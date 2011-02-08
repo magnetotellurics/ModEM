@@ -837,6 +837,7 @@ Contains
     ! In this case, we avoid an infinite loop by exiting the line search.
     if (f > f_0) then
 		print *, 'Unable to fit a quadratic due to bad gradient estimate, exiting line search'
+		starting_guess = .true.
    		exit
     end if
     ! otherwise, iterate, using the most recent value of f & alpha
@@ -852,11 +853,7 @@ Contains
    if (starting_guess) then
    	alpha = alpha_1
    	dHat = dHat_1
-
-
    	eAll = eAll_1
-
-
    	mHat = mHat_1
    	rms = rms_1
    	f = f_1
@@ -1002,10 +999,7 @@ Contains
 	starting_guess = .true.
   	alpha = alpha_1
    	dHat = dHat_1
-
-
-       eAll = eAll_1
-
+    eAll = eAll_1
    	mHat = mHat_1
    	rms = rms_1
    	f = f_1
@@ -1039,10 +1033,7 @@ Contains
    		starting_guess = .true.
    		alpha = alpha_1
    		dHat = dHat_1
-
-
      	eAll = eAll_1
-
    		mHat = mHat_1
    		rms = rms_1
    		f = f_1
@@ -1067,56 +1058,52 @@ Contains
    ! this should not happen, but in practice it is possible to end up with
    ! a function increase at this point (e.g. in the current global code).
    ! Most likely, this is due to an inaccuracy in the gradient computations.
-   ! In this case, we avoid an infinite loop by exiting the line search.
+   ! In this case, we avoid an infinite loop by taking starting guess and exiting.
    if (f > f_0) then
-    call gradient(lambda,d,m0,mHat,grad,dHat,eAll)
-	print *, 'Unable to fit a quadratic due to bad gradient estimate, exiting line search'
-	call deall_dataVectorMTX(dHat_1)
-	call deall_modelParam(mHat_0)
-	call deall_modelParam(mHat_1)
-	call deall_solnVectorMTX(eAll_1)
-   	return
-   end if
 
-   ! fit a cubic and backtrack (initialize)
-   alpha_i = alpha_1
-   f_i = f_1
-   alpha_j = alpha
-   f_j = f
+	print *, 'Unable to fit a quadratic due to bad gradient estimate, take starting guess'
+	starting_guess = .true.
 
-   fit_cubic: do
-    ! compute the minimizer
-   	q1 = f_i - f_0 - g_0 * alpha_i
-   	q2 = f_j - f_0 - g_0 * alpha_j
-   	q3 = alpha_i**2 * alpha_j**2 * (alpha_j - alpha_i)
-   	a = (alpha_i**2 * q2 - alpha_j**2 * q1)/q3
-   	b = (alpha_j**3 * q1 - alpha_i**3 * q2)/q3
-   	alpha = (- b + sqrt(b*b - 3*a*g_0))/(3*a)
- 	! if alpha is too close or too much smaller than its predecessor
-  !  if ((alpha_j - alpha < eps).or.(alpha < k*alpha_j)) then
-  !  	alpha = alpha_j/TWO ! reset alpha to ensure progress
-  !  end if
-	! compute the penalty functional
-    call linComb(ONE,mHat_0,alpha,h,mHat)
-    call func(lambda,d,m0,mHat,f,mNorm,dHat,eAll,rms)
-    call printf('CUBICLS',lambda,alpha,f,mNorm,rms)
-    call printf('CUBICLS',lambda,alpha,f,mNorm,rms,logFile)
-    niter = niter + 1
-    ! check whether the solution satisfies the sufficient decrease condition
-    if (f < f_0 + c * alpha * g_0) then
-    	exit
-    end if
-    ! if not, iterate, using the two most recent values of f & alpha
-    alpha_i = alpha_j
-    f_i = f_j
+   else
+    ! fit a cubic and backtrack (initialize)
+    alpha_i = alpha_1
+    f_i = f_1
     alpha_j = alpha
     f_j = f
-    ! check that the function still decreases to avoid infinite loops in case of a bug
-    if (abs(f_j - f_i) < TOL8) then
-    	print *, 'Warning: exiting cubic search since the function no longer decreases!'
-    	exit
-    end if
-   end do fit_cubic
+    fit_cubic: do
+        ! compute the minimizer
+   	    q1 = f_i - f_0 - g_0 * alpha_i
+   	    q2 = f_j - f_0 - g_0 * alpha_j
+   	    q3 = alpha_i**2 * alpha_j**2 * (alpha_j - alpha_i)
+   	    a = (alpha_i**2 * q2 - alpha_j**2 * q1)/q3
+   	    b = (alpha_j**3 * q1 - alpha_i**3 * q2)/q3
+   	    alpha = (- b + sqrt(b*b - 3*a*g_0))/(3*a)
+        ! if alpha is too close or too much smaller than its predecessor
+        !  if ((alpha_j - alpha < eps).or.(alpha < k*alpha_j)) then
+        !  	alpha = alpha_j/TWO ! reset alpha to ensure progress
+        !  end if
+        ! compute the penalty functional
+        call linComb(ONE,mHat_0,alpha,h,mHat)
+        call func(lambda,d,m0,mHat,f,mNorm,dHat,eAll,rms)
+        call printf('CUBICLS',lambda,alpha,f,mNorm,rms)
+        call printf('CUBICLS',lambda,alpha,f,mNorm,rms,logFile)
+        niter = niter + 1
+        ! check whether the solution satisfies the sufficient decrease condition
+        if (f < f_0 + c * alpha * g_0) then
+    	   exit
+        end if
+        ! if not, iterate, using the two most recent values of f & alpha
+        alpha_i = alpha_j
+        f_i = f_j
+        alpha_j = alpha
+        f_j = f
+        ! check that the function still decreases to avoid infinite loops in case of a bug
+        if (abs(f_j - f_i) < TOL8) then
+    	   print *, 'Warning: exiting cubic search since the function no longer decreases!'
+    	   exit
+        end if
+    end do fit_cubic
+   end if
 
    if (f_1 < f) then
    	starting_guess = .true.
@@ -1126,10 +1113,7 @@ Contains
    if (starting_guess) then
    	alpha = alpha_1
    	dHat = dHat_1
-
-
    	eAll = eAll_1
-
    	mHat = mHat_1
    	rms = rms_1
    	f = f_1
