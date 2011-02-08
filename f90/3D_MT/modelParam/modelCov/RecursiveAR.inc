@@ -271,14 +271,16 @@
 		call errStop('The input arrays should be of the same shapes in RecursiveAR')
 	end if
 
+	v = w
+
 	do iSmooth = 1,n
 
 		! smooth in the X-direction (Sx)
 	    do k = 1,NzEarth
 	    	do j = 1,Ny
-	    		v(1,j,k) = w(1,j,k)
+	    		!v(1,j,k) = v(1,j,k)
 	    		do i = 2,Nx
-					v(i,j,k) = SmoothX(i-1,j,k) * v(i-1,j,k) + w(i,j,k)
+					v(i,j,k) = SmoothX(i-1,j,k) * v(i-1,j,k) + v(i,j,k)
 	    		end do
 	    	end do
 	    end do
@@ -339,7 +341,7 @@
     do k = 1,NzEarth
     	do j = 1,Ny
     		do i = 1,Nx
-				v(i,j,k) = Scaling(i,j,k) * v(i,j,k)
+				v(i,j,k) = (Scaling(i,j,k)**(2*n)) * v(i,j,k)
     		end do
     	end do
     end do
