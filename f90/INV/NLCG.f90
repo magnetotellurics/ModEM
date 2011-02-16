@@ -518,10 +518,20 @@ Contains
    call printf('START',lambda,alpha,value,mNorm,rms)
    call printf('START',lambda,alpha,value,mNorm,rms,logFile)
 	 nfunc = 1
+   write(iterChar,'(i3.3)') 0
+
+   ! output initial model and responses for later reference
+   if (output_level > 1) then
+     mFile = trim(iterControl%fname)//'_NLCG_'//iterChar//'.rho'
+     call write_modelParam(m,trim(mFile))
+   end if
+   if (output_level > 2) then
+     dataFile = trim(iterControl%fname)//'_NLCG_'//iterChar//'.dat'
+     call write_dataVectorMTX(dHat,trim(dataFile))
+   end if
 
    ! compute gradient of the full penalty functional
    call gradient(lambda,d,m0,mHat,grad,dHat,eAll)
-   write(iterChar,'(i3.3)') 0
    if (output_level > 4) then
      gradFile = trim(iterControl%fname)//'_NLCG_'//iterChar//'.grt'
      call write_modelParam(grad,trim(gradFile))
