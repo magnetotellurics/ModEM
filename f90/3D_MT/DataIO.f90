@@ -369,7 +369,6 @@ Contains
                 ref_code,ref_lat,ref_lon,ref_x(1),ref_x(2),ref_x(3),compid,Zreal,Zimag,Zerr
 
             if (ios /= 0) then
-                write(0,*) node_info,'Number of interstation transfer function components in file: ',countData
                 backspace(ioDat)
                 exit
             end if
@@ -418,7 +417,6 @@ Contains
             read(ioDat,*,iostat=ios) Period,code,lat,lon,x(1),x(2),x(3),compid,Zreal,Zerr
 
             if (ios /= 0) then
-                write(0,*) node_info,'Number of resistivities and phases in file: ',countData
                 backspace(ioDat)
                 exit
             end if
