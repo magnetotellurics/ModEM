@@ -87,6 +87,10 @@ interface deall
    MODULE PROCEDURE deall_modelParam
 end interface
 
+interface countModelParam
+   MODULE PROCEDURE count_modelParam_f
+end interface
+
 !  I/O interfaces
 
 interface write_modelParam
@@ -393,21 +397,20 @@ Contains
    end subroutine copy_modelParam
 
    !************************************************************************
-   !  getSize_modelParam extracts model size from a modelParam_t variable
-   subroutine getSize_modelParam(cond,Ny,NzEarth)
+   !  count_modelParam counts the number of variable model parameters
+   function count_modelParam_f(cond) result (N)
 
      implicit none
      type (modelParam_t), intent(in)   	  :: cond
-     integer, intent(out)                 :: Ny,NzEarth
+     integer                              :: N
 
      if (.not.cond%allocated) then
-        call errStop('Model parameter not allocated in getValue_modelParam')
+        call errStop('Model parameter not allocated in count_modelParam')
      end if
 
-     Ny = cond%Ny
-     NzEarth = cond%NzEarth
+     N = cond%Ny * cond%NzEarth
 
-   end subroutine getSize_modelParam
+   end function count_modelParam_f
 
    !************************************************************************
    !  getValue_modelParam extracts information for a modelParam_t variable;

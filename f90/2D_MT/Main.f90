@@ -134,8 +134,26 @@ Contains
 	      endif
 	   end if
 
+     case (APPLY_COV)
+       inquire(FILE=cUserDef%rFile_Cov,EXIST=exists)
+       if (exists) then
+          call create_CmSqrt(sigma0,cUserDef%rFile_Cov)
+       else
+          call create_CmSqrt(sigma0)
+       end if
+       dsigma = sigma0
+       inquire(FILE=cUserDef%rFile_Prior,EXIST=exists)
+       if (exists) then
+           call deall_grid(grid)
+           call read_modelParam(grid,sigma0,cUserDef%rFile_Prior)
+       else
+           call zero(sigma0)
+       end if
+       sigma1 = sigma0
+       call zero(sigma1)
+
 	 case (TEST_ADJ)
-	   select case (cUserDef%test)
+	   select case (cUserDef%option)
 	       case('J','Q')
 		       inquire(FILE=cUserDef%rFile_dModel,EXIST=exists)
 		       if (exists) then

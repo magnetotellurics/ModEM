@@ -44,6 +44,7 @@ module math_constants
   real (kind=prec), parameter    :: TOL4= 0.0001_dp
   real (kind=prec), parameter    :: TOL6= 0.000001_dp
   real (kind=prec), parameter    :: TOL8= 0.00000001_dp
+  real (kind=prec), parameter    :: R_TINY= 1.0e-13
 
   real (kind=prec), parameter	 :: EIGHT = 8.0_prec
   real (kind=prec), parameter	 :: THREE = 3.0_prec

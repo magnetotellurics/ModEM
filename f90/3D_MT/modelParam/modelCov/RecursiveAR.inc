@@ -4,34 +4,34 @@
 ! Recursive autoregression.                                            !
 !----------------------------------------------------------------------!
 ! *******************************************************************
-  function multBy_Cm(m) result (mhat)
+  function multBy_Cm(mhat) result (dm)
 
-   ! Multiplies by the square root of the model covariance,
+   ! Multiplies by the full model covariance,
    ! which is viewed as a smoothing operator. Intended
    ! to be used to compute m = C_m^{1/2} \tilde{m} + m_0.
    ! For efficiency, CmSqrt is a saved, private variable inside
    ! the modelParam module. Before this routine can be called,
    ! it has to be initialized by calling create_CmSqrt(m).
 
-    type (modelParam_t), intent(in)     :: m
-    type (modelParam_t)				    :: mhat
+    type (modelParam_t), intent(in)     :: mhat
+    type (modelParam_t)				    :: dm
 
     if (.not. CmSqrt%allocated) then
-    	call create_CmSqrt(m)
+    	call create_CmSqrt(mhat)
     end if
 
-    mhat = m
+    dm = mhat
 
-    call RecursiveAR(m%cellCond%v, mhat%cellCond%v,2)
-    !mhat%cellCond%v= mhat%cellCond%v**2
-    mhat%temporary = .true.
+    call RecursiveAR(mhat%cellCond%v,dm%cellCond%v,2)
+
+    dm%temporary = .true.
 
   end function multBy_Cm
 
 ! *******************************************************************
 
 ! *******************************************************************
-  function multBy_CmSqrt(m) result (mhat)
+  function multBy_CmSqrt(mhat) result (dm)
 
    ! Multiplies by the square root of the model covariance,
    ! which is viewed as a smoothing operator. Intended
@@ -40,20 +40,45 @@
    ! the modelParam module. Before this routine can be called,
    ! it has to be initialized by calling create_CmSqrt(m).
 
-    type (modelParam_t), intent(in)     :: m
-    type (modelParam_t)				    :: mhat
+    type (modelParam_t), intent(in)     :: mhat
+    type (modelParam_t)				    :: dm
 
     if (.not. CmSqrt%allocated) then
-    	call create_CmSqrt(m)
+    	call create_CmSqrt(mhat)
     end if
 
-    mhat = m
+    dm = mhat
 
-    call RecursiveAR(m%cellCond%v, mhat%cellCond%v, CmSqrt%N)
+    call RecursiveAR(mhat%cellCond%v, dm%cellCond%v, CmSqrt%N)
+
+    dm%temporary = .true.
+
+  end function multBy_CmSqrt
+
+! *******************************************************************
+  function multBy_CmSqrtInv(dm) result (mhat)
+
+   ! Multiplies by the inverse square root of the model covariance,
+   ! which is viewed as a roughening operator. Intended
+   ! to be used to compute \tilde{m} = C_m^{-1/2} ( m - m_0 ).
+   ! For efficiency, CmSqrt is a saved, private variable inside
+   ! the modelParam module. Before this routine can be called,
+   ! it has to be initialized by calling create_CmSqrt(m).
+
+    type (modelParam_t), intent(in)     :: dm
+    type (modelParam_t)                 :: mhat
+
+    if (.not. CmSqrt%allocated) then
+        call create_CmSqrt(dm)
+    end if
+
+    mhat = dm
+
+    call RecursiveARInv(dm%cellCond%v, mhat%cellCond%v, CmSqrt%N)
 
     mhat%temporary = .true.
 
-  end function multBy_CmSqrt
+  end function multBy_CmSqrtInv
 
 ! *******************************************************************
   subroutine create_CmSqrt(m,cfile)
@@ -304,7 +329,7 @@
 	    		end do
 	    	end do
 	    end do
-
+!
 		! smooth in the Z-direction (Sz^T)
 	    do j = Ny,1,-1
 	    	do i = Nx,1,-1
@@ -341,12 +366,135 @@
     do k = 1,NzEarth
     	do j = 1,Ny
     		do i = 1,Nx
-				v(i,j,k) = (Scaling(i,j,k)**(2*n)) * v(i,j,k)
+				v(i,j,k) = (Scaling(i,j,k)**n) * v(i,j,k)
     		end do
     	end do
     end do
 
   end subroutine RecursiveAR
+
+
+  subroutine RecursiveARInv(w,v,n)
+
+   ! ... and the inverse "roughening" operator useful for starting
+   ! the inversion with an arbitrary model: \tilde{m} = C_m^{-1/2} (m - m_0).
+   ! In our case, the assumed-shape array would be e.g. conductivity
+   ! in each cell of the Nx x Ny x NzEarth grid.
+   ! NOTE: the inverse covariance operator is poorly conditioned!!!
+   ! e.g., at alpha=0.3 n=4 white noise completely overwhelmes the
+   ! inverse model. Be extra careful when you use this function and
+   ! always look at the result before using it to start the inversion.
+   ! In the future, may want to stabilize this.
+
+    real (kind=prec), intent(in)     :: w(:,:,:)
+    real (kind=prec), intent(out)    :: v(:,:,:)
+    real (kind=prec), allocatable    :: u(:,:,:)
+    integer, intent(in)                      :: n
+    integer                                  :: Nx, Ny, NzEarth, i, j, k, iSmooth, istat
+
+    Nx      = size(w,1)
+    Ny      = size(w,2)
+    NzEarth = size(w,3)
+
+    if (maxval(abs(shape(w) - shape(v)))>0) then
+        call errStop('The input arrays should be of the same shapes in RecursiveARInv')
+    end if
+
+    allocate(u(Nx,Ny,NzEarth),stat=istat)
+    v = w
+
+    do iSmooth = 1,n
+
+        u = v
+
+        ! invert smoothing in the X-direction (Sx^T)
+        do k = NzEarth,1,-1
+            do j = Ny,1,-1
+                v(Nx,j,k) = u(Nx,j,k)
+                do i = Nx,2,-1
+                    v(i-1,j,k) = u(i-1,j,k) - SmoothX(i-1,j,k) * u(i,j,k)
+                end do
+            end do
+        end do
+
+        u = v
+
+        ! invert smoothing in the Y-direction (Sy^T)
+        do k = NzEarth,1,-1
+            do i = Nx,1,-1
+                v(i,Ny,k) = u(i,Ny,k)
+                do j = Ny,2,-1
+                    v(i,j-1,k) = u(i,j-1,k) - SmoothY(i,j-1,k) * u(i,j,k)
+                end do
+            end do
+        end do
+
+        u = v
+
+        ! invert smoothing in the Z-direction (Sz^T)
+        do j = Ny,1,-1
+            do i = Nx,1,-1
+                v(i,j,NzEarth) = u(i,j,NzEarth)
+                do k = NzEarth,2,-1
+                    v(i,j,k-1) = u(i,j,k-1) - SmoothZ(i,j,k-1) * u(i,j,k)
+                end do
+            end do
+        end do
+
+        u = v
+
+        ! invert smoothing in the Z-direction (Sz)
+        do j = 1,Ny
+            do i = 1,Nx
+                v(i,j,1) = u(i,j,1)
+                do k = 2,NzEarth
+                    v(i,j,k) = - SmoothZ(i,j,k-1) * u(i,j,k-1) +u(i,j,k)
+                end do
+            end do
+        end do
+
+        u = v
+
+        ! invert smoothing in the Y-direction (Sy)
+        do k = 1,NzEarth
+            do i = 1,Nx
+                v(i,1,k) = u(i,1,k)
+                do j = 2,Ny
+                    v(i,j,k) = - SmoothY(i,j-1,k) * u(i,j-1,k) + u(i,j,k)
+                end do
+            end do
+        end do
+
+        u = v
+
+        ! invert smoothing in the X-direction (Sx)
+        do k = 1,NzEarth
+            do j = 1,Ny
+                v(1,j,k) = u(1,j,k)
+                do i = 2,Nx
+                    v(i,j,k) = - SmoothX(i-1,j,k) * u(i-1,j,k) + u(i,j,k)
+                end do
+            end do
+        end do
+
+    end do
+
+    ! apply the inverse of the scaling operator C
+    do k = 1,NzEarth
+        do j = 1,Ny
+            do i = 1,Nx
+                if (abs(Scaling(i,j,k)) < R_TINY) then
+                    v(i,j,k) = 0
+                else
+                    v(i,j,k) =  v(i,j,k) / (Scaling(i,j,k)**n)
+                end if
+            end do
+        end do
+    end do
+
+    deallocate(u,stat=istat)
+
+  end subroutine RecursiveARInv
 
 ! ****************************************************************************
   function SmoothX(i,j,k) result(alpha)
@@ -471,7 +619,7 @@
 
     implicit none
     integer, intent(in)                      :: i,j,k
-    real (kind=prec)                 :: c
+    real (kind=prec)                 :: c, alpha, beta, gamma
 
     if ((i < 1) .or. (i > CmSqrt%Nx)) then
     	call errStop('index i out of bounds in Scaling(i,j,k)')
@@ -481,12 +629,16 @@
     	call errStop('index k out of bounds in Scaling(i,j,k)')
     end if
 
+    alpha = SmoothX(i,j,k)
+    beta  = SmoothY(i,j,k)
+    gamma = SmoothZ(i,j,k)
+
 	if (CmSqrt%mask%v(i,j,k) == AIR) then
 		c = 0.0
 	else if (CmSqrt%mask%v(i,j,k) == OCEAN) then
 		c = 0.0
 	else
-		c = 1.0
+		c = 1 !(1 - alpha)**2 * (1 - beta)**2 * (1 - gamma)**2
 	end if
 
   end function Scaling

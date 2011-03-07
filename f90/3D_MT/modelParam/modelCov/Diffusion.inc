@@ -25,21 +25,21 @@
     type (rscalar)                      :: logcond
     character(80)                       :: paramType
     Integer dtime
-    
 
-    
+
+
     if (.not. CmSqrt%allocated) then
     	call create_CmSqrt(m1)
     end if
     m2=m1
     paramType = LOGE
-    
+
     call getValue_modelParam(m1,paramType,logcond)
-   
+
     dtime=5
-    
+
     call solveDiff(dtime,CmSqrt,logcond)
-    
+
     call setValue_modelParam(m2,paramType,logcond)
 
  end function multBy_Cm
@@ -60,7 +60,7 @@
     type (rscalar)                      :: logcond
     character(80)                       :: paramType
     Integer dtime
-    
+
     if (.not. CmSqrt%allocated) then
     	call create_CmSqrt(m1)
     end if
@@ -68,12 +68,33 @@
 
     paramType = LOGE
     call getValue_modelParam(m1,paramType,logcond)
-   
+
     dtime=1
     call solveDiff(dtime,CmSqrt,logcond)
     call setValue_modelParam(m2,paramType,logcond)
 
  end function multBy_CmSqrt
+
+! *******************************************************************
+  function multBy_CmSqrtInv(dm) result (mhat)
+
+   ! Multiplies by the inverse square root of the model covariance,
+   ! which is viewed as a roughening operator. Intended
+   ! to be used to compute \tilde{m} = C_m^{-1/2} ( m - m_0 ).
+   ! For efficiency, CmSqrt is a saved, private variable inside
+   ! the modelParam module. Before this routine can be called,
+   ! it has to be initialized by calling create_CmSqrt(m).
+
+    type (modelParam_t), intent(in)     :: dm
+    type (modelParam_t)                 :: mhat
+
+    if (.not. CmSqrt%allocated) then
+        call create_CmSqrt(dm)
+    end if
+
+    call errStop('The inverse has not been implemented for the diffusive covariance')
+
+  end function multBy_CmSqrtInv
 
 ! *******************************************************************
   subroutine create_CmSqrt(m,cfile)
@@ -97,7 +118,7 @@
 	 CmSqrt%xlen=0.5
      CmSqrt%ylen=0.5
      CmSqrt%zlen=0.5
- 
+
 	call create_iscalar(m%grid,CmSqrt%mask,CELL_EARTH)
 	CmSqrt%mask%v = FREE
 	CmSqrt%N = 5
@@ -119,7 +140,7 @@
 	    end if
     end if
 
-    
+
     call setup1DCM(m%grid,CmSqrt)
 
 
@@ -174,11 +195,11 @@
     read(fid,*) CmSqrt%Sx
     read(fid,*) CmSqrt%Sy
     read(fid,*) CmSqrt%Sz
-    
+
  CmSqrt%xlen=CmSqrt%Sx(1)
  CmSqrt%ylen=CmSqrt%Sy(1)
  CmSqrt%zlen=CmSqrt%Sz
- 
+
 	! read number of times to apply the smoothing
 	read(fid,*) CmSqrt%N
 
@@ -196,7 +217,7 @@
 
 
 
-       
+
   end subroutine read_Cm
 ! *******************************************************************
   subroutine deall_CmSqrt()
@@ -230,7 +251,7 @@
      real (kind=prec), pointer, dimension(:,:)   ::  XDF
      real (kind=prec), pointer, dimension(:,:)   ::  YDF
      real (kind=prec), pointer, dimension(:,:)   ::  ZDF
-     Integer         , pointer, dimension(:)     ::  xgd,ygd,zgd             
+     Integer         , pointer, dimension(:)     ::  xgd,ygd,zgd
 
      integer                  :: jj, ix, iy, iz, Nx, Ny, NzEarth
      real (kind=prec) :: xlen, ylen, zlen
@@ -246,9 +267,9 @@
 	  allocate(XDF(2,Nx))
 	  allocate(YDF(2,Ny))
 	  allocate(ZDF(2,NzEarth))
-	 
-	  allocate (xgd(Nx),ygd(Ny),zgd(NzEarth)) 	  
-     
+
+	  allocate (xgd(Nx),ygd(Ny),zgd(NzEarth))
+
 
 	  XLen = CmSqrt%xlen
 	  YLen = CmSqrt%ylen
@@ -257,11 +278,11 @@
 !>>>  X : Horizontal Diffusion
       DO iz = 1,NzEarth
         DO iy = 1,Ny
-        
+
           DO ix = 1,Nx
             xgd(ix) = CmSqrt%mask%v(ix,iy,iz)
           ENDDO ! ix
-          
+
           CALL SetupXCM(Nx,xgd,XLen,XDF)
           DO ix = 1,Nx
             CmSqrt%XDIF(1,ix,iy,iz) = XDF(1,ix)
@@ -274,11 +295,11 @@
 !>>>  Y : Horizontal Diffusion
       DO iz = 1,NzEarth
         DO ix = 1,Nx
-        
+
           DO iy = 1,Ny
             ygd(iy) = CmSqrt%mask%v(ix,iy,iz)
           ENDDO ! iy
-               
+
           CALL SetupYCM(Ny,ygd,YLen,YDF)
           DO iy = 1,Ny
             CmSqrt%YDIF(1,ix,iy,iz) = YDF(1,iy)
@@ -291,12 +312,12 @@
 !>>>  Vertical Diffusion
       DO ix = 1,Nx
         DO iy = 1,Ny
-        
+
           DO iz = 1,NzEarth
             zgd(iz) = CmSqrt%mask%v(ix,iy,iz)
           ENDDO ! iz
-          
-             
+
+
           CALL SetupZCM(NzEarth,zgd,ZLen,ZDF)
           DO iz = 1,NzEarth
             CmSqrt%ZDIF(1,ix,iy,iz) = ZDF(1,iz)
@@ -316,7 +337,7 @@
 
   SUBROUTINE SetupXCM(Nx,xgd,xlen,XDF)
 
-  
+
       Integer,intent(in), dimension(:)     ::  xgd
       integer Nx,info
       real (kind=prec)  XDF(2,Nx),xlen
@@ -324,9 +345,9 @@
 
 
 
-      
-      
-      
+
+
+
       integer ix
       real (kind=prec)  D0,D1
 
@@ -336,8 +357,8 @@
       DO ix = 1,Nx
         cr = xlen
         cl = xlen
-        
-        
+
+
         IF (ix.LT.Nx) THEN
           IF ((xgd(ix) .eq. OCEAN).AND.(xgd(ix+1).eq. OCEAN)) THEN
             cr = D0
@@ -383,7 +404,7 @@
 !...  Copyright (C) 2006 Weerachai Siripunvaraporn. All rights reserved.
 
   SUBROUTINE SetupYCM(Ny,ygd,ylen,YDF)
-  
+
       Integer,intent(in), dimension(:)     ::  ygd
       integer Ny,info
       real (kind=prec)  YDF(2,Ny),ylen
@@ -398,7 +419,7 @@
       DO iy = 1,Ny
         cr = ylen
         cl = ylen
-        
+
         IF (iy.LT.Ny) THEN
           IF ((ygd(iy) .eq. OCEAN).AND.(ygd(iy+1).eq. OCEAN)) THEN
             cr = D0
@@ -410,7 +431,7 @@
             cl = D0
           ENDIF
         ENDIF
-        
+
         difyc(iy) = D1 + cr + cl
         difyr(iy) = -cr
       ENDDO ! iy
@@ -445,7 +466,7 @@
 !...  Copyright (C) 2006 Weerachai Siripunvaraporn. All rights reserved.
 
   SUBROUTINE SetupZCM(Nz,zgd,zlen,ZDF)
-  
+
       Integer,intent(in), dimension(:)     ::  zgd
       integer Nz,info
       real (kind=prec)  ZDF(2,Nz),zlen
@@ -459,8 +480,8 @@
       DO iz = 1,Nz
         cr = zlen
         cl = zlen
-        
-        
+
+
         IF (iz.LT.Nz) THEN
           IF ((zgd(iz) .eq. OCEAN).AND.(zgd(iz+1).eq. OCEAN)) THEN
             cr = D0
@@ -472,8 +493,8 @@
             cl = D0
           ENDIF
         ENDIF
-        
-        
+
+
         difzc(iz) = D1 + cr + cl
         difzr(iz) = -cr
       ENDDO ! iz
@@ -523,8 +544,8 @@ ZDF=D0
       Nx = u2%nx
       Ny = u2%ny
       NzEarth = u2%nz
-      
-      
+
+
       DO idt = 1,DTime
         CALL X_Diff(CmSqrt,u2)
         CALL Y_Diff(CmSqrt,u2)
@@ -544,9 +565,9 @@ ZDF=D0
 				u2%v(ix,iy,iz) = Scaling(ix,iy,iz) * u2%v(ix,iy,iz)
     		end do
     	end do
-    end do      
-      
-      
+    end do
+
+
   END SUBROUTINE SolveDiff ! SolveDiff
 
 
@@ -680,12 +701,12 @@ ZDF=D0
         ENDDO ! iy
       ENDDO ! ix
 
-      
-      
 
-        
-      
-      
+
+
+
+
+
       deallocate(ZDF,uz)
 
   END SUBROUTINE Z_Diff ! Z_DIFF

@@ -35,6 +35,10 @@ module model_operators
      MODULE PROCEDURE deall_modelParam
   end interface
 
+  interface countModelParam
+     MODULE PROCEDURE count_modelParam_f
+  end interface
+
 !  INTERFACE OPERATOR (+)
 !     MODULE PROCEDURE add_modelParam_f
 !  END INTERFACE
@@ -100,6 +104,7 @@ module model_operators
   public			:: print_modelParam, write_modelParam, read_modelParam
   public			:: smoothV_modelParam, smoothH_modelParam
   public			:: multBy_CmSqrt, multBy_Cm
+  public            :: count_modelParam_f
 
 Contains
 
@@ -796,6 +801,24 @@ Contains
 	end do search
 
   end subroutine getCoeffArray_modelParam
+
+  ! **********************************************************************
+  ! * count_modelParam: counts the number of variable model parameters
+  ! * BOP
+  function count_modelParam_f(P) result (N)
+
+    implicit none
+    type (modelParam_t), intent(in)                :: P
+    integer                                        :: N
+    ! * EOP
+
+    if(.not.P%allocated) then
+       call errStop('(count_modelParam) parametrization not allocated yet')
+    end if
+
+    N = count(P%c%exists)
+
+  end function count_modelParam_f
 
   ! **********************************************************************
   ! * BOP

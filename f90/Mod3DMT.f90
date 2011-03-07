@@ -170,20 +170,31 @@ program Mod3DMT
         	call write_dataVectorMTX(allData,cUserDef%wFile_Data)
         end if
 
-     case (TEST_COV)
-        write(*,*) 'Multiplying input model parameter by covariance ...'
-        sigma1 = multBy_CmSqrt(sigma0)
+     case (APPLY_COV)
+        select case (cUserDef%option)
+            case('FWD')
+                write(*,*) 'Multiplying input model parameter by square root of the covariance ...'
+                sigma1 = multBy_CmSqrt(dsigma)
+                call linComb(ONE,sigma1,ONE,sigma0,sigma1)
+            case('INV')
+                write(*,*) 'Multiplying input model parameter by inverse square root of the covariance ...'
+                call linComb(ONE,dsigma,MinusONE,sigma0,dsigma)
+                sigma1 = multBy_CmSqrtInv(dsigma)
+            case default
+               write(0,*) 'Unknown covariance option ',trim(cUserDef%option),'; please use FWD or INV.'
+               stop
+        end select
         call write_modelParam(sigma1,cUserDef%wFile_Model)
 
      case (TEST_ADJ)
-       select case (cUserDef%test)
+       select case (cUserDef%option)
            case('J')
                call Jtest(sigma0,dsigma,allData)
            case('Q')
                call Qtest(sigma0,dsigma,allData)
 
            case default
-               write(0,*) 'Symmetry test for operator ',trim(cUserDef%test),' not yet implemented.'
+               write(0,*) 'Symmetry test for operator ',trim(cUserDef%option),' not yet implemented.'
        end select
          if (write_model .and. write_data) then
             write(*,*) 'Writing model and data files and exiting...'

@@ -97,7 +97,7 @@ Contains
 	else
 	  call warning('No input model parametrization')
 	end if
-	
+
 
 
 	!--------------------------------------------------------------------------
@@ -117,9 +117,9 @@ Contains
 
 
     ! Check if a larg grid file with E field is defined:
-    ! NOTE: right now both grids share the same transmitters. 
+    ! NOTE: right now both grids share the same transmitters.
     ! This why, reading and setting the large grid and its E solution comes after setting the trasnmitters Dictionary.
-     
+
      if (solverParams%read_E0_from_File) then
         write(6,*) 'Reading E field from: ',trim(solverParams%E0fileName)
         inFile = trim(solverParams%E0fileName)
@@ -129,9 +129,9 @@ Contains
         call create_solnVectorMTX(filePer,eAll_larg)
             do iTx=1,filePer
          		call create_solnVector(Larg_Grid,iTx,e_temp)
-        		call copy_solnVector(eAll_larg%solns(iTx),e_temp) 
-        	 end do 
-      	 
+        		call copy_solnVector(eAll_larg%solns(iTx),e_temp)
+        	 end do
+
         do iTx = 1,eAll_larg%nTx
          do iMod = 1,fileMode
            call EfileRead(ioNum, iTx, iMod, omega, eAll_larg%solns(iTx)%pol(iMod))
@@ -139,9 +139,9 @@ Contains
       enddo
       close(ioNum)
       call deall(e_temp)
-     end if    
-    
-    
+     end if
+
+
 	!--------------------------------------------------------------------------
 	!  Initialize additional data as necessary
 	select case (cUserDef%job)
@@ -185,18 +185,26 @@ Contains
           ! currently empty
        end select
 
-     case (TEST_COV)
+     case (APPLY_COV)
 	   inquire(FILE=cUserDef%rFile_Cov,EXIST=exists)
 	   if (exists) then
           call create_CmSqrt(sigma0,cUserDef%rFile_Cov)
        else
           call create_CmSqrt(sigma0)
        end if
+       dsigma = sigma0
+       inquire(FILE=cUserDef%rFile_Prior,EXIST=exists)
+       if (exists) then
+           call deall_grid(grid)
+           call read_modelParam(grid,sigma0,cUserDef%rFile_Prior)
+       else
+           call zero(sigma0)
+       end if
        sigma1 = sigma0
        call zero(sigma1)
 
      case (TEST_ADJ)
-       select case (cUserDef%test)
+       select case (cUserDef%option)
            case('J','Q')
                inquire(FILE=cUserDef%rFile_dModel,EXIST=exists)
                if (exists) then

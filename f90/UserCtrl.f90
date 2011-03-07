@@ -11,7 +11,7 @@ module UserCtrl
   character*1, parameter	:: MULT_BY_J = 'M'
   character*1, parameter	:: MULT_BY_J_T = 'T'
   character*1, parameter	:: INVERSE = 'I'
-  character*1, parameter	:: TEST_COV = 'C'
+  character*1, parameter	:: APPLY_COV = 'C'
   character*1, parameter  :: TEST_ADJ = 'A'
   character*1, parameter  :: TEST_SENS = 'S'
 
@@ -36,7 +36,7 @@ module UserCtrl
 	! Input files
 	character(80)       :: rFile_Grid, rFile_Model, rFile_Data
 	character(80)       :: rFile_dModel
-  character(80)       :: rFile_EMsoln, rFile_EMrhs
+  character(80)       :: rFile_EMsoln, rFile_EMrhs, rFile_Prior
 
 	! Output files
 	character(80)       :: wFile_Grid, wFile_Model, wFile_Data
@@ -48,8 +48,8 @@ module UserCtrl
 	! Choose the inverse search algorithm
 	character(80)       :: search
 
-  ! Choose the sort of test you wish to perform
-  character(80)       :: test
+  ! Choose the sort of test / procedure variant you wish to perform
+  character(80)       :: option
 
 
 
@@ -97,12 +97,13 @@ Contains
     ctrl%wFile_EMrhs = 'n'
     ctrl%rFile_EMsoln = 'n'
   	ctrl%wFile_EMsoln = 'n'
+  	ctrl%rFile_Prior = 'n'
   	ctrl%wFile_Sens = 'n'
   	ctrl%lambda = 1
   	ctrl%eps = 1.0e-7
   	ctrl%rFile_Cov = 'n'
   	ctrl%search = 'NLCG'
-  	ctrl%test = 'J'
+  	ctrl%option = 'J'
   	ctrl%delta = 0.05
   	ctrl%output_level = 3
 
@@ -131,9 +132,9 @@ Contains
      type(userdef_control), intent(out)  :: ctrl
      logical :: res
 
-     write(*,*) 'Copyright (c) 2004-2010 Oregon State University'
+     write(*,*) 'Copyright (c) 2004-2011 Oregon State University'
      write(*,*) 'AUTHORS  Gary Egbert, Anna Kelbert & Naser Meqbel'
-     write(*,*) 'College of Atmospheric and Oceanic Sciences'
+     write(*,*) 'College of Oceanic and Atmospheric Sciences'
      write(*,*)
 
      call initUserCtrl(ctrl)
@@ -200,15 +201,6 @@ Contains
         write(*,*) '[FORWARD]'
         write(*,*) ' -F  rFile_Model rFile_Data wFile_Data [wFile_EMsoln rFile_fwdCtrl]'
         write(*,*) '  Calculates the predicted data and saves the EM solution'
-        write(*,*) '[COMPUTE_J]'
-        write(*,*) ' -J  rFile_Model rFile_Data wFile_Sens [rFile_fwdCtrl]'
-        write(*,*) '  Calculates and saves the full J(acobian)'
-        write(*,*) '[MULT_BY_J]'
-        write(*,*) ' -M  rFile_Model rFile_dModel rFile_Data wFile_Data [rFile_fwdCtrl]'
-        write(*,*) '  Multiplies a model by J to create a data vector'
-        write(*,*) '[MULT_BY_J_T]'
-        write(*,*) ' -T  rFile_Model rFile_Data wFile_dModel [rFile_fwdCtrl]'
-        write(*,*) '  Multiplies a data vector by J^T to create a model'
         write(*,*) '[INVERSE]'
         write(*,*) ' -I NLCG rFile_Model rFile_Data [lambda eps]'
         write(*,*) '  Here, lambda = the initial damping parameter for inversion'
@@ -219,9 +211,20 @@ Contains
         write(*,*) '      the model covariance configuration file   [rFile_Cov]'
         write(*,*) '      the starting model parameter perturbation [rFile_dModel]'
         write(*,*) '  Runs an inverse search to yield an inverse model at every iteration'
-        write(*,*) '[TEST_COV]'
-        write(*,*) ' -C  rFile_Model wFile_Model [rFile_Cov]'
+        write(*,*) '[COMPUTE_J]'
+        write(*,*) ' -J  rFile_Model rFile_Data wFile_Sens [rFile_fwdCtrl]'
+        write(*,*) '  Calculates and saves the full J(acobian)'
+        write(*,*) '[MULT_BY_J]'
+        write(*,*) ' -M  rFile_Model rFile_dModel rFile_Data wFile_Data [rFile_fwdCtrl]'
+        write(*,*) '  Multiplies a model by J to create a data vector'
+        write(*,*) '[MULT_BY_J_T]'
+        write(*,*) ' -T  rFile_Model rFile_Data wFile_dModel [rFile_fwdCtrl]'
+        write(*,*) '  Multiplies a data vector by J^T to create a model'
+        write(*,*) '[APPLY_COV]'
+        write(*,*) ' -C FWD rFile_Model wFile_Model [rFile_Cov rFile_Prior]'
         write(*,*) '  Applies the model covariance to produce a smooth model output'
+        write(*,*) '  Optionally, also specify the prior model to compute resistivities'
+        write(*,*) '  from model perturbation: m = C_m^{1/2} \tilde{m} + m_0'
         write(*,*) '[TEST_ADJ]'
         write(*,*) ' -A  J rFile_Model rFile_dModel rFile_Data [wFile_Model wFile_Data]'
         write(*,*) '  Tests the equality d^T J m = m^T J^T d for any model and data.'
@@ -427,16 +430,32 @@ Contains
             end if
         end if
 
-      case (TEST_COV) ! C
-        if (narg < 2) then
-           write(0,*) 'Usage: -C  rFile_Model wFile_Model [rFile_Cov]'
+      case (APPLY_COV) ! C
+        if (narg < 3) then
+           write(0,*) 'Usage: -C  [FWD|INV] rFile_Model wFile_Model [rFile_Cov rFile_Prior]'
+           write(0,*)
+           write(0,*) ' -C FWD rFile_Model wFile_Model [rFile_Cov rFile_Prior]'
+           write(0,*) '  Applies the model covariance to produce a smooth model output'
+           write(0,*) '  Optionally, also specify the prior model to compute resistivities'
+           write(0,*) '  from model perturbation: m = C_m^{1/2} \tilde{m} + m_0'
+           write(0,*)
+           write(0,*) ' -C INV rFile_Model wFile_Model [rFile_Cov rFile_Prior]'
+           write(0,*) '  Applies the inverse of model covariance (if implemented)'
+           write(0,*) '  Optionally, also specify the prior model to compute starting'
+           write(0,*) '  perturbation for the inversion: \tilde{m} = C_m^{-1/2} (m - m_0)'
+           write(0,*) '  WARNING: may be poorly conditioned if the smoothing is too strong;'
+           write(0,*) '  always check your model for white noise after using this option.'
            stop
         else
-	    ctrl%rFile_Model = temp(1)
-	    ctrl%wFile_Model = temp(2)
+        ctrl%option = temp(1)
+	    ctrl%rFile_Model = temp(2)
+	    ctrl%wFile_Model = temp(3)
         end if
-        if (narg > 2) then
-            ctrl%rFile_Cov = temp(3)
+        if (narg > 3) then
+            ctrl%rFile_Cov = temp(4)
+        end if
+        if (narg > 4) then
+            ctrl%rFile_Prior = temp(5)
         end if
 
       case (TEST_ADJ) ! A
@@ -473,8 +492,8 @@ Contains
            write(0,*) ' -A  b rFile_EMrhs wFile_EMrhs [delta]'
            stop
         else
-           ctrl%test = temp(1)
-           select case (ctrl%test)
+           ctrl%option = temp(1)
+           select case (ctrl%option)
            ! tests of adjoint implementation ...
            case ('J')
                 ctrl%rFile_Model = temp(2)
