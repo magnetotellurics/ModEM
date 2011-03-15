@@ -47,7 +47,7 @@ OBJDIR = ./objs/3D_MT/MPIRelease
 F90 = mpif90
 #FFLAGS = -O2
 #MPIFLAGS = -Bstatic  -Mipa=fast  -Mextend  -Kieee -Mpreprocess -DMPI
-MPIFLAGS =  -g -O2  -x f95-cpp-input -DMPI -ffree-form -ffree-line-length-300 -m64 #-fbounds-check 
+MPIFLAGS =  -g -O2  -x f95-cpp-input -DMPI -ffree-form -ffree-line-length-300 -m64 #-frecord-marker=8 #-fbounds-check 
 MODULE = -dir $(OBJDIR)
 LIBS =  -llapack -lblas 
 
@@ -59,7 +59,7 @@ all: Mod3DMT
 
 # Here is the link step 
 Mod3DMT: $(OBJDIR) $(OBJ) 
-	 $(F90) -o $(OUTDIR)/Mod3DMT_MPI $(OBJ) $(LIBS) 
+	 $(F90) -o $(OUTDIR)/Mod3DMT $(OBJ) $(LIBS) 
 
 # Here are the compile steps 
 

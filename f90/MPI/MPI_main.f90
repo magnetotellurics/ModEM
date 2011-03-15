@@ -5,9 +5,10 @@ module MPI_main
   use math_constants
   use file_units
   use utilities
-  use datasens	 !!!!  inherits : dataspace, dataFunc, SolnSpace
-  use SolverSens  !!!  inherits : modelspace, soln2d
+  use datasens	 
+  use SolverSens  
   use ForwardSolver
+  use SensComp
   
   use MPI_declaration
   use MPI_sub
@@ -78,11 +79,8 @@ Subroutine Master_Job_fwdPred(sigma,d,eAll)
      starttime = MPI_Wtime()
 
 
-   if (eAll_larg%allocated) then
-         call deall(eAll_larg)
-         call deall_grid(Larg_Grid)
-   end if
-         
+
+
    
      
      ! First, distribute the current model to all workers
@@ -129,16 +127,242 @@ end subroutine Master_Job_fwdPred
 
 !##############################################   Master_Job_Compute_J #########################################################
 
-Subroutine Master_Job_Compute_J(d,sigma,dsigma,eAll)
+Subroutine Master_job_calcJ(d,sigma,sens,eAll)
 
    implicit none
    type(modelParam_t), intent(in)	:: sigma
    type(dataVectorMTX_t), intent(in)		:: d
-   type(modelParam_t), intent(Out)  	:: dsigma
    type(solnVectorMTX_t), intent(in), optional	:: eAll
-   
+   type(sensMatrix_t), pointer 		      :: sens(:)
 
-end subroutine Master_Job_Compute_J
+   !Local
+    logical        :: savedSolns
+    Integer        :: iper,idt,istn
+    Integer        :: per_index,dt_index,stn_index
+    integer        :: nTx,nDt,nStn,dest,answers_to_receive,received_answers,nComp,nFunc,ii,iFunc,istat
+    logical      :: isComplex  
+    type(modelParam_t), pointer   :: Jreal(:),Jimag(:)           
+
+   starttime = MPI_Wtime()
+   
+   
+! now, allocate for sensitivity values, if necessary
+if(.not. associated(sens)) then
+     call create_sensMatrixMTX(d, sigma, sens)
+endif
+ 
+
+	         
+! Check if an Esoln is passed    
+savedSolns = present(eAll)  
+if (.not. savedSolns )then
+    !call Master_Job_fwdPred(sigma,d,eAll)
+end if
+
+dest=0
+worker_job_task%what_to_do='COMPUTE_J' 
+! now loop over Periods
+nTx = d%nTx  
+per_index=0 
+do iper=1,nTx
+     per_index=per_index+1
+     worker_job_task%per_index= per_index
+     
+      ! now loop over data types
+      dt_index=0
+      nDt=d%d(iper)%nDt
+      do idt = 1,nDt
+         dt_index=dt_index+1
+         worker_job_task%data_type= d%d(iper)%data(idt)%dataType
+         worker_job_task%data_type_index= dt_index
+         
+          ! now loop over stations
+           stn_index=0
+           nStn= d%d(iper)%data(idt)%nSite
+           do istn=1,nStn
+              stn_index=stn_index+1
+              worker_job_task%Stn_index= stn_index  
+ 	            dest=dest+1
+	            call create_worker_job_task_place_holder
+	            call Pack_worker_job_task
+	            call MPI_SEND(worker_job_package,Nbytes, MPI_PACKED,dest, FROM_MASTER, MPI_COMM_WORLD, ierr)
+	            	 which_per=per_index
+	            	 e0=eAll%solns(which_per)
+			         call create_eAll_param_place_holder(e0)
+				     call Pack_eAll_para_vec(e0)
+				     call MPI_SEND(eAll_para_vec, Nbytes, MPI_PACKED, dest,FROM_MASTER, MPI_COMM_WORLD, ierr) 
+	             write(ioMPI,8550) per_index ,dt_index,stn_index,dest  
+	            if (dest .ge. number_of_workers) then 
+	               goto 10
+	            end if			                         
+           end do
+      end do
+end do
+
+10    continue   
+           
+! Count hom many rows of J we are going to recieve
+answers_to_receive=0
+ do iper=1,nTx 
+    nDt=d%d(iper)%nDt          
+     do idt = 1,nDt 
+      nStn= d%d(iper)%data(idt)%nSite   
+        do istn=1,nStn
+          answers_to_receive=answers_to_receive+1
+        end do
+     end do
+  end do
+        
+! Start the PING PONG procedure:
+! 1- Recieve an answer.
+! 2 -Check if all stations, all data types and all periods haven been sent.
+! 3- Send indicies if required.  
+
+received_answers = 0
+write(6,*)'answers_to_receive=', answers_to_receive
+do while (received_answers .lt. answers_to_receive) 
+
+!    Recieve worker INFO:                       
+            call create_worker_job_task_place_holder
+            call MPI_RECV(worker_job_package, Nbytes, MPI_PACKED ,MPI_ANY_SOURCE, FROM_WORKER,MPI_COMM_WORLD,STATUS, ierr)
+            call Unpack_worker_job_task
+
+                       who=worker_job_task%taskid
+                       which_per=worker_job_task%per_index
+                       which_dt=worker_job_task%data_type_index                      
+                       which_stn=worker_job_task%Stn_index
+                       write(ioMPI,8552) which_per ,which_dt,which_stn,who             
+         
+!    Recieve results from a worker:
+
+! Store the result in sens
+
+nComp = d%d(which_per)%data(which_dt)%nComp           
+isComplex = d%d(which_per)%data(which_dt)%isComplex
+
+		    if(isComplex) then
+		       !  data are complex; one sensitivity calculation can be
+		       !   used for both real and imaginary parts
+		       if(mod(nComp,2).ne.0) then
+		         call errStop('for complex data # of components must be even in calcJ')
+		       endif
+		       nFunc = nComp/2
+		    else
+		       !  data are treated as real: full sensitivity computation is required
+		       !   for each component
+		       nFunc = nComp
+		    endif
+		    allocate(Jreal(nFunc),STAT=istat)
+            allocate(Jimag(nFunc),STAT=istat)		    
+   ! allocate and initialize sensitivity values
+   do iFunc = 1,nFunc
+      ! this makes a copy of modelParam, then zeroes it
+      Jreal(iFunc) = sigma
+      call zero(Jreal(iFunc))
+      Jimag(iFunc) = sigma
+      call zero(Jimag(iFunc))
+   enddo
+   		    
+		do iFunc = 1,nFunc    
+		    !real part
+            call create_model_param_place_holder(Jreal(iFunc))
+            call MPI_RECV(sigma_para_vec, Nbytes, MPI_PACKED, who, FROM_WORKER,MPI_COMM_WORLD, STATUS, ierr)
+            call unpack_model_para_values(Jreal(iFunc))
+            
+            !image part
+            call create_model_param_place_holder(Jimag(iFunc))
+            call MPI_RECV(sigma_para_vec, Nbytes, MPI_PACKED, who, FROM_WORKER,MPI_COMM_WORLD, STATUS, ierr)
+            call unpack_model_para_values(Jimag(iFunc))
+        end do    
+            		    
+           ! store in the full sensitivity matrix
+           ii = 1
+           do iFunc = 1,nFunc
+              if(isComplex) then
+                 sens(which_per)%v(which_dt)%dm(ii,which_stn)   = Jreal(iFunc)
+                 sens(which_per)%v(which_dt)%dm(ii+1,which_stn) = Jimag(iFunc)
+                 ii = ii + 2
+              else
+                 ! for real data, throw away the imaginary part
+                 sens(which_per)%v(which_dt)%dm(ii,which_stn)   = Jreal(iFunc)
+                 ii = ii + 1
+              endif
+           enddo
+
+        ! deallocate temporary vectors
+		    do iFunc = 1,nFunc
+		       call deall_modelParam(Jreal(iFunc))
+		       call deall_modelParam(Jimag(iFunc))
+		    enddo
+		    deallocate(Jreal, STAT=istat)
+		    deallocate(Jimag, STAT=istat)
+
+                       
+            
+received_answers=received_answers+1
+
+if (Per_index ==  nTx .and. dt_index == d%d(Per_index)%nDt .and. stn_index == d%d(Per_index)%data(dt_index)%nSite ) goto 300 
+
+
+stn_index=stn_index+1 
+! Check if we sent everything
+if (stn_index .gt. d%d(Per_index)%data(dt_index)%nSite ) then
+          dt_index=dt_index+1
+          stn_index=1   
+elseif ( stn_index .le. d%d(Per_index)%data(dt_index)%nSite) then
+          dt_index=dt_index
+end if
+
+if (dt_index .gt. d%d(Per_index)%nDt ) then
+          per_index=per_index+1
+          dt_index=1   
+elseif (dt_index .le. d%d(Per_index)%nDt) then
+          per_index=per_index
+end if
+
+ if (Per_index .gt. nTx ) goto 300
+ 
+		    worker_job_task%Stn_index= stn_index  
+            worker_job_task%data_type_index=dt_index
+            worker_job_task%data_type=d%d(per_index)%data(dt_index)%dataType
+            worker_job_task%per_index= per_index
+ write(ioMPI,8551) per_index ,worker_job_task%data_type_index,stn_index,who    
+             
+! Send Indices to who (the worker who just send back an answer)
+            call create_worker_job_task_place_holder
+            call Pack_worker_job_task
+            call MPI_SEND(worker_job_package,Nbytes, MPI_PACKED,who, FROM_MASTER, MPI_COMM_WORLD, ierr)
+            
+
+	            	 e0=eAll%solns(per_index)
+			         call create_eAll_param_place_holder(e0)
+				     call Pack_eAll_para_vec(e0)
+				     call MPI_SEND(eAll_para_vec, Nbytes, MPI_PACKED, who,FROM_MASTER, MPI_COMM_WORLD, ierr)             
+                   
+    
+ 
+
+300    continue                                   
+                   
+end do
+
+ 8550  FORMAT('COMPUTE_J: Send Per. # ',i5, ' , data type # ',i5, ' and Site #',i5,' to node # ',i5  )
+ 8551  FORMAT('COUNT--> COMPUTE_J: Send Per. # ',i5, ' , data type # ',i5, ' and Site #',i5,' to node # ',i5  )
+ 8552  FORMAT('COMPUTE_J: RECV Per. # ',i5, ' , data type # ',i5, ' and Site #',i5,' from node # ',i5  )
+
+        endtime=MPI_Wtime()
+        time_used = endtime-starttime
+        !DONE: Received soln for all transmitter from all nodes
+        write(ioMPI,*)'COMPUTE_J: Finished computing for (',answers_to_receive , ';[Transmitters*data type*site]) '
+        endtime=MPI_Wtime()
+        time_used = endtime-starttime
+        write(ioMPI,*)'COMPUTE_J: TIME REQUIERED: ',time_used ,'s'
+
+
+
+
+
+end subroutine Master_job_calcJ
 
 
 
@@ -199,8 +423,8 @@ Subroutine Master_job_JmultT(sigma,d,dsigma,eAll,s_hat)
    dsigma 	   = sigma
    call zero(dsigma_temp)
    call zero(dsigma)
-   Qcomb = dsigma
-   
+   Qcomb = sigma
+   call zero(Qcomb)
  
  
   
@@ -589,7 +813,7 @@ Subroutine Worker_job (sigma,d)
    type(userdef_control)                        :: ctrl
 
       
-   Integer nTx,m_dimension,ndata,itx,ndt,dt_index,per_index_pre
+   Integer nTx,m_dimension,ndata,itx,ndt,dt_index,per_index_pre,dt
    character(80) 		  :: paramType,previous_message
 
 
@@ -597,9 +821,12 @@ Subroutine Worker_job (sigma,d)
    Integer        :: per_index,pol_index,stn_index,eAll_vec_size
    character(20)                               :: which_proc
  
-
-
-
+   type(modelParam_t), pointer   :: Jreal(:),Jimag(:)
+   integer                       ::nComp,nFunc,iFunc,istat
+   logical                       :: isComplex  
+   type(sparseVector_t), pointer	:: L(:)
+   type(modelParam_t), pointer    :: Qreal(:),Qimag(:)
+   logical      :: Qzero
  
 
       
@@ -621,7 +848,7 @@ write(node_info,'(a5,i3.3,a4)') 'node[',taskid,']:  '
           !call MPI_RECV(worker_job_task,1,worker_job_task_mpi,0, FROM_MASTER,MPI_COMM_WORLD, STATUS, ierr)
 
 
-			write(6,'(a12,a12,a30,a10)') node_info,' MPI TASK [',trim(worker_job_task%what_to_do),'] received'
+		!	write(6,'(a12,a12,a30,a10)') node_info,' MPI TASK [',trim(worker_job_task%what_to_do),'] received'
 			!write(6,*) node_info,' MPI INFO [keep soln = ',(worker_job_task%keep_E_soln), &
 			! '; several TX = ',worker_job_task%several_Tx,']'
 
@@ -660,6 +887,106 @@ if (trim(worker_job_task%what_to_do) .eq. 'FORWARD') then
 
 elseif (trim(worker_job_task%what_to_do) .eq. 'COMPUTE_J') then
 
+          per_index=worker_job_task%per_index
+          stn_index=worker_job_task%stn_index
+          dt_index=worker_job_task%data_type_index
+          dt=worker_job_task%data_type
+          worker_job_task%taskid=taskid
+          
+nComp = d%d(per_index)%data(dt_index)%nComp           
+isComplex = d%d(per_index)%data(dt_index)%isComplex
+
+		    if(isComplex) then
+		       !  data are complex; one sensitivity calculation can be
+		       !   used for both real and imaginary parts
+		       if(mod(nComp,2).ne.0) then
+		         call errStop('for complex data # of components must be even in calcJ')
+		       endif
+		       nFunc = nComp/2
+		    else
+		       !  data are treated as real: full sensitivity computation is required
+		       !   for each component
+		       nFunc = nComp
+		    endif
+		    allocate(Jreal(nFunc),STAT=istat)
+            allocate(Jimag(nFunc),STAT=istat)	
+    ! allocate and initialize sensitivity values
+   do iFunc = 1,nFunc
+      ! this makes a copy of modelParam, then zeroes it
+      Jreal(iFunc) = sigma
+      call zero(Jreal(iFunc))
+      Jimag(iFunc) = sigma
+      call zero(Jimag(iFunc))
+   enddo
+              	              
+! Do some computation
+                    call initSolver(per_index,sigma,grid,e0,e,comb) 
+		            call create_eAll_param_place_holder(e0)
+		            call MPI_RECV(eAll_para_vec, Nbytes, MPI_PACKED, 0, FROM_MASTER,MPI_COMM_WORLD, STATUS, ierr)
+		            call Unpack_eAll_para_vec(e0)
+
+   allocate(L(nFunc),STAT=istat)
+   allocate(Qreal(nFunc),STAT=istat)
+   allocate(Qimag(nFunc),STAT=istat)
+   
+	  do iFunc=1,nFunc
+		  call create_sparseVector(e0%grid,per_index,L(iFunc))
+	  end do
+	  
+   ! compute linearized data functional(s) : L
+   call Lrows(e0,sigma,dt,stn_index,L)
+   ! compute linearized data functional(s) : Q
+   call Qrows(e0,sigma,dt,stn_index,Qzero,Qreal,Qimag)	  		              
+   ! loop over functionals  (e.g., for 2D TE/TM impedances nFunc = 1)
+   do iFunc = 1,nFunc
+
+      ! solve transpose problem for each of nFunc functionals
+      call zero_rhsVector(comb)
+      call add_sparseVrhsV(C_ONE,L(iFunc),comb)
+
+      call sensSolve(per_index,TRN,e,comb)
+
+      ! multiply by P^T and add the rows of Q
+      call PmultT(e0,sigma,e,Jreal(iFunc),Jimag(iFunc))
+      if (.not. Qzero) then
+        call scMultAdd(ONE,Qreal(iFunc),Jreal(iFunc))
+        call scMultAdd(ONE,Qimag(iFunc),Jimag(iFunc))
+      endif
+
+      ! deallocate temporary vectors
+      call deall_sparseVector(L(iFunc))
+      call deall_modelParam(Qreal(iFunc))
+      call deall_modelParam(Qimag(iFunc))
+
+   enddo  ! iFunc
+
+   !  deallocate local arrays
+   deallocate(L,STAT=istat)
+   deallocate(Qreal,STAT=istat)
+   deallocate(Qimag,STAT=istat)
+   		                            
+                ! call Jrows(per_index,dt_index,stn_index,sigma,e0,Jreal,Jimag)        
+
+                
+                
+ 		      ! Create worker job package and send it to the master
+		            call create_worker_job_task_place_holder
+		            call Pack_worker_job_task
+		            call MPI_SEND(worker_job_package,Nbytes, MPI_PACKED,0,FROM_WORKER, MPI_COMM_WORLD, ierr)
+		            
+			do iFunc = 1,nFunc 	            
+		      ! Create worker model  package for Jreal and send it to the master       
+                   call create_model_param_place_holder(Jreal(iFunc))
+                   call pack_model_para_values(Jreal(iFunc))
+                   call MPI_SEND(sigma_para_vec, Nbytes, MPI_PACKED, 0,FROM_WORKER, MPI_COMM_WORLD, ierr)
+                   
+		      ! Create worker model  package for Jimag and send it to the master       
+                   call create_model_param_place_holder(Jimag(iFunc))
+                   call pack_model_para_values(Jimag(iFunc))
+                   call MPI_SEND(sigma_para_vec, Nbytes, MPI_PACKED, 0,FROM_WORKER, MPI_COMM_WORLD, ierr)
+            end do    
+            
+                                  		                      
 elseif (trim(worker_job_task%what_to_do) .eq. 'JmultT') then
 
 
@@ -809,7 +1136,7 @@ elseif (trim(worker_job_task%what_to_do) .eq. 'STOP' ) then
 
 end if
 previous_message=trim(worker_job_task%what_to_do)
-write(6,'(a12,a12,a30,a12)') node_info,' MPI TASK [',trim(worker_job_task%what_to_do),'] successful'
+!write(6,'(a12,a12,a30,a12)') node_info,' MPI TASK [',trim(worker_job_task%what_to_do),'] successful'
 
 
 end do

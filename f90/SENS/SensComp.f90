@@ -97,7 +97,10 @@ Contains
    allocate(L(nFunc),STAT=istat)
    allocate(Qreal(nFunc),STAT=istat)
    allocate(Qimag(nFunc),STAT=istat)
-
+   
+	  do iFunc=1,nFunc
+		  call create_sparseVector(e0%grid,iTx,L(iFunc))
+	  end do
    ! compute linearized data functional(s) : L
    call Lrows(e0,sigma0,iDt,iRx,L)
 
