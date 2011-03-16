@@ -199,14 +199,14 @@ subroutine Unpack_e_para_vec(e)
 end subroutine Unpack_e_para_vec
 
 !********************************************************************
-subroutine create_eAll_param_place_holder(eAll)
+subroutine create_eAll_param_place_holder(e)
 
      implicit none
-     type(solnVectorMTX_t), intent(in)	:: eAll
+     type(solnVector_t), intent(in)	:: e
      integer v_size,Nbytes1
 
 
-         v_size=size(eAll%solns(which_per)%vec%v)
+         v_size=size(e%vec%v)
          CALL MPI_PACK_SIZE(v_size, MPI_DOUBLE_COMPLEX, MPI_COMM_WORLD, Nbytes1,  ierr)
 
          Nbytes=((Nbytes1))+1
@@ -225,37 +225,37 @@ subroutine create_eAll_param_place_holder(eAll)
 
 
 !********************************************************************
-subroutine pack_eAll_para_vec(eAll)
+subroutine pack_eAll_para_vec(e)
     implicit none
 
-     type(solnVectorMTX_t), intent(in)	:: eAll
+     type(solnVector_t), intent(in)	:: e
      integer index,v_size
 
 
 
-       v_size=size(eAll%solns(which_per)%vec%v)
+       v_size=size(e%vec%v)
 
        index=1
 
-        call MPI_Pack(eAll%solns(which_per)%vec%v(1,1),v_size, MPI_DOUBLE_COMPLEX, eAll_para_vec, Nbytes, index, MPI_COMM_WORLD, ierr)
+        call MPI_Pack(e%vec%v(1,1),v_size, MPI_DOUBLE_COMPLEX, eAll_para_vec, Nbytes, index, MPI_COMM_WORLD, ierr)
 
 
 end subroutine pack_eAll_para_vec
 
 
 !********************************************************************
-subroutine Unpack_eAll_para_vec(eAll)
+subroutine Unpack_eAll_para_vec(e)
     implicit none
 
-     type(solnVectorMTX_t), intent(inout)	:: eAll
+     type(solnVector_t), intent(in)	:: e
 
      integer index,v_size
 
 
-       v_size=size(eAll%solns(which_per)%vec%v)
+       v_size=size(e%vec%v)
        index=1
 
-        call MPI_Unpack(eAll_para_vec, Nbytes, index, eAll%solns(which_per)%vec%v(1,1),v_size, MPI_DOUBLE_COMPLEX,MPI_COMM_WORLD, ierr)
+        call MPI_Unpack(eAll_para_vec, Nbytes, index, e%vec%v(1,1),v_size, MPI_DOUBLE_COMPLEX,MPI_COMM_WORLD, ierr)
 
 
 
