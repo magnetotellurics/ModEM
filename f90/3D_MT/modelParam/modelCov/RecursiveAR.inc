@@ -638,7 +638,7 @@
 	else if (CmSqrt%mask%v(i,j,k) == OCEAN) then
 		c = 0.0
 	else
-		c = 1 !(1 - alpha)**2 * (1 - beta)**2 * (1 - gamma)**2
+		c = (1 - alpha)**2 * (1 - beta)**2 * (1 - gamma)**2
 	end if
 
   end function Scaling

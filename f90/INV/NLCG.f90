@@ -32,7 +32,7 @@ public  :: NLCGsolver
      real (kind=prec)   :: lambda
      ! exit if lambda < lambdaTol approx. 1e-4
      real (kind=prec)   :: lambdaTol
-     ! set lambda_i = k * lambda_{i-1} when the inversion stalls
+     ! set lambda_i = lambda_{i-1}/k when the inversion stalls
      real (kind=prec)   :: k
      ! the factor that ensures sufficient decrease in the line search
      real (kind=prec)   :: c
@@ -67,25 +67,25 @@ Contains
    type(NLCGiterControl_t), intent(inout)	:: iterControl
 
      ! maximum number of iterations in one call to iterative solver
-     iterControl%maxIter = 120
+     iterControl%maxIter = 200
      ! convergence criteria: return from solver if rms < rmsTol
      iterControl%rmsTol  = 1.05
      ! inversion stalls when abs(rms - rmsPrev) < fdiffTol (2e-3 works well)
      iterControl%fdiffTol = 2.0e-3
      ! initial value of lambda (will not override the NLCG input argument)
-     iterControl%lambda = 1.0
+     iterControl%lambda = 1.
      ! exit if lambda < lambdaTol approx. 1e-4
-     iterControl%lambdaTol = 1.0e-4
-     ! set lambda_i = k * lambda_{i-1} when the inversion stalls
-     iterControl%k = 0.1
+     iterControl%lambdaTol = 1.0e-8
+     ! set lambda_i = lambda_{i-1}/k when the inversion stalls
+     iterControl%k = 10.
      ! the factor that ensures sufficient decrease in the line search >=1e-4
      iterControl%c = 1.0e-4
      ! restart CG every nCGmax iterations to ensure conjugacy
      iterControl%nCGmax = 8
      ! the starting step for the line search
-     iterControl%alpha_1 = 0.001
+     iterControl%alpha_1 = 20.
      ! maximum initial delta mHat (overrides alpha_1)
-     iterControl%startdm = 1e0
+     iterControl%startdm = 20.
      ! optional relaxation parameter (Renormalised Steepest Descent algorithm)
      iterControl%gamma = 0.99
      ! model and data output file name
@@ -138,6 +138,10 @@ Contains
     if (output_level > 2) then
        write (*,'(a36,g15.7)') string,iterControl%lambda
     end if
+    read (ioInvCtrl,'(a36,g15.7)') string,iterControl%k
+    if (output_level > 2) then
+       write (*,'(a36,g15.7)') string,iterControl%k
+    end if
     read (ioInvCtrl,'(a36,g15.7)') string,iterControl%startdm
     if (output_level > 2) then
        write (*,'(a36,g15.7)') string,iterControl%startdm
@@ -171,6 +175,7 @@ Contains
    ! Compute the full penalty functional F
    ! Also output the predicted data and the EM solution
    ! that can be used for evaluating the gradient
+   ! Assuming that the model norm is already scaled by Nmodel
 
     character(*), intent(in)               :: comment
     real(kind=prec), intent(in)  :: lambda, alpha, f, mNorm, rms
@@ -192,7 +197,7 @@ Contains
 	write(io_unit,'(a3,es12.6)',advance='no') ' f=',f
 	write(io_unit,'(a4,es12.6)',advance='no') ' m2=',mNorm
 	write(io_unit,'(a5,f11.6)',advance='no') ' rms=',rms
-	write(io_unit,'(a8,es7.0)',advance='no') ' lambda=',lambda
+	write(io_unit,'(a8,es12.6)',advance='no') ' lambda=',lambda
 	write(io_unit,'(a7,es12.6)') ' alpha=',alpha
 
 	! flush(io_unit): this has the effect of flushing the buffer
@@ -224,7 +229,7 @@ Contains
    type(dataVectorMTX_t)    :: res,Nres
    type(modelParam_t) :: m,JTd
    real(kind=prec) :: SS
-   integer :: Ndata
+   integer :: Ndata, Nmodel
 
    ! compute the smoothed model parameter vector
    call CmSqrtMult(mHat,m)
@@ -260,9 +265,13 @@ Contains
 
    ! compute the model norm
    mNorm = dotProd(mHat,mHat)
+   Nmodel = countModelParam(mHat)
 
    ! penalty functional = sum of squares + scaled model norm
-   F = SS + (lambda * mNorm)
+   F = SS/Ndata + (lambda * mNorm/Nmodel)
+
+   ! scale mNorm for output
+   mNorm = mNorm/Nmodel
 
    ! if required, compute the Root Mean Squared misfit
    if (present(RMS)) then
@@ -298,7 +307,7 @@ Contains
    type(solnVectorMTX_t), intent(inout)            :: eAll
 
    !  local variables
-   real(kind=prec)       :: Ndata
+   real(kind=prec)       :: Ndata,Nmodel
    type(dataVectorMTX_t)    :: res
    type(modelParam_t) :: m,JTd,CmJTd
 
@@ -316,12 +325,6 @@ Contains
    ! compute residual: res = (d-dHat)/Ndata
    call linComb(ONE,d,MinusONE,dHat,res)
 
-   ! loop over transmitters:
-   !do j = 1,res%nTx
-   !   call getSize_modelParam(eAll%solns(j)%sigma,Ny,NzEarth)
-   !   print *, Ny, NzEarth
-   !end do
-
    ! multiply by J^T
    call CdInvMult(res)
 #ifdef MPI
@@ -335,9 +338,13 @@ Contains
    ! initialize grad
    grad = m
 
+   ! compute the number of data and model parameters for scaling
+   Ndata = countData(res)
+   Nmodel = countModelParam(mHat)
+
    ! multiply by 2 (to be consistent with the formula)
    ! and add the gradient of the model norm
-   call linComb(MinusTWO,CmJTd,TWO*lambda,mHat,grad)
+   call linComb(MinusTWO/Ndata,CmJTd,TWO*lambda/Nmodel,mHat,grad)
 
    call deall_dataVectorMTX(res)
    call deall_modelParam(m)
@@ -354,29 +361,30 @@ Contains
    real(kind=prec), intent(inout)  :: F
    type(modelParam_t), intent(inout)             :: grad
 
-   real(kind=prec) :: SS, mNorm
+   real(kind=prec) :: SS, mNorm, Nmodel
 	 type(modelParam_t)          :: dSS
 
    ! compute the model norm
    mNorm = dotProd(mHat,mHat)
+   Nmodel = countModelParam(mHat)
 
-   ! sum of squares = penalty functional - scaled model norm
-   SS = F - (lambda * mNorm)
+   ! (scaled) sum of squares = penalty functional - scaled model norm
+   SS = F - (lambda * mNorm/Nmodel)
 
    ! initialize
    dSS = mHat
 
    ! subtract the model norm derivative from the gradient of the penalty functional
-   call linComb(ONE,grad,MinusTWO*lambda,mHat,dSS)
+   call linComb(ONE,grad,MinusTWO*lambda/Nmodel,mHat,dSS)
 
    ! update the damping parameter lambda
-   lambda = iterControl%k * lambda
+   lambda = lambda/iterControl%k
 
-   ! penalty functional = sum of squares + scaled model norm
-   F = SS + (lambda * mNorm)
+   ! penalty functional = (scaled) sum of squares + scaled model norm
+   F = SS + (lambda * mNorm/Nmodel)
 
 	 ! add the model norm derivative to the gradient of the penalty functional
-   call linComb(ONE,dSS,TWO*lambda,mHat,grad)
+   call linComb(ONE,dSS,TWO*lambda/Nmodel,mHat,grad)
 
    call deall_modelParam(dSS)
 
@@ -473,7 +481,7 @@ Contains
    type(dataVectorMTX_t)			:: dHat, res
    type(modelParam_t)			:: mHat, m_minus_m0, grad, g, h, gPrev
    !type(NLCGiterControl_t)			:: iterControl
-   real(kind=prec)		:: value, valuePrev, rms, rmsPrev, alpha, beta, gnorm, mNorm
+   real(kind=prec)		:: value, valuePrev, rms, rmsPrev, alpha, beta, gnorm, mNorm, Nmodel
    real(kind=prec)      :: grad_dot_h, g_dot_g, g_dot_gPrev, gPrev_dot_gPrev, g_dot_h
    integer				:: iter, nCG, nLS, nfunc, ios
    logical              :: ok
@@ -498,11 +506,11 @@ Contains
    alpha = iterControl%alpha_1
    startdm = iterControl%startdm
 
-   write(*,'(a41,es7.0)') 'The initial damping parameter lambda is ',lambda
-   write(*,'(a55,f9.6)') 'The initial line search step size (in model units) is ',startdm
+   write(*,'(a41,es8.1)') 'The initial damping parameter lambda is ',lambda
+   write(*,'(a55,f12.6)') 'The initial line search step size (in model units) is ',startdm
 
-   write(ioLog,'(a41,es7.0)') 'The initial damping parameter lambda is ',lambda
-   write(ioLog,'(a55,f9.6)') 'The initial line search step size (in model units) is ',startdm
+   write(ioLog,'(a41,es8.1)') 'The initial damping parameter lambda is ',lambda
+   write(ioLog,'(a55,f12.6)') 'The initial line search step size (in model units) is ',startdm
 
 
    ! starting from the prior hardcoded by setting mHat = 0 and m = m0
@@ -539,9 +547,11 @@ Contains
 
    ! update the initial value of alpha if necessary
    gnorm = sqrt(dotProd(grad,grad))
+   write(*,'(a37,es12.6)') 'The initial norm of the gradient is ',gnorm
+   write(ioLog,'(a37,es12.6)') 'The initial norm of the gradient is ',gnorm
    if (gnorm < TOL6) then
       call errStop('Problem with your gradient computations: first gradient is zero')
-   else if (alpha * gnorm > startdm) then
+   else !if (alpha * gnorm > startdm) then
       alpha = startdm / gnorm
       write(*,'(a39,es12.6)') 'The initial value of alpha updated to ',alpha
       write(ioLog,'(a39,es12.6)') 'The initial value of alpha updated to ',alpha
@@ -590,10 +600,11 @@ Contains
 	  alpha = 2*(value - valuePrev)/grad_dot_h
 
 	  ! adjust the starting step to ensure superlinear convergence properties
-	  alpha = min(ONE,(ONE+0.01)*alpha)
+	  alpha = (ONE+0.01)*alpha
 	  write(*,'(a25,i5)') 'Completed NLCG iteration ',iter
 	  write(ioLog,'(a25,i5)') 'Completed NLCG iteration ',iter
-	  mNorm = dotProd(mHat,mHat)
+	  Nmodel = countModelParam(mHat)
+	  mNorm = dotProd(mHat,mHat)/Nmodel
       call printf('with',lambda,alpha,value,mNorm,rms)
       call printf('with',lambda,alpha,value,mNorm,rms,logFile)
 
@@ -627,7 +638,10 @@ Contains
       		call update_damping_parameter(lambda,mHat,value,grad)
       		! update alpha
       		gnorm = sqrt(dotProd(grad,grad))
-      		alpha = min(iterControl%alpha_1,startdm/gnorm)
+            write(*,'(a34,es12.6)') 'The norm of the last gradient is ',gnorm
+            write(ioLog,'(a34,es12.6)') 'The norm of the last gradient is ',gnorm
+            !alpha = min(iterControl%alpha_1,startdm/gnorm)
+      		alpha = min(ONE,startdm)/gnorm
       		write(*,'(a48,es12.6)') 'The value of line search step alpha updated to ',alpha
             write(ioLog,'(a48,es12.6)') 'The value of line search step alpha updated to ',alpha
       		! g = - grad

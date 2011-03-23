@@ -99,7 +99,7 @@ Contains
   	ctrl%wFile_EMsoln = 'n'
   	ctrl%rFile_Prior = 'n'
   	ctrl%wFile_Sens = 'n'
-  	ctrl%lambda = 1
+  	ctrl%lambda = 10.
   	ctrl%eps = 1.0e-7
   	ctrl%rFile_Cov = 'n'
   	ctrl%search = 'NLCG'
@@ -354,8 +354,9 @@ Contains
            write(0,*) 'Here, rFile_invCtrl = the inversion control file in the format'
            write(0,*)
            write(0,*) 'Model and data output file name    : Example'
-           write(0,*) 'Initial damping factor lambda      : 1.0'
-           write(0,*) 'Initial search step in model units : 1.0'
+           write(0,*) 'Initial damping factor lambda      : 1.'
+           write(0,*) 'To update lambda divide by         : 10.'
+           write(0,*) 'Initial search step in model units : 100.'
            write(0,*) 'Restart when rms diff is less than : 2.0e-3'
            write(0,*) 'Exit search when rms is less than  : 1.05'
            write(0,*) 'Exit when lambda is less than      : 1.0e-4'
