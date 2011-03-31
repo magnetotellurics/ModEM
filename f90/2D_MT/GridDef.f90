@@ -126,7 +126,7 @@ module GridDef
        !
        implicit none
        type (grid_t), intent(in)		:: gridIn
-       type (grid_t), intent(out)		:: gridOut
+       type (grid_t), intent(inout)		:: gridOut
        integer		        			:: Nz,Ny,Nza
 
        Ny = gridIn%Ny
