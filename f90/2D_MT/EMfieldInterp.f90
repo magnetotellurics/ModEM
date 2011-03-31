@@ -97,11 +97,11 @@ Contains
        call create_sparsevecc(inGrid,NODE_EARTH,ii,LC)
     endif
 
-    LC%j = J
-    LC%k = K
-    LC%c = C
+    LC%j = J(1:ii)
+    LC%k = K(1:ii)
+    LC%c = C(1:ii)
     if(mode == 'TM') then
-       LC%k = K - inGrid%Nza
+       LC%k = K(1:ii) - inGrid%Nza
     endif
 
   end subroutine NodeInterpSetup2D
@@ -172,9 +172,9 @@ Contains
     enddo
 
     call create_sparsevecc(inGrid,EDGE,ii,LC)
-    LC%j = J
-    LC%k = K
-    LC%c = C
+    LC%j = J(1:ii)
+    LC%k = K(1:ii)
+    LC%c = C(1:ii)
 
   end subroutine BinterpSetUp_TE
   ! **************************************************************************
@@ -373,9 +373,9 @@ Contains
     enddo
 
     call create_sparsevecc(inGrid,EDGE_EARTH,ii,LC)
-    LC%j = J
-    LC%k = K
-    LC%c = C
+    LC%j = J(1:ii)
+    LC%k = K(1:ii)
+    LC%c = C(1:ii)
     LC%grid => inGrid
 
     deallocate(DelZ)
@@ -549,9 +549,9 @@ Contains
        !    (and optionally a sparse vector Q for the parameter space)
        if(ii.eq.1) then
           call create_sparsevecc(inGrid,NODE_EARTH,nCoeff,LC)
-          LC%J = J
-          LC%K = K
-          LC%C = C
+          LC%J = J(1:nCoeff)
+          LC%K = K(1:nCoeff)
+          LC%C = C(1:nCoeff)
           LC%grid => inGrid
           if(returnQ) then
              call copy_sparsevecc(Qtemp,Qj)
@@ -567,9 +567,9 @@ Contains
           call create_sparsevecc(inGrid,NODE_EARTH,nCoeff,LC_ii)
           ! add coefficients from next face to LC
           call copy_sparsevecc(LCtemp,LC)
-          LC_ii%J  = J
-          LC_ii%K  = K
-          LC_ii%C = C
+          LC_ii%J  = J(1:nCoeff)
+          LC_ii%K  = K(1:nCoeff)
+          LC_ii%C = C(1:nCoeff)
           call linComb_sparsevecc(LCtemp,C_ONE,LC_ii,LCE%C(ii),LC)
           if(returnQ) then
 	     call copy_sparsevecc(Qtemp,Q)

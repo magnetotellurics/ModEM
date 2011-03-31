@@ -221,7 +221,14 @@ contains
       ! local variables
       integer      :: istat
 
-      call deall_solnVectorMTX(eAll)
+      if (eAll%allocated) then
+         if (eAll%nTx == nTx) then
+            ! do nothing
+            return
+         else
+            call deall_solnVectorMTX(eAll)
+         end if
+      end if
 
       eAll%nTx = nTx
       allocate(eAll%solns(nTx), STAT=istat)

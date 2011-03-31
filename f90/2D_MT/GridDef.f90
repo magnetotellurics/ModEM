@@ -30,6 +30,7 @@ module GridDef
       real (kind=prec), pointer, dimension(:) :: Dely,Delz
       real (kind=prec), pointer, dimension(:) :: yNode,zNode
       real (kind=prec), pointer, dimension(:) :: yCenter,zCenter
+      logical	:: allocated = .false.
    end type grid_t
 
    public         :: create_grid, deall_grid, setup_grid, copy_grid
@@ -57,6 +58,7 @@ module GridDef
        allocate(grid%yNode(Ny+1), STAT=istat)
        allocate(grid%zCenter(Nz), STAT=istat)
        allocate(grid%yCenter(Ny), STAT=istat)
+       grid%allocated = .true.
 
      end subroutine create_grid
 
@@ -68,6 +70,7 @@ module GridDef
        type (grid_t), intent(inout)	:: grid
        integer                          :: istat
 
+       if (grid%allocated) then
        if (associated(grid%Dz)) deallocate(grid%Dz, STAT=istat)
        if (associated(grid%Dy)) deallocate(grid%Dy, STAT=istat)
        if (associated(grid%Delz)) deallocate(grid%Delz, STAT=istat)
@@ -76,6 +79,7 @@ module GridDef
        if (associated(grid%yNode)) deallocate(grid%yNode, STAT=istat)
        if (associated(grid%zCenter)) deallocate(grid%zCenter, STAT=istat)
        if (associated(grid%yCenter)) deallocate(grid%yCenter, STAT=istat)
+       end if
 
      end subroutine deall_grid
 
@@ -144,6 +148,7 @@ module GridDef
        gridOut%zNode = gridIn%zNode
        gridOut%yCenter = gridIn%yCenter
        gridOut%zCenter = gridIn%zCenter
+       gridOut%allocated = .true.
 
      end subroutine copy_grid
 

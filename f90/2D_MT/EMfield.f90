@@ -24,7 +24,7 @@ implicit none
  type :: cvector
     !!   generic 2D array for storing solution vectors, etc
 
-    logical           :: allocated
+    logical           :: allocated = .false.
     ! actual size of array
     integer   :: N1=0
     integer   :: N2=0
@@ -130,10 +130,12 @@ contains
        implicit none
        type (cvector), intent(inout)   :: vec
        integer istat
+       if (vec%allocated) then
        if (associated(vec%v)) deallocate(vec%v,STAT=istat)
        vec%allocated = .false.
        vec%gridType = ''
        nullify(vec%grid)
+      end if
      end subroutine deall_cvector
 
    !**********************************************************************
@@ -210,6 +212,7 @@ contains
     type (sparsevecc), intent(inout)		:: oldLC
     integer					:: status
 
+    if(oldLC%allocated) then
        deallocate(oldLC%j, STAT=status)
        deallocate(oldLC%k, STAT=status)
        deallocate(oldLC%c, STAT=status)
@@ -220,6 +223,7 @@ contains
        oldLC%ncoeff = 0
        oldLC%gridType = ''
        oldLC%allocated = .false.
+    end if
 
   end subroutine deall_sparsevecc
 
