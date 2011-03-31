@@ -111,6 +111,7 @@ Contains
     type (sparsevecc)                :: oldLC
     integer                          :: status
 
+    if(oldLC%allocated) then
        deallocate(oldLC%i,STAT=status)
        deallocate(oldLC%j, STAT=status)
        deallocate(oldLC%k, STAT=status)
@@ -118,6 +119,7 @@ Contains
        deallocate(oldLC%c, STAT=status)
        oldLC%gridType = ''
        oldLC%allocated = .false.
+    end if
 
   end subroutine deall_sparsevecc
 
