@@ -174,7 +174,7 @@ For 2D MT:\\
 \noindent
 Missing components are allowed. However, it is advisable to resort to the more restrictive data type whenever possible, as this will minimise internal storage and computations (e.g., use Off\_Diagonal\_Impedance in place of Full\_Impedance, whenever possible).\\
 
-If you would like to add a data type that is not described above, please get it touch with us directly. In many cases, it will be a trivial addition.
+If you would like to add a data type that is not described above, please get in touch with us directly. In many cases, it will be a trivial addition.
 
 \subsection*{Line 4: $>$ sign\_convention}
 Plus or minus, written as, e.g., "$\exp(+i\omega t)$". We search for the minus sign in this line; if not found, assume a plus. The data are then converted to the sign convention used internally in the code (which is determined by the global variable \verb"ISIGN").
@@ -210,7 +210,7 @@ to validate your model and data files. This will read your files, store them in 
 
 For convenience of the users, we have employed the model format identical to the default used in Weerachai Siripunvaraporn's WSINV3D program. The only amendment, however, is that we have added an option to store the resistivity values in natural log format. To do so, we include a \verb"LOGE" specifier in the header line, along with the model size. E.g., the line
 \begin{verbatim}
-48 46 34 0 LOGE    
+48 46 34 0 LOGE
 \end{verbatim}
 would indicate a model size $48 \times 46 \times 34$ written in natural log format. Linear resistivity is currently immediately converted to natural log on input to ModEM.\\
 
@@ -241,7 +241,7 @@ The file format is very simple; examples are provided in \verb"examples/3D_MT/" 
 | 6. Number of exceptions (1 integer >= 0)                                    |
 | 7. Exceptions in the form e.g. 2 3 0. (to turn off smoothing between 3 & 4) |
 | 8. Two integer layer indices and Nx x Ny block of masks, repeated as needed.|
-+-----------------------------------------------------------------------------+    
++-----------------------------------------------------------------------------+
 \end{verbatim}
 
 If no model covariance file is used, the code does something vaguely reasonable by default.\\
@@ -251,11 +251,15 @@ For 2D MT, Weerachai Siripuvaraporn's model covariance is used in the code. No c
 
 \section{Known bugs}
 
-The implementation of the model covariance has a known bug that we are planning to fix as soon as possible: applying the model covariance more than once doesn't work.\\
+The implementation of the model covariance had a known bug: applying the model covariance more than once didn't work. More specifically, applying a smoothing that was too strong resulted in unreasonably large variations in the \emph{smoothed} model, and the program crashed. \textbf{UPDATE}: Fixed in rev. 326 (trunk rev. 319) by rescaling the covariance and NLCG parameters. Expect NLCG to behave differently from this revision on.\\
 
-Air layers are currently hard coded in the program. This choice was driven by compatibility with Weerachai's model format. This compatibility has since been partly broken by the addition of the LOGE key in the model file header that allows to store the resistivity values in logarithmic format (LOG10 coming nobody knows when). We are aware of the fact that the user may want to specify the air layers externally. We have not tested our choice of the air layers for accuracy.\\
+Air layers are currently hard coded in the program. This choice was driven by compatibility with Weerachai's model format. This compatibility has since been partly broken by the addition of the LOGE key in the model file header that allows to store the resistivity values in logarithmic format (LOG10 coming nobody knows when). We are aware of the fact that the user may want to specify the air layers externally. We have not tested our choice of the air layers for accuracy. The thickness of the air layers depends on the top Earth layer in the model. The first air layer matches that, the next one gets multiplied by the factor of 3, and so on for 10 layers total. Thus, the total thickness of the air layers is proportional to the thickness of the top Earth layer.\\
 
-The air layers issue in the 2D MT is particularly pressing. There, the origin is set to THE TOP OF THE AIR LAYERS. With Z pointing down, this amounts to exactly 295240 metres to the ground. To use the 2D MT code correctly, your ground level site locations MUST have Z = 295240 in the data file. If you use zero instead, your sites will be located at the top of the air layers, and the code will not work as expected. This unfortunate feature will be fixed at our earliest convenience.
+In 2D MT, the origin was set to THE TOP OF THE AIR LAYERS. This was a serious problem since the vertical site location in the data file had to be defined using distance from the top of the air domain. Z coordinate was therefore dependent on the thickness of the air layers. \textbf{UPDATE}: Fixed in rev. 328 (trunk rev. 327) so that zero Z coordinate in the data file corresponds to the Earth's surface; positive is down; negative is up. If we had topography, Earth's surface would be defined by the highest point in the topography and some site Z coordinates would be positive to reflect the topography.\\
+
+The boundary conditions are inaccurate for 3D MT. The user is advised to place their model boundaries far from all data locations, or use the nested grid feature provided with the modular system.\\
+
+Excluding some components of a data type from the data file results in unreasonable misfit computations. Until this is fixed, the inversion should only be used with all components of a particular data type.\\
 
 
 \section{What if something still doesn't work for me?}
@@ -268,6 +272,6 @@ If you find a reproducible bug, please let us know. Send us the files that are c
 
 Feature requests will be noted and possibly implemented sooner or later.
 The users are welcome to work with us to improve specific features of ModEM.
-Any such improvements will be subject to the COPYRIGHT statement as attached. 
+Any such improvements will be subject to the COPYRIGHT statement as attached.
 
 \end{document}
