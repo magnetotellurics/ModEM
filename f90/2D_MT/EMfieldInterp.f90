@@ -25,6 +25,7 @@ Contains
   subroutine NodeInterpSetup2D(inGrid,x,mode,LC)
     ! sets up coefficients in sparse vector LC for evaluation/interpolation
     ! at location x of a field defined on TE or TM mode grid
+    ! zero vertical location corresponds to the Earth's surface; positive down
     ! INPUT PARAMETER mode (character*2) is used to define which case
     !   to do the interpolation for (Only difference is that there is
     !   no air layer in the TM mode solution, so vertical node numbering
@@ -58,7 +59,7 @@ Contains
     nzMax = inGrid%nz+1
 
     j0 = minNode(x(1),inGrid%yNode)
-    k0 = minNode(x(2),inGrid%zNode)
+    k0 = minNode(x(2)+inGrid%zAir,inGrid%zNode)
     if((j0.gt.0).and.(j0.lt.nyMax)) then
        w(1,2) = (x(1) - inGrid%yNode(j0))/(inGrid%Dy(j0))
     elseif(j0.le.0) then
@@ -68,7 +69,7 @@ Contains
     endif
 
     if((k0.gt.0).and.(k0.lt.nzMax)) then
-       w(2,2) = (x(2) - inGrid%zNode(k0))/(inGrid%dz(k0))
+       w(2,2) = (x(2)+inGrid%zAir - inGrid%zNode(k0))/(inGrid%dz(k0))
     elseif(k0.le.0) then
        w(2,2) = ONE
     else
@@ -110,6 +111,7 @@ Contains
     ! sets up coefficients in sparse vector LC for evaluation/interpolation
     ! of HORIZONTAL magnetic field component at location given by x,
     ! using MAGNETIC field vector defined on face
+    ! zero vertical location corresponds to the Earth's surface; positive down
     ! (For direct application, magnetic fields defined on faces
     ! would be required; can be used to construct an interpolator to compute
     ! H at arbitrary points directly from electric fields defined on
@@ -146,9 +148,9 @@ Contains
        w(1,2) = R_ZERO
     endif
 
-    k0 = minNode(x(2),inGrid%zCenter)
+    k0 = minNode(x(2)+inGrid%zAir,inGrid%zCenter)
     if((k0.gt.0).and.(k0.lt.nzMax)) then
-       w(2,2) = (x(2) - inGrid%zCenter(k0))/(inGrid%Delz(k0+1))
+       w(2,2) = (x(2)+inGrid%zAir - inGrid%zCenter(k0))/(inGrid%Delz(k0+1))
     elseif(k0.le.0) then
        w(2,2) = ONE
     else
@@ -183,6 +185,7 @@ Contains
     !  sets up coefficients in sparse vector LC for evaluation/interpolation
     !  of HORIZONTAL TE magnetic field xyz at
     !  location given by x, using TE ELECTRIC field defined on grid nodes
+    !  zero vertical location corresponds to the Earth's surface; positive down
     !  Calls BinterpSetUp, and various sparse_vector routines
     !   NEED TO MODIFY TO ALLOW INTERPOLATION OF VERTICAL
 
@@ -249,6 +252,7 @@ Contains
     ! of HORIZONTAL electric field component at location given by x,
     ! using ELECTRIC field vector defined on faces,  or
     !    on surface magnetic node
+    ! zero vertical location corresponds to the Earth's surface; positive down
     ! (For direct application, electric fields defined on faces/surface nodes
     ! would be required; can be used to construct an interpolator to compute
     ! E at arbitrary points directly from magnetic fields defined on
@@ -304,9 +308,9 @@ Contains
     DelZ = eNode(2:nzMax)-eNode(1:nzMax-1)
 
     !  vertical interpolation, using eNode and DelZ
-    k0 = minNode(x(2),eNode)
+    k0 = minNode(x(2)+inGrid%zAir,eNode)
     if((k0.gt.0).and.(k0.lt.nzMax)) then
-       w(2,2) = (x(2) - eNode(k0))/(DelZ(k0))
+       w(2,2) = (x(2)+inGrid%zAir - eNode(k0))/(DelZ(k0))
     elseif(k0.le.0) then
        w(2,2) = ONE
     else
@@ -326,7 +330,7 @@ Contains
     w(1,1) = ONE-w(1,2)
 
     !  vertical cell index for interpolated point
-    k0 = minNode(x(2),inGrid%zNode) - inGrid%Nza
+    k0 = minNode(x(2)+inGrid%zAir,inGrid%zNode) - inGrid%Nza
     j0m1 = max(1,j0-1)
     j0p1 = min(j0+1,ingrid%ny)
     r(1) = TWO*rhoC(sigma,j0,k0)/(rhoC(sigma,j0,k0)+rhoC(sigma,j0m1,k0))
@@ -389,6 +393,7 @@ Contains
     !  sets up coefficients in sparse vector LC for evaluation/interpolation
     !  of HORIZONTAL TM electric field at
     !  location given by x, using TM Magetic field defined on grid nodes
+    !  zero vertical location corresponds to the Earth's surface; positive down
     !  Calls EinterpSetUp_TM, and various sparse_vector routines
 
     !  Input: model grid data structure

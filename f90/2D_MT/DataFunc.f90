@@ -75,7 +75,7 @@ Contains
   !  get mode, frequency for transmitter used to compute solution ef
   mode = txDict(ef%tx)%mode
   omega =  txDict(ef%tx)%omega
-  ! get location from reciever dictionary
+  ! get location from receiver dictionary
   x = rxDict(iRX)%x
 
   if(mode.eq.'TE') then

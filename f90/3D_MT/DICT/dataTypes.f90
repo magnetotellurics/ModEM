@@ -72,7 +72,8 @@ module dataTypes
   integer, parameter   :: Full_Vertical_Components = 3
   integer, parameter   :: Full_Interstation_TF = 4
   integer, parameter   :: Off_Diagonal_Rho_Phase = 5
-
+  integer, parameter   :: Phase_Tensor = 6
+ 
 
 Contains
 
@@ -83,7 +84,7 @@ Contains
 
   	 integer     :: istat
 
-     allocate(typeDict(5),STAT=istat)
+     allocate(typeDict(6),STAT=istat)
 
      typeDict(Full_Impedance)%name = 'Full_Impedance'
      typeDict(Full_Impedance)%isComplex = .true.
@@ -135,6 +136,18 @@ Contains
      typeDict(Off_Diagonal_Rho_Phase)%id(2) = 'PHSXY'
      typeDict(Off_Diagonal_Rho_Phase)%id(3) = 'RHOYX'
      typeDict(Off_Diagonal_Rho_Phase)%id(4) = 'PHSYX'
+	 	 
+	 typeDict(Phase_Tensor)%name = 'Phase_Tensor'
+     typeDict(Phase_Tensor)%isComplex = .false.
+     typeDict(Phase_Tensor)%tfType    = Phase_Tensor
+     typeDict(Phase_Tensor)%units     = '[]'
+     typeDict(Phase_Tensor)%nComp     = 4
+     allocate(typeDict(Phase_Tensor)%id(4),STAT=istat)
+     typeDict(Phase_Tensor)%id(1) = 'PTXX'
+     typeDict(Phase_Tensor)%id(2) = 'PTXY'
+     typeDict(Phase_Tensor)%id(3) = 'PTYX'
+     typeDict(Phase_Tensor)%id(4) = 'PTYY'
+	 
 
   end subroutine setup_typeDict
 
@@ -244,7 +257,10 @@ Contains
 
        case('Off_Diagonal_Rho_Phase')
           dataType = Off_Diagonal_Rho_Phase
-
+		  		  
+      case('Phase_Tensor')
+          dataType = Phase_Tensor
+		  
        case default
           call errStop('Unknown data type:'//trim(typeName))
 
@@ -268,7 +284,7 @@ Contains
        case(Full_Interstation_TF)
           header = '# Period(s) Code GG_Lat GG_Lon X(m) Y(m) Z(m) Ref_Code Ref_Lat Ref_Lon Ref_X(m) Ref_Y(m) Ref_Z(m) Component Real Imag Error'
 
-       case(Off_Diagonal_Rho_Phase)
+       case(Off_Diagonal_Rho_Phase,Phase_Tensor)
           header = '# Period(s) Code GG_Lat GG_Lon X(m) Y(m) Z(m) Component Value Error'
 
     end select

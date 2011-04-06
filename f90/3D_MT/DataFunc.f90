@@ -66,16 +66,18 @@ Contains
   !  			Z(1) = Tx, Z(2) = Ty
   !   iDT=Full_Interstation_TF
   ! 		 	Z(1) = Mxx; Z(2) = Mxy; Z(3) = Myx; Z(4) = Myy
-  !   iDT=Off_Diagonal_Rho_Phase (Added on behalf of Kristina Tietze, GFZ-Potsdam)
-  !  			Z(1) = Rhoxy , Z(2) = Phixy, Z(3) = Rhoyx, Z(4) = Phiyx
+  !   iDT=Off_Diagonal_Rho_Phase
+  !  			Z(1) = log(Rhoxy) , Z(2) = Phixy, Z(3) = log(Rhoyx), Z(4) = Phiyx
+  !   iDT=Phase_Tensor 
+  !  			Z(1) = PhiXX , Z(2) = PhiXY, Z(3) = PhiYX, Z(4) = PhiYY
 
   !  optional argument, useful for linearized impedance
   complex(kind=prec), intent(out), optional	:: Binv(2,2)
 
   !  local variables
   integer			:: iMode, i,j,xyz,ij, iComp,ncomp,iFunc,nFunc
-  real(kind=prec)	:: omega,x(3),x_ref(3)
-  complex(kind=prec)    :: tempZ(2)
+  real(kind=prec)	:: omega,x(3),x_ref(3),detX
+  complex(kind=prec)    :: tempZ(4)
   complex(kind=prec)	:: BB(3,2),EE(2,2),RR(2,2)
   complex(kind=prec)	:: det,i_omega,ctemp
   type(sparsevecC)		:: Lex,Ley,Lbx,Lby,Lbz,Lrx,Lry
@@ -98,7 +100,7 @@ Contains
   endif
   !allocate(Z(nFunc))
 
-  selectcase (iDT)
+ selectcase (iDT)
      case(Full_Impedance)
                x     = rxDict(iRX)%x         !Local site position (x,y,z)
 		     ! First set up interpolation functionals for Ex, Ey
@@ -164,10 +166,9 @@ Contains
 			  BB(1,2) = -BB(1,2)/det
 			  BB(2,1) = -BB(2,1)/det
 
-
-	        Z(1) = EE(1,1)*BB(1,2)+EE(1,2)*BB(2,2)
-	        Z(2) = EE(2,1)*BB(1,1)+EE(2,2)*BB(2,1)
-
+    			Z(1) = EE(1,1)*BB(1,2)+EE(1,2)*BB(2,2)
+				Z(2) = EE(2,1)*BB(1,1)+EE(2,2)*BB(2,1)
+		
      case(Full_Vertical_Components)
                x     = rxDict(iRX)%x          !Local site position (x,y,z)
               !  Vertical field TF
@@ -233,8 +234,8 @@ Contains
 			           enddo
 			        enddo
 
-       case(Off_Diagonal_Rho_Phase)
-               x     = rxDict(iRX)%x          !Local site position (x,y,z)
+    	   case(Off_Diagonal_Rho_Phase)
+                x     = rxDict(iRX)%x          !Local site position (x,y,z)
 		     ! First set up interpolation functionals for Ex, Ey
 			  xyz = 1
 			  call EinterpSetUp(ef%grid,x,xyz,Lex)
@@ -264,12 +265,56 @@ Contains
 
 		       tempZ(1) = EE(1,1)*BB(1,2)+EE(1,2)*BB(2,2)
 		       tempZ(2) = EE(2,1)*BB(1,1)+EE(2,2)*BB(2,1)
-		       Z(1)   = abs(tempZ(1))**2*MU_0/omega
-		       z(2)   = atan2(ISIGN*dimag(tempZ(1)),real(tempZ(1)))*R2D
-		       Z(3)   = abs(tempZ(2))**2*MU_0/omega
-		       Z(4)   = atan2(ISIGN*dimag(tempZ(2)),real(tempZ(2)))*R2D
+			   
+			   Z(1)  = dlog(abs(tempZ(1))**2*MU_0/omega)
+		       Z(2)  = atan2(ISIGN*dimag(tempZ(1)),real(tempZ(1)))*R2D
+		       Z(3)  = dlog(abs(tempZ(2))**2*MU_0/omega)
+		       Z(4)  = atan2(ISIGN*dimag(tempZ(2)),real(tempZ(2)))*R2D+180.0d0
 
-  end select
+  		   case(Phase_Tensor)
+	         ! First calculate full impedance tensor
+               x     = rxDict(iRX)%x         !Local site position (x,y,z)
+		     ! First set up interpolation functionals for Ex, Ey
+			  xyz = 1
+			  call EinterpSetUp(ef%grid,x,xyz,Lex)
+			  xyz = 2
+			  call EinterpSetUp(ef%grid,x,xyz,Ley)
+			 ! Then set up interpolation functionals for Bx, By
+			  xyz = 1
+			  call BfromESetUp(ef%grid,omega,x,xyz,Lbx)
+			  xyz = 2
+			  call BfromESetUp(ef%grid,omega,x,xyz,Lby)
+			  ! loop over modes
+			  do iMode = 1,2
+			      ! electric fields
+			      EE(1,iMode) =  dotProd_noConj_scvector_f(Lex,ef%pol(iMode))
+			      EE(2,iMode) =  dotProd_noConj_scvector_f(Ley,ef%pol(iMode))
+			      ! magnetic fields
+			      BB(1,iMode) = dotProd_noConj_scvector_f(Lbx,ef%pol(iMode))
+			      BB(2,iMode) = dotProd_noConj_scvector_f(Lby,ef%pol(iMode))
+			 end do
+			 !invert horizontal B matrix using Kramer's rule.
+			  det = BB(1,1)*BB(2,2)-BB(1,2)*BB(2,1)
+			  ctemp = BB(1,1)
+			  BB(1,1) =  BB(2,2)/det
+			  BB(2,2) =  ctemp/det
+			  BB(1,2) = -BB(1,2)/det
+			  BB(2,1) = -BB(2,1)/det
+
+		        do j = 1,2
+		           do i = 1,2
+		              ij = 2*(i-1)+j
+		              tempZ(ij) = EE(i,1)*BB(1,j)+EE(i,2)*BB(2,j)
+		           enddo
+		        enddo
+				
+				detX = dreal(tempZ(1))*dreal(tempZ(4))-dreal(tempZ(2))*dreal(tempZ(3))
+				
+			Z(1) = ISIGN*(dreal(tempZ(4))*dimag(tempZ(1))-dreal(tempZ(2))*dimag(tempZ(3)))/detX
+			Z(2) = ISIGN*(dreal(tempZ(4))*dimag(tempZ(2))-dreal(tempZ(2))*dimag(tempZ(4)))/detX
+			Z(3) = ISIGN*(dreal(tempZ(1))*dimag(tempZ(3))-dreal(tempZ(3))*dimag(tempZ(1)))/detX
+			Z(4) = ISIGN*(dreal(tempZ(1))*dimag(tempZ(4))-dreal(tempZ(3))*dimag(tempZ(2)))/detX
+ end select
 
   !  copy responses in Z (possibly complex) into real output vector Resp
   !  Loop over components
@@ -327,8 +372,8 @@ Contains
   !  local variables
   complex(kind=prec)	:: Binv(2,2)
   complex (kind=prec)	:: i_omega,c1,c2
-  real(kind=prec)	:: Resp(12),x(3),x_ref(3),omega
-  type(sparsevecc)		:: L1
+  real(kind=prec)	:: Resp(12),x(3),x_ref(3),omega,detX,PT(2,2)
+  type(sparsevecc)		:: L1,L2,L3,Lp11,Lp12,Lp21,Lp22
   integer			:: i,j,k,nComp,IJ(3,6),xyz,n, iComp,predictedComp
   type(sparsevecC)		:: Lex,Ley,Lbx,Lby,Lbz,Lrx,Lry
   logical			:: ComputeHz
@@ -375,7 +420,7 @@ Contains
         IJ(3,1) = 1
         IJ(3,2) = 2
         Call dataResp(e0,Sigma0,Full_Impedance,iRX,Resp,Binv)
-     case(Full_Vertical_Components)
+      case(Full_Vertical_Components)
         nComp = 2
         ComputeHz = .true.
         IJ(1,1) = 1
@@ -396,6 +441,32 @@ Contains
            enddo
         enddo
         Call dataResp(e0,Sigma0,Full_Interstation_TF,iRX,Resp,Binv)
+     case(Off_Diagonal_Rho_Phase)
+        ! First calculate Off_Diagonal_Impedance Ls
+        ! Rho_Phase actually has 4 (real) components, but nComp here refers to the
+        ! two complex off-diagonal impedance tensor components
+        nComp = 2
+        ComputeHz = .false.
+        IJ(1,1) = 1
+        IJ(2,1) = 2
+        IJ(1,2) = 2
+        IJ(2,2) = 1
+        IJ(3,1) = 1
+        IJ(3,2) = 2
+        Call dataResp(e0,Sigma0,Full_Impedance,iRX,Resp,Binv)
+     case(Phase_Tensor)
+	  ! First calculate Full_Impedances Ls
+        nComp = 4
+        ComputeHz = .false.
+        do j = 1,2
+           do i = 1,2
+              IJ(1,2*(i-1)+j) = i
+              IJ(2,2*(i-1)+j) = j
+              IJ(3,2*(i-1)+j) = i
+           enddo
+        enddo
+        Call dataResp(e0,Sigma0,Full_Impedance,iRX,Resp,Binv)
+
      endselect
 
   ! Then set up interpolation functionals for Ex, Ey, Bx, By, Bz, (Bx,By at referance station)
@@ -456,9 +527,137 @@ Contains
         endif
      enddo
   enddo
+if (typeDict(iDT)%tfType .eq. Off_Diagonal_Rho_Phase) then
+       do k=1,2 ! 2 modes
+        ! PHSYX
+        c1 =dcmplx(0.0d0,1.0d0)*conjg(Z(3)) / (abs(Z(3))**TWO) *R2D
+	     Call linComb_sparsevecc(L(2)%L(k),c1,L(2)%L(k),C_ZERO,L(4)%L(k))
 
-  ! clean up
-  call deall_sparsevecc(L1)
+		 !log RHOYX
+	     c1 =  TWO*conjg(Z(3))/(abs(Z(3))**TWO)
+        Call linComb_sparsevecc(L(2)%L(k),c1,L(2)%L(k),C_ZERO,L(3)%L(k))
+
+        ! PHSXY
+        c1 =dcmplx(0.0d0,1.0d0)*conjg(Z(2))/(abs(Z(2))**TWO)*R2D
+		Call linComb_sparsevecc(L(1)%L(k),c1,L(1)%L(k),C_ZERO,L(2)%L(k))
+		
+          !log(RHOXY)  
+         c1 =  TWO*conjg(Z(2))  /(abs(Z(2))**TWO)
+	     Call linComb_sparsevecc(L(1)%L(k),c1,L(1)%L(k),C_ZERO,L1)
+        L(1)%L(k) = L1
+
+     enddo
+  end if
+  if (typeDict(iDT)%tfType .eq. Phase_Tensor) then
+       do k=1,2 ! 2 modes
+	    !calculate Phase Tensor Elements
+			detX = dreal(Z(1))*dreal(Z(4))-dreal(Z(2))*dreal(Z(3))			
+			PT(1,1) = ISIGN*(dreal(Z(4))*dimag(Z(1))-dreal(Z(2))*dimag(Z(3)))/detX
+			PT(1,2) = ISIGN*(dreal(Z(4))*dimag(Z(2))-dreal(Z(2))*dimag(Z(4)))/detX
+			PT(2,1) = ISIGN*(dreal(Z(1))*dimag(Z(3))-dreal(Z(3))*dimag(Z(1)))/detX
+			PT(2,2) = ISIGN*(dreal(Z(1))*dimag(Z(4))-dreal(Z(3))*dimag(Z(2)))/detX
+
+ 		 !PTXX
+		 !dx11
+	     c1 =  dcmplx(PT(1,1) * dreal(Z(4)) / detX, R_ZERO)
+		 !dx12 
+		  c2 =  dcmplx((MinusONE*PT(1,1) * dreal(Z(3)) + dimag(Z(3))) / detX ,R_ZERO)
+         Call linComb_sparsevecc(L(1)%L(k),c1,L(2)%L(k),c2,L1) 
+		 !dx21
+	     c1 =  dcmplx(MinusONE*PT(1,1) * dreal(Z(2)) / detX , R_ZERO)
+		 !dx22 
+		  c2 =  dcmplx((PT(1,1) * dreal(Z(1)) - dimag(Z(1)))/ detX,R_ZERO)
+         Call linComb_sparsevecc(L(3)%L(k),c1,L(4)%L(k),c2,L2)		 
+         Call linComb_sparsevecc(L1,C_ONE,L2,C_ONE,L3)		 
+		 ! Extra MinusONE to account for sign change due to i*i = -1
+		 !dy11
+	     c1 =  dcmplx(R_ZERO,MinusONE* dreal(Z(4)) / detX)
+		 !dy21 
+		 c2 = dcmplx(R_ZERO,MinusONE* MinusONE* dreal(Z(2)) / detX)
+		 Call linComb_sparsevecc(L(1)%L(k),c1,L(3)%L(k),c2,L1)     
+		 Call linComb_sparsevecc(L3,C_ONE,L1,C_ONE,Lp11)
+		 
+		 !PTXY
+		 !dx11
+	     c1 =  dcmplx(PT(1,2) * dreal(Z(4)) / detX, R_ZERO)
+		 !dx12 
+		  c2 =  dcmplx((MinusONE*PT(1,2) * dreal(Z(3)) + dimag(Z(4))) / detX, R_ZERO)
+         Call linComb_sparsevecc(L(1)%L(k),c1,L(2)%L(k),c2,L1) 
+		 !dx21
+	     c1 =  dcmplx(MinusONE*PT(1,2) * dreal(Z(2)) / detX, R_ZERO)
+		 !dx22 
+		  c2 =  dcmplx((PT(1,2) * dreal(Z(1)) + dimag(Z(2)))/ detX, R_ZERO)
+         Call linComb_sparsevecc(L(3)%L(k),c1,L(4)%L(k),c2,L2)		 
+         Call linComb_sparsevecc(L1,C_ONE,L2,C_ONE,L3)		 
+		 ! Extra MinusONE to account for sign change due to i*i = -1
+		 !dy12
+	     c1 =  dcmplx(R_ZERO,MinusONE* dreal(Z(4)) / detX)
+		 !dy22
+		 c2 = dcmplx(R_ZERO,MinusONE* MinusONE* dreal(Z(2))/ detX)
+         Call linComb_sparsevecc(L(2)%L(k),c1,L(4)%L(k),c2,L1)     
+		 Call linComb_sparsevecc(L3,C_ONE,L1,C_ONE,Lp12)
+		 
+		 !PTYX
+		 !dx11
+	     c1 =  dcmplx((PT(2,1) * dreal(Z(4)) - dimag(Z(3)))/ detX, R_ZERO)
+		 !dx12 
+		  c2 =  dcmplx(MinusONE*PT(2,1) * dreal(Z(3)) / detX, R_ZERO)
+         Call linComb_sparsevecc(L(1)%L(k),c1,L(2)%L(k),c2,L1) 
+		 !dx21
+	     c1 = dcmplx(( MinusONE*PT(2,1) * dreal(Z(2)) + dimag(Z(1)))/ detX, R_ZERO)
+		 !dx22 
+		  c2 =  dcmplx(PT(2,1) * dreal(Z(1)) / detX, R_ZERO)
+         Call linComb_sparsevecc(L(3)%L(k),c1,L(4)%L(k),c2,L2)		 
+         Call linComb_sparsevecc(L1,C_ONE,L2,C_ONE,L3)		 
+		 ! Extra MinusONE to account for sign change due to i*i = -1
+		 !dy11
+	     c1 =  dcmplx(R_ZERO,MinusONE* MinusONE*dreal(Z(3)) / detX)
+		 !dy21
+		 c2 = dcmplx(R_ZERO, MinusONE* dreal(Z(1)) / detX)
+         Call linComb_sparsevecc(L(1)%L(k),c1,L(3)%L(k),c2,L1)     
+		 Call linComb_sparsevecc(L3,C_ONE,L1,C_ONE,Lp21)
+		 
+
+		 !PTYY
+		 !dx11
+	     c1 =  dcmplx((PT(2,2) * dreal(Z(4)) - dimag(Z(4)))/ detX, R_ZERO)
+		 !dx12 
+		  c2 =  dcmplx(MinusONE*PT(2,2) * dreal(Z(3)) / detX, R_ZERO)
+         Call linComb_sparsevecc(L(1)%L(k),c1,L(2)%L(k),c2,L1) 
+		 !dx21
+	     c1 = dcmplx(( MinusONE*PT(2,2) * dreal(Z(2)) +dimag(Z(2)))/ detX, R_ZERO)
+		 !dx22 
+		  c2 =  dcmplx(PT(2,2) * dreal(Z(1)) / detX, R_ZERO)
+         Call linComb_sparsevecc(L(3)%L(k),c1,L(4)%L(k),c2,L2)		 
+         Call linComb_sparsevecc(L1,C_ONE,L2,C_ONE,L3)		 
+		 ! Extra MinusONE to account for sign change due to i*i = -1
+		 !dy12
+	     c1 =  dcmplx(R_ZERO,MinusONE* MinusONE*dreal(Z(3)) / detX)
+		 !dy22
+		 c2 = dcmplx(R_ZERO, MinusONE* dreal(Z(1)) / detX)
+         Call linComb_sparsevecc(L(2)%L(k),c1,L(4)%L(k),c2,L1)     
+		 Call linComb_sparsevecc(L3,C_ONE,L1,C_ONE,Lp22)
+		 
+
+    	 !Finally overwrite Impedance Ls of this mode with Phase Tensor Ls
+		 Call linComb_sparsevecc(Lp11,C_MinusOne,Lp11,C_ZERO,L(1)%L(k))
+ 		 Call linComb_sparsevecc(Lp12,C_MinusOne,Lp12,C_ZERO,L(2)%L(k))
+ 		 Call linComb_sparsevecc(Lp21,C_MinusOne,Lp21,C_ZERO,L(3)%L(k))
+ 		 Call linComb_sparsevecc(Lp22,C_MinusOne,Lp22,C_ZERO,L(4)%L(k))
+    enddo
+  end if
+
+ ! clean up
+ if (typeDict(iDT)%tfType .eq. Phase_Tensor) then
+   call deall_sparsevecc(L2)
+  call deall_sparsevecc(L3)
+  call deall_sparsevecc(Lp11)
+  call deall_sparsevecc(Lp12)
+  call deall_sparsevecc(Lp21)
+  call deall_sparsevecc(Lp22)
+  end if
+
+   call deall_sparsevecc(L1)
   call deall_sparsevecc(Lex)
   call deall_sparsevecc(Ley)
   call deall_sparsevecc(Lbx)

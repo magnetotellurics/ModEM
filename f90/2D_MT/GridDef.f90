@@ -30,6 +30,7 @@ module GridDef
       real (kind=prec), pointer, dimension(:) :: Dely,Delz
       real (kind=prec), pointer, dimension(:) :: yNode,zNode
       real (kind=prec), pointer, dimension(:) :: yCenter,zCenter
+      real (kind=prec)  :: zAir = R_ZERO
       logical	:: allocated = .false.
    end type grid_t
 
@@ -50,6 +51,7 @@ module GridDef
        grid%Nza = Nza
        grid%Nz = Nz
        grid%Ny = Ny
+       grid%zAir = R_ZERO
        allocate(grid%Dz(Nz), STAT=istat)
        allocate(grid%Dy(Ny), STAT=istat)
        allocate(grid%Delz(Nz+1), STAT=istat)
@@ -112,8 +114,13 @@ module GridDef
            grid%yNode(iy+1) = grid%yNode(iy) + grid%Dy(iy)
         enddo
         ! start summing from top of domain (includes air)
+        grid%zAir = 0
         do iz = 1,Nz
            grid%zNode(iz+1) = grid%zNode(iz) + grid%Dz(iz)
+           ! also save the total thickness of the air layers
+           if(iz .le. Nza) then
+             grid%zAir = grid%zAir + grid%Dz(iz)
+           endif
         enddo
         !  next construct positions of cell centers
         do iy = 1,Ny
@@ -148,6 +155,7 @@ module GridDef
        gridOut%zNode = gridIn%zNode
        gridOut%yCenter = gridIn%yCenter
        gridOut%zCenter = gridIn%zCenter
+       gridOut%zAir = gridIn%zAir
        gridOut%allocated = .true.
 
      end subroutine copy_grid

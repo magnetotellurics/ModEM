@@ -181,7 +181,7 @@ Contains
                         countData = countData + 1
                     end do
 
-                case(Off_Diagonal_Rho_Phase)
+                case(Off_Diagonal_Rho_Phase,Phase_Tensor)
 
                     do icomp = 1,ncomp
                         if (.not. exist(icomp)) then
@@ -189,8 +189,8 @@ Contains
                         end if
                         compid = typeDict(iDt)%id(icomp)
                         write(ioDat,'(es12.6)',    iostat=ios,advance='no') Period
-                        write(ioDat,'(a40,3f12.3)',iostat=ios,advance='no') siteid,x(:)
-                        write(ioDat,'(a8,3es15.6)',iostat=ios) compid,value(icomp),error(icomp)
+                        write(ioDat,'(a40,3f12.3)',iostat=ios,advance='no') trim(siteid),x(:)
+                        write(ioDat,'(a8,3es15.6)',iostat=ios) trim(compid),value(icomp),error(icomp)
                         countData = countData + 1
                     end do
 
@@ -410,7 +410,7 @@ Contains
         end do
 
 
-       case(Off_Diagonal_Rho_Phase)
+       case(Off_Diagonal_Rho_Phase,Phase_Tensor)
 
         do
 
@@ -447,6 +447,8 @@ Contains
             value(i,j,icomp) = SI_factor * Zreal
             error(i,j,icomp) = SI_factor * Zerr
             exist(i,j,icomp) = .TRUE.
+       
+            countData = countData + 1
 
         end do
 
