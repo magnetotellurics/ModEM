@@ -48,7 +48,7 @@ Contains
   logical               	:: Conj_Case = .false.
   integer               	:: iSite, ncomp, iTx, &
 					nFunc, iDt, iRx, iComp, iFunc, j
-	logical                 :: isComplex
+	logical                 :: isComplex, exists
   complex(kind=prec)	    :: Z
   type(sparseVector_t), pointer	:: Lz(:)
 
@@ -96,7 +96,12 @@ Contains
 	     call Lrows(e0,Sigma0,iDt,iRx,Lz)
 	     iComp = 1
 	     do iFunc  = 1, nFunc
-	        Z = dotProd_sparseVsolnV(Lz(iFunc),ef,Conj_Case)
+	        exists = d%data(j)%value(iComp,iSite)
+	        if(exists) then
+	           Z = dotProd_sparseVsolnV(Lz(iFunc),ef,Conj_Case)
+	        else
+	           Z = C_ZERO
+	        endif
 	        if(isComplex) then
 	           d%data(j)%value(iComp,iSite) = real(Z)
 	           iComp = iComp + 1
@@ -146,7 +151,7 @@ Contains
   !  local variables
   integer               		:: iSite, iTx, iDt, iRx, nComp, &
 					 nFunc, iComp, iFunc, j
-  logical                   :: isComplex
+  logical                   :: isComplex, exists
   complex(kind=prec)		    :: Z
   type(sparseVector_t), pointer    	:: Lz(:)
 
@@ -187,6 +192,7 @@ Contains
 	     call Lrows(e0,Sigma0,iDt,iRx,Lz)
 	     iComp = 1
 	     do iFunc  = 1, nFunc
+	        exists = d%data(j)%exist(iComp,iSite)
 	        if(isComplex) then
 	           !  move real data from dataVector into complex conjugate of TF (impedance)
 	           !  multiply this by data kernel for complex impedance ...
@@ -197,7 +203,9 @@ Contains
 	           Z = cmplx(d%data(j)%value(iComp,iSite),0.0,8)
 	           iComp = iComp+1
 	        endif
-	        call add_sparseVrhsV(Z,Lz(iFunc),comb)
+	        if(exists) then
+	           call add_sparseVrhsV(Z,Lz(iFunc),comb)
+	        endif
 	     enddo ! iFunc
 	  enddo ! iSite
 	  !  deallocate local arrays
@@ -232,7 +240,7 @@ Contains
   !  local variables
   integer                   :: iSite, ncomp, iTx, &
                     nFunc, iDt, iRx, iComp, iFunc, j, istat
-  logical                   :: isComplex, zeroQ
+  logical                   :: isComplex, zeroQ, exists
   real(kind=prec)           :: Zreal, Zimag
   type (modelParam_t), pointer  :: sigmaQreal(:), sigmaQimag(:)
 
@@ -279,15 +287,16 @@ Contains
 	     call Qrows(e0,Sigma0,iDt,iRx,zeroQ,sigmaQreal,sigmaQimag)
 	     iComp = 1
 	     do iFunc  = 1, nFunc
+            exists = d%data(j)%exist(iComp,iSite)
 	        if(isComplex) then
-	           if (zeroQ) then
+	           if (zeroQ .or. (.not. exists)) then
 	               Zreal = R_ZERO
 	           else
 	               Zreal = dotProd_modelParam(sigmaQreal(iFunc),dSigma)
 	           endif
 	           d%data(j)%value(iComp,iSite) = Zreal
 	           iComp = iComp + 1
-               if (zeroQ) then
+               if (zeroQ .or. (.not. exists)) then
                    Zimag = R_ZERO
                else
                    Zimag = dotProd_modelParam(sigmaQimag(iFunc),dSigma)
@@ -295,7 +304,7 @@ Contains
 	           d%data(j)%value(iComp,iSite) = Zimag
 	           iComp = iComp + 1
 	        else
-               if (zeroQ) then
+               if (zeroQ .or. (.not. exists)) then
                    Zreal = R_ZERO
                else
 	               Zreal = dotProd_modelParam(sigmaQreal(iFunc),dSigma)
@@ -347,7 +356,7 @@ Contains
   !  local variables
   integer                   :: iSite, ncomp, iTx, &
                     nFunc, iDt, iRx, iComp, iFunc, j, istat
-  logical                   :: isComplex, zeroQ
+  logical                   :: isComplex, zeroQ, exists
   real(kind=prec)           :: Zreal, Zimag
   type (modelParam_t)       :: sigmaTemp
   type (modelParam_t), pointer  :: sigmaQreal(:), sigmaQimag(:)
@@ -399,11 +408,12 @@ Contains
 	     call Qrows(e0,Sigma0,iDt,iRx,zeroQ,sigmaQreal,sigmaQimag)
 	     iComp = 1
 	     do iFunc  = 1, nFunc
+	        exists = d%data(j)%exist(iComp,iSite)
 	        if(isComplex) then
 		       ! implement the real variant of Q^T conj(d), where conj(d) is component-wise
 		       ! complex conjugate... the data are stored as real, so don't use complex
 		       ! multiplication here
-		       if (.not. zeroQ) then
+		       if ((.not. zeroQ) .and. exists) then
 		           Zreal = d%data(j)%value(iComp,iSite)
 		           Zimag = d%data(j)%value(iComp+1,iSite)
 		           ! Re( Q^T conj(d) ) = Re(Q^T) Re(d) + Im(Q^T) Im(d)
@@ -417,7 +427,7 @@ Contains
                endif
 	           iComp = iComp + 2
 	        else
-               if (.not. zeroQ) then
+               if ((.not. zeroQ) .and. exists) then
 	               Zreal = d%data(j)%value(iComp,iSite)
 	               call scMultAdd(Zreal,sigmaQreal(iFunc),QcombReal)
 	           endif

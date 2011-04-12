@@ -112,7 +112,7 @@ module DataSpace
 
       logical       :: isComplex = .false.
       logical		:: errorBar = .false.
-      logical       :: normalized = .false.
+      integer       :: normalized = 0
       logical		:: allocated = .false.
 
       ! needed to avoid memory leaks for temporary function outputs
@@ -253,7 +253,7 @@ Contains
     allocate(d%exist(nComp, nSite), STAT=istat)
     d%exist = .true.
 
-    d%normalized = .false.
+    d%normalized = 0
     d%allocated = .true.
 
   end subroutine create_dataBlock
@@ -280,7 +280,7 @@ Contains
     d%dataType = 0
     d%isComplex = .false.
     d%errorBar = .false.
-    d%normalized = .false.
+    d%normalized = 0
     d%nComp = 0
     d%nSite = 0
 
@@ -443,6 +443,7 @@ Contains
     if (errBar .and. .not. associated(dOut%error)) then
        allocate(dOut%error(dOut%nComp, dOut%nSite), STAT=istat)
     endif
+	dOut%normalized = 0
 
 	! deal with the error bars by copying them from one of the vectors;
 	! currently exit if both of the input vectors have error bars defined
@@ -450,9 +451,12 @@ Contains
 	if (d1%errorBar .and. d2%errorBar) then
 	   if ((abs(a) > R_ZERO).and.(abs(b) > R_ZERO)) then
        	  call errStop('unable to add two data vectors with error bars in linComb_dataBlock')
-       else
-       	  dOut%error = a*d1%error + b*d2%error
-       	  dOut%normalized = d1%normalized .and. d2%normalized
+       else if (abs(a) > R_ZERO) then
+          dOut%error = a*d1%error
+          dOut%normalized = d1%normalized
+       else if (abs(b) > R_ZERO) then
+       	  dOut%error = b*d2%error
+       	  dOut%normalized = d2%normalized
        end if
     else if(d1%errorBar) then
        dOut%error = a*d1%error
@@ -525,7 +529,9 @@ Contains
     r = 0.0
     do j = 1, d1%nComp
        do k = 1, d1%nSite
-          r  =  r + d2%value(j,k) * d1%value(j,k)
+          if (d1%exist(j,k) .and. d2%exist(j,k)) then
+            r  =  r + d2%value(j,k) * d1%value(j,k)
+          endif
        enddo
     enddo
 
@@ -555,10 +561,6 @@ Contains
       call errStop('no error bars for input data in normalize_dataBlock')
    endif
 
-   if (d%normalized) then
-      call errStop('data vector already normalized in normalize_dataBlock')
-   endif
-
    if (present(N)) then
       nn = N
    else
@@ -576,7 +578,7 @@ Contains
      enddo
    enddo
 
-   d%normalized = .true.
+   d%normalized = d%normalized + nn
 
   end subroutine normalize_dataBlock
 
@@ -610,7 +612,7 @@ Contains
         call errStop('different transmitters or data types in merge_dataBlock')
     elseif(d1%errorBar .neqv. d2%errorBar) then
         call errStop('input error bars incompatible in merge_dataBlock')
-    elseif(d1%normalized .neqv. d2%normalized) then
+    elseif(d1%normalized .ne. d2%normalized) then
         call errStop('input data incompatible in merge_dataBlock')
     endif
 
@@ -674,7 +676,7 @@ Contains
     d%rx = rxList(1:nSite)
     d%dataType = d1%dataType
     d%tx = d1%tx
-    d%normalized = d1%normalized .and. d2%normalized
+    d%normalized = d1%normalized
     d%allocated = .true.
 
     deallocate(rxList,STAT=istat)
