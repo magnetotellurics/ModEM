@@ -130,6 +130,9 @@ Contains
       end select
 
       !  allocate for rhs for background, scratch sensitivity solutions
+      if (output_level > 3) then
+         write(*,*) 'Initializing RHS and background solution for 2D forward solver... iTx=',iTx,' mode=',mode
+      endif
       b0%nonzero_source = .false.
       b0%nonzero_bc = .true.
       b0%adj = 'FWD'
@@ -138,19 +141,35 @@ Contains
       !  allocate for background solution
       call create_solnVector(grid,iTx,e0)
 
-      if(initForSens) then
-         !  allocate for sensitivity solution, RHS
-         call create_solnVector(grid,iTx,e)
-         comb%nonzero_source = .true.
-         comb%nonzero_bc = .false.
-         comb%adj = ''
-         call create_rhsVector(grid,iTx,comb)
-      endif
+   endif
+
+   !  allocate storage for the sensitivity soln and RHS if run for the first time
+   !  or with a new mode; if the mode is new deallocate them first (above)
+   if(initForSens) then
+     !  allocate for sensitivity solution, RHS
+     if (.not. e%allocated) then
+        if (output_level > 3) then
+            write(*,*) 'Initializing 2D EM soln for sensitivity... iTx=',iTx,' model=',mode
+        endif
+        call create_solnVector(grid,iTx,e)
+     endif
+     if (.not. comb%allocated) then
+        if (output_level > 3) then
+            write(*,*) 'Initializing the RHS for 2D sensitivity... iTx=',iTx,' model=',mode
+        endif
+        comb%nonzero_source = .true.
+        comb%nonzero_bc = .false.
+        comb%adj = ''
+        call create_rhsVector(grid,iTx,comb)
+     endif
    endif
 
    !   complete initialization of coefficient matrix, then factor
    !   (factored matrix is saved in TE/TM mode modeling module
    !   This needs to be called before solving for a different frequency
+   if (output_level > 3) then
+      write(*,*) 'Updating frequency for 2D forward solver... iTx=',iTx,' mode=',mode
+   endif
    select case (mode)
       case ('TE')
          call UpdateFreqTE(period)
@@ -240,6 +259,10 @@ Contains
       case default
    end select
 
+   if (output_level > 3) then
+      write(*,*) 'Completed: 2D forward solver... iTx=',iTx,' mode=',mode
+   endif
+
    ! update pointer to the transmitter in solnVector
    e0%tx = iTx
 
@@ -273,6 +296,10 @@ Contains
        if(IER .LT. 0) then
           call errStop('solving TM mode equation in sensSolve')
        endif
+   endif
+
+   if (output_level > 3) then
+      write(*,*) 'Completed: 2D sensitivity computations... iTx=',iTx,' mode=',txDict(iTx)%mode
    endif
 
    ! update pointer to the transmitter in solnVector

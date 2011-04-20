@@ -110,6 +110,25 @@ Contains
 
   end function update_txDict
 
+!**********************************************************************
+! Writes the transmitter dictionary to screen. Useful for debugging.
+
+  subroutine print_txDict()
+
+     ! local variables
+     integer                     :: iTx
+
+     if (.not. associated(txDict)) then
+        return
+     end if
+
+     write(*,*) 'Transmitter dictionary:'
+     do iTx = 1, size(txDict)
+        write(*,*) iTx,txDict(iTx)%period,txDict(iTx)%mode,txDict(iTx)%nPol
+     enddo
+
+  end subroutine print_txDict
+
 ! **************************************************************************
 ! Cleans up and deletes transmitter dictionary at end of program execution
 

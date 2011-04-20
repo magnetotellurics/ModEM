@@ -293,8 +293,7 @@ contains
           enddo
        enddo
     else
-       write (0, *) 'gridType incompatability in linComb_sparsevecc'
-       stop
+       write (0, *) 'Error: gridType incompatability in linComb_sparsevecc ',trim(Lic1%gridType),' vs ',trim(Lic2%gridType)
     end if
 
     call create_sparsevecc(Lic1%grid,Lic1%gridType,nCoeffsum,Loc3)
@@ -393,13 +392,11 @@ contains
                 c = c + SV%c(i) * FV%v(yi,zi)
              endif
           else
-             write(0,*) 'indices for sparse-full dot product out of bounds '
-             stop
+             write(0,*) 'Error: indices for sparse-full dot product out of bounds '
           endif
        enddo
     else
-       write (0, *) 'gridType incompatibility in dotProd_scvector'
-       stop
+       write (0, *) 'Error: gridType incompatibility in dotProd_scvector ',trim(SV%gridType),' vs ',trim(FV%gridType)
     endif
 
   end function dotProd_scvector
@@ -428,13 +425,11 @@ contains
 		(zi.gt.0).and.(zi.le.FV%N2)) then
              FV%v(yi,zi) = cs*SV%c(i) + FV%v(yi,zi)
           else
-             write(0,*) 'indices for sparse-full sum out of bounds'
-             stop
+             write(0,*) 'Error: indices for sparse-full sum out of bounds'
           endif
        enddo
     else
-       write (0, *) 'gridType incompatability in SparseFullDotProd2D'
-       stop
+       write (0, *) 'Error: gridType incompatability in add_scvector ',trim(SV%gridType),' vs ',trim(FV%gridType)
     endif
 
   end subroutine add_scvector

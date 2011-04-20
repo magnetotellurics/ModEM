@@ -138,6 +138,25 @@ function update_rxDict(loc,id,loc_ref,id_ref) result (iRx)
 
   end function update_rxDict
 
+!**********************************************************************
+! Writes the receiver dictionary to screen. Useful for debugging.
+
+  subroutine print_rxDict()
+
+     ! local variables
+     integer                     :: iRx
+
+     if (.not. associated(rxDict)) then
+        return
+     end if
+
+     write(*,*) 'Receiver dictionary:'
+     do iRx = 1, size(rxDict)
+        write(*,'(i6,a50,3f15.6,a50)') iRx,trim(rxDict(iRx)%id),rxDict(iRx)%x,trim(rxDict(iRx)%id_ref)
+     enddo
+
+  end subroutine print_rxDict
+
   ! **************************************************************************
   ! Cleans up and deletes receiver dictionary at end of program execution
   subroutine deall_rxDict()

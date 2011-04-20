@@ -75,6 +75,10 @@ program Mod2DMT
      select case (cUserDef%job)
 
      case (READ_WRITE)
+        if (output_level > 3) then
+            call print_txDict()
+            call print_rxDict()
+        end if
         if (write_model .and. write_data) then
         	write(*,*) 'Writing model and data files and exiting...'
         	call write_modelParam(sigma0,cUserDef%wFile_Model)

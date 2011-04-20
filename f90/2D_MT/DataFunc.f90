@@ -94,6 +94,14 @@ Contains
      call errStop('option not available in dataResp')
   endif
 
+  ! error checking
+  if (.not. Le%allocated) then
+    write(0,*) 'Sparse vector Le not allocated in dataResp for tx=',ef%tx,' rx=',iRX
+  endif
+  if (.not. Lb%allocated) then
+    write(0,*) 'Sparse vector Lb not allocated in dataResp for tx=',ef%tx,' rx=',iRX
+  endif
+
   !  Using sparse vector representations of data functionals,
   !          compute impedance
   E = dotProd_scvector(Le,ef%vec,Conj_case)
