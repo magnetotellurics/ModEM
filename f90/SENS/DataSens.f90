@@ -96,7 +96,7 @@ Contains
 	     call Lrows(e0,Sigma0,iDt,iRx,Lz)
 	     iComp = 1
 	     do iFunc  = 1, nFunc
-	        exists = d%data(j)%value(iComp,iSite)
+	        exists = d%data(j)%exist(iComp,iSite)
 	        if(exists) then
 	           Z = dotProd_sparseVsolnV(Lz(iFunc),ef,Conj_Case)
 	        else
