@@ -264,7 +264,7 @@ Contains
 
     grid%xEdge(1) = grid%ox
     grid%yEdge(1) = grid%oy
-    grid%zEdge(1) = grid%oz
+    grid%zEdge(1) = 0.0
     xCum = 0.0
     yCum = 0.0
     zCum = 0.0

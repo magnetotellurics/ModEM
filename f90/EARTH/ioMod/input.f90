@@ -66,7 +66,6 @@ Contains
     read (ioStartup,'(a17,a80)') string,cUserDef%calculate;
     read (ioStartup,'(a17,g15.7)') string,cUserDef%damping;
     read (ioStartup,'(a17,a80)') string,cUserDef%fn_grid;
-    read (ioStartup,'(a17,a80)') string,cUserDef%fn_rho;
     read (ioStartup,'(a17,a80)') string,cUserDef%fn_shell;
     read (ioStartup,'(a17,a80)') string,cUserDef%fn_field;
     read (ioStartup,'(a17,a80)') string,cUserDef%fn_period;
@@ -78,6 +77,7 @@ Contains
     read (ioStartup,'(a17,a80)') string,cUserDef%fn_param0;
     read (ioStartup,'(a17,a80)') string,cUserDef%fn_param;
     read (ioStartup,'(a17,a80)') string,cUserDef%fn_source;
+    read (ioStartup,'(a17,a80)') string,cUserDef%fn_hdata;
     read (ioStartup,'(a17,a80)') string,cUserDef%fn_cdata;
     read (ioStartup,'(a17,a80)') string,cUserDef%fn_ddata;
     read (ioStartup,'(a17,a80)') string,cUserDef%fn_misfit;

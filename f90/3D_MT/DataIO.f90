@@ -188,6 +188,11 @@ Contains
                             cycle
                         end if
                         compid = typeDict(iDt)%id(icomp)
+                        ! For apparent resistivities only, log10 of the values was used
+			            if (index(compid,'RHO')>0) then
+			                value(icomp) = 10**value(icomp)
+			                error(icomp) = 10**error(icomp)
+			            end if
                         write(ioDat,'(es12.6)',    iostat=ios,advance='no') Period
                         write(ioDat,'(a40,3f12.3)',iostat=ios,advance='no') trim(siteid),x(:)
                         write(ioDat,'(a8,3es15.6)',iostat=ios) trim(compid),value(icomp),error(icomp)
@@ -424,6 +429,12 @@ Contains
             ! Find component id for this value
             icomp = ImpComp(compid,iDt)
 
+            ! For apparent resistivities only, use log10 of the values
+            if (index(compid,'RHO')>0) then
+                Zreal = log10(Zreal)
+                Zerr  = log10(Zerr)
+            end if
+
             ! Update the transmitter dictionary and the index (sets up if necessary)
             iTx = update_txDict(Period,2)
             do i = 1,nTx
@@ -447,7 +458,7 @@ Contains
             value(i,j,icomp) = SI_factor * Zreal
             error(i,j,icomp) = SI_factor * Zerr
             exist(i,j,icomp) = .TRUE.
-       
+
             countData = countData + 1
 
         end do
