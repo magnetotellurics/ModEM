@@ -5,6 +5,24 @@ module field1d
   use polpak
   implicit none
 
+  ! ***************************************************************************
+  ! * type field1d_t contains the configuration for the 1d forward solver
+
+  type :: field1d_t
+
+      real(8), dimension(:), pointer    :: layer ! tops of layers
+      real(8), dimension(:), pointer    :: sigma ! layer conductivities
+      real(8)                           :: tau ! near-surface conductance
+      real(8), dimension(:), pointer    :: T ! periods in seconds
+      integer                           :: Nmax ! maximum number of iterations
+      real(8)                           :: tol ! tolerance
+      real(8)                           :: r0 ! Earth's radius in meters
+      real(8)                           :: rmax ! boundary of the domain in meters
+      logical                           :: allocated
+
+  end type field1d_t ! field1d_t
+
+
 Contains
 
 subroutine vsharm(n,cost,phi,Y,Yt,YpDst)
@@ -326,47 +344,47 @@ subroutine sourceField1d(earth,Ns,coef,Np,Nt,R,Hp,Ht,Hr)
     !between layers
     do ll=lr-1,1,-1
 
-        idr=find(Rr<=rl(ll)&Rr>rl(ll+1));
-        if (.not. isempty(idr)) then
-            call rbslprop(Ns,kl(ll)*rl(ll+1),1,tnp/kl(ll),kl(ll)*Rr(idr),tnrll,tmptnsp);
-            Tnr(idr,:)=tnrll;
+        idr = minNode(rl(ll),Rr)
+        if (idr>0) then
+            call rbslprop(Ns,kl(ll)*rl(ll+1),1,tnp/kl(ll),kl(ll)*Rr(idr),tnrll,tmptnsp)
+            Tnr(idr,:)=tnrll
         end if
         
-        ids=find(Rs<=rl(ll)&Rs>rl(ll+1));
-        if (.not. isempty(ids)) then
-            call rbslprop(Ns,kl(ll)*rl(ll+1),1,tnp/kl(ll),kl(ll)*Rs(ids),tmptnr,tnspll);
-            Tnsp(ids,:)=kl(ll)*tnspll;
+        ids = minNode(rl(ll),Rs)
+        if (ids>0) then
+            call rbslprop(Ns,kl(ll)*rl(ll+1),1,tnp/kl(ll),kl(ll)*Rs(ids),tmptnr,tnspll)
+            Tnsp(ids,:)=kl(ll)*tnspll
         end if
 
-        call rbslprop(Ns,kl(ll)*rl(ll+1),1,tnp/kl(ll),kl(ll)*rl(ll),tn,tnp);
+        call rbslprop(Ns,kl(ll)*rl(ll+1),1,tnp/kl(ll),kl(ll)*rl(ll),tn,tnp)
 
-        tnp = kl(ll)*tnp./tn;
+        tnp = kl(ll)*tnp./tn
 
-        Tnr=Tnr*diag(1./tn);
-        Tnsp=Tnsp*diag(1./tn);
+        Tnr=Tnr*diag(1./tn)
+        Tnsp=Tnsp*diag(1./tn)
 
     end do
 
     !in the air
-    idr=find(Rr>rl(1));
-    if (.not. isempty(idr)) then
+    idr = maxNode(rl(1),Rr)
+    if (idr>0) then
         sumup = .true.
-        call airprop(Ns,rl(1),1,tnp-1i*omega*mu0*earth%tau,Rr(idr),tnrll,tmptnsp,tmp,tmp,sumup);
-        Tnr(idr,:)=tnrll;
+        call airprop(Ns,rl(1),1,tnp-1i*omega*mu0*earth%tau,Rr(idr),tnrll,tmptnsp,tmp,tmp,sumup)
+        Tnr(idr,:)=tnrll
     end if
 
-    ids=find(Rs>rl(1));
-    if (.not. isempty(ids)) then
+    ids = maxNode(rl(1),Rs)
+    if (ids>0) then
         sumup = .true.
-        call airprop(Ns,rl(1),1,tnp-1i*omega*mu0*earth%tau,Rs(ids),tmptnr,tnspll,tmp,tmp,sumup);
-        Tnsp(ids,:)=tnspll;
+        call airprop(Ns,rl(1),1,tnp-1i*omega*mu0*earth%tau,Rs(ids),tmptnr,tnspll,tmp,tmp,sumup)
+        Tnsp(ids,:)=tnspll
     end if
     !renormalize against outter boundary
     sumup = .false.
-    call airprop(1,rl(1),1,tnp(1)-1i*omega*mu0*earth%tau,earth%rmax,tmptnr,tlmp,tmp,tmp,sumup);
+    call airprop(1,rl(1),1,tnp(1)-1i*omega*mu0*earth%tau,earth%rmax,tmptnr,tlmp,tmp,tmp,sumup)
 
-    Tnr=Tnr*(-earth%rmax/t1mp);
-    Tnsp=Tnsp*(-earth%rmax/t1mp);
+    Tnr=Tnr*(-earth%rmax/t1mp)
+    Tnsp=Tnsp*(-earth%rmax/t1mp)
     !-----------------------------------------------------------!
 
     !field componets

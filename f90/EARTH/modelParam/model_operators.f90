@@ -1734,7 +1734,8 @@ Contains
           else if (if_var_char == 'const') then
             if_fixed = .TRUE.
           else
-            write(0, *) 'Error: (read_modelParam) wrong character constant for ',n,l,m
+            write(0, *) 'Error: (read_modelParam) wrong character constant for ',n,l,m,': ',if_var_char
+            write(0, *) 'Error: (read_modelParam) if file looks OK, try running dos2unix on it. Exiting...'
             stop
           end if
           call setCoeffValue_modelParam(P,n,l,m,v,min,max,if_fixed)

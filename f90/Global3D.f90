@@ -63,7 +63,7 @@ program earth
 
 
 
-     
+
 
 
 
@@ -75,10 +75,10 @@ program earth
 
       call initGlobalData(cUserDef)
       ! set the grid for the numerical computations
-      
-#ifdef MPI    
+
+#ifdef MPI
       call setGrid_MPI(targetGrid)
-#else      
+#else
       call setGrid(targetGrid)
 #endif
 
@@ -652,6 +652,7 @@ end program earth
     use senscomp
     use transmitters
     use dataTypes
+    use dataio
 #ifdef MPI
     use MPI_Main
 #endif
@@ -675,6 +676,10 @@ end program earth
 #else
     call fwdPred(param,allResp)
 #endif
+
+    if (output_level > 0) then
+        call write_dataVectorMTX(allResp,cUserDef%modelname)
+    end if
 
     f = R_ZERO
 
@@ -898,6 +903,7 @@ end program earth
 	use senscomp
     use transmitters
     use dataTypes
+    use dataio
 #ifdef MPI
     use MPI_Main
 #endif
@@ -923,6 +929,10 @@ end program earth
 #else
     call fwdPred(param,allResp,H)
 #endif
+
+    if (output_level > 0) then
+        call write_dataVectorMTX(allResp,cUserDef%modelname)
+    end if
 
     f = R_ZERO
 

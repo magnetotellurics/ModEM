@@ -343,9 +343,10 @@ Contains
 
       case ('C')
         ! Read C responses into a data vector with a single data type (cdata)
-        call initDataList(cUserDef%fn_cdata,cdata,iDt,obsList,freqList)
+        call initDataList(cdata,iDt,obsList,freqList,cUserDef%fn_cdata)
         if (.not. cdata%allocated) then
           write(0,*) node_info,'Warning: Data misfit will not be calculated for C responses: data file not available'
+          call initDataList(cdata,iDt,obsList,freqList)
         end if
         do i=1,cdata%ntx
           do k=1,cdata%d(i)%data(1)%nSite
@@ -364,9 +365,10 @@ Contains
 
       case ('D')
         ! Read D responses into a data vector with a single data type (ddata)
-        call initDataList(cUserDef%fn_ddata,ddata,iDt,obsList,freqList)
+        call initDataList(ddata,iDt,obsList,freqList,cUserDef%fn_ddata)
         if (.not. ddata%allocated) then
           write(0,*) node_info,'Warning: Data misfit will not be calculated for D responses: data file not available'
+          call initDataList(ddata,iDt,obsList,freqList)
         end if
         do i=1,ddata%ntx
           do k=1,ddata%d(i)%data(1)%nSite
@@ -406,14 +408,14 @@ Contains
   ! * contain all the information about the available data: the values of the
   ! * responses, data errors corresponding to an observatory and a frequency.
 
-  subroutine initDataList(fname,mydat,itype,obsList,freqList)
+  subroutine initDataList(mydat,itype,obsList,freqList,fname)
 
 	implicit none
-	character(*), intent(in)                   :: fname
 	type (dataVectorMTX_t), intent(inout)      :: mydat
 	integer, intent(in)                        :: itype
     type (Obs_List), target, intent(in)        :: obsList
     type (Freq_List), target, intent(in)       :: freqList
+	character(*), intent(in), optional         :: fname
 	! local
     integer                 :: ifreq,iobs
     character(100)          :: label
@@ -444,12 +446,49 @@ Contains
 	error(:,:) = large
     exist(:,:) = .FALSE.
 
+    ! If called without a data file, use dictionaries to create data vector
+    if (.not. present(fname)) then
+	    call create_dataVectorMTX(nfreq,mydat)
+	    mydat%allocated = .TRUE.
+	    do i = 1,nfreq
+	       isComplex = .TRUE.
+	       errorBar = .TRUE.
+	       call create_dataVector(1,mydat%d(i))
+	       mydat%d(i)%tx = i
+	       mydat%d(i)%allocated = .TRUE.
+	       call create_dataBlock(2,nobs,mydat%d(i)%data(1),isComplex,errorBar)
+	       do j = 1,nobs
+	           exist(i,j) = .TRUE.
+	           if(exist(i,j)) then
+	               mydat%d(i)%data(1)%value(1,j) = real(value(i,j))
+	               mydat%d(i)%data(1)%value(2,j) = imag(value(i,j))
+	               mydat%d(i)%data(1)%error(1,j) = error(i,j)
+	               mydat%d(i)%data(1)%error(2,j) = error(i,j)
+                   mydat%d(i)%data(1)%exist(1,j) = exist(i,j)
+                   mydat%d(i)%data(1)%exist(2,j) = exist(i,j)
+	               mydat%d(i)%data(1)%rx(j) = j
+	           end if
+	       end do
+	       mydat%d(i)%data(1)%dataType = itype
+	       mydat%d(i)%data(1)%tx = i
+	       mydat%d(i)%data(1)%allocated = .TRUE.
+	    end do
+	    deallocate(value,STAT=istat)
+	    deallocate(error,STAT=istat)
+	    deallocate(exist,STAT=istat)
+	    return
+    end if
+
+    ! Otherwise, if data file does not exist, exit
 	inquire(FILE=trim(fname),EXIST=exists)
-	! If data file is present, initialize data, functionals and residuals
 	if (.not.exists) then
+      deallocate(value,STAT=istat)
+      deallocate(error,STAT=istat)
+      deallocate(exist,STAT=istat)
 	  return
 	end if
 
+	! If data file is present, initialize data, functionals and residuals
     open(ioDat,file=trim(fname),status='old',form='formatted',iostat=ios)
 
     write(6,*) node_info,'Reading from the data file ',trim(fname)
@@ -544,6 +583,8 @@ Contains
                mydat%d(i)%data(1)%value(2,j) = imag(value(ifreq,iobs))
                mydat%d(i)%data(1)%error(1,j) = error(ifreq,iobs)
                mydat%d(i)%data(1)%error(2,j) = error(ifreq,iobs)
+               mydat%d(i)%data(1)%exist(1,j) = exist(ifreq,iobs)
+               mydat%d(i)%data(1)%exist(2,j) = exist(ifreq,iobs)
                mydat%d(i)%data(1)%rx(j) = iobs
                j = j + 1
            end if
