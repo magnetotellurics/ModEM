@@ -90,46 +90,45 @@ subroutine airprop(lmax,r0,rn0,rnp0,r,rni,rnip,sumup)
 
 	integer, intent(in)             		        :: lmax
     real(8), intent(in)                             :: r0,r
-	complex(8), dimension(lmax+1), intent(in)       :: rn0,rnp0
-	complex(8), dimension(lmax+1), intent(inout)	:: rni,rnip
+	complex(8), dimension(lmax), intent(in)         :: rn0,rnp0
+	complex(8), dimension(lmax), intent(inout)	    :: rni,rnip
     logical, intent(in)                             :: sumup
     ! local
-    complex(8), dimension(lmax+1)   :: rnr,rnrp
+    complex(8), dimension(lmax)   :: rnr,rnrp
     complex(8)                      :: rr,rrn,rn1,rn1p,rn2,rn2p
     complex(8)                      :: A1,A2
-    integer                         :: n,l,j,istat
+    integer                         :: l,istat
 
-    if (size(rn0) /= (lmax+1)) then
-        write(0,*) 'Error in airprop: rn0 should have dimension of lmax+1'
+    if (size(rn0) /= (lmax)) then
+        write(0,*) 'Error in airprop: rn0 should have dimension of lmax'
     end if
-    if (size(rnp0) /= (lmax+1)) then
-        write(0,*) 'Error in airprop: rnp0 should have dimension of lmax+1'
+    if (size(rnp0) /= (lmax)) then
+        write(0,*) 'Error in airprop: rnp0 should have dimension of lmax'
     end if
 
     rni(:) = 0
     rnip(:) = 0
-    rnr(:) = 0;
-    rnrp(:) = 0;
+    rnr(:) = 0
+    rnrp(:) = 0
 
-    rr = r/r0; rrn=1; n=0;
+    rr = r/r0; rrn=1
 
-    do j=1,lmax+1
+    do l=1,lmax
 
-        l = j-1
-        rrn=rrn*(rr**(l-n)); n=l ! check carefully: most likely a bug there
+        rrn  = rrn*rr
         rn1  = rrn*rr
         rn1p = (l+1)*rn1/r
         rn2  = 1./(rrn)
         rn2p = -l*rn2/r
 
-        A1 = (l*rn0(j)+r0*rnp0(j))/(2*l+1)
+        A1 = (l*rn0(l)+r0*rnp0(l))/(2*l+1)
 
-        A2 = ((l+1)*(rn0(j)-A1) - r0*(rnp0(j)-A1*(l+1)/r0))/(2*l+1)
+        A2 = ((l+1)*(rn0(l)-A1) - r0*(rnp0(l)-A1*(l+1)/r0))/(2*l+1)
 
-        rni(j) = A1*rn1
-        rnr(j) = A2*rn2
-        rnip(j) = A1*rn1p
-        rnrp(j) = A2*rn2p
+        rni(l) = A1*rn1
+        rnr(l) = A2*rn2
+        rnip(l) = A1*rn1p
+        rnrp(l) = A2*rn2p
 
     end do
 
@@ -141,7 +140,7 @@ subroutine airprop(lmax,r0,rn0,rnp0,r,rni,rnip,sumup)
 end subroutine
 
 subroutine rbsls0(lmax,z0,z,type,Rbl,Rblp)
-!Computes the ricatti bessel function and 
+!Computes the ricatti bessel function and
 !the derivative scaled by exp(-+abs(imag(z0)))
 !and by (2l+-1)!!^+-1
 !and by z0^-+l
@@ -154,45 +153,51 @@ subroutine rbsls0(lmax,z0,z,type,Rbl,Rblp)
 	! local
     complex(8), dimension(:), allocatable   :: Rl
 	complex(8)                              :: Sl,Sl0
+    complex(8)                              :: cone,ctwo
 	integer                                 :: l,istat
 
-    if ((size(Rbl) .ne. (lmax+1)) .or. (size(Rblp) .ne. (lmax+1))) then
+	cone = cmplx(0.0d0,1.0d0)
+	ctwo = cmplx(0.0d0,2.0d0)
+
+    if ((size(Rbl) .ne. (lmax)) .or. (size(Rblp) .ne. (lmax))) then
         write(0,*) 'Error in rbsls0: output array sizes must be equal to the number of sph. harm. degrees'
     end if
     Rbl(:) = 0
     Rblp(:)= 0
-    
+
     select case (type)
-        
+
         case(1)
 
-            allocate(Rl(lmax+1), STAT=istat)
+            allocate(Rl(lmax), STAT=istat)
             call rrbessel(lmax,z,Rl)
-            Sl = 1/cmplx(0.,2.)*(exp(cmplx(0.,1.)*z-dimag(z0))-exp(-cmplx(0.,1.)*z-dimag(z0)))
-            do l=0,lmax
+            write(*,*) 'Rl=',Rl
+            Sl = 1./ctwo*(exp(cone*z-dimag(z0))-exp(-cone*z-dimag(z0)))
+            do l=1,lmax
                 Sl0=(2*l+1)/z0*Sl
-                Sl =Sl0*Rl(l+1)
-                Rbl(l+1) =Sl
-                Rblp(l+1)=Sl0-l*Sl/z
+                Sl =Sl0*Rl(l)
+                Rbl(l) =Sl
+                Rblp(l)=Sl0-l*Sl/z
             end do
             deallocate(Rl, STAT=istat)
 
         case(2)
 
             allocate(Rl(1), STAT=istat)
-            Sl=-cmplx(0.,1.)*exp(cmplx(0.,1.)*z+dimag(z0))
-            Rl(1)=(1./z)-cmplx(0.,1.)
-            do l=0,lmax
+            Sl=-cone*exp(cone*z+dimag(z0))
+            Rl(1)=(1./z)-cone
+            do l=1,lmax
                 Sl0 = z0/(2*l+1)*Sl
                 Sl = Sl0*Rl(1)
-                Rbl(l+1) = Sl
-                Rblp(l+1)= Sl0-l*Sl/z
+                Rbl(l) = Sl
+                Rblp(l)= Sl0-l*Sl/z
                 Rl(1)=((2*l+1)/z)-1./Rl(1)
             end do
             deallocate(Rl, STAT=istat)
     end select
 
 end subroutine
+
 
 subroutine rrbessel(lmax,z,Rl)
 ! ratio of riccati bessel functions 
@@ -205,13 +210,13 @@ subroutine rrbessel(lmax,z,Rl)
 	complex(8)  :: rl1
 	integer     :: l
 
-    if (size(Rl) .ne. (lmax+1)) then
+    if (size(Rl) .ne. (lmax)) then
         write(0,*) 'Error in rrbessel: output array size must be equal to the number of sph. harm. degrees'
     end if
 
     rl1=1./contFrac(a,lmax,z)
-    do l=lmax,0,-1
-        Rl(l+1)=rl1
+    do l=lmax,1,-1
+        Rl(l)=rl1
         rl1=1./((2*l-1)/z-rl1)
     end do
 
@@ -280,21 +285,23 @@ subroutine rbslprop(lmax,z0,phn0,phnp0,z,phn,phnp)
 
 	integer, intent(in)		    :: lmax
 	complex(8), intent(in)		:: z0,z
-	complex(8), dimension(lmax+1), intent(in)    :: phn0,phnp0
-	complex(8), dimension(lmax+1), intent(inout)	:: phn,phnp
+	complex(8), dimension(lmax), intent(in)    :: phn0,phnp0
+	complex(8), dimension(lmax), intent(inout)	:: phn,phnp
     ! local
-    complex(8), dimension(lmax+1) :: Sn,Snp,Cn,Cnp
-    complex(8), dimension(lmax+1) :: Sn0,Snp0,Cn0,Cnp0
-    complex(8), dimension(lmax+1) :: phn0h,phnp0h,An,Bn
+    complex(8), dimension(lmax) :: Sn,Snp,Cn,Cnp
+    complex(8), dimension(lmax) :: Sn0,Snp0,Cn0,Cnp0
+    complex(8), dimension(lmax) :: phn0h,phnp0h,An,Bn
     complex(8)  :: wr
     integer     :: l,istat
 
     call rbsls0(lmax,z0,z0,1,Sn0,Snp0)
+    write(*,*) 'Sn0 type 1:',Sn0
     call rbsls0(lmax,z0,z0,2,Cn0,Cnp0)
+    write(*,*) 'Cn0 type 2:',Cn0
 
     wr = -cmplx(0.,1.);
 
-    do l = 1,lmax+1
+    do l = 1,lmax
         An(l) = (Cnp0(l)*phn0(l)-Cn0(l)*phnp0(l))*wr;
 
         phn0h(l)=phn0(l)-An(l)*Sn0(l);
@@ -306,7 +313,7 @@ subroutine rbslprop(lmax,z0,phn0,phnp0,z,phn,phnp)
     call rbsls0(lmax,z0,z,1,Sn,Snp)
     call rbsls0(lmax,z0,z,2,Cn,Cnp)
     
-    do l = 1,lmax+1
+    do l = 1,lmax
         phn(l) = Sn(l)*An(l)+Cn(l)*Bn(l)
         phnp(l) = Snp(l)*An(l)+Cnp(l)*Bn(l)
     end do
@@ -325,7 +332,7 @@ subroutine sourceField1d(earth,lmax,coeff,Np,Nt,R,Hp,Ht,Hr)
 	complex(8), dimension(:,:,:), intent(inout):: Hp,Ht,Hr
 	! local
 	real(8), dimension(size(R)) :: Rr,Rs
-    integer, dimension(lmax+1)  :: Ns
+    integer, dimension(lmax)    :: Ns
 	complex(8), dimension(:,:), allocatable    :: Tnr,Tnsp
     complex(8), dimension(:), allocatable      :: rn0,rnp0,phn0,phnp0
     complex(8), dimension(:), allocatable      :: tnr1,tnsp1,tn,tnp,tlmp,tmp
@@ -340,6 +347,7 @@ subroutine sourceField1d(earth,lmax,coeff,Np,Nt,R,Hp,Ht,Hr)
     mu0 = 1.256637e-6 !(H/m)
     pi = 3.14159265357898
 
+    !No computations are performed for l=0 (this is a special case)
     ncoeff=0
     do l=0,lmax
       ncoeff = ncoeff + (2*l+1)
@@ -370,7 +378,7 @@ subroutine sourceField1d(earth,lmax,coeff,Np,Nt,R,Hp,Ht,Hr)
     Nrs=size(Rs)
     Rr=Rs ! radii for vertical components
     Nrr=Nrs
-    Nd=lmax+1 ! total number of degrees in sph. harm. expansion
+    Nd=lmax ! total number of degrees in sph. harm. expansion
 
     allocate(Tnr(Nrr,Nd),Tnsp(Nrs,Nd),STAT=istat)
     allocate(tnr1(Nd),tnsp1(Nd),tn(Nd),tnp(Nd),tlmp(Nd),tmp(Nd),STAT=istat)
@@ -378,7 +386,7 @@ subroutine sourceField1d(earth,lmax,coeff,Np,Nt,R,Hp,Ht,Hr)
 
     !within the inner core
     call find_index(Rr,0.d0,rl(Nl),idrmin,idrmax)
-    write(*,*) 'core,idrmin,idrmax=',Nl,idrmin,idrmax
+    write(*,*) 'Layer ',Nl,'(Core): ',idrmin,idrmax
     if ((idrmin > 0) .and. (idrmax > 0)) then
         do idr=idrmin,idrmax
             call rbsls0(lmax,kl(Nl)*rl(Nl),kl(Nl)*Rr(idr),1,tnr1,tmp)
@@ -388,7 +396,7 @@ subroutine sourceField1d(earth,lmax,coeff,Np,Nt,R,Hp,Ht,Hr)
     end if
 
     call find_index(Rs,0.d0,rl(Nl),idsmin,idsmax)
-    write(*,*) 'core,idsmin,idsmax=',Nl,idsmin,idsmax
+    write(*,*) 'Layer ',Nl,'(Core): ',idsmin,idsmax
     if ((idsmin > 0) .and. (idsmax > 0)) then
         do ids=idsmin,idsmax
             call rbsls0(lmax,kl(Nl)*rl(Nl),kl(Nl)*Rs(ids),1,tmp,tnsp1)
@@ -398,11 +406,13 @@ subroutine sourceField1d(earth,lmax,coeff,Np,Nt,R,Hp,Ht,Hr)
     end if
     
     call rbsls0(lmax,kl(Nl)*rl(Nl),kl(Nl)*rl(Nl),1,tn,tnp)
-    do i = 1,lmax+1
+    write(*,*) 'tn: ',tn
+    write(*,*) 'tnp: ',tnp
+    do i = 1,lmax
         tnp(i) = kl(Nl)*tnp(i)/tn(i)
     end do
     
-    do i = 1,lmax+1
+    do i = 1,lmax
         Tnr(:,i)=Tnr(:,i)/tn(i)
         Tnsp(:,i)=Tnsp(:,i)/tn(i)
     end do
@@ -410,13 +420,13 @@ subroutine sourceField1d(earth,lmax,coeff,Np,Nt,R,Hp,Ht,Hr)
     !between layers
     do ll=Nl-1,1,-1
 
-        do i = 1,lmax+1
-            phn0(i) = cmplx(1.,0.)
+        do i = 1,lmax
+            phn0(i) = cmplx(1.0d0,0.0d0)
             phnp0(i) = tnp(i)/kl(ll)
         end do
 
         call find_index(Rr,rl(ll+1),rl(ll),idrmin,idrmax)
-        write(*,*) 'll,idrmin,idrmax=',ll,idrmin,idrmax
+        write(*,*) 'Layer ',ll,': ',idrmin,idrmax
         if ((idrmin > 0) .and. (idrmax > 0)) then
             do idr=idrmin,idrmax
                 call rbslprop(lmax,kl(ll)*rl(ll+1),phn0,phnp0,kl(ll)*Rr(idr),tnr1,tmp)
@@ -426,7 +436,7 @@ subroutine sourceField1d(earth,lmax,coeff,Np,Nt,R,Hp,Ht,Hr)
         end if
         
         call find_index(Rs,rl(ll+1),rl(ll),idsmin,idsmax)
-        write(*,*) 'll,idsmin,idsmax=',ll,idsmin,idsmax
+        write(*,*) 'Layer ',ll,': ',idsmin,idsmax
         if ((idsmin > 0) .and. (idsmax > 0)) then
             do ids=idsmin,idsmax
                 call rbslprop(lmax,kl(ll)*rl(ll+1),phn0,phnp0,kl(ll)*Rs(ids),tmp,tnsp1)
@@ -437,11 +447,11 @@ subroutine sourceField1d(earth,lmax,coeff,Np,Nt,R,Hp,Ht,Hr)
 
         call rbslprop(lmax,kl(ll)*rl(ll+1),phn0,phnp0,kl(ll)*rl(ll),tn,tnp)
 
-        do i = 1,lmax+1
+        do i = 1,lmax
             tnp(i) = kl(ll)*tnp(i)/tn(i)
         end do
 
-        do i = 1,lmax+1
+        do i = 1,lmax
             Tnr(:,i)=Tnr(:,i)/tn(i)
             Tnsp(:,i)=Tnsp(:,i)/tn(i)
         end do
@@ -449,13 +459,13 @@ subroutine sourceField1d(earth,lmax,coeff,Np,Nt,R,Hp,Ht,Hr)
     end do
 
     !in the air
-    do i = 1,lmax+1
-        rn0(i) = cmplx(1.,0.)
-        rnp0(i) = tnp(i)-cmplx(0.,1.)*omega*mu0*earth%tau
+    do i = 1,lmax
+        rn0(i) = cmplx(1.0d0,0.0d0)
+        rnp0(i) = tnp(i)-cmplx(0.0d0,1.0d0)*omega*mu0*earth%tau
     end do
 
     call find_index(Rr,rl(1),rmax,idrmin,idrmax)
-    write(*,*) 'air,idrmin,idrmax=',1,idrmin,idrmax
+    write(*,*) 'Layer 1 (Air): ',idrmin,idrmax
     if ((idrmin > 0) .and. (idrmax > 0)) then
         do idr=idrmin,idrmax
             sumup = .true.
@@ -466,7 +476,7 @@ subroutine sourceField1d(earth,lmax,coeff,Np,Nt,R,Hp,Ht,Hr)
     end if
 
     call find_index(Rs,rl(1),rmax,idsmin,idsmax)
-    write(*,*) 'air,idsmin,idsmax=',1,idsmin,idsmax
+    write(*,*) 'Layer 1 (Air): ',idsmin,idsmax
     if ((idsmin > 0) .and. (idsmax > 0)) then
         do ids=idsmin,idsmax
             sumup = .true.
@@ -480,7 +490,7 @@ subroutine sourceField1d(earth,lmax,coeff,Np,Nt,R,Hp,Ht,Hr)
     sumup = .false.
     call airprop(1,rl(1),rn0(1),rnp0(1),earth%rmax,tmp,tlmp,sumup)
 
-    do i = 1,lmax+1
+    do i = 1,lmax
         Tnr(:,i)=Tnr(:,i)*(-earth%rmax/tlmp(i))
         Tnsp(:,i)=Tnsp(:,i)*(-earth%rmax/tlmp(i))
     end do
