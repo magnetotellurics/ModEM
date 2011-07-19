@@ -2,7 +2,6 @@
 module field1d
 	! Implements 1D analytic forward modelling
 
-  use math_constants
   use utilities
   use polpak
   implicit none
@@ -332,7 +331,7 @@ subroutine sourceField1d(earth,lmax,coeff,Np,Nt,R,Hp,Ht,Hr)
     complex(8), dimension(:), allocatable      :: tnr1,tnsp1,tn,tnp,tlmp,tmp
     real(8), dimension(:), allocatable         :: rl
     complex(8), dimension(:), allocatable      :: kl
-	real(8)				:: mu0,pi,omega
+	real(8)				:: mu0,pi,omega,rmax
     integer             :: idr,idrmin,idrmax,ids,idsmin,idsmax
     integer             :: i,j,l,ll,Nl,Nrr,Nrs,Nd,istat,ncoeff,icoeff
     logical             :: sumup
@@ -363,6 +362,7 @@ subroutine sourceField1d(earth,lmax,coeff,Np,Nt,R,Hp,Ht,Hr)
         rl(j) = earth%r0 - earth%layer(j)
         kl(j) = sqrt(cmplx(0.,1.)*omega*mu0*earth%sigma(j))
     end do
+    rmax = earth%rmax
     !-----------------------------------------------------------!
 
     !Radial response
@@ -377,16 +377,24 @@ subroutine sourceField1d(earth,lmax,coeff,Np,Nt,R,Hp,Ht,Hr)
     allocate(rn0(Nd),rnp0(Nd),phn0(Nd),phnp0(Nd),STAT=istat)
 
     !within the inner core
-    idr = maxNode(rl(Nl),Rr)
-    if (idr>0) then
-        call rbsls0(lmax,kl(Nl)*rl(Nl),kl(Nl)*Rr(idr),1,tnr1,tmp)
-        Tnr(idr,:)=tnr1(:)
+    call find_index(Rr,0.d0,rl(Nl),idrmin,idrmax)
+    write(*,*) 'core,idrmin,idrmax=',Nl,idrmin,idrmax
+    if ((idrmin > 0) .and. (idrmax > 0)) then
+        do idr=idrmin,idrmax
+            call rbsls0(lmax,kl(Nl)*rl(Nl),kl(Nl)*Rr(idr),1,tnr1,tmp)
+            Tnr(idr,:)=tnr1(:)
+            write(*,*) 'core,idr,tnr1: ',Nl,idr,tnr1
+        end do
     end if
 
-    ids = maxNode(rl(Nl),Rs)
-    if (ids>0) then
-        call rbsls0(lmax,kl(Nl)*rl(Nl),kl(Nl)*Rs(ids),1,tmp,tnsp1)
-        Tnsp(ids,:)=kl(Nl)*tnsp1(:)
+    call find_index(Rs,0.d0,rl(Nl),idsmin,idsmax)
+    write(*,*) 'core,idsmin,idsmax=',Nl,idsmin,idsmax
+    if ((idsmin > 0) .and. (idsmax > 0)) then
+        do ids=idsmin,idsmax
+            call rbsls0(lmax,kl(Nl)*rl(Nl),kl(Nl)*Rs(ids),1,tmp,tnsp1)
+            Tnsp(ids,:)=kl(Nl)*tnsp1(:)
+            write(*,*) 'core,ids,tnsp1: ',Nl,ids,tnsp1
+        end do
     end if
     
     call rbsls0(lmax,kl(Nl)*rl(Nl),kl(Nl)*rl(Nl),1,tn,tnp)
@@ -407,21 +415,23 @@ subroutine sourceField1d(earth,lmax,coeff,Np,Nt,R,Hp,Ht,Hr)
             phnp0(i) = tnp(i)/kl(ll)
         end do
 
-        idrmin = minNode(rl(ll),Rr)
-        idrmax = maxNode(rl(ll+1),Rr)
+        call find_index(Rr,rl(ll+1),rl(ll),idrmin,idrmax)
+        write(*,*) 'll,idrmin,idrmax=',ll,idrmin,idrmax
         if ((idrmin > 0) .and. (idrmax > 0)) then
             do idr=idrmin,idrmax
                 call rbslprop(lmax,kl(ll)*rl(ll+1),phn0,phnp0,kl(ll)*Rr(idr),tnr1,tmp)
                 Tnr(idr,:)=tnr1(:)
+                write(*,*) 'll,idr,tnr1: ',ll,idr,tnr1
             end do
         end if
         
-        idsmin = minNode(rl(ll),Rs)
-        idsmax = maxNode(rl(ll+1),Rs)
+        call find_index(Rs,rl(ll+1),rl(ll),idsmin,idsmax)
+        write(*,*) 'll,idsmin,idsmax=',ll,idsmin,idsmax
         if ((idsmin > 0) .and. (idsmax > 0)) then
             do ids=idsmin,idsmax
                 call rbslprop(lmax,kl(ll)*rl(ll+1),phn0,phnp0,kl(ll)*Rs(ids),tmp,tnsp1)
                 Tnsp(ids,:)=kl(ll)*tnsp1(:)
+                write(*,*) 'll,ids,tnsp1: ',ll,ids,tnsp1
             end do
         end if
 
@@ -444,20 +454,29 @@ subroutine sourceField1d(earth,lmax,coeff,Np,Nt,R,Hp,Ht,Hr)
         rnp0(i) = tnp(i)-cmplx(0.,1.)*omega*mu0*earth%tau
     end do
 
-    idrmax = maxNode(rl(1),Rr)
-    do idr=1,idrmax
-        sumup = .true.
-        call airprop(lmax,rl(1),rn0,rnp0,Rr(idr),tnr1,tmp,sumup)
-        Tnr(idr,:)=tnr1(:)
-    end do
+    call find_index(Rr,rl(1),rmax,idrmin,idrmax)
+    write(*,*) 'air,idrmin,idrmax=',1,idrmin,idrmax
+    if ((idrmin > 0) .and. (idrmax > 0)) then
+        do idr=idrmin,idrmax
+            sumup = .true.
+            call airprop(lmax,rl(1),rn0,rnp0,Rr(idr),tnr1,tmp,sumup)
+            Tnr(idr,:)=tnr1(:)
+            write(*,*) 'air,idr,tnr1: ',1,idr,tnr1
+        end do
+    end if
 
-    idsmax = maxNode(rl(1),Rs)
-    do ids=1,idsmax
-        sumup = .true.
-        call airprop(lmax,rl(1),rn0,rnp0,Rs(ids),tmp,tnsp1,sumup)
-        Tnsp(ids,:)=tnsp1(:)
-    end do
-    !renormalize against outter boundary
+    call find_index(Rs,rl(1),rmax,idsmin,idsmax)
+    write(*,*) 'air,idsmin,idsmax=',1,idsmin,idsmax
+    if ((idsmin > 0) .and. (idsmax > 0)) then
+        do ids=idsmin,idsmax
+            sumup = .true.
+            call airprop(lmax,rl(1),rn0,rnp0,Rs(ids),tmp,tnsp1,sumup)
+            Tnsp(ids,:)=tnsp1(:)
+            write(*,*) 'air,ids,tnsp1: ',1,ids,tnsp1
+        end do
+    end if
+
+    !renormalize against outer boundary
     sumup = .false.
     call airprop(1,rl(1),rn0(1),rnp0(1),earth%rmax,tmp,tlmp,sumup)
 
@@ -466,8 +485,14 @@ subroutine sourceField1d(earth,lmax,coeff,Np,Nt,R,Hp,Ht,Hr)
         Tnsp(:,i)=Tnsp(:,i)*(-earth%rmax/tlmp(i))
     end do
     !-----------------------------------------------------------!
-    write(*,*) 'Tnr: ',Tnr
-    write(*,*) 'Tnsp: ',Tnsp
+    write(*,*) 'Tnr: '
+    do j = 1,Nrr
+        write(*,*) Tnr(j,:)
+    end do
+    write(*,*) 'Tnsp: '
+    do j = 1,Nrs
+        write(*,*) Tnsp(j,:)
+    end do
     !-----------------------------------------------------------!
 
     Hp=0

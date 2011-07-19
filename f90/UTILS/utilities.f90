@@ -130,6 +130,37 @@ Contains
 
 
   ! **************************************************************************
+  subroutine find_index(array, xmin, xmax, imin, imax)
+    ! For an increasing array, find the minimum and maximum indices such that
+    ! xmin <= array(i) < xmax
+    ! author: A. Kelbert
+
+    implicit none
+    real (kind=prec), dimension(:), intent(in)     :: array
+    real (kind=prec), intent(in)                   :: xmin,xmax
+    integer, intent(out)                           :: imin,imax
+
+    integer                                     :: ix
+    integer                                     :: i
+
+    imin = 0
+    do i = 1,size(array)
+       if(clean(array(i)) .ge. clean(xmin)) then
+          imin = i
+          exit
+       endif
+    enddo
+
+    imax = 0
+    do i = imin,size(array)
+       if(clean(array(i)) .lt. clean(xmax)) then
+          imax = i
+       endif
+    enddo
+
+  end subroutine find_index
+
+  ! **************************************************************************
   function minNode(x, xNode) result(ix)
     !  This is a utility routine, used by several data functional
     !  set up routines, and for other interpolation functions

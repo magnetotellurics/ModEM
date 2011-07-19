@@ -10,7 +10,7 @@ program fwd1d
     integer                                     :: nL,lmax,Nt,Np,Nr,istat
 
     !earth radius and domain top radius
-    earth%r0 = 6371.0e3; earth%rmax=6.0e7;
+    earth%r0 = 6371.0e3; earth%rmax=7.0e7;
 
     ! number of 1D layers
     nL = 12
