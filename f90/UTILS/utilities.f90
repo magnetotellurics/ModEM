@@ -194,6 +194,27 @@ Contains
 
   end function maxNode
 
+  ! **************************************************************************
+  logical function ismember(n,Nvec)
+    ! replicates the corresponding function in Matlab: for an integer array,
+    ! outputs true if our integer is in the array, otherwise false.
+    ! author: A. Kelbert
+
+    integer                 :: n
+    integer, dimension(:)   :: Nvec
+    ! local
+    integer                 :: i
+
+    ismember = .false.
+    do i = 1,size(Nvec)
+        if (Nvec(i) == n) then
+            ismember = .true.
+            return
+        end if
+    end do
+
+  end function
+
 ! *****************************************************************************
 
       integer function findstr(str1,str2)

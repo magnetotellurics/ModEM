@@ -1,0 +1,95 @@
+# Makefile suited for building the FWD1D program
+# Generated using: ./fmkmf.pl [OPTIONS] FWD1D.f90 > Makefile
+# with command line options
+# -p .:INV:UTILS:FIELDS/FiniteDiff3D:EARTH:SENS:EARTH/DICT:EARTH/modelParam:EARTH/FWD:EARTH/ioMod:EARTH/Basics:EARTH/Jacobian
+# -f90 g95 (compiler)
+# -opt -g -ftrace=frame -fbounds-check (compiler optimisation)
+# -l -lblas -llapack (linking options)
+# -o ./objs/FWD1D/G95Debug (output directory for object files)
+
+#  Uncomment these lines to make program for Solaris OS (legacy)
+# F90 = f90
+# FFLAGS = -dalign -g -C -w  -L/usr/local/lib
+# LIBS = -xlic_lib=sunperf
+#  Uncomment these lines to make program with g95
+# include Makefile.local
+# OBJDIR = ./objs/3D_MT/G95Debug
+# F90 = g95
+# FFLAGS = -O2
+# FFLAGS = -g -ftrace=frame -fbounds-check
+# MPIFLAGS = -cpp # for serial code
+# MODULE = -fmod=$(OBJDIR)
+# LIBS = -lblas -llapack
+#  Uncomment these lines to make program with Intel compiler
+# include Makefile.local
+# OBJDIR = ./objs/3D_MT/IFortDebug
+# F90 = ifort
+# FFLAGS = -O3 -parallel -openmp #-heap-arrays
+# FFLAGS = -debug all -check bounds -traceback -heap-arrays
+# MPIFLAGS = -cpp # for serial code
+# MODULE = -module $(OBJDIR)
+# LIBS = -lblas -llapack
+#  Uncomment these lines to make program with PGI compiler
+# include Makefile.local
+# OBJDIR = ./objs/3D_MT/PGIDebug
+# F90 = pgf95  # mpif90
+# FFLAGS = -O3
+# FFLAGS = -g -Mprof=lines -Mbounds
+# MPIFLAGS = -Mpreprocess # for serial code
+# MPIFLAGS = -Bstatic  -Mipa=fast  -Mextend  -Kieee -Mpreprocess -DMPI
+# MODULE = -module $(OBJDIR)
+# LIBS = -llapack -lblas
+# LIBS = -L/usr/lib64 -llapack -lblas -lpgftnrtl -Mprof=lines
+
+# ------------------Macro-Defs---------------------
+include Makefile.local
+OBJDIR = ./objs/FWD1D/G95Debug
+F90 = g95 
+FFLAGS = -g -ftrace=frame -fbounds-check
+MPIFLAGS = -cpp
+MODULE = -fmod=$(OBJDIR)
+LIBS = -lblas -llapack
+
+# -------------------End-macro-Defs---------------------------
+OBJ = $(OBJDIR)/math_constants.o $(OBJDIR)/utilities.o $(OBJDIR)/polpak.o $(OBJDIR)/field1d.o $(OBJDIR)/FWD1D.o 
+
+
+all: FWD1D 
+
+# Here is the link step 
+FWD1D: $(OBJDIR) $(OBJ) 
+	 $(F90) -o $(OUTDIR)/FWD1D $(OBJ) $(LIBS) 
+
+# Here are the compile steps 
+
+$(OBJDIR): 
+	mkdir -p $(OBJDIR)
+
+$(OBJDIR)/math_constants.o:UTILS/math_constants.f90  
+	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) UTILS/math_constants.f90 -o $(OBJDIR)/math_constants.o
+
+$(OBJDIR)/utilities.o:UTILS/utilities.f90 $(OBJDIR)/math_constants.o 
+	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) UTILS/utilities.f90 -o $(OBJDIR)/utilities.o
+
+$(OBJDIR)/polpak.o:UTILS/polpak.f90  
+	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) UTILS/polpak.f90 -o $(OBJDIR)/polpak.o
+
+$(OBJDIR)/field1d.o:EARTH/FWD/field1d.f90 $(OBJDIR)/math_constants.o $(OBJDIR)/utilities.o $(OBJDIR)/polpak.o 
+	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) EARTH/FWD/field1d.f90 -o $(OBJDIR)/field1d.o
+
+$(OBJDIR)/FWD1D.o:FWD1D.f90 $(OBJDIR)/field1d.o 
+	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) FWD1D.f90 -o $(OBJDIR)/FWD1D.o
+
+# Type " make clean " to get rid of all object and module files 
+clean: 
+	cd $(OBJDIR); \
+	rm -f *~ *.o *.obj *.mod *.d *.s00 *.dbg *.stackdump \
+	`find . -mindepth 1 -name "*~"` 
+
+cleanall: clean 
+	rm -f $(OUTDIR)/FWD1D 
+
+src: clean 
+	tar cvfz $(ARCHIVE).tgz * 
+
+  

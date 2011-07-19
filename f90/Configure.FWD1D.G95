@@ -1,0 +1,11 @@
+#!/bin/sh
+if [ $# -le 0 ]; then
+    echo 1>&2 Usage: $0 Makefile1d.local
+    exit 127
+fi
+if [ -e $1 ]; then
+    rm $1
+fi
+perl fmkmf.pl -f90 g95 -opt '-g -ftrace=frame -fbounds-check' -mpi '-cpp' -l '-lblas -llapack' -o './objs/FWD1D/G95Debug' \
+-p .:INV:UTILS:FIELDS/FiniteDiff3D:EARTH:SENS:EARTH/DICT:EARTH/modelParam:EARTH/FWD:EARTH/ioMod:EARTH/Basics:EARTH/Jacobian \
+FWD1D.f90 > $1
