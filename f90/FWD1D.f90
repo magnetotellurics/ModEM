@@ -1,9 +1,13 @@
 program fwd1d
 
     use field1d
+    use modelspace
+    use input
     implicit none
 
     type(conf1d_t)                              :: earth
+    type(grid_t)                                :: grid
+    type(cvector)                               :: h1d
     complex(8), allocatable, dimension(:,:,:)   :: Hp,Ht,Hr
     real(8), allocatable, dimension(:)          :: R
     real(8), dimension(4)                       :: coef
@@ -32,9 +36,6 @@ program fwd1d
 
     !tolarence on toroidal potential
     earth%tol=1.e-9;
-
-    !max degree considered
-    earth%Nmax=100;
 
     !spherical harmonic sources
     lmax = 1;
@@ -74,13 +75,17 @@ program fwd1d
     !        3481. 3471. 3371. 3271. 3171. &
     !        3071. 2971. 2921. 2900. 2871.5 2871. );
 
-    allocate(Hp(Np,Nt,Nr),Ht(Np,Nt,Nr),Hr(Np,Nt,Nr), STAT=istat)
+    call create_cvector(grid, h1d, EDGE)
 
+    allocate(Hp(Np,Nt+1,Nr+1),Ht(Np+1,Nt,Nr+1),Hr(Np+1,Nt+1,Nr), STAT=istat)
+
+    !allocate(Hp(Np+1,Nt+1,Nr+1),Ht(Np+1,Nt+1,Nr+1),Hr(Np+1,Nt+1,Nr+1), STAT=istat)
 
     call sourceField1d(earth,lmax,coef,Np,Nt,R,Hp,Ht,Hr)
 
     deallocate(R, STAT=istat)
     deallocate(Hp,Ht,Hr, STAT=istat)
     deallocate(earth%layer,earth%sigma, STAT=istat)
+    call deall_cvector(h1d)
 
 end program fwd1d

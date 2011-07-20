@@ -51,7 +51,7 @@ MODULE = -fmod=$(OBJDIR)
 LIBS = -lblas -llapack
 
 # -------------------End-macro-Defs---------------------------
-OBJ = $(OBJDIR)/math_constants.o $(OBJDIR)/utilities.o $(OBJDIR)/polpak.o $(OBJDIR)/field1d.o $(OBJDIR)/FWD1D.o 
+OBJ = $(OBJDIR)/math_constants.o $(OBJDIR)/utilities.o $(OBJDIR)/polpak.o $(OBJDIR)/GridDef.o $(OBJDIR)/sg_vector.o $(OBJDIR)/field1d.o $(OBJDIR)/file_units.o $(OBJDIR)/paramfunc.o $(OBJDIR)/modeldef.o $(OBJDIR)/model_operators.o $(OBJDIR)/sg_scalar.o $(OBJDIR)/modelmap.o $(OBJDIR)/ModelSpace.o $(OBJDIR)/sg_boundary.o $(OBJDIR)/sg_sparse_vector.o $(OBJDIR)/iotypes.o $(OBJDIR)/transmitters.o $(OBJDIR)/receivers.o $(OBJDIR)/SolnSpace.o $(OBJDIR)/responses.o $(OBJDIR)/functionals.o $(OBJDIR)/DataSpace.o $(OBJDIR)/UserData.o $(OBJDIR)/dataTypes.o $(OBJDIR)/DataFunc.o $(OBJDIR)/iospec.o $(OBJDIR)/dataMisfit.o $(OBJDIR)/input.o $(OBJDIR)/FWD1D.o 
 
 
 all: FWD1D 
@@ -74,10 +74,82 @@ $(OBJDIR)/utilities.o:UTILS/utilities.f90 $(OBJDIR)/math_constants.o
 $(OBJDIR)/polpak.o:UTILS/polpak.f90  
 	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) UTILS/polpak.f90 -o $(OBJDIR)/polpak.o
 
-$(OBJDIR)/field1d.o:EARTH/FWD/field1d.f90 $(OBJDIR)/math_constants.o $(OBJDIR)/utilities.o $(OBJDIR)/polpak.o 
+$(OBJDIR)/GridDef.o:EARTH/GridDef.f90 $(OBJDIR)/math_constants.o 
+	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) EARTH/GridDef.f90 -o $(OBJDIR)/GridDef.o
+
+$(OBJDIR)/sg_vector.o:FIELDS/FiniteDiff3D/sg_vector.f90 $(OBJDIR)/math_constants.o $(OBJDIR)/utilities.o $(OBJDIR)/GridDef.o 
+	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) FIELDS/FiniteDiff3D/sg_vector.f90 -o $(OBJDIR)/sg_vector.o
+
+$(OBJDIR)/field1d.o:EARTH/FWD/field1d.f90 $(OBJDIR)/utilities.o $(OBJDIR)/polpak.o $(OBJDIR)/GridDef.o $(OBJDIR)/sg_vector.o 
 	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) EARTH/FWD/field1d.f90 -o $(OBJDIR)/field1d.o
 
-$(OBJDIR)/FWD1D.o:FWD1D.f90 $(OBJDIR)/field1d.o 
+$(OBJDIR)/file_units.o:UTILS/file_units.f90  
+	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) UTILS/file_units.f90 -o $(OBJDIR)/file_units.o
+
+$(OBJDIR)/paramfunc.o:EARTH/modelParam/paramfunc.f90 $(OBJDIR)/polpak.o 
+	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) EARTH/modelParam/paramfunc.f90 -o $(OBJDIR)/paramfunc.o
+
+$(OBJDIR)/modeldef.o:EARTH/modelParam/modeldef.f90 $(OBJDIR)/GridDef.o $(OBJDIR)/paramfunc.o 
+	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) EARTH/modelParam/modeldef.f90 -o $(OBJDIR)/modeldef.o
+
+$(OBJDIR)/model_operators.o:EARTH/modelParam/model_operators.f90 $(OBJDIR)/math_constants.o $(OBJDIR)/file_units.o $(OBJDIR)/utilities.o $(OBJDIR)/modeldef.o 
+	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) EARTH/modelParam/model_operators.f90 -o $(OBJDIR)/model_operators.o
+
+$(OBJDIR)/sg_scalar.o:FIELDS/FiniteDiff3D/sg_scalar.f90 $(OBJDIR)/math_constants.o $(OBJDIR)/GridDef.o 
+	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) FIELDS/FiniteDiff3D/sg_scalar.f90 -o $(OBJDIR)/sg_scalar.o
+
+$(OBJDIR)/modelmap.o:EARTH/modelParam/modelmap.f90 $(OBJDIR)/GridDef.o $(OBJDIR)/sg_scalar.o $(OBJDIR)/modeldef.o $(OBJDIR)/paramfunc.o 
+	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) EARTH/modelParam/modelmap.f90 -o $(OBJDIR)/modelmap.o
+
+$(OBJDIR)/ModelSpace.o:EARTH/ModelSpace.f90 $(OBJDIR)/model_operators.o $(OBJDIR)/modeldef.o $(OBJDIR)/modelmap.o 
+	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) EARTH/ModelSpace.f90 -o $(OBJDIR)/ModelSpace.o
+
+$(OBJDIR)/sg_boundary.o:FIELDS/FiniteDiff3D/sg_boundary.f90 $(OBJDIR)/math_constants.o $(OBJDIR)/GridDef.o $(OBJDIR)/sg_vector.o 
+	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) FIELDS/FiniteDiff3D/sg_boundary.f90 -o $(OBJDIR)/sg_boundary.o
+
+$(OBJDIR)/sg_sparse_vector.o:FIELDS/FiniteDiff3D/sg_sparse_vector.f90 $(OBJDIR)/math_constants.o $(OBJDIR)/GridDef.o $(OBJDIR)/sg_vector.o 
+	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) FIELDS/FiniteDiff3D/sg_sparse_vector.f90 -o $(OBJDIR)/sg_sparse_vector.o
+
+$(OBJDIR)/iotypes.o:EARTH/ioMod/iotypes.f90 $(OBJDIR)/math_constants.o $(OBJDIR)/file_units.o 
+	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) EARTH/ioMod/iotypes.f90 -o $(OBJDIR)/iotypes.o
+
+$(OBJDIR)/transmitters.o:EARTH/DICT/transmitters.f90 $(OBJDIR)/math_constants.o $(OBJDIR)/utilities.o $(OBJDIR)/iotypes.o 
+	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) EARTH/DICT/transmitters.f90 -o $(OBJDIR)/transmitters.o
+
+$(OBJDIR)/receivers.o:EARTH/DICT/receivers.f90 $(OBJDIR)/GridDef.o $(OBJDIR)/sg_sparse_vector.o $(OBJDIR)/math_constants.o $(OBJDIR)/utilities.o $(OBJDIR)/iotypes.o 
+	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) EARTH/DICT/receivers.f90 -o $(OBJDIR)/receivers.o
+
+$(OBJDIR)/SolnSpace.o:EARTH/SolnSpace.f90 $(OBJDIR)/math_constants.o $(OBJDIR)/file_units.o $(OBJDIR)/utilities.o $(OBJDIR)/sg_scalar.o $(OBJDIR)/sg_vector.o $(OBJDIR)/sg_boundary.o $(OBJDIR)/sg_sparse_vector.o $(OBJDIR)/transmitters.o $(OBJDIR)/receivers.o 
+	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) EARTH/SolnSpace.f90 -o $(OBJDIR)/SolnSpace.o
+
+$(OBJDIR)/responses.o:EARTH/Jacobian/responses.f90 $(OBJDIR)/SolnSpace.o $(OBJDIR)/receivers.o 
+	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) EARTH/Jacobian/responses.f90 -o $(OBJDIR)/responses.o
+
+$(OBJDIR)/functionals.o:EARTH/Jacobian/functionals.f90 $(OBJDIR)/math_constants.o 
+	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) EARTH/Jacobian/functionals.f90 -o $(OBJDIR)/functionals.o
+
+$(OBJDIR)/DataSpace.o:SENS/DataSpace.f90 $(OBJDIR)/utilities.o $(OBJDIR)/math_constants.o 
+	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) SENS/DataSpace.f90 -o $(OBJDIR)/DataSpace.o
+
+$(OBJDIR)/UserData.o:EARTH/UserData.f90 $(OBJDIR)/DataSpace.o $(OBJDIR)/modeldef.o $(OBJDIR)/iotypes.o 
+	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) EARTH/UserData.f90 -o $(OBJDIR)/UserData.o
+
+$(OBJDIR)/dataTypes.o:EARTH/DICT/dataTypes.f90 $(OBJDIR)/math_constants.o $(OBJDIR)/utilities.o $(OBJDIR)/iotypes.o 
+	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) EARTH/DICT/dataTypes.f90 -o $(OBJDIR)/dataTypes.o
+
+$(OBJDIR)/DataFunc.o:EARTH/DataFunc.f90 $(OBJDIR)/model_operators.o $(OBJDIR)/SolnSpace.o $(OBJDIR)/dataTypes.o $(OBJDIR)/transmitters.o $(OBJDIR)/receivers.o $(OBJDIR)/functionals.o $(OBJDIR)/responses.o 
+	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) EARTH/DataFunc.f90 -o $(OBJDIR)/DataFunc.o
+
+$(OBJDIR)/iospec.o:EARTH/ioMod/iospec.f90 $(OBJDIR)/file_units.o 
+	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) EARTH/ioMod/iospec.f90 -o $(OBJDIR)/iospec.o
+
+$(OBJDIR)/dataMisfit.o:EARTH/Jacobian/dataMisfit.f90 $(OBJDIR)/responses.o $(OBJDIR)/functionals.o $(OBJDIR)/model_operators.o $(OBJDIR)/UserData.o $(OBJDIR)/SolnSpace.o $(OBJDIR)/DataSpace.o $(OBJDIR)/dataTypes.o $(OBJDIR)/DataFunc.o $(OBJDIR)/iotypes.o $(OBJDIR)/iospec.o 
+	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) EARTH/Jacobian/dataMisfit.f90 -o $(OBJDIR)/dataMisfit.o
+
+$(OBJDIR)/input.o:EARTH/ioMod/input.f90 $(OBJDIR)/math_constants.o $(OBJDIR)/file_units.o $(OBJDIR)/GridDef.o $(OBJDIR)/utilities.o $(OBJDIR)/modeldef.o $(OBJDIR)/dataMisfit.o $(OBJDIR)/DataSpace.o $(OBJDIR)/SolnSpace.o $(OBJDIR)/iotypes.o $(OBJDIR)/UserData.o $(OBJDIR)/dataTypes.o $(OBJDIR)/transmitters.o $(OBJDIR)/receivers.o $(OBJDIR)/model_operators.o 
+	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) EARTH/ioMod/input.f90 -o $(OBJDIR)/input.o
+
+$(OBJDIR)/FWD1D.o:FWD1D.f90 $(OBJDIR)/field1d.o $(OBJDIR)/ModelSpace.o $(OBJDIR)/input.o 
 	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) FWD1D.f90 -o $(OBJDIR)/FWD1D.o
 
 # Type " make clean " to get rid of all object and module files 

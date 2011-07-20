@@ -4,6 +4,8 @@ module field1d
 
   use utilities
   use polpak
+  use griddef
+  use sg_vector
   implicit none
 
   ! ***************************************************************************
@@ -15,7 +17,6 @@ module field1d
       real(8), dimension(:), pointer    :: sigma ! layer conductivities
       real(8)                           :: tau ! near-surface conductance
       real(8)                           :: T ! period in seconds
-      integer                           :: Nmax ! maximum number of iterations
       real(8)                           :: tol ! tolerance
       real(8)                           :: r0 ! Earth's radius in meters
       real(8)                           :: rmax ! boundary of the domain in meters
@@ -26,62 +27,93 @@ module field1d
 
 Contains
 
-!subroutine vsharm(n,cost,phi,Y,Yt,YpDst)
+subroutine vsharm(lmax,cost,phi,Y,Yt,YpDst)
 ! vector spherical harmonic components
 ! Ynm=sqrt((2n+1)/4pi*(n-m)!/(n+m)!)*Pnm(cost)(exp(imphi))
-!
-!	integer, intent(in)		            :: n
-!	real(8), intent(in)		            :: cost,phi
-!	real(8), intent(inout)		        :: Y
-!	real(8), intent(inout), optional    :: Yt,YpDst
-!
-!    Y=diag([1,(-1).^(1:n)/sqrt(2)])*legendre(n,cost,'sch');
-!
-!    if (.not. present(Yt)) then
-!        return
-!    end if
-!
-!    Yt = zeros(size(Y));
-!    if n>0
-!        Yt(1,:)=sqrt((n)*(n+1))*Y(2,:);
-!        do m=1,n-1
-!            Yt(m+1,:)=(sqrt((n-m)*(n+m+1))*Y(m+2,:)...
-!                       -sqrt((n+m)*(n-m+1))*Y(m,:))/2;
-!        end do
-!
-!        Yt(n+1,:)=-sqrt(n/2)*Y(n,:);
-!
-!        if nargin==3 && ~isempty(phi)
-!            ep=exp(cmplx(0.,1.)*phi);
-!            do m=1,n
-!                Y(m+1,:)=ep.^m.*Y(m+1,:);
-!                Yt(m+1,:)=ep.^m.*Yt(m+1,:);
-!            end do
-!        end
-!    end
-!
-!    if (.not. present(YpDst)) then
-!        return
-!    end if
-!
-!    YpDst=zeros(size(Y));
-!    if (n>0) then
-!        ids=find(abs(cost)==1);
-!        do m=1,n-1
-!            YpDst(m+1,:)=cmplx(0.,1.)*m*Y(m+1,:)./sqrt(1-cost.^2);
-!
-!            if(.not. isempty(ids)) then
-!                YpDst(m+1,ids)=sqrt((n-m)*(n+m+1))*(Y(m+2,ids)...
-!                  +sqrt((n+m)*(n-m+1))*Y(m,ids))./(cmplx(0.,2.)*cost(ids));
-!            end if
-!        end do
-!        YpDst(n+1,1:end)=cmplx(0.,1.)*n*Y(n+1,1:end)./sqrt(1-cost(1:end).^2);
-!        if (.not. isempty(ids)) then
-!            YpDst(n+1,ids)=sqrt(2*n)*Y(n,ids)./(cmplx(0.,2.)*cost(ids));
-!        end if
-!    end if
-!
-!end subroutine
+
+	integer, intent(in)		                                    :: lmax
+	real(8), intent(in)		                                    :: cost,phi
+	complex(8), dimension(lmax,lmax+1), intent(inout)		    :: Y
+	complex(8), dimension(lmax,lmax+1), intent(inout), optional :: Yt,YpDst
+	! local
+	real(8), dimension(lmax,lmax+1)     :: P_lm
+	real(8)     :: tiny
+	integer     :: l,m
+	complex(8)  :: ep
+
+	if (lmax <= 0) then
+	    write(0,*) 'Error in vsharm: this only works for lmax >= 1'
+	end if
+
+    !compute Schmidt Seminormalized Associated Legendre Functions, defined as:
+    !Q_n^m(x) = P_n(x) for m=0
+    !Q_n^m(x) = (-1)^m sqrt ( 2 * (n-m)! / (n+m)! ) P_n^m for m>0
+    P_lm(:,:) = 0.0d0
+    call legendre_associated(lmax,0,cost,P_lm(:,1))
+	do m = 1,lmax
+        call legendre_associated(lmax,m,cost,P_lm(:,m+1))
+        do l = m,lmax
+            P_lm(l,m+1) = P_lm(l,m+1) * ( (-1)**m ) * &
+                sqrt ( 2.0d0 * ( d_factorial(l - m) ) / ( d_factorial(l + m) ) )
+        end do
+    end do
+
+    !now convert this to vector spherical harmonics
+    Y(:,:) = cmplx(0.0d0,0.0d0)
+    Y(:,1) = P_lm(:,1)
+    do l = 1,lmax
+        do m = 1,l
+            Y(l,m+1) = ((-1)**(m)/sqrt(2.0d0)) * P_lm(l,m+1)
+        end do
+    end do
+
+    if (.not. present(Yt)) then
+        return
+    end if
+
+    Yt(:,:) = cmplx(0.0d0,0.0d0)
+    do l = 1,lmax
+
+        Yt(l,1)=sqrt((l)*(l+1.0d0))*Y(l,2);
+        do m=1,l-1
+            Yt(l,m+1)=(sqrt((l-m)*(l+m+1.0d0))*Y(l,m+2) - sqrt((l+m)*(l-m+1.0d0))*Y(l,m))/2
+        end do
+        Yt(l,l+1)=-sqrt(l/2.0d0)*Y(l,l)
+
+        ep=exp(cmplx(0.0d0,1.0d0)*phi);
+        do m=1,l
+            Y(l,m+1)=(ep**m)*Y(l,m+1);
+            Yt(l,m+1)=(ep**m)*Yt(l,m+1);
+        end do
+
+    end do
+
+    if (.not. present(YpDst)) then
+        return
+    end if
+
+    YpDst(:,:) = cmplx(0.0d0,0.0d0)
+    tiny=1e-30
+    do l = 1,lmax
+
+        !presumably, YpDst(:,1) = 0
+        do m = 1,l-1
+            if (abs(abs(cost)-1.0d0) < tiny) then
+                YpDst(l,m+1)=sqrt((l-m)*(l+m+1.0d0))*(Y(l,m+2) &
+                  +sqrt((l+m)*(l-m+1.0d0))*Y(l,m))/(cmplx(0.0d0,2.0d0)*cost)
+            else
+                YpDst(l,m+1)=cmplx(0.0d0,1.0d0)*m*Y(l,m+1)/sqrt(1.0d0-cost**2)
+            end if
+        end do
+        if (abs(abs(cost)-1.0d0) < tiny) then
+            YpDst(l,l+1)=sqrt(2.0d0*l)*Y(l,l)/(cmplx(0.0d0,2.0d0)*cost)
+        else
+            YpDst(l,l+1)=cmplx(0.0d0,1.0d0)*l*Y(l,l+1)/sqrt(1.0d0-cost**2)
+        end if
+
+    end do
+
+end subroutine
 
 subroutine airprop(lmax,r0,rn0,rnp0,r,rni,rnip,sumup)
 !airprop propagates into the air(r0) 
@@ -171,7 +203,7 @@ subroutine rbsls0(lmax,z0,z,type,Rbl,Rblp)
 
             allocate(Rl(lmax), STAT=istat)
             call rrbessel(lmax,z,Rl)
-            write(*,*) 'Rl=',Rl
+            !write(*,*) 'Rl=',Rl
             Sl = 1./ctwo*(exp(cone*z-dimag(z0))-exp(-cone*z-dimag(z0)))
             do l=1,lmax
                 Sl0=(2*l+1)/z0*Sl
@@ -295,9 +327,9 @@ subroutine rbslprop(lmax,z0,phn0,phnp0,z,phn,phnp)
     integer     :: l,istat
 
     call rbsls0(lmax,z0,z0,1,Sn0,Snp0)
-    write(*,*) 'Sn0 type 1:',Sn0
     call rbsls0(lmax,z0,z0,2,Cn0,Cnp0)
-    write(*,*) 'Cn0 type 2:',Cn0
+    !write(*,*) 'Sn0 type 1:',Sn0
+    !write(*,*) 'Cn0 type 2:',Cn0
 
     wr = -cmplx(0.,1.);
 
@@ -320,48 +352,40 @@ subroutine rbslprop(lmax,z0,phn0,phnp0,z,phn,phnp)
 
 end subroutine
 
-
-subroutine sourceField1d(earth,lmax,coeff,Np,Nt,R,Hp,Ht,Hr)
+subroutine sourcePotential(earth,lmax,Rr,Rs,Tnr,Tnsp)
 !in Matlab, optionally shift to mid-faces
 
-	type (conf1d_t), intent(in)	        :: earth ! configuration structure
-	integer, intent(in)		            :: lmax ! maximum sph. harm. degree
-	real(8), dimension(:), intent(in)   :: coeff ! vector of sph. harm. coeff.
-    integer, intent(in)                 :: Np,Nt ! lateral dimensions of the grid
-	real(8), dimension(:), intent(in)	:: R ! radii for the grid
-	complex(8), dimension(:,:,:), intent(inout):: Hp,Ht,Hr
-	! local
-	real(8), dimension(size(R)) :: Rr,Rs
+    type (conf1d_t), intent(in)         :: earth ! configuration structure
+    integer, intent(in)                 :: lmax ! maximum sph. harm. degree
+    real(8), dimension(:), intent(in)   :: Rr,Rs ! radii for vertical and lateral potentials
+    complex(8), dimension(:,:), intent(inout)  :: Tnr,Tnsp ! potential coefficients
+    ! local
     integer, dimension(lmax)    :: Ns
-	complex(8), dimension(:,:), allocatable    :: Tnr,Tnsp
     complex(8), dimension(:), allocatable      :: rn0,rnp0,phn0,phnp0
     complex(8), dimension(:), allocatable      :: tnr1,tnsp1,tn,tnp,tlmp,tmp
     real(8), dimension(:), allocatable         :: rl
     complex(8), dimension(:), allocatable      :: kl
-	real(8)				:: mu0,pi,omega,rmax
+    real(8)             :: mu0,pi,omega,rmax
     integer             :: idr,idrmin,idrmax,ids,idsmin,idsmax
-    integer             :: i,j,l,ll,Nl,Nrr,Nrs,Nd,istat,ncoeff,icoeff
+    integer             :: i,j,k,l,m,ll,Nl,Nrr,Nrs,istat
     logical             :: sumup
 
     !Physical model
     mu0 = 1.256637e-6 !(H/m)
     pi = 3.14159265357898
 
-    !No computations are performed for l=0 (this is a special case)
-    ncoeff=0
-    do l=0,lmax
-      ncoeff = ncoeff + (2*l+1)
-    end do
-    if (size(coeff) .ne. ncoeff) then
-        write(0,*) 'Error in sourceField1d: bad sph. harm. coeffs vector (size ',size(coeff),'); must be size ',ncoeff
+    !No computations are performed for l=0
+    if (lmax <= 0) then
+        write(0,*) 'Error in sourcePotential: no potentials exist for degree 0 (no magnetic monopoles)'
+        return
     end if
 
     Nl=size(earth%layer) ! number of layers
     if (size(earth%sigma) .ne. Nl) then
-      write(0,*) 'Error in sourceField1d: Number of elements in arrays layer and sigma must be equal'
+      write(0,*) 'Error in sourcePotential: Number of elements in arrays layer and sigma must be equal'
     end if
     if (earth%layer(1) > 0) then
-      write(0,*) 'Error in sourceField1d: Depth of 1st layer must be zero'
+      write(0,*) 'Error in sourcePotential: Depth of 1st layer must be zero'
     end if
 
     allocate(rl(Nl),kl(Nl),STAT=istat)
@@ -374,44 +398,40 @@ subroutine sourceField1d(earth,lmax,coeff,Np,Nt,R,Hp,Ht,Hr)
     !-----------------------------------------------------------!
 
     !Radial response
-    Rs=R(:) ! radii for lateral components
     Nrs=size(Rs)
-    Rr=Rs ! radii for vertical components
-    Nrr=Nrs
-    Nd=lmax ! total number of degrees in sph. harm. expansion
+    Nrr=size(Rr)
 
-    allocate(Tnr(Nrr,Nd),Tnsp(Nrs,Nd),STAT=istat)
-    allocate(tnr1(Nd),tnsp1(Nd),tn(Nd),tnp(Nd),tlmp(Nd),tmp(Nd),STAT=istat)
-    allocate(rn0(Nd),rnp0(Nd),phn0(Nd),phnp0(Nd),STAT=istat)
+    allocate(tnr1(lmax),tnsp1(lmax),tn(lmax),tnp(lmax),tlmp(lmax),tmp(lmax),STAT=istat)
+    allocate(rn0(lmax),rnp0(lmax),phn0(lmax),phnp0(lmax),STAT=istat)
 
     !within the inner core
     call find_index(Rr,0.d0,rl(Nl),idrmin,idrmax)
-    write(*,*) 'Layer ',Nl,'(Core): ',idrmin,idrmax
+    !write(*,*) 'Layer ',Nl,'(Core): ',idrmin,idrmax
     if ((idrmin > 0) .and. (idrmax > 0)) then
         do idr=idrmin,idrmax
             call rbsls0(lmax,kl(Nl)*rl(Nl),kl(Nl)*Rr(idr),1,tnr1,tmp)
             Tnr(idr,:)=tnr1(:)
-            write(*,*) 'core,idr,tnr1: ',Nl,idr,tnr1
+            !write(*,*) 'core,idr,tnr1: ',Nl,idr,tnr1
         end do
     end if
 
     call find_index(Rs,0.d0,rl(Nl),idsmin,idsmax)
-    write(*,*) 'Layer ',Nl,'(Core): ',idsmin,idsmax
+    !write(*,*) 'Layer ',Nl,'(Core): ',idsmin,idsmax
     if ((idsmin > 0) .and. (idsmax > 0)) then
         do ids=idsmin,idsmax
             call rbsls0(lmax,kl(Nl)*rl(Nl),kl(Nl)*Rs(ids),1,tmp,tnsp1)
             Tnsp(ids,:)=kl(Nl)*tnsp1(:)
-            write(*,*) 'core,ids,tnsp1: ',Nl,ids,tnsp1
+            !write(*,*) 'core,ids,tnsp1: ',Nl,ids,tnsp1
         end do
     end if
-    
+
     call rbsls0(lmax,kl(Nl)*rl(Nl),kl(Nl)*rl(Nl),1,tn,tnp)
-    write(*,*) 'tn: ',tn
-    write(*,*) 'tnp: ',tnp
+    !write(*,*) 'tn: ',tn
+    !write(*,*) 'tnp: ',tnp
     do i = 1,lmax
         tnp(i) = kl(Nl)*tnp(i)/tn(i)
     end do
-    
+
     do i = 1,lmax
         Tnr(:,i)=Tnr(:,i)/tn(i)
         Tnsp(:,i)=Tnsp(:,i)/tn(i)
@@ -426,22 +446,22 @@ subroutine sourceField1d(earth,lmax,coeff,Np,Nt,R,Hp,Ht,Hr)
         end do
 
         call find_index(Rr,rl(ll+1),rl(ll),idrmin,idrmax)
-        write(*,*) 'Layer ',ll,': ',idrmin,idrmax
+        !write(*,*) 'Layer ',ll,': ',idrmin,idrmax
         if ((idrmin > 0) .and. (idrmax > 0)) then
             do idr=idrmin,idrmax
                 call rbslprop(lmax,kl(ll)*rl(ll+1),phn0,phnp0,kl(ll)*Rr(idr),tnr1,tmp)
                 Tnr(idr,:)=tnr1(:)
-                write(*,*) 'll,idr,tnr1: ',ll,idr,tnr1
+                !write(*,*) 'll,idr,tnr1: ',ll,idr,tnr1
             end do
         end if
-        
+
         call find_index(Rs,rl(ll+1),rl(ll),idsmin,idsmax)
-        write(*,*) 'Layer ',ll,': ',idsmin,idsmax
+        !write(*,*) 'Layer ',ll,': ',idsmin,idsmax
         if ((idsmin > 0) .and. (idsmax > 0)) then
             do ids=idsmin,idsmax
                 call rbslprop(lmax,kl(ll)*rl(ll+1),phn0,phnp0,kl(ll)*Rs(ids),tmp,tnsp1)
                 Tnsp(ids,:)=kl(ll)*tnsp1(:)
-                write(*,*) 'll,ids,tnsp1: ',ll,ids,tnsp1
+                !write(*,*) 'll,ids,tnsp1: ',ll,ids,tnsp1
             end do
         end if
 
@@ -465,24 +485,24 @@ subroutine sourceField1d(earth,lmax,coeff,Np,Nt,R,Hp,Ht,Hr)
     end do
 
     call find_index(Rr,rl(1),rmax,idrmin,idrmax)
-    write(*,*) 'Layer 1 (Air): ',idrmin,idrmax
+    !write(*,*) 'Layer 1 (Air): ',idrmin,idrmax
     if ((idrmin > 0) .and. (idrmax > 0)) then
         do idr=idrmin,idrmax
             sumup = .true.
             call airprop(lmax,rl(1),rn0,rnp0,Rr(idr),tnr1,tmp,sumup)
             Tnr(idr,:)=tnr1(:)
-            write(*,*) 'air,idr,tnr1: ',1,idr,tnr1
+            !write(*,*) 'air,idr,tnr1: ',1,idr,tnr1
         end do
     end if
 
     call find_index(Rs,rl(1),rmax,idsmin,idsmax)
-    write(*,*) 'Layer 1 (Air): ',idsmin,idsmax
+    !write(*,*) 'Layer 1 (Air): ',idsmin,idsmax
     if ((idsmin > 0) .and. (idsmax > 0)) then
         do ids=idsmin,idsmax
             sumup = .true.
             call airprop(lmax,rl(1),rn0,rnp0,Rs(ids),tmp,tnsp1,sumup)
             Tnsp(ids,:)=tnsp1(:)
-            write(*,*) 'air,ids,tnsp1: ',1,ids,tnsp1
+            !write(*,*) 'air,ids,tnsp1: ',1,ids,tnsp1
         end do
     end if
 
@@ -505,55 +525,194 @@ subroutine sourceField1d(earth,lmax,coeff,Np,Nt,R,Hp,Ht,Hr)
     end do
     !-----------------------------------------------------------!
 
+    deallocate(tnr1,tnsp1,tn,tnp,tlmp,tmp,STAT=istat)
+    deallocate(rn0,rnp0,phn0,phnp0,STAT=istat)
+    deallocate(rl,kl,STAT=istat)
+
+end subroutine
+
+
+subroutine sourceField1d(earth,lmax,coeff,Np,Nt,R,Hp,Ht,Hr)
+!in Matlab, optionally shift to mid-faces
+
+	type (conf1d_t), intent(in)	        :: earth ! configuration structure
+	integer, intent(in)		            :: lmax ! maximum sph. harm. degree
+	real(8), dimension(:), intent(in)   :: coeff ! vector of sph. harm. coeff.
+    integer, intent(in)                 :: Np,Nt ! lateral dimensions of the grid
+	real(8), dimension(:), intent(in)	:: R ! radii for the grid
+	complex(8), dimension(:,:,:), intent(inout):: Hp,Ht,Hr
+	! local
+	real(8), dimension(size(R)) :: Rr,Rs
+	real(8), dimension(Np+1)    :: ph
+	real(8), dimension(Nt+1)    :: th
+    integer, dimension(lmax)    :: Ns
+    complex(8), dimension(lmax,lmax+1)         :: Yp,Yt,Yr ! indices (l,m+1), m=0,..,lmax
+	complex(8), dimension(:,:), allocatable    :: Tnr,Tnsp
+    real(8), dimension(:), allocatable         :: coefl
+	real(8)				:: dp,dt
+    integer             :: idr,idrmin,idrmax,ids,idsmin,idsmax
+    integer             :: i,j,k,l,m,Nrr,Nrs,Nd,istat,ncoeff,icoeff
+    complex(8)          :: C
+
+    !No computations are performed for l=0 (no magnetic monopoles) so zero coeff is never used
+    ncoeff=0
+    do l=0,lmax
+      ncoeff = ncoeff + (2*l+1)
+    end do
+    if (size(coeff) .ne. ncoeff) then
+        write(0,*) 'Error in sourceField1d: bad sph. harm. coeffs vector (size ',size(coeff),'); must be size ',ncoeff
+    end if
+
+    !-----------------------------------------------------------!
+
+    !compute source potentials
+    Rs=R(:) ! radii for lateral components
+    Nrs=size(Rs)
+    Rr=Rs ! radii for vertical components
+    Nrr=Nrs
+    Nd=lmax ! total number of degrees in sph. harm. expansion
+
+    allocate(Tnr(Nrr,Nd),Tnsp(Nrs,Nd),STAT=istat)
+    
+    call sourcePotential(earth,lmax,Rr,Rs,Tnr,Tnsp)
+    
     Hp=0
     Ht=0
     Hr=0
 
-!    !field componets
-!    theta=linspace(0,pi,Nt+1); theta(end)=[];
-!    phi=linspace(0,2*pi,Np+1); phi(end)=[];
-!
-!    dt=pi/Nt;
-!    dp=pi/Np;
-!
-!    [p,t]=ndgrid(phi,theta);
-!
-!    icoeff = 0
-!
-!    do l=0,lmax
-!
-!        allocate(coefl(2*l+1), STAT=istat)
-!
-!        coefl = coeff(icoeff+1:icoeff+2*l+1)
-!
-!        call vsharm(l,cos(t(:)),p(:)+dp/2,tmp,tmp,Yp)
-!
-!        Hps=(Yp.*coefl(1:l+1)+Yp(2:end,:)*coefl(l+2:end))*(Tnsp(:,l)./Rs)
-!
-!        call vsharm(l,cos(t(:)+dt/2),p(:),tmp,Yt)
-!
-!        Hts=(Yt.*coefl(1:l+1)+Yt(2:end,:)*coefl(l+2:end))*(Tnsp(:,l)./Rs)
-!
-!        call vsharm(l,cos(t(:)),p(:),Yr)
-!
-!        Hrs=-l*(l+1)*(Yr.*coefl(1:l+1) + Yr(2:end,:)*coefl(l+2:end))*(Tnr(:,l)./(Rr).^2)
-!
-!        icoeff = icoeff+2*l+1
-!
-!        deallocate(coefl, STAT=istat)
-!
-!        Hp=Hp+Hps;
-!        Ht=Ht+Hts;
-!        Hr=Hr+Hrs;
-!    end do
-!
-!    Hp=reshape(conj(Hp),Np,Nt,[]);
-!    Ht=reshape(conj(Ht),Np,Nt,[]);
-!    Hr=reshape(conj(Hr),Np,Nt,[]);
+    !compute field components
+    dt=pi/Nt
+    dp=2*pi/Np
+
+    do j = 1,Nt+1
+        th(j) = dt*(j-1)
+    end do
+    do i = 1,Np+1
+        ph(i) = dp*(i-1)
+    end do
+    write(*,*) 'Theta: ',th*180/pi
+    write(*,*) 'Phi: ',ph*180/pi
+
+    Yp(:,:) = cmplx(0.0d0,0.0d0)
+    Yt(:,:) = cmplx(0.0d0,0.0d0)
+    Yr(:,:) = cmplx(0.0d0,0.0d0)
+
+    !compute vector spherical harmonics for all degrees and orders at one node
+    do j = 1,Nt+1
+        do i = 1,Np+1
+
+            !Yp at longitudinal mid-edges
+            call vsharm(lmax,cos(th(j)),ph(i)+dp/2,Yr,Yt,Yp)
+
+            !Yt at latitudinal mid-edges
+            call vsharm(lmax,cos(th(j)+dt/2),ph(i),Yr,Yt)
+
+            !Yr at vertical mid-edges
+            call vsharm(lmax,cos(th(j)),ph(i),Yr)
+
+        end do
+    end do
+
+    ! ph component of the field
+    do j = 1,Nt+1
+        do i = 1,Np
+            do k = 1,Nrs
+
+                !ignore l=0 (no magnetic monopoles)
+                icoeff = 1
+
+                do l = 1,lmax
+
+                    allocate(coefl(2*l+1), STAT=istat)
+
+                    !ordered m=0,1,-1,2,-2 etc (NOT like in Matlab)
+                    coefl = coeff(icoeff+1:icoeff+2*l+1)
+
+                    !m=0 goes first
+                    Hp(i,j,k) = Yp(l,1)*coefl(1)*(Tnsp(k,l)/Rs(k))
+
+                    do m = 1,l
+                        C = (Yp(l,m+1)*coefl(2*m) + Yp(l,m+1)*coefl(2*m+1))
+                        Hp(i,j,k) = Hp(i,j,k) + C*(Tnsp(k,l)/Rs(k))
+                    end do
+
+                    icoeff = icoeff+2*l+1
+
+                    deallocate(coefl, STAT=istat)
+
+                end do ! degrees
+
+            end do ! r
+        end do ! ph
+    end do ! th
+
+    ! th component of the field
+    do j = 1,Nt
+        do i = 1,Np+1
+            do k = 1,Nrs
+
+                !ignore l=0 (no magnetic monopoles)
+                icoeff = 1
+
+                do l = 1,lmax
+
+                    allocate(coefl(2*l+1), STAT=istat)
+
+                    !ordered m=0,1,-1,2,-2 etc (NOT like in Matlab)
+                    coefl = coeff(icoeff+1:icoeff+2*l+1)
+
+                    !m=0 goes first
+                    Ht(i,j,k) = Yt(l,1)*coefl(1)*(Tnsp(k,l)/Rs(k))
+
+                    do m = 1,l
+                        C = (Yt(l,m+1)*coefl(2*m) + Yt(l,m+1)*coefl(2*m+1))
+                        Ht(i,j,k) = Ht(i,j,k) + C*(Tnsp(k,l)/Rs(k))
+                    end do
+
+                    icoeff = icoeff+2*l+1
+
+                    deallocate(coefl, STAT=istat)
+
+                end do ! degrees
+
+            end do ! r
+        end do ! ph
+    end do ! th
+
+    ! vertical component of the field
+    do j = 1,Nt+1
+        do i = 1,Np+1
+            do k = 1,Nrr
+
+                !ignore l=0 (no magnetic monopoles)
+                icoeff = 1
+
+                do l = 1,lmax
+
+                    allocate(coefl(2*l+1), STAT=istat)
+
+                    !ordered m=0,1,-1,2,-2 etc (NOT like in Matlab)
+                    coefl = coeff(icoeff+1:icoeff+2*l+1)
+
+                    !m=0 goes first
+                    Hr(i,j,k) = -l*(l+1)*Yr(l,1)*coefl(1)*(Tnr(k,l)/Rr(k)**2)
+
+                    do m = 1,l
+                        C = - l*(l+1)*(Yr(l,m+1)*coefl(2*m) + Yr(l,m+1)*coefl(2*m+1))
+                        Hr(i,j,k) = Hr(i,j,k) + C*(Tnr(k,l)/Rr(k)**2)
+                    end do
+
+                    icoeff = icoeff+2*l+1
+
+                    deallocate(coefl, STAT=istat)
+
+                end do ! degrees
+
+            end do ! r
+        end do ! ph
+    end do ! th
 
     deallocate(Tnr,Tnsp,STAT=istat)
-    deallocate(tnr1,tnsp1,tn,tnp,tlmp,tmp,STAT=istat)
-    deallocate(rn0,rnp0,phn0,phnp0,STAT=istat)
 
 end subroutine
 
