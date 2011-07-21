@@ -131,32 +131,64 @@ Contains
 
   ! **************************************************************************
   subroutine find_index(array, xmin, xmax, imin, imax)
-    ! For an increasing array, find the minimum and maximum indices such that
-    ! xmin <= array(i) < xmax
+    ! For an increasing or decreasing array,
+    ! find the minimum and maximum indices
+    ! such that xmin <= array(i) < xmax
     ! author: A. Kelbert
 
     implicit none
     real (kind=prec), dimension(:), intent(in)     :: array
     real (kind=prec), intent(in)                   :: xmin,xmax
     integer, intent(out)                           :: imin,imax
+    ! local
+    logical                                     :: incr
+    integer                                     :: i,n
 
-    integer                                     :: ix
-    integer                                     :: i
+    ! quick check to see what kind of array this is
+    n = size(array)
+    if (array(1) <= array(n)) then
+        incr = .true.
+    else
+        incr = .false.
+    endif
 
-    imin = 0
-    do i = 1,size(array)
-       if(clean(array(i)) .ge. clean(xmin)) then
-          imin = i
-          exit
-       endif
-    enddo
+    if (incr) then
+        ! for an increasing array...
 
-    imax = 0
-    do i = imin,size(array)
-       if(clean(array(i)) .lt. clean(xmax)) then
-          imax = i
-       endif
-    enddo
+        imin = 0
+        do i = 1,n
+           if(clean(array(i)) .ge. clean(xmin)) then
+              imin = i
+              exit
+           endif
+        enddo
+
+        imax = 0
+        do i = imin,n
+           if(clean(array(i)) .lt. clean(xmax)) then
+              imax = i
+           endif
+        enddo
+
+    else
+        ! for a decreasing array...
+
+        imax = 0
+        do i = n,1,-1
+           if(clean(array(i)) .ge. clean(xmin)) then
+              imax = i
+              exit
+           endif
+        enddo
+
+        imin = 0
+        do i = imax,1,-1
+           if(clean(array(i)) .lt. clean(xmax)) then
+              imin = i
+           endif
+        enddo
+
+    endif
 
   end subroutine find_index
 

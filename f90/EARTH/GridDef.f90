@@ -1,21 +1,13 @@
 ! *****************************************************************************
-! * BOP
-! * module: stag_grid
-! Basic data structure to define numerical simulation on a staggered grid, like
-! grid structure, staggered grid vectors (grid/ cell edges, grid/ cell faces;
-! full storage and sparse), scalars (grid/cell centers, grid/ cell corners),
-! and tangential boundary conditions.
-! Belongs to SG_Basics class: staggered cartesian grid, data
-! types defined on this grid, and operations defined on these data types. Not
-! specific to EM problem, no dependency on outside (from other classes)
-! modules other than from SG_Basics.
-! * EOP
+! * 3D global spherical grid definitions and basic subroutines
 
 module GridDef
 
   ! all the modules being used are being listed explicitly (no
   ! inheritance)
   use math_constants
+  use file_units
+  use utilities
   implicit none
 
   ! Don't forget to overload the '=' sign: depending on the compiler, might
@@ -63,11 +55,15 @@ module GridDef
 
  	 ! storing the (spherical) grid in Randie Mackie's format
 	 ! when allocated, dimensions will be x(nx), y(ny+1), z(nz+1)
-	 real(8), pointer, dimension(:)			:: x,y,z
+	 ! (this should only be used for input, set up and output)
+	 real(8), pointer, dimension(:)			    :: x,y,z
+
 	 ! storing the cell node coordinates, in radians (ph,th) and km (r)
 	 ! dimensions are ph(nx+1), th(ny+1), r(nz+1)
 	 ! the nx+1'st longitude ph(nx+1) = 360.0 * d2r (for interpolation)
 	 real(8), pointer, dimension(:)  			:: ph,th,r
+	 ! finally, storing the distances between cell nodes
+     real(8), pointer, dimension(:)             :: dp,dt,dr
 
      ! allocated:  .true.  all the arrays have been allocated
      logical		                             :: allocated = .false.
@@ -93,6 +89,7 @@ Contains
        grid%nz = nz
        allocate(grid%x(nx), grid%y(ny+1), grid%z(nz+1), STAT=istat)
        allocate(grid%ph(nx+1), grid%th(ny+1), grid%r(nz+1), STAT=istat)
+       allocate(grid%dp(nx), grid%dt(ny), grid%dr(nz), STAT=istat)
        grid%allocated = .true.
 
      end subroutine create_grid
@@ -111,6 +108,9 @@ Contains
        if (associated(grid%ph)) deallocate(grid%ph, STAT=istat)
        if (associated(grid%th)) deallocate(grid%th, STAT=istat)
        if (associated(grid%r)) deallocate(grid%r, STAT=istat)
+       if (associated(grid%dp)) deallocate(grid%dp, STAT=istat)
+       if (associated(grid%dt)) deallocate(grid%dt, STAT=istat)
+       if (associated(grid%dr)) deallocate(grid%dr, STAT=istat)
        grid%allocated = .false.
 
      end subroutine deall_grid
@@ -143,9 +143,122 @@ Contains
        gridOut%ph = gridIn%ph
        gridOut%th = gridIn%th
        gridOut%r = gridIn%r
+       gridOut%dp = gridIn%dp
+       gridOut%dt = gridIn%dt
+       gridOut%dr = gridIn%dr
 
        gridOut%allocated = gridIn%allocated
 
      end subroutine copy_grid
+
+  ! ***************************************************************************
+  ! * read_grid reads the modelfile cfile to store the grid only.
+  ! * Traditionally, for global spherical grid, assume the following directions:
+  ! * x -> phi (longitude, varies from 0 to 360)
+  ! * y -> theta (co-latitude = 90 - latitude; varies from 0 to 180)
+  ! * z -> -r (radius from Earth's centre, r=2871.0 at CMB,
+  ! *                                        6371.0 at Earth/air interface)
+  ! *
+  ! * For consistency with the original Randy Mackie, 06-27-85, 3-D model, and
+  ! * also for consistency with the current forward solver subroutines, we are
+  ! * keeping the following grid structure in this forward solver:
+  ! *      line 1: dimensions of model (x,y,z)
+  ! *      line 2: x(*) in degrees (interval)
+  ! *      line 3: y(*) in degrees (position from n-pole)
+  ! *      line 4: z(*) in km (distance from center of the earth, decreasing)
+
+  subroutine read_grid(grid,cfile)
+
+    character(*), intent(in)                        :: cfile
+    type (grid_t) , intent(out)                     :: grid
+    integer                                         :: nx,ny,nz,nzAir,nzCrust
+    real(8), dimension(:), allocatable              :: x,y,z,ph,th,r
+    integer                                         :: ios,istat,i
+    logical                                         :: exists
+
+    inquire(FILE=trim(cfile),EXIST=exists)
+    if(exists) then
+      open(ioGrd,file=cfile,status='old',form='formatted',iostat=ios)
+      write(6,*) node_info,'Reading from the grid file ',trim(cfile)
+    else
+      write(0,*) node_info,'Error: (read_grid) input file does not exist'
+      stop
+    end if
+
+    read(ioGrd,*) nx,ny,nz
+
+    ! model grid and resistivity memory allocation
+    allocate(x(nx+1),y(ny+1),z(nz+1), STAT=istat)
+
+    ! read the x-intervals and y in degrees, z in km from the top of the air layer down
+    read(ioGrd,*) x(1:nx)
+    read(ioGrd,*) y(1:ny+1)
+    read(ioGrd,*) z(1:nz+1)
+
+    close(ioGrd)
+
+    ! round vertical grid values to nearest meter to prevent precision errors
+    do i=1,nz+1
+      z(i)=nearest_meter(z(i))
+    end do
+
+    nzAir = 0
+    do i=1,nz
+      if (clean(z(i)) > EARTH_R + EPS_GRID) then
+        nzAir = nzAir + 1
+      end if
+    end do
+
+    ! this will be overwritten if a thinsheet is defined
+    nzCrust = nzAir
+
+    ! fill in the grid structure
+    call create_grid(nx,ny,nz,grid)
+    grid%nx = nx
+    grid%ny = ny
+    grid%nz = nz
+    grid%nzAir = nzAir
+    grid%nzEarth = nz - nzAir
+    grid%nzCrust = nzCrust
+    grid%nzMantle = nz - nzCrust
+    grid%x(1:nx)   = x(1:nx)*d2r
+    grid%y(1:ny+1) = y(1:ny+1)*d2r
+    grid%z(1:nz+1) = z(1:nz+1)*1000.0D0
+    grid%allocated = .true.
+
+    ! now, define ph,th,r in radians and km
+    allocate(ph(nx+1),th(ny+1),r(nz+1), STAT=istat)
+    ph(1) = 0.0d0
+    do i=1,nx
+      ph(i+1) = ph(i)+x(i)*d2r
+    end do
+    !ph(nx+1) = ph(1) ! don't do that - problems with interpolation!!!!
+    th(1:ny+1) = y(1:ny+1)*d2r
+    r(1:nz+1) = z(1:nz+1)
+
+    ! save the cell nodes and distances in radians and km, respectively
+    grid%ph(1) = ph(1)
+    do i=2,nx+1
+      grid%ph(i) = ph(i)
+      grid%dp(i-1) = ph(i) - ph(i-1)
+    end do
+
+    grid%th(1) = th(1)
+    do i=2,ny+1
+      grid%th(i) = th(i)
+      grid%dt(i-1) = th(i) - th(i-1)
+    end do
+
+    grid%r(1) = r(1) ! note: r is decreasing from top to bottom
+    do i=2,nz+1
+      grid%r(i) = r(i)
+      grid%dr(i-1) = r(i-1) - r(i)
+    end do
+
+    deallocate(x,y,z)
+
+    return
+
+  end subroutine read_grid
 
 end module GridDef

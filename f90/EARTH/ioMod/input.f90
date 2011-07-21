@@ -107,93 +107,24 @@ Contains
 
   subroutine initGrid(cUserDef,mygrid)
 
-    type (userdef_control), intent(in)					:: cUserDef
-    type (grid_t) , intent(out)					:: mygrid
-    integer				                            :: ios,istat,i
-    integer				                            :: nx,ny,nz,nzAir,nzCrust
-	real(8), dimension(:), allocatable				:: x,y,z
+    type (userdef_control), intent(in)				:: cUserDef
+    type (grid_t) , intent(out)					    :: mygrid
+    integer				                            :: i
 
+    call read_grid(mygrid,cUserDef%fn_grid)
 
-	open(ioGrd,file=cUserDef%fn_grid,status='old',iostat=ios)
-
-    write(6,*) node_info,'Reading from the grid file ',trim(cUserDef%fn_grid)
-	read(ioGrd,*) nx,ny,nz
-	! model grid and resistivity memory allocation
-	allocate(x(nx+1),y(ny+1),z(nz+1))
-
-	! read the x-intervals and y in degrees, z in km from the top of the air layer down
-    read(ioGrd,*) x(1:nx)
-    read(ioGrd,*) y(1:ny+1)
-    read(ioGrd,*) z(1:nz+1)
-
-	close(ioGrd)
-
-	! round vertical grid values to nearest meter to prevent precision errors
-	do i=1,nz+1
-	  z(i)=nearest_meter(z(i))
-	end do
-
-	nzAir = 0
-	do i=1,nz
-	  if (clean(z(i)) > EARTH_R + EPS_GRID) then
-		nzAir = nzAir + 1
-	  end if
-	end do
-
-	nzCrust = 0
+	grid%nzCrust = grid%nzAir
 	inquire(FILE=cUserDef%fn_shell,EXIST=exists)
 	! If no thin shell information present, assume no crust for model computations
 	if (.not.exists) then
 	  write(0,*) node_info,'Warning: No thin shell conductance distribution specified; assume no crust'
-	  nzCrust = nzAir
 	else
-	  do i=1,nz
-		if (clean(z(i)) > CRUST_R + EPS_GRID) then
-		  nzCrust = nzCrust + 1
+	  do i = grid%nzAir+1,grid%nz
+		if (clean(grid%r(i)) > CRUST_R + EPS_GRID) then ! Note: all distances are in km
+		  grid%nzCrust = grid%nzCrust + 1
 		end if
 	  end do
 	end if
-
-	! fill in the grid structure
-	allocate(mygrid%x(nx),mygrid%y(ny+1),mygrid%z(nz+1),STAT=istat)
-	mygrid%nx = nx
-	mygrid%ny = ny
-	mygrid%nz = nz
-	mygrid%nzAir = nzAir
-	mygrid%nzEarth = nz - nzAir
-	mygrid%nzCrust = nzCrust
-	mygrid%nzMantle = nz - nzCrust
-    mygrid%x(1:nx)   = x(1:nx)*d2r
-    mygrid%y(1:ny+1) = y(1:ny+1)*d2r
-    mygrid%z(1:nz+1) = z(1:nz+1)*1000.0D0
-    mygrid%allocated = .true.
-
-	! fill in the coordinates of cell centres; first redefine x
-	allocate(mygrid%ph(1:nx+1),mygrid%th(ny+1),mygrid%r(nz+1),STAT=istat)
-	x(1) = 0.0d0
-	do i=1,nx
-	  x(i+1) = x(i)+mygrid%x(i)
-	end do
-	!x(nx+1) = x(1) ! don't do that - problems with interpolation!!!!
-	y(1:ny+1) = mygrid%y(1:ny+1)
-	z(1:nz+1) = mygrid%z(1:nz+1)/1000.0d0
-
-	! now save the cell node coordinates in radians and km, respectively
-	phi: do i=1,nx+1
-	  mygrid%ph(i) = x(i)
-	end do phi
-
-	theta: do i=1,ny+1
-	  mygrid%th(i) = y(i)
-	end do theta
-
-	radius: do i=1,nz+1
-	  mygrid%r(i) = z(i)
-	end do radius
-
-	deallocate(x,y,z)
-
-	return
 
   end subroutine initGrid	! initGrid
 

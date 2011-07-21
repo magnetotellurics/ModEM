@@ -16,7 +16,6 @@ module field1d
       real(8), dimension(:), pointer    :: layer ! tops of layers
       real(8), dimension(:), pointer    :: sigma ! layer conductivities
       real(8)                           :: tau ! near-surface conductance
-      real(8)                           :: T ! period in seconds
       real(8)                           :: tol ! tolerance
       real(8)                           :: r0 ! Earth's radius in meters
       real(8)                           :: rmax ! boundary of the domain in meters
@@ -28,7 +27,8 @@ module field1d
 Contains
 
 subroutine vsharm(lmax,cost,phi,Y,Yt,YpDst)
-! vector spherical harmonic components
+! usage: compute vector spherical harmonics for all degrees and orders at one node
+! vector spherical harmonic components (l,m+1), l = 1,..,lmax; m = 0,..,lmax
 ! Ynm=sqrt((2n+1)/4pi*(n-m)!/(n+m)!)*Pnm(cost)(exp(imphi))
 
 	integer, intent(in)		                                    :: lmax
@@ -352,11 +352,12 @@ subroutine rbslprop(lmax,z0,phn0,phnp0,z,phn,phnp)
 
 end subroutine
 
-subroutine sourcePotential(earth,lmax,Rr,Rs,Tnr,Tnsp)
+subroutine sourcePotential(earth,lmax,period,Rr,Rs,Tnr,Tnsp)
 !in Matlab, optionally shift to mid-faces
 
     type (conf1d_t), intent(in)         :: earth ! configuration structure
     integer, intent(in)                 :: lmax ! maximum sph. harm. degree
+    real(8), intent(in)                 :: period ! period in seconds
     real(8), dimension(:), intent(in)   :: Rr,Rs ! radii for vertical and lateral potentials
     complex(8), dimension(:,:), intent(inout)  :: Tnr,Tnsp ! potential coefficients
     ! local
@@ -389,7 +390,7 @@ subroutine sourcePotential(earth,lmax,Rr,Rs,Tnr,Tnsp)
     end if
 
     allocate(rl(Nl),kl(Nl),STAT=istat)
-    omega = 2*pi/earth%T
+    omega = 2*pi/period
     do j = 1,Nl
         rl(j) = earth%r0 - earth%layer(j)
         kl(j) = sqrt(cmplx(0.,1.)*omega*mu0*earth%sigma(j))
@@ -515,11 +516,11 @@ subroutine sourcePotential(earth,lmax,Rr,Rs,Tnr,Tnsp)
         Tnsp(:,i)=Tnsp(:,i)*(-earth%rmax/tlmp(i))
     end do
     !-----------------------------------------------------------!
-    write(*,*) 'Tnr: '
+    write(*,*) 'Tnr (',size(Tnr),'coeff): '
     do j = 1,Nrr
         write(*,*) Tnr(j,:)
     end do
-    write(*,*) 'Tnsp: '
+    write(*,*) 'Tnsp (',size(Tnsp),'coeff): '
     do j = 1,Nrs
         write(*,*) Tnsp(j,:)
     end do
@@ -532,26 +533,24 @@ subroutine sourcePotential(earth,lmax,Rr,Rs,Tnr,Tnsp)
 end subroutine
 
 
-subroutine sourceField1d(earth,lmax,coeff,Np,Nt,R,Hp,Ht,Hr)
-!in Matlab, optionally shift to mid-faces
+subroutine sourceField1d(earth,lmax,coeff,T,grid,H)
 
 	type (conf1d_t), intent(in)	        :: earth ! configuration structure
 	integer, intent(in)		            :: lmax ! maximum sph. harm. degree
 	real(8), dimension(:), intent(in)   :: coeff ! vector of sph. harm. coeff.
-    integer, intent(in)                 :: Np,Nt ! lateral dimensions of the grid
-	real(8), dimension(:), intent(in)	:: R ! radii for the grid
-	complex(8), dimension(:,:,:), intent(inout):: Hp,Ht,Hr
+	real(8), intent(in)                 :: T ! period in days
+	type (grid_t), intent(in)           :: grid ! grid for the field mapping
+	type (cvector), intent(inout)       :: H ! output magnetic field
 	! local
-	real(8), dimension(size(R)) :: Rr,Rs
-	real(8), dimension(Np+1)    :: ph
-	real(8), dimension(Nt+1)    :: th
-    integer, dimension(lmax)    :: Ns
+	real(8), dimension(:), allocatable  :: Rr,Rs
+    integer, dimension(lmax)                   :: Ns
     complex(8), dimension(lmax,lmax+1)         :: Yp,Yt,Yr ! indices (l,m+1), m=0,..,lmax
 	complex(8), dimension(:,:), allocatable    :: Tnr,Tnsp
     real(8), dimension(:), allocatable         :: coefl
-	real(8)				:: dp,dt
+	real(8)				:: dp,dt,period
     integer             :: idr,idrmin,idrmax,ids,idsmin,idsmax
-    integer             :: i,j,k,l,m,Nrr,Nrs,Nd,istat,ncoeff,icoeff
+    integer             :: Np,Nt,Nr,Nrr,Nrs,Nd
+    integer             :: i,j,k,l,m,istat,ncoeff,icoeff
     complex(8)          :: C
 
     !No computations are performed for l=0 (no magnetic monopoles) so zero coeff is never used
@@ -563,59 +562,51 @@ subroutine sourceField1d(earth,lmax,coeff,Np,Nt,R,Hp,Ht,Hr)
         write(0,*) 'Error in sourceField1d: bad sph. harm. coeffs vector (size ',size(coeff),'); must be size ',ncoeff
     end if
 
-    !-----------------------------------------------------------!
+    !get grid dimensions (assumes a regular grid but this can be easily changed)
+    Np = grid%nx
+    Nt = grid%ny
+    Nr = grid%nz
 
+    !invert the order of r (now from bottom to top and in meters)
+    !allocate(Rr(Nr),Rs(Nr+1), STAT=istat)
+    !Rs(Nr+1) = 1.0e3 * grid%r(1)
+    !do k = Nr,1,-1
+    !    Rr(k) = Rs(k+1) - 1.0e3 * grid%dr(Nr-k+1)/2.
+    !    Rs(k) = Rs(k+1) - 1.0e3 * grid%dr(Nr-k+1)
+    !end do
+    !the radius goes from top to bottom in meters
+    allocate(Rr(Nr),Rs(Nr+1), STAT=istat)
+    Rs(1:Nr+1) = 1.0e3 * grid%r(1:Nr+1)
+    Rr(1:Nr) = Rs(1:Nr) - 1.0e3 * grid%dr(1:Nr)/2.
+    write(*,*) 'Rr = ',size(Rr),Rr
+    write(*,*) 'Rs = ',size(Rs),Rs
+
+    !-----------------------------------------------------------!
     !compute source potentials
-    Rs=R(:) ! radii for lateral components
-    Nrs=size(Rs)
-    Rr=Rs ! radii for vertical components
-    Nrr=Nrs
+    Nrs=Nr + 1 ! radii for toroidal potentials
+    Nrr=Nr  ! radii for poloidal potentials
     Nd=lmax ! total number of degrees in sph. harm. expansion
+    period = T * (24*3600.) ! in seconds
 
     allocate(Tnr(Nrr,Nd),Tnsp(Nrs,Nd),STAT=istat)
     
-    call sourcePotential(earth,lmax,Rr,Rs,Tnr,Tnsp)
+    call sourcePotential(earth,lmax,period,Rr,Rs,Tnr,Tnsp)
     
-    Hp=0
-    Ht=0
-    Hr=0
-
+    !-----------------------------------------------------------!
     !compute field components
-    dt=pi/Nt
-    dp=2*pi/Np
-
-    do j = 1,Nt+1
-        th(j) = dt*(j-1)
-    end do
-    do i = 1,Np+1
-        ph(i) = dp*(i-1)
-    end do
-    write(*,*) 'Theta: ',th*180/pi
-    write(*,*) 'Phi: ',ph*180/pi
+    call zero_cvector(H)
 
     Yp(:,:) = cmplx(0.0d0,0.0d0)
     Yt(:,:) = cmplx(0.0d0,0.0d0)
     Yr(:,:) = cmplx(0.0d0,0.0d0)
 
-    !compute vector spherical harmonics for all degrees and orders at one node
-    do j = 1,Nt+1
-        do i = 1,Np+1
-
-            !Yp at longitudinal mid-edges
-            call vsharm(lmax,cos(th(j)),ph(i)+dp/2,Yr,Yt,Yp)
-
-            !Yt at latitudinal mid-edges
-            call vsharm(lmax,cos(th(j)+dt/2),ph(i),Yr,Yt)
-
-            !Yr at vertical mid-edges
-            call vsharm(lmax,cos(th(j)),ph(i),Yr)
-
-        end do
-    end do
-
     ! ph component of the field
     do j = 1,Nt+1
         do i = 1,Np
+
+            !Yp at longitudinal mid-edges
+            call vsharm(lmax,cos(grid%th(j)),grid%ph(i)+grid%dp(i)/2,Yr,Yt,Yp)
+
             do k = 1,Nrs
 
                 !ignore l=0 (no magnetic monopoles)
@@ -629,11 +620,11 @@ subroutine sourceField1d(earth,lmax,coeff,Np,Nt,R,Hp,Ht,Hr)
                     coefl = coeff(icoeff+1:icoeff+2*l+1)
 
                     !m=0 goes first
-                    Hp(i,j,k) = Yp(l,1)*coefl(1)*(Tnsp(k,l)/Rs(k))
+                    H%x(i,j,k) = Yp(l,1)*coefl(1)*(Tnsp(k,l)/Rs(k))
 
                     do m = 1,l
                         C = (Yp(l,m+1)*coefl(2*m) + Yp(l,m+1)*coefl(2*m+1))
-                        Hp(i,j,k) = Hp(i,j,k) + C*(Tnsp(k,l)/Rs(k))
+                        H%x(i,j,k) = H%x(i,j,k) + C*(Tnsp(k,l)/Rs(k))
                     end do
 
                     icoeff = icoeff+2*l+1
@@ -649,6 +640,10 @@ subroutine sourceField1d(earth,lmax,coeff,Np,Nt,R,Hp,Ht,Hr)
     ! th component of the field
     do j = 1,Nt
         do i = 1,Np+1
+
+            !Yt at latitudinal mid-edges
+            call vsharm(lmax,cos(grid%th(j)+grid%dt(j)/2),grid%ph(i),Yr,Yt)
+
             do k = 1,Nrs
 
                 !ignore l=0 (no magnetic monopoles)
@@ -662,11 +657,11 @@ subroutine sourceField1d(earth,lmax,coeff,Np,Nt,R,Hp,Ht,Hr)
                     coefl = coeff(icoeff+1:icoeff+2*l+1)
 
                     !m=0 goes first
-                    Ht(i,j,k) = Yt(l,1)*coefl(1)*(Tnsp(k,l)/Rs(k))
+                    H%y(i,j,k) = Yt(l,1)*coefl(1)*(Tnsp(k,l)/Rs(k))
 
                     do m = 1,l
                         C = (Yt(l,m+1)*coefl(2*m) + Yt(l,m+1)*coefl(2*m+1))
-                        Ht(i,j,k) = Ht(i,j,k) + C*(Tnsp(k,l)/Rs(k))
+                        H%y(i,j,k) = H%y(i,j,k) + C*(Tnsp(k,l)/Rs(k))
                     end do
 
                     icoeff = icoeff+2*l+1
@@ -682,6 +677,10 @@ subroutine sourceField1d(earth,lmax,coeff,Np,Nt,R,Hp,Ht,Hr)
     ! vertical component of the field
     do j = 1,Nt+1
         do i = 1,Np+1
+
+            !Yr at vertical mid-edges
+            call vsharm(lmax,cos(grid%th(j)),grid%ph(i),Yr)
+
             do k = 1,Nrr
 
                 !ignore l=0 (no magnetic monopoles)
@@ -695,11 +694,11 @@ subroutine sourceField1d(earth,lmax,coeff,Np,Nt,R,Hp,Ht,Hr)
                     coefl = coeff(icoeff+1:icoeff+2*l+1)
 
                     !m=0 goes first
-                    Hr(i,j,k) = -l*(l+1)*Yr(l,1)*coefl(1)*(Tnr(k,l)/Rr(k)**2)
+                    H%z(i,j,k) = -l*(l+1)*Yr(l,1)*coefl(1)*(Tnr(k,l)/Rr(k)**2)
 
                     do m = 1,l
                         C = - l*(l+1)*(Yr(l,m+1)*coefl(2*m) + Yr(l,m+1)*coefl(2*m+1))
-                        Hr(i,j,k) = Hr(i,j,k) + C*(Tnr(k,l)/Rr(k)**2)
+                        H%z(i,j,k) = H%z(i,j,k) + C*(Tnr(k,l)/Rr(k)**2)
                     end do
 
                     icoeff = icoeff+2*l+1
@@ -713,6 +712,7 @@ subroutine sourceField1d(earth,lmax,coeff,Np,Nt,R,Hp,Ht,Hr)
     end do ! th
 
     deallocate(Tnr,Tnsp,STAT=istat)
+    deallocate(Rr,Rs,STAT=istat)
 
 end subroutine
 

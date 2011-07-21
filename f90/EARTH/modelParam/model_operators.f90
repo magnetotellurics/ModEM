@@ -349,7 +349,10 @@ Contains
 		P%c(j,i)%frozen =.TRUE.
 		P%c(j,i)%exists =.FALSE.
 		! initialize pointers
-		if (j==1) then
+        if (j==1 .and. j==P%nL) then
+          nullify(P%c(j,i)%prev)
+          nullify(P%c(j,i)%next)
+		else if (j==1) then
 		  nullify(P%c(j,i)%prev)
 		  P%c(j,i)%next => P%c(j+1,i)
 		else if (j==P%nL) then
