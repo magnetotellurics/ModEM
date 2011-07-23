@@ -51,7 +51,7 @@ MODULE = -module $(OBJDIR)
 LIBS = -L/usr/lib64 -lblas -llapack -lpgftnrtl
 
 # -------------------End-macro-Defs---------------------------
-OBJ = $(OBJDIR)/math_constants.o $(OBJDIR)/utilities.o $(OBJDIR)/polpak.o $(OBJDIR)/file_units.o $(OBJDIR)/GridDef.o $(OBJDIR)/sg_vector.o $(OBJDIR)/field1d.o $(OBJDIR)/paramfunc.o $(OBJDIR)/modeldef.o $(OBJDIR)/model_operators.o $(OBJDIR)/sg_scalar.o $(OBJDIR)/modelmap.o $(OBJDIR)/ModelSpace.o $(OBJDIR)/sg_boundary.o $(OBJDIR)/sg_sparse_vector.o $(OBJDIR)/iotypes.o $(OBJDIR)/transmitters.o $(OBJDIR)/receivers.o $(OBJDIR)/SolnSpace.o $(OBJDIR)/FWD1D.o 
+OBJ = $(OBJDIR)/math_constants.o $(OBJDIR)/utilities.o $(OBJDIR)/polpak.o $(OBJDIR)/file_units.o $(OBJDIR)/GridDef.o $(OBJDIR)/sg_vector.o $(OBJDIR)/field1d.o $(OBJDIR)/paramfunc.o $(OBJDIR)/modeldef.o $(OBJDIR)/model_operators.o $(OBJDIR)/sg_scalar.o $(OBJDIR)/modelmap.o $(OBJDIR)/ModelSpace.o $(OBJDIR)/FWD1D.o 
 
 
 all: FWD1D 
@@ -77,7 +77,7 @@ $(OBJDIR)/polpak.o:UTILS/polpak.f90
 $(OBJDIR)/file_units.o:UTILS/file_units.f90  
 	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) UTILS/file_units.f90 -o $(OBJDIR)/file_units.o
 
-$(OBJDIR)/GridDef.o:EARTH/GridDef.f90 $(OBJDIR)/math_constants.o $(OBJDIR)/file_units.o 
+$(OBJDIR)/GridDef.o:EARTH/GridDef.f90 $(OBJDIR)/math_constants.o $(OBJDIR)/file_units.o $(OBJDIR)/utilities.o 
 	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) EARTH/GridDef.f90 -o $(OBJDIR)/GridDef.o
 
 $(OBJDIR)/sg_vector.o:FIELDS/FiniteDiff3D/sg_vector.f90 $(OBJDIR)/math_constants.o $(OBJDIR)/utilities.o $(OBJDIR)/GridDef.o 
@@ -104,25 +104,7 @@ $(OBJDIR)/modelmap.o:EARTH/modelParam/modelmap.f90 $(OBJDIR)/GridDef.o $(OBJDIR)
 $(OBJDIR)/ModelSpace.o:EARTH/ModelSpace.f90 $(OBJDIR)/model_operators.o $(OBJDIR)/modeldef.o $(OBJDIR)/modelmap.o 
 	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) EARTH/ModelSpace.f90 -o $(OBJDIR)/ModelSpace.o
 
-$(OBJDIR)/sg_boundary.o:FIELDS/FiniteDiff3D/sg_boundary.f90 $(OBJDIR)/math_constants.o $(OBJDIR)/GridDef.o $(OBJDIR)/sg_vector.o 
-	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) FIELDS/FiniteDiff3D/sg_boundary.f90 -o $(OBJDIR)/sg_boundary.o
-
-$(OBJDIR)/sg_sparse_vector.o:FIELDS/FiniteDiff3D/sg_sparse_vector.f90 $(OBJDIR)/math_constants.o $(OBJDIR)/GridDef.o $(OBJDIR)/sg_vector.o 
-	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) FIELDS/FiniteDiff3D/sg_sparse_vector.f90 -o $(OBJDIR)/sg_sparse_vector.o
-
-$(OBJDIR)/iotypes.o:EARTH/ioMod/iotypes.f90 $(OBJDIR)/math_constants.o $(OBJDIR)/file_units.o 
-	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) EARTH/ioMod/iotypes.f90 -o $(OBJDIR)/iotypes.o
-
-$(OBJDIR)/transmitters.o:EARTH/DICT/transmitters.f90 $(OBJDIR)/math_constants.o $(OBJDIR)/utilities.o $(OBJDIR)/iotypes.o 
-	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) EARTH/DICT/transmitters.f90 -o $(OBJDIR)/transmitters.o
-
-$(OBJDIR)/receivers.o:EARTH/DICT/receivers.f90 $(OBJDIR)/GridDef.o $(OBJDIR)/sg_sparse_vector.o $(OBJDIR)/math_constants.o $(OBJDIR)/utilities.o $(OBJDIR)/iotypes.o 
-	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) EARTH/DICT/receivers.f90 -o $(OBJDIR)/receivers.o
-
-$(OBJDIR)/SolnSpace.o:EARTH/SolnSpace.f90 $(OBJDIR)/math_constants.o $(OBJDIR)/file_units.o $(OBJDIR)/utilities.o $(OBJDIR)/sg_scalar.o $(OBJDIR)/sg_vector.o $(OBJDIR)/sg_boundary.o $(OBJDIR)/sg_sparse_vector.o $(OBJDIR)/transmitters.o $(OBJDIR)/receivers.o 
-	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) EARTH/SolnSpace.f90 -o $(OBJDIR)/SolnSpace.o
-
-$(OBJDIR)/FWD1D.o:FWD1D.f90 $(OBJDIR)/field1d.o $(OBJDIR)/ModelSpace.o $(OBJDIR)/SolnSpace.o 
+$(OBJDIR)/FWD1D.o:FWD1D.f90 $(OBJDIR)/field1d.o $(OBJDIR)/ModelSpace.o 
 	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) FWD1D.f90 -o $(OBJDIR)/FWD1D.o
 
 # Type " make clean " to get rid of all object and module files 

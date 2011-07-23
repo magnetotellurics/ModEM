@@ -2,15 +2,13 @@ program fwd1d
 
     use field1d
     use modelspace
-    use solnspace
     implicit none
 
     type(conf1d_t)                              :: earth
-    type(userdef_control)                       :: userdef
     type(grid_t)                                :: grid
     type(modelParam_t)                          :: model,source
     type(cvector)                               :: h1d
-    character(80)                               :: period_file !,label
+    character(80)                               :: period_file,label
     character(80)                               :: layered_model_file
     character(80)                               :: source_model_file
     character(80)                               :: grid_file

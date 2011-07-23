@@ -26,44 +26,62 @@ module field1d
 
 Contains
 
-subroutine vsharm(lmax,cost,phi,Y,Yt,YpDst)
+subroutine vsharm(lmax,cost,phi,Y,Yt,Yp)
 ! usage: compute vector spherical harmonics for all degrees and orders at one node
 ! vector spherical harmonic components (l,m+1), l = 1,..,lmax; m = 0,..,lmax
 ! Ynm=sqrt((2n+1)/4pi*(n-m)!/(n+m)!)*Pnm(cost)(exp(imphi))
+!
+! Output Arguments
+!
+!       Y:     (n+1) by lt array, spherical harmonics of orders 0,...,n
+!       Yt:    (n+1) by lt array, Yt=\partial{Y}/\partial{theta}
+!       Yp:    (n+1) by lt array, Yp=(\partial{Y}/\partial{phi})/sin(theta)
 
 	integer, intent(in)		                                    :: lmax
 	real(8), intent(in)		                                    :: cost,phi
 	complex(8), dimension(lmax,lmax+1), intent(inout)		    :: Y
-	complex(8), dimension(lmax,lmax+1), intent(inout), optional :: Yt,YpDst
+	complex(8), dimension(lmax,lmax+1), intent(inout), optional :: Yt,Yp
 	! local
-	real(8), dimension(lmax,lmax+1)     :: P_lm
-	real(8)     :: tiny
+	real(8), dimension(lmax+1,lmax+1)     :: P_lm
+    real(8), dimension(lmax  ,lmax+1)     :: P
+	real(8)     :: tiny,rone
 	integer     :: l,m
-	complex(8)  :: ep
+	complex(8)  :: ep,ep0,cone
 
 	if (lmax <= 0) then
 	    write(0,*) 'Error in vsharm: this only works for lmax >= 1'
 	end if
+	rone = 1.0d0
+    cone = dcmplx(0.0d0,1.0d0)
+    ep = exp(cone*phi)
 
     !compute Schmidt Seminormalized Associated Legendre Functions, defined as:
     !Q_n^m(x) = P_n(x) for m=0
     !Q_n^m(x) = (-1)^m sqrt ( 2 * (n-m)! / (n+m)! ) P_n^m for m>0
+    !note that these are computed from n=0 ... so ignore P_1 in this function
     P_lm(:,:) = 0.0d0
-    call legendre_associated(lmax,0,cost,P_lm(:,1))
-	do m = 1,lmax
+	do m = 0,lmax
         call legendre_associated(lmax,m,cost,P_lm(:,m+1))
-        do l = m,lmax
-            P_lm(l,m+1) = P_lm(l,m+1) * ( (-1)**m ) * &
-                sqrt ( 2.0d0 * ( d_factorial(l - m) ) / ( d_factorial(l + m) ) )
+    end do
+    do l = 1,lmax
+        do m = 1,l
+            P_lm(l+1,m+1) = P_lm(l+1,m+1) * ( (-1)**m ) * &
+                sqrt ( 2.*rone * ( d_factorial(l - m) ) / ( d_factorial(l + m) ) )
+            ! an additional factor to make this scaling correct
+            P_lm(l+1,m+1) = ( (-1)**(m) / sqrt(2.*rone) ) * P_lm(l+1,m+1)
         end do
     end do
 
+    !make the logic simpler by removing degree zero at this point
+    P(1:lmax,:) = P_lm(2:lmax+1,:)
+
     !now convert this to vector spherical harmonics
-    Y(:,:) = cmplx(0.0d0,0.0d0)
-    Y(:,1) = P_lm(:,1)
+    Y = P
     do l = 1,lmax
+        ep0 = cmplx(1.0d0,0.0d0)
         do m = 1,l
-            Y(l,m+1) = ((-1)**(m)/sqrt(2.0d0)) * P_lm(l,m+1)
+            ep0 = ep0 * ep
+            Y(l,m+1) = ep0 * Y(l,m+1)
         end do
     end do
 
@@ -74,41 +92,41 @@ subroutine vsharm(lmax,cost,phi,Y,Yt,YpDst)
     Yt(:,:) = cmplx(0.0d0,0.0d0)
     do l = 1,lmax
 
-        Yt(l,1)=sqrt((l)*(l+1.0d0))*Y(l,2);
+        Yt(l,1)=sqrt((l)*(l+1.0d0))*P(l,2);
         do m=1,l-1
-            Yt(l,m+1)=(sqrt((l-m)*(l+m+1.0d0))*Y(l,m+2) - sqrt((l+m)*(l-m+1.0d0))*Y(l,m))/2
+            Yt(l,m+1)=(sqrt((l-m)*(l+m+rone))*P(l,m+2) - sqrt((l+m)*(l-m+rone))*P(l,m))/2
         end do
-        Yt(l,l+1)=-sqrt(l/2.0d0)*Y(l,l)
+        Yt(l,l+1)=-sqrt(l/(2.*rone))*P(l,l)
 
-        ep=exp(cmplx(0.0d0,1.0d0)*phi);
+        ep0 = cmplx(1.0d0,0.0d0)
         do m=1,l
-            Y(l,m+1)=(ep**m)*Y(l,m+1);
-            Yt(l,m+1)=(ep**m)*Yt(l,m+1);
+            ep0 = ep0 * ep
+            Yt(l,m+1) = ep0 * Yt(l,m+1)
         end do
 
     end do
 
-    if (.not. present(YpDst)) then
+    if (.not. present(Yp)) then
         return
     end if
 
-    YpDst(:,:) = cmplx(0.0d0,0.0d0)
+    Yp(:,:) = cmplx(0.0d0,0.0d0)
     tiny=1e-30
     do l = 1,lmax
 
-        !presumably, YpDst(:,1) = 0
+        !Yp(:,1) = cmplx(0.0d0,0.0d0)
         do m = 1,l-1
-            if (abs(abs(cost)-1.0d0) < tiny) then
-                YpDst(l,m+1)=sqrt((l-m)*(l+m+1.0d0))*(Y(l,m+2) &
-                  +sqrt((l+m)*(l-m+1.0d0))*Y(l,m))/(cmplx(0.0d0,2.0d0)*cost)
+            if (abs(abs(cost)-rone) < tiny) then ! at the poles
+                Yp(l,m+1)=sqrt((l-m)*(l+m+rone))*(P(l,m+2) &
+                  +sqrt((l+m)*(l-m+rone))*P(l,m))/(2.*cone*cost)
             else
-                YpDst(l,m+1)=cmplx(0.0d0,1.0d0)*m*Y(l,m+1)/sqrt(1.0d0-cost**2)
+                Yp(l,m+1)=cone*m*P(l,m+1)/sqrt(rone-cost**2)
             end if
         end do
-        if (abs(abs(cost)-1.0d0) < tiny) then
-            YpDst(l,l+1)=sqrt(2.0d0*l)*Y(l,l)/(cmplx(0.0d0,2.0d0)*cost)
+        if (abs(abs(cost)-rone) < tiny) then ! at the poles
+            Yp(l,l+1)=sqrt(2.*rone*l)*P(l,l)/(2.*cone*cost)
         else
-            YpDst(l,l+1)=cmplx(0.0d0,1.0d0)*l*Y(l,l+1)/sqrt(1.0d0-cost**2)
+            Yp(l,l+1)=cone*l*P(l,l+1)/sqrt(rone-cost**2)
         end if
 
     end do
@@ -580,6 +598,10 @@ subroutine sourceField1d(earth,lmax,coeff,T,grid,H)
     Rr(1:Nr) = Rs(1:Nr) - 1.0e3 * grid%dr(1:Nr)/2.
     write(*,*) 'Rr = ',size(Rr),Rr
     write(*,*) 'Rs = ',size(Rs),Rs
+    write(*,*) 'th = ',size(grid%th),grid%th
+    write(*,*) 'ph = ',size(grid%ph),grid%ph
+    write(*,*) 'dt = ',size(grid%dt),grid%dt
+    write(*,*) 'dp = ',size(grid%dp),grid%dp
 
     !-----------------------------------------------------------!
     !compute source potentials
@@ -600,12 +622,16 @@ subroutine sourceField1d(earth,lmax,coeff,T,grid,H)
     Yt(:,:) = cmplx(0.0d0,0.0d0)
     Yr(:,:) = cmplx(0.0d0,0.0d0)
 
-    ! ph component of the field
-    do j = 1,Nt+1
+    ! ph component of the field (skip the poles)
+    do j = 2,Nt
         do i = 1,Np
 
             !Yp at longitudinal mid-edges
             call vsharm(lmax,cos(grid%th(j)),grid%ph(i)+grid%dp(i)/2,Yr,Yt,Yp)
+
+            if (i<=2) then
+                write(*,*) 'i,j,Yp=',i,j,Yp
+            end if
 
             do k = 1,Nrs
 
@@ -627,6 +653,8 @@ subroutine sourceField1d(earth,lmax,coeff,T,grid,H)
                         H%x(i,j,k) = H%x(i,j,k) + C*(Tnsp(k,l)/Rs(k))
                     end do
 
+                    H%x(i,j,k) = conjg(H%x(i,j,k))
+
                     icoeff = icoeff+2*l+1
 
                     deallocate(coefl, STAT=istat)
@@ -643,6 +671,10 @@ subroutine sourceField1d(earth,lmax,coeff,T,grid,H)
 
             !Yt at latitudinal mid-edges
             call vsharm(lmax,cos(grid%th(j)+grid%dt(j)/2),grid%ph(i),Yr,Yt)
+
+            if (i<=2) then
+                write(*,*) 'i,j,Yt=',i,j,Yt
+            end if
 
             do k = 1,Nrs
 
@@ -664,6 +696,8 @@ subroutine sourceField1d(earth,lmax,coeff,T,grid,H)
                         H%y(i,j,k) = H%y(i,j,k) + C*(Tnsp(k,l)/Rs(k))
                     end do
 
+                    H%y(i,j,k) = conjg(H%y(i,j,k))
+
                     icoeff = icoeff+2*l+1
 
                     deallocate(coefl, STAT=istat)
@@ -680,6 +714,10 @@ subroutine sourceField1d(earth,lmax,coeff,T,grid,H)
 
             !Yr at vertical mid-edges
             call vsharm(lmax,cos(grid%th(j)),grid%ph(i),Yr)
+
+            if (i<=2) then
+                write(*,*) 'i,j,Yr=',i,j,Yr
+            end if
 
             do k = 1,Nrr
 
@@ -700,6 +738,8 @@ subroutine sourceField1d(earth,lmax,coeff,T,grid,H)
                         C = - l*(l+1)*(Yr(l,m+1)*coefl(2*m) + Yr(l,m+1)*coefl(2*m+1))
                         H%z(i,j,k) = H%z(i,j,k) + C*(Tnr(k,l)/Rr(k)**2)
                     end do
+
+                    H%z(i,j,k) = conjg(H%z(i,j,k))
 
                     icoeff = icoeff+2*l+1
 
