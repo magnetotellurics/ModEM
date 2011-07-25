@@ -26,10 +26,48 @@ module field1d
 
 Contains
 
-subroutine vsharm(lmax,cost,phi,Y,Yt,Yp)
+
+subroutine legendre(lmax,cost,P_lm)
+! usage: compute a version of Schmidt semi-normalised Legendre polynomials
+! for all degrees and orders at one node. This is part of the vsharm subroutine;
+! however, we have taken the computation of Pnm out of the subroutine to improve
+! on efficiency, and call it only when cost is updated.
+
+    integer, intent(in)                                         :: lmax
+    real(8), intent(in)                                         :: cost
+    real(8),    dimension(lmax+1,lmax+1), intent(inout)         :: P_lm
+    ! local
+    real(8)     :: rone
+    integer     :: l,m
+
+    rone = 1.0d0
+
+    !compute Schmidt Seminormalized Associated Legendre Functions, defined as:
+    !Q_n^m(x) = P_n(x) for m=0
+    !Q_n^m(x) = (-1)^m sqrt ( 2 * (n-m)! / (n+m)! ) P_n^m for m>0
+    P_lm(:,:) = 0.0d0
+    do m = 0,lmax
+        call legendre_associated(lmax,m,cost,P_lm(:,m+1))
+    end do
+    do l = 1,lmax
+        do m = 1,l
+            P_lm(l+1,m+1) = P_lm(l+1,m+1) * ( (-1)**m ) * &
+                sqrt ( 2.*rone * ( d_factorial(l - m) ) / ( d_factorial(l + m) ) )
+            ! an additional factor to make this scaling correct
+            P_lm(l+1,m+1) = ( (-1)**(m) / sqrt(2.*rone) ) * P_lm(l+1,m+1)
+        end do
+    end do
+
+end subroutine
+
+
+subroutine vsharm(lmax,cost,phi,P_lm,Y,Yt,Yp)
 ! usage: compute vector spherical harmonics for all degrees and orders at one node
 ! vector spherical harmonic components (l,m+1), l = 1,..,lmax; m = 0,..,lmax
 ! Ynm=sqrt((2n+1)/4pi*(n-m)!/(n+m)!)*Pnm(cost)(exp(imphi))
+!
+! for extra efficiency, we have taken the computation of Pnm out of the subroutine
+! and call it only when cost is updated.
 !
 ! Output Arguments
 !
@@ -39,10 +77,10 @@ subroutine vsharm(lmax,cost,phi,Y,Yt,Yp)
 
 	integer, intent(in)		                                    :: lmax
 	real(8), intent(in)		                                    :: cost,phi
+	real(8),    dimension(lmax+1,lmax+1), intent(in)            :: P_lm
 	complex(8), dimension(lmax,lmax+1), intent(inout)		    :: Y
 	complex(8), dimension(lmax,lmax+1), intent(inout), optional :: Yt,Yp
 	! local
-	real(8), dimension(lmax+1,lmax+1)     :: P_lm
     real(8), dimension(lmax  ,lmax+1)     :: P
 	real(8)     :: tiny,rone
 	integer     :: l,m
@@ -58,19 +96,9 @@ subroutine vsharm(lmax,cost,phi,Y,Yt,Yp)
     !compute Schmidt Seminormalized Associated Legendre Functions, defined as:
     !Q_n^m(x) = P_n(x) for m=0
     !Q_n^m(x) = (-1)^m sqrt ( 2 * (n-m)! / (n+m)! ) P_n^m for m>0
+    !then scale further by (-1)^m / sqrt(2) to get the correct scaling
     !note that these are computed from n=0 ... so ignore P_1 in this function
-    P_lm(:,:) = 0.0d0
-	do m = 0,lmax
-        call legendre_associated(lmax,m,cost,P_lm(:,m+1))
-    end do
-    do l = 1,lmax
-        do m = 1,l
-            P_lm(l+1,m+1) = P_lm(l+1,m+1) * ( (-1)**m ) * &
-                sqrt ( 2.*rone * ( d_factorial(l - m) ) / ( d_factorial(l + m) ) )
-            ! an additional factor to make this scaling correct
-            P_lm(l+1,m+1) = ( (-1)**(m) / sqrt(2.*rone) ) * P_lm(l+1,m+1)
-        end do
-    end do
+    !call legendre(lmax,cost,P_lm)
 
     !make the logic simpler by removing degree zero at this point
     P(1:lmax,:) = P_lm(2:lmax+1,:)
@@ -381,7 +409,7 @@ subroutine sourcePotential(earth,lmax,period,Rr,Rs,Tnr,Tnsp)
     ! local
     integer, dimension(lmax)    :: Ns
     complex(8), dimension(:), allocatable      :: rn0,rnp0,phn0,phnp0
-    complex(8), dimension(:), allocatable      :: tnr1,tnsp1,tn,tnp,tlmp,tmp
+    complex(8), dimension(:), allocatable      :: tnr1,tnsp1,tn,tnp,t1mp,tmp
     real(8), dimension(:), allocatable         :: rl
     complex(8), dimension(:), allocatable      :: kl
     real(8)             :: mu0,pi,omega,rmax
@@ -420,7 +448,7 @@ subroutine sourcePotential(earth,lmax,period,Rr,Rs,Tnr,Tnsp)
     Nrs=size(Rs)
     Nrr=size(Rr)
 
-    allocate(tnr1(lmax),tnsp1(lmax),tn(lmax),tnp(lmax),tlmp(lmax),tmp(lmax),STAT=istat)
+    allocate(tnr1(lmax),tnsp1(lmax),tn(lmax),tnp(lmax),t1mp(lmax),tmp(lmax),STAT=istat)
     allocate(rn0(lmax),rnp0(lmax),phn0(lmax),phnp0(lmax),STAT=istat)
 
     !within the inner core
@@ -525,47 +553,48 @@ subroutine sourcePotential(earth,lmax,period,Rr,Rs,Tnr,Tnsp)
         end do
     end if
 
-    !renormalize against outer boundary
+    !renormalize against outer boundary (t1mp is complex scalar)
     sumup = .false.
-    call airprop(1,rl(1),rn0(1),rnp0(1),earth%rmax,tmp,tlmp,sumup)
+    call airprop(1,rl(1),rn0(1),rnp0(1),earth%rmax,tmp,t1mp,sumup)
 
     do i = 1,lmax
-        Tnr(:,i)=Tnr(:,i)*(-earth%rmax/tlmp(i))
-        Tnsp(:,i)=Tnsp(:,i)*(-earth%rmax/tlmp(i))
+        Tnr(:,i)=Tnr(:,i)*(-earth%rmax/t1mp(1))
+        Tnsp(:,i)=Tnsp(:,i)*(-earth%rmax/t1mp(1))
     end do
     !-----------------------------------------------------------!
-    write(*,*) 'Tnr (',size(Tnr),'coeff): '
+    write(*,*) 'Tnr (',size(Tnr,1),'x',size(Tnr,2),'coeff ): '
     do j = 1,Nrr
         write(*,*) Tnr(j,:)
     end do
-    write(*,*) 'Tnsp (',size(Tnsp),'coeff): '
+    write(*,*) 'Tnsp (',size(Tnsp,1),'x',size(Tnsp,2),'coeff ): '
     do j = 1,Nrs
         write(*,*) Tnsp(j,:)
     end do
     !-----------------------------------------------------------!
 
-    deallocate(tnr1,tnsp1,tn,tnp,tlmp,tmp,STAT=istat)
+    deallocate(tnr1,tnsp1,tn,tnp,t1mp,tmp,STAT=istat)
     deallocate(rn0,rnp0,phn0,phnp0,STAT=istat)
     deallocate(rl,kl,STAT=istat)
 
 end subroutine
 
 
-subroutine sourceField1d(earth,lmax,coeff,T,grid,H)
+subroutine sourceField1d(earth,lmax,coeff,period,grid,H)
 
 	type (conf1d_t), intent(in)	        :: earth ! configuration structure
 	integer, intent(in)		            :: lmax ! maximum sph. harm. degree
 	real(8), dimension(:), intent(in)   :: coeff ! vector of sph. harm. coeff.
-	real(8), intent(in)                 :: T ! period in days
+	real(8), intent(in)                 :: period ! period in seconds
 	type (grid_t), intent(in)           :: grid ! grid for the field mapping
 	type (cvector), intent(inout)       :: H ! output magnetic field
 	! local
 	real(8), dimension(:), allocatable  :: Rr,Rs
     integer, dimension(lmax)                   :: Ns
+    real(8), dimension(lmax+1,lmax+1)          :: P_lm
     complex(8), dimension(lmax,lmax+1)         :: Yp,Yt,Yr ! indices (l,m+1), m=0,..,lmax
 	complex(8), dimension(:,:), allocatable    :: Tnr,Tnsp
     real(8), dimension(:), allocatable         :: coefl
-	real(8)				:: dp,dt,period
+	real(8)				:: dp,dt
     integer             :: idr,idrmin,idrmax,ids,idsmin,idsmax
     integer             :: Np,Nt,Nr,Nrr,Nrs,Nd
     integer             :: i,j,k,l,m,istat,ncoeff,icoeff
@@ -596,19 +625,18 @@ subroutine sourceField1d(earth,lmax,coeff,T,grid,H)
     allocate(Rr(Nr),Rs(Nr+1), STAT=istat)
     Rs(1:Nr+1) = 1.0e3 * grid%r(1:Nr+1)
     Rr(1:Nr) = Rs(1:Nr) - 1.0e3 * grid%dr(1:Nr)/2.
-    write(*,*) 'Rr = ',size(Rr),Rr
-    write(*,*) 'Rs = ',size(Rs),Rs
-    write(*,*) 'th = ',size(grid%th),grid%th
-    write(*,*) 'ph = ',size(grid%ph),grid%ph
-    write(*,*) 'dt = ',size(grid%dt),grid%dt
-    write(*,*) 'dp = ',size(grid%dp),grid%dp
+    !write(*,*) 'Rr = ',size(Rr),Rr
+    !write(*,*) 'Rs = ',size(Rs),Rs
+    !write(*,*) 'th = ',size(grid%th),grid%th
+    !write(*,*) 'ph = ',size(grid%ph),grid%ph
+    !write(*,*) 'dt = ',size(grid%dt),grid%dt
+    !write(*,*) 'dp = ',size(grid%dp),grid%dp
 
     !-----------------------------------------------------------!
     !compute source potentials
     Nrs=Nr + 1 ! radii for toroidal potentials
     Nrr=Nr  ! radii for poloidal potentials
     Nd=lmax ! total number of degrees in sph. harm. expansion
-    period = T * (24*3600.) ! in seconds
 
     allocate(Tnr(Nrr,Nd),Tnsp(Nrs,Nd),STAT=istat)
     
@@ -624,14 +652,18 @@ subroutine sourceField1d(earth,lmax,coeff,T,grid,H)
 
     ! ph component of the field (skip the poles)
     do j = 2,Nt
+
+        ! for efficiency, call this once for each theta and use in vsharm
+        call legendre(lmax,cos(grid%th(j)),P_lm)
+
         do i = 1,Np
 
             !Yp at longitudinal mid-edges
-            call vsharm(lmax,cos(grid%th(j)),grid%ph(i)+grid%dp(i)/2,Yr,Yt,Yp)
+            call vsharm(lmax,cos(grid%th(j)),grid%ph(i)+grid%dp(i)/2,P_lm,Yr,Yt,Yp)
 
-            if (i<=2) then
-                write(*,*) 'i,j,Yp=',i,j,Yp
-            end if
+            !if (i<=2) then
+            !    write(*,*) 'i,j,Yp=',i,j,Yp
+            !end if
 
             do k = 1,Nrs
 
@@ -646,20 +678,20 @@ subroutine sourceField1d(earth,lmax,coeff,T,grid,H)
                     coefl = coeff(icoeff+1:icoeff+2*l+1)
 
                     !m=0 goes first
-                    H%x(i,j,k) = Yp(l,1)*coefl(1)*(Tnsp(k,l)/Rs(k))
+                    H%x(i,j,k) = H%x(i,j,k) + Yp(l,1)*coefl(1)*(Tnsp(k,l)/Rs(k))
 
                     do m = 1,l
                         C = (Yp(l,m+1)*coefl(2*m) + Yp(l,m+1)*coefl(2*m+1))
                         H%x(i,j,k) = H%x(i,j,k) + C*(Tnsp(k,l)/Rs(k))
                     end do
 
-                    H%x(i,j,k) = conjg(H%x(i,j,k))
-
                     icoeff = icoeff+2*l+1
 
                     deallocate(coefl, STAT=istat)
 
                 end do ! degrees
+
+                H%x(i,j,k) = conjg(H%x(i,j,k))
 
             end do ! r
         end do ! ph
@@ -667,14 +699,18 @@ subroutine sourceField1d(earth,lmax,coeff,T,grid,H)
 
     ! th component of the field
     do j = 1,Nt
+
+        ! for efficiency, call this once for each theta and use in vsharm
+        call legendre(lmax,cos(grid%th(j)+grid%dt(j)/2),P_lm)
+
         do i = 1,Np+1
 
             !Yt at latitudinal mid-edges
-            call vsharm(lmax,cos(grid%th(j)+grid%dt(j)/2),grid%ph(i),Yr,Yt)
+            call vsharm(lmax,cos(grid%th(j)+grid%dt(j)/2),grid%ph(i),P_lm,Yr,Yt)
 
-            if (i<=2) then
-                write(*,*) 'i,j,Yt=',i,j,Yt
-            end if
+            !if (i<=2) then
+            !    write(*,*) 'i,j,Yt=',i,j,Yt
+            !end if
 
             do k = 1,Nrs
 
@@ -689,14 +725,13 @@ subroutine sourceField1d(earth,lmax,coeff,T,grid,H)
                     coefl = coeff(icoeff+1:icoeff+2*l+1)
 
                     !m=0 goes first
-                    H%y(i,j,k) = Yt(l,1)*coefl(1)*(Tnsp(k,l)/Rs(k))
+                    H%y(i,j,k) = H%y(i,j,k) + Yt(l,1)*coefl(1)*(Tnsp(k,l)/Rs(k))
 
                     do m = 1,l
                         C = (Yt(l,m+1)*coefl(2*m) + Yt(l,m+1)*coefl(2*m+1))
                         H%y(i,j,k) = H%y(i,j,k) + C*(Tnsp(k,l)/Rs(k))
                     end do
 
-                    H%y(i,j,k) = conjg(H%y(i,j,k))
 
                     icoeff = icoeff+2*l+1
 
@@ -704,20 +739,26 @@ subroutine sourceField1d(earth,lmax,coeff,T,grid,H)
 
                 end do ! degrees
 
+                H%y(i,j,k) = conjg(H%y(i,j,k))
+
             end do ! r
         end do ! ph
     end do ! th
 
     ! vertical component of the field
     do j = 1,Nt+1
+
+        ! for efficiency, call this once for each theta and use in vsharm
+        call legendre(lmax,cos(grid%th(j)),P_lm)
+
         do i = 1,Np+1
 
             !Yr at vertical mid-edges
-            call vsharm(lmax,cos(grid%th(j)),grid%ph(i),Yr)
+            call vsharm(lmax,cos(grid%th(j)),grid%ph(i),P_lm,Yr)
 
-            if (i<=2) then
-                write(*,*) 'i,j,Yr=',i,j,Yr
-            end if
+            !if (i<=2) then
+            !    write(*,*) 'i,j,Yr=',i,j,Yr
+            !end if
 
             do k = 1,Nrr
 
@@ -732,20 +773,20 @@ subroutine sourceField1d(earth,lmax,coeff,T,grid,H)
                     coefl = coeff(icoeff+1:icoeff+2*l+1)
 
                     !m=0 goes first
-                    H%z(i,j,k) = -l*(l+1)*Yr(l,1)*coefl(1)*(Tnr(k,l)/Rr(k)**2)
+                    H%z(i,j,k) = H%z(i,j,k) - l*(l+1)*Yr(l,1)*coefl(1)*(Tnr(k,l)/Rr(k)**2)
 
                     do m = 1,l
                         C = - l*(l+1)*(Yr(l,m+1)*coefl(2*m) + Yr(l,m+1)*coefl(2*m+1))
                         H%z(i,j,k) = H%z(i,j,k) + C*(Tnr(k,l)/Rr(k)**2)
                     end do
 
-                    H%z(i,j,k) = conjg(H%z(i,j,k))
-
                     icoeff = icoeff+2*l+1
 
                     deallocate(coefl, STAT=istat)
 
                 end do ! degrees
+
+                H%z(i,j,k) = conjg(H%z(i,j,k))
 
             end do ! r
         end do ! ph
