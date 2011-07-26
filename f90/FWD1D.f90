@@ -29,7 +29,7 @@ program fwd1d
     narg = command_argument_count()
     if (narg < 5) then
         write(0,*) 'Usage: ./FWD1D period_file layered_model_file source_model_file grid_file fields_output_file'
-        return
+        stop
     end if
 
     call get_command_argument(1, period_file)
@@ -55,7 +55,7 @@ program fwd1d
     call read_modelParam(model,layered_model_file)
     if (model%nL /= model%nc) then
         write(0,*) 'Error in FWD1D: input model file is not layered 1D'
-        return
+        stop
     end if
     nL = model%nL
     allocate(depths(nL),logrho(nL), STAT=istat)
@@ -68,7 +68,7 @@ program fwd1d
     call read_modelParam(source,source_model_file)
     if (source%nL /= 1) then
         write(0,*) 'Error in FWD1D: source file should have exactly one layer'
-        return
+        stop
     end if
     allocate(coeff(source%nc), STAT=istat)
     call getParamValues_modelParam(source,coeff)
@@ -105,6 +105,8 @@ program fwd1d
         write(*,*) 'Computing the fields for period ',trim(ich),': ',days,' days'
         call sourceField1d(earth,lmax,coeff,T(i),grid,h1d)
 
+        call reset_time(fwd1d_timer)
+
         write(ich,'(i3.3)') i
         cfile = trim(fields_output_file)//'_'//trim(ich)//'.field'
         write(*,*) 'Writing to file: ',cfile
@@ -114,6 +116,8 @@ program fwd1d
         write(ioWRITE,'(i3)') 1
         call write_cvector(ioWRITE,h1d)
         close(ioWRITE)
+
+        write(*,*) 'Done writing to file: ',elapsed_time(fwd1d_timer),' secs'
     end do
 
     deallocate(depths,coeff,logrho,T, STAT=istat)
@@ -122,5 +126,6 @@ program fwd1d
     call deall_modelParam(source)
     call deall_cvector(h1d)
     call deall_grid(grid)
+    write(*,*) 'Total time taken: ',saved_time(fwd1d_timer),' secs'
 
 end program fwd1d

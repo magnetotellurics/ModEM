@@ -23,6 +23,8 @@ module field1d
 
   end type conf1d_t ! conf1d_t
 
+  type (timer_t), save                  :: fwd1d_timer
+
 
 Contains
 
@@ -608,6 +610,7 @@ subroutine sourceField1d(earth,lmax,coeff,period,grid,H)
     if (size(coeff) .ne. ncoeff) then
         write(0,*) 'Error in sourceField1d: bad sph. harm. coeffs vector (size ',size(coeff),'); must be size ',ncoeff
     end if
+    call reset_time(fwd1d_timer)
 
     !get grid dimensions (assumes a regular grid but this can be easily changed)
     Np = grid%nx
@@ -642,6 +645,9 @@ subroutine sourceField1d(earth,lmax,coeff,period,grid,H)
     
     call sourcePotential(earth,lmax,period,Rr,Rs,Tnr,Tnsp)
     
+    write(*,*) 'Done computing potentials: ',elapsed_time(fwd1d_timer),' secs'
+    call reset_time(fwd1d_timer)
+
     !-----------------------------------------------------------!
     !compute field components
     call zero_cvector(H)
@@ -791,6 +797,8 @@ subroutine sourceField1d(earth,lmax,coeff,period,grid,H)
             end do ! r
         end do ! ph
     end do ! th
+
+    write(*,*) 'Done mapping to grid: ',elapsed_time(fwd1d_timer),' secs'
 
     deallocate(Tnr,Tnsp,STAT=istat)
     deallocate(Rr,Rs,STAT=istat)
