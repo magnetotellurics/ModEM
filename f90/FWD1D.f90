@@ -72,7 +72,7 @@ program fwd1d
     end if
     allocate(coeff(source%nc), STAT=istat)
     call getParamValues_modelParam(source,coeff)
-    lmax = getDegree_modelParam_f(source)
+    lmax = getDegree_modelParam(source)
 
     ! reading grid file (r is in km decreasing from top to bottom)
     call read_grid(grid,grid_file)

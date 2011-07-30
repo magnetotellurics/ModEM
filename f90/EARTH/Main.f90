@@ -133,10 +133,11 @@ Contains
 	call initModel(targetGrid,param,rho)
     !--------------------------------------------------------------------------
     ! Check whether the optional interior source file exists; read it
-    inquire(FILE=cUserDef%fn_source,EXIST=exists)
-    if (exists) then
-        call read_modelParam(p_source,cUserDef%fn_source)
-    end if
+    ! (NOT IMPLEMENTED YET)
+    inquire(FILE=cUserDef%fn_intsource,EXIST=exists)
+    !if (exists) then
+    !    call read_sparsevecc(source,cUserDef%fn_intsource)
+    !end if
 	!--------------------------------------------------------------------------
 	! Read the information about the frequencies
 	call initFreq(cUserDef,freqList)

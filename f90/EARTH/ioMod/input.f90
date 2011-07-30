@@ -59,30 +59,35 @@ Contains
     endif
 
     ! This is the list of options specified in the startup file
-
     read (ioStartup,'(a17,a80)') string,cUserDef%paramname;
     read (ioStartup,'(a17,a80)') string,cUserDef%modelname;
     read (ioStartup,'(a17,a80)') string,cUserDef%verbose;
     read (ioStartup,'(a17,a80)') string,cUserDef%calculate;
-    read (ioStartup,'(a17,g15.7)') string,cUserDef%damping;
+    read (ioStartup,'(a17,a80)') string,cUserDef%secondary_field;
+    read (ioStartup,'(a17,a80)') string,cUserDef%fn_thinsheet;
     read (ioStartup,'(a17,a80)') string,cUserDef%fn_grid;
-    read (ioStartup,'(a17,a80)') string,cUserDef%fn_shell;
-    read (ioStartup,'(a17,a80)') string,cUserDef%fn_field;
-    read (ioStartup,'(a17,a80)') string,cUserDef%fn_period;
-    read (ioStartup,'(a17,a80)') string,cUserDef%fn_coords;
-    read (ioStartup,'(a17,a80)') string,cUserDef%fn_func;
-    read (ioStartup,'(a17,a80)') string,cUserDef%fn_ctrl;
-    read (ioStartup,'(a17,a80)') string,cUserDef%fn_invctrl;
-    read (ioStartup,'(a17,a80)') string,cUserDef%fn_slices;
     read (ioStartup,'(a17,a80)') string,cUserDef%fn_param0;
     read (ioStartup,'(a17,a80)') string,cUserDef%fn_param;
-    read (ioStartup,'(a17,a80)') string,cUserDef%fn_source;
-    read (ioStartup,'(a17,a80)') string,cUserDef%fn_hdata;
+    read (ioStartup,'(a17,a80)') string,cUserDef%fn_period;
+    read (ioStartup,'(a17,a80)') string,cUserDef%fn_extsource;
+    read (ioStartup,'(a17,a80)') string,cUserDef%fn_intsource;
+    read (ioStartup,'(a17,a80)') string,cUserDef%fn_fwdctrl;
+    read (ioStartup,'(a17,a80)') string,cUserDef%fn_invctrl;
+    read (ioStartup,'(a17,a80)') string,cUserDef%fn_slices;
+    read (ioStartup,'(a17,a80)') string,cUserDef%fn_coords;
+    read (ioStartup,'(a17,a80)') string,cUserDef%fn_func;
     read (ioStartup,'(a17,a80)') string,cUserDef%fn_cdata;
     read (ioStartup,'(a17,a80)') string,cUserDef%fn_ddata;
-    read (ioStartup,'(a17,a80)') string,cUserDef%fn_misfit;
-    read (ioStartup,'(a17,a80)') string,cUserDef%fn_gradient;
-    read (ioStartup,'(a17,a80)') string,cUserDef%fn_point;
+    read (ioStartup,'(a17,a80)') string,cUserDef%fn_hdata;
+    read (ioStartup,'(a17,a80)') string,cUserDef%fn_href;
+
+    ! if no inverse control file, use this default damping parameter
+    cUserDef%damping = 10.
+
+    ! old output files; probably won't be needed anymore
+    cUserDef%fn_misfit = 'MISFIT'
+    cUserDef%fn_gradient = 'GRADIENT'
+    cUserDef%fn_point = 'POINT'
 
     close(ioStartup)
 
@@ -113,15 +118,15 @@ Contains
 
     call read_grid(mygrid,cUserDef%fn_grid)
 
-	grid%nzCrust = grid%nzAir
-	inquire(FILE=cUserDef%fn_shell,EXIST=exists)
-	! If no thin shell information present, assume no crust for model computations
+	mygrid%nzCrust = mygrid%nzAir
+	inquire(FILE=cUserDef%fn_thinsheet,EXIST=exists)
+	! If no thin sheet distribution present, assume no crust for model computations
 	if (.not.exists) then
 	  write(0,*) node_info,'Warning: No thin shell conductance distribution specified; assume no crust'
 	else
-	  do i = grid%nzAir+1,grid%nz
-		if (clean(grid%r(i)) > CRUST_R + EPS_GRID) then ! Note: all distances are in km
-		  grid%nzCrust = grid%nzCrust + 1
+	  do i = mygrid%nzAir+1,mygrid%nz
+		if (clean(mygrid%r(i)) > CRUST_R + EPS_GRID) then ! Note: all distances are in km
+		  mygrid%nzCrust = mygrid%nzCrust + 1
 		end if
 	  end do
 	end if
@@ -156,7 +161,7 @@ Contains
   end subroutine initField	! initField
 
   ! ***************************************************************************
-  ! * initCrust reads the modelfile fn_shell to store S-conductance of Earth's
+  ! * initCrust reads the modelfile fn_thinsheet to store S-conductance of Earth's
   ! * crust in GM coordinates. It also stores the depth of the crust in km.
   ! * This should be called after initializing the grid, since it uses the grid
   ! * dimensions to determine the number of entries in file.
@@ -169,7 +174,7 @@ Contains
     integer				                            :: ios,istat,i
 
 
-	inquire(FILE=cUserDef%fn_shell,EXIST=exists)
+	inquire(FILE=cUserDef%fn_thinsheet,EXIST=exists)
 	if(.not.exists) then
 	  mycrust%allocated = .false.
 	  return
@@ -177,9 +182,9 @@ Contains
 
 	allocate(mycrust%cond(mygrid%nx,mygrid%ny),STAT=istat)
 
-	open(ioShell,file=cUserDef%fn_shell,status='old',iostat=ios)
+	open(ioShell,file=cUserDef%fn_thinsheet,status='old',iostat=ios)
 
-    write(6,*) node_info,'Reading from the thin sheet conductance file ',trim(cUserDef%fn_shell)
+    write(6,*) node_info,'Reading from the thin sheet conductance file ',trim(cUserDef%fn_thinsheet)
 
 	do i=1,mygrid%nx
 	  read(ioShell,*,iostat=ios) mycrust%cond(i,1:mygrid%ny)
@@ -571,7 +576,7 @@ Contains
 
 
   ! ***************************************************************************
-  ! * initControls reads the file fn_ctrl and sets the values of main control
+  ! * initControls reads the file fn_fwdctrl and sets the values of main control
   ! * parameters for the forward solver, stored in fwdCtrls
 
   subroutine initControls(cUserDef,fwdCtrls)
@@ -580,9 +585,9 @@ Contains
 	type (userdef_control), intent(in)						:: cUserDef
 	type (fwdCtrl_t), intent(out)						:: fwdCtrls
 
-	  open(ioFwdCtrl,file=cUserDef%fn_ctrl,form='formatted',status='old')
+	  open(ioFwdCtrl,file=cUserDef%fn_fwdctrl,form='formatted',status='old')
 
-      write(6,*) node_info,'Reading from the forward solver controls file ',trim(cUserDef%fn_ctrl)
+      write(6,*) node_info,'Reading from the forward solver controls file ',trim(cUserDef%fn_fwdctrl)
       read(ioFwdCtrl,*) fwdCtrls%ipotloopmax
       read(ioFwdCtrl,*) fwdCtrls%errend
       read(ioFwdCtrl,*) fwdCtrls%nrelmax

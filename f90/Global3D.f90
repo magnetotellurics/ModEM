@@ -25,7 +25,8 @@ program earth
   type(dataVectorMTX_t)                     :: allResp,d_delta
   type(solnVectorMTX_t)                     :: H,h_delta
   type(rhsVectorMTX_t)                      :: b
-  real(8)                                   :: f,f1,f2,eps,runtime
+  real(8)                                   :: f,f1,f2,eps
+  real                                      :: runtime
   character(80)								:: fn_startup=''
   character(80)								:: fn_model='rho.out'
   integer									:: i,j,k,ios,ii
@@ -68,7 +69,7 @@ program earth
 
 
 
-  runtime = 0.0d0
+  runtime = 0.0
 
   eps = 0.01
 
@@ -139,7 +140,7 @@ program earth
 
 	print *,'Calculating solution using the secondary field formulation.'
 
-	call calc_secondary_fields(runtime)
+	!call calc_secondary_fields(runtime)
 
   case ('responses')
 
@@ -178,7 +179,7 @@ program earth
     call InitGlobalData(cUserDef,eps)
 
 	!call calc_symmetry(runtime)
-	call calc_symmetric_operators(runtime)
+	!call calc_symmetric_operators(runtime)
 
   case ('test_J')
 
@@ -1682,7 +1683,7 @@ end program earth
 !	dparam = param
 !	call operatorPt(drho1,dparam,grid,param,rho)
 !	!value2 = dot_product(param%p%value,dparam%p%value)
-!	value2 = dotProd_modelParam_f(param,dparam)
+!	value2 = dotProd_modelParam(param,dparam)
 !	print *, "Value 2 = ",value2
 !	!stop
 !	do i= grid%nx,grid%nx

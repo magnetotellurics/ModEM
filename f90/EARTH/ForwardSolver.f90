@@ -23,6 +23,7 @@ module ForwardSolver
   use UserData
   use initFields
   use modelmap
+  use field1d
 
   implicit none
 
@@ -107,7 +108,10 @@ Contains
    endif
 
    if(secondaryField) then
-      call read_solnVector(cUserDef%fn_field,grid,iTx,h1d)
+      ! instead of reading the fields, compute them
+      !call read_solnVector(cUserDef%fn_field,grid,iTx,h1d)
+      call create_solnVector(grid,iTx,h1d)
+      call fwdSolve1d(iTx,m1d,h1d)
    endif
 
    ! this will only be true when new model is supplied (m0 /= mPrev)
@@ -140,6 +144,78 @@ Contains
    call reset_time(timer)
 
   end subroutine initSolver
+
+  !**********************************************************************
+  subroutine fwdSolve1d(iTx,m1d,h1d)
+!  1D Forward solver. External source is stored in the transmitter.
+!  Output solution vector has to be pre-initialized with the grid.
+
+   integer, intent(in)                          :: iTx
+   type(modelParam_t), intent(in)               :: m1d
+   type(solnVector_t), intent(inout)            :: h1d
+   ! local variables
+   type(conf1d_t)                               :: conf1d
+   type(transmitter_t), pointer                 :: freq
+   real(kind=prec)                              :: period ! secs
+   real(kind=prec), allocatable, dimension(:)   :: depths,coeff,logrho
+   integer                                      :: i,nL,lmax,istat
+
+   ! IMPORTANT: FIRST update pointer to the transmitter in solnVector
+   h1d%tx = iTx
+
+   freq => freqList%info(iTx)
+
+   ! run FWD solver
+   write (*,'(a12,a12,a3,a20,i4,a2,es12.6,a5)') node_info, &
+    'Solving the 1D ',FWD,' problem for period ',iTx,': ',1/freq%value,' secs'
+
+    period  = 1./freq%value     ! angular frequency (radians/sec)
+
+    nL = m1d%nL
+    allocate(depths(nL),logrho(nL), STAT=istat)
+    do i = 1,nL
+        depths(i) = m1d%L(i)%depth
+        call getCoeffValue_modelParam(m1d,i,0,0,logrho(i))
+    end do
+
+    ! source file should only have one layer
+    if (freq%jExt%nL /= 1) then
+        call errStop('Error in fwdSolve1d: external source parametrization should have exactly one layer')
+    end if
+    allocate(coeff(freq%jExt%nc), STAT=istat)
+    call getParamValues_modelParam(freq%jExt,coeff)
+    lmax = getDegree_modelParam(freq%jExt)
+
+    ! set earth radius and domain top radius (in meters)
+    conf1d%r0  = 6371.0e3
+    conf1d%rmax= 1.0e3 * h1d%grid%r(1) + 1.0e0
+
+    ! set tolerance on toroidal potential
+    conf1d%tol = 1.e-9
+
+    ! set surface conductance (should be small since we're using 3D thinsheet)
+    conf1d%tau = 1.e2
+
+    ! save model in 1D configuration structure: layers include the core
+    allocate(conf1d%layer(nL+1),conf1d%sigma(nL+1), STAT=istat)
+    conf1d%layer(1) = 0.0d0
+    conf1d%layer(2:nL+1) = 1.0e3 * depths(1:nL)
+    conf1d%sigma(1:nL) = 10.0**( -logrho(1:nL) )
+    conf1d%sigma(nL+1) = 10.0**( 5.0 ) ! core conductivity
+
+    write(*,*) 'Tops of model layers: ',conf1d%layer
+    write(*,*) 'Conductivity values:  ',conf1d%sigma
+
+    ! compute full magnetic field for the layered model
+    call sourceField1d(conf1d,lmax,coeff,period,h1d%grid,h1d%vec)
+
+    deallocate(depths,coeff,logrho, STAT=istat)
+    deallocate(conf1d%layer,conf1d%sigma, STAT=istat)
+
+   if (output_level > 1) then
+      write (*,*) node_info, ' time taken (mins) ', elapsed_time(timer)/60.0
+   end if
+  end subroutine fwdSolve1d
 
   !**********************************************************************
   subroutine fwdSolve(iTx,h)

@@ -4,6 +4,8 @@ module transmitters
 
   use math_constants
   use utilities
+  use sg_sparse_vector
+  use modelspace
   use iotypes
 
   implicit none
@@ -23,6 +25,10 @@ module transmitters
     real(8)                                 :: period ! (in days)
     ! use / don't use secondary field formulation
     logical                                 :: secondaryField = .false.
+    ! external source for this transmitter, stored as spherical harmonics
+    type(modelParam_t), pointer             :: jExt
+    ! internal source for this transmitter, stored as a sparse vector on the grid
+    type(sparsevecc)                        :: jInt
     ! order index of this frequency that is used for the output
     integer                                 :: i
     ! nMode is number of "modes" for transmitter (e.g., 2 for MT)
@@ -42,6 +48,9 @@ module transmitters
   ! transmitter dictionary
   type (Freq_List), save, public                :: freqList
 
+  ! we currently have one external source for all frequencies, so save it here
+  type (modelParam_t), save, target, private    :: source
+
 
 Contains
 
@@ -59,6 +68,7 @@ Contains
     real(8)                                                 :: tmp
     real(8), dimension(:), allocatable                      :: value,days
     character(80)                                           :: basename,code
+    logical                                                 :: secondaryField
 
     open(ioTX,file=cUserDef%fn_period,status='old',form='formatted',iostat=ios)
 
@@ -124,12 +134,44 @@ Contains
     end if
 
     ! Should we use secondary field formulation?
-    basename=cUserDef%fn_field
+    !basename=cUserDef%fn_field
+    !do i=1,num
+    !    code = myfreq%info(i)%code
+    !    inquire(FILE=trim(basename)//'_'//trim(code)//'.field',EXIST=exists)
+    !    myfreq%info(i)%secondaryField = exists
+    !end do
+
+    ! use / don't use secondary field formulation
+    if ((index(cUserDef%secondary_field,'no') > 0) .or. (index(cUserDef%secondary_field,'0') > 0)) then
+        secondaryField = .false.
+    else
+        secondaryField = .true.
+    end if
     do i=1,num
-        code = myfreq%info(i)%code
-        inquire(FILE=trim(basename)//'_'//trim(code)//'.field',EXIST=exists)
-        myfreq%info(i)%secondaryField = exists
+        myfreq%info(i)%secondaryField = secondaryField
     end do
+
+    inquire(FILE=trim(cUserDef%fn_extsource),EXIST=exists)
+    if (exists) then
+        ! source file should only have one layer
+        call read_modelParam(source,cUserDef%fn_extsource)
+        if (source%nL /= 1) then
+            write(0,*) 'Error in FWD1D: source file should have exactly one layer'
+            stop
+        end if
+    else
+        ! can't use secondary field formulation: no sources specified, default to P10
+        write(6,*) node_info,'Unable to use secondary field formulation: external sources not defined'
+        do i=1,num
+            myfreq%info(i)%secondaryField = .false.
+        end do
+    end if
+
+    ! in either case, associate the external source pointer with the saved structure
+    do i=1,num
+        myfreq%info(i)%jExt => source
+    end do
+
 
     return
 
@@ -145,6 +187,7 @@ Contains
     if (associated(freqList%info)) then
        deallocate(freqList%info,STAT=istat)
     end if
+    call deall_modelParam(source)
 
   end subroutine deall_freqList
 

@@ -100,7 +100,7 @@ interface deall
 end interface
 
 interface countModelParam
-   MODULE PROCEDURE count_modelParam_f
+   MODULE PROCEDURE count_modelParam
 end interface
 
 !  I/O interfaces
@@ -489,7 +489,7 @@ Contains
 
    !************************************************************************
    !  count_modelParam counts the number of variable model parameters
-   function count_modelParam_f(cond) result (N)
+   function count_modelParam(cond) result (N)
 
      implicit none
      type (modelParam_t), intent(in)      :: cond
@@ -501,7 +501,7 @@ Contains
 
      N = cond%Nx * cond%Ny * cond%NzEarth
 
-   end function count_modelParam_f
+   end function count_modelParam
 
   !**********************************************************************
   !  extracts the grid from a modelParam object; this is only needed since

@@ -36,31 +36,31 @@ module model_operators
   end interface
 
   interface countModelParam
-     MODULE PROCEDURE count_modelParam_f
+     MODULE PROCEDURE count_modelParam
   end interface
 
 !  INTERFACE OPERATOR (+)
-!     MODULE PROCEDURE add_modelParam_f
+!     MODULE PROCEDURE add_modelParam
 !  END INTERFACE
 !
 !  INTERFACE OPERATOR (-)
-!     MODULE PROCEDURE subtract_modelParam_f
+!     MODULE PROCEDURE subtract_modelParam
 !  END INTERFACE
 !
 !  ! multiplication
 !  INTERFACE OPERATOR (*)
-!     MODULE PROCEDURE mult_modelParam_f
-!     MODULE PROCEDURE scMult_modelParam_f
+!     MODULE PROCEDURE mult_modelParam
+!     MODULE PROCEDURE scMult_modelParam
 !  END INTERFACE
 !
 !  ! division
 !  INTERFACE OPERATOR (/)
-!     MODULE PROCEDURE scDiv_modelParam_f
+!     MODULE PROCEDURE scDiv_modelParam
 !  END INTERFACE
 
   INTERFACE dotProd
      MODULE PROCEDURE dotProd_modelParam
-     MODULE PROCEDURE dotProdVec_modelParam_f
+     MODULE PROCEDURE dotProdVec_modelParam
   END INTERFACE
 
   INTERFACE linComb
@@ -76,35 +76,35 @@ module model_operators
   END INTERFACE
 
   INTERFACE compare
-     MODULE PROCEDURE compare_modelParam_f
-     MODULE PROCEDURE compareLayers_modelParam_f
+     MODULE PROCEDURE compare_modelParam
+     MODULE PROCEDURE compareLayers_modelParam
   END INTERFACE
 
   INTERFACE getDegree
-     MODULE PROCEDURE getDegree_modelParam_f
-     MODULE PROCEDURE getLayerDegree_modelParam_f
+     MODULE PROCEDURE getDegree_modelParam
+     MODULE PROCEDURE getLayerDegree_modelParam
   END INTERFACE
 
   INTERFACE getRadial
-     MODULE PROCEDURE getRadial_modelParam_f
+     MODULE PROCEDURE getRadial_modelParam
   END INTERFACE
   ! * EOP
 
   public			:: create_modelParam, deall_modelParam, setup_modelParam, copy_modelParam
   public			:: fillParam_modelParam, fillParamValues_modelParam, random_modelParam
-  public			:: compare_modelParam_f, compareLayers_modelParam_f, adjustLayers_modelParam
+  public			:: compare_modelParam, compareLayers_modelParam, adjustLayers_modelParam
   public			:: zero_modelParam, getParamValues_modelParam
   public			:: setLayer_modelParam, setCoeffValue_modelParam, setCrust_modelParam
   public            :: getCoeffValue_modelParam, getCoeff_modelParam, getCoeffArray_modelParam
-  public			:: getDegree_modelParam_f, getLayerDegree_modelParam_f
-  public			:: getRadial_modelParam_f
-  public			:: add_modelParam_f, subtract_modelParam_f, linComb_modelParam
-  public			:: mult_modelParam_f, dotProd_modelParam, dotProdVec_modelParam_f
-  public			:: scMult_modelParam, scMultAdd_modelParam, scDiv_modelParam_f
+  public			:: getDegree_modelParam, getLayerDegree_modelParam
+  public			:: getRadial_modelParam
+  public			:: add_modelParam, subtract_modelParam, linComb_modelParam
+  public			:: mult_modelParam, dotProd_modelParam, dotProdVec_modelParam
+  public			:: scMult_modelParam, scMultAdd_modelParam, scDiv_modelParam
   public			:: print_modelParam, write_modelParam, read_modelParam
   public			:: smoothV_modelParam, smoothH_modelParam
   public			:: multBy_CmSqrt, multBy_Cm
-  public            :: count_modelParam_f
+  public            :: count_modelParam
 
 Contains
 
@@ -145,7 +145,7 @@ Contains
   ! * Test whether two parametrizations have the same basic definitions
   ! * Returns 1 if parametrizations are compatible, zero otherwise
   ! * BOP
-  function compare_modelParam_f(P2,P1) result (status)
+  function compare_modelParam(P2,P1) result (status)
 
     implicit none
     type (modelParam_t), intent(in)                  :: P1
@@ -181,21 +181,21 @@ Contains
 	end if
 
 	do j = 1,P1%nL
-		status = compareLayers_modelParam_f(P1%L(j),P2%L(j))
+		status = compareLayers_modelParam(P1%L(j),P2%L(j))
 		if (status .eqv. .FALSE.) then
 			write(0,*) '(compare_modelParam) incompatible layer',j
 			return
 		end if
 	end do
 
-  end function compare_modelParam_f
+  end function compare_modelParam
 
 
   ! **********************************************************************
   ! * Test whether two layer structures have the same basic definitions
   ! * Returns 1 if layers are identical, zero otherwise
   ! * BOP
-  function compareLayers_modelParam_f(L1,L2) result (status)
+  function compareLayers_modelParam(L1,L2) result (status)
 
     implicit none
     type (modelLayer_t), intent(in)      :: L1,L2
@@ -242,7 +242,7 @@ Contains
 	status = .TRUE.
 	return
 
-  end function compareLayers_modelParam_f
+  end function compareLayers_modelParam
 
 
   ! *************************************************************************
@@ -509,7 +509,7 @@ Contains
   ! **********************************************************************
   ! * P1 is the 1D (radial) part of P.
   ! * Always use a new variable for P1; should not overwrite P!!!
-  function getRadial_modelParam_f(P) result (P1)
+  function getRadial_modelParam(P) result (P1)
 
     implicit none
     type (modelParam_t), intent(in)				   :: P
@@ -538,11 +538,11 @@ Contains
     P1%zeroValued = P%zeroValued
 	P1%temporary = .TRUE.
 
-  end function getRadial_modelParam_f
+  end function getRadial_modelParam
 
   ! **********************************************************************
   ! * BOP
-  function getDegree_modelParam_f(P) result (lmax)
+  function getDegree_modelParam(P) result (lmax)
 
     implicit none
     type (modelParam_t), intent(in)				   :: P
@@ -563,11 +563,11 @@ Contains
 		end if
 	end do
 
-  end function getDegree_modelParam_f
+  end function getDegree_modelParam
 
   ! **********************************************************************
   ! * BOP
-  function getLayerDegree_modelParam_f(P,iLayer) result (lmax)
+  function getLayerDegree_modelParam(P,iLayer) result (lmax)
 
     implicit none
     type (modelParam_t), intent(in)				   :: P
@@ -589,7 +589,7 @@ Contains
 		end if
 	end do
 
-  end function getLayerDegree_modelParam_f
+  end function getLayerDegree_modelParam
 
   ! **********************************************************************
   ! * BOP
@@ -718,8 +718,9 @@ Contains
     implicit none
     type (modelParam_t), intent(in)				   :: P
 	integer, intent(in)							   :: iL,l,m
-    real(8), intent(out)						   :: v,min,max
-	logical, intent(out)						   :: frozen
+    real(8), intent(out)                           :: v
+    real(8), intent(out), optional			       :: min,max
+	logical, intent(out), optional			       :: frozen
     ! * EOP
 
 	integer										   :: iV
@@ -734,9 +735,15 @@ Contains
 	end if
 
 	v = P%c(iL,iV)%value
-	min = P%c(iL,iV)%min
-	max = P%c(iL,iV)%max
-	frozen = P%c(iL,iV)%frozen
+
+	if (present(min) .and. present(max)) then
+	    min = P%c(iL,iV)%min
+	    max = P%c(iL,iV)%max
+	end if
+
+    if (present(frozen)) then
+	    frozen = P%c(iL,iV)%frozen
+	end if
 
   end subroutine getCoeffValue_modelParam
 
@@ -808,7 +815,7 @@ Contains
   ! **********************************************************************
   ! * count_modelParam: counts the number of variable model parameters
   ! * BOP
-  function count_modelParam_f(P) result (N)
+  function count_modelParam(P) result (N)
 
     implicit none
     type (modelParam_t), intent(in)                :: P
@@ -821,7 +828,7 @@ Contains
 
     N = count(P%c%exists)
 
-  end function count_modelParam_f
+  end function count_modelParam
 
   ! **********************************************************************
   ! * BOP
@@ -937,7 +944,7 @@ Contains
   ! **********************************************************************
   ! * We can add or subtract values with exists==.FALSE. (they equal zero)
   ! * BOP
-  function add_modelParam_f(P1,P2) result(P)
+  function add_modelParam(P1,P2) result(P)
 
     implicit none
     type (modelParam_t), intent(in)		:: P1
@@ -966,13 +973,13 @@ Contains
 	P%temporary = .true.
 	P%zeroValued = P1%zeroValued .and. P2%zeroValued
 
-  end function add_modelParam_f
+  end function add_modelParam
 
 
   ! **********************************************************************
   ! * We can add or subtract values with exists==.FALSE. (they equal zero)
   ! * BOP
-  function subtract_modelParam_f(P1,P2) result(P)
+  function subtract_modelParam(P1,P2) result(P)
 
     implicit none
     type (modelParam_t), intent(in)		:: P1
@@ -1001,13 +1008,13 @@ Contains
 	P%temporary = .true.
     P%zeroValued = P1%zeroValued .and. P2%zeroValued
 
-  end function subtract_modelParam_f
+  end function subtract_modelParam
 
 
   ! **********************************************************************
   ! * We can multiply values with exists==.FALSE. (they equal zero)
   ! * BOP
-  function mult_modelParam_f(P1,P2) result(P)
+  function mult_modelParam(P1,P2) result(P)
 
     implicit none
     type (modelParam_t), intent(in)		:: P1
@@ -1036,7 +1043,7 @@ Contains
 	P%temporary = .true.
     P%zeroValued = P1%zeroValued .and. P2%zeroValued
 
-  end function mult_modelParam_f
+  end function mult_modelParam
 
   ! **********************************************************************
   ! * We can multiply values with exists==.FALSE. (they equal zero)
@@ -1079,7 +1086,7 @@ Contains
   ! **********************************************************************
   ! * If we multiply by a vector we only use values with exists==.TRUE.
   ! * BOP
-  function dotProdVec_modelParam_f(v,P2) result(r)
+  function dotProdVec_modelParam(v,P2) result(r)
 
     implicit none
     type (modelParam_t), intent(in)		:: P2
@@ -1114,7 +1121,7 @@ Contains
 	  end do
 	end do
 
-  end function dotProdVec_modelParam_f
+  end function dotProdVec_modelParam
 
   ! **********************************************************************
   ! * BOP
@@ -1168,7 +1175,7 @@ Contains
 
   ! **********************************************************************
   ! * BOP
-  function scDiv_modelParam_f(P1,v) result(P)
+  function scDiv_modelParam(P1,v) result(P)
 
     implicit none
     type (modelParam_t), intent(in)		:: P1
@@ -1192,7 +1199,7 @@ Contains
     P%smoothed = P1%smoothed
 	P%temporary = .true.
 
-  end function scDiv_modelParam_f
+  end function scDiv_modelParam
 
   ! **********************************************************************
   ! * We can add or subtract values with exists==.FALSE. (they equal zero)

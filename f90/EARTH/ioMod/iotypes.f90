@@ -32,22 +32,27 @@ module iotypes
 	character(80)				:: modelname  ! specify how to call the output files
 	character(80)				:: verbose  ! 'none'/'model'/'responses'/'all'/'debug'
 	character(80)				:: calculate  ! 'responses'/'jacobian'/'derivative'
+    character(80)               :: secondary_field  ! 'yes'/'no'
+	character(80)				:: fn_thinsheet	! GM thin sheet conductance values
 	character(80)				:: fn_grid	! grid information
-	character(80)				:: fn_shell	! GM thin shell conductance values
-	character(80)				:: fn_period  ! periods or frequencies
-	character(80)				:: fn_coords  ! observatory coordinates file
-	character(80)				:: fn_func  ! information about data functionals
-	character(80)				:: fn_ctrl	! forward solver control
-	character(80)				:: fn_invctrl	! inverse solver control
-	character(80)				:: fn_slices  ! grid radii at which we output the data
-	character(80)				:: fn_field	! input radial field solution (if required)
-	character(80)				:: fn_precond	! preconditioning parameters
 	character(80)				:: fn_param0	! base model parametrization
 	character(80)				:: fn_param	! information about the parametrization
-    character(80)               :: fn_source ! additional interior source
-    character(80)               :: fn_hdata ! name of magnetic field data file
+	character(80)				:: fn_period  ! periods or frequencies
+    character(80)               :: fn_extsource ! external source
+    character(80)               :: fn_intsource ! additional interior source (not yet implemented)
+	character(80)				:: fn_fwdctrl	! forward solver control
+	character(80)				:: fn_invctrl	! inverse solver control
+	character(80)				:: fn_slices  ! grid radii at which we output the data
+	character(80)				:: fn_coords  ! observatory coordinates file
+	character(80)				:: fn_func  ! information about data functionals
 	character(80)				:: fn_cdata	! name of C responses data file
 	character(80)				:: fn_ddata	! name of D responses data file
+    character(80)               :: fn_hdata ! name of magnetic field data file
+    character(80)               :: fn_href ! reference observatories for magnetic field inversion
+
+	! obsolete
+	character(80)				:: fn_field	! input radial field solution (obsolete: computed internally)
+	character(80)				:: fn_precond	! preconditioning parameters
 	character(80)				:: fn_misfit  ! output file for data misfit
 	character(80)				:: fn_gradient	! output file for derivative
 	character(80)				:: fn_point	! output file for point parametrization
