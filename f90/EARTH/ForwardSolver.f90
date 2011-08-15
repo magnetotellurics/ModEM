@@ -47,6 +47,8 @@ module ForwardSolver
   type(solnVector_t)    :: hPrev  ! store the previous forward solver solution
   !type(rhsVector_t)     :: b   ! needed to store the RHS for forward solver
   type(solnVector_t) :: h1d, dh ! needed for secondary field formulation
+  ! debugging variables
+  character(80)     :: cfile
 
 Contains
 
@@ -110,8 +112,18 @@ Contains
    if(secondaryField) then
       ! instead of reading the fields, compute them
       !call read_solnVector(cUserDef%fn_field,grid,iTx,h1d)
+      !call read_solnVector('p10_5deg',grid,iTx,h1d)
       call create_solnVector(grid,iTx,h1d)
       call fwdSolve1d(iTx,m1d,h1d)
+
+!      ! DEBUG: output forward solver forcing
+!        write(cfile,'(a11,i3.3,a6)') 'compute_1D_',iTx,'.field'
+!        write(*,*) 'Writing to file: ',cfile
+!        open(ioWRITE,file=cfile,status='unknown',form='formatted')
+!        write(ioWRITE,'(a45,f9.3,a6)') "# Full EM field solution output"
+!        write(ioWRITE,'(i3)') 1
+!        call write_cvector(ioWRITE,h1d%vec)
+!        close(ioWRITE)
    endif
 
    ! this will only be true when new model is supplied (m0 /= mPrev)
@@ -169,7 +181,7 @@ Contains
    write (*,'(a12,a12,a3,a20,i4,a2,es12.6,a5)') node_info, &
     'Solving the 1D ',FWD,' problem for period ',iTx,': ',1/freq%value,' secs'
 
-    period  = 1./freq%value     ! angular frequency (radians/sec)
+    period  = 1./freq%value     ! period in secs
 
     nL = m1d%nL
     allocate(depths(nL),logrho(nL), STAT=istat)
@@ -188,7 +200,7 @@ Contains
 
     ! set earth radius and domain top radius (in meters)
     conf1d%r0  = 6371.0e3
-    conf1d%rmax= 1.0e3 * h1d%grid%r(1) + 1.0e0
+    conf1d%rmax= 1.0e3 * h1d%grid%r(1)
 
     ! set tolerance on toroidal potential
     conf1d%tol = 1.e-9

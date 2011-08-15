@@ -440,10 +440,10 @@ subroutine sourcePotential(earth,lmax,period,Rr,Rs,Tnr,Tnsp)
     allocate(rl(Nl),kl(Nl),STAT=istat)
     omega = 2*pi/period
     do j = 1,Nl
-        rl(j) = earth%r0 - earth%layer(j)
+        rl(j) = earth%r0 +1.0d0 - earth%layer(j) ! add one meter to r0 to make sure it's above the thinsheet
         kl(j) = sqrt(cmplx(0.,1.)*omega*mu0*earth%sigma(j))
     end do
-    rmax = earth%rmax
+    rmax = earth%rmax + 1.0d0 ! add one meter to rmax to make sure the whole domain is included
     !-----------------------------------------------------------!
 
     !Radial response
@@ -564,14 +564,14 @@ subroutine sourcePotential(earth,lmax,period,Rr,Rs,Tnr,Tnsp)
         Tnsp(:,i)=Tnsp(:,i)*(-earth%rmax/t1mp(1))
     end do
     !-----------------------------------------------------------!
-    !write(*,*) 'Tnr (',size(Tnr,1),'x',size(Tnr,2),'coeff ): '
-    !do j = 1,Nrr
-    !    write(*,*) Tnr(j,:)
-    !end do
-    !write(*,*) 'Tnsp (',size(Tnsp,1),'x',size(Tnsp,2),'coeff ): '
-    !do j = 1,Nrs
-    !    write(*,*) Tnsp(j,:)
-    !end do
+    write(*,*) 'Tnr (',size(Tnr,1),'x',size(Tnr,2),'coeff ): '
+    do j = 1,Nrr
+        write(*,*) j, Tnr(j,:)
+    end do
+    write(*,*) 'Tnsp (',size(Tnsp,1),'x',size(Tnsp,2),'coeff ): '
+    do j = 1,Nrs
+        write(*,*) j, Tnsp(j,:)
+    end do
     !-----------------------------------------------------------!
 
     deallocate(tnr1,tnsp1,tn,tnp,t1mp,tmp,STAT=istat)

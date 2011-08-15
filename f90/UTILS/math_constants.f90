@@ -24,7 +24,7 @@ module math_constants
   ! Earth's surface for this column)
   real (kind=prec), parameter    :: SIGMA_MIN = 1.0e-6
 
-  ! Useful geophysical constants
+  ! Useful geophysical constants (thinsheet: use 6358.35 for Kuvshinov; 6321.0 for Constable)
   real (kind=prec), parameter	 :: EARTH_R = 6371.0_prec !6378.164
   real (kind=prec), parameter	 :: CRUST_R = 6358.35_prec
 

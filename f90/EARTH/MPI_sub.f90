@@ -23,7 +23,7 @@ Contains
      implicit none
      integer Nbytes1,Nbytes2,Nbytes3,Nbytes4
 
-       CALL MPI_PACK_SIZE(80*23, MPI_CHARACTER,        MPI_COMM_WORLD, Nbytes1,  ierr)
+       CALL MPI_PACK_SIZE(80*(21+5), MPI_CHARACTER,        MPI_COMM_WORLD, Nbytes1,  ierr)
        CALL MPI_PACK_SIZE(2,     MPI_DOUBLE_PRECISION, MPI_COMM_WORLD, Nbytes2,  ierr)
         Nbytes=(Nbytes1+Nbytes2)+1
 

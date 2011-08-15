@@ -79,7 +79,7 @@ program fwd1d
 
     ! set earth radius and domain top radius (in meters)
     earth%r0  = 6371.0e3
-    earth%rmax= 1.0e3 * grid%r(1) + 1.0e0
+    earth%rmax= 1.0e3 * grid%r(1)
 
     ! set tolerance on toroidal potential
     earth%tol = 1.e-9

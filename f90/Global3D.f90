@@ -30,7 +30,7 @@ program earth
   character(80)								:: fn_startup=''
   character(80)								:: fn_model='rho.out'
   integer									:: i,j,k,ios,ii
-  integer									:: istat
+  integer									:: istat,iargc,narg
   real(8),dimension(:),allocatable			:: da, R1, R2
   real(8),dimension(:,:),allocatable			:: dR
   complex(8),dimension(:,:,:),allocatable	:: psi1,psi2,dpsi1,dpsi2
@@ -45,7 +45,12 @@ program earth
 #ifdef MPI
               call  MPI_constructor
 			  if (taskid==0) then
-			   fn_startup = 'fwd_startup'
+			   narg = iargc() !get_argument_count()
+			   if (narg>0) then
+			    call getarg(1, fn_startup) !fn_startup = get_command_argument(1)
+			   else
+			    fn_startup = 'fwd_startup'
+			   end if
                call readStartFile(fn_startup,cUserDef)
                write(6,*) 'Modular global code running in: PARALLEL [', number_of_workers,' nodes]'
 			      call Master_job_Distribute_userdef_control(cUserDef)
@@ -56,7 +61,12 @@ program earth
 			 end if
 
 #else
-     fn_startup = 'fwd_startup'
+     narg = iargc() !get_argument_count()
+     if (narg>0) then
+        call getarg(1, fn_startup) !fn_startup = get_command_argument(1)
+     else
+        fn_startup = 'fwd_startup'
+     end if
      call readStartFile(fn_startup,cUserDef)
      write(6,*) 'Modular global code running in: SERIAL'
 #endif
