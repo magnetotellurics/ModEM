@@ -156,6 +156,15 @@ Contains
 	!--------------------------------------------------------------------------
 	! Read forward solver controls to store in fwdCtrls
 	call initControls(cUserDef,fwdCtrls)
+    !--------------------------------------------------------------------------
+    ! Read forward solver controls to store in adjCtrls
+    inquire(FILE=cUserDef%fn_intsource,EXIST=exists)
+    if (exists) then
+        call initControls(cUserDef,adjCtrls)
+    else
+        write(0,*) node_info,'Warning: Using forward solver configuration for adjoint computations'
+        adjCtrls = fwdCtrls
+    end if
 	!--------------------------------------------------------------------------
 	! Initialize the file names to store in outFiles
     call initOutput(cUserDef,outFiles)

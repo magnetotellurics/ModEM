@@ -143,18 +143,19 @@ Contains
 !toh: put the stopping criterion of the first frequency order of magnitude
 !     more strict than others. hope this may work for a better accuracy of a
 !     frequency loop in ASCENDING order. [22/FEB/1999]
-!ak: don't know if greater accuracy is required for dh; errend = divH tolerance
+!ak: don't know if greater accuracy is required for dh; errend = solution update tolerance
+!ak(08/2011): don't change accuracy based on call_flag (deal with such issues at a higher level)
 
 !	if ( nfreq > 1 .and. ifreq == 1 ) then
-	if ( call_flag == 0 ) then
-
-	  errend = ctrls%errend/10.d0
-
-	else
+!	if ( call_flag == 0 ) then
+!
+!	  errend = ctrls%errend/10.d0
+!
+!	else
 
 	  errend = ctrls%errend
 
-	end if
+!	end if
 
 
 

@@ -23,7 +23,7 @@ Contains
      implicit none
      integer Nbytes1,Nbytes2,Nbytes3,Nbytes4
 
-       CALL MPI_PACK_SIZE(80*(21+5), MPI_CHARACTER,        MPI_COMM_WORLD, Nbytes1,  ierr)
+       CALL MPI_PACK_SIZE(80*(22+5), MPI_CHARACTER,        MPI_COMM_WORLD, Nbytes1,  ierr)
        CALL MPI_PACK_SIZE(2,     MPI_DOUBLE_PRECISION, MPI_COMM_WORLD, Nbytes2,  ierr)
         Nbytes=(Nbytes1+Nbytes2)+1
 
@@ -44,7 +44,7 @@ Contains
 
        index=1
 
-        call MPI_Pack(ctrl%paramname,80*(21+5), MPI_CHARACTER, userdef_control_package, Nbytes, index, MPI_COMM_WORLD, ierr)
+        call MPI_Pack(ctrl%paramname,80*(22+5), MPI_CHARACTER, userdef_control_package, Nbytes, index, MPI_COMM_WORLD, ierr)
         call MPI_Pack(ctrl%damping,2, MPI_DOUBLE_PRECISION, userdef_control_package, Nbytes, index, MPI_COMM_WORLD, ierr)
 
 end subroutine pack_userdef_control
@@ -72,6 +72,7 @@ end subroutine pack_userdef_control
    call MPI_Unpack(userdef_control_package, Nbytes, index, ctrl%fn_extsource,80, MPI_CHARACTER,MPI_COMM_WORLD, ierr)
    call MPI_Unpack(userdef_control_package, Nbytes, index, ctrl%fn_intsource,80, MPI_CHARACTER,MPI_COMM_WORLD, ierr)
    call MPI_Unpack(userdef_control_package, Nbytes, index, ctrl%fn_fwdctrl,80, MPI_CHARACTER,MPI_COMM_WORLD, ierr)
+   call MPI_Unpack(userdef_control_package, Nbytes, index, ctrl%fn_adjctrl,80, MPI_CHARACTER,MPI_COMM_WORLD, ierr)
    call MPI_Unpack(userdef_control_package, Nbytes, index, ctrl%fn_invctrl,80, MPI_CHARACTER,MPI_COMM_WORLD, ierr)
    call MPI_Unpack(userdef_control_package, Nbytes, index, ctrl%fn_slices,80, MPI_CHARACTER,MPI_COMM_WORLD, ierr)
    call MPI_Unpack(userdef_control_package, Nbytes, index, ctrl%fn_coords,80, MPI_CHARACTER,MPI_COMM_WORLD, ierr)
@@ -111,6 +112,7 @@ subroutine check_userdef_control_MPI (which_proc,ctrl)
        write(6,*) '[',trim(which_proc),'] External source: ', trim(ctrl%fn_extsource)
        write(6,*) '[',trim(which_proc),'] Interior source: ', trim(ctrl%fn_intsource)
        write(6,*) '[',trim(which_proc),'] Forward control: ', trim(ctrl%fn_fwdctrl)
+       write(6,*) '[',trim(which_proc),'] Adjoint control: ', trim(ctrl%fn_adjctrl)
        write(6,*) '[',trim(which_proc),'] Inverse control: ', trim(ctrl%fn_invctrl)
        write(6,*) '[',trim(which_proc),'] Radii to output: ', trim(ctrl%fn_slices)
        write(6,*) '[',trim(which_proc),'] Obs coordinates: ', trim(ctrl%fn_coords)

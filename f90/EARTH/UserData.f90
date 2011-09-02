@@ -17,7 +17,7 @@ module UserData
   type (dataVectorMTX_t), save  :: allData
   type (output_info), save      :: outFiles
   type (userdef_control), save       :: cUserDef
-  type (fwdCtrl_t), save        :: fwdCtrls
+  type (fwdCtrl_t), save        :: fwdCtrls,adjCtrls
 
   ! ***************************************************************************
   ! * misfitType: preconditioning and regularisation parameters

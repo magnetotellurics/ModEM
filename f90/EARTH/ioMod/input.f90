@@ -72,6 +72,7 @@ Contains
     read (ioStartup,'(a17,a80)') string,cUserDef%fn_extsource;
     read (ioStartup,'(a17,a80)') string,cUserDef%fn_intsource;
     read (ioStartup,'(a17,a80)') string,cUserDef%fn_fwdctrl;
+    read (ioStartup,'(a17,a80)') string,cUserDef%fn_adjctrl;
     read (ioStartup,'(a17,a80)') string,cUserDef%fn_invctrl;
     read (ioStartup,'(a17,a80)') string,cUserDef%fn_slices;
     read (ioStartup,'(a17,a80)') string,cUserDef%fn_coords;
@@ -588,11 +589,19 @@ Contains
 	  open(ioFwdCtrl,file=cUserDef%fn_fwdctrl,form='formatted',status='old')
 
       write(6,*) node_info,'Reading from the forward solver controls file ',trim(cUserDef%fn_fwdctrl)
-      read(ioFwdCtrl,*) fwdCtrls%ipotloopmax
-      read(ioFwdCtrl,*) fwdCtrls%errend
-      read(ioFwdCtrl,*) fwdCtrls%nrelmax
-      read(ioFwdCtrl,*) fwdCtrls%n_reldivh
-      read(ioFwdCtrl,*) fwdCtrls%ipot0,fwdCtrls%ipotint,fwdCtrls%ipot_max
+      read(ioFwdCtrl,*) fwdCtrls%ipotloopmax ! max number of divergence correction loops
+      read(ioFwdCtrl,*) fwdCtrls%errend ! tolerance on the solution update (herr)
+      read(ioFwdCtrl,*) fwdCtrls%nrelmax    ! max number of solution updates between div. corrections
+      read(ioFwdCtrl,*) fwdCtrls%n_reldivh  ! number of divergence correction iterations
+      read(ioFwdCtrl,*) fwdCtrls%ipot0,fwdCtrls%ipotint,fwdCtrls%ipot_max ! check and run div. correction
+            ! if needed every ipotmax solution updates, ipotmax = min(ipot0+ndivcorr*ipotint,ipot_max)
+
+      ! write them all out to save in the output
+      write(6,*) node_info,fwdCtrls%ipotloopmax
+      write(6,*) node_info,fwdCtrls%errend
+      write(6,*) node_info,fwdCtrls%nrelmax
+      write(6,*) node_info,fwdCtrls%n_reldivh
+      write(6,*) node_info,fwdCtrls%ipot0,fwdCtrls%ipotint,fwdCtrls%ipot_max
 
       close(ioFwdCtrl)
 

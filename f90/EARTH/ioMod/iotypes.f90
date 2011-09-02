@@ -41,6 +41,7 @@ module iotypes
     character(80)               :: fn_extsource ! external source
     character(80)               :: fn_intsource ! additional interior source (not yet implemented)
 	character(80)				:: fn_fwdctrl	! forward solver control
+    character(80)               :: fn_adjctrl   ! adjoint solver control
 	character(80)				:: fn_invctrl	! inverse solver control
 	character(80)				:: fn_slices  ! grid radii at which we output the data
 	character(80)				:: fn_coords  ! observatory coordinates file

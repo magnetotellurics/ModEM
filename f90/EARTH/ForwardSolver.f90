@@ -78,6 +78,9 @@ Contains
    write(*,'(a12,a46,es9.3,a5)') node_info, &
         'Initializing 3D SGFD global solver for period ',freq%period,' days'
 
+   ! reset timer
+   call reset_time(timer)
+
    ! If h0 is already allocated, do not reinitialize - use the previous
    ! forward solution as starting solution for this frequency ...
    if(initFwd) then
@@ -151,9 +154,6 @@ Contains
    if(.not. source%allocated) then
     call create_cvector(grid,source,EDGE)
    endif
-
-   ! reset timer
-   call reset_time(timer)
 
   end subroutine initSolver
 
@@ -340,7 +340,7 @@ Contains
     ! use comb for forcing and assume zero BC; starting solution should be zero
     adjoint = (FWDorADJ .ne. FWD)
     sens = .true.
-    call operatorMii(h%vec,comb%source,omega,rho,h%grid,fwdCtrls,h%errflag,adjoint)
+    call operatorMii(h%vec,comb%source,omega,rho,h%grid,adjCtrls,h%errflag,adjoint)
 
    endif
 
@@ -399,7 +399,7 @@ Contains
    endif
 
    ! restart the clock
-   call clear_time(timer)
+   call reset_time(timer)
 
   end subroutine exitSolver
 
