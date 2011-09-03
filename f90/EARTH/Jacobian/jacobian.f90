@@ -1125,11 +1125,11 @@ Contains
 	this_layer => coeff%L
 
 	! Resistivity is constant at air layers, hence derivative is zero
-	forall (i=1:grid%nx, j=1:grid%ny, k=1:grid%nzCrust)
+	forall (i=1:grid%nx, j=1:grid%ny, k=1:grid%nzAir+grid%nzCrust)
 	  dm%v(i,j,k) = 0.0d0
 	end forall
 
-	do k=grid%nzCrust+1,grid%nz
+	do k=grid%nzAir+grid%nzCrust+1,grid%nz
 
 	  if (.not.in_layer(grid%r(k),coeff%L)) then
 		cycle
@@ -1194,11 +1194,11 @@ Contains
 	call create_rscalar(grid,dm,CENTER)
 
 	! Resistivity is constant at air layers, hence derivative is zero
-	forall (i=1:grid%nx, j=1:grid%ny, k=1:grid%nzCrust)
+	forall (i=1:grid%nx, j=1:grid%ny, k=1:grid%nzAir+grid%nzCrust)
 	  dm%v(i,j,k) = 0.0d0
 	end forall
 
-	do k=grid%nzCrust+1,grid%nz
+	do k=grid%nzAir+grid%nzCrust+1,grid%nz
 
 	  ! Find current layer by locating the upper boundary of a cell
 	  do l=1,m0%nL
@@ -1315,7 +1315,7 @@ Contains
 		func = m0%c(iL,ip)%F
 
 		! Going vertically down through the chosen layer
-		do k=grid%nzCrust+1,grid%nz
+		do k=grid%nzAir+grid%nzCrust+1,grid%nz
 
 		  ! If grid radius is not in this layer, ignore
 		  if(.not.in_layer(grid%r(k),this_layer)) then

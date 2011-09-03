@@ -38,12 +38,13 @@ module GridDef
      ! Grid Dimensions:
      ! nx is grid dimension (number of cells) in the x-direction
      ! ny is grid dimension (number of cells) in the y-direction
-     ! nzEarth is number of earth layers used in the grid modeling
-     ! nzAir is number of air layers
+     ! nzEarth is the number of earth layers used in the model parametrization
+     ! nzCrust is the number of layers to define the thinsheet
+     ! nzAir is the number of air layers
      ! nz is grid dimension (number of cells) in the z-direction:
-     ! nz = nzAir + nzEarth & nz = nzMantle + nzCrust
-	 ! If no crust information is provided, nzCrust=nzAir
-     integer               :: nx, ny, nz, nzEarth, nzMantle, nzCrust, nzAir
+     ! nz = nzAir + nzCrust + nzEarth
+	 ! If no crust information is provided, nzCrust=0
+     integer               :: nx, ny, nz, nzEarth, nzCrust, nzAir
 
      ! Grid geometry:
 	 ! No grid geometry is currently defined in the grid type definition
@@ -133,7 +134,6 @@ Contains
 
        gridOut%coords = gridIn%coords
        gridOut%nzEarth = gridIn%nzEarth
-       gridOut%nzMantle = gridIn%nzMantle
        gridOut%nzCrust = gridIn%nzCrust
        gridOut%nzAir = gridIn%nzAir
 
@@ -171,7 +171,7 @@ Contains
 
     character(*), intent(in)                        :: cfile
     type (grid_t) , intent(out)                     :: grid
-    integer                                         :: nx,ny,nz,nzAir,nzCrust
+    integer                                         :: nx,ny,nz,nzAir,nzCrust,nzEarth
     real(8), dimension(:), allocatable              :: x,y,z,ph,th,r
     integer                                         :: ios,istat,i
     logical                                         :: exists
@@ -185,7 +185,9 @@ Contains
       stop
     end if
 
-    read(ioGrd,*) nx,ny,nz
+    read(ioGrd,*) nx,ny,nzAir,nzCrust,nzEarth
+
+    nz = nzAir + nzCrust + nzEarth
 
     ! model grid and resistivity memory allocation
     allocate(x(nx+1),y(ny+1),z(nz+1), STAT=istat)
@@ -202,15 +204,10 @@ Contains
       z(i)=nearest_meter(z(i))
     end do
 
-    nzAir = 0
-    do i=1,nz
-      if (clean(z(i)) > EARTH_R + EPS_GRID) then
-        nzAir = nzAir + 1
-      end if
-    end do
-
-    ! this will be overwritten if a thinsheet is defined
-    nzCrust = nzAir
+    ! check that the Earth boundary in the grid file matches the internal Earth radius
+    if ((clean(z(nzAir+1)) > EARTH_R + EPS_GRID) .or. (clean(z(nzAir+1)) < EARTH_R - EPS_GRID)) then
+        write(6,*) node_info,'Warning: Earth radius in the grid file ',z(nzAir+1),' does not match EARTH_R'
+    end if
 
     ! fill in the grid structure
     call create_grid(nx,ny,nz,grid)
@@ -218,9 +215,8 @@ Contains
     grid%ny = ny
     grid%nz = nz
     grid%nzAir = nzAir
-    grid%nzEarth = nz - nzAir
     grid%nzCrust = nzCrust
-    grid%nzMantle = nz - nzCrust
+    grid%nzEarth = nzEarth
     grid%x(1:nx)   = x(1:nx)*d2r
     grid%y(1:ny+1) = y(1:ny+1)*d2r
     grid%z(1:nz+1) = z(1:nz+1)*1000.0D0

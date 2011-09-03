@@ -106,7 +106,7 @@ Contains
   ! * For consistency with the original Randy Mackie, 06-27-85, 3-D model, and
   ! * also for consistency with the current forward solver subroutines, we are
   ! * keeping the following grid structure in this forward solver:
-  ! *      line 1: dimensions of model (x,y,z)
+  ! *      line 1: dimensions of model (nx,ny,nzAir,nzCrust,nzEarth)
   ! *      line 2: x(*) in degrees (interval)
   ! *      line 3: y(*) in degrees (position from n-pole)
   ! *      line 4: z(*) in km (distance from center of the earth, decreasing)
@@ -119,20 +119,58 @@ Contains
 
     call read_grid(mygrid,cUserDef%fn_grid)
 
-	mygrid%nzCrust = mygrid%nzAir
 	inquire(FILE=cUserDef%fn_thinsheet,EXIST=exists)
-	! If no thin sheet distribution present, assume no crust for model computations
+	! If no thin sheet distribution present, include the thinsheet layers into the model domain
 	if (.not.exists) then
 	  write(0,*) node_info,'Warning: No thin shell conductance distribution specified; assume no crust'
-	else
-	  do i = mygrid%nzAir+1,mygrid%nz
-		if (clean(mygrid%r(i)) > CRUST_R + EPS_GRID) then ! Note: all distances are in km
-		  mygrid%nzCrust = mygrid%nzCrust + 1
-		end if
-	  end do
+      mygrid%nzEarth = mygrid%nzCrust + mygrid%nzEarth
+      mygrid%nzCrust = 0
 	end if
 
   end subroutine initGrid	! initGrid
+
+  ! ***************************************************************************
+  ! * initRho reads the resistivities on the grid from a simple file
+
+  subroutine initRho(cUserDef,mygrid,myrho)
+
+    type (userdef_control), intent(in)          :: cUserDef
+    type (grid_t), intent(in)                   :: mygrid
+    type (rscalar), intent(inout)               :: myrho  !(nx,ny,nz)
+    ! local
+    real(8)                                     :: lon,lat,depth
+    integer                                     :: ios,i,j,k,nx,ny,nzEarth
+
+
+    inquire(FILE=cUserDef%fn_param,EXIST=exists)
+    if(.not.exists) then
+      write(6,*) node_info,'Model resistivities will not be initialized: ',trim(cUserDef%fn_param)," not found"
+      return
+    end if
+
+    open(ioMdl,file=cUserDef%fn_param,status='old',iostat=ios)
+
+    write(6,*) node_info,'Reading the resistivities from file ',trim(cUserDef%fn_param)
+    read(ioMdl,*) ! header line
+    read(ioMdl,*) nx,ny,nzEarth
+
+    if ((nx .ne. mygrid%nx) .or. (ny .ne. mygrid%ny) .or. (nzEarth .ne. mygrid%nzEarth)) then
+      write(6,*) node_info,'Warning: Model resistivities do not match grid size in ',trim(cUserDef%fn_param)
+    end if
+
+    call create_rscalar(mygrid,myrho,CENTER)
+    myrho%v(:,:,:) = 1./SIGMA_AIR
+    do k=mygrid%nzAir+1,mygrid%nz
+      do i=1,mygrid%nx
+        do j=1,mygrid%ny
+          read(ioMdl,*) lon,lat,depth,myrho%v(i,j,k)
+        end do
+      end do
+    end do
+
+    close(ioMdl)
+
+  end subroutine initRho  ! initRho
 
   ! ***************************************************************************
   ! * initField reads in the full field solution from fn_field.
@@ -557,21 +595,38 @@ Contains
   ! * solver to operate. This is provided for the inversion, which will share
   ! * the same input format for now.
 
-  subroutine initModelParam(cUserDef,myparam,p0)
+  subroutine initModelParam(cUserDef,mygrid,myparam,p0)
 
 	use model_operators
 
     type (userdef_control), intent(in)					:: cUserDef
+    type (grid_t), target, intent(in)                   :: mygrid
     type (modelParam_t), intent(inout)					:: myparam
 	logical, intent(in), optional		:: p0
 
-	if(present(p0)) then
-	  if(p0) then
-	    call read_modelParam(myparam,cUserDef%fn_param0)
-	  end if
-	else
-      call read_modelParam(myparam,cUserDef%fn_param)
-	end if
+    myparam%type = trim(cUserDef%paramname)
+
+    if (trim(cUserDef%paramname) .eq. 'harmonic') then
+
+        if(present(p0)) then
+          if(p0) then
+            call read_modelParam(myparam,cUserDef%fn_param0)
+          end if
+        else
+          call read_modelParam(myparam,cUserDef%fn_param)
+        end if
+        myparam%grid => mygrid
+
+    else if (trim(cUserDef%paramname) .eq. 'grid') then
+
+        call initRho(cUserDef,mygrid,myparam%rho)
+        myparam%allocated = .true.
+
+    else
+        write(0,*) node_info,'Warning: model parametrization ',trim(cUserDef%paramname),' not implemented yet'
+        stop
+    end if
+
 
   end subroutine initModelParam	! initModelParam
 

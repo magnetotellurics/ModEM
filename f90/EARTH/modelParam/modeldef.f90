@@ -3,6 +3,7 @@ module modeldef
 	! This module contains the type definitions for the structures that contain
 	! the full information about the model parametrization
 
+  use sg_scalar
   use griddef
   implicit none
 
@@ -109,6 +110,9 @@ module modeldef
 
   type :: modelParam_t
 
+      ! defines the type of the model parameter ('harmonic'/'grid' etc)
+      character(80)                                       :: type
+
 	  ! all information about the layer structure
 	  integer											  :: nF
 	  type (modelFunc_t),  dimension(:), pointer		  :: F
@@ -123,6 +127,9 @@ module modeldef
 
 	  ! the near-surface shell is also part of model parameter
 	  type (modelShell_t)                                 :: crust
+
+      ! the full resistivity on a grid which may be defined instead of the harmonics
+      type (rscalar)                                      :: rho
 
 	  ! also contains a pointer to the grid, used for mappings
 	  ! NOTE: this may need rethinking unless one global grid is used!

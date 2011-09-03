@@ -51,7 +51,7 @@ MODULE = -module $(OBJDIR)
 LIBS = -lblas -llapack -parallel
 
 # -------------------End-macro-Defs---------------------------
-OBJ = $(OBJDIR)/math_constants.o $(OBJDIR)/utilities.o $(OBJDIR)/DataSpace.o $(OBJDIR)/file_units.o $(OBJDIR)/GridDef.o $(OBJDIR)/polpak.o $(OBJDIR)/paramfunc.o $(OBJDIR)/modeldef.o $(OBJDIR)/iotypes.o $(OBJDIR)/UserData.o $(OBJDIR)/model_operators.o $(OBJDIR)/sg_scalar.o $(OBJDIR)/modelmap.o $(OBJDIR)/ModelSpace.o $(OBJDIR)/SensMatrix.o $(OBJDIR)/sg_vector.o $(OBJDIR)/sg_boundary.o $(OBJDIR)/sg_sparse_vector.o $(OBJDIR)/transmitters.o $(OBJDIR)/receivers.o $(OBJDIR)/SolnSpace.o $(OBJDIR)/dataTypes.o $(OBJDIR)/functionals.o $(OBJDIR)/responses.o $(OBJDIR)/DataFunc.o $(OBJDIR)/DataSens.o $(OBJDIR)/elements.o $(OBJDIR)/dimensions.o $(OBJDIR)/sg_spherical.o $(OBJDIR)/wrapper.o $(OBJDIR)/field_vectors.o $(OBJDIR)/iospec.o $(OBJDIR)/coreFwd.o $(OBJDIR)/maxwells.o $(OBJDIR)/ringcurrent.o $(OBJDIR)/initFields.o $(OBJDIR)/boundaries.o $(OBJDIR)/jacobian.o $(OBJDIR)/SolverSens.o $(OBJDIR)/dataMisfit.o $(OBJDIR)/input.o $(OBJDIR)/output.o $(OBJDIR)/field1d.o $(OBJDIR)/ForwardSolver.o $(OBJDIR)/SensComp.o $(OBJDIR)/SymmetryTest.o $(OBJDIR)/datadef.o $(OBJDIR)/global.o $(OBJDIR)/grid_orig.o $(OBJDIR)/Main.o $(OBJDIR)/DataIO.o $(OBJDIR)/NLCG.o $(OBJDIR)/interp_orig.o $(OBJDIR)/output_orig.o $(OBJDIR)/Global3D.o 
+OBJ = $(OBJDIR)/math_constants.o $(OBJDIR)/utilities.o $(OBJDIR)/DataSpace.o $(OBJDIR)/file_units.o $(OBJDIR)/GridDef.o $(OBJDIR)/sg_scalar.o $(OBJDIR)/polpak.o $(OBJDIR)/paramfunc.o $(OBJDIR)/modeldef.o $(OBJDIR)/iotypes.o $(OBJDIR)/UserData.o $(OBJDIR)/model_operators.o $(OBJDIR)/modelmap.o $(OBJDIR)/ModelSpace.o $(OBJDIR)/SensMatrix.o $(OBJDIR)/sg_vector.o $(OBJDIR)/sg_boundary.o $(OBJDIR)/sg_sparse_vector.o $(OBJDIR)/transmitters.o $(OBJDIR)/receivers.o $(OBJDIR)/SolnSpace.o $(OBJDIR)/dataTypes.o $(OBJDIR)/functionals.o $(OBJDIR)/responses.o $(OBJDIR)/DataFunc.o $(OBJDIR)/DataSens.o $(OBJDIR)/elements.o $(OBJDIR)/dimensions.o $(OBJDIR)/sg_spherical.o $(OBJDIR)/wrapper.o $(OBJDIR)/field_vectors.o $(OBJDIR)/iospec.o $(OBJDIR)/coreFwd.o $(OBJDIR)/maxwells.o $(OBJDIR)/ringcurrent.o $(OBJDIR)/initFields.o $(OBJDIR)/boundaries.o $(OBJDIR)/jacobian.o $(OBJDIR)/SolverSens.o $(OBJDIR)/dataMisfit.o $(OBJDIR)/input.o $(OBJDIR)/output.o $(OBJDIR)/field1d.o $(OBJDIR)/ForwardSolver.o $(OBJDIR)/SensComp.o $(OBJDIR)/SymmetryTest.o $(OBJDIR)/datadef.o $(OBJDIR)/global.o $(OBJDIR)/grid_orig.o $(OBJDIR)/Main.o $(OBJDIR)/DataIO.o $(OBJDIR)/NLCG.o $(OBJDIR)/interp_orig.o $(OBJDIR)/output_orig.o $(OBJDIR)/Global3D.o 
 
 
 all: Global3D 
@@ -80,13 +80,16 @@ $(OBJDIR)/file_units.o:UTILS/file_units.f90
 $(OBJDIR)/GridDef.o:EARTH/GridDef.f90 $(OBJDIR)/math_constants.o $(OBJDIR)/file_units.o $(OBJDIR)/utilities.o 
 	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) EARTH/GridDef.f90 -o $(OBJDIR)/GridDef.o
 
+$(OBJDIR)/sg_scalar.o:FIELDS/FiniteDiff3D/sg_scalar.f90 $(OBJDIR)/math_constants.o $(OBJDIR)/GridDef.o 
+	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) FIELDS/FiniteDiff3D/sg_scalar.f90 -o $(OBJDIR)/sg_scalar.o
+
 $(OBJDIR)/polpak.o:UTILS/polpak.f90  
 	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) UTILS/polpak.f90 -o $(OBJDIR)/polpak.o
 
 $(OBJDIR)/paramfunc.o:EARTH/modelParam/paramfunc.f90 $(OBJDIR)/polpak.o 
 	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) EARTH/modelParam/paramfunc.f90 -o $(OBJDIR)/paramfunc.o
 
-$(OBJDIR)/modeldef.o:EARTH/modelParam/modeldef.f90 $(OBJDIR)/GridDef.o $(OBJDIR)/paramfunc.o 
+$(OBJDIR)/modeldef.o:EARTH/modelParam/modeldef.f90 $(OBJDIR)/sg_scalar.o $(OBJDIR)/GridDef.o $(OBJDIR)/paramfunc.o 
 	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) EARTH/modelParam/modeldef.f90 -o $(OBJDIR)/modeldef.o
 
 $(OBJDIR)/iotypes.o:EARTH/ioMod/iotypes.f90 $(OBJDIR)/math_constants.o $(OBJDIR)/file_units.o 
@@ -97,9 +100,6 @@ $(OBJDIR)/UserData.o:EARTH/UserData.f90 $(OBJDIR)/DataSpace.o $(OBJDIR)/modeldef
 
 $(OBJDIR)/model_operators.o:EARTH/modelParam/model_operators.f90 $(OBJDIR)/math_constants.o $(OBJDIR)/file_units.o $(OBJDIR)/utilities.o $(OBJDIR)/modeldef.o 
 	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) EARTH/modelParam/model_operators.f90 -o $(OBJDIR)/model_operators.o
-
-$(OBJDIR)/sg_scalar.o:FIELDS/FiniteDiff3D/sg_scalar.f90 $(OBJDIR)/math_constants.o $(OBJDIR)/GridDef.o 
-	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) FIELDS/FiniteDiff3D/sg_scalar.f90 -o $(OBJDIR)/sg_scalar.o
 
 $(OBJDIR)/modelmap.o:EARTH/modelParam/modelmap.f90 $(OBJDIR)/GridDef.o $(OBJDIR)/sg_scalar.o $(OBJDIR)/modeldef.o $(OBJDIR)/paramfunc.o 
 	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) EARTH/modelParam/modelmap.f90 -o $(OBJDIR)/modelmap.o

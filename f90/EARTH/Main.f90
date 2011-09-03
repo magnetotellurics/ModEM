@@ -76,7 +76,7 @@ Contains
 	call initCrust(cUserDef,targetGrid,crust)
 	!--------------------------------------------------------------------------
 	! Read main parametrization
-	call initModelParam(cUserDef,p_input)
+	call initModelParam(cUserDef,targetGrid,p_input)
 	!--------------------------------------------------------------------------
 	! Initialize thin shell conductance in the model parameter
 	call setCrust_modelParam(crust,p_input)
@@ -89,7 +89,7 @@ Contains
 	!--------------------------------------------------------------------------
 	! If exists, read it; else create a skeleton from main parametrization
 	if (exists) then
-	    call initModelParam(cUserDef,p0_input,p0=.TRUE.)
+	    call initModelParam(cUserDef,targetGrid,p0_input,p0=.TRUE.)
 	    ! Initialize thin shell conductance in the model parameter
 	    call setCrust_modelParam(crust,p0_input)
 		! Adjust the layer boundaries to match the grid

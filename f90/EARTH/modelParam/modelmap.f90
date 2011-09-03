@@ -16,7 +16,7 @@ Contains
   ! ***************************************************************************
   ! * initResist initializes resistivity structure with the known values above
   ! * mantle; if crust distribution is known, this is also used; if not, this
-  ! * case is handled by setting grid%nzCrust=grid%nzAir, so that no resistivity
+  ! * case is handled by setting grid%nzCrust=0, so that no resistivity
   ! * values below air layers are initialized here.
 
   subroutine insertShell(grid,resist,crust)
@@ -33,11 +33,11 @@ Contains
 	   stop
 	end if
 
-	crust_depth = KM2M*(EARTH_R-CRUST_R)
+	crust_depth = grid%z(grid%nzAir+1) - grid%z(grid%nzAir+grid%nzCrust+1) !KM2M*(EARTH_R-CRUST_R)
 
 	do i=1,grid%nx
 	  do j=1,grid%ny
-		do k=grid%nzAir+1,grid%nzCrust ! if no crust, nzCrust == nzAir
+		do k=grid%nzAir+1,grid%nzAir+grid%nzCrust ! if no crust, nzCrust == 0
 		  if(crust%allocated) then
 			  if(crust%cond(i,j) <= R_ZERO) then
 				write(0, *) 'Error: (insertShell) negative or infinite resistivity at',i,j,k
@@ -82,51 +82,59 @@ Contains
       resist%v(i,j,k) = 1/SIGMA_AIR
     end forall
 
-	do k=grid%nzAir+1,grid%nz
+    if (trim(param%type) .eq. 'grid') then
 
-	  ! Find current layer by locating the upper boundary of a cell
-	  do l=1,param%nL
-		if (in_layer(grid%r(k),param%L(l))) then
-		  this_layer => param%L(l)
-		  exit
-		end if
-	  end do
+      resist%v = param%rho%v
 
-	  iL = this_layer%num
+    else
 
-	  do i=1,grid%nx
-		do j=1,grid%ny
+        do k=grid%nzAir+1,grid%nz
 
-		  point%phi   = (grid%ph(i) + grid%ph(i+1))/2
-		  point%theta = (grid%th(j) + grid%th(j+1))/2
-		  point%r     = (grid%r(k) + grid%r(k+1))/2
+          ! Find current layer by locating the upper boundary of a cell
+          do l=1,param%nL
+            if (in_layer(grid%r(k),param%L(l))) then
+              this_layer => param%L(l)
+              exit
+            end if
+          end do
 
-		  ! Sum up the coeffs * F_at_point in the given layer
-		  value = 0.0d0
-		  do ip=1,param%nF
+          iL = this_layer%num
 
-			coeff = param%c(iL,ip)%value
-			func = param%F(ip)
-			if(coeff /= 0.0d0) then
-			  value = value + coeff * F_at_point(func,point)
-			end if
+          do i=1,grid%nx
+            do j=1,grid%ny
 
-		  end do
+              point%phi   = (grid%ph(i) + grid%ph(i+1))/2
+              point%theta = (grid%th(j) + grid%th(j+1))/2
+              point%r     = (grid%r(k) + grid%r(k+1))/2
 
-		  if (this_layer%if_log) then
-			resist%v(i,j,k) = exp(log(10.0d0)*value)
-		  else
-			resist%v(i,j,k) = value
-		  end if
+              ! Sum up the coeffs * F_at_point in the given layer
+              value = 0.0d0
+              do ip=1,param%nF
 
-		  if (resist%v(i,j,k) <= 0.0d0) then
-			write(0, *) 'Error: (initModel) negative or zero resistivity at',i,j,k
-			stop
-		  end if
+                coeff = param%c(iL,ip)%value
+                func = param%F(ip)
+                if(coeff /= 0.0d0) then
+                  value = value + coeff * F_at_point(func,point)
+                end if
 
-		end do
-	  end do
-	end do
+              end do
+
+              if (this_layer%if_log) then
+                resist%v(i,j,k) = exp(log(10.0d0)*value)
+              else
+                resist%v(i,j,k) = value
+              end if
+
+              if (resist%v(i,j,k) <= 0.0d0) then
+                write(0, *) 'Error: (initModel) negative or zero resistivity at',i,j,k
+                stop
+              end if
+
+            end do
+          end do
+        end do
+
+	end if
 
     ! Finally, insert thinsheet if allocated
     call insertShell(grid,resist,param%crust)
