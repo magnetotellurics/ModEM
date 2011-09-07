@@ -131,6 +131,10 @@ Contains
 	  P%crust%allocated = .false.
     end if
 
+    if(P%rho%allocated) then
+      call deall_rscalar(P%rho)
+    end if
+
 	P%nF = 0
 	P%nL = 0
 	P%nc = 0
@@ -161,6 +165,11 @@ Contains
 		call warning('(compare_modelParam) parametrization not allocated yet')
 		return
 	end if
+
+    if ((trim(P1%type) .ne. 'harmonic') .or. (trim(P2%type) .ne. 'harmonic')) then
+        call warning('(compare_modelParam) no comparison will be performed for this parametrization type')
+        return
+    end if
 
 	! compare functional construction
 	if (P1%nL /= P2%nL) then
@@ -261,6 +270,11 @@ Contains
 
     n = size(r)
     CMB = r(n)
+
+    if (trim(P%type) .ne. 'harmonic') then
+        call warning('(adjustLayers) no layers to adjust for this parametrization type')
+        return
+    end if
 
     ! Test to make sure no grid is defined outside the layered region
 	if (CMB < P%L(P%nL)%lbound) then
@@ -419,6 +433,11 @@ Contains
       call errStop('model parameter not allocated in random_modelParam')
     end if
 
+    if (trim(P%type) .ne. 'harmonic') then
+        call warning('(random_modelParam) model will not be randomised for this parametrization type')
+        return
+    end if
+
     ! this includes 'frozen' variables, but we're just testing
     allocate(dm(P%nc),STAT=istat)
     call random_number(dm)
@@ -524,6 +543,11 @@ Contains
 	end if
 
     P1 = P
+
+    if(trim(P%type) .ne. 'harmonic') then
+       call warning('(getRadial_modelParam) unable to obtain the radial structure for this model type')
+       return
+    end if
 
 	do j=1,P%nL
 	  do i=1,P%nF
@@ -850,6 +874,9 @@ Contains
 	  end if
 	end if
 
+	! copy type
+	P2%type = P1%type
+
 	! copy functional construction
 	P2%nF = P1%nF
 	if (.not. associated(P2%F)) allocate(P2%F(P2%nF),STAT=status)
@@ -864,6 +891,11 @@ Contains
 	P2%nc = P1%nc
 	if (.not. associated(P2%c)) allocate(P2%c(P2%nL,P2%nF),STAT=status)
 	P2%c = P1%c
+
+	! copy values of a grid, if exist
+	if (P1%rho%allocated) then
+	    P2%rho = P1%rho
+	end if
 
 	! copy crust, if exists
 	if (P1%crust%allocated) then
@@ -917,6 +949,10 @@ Contains
     	call errStop('(zero_modelParam) input parametrization not allocated yet')
 	end if
 
+	if (P%rho%allocated) then
+	    call zero_rscalar(P%rho)
+	end if
+
 	! Set all values to zero
 	P%c%value = R_ZERO
 
@@ -960,6 +996,12 @@ Contains
 
 	P = P1
 
+    if (P1%rho%allocated .and. P2%rho%allocated) then
+        call add_rscalar(P1%rho,P2%rho,P%rho)
+        P%temporary = .true.
+        return
+    end if
+
 	do j=1,P%nL
 	  do i=1,P%nF
 	    if((P1%c(j,i)%F%l==P2%c(j,i)%F%l).and.(P1%c(j,i)%F%m==P2%c(j,i)%F%m)) then
@@ -994,6 +1036,12 @@ Contains
 	end if
 
 	P = P1
+
+    if (P1%rho%allocated .and. P2%rho%allocated) then
+        call subtract_rscalar(P1%rho,P2%rho,P%rho)
+        P%temporary = .true.
+        return
+    end if
 
 	do j=1,P%nL
 	  do i=1,P%nF
@@ -1030,6 +1078,11 @@ Contains
 
 	P = P1
 
+    if ((trim(P1%type) .ne. 'harmonic') .or. (trim(P2%type) .ne. 'harmonic')) then
+        call warning('(mult_modelParam) no multiplication will be performed for this parametrization type')
+        return
+    end if
+
 	do j=1,P%nL
 	  do i=1,P%nF
 	    if((P1%c(j,i)%F%l==P2%c(j,i)%F%l).and.(P1%c(j,i)%F%m==P2%c(j,i)%F%m)) then
@@ -1063,6 +1116,11 @@ Contains
 	end if
 
     r = R_ZERO
+
+    if ((trim(P1%type) .ne. 'harmonic') .or. (trim(P2%type) .ne. 'harmonic')) then
+        call warning('(dotProd_modelParam) no multiplication will be performed for this parametrization type')
+        return
+    end if
 
     if (P1%zeroValued .and. P2%zeroValued) then
         return
@@ -1104,6 +1162,11 @@ Contains
 		call errStop('(dotProdVec_modelParam) wrong number of input coefficients')
 	end if
 
+	if (trim(P2%type) .ne. 'harmonic') then
+        call warning('(dotProdVec_modelParam) no multiplication will be performed for this parametrization type')
+        return
+    end if
+
     r = R_ZERO
 	k = 0
 
@@ -1141,6 +1204,10 @@ Contains
 		call errStop('(scMult_modelParam) output parametrization is incompatible')
 	end if
 
+    if (P1%rho%allocated) then
+        call scMult_rscalar(v,P1%rho,P%rho)
+    end if
+
 	P%c%value = v * P1%c%value
 	P%zeroValued = P1%zeroValued
 	P%smoothed = P1%smoothed
@@ -1164,6 +1231,10 @@ Contains
         call errStop('(scMult_modelParam) output structure has to be allocated before calling')
     else if (.not. compare(P1,P)) then
         call errStop('(scMult_modelParam) output parametrization is incompatible')
+    end if
+
+    if (P1%rho%allocated) then
+        call scMultAdd_rscalar(v,P1%rho,P%rho)
     end if
 
     P%c%value = P%c%value + v * P1%c%value
@@ -1225,6 +1296,11 @@ Contains
     ! * EOP
 
 	integer										   :: i,j
+
+	if (P1%rho%allocated .and. P2%rho%allocated) then
+	    call linComb_rscalar(r1,P1%rho,r2,P2%rho,P%rho)
+	    return
+	end if
 
 	if (.not. compare(P1,P2)) then
 		call errStop('(linComb_modelParam) input parametrization structures incompatible')
@@ -1344,6 +1420,13 @@ Contains
 
 	P = P1
 
+	if (trim(P%type) .ne. 'harmonic') then
+        call warning('(multBy_CmSqrt) no smoothing will be performed for this parametrization type')
+        P%smoothed = .false.
+        P%temporary = .true.
+        return
+    end if
+
 	! make the smoothing operator symmetric
 	if (.not. P%zeroValued) then
 	   call smoothV_modelParam(P)
@@ -1437,6 +1520,9 @@ Contains
 
     if(.not.P%allocated) then
        call warning('(print_modelParam) parametrization not allocated yet')
+       return
+    else if(trim(P%type) .ne. 'harmonic') then
+       call warning('(print_modelParam) skipped printing this model parametrization type')
 	   return
 	end if
 
@@ -1504,6 +1590,14 @@ Contains
 
 	integer									:: lmax,i,j,k,istat
     character(6)							:: if_log_char,if_var_char
+
+    if(.not.P%allocated) then
+       call warning('(write_modelParam) parametrization not allocated yet')
+       return
+    else if(trim(P%type) .ne. 'harmonic') then
+       call warning('(write_modelParam) skipped writing this model parametrization type')
+       return
+    end if
 
 	open(unit=ioPrm, file=cfile, status='unknown', iostat=istat)
 

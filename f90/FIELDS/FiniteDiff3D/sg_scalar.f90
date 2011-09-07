@@ -49,6 +49,7 @@ module sg_scalar
   END INTERFACE
 
   INTERFACE scMultAdd
+     module procedure scMultAdd_rscalar
      module procedure scMultAdd_cscalar
   END INTERFACE
 
@@ -1268,6 +1269,47 @@ Contains
 
   end function scMult_rscalar_f ! scMult_rscalar_f
 
+  !****************************************************************************
+  ! scMultadd_rscalar multiplies scalar E1 stored as derived data type
+  ! rscalar with a real scalar r, adding result to output scalar E2
+  subroutine scMultAdd_rscalar(r, E1, E2)
+
+    implicit none
+    real(kind=prec), intent(in)                      :: r
+    ! a real scalar to be multiplied with
+    type (rscalar), intent(in)                       :: E1
+    type (rscalar), intent(inout)                    :: E2
+
+    if(.not.E1%allocated) then
+       write(0,*) 'RHS not allocated yet for scMultAdd_rscalar'
+       stop
+    endif
+
+    ! check to see if LHS (E2) is active (allocated)
+    if(.not.E2%allocated) then
+       write(0,*) 'LHS was not allocated for scMultAdd_rscalar'
+    else
+
+       ! Check whether both scalars are of the same size
+       if((E1%nx == E2%nx).and.(E1%ny == E2%ny).and.(E1%nz == E2%nz)) then
+
+          if (E1%gridType == E2%gridType) then
+
+             ! complex scalar multiplication for v-component
+             E2%v = E2%v + E1%v * r
+
+          else
+             write (0, *) 'not compatible usage for scMultAdd_rscalar'
+          end if
+
+       else
+
+          write(0, *) 'Error:scMultAdd_rscalar: scalars not same size'
+
+       end if
+    end if
+
+  end subroutine scMultAdd_rscalar ! scMultAdd_rscalar
 
   !****************************************************************************
   ! add_rscalar adds scalars stored as devired data type

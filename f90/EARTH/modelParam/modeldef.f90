@@ -111,7 +111,7 @@ module modeldef
   type :: modelParam_t
 
       ! defines the type of the model parameter ('harmonic'/'grid' etc)
-      character(80)                                       :: type
+      character(80)                                       :: type=''
 
 	  ! all information about the layer structure
 	  integer											  :: nF

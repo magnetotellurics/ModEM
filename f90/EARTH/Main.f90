@@ -125,8 +125,10 @@ Contains
 	call linComb(ONE,param,ONE,p0_input,param)
     !--------------------------------------------------------------------------
     ! Test to make sure no grid is defined outside the layered region
-    if (targetGrid%r(targetGrid%nz+1) < param%L(param%nL)%lbound) then
-      param%L(param%nL)%lbound = targetGrid%r(targetGrid%nz+1)
+    if (trim(param%type) .eq. 'harmonic') then
+        if (targetGrid%r(targetGrid%nz+1) < param%L(param%nL)%lbound) then
+            param%L(param%nL)%lbound = targetGrid%r(targetGrid%nz+1)
+        end if
     end if
 	!--------------------------------------------------------------------------
 	! Compute model information everywhere in the domain, including air & crust

@@ -34,6 +34,7 @@ Contains
 	end if
 
 	crust_depth = grid%z(grid%nzAir+1) - grid%z(grid%nzAir+grid%nzCrust+1) !KM2M*(EARTH_R-CRUST_R)
+	write(0,'(a12,a20,g12.3,a34)') node_info,'Using crustal depth ',crust_depth,' to define thinsheet resistivities'
 
 	do i=1,grid%nx
 	  do j=1,grid%ny
@@ -74,19 +75,22 @@ Contains
 	type (modelPoint_t)								:: point
 
 	! First initialize resistivity in air and possibly crust, if given
-    call create_rscalar(grid,resist,CENTER)
 
-    resist%v = R_ZERO
-
-    forall (i=1:grid%nx, j=1:grid%ny, k=1:grid%nzAir)
-      resist%v(i,j,k) = 1/SIGMA_AIR
-    end forall
+	write(0,*) node_info,'Mapping to grid from model parameter of type: ',trim(param%type)
 
     if (trim(param%type) .eq. 'grid') then
 
-      resist%v = param%rho%v
+        resist = param%rho
 
     else
+
+        call create_rscalar(grid,resist,CENTER)
+
+        resist%v = R_ZERO
+
+        forall (i=1:grid%nx, j=1:grid%ny, k=1:grid%nzAir)
+            resist%v(i,j,k) = 1/SIGMA_AIR
+        end forall
 
         do k=grid%nzAir+1,grid%nz
 

@@ -154,8 +154,8 @@ Contains
     read(ioMdl,*) ! header line
     read(ioMdl,*) nx,ny,nzEarth
 
-    if ((nx .ne. mygrid%nx) .or. (ny .ne. mygrid%ny) .or. (nzEarth .ne. mygrid%nzEarth)) then
-      write(6,*) node_info,'Warning: Model resistivities do not match grid size in ',trim(cUserDef%fn_param)
+    if ((nx .ne. mygrid%nx) .or. (ny .ne. mygrid%ny) .or. (nzEarth .ne. (mygrid%nzCrust+mygrid%nzEarth))) then
+      write(6,*) 'Warning: Model resistivities do not match grid size in ',trim(cUserDef%fn_param)
     end if
 
     call create_rscalar(mygrid,myrho,CENTER)
@@ -604,7 +604,6 @@ Contains
     type (modelParam_t), intent(inout)					:: myparam
 	logical, intent(in), optional		:: p0
 
-    myparam%type = trim(cUserDef%paramname)
 
     if (trim(cUserDef%paramname) .eq. 'harmonic') then
 
@@ -626,6 +625,8 @@ Contains
         write(0,*) node_info,'Warning: model parametrization ',trim(cUserDef%paramname),' not implemented yet'
         stop
     end if
+
+    myparam%type = trim(cUserDef%paramname)
 
 
   end subroutine initModelParam	! initModelParam
