@@ -70,7 +70,7 @@ Contains
 	type (receiver_t)							  :: obs
 	real(8), dimension(:,:,:), intent(in)	  :: rho	!(nx,ny,nz)
 	complex(8)								  :: Hx,Hy,Hz
-	integer									  :: i,j,k,n,ios,istat
+	integer									  :: i,j,k,n,nx,ny,ios,istat
 	character(3)							  :: ichar
 	character(10)							  :: echar
 	character(*), intent(in), optional		  :: extension
@@ -87,8 +87,8 @@ Contains
 
 	open(ioWRITE,file=fn_output,status='unknown',form='formatted',iostat=ios)
 	write(ioWRITE,'(a85)') "#Radius ij_code GM_Lon GM_Lat rho(i,j,k) rho(i,j,k-1) Hx Hy Hz C_ratio D_ratio (km)";
-	write(ioWRITE,'(a8,f0.3,a6,i6,a4,i6,a4,i6)') &
-	  ' period=',freq%period,' nrad=',slices%n,' nx=',grid%nx,' ny=',grid%ny
+	write(ioWRITE,'(a8,f0.3,a6,i6,a4,i6,a4,i6,a6)') &
+	  ' period=',freq%period,' nrad=',slices%n,' nx=',grid%nx,' ny=',grid%ny,trim(slices%type)
 
 	do n = 1,slices%n
 	  ! Check that radius is valid
@@ -97,9 +97,9 @@ Contains
 		cycle
 	  end if
 	  ! If it is, find the closest grid radius and compute the solution
-	  call fieldValue_ij(slices%r(n),H,Hij)
-	  do j = 2,grid%ny-1
-		do i = 1,grid%nx
+	  call fieldValue_ij(slices%r(n),H,Hij,slices%type)
+	  do j = 1,size(Hij%o,2)
+		do i = 1,size(Hij%o,1)
 		  k = Hij%o(i,j)%k
 		  obs = Hij%o(i,j)
 		  Hx = Hij%x(i,j)
@@ -108,7 +108,7 @@ Contains
 		  write(ioWRITE,'(f12.3,a10,14g15.7)') &
 			  obs%rad,trim(obs%code),&
 			  obs%lon,obs%lat,&
-			  rho(i,j,k),rho(i,j,k-1),&
+			  rho(i,j+1,k),rho(i,j+1,k-1),&
 			  Hx,Hy,Hz,&
 			  m2km * C_ratio(Hx,Hy,Hz,obs%colat*d2r),&
 			  m2km * D_ratio(Hx,Hy,Hz,obs%colat*d2r)
@@ -120,8 +120,8 @@ Contains
 
 	! Deallocate solution
 	deallocate(Hij%x,Hij%y,Hij%z,STAT=istat)
-	do i = 1,grid%nx
-	  do j = 1,grid%ny
+	do i = 1,size(Hij%o,1)
+	  do j = 1,size(Hij%o,2)
 	    call deall_sparsevecc(Hij%o(i,j)%Lx)
 	    call deall_sparsevecc(Hij%o(i,j)%Ly)
 	    call deall_sparsevecc(Hij%o(i,j)%Lz)
@@ -132,117 +132,6 @@ Contains
   end subroutine outputSolution	! outputSolution
 
 
-  ! ***************************************************************************
-  ! * OutputResponses writes the chosen kind of responses calculated at every
-  ! * observatory location to an output file
-
-  subroutine outputResponses(psi,outFiles,dat)
-
-	type (dataVector_t), intent(in)					:: psi
-	type (dataVector_t), intent(in), optional		:: dat
-	type (output_info), intent(in)					:: outFiles
-	character(80)									:: fn_response
-	complex(8), dimension(:), allocatable			:: Resp,RespRatio
-	complex(8), dimension(:), allocatable			:: FieldData
-	real(8), dimension(:), allocatable			    :: FieldError
-	real(8)											:: rval,ival,err,rms
-	integer											:: i,j,k,itype,iobs,nSite
-	integer											:: ios,istat
-
-    i = psi%tx
-
-	allocate(Resp(obsList%n),RespRatio(obsList%n),FieldData(obsList%n),FieldError(obsList%n), STAT=istat)
-
-	do j=1,psi%ndt
-
-	  nSite = psi%data(j)%nSite
-      allocate(Resp(nSite),RespRatio(nSite),FieldData(nSite),FieldError(nSite), STAT=istat)
-	  RespRatio(:) = cmplx(psi%data(j)%value(1,:),psi%data(j)%value(2,:))
-	  FieldData(:) = cmplx(dat%data(j)%value(1,:),dat%data(j)%value(2,:))
-	  FieldError(:) = dat%data(j)%error(1,:)
-	  itype = dat%data(j)%dataType
-
-	  select case ( trim(TFList%info(itype)%name) )
-
-	  case ('C')
-		fn_response = outFiles%fn_cdat
-		do k=1,nSite
-		    iobs = psi%data(j)%rx(k)
-			Resp(k) = RespRatio(k) * dtan(obsList%info(iobs)%colat*d2r) * m2km
-		end do
-
-	  case ('D')
-		fn_response = outFiles%fn_ddat
-		do k=1,nSite
-            iobs = psi%data(j)%rx(k)
-			Resp(k) = RespRatio(k) * dsin(obsList%info(iobs)%colat*d2r) * m2km
-		end do
-
-	  case default
-		write(0,*) 'Warning: unknown transfer function: ',&
-		  trim(TFList%info(itype)%name)
-		cycle
-	  end select
-
-!          inquire(FILE=fn_response,EXIST=exists)
-!	  if ((.not.exists).and.(i==1)) then
-!		open(ioResp,file=fn_response,status='unknown',form='formatted',iostat=ios)
-!	    write(ioResp,*) "#Output of earth3d (for ",freqList%n," frequency values)";
-!		write(ioResp,*) "#Period Code GM_Lon GM_Lat Real(km) Imag(km) Error(km)";
-!	  else if(exists .and.(i==1)) then
-!                write(0,*) 'Warning: Response file already exists. Appending...'
-!		open(ioResp,file=fn_response,position='append', form='formatted',iostat=ios)
-!          else
-!		open(ioResp,file=fn_response,position='append', form='formatted',iostat=ios)
-!	  end if
-
-		! NB: No appending for now to make it easier to debug and cleaner. Jan 19, 2007
-	  if (i==1) then
-		  open(ioResp,file=fn_response,status='unknown',form='formatted',iostat=ios)
-	    write(ioResp,*) "#Output of earth3d (for ",freqList%n," frequency values)";
-		  write(ioResp,*) "#Period Code GM_Lon GM_Lat Real(km) Imag(km) Error(km)";
-    else
-		  open(ioResp,file=fn_response,position='append', form='formatted',iostat=ios)
-	  end if
-		!write(ioResp,*) "freq = ",freq%value
-		do k=1,nSite
-          iobs = psi%data(j)%rx(k)
-		  if (.not.obsList%info(iobs)%defined) then
-			cycle
-		  end if
-		  write(ioResp,'(f8.3,a12,4g15.7)',advance='no') &
-			  freqList%info(i)%period,&
-			  trim(obsList%info(iobs)%code),&
-			  obsList%info(iobs)%lon,obsList%info(iobs)%lat,Resp(k)
-		  if(present(dat)) then
-			!if (dat%data(j)%exists(k)) then
-			  rval = dreal(FieldData(k)-RespRatio(k))
-			  ival = dimag(FieldData(k)-RespRatio(k))
-			  err = FieldError(k)
-			  rms = ((rval/err)**2 + (ival/err)**2)/2
-			  write(ioResp,'(g15.7)') rms
-			!else
-			!  write(ioResp,'(g15.7)') 999999.9
-			!end if
-		  else
-			write(ioResp,*)
-		  end if
-		end do
-	  close(ioResp)
-
-      deallocate(Resp,RespRatio,FieldData,FieldError, STAT=istat)
-
-!	  if (fn_response == '') then
-!		do k=1,size(Resp)
-!		  write(*,*) trim(obsList%info(k)%code),Resp(k) * m2km
-!		end do
-!	  end if
-
-	end do
-
-	return
-
-  end subroutine outputResponses  ! outputResponses
 
 
   ! ***************************************************************************

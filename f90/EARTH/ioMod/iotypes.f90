@@ -74,7 +74,7 @@ module iotypes
 	character(80)				:: fn_jxjyjz, fn_hxhyhz
 	character(80)				:: fn_err
 	character(80)				:: fn_cresp, fn_dresp
-	character(80)				:: fn_cdat, fn_ddat
+	character(80)				:: fn_cdat, fn_ddat, fn_hdat
 	character(80)				:: fn_cjac, fn_djac
 	character(80)				:: fn_model
 	character(80)				:: fn_residuals
@@ -93,6 +93,7 @@ module iotypes
   ! * ... this doesn't necessarily belong here, but good enough for now!
   type :: Rad_List
 
+    character(80)                               :: type ! 'CELL'/'NODE'
     integer                                     :: n
     real(8), pointer, dimension(:)              :: r    !nrad
 
@@ -110,15 +111,17 @@ Contains
   subroutine initSlices(cUserDef,slices)
 
     implicit none
-    type (userdef_control), intent(in)                           :: cUserDef
+    type (userdef_control), intent(in)                      :: cUserDef
     type (Rad_List), intent(out)                            :: slices
+    character(80)                                           :: type
     integer                                                 :: num,i,ios
 
     inquire(FILE=cUserDef%fn_slices,EXIST=exists)
     ! If file is present, initialize the output radii ("slices")
     if (.not.exists) then
-      write(0,*) 'Warning: No radii specified; we will only output surface solution'
+      write(0,*) 'Warning: No radii specified; we will only output surface solution at cell centers'
       allocate(slices%r(1))
+      slices%type = 'CELL'
       slices%n = 1
       slices%r(1) = EARTH_R
     end if
@@ -127,6 +130,12 @@ Contains
 
     write(6,*) node_info,'Reading from the output radii file ',trim(cUserDef%fn_slices)
     read(ioRad,'(a)') label
+
+    read(ioRad,*) type
+    if ((trim(type) .ne. 'CELL') .and. (trim(type) .ne. 'NODE')) then
+      write(6,*) 'Error: Unknown output solution type ',trim(type)
+      stop
+    end if
 
     read(ioRad,*) num
     allocate(slices%r(num))
@@ -139,6 +148,7 @@ Contains
     close(ioRad)
 
     slices%n = num
+    slices%type = type
 
   end subroutine initSlices ! initSlices
 

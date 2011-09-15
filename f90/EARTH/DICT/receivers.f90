@@ -11,7 +11,7 @@ module receivers
 
   implicit none
 
-  public            :: initCoords, initObsList, getObs, deall_obsList
+  public            :: initCoords, initRefCoords, initObsList, deall_obsList, getObs
 
   ! ***************************************************************************
   ! * type receiver_t contains the information about a single observatory; we
@@ -61,6 +61,9 @@ module receivers
   ! receiver dictionary
   type (Obs_List), save, public                :: obsList
 
+  ! receiver dictionary
+  type (Obs_List), save, public                :: refObsList
+
 Contains
 
   ! ***************************************************************************
@@ -102,6 +105,55 @@ Contains
   end subroutine initCoords !   initCoords
 
   ! ***************************************************************************
+  ! * initRefCoords reads the file fn_href that contains the observatory codes
+  ! * and locations for the list of reference observatories. We use these to
+  ! * compute the scaling for the raw magnetic field responses.
+
+  subroutine initRefCoords(cUserDef,myobs)
+
+    implicit none
+    type (userdef_control), intent(in)                           :: cUserDef
+    type (Obs_List), intent(out)                            :: myobs
+    integer                                                 :: num
+    integer                                                 :: i,j,ios=0
+    logical                                                 :: exists
+
+    inquire(FILE=cUserDef%fn_href,EXIST=exists)
+    if (.not. exists) then
+        inquire(FILE=cUserDef%fn_hdata,EXIST=exists)
+        if (exists) then
+            write(0,*) node_info,'Warning: No reference observatories provided to scale the magnetic field responses; scaling will be 1'
+        end if
+        myobs%n = 0
+        return
+    end if
+
+    open(ioRX,file=cUserDef%fn_href,status='old',form='formatted',iostat=ios)
+
+    write(6,*) node_info,'Reading from the reference coordinates file ',trim(cUserDef%fn_href)
+    read(ioRX,'(a)') label
+    ! write(6,*) label
+
+    read(ioRX,*) num
+    allocate(myobs%info(num))
+    do i=1,num
+
+      read(ioRX,*) myobs%info(i)%code,myobs%info(i)%colat,myobs%info(i)%lon
+      myobs%info(i)%lat = 90.0d0 - myobs%info(i)%colat
+      myobs%info(i)%defined = .TRUE.
+
+    end do
+
+    close(ioRX)
+
+    myobs%n = num
+
+
+    return
+
+  end subroutine initRefCoords !   initRefCoords
+
+  ! ***************************************************************************
   ! * initObsList initializes the interpolation parameters for a pre-defined
   ! * list of receivers; call in the initialization block, so that we know which
   ! * receivers are defined while initializing the data
@@ -115,6 +167,9 @@ Contains
 	nobs = obsList%n
 	do i=1,nobs
 	  call LocateReceiver(grid,obsList%info(i))
+      if (.not.obsList%info(i)%defined) then
+        write(0,*) 'Warning: Observatory ',trim(obsList%info(i)%code),' is not defined at initObsList'
+      end if
 	  !write(*,'(a40,a6,2i6,2g15.7)') 'code,i,j,lon,colat = ',obsList%info(i)%code,&
 	  !	obsList%info(i)%i,obsList%info(i)%j,obsList%info(i)%lon,obsList%info(i)%colat
 	end do
@@ -137,7 +192,17 @@ Contains
         deallocate(obsList%info,STAT=istat)
     end if
 
+    if (associated(refObsList%info)) then
+        do i = 1,refObsList%n
+            call deall_sparsevecc(refObsList%info(i)%Lx)
+            call deall_sparsevecc(refObsList%info(i)%Ly)
+            call deall_sparsevecc(refObsList%info(i)%Lz)
+        end do
+        deallocate(refObsList%info,STAT=istat)
+    end if
+
   end subroutine deall_obsList
+
 
   ! ***************************************************************************
   ! * Uses observatory code to locate the receiver in the list; default zero
@@ -425,14 +490,27 @@ Contains
 
 	! Special case: receiver too close to one of the poles
 	! At poles Hx is not defined, Hy ambiguous, tan(th) = 0
-	if ((j == 1).or.(j == ny)) then
-	  write(0,*) 'Warning: (LocateReceiver) receiver ',trim(o%code),' too close to poles'
-	  o%i = i
-	  o%j = j
-	  o%k = k
-	  o%defined = .FALSE. ! fields not defined, so ignore the receiver
-	  return
+	! However, nodes 2 and ny are allowed, so take care here
+	if (j == 1) then
+	    write(0,*) 'Warning: (LocateReceiver) receiver ',trim(o%code),' ignored; too close to North pole'
+	    o%i = i
+	    o%j = j
+	    o%k = k
+	    o%defined = .FALSE. ! fields not defined, so ignore the receiver
+	    return
 	end if
+    if (j == ny) then
+      if (abs(th - th_grid(ny)) < EPS_GRID) then
+        th = th_grid(ny)
+      else
+        write(0,*) 'Warning: (LocateReceiver) receiver ',trim(o%code),' ignored; too close to South pole'
+        o%i = i
+        o%j = j
+        o%k = k
+        o%defined = .FALSE. ! fields not defined, so ignore the receiver
+        return
+      end if
+    end if
 
 	! Special case: receiver is located at equator (or vero close)
 	! At equator tan(th)->inf,cos(th)=0, hence C- and D-responses aren't useful
@@ -469,17 +547,17 @@ Contains
 	! q_crn = dnint(q_crn*LARGE_REAL)/LARGE_REAL
 
 	if ((p_crn < 0.0d0).OR.(p_crn > 1.0d0)) then
-	  write(0, *) 'Warning: (LocateReceiver) the value of p_crn is ',p_crn,' at ',trim(o%code)
 	  if ((p_crn < 0.0d0).AND.(p_crn > - EPS_GRID)) then
 		p_crn = 0.0d0
 	  else
+	    write(0, *) 'Error: (LocateReceiver) the value of p_crn is ',p_crn,' at ',trim(o%code)
 		stop
 	  end if
 	else if ((q_crn < 0.0d0).OR.(q_crn > 1.0d0)) then
-	  write(0, *) 'Warning: (LocateReceiver) the value of q_crn is ',q_crn,' at ',trim(o%code)
 	  if ((q_crn < 0.0d0).AND.(q_crn > - EPS_GRID)) then
 		q_crn = 0.0d0
 	  else
+	    write(0, *) 'Error: (LocateReceiver) the value of q_crn is ',q_crn,' at ',trim(o%code)
 		stop
 	  end if
 	end if
@@ -508,17 +586,17 @@ Contains
 
 
 	if ((p_ctr < 0.0d0).OR.(p_ctr > 1.0d0)) then
-	  write(0, *) 'Warning: (LocateReceiver) the value of p_ctr is ',p_ctr,' at ',trim(o%code)
 	  if ((p_ctr < 0.0d0).AND.(p_ctr > - EPS_GRID)) then
 		p_ctr = 0.0d0
 	  else
+	    write(0, *) 'Error: (LocateReceiver) the value of p_ctr is ',p_ctr,' at ',trim(o%code)
 		stop
 	  end if
 	else if ((q_ctr < 0.0d0).OR.(q_ctr > 1.0d0)) then
-	  write(0, *) 'Warning: (LocateReceiver) the value of q_ctr is ',q_ctr,' at ',trim(o%code)
 	  if ((q_ctr < 0.0d0).AND.(q_ctr > - EPS_GRID)) then
 		q_ctr = 0.0d0
 	  else
+	    write(0, *) 'Error: (LocateReceiver) the value of q_ctr is ',q_ctr,' at ',trim(o%code)
 		stop
 	  end if
 	end if

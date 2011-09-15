@@ -30,7 +30,7 @@ Contains
   real(kind=prec), intent(inout)    :: Resp(:)
 
   !  local variables
-  complex(8)            :: res
+  complex(8)            :: res(3)
   type (functional_t), pointer   :: dataType
   type (receiver_t), pointer     :: obs
   integer               :: iComp,nComp
@@ -38,20 +38,42 @@ Contains
   dataType => TFList%info(iDt)
   obs => obsList%info(iRx)
 
-  ! compute the complex data response (C/D ratio)
+  ! compute the complex data response (C/D ratio or the scaled H fields)
 
   select case (dataType%name)
      case('C')
-        res = dataResp_rx(C_ratio,obs,H%vec)
+        res(1) = dataResp_rx(C_ratio,obs,H%vec)
+        ! save real output
+        Resp(1) = dreal(res(1))
+        Resp(2) = dimag(res(1))
      case('D')
-        res = dataResp_rx(D_ratio,obs,H%vec)
+        res(1) = dataResp_rx(D_ratio,obs,H%vec)
+        ! save real output
+        Resp(1) = dreal(res(1))
+        Resp(2) = dimag(res(1))
+     case('T') ! generalised magnetic field transfer functions
+        res = fieldValue_rx(obs,H%vec)
+        res = res / refavg(H%vec)
+        ! save real output
+        Resp(1) = dreal(res(1))
+        Resp(2) = dimag(res(1))
+        Resp(3) = dreal(res(2))
+        Resp(4) = dimag(res(2))
+        Resp(5) = dreal(res(3))
+        Resp(6) = dimag(res(3))
+     case('H') ! raw magnetic fields
+        res = fieldValue_rx(obs,H%vec)
+        ! save real output
+        Resp(1) = dreal(res(1))
+        Resp(2) = dimag(res(1))
+        Resp(3) = dreal(res(2))
+        Resp(4) = dimag(res(2))
+        Resp(5) = dreal(res(3))
+        Resp(6) = dimag(res(3))
      case default
         call errStop('Unknown data response specified in dataResp')
   end select
 
-  ! save real output
-  Resp(1) = dreal(res)
-  Resp(2) = dimag(res)
 
   end subroutine dataResp
 
@@ -59,6 +81,11 @@ Contains
   ! * Lrows is a subroutine to output a full vector g_j defined on edges,
   ! * such that for a single frequency and a single observatory,
   ! * $\pd{psi_{\omega}^j}{veca} = g_j^* \pd{vecH}{veca}$
+  ! *
+  ! * In my complex global code, a similar routine computed
+  ! * g_sparse = conjg(gc_sparse)
+  ! * i.e., g rather than g* (conjugated).
+  ! * However, for Lrows as defined in the modular system, we want to keep it g*.
 
   subroutine Lrows(H,m0,iDt,iRx,L)
 
@@ -66,15 +93,16 @@ Contains
     type (solnVector_t), intent(in)                 :: H
     type (modelParam_t), intent(in)                 :: m0   ! not needed?
 	integer, intent(in)					            :: iDt,iRx
-	type (sparseVector_t), intent(inout)            :: L(:) ! nFunc = 1
+	type (sparseVector_t), intent(inout)            :: L(:) ! nFunc = 1 or 3
 	type (sparsevecc)								:: Lx,Ly,Lz
 	complex(8)										:: Hx,Hy,Hz
-	complex(8)										:: pd_Hx,pd_Hy,pd_Hz
+	complex(8), dimension(3)					    :: pd_Hx,pd_Hy,pd_Hz
 	type (sparsevecc)								:: gc_sparse  ! g*
 	type (sparsevecc)                  				:: g_sparse	! g
     type (functional_t), pointer                    :: dataType
     type (receiver_t), pointer                      :: obs
-	real(8)											:: EARTH_R
+    complex(8)                                      :: avg
+	real(8)											:: davg,EARTH_R
 
 	dataType => TFList%info(iDt)
 	obs => obsList%info(iRx)
@@ -103,25 +131,90 @@ Contains
 
 	if (dataType%name == 'C') then
 
-!	  pd_Hx = C_ZERO
-!	  pd_Hy = - km2m * (EARTH_R/2) * dtan(obs%colat*d2r) * Hz/(Hy*Hy)
-!	  pd_Hz =   km2m * (EARTH_R/2) * dtan(obs%colat*d2r) * 1/Hy
-	  pd_Hx = C_ZERO
-	  pd_Hy = - km2m * (EARTH_R/2) * Hz/(Hy*Hy)
-	  pd_Hz =   km2m * (EARTH_R/2) * 1/Hy
+!	  pd_Hx(1) = C_ZERO
+!	  pd_Hy(1) = - km2m * (EARTH_R/2) * dtan(obs%colat*d2r) * Hz/(Hy*Hy)
+!	  pd_Hz(1) =   km2m * (EARTH_R/2) * dtan(obs%colat*d2r) * 1/Hy
+	  pd_Hx(1) = C_ZERO
+	  pd_Hy(1) = - km2m * (EARTH_R/2) * Hz/(Hy*Hy)
+	  pd_Hz(1) =   km2m * (EARTH_R/2) * 1/Hy
 
-	  call linComb_sparsevecc(Ly,pd_Hy,Lz,pd_Hz,gc_sparse)
+	  call linComb_sparsevecc(Ly,pd_Hy(1),Lz,pd_Hz(1),gc_sparse)
+      call create_sparseVector(H%grid,H%tx,L(1))
+      L(1)%L = gc_sparse ! NOT g_sparse = conjg(gc_sparse)
 
 	else if (dataType%name == 'D') then
 
-!	  pd_Hx =   km2m * (EARTH_R/2) * dsin(obs%colat*d2r) * 1/Hy
-!	  pd_Hy = - km2m * (EARTH_R/2) * dsin(obs%colat*d2r) * Hx/(Hy*Hy)
-!	  pd_Hz = C_ZERO
-	  pd_Hx =   km2m * (EARTH_R/2) * 1/Hy
-	  pd_Hy = - km2m * (EARTH_R/2) * Hx/(Hy*Hy)
-	  pd_Hz = C_ZERO
+!	  pd_Hx(1) =   km2m * (EARTH_R/2) * dsin(obs%colat*d2r) * 1/Hy
+!	  pd_Hy(1) = - km2m * (EARTH_R/2) * dsin(obs%colat*d2r) * Hx/(Hy*Hy)
+!	  pd_Hz(1) = C_ZERO
+	  pd_Hx(1) =   km2m * (EARTH_R/2) * 1/Hy
+	  pd_Hy(1) = - km2m * (EARTH_R/2) * Hx/(Hy*Hy)
+	  pd_Hz(1) = C_ZERO
 
-	  call linComb_sparsevecc(Ly,pd_Hy,Lx,pd_Hx,gc_sparse)
+	  call linComb_sparsevecc(Ly,pd_Hy(1),Lx,pd_Hx(1),gc_sparse)
+      call create_sparseVector(H%grid,H%tx,L(1))
+      L(1)%L = gc_sparse ! NOT g_sparse = conjg(gc_sparse)
+
+    else if (dataType%name == 'T') then
+
+      avg = refavg(H%vec)
+      davg = drefavg(obs)
+
+      ! derivative of scaled Hx
+      pd_Hx(1) =   1/avg
+      pd_Hy(1) = - Hx/(avg**2) * davg
+      pd_Hz(1) = C_ZERO
+
+      call linComb_sparsevecc(Ly,pd_Hy(1),Lx,pd_Hx(1),gc_sparse)
+      call create_sparseVector(H%grid,H%tx,L(1))
+      L(1)%L = gc_sparse ! NOT g_sparse = conjg(gc_sparse)
+
+      ! derivative of scaled Hy
+      pd_Hx(2) = C_ZERO
+      pd_Hy(2) = (1/avg) - Hy/(avg**2) * davg
+      pd_Hz(2) = C_ZERO
+
+      call linComb_sparsevecc(Ly,pd_Hy(2),Ly,C_ZERO,gc_sparse)
+      call create_sparseVector(H%grid,H%tx,L(2))
+      L(2)%L = gc_sparse ! NOT g_sparse = conjg(gc_sparse)
+
+      ! derivative of scaled Hz
+      pd_Hx(3) = C_ZERO
+      pd_Hy(3) = - Hz/(avg**2) * davg
+      pd_Hz(3) =   1/avg
+
+      call linComb_sparsevecc(Ly,pd_Hy(3),Lz,pd_Hz(3),gc_sparse)
+      call create_sparseVector(H%grid,H%tx,L(3))
+      L(3)%L = gc_sparse ! NOT g_sparse = conjg(gc_sparse)
+
+	else if (dataType%name == 'H') then
+
+	  ! derivative of raw Hx
+      pd_Hx(1) = C_ONE
+      pd_Hy(1) = C_ZERO
+      pd_Hz(1) = C_ZERO
+
+      call linComb_sparsevecc(Lx,pd_Hx(1),Lx,C_ZERO,gc_sparse)
+      call create_sparseVector(H%grid,H%tx,L(1))
+      L(1)%L = gc_sparse ! NOT g_sparse = conjg(gc_sparse)
+
+      ! derivative of raw Hy
+      pd_Hx(2) = C_ZERO
+      pd_Hy(2) = C_ONE
+      pd_Hz(2) = C_ZERO
+
+      call linComb_sparsevecc(Ly,pd_Hy(2),Ly,C_ZERO,gc_sparse)
+      call create_sparseVector(H%grid,H%tx,L(2))
+      L(2)%L = gc_sparse ! NOT g_sparse = conjg(gc_sparse)
+
+      ! derivative of raw Hz
+      pd_Hx(3) = C_ZERO
+      pd_Hy(3) = C_ONE
+      pd_Hz(3) = C_ZERO
+
+      call linComb_sparsevecc(Lz,pd_Hz(3),Lz,C_ZERO,gc_sparse)
+      call create_sparseVector(H%grid,H%tx,L(3))
+      L(3)%L = gc_sparse ! NOT g_sparse = conjg(gc_sparse)
 
 	else
 
@@ -129,14 +222,6 @@ Contains
 	  stop
 
 	end if
-
-	! This was g* (conjugated), now we want g
-	!g_sparse = conjg(gc_sparse)
-
-	! Generic output
-	call create_sparseVector(H%grid,H%tx,L(1))
-	!L(1)%L = g_sparse ! left for debugging
-    L(1)%L = gc_sparse ! correct for Lrows
 
 	call deall_sparsevecc(Lx)
 	call deall_sparsevecc(Ly)

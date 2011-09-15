@@ -34,7 +34,7 @@ Contains
 	end if
 
 	crust_depth = grid%z(grid%nzAir+1) - grid%z(grid%nzAir+grid%nzCrust+1) !KM2M*(EARTH_R-CRUST_R)
-	write(0,'(a12,a20,g12.3,a34)') node_info,'Using crustal depth ',crust_depth,' to define thinsheet resistivities'
+	write(0,'(a12,a21,f12.3,a34)') node_info,'Using crustal depth ',crust_depth,' to define thinsheet resistivities'
 
 	do i=1,grid%nx
 	  do j=1,grid%ny

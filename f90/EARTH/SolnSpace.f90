@@ -104,6 +104,7 @@ end interface
   ! * full solution information for a single 'slice' at a fixed radius (in km)
   type :: solution_t
 
+    character(80)                               :: type  ! CELL/NODE
     type (receiver_t), pointer, dimension(:,:)  :: o
     complex(8), pointer, dimension(:,:)         :: x,y,z    !nx,ny
 

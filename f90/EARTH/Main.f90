@@ -14,6 +14,7 @@ module main
   use field_vectors
   use sg_scalar
   use dataspace
+  use dataio
   use userdata
   use dataTypes
   use transmitters
@@ -149,6 +150,12 @@ Contains
 	!--------------------------------------------------------------------------
 	! Compute the observatory locations on the grid and interpolation weights
 	call initObsList(targetGrid,obsList)
+    !--------------------------------------------------------------------------
+    ! Initialize reference observatory locations, if present
+    call initRefCoords(cUserDef,refObsList)
+    !--------------------------------------------------------------------------
+    ! Compute the observatory locations on the grid and interpolation weights
+    call initObsList(targetGrid,refObsList)
 	!--------------------------------------------------------------------------
 	! Initialize transfer function information
 	call initTF(cUserDef,TFList)

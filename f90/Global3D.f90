@@ -766,6 +766,7 @@ end program earth
 	use senscomp
     use transmitters
     use dataTypes
+    use dataIO
 	implicit none
 
     real(8), intent(out)                    :: f  ! penalty functional
@@ -1046,6 +1047,7 @@ end program earth
     use transmitters
     use dataTypes
     use dataSens
+    use dataIO
     implicit none
 
     real                                    :: rtime  ! run time
