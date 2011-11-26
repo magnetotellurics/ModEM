@@ -78,6 +78,8 @@ module modeldef
   ! * structure of the model parametrization, that is defined in modeldef.f90;
   ! * going from the first (uppermost) layer to the last that ends at CMB
   ! * Air layer is layer 0.
+  ! * If used for the source parametrization, layers correspond to periods, so
+  ! * add that variable to the layer type explicitly in the hope of avoiding confusion
   type :: modelLayer_t
 
 	  ! order number in layer structure
@@ -96,6 +98,9 @@ module modeldef
 	  ! the filename of additional rho info if it exists; if so, add these
 	  ! values to either rho or log_10(rho) (as specified by if_log) on the grid
 	  character(80)										  :: fn=''
+
+      ! period (in days) instead of the layer depth needed for the source structure
+      real(8)                                             :: period
 
   end type modelLayer_t	! modelLayer_t
 

@@ -51,7 +51,7 @@ MODULE = -fmod=$(OBJDIR)
 LIBS = -lblas -llapack
 
 # -------------------End-macro-Defs---------------------------
-OBJ = $(OBJDIR)/math_constants.o $(OBJDIR)/utilities.o $(OBJDIR)/polpak.o $(OBJDIR)/file_units.o $(OBJDIR)/GridDef.o $(OBJDIR)/sg_vector.o $(OBJDIR)/field1d.o $(OBJDIR)/paramfunc.o $(OBJDIR)/modeldef.o $(OBJDIR)/model_operators.o $(OBJDIR)/sg_scalar.o $(OBJDIR)/modelmap.o $(OBJDIR)/ModelSpace.o $(OBJDIR)/FWD1D.o 
+OBJ = $(OBJDIR)/math_constants.o $(OBJDIR)/utilities.o $(OBJDIR)/polpak.o $(OBJDIR)/file_units.o $(OBJDIR)/GridDef.o $(OBJDIR)/sg_vector.o $(OBJDIR)/field1d.o $(OBJDIR)/sg_scalar.o $(OBJDIR)/paramfunc.o $(OBJDIR)/modeldef.o $(OBJDIR)/model_operators.o $(OBJDIR)/modelmap.o $(OBJDIR)/ModelSpace.o $(OBJDIR)/FWD1D.o 
 
 
 all: FWD1D 
@@ -86,17 +86,17 @@ $(OBJDIR)/sg_vector.o:FIELDS/FiniteDiff3D/sg_vector.f90 $(OBJDIR)/math_constants
 $(OBJDIR)/field1d.o:EARTH/FWD/field1d.f90 $(OBJDIR)/utilities.o $(OBJDIR)/polpak.o $(OBJDIR)/GridDef.o $(OBJDIR)/sg_vector.o 
 	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) EARTH/FWD/field1d.f90 -o $(OBJDIR)/field1d.o
 
+$(OBJDIR)/sg_scalar.o:FIELDS/FiniteDiff3D/sg_scalar.f90 $(OBJDIR)/math_constants.o $(OBJDIR)/GridDef.o 
+	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) FIELDS/FiniteDiff3D/sg_scalar.f90 -o $(OBJDIR)/sg_scalar.o
+
 $(OBJDIR)/paramfunc.o:EARTH/modelParam/paramfunc.f90 $(OBJDIR)/polpak.o 
 	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) EARTH/modelParam/paramfunc.f90 -o $(OBJDIR)/paramfunc.o
 
-$(OBJDIR)/modeldef.o:EARTH/modelParam/modeldef.f90 $(OBJDIR)/GridDef.o $(OBJDIR)/paramfunc.o 
+$(OBJDIR)/modeldef.o:EARTH/modelParam/modeldef.f90 $(OBJDIR)/sg_scalar.o $(OBJDIR)/GridDef.o $(OBJDIR)/paramfunc.o 
 	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) EARTH/modelParam/modeldef.f90 -o $(OBJDIR)/modeldef.o
 
 $(OBJDIR)/model_operators.o:EARTH/modelParam/model_operators.f90 $(OBJDIR)/math_constants.o $(OBJDIR)/file_units.o $(OBJDIR)/utilities.o $(OBJDIR)/modeldef.o 
 	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) EARTH/modelParam/model_operators.f90 -o $(OBJDIR)/model_operators.o
-
-$(OBJDIR)/sg_scalar.o:FIELDS/FiniteDiff3D/sg_scalar.f90 $(OBJDIR)/math_constants.o $(OBJDIR)/GridDef.o 
-	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) FIELDS/FiniteDiff3D/sg_scalar.f90 -o $(OBJDIR)/sg_scalar.o
 
 $(OBJDIR)/modelmap.o:EARTH/modelParam/modelmap.f90 $(OBJDIR)/GridDef.o $(OBJDIR)/sg_scalar.o $(OBJDIR)/modeldef.o $(OBJDIR)/paramfunc.o 
 	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) EARTH/modelParam/modelmap.f90 -o $(OBJDIR)/modelmap.o

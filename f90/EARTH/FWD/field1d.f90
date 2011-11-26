@@ -585,7 +585,7 @@ subroutine sourceField1d(earth,lmax,coeff,period,grid,H)
 
 	type (conf1d_t), intent(in)	        :: earth ! configuration structure
 	integer, intent(in)		            :: lmax ! maximum sph. harm. degree
-	real(8), dimension(:), intent(in)   :: coeff ! vector of sph. harm. coeff.
+	complex(8), dimension(:), intent(in)   :: coeff ! vector of sph. harm. coeff.
 	real(8), intent(in)                 :: period ! period in seconds
 	type (grid_t), intent(in)           :: grid ! grid for the field mapping
 	type (cvector), intent(inout)       :: H ! output magnetic field

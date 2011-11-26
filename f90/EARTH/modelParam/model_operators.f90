@@ -660,7 +660,7 @@ Contains
 
   ! **********************************************************************
   ! * BOP
-  subroutine setLayer_modelParam(P,iL,upperb,lowerb,alpha,beta,if_log)
+  subroutine setLayer_modelParam(P,iL,upperb,lowerb,alpha,beta,if_log,period)
 
     implicit none
     type (modelParam_t), intent(inout)               :: P
@@ -668,6 +668,7 @@ Contains
     real(8), intent(in)							   :: upperb,lowerb
     real(8), intent(in)							   :: alpha,beta
 	logical, intent(in)							   :: if_log
+    real(8), intent(in), optional                  :: period ! used for sources only
     ! * EOP
 
 	real(8)										   :: depth, width
@@ -675,6 +676,11 @@ Contains
 
     if(.not.P%allocated) then
        call errStop('(setLayer_modelParam) parametrization not allocated yet')
+	end if
+
+	if (present(period)) then ! for source structure layer depth is undefined
+	    P%L(iL)%period = period
+	    return
 	end if
 
     depth = EARTH_R - lowerb
@@ -691,6 +697,7 @@ Contains
 	P%L(iL)%alpha  = alpha
 	P%L(iL)%beta   = beta
 	P%L(iL)%if_log = if_log
+
 
 
   end subroutine setLayer_modelParam
@@ -1582,6 +1589,7 @@ Contains
   ! * parameters for a model if the smoothing has already been applied.
   ! * Regularization parameters are only needed to smooth a rough model,
   ! * so we leave them out for m (and leave them in for mhat).
+  ! * Does not at present support spherical harmonic source output.
   subroutine write_modelParam(P,cfile)
 
     implicit none
@@ -1731,26 +1739,37 @@ Contains
   ! * Obviously, the information on the range is not required for the forward
   ! * solver to operate. This is provided for the inversion, which will share
   ! * the same input format for now.
+  ! * The optional output Pimag allows to use the same file format for the complex
+  ! * spherical harmonic source vector storage...
 
-  subroutine read_modelParam(P,cfile)
+  subroutine read_modelParam(P,cfile,Pimag)
 
     character(*), intent(in)            :: cfile
     type (modelParam_t), intent(inout)  :: P
+    type (modelParam_t), intent(inout), optional  :: Pimag ! used for sources only
     integer                             :: ilayer,i,j,k,n,l,m
     integer                             :: nF,nL
     integer                             :: sum,sum0,degree
     integer                             :: ios,istat
     real(8)                             :: upperb,lowerb,width,depth,alpha,beta
     character(6)                        :: if_log_char,if_var_char
-    logical                             :: if_log, if_fixed, exists
+    logical                             :: if_log, if_fixed, exists, isComplex
     character(80)                       :: prmname, string
-    real(8)                             :: v,min,max
+    real(8)                             :: v,vimag,vmin,vmax
+    real(8)                             :: period ! read in place of depth for sources
 
     lowerb = EARTH_R
     depth = 0.0d0
     width = 0.0d0
     sum = 0
     sum0 = 0
+    period = 0.0d0
+
+    if(present(Pimag)) then
+      isComplex = .true.
+    else
+      isComplex = .false.
+    end if
 
     inquire(FILE=trim(cfile),EXIST=exists)
     if(exists) then
@@ -1767,7 +1786,7 @@ Contains
        write(0, *) node_info,'Error: (read_modelParam) not a spherical harmonic parametrization'
        stop
     else
-      i = index(prmname,'layers')
+      i = max(index(prmname,'layers'),index(prmname,'periods'))
       read(prmname(i+7:len(prmname)),'(i2)') nL
       i = index(prmname,'degree')
       read(prmname(i+7:len(prmname)),'(i2)') degree
@@ -1776,6 +1795,9 @@ Contains
 
 
     call create_modelParam(P,nL,degree)
+    if (isComplex) then
+       call create_modelParam(Pimag,nL,degree)
+    end if
 
     !write(6,'(a50,i3)') 'Number of layers in script: ',P%nL
 
@@ -1810,8 +1832,18 @@ Contains
             end if
 
             read(string(1:i-1),*) if_log_char
-            read(string(i+7:j),*) degree
-            read(string(j+6:k),*) depth
+            if (j>0) then
+                read(string(i+7:j),*) degree
+                read(string(j+6:k),*) depth
+                write(*,*) 'DEBUG 1: ', string(j+6:k)
+            else ! try source structure
+                j = index(string,'period')
+                read(string(i+7:j),*) degree
+                read(string(j+6:k),*) period
+                write(*,*) 'DEBUG 2: ', string(j+6:k)
+            end if
+
+
 
        read(ioPrm,'(a80)',iostat=ios) string
 
@@ -1822,7 +1854,13 @@ Contains
        end if
        lowerb = EARTH_R - depth
 
-       call setLayer_modelParam(P,n,upperb,lowerb,alpha,beta,if_log)
+
+       if (period > 0.0d0) then
+          call setLayer_modelParam(P,n,upperb,lowerb,alpha,beta,if_log,period)
+          call setLayer_modelParam(Pimag,n,upperb,lowerb,alpha,beta,if_log,period)
+       else
+          call setLayer_modelParam(P,n,upperb,lowerb,alpha,beta,if_log)
+       end if
 
        sum0=sum0+sum
        sum=0
@@ -1832,7 +1870,11 @@ Contains
        !write(6,'(a46,i2,a2,i3)') 'Number of coefficients in layer ',n,': ',sum
 
        do i=1,sum
-          read(ioPrm,*,iostat=ios) l,m,v,min,max,if_var_char
+          if (isComplex) then
+            read(ioPrm,*,iostat=ios) l,m,v,vimag,vmin,vmax,if_var_char
+          else
+            read(ioPrm,*,iostat=ios) l,m,v,vmin,vmax,if_var_char
+          end if
           if (if_var_char == 'range') then
             if_fixed = .FALSE.
           else if (if_var_char == 'const') then
@@ -1842,8 +1884,11 @@ Contains
             write(0, *) 'Error: (read_modelParam) if file looks OK, try running dos2unix on it. Exiting...'
             stop
           end if
-          call setCoeffValue_modelParam(P,n,l,m,v,min,max,if_fixed)
-          !print *,'Values: ',l,m,v,min,max,if_fixed
+          call setCoeffValue_modelParam(P,n,l,m,v,vmin,vmax,if_fixed)
+          if (isComplex) then
+            call setCoeffValue_modelParam(Pimag,n,l,m,vimag,vmin,vmax,if_fixed)
+          end if
+          !print *,'Values: ',l,m,v,vmin,vmax,if_fixed
        end do
 
     end do
@@ -1856,6 +1901,11 @@ Contains
 
     P%zeroValued = .FALSE.
     P%smoothed = .FALSE.
+
+    if (isComplex) then
+        Pimag%zeroValued = .FALSE.
+        Pimag%smoothed = .FALSE.
+    end if
 
     return
 

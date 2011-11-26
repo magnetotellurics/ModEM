@@ -190,29 +190,17 @@ Contains
 	else if (dataType%name == 'H') then
 
 	  ! derivative of raw Hx
-      pd_Hx(1) = C_ONE
-      pd_Hy(1) = C_ZERO
-      pd_Hz(1) = C_ZERO
-
-      call linComb_sparsevecc(Lx,pd_Hx(1),Lx,C_ZERO,gc_sparse)
+      call linComb_sparsevecc(Lx,C_ONE,Lx,C_ZERO,gc_sparse)
       call create_sparseVector(H%grid,H%tx,L(1))
       L(1)%L = gc_sparse ! NOT g_sparse = conjg(gc_sparse)
 
       ! derivative of raw Hy
-      pd_Hx(2) = C_ZERO
-      pd_Hy(2) = C_ONE
-      pd_Hz(2) = C_ZERO
-
-      call linComb_sparsevecc(Ly,pd_Hy(2),Ly,C_ZERO,gc_sparse)
+      call linComb_sparsevecc(Ly,C_ONE,Ly,C_ZERO,gc_sparse)
       call create_sparseVector(H%grid,H%tx,L(2))
       L(2)%L = gc_sparse ! NOT g_sparse = conjg(gc_sparse)
 
       ! derivative of raw Hz
-      pd_Hx(3) = C_ZERO
-      pd_Hy(3) = C_ONE
-      pd_Hz(3) = C_ZERO
-
-      call linComb_sparsevecc(Lz,pd_Hz(3),Lz,C_ZERO,gc_sparse)
+      call linComb_sparsevecc(Lz,C_ONE,Lz,C_ZERO,gc_sparse)
       call create_sparseVector(H%grid,H%tx,L(3))
       L(3)%L = gc_sparse ! NOT g_sparse = conjg(gc_sparse)
 

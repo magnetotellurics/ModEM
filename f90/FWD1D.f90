@@ -6,7 +6,7 @@ program fwd1d
 
     type(conf1d_t)                              :: earth
     type(grid_t)                                :: grid
-    type(modelParam_t)                          :: model,source
+    type(modelParam_t)                          :: model,source,source_imag
     type(cvector)                               :: h1d
     character(80)                               :: period_file,label
     character(80)                               :: layered_model_file
@@ -14,9 +14,10 @@ program fwd1d
     character(80)                               :: grid_file
     character(80)                               :: fields_output_file
     character(80)                               :: cfile
-    real(8), allocatable, dimension(:)          :: depths,coeff,logrho,T
+    real(8), allocatable, dimension(:)          :: depths,coeff_real,coeff_imag,logrho,T
     real(8)                                     :: days
     character(3)                                :: ich
+    complex(8), allocatable, dimension(:)       :: coeff
     integer                                     :: i,nL,nper,lmax,Nt,Np,Nr,narg,ios,istat
 
     write(*,*) 'Copyright (c) 2010-2011 Oregon State University'
@@ -65,13 +66,15 @@ program fwd1d
     call getParamValues_modelParam(model,logrho)
 
     ! source file should only have one layer
-    call read_modelParam(source,source_model_file)
+    call read_modelParam(source,source_model_file,source_imag)
     if (source%nL /= 1) then
         write(0,*) 'Error in FWD1D: source file should have exactly one layer'
         stop
     end if
-    allocate(coeff(source%nc), STAT=istat)
-    call getParamValues_modelParam(source,coeff)
+    allocate(coeff_real(source%nc),coeff_imag(source%nc),coeff(source%nc), STAT=istat)
+    call getParamValues_modelParam(source,coeff_real)
+    call getParamValues_modelParam(source_imag,coeff_imag)
+    coeff = cmplx(coeff_real,coeff_imag)
     lmax = getDegree_modelParam(source)
 
     ! reading grid file (r is in km decreasing from top to bottom)
@@ -120,10 +123,11 @@ program fwd1d
         write(*,*) 'Done writing to file: ',elapsed_time(fwd1d_timer),' secs'
     end do
 
-    deallocate(depths,coeff,logrho,T, STAT=istat)
+    deallocate(depths,coeff,coeff_real,coeff_imag,logrho,T, STAT=istat)
     deallocate(earth%layer,earth%sigma, STAT=istat)
     call deall_modelParam(model)
     call deall_modelParam(source)
+    call deall_modelParam(source_imag)
     call deall_cvector(h1d)
     call deall_grid(grid)
     write(*,*) 'Total time taken: ',saved_time(fwd1d_timer),' secs'
