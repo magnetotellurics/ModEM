@@ -18,39 +18,40 @@ program fwd1d
     real(8)                                     :: days
     character(3)                                :: ich
     complex(8), allocatable, dimension(:)       :: coeff
-    integer                                     :: i,nL,nper,lmax,Nt,Np,Nr,narg,ios,istat
+    integer                                     :: i,icoeff,nL,nper,ncoeff,lmax,Nt,Np,Nr,narg,ios,istat
 
     write(*,*) 'Copyright (c) 2010-2011 Oregon State University'
     write(*,*) 'College of Oceanic and Atmospheric Sciences'
     write(*,*) 'Matlab code written by Jin Sun, last mod. 24 May 2010'
     write(*,*) 'Recoded in Fortran by Anna Kelbert, 11-13 July 2011'
+    write(*,*) 'Data scaling updated by Anna Kelbert, 23-28 Nov 2011'
     write(*,*)
 
     !  parse command line
     narg = command_argument_count()
-    if (narg < 5) then
-        write(0,*) 'Usage: ./FWD1D period_file layered_model_file source_model_file grid_file fields_output_file'
+    if (narg < 4) then
+        write(0,*) 'Usage: ./FWD1D layered_model_file source_model_file grid_file fields_output_file'
         stop
     end if
 
-    call get_command_argument(1, period_file)
-    call get_command_argument(2, layered_model_file)
-    call get_command_argument(3, source_model_file)
-    call get_command_argument(4, grid_file)
-    call get_command_argument(5, fields_output_file)
+    !call get_command_argument(1, period_file)
+    call get_command_argument(1, layered_model_file)
+    call get_command_argument(2, source_model_file)
+    call get_command_argument(3, grid_file)
+    call get_command_argument(4, fields_output_file)
 
     ! save periods in days
-    open(ioREAD,file=period_file,status='old',form='formatted',iostat=ios)
-    write(6,*) 'Reading from the periods file ',trim(period_file)
-    read(ioREAD,'(a)') label
-    write(6,*) label
-    read(ioREAD,*) nper
-    allocate(T(nper), STAT=istat)
-    do i = 1,nper
-      read(ioREAD,*) days ! reading period in *days*
-      T(i) = days * (24*3600)
-    end do
-    close(ioREAD)
+!    open(ioREAD,file=period_file,status='old',form='formatted',iostat=ios)
+!    write(6,*) 'Reading from the periods file ',trim(period_file)
+!    read(ioREAD,'(a)') label
+!    write(6,*) label
+!    read(ioREAD,*) nper
+!    allocate(T(nper), STAT=istat)
+!    do i = 1,nper
+!      read(ioREAD,*) days ! reading period in *days*
+!      T(i) = days * (24*3600)
+!    end do
+!    close(ioREAD)
 
     ! model file should be 1D layered
     call read_modelParam(model,layered_model_file)
@@ -65,17 +66,23 @@ program fwd1d
     end do
     call getParamValues_modelParam(model,logrho)
 
-    ! source file should only have one layer
+    ! source file contains the complex source for multiple periods
     call read_modelParam(source,source_model_file,source_imag)
-    if (source%nL /= 1) then
-        write(0,*) 'Error in FWD1D: source file should have exactly one layer'
-        stop
-    end if
     allocate(coeff_real(source%nc),coeff_imag(source%nc),coeff(source%nc), STAT=istat)
     call getParamValues_modelParam(source,coeff_real)
     call getParamValues_modelParam(source_imag,coeff_imag)
-    coeff = cmplx(coeff_real,coeff_imag)
+    coeff = dcmplx(coeff_real,coeff_imag)
+    !write(*,*) 'coeff: ', coeff
+
+    ! get the periods from the source file
+    nper = source%nL
+    allocate(T(nper), STAT=istat)
+    do i = 1,nper
+      days = source%L(i)%period
+      T(i) = days * (24*3600)
+    end do
     lmax = getDegree_modelParam(source)
+    ncoeff = (lmax + 1)**2 ! number of SH
 
     ! reading grid file (r is in km decreasing from top to bottom)
     call read_grid(grid,grid_file)
@@ -103,14 +110,18 @@ program fwd1d
     ! allocate the output cvector
     call create_cvector(grid, h1d, EDGE)
 
+    icoeff = 0
+
     do i = 1,nper
+        write(ich,'(i3.3)') i
+
         days = T(i)/(24*3600)
         write(*,*) 'Computing the fields for period ',trim(ich),': ',days,' days'
-        call sourceField1d(earth,lmax,coeff,T(i),grid,h1d)
+        call sourceField1d(earth,lmax,coeff(icoeff+1:icoeff+ncoeff),T(i),grid,h1d)
+        icoeff = icoeff + ncoeff
 
         call reset_time(fwd1d_timer)
 
-        write(ich,'(i3.3)') i
         cfile = trim(fields_output_file)//'_'//trim(ich)//'.field'
         write(*,*) 'Writing to file: ',cfile
         open(ioWRITE,file=cfile,status='unknown',form='formatted',iostat=ios)

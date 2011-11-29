@@ -1787,9 +1787,9 @@ Contains
        stop
     else
       i = max(index(prmname,'layers'),index(prmname,'periods'))
-      read(prmname(i+7:len(prmname)),'(i2)') nL
+      read(prmname(i+7:len(prmname)),*) nL
       i = index(prmname,'degree')
-      read(prmname(i+7:len(prmname)),'(i2)') degree
+      read(prmname(i+7:len(prmname)),*) degree
       write(6,*) node_info,trim(prmname)
     end if
 
@@ -1799,7 +1799,7 @@ Contains
        call create_modelParam(Pimag,nL,degree)
     end if
 
-    !write(6,'(a50,i3)') 'Number of layers in script: ',P%nL
+    write(6,'(a60,i3)') 'Number of layers/periods in script: ',P%nL
 
 
     ! Unwind spherical harmonic parametrization
@@ -1835,12 +1835,12 @@ Contains
             if (j>0) then
                 read(string(i+7:j),*) degree
                 read(string(j+6:k),*) depth
-                write(*,*) 'DEBUG 1: ', string(j+6:k)
+                !write(*,*) 'DEBUG 1: ', string(j+6:k)
             else ! try source structure
                 j = index(string,'period')
                 read(string(i+7:j),*) degree
                 read(string(j+6:k),*) period
-                write(*,*) 'DEBUG 2: ', string(j+6:k)
+                !write(*,*) 'DEBUG 2: ', string(j+6:k)
             end if
 
 
@@ -1872,6 +1872,7 @@ Contains
        do i=1,sum
           if (isComplex) then
             read(ioPrm,*,iostat=ios) l,m,v,vimag,vmin,vmax,if_var_char
+            !write(*,'(i4,2e14.6)') i,v,vimag
           else
             read(ioPrm,*,iostat=ios) l,m,v,vmin,vmax,if_var_char
           end if

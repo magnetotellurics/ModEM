@@ -29,7 +29,28 @@ module field1d
 Contains
 
 
-subroutine legendre(lmax,cost,P_lm)
+subroutine legendre_norm(lmax,cost,P_lm)
+! usage: compute fully normalised Legendre polynomials. To match the Matlab code,
+! need to divide by 2*pi. This is part of the vsharm subroutine;
+! however, we have taken the computation of Pnm out of the subroutine to improve
+! on efficiency, and call it only when cost is updated.
+
+    integer, intent(in)                                         :: lmax
+    real(8), intent(in)                                         :: cost
+    real(8),    dimension(lmax+1,lmax+1), intent(inout)         :: P_lm
+    ! local
+    integer     :: l,m
+
+    P_lm(:,:) = 0.0d0
+    do m = 0,lmax
+        call legendre_associated_normalized(lmax,m,cost,P_lm(:,m+1))
+    end do
+    !weird... no division by 2*pi needed to match the Matlab code
+    !P_lm(:,:) = P_lm(:,:) / (2.0d0 * PI)
+
+end subroutine
+
+subroutine legendre_sch(lmax,cost,P_lm)
 ! usage: compute a version of Schmidt semi-normalised Legendre polynomials
 ! for all degrees and orders at one node. This is part of the vsharm subroutine;
 ! however, we have taken the computation of Pnm out of the subroutine to improve
@@ -61,7 +82,6 @@ subroutine legendre(lmax,cost,P_lm)
     end do
 
 end subroutine
-
 
 subroutine vsharm(lmax,cost,phi,P_lm,Y,Yt,Yp)
 ! usage: compute vector spherical harmonics for all degrees and orders at one node
@@ -158,6 +178,12 @@ subroutine vsharm(lmax,cost,phi,P_lm,Y,Yt,Yp)
         else
             Yp(l,l+1)=cone*l*P(l,l+1)/sqrt(rone-cost**2)
         end if
+
+        ep0 = cmplx(1.0d0,0.0d0)
+        do m=1,l
+            ep0 = ep0 * ep
+            Yp(l,m+1) = ep0 * Yp(l,m+1)
+        end do
 
     end do
 
@@ -411,7 +437,7 @@ subroutine sourcePotential(earth,lmax,period,Rr,Rs,Tnr,Tnsp)
     ! local
     integer, dimension(lmax)    :: Ns
     complex(8), dimension(:), allocatable      :: rn0,rnp0,phn0,phnp0
-    complex(8), dimension(:), allocatable      :: tnr1,tnsp1,tn,tnp,t1mp,tmp
+    complex(8), dimension(:), allocatable      :: tnr1,tnsp1,tn,tnp,tni,tmp
     real(8), dimension(:), allocatable         :: rl
     complex(8), dimension(:), allocatable      :: kl
     real(8)             :: mu0,pi,omega,rmax
@@ -450,7 +476,7 @@ subroutine sourcePotential(earth,lmax,period,Rr,Rs,Tnr,Tnsp)
     Nrs=size(Rs)
     Nrr=size(Rr)
 
-    allocate(tnr1(lmax),tnsp1(lmax),tn(lmax),tnp(lmax),t1mp(lmax),tmp(lmax),STAT=istat)
+    allocate(tnr1(lmax),tnsp1(lmax),tn(lmax),tnp(lmax),tni(lmax),tmp(lmax),STAT=istat)
     allocate(rn0(lmax),rnp0(lmax),phn0(lmax),phnp0(lmax),STAT=istat)
 
     !within the inner core
@@ -533,12 +559,36 @@ subroutine sourcePotential(earth,lmax,period,Rr,Rs,Tnr,Tnsp)
         rnp0(i) = tnp(i)-cmplx(0.0d0,1.0d0)*omega*mu0*earth%tau
     end do
 
+    !account for incidence and reflection at the surface
+    !(replaces renormalization against outer boundary):
+
+    !divide by the external (incident) potential tni
+    sumup = .false.
+    call airprop(lmax,rl(1),rn0,rnp0,rl(1),tni,tmp,sumup)
+    do i = 1,lmax
+        tn(i) = rn0(i)/tni(i)
+    end do
+
+    !now, divide the total potential derivative by the incident potential tni (here, tnp = tnip+tnrp)
+    sumup = .true.
+    call airprop(lmax,rl(1),rn0,rnp0,rl(1),tmp,tnp,sumup)
+    do i = 1,lmax
+        tnp(i)= tnp(i)/tni(i)
+    end do
+
+    !renormalize all but the air layers by the incident potential tni
+    do i = 1,lmax
+        Tnr(:,i)=Tnr(:,i)/tni(i)
+        Tnsp(:,i)=Tnsp(:,i)/tni(i)
+    end do
+
+    !now use the renormalized tn & tnp to compute the potentials in the air layers
     call find_index(Rr,rl(1),rmax,idrmin,idrmax)
     !write(*,*) 'Layer 1 (Air): ',idrmin,idrmax
     if ((idrmin > 0) .and. (idrmax > 0)) then
         do idr=idrmin,idrmax
             sumup = .true.
-            call airprop(lmax,rl(1),rn0,rnp0,Rr(idr),tnr1,tmp,sumup)
+            call airprop(lmax,rl(1),tn,tnp,Rr(idr),tnr1,tmp,sumup)
             Tnr(idr,:)=tnr1(:)
             !write(*,*) 'air,idr,tnr1: ',1,idr,tnr1
         end do
@@ -549,20 +599,12 @@ subroutine sourcePotential(earth,lmax,period,Rr,Rs,Tnr,Tnsp)
     if ((idsmin > 0) .and. (idsmax > 0)) then
         do ids=idsmin,idsmax
             sumup = .true.
-            call airprop(lmax,rl(1),rn0,rnp0,Rs(ids),tmp,tnsp1,sumup)
+            call airprop(lmax,rl(1),tn,tnp,Rs(ids),tmp,tnsp1,sumup)
             Tnsp(ids,:)=tnsp1(:)
             !write(*,*) 'air,ids,tnsp1: ',1,ids,tnsp1
         end do
     end if
 
-    !renormalize against outer boundary (t1mp is complex scalar)
-    sumup = .false.
-    call airprop(1,rl(1),rn0(1),rnp0(1),earth%rmax,tmp,t1mp,sumup)
-
-    do i = 1,lmax
-        Tnr(:,i)=Tnr(:,i)*(-earth%rmax/t1mp(1))
-        Tnsp(:,i)=Tnsp(:,i)*(-earth%rmax/t1mp(1))
-    end do
     !-----------------------------------------------------------!
     write(*,*) 'Tnr (',size(Tnr,1),'x',size(Tnr,2),'coeff ): '
     do j = 1,Nrr
@@ -574,7 +616,7 @@ subroutine sourcePotential(earth,lmax,period,Rr,Rs,Tnr,Tnsp)
     end do
     !-----------------------------------------------------------!
 
-    deallocate(tnr1,tnsp1,tn,tnp,t1mp,tmp,STAT=istat)
+    deallocate(tnr1,tnsp1,tn,tnp,tni,tmp,STAT=istat)
     deallocate(rn0,rnp0,phn0,phnp0,STAT=istat)
     deallocate(rl,kl,STAT=istat)
 
@@ -595,8 +637,8 @@ subroutine sourceField1d(earth,lmax,coeff,period,grid,H)
     real(8), dimension(lmax+1,lmax+1)          :: P_lm
     complex(8), dimension(lmax,lmax+1)         :: Yp,Yt,Yr ! indices (l,m+1), m=0,..,lmax
 	complex(8), dimension(:,:), allocatable    :: Tnr,Tnsp
-    real(8), dimension(:), allocatable         :: coefl
-	real(8)				:: dp,dt
+    complex(8), dimension(:), allocatable      :: coefl
+	real(8)				:: R0,dp,dt
     integer             :: idr,idrmin,idrmax,ids,idsmin,idsmax
     integer             :: Np,Nt,Nr,Nrr,Nrs,Nd
     integer             :: i,j,k,l,m,istat,ncoeff,icoeff
@@ -625,6 +667,7 @@ subroutine sourceField1d(earth,lmax,coeff,period,grid,H)
     !    Rs(k) = Rs(k+1) - 1.0e3 * grid%dr(Nr-k+1)
     !end do
     !the radius goes from top to bottom in meters
+    R0 = earth%r0
     allocate(Rr(Nr),Rs(Nr+1), STAT=istat)
     Rs(1:Nr+1) = 1.0e3 * grid%r(1:Nr+1)
     Rr(1:Nr) = Rs(1:Nr) - 1.0e3 * grid%dr(1:Nr)/2.
@@ -660,7 +703,7 @@ subroutine sourceField1d(earth,lmax,coeff,period,grid,H)
     do j = 2,Nt
 
         ! for efficiency, call this once for each theta and use in vsharm
-        call legendre(lmax,cos(grid%th(j)),P_lm)
+        call legendre_norm(lmax,cos(grid%th(j)),P_lm)
 
         do i = 1,Np
 
@@ -684,11 +727,11 @@ subroutine sourceField1d(earth,lmax,coeff,period,grid,H)
                     coefl = coeff(icoeff+1:icoeff+2*l+1)
 
                     !m=0 goes first
-                    H%x(i,j,k) = H%x(i,j,k) + Yp(l,1)*coefl(1)*(Tnsp(k,l)/Rs(k))
+                    H%x(i,j,k) = H%x(i,j,k) + Yp(l,1)*coefl(1)*(Tnsp(k,l)*((R0**2)/Rs(k)))/(l*(l+1))
 
                     do m = 1,l
-                        C = (Yp(l,m+1)*coefl(2*m) + Yp(l,m+1)*coefl(2*m+1))
-                        H%x(i,j,k) = H%x(i,j,k) + C*(Tnsp(k,l)/Rs(k))
+                        C = (Yp(l,m+1)*coefl(2*m) + conjg(Yp(l,m+1))*coefl(2*m+1))/(l*(l+1))
+                        H%x(i,j,k) = H%x(i,j,k) + C*(Tnsp(k,l)*((R0**2)/Rs(k)))
                     end do
 
                     icoeff = icoeff+2*l+1
@@ -707,7 +750,7 @@ subroutine sourceField1d(earth,lmax,coeff,period,grid,H)
     do j = 1,Nt
 
         ! for efficiency, call this once for each theta and use in vsharm
-        call legendre(lmax,cos(grid%th(j)+grid%dt(j)/2),P_lm)
+        call legendre_norm(lmax,cos(grid%th(j)+grid%dt(j)/2),P_lm)
 
         do i = 1,Np+1
 
@@ -731,11 +774,11 @@ subroutine sourceField1d(earth,lmax,coeff,period,grid,H)
                     coefl = coeff(icoeff+1:icoeff+2*l+1)
 
                     !m=0 goes first
-                    H%y(i,j,k) = H%y(i,j,k) + Yt(l,1)*coefl(1)*(Tnsp(k,l)/Rs(k))
+                    H%y(i,j,k) = H%y(i,j,k) + Yt(l,1)*coefl(1)*(Tnsp(k,l)*((R0**2)/Rs(k)))/(l*(l+1))
 
                     do m = 1,l
-                        C = (Yt(l,m+1)*coefl(2*m) + Yt(l,m+1)*coefl(2*m+1))
-                        H%y(i,j,k) = H%y(i,j,k) + C*(Tnsp(k,l)/Rs(k))
+                        C = (Yt(l,m+1)*coefl(2*m) + conjg(Yt(l,m+1))*coefl(2*m+1))/(l*(l+1))
+                        H%y(i,j,k) = H%y(i,j,k) + C*(Tnsp(k,l)*((R0**2)/Rs(k)))
                     end do
 
 
@@ -755,7 +798,7 @@ subroutine sourceField1d(earth,lmax,coeff,period,grid,H)
     do j = 1,Nt+1
 
         ! for efficiency, call this once for each theta and use in vsharm
-        call legendre(lmax,cos(grid%th(j)),P_lm)
+        call legendre_norm(lmax,cos(grid%th(j)),P_lm)
 
         do i = 1,Np+1
 
@@ -779,11 +822,11 @@ subroutine sourceField1d(earth,lmax,coeff,period,grid,H)
                     coefl = coeff(icoeff+1:icoeff+2*l+1)
 
                     !m=0 goes first
-                    H%z(i,j,k) = H%z(i,j,k) - l*(l+1)*Yr(l,1)*coefl(1)*(Tnr(k,l)/Rr(k)**2)
+                    H%z(i,j,k) = H%z(i,j,k) - Yr(l,1)*coefl(1)*(Tnr(k,l)*(R0**2/Rr(k)**2))
 
                     do m = 1,l
-                        C = - l*(l+1)*(Yr(l,m+1)*coefl(2*m) + Yr(l,m+1)*coefl(2*m+1))
-                        H%z(i,j,k) = H%z(i,j,k) + C*(Tnr(k,l)/Rr(k)**2)
+                        C = - (Yr(l,m+1)*coefl(2*m) + conjg(Yr(l,m+1))*coefl(2*m+1))
+                        H%z(i,j,k) = H%z(i,j,k) + C*(Tnr(k,l)*(R0**2/Rr(k)**2))
                     end do
 
                     icoeff = icoeff+2*l+1
