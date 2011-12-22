@@ -259,7 +259,9 @@ In 2D MT, the origin was set to THE TOP OF THE AIR LAYERS. This was a serious pr
 
 The boundary conditions are inaccurate for 3D MT. The user is advised to place their model boundaries far from all data locations, or use the nested grid feature provided with the modular system.\\
 
-Excluding some components of a data type from the data file results in unreasonable misfit computations. Until this is fixed, the inversion should only be used with all components of a particular data type.\\
+Excluding some components of a data type from the data file results in unreasonable misfit computations. Until this is fixed, the inversion should only be used with all components of a particular data type. \textbf{UPDATE}: Fixed in rev. 333 (trunk rev. 330).\\
+
+Some care must be exercised when inverting the apparent resistivities and phases in 3D MT. Originally implemented by Kristina Tietze (GFZ); in her implementation, the user had to supply the natural log of apparent resistivities in the file. Stable rev. 371 (trunk rev. 336) reverts to linear apparent resistivities in the file. We now take apparent resistivities from the file and internally convert them to log10 for inversion; output apparent resistivities (no logs). This is to avoid ambiguity in the name of the data functional. The new implementation has not been used. In all likelihood it is correct, but there might still be bugs hiding somewhere in the code.\\
 
 
 \section{What if something still doesn't work for me?}
