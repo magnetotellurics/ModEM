@@ -169,7 +169,7 @@ Contains
    type(conf1d_t)                               :: conf1d
    type(transmitter_t), pointer                 :: freq
    real(kind=prec)                              :: period ! secs
-   real(kind=prec), allocatable, dimension(:)   :: depths,coeff,logrho
+   real(kind=prec), allocatable, dimension(:)   :: depths,logrho
    integer                                      :: i,nL,lmax,istat
 
    ! IMPORTANT: FIRST update pointer to the transmitter in solnVector
@@ -191,12 +191,7 @@ Contains
     end do
 
     ! source file should only have one layer
-    if (freq%jExt%nL /= 1) then
-        call errStop('Error in fwdSolve1d: external source parametrization should have exactly one layer')
-    end if
-    allocate(coeff(freq%jExt%nc), STAT=istat)
-    call getParamValues_modelParam(freq%jExt,coeff)
-    lmax = getDegree_modelParam(freq%jExt)
+    lmax = freq%degree
 
     ! set earth radius and domain top radius (in meters)
     conf1d%r0  = 6371.0e3
@@ -219,9 +214,9 @@ Contains
     write(*,*) 'Conductivity values:  ',conf1d%sigma
 
     ! compute full magnetic field for the layered model
-    call sourceField1d(conf1d,lmax,coeff,period,h1d%grid,h1d%vec)
+    call sourceField1d(conf1d,lmax,freq%jExt,period,h1d%grid,h1d%vec)
 
-    deallocate(depths,coeff,logrho, STAT=istat)
+    deallocate(depths,logrho, STAT=istat)
     deallocate(conf1d%layer,conf1d%sigma, STAT=istat)
 
    if (output_level > 1) then

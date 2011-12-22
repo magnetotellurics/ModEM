@@ -606,14 +606,14 @@ subroutine sourcePotential(earth,lmax,period,Rr,Rs,Tnr,Tnsp)
     end if
 
     !-----------------------------------------------------------!
-    write(*,*) 'Tnr (',size(Tnr,1),'x',size(Tnr,2),'coeff ): '
-    do j = 1,Nrr
-        write(*,*) j, Tnr(j,:)
-    end do
-    write(*,*) 'Tnsp (',size(Tnsp,1),'x',size(Tnsp,2),'coeff ): '
-    do j = 1,Nrs
-        write(*,*) j, Tnsp(j,:)
-    end do
+!    write(*,*) 'Tnr (',size(Tnr,1),'x',size(Tnr,2),'coeff ): '
+!    do j = 1,Nrr
+!        write(*,*) j, Tnr(j,:)
+!    end do
+!    write(*,*) 'Tnsp (',size(Tnsp,1),'x',size(Tnsp,2),'coeff ): '
+!    do j = 1,Nrs
+!        write(*,*) j, Tnsp(j,:)
+!    end do
     !-----------------------------------------------------------!
 
     deallocate(tnr1,tnsp1,tn,tnp,tni,tmp,STAT=istat)

@@ -58,7 +58,7 @@ all: Global3D
 
 # Here is the link step 
 Global3D: $(OBJDIR) $(OBJ) 
-	 $(F90) -o $(OUTDIR)/Global3D $(OBJ) $(LIBS) 
+	 $(F90) -o $(OUTDIR)/Global3D_MPI $(OBJ) $(LIBS) 
 
 # Here are the compile steps 
 

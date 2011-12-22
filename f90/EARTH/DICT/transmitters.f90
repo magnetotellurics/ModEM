@@ -26,7 +26,8 @@ module transmitters
     ! use / don't use secondary field formulation
     logical                                 :: secondaryField = .false.
     ! external source for this transmitter, stored as spherical harmonics
-    type(modelParam_t), pointer             :: jExt
+    integer                                 :: degree
+    complex(8), pointer, dimension(:)       :: jExt
     ! internal source for this transmitter, stored as a sparse vector on the grid
     type(sparsevecc)                        :: jInt
     ! order index of this frequency that is used for the output
@@ -48,8 +49,8 @@ module transmitters
   ! transmitter dictionary
   type (Freq_List), save, public                :: freqList
 
-  ! we currently have one external source for all frequencies, so save it here
-  type (modelParam_t), save, target, private    :: source
+  ! read in the external source for all frequencies, and save it here
+  type (modelParam_t), save, private            :: source,source_imag
 
 
 Contains
@@ -64,10 +65,14 @@ Contains
     type (userdef_control), intent(in)                           :: cUserDef
     type (Freq_List), intent(out)                           :: myfreq
     integer                                                 :: num
-    integer                                                 :: i,j,ios=0
+    integer                                                 :: i,j,ios=0,istat=0
+    integer                                                 :: lmax,ncoeff,icoeff
     real(8)                                                 :: tmp
     real(8), dimension(:), allocatable                      :: value,days
+    real(8), dimension(:), allocatable                      :: coeff_real,coeff_imag
+    complex(8), dimension(:), allocatable                   :: coeff
     character(80)                                           :: basename,code
+    complex(8)                                              :: p10(4)
     logical                                                 :: secondaryField
 
     open(ioTX,file=cUserDef%fn_period,status='old',form='formatted',iostat=ios)
@@ -91,18 +96,18 @@ Contains
     close(ioTX)
 
     ! sort the values in ascending order
-    do i=1,num
-      do j=i+1,num
-        if(value(i)>value(j)) then
-          tmp=value(i)
-          value(i)=value(j)
-          value(j)=tmp
-          tmp=days(i)
-          days(i)=days(j)
-          days(j)=tmp
-        end if
-      end do
-    end do
+!    do i=1,num
+!      do j=i+1,num
+!        if(value(i)>value(j)) then
+!          tmp=value(i)
+!          value(i)=value(j)
+!          value(j)=tmp
+!          tmp=days(i)
+!          days(i)=days(j)
+!          days(j)=tmp
+!        end if
+!      end do
+!    end do
 
     !omega(1:num)=2.0d0*pi*value(1:num)
     allocate(myfreq%info(num))
@@ -141,6 +146,10 @@ Contains
     !    myfreq%info(i)%secondaryField = exists
     !end do
 
+    ! define p10 just in case we need it
+    p10(:) = C_ZERO
+    p10(2) = C_ONE
+
     ! use / don't use secondary field formulation
     if ((index(cUserDef%secondary_field,'no') > 0) .or. (index(cUserDef%secondary_field,'0') > 0)) then
         secondaryField = .false.
@@ -153,25 +162,32 @@ Contains
 
     inquire(FILE=trim(cUserDef%fn_extsource),EXIST=exists)
     if (exists) then
-        ! source file should only have one layer
-        call read_modelParam(source,cUserDef%fn_extsource)
-        if (source%nL /= 1) then
-            write(0,*) 'Error in FWD1D: source file should have exactly one layer'
-            stop
-        end if
+        ! source file contains the complex source for multiple periods (identical to T)
+        call read_modelParam(source,cUserDef%fn_extsource,source_imag)
+        allocate(coeff_real(source%nc),coeff_imag(source%nc),coeff(source%nc), STAT=istat)
+        call getParamValues_modelParam(source,coeff_real)
+        call getParamValues_modelParam(source_imag,coeff_imag)
+        coeff = dcmplx(coeff_real,coeff_imag)
+        lmax = getDegree_modelParam(source)
+        ncoeff = (lmax + 1)**2 ! number of SH
+        icoeff = 0
+        do i=1,num
+            myfreq%info(i)%degree = lmax
+            allocate(myfreq%info(i)%jExt(ncoeff), STAT=istat)
+            myfreq%info(i)%jExt = coeff(icoeff+1:icoeff+ncoeff)
+            icoeff = icoeff + ncoeff
+        end do
+        deallocate(coeff_real,coeff_imag,coeff, STAT=istat)
     else
         ! can't use secondary field formulation: no sources specified, default to P10
         write(6,*) node_info,'Unable to use secondary field formulation: external sources not defined'
         do i=1,num
-            myfreq%info(i)%secondaryField = .false.
+            myfreq%info(i)%degree = 1
+            allocate(myfreq%info(i)%jExt(4), STAT=istat)
+            myfreq%info(i)%jExt = p10
+            myfreq%info(i)%secondaryField = .false. ! change this if you want to use p10 secondary fields...
         end do
     end if
-
-    ! in either case, associate the external source pointer with the saved structure
-    do i=1,num
-        myfreq%info(i)%jExt => source
-    end do
-
 
     return
 
@@ -182,12 +198,16 @@ Contains
 
   subroutine deall_freqList()
 
-    integer     :: istat
+    integer     :: i,istat
 
     if (associated(freqList%info)) then
+       do i=1,freqList%n
+           deallocate(freqList%info(i)%jExt, STAT=istat)
+       end do
        deallocate(freqList%info,STAT=istat)
     end if
     call deall_modelParam(source)
+    call deall_modelParam(source_imag)
 
   end subroutine deall_freqList
 
