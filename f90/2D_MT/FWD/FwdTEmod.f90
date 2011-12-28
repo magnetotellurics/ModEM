@@ -277,7 +277,7 @@ module fwdtemod
 
       ! Deallocates arrays used within module
       ! and sets Initialized = .False.
-
+         if (Initialized) then
          deallocate(Dz)
          deallocate(Dy)
          deallocate(Cz)
@@ -289,6 +289,7 @@ module fwdtemod
          deallocate(EXI)
          deallocate(ipiv)
          Initialized = .False.
+		 end if
 
       end subroutine Fwd2DdeallTE
 

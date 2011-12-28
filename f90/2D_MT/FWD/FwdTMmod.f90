@@ -271,7 +271,7 @@ module fwdtmmod
 
       ! Deallocates arrays used within module
       ! and sets Initialized = .False.
-
+        if (Initialized) then
          deallocate(Dzb)
          deallocate(Dy)
          deallocate(Czb)
@@ -283,6 +283,8 @@ module fwdtmmod
          deallocate(HXI)
          deallocate(ipiv)
          Initialized = .False.
+		end if
+ 
       end subroutine Fwd2DdeallTM
 
 !**********************************************************************

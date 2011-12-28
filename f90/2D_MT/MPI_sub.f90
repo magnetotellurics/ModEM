@@ -56,6 +56,7 @@ end subroutine get_nPol_MPI
 
 
 
+
        CALL MPI_PACK_SIZE(80*21, MPI_CHARACTER,        MPI_COMM_WORLD, Nbytes1,  ierr)
        CALL MPI_PACK_SIZE(3,     MPI_DOUBLE_PRECISION, MPI_COMM_WORLD, Nbytes2,  ierr)
        CALL MPI_PACK_SIZE(1,     MPI_INTEGER,          MPI_COMM_WORLD, Nbytes3,  ierr)
@@ -146,7 +147,7 @@ subroutine create_e_param_place_holder(e)
 
      implicit none
      type(solnVector_t), intent(in)	:: e
-     integer                        ::v_size,Nbytes1
+     integer                        ::v_size,Nbytes1,Nbytes2
 
 
 
@@ -155,8 +156,9 @@ subroutine create_e_param_place_holder(e)
 
          v_size=size(e%vec%v)
          CALL MPI_PACK_SIZE(v_size, MPI_DOUBLE_COMPLEX, MPI_COMM_WORLD, Nbytes1,  ierr)
+		 CALL MPI_PACK_SIZE(1, MPI_INTEGER, MPI_COMM_WORLD, Nbytes2,  ierr)
 
-         Nbytes=((Nbytes1))+1
+         Nbytes=((Nbytes1+Nbytes2))+1
 
          if(associated(e_para_vec)) then
              deallocate(e_para_vec)
@@ -179,6 +181,7 @@ subroutine create_e_param_place_holder(e)
        index=1
 
         call MPI_Pack(e%vec%v(1,1),v_size, MPI_DOUBLE_COMPLEX, e_para_vec, Nbytes, index, MPI_COMM_WORLD, ierr)
+		call MPI_Pack(e%tx,1,             MPI_INTEGER,        e_para_vec, Nbytes, index, MPI_COMM_WORLD, ierr)
 
 
 end subroutine Pack_e_para_vec
@@ -195,6 +198,7 @@ subroutine Unpack_e_para_vec(e)
        index=1
 
         call MPI_Unpack(e_para_vec, Nbytes, index, e%vec%v(1,1),v_size, MPI_DOUBLE_COMPLEX,MPI_COMM_WORLD, ierr)
+		call MPI_Unpack(e_para_vec, Nbytes, index, e%tx,1, MPI_INTEGER,MPI_COMM_WORLD, ierr)
 
 end subroutine Unpack_e_para_vec
 
@@ -203,13 +207,14 @@ subroutine create_eAll_param_place_holder(e)
 
      implicit none
      type(solnVector_t), intent(in)	:: e
-     integer v_size,Nbytes1
+     integer v_size,Nbytes1,Nbytes2
 
 
          v_size=size(e%vec%v)
          CALL MPI_PACK_SIZE(v_size, MPI_DOUBLE_COMPLEX, MPI_COMM_WORLD, Nbytes1,  ierr)
+		 CALL MPI_PACK_SIZE(1, MPI_INTEGER, MPI_COMM_WORLD, Nbytes2,  ierr)
 
-         Nbytes=((Nbytes1))+1
+         Nbytes=((Nbytes1+Nbytes2))+1
 
 
 
@@ -238,7 +243,7 @@ subroutine pack_eAll_para_vec(e)
        index=1
 
         call MPI_Pack(e%vec%v(1,1),v_size, MPI_DOUBLE_COMPLEX, eAll_para_vec, Nbytes, index, MPI_COMM_WORLD, ierr)
-
+        call MPI_Pack(e%tx,1,             MPI_INTEGER,        eAll_para_vec, Nbytes, index, MPI_COMM_WORLD, ierr)
 
 end subroutine pack_eAll_para_vec
 
@@ -256,6 +261,7 @@ subroutine Unpack_eAll_para_vec(e)
        index=1
 
         call MPI_Unpack(eAll_para_vec, Nbytes, index, e%vec%v(1,1),v_size, MPI_DOUBLE_COMPLEX,MPI_COMM_WORLD, ierr)
+		call MPI_Unpack(eAll_para_vec, Nbytes, index, e%tx,1, MPI_INTEGER,MPI_COMM_WORLD, ierr)
 
 
 

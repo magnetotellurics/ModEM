@@ -26,7 +26,7 @@ implicit none
 type(rhsVector_t), save, private		:: b0
 !    keep track of which mode was solved for most recently
 !    (to minimize reinitialization ... not clear this is needed!)
-character*2, save, public		:: currentMode = '  '
+  character*2, save, public		:: currentMode = '  '
 
 
 !  initialization routines (call Fwd version if no sensitivities are
@@ -91,8 +91,7 @@ Contains
    mode = txDict(iTx)%mode
    period = txDict(iTx)%period
 
-   if(currentMode .ne. mode) then
-      if(currentMode .ne. '  ') then
+
          !  not inital solution, but mode has changed from last
          !  sensitivity calculated: will need to reinitialize
          !  solver + rhs/soln arrays ... first deallocate from
@@ -103,15 +102,15 @@ Contains
             call deall_rhsVector(comb)
             call deall_solnVector(e)
          endif
-         select case(currentMode)
+         select case(mode)
             case('TE')
                call Fwd2DdeallTE()
             case('TM')
                call Fwd2DdeallTM()
             case default
          end select
-      endif
-      currentMode = mode
+
+      
 
       ! initialize coefficient matrix (frequency indpendent part)
       select case(mode)
@@ -141,7 +140,7 @@ Contains
       !  allocate for background solution
       call create_solnVector(grid,iTx,e0)
 
-   endif
+
 
    !  allocate storage for the sensitivity soln and RHS if run for the first time
    !  or with a new mode; if the mode is new deallocate them first (above)
