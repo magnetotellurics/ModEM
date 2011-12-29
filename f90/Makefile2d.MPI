@@ -13,7 +13,7 @@
 # LIBS = -xlic_lib=sunperf
 #  Uncomment these lines to make program with g95
 # include Makefile.local
-# OBJDIR = ./objs/3D_MT/G95Debug
+# OBJDIR = ./objs/2D_MT/G95Debug
 # F90 = g95
 # FFLAGS = -O2
 # FFLAGS = -g -ftrace=frame -fbounds-check
@@ -22,7 +22,7 @@
 # LIBS = -lblas -llapack
 #  Uncomment these lines to make program with Intel compiler
 # include Makefile.local
-# OBJDIR = ./objs/3D_MT/IFortDebug
+# OBJDIR = ./objs/2D_MT/IFortDebug
 # F90 = ifort
 # FFLAGS = -O3 -parallel -openmp #-heap-arrays
 # FFLAGS = -debug all -check bounds -traceback -heap-arrays
@@ -31,7 +31,7 @@
 # LIBS = -lblas -llapack
 #  Uncomment these lines to make program with PGI compiler
 # include Makefile.local
-# OBJDIR = ./objs/3D_MT/PGIDebug
+# OBJDIR = ./objs/2D_MT/PGIDebug
 # F90 = pgf95  # mpif90
 # FFLAGS = -O3
 # FFLAGS = -g -Mprof=lines -Mbounds
@@ -168,7 +168,7 @@ clean:
 	`find . -mindepth 1 -name "*~"` 
 
 cleanall: clean 
-	rm -f $(OUTDIR)/Mod2DMT 
+	rm -f $(OUTDIR)/Mod2DMT_MPI
 
 src: clean 
 	tar cvfz $(ARCHIVE).tgz * 

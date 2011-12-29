@@ -204,7 +204,7 @@ clean:
 	`find . -mindepth 1 -name "*~"` 
 
 cleanall: clean 
-	rm -f $(OUTDIR)/Mod3DMT 
+	rm -f $(OUTDIR)/Mod3DMT_MPI
 
 src: clean 
 	tar cvfz $(ARCHIVE).tgz * 
