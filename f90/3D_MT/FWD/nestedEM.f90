@@ -3,13 +3,16 @@ Module nestedEM
   use sg_boundary			! work between different data types
   					! (between boundary conditions and
 					! complex vectors)
-  use sg_diff_oper			 ! generic differential operators
   use sg_sparse_vector !, only: add_scvector
-  use modelOperator3d                   ! quasi-static Maxwell operator module
-  use solver				! generic solvers
-  use solnspace
 
   implicit none
+
+!################################ saved and used for the model operators ##################################
+
+  !Vector to hold the BC interpolated from a file E solution file for all transmitters and polarizations
+  type(cboundary), pointer, dimension(:), save    :: BC_from_file
+  type(cvector), pointer, dimension(:), save      :: E0_from_file
+
 
 !###################################### used for nested modelling ############################################  
     type :: location
@@ -34,7 +37,12 @@ Module nestedEM
 
   end type location
   
-
+  ! local variables set up by CreateSlices; saved and used for nesting calculations
+  type(location), pointer, dimension(:), save     :: xTslice,xBslice
+  type(location), pointer, dimension(:), save     :: yTslice,yBslice
+  type(location), pointer, dimension(:), save     :: zTslice,zBslice
+  integer, save                                   :: xslSites, yslSites, zslSites
+  logical, save                                   :: slicesSetUp = .false.
 
   !  the following are private data types that are just used internally
   ! defining a electrical field interpolation site and then using them
@@ -59,41 +67,118 @@ type(sparsevecc), pointer, dimension(:)                         ::  e_sparse_vec
   
   ! total number of sites
   integer, save							:: totalSites  
-  !##########################################################################################################  
 
-
+!##########################################################################################################
 
 
 Contains
 
+  !**********************************************************************
+  subroutine setup_BC_from_file(grid,BC,nTx,nPol)
 
-subroutine Interpolate_BC_from_E_soln(eAll_larg,Larg_Grid,grid,BC)
-
-
-  implicit none
-  
-  type(grid_t)  ,intent(in)      	        ::  Larg_Grid   
-  type(solnVectorMTX_t),intent(in)          ::  eAll_larg
-  type(grid_t),intent(in)         	        ::  Grid 
+  type(grid_t),intent(in)                   ::  grid
   type(cboundary),intent(in)                ::  BC
-  
-    ! local variables needed for nesting calculations
-  integer                      :: status,nTx_nPol,j,iMode,iTx,counter
-  character (len=80)           :: whichFace = '', whatType = '' 
-  integer                      :: whereAt
-    
-    
-  type(location), pointer, dimension(:)		:: xTslice,xBslice
-  type(location), pointer, dimension(:)		:: yTslice,yBslice
-  type(location), pointer, dimension(:)		:: zTslice,zBslice
-  integer						            :: xslSites, yslSites
-  integer						            :: zslSites
-  type (solnVector_t)	                    :: elecSoln
+  integer, intent(in)                       ::  nTx, nPol
+  ! local
+  integer     :: j,status
 
-     ! we are creating the slices (the outer layers of the mGrid cube) 
+    allocate (BC_from_file(nTx*nPol),E0_from_file(nTx*nPol), STAT=status)
+    do j=1,nTx*nPol
+      BC_from_file(j)=BC
+    end do
+
+    call CreateSlices(grid)
+
+  end subroutine setup_BC_from_file
+
+
+  !***********************************************************************
+  ! computes a single value in the nTx * nPol array of boundary conditions
+  ! stored in the BC_from_file variable and saved in this module
+
+  subroutine compute_BC_from_file(Large_Grid,e_large,Grid,counter)
+
+    type(grid_t)  ,intent(in)                 ::  Large_Grid
+    type(cvector),intent(in)                  ::  e_large
+    type(grid_t),intent(in)                   ::  Grid
+    integer, intent(in)                       ::  counter
+
+    ! local variables needed for nesting calculations
+    character (len=80)           :: whichFace = ''
+    type(cvector)                :: elecSoln
+
+
+    if (.not. slicesSetUp) then
+        call CreateSlices(Grid)
+    end if
+
+    call create_cvector(Grid, elecSoln, EDGE)
+
+    whichFace = 'zFace'
+   ! top face
+       Call NestingSetUp(Large_Grid, zslSites, zTslice, whichFace)
+       Call NestedE(e_large, elecSoln)
+
+   ! bottom face
+       Call NestingSetUp(Large_Grid, zslSites, zBslice, whichFace)
+       Call NestedE(e_large, elecSoln)
+
+       ! the two x-faces
+       whichFace = 'xFace'
+   ! top face
+       Call NestingSetUp(Large_Grid, xslSites, xTslice, whichFace)
+       Call NestedE(e_large, elecSoln)
+   ! bottom face
+       Call NestingSetUp(Large_Grid, xslSites, xBslice, whichFace)
+       Call NestedE(e_large, elecSoln)
+
+       ! the two y-faces
+       whichFace = 'yFace'
+   ! top face
+       Call NestingSetUp(Large_Grid, yslSites, yTslice, whichFace)
+       Call NestedE(e_large, elecSoln)
+   ! bottom face
+       Call NestingSetUp(Large_Grid, yslSites, yBslice, whichFace)
+       Call NestedE(e_large, elecSoln)
+
+
+    Call getBC(elecSoln,  BC_from_file(counter))
+
+    Call deall_cvector(elecSoln)
+
+
+  end subroutine compute_BC_from_file
+
+
+  !**********************************************************************
+  subroutine deall_BC_from_file()
+
+  ! local
+  integer     :: j, status
+
+    deallocate(BC_from_file,E0_from_file, STAT=status)
+
+    deallocate(xTslice,xBslice, STAT=status)
+    deallocate(yTslice,yBslice, STAT=status)
+    deallocate(zTslice,zBslice, STAT=status)
+    slicesSetUp = .false.
+
+  end subroutine deall_BC_from_file
+
+
+  !**********************************************************************
+  subroutine CreateSlices(Grid)
+
+  type(grid_t),intent(in)                   ::  Grid
+
+  ! local variables needed for nesting calculations
+  character (len=80)           :: whichFace = '', whatType = ''
+  integer                      :: whereAt
+
+     ! we are creating the slices (the outer layers of the mGrid cube)
      ! Values are extracted at the center of the edge
-      whatType = 'Edge' 
-     
+      whatType = 'Edge'
+
      ! the two z-faces
      whichFace = 'zFace'
      whereAt = 1                ! top
@@ -103,73 +188,21 @@ subroutine Interpolate_BC_from_E_soln(eAll_larg,Larg_Grid,grid,BC)
 
      ! the two x-faces
      whichFace = 'xFace'
-     whereAt = 1               ! nearest 
+     whereAt = 1               ! nearest
      Call OneSliceAtCenter(Grid, xTslice, xslSites, whichFace, whatType, whereAt)
      whereAt = Grid%nx+1      ! farthest
      Call OneSliceAtCenter(Grid, xBslice, xslSites, whichFace, whatType, whereAt)
-     
+
      ! the two y-faces
      whichFace = 'yFace'
-     whereAt = 1               ! nearest 
+     whereAt = 1               ! nearest
      Call OneSliceAtCenter(Grid, yTslice, yslSites,whichFace, whatType, whereAt)
      whereAt = Grid%ny+1      ! farthest
      Call OneSliceAtCenter(Grid, yBslice, yslSites,whichFace, whatType, whereAt)
 
+     slicesSetUp = .true.
 
-
-
-
-
-    nTx_nPol=eAll_larg%nTx*eAll_larg%solns(1)%nPol 
-     allocate (BC_from_file(nTx_nPol),E0_from_file(nTx_nPol), STAT=status)
-     do j=1,nTx_nPol
-       BC_from_file(j)=BC
-     end do
-     
-     call create_solnVector(grid,1,elecSoln)
-! For now extract the BC from eAll_larg 
-    counter=0
-    do iTx = 1, eAll_larg%nTx
-       do iMode=1,eAll_larg%solns(iTx)%nPol 
-       counter=counter+1
-       
-        whichFace = 'zFace'
-	   ! top face
-           Call NestingSetUp(Larg_Grid, zslSites, zTslice, whichFace)
-           Call NestedE(eAll_larg%solns(iTx)%pol(iMode), elecSoln%pol(iMode))
-       
-	   ! bottom face
-           Call NestingSetUp(Larg_Grid, zslSites, zBslice, whichFace)
-           Call NestedE(eAll_larg%solns(iTx)%pol(iMode), elecSoln%pol(iMode))
-
-           ! the two x-faces
-           whichFace = 'xFace'
-	   ! top face
-           Call NestingSetUp(Larg_Grid, xslSites, xTslice, whichFace)
-           Call NestedE(eAll_larg%solns(iTx)%pol(iMode), elecSoln%pol(iMode))
-	   ! bottom face
-           Call NestingSetUp(Larg_Grid, xslSites, xBslice, whichFace)
-           Call NestedE(eAll_larg%solns(iTx)%pol(iMode), elecSoln%pol(iMode))
-
-           ! the two y-faces
-           whichFace = 'yFace'
-	   ! top face
-           Call NestingSetUp(Larg_Grid, yslSites, yTslice, whichFace)
-           Call NestedE(eAll_larg%solns(iTx)%pol(iMode), elecSoln%pol(iMode))
-	   ! bottom face
-           Call NestingSetUp(Larg_Grid, yslSites, yBslice, whichFace)
-           Call NestedE(eAll_larg%solns(iTx)%pol(iMode), elecSoln%pol(iMode))	
-           
-           Call getBC(elecSoln%pol(iMode),  BC_from_file(counter))        
-       end do
-    end do
-    
-
-    
-    
-    
-    
-end subroutine Interpolate_BC_from_E_soln
+    end subroutine CreateSlices
 
 
   ! ***************************************************************************
