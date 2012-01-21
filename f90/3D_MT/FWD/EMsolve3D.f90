@@ -3,7 +3,6 @@
 ! solver
 
 module EMsolve3D
-  use nestedEM
   use sg_boundary			! work between different data types
   					! (between boundary conditions and
 					! complex vectors)

@@ -96,7 +96,7 @@ Contains
    !In case of interpolating the BC from eAll_larg   
    ! If eAll_ larg solution is already allocated, then use that to interpolate the BC from it
    if (eAll_larg%allocated) then
-     call Interpolate_BC_from_E_soln (eAll_larg,Larg_Grid,grid,b0%bc)
+     call Interpolate_BC_from_E_soln (eAll_larg,Larg_Grid,grid,b0)
      !Once we are ready from eAll_larg, deallocate it, and keep track, that BC_from_file are already Initialized.
      call deall(eAll_larg)
      call deall_grid(Larg_Grid)
@@ -106,11 +106,7 @@ Contains
    if (BC_from_file_Initialized) then
      b0%bc%read_E_from_file=.true.
    end if
-   
-   
-   
-   
-        
+
    !  allocate for background solution
    call create_solnVector(grid,iTx,e0)
 
@@ -260,6 +256,34 @@ Contains
    e%tx = iTx
 
    end subroutine sensSolve
+
+
+  !**********************************************************************
+  ! uses nestedEM module to extract the boundary conditions directly from
+  ! a full EMsolnMTX vector on a larger (and coarser) grid
+
+  subroutine Interpolate_BC_from_E_soln(eAll_larg,Larg_Grid,grid,b0)
+
+  type(grid_t)  ,intent(in)                 ::  Larg_Grid
+  type(solnVectorMTX_t),intent(in)          ::  eAll_larg
+  type(grid_t),intent(in)                   ::  Grid
+  type(RHS_t),intent(in)                    ::  b0
+
+    ! local variables needed for nesting calculations
+  integer                      :: status,iMode,iTx,counter
+
+  Call setup_BC_from_file(Grid,b0%bc,eAll_larg%nTx,eAll_larg%solns(1)%nPol)
+
+  ! For now extract the BC from eAll_larg
+    counter=0
+    do iTx = 1, eAll_larg%nTx
+       do iMode=1, eAll_larg%solns(iTx)%nPol
+         counter=counter+1
+         Call compute_BC_from_file(Larg_Grid,eAll_larg%solns(iTx)%pol(iMode),Grid,counter)
+       end do
+    end do
+
+  end subroutine Interpolate_BC_from_E_soln
 
 
 end module ForwardSolver
