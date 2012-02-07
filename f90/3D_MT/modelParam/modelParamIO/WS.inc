@@ -9,14 +9,16 @@
       ! for setting the pointer to the grid in the modelParam
 
       type(grid_t), target, intent(inout)  :: grid
+
+      
       type(modelParam_t), intent(out)	   :: m
       character(*), intent(in)             :: cfile
       integer		                       :: istat
       ! local variables
-
       type(rscalar)                        :: rho, ccond
       character(80)                        :: someChar='',paramType=''
       integer                              :: Nx, Ny, NzEarth, NzAir, someIndex=0, i, j, k
+      
       real(8)                              :: alpha=3.
 
 	  paramType = ''
@@ -47,12 +49,14 @@
 	  nzAir = 10
 
 	  ! Initialize and read in the grid
-      call create_grid(Nx,Ny,NzAir,NzEarth,grid)
-
-      read(ioPrm,*) (grid%dx(j),j=1,grid%nx)
-      read(ioPrm,*) (grid%dy(j),j=1,grid%ny)
-      read(ioPrm,*) (grid%dz(j),j=grid%nzAir+1,grid%nzAir+grid%nzEarth)
-
+      call create_mgrid(Nx,Ny,NzAir,NzEarth,grid)
+!      call create_grid(Nx,Ny,NzAir,NzEarth,grid)
+             
+        read(ioPrm,*) (grid%dx(j),j=1,grid%nx)
+        read(ioPrm,*) (grid%dy(j),j=1,grid%ny)
+        read(ioPrm,*) (grid%dz(j),j=grid%nzAir+1,grid%nzAir+grid%nzEarth)
+      
+       
       !   Following is Kush's approach to setting air layers:
       ! mirror imaging the dz values in the air layer with respect to
       ! earth layer as far as we can using the following formulation
@@ -69,8 +73,11 @@
       if (grid%dz(1).lt.30000) then
           grid%dz(1) = 30000
       end if
+     
+      call setup_mgrid(grid)
 
 	  ! Create and read in the resistivity values
+	  
       call create_rscalar(grid,rho,CELL_EARTH)
 
  	  ! Read the resistivity

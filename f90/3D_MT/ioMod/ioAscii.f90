@@ -87,7 +87,7 @@ Contains
        ! NM: Yes we do
 
        call create_grid(fileGrid%nx,fileGrid%ny,fileGrid%nzAir,fileGrid%nz-fileGrid%nzAir,fileGrid)
-       
+
        read(ioNum) fileGrid%dx
        read(ioNum) fileGrid%dy
        read(ioNum) fileGrid%dz

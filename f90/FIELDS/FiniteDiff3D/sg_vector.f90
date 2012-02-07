@@ -204,6 +204,20 @@ module sg_vector
 
   end type cvector
 
+! ******************************************************************************
+type cvector_mg
+
+! number of 'layers' with different resolutions
+integer  :: mgridSize
+! coarseness
+integer,allocatable  :: coarseness(:)
+! nz in each subgrid
+integer,allocatable :: nzEach(:)
+! cvectors of a subgrid
+type(grid_t), pointer :: cvector_mg(:)
+
+end type cvector_mg
+
   ! ***************************************************************************
   ! type vector defines vector for either edge or face in a staggered grid as
   ! a real field

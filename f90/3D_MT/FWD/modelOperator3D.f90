@@ -22,7 +22,6 @@ module modelOperator3D
   use sg_boundary
   use ModelSpace
   use boundary_ws          ! sets the boundary conditions
-  use nestedEM
   implicit none
 
   ! * These variables are used by model equation
@@ -35,6 +34,9 @@ module modelOperator3D
   type(rvector), public			::	volE    ! THE volume elements
   type(rvector), private		::	condE   ! THE edge conductivities
   real(kind=prec),private	::      omega   ! THE (active) frequency
+  !Vector to hold the BC interpolated from a file E solution file
+  type(cboundary), pointer, dimension(:)	:: BC_from_file
+  type(cvector), pointer, dimension(:)	    :: E0_from_file
 
   ! NOTE: THIS VARIABLE IS TEMPORARILY REQUIRED TO SET THE BOUNDARY CONDITIONS
   type(rscalar), private        :: Cond3D
