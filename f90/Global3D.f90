@@ -662,6 +662,7 @@ end program earth
     use dataMisfit
     use senscomp
     use transmitters
+    use dataspace
     use dataTypes
     use dataio
 #ifdef MPI
@@ -704,13 +705,15 @@ end program earth
       ! compute residual: res = dat-psi
       call linComb(ONE,dat,MinusONE,psi,res)
       ! normalize residuals, compute sum of squares
-      !wres = res
-      !call normalizeData(wres,2)
+      wres = res
+      call normalizeData(wres,2)
 
-      !   SS = dotProd(res,wres)
-      !   Ndata = countData(res)
-      !   RMS = sqrt(SS/Ndata)
-      !   print *, 'Total RMS squared misfit for ',Ndata,' data values = ',RMS**2
+      SS = dotProd(res,wres)
+      Ndata = countData(res)
+      RMS = sqrt(SS/Ndata)
+      !print *, 'Total RMS squared misfit for ',Ndata,' data values = ',RMS**2
+      write(6,'(a30,i3,a32,i2,a2,g15.7)') 'Total RMS squared misfit for ',Ndata,&
+            ' values, computed for frequency ',ifreq,' :',RMS**2
 
       ! res = psi-dat (note: multiply by +2 to obtain derivative)
       !call calcResiduals(dat,psi,res)

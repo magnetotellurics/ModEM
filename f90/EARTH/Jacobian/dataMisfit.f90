@@ -184,8 +184,8 @@ Contains
 
 	type (misfit_t), intent(inout)			:: misfit
 	type (dataVector_t), intent(in)			:: res
-	real(8)										:: rval,ival,error
-	integer										:: iTx,iDt,j,k,nSite
+	real(8)										:: val,err
+	integer										:: iTx,iDt,j,k,icomp,nSite
 
 	iTx = res%tx
 
@@ -197,23 +197,25 @@ Contains
 		!if (.not.res%data(j)%exists(k)) then
 		!  cycle
 		!end if
+		do icomp = 1,res%data(j)%nComp
 
-		rval = res%data(j)%value(1,k)
-		ival = res%data(j)%value(2,k)
-		error = res%data(j)%error(1,k)
+		val = res%data(j)%value(icomp,k)
+		err = res%data(j)%error(icomp,k)
 
 		! Calculate the misfit
 		select case (trim(misfit%name))
 		case ('Mean Squared')
 		  misfit%value(iTx,iDt) = &
-			 misfit%value(iTx,iDt) + (rval/error)**2 + (ival/error)**2
+			 misfit%value(iTx,iDt) + (val/err)**2
 		case default
 		  write(0,*) 'Warning: (compute_misfit) unknown penalty functional ',trim(misfit%name)
 		  return
 		end select
-	  end do
-	  !write(0,'(a40,2i3,i6,g15.7)') 'ifreq,ifunc,ndat,misfit = ',i,j,&
-	  !				misfit%ndat(i,j),misfit%value(i,j)/(2*misfit%ndat(i,j))
+		end do ! components
+	  end do ! sites
+
+	  !write(0,'(a40,2i3,i6,g15.7)') 'iTx,iDt,ndat,misfit = ',iTx,iDt,&
+	  !				misfit%ndat(iTx,iDt),misfit%value(iTx,iDt)/(2*misfit%ndat(iTx,iDt))
 	end do
 
   end subroutine calcMisfit	! calcMisfit

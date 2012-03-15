@@ -75,6 +75,7 @@ module DataSpace
   end interface
 
   interface countData
+     MODULE PROCEDURE count_dataVector_f
      MODULE PROCEDURE count_dataVectorMTX_f
   end interface
 
@@ -985,6 +986,23 @@ Contains
    enddo
 
   end subroutine normalize_dataVector
+
+  !**********************************************************************
+  ! count all real data values in the data vector
+
+  function count_dataVector_f(d) result(ndata)
+
+   type(dataVector_t), intent(in)        :: d
+   integer              :: ndata
+
+   ! local variables
+   integer              :: i
+   ndata = 0
+   do i = 1,d%nDt
+     ndata = ndata + count(d%data(i)%exist)
+   enddo
+
+  end function count_dataVector_f
 
   !**********************************************************************
   ! Merge two data vectors for the same tx into a single dataVector

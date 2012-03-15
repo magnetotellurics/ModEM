@@ -302,6 +302,11 @@ Contains
           exist(ifreq,iobs,k) = .TRUE.
       end do
 
+      ! Now account for "non-existent" observatories, e.g., too close to poles
+      if (.not. obsList%info(iobs)%defined) then
+          exist(ifreq,iobs,:) = .FALSE.
+      end if
+
     end do READ_DATA
 
     close(ioDat)
