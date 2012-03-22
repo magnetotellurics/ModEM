@@ -171,7 +171,6 @@ module sg_scalar
 
   end type cscalar
 
-
   ! ***************************************************************************
   ! type rscalar defines scalar for either edge or face in a staggered grid as
   ! a real field
@@ -205,7 +204,6 @@ module sg_scalar
      type (grid_t), pointer                               :: grid
 
   end type rscalar
-
 
   ! ***************************************************************************
   ! type iscalar defines scalar for either edge or face in a staggered grid as
