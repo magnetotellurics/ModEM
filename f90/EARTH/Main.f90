@@ -167,7 +167,7 @@ Contains
 	call initControls(cUserDef,fwdCtrls)
     !--------------------------------------------------------------------------
     ! Read forward solver controls to store in adjCtrls
-    inquire(FILE=cUserDef%fn_intsource,EXIST=exists)
+    inquire(FILE=cUserDef%fn_adjctrl,EXIST=exists)
     if (exists) then
         call initControls(cUserDef,adjCtrls)
     else
