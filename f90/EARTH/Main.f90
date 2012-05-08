@@ -164,12 +164,12 @@ Contains
 	call initSlices(cUserDef,slices)
 	!--------------------------------------------------------------------------
 	! Read forward solver controls to store in fwdCtrls
-	call initControls(cUserDef,fwdCtrls)
+	call initControls(fwdCtrls,cUserDef%fn_fwdctrl)
     !--------------------------------------------------------------------------
     ! Read forward solver controls to store in adjCtrls
     inquire(FILE=cUserDef%fn_adjctrl,EXIST=exists)
     if (exists) then
-        call initControls(cUserDef,adjCtrls)
+        call initControls(adjCtrls,cUserDef%fn_adjctrl)
     else
         write(0,*) node_info,'Warning: Using forward solver configuration for adjoint computations'
         adjCtrls = fwdCtrls

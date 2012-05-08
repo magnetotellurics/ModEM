@@ -353,15 +353,15 @@ Contains
   ! * initControls reads the file fn_fwdctrl and sets the values of main control
   ! * parameters for the forward solver, stored in fwdCtrls
 
-  subroutine initControls(cUserDef,fwdCtrls)
+  subroutine initControls(fwdCtrls,fname)
 
 	implicit none
-	type (userdef_control), intent(in)						:: cUserDef
+	character(len=*), intent(in)						:: fname
 	type (fwdCtrl_t), intent(out)						:: fwdCtrls
 
-	  open(ioFwdCtrl,file=cUserDef%fn_fwdctrl,form='formatted',status='old')
+	  open(ioFwdCtrl,file=fname,form='formatted',status='old')
 
-      write(6,*) node_info,'Reading from the forward solver controls file ',trim(cUserDef%fn_fwdctrl)
+      write(6,*) node_info,'Reading from the forward solver controls file ',trim(fname)
       read(ioFwdCtrl,*) fwdCtrls%ipotloopmax ! max number of divergence correction loops
       read(ioFwdCtrl,*) fwdCtrls%errend ! tolerance on the solution update (herr)
       read(ioFwdCtrl,*) fwdCtrls%nrelmax    ! max number of solution updates between div. corrections

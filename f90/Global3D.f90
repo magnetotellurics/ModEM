@@ -260,7 +260,7 @@ program earth
 	call DeleteGlobalData()
 
 	! compute random model parturbation ...
-	eps = 0.005
+	eps = 0.00005
     write(0,*) 'Model perturbation used is uniform random times ',eps
 
 	call InitGlobalData(cUserDef,eps)
@@ -272,6 +272,9 @@ program earth
     !   write(0,'(a40)') trim(TFList%info(ifunc)%name)//'-response: func2-func1, grad'
     !   write(0,'(2g15.7)') func2(ifunc)-func1(ifunc),dot_product(da(:),grad(ifunc,:))
     !end do
+
+    write(0,'(a37,es12.6)') 'The norm of the gradient was ',sqrt(dotProd(grad,grad))
+    write(0,*)
 
     write(0,'(a82)') 'Total derivative test based on Taylor series [f(m0+dm) ~ f(m0) + df/dm|_{m0} x dm]'
     write(0,'(a20,g15.7)') 'f(m0+dm) - f(m0): ',f2-f1
@@ -932,7 +935,8 @@ end program earth
 	type (solnVectorMTX_t)                  :: H
 	type (modelParam_t)						:: dmisfit,dmisfitSmooth
 	integer									:: ifreq,ifunc
-	real(8)									:: SS, RMS
+	character(80)                           :: comment
+	real(8)									:: SS, RMS, gnorm
 	integer									:: Ndata
 
     ! Call the forward solver for all frequencies
@@ -940,7 +944,7 @@ end program earth
 
 #ifdef MPI
     call Master_job_fwdPred(param,allResp,H)
-    call Master_job_Collect_eAll(allResp,H)
+    !call Master_job_Collect_eAll(allResp,H)
 #else
     call fwdPred(param,allResp,H)
 #endif
@@ -1015,10 +1019,17 @@ end program earth
 	Ndata = countData(allResp)
 	call scMult(1.0d0/Ndata,dmisfitSmooth,dmisfitSmooth)
 
+
     call write_modelParam(dmisfitSmooth,cUserDef%fn_gradient)
 	write(0,*) 'Gradient written into file ',trim(cUserDef%fn_gradient)
 
+    write(comment,*) 'Total derivative = '
+    call print_modelParam(dmisfitSmooth,output_level,trim(comment))
+
 	grad = dmisfitSmooth
+
+    gnorm = sqrt(dotProd(grad,grad))
+    write(*,'(a37,es12.6)') 'The norm of the gradient is ',gnorm
 
     call deall_dataVectorMTX(allResp)
 	call deall_solnVectorMTX(H)
@@ -1071,9 +1082,10 @@ end program earth
     type (rhsVector_t)                      :: RHS
     type (dataVector_t)                     :: dat,psi,res,wres
     type (grid_t)                           :: grid
-    integer                                 :: ifreq,ifunc
+    integer                                 :: ifreq,ifunc,Ndata
     logical                                 :: adjoint,delta
     character(1)                            :: cfunc
+    character(80)                           :: comment
     character(80)                           :: fn_err
 
     ! Start the (portable) clock
@@ -1237,11 +1249,23 @@ end program earth
 !        ! $P^T L^T \delta{R}$
 !        call operatorPt(drho,dmisfit,grid,param,rho)
 !
-!        dmisfit%c%value = -2.0d0 * dmisfit%c%value
-!        !dmisfit = ScMultParamY_f(-2.0d0,dmisfit)
-!        !dmisfit = -2. * dmisfit
 
-            dmisfitSmooth = multBy_CmSqrt(dmisfit)
+        !dmisfit = -2. * dmisfit
+        call scMult(MinusTWO,dmisfit,dmisfit)
+
+        ! scale misfit derivative by the number of data
+        Ndata = count(allData%d(ifreq)%data(ifunc)%exist)
+        call scMult(1.0d0/Ndata,dmisfit,dmisfit)
+
+        write(comment,*) 'Total unsmoothed derivative for ',trim(TFList%info(ifunc)%name),' response = '
+        call print_modelParam(dmisfit,output_level,trim(comment))
+
+        write(0,*) 'Derivative is perceived as zeroValued=',dmisfit%zeroValued
+
+        dmisfitSmooth = multBy_CmSqrt(dmisfit)
+
+        write(comment,*) 'Total derivative for ',trim(TFList%info(ifunc)%name),' response = '
+        call print_modelParam(dmisfitSmooth,output_level,trim(comment))
 
         call getParamValues_modelParam(dmisfitSmooth,misfit%dRda(ifreq,ifunc,:))
 

@@ -540,7 +540,7 @@ Contains
 
    ! compute gradient of the full penalty functional
    call gradient(lambda,d,m0,mHat,grad,dHat,eAll)
-   if (output_level > 4) then
+   if (output_level > 3) then
      gradFile = trim(iterControl%fname)//'_NLCG_'//iterChar//'.grt'
      call write_modelParam(grad,trim(gradFile))
    end if

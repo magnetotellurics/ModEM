@@ -1341,6 +1341,8 @@ Contains
 	  end do
 	end do
 
+	da%zeroValued = .false.
+
   end subroutine operatorPt	! This operator is the transpose of P
 
 

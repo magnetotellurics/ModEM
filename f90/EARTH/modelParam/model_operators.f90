@@ -1435,11 +1435,9 @@ Contains
     end if
 
 	! make the smoothing operator symmetric
-	if (.not. P%zeroValued) then
-	   call smoothV_modelParam(P)
-	   call smoothH_modelParam(P)
-	   call smoothV_modelParam(P)
-	end if
+	call smoothV_modelParam(P)
+	call smoothH_modelParam(P)
+	call smoothV_modelParam(P)
 
 	P%smoothed = .true.
 	P%temporary = .true.
