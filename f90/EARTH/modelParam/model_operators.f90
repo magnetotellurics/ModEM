@@ -248,6 +248,11 @@ Contains
 		return
 	end if
 
+    if (clean(L1%gamma)   /= clean(L2%gamma)) then
+        call warning('(compareLayers) layers have different weights')
+        return
+    end if
+
 	status = .TRUE.
 	return
 
@@ -660,13 +665,13 @@ Contains
 
   ! **********************************************************************
   ! * BOP
-  subroutine setLayer_modelParam(P,iL,upperb,lowerb,alpha,beta,if_log,period)
+  subroutine setLayer_modelParam(P,iL,upperb,lowerb,alpha,beta,weight,if_log,period)
 
     implicit none
     type (modelParam_t), intent(inout)               :: P
 	integer, intent(in)							   :: iL
     real(8), intent(in)							   :: upperb,lowerb
-    real(8), intent(in)							   :: alpha,beta
+    real(8), intent(in)							   :: alpha,beta,weight
 	logical, intent(in)							   :: if_log
     real(8), intent(in), optional                  :: period ! used for sources only
     ! * EOP
@@ -696,6 +701,7 @@ Contains
 	P%L(iL)%ubound = upperb
 	P%L(iL)%alpha  = alpha
 	P%L(iL)%beta   = beta
+	P%L(iL)%gamma  = weight
 	P%L(iL)%if_log = if_log
 
 
@@ -1321,6 +1327,7 @@ Contains
 	  do i=1,P%nF
 	    if((P1%c(j,i)%F%l==P2%c(j,i)%F%l).and.(P1%c(j,i)%F%m==P2%c(j,i)%F%m)) then
 		  P%c(j,i)%value = r1 * P1%c(j,i)%value + r2 * P2%c(j,i)%value
+		  P%c(j,i)%frozen = P1%c(j,i)%frozen .or. P2%c(j,i)%frozen
 	    else
 	      call errStop('(linComb_modelParam) parametrization not set up correctly')
 	    end if
@@ -1331,6 +1338,30 @@ Contains
 	P%smoothed = P1%smoothed .or. P2%smoothed
 
   end subroutine linComb_modelParam
+
+  ! **********************************************************************
+  ! * weights different layers relative to each other using gamma <= 1
+  ! * BOP
+  subroutine rescale_modelParam(P)
+
+    implicit none
+    type (modelParam_t), intent(inout)               :: P
+    ! * EOP
+
+    integer                                        :: i,j
+
+    if(.not.P%allocated) then
+       call warning('(rescale_modelParam) parametrization not allocated yet')
+       return
+    end if
+
+    do j=1,P%nL
+      do i=1,P%nF
+            P%c(j,i)%value = P%L(j)%gamma * P%c(j,i)%value
+      end do
+    end do
+
+  end subroutine rescale_modelParam
 
 
   ! **********************************************************************
@@ -1439,6 +1470,9 @@ Contains
 	call smoothH_modelParam(P)
 	call smoothV_modelParam(P)
 
+	! this is a diagonal operator so can be applied anywhere
+	call rescale_modelParam(P)
+
 	P%smoothed = .true.
 	P%temporary = .true.
 
@@ -1506,6 +1540,7 @@ Contains
 	allocate(P%crust%cond(nx,ny), STAT=status)
 
     P%crust%cond = crust%cond
+    P%crust%variable = crust%variable
     P%crust%allocated = .true.
 
   end subroutine setCrust_modelParam
@@ -1563,6 +1598,13 @@ Contains
 		end do
 		write(0,*)
 	end if
+
+    if (verbose>0) then
+        do j=1,P%nL
+            write(0,'(a12,a46,i2,a2,g10.5)') node_info,'Relative layer weight in layer ',j,': ',P%L(j)%gamma
+        end do
+        write(0,*)
+    end if
 
 	if (verbose>3) then
 		do i=1,P%nc
@@ -1627,7 +1669,7 @@ Contains
 		  ! INSTEAD, START NEW LINE:
 		  write(ioPrm,*)
 		else
-		  write(ioPrm,'(a5,2g10.5)') ' reg ',P%L(j)%alpha, P%L(j)%beta
+		  write(ioPrm,'(a5,2g10.5,a8,g12.6)') ' reg ',P%L(j)%alpha, P%L(j)%beta,' weight ',P%L(j)%gamma
 		end if
 		write(ioPrm,*) '  l   m   value  	  min     	max'
 		do i=1,P%nF
@@ -1695,7 +1737,7 @@ Contains
           ! INSTEAD, START NEW LINE:
           write(ioPrm,*)
         else
-          write(ioPrm,'(a5,2g10.5)') ' reg ',P(1)%L(j)%alpha, P(1)%L(j)%beta
+          write(ioPrm,'(a5,2g10.5,a8,g12.6)') ' reg ',P(1)%L(j)%alpha, P(1)%L(j)%beta,' weight ',P(1)%L(j)%gamma
         end if
         write(ioSens,*) '  l   m   value       min       max'
         do i=1,P(1)%nF
@@ -1745,14 +1787,14 @@ Contains
     character(*), intent(in)            :: cfile
     type (modelParam_t), intent(inout)  :: P
     type (modelParam_t), intent(inout), optional  :: Pimag ! used for sources only
-    integer                             :: ilayer,i,j,k,n,l,m
+    integer                             :: ilayer,i,j,k,n,l,m,w
     integer                             :: nF,nL
     integer                             :: sum,sum0,degree
     integer                             :: ios,istat
-    real(8)                             :: upperb,lowerb,width,depth,alpha,beta
+    real(8)                             :: upperb,lowerb,width,depth,alpha,beta,weight
     character(6)                        :: if_log_char,if_var_char
     logical                             :: if_log, if_fixed, exists, isComplex
-    character(80)                       :: prmname, string
+    character(200)                      :: prmname, string
     real(8)                             :: v,vimag,vmin,vmax
     real(8)                             :: period ! read in place of depth for sources
 
@@ -1814,11 +1856,19 @@ Contains
 
             !read(ioPrm,'(a3)',iostat=ios,advance='no') if_log_char
 
-            read(ioPrm,'(a80)',iostat=ios) string
+            read(ioPrm,'(a200)',iostat=ios) string
             i = index(string,'degree')
             j = index(string,'layer')
             k = index(string,'reg')
+            w = index(string,'weight')
 
+            if (w==0) then
+                    ! no weighting specified for this layer
+                    weight = 1.0d0
+                    w = len(string)
+            else
+                    read(string(w+7:len(string)),*) weight
+            end if
 
             if (k==0) then
                     ! no regularisation specified for this layer
@@ -1826,7 +1876,7 @@ Contains
                     beta  = 1.0d0
                     k = len(string)
             else
-                    read(string(k+4:len(string)),*) alpha,beta
+                    read(string(k+4:w),*) alpha,beta
             end if
 
             read(string(1:i-1),*) if_log_char
@@ -1854,10 +1904,10 @@ Contains
 
 
        if (period > 0.0d0) then
-          call setLayer_modelParam(P,n,upperb,lowerb,alpha,beta,if_log,period)
-          call setLayer_modelParam(Pimag,n,upperb,lowerb,alpha,beta,if_log,period)
+          call setLayer_modelParam(P,n,upperb,lowerb,alpha,beta,weight,if_log,period)
+          call setLayer_modelParam(Pimag,n,upperb,lowerb,alpha,beta,weight,if_log,period)
        else
-          call setLayer_modelParam(P,n,upperb,lowerb,alpha,beta,if_log)
+          call setLayer_modelParam(P,n,upperb,lowerb,alpha,beta,weight,if_log)
        end if
 
        sum0=sum0+sum

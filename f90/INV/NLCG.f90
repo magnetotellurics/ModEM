@@ -531,7 +531,7 @@ Contains
    ! output initial model and responses for later reference
    if (output_level > 1) then
      mFile = trim(iterControl%fname)//'_NLCG_'//iterChar//'.rho'
-     call write_modelParam(m,trim(mFile))
+     call write_modelParam(m0,trim(mFile))
    end if
    if (output_level > 2) then
      dataFile = trim(iterControl%fname)//'_NLCG_'//iterChar//'.dat'

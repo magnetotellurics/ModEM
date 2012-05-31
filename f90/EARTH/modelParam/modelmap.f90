@@ -25,7 +25,7 @@ Contains
     type (rscalar), intent(inout)                     :: resist
 	type (modelShell_t), intent(in)		            :: crust
 	!real(8), dimension(:,:,:), intent(out)			:: resist !(nx,ny,nz)
-	real(8)											:: crust_depth
+	real(8)											:: crust_depth, local_cond
 	integer											:: i,j,k
 
 	if(.not. resist%allocated) then
@@ -38,13 +38,22 @@ Contains
 
 	do i=1,grid%nx
 	  do j=1,grid%ny
+	    local_cond = R_ZERO
+	    if(crust%variable) then
+	        ! sum up the local crust conductance at (i,j)'th cell
+	        do k=grid%nzAir+1,grid%nzAir+grid%nzCrust
+		        local_cond = local_cond + (grid%z(k)-grid%z(k+1)) * (ONE/resist%v(i,j,k))
+		    end do
+		else
+		    ! don't add conductances, just use the thinsheet
+		end if
 		do k=grid%nzAir+1,grid%nzAir+grid%nzCrust ! if no crust, nzCrust == 0
 		  if(crust%allocated) then
 			  if(crust%cond(i,j) <= R_ZERO) then
 				write(0, *) 'Error: (insertShell) negative or infinite resistivity at',i,j,k
 				stop
 			  end if
-			  resist%v(i,j,k) = crust_depth/crust%cond(i,j)
+			  resist%v(i,j,k) = crust_depth/(local_cond+crust%cond(i,j))
 		  else
 		      !Leave alone if not allocated ...
               !resist%v(i,j,k) = R_ZERO

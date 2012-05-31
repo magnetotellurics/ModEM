@@ -231,6 +231,7 @@ Contains
 
 	close(ioShell)
 
+    mycrust%variable = .false. ! default; may be changed later
 	mycrust%allocated = .true.
 	return
 

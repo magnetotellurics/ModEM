@@ -23,10 +23,14 @@ module modeldef
   ! * few km of the solid Earth - mainly Earth crust. A typical depth is 12650 m,
   ! * the values correspond to the given grid in GM coordinates so that
   ! * rho(i,j) = 1/(cond(i,j)/depth) = depth/cond(i,j) (where depth in in metres)
+  ! *
+  ! * an important addition as of 25 May 2012: if the shell is "variable", add
+  ! * the conductance to that already specified in the model; this makes it
+  ! * possible to vary the conductance layer.
   type :: modelShell_t
 
 	  real(8), dimension(:,:), pointer		  :: cond !(nx,ny) - conductance
-	  logical                                 :: allocated
+	  logical                                 :: variable, allocated
 
   end type modelShell_t	! modelShell_t
 
@@ -90,7 +94,7 @@ module modeldef
 	  real(8)											  :: width,depth
 
 	  ! layer regularization parameters
-	  real(8)											  :: alpha,beta
+	  real(8)											  :: alpha,beta,gamma
 
 	  ! the indicator of whether the linear combination of F_i gives log_10(rho)
 	  logical											  :: if_log
