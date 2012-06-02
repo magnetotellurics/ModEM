@@ -170,6 +170,7 @@ module sg_vector
   ! ***************************************************************************
   ! type vector defines vector for either edge or face in a staggered grid as
   ! a complex field
+
   type :: cvector
 
      ! store the intention of the use in a character string defined
@@ -373,6 +374,9 @@ Contains
 
     ! allocate memory for x,y,z
     ! E%allocated will be true if all allocations succeed
+
+    ! multigrid approach  requires allocation from 0 element by z
+
     E%allocated = .true.
     if (E%gridType == EDGE) then
 	   ! For spherical problem:
@@ -389,11 +393,11 @@ Contains
 	   ! For spherical problem:
 	   ! 1) E%y(:,1,:) and E%y(:,ny+1,:) are undefined,
 	   ! 2) E%x(nx+1,:,:) is repetitios and equals E%x(1,:,:).
-       allocate(E%x(nx+1,ny,nz), STAT=status)
+       allocate(E%x(nx+1,ny,nz+1), STAT=status)
        E%allocated = E%allocated .and. (status .EQ. 0)
-       allocate(E%y(nx,ny+1,nz), STAT=status)
+       allocate(E%y(nx,ny+1,nz+1), STAT=status)
        E%allocated = E%allocated .and. (status .EQ. 0)
-       allocate(E%z(nx,ny,nz+1), STAT=status)
+       allocate(E%z(nx,ny,nz+2), STAT=status)
        E%allocated = E%allocated .and. (status .EQ. 0)
     else
        write (0, *) 'not a known tag'
@@ -463,11 +467,11 @@ Contains
 	   ! For spherical problem:
 	   ! 1) E%y(:,1,:) and E%y(:,ny+1,:) are undefined,
 	   ! 2) E%x(nx+1,:,:) is repetitious and equals E%x(1,:,:).
-       allocate(E%x(nx+1,ny,nz), STAT=status)
+       allocate(E%x(nx+1,ny,nz+1), STAT=status)
        E%allocated = E%allocated .and. (status .EQ. 0)
-       allocate(E%y(nx,ny+1,nz), STAT=status)
+       allocate(E%y(nx,ny+1,nz+1), STAT=status)
        E%allocated = E%allocated .and. (status .EQ. 0)
-       allocate(E%z(nx,ny,nz+1), STAT=status)
+       allocate(E%z(nx,ny,nz+2), STAT=status)
        E%allocated = E%allocated .and. (status .EQ. 0)
     else
        write (0, *) 'not a known tag'

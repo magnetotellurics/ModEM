@@ -9,7 +9,7 @@ module solver
    use utilities, only: isnan
    !use griddef	! staggered grid definitions
    !use sg_scalar
-   !use sg_vector
+
    implicit none
 
   ! solverControl_t as a data type controls diagnostic tools for joint forward
@@ -46,18 +46,20 @@ subroutine PCG(b,x, PCGiter)
    ! redefining some of the interfaces for our convenience (locally)
    ! generic routines for scalar operations on corner/ center nodes
    ! on a staggered grid
+
     use sg_scalar
+    use sg_scalar_mg
 
   ! routines for divergence correction
   use modeloperator3D, only:  A => DivCgrad, Minv => DivCgradILU
 
   implicit none
-  type (cscalar), intent(in)	        :: b
-  type (cscalar), intent(inout)	        :: x
+  type (cscalar_mg), intent(in)	        :: b
+  type (cscalar_mg), intent(inout)	        :: x
   type (solverControl_t), intent(inout) 	:: PCGiter
 
   ! local variables
-  type (cscalar)	:: r,s,p,q
+  type (cscalar_mg)	:: r,s,p,q
   complex(kind=prec)	:: beta,alpha,delta,deltaOld
   complex(kind=prec)	:: bnorm, rnorm
   integer		:: i
@@ -80,13 +82,16 @@ subroutine PCG(b,x, PCGiter)
 
   Call A(x,r)
   Call linComb(C_ONE,b,C_MinusOne,r,r)
+
   bnorm = dotProd(b,b)
-  rnorm = dotProd(r,r)
+  rnorm = dotProd(r,r) 
+
   i = 1
   PCGiter%rerr(i) = real(rnorm/bnorm)
 
   loop: do while ((PCGiter%rerr(i).gt.PCGiter%tol).and.(i.lt.PCGiter%maxIt))
      Call Minv(r,s)
+
      delta = dotProd(r,s)
      if(i.eq.1) then
         p = s
@@ -96,6 +101,7 @@ subroutine PCG(b,x, PCGiter)
      end if
 
      Call A(p,q)
+
      alpha = delta/dotProd(p,q)
      Call scMultAdd(alpha,p,x)
      Call scMultAdd(-alpha,q,r)
@@ -116,7 +122,6 @@ subroutine PCG(b,x, PCGiter)
 
 end subroutine PCG ! PCG
 
-
 ! *****************************************************************************
 subroutine QMR(b,x, QMRiter)
   ! Purpose ... a quasi-minimal residual method routine, set up for solving
@@ -127,28 +132,28 @@ subroutine QMR(b,x, QMRiter)
   ! redefining some of the interfaces for our convenience (locally)
   ! generic routines for vector operations for edge/ face nodes
   ! in a staggered grid
-  use sg_vector
-
   ! routines for solving Maxwell's equation
+  use sg_vector
+  use sg_vector_mg
   use modeloperator3D, only: A => multA_N, M1solve, M2solve
 
   implicit none
   !  b is right hand side
-  type (cvector), intent(in)      	:: b
+  type (cvector_mg), intent(in)      	:: b
   !  solution vector is x ... on input is provided with the initial
   !   guess, on output is the most recent iterate
-  type (cvector), intent(inout)   	:: x
+  type (cvector_mg), intent(inout)   	:: x
   type (solverControl_t), intent(inout)	:: QMRiter
 
    ! local variables
-  type (cvector)      	    :: AX,R,VT
-  type (cvector)	    :: Y,Z,WT,V,W,YT,ZT,P,Q,PT,D,S
+  type (cvector_mg)      	    :: AX,R,VT
+  type (cvector_mg)	    :: Y,Z,WT,V,W,YT,ZT,P,Q,PT,D,S
   logical                   :: adjoint, ilu_adjt
   complex (kind=prec)          :: ETA,PDE,EPSIL,RDE,BETA,DELTA,RHO
   complex (kind=prec)          :: PSI,RHO1,GAMM,GAMM1,THET,THET1,TM2
   complex (kind=prec)          :: bnorm,rnorm
   complex (kind=prec)          :: rhoInv,psiInv
-  integer                   :: iter
+  integer                   :: iter, imgrid
 
   if (.not.b%allocated) then
       write(0,*) 'Error: b in QMR not allocated yet'
@@ -160,7 +165,8 @@ subroutine QMR(b,x, QMRiter)
       stop
   end if
 
-  ! Allocate work arrays
+  ! Allocate work arrays on multigrid
+
   Call create(x%grid, AX, x%gridType)
   Call create(x%grid, R, x%gridType)
   Call create(x%grid, VT, x%gridType)
@@ -187,7 +193,9 @@ subroutine QMR(b,x, QMRiter)
 
   adjoint = .false.
   ! R is Ax
+
   Call A(x, adjoint, R)
+
   ! b - Ax, for inital guess x, that has been inputted to the routine
   Call linComb(C_ONE,b,C_MinusOne,R,R)
 
@@ -213,6 +221,7 @@ subroutine QMR(b,x, QMRiter)
   WT = R
   ilu_adjt = .true.
   Call M2solve(WT,ilu_adjt,Z)
+
   PSI  = CDSQRT(dotProd(Z,Z))
   GAMM = C_ONE
   ETA  = C_MinusONE
@@ -222,14 +231,15 @@ subroutine QMR(b,x, QMRiter)
   loop: do while ((QMRiter%rerr(iter).gt.QMRiter%tol).and.&
        (iter.lt.QMRiter%maxIt))
       if ((RHO.eq.C_ZERO).or.(PSI.eq.C_ZERO)) then
-	QMRiter%failed = .true.
-	write(0,*) 'QMR FAILED TO CONVERGE : RHO'
+	    QMRiter%failed = .true.
+	    write(0,*) 'QMR FAILED TO CONVERGE : RHO'
         write(0,*) 'QMR FAILED TO CONVERGE : PSI'
         exit
       endif
 
       rhoInv = (1/RHO)*cmplx(1.0, 0.0, 8)
       psiInv = (1/PSI)*cmplx(1.0, 0.0, 8)
+
       Call scMult(rhoInv, VT, V)
       Call scMult(psiInv, WT, W)
       Call scMult(rhoInv, Y, Y)
@@ -244,6 +254,7 @@ subroutine QMR(b,x, QMRiter)
 
       ilu_adjt = .false.
       Call M2solve(Y,ilu_adjt,YT)
+
       ilu_adjt = .true.
       Call M1solve(Z,ilu_adjt,ZT)
 
@@ -259,7 +270,9 @@ subroutine QMR(b,x, QMRiter)
       endif
 
       adjoint = .false.
+
       Call A(P, adjoint, PT)
+
       EPSIL = dotProd(Q,PT)
       if (EPSIL.eq.C_ZERO) then
         QMRiter%failed = .true.
@@ -313,6 +326,7 @@ subroutine QMR(b,x, QMRiter)
       Call scMultAdd(C_MinusONE,S,R)
       ! A new AX
       rnorm = CDSQRT(dotProd(R,R))
+
       iter = iter + 1
 
       ! Keeping track of errors

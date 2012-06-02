@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <projectDescription>
-	<name>ModEM_mg_svn</name>
+	<name>ModEM-mg</name>
 	<comment></comment>
 	<projects>
 	</projects>
@@ -23,7 +23,7 @@
 				</dictionary>
 				<dictionary>
 					<key>org.eclipse.cdt.make.core.buildArguments</key>
-					<value>-f Makefile3d</value>
+					<value>-f Makefile3d.debug</value>
 				</dictionary>
 				<dictionary>
 					<key>org.eclipse.cdt.make.core.buildCommand</key>

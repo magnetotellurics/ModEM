@@ -1,4 +1,9 @@
 module SolnSpace
+
+! MULTIGRID
+
+! NOT DEBUGED !!
+
 !   higher level module to define EM solution and RHS objects
 !   plus basic methods, linear algebra, dot products
 !   3D MT version
@@ -9,6 +14,7 @@ module SolnSpace
 use math_constants
 use utilities
 use sg_vector
+use sg_vector_mg
 use sg_boundary
 use sg_sparse_vector
 use transmitters
@@ -42,7 +48,7 @@ end interface
 interface dotProd
    MODULE PROCEDURE dotProd_solnVector
    MODULE PROCEDURE dotProd_rhsVsolnV
-   MODULE PROCEDURE dotProd_sparseVsolnV
+!   MODULE PROCEDURE dotProd_sparseVsolnV
 end interface
 
 
@@ -61,7 +67,7 @@ end interface
     !! e.g. active source applications
     integer					:: nPol = 2
     integer                 :: Pol_index(2)
-    type(cvector), pointer  :: pol(:)
+    type(cvector_mg), pointer  :: pol(:)
 
     !! tx points to information in the transmitter dictionary about the source
     !!   used to compute the solution, e.g. omega/period;
@@ -179,10 +185,11 @@ contains
        
        allocate(e%pol(e%nPol), STAT=istat)
        do k = 1,e%nPol
-          call create_cvector(grid,e%pol(k),EDGE)
+          call create_cvector_mg(grid,e%pol(k),EDGE)
        enddo
        e%tx = iTx
        e%grid => grid
+
 
 	   e%allocated = .true.
 
@@ -200,7 +207,7 @@ contains
 
        if (associated(e%pol)) then
           do k = 1,e%nPol
-             call deall_cvector(e%pol(k))
+             call deall_cvector_mg(e%pol(k))
           enddo
           deallocate(e%pol, STAT=istat)
        endif
@@ -231,7 +238,7 @@ contains
        call create_solnVector(eIn%grid,eIn%tx,eOut)
 
        do k = 1,eIn%nPol
-          call copy_cvector(eOut%pol(k),eIn%pol(k))
+          call copy_cvector_mg(eOut%pol(k),eIn%pol(k))
        enddo
 
        eOut%allocated = eIn%allocated
@@ -252,7 +259,7 @@ contains
        integer				:: k
 
        do k = 1,e%nPol
-          call zero_cvector(e%pol(k))
+          call zero_cvector_mg(e%pol(k))
        enddo
 
      end subroutine zero_solnVector
@@ -279,9 +286,9 @@ contains
 
        do k = 1,FV1%nPol
            if(Conj_Case) then
-           temp = dotProd_cvector_f(FV1%pol(k),FV2%pol(k))
+           temp = dotProd_cvector_mg_f(FV1%pol(k),FV2%pol(k))
            else
-           temp = dotProd_noConj_cvector_f(FV1%pol(k),FV2%pol(k))
+           temp = dotProd_noConj_cvector_mg_f(FV1%pol(k),FV2%pol(k))
           endif
           c = c + temp
        enddo
@@ -472,14 +479,24 @@ contains
        complex(kind=prec)		:: c
        integer					:: k
 
+       !   local variable
+       type(cvector)  :: temp
+
+
        c = C_ZERO
        if(conj_case) then
           do k = 1,SV%nPol
-             c = c + dotProd_scvector_f(SV%L(k),FV%pol(k))
+
+              Call mg2c(temp, FV%pol(k))
+
+             c = c + dotProd_scvector_f(SV%L(k),temp)
           enddo
        else
           do k = 1,SV%nPol
-             c = c + dotProd_noConj_scvector_f(SV%L(k),FV%pol(k))
+
+              Call mg2c (temp, FV%pol(k))
+
+             c = c + dotProd_noConj_scvector_f(SV%L(k),temp)
           enddo
        endif
 
@@ -700,7 +717,7 @@ contains
 
        do k = 1,b%nPol
           b%b(k)%nonzero_source = .true.
-          b%b(k)%s = e%pol(k)
+          call mg2c(b%b(k)%s,e%pol(k))
           b%b(k)%sparse_source = .false.
           b%b(k)%nonzero_BC = .false.
           b%b(k)%allocated = .true.
@@ -764,6 +781,7 @@ contains
        complex(kind=prec)       :: c
 
        !  local variables
+       type(cvector)  :: poltemp
        complex(kind=prec)   :: temp
        integer              :: k
 
@@ -776,18 +794,19 @@ contains
        c = C_ZERO
 
        do k = 1,comb%nPol
+         call mg2c(poltemp,FV%pol(k))
           if(comb%b(k)%nonzero_source) then
              if(comb%b(k)%sparse_source) then
                 if(Conj_Case) then
-                temp = dotProd_scvector_f(comb%b(k)%sSparse,FV%pol(k))
+                temp = dotProd_scvector_f(comb%b(k)%sSparse,poltemp)
                 else
-                temp = dotProd_noConj_scvector_f(comb%b(k)%sSparse,FV%pol(k))
+                temp = dotProd_noConj_scvector_f(comb%b(k)%sSparse,poltemp)
                 endif
              else
                 if(Conj_Case) then
-                temp = dotProd_cvector_f(comb%b(k)%s,FV%pol(k))
+                temp = dotProd_cvector_f(comb%b(k)%s,poltemp)
                 else
-                temp = dotProd_noConj_cvector_f(comb%b(k)%s,FV%pol(k))
+                temp = dotProd_noConj_cvector_f(comb%b(k)%s,poltemp)
                 endif
              endif
           else

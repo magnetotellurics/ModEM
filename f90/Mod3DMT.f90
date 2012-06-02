@@ -52,7 +52,9 @@ program Mod3DMT
 #ifdef MPI
       call setGrid_MPI(grid)
 #else
+
       call setGrid(grid)
+
 #endif
 
 

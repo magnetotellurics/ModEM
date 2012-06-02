@@ -4,17 +4,17 @@
 ! lengths and volumes, and other grid details
 module GridCalc
 
-  use sg_vector
-  use sg_scalar
+  use sg_vector_mg
+  use sg_scalar_mg
   implicit none
 
-  public      :: EdgeVolume, CornerVolume
+  public  :: EdgeVolume, CornerVolume
 
 Contains
 
   ! *************************************************************************
   ! * EdgeVolume creates volume elements centered around the edges of
-  ! * the grid, and stores them as real vectors with gridType=EDGE.
+  ! * the subgrids, and stores them as real vectors with gridType=EDGE.
   ! *
   ! * A diagonal matrix multiplication of the edge volume with the difference
   ! * equations enables us to make a symmetrical matrix. Remember,
@@ -23,106 +23,161 @@ Contains
 
   subroutine EdgeVolume(inGr, eV)
 
-    implicit none
-    type (grid_t), intent(in)           :: inGr     ! input model
-    type (rvector), intent(inout)         :: eV       ! edge volume
-    integer                               :: ix, iy, iz
+  implicit none
+    type (grid_t), intent(in)  :: inGr            ! input MULTIGRID
+    type (rvector_mg), intent(inout)  :: eV       ! edge volume
+    ! local variables
+    integer  :: ix, iy, iz, izCum, imgrid
+    integer  :: nx, ny, nz, nzCum
 
     ! Checks whether the size is the same
-    if ((inGr%nx == eV%nx).and.&
-         (inGr%ny == eV%ny).and.&
-         (inGr%nz == eV%nz)) then
-
+    if (inGr%mgridSize == eV%mgridSize) then
        if (eV%gridType == EDGE) then
 
-          ! edge volume are made for all the edges
-          ! for x-components
-          do ix = 1,inGr%nx
-             do iy = 1,inGr%ny+1
-                do iz = 1,inGr%nz+1
+         do imgrid = 1, inGr%mgridSize  ! global loop on subgrid
 
-                   ! eV%x values are centered within dx.
-                   eV%x(ix, iy, iz) = inGr%dx(ix)*inGr%delY(iy)*inGr%delZ(iz)
+           nx = inGr%gridArray(imgrid)%nx  ! nx current subgrid
+           ny = inGr%gridArray(imgrid)%ny  ! ny current subgrid
+           nz = inGr%gridArray(imgrid)%nz  ! nz=nzEarth+nzAir current
 
-                enddo
-             enddo
-          enddo
+           if ((nx == eV%rvArray(imgrid)%nx).and. &  ! compares nx ny nz (if...)
+              (ny == eV%rvArray(imgrid)%ny).and. &
+              (nz == eV%rvArray(imgrid)%nz)) then
 
-          ! edge volume are made for all the edges
-          ! for y-components
-          do ix = 1,inGr%nx+1
-             do iy = 1,inGr%ny
-                do iz = 1,inGr%nz+1
+              ! edge volume are made for all the edges
+              ! for x-components
+              do ix = 1, nx
+                do iy = 1, ny+1
+                  do iz = 1, nz+1
+                    ! eV%x values are centered within dx.
+                    eV%rvArray(imgrid)%x(ix, iy, iz) = inGr%gridArray(imgrid)%dx(ix)*inGr%gridArray(imgrid)%delY(iy) &
+                                                                                                 *inGr%gridArray(imgrid)%delZ(iz)
+                 enddo
+              enddo
+            enddo
 
-                   ! eV%y values are centered within dy.
-                   eV%y(ix, iy, iz) = inGr%delX(ix)*inGr%dy(iy)*inGr%delZ(iz)
+            ! edge volume are made for all the edges
+            ! for y-components
+            do ix = 1, nx+1
+               do iy = 1, ny
+                  do iz = 1, nz+1
+                     ! eV%y values are centered within dy.
+                     eV%rvArray(imgrid)%y(ix, iy, iz) = inGr%gridArray(imgrid)%delX(ix)*inGr%gridArray(imgrid)%dy(iy) &
+                                                                                                  *inGr%gridArray(imgrid)%delZ(iz)
+                  enddo
+               enddo
+            enddo
 
-                enddo
-             enddo
-          enddo
+            ! edge volume are made for all the edges
+            ! for z-components
+            do ix = 1, nx+1
+               do iy = 1,ny+1
+                  do iz = 1, nz
+                     ! eV%z values are centered within dz.
+                     eV%rvArray(imgrid)%z(ix, iy, iz) = inGr%gridArray(imgrid)%delX(ix)*inGr%gridArray(imgrid)%delY(iy) &
+                                                                                               *inGr%gridArray(imgrid)%dz(iz)
+                  enddo
+               enddo
+            enddo
 
-          ! edge volume are made for all the edges
-          ! for z-components
-          do ix = 1,inGr%nx+1
-             do iy = 1,inGr%ny+1
-                do iz = 1,inGr%nz
 
-                   ! eV%z values are centered within dz.
-                   eV%z(ix, iy, iz) = inGr%delX(ix)*inGr%delY(iy)*inGr%dz(iz)
+           else ! compares nx ny nz (if...)
+            write (0, *) 'Error-grid size and edge volume are not the same size (nx not= ny ...)'
+           end if  ! compares nx ny nz (if...)
 
-                enddo
-             enddo
-          enddo
+         enddo ! global loop on subgrid
 
        else
-          write (0, *) 'EdgeVolume: not compatible usage for existing data types'
+         write (0, *) 'EdgeVolume: not compatible usage for existing data types'
        end if
 
 
     else
-       write(0, *) 'Error-grid size and edge volume are not the same size'
+       write(0, *) 'Error-grid size and edge volume are not the same size (mgridSzie)'
     endif
 
-  end subroutine EdgeVolume  ! EdgeVolume
+  end subroutine EdgeVolume  ! EdgeVolume Multigrid case
 
-  ! *************************************************************************
+  ! ******************************************************************************************
   ! * CornerVolume creates volume elements centered around the corners of
   ! * the grid, and stores them as real scalars with gridType=CORNER.
 
-  subroutine CornerVolume(inGr, cV)
+  subroutine CornerVolume(mgrid, cV)
 
-    type (grid_t), intent(in)        :: inGr  ! input grid
-    type (rscalar), intent(inout)      :: cV    ! center volume as output
-    integer                            :: ix, iy, iz
+  implicit none
+    type (grid_t), intent(in)  :: mgrid                 ! input multigrid
+    type (rscalar_mg), intent(inout)  :: cV             ! center volume as output
+    integer  :: ix, iy, iz
+    integer  :: imgrid
+    integer  :: nx, ny, nz
 
-    ! Checks whether the size is the same
-    if ((inGr%nx == cV%nx).and.&
-         (inGr%ny == cV%ny).and.&
-         (inGr%nz == cV%nz)) then
 
-       if (cV%gridType == CORNER) then
+    if (cV%gridType == CORNER) then
 
-          ! center volume is only using the internal corner nodes
-          do ix = 2, inGr%nx
-             do iy = 2, inGr%ny
-                do iz = 2, inGr%nz
+      if (cV%mgridSize == mgrid%mgridSize) then
 
-                   ! note that we are multiplying
-                   ! using the distances with corner of a cell as a center
-                   cV%v(ix, iy, iz) = inGr%delX(ix)*inGr%delY(iy)*inGr%delZ(iz)
+        do imgrid = 1, mgrid%mgridSize
+          nx = mgrid%gridArray(imgrid)%nx
+          ny = mgrid%gridArray(imgrid)%ny
+          nz = mgrid%gridArray(imgrid)%nz
 
-                enddo
-             enddo
-          enddo
+          !Checks whether the size is the same
+          if ((nx == cV%rscArray(imgrid)%nx).and.&
+              (ny == cV%rscArray(imgrid)%ny).and.&
+              (nz == cV%rscArray(imgrid)%nz)) then
+            ! center volume is only using the internal corner nodes
 
-       else
-          write (0, *) 'CornerVolume: not compatible usage for existing data types'
-       end if
+            if(imgrid == 1) then
+              do ix = 2, nx
+                 do iy = 2, ny
+                   do iz = 2, nz+1
+
+                     ! note that we are multiplying
+                     ! using the distances with corner of a cell as a center
+                     cV%rscArray(imgrid)%v(ix, iy, iz) = mgrid%gridArray(imgrid)%delX(ix)*mgrid%gridArray(imgrid)%delY(iy) &
+                                                       *mgrid%gridArray(imgrid)%delZ(iz)
+                    enddo
+                 enddo
+              enddo
+            else if(imgrid == mgrid%mgridSize)then
+              do ix = 2, nx
+                 do iy = 2, ny
+                     do iz = 1, nz
+
+                     ! note that we are multiplying
+                     ! using the distances with corner of a cell as a center
+                     cV%rscArray(imgrid)%v(ix, iy, iz) = mgrid%gridArray(imgrid)%delX(ix)*mgrid%gridArray(imgrid)%delY(iy) &
+                                                       *mgrid%gridArray(imgrid)%delZ(iz)
+                    enddo
+                 enddo
+              enddo
+            else
+              do ix = 2, nx
+                 do iy = 2, ny
+                    do iz = 1, nz+1
+
+                     ! note that we are multiplying
+                     ! using the distances with corner of a cell as a center
+                     cV%rscArray(imgrid)%v(ix, iy, iz) = mgrid%gridArray(imgrid)%delX(ix)*mgrid%gridArray(imgrid)%delY(iy) &
+                                                       *mgrid%gridArray(imgrid)%delZ(iz)
+                    enddo
+                 enddo
+              enddo
+            endif
+          else
+            print *, 'Error-grid size and center volume are not the same size; CorverVolume;'
+          endif
+
+        enddo
+
+      else
+       print *, 'CornerVolume: error mgridSize'
+      end if
 
     else
-       write(0, *) 'Error-grid size and center volume are not the same size'
-    endif
+       print *, 'CornerVolumeMG: not compatible usage for existing data types'
+    end if
 
   end subroutine CornerVolume
-
+ ! *************************************************************************
 end module GridCalc

@@ -12,6 +12,7 @@ module sg_sparse_vector
   use math_constants
   use griddef
   use sg_vector
+  use sg_vector_mg
   implicit none
 
   INTERFACE create

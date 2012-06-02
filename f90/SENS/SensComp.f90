@@ -576,6 +576,7 @@ Contains
 		        ! output is a real vector: complex values come in pairs
 		        call dataResp(emsoln,sigma,iDt,d%data(i)%rx(j),d%data(i)%value(:,j))
 
+
 		     enddo
 
       enddo
@@ -643,7 +644,7 @@ Contains
    !  Might also have to run exitSolver at this point, if we are updating
    !   the grid during an inversion; that restarts the ForwardSolver module.
 
-   type(grid_t), intent(in)     :: newgrid
+   type(grid_t), intent(inout)     :: newgrid
 
    grid = newgrid
 

@@ -7,7 +7,7 @@ module EMsolve3D
   use sg_boundary			! work between different data types
   					! (between boundary conditions and
 					! complex vectors)
-  use sg_diff_oper			 ! generic differential operators
+
   use sg_sparse_vector, only: add_scvector
   use modelOperator3d                   ! quasi-static Maxwell operator module
   use solver				! generic solvers
@@ -83,15 +83,16 @@ module EMsolve3D
 
 Contains
 
-!**********************************************************************
-! Solves the forward EM problem;
-!
-! If bRHS%adj = 'TRN' solves transposed problem  A^T x = b
+  !**********************************************************************
+  ! Solves the forward EM problem;
+
+  ! If bRHS%adj = 'TRN' solves transposed problem  A^T x = b
 
   subroutine FWDsolve3D(bRHS,omega,eSol)
 
     ! redefine some of the interfaces (locally) for our convenience
-    use sg_vector !, only: copy => copy_cvector, &
+    use sg_vector
+    use sg_vector_mg  !, only: copy => copy_cvector, &
          !scMult => scMultReal_cvector
     ! generic routines for vector operations on the edge/face nodes
     ! in a staggered grid
@@ -99,20 +100,21 @@ Contains
 
     implicit none
     !  INPUTS:
-    type (RHS_t), intent(in)		:: bRHS
-    real(kind=prec), intent(in)	:: omega
+    type (RHS_t), intent(in)		    :: bRHS
+    real(kind=prec), intent(in)	        :: omega
     !  OUTPUTS:
     !     eSol must be allocated before calling this routine
-    type (cvector), intent(inout)	:: eSol
+    type (cvector_mg), intent(inout)	:: eSol
 
     ! LOCAL VARIABLES
-    logical				:: converged,trans,ltemp
-    integer				:: status, iter
-    complex(kind=prec)         	:: iOmegaMuInv
-    type (cvector)			:: b,temp
-    type (cscalar)			:: phi0
-    type (cboundary)             	:: tempBC
-    type (solverControl_t)			:: QMRiter
+    logical				                :: converged,trans,ltemp
+    integer				                :: status, iter
+    complex(kind=prec)         	        :: iOmegaMuInv
+    type (cvector_mg)                   :: bMG, tempMG, sMG
+    type(cvector)                       :: b,temp
+    type (cscalar_mg)			        :: phi0
+    type (cboundary)             	    :: tempBC
+    type (solverControl_t)			    :: QMRiter
 
     !  Zero solver diagnostic variables
     nIterTotal = 0
@@ -131,13 +133,17 @@ Contains
 
     ! allocate/initialize local data structures
     Call create_cvector(bRHS%grid, b, eSol%gridType)
+    Call create_cvector_mg(bRHS%grid,bMG,eSol%gridType)
     Call create_cvector(bRHS%grid, temp, eSol%gridType)
+    Call create_cvector_mg(bRHS%grid,tempMG,eSol%gridType)
+    Call create_cvector_mg(bRHS%grid,sMG,eSol%gridType)
+
     ! this is just a work array, at a given instance only single frequency and
     ! mode is being used
     Call create_cboundary(bRHS%grid, tempBC)
 
     if(bRHS%nonzero_Source) then
-       call create_cscalar(bRHS%grid,phi0,CORNER)
+       call create_cscalar_mg(bRHS%grid,phi0,CORNER)
     endif
 
     ! Using boundary condition and sources from rHS data structure
@@ -149,65 +155,73 @@ Contains
        !    for reduced (interior node) linear system; solution on
        !    boundary is determined after solving for interior nodes
        if(bRHS%nonZero_Source) then
-          if(bRHS%sparse_Source) then
-             ! Note: C_ONE = (1,0) (double complex)
-	     call add_scvector(C_ONE,bRHS%sSparse,b)
-          else
-              b = bRHS%s
-          endif
+         if(bRHS%sparse_Source) then
+           ! Note: C_ONE = (1,0) (double complex)
+	       ! sparse vector is defined on the finest grid
+	       ! make computations on the finest grid
+	       call add_scvector(C_ONE,bRHS%sSparse,b)
+	       ! then  convert cvector (b) to cvector_mg (bMG)
+	       call c2mg(bMG,b)
+         else
+           b = bRHS%s
+           call c2mg(bMG,b)
+         endif
        else
-          call zero(Esol)
-          write(0,*) 'Warning: no sources for adjoint problem'
-          write(0,*) 'Solution is identically zero'
-          ! just copy input BC into boundary nodes of solution and return
-          if(bRHS%nonzero_BC) then
-             Call setBC(bRHS%bc, eSol)
-          else
-             Call setBC(tempBC, eSol)
-          endif
-          return
+         call zero(Esol)
+         write(0,*) 'Warning: no sources for adjoint problem'
+         write(0,*) 'Solution is identically zero'
+         ! just copy input BC into boundary nodes of solution and return
+         if(bRHS%nonzero_BC) then
+            call setBC(bRHS%bc, eSol)
+         else
+            call setBC(tempBC, eSol)
+         endif
+         return
        endif
 
        !  divide by volume weights before computing divergence of sources
-       call diagDiv(b,VolE,temp)
-       call Div(temp,phi0)
+       call diagDiv(bMG,VolE,tempMG) !diagDiv_crvector
+       call Div(tempMG,phi0)
     else
-       ! In the usual forward model case BC do enter into forcing
-       !   First compute contribution of BC term to RHS of reduced interior
-       !    node system of equations : - A_IB*b
-       if (bRHS%nonzero_BC) then
-          !   copy from rHS structure into zeroed complex edge vector temp
-          Call setBC(bRHS%bc, temp)
-          !   Then multiply by curl_curl operator (use MultA_N ...
-          !     Note that MultA_N already multiplies by volume weights
-	  !     required to symetrize problem, so the result is V*A_IB*b)
-          ltemp = .false.
-          Call MultA_N(temp, ltemp, b)
-          !  change sign of result
-          Call scMult(MinusOne,b,b)
+      ! In the usual forward model case BC do enter into forcing
+      !   First compute contribution of BC term to RHS of reduced interior
+      !    node system of equations : - A_IB*b
+      if (bRHS%nonzero_BC) then
+        !   copy from rHS structure into zeroed complex edge vector temp
+        call setBC(bRHS%bc, tempMG)
+        ltemp = .false.
+
+        !   Then multiply by curl_curl operator (use MultA_N ...
+        !   Note that MultA_N already multiplies by volume weights
+	    !   required to symetrize problem, so the result is V*A_IB*b)
+        call MultA_N(tempMG, ltemp, bMG)
+        !  change sign of result
+        call scMult(MinusOne,bMG,bMG)
        endif
-       ! Add internal sources if appropriate: Note that these must be multiplied
-       !  explictly by volume weights
-       if (bRHS%nonzero_Source) then
-          if (bRHS%sparse_Source) then
-             ! temp  = bRHS%sSparse
-             call zero(temp)
-             call add_scvector(C_ONE,bRHS%sSparse,temp)
-             call Div(temp,phi0)
-             ! temp = volE*temp
-             call diagMult(volE,temp,temp)
-          else
-             ! temp = volE*rhs%s
-             call Div(bRHS%s,phi0)
-             call diagMult(volE,bRHS%s,temp)
-          endif
-          !  b = temp-b
-           !  LOOKS WRONG b is already -A_IB*b
-          if(bRHS%nonzero_BC) then
-             Call add(temp,b,b)
-          else
-             Call copy_cvector(b,temp)
-          endif
+      ! Add internal sources if appropriate: Note that these must be multiplied
+      !  explictly by volume weights
+      if (bRHS%nonzero_Source) then
+        if (bRHS%sparse_Source) then
+          ! temp  = bRHS%sSparse
+          call zero(temp)
+          call add_scvector(C_ONE,bRHS%sSparse,temp)
+          call c2mg(tempMG,temp)
+          call Div(tempMG,phi0)
+          ! tempMG = volEMG*tempMG
+          call diagMult_mg(volE,tempMG,tempMG)
+        else
+          ! temp = volE*rhs%s
+          call c2mg(sMG,bRHS%s)
+          call Div(sMG,phi0)
+          call diagMult_mg(volE,sMG,tempMG)
+        endif
+     !  b = temp-b
+        if(bRHS%nonzero_BC) then
+          call add(temp,b,b)
+          call c2mg(bMG,b)
+        else
+          bMG = tempMG
+        endif
        endif
     endif
 
@@ -218,7 +232,7 @@ Contains
 
     ! Need to make sure first guess is zero on boundaries
     ! tempBC has all zeros on the boundaries
-    Call setBC(tempBC, eSol)
+    call setBC(tempBC, eSol)
 
     ! Outer part of QMR loop ... alternates between Calls to QMR
     ! and Calls to divcor  ... this will be part of EMsolve
@@ -257,13 +271,15 @@ Contains
     !  idea to test: for non-zero source START with divergence
     !    correction
     if(bRHS%nonzero_Source) then
-       Call copy_cvector(temp, eSol)
+       tempMG = eSol
        nDivCor = 1
-       Call SdivCorr(temp,eSol,phi0)
+       call SdivCorr(tempMG,eSol,phi0)
     endif
+
     loop: do while ((.not.converged).and.(.not.failed))
 
-       Call QMR(b, eSol,QMRiter)
+
+       Call QMR(bMG, eSol, QMRiter)  ! multigrid case
 
        ! algorithm is converged when the relative error is less than tolerance
        ! (in which case QMRiter%niter will be less than QMRiter%maxIt)
@@ -281,12 +297,15 @@ Contains
 
        nDivCor = nDivCor+1
        if( nDivCor < MaxDivCor) then
+
           ! do divergence correction
-          Call copy_cvector(temp, eSol)
+
+          Call copy_cvector_mg(tempMG, eSol)
+
           if(bRHS%nonzero_Source) then
-             Call SdivCorr(temp,eSol,phi0)
+             Call SdivCorr(tempMG,eSol,phi0)
           else
-             Call SdivCorr(temp,eSol)
+             Call SdivCorr(tempMG,eSol)
           endif
        else
           ! max number of divergence corrections exceeded; convergence failed
@@ -304,29 +323,29 @@ Contains
     !   transposed, standard cases
     if(trans) then
     !   Multiply solution on interior nodes by volume weights
-       ! eSol = volE*eSol
-        call diagMult(volE,eSol,eSol)
-       ! then compute solution on boundary nodes: first  A_IB^T eSol
-       call AdjtBC(eSol, tempBC)
+    ! eSol = volE*eSol
+    call diagMult_mg(volE,eSol,eSol)
+    ! then compute solution on boundary nodes: first  A_IB^T eSol
+    call AdjtBC(eSol, tempBC)
        ! then b - A_IB^T eSol, where b is input boundary values (if any)
        !  C_MinusONE = (-1,0) and C_ONE = (1,0) (double complex) are defined in
        !    SG_Basics/math_constants.f90
        !   tempBC = rhs%bc - tempBC
-       if(bRHS%nonzero_BC) then
-           call linComb_cboundary(C_MinusONE,tempBC,C_ONE,bRHS%bc,tempBC)
-       else
-           call scMult_cboundary(C_MinusONE, tempBC, tempBC)
-       endif
-       !  and copy result into boundary nodes of eSol
-       Call setBC(tempBC, eSol)
+    if(bRHS%nonzero_BC) then
+      call linComb_cboundary(C_MinusONE,tempBC,C_ONE,bRHS%bc,tempBC)
     else
-        ! just copy input BC into boundary nodes of solution
-       if(bRHS%nonzero_BC) then
-          Call setBC(bRHS%bc, eSol)
-       else
-          Call setBC(tempBC, eSol)
-       endif
+      call scMult_cboundary(C_MinusONE, tempBC, tempBC)
     endif
+    !  and copy result into boundary nodes of eSol
+      call setBC(tempBC, eSol)
+    else
+    ! just copy input BC into boundary nodes of solution
+    if(bRHS%nonzero_BC) then
+      call setBC(bRHS%bc, eSol)
+    else
+      call setBC(tempBC, eSol)
+    endif
+  endif
 
     ! deallocate local temporary arrays
     Call deall(phi0)
@@ -337,11 +356,13 @@ Contains
 
   end subroutine FWDsolve3D
 
-!**********************************************************************
-! solver_divcorrr contains the subroutine that would solve the divergence
-! correction. Solves the divergene correction using pre-conditioned
-! conjuagte gradient
-subroutine SdivCorr(inE,outE,phi0)
+  !**********************************************************************
+  ! solver_divcorrr contains the subroutine that would solve the divergence
+  ! correction. Solves the divergene correction using pre-conditioned
+  ! conjuagte gradient
+
+  subroutine SdivCorr(inE,outE,phi0)
+
   ! Purpose: driver routine to compute divergence correction for input electric
   ! field vector inE output corrected ! electric field in outE
   !  Optional argument phi0 is scaled divergence of source term
@@ -352,45 +373,48 @@ subroutine SdivCorr(inE,outE,phi0)
   !  PCG to different problem
 
   implicit none
-  type (cvector), intent(in)	:: inE
-  type (cvector), intent(inout)	:: outE
-  type (cscalar), intent(in), optional	:: phi0
+    type (cvector_mg), intent(in)	:: inE
+    type (cvector_mg), intent(inout)	:: outE
+    type (cscalar_mg), intent(in), optional	:: phi0
 
-  !  local variables
-  type (solverControl_t)			:: PCGiter
-  type (cscalar)		        :: phiSol, phiRHS
-  complex (kind=prec)        	:: c2
-  integer				:: status
-  character (len=80)              	:: Desc = ''
-  logical				:: SourceTerm
+    !  local variables
+    type (solverControl_t)			:: PCGiter
+    type (cscalar_mg)		        :: phiSol, phiRHS
+    complex (kind=prec)        	:: c2
+    integer				:: status
+    integer  :: imgrid
+    character (len=80)              	:: Desc = ''
+    logical				:: SourceTerm
 
-  SourceTerm = present(phi0)
+    SourceTerm = present(phi0)
 
-  ! initialize PCGiter (maximum iterations allowed per set of diveregence
-  ! correction, error tolerence, and relative error book keeping)
-  PCGiter%maxIt = MaxIterDivCor
-  PCGiter%tol = tolDivCor
-  allocate(PCGiter%rerr(PCGiter%maxIt), STAT = status)
-  PCGiter%rerr = 0.0
+    ! initialize PCGiter (maximum iterations allowed per set of diveregence
+    ! correction, error tolerence, and relative error book keeping)
+    PCGiter%maxIt = MaxIterDivCor
+    PCGiter%tol = tolDivCor
 
-  Desc = CORNER
-  ! alocating phiSol, phiRHS
-  Call create_cscalar(inE%grid, phiSol, Desc)
-  Call create_cscalar(inE%grid, phiRHS, Desc)
+    allocate(PCGiter%rerr(PCGiter%maxIt), STAT = status)
+    PCGiter%rerr = 0.0
 
-  ! compute divergence of currents for input electric field
-  Call DivC(inE, phiRHS)
+    Desc = CORNER
+    ! alocating phiSol, phiRHS
+    Call create_cscalar_mg(inE%grid, phiSol, Desc)
+    Call create_cscalar_mg(inE%grid, phiRHS, Desc)
 
-  !  If source term is present, subtract from divergence of currents
-  if(SourceTerm) then
-     call subtract(phiRHS,phi0,phiRHS)
-  endif
+    ! compute divergence of currents for input electric field
+    Call DivC(inE, phiRHS)
 
-  ! compute the size of current Divergence before (using dot product)
-  divJ(1,nDivCor) = sqrt(dotProd(phiRHS,phiRHS))
+    !  If source term is present, subtract from divergence of currents
+    if(SourceTerm) then
+      call subtract(phiRHS,phi0,phiRHS)
+    endif
 
-  ! point-wise multiplication with volume weights centered on corner nodes
-  Call diagMult(volC,phiRHS,phiRHS)
+    ! compute the size of current Divergence before (using dot product)
+    divJ(1,nDivCor) = sqrt(dotProd(phiRHS,phiRHS))
+
+    ! point-wise multiplication with volume weights centered on corner nodes
+
+    Call diagMult(volC,phiRHS,phiRHS)
 
   ! PCG is a generic pre-conditioned CG algorithm
   Call PCG(phiRHS,phiSol,PCGiter)
@@ -407,8 +431,8 @@ subroutine SdivCorr(inE,outE,phi0)
   ! subtract Divergence correction from inE
   Call subtract(inE, outE, outE)
 
-  ! divergence of the corrected output electrical field
-  Call DivC(outE,phiRHS)
+     ! divergence of the corrected output electrical field
+    Call DivC(outE,phiRHS)
 
   !  If source term is present, subtract from divergence of currents
   if(SourceTerm) then
@@ -445,7 +469,7 @@ end subroutine SdivCorr ! SdivCorr
     ! Set up model operators
     ! Set up operator arrays that only need grid geometry information
     ! discretization of del X del X E
-    Call CurlcurleSetUp()
+    Call CurlcurlInit()
 
   end subroutine ModelOperatorSetUp
 

@@ -39,6 +39,7 @@ module ioAscii
   use transmitters
   use receivers
   use datatypes
+  use sg_vector_mg, only: c2mg, mg2c
 
   implicit none
 
@@ -319,11 +320,12 @@ Contains
 
     implicit none
     integer, intent(in)				:: ioNum,ifreq,imode
-    type (cvector), intent(inout)		:: inE
+    type (cvector_mg), intent(inout)		:: inE
     real (kind=prec), intent(out)	:: fileOmega
 
     !  local variables
     integer					:: nRecSkip, iskip
+    type (cvector)  :: Etemp
 !    integer					:: iskip
 
     !  following could be optional oututs
@@ -333,6 +335,7 @@ Contains
     !  hard code number of modes for now
     integer		:: nMode = 2
 
+    call create_cvector(inE%grid, Etemp, EDGE)
     ! calculate number of records before the header for this frequency/mode
     nRecSkip = ((ifreq-1)*nMode+(imode-1))*4+4
 
@@ -346,10 +349,13 @@ Contains
     read(ioNum) fileOmega, fileIfreq, fileMode, ModeName
 
     ! read electrical field data - 3 records
-    read(ioNum) inE%x
-    read(ioNum) inE%y
-    read(ioNum) inE%z
+    read(ioNum) Etemp%x
+    read(ioNum) Etemp%y
+    read(ioNum) Etemp%z
 
+    call c2mg(inE,Etemp)
+
+  call deall(Etemp)
   end subroutine EfileRead
 
   ! ***************************************************************************
@@ -361,15 +367,17 @@ Contains
     real (kind=prec), intent(in)	:: Omega
     integer, intent(in)				:: ioNum,iFreq,iMode
     character (len=20), intent(in)		:: ModeName
-    type (cvector), intent(in)			:: outE
-
+    type (cvector_mg), intent(in)			:: outE
+    integer  :: imgrid
     ! write the frequency header - 1 record
     write(ioNum) Omega, iFreq, iMode,ModeName
 
     ! write the electrical field data - 3 records
-    write(ioNum) outE%x
-    write(ioNum) outE%y
-    write(ioNum) outE%z
+    do imgrid = 1, outE%mgridSize
+      write(ioNum) outE%cvArray(imgrid)%x
+      write(ioNum) outE%cvArray(imgrid)%y
+      write(ioNum) outE%cvArray(imgrid)%z
+    enddo
 
   end subroutine EfileWrite
 

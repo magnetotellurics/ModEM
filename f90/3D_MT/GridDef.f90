@@ -13,8 +13,11 @@ implicit none
 ! legal in fortran to say y = x for data types, but that doesn't copy
 ! allocatable or pointer arrays
 interface assignment (=)
-  module procedure copy_grid
+  !module procedure copy_grid
+  module procedure copy_mgrid
+ ! module procedure copy_mgrid
 end interface
+
 
 ! Initialization routines
 public  :: create_grid, create_mgrid ! allocates grid and multigrid(subgrids)
@@ -81,7 +84,6 @@ type :: grid_orig
 
  ! total thickness of the air above
  real (kind=prec)  :: zAirThick
-
  ! allocated:  .true.  all the arrays have been allocated
  logical  :: allocated = .false.
 
@@ -90,7 +92,8 @@ end type grid_orig
 ! Extension to grid_orig type. For multigrid
 
 type, extends(grid_orig) :: grid_t ! multigrid type inherits all grid_orig
-
+! flag = Surface; Air; Earth ! just to know where we are!!!!
+integer  :: flag
 ! number of 'layers' with different resolutions
 integer  :: mgridSize! from file
 ! coarseness
@@ -99,7 +102,6 @@ integer,allocatable  :: coarseness(:) ! from file
 integer,allocatable :: nzGrid(:)
 ! this is array of the subgrids
 type(grid_t), pointer :: gridArray(:)
-
 end type grid_t
 
 Contains
@@ -124,12 +126,12 @@ grid%NzEarth = NzEarth
 grid%Nz = Nz
 allocate(grid%Dx(Nx))
 allocate(grid%Dy(Ny))
-allocate(grid%Dz(Nz))
+allocate(grid%Dz(Nz+1))
 
 ! dxinv  = 1/ dx and similarly for dyinv and dzinv
 allocate(grid%dxinv(Nx))
 allocate(grid%dyinv(Ny))
-allocate(grid%dzinv(Nz))
+allocate(grid%dzinv(Nz+1))
 
 ! delX, delY, and delZ are the distances between the electrical field
 ! defined on the center of the edges in x, y, and z axes, respectively.
@@ -150,7 +152,7 @@ allocate(grid%yEdge(Ny+1))
 allocate(grid%zEdge(Nz+1))
 allocate(grid%xCenter(Nx))
 allocate(grid%yCenter(Ny))
-allocate(grid%zCenter(Nz))
+allocate(grid%zCenter(Nz+1))
 
 grid%coords = Cartesian
 grid%allocated = .true.
@@ -171,7 +173,8 @@ integer  :: imgrid, ig
 integer  :: nzCum, nzAirGrid, nzEarthGrid
 
   ! Initialize multigrid structure
-  mgrid%mgridSize = 6
+  mgrid%mgridSize = 5
+  !mgrid%mgridSize = 10
 
   allocate(mgrid%nzGrid(mgrid%mgridSize))
   allocate(mgrid%coarseness(mgrid%mgridSize))
@@ -179,8 +182,10 @@ integer  :: nzCum, nzAirGrid, nzEarthGrid
   ! allocate mgrid
   call create_grid(nx,ny,nzAir,nzEarth,mgrid)
   ! this is only for tests. must be setup by user from file
-  mgrid%nzGrid = (/4,2,2,7,5,2/)
-  mgrid%coarseness  = (/3,2,1,0,1,2/)
+  mgrid%nzGrid = (/4,4,7,5,2/)
+  mgrid%coarseness  = (/2,1,0,1,2/)
+  !mgrid%nzGrid = (/2,2,2,14,10,6,6,6,6,7/)
+  !mgrid%coarseness  = (/3,2,1,0,1,2,3,4,5,6/)
 
   ! allocate gridarray(:)
   allocate(mgrid%gridArray(mgrid%mgridSize))
@@ -212,8 +217,15 @@ integer  :: nzCum, nzAirGrid, nzEarthGrid
 
       call create_grid(mgrid%gridArray(imgrid)%nx,mgrid%gridArray(imgrid)%ny,mgrid%gridArray(imgrid)%nzAir,&
                    mgrid%gridArray(imgrid)%nzEarth,mgrid%gridArray(imgrid))
+! define flag
+      if(mgrid%gridArray(imgrid)%nzAir.ne.0.and.mgrid%gridArray(imgrid)%nzEarth.ne.0) then ! Surface
+        mgrid%gridArray(imgrid)%flag = 0  ! Surface
+      else if(mgrid%gridArray(imgrid)%nzAir.ne.0.and.mgrid%gridArray(imgrid)%nzEarth.eq.0) then ! Air
+        mgrid%gridArray(imgrid)%flag = 1  ! Air
+      else if(mgrid%gridArray(imgrid)%nzAir.eq.0.and.mgrid%gridArray(imgrid)%nzEarth.ne.0) then ! Earth
+        mgrid%gridArray(imgrid)%flag = 2  ! Earth
+      endif
    enddo
-
 
 mgrid%coords = Cartesian
 mgrid%allocated = .true.
@@ -250,42 +262,33 @@ call setup_grid(gridOut)
 
 end subroutine copy_grid
 
-! **************************************************************************
+  ! **************************************************************************
+  ! copies multigrid
+  subroutine copy_mgrid(mgridOut,mgridIn)
 
-subroutine copy_mgrid(mgridOut,mgridIn)
-
-! copies mgridIn to mgridOut;
-
-type(grid_t),intent(in)  :: mgridIn
-type(grid_t),intent(inout)  :: mgridOut
-! local
-integer  :: imgrid
-
-  if(mgridOut%allocated) then
-! just deallocate, and start over cleanly
-   call deall_mgrid(mgridOut)
-  endif
-
-  call create_mgrid(mgridIn%nx,mgridIn%ny,mgridIn%nzAir, &
-                mgridIn%nzEarth,mgridOut)
-
-  mgridOut%mgridSize = mgridIn%mgridSize
-  mgridOut%coarseness = mgridIn%coarseness
-  mgridOut%nzGrid = mgridIn%nzGrid
-
-  mgridOut%ox = mgridIn%ox
-  mgridOut%oy = mgridIn%oy
-  mgridOut%oz = mgridIn%oz
-  mgridOut%rotdeg = mgridIn%rotdeg
-  mgridOut%coords = mgridIn%coords
+  implicit none
+    type(grid_t),intent(in)  :: mgridIn
+    type(grid_t),intent(inout)  :: mgridOut
 
 
-  do imgrid = 1, mgridIn%mgridSize
-    call create_mgrid(mgridIn%gridArray(imgrid)%nx,mgridIn%gridArray(imgrid)%ny,mgridIn%gridArray(imgrid)%nzAir, &
-                mgridIn%gridArray(imgrid)%nzEarth,mgridOut)
-  enddo
+    if(mgridOut%allocated) then
+    ! just deallocate, and start over cleanly
+     call deall_mgrid(mgridOut)
+    endif
 
-  call setup_mgrid(mgridOut)
+
+    call create_mgrid(mgridIn%nx,mgridIn%ny,mgridIn%nzAir,mgridIn%nzEarth,mgridOut)
+
+      mgridOut%dz = mgridIn%dz
+      mgridOut%dy = mgridIn%dy
+      mgridOut%dx = mgridIn%dx
+      mgridOut%ox = mgridIn%ox
+      mgridOut%oy = mgridIn%oy
+      mgridOut%oz = mgridIn%oz
+      mgridOut%rotdeg = mgridIn%rotdeg
+      mgridOut%coords = mgridIn%coords
+
+      call setup_mgrid(mgridOut)
 
 end subroutine copy_mgrid
 
@@ -440,10 +443,9 @@ ENDDO
   grid%delY = grid%delY/2.0
 
 grid%delZ(1)    = grid%dz(1)
-DO iz = 2,grid%nz
+DO iz = 2,grid%nz+1
   grid%delZ(iz) = grid%dz(iz-1) + grid%dz(iz)
 ENDDO
-grid%delZ(grid%nz+1) = grid%dz(grid%nz)
 grid%delZ = grid%delZ/ 2.0
 
 grid%delXinv = 1/ grid%delX
@@ -462,76 +464,97 @@ do iy = 1, grid%ny
   yCum = yCum + grid%delY(iy)
   grid%yCenter(iy) = yCum + grid%oy
 enddo
-do iz = 1, grid%nz
+do iz = 1, grid%nz+1
   zCum = zCum + grid%delZ(iz)
   grid%zCenter(iz) = zCum
 enddo
 
 !  need to be careful here ... grid origin is given at Earth's surface,
 !   not top of model domain!
-do iz = 1, grid%nz
+do iz = 1, grid%nz+1
   grid%zCenter(iz) = grid%zCenter(iz)-grid%zAirThick+grid%oz
   grid%zEdge(iz) = grid%zEdge(iz)-grid%zAirThick+grid%oz
 enddo
-grid%zEdge(grid%nz+1) = grid%zEdge(grid%nz+1)-grid%zAirThick+grid%oz
 
 end subroutine setup_grid
 
-! *****************************************************************************
+  ! *****************************************************************************
+  ! sets up grid parameters at each subgrid
 
-subroutine setup_mgrid(mgrid,origin)
-! set up sub grids geometry. its dx, dy, dz, delx ....
+  subroutine setup_mgrid(mgrid,origin)
+  ! set up subgrids geometry. its dx, dy, dz, delx ....
 
-implicit none
-type(grid_t), target, intent(inout)  :: mgrid
+  implicit none
+    ! input -- original grid
+    ! output -- contains subgrid arrays of grid_t
+    type(grid_t), target, intent(inout)  :: mgrid
+    ! don't know for origin!!!
+    real(kind=prec), intent(in), optional  :: origin(3)
+    ! local variables
 
-! don't know for origin!!!
-real(kind=prec), intent(in), optional  :: origin(3)
-! local variables
+    integer  :: ccoeff_current, nzCum, nx, ny, nz
+    integer  :: imgrid,ic,ix,iy, iz, izv
 
-integer  :: ccoeff_current
-integer  :: Zposition(mgrid%mgridSize)
-integer  :: imgrid,ic,ix,iy
 
-  call setup_grid(mgrid) ! setup finest grid
+    call setup_grid(mgrid) ! setup original (usually finest) grid
+    mgrid%dz(mgrid%nz+1) = 1.3*mgrid%dz(mgrid%nz)
 
-! auxiliary array; indicates which Z number grid changes
-Zposition(1)=1
-do imgrid = 2,mgrid%mgridSize
-      Zposition(imgrid) = Zposition(imgrid-1) + mgrid%gridArray(imgrid-1)%nz
-enddo
-  ! dx, dy,dz to each sub grid
+    ! dx, dy,dz to each sub grid
 
-  do imgrid = 1, mgrid%mgridSize ! main do loop on grids
-    ccoeff_current = 2**mgrid%coarseness(imgrid) ! 2^coarseness
-    do ix = 1, mgrid%gridArray(imgrid)%nx
-      do ic = 1, ccoeff_current
-        mgrid%gridArray(imgrid)%dx(ix) = mgrid%dx(ccoeff_current*(ix-1)+ic) & ! recompute dx
+    nzCum = 0  ! cumulative nz
+
+    do imgrid = 1, mgrid%mgridSize ! main do loop on grids
+      nx = mgrid%gridArray(imgrid)%nx
+      ny = mgrid%gridArray(imgrid)%ny
+      nz = mgrid%gridArray(imgrid)%nz
+      ccoeff_current = 2**mgrid%coarseness(imgrid) ! 2^coarseness
+      mgrid%gridArray(imgrid)%dx = .0
+      do ix = 1, nx
+        do ic = 1, ccoeff_current
+          mgrid%gridArray(imgrid)%dx(ix) = mgrid%dx(ccoeff_current*(ix-1)+ic) & ! recompute dx
                                            +mgrid%gridArray(imgrid)%dx(ix)
+        enddo
       enddo
-    enddo
-    do iy = 1, mgrid%gridArray(imgrid)%ny
-      do ic = 1, ccoeff_current
-        mgrid%gridArray(imgrid)%dy(iy) = mgrid%dy(ccoeff_current*(iy-1)+ic) & ! dy
+      mgrid%gridArray(imgrid)%dy= .0
+      do iy = 1, ny
+        do ic = 1, ccoeff_current
+          mgrid%gridArray(imgrid)%dy(iy) = mgrid%dy(ccoeff_current*(iy-1)+ic) & ! dy
                                            +mgrid%gridArray(imgrid)%dy(iy)
+        enddo
       enddo
+
+      do iz = 1, nz+1
+        izv = iz + nzCum
+         mgrid%gridArray(imgrid)%dz(iz) = mgrid%dz(izv)
+      enddo
+
+         mgrid%gridArray(imgrid)%ox = mgrid%ox
+         mgrid%gridArray(imgrid)%oy = mgrid%oy
+         mgrid%gridArray(imgrid)%oz = mgrid%oz
+         mgrid%gridArray(imgrid)%rotdeg = mgrid%rotdeg
+         mgrid%gridArray(imgrid)%coords = mgrid%coords
+
+      call setup_grid(mgrid%gridArray(imgrid)) ! setup subgrid parameters. It will change dz, etc.
+                                              ! for Air dz
+                                              ! we need copy it again from the finest grid
+
+      do iz = 1, nz+1
+        izv = iz + nzCum
+
+         mgrid%gridArray(imgrid)%dz(iz) = mgrid%dz(izv)
+         mgrid%gridArray(imgrid)%dzinv(iz) = mgrid%dzinv(izv)
+         mgrid%gridArray(imgrid)%Zedge(iz) = mgrid%Zedge(izv)
+         mgrid%gridArray(imgrid)%delZ(iz) = mgrid%delZ(izv)
+         mgrid%gridArray(imgrid)%delZinv(iz) = mgrid%delZinv(izv)
+         mgrid%gridArray(imgrid)%Zcenter(iz) = mgrid%Zcenter(izv)
+      enddo
+
+         mgrid%gridArray(imgrid)%zAirThick = mgrid%zAirThick
+
+    nzCum = nzCum + nz
     enddo
 
-    mgrid%gridArray(imgrid)%dz = mgrid%dz(Zposition(imgrid):Zposition(imgrid+1))
 
-   call setup_grid(mgrid%gridArray(imgrid)) ! setup subgrid parameters. It will change dz, etc.
-                                            ! for Air dz
-                                            ! we need copy it again from the finest grid
-   mgrid%gridArray(imgrid)%dz = mgrid%dz(Zposition(imgrid):Zposition(imgrid+1))
-   mgrid%gridArray(imgrid)%dzinv = mgrid%dzinv(Zposition(imgrid):Zposition(imgrid+1))
-   mgrid%gridArray(imgrid)%Zedge = mgrid%Zedge(Zposition(imgrid):Zposition(imgrid+1))
-   mgrid%gridArray(imgrid)%zAirThick = mgrid%zAirThick
-   mgrid%gridArray(imgrid)%delZ = mgrid%delZ(Zposition(imgrid):Zposition(imgrid+1))
-   mgrid%gridArray(imgrid)%delZinv = mgrid%delZinv(Zposition(imgrid):Zposition(imgrid+1))
-   mgrid%gridArray(imgrid)%Zcenter = mgrid%Zcenter(Zposition(imgrid):Zposition(imgrid+1))
-
-enddo
-
-end subroutine  setup_mgrid
+  end subroutine  setup_mgrid
 
 end module griddef

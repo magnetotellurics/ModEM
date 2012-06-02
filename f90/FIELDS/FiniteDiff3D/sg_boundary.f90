@@ -13,6 +13,7 @@ module sg_boundary
   use math_constants
   use griddef
   use sg_vector
+  use sg_vector_mg
   implicit none
 
   ! Generic interfaces are done through subroutines
@@ -76,6 +77,7 @@ module sg_boundary
   ! sets boundary nodes in the vector field
   INTERFACE setBC
      module procedure copy_bcvector
+     module procedure copy_bcvector_mg
   END INTERFACE
 
   public                             	:: copy_cbvector, copy_bcvector
@@ -982,5 +984,33 @@ Contains
     endif
 
   end subroutine copy_bcvector
+
+  ! ***************************************************************************
+  ! copy_bcvector_mg uses copy_bcvector
+  ! convert cvector_mg to cvector
+  ! call copy_bcvector
+  subroutine copy_bcvector_mg(inBC, outEmg)
+
+    implicit none
+    type (cboundary), intent(in)     :: inBC
+    ! boundary conditions as an input
+    type (cvector_mg), intent(inout)    :: outEmg
+    ! the electrical field as an output
+
+    ! local variables
+    type (cvector)  :: outE
+
+      call create(outEmg%grid, outE, outEmg%gridType)
+      ! copy cvector_mg to cvector
+      call mg2c (outE, outEmg)
+      ! passing bc to cvector
+      call copy_bcvector(inBC, outE)
+
+      ! convert back
+      call c2mg (outEmg, outE)
+
+      call deall(outE)
+
+   end subroutine copy_bcvector_mg
 
 end module sg_boundary ! sg_boundary

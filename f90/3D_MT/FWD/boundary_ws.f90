@@ -99,8 +99,8 @@ Contains
 
     Call setWSparams(nh,nv)
     Call FWD2DSetupTE(grid2D,IER)
-    Call zero(E0)
 
+    Call zero(E0)
     do iSlice = 1,nSlice
        ! now set conductivity for eacy slice ... differently for
        ! x/y modes
@@ -127,7 +127,6 @@ Contains
        Call SetBoundTE(period,EXB)
        ! solve 2D TE equations
        Call Fwd2DsolveTE(EXB,Esol,IER)
-
        ! copy Esol into a slice of E0
        ! Definitions: imode = 1 Ey polarization and imode = 2 Ex polarization
        if(imode .eq. 2) then
@@ -138,6 +137,7 @@ Contains
              enddo
           enddo
        else
+
           !  just assume imode.eq.1 ...
           !    now only y components are non-zero ...
           do ih = 1,nh+1

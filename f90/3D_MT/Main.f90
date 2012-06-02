@@ -92,13 +92,10 @@ Contains
        call read_modelParam(grid,sigma0,cUserDef%rFile_Model)
 
        ! Finish setting up the grid (if that is not done in the read subroutine)
-       call setup_grid(grid)
-
+       ! call setup_mgrid(grid)
 	else
 	  call warning('No input model parametrization')
 	end if
-
-
 
 	!--------------------------------------------------------------------------
     !  Read forward solver control in EMsolve3D (or use defaults)
@@ -131,7 +128,6 @@ Contains
          		call create_solnVector(Larg_Grid,iTx,e_temp)
         		call copy_solnVector(eAll_larg%solns(iTx),e_temp)
         	 end do
-
         do iTx = 1,eAll_larg%nTx
          do iMod = 1,fileMode
            call EfileRead(ioNum, iTx, iMod, omega, eAll_larg%solns(iTx)%pol(iMod))
@@ -140,7 +136,6 @@ Contains
       close(ioNum)
       call deall(e_temp)
      end if
-
 
 	!--------------------------------------------------------------------------
 	!  Initialize additional data as necessary

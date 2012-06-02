@@ -83,7 +83,6 @@ Contains
    character*80 :: gridType
    logical		:: initForSens,sigmaNotCurrent
 
-
    initForSens = present(comb)
 
    !  allocate for scratch rhsVector structure for background, sensitivity
@@ -106,18 +105,17 @@ Contains
    if (BC_from_file_Initialized) then
      b0%bc%read_E_from_file=.true.
    end if
-   
-   
-   
-   
-        
+
    !  allocate for background solution
    call create_solnVector(grid,iTx,e0)
 
    if(initForSens) then
+
       !  allocate for sensitivity solution, RHS
       call create_solnVector(grid,iTx,e)
+
       call create_rhsVector(grid,iTx,comb)
+
       do k = 1,comb%nPol
         comb%b(k)%nonzero_source = .true.
         comb%b(k)%nonzero_bc = .false.
@@ -213,15 +211,17 @@ Contains
    !  complete operator intialization, for this frequency
    !  call UpdateFreq(txDict(iTx)%omega)
    !  loop over polarizations
+
    do iMode = 1,e0%nPol
+
       ! compute boundary conditions for polarization iMode
       !   uses cell conductivity already set by updateCond
       call SetBound(e0%Pol_index(iMode),period,e0%pol(imode),b0%bc,iTx)
       write (*,'(a12,a12,a3,a20,i4,a2,es12.6,a15,i2)') node_info, 'Solving the ','FWD', &
 				' problem for period ',iTx,': ',(2*PI)/omega,' secs & mode # ',e0%Pol_index(iMode)
       call FWDsolve3D(b0,omega,e0%pol(imode))
-   enddo
 
+   enddo
    ! update pointer to the transmitter in solnVector
    e0%tx = iTx
 
