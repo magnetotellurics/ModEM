@@ -161,6 +161,9 @@ Contains
       !call create_rscalar(grid,rho,CENTER)
       !write(0,*) 'Output background model...'
       !call outputModel('background.rho',grid,rho0%v)
+      !if (iTx == 1) then
+      !  call write_modelParam(m0,'newModelParam.prm')
+      !end if
       call initModel(m0,rho,grid,rho0)
 
       if(secondaryField) then

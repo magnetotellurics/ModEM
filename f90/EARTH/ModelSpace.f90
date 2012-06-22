@@ -244,15 +244,15 @@ Contains
        return
     end if
 
-    if(index(cfile,'.rho')>0) then
-        call mapToGrid_modelParam(P_grid,P)
-        call writeGrid_modelParam(P_grid,cfile)
-        call deall_modelParam(P_grid)
-    else if(index(cfile,'.prm')>0) then
+    !if(index(cfile,'.rho')>0) then
+    !    call mapToGrid_modelParam(P_grid,P)
+    !    call writeGrid_modelParam(P_grid,cfile)
+    !    call deall_modelParam(P_grid)
+    !else if(index(cfile,'.prm')>0) then
         call writeLayers_modelParam(P,cfile)
-    else
-        call warning('(write_modelParam) unknown file format requested; writing to file skipped')
-    end if
+    !else
+    !    call warning('(write_modelParam) unknown file format requested; writing to file skipped')
+    !end if
 
   end subroutine write_modelParam
 
