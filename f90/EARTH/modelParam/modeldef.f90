@@ -30,6 +30,7 @@ module modeldef
   type :: modelShell_t
 
 	  real(8), dimension(:,:), pointer		  :: cond !(nx,ny) - conductance
+	  real(8)                                 :: avg ! to use for 1D modelling
 	  logical                                 :: variable, allocated
 
   end type modelShell_t	! modelShell_t
@@ -96,8 +97,11 @@ module modeldef
 	  ! layer regularization parameters
 	  real(8)											  :: alpha,beta,gamma
 
-	  ! the indicator of whether the linear combination of F_i gives log_10(rho)
+	  ! the indicator of whether the linear combination of F_i gives log_{10}(rho/rho_0)
 	  logical											  :: if_log
+
+      ! the indicator of whether the linear combination of F_i gives tan[(pi/2)*(rho/rho_0-1)]
+      logical                                             :: if_tan
 
 	  ! the filename of additional rho info if it exists; if so, add these
 	  ! values to either rho or log_10(rho) (as specified by if_log) on the grid
@@ -139,6 +143,9 @@ module modeldef
 
       ! the full resistivity on a grid which may be defined instead of the harmonics
       type (rscalar)                                      :: rho
+
+      ! the full background resistivity pointer used for mappings to the grid
+      type (rscalar), pointer                             :: rho0
 
 	  ! also contains a pointer to the grid, used for mappings
 	  ! NOTE: this may need rethinking unless one global grid is used!

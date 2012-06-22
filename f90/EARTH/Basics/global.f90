@@ -41,6 +41,7 @@ module global
   ! ***************************************************************************
   ! * param: Contains the information about the user-specified parametrization
   type (modelParam_t), save								:: p_input
+  type (modelParam_t), save                             :: p0_background
   type (modelParam_t), save								:: p0_input
   type (modelParam_t), save								:: p_smooth
   type (modelParam_t), save								:: p_diff

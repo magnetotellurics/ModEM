@@ -35,8 +35,8 @@ module iotypes
     character(80)               :: secondary_field  ! 'yes'/'no'
 	character(80)				:: fn_thinsheet	! GM thin sheet conductance values
 	character(80)				:: fn_grid	! grid information
-	character(80)				:: fn_param0	! base model parametrization
-	character(80)				:: fn_param	! information about the parametrization
+	character(80)				:: fn_param0	! background resistivity (formerly prior)
+	character(80)				:: fn_param	! starting parametrization
 	character(80)				:: fn_period  ! periods or frequencies
     character(80)               :: fn_extsource ! external source
     character(80)               :: fn_intsource ! additional interior source (not yet implemented)

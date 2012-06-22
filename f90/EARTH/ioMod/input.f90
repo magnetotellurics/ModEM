@@ -132,9 +132,9 @@ Contains
   ! ***************************************************************************
   ! * initRho reads the resistivities on the grid from a simple file
 
-  subroutine initRho(cUserDef,mygrid,myrho)
+  subroutine initRho(filename,mygrid,myrho)
 
-    type (userdef_control), intent(in)          :: cUserDef
+    character(*), intent(in)                    :: filename
     type (grid_t), intent(in)                   :: mygrid
     type (rscalar), intent(inout)               :: myrho  !(nx,ny,nz)
     ! local
@@ -142,20 +142,20 @@ Contains
     integer                                     :: ios,i,j,k,nx,ny,nzEarth
 
 
-    inquire(FILE=cUserDef%fn_param,EXIST=exists)
+    inquire(FILE=filename,EXIST=exists)
     if(.not.exists) then
-      write(6,*) node_info,'Model resistivities will not be initialized: ',trim(cUserDef%fn_param)," not found"
+      write(6,*) node_info,'Model resistivities will not be initialized: ',trim(filename)," not found"
       return
     end if
 
-    open(ioMdl,file=cUserDef%fn_param,status='old',iostat=ios)
+    open(ioMdl,file=filename,status='old',iostat=ios)
 
-    write(6,*) node_info,'Reading the resistivities from file ',trim(cUserDef%fn_param)
+    write(6,*) node_info,'Reading the resistivities from file ',trim(filename)
     read(ioMdl,*) ! header line
     read(ioMdl,*) nx,ny,nzEarth
 
     if ((nx .ne. mygrid%nx) .or. (ny .ne. mygrid%ny) .or. (nzEarth .ne. (mygrid%nzCrust+mygrid%nzEarth))) then
-      write(6,*) 'Warning: Model resistivities do not match grid size in ',trim(cUserDef%fn_param)
+      write(6,*) 'Warning: Model resistivities do not match grid size in ',trim(filename)
     end if
 
     call create_rscalar(mygrid,myrho,CENTER)
@@ -312,39 +312,50 @@ Contains
   ! * Obviously, the information on the range is not required for the forward
   ! * solver to operate. This is provided for the inversion, which will share
   ! * the same input format for now.
+  ! *
+  ! * Three parametrization options: harmonic, mixed and grid.
+  ! * If harmonic, all files are in layered form;
+  ! * if mixed, background is resistivity on a grid, other files are layered;
+  ! * if grid, all files are resistivity on a grid.
 
-  subroutine initModelParam(cUserDef,mygrid,myparam,p0)
+  subroutine initModelParam(cUserDef,filename,mygrid,myparam)
 
 	use model_operators
 
     type (userdef_control), intent(in)					:: cUserDef
+    character(*), intent(in)                            :: filename
     type (grid_t), target, intent(in)                   :: mygrid
     type (modelParam_t), intent(inout)					:: myparam
-	logical, intent(in), optional		:: p0
+	logical                               		        :: readGrid
 
+    if (trim(filename) .eq. trim(cUserDef%fn_param0)) then
 
-    if (trim(cUserDef%paramname) .eq. 'harmonic') then
+        readGrid =  ((trim(cUserDef%paramname) .eq. 'grid') &
+                 .or. (trim(cUserDef%paramname) .eq. 'mixed'))
 
-        if(present(p0)) then
-          if(p0) then
-            call read_modelParam(myparam,cUserDef%fn_param0)
-          end if
-        else
-          call read_modelParam(myparam,cUserDef%fn_param)
-        end if
-        myparam%grid => mygrid
+    else
 
-    else if (trim(cUserDef%paramname) .eq. 'grid') then
+        readGrid =  (trim(cUserDef%paramname) .eq. 'grid')
 
-        call initRho(cUserDef,mygrid,myparam%rho)
+    end if
+
+    if (readGrid) then
+
+        call initRho(filename,mygrid,myparam%rho)
         myparam%allocated = .true.
+        myparam%grid => mygrid
+        myparam%type = 'grid'
+
+    elseif (trim(cUserDef%paramname) .eq. 'harmonic') then
+
+        call read_modelParam(myparam,filename)
+        myparam%grid => mygrid
+        myparam%type = 'harmonic'
 
     else
         write(0,*) node_info,'Warning: model parametrization ',trim(cUserDef%paramname),' not implemented yet'
         stop
     end if
-
-    myparam%type = trim(cUserDef%paramname)
 
 
   end subroutine initModelParam	! initModelParam

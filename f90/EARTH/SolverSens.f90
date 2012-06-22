@@ -29,6 +29,9 @@ module SolverSens
    !   h0 is input background field solution;
    !    (h is output used for forcing;
    !    The output is allocated before calling this routine)
+   !   rho0 is the FIXED background resistivity on the grid
+   !     which is used to compute rho from m0;
+   !     rho0 NEVER CHANGED during an inversion
 
    type(solnVector_t), intent(in)       :: h0
    type(modelParam_t), intent(in)	    :: m0 ! used to compute h0
@@ -40,17 +43,19 @@ module SolverSens
    type(sparsevecc)                     :: Hb
    type(rscalar)                        :: drho,rho
    type(grid_t), pointer                :: grid
+   type(rscalar), pointer               :: rho0
 
    ! allocate temporary data structures
    Hj = h0%vec
    grid => h0%grid
-   call initModel(grid,m0,rho)
+   !rho0 => m0%rho0
+   !call initModel(m0,rho,grid,rho0)
 
    ! map from model parameter to faces ... all this is somewhat confusing since
    ! L \rho = l^F \rho^F (S^F)^{-1}. So, L already does multiplication by length elements
    ! division by area elements (parts of the curl on primary and dual grids). Will clean
    ! this up later; for now, keep as is.
-   call operatorP(m,drho,grid,m0,rho)
+   call operatorP(m,drho,grid,m0)
    call operatorL(drho,drhoF,grid)
 
    ! Insert boundary conditions in Hj
@@ -91,6 +96,9 @@ module SolverSens
    !   mapping from primary field to model parameter;
    !       P^T h = m
    !   h0 is input background field solution;
+   !   rho0 is the FIXED background resistivity on the grid
+   !     which is used to compute rho from m0;
+   !     rho0 NEVER CHANGED during an inversion
    !   NOTE: because the model parameter is real, while h is complex
    !       the adjoint mapping returns separate data structures
    !        for real and imaginary parts; imaginary output is optional ...
@@ -106,13 +114,15 @@ module SolverSens
    type(sparsevecc)                     :: Hb
    type(rscalar)                        :: drho,rho
    type(grid_t), pointer                :: grid
+   type(rscalar), pointer               :: rho0
 
 
    !  allocate temporary data structures
    Hj = h0%vec
    grid => h0%grid
+   !rho0 => m0%rho0
    dH = h%vec
-   call initModel(grid,m0,rho)
+   !call initModel(m0,rho,grid,rho0)
 
    ! compute dE = $(C^\dag)^T$ dH
    call operatorD_Si_divide(dH,grid)
@@ -138,7 +148,7 @@ module SolverSens
    ! this up later; for now, keep as is.
    dE_real = real(dE)
    call operatorLt(drho,dE_real,grid)
-   call operatorPt(drho,mReal,grid,m0,rho)
+   call operatorPt(drho,mReal,grid,m0)
    call scMult(MinusONE,mReal,mReal)
 
    if(present(mImag)) then
@@ -146,7 +156,7 @@ module SolverSens
 	   ! Map from faces back to model parameter space: imag part
 	   dE_imag = imag(dE)
 	   call operatorLt(drho,dE_imag,grid)
-	   call operatorPt(drho,mImag,grid,m0,rho)
+	   call operatorPt(drho,mImag,grid,m0)
        call scMult(MinusONE,mImag,mImag)
 
    endif

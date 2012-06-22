@@ -486,7 +486,7 @@ end program earth
 	stime = tarray(5)*3600 + tarray(6)*60 + tarray(7) + 0.001*tarray(8)
 	invparam = p_input
 
-  	call NLCGsolver(allData,cUserDef%damping,param,invparam,cUserDef%fn_invctrl)
+  	call NLCGsolver(allData,cUserDef%damping,p0_input,invparam,cUserDef%fn_invctrl)
 
 	call date_and_time(values=tarray)
 	etime = tarray(5)*3600 + tarray(6)*60 + tarray(7) + 0.001*tarray(8)
@@ -784,8 +784,8 @@ end program earth
 	type (solnVectorMTX_t)						:: H1D
 	type (cvector)                     	    :: Hj, Bj, dH, Fj
 	type (rvector)							:: drhoF
-	type (rscalar)							:: rho1D, drho
-	type (modelParam_t)                     :: param1D
+	type (rscalar)							:: rho0, rho1D, drho
+	type (modelParam_t)                     :: param1D,mgrid
 	type (grid_t)                           :: grid
     !type (cvector)							:: H,B,F
 	!type (sparsevecc)						:: Hb
@@ -799,11 +799,14 @@ end program earth
 	! call initialize_fields(dH,Bj)
 
 	grid = rho%grid
+	!rho0 = param%rho0
 
 	! Make 1D parametrization out of full, and map to grid (primary cell centers)
-	param1D = getRadial(param)
-	call create_rscalar(grid,rho1D,CENTER)
-	call initModel(grid,param1D,rho1D)
+	call getRadial(param1D,param)
+	call mapToGrid(mgrid,param1D)
+	rho1D = mgrid%rho
+	!call create_rscalar(grid,rho1D,CENTER)
+	!call initModel(param1D,rho1D,grid,rho0)
 
 	! Take the difference on the grid, to avoid the problem with zero resistivity
 	call create_rscalar(grid,drho,CENTER)
@@ -892,6 +895,7 @@ end program earth
 	call deall_rscalar(drho)
 	call deall_rscalar(rho1D)
 	call deall_modelParam(param1D)
+    call deall_modelParam(mgrid)
 	call deall_solnVectorMTX(H1D)
 	call deall_dataVector(dat)
 	call deall_dataVector(psi)
@@ -1073,7 +1077,7 @@ end program earth
     integer                                 :: istat,i,j,k
     type (cvector)                          :: H,B,F,Hconj,B_tilde,dH,dE,Econj,Bzero,dR
     type (rvector)                          :: dE_real
-    type (rscalar)                          :: drho
+    type (rscalar)                          :: drho,rho0
     type (sparsevecc)                       :: Hb
     type (functional_t)                       :: dataType
     type (transmitter_t)                      :: freq
@@ -1092,6 +1096,7 @@ end program earth
     call date_and_time(values=tarray)
 
     grid = rho%grid
+    rho0 = param%rho0
 
     call initialize_fields(grid,H,Hb)
     call create_cvector(grid,B,EDGE)
@@ -1202,7 +1207,7 @@ end program earth
    ! this up later; for now, keep as is.
    dE_real = real(dE)
    call operatorLt(drho,dE_real,grid)
-   call operatorPt(drho,dmisfit,grid,param,rho)
+   call operatorPt(drho,dmisfit,grid,param)
    call scMult(MinusONE,dmisfit,dmisfit)
    call outputModel('drho.rho',grid,drho%v)
    call write_modelParam(dmisfit,'dmisfit.prm')

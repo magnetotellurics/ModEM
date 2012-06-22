@@ -32,6 +32,7 @@ module ForwardSolver
   save
   private
   type(timer_t)     :: timer
+  type(rscalar), target     :: rho0 ! fixed background resistivity on the grid
   logical           :: solverInitialized = .false.
   logical           :: secondaryField = .false.
   logical           :: newModelParam = .false.
@@ -42,11 +43,12 @@ module ForwardSolver
   type(rscalar)     :: rho ! resistivity on the grid
   type(cvector)     :: source ! user-specified interior source
   type(sparsevecc)  :: BC ! boundary conditions set from P10
-  type(modelParam_t)    :: mPrior  ! use it to get the radial 1d model for SFF
+  type(modelParam_t)    :: mBackground  ! use it to get the radial 1d model for SFF
   type(modelParam_t)    :: mPrev  ! store the previous model for efficiency
   type(solnVector_t)    :: hPrev  ! store the previous forward solver solution
   !type(rhsVector_t)     :: b   ! needed to store the RHS for forward solver
   type(solnVector_t) :: h1d, dh ! needed for secondary field formulation
+  type(modelShell_t) :: crust
   ! debugging variables
   character(80)     :: cfile
 
@@ -57,13 +59,14 @@ Contains
    !  Initializes both forward and sens solvers for transmitter iTx.
 
    integer, intent(in)                      :: iTx
-   type(modelParam_t),intent(in), target	:: m0
+   type(modelParam_t),intent(in)	        :: m0
    type(grid_t), intent(in), target         :: grid
    type(solnVector_t), intent(inout), optional :: h0
    type(solnVector_t), intent(inout), optional :: h
    type(rhsVector_t), intent(inout), optional :: comb
    !  local variables
    type(transmitter_t), pointer             :: freq
+   type(modelParam_t)                       :: mgrid
    logical                                  :: initFwd, initForSens
 
    initFwd = present(h0)
@@ -100,25 +103,42 @@ Contains
    secondaryField = freq%secondaryField
 
    if(.not. solverInitialized) then
-      ! only do this when called for the first time
-      mPrior = m0
+      ! only do this when called for the first time; rho0 is background resistivity
+      ! that is already initialized and saved in m0 ... usually 1D. However, recomputing
+      ! rho1d from m1d allows rho0 to have more general form. Also note that setting
+      ! rho1d = rho0 will not work since rho0 has the thinsheet in it already.
+      rho0 = m0%rho0
       if(secondaryField) then
 	    ! Make 1D parametrization out of full, and map to grid (primary cell centers)
-	    call read_modelParam(mPrior,cUserDef%fn_param0)
-	    m1d = getRadial(mPrior)
+	    write(0,*) node_info,'Reading the background resistivity model for SFF; assuming it is log10 and 1D.'
+	    call read_modelParam(mBackground,cUserDef%fn_param0)
+	    call setGrid_modelParam(grid,mBackground)
+        call initCrust(cUserDef,grid,crust)
+        call setCrust_modelParam(crust,mBackground)
+	    call getRadial(m1d,mBackground)
+        write(0,*) node_info,'Crust average conductance is ',m1d%crust%avg
 	    call create_rscalar(grid,rho1d,CENTER)
-	    call initModel(grid,m1d,rho1d)
+	    call initModel(m1d,rho1d,grid) ! do NOT use background resistivity for this
+	    !call mapToGrid(mgrid,m1d)
+	    rho1d = mgrid%rho
+        call create_solnVector(grid,iTx,h1d)
+        !call fwdSolve1d(iTx,m1d,h1d) ! should be saved in solnVectorMTX if computed once
+        !call outputModel('test1d.rho',grid,rho1d%v)
 	  endif
       solverInitialized = .true.
    endif
 
+   !write(0,*) 'Output background model...'
+   !call outputModel('background.rho',grid,rho0%v)
+
+   ! compute the 1D fields; could be computed once for all frequencies & saved in solnVectorMTX_t
    if(secondaryField) then
-      ! instead of reading the fields, compute them
-      !call read_solnVector(cUserDef%fn_field,grid,iTx,h1d)
-      !call read_solnVector('p10_5deg',grid,iTx,h1d)
+!      ! instead of reading the fields, compute them
+!      !call read_solnVector(cUserDef%fn_field,grid,iTx,h1d)
+!      !call read_solnVector('p10_5deg',grid,iTx,h1d)
       call create_solnVector(grid,iTx,h1d)
       call fwdSolve1d(iTx,m1d,h1d)
-
+!
 !      ! DEBUG: output forward solver forcing
 !        write(cfile,'(a11,i3.3,a6)') 'compute_1D_',iTx,'.field'
 !        write(*,*) 'Writing to file: ',cfile
@@ -135,14 +155,19 @@ Contains
 
    if(newModelParam) then
       ! compute the resistivity on the grid
-      call create_rscalar(grid,rho,CENTER)
-      call initModel(grid,m0,rho)
+      write(0,*) node_info,'Mapping new model parameter to grid'
+      !call mapToGrid(mgrid,m0)
+      !rho = mgrid%rho
+      !call create_rscalar(grid,rho,CENTER)
+      !write(0,*) 'Output background model...'
+      !call outputModel('background.rho',grid,rho0%v)
+      call initModel(m0,rho,grid,rho0)
 
       if(secondaryField) then
 	    ! Take the difference on the grid, to avoid the problem with zero resistivity
 	    call create_rscalar(grid,drho,CENTER)
 	    call linComb_rscalar(ONE,rho,MinusONE,rho1d,drho)
-	    !call outputModel('test.rho',grid,drho%v)
+	    !call outputModel('testdelta.rho',grid,drho%v)
 
 	    ! Map the resistivity vector to primary cell faces (dual edges)
 	    call operatorL(drho,drhoF,grid)
@@ -154,6 +179,8 @@ Contains
    if(.not. source%allocated) then
     call create_cvector(grid,source,EDGE)
    endif
+
+   call deall_modelParam(mgrid)
 
   end subroutine initSolver
 
@@ -168,7 +195,7 @@ Contains
    ! local variables
    type(conf1d_t)                               :: conf1d
    type(transmitter_t), pointer                 :: freq
-   real(kind=prec)                              :: period ! secs
+   real(kind=prec)                              :: tsdepth,tssigma,tau,period ! secs
    real(kind=prec), allocatable, dimension(:)   :: depths,logrho
    integer                                      :: i,nL,lmax,istat
 
@@ -200,8 +227,23 @@ Contains
     ! set tolerance on toroidal potential
     conf1d%tol = 1.e-9
 
-    ! set surface conductance (should be small since we're using 3D thinsheet)
-    conf1d%tau = 1.e2
+    ! if thinsheet exists, replace it with an infinitely thin layer
+    if (h1d%grid%nzCrust > 0) then
+        tsdepth = h1d%grid%z(h1d%grid%nzAir+1) - h1d%grid%z(h1d%grid%nzAir+h1d%grid%nzCrust+1)
+        tssigma = 10.0**( -logrho(1) )
+    end if
+    tau = m1d%crust%avg - tsdepth * tssigma
+
+    ! ... and set surface conductance
+     write(0,'(a12,a26,f12.3,a19)') node_info,'Using surface conductance ',1.0d0,' S for 1D modelling'
+     conf1d%tau = 1.0d0
+!    if (h1d%grid%nzCrust > 0) then
+!        write(0,'(a12,a26,f12.3,a19)') node_info,'Using surface conductance ',tau,' S for 1D modelling'
+!        conf1d%tau = tau
+!    else
+!        write(0,'(a12,a71)') node_info,'No thinsheet; using negligible surface conductance 1 S for 1D modelling'
+!        conf1d%tau = 1.0d0
+!    end if
 
     ! save model in 1D configuration structure: layers include the core
     allocate(conf1d%layer(nL+1),conf1d%sigma(nL+1), STAT=istat)
@@ -385,10 +427,11 @@ Contains
       !call deall_rhsVector(b)
       call deall_solnVector(hPrev)
       call deall_modelParam(mPrev)
-      call deall_modelParam(mPrior)
+      call deall_modelParam(mBackground)
       call deall_cvector(source)
       call deall_sparsevecc(BC)
       call deall_rscalar(rho)
+      call deall_rscalar(rho0)
       solverInitialized = .false.
       newModelParam = .false.
    endif

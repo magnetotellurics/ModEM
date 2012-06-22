@@ -528,10 +528,12 @@ Contains
 	 nfunc = 1
    write(iterChar,'(i3.3)') 0
 
-   ! output initial model and responses for later reference
+   ! output (smoothed) initial model and responses for later reference
+   call CmSqrtMult(mHat,m_minus_m0)
+   call linComb(ONE,m_minus_m0,ONE,m0,m)
    if (output_level > 1) then
      mFile = trim(iterControl%fname)//'_NLCG_'//iterChar//'.rho'
-     call write_modelParam(m0,trim(mFile))
+     call write_modelParam(m,trim(mFile))
    end if
    if (output_level > 2) then
      dataFile = trim(iterControl%fname)//'_NLCG_'//iterChar//'.dat'

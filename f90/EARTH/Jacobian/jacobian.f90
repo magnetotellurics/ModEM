@@ -6,6 +6,7 @@ module jacobian
   use iotypes
   use modeldef
   use model_operators
+  use modelmap
   use elements
   use dimensions
   use griddef
@@ -1098,12 +1099,14 @@ Contains
   ! * vector p_j is the j'th column of P, that corresponds to \pd{\rho}{a_j}.
   ! * p_j \In G.
 
-  function vectorPj(m0,da,n,resist,grid) result (dm)
+  function vectorPj(m0,da,n,grid) result (dm)
 
     type (modelParam_t), intent(in)                 :: m0
     type (modelParam_t), intent(inout)				:: da
 	integer, intent(in)								:: n
-    real(8), dimension(:,:,:), intent(in)           :: resist
+    type (modelParam_t)                             :: m  !current resistivity on the grid
+    type (rscalar)                                  :: resist, resist0 !resist0 is fixed background
+    type (rscalar)                                  :: dresist
     type (grid_t), intent(in)                       :: grid
 	type (rscalar)									:: dm !(nx,ny,nz)
 	integer											:: i,j,k,l,istat
@@ -1112,6 +1115,15 @@ Contains
 	type (modelPoint_t)								:: point
 	type (modelFunc_t)								:: func
 	type (modelCoeff_t)								:: coeff
+
+    ! Preliminary computations: only needed if arctan parametrization is involved
+    !call mapToGrid(m,m0)
+    resist0 = m0%rho0
+    call initModel(m0,resist,grid,resist0)
+    !resist = m%rho
+    !resist0 = m%rho0
+    dresist = resist
+    dresist%v = dtan((PI/2)*(resist%v/resist0%v - 1.0d0))
 
 	! Create a zero-valued output in G
 	call create_rscalar(grid,dm,CENTER)
@@ -1125,11 +1137,11 @@ Contains
 	this_layer => coeff%L
 
 	! Resistivity is constant at air layers, hence derivative is zero
-	forall (i=1:grid%nx, j=1:grid%ny, k=1:grid%nzAir+grid%nzCrust)
+	forall (i=1:grid%nx, j=1:grid%ny, k=1:grid%nzAir)
 	  dm%v(i,j,k) = 0.0d0
 	end forall
 
-	do k=grid%nzAir+grid%nzCrust+1,grid%nz
+	do k=grid%nzAir+1,grid%nz
 
 	  if (.not.in_layer(grid%r(k),coeff%L)) then
 		cycle
@@ -1146,7 +1158,9 @@ Contains
 		  value = F_at_point(func,point)
 
 		  if (this_layer%if_log) then
-			dm%v(i,j,k) = value*resist(i,j,k)*log(10.)
+			dm%v(i,j,k) = value*resist%v(i,j,k)*log(10.)
+          elseif (this_layer%if_tan) then
+            dm%v(i,j,k) = (2.0d0/PI)*value*(resist0%v(i,j,k)/(1.0d0+dresist%v(i,j,k)**2))
 		  else
 			dm%v(i,j,k) = value
 		  end if
@@ -1154,6 +1168,12 @@ Contains
 		end do
 	  end do
 	end do
+
+	call deall_modelParam(m)
+	call deall_rscalar(resist)
+    call deall_rscalar(resist0)
+    call deall_rscalar(dresist)
+    call deall_rscalar(dm)
 
   end function vectorPj	! j'th column of P
 
@@ -1176,12 +1196,13 @@ Contains
   ! * initModel is the routine that generates the 3-D resistivity map on the
   ! * grid using the information stored in the grid and the parametrization
 
-  subroutine operatorP(da,dm,grid,m0,resist)
+  subroutine operatorP(da,dm,grid,m0)
 
     type (modelParam_t), intent(in)                 :: m0
     type (modelParam_t), intent(in)					:: da
 	type (rscalar), intent(inout)						:: dm !(nx,ny,nz)
-	type (rscalar), intent(in)		                :: resist !(nx,ny,nz)
+    type (modelParam_t)                              :: m  !current resistivity on the grid
+    type (rscalar)                                   :: resist, resist0 !resist0 is fixed background
     type (grid_t), intent(in)                       :: grid
 	integer											:: i,j,k,l,istat
 	integer											:: iL,ip
@@ -1189,16 +1210,26 @@ Contains
 	type (modelLayer_t), pointer						:: this_layer
 	type (modelPoint_t)								:: point
 	type (modelFunc_t)								:: func
+    type (rscalar)                                  :: dresist !(nx,ny,nz)
+
+    ! Preliminary computations: only needed if arctan parametrization is involved
+    !call mapToGrid(m,m0)
+    resist0 = m0%rho0
+    call initModel(m0,resist,grid,resist0)
+    !resist = m%rho
+    !resist0 = m%rho0
+    dresist = resist
+    dresist%v = dtan((PI/2)*(resist%v/resist0%v - 1.0d0))
 
 	! Create the output resistivity model on the grid
 	call create_rscalar(grid,dm,CENTER)
 
 	! Resistivity is constant at air layers, hence derivative is zero
-	forall (i=1:grid%nx, j=1:grid%ny, k=1:grid%nzAir+grid%nzCrust)
+	forall (i=1:grid%nx, j=1:grid%ny, k=1:grid%nzAir)
 	  dm%v(i,j,k) = 0.0d0
 	end forall
 
-	do k=grid%nzAir+grid%nzCrust+1,grid%nz
+	do k=grid%nzAir+1,grid%nz
 
 	  ! Find current layer by locating the upper boundary of a cell
 	  do l=1,m0%nL
@@ -1232,6 +1263,8 @@ Contains
 
 			if (this_layer%if_log) then
 			  dm%v(i,j,k) = dm%v(i,j,k) + value*coeff*resist%v(i,j,k)*log(10.)
+            elseif (this_layer%if_tan) then
+              dm%v(i,j,k) = dm%v(i,j,k) + (2.0d0/PI)*value*coeff*(resist0%v(i,j,k)/(1.0d0+dresist%v(i,j,k)**2))
 			else
 			  dm%v(i,j,k) = dm%v(i,j,k) + value*coeff
 			end if
@@ -1241,6 +1274,11 @@ Contains
 		end do
 	  end do
 	end do
+
+    call deall_modelParam(m)
+    call deall_rscalar(resist)
+    call deall_rscalar(resist0)
+    call deall_rscalar(dresist)
 
   end subroutine operatorP	! P
 
@@ -1267,17 +1305,19 @@ Contains
   ! *	end if
   ! * end do
 
-  subroutine operatorPt(dm,da,grid,m0,resist)
+  subroutine operatorPt(dm,da,grid,m0)
 
     type (modelParam_t), intent(in)                 :: m0 !(nx,ny,nz)
 	type (rscalar), intent(in)						:: dm !(nx,ny,nz)
-    type (modelParam_t), intent(inout)					:: da
-    type (grid_t), intent(in)                       :: grid
-	type (rscalar), intent(in)				         :: resist  !(nx,ny,nz)
+    type (modelParam_t), intent(inout)				:: da
+    type (grid_t), intent(in)                        :: grid
+	type (modelParam_t)				                 :: m  !current resistivity on the grid
+    type (rscalar)                                   :: resist, resist0 !resist0 is fixed background
 	!real(8),dimension(:),intent(out)				 :: da  !ncoeff
 	integer											 :: i,j,k,l
 	integer											 :: iL,ip
 	real(8)											 :: tau ! single entry of matrix P^t
+    type (rscalar)                                   :: dresist !(nx,ny,nz)
 	type (modelPoint_t)								 :: point
 	type (modelFunc_t)								 :: func
 	type (modelLayer_t)								 :: this_layer
@@ -1297,6 +1337,15 @@ Contains
 !		stop
 !	end if
 
+    ! Preliminary computations: only needed if arctan parametrization is involved
+    !call mapToGrid(m,m0)
+    resist0 = m0%rho0
+    call initModel(m0,resist,grid,resist0)
+    !resist = m%rho
+    !resist0 = m%rho0
+    dresist = resist
+    dresist%v = dtan((PI/2)*(resist%v/resist0%v - 1.0d0))
+
 	da = m0
 	call zero(da)
 
@@ -1315,7 +1364,7 @@ Contains
 		func = m0%c(iL,ip)%F
 
 		! Going vertically down through the chosen layer
-		do k=grid%nzAir+grid%nzCrust+1,grid%nz
+		do k=grid%nzAir+1,grid%nz
 
 		  ! If grid radius is not in this layer, ignore
 		  if(.not.in_layer(grid%r(k),this_layer)) then
@@ -1331,6 +1380,8 @@ Contains
 			  tau = F_at_point(func,point)
 			  if (this_layer%if_log) then
 				tau = tau * resist%v(i,j,k) * log(10.0d0)
+              elseif (this_layer%if_tan) then
+                tau = tau * (2.0d0/PI) * (resist0%v(i,j,k)/(1.0d0+dresist%v(i,j,k)**2))
 			  end if
 			  ! Add this expression to the output vector component
 			  da%c(iL,ip)%value = da%c(iL,ip)%value + tau * dm%v(i,j,k)
@@ -1341,6 +1392,10 @@ Contains
 	  end do
 	end do
 
+    call deall_modelParam(m)
+    call deall_rscalar(resist)
+    call deall_rscalar(resist0)
+    call deall_rscalar(dresist)
 	da%zeroValued = .false.
 
   end subroutine operatorPt	! This operator is the transpose of P

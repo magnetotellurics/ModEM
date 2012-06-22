@@ -27,6 +27,10 @@ module main
   ! * targetGrid: Target for all grid pointers for use in the main program
   type (grid_t), target, save                   :: targetGrid
 
+  ! ***************************************************************************
+  ! * targetRho0: Target background resistivity for model mappings
+  !type (rscalar), target, save                  :: targetRho0
+
 Contains
 
   ! ***************************************************************************
@@ -51,6 +55,7 @@ Contains
 	integer										:: i,ios=0,istat=0
 	character(100)								:: label
 	real(8),intent(in),optional	                :: eps
+	type (modelParam_t)                         :: p0_grid
 	type (modelCoeff_t)							:: coeff
 	type (modelShell_t)                         :: crust
 
@@ -70,45 +75,57 @@ Contains
 	! Read and compute grid information
 	call initGrid(cUserDef,targetGrid)
     !--------------------------------------------------------------------------
-    ! Read and compute grid information
+    ! ... and set the grid for sensitivity computations
     call setGrid(targetGrid)
+    !--------------------------------------------------------------------------
+    ! Right after grid, read the background resistivity model
+    call initModelParam(cUserDef,cUserDef%fn_param0,targetGrid,p0_background)
+    !--------------------------------------------------------------------------
+    ! set the grid for background model parameter
+    call setGrid_modelParam(targetGrid,p0_background)
 	!--------------------------------------------------------------------------
 	! Read and save thin shell conductance information, if present
 	call initCrust(cUserDef,targetGrid,crust)
 	!--------------------------------------------------------------------------
-	! Read main parametrization
-	call initModelParam(cUserDef,targetGrid,p_input)
+	! Initialize thin shell conductance in the background resistivity model
+	call setCrust_modelParam(crust,p0_background)
+    !--------------------------------------------------------------------------
+    ! ... and initialize background resistivity on the grid
+    !call mapToGrid_modelParam(p0_grid,p0_background)
+    !targetRho0 = p0_grid%rho
+    !call deall_modelParam(p0_grid)
+    !--------------------------------------------------------------------------
+    ! ... and initialize background resistivity on the grid
+    call initModel(p0_background,targetRho0,targetGrid)
+    !--------------------------------------------------------------------------
+    ! Check whether variable parametrization exists
+    inquire(FILE=cUserDef%fn_param,EXIST=exists)
 	!--------------------------------------------------------------------------
-	! Initialize thin shell conductance in the model parameter
-	call setCrust_modelParam(crust,p_input)
+	! Read variable parametrization; if undefined, use background model for
+	! forward modelling and to define the parametrization structure
+	if (exists) then
+	    ! read it in and initialize thinsheet in the variable model parameter
+	    call initModelParam(cUserDef,cUserDef%fn_param,targetGrid,p_input)
+        call setCrust_modelParam(crust,p_input)
+        call setGrid_modelParam(targetGrid,p_input)
+        call setBackground_modelParam(targetRho0,p_input)
+	else
+	    ! use zero starting model parameter
+	    p_input = p0_background
+	    call zero(p_input)
+        call setBackground_modelParam(targetRho0,p_input)
+	end if
 	!--------------------------------------------------------------------------
 	! Adjust the layer boundaries to match the grid
 	call adjustLayers_modelParam(p_input,targetGrid%r)
 	!--------------------------------------------------------------------------
-	! Check whether base parametrization exists
-	inquire(FILE=cUserDef%fn_param0,EXIST=exists)
-	!--------------------------------------------------------------------------
-	! If exists, read it; else create a skeleton from main parametrization
-	if (exists) then
-	    call initModelParam(cUserDef,targetGrid,p0_input,p0=.TRUE.)
-	    ! Initialize thin shell conductance in the model parameter
-	    call setCrust_modelParam(crust,p0_input)
-		! Adjust the layer boundaries to match the grid
-		call adjustLayers_modelParam(p0_input,targetGrid%r)
-		! NOTE: regularization information is taken from the prior model!!!
-		if (.not. compare(p_input,p0_input)) then
-			write(0,*) node_info,'Warning: Using the layer structure from the prior model'
-			p_input%L = p0_input%L
-			if (.not. compare(p_input,p0_input)) then
-				write(0,*) node_info,'Warning: Base parametrization incompatible with main model'
-				stop
-			end if
-		end if
-	else
-	  write(0,*) node_info,'Warning: No base parametrization found; zero model will be used'
-	  p0_input = p_input
-	  call zero(p0_input)
-	end if
+	! Create a skeleton prior for the inversion
+	write(0,*) node_info,'Using zero prior model; background model contains prior information'
+	p0_input = p_input
+	call zero(p0_input)
+	! Very important for model output: mark prior model as "smoothed"; then linear
+	! combinations such as Cm^1/2 mhat + m0 are also smoothed.
+	p0_input%smoothed = .TRUE.
 	!--------------------------------------------------------------------------
 	! Compute the correction (only needed if run for a test perturbation)
 	if (present(eps)) then
@@ -123,7 +140,8 @@ Contains
 	param = multBy_CmSqrt(p_input)
 	!--------------------------------------------------------------------------
 	! Compute parametrization to use (for model norm we will still use p_input)
-	call linComb(ONE,param,ONE,p0_input,param)
+	! NO LONGER COMPUTE THIS LINEAR COMB. INSTEAD USE RHO0 AS BACKGROUND!
+	! call linComb(ONE,param,ONE,p0_input,param)
     !--------------------------------------------------------------------------
     ! Test to make sure no grid is defined outside the layered region
     if (trim(param%type) .eq. 'harmonic') then
@@ -133,7 +151,8 @@ Contains
     end if
 	!--------------------------------------------------------------------------
 	! Compute model information everywhere in the domain, including air & crust
-	call initModel(targetGrid,param,rho)
+	! call initModel(param,rho,targetGrid,targetRho0)
+	rho = targetRho0
     !--------------------------------------------------------------------------
     ! Check whether the optional interior source file exists; read it
     ! (NOT IMPLEMENTED YET)
@@ -210,12 +229,12 @@ Contains
 	! Helpful output
 #ifdef MPI
     if (taskid==0) then
-        call print_modelParam(p0_input,output_level-1,"Prior model m_0 = ")
+        !call print_modelParam(p0_input,output_level-1,"Prior model m_0 = ")
         call print_modelParam(p_input,output_level-1,"Input model \hat{m} = ")
         call print_modelParam(param,output_level-1,"Final model m = ")
     end if
 #else
-	call print_modelParam(p0_input,output_level-1,"Prior model m_0 = ")
+	!call print_modelParam(p0_input,output_level-1,"Prior model m_0 = ")
 	call print_modelParam(p_input,output_level-1,"Input model \hat{m} = ")
 	call print_modelParam(param,output_level-1,"Final model m = ")
 #endif
@@ -280,6 +299,7 @@ Contains
 	call deall_modelParam(param0)
 	call deall_modelParam(p_input)
 	call deall_modelParam(p0_input)
+    call deall_modelParam(p0_background)
 	call deall_modelParam(p_smooth)
 	call deall_modelParam(p_diff)
     call deall_rscalar(rho)
