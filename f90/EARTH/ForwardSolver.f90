@@ -119,11 +119,9 @@ Contains
         write(0,*) node_info,'Crust average conductance is ',m1d%crust%avg
 	    call create_rscalar(grid,rho1d,CENTER)
 	    call initModel(m1d,rho1d,grid) ! do NOT use background resistivity for this
-	    !call mapToGrid(mgrid,m1d)
 	    rho1d = mgrid%rho
         call create_solnVector(grid,iTx,h1d)
         !call fwdSolve1d(iTx,m1d,h1d) ! should be saved in solnVectorMTX if computed once
-        !call outputModel('test1d.rho',grid,rho1d%v)
 	  endif
       solverInitialized = .true.
    endif
@@ -156,21 +154,12 @@ Contains
    if(newModelParam) then
       ! compute the resistivity on the grid
       write(0,*) node_info,'Mapping new model parameter to grid'
-      !call mapToGrid(mgrid,m0)
-      !rho = mgrid%rho
-      !call create_rscalar(grid,rho,CENTER)
-      !write(0,*) 'Output background model...'
-      !call outputModel('background.rho',grid,rho0%v)
-      !if (iTx == 1) then
-      !  call write_modelParam(m0,'newModelParam.prm')
-      !end if
       call initModel(m0,rho,grid,rho0)
 
       if(secondaryField) then
 	    ! Take the difference on the grid, to avoid the problem with zero resistivity
 	    call create_rscalar(grid,drho,CENTER)
 	    call linComb_rscalar(ONE,rho,MinusONE,rho1d,drho)
-	    !call outputModel('testdelta.rho',grid,drho%v)
 
 	    ! Map the resistivity vector to primary cell faces (dual edges)
 	    call operatorL(drho,drhoF,grid)

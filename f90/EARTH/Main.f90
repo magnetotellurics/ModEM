@@ -29,7 +29,7 @@ module main
 
   ! ***************************************************************************
   ! * targetRho0: Target background resistivity for model mappings
-  !type (rscalar), target, save                  :: targetRho0
+  type (rscalar), target, save                  :: targetRho0
 
 Contains
 
@@ -89,11 +89,6 @@ Contains
 	!--------------------------------------------------------------------------
 	! Initialize thin shell conductance in the background resistivity model
 	call setCrust_modelParam(crust,p0_background)
-    !--------------------------------------------------------------------------
-    ! ... and initialize background resistivity on the grid
-    !call mapToGrid_modelParam(p0_grid,p0_background)
-    !targetRho0 = p0_grid%rho
-    !call deall_modelParam(p0_grid)
     !--------------------------------------------------------------------------
     ! ... and initialize background resistivity on the grid
     call initModel(p0_background,targetRho0,targetGrid)

@@ -235,7 +235,8 @@ Contains
     type (modelParam_t), intent(in)         :: P
     character(*), intent(in)                :: cfile
 
-    type (modelParam_t)                     :: P_grid
+    type (modelParam_t)                     :: Ptemp
+    type (rscalar)                          :: rho
     integer                                 :: lmax,i,j,k,istat
     character(6)                            :: if_log_char,if_var_char
 
@@ -244,15 +245,20 @@ Contains
        return
     end if
 
-    !if(index(cfile,'.rho')>0) then
-    !    call mapToGrid_modelParam(P_grid,P)
-    !    call writeGrid_modelParam(P_grid,cfile)
-    !    call deall_modelParam(P_grid)
-    !else if(index(cfile,'.prm')>0) then
+    if(index(cfile,'.rho')>0) then
+        call create_rscalar(P%grid,rho,CENTER)
+        call initModel(P,rho,P%grid,P%rho0)
+        Ptemp = P
+        Ptemp%rho = rho
+        Ptemp%type = 'grid'
+        call writeGrid_modelParam(Ptemp,cfile)
+        call deall_modelParam(Ptemp)
+        call deall_rscalar(rho)
+    else if(index(cfile,'.prm')>0) then
         call writeLayers_modelParam(P,cfile)
-    !else
-    !    call warning('(write_modelParam) unknown file format requested; writing to file skipped')
-    !end if
+    else
+        call warning('(write_modelParam) unknown file format requested; writing to file skipped')
+    end if
 
   end subroutine write_modelParam
 

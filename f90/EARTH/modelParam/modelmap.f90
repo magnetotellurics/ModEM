@@ -13,9 +13,6 @@ module modelmap
      MODULE PROCEDURE mapToGrid_modelParam
   END INTERFACE
 
-  ! ***************************************************************************
-  ! * targetRho0: Target background resistivity for model mappings
-  type (rscalar), target, save                  :: targetRho0
 
 Contains
 
