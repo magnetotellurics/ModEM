@@ -91,7 +91,7 @@ Contains
 	call setCrust_modelParam(crust,p0_background)
     !--------------------------------------------------------------------------
     ! ... and initialize background resistivity on the grid
-    call initModel(p0_background,targetRho0,targetGrid)
+    call mapToGrid(p0_background,targetRho0)
     !--------------------------------------------------------------------------
     ! Check whether variable parametrization exists
     inquire(FILE=cUserDef%fn_param,EXIST=exists)

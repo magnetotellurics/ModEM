@@ -785,7 +785,7 @@ end program earth
 	type (cvector)                     	    :: Hj, Bj, dH, Fj
 	type (rvector)							:: drhoF
 	type (rscalar)							:: rho0, rho1D, drho
-	type (modelParam_t)                     :: param1D,mgrid
+	type (modelParam_t)                     :: param1D
 	type (grid_t)                           :: grid
     !type (cvector)							:: H,B,F
 	!type (sparsevecc)						:: Hb
@@ -803,10 +803,7 @@ end program earth
 
 	! Make 1D parametrization out of full, and map to grid (primary cell centers)
 	call getRadial(param1D,param)
-	call mapToGrid(mgrid,param1D)
-	rho1D = mgrid%rho
-	!call create_rscalar(grid,rho1D,CENTER)
-	!call initModel(param1D,rho1D,grid,rho0)
+	call mapToGrid(param1D,rho1D)
 
 	! Take the difference on the grid, to avoid the problem with zero resistivity
 	call create_rscalar(grid,drho,CENTER)
@@ -895,7 +892,6 @@ end program earth
 	call deall_rscalar(drho)
 	call deall_rscalar(rho1D)
 	call deall_modelParam(param1D)
-    call deall_modelParam(mgrid)
 	call deall_solnVectorMTX(H1D)
 	call deall_dataVector(dat)
 	call deall_dataVector(psi)
@@ -1715,8 +1711,8 @@ end program earth
 !	allocate(mask(grid%nx,grid%ny,grid%nz))
 !	mask = .TRUE.
 !
-!	! Symmetry test for operators P (initModel) and Pt
-!	print *, 'Symmetry test for operators P (initModel) and Pt'
+!	! Symmetry test for operators P (mapToGrid) and Pt
+!	print *, 'Symmetry test for operators P (mapToGrid) and Pt'
 !	call create_rscalar(grid,drho1,CENTER)
 !	call create_rscalar(grid,drho2,CENTER)
 !	drho1%v = ONE

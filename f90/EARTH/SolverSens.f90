@@ -48,8 +48,6 @@ module SolverSens
    ! allocate temporary data structures
    Hj = h0%vec
    grid => h0%grid
-   !rho0 => m0%rho0
-   !call initModel(m0,rho,grid,rho0)
 
    ! map from model parameter to faces ... all this is somewhat confusing since
    ! L \rho = l^F \rho^F (S^F)^{-1}. So, L already does multiplication by length elements
@@ -120,9 +118,7 @@ module SolverSens
    !  allocate temporary data structures
    Hj = h0%vec
    grid => h0%grid
-   !rho0 => m0%rho0
    dH = h%vec
-   !call initModel(m0,rho,grid,rho0)
 
    ! compute dE = $(C^\dag)^T$ dH
    call operatorD_Si_divide(dH,grid)

@@ -1117,11 +1117,8 @@ Contains
 	type (modelCoeff_t)								:: coeff
 
     ! Preliminary computations: only needed if arctan parametrization is involved
-    !call mapToGrid(m,m0)
     resist0 = m0%rho0
-    call initModel(m0,resist,grid,resist0)
-    !resist = m%rho
-    !resist0 = m%rho0
+    call mapToGrid(m0,resist)
     dresist = resist
     dresist%v = dtan((PI/2)*(resist%v/resist0%v - 1.0d0))
 
@@ -1193,8 +1190,9 @@ Contains
   ! * The rho, drho, dprm are global variables defined in module modeldef
   ! * Functions to substitute for F are declared in module paramfunc
   ! *
-  ! * initModel is the routine that generates the 3-D resistivity map on the
-  ! * grid using the information stored in the grid and the parametrization
+  ! * mapToGrid is the routine that generates the 3-D resistivity map on the
+  ! * grid using the information stored in the model parametrization,
+  ! * including the grid and background resistivity pointers.
 
   subroutine operatorP(da,dm,grid,m0)
 
@@ -1213,11 +1211,8 @@ Contains
     type (rscalar)                                  :: dresist !(nx,ny,nz)
 
     ! Preliminary computations: only needed if arctan parametrization is involved
-    !call mapToGrid(m,m0)
     resist0 = m0%rho0
-    call initModel(m0,resist,grid,resist0)
-    !resist = m%rho
-    !resist0 = m%rho0
+    call mapToGrid(m0,resist)
     dresist = resist
     dresist%v = dtan((PI/2)*(resist%v/resist0%v - 1.0d0))
 
@@ -1338,11 +1333,8 @@ Contains
 !	end if
 
     ! Preliminary computations: only needed if arctan parametrization is involved
-    !call mapToGrid(m,m0)
     resist0 = m0%rho0
-    call initModel(m0,resist,grid,resist0)
-    !resist = m%rho
-    !resist0 = m%rho0
+    call mapToGrid(m0,resist)
     dresist = resist
     dresist%v = dtan((PI/2)*(resist%v/resist0%v - 1.0d0))
 

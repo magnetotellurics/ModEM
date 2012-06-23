@@ -32,7 +32,6 @@ module ForwardSolver
   save
   private
   type(timer_t)     :: timer
-  type(rscalar), target     :: rho0 ! fixed background resistivity on the grid
   logical           :: solverInitialized = .false.
   logical           :: secondaryField = .false.
   logical           :: newModelParam = .false.
@@ -41,6 +40,7 @@ module ForwardSolver
   type(rscalar)     :: rho1d, drho
   type(modelParam_t):: m1d
   type(rscalar)     :: rho ! resistivity on the grid
+  !type(rscalar)     :: rho0 ! fixed background resistivity on the grid
   type(cvector)     :: source ! user-specified interior source
   type(sparsevecc)  :: BC ! boundary conditions set from P10
   type(modelParam_t)    :: mBackground  ! use it to get the radial 1d model for SFF
@@ -66,7 +66,6 @@ Contains
    type(rhsVector_t), intent(inout), optional :: comb
    !  local variables
    type(transmitter_t), pointer             :: freq
-   type(modelParam_t)                       :: mgrid
    logical                                  :: initFwd, initForSens
 
    initFwd = present(h0)
@@ -107,7 +106,7 @@ Contains
       ! that is already initialized and saved in m0 ... usually 1D. However, recomputing
       ! rho1d from m1d allows rho0 to have more general form. Also note that setting
       ! rho1d = rho0 will not work since rho0 has the thinsheet in it already.
-      rho0 = m0%rho0
+      !rho0 = m0%rho0
       if(secondaryField) then
 	    ! Make 1D parametrization out of full, and map to grid (primary cell centers)
 	    write(0,*) node_info,'Reading the background resistivity model for SFF; assuming it is log10 and 1D.'
@@ -118,8 +117,7 @@ Contains
 	    call getRadial(m1d,mBackground)
         write(0,*) node_info,'Crust average conductance is ',m1d%crust%avg
 	    call create_rscalar(grid,rho1d,CENTER)
-	    call initModel(m1d,rho1d,grid) ! do NOT use background resistivity for this
-	    rho1d = mgrid%rho
+	    call mapToGrid(m1d,rho1d) ! do NOT use background resistivity for this
         call create_solnVector(grid,iTx,h1d)
         !call fwdSolve1d(iTx,m1d,h1d) ! should be saved in solnVectorMTX if computed once
 	  endif
@@ -154,7 +152,7 @@ Contains
    if(newModelParam) then
       ! compute the resistivity on the grid
       write(0,*) node_info,'Mapping new model parameter to grid'
-      call initModel(m0,rho,grid,rho0)
+      call mapToGrid(m0,rho)
 
       if(secondaryField) then
 	    ! Take the difference on the grid, to avoid the problem with zero resistivity
@@ -171,8 +169,6 @@ Contains
    if(.not. source%allocated) then
     call create_cvector(grid,source,EDGE)
    endif
-
-   call deall_modelParam(mgrid)
 
   end subroutine initSolver
 
@@ -423,7 +419,7 @@ Contains
       call deall_cvector(source)
       call deall_sparsevecc(BC)
       call deall_rscalar(rho)
-      call deall_rscalar(rho0)
+      !call deall_rscalar(rho0)
       solverInitialized = .false.
       newModelParam = .false.
    endif

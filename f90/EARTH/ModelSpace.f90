@@ -247,7 +247,7 @@ Contains
 
     if(index(cfile,'.rho')>0) then
         call create_rscalar(P%grid,rho,CENTER)
-        call initModel(P,rho,P%grid,P%rho0)
+        call mapToGrid(P,rho)
         Ptemp = P
         Ptemp%rho = rho
         Ptemp%type = 'grid'
@@ -607,6 +607,6 @@ Contains
 
     P%rho0 => rho0
 
-  end subroutine setBackground_modelParam  ! initModel
+  end subroutine setBackground_modelParam  ! USED FOR mapToGrid
 
 end module ModelSpace
