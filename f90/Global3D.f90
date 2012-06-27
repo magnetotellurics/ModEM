@@ -108,7 +108,7 @@ program earth
 
 
 
-  call outputModel(outFiles%fn_model,rho%grid,rho%v)
+  call write_modelParam(param,outFiles%fn_model)
 
   if (cUserDef%calculate == 'nothing') then
     call write_modelParam(param,'testOutput.prm')

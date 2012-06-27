@@ -1158,6 +1158,8 @@ Contains
 			dm%v(i,j,k) = value*resist%v(i,j,k)*log(10.)
           elseif (this_layer%if_tan) then
             dm%v(i,j,k) = (2.0d0/PI)*value*(resist0%v(i,j,k)/(1.0d0+dresist%v(i,j,k)**2))
+          elseif (this_layer%if_exp) then
+            dm%v(i,j,k) = value*(-resist0%v(i,j,k)*resist%v(i,j,k))
 		  else
 			dm%v(i,j,k) = value
 		  end if
@@ -1260,6 +1262,8 @@ Contains
 			  dm%v(i,j,k) = dm%v(i,j,k) + value*coeff*resist%v(i,j,k)*log(10.)
             elseif (this_layer%if_tan) then
               dm%v(i,j,k) = dm%v(i,j,k) + (2.0d0/PI)*value*coeff*(resist0%v(i,j,k)/(1.0d0+dresist%v(i,j,k)**2))
+            elseif (this_layer%if_exp) then
+              dm%v(i,j,k) = dm%v(i,j,k) + value*(-resist0%v(i,j,k)*resist%v(i,j,k))
 			else
 			  dm%v(i,j,k) = dm%v(i,j,k) + value*coeff
 			end if
@@ -1374,6 +1378,8 @@ Contains
 				tau = tau * resist%v(i,j,k) * log(10.0d0)
               elseif (this_layer%if_tan) then
                 tau = tau * (2.0d0/PI) * (resist0%v(i,j,k)/(1.0d0+dresist%v(i,j,k)**2))
+              elseif (this_layer%if_exp) then
+                tau = tau * (-resist0%v(i,j,k)*resist%v(i,j,k))
 			  end if
 			  ! Add this expression to the output vector component
 			  da%c(iL,ip)%value = da%c(iL,ip)%value + tau * dm%v(i,j,k)

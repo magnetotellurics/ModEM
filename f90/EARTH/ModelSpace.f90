@@ -39,7 +39,7 @@ Contains
     integer                             :: ios,istat
     real(8)                             :: upperb,lowerb,width,depth,alpha,beta,weight
     character(6)                        :: if_log_char,if_var_char
-    logical                             :: if_log, if_tan, if_fixed, exists, isComplex
+    logical                             :: if_log, if_tan, if_exp, if_fixed, exists, isComplex
     character(200)                      :: prmname, string
     real(8)                             :: v,vimag,vmin,vmax
     real(8)                             :: period ! read in place of depth for sources
@@ -153,14 +153,20 @@ Contains
           if_tan = .FALSE.
        end if
 
+       if (if_log_char == 'exp') then
+          if_exp = .TRUE.
+       else
+          if_exp = .FALSE.
+       end if
+
        lowerb = EARTH_R - depth
 
 
        if (period > 0.0d0) then
-          call setLayer_modelParam(P,n,upperb,lowerb,alpha,beta,weight,if_log,if_tan,period)
-          call setLayer_modelParam(Pimag,n,upperb,lowerb,alpha,beta,weight,if_log,if_tan,period)
+          call setLayer_modelParam(P,n,upperb,lowerb,alpha,beta,weight,if_log_char,period)
+          call setLayer_modelParam(Pimag,n,upperb,lowerb,alpha,beta,weight,if_log_char,period)
        else
-          call setLayer_modelParam(P,n,upperb,lowerb,alpha,beta,weight,if_log,if_tan)
+          call setLayer_modelParam(P,n,upperb,lowerb,alpha,beta,weight,if_log_char)
        end if
 
        sum0=sum0+sum
@@ -287,7 +293,7 @@ Contains
     if (cfile /= '') then
       open(ioMdl,file=cfile,status='unknown',form='formatted',iostat=ios)
                 write(ioMdl,*) '# lon(i), lat(j), depth(k), rho(ijk) of cell node'
-                write(ioMdl,'(3i3)') P%grid%nx,P%grid%ny,P%grid%nzEarth
+                write(ioMdl,'(3i3)') P%grid%nx,P%grid%ny,P%grid%nzCrust+P%grid%nzEarth
         do k=P%grid%nzAir+1,P%grid%nz
           do i=1,P%grid%nx
             do j=1,P%grid%ny
@@ -357,6 +363,8 @@ Contains
             if_log_char = 'log'
         elseif (P%L(j)%if_tan) then
             if_log_char = 'tan'
+        elseif (P%L(j)%if_exp) then
+            if_log_char = 'exp'
         else
             if_log_char = 'linear'
         end if
@@ -426,6 +434,8 @@ Contains
             if_log_char = 'log'
         elseif (P(1)%L(j)%if_tan) then
             if_log_char = 'tan'
+        elseif (P(1)%L(j)%if_exp) then
+            if_log_char = 'exp'
         else
             if_log_char = 'linear'
         end if

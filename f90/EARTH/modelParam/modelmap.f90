@@ -127,6 +127,8 @@ Contains
                     resist%v(i,j,k) = resist0%v(i,j,k) * exp(log(10.0d0)*value)
                   elseif (this_layer%if_tan) then
                     resist%v(i,j,k) = resist0%v(i,j,k) * ((2.0d0/PI)*atan(value)+1.0d0)
+                  elseif (this_layer%if_exp) then
+                    resist%v(i,j,k) = resist0%v(i,j,k) * exp(-resist0%v(i,j,k) * value)
                   else
                     resist%v(i,j,k) = resist0%v(i,j,k) + value
                   end if
@@ -139,6 +141,8 @@ Contains
                     resist%v(i,j,k) = exp(log(10.0d0)*value)
                   elseif (this_layer%if_tan) then
                     resist%v(i,j,k) = ((2.0d0/PI)*atan(value)+1.0d0)
+                  elseif (this_layer%if_exp) then
+                    resist%v(i,j,k) = exp(-value)
                   else
                     resist%v(i,j,k) = value
                   end if

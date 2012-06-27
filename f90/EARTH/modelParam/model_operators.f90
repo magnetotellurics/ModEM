@@ -354,6 +354,7 @@ Contains
 	  P%L(i)%gamma  = 1.0d0
 	  P%L(i)%if_log =.FALSE.
 	  P%L(i)%if_tan =.FALSE.
+      P%L(i)%if_exp =.FALSE.
 	end do
 
 
@@ -671,17 +672,18 @@ Contains
 
   ! **********************************************************************
   ! * BOP
-  subroutine setLayer_modelParam(P,iL,upperb,lowerb,alpha,beta,weight,if_log,if_tan,period)
+  subroutine setLayer_modelParam(P,iL,upperb,lowerb,alpha,beta,weight,if_log_char,period)
 
     implicit none
     type (modelParam_t), intent(inout)               :: P
 	integer, intent(in)							   :: iL
     real(8), intent(in)							   :: upperb,lowerb
     real(8), intent(in)							   :: alpha,beta,weight
-	logical, intent(in)							   :: if_log,if_tan
+    character(*), intent(in)                       :: if_log_char
     real(8), intent(in), optional                  :: period ! used for sources only
     ! * EOP
 
+	logical							               :: if_log,if_tan,if_exp
 	real(8)										   :: depth, width
     integer                                        :: status
 
@@ -701,6 +703,24 @@ Contains
        stop
 	end if
 
+    if (if_log_char == 'log') then  ! log means log_{10}
+      if_log = .TRUE.
+    else
+      if_log = .FALSE.
+    end if
+
+    if (if_log_char == 'tan') then
+      if_tan = .TRUE.
+    else
+      if_tan = .FALSE.
+    end if
+
+    if (if_log_char == 'exp') then
+      if_exp = .TRUE.
+    else
+      if_exp = .FALSE.
+    end if
+
 	P%L(iL)%depth  = depth
 	P%L(iL)%width  = width
 	P%L(iL)%lbound = lowerb
@@ -710,6 +730,7 @@ Contains
 	P%L(iL)%gamma  = weight
 	P%L(iL)%if_log = if_log
     P%L(iL)%if_tan = if_tan
+    P%L(iL)%if_exp = if_exp
 
 
 

@@ -97,11 +97,14 @@ module modeldef
 	  ! layer regularization parameters
 	  real(8)											  :: alpha,beta,gamma
 
-	  ! the indicator of whether the linear combination of F_i gives log_{10}(rho/rho_0)
+	  ! the indicator that rho = rho0 * exp(log(10)*Wm) OR Wm = log_{10}(rho/rho0)
 	  logical											  :: if_log
 
-      ! the indicator of whether the linear combination of F_i gives tan[(pi/2)*(rho/rho_0-1)]
+      ! the indicator that rho = rho0 * [(2/pi)*arctan(Wm)+1] OR Wm = tan[(pi/2)*(rho/rho0-1)]
       logical                                             :: if_tan
+
+      ! the indicator that rho = rho0 * exp(-rho0*Wm) OR Wm = - (1/rho0) * log(rho/rho0)
+      logical                                             :: if_exp
 
 	  ! the filename of additional rho info if it exists; if so, add these
 	  ! values to either rho or log_10(rho) (as specified by if_log) on the grid
