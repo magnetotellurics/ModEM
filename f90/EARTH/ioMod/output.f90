@@ -369,7 +369,7 @@ Contains
 	if (fn_model /= '') then
 	  open(ioMdl,file=fn_model,status='unknown',form='formatted',iostat=ios)
                 write(ioMdl,*) '# lon(i), lat(j), depth(k), rho(ijk) of cell node'
-                write(ioMdl,'(3i3)') mygrid%nx,mygrid%ny,mygrid%nzEarth
+                write(ioMdl,'(3i3)') mygrid%nx,mygrid%ny,mygrid%nzCrust+mygrid%nzEarth
 		do k=mygrid%nzAir+1,mygrid%nz
 		  do i=1,mygrid%nx
 			do j=1,mygrid%ny

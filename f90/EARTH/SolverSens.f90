@@ -12,6 +12,7 @@ module SolverSens
    use modelmap
    use jacobian
    use boundaries
+   use output
    use SolnSpace
    use transmitters
    use dataTypes
@@ -44,6 +45,7 @@ module SolverSens
    type(rscalar)                        :: drho,rho
    type(grid_t), pointer                :: grid
    type(rscalar), pointer               :: rho0
+   character(80)                        :: cfile
 
    ! allocate temporary data structures
    Hj = h0%vec
@@ -76,6 +78,12 @@ module SolverSens
 
    ! Output
    call scMult(MinusONE,dH,h%source)
+
+   ! Output dH/d\rho
+   if (output_level > 3) then
+       cfile = trim(cUserDef%modelname)//'_'//trim(freqList%info(h%tx)%code)//'.drho'
+       call outputModel(cfile,grid,drho%v)
+   endif
 
    ! Clean up
    call deall_cvector(dH)
@@ -113,6 +121,7 @@ module SolverSens
    type(rscalar)                        :: drho,rho
    type(grid_t), pointer                :: grid
    type(rscalar), pointer               :: rho0
+   character(80)                        :: cfile
 
 
    !  allocate temporary data structures
@@ -155,6 +164,12 @@ module SolverSens
 	   call operatorPt(drho,mImag,grid,m0)
        call scMult(MinusONE,mImag,mImag)
 
+   endif
+
+   ! Output dH/d\rho
+   if (output_level > 3) then
+       cfile = trim(cUserDef%modelname)//'_'//trim(freqList%info(h%tx)%code)//'.drho'
+       call outputModel(cfile,grid,drho%v)
    endif
 
    ! Clean up

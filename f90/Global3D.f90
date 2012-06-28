@@ -1047,6 +1047,9 @@ end program earth
   ! * full derivative of the penalty functional with respect to the original
   ! * model parameters for the list of frequencies, and exit. Designed for use
   ! * by gradient-based inverse solvers.
+  ! * This is a version of the same subroutine that uses first principles to
+  ! * compute the derivative; no dependence on the ForwardSolver module.
+  ! * However, this doesn't have the capability to use secondary field formulation.
 
   subroutine debug_derivative()
 
@@ -1085,7 +1088,7 @@ end program earth
     integer                                 :: ifreq,ifunc,Ndata
     logical                                 :: adjoint,delta
     character(1)                            :: cfunc
-    character(80)                           :: comment
+    character(80)                           :: cfile,filename,comment
     character(80)                           :: fn_err
 
     ! Start the (portable) clock
@@ -1145,6 +1148,8 @@ end program earth
         print *, 'Starting the derivative computations for ',&
                   trim(TFList%info(ifunc)%name), ' responses...'
 
+        filename = trim(cUserDef%modelname)//'_'//trim(TFList%info(ifunc)%name)//'_'//trim(freq%code)
+
         ! $G_\omega r_\omega$
         !call operatorG(wres%v(ifreq,ifunc,:),H,F)
         call create_solnVector(grid,ifreq,SOLN)
@@ -1159,97 +1164,54 @@ end program earth
         delta = .TRUE.
         ! Forcing term F should not contain any non-zero boundary values
         call operatorM(dH,F,omega,rho%v,grid,fwdCtrls,errflag,adjoint,delta)
-        !call create_V_Cnode(grid,dH,edge)
-        !dH%x = C1
-        !dH%y = C1
-        !dH%z = C1
         call outputSolution(freq,dH,slices,grid,cUserDef,rho%v,'dh')
 
-   ! compute dE = $(C^\dag)^T$ dH
-   call operatorD_Si_divide(dH,grid)
-   call operatorC(dH,dE,grid)
-   !call operatorD_l_mult(dE,grid)
+           ! compute dE = $(C^\dag)^T$ dH
+           call operatorD_Si_divide(dH,grid)
+           call operatorC(dH,dE,grid)
 
-   ! Insert boundary conditions in Hj
-   call createBC(Hb,grid)
-   call insertBC(Hb,H)
+           ! Insert boundary conditions in Hj
+           call createBC(Hb,grid)
+           call insertBC(Hb,H)
 
-   open(ioWrite,file='temp.h')
-   call write_cvector(ioWrite,H)
-   close(ioWrite)
+           open(ioWrite,file='temp.h')
+           call write_cvector(ioWrite,H)
+           close(ioWrite)
 
-   ! compute Ej = $\bar{C}$ Hj ... we are taking transposes, so don't conjugate Hj
-   !Hconj = conjg_cvector_f(H)
-   Hconj = H
-   call operatorD_l_mult(Hconj,grid)
-   call operatorC(Hconj,Econj,grid)
-   !call operatorD_Si_divide(Econj,grid)
+           ! compute Ej = $\bar{C}$ Hj ... we are taking transposes, so don't conjugate Hj
+           !Hconj = conjg_cvector_f(H)
+           Hconj = H
+           call operatorD_l_mult(Hconj,grid)
+           call operatorC(Hconj,Econj,grid)
 
-   open(ioWrite,file='temp.de')
-   call write_cvector(ioWrite,dE)
-   close(ioWrite)
+           write(cfile,*) trim(filename),'.de'
+           open(ioWrite,file=cfile)
+           call write_cvector(ioWrite,dE)
+           close(ioWrite)
 
-   open(ioWrite,file='temp.econj')
-   call write_cvector(ioWrite,Econj)
-   close(ioWrite)
+           write(cfile,*) trim(filename),'.econj'
+           open(ioWrite,file=cfile)
+           call write_cvector(ioWrite,Econj)
+           close(ioWrite)
 
-   ! compute dE = diag($\bar{C}$ Hj) $(C^\dag)^T$ dH
-   call diagMult(Econj,dE,dE)
+           ! compute dE = diag($\bar{C}$ Hj) $(C^\dag)^T$ dH
+           call diagMult(Econj,dE,dE)
 
-   ! Map from faces back to model parameter space: real part
-   ! ... all this is somewhat confusing since
-   ! L \rho = l^F \rho^F (S^F)^{-1}. So, L already does multiplication by length elements
-   ! division by area elements (parts of the curl on primary and dual grids). Will clean
-   ! this up later; for now, keep as is.
-   dE_real = real(dE)
-   call operatorLt(drho,dE_real,grid)
-   call operatorPt(drho,dmisfit,grid,param)
-   call scMult(MinusONE,dmisfit,dmisfit)
-   call outputModel('drho.rho',grid,drho%v)
-   call write_modelParam(dmisfit,'dmisfit.prm')
+           ! Map from faces back to model parameter space: real part
+           ! ... all this is somewhat confusing since
+           ! L \rho = l^F \rho^F (S^F)^{-1}. So, L already does multiplication by length elements
+           ! division by area elements (parts of the curl on primary and dual grids). Will clean
+           ! this up later; for now, keep as is.
+           dE_real = real(dE)
+           call operatorLt(drho,dE_real,grid)
+           call operatorPt(drho,dmisfit,grid,param)
+           call scMult(MinusONE,dmisfit,dmisfit)
 
-!           ! Pre-divide the interior components of dH by elementary areas
-!        call operatorD_Si_divide(dH,grid)
-!
-!        ! $C D_{S_i}^{-1} M*^{-1}_{\rho,-\omega} ( G_\omega r_\omega )$
-!        call createBC(Hb,grid)
-!        call insertBC(Hb,dH)
-!        call operatorC(dH,dE,grid)
-!
-!        !   cfunc = trim(TFList%info(ifunc)%name)
-!        !   fn_err = trim(outFiles%fn_err)//trim(cfunc)
-!        !   call initFileWrite(fn_err,ioERR)
-!        !   do i= 1,grid%nx
-!        !     do j =1,grid%ny
-!        !       do k =1,grid%nz
-!        !         if (dreal(dE%y(i,j,k)) > 1.0) then
-!        !           write(ioERR,*) i,j,k, dreal(dH%y(i,j,k)), dreal(dE%y(i,j,k))
-!        !         end if
-!        !       end do
-!        !     end do
-!        !   end do
-!        !   close(ioERR)
-!
-!        ! $\bar{\e} = C \bar{\h}$
-!        Hconj = conjg_cvector_f(H)
-!        call operatorD_l_mult(Hconj,grid)
-!        call operatorC(Hconj,Econj,grid)
-!
-!        ! $D_{\bar{\e}} C D_{S_i}^{-1} M*^{-1}_{\rho,-\omega} ( G_\omega r_\omega )$
-!        !dE = Econj * dE
-!        call diagMult_cvector(Econj,dE,dE)
-!
-!        ! $\Re( D_{\bar{\e}} C D_{S_i}^{-1} M*^{-1}_{\rho,-\omega} ( G_\omega r_\omega ) )$
-!        dE_real = real_cvector_f(dE)
-!
-!        ! $L^T \delta{R}$
-!        call operatorLt(drho,dE_real,grid)
-!
-!        call outputModel('drho.rho',grid,drho%v)
-!
-!        ! $P^T L^T \delta{R}$
-!        call operatorPt(drho,dmisfit,grid,param,rho)
-!
+           ! Output partial derivative files
+           write(cfile,*) trim(filename),'.drho'
+           call outputModel(cfile,grid,drho%v)
+           write(cfile,*) trim(filename),'.dprm'
+           call write_modelParam(dmisfit,cfile)
 
         !dmisfit = -2. * dmisfit
         call scMult(MinusTWO,dmisfit,dmisfit)
