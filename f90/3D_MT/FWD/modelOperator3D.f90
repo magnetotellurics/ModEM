@@ -865,6 +865,7 @@ Contains
 
           ! update first and last layers
           call UpdateZ_O(inE,outE,diag_sign,imgrid)
+
           else
             print *, 'Error-complex vectors for Maxwell are not of same size'
           end if
@@ -907,7 +908,7 @@ Contains
 
    if(imgrid == inE%mgridSize) then
    ! the last multigrid layer
-   ! 0 layer must be already filled in
+   ! z=1 must be filled in
    ! nz+1 should be zero
    ! nothing to do
      return
@@ -1976,7 +1977,7 @@ enddo
   ! DivCorrSetup must be called once for each conductivity distribuition
   !  (i.e., before first forward run; after any change to conductivity)
 
-  subroutine DivCorrSetUp()
+   subroutine DivCorrSetUp()
 
   implicit none
     integer  :: ix, iy, iz, izv, imgrid
@@ -1984,30 +1985,29 @@ enddo
 
     if(.not.condEMG%allocated) then
       print *, 'condEMG not allocated yet: DivCorrSetUp'
- 	  stop
+      stop
     endif
 
     if(.not.db1%allocated) then
- 	  print *,'db1 not allocated yet: DivCorrSetUp'
- 	  stop
+      print *,'db1 not allocated yet: DivCorrSetUp'
+      stop
     endif
 
   if(.not.db2%allocated) then
- 	print *, 'db2 not allocated yet: DivCorrSetUp'
- 	stop
+    print *, 'db2 not allocated yet: DivCorrSetUp'
+    stop
   endif
 
   if(.not.c%allocated) then
- 	print *, 'c not allocated yet: DivCorrSetUp'
- 	stop
+    print *, 'c not allocated yet: DivCorrSetUp'
+    stop
   endif
 
   if(.not.d%allocated) then
- 	print *, 'd not allocated yet: DivCorrSetUp'
- 	stop
+    print *, 'd not allocated yet: DivCorrSetUp'
+    stop
   endif
 
-  nzCum = 0
   d%rscArray(1)%v(:,:,1) = 1.0
 
   do imgrid = 1, mgrid%mgridSize  ! Global loop on subgrids
@@ -2033,12 +2033,10 @@ enddo
 
     ! update first layer
     call UpdateZ_O(imgrid)
-
     ! the coefficients are only for the interior nodes
     ! these coefficients have not been multiplied by volume elements
     ! yet
     do iz = 2, nz
-      izv = iz+nzCum
        do iy = 2, ny
           do ix = 2, nx
 
@@ -2051,9 +2049,9 @@ enddo
              db2%rvArray(imgrid)%y(ix, iy, iz) = condEMG%rvArray(imgrid)%y(ix, iy, iz)/ &
                   (mGrid%gridArray(imgrid)%dy(iy)*mGrid%gridArray(imgrid)%delY(iy))
              db1%rvArray(imgrid)%z(ix, iy, iz) = condEMG%rvArray(imgrid)%z(ix, iy, iz-1)/ &
-                  (mGrid%dz(izv-1)*mGrid%delZ(izv))
+                  (mGrid%gridArray(imgrid)%dz(iz-1)*mGrid%gridarray(imgrid)%delZ(iz))
              db2%rvArray(imgrid)%z(ix, iy, iz) = condEMG%rvArray(imgrid)%z(ix, iy, iz)/ &
-                  (mGrid%dz(izv)*mGrid%delZ(izv))
+                  (mGrid%gridArray(imgrid)%dz(iz)*mGrid%gridArray(imgrid)%delZ(iz))
              c%rscArray(imgrid)%v(ix, iy, iz) = - (db1%rvArray(imgrid)%x(ix, iy, iz) + &
                   db2%rvArray(imgrid)%x(ix, iy, iz) + &
                   db1%rvArray(imgrid)%y(ix, iy, iz) + &
@@ -2063,21 +2061,6 @@ enddo
           enddo
        enddo
     enddo
-    ! change conductivity of air back to zero
-
-    if(mgrid%gridArray(imgrid)%flag == 1) then
-
-             condEMG%rvArray(imgrid)%x(:, :, :) = R_ZERO
-             condEMG%rvArray(imgrid)%y(:, :, :) = R_ZERO
-             condEMG%rvArray(imgrid)%z(:, :, :) = R_ZERO
-
-    else
-
-           condEMG%rvArray(imgrid)%x(:, :, 1:nzAir) = R_ZERO
-           condEMG%rvArray(imgrid)%y(:, :, 1:nzAir) = R_ZERO
-           condEMG%rvArray(imgrid)%z(:, :, 1:nzAir) = R_ZERO
-
-    endif
 
     ! Multiply by corner volume elements to make operator symmetric
     do iz = 1, nz
@@ -2085,11 +2068,11 @@ enddo
           do ix = 2, nx
 
          db1%rvArray(imgrid)%x(ix, iy, iz) = db1%rvArray(imgrid)%x(ix, iy, iz)*volC%rscArray(imgrid)%v(ix, iy, iz)
-	     db1%rvArray(imgrid)%y(ix, iy, iz) = db1%rvArray(imgrid)%y(ix, iy, iz)*volC%rscArray(imgrid)%v(ix, iy, iz)
-	     db1%rvArray(imgrid)%z(ix, iy, iz) = db1%rvArray(imgrid)%z(ix, iy, iz)*volC%rscArray(imgrid)%v(ix, iy, iz)
-	     db2%rvArray(imgrid)%x(ix, iy, iz) = db2%rvArray(imgrid)%x(ix, iy, iz)*volC%rscArray(imgrid)%v(ix, iy, iz)
-	     db2%rvArray(imgrid)%y(ix, iy, iz) = db2%rvArray(imgrid)%y(ix, iy, iz)*volC%rscArray(imgrid)%v(ix, iy, iz)
-	     db2%rvArray(imgrid)%z(ix, iy, iz) = db2%rvArray(imgrid)%z(ix, iy, iz)*volC%rscArray(imgrid)%v(ix, iy, iz)
+         db1%rvArray(imgrid)%y(ix, iy, iz) = db1%rvArray(imgrid)%y(ix, iy, iz)*volC%rscArray(imgrid)%v(ix, iy, iz)
+         db1%rvArray(imgrid)%z(ix, iy, iz) = db1%rvArray(imgrid)%z(ix, iy, iz)*volC%rscArray(imgrid)%v(ix, iy, iz)
+         db2%rvArray(imgrid)%x(ix, iy, iz) = db2%rvArray(imgrid)%x(ix, iy, iz)*volC%rscArray(imgrid)%v(ix, iy, iz)
+         db2%rvArray(imgrid)%y(ix, iy, iz) = db2%rvArray(imgrid)%y(ix, iy, iz)*volC%rscArray(imgrid)%v(ix, iy, iz)
+         db2%rvArray(imgrid)%z(ix, iy, iz) = db2%rvArray(imgrid)%z(ix, iy, iz)*volC%rscArray(imgrid)%v(ix, iy, iz)
 
           enddo
        enddo
@@ -2112,8 +2095,7 @@ enddo
     ! set top nodes to 1.0
     d%rscArray(imgrid)%v(1,:,:) = 1.0
     d%rscArray(imgrid)%v(:,1,:) = 1.0
-
-    !update first layer
+    ! update first layer
     call UpdateZ_O(imgrid,d)
 
     do iz = 2, nz
@@ -2129,11 +2111,32 @@ enddo
         enddo
       enddo
     enddo
-    nzCum = nzCum + nz
+
     enddo ! Global loop on subgrids
 
-  end subroutine DivCorrSetUp	! DivCorrSetUp
+    do imgrid = 1, mgrid%mgridSize
+
+    ! change conductivity of air back to zero
+    if(mgrid%gridArray(imgrid)%flag == 1) then
+
+             condEMG%rvArray(imgrid)%x(:, :, :) = R_ZERO
+             condEMG%rvArray(imgrid)%y(:, :, :) = R_ZERO
+             condEMG%rvArray(imgrid)%z(:, :, :) = R_ZERO
+
+    else
+
+           condEMG%rvArray(imgrid)%x(:, :, 1:mgrid%gridArray(imgrid)%nzAir) = R_ZERO
+           condEMG%rvArray(imgrid)%y(:, :, 1:mgrid%gridArray(imgrid)%nzAir) = R_ZERO
+           condEMG%rvArray(imgrid)%z(:, :, 1:mgrid%gridArray(imgrid)%nzAir) = R_ZERO
+
+    endif
+    enddo
+
+  end subroutine DivCorrSetUp   ! DivCorrSetUp
 ! ********************************************************************************************************************
+! Updates first layer z in db1, db2, ...
+! which are not computed in the main DivCorrSetUp subroutine
+
   subroutine UpdateZ_DivCorr(imgrid,d)
 
   implicit none
@@ -2151,87 +2154,95 @@ enddo
       return
       endif
 
-      nx = db1%rvArray(imgrid)%nx
-      ny = db1%rvArray(imgrid)%ny
-      nz = db1%rvArray(imgrid-1)%nz
-      nzAir = mgrid%gridArray(imgrid)%nzAir
+      nx = mGrid%gridArray(imgrid)%nx
+      ny = mGrid%gridArray(imgrid)%ny
+      nz = mGrid%gridArray(imgrid-1)%nz
+      nzAir = mGrid%gridArray(imgrid)%nzAir
 
       ! the basic strategy is to fill in the interface layer with values from the finer grid!
-      if (db1%coarseness(imgrid).gt.db1%coarseness(imgrid-1))then
+      if (mGrid%coarseness(imgrid).gt.mGrid%coarseness(imgrid-1))then
         ! interface layer: finer -> coarser
         ! current sub-grid is coarser
         ! Update 1 taking valies from nz of the previous sub-grid
-       do iy = 2, ny
-          do ix = 2, nx
-             if(.not.present(d))then
-             db1%rvArray(imgrid)%x(ix, iy, 1) = condEMG%rvArray(imgrid)%x(ix,iy,1)/ &
-                  (mGrid%gridArray(imgrid)%dx(ix-1)*mGrid%gridArray(imgrid)%delX(ix))
-             db2%rvArray(imgrid)%x(ix, iy, 1) = condEMG%rvArray(imgrid)%x(ix,iy,1)/&
-                  (mGrid%gridArray(imgrid)%dx(ix)*mGrid%gridArray(imgrid)%delX(ix))
-             db1%rvArray(imgrid)%y(ix, iy, 1) = condEMG%rvArray(imgrid)%y(ix, iy-1, 1)/ &
-                  (mGrid%gridArray(imgrid)%dy(iy-1)*mGrid%gridArray(imgrid)%delY(iy))
-             db2%rvArray(imgrid)%y(ix, iy, 1) = condEMG%rvArray(imgrid)%y(ix, iy, 1)/ &
-                  (mGrid%gridArray(imgrid)%dy(iy)*mGrid%gridArray(imgrid)%delY(iy))
-             db1%rvArray(imgrid)%z(ix, iy, 1) = condEMG%rvArray(imgrid-1)%z(2*(ix-2)+1,2*(iy-2)+1,nz)/ &
-                  (mGrid%gridArray(imgrid-1)%dz(nz)*mGrid%gridArray(imgrid)%delZ(1))
-             db2%rvArray(imgrid)%z(ix, iy, 1) = condEMG%rvArray(imgrid)%z(ix, iy, 1)/ &
-                  (mGrid%gridArray(imgrid)%dz(1)*mGrid%gridArray(imgrid)%delZ(1))
-             c%rscArray(imgrid)%v(ix, iy, 1) = - (db1%rvArray(imgrid)%x(ix, iy, 1) + &
-                  db2%rvArray(imgrid)%x(ix, iy, 1) + &
-                  db1%rvArray(imgrid)%y(ix, iy, 1) + &
-                  db2%rvArray(imgrid)%y(ix, iy, 1) + &
-                  db1%rvArray(imgrid)%z(ix, iy, 1) + &
-                  db2%rvArray(imgrid)%z(ix, iy, 1))
-             else if(present(d))then
-             d%rscArray(imgrid)%v(ix, iy, 1) = c%rscArray(imgrid)%v(ix, iy, 1) - &
+         do iy = 2, ny
+            do ix = 2, nx
+              if(present(d))then
+                d%rscArray(imgrid)%v(ix, iy, 1) = c%rscArray(imgrid)%v(ix, iy, 1) - &
                   db1%rvArray(imgrid)%x(ix,iy,1)*db2%rvArray(imgrid)%x(ix-1,iy,1)*d%rscArray(imgrid)%v(ix-1,iy,1)-&
                   db1%rvArray(imgrid)%y(ix,iy,1)*db2%rvArray(imgrid)%y(ix,iy-1,1)*d%rscArray(imgrid)%v(ix,iy-1,1)-&
-                  db1%rvArray(imgrid)%z(ix,iy,1)*db2%rvArray(imgrid-1)%z(2*(ix-2)+1,2*(iy-2)+1,nz)*d%rscArray(imgrid-1)%v(2*(ix-2)+1,2*(iy-2)+1,nz)
-             d%rscArray(imgrid)%v(ix, iy, 1) = 1.0/ d%rscArray(imgrid)%v(ix, iy, 1)
-             endif
+                  db1%rvArray(imgrid)%z(ix,iy,1)*db2%rvArray(imgrid-1)%z(2*ix-1,2*iy-1,nz)*d%rscArray(imgrid-1)%v(2*ix-1,2*iy-1,nz)
 
-          enddo
-       enddo
-     else if (db1%coarseness(imgrid).lt.db1%coarseness(imgrid-1)) then
-       ! interface : finer grid to coarser
-       ! current grid is finer
-       ! vice versa
-       do iy = 2, ny
-         do ix = 2, nx
-           ixx=nint(ix*0.5)
-           iyy=nint(iy*0.5)
-           if(.not.present(d))then
-             db1%rvArray(imgrid)%x(ix, iy, 1) = condEMG%rvArray(imgrid)%x(ix-1, iy, 1)/ &
+                d%rscArray(imgrid)%v(ix, iy, 1) = 1.0/ d%rscArray(imgrid)%v(ix, iy, 1)
+              else
+
+                db1%rvArray(imgrid)%x(ix, iy, 1) = condEMG%rvArray(imgrid)%x(ix,iy,1)/ &
                   (mGrid%gridArray(imgrid)%dx(ix-1)*mGrid%gridArray(imgrid)%delX(ix))
-             db2%rvArray(imgrid)%x(ix, iy, 1) = condEMG%rvArray(imgrid)%x(ix, iy, 1)/ &
+                db2%rvArray(imgrid)%x(ix, iy, 1) = condEMG%rvArray(imgrid)%x(ix,iy,1)/&
                   (mGrid%gridArray(imgrid)%dx(ix)*mGrid%gridArray(imgrid)%delX(ix))
-             db1%rvArray(imgrid)%y(ix, iy, 1) = condEMG%rvArray(imgrid)%y(ix, iy-1, 1)/ &
+                db1%rvArray(imgrid)%y(ix, iy, 1) = condEMG%rvArray(imgrid)%y(ix, iy-1, 1)/ &
                   (mGrid%gridArray(imgrid)%dy(iy-1)*mGrid%gridArray(imgrid)%delY(iy))
-             db2%rvArray(imgrid)%y(ix, iy, 1) = condEMG%rvArray(imgrid)%y(ix, iy, 1)/ &
+                db2%rvArray(imgrid)%y(ix, iy, 1) = condEMG%rvArray(imgrid)%y(ix, iy, 1)/ &
                   (mGrid%gridArray(imgrid)%dy(iy)*mGrid%gridArray(imgrid)%delY(iy))
-             db1%rvArray(imgrid)%z(ix, iy, 1) = condEMG%rvArray(imgrid-1)%z(ixx+1,iyy+1, nz)/ &
+                db1%rvArray(imgrid)%z(ix, iy, 1) = condEMG%rvArray(imgrid-1)%z(2*ix-1,2*iy-1,nz)/ &
                   (mGrid%gridArray(imgrid-1)%dz(nz)*mGrid%gridArray(imgrid)%delZ(1))
-             db2%rvArray(imgrid)%z(ix, iy, 1) = condEMG%rvArray(imgrid)%z(ix, iy, 1)/ &
+                db2%rvArray(imgrid)%z(ix, iy, 1) = condEMG%rvArray(imgrid)%z(ix, iy, 1)/ &
                   (mGrid%gridArray(imgrid)%dz(1)*mGrid%gridArray(imgrid)%delZ(1))
-             c%rscArray(imgrid)%v(ix, iy, 1) = - (db1%rvArray(imgrid)%x(ix, iy, 1) + &
+                c%rscArray(imgrid)%v(ix, iy, 1) = - (db1%rvArray(imgrid)%x(ix, iy, 1) + &
                   db2%rvArray(imgrid)%x(ix, iy, 1) + &
                   db1%rvArray(imgrid)%y(ix, iy, 1) + &
                   db2%rvArray(imgrid)%y(ix, iy, 1) + &
                   db1%rvArray(imgrid)%z(ix, iy, 1) + &
                   db2%rvArray(imgrid)%z(ix, iy, 1))
-           else if(present(d))then
-             d%rscArray(imgrid)%v(ix, iy, 1) = c%rscArray(imgrid)%v(ix, iy, 1) - &
-                  db1%rvArray(imgrid)%x(ix,iy,1)*db2%rvArray(imgrid)%x(ix-1,iy,1)*d%rscArray(imgrid)%v(ix-1,iy,1)-&
-                  db1%rvArray(imgrid)%y(ix,iy,1)*db2%rvArray(imgrid)%y(ix,iy-1,1)*d%rscArray(imgrid)%v(ix,iy-1,1)-&
-                  db1%rvArray(imgrid)%z(ix,iy,1)*db2%rvArray(imgrid-1)%z(ixx+1,iyy+1,nz)*d%rscArray(imgrid-1)%v(ixx+1,iyy+1,nz)
-             d%rscArray(imgrid)%v(ix, iy, 1) = 1.0/ d%rscArray(imgrid)%v(ix, iy, 1)
-           endif
+              endif
           enddo
         enddo
-      else if (db1%coarseness(imgrid).eq.db1%coarseness(imgrid-1)) then
+      else if (mGrid%coarseness(imgrid).lt.mGrid%coarseness(imgrid-1)) then
+       ! interface : finer grid to coarser
+       ! current grid is finer
+       do iy = 2, ny/2
+         do ix = 2, nx/2
+           if(present(d))then
+             d%rscArray(imgrid)%v(2*ix-1, 2*iy-1, 1) = c%rscArray(imgrid)%v(2*ix-1, 2*iy-1, 1) - &
+                  db1%rvArray(imgrid)%x(2*ix-1,2*iy-1,1)*db2%rvArray(imgrid)%x(2*(ix-1),2*iy-1,1)*d%rscArray(imgrid)%v(2*(ix-1),2*iy-1,1)-&
+                  db1%rvArray(imgrid)%y(2*ix-1,2*iy-1,1)*db2%rvArray(imgrid)%y(2*ix-1,2*(iy-1),1)*d%rscArray(imgrid)%v(2*ix-1,2*(iy-1),1)-&
+                  db1%rvArray(imgrid)%z(2*ix-1,2*iy-1,1)*db2%rvArray(imgrid-1)%z(ix,iy,nz)*d%rscArray(imgrid-1)%v(ix,iy,nz)
+
+             d%rscArray(imgrid)%v(2*ix-1, 2*iy-1, 1) = 1.0/ d%rscArray(imgrid)%v(2*ix-1, 2*iy-1, 1)
+
+           else
+             db1%rvArray(imgrid)%x(2*ix-1, 2*iy-1, 1) = condEMG%rvArray(imgrid)%x(2*(ix-1), 2*iy-1, 1)/ &
+                  (mGrid%gridArray(imgrid)%dx(2*(ix-1))*mGrid%gridArray(imgrid)%delX(2*ix-1))
+             db2%rvArray(imgrid)%x(2*ix-1, 2*iy-1, 1) = condEMG%rvArray(imgrid)%x(2*ix-1, 2*iy-1, 1)/ &
+                  (mGrid%gridArray(imgrid)%dx(ix)*mGrid%gridArray(imgrid)%delX(ix))
+             db1%rvArray(imgrid)%y(2*ix-1, 2*iy-1, 1) = condEMG%rvArray(imgrid)%y(2*ix-1, 2*(iy-1), 1)/ &
+                  (mGrid%gridArray(imgrid)%dy(2*(iy-1))*mGrid%gridArray(imgrid)%delY(2*iy-1))
+             db2%rvArray(imgrid)%y(2*ix-1, 2*iy-1, 1) = condEMG%rvArray(imgrid)%y(2*ix-1, 2*iy-1, 1)/ &
+                  (mGrid%gridArray(imgrid)%dy(2*iy-1)*mGrid%gridArray(imgrid)%delY(2*iy-1))
+             db1%rvArray(imgrid)%z(2*ix-1, 2*iy-1, 1) = condEMG%rvArray(imgrid-1)%z(ix,iy, nz)/ &
+                  (mGrid%gridArray(imgrid-1)%dz(nz)*mGrid%gridArray(imgrid)%delZ(1))
+             db2%rvArray(imgrid)%z(2*ix-1, 2*iy-1, 1) = condEMG%rvArray(imgrid)%z(2*ix-1, 2*iy-1, 1)/ &
+                  (mGrid%gridArray(imgrid)%dz(1)*mGrid%gridArray(imgrid)%delZ(1))
+             c%rscArray(imgrid)%v(2*ix-1, 2*iy-1, 1) = - (db1%rvArray(imgrid)%x(2*ix-1, 2*iy-1, 1) + &
+                  db2%rvArray(imgrid)%x(2*ix-1, 2*iy-1, 1) + &
+                  db1%rvArray(imgrid)%y(2*ix-1, 2*iy-1, 1) + &
+                  db2%rvArray(imgrid)%y(2*ix-1, 2*iy-1, 1) + &
+                  db1%rvArray(imgrid)%z(2*ix-1, 2*iy-1, 1) + &
+                  db2%rvArray(imgrid)%z(2*ix-1, 2*iy-1, 1))
+           endif
+         enddo
+       enddo
+
+      else if (mGrid%coarseness(imgrid).eq.mGrid%coarseness(imgrid-1)) then
        do iy = 2, ny
          do ix = 2, nx
-           if(.not.present(d))then
+           if(present(d))then
+           d%rscArray(imgrid)%v(ix, iy, 1) = c%rscArray(imgrid)%v(ix, iy, 1) - &
+                  db1%rvArray(imgrid)%x(ix,iy,1)*db2%rvArray(imgrid)%x(ix-1,iy,1)*d%rscArray(imgrid)%v(ix-1,iy,1)-&
+                  db1%rvArray(imgrid)%y(ix,iy,1)*db2%rvArray(imgrid)%y(ix,iy-1,1)*d%rscArray(imgrid)%v(ix,iy-1,1)-&
+                  db1%rvArray(imgrid)%z(ix,iy,1)*db2%rvArray(imgrid-1)%z(ix,iy,nz)*d%rscArray(imgrid-1)%v(ix,iy,nz)
+           d%rscArray(imgrid)%v(ix, iy, 1) = 1.0/ d%rscArray(imgrid)%v(ix, iy, 1)
+
+           else
             db1%rvArray(imgrid)%x(ix, iy, 1) = condEMG%rvArray(imgrid)%x(ix-1, iy, 1)/ &
                   (mGrid%gridArray(imgrid)%dx(ix-1)*mGrid%gridArray(imgrid)%delX(ix))
              db2%rvArray(imgrid)%x(ix, iy, 1) = condEMG%rvArray(imgrid)%x(ix, iy, 1)/ &
@@ -2250,14 +2261,7 @@ enddo
                   db2%rvArray(imgrid)%y(ix, iy, 1) + &
                   db1%rvArray(imgrid)%z(ix, iy, 1) + &
                   db2%rvArray(imgrid)%z(ix, iy, 1))
-          else if(present(d))then
-           d%rscArray(imgrid)%v(ix, iy, 1) = c%rscArray(imgrid)%v(ix, iy, 1) - &
-                  db1%rvArray(imgrid)%x(ix,iy,1)*db2%rvArray(imgrid)%x(ix-1,iy,1)*d%rscArray(imgrid)%v(ix-1,iy,1)-&
-                  db1%rvArray(imgrid)%y(ix,iy,1)*db2%rvArray(imgrid)%y(ix,iy-1,1)*d%rscArray(imgrid)%v(ix,iy-1,1)-&
-                  db1%rvArray(imgrid)%z(ix,iy,1)*db2%rvArray(imgrid-1)%z(ix,iy,nz)*d%rscArray(imgrid-1)%v(ix,iy,nz)
-           d%rscArray(imgrid)%v(ix, iy, 1) = 1.0/ d%rscArray(imgrid)%v(ix, iy, 1)
-
-          endif
+           endif
          enddo
        enddo
      endif
@@ -2336,6 +2340,7 @@ enddo
          else
            print *, 'DivCgradILU: not compatible existing data types'
          endif
+
       enddo !Loop on subgrids
 
       ! backward substitution (Solve upper triangular system)
@@ -2659,9 +2664,6 @@ enddo
             (nz == outSc%csArray(imgrid)%nz)) then
           ! computation done only for internal nodes
 
-         ! update first layer
-         call UpdateZ_O(inE,outSc,imgrid)
-
          do ix = 2, nx
            do iy = 2, ny
 
@@ -2711,6 +2713,9 @@ enddo
              enddo      ! iy
           enddo         ! ix
 
+       ! update first layer
+         call UpdateZ_O(inE,outSc,imgrid) ! call UpdateZ_DivC subroutine
+
        else
           write(0, *) 'Error: DivC: scalars not same size'
        end if
@@ -2726,6 +2731,8 @@ enddo
   ! Updates first and last z layer in Div result
   subroutine UpdateZ_DivC(inE, outSc, imgrid)
   ! created 25.05.2012
+  ! modified 20.06.2012
+  ! modified 22.06.2012
 
     implicit none
 
@@ -2734,12 +2741,12 @@ enddo
     integer, intent(in)  :: imgrid
 
     ! local variables
-    integer  :: ix, iy, ixx, iyy
+    integer  :: ix, iy
     integer  :: nx, ny, nz
 
-      if(imgrid == 1) then
+      if(imgrid == inE%mgridSize) then
       ! the last multigrid layer
-      ! 0 layer must be already filled in
+      ! z=1 must be filled in
       ! nz+1 should be zero
       ! nothing to do
       return
@@ -2747,113 +2754,112 @@ enddo
 
       nx = outSc%csArray(imgrid)%nx
       ny = outSc%csArray(imgrid)%ny
-      nz = outSc%csArray(imgrid-1)%nz
+      nz = outSc%csArray(imgrid)%nz
 
       ! the basic strategy is to fill in the interface layer with values from the finer grid!
-      if (outSc%coarseness(imgrid).gt.outSc%coarseness(imgrid-1))then
-        ! interface layer: finer -> coarser
-        ! Update 1 of Div taking valies from nz of the previous sub-grid
-        ! decided just to copy values from finer grid
-        do iy = 2, ny
-          do ix = 2, nx
-            ! FOR NODES IN THE AIR
-              if(inE%cvArray(imgrid)%grid%flag == 1.or.inE%cvArray(imgrid)%grid%flag == 0) then
-
-                outSc%csArray(imgrid)%v(ix, iy, 1) = &
-                  SIGMA_AIR*(inE%cvArray(imgrid)%x(ix,iy,1)-inE%cvArray(imgrid)%x(ix-1,iy,1)) * &
-                    inE%cvArray(imgrid)%grid%delXinv(ix)    &
-                    + SIGMA_AIR*(inE%cvArray(imgrid)%y(ix,iy,1)-inE%cvArray(imgrid)%y(ix,iy-1,1)) * &
-                    inE%cvArray(imgrid)%grid%delYinv(iy)    &
-                    + SIGMA_AIR*(inE%cvArray(imgrid)%z(ix,iy,1)-inE%cvArray(imgrid-1)%z(2*(ix-2)+1,2*(iy-2)+1,nz)) * &
-                   inE%cvArray(imgrid)%grid%delZinv(1)
-
-              else if(inE%cvArray(imgrid)%grid%flag == 2) then
-                ! FOR NODES INSIDE THE EARTH ONLY
-                ! THE TOP MOST EARTH NODE HAS AN INTERFACE WITH
-                ! AIR, THEREFORE THAT ONE IS SKIPPED HERE
-                   outSc%csArray(imgrid)%v(ix, iy, 1) = &
-                        (condEMG%rvArray(imgrid)%x(ix,iy,1)*inE%cvArray(imgrid)%x(ix, iy, 1) -         &
-                        condEMG%rvArray(imgrid)%x(ix - 1,iy,1)*inE%cvArray(imgrid)%x(ix - 1, iy, 1)) * &
-                        inE%cvArray(imgrid)%grid%delXinv(ix)      &
-                        +  (condEMG%rvArray(imgrid)%y(ix,iy,1)*inE%cvArray(imgrid)%y(ix, iy, 1) -      &
-                        condEMG%rvArray(imgrid)%y(ix,iy - 1,1)*inE%cvArray(imgrid)%y(ix, iy - 1, 1)) * &
-                        inE%cvArray(imgrid)%grid%delYinv(iy)      &
-                        +  (condEMG%rvArray(imgrid)%z(ix,iy,1)*inE%cvArray(imgrid)%z(ix, iy, 1) -      &
-                        condEMG%rvArray(imgrid-1)%z(2*(ix-2)+1,2*(iy-2)+1,nz)*inE%cvArray(imgrid-1)%z(2*(ix-2)+1, 2*(iy-2)+1, nz)) * &
-                        inE%cvArray(imgrid)%grid%delZinv(1)
-              endif
-          enddo
-        enddo
-
-      else if (outSc%coarseness(imgrid).lt.outSc%coarseness(imgrid-1)) then
+      if (inE%coarseness(imgrid).lt.inE%coarseness(imgrid+1)) then
        ! interface : finer grid to coarser
-       ! vice versa
-       do iy = 2, ny
-         do ix = 2, nx
-           ixx=nint(ix*0.5)
-           iyy=nint(iy*0.5)
-           ! FOR NODES IN THE AIR ONLY
-           if(inE%cvArray(imgrid)%grid%flag == 1.or.inE%cvArray(imgrid)%grid%flag == 0) then
+       do iy = 2, ny/2
+         do ix = 2, nx/2
+           ! FOR NODES IN THE AIR
+           if(inE%cvArray(imgrid)%grid%flag == 1) then
 
-               outSc%csArray(imgrid)%v(ix, iy, 1) = &
-                  SIGMA_AIR*(inE%cvArray(imgrid)%x(ix,iy,1)-inE%cvArray(imgrid)%x(ix-1,iy,1)) * &
-                    inE%cvArray(imgrid)%grid%delXinv(ix)    &
-                    + SIGMA_AIR*(inE%cvArray(imgrid)%y(ix,iy,1)-inE%cvArray(imgrid)%y(ix,iy-1,1)) * &
-                    inE%cvArray(imgrid)%grid%delYinv(iy)    &
-                    + SIGMA_AIR*(inE%cvArray(imgrid)%z(ix,iy,1)-inE%cvArray(imgrid-1)%z(ixx,iyy,nz)) * &
-                   inE%cvArray(imgrid)%grid%delZinv(1)
+               outSc%csArray(imgrid)%v(2*ix-1, 2*iy-1, nz+1) = &
+                  SIGMA_AIR*(inE%cvArray(imgrid+1)%x(ix,iy,1)-inE%cvArray(imgrid+1)%x(ix-1,iy,1)) * &
+                    inE%cvArray(imgrid+1)%grid%delXinv(ix)    &
+                    + SIGMA_AIR*(inE%cvArray(imgrid+1)%y(ix,iy,1)-inE%cvArray(imgrid+1)%y(ix,iy-1,1)) * &
+                    inE%cvArray(imgrid+1)%grid%delYinv(iy)    &
+                    + SIGMA_AIR*(inE%cvArray(imgrid+1)%z(ix,iy,1)-inE%cvArray(imgrid)%z(2*ix-1,2*iy-1,nz)) * &
+                   inE%cvArray(imgrid+1)%grid%delZinv(1)
 
            ! FOR NODES INSIDE THE EARTH ONLY
-           ! THE TOP MOST EARTH NODE HAS AN INTERFACE WITH
-           ! AIR, THEREFORE THAT ONE IS SKIPPED HERE
-           else if(inE%cvArray(imgrid)%grid%flag == 2) then
-
-               outSc%csArray(imgrid)%v(ix, iy, 1) = &
-                      (condEMG%rvArray(imgrid)%x(ix,iy,1)*inE%cvArray(imgrid)%x(ix, iy, 1) -         &
-                        condEMG%rvArray(imgrid)%x(ix - 1,iy,1)*inE%cvArray(imgrid+1)%x(ix - 1, iy, 1)) * &
-                        inE%cvArray(imgrid)%grid%delXinv(ix)      &
-                        +  (condEMG%rvArray(imgrid)%y(ix,iy,1)*inE%cvArray(imgrid)%y(ix, iy, 1) -      &
-                        condEMG%rvArray(imgrid)%y(ix,iy - 1,1)*inE%cvArray(imgrid)%y(ix, iy - 1, 1)) * &
-                        inE%cvArray(imgrid)%grid%delYinv(iy)      &
-                        +  (condEMG%rvArray(imgrid)%z(ix,iy,1)*inE%cvArray(imgrid)%z(ix, iy, 1) -      &
-                        condEMG%rvArray(imgrid-1)%z(ixx,iyy,nz)*inE%cvArray(imgrid-1)%z(ixx, iyy, nz)) * &
-                        inE%cvArray(imgrid)%grid%delZinv(1)
+           else if(inE%cvArray(imgrid)%grid%flag == 2 .or. inE%cvArray(imgrid)%grid%flag == 0) then
+               outSc%csArray(imgrid)%v(2*ix-1, 2*iy-1, nz+1) = &
+                      (condEMG%rvArray(imgrid+1)%x(ix,iy, 1)*inE%cvArray(imgrid+1)%x(ix, iy, 1) -        &
+                        condEMG%rvArray(imgrid+1)%x(ix-1, iy, 1)*inE%cvArray(imgrid+1)%x(ix-1, iy, 1)) * &
+                        inE%cvArray(imgrid+1)%grid%delXinv(ix)      &
+                        +  (condEMG%rvArray(imgrid+1)%y(ix, iy, 1)*inE%cvArray(imgrid+1)%y(ix, iy, 1) -  &
+                        condEMG%rvArray(imgrid+1)%y(ix,iy-1, 1)*inE%cvArray(imgrid+1)%y(ix, iy-1, 1)) * &
+                        inE%cvArray(imgrid+1)%grid%delYinv(iy)      &
+                        +  (condEMG%rvArray(imgrid+1)%z(ix,iy,1)*inE%cvArray(imgrid+1)%z(ix, iy, 1)-&
+                            condEMG%rvArray(imgrid)%z(2*ix-1, 2*iy-1 , nz)*inE%cvArray(imgrid)%z(2*ix-1, 2*iy-1, nz)) * &
+                        inE%cvArray(imgrid+1)%grid%delZinv(1)
             endif
+
+            outSc%csarray(imgrid+1)%v(ix, iy, 1) =  outSc%csArray(imgrid)%v(2*ix-1, 2*iy-1, nz+1)
+
          enddo
        enddo
 
-     else if (outSc%coarseness(imgrid).eq.outSc%coarseness(imgrid-1)) then
+      else if (inE%coarseness(imgrid).gt.inE%coarseness(imgrid+1))then
+        ! interface layer: finer -> coarser
+        ! Update 1 of Div taking values from nz of the previous sub-grid
+        do iy = 2, ny
+          do ix = 2, nx
+            ! for nodes in the air
+              if(inE%cvArray(imgrid+1)%grid%flag == 1 .or. inE%cvArray(imgrid+1)%grid%flag == 0) then
+
+                outSc%csArray(imgrid+1)%v(2*ix-1, 2*iy-1, 1) = &
+                  SIGMA_AIR*(inE%cvArray(imgrid)%x(ix, iy, nz+1)-inE%cvArray(imgrid)%x(ix-1,iy, nz+1)) * &
+                    inE%cvArray(imgrid)%grid%delXinv(ix)    &
+                    + SIGMA_AIR*(inE%cvArray(imgrid)%y(ix,iy,nz+1)-inE%cvArray(imgrid)%y(ix,iy-1, nz+1)) * &
+                    inE%cvArray(imgrid)%grid%delYinv(iy)    &
+                    + SIGMA_AIR*(inE%cvArray(imgrid+1)%z(2*ix-1,2*iy-1,1)-inE%cvArray(imgrid)%z(ix, iy, nz)) * &
+                   inE%cvArray(imgrid+1)%grid%delZinv(1)
+
+             else if(inE%cvArray(imgrid+1)%grid%flag == 2) then
+             ! FOR NODES INSIDE THE EARTH ONLY
+                   outSc%csArray(imgrid+1)%v(2*ix-1, 2*iy-1, 1) = &
+                        (condEMG%rvArray(imgrid)%x(ix, iy, nz+1)*inE%cvArray(imgrid)%x(ix, iy, nz+1) -     &
+                        condEMG%rvArray(imgrid)%x(ix-1, iy, nz+1)*inE%cvArray(imgrid)%x(ix-1, iy, nz+1)) * &
+                        inE%cvArray(imgrid)%grid%delXinv(ix)      &
+                        +  (condEMG%rvArray(imgrid)%y(ix, iy,nz+1)*inE%cvArray(imgrid)%y(ix, iy, nz+1) -   &
+                        condEMG%rvArray(imgrid)%y(ix, iy-1, nz+1)*inE%cvArray(imgrid)%y(ix, iy-1, nz+1)) * &
+                        inE%cvArray(imgrid)%grid%delYinv(iy)      &
+                        +  (condEMG%rvArray(imgrid+1)%z(2*ix-1,2*iy-1,1)*inE%cvArray(imgrid+1)%z(2*ix-1, 2*iy-1, 1) -    &
+                        condEMG%rvArray(imgrid)%z(ix,iy,nz)*inE%cvArray(imgrid)%z(ix, iy, nz)) * &
+                        inE%cvArray(imgrid+1)%grid%delZinv(1)
+              endif
+
+              outSc%csarray(imgrid)%v(ix, iy, nz+1) =  outSc%csArray(imgrid+1)%v(2*ix-1, 2*iy-1, 1)
+
+          enddo
+        enddo
+
+     else if (outSc%coarseness(imgrid).eq.outSc%coarseness(imgrid+1)) then
        do ix = 2, nx
          do iy = 2, ny
 
             ! FOR NODES IN THE AIR
-              if(inE%cvArray(imgrid)%grid%flag == 1.or.inE%cvArray(imgrid)%grid%flag == 0) then
+              if(inE%cvArray(imgrid)%grid%flag == 1) then
 
-               outSc%csArray(imgrid)%v(ix, iy, 1) = &
-                  SIGMA_AIR*(inE%cvArray(imgrid)%x(ix,iy,1)-inE%cvArray(imgrid)%x(ix-1,iy,1)) * &
+               outSc%csArray(imgrid)%v(ix, iy, nz+1) = &
+                  SIGMA_AIR*(inE%cvArray(imgrid)%x(ix,iy,nz+1)-inE%cvArray(imgrid)%x(ix-1,iy,nz+1)) * &
                     inE%cvArray(imgrid)%grid%delXinv(ix)    &
-                    + SIGMA_AIR*(inE%cvArray(imgrid)%y(ix,iy,1)-inE%cvArray(imgrid)%y(ix,iy-1,1)) * &
+                    + SIGMA_AIR*(inE%cvArray(imgrid)%y(ix,iy,nz+1)-inE%cvArray(imgrid)%y(ix,iy-1,nz+1)) * &
                     inE%cvArray(imgrid)%grid%delYinv(iy)    &
-                    + SIGMA_AIR*(inE%cvArray(imgrid)%z(ix,iy,1)-inE%cvArray(imgrid-1)%z(ix,iy,nz)) * &
-                   inE%cvArray(imgrid)%grid%delZinv(1)
-               else if(inE%cvArray(imgrid)%grid%flag == 2) then
+                    + SIGMA_AIR*(inE%cvArray(imgrid+1)%z(ix,iy,1)-inE%cvArray(imgrid)%z(ix,iy,nz)) * &
+                   inE%cvArray(imgrid+1)%grid%delZinv(1)
+               else if(inE%cvArray(imgrid)%grid%flag == 2.or.inE%cvArray(imgrid)%grid%flag == 0) then
                 ! FOR NODES INSIDE THE EARTH ONLY
                 ! THE TOP MOST EARTH NODE HAS AN INTERFACE WITH
                 ! AIR, THEREFORE THAT ONE IS SKIPPED HERE
-                   outSc%csArray(imgrid)%v(ix, iy,1) = &
-                        (condEMG%rvArray(imgrid)%x(ix,iy,1)*inE%cvArray(imgrid)%x(ix, iy, 1) -         &
-                        condEMG%rvArray(imgrid)%x(ix - 1,iy,1)*inE%cvArray(imgrid)%x(ix - 1, iy, 1)) * &
+                   outSc%csArray(imgrid)%v(ix, iy,nz+1) = &
+                        (condEMG%rvArray(imgrid)%x(ix,iy,nz+1)*inE%cvArray(imgrid)%x(ix, iy, nz+1) -         &
+                        condEMG%rvArray(imgrid)%x(ix - 1,iy,nz+1)*inE%cvArray(imgrid)%x(ix - 1, iy, nz+1)) * &
                         inE%cvArray(imgrid)%grid%delXinv(ix)      &
-                        +  (condEMG%rvArray(imgrid)%y(ix,iy,1)*inE%cvArray(imgrid)%y(ix, iy, 1) -      &
-                        condEMG%rvArray(imgrid)%y(ix,iy - 1,1)*inE%cvArray(imgrid)%y(ix, iy - 1, 1)) * &
+                        +  (condEMG%rvArray(imgrid)%y(ix,iy,nz+1)*inE%cvArray(imgrid)%y(ix, iy, nz+1) -      &
+                        condEMG%rvArray(imgrid)%y(ix,iy - 1,nz+1)*inE%cvArray(imgrid)%y(ix, iy - 1, nz+1)) * &
                         inE%cvArray(imgrid)%grid%delYinv(iy)      &
-                        +  (condEMG%rvArray(imgrid)%z(ix,iy,1)*inE%cvArray(imgrid)%z(ix, iy, 1) -      &
-                        condEMG%rvArray(imgrid-1)%z(ix,iy,nz)*inE%cvArray(imgrid-1)%z(ix, iy,nz)) * &
-                        inE%cvArray(imgrid)%grid%delZinv(1)
+                        +  (condEMG%rvArray(imgrid+1)%z(ix,iy,1)*inE%cvArray(imgrid+1)%z(ix, iy, 1) -      &
+                        condEMG%rvArray(imgrid)%z(ix,iy,nz)*inE%cvArray(imgrid)%z(ix, iy,nz)) * &
+                        inE%cvArray(imgrid+1)%grid%delZinv(1)
                endif
+
+               outSc%csarray(imgrid+1)%v(ix, iy, 1) =  outSc%csArray(imgrid)%v(ix, iy, nz+1)
+
              enddo      ! iy
           enddo         ! ix
-
      endif
 
   end  subroutine UpdateZ_DivC

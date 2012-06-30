@@ -81,6 +81,7 @@ subroutine PCG(b,x, PCGiter)
   Call create(x%grid, q, x%gridType)
 
   Call A(x,r)
+
   Call linComb(C_ONE,b,C_MinusOne,r,r)
 
   bnorm = dotProd(b,b)

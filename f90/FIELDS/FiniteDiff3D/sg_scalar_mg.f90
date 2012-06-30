@@ -402,7 +402,7 @@ end function dotProd_rscalar_mg_f
     complex(kind=prec)           :: c
 
     ! local
-    complex(kind=prec), allocatable  :: ctemp(:)
+    type (cscalar_mg)  :: e1Temp, e2Temp
     integer  :: imgrid
 
     c = C_ZERO
@@ -412,17 +412,21 @@ end function dotProd_rscalar_mg_f
       stop
     endif
 
-    if (e1%mgridSize == e2%mgridSize) then
-      allocate(ctemp(e1%mgridSize))
+    e1Temp=e1
+    e2Temp=e2
 
-      if(e1%gridType == e2%gridType) then
+    if (e1%mgridSize == e2%mgridSize.and.e1%gridType == e2%gridType) then
 
         do imgrid = 1, e1%mgridSize
           ! Check whether both input scalars are of the same size
           if((e1%csArray(imgrid)%nx == e2%csArray(imgrid)%nx).and.(e1%csArray(imgrid)%ny == e2%csArray(imgrid)%ny) &
                                     .and.(e1%csArray(imgrid)%nz == e2%csArray(imgrid)%nz)) then
 
-          c = c+dotProd_cscalar_f(e1%csArray(imgrid), e2%csArray(imgrid))
+          ! delete duplicate nodes
+          e1Temp%csArray(imgrid)%v(:,:,e1%csArray(imgrid)%nz+1)=C_ZERO
+          e2Temp%csArray(imgrid)%v(:,:,e2%csArray(imgrid)%nz+1)=C_ZERO
+
+          c = c+dotProd_cscalar_f(e1Temp%csArray(imgrid), e2Temp%csArray(imgrid))
 
           else
             print *, 'Error:dotProd_cscalar: scalars not same size'
@@ -432,12 +436,10 @@ end function dotProd_rscalar_mg_f
       else
         print *, 'not compatible usage for dotProd_cscalar'
       end if
-    else
-      print *, 'Error:dotProd_cscalar_mg: scalars not same ,mgridsize'
-    endif
 
+    call deall(e1Temp)
+    call deall(e2Temp)
 
-  deallocate(ctemp)
   end function dotProd_cscalar_mg_f ! dotProd_cscalar_mg
 !****************************************************************************
 ! scMult_cscalar multiplies scalar stored as devired data type
