@@ -19,7 +19,6 @@ module modelOperator3D
   use utilities
   use gridcalc             ! staggered grid definitions
   use sg_vector            ! generic routines for vector operations on the
-  use sg_vector_mg
   use sg_boundary
   use ModelSpace
   use boundary_ws          ! sets the boundary conditions
@@ -32,15 +31,16 @@ module modelOperator3D
   save
   !!!!!!!>>>>>>>>> FROM model_data
   type(grid_t), private, target 	::	mGrid   ! THE model grid
-  type(rvector_mg), public  ::  volE    ! THE volume elements !!! MULTIGRID!!!!
-  type(rvector_mg), private      ::  condEMG   ! THE edge conductivities on MULTIGRID
+  type(rvector), public			::	volE    ! THE volume elements
+  type(rvector), private		::	condE   ! THE edge conductivities
   real(kind=prec),private	::      omega   ! THE (active) frequency
   !Vector to hold the BC interpolated from a file E solution file
   type(cboundary), pointer, dimension(:)	:: BC_from_file
   type(cvector), pointer, dimension(:)	    :: E0_from_file
 
   ! NOTE: THIS VARIABLE IS TEMPORARILY REQUIRED TO SET THE BOUNDARY CONDITIONS
-  type(rscalar), private  :: Cond3D
+  type(rscalar), private        :: Cond3D
+
   !!!!!!>>>>>>>>> FROM multA
   ! aBC is for the Ea equation using the b component in the c direction.
   ! The two array elements correspond to coefficients required to form
@@ -53,46 +53,42 @@ module modelOperator3D
   ! directions for adjacent faces for Ex term at ix, ij, ik point
   ! (collection of left/ right horizontal and top/ bottom vertical faces),
   !    etc.
-  real (kind=prec), pointer, dimension(:,:,:), private    :: xXY, xXZ
-  real (kind=prec), pointer, dimension(:,:,:), private    :: xY, xZ
-  real (kind=prec), pointer, dimension(:,:,:), private    :: xXO
-  real (kind=prec), pointer, dimension(:,:,:), private    :: yYX, yYZ
-  real (kind=prec), pointer, dimension(:,:,:), private    :: yX, yZ
-  real (kind=prec), pointer, dimension(:,:,:), private    :: yYO
-  real (kind=prec), pointer, dimension(:,:,:), private    :: zZX, zZY
-  real (kind=prec), pointer, dimension(:,:,:), private    :: zX, zY
-  real (kind=prec), pointer, dimension(:,:,:), private    :: zZO
+  real (kind=prec), pointer, dimension(:,:), private    :: xXY, xXZ
+  real (kind=prec), pointer, dimension(:,:), private    :: xY, xZ
+  real (kind=prec), pointer, dimension(:,:), private    :: xXO
+  real (kind=prec), pointer, dimension(:,:), private    :: yYX, yYZ
+  real (kind=prec), pointer, dimension(:,:), private    :: yX, yZ
+  real (kind=prec), pointer, dimension(:,:), private    :: yYO
+  real (kind=prec), pointer, dimension(:,:), private    :: zZX, zZY
+  real (kind=prec), pointer, dimension(:,:), private    :: zX, zY
+  real (kind=prec), pointer, dimension(:,:), private    :: zZO
 
   ! coefficients of diagonal of (unweighted) A operator
-  type (cvector_mg), private   :: AdiagMG
+  type (cvector), private                                :: Adiag
   ! information about the heritage ... probably this is not needed!
   real (kind=prec), private			:: whichOmega, whichCondE
 
   !!!!!!>>>>>>>>> FROM preconditioner
   ! coefficients of diagonal of preconditoner for A operator
-  type (cvector_mg), private  :: Dilu
+  type (cvector), private		               :: Dilu
 
   !!!!!!>>>>>>>>> FROM divcorr
   ! coefficients for operators div sigma grad
   !  (which acts on scalars used for corner nodes),
   !  and the diagonal of the ilu preconditoner
 
-  type (rvector_mg) , private	:: db1, db2
+  type (rvector) , private	:: db1, db2
   !   db1%x contains coefficients of the stencil for shift -1 of ix index
   !    (%y,%z give corresponding coefficients for iy, iz)
   !   db2  contains coefficients for corresponding shift of +1
 
-  type (rscalar_mg) , private	:: c, d
+  type (rscalar) , private	:: c, d
   ! c contains the coefficients for div sigma grad operator diagonal
   ! d contains the inverse of diagonal elements of D-ILU used for
   !  preconditioner
-  type (rscalar_mg) , public   :: volC
-  ! volume contains weights for corners
 
-  ! which layer update
-  character(len=10),parameter  :: first = 'first'
-  character(len=10),parameter  :: last = 'last'
-  character(len=10),parameter  :: lastDirect = 'lastDirect'
+  type (rscalar) , public	:: volC
+  ! volume contains weights for corners
 
   ! *****************************************************************************
   !  routines from model_data_update:
@@ -106,9 +102,9 @@ module modelOperator3D
   public                                :: SetBound
 
   !  routines from multA
-  public                             	:: CurlCurlInit, CurlcurleCleanUp, Div, UpdateZ_DivC, DivC,Grad
-  public                                :: AdiagInit, AdiagSetUp, deall_Adiag, Maxwell,UpdateZ_Curl
-  public                                :: MultA_N, AdjtBC
+  public                             	:: CurlcurleSetUp, CurlcurlE, CurlcurleCleanUp
+  public                                :: AdiagInit, AdiagSetUp, deall_Adiag, Maxwell
+  public                                :: MultA_O, MultA_N, AdjtBC
   !   These are used to initialize differential equation coefficients, and
   !    then to apply the differential operator
 
@@ -117,8 +113,8 @@ module modelOperator3D
   public                      :: M1Solve, M2Solve
 
   ! routines from divcorr
-  public                :: DivCorrInit, DivCorrSetUp, UpdateZ_DivCorr, Deallocate_DivCorr
-  public                :: DivCgradILU, UpdateZ_DivCgradILU, DivCgrad, UpdateZ_DivCgrad
+  public                :: DivCorrInit, DivCorrSetUp, Deallocate_DivCorr
+  public                :: DivCgradILU, DivCgrad, DivC
 
   ! interface for data_update  ... is this needed ?
   INTERFACE updateModelData
@@ -127,49 +123,44 @@ module modelOperator3D
      module procedure UpdateFreqCond
   END INTERFACE
 
-  INTERFACE UpdateZ_O
-    module procedure UpdateZ_Curl
-    module procedure UpdateZ_DivC
-    module procedure UpdateZ_DivCorr
-    module procedure UpdateZ_DivCgradILU
-  END INTERFACE
-
 Contains
 
   subroutine ModelDataInit(inGrid)
   !**********************************************************************
-  ! * Copies multigrid to mgrid
-  !   and/or compute variables stored in model_data module:
-  !   create: allocate for edge conductivity volume weights;
-  !   EdgeVolumeMG:  compute volume weights for edge-centered prisms
+  ! *   Copies grid to mGrid
+  !      and/or compute variables stored in model_data module:
+  !         create: allocate for edge conductivity
+  !              volume weights;
+  !         EdgeVolume:  compute volume weights for edge-centered prisms
   !
   !**********************************************************************
 
-  implicit none
+    implicit none
     !  INPUTS:
-    type (grid_t), intent(in)  :: inGrid  ! this is multigrid
+    type (grid_t), intent(in)		  :: inGrid
 
     !   copy inGrid to mGrid
-    call copy_mgrid(mGrid,inGrid)
+    call copy_grid(mGrid,inGrid)
 
     ! Allocate data structure for volume elements, and compute these
-     call create(mGrid, volE, EDGE)      ! creates VolE as multigrid cvector
+    Call create(mGrid, volE, EDGE)
+    Call EdgeVolume(mGrid, volE)
 
-    call EdgeVolume(mGrid, volE)      ! in some cases we need volE defined on multigrid
+    !  Allocate condE, conductivity defined on computational cell edges
+    !   condE is also kept in module model_data
+    Call create(mGrid, condE, EDGE)
 
-    !  Allocate condEMG, conductivity defined on computational multigrid cell edges
-    call create(mGrid, condEMG, EDGE)     ! creates condEMG defined on multigrid cell edges
     ! set a default omega
     omega = 0.0
 
   end subroutine ModelDataInit
 
-! ********************************************************************************************************************8
+
   subroutine ModelDataCleanUp
 
     call deall_grid(mGrid)
-    call deall_rvector_mg(volE)
-    call deall_rvector_mg(condEMG)
+    call deall_rvector(volE)
+    call deall_rvector(condE)
 
     ! Cond3D is temporary
     call deall_rscalar(Cond3D)
@@ -185,7 +176,6 @@ Contains
 
     omega = inOmega
     Call AdiagSetUp()
-
     Call DiluSetUp()
 
   end subroutine UpdateFreq  ! UpdateFreq
@@ -196,6 +186,7 @@ Contains
 
     implicit none
     type(modelParam_t), intent(in)      :: CondParam      ! input conductivity
+
     ! structure on the center of the grid
 
     !  ModelParamToEdge is to be interpreted as an abstract routine
@@ -204,9 +195,10 @@ Contains
     !    is now fixed as rscalar;  if a different representation is
     !    to be used changes to the declarations in this routine will
     !    be required, along with changes in the module interface
-    Call ModelParamToEdgeMG(CondParam, condEMG)
+    Call ModelParamToEdge(CondParam, condE)
 
     Call DivCorrSetUp()
+
     ! TEMPORARY; REQUIRED FOR BOUNDARY CONDITIONS
     !  set static array for cell conductivities
     call ModelParamToCell(CondParam,Cond3D)
@@ -228,7 +220,7 @@ Contains
     !  ModelParamToEdge is to be interpreted as an abstract routine
     !    that maps from the external conductivity parameter to the
     !    internal edge representation  ...
-    Call ModelParamToEdgeMG(CondParam, condEMG)
+    Call ModelParamToEdge(CondParam, condE)
 
     Call AdiagSetUp()
     Call DiluSetUp()
@@ -245,7 +237,7 @@ Contains
 ! Uses input 3D conductivity in cells Cond3D, that has to be initialized
 ! by updateCond before calling this routine. Also uses mGrid set by
 ! ModelDataInit. Could use omega, which is set by updateFreq.
-  Subroutine SetBound(imode,period,E0mg,BC,iTx)
+  Subroutine SetBound(imode,period,E0,BC,iTx)
 
     !  Input mode, period
     integer, intent(in)		:: imode
@@ -253,18 +245,12 @@ Contains
     real(kind=prec)	:: period
 
     ! Output electric field first guess (for iterative solver)
-    type(cvector_mg), intent(inout)	:: E0mg
+    type(cvector), intent(inout)	:: E0
     ! Output boundary conditions
     type(cboundary), intent(inout)	:: BC
 
-    type(cvector)  :: E0
-
-    call create(mgrid, E0, EDGE)
-    call mg2c(E0, E0mg)
-
     if (BC%read_E_from_file) then
-
-          call BC_x0_WS(imode,period,mGrid,Cond3D,E0,BC)
+          call BC_x0_WS(imode,period,mGrid,Cond3D,E0,BC)  
           ! The BC are already computed from a larger grid for all transmitters and modes and stored in BC_from_file.
           ! Overwrite BC with BC_from_file.
           ! Note: Right now we are using the same period layout for both grid. 
@@ -272,52 +258,56 @@ Contains
           BC = BC_from_file((iTx*2)-(2-imode))  
     else
          ! Compute the BC using Weerachai 2D approach 
-          call BC_x0_WS(imode,period,mGrid,Cond3D,E0,BC)
+          call BC_x0_WS(imode,period,mGrid,Cond3D,E0,BC)                          
     end if
-    call c2mg(E0mg, E0)
+    
+    
     ! Cell conductivity array is no longer needed
     ! NOT TRUE: needed for imode=2
     ! call deall_rscalar(Cond3D)
 
   end subroutine SetBound
-  ! *********************************************************************************************88
 
-  ! * CurlcurlSetUp sets up all the coefficients for finite difference
+! ****************************************************************************
+! Routines from multA; set up finite difference operator for quasi-static
+!   frequency domain 3D EM induction equations, apply in various ways for forward,
+!   adjoint Krylov solvers
+
+  ! ***************************************************************************
+  ! * CurlcurleSetUp sets up all the coefficients for finite difference
   ! * approximations for del X del X E. In SetUp routines, one may do memory
   ! * allocation inside. SetUp routines does basic calculations
   ! * (maybe one time deal or sometimes more than once)
 
-  subroutine CurlCurlInit()
+  subroutine CurlcurleSetUp()
 
-  implicit none
+    implicit none
     ! Output coefficients for curlcurlE (del X del X E)
-    integer  :: ix, iy, iz, izv ! dummy variables
-    integer  :: imgrid
-    integer  :: nzCum, nx, ny,nz
+    integer                     :: status     ! for dynamic memory allocation
+    integer                     :: ix, iy, iz ! dummy variables
 
-    ! Output coefficients for curlcurlE (del X del X E)
-    integer :: status     ! for dynamic memory allocation
 
     ! Allocate memory for del x del operator coefficient arrays
     ! Coefficients for difference equation only uses interior
     ! nodes. however, we need boundary nodes for the adjoint problem
-    allocate(xXY(mgrid%mgridSize,mGrid%ny+1, 2), STAT=status)   ! Allocate memory
-    allocate(xXZ(mgrid%mgridSize,mGrid%nz+1, 2), STAT=status)   ! Allocate memory
-    allocate(xY(mgrid%mgridSize,mGrid%nx, mGrid%ny+1), STAT=status)
-    allocate(xZ(mgrid%mgridSize,mGrid%nx, mGrid%nz+1), STAT=status)
-    allocate(xXO(mgrid%mgridSize,mGrid%ny, mGrid%nz+1), STAT=status)
+    allocate(xXY(mGrid%ny+1, 2), STAT=status)   ! Allocate memory
+    allocate(xXZ(mGrid%nz+1, 2), STAT=status)   ! Allocate memory
+    allocate(xY(mGrid%nx, mGrid%ny+1), STAT=status)
+    allocate(xZ(mGrid%nx, mGrid%nz+1), STAT=status)
+    allocate(xXO(mGrid%ny, mGrid%nz), STAT=status)
 
-    allocate(yYZ(mgrid%mgridSize,mGrid%nz+1, 2), STAT=status)   ! Allocate memory
-    allocate(yYX(mgrid%mgridSize,mGrid%nx+1, 2), STAT=status)   ! Allocate memory
-    allocate(yZ(mgrid%mgridSize,mGrid%ny, mGrid%nz+1), STAT=status)
-    allocate(yX(mgrid%mgridSize,mGrid%nx+1, mGrid%ny), STAT=status)
-    allocate(yYO(mgrid%mgridSize,mGrid%nx, mGrid%nz+1), STAT=status)
+    allocate(yYZ(mGrid%nz+1, 2), STAT=status)   ! Allocate memory
+    allocate(yYX(mGrid%nx+1, 2), STAT=status)   ! Allocate memory
+    allocate(yZ(mGrid%ny, mGrid%nz+1), STAT=status)
+    allocate(yX(mGrid%nx+1, mGrid%ny), STAT=status)
+    allocate(yYO(mGrid%nx, mGrid%nz), STAT=status)
 
-    allocate(zZX(mgrid%mgridSize,mGrid%nx+1, 2), STAT=status)   ! Allocate memory
-    allocate(zZY(mgrid%mgridSize,mGrid%ny+1, 2), STAT=status)   ! Allocate memory
-    allocate(zX(mgrid%mgridSize,mGrid%nx+1, mGrid%nz), STAT=status)
-    allocate(zY(mgrid%mgridSize,mGrid%ny+1, mGrid%nz), STAT=status)
-    allocate(zZO(mgrid%mgridSize,mGrid%nx, mGrid%ny), STAT=status)
+    allocate(zZX(mGrid%nx+1, 2), STAT=status)   ! Allocate memory
+    allocate(zZY(mGrid%ny+1, 2), STAT=status)   ! Allocate memory
+    allocate(zX(mGrid%nx+1, mGrid%nz), STAT=status)
+    allocate(zY(mGrid%ny+1, mGrid%nz), STAT=status)
+    allocate(zZO(mGrid%nx, mGrid%ny), STAT=status)
+
 
     ! initalize all coefficients to zero (some remain zero)
     xXY = 0.0
@@ -335,129 +325,202 @@ Contains
     zY = 0.0
     zZO = 0.0
 
-    nzCum = 0
-    do imgrid = 1,mgrid%mgridSize  ! Global loop on multigrid
-      nx = mgrid%gridArray(imgrid)%nx
-      ny = mgrid%gridArray(imgrid)%ny
-      nz = mgrid%gridArray(imgrid)%nz
-      ! coefficents for calculating Ex ; only loop over internal edges
-      do iy = 2, ny
-         xXY(imgrid,iy,2) = -1.0/ (mgrid%gridArray(imgrid)%delY(iy) * mgrid%gridArray(imgrid)%dy(iy))
-         xXY(imgrid,iy,1) = -1.0/ (mgrid%gridArray(imgrid)%delY(iy) * mgrid%gridArray(imgrid)%dy(iy-1))
-      enddo
+    ! coefficents for calculating Ex ; only loop over internal edges
+    do iy = 2, mGrid%ny
+       xXY(iy, 2) = -1.0/ (mGrid%delY(iy) * mGrid%dy(iy))
+       xXY(iy, 1) = -1.0/ (mGrid%delY(iy) * mGrid%dy(iy-1))
+    enddo
 
-      if(imgrid == 1) then
-        do iz = 2, nz+1
-           izv = iz + nzCum
-           xXZ(imgrid, iz, 2) = -1.0/ (mgrid%delZ(izv) * mgrid%dz(izv))
-           xXZ(imgrid,iz, 1) = -1.0/ (mgrid%delZ(izv) * mgrid%dz(izv-1))
-        enddo
-      else
-         do iz = 1, nz+1
-           izv = iz + nzCum
-           xXZ(imgrid, iz, 2) = -1.0/ (mgrid%delZ(izv) * mgrid%dz(izv))
-           xXZ(imgrid,iz, 1) = -1.0/ (mgrid%delZ(izv) * mgrid%dz(izv-1))
-        enddo
-      endif
+    do iz = 2, mGrid%nz
+       xXZ(iz, 2) = -1.0/ (mGrid%delZ(iz) * mGrid%dz(iz))
+       xXZ(iz, 1) = -1.0/ (mGrid%delZ(iz) * mGrid%dz(iz-1))
+    enddo
 
-      do iy = 2, ny
-        do iz = 1, nz+1
-          xXO(imgrid, iy, iz) = -(xXY(imgrid, iy,1) + xXY(imgrid, iy,2) + &
-               xXZ(imgrid, iz,1) + xXZ(imgrid, iz,2))
+    do iy = 2, mGrid%ny
+       do iz = 2, mGrid%nz
+          xXO(iy, iz) = -(xXY(iy,1) + xXY(iy,2) + &
+               xXZ(iz,1) + xXZ(iz,2))
+
        enddo
     enddo
 
-    do ix = 1, nx
-       do iy = 2, ny
-          xY(imgrid, ix, iy) = 1.0/ (mgrid%gridArray(imgrid)%delY(iy)*mgrid%gridArray(imgrid)%dx(ix))
+    do ix = 1, mGrid%nx
+       do iy = 2, mGrid%ny
+          xY(ix, iy) = 1.0/ (mGrid%delY(iy)*mGrid%dx(ix))
        enddo
     enddo
 
-    do ix = 1, nx
-       do iz = 1, nz+1
-          xZ(imgrid, ix, iz) = 1.0/ (mgrid%gridArray(imgrid)%delZ(iz)*mgrid%gridArray(imgrid)%dx(ix))
+    do ix = 1, mGrid%nx
+       do iz = 2, mGrid%nz
+          xZ(ix, iz) = 1.0/ (mGrid%delZ(iz)*mGrid%dx(ix))
        enddo
     enddo
     ! End of Ex coefficients
 
     ! coefficents for calculating Ey; only loop over internal edges
-    if(imgrid == 1) then
-      do iz = 2, nz+1
-         izv = iz + nzCum
-         yYZ(imgrid, iz, 2) = -1.0/ (mgrid%delZ(izv)*mgrid%dz(izv))
-         yYZ(imgrid, iz, 1) = -1.0/ (mgrid%delZ(izv)*mgrid%dz(izv-1))
-      enddo
-    else
-      do iz = 1, nz+1
-         izv = iz + nzCum
-         yYZ(imgrid, iz, 2) = -1.0/ (mgrid%delZ(izv)*mgrid%dz(izv))
-         yYZ(imgrid, iz, 1) = -1.0/ (mgrid%delZ(izv)*mgrid%dz(izv-1))
-      enddo
-    endif
-
-    do ix = 2, nx
-       yYX(imgrid, ix, 2) = -1.0/ (mgrid%gridArray(imgrid)%delX(ix)*mgrid%gridArray(imgrid)%dx(ix))
-       yYX(imgrid, ix, 1) = -1.0/ (mgrid%gridArray(imgrid)%delX(ix)*mgrid%gridArray(imgrid)%dx(ix-1))
+    do iz = 2, mGrid%nz
+       yYZ(iz, 2) = -1.0/ (mGrid%delZ(iz)*mGrid%dz(iz))
+       yYZ(iz, 1) = -1.0/ (mGrid%delZ(iz)*mGrid%dz(iz-1))
     enddo
 
-    do ix = 2, nx
-       do iz = 1, nz+1
-          yYO(imgrid, ix, iz) = -(yYX(imgrid,ix,1) + yYX(imgrid, ix,2) + &
-               yYZ(imgrid, iz,1) + yYZ(imgrid, iz,2))
+    do ix = 2, mGrid%nx
+       yYX(ix, 2) = -1.0/ (mGrid%delX(ix)*mGrid%dx(ix))
+       yYX(ix, 1) = -1.0/ (mGrid%delX(ix)*mGrid%dx(ix-1))
+    enddo
 
+    do ix = 2, mGrid%nx
+       do iz = 2, mGrid%nz
+          yYO(ix, iz) = -(yYX(ix,1) + yYX(ix,2) + &
+               yYZ(iz,1) + yYZ(iz,2))
+       enddo
+    enddo
+    do iy = 1, mGrid%ny
+       do iz = 2, mGrid%nz
+          yZ(iy, iz) = 1.0/ (mGrid%delZ(iz)*mGrid%dy(iy))
        enddo
     enddo
 
-    do iy = 1, ny
-       do iz = 1, nz+1
-          yZ(imgrid, iy, iz) = 1.0/ (mgrid%gridArray(imgrid)%delZ(iz)*mgrid%gridArray(imgrid)%dy(iy))
-       enddo
-    enddo
-
-
-    do ix = 2, nx
-       do iy = 1, ny
-          yX(imgrid, ix, iy) = 1.0/ (mgrid%gridArray(imgrid)%delX(ix)*mgrid%gridArray(imgrid)%dy(iy))
+    do ix = 2, mGrid%nx
+       do iy = 1, mGrid%ny
+          yX(ix, iy) = 1.0/ (mGrid%delX(ix)*mGrid%dy(iy))
        enddo
     enddo
     ! End of Ey coefficients
 
     ! coefficents for calculating Ez; only loop over internal edges
-    do ix = 2, nx
-       zZX(imgrid, ix, 2) = -1.0/ (mgrid%gridArray(imgrid)%delX(ix)*mgrid%gridArray(imgrid)%dx(ix))
-       zZX(imgrid, ix, 1) = -1.0/ (mgrid%gridArray(imgrid)%delX(ix)*mgrid%gridArray(imgrid)%dx(ix-1))
+    do ix = 2, mGrid%nx
+       zZX(ix, 2) = -1.0/ (mGrid%delX(ix)*mGrid%dx(ix))
+       zZX(ix, 1) = -1.0/ (mGrid%delX(ix)*mGrid%dx(ix-1))
     enddo
 
-    do iy = 2, ny
-       zZY(imgrid, iy, 2) = -1.0/ (mgrid%gridArray(imgrid)%delY(iy)*mgrid%gridArray(imgrid)%dy(iy))
-       zZY(imgrid, iy, 1) = -1.0/ (mgrid%gridArray(imgrid)%delY(iy)*mgrid%gridArray(imgrid)%dy(iy-1))
+    do iy = 2, mGrid%ny
+       zZY(iy, 2) = -1.0/ (mGrid%delY(iy)*mGrid%dy(iy))
+       zZY(iy, 1) = -1.0/ (mGrid%delY(iy)*mGrid%dy(iy-1))
     enddo
 
-    do ix = 2, nx
-       do iy = 2, ny
-          zZO(imgrid, ix, iy) = -(zZX(imgrid,ix,1) + zZX(imgrid,ix,2) + &
-               zZY(imgrid,iy,1) + zZY(imgrid,iy,2))
+    do ix = 2, mGrid%nx
+       do iy = 2, mGrid%ny
+          zZO(ix, iy) = -(zZX(ix,1) + zZX(ix,2) + &
+               zZY(iy,1) + zZY(iy,2))
        enddo
     enddo
 
-    do ix = 2, nx
-       do iz = 1, nz
-          zX(imgrid,ix, iz) = 1.0/ (mgrid%gridArray(imgrid)%delX(ix)*mgrid%gridArray(imgrid)%dz(iz))
+    do ix = 2, mGrid%nx
+       do iz = 1, mGrid%nz
+          zX(ix, iz) = 1.0/ (mGrid%delX(ix)*mGrid%dz(iz))
        enddo
     enddo
 
-    do iy = 2, ny
-       do iz = 1, nz
-          zY(imgrid,iy, iz) = 1.0/ (mgrid%gridArray(imgrid)%delY(iy)*mgrid%gridArray(imgrid)%dz(iz))
+    do iy = 2, mGrid%ny
+       do iz = 1, mGrid%nz
+          zY(iy, iz) = 1.0/ (mGrid%delY(iy)*mGrid%dz(iz))
        enddo
     enddo
-
     ! End of Ez coefficients
-    nzCum = nz + nzCum
-    enddo ! loop on subgrids
 
-  end subroutine CurlCurlInit   ! CurlcurleInit
+  end subroutine CurlcurleSetUp   ! CurlcurleSetUp
 
+
+  ! ***************************************************************************
+  ! * CurlcurlE computes the finite difference equation in complex vectors
+  ! * for del X del X E. Note that the difference equation is only for interior
+  ! * edges. However, it does use the contribution from the boundary edges. The
+  ! * coefficients are calculated in CurlcurleSetUp. Remember, in the operators
+  ! * that are used iterative fashion, output is always initialized outside
+  subroutine CurlcurlE(inE, outE)
+
+    implicit none
+    type (cvector), intent(in)             :: inE
+    ! input electrical field as complex vector
+    type (cvector), target, intent(inout)  :: outE
+    ! output electrical field as complex vector
+    integer                                :: ix, iy, iz
+    ! dummy variables
+
+    if (.not.inE%allocated) then
+      write(0,*) 'inE in CurlcurlE not allocated yet'
+      stop
+    end if
+
+    if (.not.outE%allocated) then
+      write(0,*) 'outE in CurlcurlE not allocated yet'
+      stop
+    end if
+
+    ! Check whether the bounds are the same
+    if ((inE%nx == outE%nx).and.&
+         (inE%ny == outE%ny).and.&
+         (inE%nz == outE%nz)) then
+
+       if ((inE%gridType == outE%gridType)) then
+
+          ! Apply difference equation to compute Ex (only on interior nodes)
+          do iz = 2, inE%nz
+             do iy = 2, inE%ny
+                do ix = 1, inE%nx
+
+                   outE%x(ix,iy,iz) = xY(ix,iy)*(inE%y(ix+1,iy,iz)-&
+                  	inE%y(ix,iy,iz)-inE%y(ix+1,iy-1,iz)&
+                        +inE%y(ix,iy-1,iz))+&
+                  	xZ(ix,iz)*(inE%z(ix+1,iy,iz)-inE%z(ix,iy,iz)&
+                  	-inE%z(ix+1,iy,iz-1)+inE%z(ix,iy,iz-1))+&
+                  	xXY(iy,2)*inE%x(ix,iy+1,iz)+&
+                  	xXY(iy,1)*inE%x(ix,iy-1,iz)+&
+                  	xXZ(iz,2)*inE%x(ix,iy,iz+1)+&
+                  	xXZ(iz,1)*inE%x(ix,iy,iz-1)+&
+                  	xXO(iy,iz)*inE%x(ix,iy,iz)
+
+                enddo
+             enddo
+          enddo
+
+          ! Apply difference equation to compute Ey (only on interior nodes)
+          do iz = 2, inE%nz
+             do iy = 1, inE%ny
+                do ix = 2, inE%nx
+
+                   outE%y(ix,iy,iz) = yZ(iy,iz)*(inE%z(ix,iy+1,iz)-&
+                  	inE%z(ix,iy,iz)-inE%z(ix,iy+1,iz-1)+inE%z(ix,iy,iz-1))&
+                  	+yX(ix,iy)*(inE%x(ix,iy+1,iz)-inE%x(ix,iy,iz)&
+                  	-inE%x(ix-1,iy+1,iz)+inE%x(ix-1,iy,iz))+&
+                  	yYZ(iz,2)*inE%y(ix,iy,iz+1)+&
+                  	yYZ(iz,1)*inE%y(ix,iy,iz-1)+&
+                  	yYX(ix,2)*inE%y(ix+1,iy,iz)+&
+                  	yYX(ix,1)*inE%y(ix-1,iy,iz)+&
+                  	yYO(ix,iz)*inE%y(ix,iy,iz)
+
+                enddo
+             enddo
+          enddo
+
+          ! Apply difference equation to compute Ez (only on interior nodes)
+          do iz = 1, inE%nz
+             do iy = 2, inE%ny
+                do ix = 2, inE%nx
+
+                   outE%z(ix,iy,iz) = zX(ix,iz)*(inE%x(ix,iy,iz+1)-&
+                  	inE%x(ix,iy,iz)-inE%x(ix-1,iy,iz+1)+inE%x(ix-1,iy,iz))&
+                  	+zY(iy,iz)*(inE%y(ix,iy,iz+1)-inE%y(ix,iy,iz)&
+                  	-inE%y(ix,iy-1,iz+1)+inE%y(ix,iy-1,iz))+&
+                  	zZX(ix,2)*inE%z(ix+1,iy,iz)+&
+                  	zZX(ix,1)*inE%z(ix-1,iy,iz)+&
+                  	zZY(iy,2)*inE%z(ix,iy+1,iz)+&
+                  	zZY(iy,1)*inE%z(ix,iy-1,iz)+&
+                  	zZO(ix,iy)*inE%z(ix,iy,iz)
+
+                enddo
+             enddo
+          enddo
+
+       else
+          write (0, *) 'CurlcurlE: not compatible usage for existing data types'
+       end if
+
+    else
+       write(0, *) 'Error-complex vectors for CurlcurlE are not of same size'
+    end if
+
+  end subroutine CurlcurlE        ! CurlcurlE
 
   ! ***************************************************************************
   ! * CurlcurlE computes the finite difference equation in complex vectors
@@ -490,200 +553,6 @@ Contains
     deallocate(zZO, STAT=status)
 
   end subroutine CurlcurleCleanUp
-    ! ***************************************************************************
-  ! * Div computes the divergence for a complex vector
-  subroutine Div(inV, outSc)
-  !modified 27/05/2012
-
-    implicit none
-    type (cvector_mg), intent(in)  :: inV
-    type (cscalar_mg), intent(inout)  :: outSc
-    ! local variables
-    integer  :: ix, iy, iz, imgrid
-
-    if(.not.inV%allocated) then
-      print*, 'inV not allocated in Div'
-      stop
-    endif
-
-    if(.not.outSc%allocated) then
-      print*, 'outSc not allocated in Div'
-      stop
-    endif
-
-    ! Check size
-    if(inV%mgridSize /= outSc%mgridSize) then
-      print*,  'Error-mgridSize input/ output in Div are not same size'
-      stop
-    endif
-
-    do imgrid = 1, inV%mgridSize  ! loop on sub-grids
-      ! Check whether all the inputs/ outputs involved
-      ! are even of the same size
-      if ((inV%cvArray(imgrid)%nx == outSc%csArray(imgrid)%nx).and.&
-         (inV%cvArray(imgrid)%ny == outSc%csArray(imgrid)%ny).and.&
-         (inV%cvArray(imgrid)%nz == outSc%csArray(imgrid)%nz)) then
-
-       if ((inV%gridType == EDGE).and.(outSc%gridType == CORNER)) then
-
-          ! computation done only for internal nodes
-          do ix = 2, outSc%csArray(imgrid)%nx
-             do iy = 2, outSc%csArray(imgrid)%ny
-                do iz = 1, outSc%csArray(imgrid)%nz
-
-                   outSc%csArray(imgrid)%v(ix, iy, iz) = (inV%cvArray(imgrid)%x(ix, iy, iz) - &
-                        inV%cvArray(imgrid)%x(ix - 1, iy, iz))/ mgrid%gridArray(imgrid)%delX(ix) + &
-                        (inV%cvArray(imgrid)%y(ix, iy, iz) - inV%cvArray(imgrid)%y(ix, iy - 1, iz))/&
-                        mgrid%gridArray(imgrid)%delY(iy) + &
-                        (inV%cvArray(imgrid)%z(ix, iy, iz) - inV%cvArray(imgrid)%z(ix, iy, iz - 1))/&
-                        mgrid%gridArray(imgrid)%delZ(iz)
-
-                enddo   ! iz
-             enddo      ! iy
-          enddo         ! ix
-
-       else if ((inV%gridType == FACE).and.(outSc%gridType == CENTER)) then
-
-          ! computation done only for internal nodes
-          do ix = 1, outSc%csArray(imgrid)%nx
-             do iy = 1, outSc%csArray(imgrid)%ny
-                do iz = 1, outSc%csArray(imgrid)%nz
-
-                   outSc%csArray(imgrid)%v(ix, iy, iz) = (inV%cvArray(imgrid)%x(ix+1, iy, iz) - &
-                        inV%cvArray(imgrid)%x(ix, iy, iz))/ mgrid%gridArray(imgrid)%dx(ix) + &
-                        (inV%cvArray(imgrid)%y(ix, iy+1, iz) - inV%cvArray(imgrid)%y(ix, iy, iz))/&
-                        mgrid%gridArray(imgrid)%dy(iy) + &
-                        (inV%cvArray(imgrid)%z(ix, iy, iz+1) - inV%cvArray(imgrid)%z(ix, iy, iz))/&
-                        mgrid%gridArray(imgrid)%dz(iz)
-
-                enddo   ! iz
-             enddo      ! iy
-          enddo         ! ix
-
-       else
-          print*, 'Div: not compatible usage for existing data types'
-       end if
-
-     else
-       print*, 'Error-all input/ output in Div are not same size'
-     endif
-   enddo ! Loop on sub-grids
-
-  end subroutine Div  ! Div
-  ! ***************************************************************************
-  ! * Grad computes the gradient for a complex scalar
-
-  subroutine Grad(inSc, outV)
-
-  implicit none
-    type (cscalar_mg), intent(in)  :: inSc
-    type (cvector_mg), intent(inout)  :: outV
-    integer  :: ix, iy, iz, imgrid
-    integer  :: nx,ny,nz
-
-    if(.not.inSc%allocated) then
-      print *, 'inSc not allocated in Grad'
-      stop
-    endif
-
-    if(.not.outV%allocated) then
-      print *,'outV not allocated in Grad'
-      stop
-    endif
-
-      do imgrid = 1, inSc%mgridSize  ! Global loop on subgrids
-        nx = inSc%csArray(imgrid)%nx
-        ny = inSc%csArray(imgrid)%ny
-        nz = inSc%csArray(imgrid)%nz
-
-        if ((nx == outV%cvArray(imgrid)%nx).and.&
-            (ny == outV%cvArray(imgrid)%ny).and.&
-            (nz == outV%cvArray(imgrid)%nz)) then
-
-          if ((outV%gridType == EDGE).and.(inSc%gridType == CORNER).and.&
-                                   (outV%mgridSize == inSc%mgridSize)) then
-
-            ! the conversion in Grad is only done for interior nodes
-            do ix = 1, nx
-             do iy = 2, ny
-                do iz = 1, nz+1
-
-                   outV%cvArray(imgrid)%x(ix, iy, iz) = (inSc%csArray(imgrid)%v(ix+1, iy, iz) - &
-                        inSc%csArray(imgrid)%v(ix, iy, iz))/ inSc%csArray(imgrid)%grid%dx(ix)
-
-                enddo
-             enddo
-            enddo
-
-            do ix = 2, nx
-              do iy = 1, ny
-               do iz = 1, nz+1
-
-                outV%cvArray(imgrid)%y(ix, iy, iz) = (inSc%csArray(imgrid)%v(ix, iy+1, iz) - &
-                     inSc%csArray(imgrid)%v(ix, iy, iz))/ inSc%csArray(imgrid)%grid%dy(iy)
-
-               enddo
-              enddo
-            enddo
-
-            do ix = 2, nx
-              do iy = 2, ny
-               do iz = 1, nz
-
-                 outV%cvArray(imgrid)%z(ix, iy, iz) = (inSc%csArray(imgrid)%v(ix, iy, iz+1) - &
-                        inSc%csArray(imgrid)%v(ix, iy, iz))/ inSc%csArray(imgrid)%grid%dz(iz)
-
-                enddo
-               enddo
-            enddo
-
-          else if ((outV%gridType == FACE).and.(inSc%gridType == CENTER)) then
-
-            ! the conversion in Grad is only done for interior nodes
-            do ix = 2, nx
-             do iy = 1, ny
-                do iz = 1, nz+1
-
-                   outV%cvArray(imgrid)%x(ix, iy, iz) = (inSc%csArray(imgrid)%v(ix, iy, iz) - &
-                        inSc%csArray(imgrid)%v(ix-1, iy, iz))/ inSc%csArray(imgrid)%grid%delX(ix)
-
-                enddo
-             enddo
-            enddo
-
-            do ix = 1, nx
-             do iy = 2, ny
-                do iz = 1, nz+1
-
-                   outV%cvArray(imgrid)%y(ix, iy, iz) = (inSc%csArray(imgrid)%v(ix, iy, iz) - &
-                        inSc%csArray(imgrid)%v(ix, iy-1, iz))/ inSc%csArray(imgrid)%grid%delY(iy)
-
-                enddo
-             enddo
-            enddo
-
-            do ix = 1, nx
-             do iy = 1, ny
-                do iz = 2, nz
-
-                   outV%cvArray(imgrid)%z(ix, iy, iz) = (inSc%csArray(imgrid)%v(ix, iy, iz) - &
-                        inSc%csArray(imgrid)%v(ix, iy, iz-1))/ inSc%csArray(imgrid)%grid%delZ(iz)
-
-                enddo
-             enddo
-            enddo
-
-        else
-          print *, 'Error-all input/ output in Grad are not same size'
-        endif
-
-
-      else
-        print *, 'Grad: not compatible usage for existing data types'
-      endif
-    enddo ! Global loop on subgrids
-  end subroutine Grad  ! Grad
-
 
   ! ***************************************************************************
   ! * AdiagInit initializes the memory for the diagonal nodes being added
@@ -693,10 +562,10 @@ Contains
 
     implicit none
 
-   ! Call create_cvector(mGrid, Adiag, EDGE)
-    Call create_cvector_mg(mGrid, AdiagMG, EDGE)
+    Call create_cvector(mGrid, Adiag, EDGE)
 
   end subroutine AdiagInit
+
 
   ! ***************************************************************************
   ! * Adiag sets up the diagonal nodes with the imaginary part added to it
@@ -704,71 +573,55 @@ Contains
   subroutine AdiagSetUp()
 
     implicit  none
-    integer                   :: ix, iy, iz , imgrid      ! dummy variables
-    integer  :: nx,ny,nz
+    integer                   :: ix, iy, iz       ! dummy variables
 
-    if (.not.AdiagMG%allocated) then
-      print *, 'AdiagMG in AdiagSetUp not allocated yet'
+    if (.not.Adiag%allocated) then
+      write(0,*) 'Adiag in AdiagSetUp not allocated yet'
       stop
     end if
 
-      ! check size
-      if(mgrid%mgridSize /= AdiagMG%mgridSize) then
-        print *, 'AdiagSetUp error: mgridSize'
-        else
-          do imgrid = 1, mgrid%mgridSize
-            nx = mgrid%gridArray(imgrid)%nx
-            ny = mgrid%gridArray(imgrid)%ny
-            nz = mgrid%gridArray(imgrid)%nz
-            if ((nx /= AdiagMG%cvArray(imgrid)%nx.or.ny /= AdiagMG%cvArray(imgrid)%ny.or.&
-                            ny /= AdiagMG%cvArray(imgrid)%ny).and.(nx /= condEMG%rvArray(imgrid)%nx.or.ny /= condEMG%rvArray(imgrid)%ny.or.&
-                            ny /= condEMG%rvArray(imgrid)%ny)) then
-               print *, 'AdiagSetUp error: grids are not the same size'
-            else
-              do ix = 1, nx
-                AdiagMG%cvArray(imgrid)%x(ix,:,:) = CMPLX(0.0, 1.0, 8)*omega*MU_0*condEMG%rvArray(imgrid)%x(ix,:,:)
-              enddo
-              do iy = 1, ny
-                AdiagMG%cvArray(imgrid)%y(:,iy,:) = CMPLX(0.0, 1.0, 8)*omega*MU_0*condEMG%rvArray(imgrid)%y(:,iy,:)
-              enddo
-              do iz = 1, nz
-                AdiagMG%cvArray(imgrid)%z(:,:,iz) = CMPLX(0.0, 1.0, 8)*omega*MU_0*condEMG%rvArray(imgrid)%z(:,:,iz)
-              enddo
-            endif
-           enddo
-        endif
+    do ix = 1, mGrid%nx
+       Adiag%x(ix,:,:) = CMPLX(0.0, 1.0, 8)*omega*MU_0*condE%x(ix,:,:)
+    enddo
+
+    do iy = 1, mGrid%ny
+       Adiag%y(:,iy,:) = CMPLX(0.0, 1.0, 8)*omega*MU_0*condE%y(:,iy,:)
+    enddo
+
+    do iz = 1, mGrid%nz
+       Adiag%z(:,:,iz) = CMPLX(0.0, 1.0, 8)*omega*MU_0*condE%z(:,:,iz)
+    enddo
 
   end subroutine AdiagSetUp
 
-! *************************************************************************************
+  ! ***************************************************************************
   ! * deall_Adiag deallocates the memory for the diagonal nodes being added
   ! * with the imaginary part.
   subroutine deall_Adiag()
 
     implicit none
 
-    Call deall_cvector_mg(AdiagMG)
+    Call deall_cvector(Adiag)
 
   end subroutine deall_Adiag
 
-    ! ***************************************************************************
+  ! ***************************************************************************
   ! * Maxwell computes the finite difference equation in complex vectors
   ! * for del X del X E +/- i*omega*mu*conductivity*E in unsymmetrical form.
   ! * Note that the difference equation is only for interior edges. However,
   ! * it does use the contribution from the boundary edges. The coefficients
   ! * are  calculated in CurlcurleSetUp. Remember, in the operators that are
   ! * used in iterative fashion, output is always initialized outside
-   subroutine Maxwell(inE, adjt, outE)   ! Multigrid
+  subroutine Maxwell(inE, adjt, outE)
 
     implicit none
-    type (cvector_mg), intent(in)               :: inE
+    type (cvector), intent(in)               :: inE
     ! input electrical field as complex vector
     logical, intent (in)                     :: adjt
-    type (cvector_mg), target, intent(inout)    :: outE
+    type (cvector), target, intent(inout)    :: outE
     ! output electrical field as complex vector
-    complex  :: diag_sign
-    integer  :: ix, iy, iz, imgrid
-    integer  :: nx, ny,nz
+    integer                                  :: diag_sign
+    integer                                  :: ix, iy, iz
     ! dummy variables
 
     if (.not.inE%allocated) then
@@ -781,62 +634,37 @@ Contains
       stop
     end if
 
-    if (inE%mgridSize == outE%mgridSize) then
-      ! Check grid type also
-      if ((inE%gridType == outE%gridType)) then
-        do imgrid = 1, inE%mgridSize    ! Global loop on subgrids
-          ! Check whether the bounds are the same
-          if ((inE%cvArray(imgrid)%nx == outE%cvArray(imgrid)%nx).and.&
-           (inE%cvArray(imgrid)%ny == outE%cvArray(imgrid)%ny).and.&
-            (inE%cvArray(imgrid)%nz == outE%cvArray(imgrid)%nz)) then
-           nx = inE%cvArray(imgrid)%nx
-           ny = inE%cvArray(imgrid)%ny
-           nz = inE%cvArray(imgrid)%nz
-           if (adjt) then
-              diag_sign = -1*ISIGN
-           else
-              diag_sign = ISIGN
-           end if
+    ! Check whether the bounds are the same
+    if ((inE%nx == outE%nx).and.&
+         (inE%ny == outE%ny).and.&
+         (inE%nz == outE%nz)) then
+
+       if ((inE%gridType == outE%gridType)) then
+
+          if (adjt) then
+             diag_sign = -1*ISIGN
+          else
+             diag_sign = ISIGN
+          end if
 
           !$OMP PARALLEL DEFAULT(SHARED) PRIVATE(ix,iy,iz)
 
           ! Apply difference equation to compute Ex (only on interior nodes)
           ! the diagonal nodes have the imaginary component added
           !$OMP DO SCHEDULE(STATIC)
-	      do iz = 2, nz
-             do iy = 2, ny
-                do ix = 1, nx
-                   outE%cvArray(imgrid)%x(ix,iy,iz) = xY(imgrid,ix,iy)*(inE%cvArray(imgrid)%y(ix+1,iy,iz)-&
-                  	inE%cvArray(imgrid)%y(ix,iy,iz)-inE%cvArray(imgrid)%y(ix+1,iy-1,iz)&
-                        +inE%cvArray(imgrid)%y(ix,iy-1,iz))+&
-                  	xZ(imgrid,ix,iz)*(inE%cvArray(imgrid)%z(ix+1,iy,iz)-inE%cvArray(imgrid)%z(ix,iy,iz)&
-                  	-inE%cvArray(imgrid)%z(ix+1,iy,iz-1)+inE%cvArray(imgrid)%z(ix,iy,iz-1))+&
-                  	xXY(imgrid,iy,2)*inE%cvArray(imgrid)%x(ix,iy+1,iz)+&
-                  	xXY(imgrid,iy,1)*inE%cvArray(imgrid)%x(ix,iy-1,iz)+&
-                  	xXZ(imgrid,iz ,2)*inE%cvArray(imgrid)%x(ix,iy,iz+1)+&
-                  	xXZ(imgrid,iz,1)*inE%cvArray(imgrid)%x(ix,iy,iz-1)+&
-                  	(xXO(imgrid,iy,iz)+diag_sign*AdiagMG%cvArray(imgrid)%x(ix,iy,iz))*inE%cvArray(imgrid)%x(ix,iy,iz)
-                enddo
-             enddo
-          enddo
-
-          !$OMP END DO NOWAIT
-
-          ! Apply difference equation to compute Ey (only on interior nodes)
-	      ! the diagonal nodes have the imaginary component added
-          !$OMP DO SCHEDULE(STATIC)
-          do iz = 2, nz
-             do iy = 1, ny
-                do ix = 2, nx
-                   outE%cvArray(imgrid)%y(ix,iy,iz) = yZ(imgrid,iy,iz)*(inE%cvArray(imgrid)%z(ix,iy+1,iz)-&
-                  	inE%cvArray(imgrid)%z(ix,iy,iz)-inE%cvArray(imgrid)%z(ix,iy+1,iz-1)+inE%cvArray(imgrid)%z(ix,iy,iz-1))&
-                  	+yX(imgrid,ix,iy)*(inE%cvArray(imgrid)%x(ix,iy+1,iz)-inE%cvArray(imgrid)%x(ix,iy,iz)&
-                  	-inE%cvArray(imgrid)%x(ix-1,iy+1,iz)+inE%cvArray(imgrid)%x(ix-1,iy,iz))+&
-                  	yYZ(imgrid,iz,2)*inE%cvArray(imgrid)%y(ix,iy,iz+1)+&
-                  	yYZ(imgrid,iz,1)*inE%cvArray(imgrid)%y(ix,iy,iz-1)+&
-                  	yYX(imgrid,ix,2)*inE%cvArray(imgrid)%y(ix+1,iy,iz)+&
-                 	yYX(imgrid,ix,1)*inE%cvArray(imgrid)%y(ix-1,iy,iz)+&
-                  	(yYO(imgrid,ix,iz)+diag_sign*AdiagMG%cvArray(imgrid)%y(ix,iy,iz))*inE%cvArray(imgrid)%y(ix,iy,iz)
+	      do iz = 2, inE%nz
+             do iy = 2, inE%ny
+                do ix = 1, inE%nx
+                   outE%x(ix,iy,iz) = xY(ix,iy)*(inE%y(ix+1,iy,iz)-&
+                  	inE%y(ix,iy,iz)-inE%y(ix+1,iy-1,iz)&
+                        +inE%y(ix,iy-1,iz))+&
+                  	xZ(ix,iz)*(inE%z(ix+1,iy,iz)-inE%z(ix,iy,iz)&
+                  	-inE%z(ix+1,iy,iz-1)+inE%z(ix,iy,iz-1))+&
+                  	xXY(iy,2)*inE%x(ix,iy+1,iz)+&
+                  	xXY(iy,1)*inE%x(ix,iy-1,iz)+&
+                  	xXZ(iz,2)*inE%x(ix,iy,iz+1)+&
+                  	xXZ(iz,1)*inE%x(ix,iy,iz-1)+&
+                  	(xXO(iy,iz)+diag_sign*Adiag%x(ix,iy,iz))*inE%x(ix,iy,iz)
                 enddo
              enddo
           enddo
@@ -845,263 +673,126 @@ Contains
           ! Apply difference equation to compute Ey (only on interior nodes)
 	      ! the diagonal nodes have the imaginary component added
           !$OMP DO SCHEDULE(STATIC)
-          do iz = 1, nz
-             do iy = 2, ny
-                do ix = 2, nx
-                   outE%cvArray(imgrid)%z(ix,iy,iz) = zX(imgrid,ix,iz)*(inE%cvArray(imgrid)%x(ix,iy,iz+1)-&
-                      inE%cvArray(imgrid)%x(ix,iy,iz)-inE%cvArray(imgrid)%x(ix-1,iy,iz+1)+inE%cvArray(imgrid)%x(ix-1,iy,iz))&
-                  	+zY(imgrid,iy,iz)*(inE%cvArray(imgrid)%y(ix,iy,iz+1)-inE%cvArray(imgrid)%y(ix,iy,iz)&
-                  	-inE%cvArray(imgrid)%y(ix,iy-1,iz+1)+inE%cvArray(imgrid)%y(ix,iy-1,iz))+&
-                  	zZX(imgrid,ix,2)*inE%cvArray(imgrid)%z(ix+1,iy,iz)+&
-                  	zZX(imgrid,ix,1)*inE%cvArray(imgrid)%z(ix-1,iy,iz)+&
-                  	zZY(imgrid,iy,2)*inE%cvArray(imgrid)%z(ix,iy+1,iz)+&
-                  	zZY(imgrid,iy,1)*inE%cvArray(imgrid)%z(ix,iy-1,iz)+&
-                  	(zZO(imgrid,ix,iy)+diag_sign*AdiagMG%cvArray(imgrid)%z(ix,iy,iz))*inE%cvArray(imgrid)%z(ix,iy,iz)
+          do iz = 2, inE%nz
+             do iy = 1, inE%ny
+                do ix = 2, inE%nx
+                   outE%y(ix,iy,iz) = yZ(iy,iz)*(inE%z(ix,iy+1,iz)-&
+                  	inE%z(ix,iy,iz)-inE%z(ix,iy+1,iz-1)+inE%z(ix,iy,iz-1))&
+                  	+yX(ix,iy)*(inE%x(ix,iy+1,iz)-inE%x(ix,iy,iz)&
+                  	-inE%x(ix-1,iy+1,iz)+inE%x(ix-1,iy,iz))+&
+                  	yYZ(iz,2)*inE%y(ix,iy,iz+1)+&
+                  	yYZ(iz,1)*inE%y(ix,iy,iz-1)+&
+                  	yYX(ix,2)*inE%y(ix+1,iy,iz)+&
+                  	yYX(ix,1)*inE%y(ix-1,iy,iz)+&
+                  	(yYO(ix,iz)+diag_sign*Adiag%y(ix,iy,iz))*inE%y(ix,iy,iz)
                 enddo
              enddo
           enddo
           !$OMP END DO NOWAIT
+
+          ! Apply difference equation to compute Ey (only on interior nodes)
+	      ! the diagonal nodes have the imaginary component added
+          !$OMP DO SCHEDULE(STATIC)
+          do iz = 1, inE%nz
+             do iy = 2, inE%ny
+                do ix = 2, inE%nx
+                   outE%z(ix,iy,iz) = zX(ix,iz)*(inE%x(ix,iy,iz+1)-&
+                  	inE%x(ix,iy,iz)-inE%x(ix-1,iy,iz+1)+inE%x(ix-1,iy,iz))&
+                  	+zY(iy,iz)*(inE%y(ix,iy,iz+1)-inE%y(ix,iy,iz)&
+                  	-inE%y(ix,iy-1,iz+1)+inE%y(ix,iy-1,iz))+&
+                  	zZX(ix,2)*inE%z(ix+1,iy,iz)+&
+                  	zZX(ix,1)*inE%z(ix-1,iy,iz)+&
+                  	zZY(iy,2)*inE%z(ix,iy+1,iz)+&
+                  	zZY(iy,1)*inE%z(ix,iy-1,iz)+&
+                  	(zZO(ix,iy)+diag_sign*Adiag%z(ix,iy,iz))*inE%z(ix,iy,iz)
+                enddo
+             enddo
+          enddo
+          !$OMP END DO NOWAIT
+
           !$OMP END PARALLEL
 
-          ! update first and last layers
-          call UpdateZ_O(inE,outE,diag_sign,imgrid)
-
-          else
-            print *, 'Error-complex vectors for Maxwell are not of same size'
-          end if
-
-        enddo ! Global loop on subgrids
-      else
-        print *, 'Maxwell: not compatible usage for existing data types'
+       else
+          write (0, *) ' Maxwell: not compatible usage for existing data types'
        end if
 
     else
-      print *, 'Error complex vectors for Maxwell; multigridSize are not of same size'
-    endif
+       write(0, *) 'Error-complex vectors for Maxwell are not of same size'
+    end if
 
-  end subroutine Maxwell        ! Maxwell  Multigrid
-
-  ! ******************************************************************************************************
-  subroutine UpdateZ_Curl(inE, outE,diag_sign,imgrid)
-  ! created 24.04.2012
-  ! modified 27.04.2012
-  ! modified 07.05.2012
-  ! modified 23.05.2012 ! no coarseness case added
-  ! modified 30.05.2012
-
-  ! Updates first z layer in curl curl
-           !last
-  implicit none
-
-  type(cvector_mg), intent(inout)  :: outE
-  type(cvector_mg), intent(in)  :: inE
-  integer, intent(in)  :: imgrid
-  complex,intent(in)  :: diag_sign
-
-  ! local variables
-  integer  :: ix, iy, iz
-  integer  :: nx, ny, nz
-
-    nx = inE%cvArray(imgrid)%nx
-    ny = inE%cvArray(imgrid)%ny
-    nz = inE%cvArray(imgrid)%nz
-
-   if(imgrid == inE%mgridSize) then
-   ! the last multigrid layer
-   ! z=1 must be filled in
-   ! nz+1 should be zero
-   ! nothing to do
-     return
-   endif
-
-   ! the basic strategy is to fill in the interface layer with values from the finer grid!
-   if (inE%coarseness(imgrid).lt.inE%coarseness(imgrid+1))then
-      ! interface layer: finer -> coarser
-      ! Update nz+1 curl curl operator
-      do iy = 2, ny/2
-        do ix = 1, nx/2
-          ! Update Ex
-          ! 'odd values'
-          outE%cvArray(imgrid)%x(2*ix-1,2*iy-1,nz+1) = xY(imgrid,2*ix-1,2*iy-1)*(inE%cvArray(imgrid)%y(2*ix,2*iy-1,nz+1)-&
-                    inE%cvArray(imgrid)%y(2*ix-1,2*iy-1,nz+1)-inE%cvArray(imgrid)%y(2*ix,2*(iy-1),nz+1)&
-                        +inE%cvArray(imgrid)%y(2*ix-1,2*(iy-1),nz+1))+&
-                    xZ(imgrid,2*ix-1,nz)*(inE%cvArray(imgrid)%z(2*ix,2*iy-1,nz)-inE%cvArray(imgrid)%z(2*ix-1,2*iy-1,nz))&
-                    -xZ(imgrid+1,ix,1)*(inE%cvArray(imgrid+1)%z(ix+1,iy,1)-inE%cvArray(imgrid+1)%z(ix,iy,1))+&
-                    xXY(imgrid,2*iy-1,2)*inE%cvArray(imgrid)%x(2*ix-1,2*iy,nz+1)+&
-                    xXY(imgrid,2*iy-1,1)*inE%cvArray(imgrid)%x(2*ix-1,2*(iy-1),nz+1)+&
-                    xXZ(imgrid,nz,2)*inE%cvArray(imgrid)%x(2*ix-1,2*iy-1,nz)+&
-                    xXZ(imgrid+1,1,1)*(inE%cvArray(imgrid+1)%x(ix,iy,2)-inE%cvArray(imgrid+1)%x(ix,iy,1))+&
-                    (-(xXY(imgrid,2*iy-1,1)+xXY(imgrid,2*iy-1,2)+xXZ(imgrid,nz,2))+diag_sign*AdiagMG%cvArray(imgrid)%x(2*ix-1,2*iy-1,nz+1))*inE%cvArray(imgrid)%x(2*ix-1,2*iy-1,nz+1)
-
-          ! 'even values'
-          outE%cvArray(imgrid)%x(2*ix,2*iy-1,nz+1) = xY(imgrid,2*ix,2*iy-1)*(inE%cvArray(imgrid)%y(2*ix+1,2*iy-1,nz+1)-&
-                    inE%cvArray(imgrid)%y(2*ix,2*iy-1,nz+1)-inE%cvArray(imgrid)%y(2*ix+1,2*(iy-1),nz+1)&
-                        +inE%cvArray(imgrid)%y(2*ix,2*(iy-1),nz+1))+&
-                    xZ(imgrid,2*ix,nz)*(inE%cvArray(imgrid)%z(2*ix+1,2*iy-1,nz)-inE%cvArray(imgrid)%z(2*ix,2*iy-1,nz))&
-                    -xZ(imgrid+1,ix,1)*(inE%cvArray(imgrid+1)%z(ix+1,iy,1)-inE%cvArray(imgrid+1)%z(ix,iy,1))+&
-                    xXY(imgrid,2*iy-1,2)*inE%cvArray(imgrid)%x(2*ix,2*iy,nz+1)+&
-                    xXY(imgrid,2*iy-1,1)*inE%cvArray(imgrid)%x(2*ix,2*(iy-1),nz+1)+&
-                    xXZ(imgrid,nz,2)*inE%cvArray(imgrid)%x(2*ix,2*iy-1,nz)+&
-                    xXZ(imgrid+1,1,1)*(inE%cvArray(imgrid+1)%x(ix,iy,2)-inE%cvArray(imgrid+1)%x(ix,iy,1))+&
-                    (-(xXY(imgrid,2*iy-1,1)+xXY(imgrid,2*iy-1,2)+xXZ(imgrid,nz,2))+diag_sign*AdiagMG%cvArray(imgrid)%x(2*ix,2*iy-1,nz+1))*inE%cvArray(imgrid)%x(2*ix,2*iy-1,nz+1)
+  end subroutine Maxwell        ! Maxwell
 
 
-          ! fill in first layer of the next multigrid layer
-          outE%cvArray(imgrid+1)%x(ix,iy,1) =  (outE%cvArray(imgrid)%x(2*ix-1,2*iy-1,nz+1)*mGrid%gridArray(imgrid)%dx(2*ix-1)&
-                                              +outE%cvArray(imgrid)%x(2*ix,2*iy-1,nz+1)*mGrid%gridArray(imgrid)%dx(2*ix))/&
-                                              (mGrid%gridArray(imgrid)%dx(2*ix-1)+mGrid%gridArray(imgrid)%dx(2*ix))
-        enddo
-      enddo
+  ! **************************************************************************
+  ! * Gets the Maxwell's equation in the complete symmetrical form,
+  ! * del X del X E +/- i*omega*mu*conductivity*E. E is the complex vector
+  ! * defining the electrical field _O is to denote that this is the original
+  ! * subroutine. Diagonally multiplied by weights for symmetry.
+  subroutine MultA_O(inE, adjt, outE)
 
-     ! Update Ey
-     do iy = 1, ny/2
-       do ix = 2, nx/2
-         ! 'odd values'
-                   outE%cvArray(imgrid)%y(2*ix-1,2*iy-1,nz+1) = yZ(imgrid,2*iy-1,nz)*(inE%cvArray(imgrid)%z(2*ix-1,2*iy,nz)-&
-                    inE%cvArray(imgrid)%z(2*ix-1,2*iy-1,nz))&
-                    -yZ(imgrid+1,iy,1)*(inE%cvArray(imgrid+1)%z(ix,iy+1,1)-inE%cvArray(imgrid+1)%z(ix,iy,1))&
-                    +yX(imgrid,2*ix-1,2*iy-1)*(inE%cvArray(imgrid)%x(2*ix-1,2*iy,nz+1)-inE%cvArray(imgrid)%x(2*ix-1,2*iy-1,nz+1)&
-                    -inE%cvArray(imgrid)%x(2*(ix-1),2*iy,nz+1)+inE%cvArray(imgrid)%x(2*(ix-1),2*iy-1,nz+1))+&
-                    yYZ(imgrid,nz,2)*inE%cvArray(imgrid)%y(2*ix-1,2*iy-1,nz)+&
-                    yYZ(imgrid+1,1,1)*(inE%cvArray(imgrid+1)%y(ix,iy,2)-inE%cvArray(imgrid)%y(ix,iy,1))+&
-                    yYX(imgrid,2*ix-1,2)*inE%cvArray(imgrid)%y(2*ix,2*iy-1,nz+1)+&
-                    yYX(imgrid,2*ix-1,1)*inE%cvArray(imgrid)%y(2*(ix-1),2*iy-1,nz+1)+&
-                    (-(yYX(imgrid,2*ix-1,1)+yYX(imgrid,2*ix-1,2)+yYZ(imgrid,nz,2))+diag_sign*AdiagMG%cvArray(imgrid)%y(2*ix-1,2*iy-1,nz+1))*inE%cvArray(imgrid)%y(2*ix-1,2*iy-1,nz+1)
+    implicit none
+    type (cvector), intent (in)              :: inE
+    logical, intent (in)                     :: adjt
+    type (cvector), intent (inout)           :: outE
+    type (cvector)                           :: workE
+    ! workE is the complex vector that is used as a work space
+    integer                                  :: diag_sign
+    complex(kind=prec)               :: c2
+    ! a complex multiplier
 
-         ! 'even values'
-                   outE%cvArray(imgrid)%y(2*ix-1,2*iy,nz+1) = yZ(imgrid,2*iy,nz)*(inE%cvArray(imgrid)%z(2*ix-1,2*iy+1,nz)-&
-                    inE%cvArray(imgrid)%z(2*ix-1,2*iy,nz))&
-                    -yZ(imgrid+1,iy,1)*(inE%cvArray(imgrid+1)%z(ix,iy+1,1)-inE%cvArray(imgrid+1)%z(ix,iy,1))&
-                    +yX(imgrid,2*ix-1,2*iy)*(inE%cvArray(imgrid)%x(2*ix-1,2*iy+1,nz+1)-inE%cvArray(imgrid)%x(2*ix-1,2*iy,nz+1)&
-                    -inE%cvArray(imgrid)%x(2*(ix-1),2*iy+1,nz+1)+inE%cvArray(imgrid)%x(2*(ix-1),2*iy,nz+1))+&
-                    yYZ(imgrid,nz,2)*inE%cvArray(imgrid)%y(2*ix-1,2*iy,nz)+&
-                    yYZ(imgrid+1,1,1)*(inE%cvArray(imgrid+1)%y(ix,iy,2)-inE%cvArray(imgrid)%y(ix,iy,1))+&
-                    yYX(imgrid,2*ix-1,2)*inE%cvArray(imgrid)%y(2*ix,2*iy,nz+1)+&
-                    yYX(imgrid,2*ix-1,1)*inE%cvArray(imgrid)%y(2*(ix-1),2*iy,nz+1)+&
-                    (-(yYX(imgrid,2*ix-1,1)+yYX(imgrid,2*ix-1,2)+yYZ(imgrid,nz,2))+diag_sign*AdiagMG%cvArray(imgrid)%y(2*ix-1,2*iy,nz+1))*inE%cvArray(imgrid)%y(2*ix-1,2*iy,nz+1)
+    if (.not.inE%allocated) then
+      write(0,*) 'inE in MultA_O not allocated yet'
+      stop
+    end if
 
-          ! fill in zero layer of the next multigrid layer
-          outE%cvArray(imgrid+1)%y(ix,iy,1) =  (outE%cvArray(imgrid)%y(2*ix-1,2*iy-1,nz+1)*mGrid%gridArray(imgrid)%dy(2*iy-1)&
-                                              +outE%cvArray(imgrid)%y(2*ix-1,2*iy,nz+1)*mGrid%gridArray(imgrid)%dy(2*iy))/&
-                                              (mGrid%gridArray(imgrid)%dy(2*iy-1)+mGrid%gridArray(imgrid)%dy(2*iy))
-        enddo
-      enddo
+    if (.not.outE%allocated) then
+      write(0,*) 'outE in MultA_O not allocated yet'
+      stop
+    end if
 
-   else if (inE%coarseness(imgrid).gt.inE%coarseness(imgrid+1))then
+    Call create_cvector(mGrid, workE, EDGE)
 
-     ! interface layer: coarse to fine
-      do iy = 2, ny
-        do ix = 1, nx
-          ! Update Ex
-          ! 'odd values'
-          outE%cvArray(imgrid+1)%x(2*ix-1,2*iy-1,1) = xY(imgrid+1,2*ix-1,2*iy-1)*(inE%cvArray(imgrid+1)%y(2*ix,2*iy-1,1)-&
-                    inE%cvArray(imgrid+1)%y(2*ix-1,2*iy-1,1)-inE%cvArray(imgrid+1)%y(2*ix,2*(iy-1),1)&
-                        +inE%cvArray(imgrid+1)%y(2*ix-1,2*(iy-1),1))+&
-                    xZ(imgrid+1,2*ix-1,1)*(inE%cvArray(imgrid+1)%z(2*ix,2*iy-1,1)-inE%cvArray(imgrid+1)%z(2*ix-1,2*iy-1,1))&
-                    -xZ(imgrid,ix,nz)*(inE%cvArray(imgrid)%z(ix+1,iy,nz)-inE%cvArray(imgrid)%z(ix,iy,nz))+&
-                    xXY(imgrid+1,2*iy-1,2)*inE%cvArray(imgrid+1)%x(2*ix-1,2*iy,1)+&
-                    xXY(imgrid+1,2*iy-1,1)*inE%cvArray(imgrid+1)%x(2*ix-1,2*(iy-1),1)+&
-                    xXZ(imgrid+1,1 ,1)*inE%cvArray(imgrid+1)%x(2*ix-1,2*iy-1,2)+&
-                    xXZ(imgrid,nz,2)*(inE%cvArray(imgrid)%x(ix,iy,nz)-inE%cvArray(imgrid)%x(ix,iy,nz+1))+&
-                    (-(xXY(imgrid+1,2*iy-1,1)+xXY(imgrid+1,2*iy-1,2)+xXZ(imgrid+1,1,1))+diag_sign*AdiagMG%cvArray(imgrid+1)%x(2*ix-1,2*iy-1,1))*inE%cvArray(imgrid+1)%x(2*ix-1,2*iy-1,1)
-          ! 'even values'
-          outE%cvArray(imgrid+1)%x(2*ix,2*iy-1,1) = xY(imgrid+1,2*ix,2*iy-1)*(inE%cvArray(imgrid+1)%y(2*ix+1,2*iy-1,1)-&
-                    inE%cvArray(imgrid+1)%y(2*ix,2*iy-1,1)-inE%cvArray(imgrid+1)%y(2*ix+1,2*(iy-1),1)&
-                        +inE%cvArray(imgrid+1)%y(2*ix,2*(iy-1),1))+&
-                    xZ(imgrid+1,2*ix,1)*(inE%cvArray(imgrid+1)%z(2*ix+1,2*iy-1,1)-inE%cvArray(imgrid+1)%z(2*ix,2*iy-1,1))&
-                    -xZ(imgrid,ix,nz)*(inE%cvArray(imgrid)%z(ix+1,iy,nz)-inE%cvArray(imgrid)%z(ix,iy,nz))+&
-                    xXY(imgrid+1,2*iy-1,2)*inE%cvArray(imgrid+1)%x(2*ix,2*iy,1)+&
-                    xXY(imgrid+1,2*iy-1,1)*inE%cvArray(imgrid+1)%x(2*ix,2*(iy-1),1)+&
-                    xXZ(imgrid+1,1 ,1)*inE%cvArray(imgrid+1)%x(2*ix,2*iy-1,2)+&
-                    xXZ(imgrid,nz,2)*(inE%cvArray(imgrid)%x(ix,iy,nz)-inE%cvArray(imgrid)%x(ix,iy,nz+1))+&
-                    (-(xXY(imgrid+1,2*iy-1,1)+xXY(imgrid+1,2*iy-1,2)+xXZ(imgrid+1,1,1))+diag_sign*AdiagMG%cvArray(imgrid+1)%x(2*ix,2*iy-1,1))*inE%cvArray(imgrid+1)%x(2*ix,2*iy-1,1)
+    ! Check whether the bounds are the same
+    if ((inE%nx == outE%nx).and.&
+         (inE%ny == outE%ny).and.&
+         (inE%nz == outE%nz).and.&
+         (inE%nx == workE%nx).and.&
+         (inE%ny == workE%ny).and.&
+         (inE%nz == workE%nz)) then
 
-          ! fill in zero layer of the next multigrid layer
-          outE%cvArray(imgrid)%x(ix,iy,nz+1) =  (outE%cvArray(imgrid+1)%x(2*ix-1,2*iy-1,1)*mGrid%gridArray(imgrid+1)%dx(2*ix-1)&
-                                               +outE%cvArray(imgrid+1)%x(2*ix,2*iy-1,1)*mGrid%gridArray(imgrid+1)%dx(2*ix))/&
-                                               (mGrid%gridArray(imgrid+1)%dx(2*ix-1)+mGrid%gridArray(imgrid+1)%dx(2*ix))
-        enddo
-      enddo
+       if ((inE%gridType == outE%gridType).and.(inE%gridType == workE%gridType)) &
+            then
 
-      ! Update Ey
-      do iy = 1, ny
-        do ix = 2, nx
-         ! 'odd values'
-                   outE%cvArray(imgrid+1)%y(2*ix-1,2*iy-1,1) = yZ(imgrid+1,2*iy-1,1)*(inE%cvArray(imgrid+1)%z(2*ix-1,2*iy,1)-&
-                    inE%cvArray(imgrid+1)%z(2*ix-1,2*iy-1,1))&
-                    -yZ(imgrid,iy,nz)*(inE%cvArray(imgrid)%z(ix,iy+1,nz)-inE%cvArray(imgrid)%z(ix,iy,nz))&
-                    +yX(imgrid+1,2*ix-1,2*iy-1)*(inE%cvArray(imgrid+1)%x(2*ix-1,2*iy,1)-inE%cvArray(imgrid+1)%x(2*ix-1,2*iy-1,1)&
-                    -inE%cvArray(imgrid+1)%x(2*(ix-1),2*iy,1)+inE%cvArray(imgrid+1)%x(2*(ix-1),2*iy-1,1))+&
-                    yYZ(imgrid+1,1,1)*inE%cvArray(imgrid+1)%y(2*ix-1,2*iy-1,2)+&
-                    yYZ(imgrid,nz,2)*(inE%cvArray(imgrid)%y(ix,iy,nz)-inE%cvArray(imgrid)%y(ix,iy,nz+1))+&
-                    yYX(imgrid+1,2*ix-1,2)*inE%cvArray(imgrid+1)%y(2*ix,2*iy-1,1)+&
-                    yYX(imgrid+1,2*ix-1,1)*inE%cvArray(imgrid+1)%y(2*(ix-1),2*iy-1,1)+&
-                    (-(yYX(imgrid+1,2*ix-1,1)+yYX(imgrid+1,2*ix-1,2)+yYZ(imgrid+1,1,1))+diag_sign*AdiagMG%cvArray(imgrid+1)%y(2*ix-1,2*iy-1,1))*inE%cvArray(imgrid+1)%y(2*ix-1,2*iy-1,1)
-         ! 'even values'
-                   outE%cvArray(imgrid+1)%y(2*ix-1,2*iy,1) = yZ(imgrid+1,2*iy,1)*(inE%cvArray(imgrid+1)%z(2*ix-1,2*iy+1,1)-&
-                    inE%cvArray(imgrid+1)%z(2*ix-1,2*iy,1))&
-                    -yZ(imgrid,iy,nz)*(inE%cvArray(imgrid)%z(ix,iy+1,nz)-inE%cvArray(imgrid)%z(ix,iy,nz))&
-                    +yX(imgrid+1,2*ix-1,2*iy)*(inE%cvArray(imgrid+1)%x(2*ix-1,2*iy+1,1)-inE%cvArray(imgrid+1)%x(2*ix-1,2*iy,1)&
-                    -inE%cvArray(imgrid+1)%x(2*(ix-1),2*iy+1,1)+inE%cvArray(imgrid+1)%x(2*(ix-1),2*iy,1))+&
-                    yYZ(imgrid+1,1,1)*inE%cvArray(imgrid+1)%y(2*ix-1,2*iy,2)+&
-                    yYZ(imgrid,nz,2)*(inE%cvArray(imgrid)%y(ix,iy,nz)-inE%cvArray(imgrid)%y(ix,iy,nz+1))+&
-                    yYX(imgrid+1,2*ix-1,2)*inE%cvArray(imgrid+1)%y(2*ix,2*iy,1)+&
-                    yYX(imgrid+1,2*ix-1,1)*inE%cvArray(imgrid+1)%y(2*(ix-1),2*iy,1)+&
-                    (-(yYX(imgrid+1,2*ix-1,1)+yYX(imgrid+1,2*ix-1,2)+yYZ(imgrid+1,1,1))+diag_sign*AdiagMG%cvArray(imgrid+1)%y(2*ix-1,2*iy,1))*inE%cvArray(imgrid+1)%y(2*ix-1,2*iy,1)
+          Call CurlcurlE(inE, workE)
+          ! done with preparing del X del X E
 
-          ! fill in zero layer of the next multigrid layer
-          outE%cvArray(imgrid)%y(ix,iy,nz+1) =  (outE%cvArray(imgrid+1)%y(2*ix-1,2*iy-1,1)*mGrid%gridArray(imgrid+1)%dy(2*iy-1)&
-                                               +outE%cvArray(imgrid+1)%y(2*ix-1,2*iy,1)*mGrid%gridArray(imgrid+1)%dy(2*iy))/&
-                                               (mGrid%gridArray(imgrid+1)%dy(2*iy-1)+mGrid%gridArray(imgrid+1)%dy(2*iy))
-        enddo
-      enddo
+          if (adjt) then
+             diag_sign = -1*ISIGN
+          else
+             diag_sign = ISIGN
+          end if
 
-     ! if coarseness == 0,0,0,0,0 ...
-     ! we get the regular grid
-     ! it was needed for debugging
-     ! may also be needed ?!
+          ! now preparing +/-i*omega*mu*conductivity*E
+          Call diagMult_crvector(inE, condE, outE)
+          c2 = diag_sign*C_ONE*omega*MU_0
+          Call linComb_cvector(C_ONE, workE, c2, outE, outE)
 
-     else if (inE%coarseness(imgrid).eq.inE%coarseness(imgrid+1))then
-      do iy = 2, ny
-        do ix= 1, nx
-          ! standard curl curl for interface
-          ! curl curl Ex
-          outE%cvArray(imgrid)%x(ix,iy,nz+1) = &
-              xY(imgrid,ix,iy)*(inE%cvArray(imgrid)%y(ix+1,iy,nz+1)-&
-                                inE%cvArray(imgrid)%y(ix,iy,nz+1)-inE%cvArray(imgrid)%y(ix+1,iy-1,nz+1)&
-                                +inE%cvArray(imgrid)%y(ix,iy-1,nz+1))+&
-              xZ(imgrid,ix,nz+1)*(inE%cvArray(imgrid+1)%z(ix+1,iy,1)-inE%cvArray(imgrid+1)%z(ix,iy,1)&
-                    -inE%cvArray(imgrid)%z(ix+1,iy,nz)+inE%cvArray(imgrid)%z(ix,iy,nz))+&
-              xXY(imgrid,iy,2)*inE%cvArray(imgrid)%x(ix,iy+1,nz+1)+&
-              xXY(imgrid,iy,1)*inE%cvArray(imgrid)%x(ix,iy-1,nz+1)+&
-              xXZ(imgrid,nz+1,2)*inE%cvArray(imgrid+1)%x(ix,iy,2)+&
-              xXZ(imgrid,nz+1,1)*inE%cvArray(imgrid)%x(ix,iy,nz)+&
-              (xXO(imgrid,iy,nz+1)+diag_sign*AdiagMG%cvArray(imgrid)%x(ix,iy,nz+1))*inE%cvArray(imgrid)%x(ix,iy,nz+1)
+          ! diagonally multiply the final results with weights (edge volume)
+          Call diagMult_crvector(outE, volE, outE)
 
-          outE%cvArray(imgrid+1)%x(ix,iy,1) = outE%cvArray(imgrid)%x(ix,iy,nz+1)
-        enddo
-      enddo
-      do iy = 1, ny
-        do ix = 2, nx
-          ! standard curl curl for interface
-          ! curl curl Ey
-            outE%cvArray(imgrid)%y(ix,iy,nz+1) =  &
-                yZ(imgrid,iy,nz+1)*(inE%cvArray(imgrid+1)%z(ix,iy+1,1)-inE%cvArray(imgrid+1)%z(ix,iy,1)-&
-                                    inE%cvArray(imgrid)%z(ix,iy+1,nz)+inE%cvArray(imgrid)%z(ix,iy,nz))+&
-                yX(imgrid,ix,iy)*(inE%cvArray(imgrid)%x(ix,iy+1,nz+1)-inE%cvArray(imgrid)%x(ix,iy,nz+1)&
-                                 -inE%cvArray(imgrid)%x(ix-1,iy+1,nz+1)+inE%cvArray(imgrid)%x(ix-1,iy,nz+1))+&
-                yYZ(imgrid,nz+1,2)*inE%cvArray(imgrid+1)%y(ix,iy,2)+&
-                yYZ(imgrid,nz+1,1)*inE%cvArray(imgrid)%y(ix,iy,nz)+&
-                yYX(imgrid,ix,2)*inE%cvArray(imgrid)%y(ix+1,iy,nz+1)+&
-                yYX(imgrid,ix,1)*inE%cvArray(imgrid)%y(ix-1,iy,nz+1)+&
-                (yYO(imgrid,ix,nz+1)+diag_sign*AdiagMG%cvArray(imgrid)%y(ix,iy,nz+1))*inE%cvArray(imgrid)%y(ix,iy,nz+1)
+       else
+          write (0, *) 'MultA_O: not compatible usage for existing data types'
+       end if
 
-          outE%cvArray(imgrid+1)%y(ix,iy,1) = outE%cvArray(imgrid)%y(ix,iy,nz+1)
-        enddo
-      enddo
-    endif
+    else
+       write(0, *) 'Error-complex vectors for MultA_O are not of same size'
+    end if
 
-  end subroutine UpdateZ_Curl
+    Call deall(workE)
+
+  end subroutine MultA_O
+
+
   ! ***************************************************************************
   ! * Gets the Maxwell's equation in the complete symmetrical form,
   ! * del X del X E +/- i*omega*mu*conductivity*E. E is the complex vector
@@ -1111,33 +802,44 @@ Contains
   subroutine MultA_N(inE, adjt, outE)
 
     implicit none
-    type (cvector_mg), intent (in)  :: inE    !  inE(:) array of cvectors on multigrid
-    logical, intent (in)  :: adjt
-    type (cvector_mg), intent (inout) :: outE !  outE(:) array of cvectors on multigird
-
-    !local variables
-    integer  :: imgrid
-    integer  :: nx,ny,nz
+    type (cvector), intent (in)              :: inE
+    logical, intent (in)                     :: adjt
+    type (cvector), intent (inout)           :: outE
 
     if (.not.inE%allocated) then
-      print *, 'inE in MultA_N not allocated yet'
+      write(0,*) 'inE in MultA_N not allocated yet'
       stop
     end if
 
     if (.not.outE%allocated) then
-      print *, 'out in MultA_N not allocated yet'
+      write(0,*) 'outE in MultA_N not allocated yet'
       stop
     end if
 
-     Call Maxwell(inE, adjt, outE)
-     ! done with preparing del X del X E +/- i*omega*mu*conductivity*E
-     ! diagonally multiply the final results with weights (edge volume)
-     Call diagMult_mg(outE, volE, outE)
+    ! Check whether the bounds are the same
+    if ((inE%nx == outE%nx).and.&
+         (inE%ny == outE%ny).and.&
+         (inE%nz == outE%nz)) then
 
+       if ((inE%gridType == outE%gridType)) then
+
+          Call Maxwell(inE, adjt, outE)
+          ! done with preparing del X del X E +/- i*omega*mu*conductivity*E
+
+          ! diagonally multiply the final results with weights (edge volume)
+          Call diagMult(outE, volE, outE)
+
+       else
+          write (0, *) 'MultA_N: not compatible usage for existing data types'
+       end if
+
+    else
+       write(0, *) 'Error-complex vectors for MultA_N are not of same size'
+    end if
 
   end subroutine MultA_N
-! *************************************************************************************
-  subroutine AdjtBC(eInmg, BC)
+
+  subroutine AdjtBC(eIn, BC)
   !  subroutine AdjtBC uses (adjoint) interior node solution to compute
   !  boundary node values for adjoint (or transpose) solution
   !   (NOTE: because off-diagonal part of EM operator is real this works
@@ -1161,155 +863,24 @@ Contains
     implicit none
 
     ! INPUT: electrical fields stored as cvector
-    type (cvector_mg), intent(in)             		:: eInmg
+    type (cvector), intent(in)             		:: eIn
     ! OUTPUT: boundary condition structure: should be allocated
     !   and initialized before call to this routine
     type (cboundary),intent(inout)  			:: BC
 
     ! local variables
-    type (cvector)                :: eIn
     integer                   :: ix,iy,iz,nx,ny,nz
-    ! Output coefficients for curlcurlE (del X del X E)
-    integer :: status     ! for dynamic memory allocation
-    real (kind=prec), pointer, dimension(:,:)  :: xXY, xXZ
-    real (kind=prec), pointer, dimension(:,:)  :: xY, xZ
-    real (kind=prec), pointer, dimension(:,:)  :: xXO
-    real (kind=prec), pointer, dimension(:,:)  :: yYX, yYZ
-    real (kind=prec), pointer, dimension(:,:)  :: yX, yZ
-    real (kind=prec), pointer, dimension(:,:)  :: yYO
-    real (kind=prec), pointer, dimension(:,:)  :: zZX, zZY
-    real (kind=prec), pointer, dimension(:,:)  :: zX, zY
-    real (kind=prec), pointer, dimension(:,:)  :: zZO
-
-    ! convert cvector_mg to cvector
-    call mg2c(eIn, eInmg)
-
-    nx = mgrid%nx
-    ny = mgrid%ny
-    nz = mgrid%nz
-    ! Allocate memory for del x del operator coefficient arrays
-    ! Coefficients for difference equation only uses interior
-    ! nodes. however, we need boundary nodes for the adjoint problem
-    allocate(xXY(ny+1, 2), STAT=status)   ! Allocate memory
-    allocate(xXZ(nz+1, 2), STAT=status)   ! Allocate memory
-    allocate(xY(nx, ny+1), STAT=status)
-    allocate(xZ(nx, nz+1), STAT=status)
-    allocate(xXO(ny, nz), STAT=status)
-
-    allocate(yYZ(nz+1, 2), STAT=status)   ! Allocate memory
-    allocate(yYX(nx+1, 2), STAT=status)   ! Allocate memory
-    allocate(yZ(ny, mGrid%nz+1), STAT=status)
-    allocate(yX(nx+1, mGrid%ny), STAT=status)
-    allocate(yYO(nx, mGrid%nz), STAT=status)
-
-    allocate(zZX(nx+1, 2), STAT=status)   ! Allocate memory
-    allocate(zZY(ny+1, 2), STAT=status)   ! Allocate memory
-    allocate(zX(nx+1, nz), STAT=status)
-    allocate(zY(ny+1,nz), STAT=status)
-    allocate(zZO(nx,ny), STAT=status)
-
-    ! initalize all coefficients to zero (some remain zero)
-    xXY = 0.0
-    xXZ = 0.0
-    xY = 0.0
-    xZ = 0.0
-    xXO = 0.0
-    yYX = 0.0
-    yYZ = 0.0
-    yX = 0.0
-    yZ = 0.0
-    zZX = 0.0
-    zZY = 0.0
-    zX = 0.0
-    zY = 0.0
-    zZO = 0.0
-
-    ! Curl curl set up for finest grid
-    ! coefficents for calculating Ex ; only loop over internal edges
-    do iy = 2, mGrid%ny
-       xXY(iy, 2) = -1.0/ (mGrid%delY(iy) * mGrid%dy(iy))
-       xXY(iy, 1) = -1.0/ (mGrid%delY(iy) * mGrid%dy(iy-1))
-    enddo
-    do iz = 2, mGrid%nz
-       xXZ(iz, 2) = -1.0/ (mGrid%delZ(iz) * mGrid%dz(iz))
-       xXZ(iz, 1) = -1.0/ (mGrid%delZ(iz) * mGrid%dz(iz-1))
-    enddo
-    do iy = 2, mGrid%ny
-       do iz = 2, mGrid%nz
-          xXO(iy, iz) = -(xXY(iy,1) + xXY(iy,2) + &
-               xXZ(iz,1) + xXZ(iz,2))
-       enddo
-    enddo
-    do ix = 1, mGrid%nx
-       do iy = 2, mGrid%ny
-          xY(ix, iy) = 1.0/ (mGrid%delY(iy)*mGrid%dx(ix))
-       enddo
-    enddo
-    do ix = 1, mGrid%nx
-       do iz = 2, mGrid%nz
-          xZ(ix, iz) = 1.0/ (mGrid%delZ(iz)*mGrid%dx(ix))
-       enddo
-    enddo
-    ! End of Ex coefficients
-    ! coefficents for calculating Ey; only loop over internal edges
-    do iz = 2, mGrid%nz
-       yYZ(iz, 2) = -1.0/ (mGrid%delZ(iz)*mGrid%dz(iz))
-       yYZ(iz, 1) = -1.0/ (mGrid%delZ(iz)*mGrid%dz(iz-1))
-    enddo
-    do ix = 2, mGrid%nx
-       yYX(ix, 2) = -1.0/ (mGrid%delX(ix)*mGrid%dx(ix))
-       yYX(ix, 1) = -1.0/ (mGrid%delX(ix)*mGrid%dx(ix-1))
-    enddo
-    do ix = 2, mGrid%nx
-       do iz = 2, mGrid%nz
-          yYO(ix, iz) = -(yYX(ix,1) + yYX(ix,2) + &
-               yYZ(iz,1) + yYZ(iz,2))
-       enddo
-    enddo
-    do iy = 1, mGrid%ny
-       do iz = 2, mGrid%nz
-          yZ(iy, iz) = 1.0/ (mGrid%delZ(iz)*mGrid%dy(iy))
-       enddo
-    enddo
-    do ix = 2, mGrid%nx
-       do iy = 1, mGrid%ny
-          yX(ix, iy) = 1.0/ (mGrid%delX(ix)*mGrid%dy(iy))
-       enddo
-    enddo
-    ! End of Ey coefficients
-    ! coefficents for calculating Ez; only loop over internal edges
-    do ix = 2, mGrid%nx
-       zZX(ix, 2) = -1.0/ (mGrid%delX(ix)*mGrid%dx(ix))
-       zZX(ix, 1) = -1.0/ (mGrid%delX(ix)*mGrid%dx(ix-1))
-    enddo
-    do iy = 2, mGrid%ny
-       zZY(iy, 2) = -1.0/ (mGrid%delY(iy)*mGrid%dy(iy))
-       zZY(iy, 1) = -1.0/ (mGrid%delY(iy)*mGrid%dy(iy-1))
-    enddo
-    do ix = 2, mGrid%nx
-       do iy = 2, mGrid%ny
-          zZO(ix, iy) = -(zZX(ix,1) + zZX(ix,2) + &
-               zZY(iy,1) + zZY(iy,2))
-       enddo
-    enddo
-    do ix = 2, mGrid%nx
-       do iz = 1, mGrid%nz
-          zX(ix, iz) = 1.0/ (mGrid%delX(ix)*mGrid%dz(iz))
-       enddo
-    enddo
-    do iy = 2, mGrid%ny
-       do iz = 1, mGrid%nz
-          zY(iy, iz) = 1.0/ (mGrid%delY(iy)*mGrid%dz(iz))
-       enddo
-    enddo
-    ! End of Ez coefficients
 
     !  Multiply FD electric field vector defined on interior nodes (eIn) by
     !  adjoint of A_IB, the interior/boundary sub-block of the differential
     !  operator.
 
-    !Ex components in x/z plane (iy=1; iy = ny+1)
-    !NOTE: C_ZERO = (0,0) (double complex) is defined in SG_Basics/math_constants.f90
+    nx = eIn%nx
+    ny = eIn%ny
+    nz = eIn%nz
+
+!  Ex components in x/z plane (iy=1; iy = ny+1)
+!  NOTE: C_ZERO = (0,0) (double complex) is defined in SG_Basics/math_constants.f90
     BC%xYMax(:,1) = C_ZERO
     BC%xYmin(:,1) = C_ZERO
     BC%xYMax(:,nz+1) = C_ZERO
@@ -1325,7 +896,7 @@ Contains
         enddo
      enddo
 
-    !Ez components in x/z plane (iy=1; iy = ny+1)
+!  Ez components in x/z plane (iy=1; iy = ny+1)
     BC%zYMin(1,:) = C_ZERO
     BC%zYmax(1,:) = C_ZERO
     BC%zYmin(nx+1,:) = C_ZERO
@@ -1341,7 +912,7 @@ Contains
         enddo
      enddo
 
-    !Ey components in y/z plane (ix=1; ix = nx+1)
+!  Ey components in y/z plane (ix=1; ix = nx+1)
     BC%yXmin(:,1) = C_ZERO
     BC%yXmax(:,1) = C_ZERO
     BC%yXmin(:,nz+1) = C_ZERO
@@ -1357,7 +928,7 @@ Contains
         enddo
      enddo
 
-    !Ez components in y/z plane (ix=1; ix = nx+1)
+!  Ez components in y/z plane (ix=1; ix = nx+1)
     BC%zXmin(1,:) = C_ZERO
     BC%zXmax(1,:) = C_ZERO
     BC%zXmin(ny+1,:) = C_ZERO
@@ -1373,7 +944,7 @@ Contains
         enddo
      enddo
 
-    !Ex components in x/y plane (iz=1; iz = nz+1)
+!  Ex components in x/y plane (iz=1; iz = nz+1)
     BC%xZmin(:,1) = C_ZERO
     BC%xZmax(:,1) = C_ZERO
     BC%xZmin(:,ny+1) = C_ZERO
@@ -1389,7 +960,7 @@ Contains
         enddo
      enddo
 
-    !Ey components in x/y plane (iz=1; iz = nz+1)
+!  Ey components in x/y plane (iz=1; iz = nz+1)
     BC%yZmin(:,1) = C_ZERO
     BC%yZmax(:,1) = C_ZERO
     BC%yZmin(nx+1,:) = C_ZERO
@@ -1404,59 +975,33 @@ Contains
                             + yYZ(nz,2)*Ein%y(ix,iy,nz)
         enddo
      enddo
-  ! Deallocate memory for del x del operator coefficient arrays
-  ! Coefficients for difference equation only uses interior
-  ! nodes. however, we need boundary nodes for the adjoint problem
-
-   deallocate(xXY, STAT=status)
-   deallocate(xXZ, STAT=status)
-   deallocate(xY, STAT=status)
-   deallocate(xZ, STAT=status)
-   deallocate(xXO, STAT=status)
-   deallocate(yYZ, STAT=status)
-   deallocate(yYX, STAT=status)
-   deallocate(yZ, STAT=status)
-   deallocate(yX, STAT=status)
-   deallocate(yYO, STAT=status)
-
-   deallocate(zZX, STAT=status)
-   deallocate(zZY, STAT=status)
-   deallocate(zX, STAT=status)
-   deallocate(zY, STAT=status)
-   deallocate(zZO, STAT=status)
 
   end subroutine AdjtBC
 
-  ! ****************************************************************************
-  ! PRECONDITIONER ROUTINES: set up ILU-Level I preconditioner for
-  ! Maxwell's equation, solve lower and upper triangular systems to
-  ! apply preconditioner
+! ****************************************************************************
+! PRECONDITIONER ROUTINES: set up ILU-Level I preconditioner for
+!     Maxwell's equation, solve lower and upper triangular systems to
+!      apply preconditioner
   !****************************************************************************
   ! initializes a diagonal of preconditioner for A operator
   subroutine DiluInit()
 
     implicit none
-    integer  :: status
-    integer  :: ix, iy, iz, imgrid
-
+    integer                                 :: status
+    integer                                 :: ix, iy, iz
 
     if (.not.Dilu%allocated) then
 
-       Call create(mGrid, Dilu, EDGE) ! allocate cvector_mg
+       Call create(mGrid, Dilu, EDGE)
 
     else
 
-       if (Dilu%mgridSize /= mGrid%mgridSize) then
-         deallocate(Dilu%cvArray, STAT = status)
-         Call create(mGrid, Dilu, EDGE)
-       else
-         do imgrid = 1, mgrid%mgridSize
-            if ((Dilu%cvArray(imgrid)%nx /= mGrid%gridArray(imgrid)%nx).or. &
-            (Dilu%cvArray(imgrid)%ny /= mGrid%gridArray(imgrid)%ny).or.&
-            (Dilu%cvArray(imgrid)%nz /= mGrid%gridArray(imgrid)%nz)) exit
-            deallocate(Dilu%cvArray, STAT = status)
-            Call create(mGrid, Dilu, EDGE)
-         enddo
+       if ((Dilu%nx /= mGrid%nx).or.(Dilu%ny /= mGrid%ny).or.&
+            (Dilu%nz /= mGrid%nz)) then
+
+          deallocate(Dilu%x, Dilu%y, Dilu%z, STAT = status)
+          Call create(mGrid, Dilu, EDGE)
+
        end if
     end if
 
@@ -1467,93 +1012,78 @@ Contains
   subroutine DiluSetUp()
 
     implicit none
-    integer   :: status
-    integer   :: ix, iy, iz, imgrid
-    integer  :: nx, ny, nz
+    integer                                 :: status
+    integer                                 :: ix, iy, iz
 
     if (.not.Dilu%allocated) then
-      print *, 'Dilu not allocated yet'
+       write (0, *) 'Dilu not allocated yet'
     else
+
+       if ((Dilu%nx /= mGrid%nx).or.(Dilu%ny /= mGrid%ny).or.&
+            (Dilu%nz /= mGrid%nz)) then
+         write (0, *) 'Dilu that is right now existing has the wrong size'
+       end if
+    end if
 
     ! initializing the non-interior values
     ! only the interior edge values are really used
-    Dilu%cvArray(1)%x(:,:,1) = cmplx(1.0, 0.0, 8)
-    Dilu%cvArray(1)%y(:,:,1) = cmplx(1.0, 0.0, 8)
+    Dilu%x(:,1,:) = cmplx(1.0, 0.0, 8)
+    Dilu%x(:,:,1) = cmplx(1.0, 0.0, 8)
 
-    do imgrid = 1, mgrid%mgridSize  ! Global loop on subgrids
+    Dilu%y(1,:,:) = cmplx(1.0, 0.0, 8)
+    Dilu%y(:,:,1) = cmplx(1.0, 0.0, 8)
 
-      Dilu%cvArray(imgrid)%x(:,1,:) = cmplx(1.0, 0.0, 8)
-      Dilu%cvArray(imgrid)%y(1,:,:) = cmplx(1.0, 0.0, 8)
-      Dilu%cvArray(imgrid)%z(1,:,:) = cmplx(1.0, 0.0, 8)
-      Dilu%cvArray(imgrid)%z(:,1,:) = cmplx(1.0, 0.0, 8)
+    Dilu%z(1,:,:) = cmplx(1.0, 0.0, 8)
+    Dilu%z(:,1,:) = cmplx(1.0, 0.0, 8)
 
-      if ((Dilu%cvArray(imgrid)%nx /= mGrid%gridArray(imgrid)%nx).or. &
-         (Dilu%cvArray(imgrid)%ny /= mGrid%gridArray(imgrid)%ny).or.&
-         (Dilu%cvArray(imgrid)%nz /= mGrid%gridArray(imgrid)%nz)) then
-         print *,'Dilu that is right now existing has the wrong size'
-      endif
+    do ix = 1, mGrid%nx
+       do iy = 2, mGrid%ny
+          do iz = 2, mGrid%nz
 
-      nx = mGrid%gridArray(imgrid)%nx
-      ny = mGrid%gridArray(imgrid)%ny
-      nz = mGrid%gridArray(imgrid)%nz
-
-      ! update first layer in Dilu
-      call UpdateZ(Dilu,first,imgrid)
-
-      do ix = 1, nx
-        do iz = 2, nz+1
-          do iy = 2, ny
-
-           Dilu%cvArray(imgrid)%x(ix, iy, iz) = xXO(imgrid,iy,iz) - &
-                  CMPLX(0.0, 1.0, 8)*omega*MU_0*condEMG%rvArray(imgrid)%x(ix, iy, iz)  &
-                  - xXY(imgrid,iy, 1)*xXY(imgrid,iy-1, 2)*Dilu%cvArray(imgrid)%x(ix,iy-1,iz) &
-                  - xXZ(imgrid,iz, 1)*xXZ(imgrid,iz-1, 2)*Dilu%cvArray(imgrid)%x(ix,iy,iz-1)
-           Dilu%cvArray(imgrid)%x(ix, iy, iz) = 1.0/ Dilu%cvArray(imgrid)%x(ix, iy, iz)
-          enddo
-        enddo
-      enddo
-
-      ! the coefficients for y are only for the interior nodes
-      !  but need to initialize edges for recursive algorithm
-      do iy = 1, ny
-        do iz = 2, nz+1
-          do ix = 2, nx
-
-             Dilu%cvArray(imgrid)%y(ix, iy, iz) = yYO(imgrid,ix,iz) - &
-                 CMPLX(0.0, 1.0, 8)*omega*MU_0*condEMG%rvArray(imgrid)%y(ix, iy, iz) &
-                 - yYZ(imgrid,iz, 1)*yYZ(imgrid,iz-1, 2)*Dilu%cvArray(imgrid)%y(ix, iy, iz-1) &
-                 - yYX(imgrid,ix, 1)*yYX(imgrid,ix-1, 2)*Dilu%cvArray(imgrid)%y(ix-1, iy, iz)
-             Dilu%cvArray(imgrid)%y(ix, iy, iz) = 1.0/ Dilu%cvArray(imgrid)%y(ix, iy, iz)
+             Dilu%x(ix, iy, iz) = xXO(iy,iz) - &
+                  CMPLX(0.0, 1.0, 8)*omega*MU_0*condE%x(ix, iy, iz)  &
+                  - xXY(iy, 1)*xXY(iy-1, 2)*Dilu%x(ix,iy-1,iz) &
+                  - xXZ(iz, 1)*xXZ(iz-1, 2)*Dilu%x(ix,iy,iz-1)
+             Dilu%x(ix, iy, iz) = 1.0/ Dilu%x(ix, iy, iz)
 
           enddo
-        enddo
-      enddo
+       enddo
+    enddo
 
-      ! the coefficients for z are only for the interior nodes
-      !  but need to initialize edges for recursive algorithm
-      do iz = 1, nz
-        do ix = 2, ny
-          do iy = 2, nx
+    ! the coefficients for y are only for the interior nodes
+    !  but need to initialize edges for recursive algorithm
+    do iy = 1, mGrid%ny
+       do iz = 2, mGrid%nz
+          do ix = 2, mGrid%nx
 
-           Dilu%cvArray(imgrid)%z(ix, iy, iz) = zZO(imgrid,ix,iy) - &
-                CMPLX(0.0, 1.0, 8)*omega*MU_0*condEMG%rvArray(imgrid)%z(ix, iy, iz) &
-                - zZX(imgrid,ix, 1)*zZX(imgrid,ix-1, 2)*Dilu%cvArray(imgrid)%z(ix-1, iy, iz) &
-                - zZY(imgrid,iy, 1)*zZY(imgrid,iy-1, 2)*Dilu%cvArray(imgrid)%z(ix, iy-1, iz)
-           Dilu%cvArray(imgrid)%z(ix, iy, iz) = 1.0/ Dilu%cvArray(imgrid)%z(ix, iy, iz)
+             Dilu%y(ix, iy, iz) = yYO(ix,iz) - &
+                  CMPLX(0.0, 1.0, 8)*omega*MU_0*condE%y(ix, iy, iz) &
+                  - yYZ(iz, 1)*yYZ(iz-1, 2)*Dilu%y(ix, iy, iz-1) &
+                  - yYX(ix, 1)*yYX(ix-1, 2)*Dilu%y(ix-1, iy, iz)
+             Dilu%y(ix, iy, iz) = 1.0/ Dilu%y(ix, iy, iz)
 
           enddo
-        enddo
-      enddo
+       enddo
+    enddo
 
-      enddo ! Global loop on subgrid
-      ! last nz+1 must be 1 and 0
-      Dilu%cvArray(mGrid%mgridSize)%x(:,:,mGrid%gridArray(mGrid%mgridSize)%nz+1) = C_ZERO
-      Dilu%cvArray(mGrid%mgridSize)%y(:,:,mGrid%gridArray(mGrid%mgridSize)%nz+1) = C_ZERO
-      Dilu%cvArray(mGrid%mgridSize)%x(:,1,mGrid%gridArray(mGrid%mgridSize)%nz+1) = cmplx(1.0, 0.0, 8)
-      Dilu%cvArray(mGrid%mgridSize)%y(1,:,mGrid%gridArray(mGrid%mgridSize)%nz+1) = cmplx(1.0, 0.0, 8)
+    ! the coefficients for z are only for the interior nodes
+    !  but need to initialize edges for recursive algorithm
+    do iz = 1, mGrid%nz
+       do ix = 2, mGrid%nx
+          do iy = 2, mGrid%ny
 
-   endif
+             Dilu%z(ix, iy, iz) = zZO(ix,iy) - &
+                  CMPLX(0.0, 1.0, 8)*omega*MU_0*condE%z(ix, iy, iz) &
+                  - zZX(ix, 1)*zZX(ix-1, 2)*Dilu%z(ix-1, iy, iz) &
+                  - zZY(iy, 1)*zZY(iy-1, 2)*Dilu%z(ix, iy-1, iz)
+             Dilu%z(ix, iy, iz) = 1.0/ Dilu%z(ix, iy, iz)
+
+          enddo
+       enddo
+    enddo
+
   end subroutine DiluSetUp  ! DiluSetUp
+
 
   !****************************************************************************
   !  To Deallocate arrays in structure Dilu
@@ -1561,7 +1091,7 @@ Contains
     implicit none
     integer                                 :: status
 
-	call deall_cvector_mg(Dilu)
+	call deall_cvector(Dilu)
 
   end subroutine DeallocateDilu  ! DeallocateDilu
 
@@ -1569,16 +1099,13 @@ Contains
   !****************************************************************************
   ! Purpose: to solve the lower triangular system (or it's adjoint);
   ! for the d-ilu pre-condtioner.
-
   subroutine M1solve(inE, adjt, outE)
 
     implicit none
-    type (cvector_mg), intent(in)  :: inE
-    logical, intent(in)  :: adjt
-    type (cvector_mg), intent(inout)  :: outE
-    ! local variables
-    integer  :: ix, iy, iz, imgrid
-    integer  :: nx, ny, nz
+    type (cvector), intent(in)	        :: inE
+    logical, intent(in)		        :: adjt
+    type (cvector), intent(inout) 	:: outE
+    integer                             :: ix, iy, iz
 
     if (.not.inE%allocated) then
       write(0,*) 'inE in M1solve not allocated yet'
@@ -1590,55 +1117,46 @@ Contains
       stop
     end if
 
-    ! Check whether the multigrid sizes are the same
-    if (inE%mgridSize == outE%mgridSize) then
-      ! Check grid type also
-      if ((inE%gridType == outE%gridType)) then
+    ! Check whether all the vector nodes are of the same size
+    if((inE%nx == outE%nx).and.(inE%ny == outE%ny).and.&
+         (inE%nz == outE%nz)) then
 
-      if (.not.adjt) then
-      !adjoint = .false.
+       if (inE%gridType == outE%gridType) then
 
-        call diagDiv(inE, volE, outE)
-          !$OMP PARALLEL DEFAULT(SHARED)
-          do imgrid = 1, inE%mgridSize    ! Direct loop on subgrids
-            ! Check whether the bounds are the same
-            if ((inE%cvArray(imgrid)%nx == outE%cvArray(imgrid)%nx).and.&
-               (inE%cvArray(imgrid)%ny == outE%cvArray(imgrid)%ny).and.&
-               (inE%cvArray(imgrid)%nz == outE%cvArray(imgrid)%nz)) then
-              nx = inE%cvArray(imgrid)%nx
-              ny = inE%cvArray(imgrid)%ny
-              nz = inE%cvArray(imgrid)%nz
+          if (.not.adjt) then
+	     ! adjoint = .false.
+             Call diagDiv(inE, volE, outE)
 
-              ! update first layer
-              call UpdateZ(outE,first,imgrid)
              ! ... note that we only parallelize the outer loops
+             !$OMP PARALLEL DEFAULT(SHARED)
              !$OMP DO ORDERED SCHEDULE(STATIC) PRIVATE(ix)
-              do ix = 1, nx
+             do ix = 1, inE%nx
                 !$OMP ORDERED
-                do iz = 2, nz+1
-                   do iy = 2, ny
+                do iz = 2, inE%nz
+                   do iy = 2, inE%ny
 
-                      outE%cvArray(imgrid)%x(ix, iy, iz) = (outE%cvArray(imgrid)%x(ix, iy, iz) - &
-                           outE%cvArray(imgrid)%x(ix, iy-1, iz)*xXY(imgrid,iy, 1) - &
-                           outE%cvArray(imgrid)%x(ix, iy, iz-1)*xXZ(imgrid,iz, 1))* &
-                           Dilu%cvArray(imgrid)%x(ix, iy, iz)
+                      outE%x(ix, iy, iz) = (outE%x(ix, iy, iz) - &
+                           outE%x(ix, iy-1, iz)*xXY(iy, 1) - &
+                           outE%x(ix, iy, iz-1)*xXZ(iz, 1))* &
+                           Dilu%x(ix, iy, iz)
 
-                    enddo
-                 enddo
+                   enddo
+                enddo
                 !$OMP END ORDERED
-               enddo
-              !$OMP END DO
+             enddo
+             !$OMP END DO
+
 
              !$OMP DO ORDERED SCHEDULE(STATIC) PRIVATE(iy)
-             do iy = 1, ny
+             do iy = 1, inE%ny
                 !$OMP ORDERED
-                do iz = 2, nz+1
-                   do ix = 2, nx
+                do iz = 2, inE%nz
+                   do ix = 2, inE%nx
 
-                      outE%cvArray(imgrid)%y(ix, iy, iz) = (outE%cvArray(imgrid)%y(ix, iy, iz) - &
-                           outE%cvArray(imgrid)%y(ix, iy, iz-1)*yYZ(imgrid,iz, 1) - &
-                           outE%cvArray(imgrid)%y(ix-1, iy, iz)*yYX(imgrid,ix, 1))* &
-                           Dilu%cvArray(imgrid)%y(ix, iy, iz)
+                      outE%y(ix, iy, iz) = (outE%y(ix, iy, iz) - &
+                           outE%y(ix, iy, iz-1)*yYZ(iz, 1) - &
+                           outE%y(ix-1, iy, iz)*yYX(ix, 1))* &
+                           Dilu%y(ix, iy, iz)
 
                    enddo
                 enddo
@@ -1647,113 +1165,98 @@ Contains
              !$OMP END DO
 
              !$OMP DO ORDERED SCHEDULE(STATIC) PRIVATE(iz)
-             do iz = 1, nz
+             do iz = 1, inE%nz
                 !$OMP ORDERED
-                do iy = 2, ny
-                   do ix = 2, nx
-                      outE%cvArray(imgrid)%z(ix, iy, iz) = (outE%cvArray(imgrid)%z(ix, iy, iz) - &
-                           outE%cvArray(imgrid)%z(ix-1, iy, iz)*zZX(imgrid,ix, 1) - &
-                           outE%cvArray(imgrid)%z(ix, iy-1, iz)*zZY(imgrid,iy, 1))* &
-                           Dilu%cvArray(imgrid)%z(ix, iy, iz)
+                do iy = 2, inE%ny
+                   do ix = 2, inE%nx
+
+                      outE%z(ix, iy, iz) = (outE%z(ix, iy, iz) - &
+                           outE%z(ix-1, iy, iz)*zZX(ix, 1) - &
+                           outE%z(ix, iy-1, iz)*zZY(iy, 1))* &
+                           Dilu%z(ix, iy, iz)
+
                    enddo
                 enddo
                 !$OMP END ORDERED
              enddo
              !$OMP END DO
-            else
-              print *, 'Error-complex vectors for M1Solve are not of same size'
-            endif
-          enddo ! Direct loop on subgrids
-          !$OMP END PARALLEL
-       ! to be sure that the last layer is equal zero
-       outE%cvArray(inE%mgridSize)%x(:,:,inE%cvArray(inE%mgridSize)%nz+1) = 0.0
-       outE%cvArray(inE%mgridSize)%y(:,:,inE%cvArray(inE%mgridSize)%nz+1) = 0.0
+             !$OMP END PARALLEL
+             ! adjoint = .true.
+
+          else
+
+             ! ... note that we only parallelize the outer loops
+             !$OMP PARALLEL DEFAULT(SHARED)
+             ! the coefficients for x are only for the interior nodes
+             !$OMP DO ORDERED SCHEDULE(STATIC) PRIVATE(ix)
+             do ix = 1, inE%nx
+                !$OMP ORDERED
+                do iy = inE%ny, 2, -1
+                   do iz = inE%nz, 2, -1
+
+                      outE%x(ix, iy, iz) = (inE%x(ix, iy, iz) - &
+                           outE%x(ix, iy+1, iz)*xXY(iy+1, 1) - &
+                           outE%x(ix, iy, iz+1)*xXZ(iz+1, 1))* &
+                           conjg(Dilu%x(ix, iy, iz))
+
+                   enddo
+                enddo
+                !$OMP END ORDERED
+             enddo
+             !$OMP END DO
+
+             ! the coefficients for y are only for the interior nodes
+             !$OMP DO ORDERED SCHEDULE(STATIC) PRIVATE(iy)
+             do iy = 1, inE%ny
+                !$OMP ORDERED
+                do ix = inE%nx, 2, -1
+                   do iz = inE%nz, 2, -1
+
+                      outE%y(ix, iy, iz) = (inE%y(ix, iy, iz) - &
+                           outE%y(ix, iy, iz+1)*yYZ(iz+1, 1) - &
+                           outE%y(ix+1, iy, iz)*yYX(ix+1, 1))* &
+                           conjg(Dilu%y(ix, iy, iz))
+
+                   enddo
+                enddo
+                !$OMP END ORDERED
+             enddo
+             !$OMP END DO
+
+             !$OMP DO ORDERED SCHEDULE(STATIC) PRIVATE(iz)
+             do iz = 1, inE%nz
+                !$OMP ORDERED
+                do ix = inE%nx, 2, -1
+                   do iy = inE%ny, 2, -1
+
+                      outE%z(ix, iy, iz) = (inE%z(ix, iy, iz) - &
+                           outE%z(ix+1, iy, iz)*zZX(ix+1, 1) - &
+                           outE%z(ix, iy+1, iz)*zZY(iy+1, 1))* &
+                           conjg(Dilu%z(ix, iy, iz))
+
+                   enddo
+                enddo
+                !$OMP END ORDERED
+             enddo
+             !$OMP END DO
+             !$OMP END PARALLEL
+
+             Call diagDiv(outE, volE, outE)
+
+          end if
 
        else
-         ! adjoint = .true.
-          !$OMP PARALLEL DEFAULT(SHARED)
-          do imgrid = inE%mgridSize, 1, -1 ! Reverse loop on subgrids
-            nx = inE%cvArray(imgrid)%nx
-            ny = inE%cvArray(imgrid)%ny
-            nz = inE%cvArray(imgrid)%nz
-
-            call UpdateZ(outE, last, imgrid)
-
-            ! ... note that we only parallelize the outer loops
-            ! the coefficients for x are only for the interior nodes
-            !$OMP DO ORDERED SCHEDULE(STATIC) PRIVATE(ix)
-            do ix = 1, nx
-              !$OMP ORDERED
-              do iy = ny, 2, -1
-                 do iz = nz, 1, -1
-
-                      outE%cvArray(imgrid)%x(ix, iy, iz) = (inE%cvArray(imgrid)%x(ix, iy, iz) - &
-                           outE%cvArray(imgrid)%x(ix, iy+1, iz)*xXY(imgrid,iy+1, 1) - &
-                           outE%cvArray(imgrid)%x(ix, iy, iz+1)*xXZ(imgrid,iz+1, 1))* &
-                           conjg(Dilu%cvArray(imgrid)%x(ix, iy, iz))
-
-                 enddo
-              enddo
-              !$OMP END ORDERED
-            enddo
-            !$OMP END DO
-
-            ! the coefficients for y are only for the interior nodes
-            !$OMP DO ORDERED SCHEDULE(STATIC) PRIVATE(iy)
-            do iy = 1, ny
-              !$OMP ORDERED
-              do ix = nx, 2, -1
-                 do iz = nz, 1, -1
-
-                      outE%cvArray(imgrid)%y(ix, iy, iz) = (inE%cvArray(imgrid)%y(ix, iy, iz) - &
-                           outE%cvArray(imgrid)%y(ix, iy, iz+1)*yYZ(imgrid,iz+1, 1) - &
-                           outE%cvArray(imgrid)%y(ix+1, iy, iz)*yYX(imgrid,ix+1, 1))* &
-                           conjg(Dilu%cvArray(imgrid)%y(ix, iy, iz))
-
-                 enddo
-              enddo
-              !$OMP END ORDERED
-            enddo
-            !$OMP END DO
-         enddo !  Reverse loop on subgrids
-            !$OMP END PARALLEL
-
-         do imgrid = 1, inE%mgridSize
-            nx = inE%cvArray(imgrid)%nx
-            ny = inE%cvArray(imgrid)%ny
-            nz = inE%cvArray(imgrid)%nz
-            !$OMP DO ORDERED SCHEDULE(STATIC) PRIVATE(iz)
-            do iz = 1, nz
-              !$OMP ORDERED
-              do ix = nx, 2, -1
-                do iy = ny, 2, -1
-
-                      outE%cvArray(imgrid)%z(ix, iy, iz) = (inE%cvArray(imgrid)%z(ix, iy, iz) - &
-                           outE%cvArray(imgrid)%z(ix+1, iy, iz)*zZX(imgrid,ix+1, 1) - &
-                           outE%cvArray(imgrid)%z(ix, iy+1, iz)*zZY(imgrid,iy+1, 1))* &
-                           conjg(Dilu%cvArray(imgrid)%z(ix, iy, iz))
-
-                 enddo
-              enddo
-              !$OMP END ORDERED
-            enddo
-            !$OMP END DO
-
-enddo
-
-         call diagDiv(outE, volE, outE)
-
-       endif
-
-      else
-        print *, 'M1 solver: not compatible usage for existing data types'
-      end if
+          write (0, *) 'not compatible usage for M1solve'
+       end if
 
     else
-      print *, 'Error complex vectors for M1 solver; multigridSize are not of same size'
-    endif
+
+       write(0, *) 'Error:lower triangular: vectors not same size'
+
+    end if
 
   end subroutine M1solve ! M1solve
+
 
   !****************************************************************************
   ! Purpose: to solve the upper triangular system (or it's adjoint);
@@ -1761,11 +1264,10 @@ enddo
   subroutine M2solve(inE, adjt, outE)
 
     implicit none
-    type (cvector_mg), intent(in)	:: inE
+    type (cvector), intent(in)	:: inE
     logical, intent(in)		:: adjt
-    type (cvector_mg), intent(inout) 	:: outE
-    integer  :: ix, iy, iz, imgrid
-    integer  :: nx, ny, nz
+    type (cvector), intent(inout) 	:: outE
+    integer                         :: ix, iy, iz
 
     if (.not.inE%allocated) then
       write(0,*) 'inE in M2solve not allocated yet'
@@ -1777,837 +1279,482 @@ enddo
       stop
     end if
 
-    ! Check whether the multigrid sizes are the same
-    if (inE%mgridSize == outE%mgridSize) then
-      ! Check grid type also
-      if ((inE%gridType == outE%gridType)) then
-        if (.not.adjt) then
-        !adjoint = .false.
-          ! ... note that we only parallelize the outer loops
-          !$OMP PARALLEL DEFAULT(SHARED)
-          do imgrid = inE%mgridSize, 1, -1    ! Reverse loop on subgrids
-            ! Check whether the bounds are the same
-            if ((inE%cvArray(imgrid)%nx == outE%cvArray(imgrid)%nx).and.&
-            (inE%cvArray(imgrid)%ny == outE%cvArray(imgrid)%ny).and.&
-            (inE%cvArray(imgrid)%nz == outE%cvArray(imgrid)%nz)) then
+    ! Check whether all the vector nodes are of the same size
+    if((inE%nx == outE%nx).and.(inE%ny == outE%ny).and.&
+         (inE%nz == outE%nz)) then
 
-            ! update nz+1 layer
-            call UpdateZ(outE, last, imgrid)
+       if (inE%gridType == outE%gridType) then
 
+          ! adjoint = .false.
+          if (.not.adjt) then
+             ! for standard upper triangular solution
+
+             ! ... note that we only parallelize the outer loops
+             !$OMP PARALLEL DEFAULT(SHARED)
              !$OMP DO ORDERED SCHEDULE(STATIC) PRIVATE(ix)
-               do ix = 1, inE%cvArray(imgrid)%nx
-                  !$OMP ORDERED
-                  do iz = inE%cvArray(imgrid)%nz, 1, -1
-                     do iy = inE%cvArray(imgrid)%ny, 2, -1
+             do ix = 1, inE%nx
+                !$OMP ORDERED
+                do iz = inE%nz, 2, -1
+                   do iy = inE%ny, 2, -1
 
-                        outE%cvArray(imgrid)%x(ix, iy, iz) = inE%cvArray(imgrid)%x(ix, iy, iz) - &
-                           ( outE%cvArray(imgrid)%x(ix, iy+1, iz)*xXY(imgrid,iy, 2) &
-                           + outE%cvArray(imgrid)%x(ix, iy, iz+1)*xXZ(imgrid,iz, 2))* &
-                           Dilu%cvArray(imgrid)%x(ix, iy, iz)
-                     enddo
-                  enddo
+                      outE%x(ix, iy, iz) = inE%x(ix, iy, iz) - &
+                           ( outE%x(ix, iy+1, iz)*xXY(iy, 2) &
+                           + outE%x(ix, iy, iz+1)*xXZ(iz, 2))* &
+                           Dilu%x(ix, iy, iz)
+
+                   enddo
+                enddo
                 !$OMP END ORDERED
-               enddo
-              !$OMP END DO
-
-               !$OMP DO ORDERED SCHEDULE(STATIC) PRIVATE(iy)
-               do iy = 1, inE%cvArray(imgrid)%ny
-                  !$OMP ORDERED
-                  do iz = inE%cvArray(imgrid)%nz, 1, -1
-                     do ix = inE%cvArray(imgrid)%nx, 2, -1
-
-                        outE%cvArray(imgrid)%y(ix, iy, iz) = inE%cvArray(imgrid)%y(ix, iy, iz) - &
-                             ( outE%cvArray(imgrid)%y(ix, iy, iz+1)*yYZ(imgrid,iz, 2) &
-                             + outE%cvArray(imgrid)%y(ix+1, iy, iz)*yYX(imgrid,ix, 2))* &
-                             Dilu%cvArray(imgrid)%y(ix, iy, iz)
-                     enddo
-                  enddo
-                 !$OMP END ORDERED
-               enddo
-               !$OMP END DO
-            else
-              print *, 'Error-complex vectors for M2 solver are not of same size'
-            end if
-          enddo ! Reverse loop on subgrids
-          !$OMP END PARALLEL
-          !$OMP PARALLEL DEFAULT(SHARED)
-          do imgrid = 1, inE%mgridSize ! Direct loop on subgrids
-               !$OMP DO ORDERED SCHEDULE(STATIC) PRIVATE(iz)
-               do iz = 1, inE%cvArray(imgrid)%nz
-                  !$OMP ORDERED
-                  do iy = inE%cvArray(imgrid)%ny, 2, -1
-                     do ix = inE%cvArray(imgrid)%nx, 2, -1
-
-                        outE%cvArray(imgrid)%z(ix, iy, iz) = inE%cvArray(imgrid)%z(ix, iy, iz) - &
-                             ( outE%cvArray(imgrid)%z(ix+1, iy, iz)*zZX(imgrid,ix, 2) &
-                             + outE%cvArray(imgrid)%z(ix, iy+1, iz)*zZY(imgrid,iy, 2))* &
-                             Dilu%cvArray(imgrid)%z(ix, iy, iz)
-
-                     enddo
-                  enddo
-                  !$OMP END ORDERED
-               enddo
-               !$OMP END DO
-          enddo ! Direct loop subgrids
-          !$OMP END PARALLEL
-        ! adjoint = .true.
-        else
-
-          !$OMP PARALLEL DEFAULT(SHARED)
-          do imgrid = 1, inE%mgridSize ! Direct loop on sub-grid
-
-            ! ... note that we only parallelize the outer loops
-
-          ! update 1 layer
-          call UpdateZ(outE, first, imgrid)
-            !$OMP DO ORDERED SCHEDULE(STATIC) PRIVATE(ix)
-            do ix = 1, inE%cvArray(imgrid)%nx
-              !$OMP ORDERED
-              do iz = 2, inE%cvArray(imgrid)%nz+1
-                 do iy = 2, inE%cvArray(imgrid)%ny
-
-                        outE%cvArray(imgrid)%x(ix, iy, iz) = inE%cvArray(imgrid)%x(ix, iy, iz) &
-                             - outE%cvArray(imgrid)%x(ix, iy-1, iz)*xXY(imgrid,iy-1, 2) &
-                             * conjg(Dilu%cvArray(imgrid)%x(ix,iy-1,iz))   &
-                             - outE%cvArray(imgrid)%x(ix, iy, iz-1)*xXZ(imgrid,iz-1, 2) &
-                             * conjg(Dilu%cvArray(imgrid)%x(ix, iy, iz-1))
-                 enddo
-              enddo
-             !$OMP END ORDERED
-           enddo
-           !$OMP END DO
-
-           !$OMP DO ORDERED SCHEDULE(STATIC) PRIVATE(iy)
-           do iy = 1, inE%cvArray(imgrid)%ny
-            !$OMP ORDERED
-              do iz = 2, inE%cvArray(imgrid)%nz+1
-                do ix = 2, inE%cvArray(imgrid)%nx
-
-                      outE%cvArray(imgrid)%y(ix, iy, iz) = inE%cvArray(imgrid)%y(ix, iy, iz) &
-                           - outE%cvArray(imgrid)%y(ix, iy, iz-1)*yYZ(imgrid,iz-1, 2) &
-                           * conjg(Dilu%cvArray(imgrid)%y(ix,iy,iz-1)) &
-                           - outE%cvArray(imgrid)%y(ix-1, iy, iz)*yYX(imgrid,ix-1, 2) &
-                           * conjg(Dilu%cvArray(imgrid)%y(ix-1, iy, iz))
-                 enddo
-              enddo
-              !$OMP END ORDERED
-           enddo
-           !$OMP END DO
-
-           !$OMP DO ORDERED SCHEDULE(STATIC) PRIVATE(iz)
-           do iz = 1, inE%cvArray(imgrid)%nz
-             !$OMP ORDERED
-             do iy = 2, inE%cvArray(imgrid)%ny
-               do ix = 2, inE%cvArray(imgrid)%nx
-
-                      outE%cvArray(imgrid)%z(ix, iy, iz) = inE%cvArray(imgrid)%z(ix, iy, iz) &
-                           - outE%cvArray(imgrid)%z(ix-1, iy, iz)*zZX(imgrid,ix-1, 2) &
-                           * conjg(Dilu%cvArray(imgrid)%z(ix-1,iy,iz)) &
-                           - outE%cvArray(imgrid)%z(ix, iy-1, iz)*zZY(imgrid,iy-1, 2) &
-                           * conjg(Dilu%cvArray(imgrid)%z(ix, iy-1, iz))
-
-               enddo
              enddo
-            !$OMP END ORDERED
-           enddo
-           !$OMP END DO
-          enddo !  Direct loop subgrids
-           !$OMP END PARALLEL
+             !$OMP END DO
 
-          ! values in the last layer must be zero
-          outE%cvArray(outE%mgridSize)%x(:, :, outE%cvarray(outE%mgridSize)%nz+1) = C_ZERO
-          outE%cvArray(outE%mgridSize)%y(:, :, outE%cvarray(outE%mgridSize)%nz+1) = C_ZERO
+             !$OMP DO ORDERED SCHEDULE(STATIC) PRIVATE(iy)
+             do iy = 1, inE%ny
+                !$OMP ORDERED
+                do iz = inE%nz, 2, -1
+                   do ix = inE%nx, 2, -1
 
+                      outE%y(ix, iy, iz) = inE%y(ix, iy, iz) - &
+                           ( outE%y(ix, iy, iz+1)*yYZ(iz, 2) &
+                           + outE%y(ix+1, iy, iz)*yYX(ix, 2))* &
+                           Dilu%y(ix, iy, iz)
+
+                   enddo
+                enddo
+                !$OMP END ORDERED
+             enddo
+             !$OMP END DO
+
+             !$OMP DO ORDERED SCHEDULE(STATIC) PRIVATE(iz)
+             do iz = 1, inE%nz
+                !$OMP ORDERED
+                do iy = inE%ny, 2, -1
+                   do ix = inE%nx, 2, -1
+
+                      outE%z(ix, iy, iz) = inE%z(ix, iy, iz) - &
+                           ( outE%z(ix+1, iy, iz)*zZX(ix, 2) &
+                           + outE%z(ix, iy+1, iz)*zZY(iy, 2))* &
+                           Dilu%z(ix, iy, iz)
+
+                   enddo
+                enddo
+                !$OMP END ORDERED
+             enddo
+             !$OMP END DO
+             !$OMP END PARALLEL
+          ! adjoint = .true.
+          else
+
+             ! ... note that we only parallelize the outer loops
+             !$OMP PARALLEL DEFAULT(SHARED)
+             !$OMP DO ORDERED SCHEDULE(STATIC) PRIVATE(ix)
+             do ix = 1, inE%nx
+                !$OMP ORDERED
+                do iz = 2, inE%nz
+                   do iy = 2, inE%ny
+
+                      outE%x(ix, iy, iz) = inE%x(ix, iy, iz) &
+                           - outE%x(ix, iy-1, iz)*xXY(iy-1, 2) &
+                           * conjg(Dilu%x(ix,iy-1,iz))   &
+                           - outE%x(ix, iy, iz-1)*xXZ(iz-1, 2) &
+                           * conjg(Dilu%x(ix, iy, iz-1))
+
+                   enddo
+                enddo
+                !$OMP END ORDERED
+             enddo
+             !$OMP END DO
+
+             !$OMP DO ORDERED SCHEDULE(STATIC) PRIVATE(iy)
+             do iy = 1, inE%ny
+                !$OMP ORDERED
+                do iz = 2, inE%nz
+                   do ix = 2, inE%nx
+
+                      outE%y(ix, iy, iz) = inE%y(ix, iy, iz) &
+                           - outE%y(ix, iy, iz-1)*yYZ(iz-1, 2) &
+                           * conjg(Dilu%y(ix,iy,iz-1)) &
+                           - outE%y(ix-1, iy, iz)*yYX(ix-1, 2) &
+                           * conjg(Dilu%y(ix-1, iy, iz))
+
+                   enddo
+                enddo
+                !$OMP END ORDERED
+             enddo
+             !$OMP END DO
+
+             !$OMP DO ORDERED SCHEDULE(STATIC) PRIVATE(iz)
+             do iz = 1, inE%nz
+                !$OMP ORDERED
+                do iy = 2, inE%ny
+                   do ix = 2, inE%nx
+
+                      outE%z(ix, iy, iz) = inE%z(ix, iy, iz) &
+                           - outE%z(ix-1, iy, iz)*zZX(ix-1, 2) &
+                           * conjg(Dilu%z(ix-1,iy,iz)) &
+                           - outE%z(ix, iy-1, iz)*zZY(iy-1, 2) &
+                           * conjg(Dilu%z(ix, iy-1, iz))
+
+                   enddo
+                enddo
+                !$OMP END ORDERED
+             enddo
+             !$OMP END DO
+             !$OMP END PARALLEL
+          end if
+
+       else
+          write (0, *) 'not compatible usage for M2solve'
        end if
 
-      else
-        print *, 'M2 solver: not compatible usage for existing data types'
-      end if
-
     else
-       print *, 'Error complex vectors for M2 solver; multigridSize are not of same size'
+
+       write(0, *) 'Error:lower triangular: vectors not same size'
+
     end if
 
   end subroutine M2solve ! M2solve
 
-  ! *****************************************************************************
-  ! Routines used by divergence correction for 3D finite difference
-  ! EM modeling code. Initialization and application of operator used
-  ! for divergence correction. These routines are used by the divergence
-  ! correction driver routine to (1) compute divergence of currents
-  ! rho =  div sigma E ; (2) set up coefficient matrix for the PDE
-  ! div sigma grad phi = rho ; (3) apply the operator div sigma grad
-  ! The PDE is solved using conjugate gradients with a D-ILU preconditoner.
-  ! The inverse of the pre-conditioner diagonal is set up at the
-  ! same time as the coefficients.  Note that the potential phi that is
-  ! solved for should be constant (phi=0) on the boundary, so that
-  ! tangential components of the correction E-field are zero on the bounary
+! *****************************************************************************
+! Routines used by divergence correction for 3D finite difference
+! EM modeling code. Initialization and application of operator used
+! for divergence correction. These routines are used by the divergence
+! correction driver routine to (1) compute divergence of currents
+! rho =  div sigma E ; (2) set up coefficient matrix for the PDE
+! div sigma grad phi = rho ; (3) apply the operator div sigma grad
+! The PDE is solved using conjugate gradients with a D-ILU preconditoner.
+! The inverse of the pre-conditioner diagonal is set up at the
+! same time as the coefficients.  Note that the potential phi that is
+! solved for should be constant (phi=0) on the boundary, so that
+! tangential components of the correction E-field are zero on the bounary
+
 
   !**********************************************************************
   ! to initialize the operator and preconditioner coefficients. Init routines
   ! do memory allocation, reading and setting up arrays
-
   subroutine DivCorrInit()
 
-  implicit none
+    implicit none
 
-    integer  :: imgrid
-
-    call create(mGrid, db1, EDGE)
-    call create(mGrid, db2, EDGE)
-    call create(mGrid, c, CORNER)
+    Call create_rvector(mGrid, db1, EDGE)
+    Call create_rvector(mGrid, db2, EDGE)
+    Call create_rscalar(mGrid, c, CORNER)
     ! d contains the inEerse of diagonal elements of ILU of divCgrad
-    call create(mGrid, d, CORNER)
+    Call create_rscalar(mGrid, d, CORNER)
     ! set top nodes to 1.0
-    do imgrid=1,mgrid%mgridSize
-
-      d%rscArray(imgrid)%v(1,:,:) = 1.0
-      d%rscArray(imgrid)%v(:,1,:) = 1.0
-    enddo
-    d%rscArray(1)%v(:,:,1) = 1.0
+    d%v(1,:,:) = 1.0
+    d%v(:,1,:) = 1.0
+    d%v(:,:,1) = 1.0
 
     ! initialize volume weights centered at corners
-    Call create(mGrid, volC, CORNER)
+    Call create_rscalar(mGrid, volC, CORNER)
     Call CornerVolume(mGrid, volC)
 
-   end subroutine DivCorrInit  ! DivCorrInit Multigrid case
+   end subroutine DivCorrInit  ! DivCorrInit
 
-  !**********************************************************************
-  ! SetUp routines do calculations (maybe once; possibly more than once)
-  ! DivCorrSetup must be called once for each conductivity distribuition
-  !  (i.e., before first forward run; after any change to conductivity)
 
-   subroutine DivCorrSetUp()
+   !**********************************************************************
+   ! SetUp routines do calculations (maybe once; possibly more than once)
+   ! DivCorrSetup must be called once for each conductivity distribuition
+   !  (i.e., before first forward run; after any change to conductivity)
+  subroutine DivCorrSetUp()
 
-  implicit none
-    integer  :: ix, iy, iz, imgrid
-    integer  :: nx, ny, nz, nzAir, nzCum
+    implicit none
+    integer                               :: ix, iy, iz
 
-    if(.not.condEMG%allocated) then
-      print *, 'condEMG not allocated yet: DivCorrSetUp'
-      stop
-    endif
+    IF(.not.condE%allocated) THEN
+ 	WRITE(0,*) 'condE not allocated yet: DivCorrSetUp'
+ 	STOP
+    ENDIF
 
-    if(.not.db1%allocated) then
-      print *,'db1 not allocated yet: DivCorrSetUp'
-      stop
-    endif
+    IF(.not.db1%allocated) THEN
+ 	WRITE(0,*) 'db1 not allocated yet: DivCorrSetUp'
+ 	STOP
+    ENDIF
 
-  if(.not.db2%allocated) then
-    print *, 'db2 not allocated yet: DivCorrSetUp'
-    stop
-  endif
+    IF(.not.db2%allocated) THEN
+ 	WRITE(0,*) 'db2 not allocated yet: DivCorrSetUp'
+ 	STOP
+    ENDIF
 
-  if(.not.c%allocated) then
-    print *, 'c not allocated yet: DivCorrSetUp'
-    stop
-  endif
+        IF(.not.c%allocated) THEN
+ 	WRITE(0,*) 'c not allocated yet: DivCorrSetUp'
+ 	STOP
+    ENDIF
 
-  if(.not.d%allocated) then
-    print *, 'd not allocated yet: DivCorrSetUp'
-    stop
-  endif
-
-  d%rscArray(1)%v(:,:,1) = 1.0
-
-  do imgrid = 1, mgrid%mgridSize  ! Global loop on subgrids
-    nx = mgrid%gridArray(imgrid)%nx
-    ny = mgrid%gridArray(imgrid)%ny
-    nz = mgrid%gridArray(imgrid)%nz
-    nzAir = mgrid%gridArray(imgrid)%nzAir
+    IF(.not.d%allocated) THEN
+ 	WRITE(0,*) 'd not allocated yet: DivCorrSetUp'
+ 	STOP
+    ENDIF
 
     ! conductivity of air is modified for computing divergence correction
     ! operator coefficients ...
-    if(mgrid%gridArray(imgrid)%flag == 1) then
+    do iz = 1, mGrid%nzAir
+       do iy = 1, mGrid%ny
+          do ix = 1, mGrid%nx
+             condE%x(ix, iy, iz) = SIGMA_AIR
+             condE%y(ix, iy, iz) = SIGMA_AIR
+             condE%z(ix, iy, iz) = SIGMA_AIR
+          enddo
+       enddo
+    enddo
 
-       condEMG%rvArray(imgrid)%x(:, :, :) = SIGMA_AIR
-       condEMG%rvArray(imgrid)%y(:, :, :) = SIGMA_AIR
-       condEMG%rvArray(imgrid)%z(:, :, :) = SIGMA_AIR
-
-    else
-
-             condEMG%rvArray(imgrid)%x(:, :, 1:nzAir) = SIGMA_AIR
-             condEMG%rvArray(imgrid)%y(:, :, 1:nzAir) = SIGMA_AIR
-             condEMG%rvArray(imgrid)%z(:, :, 1:nzAir) = SIGMA_AIR
-    endif
-
-    ! update first Z
-    call UpdateZ_O(imgrid)
     ! the coefficients are only for the interior nodes
     ! these coefficients have not been multiplied by volume elements
     ! yet
-    do iz = 2, nz
-       do iy = 2, ny
-          do ix = 2, nx
+    do iz = 2, mGrid%nz
+       do iy = 2, mGrid%ny
+          do ix = 2, mGrid%nx
 
-             db1%rvArray(imgrid)%x(ix, iy, iz) = condEMG%rvArray(imgrid)%x(ix-1, iy, iz)/ &
-                  (mGrid%gridArray(imgrid)%dx(ix-1)*mGrid%gridArray(imgrid)%delX(ix))
-             db2%rvArray(imgrid)%x(ix, iy, iz) = condEMG%rvArray(imgrid)%x(ix, iy, iz)/ &
-                  (mGrid%gridArray(imgrid)%dx(ix)*mGrid%gridArray(imgrid)%delX(ix))
-             db1%rvArray(imgrid)%y(ix, iy, iz) = condEMG%rvArray(imgrid)%y(ix, iy-1, iz)/ &
-                  (mGrid%gridArray(imgrid)%dy(iy-1)*mGrid%gridArray(imgrid)%delY(iy))
-             db2%rvArray(imgrid)%y(ix, iy, iz) = condEMG%rvArray(imgrid)%y(ix, iy, iz)/ &
-                  (mGrid%gridArray(imgrid)%dy(iy)*mGrid%gridArray(imgrid)%delY(iy))
-             db1%rvArray(imgrid)%z(ix, iy, iz) = condEMG%rvArray(imgrid)%z(ix, iy, iz-1)/ &
-                  (mGrid%gridArray(imgrid)%dz(iz-1)*mGrid%gridarray(imgrid)%delZ(iz))
-             db2%rvArray(imgrid)%z(ix, iy, iz) = condEMG%rvArray(imgrid)%z(ix, iy, iz)/ &
-                  (mGrid%gridArray(imgrid)%dz(iz)*mGrid%gridArray(imgrid)%delZ(iz))
-             c%rscArray(imgrid)%v(ix, iy, iz) = - (db1%rvArray(imgrid)%x(ix, iy, iz) + &
-                  db2%rvArray(imgrid)%x(ix, iy, iz) + &
-                  db1%rvArray(imgrid)%y(ix, iy, iz) + &
-                  db2%rvArray(imgrid)%y(ix, iy, iz) + &
-                  db1%rvArray(imgrid)%z(ix, iy, iz) + &
-                  db2%rvArray(imgrid)%z(ix, iy, iz))
+             db1%x(ix, iy, iz) = condE%x(ix-1, iy, iz)/ &
+                  (mGrid%dx(ix-1)*mGrid%delX(ix))
+             db2%x(ix, iy, iz) = condE%x(ix, iy, iz)/ &
+                  (mGrid%dx(ix)*mGrid%delX(ix))
+             db1%y(ix, iy, iz) = condE%y(ix, iy-1, iz)/ &
+                  (mGrid%dy(iy-1)*mGrid%delY(iy))
+             db2%y(ix, iy, iz) = condE%y(ix, iy, iz)/ &
+                  (mGrid%dy(iy)*mGrid%delY(iy))
+             db1%z(ix, iy, iz) = condE%z(ix, iy, iz-1)/ &
+                  (mGrid%dz(iz-1)*mGrid%delZ(iz))
+             db2%z(ix, iy, iz) = condE%z(ix, iy, iz)/ &
+                  (mGrid%dz(iz)*mGrid%delZ(iz))
+             c%v(ix, iy, iz) = - (db1%x(ix, iy, iz) + &
+                  db2%x(ix, iy, iz) + &
+                  db1%y(ix, iy, iz) + &
+                  db2%y(ix, iy, iz) + &
+                  db1%z(ix, iy, iz) + &
+                  db2%z(ix, iy, iz)   &
+                  )
+
+          enddo
+       enddo
+    enddo
+
+    ! change conductivity of air back to zero
+    do iz = 1, mGrid%nzAir
+       do iy = 1, mGrid%ny
+          do ix = 1, mGrid%nx
+             condE%x(ix, iy, iz) = R_ZERO
+             condE%y(ix, iy, iz) = R_ZERO
+             condE%z(ix, iy, iz) = R_ZERO
           enddo
        enddo
     enddo
 
     ! Multiply by corner volume elements to make operator symmetric
-    do iz = 1, nz
-       do iy = 2, ny
-          do ix = 2, nx
+    do iz = 2, mGrid%nz
+       do iy = 2, mGrid%ny
+          do ix = 2, mGrid%nx
 
-         db1%rvArray(imgrid)%x(ix, iy, iz) = db1%rvArray(imgrid)%x(ix, iy, iz)*volC%rscArray(imgrid)%v(ix, iy, iz)
-         db1%rvArray(imgrid)%y(ix, iy, iz) = db1%rvArray(imgrid)%y(ix, iy, iz)*volC%rscArray(imgrid)%v(ix, iy, iz)
-         db1%rvArray(imgrid)%z(ix, iy, iz) = db1%rvArray(imgrid)%z(ix, iy, iz)*volC%rscArray(imgrid)%v(ix, iy, iz)
-         db2%rvArray(imgrid)%x(ix, iy, iz) = db2%rvArray(imgrid)%x(ix, iy, iz)*volC%rscArray(imgrid)%v(ix, iy, iz)
-         db2%rvArray(imgrid)%y(ix, iy, iz) = db2%rvArray(imgrid)%y(ix, iy, iz)*volC%rscArray(imgrid)%v(ix, iy, iz)
-         db2%rvArray(imgrid)%z(ix, iy, iz) = db2%rvArray(imgrid)%z(ix, iy, iz)*volC%rscArray(imgrid)%v(ix, iy, iz)
+             db1%x(ix, iy, iz) = db1%x(ix, iy, iz)*volC%v(ix, iy, iz)
+	     db1%y(ix, iy, iz) = db1%y(ix, iy, iz)*volC%v(ix, iy, iz)
+	     db1%z(ix, iy, iz) = db1%z(ix, iy, iz)*volC%v(ix, iy, iz)
+	     db2%x(ix, iy, iz) = db2%x(ix, iy, iz)*volC%v(ix, iy, iz)
+	     db2%y(ix, iy, iz) = db2%y(ix, iy, iz)*volC%v(ix, iy, iz)
+	     db2%z(ix, iy, iz) = db2%z(ix, iy, iz)*volC%v(ix, iy, iz)
+
+          enddo
+       enddo
+    enddo
+    Call diagMult_rscalar(c, volC, c)
+
+    !  To be explicit about forcing coefficients that multiply boundary
+    !    nodes to be zero (this gaurantees that the BC on the potential
+    !    is phi = 0):
+    db1%x(2,:,:) = R_ZERO
+    db1%y(:,2,:) = R_ZERO
+    db1%z(:,:,2) = R_ZERO
+    db2%x(mGrid%nx,:,:) = R_ZERO
+    db2%y(:,mGrid%ny,:) = R_ZERO
+    db2%z(:,:,mGrid%nz) = R_ZERO
+
+    ! Compute inverse diagonal elements for D-ILU (interior nodes only)
+    ! set top nodes to 1.0
+    d%v(1,:,:) = 1.0
+    d%v(:,1,:) = 1.0
+    d%v(:,:,1) = 1.0
+    do iz = 2, mGrid%nz
+       do iy = 2, mGrid%ny
+          do ix = 2, mGrid%nx
+
+             d%v(ix, iy, iz) = c%v(ix, iy, iz) - &
+                  db1%x(ix,iy,iz)*db2%x(ix-1,iy,iz)*d%v(ix-1,iy,iz)-&
+                  db1%y(ix,iy,iz)*db2%y(ix,iy-1,iz)*d%v(ix,iy-1,iz)-&
+                  db1%z(ix,iy,iz)*db2%z(ix,iy,iz-1)*d%v(ix,iy,iz-1)
+	     d%v(ix, iy, iz) = 1.0/ d%v(ix, iy, iz)
 
           enddo
        enddo
     enddo
 
-    Call diagMult_rscalar(c%rscArray(imgrid), volC%rscArray(imgrid), c%rscArray(imgrid))
+  end subroutine DivCorrSetUp	! DivCorrSetUp
 
-    !  To be explicit about forcing coefficients that multiply boundary
-    !    nodes to be zero (this gaurantees that the BC on the potential
-    !    is phi = 0):
 
-    db1%rvArray(imgrid)%x(2,:,:) = R_ZERO
-    db1%rvArray(imgrid)%y(:,2,:) = R_ZERO
-    db1%rvArray(1)%z(:,:,2) = R_ZERO
-    db2%rvArray(imgrid)%x(mGrid%gridArray(imgrid)%nx,:,:) = R_ZERO
-    db2%rvArray(imgrid)%y(:,mGrid%gridArray(imgrid)%ny,:) = R_ZERO
-    db2%rvArray(mgrid%mgridSize)%z(:,:,mGrid%gridArray(mgrid%mgridSize)%nz) = R_ZERO
-
-    ! Compute inverse diagonal elements for D-ILU (interior nodes only)
-    ! set top nodes to 1.0
-    d%rscArray(imgrid)%v(1,:,:) = 1.0
-    d%rscArray(imgrid)%v(:,1,:) = 1.0
-
-    ! update first Z in d array
-    call UpdateZ_O(imgrid,d)
-
-    do iz = 2, nz
-      do iy = 2, ny
-        do ix = 2, nx
-
-             d%rscArray(imgrid)%v(ix, iy, iz) = c%rscArray(imgrid)%v(ix, iy, iz) - &
-                  db1%rvArray(imgrid)%x(ix,iy,iz)*db2%rvArray(imgrid)%x(ix-1,iy,iz)*d%rscArray(imgrid)%v(ix-1,iy,iz)-&
-                  db1%rvArray(imgrid)%y(ix,iy,iz)*db2%rvArray(imgrid)%y(ix,iy-1,iz)*d%rscArray(imgrid)%v(ix,iy-1,iz)-&
-                  db1%rvArray(imgrid)%z(ix,iy,iz)*db2%rvArray(imgrid)%z(ix,iy,iz-1)*d%rscArray(imgrid)%v(ix,iy,iz-1)
-             d%rscArray(imgrid)%v(ix, iy, iz) = 1.0/ d%rscArray(imgrid)%v(ix, iy, iz)
-
-        enddo
-      enddo
-    enddo
-
-    enddo ! Global loop on subgrids
-
-    do imgrid = 1, mgrid%mgridSize
-      ! change conductivity of air back to zero
-      if(mgrid%gridArray(imgrid)%flag == 1) then
-             condEMG%rvArray(imgrid)%x(:, :, :) = R_ZERO
-             condEMG%rvArray(imgrid)%y(:, :, :) = R_ZERO
-             condEMG%rvArray(imgrid)%z(:, :, :) = R_ZERO
-      else
-           condEMG%rvArray(imgrid)%x(:, :, 1:mgrid%gridArray(imgrid)%nzAir) = R_ZERO
-           condEMG%rvArray(imgrid)%y(:, :, 1:mgrid%gridArray(imgrid)%nzAir) = R_ZERO
-           condEMG%rvArray(imgrid)%z(:, :, 1:mgrid%gridArray(imgrid)%nzAir) = R_ZERO
-      endif
-    enddo
-
-  end subroutine DivCorrSetUp   ! DivCorrSetUp
-! ********************************************************************************************************************
-  ! Updates first layer z in db1, db2, ...
-  ! which are not computed in the main DivCorrSetUp subroutine
-
-  subroutine UpdateZ_DivCorr(imgrid,d)
-  ! modified 2.07.2012
-  implicit none
-
-    integer, intent(in)  :: imgrid
-    type (rscalar_mg) ,optional   :: d
-    ! local variables
-    integer  :: ix, iy, iz
-    integer  :: nz
-
-      if(imgrid == 1) then
-      ! in the first sub-grid
-      ! z=1 should not be changed
-      ! nothing to do
-      return
-      endif
-      nz = mGrid%gridArray(imgrid-1)%nz
-      ! the basic strategy is to fill in the interface layer with values from the finer grid!
-      if (mGrid%coarseness(imgrid).gt.mGrid%coarseness(imgrid-1))then
-        ! interface layer: finer -> coarser
-        ! current sub-grid is coarser
-        ! Update 1 taking values from nz of the previous sub-grid
-         do iy = 2, mGrid%gridArray(imgrid)%ny
-            do ix = 2,  mGrid%gridArray(imgrid)%nx
-              if(present(d))then
-                d%rscArray(imgrid)%v(ix, iy, 1) = c%rscArray(imgrid)%v(ix, iy, 1)- &
-                  db1%rvArray(imgrid)%x(ix,iy,1)*db2%rvArray(imgrid)%x(ix-1,iy,1)*d%rscArray(imgrid)%v(ix-1,iy,1)-&
-                  db1%rvArray(imgrid)%y(ix,iy,1)*db2%rvArray(imgrid)%y(ix,iy-1,1)*d%rscArray(imgrid)%v(ix,iy-1,1)-&
-                  db1%rvArray(imgrid)%z(ix,iy,1)*db2%rvArray(imgrid-1)%z(2*ix-1,2*iy-1,nz)*d%rscArray(imgrid-1)%v(2*ix-1,2*iy-1,nz)
-
-                d%rscArray(imgrid)%v(ix, iy, 1) = 1.0/ d%rscArray(imgrid)%v(ix, iy, 1)
-              else
-                db1%rvArray(imgrid)%x(ix, iy, 1) = condEMG%rvArray(imgrid)%x(ix-1,iy,1)/ &
-                  (mGrid%gridArray(imgrid)%dx(ix-1)*mGrid%gridArray(imgrid)%delX(ix))
-                db2%rvArray(imgrid)%x(ix, iy, 1) = condEMG%rvArray(imgrid)%x(ix,iy,1)/&
-                  (mGrid%gridArray(imgrid)%dx(ix)*mGrid%gridArray(imgrid)%delX(ix))
-                db1%rvArray(imgrid)%y(ix, iy, 1) = condEMG%rvArray(imgrid)%y(ix, iy-1, 1)/ &
-                  (mGrid%gridArray(imgrid)%dy(iy-1)*mGrid%gridArray(imgrid)%delY(iy))
-                db2%rvArray(imgrid)%y(ix, iy, 1) = condEMG%rvArray(imgrid)%y(ix, iy, 1)/ &
-                  (mGrid%gridArray(imgrid)%dy(iy)*mGrid%gridArray(imgrid)%delY(iy))
-                db1%rvArray(imgrid)%z(ix, iy, 1) = condEMG%rvArray(imgrid-1)%z(2*ix-1,2*iy-1,nz)/ &
-                  (mGrid%gridArray(imgrid-1)%dz(nz)*mGrid%gridArray(imgrid)%delZ(1))
-                db2%rvArray(imgrid)%z(ix, iy, 1) = condEMG%rvArray(imgrid)%z(ix, iy, 1)/ &
-                  (mGrid%gridArray(imgrid)%dz(1)*mGrid%gridArray(imgrid)%delZ(1))
-                c%rscArray(imgrid)%v(ix, iy, 1) = - (db1%rvArray(imgrid)%x(ix, iy, 1) + &
-                  db2%rvArray(imgrid)%x(ix, iy, 1) + &
-                  db1%rvArray(imgrid)%y(ix, iy, 1) + &
-                  db2%rvArray(imgrid)%y(ix, iy, 1) + &
-                  db1%rvArray(imgrid)%z(ix, iy, 1) + &
-                  db2%rvArray(imgrid)%z(ix, iy, 1))
-              endif
-            enddo
-         enddo
-      else if (mGrid%coarseness(imgrid).lt.mGrid%coarseness(imgrid-1)) then
-       ! interface : coarser to finer
-       ! current grid is finer
-       do iy = 2, mGrid%gridArray(imgrid-1)%ny
-         do ix = 2, mGrid%gridArray(imgrid-1)%nx
-           if(present(d))then
-             d%rscArray(imgrid)%v(2*ix-1, 2*iy-1, 1) = c%rscArray(imgrid)%v(2*ix-1, 2*iy-1, 1) - &
-                  db1%rvArray(imgrid)%x(2*ix-1, 2*iy-1, 1)*db2%rvArray(imgrid)%x(2*(ix-1), 2*iy-1, 1)*d%rscArray(imgrid)%v(2*(ix-1), 2*iy-1, 1)-&
-                  db1%rvArray(imgrid)%y(2*ix-1, 2*iy-1, 1)*db2%rvArray(imgrid)%y(2*ix-1, 2*(iy-1), 1)*d%rscArray(imgrid)%v(2*ix-1, 2*(iy-1), 1)-&
-                  db1%rvArray(imgrid)%z(2*ix-1, 2*iy-1, 1)*db2%rvArray(imgrid-1)%z(ix,iy,nz)*d%rscArray(imgrid-1)%v(ix, iy, nz)
-             d%rscArray(imgrid)%v(2*ix-1, 2*iy-1, 1) = 1.0/ d%rscArray(imgrid)%v(2*ix-1, 2*iy-1, 1)
-           else
-              db1%rvArray(imgrid)%x(2*ix-1, 2*iy-1, 1) = condEMG%rvArray(imgrid-1)%x(ix-1, iy, nz+1)/ &
-                  (mGrid%gridArray(imgrid-1)%dx(ix-1)*mGrid%gridArray(imgrid-1)%delX(ix))
-              db2%rvArray(imgrid)%x(2*ix-1, 2*iy-1, 1) = condEMG%rvArray(imgrid-1)%x(ix, iy, nz+1)/ &
-                  (mGrid%gridArray(imgrid-1)%dx(ix)*mGrid%gridArray(imgrid-1)%delX(ix))
-              db1%rvArray(imgrid)%y(2*ix-1, 2*iy-1, 1)= condEMG%rvArray(imgrid-1)%y(ix, iy-1, nz+1)/ &
-                  (mGrid%gridArray(imgrid-1)%dy(iy-1)*mGrid%gridArray(imgrid-1)%delY(iy))
-              db2%rvArray(imgrid)%y(2*ix-1, 2*iy-1, 1) = condEMG%rvArray(imgrid-1)%y(ix, iy, nz+1)/ &
-                  (mGrid%gridArray(imgrid-1)%dy(iy)*mGrid%gridArray(imgrid-1)%delY(iy))
-              db1%rvArray(imgrid)%z(2*ix-1, 2*iy-1, 1) = condEMG%rvArray(imgrid-1)%z(ix, iy, nz)/ &
-                  (mGrid%gridArray(imgrid-1)%dz(nz)*mGrid%gridarray(imgrid)%delZ(1))
-              db2%rvArray(imgrid)%z(2*ix-1, 2*iy-1, 1) = condEMG%rvArray(imgrid)%z(2*ix-1, 2*iy-1, 1)/ &
-                  (mGrid%gridArray(imgrid)%dz(1)*mGrid%gridArray(imgrid)%delZ(1))
-              c%rscArray(imgrid)%v(2*ix-1, 2*iy-1, 1) = - (db1%rvArray(imgrid)%x(2*ix-1, 2*iy-1, 1) + &
-                  db2%rvArray(imgrid)%x(2*ix-1, 2*iy-1, 1) + &
-                  db1%rvArray(imgrid)%y(2*ix-1, 2*iy-1, 1) + &
-                  db2%rvArray(imgrid)%y(2*ix-1, 2*iy-1, 1) + &
-                  db1%rvArray(imgrid)%z(2*ix-1, 2*iy-1, 1) + &
-                  db2%rvArray(imgrid)%z(2*ix-1, 2*iy-1, 1))
-           endif
-         enddo
-       enddo
-
-      else if (mGrid%coarseness(imgrid).eq.mGrid%coarseness(imgrid-1)) then
-       do iy = 2, mGrid%gridArray(imgrid)%ny
-         do ix = 2, mGrid%gridArray(imgrid)%nx
-           if(present(d))then
-           d%rscArray(imgrid)%v(ix, iy, 1) = c%rscArray(imgrid)%v(ix, iy, 1) - &
-                  db1%rvArray(imgrid)%x(ix,iy,1)*db2%rvArray(imgrid)%x(ix-1,iy,1)*d%rscArray(imgrid)%v(ix-1,iy,1)-&
-                  db1%rvArray(imgrid)%y(ix,iy,1)*db2%rvArray(imgrid)%y(ix,iy-1,1)*d%rscArray(imgrid)%v(ix,iy-1,1)-&
-                  db1%rvArray(imgrid)%z(ix,iy,1)*db2%rvArray(imgrid-1)%z(ix,iy,nz)*d%rscArray(imgrid-1)%v(ix,iy,nz)
-           d%rscArray(imgrid)%v(ix, iy, 1) = 1.0/ d%rscArray(imgrid)%v(ix, iy, 1)
-
-           else
-            db1%rvArray(imgrid)%x(ix, iy, 1) = condEMG%rvArray(imgrid)%x(ix-1, iy, 1)/ &
-                  (mGrid%gridArray(imgrid)%dx(ix-1)*mGrid%gridArray(imgrid)%delX(ix))
-             db2%rvArray(imgrid)%x(ix, iy, 1) = condEMG%rvArray(imgrid)%x(ix, iy, 1)/ &
-                  (mGrid%gridArray(imgrid)%dx(ix)*mGrid%gridArray(imgrid)%delX(ix))
-             db1%rvArray(imgrid)%y(ix, iy, 1) = condEMG%rvArray(imgrid)%y(ix, iy-1, 1)/ &
-                  (mGrid%gridArray(imgrid)%dy(iy-1)*mGrid%gridArray(imgrid)%delY(iy))
-             db2%rvArray(imgrid)%y(ix, iy, 1) = condEMG%rvArray(imgrid)%y(ix, iy, 1)/ &
-                  (mGrid%gridArray(imgrid)%dy(iy)*mGrid%gridArray(imgrid)%delY(iy))
-             db1%rvArray(imgrid)%z(ix, iy, 1) = condEMG%rvArray(imgrid-1)%z(ix, iy, nz)/ &
-                  (mGrid%gridArray(imgrid-1)%dz(nz)*mGrid%gridArray(imgrid)%delZ(1))
-             db2%rvArray(imgrid)%z(ix, iy, 1) = condEMG%rvArray(imgrid)%z(ix, iy, 1)/ &
-                  (mGrid%gridArray(imgrid)%dz(1)*mGrid%gridArray(imgrid)%delZ(1))
-             c%rscArray(imgrid)%v(ix, iy, 1) = - (db1%rvArray(imgrid)%x(ix, iy, 1) + &
-                  db2%rvArray(imgrid)%x(ix, iy, 1) + &
-                  db1%rvArray(imgrid)%y(ix, iy, 1) + &
-                  db2%rvArray(imgrid)%y(ix, iy, 1) + &
-                  db1%rvArray(imgrid)%z(ix, iy, 1) + &
-                  db2%rvArray(imgrid)%z(ix, iy, 1))
-           endif
-         enddo
-       enddo
-     endif
-
-  end subroutine UpdateZ_DivCorr
   !**********************************************************************
   ! to deallocate the coefficients used for divergence correction
   subroutine Deallocate_DivCorr()
 
     implicit none
 
-    Call deall_rvector_mg(db1)
-    Call deall_rvector_mg(db2)
-    Call deall_rscalar_mg(c)
-    Call deall_rscalar_mg(d)
+    Call deall_rvector(db1)
+    Call deall_rvector(db2)
+    Call deall_rscalar(c)
+    Call deall_rscalar(d)
     ! corner volumes
-    Call deall_rscalar_mg(volC)
+    Call deall_rscalar(volC)
 
   end subroutine Deallocate_DivCorr	! Deallocate_DivCorr
+
 
   !**********************************************************************
   ! apply pre-conditioner, solving lower and upper triangular systems using
   ! coefficients in db1, db2, and d.
-
   subroutine DivCgradILU(inPhi, outPhi)
 
-  implicit none
+    implicit none
+    type (cscalar), intent(in)                :: inPhi
+    type (cscalar), intent(inout)             :: outPhi
+    integer                                   :: ix, iy, iz
 
-    type (cscalar_mg), intent(in)   :: inPhi
-    type (cscalar_mg), intent(inout)  :: outPhi
-    ! local variables
-    integer  :: ix, iy, iz, imgrid
-    integer  :: nx, ny ,nz
-    character(len=7)  :: reverse='reverse'
+    IF(.not.inPhi%allocated) THEN
+ 	WRITE(0,*) 'inPhi not allocated in DivCgradILU'
+ 	STOP
+    ENDIF
 
-    if(.not.inPhi%allocated) then
-      print *, 'inPhi not allocated in DivCgradILU'
-    stop
-    endif
-
-    if(.not.outPhi%allocated) then
-     print *, 'outPhi not allocated in DivCgradILU'
- 	 stop
-    endif
+    IF(.not.outPhi%allocated) THEN
+ 	WRITE(0,*) 'outPhi not allocated in DivCgradILU'
+ 	STOP
+    ENDIF
 
     if (outPhi%allocated) then
-      if ((inPhi%gridType == outPhi%gridType).and.(inPhi%mgridSize == outPhi%mgridSize)) then
 
-        do imgrid= 1, mGrid%mgridSize ! Direct loop on multigrid
-          nx = inPhi%csArray(imgrid)%nx
-          ny = inPhi%csArray(imgrid)%ny
-          nz = inPhi%csArray(imgrid)%nz
+       ! Check whether all the inputs/ outputs involved are even of the same
+       ! size
+       if ((inPhi%nx == outPhi%nx).and.&
+            (inPhi%ny == outPhi%ny).and.&
+            (inPhi%nz == outPhi%nz)) then
 
-          ! Check whether all the inputs/ outputs involved are even of the same size
-          if ((nx == outPhi%csArray(imgrid)%nx).and.&
-            (ny == outPhi%csArray(imgrid)%ny).and.&
-            (nz == outPhi%csArray(imgrid)%nz)) then
+          if (inPhi%gridType == outPhi%gridType) then
 
-          ! update first layer
-          call UpdateZ_O(inPhi, outPhi, imgrid)
+             outPhi%v = 0.0
+             ! forward substitution (Solve lower triangular system)
+             ! the coefficients are only for the interior nodes
+             do iz = 2, inPhi%nz
+                do iy = 2, inPhi%ny
+                   do ix = 2, inPhi%nx
 
-            do iz = 2, nz
-              do iy = 2, ny
-                do ix = 2, nx
+                      outPhi%v(ix, iy, iz) = inPhi%v(ix, iy, iz) &
+                           - outPhi%v(ix-1,iy,iz)*db1%x(ix,iy,iz)&
+                           *d%v(ix-1,iy,iz) &
+                           - outPhi%v(ix,iy-1,iz)*db1%y(ix,iy,iz)&
+                           *d%v(ix,iy-1,iz) &
+                           - outPhi%v(ix,iy,iz-1)*db1%z(ix,iy,iz)&
+                           *d%v(ix,iy,iz-1)
 
-                outPhi%csArray(imgrid)%v(ix, iy, iz) = inPhi%csArray(imgrid)%v(ix, iy, iz) &
-                  - outPhi%csArray(imgrid)%v(ix-1,iy,iz)*db1%rvArray(imgrid)%x(ix,iy,iz)&
-                    *d%rscArray(imgrid)%v(ix-1,iy,iz) &
-                   - outPhi%csArray(imgrid)%v(ix,iy-1,iz)*db1%rvArray(imgrid)%y(ix,iy,iz)&
-                     *d%rscArray(imgrid)%v(ix,iy-1,iz) &
-                    - outPhi%csArray(imgrid)%v(ix,iy,iz-1)*db1%rvArray(imgrid)%z(ix,iy,iz)&
-                      *d%rscArray(imgrid)%v(ix,iy,iz-1)
-                enddo
-              enddo
-           enddo
-         else
-           print *, 'DivCgradILU: not compatible existing data types'
-         endif
-
-      enddo !Loop on subgrids
-
-      ! backward substitution (Solve upper triangular system)
-      ! the coefficients are only for the interior nodes
-      do imgrid = mGrid%mgridSize, 1, -1 ! Reverse loop on subgrids
-
-         nx = inPhi%csArray(imgrid)%nx
-         ny = inPhi%csArray(imgrid)%ny
-         nz = inPhi%csArray(imgrid)%nz
-
-         do iz = nz,1,-1
-           do iy = ny,2,-1
-              do ix = nx,2,-1
-
-                outPhi%csArray(imgrid)%v(ix, iy, iz) = (outPhi%csArray(imgrid)%v(ix, iy, iz) &
-                  - outPhi%csArray(imgrid)%v(ix+1, iy, iz)*db2%rvArray(imgrid)%x(ix, iy, iz)  &
-                  - outPhi%csArray(imgrid)%v(ix, iy+1, iz)*db2%rvArray(imgrid)%y(ix, iy, iz)  &
-                  - outPhi%csArray(imgrid)%v(ix, iy, iz+1)*db2%rvArray(imgrid)%z(ix, iy, iz)) &
-                        *d%rscArray(imgrid)%v(ix, iy, iz)
                    enddo
                 enddo
              enddo
 
-          ! update nz+1 layer
-          call UpdateZ_O(inPhi, outPhi, imgrid, reverse)
+!             ! backward substitution (Solve upper triangular system)
+!             ! the coefficients are only for the interior nodes
+!             do iz = inPhi%nz,2,-1
+!                do iy = inPhi%ny,2,-1
+!                   do ix = inPhi%nx,2,-1
+!
+!                      outPhi%v(ix, iy, iz) = (outPhi%v(ix, iy, iz)  &
+!                           - outPhi%v(ix+1, iy, iz)*db2%x(ix, iy, iz)  &
+!                           - outPhi%v(ix, iy+1, iz)*db2%y(ix, iy, iz)  &
+!                           - outPhi%v(ix, iy, iz+1)*db2%z(ix, iy, iz)) &
+!                           *d%v(ix, iy, iz)
+!
+!                   enddo
+!                enddo
+!             enddo
+          else
+             write (0, *) 'DivCgradILU: not compatible existing data types'
+          end if
 
-       enddo ! GLobal loop on subgrids (reverse)
+       else
+          write(0, *) 'Error: DivCgradILU: scalars not same size'
+       end if
 
     else
-      print *, 'Error: DivCgradILU: scalars not same size'
-    endif
+       write(0, *) 'Error: DivCgradILU: output scalar not even allocated yet'
+    end if
 
-  else
-    print *, 'Error: DivCgradILU: output scalar not even allocated yet'
-  endif
+    print*, inPhi%v(:,:,21:22)
+
+
+
 
   end subroutine DivCgradILU  		! DivCgradILU
-  ! ****************************************************************************************************
-  ! Update first z layer in DivCgradILU
-  subroutine UpdateZ_DivCgradILU (inSc, outSc, imgrid,reverse)
-    implicit none
 
-    type (cscalar_mg), intent(in)   :: inSc
-    type (cscalar_mg), intent(inout)  :: outSc
-    integer, intent(in)  :: imgrid
-    ! local variables
-    integer  :: ix, iy, iz
-    integer  :: nz
-    character(len=7),optional  :: reverse
 
-     if (present(reverse)) then
-        if(imgrid==mgrid%mgridSize)then
-         !nothing to do
-          return
-        endif
-        nz = mgrid%gridArray(imgrid)%nz
-        if (mGrid%coarseness(imgrid).lt.mGrid%coarseness(imgrid+1))then
-        ! finer -> coarser
-          do iy = 2, mGrid%gridArray(imgrid+1)%ny
-            do ix = 2, mGrid%gridArray(imgrid+1)%nx
-              outSc%csArray(imgrid)%v(2*ix-1, 2*iy-1, nz+1) = outSc%csArray(imgrid+1)%v(ix, iy, 1)
-!               outSc%csArray(imgrid)%v(2*ix-1, 2*iy-1, nz+1) = (outSc%csArray(imgrid+1)%v(ix, iy, 1) &
-!                  - outSc%csArray(imgrid+1)%v(ix+1, iy, 1)*db2%rvArray(imgrid+1)%x(ix, iy, 1)  &
-!                  - outSc%csArray(imgrid+1)%v(ix, iy+1, 1)*db2%rvArray(imgrid+1)%y(ix, iy, 1)  &
-!                  - outSc%csArray(imgrid+1)%v(ix, iy, 2)*db2%rvArray(imgrid+1)%z(ix, iy, 1)) &
-!                        *d%rscArray(imgrid+1)%v(ix, iy, 1)
-            enddo
-          enddo
-        else if  (mGrid%coarseness(imgrid).gt.mGrid%coarseness(imgrid+1)) then
-        ! coarser -> finer
-          do iy = 2, mGrid%gridArray(imgrid)%ny
-            do ix = 2, mGrid%gridArray(imgrid)%nx
-              outSc%csArray(imgrid)%v(ix, iy, nz+1) = outSc%csArray(imgrid+1)%v(2*ix-1, 2*iy-1, 1)
-!               outSc%csArray(imgrid)%v(ix, iy, nz+1) = (outSc%csArray(imgrid+1)%v(2*ix-1, 2*iy-1, 1) &
-!                  - outSc%csArray(imgrid+1)%v(2*ix+1, 2*iy-1, 1)*db2%rvArray(imgrid+1)%x(2*ix-1, 2*iy-1, 1)  &
-!                  - outSc%csArray(imgrid+1)%v(2*ix-1, 2*iy+1, 1)*db2%rvArray(imgrid+1)%y(2*ix-1, 2*iy-1, 1)  &
-!                  - outSc%csArray(imgrid+1)%v(2*ix-1, 2*iy-1, 2)*db2%rvArray(imgrid+1)%z(2*ix-1, 2*iy-1, 1)) &
-!                        *d%rscArray(imgrid+1)%v(2*ix-1, 2*iy-1, 1)
-            enddo
-          enddo
-        else if (mGrid%coarseness(imgrid).eq.mGrid%coarseness(imgrid+1)) then
-          do iy = 2, mGrid%gridArray(imgrid)%ny
-            do ix = 2, mGrid%gridArray(imgrid)%nx
-              outSc%csArray(imgrid)%v(ix, iy, nz+1) =  outSc%csArray(imgrid+1)%v(ix, iy, 1)
-            enddo
-          enddo
-        endif
-      else
-
-        if(imgrid == 1) then
-          ! nothing to do
-          return
-        endif
-        nz = mGrid%gridArray(imgrid-1)%nz
-        ! the basic strategy is to fill in the interface layer with values from the finer grid!
-        if (mGrid%coarseness(imgrid).gt.mGrid%coarseness(imgrid-1))then
-          ! interface layer: finer -> coarser
-          ! current sub-grid is coarser
-          ! Update 1 taking valies from nz of the previous sub-grid
-          do iy = 2, mGrid%gridArray(imgrid)%ny
-            do ix = 2, mGrid%gridArray(imgrid)%nx
-              outSc%csArray(imgrid)%v(ix, iy, 1) = inSc%csArray(imgrid)%v(ix, iy, 1) &
-              - outSc%csArray(imgrid)%v(ix-1,iy,1)*db1%rvArray(imgrid)%x(ix,iy,1)&
-                                                   *d%rscArray(imgrid)%v(ix-1,iy,1) &
-                   - outSc%csArray(imgrid)%v(ix,iy-1,1)*db1%rvArray(imgrid)%y(ix,iy,1)&
-                     *d%rscArray(imgrid)%v(ix,iy-1,1) &
-                    - outSc%csArray(imgrid-1)%v(2*ix-1,2*iy-1,nz)*db1%rvArray(imgrid)%z(ix,iy,1)&
-                      *d%rscArray(imgrid-1)%v(2*ix-1,2*iy-1,nz)
-            enddo
-          enddo
-        else if (mGrid%coarseness(imgrid).lt.mGrid%coarseness(imgrid-1)) then
-          ! interface : coarser to finer
-          ! current grid is finer
-          ! vice versa
-          do iy = 2, mGrid%gridArray(imgrid-1)%ny
-            do ix = 2, mGrid%gridArray(imgrid-1)%nx
-              outSc%csArray(imgrid)%v(2*ix-1, 2*iy-1, 1) = inSc%csArray(imgrid)%v(2*ix-1, 2*iy-1, 1) &
-                  - outSc%csArray(imgrid)%v(2*(ix-1), 2*iy-1, 1)*db1%rvArray(imgrid)%x(2*ix-1, 2*iy-1, 1)&
-                    *d%rscArray(imgrid)%v(2*(ix-1), 2*iy-1, 1) &
-                   - outSc%csArray(imgrid)%v(2*ix-1, 2*(iy-1), 1)*db1%rvArray(imgrid)%y(2*ix-1, 2*iy-1, 1)&
-                     *d%rscArray(imgrid)%v(2*ix-1, 2*(iy-1), 1) &
-                    - outSc%csArray(imgrid-1)%v(ix,iy,nz)*db1%rvArray(imgrid)%z(2*ix-1, 2*iy-1, 1)&
-                      *d%rscArray(imgrid-1)%v(ix,iy,nz)
-
-            enddo
-          enddo
-
-        else if (mGrid%coarseness(imgrid).eq.mGrid%coarseness(imgrid-1)) then
-          do iy = 2, mGrid%gridArray(imgrid)%ny
-            do ix = 2, mGrid%gridArray(imgrid)%nx
-             outSc%csArray(imgrid)%v(ix, iy, 1) = inSc%csArray(imgrid)%v(ix, iy, 1) &
-                  - outSc%csArray(imgrid)%v(ix-1,iy,1)*db1%rvArray(imgrid)%x(ix,iy,1)&
-                    *d%rscArray(imgrid)%v(ix-1,iy,1) &
-                   - outSc%csArray(imgrid)%v(ix,iy-1,1)*db1%rvArray(imgrid)%y(ix,iy,1)&
-                     *d%rscArray(imgrid)%v(ix,iy-1,1) &
-                    - outSc%csArray(imgrid-1)%v(ix,iy,nz)*db1%rvArray(imgrid)%z(ix,iy,1)&
-                      *d%rscArray(imgrid-1)%v(ix,iy,nz)
-            enddo
-          enddo
-        endif
-      endif
-  end subroutine UpdateZ_DivCgradILU
   !**********************************************************************
   ! Apply operator div sigma grad to a scalar field (used for corners)
   !  called by PCG for iterative solution of divergence correction equation
   subroutine DivCgrad(inPhi, outPhi)
 
-  implicit none
-    type (cscalar_mg), intent(in)  :: inPhi
-    type (cscalar_mg), intent(inout)  :: outPhi
-    integer  :: ix, iy, iz,imgrid
+    implicit none
+    type (cscalar), intent(in)                :: inPhi
+    type (cscalar), intent(inout)             :: outPhi
+    integer                                   :: ix, iy, iz
 
-    if(.not.inPhi%allocated) then
- 	  print *, 'inPhi not allocated in DivCgrad'
- 	  stop
- 	endif
+   IF(.not.inPhi%allocated) THEN
+ 	WRITE(0,*) 'inPhi not allocated in DivCgrad'
+ 	STOP
+    ENDIF
 
-    if(.not.outPhi%allocated) then
-     print *, 'outPhi not allocated in DivCgrad'
- 	 stop
-    endif
+    IF(.not.outPhi%allocated) THEN
+ 	WRITE(0,*) 'outPhi not allocated in DivCgrad'
+ 	STOP
+    ENDIF
 
-    if (outPhi%allocated .and. inPhi%mgridSize == outPhi%mgridSize) then
+    if (outPhi%allocated) then
 
-      if (inPhi%gridType == outPhi%gridType) then
+       ! Check whether all the inputs/ outputs involved are even of the same
+       ! size
+       if ((inPhi%nx == outPhi%nx).and.&
+            (inPhi%ny == outPhi%ny).and.&
+            (inPhi%nz == outPhi%nz)) then
 
-       do imgrid = 1, inPhi%mgridSize  ! loop on subgrids
+          if (inPhi%gridType == outPhi%gridType) then
 
-        ! Check whether all the inputs/ outputs involved are even of the same size
-        if ((inPhi%csArray(imgrid)%nx == outPhi%csArray(imgrid)%nx).and.&
-            (inPhi%csArray(imgrid)%ny == outPhi%csArray(imgrid)%ny).and.&
-            (inPhi%csArray(imgrid)%nz == outPhi%csArray(imgrid)%nz)) then
+             ! the coefficients are only for interior nodes
+             !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(ix,iy,iz)
+             do iz = 2, inPhi%nz
+                do iy = 2, inPhi%ny
+                   do ix = 2, inPhi%nx
 
-       ! update first layer
-       call UpdateZ_DivCgrad(inPhi, outPhi, imgrid)
+                      outPhi%v(ix,iy,iz) = inPhi%v(ix+1,iy,iz)&
+                           *db2%x(ix,iy,iz)+&
+                           inPhi%v(ix-1, iy, iz)*db1%x(ix, iy, iz) + &
+                           inPhi%v(ix, iy+1, iz)*db2%y(ix, iy, iz) + &
+                           inPhi%v(ix, iy-1, iz)*db1%y(ix, iy, iz) + &
+                           inPhi%v(ix, iy, iz+1)*db2%z(ix, iy, iz) + &
+                           inPhi%v(ix, iy, iz-1)*db1%z(ix, iy, iz) + &
+                           inPhi%v(ix, iy, iz)*c%v(ix, iy, iz)
 
-          ! the coefficients are only for interior nodes
-          !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(ix,iy,iz)
-          do iz = 2, inPhi%csArray(imgrid)%nz
-            do iy = 2, inPhi%csArray(imgrid)%ny
-              do ix = 2, inPhi%csArray(imgrid)%nx
+                   enddo
+                enddo
+             enddo
+             !$OMP END PARALLEL DO
 
-                outPhi%csArray(imgrid)%v(ix,iy,iz) = inPhi%csArray(imgrid)%v(ix+1,iy,iz)&
-                                                  *db2%rvArray(imgrid)%x(ix,iy,iz)+&
-                           inPhi%csArray(imgrid)%v(ix-1, iy, iz)*db1%rvArray(imgrid)%x(ix, iy, iz) + &
-                           inPhi%csArray(imgrid)%v(ix, iy+1, iz)*db2%rvArray(imgrid)%y(ix, iy, iz) + &
-                           inPhi%csArray(imgrid)%v(ix, iy-1, iz)*db1%rvArray(imgrid)%y(ix, iy, iz) + &
-                           inPhi%csArray(imgrid)%v(ix, iy, iz+1)*db2%rvArray(imgrid)%z(ix, iy, iz) + &
-                           inPhi%csArray(imgrid)%v(ix, iy, iz-1)*db1%rvArray(imgrid)%z(ix, iy, iz) + &
-                           inPhi%csArray(imgrid)%v(ix, iy, iz)*c%rscArray(imgrid)%v(ix, iy, iz)
+          else
+             write (0, *) 'DivCgrad: not compatible existing data types'
+          end if
 
-              enddo
-            enddo
-          enddo
-        !$OMP END PARALLEL DO
-
-        else
-          print *, 'Error: DivCgrad: scalars not same size'
-        end if
-
-    enddo ! loop on subgrids
+       else
+          write(0, *) 'Error: DivCgrad: scalars not same size'
+       end if
 
     else
-      print *, 'DivCgrad: not compatible existing data types'
-    endif
-
-  else
-    print *, 'Error: DivCgrad: output scalar not even allocated yet'
-  endif
+       write(0, *) 'Error: DivCgrad: output scalar not even allocated yet'
+    end if
 
   end subroutine DivCgrad	! DivCgrad
 
-  ! *********************************************************************
-  !Update first layer in DivCgrad
-  subroutine UpdateZ_DivCgrad(inSc,outSc,imgrid)
-    implicit none
 
-    type (cscalar_mg), intent(in)   :: inSc
-    type (cscalar_mg), intent(inout)  :: outSc
-    integer, intent(in)  :: imgrid
-    ! local variables
-    integer  :: ix, iy, iz
-    integer  :: nz
-
-
-      if(imgrid == 1) then
-      return
-      endif
-
-      ! the basic strategy is to fill in the interface layer with values from the finer grid!
-      if (mGrid%coarseness(imgrid).gt.mGrid%coarseness(imgrid-1))then
-        ! interface layer: finer to coarser
-        ! current sub-grid is coarser
-        ! Update 1 taking values from nz of the previous sub-grid
-       do iy = 2, mGrid%gridArray(imgrid)%ny
-          do ix = 2, mGrid%gridArray(imgrid)%nx
-            outSc%csArray(imgrid)%v(ix,iy,1) = inSc%csArray(imgrid)%v(ix+1,iy,1)&
-                                                 *db2%rvArray(imgrid)%x(ix,iy,1)+&
-                           inSc%csArray(imgrid)%v(ix-1, iy, 1)*db1%rvArray(imgrid)%x(ix, iy, 1) + &
-                           inSc%csArray(imgrid)%v(ix, iy+1, 1)*db2%rvArray(imgrid)%y(ix, iy, 1) + &
-                           inSc%csArray(imgrid)%v(ix, iy-1, 1)*db1%rvArray(imgrid)%y(ix, iy, 1) + &
-                           inSc%csArray(imgrid)%v(ix, iy, 2)*db2%rvArray(imgrid)%z(ix, iy, 1) + &
-                           inSc%csArray(imgrid-1)%v(2*ix-1, 2*iy-1,mGrid%gridArray(imgrid-1)%nz )*db1%rvArray(imgrid)%z(ix, iy, 1) + &
-                           inSc%csArray(imgrid)%v(ix, iy, 1)*c%rscArray(imgrid)%v(ix, iy, 1)
-           enddo
-       enddo
-     else if (mGrid%coarseness(imgrid).lt.mGrid%coarseness(imgrid-1)) then
-       ! interface : coarser to finer
-       ! current grid is finer
-       ! vice versa
-       nz = mGrid%gridArray(imgrid-1)%nz
-       do iy = 2, mGrid%gridArray(imgrid-1)%ny
-         do ix = 2, mGrid%gridArray(imgrid-1)%nx
-            outSc%csArray(imgrid)%v(2*ix-1,2*iy-1,1) = inSc%csArray(imgrid)%v(2*ix,2*iy-1,1)&
-                                                  *db2%rvArray(imgrid)%x(2*ix-1,2*iy-1,1)+&
-                           inSc%csArray(imgrid)%v(2*(ix-1), 2*iy-1, 1)*db1%rvArray(imgrid)%x(2*ix-1, 2*iy-1, 1) + &
-                           inSc%csArray(imgrid)%v(2*ix-1, 2*iy, 1)*db2%rvArray(imgrid)%y(2*ix-1, 2*iy-1, 1) + &
-                           inSc%csArray(imgrid)%v(2*ix-1, 2*(iy-1), 1)*db1%rvArray(imgrid)%y(2*ix-1, 2*iy-1, 1) + &
-                           inSc%csArray(imgrid)%v(2*ix-1, 2*iy-1, 2)*db2%rvArray(imgrid)%z(2*ix-1, 2*iy-1, 1) + &
-                           inSc%csArray(imgrid-1)%v(ix, iy, nz)*db1%rvArray(imgrid)%z(2*ix-1, 2*iy-1, 1) + &
-                           inSc%csArray(imgrid)%v(2*ix-1, 2*iy-1, 1)*c%rscArray(imgrid)%v(2*ix-1, 2*iy-1, 1)
-          enddo
-        enddo
-
-      else if (mGrid%coarseness(imgrid).eq.mGrid%coarseness(imgrid-1)) then
-       do iy = 2, mGrid%gridArray(imgrid)%ny
-         do ix = 2, mGrid%gridArray(imgrid)%nx
-                outSc%csArray(imgrid)%v(ix,iy,1) = inSc%csArray(imgrid)%v(ix+1,iy,1)&
-                                                  *db2%rvArray(imgrid)%x(ix,iy,1)+&
-                           inSc%csArray(imgrid)%v(ix-1, iy, 1)*db1%rvArray(imgrid)%x(ix, iy, 1) + &
-                           inSc%csArray(imgrid)%v(ix, iy+1, 1)*db2%rvArray(imgrid)%y(ix, iy, 1) + &
-                           inSc%csArray(imgrid)%v(ix, iy-1, 1)*db1%rvArray(imgrid)%y(ix, iy, 1) + &
-                           inSc%csArray(imgrid)%v(ix, iy, 2)*db2%rvArray(imgrid)%z(ix, iy, 1) + &
-                           inSc%csArray(imgrid-1)%v(ix, iy, mGrid%gridArray(imgrid-1)%nz)*db1%rvArray(imgrid)%z(ix, iy, 1) + &
-                           inSc%csArray(imgrid)%v(ix, iy, 1)*c%rscArray(imgrid)%v(ix, iy, 1)
-         enddo
-       enddo
-     endif
-  end subroutine UpdateZ_DivCgrad
   !**********************************************************************
   ! Purpose is to compute div sigma inE (input electrical field)
   ! where sigma is the edge conductivity. Thus, in practice, this computes
@@ -2619,237 +1766,82 @@ enddo
   subroutine DivC(inE, outSc)
 
     implicit none
-      type (cvector_mg), intent(in)  :: inE
-      type (cscalar_mg), intent(inout)   :: outSc
-      integer   :: ix, iy, iz,imgrid
-      integer  :: nz, nzAir, nx, ny
+    type (cvector), intent(in)		         :: inE
+    type (cscalar), intent(inout)		 :: outSc
+    integer                                      :: ix, iy, iz
 
-      if(.not.inE%allocated) then
- 	    print *, 'inE not allocated in DivC'
- 	    stop
-      endif
+    IF(.not.inE%allocated) THEN
+ 	WRITE(0,*) 'inE not allocated in DivC'
+ 	STOP
+    ENDIF
 
-      if(.not.outSc%allocated) then
- 	    print *, 'outSc not allocated in DivC'
- 	    stop
-      endif
+    IF(.not.outSc%allocated) THEN
+ 	WRITE(0,*) 'outSc not allocated in DivC'
+ 	STOP
+    ENDIF
 
-      if (outSc%gridType == CORNER) then
+    if (outSc%gridType == CORNER) then
 
-      do imgrid = 1, inE%mgridSize ! Loop on subgrids
-        nx = inE%cvArray(imgrid)%nx
-        ny = inE%cvArray(imgrid)%ny
-        nz = inE%cvArray(imgrid)%nz
-        nzAir = inE%cvArray(imgrid)%grid%nzAir
+       ! Check whether all the inputs/ outputs involved are even of the same
+       ! size
+       if ((inE%nx == outSc%nx).and.&
+            (inE%ny == outSc%ny).and.&
+            (inE%nz == outSc%nz)) then
 
-        ! Check whether all the inputs/ outputs involved are even of the same
-        ! size
-        if ((nx == outSc%csArray(imgrid)%nx).and.&
-            (ny == outSc%csArray(imgrid)%ny).and.&
-            (nz == outSc%csArray(imgrid)%nz)) then
           ! computation done only for internal nodes
-
-         do ix = 2, nx
-           do iy = 2, ny
+          do ix = 2, outSc%nx
+             do iy = 2, outSc%ny
 
 	        ! FOR NODES IN THE AIR ONLY
-               do iz = 2,nzAir
+                do iz = 2,outSc%grid%nzAir
+                   outSc%v(ix, iy, iz) = &
+                        SIGMA_AIR*(inE%x(ix,iy,iz)-inE%x(ix - 1,iy,iz)) * &
+                        inE%grid%delXinv(ix)    &
+                        + SIGMA_AIR*(inE%y(ix,iy,iz)-inE%y(ix,iy - 1,iz)) * &
+                        inE%grid%delYinv(iy)    &
+                        + SIGMA_AIR*(inE%z(ix,iy,iz)-inE%z(ix,iy,iz - 1)) * &
+                        inE%grid%delZinv(iz)
+                enddo   ! iz
 
-               outSc%csArray(imgrid)%v(ix, iy, iz) = &
-                  SIGMA_AIR*(inE%cvArray(imgrid)%x(ix,iy,iz)-inE%cvArray(imgrid)%x(ix-1,iy,iz)) * &
-                    inE%cvArray(imgrid)%grid%delXinv(ix)    &
-                    + SIGMA_AIR*(inE%cvArray(imgrid)%y(ix,iy,iz)-inE%cvArray(imgrid)%y(ix,iy-1,iz)) * &
-                    inE%cvArray(imgrid)%grid%delYinv(iy)    &
-                    + SIGMA_AIR*(inE%cvArray(imgrid)%z(ix,iy,iz)-inE%cvArray(imgrid)%z(ix,iy,iz-1)) * &
-                   inE%cvArray(imgrid)%grid%delZinv(iz)
-               enddo   ! iz
+	        ! FOR NODES AT THE AIR-EARTH INTERFACE
+                iz = outSc%grid%nzAir+1
+                   outSc%v(ix, iy, iz) = &
+                        (condE%x(ix,iy,iz)*inE%x(ix, iy, iz) -         &
+                        condE%x(ix - 1,iy,iz)*inE%x(ix - 1, iy, iz)) * &
+                        inE%grid%delXinv(ix)      &
+                        +  (condE%y(ix,iy,iz)*inE%y(ix, iy, iz) -      &
+                        condE%y(ix,iy - 1,iz)*inE%y(ix, iy - 1, iz)) * &
+                        inE%grid%delYinv(iy)      &
+                        +  (condE%z(ix,iy,iz)*inE%z(ix, iy, iz) -      &
+                        SIGMA_AIR*inE%z(ix, iy, iz - 1)) * &
+                        inE%grid%delZinv(iz)
 
-	           ! FOR NODES AT THE AIR-EARTH INTERFACE
-
-	           if(inE%cvArray(imgrid)%grid%flag == 0) then
-                 iz = nzAir+1
-
-                   outSc%csArray(imgrid)%v(ix, iy, iz) = &
-                        (condEMG%rvArray(imgrid)%x(ix,iy,iz)*inE%cvArray(imgrid)%x(ix, iy, iz) -         &
-                        condEMG%rvArray(imgrid)%x(ix-1,iy,iz)*inE%cvArray(imgrid)%x(ix-1, iy, iz)) * &
-                        inE%cvArray(imgrid)%grid%delXinv(ix)      &
-                        +  (condEMG%rvArray(imgrid)%y(ix,iy,iz)*inE%cvArray(imgrid)%y(ix, iy, iz) -      &
-                        condEMG%rvArray(imgrid)%y(ix,iy - 1,iz)*inE%cvArray(imgrid)%y(ix, iy - 1, iz)) * &
-                        inE%cvArray(imgrid)%grid%delYinv(iy)      &
-                        +  (condEMG%rvArray(imgrid)%z(ix,iy,iz)*inE%cvArray(imgrid)%z(ix, iy, iz) -      &
-                        SIGMA_AIR*inE%cvArray(imgrid)%z(ix, iy, iz-1)) * &
-                        inE%cvArray(imgrid)%grid%delZinv(iz)
-               endif
                 ! FOR NODES INSIDE THE EARTH ONLY
-		        ! THE TOP MOST EARTH NODE HAS AN INTERFACE WITH
-		        ! AIR, THEREFORE THAT ONE IS SKIPPED HERE
-                do iz = nzAir+2, nz
-                   outSc%csArray(imgrid)%v(ix, iy, iz) = &
-                        (condEMG%rvArray(imgrid)%x(ix,iy,iz)*inE%cvArray(imgrid)%x(ix, iy, iz) -         &
-                        condEMG%rvArray(imgrid)%x(ix - 1,iy,iz)*inE%cvArray(imgrid)%x(ix - 1, iy, iz)) * &
-                        inE%cvArray(imgrid)%grid%delXinv(ix)      &
-                        +  (condEMG%rvArray(imgrid)%y(ix,iy,iz)*inE%cvArray(imgrid)%y(ix, iy, iz) -      &
-                        condEMG%rvArray(imgrid)%y(ix,iy - 1,iz)*inE%cvArray(imgrid)%y(ix, iy - 1, iz)) * &
-                        inE%cvArray(imgrid)%grid%delYinv(iy)      &
-                        +  (condEMG%rvArray(imgrid)%z(ix,iy,iz)*inE%cvArray(imgrid)%z(ix, iy, iz) -      &
-                        condEMG%rvArray(imgrid)%z(ix,iy,iz - 1)*inE%cvArray(imgrid)%z(ix, iy, iz - 1)) * &
-                        inE%cvArray(imgrid)%grid%delZinv(iz)
+		! THE TOP MOST EARTH NODE HAS AN INTERFACE WITH
+		! AIR, THEREFORE THAT ONE IS SKIPPED HERE
+                do iz = outSc%grid%nzAir+2, outSc%nz
+                   outSc%v(ix, iy, iz) = &
+                        (condE%x(ix,iy,iz)*inE%x(ix, iy, iz) -         &
+                        condE%x(ix - 1,iy,iz)*inE%x(ix - 1, iy, iz)) * &
+                        inE%grid%delXinv(ix)      &
+                        +  (condE%y(ix,iy,iz)*inE%y(ix, iy, iz) -      &
+                        condE%y(ix,iy - 1,iz)*inE%y(ix, iy - 1, iz)) * &
+                        inE%grid%delYinv(iy)      &
+                        +  (condE%z(ix,iy,iz)*inE%z(ix, iy, iz) -      &
+                        condE%z(ix,iy,iz - 1)*inE%z(ix, iy, iz - 1)) * &
+                        inE%grid%delZinv(iz)
                 enddo   ! iz
              enddo      ! iy
           enddo         ! ix
 
-       ! update first layer
-         call UpdateZ_O(inE,outSc,imgrid) ! call UpdateZ_DivC subroutine
-
        else
           write(0, *) 'Error: DivC: scalars not same size'
        end if
-
-      enddo ! loop on subgrid
 
     else
        write(0, *) 'Error: DivC: output scalar not compatible use'
     end if
 
   end subroutine DivC	! DivC
-! ************************************************************************************************************
-  ! Updates first and last z layer in Div result
-  subroutine UpdateZ_DivC(inE, outSc, imgrid)
-  ! created 25.05.2012
-  ! modified 20.06.2012
-  ! modified 22.06.2012
 
-    implicit none
-
-    type (cvector_mg), intent(in)   :: inE
-    type (cscalar_mg), intent(inout)   :: outSc
-    integer, intent(in)  :: imgrid
-
-    ! local variables
-    integer  :: ix, iy
-    integer  :: nx, ny, nz
-
-      if(imgrid == inE%mgridSize) then
-      ! the last multigrid layer
-      ! z=1 must be filled in
-      ! nz+1 should be zero
-      ! nothing to do
-      return
-      endif
-
-      nx = outSc%csArray(imgrid)%nx
-      ny = outSc%csArray(imgrid)%ny
-      nz = outSc%csArray(imgrid)%nz
-
-      ! the basic strategy is to fill in the interface layer with values from the finer grid!
-      if (inE%coarseness(imgrid).lt.inE%coarseness(imgrid+1)) then
-       ! interface : finer grid to coarser
-       do iy = 2, ny/2
-         do ix = 2, nx/2
-           ! FOR NODES IN THE AIR
-           if(inE%cvArray(imgrid)%grid%flag == 1) then
-
-               outSc%csArray(imgrid)%v(2*ix-1, 2*iy-1, nz+1) = &
-                  SIGMA_AIR*(inE%cvArray(imgrid+1)%x(ix,iy,1)-inE%cvArray(imgrid+1)%x(ix-1,iy,1)) * &
-                    inE%cvArray(imgrid+1)%grid%delXinv(ix)    &
-                    + SIGMA_AIR*(inE%cvArray(imgrid+1)%y(ix,iy,1)-inE%cvArray(imgrid+1)%y(ix,iy-1,1)) * &
-                    inE%cvArray(imgrid+1)%grid%delYinv(iy)    &
-                    + SIGMA_AIR*(inE%cvArray(imgrid+1)%z(ix,iy,1)-inE%cvArray(imgrid)%z(2*ix-1,2*iy-1,nz)) * &
-                   inE%cvArray(imgrid+1)%grid%delZinv(1)
-
-           ! FOR NODES INSIDE THE EARTH ONLY
-           else if(inE%cvArray(imgrid)%grid%flag == 2 .or. inE%cvArray(imgrid)%grid%flag == 0) then
-               outSc%csArray(imgrid)%v(2*ix-1, 2*iy-1, nz+1) = &
-                      (condEMG%rvArray(imgrid+1)%x(ix,iy, 1)*inE%cvArray(imgrid+1)%x(ix, iy, 1) -        &
-                        condEMG%rvArray(imgrid+1)%x(ix-1, iy, 1)*inE%cvArray(imgrid+1)%x(ix-1, iy, 1)) * &
-                        inE%cvArray(imgrid+1)%grid%delXinv(ix)      &
-                        +  (condEMG%rvArray(imgrid+1)%y(ix, iy, 1)*inE%cvArray(imgrid+1)%y(ix, iy, 1) -  &
-                        condEMG%rvArray(imgrid+1)%y(ix,iy-1, 1)*inE%cvArray(imgrid+1)%y(ix, iy-1, 1)) * &
-                        inE%cvArray(imgrid+1)%grid%delYinv(iy)      &
-                        +  (condEMG%rvArray(imgrid+1)%z(ix,iy,1)*inE%cvArray(imgrid+1)%z(ix, iy, 1)-&
-                            condEMG%rvArray(imgrid)%z(2*ix-1, 2*iy-1 , nz)*inE%cvArray(imgrid)%z(2*ix-1, 2*iy-1, nz)) * &
-                        inE%cvArray(imgrid+1)%grid%delZinv(1)
-            endif
-
-            outSc%csarray(imgrid+1)%v(ix, iy, 1) =  outSc%csArray(imgrid)%v(2*ix-1, 2*iy-1, nz+1)
-
-         enddo
-       enddo
-
-      else if (inE%coarseness(imgrid).gt.inE%coarseness(imgrid+1))then
-        ! interface layer: coarser -> finer
-        ! Update 1 of Div taking values from nz of the previous sub-grid
-        do iy = 2, ny
-          do ix = 2, nx
-            ! for nodes in the air
-              if(inE%cvArray(imgrid+1)%grid%flag == 1 .or. inE%cvArray(imgrid+1)%grid%flag == 0) then
-
-                outSc%csArray(imgrid+1)%v(2*ix-1, 2*iy-1, 1) = &
-                  SIGMA_AIR*(inE%cvArray(imgrid)%x(ix, iy, nz+1)-inE%cvArray(imgrid)%x(ix-1,iy, nz+1)) * &
-                    inE%cvArray(imgrid)%grid%delXinv(ix)    &
-                    + SIGMA_AIR*(inE%cvArray(imgrid)%y(ix,iy,nz+1)-inE%cvArray(imgrid)%y(ix,iy-1, nz+1)) * &
-                    inE%cvArray(imgrid)%grid%delYinv(iy)    &
-                    + SIGMA_AIR*(inE%cvArray(imgrid+1)%z(2*ix-1,2*iy-1,1)-inE%cvArray(imgrid)%z(ix, iy, nz)) * &
-                   inE%cvArray(imgrid+1)%grid%delZinv(1)
-
-             else if(inE%cvArray(imgrid+1)%grid%flag == 2) then
-             ! FOR NODES INSIDE THE EARTH ONLY
-                   outSc%csArray(imgrid+1)%v(2*ix-1, 2*iy-1, 1) = &
-                        (condEMG%rvArray(imgrid)%x(ix, iy, nz+1)*inE%cvArray(imgrid)%x(ix, iy, nz+1) -     &
-                        condEMG%rvArray(imgrid)%x(ix-1, iy, nz+1)*inE%cvArray(imgrid)%x(ix-1, iy, nz+1)) * &
-                        inE%cvArray(imgrid)%grid%delXinv(ix)      &
-                        +  (condEMG%rvArray(imgrid)%y(ix, iy,nz+1)*inE%cvArray(imgrid)%y(ix, iy, nz+1) -   &
-                        condEMG%rvArray(imgrid)%y(ix, iy-1, nz+1)*inE%cvArray(imgrid)%y(ix, iy-1, nz+1)) * &
-                        inE%cvArray(imgrid)%grid%delYinv(iy)      &
-                        +  (condEMG%rvArray(imgrid+1)%z(2*ix-1,2*iy-1,1)*inE%cvArray(imgrid+1)%z(2*ix-1, 2*iy-1, 1) -    &
-                        condEMG%rvArray(imgrid)%z(ix,iy,nz)*inE%cvArray(imgrid)%z(ix, iy, nz)) * &
-                        inE%cvArray(imgrid+1)%grid%delZinv(1)
-              endif
-
-              outSc%csarray(imgrid)%v(ix, iy, nz+1) =  outSc%csArray(imgrid+1)%v(2*ix-1, 2*iy-1, 1)
-
-          enddo
-        enddo
-
-     else if (outSc%coarseness(imgrid).eq.outSc%coarseness(imgrid+1)) then
-       do ix = 2, nx
-         do iy = 2, ny
-
-            ! FOR NODES IN THE AIR
-              if(inE%cvArray(imgrid)%grid%flag == 1) then
-
-               outSc%csArray(imgrid)%v(ix, iy, nz+1) = &
-                  SIGMA_AIR*(inE%cvArray(imgrid)%x(ix,iy,nz+1)-inE%cvArray(imgrid)%x(ix-1,iy,nz+1)) * &
-                    inE%cvArray(imgrid)%grid%delXinv(ix)    &
-                    + SIGMA_AIR*(inE%cvArray(imgrid)%y(ix,iy,nz+1)-inE%cvArray(imgrid)%y(ix,iy-1,nz+1)) * &
-                    inE%cvArray(imgrid)%grid%delYinv(iy)    &
-                    + SIGMA_AIR*(inE%cvArray(imgrid+1)%z(ix,iy,1)-inE%cvArray(imgrid)%z(ix,iy,nz)) * &
-                   inE%cvArray(imgrid+1)%grid%delZinv(1)
-               else if(inE%cvArray(imgrid)%grid%flag == 2.or.inE%cvArray(imgrid)%grid%flag == 0) then
-                ! FOR NODES INSIDE THE EARTH ONLY
-                ! THE TOP MOST EARTH NODE HAS AN INTERFACE WITH
-                ! AIR, THEREFORE THAT ONE IS SKIPPED HERE
-                   outSc%csArray(imgrid)%v(ix, iy,nz+1) = &
-                        (condEMG%rvArray(imgrid)%x(ix,iy,nz+1)*inE%cvArray(imgrid)%x(ix, iy, nz+1) -         &
-                        condEMG%rvArray(imgrid)%x(ix - 1,iy,nz+1)*inE%cvArray(imgrid)%x(ix - 1, iy, nz+1)) * &
-                        inE%cvArray(imgrid)%grid%delXinv(ix)      &
-                        +  (condEMG%rvArray(imgrid)%y(ix,iy,nz+1)*inE%cvArray(imgrid)%y(ix, iy, nz+1) -      &
-                        condEMG%rvArray(imgrid)%y(ix,iy - 1,nz+1)*inE%cvArray(imgrid)%y(ix, iy - 1, nz+1)) * &
-                        inE%cvArray(imgrid)%grid%delYinv(iy)      &
-                        +  (condEMG%rvArray(imgrid+1)%z(ix,iy,1)*inE%cvArray(imgrid+1)%z(ix, iy, 1) -      &
-                        condEMG%rvArray(imgrid)%z(ix,iy,nz)*inE%cvArray(imgrid)%z(ix, iy,nz)) * &
-                        inE%cvArray(imgrid+1)%grid%delZinv(1)
-               endif
-
-               outSc%csarray(imgrid+1)%v(ix, iy, 1) =  outSc%csArray(imgrid)%v(ix, iy, nz+1)
-
-             enddo      ! iy
-          enddo         ! ix
-     endif
-
-  end  subroutine UpdateZ_DivC
-
-
-
-! *********************************************************************************************************
 end  module modelOperator3D
