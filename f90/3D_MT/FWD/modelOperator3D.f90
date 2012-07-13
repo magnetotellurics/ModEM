@@ -823,11 +823,14 @@ Contains
 
        if ((inE%gridType == outE%gridType)) then
 
+write(0,*) 'DEBUG 2-1'
           Call Maxwell(inE, adjt, outE)
           ! done with preparing del X del X E +/- i*omega*mu*conductivity*E
+write(0,*) 'DEBUG 2-2'
 
           ! diagonally multiply the final results with weights (edge volume)
           Call diagMult(outE, volE, outE)
+write(0,*) 'DEBUG 2-3'
 
        else
           write (0, *) 'MultA_N: not compatible usage for existing data types'

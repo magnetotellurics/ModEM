@@ -142,7 +142,7 @@ Contains
     ! Using boundary condition and sources from rHS data structure
     ! construct vector b (defined only on interior nodes) for rHS of
     ! reduced (interior nodes only) linear system of equations
-
+write(0,*) 'DEBUG 1'
     if(trans) then
        !  In this case boundary conditions do not enter into forcing
        !    for reduced (interior node) linear system; solution on
@@ -181,7 +181,9 @@ Contains
           !     Note that MultA_N already multiplies by volume weights
 	  !     required to symetrize problem, so the result is V*A_IB*b)
           ltemp = .false.
+write(0,*) 'DEBUG 2'
           Call MultA_N(temp, ltemp, b)
+write(0,*) 'DEBUG 3'
           !  change sign of result
           Call scMult(MinusOne,b,b)
        endif
