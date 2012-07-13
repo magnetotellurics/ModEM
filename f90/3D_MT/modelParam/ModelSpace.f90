@@ -24,7 +24,9 @@ module ModelSpace
   use math_constants
   use utilities
   use sg_scalar
+  use sg_scalar_mg
   use sg_vector
+  use sg_vector_mg
   use sg_sparse_vector
 #ifdef MPI
   use MPI_declaration
@@ -66,7 +68,7 @@ module ModelSpace
      character (len=80)	:: paramType = ''
   end type modelParam_t
 
-
+! ***************************************************************************************
 interface assignment (=)
    MODULE PROCEDURE copy_modelParam
 end interface

@@ -173,8 +173,15 @@ integer  :: imgrid, ig
 integer  :: nzCum, nzAirGrid, nzEarthGrid
 
   ! Initialize multigrid structure
+  ! simple model 16
   mgrid%mgridSize = 5
-  !mgrid%mgridSize = 10
+! 32
+!  mgrid%mgridSize = 6
+! 64
+!  mgrid%mgridSize = 9
+
+!128 model
+!  mgrid%mgridSize = 6
 
   allocate(mgrid%nzGrid(mgrid%mgridSize))
   allocate(mgrid%coarseness(mgrid%mgridSize))
@@ -182,10 +189,24 @@ integer  :: nzCum, nzAirGrid, nzEarthGrid
   ! allocate mgrid
   call create_grid(nx,ny,nzAir,nzEarth,mgrid)
   ! this is only for tests. must be setup by user from file
+! very simple model 16x16x12
   mgrid%nzGrid = (/4,4,7,5,2/)
   mgrid%coarseness  = (/2,1,0,1,2/)
-  !mgrid%nzGrid = (/2,2,2,14,10,6,6,6,6,7/)
-  !mgrid%coarseness  = (/3,2,1,0,1,2,3,4,5,6/)
+! 32x32x12
+!  mgrid%nzGrid = (/4,2,2,7,2,2,3/)
+!  mgrid%coarseness  = (/3,2,1,0,1,2,3/)
+! 32x32x32
+!  mgrid%nzGrid = (/4,12,8,8,5,5/)
+ ! mgrid%coarseness  = (/0,0,0,0,0,0,0/)
+!  mgrid%coarseness  = (/0,0,1,2,3,4/)
+! 64x64x32
+!  mgrid%nzGrid = (/2,2,2,2,6,4,6,8,10/)
+!  mgrid%coarseness  = (/4,3,2,1,0,1,2,3,4/)
+
+! 128 model
+!  mgrid%nzGrid = (/20,8,8,8,8,9/)
+!  mgrid%coarseness  = (/0,1,2,3,4,5/)
+
 
   ! allocate gridarray(:)
   allocate(mgrid%gridArray(mgrid%mgridSize))

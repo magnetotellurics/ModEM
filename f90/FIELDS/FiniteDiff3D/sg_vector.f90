@@ -393,11 +393,11 @@ Contains
 	   ! For spherical problem:
 	   ! 1) E%y(:,1,:) and E%y(:,ny+1,:) are undefined,
 	   ! 2) E%x(nx+1,:,:) is repetitios and equals E%x(1,:,:).
-       allocate(E%x(nx+1,ny,nz+1), STAT=status)
+       allocate(E%x(nx+1,ny,nz), STAT=status)
        E%allocated = E%allocated .and. (status .EQ. 0)
-       allocate(E%y(nx,ny+1,nz+1), STAT=status)
+       allocate(E%y(nx,ny+1,nz), STAT=status)
        E%allocated = E%allocated .and. (status .EQ. 0)
-       allocate(E%z(nx,ny,nz+2), STAT=status)
+       allocate(E%z(nx,ny,nz+1), STAT=status)
        E%allocated = E%allocated .and. (status .EQ. 0)
     else
        write (0, *) 'not a known tag'
@@ -467,11 +467,11 @@ Contains
 	   ! For spherical problem:
 	   ! 1) E%y(:,1,:) and E%y(:,ny+1,:) are undefined,
 	   ! 2) E%x(nx+1,:,:) is repetitious and equals E%x(1,:,:).
-       allocate(E%x(nx+1,ny,nz+1), STAT=status)
+       allocate(E%x(nx+1,ny,nz), STAT=status)
        E%allocated = E%allocated .and. (status .EQ. 0)
-       allocate(E%y(nx,ny+1,nz+1), STAT=status)
+       allocate(E%y(nx,ny+1,nz), STAT=status)
        E%allocated = E%allocated .and. (status .EQ. 0)
-       allocate(E%z(nx,ny,nz+2), STAT=status)
+       allocate(E%z(nx,ny,nz+1), STAT=status)
        E%allocated = E%allocated .and. (status .EQ. 0)
     else
        write (0, *) 'not a known tag'

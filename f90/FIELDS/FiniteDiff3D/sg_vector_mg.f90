@@ -313,18 +313,21 @@ end  subroutine deall_cvector_mg
 
 end subroutine copy_cvector_mg
   ! *****************************************************************************
-  ! converts cvector type to cvector_mg
-  ! Try to avoid this routine
+  ! averages or copyies fields from cvector to cvector_mg
+
+  ! edited 12.07.2012
   subroutine c2mg(e2,e1)
 
   implicit none
 
-    type(cvector), intent(in)  :: e1  ! old in
-    type(cvector_mg), intent(inout)  ::e2  ! new out
+    type(cvector), intent(in)  :: e1       ! input cvector
+    type(cvector_mg), intent(inout)  ::e2  ! output cvector
 
     ! local
-    integer  :: imgrid,ifine, ix,iy,iz,izv
+    complex (kind=prec),allocatable, dimension(:,:,:)    :: tempE2
+    integer  :: imgrid,ifine, ix,iy,iz,izv,ic
     integer  :: nx,ny,nz,nzCum,ccoeff_current
+    integer  :: errAll
 
     if (.not.e1%allocated)then
       print *, 'Error c2mg; e1 (cvector) is not allocated'
@@ -334,45 +337,69 @@ end subroutine copy_cvector_mg
       print *, 'Error c2mg; e2 (cvector_mg) is not allocated'
     endif
 
+    ! allocate temp array
+    allocate(tempE2(e1%grid%nx+1,e1%grid%ny+1,e1%grid%nz+1), STAT= errAll)
+
     ! check gridType
     if (e1%gridType == e2%gridType) then
 
       nzCum = 0
-      do imgrid = 1 , e2%mgridSize
+      do imgrid = 1 , e2%mgridSize  ! Global loop on sub-grids
+
         nx = e2%cvArray(imgrid)%nx
         ny = e2%cvArray(imgrid)%ny
         nz = e2%cvArray(imgrid)%nz
         ccoeff_current = 2**e2%coarseness(imgrid)
 
-        ! fields are not averaged
-        ! it takes value from the first cell
+        ! re-count x component
+        tempE2 = C_ZERO
         do iz = 1, nz+1
            izv = iz + nzCum
           do iy = 1, ny+1
             do ix =1, nx
-              e2%cvArray(imgrid)%x(ix,iy,iz) = e1%x(ccoeff_current*(ix-1)+1,ccoeff_current*(iy-1)+1,izv)
+              do ic = 1, ccoeff_current
+              ! this averaging does not work properly
+              ! problem is in accuracy
+              !  tempE2(ix,iy,iz) = tempE2(ix,iy,iz) + e1%x(ccoeff_current*(ix-1)+ic,ccoeff_current*(iy-1)+1,izv)*e1%grid%dx(ccoeff_current*(ix-1)+ic)
+                tempE2(ix,iy,iz) =  e1%x(ccoeff_current*(ix-1)+ic,ccoeff_current*(iy-1)+1,izv)
+              enddo
+              !  tempE2(ix,iy,iz) = tempE2(ix,iy,iz)/e2%grid%gridArray(imgrid)%dx(ix)
+                e2%cvArray(imgrid)%x(ix,iy,iz) = tempE2(ix,iy,iz)
             enddo
           enddo
-          do iy = 1, ny
-            do ix = 1, nx+1
-              e2%cvArray(imgrid)%y(ix,iy,iz) = e1%y(ccoeff_current*(ix-1)+1,ccoeff_current*(iy-1)+1,izv)
+
+        ! re-count y component
+        tempE2 = C_ZERO
+          do ix = 1, nx+1
+            do iy = 1, ny
+              do ic = 1, ccoeff_current
+               ! tempE2(ix,iy,iz) = tempE2(ix,iy,iz) +  e1%y(ccoeff_current*(ix-1)+1,ccoeff_current*(iy-1)+ic,izv)*e1%grid%dy(ccoeff_current*(iy-1)+ic)
+                tempE2(ix,iy,iz) = e1%y(ccoeff_current*(ix-1)+1,ccoeff_current*(iy-1)+ic,izv)
+              enddo
+               ! tempE2(ix,iy,iz) = tempE2(ix,iy,iz)/e2%grid%gridArray(imgrid)%dy(iy)
+                e2%cvArray(imgrid)%y(ix,iy,iz) = tempE2(ix,iy,iz)
             enddo
           enddo
-       enddo
-       do iz = 1, nz
-          izv = iz + nzCum
-         do iy =1, ny+1
-           do ix= 1, nx+1
-             e2%cvArray(imgrid)%z(ix,iy,iz) = e1%z(ccoeff_current*(ix-1)+1,ccoeff_current*(iy-1)+1,izv)
+        enddo
+
+        ! re-count z component
+        do iy =1, ny+1
+          do ix= 1, nx+1
+            do iz = 1, nz
+               izv = iz + nzCum
+              e2%cvArray(imgrid)%z(ix,iy,iz) = e1%z(ccoeff_current*(ix-1)+1,ccoeff_current*(ix-1)+1,izv)
            enddo
-         enddo
-      enddo
+          enddo
+        enddo
 
       nzCum =  nzCum + nz
-    enddo
+    enddo  ! Global loop
   else
     print *, 'Error c2mg; cvector and cvector_mg not are the same gridType'
   endif
+
+    ! deallocate temp array
+    deallocate(tempE2, STAT=errAll)
 
   end subroutine c2mg
 
@@ -382,12 +409,12 @@ end subroutine copy_cvector_mg
   subroutine mg2c(e2, e1)
 
   implicit none
-    type(cvector_mg), intent(in)  :: e1  ! old in
-    type(cvector), intent(inout)  :: e2  ! new out
+    type(cvector_mg), intent(in)  :: e1  ! cvector_mg in
+    type(cvector), intent(inout)  :: e2  ! cvector out
 
     ! local
     integer :: nzCum, ccoeff_current, nx,ny,nz
-    integer  :: imgrid,ix,iy,iz,izv, ic
+    integer  :: imgrid,ix,iy,iz,izv, ic, iyy
 
     if (.not.e1%allocated)then
       print *, 'Error mg2c; e1 (cvector_mg) is not allocated'
@@ -400,51 +427,34 @@ end subroutine copy_cvector_mg
     ! check gridType
     if (e1%gridType == e2%gridType) then
 
-      nzCum = 0
-      do imgrid = 1, e1%mgridSize
-        nx = e1%cvArray(imgrid)%nx
-        ny = e1%cvArray(imgrid)%ny
-        nz = e1%cvArray(imgrid)%nz
-        ccoeff_current = 2**e1%coarseness(imgrid)
-
-        do iz = 1, nz+1
-           izv = iz + nzCum
-          do iy = 1, ny
-            do ix =1, nx
-               do ic = 1, ccoeff_current
-                e2%x(ccoeff_current*(ix-1)+ic,ccoeff_current*(iy-1)+ic,izv) = e1%cvArray(imgrid)%x(ix,iy,iz)
+        nzCum = 0
+        do imgrid = 1, e1%mgridSize  ! Global loop on sub-grids
+           nx = e1%cvArray(imgrid)%nx
+           ny = e1%cvArray(imgrid)%ny
+           nz = e1%cvArray(imgrid)%nz
+           ccoeff_current = 2**e1%coarseness(imgrid)
+           do iz = 2, nz
+              izv = iz + nzCum
+              do iy = 1, ny
+                 do ix =1, nx
+                    do ic = 1, ccoeff_current
+                       e2%x(ccoeff_current*(ix-1)+ic,iy,izv) = e1%cvArray(imgrid)%x(ix,iy,iz)
+                       e2%y(ccoeff_current*(ix-1)+ic,iy,izv) = e1%cvArray(imgrid)%y(ix,iy,iz)
+                       e2%z(ccoeff_current*(ix-1)+ic,iy,izv) = e1%cvArray(imgrid)%z(ix,iy,iz)
+                       e2%x(ix,ccoeff_current*(iy-1)+ic,izv) = e1%cvArray(imgrid)%x(ix,iy,iz)
+                       e2%y(ix,ccoeff_current*(iy-1)+ic,izv) = e1%cvArray(imgrid)%y(ix,iy,iz)
+                       e2%z(ix,ccoeff_current*(iy-1)+ic,izv) = e1%cvArray(imgrid)%z(ix,iy,iz)
+                     enddo
+                  enddo
                enddo
             enddo
-          enddo
+        nzCum = nzCum + nz
+        enddo   ! Global loop on sub-grids
+    else
+      print *, 'Error mg2c; cvector and cvector_mg not are the same gridType'
+    endif
 
-          do iy = 1, ny
-            do ix = 1, nx
-               do ic = 1, ccoeff_current
-                e2%y(ccoeff_current*(ix-1)+ic,ccoeff_current*(iy-1)+ic,izv) = e1%cvArray(imgrid)%y(ix,iy,iz)
-               enddo
-            enddo
-          enddo
-        enddo
-
-        do iz = 1, nz
-           izv = iz + nzCum
-          do ix = 1, ny
-            do iy= 1, nx
-              do ic = 1, ccoeff_current
-                e2%z(ccoeff_current*(ix-1)+ic,ccoeff_current*(iy-1)+ic,izv) = e1%cvArray(imgrid)%z(ix,iy,iz)
-              enddo
-            enddo
-          enddo
-        enddo
-
-      nzCum = nzCum + nz
-      enddo
-
-  else
-    print *, 'Error mg2c; cvector and cvector_mg not are the same gridType'
-  endif
-
-end subroutine mg2c
+  end subroutine mg2c
 
 ! *****************************************************************************
   subroutine zero_cvector_mg(e)
@@ -931,13 +941,8 @@ end subroutine diagDiv_rcvector_mg
 
   ! local variables
   integer  :: ix, iy, iz
-  integer  :: nx, ny, nz
   character(len=10),parameter  :: first = 'first'
   character(len=10),parameter  :: last = 'last'
-
-      nx = outE%cvArray(imgrid)%nx
-      ny = outE%cvArray(imgrid)%ny
-      nz = outE%cvArray(imgrid)%nz
 
     if(whichZ.eq.first)then
       if(imgrid == 1) then
@@ -950,8 +955,8 @@ end subroutine diagDiv_rcvector_mg
         if(outE%coarseness(imgrid).lt.outE%coarseness(imgrid-1))then
           ! interface : coarser grid to finer
           ! copy fields from the previous sub-grid (nz+1 layer) to the current sub-grid (1 layer)
-          do iy = 1, ny/2
-            do ix = 1, nx/2
+          do iy = 1, outE%cvArray(imgrid-1)%ny
+            do ix = 1, outE%cvArray(imgrid-1)%nx
               ! copy Ex odd values
               outE%cvArray(imgrid)%x(2*ix-1,2*iy-1,1) = outE%cvArray(imgrid-1)%x(ix,iy,outE%cvArray(imgrid-1)%nz+1)
               ! copy Ex even values
@@ -966,8 +971,8 @@ end subroutine diagDiv_rcvector_mg
        else if (outE%coarseness(imgrid).gt.outE%coarseness(imgrid-1)) then
          ! interface : finer grid to coarser
 
-         do iy = 1, ny
-           do ix = 1, nx
+         do iy = 1,  outE%cvArray(imgrid)%ny
+           do ix = 1,  outE%cvArray(imgrid)%nx
              outE%cvArray(imgrid)%x(ix,iy,1) =  outE%cvArray(imgrid-1)%x(2*ix-1,2*iy-1,outE%cvArray(imgrid-1)%nz+1)
              !outE%cvArray(imgrid-1)%x(2*ix,2*iy,outE%cvArray(imgrid-1)%nz+1) = &
              !  outE%cvArray(imgrid-1)%x(2*ix-1,2*iy-1,outE%cvArray(imgrid-1)%nz+1)
@@ -982,8 +987,8 @@ end subroutine diagDiv_rcvector_mg
         ! coarseness does not change
         ! copy fields
 
-         do iy = 1, ny
-           do ix = 1, nx
+         do iy = 1,  outE%cvArray(imgrid)%ny
+           do ix = 1,  outE%cvArray(imgrid)%nx
              outE%cvArray(imgrid)%x(ix,iy,1) = outE%cvArray(imgrid-1)%x(ix,iy,outE%cvArray(imgrid-1)%nz+1)
              outE%cvArray(imgrid)%y(ix,iy,1) = outE%cvArray(imgrid-1)%y(ix,iy,outE%cvArray(imgrid-1)%nz+1)
            enddo
@@ -999,26 +1004,26 @@ end subroutine diagDiv_rcvector_mg
       return
       endif
         if(outE%coarseness(imgrid).lt.outE%coarseness(imgrid+1))then
-          ! interface : coarser grid to finer
+          ! interface : finer to coarser
           ! copy fields from the previous subgrid (1 layer) to the current subgrid (nz+2 layer)
-          do iy = 1, ny/2
-            do ix = 1, nx/2
-              outE%cvArray(imgrid)%x(2*ix-1,2*iy-1,nz+1) = outE%cvArray(imgrid+1)%x(ix,iy,1)
-              outE%cvArray(imgrid)%x(2*ix,2*iy,nz+1) = outE%cvArray(imgrid)%x(2*ix-1,2*iy-1,nz+1)
+          do iy = 1, outE%cvArray(imgrid+1)%ny
+            do ix = 1, outE%cvArray(imgrid+1)%nx
+              outE%cvArray(imgrid)%x(2*ix-1,2*iy-1,outE%cvArray(imgrid)%nz+1) = outE%cvArray(imgrid+1)%x(ix,iy,1)
+              outE%cvArray(imgrid)%x(2*ix,2*iy,outE%cvArray(imgrid)%nz+1) = outE%cvArray(imgrid)%x(2*ix-1,2*iy-1,outE%cvArray(imgrid)%nz+1)
 
-              outE%cvArray(imgrid)%y(2*ix-1,2*iy-1,nz+1) = outE%cvArray(imgrid+1)%y(ix,iy,1)
-              outE%cvArray(imgrid)%y(2*ix,2*iy,nz+1) = outE%cvArray(imgrid)%y(2*ix-1,2*iy-1,nz+1)
+              outE%cvArray(imgrid)%y(2*ix-1,2*iy-1,outE%cvArray(imgrid)%nz+1) = outE%cvArray(imgrid+1)%y(ix,iy,1)
+              outE%cvArray(imgrid)%y(2*ix,2*iy,outE%cvArray(imgrid)%nz+1) = outE%cvArray(imgrid)%y(2*ix-1,2*iy-1,outE%cvArray(imgrid)%nz+1)
             enddo
           enddo
 
         else if (outE%coarseness(imgrid).gt.outE%coarseness(imgrid+1)) then
-          ! interface : finer grid to coarser
-          do iy = 1, ny
-            do ix = 1, nx
-              outE%cvArray(imgrid)%x(ix,iy,nz+1) = outE%cvArray(imgrid+1)%x(2*ix-1,2*iy-1,1)
+          ! interface : coarser to finer
+          do iy = 1, outE%cvArray(imgrid)%ny
+            do ix = 1, outE%cvArray(imgrid)%nx
+              outE%cvArray(imgrid)%x(ix,iy,outE%cvArray(imgrid)%nz+1) = outE%cvArray(imgrid+1)%x(2*ix-1,2*iy-1,1)
               !outE%cvArray(imgrid+1)%x(2*ix,2*iy,1) = outE%cvArray(imgrid+1)%x(2*ix,2*iy,1)
 
-              outE%cvArray(imgrid)%y(ix,iy,nz+1) = outE%cvArray(imgrid+1)%y(2*ix-1,2*iy-1,1)
+              outE%cvArray(imgrid)%y(ix,iy,outE%cvArray(imgrid)%nz+1) = outE%cvArray(imgrid+1)%y(2*ix-1,2*iy-1,1)
               !outE%cvArray(imgrid+1)%y(2*ix,2*iy,1) = outE%cvArray(imgrid+1)%y(2*ix,2*iy,1)
             enddo
           enddo
@@ -1027,10 +1032,10 @@ end subroutine diagDiv_rcvector_mg
           ! coarseness does not change
           ! copy fields
 
-      do iy = 1, ny
-         do ix = 1, nx
-           outE%cvArray(imgrid)%x(ix,iy,nz+1) = outE%cvArray(imgrid+1)%x(ix,iy,1)
-           outE%cvArray(imgrid)%y(ix,iy,nz+1) = outE%cvArray(imgrid+1)%y(ix,iy,1)
+      do iy = 1, outE%cvArray(imgrid)%ny
+         do ix = 1, outE%cvArray(imgrid)%nx
+           outE%cvArray(imgrid)%x(ix,iy,outE%cvArray(imgrid)%nz+1) = outE%cvArray(imgrid+1)%x(ix,iy,1)
+           outE%cvArray(imgrid)%y(ix,iy,outE%cvArray(imgrid)%nz+1) = outE%cvArray(imgrid+1)%y(ix,iy,1)
          enddo
       enddo
         endif
@@ -1064,15 +1069,14 @@ end subroutine updateZ_cvector
     ! z1 == 0 as it is
       return
     endif
-      nx = outE%rvArray(imgrid)%nx
-      ny = outE%rvArray(imgrid)%ny
+
       nz = outE%rvArray(imgrid)%nz
     if(outE%coarseness(imgrid).lt.outE%coarseness(imgrid-1))then
 
       ! interface : coarser grid to finer
       ! copy fields from the prioues subgrid (nz layer) to the current subgrid (1 layer)
-      do iy = 1, ny/2
-        do ix = 1, nx/2
+      do iy = 1, outE%rvArray(imgrid+1)%ny
+        do ix = 1, outE%rvArray(imgrid+1)%nx
            outE%rvArray(imgrid)%x(ix*2-1,iy*2-1,1) = &
              outE%rvArray(imgrid-1)%x(ix,iy,outE%rvArray(imgrid-1)%nz+1)
            outE%rvArray(imgrid)%x(ix*2,iy*2,1) = outE%rvArray(imgrid)%x(ix*2-1,iy*2-1,1)
@@ -1090,8 +1094,8 @@ end subroutine updateZ_cvector
 
       ! probably we need averaging here !!!!!!!!!
 
-      do iy = 1, ny
-        do ix = 1, nx
+      do iy = 1, outE%rvArray(imgrid)%ny
+        do ix = 1, outE%rvArray(imgrid)%nx
           outE%rvArray(imgrid)%x(ix,iy,1) = &
             outE%rvArray(imgrid-1)%x(2*(ix-1)+1,2*(iy-1)+1,outE%rvArray(imgrid-1)%nz+1)
           outE%rvArray(imgrid-1)%x(2*(ix-1)+2,2*(iy-1)+2,outE%rvArray(imgrid-1)%nz+1) = &
@@ -1109,8 +1113,8 @@ end subroutine updateZ_cvector
     ! coarseness does not change
     ! copy fields
 
-      do iy = 1, ny
-         do ix = 1, nx
+      do iy = 1, outE%rvArray(imgrid)%ny
+         do ix = 1, outE%rvArray(imgrid)%nx
            outE%rvArray(imgrid)%x(ix,iy,1) = outE%rvArray(imgrid-1)%x(ix,iy,outE%rvArray(imgrid-1)%nz+1)
            outE%rvArray(imgrid)%y(ix,iy,1) = outE%rvArray(imgrid-1)%y(ix,iy,outE%rvArray(imgrid-1)%nz+1)
          enddo

@@ -65,7 +65,73 @@
    end subroutine ModelParamToCell
 
   ! **********************************************************************
-
+!**********************************************************************
+!  ! distribute model parameters to cell on MULTIGRID
+!
+!   subroutine ModelParamToCellMG(m,cCond,paramType,mgrid,AirCond)
+!
+!   type(modelParam_t), intent(in)        :: m
+!   type(rscalar_mg), intent(inout)          :: cCond
+!   character(80), intent(out), optional  :: paramType
+!   type(grid_t), intent(out), optional :: mgrid
+!   real(kind=prec), intent(out), optional :: AirCond
+!   ! local variables
+!   integer  :: nx, ny, nz, nzAir, nzCum, ccoeff_current
+!   integer  ::imgrid,ix,iy,ic
+!
+!   if(cCond%allocated) then
+!     if(cCond%mgridSize.ne.m%grid%mgridSize) then
+!       call deall_rscalar_mg(cCond)
+!       call create_rscalar_mg(m%grid,cCond,CENTER)
+!     end if
+!     else
+!    call  create_rscalar_mg(m%grid,cCond,CENTER)
+!   endif
+!
+!   if (present(paramType)) then
+!      paramType = m%paramType
+!   end if
+!
+!   if (present(mgrid)) then
+!     if (mgrid%allocated) then
+!       call deall_mgrid(mgrid)
+!     end if
+!     mgrid = m%grid
+!   end if
+!
+!   if (present(AirCond)) then
+!     AirCond = m%AirCond
+!   end if
+!
+!
+!   nzCum = 0
+!   do imgrid = 1, m%grid%mgridSize  ! global loop on subgrids
+!     nx = m%grid%gridArray(imgrid)%nx
+!     ny = m%grid%gridArray(imgrid)%ny
+!     nzAir = m%grid%gridArray(imgrid)%nzAir
+!     nz = m%grid%gridArray(imgrid)%nz
+!     ccoeff_current = 2**m%grid%coarseness(imgrid)
+!     do ix = 1, nx
+!       do iy = 1,ny
+!         do ic = 1,ccoeff_current
+!           if(m%paramType .eq. LOGE) then
+!             cCond%rscArray(imgrid)%v(ix,iy,1:nzAir) = exp(m%AirCond)
+!             cCond%rscArray(imgrid)%v(ix,iy,nzAir+1:nz) = exp(m%cellCond%v(ccoeff_current*(ix-1)+ic, &
+!                ccoeff_current*(iy-1)+ic,nzCum+1:nz+nzCum-nzAir))
+!           else
+!            cCond%rscArray(imgrid)%v(ix,iy,1:nzAir) = m%AirCond
+!            cCond%rscArray(imgrid)%v(ix,iy,nzAir+1:nz) = m%cellCond%v(ccoeff_current*(ix-1)+ic, &
+!                ccoeff_current*(iy-1)+ic,nzCum+1:nz+nzCum-nzAir)
+!           endif
+!         enddo
+!       enddo
+!     enddo
+!
+!   nzCum = nzCum+nz-nzAir
+!
+!   enddo ! global loop on subgrid
+!
+!   end subroutine ModelParamToCellMG
   subroutine dModelParamToEdge(m, Econd,m0)
   !  Maps conductivity defined on grid cells (prisms) to edge-nodes ...
   !  Linear interface to ModelParamToEdge which makes the code more readable.

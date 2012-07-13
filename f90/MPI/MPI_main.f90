@@ -863,6 +863,7 @@ if (trim(worker_job_task%what_to_do) .eq. 'FORWARD') then
           worker_job_task%taskid=taskid
 
 		       call initSolver(per_index,sigma,grid,e0)
+
 		       call set_e_soln(pol_index,e0)
 		       
 
@@ -997,7 +998,7 @@ elseif (trim(worker_job_task%what_to_do) .eq. 'JmultT') then
  
                     call initSolver(per_index,sigma,grid,e0,e,comb) 
                   
-		            
+
 		            call create_eAll_param_place_holder(e0)
 		            call MPI_RECV(eAll_para_vec, Nbytes, MPI_PACKED, 0, FROM_MASTER,MPI_COMM_WORLD, STATUS, ierr)
 		            call Unpack_eAll_para_vec(e0)
@@ -1035,7 +1036,7 @@ elseif (trim(worker_job_task%what_to_do) .eq. 'Jmult') then
                        worker_job_task%taskid=taskid
 	 
                     call initSolver(per_index,sigma,grid,e0,e,comb) 
-		           
+
                    
 		            call create_eAll_param_place_holder(e0)
 		            call MPI_RECV(eAll_para_vec, Nbytes, MPI_PACKED, 0, FROM_MASTER,MPI_COMM_WORLD, STATUS, ierr)

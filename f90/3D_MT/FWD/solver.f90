@@ -91,6 +91,7 @@ subroutine PCG(b,x, PCGiter)
   PCGiter%rerr(i) = real(rnorm/bnorm)
 
   loop: do while ((PCGiter%rerr(i).gt.PCGiter%tol).and.(i.lt.PCGiter%maxIt))
+
      Call Minv(r,s)
 
      delta = dotProd(r,s)
@@ -100,7 +101,6 @@ subroutine PCG(b,x, PCGiter)
         beta = delta/deltaOld
         Call linComb(C_ONE,s,beta,p,p)
      end if
-
      Call A(p,q)
 
      alpha = delta/dotProd(p,q)
@@ -197,7 +197,7 @@ subroutine QMR(b,x, QMRiter)
 
   Call A(x, adjoint, R)
 
-  ! b - Ax, for inital guess x, that has been inputted to the routine
+   ! b - Ax, for inital guess x, that has been inputted to the routine
   Call linComb(C_ONE,b,C_MinusOne,R,R)
 
   ! Norm of rhs, residual

@@ -76,7 +76,7 @@ module sg_boundary
 
   ! sets boundary nodes in the vector field
   INTERFACE setBC
-     module procedure copy_bcvector
+     ! NOT NEEDED  module procedure copy_bcvector
      module procedure copy_bcvector_mg
   END INTERFACE
 
@@ -872,7 +872,6 @@ Contains
 
   end subroutine copy_cbvector ! copy_cbvector
 
-
   ! ***************************************************************************
   ! * copy_bcvector reads the boundary conditions as an input and writes them to the
   ! * complex vector used as EDGE on the designated boundaries for a
@@ -926,7 +925,7 @@ Contains
              enddo ! iz
           enddo    ! ix
           ! z-component
-          do ix = 1, outE%nx+1
+          do ix = 1, outE%nx
              do iz = 1, outE%nz
                 ! Passing the YMin face
                 outE%z(ix, YMin, iz) = inBC%zYMin(ix, iz)
@@ -986,31 +985,198 @@ Contains
   end subroutine copy_bcvector
 
   ! ***************************************************************************
-  ! copy_bcvector_mg uses copy_bcvector
-  ! convert cvector_mg to cvector
-  ! call copy_bcvector
-  subroutine copy_bcvector_mg(inBC, outEmg)
+  ! * copy_bcvector reads the boundary conditions as an input and writes them to the
+  ! * complex vector used as EDGE on the designated boundaries for a
+  ! * specific frequency/ period and mode.
+  ! * editied for the case of cvector_mg !!! Multi-grid
+  subroutine copy_bcvector_mg(inBC, outE)
+  ! created 10.07.2012
 
     implicit none
-    type (cboundary), intent(in)     :: inBC
     ! boundary conditions as an input
-    type (cvector_mg), intent(inout)    :: outEmg
+    type (cboundary), intent(in)  :: inBC
     ! the electrical field as an output
+    type (cvector_mg), intent(inout)    :: outE
 
-    ! local variables
-    type (cvector)  :: outE
+    complex (kind=prec),allocatable, dimension(:,:)    :: tempBCMin, tempBCMax
+    integer   :: ix, iy, iz, izv, ic, imgrid,ifine       ! dummy integers
+    integer   :: YMax, YMin       ! ends for BC writing
+    integer   :: XMax, XMin       ! ends for BC writing
+    integer   :: ZMin, ZMax       ! ends for BC writing
+    integer   :: ccoeff_current, ccoeff_first, ccoeff_last, nzCum
+    integer  :: errAll
 
-      call create(outEmg%grid, outE, outEmg%gridType)
-      ! copy cvector_mg to cvector
-      call mg2c (outE, outEmg)
-      ! passing bc to cvector
-      call copy_bcvector(inBC, outE)
+    if (.not.outE%allocated) then
+      print *, 'outE in copy_bcvector_mg not allocated yet'
+      stop
+    end if
 
-      ! convert back
-      call c2mg (outEmg, outE)
+    if (.not.inBC%allocated) then
+      print *, 'inBC in copy_bcvector_mg not allocated yet'
+      stop
+    end if
 
-      call deall(outE)
+    ! allocate temp array
+    allocate(tempBCMin(2*inBC%grid%nx,2*inBC%grid%ny), STAT= errAll)
+    allocate(tempBCMax(2*inBC%grid%nx,2*inBC%grid%ny), STAT= errAll)
 
-   end subroutine copy_bcvector_mg
+
+    ! Check whether the bounds are the same
+    do imgrid = 1, outE%mgridSize
+      if (outE%coarseness(imgrid) == 0) then
+       ifine = imgrid  ! this is finest sub-grid
+
+       if (inBC%nx /= outE%cvArray(ifine)%nx.or.&
+           inBC%ny /= outE%cvArray(ifine)%ny) then
+         print *, 'Error: copy_bcvector_mg; inBc and outE are not the same size'
+       endif
+      endif
+    enddo
+
+    if (outE%gridType == EDGE) then
+
+      YMin = 1
+      XMin = 1
+      ZMin = 1
+      ZMax = outE%cvarray(outE%mgridSize)%nz+1
+      nzCum = 0
+      ccoeff_first = 2**outE%coarseness(1)
+      ccoeff_last = 2 **outE%coarseness(outE%mgridSize)
+
+      do imgrid = 1, outE%mgridSize ! Global loop on sub-grids
+
+        YMax = outE%cvArraY(imgrid)%ny+1
+        XMax = outE%cvArraY(imgrid)%nx+1
+        ccoeff_current = 2**outE%coarseness(imgrid)
+
+       ! passing boundary condition values to the complete description
+       ! of the vector field by  passing boundary values for the YMin
+       ! and YMax face
+       ! x-component
+       tempBCMin = C_ZERO
+       tempBCMax = C_ZERO
+       do iz = 1, outE%cvArray(imgrid)%nz+1
+          izv = iz + nzCum
+          do ix = 1, outE%cvArray(imgrid)%nx
+            do ic = 1, ccoeff_current
+               tempBCMin(ix,iz) = tempBCMin(ix,iz) + inBC%xYMin(ccoeff_current*(ix-1)+ic, izv)*inBC%grid%dx(ccoeff_current*(ix-1)+ic)
+               tempBCMax(ix,iz) = tempBCMax(ix,iz) + inBC%xYMax(ccoeff_current*(ix-1)+ic, izv)*inBC%grid%dx(ccoeff_current*(ix-1)+ic)
+            enddo  ! ic
+            tempBCMin(ix,iz) = tempBCMin(ix,iz)/outE%grid%gridArray(imgrid)%dx(ix)
+            tempBCMax(ix,iz) = tempBCMax(ix,iz)/outE%grid%gridArray(imgrid)%dx(ix)
+            ! Passing the YMin face
+            outE%cvArray(imgrid)%x(ix, YMin, iz) = tempBCMin(ix,iz)
+            ! Passing the YMax face
+            outE%cvArray(imgrid)%x(ix, YMax, iz) = tempBCMax(ix,iz)
+          enddo  ! ix
+        enddo    ! iz
+
+        ! z-component
+        do iz = 1, outE%cvArray(imgrid)%nz
+           izv = iz + nzCum
+          do ix = 1, outE%cvArray(imgrid)%nx+1
+            ! Passing the YMin face
+            outE%cvArray(imgrid)%z(ix, YMin, iz) = inBC%zYMin(ccoeff_current*(ix-1)+1,izv)
+            ! Passing the YMax face
+            outE%cvArray(imgrid)%z(ix, YMax, iz) = inBC%zYMax(ccoeff_current*(ix-1)+1,izv)
+           enddo  ! ix
+        enddo     ! iz
+
+       ! passing boundary values for the XMax and XMin face
+       ! y-component
+       tempBCMin = C_ZERO
+       tempBCMax = C_ZERO
+       do iz = 1, outE%cvArray(imgrid)%nz+1
+          izv = iz + nzCum
+         do iy = 1, outE%cvArray(imgrid)%ny
+           do ic = 1, ccoeff_current
+              tempBCMin(iy,iz) = tempBCMin(iy,iz) + inBC%yXMin(ccoeff_current*(iy-1)+ic, izv)*inBC%grid%dy(ccoeff_current*(iy-1)+ic)
+              tempBCMax(iy,iz) = tempBCMax(iy,iz) + inBC%yXMax(ccoeff_current*(iy-1)+ic, izv)*inBC%grid%dy(ccoeff_current*(iy-1)+ic)
+           enddo ! ic
+           tempBCMin(iy,iz) = tempBCMin(iy,iz)/outE%grid%gridArray(imgrid)%dy(iy)
+           tempBCMax(iy,iz) = tempBCMax(iy,iz)/outE%grid%gridArray(imgrid)%dy(iy)
+           ! Passing the XMin face
+           outE%cvArray(imgrid)%y(XMin, iy, iz) =  tempBCMin(iy,iz)
+           ! Passing the XMax face
+           outE%cvArray(imgrid)%y(XMax, iy, iz) =  tempBCMax(iy,iz)
+         enddo  ! iy
+        enddo   ! iz
+
+       ! z-component
+       do iz = 1, outE%cvArray(imgrid)%nz
+          izv = iz + nzCum
+         do iy = 1, outE%cvArray(imgrid)%ny+1
+           ! Passing the XMin face
+           outE%cvArray(imgrid)%z(XMin, iy, iz) = inBC%zXMin(ccoeff_current*(iy-1)+1, izv)
+           ! Passing the XMax face
+           outE%cvArray(imgrid)%z(XMax, iy, iz) = inBC%zXMax(ccoeff_current*(iy-1)+1, izv)
+         enddo  ! iy
+       enddo     ! iz
+
+        ! passing boundary values for the ZMin and ZMax face
+        tempBCMin = C_ZERO
+        tempBCMax = C_ZERO
+        ! x-component
+        do iy = 1, outE%cvArray(1)%ny+1
+          do ix = 1, outE%cvArray(1)%nx
+            do ic =1, ccoeff_first
+              tempBCMin(ix,iy) = tempBCMin(ix,iy) + inBC%xZMin(ccoeff_first*(ix-1)+ic, ccoeff_first*(iy-1)+1)*&
+                                                        inBC%grid%dx(ccoeff_first*(ix-1)+ic)
+            enddo ! ic
+            tempBCMin(ix,iy) =  tempBCMin(ix,iy)/outE%grid%gridArray(1)%dx(ix)
+            ! Passing the ZMin face
+            outE%cvArray(1)%x(ix, iy, ZMin) = tempBCMin(ix,iy)
+          enddo  ! ix
+        enddo  !iy
+
+        do iy = 1 , outE%cvArray(outE%mgridSize)%ny+1
+          do ix = 1, outE%cvArray(outE%mgridSize)%nx
+            do ic =1, ccoeff_last
+              tempBCMax(ix,iy) = tempBCMax(ix,iy) + inBC%xZMax(ccoeff_last*(ix-1)+ic, ccoeff_last*(iy-1)+1)*&
+                                                        inBC%grid%dx(ccoeff_last*(ix-1)+ic)
+            enddo ! ic
+            tempBCMax(ix,iy) =  tempBCMax(ix,iy)/outE%grid%gridArray(outE%mgridSize)%dx(ix)
+            ! Passing the ZMax face
+            outE%cvArray(outE%mgridSize)%x(ix, iy, ZMax) = tempBCMax(ix,iy)
+          enddo   ! ix
+        enddo      ! iy
+
+        ! y-component
+        tempBCMin = C_ZERO
+        tempBCMax = C_ZERO
+        do ix = 1, outE%cvArray(1)%nx+1
+           do iy = 1, outE%cvArray(1)%ny
+             do ic = 1, ccoeff_first
+               tempBCMin(ix,iy) =  tempBCMin(ix,iy) + inBC%yZMin(ccoeff_first*(ix-1)+1, ccoeff_first*(iy-1)+ic)*&
+                                                      inBC%grid%dy(ccoeff_first*(iy-1)+ic)
+             enddo ! ic
+             tempBCMin(ix,iy) =  tempBCMin(ix,iy)/outE%grid%gridArray(1)%dy(iy)
+             ! Passing the ZMin face
+             outE%cvArray(1)%y(ix, iy, ZMin) = tempBCMin(ix,iy)
+           enddo  ! iy
+        enddo  ! ix
+
+        do ix = 1, outE%cvArray(outE%mgridSize)%nx+1
+          do iy = 1, outE%cvArray(outE%mgridSize)%ny
+             do ic = 1, ccoeff_last
+               tempBCMax(ix,iy) = tempBCMax(ix,iy)+ inBC%yZMax(ccoeff_last*(ix-1)+1, ccoeff_last*(iy-1)+ic)*&
+                                                     inBC%grid%dy(ccoeff_last*(iy-1)+ic)
+             enddo   ! ic
+             tempBCMax(ix,iy) = tempBCMax(ix,iy)/outE%grid%gridArray(outE%mgridSize)%dy(iy)
+             ! Passing the ZMax face
+             outE%cvArray(outE%mgridSize)%y(ix, iy, ZMax) = tempBCMax(ix,iy)
+          enddo   ! iy
+        enddo      ! ix
+
+      nzCum = outE%cvArray(imgrid)%nz + nzCum
+      enddo ! Global loop on subgrids
+    else
+      print *, 'Error:copy_bcvector: not compatible usage for existing data types'
+    end if
+
+    ! deallocate temp array
+    deallocate(tempBCMin, tempBCMax, STAT=errAll)
+
+end subroutine copy_bcvector_mg
 
 end module sg_boundary ! sg_boundary

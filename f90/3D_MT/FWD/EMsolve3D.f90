@@ -189,8 +189,8 @@ Contains
       if (bRHS%nonzero_BC) then
         !   copy from rHS structure into zeroed complex edge vector temp
         call setBC(bRHS%bc, tempMG)
-        ltemp = .false.
 
+        ltemp = .false.
         !   Then multiply by curl_curl operator (use MultA_N ...
         !   Note that MultA_N already multiplies by volume weights
 	    !   required to symetrize problem, so the result is V*A_IB*b)
@@ -232,6 +232,7 @@ Contains
 
     ! Need to make sure first guess is zero on boundaries
     ! tempBC has all zeros on the boundaries
+
     call setBC(tempBC, eSol)
 
     ! Outer part of QMR loop ... alternates between Calls to QMR
@@ -277,7 +278,6 @@ Contains
     endif
 
     loop: do while ((.not.converged).and.(.not.failed))
-
 
        Call QMR(bMG, eSol, QMRiter)  ! multigrid case
 
@@ -352,6 +352,9 @@ Contains
     Call deall(b)
     Call deall(temp)
     Call deall(tempBC)
+    Call deall_cvector_mg(bMG)
+    Call deall_cvector_mg(tempMG)
+    Call deall_cvector_mg(sMG)
     deallocate(QMRiter%rerr, STAT=status)
 
   end subroutine FWDsolve3D
@@ -390,8 +393,9 @@ Contains
 
     ! initialize PCGiter (maximum iterations allowed per set of diveregence
     ! correction, error tolerence, and relative error book keeping)
-    PCGiter%maxIt = MaxIterDivCor
-    PCGiter%tol = tolDivCor
+    !PCGiter%maxIt = MaxIterDivCor
+    PCGiter%maxIt = 10    
+    !PCGiter%tol = tolDivCor
 
     allocate(PCGiter%rerr(PCGiter%maxIt), STAT = status)
     PCGiter%rerr = 0.0
@@ -417,7 +421,7 @@ Contains
     Call diagMult(volC,phiRHS,phiRHS)
 
   ! PCG is a generic pre-conditioned CG algorithm
-  Call PCG(phiRHS,phiSol,PCGiter)
+  Call PCG(phiRHS,phiSol,PCGiter )
   DivCorRelErr(:,nDivCor) = PCGiter%rerr
 
   if (output_level > 2) then

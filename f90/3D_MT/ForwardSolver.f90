@@ -202,6 +202,7 @@ Contains
    real(kind=prec)	:: period, omega
    integer			:: IER,iMode
    complex(kind=prec)	:: i_omega_mu
+   integer  :: it
 
    omega = txDict(iTx)%omega
    period = txDict(iTx)%period
@@ -211,7 +212,7 @@ Contains
    !  complete operator intialization, for this frequency
    !  call UpdateFreq(txDict(iTx)%omega)
    !  loop over polarizations
-
+!do it = 1, 100
    do iMode = 1,e0%nPol
 
       ! compute boundary conditions for polarization iMode
@@ -220,8 +221,8 @@ Contains
       write (*,'(a12,a12,a3,a20,i4,a2,es12.6,a15,i2)') node_info, 'Solving the ','FWD', &
 				' problem for period ',iTx,': ',(2*PI)/omega,' secs & mode # ',e0%Pol_index(iMode)
       call FWDsolve3D(b0,omega,e0%pol(imode))
-
    enddo
+!enddo
    ! update pointer to the transmitter in solnVector
    e0%tx = iTx
 

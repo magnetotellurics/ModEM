@@ -183,19 +183,21 @@ Contains
     integer, intent(in)				:: ioNum
     integer, intent(out)			:: ios
 
-    open (unit=ioNum,file=outFile,STATUS='unknown', form ='unformatted',&
-         iostat=ios)
+    open (unit=ioNum,file=outFile,STATUS='unknown', iostat=ios)
+
+  !  open (unit=ioNum,file=outFile,STATUS='unknown', form ='unformatted', iostat=ios)
 
     if( ios/=0) then
        write(0,*) 'Error opening file in FileWriteInit: ', outFile
     else
        ! write the header (contains the basic information for the forward
        ! modeling). the header is 4 lines
-       write(ioNum) version,nPer,nMode,inGrid%nx,inGrid%ny,inGrid%nz,inGrid%nzAir, &
-       inGrid%ox, inGrid%oy, inGrid%oz, inGrid%rotdeg
-       write(ioNum) inGrid%dx
-       write(ioNum) inGrid%dy
-       write(ioNum) inGrid%dz
+!       write(ioNum) version,nPer,nMode,inGrid%nx,inGrid%ny,inGrid%nz,inGrid%nzAir, &
+!       inGrid%ox, inGrid%oy, inGrid%oz, inGrid%rotdeg
+!       write(ioNum) inGrid%dx
+!       write(ioNum) inGrid%dy
+!       write(ioNum) inGrid%dz
+
     endif
   end subroutine FileWriteInit
 
@@ -368,16 +370,35 @@ Contains
     integer, intent(in)				:: ioNum,iFreq,iMode
     character (len=20), intent(in)		:: ModeName
     type (cvector_mg), intent(in)			:: outE
-    integer  :: imgrid
+    integer  :: ix,iy,iz, imgrid,c
     ! write the frequency header - 1 record
-    write(ioNum) Omega, iFreq, iMode,ModeName
+ !   write(ioNum) Omega, iFreq, iMode,ModeName
+   !write(ioNum,*)'Omega = ', Omega
+   !write(ioNum,*)'iFreq = ', iFreq
+   !write(ioNum,*)'iMode = ', iMode
+   !write(ioNum,*)'Modename = ', Modename
 
     ! write the electrical field data - 3 records
-    do imgrid = 1, outE%mgridSize
-      write(ioNum) outE%cvArray(imgrid)%x
-      write(ioNum) outE%cvArray(imgrid)%y
-      write(ioNum) outE%cvArray(imgrid)%z
-    enddo
+  !  do imgrid = 1, outE%mgridSize
+     !write(ioNum)  outE%cvArray(imgrid)%x
+     ! write(ioNum) outE%cvArray(imgrid)%y
+     ! write(ioNum) outE%cvArray(imgrid)%z
+  !  enddo
+
+! write E field at the surface
+   do imgrid = 1, outE%mgridSize
+     if(outE%grid%gridarray(imgrid)%flag == 0)then
+      do iy = 1, outE%cvarray(imgrid)%ny
+        do ix = 1, outE%cvarray(imgrid)%nx
+          write(ioNum,'(i3,2x,i3,2x,es13.5,2x,es13.5,2x,es13.5)') iy, ix, abs(outE%cvarray(imgrid)%x(ix,iy,outE%grid%gridArray(imgrid)%nzAir+1)), &
+                                 abs(outE%cvarray(imgrid)%y(ix,iy,outE%grid%gridArray(imgrid)%nzAir+1)), &
+                                 abs(outE%cvarray(imgrid)%z(ix,iy,outE%grid%gridArray(imgrid)%nzAir+1))
+
+        enddo
+      enddo
+     endif
+   enddo
+
 
   end subroutine EfileWrite
 
@@ -480,7 +501,6 @@ Contains
 !*******************************************************************************
 !*******************************************************************************
 !*******************************************************************************
-
 !******************************************************************
       subroutine write_solnVectorMTX(fid,cfile,eAll)
 
@@ -503,16 +523,20 @@ Contains
       ModeNames(1) = 'Ey'
       ModeNames(2) = 'Ex'
 
-      call FileWriteInit(version,cfile,fid,eAll%solns(1)%grid &
+       call FileWriteInit(version,cfile,fid,eAll%solns(1)%grid &
                ,eAll%nTX, nMode,ios)
 
-      do j = 1,eAll%nTx
-         do k = 1,2
+     print*, 'Which period?'
+     read*, j
+     ! do j = 1,eAll%nTx
+     print*, 'Which Mode?'
+     read*, k
+        ! do k = 1,2
            omega = txDict(eAll%solns(j)%tx)%omega
            call EfileWrite(fid, omega, j,  &
              k, ModeNames(k), eAll%solns(j)%pol(k))
-         enddo
-      enddo
+        ! enddo
+     ! enddo
       close(fid)
       end subroutine write_solnVectorMTX
 

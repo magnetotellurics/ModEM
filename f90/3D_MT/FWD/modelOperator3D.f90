@@ -260,7 +260,10 @@ Contains
     type(cvector)  :: E0
 
     call create(mgrid, E0, EDGE)
-    call mg2c(E0, E0mg)
+
+   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+   ! FOR FWD PROBLEM (WITHOUT SENS) DECIDED TO CREATE E0 AS CVECTOR
+   ! NEED TO THINK HOW TO WORK IN CASE of SENSITIVITIES !!!!!!!!!!
 
     if (BC%read_E_from_file) then
 
@@ -274,7 +277,10 @@ Contains
          ! Compute the BC using Weerachai 2D approach 
           call BC_x0_WS(imode,period,mGrid,Cond3D,E0,BC)
     end if
+
+    ! need to average and copy fields from E0 cvector to cvector_mg
     call c2mg(E0mg, E0)
+
     ! Cell conductivity array is no longer needed
     ! NOT TRUE: needed for imode=2
     ! call deall_rscalar(Cond3D)
@@ -766,7 +772,7 @@ Contains
     logical, intent (in)                     :: adjt
     type (cvector_mg), target, intent(inout)    :: outE
     ! output electrical field as complex vector
-    complex  :: diag_sign
+    integer  :: diag_sign
     integer  :: ix, iy, iz, imgrid
     integer  :: nx, ny,nz
     ! dummy variables
@@ -799,7 +805,6 @@ Contains
            end if
 
           !$OMP PARALLEL DEFAULT(SHARED) PRIVATE(ix,iy,iz)
-
           ! Apply difference equation to compute Ex (only on interior nodes)
           ! the diagonal nodes have the imaginary component added
           !$OMP DO SCHEDULE(STATIC)
@@ -807,7 +812,7 @@ Contains
              do iy = 2, ny
                 do ix = 1, nx
                    outE%cvArray(imgrid)%x(ix,iy,iz) = xY(imgrid,ix,iy)*(inE%cvArray(imgrid)%y(ix+1,iy,iz)-&
-                  	inE%cvArray(imgrid)%y(ix,iy,iz)-inE%cvArray(imgrid)%y(ix+1,iy-1,iz)&
+                 	inE%cvArray(imgrid)%y(ix,iy,iz)-inE%cvArray(imgrid)%y(ix+1,iy-1,iz)&
                         +inE%cvArray(imgrid)%y(ix,iy-1,iz))+&
                   	xZ(imgrid,ix,iz)*(inE%cvArray(imgrid)%z(ix+1,iy,iz)-inE%cvArray(imgrid)%z(ix,iy,iz)&
                   	-inE%cvArray(imgrid)%z(ix+1,iy,iz-1)+inE%cvArray(imgrid)%z(ix,iy,iz-1))+&
@@ -819,7 +824,6 @@ Contains
                 enddo
              enddo
           enddo
-
           !$OMP END DO NOWAIT
 
           ! Apply difference equation to compute Ey (only on interior nodes)
@@ -869,14 +873,26 @@ Contains
           else
             print *, 'Error-complex vectors for Maxwell are not of same size'
           end if
-
         enddo ! Global loop on subgrids
+
+!imgrid = 1
+!iz = 2
+!ix = 16
+!iy = 2
+!print*, inE%cvArray(imgrid)%y(ix,iy,iz+1)
+!print*, inE%cvArray(imgrid)%y(ix,iy,iz)
+!print*, inE%cvArray(imgrid)%y(ix,iy-1,iz+1)
+!print*, inE%cvArray(imgrid)%y(ix,iy-1,iz)
+!print*, inE%cvArray(imgrid)%y(ix,iy,iz+1)-inE%cvArray(imgrid)%y(ix,iy,iz)
+!print*, inE%cvArray(imgrid)%y(ix,iy-1,iz+1)-inE%cvArray(imgrid)%y(ix,iy-1,iz)
+
+
       else
         print *, 'Maxwell: not compatible usage for existing data types'
        end if
 
     else
-      print *, 'Error complex vectors for Maxwell; multigridSize are not of same size'
+      print *, 'Error complex vectors for Maxwell'
     endif
 
   end subroutine Maxwell        ! Maxwell  Multigrid
@@ -888,6 +904,7 @@ Contains
   ! modified 07.05.2012
   ! modified 23.05.2012 ! no coarseness case added
   ! modified 30.05.2012
+  ! modified 10.07.2012
 
   ! Updates first z layer in curl curl
            !last
@@ -896,7 +913,7 @@ Contains
   type(cvector_mg), intent(inout)  :: outE
   type(cvector_mg), intent(in)  :: inE
   integer, intent(in)  :: imgrid
-  complex,intent(in)  :: diag_sign
+  integer  :: diag_sign
 
   ! local variables
   integer  :: ix, iy, iz
@@ -918,8 +935,9 @@ Contains
    if (inE%coarseness(imgrid).lt.inE%coarseness(imgrid+1))then
       ! interface layer: finer -> coarser
       ! Update nz+1 curl curl operator
-      do iy = 2, ny/2
-        do ix = 1, nx/2
+
+      do iy = 2, inE%cvarray(imgrid+1)%ny
+        do ix = 1, inE%cvarray(imgrid+1)%nx
           ! Update Ex
           ! 'odd values'
           outE%cvArray(imgrid)%x(2*ix-1,2*iy-1,nz+1) = xY(imgrid,2*ix-1,2*iy-1)*(inE%cvArray(imgrid)%y(2*ix,2*iy-1,nz+1)-&
@@ -929,10 +947,9 @@ Contains
                     -xZ(imgrid+1,ix,1)*(inE%cvArray(imgrid+1)%z(ix+1,iy,1)-inE%cvArray(imgrid+1)%z(ix,iy,1))+&
                     xXY(imgrid,2*iy-1,2)*inE%cvArray(imgrid)%x(2*ix-1,2*iy,nz+1)+&
                     xXY(imgrid,2*iy-1,1)*inE%cvArray(imgrid)%x(2*ix-1,2*(iy-1),nz+1)+&
-                    xXZ(imgrid,nz,2)*inE%cvArray(imgrid)%x(2*ix-1,2*iy-1,nz)+&
-                    xXZ(imgrid+1,1,1)*(inE%cvArray(imgrid+1)%x(ix,iy,2)-inE%cvArray(imgrid+1)%x(ix,iy,1))+&
-                    (-(xXY(imgrid,2*iy-1,1)+xXY(imgrid,2*iy-1,2)+xXZ(imgrid,nz,2))+diag_sign*AdiagMG%cvArray(imgrid)%x(2*ix-1,2*iy-1,nz+1))*inE%cvArray(imgrid)%x(2*ix-1,2*iy-1,nz+1)
-
+                    xXZ(imgrid,nz+1,1)*inE%cvArray(imgrid)%x(2*ix-1,2*iy-1,nz)+&
+                    xXZ(imgrid,nz+1,2)*(inE%cvArray(imgrid+1)%x(ix,iy,2)-inE%cvArray(imgrid+1)%x(ix,iy,1))+&
+                    (-(xXY(imgrid,2*iy-1,1)+xXY(imgrid,2*iy-1,2)+xXZ(imgrid,nz+1,1))+diag_sign*AdiagMG%cvArray(imgrid)%x(2*ix-1,2*iy-1,nz+1))*inE%cvArray(imgrid)%x(2*ix-1,2*iy-1,nz+1)
           ! 'even values'
           outE%cvArray(imgrid)%x(2*ix,2*iy-1,nz+1) = xY(imgrid,2*ix,2*iy-1)*(inE%cvArray(imgrid)%y(2*ix+1,2*iy-1,nz+1)-&
                     inE%cvArray(imgrid)%y(2*ix,2*iy-1,nz+1)-inE%cvArray(imgrid)%y(2*ix+1,2*(iy-1),nz+1)&
@@ -941,10 +958,9 @@ Contains
                     -xZ(imgrid+1,ix,1)*(inE%cvArray(imgrid+1)%z(ix+1,iy,1)-inE%cvArray(imgrid+1)%z(ix,iy,1))+&
                     xXY(imgrid,2*iy-1,2)*inE%cvArray(imgrid)%x(2*ix,2*iy,nz+1)+&
                     xXY(imgrid,2*iy-1,1)*inE%cvArray(imgrid)%x(2*ix,2*(iy-1),nz+1)+&
-                    xXZ(imgrid,nz,2)*inE%cvArray(imgrid)%x(2*ix,2*iy-1,nz)+&
-                    xXZ(imgrid+1,1,1)*(inE%cvArray(imgrid+1)%x(ix,iy,2)-inE%cvArray(imgrid+1)%x(ix,iy,1))+&
-                    (-(xXY(imgrid,2*iy-1,1)+xXY(imgrid,2*iy-1,2)+xXZ(imgrid,nz,2))+diag_sign*AdiagMG%cvArray(imgrid)%x(2*ix,2*iy-1,nz+1))*inE%cvArray(imgrid)%x(2*ix,2*iy-1,nz+1)
-
+                    xXZ(imgrid,nz+1,1)*inE%cvArray(imgrid)%x(2*ix,2*iy-1,nz)+&
+                    xXZ(imgrid,nz+1,2)*(inE%cvArray(imgrid+1)%x(ix,iy,2)-inE%cvArray(imgrid+1)%x(ix,iy,1))+&
+                    (-(xXY(imgrid,2*iy-1,1)+xXY(imgrid,2*iy-1,2)+xXZ(imgrid,nz+1,1))+diag_sign*AdiagMG%cvArray(imgrid)%x(2*ix,2*iy-1,nz+1))*inE%cvArray(imgrid)%x(2*ix,2*iy-1,nz+1)
 
           ! fill in first layer of the next multigrid layer
           outE%cvArray(imgrid+1)%x(ix,iy,1) =  (outE%cvArray(imgrid)%x(2*ix-1,2*iy-1,nz+1)*mGrid%gridArray(imgrid)%dx(2*ix-1)&
@@ -954,19 +970,20 @@ Contains
       enddo
 
      ! Update Ey
-     do iy = 1, ny/2
-       do ix = 2, nx/2
+     do iy = 1, inE%cvarray(imgrid+1)%ny
+       do ix = 2, inE%cvarray(imgrid+1)%nx
+
          ! 'odd values'
                    outE%cvArray(imgrid)%y(2*ix-1,2*iy-1,nz+1) = yZ(imgrid,2*iy-1,nz)*(inE%cvArray(imgrid)%z(2*ix-1,2*iy,nz)-&
                     inE%cvArray(imgrid)%z(2*ix-1,2*iy-1,nz))&
                     -yZ(imgrid+1,iy,1)*(inE%cvArray(imgrid+1)%z(ix,iy+1,1)-inE%cvArray(imgrid+1)%z(ix,iy,1))&
                     +yX(imgrid,2*ix-1,2*iy-1)*(inE%cvArray(imgrid)%x(2*ix-1,2*iy,nz+1)-inE%cvArray(imgrid)%x(2*ix-1,2*iy-1,nz+1)&
                     -inE%cvArray(imgrid)%x(2*(ix-1),2*iy,nz+1)+inE%cvArray(imgrid)%x(2*(ix-1),2*iy-1,nz+1))+&
-                    yYZ(imgrid,nz,2)*inE%cvArray(imgrid)%y(2*ix-1,2*iy-1,nz)+&
-                    yYZ(imgrid+1,1,1)*(inE%cvArray(imgrid+1)%y(ix,iy,2)-inE%cvArray(imgrid)%y(ix,iy,1))+&
+                    yYZ(imgrid,nz+1,1)*inE%cvArray(imgrid)%y(2*ix-1,2*iy-1,nz)+&
+                    yYZ(imgrid,nz+1,2)*(inE%cvArray(imgrid+1)%y(ix,iy,2)-inE%cvArray(imgrid+1)%y(ix,iy,1))+&
                     yYX(imgrid,2*ix-1,2)*inE%cvArray(imgrid)%y(2*ix,2*iy-1,nz+1)+&
                     yYX(imgrid,2*ix-1,1)*inE%cvArray(imgrid)%y(2*(ix-1),2*iy-1,nz+1)+&
-                    (-(yYX(imgrid,2*ix-1,1)+yYX(imgrid,2*ix-1,2)+yYZ(imgrid,nz,2))+diag_sign*AdiagMG%cvArray(imgrid)%y(2*ix-1,2*iy-1,nz+1))*inE%cvArray(imgrid)%y(2*ix-1,2*iy-1,nz+1)
+                    (-(yYX(imgrid,2*ix-1,1)+yYZ(imgrid,nz+1,1)+yYX(imgrid,2*ix-1,2))+diag_sign*AdiagMG%cvArray(imgrid)%y(2*ix-1,2*iy-1,nz+1))*inE%cvArray(imgrid)%y(2*ix-1,2*iy-1,nz+1)
 
          ! 'even values'
                    outE%cvArray(imgrid)%y(2*ix-1,2*iy,nz+1) = yZ(imgrid,2*iy,nz)*(inE%cvArray(imgrid)%z(2*ix-1,2*iy+1,nz)-&
@@ -974,11 +991,11 @@ Contains
                     -yZ(imgrid+1,iy,1)*(inE%cvArray(imgrid+1)%z(ix,iy+1,1)-inE%cvArray(imgrid+1)%z(ix,iy,1))&
                     +yX(imgrid,2*ix-1,2*iy)*(inE%cvArray(imgrid)%x(2*ix-1,2*iy+1,nz+1)-inE%cvArray(imgrid)%x(2*ix-1,2*iy,nz+1)&
                     -inE%cvArray(imgrid)%x(2*(ix-1),2*iy+1,nz+1)+inE%cvArray(imgrid)%x(2*(ix-1),2*iy,nz+1))+&
-                    yYZ(imgrid,nz,2)*inE%cvArray(imgrid)%y(2*ix-1,2*iy,nz)+&
-                    yYZ(imgrid+1,1,1)*(inE%cvArray(imgrid+1)%y(ix,iy,2)-inE%cvArray(imgrid)%y(ix,iy,1))+&
+                    yYZ(imgrid,nz+1,1)*inE%cvArray(imgrid)%y(2*ix-1,2*iy,nz)+&
+                    yYZ(imgrid,nz+1,2)*(inE%cvArray(imgrid+1)%y(ix,iy,2)-inE%cvArray(imgrid+1)%y(ix,iy,1))+&
                     yYX(imgrid,2*ix-1,2)*inE%cvArray(imgrid)%y(2*ix,2*iy,nz+1)+&
                     yYX(imgrid,2*ix-1,1)*inE%cvArray(imgrid)%y(2*(ix-1),2*iy,nz+1)+&
-                    (-(yYX(imgrid,2*ix-1,1)+yYX(imgrid,2*ix-1,2)+yYZ(imgrid,nz,2))+diag_sign*AdiagMG%cvArray(imgrid)%y(2*ix-1,2*iy,nz+1))*inE%cvArray(imgrid)%y(2*ix-1,2*iy,nz+1)
+                    (-(yYX(imgrid,2*ix-1,1)+yYZ(imgrid,nz+1,1)+yYX(imgrid,2*ix-1,2))+diag_sign*AdiagMG%cvArray(imgrid)%y(2*ix-1,2*iy,nz+1))*inE%cvArray(imgrid)%y(2*ix-1,2*iy,nz+1)
 
           ! fill in zero layer of the next multigrid layer
           outE%cvArray(imgrid+1)%y(ix,iy,1) =  (outE%cvArray(imgrid)%y(2*ix-1,2*iy-1,nz+1)*mGrid%gridArray(imgrid)%dy(2*iy-1)&
@@ -986,7 +1003,6 @@ Contains
                                               (mGrid%gridArray(imgrid)%dy(2*iy-1)+mGrid%gridArray(imgrid)%dy(2*iy))
         enddo
       enddo
-
    else if (inE%coarseness(imgrid).gt.inE%coarseness(imgrid+1))then
 
      ! interface layer: coarse to fine
@@ -1001,9 +1017,9 @@ Contains
                     -xZ(imgrid,ix,nz)*(inE%cvArray(imgrid)%z(ix+1,iy,nz)-inE%cvArray(imgrid)%z(ix,iy,nz))+&
                     xXY(imgrid+1,2*iy-1,2)*inE%cvArray(imgrid+1)%x(2*ix-1,2*iy,1)+&
                     xXY(imgrid+1,2*iy-1,1)*inE%cvArray(imgrid+1)%x(2*ix-1,2*(iy-1),1)+&
-                    xXZ(imgrid+1,1 ,1)*inE%cvArray(imgrid+1)%x(2*ix-1,2*iy-1,2)+&
-                    xXZ(imgrid,nz,2)*(inE%cvArray(imgrid)%x(ix,iy,nz)-inE%cvArray(imgrid)%x(ix,iy,nz+1))+&
-                    (-(xXY(imgrid+1,2*iy-1,1)+xXY(imgrid+1,2*iy-1,2)+xXZ(imgrid+1,1,1))+diag_sign*AdiagMG%cvArray(imgrid+1)%x(2*ix-1,2*iy-1,1))*inE%cvArray(imgrid+1)%x(2*ix-1,2*iy-1,1)
+                    xXZ(imgrid+1,1,2)*inE%cvArray(imgrid+1)%x(2*ix-1,2*iy-1,2)+&
+                    xXZ(imgrid+1,1,1)*(inE%cvArray(imgrid)%x(ix,iy,nz)-inE%cvArray(imgrid)%x(ix,iy,nz+1))+&
+                    (-(xXY(imgrid+1,2*iy-1,1)+xXY(imgrid+1,2*iy-1,2)+xXZ(imgrid+1,1,2))+diag_sign*AdiagMG%cvArray(imgrid+1)%x(2*ix-1,2*iy-1,1))*inE%cvArray(imgrid+1)%x(2*ix-1,2*iy-1,1)
           ! 'even values'
           outE%cvArray(imgrid+1)%x(2*ix,2*iy-1,1) = xY(imgrid+1,2*ix,2*iy-1)*(inE%cvArray(imgrid+1)%y(2*ix+1,2*iy-1,1)-&
                     inE%cvArray(imgrid+1)%y(2*ix,2*iy-1,1)-inE%cvArray(imgrid+1)%y(2*ix+1,2*(iy-1),1)&
@@ -1012,9 +1028,9 @@ Contains
                     -xZ(imgrid,ix,nz)*(inE%cvArray(imgrid)%z(ix+1,iy,nz)-inE%cvArray(imgrid)%z(ix,iy,nz))+&
                     xXY(imgrid+1,2*iy-1,2)*inE%cvArray(imgrid+1)%x(2*ix,2*iy,1)+&
                     xXY(imgrid+1,2*iy-1,1)*inE%cvArray(imgrid+1)%x(2*ix,2*(iy-1),1)+&
-                    xXZ(imgrid+1,1 ,1)*inE%cvArray(imgrid+1)%x(2*ix,2*iy-1,2)+&
-                    xXZ(imgrid,nz,2)*(inE%cvArray(imgrid)%x(ix,iy,nz)-inE%cvArray(imgrid)%x(ix,iy,nz+1))+&
-                    (-(xXY(imgrid+1,2*iy-1,1)+xXY(imgrid+1,2*iy-1,2)+xXZ(imgrid+1,1,1))+diag_sign*AdiagMG%cvArray(imgrid+1)%x(2*ix,2*iy-1,1))*inE%cvArray(imgrid+1)%x(2*ix,2*iy-1,1)
+                    xXZ(imgrid+1,1,2)*inE%cvArray(imgrid+1)%x(2*ix,2*iy-1,2)+&
+                    xXZ(imgrid+1,1,1)*(inE%cvArray(imgrid)%x(ix,iy,nz)-inE%cvArray(imgrid)%x(ix,iy,nz+1))+&
+                    (-(xXY(imgrid+1,2*iy-1,1)+xXY(imgrid+1,2*iy-1,2)+xXZ(imgrid+1,1,2))+diag_sign*AdiagMG%cvArray(imgrid+1)%x(2*ix,2*iy-1,1))*inE%cvArray(imgrid+1)%x(2*ix,2*iy-1,1)
 
           ! fill in zero layer of the next multigrid layer
           outE%cvArray(imgrid)%x(ix,iy,nz+1) =  (outE%cvArray(imgrid+1)%x(2*ix-1,2*iy-1,1)*mGrid%gridArray(imgrid+1)%dx(2*ix-1)&
@@ -1032,22 +1048,22 @@ Contains
                     -yZ(imgrid,iy,nz)*(inE%cvArray(imgrid)%z(ix,iy+1,nz)-inE%cvArray(imgrid)%z(ix,iy,nz))&
                     +yX(imgrid+1,2*ix-1,2*iy-1)*(inE%cvArray(imgrid+1)%x(2*ix-1,2*iy,1)-inE%cvArray(imgrid+1)%x(2*ix-1,2*iy-1,1)&
                     -inE%cvArray(imgrid+1)%x(2*(ix-1),2*iy,1)+inE%cvArray(imgrid+1)%x(2*(ix-1),2*iy-1,1))+&
-                    yYZ(imgrid+1,1,1)*inE%cvArray(imgrid+1)%y(2*ix-1,2*iy-1,2)+&
-                    yYZ(imgrid,nz,2)*(inE%cvArray(imgrid)%y(ix,iy,nz)-inE%cvArray(imgrid)%y(ix,iy,nz+1))+&
+                    yYZ(imgrid+1,1,2)*inE%cvArray(imgrid+1)%y(2*ix-1,2*iy-1,2)+&
+                    yYZ(imgrid+1,1,1)*(inE%cvArray(imgrid)%y(ix,iy,nz)-inE%cvArray(imgrid)%y(ix,iy,nz+1))+&
                     yYX(imgrid+1,2*ix-1,2)*inE%cvArray(imgrid+1)%y(2*ix,2*iy-1,1)+&
                     yYX(imgrid+1,2*ix-1,1)*inE%cvArray(imgrid+1)%y(2*(ix-1),2*iy-1,1)+&
-                    (-(yYX(imgrid+1,2*ix-1,1)+yYX(imgrid+1,2*ix-1,2)+yYZ(imgrid+1,1,1))+diag_sign*AdiagMG%cvArray(imgrid+1)%y(2*ix-1,2*iy-1,1))*inE%cvArray(imgrid+1)%y(2*ix-1,2*iy-1,1)
+                    (-(yYX(imgrid+1,2*ix-1,1)+yYX(imgrid+1,2*ix-1,2)+yYZ(imgrid+1,1,2))+diag_sign*AdiagMG%cvArray(imgrid+1)%y(2*ix-1,2*iy-1,1))*inE%cvArray(imgrid+1)%y(2*ix-1,2*iy-1,1)
          ! 'even values'
                    outE%cvArray(imgrid+1)%y(2*ix-1,2*iy,1) = yZ(imgrid+1,2*iy,1)*(inE%cvArray(imgrid+1)%z(2*ix-1,2*iy+1,1)-&
                     inE%cvArray(imgrid+1)%z(2*ix-1,2*iy,1))&
                     -yZ(imgrid,iy,nz)*(inE%cvArray(imgrid)%z(ix,iy+1,nz)-inE%cvArray(imgrid)%z(ix,iy,nz))&
                     +yX(imgrid+1,2*ix-1,2*iy)*(inE%cvArray(imgrid+1)%x(2*ix-1,2*iy+1,1)-inE%cvArray(imgrid+1)%x(2*ix-1,2*iy,1)&
                     -inE%cvArray(imgrid+1)%x(2*(ix-1),2*iy+1,1)+inE%cvArray(imgrid+1)%x(2*(ix-1),2*iy,1))+&
-                    yYZ(imgrid+1,1,1)*inE%cvArray(imgrid+1)%y(2*ix-1,2*iy,2)+&
-                    yYZ(imgrid,nz,2)*(inE%cvArray(imgrid)%y(ix,iy,nz)-inE%cvArray(imgrid)%y(ix,iy,nz+1))+&
+                    yYZ(imgrid+1,1,2)*inE%cvArray(imgrid+1)%y(2*ix-1,2*iy,2)+&
+                    yYZ(imgrid+1,1,1)*(inE%cvArray(imgrid)%y(ix,iy,nz)-inE%cvArray(imgrid)%y(ix,iy,nz+1))+&
                     yYX(imgrid+1,2*ix-1,2)*inE%cvArray(imgrid+1)%y(2*ix,2*iy,1)+&
                     yYX(imgrid+1,2*ix-1,1)*inE%cvArray(imgrid+1)%y(2*(ix-1),2*iy,1)+&
-                    (-(yYX(imgrid+1,2*ix-1,1)+yYX(imgrid+1,2*ix-1,2)+yYZ(imgrid+1,1,1))+diag_sign*AdiagMG%cvArray(imgrid+1)%y(2*ix-1,2*iy,1))*inE%cvArray(imgrid+1)%y(2*ix-1,2*iy,1)
+                    (-(yYX(imgrid+1,2*ix-1,1)+yYX(imgrid+1,2*ix-1,2)+yYZ(imgrid+1,1,2))+diag_sign*AdiagMG%cvArray(imgrid+1)%y(2*ix-1,2*iy,1))*inE%cvArray(imgrid+1)%y(2*ix-1,2*iy,1)
 
           ! fill in zero layer of the next multigrid layer
           outE%cvArray(imgrid)%y(ix,iy,nz+1) =  (outE%cvArray(imgrid+1)%y(2*ix-1,2*iy-1,1)*mGrid%gridArray(imgrid+1)%dy(2*iy-1)&
