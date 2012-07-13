@@ -76,7 +76,7 @@ module SolverSens
    call operatorCt(dE,dH,grid)
    call operatorD_Si_divide(dH,grid)
 
-   ! Output
+   ! compute subroutine output h
    call scMult(MinusONE,dH,h%source)
 
    ! Output dH/d\rho

@@ -346,7 +346,8 @@ Contains
         myparam%grid => mygrid
         myparam%type = 'grid'
 
-    elseif (trim(cUserDef%paramname) .eq. 'harmonic') then
+    elseif (((trim(cUserDef%paramname) .eq. 'harmonic') &
+                 .or. (trim(cUserDef%paramname) .eq. 'mixed'))) then
 
         call read_modelParam(myparam,filename)
         myparam%grid => mygrid

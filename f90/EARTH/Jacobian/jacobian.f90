@@ -430,6 +430,174 @@ Contains
 
   end subroutine operatorD_l_divide
 
+! *****************************************************************************
+! * multiplies E on FACES by corresponding length elements
+
+  subroutine lFmult_cvector(E)
+
+      integer                   :: nx,ny,nz
+      real(8),dimension(:),allocatable      :: x,y,z
+      complex(8),dimension(np2) :: rvec
+      real(8)                   :: xlen,ylen,zlen
+      integer                   :: ic,i,j,k,ii,istat
+      type(cvector), intent(inout) :: E
+      type(cvector)             :: E1
+      type(rvector)             :: lF
+
+      ! Check whether input vector is defined on edges
+      if (E%gridType /= FACE) then
+        write(0, *) 'Error: (lFmult_cvector) input vector not defined on faces'
+        stop
+      end if
+
+      E1 = E
+
+      call create_rvector(E%grid,lF,FACE)
+
+      nx = E%grid%nx
+      ny = E%grid%ny
+      nz = E%grid%nz
+
+      allocate(x(nx),y(ny+1),z(nz+1),STAT=istat)
+      x = E%grid%x
+      y = E%grid%y
+      z = E%grid%z
+
+      do i=1,nx
+        do k=1,nz
+          do j=2,ny
+            call leng_xijk2(i,j,k,x,y,z,xlen)
+            lF%x(i,j,k)=xlen
+          end do
+        end do
+      end do
+
+      do j=2,ny
+        do k=1,nz
+          call leng_yijk2(j,k,y,z,ylen)
+          do i=1,nx
+            lF%y(i,j,k)=ylen
+          end do
+        end do
+      end do
+
+      do k=1,nz
+        call leng_zijk2(k,z,zlen)
+        lF%y(:,1,k)=zlen
+        do j=2,ny
+          do i=1,nx
+            lF%y(i,j,k)=zlen
+          end do
+        end do
+        lF%y(:,ny+1,k)=zlen
+      end do
+
+      call validate_rvector(lF,.true.)
+      call diagMult_rcvector(lF,E1,E)
+
+      call deall_rvector(lF)
+      call deall_cvector(E1)
+      deallocate(x,y,z)
+
+      return
+      end subroutine lFmult_cvector
+
+! *****************************************************************************
+! * divides E on FACES by corresponding area elements
+
+  subroutine SFdiv_cvector(E)
+
+      integer                   :: nx,ny,nz
+      real(8),dimension(:),allocatable      :: x,y,z
+      complex(8),dimension(np2) :: rvec
+      real(8)                   :: sijk2,sjki2,skij2
+      real(8)                   :: ym,yp,zp
+      integer                   :: ic,i,j,k,ii,istat
+      type(cvector), intent(inout) :: E
+      type(cvector)             :: E1
+      type(rvector)             :: SFinv
+
+      ! Check whether input vector is defined on edges
+      if (E%gridType /= FACE) then
+        write(0, *) 'Error: (SFdiv_cvector) input vector not defined on faces'
+        stop
+      end if
+
+      E1 = E
+
+      call create_rvector(E%grid,SFinv,FACE)
+
+      nx = E%grid%nx
+      ny = E%grid%ny
+      nz = E%grid%nz
+
+      allocate(x(nx),y(ny+1),z(nz+1),STAT=istat)
+      x = E%grid%x
+      y = E%grid%y
+      z = E%grid%z
+
+      ic=0
+      do i=1,nx
+        do k=2,nz
+          do j=2,ny
+            ic=ic+1
+            call area_sijk2(j-1,k-1,y,z,sijk2)
+            SFinv%x(i,j,k) = ONE/sijk2
+          end do
+        end do
+      end do
+
+      do j=1,ny
+        do k=2,nz
+          ! Zero longitude
+          ic=ic+1
+          call area_sjki2(nx,1,j,k-1,x,y,z,sjki2)
+          SFinv%y(i,j,k) = ONE/sjki2
+          do i=2,nx
+            ic=ic+1
+            call area_sjki2(i-1,i,j,k-1,x,y,z,sjki2)
+            SFinv%y(i,j,k) = ONE/sjki2
+          end do
+        end do
+      end do
+
+      do k=2,nz
+        ic=ic+1
+        ! North pole cap
+        j=1
+        zp=(z(k)+z(k+1))/2.0d0
+        yp=(y(j)+y(j+1))/2.0d0
+        skij2=2.0d0*pi*(zp**2)*(1.0d0-dcos(yp))
+        SFinv%y(i,j,k) = ONE/skij2
+        do j=2,ny
+          ! Zero longitude
+          ic=ic+1
+          call area_skij2(nx,1,j-1,k,x,y,z,skij2)
+          SFinv%y(i,j,k) = ONE/skij2
+          do i=2,nx
+            ic=ic+1
+            call area_skij2(i-1,i,j-1,k,x,y,z,skij2)
+            SFinv%y(i,j,k) = ONE/skij2
+          end do
+        end do
+        ic=ic+1
+        ! South pole cap
+        j=ny+1
+        zp=(z(k)+z(k+1))/2.0d0
+        ym=(y(j)+y(j-1))/2.0d0
+        skij2=2.0d0*pi*(zp**2)*(dcos(ym)+1.0d0)
+        SFinv%y(i,j,k) = ONE/skij2
+      end do
+
+      call validate_rvector(SFinv,.true.)
+      call diagMult_rcvector(SFinv,E1,E)
+
+      call deall_rvector(SFinv)
+      call deall_cvector(E1)
+      deallocate(x,y,z)
+
+      return
+      end subroutine SFdiv_cvector
 
   ! ***************************************************************************
   ! * operator D_{l}: E -> E represents the diagonal operator that

@@ -54,8 +54,13 @@ Contains
 
     if (trim(param%type) .eq. 'grid') then
 
-        ! set output to the resistivity on the grid
-        resist = param%rho
+        if (background) then
+            ! need something that works correct with zero rho (usually true for forward modelling)
+            resist = param%rho + param%rho0
+        else
+            ! set output to the resistivity on the grid
+            resist = param%rho
+        end if
 
         ! ... and insert thinsheet if allocated (if no crust, nzCrust == 0)
         do k=grid%nzAir+1,grid%nzAir+grid%nzCrust !

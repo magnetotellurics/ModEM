@@ -80,11 +80,13 @@ end interface
   type :: rhsVector_t
      !!   right hand side for solving Maxwell's equations
      character*3            :: adj = ''
-     logical                :: nonzero_source = .false.
      logical                :: nonzero_bc = .false.
+     logical                :: nonzero_source = .false.
+     logical                :: sparse_source = .false.
      logical                :: allocated = .false.
     logical                 :: temporary = .false. ! true for function outputs only
      type(cvector)          :: source
+     type(sparsevecc)       :: sparseSource
      complex(kind=prec), pointer, dimension(:)  :: bc
      type(grid_t), pointer      :: grid
      integer                    :: tx = 0
@@ -305,18 +307,26 @@ Contains
 !**********************************************************************
 !           Basic solnVector methods
 !**********************************************************************
-     subroutine create_solnVector(grid,iTx,e)
+     subroutine create_solnVector(grid,iTx,e,dualGrid)
        ! the interface is generic, and could be used as such
        ! ... note gridType = EDGE for all solution vectors
+       ! override this behaviour by specifying dualGrid = .true.
 
        implicit none
        type(grid_t), intent(in), target     :: grid
        integer, intent(in)                  :: iTx
        type (solnVector_t), intent(inout)   :: e
+       logical, intent(in), optional        :: dualGrid
        ! local
        character(80)  :: gridType
 
-       call create_cvector(grid,e%vec,EDGE)
+       gridType = EDGE
+       if (present(dualGrid)) then
+        if (dualGrid) then
+            gridType = FACE
+        endif
+       endif
+       call create_cvector(grid,e%vec,gridType)
        e%tx = iTx
        e%errflag = 0
        e%grid => grid
@@ -443,12 +453,13 @@ Contains
 
   !****************************************************************************
   ! write_solnVector writes an ASCII data file containing one solnVector
-  subroutine write_solnVector(fname, E)
+  subroutine write_solnVector(fname, E, type)
 
     implicit none
     !   input vectors
     character(*), intent(in)               :: fname
     type (solnVector_t), intent(in)         :: E
+    character(*), intent(in), optional      :: type
     ! local
     character(80)                          :: code
     integer                                :: j,ios
@@ -459,7 +470,11 @@ Contains
     end if
 
     code = freqList%info(E%tx)%code !write (code,'(i3.3)') E%tx
-    fn_output = trim(fname)//'_'//trim(code)//'.field'
+    if (present(type)) then
+        fn_output = trim(fname)//'_'//trim(code)//'.'//trim(type)//'field'
+    else
+        fn_output = trim(fname)//'_'//trim(code)//'.field'
+    end if
     write(*,*) 'Writing to file: ',trim(fn_output)
     open(ioWRITE,file=fn_output,status='unknown',form='formatted',iostat=ios)
     write(ioWRITE,'(a45,f9.3,a6)') "# Full EM field solution output for period ",   &
@@ -641,6 +656,145 @@ Contains
        b%allocated = .false.
 
      end subroutine deall_rhsVector
+
+     !****************************************************************************
+     ! write_rhsVector writes an ASCII data file containing one source or BC
+     subroutine write_rhsVector(fname, b)
+
+        implicit none
+        !   input vectors
+        character(*), intent(in)               :: fname
+        type (rhsVector_t), intent(in)         :: b
+        ! local
+        character(80)                          :: code
+        integer                                :: j,ios
+        character(100)                         :: fn_output
+
+        if(.not.b%allocated) then
+            call errStop('input not allocated yet for write_rhsVector')
+        end if
+
+        code = freqList%info(b%tx)%code !write (code,'(i3.3)') b%tx
+        if (b%nonzero_BC) then
+
+!            fn_output = trim(fname)//'_'//trim(code)//'.bc'
+!            write(*,*) 'Writing to file: ',trim(fn_output)
+!            open(ioWRITE,file=fn_output,status='unknown',form='formatted',iostat=ios)
+!            write(ioWRITE,'(a48,f9.3,a7)') "# Sparse EM boundary field output for period ",   &
+!                                                freqList%info(E%tx)%period*24,' hours.'
+!            write(ioWRITE,'(i3)') E%tx
+!            call write_sparsevecc(ioWRITE,b%bc)
+!            close(ioWRITE)
+
+        elseif (b%nonzero_source) then
+
+            if (b%sparse_source) then
+                fn_output = trim(fname)//'_'//trim(code)//'.source'
+                write(*,*) 'Writing to file: ',trim(fn_output)
+                open(ioWRITE,file=fn_output,status='unknown',form='formatted',iostat=ios)
+                write(ioWRITE,'(a48,f9.3,a7)') "# Sparse EM source information for period ",   &
+                                                    freqList%info(b%tx)%period*24,' hours.'
+                write(ioWRITE,'(i3)') b%tx
+                call write_sparsevecc(ioWRITE,b%sparseSource)
+                close(ioWRITE)
+            else
+                fn_output = trim(fname)//'_'//trim(code)//'.sourcefield'
+                write(*,*) 'Writing to file: ',trim(fn_output)
+                open(ioWRITE,file=fn_output,status='unknown',form='formatted',iostat=ios)
+                write(ioWRITE,'(a48,f9.3,a7)') "# Full EM source information for period ",   &
+                                                    freqList%info(b%tx)%period*24,' hours.'
+                write(ioWRITE,'(i3)') b%tx
+                call write_cvector(ioWRITE,b%source)
+                close(ioWRITE)
+            endif
+
+        else
+            write(0,*) 'RHS field output skipped: unknown storage type'
+            return
+        endif
+
+
+     end subroutine write_rhsVector ! write_rhsVector
+
+     !****************************************************************************
+     ! read_rhsVector reads an ASCII data file containing one source or BC
+     subroutine read_rhsVector(fname, grid, iTx, b, nonzero_source, sparse_source)
+
+        implicit none
+        !   input vectors
+        character(*), intent(in)               :: fname
+        type (rhsVector_t), intent(inout)      :: b
+        integer, intent(in)                    :: iTx
+        type (grid_t), intent(in), target      :: grid
+        logical, intent(in), optional          :: nonzero_source, sparse_source
+        ! local
+        integer                                :: j,ios,istat
+        character(80)                          :: code
+        character(100)                         :: comment, fn_input
+
+        if(b%allocated) then
+            call deall_rhsVector(b)
+        end if
+        if (.not. present(nonzero_source)) then
+            b%nonzero_source = .true.
+            b%nonzero_bc = .false.
+        else
+            b%nonzero_source = nonzero_source
+            b%nonzero_bc = .not. nonzero_source
+        end if
+        if (.not. present(sparse_source)) then
+            b%sparse_source = .true.
+        else
+            b%sparse_source = sparse_source
+        end if
+        call create_rhsVector(grid,iTx,b)
+
+        code = freqList%info(iTx)%code !write (code,'(i3.3)') iTx
+        if (b%nonzero_BC) then
+
+!            fn_input = trim(fname)//'_'//trim(code)//'.bc'
+!            write(*,*) node_info,'Reading from file: ',trim(fn_input)
+!            open(ioREAD,file=fn_input,status='unknown',form='formatted',iostat=ios)
+!            read(ioREAD,'(a35)',iostat=istat) comment
+!            read(ioREAD,'(i3)',iostat=istat) j
+!            if (j .ne. iTx) then
+!                write(0,*) node_info,'Warning: transmitter ',iTx,' is read from file ',j
+!            end if
+!            call read_sparsevecc(ioREAD,b%bc,grid)
+!            close(ioREAD)
+
+        elseif (b%nonzero_source) then
+
+            if (b%sparse_source) then
+                fn_input = trim(fname)//'_'//trim(code)//'.source'
+                write(*,*) node_info,'Reading from file: ',trim(fn_input)
+                open(ioREAD,file=fn_input,status='unknown',form='formatted',iostat=ios)
+                read(ioREAD,'(a35)',iostat=istat) comment
+                read(ioREAD,'(i3)',iostat=istat) j
+                if (j .ne. iTx) then
+                    write(0,*) node_info,'Warning: transmitter ',iTx,' is read from file ',j
+                end if
+                call read_sparsevecc(ioREAD,b%sparseSource,grid)
+                close(ioREAD)
+            else
+                fn_input = trim(fname)//'_'//trim(code)//'.field'
+                write(*,*) node_info,'Reading from file: ',trim(fn_input)
+                open(ioREAD,file=fn_input,status='unknown',form='formatted',iostat=ios)
+                read(ioREAD,'(a35)',iostat=istat) comment
+                read(ioREAD,'(i3)',iostat=istat) j
+                if (j .ne. iTx) then
+                    write(0,*) node_info,'Warning: transmitter ',iTx,' is read from file ',j
+                end if
+                call read_cvector(ioREAD,b%source,grid)
+                close(ioREAD)
+            endif
+
+        else
+            write(0,*) 'RHS field input skipped: unknown storage type'
+            return
+        endif
+
+     end subroutine read_rhsVector ! read_rhsVector
 
      !**********************************************************************
      subroutine add_sparseVrhsV(cs,SV,FV)

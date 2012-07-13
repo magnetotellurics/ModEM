@@ -150,8 +150,8 @@ Contains
 	rho = targetRho0
     !--------------------------------------------------------------------------
     ! Check whether the optional interior source file exists; read it
-    ! (NOT IMPLEMENTED YET)
-    inquire(FILE=cUserDef%fn_intsource,EXIST=exists)
+    ! (THIS IS DONE IN THE TRANSMITTERS INIT ROUTINE)
+    !inquire(FILE=cUserDef%fn_intsource,EXIST=exists)
     !if (exists) then
     !    call read_sparsevecc(source,cUserDef%fn_intsource)
     !end if

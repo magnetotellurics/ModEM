@@ -386,7 +386,7 @@ Contains
 	  do k=mygrid%nzAir,mygrid%nz
 		i=mygrid%nx
 		j=1
-		write(*,'(a10,i3,i3,i3)',advance='no') 'i,j,k = ',i,j,k
+		write(*,'(a10,i4,i4,i4)',advance='no') 'i,j,k = ',i,j,k
 		write(*,*) ' rho(ijk) = ',rho(i,j,k)
 	  end do
 	  do k=mygrid%nzAir,mygrid%nz

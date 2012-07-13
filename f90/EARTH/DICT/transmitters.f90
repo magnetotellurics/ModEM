@@ -71,7 +71,7 @@ Contains
     real(8), dimension(:), allocatable                      :: value,days
     real(8), dimension(:), allocatable                      :: coeff_real,coeff_imag
     complex(8), dimension(:), allocatable                   :: coeff
-    character(80)                                           :: basename,code
+    character(80)                                           :: fn_input,basename,comment,code
     complex(8)                                              :: p10(4)
     logical                                                 :: secondaryField
 
@@ -188,6 +188,26 @@ Contains
             myfreq%info(i)%secondaryField = .false. ! change this if you want to use p10 secondary fields...
         end do
     end if
+
+    ! interior source is a complex sparse vector; it contains rho*J where J is current density in SI units
+    ! so the units of this input vector should be V/m = T*m/s. We then take the curl inside this program
+    ! which divides by length to get the units of V/m^2 = T/s for the RHS of the Helmholtz equation.
+    ! For tides, this input should contain v x B, where v are tidal velocities and B are in Teslas.
+    do i=1,num
+        fn_input = trim(cUserDef%fn_intsource)//'_'//trim(myfreq%info(i)%code)//'.source'
+        inquire(FILE=fn_input,EXIST=exists)
+        if (exists) then
+            write(*,*) node_info,'Reading source [T*m/s] from interior source file: ',trim(fn_input)
+            open(ioREAD,file=fn_input,status='unknown',form='formatted',iostat=ios)
+            read(ioREAD,'(a35)',iostat=istat) comment
+            read(ioREAD,'(i3)',iostat=istat) j
+            if (j .ne. i) then
+                write(0,*) node_info,'Warning: transmitter ',i,' is read from file ',j
+            end if
+            call read_sparsevecc(ioREAD,myfreq%info(i)%jInt)
+            close(ioREAD)
+        end if
+    end do
 
     return
 

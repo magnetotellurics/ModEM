@@ -36,16 +36,19 @@ module ForwardSolver
   logical           :: secondaryField = .false.
   logical           :: newModelParam = .false.
   type(cvector)     :: b, e
-  type(rvector)     :: drhoF
+  type(rvector)     :: drhoF, rhoF
   type(rscalar)     :: rho1d, drho
   type(modelParam_t):: m1d
   type(rscalar)     :: rho ! resistivity on the grid
   !type(rscalar)     :: rho0 ! fixed background resistivity on the grid
-  type(cvector)     :: source ! user-specified interior source
+  type(cvector)     :: tempJ ! temporary full interior forcing on faces
+  !type(cvector)     :: source ! user-specified interior source
+  type(rhsVector_t) :: f ! forcing for the forward solver
   type(sparsevecc)  :: BC ! boundary conditions set from P10
   type(modelParam_t)    :: mBackground  ! use it to get the radial 1d model for SFF
   type(modelParam_t)    :: mPrev  ! store the previous model for efficiency
   type(solnVector_t)    :: hPrev  ! store the previous forward solver solution
+  type(solnVector_t)    :: outE, outJ, outH ! used for output if requested
   !type(rhsVector_t)     :: b   ! needed to store the RHS for forward solver
   type(solnVector_t) :: h1d, dh ! needed for secondary field formulation
   type(modelShell_t) :: crust
@@ -90,6 +93,16 @@ Contains
         call create_solnVector(grid,iTx,h0)
         call initialize_fields(grid,h0%vec,BC)
      endif
+   endif
+
+   ! NOW: BC should be zero - no external sources - for the tidal forcing.
+   ! SO: SET IT TO ZERO if internal source is specified. This is very
+   ! crude - a quick and dirty fix - will need to be more careful in the future.
+   ! However, setting sens=.true. below also won't work since that also sets
+   ! the starting model for FWD to zero. This is just a new case that we haven't
+   ! encountered before and haven't allowed for explicitly. Rethink this.
+   if(freq%jInt%allocated) then
+      BC%c = C_ZERO
    endif
 
    if(initForSens) then
@@ -165,9 +178,34 @@ Contains
 
    endif
 
-   ! Initialize interior source from file (currently, set to zero)
-   if(.not. source%allocated) then
-    call create_cvector(grid,source,EDGE)
+   ! Initialize interior source from the transmitter dictionary.
+   ! Should be done every time the transmitter is updated!
+   ! First, initialize to zero.
+   f%nonzero_source = .true.
+   f%sparse_source = .false.
+   call create_rhsVector(grid,iTx,f)
+   ! For now, assume the source (v x B) in on faces and maps
+   ! to edges for curl(v x B) here.
+   if(freq%jInt%allocated) then
+    write(0,*) node_info,'Using interior forcing to compute the RHS for the FWD problem'
+    call create_cvector(grid,tempJ,FACE)
+    call add_scvector(C_ONE,freq%jInt,tempJ)
+    if (output_level > 3) then
+                write(*,*) 'Writing to file: sparse.source'
+                open(ioWRITE,file='sparse.source',status='unknown',form='formatted')
+                write(ioWRITE,'(a48,f9.3,a7)') "# Sparse EM source information for period ",   &
+                                                    freq%period*24,' hours.'
+                write(ioWRITE,'(i3)') iTx
+                call write_sparsevecc(ioWRITE,freq%jInt)
+                close(ioWRITE)
+        !call write_rhsVector(cUserDef%modelname,f)
+    end if
+    call lFmult_cvector(tempJ)
+    call operatorCt(tempJ,f%source,grid)
+    call operatorD_Si_divide(f%source,grid)
+    if (output_level > 3) then
+        call write_rhsVector(cUserDef%modelname,f)
+    end if
    endif
 
   end subroutine initSolver
@@ -264,7 +302,7 @@ Contains
    ! local variables
    type(transmitter_t), pointer                 :: freq
    real(kind=prec)                              :: omega
-   logical                                      :: adjoint,sens
+   logical                                      :: adjoint,sens,dualGrid
 
    ! IMPORTANT: FIRST update pointer to the transmitter in solnVector
    h%tx = iTx
@@ -295,7 +333,7 @@ Contains
       call zero_solnVector(dh)
       adjoint = .false.
       sens = .true.
-      call linComb_cvector(C_ONE,source,C_ONE,b,b)
+      call linComb_cvector(C_ONE,f%source,C_ONE,b,b)
       call operatorMii(dh%vec,b,omega,rho,h%grid,fwdCtrls,h%errflag,adjoint)
 
       ! Full solution for one frequency is the sum H1D + dH
@@ -305,10 +343,11 @@ Contains
 
       write(*,*) node_info, 'Using the forward solver ...'
 
-      ! solve S_m <h> = <s> for vector <h>
+      ! solve S_m <h> = <s> for vector <h>; source contains interior forcing only
+      ! since the boundary conditions BC are passed explicitly and mapped inside M.
       adjoint = .false.
       sens = .true.
-      call operatorMii(h%vec,source,omega,rho,h%grid,fwdCtrls,h%errflag,adjoint,BC)
+      call operatorMii(h%vec,f%source,omega,rho,h%grid,fwdCtrls,h%errflag,adjoint,BC)
 
    end if
 
@@ -317,7 +356,31 @@ Contains
 
    ! output full H-field cvector
    if (output_level > 3) then
-      call write_solnVector(cUserDef%modelname,h)
+      call write_solnVector(cUserDef%modelname,h,'h')
+   end if
+
+   ! also output full current density and electric fields
+   if (output_level > 3) then
+      outH = h
+      dualGrid = .true.
+      call create_solnVector(h%grid,iTx,outJ,dualGrid)
+      call operatorD_l_mult(outH%vec,h%grid)
+      call operatorC(outH%vec,outJ%vec,h%grid)
+      call SFdiv_cvector(outJ%vec) ! check that this used FACES when needed
+      call write_solnVector(cUserDef%modelname,outJ,'j')
+      call deall_solnVector(outH) ! done with outH; need outJ to compute outE
+      ! Map the resistivity vector to primary cell faces (dual edges). This has already
+      ! multiplied by unit lengths and divided by area elements on the dual grid!
+      ! Need to fix this: these things shouldn't be part of operatorL and we don't
+      ! want them here!!!! This will NOT work correctly until FIXED!!!!
+      ! COMMENTING OUT UNTIL FIXED
+      !call operatorL(rho,rhoF,h%grid)
+      !call create_solnVector(h%grid,iTx,outE,dualGrid)
+      !call diagMult(rhoF,outJ%vec,outE%vec)
+      !call write_solnVector(cUserDef%modelname,outE,'e')
+      ! END COMMENTING OUT UNTIL FIXED
+      call deall_solnVector(outJ)
+      call deall_solnVector(outE)
    end if
 
    if (output_level > 1) then
@@ -358,7 +421,7 @@ Contains
     ! assume interior forcing s + BC; starting solution already initialized
     adjoint = .false.
     sens = .false.
-    call operatorMii(h%vec,source,omega,rho,h%grid,fwdCtrls,h%errflag,adjoint,BC)
+    call operatorMii(h%vec,f%source,omega,rho,h%grid,fwdCtrls,h%errflag,adjoint,BC)
 
    else
 
@@ -403,10 +466,12 @@ Contains
    if(solverInitialized) then
       ! cleanup/deallocation routines for model operators
       if(secondaryField) then
+        call deall_rhsVector(f)
         call deall_solnVector(h1d)
         call deall_solnVector(dh)
         call deall_cvector(b)
         call deall_cvector(e)
+        call deall_rvector(rhoF)
         call deall_rvector(drhoF)
         call deall_rscalar(rho1d)
         call deall_rscalar(drho)
@@ -416,7 +481,6 @@ Contains
       call deall_solnVector(hPrev)
       call deall_modelParam(mPrev)
       call deall_modelParam(mBackground)
-      call deall_cvector(source)
       call deall_sparsevecc(BC)
       call deall_rscalar(rho)
       !call deall_rscalar(rho0)

@@ -293,7 +293,7 @@ Contains
     if (cfile /= '') then
       open(ioMdl,file=cfile,status='unknown',form='formatted',iostat=ios)
                 write(ioMdl,*) '# lon(i), lat(j), depth(k), rho(ijk) of cell node'
-                write(ioMdl,'(3i3)') P%grid%nx,P%grid%ny,P%grid%nzCrust+P%grid%nzEarth
+                write(ioMdl,'(3i4)') P%grid%nx,P%grid%ny,P%grid%nzCrust+P%grid%nzEarth
         do k=P%grid%nzAir+1,P%grid%nz
           do i=1,P%grid%nx
             do j=1,P%grid%ny

@@ -66,6 +66,7 @@ module sg_sparse_vector
 
   public			:: sparsevecc
   public			:: create_sparsevecc, deall_sparsevecc
+  public            :: read_sparsevecc, write_sparsevecc
   public            :: scMult_sparsevecc
   public			:: newValueC_sparsevecc, newValueR_sparsevecc
   public			:: copyValue_csvector, conjg_sparsevecc_f
@@ -244,6 +245,71 @@ Contains
     call deall_sparsevecc(tempLC)
 
   end subroutine reall_sparsevecc
+
+  !******************************************************************************
+  ! write_sparsevecc writes a sparse vector  in a simple ASCII format; vector has
+  ! to exist and be allocated before calling this routine, and the file unit
+  ! must already be available for writing.
+  subroutine write_sparsevecc(fid, SV)
+
+      integer,        intent(in)        :: fid
+      type (sparsevecc), intent(in)     :: SV
+
+      !  local variables
+      integer                           :: ii, istat
+
+      if(.not. SV%allocated) then
+         write(0, *) 'sparse vector must be allocated before call to write_sparsevecc'
+         return
+      endif
+
+      write(fid,'(i12,a10)',iostat=istat) SV%nCoeff,trim(SV%gridType)
+
+      do ii = 1,SV%nCoeff
+         write(fid,'(4i5,2es14.6)',iostat=istat) SV%i(ii),SV%j(ii),SV%k(ii),SV%xyz(ii),real(SV%c(ii)),imag(SV%c(ii))
+      end do
+
+  end subroutine write_sparsevecc
+
+  !**********************************************************************************
+  ! read_sparsevecc reads a sparse vector in a simple ASCII format; vector must match
+  ! the input grid; file unit must already be available for reading.
+  subroutine read_sparsevecc(fid, SV, grid)
+
+      integer,        intent(in)        :: fid
+      type (sparsevecc), intent(inout)  :: SV
+      type (grid_t), intent(in), optional :: grid
+
+      !  local variables
+      integer                           :: nCoeff
+      character(80)                     :: gridType
+      integer                           :: ii, istat
+      real (kind(SV%c))                  :: cr, ci
+
+      read(fid,*,iostat=istat) nCoeff,gridType
+
+      if(.not. SV%allocated) then
+        call create_sparsevecc(nCoeff,SV,gridType)
+      else
+        call reall_sparsevecc(nCoeff,SV)
+        SV%gridType = gridType
+      endif
+
+      do ii = 1,nCoeff
+        ! makes the acceptable formatting more flexible
+        read(fid,*,iostat=istat) SV%i(ii),SV%j(ii),SV%k(ii),SV%xyz(ii),cr,ci
+        SV%c(ii) = cmplx(cr,ci)
+      end do
+
+      ! if grid is available, make sure the two are consistent
+      if (present(grid)) then
+        if ((maxval(SV%i) > grid%nx) .or. (maxval(SV%j) > grid%ny) .or. (maxval(SV%k) > grid%nz)) then
+            write(0, *) 'sparse vector size does not match the grid in read_sparsevecc'
+            return
+        endif
+      endif
+
+  end subroutine read_sparsevecc
 
   ! **********************************************************************
   ! this will copy a sparse complex vector from SV1 to SV2 ...
