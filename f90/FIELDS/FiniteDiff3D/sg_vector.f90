@@ -1971,16 +1971,9 @@ Contains
           if ((E1%gridType == E2%gridType).and.(E1%gridType == E3%gridType)) then
 
              ! pointwise multiplication for x,y,z-components
-write(0,*) 'DEBUG 2-2-diagMult'
-write(0,*) 'DEBUG 2-2-outE',E1%x(1,1,:)
-write(0,*) 'DEBUG 2-2-volE',E2%x(1,1,:)
-write(0,*) 'DEBUG 2-2-outE*volE',E2%x(1,1,:)*E2%x(1,1,:)
              E3%x = E1%x * E2%x
-write(0,*) 'DEBUG 2-2-x'
              E3%y = E1%y * E2%y
-write(0,*) 'DEBUG 2-2-y'
              E3%z = E1%z * E2%z
-write(0,*) 'DEBUG 2-2-z'
 
           else
              write (0, *) 'not compatible usage for diagMult_crvector'
