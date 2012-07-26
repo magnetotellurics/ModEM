@@ -568,16 +568,16 @@ Contains
         zp=(z(k)+z(k+1))/2.0d0
         yp=(y(j)+y(j+1))/2.0d0
         skij2=2.0d0*pi*(zp**2)*(1.0d0-dcos(yp))
-        SFinv%y(i,j,k) = ONE/skij2
+        SFinv%z(i,j,k) = ONE/skij2
         do j=2,ny
           ! Zero longitude
           ic=ic+1
           call area_skij2(nx,1,j-1,k,x,y,z,skij2)
-          SFinv%y(i,j,k) = ONE/skij2
+          SFinv%z(i,j,k) = ONE/skij2
           do i=2,nx
             ic=ic+1
             call area_skij2(i-1,i,j-1,k,x,y,z,skij2)
-            SFinv%y(i,j,k) = ONE/skij2
+            SFinv%z(i,j,k) = ONE/skij2
           end do
         end do
         ic=ic+1
@@ -586,7 +586,7 @@ Contains
         zp=(z(k)+z(k+1))/2.0d0
         ym=(y(j)+y(j-1))/2.0d0
         skij2=2.0d0*pi*(zp**2)*(dcos(ym)+1.0d0)
-        SFinv%y(i,j,k) = ONE/skij2
+        SFinv%z(i,j,k) = ONE/skij2
       end do
 
       call validate_rvector(SFinv,.true.)
