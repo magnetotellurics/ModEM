@@ -51,14 +51,14 @@ MODULE = -module $(OBJDIR)
 LIBS = -L/usr/lib64 -llapack -lblas -lpgftnrtl
 
 # -------------------End-macro-Defs---------------------------
-OBJ = $(OBJDIR)/math_constants.o $(OBJDIR)/utilities.o $(OBJDIR)/DataSpace.o $(OBJDIR)/file_units.o $(OBJDIR)/GridDef.o $(OBJDIR)/sg_scalar.o $(OBJDIR)/polpak.o $(OBJDIR)/paramfunc.o $(OBJDIR)/modeldef.o $(OBJDIR)/iotypes.o $(OBJDIR)/UserData.o $(OBJDIR)/MPI_declaration.o $(OBJDIR)/model_operators.o $(OBJDIR)/modelmap.o $(OBJDIR)/ModelSpace.o $(OBJDIR)/SensMatrix.o $(OBJDIR)/sg_vector.o $(OBJDIR)/sg_boundary.o $(OBJDIR)/sg_sparse_vector.o $(OBJDIR)/transmitters.o $(OBJDIR)/receivers.o $(OBJDIR)/SolnSpace.o $(OBJDIR)/dataTypes.o $(OBJDIR)/functionals.o $(OBJDIR)/responses.o $(OBJDIR)/DataFunc.o $(OBJDIR)/DataSens.o $(OBJDIR)/elements.o $(OBJDIR)/dimensions.o $(OBJDIR)/sg_spherical.o $(OBJDIR)/wrapper.o $(OBJDIR)/field_vectors.o $(OBJDIR)/iospec.o $(OBJDIR)/coreFwd.o $(OBJDIR)/maxwells.o $(OBJDIR)/ringcurrent.o $(OBJDIR)/initFields.o $(OBJDIR)/boundaries.o $(OBJDIR)/jacobian.o $(OBJDIR)/SolverSens.o $(OBJDIR)/dataMisfit.o $(OBJDIR)/input.o $(OBJDIR)/output.o $(OBJDIR)/field1d.o $(OBJDIR)/ForwardSolver.o $(OBJDIR)/SensComp.o $(OBJDIR)/SymmetryTest.o $(OBJDIR)/datadef.o $(OBJDIR)/global.o $(OBJDIR)/grid_orig.o $(OBJDIR)/DataIO.o $(OBJDIR)/Main.o $(OBJDIR)/MPI_sub.o $(OBJDIR)/MPI_main.o $(OBJDIR)/NLCG.o $(OBJDIR)/interp_orig.o $(OBJDIR)/output_orig.o $(OBJDIR)/Global3D.o 
+OBJ = $(OBJDIR)/math_constants.o $(OBJDIR)/utilities.o $(OBJDIR)/DataSpace.o $(OBJDIR)/file_units.o $(OBJDIR)/GridDef.o $(OBJDIR)/sg_scalar.o $(OBJDIR)/polpak.o $(OBJDIR)/paramfunc.o $(OBJDIR)/modeldef.o $(OBJDIR)/iotypes.o $(OBJDIR)/UserData.o $(OBJDIR)/MPI_declaration.o $(OBJDIR)/model_operators.o $(OBJDIR)/modelmap.o $(OBJDIR)/ModelSpace.o $(OBJDIR)/SensMatrix.o $(OBJDIR)/sg_vector.o $(OBJDIR)/sg_boundary.o $(OBJDIR)/sg_sparse_vector.o $(OBJDIR)/transmitters.o $(OBJDIR)/receivers.o $(OBJDIR)/SolnSpace.o $(OBJDIR)/dataTypes.o $(OBJDIR)/functionals.o $(OBJDIR)/responses.o $(OBJDIR)/DataFunc.o $(OBJDIR)/DataSens.o $(OBJDIR)/elements.o $(OBJDIR)/dimensions.o $(OBJDIR)/sg_spherical.o $(OBJDIR)/wrapper.o $(OBJDIR)/field_vectors.o $(OBJDIR)/iospec.o $(OBJDIR)/coreFwd.o $(OBJDIR)/maxwells.o $(OBJDIR)/ringcurrent.o $(OBJDIR)/initFields.o $(OBJDIR)/boundaries.o $(OBJDIR)/jacobian.o $(OBJDIR)/dataMisfit.o $(OBJDIR)/output.o $(OBJDIR)/SolverSens.o $(OBJDIR)/input.o $(OBJDIR)/field1d.o $(OBJDIR)/ForwardSolver.o $(OBJDIR)/SensComp.o $(OBJDIR)/SymmetryTest.o $(OBJDIR)/datadef.o $(OBJDIR)/global.o $(OBJDIR)/grid_orig.o $(OBJDIR)/DataIO.o $(OBJDIR)/Main.o $(OBJDIR)/MPI_sub.o $(OBJDIR)/MPI_main.o $(OBJDIR)/NLCG.o $(OBJDIR)/interp_orig.o $(OBJDIR)/output_orig.o $(OBJDIR)/Global3D.o 
 
 
 all: Global3D 
 
 # Here is the link step 
 Global3D: $(OBJDIR) $(OBJ) 
-	 $(F90) -o $(OUTDIR)/Global3D_MPI $(OBJ) $(LIBS) 
+	 $(F90) -o $(OUTDIR)/Global3D $(OBJ) $(LIBS) 
 
 # Here are the compile steps 
 
@@ -146,8 +146,8 @@ $(OBJDIR)/DataFunc.o:EARTH/DataFunc.f90 $(OBJDIR)/model_operators.o $(OBJDIR)/So
 $(OBJDIR)/DataSens.o:SENS/DataSens.f90 $(OBJDIR)/math_constants.o $(OBJDIR)/utilities.o $(OBJDIR)/DataSpace.o $(OBJDIR)/DataFunc.o 
 	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) SENS/DataSens.f90 -o $(OBJDIR)/DataSens.o
 
-$(OBJDIR)/elements.o:EARTH/Basics/elements.f90  
-	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) EARTH/Basics/elements.f90 -o $(OBJDIR)/elements.o
+$(OBJDIR)/elements.o:UTILS/elements.f90  
+	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) UTILS/elements.f90 -o $(OBJDIR)/elements.o
 
 $(OBJDIR)/dimensions.o:EARTH/Basics/dimensions.f90  
 	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) EARTH/Basics/dimensions.f90 -o $(OBJDIR)/dimensions.o
@@ -179,20 +179,20 @@ $(OBJDIR)/initFields.o:EARTH/FWD/initFields.f90 $(OBJDIR)/field_vectors.o $(OBJD
 $(OBJDIR)/boundaries.o:EARTH/Basics/boundaries.f90 $(OBJDIR)/sg_sparse_vector.o 
 	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) EARTH/Basics/boundaries.f90 -o $(OBJDIR)/boundaries.o
 
-$(OBJDIR)/jacobian.o:EARTH/Jacobian/jacobian.f90 $(OBJDIR)/iotypes.o $(OBJDIR)/modeldef.o $(OBJDIR)/model_operators.o $(OBJDIR)/elements.o $(OBJDIR)/dimensions.o $(OBJDIR)/GridDef.o $(OBJDIR)/sg_vector.o $(OBJDIR)/sg_scalar.o $(OBJDIR)/sg_spherical.o $(OBJDIR)/wrapper.o $(OBJDIR)/maxwells.o $(OBJDIR)/initFields.o $(OBJDIR)/maxwells.o $(OBJDIR)/field_vectors.o $(OBJDIR)/boundaries.o $(OBJDIR)/boundaries.o $(OBJDIR)/boundaries.o 
+$(OBJDIR)/jacobian.o:EARTH/Jacobian/jacobian.f90 $(OBJDIR)/iotypes.o $(OBJDIR)/modeldef.o $(OBJDIR)/model_operators.o $(OBJDIR)/modelmap.o $(OBJDIR)/elements.o $(OBJDIR)/dimensions.o $(OBJDIR)/GridDef.o $(OBJDIR)/sg_vector.o $(OBJDIR)/sg_scalar.o $(OBJDIR)/sg_spherical.o $(OBJDIR)/wrapper.o $(OBJDIR)/maxwells.o $(OBJDIR)/initFields.o $(OBJDIR)/maxwells.o $(OBJDIR)/field_vectors.o $(OBJDIR)/boundaries.o $(OBJDIR)/boundaries.o $(OBJDIR)/boundaries.o 
 	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) EARTH/Jacobian/jacobian.f90 -o $(OBJDIR)/jacobian.o
-
-$(OBJDIR)/SolverSens.o:EARTH/SolverSens.f90 $(OBJDIR)/math_constants.o $(OBJDIR)/utilities.o $(OBJDIR)/sg_scalar.o $(OBJDIR)/model_operators.o $(OBJDIR)/modelmap.o $(OBJDIR)/jacobian.o $(OBJDIR)/boundaries.o $(OBJDIR)/SolnSpace.o $(OBJDIR)/transmitters.o $(OBJDIR)/dataTypes.o 
-	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) EARTH/SolverSens.f90 -o $(OBJDIR)/SolverSens.o
 
 $(OBJDIR)/dataMisfit.o:EARTH/Jacobian/dataMisfit.f90 $(OBJDIR)/responses.o $(OBJDIR)/functionals.o $(OBJDIR)/model_operators.o $(OBJDIR)/UserData.o $(OBJDIR)/SolnSpace.o $(OBJDIR)/DataSpace.o $(OBJDIR)/dataTypes.o $(OBJDIR)/DataFunc.o $(OBJDIR)/iotypes.o $(OBJDIR)/iospec.o 
 	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) EARTH/Jacobian/dataMisfit.f90 -o $(OBJDIR)/dataMisfit.o
 
-$(OBJDIR)/input.o:EARTH/ioMod/input.f90 $(OBJDIR)/math_constants.o $(OBJDIR)/file_units.o $(OBJDIR)/GridDef.o $(OBJDIR)/utilities.o $(OBJDIR)/modeldef.o $(OBJDIR)/dataMisfit.o $(OBJDIR)/DataSpace.o $(OBJDIR)/SolnSpace.o $(OBJDIR)/iotypes.o $(OBJDIR)/UserData.o $(OBJDIR)/dataTypes.o $(OBJDIR)/transmitters.o $(OBJDIR)/receivers.o $(OBJDIR)/model_operators.o 
-	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) EARTH/ioMod/input.f90 -o $(OBJDIR)/input.o
-
 $(OBJDIR)/output.o:EARTH/ioMod/output.f90 $(OBJDIR)/iotypes.o $(OBJDIR)/iospec.o $(OBJDIR)/GridDef.o $(OBJDIR)/sg_vector.o $(OBJDIR)/sg_sparse_vector.o $(OBJDIR)/modeldef.o $(OBJDIR)/dataMisfit.o $(OBJDIR)/responses.o $(OBJDIR)/functionals.o $(OBJDIR)/DataSpace.o $(OBJDIR)/UserData.o $(OBJDIR)/dataTypes.o $(OBJDIR)/transmitters.o $(OBJDIR)/receivers.o $(OBJDIR)/model_operators.o 
 	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) EARTH/ioMod/output.f90 -o $(OBJDIR)/output.o
+
+$(OBJDIR)/SolverSens.o:EARTH/SolverSens.f90 $(OBJDIR)/math_constants.o $(OBJDIR)/utilities.o $(OBJDIR)/sg_scalar.o $(OBJDIR)/model_operators.o $(OBJDIR)/modelmap.o $(OBJDIR)/jacobian.o $(OBJDIR)/boundaries.o $(OBJDIR)/output.o $(OBJDIR)/SolnSpace.o $(OBJDIR)/transmitters.o $(OBJDIR)/dataTypes.o 
+	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) EARTH/SolverSens.f90 -o $(OBJDIR)/SolverSens.o
+
+$(OBJDIR)/input.o:EARTH/ioMod/input.f90 $(OBJDIR)/math_constants.o $(OBJDIR)/file_units.o $(OBJDIR)/GridDef.o $(OBJDIR)/utilities.o $(OBJDIR)/modeldef.o $(OBJDIR)/dataMisfit.o $(OBJDIR)/DataSpace.o $(OBJDIR)/SolnSpace.o $(OBJDIR)/iotypes.o $(OBJDIR)/UserData.o $(OBJDIR)/dataTypes.o $(OBJDIR)/transmitters.o $(OBJDIR)/receivers.o $(OBJDIR)/model_operators.o 
+	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) EARTH/ioMod/input.f90 -o $(OBJDIR)/input.o
 
 $(OBJDIR)/field1d.o:EARTH/FWD/field1d.f90 $(OBJDIR)/utilities.o $(OBJDIR)/polpak.o $(OBJDIR)/GridDef.o $(OBJDIR)/sg_vector.o 
 	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) EARTH/FWD/field1d.f90 -o $(OBJDIR)/field1d.o
@@ -236,7 +236,7 @@ $(OBJDIR)/interp_orig.o:EARTH/Jacobian/interp_orig.f90
 $(OBJDIR)/output_orig.o:EARTH/ioMod/output_orig.f90 $(OBJDIR)/math_constants.o $(OBJDIR)/elements.o $(OBJDIR)/interp_orig.o $(OBJDIR)/iospec.o 
 	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) EARTH/ioMod/output_orig.f90 -o $(OBJDIR)/output_orig.o
 
-$(OBJDIR)/Global3D.o:Global3D.f90 $(OBJDIR)/UserData.o $(OBJDIR)/SymmetryTest.o $(OBJDIR)/Main.o $(OBJDIR)/output.o $(OBJDIR)/SensComp.o $(OBJDIR)/NLCG.o $(OBJDIR)/MPI_main.o $(OBJDIR)/global.o $(OBJDIR)/ringcurrent.o $(OBJDIR)/dimensions.o $(OBJDIR)/field_vectors.o $(OBJDIR)/UserData.o $(OBJDIR)/global.o $(OBJDIR)/NLCG.o $(OBJDIR)/UserData.o $(OBJDIR)/global.o $(OBJDIR)/field_vectors.o $(OBJDIR)/ringcurrent.o $(OBJDIR)/maxwells.o $(OBJDIR)/output_orig.o $(OBJDIR)/transmitters.o $(OBJDIR)/UserData.o $(OBJDIR)/global.o $(OBJDIR)/jacobian.o $(OBJDIR)/boundaries.o $(OBJDIR)/output.o $(OBJDIR)/initFields.o $(OBJDIR)/DataFunc.o $(OBJDIR)/dataMisfit.o $(OBJDIR)/SensComp.o $(OBJDIR)/transmitters.o $(OBJDIR)/dataTypes.o $(OBJDIR)/DataIO.o $(OBJDIR)/MPI_main.o $(OBJDIR)/UserData.o $(OBJDIR)/GridDef.o $(OBJDIR)/global.o $(OBJDIR)/DataFunc.o $(OBJDIR)/jacobian.o $(OBJDIR)/input.o $(OBJDIR)/output.o $(OBJDIR)/initFields.o $(OBJDIR)/dataMisfit.o $(OBJDIR)/boundaries.o $(OBJDIR)/SensComp.o $(OBJDIR)/transmitters.o $(OBJDIR)/dataTypes.o $(OBJDIR)/DataIO.o $(OBJDIR)/UserData.o $(OBJDIR)/global.o $(OBJDIR)/jacobian.o $(OBJDIR)/boundaries.o $(OBJDIR)/output.o $(OBJDIR)/initFields.o $(OBJDIR)/DataFunc.o $(OBJDIR)/dataMisfit.o $(OBJDIR)/SensComp.o $(OBJDIR)/transmitters.o $(OBJDIR)/dataTypes.o $(OBJDIR)/DataIO.o $(OBJDIR)/MPI_main.o $(OBJDIR)/UserData.o $(OBJDIR)/global.o $(OBJDIR)/jacobian.o $(OBJDIR)/boundaries.o $(OBJDIR)/output.o $(OBJDIR)/initFields.o $(OBJDIR)/DataFunc.o $(OBJDIR)/dataMisfit.o $(OBJDIR)/transmitters.o $(OBJDIR)/dataTypes.o $(OBJDIR)/DataSens.o $(OBJDIR)/DataIO.o $(OBJDIR)/UserData.o $(OBJDIR)/global.o $(OBJDIR)/jacobian.o $(OBJDIR)/boundaries.o $(OBJDIR)/output.o $(OBJDIR)/initFields.o $(OBJDIR)/DataFunc.o $(OBJDIR)/dataMisfit.o $(OBJDIR)/transmitters.o $(OBJDIR)/dataTypes.o $(OBJDIR)/receivers.o $(OBJDIR)/UserData.o $(OBJDIR)/global.o $(OBJDIR)/jacobian.o $(OBJDIR)/boundaries.o $(OBJDIR)/output.o $(OBJDIR)/initFields.o $(OBJDIR)/DataFunc.o $(OBJDIR)/dataMisfit.o $(OBJDIR)/DataSens.o $(OBJDIR)/transmitters.o $(OBJDIR)/dataTypes.o $(OBJDIR)/UserData.o $(OBJDIR)/global.o $(OBJDIR)/jacobian.o $(OBJDIR)/output.o $(OBJDIR)/modelmap.o $(OBJDIR)/initFields.o $(OBJDIR)/DataFunc.o $(OBJDIR)/dataMisfit.o $(OBJDIR)/sg_spherical.o $(OBJDIR)/DataSens.o $(OBJDIR)/transmitters.o $(OBJDIR)/dataTypes.o $(OBJDIR)/SymmetryTest.o 
+$(OBJDIR)/Global3D.o:Global3D.f90 $(OBJDIR)/UserData.o $(OBJDIR)/SymmetryTest.o $(OBJDIR)/Main.o $(OBJDIR)/output.o $(OBJDIR)/SensComp.o $(OBJDIR)/NLCG.o $(OBJDIR)/MPI_main.o $(OBJDIR)/global.o $(OBJDIR)/ringcurrent.o $(OBJDIR)/dimensions.o $(OBJDIR)/field_vectors.o $(OBJDIR)/UserData.o $(OBJDIR)/global.o $(OBJDIR)/NLCG.o $(OBJDIR)/UserData.o $(OBJDIR)/global.o $(OBJDIR)/field_vectors.o $(OBJDIR)/ringcurrent.o $(OBJDIR)/maxwells.o $(OBJDIR)/output_orig.o $(OBJDIR)/transmitters.o $(OBJDIR)/UserData.o $(OBJDIR)/global.o $(OBJDIR)/jacobian.o $(OBJDIR)/boundaries.o $(OBJDIR)/output.o $(OBJDIR)/initFields.o $(OBJDIR)/DataFunc.o $(OBJDIR)/dataMisfit.o $(OBJDIR)/SensComp.o $(OBJDIR)/transmitters.o $(OBJDIR)/DataSpace.o $(OBJDIR)/dataTypes.o $(OBJDIR)/DataIO.o $(OBJDIR)/MPI_main.o $(OBJDIR)/UserData.o $(OBJDIR)/GridDef.o $(OBJDIR)/global.o $(OBJDIR)/DataFunc.o $(OBJDIR)/jacobian.o $(OBJDIR)/input.o $(OBJDIR)/output.o $(OBJDIR)/initFields.o $(OBJDIR)/dataMisfit.o $(OBJDIR)/boundaries.o $(OBJDIR)/SensComp.o $(OBJDIR)/transmitters.o $(OBJDIR)/dataTypes.o $(OBJDIR)/DataIO.o $(OBJDIR)/UserData.o $(OBJDIR)/global.o $(OBJDIR)/jacobian.o $(OBJDIR)/boundaries.o $(OBJDIR)/output.o $(OBJDIR)/initFields.o $(OBJDIR)/DataFunc.o $(OBJDIR)/dataMisfit.o $(OBJDIR)/SensComp.o $(OBJDIR)/transmitters.o $(OBJDIR)/dataTypes.o $(OBJDIR)/DataIO.o $(OBJDIR)/MPI_main.o $(OBJDIR)/UserData.o $(OBJDIR)/global.o $(OBJDIR)/jacobian.o $(OBJDIR)/boundaries.o $(OBJDIR)/output.o $(OBJDIR)/initFields.o $(OBJDIR)/DataFunc.o $(OBJDIR)/dataMisfit.o $(OBJDIR)/transmitters.o $(OBJDIR)/dataTypes.o $(OBJDIR)/DataSens.o $(OBJDIR)/DataIO.o $(OBJDIR)/UserData.o $(OBJDIR)/global.o $(OBJDIR)/jacobian.o $(OBJDIR)/boundaries.o $(OBJDIR)/output.o $(OBJDIR)/initFields.o $(OBJDIR)/DataFunc.o $(OBJDIR)/dataMisfit.o $(OBJDIR)/transmitters.o $(OBJDIR)/dataTypes.o $(OBJDIR)/receivers.o $(OBJDIR)/UserData.o $(OBJDIR)/global.o $(OBJDIR)/jacobian.o $(OBJDIR)/boundaries.o $(OBJDIR)/output.o $(OBJDIR)/initFields.o $(OBJDIR)/DataFunc.o $(OBJDIR)/dataMisfit.o $(OBJDIR)/DataSens.o $(OBJDIR)/transmitters.o $(OBJDIR)/dataTypes.o $(OBJDIR)/UserData.o $(OBJDIR)/global.o $(OBJDIR)/jacobian.o $(OBJDIR)/output.o $(OBJDIR)/modelmap.o $(OBJDIR)/initFields.o $(OBJDIR)/DataFunc.o $(OBJDIR)/dataMisfit.o $(OBJDIR)/sg_spherical.o $(OBJDIR)/DataSens.o $(OBJDIR)/transmitters.o $(OBJDIR)/dataTypes.o $(OBJDIR)/SymmetryTest.o 
 	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) Global3D.f90 -o $(OBJDIR)/Global3D.o
 
 # Type " make clean " to get rid of all object and module files 

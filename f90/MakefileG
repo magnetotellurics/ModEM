@@ -143,8 +143,8 @@ $(OBJDIR)/DataFunc.o:EARTH/DataFunc.f90 $(OBJDIR)/model_operators.o $(OBJDIR)/So
 $(OBJDIR)/DataSens.o:SENS/DataSens.f90 $(OBJDIR)/math_constants.o $(OBJDIR)/utilities.o $(OBJDIR)/DataSpace.o $(OBJDIR)/DataFunc.o 
 	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) SENS/DataSens.f90 -o $(OBJDIR)/DataSens.o
 
-$(OBJDIR)/elements.o:EARTH/Basics/elements.f90  
-	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) EARTH/Basics/elements.f90 -o $(OBJDIR)/elements.o
+$(OBJDIR)/elements.o:UTILS/elements.f90  
+	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) UTILS/elements.f90 -o $(OBJDIR)/elements.o
 
 $(OBJDIR)/dimensions.o:EARTH/Basics/dimensions.f90  
 	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) EARTH/Basics/dimensions.f90 -o $(OBJDIR)/dimensions.o
