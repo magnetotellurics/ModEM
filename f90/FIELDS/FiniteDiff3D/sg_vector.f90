@@ -386,7 +386,8 @@ Contains
     else if (E%gridType == FACE) then
 	   ! For spherical problem:
 	   ! 1) E%y(:,1,:) and E%y(:,ny+1,:) are undefined,
-	   ! 2) E%x(nx+1,:,:) is repetitios and equals E%x(1,:,:).
+	   ! 2) E%x(nx+1,:,:) is repetitios and equals E%x(1,:,:),
+	   ! 3) E%z(:,:,1) and E%z(:,:,nz+1) are undefined.
        allocate(E%x(nx+1,ny,nz), STAT=status)
        E%allocated = E%allocated .and. (status .EQ. 0)
        allocate(E%y(nx,ny+1,nz), STAT=status)

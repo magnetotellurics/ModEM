@@ -466,7 +466,7 @@ Contains
       do i=1,nx
         do k=1,nz
           do j=2,ny
-            call leng_xijk2(i,j,k,x,y,z,xlen)
+            call leng_xijk2_shifted(i,j,k,x,y,z,xlen)
             lF%x(i,j,k)=xlen
           end do
         end do
@@ -474,7 +474,7 @@ Contains
 
       do j=2,ny
         do k=1,nz
-          call leng_yijk2(j,k,y,z,ylen)
+          call leng_yijk2_shifted(j,k,y,z,ylen)
           do i=1,nx
             lF%y(i,j,k)=ylen
           end do
@@ -482,7 +482,7 @@ Contains
       end do
 
       do k=1,nz
-        call leng_zijk2(k,z,zlen)
+        call leng_zijk2_shifted(k,z,zlen)
         lF%y(:,1,k)=zlen
         do j=2,ny
           do i=1,nx
@@ -1084,11 +1084,11 @@ Contains
       do j=1,ny
 		! loop over longitudes including i=nx (nx+1'th fields same as i=1)
         do i=1,nx
-		  call leng_xijk2(i,j,k,x,y,z,lp)
+		  call leng_xijk2_shifted(i,j,k,x,y,z,lp)
 		  if (i==1) then
-			call leng_xijk2(nx,j,k,x,y,z,lm)
+			call leng_xijk2_shifted(nx,j,k,x,y,z,lm)
 		  else
-			call leng_xijk2(i-1,j,k,x,y,z,lm)
+			call leng_xijk2_shifted(i-1,j,k,x,y,z,lm)
 		  end if
           call area_sijk(j,k,y,z,S)
 
@@ -1098,10 +1098,10 @@ Contains
 			vecF%x(i,j,k)=(lp*resist%v(i,j,k)+lm*resist%v(i-1,j,k))/(2*S)
 		  end if
 
-		  call leng_yijk2(j,k,y,z,lp)
+		  call leng_yijk2_shifted(j,k,y,z,lp)
 		  if (j==1) then
 		  else
-			call leng_yijk2(j-1,k,y,z,lm)
+			call leng_yijk2_shifted(j-1,k,y,z,lm)
 		  end if
           call area_sjki(i,j,k,x,y,z,S)
 
@@ -1111,11 +1111,11 @@ Contains
 			vecF%y(i,j,k)=(lp*resist%v(i,j,k)+lm*resist%v(i,j-1,k))/(2*S)
 		  end if
 
-		  call leng_zijk2(k,z,lp)
+		  call leng_zijk2_shifted(k,z,lp)
 		  if (k==1) then
 			lm=lp
 		  else
-			call leng_zijk2(k-1,z,lm)
+			call leng_zijk2_shifted(k-1,z,lm)
 		  end if
           call area_skij(i,j,k,x,y,z,S)
 
@@ -1132,7 +1132,7 @@ Contains
 	vecF%x(nx+1,:,:) = vecF%x(1,:,:)
 	vecF%y(:,ny+1,:) = R_ZERO !undefined
 
-	call leng_zijk2(nz,z,lm)
+	call leng_zijk2_shifted(nz,z,lm)
     do j=1,ny
       do i=1,nx
         call area_skij(i,j,nz+1,x,y,z,S)
@@ -1194,12 +1194,12 @@ Contains
       do j=1,ny
 		! loop over longitudes including i=nx (nx+1'th fields same as i=1)
         do i=1,nx
-		  call leng_xijk2(i,j,k,x,y,z,l)
+		  call leng_xijk2_shifted(i,j,k,x,y,z,l)
           call area_sijk(j,k,y,z,S)
 		  Sp=S
 		  resist%v(i,j,k)=vecF%x(i,j,k)*l/(2*S)+vecF%x(i+1,j,k)*l/(2*Sp)
 
-		  call leng_yijk2(j,k,y,z,l)
+		  call leng_yijk2_shifted(j,k,y,z,l)
           call area_sjki(i,j,k,x,y,z,S)
           call area_sjki(i,j+1,k,x,y,z,Sp)
 		  if (j==1) then
@@ -1210,7 +1210,7 @@ Contains
   			resist%v(i,j,k)=resist%v(i,j,k)+vecF%y(i,j,k)*l/(2*S)+vecF%y(i,j+1,k)*l/(2*Sp)
 		  end if
 
-		  call leng_zijk2(k,z,l)
+		  call leng_zijk2_shifted(k,z,l)
           call area_skij(i,j,k,x,y,z,S)
           call area_skij(i,j,k+1,x,y,z,Sp)
 		  resist%v(i,j,k)=resist%v(i,j,k)+vecF%z(i,j,k)*l/(2*S)+vecF%z(i,j,k+1)*l/(2*Sp)

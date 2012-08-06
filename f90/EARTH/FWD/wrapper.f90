@@ -328,7 +328,7 @@ Contains
         end do
       end do
 
-      do k=2,n
+      do k=2,n ! BOUNDARY CONDITIONS ERROR: should loop from k=1
         ic=ic+1
 		! North pole cap
 		j=1

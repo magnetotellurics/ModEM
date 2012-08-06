@@ -15,6 +15,70 @@ Contains
   ! * by the forward modelling subroutines
 
 
+      subroutine volume_vijk(i,j,k,ph,th,r,vijk)
+
+!-------------------------------------------------------------
+! subroutine for calculating primary cell volume element Vijk
+!-------------------------------------------------------------
+!
+!   -----------------------------------------------------
+!    ------ phai and theta in radian
+!    ------ phai denotes interval
+!    ------ theta denotes angle from the north pole
+!    ------ r is measured from the center of the earth
+!   -----------------------------------------------------
+
+      implicit none
+
+      integer                        :: i,j,k
+      real(8),dimension(:)           :: ph
+      real(8),dimension(:)           :: th
+      real(8),dimension(:)           :: r
+      real(8)                        :: vijk,r1,th1
+
+      th1=(th(j  )+th(j+1))/2.d0
+       r1=( r(k  )+ r(k+1))/2.d0
+
+      vijk=r1*dsin( th1 )*( (r(k)**2)-(r(k+1)**2) )*( th(j+1)-th(j) )*ph(i)/2.d0
+
+      return
+      end subroutine volume_vijk
+
+
+
+      subroutine volume_vijk2(i1,i2,j,k,ph,th,r,vijk2)
+
+!-------------------------------------------------------------
+! subroutine for calculating dual cell volume element Vijk_2
+!-------------------------------------------------------------
+!
+!   -----------------------------------------------------
+!    ------ phai and theta in radian
+!    ------ phai denotes interval
+!    ------ theta denotes angle from the north pole
+!    ------ r is measured from the center of the earth
+!   -----------------------------------------------------
+
+      implicit none
+
+      integer                        :: i1,i2,j,k
+      real(8),dimension(:)           :: ph
+      real(8),dimension(:)           :: th
+      real(8),dimension(:)           :: r
+      real(8)                        :: vijk2,th1,th2,r1,r2,dph
+
+      dph=(ph(i1 )+ph(i2 ))/2.d0
+      th1=(th(j  )+th(j+1))/2.d0
+      th2=(th(j+1)+th(j+2))/2.d0
+       r1=( r(k  )+ r(k+1))/2.d0
+       r2=( r(k+1)+ r(k+2))/2.d0
+
+      vijk2=r(k+1)*dsin( th(j+1) )*( (r1**2)-(r2**2) )*( th2-th1 )*dph/2.d0
+
+      return
+      end subroutine volume_vijk2
+
+
       subroutine area_sijk(j,k,th,r,sijk)
  
 !-------------------------------------------------------------
@@ -220,8 +284,38 @@ Contains
       return
       end subroutine leng_xijk
 
+
+      subroutine leng_xijk2(i1,i2,j,k,ph,th,r,xijk2)
+
+!-------------------------------------------------------------
+!      subroutine for calculating line element Xijk2
+!
+!   -----------------------------------------------------
+!    ------ phai and theta in radian
+!    ------ phai denotes interval
+!    ------ theta denotes angle from the north pole
+!    ------ r is measured from the center of the earth
+!-------------------------------------------------------------
+
+      implicit none
+
+      integer                         :: i1,i2,j,k
+      real(8),dimension(:)            :: ph
+      real(8),dimension(:)            :: th
+      real(8),dimension(:)            :: r
+      real(8)                         :: xijk2,r1,th1,dph
+
+      dph = ( ph(i1 )+ph(i2 ) )/2.0d0
+      th1 = ( th(j  )+th(j+1) )/2.0d0
+       r1 = (  r(k  )+ r(k+1) )/2.0d0
+
+      xijk2=r1*dsin( th1 )*dph
+
+      return
+      end subroutine leng_xijk2
+
  
-      subroutine leng_xijk2(i,j,k,ph,th,r,xijk2)
+      subroutine leng_xijk2_shifted(i,j,k,ph,th,r,xijk2)
 
 !-------------------------------------------------------------
 !      subroutine for calculating line element Xijk2  - A.K.
@@ -239,15 +333,15 @@ Contains
       real(8),dimension(:)			  :: ph
       real(8),dimension(:)			  :: th
       real(8),dimension(:)			  :: r
-      real(8)                         :: xijk2,r_avg,th_avg
+      real(8)                         :: xijk2,r1,th1
  
-	  th_avg=(th(j  )+th(j+1))/2.d0
-       r_avg=( r(k  )+ r(k+1))/2.d0
+	  th1=( th(j  )+th(j+1) )/2.d0
+       r1=(  r(k  )+ r(k+1) )/2.d0
 
-      xijk2=r_avg*dsin( th_avg )*ph(i)
+      xijk2=r1*dsin( th1 )*ph(i)
  
       return
-      end subroutine leng_xijk2
+      end subroutine leng_xijk2_shifted
 
 
       subroutine leng_yijk(j,k,th,r,yijk)
@@ -275,8 +369,37 @@ Contains
       end subroutine leng_yijk
 
 
-
       subroutine leng_yijk2(j,k,th,r,yijk2)
+
+!-------------------------------------------------------------
+!      subroutine for calculating line element Yijk2
+!
+!   -----------------------------------------------------
+!    ------ phai and theta in radian
+!    ------ phai denotes interval
+!    ------ theta denotes angle from the north pole
+!    ------ r is measured from the center of the earth
+!-------------------------------------------------------------
+
+      implicit none
+
+      integer                               :: j,k
+      real(8),dimension(:)                  :: th
+      real(8),dimension(:)                  :: r
+      real(8)                               :: yijk2,r1,th1,th2
+
+      th1 = ( th(j  )+th(j+1) )/2.0d0
+      th2 = ( th(j+1)+th(j+2) )/2.0d0
+       r1 = (  r(k  )+ r(k+1) )/2.0d0
+
+      yijk2=r1*( th2-th1 )
+
+      return
+      end subroutine leng_yijk2
+
+
+
+      subroutine leng_yijk2_shifted(j,k,th,r,yijk2)
 
 !-------------------------------------------------------------
 !      subroutine for calculating line element Y(i)jk2 - A.K.
@@ -293,14 +416,14 @@ Contains
       integer								:: j,k
       real(8),dimension(:)					:: th
       real(8),dimension(:)					:: r
-      real(8)								:: yijk2,r_avg
+      real(8)								:: yijk2,r1
  
-      r_avg=(r(k)+ r(k+1))/2.d0
+      r1 = ( r(k )+ r(k+1) )/2.d0
 
-      yijk2=r_avg*( th(j+1)-th(j) )
+      yijk2=r1*( th(j+1)-th(j) )
  
       return
-      end subroutine leng_yijk2
+      end subroutine leng_yijk2_shifted
 
 
 
@@ -328,8 +451,34 @@ Contains
       end subroutine leng_zijk
 
 
-
       subroutine leng_zijk2(k,r,zijk2)
+
+!-------------------------------------------------------------
+!      subroutine for calculating line element Zijk2
+!
+!   -----------------------------------------------------
+!    ------ phai and theta in radian
+!    ------ phai denotes interval
+!    ------ theta denotes angle from the north pole
+!    ------ r is measured from the center of the earth
+!-------------------------------------------------------------
+
+      implicit none
+
+      integer                           :: k
+      real(8),dimension(:)              :: r
+      real(8)                           :: zijk2,r1,r2
+
+      r1 = (  r(k  )+ r(k+1) )/2.0d0
+      r2 = (  r(k+1)+ r(k+2) )/2.0d0
+
+      zijk2=r1-r2
+
+      return
+      end subroutine leng_zijk2
+
+
+      subroutine leng_zijk2_shifted(k,r,zijk2)
 
 !-------------------------------------------------------------
 !      subroutine for calculating line element Z(ij)k2	- A.K.
@@ -350,7 +499,7 @@ Contains
       zijk2=r(k)-r(k+1)
  
       return
-      end subroutine leng_zijk2
+      end subroutine leng_zijk2_shifted
 
 
 ! *****************************************************************************
