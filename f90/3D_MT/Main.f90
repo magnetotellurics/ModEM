@@ -86,15 +86,17 @@ Contains
 	!--------------------------------------------------------------------------
 	! Check whether model parametrization file exists and read it, if exists
 	inquire(FILE=cUserDef%rFile_Model,EXIST=exists)
+    inquire(FILE=cUserDef%rFile_mg,EXIST=exists)
 
 	if (exists) then
 	   ! Read background conductivity parameter and grid
        call read_modelParam(grid,sigma0,cUserDef%rFile_Model)
-
+       call read_mgParam(grid,cUserDef%rFile_mg)
        ! Finish setting up the grid (if that is not done in the read subroutine)
        ! call setup_mgrid(grid)
 	else
 	  call warning('No input model parametrization')
+	  call warning('No input mg')
 	end if
 
 	!--------------------------------------------------------------------------
@@ -244,7 +246,7 @@ Contains
 	if (output_level > 3) then
 	   write(0,*) 'Cleaning up grid...'
 	endif
-	call deall_grid(grid)
+	call deall_mgrid(grid)
 
 	if (output_level > 3) then
 	   write(0,*) 'Cleaning up data...'

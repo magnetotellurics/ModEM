@@ -216,9 +216,10 @@ subroutine QMR(b,x, QMRiter)
 
   VT = R
   ilu_adjt = .false.
-  Call M1solve(VT,ilu_adjt,Y)
-  RHO = CDSQRT(dotProd(Y,Y))
 
+  Call M1solve(VT,ilu_adjt,Y)
+
+  RHO = CDSQRT(dotProd(Y,Y))
   WT = R
   ilu_adjt = .true.
   Call M2solve(WT,ilu_adjt,Z)

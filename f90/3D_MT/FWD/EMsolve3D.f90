@@ -194,7 +194,9 @@ Contains
         !   Then multiply by curl_curl operator (use MultA_N ...
         !   Note that MultA_N already multiplies by volume weights
 	    !   required to symetrize problem, so the result is V*A_IB*b)
+
         call MultA_N(tempMG, ltemp, bMG)
+
         !  change sign of result
         call scMult(MinusOne,bMG,bMG)
        endif
@@ -299,8 +301,7 @@ Contains
        if( nDivCor < MaxDivCor) then
 
           ! do divergence correction
-
-          Call copy_cvector_mg(tempMG, eSol)
+          tempMG = eSol
 
           if(bRHS%nonzero_Source) then
              Call SdivCorr(tempMG,eSol,phi0)
@@ -316,7 +317,9 @@ Contains
 
     if (output_level > 1) then
        write (*,'(a12,a20,i8,g15.7)') node_info, 'finished solving:', nIterTotal, EMrelErr(nIterTotal)
-	   write (*,'(a12,a22,f12.6)')    node_info, ' time taken (mins) ', elapsed_time(timer)/60.0
+!	   write (*,'(a12,a22,f12.6)')    node_info, ' time taken (mins) ', elapsed_time(timer)/60.0
+       write (*,'(a12,a22,f12.6)')    node_info, ' time taken (mins) ', elapsed_time(timer)
+
     end if
 
     !  After solving symetrized system, need to do different things for
@@ -352,9 +355,9 @@ Contains
     Call deall(b)
     Call deall(temp)
     Call deall(tempBC)
-    Call deall_cvector_mg(bMG)
-    Call deall_cvector_mg(tempMG)
-    Call deall_cvector_mg(sMG)
+    Call deall(bMG)
+    Call deall(tempMG)
+    Call deall(sMG)
     deallocate(QMRiter%rerr, STAT=status)
 
   end subroutine FWDsolve3D
@@ -393,17 +396,16 @@ Contains
 
     ! initialize PCGiter (maximum iterations allowed per set of diveregence
     ! correction, error tolerence, and relative error book keeping)
-    !PCGiter%maxIt = MaxIterDivCor
-    PCGiter%maxIt = 10    
-    !PCGiter%tol = tolDivCor
+    PCGiter%maxIt = MaxIterDivCor
+    PCGiter%tol = tolDivCor
 
     allocate(PCGiter%rerr(PCGiter%maxIt), STAT = status)
     PCGiter%rerr = 0.0
 
     Desc = CORNER
     ! alocating phiSol, phiRHS
-    Call create_cscalar_mg(inE%grid, phiSol, Desc)
-    Call create_cscalar_mg(inE%grid, phiRHS, Desc)
+    Call create(inE%grid, phiSol, Desc)
+    Call create(inE%grid, phiRHS, Desc)
 
     ! compute divergence of currents for input electric field
     Call DivC(inE, phiRHS)
@@ -629,14 +631,6 @@ end subroutine SdivCorr ! SdivCorr
  else
      solverControl%read_E0_from_File=.false.
   end if
-
-
-
-
-
-
-
-
 
     close(ioFwdCtrl)
 

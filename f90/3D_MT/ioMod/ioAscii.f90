@@ -370,34 +370,20 @@ Contains
     integer, intent(in)				:: ioNum,iFreq,iMode
     character (len=20), intent(in)		:: ModeName
     type (cvector_mg), intent(in)			:: outE
+
+    type (cvector_mg) :: Ey  ! dummy
+    type (cvector_mg) :: Ex
     integer  :: ix,iy,iz, imgrid,c
     ! write the frequency header - 1 record
- !   write(ioNum) Omega, iFreq, iMode,ModeName
-   !write(ioNum,*)'Omega = ', Omega
-   !write(ioNum,*)'iFreq = ', iFreq
-   !write(ioNum,*)'iMode = ', iMode
-   !write(ioNum,*)'Modename = ', Modename
+    write(ioNum) Omega, iFreq, iMode,ModeName
 
     ! write the electrical field data - 3 records
-  !  do imgrid = 1, outE%mgridSize
-     !write(ioNum)  outE%cvArray(imgrid)%x
-     ! write(ioNum) outE%cvArray(imgrid)%y
-     ! write(ioNum) outE%cvArray(imgrid)%z
-  !  enddo
-
-! write E field at the surface
    do imgrid = 1, outE%mgridSize
-     if(outE%grid%gridarray(imgrid)%flag == 0)then
-      do iy = 1, outE%cvarray(imgrid)%ny
-        do ix = 1, outE%cvarray(imgrid)%nx
-          write(ioNum,'(i3,2x,i3,2x,es13.5,2x,es13.5,2x,es13.5)') iy, ix, abs(outE%cvarray(imgrid)%x(ix,iy,outE%grid%gridArray(imgrid)%nzAir+1)), &
-                                 abs(outE%cvarray(imgrid)%y(ix,iy,outE%grid%gridArray(imgrid)%nzAir+1)), &
-                                 abs(outE%cvarray(imgrid)%z(ix,iy,outE%grid%gridArray(imgrid)%nzAir+1))
+     write(ioNum)  outE%cvArray(imgrid)%x
+      write(ioNum) outE%cvArray(imgrid)%y
+      write(ioNum) outE%cvArray(imgrid)%z
+    enddo
 
-        enddo
-      enddo
-     endif
-   enddo
 
 
   end subroutine EfileWrite
@@ -517,26 +503,54 @@ Contains
 
       !   local variables
       integer           :: j,k,nMode = 2, ios
-      character (len=20) 		:: version = '',ModeNames(2)
+      integer  :: ig, iSurface,ix,iy
+      integer  :: nx,ny,nz,Iox,Ioy
+      character (len=20) 		:: version = ''
       real (kind=prec)   :: omega
+      real (kind=prec) :: tempD
 
-      ModeNames(1) = 'Ey'
-      ModeNames(2) = 'Ex'
 
        call FileWriteInit(version,cfile,fid,eAll%solns(1)%grid &
                ,eAll%nTX, nMode,ios)
 
-     print*, 'Which period?'
-     read*, j
-     ! do j = 1,eAll%nTx
-     print*, 'Which Mode?'
-     read*, k
-        ! do k = 1,2
-           omega = txDict(eAll%solns(j)%tx)%omega
-           call EfileWrite(fid, omega, j,  &
-             k, ModeNames(k), eAll%solns(j)%pol(k))
-        ! enddo
-     ! enddo
+     do ig = 1, eAll%solns(1)%grid%mgridSize
+         Isurface = ig
+       if (eAll%solns(1)%grid%gridarray(ig)%flag == 0)exit
+     enddo
+
+      nz =  eAll%solns(1)%grid%gridArray(Isurface)%nzAir
+      nx = eAll%solns(1)%grid%gridArray(Isurface)%nx
+      ny = eAll%solns(1)%grid%gridArray(Isurface)%ny
+
+      tempD= 0
+      do ix = 1,nx-1
+        tempD= tempD+eAll%solns(1)%grid%dx(ix)
+        Iox = ix
+        if (tempD == -eAll%solns(1)%grid%ox) exit
+      enddo
+      tempD= 0
+      do iy = 1,ny-1
+        tempD = tempD + eAll%solns(1)%grid%dy(iy)
+        Ioy = iy
+        if (tempD == -eAll%solns(1)%grid%oy) exit
+      enddo
+
+     do j = 1,eAll%nTx   ! loop periods
+       !do k = 1,2        ! loop modes
+
+          ! omega = txDict(eAll%solns(j)%tx)%omega
+          write(fid,'(i2,es13.5,2x,i3,2x,i3,2x,es13.5,2x,es13.5,2x,es13.5)') (1,txDict(eAll%solns(j)%tx)%period, Iox, iy, &
+                                 abs(eAll%solns(j)%pol(2)%cvarray(Isurface)%x(Iox,iy,nz)), &
+                                 abs(eAll%solns(j)%pol(2)%cvarray(Isurface)%y(Iox,iy,nz)), &
+                                 abs(eAll%solns(j)%pol(2)%cvarray(Isurface)%z(Iox,iy,nz)),iy=1,ny)
+           write(fid,'(i2,es13.5,2x,i3,2x,i3,2x,es13.5,2x,es13.5,2x,es13.5)') (2,txDict(eAll%solns(j)%tx)%period,Ioy, ix, abs(eAll%solns(j)%pol(1)%cvarray(Isurface)%x(ix,Ioy,nz)), &
+                                 abs(eAll%solns(j)%pol(1)%cvarray(Isurface)%y(ix,Ioy,nz)), &
+                                 abs(eAll%solns(j)%pol(1)%cvarray(Isurface)%z(ix,Ioy,nz)),ix=1,nx)
+
+          ! call EfileWrite(fid, omega, j,  &
+          !   k, ModeNames(k), eAll%solns(j)%pol(k))
+       !enddo
+     enddo
       close(fid)
       end subroutine write_solnVectorMTX
 

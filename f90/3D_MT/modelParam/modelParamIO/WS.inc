@@ -47,8 +47,7 @@
 	  nzAir = 10
 
 	  ! Initialize and read in the grid
-     ! call create_grid(Nx,Ny,NzAir,NzEarth,grid)
-      call create_mgrid(nx,ny,nzair,nzearth,grid)
+      call create_grid(Nx,Ny,NzAir,NzEarth,grid)
 
       read(ioPrm,*) (grid%dx(j),j=1,grid%nx)
       read(ioPrm,*) (grid%dy(j),j=1,grid%ny)
@@ -112,7 +111,7 @@
 
       close(ioPrm)
       ! Finally setup multigrid
-       call setup_mgrid(grid)
+      ! call setup_mgrid(grid)
 
 	  ! Finally create the model parameter
 	  call create_modelParam(grid,paramType,m,ccond)
@@ -126,7 +125,53 @@
 	  call deall_rscalar(ccond)
 
 	end subroutine read_modelParam_ws
+    ! *****************************************************************
+    ! additional procedure to read multi-grid parameters
+    subroutine read_mgParam(mgrid,cfile)
 
+    implicit none
+
+      type(grid_t), target, intent(inout)  :: mgrid
+      character(*), intent(in)             :: cfile
+      integer                              :: istat,errAll
+      ! local variables
+
+      character(80)        :: someChar=''
+      integer  :: i,j, ig, N, Nc
+
+      ! Open file and read grid
+      open(unit=ioPrm, file=cfile, status='old', iostat=istat)
+
+      ! First read the comment line
+      read(ioPrm,'(a80)') someChar
+
+      ! Now read the second line with coarseness
+
+      read(ioPrm,*) mgrid%mgridSize
+
+      allocate(mgrid%nzGrid(mgrid%mgridSize),STAT=errAll)
+      allocate(mgrid%coarseness(mgrid%mgridSize),STAT=errAll)
+
+      read(ioPrm,*) (mgrid%nzGrid(i), i=1,mgrid%mgridSize)
+      read(ioPrm,*) (mgrid%coarseness(j), j=1,mgrid%mgridSize)
+
+      call create_mgrid(mgrid)
+      call setup_mgrid(mgrid)
+
+      ! print on the screen
+      ! number of model parameters with coarseness and without
+
+      Nc = 0
+      do ig = 1, mgrid%mgridsize
+        Nc = Nc + mgrid%gridarray(ig)%nx*mgrid%gridarray(ig)%ny*mgrid%gridarray(ig)%nz
+      enddo
+        N = mgrid%nx*mgrid%ny*mgrid%nz
+
+     print*, 'Number of model parameters with coarseness =', Nc
+     print*, 'Number of model parameters with no coarseness = ', N
+
+
+    end subroutine
 	!******************************************************************
 	subroutine write_modelParam_ws(m,cfile,comment)
 

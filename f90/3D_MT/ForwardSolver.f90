@@ -212,7 +212,7 @@ Contains
    !  complete operator intialization, for this frequency
    !  call UpdateFreq(txDict(iTx)%omega)
    !  loop over polarizations
-!do it = 1, 100
+
    do iMode = 1,e0%nPol
 
       ! compute boundary conditions for polarization iMode
@@ -222,7 +222,7 @@ Contains
 				' problem for period ',iTx,': ',(2*PI)/omega,' secs & mode # ',e0%Pol_index(iMode)
       call FWDsolve3D(b0,omega,e0%pol(imode))
    enddo
-!enddo
+
    ! update pointer to the transmitter in solnVector
    e0%tx = iTx
 

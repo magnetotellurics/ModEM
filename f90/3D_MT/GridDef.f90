@@ -13,9 +13,7 @@ implicit none
 ! legal in fortran to say y = x for data types, but that doesn't copy
 ! allocatable or pointer arrays
 interface assignment (=)
-  !module procedure copy_grid
   module procedure copy_mgrid
- ! module procedure copy_mgrid
 end interface
 
 
@@ -161,55 +159,20 @@ end subroutine create_grid
 
 ! **************************************************************************
 
-subroutine create_mgrid(nx,ny,nzAir,nzEarth,mgrid)
+subroutine create_mgrid(mgrid)
 !  creates finite differences mgrid_t structure
 !   allocates sub grid arrays
 implicit none
 
-integer, intent(in)  :: nx,ny,nzAir,nzEarth
 type(grid_t), intent(inout)  :: mgrid
 !  local variables
 integer  :: imgrid, ig
 integer  :: nzCum, nzAirGrid, nzEarthGrid
 
   ! Initialize multigrid structure
-  ! simple model 16
-  mgrid%mgridSize = 5
-! 32
-!  mgrid%mgridSize = 6
-! 64
-!  mgrid%mgridSize = 9
 
-!128 model
-!  mgrid%mgridSize = 6
-
-  allocate(mgrid%nzGrid(mgrid%mgridSize))
-  allocate(mgrid%coarseness(mgrid%mgridSize))
-
-  ! allocate mgrid
-  call create_grid(nx,ny,nzAir,nzEarth,mgrid)
-  ! this is only for tests. must be setup by user from file
-! very simple model 16x16x12
-  mgrid%nzGrid = (/4,4,7,5,2/)
-  mgrid%coarseness  = (/2,1,0,1,2/)
-! 32x32x12
-!  mgrid%nzGrid = (/4,2,2,7,2,2,3/)
-!  mgrid%coarseness  = (/3,2,1,0,1,2,3/)
-! 32x32x32
-!  mgrid%nzGrid = (/4,12,8,8,5,5/)
- ! mgrid%coarseness  = (/0,0,0,0,0,0,0/)
-!  mgrid%coarseness  = (/0,0,1,2,3,4/)
-! 64x64x32
-!  mgrid%nzGrid = (/2,2,2,2,6,4,6,8,10/)
-!  mgrid%coarseness  = (/4,3,2,1,0,1,2,3,4/)
-
-! 128 model
-!  mgrid%nzGrid = (/20,8,8,8,8,9/)
-!  mgrid%coarseness  = (/0,1,2,3,4,5/)
-
-
-  ! allocate gridarray(:)
-  allocate(mgrid%gridArray(mgrid%mgridSize))
+  ! allocate grid arrays
+   allocate(mgrid%gridArray(mgrid%mgridSize))
 
   ! allocate subgrids
   ! start from the top atmosphere
@@ -217,15 +180,15 @@ integer  :: nzCum, nzAirGrid, nzEarthGrid
   nzCum = 0
   do imgrid = 1,mgrid%mgridSize ! main do loop on subgrids
 
-   mgrid%gridArray(imgrid)%nx = nx/2**(mgrid%coarseness(imgrid)) ! nx in each subgrid
-   mgrid%gridArray(imgrid)%ny = ny/2**(mgrid%coarseness(imgrid)) ! ny in each subgrid
+   mgrid%gridArray(imgrid)%nx = mgrid%nx/2**(mgrid%coarseness(imgrid)) ! nx in each subgrid
+   mgrid%gridArray(imgrid)%ny = mgrid%ny/2**(mgrid%coarseness(imgrid)) ! ny in each subgrid
 
    nzAirGrid = 0
    nzEarthGrid = 0
 
      do ig = 1, mgrid%nzGrid(imgrid) ! do loop on nz in ezch subgrid
 
-       if (nzCum.lt.nzAir) then ! Air
+       if (nzCum.lt.mgrid%nzAir) then ! Air
          nzAirGrid = nzAirGrid+1
        else
          nzEarthGrid = nzEarthGrid+1  ! Earth
@@ -291,14 +254,23 @@ end subroutine copy_grid
     type(grid_t),intent(in)  :: mgridIn
     type(grid_t),intent(inout)  :: mgridOut
 
+    integer  :: errAll
 
     if(mgridOut%allocated) then
     ! just deallocate, and start over cleanly
      call deall_mgrid(mgridOut)
     endif
 
+    allocate(mgridOut%nzGrid(mgridIn%mgridSize),STAT=errAll)
+    allocate(mgridOut%coarseness(mgridIn%mgridSize), STAT=errall)
 
-    call create_mgrid(mgridIn%nx,mgridIn%ny,mgridIn%nzAir,mgridIn%nzEarth,mgridOut)
+    call create_grid(mgridIn%Nx,mgridIn%Ny,mgridIn%NzAir, &
+             mgridIn%NzEarth,mgridOut)
+      mgridOut%mgridSize = mgridIn%mgridSize
+      mgridOut%nzGrid = mgridIn%nzGrid
+      mgridOut%coarseness = mgridIn%coarseness
+
+    call create_mgrid(mgridOut)
 
       mgridOut%dz = mgridIn%dz
       mgridOut%dy = mgridIn%dy

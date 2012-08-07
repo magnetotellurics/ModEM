@@ -262,6 +262,7 @@ end  subroutine deall_rvector_mg
 
       if(associated(e%grid)) nullify(e%grid)
 
+
       e%mgridSize = 0
       E%gridType = ''
       E%allocated = .false.
@@ -285,7 +286,7 @@ end  subroutine deall_cvector_mg
     endif
 
     if(.not.e2%allocated) then
-      call create_cvector_mg(e1%grid, e2, e1%gridType)
+      call create(e1%grid, e2, e1%gridType)
     endif
 
      if (e1%gridType == e2%gridType.and.e1%mgridSize == e2%mgridSize) then
@@ -798,6 +799,7 @@ end subroutine subtract_cvector_mg
   c = sum(ctemp)
 
   deallocate(ctemp)
+  call deall_cvector_mg(e3)
 
 end function dotProd_cvector_mg_f
 

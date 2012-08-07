@@ -257,9 +257,10 @@ Contains
     ! Output boundary conditions
     type(cboundary), intent(inout)	:: BC
 
-    type(cvector)  :: E0
+    ! temporal cvector
+    type(cvector)  :: TempE0
 
-    call create(mgrid, E0, EDGE)
+    call create(mgrid, TempE0, EDGE)
 
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    ! FOR FWD PROBLEM (WITHOUT SENS) DECIDED TO CREATE E0 AS CVECTOR
@@ -267,7 +268,7 @@ Contains
 
     if (BC%read_E_from_file) then
 
-          call BC_x0_WS(imode,period,mGrid,Cond3D,E0,BC)
+          call BC_x0_WS(imode,period,mGrid,Cond3D,TempE0,BC)
           ! The BC are already computed from a larger grid for all transmitters and modes and stored in BC_from_file.
           ! Overwrite BC with BC_from_file.
           ! Note: Right now we are using the same period layout for both grid. 
@@ -275,15 +276,17 @@ Contains
           BC = BC_from_file((iTx*2)-(2-imode))  
     else
          ! Compute the BC using Weerachai 2D approach 
-          call BC_x0_WS(imode,period,mGrid,Cond3D,E0,BC)
+          call BC_x0_WS(imode,period,mGrid,Cond3D,TempE0,BC)
     end if
 
     ! need to average and copy fields from E0 cvector to cvector_mg
-    call c2mg(E0mg, E0)
+    call c2mg(E0mg, TempE0)
 
     ! Cell conductivity array is no longer needed
     ! NOT TRUE: needed for imode=2
     ! call deall_rscalar(Cond3D)
+
+    call deall(TempE0)
 
   end subroutine SetBound
   ! *********************************************************************************************88
@@ -700,7 +703,7 @@ Contains
     implicit none
 
    ! Call create_cvector(mGrid, Adiag, EDGE)
-    Call create_cvector_mg(mGrid, AdiagMG, EDGE)
+    Call create(mGrid, AdiagMG, EDGE)
 
   end subroutine AdiagInit
 
@@ -753,7 +756,7 @@ Contains
 
     implicit none
 
-    Call deall_cvector_mg(AdiagMG)
+    Call deall(AdiagMG)
 
   end subroutine deall_Adiag
 
@@ -875,18 +878,6 @@ Contains
           end if
         enddo ! Global loop on subgrids
 
-!imgrid = 1
-!iz = 2
-!ix = 16
-!iy = 2
-!print*, inE%cvArray(imgrid)%y(ix,iy,iz+1)
-!print*, inE%cvArray(imgrid)%y(ix,iy,iz)
-!print*, inE%cvArray(imgrid)%y(ix,iy-1,iz+1)
-!print*, inE%cvArray(imgrid)%y(ix,iy-1,iz)
-!print*, inE%cvArray(imgrid)%y(ix,iy,iz+1)-inE%cvArray(imgrid)%y(ix,iy,iz)
-!print*, inE%cvArray(imgrid)%y(ix,iy-1,iz+1)-inE%cvArray(imgrid)%y(ix,iy-1,iz)
-
-
       else
         print *, 'Maxwell: not compatible usage for existing data types'
        end if
@@ -899,12 +890,6 @@ Contains
 
   ! ******************************************************************************************************
   subroutine UpdateZ_Curl(inE, outE,diag_sign,imgrid)
-  ! created 24.04.2012
-  ! modified 27.04.2012
-  ! modified 07.05.2012
-  ! modified 23.05.2012 ! no coarseness case added
-  ! modified 30.05.2012
-  ! modified 10.07.2012
 
   ! Updates first z layer in curl curl
            !last

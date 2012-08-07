@@ -1017,8 +1017,8 @@ Contains
     end if
 
     ! allocate temp array
-    allocate(tempBCMin(2*inBC%grid%nx,2*inBC%grid%ny), STAT= errAll)
-    allocate(tempBCMax(2*inBC%grid%nx,2*inBC%grid%ny), STAT= errAll)
+    allocate(tempBCMin(inBC%grid%nx+1,inBC%grid%ny+1), STAT= errAll)
+    allocate(tempBCMax(inBC%grid%nx+1,inBC%grid%ny+1), STAT= errAll)
 
 
     ! Check whether the bounds are the same
@@ -1061,6 +1061,9 @@ Contains
             do ic = 1, ccoeff_current
                tempBCMin(ix,iz) = tempBCMin(ix,iz) + inBC%xYMin(ccoeff_current*(ix-1)+ic, izv)*inBC%grid%dx(ccoeff_current*(ix-1)+ic)
                tempBCMax(ix,iz) = tempBCMax(ix,iz) + inBC%xYMax(ccoeff_current*(ix-1)+ic, izv)*inBC%grid%dx(ccoeff_current*(ix-1)+ic)
+!               tempBCMin(ix,iz) = inBC%xYMin(ccoeff_current*(ix-1)+ic, izv)
+!               tempBCMax(ix,iz) = inBC%xYMax(ccoeff_current*(ix-1)+ic, izv)
+
             enddo  ! ic
             tempBCMin(ix,iz) = tempBCMin(ix,iz)/outE%grid%gridArray(imgrid)%dx(ix)
             tempBCMax(ix,iz) = tempBCMax(ix,iz)/outE%grid%gridArray(imgrid)%dx(ix)
@@ -1092,6 +1095,9 @@ Contains
            do ic = 1, ccoeff_current
               tempBCMin(iy,iz) = tempBCMin(iy,iz) + inBC%yXMin(ccoeff_current*(iy-1)+ic, izv)*inBC%grid%dy(ccoeff_current*(iy-1)+ic)
               tempBCMax(iy,iz) = tempBCMax(iy,iz) + inBC%yXMax(ccoeff_current*(iy-1)+ic, izv)*inBC%grid%dy(ccoeff_current*(iy-1)+ic)
+!              tempBCMin(iy,iz) = inBC%yXMin(ccoeff_current*(iy-1)+ic, izv)
+!              tempBCMax(iy,iz) = inBC%yXMax(ccoeff_current*(iy-1)+ic, izv)
+
            enddo ! ic
            tempBCMin(iy,iz) = tempBCMin(iy,iz)/outE%grid%gridArray(imgrid)%dy(iy)
            tempBCMax(iy,iz) = tempBCMax(iy,iz)/outE%grid%gridArray(imgrid)%dy(iy)
