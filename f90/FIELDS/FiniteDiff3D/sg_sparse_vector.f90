@@ -1,5 +1,13 @@
 ! *****************************************************************************
-module sg_sparse_vector
+module sg_sparse_vector ! MULTI-GRID
+
+  ! 25.09.2012 Maria
+  ! this is multi-grid version of the sg_sparse_vector;
+  ! it was modified for the dataFunc computations. For this purposes we do not
+  ! need the multi-grid structure for the sparse vector ;
+  ! We only need a new attribute (current sub-grid) ;
+  ! decided, do not create a new type -- sparsevector mg. May be we will need it further
+  !__________________________________________________________________________________________
   ! Sparse complex vector operations. At present, sparse vectors are used for
   ! representation of data functionals. Only complex vectors are supported, and
   ! only those routines needed for modeling and initial work on inversion have
@@ -77,12 +85,18 @@ module sg_sparse_vector
 !**************************************************************************
   type :: sparsevecc
 
+     ! 25.09.2012 Maria
+     ! this type was slightly changed
+     ! new attribute currSG was added
+     !_______________________________________________________________________
      ! complex vector defined on edge/ face nodes;
      ! store the intention of the use in a character string defined
      ! as in GridDef as a parameter: EDGE or FACE
      character (len=80)	                             	:: gridType=''
      ! nCoeff is number of non-zero nodes
      integer 						:: nCoeff  = 0
+     ! number of the current sub-grid
+     integer                        :: currSG = 0
      ! xyz = 1,2,3 refers to x, y or z components,
      ! i,j,k are arrays of indices that defines grid location
      integer , pointer, dimension(:) 		:: i,j,k,xyz
@@ -129,7 +143,7 @@ Contains
   ! create an object of type sparsevecc of length nCoeff
   ! pointer to the grid not needed (and in some cases
   ! when sparse vectors are set up, we don't even have it).
-  subroutine create_sparsevecc(nCoeff,newLC, gridType)
+  subroutine create_sparsevecc(nCoeff,newLC,gridType)
 
     implicit none
     integer, intent(in) 					:: nCoeff
@@ -274,7 +288,7 @@ Contains
         ! is an exception
         call deall_sparsevecc(SV2)
         ! ... now allocate for correct number of components
-        call create_sparsevecc(SV1%nCoeff, SV2, SV1%gridType)
+        call create_sparsevecc(SV1%nCoeff,SV2, SV1%gridType)
     end if
 
     ! happen to have the same specs
@@ -286,7 +300,7 @@ Contains
              SV2%k = SV1%k
              SV2%xyz = SV1%xyz
              SV2%c = SV1%c
-
+             SV2%currSG = SV1%currSG
 	else
              write (0, *) 'not compatible usage for copy_sparsevecc'
 
@@ -415,7 +429,7 @@ Contains
 
     implicit none
     type (sparsevecc), intent(in)		:: SV
-    type (cvector), intent(in)			:: V
+    type (cvector_mg), intent(in)			:: V
     complex(kind=prec)				:: c
     integer					:: i
     integer					:: xi, yi, zi
@@ -438,29 +452,29 @@ Contains
     do i = 1,SV%nCoeff
 
        ! generic test for both edge and face (all the components)
-       if ((SV%i(i).le.V%grid%nx+1).or.(SV%j(i).le.V%grid%ny+1).or.&
-            (SV%k(i).le.V%grid%nz+1)) then
+       if ((SV%i(i).le.V%grid%gridArray(SV%currSG)%nx+1).or.(SV%j(i).le.V%grid%gridArray(SV%currSG)%ny+1).or.&
+            (SV%k(i).le.V%grid%gridArray(SV%currSG)%nz+1)) then
 
           ! dealing with x-components
           if (SV%xyz(i) == 1) then
              xi = SV%i(i)
              yi = SV%j(i)
              zi = SV%k(i)
-             c = c + conjg(SV%c(i)) * V%x(xi, yi, zi)
+             c = c + conjg(SV%c(i)) * V%cvArray(SV%currSG)%x(xi, yi, zi)
 
              ! dealing with y-component
           else if (SV%xyz(i) == 2) then
              xi = SV%i(i)
              yi = SV%j(i)
              zi = SV%k(i)
-             c = c + conjg(SV%c(i)) * V%y(xi, yi, zi)
+             c = c + conjg(SV%c(i)) * V%cvArray(SV%currSG)%y(xi, yi, zi)
 
              ! dealing with z-component
           else if (SV%xyz(i) == 3) then
              xi = SV%i(i)
              yi = SV%j(i)
              zi = SV%k(i)
-             c = c + conjg(SV%c(i)) * V%z(xi, yi, zi)
+             c = c + conjg(SV%c(i)) * V%cvArray(SV%currSG)%z(xi, yi, zi)
           end if
 
        else
@@ -544,7 +558,7 @@ Contains
 
     implicit none
     type (sparsevecc), intent(in)		:: SV
-    type (cvector), intent(in)			:: V
+    type (cvector_mg), intent(in)			:: V
     complex(kind=prec)				:: c
     integer					:: i
     integer					:: xi, yi, zi
@@ -567,29 +581,29 @@ Contains
     do i = 1,SV%nCoeff
 
        ! generic test for both edge and face (all the components)
-       if ((SV%i(i).le.V%grid%nx+1).or.(SV%j(i).le.V%grid%ny+1).or.&
-            (SV%k(i).le.V%grid%nz+1)) then
+       if ((SV%i(i).le.V%grid%gridArray(SV%currSG)%nx+1).or.(SV%j(i).le.V%grid%gridArray(SV%currSG)%ny+1).or.&
+            (SV%k(i).le.V%grid%gridArray(SV%currSG)%nz+1)) then
 
           ! dealing with x-components
           if (SV%xyz(i) == 1) then
              xi = SV%i(i)
              yi = SV%j(i)
              zi = SV%k(i)
-             c = c + SV%c(i) * V%x(xi, yi, zi)
+             c = c + SV%c(i) * V%cvArray(SV%currSG)%x(xi, yi, zi)
 
              ! dealing with y-component
           else if (SV%xyz(i) == 2) then
              xi = SV%i(i)
              yi = SV%j(i)
              zi = SV%k(i)
-             c = c + SV%c(i) * V%y(xi, yi, zi)
+             c = c + SV%c(i) * V%cvArray(SV%currSG)%y(xi, yi, zi)
 
              ! dealing with z-component
           else if (SV%xyz(i) == 3) then
              xi = SV%i(i)
              yi = SV%j(i)
              zi = SV%k(i)
-             c = c + SV%c(i) * V%z(xi, yi, zi)
+             c = c + SV%c(i) * V%cvArray(SV%currSG)%z(xi, yi, zi)
           end if
 
        else

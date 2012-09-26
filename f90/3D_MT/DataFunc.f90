@@ -72,15 +72,13 @@ Contains
   complex(kind=prec), intent(out), optional	:: Binv(2,2)
 
   !  local variables
-  type(grid_t)  :: SurfaceGrid                     !temporal
-  type(cvector), pointer :: SurfaceEPol(:)    !temporal
   integer			:: iMode, i,j,xyz,ij, iComp,ncomp,iFunc,nFunc
-  integer  :: status,imgrid
+  integer           :: status
   real(kind=prec)	:: omega,x(3),x_ref(3),detX
   complex(kind=prec)    :: tempZ(4)
   complex(kind=prec)	:: BB(3,2),EE(2,2),RR(2,2)
   complex(kind=prec)	:: det,i_omega,ctemp
-  type(sparsevecC)		:: Lex,Ley,Lbx,Lby,Lbz,Lrx,Lry
+  type(sparsevecc)		:: Lex,Ley,Lbx,Lby,Lbz,Lrx,Lry
   logical			:: ComputeHz,ComputeE
 
 
@@ -101,39 +99,27 @@ Contains
   endif
   !allocate(Z(nFunc))
 
-  ! FIND Surface subgrid !!!!
-  allocate(SurfaceEPol(2), STAT=status)
-  do imgrid = 1, ef%grid%mgridSize
-    if (ef%grid%gridArray(imgrid)%flag == 0) then
-      call copy_grid(SurfaceGrid,ef%grid%gridArray(imgrid))
-      do iMode = 1,2
-        call create_cvector(ef%grid, SurfaceEPol(iMode), ef%pol(iMode)%gridType)
-        SurfaceEPol(iMode) = ef%pol(iMode)%cvArray(imgrid)
-      enddo
-    endif
-  enddo
-
  selectcase (iDT)
      case(Full_Impedance)
                x     = rxDict(iRX)%x         !Local site position (x,y,z)
 		     ! First set up interpolation functionals for Ex, Ey
 			  xyz = 1
-			  call EinterpSetUp(SurfaceGrid,x,xyz,Lex)
+			  call EinterpSetUp(ef%grid,x,xyz,Lex)
 			  xyz = 2
-			  call EinterpSetUp(SurfaceGrid,x,xyz,Ley)
+			  call EinterpSetUp(ef%grid,x,xyz,Ley)
 			 ! Then set up interpolation functionals for Bx, By
 			  xyz = 1
-			  call BfromESetUp(SurfaceGrid,omega,x,xyz,Lbx)
+			  call BfromESetUp(ef%grid,omega,x,xyz,Lbx)
 			  xyz = 2
-			  call BfromESetUp(SurfaceGrid,omega,x,xyz,Lby)
+			  call BfromESetUp(ef%grid,omega,x,xyz,Lby)
 			  ! loop over modes
 			  do iMode = 1,2
 			      ! electric fields
-			      EE(1,iMode) =  dotProd_noConj_scvector_f(Lex,SurfaceEPol(iMode))
-			      EE(2,iMode) =  dotProd_noConj_scvector_f(Ley,SurfaceEPol(iMode))
+			      EE(1,iMode) =  dotProd_noConj_scvector_f(Lex,ef%pol(iMode))
+			      EE(2,iMode) =  dotProd_noConj_scvector_f(Ley,ef%pol(iMode))
 			      ! magnetic fields
-			      BB(1,iMode) = dotProd_noConj_scvector_f(Lbx,SurfaceEPol(iMode))
-			      BB(2,iMode) = dotProd_noConj_scvector_f(Lby,SurfaceEPol(iMode))
+			      BB(1,iMode) = dotProd_noConj_scvector_f(Lbx,ef%pol(iMode))
+			      BB(2,iMode) = dotProd_noConj_scvector_f(Lby,ef%pol(iMode))
 			 end do
 			 !invert horizontal B matrix using Kramer's rule.
 			  det = BB(1,1)*BB(2,2)-BB(1,2)*BB(2,1)
@@ -165,11 +151,11 @@ Contains
 			  ! loop over modes
 			  do iMode = 1,2
 			      ! electric fields
-			      EE(1,iMode) =  dotProd_noConj_scvector_f(Lex,SurfaceEPol(iMode))
-			      EE(2,iMode) =  dotProd_noConj_scvector_f(Ley,SurfaceEPol(iMode))
+			      EE(1,iMode) =  dotProd_noConj_scvector_f(Lex,ef%pol(iMode))
+			      EE(2,iMode) =  dotProd_noConj_scvector_f(Ley,ef%pol(iMode))
 			      ! magnetic fields
-			      BB(1,iMode) = dotProd_noConj_scvector_f(Lbx,SurfaceEPol(iMode))
-			      BB(2,iMode) = dotProd_noConj_scvector_f(Lby,SurfaceEPol(iMode))
+			      BB(1,iMode) = dotProd_noConj_scvector_f(Lbx,ef%pol(iMode))
+			      BB(2,iMode) = dotProd_noConj_scvector_f(Lby,ef%pol(iMode))
 			 end do
 			 !invert horizontal B matrix using Kramer's rule.
 			  det = BB(1,1)*BB(2,2)-BB(1,2)*BB(2,1)
@@ -195,9 +181,9 @@ Contains
 			  ! loop over modes
 			  do iMode = 1,2
 			      ! magnetic fields
-			      BB(1,iMode) = dotProd_noConj_scvector_f(Lbx,SurfaceEPol(iMode))
-			      BB(2,iMode) = dotProd_noConj_scvector_f(Lby,SurfaceEPol(iMode))
-			      BB(3,iMode) = dotProd_noConj_scvector_f(Lbz,SurfaceEPol(iMode))
+			      BB(1,iMode) = dotProd_noConj_scvector_f(Lbx,ef%pol(iMode))
+			      BB(2,iMode) = dotProd_noConj_scvector_f(Lby,ef%pol(iMode))
+			      BB(3,iMode) = dotProd_noConj_scvector_f(Lbz,ef%pol(iMode))
 			 end do
 			 !invert horizontal B matrix using Kramer's rule.
 			  det = BB(1,1)*BB(2,2)-BB(1,2)*BB(2,1)
@@ -226,11 +212,11 @@ Contains
 			  call BfromESetUp(ef%grid,omega,x_ref,xyz,Lry)
 			    do iMode = 1,2
 			      ! magnetic fields at local station
-			      BB(1,iMode) = dotProd_noConj_scvector_f(Lbx,SurfaceEPol(iMode))
-			      BB(2,iMode) = dotProd_noConj_scvector_f(Lby,SurfaceEPol(iMode))
+			      BB(1,iMode) = dotProd_noConj_scvector_f(Lbx,ef%pol(iMode))
+			      BB(2,iMode) = dotProd_noConj_scvector_f(Lby,ef%pol(iMode))
 			      ! magnetic fields, at the REFERANCE station
-			      RR(1,iMode) = dotProd_noConj_scvector_f(Lrx,SurfaceEPol(iMode))
-			      RR(2,iMode) = dotProd_noConj_scvector_f(Lry,SurfaceEPol(iMode))
+			      RR(1,iMode) = dotProd_noConj_scvector_f(Lrx,ef%pol(iMode))
+			      RR(2,iMode) = dotProd_noConj_scvector_f(Lry,ef%pol(iMode))
 			    end do
 			  ! Compute the inverse of RR using Kramer's rule
 			  det = RR(1,1)*RR(2,2)-RR(1,2)*RR(2,1)
@@ -262,11 +248,11 @@ Contains
 			  ! loop over modes
 			  do iMode = 1,2
 			      ! electric fields
-			      EE(1,iMode) =  dotProd_noConj_scvector_f(Lex,SurfaceEPol(iMode))
-			      EE(2,iMode) =  dotProd_noConj_scvector_f(Ley,SurfaceEPol(iMode))
+			      EE(1,iMode) =  dotProd_noConj_scvector_f(Lex,ef%pol(iMode))
+			      EE(2,iMode) =  dotProd_noConj_scvector_f(Ley,ef%pol(iMode))
 			      ! magnetic fields
-			      BB(1,iMode) = dotProd_noConj_scvector_f(Lbx,SurfaceEPol(iMode))
-			      BB(2,iMode) = dotProd_noConj_scvector_f(Lby,SurfaceEPol(iMode))
+			      BB(1,iMode) = dotProd_noConj_scvector_f(Lbx,ef%pol(iMode))
+			      BB(2,iMode) = dotProd_noConj_scvector_f(Lby,ef%pol(iMode))
 			 end do
 			 !invert horizontal B matrix using Kramer's rule.
 			  det = BB(1,1)*BB(2,2)-BB(1,2)*BB(2,1)
@@ -300,11 +286,11 @@ Contains
 			  ! loop over modes
 			  do iMode = 1,2
 			      ! electric fields
-			      EE(1,iMode) =  dotProd_noConj_scvector_f(Lex,SurfaceEPol(iMode))
-			      EE(2,iMode) =  dotProd_noConj_scvector_f(Ley,SurfaceEPol(iMode))
+			      EE(1,iMode) =  dotProd_noConj_scvector_f(Lex,ef%pol(iMode))
+			      EE(2,iMode) =  dotProd_noConj_scvector_f(Ley,ef%pol(iMode))
 			      ! magnetic fields
-			      BB(1,iMode) = dotProd_noConj_scvector_f(Lbx,SurfaceEPol(iMode))
-			      BB(2,iMode) = dotProd_noConj_scvector_f(Lby,SurfaceEPol(iMode))
+			      BB(1,iMode) = dotProd_noConj_scvector_f(Lbx,ef%pol(iMode))
+			      BB(2,iMode) = dotProd_noConj_scvector_f(Lby,ef%pol(iMode))
 			 end do
 			 !invert horizontal B matrix using Kramer's rule.
 			  det = BB(1,1)*BB(2,2)-BB(1,2)*BB(2,1)
@@ -360,10 +346,6 @@ Contains
   call deall_sparsevecc(Lbz)
   call deall_sparsevecc(Lrx)
   call deall_sparsevecc(Lry)
-  call deall_grid(SurfaceGrid)
-  call deall_cvector(SurFaceEpol(1))
-  call deall_cvector(SurFaceEpol(2))
-  deallocate(SurFaceEpol, STAT = status)
   !deallocate(Z)
 
   end subroutine dataResp
@@ -503,10 +485,6 @@ Contains
      xyz = 3
      call BfromESetUp(e0%grid,omega,x,xyz,Lbz)
   endif
-
-
-
-
 
   !  compute sparse vector representations of linearized functionals
   do n = 1,nComp

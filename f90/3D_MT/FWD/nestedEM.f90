@@ -61,12 +61,13 @@ type(sparsevecc), pointer, dimension(:)                         ::  e_sparse_vec
   !##########################################################################################################  
 
 
+
+
 Contains
 
-
+#ifdef Nested
 subroutine Interpolate_BC_from_E_soln(eAll_larg,Larg_Grid,grid,BC)
 
-! NOT DEBUGED
 
   implicit none
   
@@ -87,9 +88,6 @@ subroutine Interpolate_BC_from_E_soln(eAll_larg,Larg_Grid,grid,BC)
   integer						            :: xslSites, yslSites
   integer						            :: zslSites
   type (solnVector_t)	                    :: elecSoln
-  type(cvector), allocatable  :: Ctemp(:)
-  type(cvector), allocatable  :: CtempSolns(:)
-
 
      ! we are creating the slices (the outer layers of the mGrid cube) 
      ! Values are extracted at the center of the edge
@@ -132,52 +130,41 @@ subroutine Interpolate_BC_from_E_soln(eAll_larg,Larg_Grid,grid,BC)
     counter=0
     do iTx = 1, eAll_larg%nTx
        do iMode=1,eAll_larg%solns(iTx)%nPol 
-
-          call create(grid, Ctemp(iMode), EDGE)
-          call create(Larg_Grid, CtempSolns(iMode), EDGE)
-          Call mg2c(Ctemp(iMode), elecSoln%pol(iMode))
-          Call mg2c(CtempSolns(iMode), eAll_larg%solns(iTx)%pol(iMode))
-
        counter=counter+1
        
         whichFace = 'zFace'
 	   ! top face
            Call NestingSetUp(Larg_Grid, zslSites, zTslice, whichFace)
-           Call NestedE(CtempSolns(iMode), Ctemp(iMode))
+           Call NestedE(eAll_larg%solns(iTx)%pol(iMode), elecSoln%pol(iMode))
        
 	   ! bottom face
            Call NestingSetUp(Larg_Grid, zslSites, zBslice, whichFace)
-           Call NestedE(CtempSolns(iMode), Ctemp(iMode))
+           Call NestedE(eAll_larg%solns(iTx)%pol(iMode), elecSoln%pol(iMode))
 
            ! the two x-faces
            whichFace = 'xFace'
 	   ! top face
            Call NestingSetUp(Larg_Grid, xslSites, xTslice, whichFace)
-           Call NestedE(CtempSolns(iMode), Ctemp(iMode))
+           Call NestedE(eAll_larg%solns(iTx)%pol(iMode), elecSoln%pol(iMode))
 	   ! bottom face
            Call NestingSetUp(Larg_Grid, xslSites, xBslice, whichFace)
-           Call NestedE(CtempSolns(iMode), Ctemp(iMode))
+           Call NestedE(eAll_larg%solns(iTx)%pol(iMode), elecSoln%pol(iMode))
 
            ! the two y-faces
            whichFace = 'yFace'
 	   ! top face
            Call NestingSetUp(Larg_Grid, yslSites, yTslice, whichFace)
-           Call NestedE(CtempSolns(iMode), Ctemp(iMode))
+           Call NestedE(eAll_larg%solns(iTx)%pol(iMode), elecSoln%pol(iMode))
 	   ! bottom face
            Call NestingSetUp(Larg_Grid, yslSites, yBslice, whichFace)
-           Call NestedE(CtempSolns(iMode), Ctemp(iMode))
+           Call NestedE(eAll_larg%solns(iTx)%pol(iMode), elecSoln%pol(iMode))	
            
-           Call getBC(Ctemp(iMode),  BC_from_file(counter))
+           Call getBC(elecSoln%pol(iMode),  BC_from_file(counter))        
        end do
     end do
-    
 
-    
-    
-    
-    
 end subroutine Interpolate_BC_from_E_soln
-
+#endif
 
   ! ***************************************************************************
   ! * BOP
@@ -500,6 +487,7 @@ end subroutine Interpolate_BC_from_E_soln
   ! and then call NestedE(ef, eOut) for complete intepolation together.
   ! However, the siteLocations(nSites) needs to be calculated before hand.
   ! eOut has to be contained within ef
+#ifdef Nested
   subroutine NestedE(ef, eOut)
 
     implicit none
@@ -555,10 +543,6 @@ end subroutine Interpolate_BC_from_E_soln
      totalSites = 0
      
 end subroutine NestedE
-
-
-
-
-
+#endif
 
 end module nestedEM

@@ -34,7 +34,7 @@ module UserCtrl
     character(80)       :: wFile_MPI
 
 	! Input files
-	character(80)       :: rFile_Grid, rFile_Model, rFile_Data
+	character(80)       :: rFile_Grid, rFile_Model, rFile_mg, rFile_Data
 	character(80)       :: rFile_dModel
   character(80)       :: rFile_EMsoln, rFile_EMrhs, rFile_Prior
 
@@ -88,6 +88,7 @@ Contains
   	ctrl%rFile_Grid = 'n'
   	ctrl%wFile_Grid = 'n'
   	ctrl%rFile_Model = 'n'
+    ctrl%rFile_mg = 'n'
   	ctrl%wFile_Model = 'n'
   	ctrl%rFile_Data = 'n'
   	ctrl%wFile_Data = 'n'
@@ -278,7 +279,7 @@ Contains
 
       case (FORWARD) !F
         if (narg < 3) then
-           write(0,*) 'Usage: -F  rFile_Model rFile_Data wFile_Data [wFile_EMsoln rFile_fwdCtrl]'
+           write(0,*) 'Usage: -F  rFile_Model rFile_Data wFile_Data [wFile_EMsoln rFile_fwdCtrl rFile_mg]'
            write(0,*)
            write(0,*) 'Here, rFile_fwdCtrl is the forward solver control file in the format'
            write(0,*)
@@ -301,6 +302,9 @@ Contains
 	    if (narg > 4) then
 	       ctrl%rFile_fwdCtrl = temp(5)
 	    end if
+        if (narg > 5) then
+           ctrl%rFile_mg = temp(6)
+        end if
 
       case (COMPUTE_J) ! J
         if (narg < 3) then

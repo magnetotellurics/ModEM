@@ -480,22 +480,16 @@ contains
        integer					:: k
 
        !   local variable
-       type(cvector)  :: temp
+       type(cvector_mg)  :: temp
 
 
        c = C_ZERO
        if(conj_case) then
           do k = 1,SV%nPol
-
-              Call mg2c(temp, FV%pol(k))
-
              c = c + dotProd_scvector_f(SV%L(k),temp)
           enddo
        else
           do k = 1,SV%nPol
-
-              Call mg2c (temp, FV%pol(k))
-
              c = c + dotProd_noConj_scvector_f(SV%L(k),temp)
           enddo
        endif
@@ -775,13 +769,17 @@ contains
        ! does not compute anything from the boundary conditions!!!
        ! this might have to be changed.
 
+       ! SHOULD BE CHANGED IF MULTI-GRID SPARSEVECTOR
+       ! NOW COMMENTED
+       ! DO NOT SEE WHERE WE USE IT?!
+
        type (rhsVector_t), intent(in)             :: comb  ! rhs
        type (solnVector_t), intent(in)            :: FV  ! full vector
        logical, intent(in)                     :: conj_Case ! = .true.
        complex(kind=prec)       :: c
 
        !  local variables
-       type(cvector)  :: poltemp
+       type(cvector_mg)  :: poltemp
        complex(kind=prec)   :: temp
        integer              :: k
 
@@ -794,7 +792,6 @@ contains
        c = C_ZERO
 
        do k = 1,comb%nPol
-         call mg2c(poltemp,FV%pol(k))
           if(comb%b(k)%nonzero_source) then
              if(comb%b(k)%sparse_source) then
                 if(Conj_Case) then
@@ -804,9 +801,9 @@ contains
                 endif
              else
                 if(Conj_Case) then
-                temp = dotProd_cvector_f(comb%b(k)%s,poltemp)
+                !temp = dotProd_cvector_mg_f(comb%b(k)%s,poltemp) ! UNCOMMENT AND CHANGE TYPES ?!
                 else
-                temp = dotProd_noConj_cvector_f(comb%b(k)%s,poltemp)
+                !temp = dotProd_noConj_cvector_f(comb%b(k)%s,poltemp)! UNCOMMENT AND CHANGE TYPES ?!
                 endif
              endif
           else

@@ -3,7 +3,9 @@
 ! solver
 
 module EMsolve3D
+#ifdef Nested
   use nestedEM
+#endif
   use sg_boundary			! work between different data types
   					! (between boundary conditions and
 					! complex vectors)
@@ -156,12 +158,10 @@ Contains
        !    boundary is determined after solving for interior nodes
        if(bRHS%nonZero_Source) then
          if(bRHS%sparse_Source) then
+#ifdef SparseSource
            ! Note: C_ONE = (1,0) (double complex)
-	       ! sparse vector is defined on the finest grid
-	       ! make computations on the finest grid
 	       call add_scvector(C_ONE,bRHS%sSparse,b)
-	       ! then  convert cvector (b) to cvector_mg (bMG)
-	       call c2mg(bMG,b)
+#endif
          else
            b = bRHS%s
            call c2mg(bMG,b)
@@ -204,13 +204,14 @@ Contains
       !  explictly by volume weights
       if (bRHS%nonzero_Source) then
         if (bRHS%sparse_Source) then
-          ! temp  = bRHS%sSparse
-          call zero(temp)
-          call add_scvector(C_ONE,bRHS%sSparse,temp)
-          call c2mg(tempMG,temp)
-          call Div(tempMG,phi0)
-          ! tempMG = volEMG*tempMG
-          call diagMult_mg(volE,tempMG,tempMG)
+#ifdef SparseSource
+            ! temp  = bRHS%sSparse
+             call zero(temp)
+             call add_scvector(C_ONE,bRHS%sSparse,temp)
+             call Div(temp,phi0)
+             ! temp = volE*temp
+             call diagMult(volE,temp,temp)
+#endif
         else
           ! temp = volE*rhs%s
           call c2mg(sMG,bRHS%s)

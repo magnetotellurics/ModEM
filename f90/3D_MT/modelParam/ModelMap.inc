@@ -831,3 +831,96 @@ real(kind=prec),pointer,dimension(:,:,:)  :: temp
     endselect
   end function ModelParamToOneEdge
 
+    !**********************************************************************
+  function ModelParamToOneEdgeMG(m,xyz,is,ix,iy,iz) result(r)
+
+  ! This function is needed for the interpolation in Multigrid case
+  !______________________________________________________________________
+  !   computes conductivity for edge xyz/i,j,k using input modelParam
+  !    structure m.  This function defines how the abstract
+  !     conductivity parameter is mapped to edge conductivities needed
+  !     for more accurate electric field interpolation.  The derivative
+  !     of this function is required for evaluation of linearized
+  !     data functionals, and for construction of the direct
+  !     parameter space part of the comb
+  !______________________________________________________________________
+
+    type (modelParam_t), intent(in)     :: m
+    integer, intent(in)                 :: xyz,ix,iy,iz,is
+    real(kind=prec)                     :: r
+
+    ! local variables
+    integer                             :: izE,nx,ny,nz,nZE,nZa
+    real(kind=prec)                     :: w11,w21,w12,w22,S,temp(2,2)
+
+    !local
+    integer :: ccoeff_current
+
+    nx = m%grid%gridArray(is)%Nx
+    ny = m%grid%gridArray(is)%Ny
+    nz = m%grid%gridArray(is)%nZ
+    nZE = m%grid%gridArray(is)%nZEarth
+    nZa = Nz-nZE
+
+    izE = iz-Nza
+    ccoeff_current = 2**m%grid%coarseness(is)
+    selectcase(xyz)
+    case(1)      ! Ex edge
+       w11 = m%grid%dy(iy)*m%grid%dz(iz)
+       temp(1,1) = m%cellCond%v(ccoeff_current*(ix-1)+1, ccoeff_current*(iy-1)+1,izE)
+       w21 = m%grid%dy(iy-1)*m%grid%dz(iz)
+       temp(2,1) = m%cellCond%v(ccoeff_current*(ix-1)+1, ccoeff_current*(iy-2)+1,izE)
+       w12 = m%grid%dy(iy)*m%grid%dz(iz-1)
+       temp(1,2) = m%cellCond%v(ccoeff_current*(ix-1)+1, ccoeff_current*(iy-1)+1,izE-1)
+       w22 = m%grid%dy(iy-1)*m%grid%dz(iz-1)
+       temp(2,2) = m%cellCond%v(ccoeff_current*(ix-1)+1, ccoeff_current*(iy-2)+1,izE-1)
+       S = w11+w21+w12+w22
+       if(m%paramtype .eq. LOGE) then
+          temp = exp(temp)
+       endif
+       if(izE.eq.1) then
+          r = (temp(1,1)*w11+temp(1,2)*w21)/S
+       else
+          r = (temp(1,1)*w11 + temp(2,1)*w21+    &
+               temp(1,2)*w12 + temp(2,2)*w22)/S
+       endif
+
+    case(2)      ! Ey edge
+       w11 = m%grid%dx(ix)*m%grid%dz(iz)
+       temp(1,1) = m%cellCond%v(ccoeff_current*(ix-1)+1, ccoeff_current*(iy-1)+1,izE)
+       w21 = m%grid%dx(ix-1)*m%grid%dz(iz)
+       temp(2,1) = m%cellCond%v(ccoeff_current*(ix-2)+1, ccoeff_current*(iy-1)+1,izE)
+       w12 = m%grid%dx(ix)*m%grid%dz(iz-1)
+       temp(1,2) = m%cellCond%v(ccoeff_current*(ix-1)+1, ccoeff_current*(iy-1)+1,izE-1)
+       w22 = m%grid%dx(ix-1)*m%grid%dz(iz-1)
+       temp(2,2) = m%cellCond%v(ccoeff_current*(ix-2)+1, ccoeff_current*(iy-1)+1,izE-1)
+       S = w11+w21+w12+w22
+       if(m%paramtype .eq. LOGE) then
+          temp = exp(temp)
+       endif
+       if(izE.eq.1) then
+          r = (temp(1,1)*w11+temp(1,2)*w21)/S
+       else
+          r = (temp(1,1)*w11 + temp(2,1)*w21+ &
+               temp(1,2)*w12 + temp(2,2)*w22)/S
+       endif
+
+    case(3)      ! Ez edge
+       w11 = m%grid%dx(ix)*m%grid%dy(iy)
+       temp(1,1) = m%cellCond%v(ccoeff_current*(ix-1)+1, ccoeff_current*(iy-1)+1,izE)
+       w21 = m%grid%dx(ix)*m%grid%dy(iy-1)
+       temp(2,1) = m%cellCond%v(ccoeff_current*(ix-1)+1, ccoeff_current*(iy-2)+1,izE)
+       w12 = m%grid%dx(ix-1)*m%grid%dy(iy)
+       temp(1,2) = m%cellCond%v(ccoeff_current*(ix-2)+1, ccoeff_current*(iy-1)+1,izE)
+       w22 = m%grid%dx(ix-1)*m%grid%dy(iy-1)
+       temp(2,2) = m%cellCond%v(ccoeff_current*(ix-2)+1, ccoeff_current*(iy-2)+1,izE)
+       S = w11+w21+w12+w22
+       if(m%paramtype .eq. LOGE) then
+          temp = exp(temp)
+       endif
+       r = (temp(1,1)*w11 + temp(2,1)*w21+  &
+            temp(1,2)*w12 + temp(2,2)*w22)/S
+
+    endselect
+  end function ModelParamToOneEdgeMG
+

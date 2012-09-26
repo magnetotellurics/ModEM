@@ -25,7 +25,9 @@
  OBJDIR = ./objs/3D_MT/IFortDebug
  F90 = ifort
 # FFLAGS = -O3 -parallel -openmp #-heap-arrays
- FFLAGS = -debug all -debug extended -traceback -heap-arrays
+ FFLAGS = -debug all -debug extended -traceback -check bounds -heap-arrays 
+ #-DNested
+ #-DSparseSource
  MPIFLAGS = -cpp   # for serial code
  MODULE = -module $(OBJDIR)
 # LIBS = -lblas -llapack

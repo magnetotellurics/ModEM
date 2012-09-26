@@ -95,7 +95,9 @@ Contains
    !In case of interpolating the BC from eAll_larg   
    ! If eAll_ larg solution is already allocated, then use that to interpolate the BC from it
    if (eAll_larg%allocated) then
+#ifdef Nested
      call Interpolate_BC_from_E_soln (eAll_larg,Larg_Grid,grid,b0%bc)
+#endif
      !Once we are ready from eAll_larg, deallocate it, and keep track, that BC_from_file are already Initialized.
      call deall(eAll_larg)
      call deall_grid(Larg_Grid)
