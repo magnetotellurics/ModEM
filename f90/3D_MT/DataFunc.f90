@@ -352,6 +352,9 @@ Contains
 !
 !****************************************************************************
   subroutine Lrows(e0,Sigma0,iDT,iRX,L)
+
+  ! 28.09.2012 Maria: modified for multi-grid sparse-vector
+
   !  given input background electric field solution (both modes; e0),
   !  indices into data type/receiver dictionaries
   !  compute array of sparse complex vectors giving coefficients
@@ -495,9 +498,9 @@ Contains
      c1 = Z(2*(i-1)+1)
      c2 = Z(2*(i-1)+2)
     if(typeDict(iDT)%tfType .eq. Full_Interstation_TF) then
-      Call linComb_sparsevecc(Lrx,c1,Lry,c2,L1)
+      Call linComb(Lrx,c1,Lry,c2,L1) !linComb_sparsevecc
     else
-      Call linComb_sparsevecc(Lbx,c1,Lby,c2,L1)
+      Call linComb(Lbx,c1,Lby,c2,L1)
     end if
      do k = 1,2
         !  k defines which mode the linearized functional is
@@ -506,19 +509,19 @@ Contains
         c2 = -c1
         if(predictedComp.eq.1) then
            !  component in x row of impedance tensor
-           Call linComb_sparsevecc(Lex,c1,L1,c2,L(n)%L(k))
+           Call linComb(Lex,c1,L1,c2,L(n)%L(k)) !linComb_sparsevecc
         elseif(predictedComp.eq.2) then
            !  component in y row of impedance tensor
-           Call linComb_sparsevecc(Ley,c1,L1,c2,L(n)%L(k))
+           Call linComb(Ley,c1,L1,c2,L(n)%L(k))
         elseif(predictedComp.eq.3) then
            !  component in Bz row (vertical field TF)
-           Call linComb_sparsevecc(Lbz,c1,L1,c2,L(n)%L(k))
+           Call linComb(Lbz,c1,L1,c2,L(n)%L(k))
         elseif(predictedComp.eq.4) then
            !  component in x row (interstation TF)
-           Call linComb_sparsevecc(Lrx,c1,L1,c2,L(n)%L(k))
+           Call linComb(Lrx,c1,L1,c2,L(n)%L(k))
         elseif(predictedComp.eq.5) then
            !  component in y row (interstation TF)
-           Call linComb_sparsevecc(Lry,c1,L1,c2,L(n)%L(k))
+           Call linComb(Lry,c1,L1,c2,L(n)%L(k))
         endif
      enddo
   enddo
@@ -526,19 +529,19 @@ if (typeDict(iDT)%tfType .eq. Off_Diagonal_Rho_Phase) then
        do k=1,2 ! 2 modes
         ! PHSYX
         c1 =dcmplx(0.0d0,1.0d0)*conjg(Z(3)) / (abs(Z(3))**TWO) *R2D
-	     Call linComb_sparsevecc(L(2)%L(k),c1,L(2)%L(k),C_ZERO,L(4)%L(k))
+	     Call linComb(L(2)%L(k),c1,L(2)%L(k),C_ZERO,L(4)%L(k)) !linComb_sparsevecc
 
 		 !log RHOYX
 	     c1 =  TWO*conjg(Z(3))/(abs(Z(3))**TWO)
-        Call linComb_sparsevecc(L(2)%L(k),c1,L(2)%L(k),C_ZERO,L(3)%L(k))
+        Call linComb(L(2)%L(k),c1,L(2)%L(k),C_ZERO,L(3)%L(k))
 
         ! PHSXY
         c1 =dcmplx(0.0d0,1.0d0)*conjg(Z(2))/(abs(Z(2))**TWO)*R2D
-		Call linComb_sparsevecc(L(1)%L(k),c1,L(1)%L(k),C_ZERO,L(2)%L(k))
+		Call linComb(L(1)%L(k),c1,L(1)%L(k),C_ZERO,L(2)%L(k))
 
           !log(RHOXY)
          c1 =  TWO*conjg(Z(2))  /(abs(Z(2))**TWO)
-	     Call linComb_sparsevecc(L(1)%L(k),c1,L(1)%L(k),C_ZERO,L1)
+	     Call linComb(L(1)%L(k),c1,L(1)%L(k),C_ZERO,L1)
         L(1)%L(k) = L1
 
      enddo
@@ -557,60 +560,60 @@ if (typeDict(iDT)%tfType .eq. Off_Diagonal_Rho_Phase) then
 	     c1 =  dcmplx(PT(1,1) * dreal(Z(4)) / detX, R_ZERO)
 		 !dx12
 		  c2 =  dcmplx((MinusONE*PT(1,1) * dreal(Z(3)) + dimag(Z(3))) / detX ,R_ZERO)
-         Call linComb_sparsevecc(L(1)%L(k),c1,L(2)%L(k),c2,L1)
+         Call linComb(L(1)%L(k),c1,L(2)%L(k),c2,L1) !linComb_sparsevecc
 		 !dx21
 	     c1 =  dcmplx(MinusONE*PT(1,1) * dreal(Z(2)) / detX , R_ZERO)
 		 !dx22
 		  c2 =  dcmplx((PT(1,1) * dreal(Z(1)) - dimag(Z(1)))/ detX,R_ZERO)
-         Call linComb_sparsevecc(L(3)%L(k),c1,L(4)%L(k),c2,L2)
-         Call linComb_sparsevecc(L1,C_ONE,L2,C_ONE,L3)
+         Call linComb(L(3)%L(k),c1,L(4)%L(k),c2,L2)
+         Call linComb(L1,C_ONE,L2,C_ONE,L3)
 		 ! Extra MinusONE to account for sign change due to i*i = -1
 		 !dy11
 	     c1 =  dcmplx(R_ZERO,MinusONE* dreal(Z(4)) / detX)
 		 !dy21
 		 c2 = dcmplx(R_ZERO,MinusONE* MinusONE* dreal(Z(2)) / detX)
-		 Call linComb_sparsevecc(L(1)%L(k),c1,L(3)%L(k),c2,L1)
-		 Call linComb_sparsevecc(L3,C_ONE,L1,C_ONE,Lp11)
+		 Call linComb(L(1)%L(k),c1,L(3)%L(k),c2,L1)
+		 Call linComb(L3,C_ONE,L1,C_ONE,Lp11)
 
 		 !PTXY
 		 !dx11
 	     c1 =  dcmplx(PT(1,2) * dreal(Z(4)) / detX, R_ZERO)
 		 !dx12
 		  c2 =  dcmplx((MinusONE*PT(1,2) * dreal(Z(3)) + dimag(Z(4))) / detX, R_ZERO)
-         Call linComb_sparsevecc(L(1)%L(k),c1,L(2)%L(k),c2,L1)
+         Call linComb(L(1)%L(k),c1,L(2)%L(k),c2,L1)
 		 !dx21
 	     c1 =  dcmplx(MinusONE*PT(1,2) * dreal(Z(2)) / detX, R_ZERO)
 		 !dx22
 		  c2 =  dcmplx((PT(1,2) * dreal(Z(1)) + dimag(Z(2)))/ detX, R_ZERO)
-         Call linComb_sparsevecc(L(3)%L(k),c1,L(4)%L(k),c2,L2)
-         Call linComb_sparsevecc(L1,C_ONE,L2,C_ONE,L3)
+         Call linComb(L(3)%L(k),c1,L(4)%L(k),c2,L2)
+         Call linComb(L1,C_ONE,L2,C_ONE,L3)
 		 ! Extra MinusONE to account for sign change due to i*i = -1
 		 !dy12
 	     c1 =  dcmplx(R_ZERO,MinusONE* dreal(Z(4)) / detX)
 		 !dy22
 		 c2 = dcmplx(R_ZERO,MinusONE* MinusONE* dreal(Z(2))/ detX)
-         Call linComb_sparsevecc(L(2)%L(k),c1,L(4)%L(k),c2,L1)
-		 Call linComb_sparsevecc(L3,C_ONE,L1,C_ONE,Lp12)
+         Call linComb(L(2)%L(k),c1,L(4)%L(k),c2,L1)
+		 Call linComb(L3,C_ONE,L1,C_ONE,Lp12)
 
 		 !PTYX
 		 !dx11
 	     c1 =  dcmplx((PT(2,1) * dreal(Z(4)) - dimag(Z(3)))/ detX, R_ZERO)
 		 !dx12
 		  c2 =  dcmplx(MinusONE*PT(2,1) * dreal(Z(3)) / detX, R_ZERO)
-         Call linComb_sparsevecc(L(1)%L(k),c1,L(2)%L(k),c2,L1)
+         Call linComb(L(1)%L(k),c1,L(2)%L(k),c2,L1)
 		 !dx21
 	     c1 = dcmplx(( MinusONE*PT(2,1) * dreal(Z(2)) + dimag(Z(1)))/ detX, R_ZERO)
 		 !dx22
 		  c2 =  dcmplx(PT(2,1) * dreal(Z(1)) / detX, R_ZERO)
-         Call linComb_sparsevecc(L(3)%L(k),c1,L(4)%L(k),c2,L2)
-         Call linComb_sparsevecc(L1,C_ONE,L2,C_ONE,L3)
+         Call linComb(L(3)%L(k),c1,L(4)%L(k),c2,L2)
+         Call linComb(L1,C_ONE,L2,C_ONE,L3)
 		 ! Extra MinusONE to account for sign change due to i*i = -1
 		 !dy11
 	     c1 =  dcmplx(R_ZERO,MinusONE* MinusONE*dreal(Z(3)) / detX)
 		 !dy21
 		 c2 = dcmplx(R_ZERO, MinusONE* dreal(Z(1)) / detX)
-         Call linComb_sparsevecc(L(1)%L(k),c1,L(3)%L(k),c2,L1)
-		 Call linComb_sparsevecc(L3,C_ONE,L1,C_ONE,Lp21)
+         Call linComb(L(1)%L(k),c1,L(3)%L(k),c2,L1)
+		 Call linComb(L3,C_ONE,L1,C_ONE,Lp21)
 
 
 		 !PTYY
@@ -618,48 +621,48 @@ if (typeDict(iDT)%tfType .eq. Off_Diagonal_Rho_Phase) then
 	     c1 =  dcmplx((PT(2,2) * dreal(Z(4)) - dimag(Z(4)))/ detX, R_ZERO)
 		 !dx12
 		  c2 =  dcmplx(MinusONE*PT(2,2) * dreal(Z(3)) / detX, R_ZERO)
-         Call linComb_sparsevecc(L(1)%L(k),c1,L(2)%L(k),c2,L1)
+         Call linComb(L(1)%L(k),c1,L(2)%L(k),c2,L1)
 		 !dx21
 	     c1 = dcmplx(( MinusONE*PT(2,2) * dreal(Z(2)) +dimag(Z(2)))/ detX, R_ZERO)
 		 !dx22
 		  c2 =  dcmplx(PT(2,2) * dreal(Z(1)) / detX, R_ZERO)
-         Call linComb_sparsevecc(L(3)%L(k),c1,L(4)%L(k),c2,L2)
-         Call linComb_sparsevecc(L1,C_ONE,L2,C_ONE,L3)
+         Call linComb(L(3)%L(k),c1,L(4)%L(k),c2,L2)
+         Call linComb(L1,C_ONE,L2,C_ONE,L3)
 		 ! Extra MinusONE to account for sign change due to i*i = -1
 		 !dy12
 	     c1 =  dcmplx(R_ZERO,MinusONE* MinusONE*dreal(Z(3)) / detX)
 		 !dy22
 		 c2 = dcmplx(R_ZERO, MinusONE* dreal(Z(1)) / detX)
-         Call linComb_sparsevecc(L(2)%L(k),c1,L(4)%L(k),c2,L1)
-		 Call linComb_sparsevecc(L3,C_ONE,L1,C_ONE,Lp22)
+         Call linComb(L(2)%L(k),c1,L(4)%L(k),c2,L1)
+		 Call linComb(L3,C_ONE,L1,C_ONE,Lp22)
 
 
     	 !Finally overwrite Impedance Ls of this mode with Phase Tensor Ls
-		 Call linComb_sparsevecc(Lp11,C_MinusOne,Lp11,C_ZERO,L(1)%L(k))
- 		 Call linComb_sparsevecc(Lp12,C_MinusOne,Lp12,C_ZERO,L(2)%L(k))
- 		 Call linComb_sparsevecc(Lp21,C_MinusOne,Lp21,C_ZERO,L(3)%L(k))
- 		 Call linComb_sparsevecc(Lp22,C_MinusOne,Lp22,C_ZERO,L(4)%L(k))
+		 Call linComb(Lp11,C_MinusOne,Lp11,C_ZERO,L(1)%L(k))
+ 		 Call linComb(Lp12,C_MinusOne,Lp12,C_ZERO,L(2)%L(k))
+ 		 Call linComb(Lp21,C_MinusOne,Lp21,C_ZERO,L(3)%L(k))
+ 		 Call linComb(Lp22,C_MinusOne,Lp22,C_ZERO,L(4)%L(k))
     enddo
   end if
 
  ! clean up
  if (typeDict(iDT)%tfType .eq. Phase_Tensor) then
-   call deall_sparsevecc(L2)
-  call deall_sparsevecc(L3)
-  call deall_sparsevecc(Lp11)
-  call deall_sparsevecc(Lp12)
-  call deall_sparsevecc(Lp21)
-  call deall_sparsevecc(Lp22)
+  call deall(L2) !deall_sparsevecc
+  call deall(L3)
+  call deall(Lp11)
+  call deall(Lp12)
+  call deall(Lp21)
+  call deall(Lp22)
   end if
 
-   call deall_sparsevecc(L1)
-  call deall_sparsevecc(Lex)
-  call deall_sparsevecc(Ley)
-  call deall_sparsevecc(Lbx)
-  call deall_sparsevecc(Lby)
-  call deall_sparsevecc(Lbz)
-  call deall_sparsevecc(Lrx)
-  call deall_sparsevecc(Lry)
+  call deall(L1)
+  call deall(Lex)
+  call deall(Ley)
+  call deall(Lbx)
+  call deall(Lby)
+  call deall(Lbz)
+  call deall(Lrx)
+  call deall(Lry)
 
   end subroutine Lrows
 !

@@ -132,6 +132,7 @@
 !   enddo ! global loop on subgrid
 !
 !   end subroutine ModelParamToCellMG
+
   subroutine dModelParamToEdge(m, Econd,m0)
   !  Maps conductivity defined on grid cells (prisms) to edge-nodes ...
   !  Linear interface to ModelParamToEdge which makes the code more readable.
@@ -141,11 +142,11 @@
     type(modelParam_t), intent(in)            :: m
     !  OUTPUTS: conductivities on edge nodes, as needed for FD calc.
     !    stored as rvector; allocate Econd before calling
-    type(rvector), intent(inout)         :: Econd
+    type(rvector_mg), intent(inout)         :: Econd
     !  INPUT: background model parameter for linearization
     type(modelParam_t),  intent(in)	     :: m0
 
-    call ModelParamToEdge(m, Econd,m0)
+    call ModelParamToEdgeMG(m, Econd,m0)
 
   end subroutine dModelParamToEdge
 

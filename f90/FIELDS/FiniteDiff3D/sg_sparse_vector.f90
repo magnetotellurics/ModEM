@@ -44,7 +44,7 @@ module sg_sparse_vector ! MULTI-GRID
   END INTERFACE
 
   INTERFACE add
-     module procedure add_scvector
+     module procedure add_scvector_mg
   END INTERFACE
 
   INTERFACE dotProd
@@ -80,7 +80,7 @@ module sg_sparse_vector ! MULTI-GRID
   public			:: copyValue_csvector, conjg_sparsevecc_f
   public			:: copy_sparsevecc, linComb_sparsevecc
   public			:: dotProd_scvector_f, dotProd_csvector_f
-  public			:: add_scvector
+  public			:: add_scvector_mg
 
 !**************************************************************************
   type :: sparsevecc
@@ -96,7 +96,7 @@ module sg_sparse_vector ! MULTI-GRID
      ! nCoeff is number of non-zero nodes
      integer 						:: nCoeff  = 0
      ! number of the current sub-grid
-     integer                        :: currSG = 0
+     integer                        :: currSG
      ! xyz = 1,2,3 refers to x, y or z components,
      ! i,j,k are arrays of indices that defines grid location
      integer , pointer, dimension(:) 		:: i,j,k,xyz
@@ -175,6 +175,7 @@ Contains
     newLC%allocated = newLC%allocated .and. (status .eq. 0)
 
     newLC%nCoeff = nCoeff
+    newLC%currSG = 0
     newLC%i = 0
     newLC%j = 0
     newLC%k = 0
@@ -331,13 +332,7 @@ Contains
 
     ! it all depends on how many nodes are common
     if(Loc3%allocated) then
-       deallocate(Loc3%i, STAT = status)
-       deallocate(Loc3%j, STAT = status)
-       deallocate(Loc3%k, STAT = status)
-       deallocate(Loc3%xyz, STAT = status)
-       deallocate(Loc3%c, STAT = status)
-       Loc3%gridType = ''
-       Loc3%allocated = .false.
+     call deall(Loc3) ! deall_sparsevecc
     endif
 
     if (Lic1%gridType == Lic2%gridType) then
@@ -362,13 +357,14 @@ Contains
        write (0, *) 'not compatible usage for LinCompSparseVecC'
     end if
 
-    Call create_sparsevecc(nCoeffsum, Loc3, Lic1%gridType)
+    Call create(nCoeffsum, Loc3, Lic1%gridType) ! create_sparsevecc
     nm = Lic1%nCoeff
     Loc3%i(1:nm) = Lic1%i
     Loc3%j(1:nm) = Lic1%j
     Loc3%k(1:nm) = Lic1%k
     Loc3%xyz(1:nm) = Lic1%xyz
     Loc3%c(1:nm) = ic1*Lic1%c
+    Loc3%currSG = Lic1%currSG
 
     do m = 1,Lic2%nCoeff
        ! if none of them are common, just concatenate
@@ -688,11 +684,11 @@ Contains
   ! overwrites V. Can also be used to construct a complex full vector
   ! from a sparse complex vector if cs = (1.0, 0.0) and V = 0 (initially)
   ! or copy from a sparse vector to a full vector
-  subroutine add_scvector(cs,SV,V)
+  subroutine add_scvector_mg(cs,SV,V)
 
     implicit none
     type (sparsevecc), intent(in)	:: SV
-    type (cvector), intent(inout)	:: V
+    type (cvector_mg), intent(inout)	:: V
     complex(kind=prec), intent(in)		:: cs
     integer				:: i
     integer				:: xi, yi, zi
@@ -713,39 +709,35 @@ Contains
     do i = 1,SV%nCoeff
 
        ! generic test for both edge and face (all the components)
-       if ((SV%i(i).le.V%grid%nx+1).or.(SV%j(i).le.V%grid%ny+1).or.&
-            (SV%k(i).le.V%grid%nz+1)) then
+       if ((SV%i(i).le.V%grid%gridArray(SV%currSG)%nx+1).or.(SV%j(i).le.V%grid%gridArray(SV%currSG)%ny+1).or.&
+            (SV%k(i).le.V%grid%gridArray(SV%currSG)%nz+1)) then
 
           ! dealing with x-components
           if (SV%xyz(i) == 1) then
              xi = SV%i(i)
              yi = SV%j(i)
              zi = SV%k(i)
-             V%x(xi, yi, zi) = cs*SV%c(i) + V%x(xi, yi, zi)
-
+             V%cvArray(SV%currSG)%x(xi, yi, zi) = cs*SV%c(i) + V%cvArray(SV%currSG)%x(xi, yi, zi)
              ! dealing with y-component
           else if (SV%xyz(i) == 2) then
              xi = SV%i(i)
              yi = SV%j(i)
              zi = SV%k(i)
-             V%y(xi, yi, zi) = cs*SV%c(i) + V%y(xi, yi, zi)
+             V%cvArray(SV%currSG)%y(xi, yi, zi) = cs*SV%c(i) + V%cvArray(SV%currSG)%y(xi, yi, zi)
 
              ! dealing with z-component
           else if (SV%xyz(i) == 3) then
              xi = SV%i(i)
              yi = SV%j(i)
              zi = SV%k(i)
-             V%z(xi, yi, zi) = cs*SV%c(i) + V%z(xi, yi, zi)
+             V%cvArray(SV%currSG)%z(xi, yi, zi) = cs*SV%c(i) + V%cvArray(SV%currSG)%z(xi, yi, zi)
           end if
-
        else
-          write(0,*) 'IJK out of bounds for add_scvector'
+          write(0,*) 'IJK out of bounds for add_scvector_mg'
           return
        endif
-
     enddo
-
-  end subroutine add_scvector
+  end subroutine add_scvector_mg
 
   ! **********************************************************************
   ! this will conjugate a sparse complex vector SV1 (result SV2)

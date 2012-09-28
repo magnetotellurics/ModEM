@@ -436,7 +436,7 @@ Contains
     i_omega_inv = ISIGN*cmplx(0.0 ,1./omega,kind=prec)
 
     if(LC%allocated) then
-      call deall_sparsevecc(LC)
+      call deall(LC) ! deall_sparsevecc
     endif
 
     ! we work with electrical fields here, therefore gridType = EDGE
@@ -444,8 +444,7 @@ Contains
     ! compute coefficients for bi-linear spline interpolation of
     ! magnetic fields from grid cell faces to location x
     Call BinterpSetUp(inGrid,x,xyz,LCH)
-    Call create_sparsevecc(num,LC,gridType)
-    LC%currSG = LCH%currSG
+    Call create(num,LC,gridType) !create_sparsevecc
 
     !   loop over coefficients for mag field interpolation
     do ii = 1,LCH%nCoeff
@@ -520,8 +519,8 @@ Contains
        if(ii.eq.1) then
           ! initialize LC (coefficients for H measurement functional:
           ! coefficients for first face
-    Call create_sparsevecc(num,LConeH,gridType)
-    Call create_sparsevecc(num,LCtemp,gridType)
+          Call create(num,LConeH,gridType) !create_sparsevecc
+          Call create(num,LCtemp,gridType) !create_sparsevecc
           LC%i = I
           LC%j = J
           LC%k = K
@@ -530,7 +529,7 @@ Contains
        else
           ! add coefficients for next face
           ! first store cumulative sum so far in LCtemp
-	  LCtemp = LC
+	      LCtemp = LC
           LConeH%i = I
           LConeH%j = J
           LConeH%k = K
@@ -539,15 +538,15 @@ Contains
 
           c1 = C_ONE
           c2 = LCH%c(ii)*i_omega_inv
-          Call linComb_sparsevecc(LCtemp,c1,LConeH,c2,LC)
-
+          Call linComb(LCtemp,c1,LConeH,c2,LC) !linComb_sparsevecc
        endif
 
     enddo
+    LC%currSG = LCH%currSG
     ! do all the clean-up while exiting
-    call deall_sparsevecc(LConeH)
-    call deall_sparsevecc(LCH)
-    call deall_sparsevecc(LCtemp)
+    call deall(LConeH) !deall_sparsevecc
+    call deall(LCH)
+    call deall(LCtemp)
 
   end subroutine BfromESetUp
 

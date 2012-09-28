@@ -122,7 +122,7 @@ end interface
      logical                    :: sparse_Source  = .false.
      logical			:: allocated      = .false.
     logical					:: temporary = .false.
-     type (cvector) 		:: s
+     type (cvector_mg) 		:: s
      type (sparsevecc) 		:: sSparse
      type (cboundary) 		:: bc
      type(grid_t), pointer	:: grid
@@ -523,7 +523,7 @@ contains
        if (b%nonzero_BC) then
           ! create boundary condition data structures for each polarization
           !  NOTE: get rid of "used for" in BC type def
-          call create_cboundary(grid,b%bc)
+          call create(grid,b%bc)
           b%allocated = .true.
        endif
 
@@ -534,7 +534,7 @@ contains
             !    actually use (e.g., add another sparse vector)
           else
               ! Initialize full array for storage of source
-              call create_cvector(grid, b%s, EDGE)
+              call create(grid, b%s, EDGE)
               b%allocated = .true.
           endif
        endif
@@ -558,7 +558,7 @@ contains
           if(b%sparse_source) then
              call deall_sparsevecc(b%sSparse)
           else
-             call deall_cvector(b%s)
+             call deall(b%s)
           endif
        endif
 
@@ -582,7 +582,7 @@ contains
              !    deleted ...
              call deall_sparsevecc(b%sSparse)
           else
-             call zero_cvector(b%s)
+             call zero(b%s)
           endif
        else if(b%nonzero_bc .and. b%allocated) then
           call zero_cboundary(b%bc)
@@ -711,7 +711,7 @@ contains
 
        do k = 1,b%nPol
           b%b(k)%nonzero_source = .true.
-          call mg2c(b%b(k)%s,e%pol(k))
+          b%b(k)%s = e%pol(k)
           b%b(k)%sparse_source = .false.
           b%b(k)%nonzero_BC = .false.
           b%b(k)%allocated = .true.
@@ -722,6 +722,9 @@ contains
      !**********************************************************************
 
      subroutine add_sparseVrhsV(cs,SV,comb)
+
+     ! 27.09.2012 Maria
+     ! modified for the case  comb%b%s is cvector_mg type
 
      !   Forms the linear combination cs*SV+comb where:
      !     cs is complex
@@ -745,19 +748,18 @@ contains
              ! use sparse vector storage for output
              if(comb%b(k)%sSparse%allocated) then
                 !  add to contentes of comb sparse vector and cs*SV
-                call linComb_sparsevecc(comb%b(k)%sSparse,C_ONE, &
-			SV%L(k),cs,temp)
+                call linComb(comb%b(k)%sSparse,C_ONE, SV%L(k),cs,temp)
              else
-                call scMult_sparsevecc(cs,SV%L(k),temp)
+                call scMult(cs,SV%L(k),temp)
              endif
-             call copy_sparsevecc(temp,comb%b(k)%sSparse)
+             temp = comb%b(k)%sSparse
           else
              !  might want to check for allocation of comb%b(k)%s first
-             call add_scvector(cs,SV%L(k),comb%b(k)%s)
+             call add(cs,SV%L(k),comb%b(k)%s) ! add_scvector_mg
           endif
        enddo
 
-       call deall_sparsevecc(temp)
+       call deall(temp)
 
      end subroutine add_sparseVrhsV
 

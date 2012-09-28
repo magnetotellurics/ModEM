@@ -40,27 +40,22 @@ module SolverSens
 
    !  local variables
    complex(kind=prec)  :: minus_i_omega_mu
-   type(rvector)  :: tempRV
-   type(cvector)  :: tempCV
+   type(rvector_mg)  :: temp
    integer  :: k
 
    minus_i_omega_mu = cmplx(0.,-ISIGN*MU_0*txDict(e0%tx)%omega,kind=prec)
-   call create_rvector(e0%grid,tempRV,EDGE)
-   call create_cvector(e0%grid,tempCV,EDGE)
+   call create(e0%grid,temp,EDGE)
 
    ! map dsigma to edges, storing in array temp
-   call dModelParamToEdge(dsigma,tempRV,sigma0)
+   call dModelParamToEdge(dsigma,temp,sigma0) !multi-grid
 
    !  multiply temp by i_omeag_mu*e0, put result in e
    do k = 1,e0%nPol
-      Call  mg2c(tempCV,e0%pol(k))
-      call diagMult_crvector(tempCV,tempRV,e%b(k)%s)
-      call scMult_cvector(minus_i_omega_mu,e%b(k)%s,e%b(k)%s)
+      call diagMult(e0%pol(k),temp,e%b(k)%s)
+      call scMult(minus_i_omega_mu,e%b(k)%s,e%b(k)%s)
    enddo
 
-   call deall_rvector(tempRV)
-   call deall_cvector(tempCV)
-
+   call deall(temp)
    end subroutine Pmult
 
    !**********************************************************************

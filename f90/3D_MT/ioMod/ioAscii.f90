@@ -320,15 +320,16 @@ Contains
   ! read electric field solution for one mode, frequency; open unit ioNum first ...
   subroutine EfileRead(ioNum, ifreq, imode, fileOmega, inE)
 
+   ! 26.09.2012 Maria
+   ! modified for multi-grid, but not debugged
+
     implicit none
     integer, intent(in)				:: ioNum,ifreq,imode
     type (cvector_mg), intent(inout)		:: inE
     real (kind=prec), intent(out)	:: fileOmega
 
     !  local variables
-    integer					:: nRecSkip, iskip
-    type (cvector)  :: Etemp
-!    integer					:: iskip
+    integer					:: nRecSkip, iskip, imgrid
 
     !  following could be optional oututs
     integer				:: fileIfreq, fileMode
@@ -337,7 +338,7 @@ Contains
     !  hard code number of modes for now
     integer		:: nMode = 2
 
-    call create_cvector(inE%grid, Etemp, EDGE)
+    call create(inE%grid, inE, EDGE)
     ! calculate number of records before the header for this frequency/mode
     nRecSkip = ((ifreq-1)*nMode+(imode-1))*4+4
 
@@ -351,13 +352,13 @@ Contains
     read(ioNum) fileOmega, fileIfreq, fileMode, ModeName
 
     ! read electrical field data - 3 records
-    read(ioNum) Etemp%x
-    read(ioNum) Etemp%y
-    read(ioNum) Etemp%z
+    do imgrid = 1, inE%mgridSize
+      read(ioNum) inE%cvArray(imgrid)%x
+      read(ioNum) inE%cvArray(imgrid)%y
+      read(ioNum) inE%cvArray(imgrid)%z
+    enddo
 
-    call c2mg(inE,Etemp)
-
-  call deall(Etemp)
+  call deall(inE)
   end subroutine EfileRead
 
   ! ***************************************************************************

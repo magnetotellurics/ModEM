@@ -499,10 +499,11 @@ Contains
     deallocate(zZO, STAT=status)
 
   end subroutine CurlcurleCleanUp
-    ! ***************************************************************************
-  ! * Div computes the divergence for a complex vector
+
+  ! ***************************************************************************
+  ! * Div computes the divergence for a complex vector define on multi-grid
   subroutine Div(inV, outSc)
-  !modified 27/05/2012
+  !modified 27/05/2012 for multi-grid
 
     implicit none
     type (cvector_mg), intent(in)  :: inV
@@ -526,7 +527,7 @@ Contains
       stop
     endif
 
-    do imgrid = 1, inV%mgridSize  ! loop on sub-grids
+    do imgrid = 1, inV%mgridSize  ! Global loop over sub-grids
       ! Check whether all the inputs/ outputs involved
       ! are even of the same size
       if ((inV%cvArray(imgrid)%nx == outSc%csArray(imgrid)%nx).and.&
@@ -534,11 +535,11 @@ Contains
          (inV%cvArray(imgrid)%nz == outSc%csArray(imgrid)%nz)) then
 
        if ((inV%gridType == EDGE).and.(outSc%gridType == CORNER)) then
-
+          call UpdateZ_Div(inV,outSc,imgrid)
           ! computation done only for internal nodes
           do ix = 2, outSc%csArray(imgrid)%nx
              do iy = 2, outSc%csArray(imgrid)%ny
-                do iz = 1, outSc%csArray(imgrid)%nz
+                do iz = 2, outSc%csArray(imgrid)%nz
 
                    outSc%csArray(imgrid)%v(ix, iy, iz) = (inV%cvArray(imgrid)%x(ix, iy, iz) - &
                         inV%cvArray(imgrid)%x(ix - 1, iy, iz))/ mgrid%gridArray(imgrid)%delX(ix) + &
@@ -554,6 +555,8 @@ Contains
        else if ((inV%gridType == FACE).and.(outSc%gridType == CENTER)) then
 
           ! computation done only for internal nodes
+          ! there us no problems with update z in this case,
+          ! because cvector_mg allocated nz+1 in gridType == FACE
           do ix = 1, outSc%csArray(imgrid)%nx
              do iy = 1, outSc%csArray(imgrid)%ny
                 do iz = 1, outSc%csArray(imgrid)%nz
@@ -576,9 +579,72 @@ Contains
      else
        print*, 'Error-all input/ output in Div are not same size'
      endif
-   enddo ! Loop on sub-grids
+   enddo ! Global loop over sub-grids
 
   end subroutine Div  ! Div
+  ! *********************************************************************
+  !Update first layer in Div
+  subroutine UpdateZ_Div(inV,outSc,imgrid)
+
+  ! сcreated 27.07.2012 Maria
+    implicit none
+
+    type (cscalar_mg), intent(inout)   :: outSc
+    type (cvector_mg), intent(in)  :: inV
+    integer, intent(in)  :: imgrid
+    ! local variables
+    integer  :: ix, iy, iz
+
+      ! Since computations are done for the internal nodes
+      ! we do not need to update the first sub-grid
+      if(imgrid == 1) then
+        return
+      endif
+
+      ! the basic strategy is to fill in the interface layer with values from the finer grid!
+      if (mGrid%coarseness(imgrid).gt.mGrid%coarseness(imgrid-1))then
+        ! interface layer: finer to coarser
+        ! current sub-grid is coarser
+        ! take values from nz of the previous sub-grid
+       do iy = 2, mGrid%gridArray(imgrid)%ny
+          do ix = 2, mGrid%gridArray(imgrid)%nx
+            outSc%csArray(imgrid)%v(ix, iy, 1) = (inV%cvArray(imgrid)%x(ix, iy, 1) - &
+                        inV%cvArray(imgrid)%x(ix-1, iy, 1))/ mgrid%gridArray(imgrid)%delX(ix) + &
+                        (inV%cvArray(imgrid)%y(ix, iy, 1) - inV%cvArray(imgrid)%y(ix, iy-1, 1))/&
+                        mgrid%gridArray(imgrid)%delY(iy) + &
+                        (inV%cvArray(imgrid)%z(ix, iy, 1) - inV%cvArray(imgrid-1)%z(2*ix-1, 2*iy-1, mGrid%gridArray(imgrid-1)%nz))/&
+                        mgrid%gridArray(imgrid)%delZ(1)
+           enddo
+       enddo
+      else if (mGrid%coarseness(imgrid).lt.mGrid%coarseness(imgrid-1)) then
+       ! interface : coarser to finer
+       ! current grid is finer
+       ! vice versa
+       do iy = 2, mGrid%gridArray(imgrid-1)%ny
+         do ix = 2, mGrid%gridArray(imgrid-1)%nx
+           outSc%csArray(imgrid)%v(2*ix-1, 2*iy-1, 1) = (inV%cvArray(imgrid)%x(2*ix-1, 2*iy-1, 1) - &
+                        inV%cvArray(imgrid)%x(2*(ix-1), 2*iy-1, 1))/ mgrid%gridArray(imgrid)%delX(2*ix-1) + &
+                        (inV%cvArray(imgrid)%y(2*ix-1, 2*iy-1, 1) - inV%cvArray(imgrid)%y(2*ix-1, 2*(iy-1), 1))/&
+                        mgrid%gridArray(imgrid)%delY(2*iy-1) + &
+                        (inV%cvArray(imgrid)%z(2*ix-1, 2*iy-1, 1) - inV%cvArray(imgrid-1)%z(ix, iy, mGrid%gridArray(imgrid-1)%nz))/&
+                        mgrid%gridArray(imgrid)%delZ(1)
+          enddo
+        enddo
+
+      else if (mGrid%coarseness(imgrid).eq.mGrid%coarseness(imgrid-1)) then
+       do iy = 2, mGrid%gridArray(imgrid)%ny
+         do ix = 2, mGrid%gridArray(imgrid)%nx
+           outSc%csArray(imgrid)%v(ix, iy, 1) = (inV%cvArray(imgrid)%x(ix, iy, 1) - &
+                        inV%cvArray(imgrid)%x(ix - 1, iy, 1))/ mgrid%gridArray(imgrid)%delX(ix) + &
+                        (inV%cvArray(imgrid)%y(ix, iy, 1) - inV%cvArray(imgrid)%y(ix, iy - 1, 1))/&
+                        mgrid%gridArray(imgrid)%delY(iy) + &
+                        (inV%cvArray(imgrid)%z(ix, iy, 1) - inV%cvArray(imgrid-1)%z(ix, iy, mGrid%gridArray(imgrid-1)%nz))/&
+                        mgrid%gridArray(imgrid)%delZ(1)
+         enddo
+       enddo
+     endif
+
+  end subroutine UpdateZ_Div
   ! ***************************************************************************
   ! * Grad computes the gradient for a complex scalar
 
@@ -1133,12 +1199,14 @@ Contains
      Call Maxwell(inE, adjt, outE)
      ! done with preparing del X del X E +/- i*omega*mu*conductivity*E
      ! diagonally multiply the final results with weights (edge volume)
-     Call diagMult_mg(outE, volE, outE)
+     Call diagMult(outE, volE, outE)
 
 
   end subroutine MultA_N
 ! *************************************************************************************
   subroutine AdjtBC(eInmg, BC)
+
+  ! 27.09.2012 multi-grid
   !  subroutine AdjtBC uses (adjoint) interior node solution to compute
   !  boundary node values for adjoint (or transpose) solution
   !   (NOTE: because off-diagonal part of EM operator is real this works
@@ -1161,14 +1229,14 @@ Contains
 
     implicit none
 
-    ! INPUT: electrical fields stored as cvector
+    ! INPUT: electrical fields stored as cvector_mg
     type (cvector_mg), intent(in)             		:: eInmg
     ! OUTPUT: boundary condition structure: should be allocated
     !   and initialized before call to this routine
     type (cboundary),intent(inout)  			:: BC
 
     ! local variables
-    type (cvector)                :: eIn
+    type (cvector)                :: eTemp
     integer                   :: ix,iy,iz,nx,ny,nz
     ! Output coefficients for curlcurlE (del X del X E)
     integer :: status     ! for dynamic memory allocation
@@ -1182,8 +1250,9 @@ Contains
     real (kind=prec), pointer, dimension(:,:)  :: zX, zY
     real (kind=prec), pointer, dimension(:,:)  :: zZO
 
+    call create(mgrid, eTemp, eInmg%gridtype)
     ! convert cvector_mg to cvector
-    call mg2c(eIn, eInmg)
+    eTemp = eInmg
 
     nx = mgrid%nx
     ny = mgrid%ny
@@ -1317,12 +1386,12 @@ Contains
     BC%xyMin(:,nz+1) = C_ZERO
     do ix = 1, nx
        do iz = 2, nz
-          BC%xYmin(ix,iz) = - yX(ix,1)*Ein%y(ix,1,iz)       &
-                            + yX(ix+1,1)*Ein%y(ix+1,1,iz)   &
-                            + xXY(2,1)*Ein%x(ix,2,iz)
-          BC%xYmax(ix,iz) = + yX(ix,ny)*Ein%y(ix,ny,iz)     &
-                            - yX(ix+1,ny)*Ein%y(ix+1,ny,iz) &
-                            + xXY(ny,2)*Ein%x(ix,ny,iz)
+          BC%xYmin(ix,iz) = - yX(ix,1)*eTemp%y(ix,1,iz)       &
+                            + yX(ix+1,1)*eTemp%y(ix+1,1,iz)   &
+                            + xXY(2,1)*eTemp%x(ix,2,iz)
+          BC%xYmax(ix,iz) = + yX(ix,ny)*eTemp%y(ix,ny,iz)     &
+                            - yX(ix+1,ny)*eTemp%y(ix+1,ny,iz) &
+                            + xXY(ny,2)*eTemp%x(ix,ny,iz)
         enddo
      enddo
 
@@ -1333,12 +1402,12 @@ Contains
     BC%zYmax(nx+1,:) = C_ZERO
     do iz = 1, nz
        do ix = 2, nx
-          BC%zYmin(ix,iz) = - yZ(1,iz)*Ein%y(ix,1,iz)        &
-                            + yZ(1,iz+1)*Ein%y(ix,1,iz+1)    &
-                            + zZY(2,1)*Ein%z(ix,2,iz)
-          BC%zYmax(ix,iz) = + yZ(ny,iz)*Ein%y(ix,ny,iz)      &
-                            - yZ(ny,iz+1)*Ein%y(ix,ny,iz+1)  &
-                            + zZY(ny,2)*Ein%z(ix,ny,iz)
+          BC%zYmin(ix,iz) = - yZ(1,iz)*eTemp%y(ix,1,iz)        &
+                            + yZ(1,iz+1)*eTemp%y(ix,1,iz+1)    &
+                            + zZY(2,1)*eTemp%z(ix,2,iz)
+          BC%zYmax(ix,iz) = + yZ(ny,iz)*eTemp%y(ix,ny,iz)      &
+                            - yZ(ny,iz+1)*eTemp%y(ix,ny,iz+1)  &
+                            + zZY(ny,2)*eTemp%z(ix,ny,iz)
         enddo
      enddo
 
@@ -1349,12 +1418,12 @@ Contains
     BC%yXmax(:,nz+1) = C_ZERO
     do iy = 1, ny
        do iz = 2, nz
-          BC%yXmin(iy,iz) = - xY(1,iy)*Ein%x(1,iy,iz)        &
-                            + xY(1,iy+1)*Ein%x(1,iy+1,iz)    &
-                            + yYX(2,1)*Ein%y(2,iy,iz)
-          BC%yXmax(iy,iz) = + xY(nx,iy)*Ein%x(nx,iy,iz)      &
-                            - xY(nx,iy+1)*Ein%x(nx,iy+1,iz)  &
-                            + yYX(nx,2)*Ein%y(nx,iy,iz)
+          BC%yXmin(iy,iz) = - xY(1,iy)*eTemp%x(1,iy,iz)        &
+                            + xY(1,iy+1)*eTemp%x(1,iy+1,iz)    &
+                            + yYX(2,1)*eTemp%y(2,iy,iz)
+          BC%yXmax(iy,iz) = + xY(nx,iy)*eTemp%x(nx,iy,iz)      &
+                            - xY(nx,iy+1)*eTemp%x(nx,iy+1,iz)  &
+                            + yYX(nx,2)*eTemp%y(nx,iy,iz)
         enddo
      enddo
 
@@ -1365,12 +1434,12 @@ Contains
     BC%zXmax(ny+1,:) = C_ZERO
     do iz = 1, nz
        do iy = 2, ny
-          BC%zXmin(iy,iz) = - xZ(1,iz)*Ein%x(1,iy,iz)       &
-                            + xZ(1,iz+1)*Ein%x(1,iy,iz+1)   &
-                            + zZX(2,1)*Ein%z(2,iy,iz)
-          BC%zXmax(iy,iz) = + xZ(nx,iz)*Ein%x(nx,iy,iz)     &
-                            - xZ(nx,iz+1)*Ein%x(nx,iy,iz+1) &
-                            + zZX(nx,2)*Ein%z(nx,iy,iz)
+          BC%zXmin(iy,iz) = - xZ(1,iz)*eTemp%x(1,iy,iz)       &
+                            + xZ(1,iz+1)*eTemp%x(1,iy,iz+1)   &
+                            + zZX(2,1)*eTemp%z(2,iy,iz)
+          BC%zXmax(iy,iz) = + xZ(nx,iz)*eTemp%x(nx,iy,iz)     &
+                            - xZ(nx,iz+1)*eTemp%x(nx,iy,iz+1) &
+                            + zZX(nx,2)*eTemp%z(nx,iy,iz)
         enddo
      enddo
 
@@ -1381,12 +1450,12 @@ Contains
     BC%xZmax(:,ny+1) = C_ZERO
     do ix = 1, nx
        do iy = 2, ny
-          BC%xZmin(ix,iy) = - zX(ix,1)*Ein%z(ix,iy,1)       &
-                            + zX(ix+1,1)*Ein%z(ix+1,iy,1)   &
-                            + xXZ(2,1)*Ein%x(ix,iy,2)
-          BC%xZmax(ix,iy) = + zX(ix,nz)*Ein%z(ix,iy,nz)     &
-                            - zX(ix+1,nz)*Ein%z(ix+1,iy,nz) &
-                            + xXZ(nz,2)*Ein%x(ix,iy,nz)
+          BC%xZmin(ix,iy) = - zX(ix,1)*eTemp%z(ix,iy,1)       &
+                            + zX(ix+1,1)*eTemp%z(ix+1,iy,1)   &
+                            + xXZ(2,1)*eTemp%x(ix,iy,2)
+          BC%xZmax(ix,iy) = + zX(ix,nz)*eTemp%z(ix,iy,nz)     &
+                            - zX(ix+1,nz)*eTemp%z(ix+1,iy,nz) &
+                            + xXZ(nz,2)*eTemp%x(ix,iy,nz)
         enddo
      enddo
 
@@ -1397,12 +1466,12 @@ Contains
     BC%yZmin(nx+1,:) = C_ZERO
     do iy = 1, ny
        do ix = 2, nx
-          BC%yZmin(ix,iy) = - zY(iy,1)*Ein%z(ix,iy,1)        &
-                            + zY(iy+1,1)*Ein%z(ix,iy+1,1)    &
-                            + yYZ(2,1)*Ein%y(ix,iy,2)
-          BC%yZmax(ix,iy) = + zY(iy,nz)*Ein%z(ix,iy,nz)      &
-                            - zY(iy+1,nz)*Ein%z(ix,iy+1,nz)  &
-                            + yYZ(nz,2)*Ein%y(ix,iy,nz)
+          BC%yZmin(ix,iy) = - zY(iy,1)*eTemp%z(ix,iy,1)        &
+                            + zY(iy+1,1)*eTemp%z(ix,iy+1,1)    &
+                            + yYZ(2,1)*eTemp%y(ix,iy,2)
+          BC%yZmax(ix,iy) = + zY(iy,nz)*eTemp%z(ix,iy,nz)      &
+                            - zY(iy+1,nz)*eTemp%z(ix,iy+1,nz)  &
+                            + yYZ(nz,2)*eTemp%y(ix,iy,nz)
         enddo
      enddo
   ! Deallocate memory for del x del operator coefficient arrays

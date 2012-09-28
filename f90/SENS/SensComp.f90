@@ -441,7 +441,6 @@ Contains
 
     ! set up comb using linearized data functionals
     call LmultT(e0,sigma0,d,comb)
-
     ! solve transpose problem with source in comb
     call sensSolve(iTx,TRN,e,comb)
 

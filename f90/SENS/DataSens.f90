@@ -214,7 +214,6 @@ Contains
 	  enddo
 	  deallocate(Lz)
   enddo ! j
-
   end subroutine LmultT
 
 !****************************************************************************

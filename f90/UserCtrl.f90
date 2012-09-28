@@ -278,8 +278,8 @@ Contains
 	    end if
 
       case (FORWARD) !F
-        if (narg < 3) then
-           write(0,*) 'Usage: -F  rFile_Model rFile_Data wFile_Data [wFile_EMsoln rFile_fwdCtrl rFile_mg]'
+        if (narg < 4) then
+           write(0,*) 'Usage: -F  rFile_Model rFile_mg rFile_Data wFile_Data [wFile_EMsoln rFile_fwdCtrl rFile_mg]'
            write(0,*)
            write(0,*) 'Here, rFile_fwdCtrl is the forward solver control file in the format'
            write(0,*)
@@ -293,30 +293,32 @@ Contains
            stop
         else
 	       ctrl%rFile_Model = temp(1)
-	       ctrl%rFile_Data = temp(2)
-	       ctrl%wFile_Data = temp(3)
-	    end if
-	    if (narg > 3) then
-	       ctrl%wFile_EMsoln = temp(4)
+	       ctrl%rFile_mg = temp(2)
+	       ctrl%rFile_Data = temp(3)
+	       ctrl%wFile_Data = temp(4)
 	    end if
 	    if (narg > 4) then
-	       ctrl%rFile_fwdCtrl = temp(5)
+	       ctrl%wFile_EMsoln = temp(5)
 	    end if
-        if (narg > 5) then
-           ctrl%rFile_mg = temp(6)
+	    if (narg > 5) then
+	       ctrl%rFile_fwdCtrl = temp(6)
+	    end if
+        if (narg > 6) then
+           ctrl%rFile_mg = temp(7)
         end if
 
       case (COMPUTE_J) ! J
-        if (narg < 3) then
-           write(0,*) 'Usage: -J  rFile_Model rFile_Data wFile_Sens [rFile_fwdCtrl]'
+        if (narg < 4) then
+           write(0,*) 'Usage: -J  rFile_Model rFile_mg rFile_Data wFile_Sens [rFile_fwdCtrl]'
            stop
         else
 	       ctrl%rFile_Model = temp(1)
-	       ctrl%rFile_Data = temp(2)
-	       ctrl%wFile_Sens = temp(3)
+	       ctrl%rFile_mg = temp(2)
+	       ctrl%rFile_Data = temp(3)
+	       ctrl%wFile_Sens = temp(4)
 	    end if
-	    if (narg > 3) then
-	       ctrl%rFile_fwdCtrl = temp(4)
+	    if (narg > 4) then
+	       ctrl%rFile_fwdCtrl = temp(5)
 	    end if
 
       case (MULT_BY_J) ! M
@@ -391,14 +393,15 @@ Contains
 				stop
            end select
 	       ctrl%rFile_Model = temp(2)
-	       ctrl%rFile_Data = temp(3)
+	       ctrl%rFile_mg = temp(3)
+	       ctrl%rFile_Data = temp(4)
 	    end if
-	    if (narg > 3) then
-          read(temp(4),*,iostat=istat) ctrl%lambda
-          res=is_letter(temp(4))
+	    if (narg > 4) then
+          read(temp(5),*,iostat=istat) ctrl%lambda
+          res=is_letter(temp(5))
           if (res) then
             ! check for the inverse solver configuration file
-            ctrl%rFile_invCtrl = temp(4)
+            ctrl%rFile_invCtrl = temp(5)
             inquire(FILE=ctrl%rFile_invCtrl,EXIST=exists)
             if (.not. exists) then
             	! problem - invalid argument
@@ -407,12 +410,12 @@ Contains
             end if
           end if
         end if
-        if (narg > 4) then
-          read(temp(5),*,iostat=istat) ctrl%eps
-          res=is_letter(temp(5))
+        if (narg > 5) then
+          read(temp(6),*,iostat=istat) ctrl%eps
+          res=is_letter(temp(6))
           if (res) then
             ! check for the forward solver configuration file
-            ctrl%rFile_fwdCtrl = temp(5)
+            ctrl%rFile_fwdCtrl = temp(6)
             inquire(FILE=ctrl%rFile_fwdCtrl,EXIST=exists)
             if (.not. exists) then
             	! problem - invalid argument
@@ -421,12 +424,12 @@ Contains
             end if
           end if
         end if
-	    if (narg > 5) then
-	       ctrl%rFile_Cov = temp(6)
+	    if (narg > 6) then
+	       ctrl%rFile_Cov = temp(7)
 	    end if
-        if (narg > 6) then
+        if (narg > 7) then
             ! check for the optional starting model file
-            ctrl%rFile_dModel = temp(7)
+            ctrl%rFile_dModel = temp(8)
             inquire(FILE=ctrl%rFile_dModel,EXIST=exists)
             if (.not. exists) then
             	! problem - invalid argument

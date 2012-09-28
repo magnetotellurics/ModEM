@@ -10,7 +10,7 @@ module EMsolve3D
   					! (between boundary conditions and
 					! complex vectors)
 
-  use sg_sparse_vector, only: add_scvector
+  use sg_sparse_vector, only: add_scvector_mg
   use modelOperator3d                   ! quasi-static Maxwell operator module
   use solver				! generic solvers
   use solnspace
@@ -92,6 +92,9 @@ Contains
 
   subroutine FWDsolve3D(bRHS,omega,eSol)
 
+  ! 27.09.2012  ('trans' for mg) Maria
+  ! 28.09.2012  (revised: bMG,tempMG,sMG removed; set up b,temp as cvector_mg) Maria
+
     ! redefine some of the interfaces (locally) for our convenience
     use sg_vector
     use sg_vector_mg  !, only: copy => copy_cvector, &
@@ -112,8 +115,7 @@ Contains
     logical				                :: converged,trans,ltemp
     integer				                :: status, iter
     complex(kind=prec)         	        :: iOmegaMuInv
-    type (cvector_mg)                   :: bMG, tempMG, sMG
-    type(cvector)                       :: b,temp
+    type(cvector_mg)                       :: b,temp
     type (cscalar_mg)			        :: phi0
     type (cboundary)             	    :: tempBC
     type (solverControl_t)			    :: QMRiter
@@ -134,18 +136,14 @@ Contains
     endif
 
     ! allocate/initialize local data structures
-    Call create_cvector(bRHS%grid, b, eSol%gridType)
-    Call create_cvector_mg(bRHS%grid,bMG,eSol%gridType)
-    Call create_cvector(bRHS%grid, temp, eSol%gridType)
-    Call create_cvector_mg(bRHS%grid,tempMG,eSol%gridType)
-    Call create_cvector_mg(bRHS%grid,sMG,eSol%gridType)
-
+    Call create(bRHS%grid, b, eSol%gridType)
+    Call create(bRHS%grid, temp, eSol%gridType)
     ! this is just a work array, at a given instance only single frequency and
     ! mode is being used
-    Call create_cboundary(bRHS%grid, tempBC)
+    Call create(bRHS%grid, tempBC)
 
     if(bRHS%nonzero_Source) then
-       call create_cscalar_mg(bRHS%grid,phi0,CORNER)
+       call create(bRHS%grid,phi0,CORNER)
     endif
 
     ! Using boundary condition and sources from rHS data structure
@@ -160,11 +158,10 @@ Contains
          if(bRHS%sparse_Source) then
 #ifdef SparseSource
            ! Note: C_ONE = (1,0) (double complex)
-	       call add_scvector(C_ONE,bRHS%sSparse,b)
+	       call add(C_ONE,bRHS%sSparse,b) !add_scvector_mg
 #endif
          else
            b = bRHS%s
-           call c2mg(bMG,b)
          endif
        else
          call zero(Esol)
@@ -180,25 +177,23 @@ Contains
        endif
 
        !  divide by volume weights before computing divergence of sources
-       call diagDiv(bMG,VolE,tempMG) !diagDiv_crvector
-       call Div(tempMG,phi0)
+       call diagDiv(b,VolE,temp) !diagDiv_crvector
+       call Div(temp,phi0)
     else
       ! In the usual forward model case BC do enter into forcing
       !   First compute contribution of BC term to RHS of reduced interior
       !    node system of equations : - A_IB*b
       if (bRHS%nonzero_BC) then
-        !   copy from rHS structure into zeroed complex edge vector temp
-        call setBC(bRHS%bc, tempMG)
+        !   copy from rHS structure into zeroed complex edge vector temp on multi-grid
+        call setBC(bRHS%bc, temp)
 
         ltemp = .false.
         !   Then multiply by curl_curl operator (use MultA_N ...
         !   Note that MultA_N already multiplies by volume weights
 	    !   required to symetrize problem, so the result is V*A_IB*b)
-
-        call MultA_N(tempMG, ltemp, bMG)
-
+        call MultA_N(temp, ltemp, b)
         !  change sign of result
-        call scMult(MinusOne,bMG,bMG)
+        call scMult(MinusOne,b,b)
        endif
       ! Add internal sources if appropriate: Note that these must be multiplied
       !  explictly by volume weights
@@ -207,23 +202,21 @@ Contains
 #ifdef SparseSource
             ! temp  = bRHS%sSparse
              call zero(temp)
-             call add_scvector(C_ONE,bRHS%sSparse,temp)
+             call add(C_ONE,bRHS%sSparse,temp)! add_scvector_mg
              call Div(temp,phi0)
              ! temp = volE*temp
              call diagMult(volE,temp,temp)
 #endif
         else
           ! temp = volE*rhs%s
-          call c2mg(sMG,bRHS%s)
-          call Div(sMG,phi0)
-          call diagMult_mg(volE,sMG,tempMG)
+          call Div(bRHS%s,phi0)
+          call diagMult(volE,bRHS%s,temp)
         endif
      !  b = temp-b
         if(bRHS%nonzero_BC) then
           call add(temp,b,b)
-          call c2mg(bMG,b)
         else
-          bMG = tempMG
+          b = temp
         endif
        endif
     endif
@@ -275,14 +268,14 @@ Contains
     !  idea to test: for non-zero source START with divergence
     !    correction
     if(bRHS%nonzero_Source) then
-       tempMG = eSol
+       temp = eSol
        nDivCor = 1
-       call SdivCorr(tempMG,eSol,phi0)
+       call SdivCorr(temp,eSol,phi0)
     endif
 
     loop: do while ((.not.converged).and.(.not.failed))
 
-       Call QMR(bMG, eSol, QMRiter)  ! multigrid case
+       Call QMR(b, eSol, QMRiter)  ! multigrid case
 
        ! algorithm is converged when the relative error is less than tolerance
        ! (in which case QMRiter%niter will be less than QMRiter%maxIt)
@@ -302,12 +295,12 @@ Contains
        if( nDivCor < MaxDivCor) then
 
           ! do divergence correction
-          tempMG = eSol
+          temp = eSol
 
           if(bRHS%nonzero_Source) then
-             Call SdivCorr(tempMG,eSol,phi0)
+             Call SdivCorr(temp,eSol,phi0)
           else
-             Call SdivCorr(tempMG,eSol)
+             Call SdivCorr(temp,eSol)
           endif
        else
           ! max number of divergence corrections exceeded; convergence failed
@@ -328,7 +321,7 @@ Contains
     if(trans) then
     !   Multiply solution on interior nodes by volume weights
     ! eSol = volE*eSol
-    call diagMult_mg(volE,eSol,eSol)
+    call diagMult(volE,eSol,eSol)
     ! then compute solution on boundary nodes: first  A_IB^T eSol
     call AdjtBC(eSol, tempBC)
        ! then b - A_IB^T eSol, where b is input boundary values (if any)
@@ -356,9 +349,6 @@ Contains
     Call deall(b)
     Call deall(temp)
     Call deall(tempBC)
-    Call deall(bMG)
-    Call deall(tempMG)
-    Call deall(sMG)
     deallocate(QMRiter%rerr, STAT=status)
 
   end subroutine FWDsolve3D

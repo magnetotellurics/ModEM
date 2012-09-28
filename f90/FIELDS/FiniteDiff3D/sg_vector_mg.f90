@@ -17,6 +17,8 @@ implicit none
   ! Important - overloading the '=' assignment
   interface assignment (=)
     module procedure copy_cvector_mg
+    module procedure c2mg
+    module procedure mg2c
   end interface
 
   ! Generic interfaces are done through subroutines
@@ -63,7 +65,7 @@ end interface
 ! Both are vector data types
 
 ! IS IT REALLY NEEDED?
-interface diagMult_mg
+interface diagMult
   module procedure diagMult_cvector_mg
   module procedure diagMult_rvector_mg
   module procedure diagMult_crvector_mg
@@ -314,9 +316,9 @@ end  subroutine deall_cvector_mg
 
 end subroutine copy_cvector_mg
   ! *****************************************************************************
-  ! averages or copyies fields from cvector to cvector_mg
+  ! averages or copies fields from cvector to cvector_mg
 
-  ! edited 12.07.2012
+  ! 12.07.2012
   subroutine c2mg(e2,e1)
 
   implicit none
@@ -341,17 +343,14 @@ end subroutine copy_cvector_mg
     ! allocate temp array
     allocate(tempE2(e1%grid%nx+1,e1%grid%ny+1,e1%grid%nz+1), STAT= errAll)
 
-    ! check gridType
-    if (e1%gridType == e2%gridType) then
-
+    ! which gridType and check
+    if (e1%gridType == EDGE .and. e1%gridType == e2%gridType) then
       nzCum = 0
-      do imgrid = 1 , e2%mgridSize  ! Global loop on sub-grids
-
+      do imgrid = 1, e2%mgridSize  ! Global loop on sub-grids
         nx = e2%cvArray(imgrid)%nx
         ny = e2%cvArray(imgrid)%ny
         nz = e2%cvArray(imgrid)%nz
         ccoeff_current = 2**e2%coarseness(imgrid)
-
         ! re-count x component
         tempE2 = C_ZERO
         do iz = 1, nz+1
@@ -359,16 +358,15 @@ end subroutine copy_cvector_mg
           do iy = 1, ny+1
             do ix =1, nx
               do ic = 1, ccoeff_current
-              ! this averaging does not work properly
-              ! problem is in accuracy
+              ! we may average the fields, but it does not work properly
               !  tempE2(ix,iy,iz) = tempE2(ix,iy,iz) + e1%x(ccoeff_current*(ix-1)+ic,ccoeff_current*(iy-1)+1,izv)*e1%grid%dx(ccoeff_current*(ix-1)+ic)
+              ! we just copy them
                 tempE2(ix,iy,iz) =  e1%x(ccoeff_current*(ix-1)+ic,ccoeff_current*(iy-1)+1,izv)
-              enddo
+              enddo ! ic
               !  tempE2(ix,iy,iz) = tempE2(ix,iy,iz)/e2%grid%gridArray(imgrid)%dx(ix)
                 e2%cvArray(imgrid)%x(ix,iy,iz) = tempE2(ix,iy,iz)
-            enddo
-          enddo
-
+            enddo  !ix
+          enddo !iy
         ! re-count y component
         tempE2 = C_ZERO
           do ix = 1, nx+1
@@ -376,28 +374,73 @@ end subroutine copy_cvector_mg
               do ic = 1, ccoeff_current
                ! tempE2(ix,iy,iz) = tempE2(ix,iy,iz) +  e1%y(ccoeff_current*(ix-1)+1,ccoeff_current*(iy-1)+ic,izv)*e1%grid%dy(ccoeff_current*(iy-1)+ic)
                 tempE2(ix,iy,iz) = e1%y(ccoeff_current*(ix-1)+1,ccoeff_current*(iy-1)+ic,izv)
-              enddo
+              enddo !ic
                ! tempE2(ix,iy,iz) = tempE2(ix,iy,iz)/e2%grid%gridArray(imgrid)%dy(iy)
                 e2%cvArray(imgrid)%y(ix,iy,iz) = tempE2(ix,iy,iz)
-            enddo
-          enddo
-        enddo
-
+            enddo !iy
+          enddo !ix
+        enddo ! iz
         ! re-count z component
         do iy =1, ny+1
           do ix= 1, nx+1
             do iz = 1, nz
                izv = iz + nzCum
               e2%cvArray(imgrid)%z(ix,iy,iz) = e1%z(ccoeff_current*(ix-1)+1,ccoeff_current*(ix-1)+1,izv)
-           enddo
-          enddo
-        enddo
-
-      nzCum =  nzCum + nz
-    enddo  ! Global loop
-  else
-    print *, 'Error c2mg; cvector and cvector_mg not are the same gridType'
-  endif
+           enddo !iz
+          enddo !ix
+        enddo !iy
+        nzCum =  nzCum + nz
+      enddo  ! Global loop over sub-grids
+    else if(e1%gridType == FACE .and. e1%gridType == e2%gridType) then
+      nzCum = 0
+      do imgrid = 1, e2%mgridSize  ! Global loop on sub-grids
+        nx = e2%cvArray(imgrid)%nx
+        ny = e2%cvArray(imgrid)%ny
+        nz = e2%cvArray(imgrid)%nz
+        ccoeff_current = 2**e2%coarseness(imgrid)
+        ! re-count x component
+        tempE2 = C_ZERO
+        do iz = 1, nz
+           izv = iz + nzCum
+          do iy = 1, ny
+            do ix =1, nx+1
+              do ic = 1, ccoeff_current
+              ! we may average the fields, but it does not work properly
+              !  tempE2(ix,iy,iz) = tempE2(ix,iy,iz) + e1%x(ccoeff_current*(ix-1)+ic,ccoeff_current*(iy-1)+1,izv)*e1%grid%dx(ccoeff_current*(ix-1)+ic)
+              ! we just copy them
+                tempE2(ix,iy,iz) =  e1%x(ccoeff_current*(ix-1)+ic,ccoeff_current*(iy-1)+1,izv)
+              enddo ! ic
+              !  tempE2(ix,iy,iz) = tempE2(ix,iy,iz)/e2%grid%gridArray(imgrid)%dx(ix)
+                e2%cvArray(imgrid)%x(ix,iy,iz) = tempE2(ix,iy,iz)
+            enddo  !ix
+          enddo !iy
+        ! re-count y component
+        tempE2 = C_ZERO
+          do ix = 1, nx
+            do iy = 1, ny+1
+              do ic = 1, ccoeff_current
+               ! tempE2(ix,iy,iz) = tempE2(ix,iy,iz) +  e1%y(ccoeff_current*(ix-1)+1,ccoeff_current*(iy-1)+ic,izv)*e1%grid%dy(ccoeff_current*(iy-1)+ic)
+                tempE2(ix,iy,iz) = e1%y(ccoeff_current*(ix-1)+1,ccoeff_current*(iy-1)+ic,izv)
+              enddo !ic
+               ! tempE2(ix,iy,iz) = tempE2(ix,iy,iz)/e2%grid%gridArray(imgrid)%dy(iy)
+                e2%cvArray(imgrid)%y(ix,iy,iz) = tempE2(ix,iy,iz)
+            enddo !iy
+          enddo !ix
+        enddo ! iz
+        ! re-count z component
+        do iy =1, ny
+          do ix= 1, nx
+            do iz = 1, nz+1
+               izv = iz + nzCum
+              e2%cvArray(imgrid)%z(ix,iy,iz) = e1%z(ccoeff_current*(ix-1)+1,ccoeff_current*(ix-1)+1,izv)
+           enddo !iz
+          enddo !ix
+        enddo !iy
+        nzCum =  nzCum + nz
+      enddo  ! Global loop over sub-grids
+    else
+      print *, 'Error c2mg; cvector and cvector_mg not are the same gridType'
+    endif
 
     ! deallocate temp array
     deallocate(tempE2, STAT=errAll)
@@ -464,7 +507,7 @@ end subroutine copy_cvector_mg
   type(cvector_mg), intent(inout)  :: e
   ! local
   integer  ::imgrid
-print *,'kuku'
+
     do imgrid = 1, e%mgridSize
       call zero_cvector(e%cvArray(imgrid))
     enddo
@@ -685,30 +728,30 @@ integer  :: imgrid
   endif
 
 end subroutine diagMult_crvector_mg
-! **********************************************************************************************
-subroutine diagMult_rcvector_mg(e1, e2, e3)
+    ! **********************************************************************************************
+    subroutine diagMult_rcvector_mg(e1, e2, e3)
 
-implicit none
-type (rvector_mg), intent(in)  :: e1
-type (cvector_mg), intent(in)  :: e2
-type (cvector_mg), intent(inout)  :: e3
-! local
-integer  :: imgrid
+    implicit none
+    type (rvector_mg), intent(in)  :: e1
+    type (cvector_mg), intent(in)  :: e2
+    type (cvector_mg), intent(inout)  :: e3
+    ! local
+    integer  :: imgrid
 
-! check whether e1 and e2 have the same number of subgrids
-  if ((e1%mgridSize == e2%mgridSize).and.(e1%mgridSize == e3%mgridSize).and. &
-                                   (e2%mgridSize == e3%mgridSize)) then
+    ! check whether e1 and e2 have the same number of subgrids
+      if ((e1%mgridSize == e2%mgridSize).and.(e1%mgridSize == e3%mgridSize).and. &
+                                       (e2%mgridSize == e3%mgridSize)) then
 
-    do imgrid = 1, e1%mgridSize
-      call diagMult_rcvector(e1%rvArray(imgrid), e2%cvArray(imgrid), e3%cvArray(imgrid))
-    enddo
+        do imgrid = 1, e1%mgridSize
+          call diagMult_rcvector(e1%rvArray(imgrid), e2%cvArray(imgrid), e3%cvArray(imgrid))
+        enddo
 
-  else
-     write(0, *) 'Error::diagMult_rcvector vectors not same subgrids size'
+      else
+         write(0, *) 'Error::diagMult_rcvector vectors not same subgrids size'
 
-  endif
+      endif
 
-end subroutine diagMult_rcvector_mg
+    end subroutine diagMult_rcvector_mg
 ! ********************************************************************************************88
 subroutine subtract_rvector_mg(e1, e2, e3)
 
