@@ -53,48 +53,67 @@ implicit none
     module procedure linComb_cvector_mg
   end interface
 
-! adds the edge/ face nodes
-interface add
-  module procedure add_cvector_mg
-  module procedure add_rvector_mg
-end interface
+    ! adds the edge/ face nodes
+    interface add
+      module procedure add_cvector_mg
+      module procedure add_rvector_mg
+    end interface
 
-! pointwise vector (two vector data types) multiplication of edge/ face
-! nodes
-! and pointwise real-complex (mixed) multiplication of edge/ face nodes
-! Both are vector data types
+    ! pointwise vector (two vector data types) multiplication of edge/ face
+    ! nodes
+    ! and pointwise real-complex (mixed) multiplication of edge/ face nodes
+    ! Both are vector data types
 
-! IS IT REALLY NEEDED?
-interface diagMult
-  module procedure diagMult_cvector_mg
-  module procedure diagMult_rvector_mg
-  module procedure diagMult_crvector_mg
-  module procedure diagMult_rcvector_mg
-end interface
+    ! IS IT REALLY NEEDED?
+    interface diagMult
+      module procedure diagMult_cvector_mg
+      module procedure diagMult_rvector_mg
+      module procedure diagMult_crvector_mg
+      module procedure diagMult_rcvector_mg
+    end interface
 
-! subtracts the edge/ face nodes
-interface subtract
-  module procedure subtract_rvector_mg
-  module procedure subtract_cvector_mg
-end interface
+    ! subtracts the edge/ face nodes
+    interface subtract
+      module procedure subtract_rvector_mg
+      module procedure subtract_cvector_mg
+    end interface
 
-interface dotProd
-  module procedure dotProd_cvector_mg_f
-end interface
+    interface dotProd
+      module procedure dotProd_cvector_mg_f
+    end interface
 
-interface dotProd_noConj
-  module procedure dotProd_noConj_cvector_mg_f
-end interface
+    interface dotProd_noConj
+      module procedure dotProd_noConj_cvector_mg_f
+    end interface
 
-interface  diagDiv
-  module procedure diagDiv_rcvector_mg
-  module procedure diagDiv_crvector_mg
-end interface
+    interface  diagDiv
+      module procedure diagDiv_rcvector_mg
+      module procedure diagDiv_crvector_mg
+    end interface
 
-interface UpdateZ
-  module procedure updateZ_cvector
-  module procedure updateZ_rvector
-end interface
+    interface UpdateZ
+      module procedure updateZ_cvector
+      module procedure updateZ_rvector
+    end interface
+
+
+  ! overload some intrinsic functions for complex numbers
+  INTERFACE conjg
+     MODULE PROCEDURE conjg_cvector_mg_f
+  END INTERFACE
+
+  INTERFACE cmplx
+     MODULE PROCEDURE cmplx_rvector_mg_f
+  END INTERFACE
+
+  INTERFACE real
+     MODULE PROCEDURE real_cvector_mg_f
+  END INTERFACE
+
+  INTERFACE imag
+     MODULE PROCEDURE imag_cvector_mg_f
+  END INTERFACE
+
 
 public  :: create_rvector_mg, create_cvector_mg, &
            deall_rvector_mg, deall_cvector_mg, &
@@ -108,7 +127,8 @@ public  :: create_rvector_mg, create_cvector_mg, &
            linComb_cvector_mg, &
            dotProd_cvector_mg_f,  dotProd_noConj_cvector_mg_f, &
            diagDiv_rcvector_mg, diagDiv_crvector_mg, &
-           updateZ_cvector, updateZ_rvector
+           updateZ_cvector, updateZ_rvector, &
+           conjg_cvector_mg_f, cmplx_rvector_mg_f, real_cvector_mg_f, imag_cvector_mg_f
 
 ! *******************************************************************************
 ! this type defines cvectors on MULTIgrid
@@ -124,7 +144,14 @@ type :: cvector_mg
    logical  :: allocated = .false.
    ! store the intention of the use in a character string defined
    ! in GridDef as a parameter: EDGE or FACE are two possibilities
+
+   ! temporary:  .true. for function outputs only; necessary to avoid memory leaks
+   ! (probably will not be needed in the future when compilers will support
+   ! ISO/IEC 15581 - the "allocatable array extension")
+   logical                                        :: temporary = .false.
+
    character (len=80)   :: gridType
+
    ! pointer to parent grid
    type (grid_t), pointer  :: grid
 end type cvector_mg
@@ -143,6 +170,10 @@ type rvector_mg
   integer, allocatable  :: coarseness(:)
   ! allocated:  .true.  x, y, z arrays have been allocated
   logical  :: allocated = .false.
+  ! temporary:  .true. for function outputs only; necessary to avoid memory leaks
+  ! (probably will not be needed in the future when compilers will support
+  ! ISO/IEC 15581 - the "allocatable array extension")
+  logical                                        :: temporary = .false.
 
 end type rvector_mg
 
@@ -359,11 +390,11 @@ end subroutine copy_cvector_mg
             do ix =1, nx
               do ic = 1, ccoeff_current
               ! we may average the fields, but it does not work properly
-              !  tempE2(ix,iy,iz) = tempE2(ix,iy,iz) + e1%x(ccoeff_current*(ix-1)+ic,ccoeff_current*(iy-1)+1,izv)*e1%grid%dx(ccoeff_current*(ix-1)+ic)
+                tempE2(ix,iy,iz) = tempE2(ix,iy,iz) + e1%x(ccoeff_current*(ix-1)+ic,ccoeff_current*(iy-1)+1,izv)*e1%grid%dx(ccoeff_current*(ix-1)+ic)
               ! we just copy them
-                tempE2(ix,iy,iz) =  e1%x(ccoeff_current*(ix-1)+ic,ccoeff_current*(iy-1)+1,izv)
+              !  tempE2(ix,iy,iz) =  e1%x(ccoeff_current*(ix-1)+ic,ccoeff_current*(iy-1)+1,izv)
               enddo ! ic
-              !  tempE2(ix,iy,iz) = tempE2(ix,iy,iz)/e2%grid%gridArray(imgrid)%dx(ix)
+                tempE2(ix,iy,iz) = tempE2(ix,iy,iz)/e2%grid%gridArray(imgrid)%dx(ix)
                 e2%cvArray(imgrid)%x(ix,iy,iz) = tempE2(ix,iy,iz)
             enddo  !ix
           enddo !iy
@@ -372,10 +403,10 @@ end subroutine copy_cvector_mg
           do ix = 1, nx+1
             do iy = 1, ny
               do ic = 1, ccoeff_current
-               ! tempE2(ix,iy,iz) = tempE2(ix,iy,iz) +  e1%y(ccoeff_current*(ix-1)+1,ccoeff_current*(iy-1)+ic,izv)*e1%grid%dy(ccoeff_current*(iy-1)+ic)
-                tempE2(ix,iy,iz) = e1%y(ccoeff_current*(ix-1)+1,ccoeff_current*(iy-1)+ic,izv)
+                tempE2(ix,iy,iz) = tempE2(ix,iy,iz) +  e1%y(ccoeff_current*(ix-1)+1,ccoeff_current*(iy-1)+ic,izv)*e1%grid%dy(ccoeff_current*(iy-1)+ic)
+               ! tempE2(ix,iy,iz) = e1%y(ccoeff_current*(ix-1)+1,ccoeff_current*(iy-1)+ic,izv)
               enddo !ic
-               ! tempE2(ix,iy,iz) = tempE2(ix,iy,iz)/e2%grid%gridArray(imgrid)%dy(iy)
+                tempE2(ix,iy,iz) = tempE2(ix,iy,iz)/e2%grid%gridArray(imgrid)%dy(iy)
                 e2%cvArray(imgrid)%y(ix,iy,iz) = tempE2(ix,iy,iz)
             enddo !iy
           enddo !ix
@@ -406,11 +437,11 @@ end subroutine copy_cvector_mg
             do ix =1, nx+1
               do ic = 1, ccoeff_current
               ! we may average the fields, but it does not work properly
-              !  tempE2(ix,iy,iz) = tempE2(ix,iy,iz) + e1%x(ccoeff_current*(ix-1)+ic,ccoeff_current*(iy-1)+1,izv)*e1%grid%dx(ccoeff_current*(ix-1)+ic)
+                tempE2(ix,iy,iz) = tempE2(ix,iy,iz) + e1%x(ccoeff_current*(ix-1)+ic,ccoeff_current*(iy-1)+1,izv)*e1%grid%dx(ccoeff_current*(ix-1)+ic)
               ! we just copy them
-                tempE2(ix,iy,iz) =  e1%x(ccoeff_current*(ix-1)+ic,ccoeff_current*(iy-1)+1,izv)
+              !  tempE2(ix,iy,iz) =  e1%x(ccoeff_current*(ix-1)+ic,ccoeff_current*(iy-1)+1,izv)
               enddo ! ic
-              !  tempE2(ix,iy,iz) = tempE2(ix,iy,iz)/e2%grid%gridArray(imgrid)%dx(ix)
+                tempE2(ix,iy,iz) = tempE2(ix,iy,iz)/e2%grid%gridArray(imgrid)%dx(ix)
                 e2%cvArray(imgrid)%x(ix,iy,iz) = tempE2(ix,iy,iz)
             enddo  !ix
           enddo !iy
@@ -419,10 +450,10 @@ end subroutine copy_cvector_mg
           do ix = 1, nx
             do iy = 1, ny+1
               do ic = 1, ccoeff_current
-               ! tempE2(ix,iy,iz) = tempE2(ix,iy,iz) +  e1%y(ccoeff_current*(ix-1)+1,ccoeff_current*(iy-1)+ic,izv)*e1%grid%dy(ccoeff_current*(iy-1)+ic)
-                tempE2(ix,iy,iz) = e1%y(ccoeff_current*(ix-1)+1,ccoeff_current*(iy-1)+ic,izv)
+                tempE2(ix,iy,iz) = tempE2(ix,iy,iz) +  e1%y(ccoeff_current*(ix-1)+1,ccoeff_current*(iy-1)+ic,izv)*e1%grid%dy(ccoeff_current*(iy-1)+ic)
+               ! tempE2(ix,iy,iz) = e1%y(ccoeff_current*(ix-1)+1,ccoeff_current*(iy-1)+ic,izv)
               enddo !ic
-               ! tempE2(ix,iy,iz) = tempE2(ix,iy,iz)/e2%grid%gridArray(imgrid)%dy(iy)
+                tempE2(ix,iy,iz) = tempE2(ix,iy,iz)/e2%grid%gridArray(imgrid)%dy(iy)
                 e2%cvArray(imgrid)%y(ix,iy,iz) = tempE2(ix,iy,iz)
             enddo !iy
           enddo !ix
@@ -1168,7 +1199,184 @@ end subroutine updateZ_cvector
     endif
 
 end subroutine updateZ_rvector
-! *********************************************************************************************************
+
+  ! *********************************************************************************************************
+
+  function conjg_cvector_mg_f(e1) result (e2)
+    ! conjg_cvector_mg_f computes a conjugate of a derived data type cvector_mg
+    ! A.K.
+    implicit none
+    type (cvector_mg), intent(in)            :: e1
+    type (cvector_mg)                        :: e2
+
+    integer                                  :: status
+    integer                                  :: imgrid
+
+    ! check to see if RHS (e1) is active (allocated)
+    if(.not.e1%allocated) then
+       print*, 'input not allocated yet for conjg_cvector_mg_f'
+    else
+
+      if  (e1%gridType == e2%gridType) then
+        if(e2%mgridSize /= e1%mgridSize) then
+          print*, 'Warning: e2 and e1 are not the same size in function conjg_cvector_mg_f. Reallocated! '
+          call deall(e2)
+          call create(e1%grid, e2,e1%gridType)
+        else
+          do imgrid = 1, e1%mgridSize ! Global loop over sub-grid
+            if((e2%cvArray(imgrid)%nx == e1%cvArray(imgrid)%nx).and.(e2%cvArray(imgrid)%ny == e1%cvArray(imgrid)%ny) &
+                                                             .and.(e2%cvArray(imgrid)%nz == e1%cvArray(imgrid)%nz)) then
+
+              ! just conjugate components
+              e2%cvArray(imgrid)%x = conjg(e1%cvArray(imgrid)%x)
+              e2%cvArray(imgrid)%y = conjg(e1%cvArray(imgrid)%y)
+              e2%cvArray(imgrid)%z = conjg(e1%cvArray(imgrid)%z)
+              e2%cvArray(imgrid)%gridType = e1%cvArray(imgrid)%gridType
+            else
+              if(e2%allocated)then
+                ! first deallocate memory for x,y,z
+                deallocate(e2%cvArray(imgrid)%x,e2%cvArray(imgrid)%y,e2%cvArray(imgrid)%z, STAT=status)
+              endif
+
+              !  then allocate E3 as correct size ...
+              call create(e1%cvarray(imgrid)%grid, e2%cvarray(imgrid),e1%gridType)
+
+              !   .... and conjugate E1
+              e2%cvArray(imgrid)%x = conjg(e1%cvArray(imgrid)%x)
+              e2%cvArray(imgrid)%y = conjg(e1%cvArray(imgrid)%y)
+              e2%cvArray(imgrid)%z = conjg(e1%cvArray(imgrid)%z)
+              e2%cvArray(imgrid)%gridType = e1%cvArray(imgrid)%gridType
+            endif ! check nx,ny,nz
+          enddo  ! Global loop over sub-grid
+        endif  ! check mgridSize
+      else
+       print*, 'not compatible usage for conjg_cvector_mg_f'
+     end if ! check gridType
+    endif ! check e1 allocation
+    e2%temporary = .true.
+
+  end function conjg_cvector_mg_f  ! conjg_cvector_mg_f
+
+  ! ***************************************************************************
+  function cmplx_rvector_mg_f(e1, e2) result (e3)
+  ! inputs two real vectors defined on the multi-grid, merges them as real1 + imag(real2), a complex
+  ! vector on mg
+    implicit none
+    type (rvector_mg), intent(in)            :: e1
+    type (rvector_mg), intent(in)            :: e2
+    type (cvector_mg)                        :: e3
+
+    integer                               :: status
+    integer                               :: imgrid
+
+    ! check to see if RHS (E1 and E2) are active (allocated)
+    if((.not.e1%allocated).or.(.not.e2%allocated)) then
+       write(0,*) 'RHS not allocated yet for cmplx_rvector_mg_f'
+    else
+      if ((e1%gridType == e2%gridType).and.(e1%gridType == e3%gridType)) then
+        if (e1%mgridSize == e2%mgridSize .and. e3%mgridSize == e2%mgridSize .and. e3%mgridSize == e1%mgridSize)then
+          do imgrid = 1, e1%mgridSize ! Global loop over sub-grids
+            if((e3%cvArray(imgrid)%nx == e1%rvArray(imgrid)%nx).and.(e3%cvArray(imgrid)%ny == e1%rvArray(imgrid)%ny).and.(e3%cvArray(imgrid)%nz == e1%rvArray(imgrid)%nz).and.&
+              (e3%cvArray(imgrid)%nx == e2%rvArray(imgrid)%nx).and.(e3%cvArray(imgrid)%ny == e2%rvArray(imgrid)%ny).and.(e3%cvArray(imgrid)%nz == e2%rvArray(imgrid)%nz))  then
+
+               ! create a complex pair
+              e3%cvArray(imgrid)%x = cmplx(e1%rvArray(imgrid)%x, e2%rvArray(imgrid)%x, prec)
+              e3%cvArray(imgrid)%y = cmplx(e1%rvArray(imgrid)%y, e2%rvArray(imgrid)%y, prec)
+              e3%cvArray(imgrid)%z = cmplx(e1%rvArray(imgrid)%z, e2%rvArray(imgrid)%z, prec)
+              e3%cvArray(imgrid)%gridType = e1%rvArray(imgrid)%gridType
+            else
+              if(e3%allocated) then
+                ! first deallocate memory for x,y,z
+                deallocate(e3%cvArray(imgrid)%x,e3%cvArray(imgrid)%y,e3%cvArray(imgrid)%z, stat=status)
+              endif
+              !  then allocate e3 as correct size ...
+              call create(e1%rvArray(imgrid)%grid, e3%cvArray(imgrid), e1%gridType)
+              !   .... and create a complex pair
+              e3%cvArray(imgrid)%x = cmplx(e1%rvArray(imgrid)%x, e2%rvArray(imgrid)%x, prec)
+              e3%cvArray(imgrid)%y = cmplx(e1%rvArray(imgrid)%y, e2%rvArray(imgrid)%y, prec)
+              e3%cvArray(imgrid)%z = cmplx(e1%rvArray(imgrid)%z, e2%rvArray(imgrid)%z, prec)
+              e3%cvArray(imgrid)%gridType = e1%rvArray(imgrid)%gridType
+            end if ! check nx, ny, nz
+          enddo ! Global loop over sub-grids
+        else
+          write (0, *) 'not compatible usage for cmplx_rvector_mg_f'
+        end if  ! check mgridSize
+      else
+       write (0, *) 'not compatible usage for cmplx_rvector_mg_f'
+      end if  ! check gridType
+    endif ! check allocate
+    e3%temporary = .true.
+
+  end function cmplx_rvector_mg_f  ! cmplx_rvector_f
+
+
+  ! ***************************************************************************
+  ! real_cvector_mg_f copies the real part of the derived data type cvector_mg variable;
+  ! to produce a derived data type rvector_mg
+  function real_cvector_mg_f(e1) result (e2)
+
+    implicit none
+    type (cvector_mg), intent(in)            :: e1
+    type (rvector_mg)                        :: e2
+
+    integer                               :: status
+    integer                               :: imgrid
+
+    ! check to see if RHS (e1) is active (allocated)
+    if(.not.e1%allocated) then
+       write(0,*) 'input not allocated yet for real_cvector_mg_f'
+    else
+
+      ! we know nothing about e2 ... deallocate just in case
+      Call deall(e2) !deall_rvector_mg
+      !  then allocate e2 as correct size ...
+      Call create(e1%grid, e2, e1%gridType) !create_rvector_mg
+      !   .... and copy E1
+      do imgrid = 1, e1%mgridSize
+        e2%rvArray(imgrid)%x = real(e1%cvArray(imgrid)%x)
+        e2%rvArray(imgrid)%y = real(e1%cvArray(imgrid)%y)
+        e2%rvArray(imgrid)%z = real(e1%cvArray(imgrid)%z)
+        e2%rvArray(imgrid)%gridType = e1%cvArray(imgrid)%gridType
+      enddo
+    end if
+    e2%temporary = .true.
+
+  end function real_cvector_mg_f  ! real_cvector_mg_f
+
+
+  ! ***************************************************************************
+  ! imag_cvector_mg_f copies the imag part of the derived data type cvector_mg variable;
+  ! to produce a derived data type rvector_mg
+  function imag_cvector_mg_f(e1) result (e2)
+
+    implicit none
+    type (cvector_mg), intent(in)            :: e1
+    type (rvector_mg)                        :: e2
+
+    integer                               :: status
+    integer                               :: imgrid
+
+    ! check to see if RHS (e1) is active (allocated)
+    if(.not.e1%allocated) then
+       write(0,*) 'input not allocated yet for imag_cvector_mg_f'
+    else
+
+      ! we know nothing about e2 ... deallocate just in case
+      Call deall(e2) !deall_rvector_mg
+      !  then allocate e2 as correct size ...
+      Call create(e1%grid, e2, e1%gridType) !create_rvector_mg
+      !   .... and copy e1
+      do imgrid = 1, e1%mgridSize
+        e2%rvArray(imgrid)%x = aimag(e1%cvArray(imgrid)%x)
+        e2%rvArray(imgrid)%y = aimag(e1%cvArray(imgrid)%y)
+        e2%rvArray(imgrid)%z = aimag(e1%cvArray(imgrid)%z)
+        e2%rvArray(imgrid)%gridType = e1%cvArray(imgrid)%gridType
+      enddo
+    end if
+
+    e2%temporary = .true.
+
+  end function imag_cvector_mg_f  ! imag_cvector_mg_f
 
 
 end module sg_vector_mg

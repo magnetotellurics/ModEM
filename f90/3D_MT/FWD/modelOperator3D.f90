@@ -198,9 +198,9 @@ Contains
     type(modelParam_t), intent(in)      :: CondParam      ! input conductivity
     ! structure on the center of the grid
 
-    !  ModelParamToEdge is to be interpreted as an abstract routine
+    !  ModelParamToEdgeMG is to be interpreted as an abstract routine
     !    that maps from the external conductivity parameter to the
-    !    internal edge representation  ... the type of CondParam
+    !    internal edge representation (multi-grid)... the type of CondParam
     !    is now fixed as rscalar;  if a different representation is
     !    to be used changes to the declarations in this routine will
     !    be required, along with changes in the module interface
@@ -225,9 +225,9 @@ Contains
 
     omega = inOmega
 
-    !  ModelParamToEdge is to be interpreted as an abstract routine
+    !  ModelParamToEdgeMG is to be interpreted as an abstract routine
     !    that maps from the external conductivity parameter to the
-    !    internal edge representation  ...
+    !    internal edge representation (multi-grid) ...
     Call ModelParamToEdgeMG(CondParam, condEMG)
 
     Call AdiagSetUp()

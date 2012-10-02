@@ -75,35 +75,30 @@ module SolverSens
 
    !  local variables
    complex(kind=prec)			:: minus_i_omega_mu
-   type(cvector_mg), pointer  :: CMGtemp(:)
-   type(cvector),pointer  :: Ctemp(:)
-   type(rvector)				:: temp
+   type(cvector_mg), pointer    :: Ctemp(:)
+   type(rvector_mg)				:: temp
 
  !  type(rvector_mg)  ::tempMG
 
    integer					:: k,istat
 
    minus_i_omega_mu = cmplx(0.,-ISIGN*MU_0*txDict(e0%tx)%omega,kind=prec)
-   call create_rvector(e0%grid,temp,EDGE)
-   allocate(CMGtemp(e0%nPol), STAT=istat)
+   call create(e0%grid,temp,EDGE) !create_rvector_mg
    allocate(Ctemp(e0%nPol), STAT=istat)
    do k = 1,e0%nPol
-      call create_cvector_mg(e0%grid,CMGtemp(k),EDGE)
-      call create_cvector(e0%grid,Ctemp(k),EDGE)
+      call create(e0%grid,Ctemp(k),EDGE) !create_cvector_mg
    enddo
 
    ! multiply backward solutions (e) by minus_i_omega_mu * e0
    !   and sum over modes ...
    do k = 1,e0%nPol
-      call diagMult_cvector_mg(e0%pol(k),e%pol(k),CMGtemp(k))
+      call diagMult(e0%pol(k),e%pol(k),Ctemp(k)) !diagMult_cvector_mg
    enddo
    do k = 2,e0%nPol
-      call add_cvector_mg(CMGtemp(1), CMGtemp(k), CMGtemp(1))
+      call add(Ctemp(1), Ctemp(k), Ctemp(1))!add_cvector_mg
    enddo
-   call scMult_cvector_mg(minus_i_omega_mu,CMGtemp(1),CMGtemp(1))
-   do k = 1,e0%nPol
-   Call mg2c(Ctemp(k), CMGtemp(k))
-   enddo
+   call scMult(minus_i_omega_mu,Ctemp(1),Ctemp(1)) !scMult_cvector_mg
+
    ! map real/imag parts onto parameter space
    temp = real(Ctemp(1))
    call dEdgeToModelParam(temp,dsigmaReal,sigma0)
@@ -114,10 +109,9 @@ module SolverSens
       call dEdgeToModelParam(temp,dsigmaImag,sigma0)
    endif
 
-   call deall_rvector(temp)
+   call deall(temp) !deall_rvector_mg
    do k = 1,e0%nPol
-      call deall_cvector(Ctemp(k))
-      call deall_cvector_mg(CMGtemp(k))
+      call deall(Ctemp(k)) !deall_cvector_mg
    enddo
    deallocate(Ctemp, STAT=istat)
 

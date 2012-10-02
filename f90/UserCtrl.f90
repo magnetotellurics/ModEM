@@ -350,7 +350,7 @@ Contains
 
       case (INVERSE) ! I
         if (narg < 3) then
-           write(0,*) 'Usage: -I NLCG rFile_Model rFile_Data [lambda eps]'
+           write(0,*) 'Usage: -I NLCG rFile_Model rFile_mg  rFile_Data [lambda eps]'
            write(0,*)
            write(0,*) 'Here, lambda = the initial damping parameter for inversion'
            write(0,*) '         eps = misfit tolerance for the forward solver'
