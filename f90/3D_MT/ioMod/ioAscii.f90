@@ -39,7 +39,6 @@ module ioAscii
   use transmitters
   use receivers
   use datatypes
-  use sg_vector_mg, only: c2mg, mg2c
 
   implicit none
 

@@ -115,11 +115,11 @@ Contains
 			  ! loop over modes
 			  do iMode = 1,2
 			      ! electric fields
-			      EE(1,iMode) =  dotProd_noConj_scvector_f(Lex,ef%pol(iMode))
-			      EE(2,iMode) =  dotProd_noConj_scvector_f(Ley,ef%pol(iMode))
+			      EE(1,iMode) =  dotProd_noConj_scvector_mg_f(Lex,ef%pol(iMode))
+			      EE(2,iMode) =  dotProd_noConj_scvector_mg_f(Ley,ef%pol(iMode))
 			      ! magnetic fields
-			      BB(1,iMode) = dotProd_noConj_scvector_f(Lbx,ef%pol(iMode))
-			      BB(2,iMode) = dotProd_noConj_scvector_f(Lby,ef%pol(iMode))
+			      BB(1,iMode) = dotProd_noConj_scvector_mg_f(Lbx,ef%pol(iMode))
+			      BB(2,iMode) = dotProd_noConj_scvector_mg_f(Lby,ef%pol(iMode))
 			 end do
 			 !invert horizontal B matrix using Kramer's rule.
 			  det = BB(1,1)*BB(2,2)-BB(1,2)*BB(2,1)
@@ -151,11 +151,11 @@ Contains
 			  ! loop over modes
 			  do iMode = 1,2
 			      ! electric fields
-			      EE(1,iMode) =  dotProd_noConj_scvector_f(Lex,ef%pol(iMode))
-			      EE(2,iMode) =  dotProd_noConj_scvector_f(Ley,ef%pol(iMode))
+			      EE(1,iMode) =  dotProd_noConj_scvector_mg_f(Lex,ef%pol(iMode))
+			      EE(2,iMode) =  dotProd_noConj_scvector_mg_f(Ley,ef%pol(iMode))
 			      ! magnetic fields
-			      BB(1,iMode) = dotProd_noConj_scvector_f(Lbx,ef%pol(iMode))
-			      BB(2,iMode) = dotProd_noConj_scvector_f(Lby,ef%pol(iMode))
+			      BB(1,iMode) = dotProd_noConj_scvector_mg_f(Lbx,ef%pol(iMode))
+			      BB(2,iMode) = dotProd_noConj_scvector_mg_f(Lby,ef%pol(iMode))
 			 end do
 			 !invert horizontal B matrix using Kramer's rule.
 			  det = BB(1,1)*BB(2,2)-BB(1,2)*BB(2,1)
@@ -181,9 +181,9 @@ Contains
 			  ! loop over modes
 			  do iMode = 1,2
 			      ! magnetic fields
-			      BB(1,iMode) = dotProd_noConj_scvector_f(Lbx,ef%pol(iMode))
-			      BB(2,iMode) = dotProd_noConj_scvector_f(Lby,ef%pol(iMode))
-			      BB(3,iMode) = dotProd_noConj_scvector_f(Lbz,ef%pol(iMode))
+			      BB(1,iMode) = dotProd_noConj_scvector_mg_f(Lbx,ef%pol(iMode))
+			      BB(2,iMode) = dotProd_noConj_scvector_mg_f(Lby,ef%pol(iMode))
+			      BB(3,iMode) = dotProd_noConj_scvector_mg_f(Lbz,ef%pol(iMode))
 			 end do
 			 !invert horizontal B matrix using Kramer's rule.
 			  det = BB(1,1)*BB(2,2)-BB(1,2)*BB(2,1)
@@ -212,11 +212,11 @@ Contains
 			  call BfromESetUp(ef%grid,omega,x_ref,xyz,Lry)
 			    do iMode = 1,2
 			      ! magnetic fields at local station
-			      BB(1,iMode) = dotProd_noConj_scvector_f(Lbx,ef%pol(iMode))
-			      BB(2,iMode) = dotProd_noConj_scvector_f(Lby,ef%pol(iMode))
+			      BB(1,iMode) = dotProd_noConj_scvector_mg_f(Lbx,ef%pol(iMode))
+			      BB(2,iMode) = dotProd_noConj_scvector_mg_f(Lby,ef%pol(iMode))
 			      ! magnetic fields, at the REFERANCE station
-			      RR(1,iMode) = dotProd_noConj_scvector_f(Lrx,ef%pol(iMode))
-			      RR(2,iMode) = dotProd_noConj_scvector_f(Lry,ef%pol(iMode))
+			      RR(1,iMode) = dotProd_noConj_scvector_mg_f(Lrx,ef%pol(iMode))
+			      RR(2,iMode) = dotProd_noConj_scvector_mg_f(Lry,ef%pol(iMode))
 			    end do
 			  ! Compute the inverse of RR using Kramer's rule
 			  det = RR(1,1)*RR(2,2)-RR(1,2)*RR(2,1)
@@ -248,11 +248,11 @@ Contains
 			  ! loop over modes
 			  do iMode = 1,2
 			      ! electric fields
-			      EE(1,iMode) =  dotProd_noConj_scvector_f(Lex,ef%pol(iMode))
-			      EE(2,iMode) =  dotProd_noConj_scvector_f(Ley,ef%pol(iMode))
+			      EE(1,iMode) =  dotProd_noConj_scvector_mg_f(Lex,ef%pol(iMode))
+			      EE(2,iMode) =  dotProd_noConj_scvector_mg_f(Ley,ef%pol(iMode))
 			      ! magnetic fields
-			      BB(1,iMode) = dotProd_noConj_scvector_f(Lbx,ef%pol(iMode))
-			      BB(2,iMode) = dotProd_noConj_scvector_f(Lby,ef%pol(iMode))
+			      BB(1,iMode) = dotProd_noConj_scvector_mg_f(Lbx,ef%pol(iMode))
+			      BB(2,iMode) = dotProd_noConj_scvector_mg_f(Lby,ef%pol(iMode))
 			 end do
 			 !invert horizontal B matrix using Kramer's rule.
 			  det = BB(1,1)*BB(2,2)-BB(1,2)*BB(2,1)
@@ -286,11 +286,11 @@ Contains
 			  ! loop over modes
 			  do iMode = 1,2
 			      ! electric fields
-			      EE(1,iMode) =  dotProd_noConj_scvector_f(Lex,ef%pol(iMode))
-			      EE(2,iMode) =  dotProd_noConj_scvector_f(Ley,ef%pol(iMode))
+			      EE(1,iMode) =  dotProd_noConj_scvector_mg_f(Lex,ef%pol(iMode))
+			      EE(2,iMode) =  dotProd_noConj_scvector_mg_f(Ley,ef%pol(iMode))
 			      ! magnetic fields
-			      BB(1,iMode) = dotProd_noConj_scvector_f(Lbx,ef%pol(iMode))
-			      BB(2,iMode) = dotProd_noConj_scvector_f(Lby,ef%pol(iMode))
+			      BB(1,iMode) = dotProd_noConj_scvector_mg_f(Lbx,ef%pol(iMode))
+			      BB(2,iMode) = dotProd_noConj_scvector_mg_f(Lby,ef%pol(iMode))
 			 end do
 			 !invert horizontal B matrix using Kramer's rule.
 			  det = BB(1,1)*BB(2,2)-BB(1,2)*BB(2,1)

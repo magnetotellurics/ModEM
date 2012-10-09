@@ -479,18 +479,14 @@ contains
        complex(kind=prec)		:: c
        integer					:: k
 
-       !   local variable
-       type(cvector_mg)  :: temp
-
-
        c = C_ZERO
        if(conj_case) then
           do k = 1,SV%nPol
-             c = c + dotProd_scvector_f(SV%L(k),temp)
+             c = c + dotProd_scvector_mg_f(SV%L(k),FV%pol(k))
           enddo
        else
           do k = 1,SV%nPol
-             c = c + dotProd_noConj_scvector_f(SV%L(k),temp)
+             c = c + dotProd_noConj_scvector_mg_f(SV%L(k),FV%pol(k))
           enddo
        endif
 
@@ -797,9 +793,9 @@ contains
           if(comb%b(k)%nonzero_source) then
              if(comb%b(k)%sparse_source) then
                 if(Conj_Case) then
-                temp = dotProd_scvector_f(comb%b(k)%sSparse,poltemp)
+                temp = dotProd_scvector_mg_f(comb%b(k)%sSparse,poltemp)
                 else
-                temp = dotProd_noConj_scvector_f(comb%b(k)%sSparse,poltemp)
+                temp = dotProd_noConj_scvector_mg_f(comb%b(k)%sSparse,poltemp)
                 endif
              else
                 if(Conj_Case) then

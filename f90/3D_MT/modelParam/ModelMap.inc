@@ -134,6 +134,7 @@
       v(:,:,1:m%grid%nzEarth) = m%cellCond%v(:,:,:)
       v(:,:,0) = R_ZERO
       v(:,:,m%grid%nzEarth+1) = R_ZERO
+
       do imgrid = 1, m%grid%mgridSize ! Global loop over sub-grids
         temp = R_ZERO
         nx = m%grid%gridArray(imgrid)%nx ! nx of the current subgrid
@@ -142,6 +143,7 @@
         nzAir = m%grid%gridArray(imgrid)%nzAir
         ccoeff_current = 2**m%grid%coarseness(imgrid)
         do iz = nzAir,nz+1
+           if(nzAir == nz) cycle
            izE = iz - nzAir
            izv = izE + nzCum
           do iy = 1, ny
@@ -151,10 +153,10 @@
                   temp(ix,iy,izE) = temp(ix,iy,izE) + v(ccoeff_current*(ix-1)+icx, ccoeff_current*(iy-1)+icy,izv)
                 enddo ! icx
               enddo ! icy
+              temp(ix,iy,izE) = temp(ix,iy,izE)/ccoeff_current**2
             enddo ! nx
           enddo ! ny
         enddo ! nz
-        temp = temp/nx*ny*nz ! arithmetic average
 
         if(m%paramType .EQ. LOGE) then
         !  if(linearizedMapping) then   ! NEED TO BE CHECKED
@@ -323,62 +325,61 @@
 
       ! Could add code to check whether the bounds are the same ...
 
-      allocate(temp(m%grid%nx,m%grid%ny,m%grid%nzEarth))
-      temp = R_ZERO
-
+      allocate(temp(m%grid%nx,m%grid%ny,0:m%grid%nzEarth+1))
       ! Now map onto edges, x, y, then z ... first  zero output
       nzCum = 0
-      do imgrid = 1,m%grid%mgridSize  ! global loop on subgrids
+      do imgrid = 1,m%grid%mgridSize  ! Global loop over subgrids
+        temp = R_ZERO
         nx = m%grid%gridArray(imgrid)%nx ! nx of the current subgrid
         ny = m%grid%gridArray(imgrid)%ny ! ny
         nz = m%grid%gridArray(imgrid)%nz ! nz = nzEarth+nzAir
         nzAir = m%grid%gridArray(imgrid)%nzAir
         ccoeff_current = 2**m%grid%coarseness(imgrid)
-       ! if(nzAir == nz) cycle
-      ! Ex edges: (leave boundary edges set to 0)
-        do ix = 1, nx
-           do iy = 2, ny
-              do iz = nzAir+1,nz
+        if(nzAir /= nz) then ! Do nothing for Air
+          ! Ex edges: (leave boundary edges set to 0)
+          do ix = 1, nx
+            do iy = 2, ny
+              do iz = nzAir+1,nz+1
                  izE = iz-nzAir
-                 izv = izE + nzCum
+                 izv = izE + nzCum+ m%grid%nzAir
                  Vdr = m%grid%gridArray(imgrid)%dy(iy)*m%grid%dz(izv)
                  Vdl = m%grid%gridArray(imgrid)%dy(iy-1)*m%grid%dz(izv)
                  Vur = m%grid%gridArray(imgrid)%dy(iy)*m%grid%dz(izv-1)
                  Vul = m%grid%gridArray(imgrid)%dy(iy-1)*m%grid%dz(izv-1)
                  S = Vdr+Vdl+Vur+Vul
-                 if(izE.gt.1) then
+                 !if(izE.gt.1) then
                     temp(ix,iy,izE-1) = temp(ix,iy,izE-1)+ Econd%rvArray(imgrid)%x(ix,iy,iz)*Vur/S
                     temp(ix,iy-1,izE-1) = temp(ix,iy-1,izE-1)+Econd%rvArray(imgrid)%x(ix,iy,iz)*Vul/S
-                 endif
+                 !endif
                  temp(ix,iy,izE) = temp(ix,iy,izE)+ Econd%rvArray(imgrid)%x(ix,iy,iz)*Vdr/S
                  temp(ix,iy-1,izE) = temp(ix,iy-1,izE)+Econd%rvArray(imgrid)%x(ix,iy,iz)*Vdl/S
-              enddo
-           enddo
-         enddo
+              enddo ! iz
+            enddo ! iy
+          enddo ! ix
 
-         ! Ey edges
-         do ix = 2, nx
+          ! Ey edges
+          do ix = 2, nx
             do iy = 1, ny
-               do iz = nzAir+1,nz
+               do iz = nzAir+1,nz+1
                   izE = iz-nzAir
-                  izv = izE + nzCum
+                  izv = izE + nzCum+ m%grid%nzAir
                   Vdn = m%grid%gridArray(imgrid)%dx(ix)*m%grid%dz(izv)
                   Vds = m%grid%gridArray(imgrid)%dx(ix-1)*m%grid%dz(izv)
                   Vun = m%grid%gridArray(imgrid)%dx(ix)*m%grid%dz(izv-1)
                   Vus = m%grid%gridArray(imgrid)%dx(ix-1)*m%grid%dz(izv-1)
                   S = Vdn+Vds+Vun+Vus
-                  if(izE.gt.1) then
+                  !if(izE.gt.1) then
                     temp(ix,iy,izE-1) = temp(ix,iy,izE-1)+ Econd%rvArray(imgrid)%y(ix,iy,iz)*Vun/S
                     temp(ix-1,iy,izE-1) = temp(ix-1,iy,izE-1)+Econd%rvArray(imgrid)%y(ix,iy,iz)*Vus/S
-                  endif
+                  !endif
                   temp(ix,iy,izE) = temp(ix,iy,izE)+ Econd%rvArray(imgrid)%y(ix,iy,iz)*Vdn/S
                   temp(ix-1,iy,izE) = temp(ix-1,iy,izE)+Econd%rvArray(imgrid)%y(ix,iy,iz)*Vds/S
                enddo
-            enddo
-          enddo
+             enddo
+           enddo
 
-         ! Ez edges
-         do ix = 2, nx
+           ! Ez edges
+           do ix = 2, nx
             do iy = 2, ny
                do iz = nzAir+1,nz
                   izE = iz-nzAir
@@ -393,13 +394,13 @@
                   temp(ix-1,iy-1,izE) = temp(ix-1,iy-1,izE)+Econd%rvArray(imgrid)%z(ix,iy,iz)*Vsl/S
                enddo
             enddo
-          enddo
+           enddo
 
-        !Store temp on subgrids to model parameters on the finnest grid, where m is defined
-          do iz = 1,nz
-             izv = iz+nzCum
-            do iy =1 ,ny
-              do ix = 1, nx
+          !Store temp on subgrids to model parameters on the finnest grid, where m is defined
+           do iz = 1,nz
+              izv = iz+nzCum
+             do iy =1 ,ny
+               do ix = 1, nx
                 do ic = 1, ccoeff_current
                   if(m%paramType .eq. LOGE) then
                     m%cellCond%v(ccoeff_current*(ix-1)+ic,ccoeff_current*(iy-1)+ic,izv) = temp(ix,iy,iz) &
@@ -408,20 +409,20 @@
                     m%cellCond%v(ccoeff_current*(ix-1)+ic,ccoeff_current*(iy-1)+ic,izv) = temp(ix,iy,iz)
                   endif
                 enddo ! ic
-              enddo !ix
-            enddo ! iy
-          enddo !iz
+               enddo !ix
+              enddo ! iy
+            enddo !iz
+        endif ! Do nothing for Air
         nzCum = nzCum + m%grid%gridArray(imgrid)%nzEarth
 
-      enddo ! global loop on subgrids
+      enddo ! Global loop over subgrids
 
         m%zeroValued = .false.
 
         deallocate(temp, stat=status)
-
       end subroutine EdgeToModelParamMG
 
-  !**********************************************************************
+  ! *********************************************************************
   function ModelParamToOneEdgeMG(m,xyz,is,ix,iy,iz) result(r)
 
   ! This function is needed for the interpolation in Multigrid case

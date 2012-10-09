@@ -280,7 +280,7 @@ Contains
     end if
 
     ! need to average and copy fields from E0 cvector to cvector_mg
-    call c2mg(E0mg, TempE0)
+    e0mg = TempE0 ! c2mg
 
     ! Cell conductivity array is no longer needed
     ! NOT TRUE: needed for imode=2
@@ -1252,7 +1252,8 @@ Contains
 
     call create(mgrid, eTemp, eInmg%gridtype)
     ! convert cvector_mg to cvector
-    eTemp = eInmg
+
+    eTemp = eInmg !mg2c
 
     nx = mgrid%nx
     ny = mgrid%ny

@@ -80,7 +80,7 @@ Contains
 	  ! allocate space for sparse rows of L
 	  allocate(Lz(nFunc))
 	  do iFunc=1,nFunc
-		  call create_sparseVector(e0%grid,iTx,Lz(iFunc))
+		  call create(e0%grid,iTx,Lz(iFunc)) !create_sparseVector
 	  end do
 
     ! make sure that predicted data do not have error bars

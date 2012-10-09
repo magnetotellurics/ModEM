@@ -48,12 +48,12 @@ module sg_sparse_vector ! MULTI-GRID
   END INTERFACE
 
   INTERFACE dotProd
-     module procedure dotProd_scvector_f
+     module procedure dotProd_scvector_mg_f
      !module procedure dotProd_csvector_f
   END INTERFACE
 
   INTERFACE dotProd_noConj
-     module procedure dotProd_noConj_scvector_f
+     module procedure dotProd_noConj_scvector_mg_f
      !module procedure dotProd_noConj_csvector_f
   END INTERFACE
 
@@ -79,7 +79,7 @@ module sg_sparse_vector ! MULTI-GRID
   public			:: newValueC_sparsevecc, newValueR_sparsevecc
   public			:: copyValue_csvector, conjg_sparsevecc_f
   public			:: copy_sparsevecc, linComb_sparsevecc
-  public			:: dotProd_scvector_f, dotProd_csvector_f
+  public			:: dotProd_scvector_mg_f, dotProd_csvector_f
   public			:: add_scvector_mg
 
 !**************************************************************************
@@ -421,7 +421,7 @@ Contains
   ! **********************************************************************
   ! compute complex dot product between a sparse vector SV and a vector of
   ! type cvector ... result in c
-  function dotProd_scvector_f(SV,V) result(c)
+  function dotProd_scvector_mg_f(SV,V) result(c)
 
     implicit none
     type (sparsevecc), intent(in)		:: SV
@@ -480,7 +480,7 @@ Contains
 
     enddo
 
-  end function dotProd_scvector_f
+  end function dotProd_scvector_mg_f
 
   ! **********************************************************************
   ! compute complex dot product between a sparse vector SV and a vector of
@@ -550,24 +550,27 @@ Contains
   ! compute complex dot product between a sparse vector SV and a vector of
   ! type cvector ... result in c
   !   FOR THIS VERSION FIRST VECTOR IS NOT CONJUGATED
-  function dotProd_noConj_scvector_f(SV,V) result(c)
+  function dotProd_noConj_scvector_mg_f(SV,V) result(c)
+
+  ! 09.10.2012 Maria
+  ! modified for cvector_mg
 
     implicit none
-    type (sparsevecc), intent(in)		:: SV
+    type (sparsevecc), intent(in)		    :: SV
     type (cvector_mg), intent(in)			:: V
-    complex(kind=prec)				:: c
-    integer					:: i
-    integer					:: xi, yi, zi
+    complex(kind=prec)				        :: c
+    integer					                :: i
+    integer				                	:: xi, yi, zi
 
     c = C_ZERO
 
     if((.not.SV%allocated).or.(.not.V%allocated)) then
-       write(0,*) 'RHS not allocated yet for dotProd_scvector_f'
+       write(0,*) 'RHS not allocated yet for dotProd_noConj_scvector_mg_f'
        return
     endif
 
     if (SV%gridType /= V%gridType) then
-       write(0,*) 'not compatible usage for dotProd_scvector_f'
+       write(0,*) 'not compatible usage for dotProd_noConj_scvector_mg_f'
        return
     endif
 
@@ -603,13 +606,13 @@ Contains
           end if
 
        else
-          write(0,*) 'IJK out of bounds for dotProd_scvector_f'
+          write(0,*) 'IJK out of bounds for dotProd_noConj_scvector_mg_f'
           return
        endif
 
     enddo
 
-  end function dotProd_noConj_scvector_f
+  end function dotProd_noConj_scvector_mg_f
 
 
   ! **********************************************************************
