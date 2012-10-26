@@ -94,6 +94,12 @@ subroutine PCG(b,x, PCGiter)
 
      Call Minv(r,s)
 
+!print*, s%csarray(2)%v(5,2,1)
+!print*, s%csarray(2)%v(5,3,1)
+!print*, s%csarray(2)%v(5,4,1)
+!print*, s%csarray(2)%v(5,5,1)
+!print*, s%csarray(2)%v(5,6,1)
+
      delta = dotProd(r,s)
      if(i.eq.1) then
         p = s

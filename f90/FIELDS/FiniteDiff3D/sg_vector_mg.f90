@@ -58,13 +58,11 @@ implicit none
       module procedure add_cvector_mg
       module procedure add_rvector_mg
     end interface
-
     ! pointwise vector (two vector data types) multiplication of edge/ face
     ! nodes
     ! and pointwise real-complex (mixed) multiplication of edge/ face nodes
     ! Both are vector data types
 
-    ! IS IT REALLY NEEDED?
     interface diagMult
       module procedure diagMult_cvector_mg
       module procedure diagMult_rvector_mg
@@ -390,6 +388,7 @@ Contains
                 do ic = 1, ccoeff_current
               ! average fields
                 tempE2(ix,iy,iz) = tempE2(ix,iy,iz) + e1%x(ccoeff_current*(ix-1)+ic,ccoeff_current*(iy-1)+1,izv)*e1%grid%dx(ccoeff_current*(ix-1)+ic)
+              ! copy fields
               ! tempE2(ix,iy,iz) = e1%x(ccoeff_current*(ix-1)+ic,ccoeff_current*(iy-1)+1,izv)
               enddo ! ic
                 tempE2(ix,iy,iz) = tempE2(ix,iy,iz)/e2%grid%gridArray(imgrid)%dx(ix)
@@ -474,8 +473,15 @@ Contains
   end subroutine c2mg
 
   ! *****************************************************************************
-  ! convert cvector_mg to cvector
-  ! adjoint to c2mg. Copy fields
+
+  ! convert cvector_mg to cvector. Copy fields
+  ! Modified by Cherevatova (Oct 2012). Copying is not enough.
+  ! Copy fields in the direction of the polarization (Ex%x or Ey%y)
+  ! Linear approximation for the perpendicular directions (Ex%y, Ey%x) and for Ez
+
+  ! this subroutine is used only in write_solnVectorMTX, to plot a vertical cut of the fields
+  ! and in AdjtBC, as BC are not mg
+
   subroutine mg2c(e2, e1)
 
   implicit none
@@ -483,8 +489,10 @@ Contains
     type(cvector), intent(inout)  :: e2  ! cvector out
 
     ! local
-    integer :: nzCum, ccoeff_current, nx,ny,nz
-    integer  :: imgrid,ix,iy,iz,izv, ic, iyy
+    integer :: nzCum, nc, nx,ny,nz
+    integer  :: imgrid,ix,iy,iz,izv, icx,icy
+    integer  :: status
+    complex,allocatable   :: tempE1(:,:,:), tempE2(:,:,:)
 
     if (.not.e1%allocated)then
       print *, 'Error mg2c; e1 (cvector_mg) is not allocated'
@@ -497,45 +505,74 @@ Contains
     ! check gridType
     if (e1%gridType == e2%gridType) then
 
+    allocate(TempE1(e2%grid%nx+1,e2%grid%ny+1,e2%grid%nz ),TempE2(e2%grid%nx+1,e2%grid%ny+1,e2%grid%nz), stat=status)
+
         nzCum = 0
         do imgrid = 1, e1%mgridSize  ! Global loop over sub-grids
            nx = e1%cvArray(imgrid)%nx
            ny = e1%cvArray(imgrid)%ny
            nz = e1%cvArray(imgrid)%nz
-           ccoeff_current = 2**e1%coarseness(imgrid)
+           nc= 2**e1%coarseness(imgrid)
            do iz = 1, nz+1
               izv = iz + nzCum
               ! Ex components
-              do iy = 1, ny
+             do iy = 1, ny
                  do ix =1, nx
-                    do ic = 1, ccoeff_current
-                       e2%x(ccoeff_current*(ix-1)+ic,iy,izv) = e1%cvArray(imgrid)%x(ix,iy,iz)
-                       e2%x(ix,ccoeff_current*(iy-1)+ic,izv) = e1%cvArray(imgrid)%x(ix,iy,iz)
+                      do icx = 1, nc
+                        e2%x(nc*(ix-1)+icx,nc*(iy-1)+1,izv) = e1%cvArray(imgrid)%x(ix,iy,iz)
+                        do icy = 2, nc
+                          e2%x(nc*(ix-1)+icx,nc*(iy-1)+icy,izv) = ((e1%cvArray(imgrid)%x(ix,iy+1,iz) - e1%cvArray(imgrid)%x(ix,iy,iz))/ &
+                                  e1%grid%gridArray(imgrid)%dy(iy))*e2%grid%dy(nc*(iy-1)+icy)+e1%cvArray(imgrid)%x(ix,iy,iz)
+                        enddo ! icy
+                    enddo !icx
+                 enddo ! ix
+              enddo ! iy
               ! Ey components
-                       e2%y(ccoeff_current*(ix-1)+ic,iy,izv) = e1%cvArray(imgrid)%y(ix,iy,iz)
-                       e2%y(ix,ccoeff_current*(iy-1)+ic,izv) = e1%cvArray(imgrid)%y(ix,iy,iz)
-                     enddo ! ic
-                  enddo ! ix
-               enddo ! iy
-            enddo ! iz
+             do ix = 1, nx
+                 do iy =1, ny
+                      do icy = 1, nc
+                        e2%y(nc*(ix-1)+1,nc*(iy-1)+icy,izv) = e1%cvArray(imgrid)%y(ix,iy,iz)
+                        do icx = 2, nc
+                          e2%y(nc*(ix-1)+icx,nc*(iy-1)+icy,izv) = ((e1%cvArray(imgrid)%y(ix+1,iy,iz) - e1%cvArray(imgrid)%y(ix,iy,iz))/ &
+                                  e1%grid%gridArray(imgrid)%dx(ix))*e2%grid%dx(nc*(ix-1)+icx)+e1%cvArray(imgrid)%y(ix,iy,iz)
+                        enddo ! icx
+                    enddo !icy
+                 enddo ! iy
+              enddo ! ix
+           enddo !iz
 
-            ! Ez components
-           do iz = 1, nz
+          ! Ez components
+          do iz = 1, nz
               izv = iz + nzCum
               do iy = 1, ny
                  do ix =1, nx
-                   do ic = 1, ccoeff_current
-                    e2%z(ccoeff_current*(ix-1)+ic,iy,izv) = e1%cvArray(imgrid)%z(ix,iy,iz)
-                    e2%z(ix,ccoeff_current*(iy-1)+ic,izv) = e1%cvArray(imgrid)%z(ix,iy,iz)
-                   enddo ! ic
-                 enddo ! ix
-              enddo ! iy
+                   do icy = 1, nc
+                      TempE1(nc*(ix-1)+1,nc*(iy-1)+icy,izv)= e1%cvArray(imgrid)%z(ix,iy,iz)
+                     do icx = 2, nc
+                     TempE1(nc*(ix-1)+icx,nc*(iy-1)+icy,izv) = ((e1%cvArray(imgrid)%z(ix+1,iy,iz) - e1%cvArray(imgrid)%z(ix,iy,iz))/ &
+                                  e1%grid%gridArray(imgrid)%dx(ix))*e2%grid%dx(nc*(ix-1)+icx)+e1%cvArray(imgrid)%z(ix,iy,iz)
+                     enddo ! icx
+                   enddo ! icy
+
+                   do icx = 1, nc
+                     TempE2(nc*(ix-1)+icx,nc*(iy-1)+1,izv)= e1%cvArray(imgrid)%z(ix,iy,iz)
+                     do icy = 2, nc
+                     TempE2(nc*(ix-1)+icx,nc*(iy-1)+icy,izv) = ((e1%cvArray(imgrid)%z(ix,iy+1,iz) - e1%cvArray(imgrid)%z(ix,iy,iz))/ &
+                                  e1%grid%gridArray(imgrid)%dy(iy))*e2%grid%dy(nc*(ix-1)+icy)+e1%cvArray(imgrid)%z(ix,iy,iz)
+                     enddo ! icx
+                   enddo ! icy
+                 enddo ! iy
+             enddo
           enddo !iz
         nzCum = nzCum + nz
         enddo   ! Global loop over sub-grids
+
+        e2%z = TempE1 + TempE2
     else
       print *, 'Error mg2c; cvector and cvector_mg are not the same gridType'
     endif
+
+  deallocate(TempE1,TempE2)
 
   end subroutine mg2c
 
