@@ -16,7 +16,7 @@ module ModelSpace
 !    read_modelParam, write_modelParam.
 !
 ! Also includes conductivity mappings on the grid:
-!    ModelParamToCell, ModelParamToEdgeMG, EdgeToModelParamMG,
+!    ModelParamToCell, ModelParamToEdge, EdgeToModelParam,
 !    QtoModelParam, sigC
 
   use griddef

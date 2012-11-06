@@ -314,7 +314,7 @@ Contains
                   E2%xZMax, E2%yZMax, STAT=status)
           end if
           !  then allocate E2 as correct size ...
-          Call create_cboundary(E1%grid, E2)
+          Call create(E1%grid, E2) !create_cboundary
           !   .... and copy E1
           E2%xYMax = E1%xYMax
           E2%zYMax = E1%zYMax
@@ -520,7 +520,7 @@ Contains
     endif
 
     ! In function version, appropriate data types need to be created
-    Call create_cboundary(E1%grid, E3)
+    Call create(E1%grid, E3) !create_cboundary
     ! check to see if LHS (E3) is active (allocated)
     if(.not.E3%allocated) then
        write(0,*) 'LHS was not allocated for add_cboundary_f'
@@ -990,7 +990,7 @@ Contains
   ! * specific frequency/ period and mode.
   ! * editied for the case of cvector_mg !!! Multi-grid
   subroutine copy_bcvector_mg(inBC, outE)
-  ! created 10.07.2012
+  ! created by Cherevatova (Jul, 2012)
 
     implicit none
     ! boundary conditions as an input

@@ -6,7 +6,7 @@ module EMfieldInterp
 
   use utilities
   use sg_sparse_vector
-  use ModelSpace, sigC => ModelParamToOneEdgeMG
+  use ModelSpace, sigC => ModelParamToOneEdge
 
   implicit none
 
@@ -19,8 +19,6 @@ Contains
   ! electrical field coeffcients in the sparse vector
   subroutine EinterpSetUp(inGrid,x,xyz,LC,CondE)
 
-  ! 22.09.2012   Maria
-  ! This routine is re-written for multi-grid case
   ! _________________________________________________________________________________
     ! sets up coefficients in sparse vector LC for evaluation/interpolation
     ! at location x of electric field vector defined on edges of staggered

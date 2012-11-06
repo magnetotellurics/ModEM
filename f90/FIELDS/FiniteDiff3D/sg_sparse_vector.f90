@@ -1,7 +1,7 @@
 ! *****************************************************************************
 module sg_sparse_vector ! MULTI-GRID
 
-  ! 25.09.2012 Maria
+  ! Created by Cherevatova (Aug, 2012)
   ! this is multi-grid version of the sg_sparse_vector;
   ! it was modified for the dataFunc computations. For this purposes we do not
   ! need the multi-grid structure for the sparse vector ;
@@ -85,7 +85,6 @@ module sg_sparse_vector ! MULTI-GRID
 !**************************************************************************
   type :: sparsevecc
 
-     ! 25.09.2012 Maria
      ! this type was slightly changed
      ! new attribute currSG was added
      !_______________________________________________________________________
@@ -257,7 +256,7 @@ Contains
     	end do
 	end if
 
-    call deall_sparsevecc(tempLC)
+    call deall(tempLC) !deall_sparsevecc
 
   end subroutine reall_sparsevecc
 
@@ -283,13 +282,13 @@ Contains
 
     ! allocate output if needed, otherwise check for consistency
     if(.not. SV2%allocated) then
-       call create_sparsevecc(SV1%nCoeff, SV2, SV1%gridType)
+       call create(SV1%nCoeff, SV2, SV1%gridType)!create_sparsevecc
     elseif(SV1%nCoeff .ne. SV2%nCoeff) then
         ! internal memory allocation is strongly discouraged. But this
         ! is an exception
-        call deall_sparsevecc(SV2)
+        call deall(SV2) !deall_sparsevecc
         ! ... now allocate for correct number of components
-        call create_sparsevecc(SV1%nCoeff,SV2, SV1%gridType)
+        call create(SV1%nCoeff,SV2, SV1%gridType) !create_sparsevecc
     end if
 
     ! happen to have the same specs
@@ -308,7 +307,7 @@ Contains
     end if
 
     if(SV1%temporary) then
-    	call deall_sparsevecc(SV1)
+    	call deall(SV1)!deall_sparsevecc
     end if
 
   end subroutine copy_sparsevecc
@@ -403,11 +402,11 @@ Contains
           write(0,*) 'not compatible usage for scMult_sparsevecc'
           return
        elseif(SV2%nCoeff .ne. SV1%nCoeff) then
-          call deall_sparsevecc(SV2)
-          call create_sparsevecc(SV1%nCoeff,SV2,SV1%gridType)
+          call deall(SV2) !deall_sparsevecc
+          call create(SV1%nCoeff,SV2,SV1%gridType)!create_sparsevecc
        endif
     else
-       call create_sparsevecc(SV1%nCoeff,SV2,SV1%gridType)
+       call create(SV1%nCoeff,SV2,SV1%gridType)!create_sparsevecc
     endif
 
     SV2%i = SV1%i
@@ -759,11 +758,11 @@ Contains
     !  make sure SV2 is allocated and of the correct size
     if(SV2%allocated) then
        if ((SV2%gridType .ne. SV1%gridType) .or. (SV2%nCoeff .ne. SV1%nCoeff)) then
-          call deall_sparsevecc(SV2)
-          call create_sparsevecc(SV1%nCoeff,SV2,SV1%gridType)
+          call deall(SV2) !deall_sparsevecc
+          call create(SV1%nCoeff,SV2,SV1%gridType) !create_sparsevecc
        endif
     else
-       call create_sparsevecc(SV1%nCoeff,SV2,SV1%gridType)
+       call create(SV1%nCoeff,SV2,SV1%gridType) !create_sparsevecc
     endif
 
     SV2%i = SV1%i

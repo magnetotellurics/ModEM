@@ -78,7 +78,7 @@
     !  INPUT: background model parameter for linearization
     type(modelParam_t),  intent(in)	     :: m0
 
-    call ModelParamToEdgeMG(m, Econd,m0)
+    call ModelParamToEdge(m, Econd,m0)
 
   end subroutine dModelParamToEdge
 
@@ -87,7 +87,7 @@
   ! arithmetic averaging of the m.p. for coarser grid
   ! LINEARIZED MAPPING case need to be checked
 
-    subroutine ModelParamtoEdgeMG(m, Econd,m0)
+    subroutine ModelParamtoEdge(m, Econd,m0)
 
     implicit none
     !  INPUTS:  model parameter
@@ -266,7 +266,7 @@
 
     deallocate(temp,stat=status)
     deallocate(v,stat=status)
-    end subroutine ModelParamtoEdgeMG
+    end subroutine ModelParamtoEdge
 
 ! ***********************************************************************
   subroutine dEdgeToModelParam(Econd,m,m0)
@@ -282,14 +282,14 @@
     !  INPUT background model parameter
     type(modelParam_t), intent(in)	    :: m0
 
-    call EdgeToModelParamMG(Econd,m,m0)
+    call EdgeToModelParam(Econd,m,m0)
 
     m%zeroValued = .false.
 
   end subroutine dEdgeToModelParam
 
     !**********************************************************************
-    subroutine EdgeToModelParamMG(Econd,m,m0)
+    subroutine EdgeToModelParam(Econd,m,m0)
     !  Maps from a real vector (defined on edges of the MULTIGRID) to modelParam;
     !    the adjoint of linear mapping implemented by ModelParamToEdgeMG
     !
@@ -420,10 +420,9 @@
         m%zeroValued = .false.
 
         deallocate(temp, stat=status)
-      end subroutine EdgeToModelParamMG
-
+      end subroutine EdgeToModelParam
   ! *********************************************************************
-  function ModelParamToOneEdgeMG(m,xyz,is,ix,iy,iz) result(r)
+  function ModelParamToOneEdge(m,xyz,is,ix,iy,iz) result(r)
 
   ! This function is needed for the interpolation in Multigrid case
   !______________________________________________________________________
@@ -513,5 +512,5 @@
             temp(1,2)*w12 + temp(2,2)*w22)/S
 
     endselect
-  end function ModelParamToOneEdgeMG
+  end function ModelParamToOneEdge
 

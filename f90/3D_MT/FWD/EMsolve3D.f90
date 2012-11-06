@@ -92,8 +92,7 @@ Contains
 
   subroutine FWDsolve3D(bRHS,omega,eSol)
 
-  ! 27.09.2012  ('trans' for mg) Maria
-  ! 28.09.2012  (revised: bMG,tempMG,sMG removed; set up b,temp as cvector_mg) Maria
+  ! modified for multi-grid by Cherevatova (2012)
 
     ! redefine some of the interfaces (locally) for our convenience
     use sg_vector
@@ -136,11 +135,11 @@ Contains
     endif
 
     ! allocate/initialize local data structures
-    Call create(bRHS%grid, b, eSol%gridType)
+    Call create(bRHS%grid, b, eSol%gridType) !create_cvector_mg
     Call create(bRHS%grid, temp, eSol%gridType)
     ! this is just a work array, at a given instance only single frequency and
     ! mode is being used
-    Call create(bRHS%grid, tempBC)
+    Call create(bRHS%grid, tempBC)  !create_cboundary
 
     if(bRHS%nonzero_Source) then
        call create(bRHS%grid,phi0,CORNER)
