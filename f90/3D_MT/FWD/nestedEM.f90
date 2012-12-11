@@ -65,7 +65,7 @@ type(sparsevecc), pointer, dimension(:)                         ::  e_sparse_vec
 
 Contains
 
-#ifdef Nested
+#IFDEF Nested
 subroutine Interpolate_BC_from_E_soln(eAll_larg,Larg_Grid,grid,BC)
 
 
@@ -164,7 +164,7 @@ subroutine Interpolate_BC_from_E_soln(eAll_larg,Larg_Grid,grid,BC)
     end do
 
 end subroutine Interpolate_BC_from_E_soln
-#endif
+#ENDIF
 
   ! ***************************************************************************
   ! * BOP
@@ -487,7 +487,7 @@ end subroutine Interpolate_BC_from_E_soln
   ! and then call NestedE(ef, eOut) for complete intepolation together.
   ! However, the siteLocations(nSites) needs to be calculated before hand.
   ! eOut has to be contained within ef
-#ifdef Nested
+#IFDEF Nested
   subroutine NestedE(ef, eOut)
 
     implicit none
@@ -543,6 +543,6 @@ end subroutine Interpolate_BC_from_E_soln
      totalSites = 0
      
 end subroutine NestedE
-#endif
+#ENDIF
 
 end module nestedEM

@@ -73,7 +73,7 @@
        call setup_grid(grid)
 
 	  ! Create and read in the resistivity values
-      call create_rscalar(grid,rho,CELL_EARTH)
+      call create(grid,rho,CELL_EARTH) ! create_rscalar
 
  	  ! Read the resistivity
  	  do k=1,nzEarth
@@ -87,12 +87,13 @@
       ! call read_rscalar(ioPrm,rho)
 
       ! Convert from conductivity to resistivity
-      call copy_rscalar(ccond,rho)
+      call copy_rscalar(ccond,rho) ! copy_rscalar
+
       if (index(paramType,trim(LOGE))>0) then
-      	ccond%v = - rho%v
+              ccond%v = - rho%v
       else if (index(paramType,trim(LINEAR))>0) then
-       	ccond%v = ONE/rho%v
- 	  end if
+              ccond%v = ONE/rho%v
+      end if
 
       ! In case the grid origin is stored next (in metres!)...
       read(ioPrm,*,iostat=istat) grid%ox, grid%oy, grid%oz
@@ -121,8 +122,8 @@
 	  call setType_modelParam(m,paramType)
 
 	  ! now done with the rscalars, so deallocate
-	  call deall_rscalar(rho)
-	  call deall_rscalar(ccond)
+	  call deall(rho) ! deall_rscalar
+	  call deall(ccond)
 
 	end subroutine read_modelParam_ws
     ! *****************************************************************
@@ -226,6 +227,7 @@
 
       ! Convert conductivity to resistivity
       call copy_rscalar(rho,ccond)
+
       if (index(paramType,trim(LOGE))>0) then
       	rho%v = - ccond%v
       else if (index(paramType,trim(LINEAR))>0) then

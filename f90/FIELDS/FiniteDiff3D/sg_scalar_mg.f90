@@ -282,8 +282,8 @@
               e2%csArray(imgrid)%ny ==  e1%csArray(imgrid)%ny.and. &
               e2%csArray(imgrid)%nz ==  e1%csArray(imgrid)%nz) then
 
-                 e2%csArray(imgrid)%v = e1%csArray(imgrid)%v
-                 e2%coarseness = e1%coarseness
+                    e2%csArray(imgrid)%v = e1%csArray(imgrid)%v
+
                  e2%csArray(imgrid)%gridType = e1%csArray(imgrid)%gridType
              else
                 print *, 'e1 and e2 are not the same size; copy_cscalar_mg'
@@ -485,7 +485,7 @@
         type (cscalar_mg), intent(in)   :: e1
         type (cscalar_mg), intent(inout)  :: e2
 
-        integer  :: imgrid
+        integer  :: imgrid, ix, iy, iz
 
         if(.not.e1%allocated) then
           print *, 'RHS not allocated yet for scMultAdd_cscalar'
@@ -502,7 +502,9 @@
              if((e1%csArray(imgrid)%nx == e2%csArray(imgrid)%nx).and.(e1%csArray(imgrid)%ny == e2%csArray(imgrid)%ny) &
                                       .and.(e1%csArray(imgrid)%nz == e2%csArray(imgrid)%nz)) then
                  ! complex scalar multiplication for v-component
-                 e2%csArray(imgrid)%v = e2%csArray(imgrid)%v + e1%csArray(imgrid)%v * c
+
+                   e2%csArray(imgrid)%v = e2%csArray(imgrid)%v + e1%csArray(imgrid)%v * c
+
              else
                print *, 'Error:scMultAdd_cscalar: scalars not same size'
              end if
@@ -512,7 +514,7 @@
           endif
         end if
 
-      end subroutine scMultAdd_cscalar_mg ! scMultAdd_cscalar
+      end subroutine scMultAdd_cscalar_mg
 
     ! *************************************************************************************
       subroutine subtract_cscalar_mg(e1, e2, e3)
@@ -546,7 +548,9 @@
               if((nx == e2%csArray(imgrid)%nx).and.(ny == e2%csArray(imgrid)%ny).and.(nz == e2%csArray(imgrid)%nz).and.&
                   (nx == e3%csArray(imgrid)%nx).and.(ny == e3%csArray(imgrid)%ny).and.(nz == e3%csArray(imgrid)%nz)) then
                 ! subtract v-component
+
                 e3%csArray(imgrid)%v = e1%csArray(imgrid)%v - e2%csArray(imgrid)%v
+
               else
                 print *, 'Error:subtract_cscalar_mg: scalars not same size'
               end if
@@ -590,8 +594,9 @@
                 (e1%csArray(imgrid)%nx == e3%csArray(imgrid)%nx).and.(e1%csArray(imgrid)%ny == e3%csArray(imgrid)%ny).and. &
                 (e1%csArray(imgrid)%nz == e3%csArray(imgrid)%nz)) then
 
-                 ! form linear combinatoin
-                 e3%csArray(imgrid)%v = inc1*e1%csArray(imgrid)%v + inc2*e2%csArray(imgrid)%v
+               ! form linear combination
+
+                    e3%csArray(imgrid)%v = inc1*e1%csArray(imgrid)%v + inc2*e2%csArray(imgrid)%v
 
             else
               print *, 'Error:linComb_cscalar:  scalars not same size'
@@ -599,7 +604,7 @@
 
           enddo
         else
-          print *, 'not compatible usage for linComb_cscalar'
+          print *, 'not compatible usage for linComb_cscalar_mg'
         end if
       end if
       end subroutine linComb_cscalar_mg

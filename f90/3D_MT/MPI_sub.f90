@@ -1,6 +1,6 @@
 
 module MPI_sub
-#ifdef MPI
+#IFDEF MPI
 
 use math_constants
 use utilities
@@ -303,6 +303,6 @@ subroutine Unpack_eAll_para_vec(e)
 end subroutine Unpack_eAll_para_vec
 
 
-#endif
+#ENDIF
 
 end module MPI_sub

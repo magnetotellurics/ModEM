@@ -28,9 +28,9 @@ module ModelSpace
   use sg_vector
   use sg_vector_mg
   use sg_sparse_vector
-#ifdef MPI
+#IFDEF MPI
   use MPI_declaration
-#endif
+#ENDIF
 
   implicit none
 
@@ -144,9 +144,9 @@ Contains
 #include "modelParamIO/WS.inc"
 
 !  MPI model parameter, if needed
-#ifdef MPI
+#IFDEF MPI
 #include "ModelParam_MPI.inc"
-#endif
+#ENDIF
 !**********************************************************************
 !
    !  create_modelParam allocates and initializes arrays for
@@ -306,6 +306,8 @@ Contains
      real(kind=prec),intent(in)       :: a1,a2
      type(modelParam_t), intent(in)		:: m1,m2
      type(modelParam_t), intent(inout)		:: m
+     ! local
+     integer                                :: ix, iy, iz
 
      if((m1%Ny .ne. m2%Ny).or. (m1%Nx .ne. m2%Nx) .or. &
 		(m1%NzEarth .ne. m2%NzEarth)) then
@@ -327,7 +329,9 @@ Contains
      else
         call create_modelParam(m1%grid,m1%paramtype,m)
      endif
+
      m%cellCond%v = a1*m1%cellCond%v + a2*m2%cellCond%v
+
      !  we are implicitly assuming that if m1 and m2 are the same
      !   size other parameters are of the same type
      m%AirCond = m1%AirCond
@@ -464,6 +468,8 @@ Contains
 
      type(modelParam_t), intent(in)       :: mIn
      type(modelParam_t), intent(inout)    :: mOut
+     ! local
+     integer                              :: ix, iy, iz
 
      ! if mOut is allocated, check to see if if is of same size as
      !   mIn; if not, deallocate and reallocate as correct size; otherwise
@@ -477,10 +483,10 @@ Contains
      else
         call create_modelParam(mIn%grid,mIn%paramtype,mOut)
      endif
+
      mOut%cellCond%v = mIn%cellCond%v
      mOut%AirCond = mIn%AirCond
      mOut%zeroValued = mIn%zeroValued
-
      ! no need to set updated to TRUE - this just makes a copy.
      ! clean up the memory if this is used with an "=" sign.
      if(mIn%temporary) then

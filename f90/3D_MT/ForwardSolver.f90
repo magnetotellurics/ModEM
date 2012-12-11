@@ -42,11 +42,10 @@ public exitSolver
 
 ! solver routines
 public fwdSolve, sensSolve
-
 logical, save, private		:: modelDataInitialized = .false.
 logical, save, private		:: BC_from_file_Initialized = .false.
 !  logical, save, private		:: sigmaNotCurrent = .true.
-
+type (timer_t),save,private         :: timer
 Contains
 
    !**********************************************************************
@@ -91,13 +90,15 @@ Contains
    b0%adj = 'FWD'
    b0%sparse_Source = .false.
    call create_RHS(grid,iTx,b0)
-
+#IFDEF Timer
+      write (*,'(a12,a30,f12.6)')   node_info, 'create RHS: elapsed time (sec)', elapsed_time(Globaltimer)
+#ENDIF
    !In case of interpolating the BC from eAll_larg   
    ! If eAll_ larg solution is already allocated, then use that to interpolate the BC from it
    if (eAll_larg%allocated) then
-#ifdef Nested
+#IFDEF Nested
      call Interpolate_BC_from_E_soln (eAll_larg,Larg_Grid,grid,b0%bc)
-#endif
+#ENDIF
      !Once we are ready from eAll_larg, deallocate it, and keep track, that BC_from_file are already Initialized.
      call deall(eAll_larg)
      call deall_grid(Larg_Grid)
@@ -110,7 +111,9 @@ Contains
 
    !  allocate for background solution
    call create_solnVector(grid,iTx,e0)
-
+#IFDEF Timer
+      write (*,'(a12,a40,f12.6)')    node_info, 'create SolnVect: elapsed time (sec)', elapsed_time(Globaltimer)
+#ENDIF
    if(initForSens) then
 
       !  allocate for sensitivity solution, RHS
@@ -126,13 +129,20 @@ Contains
         comb%b(k)%adj = ''
         !  using all this information, reallocate storage for each polarization
         call create_RHS(grid,iTx,comb%b(k))
+
       enddo
    endif
 
    if(.NOT.modelDataInitialized) then
    !   Initialize modelData, setup model operators
       call ModelDataInit(grid)
+#IFDEF Timer
+      write (*,'(a12,a40,f12.6)')    node_info, 'ModelDataInit: elapsed time (sec)', elapsed_time(Globaltimer)
+#ENDIF
       call ModelOperatorSetup()
+#IFDEF Timer
+      write (*,'(a12,a40,f12.6)')    node_info, 'ModelOperSetup: elapsed time (sec)', elapsed_time(Globaltimer)
+#ENDIF
       modelDataInitialized = .true.
    endif
 
@@ -146,6 +156,7 @@ Contains
 !     with what is stored)
 !  if(sigmaNotCurrent) then
        call updateCond(sigma)
+
 !      sigmaNotCurrent = .false.
 !   endif
 
@@ -216,13 +227,26 @@ Contains
    !  loop over polarizations
 
    do iMode = 1,e0%nPol
-
       ! compute boundary conditions for polarization iMode
       !   uses cell conductivity already set by updateCond
+#IFDEF Timer
+      call reset_time(timer)
+#ENDIF
       call SetBound(e0%Pol_index(iMode),period,e0%pol(imode),b0%bc,iTx)
+#IFDEF Timer
+      write (*,'(a12,a30,f12.6)')    node_info, 'SetBound: elapsed time (sec)', elapsed_time(Globaltimer)
+      write (*,'(a12,a30,f12.6)')    node_info, 'SetBound: time taken (sec)', elapsed_time(timer)
+#ENDIF
       write (*,'(a12,a12,a3,a20,i4,a2,es12.6,a15,i2)') node_info, 'Solving the ','FWD', &
 				' problem for period ',iTx,': ',(2*PI)/omega,' secs & mode # ',e0%Pol_index(iMode)
+#IFDEF Timer
+      call reset_time(timer)
+#ENDIF
       call FWDsolve3D(b0,omega,e0%pol(imode))
+#IFDEF Timer
+      write (*,'(a12,a30,f12.6)')    node_info, 'FWDSolve3D: elapsed time (sec) ', elapsed_time(Globaltimer)
+      write (*,'(a12,a30,f12.6)')    node_info, 'FWDSolve3D: time taken (sec) ', elapsed_time(timer)
+#ENDIF
    enddo
 
    ! update pointer to the transmitter in solnVector

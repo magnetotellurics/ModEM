@@ -25,21 +25,23 @@
    !**********************************************************************
    subroutine ModelParamToCell(m ,cCond,paramType,grid,AirCond)
 
-     type(modelParam_t), intent(in)        :: m
-     type(rscalar), intent(inout)	       :: cCond
-     character(80), intent(out), optional  :: paramType
-     type(grid_t), intent(out), optional :: grid
+     type(modelParam_t), intent(in)         :: m
+     type(rscalar), intent(inout)	        :: cCond
+     character(80), intent(out), optional   :: paramType
+     type(grid_t), intent(out), optional    :: grid
      real(kind=prec), intent(out), optional :: AirCond
+     integer                                :: ix, iy, iz, izE
 
      if(cCond%allocated) then
         if((cCond%Ny .ne. m%Ny).or. (cCond%Nx .ne. m%Nx) .or. &
 		(cCond%Nz .ne. m%grid%Nz)) then
-           call deall_rscalar(cCond)
-           call create_rscalar(m%grid,cCond,CENTER)
+           call deall(cCond) ! deall_rscalar
+           call create(m%grid,cCond,CENTER) ! create_rscalar
         endif
      else
-        call create_rscalar(m%grid,cCond,CENTER)
+        call create(m%grid,cCond,CENTER)
      endif
+
      if(m%paramType .eq. LOGE) then
         cCond%v(:,:,1:m%grid%NzAir) = exp(m%AirCond)
         cCond%v(:,:,m%grid%NzAir+1:m%grid%Nz) = exp(m%cellCond%v)
@@ -131,6 +133,7 @@
       allocate(temp(m%grid%nx, m%grid%ny, 0:m%grid%nzEarth+1))
       airCond = m%airCond
       nzCum = 0
+
       v(:,:,1:m%grid%nzEarth) = m%cellCond%v(:,:,:)
       v(:,:,0) = R_ZERO
       v(:,:,m%grid%nzEarth+1) = R_ZERO
@@ -159,26 +162,25 @@
         enddo ! nz
 
         if(m%paramType .EQ. LOGE) then
-        !  if(linearizedMapping) then   ! NEED TO BE CHECKED
-        !    do iz = nzAir,nz+1
-        !       izE = iz - nzAir
-        !       izv = izE + nzCum
-        !      do iy = 1, ny
-        !        do ix = 1, nx
-        !          do ic = 1, ccoeff_current
-        !            temp(ix,iy,izE)= temp(ix,iy,izE)*exp(m0%cellCond%v(ccoeff_current*(ix-1)+1, ccoeff_current*(iy-1)+1,izv))
-        !          enddo
-        !        enddo
-        !      enddo
-        !    enddo
-        !    airCond = R_ZERO
-        !  else
-            temp = exp(temp)
-            airCond = exp(m%airCond)
-        !  endif
-        endif
+          if(linearizedMapping) then
+            do iz = nzAir,nz+1
+               izE = iz - nzAir
+               izv = izE + nzCum
+              do iy = 1, ny
+                do ix = 1, nx
+                   temp(ix,iy,izE)= temp(ix,iy,izE)*exp(m0%cellCond%v(ccoeff_current*(ix-1)+1, ccoeff_current*(iy-1)+1,izv))
+                enddo
+              enddo
+            enddo
+            airCond = R_ZERO
+         else
 
-        ! Ex edges
+          temp = exp(temp)
+          airCond = exp(m%airCond)
+         endif
+       endif
+
+       ! Ex edges
         Econd%rvArray(imgrid)%x = 0.0
         do ix =1 ,nx
           do iy = 2,ny

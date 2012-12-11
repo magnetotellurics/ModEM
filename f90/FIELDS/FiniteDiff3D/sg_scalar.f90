@@ -379,7 +379,7 @@ Contains
        E%v = R_ZERO
     end if
 
-  end subroutine create_rscalar  ! create_rscalar
+  end subroutine create_rscalar
 
   ! ***************************************************************************
   ! create_cscalar creates variable of derived type cscalar,
@@ -432,7 +432,7 @@ Contains
     end if
     ! print *, 'E%allocated', E%allocated
 
-  end subroutine create_cscalar  ! create_cscalar
+  end subroutine create_cscalar
 
   !****************************************************************************
   ! create_iscalar creates variable of derived type iscalar,
@@ -482,7 +482,7 @@ Contains
        E%v = 0
     end if
 
-  end subroutine create_iscalar  ! create_iscalar
+  end subroutine create_iscalar
 
   !****************************************************************************
   ! deall_rscalar destoys variable of derived type rscalar,
@@ -504,8 +504,7 @@ Contains
     E%gridType = ''
     E%allocated = .false.
 
-  end subroutine deall_rscalar  ! deall_rscalar
-
+  end subroutine deall_rscalar
 
   !****************************************************************************
   ! deall_cscalar destoys variable of derived type cscalar,
@@ -528,8 +527,7 @@ Contains
     E%gridType = ''
     E%allocated = .false.
 
-  end subroutine deall_cscalar  ! deall_cscalar
-
+  end subroutine deall_cscalar
 
   !****************************************************************************
   ! deall_iscalar destoys variable of derived type iscalar,
@@ -552,7 +550,7 @@ Contains
     E%gridType = ''
     E%allocated = .false.
 
-  end subroutine deall_iscalar  ! deall_iscalar
+  end subroutine deall_iscalar
 
   !****************************************************************************
   ! read_rscalar reads in an rscalar in a simple ASCII format; rscalar has
@@ -914,9 +912,11 @@ Contains
 
           if (E1%gridType == E2%gridType) then
 
-             ! just copy components
-             E2%v = E1%v
-             E2%gridType = E1%gridType
+             ! just copy component
+
+          E2%v = E1%v
+
+          E2%gridType = E1%gridType
 
           else
              write (0, *) 'not compatible usage in copy_rscalar'
@@ -932,7 +932,10 @@ Contains
           !  then allocate E2 as correct size ...
           Call create_rscalar(E1%grid, E2, E1%gridType)
           !   .... and copy E1
+          ! for the large grids we need to code this explicitly(compiler problems)
+
           E2%v = E1%v
+
           E2%gridType = E1%gridType
 
        end if
@@ -981,7 +984,7 @@ Contains
           end if
 
           !  then allocate E2 as correct size ...
-          Call create_cscalar(E1%grid, E2, E1%gridType)
+          Call create(E1%grid, E2, E1%gridType) ! create_cscalar
           !   .... and copy E1
           E2%v = E1%v
           E2%gridType = E1%gridType
@@ -991,10 +994,10 @@ Contains
     end if
 
     if(E1%temporary) then
-    	call deall_cscalar(E1)
+    	call deall(E1) ! deall_cscalar
     end if
 
-  end subroutine copy_cscalar  ! copy_cscalar
+  end subroutine copy_cscalar
 
 
   !****************************************************************************
@@ -1032,7 +1035,7 @@ Contains
           end if
 
           !  then allocate E2 as correct size ...
-          Call create_iscalar(E1%grid, E2, E1%gridType)
+          Call create(E1%grid, E2, E1%gridType) ! create_iscalar
           !   .... and copy E1
           E2%v = E1%v
           E2%gridType = E1%gridType
@@ -1042,10 +1045,10 @@ Contains
     end if
 
     if(E1%temporary) then
-    	call deall_iscalar(E1)
+    	call deall(E1) !deall_iscalar
     end if
 
-  end subroutine copy_iscalar  ! copy_iscalar
+  end subroutine copy_iscalar
 
   !****************************************************************************
   ! zero_rscalar zeros variable of derived data type
@@ -1084,8 +1087,7 @@ Contains
 
     end if
 
-  end subroutine zero_cscalar ! zero_cscalar
-
+  end subroutine zero_cscalar
 
   !****************************************************************************
   ! scMult_cscalar multiplies scalar stored as devired data type
@@ -1115,6 +1117,7 @@ Contains
           if (E1%gridType == E2%gridType) then
 
              ! complex scalar multiplication for v-component
+
              E2%v = E1%v * c
 
           else
@@ -1127,8 +1130,7 @@ Contains
        end if
     end if
 
-  end subroutine scMult_cscalar ! scMult_cscalar
-
+  end subroutine scMult_cscalar
 
   !****************************************************************************
   ! scMult_cscalar_f multiplies scalar stored as devired data type
@@ -1159,6 +1161,7 @@ Contains
           if (E1%gridType == E2%gridType) then
 
              ! complex scalar multiplication for v-component
+
              E2%v = E1%v * c
 
           else
@@ -1174,8 +1177,7 @@ Contains
 
     E2%temporary = .true.
 
-  end function scMult_cscalar_f ! scMult_cscalar_f
-
+  end function scMult_cscalar_f
 
   ! ***************************************************************************
   ! scMult_rscalar multiplies scalar stored as devired data type
@@ -1218,8 +1220,7 @@ Contains
        end if
     end if
 
-  end subroutine scMult_rscalar ! scMult_rscalar
-
+  end subroutine scMult_rscalar
 
   !****************************************************************************
   ! scMult_rscalar_f multiplies scalar stored as devired data type
@@ -1265,7 +1266,7 @@ Contains
 
     E2%temporary = .true.
 
-  end function scMult_rscalar_f ! scMult_rscalar_f
+  end function scMult_rscalar_f
 
   !****************************************************************************
   ! scMultadd_rscalar multiplies scalar E1 stored as derived data type
@@ -1307,7 +1308,7 @@ Contains
        end if
     end if
 
-  end subroutine scMultAdd_rscalar ! scMultAdd_rscalar
+  end subroutine scMultAdd_rscalar
 
   !****************************************************************************
   ! add_rscalar adds scalars stored as devired data type
@@ -1349,8 +1350,7 @@ Contains
        end if
     end if
 
-  end subroutine add_rscalar ! add_rscalar
-
+  end subroutine add_rscalar
 
   !****************************************************************************
   ! add_rscalar_f adds scalars stored as devired data type
@@ -1395,7 +1395,7 @@ Contains
 
     E3%temporary = .true.
 
-  end function add_rscalar_f ! add_rscalar_f
+  end function add_rscalar_f
 
 
   !****************************************************************************
@@ -1438,8 +1438,7 @@ Contains
        end if
     end if
 
-  end subroutine add_cscalar ! add_cscalar
-
+  end subroutine add_cscalar
 
   !****************************************************************************
   ! add_cscalar_f adds scalars stored as devired data type
@@ -1484,8 +1483,7 @@ Contains
 
     E3%temporary = .true.
 
-  end function add_cscalar_f ! add_cscalar_f
-
+  end function add_cscalar_f
 
   !****************************************************************************
   ! subtract_rscalar subtracts scalars stored as devired data type
@@ -1527,8 +1525,7 @@ Contains
        end if
     end if
 
-  end subroutine subtract_rscalar ! subtract_rscalar
-
+  end subroutine subtract_rscalar
 
   !****************************************************************************
   ! subtract_rscalar_f subtracts scalars stored as devired data type
@@ -1573,8 +1570,7 @@ Contains
 
     E3%temporary = .true.
 
-  end function subtract_rscalar_f ! subtract_rscalar_f
-
+  end function subtract_rscalar_f
 
   !****************************************************************************
   ! subtract_cscalar subtracts scalars stored as devired data type
@@ -1616,8 +1612,7 @@ Contains
        end if
     end if
 
-  end subroutine subtract_cscalar ! subtract_cscalar
-
+  end subroutine subtract_cscalar
 
   !****************************************************************************
   ! subtract_cscalar_f subtracts scalars stored as devired data type
@@ -1662,8 +1657,7 @@ Contains
 
     E3%temporary = .true.
 
-  end function subtract_cscalar_f ! subtract_cscalar_f
-
+  end function subtract_cscalar_f
 
   !****************************************************************************
   ! diagMult_rscalar multiplies two scalars E1, E2 stored as devired data
@@ -1692,6 +1686,7 @@ Contains
           if ((E1%gridType == E2%gridType).and.(E1%gridType == E3%gridType)) then
 
              ! pointwise multiplication for v-component
+
              E3%v = E1%v * E2%v
 
           else
@@ -1705,8 +1700,7 @@ Contains
        end if
     end if
 
-  end subroutine diagMult_rscalar ! diagMult_rscalar
-
+  end subroutine diagMult_rscalar
 
   !****************************************************************************
   ! diagMult_rscalar_f multiplies two scalars E1, E2 stored as devired
@@ -1751,8 +1745,7 @@ Contains
 
     E3%temporary = .true.
 
-  end function diagMult_rscalar_f ! diagMult_rscalar_f
-
+  end function diagMult_rscalar_f
 
   !****************************************************************************
   ! diagMult_cscalar multiplies two scalars E1, E2 stored as devired data
@@ -1794,8 +1787,7 @@ Contains
        end if
     end if
 
-  end subroutine diagMult_cscalar ! diagMult_cscalar
-
+  end subroutine diagMult_cscalar
 
   !****************************************************************************
   ! diagMult_cscalar_f multiplies two scalars E1, E2 stored as devired
@@ -1840,8 +1832,7 @@ Contains
 
     E3%temporary = .true.
 
-  end function diagMult_cscalar_f ! diagMult_cscalar_f
-
+  end function diagMult_cscalar_f
 
   !****************************************************************************
   ! diagMult_crscalar multiplies scalar E1 with scalar E2 stored as
@@ -1884,8 +1875,7 @@ Contains
        end if
     end if
 
-  end subroutine diagMult_crscalar ! diagMult_crscalar
-
+  end subroutine diagMult_crscalar
 
   !****************************************************************************
   ! diagMult_crscalar_f multiplies scalar E1 with scalar E2 stored as
@@ -1931,8 +1921,7 @@ Contains
 
     E3%temporary = .true.
 
-  end function diagMult_crscalar_f ! diagMult_crscalar_f
-
+  end function diagMult_crscalar_f
 
   !****************************************************************************
   ! diagMult_rcscalar multiplies scalar E1 with scalar E2 stored as
@@ -1944,6 +1933,7 @@ Contains
     type (rscalar), intent(in)               :: E1
     type (cscalar), intent(in)               :: E2
     type (cscalar), intent(inout)            :: E3
+
 
    if((.not.E1%allocated).or.(.not.E2%allocated)) then
        write(0,*) 'RHS not allocated yet for diagMult_rcscalar'
@@ -1962,7 +1952,8 @@ Contains
           if ((E1%gridType == E2%gridType).and.(E1%gridType == E3%gridType)) then
 
              ! pointwise multiplication for v-component
-             E3%v = E1%v * E2%v
+
+                   E3%v = E1%v * E2%v
 
           else
              write (0, *) 'not compatible usage for diagMult_rcscalar'
@@ -1976,8 +1967,7 @@ Contains
     end if
 
 
-  end subroutine diagMult_rcscalar ! diagMult_rcscalar
-
+  end subroutine diagMult_rcscalar
 
   !****************************************************************************
   ! diagMult_rcscalar_f multiplies scalar E1 with scalar E2 stored as
@@ -2023,8 +2013,7 @@ Contains
 
     E3%temporary = .true.
 
-  end function diagMult_rcscalar_f ! diagMult_rcscalar_f
-
+  end function diagMult_rcscalar_f
 
   !****************************************************************************
   ! dotProd_rscalar computes dot product of two vecors stored
@@ -2059,8 +2048,7 @@ Contains
 
     end if
 
-  end function dotProd_rscalar_f  ! dotProd_rscalar
-
+  end function dotProd_rscalar_f
 
   !****************************************************************************
   ! dotProd_cscalar computes dot product of two vecors stored
@@ -2095,8 +2083,7 @@ Contains
 
     end if
 
-  end function dotProd_cscalar_f ! dotProd_cscalar
-
+  end function dotProd_cscalar_f
 
   !****************************************************************************
   ! linComb_rscalar computes linear combination of two scalars
@@ -2141,7 +2128,7 @@ Contains
        end if
     end if
 
-  end subroutine linComb_rscalar ! linComb_rscalar
+  end subroutine linComb_rscalar
 
   !****************************************************************************
   ! linComb_cscalar computes linear combination of two scalars
@@ -2186,8 +2173,7 @@ Contains
        end if
     end if
 
-  end subroutine linComb_cscalar ! linComb_cscalar
-
+  end subroutine linComb_cscalar
 
   !****************************************************************************
   ! scMultadd_cscalar multiplies scalar E1 stored as derived data type
@@ -2229,7 +2215,7 @@ Contains
        end if
     end if
 
-  end subroutine scMultAdd_cscalar ! scMultAdd_cscalar
+  end subroutine scMultAdd_cscalar
 
 
-end module sg_scalar ! sg_scalar
+end module sg_scalar

@@ -279,7 +279,7 @@ Contains
 
       case (FORWARD) !F
         if (narg < 4) then
-           write(0,*) 'Usage: -F  rFile_Model rFile_mg rFile_Data wFile_Data [wFile_EMsoln rFile_fwdCtrl rFile_mg]'
+           write(0,*) 'Usage: -F  rFile_Model rFile_mgCtrl rFile_Data wFile_Data [rFile_fwdCtrl wFile_EMsoln ]'
            write(0,*)
            write(0,*) 'Here, rFile_fwdCtrl is the forward solver control file in the format'
            write(0,*)
@@ -298,14 +298,12 @@ Contains
 	       ctrl%wFile_Data = temp(4)
 	    end if
 	    if (narg > 4) then
-	       ctrl%wFile_EMsoln = temp(5)
+	       ctrl%rFile_fwdCtrl = temp(5)
 	    end if
-	    if (narg > 5) then
-	       ctrl%rFile_fwdCtrl = temp(6)
-	    end if
-        if (narg > 6) then
-           ctrl%rFile_mg = temp(7)
+        if (narg > 5) then
+           ctrl%wFile_EMsoln = temp(6)
         end if
+
 
       case (COMPUTE_J) ! J
         if (narg < 4) then
@@ -355,7 +353,7 @@ Contains
            write(0,*) 'Here, lambda = the initial damping parameter for inversion'
            write(0,*) '         eps = misfit tolerance for the forward solver'
            write(0,*) 'OR'
-           write(0,*) 'Usage: -I NLCG rFile_Model rFile_Data [rFile_invCtrl rFile_fwdCtrl]'
+           write(0,*) 'Usage: -I NLCG rFile_Model rFile_mg rFile_Data [rFile_invCtrl rFile_fwdCtrl]'
            write(0,*)
            write(0,*) 'Here, rFile_invCtrl = the inversion control file in the format'
            write(0,*)

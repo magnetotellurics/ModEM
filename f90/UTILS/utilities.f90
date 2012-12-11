@@ -14,6 +14,7 @@ module utilities
   end type timer_t
 
   !character(80)  :: msg
+  type(timer_t)             :: Globaltimer
 
 Contains
 

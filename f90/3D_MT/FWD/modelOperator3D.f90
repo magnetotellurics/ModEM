@@ -95,6 +95,8 @@
       character(len=10),parameter  :: last = 'last'
       character(len=10),parameter  :: lastDirect = 'lastDirect'
 
+      type (timer_t), private        :: timer
+
       ! *****************************************************************************
       !  routines from model_data_update:
       public                             	:: UpdateFreq, UpdateCond
@@ -185,9 +187,15 @@
         real (kind=prec), intent (in)             :: inOmega
 
         omega = inOmega
-        Call AdiagSetUp()
 
+        Call AdiagSetUp()
+#IFDEF Timer
+      write (*,'(a12,a40,f12.6)')    node_info, 'AdiagSetUp: elapsed time (sec)', elapsed_time(Globaltimer)
+#ENDIF
         Call DiluSetUp()
+#IFDEF Timer
+      write (*,'(a12,a40,f12.6)')    node_info, 'DiluSetUp: elapsed time (sec)', elapsed_time(Globaltimer)
+#ENDIF
 
       end subroutine UpdateFreq  ! UpdateFreq
 
@@ -206,12 +214,19 @@
         !    to be used changes to the declarations in this routine will
         !    be required, along with changes in the module interface
         Call ModelParamToEdge(CondParam, condE)
-
+#IFDEF Timer
+      write (*,'(a12,a40,f12.6)')    node_info, 'ModelParamtoEdge: elapsed time (sec)', elapsed_time(Globaltimer)
+#ENDIF
         Call DivCorrSetUp()
+#IFDEF Timer
+      write (*,'(a12,a40,f12.6)')    node_info, 'DivCorrSetUp: elapsed time (sec)', elapsed_time(Globaltimer)
+#ENDIF
         ! TEMPORARY; REQUIRED FOR BOUNDARY CONDITIONS
         !  set static array for cell conductivities
         call ModelParamToCell(CondParam,Cond3D)
-
+#IFDEF Timer
+      write (*,'(a12,a40,f12.6)')    node_info, 'ModelParamToCell: elapsed time (sec)', elapsed_time(Globaltimer)
+#ENDIF
       end subroutine UpdateCond  ! UpdateCond
 
       ! ***************************************************************************
@@ -795,6 +810,7 @@
                                 ny /= condE%rvArray(imgrid)%ny)) then
                    print *, 'AdiagSetUp error: grids are not the same size'
                 else
+
                   do ix = 1, nx
                     Adiag%cvArray(imgrid)%x(ix,:,:) = CMPLX(0.0, 1.0, 8)*omega*MU_0*condE%rvArray(imgrid)%x(ix,:,:)
                   enddo
@@ -804,6 +820,7 @@
                   do iz = 1, nz
                     Adiag%cvArray(imgrid)%z(:,:,iz) = CMPLX(0.0, 1.0, 8)*omega*MU_0*condE%rvArray(imgrid)%z(:,:,iz)
                   enddo
+
                 endif
                enddo
             endif
@@ -1197,7 +1214,13 @@
 
       end subroutine MultA_N
     ! *************************************************************************************
-      subroutine AdjtBC(eInmg, BC)
+      subroutine AdjtBC(eIn, BC)
+
+     ! modified by Cherevatova (Aug,2012)
+     ! for the multi-grid
+     ! BC here are defined on the multi-grid
+     ! and belong to extended type cboundary_mg
+
 
       !  subroutine AdjtBC uses (adjoint) interior node solution to compute
       !  boundary node values for adjoint (or transpose) solution
@@ -1222,150 +1245,12 @@
         implicit none
 
         ! INPUT: electrical fields stored as cvector_mg
-        type (cvector_mg), intent(in)             		:: eInmg
+        type (cvector_mg), intent(in)             		:: eIn
         ! OUTPUT: boundary condition structure: should be allocated
         !   and initialized before call to this routine
-        type (cboundary),intent(inout)  			:: BC
-
-        ! local variables
-        type (cvector)                :: eTemp
-        integer                   :: ix,iy,iz,nx,ny,nz
-        ! Output coefficients for curlcurlE (del X del X E)
-        integer :: status     ! for dynamic memory allocation
-        real (kind=prec), pointer, dimension(:,:)  :: xXY, xXZ
-        real (kind=prec), pointer, dimension(:,:)  :: xY, xZ
-        real (kind=prec), pointer, dimension(:,:)  :: xXO
-        real (kind=prec), pointer, dimension(:,:)  :: yYX, yYZ
-        real (kind=prec), pointer, dimension(:,:)  :: yX, yZ
-        real (kind=prec), pointer, dimension(:,:)  :: yYO
-        real (kind=prec), pointer, dimension(:,:)  :: zZX, zZY
-        real (kind=prec), pointer, dimension(:,:)  :: zX, zY
-        real (kind=prec), pointer, dimension(:,:)  :: zZO
-
-        call create(mgrid, eTemp, eInmg%gridtype)
-        ! convert cvector_mg to cvector
-
-        eTemp = eInmg !mg2c
-
-        nx = mgrid%nx
-        ny = mgrid%ny
-        nz = mgrid%nz
-        ! Allocate memory for del x del operator coefficient arrays
-        ! Coefficients for difference equation only uses interior
-        ! nodes. however, we need boundary nodes for the adjoint problem
-        allocate(xXY(ny+1, 2), STAT=status)   ! Allocate memory
-        allocate(xXZ(nz+1, 2), STAT=status)   ! Allocate memory
-        allocate(xY(nx, ny+1), STAT=status)
-        allocate(xZ(nx, nz+1), STAT=status)
-        allocate(xXO(ny, nz), STAT=status)
-
-        allocate(yYZ(nz+1, 2), STAT=status)   ! Allocate memory
-        allocate(yYX(nx+1, 2), STAT=status)   ! Allocate memory
-        allocate(yZ(ny, mGrid%nz+1), STAT=status)
-        allocate(yX(nx+1, mGrid%ny), STAT=status)
-        allocate(yYO(nx, mGrid%nz), STAT=status)
-
-        allocate(zZX(nx+1, 2), STAT=status)   ! Allocate memory
-        allocate(zZY(ny+1, 2), STAT=status)   ! Allocate memory
-        allocate(zX(nx+1, nz), STAT=status)
-        allocate(zY(ny+1,nz), STAT=status)
-        allocate(zZO(nx,ny), STAT=status)
-
-        ! initalize all coefficients to zero (some remain zero)
-        xXY = 0.0
-        xXZ = 0.0
-        xY = 0.0
-        xZ = 0.0
-        xXO = 0.0
-        yYX = 0.0
-        yYZ = 0.0
-        yX = 0.0
-        yZ = 0.0
-        zZX = 0.0
-        zZY = 0.0
-        zX = 0.0
-        zY = 0.0
-        zZO = 0.0
-
-        ! Curl curl set up for finest grid
-        ! coefficents for calculating Ex ; only loop over internal edges
-        do iy = 2, mGrid%ny
-           xXY(iy, 2) = -1.0/ (mGrid%delY(iy) * mGrid%dy(iy))
-           xXY(iy, 1) = -1.0/ (mGrid%delY(iy) * mGrid%dy(iy-1))
-        enddo
-        do iz = 2, mGrid%nz
-           xXZ(iz, 2) = -1.0/ (mGrid%delZ(iz) * mGrid%dz(iz))
-           xXZ(iz, 1) = -1.0/ (mGrid%delZ(iz) * mGrid%dz(iz-1))
-        enddo
-        do iy = 2, mGrid%ny
-           do iz = 2, mGrid%nz
-              xXO(iy, iz) = -(xXY(iy,1) + xXY(iy,2) + &
-                   xXZ(iz,1) + xXZ(iz,2))
-           enddo
-        enddo
-        do ix = 1, mGrid%nx
-           do iy = 2, mGrid%ny
-              xY(ix, iy) = 1.0/ (mGrid%delY(iy)*mGrid%dx(ix))
-           enddo
-        enddo
-        do ix = 1, mGrid%nx
-           do iz = 2, mGrid%nz
-              xZ(ix, iz) = 1.0/ (mGrid%delZ(iz)*mGrid%dx(ix))
-           enddo
-        enddo
-        ! End of Ex coefficients
-        ! coefficents for calculating Ey; only loop over internal edges
-        do iz = 2, mGrid%nz
-           yYZ(iz, 2) = -1.0/ (mGrid%delZ(iz)*mGrid%dz(iz))
-           yYZ(iz, 1) = -1.0/ (mGrid%delZ(iz)*mGrid%dz(iz-1))
-        enddo
-        do ix = 2, mGrid%nx
-           yYX(ix, 2) = -1.0/ (mGrid%delX(ix)*mGrid%dx(ix))
-           yYX(ix, 1) = -1.0/ (mGrid%delX(ix)*mGrid%dx(ix-1))
-        enddo
-        do ix = 2, mGrid%nx
-           do iz = 2, mGrid%nz
-              yYO(ix, iz) = -(yYX(ix,1) + yYX(ix,2) + &
-                   yYZ(iz,1) + yYZ(iz,2))
-           enddo
-        enddo
-        do iy = 1, mGrid%ny
-           do iz = 2, mGrid%nz
-              yZ(iy, iz) = 1.0/ (mGrid%delZ(iz)*mGrid%dy(iy))
-           enddo
-        enddo
-        do ix = 2, mGrid%nx
-           do iy = 1, mGrid%ny
-              yX(ix, iy) = 1.0/ (mGrid%delX(ix)*mGrid%dy(iy))
-           enddo
-        enddo
-        ! End of Ey coefficients
-        ! coefficents for calculating Ez; only loop over internal edges
-        do ix = 2, mGrid%nx
-           zZX(ix, 2) = -1.0/ (mGrid%delX(ix)*mGrid%dx(ix))
-           zZX(ix, 1) = -1.0/ (mGrid%delX(ix)*mGrid%dx(ix-1))
-        enddo
-        do iy = 2, mGrid%ny
-           zZY(iy, 2) = -1.0/ (mGrid%delY(iy)*mGrid%dy(iy))
-           zZY(iy, 1) = -1.0/ (mGrid%delY(iy)*mGrid%dy(iy-1))
-        enddo
-        do ix = 2, mGrid%nx
-           do iy = 2, mGrid%ny
-              zZO(ix, iy) = -(zZX(ix,1) + zZX(ix,2) + &
-                   zZY(iy,1) + zZY(iy,2))
-           enddo
-        enddo
-        do ix = 2, mGrid%nx
-           do iz = 1, mGrid%nz
-              zX(ix, iz) = 1.0/ (mGrid%delX(ix)*mGrid%dz(iz))
-           enddo
-        enddo
-        do iy = 2, mGrid%ny
-           do iz = 1, mGrid%nz
-              zY(iy, iz) = 1.0/ (mGrid%delY(iy)*mGrid%dz(iz))
-           enddo
-        enddo
-        ! End of Ez coefficients
+        type (cboundary_mg),intent(inout)  		    	:: BC
+        !local
+        integer                   :: imgrid,ix,iy,iz,nx,ny,nz
 
         !  Multiply FD electric field vector defined on interior nodes (eIn) by
         !  adjoint of A_IB, the interior/boundary sub-block of the differential
@@ -1373,122 +1258,110 @@
 
         !Ex components in x/z plane (iy=1; iy = ny+1)
         !NOTE: C_ZERO = (0,0) (double complex) is defined in SG_Basics/math_constants.f90
-        BC%xYMax(:,1) = C_ZERO
-        BC%xYmin(:,1) = C_ZERO
-        BC%xYMax(:,nz+1) = C_ZERO
-        BC%xyMin(:,nz+1) = C_ZERO
-        do ix = 1, nx
-           do iz = 2, nz
-              BC%xYmin(ix,iz) = - yX(ix,1)*eTemp%y(ix,1,iz)       &
-                                + yX(ix+1,1)*eTemp%y(ix+1,1,iz)   &
-                                + xXY(2,1)*eTemp%x(ix,2,iz)
-              BC%xYmax(ix,iz) = + yX(ix,ny)*eTemp%y(ix,ny,iz)     &
-                                - yX(ix+1,ny)*eTemp%y(ix+1,ny,iz) &
-                                + xXY(ny,2)*eTemp%x(ix,ny,iz)
-            enddo
-         enddo
 
-        !Ez components in x/z plane (iy=1; iy = ny+1)
-        BC%zYMin(1,:) = C_ZERO
-        BC%zYmax(1,:) = C_ZERO
-        BC%zYmin(nx+1,:) = C_ZERO
-        BC%zYmax(nx+1,:) = C_ZERO
-        do iz = 1, nz
-           do ix = 2, nx
-              BC%zYmin(ix,iz) = - yZ(1,iz)*eTemp%y(ix,1,iz)        &
-                                + yZ(1,iz+1)*eTemp%y(ix,1,iz+1)    &
-                                + zZY(2,1)*eTemp%z(ix,2,iz)
-              BC%zYmax(ix,iz) = + yZ(ny,iz)*eTemp%y(ix,ny,iz)      &
-                                - yZ(ny,iz+1)*eTemp%y(ix,ny,iz+1)  &
-                                + zZY(ny,2)*eTemp%z(ix,ny,iz)
-            enddo
-         enddo
+        do imgrid = 1,BC%mgridSize ! Main loop over sub-grid
 
-        !Ey components in y/z plane (ix=1; ix = nx+1)
-        BC%yXmin(:,1) = C_ZERO
-        BC%yXmax(:,1) = C_ZERO
-        BC%yXmin(:,nz+1) = C_ZERO
-        BC%yXmax(:,nz+1) = C_ZERO
-        do iy = 1, ny
-           do iz = 2, nz
-              BC%yXmin(iy,iz) = - xY(1,iy)*eTemp%x(1,iy,iz)        &
-                                + xY(1,iy+1)*eTemp%x(1,iy+1,iz)    &
-                                + yYX(2,1)*eTemp%y(2,iy,iz)
-              BC%yXmax(iy,iz) = + xY(nx,iy)*eTemp%x(nx,iy,iz)      &
-                                - xY(nx,iy+1)*eTemp%x(nx,iy+1,iz)  &
-                                + yYX(nx,2)*eTemp%y(nx,iy,iz)
-            enddo
-         enddo
+          nx = BC%bcArray(imgrid)%nx
+          ny = BC%bcArray(imgrid)%ny
+          nz = BC%bcArray(imgrid)%nz
 
-        !Ez components in y/z plane (ix=1; ix = nx+1)
-        BC%zXmin(1,:) = C_ZERO
-        BC%zXmax(1,:) = C_ZERO
-        BC%zXmin(ny+1,:) = C_ZERO
-        BC%zXmax(ny+1,:) = C_ZERO
-        do iz = 1, nz
-           do iy = 2, ny
-              BC%zXmin(iy,iz) = - xZ(1,iz)*eTemp%x(1,iy,iz)       &
-                                + xZ(1,iz+1)*eTemp%x(1,iy,iz+1)   &
-                                + zZX(2,1)*eTemp%z(2,iy,iz)
-              BC%zXmax(iy,iz) = + xZ(nx,iz)*eTemp%x(nx,iy,iz)     &
-                                - xZ(nx,iz+1)*eTemp%x(nx,iy,iz+1) &
-                                + zZX(nx,2)*eTemp%z(nx,iy,iz)
-            enddo
-         enddo
+            do ix = 1, nx
+               do iz = 1, nz+1
+                  BC%bcArray(imgrid)%xYmin(ix,iz) = - yX(imgrid,ix,1)*eIn%cvarray(imgrid)%y(ix,1,iz)       &
+                                    + yX(imgrid,ix+1,1)*eIn%cvArray(imgrid)%y(ix+1,1,iz)   &
+                                    + xXY(imgrid,2,1)*eIn%cvArray(imgrid)%x(ix,2,iz)
+                  BC%bcArray(imgrid)%xYmax(ix,iz) = + yX(imgrid,ix,ny)*eIn%cvArray(imgrid)%y(ix,ny,iz)     &
+                                    - yX(imgrid,ix+1,ny)*eIn%cvArray(imgrid)%y(ix+1,ny,iz) &
+                                    + xXY(imgrid,ny,2)*eIn%cvArray(imgrid)%x(ix,ny,iz)
+                enddo ! iz
+             enddo ! ix
 
-        !Ex components in x/y plane (iz=1; iz = nz+1)
-        BC%xZmin(:,1) = C_ZERO
-        BC%xZmax(:,1) = C_ZERO
-        BC%xZmin(:,ny+1) = C_ZERO
-        BC%xZmax(:,ny+1) = C_ZERO
-        do ix = 1, nx
-           do iy = 2, ny
-              BC%xZmin(ix,iy) = - zX(ix,1)*eTemp%z(ix,iy,1)       &
-                                + zX(ix+1,1)*eTemp%z(ix+1,iy,1)   &
-                                + xXZ(2,1)*eTemp%x(ix,iy,2)
-              BC%xZmax(ix,iy) = + zX(ix,nz)*eTemp%z(ix,iy,nz)     &
-                                - zX(ix+1,nz)*eTemp%z(ix+1,iy,nz) &
-                                + xXZ(nz,2)*eTemp%x(ix,iy,nz)
-            enddo
-         enddo
+            !Ez components in x/z plane (iy=1; iy = ny+1)
+            BC%bcArray(imgrid)%zYMin(1,:) = C_ZERO
+            BC%bcArray(imgrid)%zYmax(1,:) = C_ZERO
+            BC%bcArray(imgrid)%zYmin(nx+1,:) = C_ZERO
+            BC%bcArray(imgrid)%zYmax(nx+1,:) = C_ZERO
+            do iz = 1, nz
+               do ix = 2, nx
+                  BC%bcArray(imgrid)%zYmin(ix,iz) = - yZ(imgrid,1,iz)*eIn%cvArray(imgrid)%y(ix,1,iz)        &
+                                    + yZ(imgrid,1,iz+1)*eIn%cvArray(imgrid)%y(ix,1,iz+1)    &
+                                    + zZY(imgrid,2,1)*eIn%cvArray(imgrid)%z(ix,2,iz)
+                  BC%bcArray(imgrid)%zYmax(ix,iz) = + yZ(imgrid,ny,iz)*eIn%cvArray(imgrid)%y(ix,ny,iz)      &
+                                    - yZ(imgrid,ny,iz+1)*eIn%cvArray(imgrid)%y(ix,ny,iz+1)  &
+                                    + zZY(imgrid,ny,2)*eIn%cvArray(imgrid)%z(ix,ny,iz)
+                enddo
+             enddo
 
-        !Ey components in x/y plane (iz=1; iz = nz+1)
-        BC%yZmin(:,1) = C_ZERO
-        BC%yZmax(:,1) = C_ZERO
-        BC%yZmin(nx+1,:) = C_ZERO
-        BC%yZmin(nx+1,:) = C_ZERO
-        do iy = 1, ny
-           do ix = 2, nx
-              BC%yZmin(ix,iy) = - zY(iy,1)*eTemp%z(ix,iy,1)        &
-                                + zY(iy+1,1)*eTemp%z(ix,iy+1,1)    &
-                                + yYZ(2,1)*eTemp%y(ix,iy,2)
-              BC%yZmax(ix,iy) = + zY(iy,nz)*eTemp%z(ix,iy,nz)      &
-                                - zY(iy+1,nz)*eTemp%z(ix,iy+1,nz)  &
-                                + yYZ(nz,2)*eTemp%y(ix,iy,nz)
-            enddo
-         enddo
-      ! Deallocate memory for del x del operator coefficient arrays
-      ! Coefficients for difference equation only uses interior
-      ! nodes. however, we need boundary nodes for the adjoint problem
+            !Ey components in y/z plane (ix=1; ix = nx+1)
+            do iy = 1, ny
+               do iz = 1, nz+1
+                  BC%bcArray(imgrid)%yXmin(iy,iz) = - xY(imgrid,1,iy)*eIn%cvArray(imgrid)%x(1,iy,iz)        &
+                                    + xY(imgrid,1,iy+1)*eIn%cvArray(imgrid)%x(1,iy+1,iz)    &
+                                    + yYX(imgrid,2,1)*eIn%cvArray(imgrid)%y(2,iy,iz)
+                  BC%bcArray(imgrid)%yXmax(iy,iz) = + xY(imgrid,nx,iy)*eIn%cvArray(imgrid)%x(nx,iy,iz)      &
+                                    - xY(imgrid,nx,iy+1)*eIn%cvArray(imgrid)%x(nx,iy+1,iz)  &
+                                    + yYX(imgrid,nx,2)*eIn%cvArray(imgrid)%y(nx,iy,iz)
+                enddo
+             enddo
 
-       deallocate(xXY, STAT=status)
-       deallocate(xXZ, STAT=status)
-       deallocate(xY, STAT=status)
-       deallocate(xZ, STAT=status)
-       deallocate(xXO, STAT=status)
-       deallocate(yYZ, STAT=status)
-       deallocate(yYX, STAT=status)
-       deallocate(yZ, STAT=status)
-       deallocate(yX, STAT=status)
-       deallocate(yYO, STAT=status)
+            !Ez components in y/z plane (ix=1; ix = nx+1)
+            BC%bcArray(imgrid)%zXmin(1,:) = C_ZERO
+            BC%bcArray(imgrid)%zXmax(1,:) = C_ZERO
+            BC%bcArray(imgrid)%zXmin(ny+1,:) = C_ZERO
+            BC%bcArray(imgrid)%zXmax(ny+1,:) = C_ZERO
+            do iz = 1, nz
+               do iy = 2, ny
+                  BC%bcArray(imgrid)%zXmin(iy,iz) = - xZ(imgrid,1,iz)*eIn%cvArray(imgrid)%x(1,iy,iz)       &
+                                    + xZ(imgrid,1,iz+1)*eIn%cvArray(imgrid)%x(1,iy,iz+1)   &
+                                    + zZX(imgrid,2,1)*eIn%cvArray(imgrid)%z(2,iy,iz)
+                  BC%bcArray(imgrid)%zXmax(iy,iz) = + xZ(imgrid,nx,iz)*eIn%cvArray(imgrid)%x(nx,iy,iz)     &
+                                    - xZ(imgrid,nx,iz+1)*eIn%cvArray(imgrid)%x(nx,iy,iz+1) &
+                                    + zZX(imgrid,nx,2)*eIn%cvArray(imgrid)%z(nx,iy,iz)
+                enddo
+             enddo
 
-       deallocate(zZX, STAT=status)
-       deallocate(zZY, STAT=status)
-       deallocate(zX, STAT=status)
-       deallocate(zY, STAT=status)
-       deallocate(zZO, STAT=status)
+            !Ex components in x/y plane (iz=1; iz = nz+1)
+            BC%bcArray(imgrid)%xZmin(:,1) = C_ZERO
+            BC%bcArray(imgrid)%xZmax(:,1) = C_ZERO
+            BC%bcArray(imgrid)%xZmin(:,ny+1) = C_ZERO
+            BC%bcArray(imgrid)%xZmax(:,ny+1) = C_ZERO
+            do ix = 1, nx
+               do iy = 2, ny
+                  BC%bcArray(imgrid)%xZmin(ix,iy) = - zX(imgrid,ix,1)*eIn%cvArray(imgrid)%z(ix,iy,1)       &
+                                    + zX(imgrid,ix+1,1)*eIn%cvArray(imgrid)%z(ix+1,iy,1)   &
+                                    + xXZ(imgrid,2,1)*eIn%cvArray(imgrid)%x(ix,iy,2)
+                  BC%bcArray(imgrid)%xZmax(ix,iy) = + zX(imgrid,ix,nz)*eIn%cvArray(imgrid)%z(ix,iy,nz)     &
+                                    - zX(imgrid,ix+1,nz)*eIn%cvArray(imgrid)%z(ix+1,iy,nz) &
+                                    + xXZ(imgrid,nz,2)*eIn%cvArray(imgrid)%x(ix,iy,nz)
+                enddo
+             enddo
 
-       call deall(eTemp)
+            !Ey components in x/y plane (iz=1; iz = nz+1)
+            BC%yZmin(1,:) = C_ZERO
+            BC%yZmax(1,:) = C_ZERO
+            BC%yZmin(nx+1,:) = C_ZERO
+            BC%yZmin(nx+1,:) = C_ZERO
+            do iy = 1, ny
+               do ix = 2, nx
+                  BC%bcArray(imgrid)%yZmin(ix,iy) = - zY(imgrid,iy,1)*eIn%cvArray(imgrid)%z(ix,iy,1)        &
+                                    + zY(imgrid,iy+1,1)*eIn%cvArray(imgrid)%z(ix,iy+1,1)    &
+                                    + yYZ(imgrid,2,1)*eIn%cvArray(imgrid)%y(ix,iy,2)
+                  BC%bcArray(imgrid)%yZmax(ix,iy) = + zY(imgrid,iy,nz)*eIn%cvArray(imgrid)%z(ix,iy,nz)      &
+                                    - zY(imgrid,iy+1,nz)*eIn%cvArray(imgrid)%z(ix,iy+1,nz)  &
+                                    + yYZ(imgrid,nz,2)*eIn%cvArray(imgrid)%y(ix,iy,nz)
+                enddo
+             enddo
+      enddo ! end Main loop over sub-grids
+        BC%bcArray(1)%xYMax(:,1) = C_ZERO
+        BC%bcArray(1)%xYmin(:,1) = C_ZERO
+        BC%bcArray(BC%mgridSize)%xYMax(:,BC%bcArray(BC%mgridSize)%nz+1) = C_ZERO
+        BC%bcArray(BC%mgridSize)%xyMin(:,BC%bcArray(BC%mgridSize)%nz+1) = C_ZERO
+
+        BC%bcArray(BC%mgridSize)%yXmin(:,1) = C_ZERO
+        BC%bcArray(BC%mgridSize)%yXmax(:,1) = C_ZERO
+        BC%bcArray(BC%mgridSize)%yXmin(:,BC%bcArray(BC%mgridSize)%nz+1) = C_ZERO
+        BC%bcArray(BC%mgridSize)%yXmax(:,BC%bcArray(BC%mgridSize)%nz+1) = C_ZERO
+
       end subroutine AdjtBC
 
       ! ****************************************************************************

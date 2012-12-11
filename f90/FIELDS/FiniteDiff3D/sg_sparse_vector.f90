@@ -295,6 +295,7 @@ Contains
     if (SV1%gridType == SV2%gridType) then
 
              ! just copy the components
+
              SV2%i = SV1%i
              SV2%j = SV1%j
              SV2%k = SV1%k

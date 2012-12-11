@@ -356,7 +356,7 @@ Contains
     character (len=80), intent(in)     :: gridType
 
 	! First deallocate anything, that's allocated
-	call deall_rvector(E)
+	call deall(E) ! deall_rvector
 
     ! Set pointer
     E%grid => igrid
@@ -431,7 +431,7 @@ Contains
     character (len=80), intent(in)      :: gridType
 
 	! First deallocate anything, that's allocated
-    call deall_cvector(E)
+    call deall(E) ! deall_cvector
 
     ! Set pointer
     E%grid => igrid
@@ -692,7 +692,7 @@ Contains
       endif
 
       if(.not. E%allocated) then
-      	call create_rvector(grid,E,gridType)
+      	call create(grid,E,gridType) ! create_rvector
       else
       	E%nx = Nx
       	E%ny = Ny
@@ -761,7 +761,7 @@ Contains
       endif
 
       if(.not. E%allocated) then
-      	call create_cvector(grid,E,gridType)
+      	call create(grid,E,gridType) ! create_cvector
       else
       	E%nx = Nx
       	E%ny = Ny
@@ -848,7 +848,7 @@ Contains
           end if
 
           !  then allocate E2 as correct size ...
-          Call create_rvector(E1%grid, E2, E1%gridType)
+          Call create(E1%grid, E2, E1%gridType) ! create_rvector
           !   .... and copy E1
           E2%x = E1%x
           E2%y = E1%y
@@ -862,11 +862,10 @@ Contains
 
     ! if the input was a temporary function output, deallocate
     if (E1%temporary) then
-    	call deall_rvector(E1)
+    	call deall(E1) !deall_rvector
     end if
 
-  end subroutine copy_rvector  ! copy_rvector
-
+  end subroutine copy_rvector
 
   !****************************************************************************
   ! copy_cvector makes an exact copy of derived data type
@@ -878,6 +877,7 @@ Contains
     type (cvector), intent(inout)         :: E2
     integer                               :: status
 
+
     ! check to see if RHS (E1) is active (allocated)
     if(.not.E1%allocated) then
        write(0,*) 'RHS not allocated yet for copy_cvector'
@@ -888,9 +888,9 @@ Contains
           if  (E1%gridType == E2%gridType) then
 
              ! just copy components
-             E2%x = E1%x
-             E2%y = E1%y
-             E2%z = E1%z
+                      e2%x = e1%x
+                      e2%y = e1%y
+                      e2%z = e1%z
              E2%gridType = E1%gridType
              E2%grid => E1%grid
 
@@ -906,11 +906,12 @@ Contains
           end if
 
           !  then allocate E2 as correct size ...
-          Call create_cvector(E1%grid, E2, E1%gridType)
+          Call create(E1%grid, E2, E1%gridType) ! create_cvector
           !   .... and copy E1
-          E2%x = E1%x
-          E2%y = E1%y
-          E2%z = E1%z
+
+                      e2%x = e1%x
+                      e2%y = e1%y
+                      e2%z = e1%z
           E2%gridType = E1%gridType
           E2%grid => E1%grid
 
@@ -920,7 +921,7 @@ Contains
 
     ! if the input was a temporary function output, deallocate
     if (E1%temporary) then
-    	call deall_cvector(E1)
+    	call deall(E1) ! deall_cvector
     end if
 
   end subroutine copy_cvector  ! copy_cvector
@@ -1120,6 +1121,7 @@ Contains
     type (cvector), intent(in)                       :: E1
     type (cvector), intent(inout)                    :: E2
 
+
     if(.not.E1%allocated) then
        write(0,*) 'RHS not allocated yet for scMult_cvector'
        return
@@ -1136,6 +1138,7 @@ Contains
           if (E1%gridType == E2%gridType) then
 
              ! complex scalar multiplication for x,y,z-components
+
              E2%x = E1%x * c
              E2%y = E1%y * c
              E2%z = E1%z * c
@@ -1150,8 +1153,7 @@ Contains
        end if
     end if
 
-  end subroutine scMult_cvector ! scMult_cvector
-
+  end subroutine scMult_cvector
 
   ! ***************************************************************************
   ! scMult_cvector_f multiplies vector stored as derived data type
@@ -1199,8 +1201,7 @@ Contains
 
     E2%temporary = .true.
 
-  end function scMult_cvector_f ! scMult_cvector_f
-
+  end function scMult_cvector_f
 
   ! ***************************************************************************
   ! scMultReal_cvector multiplies vector stored as derived data type
@@ -1211,8 +1212,9 @@ Contains
     implicit none
     real (kind=prec), intent(in)                         :: c
     ! a real scalar to be multiplied with
-    type (cvector), intent(in)                       :: E1
-    type (cvector), intent(inout)                    :: E2
+    type (cvector), intent(in)                           :: E1
+    type (cvector), intent(inout)                        :: E2
+
 
     if(.not.E1%allocated) then
        write(0,*) 'RHS not allocated yet for scMultReal_cvector'
@@ -1230,9 +1232,10 @@ Contains
           if (E1%gridType == E2%gridType) then
 
              ! complex scalar multiplication for x,y,z-components
-             E2%x = E1%x * c
-             E2%y = E1%y * c
-             E2%z = E1%z * c
+
+                   E2%x = E1%x * c
+                   E2%y = E1%y * c
+                   E2%z = E1%z * c
 
           else
              write (0, *) 'not compatible usage for scMultReal_cvector'
@@ -1244,8 +1247,7 @@ Contains
        end if
     end if
 
-  end subroutine scMultReal_cvector ! scMultReal_cvector
-
+  end subroutine scMultReal_cvector
 
   !****************************************************************************
   ! scMult_cvector_f multiplies vector stored as derived data type
@@ -1293,8 +1295,7 @@ Contains
 
     E2%temporary = .true.
 
-  end function scMultReal_cvector_f ! scMultReal_cvector_f
-
+  end function scMultReal_cvector_f
 
   ! ***************************************************************************
   ! scMult_rvector multiplies vector stored as derived data type
@@ -1339,9 +1340,7 @@ Contains
        end if
     end if
 
-  end subroutine scMult_rvector ! scMult_rvector
-
-
+  end subroutine scMult_rvector
   !****************************************************************************
   ! scMult_rvector_f multiplies vector stored as derived data type
   ! rvector with a real scalar; function version
@@ -1388,9 +1387,7 @@ Contains
 
     E2%temporary = .true.
 
-  end function scMult_rvector_f ! scMult_rvector_f
-
-
+  end function scMult_rvector_f
   !****************************************************************************
   ! add_rvector adds vectors stored as derived data type
   ! rvector with ; subroutine version
@@ -1433,8 +1430,7 @@ Contains
        end if
     end if
 
-  end subroutine add_rvector ! add_rvector
-
+  end subroutine add_rvector
 
   !****************************************************************************
   ! add_rvector_f adds vectors stored as derived data type
@@ -1481,8 +1477,7 @@ Contains
 
     E3%temporary = .true.
 
-  end function add_rvector_f ! add_rvector_f
-
+  end function add_rvector_f
 
   !****************************************************************************
   ! add_cvector adds vectors stored as derived data type
@@ -1493,6 +1488,7 @@ Contains
     implicit none
     type (cvector), intent(in)               :: E1, E2
     type (cvector), intent(inout)            :: E3
+
 
     if((.not.E1%allocated).or.(.not.E2%allocated)) then
        write(0,*) 'RHS not allocated yet for add_cvector'
@@ -1511,6 +1507,7 @@ Contains
           if ((E1%gridType == E2%gridType).and.(E1%gridType == E3%gridType)) then
 
              ! add x,y,z-components
+
              E3%x = E1%x + E2%x
              E3%y = E1%y + E2%y
              E3%z = E1%z + E2%z
@@ -1526,8 +1523,7 @@ Contains
        end if
     end if
 
-  end subroutine add_cvector ! add_cvector
-
+  end subroutine add_cvector
 
   !****************************************************************************
   ! add_cvector_f adds vectors stored as derived data type
@@ -1574,8 +1570,7 @@ Contains
 
     E3%temporary = .true.
 
-  end function add_cvector_f ! add_cvector_f
-
+  end function add_cvector_f
 
   !****************************************************************************
   ! subtract_rvector subtracts vectors stored as derived data type rvector with
@@ -1619,8 +1614,7 @@ Contains
        end if
     end if
 
-  end subroutine subtract_rvector ! subtract_rvector
-
+  end subroutine subtract_rvector
 
   !****************************************************************************
   ! subtract_rvector_f subtracts vectors stored as derived data type
@@ -1667,8 +1661,7 @@ Contains
 
     E3%temporary = .true.
 
-  end function subtract_rvector_f ! subtract_rvector_f
-
+  end function subtract_rvector_f
 
   !****************************************************************************
   ! subtract_cvector subtracts vectors stored as derived data type
@@ -1679,6 +1672,7 @@ Contains
     implicit none
     type (cvector), intent(in)               :: E1, E2
     type (cvector), intent(inout)            :: E3
+
 
     if((.not.E1%allocated).or.(.not.E2%allocated)) then
        write(0,*) 'RHS not allocated yet for subtract_cvector'
@@ -1697,10 +1691,10 @@ Contains
           if ((E1%gridType == E2%gridType).and.(E1%gridType == E3%gridType)) then
 
              ! subtract x,y,z-components
-             E3%x = E1%x - E2%x
-             E3%y = E1%y - E2%y
-             E3%z = E1%z - E2%z
 
+                   E3%x = E1%x - E2%x
+                   E3%y = E1%y - E2%y
+                   E3%z = E1%z - E2%z
           else
              write (0, *) 'not compatible usage for subtract_cvector'
           end if
@@ -1712,8 +1706,7 @@ Contains
        end if
     end if
 
-  end subroutine subtract_cvector ! subtract_cvector
-
+  end subroutine subtract_cvector
 
   !****************************************************************************
   ! subtract_cvector_f subtracts vectors stored as derived data type
@@ -1760,8 +1753,7 @@ Contains
 
     E3%temporary = .true.
 
-  end function subtract_cvector_f ! subtract_cvector_f
-
+  end function subtract_cvector_f
 
   !****************************************************************************
   ! diagMult_rvector multiplies two vectors E1, E2 stored as derived data
@@ -1805,8 +1797,7 @@ Contains
        end if
     end if
 
-  end subroutine diagMult_rvector ! diagMult_rvector
-
+  end subroutine diagMult_rvector
 
   !****************************************************************************
   ! diagMult_rvector_f multiplies two vectors E1, E2 stored as derived
@@ -1853,8 +1844,7 @@ Contains
 
     E3%temporary = .true.
 
-  end function diagMult_rvector_f ! diagMult_rvector_f
-
+  end function diagMult_rvector_f
 
   !****************************************************************************
   ! diagMult_cvector multiplies two vectors E1, E2 stored as derived data
@@ -1883,6 +1873,7 @@ Contains
           if ((E1%gridType == E2%gridType).and.(E1%gridType == E3%gridType)) then
 
              ! pointwise multiplication for x,y,z-components
+
              E3%x = E1%x * E2%x
              E3%y = E1%y * E2%y
              E3%z = E1%z * E2%z
@@ -1898,8 +1889,7 @@ Contains
        end if
     end if
 
-  end subroutine diagMult_cvector ! diagMult_cvector
-
+  end subroutine diagMult_cvector
 
   !****************************************************************************
   ! diagMult_cvector_f multiplies two vectors E1, E2 stored as derived
@@ -1946,8 +1936,7 @@ Contains
 
     E3%temporary = .true.
 
-  end function diagMult_cvector_f ! diagMult_cvector_f
-
+  end function diagMult_cvector_f
 
   !****************************************************************************
   ! diagMult_crvector multiplies complex vector E1 with scalar vector E2
@@ -1959,6 +1948,7 @@ Contains
     type (cvector), intent(in)               :: E1
     type (rvector), intent(in)               :: E2
     type (cvector), intent(inout)            :: E3
+
 
     if((.not.E1%allocated).or.(.not.E2%allocated)) then
        write(0,*) 'RHS not allocated yet for diagMult_crvector'
@@ -1977,9 +1967,10 @@ Contains
           if ((E1%gridType == E2%gridType).and.(E1%gridType == E3%gridType)) then
 
              ! pointwise multiplication for x,y,z-components
-             E3%x = E1%x * E2%x
-             E3%y = E1%y * E2%y
-             E3%z = E1%z * E2%z
+
+                  E3%x = E1%x * E2%x
+                  E3%y = E1%y * E2%y
+                  E3%z = E1%z * E2%z
 
           else
              write (0, *) 'not compatible usage for diagMult_crvector'
@@ -1992,8 +1983,7 @@ Contains
        end if
     end if
 
-  end subroutine diagMult_crvector ! diagMult_crvector
-
+  end subroutine diagMult_crvector
 
   !****************************************************************************
   ! diagMult_crvector_f multiplies complex vector E1 with real vector
@@ -2041,8 +2031,7 @@ Contains
 
     E3%temporary = .true.
 
-  end function diagMult_crvector_f ! diagMult_crvector_f
-
+  end function diagMult_crvector_f
 
   !****************************************************************************
   ! diagMult_rcvector multiplies real vector E1 with complex vector E2
@@ -2054,6 +2043,7 @@ Contains
     type (rvector), intent(in)               :: E1
     type (cvector), intent(in)               :: E2
     type (cvector), intent(inout)            :: E3
+
 
     if((.not.E1%allocated).or.(.not.E2%allocated)) then
        write(0,*) 'RHS not allocated yet for diagMult_rcvector'
@@ -2072,6 +2062,7 @@ Contains
           if ((E1%gridType == E2%gridType).and.(E1%gridType == E3%gridType)) then
 
              ! pointwise multiplication for x,y,z-components
+
              E3%x = E1%x * E2%x
              E3%y = E1%y * E2%y
              E3%z = E1%z * E2%z
@@ -2087,8 +2078,7 @@ Contains
        end if
     end if
 
-  end subroutine diagMult_rcvector ! diagMult_rcvector
-
+  end subroutine diagMult_rcvector
 
   !****************************************************************************
   ! diagMult_rcvector_f multiplies real vector E1 with complex vector E2
@@ -2136,8 +2126,7 @@ Contains
 
     E3%temporary = .true.
 
-  end function diagMult_rcvector_f ! diagMult_rcvector_f
-
+  end function diagMult_rcvector_f
 
   !****************************************************************************
   ! diagDiv_crvector divides complex vector E1 with scalar vector E2
@@ -2149,6 +2138,7 @@ Contains
     type (cvector), intent(in)               :: E1
     type (rvector), intent(in)               :: E2
     type (cvector), intent(inout)            :: E3
+
 
     if((.not.E1%allocated).or.(.not.E2%allocated)) then
        write(0,*) 'RHS not allocated yet for diagDiv_crvector'
@@ -2167,9 +2157,10 @@ Contains
           if ((E1%gridType == E2%gridType).and.(E1%gridType == E3%gridType)) then
 
              ! pointwise division for x,y,z-components
-             E3%x = E1%x / E2%x
-             E3%y = E1%y / E2%y
-             E3%z = E1%z / E2%z
+
+                   E3%x = E1%x/ E2%x
+                   E3%y = E1%y/ E2%y
+                   E3%z = E1%z/ E2%z
 
           else
              write (0, *) 'not compatible usage for diagDiv_crvector'
@@ -2182,8 +2173,7 @@ Contains
        end if
     end if
 
-  end subroutine diagDiv_crvector ! diagDiv_crvector
-
+  end subroutine diagDiv_crvector
 
   !****************************************************************************
   ! diagDiv_crvector_f divides complex vector E1 with real vector
@@ -2231,8 +2221,7 @@ Contains
 
     E3%temporary = .true.
 
-  end function diagDiv_crvector_f ! diagDiv_crvector_f
-
+  end function diagDiv_crvector_f
 
   !****************************************************************************
   ! diagDiv_rcvector divides real vector E1 with complex vector E2
@@ -2277,8 +2266,7 @@ Contains
        end if
     end if
 
-  end subroutine diagDiv_rcvector ! diagDiv_rcvector
-
+  end subroutine diagDiv_rcvector
 
   !****************************************************************************
   ! diagDiv_rcvector_f divides real vector E1 with complex vector E2
@@ -2326,8 +2314,7 @@ Contains
 
     E3%temporary = .true.
 
-  end function diagDiv_rcvector_f ! diagDiv_rcvector_f
-
+  end function diagDiv_rcvector_f
 
   ! ***************************************************************************
   ! dotProd_rvector computes dot product of two vectors stored
@@ -2394,8 +2381,7 @@ Contains
 
     call deall_rvector(E3)
 
-  end function dotProd_rvector_f  ! dotProd_rvector_f
-
+  end function dotProd_rvector_f
 
   ! ***************************************************************************
   ! dotProd_cvector computes dot product of two vectors stored
@@ -2462,8 +2448,7 @@ Contains
 
     call deall_cvector(E3)
 
-  end function dotProd_cvector_f ! dotProd_cvector
-
+  end function dotProd_cvector_f
 
   ! ***************************************************************************
   ! dotProd_noConj_cvector computes dot product of two vectors stored
@@ -2530,8 +2515,7 @@ Contains
 
     call deall_cvector(E3)
 
-  end function dotProd_noConj_cvector_f ! dotProd__noConj_cvector_f
-
+  end function dotProd_noConj_cvector_f
 
   !****************************************************************************
   ! linComb_cvector computes linear combination of two vectors
@@ -2543,8 +2527,9 @@ Contains
     !   input vectors
     type (cvector), intent(in)             :: E1, E2
     !  input complex scalars
-    complex (kind=prec), intent(in)           :: inc1, inc2
+    complex (kind=prec), intent(in)        :: inc1, inc2
     type (cvector), intent(inout)          :: E3
+
 
     if((.not.E1%allocated).or.(.not.E2%allocated)) then
        call warning('inputs not allocated yet for linComb_cvector')
@@ -2556,17 +2541,17 @@ Contains
        call warning('output has to be allocated before call to linComb_cvector')
 
     elseif (compare(E1,E2) .and. compare(E1,E3)) then
-        ! form linear combinatoin
-        E3%x = inc1*E1%x + inc2*E2%x
-        E3%y = inc1*E1%y + inc2*E2%y
-        E3%z = inc1*E1%z + inc2*E2%z
+        ! form linear combination
+
+            E3%x  = inc1*E1%x  + inc2*E2%x
+            E3%y  = inc1*E1%y  + inc2*E2%y
+            E3%z  = inc1*E1%z  + inc2*E2%z
 
     else
         call warning('not compatible usage for linComb_cvector')
     end if
 
-  end subroutine linComb_cvector ! linComb_cvector
-
+  end subroutine linComb_cvector
   !****************************************************************************
   ! linComb_rvector computes linear combination of two vectors
   ! stored as derived data type cvector; subroutine, not a function
@@ -2601,7 +2586,7 @@ Contains
         return
     end if
 
-  end subroutine linComb_rvector ! linComb_rvector
+  end subroutine linComb_rvector
 
   !****************************************************************************
   ! scMultadd_cvector multiplies vector E1 stored as derived data type
@@ -2645,8 +2630,7 @@ Contains
        end if
     end if
 
-  end subroutine scMultAdd_cvector ! scMultAdd_cvector
-
+  end subroutine scMultAdd_cvector
 
   ! ***************************************************************************
   function conjg_cvector_f(E1) result (E2)
@@ -2753,8 +2737,7 @@ Contains
 
     E3%temporary = .true.
 
-  end function cmplx_rvector_f  ! cmplx_rvector_f
-
+  end function cmplx_rvector_f
 
   ! ***************************************************************************
   ! real_cvector_f copies the real part of the derived data type cvector variable;
@@ -2786,8 +2769,7 @@ Contains
 
     E2%temporary = .true.
 
-  end function real_cvector_f  ! real_cvector_f
-
+  end function real_cvector_f
 
   ! ***************************************************************************
   ! imag_cvector_f copies the imag part of the derived data type cvector variable;
@@ -2819,6 +2801,6 @@ Contains
 
     E2%temporary = .true.
 
-  end function imag_cvector_f  ! imag_cvector_f
+  end function imag_cvector_f
 
-end module sg_vector ! sg_vector
+end module sg_vector

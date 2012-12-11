@@ -39,6 +39,7 @@ module ioAscii
   use transmitters
   use receivers
   use datatypes
+  use sg_vector_mg, only: mg2c, real_cvector_mg_f, imag_cvector_mg_f, deall_cvector_mg
 
   implicit none
 
@@ -87,7 +88,7 @@ Contains
        ! NM: Yes we do
 
        call create_grid(fileGrid%nx,fileGrid%ny,fileGrid%nzAir,fileGrid%nz-fileGrid%nzAir,fileGrid)
-
+       
        read(ioNum) fileGrid%dx
        read(ioNum) fileGrid%dy
        read(ioNum) fileGrid%dz
@@ -182,21 +183,19 @@ Contains
     integer, intent(in)				:: ioNum
     integer, intent(out)			:: ios
 
-    open (unit=ioNum,file=outFile,STATUS='unknown', iostat=ios)
-
-  !  open (unit=ioNum,file=outFile,STATUS='unknown', form ='unformatted', iostat=ios)
+    open (unit=ioNum,file=outFile,STATUS='unknown', form ='unformatted',&
+         iostat=ios)
 
     if( ios/=0) then
        write(0,*) 'Error opening file in FileWriteInit: ', outFile
     else
        ! write the header (contains the basic information for the forward
        ! modeling). the header is 4 lines
-!       write(ioNum) version,nPer,nMode,inGrid%nx,inGrid%ny,inGrid%nz,inGrid%nzAir, &
-!       inGrid%ox, inGrid%oy, inGrid%oz, inGrid%rotdeg
-!       write(ioNum) inGrid%dx
-!       write(ioNum) inGrid%dy
-!       write(ioNum) inGrid%dz
-
+       write(ioNum) version,nPer,nMode,inGrid%nx,inGrid%ny,inGrid%nz,inGrid%nzAir, &
+       inGrid%ox, inGrid%oy, inGrid%oz, inGrid%rotdeg
+       write(ioNum) inGrid%dx
+       write(ioNum) inGrid%dy
+       write(ioNum) inGrid%dz
     endif
   end subroutine FileWriteInit
 
@@ -319,9 +318,6 @@ Contains
   ! read electric field solution for one mode, frequency; open unit ioNum first ...
   subroutine EfileRead(ioNum, ifreq, imode, fileOmega, inE)
 
-   ! 26.09.2012 Maria
-   ! modified for multi-grid, but not debugged
-
     implicit none
     integer, intent(in)				:: ioNum,ifreq,imode
     type (cvector_mg), intent(inout)		:: inE
@@ -329,6 +325,7 @@ Contains
 
     !  local variables
     integer					:: nRecSkip, iskip, imgrid
+!    integer					:: iskip
 
     !  following could be optional oututs
     integer				:: fileIfreq, fileMode
@@ -337,7 +334,6 @@ Contains
     !  hard code number of modes for now
     integer		:: nMode = 2
 
-    call create(inE%grid, inE, EDGE)
     ! calculate number of records before the header for this frequency/mode
     nRecSkip = ((ifreq-1)*nMode+(imode-1))*4+4
 
@@ -352,12 +348,10 @@ Contains
 
     ! read electrical field data - 3 records
     do imgrid = 1, inE%mgridSize
-      read(ioNum) inE%cvArray(imgrid)%x
-      read(ioNum) inE%cvArray(imgrid)%y
-      read(ioNum) inE%cvArray(imgrid)%z
+      read(ioNum) inE%cvarray(imgrid)%x
+      read(ioNum) inE%cvarray(imgrid)%y
+      read(ioNum) inE%cvarray(imgrid)%z
     enddo
-
-  call deall(inE)
   end subroutine EfileRead
 
   ! ***************************************************************************
@@ -365,29 +359,19 @@ Contains
   !    ... again no sense to skipping, rewinding for sequential binary write
   subroutine EfileWrite(ioNum,Omega, iFreq, iMode, ModeName, outE)
 
-  ! modified for multi-grid
-  ! did not check
-
     implicit none
     real (kind=prec), intent(in)	:: Omega
     integer, intent(in)				:: ioNum,iFreq,iMode
     character (len=20), intent(in)		:: ModeName
-    type (cvector_mg), intent(in)			:: outE
+    type (cvector), intent(in)			:: outE
 
-    type (cvector_mg) :: Ey  ! dummy
-    type (cvector_mg) :: Ex
-    integer  :: ix,iy,iz, imgrid,c
     ! write the frequency header - 1 record
     write(ioNum) Omega, iFreq, iMode,ModeName
 
     ! write the electrical field data - 3 records
-   do imgrid = 1, outE%mgridSize
-     write(ioNum)  outE%cvArray(imgrid)%x
-      write(ioNum) outE%cvArray(imgrid)%y
-      write(ioNum) outE%cvArray(imgrid)%z
-    enddo
-
-
+    write(ioNum) outE%x
+    write(ioNum) outE%y
+    write(ioNum) outE%z
 
   end subroutine EfileWrite
 
@@ -490,6 +474,7 @@ Contains
 !*******************************************************************************
 !*******************************************************************************
 !*******************************************************************************
+
 !******************************************************************
       subroutine write_solnVectorMTX(fid,cfile,eAll)
 
@@ -500,108 +485,132 @@ Contains
       !    solutions, periods, etc. (can get this infor from
       !    eAll%solns(j)%tx, but only with access to TXdict.
 
-      ! Modified by Cherevatova, Oct 2012, for formatted output
-      ! to test the multi-grid FWD results
-
       integer, intent(in)               :: fid
       character(*), intent(in)          :: cfile
       type(solnVectorMTX_t), intent(in)               :: eAll
 
       !   local variables
       integer           :: j,k,nMode = 2, ios
-      integer  :: ig, iSurface,ix,iy,iz
-      integer  :: nx,ny,nz,Iox,Ioy
-      character (len=20) 		:: version = ''
-      character(len=10)  :: XZYZ, XY
+      character (len=20) 		:: version = '',ModeNames(2)
       real (kind=prec)   :: omega
-      real (kind=prec) :: tempD
+
+      ModeNames(1) = 'Ey'
+      ModeNames(2) = 'Ex'
+
+      call FileWriteInit(version,cfile,fid,eAll%solns(1)%grid &
+               ,eAll%nTX, nMode,ios)
+
+     ! do j = 1,eAll%nTx
+     !    do k = 1,2
+           !omega = txDict(eAll%solns(j)%tx)%omega
+           ! unformatted write
+           !call EfileWrite(fid, omega, j,  k, ModeNames(k), eAll%solns(j)%pol(k))
+
+           call plotFields(eAll)
+
+
+     !    enddo
+     ! enddo
+      close(fid)
+
+      end subroutine write_solnVectorMTX
+! *********************************************************************
+      subroutine plotFields(eAll)
+
+      ! created by Cherevatova (Nov,2012)
+      ! to plot fields
+
+      type(solnVectorMTX_t), intent(in)               :: eAll
+
+      !   local variables
+      integer  :: j, ig, iSurface,ix,iy,iz
+      integer  :: nx,ny,Iox,Ioy
+
+      real     :: tempD
       type(cvector)    :: Etemp
 
-
-       call FileWriteInit(version,cfile,fid,eAll%solns(1)%grid &
-               ,eAll%nTX, nMode,ios)
-     ! to plot fields for one site over the center
-     ! at the surface
+     ! plot curve at the surface
      do ig = 1, eAll%solns(1)%grid%mgridSize
          Isurface = ig
        if (eAll%solns(1)%grid%gridarray(ig)%flag == 0)exit
      enddo
-      nz =  eAll%solns(1)%grid%gridArray(Isurface)%nzAir
+     ! iz =  eAll%solns(1)%grid%gridArray(Isurface)%nz-eAll%solns(1)%grid%gridArray(Isurface)%nzAir
       nx = eAll%solns(1)%grid%gridArray(Isurface)%nx
       ny = eAll%solns(1)%grid%gridArray(Isurface)%ny
       tempD= 0
       do ix = 1,nx-1
         tempD= tempD+eAll%solns(1)%grid%dx(ix)
-        Iox = ix
+          Iox = ix
         if (tempD == -eAll%solns(1)%grid%ox) exit
       enddo
       tempD= 0
       do iy = 1,ny-1
         tempD = tempD + eAll%solns(1)%grid%dy(iy)
-        Ioy = iy
+          Ioy = iy
         if (tempD == -eAll%solns(1)%grid%oy) exit
       enddo
-      do j = 1,eAll%nTx   ! loop periods
-       !do k = 1,2        ! loop modes
+      Isurface = 3
+      iz = 13
+      open(01, file = 'Curve.dat')
+        do j = 1,eAll%nTx   ! loop periods
+          ! 1 - Ey
+          ! 2 - Ex
+          write(01,*)'Nmode, period, X, Y, Z, Ex, Ey, Ez'
+                     !Mode Period  Orig Iy   Ex          Ey       Ez
+          write(01,'(i2,es13.5,2x,i3,2x,i3,2x,es13.5,2x,es13.5,2x,es13.5,es13.5,2x,es13.5,2x,es13.5)') (1,txDict(eAll%solns(j)%tx)%period, Ioy, ix, &
+                                 real(eAll%solns(j)%pol(1)%cvarray(Isurface)%x(ix,Ioy,iz)), imag(eAll%solns(j)%pol(1)%cvarray(Isurface)%x(ix,Ioy,iz)),&
+                                 real(eAll%solns(j)%pol(1)%cvarray(Isurface)%y(ix,Ioy,iz)), imag(eAll%solns(j)%pol(1)%cvarray(Isurface)%y(ix,Ioy,iz)),&
+                                 real(eAll%solns(j)%pol(1)%cvarray(Isurface)%z(ix,Ioy,iz)), imag(eAll%solns(j)%pol(1)%cvarray(Isurface)%z(ix,Ioy,iz)),ix=1,nx)
+          write(01,'(i2,es13.5,2x,i3,2x,i3,2x,es13.5,2x,es13.5,2x,es13.5,es13.5,2x,es13.5,2x,es13.5)') (2,txDict(eAll%solns(j)%tx)%period,Ioy, ix, &
+                                 real(eAll%solns(j)%pol(2)%cvarray(Isurface)%x(ix,Ioy,iz)), imag(eAll%solns(j)%pol(2)%cvarray(Isurface)%x(ix,Ioy,iz)), &
+                                 real(eAll%solns(j)%pol(2)%cvarray(Isurface)%y(ix,Ioy,iz)), imag(eAll%solns(j)%pol(2)%cvarray(Isurface)%y(ix,Ioy,iz)), &
+                                 real(eAll%solns(j)%pol(2)%cvarray(Isurface)%z(ix,Ioy,iz)), imag(eAll%solns(j)%pol(2)%cvarray(Isurface)%z(ix,Ioy,iz)),ix=1,nx)
 
-          ! omega = txDict(eAll%solns(j)%tx)%omega
-          write(fid,'(i2,es13.5,2x,i3,2x,i3,2x,es13.5,2x,es13.5,2x,es13.5)') (1,txDict(eAll%solns(j)%tx)%period, Iox, iy, &
-                                 abs(eAll%solns(j)%pol(1)%cvarray(Isurface)%x(Iox,iy,nz)), &
-                                 abs(eAll%solns(j)%pol(1)%cvarray(Isurface)%y(Iox,iy,nz)), &
-                                 abs(eAll%solns(j)%pol(1)%cvarray(Isurface)%z(Iox,iy,nz)),iy=1,ny)
-           write(fid,'(i2,es13.5,2x,i3,2x,i3,2x,es13.5,2x,es13.5,2x,es13.5)') (2,txDict(eAll%solns(j)%tx)%period,Ioy, ix, abs(eAll%solns(j)%pol(1)%cvarray(Isurface)%x(ix,Ioy,nz)), &
-                                 abs(eAll%solns(j)%pol(1)%cvarray(Isurface)%y(ix,Ioy,nz)), &
-                                 abs(eAll%solns(j)%pol(1)%cvarray(Isurface)%z(ix,Ioy,nz)),ix=1,nx)
-
-          ! call EfileWrite(fid, omega, j,  &
-          !   k, ModeNames(k), eAll%solns(j)%pol(k))
-       !enddo
-     enddo
-      close(fid)
+        enddo
+      close(01)
 
       call create(eAll%solns(1)%pol(1)%grid,Etemp,eAll%solns(1)%pol(1)%gridType)
       ! to plot a plane view of the fields
       ! XPer plane view, across the center (Y)
-      open(01, file = 'XZYZ')
-        write(01,*)'Nmode, period, X, Y, Z, Ex, Ey, Ez'
+      open(02, file = 'XZYZ.dat')
+        write(02,*)'Nmode, period, X, Y, Z, Ex, Ey, Ez'
         do j = 1,eAll%nTx   ! loop over periods
             Etemp = eAll%solns(j)%pol(1)
-            write(01,'(i2,es13.5,2x,i3,2x,i3,2x,i3,2x,es13.5,2x,es13.5,2x,es13.5)') ((1,txDict(eAll%solns(j)%tx)%period, Iox, iy,iz, &
-                                 abs(Etemp%x(Iox,iy,iz)), &
-                                 abs(Etemp%y(Iox,iy,iz)), &
-                                 abs(Etemp%z(Iox,iy,iz)),iy=1,Etemp%ny),iz=1,Etemp%nz)
+            write(02,'(i2,es13.5,2x,i3,2x,i3,2x,i3,2x,es13.5,2x,es13.5,2x,es13.5,2x,es13.5,2x,es13.5,2x,es13.5,2x,es13.5,2x,es13.5,2x,es13.5)') ((1,txDict(eAll%solns(j)%tx)%period, Iox, iy,iz, &
+                                 real(Etemp%x(Iox,iy,iz)), imag(Etemp%x(Iox,iy,iz)), abs(Etemp%x(Iox,iy,iz)),&
+                                 real(Etemp%y(Iox,iy,iz)), imag(Etemp%y(Iox,iy,iz)), abs(Etemp%y(Iox,iy,iz)),&
+                                 real(Etemp%z(Iox,iy,iz)), imag(Etemp%z(Iox,iy,iz)), abs(Etemp%z(Iox,iy,iz)),iy=1,Etemp%ny),iz=1,Etemp%nz)
             call zero(Etemp)
             Etemp = eAll%solns(j)%pol(2)
-            write(01,'(i2,es13.5,2x,i3,2x,i3,2x,i3,2x,es13.5,2x,es13.5,2x,es13.5)') ((2,txDict(eAll%solns(j)%tx)%period, ix, Ioy,iz, &
-                                 abs(Etemp%x(ix,Ioy,iz)), &
-                                 abs(Etemp%y(ix,Ioy,iz)), &
-                                 abs(Etemp%z(ix,Ioy,iz)),ix=1,Etemp%nx),iz=1,Etemp%nz)
-            call zero(Etemp)
-        enddo ! periods
-        close(01)
-      ! to plot a plane view of the fields
-      ! XPer plane view, across the center (Y)
-      open(02, file = 'XY')
-        write(02,*)'Nmode, period, X, Y, Z,Ex, Ey, Ez'
-        do j = 1,eAll%nTx   ! loop over periods
-            Etemp = eAll%solns(j)%pol(1)
-            write(02,'(i2,es13.5,2x,i3,2x,i3,2x,i3,2x,es13.5,2x,es13.5,2x,es13.5)') ((1,txDict(eAll%solns(j)%tx)%period, ix, iy,13, &
-                                 abs(Etemp%x(ix,iy,13)), &
-                                 abs(Etemp%y(ix,iy,13)), &
-                                 abs(Etemp%z(ix,iy,13)),ix=1,Etemp%nx),iy=1,Etemp%ny)
-            call zero(Etemp)
-            Etemp = eAll%solns(j)%pol(2)
-            write(02,'(i2,es13.5,2x,i3,2x,i3,2x,i3,2x,es13.5,2x,es13.5,2x,es13.5)') ((2,txDict(eAll%solns(j)%tx)%period, ix, iy,13, &
-                                 abs(Etemp%x(ix,iy,13)), &
-                                 abs(Etemp%y(ix,iy,13)), &
-                                 abs(Etemp%z(ix,iy,13)),ix=1,Etemp%nx),iy=1,Etemp%ny)
+            write(02,'(i2,es13.5,2x,i3,2x,i3,2x,i3,2x,es13.5,2x,es13.5,2x,es13.5,2x,es13.5,2x,es13.5,2x,es13.5,2x,es13.5,2x,es13.5,2x,es13.5)') ((2,txDict(eAll%solns(j)%tx)%period, ix, Ioy,iz, &
+                                 real(Etemp%x(ix,Ioy,iz)),imag(Etemp%x(ix,Ioy,iz)), abs(Etemp%x(ix,Ioy,iz)), &
+                                 real(Etemp%y(ix,Ioy,iz)),imag(Etemp%y(ix,Ioy,iz)), abs(Etemp%y(ix,Ioy,iz)),&
+                                 real(Etemp%z(ix,Ioy,iz)),imag(Etemp%z(ix,Ioy,iz)), abs(Etemp%z(ix,Ioy,iz)),ix=1,Etemp%nx),iz=1,Etemp%nz)
             call zero(Etemp)
         enddo ! periods
         close(02)
+      ! to plot a plane view of the fields
+      ! XPer plane view, across the center (Y)
+      open(03, file = 'XY.dat')
+        ig = 3
+        iz = 13
+        write(03,*)'Nmode, period, X, Y, Z,Ex, Ey, Ez'
+        do j = 1,eAll%nTx   ! loop over periods
+            write(03,'(i2,es13.5,2x,i3,2x,i3,2x,i3,2x,es13.5,2x,es13.5,2x,es13.5,2x,es13.5,2x,es13.5,2x,es13.5,2x,es13.5,2x,es13.5,2x,es13.5)') ((1,txDict(eAll%solns(j)%tx)%period, ix, iy,iz, &
+                                 real(eAll%solns(j)%pol(1)%cvarray(ig)%x(ix,iy,iz)),imag(eAll%solns(j)%pol(1)%cvarray(ig)%x(ix,iy,iz)), abs(eAll%solns(j)%pol(1)%cvarray(ig)%x(ix,iy,iz)),&
+                                 real(eAll%solns(j)%pol(1)%cvarray(ig)%y(ix,iy,iz)),imag(eAll%solns(j)%pol(1)%cvarray(ig)%y(ix,iy,iz)), abs(eAll%solns(j)%pol(1)%cvarray(ig)%y(ix,iy,iz)),&
+                                 real(eAll%solns(j)%pol(1)%cvarray(ig)%z(ix,iy,iz)),imag(eAll%solns(j)%pol(1)%cvarray(ig)%z(ix,iy,iz)), abs(eAll%solns(j)%pol(1)%cvarray(ig)%z(ix,iy,iz)),&
+                                 ix=1,eAll%solns(j)%pol(1)%cvarray(ig)%nx),iy=1,eAll%solns(j)%pol(1)%cvarray(ig)%ny)
+            write(03,'(i2,es13.5,2x,i3,2x,i3,2x,i3,2x,es13.5,2x,es13.5,2x,es13.5,2x,es13.5,2x,es13.5,2x,es13.5,2x,es13.5,2x,es13.5,2x,es13.5)') ((2,txDict(eAll%solns(j)%tx)%period, ix, iy,iz, &
+                                 real(eAll%solns(j)%pol(2)%cvarray(ig)%x(ix,iy,iz)),imag(eAll%solns(j)%pol(2)%cvarray(ig)%x(ix,iy,iz)), abs(eAll%solns(j)%pol(2)%cvarray(ig)%x(ix,iy,iz)),&
+                                 real(eAll%solns(j)%pol(2)%cvarray(ig)%y(ix,iy,iz)),imag(eAll%solns(j)%pol(2)%cvarray(ig)%y(ix,iy,iz)), abs(eAll%solns(j)%pol(2)%cvarray(ig)%y(ix,iy,iz)),&
+                                 real(eAll%solns(j)%pol(2)%cvarray(ig)%z(ix,iy,iz)),imag(eAll%solns(j)%pol(2)%cvarray(ig)%z(ix,iy,iz)), abs(eAll%solns(j)%pol(2)%cvarray(ig)%z(ix,iy,iz)),&
+                                 ix=1,eAll%solns(j)%pol(2)%cvarray(ig)%nx),iy=1,eAll%solns(j)%pol(2)%cvarray(ig)%ny)
+        enddo ! periods
+        close(03)
 
-
-      end subroutine write_solnVectorMTX
-
+        call deall(Etemp)
+      end subroutine plotFields
 !******************************************************************
 !      subroutine read_solnVectorMTX(fid,cfile,eAll)
 !

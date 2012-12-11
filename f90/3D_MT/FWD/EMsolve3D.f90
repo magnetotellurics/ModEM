@@ -3,9 +3,9 @@
 ! solver
 
 module EMsolve3D
-#ifdef Nested
+#IFDEF Nested
   use nestedEM
-#endif
+#ENDIF
   use sg_boundary			! work between different data types
   					! (between boundary conditions and
 					! complex vectors)
@@ -64,7 +64,7 @@ module EMsolve3D
 
   save
 
-  type(timer_t), private :: timer
+  type(timer_t), private :: timer, Localtimer
 
   ! Actual values of control parameters must be set before first use,
   !     by call to setEMsolveControl
@@ -116,7 +116,7 @@ Contains
     complex(kind=prec)         	        :: iOmegaMuInv
     type(cvector_mg)                       :: b,temp
     type (cscalar_mg)			        :: phi0
-    type (cboundary)             	    :: tempBC
+    type (cboundary_mg)            	    :: tempBC
     type (solverControl_t)			    :: QMRiter
 
     !  Zero solver diagnostic variables
@@ -155,10 +155,10 @@ Contains
        !    boundary is determined after solving for interior nodes
        if(bRHS%nonZero_Source) then
          if(bRHS%sparse_Source) then
-#ifdef SparseSource
+#IFDEF SparseSource
            ! Note: C_ONE = (1,0) (double complex)
 	       call add(C_ONE,bRHS%sSparse,b) !add_scvector_mg
-#endif
+#ENDIF
          else
            b = bRHS%s
          endif
@@ -185,12 +185,17 @@ Contains
       if (bRHS%nonzero_BC) then
         !   copy from rHS structure into zeroed complex edge vector temp on multi-grid
         call setBC(bRHS%bc, temp)
-
+#IFDEF Timer
+      write (*,'(a12,a30,f12.6)')    node_info, 'SetBC: elapsed time (sec)', elapsed_time(Globaltimer)
+#ENDIF
         ltemp = .false.
         !   Then multiply by curl_curl operator (use MultA_N ...
         !   Note that MultA_N already multiplies by volume weights
 	    !   required to symetrize problem, so the result is V*A_IB*b)
         call MultA_N(temp, ltemp, b)
+#IFDEF Timer
+      write (*,'(a12,a30,f12.6)')    node_info, 'MultA_N: elapsed time (sec)', elapsed_time(Globaltimer)
+#ENDIF
         !  change sign of result
         call scMult(MinusOne,b,b)
        endif
@@ -198,14 +203,14 @@ Contains
       !  explictly by volume weights
       if (bRHS%nonzero_Source) then
         if (bRHS%sparse_Source) then
-#ifdef SparseSource
+#IFDEF SparseSource
             ! temp  = bRHS%sSparse
              call zero(temp)
              call add(C_ONE,bRHS%sSparse,temp)! add_scvector_mg
              call Div(temp,phi0)
              ! temp = volE*temp
              call diagMult(volE,temp,temp)
-#endif
+#ENDIF
         else
           ! temp = volE*rhs%s
           call Div(bRHS%s,phi0)
@@ -271,10 +276,15 @@ Contains
        nDivCor = 1
        call SdivCorr(temp,eSol,phi0)
     endif
-
     loop: do while ((.not.converged).and.(.not.failed))
+#IFDEF Timer
+      call reset_time(Localtimer)
+#ENDIF
        Call QMR(b, eSol, QMRiter)
-
+#IFDEF Timer
+      write (*,'(a12,a30,f12.6)')    node_info, 'QMR: elapsed time (sec)', elapsed_time(Globaltimer)
+      write (*,'(a12,a30,f12.6)')    node_info, 'QMR: time taken (sec)', elapsed_time(Localtimer)
+#ENDIF
        ! algorithm is converged when the relative error is less than tolerance
        ! (in which case QMRiter%niter will be less than QMRiter%maxIt)
        converged = QMRiter%niter .lt. QMRiter%maxIt
@@ -288,18 +298,25 @@ Contains
            EMrelErr(nIterTotal+iter) = QMRiter%rerr(iter)
        enddo
        nIterTotal = nIterTotal + QMRiter%niter
+       !write (*,'(a12,a20,i8,g15.7)') node_info, 'finished QMR:', QMRiter%niter, QMRiter%rerr(QMRiter%niter)
 
        nDivCor = nDivCor+1
        if( nDivCor < MaxDivCor) then
 
           ! do divergence correction
           temp = eSol
-
+#IFDEF Timer
+      call reset_time(Localtimer)
+#ENDIF
           if(bRHS%nonzero_Source) then
              Call SdivCorr(temp,eSol,phi0)
           else
              Call SdivCorr(temp,eSol)
           endif
+#IFDEF Timer
+      write (*,'(a12,a30,f12.6)')    node_info, 'DivCorr: elapsed time (sec)', elapsed_time(Globaltimer)
+      write (*,'(a12,a30,f12.6)')    node_info, 'DivCorr: time taken (sec)', elapsed_time(Localtimer)
+#ENDIF
        else
           ! max number of divergence corrections exceeded; convergence failed
           failed = .true.
@@ -310,7 +327,7 @@ Contains
     if (output_level > 1) then
        write (*,'(a12,a20,i8,g15.7)') node_info, 'finished solving:', nIterTotal, EMrelErr(nIterTotal)
 !	   write (*,'(a12,a22,f12.6)')    node_info, ' time taken (mins) ', elapsed_time(timer)/60.0
-       write (*,'(a12,a22,f12.6)')    node_info, ' time taken (mins) ', elapsed_time(timer)
+       write (*,'(a12,a22,f12.6)')    node_info, ' time taken (sec) ', elapsed_time(timer)
 
     end if
 
@@ -327,9 +344,9 @@ Contains
        !    SG_Basics/math_constants.f90
        !   tempBC = rhs%bc - tempBC
     if(bRHS%nonzero_BC) then
-      call linComb_cboundary(C_MinusONE,tempBC,C_ONE,bRHS%bc,tempBC)
+      call linComb(C_MinusONE,tempBC,C_ONE,bRHS%bc,tempBC)
     else
-      call scMult_cboundary(C_MinusONE, tempBC, tempBC)
+      call scMult(C_MinusONE, tempBC, tempBC)
     endif
     !  and copy result into boundary nodes of eSol
       call setBC(tempBC, eSol)
@@ -341,6 +358,8 @@ Contains
       call setBC(tempBC, eSol)
     endif
   endif
+
+        call plotCvector_mg(eSol)
 
     ! deallocate local temporary arrays
     Call deall(phi0)
