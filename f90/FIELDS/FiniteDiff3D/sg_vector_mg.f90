@@ -88,11 +88,6 @@
           module procedure diagDiv_crvector_mg
         end interface
 
-        interface UpdateZ
-          module procedure updateZ_cvector_mg
-          module procedure updateZ_rvector_mg
-        end interface
-
           ! overload some intrinsic functions for complex numbers
           INTERFACE conjg
              MODULE PROCEDURE conjg_cvector_mg_f
@@ -123,7 +118,6 @@
                    linComb_cvector_mg, &
                    dotProd_cvector_mg_f,  dotProd_noConj_cvector_mg_f, &
                    diagDiv_rcvector_mg, diagDiv_crvector_mg, &
-                   updateZ_cvector_mg, updateZ_rvector_mg, &
                    conjg_cvector_mg_f, cmplx_rvector_mg_f, real_cvector_mg_f, imag_cvector_mg_f, &
                    plotCvector_mg
 
@@ -384,18 +378,18 @@
                   ! enddo ! ic
                   !  e2%cvArray(imgrid)%x(ix,iy,iz) = e2%cvArray(imgrid)%x(ix,iy,iz)/e2%grid%gridArray(imgrid)%dx(ix)
                   ! copy fields
-                    e2%cvArray(imgrid)%x(ix,iy,iz) = e1%x(ccoeff_current*(ix-1)+ccoeff_current,ccoeff_current*(iy-1)+1,izv)
+                    e2%cvArray(imgrid)%x(ix,iy,iz) = e1%x(ccoeff_current*(ix-1)+1,ccoeff_current*(iy-1)+1,izv)
                 enddo  !ix
               enddo !iy
             ! re-count y component
               do ix = 1, nx+1
                 do iy = 1, ny
-                   !do ic = 1, ccoeff_current
-                   ! e2%cvArray(imgrid)%y(ix,iy,iz) = e2%cvArray(imgrid)%y(ix,iy,iz) +  &
-                                     !e1%y(ccoeff_current*(ix-1)+1,ccoeff_current*(iy-1)+ic,izv)*e1%grid%dy(ccoeff_current*(iy-1)+ic)
-                   !enddo !ic
-                   ! e2%cvArray(imgrid)%y(ix,iy,iz) = e2%cvArray(imgrid)%y(ix,iy,iz)/e2%grid%gridArray(imgrid)%dy(iy)
-                   e2%cvArray(imgrid)%y(ix,iy,iz) = e1%y(ccoeff_current*(ix-1)+1,ccoeff_current*(iy-1)+ccoeff_current,izv)
+!                   do ic = 1, ccoeff_current
+!                    e2%cvArray(imgrid)%y(ix,iy,iz) = e2%cvArray(imgrid)%y(ix,iy,iz) +  &
+!                                     e1%y(ccoeff_current*(ix-1)+1,ccoeff_current*(iy-1)+ic,izv)*e1%grid%dy(ccoeff_current*(iy-1)+ic)
+!                   enddo !ic
+!                    e2%cvArray(imgrid)%y(ix,iy,iz) = e2%cvArray(imgrid)%y(ix,iy,iz)/e2%grid%gridArray(imgrid)%dy(iy)
+                   e2%cvArray(imgrid)%y(ix,iy,iz) = e1%y(ccoeff_current*(ix-1)+1,ccoeff_current*(iy-1)+1,izv)
                 enddo !iy
               enddo !ix
             enddo ! iz
@@ -499,23 +493,24 @@
                   ! Ex components
                  do iy = 1, ny
                      do ix =1, nx
-                           ! e2%x(nc*(ix-1)+1,nc*(iy-1)+1,izv) = e1%cvArray(imgrid)%x(ix,iy,iz)
+!                           e2%x(nc*(ix-1)+1,nc*(iy-1)+1,izv) = e1%cvArray(imgrid)%x(ix,iy,iz)
                        do icx = 1, nc
-                         do icy = 1, nc
-                           e2%x(nc*(ix-1)+icx,nc*(iy-1)+icy,izv) = e1%cvArray(imgrid)%x(ix,iy,iz)
-                         enddo
-                       enddo
+!                         do icy = 1, nc
+                           e2%x(nc*(ix-1)+icx,nc*(iy-1)+1,izv) = e1%cvArray(imgrid)%x(ix,iy,iz)
+!                           e2%x(nc*(ix-1)+icx,nc*(iy-1)+icy,izv) = e1%cvArray(imgrid)%x(ix,iy,iz)
+!                         enddo ! icy
+                       enddo  ! icx
                      enddo ! ix
                   enddo ! iy
                   ! Ey components
                  do ix = 1, nx
                      do iy =1, ny
-                          !  e2%y(nc*(ix-1)+1,nc*(iy-1)+1,izv) = e1%cvArray(imgrid)%y(ix,iy,iz)
+                      !      e2%y(nc*(ix-1)+1,nc*(iy-1)+1,izv) = e1%cvArray(imgrid)%y(ix,iy,iz)
                        do icx =1, nc
-                         do icy = 1, nc
-                           e2%y(nc*(ix-1)+icx,nc*(iy-1)+icy,izv) = e1%cvArray(imgrid)%y(ix,iy,iz)
-                         enddo
-                       enddo
+!                         do icy = 1, nc
+                           e2%y(nc*(ix-1)+icx,nc*(iy-1)+1,izv) = e1%cvArray(imgrid)%y(ix,iy,iz)
+!                         enddo  ! icx
+                       enddo  ! icy
                      enddo ! iy
                   enddo ! ix
                enddo !iz
@@ -525,12 +520,12 @@
                   izv = iz + nzCum
                   do iy = 1, ny
                      do ix =1, nx
-                         ! e2%z(nc*(ix-1)+1,nc*(iy-1)+1,izv)= e1%cvArray(imgrid)%z(ix,iy,iz)
+                     !     e2%z(nc*(ix-1)+1,nc*(iy-1)+1,izv)= e1%cvArray(imgrid)%z(ix,iy,iz)
                        do icx = 1, nc
-                         do icy = 1, nc
-                           e2%z(nc*(ix-1)+icx,nc*(iy-1)+icy,izv)= e1%cvArray(imgrid)%z(ix,iy,iz)
-                         enddo
-                       enddo
+!                         do icy = 1, nc
+                           e2%z(nc*(ix-1)+icx,nc*(iy-1)+1,izv)= e1%cvArray(imgrid)%z(ix,iy,iz)
+!                        enddo ! icx
+                       enddo ! icy
                      enddo ! ix
                  enddo !iy
               enddo !iz
@@ -961,178 +956,6 @@
             end if
 
      end subroutine scMultAdd_cvector_mg
-     ! ******************************************************************************************************
-     subroutine updateZ_cvector_mg(outE, whichZ,imgrid)
-     ! Used in M1Solver, M2Solver only
-     ! Updates z layer in cvector_mg (E fields)
-       implicit none
-
-          type(cvector_mg), intent(inout)  :: outE
-          integer, intent(in)  :: imgrid
-          character(len=10), intent(in)  :: whichZ
-
-
-          ! local variables
-          integer  :: ix, iy, iz
-          ! if 'first' then it is direct loop and need to fill in z=1 within each sub-grid (except sub-grid #1)
-          character(len=10),parameter  :: first = 'first'
-          ! if 'first' then it is backward substitution and need to fill in z=nz+1 within each sub-grid (except sub-grid the last (#mgridSize))
-          character(len=10),parameter  :: last = 'last'
-
-            if(whichZ.eq.first)then
-              if(imgrid == 1) then
-                ! do nothing
-                ! this is upper boundary
-                ! leave ...%z(:,:,1) as it is, zeros
-                return
-              endif
-
-                if(outE%coarseness(imgrid).lt.outE%coarseness(imgrid-1))then
-                  ! interface : coarser grid to finer
-                  ! copy fields from the previous sub-grid (nz+1 layer) to the current sub-grid (1 layer)
-                  do iy = 1, outE%cvArray(imgrid-1)%ny
-                    do ix = 1, outE%cvArray(imgrid-1)%nx
-                      ! copy Ex odd values
-                      outE%cvArray(imgrid)%x(2*ix-1,2*iy-1,1) = outE%cvArray(imgrid-1)%x(ix,iy,outE%cvArray(imgrid-1)%nz+1)
-                      ! copy Ex even values
-                      outE%cvArray(imgrid)%x(2*ix,2*iy-1,1) = outE%cvArray(imgrid)%x(2*ix-1,2*iy-1,1)
-
-                      ! copy Ey odd values
-                      outE%cvArray(imgrid)%y(2*ix-1,2*iy-1,1) = outE%cvArray(imgrid-1)%y(ix,iy,outE%cvArray(imgrid-1)%nz+1)
-                      ! copy Ey even values
-                      outE%cvArray(imgrid)%y(2*ix-1,2*iy,1) = outE%cvArray(imgrid)%y(2*ix-1,2*iy-1,1)
-                    enddo
-                  enddo
-
-               else if (outE%coarseness(imgrid).gt.outE%coarseness(imgrid-1)) then
-                 ! interface : finer grid to coarser
-
-                 do iy = 1,  outE%cvArray(imgrid)%ny
-                   do ix = 1,  outE%cvArray(imgrid)%nx
-                     ! copy fields from the previous sub-grid
-                     outE%cvArray(imgrid)%x(ix,iy,1) =  outE%cvArray(imgrid-1)%x(2*ix-1,2*iy-1,outE%cvArray(imgrid-1)%nz+1)
-                     outE%cvArray(imgrid)%y(ix,iy,1) =  outE%cvArray(imgrid-1)%y(2*ix-1,2*iy-1,outE%cvArray(imgrid-1)%nz+1)
-                   enddo
-                 enddo
-
-               else if (outE%coarseness(imgrid) .eq. outE%coarseness(imgrid-1)) then
-                ! coarseness does not change
-                ! copy fields
-
-                 do iy = 1,  outE%cvArray(imgrid)%ny
-                   do ix = 1,  outE%cvArray(imgrid)%nx
-                     outE%cvArray(imgrid)%x(ix,iy,1) = outE%cvArray(imgrid-1)%x(ix,iy,outE%cvArray(imgrid-1)%nz+1)
-                     outE%cvArray(imgrid)%y(ix,iy,1) = outE%cvArray(imgrid-1)%y(ix,iy,outE%cvArray(imgrid-1)%nz+1)
-                   enddo
-                 enddo
-              endif
-
-            else if(whichZ.eq.last)then
-
-              if(imgrid == outE%mgridSize) then
-                ! do nothing
-                ! this is lower boundary
-                ! leave ...%z(:,:,nz+1) as it is
-              return
-              endif
-                if(outE%coarseness(imgrid).lt.outE%coarseness(imgrid+1))then
-                  ! interface : coarser --> finer
-                  ! copy fields from the previous subgrid (1 layer) to the current subgrid (nz+2 layer)
-                  do iy = 1, outE%cvArray(imgrid+1)%ny
-                    do ix = 1, outE%cvArray(imgrid+1)%nx
-                      outE%cvArray(imgrid)%x(2*ix-1,2*iy-1,outE%cvArray(imgrid)%nz+1) = outE%cvArray(imgrid+1)%x(ix,iy,1)
-                      outE%cvArray(imgrid)%x(2*ix,2*iy-1,outE%cvArray(imgrid)%nz+1) = outE%cvArray(imgrid)%x(2*ix,2*iy,outE%cvArray(imgrid)%nz+1)
-
-                      outE%cvArray(imgrid)%y(2*ix-1,2*iy-1,outE%cvArray(imgrid)%nz+1) = outE%cvArray(imgrid+1)%y(ix,iy,1)
-                    outE%cvArray(imgrid)%y(2*ix-1,2*iy,outE%cvArray(imgrid)%nz+1) = outE%cvArray(imgrid)%y(2*ix,2*iy,outE%cvArray(imgrid)%nz+1)
-                    enddo
-                  enddo
-
-                else if (outE%coarseness(imgrid).gt.outE%coarseness(imgrid+1)) then
-                  ! interface : finer --> coarser
-                  do iy = 1, outE%cvArray(imgrid)%ny
-                    do ix = 1, outE%cvArray(imgrid)%nx
-                      outE%cvArray(imgrid)%x(ix,iy,outE%cvArray(imgrid)%nz+1) = outE%cvArray(imgrid+1)%x(2*ix-1,2*iy-1,1)
-                      outE%cvArray(imgrid)%y(ix,iy,outE%cvArray(imgrid)%nz+1) = outE%cvArray(imgrid+1)%y(2*ix-1,2*iy-1,1)
-                    enddo
-                  enddo
-
-                else if (outE%coarseness(imgrid) .eq. outE%coarseness(imgrid+1)) then
-                  ! coarseness does not change
-                  ! copy fields
-
-              do iy = 1, outE%cvArray(imgrid)%ny
-                 do ix = 1, outE%cvArray(imgrid)%nx
-                   outE%cvArray(imgrid)%x(ix,iy,outE%cvArray(imgrid)%nz+1) = outE%cvArray(imgrid+1)%x(ix,iy,1)
-                   outE%cvArray(imgrid)%y(ix,iy,outE%cvArray(imgrid)%nz+1) = outE%cvArray(imgrid+1)%y(ix,iy,1)
-                 enddo
-              enddo
-                endif
-            endif
-
-     end subroutine updateZ_cvector_mg
-
-    ! ***********************************************************************************************************
-    subroutine updateZ_rvector_mg(outE, imgrid)
-          ! Updates first z layer in rvector_mg
-          ! starting from the second subgrid
-          ! in the first subgris z1 == 0 (upper boundary)
-          ! in the next subgrids first layer must be equal to the last layer in the previous subgrid
-          ! e(igrid)(:,:,1) == E(igrid-1)(:,:,nz)
-          implicit none
-
-          type(rvector_mg), intent(inout)  :: outE
-          integer, intent(in)  :: imgrid
-
-          ! local variables
-          integer  :: ix, iy, iz
-          integer  :: nx, ny, nz
-
-
-            if(imgrid == 1) then
-            ! do nothing
-            ! this is upper boundary
-            ! z1 == 0 as it is
-              return
-            endif
-
-              nz = outE%rvArray(imgrid)%nz
-            if(outE%coarseness(imgrid).lt.outE%coarseness(imgrid-1))then
-
-              ! interface : coarser grid to finer
-              ! copy fields from the privious subgrid (nz layer) to the current subgrid (1 layer)
-              do iy = 1, outE%rvArray(imgrid+1)%ny
-                do ix = 1, outE%rvArray(imgrid+1)%nx
-                   outE%rvArray(imgrid)%x(2*ix-1,2*iy-1,1) = outE%rvArray(imgrid-1)%x(ix,iy,outE%rvArray(imgrid-1)%nz+1)
-                   outE%rvArray(imgrid)%x(2*ix,2*iy-1,1) = outE%rvArray(imgrid)%x(2*ix-1,2*iy-1,1)
-                   outE%rvArray(imgrid)%y(2*ix-1,2*iy-1,1) = outE%rvArray(imgrid-1)%y(ix,iy,outE%rvArray(imgrid-1)%nz+1)
-                   outE%rvArray(imgrid)%y(2*ix-1,2*iy,1) = outE%rvArray(imgrid)%y(2*ix-1,2*iy-1,1)
-                enddo
-              enddo
-
-            else if (outE%coarseness(imgrid).gt.outE%coarseness(imgrid-1)) then
-              ! interface : finer grid to coarser
-              ! now copies fileds
-              do iy = 1, outE%rvArray(imgrid)%ny
-                do ix = 1, outE%rvArray(imgrid)%nx
-                  outE%rvArray(imgrid)%x(ix,iy,1) = outE%rvArray(imgrid-1)%x(2*ix-1,2*iy-1,outE%rvArray(imgrid-1)%nz+1)
-                  outE%rvArray(imgrid)%y(ix,iy,1) = outE%rvArray(imgrid-1)%y(2*ix-1,2*iy-1,outE%rvArray(imgrid-1)%nz+1)
-                enddo
-              enddo
-
-            else if (outE%coarseness(imgrid) .eq. outE%coarseness(imgrid-1)) then
-            ! coarseness does not change
-            ! copy fields
-              do iy = 1, outE%rvArray(imgrid)%ny
-                 do ix = 1, outE%rvArray(imgrid)%nx
-                   outE%rvArray(imgrid)%x(ix,iy,1) = outE%rvArray(imgrid-1)%x(ix,iy,outE%rvArray(imgrid-1)%nz+1)
-                   outE%rvArray(imgrid)%y(ix,iy,1) = outE%rvArray(imgrid-1)%y(ix,iy,outE%rvArray(imgrid-1)%nz+1)
-                 enddo
-              enddo
-
-            endif
-
-     end subroutine updateZ_rvector_mg
 
      ! *********************************************************************************************************
 
@@ -1321,7 +1144,7 @@
           character(len=10)                     :: XZYZ,XY
           real (kind=prec)                      :: tempD
           type(cvector)                         :: Etemp
-          integer                               :: Io, ix, iy, iz, nx, ny, nz
+          integer                               :: Io, ix, iy, iz, nx, ny, nz, imgrid
 
           nx = inE%grid%nx
           ny = inE%grid%ny
@@ -1346,17 +1169,21 @@
                 call zero(Etemp)
             close(001)
 
+          ! plot horizontal cut
           open(002, file = 'XY')
             write(002,*)'X, Y, Z,Ex, Ey, Ez'
               ! specify number of iz manually
-               write(002,'(i3,2x,i3,2x,i3,2x,es13.5,2x,es13.5,2x,es13.5)') ((ix, iy, 11, &
-                                     abs(inE%cvArray(3)%x(ix,iy,11)), &
-                                     abs(inE%cvArray(3)%y(ix,iy,11)), &
-                                     abs(inE%cvArray(3)%z(ix,iy,11)),ix=1,nx),iy=1,ny)
+              imgrid = 1
+              iz = 20
+               write(002,'(i3,2x,i3,2x,i3,2x,es13.5,2x,es13.5,2x,es13.5)') ((ix, iy, iz, &
+                                     abs(inE%cvArray(imgrid)%x(ix,iy,iz)), &
+                                     abs(inE%cvArray(imgrid)%y(ix,iy,iz)), &
+                                     abs(inE%cvArray(imgrid)%z(ix,iy,iz)),ix=1,nx),iy=1,ny)
             close(002)
 
         call deall(Etemp)
 
       end subroutine plotCvector_mg
+
 
     end module sg_vector_mg

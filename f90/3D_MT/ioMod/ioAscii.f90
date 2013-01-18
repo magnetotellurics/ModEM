@@ -526,7 +526,7 @@ Contains
       integer  :: j, ig, iSurface,ix,iy,iz
       integer  :: nx,ny,Iox,Ioy
 
-      real     :: tempD
+      real(kind=prec)    :: tempD
       type(cvector)    :: Etemp
 
      ! plot curve at the surface
@@ -541,16 +541,16 @@ Contains
       do ix = 1,nx-1
         tempD= tempD+eAll%solns(1)%grid%dx(ix)
           Iox = ix
-        if (tempD == -eAll%solns(1)%grid%ox) exit
+        if (tempD == -(eAll%solns(1)%grid%ox)) exit
       enddo
       tempD= 0
       do iy = 1,ny-1
         tempD = tempD + eAll%solns(1)%grid%dy(iy)
           Ioy = iy
-        if (tempD == -eAll%solns(1)%grid%oy) exit
+        if (tempD == -(eAll%solns(1)%grid%oy)) exit
       enddo
-      Isurface = 3
-      iz = 13
+      Isurface = 2
+      iz = 12
       open(01, file = 'Curve.dat')
         do j = 1,eAll%nTx   ! loop periods
           ! 1 - Ey
@@ -592,8 +592,8 @@ Contains
       ! to plot a plane view of the fields
       ! XPer plane view, across the center (Y)
       open(03, file = 'XY.dat')
-        ig = 3
-        iz = 13
+        ig = 2
+        iz = 12
         write(03,*)'Nmode, period, X, Y, Z,Ex, Ey, Ez'
         do j = 1,eAll%nTx   ! loop over periods
             write(03,'(i2,es13.5,2x,i3,2x,i3,2x,i3,2x,es13.5,2x,es13.5,2x,es13.5,2x,es13.5,2x,es13.5,2x,es13.5,2x,es13.5,2x,es13.5,2x,es13.5)') ((1,txDict(eAll%solns(j)%tx)%period, ix, iy,iz, &

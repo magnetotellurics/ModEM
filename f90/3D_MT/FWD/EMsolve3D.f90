@@ -280,7 +280,11 @@ Contains
 #IFDEF Timer
       call reset_time(Localtimer)
 #ENDIF
+
        Call QMR(b, eSol, QMRiter)
+
+       ! call plotCvector_mg(eSol)
+
 #IFDEF Timer
       write (*,'(a12,a30,f12.6)')    node_info, 'QMR: elapsed time (sec)', elapsed_time(Globaltimer)
       write (*,'(a12,a30,f12.6)')    node_info, 'QMR: time taken (sec)', elapsed_time(Localtimer)
@@ -298,7 +302,7 @@ Contains
            EMrelErr(nIterTotal+iter) = QMRiter%rerr(iter)
        enddo
        nIterTotal = nIterTotal + QMRiter%niter
-       !write (*,'(a12,a20,i8,g15.7)') node_info, 'finished QMR:', QMRiter%niter, QMRiter%rerr(QMRiter%niter)
+       write (*,'(a12,a20,i8,g15.7)') node_info, 'finished QMR:', QMRiter%niter, QMRiter%rerr(QMRiter%niter)
 
        nDivCor = nDivCor+1
        if( nDivCor < MaxDivCor) then
@@ -311,7 +315,7 @@ Contains
           if(bRHS%nonzero_Source) then
              Call SdivCorr(temp,eSol,phi0)
           else
-             Call SdivCorr(temp,eSol)
+            ! Call SdivCorr(temp,eSol)
           endif
 #IFDEF Timer
       write (*,'(a12,a30,f12.6)')    node_info, 'DivCorr: elapsed time (sec)', elapsed_time(Globaltimer)
@@ -323,6 +327,8 @@ Contains
        endif
 
     end do loop
+
+    !call plotCvector_mg(eSol)
 
     if (output_level > 1) then
        write (*,'(a12,a20,i8,g15.7)') node_info, 'finished solving:', nIterTotal, EMrelErr(nIterTotal)
@@ -358,8 +364,6 @@ Contains
       call setBC(tempBC, eSol)
     endif
   endif
-
-        call plotCvector_mg(eSol)
 
     ! deallocate local temporary arrays
     Call deall(phi0)
@@ -432,6 +436,7 @@ Contains
 
   ! PCG is a generic pre-conditioned CG algorithm
   Call PCG(phiRHS,phiSol,PCGiter )
+
   DivCorRelErr(:,nDivCor) = PCGiter%rerr
 
   if (output_level > 2) then

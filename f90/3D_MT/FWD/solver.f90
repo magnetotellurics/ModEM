@@ -94,12 +94,6 @@ subroutine PCG(b,x, PCGiter)
 
      Call Minv(r,s)
 
-!print*, s%csarray(2)%v(5,2,1)
-!print*, s%csarray(2)%v(5,3,1)
-!print*, s%csarray(2)%v(5,4,1)
-!print*, s%csarray(2)%v(5,5,1)
-!print*, s%csarray(2)%v(5,6,1)
-
      delta = dotProd(r,s)
      if(i.eq.1) then
         p = s
@@ -153,14 +147,18 @@ subroutine QMR(b,x, QMRiter)
   type (solverControl_t), intent(inout)	:: QMRiter
 
    ! local variables
-  type (cvector_mg)      	    :: AX,R,VT
-  type (cvector_mg)	    :: Y,Z,WT,V,W,YT,ZT,P,Q,PT,D,S
-  logical                   :: adjoint, ilu_adjt
+  type (cvector_mg)      	   :: AX,R,VT
+  type (cvector_mg)	           :: Y,Z,WT,V,W,YT,ZT,P,Q,PT,D,S
+  logical                      :: adjoint, ilu_adjt
   complex (kind=prec)          :: ETA,PDE,EPSIL,RDE,BETA,DELTA,RHO
   complex (kind=prec)          :: PSI,RHO1,GAMM,GAMM1,THET,THET1,TM2
   complex (kind=prec)          :: bnorm,rnorm
   complex (kind=prec)          :: rhoInv,psiInv
-  integer                   :: iter, imgrid
+  integer                      :: iter
+
+  ! temp aray
+  type(cvector_mg)             :: prevX, residual
+
 
   if (.not.b%allocated) then
       write(0,*) 'Error: b in QMR not allocated yet'
@@ -203,6 +201,8 @@ subroutine QMR(b,x, QMRiter)
 
   Call A(x, adjoint, R)
 
+  call plotCvector_mg(R)
+
    ! b - Ax, for inital guess x, that has been inputted to the routine
   Call linComb(C_ONE,b,C_MinusOne,R,R)
 
@@ -223,12 +223,15 @@ subroutine QMR(b,x, QMRiter)
   VT = R
   ilu_adjt = .false.
 
-  Call M1solve(VT,ilu_adjt,Y)
+  !Call M1solve(VT,ilu_adjt,Y)
+  Y =VT
 
   RHO = CDSQRT(dotProd(Y,Y))
   WT = R
   ilu_adjt = .true.
-  Call M2solve(WT,ilu_adjt,Z)
+
+  !Call M2solve(WT,ilu_adjt,Z)
+  Z = WT
 
   PSI  = CDSQRT(dotProd(Z,Z))
   GAMM = C_ONE
@@ -261,10 +264,14 @@ subroutine QMR(b,x, QMRiter)
       endif
 
       ilu_adjt = .false.
-      Call M2solve(Y,ilu_adjt,YT)
+
+      !Call M2solve(Y,ilu_adjt,YT)
+      YT = Y
 
       ilu_adjt = .true.
-      Call M1solve(Z,ilu_adjt,ZT)
+
+      !Call M1solve(Z,ilu_adjt,ZT)
+      ZT = Z
 
       if (iter.eq.1) then
         P = YT
@@ -298,7 +305,10 @@ subroutine QMR(b,x, QMRiter)
 
       RHO1 = RHO
       ilu_adjt = .false.
-      Call M1solve(VT, ilu_adjt, Y)
+
+      !Call M1solve(VT, ilu_adjt, Y)
+      Y = VT
+
       RHO = CDSQRT(dotProd(Y,Y))
 
       adjoint = .true.
@@ -306,7 +316,10 @@ subroutine QMR(b,x, QMRiter)
       Call scMultAdd(-conjg(BETA),W,WT)
 
       ilu_adjt = .true.
-      Call M2solve(WT,ilu_adjt,Z)
+
+      !Call M2solve(WT,ilu_adjt,Z)
+      Z = WT
+
       PSI = CDSQRT(dotProd(Z,Z))
 
       if (iter.gt.1) then

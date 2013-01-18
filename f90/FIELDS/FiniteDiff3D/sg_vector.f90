@@ -387,7 +387,7 @@ Contains
        E%allocated = E%allocated .and. (status .EQ. 0)
        allocate(E%y(nx+1,ny,nz+1), STAT=status)
        E%allocated = E%allocated .and. (status .EQ. 0)
-       allocate(E%z(nx+1,ny+1,nz), STAT=status)
+       allocate(E%z(nx+1,ny+1,nz+1), STAT=status)
        E%allocated = E%allocated .and. (status .EQ. 0)
     else if (E%gridType == FACE) then
 	   ! For spherical problem:
