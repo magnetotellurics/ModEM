@@ -27,18 +27,22 @@ Contains
     type (modelParam_t), intent(in)					:: param
 	type (rscalar), intent(out)					    :: resist
     type (rscalar), pointer                         :: resist0
-	integer											:: i,j,k,l,istat
+	integer											:: i,j,k,l,lmax,istat
 	integer											:: iL,ip
-	real(8)											:: value,coeff
-	type (modelLayer_t), pointer						:: this_layer
+	real(8)											:: coeff,value
+    !real(8),dimension(grid%nx,grid%ny)              :: value
+    !logical                                         :: new_layer
+	type (modelLayer_t), pointer					:: this_layer
 	type (modelFunc_t)								:: func
 	type (modelPoint_t)								:: point
+	type (timer_t)                                  :: timer
     real(8)                                         :: crust_depth
     logical                                         :: background
 
 	! First initialize resistivity in air and possibly crust, if given
 
 	write(0,*) node_info,'Mapping to grid from model parameter of type: ',trim(param%type)
+	call reset_time(timer)
 
     if(associated(param%rho0)) then
        background = .true.
@@ -93,6 +97,8 @@ Contains
             resist%v(i,j,k) = 1/SIGMA_AIR
         end forall
 
+        iL = 0
+
         do k=grid%nzAir+1,grid%nz
 
           ! Find current layer by locating the upper boundary of a cell
@@ -103,7 +109,17 @@ Contains
             end if
           end do
 
+          ! If we're still in the previous layer, don't recompute
+          if (this_layer%num == iL) then
+            resist%v(:,:,k) = resist%v(:,:,k-1)
+            write(*,*) node_info,'layer ',iL,' repeated'
+            cycle
+          end if
+
           iL = this_layer%num
+          if (output_level > 0) then
+              write(*,*) node_info,'Mapping layer: ',iL
+          end if
 
           do i=1,grid%nx
             do j=1,grid%ny
@@ -118,7 +134,7 @@ Contains
 
                 coeff = param%c(iL,ip)%value
                 func = param%F(ip)
-                if(coeff /= 0.0d0) then
+                if(abs(coeff) > R_TINY) then
                   value = value + coeff * F_at_point(func,point)
                 end if
 
@@ -182,11 +198,14 @@ Contains
 
 	end if
 
-     if (background) then
+    if (output_level > 0) then
+        write(*,*) node_info,'Done mapping from model parameter to grid: ',elapsed_time(timer),' secs'
+    end if
+    if (background) then
         write(0,'(a12,a50)') node_info,'Mapping to grid complete. Used a background model.'
-     else
+    else
         write(0,'(a12,a51)') node_info,'Mapping to grid complete. No background model used.'
-     end if
+    end if
 
   end subroutine mapToGrid_modelParam	! mapToGrid
 

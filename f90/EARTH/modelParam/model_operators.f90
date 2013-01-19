@@ -547,7 +547,7 @@ Contains
     integer							   			   :: lmax
     ! * EOP
 
-	integer										   :: i,j,k
+	integer										   :: i,j,k,status
 
     if(.not.P%allocated) then
        call errStop('(getRadial_modelParam) parametrization not allocated yet')
@@ -559,6 +559,17 @@ Contains
        call warning('(getRadial_modelParam) unable to obtain the radial structure from model type '//trim(P%type))
        return
     end if
+
+    deallocate(Prad%F,STAT=status)
+    allocate(Prad%F(1),STAT=status)
+
+    Prad%nF = 1
+    Prad%F(:)%name='Y'
+
+    i=1
+    Prad%F(i)%num=1
+    Prad%F(i)%l=0
+    Prad%F(i)%m=0
 
 	do j=1,P%nL
 	  do i=1,P%nF
