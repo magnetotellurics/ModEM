@@ -1580,7 +1580,7 @@
            do ix = 1, mGrid%gridArray(imgrid)%nx
              do iy = 2, mGrid%gridArray(imgrid)%ny
 
-               Dilu%cvArray(imgrid)%x(ix, iy, nz+1) = -(xXY(imgrid,iy,1)+xXY(imgrid,iy,2)+xXZ(imgrid,nz+1,1)) -&
+               Dilu%cvArray(imgrid)%x(ix, iy, nz+1) = xXO(imgrid,iy,nz+1) -&!-(xXY(imgrid,iy,1)+xXY(imgrid,iy,2)+xXZ(imgrid,nz+1,1)) -&
                       CMPLX(0.0, 1.0, 8)*omega*MU_0*condE%rvArray(imgrid)%x(ix, iy, nz+1)
                Dilu%cvArray(imgrid)%x(ix, iy, nz+1) = 1.0/ Dilu%cvArray(imgrid)%x(ix, iy, nz+1)
 
@@ -1598,7 +1598,7 @@
            do iy = 1, mGrid%gridArray(imgrid)%ny
              do ix = 2, mGrid%gridArray(imgrid)%nx
 
-               Dilu%cvArray(imgrid)%y(ix, iy, nz+1) = -(yYX(imgrid,ix,1)+yYZ(imgrid,nz+1,1)+yYX(imgrid,ix,2)) - &
+               Dilu%cvArray(imgrid)%y(ix, iy, nz+1) = yYO(imgrid,ix,nz+1)- &!-(yYX(imgrid,ix,1)+yYZ(imgrid,nz+1,1)+yYX(imgrid,ix,2)) - &
                    CMPLX(0.0, 1.0, 8)*omega*MU_0*condE%rvArray(imgrid)%y(ix, iy, nz+1)
                Dilu%cvArray(imgrid)%y(ix, iy, nz+1) = 1.0/ Dilu%cvArray(imgrid)%y(ix, iy, nz+1)
 
@@ -1619,7 +1619,7 @@
            do ix = 1, mGrid%gridArray(imgrid+1)%nx
              do iy = 2, mGrid%gridArray(imgrid+1)%ny
 
-               Dilu%cvArray(imgrid+1)%x(ix, iy, 1) = -(xXY(imgrid+1,iy,1)+xXY(imgrid+1,iy,2)+xXZ(imgrid,1,1)) -&
+               Dilu%cvArray(imgrid+1)%x(ix, iy, 1) = xXO(imgrid+1,iy,1) -&!-(xXY(imgrid+1,iy,1)+xXY(imgrid+1,iy,2)+xXZ(imgrid,1,1)) -&
                       CMPLX(0.0, 1.0, 8)*omega*MU_0*condE%rvArray(imgrid+1)%x(ix, iy, 1)
                Dilu%cvArray(imgrid+1)%x(ix, iy, 1) = 1.0/ Dilu%cvArray(imgrid+1)%x(ix, iy, 1)
              enddo  ! iy
@@ -1637,7 +1637,7 @@
            do iy = 1, mGrid%gridArray(imgrid+1)%ny
              do ix = 2, mGrid%gridArray(imgrid+1)%nx
 
-               Dilu%cvArray(imgrid+1)%y(ix, iy, 1) = -(yYX(imgrid+1,ix,1)+yYZ(imgrid+1,1,1)+yYX(imgrid+1,ix,2)) - &
+               Dilu%cvArray(imgrid+1)%y(ix, iy, 1) = yYO(imgrid+1,ix,1)-&!-(yYX(imgrid+1,ix,1)+yYZ(imgrid+1,1,1)+yYX(imgrid+1,ix,2)) - &
                    CMPLX(0.0, 1.0, 8)*omega*MU_0*condE%rvArray(imgrid+1)%y(ix, iy, 1)
                Dilu%cvArray(imgrid+1)%y(ix, iy, 1) = 1.0/ Dilu%cvArray(imgrid+1)%y(ix, iy, 1)
              enddo ! ix
