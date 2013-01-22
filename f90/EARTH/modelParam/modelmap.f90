@@ -111,8 +111,8 @@ Contains
 
           ! If we're still in the previous layer, don't recompute
           if (this_layer%num == iL) then
+            !write(*,*) node_info,'layer ',iL,' repeated'
             resist%v(:,:,k) = resist%v(:,:,k-1)
-            write(*,*) node_info,'layer ',iL,' repeated'
             cycle
           end if
 

@@ -8,10 +8,12 @@ module field1d
   use sg_vector
   implicit none
 
+  private
+
   ! ***************************************************************************
   ! * type conf1d_t contains the configuration for the 1d forward solver
 
-  type :: conf1d_t
+  type, public :: conf1d_t
 
       real(8), dimension(:), pointer    :: layer ! tops of layers
       real(8), dimension(:), pointer    :: sigma ! layer conductivities
@@ -23,11 +25,47 @@ module field1d
 
   end type conf1d_t ! conf1d_t
 
+  ! Legendre polynomials are computed once and saved for efficiency;
+  ! this becomes very important in an inversion when this module is called repeatedly
+  ! The dimensions are (Nt+1,lmax+1,lmax+1).
+  ! Once these are computed, legendre_allocated values are set to .true.
+  real(8), dimension(:,:,:), allocatable, private, save  :: node_P_lm
+  real(8), dimension(:,:,:), allocatable, private, save  :: edge_P_lm
+  logical, private, save                                 :: legendre_allocated_at_nodes=.false.
+  logical, private, save                                 :: legendre_allocated_at_edges=.false.
+
   type (timer_t), save                  :: fwd1d_timer
+
+  public        :: legendre_deallocate_at_nodes
+  public        :: legendre_deallocate_at_edges
+  public        :: sourceField1d
 
 
 Contains
 
+subroutine legendre_deallocate_at_nodes()
+! For efficiency in an inversion, we save the Legendre polynomials once these
+! have been computed. We reuse these whenever this module is invoked again.
+! Use this subroutine to explicitly deallocate these arrays.
+
+    integer     :: istat
+
+    deallocate(node_P_lm, STAT=istat)
+    legendre_allocated_at_nodes=.false.
+
+end subroutine
+
+subroutine legendre_deallocate_at_edges()
+! For efficiency in an inversion, we save the Legendre polynomials once these
+! have been computed. We reuse these whenever this module is invoked again.
+! Use this subroutine to explicitly deallocate these arrays.
+
+    integer     :: istat
+
+    deallocate(edge_P_lm, STAT=istat)
+    legendre_allocated_at_edges=.false.
+
+end subroutine
 
 subroutine legendre_norm(lmax,cost,P_lm)
 ! usage: compute fully normalised Legendre polynomials. To match the Matlab code,
@@ -688,7 +726,7 @@ subroutine sourceField1d(earth,lmax,coeff,period,grid,H)
     
     call sourcePotential(earth,lmax,period,Rr,Rs,Tnr,Tnsp)
     
-    write(*,*) 'Done computing potentials: ',elapsed_time(fwd1d_timer),' secs'
+    write(*,*) node_info,'Done computing potentials: ',elapsed_time(fwd1d_timer),' secs'
     call reset_time(fwd1d_timer)
 
     !-----------------------------------------------------------!
@@ -699,11 +737,32 @@ subroutine sourceField1d(earth,lmax,coeff,period,grid,H)
     Yt(:,:) = cmplx(0.0d0,0.0d0)
     Yr(:,:) = cmplx(0.0d0,0.0d0)
 
+    if (.not. legendre_allocated_at_nodes) then
+        write(*,*) node_info,'Allocating Legendre polynomials at grid nodes'
+        allocate(node_P_lm(Nt+1,lmax+1,lmax+1),STAT=istat)
+        node_P_lm = 0.0d0
+    else
+        write(*,*) node_info,'Legendre polynomials pre-allocated at grid nodes'
+    end if
+
+    if (.not. legendre_allocated_at_edges) then
+        write(*,*) node_info,'Allocating Legendre polynomials at grid edges'
+        allocate(edge_P_lm(Nt+1,lmax+1,lmax+1),STAT=istat)
+        edge_P_lm = 0.0d0
+    else
+        write(*,*) node_info,'Legendre polynomials pre-allocated at grid edges'
+    end if
+
     ! ph component of the field (skip the poles)
     do j = 2,Nt
 
         ! for efficiency, call this once for each theta and use in vsharm
-        call legendre_norm(lmax,cos(grid%th(j)),P_lm)
+        if (legendre_allocated_at_nodes) then
+            P_lm = node_P_lm(j,:,:)
+        else
+            call legendre_norm(lmax,cos(grid%th(j)),P_lm)
+            node_P_lm(j,:,:) = P_lm
+        end if
 
         do i = 1,Np
 
@@ -750,7 +809,12 @@ subroutine sourceField1d(earth,lmax,coeff,period,grid,H)
     do j = 1,Nt
 
         ! for efficiency, call this once for each theta and use in vsharm
-        call legendre_norm(lmax,cos(grid%th(j)+grid%dt(j)/2),P_lm)
+        if (legendre_allocated_at_edges) then
+            P_lm = edge_P_lm(j,:,:)
+        else
+            call legendre_norm(lmax,cos(grid%th(j)+grid%dt(j)/2),P_lm)
+            edge_P_lm(j,:,:) = P_lm
+        end if
 
         do i = 1,Np+1
 
@@ -798,7 +862,14 @@ subroutine sourceField1d(earth,lmax,coeff,period,grid,H)
     do j = 1,Nt+1
 
         ! for efficiency, call this once for each theta and use in vsharm
-        call legendre_norm(lmax,cos(grid%th(j)),P_lm)
+        ! by now, node_P_lm has been already computed for nodes 2:Nt
+        ! but we recompute them here for the sake of code clarity
+        if (legendre_allocated_at_nodes) then
+            P_lm = node_P_lm(j,:,:)
+        else
+            call legendre_norm(lmax,cos(grid%th(j)),P_lm)
+            node_P_lm(j,:,:) = P_lm
+        end if
 
         do i = 1,Np+1
 
@@ -841,7 +912,10 @@ subroutine sourceField1d(earth,lmax,coeff,period,grid,H)
         end do ! ph
     end do ! th
 
-    write(*,*) 'Done mapping to grid: ',elapsed_time(fwd1d_timer),' secs'
+    legendre_allocated_at_nodes = .true.
+    legendre_allocated_at_edges = .true.
+
+    write(*,*) node_info,'Done mapping to grid: ',elapsed_time(fwd1d_timer),' secs'
 
     deallocate(Tnr,Tnsp,STAT=istat)
     deallocate(Rr,Rs,STAT=istat)
