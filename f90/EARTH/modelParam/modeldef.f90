@@ -13,6 +13,8 @@ module modeldef
   ! * and relative location on the grid
   type :: modelPoint_t
 
+      character(80)                           :: type=CENTER
+      integer                                 :: i,j,k
 	  real(8)								  :: phi,theta,r
 
   end type modelPoint_t
@@ -287,7 +289,8 @@ Contains
   end function iY
 
 
-  ! Compute the value of the function at given phi and theta values
+  ! Compute the value of the function at given phi and theta values;
+  ! if dealing with spherical harmonics, preallocate for efficiency
 
   real(8) function F_at_point(f,pt)
 
@@ -299,7 +302,46 @@ Contains
 
 	select case ( f%name )
 	case ('Y')
-	  F_at_point  = SphHarm(f%l,f%m,pt%phi,pt%theta)
+	  if (trim(pt%type) == CENTER) then
+
+	    if (.not. legendre_allocated_at_centers) then
+          write(0,*) 'Error: (F_at_point) Legendre polynomials not allocated yet; exiting'
+          stop
+        else if (computed_at_centers_to_degree < f%l) then
+          write(0,*) 'Error: (F_at_point) Legendre polynomials not allocated to degree ',f%l
+          stop
+        end if
+
+        if (f%m>=0) then
+          F_at_point =  center_P_lm(pt%j,f%l+1,f%m+1) * cos(f%m * pt%phi)
+        else if(f%m<0) then
+          F_at_point =  center_P_lm(pt%j,f%l+1,iabs(f%m)+1) * sin(iabs(f%m) * pt%phi)
+        end if
+	    !F_at_point  = SphHarm(f%l,f%m,pt%phi,pt%theta)
+	  elseif (trim(pt%type) == CORNER) then
+
+        if (.not. legendre_allocated_at_corners) then
+          write(0,*) 'Error: (F_at_point) Legendre polynomials not allocated yet; exiting'
+          stop
+        else if (computed_at_corners_to_degree < f%l) then
+          write(0,*) 'Error: (F_at_point) Legendre polynomials not allocated to degree ',f%l
+          stop
+        end if
+
+        if (f%m>=0) then
+          F_at_point =  corner_P_lm(pt%j,f%l+1,f%m+1) * cos(f%m * pt%phi)
+        else if(f%m<0) then
+          F_at_point =  corner_P_lm(pt%j,f%l+1,iabs(f%m)+1) * sin(iabs(f%m) * pt%phi)
+        end if
+        !F_at_point  = SphHarm(f%l,f%m,pt%phi,pt%theta)
+
+      else
+        write(0,*) 'Error: (F_at_point) sorry, I can only compute efficient spherical harmonics at cell CENTER or CORNER'
+        stop
+      endif
+      if (output_level > 4) then
+        write(*,*) 'SPHERICAL HARMONICS AT POINT: ',pt%type,pt%i,pt%j,f%l,f%m,F_at_point
+      end if
 	case default
 	  write(0,*) 'Error: (F_at_point) sorry, only spherical harmonics are currently implemented'
 	  stop

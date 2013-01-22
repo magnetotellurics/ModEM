@@ -20,6 +20,7 @@ module main
   use transmitters
   use receivers
   use senscomp
+  use field1d
 
   implicit none
 
@@ -52,7 +53,7 @@ Contains
 
 	implicit none
     type (userdef_control), intent(inout)			:: ctrl
-	integer										:: i,ios=0,istat=0
+	integer										:: i,lmax,ios=0,istat=0
 	character(100)								:: label
 	real(8),intent(in),optional	                :: eps
 	type (modelParam_t)                         :: p0_grid
@@ -90,6 +91,12 @@ Contains
 	! Initialize thin shell conductance in the background resistivity model
 	call setCrust_modelParam(crust,p0_background)
     !--------------------------------------------------------------------------
+    ! Pre-initialize Legendre polynomials if needed for spherical harmonics
+    if (trim(p0_background%type) .eq. 'harmonic') then
+        lmax = getDegree_modelParam(p0_background)
+        call legendre_initialize(lmax,targetGrid,CENTER)
+    end if
+    !--------------------------------------------------------------------------
     ! ... and initialize background resistivity on the grid
     call mapToGrid(p0_background,targetRho0)
     !--------------------------------------------------------------------------
@@ -110,6 +117,12 @@ Contains
 	    call zero(p_input)
         call setBackground_modelParam(targetRho0,p_input)
 	end if
+    !--------------------------------------------------------------------------
+    ! Reallocate Legendre polynomials if needed for spherical harmonics
+    if (trim(p_input%type) .eq. 'harmonic') then
+        lmax = getDegree_modelParam(p_input)
+        call legendre_initialize(lmax,targetGrid,CENTER)
+    end if
 	!--------------------------------------------------------------------------
 	! Adjust the layer boundaries to match the grid
 	call adjustLayers_modelParam(p_input,targetGrid%r)
@@ -314,6 +327,14 @@ Contains
 	call deall_obsList()
 	call deall_freqList()
 	call deall_TFList()
+
+	! Deallocate Legendre polynomials in model and source mappings;
+	! nodes & edges stored in field1d
+	! centers & corners stored in paramfunc
+	call legendre_deallocate_at_nodes()
+	call legendre_deallocate_at_edges()
+    call legendre_deallocate_at_centers()
+    call legendre_deallocate_at_corners()
 
 	! Deallocate the forward solver
 	call cleanUp()

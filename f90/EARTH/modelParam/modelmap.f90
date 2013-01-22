@@ -127,6 +127,10 @@ Contains
               point%phi   = (grid%ph(i) + grid%ph(i+1))/2
               point%theta = (grid%th(j) + grid%th(j+1))/2
               point%r     = (grid%r(k) + grid%r(k+1))/2
+              point%i     = i
+              point%j     = j
+              point%k     = k
+              point%type  = CENTER
 
               ! Sum up the coeffs * F_at_point in the given layer
               value = 0.0d0

@@ -5,6 +5,7 @@ module ringcurrent
 	! We currently use set_initial_ringcurrent (written by Ikuko Fujii) instead,
 	! since this is modelling the reality with greater accuracy.
 
+  use polpak, only: legendre_associated
   use math_constants
   use elements
   implicit none
@@ -731,7 +732,22 @@ end function cel
 
 ! End of Ikuko Fujii's external subroutines
 
+! ***************************************************************************
+! * computes the value for the (l,m) legendre polynomial; terribly inefficient
+! * but this isn't used anywhere outside of the ringcurrent module so not
+! * a concern. For efficient calculations, use paramfunc module (SphHarm).
+function plgndr(l,m,x)
 
+    integer, intent(in)     :: l,m
+    real(8), intent(in)     :: x
+    real(8)                 :: plgndr
+    real(8), dimension(0:l) :: P_lm
+
+    call legendre_associated(l,m,x,P_lm)
+
+    plgndr = P_lm(l)
+
+end function plgndr
 
 
 end module ringcurrent
