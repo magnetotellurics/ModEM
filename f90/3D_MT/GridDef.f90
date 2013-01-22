@@ -92,6 +92,9 @@
     type, extends(grid_orig) :: grid_t ! multigrid type inherits all grid_orig
     ! flag = Surface; Air; Earth ! just to know where we are!!!!
     integer  :: flag
+    ! to define interface Type
+    ! coarse to fine / fine to coarse/ fine to fine or, possibly, coarse to coarse
+    character(len = 10)  :: interfaceType(20)
     ! number of 'layers' with different resolutions
     integer  :: mgridSize! from file
     ! coarseness
@@ -211,6 +214,18 @@
           endif
        enddo
 
+       do imgrid = 1, mGrid%mgridSize-1
+
+         if (mGrid%coarseness(imgrid) .gt. mGrid%coarseness(imgrid+1)) then
+           mGrid%interfaceType(imgrid) = 'c2f'
+         else if (mGrid%coarseness(imgrid) .lt. mGrid%coarseness(imgrid+1)) then
+           mGrid%interfaceType(imgrid) = 'f2c'
+         else if (mGrid%coarseness(imgrid) .eq. mGrid%coarseness(imgrid+1)) then
+           mGrid%interfaceType(imgrid) = 'f2f'
+         end if
+
+       enddo ! imgrid
+
     mgrid%coords = Cartesian
     mgrid%allocated = .true.
 
@@ -269,6 +284,7 @@
           mgridOut%mgridSize = mgridIn%mgridSize
           mgridOut%nzGrid = mgridIn%nzGrid
           mgridOut%coarseness = mgridIn%coarseness
+          mgridOut%interfaceType = mgridIn%interfaceType
 
         call create_mgrid(mgridOut)
 
@@ -336,6 +352,7 @@
     deallocate(mgrid%gridArray)
 
     mgrid%allocated = .false.
+    mgrid%interfaceType = 'zeroes'
     mgrid%NzAir = 0
     mgrid%Nx = 0
     mgrid%Ny = 0

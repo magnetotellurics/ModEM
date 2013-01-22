@@ -199,9 +199,7 @@ subroutine QMR(b,x, QMRiter)
   adjoint = .false.
   ! R is Ax
 
-  Call A(x, adjoint, R)
-
-  call plotCvector_mg(R)
+  Call A(x, adjoint, R)  ! O'k
 
    ! b - Ax, for inital guess x, that has been inputted to the routine
   Call linComb(C_ONE,b,C_MinusOne,R,R)
@@ -223,15 +221,15 @@ subroutine QMR(b,x, QMRiter)
   VT = R
   ilu_adjt = .false.
 
-  !Call M1solve(VT,ilu_adjt,Y)
-  Y =VT
-
+  Call M1solve(VT,ilu_adjt,Y)
+  !Y =VT
+        call plotCvector_mg(Y)
   RHO = CDSQRT(dotProd(Y,Y))
   WT = R
   ilu_adjt = .true.
 
-  !Call M2solve(WT,ilu_adjt,Z)
-  Z = WT
+  Call M2solve(WT,ilu_adjt,Z)
+  !Z = WT
 
   PSI  = CDSQRT(dotProd(Z,Z))
   GAMM = C_ONE
@@ -265,13 +263,13 @@ subroutine QMR(b,x, QMRiter)
 
       ilu_adjt = .false.
 
-      !Call M2solve(Y,ilu_adjt,YT)
-      YT = Y
+      Call M2solve(Y,ilu_adjt,YT)
+      !YT = Y
 
       ilu_adjt = .true.
 
-      !Call M1solve(Z,ilu_adjt,ZT)
-      ZT = Z
+      call M1solve(Z,ilu_adjt,ZT)
+      !ZT = Z
 
       if (iter.eq.1) then
         P = YT
@@ -306,8 +304,8 @@ subroutine QMR(b,x, QMRiter)
       RHO1 = RHO
       ilu_adjt = .false.
 
-      !Call M1solve(VT, ilu_adjt, Y)
-      Y = VT
+      Call M1solve(VT, ilu_adjt, Y)
+      !Y = VT
 
       RHO = CDSQRT(dotProd(Y,Y))
 
@@ -317,8 +315,8 @@ subroutine QMR(b,x, QMRiter)
 
       ilu_adjt = .true.
 
-      !Call M2solve(WT,ilu_adjt,Z)
-      Z = WT
+      Call M2solve(WT,ilu_adjt,Z)
+      !Z = WT
 
       PSI = CDSQRT(dotProd(Z,Z))
 

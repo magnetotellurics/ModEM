@@ -1178,7 +1178,7 @@
                write(002,'(i3,2x,i3,2x,i3,2x,es13.5,2x,es13.5,2x,es13.5)') ((ix, iy, iz, &
                                      abs(inE%cvArray(imgrid)%x(ix,iy,iz)), &
                                      abs(inE%cvArray(imgrid)%y(ix,iy,iz)), &
-                                     abs(inE%cvArray(imgrid)%z(ix,iy,iz)),ix=1,nx),iy=1,ny)
+                                     abs(inE%cvArray(imgrid)%z(ix,iy,iz)),ix=1,inE%cvArray(imgrid)%nx),iy=1,inE%cvArray(imgrid)%ny)
             close(002)
 
         call deall(Etemp)

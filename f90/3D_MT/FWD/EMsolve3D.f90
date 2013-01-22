@@ -52,7 +52,7 @@ module EMsolve3D
 
   ! Default solver control parameters
   ! number of QMR iterations for each call to divergence correction:
-  integer, parameter    ::              IterPerDivCorDef = 40
+  integer, parameter    ::              IterPerDivCorDef = 2
   ! maximum number of divergence correction calls allowed
   integer, parameter    ::              MaxDivCorDef = 20
   ! maximum number of PCG iterations for divergence correction
@@ -283,7 +283,7 @@ Contains
 
        Call QMR(b, eSol, QMRiter)
 
-       ! call plotCvector_mg(eSol)
+        call plotCvector_mg(eSol)
 
 #IFDEF Timer
       write (*,'(a12,a30,f12.6)')    node_info, 'QMR: elapsed time (sec)', elapsed_time(Globaltimer)
