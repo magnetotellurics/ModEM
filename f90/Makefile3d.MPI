@@ -58,7 +58,7 @@ all: Mod3DMT
 
 # Here is the link step 
 Mod3DMT: $(OBJDIR) $(OBJ) 
-	 $(F90) -o $(OUTDIR)/Mod3DMT $(OBJ) $(LIBS) 
+	 $(F90) -o $(OUTDIR)/Mod3DMT_MPI $(OBJ) $(LIBS) 
 
 # Here are the compile steps 
 

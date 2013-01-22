@@ -288,6 +288,7 @@ Contains
            write(0,*) 'Misfit tolerance for EM forward solver        : 1.0e-7'
            write(0,*) 'Misfit tolerance for EM adjoint solver        : 1.0e-7'
            write(0,*) 'Misfit tolerance for divergence correction    : 1.0e-5'
+           write(0,*) 'Optional EM solution file name for nested BC  : nested.esoln'
            write(0,*)
            stop
         else
@@ -370,6 +371,7 @@ Contains
            write(0,*) 'Misfit tolerance for EM forward solver        : 1.0e-7'
            write(0,*) 'Misfit tolerance for EM adjoint solver        : 1.0e-7'
            write(0,*) 'Misfit tolerance for divergence correction    : 1.0e-5'
+           write(0,*) 'Optional EM solution file name for nested BC  : nested.esoln'
            write(0,*)
            write(0,*) 'Optionally, may also supply'
            write(0,*)

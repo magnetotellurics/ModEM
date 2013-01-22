@@ -714,9 +714,9 @@ end program earth
       SS = dotProd(res,wres)
       Ndata = countData(res)
       RMS = sqrt(SS/Ndata)
-      !print *, 'Total RMS squared misfit for ',Ndata,' data values = ',RMS**2
-      write(6,'(a30,i3,a32,i2,a2,g15.7)') 'Total RMS squared misfit for ',Ndata,&
+      write(6,'(a30,i3,a35,i2,a2,g15.7)') 'Total RMS squared misfit for ',Ndata,&
             ' values, computed for frequency ',ifreq,' :',RMS**2
+      f = f + (RMS**2)/(2*Ndata)
 
       ! res = psi-dat (note: multiply by +2 to obtain derivative)
       !call calcResiduals(dat,psi,res)
@@ -728,22 +728,25 @@ end program earth
 
       ! If computing different kinds of misfits, be consistent;
       ! write different kinds into different data structures
-      call calcMisfit(res,misfit)
+      !call calcMisfit(res,misfit)
 
-      f = f + sum(misfit%value)/(2*sum(misfit%ndat))
+      !f = f + sum(misfit%value)/(2*sum(misfit%ndat))
 
     end do
 
-    if (output_level>0) then
-    write(0,*)
-    do i=1,freqList%n
-      do j=1,TFList%n
-    write(6,'(a12,i3,a3,a35,i2,a2,g15.7)') 'Misfit for ',misfit%ndat(i,j),&
-            trim(TFList%info(j)%name),' responses, computed for frequency ',i,' :',&
-            misfit%value(i,j)/(2*misfit%ndat(i,j))
-      end do
-    end do
-    end if
+    write(6,'(a21,i3,a10,g15.7)') 'Total RMS misfit for ',allData%ntx,' periods :',sqrt(f)
+
+
+!    if (output_level>3) then
+!    write(0,*)
+!    do i=1,freqList%n
+!      do j=1,TFList%n
+!    write(6,'(a12,i3,a3,a35,i2,a2,g15.7)') 'Misfit for ',misfit%ndat(i,j),&
+!            trim(TFList%info(j)%name),' responses, computed for frequency ',i,' :',&
+!            misfit%value(i,j)/(2*misfit%ndat(i,j))
+!      end do
+!    end do
+!    end if
 
     call deall_dataVector(dat)
     call deall_dataVector(psi)

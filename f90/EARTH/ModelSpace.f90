@@ -244,6 +244,7 @@ Contains
     type (modelParam_t)                     :: Ptemp
     type (rscalar)                          :: rho
     integer                                 :: lmax,i,j,k,istat
+    character(100)                          :: ctemp
     character(6)                            :: if_log_char,if_var_char
 
     if(.not.P%allocated) then
@@ -252,16 +253,24 @@ Contains
     end if
 
     if(index(cfile,'.rho')>0) then
+        ! map model to grid for writing
         call create_rscalar(P%grid,rho,CENTER)
         call mapToGrid(P,rho)
         Ptemp = P
         Ptemp%rho = rho
         Ptemp%type = 'grid'
         call writeGrid_modelParam(Ptemp,cfile)
+        ! also write the updated conductance map
+        ctemp = trim(cfile(1:len_trim(cfile)-4))//'.cond'
+        call writeCrust_modelParam(Ptemp,ctemp)
+        ! now deallocate temporary model on the grid
         call deall_modelParam(Ptemp)
         call deall_rscalar(rho)
     else if(index(cfile,'.prm')>0) then
         call writeLayers_modelParam(P,cfile)
+        ! also write the 1d component of the model to a separate file
+        ctemp = trim(cfile(1:len_trim(cfile)-4))//'.1d'
+        call writeRadial_modelParam(P,ctemp)
     else
         call warning('(write_modelParam) unknown file format requested; writing to file skipped')
     end if
@@ -319,6 +328,52 @@ Contains
     end if
 
   end subroutine writeGrid_modelParam  ! outputModel
+
+  ! **********************************************************************
+  ! * Use this to output the up-to-date conductance map
+  subroutine writeCrust_modelParam(P,cfile)
+
+    type (modelParam_t), intent(in)         :: P
+    character(*), intent(in)                :: cfile
+    ! local
+    type (modelShell_t)               :: crust
+    real(8)                           :: lon,lat,depth
+    integer                           :: ios,istat,i,j,k
+
+    if(.not.P%allocated) then
+       call warning('(writeCrust_modelParam) parametrization not allocated yet')
+       return
+    else if(trim(P%type) .ne. 'grid') then
+       call warning('(writeCrust_modelParam) skipped writing this model parametrization type')
+       return
+    end if
+
+    allocate(crust%cond(P%grid%nx,P%grid%ny), STAT=istat)
+    crust%cond = R_ZERO
+    do k=P%grid%nzAir+1,P%grid%nzAir+P%grid%nzCrust
+      do i=1,P%grid%nx
+        do j=1,P%grid%ny
+            crust%cond(i,j) = crust%cond(i,j) + 1.e3*P%grid%dr(k)/P%rho%v(i,j,k)
+        end do
+      end do
+    end do
+
+    open(ioShell,file=cfile,status='unknown',form='formatted',iostat=ios)
+
+    write(6,*) node_info,'Writing into thin sheet conductance file ',trim(cfile)
+
+    do i=1,P%grid%nx
+      do j=1,P%grid%ny
+        write(ioShell,'(f12.2)',advance='no',iostat=ios) crust%cond(i,j)
+      end do
+      write(ioShell,*)
+    end do
+
+    close(ioShell)
+
+    deallocate(crust%cond, STAT=istat)
+
+  end subroutine writeCrust_modelParam  ! outputModel
 
   ! **********************************************************************
   ! * This is an essential subroutine that is used to output the model
@@ -399,6 +454,84 @@ Contains
     close(ioPrm)
 
   end subroutine writeLayers_modelParam
+
+  ! **********************************************************************
+  ! * Only writes out the radial component of the spherical harmonic model.
+  ! * We output both the final "smooth" model m = Cm^{1/2} mhat + m0,
+  ! * and the "rough" model mhat, which is the result of the inverse search.
+  ! * The smooth model m is best used to save and to plot the model; while
+  ! * the rough model mhat is best used in conjunction with the prior to
+  ! * restart the inversion, or compute the responses / derivatives.
+  ! * Therefore, to avoid confusion we DO NOT write the regularization
+  ! * parameters for a model if the smoothing has already been applied.
+  ! * Regularization parameters are only needed to smooth a rough model,
+  ! * so we leave them out for m (and leave them in for mhat).
+  subroutine writeRadial_modelParam(P,cfile)
+
+    implicit none
+    type (modelParam_t), intent(in)         :: P
+    character(*), intent(in)                :: cfile
+
+    integer                                 :: lmax,i,j,k,istat
+    character(6)                            :: if_log_char,if_var_char
+
+    if(.not.P%allocated) then
+       call warning('(writeRadial_modelParam) parametrization not allocated yet')
+       return
+    else if(trim(P%type) .ne. 'harmonic') then
+       call warning('(writeRadial_modelParam) skipped writing this model parametrization type')
+       return
+    end if
+
+    open(unit=ioPrm, file=cfile, status='unknown', iostat=istat)
+
+    lmax = 0
+
+    write(ioPrm,'(a24,i2,a8,i2)') 'Format: harmonic layers ',P%nL,' degree ',lmax
+    write(ioPrm,*)
+
+    do j=1,P%nL
+        if (P%L(j)%if_log) then
+            if_log_char = 'log'
+        elseif (P%L(j)%if_tan) then
+            if_log_char = 'tan'
+        elseif (P%L(j)%if_exp) then
+            if_log_char = 'exp'
+        else
+            if_log_char = 'linear'
+        end if
+        lmax = 0
+        write(ioPrm,'(a6)',advance='no') if_log_char
+        write(ioPrm,'(a8,i2)',advance='no') ' degree ',lmax
+        write(ioPrm,'(a7,g10.5)',advance='no') ' layer ',P%L(j)%depth
+        if (P%smoothed) then
+          ! OUTPUT SMOOTH MODEL SO DO NOT WRITE THE REGULARISATION PARAMETERS...
+          ! INSTEAD, START NEW LINE:
+          write(ioPrm,*)
+        else
+          write(ioPrm,'(a5,2g10.5,a8,g12.6)') ' reg ',P%L(j)%alpha, P%L(j)%beta,' weight ',P%L(j)%gamma
+        end if
+        write(ioPrm,*) '  l   m   value       min       max'
+        do i=1,1
+            if (.not.P%c(j,i)%exists) then
+                cycle
+            end if
+            write(ioPrm,'(2i4,g15.7)',advance='no') P%F(i)%l,P%F(i)%m,P%c(j,i)%value
+            if (P%c(j,i)%frozen) then
+                if_var_char = 'const'
+            else
+                if_var_char = 'range'
+            end if
+            write(ioPrm,'(2g15.7,a6)') P%c(j,i)%min,P%c(j,i)%max,if_var_char
+        end do
+        write(ioPrm,*)
+    end do
+    write(ioPrm,*)
+
+    close(ioPrm)
+
+  end subroutine writeRadial_modelParam
+
 
   ! **********************************************************************
   ! * Use to output a vector of model parameters, normally for the full
@@ -502,11 +635,11 @@ Contains
     end if
 
     if (verbose>0) then
-        write(0,'(a12,a50,i4)') node_info,'Number of layers in script: ',P%nL
+        write(0,'(a12,a50,i6)') node_info,'Number of layers in script: ',P%nL
         do j=1,P%nL
-            write(0,'(a12,a46,i2,a2,i4)') node_info,'Number of coefficients in layer ',j,': ',count(.not.P%c(j,:)%frozen)
+            write(0,'(a12,a46,i2,a2,i6)') node_info,'Number of coefficients in layer ',j,': ',count(.not.P%c(j,:)%frozen)
         end do
-        write(0,'(a12,a50,i4)') node_info,'Number of variable parameters in script: ',count(.not.P%c%frozen)
+        write(0,'(a12,a50,i6)') node_info,'Number of variable parameters in script: ',count(.not.P%c%frozen)
         write(0,*)
     end if
 
