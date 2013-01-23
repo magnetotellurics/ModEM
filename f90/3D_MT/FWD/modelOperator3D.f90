@@ -1545,7 +1545,7 @@
 
           ! Compute Dilu on the interfaces, separately
           call DiluInterface()
-          call plotCvector_mg(Dilu)
+
           ! last nz+1 must be 1 and 0
           Dilu%cvArray(mGrid%mgridSize)%x(:,:,mGrid%gridArray(mGrid%mgridSize)%nz+1) = C_ZERO
           Dilu%cvArray(mGrid%mgridSize)%y(:,:,mGrid%gridArray(mGrid%mgridSize)%nz+1) = C_ZERO
@@ -1793,8 +1793,9 @@
               enddo ! Direct loop over subgrids
 
               ! Now compute M1 on the interfaces, separately
-              call M1Interface(inE, adjt, outE)
+              call M1Interface(inE, outE)
 
+              call plotCvector_mg(outE)
               !$OMP END PARALLEL
            ! to be sure that the last layer is equal zero
            outE%cvArray(inE%mgridSize)%x(:,:,inE%cvArray(inE%mgridSize)%nz+1) = 0.0
@@ -1870,9 +1871,6 @@
 
              enddo
 
-              ! Now compute M1 on the interfaces, separately
-              call M1Interface(inE, adjt, outE)
-
              call diagDiv(outE, volE, outE)
 
            endif
@@ -1891,20 +1889,17 @@
      ! created by Cherevatova (Jan,2013)
      ! used in M1Solver
      ! Computes M1 pre-conditioner on boundaries between sub-grids
-     subroutine M1Interface(inE, adjt, outE)
+     subroutine M1Interface(inE, outE)
 
        implicit none
 
           type(cvector_mg), intent(inout)         :: outE
           type(cvector_mg), intent(in)            :: inE
-          logical, intent(in)                     :: adjt
 
           ! local variables
-          integer  :: ix, iy, iz, imgrid
+          integer  :: ix, iy, imgrid
           integer  :: nz
 
-          if (.not.adjt) then
-          !adjoint = .false.
             do imgrid = 1, mGrid%mgridSize ! Global loop over sub-grids
 
               nz = mGrid%gridArray(imgrid)%nz
@@ -1982,127 +1977,36 @@
                   enddo  ! iy
                 case('f2f')
 !                else if (outE%coarseness(imgrid) .eq. outE%coarseness(imgrid+1)) then
-                ! interface : coarse to fine
                   ! Ex
-                  do iy = 2, mGrid%gridArray(imgrid)%ny
-                    do ix = 1, mGrid%gridArray(imgrid)%nx
-                      outE%cvArray(imgrid+1)%x(ix,iy,1) = (-(xXY(imgrid+1,iy,1)+xXY(imgrid+1,iy,2)+xXZ(imgrid+1,1,2))&
-                        +Adiag%cvArray(imgrid+1)%x(ix,iy,1))*inE%cvArray(imgrid+1)%x(ix,iy,1)
-
+                  do iy = 2, mGrid%gridArray(imgrid+1)%ny
+                    do ix = 1, mGrid%gridArray(imgrid+1)%nx
+!                      outE%cvArray(imgrid+1)%x(ix,iy,1) = (-(xXY(imgrid+1,iy,1)+xXY(imgrid+1,iy,2)+xXZ(imgrid+1,1,2))&
+!                        +Adiag%cvArray(imgrid+1)%x(ix,iy,1))*inE%cvArray(imgrid+1)%x(ix,iy,1)
+                      outE%cvArray(imgrid+1)%x(ix,iy,1) =(outE%cvArray(imgrid+1)%x(ix, iy, 1) - &
+                               outE%cvArray(imgrid+1)%x(ix, iy-1, 1)*xXY(imgrid+1,iy, 1) - &
+                               outE%cvArray(imgrid)%x(ix, iy, nz)*xXZ(imgrid+1,1, 1))* &
+                               Dilu%cvArray(imgrid+1)%x(ix, iy, 1)
                       outE%cvArray(imgrid)%x(ix,iy,nz+1) =  outE%cvArray(imgrid+1)%x(ix,iy,1)
-                    enddo
-                  enddo
+                    enddo ! ix
+                  enddo ! iy
 
                   ! Ey
                   do iy = 1, mGrid%gridArray(imgrid)%ny
                     do ix = 2, mGrid%gridArray(imgrid)%nx
 
-                       outE%cvArray(imgrid+1)%y(ix,iy,1) = (-(yYX(imgrid+1,ix,1)+yYX(imgrid+1,ix,2)+yYZ(imgrid+1,1,2))&
-                           +Adiag%cvArray(imgrid+1)%y(ix,iy,1))*inE%cvArray(imgrid+1)%y(ix,iy,1)
-
+!                       outE%cvArray(imgrid+1)%y(ix,iy,1) = (-(yYX(imgrid+1,ix,1)+yYX(imgrid+1,ix,2)+yYZ(imgrid+1,1,2))&
+!                           +Adiag%cvArray(imgrid+1)%y(ix,iy,1))*inE%cvArray(imgrid+1)%y(ix,iy,1)
+                        outE%cvArray(imgrid+1)%y(ix,iy,1) = (outE%cvArray(imgrid+1)%y(ix, iy, 1) - &
+                               outE%cvArray(imgrid)%y(ix, iy, nz)*yYZ(imgrid+1,1, 1) - &
+                               outE%cvArray(imgrid+1)%y(ix-1, iy, 1)*yYX(imgrid+1,ix, 1))* &
+                               Dilu%cvArray(imgrid+1)%y(ix, iy, 1)
                        outE%cvArray(imgrid)%y(ix,iy,nz+1) =  outE%cvArray(imgrid+1)%y(ix,iy,1)
                     enddo
                   enddo
               end select
 !                endif
             enddo !  Global loop over sub-grids
-          else
-            ! adjoint = .true.
-            do imgrid = inE%mgridSize, 1, -1 ! Reverse loop over sub-grids
 
-              nz = inE%cvArray(imgrid+1)%nz
-              select case (mGrid%interfaceType(imgrid))
-              case('f2c') ! c2f indeed  as we go from the last to the first sub-grid
-                ! Ex component
-                do ix = 1, mGrid%gridArray(imgrid+1)%nx
-                    do iy = 1, mGrid%gridArray(imgrid+1)%ny
-
-                       outE%cvArray(imgrid+1)%x(ix, iy, nz+1) = (-(xXY(imgrid+1,iy,1)+xXY(imgrid+1,iy,2)+xXZ(imgrid+1,nz+1,1)) &
-                             +Adiag%cvArray(imgrid+1)%x(ix,iy,nz+1))*inE%cvArray(imgrid+1)%x(ix,iy,nz+1)
-
-                    enddo
-                  enddo
-
-                  do iy = 2, mGrid%gridArray(imgrid)%ny
-                    do ix = 1, mGrid%gridArray(imgrid)%nx
-                       outE%cvArray(imgrid)%x(ix,iy,1) =  (outE%cvArray(imgrid+1)%x(2*ix-1,2*iy-1,nz+1)*mGrid%gridArray(imgrid+1)%dx(2*ix-1)&
-                                                  +outE%cvArray(imgrid+1)%x(2*ix,2*iy-1,nz+1)*mGrid%gridArray(imgrid+1)%dx(2*ix))/&
-                                                  (mGrid%gridArray(imgrid+1)%dx(2*ix-1)+mGrid%gridArray(imgrid+1)%dx(2*ix))
-                       enddo
-                  enddo
-                  ! Ey component
-                  do iy = 1, inE%cvarray(imgrid+1)%ny
-                    do ix = 1, inE%cvarray(imgrid+1)%nx
-
-                      outE%cvArray(imgrid+1)%y(ix,iy,nz+1) = (-(yYX(imgrid+1,ix,1)+yYZ(imgrid+1,nz+1,1)+yYX(imgrid+1,ix,2))&
-                                 +Adiag%cvArray(imgrid+1)%y(ix,iy,nz+1))*inE%cvArray(imgrid+1)%y(ix,iy,nz+1)
-                    enddo
-                  enddo
-                  do iy = 1, inE%cvarray(imgrid)%ny
-                    do ix = 2, inE%cvarray(imgrid)%nx
-
-                      outE%cvArray(imgrid)%y(ix,iy,1) =  (outE%cvArray(imgrid+1)%y(2*ix-1,2*iy-1,nz+1)*mGrid%gridArray(imgrid+1)%dy(2*iy-1)&
-                                                  +outE%cvArray(imgrid+1)%y(2*ix-1,2*iy,nz+1)*mGrid%gridArray(imgrid+1)%dy(2*iy))/&
-                                                  (mGrid%gridArray(imgrid+1)%dy(2*iy-1)+mGrid%gridArray(imgrid+1)%dy(2*iy))
-                    enddo ! ix
-                  enddo ! iy
-
-                case('c2f') ! fine to coarse indeed
-                  ! Ex
-                  do iy = 2, mGrid%gridArray(imgrid)%ny
-                    do ix = 1, mGrid%gridArray(imgrid)%nx
-                      outE%cvArray(imgrid)%x(ix,iy,1) = (-(xXY(imgrid,iy,1)+xXY(imgrid,iy,2)+xXZ(imgrid,1,2))&
-                        +Adiag%cvArray(imgrid)%x(ix,iy,1))*inE%cvArray(imgrid)%x(ix,iy,1)
-                    enddo
-                  enddo
-                  do iy = 2, mGrid%gridArray(imgrid+1)%ny
-                    do ix = 1, mGrid%gridArray(imgrid+1)%nx
-
-                      outE%cvArray(imgrid+1)%x(ix,iy,nz+1) =  (outE%cvArray(imgrid)%x(2*ix-1,2*iy-1,1)*mGrid%gridArray(imgrid)%dx(2*ix-1)&
-                                                   +outE%cvArray(imgrid)%x(2*ix,2*iy-1,1)*mGrid%gridArray(imgrid)%dx(2*ix))/&
-                                                   (mGrid%gridArray(imgrid)%dx(2*ix-1)+mGrid%gridArray(imgrid)%dx(2*ix))
-                    enddo ! ix
-                  enddo  ! iy
-                  ! Ey
-                  do iy = 1, mGrid%gridArray(imgrid)%ny
-                    do ix = 2, mGrid%gridArray(imgrid)%nx
-
-                       outE%cvArray(imgrid)%y(ix,iy,1) = (-(yYX(imgrid,ix,1)+yYX(imgrid,ix,2)+yYZ(imgrid,1,2))&
-                           +Adiag%cvArray(imgrid)%y(ix,iy,1))*inE%cvArray(imgrid)%y(ix,iy,1)
-                    enddo
-                  enddo
-                  do iy = 1, mGrid%gridArray(imgrid+1)%ny
-                    do ix = 2, mGrid%gridArray(imgrid+1)%nx
-                       outE%cvArray(imgrid+1)%y(ix,iy,nz+1) =  (outE%cvArray(imgrid)%y(2*ix-1,2*iy-1,1)*mGrid%gridArray(imgrid)%dy(2*iy-1)&
-                                                   +outE%cvArray(imgrid)%y(2*ix-1,2*iy,1)*mGrid%gridArray(imgrid)%dy(2*iy))/&
-                                                   (mGrid%gridArray(imgrid)%dy(2*iy-1)+mGrid%gridArray(imgrid)%dy(2*iy))
-                    enddo ! ix
-                  enddo  ! iy
-
-                case('f2f')
-                  ! Ex
-                  do iy = 2, mGrid%gridArray(imgrid)%ny
-                    do ix = 1, mGrid%gridArray(imgrid)%nx
-                      outE%cvArray(imgrid)%x(ix,iy,1) = (-(xXY(imgrid,iy,1)+xXY(imgrid,iy,2)+xXZ(imgrid,1,2))&
-                        +Adiag%cvArray(imgrid)%x(ix,iy,1))*inE%cvArray(imgrid)%x(ix,iy,1)
-
-                      outE%cvArray(imgrid+1)%x(ix,iy,nz+1) =  outE%cvArray(imgrid)%x(ix,iy,1)
-                    enddo
-                  enddo
-                  ! Ey
-                  do iy = 1, mGrid%gridArray(imgrid)%ny
-                    do ix = 2, mGrid%gridArray(imgrid)%nx
-
-                       outE%cvArray(imgrid)%y(ix,iy,1) = (-(yYX(imgrid,ix,1)+yYX(imgrid,ix,2)+yYZ(imgrid,1,2))&
-                           +Adiag%cvArray(imgrid)%y(ix,iy,1))*inE%cvArray(imgrid)%y(ix,iy,1)
-
-                       outE%cvArray(imgrid+1)%y(ix,iy,nz+1) = outE%cvArray(imgrid)%y(ix,iy,1)
-                    enddo
-                  enddo
-                end select
-             enddo !  Reverse loop over sub-grids
-
-            endif
      end subroutine M1Interface
 
       !****************************************************************************
