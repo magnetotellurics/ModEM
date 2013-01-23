@@ -28,9 +28,9 @@ module ModelSpace
   use sg_vector
   use sg_vector_mg
   use sg_sparse_vector
-#IFDEF MPI
+#ifdef MPI
   use MPI_declaration
-#ENDIF
+#endif
 
   implicit none
 
@@ -144,9 +144,9 @@ Contains
 #include "modelParamIO/WS.inc"
 
 !  MPI model parameter, if needed
-#IFDEF MPI
+#ifdef MPI
 #include "ModelParam_MPI.inc"
-#ENDIF
+#endif
 !**********************************************************************
 !
    !  create_modelParam allocates and initializes arrays for

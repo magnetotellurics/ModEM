@@ -68,7 +68,7 @@ Contains
 
     !  file header contents
     character (len=20), intent(out)             :: fileVersion
-    type (grid_t), intent(out)                :: fileGrid
+    type (grid_t), intent(inout)             :: fileGrid
     integer, intent(out)                        :: filePer
     integer, intent(out)                        :: fileMode
     integer, intent(out)                        :: ios
@@ -319,20 +319,20 @@ Contains
   subroutine EfileRead(ioNum, ifreq, imode, fileOmega, inE)
 
     implicit none
-    integer, intent(in)				:: ioNum,ifreq,imode
-    type (cvector_mg), intent(inout)		:: inE
-    real (kind=prec), intent(out)	:: fileOmega
+    integer, intent(in)             :: ioNum,ifreq,imode
+    type (cvector), intent(inout)       :: inE
+    real (kind=prec), intent(out)   :: fileOmega
 
     !  local variables
-    integer					:: nRecSkip, iskip, imgrid
-!    integer					:: iskip
+    integer                 :: nRecSkip, iskip
+!    integer                    :: iskip
 
     !  following could be optional oututs
-    integer				:: fileIfreq, fileMode
-    character (len = 20)            	:: ModeName
+    integer             :: fileIfreq, fileMode
+    character (len = 20)                :: ModeName
 
     !  hard code number of modes for now
-    integer		:: nMode = 2
+    integer     :: nMode = 2
 
     ! calculate number of records before the header for this frequency/mode
     nRecSkip = ((ifreq-1)*nMode+(imode-1))*4+4
@@ -347,12 +347,12 @@ Contains
     read(ioNum) fileOmega, fileIfreq, fileMode, ModeName
 
     ! read electrical field data - 3 records
-    do imgrid = 1, inE%mgridSize
-      read(ioNum) inE%cvarray(imgrid)%x
-      read(ioNum) inE%cvarray(imgrid)%y
-      read(ioNum) inE%cvarray(imgrid)%z
-    enddo
+    read(ioNum) inE%x
+    read(ioNum) inE%y
+    read(ioNum) inE%z
+
   end subroutine EfileRead
+
 
   ! ***************************************************************************
   ! write electrical field solution for one frequency/mode
@@ -474,6 +474,58 @@ Contains
 !*******************************************************************************
 !*******************************************************************************
 !*******************************************************************************
+!******************************************************************
+      subroutine read_solnVectorMTX(fid,cfile,eAll)
+
+      !  open cfile on unit fid, writes out object of
+      !   type cvector in standard format (readable by matlab
+      !   routine readcvector.m), closes file
+      !  NOT coded at present to specifically write out TE/TM
+      !    solutions, periods, etc. (can get this infor from
+      !    eAll%solns(j)%tx, but only with access to TXdict.
+
+      integer, intent(in)               :: fid
+      character(*), intent(in)          :: cfile
+      type(solnVectorMTX_t), intent(inout)            :: eAll
+
+      !   local variables
+      integer           :: j,k,nMode = 2, ios,ig,cdot
+      character (len=3)         :: igchar
+      character (len=20)        :: version = '',ModeNames(2)
+      character (len=200)       :: fn_input
+      real (kind=prec)   :: omega
+
+      ModeNames(1) = 'Ey'
+      ModeNames(2) = 'Ex'
+
+      ! unformatted write for multigrid
+      do ig = 1, eAll%solns(j)%grid%mgridSize
+
+          if (eAll%solns(j)%grid%gridArray(ig)%flag == 0) exit
+
+          write (igchar,'(i3.3)') eAll%solns(j)%grid%gridArray(ig)%flag
+          cdot = index(cfile,'.')
+          if (cdot > 0) then
+            fn_input = cfile(1:cdot-1)//'_'//igchar//cfile(cdot:len_trim(cfile))
+          else
+            fn_input = trim(cfile)//'_'//igchar
+          end if
+          write(*,*) 'Reading E-fields for subgrid number ',ig,' from file: ',trim(fn_input)
+
+          call FileReadInit(fn_input,fid,eAll%solns(1)%grid%gridArray(ig),eAll%nTX,nMode,version,ios)
+          do j = 1,eAll%nTx
+             do k = 1,2
+               omega = txDict(eAll%solns(j)%tx)%omega
+
+               call EfileRead(fid, j, k, omega, eAll%solns(j)%pol(k)%cvarray(ig))
+
+             enddo
+          enddo
+          close(fid)
+
+      enddo
+
+      end subroutine read_solnVectorMTX
 
 !******************************************************************
       subroutine write_solnVectorMTX(fid,cfile,eAll)
@@ -490,30 +542,49 @@ Contains
       type(solnVectorMTX_t), intent(in)               :: eAll
 
       !   local variables
-      integer           :: j,k,nMode = 2, ios
+      integer           :: j,k,nMode = 2, ios,ig,cdot
+      character (len=3)         :: igchar
       character (len=20) 		:: version = '',ModeNames(2)
+      character (len=200)       :: fn_output
       real (kind=prec)   :: omega
 
       ModeNames(1) = 'Ey'
       ModeNames(2) = 'Ex'
 
-      call FileWriteInit(version,cfile,fid,eAll%solns(1)%grid &
-               ,eAll%nTX, nMode,ios)
+      ! Maria C.: temporary output to be moved outside of this routine
+      call plotFields(eAll)
 
-     ! do j = 1,eAll%nTx
-     !    do k = 1,2
-           !omega = txDict(eAll%solns(j)%tx)%omega
-           ! unformatted write
-           !call EfileWrite(fid, omega, j,  k, ModeNames(k), eAll%solns(j)%pol(k))
-
-           call plotFields(eAll)
-
-
-     !    enddo
-     ! enddo
-      close(fid)
+!      ! unformatted write for multigrid
+!      do ig = 1, eAll%solns(j)%grid%mgridSize
+!
+!          if (eAll%solns(j)%grid%gridArray(ig)%flag == 0) exit
+!          write(*,*) 'Flag ',eAll%solns(j)%grid%gridArray(ig)%flag
+!
+!          write (igchar,'(i3.3)') eAll%solns(j)%grid%gridArray(ig)%flag
+!          write(*,*) 'E-fields for subgrid number ',igchar
+!          cdot = index(cfile,'.')
+!          if (cdot > 0) then
+!            fn_output = cfile(1:cdot-1)//'_'//igchar//cfile(cdot:len_trim(cfile))
+!          else
+!            fn_output = trim(cfile)//'_'//igchar
+!          end if
+!          write(*,*) 'E-fields for subgrid number ',ig,' written to ',trim(fn_output)
+!
+!          call FileWriteInit(version,fn_output,fid,eAll%solns(1)%grid%gridArray(ig),eAll%nTX,nMode,ios)
+!          do j = 1,eAll%nTx
+!             do k = 1,2
+!               omega = txDict(eAll%solns(j)%tx)%omega
+!
+!               call EfileWrite(fid, omega, j,  k, ModeNames(k), eAll%solns(j)%pol(k)%cvarray(ig))
+!
+!             enddo
+!          enddo
+!          close(fid)
+!
+!      enddo
 
       end subroutine write_solnVectorMTX
+
 ! *********************************************************************
       subroutine plotFields(eAll)
 
@@ -611,36 +682,6 @@ Contains
 
         call deall(Etemp)
       end subroutine plotFields
-!******************************************************************
-!      subroutine read_solnVectorMTX(fid,cfile,eAll)
-!
-!      !  open cfile on unit fid, writes out object of
-!      !   type cvector in standard format (readable by matlab
-!      !   routine readcvector.m), closes file
-!      !  NOT coded at present to specifically write out TE/TM
-!      !    solutions, periods, etc. (can get this infor from
-!      !    eAll%solns(j)%tx, but only with access to TXdict.
-!
-!      integer, intent(in)               :: fid
-!      character(*), intent(in)          :: cfile
-!      type(solnVectorMTX_t), intent(in)               :: eAll
-!
-!      !   local variables
-!      integer           :: j,k,nMode = 2, ios
-!      character (len=20)        :: version = '',ModeNames(2)
-!      real (kind=prec)   :: omega
-!
-!      ModeNames(1) = 'Ey'
-!      ModeNames(2) = 'Ex'
-!
-!      call FileReadInit(cfile,fid,eAll%solns(1)%grid,eAll%nTX,nMode,version,ios)
-!
-!      do j = 1,eAll%nTx
-!         do k = 1,2
-!           call EfileRead(fid, j, ModeNames(k), omega, eAll%solns(j)%pol(k))
-!         enddo
-!      enddo
-!      close(fid)
-!      end subroutine read_solnVectorMTX
+
 
 end module ioAscii

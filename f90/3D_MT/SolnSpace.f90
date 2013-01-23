@@ -149,7 +149,7 @@ end interface
     logical         :: allocated = .false.
   end type rhsVectorMTX_t
 
-contains
+Contains
 
 !**********************************************************************
 !           Basic solnVector methods

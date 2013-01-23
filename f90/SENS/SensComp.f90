@@ -557,9 +557,9 @@ Contains
       !  do any necessary initialization for transmitter iTx
 
       call initSolver(iTx,sigma,grid,emsoln)
-#IFDEF Timer
+#ifdef Timer
       write (*,'(a12,a30,f12.6)')    node_info, 'InitSolver: elapsed time (sec)', elapsed_time(Globaltimer)
-#ENDIF
+#endif
       ! compute forward solution
       call fwdSolve(iTx,emsoln)
 

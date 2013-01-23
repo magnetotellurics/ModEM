@@ -177,13 +177,13 @@
         omega = inOmega
 
         Call AdiagSetUp()
-#IFDEF Timer
+#ifdef Timer
       write (*,'(a12,a40,f12.6)')    node_info, 'AdiagSetUp: elapsed time (sec)', elapsed_time(Globaltimer)
-#ENDIF
+#endif
         Call DiluSetUp()
-#IFDEF Timer
+#ifdef Timer
       write (*,'(a12,a40,f12.6)')    node_info, 'DiluSetUp: elapsed time (sec)', elapsed_time(Globaltimer)
-#ENDIF
+#endif
 
       end subroutine UpdateFreq  ! UpdateFreq
 
@@ -202,19 +202,19 @@
         !    to be used changes to the declarations in this routine will
         !    be required, along with changes in the module interface
         Call ModelParamToEdge(CondParam, condE)
-#IFDEF Timer
+#ifdef Timer
       write (*,'(a12,a40,f12.6)')    node_info, 'ModelParamtoEdge: elapsed time (sec)', elapsed_time(Globaltimer)
-#ENDIF
+#endif
         Call DivCorrSetUp()
-#IFDEF Timer
+#ifdef Timer
       write (*,'(a12,a40,f12.6)')    node_info, 'DivCorrSetUp: elapsed time (sec)', elapsed_time(Globaltimer)
-#ENDIF
+#endif
         ! TEMPORARY; REQUIRED FOR BOUNDARY CONDITIONS
         !  set static array for cell conductivities
         call ModelParamToCell(CondParam,Cond3D)
-#IFDEF Timer
+#ifdef Timer
       write (*,'(a12,a40,f12.6)')    node_info, 'ModelParamToCell: elapsed time (sec)', elapsed_time(Globaltimer)
-#ENDIF
+#endif
       end subroutine UpdateCond  ! UpdateCond
 
       ! ***************************************************************************

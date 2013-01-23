@@ -123,19 +123,20 @@ Contains
         write(6,*) 'Reading E field from: ',trim(solverParams%E0fileName)
         inFile = trim(solverParams%E0fileName)
         ioNum  = solverParams%ioE0
-        call FileReadInit(inFile,ioNum,Larg_Grid,filePer,fileMode,fileVersion,ios)
+!        call FileReadInit(inFile,ioNum,Larg_Grid,filePer,fileMode,fileVersion,ios)
         call setup_grid(Larg_Grid)
         call create_solnVectorMTX(filePer,eAll_larg)
             do iTx=1,filePer
          		call create_solnVector(Larg_Grid,iTx,e_temp)
         		call copy_solnVector(eAll_larg%solns(iTx),e_temp)
         	 end do
-        do iTx = 1,eAll_larg%nTx
-         do iMod = 1,fileMode
-           call EfileRead(ioNum, iTx, iMod, omega, eAll_larg%solns(iTx)%pol(iMod))
-         enddo
-      enddo
-      close(ioNum)
+        call read_solnVectorMTX(ioNum,inFile,eAll_larg)
+!        do iTx = 1,eAll_larg%nTx
+!         do iMod = 1,fileMode
+!           call EfileRead(ioNum, iTx, iMod, omega, eAll_larg%solns(iTx)%pol(iMod))
+!         enddo
+!      enddo
+!      close(ioNum)
       call deall(e_temp)
      end if
 
