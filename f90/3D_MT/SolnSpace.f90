@@ -264,6 +264,30 @@ Contains
 
      end subroutine zero_solnVector
 
+      ! **********************************************************************
+      ! * Creates a random perturbation in the EM soln - used for testing
+      subroutine random_solnVector(e,eps)
+
+        implicit none
+        type (solnVector_t), intent(inout)               :: e
+        real (kind=prec), intent(in), optional           :: eps
+        ! local
+        integer     :: j,k
+
+        if (.not. e%allocated) then
+          call errStop('EM solution not allocated in random_solnVector')
+        elseif (present(eps)) then
+          do k = 1,e%nPol
+            call random_cvector_mg(e%pol(k),eps)
+          end do
+        else
+          do k = 1,e%nPol
+            call random_cvector_mg(e%pol(k),0.05*ONE)
+          end do
+        end if
+
+      end subroutine random_solnVector
+
      !**********************************************************************
      function dotProd_solnVector(FV1,FV2,Conj_Case) result(c)
        ! computes a dot product between solution vectors
@@ -623,6 +647,7 @@ Contains
           call create_RHS(grid,iTx,b%b(k))
        enddo
 
+       b%tx = iTx
        b%allocated = .true.
 
      end subroutine create_rhsVector
@@ -767,9 +792,9 @@ Contains
        ! does not compute anything from the boundary conditions!!!
        ! this might have to be changed.
 
-       ! SHOULD BE CHANGED IF MULTI-GRID SPARSEVECTOR
-       ! NOW COMMENTED
-       ! DO NOT SEE WHERE WE USE IT?!
+       ! THERE MIGHT BE SOME SUBTLETIES WITH MULTI-GRID SPARSEVECTORS
+       ! THE FULL VECTOR VERSION WORKS
+       ! SPARSE VECTOR VERSION NOT FULLY TESTED
 
        type (rhsVector_t), intent(in)             :: comb  ! rhs
        type (solnVector_t), intent(in)            :: FV  ! full vector
@@ -777,13 +802,14 @@ Contains
        complex(kind=prec)       :: c
 
        !  local variables
-       type(cvector_mg)  :: poltemp
        complex(kind=prec)   :: temp
        integer              :: k
 
        if((.not. comb%allocated) .or. (.not. FV%allocated)) then
             call errStop('RHS and solution vectors have to be allocated in dotProd_rhsVsolnV')
        elseif(comb%tx .ne. FV%tx) then
+            write(0,*) 'RHS vector transmitter:  ',comb%tx
+            write(0,*) 'Soln vector transmitter: ',FV%tx
             call errStop('different transmitters on input to dotProd_rhsVsolnV')
        endif
 
@@ -793,15 +819,15 @@ Contains
           if(comb%b(k)%nonzero_source) then
              if(comb%b(k)%sparse_source) then
                 if(Conj_Case) then
-                temp = dotProd_scvector_mg_f(comb%b(k)%sSparse,poltemp)
+                temp = dotProd_scvector_mg_f(comb%b(k)%sSparse,FV%pol(k))
                 else
-                temp = dotProd_noConj_scvector_mg_f(comb%b(k)%sSparse,poltemp)
+                temp = dotProd_noConj_scvector_mg_f(comb%b(k)%sSparse,FV%pol(k))
                 endif
              else
                 if(Conj_Case) then
-                !temp = dotProd_cvector_mg_f(comb%b(k)%s,poltemp) ! UNCOMMENT AND CHANGE TYPES ?!
+                temp = dotProd_cvector_mg_f(comb%b(k)%s,FV%pol(k))
                 else
-                !temp = dotProd_noConj_cvector_f(comb%b(k)%s,poltemp)! UNCOMMENT AND CHANGE TYPES ?!
+                temp = dotProd_noConj_cvector_mg_f(comb%b(k)%s,FV%pol(k))
                 endif
              endif
           else

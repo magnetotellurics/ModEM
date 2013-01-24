@@ -34,7 +34,7 @@ module UserCtrl
     character(80)       :: wFile_MPI
 
 	! Input files
-	character(80)       :: rFile_Grid, rFile_Model, rFile_mg, rFile_Data
+	character(80)       :: rFile_Grid, rFile_Model, rFile_mgCtrl, rFile_Data
 	character(80)       :: rFile_dModel
   character(80)       :: rFile_EMsoln, rFile_EMrhs, rFile_Prior
 
@@ -88,7 +88,7 @@ Contains
   	ctrl%rFile_Grid = 'n'
   	ctrl%wFile_Grid = 'n'
   	ctrl%rFile_Model = 'n'
-    ctrl%rFile_mg = 'n'
+    ctrl%rFile_mgCtrl = 'n'
   	ctrl%wFile_Model = 'n'
   	ctrl%rFile_Data = 'n'
   	ctrl%wFile_Data = 'n'
@@ -293,7 +293,7 @@ Contains
            stop
         else
 	       ctrl%rFile_Model = temp(1)
-	       ctrl%rFile_mg = temp(2)
+	       ctrl%rFile_mgCtrl = temp(2)
 	       ctrl%rFile_Data = temp(3)
 	       ctrl%wFile_Data = temp(4)
 	    end if
@@ -307,11 +307,11 @@ Contains
 
       case (COMPUTE_J) ! J
         if (narg < 4) then
-           write(0,*) 'Usage: -J  rFile_Model rFile_mg rFile_Data wFile_Sens [rFile_fwdCtrl]'
+           write(0,*) 'Usage: -J  rFile_Model rFile_mgCtrl rFile_Data wFile_Sens [rFile_fwdCtrl]'
            stop
         else
 	       ctrl%rFile_Model = temp(1)
-	       ctrl%rFile_mg = temp(2)
+	       ctrl%rFile_mgCtrl = temp(2)
 	       ctrl%rFile_Data = temp(3)
 	       ctrl%wFile_Sens = temp(4)
 	    end if
@@ -320,40 +320,42 @@ Contains
 	    end if
 
       case (MULT_BY_J) ! M
-        if (narg < 4) then
-           write(0,*) 'Usage: -M  rFile_Model rFile_dModel rFile_Data wFile_Data [rFile_fwdCtrl]'
+        if (narg < 5) then
+           write(0,*) 'Usage: -M  rFile_Model rFile_mgCtrl rFile_dModel rFile_Data wFile_Data [rFile_fwdCtrl]'
            stop
         else
 	       ctrl%rFile_Model = temp(1)
-	       ctrl%rFile_dModel = temp(2)
+           ctrl%rFile_mgCtrl = temp(2)
+	       ctrl%rFile_dModel = temp(3)
+	       ctrl%rFile_Data = temp(4)
+	       ctrl%wFile_Data = temp(5)
+	    end if
+	    if (narg > 5) then
+	       ctrl%rFile_fwdCtrl = temp(6)
+	    end if
+
+      case (MULT_BY_J_T) ! T
+        if (narg < 4) then
+           write(0,*) 'Usage: -T  rFile_Model rFile_mgCtrl rFile_Data wFile_dModel [rFile_fwdCtrl]'
+           stop
+        else
+	       ctrl%rFile_Model = temp(1)
+           ctrl%rFile_mgCtrl = temp(2)
 	       ctrl%rFile_Data = temp(3)
-	       ctrl%wFile_Data = temp(4)
+	       ctrl%wFile_dModel = temp(4)
 	    end if
 	    if (narg > 4) then
 	       ctrl%rFile_fwdCtrl = temp(5)
 	    end if
 
-      case (MULT_BY_J_T) ! T
-        if (narg < 3) then
-           write(0,*) 'Usage: -T  rFile_Model rFile_Data wFile_dModel [rFile_fwdCtrl]'
-           stop
-        else
-	       ctrl%rFile_Model = temp(1)
-	       ctrl%rFile_Data = temp(2)
-	       ctrl%wFile_dModel = temp(3)
-	    end if
-	    if (narg > 3) then
-	       ctrl%rFile_fwdCtrl = temp(4)
-	    end if
-
       case (INVERSE) ! I
         if (narg < 3) then
-           write(0,*) 'Usage: -I NLCG rFile_Model rFile_mg  rFile_Data [lambda eps]'
+           write(0,*) 'Usage: -I NLCG rFile_Model rFile_mgCtrl rFile_Data [lambda eps]'
            write(0,*)
            write(0,*) 'Here, lambda = the initial damping parameter for inversion'
            write(0,*) '         eps = misfit tolerance for the forward solver'
            write(0,*) 'OR'
-           write(0,*) 'Usage: -I NLCG rFile_Model rFile_mg rFile_Data [rFile_invCtrl rFile_fwdCtrl]'
+           write(0,*) 'Usage: -I NLCG rFile_Model rFile_mgCtrl rFile_Data [rFile_invCtrl rFile_fwdCtrl]'
            write(0,*)
            write(0,*) 'Here, rFile_invCtrl = the inversion control file in the format'
            write(0,*)
@@ -391,7 +393,7 @@ Contains
 				stop
            end select
 	       ctrl%rFile_Model = temp(2)
-	       ctrl%rFile_mg = temp(3)
+	       ctrl%rFile_mgCtrl = temp(3)
 	       ctrl%rFile_Data = temp(4)
 	    end if
 	    if (narg > 4) then
@@ -438,14 +440,14 @@ Contains
 
       case (APPLY_COV) ! C
         if (narg < 3) then
-           write(0,*) 'Usage: -C  [FWD|INV] rFile_Model wFile_Model [rFile_Cov rFile_Prior]'
+           write(0,*) 'Usage: -C  [FWD|INV] rFile_Model rFile_mgCtrl wFile_Model [rFile_Cov rFile_Prior]'
            write(0,*)
-           write(0,*) ' -C FWD rFile_Model wFile_Model [rFile_Cov rFile_Prior]'
+           write(0,*) ' -C FWD rFile_Model rFile_mgCtrl wFile_Model [rFile_Cov rFile_Prior]'
            write(0,*) '  Applies the model covariance to produce a smooth model output'
            write(0,*) '  Optionally, also specify the prior model to compute resistivities'
            write(0,*) '  from model perturbation: m = C_m^{1/2} \tilde{m} + m_0'
            write(0,*)
-           write(0,*) ' -C INV rFile_Model wFile_Model [rFile_Cov rFile_Prior]'
+           write(0,*) ' -C INV rFile_Model rFile_mgCtrl wFile_Model [rFile_Cov rFile_Prior]'
            write(0,*) '  Applies the inverse of model covariance (if implemented)'
            write(0,*) '  Optionally, also specify the prior model to compute starting'
            write(0,*) '  perturbation for the inversion: \tilde{m} = C_m^{-1/2} (m - m_0)'
@@ -455,13 +457,14 @@ Contains
         else
         ctrl%option = temp(1)
 	    ctrl%rFile_Model = temp(2)
-	    ctrl%wFile_Model = temp(3)
-        end if
-        if (narg > 3) then
-            ctrl%rFile_Cov = temp(4)
+        ctrl%rFile_mgCtrl = temp(3)
+	    ctrl%wFile_Model = temp(4)
         end if
         if (narg > 4) then
-            ctrl%rFile_Prior = temp(5)
+            ctrl%rFile_Cov = temp(5)
+        end if
+        if (narg > 5) then
+            ctrl%rFile_Prior = temp(6)
         end if
 
       case (TEST_ADJ) ! A
@@ -469,33 +472,33 @@ Contains
            write(0,*) 'Usage: Test the adjoint implementation for each of the critical'
            write(0,*) '       operators in J = L S^{-1} P + Q'
            write(0,*)
-           write(0,*) ' -A  J rFile_Model rFile_dModel rFile_Data [wFile_Model wFile_Data]'
+           write(0,*) ' -A  J rFile_Model rFile_mgCtrl rFile_dModel rFile_Data [wFile_Model wFile_Data]'
            write(0,*) '  Tests the equality d^T J m = m^T J^T d for any model and data.'
            write(0,*) '  Optionally, outputs J m and J^T d.'
            write(0,*)
-           write(0,*) ' -A  L rFile_Model rFile_EMsoln rFile_Data [wFile_EMrhs wFile_Data]'
+           write(0,*) ' -A  L rFile_Model rFile_mgCtrl rFile_EMsoln rFile_Data [wFile_EMrhs wFile_Data]'
            write(0,*) '  Tests the equality d^T L e = e^T L^T d for any EMsoln and data.'
            write(0,*) '  Optionally, outputs L e and L^T d.'
            write(0,*)
-           write(0,*) ' -A  S rFile_Model rFile_EMrhs rFile_Data [wFile_EMsoln]'
+           write(0,*) ' -A  S rFile_Model rFile_mgCtrl rFile_EMrhs rFile_Data [wFile_EMsoln]'
            write(0,*) '  Tests the equality b^T S^{-1} b = b^T (S^{-1})^T b for any EMrhs.'
            write(0,*) '  For simplicity, use one EMrhs for forward and transpose solvers.'
            write(0,*) '  Data file only needed to set up dictionaries.'
            write(0,*) '  Optionally, outputs e = S^{-1} b.'
            write(0,*)
-           write(0,*) ' -A  P rFile_Model rFile_dModel rFile_EMsoln [wFile_Model wFile_EMrhs]'
+           write(0,*) ' -A  P rFile_Model rFile_mgCtrl rFile_dModel rFile_EMsoln [wFile_Model wFile_EMrhs]'
            write(0,*) '  Tests the equality e^T P m = m^T P^T e for any EMsoln and data.'
            write(0,*) '  Optionally, outputs P m and P^T e.'
            write(0,*)
-           write(0,*) ' -A  Q rFile_Model rFile_dModel rFile_Data [wFile_Model wFile_Data]'
+           write(0,*) ' -A  Q rFile_Model rFile_mgCtrl rFile_dModel rFile_Data [wFile_Model wFile_Data]'
            write(0,*) '  Tests the equality d^T Q m = m^T Q^T d for any model and data.'
            write(0,*) '  Optionally, outputs Q m and Q^T d.'
            write(0,*)
            write(0,*) 'Finally, generates random 5% perturbations, if implemented:'
-           write(0,*) ' -A  m rFile_Model wFile_Model [delta]'
+           write(0,*) ' -A  m rFile_Model wFile_Model [delta rFile_mgCtrl]'
            write(0,*) ' -A  d rFile_Data wFile_Data [delta]'
-           write(0,*) ' -A  e rFile_EMsoln wFile_EMsoln [delta]'
-           write(0,*) ' -A  b rFile_EMrhs wFile_EMrhs [delta]'
+           write(0,*) ' -A  e rFile_EMsoln wFile_EMsoln [delta rFile_mgCtrl]'
+           write(0,*) ' -A  b rFile_EMrhs wFile_EMrhs [delta rFile_mgCtrl]'
            stop
         else
            ctrl%option = temp(1)
@@ -503,50 +506,55 @@ Contains
            ! tests of adjoint implementation ...
            case ('J')
                 ctrl%rFile_Model = temp(2)
-                ctrl%rFile_dModel = temp(3)
-                ctrl%rFile_Data = temp(4)
-                if (narg > 4) then
-                    ctrl%wFile_Model = temp(5)
-                endif
+                ctrl%rFile_mgCtrl = temp(3)
+                ctrl%rFile_dModel = temp(4)
+                ctrl%rFile_Data = temp(5)
                 if (narg > 5) then
-                    ctrl%wFile_Data = temp(6)
+                    ctrl%wFile_Model = temp(6)
+                endif
+                if (narg > 6) then
+                    ctrl%wFile_Data = temp(7)
                 endif
            case ('L')
                 ctrl%rFile_Model = temp(2)
-                ctrl%rFile_EMsoln = temp(3)
-                ctrl%rFile_Data = temp(4)
-                if (narg > 4) then
-                    ctrl%wFile_EMrhs = temp(5)
-                endif
-                if (narg > 5) then
-                    ctrl%wFile_Data = temp(6)
-                endif
-           case ('S')
-                ctrl%rFile_Model = temp(2)
-                ctrl%rFile_EMrhs = temp(3)
-                ctrl%rFile_Data = temp(4)
-                if (narg > 4) then
-                    ctrl%wFile_EMsoln = temp(5)
-                endif
-           case ('P')
-                ctrl%rFile_Model = temp(2)
-                ctrl%rFile_dModel = temp(3)
+                ctrl%rFile_mgCtrl = temp(3)
                 ctrl%rFile_EMsoln = temp(4)
-                if (narg > 4) then
-                    ctrl%wFile_Model = temp(5)
-                endif
+                ctrl%rFile_Data = temp(5)
                 if (narg > 5) then
                     ctrl%wFile_EMrhs = temp(6)
                 endif
+                if (narg > 6) then
+                    ctrl%wFile_Data = temp(7)
+                endif
+           case ('S')
+                ctrl%rFile_Model = temp(2)
+                ctrl%rFile_mgCtrl = temp(3)
+                ctrl%rFile_EMrhs = temp(4)
+                ctrl%rFile_Data = temp(5)
+                if (narg > 5) then
+                    ctrl%wFile_EMsoln = temp(6)
+                endif
+           case ('P')
+                ctrl%rFile_Model = temp(2)
+                ctrl%rFile_mgCtrl = temp(3)
+                ctrl%rFile_dModel = temp(4)
+                ctrl%rFile_EMsoln = temp(5)
+                if (narg > 5) then
+                    ctrl%wFile_Model = temp(6)
+                endif
+                if (narg > 6) then
+                    ctrl%wFile_EMrhs = temp(7)
+                endif
            case ('Q')
                 ctrl%rFile_Model = temp(2)
-                ctrl%rFile_dModel = temp(3)
-                ctrl%rFile_Data = temp(4)
-                if (narg > 4) then
-                    ctrl%wFile_Model = temp(5)
-                endif
+                ctrl%rFile_mgCtrl = temp(3)
+                ctrl%rFile_dModel = temp(4)
+                ctrl%rFile_Data = temp(5)
                 if (narg > 5) then
-                    ctrl%wFile_Data = temp(6)
+                    ctrl%wFile_Model = temp(6)
+                endif
+                if (narg > 6) then
+                    ctrl%wFile_Data = temp(7)
                 endif
            ! random perturbations ...
            case ('m')
@@ -554,6 +562,9 @@ Contains
                 ctrl%wFile_Model = temp(3)
                 if (narg > 3) then
                     read(temp(4),*,iostat=istat) ctrl%delta
+                endif
+                if (narg > 4) then
+                    ctrl%rFile_mgCtrl = temp(5)
                 endif
            case ('d')
                 ctrl%rFile_Data = temp(2)
@@ -567,11 +578,17 @@ Contains
                 if (narg > 3) then
                     read(temp(4),*,iostat=istat) ctrl%delta
                 endif
+                if (narg > 4) then
+                    ctrl%rFile_mgCtrl = temp(5)
+                endif
            case ('b')
                 ctrl%rFile_EMrhs = temp(2)
                 ctrl%wFile_EMrhs = temp(3)
                 if (narg > 3) then
                     read(temp(4),*,iostat=istat) ctrl%delta
+                endif
+                if (narg > 4) then
+                    ctrl%rFile_mgCtrl = temp(5)
                 endif
            case default
                 write(0,*) 'Unknown operator. Usage: -A [J | L | S | P | Q] OR -A [m | d | e | b]'

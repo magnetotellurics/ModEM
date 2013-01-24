@@ -32,7 +32,6 @@ module EMsolve3D
     logical                   ::      UseDefaults
     logical                   ::      read_E0_from_File=.false.
     character (len=80)        ::      E0fileName
-    integer                   ::      ioE0
   end type emsolve_control
 
   type :: emsolve_diag
@@ -638,7 +637,6 @@ end subroutine SdivCorr ! SdivCorr
 	       write (*,'(a12,a48,a80)') node_info,string,solverControl%E0fileName
 	     end if
        solverControl%read_E0_from_File=.true.
-       solverControl%ioE0=ioE
      end if
 
  else

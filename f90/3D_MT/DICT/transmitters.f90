@@ -21,6 +21,10 @@ module transmitters
      real(kind=prec)            :: period = R_ZERO
      ! index number to frequency/ period in solution file
      integer                    :: iPer
+     ! the code may be needed to select frequency subsets, e.g. for reading
+     character(80)              :: code
+     ! use / don't use secondary field formulation
+     logical                    :: secondaryField = .false.
    end type MTtx
 
    ! transmitter dictionary txDict for 3D-MT data will be an array of
@@ -61,6 +65,8 @@ Contains
         if (present(nPol)) then
         	txDict(iTx)%nPol = nPol
         endif
+        ! the default code is the frequency number in list
+        write (txDict(iTx)%code,'(i3.3)') iTx
      enddo
 
   end subroutine setup_txDict
@@ -92,6 +98,7 @@ Contains
      	new%nPol = 2
      end if
      new%iPer   = nTx + 1
+     write (new%code,'(i3.3)') nTx + 1
 
      ! If txDict doesn't yet exist, create it
      if(.not. associated(txDict)) then

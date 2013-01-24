@@ -86,18 +86,25 @@ Contains
 	!--------------------------------------------------------------------------
 	! Check whether model parametrization file exists and read it, if exists
 	inquire(FILE=cUserDef%rFile_Model,EXIST=exists)
-    inquire(FILE=cUserDef%rFile_mg,EXIST=exists)
 
 	if (exists) then
 	   ! Read background conductivity parameter and grid
        call read_modelParam(grid,sigma0,cUserDef%rFile_Model)
-       call read_mgParam(grid,cUserDef%rFile_mg)
-       ! Finish setting up the grid (if that is not done in the read subroutine)
-       ! call setup_mgrid(grid)
 	else
 	  call warning('No input model parametrization')
-	  call warning('No input mg')
 	end if
+
+    !--------------------------------------------------------------------------
+    ! Check whether the multigrid control file exists and read it, if exists
+    inquire(FILE=cUserDef%rFile_mgCtrl,EXIST=exists)
+
+    if (exists) then
+       call read_mgParam(grid,cUserDef%rFile_mgCtrl)
+       ! Finish setting up the grid (if that is not done in the read subroutine)
+       ! call setup_mgrid(grid)
+    else
+      call warning('No input multigrid control file')
+    end if
 
 	!--------------------------------------------------------------------------
     !  Read forward solver control in EMsolve3D (or use defaults)
@@ -122,21 +129,20 @@ Contains
      if (solverParams%read_E0_from_File) then
         write(6,*) 'Reading E field from: ',trim(solverParams%E0fileName)
         inFile = trim(solverParams%E0fileName)
-        ioNum  = solverParams%ioE0
-!        call FileReadInit(inFile,ioNum,Larg_Grid,filePer,fileMode,fileVersion,ios)
+!        call FileReadInit(inFile,ioE,Larg_Grid,filePer,fileMode,fileVersion,ios)
         call setup_grid(Larg_Grid)
-        call create_solnVectorMTX(filePer,eAll_larg)
-            do iTx=1,filePer
-         		call create_solnVector(Larg_Grid,iTx,e_temp)
-        		call copy_solnVector(eAll_larg%solns(iTx),e_temp)
-        	 end do
-        call read_solnVectorMTX(ioNum,inFile,eAll_larg)
+!        call create_solnVectorMTX(filePer,eAll_larg)
+!            do iTx=1,filePer
+!         		call create_solnVector(Larg_Grid,iTx,e_temp)
+!        		call copy_solnVector(eAll_larg%solns(iTx),e_temp)
+!        	 end do
+        call read_solnVectorMTX(Larg_Grid,eAll_larg,inFile)
 !        do iTx = 1,eAll_larg%nTx
 !         do iMod = 1,fileMode
-!           call EfileRead(ioNum, iTx, iMod, omega, eAll_larg%solns(iTx)%pol(iMod))
+!           call EfileRead(ioE, iTx, iMod, omega, eAll_larg%solns(iTx)%pol(iMod))
 !         enddo
 !      enddo
-!      close(ioNum)
+!      close(ioE)
       call deall(e_temp)
      end if
 
@@ -203,13 +209,23 @@ Contains
 
      case (TEST_ADJ)
        select case (cUserDef%option)
-           case('J','Q')
+           case('J','Q','P')
                inquire(FILE=cUserDef%rFile_dModel,EXIST=exists)
                if (exists) then
                   call deall_grid(grid)
                   call read_modelParam(grid,dsigma,cUserDef%rFile_dModel)
                else
                   call warning('The input model perturbation file does not exist')
+               end if
+           case default
+       end select
+       select case (cUserDef%option)
+           case('L','P')
+               inquire(FILE=cUserDef%rFile_EMsoln,EXIST=exists)
+               if (exists) then
+                  call read_solnVectorMTX(grid,eAll,cUserDef%rFile_EMsoln)
+               else
+                  call warning('The input EM solution file does not exist')
                end if
            case default
        end select

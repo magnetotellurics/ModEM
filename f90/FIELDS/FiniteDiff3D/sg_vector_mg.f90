@@ -539,6 +539,56 @@
       end subroutine mg2c
 
       ! *****************************************************************************
+      subroutine random_rvector_mg(e,eps)
+
+        implicit none
+        type(rvector_mg), intent(inout)  :: e
+        real(8), intent(in), optional    :: eps
+        ! local
+        integer  ::imgrid
+
+        do imgrid = 1, e%mgridSize
+            if (present(eps)) then
+                call random_rvector(e%rvArray(imgrid),eps)
+            else
+                call random_rvector(e%rvArray(imgrid))
+            endif
+        enddo
+     end subroutine random_rvector_mg
+
+      ! *****************************************************************************
+      subroutine random_cvector_mg(e,eps)
+
+        implicit none
+        type(cvector_mg), intent(inout)  :: e
+        real(8), intent(in), optional    :: eps
+        ! local
+        integer  ::imgrid
+
+        do imgrid = 1, e%mgridSize
+            if (present(eps)) then
+                call random_cvector(e%cvArray(imgrid),eps)
+            else
+                call random_cvector(e%cvArray(imgrid))
+            endif
+        enddo
+     end subroutine random_cvector_mg
+
+
+      ! *****************************************************************************
+      subroutine zero_rvector_mg(e)
+
+        implicit none
+        type(rvector_mg), intent(inout)  :: e
+        ! local
+        integer  ::imgrid
+
+        do imgrid = 1, e%mgridSize
+            call zero(e%rvArray(imgrid)) !zero_rvector
+       enddo
+     end subroutine zero_rvector_mg
+
+      ! *****************************************************************************
       subroutine zero_cvector_mg(e)
 
         implicit none
@@ -855,6 +905,8 @@
              ctemp(imgrid) = dotProd_noConj(e1%cvArray(imgrid), e2%cvArray(imgrid))!dotProd_noConj_cvector_f
            enddo
          else
+            write(0,*) 'Multigrid cvector 1 # of subgrids: ',e1%mgridSize
+            write(0,*) 'Multigrid cvector 2 # of subgrids: ',e2%mgridSize
             write(0,*) 'Error :: dotProd_noConj_cvector_mg_f: e1 and e2 not the same subgrids'
          end if
          c = sum(ctemp)
