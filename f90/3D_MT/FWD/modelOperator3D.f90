@@ -2379,7 +2379,7 @@
         ! the coefficients are only for the interior nodes
         ! these coefficients have not been multiplied by volume elements
         ! yet
-        do iz = 2, nz+1
+        do iz = 2, nz
            do iy = 2, ny
               do ix = 2, nx
 
@@ -2406,7 +2406,7 @@
         enddo
 
         ! Multiply by corner volume elements to make operator symmetric
-        do iz = 1, nz+1
+        do iz = 1, nz
            do iy = 2, ny
               do ix = 2, nx
 
@@ -2442,7 +2442,7 @@
         ! update first Z in d array
         call UpdateDivCorr(imgrid,d)
 
-        do iz = 2, nz+1
+        do iz = 2, nz
           do iy = 2, ny
             do ix = 2, nx
 
