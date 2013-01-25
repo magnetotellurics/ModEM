@@ -30,6 +30,11 @@
     character(len=80), parameter		:: CENTER = 'CELL'
     character(len=80), parameter		:: CORNER = 'NODE'
     character(len=80), parameter		:: CELL_EARTH = 'CELL EARTH'
+    ! Possible interface Types
+    character(len=10), parameter         :: f2c = 'f2c'
+    character(len=10), parameter         :: c2f = 'c2f'
+    character(len=10), parameter         :: f2f = 'f2f'
+    character(len=10), parameter         :: orig = 'orig'
 
     ! ***************************************************************************
     ! Type grid_param consists of parameters that define the basic grid geometry
@@ -214,16 +219,22 @@
           endif
        enddo
 
-       do imgrid = 1, mGrid%mgridSize-1
-
-         if (mGrid%coarseness(imgrid) .gt. mGrid%coarseness(imgrid+1)) then
-           mGrid%interfaceType(imgrid) = 'c2f'
-         else if (mGrid%coarseness(imgrid) .lt. mGrid%coarseness(imgrid+1)) then
-           mGrid%interfaceType(imgrid) = 'f2c'
-         else if (mGrid%coarseness(imgrid) .eq. mGrid%coarseness(imgrid+1)) then
-           mGrid%interfaceType(imgrid) = 'f2f'
+       do imgrid = 1, mGrid%mgridSize
+         if (imgrid < mGrid%mGridSize) then
+           if (mGrid%coarseness(imgrid) > mGrid%coarseness(imgrid+1)) then
+             mGrid%interfaceType(imgrid) = c2f
+           else if (mGrid%coarseness(imgrid) < mGrid%coarseness(imgrid+1)) then
+             mGrid%interfaceType(imgrid) = f2c
+           else if (mGrid%coarseness(imgrid) == mGrid%coarseness(imgrid+1)) then
+             mGrid%interfaceType(imgrid) = f2f
+           endif
+         else if (imgrid == mGrid%mgridSize) then
+           if (imgrid /= 1) then
+             mGrid%interfaceType(imgrid) = mGrid%interfaceType(imgrid-1)
+           else
+             mGrid%interfaceType(imgrid) = orig
+           endif
          end if
-
        enddo ! imgrid
 
     mgrid%coords = Cartesian

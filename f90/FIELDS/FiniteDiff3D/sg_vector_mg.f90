@@ -166,6 +166,9 @@
       ! ISO/IEC 15581 - the "allocatable array extension")
       logical                                        :: temporary = .false.
 
+       ! pointer to parent grid
+       type (grid_t), pointer  :: grid
+
     end type rvector_mg
 
 
@@ -186,7 +189,8 @@
 
         ! First deallocate anything, that's allocated
         call deall(e) !deall_rvector_mg
-
+        ! Set pointer
+        e%grid => mgrid
        ! allocate memory for rvector arrays
         allocate(e%rvArray(mgrid%mgridSize), STAT = status)
         ! allocate rvectors
@@ -259,7 +263,7 @@
           deallocate(e%coarseness, STAT=status)
           deallocate(e%rvArray, STAT = status)
           end if
-
+          if(associated(e%grid)) nullify(e%grid)
           e%mgridSize = 0
           E%gridType = ''
           E%allocated = .false.
@@ -1009,6 +1013,160 @@
 
      end subroutine scMultAdd_cvector_mg
 
+! ****************************************************************************************************************
+    ! Created by Cherevatova (Jan, 2013)
+    ! This routine computes Cvector_mg on the coarse side
+    ! taking Cvector_mg on the fine side.
+    ! Used in some routines like M1Interface
+    ! to fill in nz+1 layer on the coarse side from 1 layer of fine side
+    ! or vice-versa
+    subroutine AverageCvector_mg(E)
+
+    implicit none
+     type(cvector_mg), intent(inout)    :: E
+
+     !local
+     integer                            :: imgrid
+     integer                            :: ix, iy, iz
+     integer                            :: nz
+
+     if(.not.E%allocated)then
+       print*, 'AverageCvector_mg: E not allocated'
+       stop
+     endif
+
+     do imgrid = 1, E%mGridSize-1
+       nz = E%cvArray(imgrid)%nz
+       select case (E%grid%interfaceType(imgrid))
+
+       case(f2c) ! interface: fine to coarse
+         ! Ex component
+         do iy = 2, E%cvArray(imgrid+1)%ny
+           do ix = 1, E%cvArray(imgrid+1)%nx
+             E%cvArray(imgrid+1)%x(ix,iy,1) =  (E%cvArray(imgrid)%x(2*ix-1,2*iy-1,nz+1)*E%grid%gridArray(imgrid)%dx(2*ix-1)&
+                                                 +E%cvArray(imgrid)%x(2*ix,2*iy-1,nz+1)*E%grid%gridArray(imgrid)%dx(2*ix))/&
+                                                 (E%grid%gridArray(imgrid)%dx(2*ix-1)+E%grid%gridArray(imgrid)%dx(2*ix))
+           enddo ! ix
+        enddo ! iy
+        ! Ey component
+        do iy = 1, E%cvArray(imgrid+1)%ny
+          do ix = 2, E%cvArray(imgrid+1)%nx
+            E%cvArray(imgrid+1)%y(ix,iy,1) =  (E%cvArray(imgrid)%y(2*ix-1,2*iy-1,nz+1)*E%grid%gridArray(imgrid)%dy(2*iy-1)&
+                                                  +E%cvArray(imgrid)%y(2*ix-1,2*iy,nz+1)*E%grid%gridArray(imgrid)%dy(2*iy))/&
+                                                  (E%grid%gridArray(imgrid)%dy(2*iy-1)+E%grid%gridArray(imgrid)%dy(2*iy))
+          enddo ! ix
+        enddo ! iy
+
+       case(c2f) ! interface : coarse to fine
+       ! Ex component
+       do iy = 2, E%cvArray(imgrid)%ny
+         do ix = 1, E%cvArray(imgrid)%nx
+            E%cvArray(imgrid)%x(ix,iy,nz+1) =  (E%cvArray(imgrid+1)%x(2*ix-1,2*iy-1,1)*E%grid%gridArray(imgrid+1)%dx(2*ix-1)&
+                                                  +E%cvArray(imgrid+1)%x(2*ix,2*iy-1,1)*E%grid%gridArray(imgrid+1)%dx(2*ix))/&
+                                                  (E%grid%gridArray(imgrid+1)%dx(2*ix-1)+E%grid%gridArray(imgrid+1)%dx(2*ix))
+         enddo ! ix
+       enddo  ! iy
+       ! Ey component
+       do iy = 1, E%cvArray(imgrid)%ny
+         do ix = 2, E%cvArray(imgrid)%nx
+            E%cvArray(imgrid)%y(ix,iy,nz+1) =  (E%cvArray(imgrid+1)%y(2*ix-1,2*iy-1,1)*E%grid%gridArray(imgrid+1)%dy(2*iy-1)&
+                                                  +E%cvArray(imgrid+1)%y(2*ix-1,2*iy,1)*E%grid%gridArray(imgrid+1)%dy(2*iy))/&
+                                                  (E%grid%gridArray(imgrid+1)%dy(2*iy-1)+E%grid%gridArray(imgrid+1)%dy(2*iy))
+         enddo ! ix
+       enddo  ! iy
+       case(f2f) ! interface fine to fine/ coarse to coarse grid
+         E%cvArray(imgrid)%x(:, :, nz+1) = E%cvArray(imgrid+1)%x(:, :, 1)
+         E%cvArray(imgrid)%y(:, :, nz+1) = E%cvArray(imgrid+1)%y(:, :, 1)
+       case (orig)
+         ! this is original ModEM, no sub-grids
+         ! nothing to do with the interfaces
+         return
+       case default
+         print*, 'AverageCvector_mg: select case statement error'
+       end select
+
+
+     enddo ! imgrid
+
+    end subroutine AverageCvector_mg
+! **************************************************************************************************************
+    ! Created by Cherevatova (Jan, 2013)
+    ! This routine computes Rvector_mg on the coarse side
+    ! taking Rvector_mg on the fine side.
+    ! Used in some routines like M1Interface
+    ! to fill in nz+1 layer on the coarse side from 1 layer of fine side
+    ! or vice-versa
+    subroutine AverageRvector_mg(E)
+
+    implicit none
+     type(rvector_mg), intent(inout)    :: E
+
+     !local
+     integer                            :: imgrid
+     integer                            :: ix, iy, iz
+     integer                            :: nz
+
+     if(.not.E%allocated)then
+       print*, 'AverageRvector_mg: E not allocated'
+       stop
+     endif
+
+     do imgrid = 1, E%mGridSize-1
+       nz = E%rvArray(imgrid)%nz
+       select case (E%grid%interfaceType(imgrid))
+
+       case(f2c) ! interface: fine to coarse
+         ! Ex component
+         do iy = 2, E%rvArray(imgrid+1)%ny
+           do ix = 1, E%rvArray(imgrid+1)%nx
+             E%rvArray(imgrid+1)%x(ix,iy,1) =  (E%rvArray(imgrid)%x(2*ix-1,2*iy-1,nz+1)*E%grid%gridArray(imgrid)%dx(2*ix-1)&
+                                                 +E%rvArray(imgrid)%x(2*ix,2*iy-1,nz+1)*E%grid%gridArray(imgrid)%dx(2*ix))/&
+                                                 (E%grid%gridArray(imgrid)%dx(2*ix-1)+E%grid%gridArray(imgrid)%dx(2*ix))
+           enddo ! ix
+        enddo ! iy
+        ! Ey component
+        do iy = 1, E%rvArray(imgrid+1)%ny
+          do ix = 2, E%rvArray(imgrid+1)%nx
+            E%rvArray(imgrid+1)%y(ix,iy,1) =  (E%rvArray(imgrid)%y(2*ix-1,2*iy-1,nz+1)*E%grid%gridArray(imgrid)%dy(2*iy-1)&
+                                                  +E%rvArray(imgrid)%y(2*ix-1,2*iy,nz+1)*E%grid%gridArray(imgrid)%dy(2*iy))/&
+                                                  (E%grid%gridArray(imgrid)%dy(2*iy-1)+E%grid%gridArray(imgrid)%dy(2*iy))
+          enddo ! ix
+        enddo ! iy
+
+       case(c2f) ! interface : coarse to fine
+       ! Ex component
+       do iy = 2, E%rvArray(imgrid)%ny
+         do ix = 1, E%rvArray(imgrid)%nx
+            E%rvArray(imgrid)%x(ix,iy,nz+1) =  (E%rvArray(imgrid+1)%x(2*ix-1,2*iy-1,1)*E%grid%gridArray(imgrid+1)%dx(2*ix-1)&
+                                                  +E%rvArray(imgrid+1)%x(2*ix,2*iy-1,1)*E%grid%gridArray(imgrid+1)%dx(2*ix))/&
+                                                  (E%grid%gridArray(imgrid+1)%dx(2*ix-1)+E%grid%gridArray(imgrid+1)%dx(2*ix))
+         enddo ! ix
+       enddo  ! iy
+       ! Ey component
+       do iy = 1, E%rvArray(imgrid)%ny
+         do ix = 2, E%rvArray(imgrid)%nx
+            E%rvArray(imgrid)%y(ix,iy,nz+1) =  (E%rvArray(imgrid+1)%y(2*ix-1,2*iy-1,1)*E%grid%gridArray(imgrid+1)%dy(2*iy-1)&
+                                                  +E%rvArray(imgrid+1)%y(2*ix-1,2*iy,1)*E%grid%gridArray(imgrid+1)%dy(2*iy))/&
+                                                  (E%grid%gridArray(imgrid+1)%dy(2*iy-1)+E%grid%gridArray(imgrid+1)%dy(2*iy))
+         enddo ! ix
+       enddo  ! iy
+       case(f2f) ! interface fine to fine/ coarse to coarse grid
+         E%rvArray(imgrid)%x(:, :, nz+1) = E%rvArray(imgrid+1)%x(:, :, 1)
+         E%rvArray(imgrid)%y(:, :, nz+1) = E%rvArray(imgrid+1)%y(:, :, 1)
+       case (orig)
+         ! this is original ModEM, no sub-grids
+         ! nothing to do with the interfaces
+         return
+       case default
+         print*, 'AverageRvector_mg: select case statement error'
+       end select
+
+
+     enddo ! imgrid
+
+    end subroutine AverageRvector_mg
+
+
      ! *********************************************************************************************************
 
       function conjg_cvector_mg_f(e1) result (e2)
@@ -1186,6 +1344,11 @@
         e2%temporary = .true.
 
       end function imag_cvector_mg_f  ! imag_cvector_mg_f
+
+
+
+
+
       ! ******************************************************************************************************
       subroutine plotCvector_mg(inE) ! need for testing
         ! created by Cherevatova (Oct, 2012)
