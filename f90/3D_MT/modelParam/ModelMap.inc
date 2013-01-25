@@ -114,7 +114,7 @@
     real(kind=prec)  :: Vnr,Vnl,Vsr,Vsl
     real(kind=prec)  ::airCond
     real(kind=prec),pointer,dimension(:,:,:)	:: temp ! x,y,z
-    real(kind=prec),pointer,dimension(:,:,:)    :: v ! x,y,z
+    real(kind=prec),pointer,dimension(:,:,:)    :: v,v0 ! x,y,z
 
     linearizedMapping = present(m0)
 
@@ -137,6 +137,13 @@
       v(:,:,1:m%grid%nzEarth) = m%cellCond%v(:,:,:)
       v(:,:,0) = R_ZERO
       v(:,:,m%grid%nzEarth+1) = R_ZERO
+      
+      if (linearizedMapping) then
+	      allocate(v0(m%grid%nx, m%grid%ny, 0:m%grid%nzEarth+1))
+	      v0(:,:,1:m%grid%nzEarth) = m0%cellCond%v(:,:,:)
+	      v0(:,:,0) = R_ZERO
+	      v0(:,:,m%grid%nzEarth+1) = R_ZERO
+      end if
 
       do imgrid = 1, m%grid%mgridSize ! Global loop over sub-grids
         temp = R_ZERO
@@ -168,7 +175,7 @@
                izv = izE + nzCum
               do iy = 1, ny
                 do ix = 1, nx
-                   temp(ix,iy,izE)= temp(ix,iy,izE)*exp(m0%cellCond%v(ccoeff_current*(ix-1)+1, ccoeff_current*(iy-1)+1,izv))
+                   temp(ix,iy,izE)= temp(ix,iy,izE)*exp(v0(ccoeff_current*(ix-1)+1, ccoeff_current*(iy-1)+1,izv))
                 enddo
               enddo
             enddo
@@ -266,8 +273,11 @@
         Econd%rvArray(m%grid%mgridSize)%y(:,:,m%grid%gridArray(m%grid%mgridSize)%nz)
 
 
-    deallocate(temp,stat=status)
-    deallocate(v,stat=status)
+      deallocate(temp,stat=status)
+      deallocate(v,stat=status)
+      if (linearizedMapping) then
+      	deallocate(v0,stat=status)
+      end if
     end subroutine ModelParamtoEdge
 
 ! ***********************************************************************

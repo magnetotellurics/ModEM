@@ -486,8 +486,9 @@ Contains
            write(0,*) '  Data file only needed to set up dictionaries.'
            write(0,*) '  Optionally, outputs e = S^{-1} b.'
            write(0,*)
-           write(0,*) ' -A  P rFile_Model rFile_mgCtrl rFile_dModel rFile_EMsoln [wFile_Model wFile_EMrhs]'
+           write(0,*) ' -A  P rFile_Model rFile_mgCtrl rFile_dModel rFile_EMsoln rFile_Data [wFile_Model wFile_EMrhs]'
            write(0,*) '  Tests the equality e^T P m = m^T P^T e for any EMsoln and data.'
+           write(0,*) '  The data template isn''t needed here except to set up the transmitters.'
            write(0,*) '  Optionally, outputs P m and P^T e.'
            write(0,*)
            write(0,*) ' -A  Q rFile_Model rFile_mgCtrl rFile_dModel rFile_Data [wFile_Model wFile_Data]'
@@ -539,11 +540,17 @@ Contains
                 ctrl%rFile_mgCtrl = temp(3)
                 ctrl%rFile_dModel = temp(4)
                 ctrl%rFile_EMsoln = temp(5)
-                if (narg > 5) then
-                    ctrl%wFile_Model = temp(6)
+                if (narg < 6) then
+                    write(0,*) 'Usage: -P rFile_Model rFile_mgCtrl rFile_dModel rFile_EMsoln rFile_Data [wFile_Model wFile_EMrhs]'
+                    write(0,*) 'Please specify data template file to set up the transmitter dictionary'
+                    stop
                 endif
+                ctrl%rFile_Data = temp(6)
                 if (narg > 6) then
-                    ctrl%wFile_EMrhs = temp(7)
+                    ctrl%wFile_Model = temp(7)
+                endif
+                if (narg > 7) then
+                    ctrl%wFile_EMrhs = temp(8)
                 endif
            case ('Q')
                 ctrl%rFile_Model = temp(2)

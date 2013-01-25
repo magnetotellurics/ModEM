@@ -480,6 +480,8 @@ Contains
       ! reads an array of solution vectors for all transmitters & subgrids
       ! currently uses the old binary format; will switch to NetCDF when
       ! time allows
+      ! this SHOULD initialize the transmitter dictionary and the grids, as needed
+      ! but currently it can only work if these are pre-allocated and the same
 
       character(*), intent(in)                    :: cfile
       type(solnVectorMTX_t), intent(inout)        :: eAll
@@ -518,9 +520,12 @@ Contains
           call FileReadInit(fn_input,ioE,eAll%solns(1)%grid%gridArray(ig),eAll%nTX,nMode,version,ios)
           do j = 1,nTx
              do k = 1,2
-               omega = txDict(eAll%solns(j)%tx)%omega
 
                call EfileRead(ioE, j, k, omega, eAll%solns(j)%pol(k)%cvarray(ig))
+
+               if (abs(omega - txDict(eAll%solns(j)%tx)%omega) > R_TINY) then
+                    write(0,*) 'Warning: frequencies don''t match on E-field input ',j
+               endif
 
              enddo
           enddo
