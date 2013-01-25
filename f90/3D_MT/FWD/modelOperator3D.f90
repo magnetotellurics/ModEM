@@ -1764,14 +1764,7 @@
                     !$OMP END ORDERED
                  enddo
                  !$OMP END DO
-                 ix = 3
-                 iy = 2
-                 iz =20
 
-                 print*,  outE%cvArray(imgrid)%y(ix, iy, iz)
-                 print*,  outE%cvArray(imgrid)%y(ix, iy, iz-1)*yYZ(imgrid,iz, 1)
-                 print*,  outE%cvArray(imgrid)%y(ix-1, iy, iz)*yYX(imgrid,ix, 1)
-                 print*,  Dilu%cvArray(imgrid)%y(ix, iy, iz)
                  !$OMP DO ORDERED SCHEDULE(STATIC) PRIVATE(iz)
                  do iz = 1, nz
                     !$OMP ORDERED

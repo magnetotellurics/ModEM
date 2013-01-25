@@ -1020,7 +1020,7 @@
     ! Used in some routines like M1Interface
     ! to fill in nz+1 layer on the coarse side from 1 layer of fine side
     ! or vice-versa
-    subroutine AverageCvector_mg(E)
+    subroutine average_cvector_mg(E)
 
     implicit none
      type(cvector_mg), intent(inout)    :: E
@@ -1031,7 +1031,7 @@
      integer                            :: nz
 
      if(.not.E%allocated)then
-       print*, 'AverageCvector_mg: E not allocated'
+       print*, 'average_cvector_mg: E not allocated'
        stop
      endif
 
@@ -1082,13 +1082,13 @@
          ! nothing to do with the interfaces
          return
        case default
-         print*, 'AverageCvector_mg: select case statement error'
+         print*, 'average_cvector_mg: select case statement error'
        end select
 
 
      enddo ! imgrid
 
-    end subroutine AverageCvector_mg
+    end subroutine average_cvector_mg
 ! **************************************************************************************************************
     ! Created by Cherevatova (Jan, 2013)
     ! This routine computes Rvector_mg on the coarse side
@@ -1096,7 +1096,7 @@
     ! Used in some routines like M1Interface
     ! to fill in nz+1 layer on the coarse side from 1 layer of fine side
     ! or vice-versa
-    subroutine AverageRvector_mg(E)
+    subroutine average_rvector_mg(E)
 
     implicit none
      type(rvector_mg), intent(inout)    :: E
@@ -1107,7 +1107,7 @@
      integer                            :: nz
 
      if(.not.E%allocated)then
-       print*, 'AverageRvector_mg: E not allocated'
+       print*, 'average_rvector_mg: E not allocated'
        stop
      endif
 
@@ -1158,13 +1158,13 @@
          ! nothing to do with the interfaces
          return
        case default
-         print*, 'AverageRvector_mg: select case statement error'
+         print*, 'average_rvector_mg: select case statement error'
        end select
 
 
      enddo ! imgrid
 
-    end subroutine AverageRvector_mg
+    end subroutine average_rvector_mg
 
 
      ! *********************************************************************************************************
