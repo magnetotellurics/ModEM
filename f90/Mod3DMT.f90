@@ -203,6 +203,8 @@ program Mod3DMT
                call Ltest(sigma0,eAll,allData)
            case('Q')
                call Qtest(sigma0,dsigma,allData)
+           case('S')
+               call Stest(sigma0,RHS,eAll)
            case default
                write(0,*) 'Symmetry test for operator ',trim(cUserDef%option),' not yet implemented.'
        end select

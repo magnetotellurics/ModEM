@@ -46,6 +46,9 @@ module Main
   !  storage for EM solutions
   type(solnVectorMTX_t), save            :: eAll
 
+  !  storage for EM rhs (only for S test)
+  type(rhsVectorMTX_t), save            :: RHS
+
   logical                   :: write_model, write_data, write_EMsoln
 
 
@@ -229,7 +232,15 @@ Contains
                end if
            case default
        end select
-
+       select case (cUserDef%option)
+           case('S')
+            call create_rhsVectorMTX(allData%ntx,RHS)
+            do iTx = 1,allData%ntx
+                RHS%combs(iTx)%nonzero_source = .true.
+                call create_rhsVector(grid,iTx,RHS%combs(iTx))
+            end do
+            call random_rhsVectorMTX(RHS,cUserDef%eps)
+       end select
     end select
 
 	!--------------------------------------------------------------------------

@@ -136,6 +136,9 @@ end interface
 
      integer				:: nPol = 2
      type (RHS_t), pointer	:: b(:)
+     logical                :: nonzero_BC     = .false.
+     logical                :: nonzero_Source = .false.
+     logical                :: sparse_Source  = .false.
      logical				:: allocated = .false.
      logical				:: temporary = .false.
      type(grid_t), pointer	:: grid
@@ -644,6 +647,9 @@ Contains
        b%nPol = txDict(iTx)%nPol
        allocate(b%b(b%nPol), STAT=istat)
        do k = 1,b%nPol
+          b%b(k)%nonzero_bc = b%nonzero_bc
+          b%b(k)%nonzero_source = b%nonzero_source
+          b%b(k)%sparse_source = b%sparse_source
           call create_RHS(grid,iTx,b%b(k))
        enddo
 
@@ -714,6 +720,27 @@ Contains
        enddo
      end subroutine zero_rhsVector
 
+  ! **********************************************************************
+  ! * Creates a random perturbation in the EM RHS - used for testing
+  subroutine random_rhsVector(b,eps)
+
+    implicit none
+    type (rhsVector_t), intent(inout)                :: b
+    real (kind=prec), intent(in), optional           :: eps
+    ! local
+    integer     :: k
+
+       do k = 1,b%nPol
+        if (.not. (b%b(k)%allocated .and. b%b(k)%nonzero_source)) then
+          call errStop('EM RHS not allocated in random_rhsVector')
+        elseif (present(eps)) then
+          call random_cvector_mg(b%b(k)%s,eps)
+        else
+          call random_cvector_mg(b%b(k)%s,0.05*ONE)
+        end if
+       enddo
+
+  end subroutine random_rhsVector
 
      !**********************************************************************
      subroutine copy_solnVrhsV(b,e)
@@ -884,5 +911,24 @@ Contains
       bAll%allocated = .false.
 
    end subroutine deall_rhsVectorMTX
+
+   !**********************************************************************
+   subroutine random_rhsVectorMTX(bAll,eps)
+
+    type(rhsVectorMTX_t), intent(inout)     :: bAll
+    real (kind=prec), intent(in), optional  :: eps
+
+    !  local variables
+    integer                           :: j
+
+    do j = 1,bAll%nTx
+      if (present(eps)) then
+        call random_rhsVector(bAll%combs(j),eps)
+      else
+        call random_rhsVector(bAll%combs(j),0.05*ONE)
+      end if
+    end do
+
+   end subroutine random_rhsVectorMTX
 
 end module SolnSpace
