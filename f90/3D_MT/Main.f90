@@ -46,6 +46,9 @@ module Main
   !  storage for EM solutions
   type(solnVectorMTX_t), save            :: eAll
 
+  !  storage for EM rhs (only for S test)
+  type(rhsVectorMTX_t), save            :: RHS
+
   logical                   :: write_model, write_data, write_EMsoln
 
 
@@ -123,24 +126,18 @@ Contains
      if (solverParams%read_E0_from_File) then
         write(6,*) 'Reading E field from: ',trim(solverParams%E0fileName)
         inFile = trim(solverParams%E0fileName)
-        ioNum  = solverParams%ioE0
-        call FileReadInit(inFile,ioNum,Larg_Grid,filePer,fileMode,fileVersion,ios)
+!        call FileReadInit(inFile,ioE,Larg_Grid,filePer,fileMode,fileVersion,ios)
         call setup_grid(Larg_Grid)
-        call create_solnVectorMTX(filePer,eAll_larg)
-            do iTx=1,filePer
-         		call create_solnVector(Larg_Grid,iTx,e_temp)
-        		call copy_solnVector(eAll_larg%solns(iTx),e_temp)
-        	 end do
-
-        do iTx = 1,eAll_larg%nTx
-         do iMod = 1,fileMode
-           call EfileRead(ioNum, iTx, iMod, omega, eAll_larg%solns(iTx)%pol(iMod))
-         enddo
-      enddo
-      close(ioNum)
-      call deall(e_temp)
+!        call create_solnVectorMTX(filePer,eAll_larg)
+!            do iTx=1,filePer
+!         		call create_solnVector(Larg_Grid,iTx,e_temp)
+!        		call copy_solnVector(eAll_larg%solns(iTx),e_temp)
+!        	 end do
+        call read_solnVectorMTX(Larg_Grid,eAll_larg,inFile)
+!        do iTx = 1,eAll_larg%nTx
+!         do iMod = 1,fileMode
+!           call EfileRead(ioE, iTx, iMod, omega, eAll_larg%solns(iTx)%pol      call deall(e_temp)
      end if
-
 
 	!--------------------------------------------------------------------------
 	!  Initialize additional data as necessary
@@ -205,7 +202,7 @@ Contains
 
      case (TEST_ADJ)
        select case (cUserDef%option)
-           case('J','Q')
+           case('J','Q','P')
                inquire(FILE=cUserDef%rFile_dModel,EXIST=exists)
                if (exists) then
                   call deall_grid(grid)
@@ -215,7 +212,25 @@ Contains
                end if
            case default
        end select
-
+       select case (cUserDef%option)
+           case('L','P')
+               inquire(FILE=cUserDef%rFile_EMsoln,EXIST=exists)
+               if (exists) then
+                  call read_solnVectorMTX(grid,eAll,cUserDef%rFile_EMsoln)
+               else
+                  call warning('The input EM solution file does not exist')
+               end if
+           case default
+       end select
+       select case (cUserDef%option)
+           case('S')
+            call create_rhsVectorMTX(allData%ntx,RHS)
+            do iTx = 1,allData%ntx
+                RHS%combs(iTx)%nonzero_source = .true.
+                call create_rhsVector(grid,iTx,RHS%combs(iTx))
+            end do
+            call random_rhsVectorMTX(RHS,cUserDef%eps)
+       end select
     end select
 
 	!--------------------------------------------------------------------------

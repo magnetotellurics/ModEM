@@ -287,6 +287,7 @@ Contains
        call Pmult(eAll%solns(j),m0,m,Pm)
 
        ! compute P^T d
+       PTe = m0
        call PmultT(eAll%solns(j),m0,e%solns(j),PTe)
 
        ! compute dot product #1: e^T P m

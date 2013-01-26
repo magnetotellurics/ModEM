@@ -49,6 +49,7 @@ module ioAscii
   public                   :: DfileWrite
   public                   :: ZfileRead, ZfileWrite
   public                   :: write_solnVectorMTX
+  public                   :: read_solnVectorMTX
 
 Contains
 
@@ -67,7 +68,7 @@ Contains
 
     !  file header contents
     character (len=20), intent(out)             :: fileVersion
-    type (grid_t), intent(out)                :: fileGrid
+    type (grid_t), intent(inout)             :: fileGrid
     integer, intent(out)                        :: filePer
     integer, intent(out)                        :: fileMode
     integer, intent(out)                        :: ios
@@ -318,20 +319,20 @@ Contains
   subroutine EfileRead(ioNum, ifreq, imode, fileOmega, inE)
 
     implicit none
-    integer, intent(in)				:: ioNum,ifreq,imode
-    type (cvector), intent(inout)		:: inE
-    real (kind=prec), intent(out)	:: fileOmega
+    integer, intent(in)             :: ioNum,ifreq,imode
+    type (cvector), intent(inout)       :: inE
+    real (kind=prec), intent(out)   :: fileOmega
 
     !  local variables
-    integer					:: nRecSkip, iskip
-!    integer					:: iskip
+    integer                 :: nRecSkip, iskip
+!    integer                    :: iskip
 
     !  following could be optional oututs
-    integer				:: fileIfreq, fileMode
-    character (len = 20)            	:: ModeName
+    integer             :: fileIfreq, fileMode
+    character (len = 20)                :: ModeName
 
     !  hard code number of modes for now
-    integer		:: nMode = 2
+    integer     :: nMode = 2
 
     ! calculate number of records before the header for this frequency/mode
     nRecSkip = ((ifreq-1)*nMode+(imode-1))*4+4
@@ -351,6 +352,7 @@ Contains
     read(ioNum) inE%z
 
   end subroutine EfileRead
+
 
   ! ***************************************************************************
   ! write electrical field solution for one frequency/mode
@@ -472,9 +474,59 @@ Contains
 !*******************************************************************************
 !*******************************************************************************
 !*******************************************************************************
+!******************************************************************
+      subroutine read_solnVectorMTX(grid,eAll,cfile)
+
+      ! reads an array of solution vectors for all transmitters & subgrids
+      ! currently uses the old binary format; will switch to NetCDF when
+      ! time allows
+      ! this SHOULD initialize the transmitter dictionary and the grids, as needed
+      ! but currently it can only work if these are pre-allocated and the same
+
+      character(*), intent(in)                    :: cfile
+      type(solnVectorMTX_t), intent(inout)        :: eAll
+      type(grid_t), intent(in), target            :: grid
+
+      !   local variables
+      integer           :: j,k,nMode = 2, ios,ig,cdot
+      integer           :: iTx,nTx
+      character (len=3)         :: igchar
+      character (len=20)        :: version = '',ModeNames(2)
+      character (len=200)       :: fn_input
+      real (kind=prec)   :: omega
+
+      ModeNames(1) = 'Ey'
+      ModeNames(2) = 'Ex'
+
+      nTx = size(txDict)
+
+      call create_solnVectorMTX(nTx,eAll)
+      do iTx=1,size(txDict)
+         call create_solnVector(grid,iTx,eAll%solns(iTx))
+      end do
+
+          fn_input = trim(cfile)
+
+          write(*,*) 'Reading E-fields from file: ',trim(fn_input)
+
+          call FileReadInit(fn_input,ioE,eAll%solns(1)%grid,eAll%nTX,nMode,version,ios)
+          do j = 1,nTx
+             do k = 1,2
+
+               call EfileRead(ioE, j, k, omega, eAll%solns(j)%pol(k))
+
+               if (abs(omega - txDict(eAll%solns(j)%tx)%omega) > R_TINY) then
+                    write(0,*) 'Warning: frequencies don''t match on E-field input ',j
+               endif
+
+             enddo
+          enddo
+          close(ioE)
+
+      end subroutine read_solnVectorMTX
 
 !******************************************************************
-      subroutine write_solnVectorMTX(fid,cfile,eAll)
+      subroutine write_solnVectorMTX(eAll,cfile)
 
       !  open cfile on unit fid, writes out object of
       !   type cvector in standard format (readable by matlab
@@ -483,61 +535,35 @@ Contains
       !    solutions, periods, etc. (can get this infor from
       !    eAll%solns(j)%tx, but only with access to TXdict.
 
-      integer, intent(in)               :: fid
       character(*), intent(in)          :: cfile
       type(solnVectorMTX_t), intent(in)               :: eAll
 
       !   local variables
-      integer           :: j,k,nMode = 2, ios
+      integer           :: j,k,nMode = 2, ios,ig,cdot
+      character (len=3)         :: igchar
       character (len=20) 		:: version = '',ModeNames(2)
+      character (len=200)       :: fn_output
       real (kind=prec)   :: omega
 
       ModeNames(1) = 'Ey'
       ModeNames(2) = 'Ex'
 
-      call FileWriteInit(version,cfile,fid,eAll%solns(1)%grid &
-               ,eAll%nTX, nMode,ios)
+          fn_output = trim(cfile)
 
-      do j = 1,eAll%nTx
-         do k = 1,2
-           omega = txDict(eAll%solns(j)%tx)%omega
-           call EfileWrite(fid, omega, j,  &
-             k, ModeNames(k), eAll%solns(j)%pol(k))
-         enddo
-      enddo
-      close(fid)
+          write(*,*) 'E-fields written to ',trim(fn_output)
+
+          call FileWriteInit(version,fn_output,ioE,eAll%solns(1)%grid,eAll%nTX,nMode,ios)
+          do j = 1,eAll%nTx
+             do k = 1,2
+               omega = txDict(eAll%solns(j)%tx)%omega
+
+               call EfileWrite(ioE, omega, j,  k, ModeNames(k), eAll%solns(j)%pol(k))
+
+             enddo
+          enddo
+          close(ioE)
+
       end subroutine write_solnVectorMTX
 
-!******************************************************************
-!      subroutine read_solnVectorMTX(fid,cfile,eAll)
-!
-!      !  open cfile on unit fid, writes out object of
-!      !   type cvector in standard format (readable by matlab
-!      !   routine readcvector.m), closes file
-!      !  NOT coded at present to specifically write out TE/TM
-!      !    solutions, periods, etc. (can get this infor from
-!      !    eAll%solns(j)%tx, but only with access to TXdict.
-!
-!      integer, intent(in)               :: fid
-!      character(*), intent(in)          :: cfile
-!      type(solnVectorMTX_t), intent(in)               :: eAll
-!
-!      !   local variables
-!      integer           :: j,k,nMode = 2, ios
-!      character (len=20)        :: version = '',ModeNames(2)
-!      real (kind=prec)   :: omega
-!
-!      ModeNames(1) = 'Ey'
-!      ModeNames(2) = 'Ex'
-!
-!      call FileReadInit(cfile,fid,eAll%solns(1)%grid,eAll%nTX,nMode,version,ios)
-!
-!      do j = 1,eAll%nTx
-!         do k = 1,2
-!           call EfileRead(fid, j, ModeNames(k), omega, eAll%solns(j)%pol(k))
-!         enddo
-!      enddo
-!      close(fid)
-!      end subroutine read_solnVectorMTX
 
 end module ioAscii

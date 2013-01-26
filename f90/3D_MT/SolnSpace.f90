@@ -130,6 +130,9 @@ end interface
 
      integer				:: nPol = 2
      type (RHS_t), pointer	:: b(:)
+     logical                    :: nonzero_BC     = .false.
+     logical                    :: nonzero_Source = .false.
+     logical                    :: sparse_Source  = .false.
      logical				:: allocated = .false.
      logical				:: temporary = .false.
      type(grid_t), pointer	:: grid
@@ -256,6 +259,30 @@ contains
        enddo
 
      end subroutine zero_solnVector
+
+      ! **********************************************************************
+      ! * Creates a random perturbation in the EM soln - used for testing
+      subroutine random_solnVector(e,eps)
+
+        implicit none
+        type (solnVector_t), intent(inout)               :: e
+        real (kind=prec), intent(in), optional           :: eps
+        ! local
+        integer     :: j,k
+
+        if (.not. e%allocated) then
+          call errStop('EM solution not allocated in random_solnVector')
+        elseif (present(eps)) then
+          do k = 1,e%nPol
+            call random_cvector(e%pol(k),eps)
+          end do
+        else
+          do k = 1,e%nPol
+            call random_cvector(e%pol(k),0.05*ONE)
+          end do
+        end if
+
+      end subroutine random_solnVector
 
      !**********************************************************************
      function dotProd_solnVector(FV1,FV2,Conj_Case) result(c)
@@ -613,9 +640,13 @@ contains
        b%nPol = txDict(iTx)%nPol
        allocate(b%b(b%nPol), STAT=istat)
        do k = 1,b%nPol
+          b%b(k)%nonzero_bc = b%nonzero_bc
+          b%b(k)%nonzero_source = b%nonzero_source
+          b%b(k)%sparse_source = b%sparse_source
           call create_RHS(grid,iTx,b%b(k))
        enddo
 
+       b%tx = iTx
        b%allocated = .true.
 
      end subroutine create_rhsVector
@@ -682,6 +713,27 @@ contains
        enddo
      end subroutine zero_rhsVector
 
+  ! **********************************************************************
+  ! * Creates a random perturbation in the EM RHS - used for testing
+  subroutine random_rhsVector(b,eps)
+
+    implicit none
+    type (rhsVector_t), intent(inout)                :: b
+    real (kind=prec), intent(in), optional           :: eps
+    ! local
+    integer     :: k
+
+       do k = 1,b%nPol
+        if (.not. (b%b(k)%allocated .and. b%b(k)%nonzero_source)) then
+          call errStop('EM RHS not allocated in random_rhsVector')
+        elseif (present(eps)) then
+          call random_cvector(b%b(k)%s,eps)
+        else
+          call random_cvector(b%b(k)%s,0.05*ONE)
+        end if
+       enddo
+
+  end subroutine random_rhsVector
 
      !**********************************************************************
      subroutine copy_solnVrhsV(b,e)
@@ -844,5 +896,24 @@ contains
       bAll%allocated = .false.
 
    end subroutine deall_rhsVectorMTX
+
+   !**********************************************************************
+   subroutine random_rhsVectorMTX(bAll,eps)
+
+    type(rhsVectorMTX_t), intent(inout)     :: bAll
+    real (kind=prec), intent(in), optional  :: eps
+
+    !  local variables
+    integer                           :: j
+
+    do j = 1,bAll%nTx
+      if (present(eps)) then
+        call random_rhsVector(bAll%combs(j),eps)
+      else
+        call random_rhsVector(bAll%combs(j),0.05*ONE)
+      end if
+    end do
+
+   end subroutine random_rhsVectorMTX
 
 end module SolnSpace
