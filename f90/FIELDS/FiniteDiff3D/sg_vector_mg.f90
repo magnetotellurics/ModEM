@@ -16,8 +16,21 @@
       ! Important - overloading the '=' assignment
       interface assignment (=)
         module procedure copy_cvector_mg
-        module procedure c2mg ! copies cvector to cvector_mg
-        module procedure mg2c ! cvector_mg to cvector
+        module procedure copy_rvector_mg
+        module procedure copy_cvector2mg ! copies cvector to cvector_mg
+        module procedure copy_mg2cvector ! cvector_mg to cvector
+        module procedure copy_rvector2mg ! copies rvector to rvector_mg
+        module procedure copy_mg2rvector ! rvector_mg to rvector
+      end interface
+
+      ! copies cvector to cvector_mg: keeping this for Masha's convenience ;)
+      interface c2mg
+        module procedure copy_cvector2mg
+      end interface
+
+      ! copies cvector_mg to cvector: keeping this for Masha's convenience ;)
+      interface mg2c
+        module procedure copy_mg2cvector
       end interface
 
       ! Generic interfaces are done through subroutines
@@ -108,7 +121,9 @@
 
         public  :: create_rvector_mg, create_cvector_mg, &
                    deall_rvector_mg, deall_cvector_mg, &
-                   copy_cvector_mg, c2mg, mg2c, &
+                   copy_cvector_mg, copy_rvector_mg,&
+                   copy_cvector2mg, copy_rvector2mg,&
+                   copy_mg2cvector, copy_mg2rvector,&
                    zero_cvector_mg, &
                    subtract_rvector_mg, subtract_cvector_mg, &
                    scMult_cvector_mg, &
@@ -133,14 +148,13 @@
        integer, allocatable  :: coarseness(:)
        ! allocated:  .true.  x, y, z arrays have been allocated
        logical  :: allocated = .false.
-       ! store the intention of the use in a character string defined
-       ! in GridDef as a parameter: EDGE or FACE are two possibilities
-
        ! temporary:  .true. for function outputs only; necessary to avoid memory leaks
        ! (probably will not be needed in the future when compilers will support
        ! ISO/IEC 15581 - the "allocatable array extension")
        logical                                        :: temporary = .false.
 
+       ! store the intention of the use in a character string defined
+       ! in GridDef as a parameter: EDGE or FACE are two possibilities
        character (len=80)   :: gridType
 
        ! pointer to parent grid
@@ -152,9 +166,6 @@
     type rvector_mg
       ! number of subgrids
       integer  :: mgridSize
-      ! store the intention of the use in a character string defined
-      ! in GridDef as a parameter: EDGE or FACE are two possibilities
-      character (len=80)  :: gridType
       ! rvectors for subgrids
       type(rvector), pointer :: rvArray(:)
       ! coarseness
@@ -166,8 +177,12 @@
       ! ISO/IEC 15581 - the "allocatable array extension")
       logical                                        :: temporary = .false.
 
-       ! pointer to parent grid
-       type (grid_t), pointer  :: grid
+      ! store the intention of the use in a character string defined
+      ! in GridDef as a parameter: EDGE or FACE are two possibilities
+      character (len=80)   :: gridType
+
+      ! pointer to parent grid
+      type (grid_t), pointer  :: grid
 
     end type rvector_mg
 
@@ -297,6 +312,49 @@
       end  subroutine deall_cvector_mg
 
       ! *****************************************************************************
+      ! copy rvector_mg to rvector_mg
+      subroutine copy_rvector_mg(e2,e1)
+
+      ! first argument is output
+      implicit none
+        type (rvector_mg), intent(in)  :: e1
+        type (rvector_mg), intent(inout)  :: e2
+        !local
+        integer  :: imgrid
+
+        if(.not.e1%allocated) then
+          print *, 'RHS not allocated yet for copy_rvector_mg'
+        endif
+
+        if(.not.e2%allocated) then
+          call create(e1%grid, e2, e1%gridType)
+        endif
+
+         if (e1%gridType == e2%gridType.and.e1%mgridSize == e2%mgridSize) then
+            do imgrid = 1, e1%mgridSize
+              if(e2%rvArray(imgrid)%nx ==  e1%rvArray(imgrid)%nx.and. &
+                 e2%rvArray(imgrid)%ny ==  e1%rvArray(imgrid)%ny.and. &
+                 e2%rvArray(imgrid)%nz ==  e1%rvArray(imgrid)%nz) then
+
+                      e2%rvArray(imgrid)%x = e1%rvArray(imgrid)%x
+                      e2%rvArray(imgrid)%y = e1%rvArray(imgrid)%y
+                      e2%rvArray(imgrid)%z = e1%rvArray(imgrid)%z
+                 e2%rvArray(imgrid)%gridType = e1%rvArray(imgrid)%gridType
+                 e2%rvArray(imgrid)%grid => e1%rvArray(imgrid)%grid
+              else
+                print *, 'e1 and e2 are not the same size; copy_rvector_mg'
+              endif
+            enddo
+            e2%gridType = e1%gridType
+            e2%grid => e1%grid
+            e2%coarseness = e1%coarseness
+          else
+            print *, 'not compatible usage for copy_rvector_mg'
+          endif
+
+      end subroutine copy_rvector_mg
+
+      ! *****************************************************************************
       ! copy cvector_mg to cvector_mg
       subroutine copy_cvector_mg(e2,e1)
 
@@ -338,9 +396,10 @@
           endif
 
       end subroutine copy_cvector_mg
+
       ! *****************************************************************************
       ! copy fields from cvector to cvector_mg
-      subroutine c2mg(e2,e1)
+      subroutine copy_cvector2mg(e2,e1)
 
       implicit none
 
@@ -353,11 +412,11 @@
         integer  :: errAll
 
         if (.not.e1%allocated)then
-          print *, 'Error c2mg; e1 (cvector) is not allocated'
+          print *, 'Error copy_cvector2mg; e1 (cvector) is not allocated'
         endif
 
         if (.not.e2%allocated)then
-          print *, 'Error c2mg; e2 (cvector_mg) is not allocated'
+          print *, 'Error copy_cvector2mg; e2 (cvector_mg) is not allocated'
         endif
 
         ! which gridType and check
@@ -454,17 +513,17 @@
             nzCum =  nzCum + nz
           enddo  ! Global loop over sub-grids
         else
-          print *, 'Error c2mg; cvector and cvector_mg not are the same gridType'
+          print *, 'Error copy_cvector2mg; cvector and cvector_mg not are the same gridType'
         endif
 
-      end subroutine c2mg
+      end subroutine copy_cvector2mg
 
       ! *****************************************************************************
 
       ! convert cvector_mg to cvector. Copy fields
       ! used only to plot fields
 
-      subroutine mg2c(e2, e1)
+      subroutine copy_mg2cvector(e2, e1)
 
       implicit none
         type(cvector_mg), intent(in)  :: e1  ! cvector_mg in
@@ -476,11 +535,11 @@
         integer  :: status
 
         if (.not.e1%allocated)then
-          print *, 'Error mg2c; e1 (cvector_mg) is not allocated'
+          print *, 'Error copy_mg2cvector; e1 (cvector_mg) is not allocated'
         endif
 
         if (.not.e2%allocated)then
-          print *, 'Error mg2c; e2 (cvector) is not allocated'
+          print *, 'Error copy_mg2cvector; e2 (cvector) is not allocated'
         endif
 
         ! check gridType
@@ -537,10 +596,214 @@
             enddo   ! Global loop over sub-grids
 
         else
-          print *, 'Error mg2c; cvector and cvector_mg are not the same gridType'
+          print *, 'Error copy_mg2cvector; cvector and cvector_mg are not the same gridType'
         endif
 
-      end subroutine mg2c
+      end subroutine copy_mg2cvector
+
+      ! *****************************************************************************
+      ! copy fields from rvector to rvector_mg
+      subroutine copy_rvector2mg(e2,e1)
+
+      implicit none
+
+        type(rvector), intent(in)  :: e1       ! input rvector
+        type(rvector_mg), intent(inout)  ::e2  ! output rvector
+
+        ! local
+        integer  :: imgrid,ifine, ix,iy,iz,izv,ic
+        integer  :: nx,ny,nz,nzCum,ccoeff_current
+        integer  :: errAll
+
+        if (.not.e1%allocated)then
+          print *, 'Error copy_rvector2mg; e1 (rvector) is not allocated'
+        endif
+
+        if (.not.e2%allocated)then
+          print *, 'Error copy_rvector2mg; e2 (rvector_mg) is not allocated'
+        endif
+
+        ! which gridType and check
+        if (e1%gridType == EDGE .and. e1%gridType == e2%gridType) then
+          nzCum = 0
+          do imgrid = 1, e2%mgridSize  ! Global loop on sub-grids
+            nx = e2%rvArray(imgrid)%nx
+            ny = e2%rvArray(imgrid)%ny
+            nz = e2%rvArray(imgrid)%nz
+            ccoeff_current = 2**e2%coarseness(imgrid)
+            ! re-count x component
+            do iz = 1, nz+1
+               izv = iz + nzCum
+              do iy = 1, ny+1
+                do ix =1, nx
+                  ! do ic = 1, ccoeff_current
+                  ! average fields
+                  ! does not make any difference in the final solution, compare with copy, but
+                  ! leads to numerical unstability, therefore not used
+                  !  e2%rvArray(imgrid)%x(ix,iy,iz) = e2%rvArray(imgrid)%x(ix,iy,iz) + &
+                  !                e1%x(ccoeff_current*(ix-1)+ic,ccoeff_current*(iy-1)+1,izv)*e1%grid%dx(ccoeff_current*(ix-1)+ic)
+                  ! enddo ! ic
+                  !  e2%rvArray(imgrid)%x(ix,iy,iz) = e2%rvArray(imgrid)%x(ix,iy,iz)/e2%grid%gridArray(imgrid)%dx(ix)
+                  ! copy fields
+                    e2%rvArray(imgrid)%x(ix,iy,iz) = e1%x(ccoeff_current*(ix-1)+1,ccoeff_current*(iy-1)+1,izv)
+                enddo  !ix
+              enddo !iy
+            ! re-count y component
+              do ix = 1, nx+1
+                do iy = 1, ny
+!                   do ic = 1, ccoeff_current
+!                    e2%rvArray(imgrid)%y(ix,iy,iz) = e2%rvArray(imgrid)%y(ix,iy,iz) +  &
+!                                     e1%y(ccoeff_current*(ix-1)+1,ccoeff_current*(iy-1)+ic,izv)*e1%grid%dy(ccoeff_current*(iy-1)+ic)
+!                   enddo !ic
+!                    e2%rvArray(imgrid)%y(ix,iy,iz) = e2%rvArray(imgrid)%y(ix,iy,iz)/e2%grid%gridArray(imgrid)%dy(iy)
+                   e2%rvArray(imgrid)%y(ix,iy,iz) = e1%y(ccoeff_current*(ix-1)+1,ccoeff_current*(iy-1)+1,izv)
+                enddo !iy
+              enddo !ix
+            enddo ! iz
+            ! re-count z component
+            do iy =1, ny+1
+              do ix= 1, nx+1
+                do iz = 1, nz
+                   izv = iz + nzCum
+                    e2%rvArray(imgrid)%z(ix,iy,iz) = e1%z(ccoeff_current*(ix-1)+1,ccoeff_current*(ix-1)+1,izv)
+               enddo !iz
+              enddo !ix
+            enddo !iy
+            nzCum =  nzCum + nz
+          enddo  ! Global loop over sub-grids
+
+        else if(e1%gridType == FACE .and. e1%gridType == e2%gridType) then
+          nzCum = 0
+          do imgrid = 1, e2%mgridSize  ! Global loop on sub-grids
+            nx = e2%rvArray(imgrid)%nx
+            ny = e2%rvArray(imgrid)%ny
+            nz = e2%rvArray(imgrid)%nz
+            ccoeff_current = 2**e2%coarseness(imgrid)
+            ! re-count x component
+            do iz = 1, nz
+               izv = iz + nzCum
+              do iy = 1, ny
+                do ix =1, nx+1
+                  !do ic = 1, ccoeff_current
+                  ! average fields
+                  !  e2%rvArray(imgrid)%x(ix,iy,iz) = e2%rvArray(imgrid)%x(ix,iy,iz) + &
+                  !            e1%x(ccoeff_current*(ix-1)+ic,ccoeff_current*(iy-1)+1,izv)*e1%grid%dx(ccoeff_current*(ix-1)+ic)
+                  !enddo ! ic
+                  !  e2%rvArray(imgrid)%x(ix,iy,iz) = e2%rvArray(imgrid)%x(ix,iy,iz)/e2%grid%gridArray(imgrid)%dx(ix)
+                    e2%rvArray(imgrid)%x(ix,iy,iz) = e1%x(ccoeff_current*(ix-1)+ic,ccoeff_current*(iy-1)+1,izv)
+                enddo  !ix
+              enddo !iy
+            ! re-count y component
+              do ix = 1, nx
+                do iy = 1, ny+1
+                  ! do ic = 1, ccoeff_current
+                  !   e2%rvArray(imgrid)%y(ix,iy,iz) = e2%rvArray(imgrid)%y(ix,iy,iz)  + &
+                  !                   e1%y(ccoeff_current*(ix-1)+1,ccoeff_current*(iy-1)+ic,izv)*e1%grid%dy(ccoeff_current*(iy-1)+ic)
+                  !enddo !ic
+                  !  e2%rvArray(imgrid)%y(ix,iy,iz) = e2%rvArray(imgrid)%y(ix,iy,iz)/e2%grid%gridArray(imgrid)%dy(iy)
+                    e2%rvArray(imgrid)%y(ix,iy,iz) = e1%y(ccoeff_current*(ix-1)+1,ccoeff_current*(iy-1)+ic,izv)
+                enddo !iy
+              enddo !ix
+            enddo ! iz
+            ! re-count z component
+            do iy =1, ny
+              do ix= 1, nx
+                do iz = 1, nz+1
+                   izv = iz + nzCum
+                    e2%rvArray(imgrid)%z(ix,iy,iz) = e1%z(ccoeff_current*(ix-1)+1,ccoeff_current*(ix-1)+1,izv)
+               enddo !iz
+              enddo !ix
+            enddo !iy
+            nzCum =  nzCum + nz
+          enddo  ! Global loop over sub-grids
+        else
+          print *, 'Error copy_rvector2mg; rvector and rvector_mg not are the same gridType'
+        endif
+
+      end subroutine copy_rvector2mg
+
+      ! *****************************************************************************
+
+      ! convert rvector_mg to rvector. Copy fields
+      ! used only to plot fields
+
+      subroutine copy_mg2rvector(e2, e1)
+
+      implicit none
+        type(rvector_mg), intent(in)  :: e1  ! rvector_mg in
+        type(rvector), intent(inout)  :: e2  ! rvector out
+
+        ! local
+        integer :: nzCum, nc, nx,ny,nz
+        integer  :: imgrid,ix,iy,iz,izv, ic,icx,icy
+        integer  :: status
+
+        if (.not.e1%allocated)then
+          print *, 'Error copy_mg2rvector; e1 (rvector_mg) is not allocated'
+        endif
+
+        if (.not.e2%allocated)then
+          print *, 'Error copy_mg2rvector; e2 (rvector) is not allocated'
+        endif
+
+        ! check gridType
+        if (e1%gridType == e2%gridType) then
+
+            nzCum = 0
+            do imgrid = 1, e1%mgridSize  ! Global loop over sub-grids
+               nx = e1%rvArray(imgrid)%nx
+               ny = e1%rvArray(imgrid)%ny
+               nz = e1%rvArray(imgrid)%nz
+               nc= 2**e1%coarseness(imgrid)
+               do iz = 1, nz+1
+                  izv = iz + nzCum
+                  ! Ex components
+                 do iy = 1, ny
+                     do ix =1, nx
+!                           e2%x(nc*(ix-1)+1,nc*(iy-1)+1,izv) = e1%rvArray(imgrid)%x(ix,iy,iz)
+                       do icx = 1, nc
+!                         do icy = 1, nc
+                           e2%x(nc*(ix-1)+icx,nc*(iy-1)+1,izv) = e1%rvArray(imgrid)%x(ix,iy,iz)
+!                           e2%x(nc*(ix-1)+icx,nc*(iy-1)+icy,izv) = e1%rvArray(imgrid)%x(ix,iy,iz)
+!                         enddo ! icy
+                       enddo  ! icx
+                     enddo ! ix
+                  enddo ! iy
+                  ! Ey components
+                 do ix = 1, nx
+                     do iy =1, ny
+                      !      e2%y(nc*(ix-1)+1,nc*(iy-1)+1,izv) = e1%rvArray(imgrid)%y(ix,iy,iz)
+                       do icx =1, nc
+!                         do icy = 1, nc
+                           e2%y(nc*(ix-1)+icx,nc*(iy-1)+1,izv) = e1%rvArray(imgrid)%y(ix,iy,iz)
+!                         enddo  ! icx
+                       enddo  ! icy
+                     enddo ! iy
+                  enddo ! ix
+               enddo !iz
+
+              ! Ez components
+              do iz = 1, nz
+                  izv = iz + nzCum
+                  do iy = 1, ny
+                     do ix =1, nx
+                     !     e2%z(nc*(ix-1)+1,nc*(iy-1)+1,izv)= e1%rvArray(imgrid)%z(ix,iy,iz)
+                       do icx = 1, nc
+!                         do icy = 1, nc
+                           e2%z(nc*(ix-1)+icx,nc*(iy-1)+1,izv)= e1%rvArray(imgrid)%z(ix,iy,iz)
+!                        enddo ! icx
+                       enddo ! icy
+                     enddo ! ix
+                 enddo !iy
+              enddo !iz
+            nzCum = nzCum + nz
+            enddo   ! Global loop over sub-grids
+
+        else
+          print *, 'Error copy_mg2rvector; rvector and rvector_mg are not the same gridType'
+        endif
+
+      end subroutine copy_mg2rvector
 
       ! *****************************************************************************
       subroutine random_rvector_mg(e,eps)

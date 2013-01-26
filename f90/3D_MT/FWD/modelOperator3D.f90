@@ -1973,7 +1973,7 @@
             enddo !  Global loop over sub-grids
 
             ! Average from fine to coarse grid
-            call AverageCvector_mg(E)
+            call average_cvector_mg(E)
 
      end subroutine M1Interface
 
