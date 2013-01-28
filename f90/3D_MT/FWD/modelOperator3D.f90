@@ -1447,7 +1447,7 @@ Contains
 
     ! initialize volume weights centered at corners
     Call create_rscalar(mGrid, volC, CORNER)
-    Call CornerVolume(mGrid, volC)
+    Call NodeVolume(mGrid, volC)
 
    end subroutine DivCorrInit  ! DivCorrInit
 
