@@ -1711,6 +1711,48 @@ Contains
 
 
   !****************************************************************************
+  ! diagDiv_rscalar divides scalar E1 by scalar E2 to get scalar E3
+  ! type rscalar pointwise; subroutine version
+  ! E3 can overwrite E1 or E2
+  subroutine diagDiv_rscalar(E1, E2, E3)
+
+    implicit none
+    type (rscalar), intent(in)               :: E1, E2
+    type (rscalar), intent(inout)            :: E3
+
+    if((.not.E1%allocated).or.(.not.E2%allocated)) then
+       write(0,*) 'RHS not allocated yet for diagDiv_rscalar'
+       stop
+    endif
+
+    ! check to see if LHS (E3) is active (allocated)
+    if(.not.E3%allocated) then
+       write(0,*) 'LHS was not allocated for diagDiv_rscalar'
+    else
+
+       ! Check whether all the scalar nodes are of the same size
+       if((E1%nx == E2%nx).and.(E1%ny == E2%ny).and.(E1%nz == E2%nz).and. &
+            (E1%nx == E3%nx).and.(E1%ny == E3%ny).and.(E1%nz == E3%nz)) then
+
+          if ((E1%gridType == E2%gridType).and.(E1%gridType == E3%gridType)) then
+
+             ! pointwise division for v-component; NO ZERO TESTING FOR EFFICIENCY
+             E3%v = E1%v / E2%v
+
+          else
+             write (0, *) 'not compatible usage for diagDiv_rscalar'
+          end if
+
+       else
+
+          write(0, *) 'Error:diagDiv_rscalar: scalars not same size'
+
+       end if
+    end if
+
+  end subroutine diagDiv_rscalar ! diagDiv_rscalar
+
+  !****************************************************************************
   ! diagMult_rscalar_f multiplies two scalars E1, E2 stored as devired
   ! data type rscalar pointwise; function version
   function diagMult_rscalar_f(E1, E2) result(E3)

@@ -116,15 +116,12 @@
     type(modelParam_t), optional, intent(in)	:: m0
 
     !   LOCAL Variables
-    integer		:: ix,iy,iz,ize,nx,ny,nz,nzE,nZa
+    type(rscalar)  :: temp,Ctemp,V_C
+    type(rvector)  :: Etemp,V_E
+    integer		:: ix,iy,iz,ize,nx,ny,nz,nzEarth,nzAir
     logical		:: linearizedMapping
-    ! the prefix V are the volumes S is total over surrounding cells
-    !   common sides are ommited from volume calculation
-    real(kind=prec)            :: Vdr,Vdl,Vur,Vul,S
-    real(kind=prec)            :: Vdn,Vds,Vun,Vus
-    real(kind=prec)            :: Vnr,Vnl,Vsr,Vsl,airCond
-    real(kind=prec),pointer,dimension(:,:,:)	:: temp
-
+    real(kind=prec)   :: airCond
+ 
     linearizedMapping = present(m0)
 
     if (.not. m%allocated) then
@@ -140,102 +137,39 @@
 
     nx = m%Nx
     ny = m%Ny
-    nz = m%grid%nZ
-    nZE = m%nZEarth
-    nZa = Nz-nZE
+    nz = m%grid%nz
+    nzEarth = m%nzEarth
+    nzAir = nz-nzEarth
 
-    allocate(temp(nx,ny,nzE))
     airCond = m%airCond
-    temp = m%cellCond%v
+    call create_rscalar(m%grid,temp,CENTER)
+    call setup_grid(temp%grid)
 
     if(m%paramType .EQ. LOGE) then
        if(linearizedMapping) then
-          temp = temp*exp(m0%cellCond%v)
+          temp%v(:,:,nzAir+1:nz) = m%cellCond%v*exp(m0%cellCond%v)
           airCond = R_ZERO
+          temp%v(:,:,1:nzAir) = airCond
        else
-          temp = exp(temp)
+          temp%v(:,:,nzAir+1:nz) = exp(m%cellCond%v)
           airCond = exp(m%airCond)
+          temp%v(:,:,1:nzAir) = airCond
        endif
     endif
 
-    ! Now map onto edges, x, y, then z ... first  zero output
-    ! Ex edges: (leave boundary edges set to 0)
-    Econd%x = 0.0
-    do ix = 1, nx
-       do iy = 2, ny
-          do iz = Nza+1,Nz
-             izE = iz-Nza
-             Vdr = m%grid%dy(iy)*m%grid%dz(iz)
-             Vdl = m%grid%dy(iy-1)*m%grid%dz(iz)
-             Vur = m%grid%dy(iy)*m%grid%dz(iz-1)
-             Vul = m%grid%dy(iy-1)*m%grid%dz(iz-1)
-             S = Vdr+Vdl+Vur+Vul
-             if(izE.eq.1) then
-                Econd%x(ix,iy,iz) = (temp(ix,iy,izE)*Vdr + &
-                                  temp(ix,iy-1,izE)*Vdl)/S
-             else
-                Econd%x(ix,iy,iz) = (temp(ix,iy,izE)*Vdr + &
-                                  temp(ix,iy-1,izE)*Vdl + &
-                                  temp(ix,iy  ,izE-1)*Vur + &
-                                  temp(ix,iy-1,izE-1)*Vul)/S
-             endif
-          enddo
-	  do iz = 1,Nza
-             Econd%x(ix,iy,iz) = airCond
-          enddo
-       enddo
-     enddo
+	call CellVolume(m%grid,V_C)
+	call EdgeVolume(m%grid,V_E)	
+	Ctemp = temp
+	call diagMult(V_C,temp,Ctemp)
+	call Cell2Edge(m%grid,Ctemp,Etemp)
+	Econd = Etemp
+	call diagDiv(Etemp,V_E,Econd)
 
-     ! Ey edges
-     Econd%y = 0.0
-     do ix = 2, nx
-        do iy = 1, ny
-           do iz = Nza+1,Nz
-              izE = iz-Nza
-              Vdn = m%grid%dx(ix)*m%grid%dz(iz)
-              Vds = m%grid%dx(ix-1)*m%grid%dz(iz)
-              Vun = m%grid%dx(ix)*m%grid%dz(iz-1)
-              Vus = m%grid%dx(ix-1)*m%grid%dz(iz-1)
-              S = Vdn+Vds+Vun+Vus
-              if(izE.eq.1) then
-                Econd%y(ix,iy,iz) = (temp(ix,iy,izE)*Vdn + &
-                                  temp(ix-1,iy,izE)*Vds)/S
-              else
-                Econd%y(ix,iy,iz) = (temp(ix,iy,izE)*Vdn + &
-                                  temp(ix-1,iy,izE)*Vds + &
-                                  temp(ix,iy  ,izE-1)*Vun + &
-                                  temp(ix-1,iy,izE-1)*Vus)/S
-              endif
-           enddo
-	   do iz = 1,Nza
-              Econd%y(ix,iy,iz) = airCond
-           enddo
-        enddo
-     enddo
-
-     ! Ez edges
-     Econd%z = 0.0
-     do ix = 2, nx
-        do iy = 2, ny
-           do iz = Nza+1,Nz
-              izE = iz-Nza
-              Vnr = m%grid%dx(ix)*m%grid%dy(iy)
-              Vnl = m%grid%dx(ix)*m%grid%dy(iy-1)
-              Vsr = m%grid%dx(ix-1)*m%grid%dy(iy)
-              Vsl = m%grid%dx(ix-1)*m%grid%dy(iy-1)
-              S =  Vnr+Vnl+Vsr+Vsl
-              Econd%z(ix,iy,iz) = (temp(ix,iy,izE)*Vnr + &
-                                  temp(ix,iy-1,izE)*Vnl + &
-                                  temp(ix-1,iy  ,izE)*Vsr + &
-                                  temp(ix-1,iy-1,izE)*Vsl)/S
-           enddo
-	   do iz = 1,Nza
-              Econd%z(ix,iy,iz) = airCond
-           enddo
-        enddo
-      enddo
-
-      deallocate(temp)
+	call deall_rscalar(V_C)
+	call deall_rvector(V_E)
+	call deall_rscalar(temp)
+	call deall_rscalar(Ctemp)
+	call deall_rvector(Etemp)
 
   end subroutine ModelParamToEdge
 
@@ -276,14 +210,9 @@
     type(modelParam_t), optional, intent(in)	:: m0
 
     !   LOCAL Variables
-    integer		:: ix,iy,iz,ize,nx,ny,nz,nzE,nZa
-    ! the prefix V are the volumes S is total over surrounding cells
-    !   common sides are ommited from volume calculation
-    real(kind=prec)            :: Vdr,Vdl,Vur,Vul,S
-    real(kind=prec)            :: Vdn,Vds,Vun,Vus
-    real(kind=prec)            :: Vnr,Vnl,Vsr,Vsl
-    real(kind=prec),pointer,dimension(:,:,:)	:: temp
-
+    type(rscalar)  :: temp,Ctemp,V_C
+    type(rvector)  :: Etemp,V_E
+    integer		:: ix,iy,iz,ize,nx,ny,nz,nzEarth,nzAir
 
     if ((.not.m%allocated).or.(.not.Econd%allocated)) then
       call errStop('m or Econd not allocated yet in EdgeToModelParam')
@@ -298,81 +227,34 @@
 
     nx = m%Nx
     ny = m%Ny
-    nz = m%grid%nZ
-    nZE = m%nZEarth
-    nZa = Nz-nZE
+    nz = m%grid%nz
+    nzEarth = m%nzEarth
+    nzAir = nz-nzEarth
 
-    allocate(temp(nx,ny,nzE))
-    temp = R_ZERO
+    call create_rscalar(Econd%grid,temp,CENTER)
+    
+	call CellVolume(m%grid,V_C)
+	call EdgeVolume(m%grid,V_E)	
+	Etemp = Econd
+	call diagDiv(Econd,V_E,Etemp)
+	call Edge2Cell(m%grid,Etemp,Ctemp)
+	temp = Ctemp
+	call diagMult(V_C,Ctemp,temp)
 
-    ! Now map onto edges, x, y, then z ... first  zero output
-    ! Ex edges: (leave boundary edges set to 0)
-    do ix = 1, nx
-       do iy = 2, ny
-          do iz = Nza+1,Nz
-             izE = iz-Nza
-             Vdr = m%grid%dy(iy)*m%grid%dz(iz)
-             Vdl = m%grid%dy(iy-1)*m%grid%dz(iz)
-             Vur = m%grid%dy(iy)*m%grid%dz(iz-1)
-             Vul = m%grid%dy(iy-1)*m%grid%dz(iz-1)
-             S = Vdr+Vdl+Vur+Vul
-             if(izE.gt.1) then
-                temp(ix,iy,izE-1) = temp(ix,iy,izE-1)+ Econd%x(ix,iy,iz)*Vur/S
-                temp(ix,iy-1,izE-1) = temp(ix,iy-1,izE-1)+Econd%x(ix,iy,iz)*Vul/S
-             endif
-             temp(ix,iy,izE) = temp(ix,iy,izE)+ Econd%x(ix,iy,iz)*Vdr/S
-             temp(ix,iy-1,izE) = temp(ix,iy-1,izE)+Econd%x(ix,iy,iz)*Vdl/S
-          enddo
-       enddo
-     enddo
-
-     ! Ey edges
-     do ix = 2, nx
-        do iy = 1, ny
-           do iz = Nza+1,Nz
-              izE = iz-Nza
-              Vdn = m%grid%dx(ix)*m%grid%dz(iz)
-              Vds = m%grid%dx(ix-1)*m%grid%dz(iz)
-              Vun = m%grid%dx(ix)*m%grid%dz(iz-1)
-              Vus = m%grid%dx(ix-1)*m%grid%dz(iz-1)
-              S = Vdn+Vds+Vun+Vus
-              if(izE.gt.1) then
-	        temp(ix,iy,izE-1) = temp(ix,iy,izE-1)+ Econd%y(ix,iy,iz)*Vun/S
-                temp(ix-1,iy,izE-1) = temp(ix-1,iy,izE-1)+Econd%y(ix,iy,iz)*Vus/S
-              endif
-              temp(ix,iy,izE) = temp(ix,iy,izE)+ Econd%y(ix,iy,iz)*Vdn/S
-              temp(ix-1,iy,izE) = temp(ix-1,iy,izE)+Econd%y(ix,iy,iz)*Vds/S
-           enddo
-        enddo
-      enddo
-
-     ! Ez edges
-     do ix = 2, nx
-        do iy = 2, ny
-           do iz = Nza+1,Nz
-              izE = iz-Nza
-              Vnr = m%grid%dx(ix)*m%grid%dy(iy)
-              Vnl = m%grid%dx(ix)*m%grid%dy(iy-1)
-              Vsr = m%grid%dx(ix-1)*m%grid%dy(iy)
-              Vsl = m%grid%dx(ix-1)*m%grid%dy(iy-1)
-              S =  Vnr+Vnl+Vsr+Vsl
-              temp(ix,iy,izE) = temp(ix,iy,izE)+ Econd%z(ix,iy,iz)*Vnr/S
-              temp(ix,iy-1,izE) = temp(ix,iy-1,izE)+Econd%z(ix,iy,iz)*Vnl/S
-              temp(ix-1,iy,izE) = temp(ix-1,iy,izE)+ Econd%z(ix,iy,iz)*Vsr/S
-              temp(ix-1,iy-1,izE) = temp(ix-1,iy-1,izE)+Econd%z(ix,iy,iz)*Vsl/S
-           enddo
-        enddo
-      enddo
 
     if(m%paramType .EQ. LOGE) then
-       m%cellCond%v = temp*exp(m0%cellCond%v)
+       m%cellCond%v = temp%v(:,:,nzAir+1:nz)*exp(m0%cellCond%v)
     else
-       m%cellCond%v = temp
+       m%cellCond%v = temp%v(:,:,nzAir+1:nz)
     endif
 
     m%zeroValued = .false.
 
-    deallocate(temp)
+	call deall_rscalar(V_C)
+	call deall_rvector(V_E)
+	call deall_rscalar(temp)
+	call deall_rscalar(Ctemp)
+	call deall_rvector(Etemp)
 
   end subroutine EdgeToModelParam
 

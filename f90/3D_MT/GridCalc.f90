@@ -403,7 +403,7 @@ Contains
   ! *************************************************************************
   ! * UNWEIGHTED MAPPING OPERATORS THAT LEAVE ALL BOUNDARY EDGES SET TO ZERO
   ! * (NOTE: most likely, this will also work for multigrid: we would use
-  ! * separate subroutines to set the interior boundaries between subgrids)
+  ! * separate subroutines to map from egdes to multigrid edges and back)
   ! *************************************************************************
 
   ! *************************************************************************
@@ -420,33 +420,44 @@ Contains
 
       call create_rvector(grid, E, EDGE)
 
-      ! face areas are made for all the faces
       ! for x-components
       do ix = 1,grid%nx
          do iy = 2,grid%ny
+            ! special case of upper boundary
+            iz = 1
+            E%x(ix, iy, iz) = (C%v(ix, iy-1, iz) + C%v(ix, iy, iz))/2.0d0
+            ! inside the Earth
             do iz = 2,grid%nz
 
                E%x(ix, iy, iz) = (C%v(ix, iy-1, iz-1) + C%v(ix, iy, iz-1) + &
                                   C%v(ix, iy-1, iz) + C%v(ix, iy, iz))/4.0d0
 
             enddo
+            ! special case of lower boundary
+            iz = grid%nz+1
+            E%x(ix, iy, iz) = (C%v(ix, iy-1, iz-1) + C%v(ix, iy, iz-1))/2.0d0
          enddo
       enddo
 
-      ! face areas are made for all the faces
       ! for y-components
       do ix = 2,grid%nx
          do iy = 1,grid%ny
+            ! special case of upper boundary
+            iz = 1
+            E%y(ix, iy, iz) = (C%v(ix-1, iy, iz) + C%v(ix, iy, iz))/2.0d0
+            ! inside the Earth
             do iz = 2,grid%nz
 
                E%y(ix, iy, iz) = (C%v(ix-1, iy, iz-1) + C%v(ix, iy, iz-1) + &
                                   C%v(ix-1, iy, iz) + C%v(ix, iy, iz))/4.0d0
 
             enddo
+            ! special case of lower boundary
+            iz = grid%nz+1
+            E%y(ix, iy, iz) = (C%v(ix-1, iy, iz-1) + C%v(ix, iy, iz-1))/2.0d0
          enddo
       enddo
 
-      ! face areas are made for all the faces
       ! for z-components
       do ix = 2,grid%nx
          do iy = 2,grid%ny
@@ -474,18 +485,61 @@ Contains
 
       call create_rscalar(grid, C, CENTER)
 
-      ! face areas are made for all the faces
       ! for x-components
       do ix = 1,grid%nx
+         do iy = 2,grid%ny
+            ! special case of upper boundary
+            iz = 1
+            C%v(ix, iy-1, iz) = C%v(ix, iy-1, iz) + E%x(ix, iy, iz)/2.0d0
+            C%v(ix, iy, iz) = C%v(ix, iy, iz) + E%x(ix, iy, iz)/2.0d0
+            ! inside the Earth
+            do iz = 2,grid%nz
+
+               C%v(ix, iy-1, iz-1) = C%v(ix, iy-1, iz-1) + E%x(ix, iy, iz)/4.0d0
+               C%v(ix, iy, iz-1) = C%v(ix, iy, iz-1) + E%x(ix, iy, iz)/4.0d0
+               C%v(ix, iy-1, iz) = C%v(ix, iy-1, iz) + E%x(ix, iy, iz)/4.0d0
+               C%v(ix, iy, iz) = C%v(ix, iy, iz) + E%x(ix, iy, iz)/4.0d0
+
+            enddo
+            ! special case of lower boundary
+            iz = grid%nz+1
+            C%v(ix, iy-1, iz-1) = C%v(ix, iy-1, iz-1) + E%x(ix, iy, iz)/2.0d0
+            C%v(ix, iy, iz-1) = C%v(ix, iy, iz-1) + E%x(ix, iy, iz)/2.0d0
+         enddo
+      enddo
+
+      ! for y-components
+      do ix = 2,grid%nx
          do iy = 1,grid%ny
+            ! special case of upper boundary
+            iz = 1
+            C%v(ix-1, iy, iz) = C%v(ix-1, iy, iz) + E%y(ix, iy, iz)/2.0d0
+            C%v(ix, iy, iz) = C%v(ix, iy, iz) + E%y(ix, iy, iz)/2.0d0
+            ! inside the Earth
+            do iz = 2,grid%nz
+
+               C%v(ix-1, iy, iz-1) = C%v(ix-1, iy, iz-1) + E%y(ix, iy, iz)/4.0d0
+               C%v(ix, iy, iz-1) = C%v(ix, iy, iz-1) + E%y(ix, iy, iz)/4.0d0
+               C%v(ix-1, iy, iz) = C%v(ix-1, iy, iz) + E%y(ix, iy, iz)/4.0d0
+               C%v(ix, iy, iz) = C%v(ix, iy, iz) + E%y(ix, iy, iz)/4.0d0
+
+            enddo
+            ! special case of lower boundary
+            iz = grid%nz+1
+            C%v(ix-1, iy, iz-1) = C%v(ix-1, iy, iz-1) + E%y(ix, iy, iz)/2.0d0
+            C%v(ix, iy, iz-1) = C%v(ix, iy, iz-1) + E%y(ix, iy, iz)/2.0d0
+         enddo
+      enddo
+
+      ! for z-components
+      do ix = 2,grid%nx
+         do iy = 2,grid%ny
             do iz = 1,grid%nz
 
-               C%v(ix, iy, iz) = (E%x(ix, iy, iz) + E%x(ix, iy, iz+1) + &
-                                  E%x(ix, iy+1, iz) + E%x(ix, iy+1, iz+1) + &
-                                  E%y(ix, iy, iz) + E%y(ix+1, iy, iz) + &
-                                  E%y(ix, iy, iz+1) + E%y(ix+1, iy, iz+1) + &
-                                  E%z(ix, iy, iz) + E%z(ix+1, iy, iz) + &
-                                  E%z(ix, iy+1, iz) + E%z(ix+1, iy+1, iz))/12.0d0
+               C%v(ix-1, iy-1, iz) = C%v(ix-1, iy-1, iz) + E%z(ix, iy, iz)/4.0d0
+               C%v(ix-1, iy, iz) = C%v(ix-1, iy, iz) + E%z(ix, iy, iz)/4.0d0
+               C%v(ix, iy-1, iz) = C%v(ix, iy-1, iz) + E%z(ix, iy, iz)/4.0d0
+               C%v(ix, iy, iz) = C%v(ix, iy, iz) + E%z(ix, iy, iz)/4.0d0
 
             enddo
          enddo

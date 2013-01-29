@@ -87,6 +87,7 @@ module sg_vector
   ! pointwise real-complex (mixed) division of edge/ face nodes
   ! Both are vector data types
   INTERFACE diagDiv
+     module procedure diagDiv_rvector
      module procedure diagDiv_rcvector
      module procedure diagDiv_crvector
   END INTERFACE
@@ -2133,9 +2134,53 @@ Contains
 
   end function diagMult_rcvector_f ! diagMult_rcvector_f
 
+  !****************************************************************************
+  ! diagDiv_rvector divides real vector E1 with real vector E2
+  ! stored as derived type rvector pointwise; subroutine version
+  ! E3 can overwrite E1 or E2
+  subroutine diagDiv_rvector(E1, E2, E3)
+
+    implicit none
+    type (rvector), intent(in)               :: E1
+    type (rvector), intent(in)               :: E2
+    type (rvector), intent(inout)            :: E3
+
+    if((.not.E1%allocated).or.(.not.E2%allocated)) then
+       write(0,*) 'RHS not allocated yet for diagDiv_rvector'
+       return
+    endif
+
+    ! check to see if LHS (E3) is active (allocated)
+    if(.not.E3%allocated) then
+       write(0,*) 'LHS was not allocated for diagDiv_rvector'
+    else
+
+       ! Check whether all the vector nodes are of the same size
+       if((E1%nx == E2%nx).and.(E1%ny == E2%ny).and.(E1%nz == E2%nz).and. &
+            (E1%nx == E3%nx).and.(E1%ny == E3%ny).and.(E1%nz == E3%nz)) then
+
+          if ((E1%gridType == E2%gridType).and.(E1%gridType == E3%gridType)) then
+
+             ! pointwise division for x,y,z-components
+             E3%x = E1%x / E2%x
+             E3%y = E1%y / E2%y
+             E3%z = E1%z / E2%z
+
+          else
+             write (0, *) 'not compatible usage for diagDiv_rvector'
+          end if
+
+       else
+
+          write(0, *) 'Error:diagDiv_rvector: vectors not same size'
+
+       end if
+    end if
+
+  end subroutine diagDiv_rvector ! diagDiv_rvector
 
   !****************************************************************************
-  ! diagDiv_crvector divides complex vector E1 with scalar vector E2
+  ! diagDiv_crvector divides complex vector E1 with real vector E2
   ! stored as derived type cvector pointwise; subroutine version
   ! E3 can overwrite E1 or E2
   subroutine diagDiv_crvector(E1, E2, E3)
