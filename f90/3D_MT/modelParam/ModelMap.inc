@@ -273,16 +273,16 @@
     real(kind=prec)           :: r
 
     ! local variables
-    integer		:: izE,nx,ny,nz,nZE,nZa
+    integer		:: izE,nx,ny,nz,nzEarth,nzAir
     real(kind=prec)           :: w11,w21,w12,w22,S,temp(2,2)
 
     nx = m%Nx
     ny = m%Ny
-    nz = m%grid%nZ
-    nZE = m%nZEarth
-    nZa = Nz-nZE
+    nz = m%grid%nz
+    nzEarth = m%nzEarth
+    nzAir = nz-nzEarth
 
-    izE = iz-Nza
+    izE = iz-nzAir
     selectcase(xyz)
     case(1)		 ! Ex edge
        w11 = m%grid%dy(iy)*m%grid%dz(iz)
@@ -298,7 +298,7 @@
           temp = exp(temp)
        endif
        if(izE.eq.1) then
-          r = (temp(1,1)*w11+temp(1,2)*w21)/S
+          r = (temp(1,1)*w11+temp(2,1)*w21)/S
        else
           r = (temp(1,1)*w11 + temp(2,1)*w21+    &
                temp(1,2)*w12 + temp(2,2)*w22)/S
@@ -318,7 +318,7 @@
           temp = exp(temp)
        endif
        if(izE.eq.1) then
-          r = (temp(1,1)*w11+temp(1,2)*w21)/S
+          r = (temp(1,1)*w11+temp(2,1)*w21)/S
        else
           r = (temp(1,1)*w11 + temp(2,1)*w21+ &
                temp(1,2)*w12 + temp(2,2)*w22)/S
