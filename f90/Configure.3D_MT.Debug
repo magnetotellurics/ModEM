@@ -6,7 +6,12 @@ fi
 if [ -e $1 ]; then
     rm $1
 fi
-perl fmkmf.pl -f90 pgf95 -opt '-g -Mbounds -Mconcur -mp' -mpi '-Mpreprocess' \
--l '-L/usr/lib64 -llapack -lblas -lpgftnrtl -Mconcur -mp' -o './objs/3D_MT/Debug' \
+
+perl fmkmf.pl -f90 ifort \
+-opt '-debug all -debug extended -traceback -check bounds -heap-arrays' \
+-mpi '-cpp' \
+-o './objs/3D_MT/Debug' \
+-l '-lmkl_lapack -lmkl_intel_lp64 -lmkl_intel_thread -lmkl_core  -lpthread -openmp -parallel' \
+-lp '/usr/local/intel/mkl/lib/em64t' \
 -p .:INV:LAPACK:SENS:UTILS:FIELDS/FiniteDiff3D:3D_MT:3D_MT/DICT:3D_MT/modelParam:3D_MT/FWD:3D_MT/FWD/Mod2d:3D_MT/ioMod \
 Mod3DMT.f90 > $1

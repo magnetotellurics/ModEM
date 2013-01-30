@@ -1139,12 +1139,15 @@
            if (e1%mgridSize == e2%mgridSize) then
              allocate(ctemp(e1%mgridSize))
 
-             do imgrid = 1, e1%mgridSize
+             do imgrid = 1, e1%mgridSize-1
                ! delete duplicate edges
                e3%cvarray(imgrid)%x(:,:,e1%cvarray(imgrid)%nz+1) = C_ZERO
                e3%cvarray(imgrid)%y(:,:,e1%cvarray(imgrid)%nz+1) = C_ZERO
                ctemp(imgrid) = dotProd(e3%cvArray(imgrid), e2%cvArray(imgrid)) !dotProd_cvector_f
              enddo
+             ! treat the lower boundary separately
+             imgrid = e1%mgridSize
+             ctemp(imgrid) = dotProd(e3%cvArray(imgrid), e2%cvArray(imgrid)) !dotProd_cvector_f
           else
             write(0,*) 'Error :: dotProd_cvector_mg_f: e1 and e2 not the same subgrids'
           end if

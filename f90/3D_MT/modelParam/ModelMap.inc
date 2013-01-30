@@ -85,200 +85,94 @@
   end subroutine dModelParamToEdge
 
   !**********************************************************************
-  ! subroutine for destribution the model parameters to edges of multigrid
-  ! arithmetic averaging of the m.p. for coarser grid
-  ! LINEARIZED MAPPING case need to be checked
 
-    subroutine ModelParamtoEdge(m, Econd,m0)
+  subroutine ModelParamToEdge(m, Econd,m0)
+  !  Maps conductivity defined on grid cells (prisms) to edge-nodes ... this
+  !   can be used for both non-linear and linearized mappings when
+  !   paramtype = LOGE.  In this case, if optional argument m0 is present
+  !   the linearized mapping is used; otherwise the non-linear mappring is used.
+  !   If paramtype = LINEAR (linear conductivity) then the same linear mapping
+  !   is done in whether m0 is present or not (and in fact, m0 is not referenced
+  !   in this case)
+  !  NOTE: there is a subtlty (and possible source of error) associated with
+  !   treatement of air conductivity.  This is (in the present implementation)
+  !   viewed as a non-adjustable parameter, but when this routine is called for
+  !   the full (i.e., in general non-linear) mapping it must set the edges
+  !   in the air to airCond.  On the other hand, when called to implement the
+  !   linearization (i.e., to map perturbations in the model parameter) it
+  !   should leave air edges set to zero.  WHen the conductivity mapping is
+  !   linear, there is no way to distinguish between whether this is a linear
+  !   mapping of the perturbation, or the full linear mapping.
+  !   One should thus set airCond in perturbations to zero (or they will
+  !   be propagated to perturbation in the air edges, only for the linear
+  !   model parameter case).
 
     implicit none
     !  INPUTS:  model parameter
-    type(modelParam_t), intent(in)  :: m
-    !  OUTPUTS: conductivities on edge nodes of multigrids, as needed for FD calc.
-    ! stored as rvector_mg; allocate Econd before calling; Econd on multigrid
-    type(rvector_mg), intent(inout)  :: Econd
+    type(modelParam_t), intent(in)            :: m
+    !  OUTPUTS: conductivities on edge nodes, as needed for FD calc.
+    !    stored as rvector; allocate Econd before calling
+    type(rvector_mg), intent(inout)         :: Econd
     !   OPTIONAL INPUT: background model parameter for linearization
-    type(modelParam_t), optional, intent(in)  :: m0
-
+    type(modelParam_t), optional, intent(in)	:: m0
 
     !   LOCAL Variables
-    integer  :: imgrid, ix, iy, ic, icx, icy, izE, iz, izv
-    integer  :: nx,ny,nz,nzAir, nzCum
-    integer  :: ccoeff_current,mgridSize
-    integer  :: status
+    type(rscalar)  :: temp,Ctemp,V_C
+    type(rvector)  :: Etemp,V_E
+    integer		:: ix,iy,iz,ize,nx,ny,nz,nzEarth,nzAir
     logical		:: linearizedMapping
-    ! the prefix V are the volumes S is total over surrounding cells
-    !   common sides are ommited from volume calculation
-    real(kind=prec)  :: Vdr,Vdl,Vur,Vul,S
-    real(kind=prec)  :: Vdn,Vds,Vun,Vus
-    real(kind=prec)  :: Vnr,Vnl,Vsr,Vsl
-    real(kind=prec)  ::airCond
-    real(kind=prec),pointer,dimension(:,:,:)	:: temp ! x,y,z
-    real(kind=prec),pointer,dimension(:,:,:)    :: v,v0 ! x,y,z
-
+    real(kind=prec)   :: airCond
+ 
     linearizedMapping = present(m0)
 
-    ! model parameters must be allocated
-      if (.not. m%allocated) then
-        write(0,*) 'input model parameter in ModelParamToEdgeMG not allocated yet'
-        stop
-      end if
+    if (.not. m%allocated) then
+      write(0,*) 'input model parameter in ModelParamToEdge not allocated yet'
+      stop
+    end if
 
-    ! allocate Econd for multigrid
-      if (.not. Econd%allocated) then
-        call create(m%grid,Econd,EDGE) !create_rvector_mg
-      end if
+    if (.not. Econd%allocated) then
+      call create_rvector_mg(m%grid,Econd,EDGE)
+    end if
 
-      allocate(v(m%grid%nx, m%grid%ny, 0:m%grid%nzEarth+1))
-      allocate(temp(m%grid%nx, m%grid%ny, 0:m%grid%nzEarth+1))
-      airCond = m%airCond
-      nzCum = 0
+    ! Could add code to check whether the bounds are the same ...
 
-      v(:,:,1:m%grid%nzEarth) = m%cellCond%v(:,:,:)
-      v(:,:,0) = R_ZERO
-      v(:,:,m%grid%nzEarth+1) = R_ZERO
-      
-      if (linearizedMapping) then
-	      allocate(v0(m%grid%nx, m%grid%ny, 0:m%grid%nzEarth+1))
-	      v0(:,:,1:m%grid%nzEarth) = m0%cellCond%v(:,:,:)
-	      v0(:,:,0) = R_ZERO
-	      v0(:,:,m%grid%nzEarth+1) = R_ZERO
-      end if
+    nx = m%Nx
+    ny = m%Ny
+    nz = m%grid%nz
+    nzEarth = m%nzEarth
+    nzAir = nz-nzEarth
 
-      do imgrid = 1, m%grid%mgridSize ! Global loop over sub-grids
-        temp = R_ZERO
-        nx = m%grid%gridArray(imgrid)%nx ! nx of the current subgrid
-        ny = m%grid%gridArray(imgrid)%ny ! ny
-        nz = m%grid%gridArray(imgrid)%nz ! nz = nzEarth+nzAir
-        nzAir = m%grid%gridArray(imgrid)%nzAir
-        ccoeff_current = 2**m%grid%coarseness(imgrid)
-        do iz = nzAir,nz+1
-           if(nzAir == nz) cycle
-           izE = iz - nzAir
-           izv = izE + nzCum
-          do iy = 1, ny
-            do ix = 1, nx
-              do icy = 1, ccoeff_current
-                do icx = 1, ccoeff_current
-                  temp(ix,iy,izE) = temp(ix,iy,izE) + v(ccoeff_current*(ix-1)+icx, ccoeff_current*(iy-1)+icy,izv)
-                enddo ! icx
-              enddo ! icy
-              temp(ix,iy,izE) = temp(ix,iy,izE)/ccoeff_current**2
-            enddo ! nx
-          enddo ! ny
-        enddo ! nz
+    airCond = m%airCond
+    call create_rscalar(m%grid,temp,CENTER)
+    call setup_grid(temp%grid)
 
-        if(m%paramType .EQ. LOGE) then
-          if(linearizedMapping) then
-            do iz = nzAir,nz+1
-               izE = iz - nzAir
-               izv = izE + nzCum
-              do iy = 1, ny
-                do ix = 1, nx
-                   temp(ix,iy,izE)= temp(ix,iy,izE)*exp(v0(ccoeff_current*(ix-1)+1, ccoeff_current*(iy-1)+1,izv))
-                enddo
-              enddo
-            enddo
-            airCond = R_ZERO
-         else
-
-          temp = exp(temp)
+    if(m%paramType .EQ. LOGE) then
+       if(linearizedMapping) then
+          temp%v(:,:,nzAir+1:nz) = m%cellCond%v*exp(m0%cellCond%v)
+          airCond = R_ZERO
+          temp%v(:,:,1:nzAir) = airCond
+       else
+          temp%v(:,:,nzAir+1:nz) = exp(m%cellCond%v)
           airCond = exp(m%airCond)
-         endif
+          temp%v(:,:,1:nzAir) = airCond
        endif
+    endif
 
-       ! Ex edges
-        Econd%rvArray(imgrid)%x = 0.0
-        do ix =1 ,nx
-          do iy = 2,ny
-            do iz = nzAir+1, nz+1
-               izE = iz-nzAir
-               izv = izE + nzCum+m%grid%nzAir
-              Vdr = m%grid%gridArray(imgrid)%dy(iy)*m%grid%dz(izv)
-              Vdl = m%grid%gridArray(imgrid)%dy(iy-1)*m%grid%dz(izv)
-              Vur = m%grid%gridArray(imgrid)%dy(iy)*m%grid%dz(izv-1)
-              Vul = m%grid%gridArray(imgrid)%dy(iy-1)*m%grid%dz(izv-1)
-              S = Vdr+Vdl+Vur+Vul
-              if(izE.eq.1.and.nzAir.ne.0) then
-                Econd%rvArray(imgrid)%x(ix,iy,iz) = (temp(ix,iy,izE)*Vdr + &
-                                    temp(ix,iy-1,izE)*Vdl)/S
-              else
-                Econd%rvArray(imgrid)%x(ix,iy,iz) = (temp(ix,iy,izE)*Vdr + &
-                                   temp(ix,iy-1,izE)*Vdl + &
-                                   temp(ix,iy  ,izE-1)*Vur + &
-                                   temp(ix,iy-1,izE-1)*Vul)/S
-                endif
-            enddo
-            do iz = 1,nzAir
-              Econd%rvArray(imgrid)%x(ix,iy,iz) = airCond
-            enddo
-          enddo
-        enddo
+	call CellVolume(m%grid,V_C)
+	call EdgeVolume(m%grid,V_E)	
+	Ctemp = temp
+	call diagMult(V_C,temp,Ctemp)
+	call Cell2Edge(m%grid,Ctemp,Etemp)
+	call diagDiv(Etemp,V_E,Etemp)
+	Econd = Etemp ! copy_rvector2mg
 
-        ! Ey edges
-        Econd%rvArray(imgrid)%y = 0.0
-        do ix = 2, nx
-          do iy = 1, ny
-             do iz = nzAir+1,nz+1
-                izE = iz-nzAir
-                izv = izE + nzCum + m%grid%nzAir
-               Vdn = m%grid%gridArray(imgrid)%dx(ix)*m%grid%dz(izv)
-               Vds = m%grid%gridArray(imgrid)%dx(ix-1)*m%grid%dz(izv)
-               Vun = m%grid%gridArray(imgrid)%dx(ix)*m%grid%dz(izv-1)
-               Vus = m%grid%gridArray(imgrid)%dx(ix-1)*m%grid%dz(izv-1)
-               S = Vdn+Vds+Vun+Vus
-               if(izE.eq.1.and. nzAir.ne.0) then
-                  Econd%rvArray(imgrid)%y(ix,iy,iz) = (temp(ix,iy,izE)*Vdn + &
-                                     temp(ix-1,iy,izE)*Vds)/S
-               else
-                  Econd%rvArray(imgrid)%y(ix,iy,iz) = (temp(ix,iy,izE)*Vdn + &
-                                      temp(ix-1,iy,izE)*Vds + &
-                                      temp(ix,iy  ,izE-1)*Vun + &
-                                      temp(ix-1,iy,izE-1)*Vus)/S
-               endif
-             enddo
-             do iz = 1,nzAir
-                  Econd%rvArray(imgrid)%y(ix,iy,iz) = airCond
-             enddo
-           enddo
-        enddo
+	call deall_rscalar(V_C)
+	call deall_rvector(V_E)
+	call deall_rscalar(temp)
+	call deall_rscalar(Ctemp)
+	call deall_rvector(Etemp)
 
-         ! Ez edges
-         Econd%rvArray(imgrid)%z = 0.0
-         do ix = 2, nx
-            do iy = 2, ny
-               do iz = nzAir+1,nz
-                  izE = iz-nzAir
-                  Vnr = m%grid%gridArray(imgrid)%dx(ix)*m%grid%gridArray(imgrid)%dy(iy)
-                  Vnl = m%grid%gridArray(imgrid)%dx(ix)*m%grid%gridArray(imgrid)%dy(iy-1)
-                  Vsr = m%grid%gridArray(imgrid)%dx(ix-1)*m%grid%gridArray(imgrid)%dy(iy)
-                  Vsl = m%grid%gridArray(imgrid)%dx(ix-1)*m%grid%gridArray(imgrid)%dy(iy-1)
-                  S =  Vnr+Vnl+Vsr+Vsl
-                  Econd%rvArray(imgrid)%z(ix,iy,iz) = (temp(ix,iy,izE)*Vnr + &
-                                      temp(ix,iy-1,izE)*Vnl + &
-                                      temp(ix-1,iy  ,izE)*Vsr + &
-                                      temp(ix-1,iy-1,izE)*Vsl)/S
-               enddo
-              do iz = 1,nzAir
-                  Econd%rvArray(imgrid)%z(ix,iy,iz) = airCond
-               enddo
-            enddo
-          enddo
-       nzCum = nzCum + m%grid%gridArray(imgrid)%nzEarth
-      enddo ! Global loop over sub-grids
-
-        Econd%rvArray(m%grid%mgridSize)%x(:,:,m%grid%gridArray(m%grid%mgridSize)%nz+1) = &
-        Econd%rvArray(m%grid%mgridSize)%x(:,:,m%grid%gridArray(m%grid%mgridSize)%nz)
-        Econd%rvArray(m%grid%mgridSize)%y(:,:,m%grid%gridArray(m%grid%mgridSize)%nz+1) = &
-        Econd%rvArray(m%grid%mgridSize)%y(:,:,m%grid%gridArray(m%grid%mgridSize)%nz)
-
-
-      deallocate(temp,stat=status)
-      deallocate(v,stat=status)
-      if (linearizedMapping) then
-      	deallocate(v0,stat=status)
-      end if
-    end subroutine ModelParamtoEdge
+  end subroutine ModelParamToEdge
 
 ! ***********************************************************************
   subroutine dEdgeToModelParam(Econd,m,m0)
@@ -315,15 +209,9 @@
     type(modelParam_t), optional, intent(in)  :: m0
 
     !   LOCAL Variables
-    integer  :: ix,iy,iz,ize,izv,imgrid,ic
-    integer  :: nx,ny,nz,nzE,nzAir,nzCum, ccoeff_current
-    integer  :: status
-    ! the prefix V are the volumes S is total over surrounding cells
-    !   common sides are ommited from volume calculation
-    real(kind=prec)  :: Vdr,Vdl,Vur,Vul,S
-    real(kind=prec)  :: Vdn,Vds,Vun,Vus
-    real(kind=prec)  :: Vnr,Vnl,Vsr,Vsl
-    real(kind=prec),pointer,dimension(:,:,:)  :: temp
+    type(rscalar)  :: temp,Ctemp,V_C
+    type(rvector)  :: Etemp,V_E
+    integer		:: ix,iy,iz,ize,nx,ny,nz,nzEarth,nzAir
 
 
       if ((.not.m%allocated).or.(.not.Econd%allocated)) then
@@ -335,104 +223,42 @@
         call errStop('Background conductivity required for paramType LOGE in EdgeToModelParamMG')
       endif
 
-      ! Could add code to check whether the bounds are the same ...
+    ! Could add code to check whether the bounds are the same ...
 
-      allocate(temp(m%grid%nx,m%grid%ny,0:m%grid%nzEarth+1))
-      ! Now map onto edges, x, y, then z ... first  zero output
-      nzCum = 0
-      do imgrid = 1,m%grid%mgridSize  ! Global loop over subgrids
-        temp = R_ZERO
-        nx = m%grid%gridArray(imgrid)%nx ! nx of the current subgrid
-        ny = m%grid%gridArray(imgrid)%ny ! ny
-        nz = m%grid%gridArray(imgrid)%nz ! nz = nzEarth+nzAir
-        nzAir = m%grid%gridArray(imgrid)%nzAir
-        ccoeff_current = 2**m%grid%coarseness(imgrid)
-        if(nzAir /= nz) then ! Do nothing for Air
-          ! Ex edges: (leave boundary edges set to 0)
-          do ix = 1, nx
-            do iy = 2, ny
-              do iz = nzAir+1,nz+1
-                 izE = iz-nzAir
-                 izv = izE + nzCum+ m%grid%nzAir
-                 Vdr = m%grid%gridArray(imgrid)%dy(iy)*m%grid%dz(izv)
-                 Vdl = m%grid%gridArray(imgrid)%dy(iy-1)*m%grid%dz(izv)
-                 Vur = m%grid%gridArray(imgrid)%dy(iy)*m%grid%dz(izv-1)
-                 Vul = m%grid%gridArray(imgrid)%dy(iy-1)*m%grid%dz(izv-1)
-                 S = Vdr+Vdl+Vur+Vul
-                 !if(izE.gt.1) then
-                    temp(ix,iy,izE-1) = temp(ix,iy,izE-1)+ Econd%rvArray(imgrid)%x(ix,iy,iz)*Vur/S
-                    temp(ix,iy-1,izE-1) = temp(ix,iy-1,izE-1)+Econd%rvArray(imgrid)%x(ix,iy,iz)*Vul/S
-                 !endif
-                 temp(ix,iy,izE) = temp(ix,iy,izE)+ Econd%rvArray(imgrid)%x(ix,iy,iz)*Vdr/S
-                 temp(ix,iy-1,izE) = temp(ix,iy-1,izE)+Econd%rvArray(imgrid)%x(ix,iy,iz)*Vdl/S
-              enddo ! iz
-            enddo ! iy
-          enddo ! ix
+    nx = m%Nx
+    ny = m%Ny
+    nz = m%grid%nz
+    nzEarth = m%nzEarth
+    nzAir = nz-nzEarth
 
-          ! Ey edges
-          do ix = 2, nx
-            do iy = 1, ny
-               do iz = nzAir+1,nz+1
-                  izE = iz-nzAir
-                  izv = izE + nzCum+ m%grid%nzAir
-                  Vdn = m%grid%gridArray(imgrid)%dx(ix)*m%grid%dz(izv)
-                  Vds = m%grid%gridArray(imgrid)%dx(ix-1)*m%grid%dz(izv)
-                  Vun = m%grid%gridArray(imgrid)%dx(ix)*m%grid%dz(izv-1)
-                  Vus = m%grid%gridArray(imgrid)%dx(ix-1)*m%grid%dz(izv-1)
-                  S = Vdn+Vds+Vun+Vus
-                  !if(izE.gt.1) then
-                    temp(ix,iy,izE-1) = temp(ix,iy,izE-1)+ Econd%rvArray(imgrid)%y(ix,iy,iz)*Vun/S
-                    temp(ix-1,iy,izE-1) = temp(ix-1,iy,izE-1)+Econd%rvArray(imgrid)%y(ix,iy,iz)*Vus/S
-                  !endif
-                  temp(ix,iy,izE) = temp(ix,iy,izE)+ Econd%rvArray(imgrid)%y(ix,iy,iz)*Vdn/S
-                  temp(ix-1,iy,izE) = temp(ix-1,iy,izE)+Econd%rvArray(imgrid)%y(ix,iy,iz)*Vds/S
-               enddo
-             enddo
-           enddo
+    call create_rscalar(Econd%grid,temp,CENTER)
+    call create_rvector(Econd%grid,Etemp,EDGE)    
+        
+	call CellVolume(m%grid,V_C)
+	call EdgeVolume(m%grid,V_E)	
+	Etemp = Econd ! copy_mg2rvector
+	call diagDiv(Etemp,V_E,Etemp)
+	call Edge2Cell(m%grid,Etemp,Ctemp)
+	temp = Ctemp
+	call diagMult(V_C,Ctemp,temp)
 
-           ! Ez edges
-           do ix = 2, nx
-            do iy = 2, ny
-               do iz = nzAir+1,nz
-                  izE = iz-nzAir
-                  Vnr = m%grid%gridArray(imgrid)%dx(ix)*m%grid%gridArray(imgrid)%dy(iy)
-                  Vnl = m%grid%gridArray(imgrid)%dx(ix)*m%grid%gridArray(imgrid)%dy(iy-1)
-                  Vsr = m%grid%gridArray(imgrid)%dx(ix-1)*m%grid%gridArray(imgrid)%dy(iy)
-                  Vsl = m%grid%gridArray(imgrid)%dx(ix-1)*m%grid%gridArray(imgrid)%dy(iy-1)
-                  S =  Vnr+Vnl+Vsr+Vsl
-                  temp(ix,iy,izE) = temp(ix,iy,izE)+ Econd%rvArray(imgrid)%z(ix,iy,iz)*Vnr/S
-                  temp(ix,iy-1,izE) = temp(ix,iy-1,izE)+Econd%rvArray(imgrid)%z(ix,iy,iz)*Vnl/S
-                  temp(ix-1,iy,izE) = temp(ix-1,iy,izE)+ Econd%rvArray(imgrid)%z(ix,iy,iz)*Vsr/S
-                  temp(ix-1,iy-1,izE) = temp(ix-1,iy-1,izE)+Econd%rvArray(imgrid)%z(ix,iy,iz)*Vsl/S
-               enddo
-            enddo
-           enddo
 
-          !Store temp on subgrids to model parameters on the finnest grid, where m is defined
-           do iz = 1,nz
-              izv = iz+nzCum
-             do iy =1 ,ny
-               do ix = 1, nx
-                do ic = 1, ccoeff_current
-                  if(m%paramType .eq. LOGE) then
-                    m%cellCond%v(ccoeff_current*(ix-1)+ic,ccoeff_current*(iy-1)+ic,izv) = temp(ix,iy,iz) &
-                    *exp(m0%cellCond%v(ccoeff_current*(ix-1)+ic,ccoeff_current*(iy-1)+ic,izv))
-                  else
-                    m%cellCond%v(ccoeff_current*(ix-1)+ic,ccoeff_current*(iy-1)+ic,izv) = temp(ix,iy,iz)
-                  endif
-                enddo ! ic
-               enddo !ix
-              enddo ! iy
-            enddo !iz
-        endif ! Do nothing for Air
-        nzCum = nzCum + m%grid%gridArray(imgrid)%nzEarth
+    if(m%paramType .EQ. LOGE) then
+       m%cellCond%v = temp%v(:,:,nzAir+1:nz)*exp(m0%cellCond%v)
+    else
+       m%cellCond%v = temp%v(:,:,nzAir+1:nz)
+    endif
 
-      enddo ! Global loop over subgrids
+    m%zeroValued = .false.
 
-        m%zeroValued = .false.
-
-        deallocate(temp, stat=status)
-      end subroutine EdgeToModelParam
+	call deall_rscalar(V_C)
+	call deall_rvector(V_E)
+	call deall_rscalar(temp)
+	call deall_rscalar(Ctemp)
+	call deall_rvector(Etemp)
+	  
+  end subroutine EdgeToModelParam
+      
   ! *********************************************************************
   function ModelParamToOneEdge(m,xyz,is,ix,iy,iz) result(r)
 

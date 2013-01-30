@@ -19,7 +19,7 @@ module ModelSpace
 !    ModelParamToCell, ModelParamToEdge, EdgeToModelParam,
 !    QtoModelParam, sigC
 
-  use griddef
+  use gridcalcmg
   use file_units
   use math_constants
   use utilities

@@ -18,7 +18,7 @@
 
       use math_constants
       use utilities
-      use gridcalc             ! staggered grid definitions
+      use gridcalcmg           ! staggered grid definitions
       use sg_vector            ! generic routines for vector operations on the
       use sg_vector_mg
       use sg_boundary
@@ -2235,7 +2235,7 @@
 
         ! initialize volume weights centered at corners
         Call create(mGrid, volC, CORNER)
-        Call CornerVolume(mGrid, volC)
+        Call NodeVolume(mGrid, volC)
 
        end subroutine DivCorrInit  ! DivCorrInit Multigrid case
 
