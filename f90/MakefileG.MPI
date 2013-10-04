@@ -3,9 +3,10 @@
 # with command line options
 # -p .:INV:MPI:UTILS:FIELDS/FiniteDiff3D:EARTH:SENS:EARTH/DICT:EARTH/modelParam:EARTH/FWD:EARTH/ioMod:EARTH/Basics:EARTH/Jacobian
 # -f90 mpif90 (compiler)
-# -opt -O2 (compiler optimisation)
-# -l -L/usr/lib64 -llapack -lblas -lpgftnrtl (linking options)
-# -o ./objs/EARTH/MPIRelease (output directory for object files)
+# -opt -O3 -fastsse -mp -tp=istanbul-64 (compiler optimisation)
+# -lp ${PGI}/linux86-64/current/lib (linking options: path to libraries)
+# -l -llapack -lblas -lpgftnrtl (linking options)
+# -o ./objs/3D_MT/PGIRelease (output directory for object files)
 
 #  Uncomment these lines to make program for Solaris OS (legacy)
 # F90 = f90
@@ -43,12 +44,13 @@
 
 # ------------------Macro-Defs---------------------
 include Makefile.local
-OBJDIR = ./objs/EARTH/MPIRelease
+OBJDIR = ./objs/3D_MT/PGIRelease
 F90 = mpif90 
-FFLAGS = -O2
+FFLAGS = -O3 -fastsse -mp -tp=istanbul-64
 MPIFLAGS = -Bstatic  -Mipa=fast  -Mextend  -Kieee -Mpreprocess -DMPI
 MODULE = -module $(OBJDIR)
-LIBS = -L/usr/lib64 -llapack -lblas -lpgftnrtl
+LIBS_PATH = -L${PGI}/linux86-64/current/lib
+LIBS = -llapack -lblas -lpgftnrtl
 
 # -------------------End-macro-Defs---------------------------
 OBJ = $(OBJDIR)/math_constants.o $(OBJDIR)/utilities.o $(OBJDIR)/DataSpace.o $(OBJDIR)/file_units.o $(OBJDIR)/GridDef.o $(OBJDIR)/sg_scalar.o $(OBJDIR)/polpak.o $(OBJDIR)/paramfunc.o $(OBJDIR)/modeldef.o $(OBJDIR)/iotypes.o $(OBJDIR)/UserData.o $(OBJDIR)/MPI_declaration.o $(OBJDIR)/model_operators.o $(OBJDIR)/modelmap.o $(OBJDIR)/ModelSpace.o $(OBJDIR)/SensMatrix.o $(OBJDIR)/sg_vector.o $(OBJDIR)/sg_boundary.o $(OBJDIR)/sg_sparse_vector.o $(OBJDIR)/transmitters.o $(OBJDIR)/receivers.o $(OBJDIR)/SolnSpace.o $(OBJDIR)/dataTypes.o $(OBJDIR)/functionals.o $(OBJDIR)/responses.o $(OBJDIR)/DataFunc.o $(OBJDIR)/DataSens.o $(OBJDIR)/elements.o $(OBJDIR)/dimensions.o $(OBJDIR)/sg_spherical.o $(OBJDIR)/wrapper.o $(OBJDIR)/field_vectors.o $(OBJDIR)/iospec.o $(OBJDIR)/coreFwd.o $(OBJDIR)/maxwells.o $(OBJDIR)/ringcurrent.o $(OBJDIR)/initFields.o $(OBJDIR)/boundaries.o $(OBJDIR)/jacobian.o $(OBJDIR)/dataMisfit.o $(OBJDIR)/output.o $(OBJDIR)/SolverSens.o $(OBJDIR)/input.o $(OBJDIR)/field1d.o $(OBJDIR)/ForwardSolver.o $(OBJDIR)/SensComp.o $(OBJDIR)/SymmetryTest.o $(OBJDIR)/datadef.o $(OBJDIR)/global.o $(OBJDIR)/grid_orig.o $(OBJDIR)/DataIO.o $(OBJDIR)/Main.o $(OBJDIR)/MPI_sub.o $(OBJDIR)/MPI_main.o $(OBJDIR)/NLCG.o $(OBJDIR)/interp_orig.o $(OBJDIR)/output_orig.o $(OBJDIR)/Global3D.o 
@@ -58,7 +60,7 @@ all: Global3D
 
 # Here is the link step 
 Global3D: $(OBJDIR) $(OBJ) 
-	 $(F90) -o $(OUTDIR)/Global3D_MPI $(OBJ) $(LIBS) 
+	 $(F90) -o $(OUTDIR)/Global3D $(OBJ) $(LIBS) $(LIBS_PATH)
 
 # Here are the compile steps 
 
@@ -86,7 +88,7 @@ $(OBJDIR)/sg_scalar.o:FIELDS/FiniteDiff3D/sg_scalar.f90 $(OBJDIR)/math_constants
 $(OBJDIR)/polpak.o:UTILS/polpak.f90  
 	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) UTILS/polpak.f90 -o $(OBJDIR)/polpak.o
 
-$(OBJDIR)/paramfunc.o:EARTH/modelParam/paramfunc.f90 $(OBJDIR)/polpak.o 
+$(OBJDIR)/paramfunc.o:EARTH/modelParam/paramfunc.f90 $(OBJDIR)/polpak.o $(OBJDIR)/GridDef.o 
 	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) EARTH/modelParam/paramfunc.f90 -o $(OBJDIR)/paramfunc.o
 
 $(OBJDIR)/modeldef.o:EARTH/modelParam/modeldef.f90 $(OBJDIR)/sg_scalar.o $(OBJDIR)/GridDef.o $(OBJDIR)/paramfunc.o 
@@ -170,7 +172,7 @@ $(OBJDIR)/coreFwd.o:EARTH/FWD/coreFwd.f90 $(OBJDIR)/math_constants.o $(OBJDIR)/e
 $(OBJDIR)/maxwells.o:EARTH/FWD/maxwells.f90 $(OBJDIR)/iotypes.o $(OBJDIR)/field_vectors.o $(OBJDIR)/math_constants.o $(OBJDIR)/coreFwd.o $(OBJDIR)/wrapper.o 
 	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) EARTH/FWD/maxwells.f90 -o $(OBJDIR)/maxwells.o
 
-$(OBJDIR)/ringcurrent.o:EARTH/FWD/ringcurrent.f90 $(OBJDIR)/math_constants.o $(OBJDIR)/elements.o 
+$(OBJDIR)/ringcurrent.o:EARTH/FWD/ringcurrent.f90 $(OBJDIR)/polpak.o $(OBJDIR)/math_constants.o $(OBJDIR)/elements.o 
 	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) EARTH/FWD/ringcurrent.f90 -o $(OBJDIR)/ringcurrent.o
 
 $(OBJDIR)/initFields.o:EARTH/FWD/initFields.f90 $(OBJDIR)/field_vectors.o $(OBJDIR)/dimensions.o $(OBJDIR)/ringcurrent.o $(OBJDIR)/coreFwd.o $(OBJDIR)/wrapper.o $(OBJDIR)/sg_sparse_vector.o $(OBJDIR)/GridDef.o 
@@ -218,7 +220,7 @@ $(OBJDIR)/grid_orig.o:EARTH/Basics/grid_orig.f90
 $(OBJDIR)/DataIO.o:EARTH/DataIO.f90 $(OBJDIR)/UserData.o $(OBJDIR)/transmitters.o $(OBJDIR)/receivers.o $(OBJDIR)/dataTypes.o 
 	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) EARTH/DataIO.f90 -o $(OBJDIR)/DataIO.o
 
-$(OBJDIR)/Main.o:EARTH/Main.f90 $(OBJDIR)/input.o $(OBJDIR)/iospec.o $(OBJDIR)/iotypes.o $(OBJDIR)/math_constants.o $(OBJDIR)/model_operators.o $(OBJDIR)/modeldef.o $(OBJDIR)/modelmap.o $(OBJDIR)/global.o $(OBJDIR)/grid_orig.o $(OBJDIR)/field_vectors.o $(OBJDIR)/sg_scalar.o $(OBJDIR)/DataSpace.o $(OBJDIR)/DataIO.o $(OBJDIR)/UserData.o $(OBJDIR)/dataTypes.o $(OBJDIR)/transmitters.o $(OBJDIR)/receivers.o $(OBJDIR)/SensComp.o $(OBJDIR)/dimensions.o $(OBJDIR)/dimensions.o $(OBJDIR)/boundaries.o $(OBJDIR)/ringcurrent.o 
+$(OBJDIR)/Main.o:EARTH/Main.f90 $(OBJDIR)/input.o $(OBJDIR)/iospec.o $(OBJDIR)/iotypes.o $(OBJDIR)/math_constants.o $(OBJDIR)/model_operators.o $(OBJDIR)/modeldef.o $(OBJDIR)/modelmap.o $(OBJDIR)/global.o $(OBJDIR)/grid_orig.o $(OBJDIR)/field_vectors.o $(OBJDIR)/sg_scalar.o $(OBJDIR)/DataSpace.o $(OBJDIR)/DataIO.o $(OBJDIR)/UserData.o $(OBJDIR)/dataTypes.o $(OBJDIR)/transmitters.o $(OBJDIR)/receivers.o $(OBJDIR)/SensComp.o $(OBJDIR)/field1d.o $(OBJDIR)/dimensions.o $(OBJDIR)/dimensions.o $(OBJDIR)/boundaries.o $(OBJDIR)/ringcurrent.o 
 	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) EARTH/Main.f90 -o $(OBJDIR)/Main.o
 
 $(OBJDIR)/MPI_sub.o:EARTH/MPI_sub.f90 $(OBJDIR)/math_constants.o $(OBJDIR)/utilities.o $(OBJDIR)/SolnSpace.o $(OBJDIR)/iotypes.o $(OBJDIR)/MPI_declaration.o 

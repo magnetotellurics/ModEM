@@ -1318,6 +1318,10 @@ Contains
 		  point%phi   = (grid%ph(i) + grid%ph(i+1))/2
 		  point%theta = (grid%th(j) + grid%th(j+1))/2
 		  point%r     = (grid%r(k) + grid%r(k+1))/2
+          point%i     = i
+          point%j     = j
+          point%k     = k
+          point%type  = CENTER
 
 		  func = coeff%F
 		  value = F_at_point(func,point)
@@ -1412,6 +1416,10 @@ Contains
 		  point%phi   = (grid%ph(i) + grid%ph(i+1))/2
 		  point%theta = (grid%th(j) + grid%th(j+1))/2
 		  point%r     = (grid%r(k) + grid%r(k+1))/2
+          point%i     = i
+          point%j     = j
+          point%k     = k
+          point%type  = CENTER
 
 		  dm%v(i,j,k) = 0.0d0
 
@@ -1540,6 +1548,10 @@ Contains
 			  point%phi   = (grid%ph(i) + grid%ph(i+1))/2
 			  point%theta = (grid%th(j) + grid%th(j+1))/2
 			  point%r     = (grid%r(k) + grid%r(k+1))/2
+              point%i     = i
+              point%j     = j
+              point%k     = k
+              point%type  = CENTER
 
 			  tau = F_at_point(func,point)
 			  if (this_layer%if_log) then
