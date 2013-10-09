@@ -233,6 +233,8 @@ Contains
 			              Z(ij) = BB(i,1)*RR(1,j)+BB(i,2)*RR(2,j)
 			           enddo
 			        enddo
+					  Z(1)= Z(1)-ONE
+                      Z(4)= Z(4)-ONE
 
     	   case(Off_Diagonal_Rho_Phase)
                 x     = rxDict(iRX)%x          !Local site position (x,y,z)
@@ -520,10 +522,10 @@ Contains
            Call linComb_sparsevecc(Lbz,c1,L1,c2,L(n)%L(k))
         elseif(predictedComp.eq.4) then
            !  component in x row (interstation TF)
-           Call linComb_sparsevecc(Lrx,c1,L1,c2,L(n)%L(k))
+           Call linComb_sparsevecc(Lbx,c1,L1,c2,L(n)%L(k))
         elseif(predictedComp.eq.5) then
            !  component in y row (interstation TF)
-           Call linComb_sparsevecc(Lry,c1,L1,c2,L(n)%L(k))
+           Call linComb_sparsevecc(Lby,c1,L1,c2,L(n)%L(k))
         endif
      enddo
   enddo
