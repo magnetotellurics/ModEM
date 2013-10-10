@@ -67,7 +67,7 @@ Contains
    type(NLCGiterControl_t), intent(inout)	:: iterControl
 
      ! maximum number of iterations in one call to iterative solver
-     iterControl%maxIter = 200
+     iterControl%maxIter = 600
      ! convergence criteria: return from solver if rms < rmsTol
      iterControl%rmsTol  = 1.05
      ! inversion stalls when abs(rms - rmsPrev) < fdiffTol (2e-3 works well)

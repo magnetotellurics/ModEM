@@ -442,7 +442,7 @@ implicit none
        '!!! ATTENTION, ERROR WHILE DECOMPOSING MATRIX !!!'
         WRITE(6,*) '!!! Please, check your model and restart !!!'
         WRITE(6,*)   &
-       '!!! If problem persists, contact wsiripun@oce.orst.edu !!'
+       '!!! If problem persists, contact egbert@coas.oregonstate.edu !!'
         STOP
       ENDIF
 
