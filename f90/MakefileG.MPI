@@ -44,7 +44,7 @@
 
 # ------------------Macro-Defs---------------------
 include Makefile.local
-OBJDIR = ./objs/3D_MT/PGIRelease
+OBJDIR = ./objs/3D_MT/PGIReleaseMPI
 F90 = mpif90 
 FFLAGS = -O3 -fastsse -mp -tp=istanbul-64
 MPIFLAGS = -Bstatic  -Mipa=fast  -Mextend  -Kieee -Mpreprocess -DMPI
@@ -60,7 +60,7 @@ all: Global3D
 
 # Here is the link step 
 Global3D: $(OBJDIR) $(OBJ) 
-	 $(F90) -o $(OUTDIR)/Global3D $(OBJ) $(LIBS) $(LIBS_PATH)
+	 $(F90) -o $(OUTDIR)/Global3D_MPI $(OBJ) $(LIBS) $(LIBS_PATH)
 
 # Here are the compile steps 
 

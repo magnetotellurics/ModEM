@@ -3,9 +3,10 @@
 # with command line options
 # -p .:INV:LAPACK:SENS:UTILS:FIELDS/FiniteDiff3D:3D_MT:3D_MT/DICT:3D_MT/modelParam:3D_MT/FWD:3D_MT/FWD/Mod2d:3D_MT/ioMod
 # -f90 pgf95 (compiler)
-# -opt -g -Mbounds -Mconcur -mp (compiler optimisation)
-# -l -L/usr/lib64 -llapack -lblas -lpgftnrtl -Mconcur -mp (linking options)
-# -o ./objs/3D_MT/Debug (output directory for object files)
+# -opt -g -Mbounds -Mconcur -mp -tp=istanbul-64 (compiler optimisation)
+# -lp ${PGI}/linux86-64/current/lib (linking options: path to libraries)
+# -l -llapack -lblas -lpgftnrtl -Mconcur -mp (linking options)
+# -o ./objs/3D_MT/PGIDebug (output directory for object files)
 
 #  Uncomment these lines to make program for Solaris OS (legacy)
 # F90 = f90
@@ -43,23 +44,23 @@
 
 # ------------------Macro-Defs---------------------
 include Makefile.local
-OBJDIR = ./objs/3D_MT/Debug
+OBJDIR = ./objs/3D_MT/PGIDebug
 F90 = pgf95 
 FFLAGS = -g -Mbounds -Mconcur -mp -tp=istanbul-64
 MPIFLAGS = -Mpreprocess
 MODULE = -module $(OBJDIR)
-#LIBS = -L/usr/lib64 -llapack -lblas -lpgftnrtl -Mconcur -mp
-LIBS = -L${PGI}/linux86-64/current/lib -llapack -lblas -lpgftnrtl -Mconcur -mp
+LIBS_PATH = -L${PGI}/linux86-64/current/lib
+LIBS = -llapack -lblas -lpgftnrtl -Mconcur -mp
 
 # -------------------End-macro-Defs---------------------------
-OBJ = $(OBJDIR)/math_constants.o $(OBJDIR)/utilities.o $(OBJDIR)/file_units.o $(OBJDIR)/DataSpace.o $(OBJDIR)/GridDef.o $(OBJDIR)/sg_scalar.o $(OBJDIR)/sg_vector.o $(OBJDIR)/sg_sparse_vector.o $(OBJDIR)/ModelSpace.o $(OBJDIR)/SensMatrix.o $(OBJDIR)/EMfieldInterp.o $(OBJDIR)/sg_boundary.o $(OBJDIR)/transmitters.o $(OBJDIR)/SolnSpace.o $(OBJDIR)/receivers.o $(OBJDIR)/dataTypes.o $(OBJDIR)/DataFunc.o $(OBJDIR)/DataSens.o $(OBJDIR)/SolverSens.o $(OBJDIR)/sg_diff_oper.o $(OBJDIR)/elements.o $(OBJDIR)/GridCalc.o $(OBJDIR)/WSfwd2Dpar.o $(OBJDIR)/WSutils.o $(OBJDIR)/WSfwd1Dmod.o $(OBJDIR)/WSfwd2Dmod.o $(OBJDIR)/FwdTEmod.o $(OBJDIR)/boundary_ws.o $(OBJDIR)/nestedEM.o $(OBJDIR)/modelOperator3D.o $(OBJDIR)/solver.o $(OBJDIR)/EMsolve3D.o $(OBJDIR)/ForwardSolver.o $(OBJDIR)/SensComp.o $(OBJDIR)/SymmetryTest.o $(OBJDIR)/UserCtrl.o $(OBJDIR)/ioAscii.o $(OBJDIR)/DataIO.o $(OBJDIR)/Main.o $(OBJDIR)/NLCG.o $(OBJDIR)/DCG.o $(OBJDIR)/Mod3DMT.o 
+OBJ = $(OBJDIR)/math_constants.o $(OBJDIR)/utilities.o $(OBJDIR)/file_units.o $(OBJDIR)/DataSpace.o $(OBJDIR)/GridDef.o $(OBJDIR)/sg_vector.o $(OBJDIR)/sg_scalar.o $(OBJDIR)/elements.o $(OBJDIR)/GridCalc.o $(OBJDIR)/sg_sparse_vector.o $(OBJDIR)/ModelSpace.o $(OBJDIR)/SensMatrix.o $(OBJDIR)/EMfieldInterp.o $(OBJDIR)/sg_boundary.o $(OBJDIR)/transmitters.o $(OBJDIR)/SolnSpace.o $(OBJDIR)/receivers.o $(OBJDIR)/dataTypes.o $(OBJDIR)/DataFunc.o $(OBJDIR)/DataSens.o $(OBJDIR)/SolverSens.o $(OBJDIR)/sg_diff_oper.o $(OBJDIR)/WSfwd2Dpar.o $(OBJDIR)/WSutils.o $(OBJDIR)/WSfwd1Dmod.o $(OBJDIR)/WSfwd2Dmod.o $(OBJDIR)/FwdTEmod.o $(OBJDIR)/boundary_ws.o $(OBJDIR)/nestedEM.o $(OBJDIR)/modelOperator3D.o $(OBJDIR)/solver.o $(OBJDIR)/EMsolve3D.o $(OBJDIR)/ForwardSolver.o $(OBJDIR)/SensComp.o $(OBJDIR)/SymmetryTest.o $(OBJDIR)/UserCtrl.o $(OBJDIR)/ioAscii.o $(OBJDIR)/DataIO.o $(OBJDIR)/Main.o $(OBJDIR)/NLCG.o $(OBJDIR)/DCG.o $(OBJDIR)/Mod3DMT.o 
 
 
 all: Mod3DMT 
 
 # Here is the link step 
 Mod3DMT: $(OBJDIR) $(OBJ) 
-	 $(F90) -o $(OUTDIR)/Mod3DMT $(OBJ) $(LIBS) 
+	 $(F90) -o $(OUTDIR)/Mod3DMT $(OBJ) $(LIBS) $(LIBS_PATH)
 
 # Here are the compile steps 
 
@@ -81,16 +82,22 @@ $(OBJDIR)/DataSpace.o:SENS/DataSpace.f90 $(OBJDIR)/utilities.o $(OBJDIR)/math_co
 $(OBJDIR)/GridDef.o:3D_MT/GridDef.f90 $(OBJDIR)/math_constants.o 
 	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) 3D_MT/GridDef.f90 -o $(OBJDIR)/GridDef.o
 
+$(OBJDIR)/sg_vector.o:FIELDS/FiniteDiff3D/sg_vector.f90 $(OBJDIR)/math_constants.o $(OBJDIR)/utilities.o $(OBJDIR)/GridDef.o 
+	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) FIELDS/FiniteDiff3D/sg_vector.f90 -o $(OBJDIR)/sg_vector.o
+
 $(OBJDIR)/sg_scalar.o:FIELDS/FiniteDiff3D/sg_scalar.f90 $(OBJDIR)/math_constants.o $(OBJDIR)/GridDef.o 
 	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) FIELDS/FiniteDiff3D/sg_scalar.f90 -o $(OBJDIR)/sg_scalar.o
 
-$(OBJDIR)/sg_vector.o:FIELDS/FiniteDiff3D/sg_vector.f90 $(OBJDIR)/math_constants.o $(OBJDIR)/utilities.o $(OBJDIR)/GridDef.o 
-	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) FIELDS/FiniteDiff3D/sg_vector.f90 -o $(OBJDIR)/sg_vector.o
+$(OBJDIR)/elements.o:UTILS/elements.f90  
+	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) UTILS/elements.f90 -o $(OBJDIR)/elements.o
+
+$(OBJDIR)/GridCalc.o:3D_MT/GridCalc.f90 $(OBJDIR)/sg_vector.o $(OBJDIR)/sg_scalar.o $(OBJDIR)/elements.o 
+	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) 3D_MT/GridCalc.f90 -o $(OBJDIR)/GridCalc.o
 
 $(OBJDIR)/sg_sparse_vector.o:FIELDS/FiniteDiff3D/sg_sparse_vector.f90 $(OBJDIR)/math_constants.o $(OBJDIR)/GridDef.o $(OBJDIR)/sg_vector.o 
 	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) FIELDS/FiniteDiff3D/sg_sparse_vector.f90 -o $(OBJDIR)/sg_sparse_vector.o
 
-$(OBJDIR)/ModelSpace.o:3D_MT/modelParam/ModelSpace.f90 $(OBJDIR)/GridDef.o $(OBJDIR)/file_units.o $(OBJDIR)/math_constants.o $(OBJDIR)/utilities.o $(OBJDIR)/sg_scalar.o $(OBJDIR)/sg_vector.o $(OBJDIR)/sg_sparse_vector.o 3D_MT/modelParam/modelCov/RecursiveAR.hd 3D_MT/modelParam/ModelMap.inc 3D_MT/modelParam/modelCov/RecursiveAR.inc 3D_MT/modelParam/modelParamIO/Binary.inc 3D_MT/modelParam/modelParamIO/Mackie.inc 3D_MT/modelParam/modelParamIO/WS.inc
+$(OBJDIR)/ModelSpace.o:3D_MT/modelParam/ModelSpace.f90 $(OBJDIR)/GridCalc.o $(OBJDIR)/file_units.o $(OBJDIR)/math_constants.o $(OBJDIR)/utilities.o $(OBJDIR)/sg_scalar.o $(OBJDIR)/sg_vector.o $(OBJDIR)/sg_sparse_vector.o 3D_MT/modelParam/modelCov/RecursiveAR.hd 3D_MT/modelParam/ModelMap.inc 3D_MT/modelParam/modelCov/RecursiveAR.inc 3D_MT/modelParam/modelParamIO/Binary.inc 3D_MT/modelParam/modelParamIO/Mackie.inc 3D_MT/modelParam/modelParamIO/WS.inc
 	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) 3D_MT/modelParam/ModelSpace.f90 -o $(OBJDIR)/ModelSpace.o
 
 $(OBJDIR)/SensMatrix.o:SENS/SensMatrix.f90 $(OBJDIR)/math_constants.o $(OBJDIR)/file_units.o $(OBJDIR)/utilities.o $(OBJDIR)/DataSpace.o $(OBJDIR)/ModelSpace.o 
@@ -125,12 +132,6 @@ $(OBJDIR)/SolverSens.o:3D_MT/SolverSens.f90 $(OBJDIR)/math_constants.o $(OBJDIR)
 
 $(OBJDIR)/sg_diff_oper.o:FIELDS/FiniteDiff3D/sg_diff_oper.f90 $(OBJDIR)/math_constants.o $(OBJDIR)/sg_vector.o $(OBJDIR)/sg_scalar.o 
 	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) FIELDS/FiniteDiff3D/sg_diff_oper.f90 -o $(OBJDIR)/sg_diff_oper.o
-
-$(OBJDIR)/elements.o:UTILS/elements.f90  
-	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) UTILS/elements.f90 -o $(OBJDIR)/elements.o
-
-$(OBJDIR)/GridCalc.o:3D_MT/GridCalc.f90 $(OBJDIR)/sg_vector.o $(OBJDIR)/sg_scalar.o $(OBJDIR)/elements.o 
-	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) 3D_MT/GridCalc.f90 -o $(OBJDIR)/GridCalc.o
 
 $(OBJDIR)/WSfwd2Dpar.o:3D_MT/FWD/Mod2d/WSfwd2Dpar.f90 $(OBJDIR)/math_constants.o 
 	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) 3D_MT/FWD/Mod2d/WSfwd2Dpar.f90 -o $(OBJDIR)/WSfwd2Dpar.o

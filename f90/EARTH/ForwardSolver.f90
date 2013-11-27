@@ -121,6 +121,7 @@ Contains
       ! rho1d = rho0 will not work since rho0 has the thinsheet in it already.
       !rho0 = m0%rho0
       if(secondaryField) then
+        if (trim(cUserDef%paramname) .eq. 'harmonic') then
 	    ! Make 1D parametrization out of full, and map to grid (primary cell centers)
 	    write(0,*) node_info,'Reading the background resistivity model for SFF; assuming it is log10 and 1D.'
 	    call read_modelParam(mBackground,cUserDef%fn_param0)
@@ -133,6 +134,24 @@ Contains
 	    call mapToGrid(m1d,rho1d) ! do NOT use background resistivity for this
         call create_solnVector(grid,iTx,h1d)
         !call fwdSolve1d(iTx,m1d,h1d) ! should be saved in solnVectorMTX if computed once
+        else
+        !!! create the 1D out of averaged full grid - we need the SFF for non-harmonic params also !!!
+        ! the whole logic for this is terribly and unnecessarily complicated
+        write(0,*) node_info,'Creating the background model for SFF from resistivity on a grid.'
+        call initRho(cUserDef%fn_param0,grid,mBackground%rho)
+        mBackground%allocated = .true.
+        mBackground%grid => grid
+        mBackground%type = 'grid'
+        call setGrid_modelParam(grid,mBackground)
+        call getRadial(m1d,mBackground)
+        call print_modelParam(m1d,output_level-1,"Radial model m1d = ")
+        call initCrust(cUserDef,grid,crust)
+        call setCrust_modelParam(crust,mBackground)
+        write(0,*) node_info,'Crust average conductance is ',m1d%crust%avg
+        call create_rscalar(grid,rho1d,CENTER)
+        call mapToGrid(m1d,rho1d) ! do NOT use background resistivity for this
+        call create_solnVector(grid,iTx,h1d)
+        endif
 	  endif
       solverInitialized = .true.
    endif

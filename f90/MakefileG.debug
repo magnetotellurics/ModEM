@@ -6,7 +6,7 @@
 # -opt -g -Mbounds -Mconcur -mp -tp=istanbul-64 (compiler optimisation)
 # -lp ${PGI}/linux86-64/current/lib (linking options: path to libraries)
 # -l -llapack -lblas -lpgftnrtl -Mconcur -mp (linking options)
-# -o ./objs/3D_MT/PGIDebug (output directory for object files)
+# -o ./objs/EARTH/PGIDebug (output directory for object files)
 
 #  Uncomment these lines to make program for Solaris OS (legacy)
 # F90 = f90
@@ -44,7 +44,7 @@
 
 # ------------------Macro-Defs---------------------
 include Makefile.local
-OBJDIR = ./objs/3D_MT/PGIDebug
+OBJDIR = ./objs/EARTH/PGIDebug
 F90 = pgf95 
 FFLAGS = -g -Mbounds -Mconcur -mp -tp=istanbul-64
 MPIFLAGS = -Mpreprocess

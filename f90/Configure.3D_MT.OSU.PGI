@@ -33,7 +33,7 @@ else
 perl fmkmf.pl -f90 mpif90 \
 -opt '-O3 -fastsse -mp -tp=istanbul-64' \
 -mpi '-Bstatic  -Mipa=fast  -Mextend  -Kieee -Mpreprocess -DMPI' \
--o './objs/3D_MT/PGIRelease' \
+-o './objs/3D_MT/PGIReleaseMPI' \
 -l '-llapack -lblas -lpgftnrtl' \
 -lp '${PGI}/linux86-64/current/lib' \
 -p .:INV:MPI:LAPACK:SENS:UTILS:FIELDS/FiniteDiff3D:3D_MT:3D_MT/DICT:3D_MT/modelParam:3D_MT/FWD:3D_MT/FWD/Mod2d:3D_MT/ioMod \

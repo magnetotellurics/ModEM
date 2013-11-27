@@ -11,31 +11,31 @@ if [ $2 = "debug" ]; then
 perl fmkmf.pl -f90 pgf95 \
 -opt '-g -Mbounds -Mconcur -mp -tp=istanbul-64' \
 -mpi '-Mpreprocess' \
--o './objs/EARTH/PGIDebug' \
+-o './objs/2D_MT/PGIDebug' \
 -l '-llapack -lblas -lpgftnrtl -Mconcur -mp' \
 -lp '${PGI}/linux86-64/current/lib' \
--p .:INV:MPI:UTILS:FIELDS/FiniteDiff3D:EARTH:SENS:EARTH/DICT:EARTH/modelParam:EARTH/FWD:EARTH/ioMod:EARTH/Basics:EARTH/Jacobian \
-Global3D.f90 > $1
+-p .:INV:LAPACK:SENS:UTILS:2D_MT:2D_MT/DICT:2D_MT/modelParam:2D_MT/FWD:2D_MT/ioMod \
+Mod2DMT.f90 > $1
 
 elif [ $2 = "release" ]; then
 # Release configuration
 perl fmkmf.pl -f90 pgf95 \
 -opt '-O3 -fastsse -mp -tp=istanbul-64' \
 -mpi '-Mpreprocess' \
--o './objs/EARTH/PGIRelease' \
+-o './objs/2D_MT/PGIRelease' \
 -l '-llapack -lblas -lpgftnrtl -Mconcur -mp' \
 -lp '${PGI}/linux86-64/current/lib' \
--p .:INV:MPI:UTILS:FIELDS/FiniteDiff3D:EARTH:SENS:EARTH/DICT:EARTH/modelParam:EARTH/FWD:EARTH/ioMod:EARTH/Basics:EARTH/Jacobian \
-Global3D.f90 > $1
+-p .:INV:LAPACK:SENS:UTILS:2D_MT:2D_MT/DICT:2D_MT/modelParam:2D_MT/FWD:2D_MT/ioMod \
+Mod2DMT.f90 > $1
 
 else
 # MPI configuration
 perl fmkmf.pl -f90 mpif90 \
 -opt '-O3 -fastsse -mp -tp=istanbul-64' \
 -mpi '-Bstatic  -Mipa=fast  -Mextend  -Kieee -Mpreprocess -DMPI' \
--o './objs/EARTH/PGIReleaseMPI' \
+-o './objs/2D_MT/PGIReleaseMPI' \
 -l '-llapack -lblas -lpgftnrtl' \
 -lp '${PGI}/linux86-64/current/lib' \
--p .:INV:MPI:UTILS:FIELDS/FiniteDiff3D:EARTH:SENS:EARTH/DICT:EARTH/modelParam:EARTH/FWD:EARTH/ioMod:EARTH/Basics:EARTH/Jacobian \
-Global3D.f90 > $1
+-p .:INV:MPI:LAPACK:SENS:UTILS:2D_MT:2D_MT/DICT:2D_MT/modelParam:2D_MT/FWD:2D_MT/ioMod \
+Mod2DMT.f90 > $1
 fi

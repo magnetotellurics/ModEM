@@ -544,7 +544,7 @@ Contains
     implicit none
     type (modelParam_t), intent(in)				   :: P
     type (modelParam_t), intent(inout)			   :: Prad
-    integer							   			   :: lmax
+    integer							   			   :: lmax,nL
     ! * EOP
 
 	integer										   :: i,j,k,status
@@ -553,37 +553,63 @@ Contains
        call errStop('(getRadial_modelParam) parametrization not allocated yet')
 	end if
 
-    Prad = P
 
     if(trim(P%type) .ne. 'harmonic') then
-       call warning('(getRadial_modelParam) unable to obtain the radial structure from model type '//trim(P%type))
-       return
-    end if
+       !call warning('(getRadial_modelParam) unable to obtain the radial structure from model type '//trim(P%type))
+       !return
 
-    deallocate(Prad%F,STAT=status)
-    allocate(Prad%F(1),STAT=status)
+        nL = P%grid%nzEarth
+        call create_modelParam(Prad,nL,0)
+        if (.not. associated(P%grid)) then
+            call errStop('(getRadial_modelParam) grid not allocated yet')
+        else
+            Prad%grid => P%grid
+        end if
 
-    Prad%nF = 1
-    Prad%F(:)%name='Y'
+        do j=1,nL
+          k=P%grid%nzAir+j
+          Prad%L(j)%lbound = P%grid%r(k)
+          Prad%L(j)%ubound = P%grid%r(k-1)
+          Prad%L(j)%width  = P%grid%r(k-1) - P%grid%r(k)
+          Prad%L(j)%depth  = EARTH_R - P%grid%r(k)
+          Prad%L(j)%if_log =.TRUE.
+          Prad%c(j,1)%value = sum(P%rho%v(:,:,k))/(P%grid%nx*P%grid%ny)
+          Prad%c(j,1)%value = log(Prad%c(j,1)%value)/log(10.0)
+          Prad%c(j,1)%exists = .TRUE.
+        end do
 
-    i=1
-    Prad%F(i)%num=1
-    Prad%F(i)%l=0
-    Prad%F(i)%m=0
+        Prad%temporary = .TRUE.
 
-	do j=1,P%nL
-	  do i=1,P%nF
-		if((P%F(i)%l == 0) .and. (P%F(i)%m == 0)) then
-		  cycle
-		end if
-		Prad%c(j,i)%value=R_ZERO
-	  end do
-	end do
+    else
 
-    Prad%crust%avg = P%crust%avg
-    Prad%crust%allocated = .FALSE.
-    Prad%zeroValued = P%zeroValued
-	Prad%temporary = .TRUE.
+        Prad = P
+
+        deallocate(Prad%F,STAT=status)
+        allocate(Prad%F(1),STAT=status)
+
+        Prad%nF = 1
+        Prad%F(:)%name='Y'
+
+        i=1
+        Prad%F(i)%num=1
+        Prad%F(i)%l=0
+        Prad%F(i)%m=0
+
+        do j=1,P%nL
+          do i=1,P%nF
+            if((P%F(i)%l == 0) .and. (P%F(i)%m == 0)) then
+              cycle
+            end if
+            Prad%c(j,i)%value=R_ZERO
+          end do
+        end do
+
+        Prad%crust%avg = P%crust%avg
+        Prad%crust%allocated = .FALSE.
+        Prad%zeroValued = P%zeroValued
+        Prad%temporary = .TRUE.
+
+	endif
 
   end subroutine getRadial_modelParam
 

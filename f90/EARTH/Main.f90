@@ -95,6 +95,8 @@ Contains
     if (trim(p0_background%type) .eq. 'harmonic') then
         lmax = getDegree_modelParam(p0_background)
         call legendre_initialize(lmax,targetGrid,CENTER)
+    else
+        call legendre_initialize(0,targetGrid,CENTER)
     end if
     !--------------------------------------------------------------------------
     ! ... and initialize background resistivity on the grid
