@@ -13,8 +13,18 @@ module GridCalc
 
   use sg_vector
   use sg_scalar
+  use sg_spherical
   use elements
   implicit none
+
+  save
+
+  !!!!!!!>>>>>>>>> block of precomputed grid elements (public)
+  !!!!!!!>>>>>>>>> initialized in ModelDataInit to accommodate
+  !!!!!!!>>>>>>>>> for potential on-the-fly grid modification
+  type(rvector), public     :: V_E, l_E, S_E ! edges (primary)
+  type(rvector), public     :: V_F, l_F, S_F ! faces (dual)
+  type(rscalar), public     :: V_N, V_C ! nodes and cells
 
   public      :: EdgeVolume, FaceVolume, NodeVolume, CellVolume
   public      :: EdgeLength, FaceLength
@@ -31,7 +41,7 @@ Contains
   ! * the electrical fields are defined on the center of the edges, therefore,
   ! * the edge volume is centered about the electrical field measurement.
 
-  subroutine EdgeVolume(grid, V_E)
+  subroutine EdgeVolume(grid, V_E, l_E, S_E)
 
       implicit none
       type (grid_t), intent(in)           :: grid     ! input model
@@ -146,7 +156,7 @@ Contains
       integer                            :: nx,ny,nz
       real(8),dimension(:),allocatable   :: x,y,z
       real(8)                            :: volume,sijk2,zm,zp,ym,yp
-      integer                            :: i, j, k
+      integer                            :: i, j, k, istat
 
       if (.not. V_N%allocated) then
         call create_rscalar(grid, V_N, CORNER)
@@ -223,12 +233,12 @@ Contains
 
       implicit none
       type (grid_t), intent(in)          :: grid     ! input model
-      type (rvector), intent(inout)      :: V_C       ! cell volume
+      type (rscalar), intent(inout)      :: V_C       ! cell volume
       ! local variables
       integer                            :: nx,ny,nz
       real(8),dimension(:),allocatable   :: x,y,z
       real(8)                            :: volume
-      integer                            :: i, j, k
+      integer                            :: i, j, k, istat
 
       if (.not. V_C%allocated) then
         call create_rscalar(grid, V_C, CENTER)
@@ -280,7 +290,7 @@ Contains
   ! * EdgeLength creates line elements defined on edges of the primary grid.
   ! * Edge length elements are defined on interior and boundary edges.
 
-  subroutine EdgeLength(grid,l_F)
+  subroutine EdgeLength(grid,l_E)
 
       type(grid_t), intent(in)      :: grid
       type(rvector), intent(inout)  :: l_E
@@ -562,7 +572,7 @@ Contains
       integer                   :: nx,ny,nz
       real(8),dimension(:),allocatable      :: x,y,z
       real(8)                   :: sijk,sjki,skij
-      integer                   :: i,j,k
+      integer                   :: i,j,k,istat
 
       call create_rvector(grid, S_F, FACE)
 
@@ -632,5 +642,155 @@ Contains
 
       return
       end subroutine FaceArea
+
+  ! *************************************************************************
+  ! * UNWEIGHTED MAPPING OPERATORS THAT LEAVE ALL BOUNDARY EDGES SET TO ZERO
+  ! * (NOTE: most likely, this will also work for multigrid: we would use
+  ! * separate subroutines to map from egdes to multigrid edges and back)
+  ! * BORROWED DIRECTLY FROM THE CARTESIAN GRIDCALC SO THEY ARE POSSIBLY WRONG
+  ! * WHEN APPLIED TO THE SPHERICAL COORDINATE PROBLEM
+  ! *************************************************************************
+
+  ! *************************************************************************
+  ! * Cell2Edge will be used by forward model mappings
+  ! * might need to revisit boundary edges
+
+  subroutine Cell2Edge(grid,C,E)
+
+      type(grid_t), intent(in)      :: grid
+      type(rscalar), intent(in)     :: C
+      type(rvector), intent(out)    :: E
+      ! local variables
+      integer                   :: ix,iy,iz
+
+      call create_rvector(grid, E, EDGE)
+
+      ! for x-components
+      do ix = 1,grid%nx
+         do iy = 2,grid%ny
+            ! special case of upper boundary
+            iz = 1
+            E%x(ix, iy, iz) = (C%v(ix, iy-1, iz) + C%v(ix, iy, iz))/2.0d0
+            ! inside the Earth
+            do iz = 2,grid%nz
+
+               E%x(ix, iy, iz) = (C%v(ix, iy-1, iz-1) + C%v(ix, iy, iz-1) + &
+                                  C%v(ix, iy-1, iz) + C%v(ix, iy, iz))/4.0d0
+
+            enddo
+            ! special case of lower boundary
+            iz = grid%nz+1
+            E%x(ix, iy, iz) = (C%v(ix, iy-1, iz-1) + C%v(ix, iy, iz-1))/2.0d0
+         enddo
+      enddo
+
+      ! for y-components
+      do ix = 2,grid%nx
+         do iy = 1,grid%ny
+            ! special case of upper boundary
+            iz = 1
+            E%y(ix, iy, iz) = (C%v(ix-1, iy, iz) + C%v(ix, iy, iz))/2.0d0
+            ! inside the Earth
+            do iz = 2,grid%nz
+
+               E%y(ix, iy, iz) = (C%v(ix-1, iy, iz-1) + C%v(ix, iy, iz-1) + &
+                                  C%v(ix-1, iy, iz) + C%v(ix, iy, iz))/4.0d0
+
+            enddo
+            ! special case of lower boundary
+            iz = grid%nz+1
+            E%y(ix, iy, iz) = (C%v(ix-1, iy, iz-1) + C%v(ix, iy, iz-1))/2.0d0
+         enddo
+      enddo
+
+      ! for z-components
+      do ix = 2,grid%nx
+         do iy = 2,grid%ny
+            do iz = 1,grid%nz
+
+               E%z(ix, iy, iz) = (C%v(ix-1, iy-1, iz) + C%v(ix-1, iy, iz) + &
+                                  C%v(ix, iy-1, iz) + C%v(ix, iy, iz))/4.0d0
+
+            enddo
+         enddo
+      enddo
+
+  end subroutine Cell2Edge
+
+  ! *************************************************************************
+  ! * Edge2Cell will be used by adjoint model mappings
+
+  subroutine Edge2Cell(grid,E,C)
+
+      type(grid_t), intent(in)      :: grid
+      type(rvector), intent(in)     :: E
+      type(rscalar), intent(out)    :: C
+      ! local variables
+      integer                   :: ix,iy,iz
+
+      call create_rscalar(grid, C, CENTER)
+
+      ! for x-components
+      do ix = 1,grid%nx
+         do iy = 2,grid%ny
+            ! special case of upper boundary
+            iz = 1
+            C%v(ix, iy-1, iz) = C%v(ix, iy-1, iz) + E%x(ix, iy, iz)/2.0d0
+            C%v(ix, iy, iz) = C%v(ix, iy, iz) + E%x(ix, iy, iz)/2.0d0
+            ! inside the Earth
+            do iz = 2,grid%nz
+
+               C%v(ix, iy-1, iz-1) = C%v(ix, iy-1, iz-1) + E%x(ix, iy, iz)/4.0d0
+               C%v(ix, iy, iz-1) = C%v(ix, iy, iz-1) + E%x(ix, iy, iz)/4.0d0
+               C%v(ix, iy-1, iz) = C%v(ix, iy-1, iz) + E%x(ix, iy, iz)/4.0d0
+               C%v(ix, iy, iz) = C%v(ix, iy, iz) + E%x(ix, iy, iz)/4.0d0
+
+            enddo
+            ! special case of lower boundary
+            iz = grid%nz+1
+            C%v(ix, iy-1, iz-1) = C%v(ix, iy-1, iz-1) + E%x(ix, iy, iz)/2.0d0
+            C%v(ix, iy, iz-1) = C%v(ix, iy, iz-1) + E%x(ix, iy, iz)/2.0d0
+         enddo
+      enddo
+
+      ! for y-components
+      do ix = 2,grid%nx
+         do iy = 1,grid%ny
+            ! special case of upper boundary
+            iz = 1
+            C%v(ix-1, iy, iz) = C%v(ix-1, iy, iz) + E%y(ix, iy, iz)/2.0d0
+            C%v(ix, iy, iz) = C%v(ix, iy, iz) + E%y(ix, iy, iz)/2.0d0
+            ! inside the Earth
+            do iz = 2,grid%nz
+
+               C%v(ix-1, iy, iz-1) = C%v(ix-1, iy, iz-1) + E%y(ix, iy, iz)/4.0d0
+               C%v(ix, iy, iz-1) = C%v(ix, iy, iz-1) + E%y(ix, iy, iz)/4.0d0
+               C%v(ix-1, iy, iz) = C%v(ix-1, iy, iz) + E%y(ix, iy, iz)/4.0d0
+               C%v(ix, iy, iz) = C%v(ix, iy, iz) + E%y(ix, iy, iz)/4.0d0
+
+            enddo
+            ! special case of lower boundary
+            iz = grid%nz+1
+            C%v(ix-1, iy, iz-1) = C%v(ix-1, iy, iz-1) + E%y(ix, iy, iz)/2.0d0
+            C%v(ix, iy, iz-1) = C%v(ix, iy, iz-1) + E%y(ix, iy, iz)/2.0d0
+         enddo
+      enddo
+
+      ! for z-components
+      do ix = 2,grid%nx
+         do iy = 2,grid%ny
+            do iz = 1,grid%nz
+
+               C%v(ix-1, iy-1, iz) = C%v(ix-1, iy-1, iz) + E%z(ix, iy, iz)/4.0d0
+               C%v(ix-1, iy, iz) = C%v(ix-1, iy, iz) + E%z(ix, iy, iz)/4.0d0
+               C%v(ix, iy-1, iz) = C%v(ix, iy-1, iz) + E%z(ix, iy, iz)/4.0d0
+               C%v(ix, iy, iz) = C%v(ix, iy, iz) + E%z(ix, iy, iz)/4.0d0
+
+            enddo
+         enddo
+      enddo
+
+  end subroutine Edge2Cell
+
 
 end module GridCalc
