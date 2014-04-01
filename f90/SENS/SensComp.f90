@@ -465,7 +465,7 @@ Contains
 
 
   !**********************************************************************
-  subroutine JmultT(sigma0,d,dsigma,eAll)
+  subroutine JmultT(sigma0,d,dsigma,eAll,JT_multi_Tx_vec)
 
    !  Transpose of Jmult multiplied by data vector d for all transmitters;
    !   output is a single conductivity parameter in dsigma
@@ -489,13 +489,16 @@ Contains
    !   dsigma is the output conductivity parameter
    type(modelParam_t), intent(out)  	:: dsigma
    type(solnVectorMTX_t), intent(in), optional	:: eAll
+   type(modelParam_t),intent(inout),  pointer, dimension(:), optional :: JT_multi_Tx_vec
+ 
 
    !  local variables
    type(modelParam_t)	:: sigmaTemp
    integer 		:: j
-   logical		:: savedSolns
+   logical		:: savedSolns,returne_m_vectors
 
    savedSolns = present(eAll)
+   returne_m_vectors= present(JT_multi_Tx_vec)
    if(savedSolns) then
       if(d%nTx .ne. eAll%nTx) then
          call errStop('dimensions of eAll and d do not agree in JmultT_MTX')
@@ -504,7 +507,15 @@ Contains
 
    dsigma = sigma0
    call zero(dsigma)
-
+  if (returne_m_vectors) then
+       if (.not. associated(JT_multi_Tx_vec)) then
+        allocate(JT_multi_Tx_vec(d%nTx))
+       end if 
+	  do j=1,d%nTx
+	  	 JT_multi_Tx_vec(j)=sigma0
+	  	 call zero(JT_multi_Tx_vec(j))
+	  end do
+ end if
    ! loop over transmitters
    do j = 1,d%nTx
 
@@ -515,6 +526,11 @@ Contains
        ! do not pass the EM soln to JmultT - it will be computed
    	   call JmultT_TX(sigma0,d%d(j),sigmaTemp)
     endif
+    
+    if (returne_m_vectors) then
+        JT_multi_Tx_vec(j)=sigmaTemp
+    end if
+    
    	! ... add to dsigma
    	call linComb_modelParam(ONE,dsigma,ONE,sigmaTemp,dsigma)
 

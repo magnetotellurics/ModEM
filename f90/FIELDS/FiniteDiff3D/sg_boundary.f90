@@ -190,7 +190,7 @@ Contains
        ! first deallocate memory for different 2D faces of boundaries
        deallocate(E%xYMax, E%zYMax, E%xYMin, E%zYMin, E%yXMax, &
             E%zXMax, E%yXMin, E%zXMin, E%xZMin, E%yZMin, &
-            E%xZMax, E%yZMax, STAT=status)
+            E%xZMin, E%yZMin, E%xZMax, E%xZMax, STAT=status)
     end if
 
     ! Set pointer
@@ -309,7 +309,7 @@ Contains
              ! first deallocate memory for different 2D faces of boundaries
              deallocate(E2%xYMax, E2%zYMax, E2%xYMin, E2%zYMin, E2%yXMax, &
                   E2%zXMax, E2%yXMin, E2%zXMin, E2%xZMin, E2%yZMin, &
-                  E2%xZMax, E2%yZMax, STAT=status)
+                  E2%xZMin, E2%yZMin, E2%xZMax, E2%xZMax, STAT=status)
           end if
           !  then allocate E2 as correct size ...
           Call create_cboundary(E1%grid, E2)

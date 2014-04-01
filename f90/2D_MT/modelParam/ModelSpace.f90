@@ -42,7 +42,7 @@ type ::  modelParam_t
    integer   				:: Ny = 0
    integer   				:: NzEarth = 0
    type(grid_t), pointer  		:: grid
-   real (kind=prec), pointer, dimension(:,:) :: v
+   real (kind=prec), allocatable, dimension(:,:) :: v
    real (kind=prec)		:: AirCond = SIGMA_AIR
    logical           			:: allocated = .false.
      !  this logical is set true by zero_modelParam ONLY
@@ -144,7 +144,7 @@ Contains
      real (kind=prec), intent(in), optional :: value(:,:)
      real (kind=prec), intent(in), optional :: airCond
      !  local variables
-     integer ::       Nz,Ny,Nza,NzEarth
+     integer ::       Nz,Ny,Nza,NzEarth,istat
 
 	 if (cond%allocated) then
         call warning('Model parameter already allocated in create_modelParam')
@@ -160,7 +160,8 @@ Contains
      cond%grid => grid
      cond%paramType = paramtype
 
-     allocate(cond%v(Ny,NzEarth))
+     allocate(cond%v(Ny,NzEarth), STAT=istat)
+     
      if (present(value)) then
         if((size(value,1)==Ny).and.(size(value,2)==NzEarth)) then
            cond%v = value
@@ -384,6 +385,7 @@ Contains
            call create_modelParam(mIn%grid,mIn%paramtype,mOut)
         endif
      else
+        call deall_modelParam(mOut)
         call create_modelParam(mIn%grid,mIn%paramtype,mOut)
      endif
      mOut%v = mIn%v

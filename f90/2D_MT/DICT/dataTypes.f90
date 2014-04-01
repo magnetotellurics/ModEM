@@ -45,7 +45,8 @@ module dataTypes
   ! add data types here ... this all needs work!
   integer, parameter    :: TE_Impedance = 1
   integer, parameter    :: TM_Impedance = 2
-
+  integer, parameter    :: Tzy_Impedance = 3
+  integer, parameter    :: Rho_Phs_TM = 4  
 Contains
 
 !**************************************************************************
@@ -54,20 +55,37 @@ Contains
 
   	 integer     :: istat
 
-     allocate(typeDict(2),STAT=istat)
+     allocate(typeDict(4),STAT=istat)
+     
      typeDict(TE_Impedance)%name = 'TE_Impedance'
      typeDict(TE_Impedance)%isComplex = .true.
      typeDict(TE_Impedance)%units     = '[V/m]/[T]'
      typeDict(TE_Impedance)%nComp     = 2
      allocate(typeDict(TE_Impedance)%id(1),STAT=istat)
      typeDict(TE_Impedance)%id(1)     = 'TE'
+     
      typeDict(TM_Impedance)%name = 'TM_Impedance'
      typeDict(TM_Impedance)%isComplex = .true.
      typeDict(TM_Impedance)%units     = '[V/m]/[T]'
      typeDict(TM_Impedance)%nComp     = 2
      allocate(typeDict(TM_Impedance)%id(1),STAT=istat)
      typeDict(TM_Impedance)%id(1)     = 'TM'
-
+     
+     typeDict(Tzy_Impedance)%name = 'Tzy_Impedance'
+     typeDict(Tzy_Impedance)%isComplex = .true.
+     typeDict(Tzy_Impedance)%units     = '[]'
+     typeDict(Tzy_Impedance)%nComp     = 2
+     allocate(typeDict(Tzy_Impedance)%id(1),STAT=istat)
+     typeDict(Tzy_Impedance)%id(1)     = 'Ty'
+     
+     typeDict(Rho_Phs_TM)%name = 'Rho_Phs_TM'
+     typeDict(Rho_Phs_TM)%isComplex = .false.
+     typeDict(Rho_Phs_TM)%units     = '[]'
+     typeDict(Rho_Phs_TM)%nComp     = 2
+     allocate(typeDict(Rho_Phs_TM)%id(2),STAT=istat)
+     typeDict(Rho_Phs_TM)%id(1)     = 'Rho_TM'
+     typeDict(Rho_Phs_TM)%id(2)     = 'Phs_TM'   
+     
   end subroutine setup_typeDict
 
 ! **************************************************************************
@@ -114,6 +132,12 @@ Contains
 	! local
 	real(kind=prec)             :: factor1, factor2
 
+    
+    if ((index(oldUnits,'[]')>0) .or. (index(newUnits,'[]')>0)) then
+	   SI_factor = ONE
+	   return
+    end if
+        
 	! first convert the old units to [V/m]/[T]
 	if (index(oldUnits,'[V/m]/[T]')>0) then
 	   ! SI units for E/B
@@ -154,13 +178,19 @@ Contains
     character(*), intent(in)    :: mode
     integer                     :: dataType
 
-    if (index(mode,'TE')>0) then
-        dataType = TE_Impedance
-    else if (index(mode,'TM')>0) then
-        dataType = TM_Impedance
-    else
-       call errStop('Unknown mode in ImpType: '//trim(mode))
-    end if
+    
+     select case (trim(mode))
+         case('TE_Impedance')
+            dataType = TE_Impedance
+         case('TM_Impedance')  
+             dataType = TM_Impedance
+         case('Tzy_Impedance')
+             dataType = Tzy_Impedance
+         case('Rho_Phs_TM')
+             dataType = Rho_Phs_TM
+         case default
+             call errStop('Unknown data type:'//trim(mode))             
+     end select  
 
   end function ImpType
 
@@ -174,9 +204,10 @@ Contains
 
     select case (dataType)
 
-       case(TE_Impedance,TM_Impedance)
+       case(TE_Impedance,TM_Impedance,Tzy_Impedance)
           header = '# Period(s) Code GG_Lat GG_Lon X(m) Y(m) Z(m) Component Real Imag Error'
-
+       case(Rho_Phs_TM)
+          header = '# Period(s) Code GG_Lat GG_Lon X(m) Y(m) Z(m) Component Value Error'
     end select
 
   end function ImpHeader

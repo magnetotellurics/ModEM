@@ -144,14 +144,14 @@ Contains
 
             select case (iDt)
 
-                case(TE_Impedance,TM_Impedance)
+                case(TE_Impedance,TM_Impedance,Tzy_Impedance)
 
                     do icomp = 1,ncomp/2
                         if (.not. exist(2*icomp-1)) then
                             cycle
                         end if
                         compid = typeDict(iDt)%id(icomp)
-                        write(ioDat,'(es12.6)',    iostat=ios,advance='no') Period
+                        write(ioDat,'(f12.6)',    iostat=ios,advance='no') Period
                         write(ioDat,'(a40,3f12.3)',iostat=ios,advance='no') trim(siteid),x(:)
                         if (conjugate) then
                             write(ioDat,'(a8,3es15.6)',iostat=ios) trim(compid),value(2*icomp-1),-value(2*icomp),error(2*icomp)
@@ -160,7 +160,18 @@ Contains
                         end if
                         countData = countData + 1
                     end do
-
+                case(Rho_Phs_TM)
+                    do icomp = 1,ncomp
+                        if (.not. exist(icomp)) then
+                            cycle
+                        end if
+                         
+                        compid = typeDict(iDt)%id(icomp)
+                        write(ioDat,'(f12.6)',    iostat=ios,advance='no') Period
+                        write(ioDat,'(a40,3f12.3)',iostat=ios,advance='no') trim(siteid),x(:)
+                        write(ioDat,'(a8,3es15.6)',iostat=ios) trim(compid),value(icomp),error(icomp)
+                        countData = countData + 1
+                    end do
             end select
 
         end do  ! transmitters
@@ -201,7 +212,7 @@ Contains
     character(200)                  :: typeName,typeInfo,typeHeader
     character(40)                   :: siteid,Mode
     integer                         :: iDt,i,j,k,istat,ios
-    character(12)                   :: code
+    character(20)                   :: code
     real(8)                         :: x(3),Period,SI_factor,large
     real(8)                         :: lat,lon,ref_lat,ref_lon
     real(8)                         :: Zreal, Zimag, Zerr
@@ -281,7 +292,7 @@ Contains
 
     select case (iDt)
 
-       case(TE_Impedance,TM_Impedance)
+case(TE_Impedance,TM_Impedance,Tzy_Impedance)
 
         do
 
@@ -295,6 +306,12 @@ Contains
             ! Find component id for this value
             icomp = ImpComp(Mode,iDt)
 
+
+            ! Before updating the Tx-DIC we need to check the mode if it is TE or TM. In case of Ty set mode to TE.
+            if (trim(mode) .eq. 'Ty') then
+               mode='TE'
+            end if
+
             ! Update the transmitter dictionary and the index (sets up if necessary)
             iTx = update_txDict(Period,trim(Mode))
             do i = 1,nTx
@@ -306,7 +323,7 @@ Contains
 
             ! Update the receiver dictionary and index (sets up if necessary)
             ! For now, make lat & lon part of site ID; could use directly in the future
-            write(siteid,'(a12,2f9.3)') code,lat,lon
+            write(siteid,'(a20,2f9.3)') code,lat,lon
             iRx = update_rxDict(x(2:3),siteid)
             do j = 1,nRx
                 if ((new_Rx(j) == iRx) .or. (new_Rx(j) == 0)) then
@@ -326,9 +343,50 @@ Contains
             countData = countData + 1
 
         end do
+            
+case(Rho_Phs_TM)
+    
+        do
+           read(ioDat,*,iostat=ios) Period,code,lat,lon,x(1),x(2),x(3),Mode,Zreal,Zerr
 
-    end select
+            if (ios /= 0) then
+                backspace(ioDat)
+                exit
+            end if
+            ! Find component id for this value
+            icomp = ImpComp(Mode,iDt)
+            ! Before updating the Tx-DIC we need to check the mode if it is TE or TM. In case of Rho_Phs_TM set mode to TM.
+             mode='TM'
+            
+            ! Update the transmitter dictionary and the index (sets up if necessary)
+            iTx = update_txDict(Period,trim(Mode))
+            do i = 1,nTx
+                if ((new_Tx(i) == iTx) .or. (new_Tx(i) == 0)) then
+                    exit
+                end if
+            end do
+            new_Tx(i) = iTx
 
+            ! Update the receiver dictionary and index (sets up if necessary)
+            ! For now, make lat & lon part of site ID; could use directly in the future
+            write(siteid,'(a12,2f9.3)') code,lat,lon
+            iRx = update_rxDict(x(2:3),siteid)
+            do j = 1,nRx
+                if ((new_Rx(j) == iRx) .or. (new_Rx(j) == 0)) then
+                    exit
+                end if
+            end do
+            new_Rx(j) = iRx
+             !write(6,*) Itx,Irx,trim(mode),icomp
+            value(i,j,icomp) = SI_factor * Zreal
+            error(i,j,icomp) = SI_factor * Zerr
+            exist(i,j,icomp) = .TRUE.
+
+            countData = countData + 1
+
+        end do                  
+           
+end select
     write(0,*) 'Read ',countData,' data values of type ',trim(typeDict(iDt)%name),' from file'
 
     ! Create a single-type data vector from the new values

@@ -139,7 +139,7 @@
       integer                              :: Nx, Ny, NzEarth, i, j, k
 
 	  ! Convert modelParam to natural log for output
-	  paramType = LOGE
+	  paramType = m%paramType !LOGE
 	  call getValue_modelParam(m,paramType,ccond)
 
 	  grid = ccond%grid

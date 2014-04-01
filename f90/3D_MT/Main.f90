@@ -18,6 +18,7 @@ module Main
      integer (kind=4), save :: fidRead = 1
      integer (kind=4), save :: fidWrite = 2
      integer (kind=4), save :: fidError = 99
+     logical, public,  save :: Read_Efield_from_file
 
   ! ***************************************************************************
   ! * fwdCtrls: User-specified information about the forward solver relaxations
@@ -39,6 +40,8 @@ module Main
   type(modelParam_t), save		:: dsigma
   !  storage for the inverse solution
   type(modelParam_t), save		:: sigma1
+  !  storage for multi-Tx outputed from JT computation
+  type(modelParam_t),pointer, dimension(:), save :: JT_multi_Tx_vec
 
   !  storage for the full sensitivity matrix (dimension nTx)
   type(sensMatrix_t), pointer, dimension(:), save	:: sens
@@ -54,6 +57,21 @@ module Main
 
 
 Contains
+  ! ***************************************************************************
+   subroutine read_Efiled_from_file
+    character (len=80)			                :: inFile
+    character (len=20)                          :: fileVersion
+    Integer                                     :: iTx,iMod,filePer
+    integer			                            :: fileMode,ioNum
+    type(solnVector_t)                          :: e_temp
+    real (kind=prec)                        	:: Omega
+    integer										:: i,ios=0,istat=0
+    
+        write(6,*) 'The Master reads E field from: ',trim(solverParams%E0fileName)
+        inFile = trim(solverParams%E0fileName)
+        call read_solnVectorMTX(Larg_Grid,eAll_larg,inFile)
+        nTx_nPol=eAll_larg%nTx*eAll_larg%solns(1)%nPol   
+    end subroutine read_Efiled_from_file    
 
   ! ***************************************************************************
   ! * InitGlobalData is the routine to call to initialize all derived data types
@@ -124,21 +142,10 @@ Contains
     ! This why, reading and setting the large grid and its E solution comes after setting the trasnmitters Dictionary.
 
      if (solverParams%read_E0_from_File) then
-        write(6,*) 'Reading E field from: ',trim(solverParams%E0fileName)
-        inFile = trim(solverParams%E0fileName)
-!        call FileReadInit(inFile,ioE,Larg_Grid,filePer,fileMode,fileVersion,ios)
-        call setup_grid(Larg_Grid)
-!        call create_solnVectorMTX(filePer,eAll_larg)
-!            do iTx=1,filePer
-!         		call create_solnVector(Larg_Grid,iTx,e_temp)
-!        		call copy_solnVector(eAll_larg%solns(iTx),e_temp)
-!        	 end do
-        call read_solnVectorMTX(Larg_Grid,eAll_larg,inFile)
-!        do iTx = 1,eAll_larg%nTx
-!         do iMod = 1,fileMode
-!           call EfileRead(ioE, iTx, iMod, omega, eAll_larg%solns(iTx)%pol      call deall(e_temp)
-     end if
-
+         Read_Efield_from_file = .true.
+     end if    
+    
+    
 	!--------------------------------------------------------------------------
 	!  Initialize additional data as necessary
 	select case (cUserDef%job)
@@ -163,6 +170,7 @@ Contains
 	   if (exists) then
 	      call deall_grid(grid)
 	   	  call read_modelParam(grid,dsigma,cUserDef%rFile_dModel)
+		  call setup_grid(grid) ! Added by Oat
 	      if (output_level > 0) then
 	        write(*,*) 'Using the initial model perturbations from file ',trim(cUserDef%rFile_dModel)
 	      endif

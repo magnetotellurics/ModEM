@@ -55,7 +55,7 @@
       ! do nothing: a placeholder for other covariance operators
     end if
 
-    call setup1DCM(m%grid,CmSqrt)
+    call setup1DCM(m%grid,CmSqrt,cfile)
 
     CmSqrt%allocated = .true.
 
@@ -81,10 +81,11 @@
 !...  Copyright (C) 2006 Weerachai Siripunvaraporn. All rights reserved.
 
 
-  subroutine setup1DCM(gd,Cm)
+  subroutine setup1DCM(gd,Cm,cfile)
 
   type (grid_t),   intent(in)    :: gd
   type (modelCov_t), intent(out)   :: Cm
+  character(*), intent(in), optional  :: cfile
 
   real (kind=prec), pointer, dimension(:,:)   ::  YDF
   real (kind=prec), pointer, dimension(:,:)   ::  ZDF
@@ -96,15 +97,30 @@
   NzEarth = gd%Nz - gd%Nza
   allocate(Cm%YDIF(2,gd%Ny,NzEarth),STAT = istat)
   allocate(Cm%ZDIF(2,gd%Ny,NzEarth),STAT = istat)
+
+  	allocate(Cm%Sx(NzEarth), STAT=istat)
+	allocate(Cm%Sy(NzEarth), STAT=istat)
+	allocate(Cm%mask(Ny,NzEarth), STAT=istat)
+
   Cm%ylen = 0.05
   Cm%zlen = 0.05
+  Cm%N=10
+  !By default all model parameters as free for changes
+  Cm%mask=ONE
+  
+  Cm%allocated=.true.
+  
+  ! If model Cov file is present ---> read and overwrite Cm%ylen and Cm%zlen from the file and also the masked cells  
+  if (present(cfile)) then
+    call read_Cm(cfile,CM)
+  end if
 
   ylen = Cm%ylen
   zlen = Cm%zlen
 
   ! horizontal diffusion
   do iz = 1,NzEarth
-    call setupYCM(Ny,ylen,YDF)
+    call setupYCM(Ny,ylen,YDF,cm,iz,gd)
     do iy = 1,Ny
       Cm%YDIF(1,iy,iz) = YDF(1,iy)
       Cm%YDIF(2,iy,iz) = YDF(2,iy)
@@ -114,7 +130,7 @@
 
   ! vertical diffusion
   do iy = 1,Ny
-    call setupZCM(NzEarth,zlen,ZDF)
+    call setupZCM(NzEarth,zlen,ZDF,cm,iy,gd)
     do iz = 1,NzEarth
       Cm%ZDIF(1,iy,iz) = ZDF(1,iz)
       Cm%ZDIF(2,iy,iz) = ZDF(2,iz)
@@ -125,16 +141,90 @@
   end subroutine setup1DCM
 
 !------------------------------------------------------------------------------
+ subroutine read_Cm(cfile,Cm)
 
-  subroutine setupYCM(Ny,ylen,YDF)
+	! The minimal covariance information includes the AR parameters
+	! alpha(k), beta(k) for smoothing in x, y directions and gamma for
+	! the vertical smoothing. Both alpha and beta could depend on the
+	! vertical layer. The scaling is the identity when not specified.
+	! This information is read from a file. Also, we read an integer mask
+	! array that subdivides the model grid into different regions
+	! (AIR, OCEAN, EARTH) and a set of rules that overrides the default
+	! smoothing parameters across a particular surface between two
+	! distinct regions. We use this to set up the covariance CmSqrt.
+	!
+	! Strictly speaking, to define the smoothing across surfaces in
+	! full generality while maintaining efficiency, it has to be a sparse
+	! real vector defined on FACES (sparsevecr). We only have a complex
+	! sparse vector implemented (sparsevecc). We could either use that,
+	! or imitate the structure.
+
+    character(*), intent(in)                         :: cfile
+	type (modelCov_t), intent(inout)   :: Cm
+    ! Exception rules
+    integer, pointer, dimension(:)                   :: mask1, mask2, ii, jj, kk, xyz
+    real (kind=prec), pointer, dimension(:)  :: smoothing, S
+
+    integer       			 :: Nx, Ny, NzEarth, nrules, nS, i, j, k, n, istat
+    integer                  :: fid = 30
+	integer                  :: ios
+
+	if (.not. Cm%allocated) then
+		call errStop('Model covariance must be allocated before reading from file in read_CmSqrt')
+	end if
+
+    open(unit=fid,file=cfile,form='formatted',status='old')
+
+    ! skip the 16 lines header
+    do j = 1,16
+       read(fid,*)
+    end do
+
+	! read grid dimensions
+	read(fid,*) Ny,NzEarth
+	Cm%Ny = Ny
+	Cm%NzEarth = NzEarth
+
+	! read smoothing parameters
+    read(fid,*) Cm%Sy
+    read(fid,*) Cm%Sz
+    
+ Cm%ylen=Cm%Sy(1)
+ Cm%zlen=Cm%Sz
+ 
+	! read number of times to apply the smoothing
+	read(fid,*) Cm%N
+
+	! read exception rules for smoothing across surfaces
+    read(fid,*) nrules
+    allocate(mask1(nrules),mask2(nrules),smoothing(nrules),STAT=istat)
+    do n = 1,nrules
+       read(fid,*) mask1(n), mask2(n), smoothing(n)
+    end do
+
+	! read the mask array
+      do j=1,NzEarth
+      	read(fid,*,iostat=ios) (Cm%mask(k,j), k=1,Ny)
+      end do
+
+	close(fid)
+
+
+
+       
+  end subroutine read_Cm
+! *******************************************************************
+  subroutine setupYCM(Ny,ylen,YDF,Cm,iz,gd)
 
   !use wsLAPACK
   real (kind=prec), pointer, dimension(:,:)   ::  YDF
-  integer  :: Ny
+  integer  :: Ny,iz
   real (kind=prec) :: ylen
+  type (modelCov_t), intent(in)   :: Cm
+    type (grid_t),   intent(in)    :: gd
 
   integer  :: iy,info,istat
-  real (kind=prec) :: cr, cl
+  real (kind=prec) :: cr, cl,min_scale
   real (kind=prec), allocatable, dimension(:)   ::  dfyc, dfyr
 
 
@@ -149,11 +239,41 @@
   do iy = 1,Ny
     cr = ylen
     cl = ylen
+	    
+		IF (iy.LT.Ny) THEN
+          IF ((cm%mask(iy,iz) .eq. OCEAN).AND.(cm%mask(iy+1,iz).eq. OCEAN)) THEN
+            cr = R_ZERO
+          ENDIF
+        ENDIF
+
+		IF (iy.LT.Ny) THEN
+          IF ((cm%mask(iy,iz) .eq. AIR).AND.(cm%mask(iy+1,iz).eq. AIR)) THEN
+            cr = R_ZERO
+          ENDIF
+        ENDIF
+
+
+
+
+        IF (iy.GT.1) THEN
+          IF ((cm%mask(iy,iz) .eq. OCEAN).AND.(cm%mask(iy-1,iz).eq. OCEAN)) THEN
+            cl = R_ZERO
+          ENDIF
+        ENDIF
+
+
+        IF (iy.GT.1) THEN
+          IF ((cm%mask(iy,iz) .eq. AIR).AND.(cm%mask(iy-1,iz).eq. AIR)) THEN
+            cl = R_ZERO
+          ENDIF
+        ENDIF
+
+
+
+
 
     dfyc(iy) = 1. + cr + cl
     dfyr(iy) = -cr
-!   dfyc(iy) = 1. - cr - cl
-!   dfyr(iy) = cr
   enddo
 
   do iy =1,Ny
@@ -177,15 +297,17 @@
 
 !------------------------------------------------------------------------------
 
-  subroutine setupZCM(Nzb,zlen,ZDF)
+  subroutine setupZCM(Nzb,zlen,ZDF,cm,iy,gd)
 
   !use wsLAPACK
   real (kind=prec), pointer,  dimension(:,:)   ::  ZDF
-  integer  :: Nzb
+  integer  :: Nzb,iy
   real (kind=prec) :: zlen
+    type (modelCov_t), intent(in)   :: Cm
+	type (grid_t),   intent(in)    :: gd
 
   integer  :: iz,info,istat
-  real (kind=prec) :: cr, cl
+  real (kind=prec) :: cr, cl,min_scale
   real (kind=prec), allocatable, dimension(:)   ::  dfzc, dfzr
 
 
@@ -201,10 +323,34 @@
     cr = zlen
     cl = zlen
 
+        IF (iz.LT.Nzb) THEN
+          IF ((cm%mask(iy,iz) .eq. OCEAN).AND.(cm%mask(iy,iz+1).eq. OCEAN)) THEN
+            cr = R_ZERO
+          ENDIF
+        ENDIF
+
+        IF (iz.LT.Nzb) THEN
+          IF ((cm%mask(iy,iz) .eq. AIR).AND.(cm%mask(iy,iz+1).eq. AIR)) THEN
+            cr = R_ZERO
+          ENDIF
+        ENDIF
+
+        IF (iz.GT.1) THEN
+          IF ((cm%mask(iy,iz) .eq. OCEAN).AND.(cm%mask(iy,iz-1).eq. OCEAN)) THEN
+            cl = R_ZERO
+          ENDIF
+        ENDIF
+
+        IF (iz.GT.1) THEN
+          IF ((cm%mask(iy,iz) .eq. AIR).AND.(cm%mask(iy,iz-1).eq. AIR)) THEN
+            cl = R_ZERO
+          ENDIF
+        ENDIF
+
+
     dfzc(iz) = 1. + cr + cl
     dfzr(iz) = -cr
-!   dfzc(iz) = 1. - cr - cl
-!   dfzr(iz) =  cr
+
   enddo
 
   do iz =1,Nzb
@@ -233,18 +379,18 @@
   type (modelCov_t),   intent(in)    :: Cm
   type (modelParam_t), intent(inout) :: CmJ
 
-  integer            :: Ny,Nz,it, dTime
+  integer            :: Ny,Nz,it, dTime,iy,iz
 
   Ny = CmJ%Ny
   Nz = CmJ%NzEarth
 
-  dTime = 10
+  dTime = Cm%N
 
-! do iz = 1,Nz
-!   do iy = 1,Ny
-!     write(45,*) CmJ%v(iy,iz)
-!   enddo
-! enddo
+ !do iz = 1,Nz
+ ! do iy = 1,Ny
+ !  write(45,*) CmJ%v(iy,iz)
+ ! enddo
+ !enddo
 
   do it = 1,dTime
     call yDiff(Cm,CmJ)
@@ -255,11 +401,13 @@
     call yDiff(Cm,CmJ)
   enddo
 
-! do iz = 1,Nz
-!   do iy = 1,Ny
-!     write(46,*) CmJ%v(iy,iz)
-!   enddo
-! enddo
+ do iz = 1,Nz
+   do iy = 1,Ny
+     if (cm%mask(iy,iz) == OCEAN .or. cm%mask(iy,iz) == AIR) then
+	   CmJ%v(iy,iz)=R_ZERO
+     end if
+   enddo
+ enddo
 
   end subroutine solveDiff
 

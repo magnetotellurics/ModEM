@@ -1,0 +1,42 @@
+# Makefile suited for building the Mod3D_EM program
+# Generated using: ./fmkmf.pl [OPTIONS] Mod3D_EM.f90 > Makefile
+# with command line options
+# -p .:MPI:INV:LAPACK:SENS:UTILS:FIELDS/FiniteDiff3D:3D_MT:3D_MT/DICT:3D_MT/modelParam:3D_MT/FWD:3D_MT/FWD/Mod2d:3D_MT/ioMod
+# -f90 mpif90 (compiler)
+# -opt -O2 -ip -funroll-loops (compiler optimisation)
+# -l -lmkl_scalapack_lp64 -lmkl_blacs_openmpi_lp64 -lmkl_lapack -lmkl_intel_lp64 -lmkl_intel_thread -lmkl_core -liomp5 -lpthread -L/opt/intel/Compiler/11.1/072/mkl/lib/em64t -I/opt/intel/Compiler/11.1/072/mkl/include -I/opt/intel/Compiler/11.1/072/ipp/em64t/include (linking options)
+# -o ./objs/3D_$1/Release (output directory for object files)
+
+#  Uncomment these lines to make program for Solaris OS (legacy)
+# F90 = f90
+# FFLAGS = -dalign -g -C -w  -L/usr/local/lib
+# LIBS = -xlic_lib=sunperf
+#  Uncomment these lines to make program with g95
+# include Makefile.local
+# OBJDIR = ./objs/3D_MT/G95Debug
+# F90 = g95
+# FFLAGS = -O2
+# FFLAGS = -g -ftrace=frame -fbounds-check
+# MPIFLAGS = -cpp # for serial code
+# MODULE = -fmod=$(OBJDIR)
+# LIBS = -lblas -llapack
+#  Uncomment these lines to make program with Intel compiler
+# include Makefile.local
+# OBJDIR = ./objs/3D_MT/IFortDebug
+# F90 = ifort
+# FFLAGS = -O3 -parallel -openmp #-heap-arrays
+# FFLAGS = -debug all -check bounds -traceback -heap-arrays
+# MPIFLAGS = -cpp # for serial code
+# MODULE = -module $(OBJDIR)
+# LIBS = -lblas -llapack
+#  Uncomment these lines to make program with PGI compiler
+# include Makefile.local
+# OBJDIR = ./objs/3D_MT/PGIDebug
+# F90 = pgf95  # mpif90
+# FFLAGS = -O3
+# FFLAGS = -g -Mprof=lines -Mbounds
+# MPIFLAGS = -Mpreprocess # for serial code
+# MPIFLAGS = -Bstatic  -Mipa=fast  -Mextend  -Kieee -Mpreprocess -DMPI
+# MODULE = -module $(OBJDIR)
+# LIBS = -llapack -lblas
+# LIBS = -L/usr/lib64 -llapack -lblas -lpgftnrtl -Mprof=lines

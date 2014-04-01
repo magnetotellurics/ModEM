@@ -475,20 +475,24 @@ Contains
 !*******************************************************************************
 !*******************************************************************************
 !******************************************************************
-      subroutine read_solnVectorMTX(grid,eAll,cfile)
+      subroutine read_solnVectorMTX(Larg_Grid,eAll,cfile)
 
       ! reads an array of solution vectors for all transmitters & subgrids
       ! currently uses the old binary format; will switch to NetCDF when
       ! time allows
       ! this SHOULD initialize the transmitter dictionary and the grids, as needed
       ! but currently it can only work if these are pre-allocated and the same
+	  
+	  !NM: "this SHOULD initialize the ...", That will not work for the nested modelling and in case of Joint inversion.
+	  ! Also, the large_grid is initialized based on what we have in the E-file. Thus, the first thing to do is to read the meta data from the file,
+	  ! initialize both the large_grid and corrsponding solution vectors based on the number of Tx present in the file and NOT in the txDic!
 
       character(*), intent(in)                    :: cfile
       type(solnVectorMTX_t), intent(inout)        :: eAll
-      type(grid_t), intent(in), target            :: grid
+      type(grid_t), intent(inout)            :: Larg_Grid
 
       !   local variables
-      integer           :: j,k,nMode = 2, ios,ig,cdot
+      integer           :: j,k,nMode = 2, ios,ig,cdot,filePer
       integer           :: iTx,nTx
       character (len=3)         :: igchar
       character (len=20)        :: version = '',ModeNames(2)
@@ -498,18 +502,21 @@ Contains
       ModeNames(1) = 'Ey'
       ModeNames(2) = 'Ex'
 
-      nTx = size(txDict)
 
-      call create_solnVectorMTX(nTx,eAll)
-      do iTx=1,size(txDict)
-         call create_solnVector(grid,iTx,eAll%solns(iTx))
-      end do
 
           fn_input = trim(cfile)
 
           write(*,*) 'Reading E-fields from file: ',trim(fn_input)
+          call FileReadInit(fn_input,ioE,Larg_Grid,filePer,nMode,version,ios)
+		  call setup_grid(Larg_Grid)
+          nTx = filePer   ! Get nTx from the file
 
-          call FileReadInit(fn_input,ioE,eAll%solns(1)%grid,eAll%nTX,nMode,version,ios)
+      call create_solnVectorMTX(nTx,eAll)
+      do iTx=1,nTx
+         call create_solnVector(Larg_Grid,iTx,eAll%solns(iTx))
+      end do		  
+		  
+		  
           do j = 1,nTx
              do k = 1,2
 
@@ -554,7 +561,7 @@ Contains
 
           call FileWriteInit(version,fn_output,ioE,eAll%solns(1)%grid,eAll%nTX,nMode,ios)
           do j = 1,eAll%nTx
-             do k = 1,2
+             do k = 1,eAll%solns(j)%nPol
                omega = txDict(eAll%solns(j)%tx)%omega
 
                call EfileWrite(ioE, omega, j,  k, ModeNames(k), eAll%solns(j)%pol(k))

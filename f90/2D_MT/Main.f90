@@ -118,7 +118,12 @@ Contains
 
 
      case (INVERSE)
-       call create_CmSqrt(sigma0)
+       inquire(FILE=cUserDef%rFile_Cov,EXIST=exists)
+       if (exists) then
+          call create_CmSqrt(sigma0,cUserDef%rFile_Cov)
+       else
+          call create_CmSqrt(sigma0)
+       end if
 	   inquire(FILE=cUserDef%rFile_dModel,EXIST=exists)
 	   if (exists) then
 	      call deall_grid(grid)

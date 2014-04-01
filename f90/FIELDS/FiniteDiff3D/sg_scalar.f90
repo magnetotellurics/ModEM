@@ -912,11 +912,9 @@ Contains
 
           if (E1%gridType == E2%gridType) then
 
-             ! just copy component
-
-          E2%v = E1%v
-
-          E2%gridType = E1%gridType
+             ! just copy components
+             E2%v = E1%v
+             E2%gridType = E1%gridType
 
           else
              write (0, *) 'not compatible usage in copy_rscalar'

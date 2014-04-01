@@ -62,62 +62,87 @@ Contains
   !    be treated as an array here, even if there is only one element.
   !   As an example: to add tippers to TE mode, dimension on Z
   !     will have to be changed to 2 (and of Resp to 4)!
-  complex(kind=prec)	:: Z(1)
+  complex(kind=prec)	:: Z(1),tempZ(1)
 
   !  local variables
-  type(sparsevecc)		:: Lb,Le
-  complex(kind=prec)	:: B,E
+  type(sparsevecc)		:: Lb,Le,Lbz,Lby
+  complex(kind=prec)	:: B,E,Bz,By
   real(kind=prec)	:: omega, x(2)
   logical			:: Conj_Case = .false.
-  character*2			:: mode
+  character(2)			:: mode
   character*80			:: msg
-
+  integer               :: yz  !define which magnetic componenets is required (By=1, Bz=2)
   !  get mode, frequency for transmitter used to compute solution ef
   mode = txDict(ef%tx)%mode
   omega =  txDict(ef%tx)%omega
   ! get location from receiver dictionary
   x = rxDict(iRX)%x
-
-  if(mode.eq.'TE') then
-     ! electric field
+  if( mode.eq.'TE') then
+     ! electric field Ex
      call NodeInterpSetup2D(ef%grid,x,mode,Le)
-     ! magnetic field
-     call BfromESetUp_TE(ef%grid,x,omega,Lb)
-
-
-  elseif(mode.eq.'TM') then
-     ! magnetic field
+     ! magnetic field By
+     yz=1
+     call BfromESetUp_TE(ef%grid,x,omega,yz,Lb)
+     
+     yz=1
+     call BfromESetUp_TE(ef%grid,x,omega,yz,Lby)
+     ! magnetic field Bz (required if TP is needed)
+     yz=2
+     call BfromESetUp_TE(ef%grid,x,omega,yz,Lbz)
+  elseif(mode .eq.'TM') then
+     ! magnetic field Bx
      call NodeInterpSetup2D(ef%grid,x,mode,Lb)
-     ! electric field
+     ! electric field Ey
      call EfromBSetUp_TM(ef%grid,x,omega,Sigma,Le)
   else
      call errStop('option not available in dataResp')
   endif
+  
+ if(iDt .eq. Tzy_Impedance) then
+        ! error checking
+       if (.not. Lbz%allocated) then
+        write(0,*) 'Sparse vector Lb not allocated in dataResp for tx=',ef%tx,' rx=',iRX
+       endif
+       ! magnetic field By
+       By = dotProd_scvector(Lby,ef%vec,Conj_case)     
+       ! magnetic field Bz
+       Bz = dotProd_scvector(Lbz,ef%vec,Conj_case) 
+       Z(1) = Bz/By 
+ else      
+      ! error checking
+      if (.not. Le%allocated) then
+        write(0,*) 'Sparse vector Le not allocated in dataResp for tx=',ef%tx,' rx=',iRX
+      endif
+      if (.not. Lb%allocated) then
+        write(0,*) 'Sparse vector Lb not allocated in dataResp for tx=',ef%tx,' rx=',iRX
+      endif
+      !  Using sparse vector representations of data functionals,
+      !          compute impedance
+      E = dotProd_scvector(Le,ef%vec,Conj_case)
+      ! magnetic field
+      B = dotProd_scvector(Lb,ef%vec,Conj_case)
 
-  ! error checking
-  if (.not. Le%allocated) then
-    write(0,*) 'Sparse vector Le not allocated in dataResp for tx=',ef%tx,' rx=',iRX
-  endif
-  if (.not. Lb%allocated) then
-    write(0,*) 'Sparse vector Lb not allocated in dataResp for tx=',ef%tx,' rx=',iRX
-  endif
-
-  !  Using sparse vector representations of data functionals,
-  !          compute impedance
-  E = dotProd_scvector(Le,ef%vec,Conj_case)
-  ! magnetic field
-  B = dotProd_scvector(Lb,ef%vec,Conj_case)
-
-  ! impedance is trivial for 2D!
-  Z = E/B
-
+      ! impedance is trivial for 2D!
+      Z(1) = E/B
+      ! Now, check if we are working with Rho and Phase, and overwrite Z if needed
+      if (iDt .eq. Rho_Phs_TM ) then
+          Z(1)  = dcmplx((abs(Z(1))**2*MU_0/omega), atan2(ISIGN*dimag(Z(1)),real(Z(1)))*R2D+180.0d0)
+      end if
+ end if
+ 
   ! convert to real output
   Resp(1) = real(Z(1))
   Resp(2) = imag(Z(1))
 
   ! clean up
-  call deall_sparsevecc(Le)
-  call deall_sparsevecc(Lb)
+   if(iDt .eq. Tzy_Impedance) then
+         call deall_sparsevecc(Lby)
+         call deall_sparsevecc(Lbz)
+   else    
+         call deall_sparsevecc(Lb)
+         call deall_sparsevecc(Le)
+   end if
+   
 
   end subroutine dataResp
 
@@ -149,11 +174,12 @@ Contains
   type(sparseVector_t), intent(inout)		:: Lz(1)
 
   !  local variables
-  complex (kind=prec)		:: B,E,c_E,c_B
-  type(sparsevecc)			:: Le,Lb
+  complex (kind=prec)		:: B,E,c_E,c_B,By,Bz,c_By,c_Bz,Z
+  type(sparsevecc)			:: Le,Lb,Lby,Lbz
   real (kind=prec)		:: x(2), omega
-  character*2				:: mode
+  character(2)				:: mode
   logical				:: Conj_case = .false.
+  integer                :: yz
 
   !  get mode, frequency for transmitter used to compute solution ef
   mode = txDict(e0%tx)%mode
@@ -162,12 +188,20 @@ Contains
   x = rxDict(iRX)%x
 
   !   evaluate E, B, for background solution
-  if(mode.eq.'TE') then
+if(mode .eq.'TE') then
      ! electric field
      call NodeInterpSetup2D(e0%grid,x,mode,Le)
      ! magnetic field
-     call BfromESetUp_TE(e0%grid,x,omega,Lb)
-  elseif(mode.eq.'TM') then
+     yz=1
+     call BfromESetUp_TE(e0%grid,x,omega,yz,Lb)
+     
+     ! magnetic field By (its repetation to the previous Interpolation, but, saved in Lby. Leave it like this for now)
+     yz=1
+     call BfromESetUp_TE(e0%grid,x,omega,yz,Lby)
+     ! magnetic field Bz (required if TP is needed)
+     yz=2
+     call BfromESetUp_TE(e0%grid,x,omega,yz,Lbz)
+elseif(mode .eq.'TM') then
      ! magnetic field
      call NodeInterpSetup2D(e0%grid,x,mode,Lb)
      ! electric field
@@ -175,23 +209,39 @@ Contains
   else
      call errStop('option not available in Lrows')
   endif
+  
+if(iDt .eq. Tzy_Impedance) then
+      Bz = dotProd_scvector(Lbz,e0%vec,Conj_case)  
+      By = dotProd_scvector(Lby,e0%vec,Conj_case)
 
-  !  Compute electric, magnetic field for background soln.
-  E = dotProd_scvector(Le,e0%vec,Conj_case)
-  B = dotProd_scvector(Lb,e0%vec,Conj_case)
 
-  !  compute sparse vector representations of linearized
-  !    impedance functional; coefficients depend on E, B
-  c_E = C_ONE/B
-  c_B = -E/(B*B)
-  !  Nominally, Lz = c_E*Le + c_B*Lb
-  ! However, note that Lz is of type sparseVector (here just a wrapped
-  !    version of a sparsevecc object)
-  call linComb_sparsevecc(Le,c_E,Lb,c_B,Lz(1)%L)
+      c_By = C_ONE/By
+      c_Bz = -Bz/(By*By)
+      call linComb_sparsevecc(Lbz,c_by,Lby,c_Bz,Lz(1)%L)
+      call deall_sparsevecc(Lby)
+      call deall_sparsevecc(Lbz)  
+else      
+      !  Compute electric, magnetic field for background soln.
+      E = dotProd_scvector(Le,e0%vec,Conj_case)
+      B = dotProd_scvector(Lb,e0%vec,Conj_case)
 
-  ! clean up
-  call deall_sparsevecc(Le)
-  call deall_sparsevecc(Lb)
+      !  compute sparse vector representations of linearized
+      !    impedance functional; coefficients depend on E, B
+      c_E = C_ONE/B
+      c_B = -E/(B*B)
+      !  Nominally, Lz = c_E*Le + c_B*Lb
+      ! However, note that Lz is of type sparseVector (here just a wrapped
+      !    version of a sparsevecc object)
+      call linComb_sparsevecc(Le,c_E,Lb,c_B,Lz(1)%L)
+     
+      ! Now, check if we are working with Rho and Phase: Not ready yet.
+      if (iDt .eq. Rho_Phs_TM) then
+          
+      end if    
+      ! clean up
+      call deall_sparsevecc(Le)
+      call deall_sparsevecc(Lb)
+end if
 
   end subroutine Lrows
 !
@@ -221,7 +271,7 @@ Contains
   complex (kind=prec)   :: B,c_E
   type(sparsevecc)      :: Lb,Le
   real (kind=prec)      :: x(2), omega
-  character*2           :: mode
+  character(2)           :: mode
   logical               :: Conj_case = .false.
   logical               :: isComplex = .true.
   integer               :: nFunc = 1
@@ -252,7 +302,7 @@ Contains
     !  Qimag(iFunc) = Sigma0
     !  call zero(Qimag(iFunc))
 	!enddo
-  elseif(mode .eq. 'TM') then
+  elseif(mode.eq. 'TM' ) then
      ! set the logical to false - vectors are non-zero.
      zeroValued = .false.
      ! compute magnetic field for background solution

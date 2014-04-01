@@ -572,7 +572,8 @@ Contains
      do i = 1, d%nComp
         if (.not. d%exist(i,j)) then
             cycle
-        elseif (abs(d%error(i,j)) <= R_TINY * abs(d%value(i,j))) then
+        elseif (abs(d%error(i,j)) <= 1E-20 * abs(d%value(i,j))) then
+!        elseif (abs(d%error(i,j)) <= 1E-20) then
            call errStop('data error bars too small in normalize_dataBlock')
         endif
         d%value(i,j) = d%value(i,j)/(d%error(i,j)**nn)

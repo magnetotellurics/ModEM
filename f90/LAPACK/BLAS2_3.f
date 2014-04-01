@@ -5101,3 +5101,81 @@ c ====================================================================
 *
       END
 c ====================================================================
+
+*           lower triangular part of the array C must contain the lower
+*           triangular part  of the  symmetric matrix  and the strictly
+*           upper triangular part of C is not referenced.  On exit, the
+*           lower triangular part of the array  C is overwritten by the
+*           lower triangular part of the updated matrix.
+*
+*  LDC    - INTEGER.
+*           On entry, LDC specifies the first dimension of C as declared
+*           in  the  calling  (sub)  program.   LDC  must  be  at  least
+*           max( 1, n ).
+*           Unchanged on exit.
+*
+*
+*  Level 3 Blas routine.
+*
+*  -- Written on 8-February-1989.
+*     Jack Dongarra, Argonne National Laboratory.
+*     Iain Duff, AERE Harwell.
+*     Jeremy Du Croz, Numerical Algorithms Group Ltd.
+*     Sven Hammarling, Numerical Algorithms Group Ltd.
+*
+*
+*     .. External Functions ..
+      LOGICAL            LSAME
+      EXTERNAL           LSAME
+*     .. External Subroutines ..
+      EXTERNAL           XERBLA
+*     .. Intrinsic Functions ..
+      INTRINSIC          MAX
+*     .. Local Scalars ..
+      LOGICAL            UPPER
+      INTEGER            I, INFO, J, L, NROWA
+      DOUBLE PRECISION   TEMP
+*     .. Parameters ..
+      DOUBLE PRECISION   ONE ,         ZERO
+      PARAMETER        ( ONE = 1.0D+0, ZERO = 0.0D+0 )
+*     ..
+*     .. Executable Statements ..
+*
+*     Test the input parameters.
+*
+      IF( LSAME( TRANS, 'N' ) )THEN
+         NROWA = N
+      ELSE
+         NROWA = K
+      END IF
+      UPPER = LSAME( UPLO, 'U' )
+*
+      INFO = 0
+      IF(      ( .NOT.UPPER               ).AND.
+     $         ( .NOT.LSAME( UPLO , 'L' ) )      )THEN
+         INFO = 1
+      ELSE IF( ( .NOT.LSAME( TRANS, 'N' ) ).AND.
+     $         ( .NOT.LSAME( TRANS, 'T' ) ).AND.
+     $         ( .NOT.LSAME( TRANS, 'C' ) )      )THEN
+         INFO = 2
+      ELSE IF( N  .LT.0               )THEN
+         INFO = 3
+      ELSE IF( K  .LT.0               )THEN
+         INFO = 4
+      ELSE IF( LDA.LT.MAX( 1, NROWA ) )THEN
+         INFO = 7
+      ELSE IF( LDC.LT.MAX( 1, N     ) )THEN
+         INFO = 10
+      END IF
+      IF( INFO.NE.0 )THEN
+         CALL XERBLA( 'DSYRK ', INFO )
+         RETURN
+      END IF
+*
+*     Quick return if possible.
+*
+      IF( ( N.EQ.0 ).OR.
+     $    ( ( ( ALPHA.EQ.ZERO ).OR.( K.EQ.0 ) ).AND.( BETA.EQ.ONE ) ) )
+     $   RETURN
+*
+*     And when  alpha.

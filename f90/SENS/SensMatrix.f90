@@ -292,7 +292,40 @@ Contains
     close(ioSens)
 
   end subroutine write_sensMatrixMTX
+!*********************************************************************
+  ! output is a quick fix, as always - reduces to nearly the same thing
+  ! as before, a vector of model parameters
+  subroutine write_JT_multi_Tx_vec(JT_multi_Tx_vec,cfile)
 
+    type(modelParam_t), pointer	:: JT_multi_Tx_vec(:)
+    character(*), intent(in)				:: cfile
+    ! local
+    integer  iTx,iDt,iRx,nTx,nDt,nSite,nComp,i,j,k,istat,ios,nAll
+    character(80) header
+
+    if(.not. associated(JT_multi_Tx_vec)) then
+        call errStop('JT_multi_Tx_vec not allocated in write_JT_multi_Tx_vec')
+    end if
+
+    open(unit=ioSens, file=cfile, form='unformatted', iostat=ios)
+	write(0,*) 'Output JT_multi_Tx_vec...'
+
+    write(header,*) 'JT multi_Tx vectors'
+	write(ioSens) header
+
+    nTx = size(JT_multi_Tx_vec)
+    nComp=1
+    do i = 1,nTx
+            write(header,'(a10,i4)') 'JT for tx=',i
+        	call write_JT_multi_vec_binary(JT_multi_Tx_vec(i),header,cfile)
+            
+   end do !tx
+   
+
+
+    close(ioSens)
+
+  end subroutine write_JT_multi_Tx_vec
   !*********************************************************************
   ! implements direct (real) matrix vector multiplication d = J m
   ! ... this can be used to test the implementation of calcJ,

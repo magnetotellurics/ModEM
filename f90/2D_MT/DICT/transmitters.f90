@@ -21,6 +21,7 @@ module transmitters
      real(kind=prec)            :: period = R_ZERO
      ! index number to frequency/ period in solution file
      integer                    :: iPer
+     character(2)               :: Tx_type
    end type MTtx
 
    ! transmitter dictionary for MT data will be an array of
@@ -93,7 +94,7 @@ Contains
 
      ! If this transmitter isn't new, do nothing
      do iTx = 1,nTx
-     	if ((Period - txDict(iTx)%period < TOL6) .and. (Mode .eq. txDict(iTx)%mode)) then
+     	if ((abs(Period - txDict(iTx)%period) < TOL6) .and. (Mode .eq. txDict(iTx)%mode)) then
      		return
      	end if
      end do

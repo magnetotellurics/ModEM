@@ -10,6 +10,7 @@ module UserCtrl
   character*1, parameter	:: COMPUTE_J = 'J'
   character*1, parameter	:: MULT_BY_J = 'M'
   character*1, parameter	:: MULT_BY_J_T = 'T'
+  character*1, parameter	:: MULT_BY_J_T_multi_Tx = 'x'
   character*1, parameter	:: INVERSE = 'I'
   character*1, parameter	:: APPLY_COV = 'C'
   character*1, parameter  :: TEST_ADJ = 'A'
@@ -219,6 +220,8 @@ Contains
         write(*,*) '  Multiplies a model by J to create a data vector'
         write(*,*) '[MULT_BY_J_T]'
         write(*,*) ' -T  rFile_Model rFile_Data wFile_dModel [rFile_fwdCtrl]'
+        write(*,*) '[MULT_BY_J_T_multi_Tx]'
+        write(*,*) ' -x  rFile_Model rFile_Data wFile_dModel [rFile_fwdCtrl]'
         write(*,*) '  Multiplies a data vector by J^T to create a model'
         write(*,*) '[APPLY_COV]'
         write(*,*) ' -C FWD rFile_Model wFile_Model [rFile_Cov rFile_Prior]'
@@ -342,7 +345,18 @@ Contains
 	    if (narg > 3) then
 	       ctrl%rFile_fwdCtrl = temp(4)
 	    end if
-
+      case (MULT_BY_J_T_multi_Tx) ! x
+        if (narg < 3) then
+           write(0,*) 'Usage: -x  rFile_Model rFile_Data wFile_dModel [rFile_fwdCtrl]'
+           stop
+        else
+	       ctrl%rFile_Model = temp(1)
+	       ctrl%rFile_Data = temp(2)
+	       ctrl%wFile_dModel = temp(3)
+	    end if
+	    if (narg > 3) then
+	       ctrl%rFile_fwdCtrl = temp(4)
+	    end if
       case (INVERSE) ! I
         if (narg < 3) then
            write(0,*) 'Usage: -I NLCG rFile_Model rFile_Data [lambda eps]'

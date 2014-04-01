@@ -21,10 +21,22 @@ subroutine set_e_soln(pol_index,e)
     Integer, intent(in)                :: pol_index
     type(solnVector_t), intent(inout)  :: e
 
+                  orginal_nPol=1
 
 
 end subroutine set_e_soln
 !*****************************************************************************************
+subroutine count_number_of_meaasges_to_RECV(eAll1)
+
+  type(solnVectorMTX_t), intent(in)  :: eAll1
+  integer                            :: itx
+            answers_to_receive=0
+            do itx=1,eAll1%nTx
+              answers_to_receive=answers_to_receive+(1)
+			end do
+			
+
+end subroutine count_number_of_meaasges_to_RECV
 !*****************************************************************************************
 subroutine reset_e_soln(emsoln)
     type(solnVector_t), intent(inout)  :: emsoln
@@ -33,11 +45,10 @@ subroutine reset_e_soln(emsoln)
 
 end subroutine reset_e_soln
 !*****************************************************************************************
-subroutine get_nPol_MPI(eAll)
+subroutine get_nPol_MPI(emsoln)
 
-   type(solnVectorMTX_t), intent(in)	:: eAll
-
-
+    type(solnVector_t), intent(in)  :: emsoln
+             
             nPol_MPI= 1
 
 end subroutine get_nPol_MPI

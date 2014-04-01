@@ -36,7 +36,7 @@ integer        :: typelist(0:21)
 ! Parameters used in communication
 !********************************************************************
 Integer        :: answers_to_receive,received_answers,recv_loop
-Integer        :: who, which_stn,which_per,which_dt,which_pol
+Integer        :: who, which_stn,which_per,which_dt,which_pol,orginal_nPol
 Integer , pointer, dimension(:)  :: eAll_location
 logical                          :: eAll_exist=.false.
 real*8,   pointer, dimension(:)  :: model_para_vec
@@ -72,6 +72,7 @@ type :: define_worker_job
      Integer       :: taskid
      logical       :: keep_E_soln=.false.
      logical       :: several_Tx=.false.
+     logical       :: create_your_own_e0=.false.
  end type define_worker_job
 type(define_worker_job), save :: worker_job_task
 !********************************************************************
@@ -89,7 +90,7 @@ subroutine create_worker_job_task_place_holder
 
        CALL MPI_PACK_SIZE(80, MPI_CHARACTER, MPI_COMM_WORLD, Nbytes1,  ierr)
        CALL MPI_PACK_SIZE(6, MPI_INTEGER, MPI_COMM_WORLD, Nbytes2,  ierr)
-       CALL MPI_PACK_SIZE(2, MPI_LOGICAL, MPI_COMM_WORLD, Nbytes3,  ierr)
+       CALL MPI_PACK_SIZE(3, MPI_LOGICAL, MPI_COMM_WORLD, Nbytes3,  ierr)
 
          Nbytes=(Nbytes1+Nbytes2+Nbytes3)+1
 
@@ -118,6 +119,7 @@ index=1
 
         call MPI_Pack(worker_job_task%keep_E_soln,1, 		MPI_LOGICAL, worker_job_package, Nbytes, index, MPI_COMM_WORLD, ierr)
         call MPI_Pack(worker_job_task%several_Tx,1, 		MPI_LOGICAL, worker_job_package, Nbytes, index, MPI_COMM_WORLD, ierr)
+        call MPI_Pack(worker_job_task%create_your_own_e0,1, 		MPI_LOGICAL, worker_job_package, Nbytes, index, MPI_COMM_WORLD, ierr)
 
 end subroutine Pack_worker_job_task
 
@@ -136,6 +138,7 @@ index=1
         
         call MPI_Unpack(worker_job_package, Nbytes, index, worker_job_task%keep_E_soln,1, MPI_LOGICAL,MPI_COMM_WORLD, ierr)
         call MPI_Unpack(worker_job_package, Nbytes, index, worker_job_task%several_Tx,1, MPI_LOGICAL,MPI_COMM_WORLD, ierr)
+        call MPI_Unpack(worker_job_package, Nbytes, index, worker_job_task%create_your_own_e0,1, MPI_LOGICAL,MPI_COMM_WORLD, ierr)
 
 end subroutine Unpack_worker_job_task
 

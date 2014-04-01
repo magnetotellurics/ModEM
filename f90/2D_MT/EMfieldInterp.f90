@@ -97,17 +97,20 @@ Contains
     else
        call create_sparsevecc(inGrid,NODE_EARTH,ii,LC)
     endif
-
-    LC%j = J(1:ii)
-    LC%k = K(1:ii)
-    LC%c = C(1:ii)
+  do n=1,ii
+    LC%j(n) = J(n)
+    LC%k(n) = K(n)
+    LC%c(n) = C(n)
+ end do   
     if(mode == 'TM') then
-       LC%k = K(1:ii) - inGrid%Nza
+      do n=1,ii   
+       LC%k(n) = K(n) - inGrid%Nza
+      end do  
     endif
 
   end subroutine NodeInterpSetup2D
   ! **************************************************************************
-  subroutine BinterpSetUp_TE(inGrid,x,LC)
+  subroutine BinterpSetUp_TE(inGrid,x,yz,LC)
     ! sets up coefficients in sparse vector LC for evaluation/interpolation
     ! of HORIZONTAL magnetic field component at location given by x,
     ! using MAGNETIC field vector defined on face
@@ -118,9 +121,11 @@ Contains
     ! staggered grid edges; see BfromESetup_TE)
     ! INTERPOLATION METHOD:  bilinear spline
     !   NEED TO MODIFY TO ALLOW INTERPOLATION OF VERTICAL
+    !   Modified to allow  interpolation of vertical components (Naser Meqbel, 10th of Jan. 2013)
 
     type (grid_t), target, intent(in)	:: inGrid
     real (kind=prec), dimension(2), intent(in) 	:: x
+    integer, intent(in)        			:: yz
     type (sparsevecc), intent(inout) 		:: LC
 
     !   local variables
@@ -136,22 +141,45 @@ Contains
     endif
 
     ! this part needs to change for vertical mag field
-    nyMax = inGrid%ny+1
+    nyMax = inGrid%ny
     nzMax = inGrid%nz
 
-    j0 = minNode(x(1),inGrid%yNode)
+     if (yz .eq. 1) then
+       j0 = minNode(x(1),inGrid%yNode)
+       k0 = minNode(x(2)+inGrid%zAir,inGrid%zCenter)
+       ! maximum number of edge nodes
+       nyMax = nyMax + 1
+    elseif (yz .eq. 2) then
+       j0 = minNode(x(1),inGrid%yCenter)
+       k0 = minNode(x(2)+inGrid%zAir,inGrid%zNode)
+       ! maximum number of edge nodes
+       nzMax = nzMax + 1
+    else
+       write(0,*) 'Error: component # out of range in BinterpSetUp_TE'
+    endif
+    
+    
+    !j0 = minNode(x(1),inGrid%yNode)
     if((j0.gt.0).and.(j0.lt.nyMax)) then
+      if (yz .eq.1) then    
        w(1,2) = (x(1) - inGrid%yNode(j0))/(inGrid%dy(j0))
+      else
+       w(1,2)=  (x(1)-  inGrid%yCenter(j0))/(inGrid%Dely(j0+1)) 
+      end if 
     elseif(j0.le.0) then
        w(1,2) = ONE
     else
        w(1,2) = R_ZERO
     endif
 
-    k0 = minNode(x(2)+inGrid%zAir,inGrid%zCenter)
+    !k0 = minNode(x(2)+inGrid%zAir,inGrid%zCenter)
     if((k0.gt.0).and.(k0.lt.nzMax)) then
-       w(2,2) = (x(2)+inGrid%zAir - inGrid%zCenter(k0))/(inGrid%Delz(k0+1))
-    elseif(k0.le.0) then
+       if (yz .eq. 2) then
+          w(2,2) = (x(2)+inGrid%zAir - inGrid%zNode(k0))/(inGrid%dz(k0))
+       else    
+          w(2,2) = (x(2)+inGrid%zAir - inGrid%zCenter(k0))/(inGrid%Delz(k0+1))
+       end if
+     elseif(k0.le.0) then
        w(2,2) = ONE
     else
        w(2,2) = R_ZERO
@@ -181,17 +209,19 @@ Contains
   end subroutine BinterpSetUp_TE
   ! **************************************************************************
   ! magnetic field from electrical field in a sparse vector data structures
-  subroutine BfromESetUp_TE(inGrid,x,omega,LC)
+  subroutine BfromESetUp_TE(inGrid,x,omega,yz,LC)
     !  sets up coefficients in sparse vector LC for evaluation/interpolation
     !  of HORIZONTAL TE magnetic field xyz at
     !  location given by x, using TE ELECTRIC field defined on grid nodes
     !  zero vertical location corresponds to the Earth's surface; positive down
     !  Calls BinterpSetUp, and various sparse_vector routines
     !   NEED TO MODIFY TO ALLOW INTERPOLATION OF VERTICAL
+    ! Modified to allow  interpolation of vertical components (Naser Meqbel, 10th of Jan. 2013)
 
     type (grid_t), target, intent(in)	:: inGrid
     real (kind=prec), dimension(2), intent(in)	:: x
     real (kind=prec), intent(in)	:: omega
+    integer, intent(in)        			:: yz
     type (sparsevecc), intent(inout) 		:: LC
 
     integer 					:: ii
@@ -210,16 +240,27 @@ Contains
 
     !  first setup sparsevector for interpolation of mag fields from
     !  mag fields at center of edge
-    call BinterpSetUp_TE(inGrid,x,LCH)
+    call BinterpSetUp_TE(inGrid,x,yz,LCH)
 
     !   loop over coefficients for mag field interpolation
     do ii = 1,LCH%nCoeff
+     if (yz .eq. 1 ) then  
        J(1) = LCH%j(ii)
        J(2) = LCH%j(ii)
        K(1) = LCH%k(ii)
        K(2) = LCH%k(ii)+1
        C(1) = MinusONE/(inGrid%dz(K(1))*i_omega)
        C(2) = ONE/(inGrid%dz(K(1))*i_omega)
+     elseif (yz .eq. 2 )then
+       J(1) = LCH%j(ii)
+       J(2) = LCH%j(ii)+1
+       K(1) = LCH%k(ii)
+       K(2) = LCH%k(ii)
+       C(1) = MinusONE/(inGrid%dy(J(1))*i_omega)
+       C(2) = ONE/(inGrid%dy(J(1))*i_omega)
+     end if
+     
+       
 
        if(ii.eq.1) then
           ! initialize LC (coefficients for H measurement functional:

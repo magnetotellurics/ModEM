@@ -48,7 +48,61 @@ logical, save, private		:: BC_from_file_Initialized = .false.
 !  logical, save, private		:: sigmaNotCurrent = .true.
 
 Contains
+   !**********************************************************************
+subroutine Interpolate_BC(grid)
+  type(grid_t), intent(in)        :: grid
+  integer                                  :: iTx,ix,iy,iz
 
+  
+
+
+	 b0%nonzero_Source = .false.
+     b0%nonzero_bc = .true.
+	 
+	 
+     b0%adj = 'FWD'
+     b0%sparse_Source = .false.
+     iTx=1
+     call create_RHS(grid,iTx,b0)
+	!In case of interpolating the BC from eAll_larg   
+	! If eAll_ larg solution is already allocated, then use that to interpolate the BC from it
+     
+	  if (eAll_larg%allocated) then
+           write(15,*) ' Start interploating',grid%nx,grid%ny,grid%nz,b0%bc%nx,b0%bc%ny,b0%bc%nz
+		call Interpolate_BC_from_E_soln (eAll_larg,Larg_Grid,Grid,b0)
+        !Once we are ready from eAll_larg, deallocate it, and keep track, that BC_from_file are already Initialized.
+        call deall(eAll_larg)
+        call deall_grid(Larg_Grid)
+         BC_from_file_Initialized=.true.
+      end if
+        write(15,*) ' End interploating',BC_from_file(1)%yXMin(10,11)
+  
+
+
+        
+      
+end subroutine Interpolate_BC
+!**********************************************************************
+subroutine ini_BC_from_file(grid)
+  type(grid_t), intent(in)        :: grid    
+  integer                                  :: iTx,j,status
+  
+	 b0%nonzero_Source = .false.
+     b0%nonzero_bc = .true.
+     b0%adj = 'FWD'
+     b0%sparse_Source = .false.
+     iTx=1
+     call create_RHS(grid,iTx,b0)
+     
+     
+     allocate (BC_from_file(nTx_nPol), STAT=status)
+     do j=1,nTx_nPol
+       BC_from_file(j)=b0%bc
+     end do
+     BC_from_file_Initialized=.true.
+     
+
+end subroutine ini_BC_from_file     
    !**********************************************************************
    subroutine initSolver(iTx,sigma,grid,e0,e,comb)
    !   Initializes forward solver for transmitter iTx.
@@ -95,13 +149,13 @@ Contains
 
    !In case of interpolating the BC from eAll_larg   
    ! If eAll_ larg solution is already allocated, then use that to interpolate the BC from it
-   if (eAll_larg%allocated) then
-     call Interpolate_BC_from_E_soln (eAll_larg,Larg_Grid,grid,b0)
-     !Once we are ready from eAll_larg, deallocate it, and keep track, that BC_from_file are already Initialized.
-     call deall(eAll_larg)
-     call deall_grid(Larg_Grid)
-     BC_from_file_Initialized=.true.
-   end if
+   !if (eAll_larg%allocated) then
+   !  call Interpolate_BC_from_E_soln (eAll_larg,Larg_Grid,grid,b0)
+   !  !Once we are ready from eAll_larg, deallocate it, and keep track, that BC_from_file are already Initialized.
+   !  call deall(eAll_larg)
+   !  call deall_grid(Larg_Grid)
+   !  BC_from_file_Initialized=.true.
+   !end if
    
    if (BC_from_file_Initialized) then
      b0%bc%read_E_from_file=.true.

@@ -1,0 +1,12 @@
+#!/bin/sh
+if [ $# -le 0 ]; then
+    echo 1>&2 Usage: $0 Makefile3d.local
+    exit 127
+fi
+if [ -e $1 ]; then
+    rm $1
+fi
+perl fmkmf.pl -f90 pgf95 -opt '-g -Mbounds -Mconcur -mp' -mpi '-Mpreprocess' \
+-l '-L/usr/lib64 -llapack -lblas -lpgftnrtl -Mconcur -mp' -o './objs/3D_CSEM/Debug' \
+-p .:MPI:INV:LAPACK:SENS:UTILS:FIELDS/FiniteDiff3D:3D_CSEM:3D_CSEM/DICT:3D_CSEM/modelParam:3D_CSEM/Dipole1D:3D_CSEM/FWD:3D_CSEM/FWD/Mod2d:3D_CSEM/ioMod \
+Mod3DCSEM.f90 > $1

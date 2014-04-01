@@ -39,7 +39,7 @@ Contains
       th1=(th(j  )+th(j+1))/2.d0
        r1=( r(k  )+ r(k+1))/2.d0
 
-      vijk=r1*dsin( th1 )*abs( (r(k)**2)-(r(k+1)**2) )*abs( th(j+1)-th(j) )*ph(i)/2.d0
+      vijk=r1*dsin( th1 )*( (r(k)**2)-(r(k+1)**2) )*( th(j+1)-th(j) )*ph(i)/2.d0
 
       return
       end subroutine volume_vijk
@@ -73,7 +73,7 @@ Contains
        r1=( r(k  )+ r(k+1))/2.d0
        r2=( r(k+1)+ r(k+2))/2.d0
 
-      vijk2=r(k+1)*dsin( th(j+1) )*abs( (r1**2)-(r2**2) )*abs( th2-th1 )*dph/2.d0
+      vijk2=r(k+1)*dsin( th(j+1) )*( (r1**2)-(r2**2) )*( th2-th1 )*dph/2.d0
 
       return
       end subroutine volume_vijk2
@@ -99,7 +99,7 @@ Contains
       real(8),dimension(:)	         :: r
       real(8)                        :: sijk
  
-      sijk=abs( (r(k)**2)-(r(k+1)**2) )*abs( th(j+1)-th(j) )/2.d0
+      sijk=( (r(k)**2)-(r(k+1)**2) )*( th(j+1)-th(j) )/2.d0
  
       return
       end subroutine area_sijk
@@ -130,7 +130,7 @@ Contains
       th2=(th(j+1)+th(j+2))/2.d0
        r1=( r(k  )+ r(k+1))/2.d0
        r2=( r(k+1)+ r(k+2))/2.d0
-      sijk2=abs( (r1**2)-(r2**2) )*abs( th2-th1 )/2.d0
+      sijk2=( (r1**2)-(r2**2) )*( th2-th1 )/2.d0
  
       return
       end subroutine area_sijk2
@@ -158,7 +158,7 @@ Contains
       real(8),dimension(:)         :: r
       real(8) sjki
  
-      sjki=abs( (r(k)**2)-(r(k+1)**2) )* dsin( th(j) )*ph(i)/2.0d0
+      sjki=( (r(k)**2)-(r(k+1)**2) )* dsin( th(j) )*ph(i)/2.0d0
  
       return
       end subroutine area_sjki
@@ -191,7 +191,7 @@ Contains
       th1 = ( th(j  )+th(j+1) )/2.0d0
        r1 = (  r(k  )+ r(k+1) )/2.0d0
        r2 = (  r(k+1)+ r(k+2) )/2.0d0
-      sjki2=abs( (r1**2)-(r2**2) )* dsin( th1 )*dph/2.0d0
+      sjki2=( (r1**2)-(r2**2) )* dsin( th1 )*dph/2.0d0
  
       return
       end subroutine area_sjki2
@@ -219,7 +219,7 @@ Contains
       real(8),dimension(:)			:: r
       real(8)						:: skij
  
-      skij=(r(k)**2)*abs( dcos( th(j) )- dcos( th(j+1)) )*ph(i)
+      skij=(r(k)**2)*( dcos( th(j) )- dcos( th(j+1)) )*ph(i)
  
       return
       end subroutine area_skij
@@ -252,7 +252,7 @@ Contains
       th1 = ( th(j  )+th(j+1) )/2.d0
       th2 = ( th(j+1)+th(j+2) )/2.d0
        r1 = (  r(k  )+ r(k+1) )/2.d0
-      skij2=(r1**2)*abs( dcos( th1 )- dcos( th2 ) )*dph
+      skij2=(r1**2)*( dcos( th1 )- dcos( th2 ) )*dph
  
       return
       end subroutine area_skij2
@@ -363,7 +363,7 @@ Contains
       real(8),dimension(:)					:: r
       real(8)								:: yijk
  
-      yijk=r(k)*abs( th(j+1)-th(j) )
+      yijk=r(k)*( th(j+1)-th(j) )
  
       return
       end subroutine leng_yijk
@@ -392,7 +392,7 @@ Contains
       th2 = ( th(j+1)+th(j+2) )/2.0d0
        r1 = (  r(k  )+ r(k+1) )/2.0d0
 
-      yijk2=r1*abs( th2-th1 )
+      yijk2=r1*( th2-th1 )
 
       return
       end subroutine leng_yijk2
@@ -420,7 +420,7 @@ Contains
  
       r1 = ( r(k )+ r(k+1) )/2.d0
 
-      yijk2=r1*abs( th(j+1)-th(j) )
+      yijk2=r1*( th(j+1)-th(j) )
  
       return
       end subroutine leng_yijk2_shifted
@@ -445,7 +445,7 @@ Contains
       real(8),dimension(:)				:: r
       real(8)							:: zijk
  
-      zijk=abs( r(k)-r(k+1) )
+      zijk=r(k)-r(k+1)
  
       return
       end subroutine leng_zijk
@@ -472,7 +472,7 @@ Contains
       r1 = (  r(k  )+ r(k+1) )/2.0d0
       r2 = (  r(k+1)+ r(k+2) )/2.0d0
 
-      zijk2=abs( r1-r2 )
+      zijk2=r1-r2
 
       return
       end subroutine leng_zijk2
@@ -496,7 +496,7 @@ Contains
       real(8),dimension(:)				:: r
       real(8)							:: zijk2
  
-      zijk2=abs( r(k)-r(k+1) )
+      zijk2=r(k)-r(k+1)
  
       return
       end subroutine leng_zijk2_shifted
@@ -732,7 +732,7 @@ Contains
       real(8)                         :: vols,pi
   
       pi = 4.0D0*datan(1.0D0)
-      vols=4.0d0/3.0d0*pi*abs( (z(k1)**3)-(z(k2)**3) )
+      vols=4.0d0/3.0d0*pi*( (z(k1)**3)-(z(k2)**3) )
  
       return
       end subroutine volume_sph
