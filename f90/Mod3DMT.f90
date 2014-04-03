@@ -50,11 +50,20 @@ program Mod3DMT
       ! set the grid for the numerical computations
 
 #ifdef MPI
-      call setGrid_MPI(grid)
+    call setGrid_MPI(grid)
+    if (Read_Efield_from_file) then
+      if (taskid==0) then
+            call read_Efiled_from_file
+            call Interpolate_BC(grid)
+            call Master_job_Distribute_nTx_nPol(nTx_nPol)
+      else
+            call RECV_nTx_nPol
+            call ini_BC_from_file(grid)
+            call RECV_BC_form_Master
+      end if    
+    end if    
 #else
-
       call setGrid(grid)
-
 #endif
 
 
@@ -63,7 +72,7 @@ program Mod3DMT
 			    call Worker_job(sigma0,allData)
 	            if (trim(worker_job_task%what_to_do) .eq. 'Job Completed')  then
 	               	 call deallGlobalData()
-		             call cleanUp_MPI()
+		             !call cleanUp_MPI()
 	                 call MPI_destructor
 	              stop
 	            end if
@@ -102,20 +111,20 @@ program Mod3DMT
         call fwdPred(sigma0,allData,eAll)
 #endif
 
+
         ! write out all impedances
         call write_dataVectorMTX(allData,cUserDef%wFile_Data)
 
         if (write_EMsoln) then
         	! write out EM solutions
         	write(*,*) 'Saving the EM solution...'
-        	call write_solnVectorMTX(eAll,cUserDef%wFile_EMsoln)
+        	call write_solnVectorMTX(fidWrite,cUserDef%wFile_EMsoln,eAll)
         end if
 
      case (COMPUTE_J)
         write(*,*) 'Calculating the full sensitivity matrix...'
 #ifdef MPI
-        call Master_job_fwdPred(sigma0,allData,eAll)
-        call Master_job_calcJ(allData,sigma0,sens,eAll)
+        !call Master_job_COMPUTE_J(allData,sigma0,sens)
         call Master_job_STOP_MESSAGE
 #else
         call calcJ(allData,sigma0,sens)
@@ -126,7 +135,7 @@ program Mod3DMT
         write(*,*) 'Multiplying by J...'
 
 #ifdef MPI
-            !call Master_job_Jmult(dsigma,sigma0,allData)
+            call Master_job_Jmult(dsigma,sigma0,allData)
             call Master_job_STOP_MESSAGE
 #else
             call Jmult(dsigma,sigma0,allData)
@@ -138,14 +147,26 @@ program Mod3DMT
      case (MULT_BY_J_T)
         write(*,*) 'Multiplying by J^T...'
 #ifdef MPI
-         call Master_job_fwdPred(sigma0,allData,eAll)
-         call Master_job_JmultT(sigma0,allData,dsigma,eAll)
+         !call Master_job_fwdPred(sigma0,allData,eAll)
+         call Master_job_JmultT(sigma0,allData,dsigma)
          call Master_job_STOP_MESSAGE
 #else
          call JmultT(sigma0,allData,dsigma)
 #endif
 
          call write_modelParam(dsigma,cUserDef%wFile_dModel)
+         
+     case (MULT_BY_J_T_multi_Tx)
+        write(*,*) 'Multiplying by J^T...output multi-Tx model vectors'
+#ifdef MPI
+         call Master_job_fwdPred(sigma0,allData,eAll)
+         call Master_job_JmultT(sigma0,allData,dsigma,eAll,JT_multi_Tx_vec)
+         call Master_job_STOP_MESSAGE
+#else
+         call fwdPred(sigma0,allData,eAll)
+         call JmultT(sigma0,allData,dsigma,eAll,JT_multi_Tx_vec)
+#endif
+         call write_JT_multi_Tx_vec(JT_multi_Tx_vec,cUserDef%wFile_dModel)
 
      case (INVERSE)
      	if (trim(cUserDef%search) == 'NLCG') then
@@ -154,13 +175,14 @@ program Mod3DMT
             sigma1 = dsigma
            	call NLCGsolver(allData,cUserDef%lambda,sigma0,sigma1,cUserDef%rFile_invCtrl)
 
+
 #ifdef MPI
         	call Master_job_STOP_MESSAGE
 #endif
     	elseif (trim(cUserDef%search) == 'DCG') then
         	write(*,*) 'Starting the DCG search...'
         	sigma1 = dsigma
-        	call DCGsolver(allData,sigma0,sigma1,cUserDef%lambda)
+        	call DCGsolver(allData,sigma0,sigma1,cUserDef%lambda,cUserDef%rFile_invCtrl)
             !call Marquardt_M_space(allData,sigma0,sigma1,cUserDef%lambda)
 #ifdef MPI
         	call Master_job_STOP_MESSAGE
@@ -177,7 +199,7 @@ program Mod3DMT
         	call write_dataVectorMTX(allData,cUserDef%wFile_Data)
         end if
 
-     case (APPLY_COV)
+case (APPLY_COV)
         select case (cUserDef%option)
             case('FWD')
                 write(*,*) 'Multiplying input model parameter by square root of the covariance ...'
@@ -223,11 +245,11 @@ program Mod3DMT
 
      end select
 	 ! cleaning up
-	 call deallGlobalData()
+	 !call deallGlobalData()
 
 #ifdef MPI
             close(ioMPI)
-	    call cleanUp_MPI()
+	     ! call cleanUp_MPI()
 #else
             call cleanUp()
 #endif
