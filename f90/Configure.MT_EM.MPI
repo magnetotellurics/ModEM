@@ -20,4 +20,4 @@ perl fmkmf.pl -f90 mpif90 -opt '-O2 -ip -funroll-loops' -mpi '-fpp -DMPI' \
 -l '-lmkl_scalapack_lp64 -lmkl_blacs_openmpi_lp64 -lmkl_lapack -lmkl_intel_lp64 -lmkl_intel_thread -lmkl_core -liomp5 -lpthread -L/opt/intel/Compiler/11.1/072/mkl/lib/em64t -I/opt/intel/Compiler/11.1/072/mkl/include -I/opt/intel/Compiler/11.1/072/ipp/em64t/include' \
 -o './objs/3D_'$1'/Release' \
 -p .:MPI:$INV_dir:LAPACK:SENS:UTILS:FIELDS/FiniteDiff3D:$path_dir \
-Mod3D_EM.f90 > $2
+Mod3DMT.f90 > $2

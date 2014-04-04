@@ -27,6 +27,7 @@ type(RHS_t), save, private			:: b0
 ! Used for interpolating the BC from a larger grid.
   type(grid_t),save,public               	 ::	 Larg_Grid   
   type(solnVectorMTX_t),save,public          ::  eAll_larg
+  integer              ,save,public          ::   nTx_nPol
 !  initialization routines (call Fwd version if no sensitivities are
 !     are calculated).  Note that these routines are set up to
 !    automatically manage memory and to figure out which initialization

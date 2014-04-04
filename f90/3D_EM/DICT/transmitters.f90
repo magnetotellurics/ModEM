@@ -126,7 +126,28 @@ Contains
      iTx = nTx+1
 
   end function update_txDict
-!
+!!**********************************************************************
+! Writes the transmitter dictionary to screen. Useful for debugging.
+
+  subroutine print_txDict()
+
+     ! local variables
+     integer                     :: iTx
+
+     if (.not. associated(txDict)) then
+        return
+
+     end if
+
+
+     write(*,*) 'Transmitter dictionary:'
+     do iTx = 1, size(txDict)
+        write(*,*) iTx,txDict(iTx)%period,txDict(iTx)%nPol
+     enddo
+
+  end subroutine print_txDict
+
+! **************************************************************************
 ! **************************************************************************
 !
   function IsTxExist(Txa,Txb) result (YESNO)
