@@ -102,7 +102,7 @@
 	CmSqrt%Sz = 0.3
 	call create_iscalar(m%grid,CmSqrt%mask,CELL_EARTH)
 	CmSqrt%mask%v = FREE
-	CmSqrt%N = 2
+	CmSqrt%N = 1
     CmSqrt%allocated = .true.
 
     if (.not. present(cfile)) then

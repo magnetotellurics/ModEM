@@ -17,9 +17,7 @@
       type(rscalar)                        :: rho, ccond
       character(80)                        :: someChar='',paramType=''
       integer                              :: Nx, Ny, NzEarth, NzAir, someIndex=0, i, j, k
-      real(kind=prec)                              :: alpha=3.
-      real(kind=prec)                              :: max_height,factor,sum1
-      real(kind=prec),pointer, dimension(:)        :: edge_height
+      real(8)                              :: alpha=3.
 
 	  paramType = ''
 
@@ -46,8 +44,8 @@
       end if
 
 	  ! No information about the air layers in file. Hardcoded here.
-	    nzAir = 10
-	  
+	  nzAir = 10
+
 	  ! Initialize and read in the grid
       call create_grid(Nx,Ny,NzAir,NzEarth,grid)
 
@@ -55,33 +53,23 @@
       read(ioPrm,*) (grid%dy(j),j=1,grid%ny)
       read(ioPrm,*) (grid%dz(j),j=grid%nzAir+1,grid%nzAir+grid%nzEarth)
 
-!##################################################################################
-! New procedure to compute the air layers.
-! - First, determine the increasing factor used to compute the edges height. 
-!   This factor is determined using the max height, the thickness of the first layer and the max number of air layers. 
-! - Second, compute the edges height using the computed increasing factor.  
-      
-      allocate(edge_height(0:nzAir+1))
-      max_height=200000     ! in meters                          
-      factor = (max_height/(grid%dz(grid%nzAir+1))) ** (1.0 / (nzAir-1))
-      sum1=grid%dz(grid%nzAir+1)
-      edge_height(0)=0.0
-      do k=1,nzAir
-	     edge_height(k)=sum1   
-       sum1=sum1*factor
-      end do
-       
-      
-      
-! - Finally, compute the air layers thicknesses.        
+      !   Following is Kush's approach to setting air layers:
+      ! mirror imaging the dz values in the air layer with respect to
+      ! earth layer as far as we can using the following formulation
+      ! air layer(bottom:top) = (alpha)^(j-1) * earth layer(top:bottom)
+      i = grid%nzAir+1
       j = 0
-        do k = nzAir, 1, -1
-          grid%dz(k) = edge_height(j+1)-edge_height(j)
+      do k = grid%nzAir, 1, -1
           j = j + 1
-        end do 
-  deallocate(edge_height)        
- !##################################################################################
-      
+          grid%dz(k) = ((alpha)**(j-1))*grid%dz(i)
+          i = i + 1
+      end do
+
+      ! the topmost air layer has to be at least 30 km
+      if (grid%dz(1).lt.30000) then
+          grid%dz(1) = 30000
+      end if
+
 	  ! Create and read in the resistivity values
       call create_rscalar(grid,rho,CELL_EARTH)
 

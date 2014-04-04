@@ -988,13 +988,13 @@ else
 						call JmultT(m,res,JTd,eAll)
 #endif
                          
-					     mFile = 'JTd_before_smoothing'//iterChar//'.rho'
-						 call write_modelParam(JTd,trim(mFile))
+					     !mFile = 'JTd_before_smoothing'//iterChar//'.rho'
+						 !call write_modelParam(JTd,trim(mFile))
                         
     					 call CmSqrtMult(JTd,CmJTd)
 				         
-						 mFile = 'JTd_after_smoothing'//iterChar//'.rho'
-						 call write_modelParam(CmJTd,trim(mFile))
+						 !mFile = 'JTd_after_smoothing'//iterChar//'.rho'
+						 !call write_modelParam(CmJTd,trim(mFile))
 						 
 				 ! initialize grad
 					grad = m	
