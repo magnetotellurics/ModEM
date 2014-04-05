@@ -11,7 +11,7 @@ module sensMatrix
   public 	:: create_sensMatrix, deall_sensMatrix
   public 	:: create_sensMatrixMTX, deall_sensMatrixMTX
   public    :: count_sensMatrixMTX
-  public    :: write_sensMatrixMTX
+  public    :: write_sensMatrixMTX,write_JT_multi_Tx_vec
   public    :: multBy_sensMatrixMTX
 
   !***********************************************************************

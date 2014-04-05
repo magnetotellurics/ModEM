@@ -1,4 +1,4 @@
-module DCG
+module DCG_hybrid
 
 	use math_constants
  	use utilities
@@ -4744,4 +4744,4 @@ end subroutine CG_DS_modified
 
 !**********************************************************************
 
-end module DCG
+end module DCG_hybrid

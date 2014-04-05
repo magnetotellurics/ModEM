@@ -124,7 +124,8 @@ program Mod3DMT
      case (COMPUTE_J)
         write(*,*) 'Calculating the full sensitivity matrix...'
 #ifdef MPI
-        !call Master_job_COMPUTE_J(allData,sigma0,sens)
+        call Master_job_fwdPred(sigma0,allData,eAll)
+        call Master_job_calcJ(allData,sigma0,sens,eAll)
         call Master_job_STOP_MESSAGE
 #else
         call calcJ(allData,sigma0,sens)

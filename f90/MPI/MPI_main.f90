@@ -138,7 +138,7 @@ Subroutine Master_job_calcJ(d,sigma,sens,eAll)
    !Local
     logical        :: savedSolns
     Integer        :: iper,idt,istn
-    Integer        :: per_index,dt_index,stn_index
+    Integer        :: per_index,dt_index,stn_index,ipol1
     integer        :: nTx,nDt,nStn,dest,answers_to_receive,received_answers,nComp,nFunc,ii,iFunc,istat
     logical      :: isComplex  
     type(modelParam_t), pointer   :: Jreal(:),Jimag(:)           
@@ -167,6 +167,7 @@ per_index=0
 do iper=1,nTx
      per_index=per_index+1
      worker_job_task%per_index= per_index
+      call get_nPol_MPI(eAll%solns(per_index)) 
      
       ! now loop over data types
       dt_index=0
@@ -187,10 +188,13 @@ do iper=1,nTx
 	            call Pack_worker_job_task
 	            call MPI_SEND(worker_job_package,Nbytes, MPI_PACKED,dest, FROM_MASTER, MPI_COMM_WORLD, ierr)
 	            	 which_per=per_index
-	            	 e0=eAll%solns(which_per)
-			         call create_eAll_param_place_holder(e0)
-				     call Pack_eAll_para_vec(e0)
-				     call MPI_SEND(eAll_para_vec, Nbytes, MPI_PACKED, dest,FROM_MASTER, MPI_COMM_WORLD, ierr) 
+
+								        do ipol1=1,nPol_MPI
+                                           which_pol=ipol1
+			        				       call create_e_param_place_holder(eAll%solns(which_per))
+				    				       call Pack_e_para_vec(eAll%solns(which_per))
+				    				       call MPI_SEND(e_para_vec, Nbytes, MPI_PACKED, dest,FROM_MASTER, MPI_COMM_WORLD, ierr) 
+										end do
 	             write(ioMPI,8550) per_index ,dt_index,stn_index,dest  
 	            if (dest .ge. number_of_workers) then 
 	               goto 10
@@ -334,10 +338,12 @@ end if
             call MPI_SEND(worker_job_package,Nbytes, MPI_PACKED,who, FROM_MASTER, MPI_COMM_WORLD, ierr)
             
 
-	            	 e0=eAll%solns(per_index)
-			         call create_eAll_param_place_holder(e0)
-				     call Pack_eAll_para_vec(e0)
-				     call MPI_SEND(eAll_para_vec, Nbytes, MPI_PACKED, who,FROM_MASTER, MPI_COMM_WORLD, ierr)             
+								        do ipol1=1,nPol_MPI
+                                           which_pol=ipol1
+			        				       call create_e_param_place_holder(eAll%solns(per_index))
+				    				       call Pack_e_para_vec(eAll%solns(per_index))
+				    				       call MPI_SEND(e_para_vec, Nbytes, MPI_PACKED, who,FROM_MASTER, MPI_COMM_WORLD, ierr) 
+										end do          
                    
     
  
@@ -947,9 +953,15 @@ isComplex = d%d(per_index)%data(dt_index)%isComplex
               	              
 ! Do some computation
                     call initSolver(per_index,sigma,grid,e0,e,comb) 
-		            call create_eAll_param_place_holder(e0)
-		            call MPI_RECV(eAll_para_vec, Nbytes, MPI_PACKED, 0, FROM_MASTER,MPI_COMM_WORLD, STATUS, ierr)
-		            call Unpack_eAll_para_vec(e0)
+                   call get_nPol_MPI(e0)
+                    write(6,'(a12,a18,i5,a12)') node_info, ' Start Receiving ' , orginal_nPol, ' from Master'
+		          do ipol=1,nPol_MPI 
+                    which_pol=ipol				  
+		            call create_e_param_place_holder(e0)
+		            call MPI_RECV(e_para_vec, Nbytes, MPI_PACKED, 0, FROM_MASTER,MPI_COMM_WORLD, STATUS, ierr)
+                    call Unpack_e_para_vec(e0)
+                  end do
+                      write(6,'(a12,a18,i5,a12)') node_info, ' Finished Receiving ' , orginal_nPol, ' from Master'
 
    allocate(L(nFunc),STAT=istat)
    allocate(Qreal(nFunc),STAT=istat)
