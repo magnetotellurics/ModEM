@@ -88,36 +88,7 @@
 	  call deall_rscalar(ccond)
 
       end subroutine read_modelParam_binary
-!******************************************************************
-      subroutine write_JT_multi_vec_binary(m,header,cfile)
 
-      !  open cfile on unit ioPrm, writes out one objects of
-      !   type modelParam , closes file
-
-      character(*), intent(in)          :: cfile, header
-      type(modelParam_t), intent(in)      :: m
-      integer                :: ios
-
-      integer 		:: i,Nz,NzAir
-      logical		:: opened
-
-
-      inquire(file=cfile, opened=opened)
-      if (.not. opened) then
-      	open(unit=ioSens, file=cfile, form='unformatted', iostat=ios)
-      endif
-
-         Nz = m%grid%Nz
-         NzAir = m%grid%Nz-m%NzEarth
-         write(ioSens) m%paramType
-         write(ioSens) m%Nx,m%Ny,m%NzEarth
-         write(ioSens) m%grid%dx
-         write(ioSens) m%grid%dy
-         write(ioSens) m%grid%dz(NzAir+1:Nz)
-         write(ioSens) m%AirCond
-         write(ioSens) m%CellCond%v
-
-      end subroutine write_JT_multi_vec_binary
      !******************************************************************
       subroutine writeVec_modelParam_binary(nSigma,m,header,cfile)
 

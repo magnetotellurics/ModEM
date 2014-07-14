@@ -360,7 +360,9 @@ Contains
    
      if (which_iter == 0) then
        open (unit=ioWeighting,file=trim(iterControl%fname)//'_Weighting.log',status='unknown',iostat=ios)
-       write(ioWeighting,'(a14,12a30)') 'Iteration No. ', 'CmJTd_norm_before','CmJTd_norm_after','CmJTd_MT_norm','CmJTd_CSEM_norm', 'scaling_factor_MT','scaling_factor_CSEM','RMS_MT','RMS_CSEM','RMS_total','CmJTd_MT_norm/CmJTd_CSEM_norm','CmJTd_CSEM_norm/CmJTd_MT_norm','scaling_factor'
+       write(ioWeighting,'(a14,12a30)') 'Iteration No. ', 'CmJTd_norm_before','CmJTd_norm_after', &
+        'CmJTd_MT_norm','CmJTd_CSEM_norm', 'scaling_factor_MT','scaling_factor_CSEM', &
+        'RMS_MT','RMS_CSEM','RMS_total','CmJTd_MT_norm/CmJTd_CSEM_norm','CmJTd_CSEM_norm/CmJTd_MT_norm','scaling_factor'
 	   data_temp=d
 	 end if
 	 

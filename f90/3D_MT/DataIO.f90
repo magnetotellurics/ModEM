@@ -191,8 +191,14 @@ Contains
                         ! For apparent resistivities only, log10 of the values was used
 			            if (index(compid,'RHO')>0) then
 			                value(icomp) = 10**value(icomp)
-			                error(icomp) = 10**error(icomp)
+						! Avoid Inf for FWD calculation
+							if (error(icomp) .ge. large) then
+                                error(icomp) = large
+                            else 
+			                    error(icomp) = 10**error(icomp)
+                            endif
 			            end if
+
                         write(ioDat,'(es12.6)',    iostat=ios,advance='no') Period
                         write(ioDat,'(a40,3f12.3)',iostat=ios,advance='no') trim(siteid),x(:)
                         write(ioDat,'(a8,3es15.6)',iostat=ios) trim(compid),value(icomp),error(icomp)
@@ -458,6 +464,7 @@ Contains
             value(i,j,icomp) = SI_factor * Zreal
             error(i,j,icomp) = SI_factor * Zerr
             exist(i,j,icomp) = .TRUE.
+
 
             countData = countData + 1
 

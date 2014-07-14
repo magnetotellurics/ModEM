@@ -564,7 +564,6 @@ end if
      xyz = 3
      call BfromESetUp(e0%grid,omega,x,xyz,Lbz)
   endif
-  
 
 
 
@@ -613,118 +612,119 @@ if (typeDict(iDT)%tfType .eq. Off_Diagonal_Rho_Phase) then
 	     Call linComb_sparsevecc(L(2)%L(k),c1,L(2)%L(k),C_ZERO,L(4)%L(k))
 
 		 !log RHOYX
-	     c1 =  TWO*conjg(Z(3))/(abs(Z(3))**TWO)
+	     c1 =  TWO*conjg(Z(3))/(abs(Z(3))**TWO)*dlog(10.0d0)
         Call linComb_sparsevecc(L(2)%L(k),c1,L(2)%L(k),C_ZERO,L(3)%L(k))
 
         ! PHSXY
         c1 =dcmplx(0.0d0,1.0d0)*conjg(Z(2))/(abs(Z(2))**TWO)*R2D
 		Call linComb_sparsevecc(L(1)%L(k),c1,L(1)%L(k),C_ZERO,L(2)%L(k))
-		
-          !log(RHOXY)  
-         c1 =  TWO*conjg(Z(2))  /(abs(Z(2))**TWO)
+
+          !log(RHOXY)
+         c1 =  TWO*conjg(Z(2))  /(abs(Z(2))**TWO)*dlog(10.0d0)
 	     Call linComb_sparsevecc(L(1)%L(k),c1,L(1)%L(k),C_ZERO,L1)
         L(1)%L(k) = L1
 
      enddo
   end if
-  if (typeDict(iDT)%tfType .eq. Phase_Tensor) then
+   if (typeDict(iDT)%tfType .eq. Phase_Tensor) then
        do k=1,2 ! 2 modes
 	    !calculate Phase Tensor Elements
 			detX = dreal(Z(1))*dreal(Z(4))-dreal(Z(2))*dreal(Z(3))
-			PT(1,1) = ISIGN*(dreal(Z(4))*dimag(Z(1))-dreal(Z(2))*dimag(Z(3)))/detX
-			PT(1,2) = ISIGN*(dreal(Z(4))*dimag(Z(2))-dreal(Z(2))*dimag(Z(4)))/detX
-			PT(2,1) = ISIGN*(dreal(Z(1))*dimag(Z(3))-dreal(Z(3))*dimag(Z(1)))/detX
-			PT(2,2) = ISIGN*(dreal(Z(1))*dimag(Z(4))-dreal(Z(3))*dimag(Z(2)))/detX
 
- 		 !PTXX
+		PT(1,1) = ISIGN*(dreal(Z(4))*dimag(Z(1))-dreal(Z(2))*dimag(Z(3)))/detX
+		PT(1,2) = ISIGN*(dreal(Z(4))*dimag(Z(2))-dreal(Z(2))*dimag(Z(4)))/detX
+		PT(2,1) = ISIGN*(dreal(Z(1))*dimag(Z(3))-dreal(Z(3))*dimag(Z(1)))/detX
+		PT(2,2) = ISIGN*(dreal(Z(1))*dimag(Z(4))-dreal(Z(3))*dimag(Z(2)))/detX
+
+		 !PTXX
 		 !dx11
-	     c1 =  dcmplx(PT(1,1) * dreal(Z(4)) / detX, R_ZERO)
+	     c1 =  dcmplx(MinusONE*PT(1,1) * dreal(Z(4)) / detX, R_ZERO)
 		 !dx12
-		  c2 =  dcmplx((MinusONE*PT(1,1) * dreal(Z(3)) + dimag(Z(3))) / detX ,R_ZERO)
+		  c2 =  dcmplx((PT(1,1) * dreal(Z(3)) - ISIGN*dimag(Z(3))) / detX ,R_ZERO)
          Call linComb_sparsevecc(L(1)%L(k),c1,L(2)%L(k),c2,L1)
 		 !dx21
-	     c1 =  dcmplx(MinusONE*PT(1,1) * dreal(Z(2)) / detX , R_ZERO)
+	     c1 =  dcmplx(PT(1,1) * dreal(Z(2)) / detX , R_ZERO)
 		 !dx22
-		  c2 =  dcmplx((PT(1,1) * dreal(Z(1)) - dimag(Z(1)))/ detX,R_ZERO)
+		  c2 =  dcmplx((MinusONE * PT(1,1) * dreal(Z(1)) + ISIGN*dimag(Z(1)))/ detX,R_ZERO)
          Call linComb_sparsevecc(L(3)%L(k),c1,L(4)%L(k),c2,L2)
          Call linComb_sparsevecc(L1,C_ONE,L2,C_ONE,L3)
-		 ! Extra MinusONE to account for sign change due to i*i = -1
 		 !dy11
-	     c1 =  dcmplx(R_ZERO,MinusONE* dreal(Z(4)) / detX)
+	     c1 =  dcmplx(R_ZERO,dreal(Z(4)) / detX)
 		 !dy21
-		 c2 = dcmplx(R_ZERO,MinusONE* MinusONE* dreal(Z(2)) / detX)
+		 c2 = dcmplx(R_ZERO,MinusONE* dreal(Z(2)) / detX)
 		 Call linComb_sparsevecc(L(1)%L(k),c1,L(3)%L(k),c2,L1)
 		 Call linComb_sparsevecc(L3,C_ONE,L1,C_ONE,Lp11)
 
 		 !PTXY
 		 !dx11
-	     c1 =  dcmplx(PT(1,2) * dreal(Z(4)) / detX, R_ZERO)
+	     c1 =  dcmplx(MinusONE*PT(1,2) * dreal(Z(4)) / detX, R_ZERO)
 		 !dx12
-		  c2 =  dcmplx((MinusONE*PT(1,2) * dreal(Z(3)) + dimag(Z(4))) / detX, R_ZERO)
+		  c2 =  dcmplx((PT(1,2) * dreal(Z(3)) - ISIGN*dimag(Z(4))) / detX, R_ZERO)
          Call linComb_sparsevecc(L(1)%L(k),c1,L(2)%L(k),c2,L1)
 		 !dx21
-	     c1 =  dcmplx(MinusONE*PT(1,2) * dreal(Z(2)) / detX, R_ZERO)
+	     c1 =  dcmplx(PT(1,2) * dreal(Z(2)) / detX, R_ZERO)
 		 !dx22
-		  c2 =  dcmplx((PT(1,2) * dreal(Z(1)) + dimag(Z(2)))/ detX, R_ZERO)
+		  c2 =  dcmplx((MinusONE*PT(1,2) * dreal(Z(1)) + ISIGN*dimag(Z(2)))/ detX, R_ZERO)
          Call linComb_sparsevecc(L(3)%L(k),c1,L(4)%L(k),c2,L2)
          Call linComb_sparsevecc(L1,C_ONE,L2,C_ONE,L3)
-		 ! Extra MinusONE to account for sign change due to i*i = -1
+		 
 		 !dy12
-	     c1 =  dcmplx(R_ZERO,MinusONE* dreal(Z(4)) / detX)
+	     c1 =  dcmplx(R_ZERO, dreal(Z(4)) / detX)
 		 !dy22
-		 c2 = dcmplx(R_ZERO,MinusONE* MinusONE* dreal(Z(2))/ detX)
+		 c2 = dcmplx(R_ZERO, MinusONE* dreal(Z(2))/ detX)
          Call linComb_sparsevecc(L(2)%L(k),c1,L(4)%L(k),c2,L1)
 		 Call linComb_sparsevecc(L3,C_ONE,L1,C_ONE,Lp12)
 
 		 !PTYX
 		 !dx11
-	     c1 =  dcmplx((PT(2,1) * dreal(Z(4)) - dimag(Z(3)))/ detX, R_ZERO)
+	     c1 =  dcmplx((MinusONE*PT(2,1) * dreal(Z(4)) + ISIGN*dimag(Z(3)))/ detX, R_ZERO)
 		 !dx12
-		  c2 =  dcmplx(MinusONE*PT(2,1) * dreal(Z(3)) / detX, R_ZERO)
+		  c2 =  dcmplx(PT(2,1) * dreal(Z(3)) / detX, R_ZERO)
          Call linComb_sparsevecc(L(1)%L(k),c1,L(2)%L(k),c2,L1)
 		 !dx21
-	     c1 = dcmplx(( MinusONE*PT(2,1) * dreal(Z(2)) + dimag(Z(1)))/ detX, R_ZERO)
+	     c1 = dcmplx(( PT(2,1) * dreal(Z(2)) - ISIGN*dimag(Z(1)))/ detX, R_ZERO)
 		 !dx22
-		  c2 =  dcmplx(PT(2,1) * dreal(Z(1)) / detX, R_ZERO)
+		  c2 =  dcmplx(MinusONE*PT(2,1) * dreal(Z(1)) / detX, R_ZERO)
          Call linComb_sparsevecc(L(3)%L(k),c1,L(4)%L(k),c2,L2)
          Call linComb_sparsevecc(L1,C_ONE,L2,C_ONE,L3)
-		 ! Extra MinusONE to account for sign change due to i*i = -1
-		 !dy11
-	     c1 =  dcmplx(R_ZERO,MinusONE* MinusONE*dreal(Z(3)) / detX)
-		 !dy21
-		 c2 = dcmplx(R_ZERO, MinusONE* dreal(Z(1)) / detX)
-         Call linComb_sparsevecc(L(1)%L(k),c1,L(3)%L(k),c2,L1)     
-		 Call linComb_sparsevecc(L3,C_ONE,L1,C_ONE,Lp21)
 		 
+		 !dy11
+	     c1 =  dcmplx(R_ZERO, MinusONE*dreal(Z(3)) / detX)
+		 !dy21
+		 c2 = dcmplx(R_ZERO,  dreal(Z(1)) / detX)
+         Call linComb_sparsevecc(L(1)%L(k),c1,L(3)%L(k),c2,L1)
+		 Call linComb_sparsevecc(L3,C_ONE,L1,C_ONE,Lp21)
+
 
 		 !PTYY
 		 !dx11
-	     c1 =  dcmplx((PT(2,2) * dreal(Z(4)) - dimag(Z(4)))/ detX, R_ZERO)
-		 !dx12 
-		  c2 =  dcmplx(MinusONE*PT(2,2) * dreal(Z(3)) / detX, R_ZERO)
-         Call linComb_sparsevecc(L(1)%L(k),c1,L(2)%L(k),c2,L1) 
+	     c1 =  dcmplx((MinusONE*PT(2,2) * dreal(Z(4)) + ISIGN*dimag(Z(4)))/ detX, R_ZERO)
+		 !dx12
+		  c2 =  dcmplx(PT(2,2) * dreal(Z(3)) / detX, R_ZERO)
+         Call linComb_sparsevecc(L(1)%L(k),c1,L(2)%L(k),c2,L1)
 		 !dx21
-	     c1 = dcmplx(( MinusONE*PT(2,2) * dreal(Z(2)) +dimag(Z(2)))/ detX, R_ZERO)
-		 !dx22 
-		  c2 =  dcmplx(PT(2,2) * dreal(Z(1)) / detX, R_ZERO)
-         Call linComb_sparsevecc(L(3)%L(k),c1,L(4)%L(k),c2,L2)		 
-         Call linComb_sparsevecc(L1,C_ONE,L2,C_ONE,L3)		 
-		 ! Extra MinusONE to account for sign change due to i*i = -1
-		 !dy12
-	     c1 =  dcmplx(R_ZERO,MinusONE* MinusONE*dreal(Z(3)) / detX)
-		 !dy22
-		 c2 = dcmplx(R_ZERO, MinusONE* dreal(Z(1)) / detX)
-         Call linComb_sparsevecc(L(2)%L(k),c1,L(4)%L(k),c2,L1)     
-		 Call linComb_sparsevecc(L3,C_ONE,L1,C_ONE,Lp22)
+	     c1 = dcmplx(( PT(2,2) * dreal(Z(2)) - ISIGN*dimag(Z(2)))/ detX, R_ZERO)
+		 !dx22
+		  c2 =  dcmplx(MinusONE*PT(2,2) * dreal(Z(1)) / detX, R_ZERO)
+         Call linComb_sparsevecc(L(3)%L(k),c1,L(4)%L(k),c2,L2)
+         Call linComb_sparsevecc(L1,C_ONE,L2,C_ONE,L3)
 		 
+		 !dy12
+	     c1 =  dcmplx(R_ZERO, MinusONE*dreal(Z(3)) / detX)
+		 !dy22
+		 c2 = dcmplx(R_ZERO,dreal(Z(1)) / detX)
+         Call linComb_sparsevecc(L(2)%L(k),c1,L(4)%L(k),c2,L1)
+		 Call linComb_sparsevecc(L3,C_ONE,L1,C_ONE,Lp22)
+
 
     	 !Finally overwrite Impedance Ls of this mode with Phase Tensor Ls
-		 Call linComb_sparsevecc(Lp11,C_MinusOne,Lp11,C_ZERO,L(1)%L(k))
- 		 Call linComb_sparsevecc(Lp12,C_MinusOne,Lp12,C_ZERO,L(2)%L(k))
- 		 Call linComb_sparsevecc(Lp21,C_MinusOne,Lp21,C_ZERO,L(3)%L(k))
- 		 Call linComb_sparsevecc(Lp22,C_MinusOne,Lp22,C_ZERO,L(4)%L(k))
+		 Call linComb_sparsevecc(Lp11,C_ONE,Lp11,C_ZERO,L(1)%L(k))
+ 		 Call linComb_sparsevecc(Lp12,C_ONE,Lp12,C_ZERO,L(2)%L(k))
+ 		 Call linComb_sparsevecc(Lp21,C_ONE,Lp21,C_ZERO,L(3)%L(k))
+ 		 Call linComb_sparsevecc(Lp22,C_ONE,Lp22,C_ZERO,L(4)%L(k))
     enddo
   end if
+
 
  ! clean up
  if (typeDict(iDT)%tfType .eq. Phase_Tensor) then

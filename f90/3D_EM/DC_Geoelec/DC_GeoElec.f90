@@ -144,7 +144,13 @@ subroutine RHS_DC_FWD
       do 1015,k=1,kmax
       do 1015,j=1,jmax
       do 1015,i=1,imax
-1015  b_RHS_DC(i,j,k)=-(c1(i,j,k)*vacalc3(x(i-1),y(j),z(k),r1,r2,squer,iflags,isurf1,isurf2)+c2(i,j,k)*vacalc3(x(i+1),y(j),z(k),r1,r2,squer,iflags,isurf1,isurf2)+c3(i,j,k)*vacalc3(x(i),y(j-1),z(k),r1,r2,squer,iflags,isurf1,isurf2)+c4(i,j,k)*vacalc3(x(i),y(j+1),z(k),r1,r2,squer,iflags,isurf1,isurf2) +c5(i,j,k)*vacalc3(x(i),y(j),z(k-1),r1,r2,squer,iflags,isurf1,isurf2)+c6(i,j,k)*vacalc3(x(i),y(j),z(k+1),r1,r2,squer,iflags,isurf1,isurf2)+c0(i,j,k)*vacalc3(x(i),y(j),z(k),r1,r2,squer,iflags,isurf1,isurf2))
+1015  b_RHS_DC(i,j,k)=-(c1(i,j,k)*vacalc3(x(i-1),y(j),z(k),r1,r2,squer,iflags,isurf1,isurf2) &
+                      +c2(i,j,k)*vacalc3(x(i+1),y(j),z(k),r1,r2,squer,iflags,isurf1,isurf2) &
+                      +c3(i,j,k)*vacalc3(x(i),y(j-1),z(k),r1,r2,squer,iflags,isurf1,isurf2) &
+                      +c4(i,j,k)*vacalc3(x(i),y(j+1),z(k),r1,r2,squer,iflags,isurf1,isurf2) &
+                      +c5(i,j,k)*vacalc3(x(i),y(j),z(k-1),r1,r2,squer,iflags,isurf1,isurf2) &
+                      +c6(i,j,k)*vacalc3(x(i),y(j),z(k+1),r1,r2,squer,iflags,isurf1,isurf2) &
+                      +c0(i,j,k)*vacalc3(x(i),y(j),z(k),r1,r2,squer,iflags,isurf1,isurf2))
      !write(10,*) k,j,i,b_RHS_DC(i,j,k)
     !  close(10)
 end subroutine RHS_DC_FWD
@@ -738,7 +744,7 @@ subroutine mixedb(c1,c2,c3,c4,c5,c6,c0,im,jm,km,b_RHS_DC,f,g,h)
 
       k=km
 
-! Fl„che unten innen
+! Flï¿½che unten innen
 
       evec(1)=0.
       evec(2)=0.
@@ -837,7 +843,7 @@ subroutine mixedb(c1,c2,c3,c4,c5,c6,c0,im,jm,km,b_RHS_DC,f,g,h)
 
       j=jm
 
-! Fl„che innen und Kante oben innen
+! Flï¿½che innen und Kante oben innen
 
 
       evec(1)=0.
@@ -1212,7 +1218,9 @@ end subroutine mixedb
       !equivalence (pn(1),pnm1(1)),(rn(1),rnp1(1)),(amalx(1),amalpn(1))
       imjmkm=im*jm*km
 
-      !write(6,'(//1x,a/1x,a/1x,a/1x,a)')'**************************************************************','     THE SET OF EQUATIONS IS SOLVED BY THE PRECONDITIONED','               CONJUGATE GRADIENT METHOD CGPC',          '**************************************************************'
+      !write(6,'(//1x,a/1x,a/1x,a/1x,a)')'**************************************************************', &
+      !'     THE SET OF EQUATIONS IS SOLVED BY THE PRECONDITIONED','               CONJUGATE GRADIENT METHOD CGPC', &
+      !          '**************************************************************'
 
 ! DETERMINATION OF OMEGA
 

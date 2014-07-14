@@ -21,7 +21,7 @@ program fwd1d
     integer                                     :: i,icoeff,nL,nper,ncoeff,lmax,Nt,Np,Nr,narg,ios,istat
 
     write(*,*) 'Copyright (c) 2010-2011 Oregon State University'
-    write(*,*) 'College of Oceanic and Atmospheric Sciences'
+    write(*,*) 'College of Earth, Ocean and Atmospheric Sciences'
     write(*,*) 'Matlab code written by Jin Sun, last mod. 24 May 2010'
     write(*,*) 'Recoded in Fortran by Anna Kelbert, 11-13 July 2011'
     write(*,*) 'Data scaling updated by Anna Kelbert, 23-28 Nov 2011'

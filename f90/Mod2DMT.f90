@@ -1,9 +1,9 @@
 ! *****************************************************************************
 program Mod2DMT
 ! Program for running 2D MT forward, sensitivity and inverse modelling
-! Copyright (c) 2004-2010 Oregon State University
+! Copyright (c) 2004-2014 Oregon State University
 !              AUTHORS  Gary Egbert, Anna Kelbert & Naser Meqbel
-!              College of Atmospheric and Oceanic Sciences
+!              College of Earth, Ocean and Atmospheric Sciences
 
      use SensComp
      use SymmetryTest

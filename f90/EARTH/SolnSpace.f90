@@ -54,6 +54,7 @@ end interface
     !!   use of higher level inversion modules on different problems.
     type(cvector)           :: vec
     type(grid_t), pointer   :: grid
+    integer                 :: nPol
     integer                 :: tx = 0
     integer                 :: errflag = 0
     logical                 :: allocated = .false.

@@ -12,7 +12,7 @@ module MPI_main
   
   use MPI_declaration
   use MPI_sub
-      use ioascii
+      !use ioascii
 
   implicit none
 

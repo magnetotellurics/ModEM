@@ -1,9 +1,9 @@
 ! *****************************************************************************
 program Mod3DMT
 ! Program for running 3D MT forward, sensitivity and inverse modelling
-! Copyright (c) 2004-2010 Oregon State University
+! Copyright (c) 2004-2014 Oregon State University
 !              AUTHORS  Gary Egbert, Anna Kelbert & Naser Meqbel
-!              College of Atmospheric and Oceanic Sciences
+!              College of Earth, Ocean and Atmospheric Sciences
 
      use SensComp
      use SymmetryTest
@@ -23,6 +23,10 @@ program Mod3DMT
 
      ! Variable required for storing the date and time
      type (timer_t)         :: timer
+
+     ! Output variable
+     character(80)          :: header
+     integer                :: ios
 
 
 
@@ -167,7 +171,12 @@ program Mod3DMT
          call fwdPred(sigma0,allData,eAll)
          call JmultT(sigma0,allData,dsigma,eAll,JT_multi_Tx_vec)
 #endif
-         call write_JT_multi_Tx_vec(JT_multi_Tx_vec,cUserDef%wFile_dModel)
+         open(unit=ioSens, file=cUserDef%wFile_dModel, form='unformatted', iostat=ios)
+         write(0,*) 'Output JT_multi_Tx_vec...'
+         write(header,*) 'JT multi_Tx vectors'
+         write(ioSens) header
+         call writeVec_modelParam_binary(size(JT_multi_Tx_vec),JT_multi_Tx_vec,header,cUserDef%wFile_dModel)
+         close(ioSens)
 
      case (INVERSE)
      	if (trim(cUserDef%search) == 'NLCG') then

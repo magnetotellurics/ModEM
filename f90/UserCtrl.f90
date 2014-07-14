@@ -133,9 +133,9 @@ Contains
      type(userdef_control), intent(out)  :: ctrl
      logical :: res
 
-     write(*,*) 'Copyright (c) 2004-2011 Oregon State University'
+     write(*,*) 'Copyright (c) 2004-2014 Oregon State University'
      write(*,*) 'AUTHORS  Gary Egbert, Anna Kelbert & Naser Meqbel'
-     write(*,*) 'College of Oceanic and Atmospheric Sciences'
+     write(*,*) 'College of Earth, Ocean and Atmospheric Sciences'
      write(*,*)
 
      call initUserCtrl(ctrl)
@@ -220,14 +220,15 @@ Contains
         write(*,*) '  Multiplies a model by J to create a data vector'
         write(*,*) '[MULT_BY_J_T]'
         write(*,*) ' -T  rFile_Model rFile_Data wFile_dModel [rFile_fwdCtrl]'
+        write(*,*) '  Multiplies a data vector by J^T to create a model'
         write(*,*) '[MULT_BY_J_T_multi_Tx]'
         write(*,*) ' -x  rFile_Model rFile_Data wFile_dModel [rFile_fwdCtrl]'
-        write(*,*) '  Multiplies a data vector by J^T to create a model'
+        write(*,*) '  Multiplies a data vector by J^T to output models for each transmitter'
         write(*,*) '[APPLY_COV]'
         write(*,*) ' -C FWD rFile_Model wFile_Model [rFile_Cov rFile_Prior]'
         write(*,*) '  Applies the model covariance to produce a smooth model output'
         write(*,*) '  Optionally, also specify the prior model to compute resistivities'
-        write(*,*) '  from model perturbation: m = C_m^{1/2} \tilde{m} + m_0'
+        write(*,*) '  from model perturbation: m = C_m^{1/2} \\tilde{m} + m_0'
         write(*,*) '[TEST_ADJ]'
         write(*,*) ' -A  J rFile_Model rFile_dModel rFile_Data [wFile_Model wFile_Data]'
         write(*,*) '  Tests the equality d^T J m = m^T J^T d for any model and data.'
@@ -345,6 +346,7 @@ Contains
 	    if (narg > 3) then
 	       ctrl%rFile_fwdCtrl = temp(4)
 	    end if
+
       case (MULT_BY_J_T_multi_Tx) ! x
         if (narg < 3) then
            write(0,*) 'Usage: -x  rFile_Model rFile_Data wFile_dModel [rFile_fwdCtrl]'
@@ -357,6 +359,7 @@ Contains
 	    if (narg > 3) then
 	       ctrl%rFile_fwdCtrl = temp(4)
 	    end if
+
       case (INVERSE) ! I
         if (narg < 3) then
            write(0,*) 'Usage: -I NLCG rFile_Model rFile_Data [lambda eps]'
@@ -454,12 +457,12 @@ Contains
            write(0,*) ' -C FWD rFile_Model wFile_Model [rFile_Cov rFile_Prior]'
            write(0,*) '  Applies the model covariance to produce a smooth model output'
            write(0,*) '  Optionally, also specify the prior model to compute resistivities'
-           write(0,*) '  from model perturbation: m = C_m^{1/2} \tilde{m} + m_0'
+           write(0,*) '  from model perturbation: m = C_m^{1/2} \\tilde{m} + m_0'
            write(0,*)
            write(0,*) ' -C INV rFile_Model wFile_Model [rFile_Cov rFile_Prior]'
            write(0,*) '  Applies the inverse of model covariance (if implemented)'
            write(0,*) '  Optionally, also specify the prior model to compute starting'
-           write(0,*) '  perturbation for the inversion: \tilde{m} = C_m^{-1/2} (m - m_0)'
+           write(0,*) '  perturbation for the inversion: \\tilde{m} = C_m^{-1/2} (m - m_0)'
            write(0,*) '  WARNING: may be poorly conditioned if the smoothing is too strong;'
            write(0,*) '  always check your model for white noise after using this option.'
            stop

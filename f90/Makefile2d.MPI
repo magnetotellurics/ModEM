@@ -3,9 +3,9 @@
 # with command line options
 # -p .:INV:MPI:LAPACK:SENS:UTILS:2D_MT:2D_MT/DICT:2D_MT/modelParam:2D_MT/FWD:2D_MT/ioMod
 # -f90 mpif90 (compiler)
-# -opt -O2 (compiler optimisation)
-# -l -L/usr/lib64 -llapack  -lblas -lpgftnrtl (linking options)
-# -o ./objs/2D_MT/MPIRelease (output directory for object files)
+# -opt -O3 -fastsse -mp -tp=istanbul-64 (compiler optimisation)
+# -l -llapack -lblas -lpgftnrtl (linking options)
+# -o ./objs/2D_MT/PGIReleaseMPI (output directory for object files)
 
 #  Uncomment these lines to make program for Solaris OS (legacy)
 # F90 = f90
@@ -43,12 +43,12 @@
 
 # ------------------Macro-Defs---------------------
 include Makefile.local
-OBJDIR = ./objs/2D_MT/MPIRelease
+OBJDIR = ./objs/2D_MT/PGIReleaseMPI
 F90 = mpif90 
-FFLAGS = -O2
+FFLAGS = -O3 -fastsse -mp -tp=istanbul-64
 MPIFLAGS = -Bstatic  -Mipa=fast  -Mextend  -Kieee -Mpreprocess -DMPI
 MODULE = -module $(OBJDIR)
-LIBS = -L/usr/lib64 -llapack  -lblas -lpgftnrtl
+LIBS = -llapack -lblas -lpgftnrtl
 
 # -------------------End-macro-Defs---------------------------
 OBJ = $(OBJDIR)/math_constants.o $(OBJDIR)/utilities.o $(OBJDIR)/file_units.o $(OBJDIR)/DataSpace.o $(OBJDIR)/GridDef.o $(OBJDIR)/EMfield.o $(OBJDIR)/MPI_declaration.o $(OBJDIR)/ModelSpace.o $(OBJDIR)/SensMatrix.o $(OBJDIR)/EMfieldInterp.o $(OBJDIR)/transmitters.o $(OBJDIR)/SolnSpace.o $(OBJDIR)/receivers.o $(OBJDIR)/dataTypes.o $(OBJDIR)/DataFunc.o $(OBJDIR)/DataSens.o $(OBJDIR)/SolverSens.o $(OBJDIR)/WSfwd2D.o $(OBJDIR)/FwdTEmod.o $(OBJDIR)/FwdTMmod.o $(OBJDIR)/ForwardSolver.o $(OBJDIR)/SensComp.o $(OBJDIR)/SymmetryTest.o $(OBJDIR)/UserCtrl.o $(OBJDIR)/ioAscii.o $(OBJDIR)/DataIO.o $(OBJDIR)/Main.o $(OBJDIR)/MPI_sub.o $(OBJDIR)/MPI_main.o $(OBJDIR)/NLCG.o $(OBJDIR)/DCG.o $(OBJDIR)/Mod2DMT.o 
@@ -58,7 +58,7 @@ all: Mod2DMT
 
 # Here is the link step 
 Mod2DMT: $(OBJDIR) $(OBJ) 
-	 $(F90) -o $(OUTDIR)/Mod2DMT_MPI $(OBJ) $(LIBS) 
+	 $(F90) -o $(OUTDIR)/Mod2DMT $(OBJ) $(LIBS) 
 
 # Here are the compile steps 
 
@@ -140,7 +140,7 @@ $(OBJDIR)/UserCtrl.o:./UserCtrl.f90 $(OBJDIR)/utilities.o
 $(OBJDIR)/ioAscii.o:2D_MT/ioMod/ioAscii.f90 $(OBJDIR)/math_constants.o $(OBJDIR)/EMfield.o $(OBJDIR)/DataSpace.o $(OBJDIR)/ForwardSolver.o $(OBJDIR)/utilities.o $(OBJDIR)/transmitters.o $(OBJDIR)/receivers.o $(OBJDIR)/dataTypes.o 
 	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) 2D_MT/ioMod/ioAscii.f90 -o $(OBJDIR)/ioAscii.o
 
-$(OBJDIR)/DataIO.o:2D_MT/DataIO.f90 $(OBJDIR)/math_constants.o $(OBJDIR)/file_units.o $(OBJDIR)/DataSpace.o $(OBJDIR)/transmitters.o $(OBJDIR)/receivers.o $(OBJDIR)/dataTypes.o 
+$(OBJDIR)/DataIO.o:2D_MT/DataIO.f90 $(OBJDIR)/math_constants.o $(OBJDIR)/file_units.o $(OBJDIR)/utilities.o $(OBJDIR)/DataSpace.o $(OBJDIR)/transmitters.o $(OBJDIR)/receivers.o $(OBJDIR)/dataTypes.o 
 	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) 2D_MT/DataIO.f90 -o $(OBJDIR)/DataIO.o
 
 $(OBJDIR)/Main.o:2D_MT/Main.f90 $(OBJDIR)/ModelSpace.o $(OBJDIR)/DataSpace.o $(OBJDIR)/DataFunc.o $(OBJDIR)/ForwardSolver.o $(OBJDIR)/SensMatrix.o $(OBJDIR)/UserCtrl.o $(OBJDIR)/ioAscii.o $(OBJDIR)/DataIO.o 
@@ -149,7 +149,7 @@ $(OBJDIR)/Main.o:2D_MT/Main.f90 $(OBJDIR)/ModelSpace.o $(OBJDIR)/DataSpace.o $(O
 $(OBJDIR)/MPI_sub.o:2D_MT/MPI_sub.f90 $(OBJDIR)/math_constants.o $(OBJDIR)/utilities.o $(OBJDIR)/SolnSpace.o $(OBJDIR)/UserCtrl.o $(OBJDIR)/MPI_declaration.o 
 	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) 2D_MT/MPI_sub.f90 -o $(OBJDIR)/MPI_sub.o
 
-$(OBJDIR)/MPI_main.o:MPI/MPI_main.f90 $(OBJDIR)/math_constants.o $(OBJDIR)/file_units.o $(OBJDIR)/utilities.o $(OBJDIR)/DataSens.o $(OBJDIR)/SolverSens.o $(OBJDIR)/ForwardSolver.o $(OBJDIR)/MPI_declaration.o $(OBJDIR)/MPI_sub.o 
+$(OBJDIR)/MPI_main.o:MPI/MPI_main.f90 $(OBJDIR)/math_constants.o $(OBJDIR)/file_units.o $(OBJDIR)/utilities.o $(OBJDIR)/DataSens.o $(OBJDIR)/SolverSens.o $(OBJDIR)/ForwardSolver.o $(OBJDIR)/SensComp.o $(OBJDIR)/MPI_declaration.o $(OBJDIR)/MPI_sub.o 
 	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) MPI/MPI_main.f90 -o $(OBJDIR)/MPI_main.o
 
 $(OBJDIR)/NLCG.o:INV/NLCG.f90 $(OBJDIR)/SensComp.o $(OBJDIR)/DataIO.o $(OBJDIR)/MPI_main.o $(OBJDIR)/MPI_sub.o 
