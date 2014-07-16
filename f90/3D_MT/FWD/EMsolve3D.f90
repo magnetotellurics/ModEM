@@ -113,6 +113,7 @@ Contains
     type (cboundary)             	:: tempBC
     type (solverControl_t)			:: QMRiter
 
+
     !  Zero solver diagnostic variables
     nIterTotal = 0
     nDivCor = 0
@@ -168,7 +169,7 @@ Contains
        endif
 
        !  divide by volume weights before computing divergence of sources
-       call diagDiv(b,VolE,temp)
+       call diagDiv(b,V_E,temp)
        call Div(temp,phi0)
     else
        ! In the usual forward model case BC do enter into forcing
@@ -177,14 +178,17 @@ Contains
        if (bRHS%nonzero_BC) then
           !   copy from rHS structure into zeroed complex edge vector temp
           Call setBC(bRHS%bc, temp)
+
           !   Then multiply by curl_curl operator (use MultA_N ...
           !     Note that MultA_N already multiplies by volume weights
 	  !     required to symetrize problem, so the result is V*A_IB*b)
           ltemp = .false.
           Call MultA_N(temp, ltemp, b)
+
           !  change sign of result
           Call scMult(MinusOne,b,b)
        endif
+
        ! Add internal sources if appropriate: Note that these must be multiplied
        !  explictly by volume weights
        if (bRHS%nonzero_Source) then
@@ -193,12 +197,12 @@ Contains
              call zero(temp)
              call add_scvector(C_ONE,bRHS%sSparse,temp)
              call Div(temp,phi0)
-             ! temp = volE*temp
-             call diagMult(volE,temp,temp)
+             ! temp = V_E*temp
+             call diagMult(V_E,temp,temp)
           else
-             ! temp = volE*rhs%s
+             ! temp = V_E*rhs%s
              call Div(bRHS%s,phi0)
-             call diagMult(volE,bRHS%s,temp)
+             call diagMult(V_E,bRHS%s,temp)
           endif
           !  b = temp-b
            !  LOOKS WRONG b is already -A_IB*b
@@ -303,8 +307,8 @@ Contains
     !   transposed, standard cases
     if(trans) then
     !   Multiply solution on interior nodes by volume weights
-       ! eSol = volE*eSol
-        call diagMult(volE,eSol,eSol)
+       ! eSol = V_E*eSol
+        call diagMult(V_E,eSol,eSol)
        ! then compute solution on boundary nodes: first  A_IB^T eSol
        call AdjtBC(eSol, tempBC)
        ! then b - A_IB^T eSol, where b is input boundary values (if any)
@@ -326,6 +330,8 @@ Contains
           Call setBC(tempBC, eSol)
        endif
     endif
+
+
 
     ! deallocate local temporary arrays
     Call deall(phi0)
@@ -389,7 +395,7 @@ subroutine SdivCorr(inE,outE,phi0)
   divJ(1,nDivCor) = sqrt(dotProd(phiRHS,phiRHS))
 
   ! point-wise multiplication with volume weights centered on corner nodes
-  Call diagMult(volC,phiRHS,phiRHS)
+  Call diagMult(V_N,phiRHS,phiRHS)
 
   ! PCG is a generic pre-conditioned CG algorithm
   Call PCG(phiRHS,phiSol,PCGiter)

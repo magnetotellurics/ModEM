@@ -489,7 +489,7 @@ Contains
    !   dsigma is the output conductivity parameter
    type(modelParam_t), intent(out)  	:: dsigma
    type(solnVectorMTX_t), intent(in), optional	:: eAll
-   type(modelParam_t),intent(inout),  pointer, dimension(:), optional :: JT_multi_Tx_vec
+   type(modelParam_t),pointer, dimension(:), optional :: JT_multi_Tx_vec
  
 
    !  local variables

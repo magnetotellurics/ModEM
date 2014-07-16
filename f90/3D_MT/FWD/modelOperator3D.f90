@@ -30,14 +30,19 @@ module modelOperator3D
   ! * All variables are saved until changed/deallocated
 
   save
+
+  !!!!!!!>>>>>>>>> conductivities in cells and edges (private)
+  type(rvector), private    :: sigma_E ! edges
+  type(rscalar), private    :: sigma_C ! cells - needed for boundary conditions
+
   !!!!!!!>>>>>>>>> FROM model_data
   type(grid_t), private, target 	::	mGrid   ! THE model grid
-  type(rvector), public			::	volE    ! THE volume elements
-  type(rvector), private		::	condE   ! THE edge conductivities
+  !type(rvector), public			::	volE    ! THE volume elements
+  !type(rvector), private		::	condE   ! THE edge conductivities
   real(kind=prec),private	::      omega   ! THE (active) frequency
 
   ! NOTE: THIS VARIABLE IS TEMPORARILY REQUIRED TO SET THE BOUNDARY CONDITIONS
-  type(rscalar), private        :: Cond3D
+  !type(rscalar), private        :: Cond3D
 
   !!!!!!>>>>>>>>> FROM multA
   ! aBC is for the Ea equation using the b component in the c direction.
@@ -85,8 +90,6 @@ module modelOperator3D
   ! d contains the inverse of diagonal elements of D-ILU used for
   !  preconditioner
 
-  type (rscalar) , public	:: volC
-  ! volume contains weights for corners
 
   ! *****************************************************************************
   !  routines from model_data_update:
@@ -141,12 +144,20 @@ Contains
     call copy_grid(mGrid,inGrid)
 
     ! Allocate data structure for volume elements, and compute these
-    Call create(mGrid, volE, EDGE)
-    Call EdgeVolume(mGrid, volE)
+    Call create(mGrid, V_E, EDGE)
 
-    !  Allocate condE, conductivity defined on computational cell edges
-    !   condE is also kept in module model_data
-    Call create(mGrid, condE, EDGE)
+    ! Use the grid (which, potentially, maybe have been updated!) to set up
+    !   all the grid length, surface and volume elements stored in GridCalc.
+    ! Want to initialize them here in case the grid gets updated along the way.
+    ! The reason for storing them in GridCalc is that they are also used
+    !   by ModelMap, EMfieldInterp, nestedEM
+    Call EdgeVolume(mGrid, V_E)
+    Call NodeVolume(mGrid, V_N) ! used for divergence correction
+
+    !  Allocate sigma_E, conductivity defined on computational cell edges
+    !   sigma_E is also needed in EMfieldInterp
+    !!! Call create(mGrid, sigma_E, EDGE)
+    Call create_rvector(mGrid, sigma_E, EDGE)
 
     ! set a default omega
     omega = 0.0
@@ -156,12 +167,20 @@ Contains
 
   subroutine ModelDataCleanUp
 
+    ! Deallocated the grid
     call deall_grid(mGrid)
-    call deall_rvector(volE)
-    call deall_rvector(condE)
 
-    ! Cond3D is temporary
-    call deall_rscalar(Cond3D)
+    ! and the grid elements stored in GridCalc
+    call deall_rvector(V_E)
+    call deall_rscalar(V_N)
+
+    ! and the edge conductivities
+    call deall_rvector(sigma_E)
+
+    ! and the cell conductivities
+    ! note that sigma_C is only needed to set up boundary conditions
+    !   until we set up a better way to do this
+    call deall_rscalar(sigma_C)
 
   end subroutine ModelDataCleanUp
 
@@ -193,13 +212,13 @@ Contains
     !    is now fixed as rscalar;  if a different representation is
     !    to be used changes to the declarations in this routine will
     !    be required, along with changes in the module interface
-    Call ModelParamToEdge(CondParam, condE)
+    Call ModelParamToEdge(CondParam, sigma_E)
 
     Call DivCorrSetUp()
 
     ! TEMPORARY; REQUIRED FOR BOUNDARY CONDITIONS
     !  set static array for cell conductivities
-    call ModelParamToCell(CondParam,Cond3D)
+    call ModelParamToCell(CondParam, sigma_C)
 
   end subroutine UpdateCond  ! UpdateCond
 
@@ -218,7 +237,7 @@ Contains
     !  ModelParamToEdge is to be interpreted as an abstract routine
     !    that maps from the external conductivity parameter to the
     !    internal edge representation  ...
-    Call ModelParamToEdge(CondParam, condE)
+    Call ModelParamToEdge(CondParam, sigma_E)
 
     Call AdiagSetUp()
     Call DiluSetUp()
@@ -226,13 +245,13 @@ Contains
 
     ! TEMPORARY; REQUIRED FOR BOUNDARY CONDITIONS
     !  set static array for cell conductivities
-    call ModelParamToCell(CondParam,Cond3D)
+    call ModelParamToCell(CondParam,sigma_C)
 
   end subroutine UpdateFreqCond  ! UpdateFreqCond
 
 !**********************************************************************
 ! Sets boundary conditions. Currently a wrapper for BC_x0_WS.
-! Uses input 3D conductivity in cells Cond3D, that has to be initialized
+! Uses input 3D conductivity in cells sigma_C, that has to be initialized
 ! by updateCond before calling this routine. Also uses mGrid set by
 ! ModelDataInit. Could use omega, which is set by updateFreq.
   Subroutine SetBound(imode,period,E0,BC,iTx)
@@ -247,8 +266,12 @@ Contains
     ! Output boundary conditions
     type(cboundary), intent(inout)	:: BC
 
+
+
     if (BC%read_E_from_file) then
-          call BC_x0_WS(imode,period,mGrid,Cond3D,E0,BC)  
+          
+          call BC_x0_WS(imode,period,mGrid,sigma_C,E0,BC) 
+
           ! The BC are already computed from a larger grid for all transmitters and modes and stored in BC_from_file.
           ! Overwrite BC with BC_from_file.
           ! Note: Right now we are using the same period layout for both grid. 
@@ -256,13 +279,13 @@ Contains
           BC = BC_from_file((iTx*2)-(2-imode))  
     else
          ! Compute the BC using Weerachai 2D approach 
-          call BC_x0_WS(imode,period,mGrid,Cond3D,E0,BC)                          
+          call BC_x0_WS(imode,period,mGrid,sigma_C,E0,BC)                          
     end if
     
-    
+   
     ! Cell conductivity array is no longer needed
     ! NOT TRUE: needed for imode=2
-    ! call deall_rscalar(Cond3D)
+    ! call deall_rscalar(sigma_C)
 
   end subroutine SetBound
 
@@ -580,15 +603,15 @@ Contains
     end if
 
     do ix = 1, mGrid%nx
-       Adiag%x(ix,:,:) = CMPLX(0.0, 1.0, 8)*omega*MU_0*condE%x(ix,:,:)
+       Adiag%x(ix,:,:) = CMPLX(0.0, 1.0, 8)*omega*MU_0*sigma_E%x(ix,:,:)
     enddo
 
     do iy = 1, mGrid%ny
-       Adiag%y(:,iy,:) = CMPLX(0.0, 1.0, 8)*omega*MU_0*condE%y(:,iy,:)
+       Adiag%y(:,iy,:) = CMPLX(0.0, 1.0, 8)*omega*MU_0*sigma_E%y(:,iy,:)
     enddo
 
     do iz = 1, mGrid%nz
-       Adiag%z(:,:,iz) = CMPLX(0.0, 1.0, 8)*omega*MU_0*condE%z(:,:,iz)
+       Adiag%z(:,:,iz) = CMPLX(0.0, 1.0, 8)*omega*MU_0*sigma_E%z(:,:,iz)
     enddo
 
 
@@ -773,12 +796,12 @@ Contains
           end if
 
           ! now preparing +/-i*omega*mu*conductivity*E
-          Call diagMult_crvector(inE, condE, outE)
+          Call diagMult_crvector(inE, sigma_E, outE)
           c2 = diag_sign*C_ONE*omega*MU_0
           Call linComb_cvector(C_ONE, workE, c2, outE, outE)
 
           ! diagonally multiply the final results with weights (edge volume)
-          Call diagMult_crvector(outE, volE, outE)
+          Call diagMult_crvector(outE, V_E, outE)
 
        else
           write (0, *) 'MultA_O: not compatible usage for existing data types'
@@ -806,6 +829,7 @@ Contains
     logical, intent (in)                     :: adjt
     type (cvector), intent (inout)           :: outE
 
+
     if (.not.inE%allocated) then
       write(0,*) 'inE in MultA_N not allocated yet'
       stop
@@ -827,7 +851,7 @@ Contains
           ! done with preparing del X del X E +/- i*omega*mu*conductivity*E
 
           ! diagonally multiply the final results with weights (edge volume)
-          Call diagMult(outE, volE, outE)
+          Call diagMult(outE, V_E, outE)
 
        else
           write (0, *) 'MultA_N: not compatible usage for existing data types'
@@ -1041,7 +1065,7 @@ Contains
           do iz = 2, mGrid%nz
 
              Dilu%x(ix, iy, iz) = xXO(iy,iz) - &
-                  CMPLX(0.0, 1.0, 8)*omega*MU_0*condE%x(ix, iy, iz)  &
+                  CMPLX(0.0, 1.0, 8)*omega*MU_0*sigma_E%x(ix, iy, iz)  &
                   - xXY(iy, 1)*xXY(iy-1, 2)*Dilu%x(ix,iy-1,iz) &
                   - xXZ(iz, 1)*xXZ(iz-1, 2)*Dilu%x(ix,iy,iz-1)
              Dilu%x(ix, iy, iz) = 1.0/ Dilu%x(ix, iy, iz)
@@ -1057,7 +1081,7 @@ Contains
           do ix = 2, mGrid%nx
 
              Dilu%y(ix, iy, iz) = yYO(ix,iz) - &
-                  CMPLX(0.0, 1.0, 8)*omega*MU_0*condE%y(ix, iy, iz) &
+                  CMPLX(0.0, 1.0, 8)*omega*MU_0*sigma_E%y(ix, iy, iz) &
                   - yYZ(iz, 1)*yYZ(iz-1, 2)*Dilu%y(ix, iy, iz-1) &
                   - yYX(ix, 1)*yYX(ix-1, 2)*Dilu%y(ix-1, iy, iz)
              Dilu%y(ix, iy, iz) = 1.0/ Dilu%y(ix, iy, iz)
@@ -1073,7 +1097,7 @@ Contains
           do iy = 2, mGrid%ny
 
              Dilu%z(ix, iy, iz) = zZO(ix,iy) - &
-                  CMPLX(0.0, 1.0, 8)*omega*MU_0*condE%z(ix, iy, iz) &
+                  CMPLX(0.0, 1.0, 8)*omega*MU_0*sigma_E%z(ix, iy, iz) &
                   - zZX(ix, 1)*zZX(ix-1, 2)*Dilu%z(ix-1, iy, iz) &
                   - zZY(iy, 1)*zZY(iy-1, 2)*Dilu%z(ix, iy-1, iz)
              Dilu%z(ix, iy, iz) = 1.0/ Dilu%z(ix, iy, iz)
@@ -1125,7 +1149,7 @@ Contains
 
           if (.not.adjt) then
 	     ! adjoint = .false.
-             Call diagDiv(inE, volE, outE)
+             Call diagDiv(inE, V_E, outE)
 
              ! ... note that we only parallelize the outer loops
              !$OMP PARALLEL DEFAULT(SHARED)
@@ -1240,7 +1264,7 @@ Contains
              !$OMP END DO
              !$OMP END PARALLEL
 
-             Call diagDiv(outE, volE, outE)
+             Call diagDiv(outE, V_E, outE)
 
           end if
 
@@ -1446,8 +1470,9 @@ Contains
     d%v(:,:,1) = 1.0
 
     ! initialize volume weights centered at corners
-    Call create_rscalar(mGrid, volC, CORNER)
-    Call NodeVolume(mGrid, volC)
+    ! commented out - already initialized in ModelDataInit
+    !Call create_rscalar(mGrid, V_N, CORNER)
+    !Call NodeVolume(mGrid, V_N)
 
    end subroutine DivCorrInit  ! DivCorrInit
 
@@ -1459,10 +1484,15 @@ Contains
   subroutine DivCorrSetUp()
 
     implicit none
-    integer                               :: ix, iy, iz
 
-    IF(.not.condE%allocated) THEN
- 	WRITE(0,*) 'condE not allocated yet: DivCorrSetUp'
+    integer                               :: ix, iy, iz
+    character*20 ModeName
+
+    !type (cvector):: wE
+    !call create_cvector(mGrid,wE,EDGE)
+
+    IF(.not.sigma_E%allocated) THEN
+ 	WRITE(0,*) 'sigma_E not allocated yet: DivCorrSetUp'
  	STOP
     ENDIF
 
@@ -1488,16 +1518,17 @@ Contains
 
     ! conductivity of air is modified for computing divergence correction
     ! operator coefficients ...
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     do iz = 1, mGrid%nzAir
        do iy = 1, mGrid%ny
           do ix = 1, mGrid%nx
-             condE%x(ix, iy, iz) = SIGMA_AIR
-             condE%y(ix, iy, iz) = SIGMA_AIR
-             condE%z(ix, iy, iz) = SIGMA_AIR
+             sigma_E%x(ix, iy, iz) = SIGMA_AIR
+             sigma_E%y(ix, iy, iz) = SIGMA_AIR
+             sigma_E%z(ix, iy, iz) = SIGMA_AIR
           enddo
        enddo
-    enddo
-
+    enddo    
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!   
     ! the coefficients are only for the interior nodes
     ! these coefficients have not been multiplied by volume elements
     ! yet
@@ -1505,17 +1536,17 @@ Contains
        do iy = 2, mGrid%ny
           do ix = 2, mGrid%nx
 
-             db1%x(ix, iy, iz) = condE%x(ix-1, iy, iz)/ &
+             db1%x(ix, iy, iz) = sigma_E%x(ix-1, iy, iz)/ &
                   (mGrid%dx(ix-1)*mGrid%delX(ix))
-             db2%x(ix, iy, iz) = condE%x(ix, iy, iz)/ &
+             db2%x(ix, iy, iz) = sigma_E%x(ix, iy, iz)/ &
                   (mGrid%dx(ix)*mGrid%delX(ix))
-             db1%y(ix, iy, iz) = condE%y(ix, iy-1, iz)/ &
+             db1%y(ix, iy, iz) = sigma_E%y(ix, iy-1, iz)/ &
                   (mGrid%dy(iy-1)*mGrid%delY(iy))
-             db2%y(ix, iy, iz) = condE%y(ix, iy, iz)/ &
+             db2%y(ix, iy, iz) = sigma_E%y(ix, iy, iz)/ &
                   (mGrid%dy(iy)*mGrid%delY(iy))
-             db1%z(ix, iy, iz) = condE%z(ix, iy, iz-1)/ &
+             db1%z(ix, iy, iz) = sigma_E%z(ix, iy, iz-1)/ &
                   (mGrid%dz(iz-1)*mGrid%delZ(iz))
-             db2%z(ix, iy, iz) = condE%z(ix, iy, iz)/ &
+             db2%z(ix, iy, iz) = sigma_E%z(ix, iy, iz)/ &
                   (mGrid%dz(iz)*mGrid%delZ(iz))
              c%v(ix, iy, iz) = - (db1%x(ix, iy, iz) + &
                   db2%x(ix, iy, iz) + &
@@ -1528,14 +1559,14 @@ Contains
           enddo
        enddo
     enddo
-
+!!!!!!!
     ! change conductivity of air back to zero
     do iz = 1, mGrid%nzAir
        do iy = 1, mGrid%ny
           do ix = 1, mGrid%nx
-             condE%x(ix, iy, iz) = R_ZERO
-             condE%y(ix, iy, iz) = R_ZERO
-             condE%z(ix, iy, iz) = R_ZERO
+             sigma_E%x(ix, iy, iz) = R_ZERO
+             sigma_E%y(ix, iy, iz) = R_ZERO
+             sigma_E%z(ix, iy, iz) = R_ZERO
           enddo
        enddo
     enddo
@@ -1545,17 +1576,17 @@ Contains
        do iy = 2, mGrid%ny
           do ix = 2, mGrid%nx
 
-             db1%x(ix, iy, iz) = db1%x(ix, iy, iz)*volC%v(ix, iy, iz)
-	     db1%y(ix, iy, iz) = db1%y(ix, iy, iz)*volC%v(ix, iy, iz)
-	     db1%z(ix, iy, iz) = db1%z(ix, iy, iz)*volC%v(ix, iy, iz)
-	     db2%x(ix, iy, iz) = db2%x(ix, iy, iz)*volC%v(ix, iy, iz)
-	     db2%y(ix, iy, iz) = db2%y(ix, iy, iz)*volC%v(ix, iy, iz)
-	     db2%z(ix, iy, iz) = db2%z(ix, iy, iz)*volC%v(ix, iy, iz)
+             db1%x(ix, iy, iz) = db1%x(ix, iy, iz)*V_N%v(ix, iy, iz)
+	     db1%y(ix, iy, iz) = db1%y(ix, iy, iz)*V_N%v(ix, iy, iz)
+	     db1%z(ix, iy, iz) = db1%z(ix, iy, iz)*V_N%v(ix, iy, iz)
+	     db2%x(ix, iy, iz) = db2%x(ix, iy, iz)*V_N%v(ix, iy, iz)
+	     db2%y(ix, iy, iz) = db2%y(ix, iy, iz)*V_N%v(ix, iy, iz)
+	     db2%z(ix, iy, iz) = db2%z(ix, iy, iz)*V_N%v(ix, iy, iz)
 
           enddo
        enddo
     enddo
-    Call diagMult_rscalar(c, volC, c)
+    Call diagMult_rscalar(c, V_N, c)
 
     !  To be explicit about forcing coefficients that multiply boundary
     !    nodes to be zero (this gaurantees that the BC on the potential
@@ -1600,7 +1631,7 @@ Contains
     Call deall_rscalar(c)
     Call deall_rscalar(d)
     ! corner volumes
-    Call deall_rscalar(volC)
+    !Call deall_rscalar(V_N)
 
   end subroutine Deallocate_DivCorr	! Deallocate_DivCorr
 
@@ -1801,13 +1832,13 @@ Contains
 	        ! FOR NODES AT THE AIR-EARTH INTERFACE
                 iz = outSc%grid%nzAir+1
                    outSc%v(ix, iy, iz) = &
-                        (condE%x(ix,iy,iz)*inE%x(ix, iy, iz) -         &
-                        condE%x(ix - 1,iy,iz)*inE%x(ix - 1, iy, iz)) * &
+                        (sigma_E%x(ix,iy,iz)*inE%x(ix, iy, iz) -         &
+                        sigma_E%x(ix - 1,iy,iz)*inE%x(ix - 1, iy, iz)) * &
                         inE%grid%delXinv(ix)      &
-                        +  (condE%y(ix,iy,iz)*inE%y(ix, iy, iz) -      &
-                        condE%y(ix,iy - 1,iz)*inE%y(ix, iy - 1, iz)) * &
+                        +  (sigma_E%y(ix,iy,iz)*inE%y(ix, iy, iz) -      &
+                        sigma_E%y(ix,iy - 1,iz)*inE%y(ix, iy - 1, iz)) * &
                         inE%grid%delYinv(iy)      &
-                        +  (condE%z(ix,iy,iz)*inE%z(ix, iy, iz) -      &
+                        +  (sigma_E%z(ix,iy,iz)*inE%z(ix, iy, iz) -      &
                         SIGMA_AIR*inE%z(ix, iy, iz - 1)) * &
                         inE%grid%delZinv(iz)
 
@@ -1816,14 +1847,14 @@ Contains
 		! AIR, THEREFORE THAT ONE IS SKIPPED HERE
                 do iz = outSc%grid%nzAir+2, outSc%nz
                    outSc%v(ix, iy, iz) = &
-                        (condE%x(ix,iy,iz)*inE%x(ix, iy, iz) -         &
-                        condE%x(ix - 1,iy,iz)*inE%x(ix - 1, iy, iz)) * &
+                        (sigma_E%x(ix,iy,iz)*inE%x(ix, iy, iz) -         &
+                        sigma_E%x(ix - 1,iy,iz)*inE%x(ix - 1, iy, iz)) * &
                         inE%grid%delXinv(ix)      &
-                        +  (condE%y(ix,iy,iz)*inE%y(ix, iy, iz) -      &
-                        condE%y(ix,iy - 1,iz)*inE%y(ix, iy - 1, iz)) * &
+                        +  (sigma_E%y(ix,iy,iz)*inE%y(ix, iy, iz) -      &
+                        sigma_E%y(ix,iy - 1,iz)*inE%y(ix, iy - 1, iz)) * &
                         inE%grid%delYinv(iy)      &
-                        +  (condE%z(ix,iy,iz)*inE%z(ix, iy, iz) -      &
-                        condE%z(ix,iy,iz - 1)*inE%z(ix, iy, iz - 1)) * &
+                        +  (sigma_E%z(ix,iy,iz)*inE%z(ix, iy, iz) -      &
+                        sigma_E%z(ix,iy,iz - 1)*inE%z(ix, iy, iz - 1)) * &
                         inE%grid%delZinv(iz)
                 enddo   ! iz
 
