@@ -30,6 +30,11 @@ module GridCalc
   public      :: EdgeLength, FaceLength
   public      :: EdgeArea,   FaceArea
 
+  !!!!!!!>>>>>>>>> global parameter key to enable switching
+  !!!!!!!>>>>>>>>> between cartesian and spherical grids
+  !!!!!!!>>>>>>>>> (spherical can be global or regional)
+  character (len=80), parameter  :: gridCoords = SPHERICAL
+
 Contains
 
   ! *************************************************************************
@@ -222,8 +227,6 @@ Contains
 
       deallocate(x,y,z)
 
-      call validate_rscalar(V_N,.true.)
-
   end subroutine NodeVolume
 
   ! *************************************************************************
@@ -281,8 +284,6 @@ Contains
       enddo
 
       deallocate(x,y,z)
-
-      call validate_rscalar(V_C,.true.)
 
   end subroutine CellVolume  ! CellVolume
 
@@ -398,10 +399,14 @@ Contains
           i=1
           call leng_xijk2(nx,1,j,k,x,y,z,xlen)
           l_F%x(i,j,k)=xlen
-          do i=2,nx+1
+          do i=2,nx
             call leng_xijk2(i-1,i,j,k,x,y,z,xlen)
             l_F%x(i,j,k)=xlen
           end do
+          ! Zero longitude again
+          i=nx+1
+          call leng_xijk2(nx,1,j,k,x,y,z,xlen)
+          l_F%x(i,j,k)=xlen
         end do
       end do
 

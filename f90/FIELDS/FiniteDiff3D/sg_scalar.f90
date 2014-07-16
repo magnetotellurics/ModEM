@@ -10,7 +10,9 @@ module sg_scalar
   ! specific to EM problem, no dependency on outside (from other classes) modules.
 
   use math_constants		! math/ physics constants
+  use utilities             ! for error and warning messages
   use griddef
+
   implicit none
 
   ! Generic interfaces are done through subroutines
@@ -553,26 +555,55 @@ Contains
   end subroutine deall_iscalar
 
   !****************************************************************************
-  ! read_rscalar reads in an rscalar in a simple ASCII format; rscalar has
+  ! read_rscalar reads in an rscalar in a simple format; rscalar has
   ! to exist and be allocated before calling this routine, and the file unit
   ! must already be available for reading; also need to be careful that
   ! dimensions in the input file match those of the rscalar;
   ! assuming the "intuitive geographic" file convention by reading
   ! x from the bottom up (x points North), y left to right (y points East)
-  subroutine read_rscalar(fid, E)
+  ! optional file type may be 'ascii' or 'binary', shortcuts allowed;
+  ! defaults to 'ascii'. use binary for better accuracy.
+  subroutine read_rscalar(fid, E, ftype)
 
       integer,        intent(in)		:: fid
       type (rscalar), intent(inout)		:: E
+      character(*), optional, intent(in):: ftype
 
       !  local variables
       integer 		                    :: Nx, Ny, Nz
       integer                           :: i, j, k, k1, k2, istat
       real (kind(E%v)), allocatable     :: temp(:)
+      logical                           :: ok, hasname, binary
+      character(80)                     :: fname, isbinary
 
       if(.not. E%allocated) then
          write(0, *) 'rscalar must be allocated before call to read_rscalar'
          stop
       endif
+
+      if (.not. present(ftype)) then
+         binary = .false.
+      elseif (index(ftype,'b')>0) then
+         binary = .true.
+      else
+         binary = .false.
+      endif
+
+      inquire(fid, opened=ok, named=hasname, name=fname, unformatted=isbinary)
+
+      ! check that the file is unformatted if binary, formatted if ascii
+      if ((index(isbinary,'yes')>0 .or. index(isbinary,'YES')>0) .and. .not. binary) then
+         write(0,*) 'Warning: Unable to read rscalar from unformatted file ',trim(fname)
+      elseif ((index(isbinary,'no')>0 .or. index(isbinary,'NO')>0) .and. binary) then
+         write(0,*) 'Warning: Unable to read rscalar from formatted file ',trim(fname)
+      endif
+
+      if (binary) then
+         ! read binary from unformatted files and exit
+         read(fid) E%nx,E%ny,E%nz,E%gridType
+         read(fid) E%v
+         return
+      end if
 
 	  Nx = size(E%v,1)
 	  Ny = size(E%v,2)
@@ -607,27 +638,56 @@ Contains
   end subroutine read_rscalar
 
   !****************************************************************************
-  ! read_cscalar reads in an cscalar in a simple ASCII format; cscalar has
+  ! read_cscalar reads in an cscalar in a simple format; cscalar has
   ! to exist and be allocated before calling this routine, and the file unit
   ! must already be available for reading; also need to be careful that
   ! dimensions in the input file match those of the cscalar. Each complex
   ! value must be of the form (v1, v2);
   ! assuming the "intuitive geographic" file convention by reading
   ! x from the bottom up (x points North), y left to right (y points East)
-  subroutine read_cscalar(fid, E)
+  ! optional file type may be 'ascii' or 'binary', shortcuts allowed;
+  ! defaults to 'ascii'. use binary for better accuracy.
+  subroutine read_cscalar(fid, E, ftype)
 
       integer,        intent(in)		:: fid
       type (cscalar), intent(inout)		:: E
+      character(*), optional, intent(in):: ftype
 
       !  local variables
       integer 		                    :: Nx, Ny, Nz
       integer                           :: i, j, k, k1, k2, istat
       complex (kind(E%v)), allocatable  :: temp(:)
+      logical                           :: ok, hasname, binary
+      character(80)                     :: fname, isbinary
 
       if(.not. E%allocated) then
          write(0, *) 'cscalar must be allocated before call to read_cscalar'
          stop
       endif
+
+      if (.not. present(ftype)) then
+         binary = .false.
+      elseif (index(ftype,'b')>0) then
+         binary = .true.
+      else
+         binary = .false.
+      endif
+
+      inquire(fid, opened=ok, named=hasname, name=fname, unformatted=isbinary)
+
+      ! check that the file is unformatted if binary, formatted if ascii
+      if ((index(isbinary,'yes')>0 .or. index(isbinary,'YES')>0) .and. .not. binary) then
+         write(0,*) 'Warning: Unable to read cscalar from unformatted file ',trim(fname)
+      elseif ((index(isbinary,'no')>0 .or. index(isbinary,'NO')>0) .and. binary) then
+         write(0,*) 'Warning: Unable to read cscalar from formatted file ',trim(fname)
+      endif
+
+      if (binary) then
+         ! read binary from unformatted files and exit
+         read(fid) E%nx,E%ny,E%nz,E%gridType
+         read(fid) E%v
+         return
+      end if
 
 	  Nx = size(E%v,1)
 	  Ny = size(E%v,2)
@@ -669,20 +729,49 @@ Contains
   ! assuming the "intuitive geographic" file convention by reading
   ! x from the bottom up (x points North), y left to right (y points East)
   ! ... conforms to the model format of Weerachai Siripunvaraporn
-  subroutine read_iscalar(fid, E)
+  ! optional file type may be 'ascii' or 'binary', shortcuts allowed;
+  ! defaults to 'ascii'.
+  subroutine read_iscalar(fid, E, ftype)
 
       integer,        intent(in)		:: fid
       type (iscalar), intent(inout)		:: E
+      character(*), optional, intent(in):: ftype
 
       !  local variables
       integer 		                    :: Nx, Ny, Nz
       integer                           :: i, j, k, k1, k2, istat
       integer, allocatable              :: temp(:)
+      logical                           :: ok, hasname, binary
+      character(80)                     :: fname, isbinary
 
       if(.not. E%allocated) then
          write(0, *) 'iscalar must be allocated before call to read_iscalar'
          stop
       endif
+
+      if (.not. present(ftype)) then
+         binary = .false.
+      elseif (index(ftype,'b')>0) then
+         binary = .true.
+      else
+         binary = .false.
+      endif
+
+      inquire(fid, opened=ok, named=hasname, name=fname, unformatted=isbinary)
+
+      ! check that the file is unformatted if binary, formatted if ascii
+      if ((index(isbinary,'yes')>0 .or. index(isbinary,'YES')>0) .and. .not. binary) then
+         write(0,*) 'Warning: Unable to read iscalar from unformatted file ',trim(fname)
+      elseif ((index(isbinary,'no')>0 .or. index(isbinary,'NO')>0) .and. binary) then
+         write(0,*) 'Warning: Unable to read iscalar from formatted file ',trim(fname)
+      endif
+
+      if (binary) then
+         ! read binary from unformatted files and exit
+         read(fid) E%nx,E%ny,E%nz,E%gridType
+         read(fid) E%v
+         return
+      end if
 
 	  Nx = size(E%v,1)
 	  Ny = size(E%v,2)
@@ -722,22 +811,51 @@ Contains
   ! must already be available for writing;
   ! assuming the "intuitive geographic" file convention by writing
   ! x from the bottom up (x points North), y left to right (y points East)
-  subroutine write_rscalar(fid, E)
+  ! optional file type may be 'ascii' or 'binary', shortcuts allowed;
+  ! defaults to 'ascii'. use binary for better accuracy.
+  subroutine write_rscalar(fid, E, ftype)
 
       integer,        intent(in)		:: fid
       type (rscalar), intent(in)		:: E
+      character(*), optional, intent(in):: ftype
 
       !  local variables
       integer 		                    :: Nx, Ny, Nz
       integer                           :: i, j, k, k1, k2, istat
       real (kind(E%v)), allocatable     :: temp(:,:)
+      logical                           :: ok, hasname, binary
+      character(80)                     :: fname, isbinary
 
       if(.not. E%allocated) then
          write(0, *) 'rscalar must be allocated before call to write_rscalar'
          stop
       endif
 
-	  Nx = size(E%v,1)
+      if (.not. present(ftype)) then
+         binary = .false.
+      elseif (index(ftype,'b')>0) then
+         binary = .true.
+      else
+         binary = .false.
+      endif
+
+      inquire(fid, opened=ok, named=hasname, name=fname, unformatted=isbinary)
+
+      ! check that the file is unformatted if binary, formatted if ascii
+      if ((index(isbinary,'yes')>0 .or. index(isbinary,'YES')>0) .and. .not. binary) then
+         write(0,*) 'Warning: Unable to write rscalar to unformatted file ',trim(fname)
+      elseif ((index(isbinary,'no')>0 .or. index(isbinary,'NO')>0) .and. binary) then
+         write(0,*) 'Warning: Unable to write rscalar to formatted file ',trim(fname)
+      endif
+
+      ! write binary to unformatted files
+      if (binary) then
+         write(fid) E%nx,E%ny,E%nz,E%gridType
+         write(fid) E%v
+         return
+      end if
+
+      Nx = size(E%v,1)
 	  Ny = size(E%v,2)
 	  Nz = size(E%v,3)
 
@@ -772,27 +890,56 @@ Contains
   end subroutine write_rscalar
 
   !****************************************************************************
-  ! write_cscalar writes an iscalar in a simple ASCII format; cscalar has
+  ! write_cscalar writes an iscalar in a simple format; cscalar has
   ! to exist and be allocated before calling this routine, and the file unit
   ! must already be available for writing;
   ! assuming the "intuitive geographic" file convention by writing
   ! x from the bottom up (x points North), y left to right (y points East)
-  subroutine write_cscalar(fid, E)
+  ! optional file type may be 'ascii' or 'binary', shortcuts allowed;
+  ! defaults to 'ascii'. use binary for better accuracy.
+  subroutine write_cscalar(fid, E, ftype)
 
       integer,        intent(in)		:: fid
       type (cscalar), intent(in)		:: E
+      character(*), optional, intent(in):: ftype
 
       !  local variables
       integer 		                    :: Nx, Ny, Nz
       integer                           :: i, j, k, k1, k2, istat
       complex (kind(E%v)), allocatable  :: temp(:,:)
+      logical                           :: ok, hasname, binary
+      character(80)                     :: fname, isbinary
 
       if(.not. E%allocated) then
          write(0, *) 'cscalar must be allocated before call to write_cscalar'
          stop
       endif
 
-	  Nx = size(E%v,1)
+      if (.not. present(ftype)) then
+         binary = .false.
+      elseif (index(ftype,'b')>0) then
+         binary = .true.
+      else
+         binary = .false.
+      endif
+
+      inquire(fid, opened=ok, named=hasname, name=fname, unformatted=isbinary)
+
+      ! check that the file is unformatted if binary, formatted if ascii
+      if ((index(isbinary,'yes')>0 .or. index(isbinary,'YES')>0) .and. .not. binary) then
+         write(0,*) 'Warning: Unable to write cscalar to unformatted file ',trim(fname)
+      elseif ((index(isbinary,'no')>0 .or. index(isbinary,'NO')>0) .and. binary) then
+         write(0,*) 'Warning: Unable to write cscalar to formatted file ',trim(fname)
+      endif
+
+      ! write binary to unformatted files
+      if (binary) then
+         write(fid) E%nx,E%ny,E%nz,E%gridType
+         write(fid) E%v
+         return
+      end if
+
+      Nx = size(E%v,1)
 	  Ny = size(E%v,2)
 	  Nz = size(E%v,3)
 
@@ -827,27 +974,60 @@ Contains
   end subroutine write_cscalar
 
   !****************************************************************************
-  ! write_iscalar writes an iscalar in a simple ASCII format; iscalar has
+  ! write_iscalar writes an iscalar in a simple format; iscalar has
   ! to exist and be allocated before calling this routine, and the file unit
   ! must already be available for writing;
   ! assuming the "intuitive geographic" file convention by writing
   ! x from the bottom up (x points North), y left to right (y points East)
-  ! ... conforms to the model format of Weerachai Siripunvaraporn
-  subroutine write_iscalar(fid, E)
+  ! ... ascii conforms to the model format of Weerachai Siripunvaraporn
+  ! optional file type may be 'ascii' or 'binary', shortcuts allowed;
+  ! defaults to 'ascii'.
+  subroutine write_iscalar(fid, E, ftype)
 
       integer,        intent(in)		:: fid
       type (iscalar), intent(in)		:: E
+      character(*), optional, intent(in):: ftype
 
       !  local variables
       integer 		                    :: Nx, Ny, Nz
       integer                           :: i, j, k, k1, k2, istat
       integer, allocatable              :: temp(:,:)
       character(10)                     :: fmt
+      logical                           :: ok, hasname, binary
+      character(80)                     :: fname, isbinary
 
       if(.not. E%allocated) then
          write(0, *) 'iscalar must be allocated before call to write_iscalar'
          stop
       endif
+
+      if (.not. present(ftype)) then
+         binary = .false.
+      elseif (index(ftype,'b')>0) then
+         binary = .true.
+      else
+         binary = .false.
+      endif
+
+      inquire(fid, opened=ok, named=hasname, name=fname, unformatted=isbinary)
+
+      ! check that the file is unformatted if binary, formatted if ascii
+      if ((index(isbinary,'yes')>0 .or. index(isbinary,'YES')>0) .and. .not. binary) then
+         write(0,*) 'Warning: Unable to write iscalar to unformatted file ',trim(fname)
+      elseif ((index(isbinary,'no')>0 .or. index(isbinary,'NO')>0) .and. binary) then
+         write(0,*) 'Warning: Unable to write iscalar to formatted file ',trim(fname)
+      endif
+
+      ! write binary to unformatted files
+      if (binary) then
+         ! (AK) CORRECT:
+         !write(fid) E%nx,E%ny,E%nz,trim(E%gridType)
+         ! (AK) DEBUG & need version compatibility; output gibberish header:
+         write(fid) R_ZERO,E%nx,E%ny,'*******testing******'
+         ! (AK) END DEBUG
+         write(fid) E%v
+         return
+      end if
 
 	  Nx = size(E%v,1)
 	  Ny = size(E%v,2)
@@ -1786,6 +1966,49 @@ Contains
     end if
 
   end subroutine diagDiv_rscalar ! diagDiv_rscalar
+  !****************************************************************************
+  ! diagDiv_crscalar divides scalar E1 by scalar E2 to get scalar E3
+  ! type cscalar pointwise; subroutine version
+  ! E3 can overwrite E1 or E2
+  subroutine diagDiv_crscalar(E1, E2, E3)
+
+    implicit none
+    type (cscalar), intent(in)               :: E1
+    type (rscalar), intent(in)               :: E2
+    type (cscalar), intent(inout)            :: E3
+
+    if((.not.E1%allocated).or.(.not.E2%allocated)) then
+       write(0,*) 'RHS not allocated yet for diagDiv_rscalar'
+       stop
+    endif
+
+    ! check to see if LHS (E3) is active (allocated)
+    if(.not.E3%allocated) then
+       write(0,*) 'LHS was not allocated for diagDiv_rscalar'
+    else
+
+       ! Check whether all the scalar nodes are of the same size
+       if((E1%nx == E2%nx).and.(E1%ny == E2%ny).and.(E1%nz == E2%nz).and. &
+            (E1%nx == E3%nx).and.(E1%ny == E3%ny).and.(E1%nz == E3%nz)) then
+
+          if ((E1%gridType == E2%gridType).and.(E1%gridType == E3%gridType)) then
+
+             ! pointwise division for v-component; NO ZERO TESTING FOR EFFICIENCY
+             E3%v = E1%v / E2%v
+
+          else
+             write (0, *) 'not compatible usage for diagDiv_rscalar'
+          end if
+
+       else
+
+          write(0, *) 'Error:diagDiv_rscalar: scalars not same size'
+
+       end if
+    end if
+
+  end subroutine diagDiv_crscalar ! diagDiv_cscalar
+
 
   !****************************************************************************
   ! diagMult_cscalar multiplies two scalars E1, E2 stored as devired data
@@ -2256,6 +2479,49 @@ Contains
     end if
 
   end subroutine scMultAdd_cscalar
+!****************************************************************** Lana
+  ! **********************************************************************
+  ! * Creates a random perturbation in cvector - used for testing
 
+  subroutine random_cscalar(E,eps)
 
+    implicit none
+    type (cscalar), intent(inout)                    :: E
+    real(8), intent(in), optional                    :: eps
+    ! local
+    real (kind(E%v)), allocatable, dimension(:,:,:)  :: zr,zi
+    integer              :: Nx,Ny,Nz,istat
+
+    if (.not. E%allocated) then
+      call warning('cscalar not allocated in random_cscalar')
+      return
+    end if
+
+    call zero_cscalar(E)
+
+    ! make some random vectors
+    Nx = E%nx
+    Ny = E%ny
+    Nz = E%nz
+    allocate(zr(Nx+1,Ny+1,Nz+1),zi(Nx+1,Ny+1,Nz+1),STAT=istat)
+    call random_number(zr)
+    call random_number(zi)
+    if (present(eps)) then
+        zr = zr * eps
+        zi = zi * eps
+    else
+        zr = zr * 0.05
+        zi = zi * 0.05
+    end if
+    if (E%gridType == CENTER) then
+	   E%v = cmplx(zr(1:Nx,1:Ny,1:Nz),zi(1:Nx,1:Ny,1:Nz))
+    else if (E%gridType == CORNER) then
+	   E%v = cmplx(zr,zi)
+    else
+	   write (0, *) 'not a known tag'
+    end if
+    deallocate(zr,zi,STAT=istat)
+
+  end subroutine random_cscalar
+!****************************************************************** Lana
 end module sg_scalar

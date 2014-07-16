@@ -10,7 +10,7 @@ module sg_vector
   ! specific to EM problem, no dependency on outside (from other classes) modules.
 
   use math_constants		! math/ physics constants
-  use utilities
+  use utilities             ! for error and warning messages
   use griddef
   implicit none
 
@@ -544,24 +544,56 @@ Contains
   end subroutine deall_cvector  ! deall_cvector
 
   !****************************************************************************
-  ! write_rvector writes an rvector in a simple ASCII format; rvector has
+  ! write_rvector writes an rvector in a simple format; rvector has
   ! to exist and be allocated before calling this routine, and the file unit
   ! must already be available for writing.
-  subroutine write_rvector(fid, E)
+  ! optional file type may be 'ascii' or 'binary', shortcuts allowed;
+  ! defaults to 'ascii'. use binary for better accuracy.
+  subroutine write_rvector(fid, E, ftype)
 
       integer,        intent(in)		:: fid
       type (rvector), intent(in)		:: E
+      character(*), optional, intent(in):: ftype
 
       !  local variables
       integer 		                    :: Nx, Ny, Nz
       integer                           :: i, j, k, istat
       real (kind(E%x)), allocatable, dimension(:,:,:)  :: x, y, z
+      logical                           :: ok, hasname, binary
+      character(80)                     :: fname, isbinary
 
       if(.not. E%allocated) then
          write(0, *) 'rvector must be allocated before call to write_rvector'
          return
       endif
 
+       if (.not. present(ftype)) then
+         binary = .false.
+      elseif (index(ftype,'b')>0) then
+         binary = .true.
+      else
+         binary = .false.
+      endif
+
+      inquire(fid, opened=ok, named=hasname, name=fname, unformatted=isbinary)
+
+      ! check that the file is unformatted if binary, formatted if ascii
+      if ((index(isbinary,'yes')>0 .or. index(isbinary,'YES')>0) .and. .not. binary) then
+         write(0,*) 'Warning: Unable to write rvector to unformatted file ',trim(fname)
+      elseif ((index(isbinary,'no')>0 .or. index(isbinary,'NO')>0) .and. binary) then
+         write(0,*) 'Warning: Unable to write rvector to formatted file ',trim(fname)
+      endif
+
+      ! write binary to unformatted files
+      if (binary) then
+         write(fid) E%nx,E%ny,E%nz,E%gridType
+         write(fid) E%x
+         write(fid) E%y
+         write(fid) E%z
+         return
+      end if
+
+      ! otherwise, write ascii
       write(fid,'(3i5,a10)',iostat=istat) E%nx,E%ny,E%nz,trim(E%gridType)
 
 	  Nx = E%nx
@@ -605,24 +637,56 @@ Contains
   end subroutine write_rvector
 
   !****************************************************************************
-  ! write_cvector writes a cvector in a simple ASCII format; cvector has
+  ! write_cvector writes a cvector in a simple format; cvector has
   ! to exist and be allocated before calling this routine, and the file unit
   ! must already be available for writing.
-  subroutine write_cvector(fid, E)
+  ! optional file type may be 'ascii' or 'binary', shortcuts allowed;
+  ! defaults to 'ascii'. use binary for better accuracy.
+  subroutine write_cvector(fid, E, ftype)
 
       integer,        intent(in)		:: fid
       type (cvector), intent(in)		:: E
+      character(*), optional, intent(in):: ftype
 
       !  local variables
       integer 		                    :: Nx, Ny, Nz
       integer                           :: i, j, k, istat
       complex (kind(E%x)), allocatable, dimension(:,:,:)  :: x, y, z
+      logical                           :: ok, hasname, binary
+      character(80)                     :: fname, isbinary
 
       if(.not. E%allocated) then
          write(0, *) 'cvector must be allocated before call to write_cvector'
          return
       endif
 
+      if (.not. present(ftype)) then
+         binary = .false.
+      elseif (index(ftype,'b')>0) then
+         binary = .true.
+      else
+         binary = .false.
+      endif
+
+      inquire(fid, opened=ok, named=hasname, name=fname, unformatted=isbinary)
+
+      ! check that the file is unformatted if binary, formatted if ascii
+      if ((index(isbinary,'yes')>0 .or. index(isbinary,'YES')>0) .and. .not. binary) then
+         write(0,*) 'Warning: Unable to write cvector to unformatted file ',trim(fname)
+      elseif ((index(isbinary,'no')>0 .or. index(isbinary,'NO')>0) .and. binary) then
+         write(0,*) 'Warning: Unable to write cvector to formatted file ',trim(fname)
+      endif
+
+      ! write binary to unformatted files
+      if (binary) then
+         write(fid) E%nx,E%ny,E%nz,E%gridType
+         write(fid) E%x
+         write(fid) E%y
+         write(fid) E%z
+         return
+      end if
+
+      ! otherwise, write ascii
       write(fid,'(3i5,a10)',iostat=istat) E%nx,E%ny,E%nz,trim(E%gridType)
 
 	  Nx = E%nx
@@ -666,37 +730,69 @@ Contains
   end subroutine write_cvector
 
   !****************************************************************************
-  ! read_rvector reads an rvector in a simple ASCII format; rvector must match
+  ! read_rvector reads an rvector in a simple format; rvector must match
   ! the input grid; file unit must already be available for reading.
-  subroutine read_rvector(fid, E, grid)
+  ! optional file type may be 'ascii' or 'binary', shortcuts allowed;
+  ! defaults to 'ascii'. use binary for better accuracy.
+  subroutine read_rvector(fid, E, ftype)
 
       integer,        intent(in)		:: fid
       type (rvector), intent(inout)		:: E
-      type (grid_t), target, intent(in) :: grid
+      character(*), optional, intent(in):: ftype
 
       !  local variables
       integer 		                    :: Nx, Ny, Nz
       character(80)						:: gridType
       integer                           :: i, j, k, ii, jj, kk, istat
       real (kind(E%x)), allocatable, dimension(:,:,:)  :: x, y, z
+      logical                           :: ok, hasname, binary
+      character(80)                     :: fname, isbinary
 
-      read(fid,*,iostat=istat) Nx,Ny,Nz,gridType
-
-      if ((Nx .ne. grid%nx) .or. (Ny .ne. grid%ny) .or. (Nz .ne. grid%nz)) then
-         write(0, *) 'rvector size does not match the grid in read_rvector'
-         return
+      if (.not. present(ftype)) then
+         binary = .false.
+      elseif (index(ftype,'b')>0) then
+         binary = .true.
+      else
+         binary = .false.
       endif
+
+      inquire(fid, opened=ok, named=hasname, name=fname, unformatted=isbinary)
+
+      ! check that the file is unformatted if binary, formatted if ascii
+      if ((index(isbinary,'yes')>0 .or. index(isbinary,'YES')>0) .and. .not. binary) then
+         write(0,*) 'Warning: Unable to read rvector from unformatted file ',trim(fname)
+      elseif ((index(isbinary,'no')>0 .or. index(isbinary,'NO')>0) .and. binary) then
+         write(0,*) 'Warning: Unable to read rvector from formatted file ',trim(fname)
+      endif
+
+      if (binary) then
+         ! read binary from unformatted files
+         read(fid) Nx,Ny,Nz,gridType
+      else
+         ! otherwise, read ascii
+         read(fid,*,iostat=istat) Nx,Ny,Nz,gridType
+      end if
 
       if(.not. E%allocated) then
-      	call create_rvector(grid,E,gridType)
-      else
-      	E%nx = Nx
-      	E%ny = Ny
-      	E%nz = Nz
-      	E%gridType = gridType
-      	E%grid => grid
+         write(0, *) 'rvector must be allocated before reading from ',trim(fname)
+         stop
+      elseif (E%gridType .ne. gridType) then
+         write(0, *) 'rvector must be of type ',gridType,' before reading from ',trim(fname)
+         stop
+      elseif ((E%nx .ne. Nx) .or. (E%ny .ne. Ny) .or. (E%nz .ne. Nz)) then
+         write(0, *) 'wrong size of rvector on input from ',trim(fname)
+         stop
       endif
 
+      if (binary) then
+         ! read binary from unformatted files
+         read(fid) E%x
+         read(fid) E%y
+         read(fid) E%z
+         return
+      end if
+
+      ! otherwise, read ascii
       allocate(x(Nx+1,Ny+1,Nz+1),y(Nx+1,Ny+1,Nz+1),z(Nx+1,Ny+1,Nz+1),STAT=istat)
       x = R_ZERO
       y = R_ZERO
@@ -736,11 +832,13 @@ Contains
   !****************************************************************************
   ! read_cvector reads a cvector in a simple ASCII format; cvector must match
   ! the input grid; file unit must already be available for reading.
-  subroutine read_cvector(fid, E, grid)
+  ! optional file type may be 'ascii' or 'binary', shortcuts allowed;
+  ! defaults to 'ascii'. use binary for better accuracy.
+  subroutine read_cvector(fid, E, ftype)
 
       integer,        intent(in)		:: fid
       type (cvector), intent(inout)		:: E
-      type (grid_t), target, intent(in) :: grid
+      character(*), optional, intent(in):: ftype
 
       !  local variables
       integer 		                    :: Nx, Ny, Nz
@@ -748,24 +846,54 @@ Contains
       integer                           :: i, j, k, ii, jj, kk, istat
       real (kind(E%x))                  :: xr, xi, yr, yi, zr, zi
       complex (kind(E%x)), allocatable, dimension(:,:,:)  :: x, y, z
+      logical                           :: ok, hasname, binary
+      character(80)                     :: fname, isbinary
 
-      read(fid,*,iostat=istat) Nx,Ny,Nz,gridType
-
-      if ((Nx .ne. grid%nx) .or. (Ny .ne. grid%ny) .or. (Nz .ne. grid%nz)) then
-         write(0, *) 'cvector size does not match the grid in read_cvector'
-         return
+      if (.not. present(ftype)) then
+         binary = .false.
+      elseif (index(ftype,'b')>0) then
+         binary = .true.
+      else
+         binary = .false.
       endif
+
+      inquire(fid, opened=ok, named=hasname, name=fname, unformatted=isbinary)
+
+      ! check that the file is unformatted if binary, formatted if ascii
+      if ((index(isbinary,'yes')>0 .or. index(isbinary,'YES')>0) .and. .not. binary) then
+         write(0,*) 'Warning: Unable to read cvector from unformatted file ',trim(fname)
+      elseif ((index(isbinary,'no')>0 .or. index(isbinary,'NO')>0) .and. binary) then
+         write(0,*) 'Warning: Unable to read cvector from formatted file ',trim(fname)
+      endif
+
+      if (binary) then
+         ! read binary from unformatted files
+         read(fid) Nx,Ny,Nz,gridType
+      else
+         ! otherwise, read ascii
+         read(fid,*,iostat=istat) Nx,Ny,Nz,gridType
+      end if
 
       if(.not. E%allocated) then
-      	call create_cvector(grid,E,gridType)
-      else
-      	E%nx = Nx
-      	E%ny = Ny
-      	E%nz = Nz
-      	E%gridType = gridType
-      	E%grid => grid
+         write(0, *) 'cvector must be allocated before reading from ',trim(fname)
+         stop
+      elseif (E%gridType .ne. gridType) then
+         write(0, *) 'cvector must be of type ',gridType,' before reading from ',trim(fname)
+         stop
+      elseif ((E%nx .ne. Nx) .or. (E%ny .ne. Ny) .or. (E%nz .ne. Nz)) then
+         write(0, *) 'wrong size of cvector on input from ',trim(fname)
+         stop
       endif
 
+      if (binary) then
+         ! read binary from unformatted files
+         read(fid) E%x
+         read(fid) E%y
+         read(fid) E%z
+         return
+      end if
+
+      ! otherwise, read ascii
       allocate(x(Nx+1,Ny+1,Nz+1),y(Nx+1,Ny+1,Nz+1),z(Nx+1,Ny+1,Nz+1),STAT=istat)
       x = C_ZERO
       y = C_ZERO
@@ -2392,7 +2520,7 @@ Contains
 	ny = E3%ny
 	nz = E3%nz
 
-	if (E3%grid%coords == Spherical) then
+	if (E3%grid%geometry == SPHERE) then
 	  ! needs special treatment
 	  if (E3%gridType == EDGE) then
 		! delete duplicate edges
@@ -2406,10 +2534,10 @@ Contains
 	  else
 		write(0,*) 'unknown gridType ',trim(E3%gridType),' in dotProd_rvector_f'
 	  end if
-	else if (E3%grid%coords == Cartesian) then
+	else if (E3%grid%geometry == REGION) then
 	  ! do nothing
 	else
-	  write(0,*) 'unknown coordinate system ',trim(E3%grid%coords),' in dotProd_rvector_f'
+	  write(0,*) 'unknown grid geometry ',trim(E3%grid%geometry),' in dotProd_rvector_f'
 	  return
 	end if
 
@@ -2460,7 +2588,7 @@ Contains
 	ny = E3%ny
 	nz = E3%nz
 
-	if (E3%grid%coords == Spherical) then
+	if (E3%grid%geometry == SPHERE) then
 	  ! needs special treatment
 	  if (E3%gridType == EDGE) then
 		! delete duplicate edges
@@ -2474,10 +2602,10 @@ Contains
 	  else
 		write(0,*) 'unknown gridType ',trim(E3%gridType),' in dotProd_cvector_f'
 	  end if
-	else if (E3%grid%coords == Cartesian) then
+	else if (E3%grid%geometry == REGION) then
 	  ! do nothing
 	else
-	  write(0,*) 'unknown coordinate system ',trim(E3%grid%coords),' in dotProd_cvector_f'
+	  write(0,*) 'unknown grid geometry ',trim(E3%grid%geometry),' in dotProd_cvector_f'
 	  return
 	end if
 
@@ -2528,7 +2656,7 @@ Contains
 	ny = E3%ny
 	nz = E3%nz
 
-	if (E3%grid%coords == Spherical) then
+	if (E3%grid%geometry == SPHERE) then
 	  ! needs special treatment
 	  if (E3%gridType == EDGE) then
 		! delete duplicate edges
@@ -2542,10 +2670,10 @@ Contains
 	  else
 		write(0,*) 'unknown gridType ',trim(E3%gridType),' in dotProd_noConj_cvector_f'
 	  end if
-	else if (E3%grid%coords == Cartesian) then
+	else if (E3%grid%geometry == REGION) then
 	  ! do nothing
 	else
-	  write(0,*) 'unknown coordinate system ',trim(E3%grid%coords),' in dotProd_noConj_cvector_f'
+	  write(0,*) 'unknown grid geometry ',trim(E3%grid%geometry),' in dotProd_noConj_cvector_f'
 	  return
 	end if
 

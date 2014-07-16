@@ -271,7 +271,7 @@ Contains
       write(fid,'(i12,a10)',iostat=istat) SV%nCoeff,trim(SV%gridType)
 
       do ii = 1,SV%nCoeff
-         write(fid,'(4i5,2es14.6)',iostat=istat) SV%i(ii),SV%j(ii),SV%k(ii),SV%xyz(ii),real(SV%c(ii)),imag(SV%c(ii))
+         write(fid,'(4i5,2es14.6)',iostat=istat) SV%i(ii),SV%j(ii),SV%k(ii),SV%xyz(ii),real(SV%c(ii)),aimag(SV%c(ii))
       end do
 
   end subroutine write_sparsevecc

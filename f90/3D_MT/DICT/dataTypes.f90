@@ -282,7 +282,8 @@ Contains
           header = '# Period(s) Code GG_Lat GG_Lon X(m) Y(m) Z(m) Component Real Imag Error'
 
        case(Full_Interstation_TF)
-          header = '# Period(s) Code GG_Lat GG_Lon X(m) Y(m) Z(m) Ref_Code Ref_Lat Ref_Lon Ref_X(m) Ref_Y(m) Ref_Z(m) Component Real Imag Error'
+          header = '# Period(s) Code GG_Lat GG_Lon X(m) Y(m) Z(m) Ref_Code Ref_Lat '// &
+                   'Ref_Lon Ref_X(m) Ref_Y(m) Ref_Z(m) Component Real Imag Error'
 
        case(Off_Diagonal_Rho_Phase,Phase_Tensor)
           header = '# Period(s) Code GG_Lat GG_Lon X(m) Y(m) Z(m) Component Value Error'

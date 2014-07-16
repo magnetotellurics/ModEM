@@ -24,7 +24,7 @@ module receivers
      ! x gives location of EM measurements;
   	 ! x(1) points North, x(2) points East, x(3) points down
 
-  	 ! NM: add addtional vector to store the location of a refernace station.
+  	 ! NM: add addtional vector to store the location of a reference station.
      ! Same as x: r(1) points North, r(2) points East, r(3) points down
      real (kind=prec)                   ::  x(3)
      real (kind=prec)                   ::  r(3)
@@ -84,6 +84,7 @@ function update_rxDict(loc,id,loc_ref,id_ref) result (iRx)
 
      character(*), intent(in)            :: id
      real(kind=prec), intent(in)         :: loc(3)
+     real(kind=prec):: lat,lon
      real(kind=prec),intent(in),optional :: loc_ref(3)
      character(*), intent(in),optional   :: id_ref
      integer                             :: iRx
@@ -96,6 +97,7 @@ function update_rxDict(loc,id,loc_ref,id_ref) result (iRx)
      ! Create a receiver for this location
      new%id = id
      new%x  = loc
+
      if (present(loc_ref)) then
      	new%r  = loc_ref
      	new%id_ref=id_ref
@@ -112,16 +114,23 @@ function update_rxDict(loc,id,loc_ref,id_ref) result (iRx)
 
      nRx = size(rxDict)
 
-     ! If this site isn't new, do nothing
+     ! If this site isn't new, do nothing, unless a new ref. site is found in case of Inter-Stations TF.
      do i = 1,nRx
      	if (new%id .eq. rxDict(i)%id) then
+           if (present(loc_ref)) then
+           !Check if the this site is associated with the same Ref. site. If not, then continue and append another site to the Rx dictionary. 
+              if (new%id_ref .eq. rxDict(i)%id_ref) then 
+     	         rxDict(i)%r=loc_ref
+     	         rxDict(i)%id_ref=id_ref
+                 iRx=i
+                 new_Rx = .false.
+                 return
+              end if   
+           else    
      	    iRx=i
-     	     if (present(loc_ref)) then
-     	      rxDict(i)%r=loc_ref
-     	      rxDict(i)%id_ref=id_ref
-     	     end if
-     	     new_Rx = .false.
+            new_Rx = .false.
      		return
+           end if 
      	end if
      end do
 

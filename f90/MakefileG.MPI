@@ -44,7 +44,7 @@
 
 # ------------------Macro-Defs---------------------
 include Makefile.local
-OBJDIR = ./objs/3D_MT/PGIReleaseMPI
+OBJDIR = ./objs/3D_MT/PGIReleaseMPI_global
 F90 = mpif90 
 FFLAGS = -O3 -fastsse -mp -tp=istanbul-64
 MPIFLAGS = -Bstatic  -Mipa=fast  -Mextend  -Kieee -Mpreprocess -DMPI

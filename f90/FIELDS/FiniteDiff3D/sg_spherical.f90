@@ -11,6 +11,7 @@ module sg_spherical
 
   use math_constants
   use sg_vector
+  use sg_scalar
   use utilities
   implicit none
 
@@ -342,5 +343,245 @@ Contains
 
   end subroutine validate_cvector  ! validate_cvector
 
+
+  !****************************************************************************
+  ! coordFlip_rvector makes an exact copy of derived data type
+  ! rvector, except the coordinate systems are flipped;   NOTE: first argument is output
+  ! used to switch between the MT coordinate system North-East-Down
+  ! and the global code coordinate system Earth-South-Down.
+  ! NOTE ALSO that this does NOTHING to the underlying grid.
+  ! If we only use this to compute grid elements in GridCalc module,
+  ! as we do now, we can save ourselves some work and not reverse the latitude order:
+  ! it will still match the grid but they will be decreasing rather than increasing.
+  ! NOT OK TO OVERWRITE THE INPUT WITH OUTPUT because the "spherical" vector is illegal -
+  ! the grid doesn't match it's shape, so we cannot use copy statements.
+  subroutine coordFlip_rvector(E, E1, newCoords, verbose)
+
+    implicit none
+    type (rvector), intent(in)       :: E1
+    type (rvector), intent(inout)    :: E
+    character(*), intent(in)         :: newCoords
+    logical, intent(in), optional    :: verbose
+    integer                      :: nx,ny,nz,status,k,nlat,nz1(3)
+
+    ! check to see if RHS (E1) is active (allocated)
+    if(.not.E1%allocated) then
+       write(0,*) 'RHS not allocated yet for copy_rvector'
+    else
+
+       if(E%allocated) then
+          call deall_rvector(E)
+       end if
+
+       ! flip x & y coordinate dimensions
+       nx = E1%ny
+       ny = E1%nx
+       nz = E1%nz
+
+        ! allocate memory for x,y,z
+        ! E%allocated will be true if all allocations succeed
+        E%allocated = .true.
+        if (E1%gridType == EDGE) then
+           ! For spherical problem:
+           ! 1) E%x(:,1,:) and E%x(:,ny+1,:) are undefined,
+           ! 2) E%y(nx+1,:,:) and E%z(nx+1,:,:) are repetitios,
+           ! 3) E%x(-1,0,ny+1,ny+2,:,:) will be needed for interpolation.
+           allocate(E%x(nx,ny+1,nz+1), STAT=status)
+           E%allocated = E%allocated .and. (status .EQ. 0)
+           allocate(E%y(nx+1,ny,nz+1), STAT=status)
+           E%allocated = E%allocated .and. (status .EQ. 0)
+           allocate(E%z(nx+1,ny+1,nz), STAT=status)
+           E%allocated = E%allocated .and. (status .EQ. 0)
+           nz1(1)=E1%nz+1;nz1(2)=E1%nz+1;nz1(3)=E1%nz
+        else if (E1%gridType == FACE) then
+           ! For spherical problem:
+           ! 1) E%y(:,1,:) and E%y(:,ny+1,:) are undefined,
+           ! 2) E%x(nx+1,:,:) is repetitios and equals E%x(1,:,:),
+           ! 3) E%z(:,:,1) and E%z(:,:,nz+1) are undefined.
+           allocate(E%x(nx+1,ny,nz), STAT=status)
+           E%allocated = E%allocated .and. (status .EQ. 0)
+           allocate(E%y(nx,ny+1,nz), STAT=status)
+           E%allocated = E%allocated .and. (status .EQ. 0)
+           allocate(E%z(nx,ny,nz+1), STAT=status)
+           E%allocated = E%allocated .and. (status .EQ. 0)
+           nz1(1)=E1%nz;nz1(2)=E1%nz;nz1(3)=E1%nz+1
+        else
+           write (0, *) 'not a known tag in coordFlip_rvector'
+        end if
+
+        if (E%allocated) then
+           E%x = R_ZERO
+           E%y = R_ZERO
+           E%z = R_ZERO
+        else
+            write (0, *) 'Warning: unable to allocate rvector - invalid grid supplied'
+        end if
+
+          if (trim(newCoords) == trim(Cartesian)) then
+
+             ! switch horizontal components and the direction of latitude
+             E%nx = E1%ny
+             E%ny = E1%nx
+             E%nz = E1%nz
+             !nlat = size(E1%x,2)
+             !E%x = E1%y !(:, nlat:1:-1, :) ! co-latitude South->latitude North
+             !nlat = size(E1%y,2)
+             !E%y = E1%x !(:, nlat:1:-1, :) ! longitude East
+             !nlat = size(E1%z,2)
+             !E%z = E1%z !(:, nlat:1:-1, :) ! Down
+             do k=1,nz1(1)
+                E%x(:,:,k) = transpose(E1%y(:,:,k))
+             enddo
+             do k=1,nz1(2)
+                E%y(:,:,k) = transpose(E1%x(:,:,k))
+             enddo
+             do k=1,nz1(3)
+                E%z(:,:,k) = transpose(E1%z(:,:,k))
+             end do
+             E%gridType = E1%gridType
+             E%grid => E1%grid
+
+          elseif (trim(newCoords) == trim(Spherical)) then
+
+             ! switch horizontal components and the direction of latitude
+             E%nx = E1%ny
+             E%ny = E1%nx
+             E%nz = E1%nz
+             !nlat = size(E1%x,1)
+             !E%x = E1%y !(nlat:1:-1, :, :) ! longitude East
+             !nlat = size(E1%y,1)
+             !E%y = E1%x !(nlat:1:-1, :, :) ! latitude North->co-latitude South
+             !nlat = size(E1%z,1)
+             !E%z = E1%z !(nlat:1:-1, :, :) ! Down
+             do k=1,nz1(1)
+                E%x(:,:,k) = transpose(E1%y(:,:,k))
+             enddo
+             do k=1,nz1(2)
+                E%y(:,:,k) = transpose(E1%x(:,:,k))
+             enddo
+             do k=1,nz1(3)
+                E%z(:,:,k) = transpose(E1%z(:,:,k))
+             enddo
+             E%gridType = E1%gridType
+             E%grid => E1%grid
+
+          else
+             write (0, *) 'not compatible usage for coordFlip_rvector'
+          end if
+
+    end if
+
+    ! if the input was a temporary function output, deallocate
+    if (E1%temporary) then
+        call deall_rvector(E1)
+    end if
+
+    if (present(verbose)) then
+        write(*,*) '(coordFlip_rvector) successfully flipped the vector to ',trim(newCoords)
+        write(*,*) 'without changing the underlying grid...'
+        write(*,*) 'this renders the output vector illegal. Do not use except as a quick fix.'
+    end if
+
+  end subroutine coordFlip_rvector
+
+  !****************************************************************************
+  ! coordFlip_rscalar makes an exact copy of derived data type
+  ! rscalar, except the coordinate systems are flipped;   NOTE: first argument is output
+  ! used to switch between the MT coordinate system North-East-Down
+  ! and the global code coordinate system Earth-South-Down.
+  ! NOTE ALSO that this does NOTHING to the underlying grid.
+  ! If we only use this to compute grid elements in GridCalc module,
+  ! as we do now, we can save ourselves some work and not reverse the latitude order:
+  ! it will still match the grid but they will be decreasing rather than increasing.
+  ! NOT OK TO OVERWRITE THE INPUT WITH OUTPUT because the "spherical" vector is illegal -
+  ! the grid doesn't match it's shape, so we cannot use copy statements.
+  subroutine coordFlip_rscalar(E, E1, newCoords, verbose)
+
+    implicit none
+    type (rscalar), intent(in)       :: E1
+    type (rscalar), intent(inout)    :: E
+    character(*), intent(in)         :: newCoords
+    logical, intent(in), optional    :: verbose
+    integer                      :: nx,ny,nz,status,k,nlat,i1
+
+    ! check to see if RHS (E1) is active (allocated)
+    if(.not.E1%allocated) then
+       write(0,*) 'RHS not allocated yet for copy_rvector'
+    else
+
+       if(E%allocated) then
+          call deall_rscalar(E)
+       end if
+
+       ! flip x & y coordinate dimensions
+       nx = E1%ny
+       ny = E1%nx
+       nz = E1%nz
+       i1=0
+        ! allocate memory for v
+        ! E%allocated will be true if all allocations succeed
+        if (E1%gridType == CENTER) then
+           allocate(E%v(nx,ny,nz), STAT=status)
+        else if (E1%gridType == CORNER) then
+           allocate(E%v(nx+1,ny+1,nz+1), STAT=status)
+           i1=1
+        else if(E1%gridType == CELL_EARTH) then
+           nz = E1%grid%nzEarth
+           allocate(E%v(nx,ny,nz), STAT=status)
+        else
+           write (0, *) 'gridType == ',trim(E1%gridType),' undefined in coordFlip_rscalar'
+        end if
+        E%allocated = status .EQ. 0
+
+        if (E%allocated) then
+           E%v = R_ZERO
+        end if
+
+          if (trim(newCoords) == trim(Cartesian)) then
+
+             ! switch horizontal components and the direction of latitude
+             nlat = size(E1%v,2)
+             E%nx = E1%ny
+             E%ny = E1%nx
+             E%nz = E1%nz
+             !E%v = E1%v !(:, nlat:1:-1, :) ! co-latitude South->latitude North
+             do k=1,E1%nz+i1
+                E%v(:,:,k) = transpose(E1%v(:,:,k))
+             end do
+             E%gridType = E1%gridType
+             E%grid => E1%grid
+
+          elseif (trim(newCoords) == trim(Spherical)) then
+
+             ! switch horizontal components and the direction of latitude
+             nlat = size(E1%v,1)
+             E%nx = E1%ny
+             E%ny = E1%nx
+             E%nz = E1%nz
+             !E%v = E1%v !(E1%nx+1:1:-1, :, :) ! latitude North->co-latitude South
+             do k=1,E1%nz+i1
+                E%v(:,:,k) = transpose(E1%v(:,:,k))
+             end do
+             E%gridType = E1%gridType
+             E%grid => E1%grid
+
+          else
+             write (0, *) 'not compatible usage for coordFlip_rscalar'
+          end if
+
+    end if
+
+    ! if the input was a temporary function output, deallocate
+    if (E1%temporary) then
+        call deall_rscalar(E1)
+    end if
+
+    if (present(verbose)) then
+        write(*,*) '(coordFlip_rscalar) successfully flipped the vector to ',trim(newCoords)
+        write(*,*) 'without changing the underlying grid...'
+        write(*,*) 'this renders the output vector illegal. Do not use except as a quick fix.'
+    end if
+
+  end subroutine coordFlip_rscalar
 
 end module sg_spherical	! sg_spherical

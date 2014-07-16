@@ -32,8 +32,12 @@ module GridDef
   type :: grid_t
   ! * EOP
 
-     ! Grid coordinate system; important - used in EMfield
-     character (len=80)			:: coords = Spherical
+     ! Grid geometry:
+     ! regional or global grid geometry; important - used in EMfield
+	 ! This only refers to full sphere vs cube (region). The coordinates
+	 ! (either cartesian or spherical) are given by a global variable
+	 ! gridCoords, defined in GridCalc module.
+     character (len=80)         :: geometry = SPHERE
 
      ! Grid Dimensions:
      ! nx is grid dimension (number of cells) in the x-direction
@@ -45,11 +49,6 @@ module GridDef
      ! nz = nzAir + nzCrust + nzEarth
 	 ! If no crust information is provided, nzCrust=0
      integer               :: nx, ny, nz, nzEarth, nzCrust, nzAir
-
-     ! Grid geometry:
-	 ! No grid geometry is currently defined in the grid type definition
-	 ! This may (and should be) added in the future, when Spherical and
-	 ! Cartesian codes are united.
 
      ! Book-keeping on cumulative distances
 	 ! No cumulative distances are currently defined in the grid type
@@ -132,7 +131,7 @@ Contains
        call deall_grid(gridOut)
        call create_grid(nx,ny,nz,gridOut)
 
-       gridOut%coords = gridIn%coords
+       gridOut%geometry = gridIn%geometry
        gridOut%nzEarth = gridIn%nzEarth
        gridOut%nzCrust = gridIn%nzCrust
        gridOut%nzAir = gridIn%nzAir

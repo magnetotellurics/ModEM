@@ -33,8 +33,12 @@ module GridDef
   ! used for three dimensional numerical modeling
   type :: grid_t
 
-     ! Grid coordinate system; important - used in EMfield
-     character (len=80)			:: coords = Cartesian
+     ! Grid geometry:
+     ! regional or global grid geometry; important - used in EMfield
+     ! This only refers to full sphere vs cube (region). The coordinates
+     ! (either cartesian or spherical) are given by a global variable
+     ! gridCoords, defined in GridCalc module.
+     character (len=80)			:: geometry = REGION
 
      ! Grid Dimensions:
      ! nx is grid dimension (number of cells) in the x-direction
@@ -47,7 +51,7 @@ module GridDef
 
      ! the origin of the model, by default set to zero
      real (kind=prec)			:: ox = 0.0, oy = 0.0, oz = 0.0
-     !  the rotation angle in degrees, by defualt set to zero
+     !  the rotation angle in degrees, by default set to zero
      real (kind=prec)			:: rotdeg = 0.0
 
      ! Grid geometry:
@@ -138,7 +142,6 @@ Contains
     allocate(grid%yCenter(Ny))
     allocate(grid%zCenter(Nz))
 
-	grid%coords = Cartesian
     grid%allocated = .true.
 
   end subroutine create_grid
@@ -167,7 +170,7 @@ Contains
      gridOut%oz = gridIn%oz
 
      gridOut%rotdeg = gridIn%rotdeg
-     gridOut%coords = gridIn%coords
+     gridOut%geometry = gridIn%geometry
 
      call setup_grid(gridOut)
 

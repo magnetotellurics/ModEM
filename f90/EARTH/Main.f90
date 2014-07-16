@@ -293,6 +293,18 @@ Contains
 
 	call InitGlobalArrays()
 
+!   ! Will need to allocate these GridCalc elements if we start using them;
+!   ! currently, we are sticking to the old way of doing these multiplications:
+!   ! separate routines for each. These are only used in SymmetryTest for output.
+!    Call EdgeLength(mGrid, l_E)
+!    Call EdgeArea(mGrid, S_E)
+!    Call EdgeVolume(mGrid, V_E, l_E, S_E)
+!    Call FaceLength(mGrid, l_F)
+!    Call FaceArea(mGrid, S_F)
+!    Call FaceVolume(mGrid, V_F, l_F, S_F)
+!    Call CellVolume(mGrid, V_C)
+!    Call NodeVolume(mGrid, V_N) ! used for divergence correction
+
 	return
 
   end subroutine InitGlobalData	! InitGlobalData
@@ -349,6 +361,18 @@ Contains
 	end if
 
 	call DeleteGlobalArrays()
+
+!   ! Will need to allocate these GridCalc elements if we start using them;
+!   ! currently, we are sticking to the old way of doing these multiplications:
+!   ! separate routines for each. These are only used in SymmetryTest for output.
+!    call deall_rvector(l_E)
+!    call deall_rvector(S_E)
+!    call deall_rvector(V_E)
+!    call deall_rvector(l_F)
+!    call deall_rvector(S_F)
+!    call deall_rvector(V_F)
+!    call deall_rscalar(V_C)
+!    call deall_rscalar(V_N)
 
   end subroutine DeleteGlobalData	! DeleteGlobalData
 

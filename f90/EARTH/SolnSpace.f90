@@ -54,7 +54,6 @@ end interface
     !!   use of higher level inversion modules on different problems.
     type(cvector)           :: vec
     type(grid_t), pointer   :: grid
-    integer                 :: nPol
     integer                 :: tx = 0
     integer                 :: errflag = 0
     logical                 :: allocated = .false.
@@ -297,7 +296,7 @@ Contains
 	do j = 1,nTx
 		read(ioREAD,'(i3)',iostat=istat) iTx
         call create_solnVector(grid,iTx,E%solns(j))
-		call read_cvector(ioREAD,E%solns(j)%vec,grid)
+		call read_cvector(ioREAD,E%solns(j)%vec,'ascii')
 		E%solns(j)%errflag = 0
 		E%solns(j)%grid => grid
 	end do
@@ -515,7 +514,7 @@ Contains
     if (j .ne. iTx) then
         write(0,*) node_info,'Warning: transmitter ',iTx,' is read from file ',j
     end if
-    call read_cvector(ioREAD,E%vec,grid)
+    call read_cvector(ioREAD,E%vec,'ascii')
     E%errflag = 0
     E%grid => grid
     close(ioREAD)
@@ -786,7 +785,7 @@ Contains
                 if (j .ne. iTx) then
                     write(0,*) node_info,'Warning: transmitter ',iTx,' is read from file ',j
                 end if
-                call read_cvector(ioREAD,b%source,grid)
+                call read_cvector(ioREAD,b%source,'ascii')
                 close(ioREAD)
             endif
 

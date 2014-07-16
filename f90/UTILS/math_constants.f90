@@ -66,7 +66,12 @@ module math_constants
   character (len=3), parameter	 :: TRN = 'TRN'
   character (len=3), parameter	 :: ADJ = 'ADJ'
 
-  character (len=80), parameter  :: Cartesian = 'Cartesian'
-  character (len=80), parameter  :: Spherical = 'Spherical'
+  ! Coordinate type options
+  character (len=80), parameter  :: CARTESIAN = 'Cartesian'
+  character (len=80), parameter  :: SPHERICAL = 'Spherical'
+
+  ! Grid type options (global will always use spherical coords)
+  character (len=80), parameter  :: REGION = 'Regional'
+  character (len=80), parameter  :: SPHERE = 'Global'
 
 end module math_constants !math_constants
