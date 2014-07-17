@@ -649,16 +649,14 @@ Contains
       end subroutine FaceArea
 
   ! *************************************************************************
-  ! * UNWEIGHTED MAPPING OPERATORS THAT LEAVE ALL BOUNDARY EDGES SET TO ZERO
+  ! * UNWEIGHTED MAPPING OPERATORS THAT ALSO COMPUTE BOUNDARY EDGES (TESTED)
+  ! * SAME FOR SPHERICAL AND CARTESIAN COORDINATES
   ! * (NOTE: most likely, this will also work for multigrid: we would use
   ! * separate subroutines to map from egdes to multigrid edges and back)
-  ! * BORROWED DIRECTLY FROM THE CARTESIAN GRIDCALC SO THEY ARE POSSIBLY WRONG
-  ! * WHEN APPLIED TO THE SPHERICAL COORDINATE PROBLEM
   ! *************************************************************************
 
   ! *************************************************************************
   ! * Cell2Edge will be used by forward model mappings
-  ! * might need to revisit boundary edges
 
   subroutine Cell2Edge(grid,C,E)
 
@@ -670,45 +668,31 @@ Contains
 
       call create_rvector(grid, E, EDGE)
 
-      ! for x-components
+      ! for x-components inside the domain
       do ix = 1,grid%nx
          do iy = 2,grid%ny
-            ! special case of upper boundary
-            iz = 1
-            E%x(ix, iy, iz) = (C%v(ix, iy-1, iz) + C%v(ix, iy, iz))/2.0d0
-            ! inside the Earth
             do iz = 2,grid%nz
 
                E%x(ix, iy, iz) = (C%v(ix, iy-1, iz-1) + C%v(ix, iy, iz-1) + &
                                   C%v(ix, iy-1, iz) + C%v(ix, iy, iz))/4.0d0
 
             enddo
-            ! special case of lower boundary
-            iz = grid%nz+1
-            E%x(ix, iy, iz) = (C%v(ix, iy-1, iz-1) + C%v(ix, iy, iz-1))/2.0d0
          enddo
       enddo
 
-      ! for y-components
+      ! for y-components inside the domain
       do ix = 2,grid%nx
          do iy = 1,grid%ny
-            ! special case of upper boundary
-            iz = 1
-            E%y(ix, iy, iz) = (C%v(ix-1, iy, iz) + C%v(ix, iy, iz))/2.0d0
-            ! inside the Earth
             do iz = 2,grid%nz
 
                E%y(ix, iy, iz) = (C%v(ix-1, iy, iz-1) + C%v(ix, iy, iz-1) + &
                                   C%v(ix-1, iy, iz) + C%v(ix, iy, iz))/4.0d0
 
             enddo
-            ! special case of lower boundary
-            iz = grid%nz+1
-            E%y(ix, iy, iz) = (C%v(ix-1, iy, iz-1) + C%v(ix, iy, iz-1))/2.0d0
          enddo
       enddo
 
-      ! for z-components
+      ! for z-components inside the domain
       do ix = 2,grid%nx
          do iy = 2,grid%ny
             do iz = 1,grid%nz
@@ -718,6 +702,120 @@ Contains
 
             enddo
          enddo
+      enddo
+
+      ! upper boundary
+      iz = 1
+      do iy = 1,grid%ny
+         do ix = 2,grid%nx
+            E%y(ix, iy, iz) = (C%v(ix-1, iy, iz) + C%v(ix, iy, iz))/2.0d0
+         enddo
+      enddo
+      do ix = 1,grid%nx
+         do iy = 2,grid%ny
+            E%x(ix, iy, iz) = (C%v(ix, iy-1, iz) + C%v(ix, iy, iz))/2.0d0
+         enddo
+      enddo
+
+      ! lower boundary
+      iz = grid%nz+1
+      do iy = 1,grid%ny
+         do ix = 2,grid%nx
+            E%y(ix, iy, iz) = (C%v(ix-1, iy, iz-1) + C%v(ix, iy, iz-1))/2.0d0
+         enddo
+      enddo
+      do ix = 1,grid%nx
+         do iy = 2,grid%ny
+            E%x(ix, iy, iz) = (C%v(ix, iy-1, iz-1) + C%v(ix, iy, iz-1))/2.0d0
+         enddo
+      enddo
+
+      ! side boundaries: left x-side
+      ix = 1
+      do iy = 1,grid%ny
+         do iz = 2,grid%nz
+            E%y(ix, iy, iz) = (C%v(ix, iy, iz-1) + C%v(ix, iy, iz))/2.0d0
+         enddo
+      enddo
+      do iz = 1,grid%nz
+        do iy = 2,grid%ny
+            E%z(ix, iy, iz) = (C%v(ix, iy-1, iz) + C%v(ix, iy, iz))/2.0d0
+        enddo
+      enddo
+
+      ! side boundaries: right x-side
+      ix = grid%nx+1
+      do iy = 1,grid%ny
+         do iz = 2,grid%nz
+            E%y(ix, iy, iz) = (C%v(ix-1, iy, iz-1) + C%v(ix-1, iy, iz))/2.0d0
+         enddo
+      enddo
+      do iz = 1,grid%nz
+         do iy = 2,grid%ny
+            E%z(ix, iy, iz) = (C%v(ix-1, iy-1, iz) + C%v(ix-1, iy, iz))/2.0d0
+         enddo
+      enddo
+
+      ! side boundaries: left y-side
+      iy = 1
+      do ix = 1,grid%nx
+         do iz = 2,grid%nz
+            E%x(ix, iy, iz) = (C%v(ix, iy, iz-1) + C%v(ix, iy, iz))/2.0d0
+         enddo
+      enddo
+      do iz = 1,grid%nz
+         do ix = 2,grid%nx
+            E%z(ix, iy, iz) = (C%v(ix-1, iy, iz) + C%v(ix, iy, iz))/2.0d0
+         enddo
+      enddo
+
+      ! side boundaries: right y-side
+      iy = grid%ny+1
+      do ix = 1,grid%nx
+         do iz = 2,grid%nz
+            E%x(ix, iy, iz) = (C%v(ix, iy-1, iz-1) + C%v(ix, iy-1, iz))/2.0d0
+         enddo
+      enddo
+      do iz = 1,grid%nz
+         do ix = 2,grid%nx
+            E%z(ix, iy, iz) = (C%v(ix-1, iy-1, iz) + C%v(ix, iy-1, iz))/2.0d0
+         enddo
+      enddo
+
+      ! z-component corners
+      do iz = 1,grid%nz
+         ix = 1; iy = 1
+         E%z(ix, iy, iz) = C%v(ix, iy, iz)
+         ix = 1; iy = grid%ny+1
+         E%z(ix, iy, iz) = C%v(ix, iy-1, iz)
+         ix = grid%nx+1; iy = 1
+         E%z(ix, iy, iz) = C%v(ix-1, iy, iz)
+         ix = grid%nx+1; iy = grid%ny+1
+         E%z(ix, iy, iz) = C%v(ix-1, iy-1, iz)
+      enddo
+
+      ! y-component corners
+      do iy = 1,grid%ny
+         ix = 1; iz = 1
+         E%y(ix, iy, iz) = C%v(ix, iy, iz)
+         ix = 1; iz = grid%nz+1
+         E%y(ix, iy, iz) = C%v(ix, iy, iz-1)
+         ix = grid%nx+1; iz = 1
+         E%y(ix, iy, iz) = C%v(ix-1, iy, iz)
+         ix = grid%nx+1; iz = grid%nz+1
+         E%y(ix, iy, iz) = C%v(ix-1, iy, iz-1)
+      enddo
+
+      ! x-component corners
+      do ix = 1,grid%nx
+         iy = 1; iz = 1
+         E%x(ix, iy, iz) = C%v(ix, iy, iz)
+         iy = 1; iz = grid%nz+1
+         E%x(ix, iy, iz) = C%v(ix, iy, iz-1)
+         iy = grid%ny+1; iz = 1
+         E%x(ix, iy, iz) = C%v(ix, iy-1, iz)
+         iy = grid%ny+1; iz = grid%nz+1
+         E%x(ix, iy, iz) = C%v(ix, iy-1, iz-1)
       enddo
 
   end subroutine Cell2Edge
@@ -735,14 +833,9 @@ Contains
 
       call create_rscalar(grid, C, CENTER)
 
-      ! for x-components
+      ! for x-components inside the domain
       do ix = 1,grid%nx
          do iy = 2,grid%ny
-            ! special case of upper boundary
-            iz = 1
-            C%v(ix, iy-1, iz) = C%v(ix, iy-1, iz) + E%x(ix, iy, iz)/2.0d0
-            C%v(ix, iy, iz) = C%v(ix, iy, iz) + E%x(ix, iy, iz)/2.0d0
-            ! inside the Earth
             do iz = 2,grid%nz
 
                C%v(ix, iy-1, iz-1) = C%v(ix, iy-1, iz-1) + E%x(ix, iy, iz)/4.0d0
@@ -751,21 +844,12 @@ Contains
                C%v(ix, iy, iz) = C%v(ix, iy, iz) + E%x(ix, iy, iz)/4.0d0
 
             enddo
-            ! special case of lower boundary
-            iz = grid%nz+1
-            C%v(ix, iy-1, iz-1) = C%v(ix, iy-1, iz-1) + E%x(ix, iy, iz)/2.0d0
-            C%v(ix, iy, iz-1) = C%v(ix, iy, iz-1) + E%x(ix, iy, iz)/2.0d0
          enddo
       enddo
 
-      ! for y-components
+      ! for y-components inside the domain
       do ix = 2,grid%nx
          do iy = 1,grid%ny
-            ! special case of upper boundary
-            iz = 1
-            C%v(ix-1, iy, iz) = C%v(ix-1, iy, iz) + E%y(ix, iy, iz)/2.0d0
-            C%v(ix, iy, iz) = C%v(ix, iy, iz) + E%y(ix, iy, iz)/2.0d0
-            ! inside the Earth
             do iz = 2,grid%nz
 
                C%v(ix-1, iy, iz-1) = C%v(ix-1, iy, iz-1) + E%y(ix, iy, iz)/4.0d0
@@ -774,14 +858,10 @@ Contains
                C%v(ix, iy, iz) = C%v(ix, iy, iz) + E%y(ix, iy, iz)/4.0d0
 
             enddo
-            ! special case of lower boundary
-            iz = grid%nz+1
-            C%v(ix-1, iy, iz-1) = C%v(ix-1, iy, iz-1) + E%y(ix, iy, iz)/2.0d0
-            C%v(ix, iy, iz-1) = C%v(ix, iy, iz-1) + E%y(ix, iy, iz)/2.0d0
          enddo
       enddo
 
-      ! for z-components
+      ! for z-components inside the domain
       do ix = 2,grid%nx
          do iy = 2,grid%ny
             do iz = 1,grid%nz
@@ -794,6 +874,133 @@ Contains
             enddo
          enddo
       enddo
+
+      ! upper boundary
+      iz = 1
+      do iy = 1,grid%ny
+         do ix = 2,grid%nx
+            C%v(ix-1, iy, iz) = C%v(ix-1, iy, iz) + E%y(ix, iy, iz)/2.0d0
+            C%v(ix, iy, iz) = C%v(ix, iy, iz) + E%y(ix, iy, iz)/2.0d0
+         enddo
+      enddo
+      do ix = 1,grid%nx
+         do iy = 2,grid%ny
+            C%v(ix, iy-1, iz) = C%v(ix, iy-1, iz) + E%x(ix, iy, iz)/2.0d0
+            C%v(ix, iy, iz) = C%v(ix, iy, iz) + E%x(ix, iy, iz)/2.0d0
+         enddo
+      enddo
+
+      ! lower boundary
+      iz = grid%nz+1
+      do iy = 1,grid%ny
+         do ix = 2,grid%nx
+            C%v(ix-1, iy, iz-1) = C%v(ix-1, iy, iz-1) + E%y(ix, iy, iz)/2.0d0
+            C%v(ix, iy, iz-1) = C%v(ix, iy, iz-1) + E%y(ix, iy, iz)/2.0d0
+         enddo
+      enddo
+      do ix = 1,grid%nx
+         do iy = 2,grid%ny
+            C%v(ix, iy-1, iz-1) = C%v(ix, iy-1, iz-1) + E%x(ix, iy, iz)/2.0d0
+            C%v(ix, iy, iz-1) = C%v(ix, iy, iz-1) + E%x(ix, iy, iz)/2.0d0
+         enddo
+      enddo
+
+      ! side boundaries: left x-side
+      ix = 1
+      do iy = 1,grid%ny
+         do iz = 2,grid%nz
+            C%v(ix, iy, iz-1) = C%v(ix, iy, iz-1) + E%y(ix, iy, iz)/2.0d0
+            C%v(ix, iy, iz) = C%v(ix, iy, iz) + E%y(ix, iy, iz)/2.0d0
+         enddo
+      enddo
+      do iz = 1,grid%nz
+         do iy = 2,grid%ny
+            C%v(ix, iy-1, iz) = C%v(ix, iy-1, iz) + E%z(ix, iy, iz)/2.0d0
+            C%v(ix, iy, iz) = C%v(ix, iy, iz) + E%z(ix, iy, iz)/2.0d0
+         enddo
+      enddo
+
+      ! side boundaries: right x-side
+      ix = grid%nx+1
+      do iy = 1,grid%ny
+         do iz = 2,grid%nz
+            C%v(ix-1, iy, iz-1) = C%v(ix-1, iy, iz-1) + E%y(ix, iy, iz)/2.0d0
+            C%v(ix-1, iy, iz) = C%v(ix-1, iy, iz) + E%y(ix, iy, iz)/2.0d0
+         enddo
+      enddo
+      do iz = 1,grid%nz
+         do iy = 2,grid%ny
+            C%v(ix-1, iy-1, iz) = C%v(ix-1, iy-1, iz) + E%z(ix, iy, iz)/2.0d0
+            C%v(ix-1, iy, iz) = C%v(ix-1, iy, iz) + E%z(ix, iy, iz)/2.0d0
+         enddo
+      enddo
+
+      ! side boundaries: left y-side
+      iy = 1
+      do ix = 1,grid%nx
+         do iz = 2,grid%nz
+            C%v(ix, iy, iz-1) = C%v(ix, iy, iz-1) + E%x(ix, iy, iz)/2.0d0
+            C%v(ix, iy, iz) = C%v(ix, iy, iz) + E%x(ix, iy, iz)/2.0d0
+         enddo
+      enddo
+      do iz = 1,grid%nz
+         do ix = 2,grid%nx
+            C%v(ix-1, iy, iz) = C%v(ix-1, iy, iz) + E%z(ix, iy, iz)/2.0d0
+            C%v(ix, iy, iz) = C%v(ix, iy, iz) + E%z(ix, iy, iz)/2.0d0
+         enddo
+      enddo
+
+      ! side boundaries: right y-side
+      iy = grid%ny+1
+      do ix = 1,grid%nx
+         do iz = 2,grid%nz
+            C%v(ix, iy-1, iz-1) = C%v(ix, iy-1, iz-1) + E%x(ix, iy, iz)/2.0d0
+            C%v(ix, iy-1, iz) = C%v(ix, iy-1, iz) + E%x(ix, iy, iz)/2.0d0
+         enddo
+      enddo
+      do iz = 1,grid%nz
+         do ix = 2,grid%nx
+            C%v(ix-1, iy-1, iz) = C%v(ix-1, iy-1, iz) + E%z(ix, iy, iz)/2.0d0
+            C%v(ix, iy-1, iz) = C%v(ix, iy-1, iz) + E%z(ix, iy, iz)/2.0d0
+         enddo
+      enddo
+
+      ! z-component corners
+      do iz = 1,grid%nz
+         ix = 1; iy = 1
+         C%v(ix, iy, iz) = C%v(ix, iy, iz) + E%z(ix, iy, iz)
+         ix = 1; iy = grid%ny+1
+         C%v(ix, iy-1, iz) = C%v(ix, iy-1, iz) + E%z(ix, iy, iz)
+         ix = grid%nx+1; iy = 1
+         C%v(ix-1, iy, iz) = C%v(ix-1, iy, iz) + E%z(ix, iy, iz)
+         ix = grid%nx+1; iy = grid%ny+1
+         C%v(ix-1, iy-1, iz) = C%v(ix-1, iy-1, iz) + E%z(ix, iy, iz)
+      enddo
+
+      ! y-component corners
+      do iy = 1,grid%ny
+         ix = 1; iz = 1
+         C%v(ix, iy, iz) = C%v(ix, iy, iz) + E%y(ix, iy, iz)
+         ix = 1; iz = grid%nz+1
+         C%v(ix, iy, iz-1) = C%v(ix, iy, iz-1) + E%y(ix, iy, iz)
+         ix = grid%nx+1; iz = 1
+         C%v(ix-1, iy, iz) = C%v(ix-1, iy, iz) + E%y(ix, iy, iz)
+         ix = grid%nx+1; iz = grid%nz+1
+         C%v(ix-1, iy, iz-1) = C%v(ix-1, iy, iz-1) + E%y(ix, iy, iz)
+      enddo
+
+      ! x-component corners
+      do ix = 1,grid%nx
+         iy = 1; iz = 1
+         C%v(ix, iy, iz) = C%v(ix, iy, iz) + E%x(ix, iy, iz)
+         iy = 1; iz = grid%nz+1
+         C%v(ix, iy, iz-1) = C%v(ix, iy, iz-1) + E%x(ix, iy, iz)
+         iy = grid%ny+1; iz = 1
+         C%v(ix, iy-1, iz) = C%v(ix, iy-1, iz) + E%x(ix, iy, iz)
+         iy = grid%ny+1; iz = grid%nz+1
+         C%v(ix, iy-1, iz-1) = C%v(ix, iy-1, iz-1) + E%x(ix, iy, iz)
+      enddo
+
 
   end subroutine Edge2Cell
 

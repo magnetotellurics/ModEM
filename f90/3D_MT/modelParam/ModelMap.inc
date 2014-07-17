@@ -116,9 +116,9 @@
     type(modelParam_t), optional, intent(in)	:: m0
 
     !   LOCAL Variables
-    type(rscalar)  :: temp,Ctemp,V_C
-    type(rvector)  :: Etemp,V_E
-    integer		:: ix,iy,iz,ize,nx,ny,nz,nzEarth,nzAir
+    type(rscalar)  :: temp,Ctemp
+    type(rvector)  :: Etemp,V_E_ghost
+    integer		:: ix,iy,iz,ize,nx,ny,nz,nzEarth,nzAir,ioNum,ios
     logical		:: linearizedMapping
     real(kind=prec)   :: airCond
  
@@ -157,16 +157,27 @@
        endif
     endif
 
-	call CellVolume(m%grid,V_C)
-	call EdgeVolume(m%grid,V_E)	
+	! V_C and V_E are global variables stored in GridCalc, initialized in initSolver;
+	! for efficiency, do not recompute unless called outside of solver for testing.
+	if (.not. V_C%allocated) then
+		call CellVolume(m%grid,V_C) ! global variable
+	end if
+	if (.not. V_E%allocated) then
+		call EdgeVolume(m%grid,V_E) ! global variable
+	end if
+	
+	! for spherical coords to be strictly correct, need to also average the volumes
+	! instead of using the edge volumes V_E, use the "ghost" averaged version...
+	! which also has full volumes on boundary edges as if the grid extended further
+	call Cell2Edge(m%grid,V_C,V_E_ghost) 	
+	
 	Ctemp = temp
 	call diagMult(V_C,temp,Ctemp)
 	call Cell2Edge(m%grid,Ctemp,Etemp)
 	Econd = Etemp
-	call diagDiv(Etemp,V_E,Econd)
-
-	call deall_rscalar(V_C)
-	call deall_rvector(V_E)
+	call diagDiv(Etemp,V_E_ghost,Econd)
+	
+	call deall_rvector(V_E_ghost)
 	call deall_rscalar(temp)
 	call deall_rscalar(Ctemp)
 	call deall_rvector(Etemp)
@@ -210,9 +221,9 @@
     type(modelParam_t), optional, intent(in)	:: m0
 
     !   LOCAL Variables
-    type(rscalar)  :: temp,Ctemp,V_C
-    type(rvector)  :: Etemp,V_E
-    integer		:: ix,iy,iz,ize,nx,ny,nz,nzEarth,nzAir
+    type(rscalar)  :: temp,Ctemp
+    type(rvector)  :: Etemp,V_E_ghost
+    integer		:: ix,iy,iz,ize,nx,ny,nz,nzEarth,nzAir,ioNum,ios
 
     if ((.not.m%allocated).or.(.not.Econd%allocated)) then
       call errStop('m or Econd not allocated yet in EdgeToModelParam')
@@ -233,14 +244,25 @@
 
     call create_rscalar(Econd%grid,temp,CENTER)
     
-	call CellVolume(m%grid,V_C)
-	call EdgeVolume(m%grid,V_E)	
+	! V_C and V_E are global variables stored in GridCalc, initialized in initSolver;
+	! for efficiency, do not recompute unless called outside of solver for testing.
+	if (.not. V_C%allocated) then
+		call CellVolume(m%grid,V_C) ! global variable
+	end if
+	if (.not. V_E%allocated) then
+		call EdgeVolume(m%grid,V_E) ! global variable
+	end if
+	
+	! for spherical coords to be strictly correct, need to also average the volumes
+	! instead of using the edge volumes V_E, use the "ghost" averaged version...
+	! which also has full volumes on boundary edges as if the grid extended further
+	call Cell2Edge(m%grid,V_C,V_E_ghost) 
+	
 	Etemp = Econd
-	call diagDiv(Econd,V_E,Etemp)
+	call diagDiv(Econd,V_E_ghost,Etemp)
 	call Edge2Cell(m%grid,Etemp,Ctemp)
 	temp = Ctemp
 	call diagMult(V_C,Ctemp,temp)
-
 
     if(m%paramType .EQ. LOGE) then
        m%cellCond%v = temp%v(:,:,nzAir+1:nz)*exp(m0%cellCond%v)
@@ -250,8 +272,7 @@
 
     m%zeroValued = .false.
 
-	call deall_rscalar(V_C)
-	call deall_rvector(V_E)
+	call deall_rvector(V_E_ghost)
 	call deall_rscalar(temp)
 	call deall_rscalar(Ctemp)
 	call deall_rvector(Etemp)
