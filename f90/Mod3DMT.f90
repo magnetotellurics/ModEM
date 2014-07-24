@@ -174,7 +174,7 @@ program Mod3DMT
          open(unit=ioSens, file=cUserDef%wFile_dModel, form='unformatted', iostat=ios)
          write(0,*) 'Output JT_multi_Tx_vec...'
          write(header,*) 'JT multi_Tx vectors'
-         write(ioSens) header
+         !write(ioSens) header
          call writeVec_modelParam_binary(size(JT_multi_Tx_vec),JT_multi_Tx_vec,header,cUserDef%wFile_dModel)
          close(ioSens)
 

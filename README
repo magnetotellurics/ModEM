@@ -5,8 +5,8 @@ Modular Electromagnetic Inversion Software (ModEM)
 AUTHORS
 
   Gary Egbert, Anna Kelbert & Naser Meqbel
-  College of Atmospheric and Oceanic Sciences
-  104 COAS Admin. Bldg.
+  College of Earth, Ocean and Atmos. Sciences
+  104 CEOAS Admin. Bldg.
   Oregon State University
   Corvallis, OR 97331-5503
   
@@ -39,12 +39,20 @@ INSTALLATION
   To compile 2D MT:
   > cd f90; cp Makefile2d Makefile; make
   
-  These makefiles have been generated with the Configure scripts, as follows:
-  > ./Configure.3D_MT Makefile3d
+  The makefiles may also be generated with the Configure scripts, as follows:
+  > ./Configure.3D_MT.GFortran Makefile release
   
   and
-  > ./Configure.2D_MT Makefile2d
+  > ./Configure.2D_MT.GFortran Makefile release
   
+  Configure scripts are provided for the following compilers: 
+    Portland Group, Intel, G95, GFortran
+
+  The programs are parallelized with MPI. To compile with MPI, reconfigure. 
+  E.g.,
+  > ./Configure.3D_MT.Intel Makefile MPI
+
+  Parallel configuration has only been tested with Portland Group and Intel.
   Compilers and linked libraries may be modified in the Configure scripts, or
   directly in the Makefiles. Configure scripts have to be rerun if the module
   usage dependencies change or if new source code is added.

@@ -1,11 +1,47 @@
 #!/bin/sh
-if [ $# -le 0 ]; then
-    echo 1>&2 Usage: $0 Makefile2d.local
+if [ $# -le 1 ]; then
+    echo 1>&2 Usage: $0 Makefile [debug|release|MPI]
     exit 127
 fi
 if [ -e $1 ]; then
     rm $1
 fi
-perl fmkmf.pl -f90 g95 -opt '-g -ftrace=frame -fbounds-check' -mpi '-cpp' \
--l '-lblas -llapack' -o './objs/2D_MT/G95Debug' \
--p .:INV:LAPACK:SENS:UTILS:2D_MT:2D_MT/DICT:2D_MT/modelParam:2D_MT/FWD:2D_MT/ioMod Mod2DMT.f90 > $1
+if [ $2 = "debug" ]; then
+# Debug configuration
+perl fmkmf.pl -f90 g95 \
+-opt '-g -ftrace=frame -fbounds-check' \
+-mpi '-cpp' \
+-o './objs/2D_MT/G95Debug' \
+-l '-llapack -lblas' \
+-lp '/usr/local/lib' \
+-p .:INV:LAPACK:SENS:UTILS:2D_MT:2D_MT/DICT:2D_MT/modelParam:2D_MT/FWD:2D_MT/ioMod \
+Mod2DMT.f90 > $1
+
+elif [ $2 = "release" ]; then
+# Release configuration
+perl fmkmf.pl -f90 g95 \
+-opt '-O3' \
+-mpi '-cpp' \
+-o './objs/2D_MT/G95Release' \
+-l '-llapack -lblas' \
+-lp '/usr/local/lib' \
+-p .:INV:LAPACK:SENS:UTILS:2D_MT:2D_MT/DICT:2D_MT/modelParam:2D_MT/FWD:2D_MT/ioMod \
+Mod2DMT.f90 > $1
+
+else
+# MPI configuration (not tested)
+perl fmkmf.pl -f90 g95 \
+-opt '-O3' \
+-mpi '-cpp -DMPI' \
+-o './objs/2D_MT/G95ReleaseMPI' \
+-l '-llapack -lblas' \
+-lp '/usr/local/lib' \
+-p .:INV:LAPACK:SENS:UTILS:2D_MT:2D_MT/DICT:2D_MT/modelParam:2D_MT/FWD:2D_MT/ioMod \
+Mod2DMT.f90 > $1
+fi
+
+if [ $# -le 2 ]; then
+    echo 1>&2 'Makefile for 2D MT inversion ready to use.'
+    exit
+fi
+

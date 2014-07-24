@@ -78,6 +78,15 @@ else {
   $mpiflags=" ";
 }
 
+if ( $ENV{FMKMF_LIBRARY_PATH} ) {
+  #print "\# FMKMF_LIBRARY_PATH set to $ENV{FMKMF_LIBRARY_PATH}\n";
+  $libpath="-L$ENV{FMKMF_LIBRARY_PATH}";
+}
+else {
+  #print "\# FMKMF_LIBRARY_PATH not set: using no library path \n";
+  $libpath=" ";
+}
+
 if ( $ENV{FMKMF_LINKOPTS} ) {
   #print "\# FMKMF_LINKOPTS set to $ENV{FMKMF_LINKOPTS}\n";
   $linkopts=$ENV{FMKMF_LINKOPTS};
@@ -128,6 +137,10 @@ while (@ARGV){
     }
     print STDERR "# Using compiler MPI flags $mpiflags from cmd line\n";
   }
+  if ($arg =~ /^-lp$/){
+    $libpath=shift;
+    print STDERR "# Using Library path $libpath from cmd line\n";
+  }
   if ($arg =~ /^-l$/){
     $linkopts=shift;
     print STDERR "# Using Link options $linkopts from cmd line\n";
@@ -172,6 +185,7 @@ if($optiond){
 print "# -p $spath\n";
 print "# -f90 $f90 (compiler)\n";
 print "# -opt $optim (compiler optimisation)\n";
+print "# -lp $libpath (linking options: path to libraries)\n";
 print "# -l $linkopts (linking options)\n";
 print "# -o $linkdir (output directory for object files)\n\n";
 
@@ -233,6 +247,11 @@ if ($WIN) {
 } else {
 	print "MODULE = -module \$(OBJDIR)\n";
 }
+if ($libpath !~ /^(\s*)$/){
+	print "LIBS_PATH = -L$libpath\n";
+} else {
+	print "LIBS_PATH = \n";	
+}
 print "LIBS = $linkopts\n";
 
 
@@ -248,10 +267,10 @@ print "\n# Here is the link step \n";
 
 if ($WIN) {
 	print "$execfile: \$(OBJDIR) \$(OBJ) \n";
-	print "\t \$(F90) /link \$(OUTDIR)/$execfile \$(OBJ) \$(LIBS) \n";
+	print "\t \$(F90) /link \$(OUTDIR)/$execfile \$(OBJ) \$(LIBS_PATH) \$(LIBS)\n";
 } else {
 	print "$execfile: \$(OBJDIR) \$(OBJ) \n";
-	print "\t \$(F90) -o \$(OUTDIR)/$execfile \$(OBJ) \$(LIBS) \n";
+	print "\t \$(F90) -o \$(OUTDIR)/$execfile \$(OBJ) \$(LIBS_PATH) \$(LIBS)\n";
 }
 # print "\trm -f *.mod \n";
 

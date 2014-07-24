@@ -42,7 +42,7 @@ type ::  modelParam_t
    integer   				:: Ny = 0
    integer   				:: NzEarth = 0
    type(grid_t), pointer  		:: grid
-   real (kind=prec), allocatable, dimension(:,:) :: v
+   real (kind=prec), pointer, dimension(:,:) :: v
    real (kind=prec)		:: AirCond = SIGMA_AIR
    logical           			:: allocated = .false.
      !  this logical is set true by zero_modelParam ONLY

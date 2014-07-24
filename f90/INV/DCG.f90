@@ -142,6 +142,7 @@ subroutine read_DCGiterControl(DCGiterControl,rFile,fileExists)
        write (*,*)
        write (*,'(a36,a80)') string,DCGiterControl%fname
     end if
+    DCGiterControl%fname = adjustl(DCGiterControl%fname)
     read (ioInvCtrl,'(a36,g15.7)') string,DCGiterControl%lambda
     if (output_level > 2) then
        write (*,'(a36,g15.7)') string,DCGiterControl%lambda

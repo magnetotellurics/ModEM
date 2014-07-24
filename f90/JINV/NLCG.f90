@@ -138,6 +138,7 @@ Contains
        write (*,*)
        write (*,'(a36,a80)') string,iterControl%fname
     end if
+    iterControl%fname = adjustl(iterControl%fname)
     read (ioInvCtrl,'(a36,g15.7)') string,iterControl%lambda
     if (output_level > 2) then
        write (*,'(a36,g15.7)') string,iterControl%lambda

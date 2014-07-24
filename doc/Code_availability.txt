@@ -1,0 +1,37 @@
+==================================================
+Modular Electromagnetic Inversion Software (ModEM)
+==================================================
+
+AUTHORS
+
+  Gary Egbert, Anna Kelbert & Naser Meqbel
+  College of Earth, Ocean and Atmospheric Sciences
+  104 CEOAS Admin. Bldg.
+  Oregon State University
+  Corvallis, OR 97331-5503
+  
+  E-mail:  egbert@coas.oregonstate.edu                                      
+  Fax:     (541) 737-2064
+  Ph.:     (541) 737-2947                                        
+  http://www.ceoas.oregonstate.edu
+
+==================================================
+
+OBTAINING THE SOFTWARE
+
+The latest stable version of ModEM is available at our Subversion repository:
+http://mt.coas.oregonstate.edu/svn/ModEM/branches/stable
+
+The Software (specifically, 2D and 3D MT modeling and inversion codes) are 
+available for non-commercial and academic use subject to the license agreement 
+in the attached Copyright statement, upon creation of a personal SVN user account
+at Oregon State University. Interested persons are advised to contact the authors 
+directly with their preferred username and password. They will receive detailed
+download instructions.
+
+Implementations for other EM problems within the framework of ModEM are currently 
+not available for distribution. Potential collaborators are encouraged to contact
+the authors directly.
+
+================================================== 
+

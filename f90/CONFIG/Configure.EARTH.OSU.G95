@@ -1,0 +1,47 @@
+#!/bin/sh
+if [ $# -le 1 ]; then
+    echo 1>&2 Usage: $0 Makefile [debug|release|MPI]
+    exit 127
+fi
+if [ -e $1 ]; then
+    rm $1
+fi
+if [ $2 = "debug" ]; then
+# Debug configuration
+perl fmkmf.pl -f90 g95 \
+-opt '-g -ftrace=frame -fbounds-check' \
+-mpi '-cpp' \
+-o './objs/EARTH/G95Debug' \
+-l '-llapack -lblas' \
+-lp '/usr/local/lib' \
+-p .:INV:UTILS:FIELDS/FiniteDiff3D:EARTH:SENS:EARTH/DICT:EARTH/modelParam:EARTH/FWD:EARTH/ioMod:EARTH/Basics:EARTH/Jacobian \
+Global3D.f90 > $1
+
+elif [ $2 = "release" ]; then
+# Release configuration
+perl fmkmf.pl -f90 g95 \
+-opt '-O3' \
+-mpi '-cpp' \
+-o './objs/EARTH/G95Release' \
+-l '-llapack -lblas' \
+-lp '/usr/local/lib' \
+-p .:INV:UTILS:FIELDS/FiniteDiff3D:EARTH:SENS:EARTH/DICT:EARTH/modelParam:EARTH/FWD:EARTH/ioMod:EARTH/Basics:EARTH/Jacobian \
+Global3D.f90 > $1
+
+else
+# MPI configuration (not tested)
+perl fmkmf.pl -f90 g95 \
+-opt '-O3' \
+-mpi '-cpp -DMPI' \
+-o './objs/EARTH/G95ReleaseMPI' \
+-l '-llapack -lblas' \
+-lp '/usr/local/lib' \
+-p .:INV:UTILS:FIELDS/FiniteDiff3D:EARTH:SENS:EARTH/DICT:EARTH/modelParam:EARTH/FWD:EARTH/ioMod:EARTH/Basics:EARTH/Jacobian \
+Global3D.f90 > $1
+fi
+
+if [ $# -le 2 ]; then
+    echo 1>&2 'Makefile for global EM inversion is ready to use.'
+    exit
+fi
+
