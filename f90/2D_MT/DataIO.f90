@@ -39,6 +39,24 @@ module DataIO
 Contains
 
 !**********************************************************************
+! Sorts out the data type header
+
+  function DataBlockHeader(dataType) result (header)
+
+    integer, intent(in)         :: dataType
+    character(200)              :: header
+
+    select case (dataType)
+
+       case(TE_Impedance,TM_Impedance,Tzy_Impedance)
+          header = '# Period(s) Code GG_Lat GG_Lon X(m) Y(m) Z(m) Component Real Imag Error'
+       case(Rho_Phs_TM)
+          header = '# Period(s) Code GG_Lat GG_Lon X(m) Y(m) Z(m) Component Value Error'
+    end select
+
+  end function DataBlockHeader
+
+!**********************************************************************
 ! writes data in the ASCII list data file; it is convenient to work
 ! with data ordered by site (NOT by frequency), so we are going into
 ! some pains here to write them out in this order ...
@@ -94,7 +112,7 @@ Contains
       call compact(info_in_file(iDt))
       write(ioDat,'(a32)',advance='no') '# ModEM impedance responses for '
       write(ioDat,'(a100)',iostat=ios) info_in_file(iDt)
-      write(ioDat,'(a100)',iostat=ios) ImpHeader(iDt)
+      write(ioDat,'(a100)',iostat=ios) DataBlockHeader(iDt)
       call compact(typeDict(iDt)%name)
       write(ioDat,'(a2)',advance='no') temp
       write(ioDat,*,iostat=ios) trim(typeDict(iDt)%name)

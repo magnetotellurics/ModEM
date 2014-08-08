@@ -8,20 +8,31 @@ module transmitters
 
   public			:: setup_txDict, update_txDict, deall_txDict
 
-type :: transmitter_t
-!defines what kind of transmitter: MT or CSEM        
-           character(10)		    :: tx_type=''
-		   
-! both MT and CSEM have common attributes:         
-		 integer					:: nPol !while setting up the Tx, nPol=2 for MT and 1 for CSEM
-		 ! angular frequency (radians/sec), and for convenience period (s)
-		 real(kind=prec)            :: omega = R_ZERO
-		 real(kind=prec)            :: period = R_ZERO
-		 ! index number to frequency/ period in solution file
-		 integer                    :: iPer
+  type :: transmitter_t
+
+    ! defines the kind of transmitter: MT, DC, CSEM, TIDE
+    character(10)		        :: tx_type=''
+    ! attributes common for all transmitter types:
+	integer					    :: nPol !while setting up the Tx, nPol=2 for MT and 1 for CSEM
+	! angular frequency (radians/sec), and for convenience period (s)
+	real(kind=prec)             :: omega = R_ZERO
+	real(kind=prec)             :: period = R_ZERO
+	! index number to frequency/ period in solution file
+	integer                     :: iPer
+
+!######################################################
+! Tidal details
+    ! in some cases (e.g., tides), might want to give the transmitter a name
+    character(20)              :: id = ''
+    ! ocean tides also have amplitude which might be useful
+    real(kind=prec)            :: amplitude = R_ZERO
+    ! internal source for this transmitter, stored as a sparse vector on the grid
+    !   this is supported for some rare circumstances (e.g., tides);
+    !   doesn't exist for MT problem and should be ignored by most users
+    !type(sparsevecc)          :: jInt
 		  
 !######################################################	 		  
-! CSEM detalies
+! CSEM details
      ! Specific Dipole Type (Electric or Magnetic)
      character(8)		:: Dipole
      !   location of transmitter, relative to grid 
@@ -32,23 +43,31 @@ type :: transmitter_t
      real(kind=prec)            :: dipTx ! (degrees) 
      ! Source dipole moment
      real(kind=prec)            :: moment ! (A.m) for electric, (A.m^2) for magnetic
-!######################################################	 
 
-end type transmitter_t 
-
+  end type transmitter_t
 
 
-
-
-   ! transmitter dictionary txDict for 3D-CSEM data will be an array of
-   ! type VMDtx (one element  for each transmitter)
-   !
    ! NOTE: could have multiple transmitter dictionaries, each of which
    !    could constist of elements of different types; nothing about
    !    the dictionary or the elements that it consists of is used
    !    in higher level routines
+   ! In the future, the plan is to use submodules as soon as these are
+   ! universally supported, and have separate submodules to set up each
+   ! of the transmitter types (MT, CSEM, tidal etc)
+   ! Then the master transmitter dictionary will do the bookkeeping.
+   ! e.g., transmitter dictionary txDict for 3D-CSEM data will be an array of
+   ! type VMDtx (one element  for each transmitter)
+   ! type MTtx (for magnetotellurics)
+   ! type TIDEtx (for tidal source)
    type (transmitter_t), pointer, save, public, dimension (:)   :: txDict
 
+  ! transmitter types; correspond to index iTxt in the data vectors
+  !  these will be heavily used in inversion routines
+  integer, parameter   :: MT = 1
+  integer, parameter   :: DC = 2
+  integer, parameter   :: CSEM = 3
+  integer, parameter   :: TIDE = 4
+  integer, parameter   :: GLOBAL = 5
 
 Contains
 
@@ -82,7 +101,7 @@ Contains
   end subroutine setup_txDict
 
 !**********************************************************************
-! Updates the transmitter dictionary for CSEM with a new source
+! Updates the transmitter dictionary with a new source
 ! Returns the index of the new element.
 ! This is not efficient; but this would only be used a few times, with
 ! a small number of values, so convenience is much more of an issue here
@@ -110,7 +129,7 @@ Contains
 
      ! If this period isn't new, do nothing
      do iTx = 1,nTx
-     	if ( IsTxExist(aTx,txDict(iTx) ) ) then
+     	if ( compare_tx(aTx,txDict(iTx) ) ) then
      	  return
      	end if
      end do
@@ -126,7 +145,8 @@ Contains
      iTx = nTx+1
 
   end function update_txDict
-!!**********************************************************************
+
+!**********************************************************************
 ! Writes the transmitter dictionary to screen. Useful for debugging.
 
   subroutine print_txDict()
@@ -148,54 +168,110 @@ Contains
   end subroutine print_txDict
 
 ! **************************************************************************
-! **************************************************************************
-!
-  function IsTxExist(Txa,Txb) result (YESNO)
-  type(transmitter_t), intent(in):: Txa
-  type(transmitter_t), intent(in):: Txb
-  logical                  YESNO
-
-  YESNO = .FALSE.
-if (Txa%Tx_type=='DC') then
-  if( ABS(Txa%xyzTx(1) - Txb%xyzTx(1)) < TOL6 .AND.   &
-      ABS(Txa%xyzTx(2) - Txb%xyzTx(2)) < TOL6 .AND.   &
-      ABS(Txa%xyzTx(3) - Txb%xyzTx(3)) < TOL6 )  then
-	  YESNO = .true.
-  end if
-elseif (Txa%Tx_type=='CSEM') then
-  if( ABS(Txa%Period - Txb%period) < TOL6  .AND.      &
-      ABS(Txa%xyzTx(1) - Txb%xyzTx(1)) < TOL6 .AND.   &
-      ABS(Txa%xyzTx(2) - Txb%xyzTx(2)) < TOL6 .AND.   &
-      ABS(Txa%xyzTx(3) - Txb%xyzTx(3)) < TOL6 .AND.   &
-      ABS(Txa%moment - Txb%moment) < TOL6 .AND. &
-      ABS(Txa%azimuthTx - Txb%azimuthTx) < TOL6 .AND. &
-      ABS(Txa%dipTx - Txb%dipTx) < TOL6 ) then
-      if (Txa%Dipole .Eq. Txb%Dipole) then
-    	  YESNO = .true.
-      end if
-  end if
-elseif (Txa%Tx_type=='MT') then
-      if(ABS(Txa%Period - Txb%period) < TOL6  .and. Txa%nPol == Txb%nPol) then
-    YESNO = .true.
-  end if
-end if
- 
-
-  return
-  end function IsTxExist
-  
-!  
-! **************************************************************************
 ! Cleans up and deletes transmitter dictionary at end of program execution
 
   subroutine deall_txDict()
 
-	integer     :: istat
+    integer     :: istat
 
     if (associated(txDict)) then
        deallocate(txDict,STAT=istat)
     end if
 
   end subroutine deall_txDict
+
+! **************************************************************************
+! Used to compare two transmitters for updating the dictionary
+
+  function compare_tx(Txa,Txb) result (YESNO)
+
+    type(transmitter_t), intent(in):: Txa
+    type(transmitter_t), intent(in):: Txb
+    logical                  YESNO
+
+    YESNO = .false.
+    if (trim(Txa%Tx_type) .eq. 'DC') then
+      if( ABS(Txa%xyzTx(1) - Txb%xyzTx(1)) < TOL6 .AND.   &
+          ABS(Txa%xyzTx(2) - Txb%xyzTx(2)) < TOL6 .AND.   &
+          ABS(Txa%xyzTx(3) - Txb%xyzTx(3)) < TOL6 )  then
+          YESNO = .true.
+      end if
+    elseif (trim(Txa%Tx_type) .eq. 'CSEM') then
+      if( ABS(Txa%period - Txb%period) < TOL6  .AND.      &
+          ABS(Txa%xyzTx(1) - Txb%xyzTx(1)) < TOL6 .AND.   &
+          ABS(Txa%xyzTx(2) - Txb%xyzTx(2)) < TOL6 .AND.   &
+          ABS(Txa%xyzTx(3) - Txb%xyzTx(3)) < TOL6 .AND.   &
+          ABS(Txa%moment - Txb%moment) < TOL6 .AND. &
+          ABS(Txa%azimuthTx - Txb%azimuthTx) < TOL6 .AND. &
+          ABS(Txa%dipTx - Txb%dipTx) < TOL6 ) then
+          if (Txa%Dipole .Eq. Txb%Dipole) then
+              YESNO = .true.
+          end if
+      end if
+    elseif (trim(Txa%Tx_type) .eq. 'MT') then
+      if(ABS(Txa%period - Txb%period) < TOL6  .and. Txa%nPol == Txb%nPol) then
+        YESNO = .true.
+      end if
+    elseif (trim(Txa%Tx_type) .eq. 'TIDE') then
+      if (trim(Txa%id) .eq. trim(Txb%id)) then
+        YESNO = .true.
+      end if
+    end if
+ 
+  end function compare_tx
+
+! **************************************************************************
+! Used to extract tx_type character name from transmitter type index iTxt
+!
+  function tx_type_name(iTxt) result (tx_type)
+
+    integer, intent(in)                 :: iTxt
+    character(10)                       :: tx_type
+
+    select case (iTxt)
+       case(MT)
+          tx_type = 'MT'
+       case(DC)
+          tx_type = 'DC'
+       case(CSEM)
+          tx_type = 'CSEM'
+       case(TIDE)
+          tx_type = 'TIDE'
+       case(GLOBAL)
+          tx_type = 'GLOBAL'
+       case default
+          write(0,*) 'Unknown transmitter type #',iTxt
+    end select
+
+  end function tx_type_name
+
+! **************************************************************************
+! Used to extract transmitter type index iTxt from transmitter type name.
+! All this is only needed because key-value lists aren't allowed in Fortran!
+! In the future, we should stick to the transmitter integer indicator
+! and keep the name for input/output only. The integer is all that
+! the data vector should ever know of.
+!
+  function tx_type_index(tx_type) result (iTxt)
+
+    character(*), intent(in)            :: tx_type
+    integer                             :: iTxt
+
+    select case (tx_type)
+       case('MT')
+          iTxt = MT
+       case('DC')
+          iTxt = DC
+       case('CSEM')
+          iTxt = CSEM
+       case('TIDE')
+          iTxt = TIDE
+       case('GLOBAL')
+          iTxt = GLOBAL
+       case default
+          write(0,*) 'Unknown transmitter type: ',trim(tx_type)
+    end select
+
+  end function tx_type_index
 
 end module transmitters

@@ -447,8 +447,15 @@ end if
 
    ! local variables
    logical			:: initForSens
+   character(10)    :: txType
 
    initForSens = present(comb)
+
+   if(present(e0)) then
+      if(e0%allocated) then
+        txType = txDict(e0%tx)%tx_type
+      endif
+   endif
 
    call deall_RHS(b0)
    if(present(e0)) then
@@ -467,9 +474,9 @@ end if
       modelDataInitialized = .false.
    endif
 
-   if (txDict(e0%tx)%tx_type =='DC') then
+   if (txType =='DC') then
      call de_ini_private_data_DC
-  end if
+   end if
    
    
    end subroutine exitSolver

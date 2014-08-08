@@ -108,8 +108,15 @@ module DataSpace
       ! tx is index into transmitter dictionary
       integer		:: tx = 0
 
+      ! txType is index into transmitter type dictionary
+      integer		:: txType = 0
+
       ! dt is index into data type dictionary
-      integer		:: dataType = 0
+      integer       :: dataType = 0
+
+      ! scaling factor allows different weighting of blocks for inversion;
+      ! upon initialization they are always one unless specified
+      real (kind=prec)   :: scalingFactor
 
       logical       :: isComplex = .false.
       logical		:: errorBar = .false.
@@ -133,6 +140,9 @@ module DataSpace
 
       ! tx is the index into transmitter dictionary
       integer       :: tx = 0
+
+      ! tx is the transmitter type
+      integer       :: txType = 0
 
       logical       :: allocated = .false.
 
@@ -209,6 +219,11 @@ Contains
        call warning(msg)
     endif
 
+    if (d%txType /= 0) then
+       write(msg,*) 'please set the transmitter type index ',d%txType,' after calling create_dataBlock'
+       call warning(msg)
+    endif
+
     if (d%dataType /= 0) then
        write(msg,*) 'please set the data type index ',d%dataType,' after calling create_dataBlock'
        call warning(msg)
@@ -222,7 +237,9 @@ Contains
     d%value = R_ZERO
 
     d%tx = 0
+    d%txType = 0
     d%dataType = 0
+    d%scalingFactor = ONE
     allocate(d%rx(nSite), STAT=istat)
     d%rx = 0
 
@@ -278,7 +295,9 @@ Contains
     endif
 
     d%tx = 0
+    d%txType = 0
     d%dataType = 0
+    d%scalingFactor = ONE
     d%isComplex = .false.
     d%errorBar = .false.
     d%normalized = 0
@@ -367,7 +386,9 @@ Contains
     d2%normalized = d1%normalized
     d2%rx = d1%rx
     d2%tx = d1%tx
+    d2%txType = d1%txType
     d2%dataType = d1%dataType
+    d2%scalingFactor = d1%scalingFactor
 
     ! if input is a temporary function output, deallocate
     if (d1%temporary) then
@@ -407,11 +428,17 @@ Contains
     if (d1%tx .ne. d2%tx) then
        call errStop('input dataVecs correspond to different transmitters in linComb_dataBlock')
     endif
+    if (d1%txType .ne. d2%txType) then
+       call errStop('input dataVecs correspond to different transmitter types in linComb_dataBlock')
+    endif
     if (d1%dataType .ne. d2%dataType) then
        call errStop('input dataVecs correspond to different dataType in linComb_dataBlock')
     endif
     if (maxval(abs(d1%rx - d2%rx)) > 0) then
        call errStop('input dataVecs correspond to different receiver sets in linComb_dataBlock')
+    endif
+    if (abs(d1%scalingFactor - d2%scalingFactor) > TOL6) then
+       call warning('input dataVecs have different scaling factors in linComb_dataBlock... first value used')
     endif
 
     ! create the output vector that is consistent with inputs
@@ -427,7 +454,9 @@ Contains
 
 	! set the receiver indices to those of d1
 	dOut%tx = d1%tx
+    dOut%txType = d1%txType
 	dOut%dataType = d1%dataType
+	dOut%scalingFactor = d1%scalingFactor
 	dOut%rx = d1%rx
 
     !  finally do the linear combination ...
@@ -520,6 +549,9 @@ Contains
     if (d1%tx .ne. d2%tx) then
        call errStop('input dataVecs correspond to different transmitters in dotProd_dataBlock_f')
     endif
+    if (d1%txType .ne. d2%txType) then
+       call errStop('input dataVecs correspond to different transmitter types in linComb_dataBlock')
+    endif
     if (d1%dataType .ne. d2%dataType) then
        call errStop('input dataVecs correspond to different dataType in dotProd_dataBlock_f')
     endif
@@ -610,12 +642,16 @@ Contains
         return
     endif
 
-    if((d1%tx .ne. d2%tx) .or. (d1%dataType .ne. d2%dataType)) then
-        call errStop('different transmitters or data types in merge_dataBlock')
+    if((d1%txType .ne. d2%txType) .or. (d1%tx .ne. d2%tx) .or. (d1%dataType .ne. d2%dataType)) then
+        call errStop('different transmitter types, transmitters or data types in merge_dataBlock')
     elseif(d1%errorBar .neqv. d2%errorBar) then
         call errStop('input error bars incompatible in merge_dataBlock')
     elseif(d1%normalized .ne. d2%normalized) then
         call errStop('input data incompatible in merge_dataBlock')
+    endif
+
+    if (abs(d1%scalingFactor - d2%scalingFactor) > TOL6) then
+       call warning('input data blocks have different scaling factors in merge_dataBlock... crudely averaged')
     endif
 
     nComp = d1%nComp
@@ -678,6 +714,8 @@ Contains
     d%rx = rxList(1:nSite)
     d%dataType = d1%dataType
     d%tx = d1%tx
+    d%txType = d1%txType
+    d%scalingFactor = (d1%scalingFactor + d2%scalingFactor)/TWO
     d%normalized = d1%normalized
     d%allocated = .true.
 
@@ -728,7 +766,13 @@ Contains
        call warning(msg)
     endif
 
+    if (d%txType /= 0) then
+       write(msg,*) 'please set the transmitter type ',d%txType,' after calling create_dataVector'
+       call warning(msg)
+    endif
+
     d%tx = 0
+    d%txType = 0
 
     ! important - not allocated until all of the dataVec's are
     d%allocated = .false.
@@ -753,6 +797,7 @@ Contains
     endif
 
     d%tx = 0
+    d%txType = 0
     d%allocated = .false.
 
   end subroutine deall_dataVector
@@ -837,6 +882,7 @@ Contains
        d2%data(i) = d1%data(i)
     enddo
     d2%tx = d1%tx
+    d2%txType = d1%txType
     d2%allocated = .true.
 
     ! if input is a temporary function output, deallocate
@@ -872,6 +918,11 @@ Contains
     ! check to see that the transmitters are the same
     if (d1%tx .ne. d2%tx) then
        call errStop('inputs correspond to different transmitters in linComb_dataVector')
+    endif
+
+    ! transmitter types should also coincide
+    if (d1%txType .ne. d2%txType) then
+       call errStop('inputs correspond to different transmitter types in linComb_dataVector')
     endif
 
     ! create the output vector that is consistent with inputs
@@ -947,6 +998,11 @@ Contains
     ! check to see that the transmitters are the same
     if (d1%tx .ne. d2%tx) then
        call errStop('inputs correspond to different transmitters in dotProd_dataVector_f')
+    endif
+
+    ! transmitter types should also coincide
+    if (d1%txType .ne. d2%txType) then
+       call errStop('inputs correspond to different transmitter types in linComb_dataVector')
     endif
 
     r = 0.0
@@ -1032,6 +1088,10 @@ Contains
         call errStop('different transmitters in merge_dataVector')
     endif
 
+    if(d1%txType .ne. d2%txType) then
+        call errStop('different transmitter types in merge_dataVector')
+    endif
+
     nDt = d1%nDt + d2%nDt
     allocate(typeList(nDt),STAT=istat)
     allocate(i1(nDt),i2(nDt),STAT=istat)
@@ -1089,6 +1149,7 @@ Contains
         endif
     enddo
     d%tx = d1%tx
+    d%txType = d1%txType
     d%allocated = .true.
 
     deallocate(typeList,STAT=istat)
@@ -1487,12 +1548,15 @@ Contains
   !**********************************************************************
   ! count the number of data blocks in the full data vector dataVectorMTX.
   ! there should be one for each transmitter and data type... if iDt
-  ! is present, count the number of blocks for this data type only.
+  ! is present, count the number of blocks for this data type only...
+  ! further, if transmitter type is present, only count that type of data.
+  ! (the indices need to be reversed; they are in this order for historic
+  !  reasons - will be fixed in a later code revision).
 
-  function countBlock_dataVectorMTX_f(d,iDt) result(nblock)
+  function countBlock_dataVectorMTX_f(d,iDt,iTxt) result(nblock)
 
    type(dataVectorMTX_t), intent(in)		:: d
-   integer, intent(in), optional            :: iDt
+   integer, intent(in), optional            :: iDt,iTxt
    integer				:: nblock
 
    ! local variables
@@ -1502,7 +1566,13 @@ Contains
     do j = 1,d%nTx
         do i = 1,d%d(j)%nDt
             if (d%d(j)%data(i)%dataType == iDt) then
-                nblock = nblock + 1
+                if (present(iTxt)) then
+                    if (d%d(j)%data(i)%txType == iTxt) then
+                        nblock = nblock + 1
+                    end if
+                else
+                    nblock = nblock + 1
+                end if
             endif
         enddo
     enddo
@@ -1515,16 +1585,88 @@ Contains
   end function countBlock_dataVectorMTX_f
 
   !**********************************************************************
+  ! set the scaling of data blocks in the full data vector dataVectorMTX.
+  ! there should be one for each transmitter and data type...
+  ! if transmitter type iTxt is present, only affect that type of data.
+  ! if iDt is present, set scaling for data blocks for this data type only.
+
+  subroutine setScaling_dataVectorMTX(scalingFactor,d,dout,iTxt,iDt)
+
+   real(kind=prec)                          :: scalingFactor
+   type(dataVectorMTX_t), intent(in)        :: d
+   type(dataVectorMTX_t), intent(inout)     :: dout
+   integer, intent(in), optional            :: iTxt,iDt
+
+   ! local variables
+   integer              :: i,j
+
+   dout = d
+
+    do j = 1,dout%nTx
+        do i = 1,dout%d(j)%nDt
+            if (present(iTxt)) then
+                if (dout%d(j)%data(i)%txType == iTxt) then
+                    if (present(iDt)) then
+                        if (dout%d(j)%data(i)%dataType == iDt) then
+                            dout%d(j)%data(i)%scalingFactor = scalingFactor
+                        end if
+                    else
+                        dout%d(j)%data(i)%scalingFactor = scalingFactor
+                    end if
+                endif
+            else
+                dout%d(j)%data(i)%scalingFactor = scalingFactor
+            endif
+        enddo
+    enddo
+
+  end subroutine setScaling_dataVectorMTX
+
+  !**********************************************************************
+  ! extract a dataVectorMTX for specified transmitter type only.
+  ! for subsetting, transmitter type index is a necessity since otherwise
+  ! access to the transmitter dictionary would be required to perform
+  ! this task.
+
+  subroutine subset_dataVectorMTX(d,dout,iTxt)
+
+   type(dataVectorMTX_t), intent(in)        :: d
+   type(dataVectorMTX_t), intent(inout)     :: dout
+   integer, intent(in)                      :: iTxt
+
+   ! local variables
+   integer              :: j,jsub,nTx
+
+   ! count the relevant data vectors
+   nTx = 0
+   do j = 1,d%nTx
+       if (d%d(j)%txType == iTxt) then
+           nTx = nTx + 1
+       end if
+   end do
+
+   call create_dataVectorMTX(nTx,dout)
+
+   jsub = 1
+   do j = 1,dout%nTx
+       if (d%d(j)%txType == iTxt) then
+           dout%d(jsub) = d%d(j)
+       end if
+   enddo
+
+  end subroutine subset_dataVectorMTX
+
+  !**********************************************************************
   ! index the transmitters and receivers in dataVectorMTX: for a specific
   ! data type, and for each transmitter and receiver in the dictionary,
   ! this allows to quickly locate the respective data components.
   ! The output arrays are tx_index(nTx) and rx_index(nTx,nRx), where
   ! nTx and nRx are the lengths of the respective dictionaries.
 
-  subroutine index_dataVectorMTX(d,iDt,tx_index,dt_index,rx_index)
+  subroutine index_dataVectorMTX(d,iTxt,iDt,tx_index,dt_index,rx_index)
 
    type(dataVectorMTX_t), intent(in)        :: d
-   integer, intent(in)                      :: iDt
+   integer, intent(in)                      :: iTxt,iDt
    integer, intent(inout)                   :: tx_index(:), dt_index(:), rx_index(:,:)
 
    ! local variables
@@ -1536,7 +1678,7 @@ Contains
 
    do j = 1,d%nTx
         do i = 1,d%d(j)%nDt
-            if (d%d(j)%data(i)%dataType == iDt) then
+            if ((d%d(j)%data(i)%txType == iTxt) .and. (d%d(j)%data(i)%dataType == iDt)) then
                 tx_index(d%d(j)%tx) = j
                 dt_index(d%d(j)%tx) = i
                 do k = 1,d%d(j)%data(i)%nSite
