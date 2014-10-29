@@ -374,7 +374,7 @@ Contains
       type(dataVectorMTX_t), intent(in)             :: allResp
       ! local variables
       integer									:: i
-      character(80)								:: strtmp
+      character(200)								:: strtmp
 
       do i=1,allData%nTx
 
@@ -402,7 +402,7 @@ Contains
     type (dataVector_t), intent(in)                 :: psi
     type (dataVector_t), intent(in)                 :: dat
     type (output_info), intent(in)                  :: outFiles
-    character(80)                                   :: fn_response
+    character(200)                                  :: fn_response
     character(200)                                  :: comment
     complex(8), dimension(:,:), allocatable         :: Resp,RespRatio
     complex(8), dimension(:,:), allocatable         :: FieldData

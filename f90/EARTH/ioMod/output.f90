@@ -36,7 +36,7 @@ Contains
 	character(3)							  :: ichar
 	character(10)							  :: echar
 	character(*), intent(in), optional		  :: extension
-	character(80)							  :: fn_output
+	character(200)							  :: fn_output
 
 	write (ichar,'(i3.3)') freq%i
 	if (present(extension)) then
@@ -74,7 +74,7 @@ Contains
 	character(3)							  :: ichar
 	character(10)							  :: echar
 	character(*), intent(in), optional		  :: extension
-	character(80)							  :: fn_output
+	character(200)							  :: fn_output
 
 	write (ichar,'(i3.3)') freq%i
 	if (present(extension)) then
@@ -143,7 +143,7 @@ Contains
 	type (misfit_t), intent(in)			  :: misfit
 	type (modelParam_t), intent(in)			  :: param
 	real(8),dimension(:),intent(in)			  :: misfitValue
-    character(80)                             :: fn_misfit
+    character(200)                            :: fn_misfit
 
         fn_misfit = cUserDef%fn_misfit
 
@@ -167,7 +167,7 @@ Contains
 	type (modelParam_t), intent(in)			  :: param
 	real(8),dimension(:,:),intent(in)		  :: dmisfitValue
 	integer									  :: i,j,l
-    character(80)                             :: fn_misfit
+    character(200)                            :: fn_misfit
 
         fn_misfit = cUserDef%fn_gradient
 
@@ -192,7 +192,7 @@ Contains
 
 	type (dataVector_t), intent(in)					:: res
 	type (output_info), intent(in)					:: outFiles
-	character(80)									:: fname
+	character(200)									:: fname
 	integer											:: i,j,k,ios,iobs
 	real(8)											:: rval,ival,error
 
@@ -240,7 +240,7 @@ Contains
 	type (TF_List), intent(in)				  :: TFList
 	integer									  :: ifreq,ifunc,ilayer,icoeff,ivar
 	real(8)									  :: misfitValue,dmisfitValue
-        character(80)                                     :: fn_misfit
+        character(200)                                     :: fn_misfit
 
         fn_misfit = 'info.out'
 
@@ -286,7 +286,7 @@ Contains
 	type (userdef_control), intent(in)			  :: cUserDef
 	character(3)							  :: ichar
 	character(10)							  :: echar
-	character(80)									:: fn_jacobian
+	character(200)									:: fn_jacobian
 	complex(8), dimension(:), allocatable			:: Resp
 	real(8)											:: rval,ival,error,rms
 	integer											:: i,j,k,l,itype,iobs,nSite
