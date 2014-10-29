@@ -164,7 +164,7 @@ Contains
     integer                 :: i,j,k,ios=0,istat=0
     real(8)                 :: const,large
     real(8)                 :: freq,days,prev
-    character(3)            :: code
+    character(80)           :: code
     real(8)                 :: lon,lat
     real(8)                 :: creal(3),cimag(3),cerr(3)
     integer                 :: nfreq,nobs,ncomp,nsite
@@ -278,7 +278,7 @@ Contains
         end if
       end if
       if (ifreq == 0) then
-        !print *, 'Frequency ',freq,' is not in the frequency list; ignore'
+        print *, 'Frequency ',freq,' is not in the frequency list; ignore'
         !do j=1,num
           !read(ioDat,*,iostat=ios)
         !end do
@@ -289,7 +289,7 @@ Contains
       if (iobs > 0) then
         countData = countData + ncomp
       else
-        !print *, 'Observatory ',trim(code),' in file ',trim(fname),' is not in our list'
+        print *, 'Observatory ',trim(code),' in file ',trim(fname),' is not in our list'
         !print *, 'This is an error; exiting...'
         !stop
         cycle READ_DATA

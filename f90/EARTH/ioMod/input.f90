@@ -59,28 +59,51 @@ Contains
     endif
 
     ! This is the list of options specified in the startup file
-    read (ioStartup,'(a17,a80)') string,cUserDef%paramname;
-    read (ioStartup,'(a17,a80)') string,cUserDef%modelname;
-    read (ioStartup,'(a17,a80)') string,cUserDef%verbose;
-    read (ioStartup,'(a17,a80)') string,cUserDef%calculate;
-    read (ioStartup,'(a17,a80)') string,cUserDef%secondary_field;
-    read (ioStartup,'(a17,a80)') string,cUserDef%fn_thinsheet;
-    read (ioStartup,'(a17,a80)') string,cUserDef%fn_grid;
-    read (ioStartup,'(a17,a80)') string,cUserDef%fn_param0;
-    read (ioStartup,'(a17,a80)') string,cUserDef%fn_param;
-    read (ioStartup,'(a17,a80)') string,cUserDef%fn_period;
-    read (ioStartup,'(a17,a80)') string,cUserDef%fn_extsource;
-    read (ioStartup,'(a17,a80)') string,cUserDef%fn_intsource;
-    read (ioStartup,'(a17,a80)') string,cUserDef%fn_fwdctrl;
-    read (ioStartup,'(a17,a80)') string,cUserDef%fn_adjctrl;
-    read (ioStartup,'(a17,a80)') string,cUserDef%fn_invctrl;
-    read (ioStartup,'(a17,a80)') string,cUserDef%fn_slices;
-    read (ioStartup,'(a17,a80)') string,cUserDef%fn_coords;
-    read (ioStartup,'(a17,a80)') string,cUserDef%fn_func;
-    read (ioStartup,'(a17,a80)') string,cUserDef%fn_cdata;
-    read (ioStartup,'(a17,a80)') string,cUserDef%fn_ddata;
-    read (ioStartup,'(a17,a80)') string,cUserDef%fn_hdata;
-    read (ioStartup,'(a17,a80)') string,cUserDef%fn_href;
+    read (ioStartup,'(a17,a200)') string,cUserDef%paramname;
+    read (ioStartup,'(a17,a200)') string,cUserDef%modelname;
+    read (ioStartup,'(a17,a200)') string,cUserDef%verbose;
+    read (ioStartup,'(a17,a200)') string,cUserDef%calculate;
+    read (ioStartup,'(a17,a200)') string,cUserDef%secondary_field;
+    read (ioStartup,'(a17,a200)') string,cUserDef%fn_thinsheet;
+    read (ioStartup,'(a17,a200)') string,cUserDef%fn_grid;
+    read (ioStartup,'(a17,a200)') string,cUserDef%fn_param0;
+    read (ioStartup,'(a17,a200)') string,cUserDef%fn_param;
+    read (ioStartup,'(a17,a200)') string,cUserDef%fn_period;
+    read (ioStartup,'(a17,a200)') string,cUserDef%fn_extsource;
+    read (ioStartup,'(a17,a200)') string,cUserDef%fn_intsource;
+    read (ioStartup,'(a17,a200)') string,cUserDef%fn_fwdctrl;
+    read (ioStartup,'(a17,a200)') string,cUserDef%fn_adjctrl;
+    read (ioStartup,'(a17,a200)') string,cUserDef%fn_invctrl;
+    read (ioStartup,'(a17,a200)') string,cUserDef%fn_slices;
+    read (ioStartup,'(a17,a200)') string,cUserDef%fn_coords;
+    read (ioStartup,'(a17,a200)') string,cUserDef%fn_func;
+    read (ioStartup,'(a17,a200)') string,cUserDef%fn_cdata;
+    read (ioStartup,'(a17,a200)') string,cUserDef%fn_ddata;
+    read (ioStartup,'(a17,a200)') string,cUserDef%fn_hdata;
+    read (ioStartup,'(a17,a200)') string,cUserDef%fn_href;
+
+!    call compact(cUserDef%paramname)
+!    call compact(cUserDef%modelname)
+!    call compact(cUserDef%verbose)
+!    call compact(cUserDef%calculate)
+!    call compact(cUserDef%secondary_field)
+!    call compact(cUserDef%fn_thinsheet)
+!    call compact(cUserDef%fn_grid)
+!    call compact(cUserDef%fn_param0)
+!    call compact(cUserDef%fn_param)
+!    call compact(cUserDef%fn_period)
+!    call compact(cUserDef%fn_extsource)
+!    call compact(cUserDef%fn_intsource)
+!    call compact(cUserDef%fn_fwdctrl)
+!    call compact(cUserDef%fn_adjctrl)
+!    call compact(cUserDef%fn_invctrl)
+!    call compact(cUserDef%fn_slices)
+!    call compact(cUserDef%fn_coords)
+!    call compact(cUserDef%fn_func)
+!    call compact(cUserDef%fn_cdata)
+!    call compact(cUserDef%fn_ddata)
+!    call compact(cUserDef%fn_hdata)
+!    call compact(cUserDef%fn_href)
 
     ! if no inverse control file, use this default damping parameter
     cUserDef%damping = 10.
