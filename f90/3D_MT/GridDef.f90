@@ -250,7 +250,7 @@ Contains
     end if
 
     ! the topmost air layer has to be atleast 30 km
-    if (grid%dz(1).lt.30000) then
+    if ((grid%dz(1).lt.30000).and.(grid%nzAir.gt.0)) then
         grid%dz(1) = 30000
     end if
 

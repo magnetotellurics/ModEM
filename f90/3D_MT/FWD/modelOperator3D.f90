@@ -270,6 +270,9 @@ Contains
 
     if (BC%read_E_from_file) then
           
+          !   call to this routine is to initialize E0 for iterative solver;  BC
+          !   are   just overwritten -- in fact it would make more sense to
+          !   intialize from 2D solutions computed with the actual BC used!
           call BC_x0_WS(imode,period,mGrid,sigma_C,E0,BC) 
 
           ! The BC are already computed from a larger grid for all transmitters and modes and stored in BC_from_file.
