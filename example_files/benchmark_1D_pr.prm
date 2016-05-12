@@ -1,0 +1,21 @@
+Format: harmonic layers 5 degree 0
+
+log degree 0 layer 12.65
+l   m   value	      min	max
+0   0   4.0	      -1.	1.      range
+
+log degree 0 layer 100.
+l   m   value	      min	max
+0   0   4.0	      -1.	1.      range
+
+log degree 0 layer 400.
+l   m   value	      min	max
+0   0   2.0	      -1.	1.      range
+
+log degree 0 layer 650.
+l   m   value	      min	max
+0   0   1.0	      -1.	1.      range
+
+log degree 0 layer 4000.
+l   m   value	      min	max
+0   0   -0.30103      -1.	1.     range

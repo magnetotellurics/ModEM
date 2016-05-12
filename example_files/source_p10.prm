@@ -1,0 +1,30 @@
+Format: harmonic periods 4 degree 1
+
+linear degree 1 period 16.
+l   m   real	imag	      min	max
+0   0   0.0	0.0	      -1.	1.      range
+1   0   1.0	0.0	      -1.	1.      range
+1   1   0.0	0.0	      -1.	1.      range
+1  -1   0.0	0.0	      -1.	1.      range
+
+linear degree 1 period 4.
+l   m   real	imag	      min	max
+0   0   0.0	0.0	      -1.	1.      range
+1   0   1.0	0.0	      -1.	1.      range
+1   1   0.0	0.0	      -1.	1.      range
+1  -1   0.0	0.0	      -1.	1.      range
+
+linear degree 1 period 1.
+l   m   real	imag	      min	max
+0   0   0.0	0.0	      -1.	1.      range
+1   0   1.0	0.0	      -1.	1.      range
+1   1   0.0	0.0	      -1.	1.      range
+1  -1   0.0	0.0	      -1.	1.      range
+
+linear degree 1 period 0.25
+l   m   real	imag	      min	max
+0   0   0.0	0.0	      -1.	1.      range
+1   0   1.0	0.0	      -1.	1.      range
+1   1   0.0	0.0	      -1.	1.      range
+1  -1   0.0	0.0	      -1.	1.      range
+
