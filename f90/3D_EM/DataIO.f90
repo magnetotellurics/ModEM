@@ -44,6 +44,7 @@ module DataIO
      ! these lists contain the indices into the data vector for each data type;
      ! they make it possible to sort the data by receiver for output.
      ! no data denoted by zero index; dimensions (nTx) and (nTx,nRx).
+     ! these indices are typically allocated as we read the data file
      integer, pointer, dimension(:)   :: tx_index
      integer, pointer, dimension(:)   :: dt_index
      integer, pointer, dimension(:,:) :: rx_index
@@ -54,8 +55,10 @@ module DataIO
   end type data_file_block
 
   ! private dictionary of data block info dimension (nTxt,nDt)
-  ! where nTxt = number of all possible transmitter type
+  ! where nTxt = number of all possible transmitter types
   !       nDt  = number of all possible data types
+  ! number of transmitter types comes from the DICT/txTypes module
+  ! and defines the number of conceptually different types of sources
   type (data_file_block), pointer, save, private, dimension(:,:) :: fileInfo
 
 
@@ -113,9 +116,9 @@ Contains
        do iDt = 1,nDt
          fileInfo(iTxt,iDt)%defined = .false.
          if (present(nTx) .and. present(nRx)) then
-           allocate(fileInfo(iTxt,iDt)%tx_index,STAT=istat)
-           allocate(fileInfo(iTxt,iDt)%dt_index,STAT=istat)
-           allocate(fileInfo(iTxt,iDt)%rx_index,STAT=istat)
+           allocate(fileInfo(iTxt,iDt)%tx_index(nTx),STAT=istat)
+           allocate(fileInfo(iTxt,iDt)%dt_index(nTx),STAT=istat)
+           allocate(fileInfo(iTxt,iDt)%rx_index(nTx,nRx),STAT=istat)
          end if
        end do
      end do

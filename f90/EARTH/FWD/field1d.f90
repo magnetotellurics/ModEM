@@ -34,7 +34,7 @@ module field1d
   logical, private, save                                 :: legendre_allocated_at_nodes=.false.
   logical, private, save                                 :: legendre_allocated_at_edges=.false.
 
-  type (timer_t), save                  :: fwd1d_timer
+  type (timer_t), public, save          :: fwd1d_timer
 
   public        :: legendre_deallocate_at_nodes
   public        :: legendre_deallocate_at_edges

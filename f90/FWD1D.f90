@@ -2,6 +2,7 @@ program fwd1d
 
     use field1d
     use modelspace
+    use sg_vector
     implicit none
 
     type(conf1d_t)                              :: earth
