@@ -17,13 +17,11 @@ module DataIO
 
   ! switch between data formats by leaving uncommented one of the options below
   interface read_dataVectorMTX
-	!MODULE PROCEDURE read_Z
-  	MODULE PROCEDURE read_Z_list
+	MODULE PROCEDURE read_Z_list
   end interface
 
   interface write_dataVectorMTX
-	!MODULE PROCEDURE write_Z
-    MODULE PROCEDURE write_Z_list
+	MODULE PROCEDURE write_Z_list
   end interface
 
 
@@ -56,32 +54,35 @@ module DataIO
   end type data_file_block
 
   ! private dictionary of data block info dimension (nTxt,nDt)
-  ! where nTxt = number of all possible transmitter type
+  ! where nTxt = number of all possible transmitter types
   !       nDt  = number of all possible data types
+  ! number of transmitter types comes from the DICT/txTypes module
+  ! and defines the number of conceptually different types of sources
   type (data_file_block), pointer, save, private, dimension(:,:) :: fileInfo
 
 
 Contains
 
 !**********************************************************************
-! Sorts out the data type header
+! Sorts out the data block header
 
-  function DataBlockHeader(dataType) result (header)
+  function DataBlockHeader(txType,dataType) result (header)
 
+    integer, intent(in)         :: txType
     integer, intent(in)         :: dataType
     character(200)              :: header
 
     select case (dataType)
 
        case(Full_Impedance,Off_Diagonal_Impedance,Full_Vertical_Components)
-          header = '# Period(s) Code GG_Lat GG_Lon X(m) Y(m) Z(m) Component Real Imag Error'
+          header = 'Period(s) Code GG_Lat GG_Lon X(m) Y(m) Z(m) Component Real Imag Error'
 
        case(Full_Interstation_TF)
-          header = '# Period(s) Code GG_Lat GG_Lon X(m) Y(m) Z(m) Ref_Code Ref_Lat '// &
+          header = 'Period(s) Code GG_Lat GG_Lon X(m) Y(m) Z(m) Ref_Code Ref_Lat '// &
                    'Ref_Lon Ref_X(m) Ref_Y(m) Ref_Z(m) Component Real Imag Error'
 
        case(Off_Diagonal_Rho_Phase,Phase_Tensor)
-          header = '# Period(s) Code GG_Lat GG_Lon X(m) Y(m) Z(m) Component Value Error'
+          header = 'Period(s) Code GG_Lat GG_Lon X(m) Y(m) Z(m) Component Value Error'
 
     end select
 
@@ -155,13 +156,11 @@ Contains
     real(8), allocatable            :: error(:) ! (ncomp)
     logical, allocatable            :: exist(:) ! (ncomp)
     character(2)                    :: temp = '> '
-    character(100)                  :: siteid,ref_siteid,compid
+    character(40)                   :: siteid,ref_siteid,compid
     integer                         :: iTxt,iTx,iRx,iDt,icomp,i,j,k,istat,ios,nBlocks
     real(8)                         :: x(3),ref_x(3), Period,SI_factor,large
     real(8)                         :: lat,lon,ref_lat,ref_lon
     logical                         :: conjugate, isComplex
-
-    large = 2.0e15
 
     iTxt = 1
 
@@ -170,9 +169,10 @@ Contains
     ! For each data type in dictionary, if data of this type exists, write it out.
     WRITE_DATA_TYPE: do iDt = 1,size(typeDict)
 
-      nBlocks = countDataBlock(allData,iDt)
+      nBlocks = countDataBlock(allData,iDt,iTxt)
       if (nBlocks == 0) then
-        ! no data for this data type; skip it
+	! no data for this data type; skip it - this shouldn't happen anymore
+	! since the "defined" logical deals with this on input
         cycle WRITE_DATA_TYPE
       else
         ! count the number of transmitters and receivers
@@ -196,8 +196,9 @@ Contains
       ! write the data type header
       call compact(fileInfo(iTxt,iDt)%info_in_file)
       write(ioDat,'(a32)',advance='no') '# ModEM impedance responses for '
-      write(ioDat,'(a100)',iostat=ios) fileInfo(iTxt,iDt)%info_in_file
-      write(ioDat,'(a200)',iostat=ios) DataBlockHeader(iDt)
+      write(ioDat,*,iostat=ios) adjustl(trim(fileInfo(iTxt,iDt)%info_in_file))
+      write(ioDat,'(a2)',advance='no') '# '
+      write(ioDat,*,iostat=ios) adjustl(trim(DataBlockHeader(iTxt,iDt)))
       !if (.not. (tx_type_name(iTxt) .eq. 'MT')) then
       !    write(ioDat,'(a2)',advance='no') '+ '
       !    write(ioDat,*,iostat=ios) trim(tx_type_name(iTxt))
@@ -241,7 +242,7 @@ Contains
             if (allData%d(j)%data(i)%errorBar) then
                 error = SI_factor * allData%d(j)%data(i)%error(:,k)
             else
-                error = large
+                error = LARGE_REAL
             end if
             exist = allData%d(j)%data(i)%exist(:,k)
             Period = txDict(iTx)%period
@@ -258,7 +259,8 @@ Contains
                         end if
                         compid = typeDict(iDt)%id(icomp)
                         write(ioDat,'(es12.6)',    iostat=ios,advance='no') Period
-                        write(ioDat,'(a40,3f12.3)',iostat=ios,advance='no') trim(siteid),x(:)
+                        write(ioDat, '(a1)', iostat=ios,advance='no') ' '
+                        write(ioDat,'(a40,3f15.3)',iostat=ios,advance='no') trim(siteid),x(:)
                         if (conjugate) then
                             write(ioDat,'(a8,3es15.6)',iostat=ios) trim(compid),value(2*icomp-1),-value(2*icomp),error(2*icomp)
                         else
@@ -277,8 +279,9 @@ Contains
                         ref_siteid = rxDict(iRx)%id_ref
                         ref_x = rxDict(iRx)%r
                         write(ioDat,'(es12.6)',    iostat=ios,advance='no') Period
-                        write(ioDat,'(a40,3f12.3)',iostat=ios,advance='no') trim(siteid),x(:)
-                        write(ioDat,'(a40,3f12.3)',iostat=ios,advance='no') trim(ref_siteid),ref_x(:)
+                        write(ioDat, '(a1)', iostat=ios,advance='no') ' '
+                        write(ioDat,'(a40,3f15.3)',iostat=ios,advance='no') trim(siteid),x(:)
+                        write(ioDat,'(a40,3f15.3)',iostat=ios,advance='no') trim(ref_siteid),ref_x(:)
                         if (conjugate) then
                             write(ioDat,'(a8,3es15.6)',iostat=ios) trim(compid),value(2*icomp-1),-value(2*icomp),error(2*icomp)
                         else
@@ -294,19 +297,20 @@ Contains
                             cycle
                         end if
                         compid = typeDict(iDt)%id(icomp)
-                        ! For apparent resistivities only, log10 of the values was used
-			            if (index(compid,'RHO')>0) then
-			                value(icomp) = 10**value(icomp)
-						! Avoid Inf for FWD calculation
-							if (error(icomp) .ge. large) then
-                                error(icomp) = large
-                            else 
-			                    error(icomp) = 10**error(icomp)
+                        ! For apparent resistivities only, log10 of the values was used internally in the program;
+                        ! writing out the linear apparent resistivity
+                        if (index(compid,'RHO')>0) then
+                            value(icomp) = 10**value(icomp)
+                            ! Avoid Inf for FWD calculation
+                            if (error(icomp) .ge. LARGE_REAL) then
+                                error(icomp) = LARGE_REAL
+                            else
+                                error(icomp) = 10**error(icomp)
                             endif
-			            end if
-
+                        end if
                         write(ioDat,'(es12.6)',    iostat=ios,advance='no') Period
-                        write(ioDat,'(a40,3f12.3)',iostat=ios,advance='no') trim(siteid),x(:)
+                        write(ioDat, '(a1)', iostat=ios,advance='no') ' '
+                        write(ioDat,'(a40,3f15.3)',iostat=ios,advance='no') trim(siteid),x(:)
                         write(ioDat,'(a8,3es15.6)',iostat=ios) trim(compid),value(icomp),error(icomp)
                         countData = countData + 1
                     end do
@@ -317,7 +321,7 @@ Contains
       end do  ! receivers
 
       if (output_level > 4) then
-        write(0,*) 'Written ',countData,' data values of type ',trim(typeDict(iDt)%name),' to file'
+        write(0,*) 'Written ',countData,' data values of type MT: ',trim(typeDict(iDt)%name),' to file'
       end if
       deallocate(value, error, exist, STAT=istat)
 
@@ -345,101 +349,105 @@ Contains
     complex(8), allocatable         :: value(:,:,:) ! (nTx,nRx,ncomp)
     real(8), allocatable            :: error(:,:,:) ! (nTx,nRx,ncomp)
     logical, allocatable            :: exist(:,:,:) ! (nTx,nRx,ncomp)
+    integer, allocatable            :: new_TxType(:) ! contains txType indices (nTx)
     integer, allocatable            :: new_Tx(:) ! contains txDict indices (nTx)
     integer, allocatable            :: new_Rx(:) ! contains rxDict indices (nRx)
     character(2)                    :: temp
     character(200)                  :: txTypeName,typeName,typeInfo,typeHeader
     character(40)                   :: siteid,ref_siteid,compid
     integer                         :: nTxt,iTxt,iDt,i,j,k,istat,ios
-    character(12)                   :: code,ref_code
+    character(40)                   :: code,ref_code
     real(8)                         :: x(3),ref_x(3), Period,SI_factor,large
     real(8)                         :: lat,lon,ref_lat,ref_lon
     real(8)                         :: Zreal, Zimag, Zerr
     logical                         :: conjugate, errorBar, isComplex
 
-	! First, set up the data type dictionary, if it's not in existence yet
-	call setup_typeDict()
+    ! First, set up the data type dictionary, if it's not in existence yet
+    call setup_typeDict()
 
     ! Save the user preferences
     nDt = size(typeDict)
     call init_fileInfo(1,nDt)
 
-	! Now, read the data file
-	open(unit=ioDat,file=cfile,form='formatted',status='old')
-
-	! Read the data blocks for each data type
+    ! Now, read the data file
+    open(unit=ioDat,file=cfile,form='formatted',status='old')
+      
+    ! Read the data blocks for each data type
     READ_DATA_TYPE: do
+      
+    	read(ioDat,'(a2,a200)',iostat=ios) temp,typeInfo
+    	read(ioDat,'(a2,a200)',iostat=ios) temp,typeHeader
+    	read(ioDat,'(a2,a100)',iostat=ios) temp,typeName
 
-    read(ioDat,'(a2,a200)',iostat=ios) temp,typeInfo
-    read(ioDat,'(a2,a100)',iostat=ios) temp,typeHeader
-    read(ioDat,'(a2,a100)',iostat=ios) temp,typeName
+        ! If transmitter name exists, it precedes the typeName
+        if (temp(1:1) == '+') then
+            txTypeName = typeName
+            read(ioDat,'(a2,a100)',iostat=ios) temp,typeName
+        else
+            txTypeName = 'MT'
+        end if
+    	iTxt = 1
+    	if (ios /= 0) exit
+    
+    	! Read new data type
+    	call compact(typeName)
+    	iDt = ImpType(typeName)
+    	ncomp = typeDict(iDt)%nComp
+    	if (typeDict(iDt)%isComplex) then
+        	ncomp = ncomp/2
+    	end if
 
-    ! If transmitter name exists, it precedes the typeName
-    if (temp(1:1) == '+') then
-        txTypeName = typeName
-        read(ioDat,'(a2,a100)',iostat=ios) temp,typeName
-    else
-        txTypeName = 'MT'
-    end if
-    iTxt = 1
-    if (ios /= 0) exit
+    	fileInfo(iTxt,iDt)%defined = .true.
+    	fileInfo(iTxt,iDt)%info_in_file = typeInfo
+    	
+    	! Sort out the sign convention
+		read(ioDat,'(a2,a20)',iostat=ios) temp,fileInfo(iTxt,iDt)%sign_info_in_file
+    	if(index(fileInfo(iTxt,iDt)%sign_info_in_file,'-')>0) then
+      		fileInfo(iTxt,iDt)%sign_in_file = - 1
+    	else
+      		fileInfo(iTxt,iDt)%sign_in_file = 1
+    	end if
+    	if (fileInfo(iTxt,iDt)%sign_in_file == ISIGN) then
+      		conjugate = .false.
+    	else
+      		conjugate = .true.
+    	end if
 
-    ! Read new data type
-    call compact(typeName)
-    iDt = ImpType(typeName)
-    ncomp = typeDict(iDt)%nComp
-    if (typeDict(iDt)%isComplex) then
-        ncomp = ncomp/2
-    end if
+        read(ioDat,'(a2,a20)',iostat=ios) temp,fileInfo(iTxt,iDt)%units_in_file
+        SI_factor = ImpUnits(fileInfo(iTxt,iDt)%units_in_file,typeDict(iDt)%units)
 
-    fileInfo(iTxt,iDt)%defined = .true.
-    fileInfo(iTxt,iDt)%info_in_file = typeInfo
+        read(ioDat,*,iostat=ios) temp,fileInfo(iTxt,iDt)%geographic_orientation
+        read(ioDat,*,iostat=ios) temp,fileInfo(iTxt,iDt)%origin_in_file(1),fileInfo(iTxt,iDt)%origin_in_file(2)
+        read(ioDat,*,iostat=ios) temp,nTx,nRx
 
-    ! Sort out the sign convention
-    read(ioDat,'(a2,a20)',iostat=ios) temp,fileInfo(iTxt,iDt)%sign_info_in_file
-    if(index(fileInfo(iTxt,iDt)%sign_info_in_file,'-')>0) then
-        fileInfo(iTxt,iDt)%sign_in_file = - 1
-    else
-        fileInfo(iTxt,iDt)%sign_in_file = 1
-    end if
-    if (fileInfo(iTxt,iDt)%sign_in_file == ISIGN) then
-        conjugate = .false.
-    else
-        conjugate = .true.
-    end if
 
-    read(ioDat,'(a2,a20)',iostat=ios) temp,fileInfo(iTxt,iDt)%units_in_file
-    SI_factor = ImpUnits(fileInfo(iTxt,iDt)%units_in_file,typeDict(iDt)%units)
+        if (output_level > 3) then
+            write(0,*) node_info,'Reading data type: ',trim(typeName)
+            write(0,*) node_info,'Sign convention in file: ',trim(fileInfo(iTxt,iDt)%sign_info_in_file)
+            write(0,*) node_info,'Units in file: ',trim(fileInfo(iTxt,iDt)%units_in_file)
+            write(0,*) node_info,'Number of transmitters: ',nTx
+            write(0,*) node_info,'Number of receivers: ',nRx
+        end if
 
-    read(ioDat,*,iostat=ios) temp,fileInfo(iTxt,iDt)%geographic_orientation
-    read(ioDat,*,iostat=ios) temp,fileInfo(iTxt,iDt)%origin_in_file(1),fileInfo(iTxt,iDt)%origin_in_file(2)
-    read(ioDat,*,iostat=ios) temp,nTx,nRx
 
-    if (output_level > 3) then
-        write(0,*) node_info,'Reading data type: ',trim(typeName)
-        write(0,*) node_info,'Sign convention in file: ',trim(fileInfo(iTxt,iDt)%sign_info_in_file)
-        write(0,*) node_info,'Units in file: ',trim(fileInfo(iTxt,iDt)%units_in_file)
-        write(0,*) node_info,'Number of transmitters: ',nTx
-        write(0,*) node_info,'Number of receivers: ',nRx
-    end if
+        ! Allocate temporary data arrays
+        allocate(new_TxType(nTx),new_Tx(nTx),new_Rx(nRx),STAT=istat)
+        allocate(value(nTx,nRx,ncomp),error(nTx,nRx,ncomp),exist(nTx,nRx,ncomp),STAT=istat)
 
-    ! Allocate temporary data arrays
-    allocate(new_Tx(nTx),new_Rx(nRx),STAT=istat)
-    allocate(value(nTx,nRx,ncomp),error(nTx,nRx,ncomp),exist(nTx,nRx,ncomp),STAT=istat)
+        new_TxType(:) = 0
+        new_Tx(:) = 0
+        new_Rx(:) = 0
+        value(:,:,:) = dcmplx(0.0d0,0.0d0)
+        error(:,:,:) = large
+        exist(:,:,:) = .FALSE.
+        countData = 0
 
-    large = 2.0e15
-    new_Tx(:) = 0
-    new_Rx(:) = 0
-    value(:,:,:) = dcmplx(0.0d0,0.0d0)
-    error(:,:,:) = large
-    exist(:,:,:) = .FALSE.
-    countData = 0
 
-    READ_DATA_LINE: Do
+        READ_DATA_LINE: Do
 
-        select case (iDt)
+            select case (iDt)
 
-           case(Full_Impedance,Off_Diagonal_Impedance,Full_Vertical_Components)
+            case(Full_Impedance,Off_Diagonal_Impedance,Full_Vertical_Components)
                 read(ioDat,*,iostat=ios) Period,code,lat,lon,x(1),x(2),x(3),compid,Zreal,Zimag,Zerr
 
                 if (ios /= 0) then
@@ -455,10 +463,10 @@ Contains
 
                 ! Update the receiver dictionary and index (sets up if necessary)
                 ! For now, make lat & lon part of site ID; could use directly in the future
-                write(siteid,'(a12,2f9.3)') code,lat,lon
+                write(siteid,'(a20,2f9.3)') code,lat,lon
                 iRx = update_rxDict(x,siteid)
 
-           case(Full_Interstation_TF)
+            case(Full_Interstation_TF)
                 read(ioDat,*,iostat=ios) Period,code,lat,lon,x(1),x(2),x(3), &
                     ref_code,ref_lat,ref_lon,ref_x(1),ref_x(2),ref_x(3),compid,Zreal,Zimag,Zerr
 
@@ -475,12 +483,12 @@ Contains
 
                 ! Update the receiver dictionary and index (sets up if necessary)
                 ! For now, make lat & lon part of site ID; could use directly in the future
-                write(siteid,'(a12,2f9.3)') code,lat,lon
-                write(ref_siteid,'(a12,2f9.3)') ref_code,ref_lat,ref_lon
+                write(siteid,'(a22,2f9.3)') code,lat,lon
+                write(ref_siteid,'(a22,2f9.3)') ref_code,ref_lat,ref_lon
                 iRx = update_rxDict(x,siteid,ref_x,ref_siteid)
 
 
-           case(Off_Diagonal_Rho_Phase,Phase_Tensor)
+            case(Off_Diagonal_Rho_Phase,Phase_Tensor)
                 read(ioDat,*,iostat=ios) Period,code,lat,lon,x(1),x(2),x(3),compid,Zreal,Zerr
 
                 if (ios /= 0) then
@@ -502,10 +510,10 @@ Contains
 
                 ! Update the receiver dictionary and index (sets up if necessary)
                 ! For now, make lat & lon part of site ID; could use directly in the future
-                write(siteid,'(a12,2f9.3)') code,lat,lon
+                write(siteid,'(a22,2f9.3)') code,lat,lon
                 iRx = update_rxDict(x,siteid)
 
-           end select
+            end select
 
             ! complete transmitter dictionary update
             do i = 1,nTx
@@ -514,6 +522,7 @@ Contains
                 end if
             end do
             new_Tx(i) = iTx
+            new_TxType(i) = iTxt
 
             ! complete receiver dictionary update
             do j = 1,nRx
@@ -538,65 +547,67 @@ Contains
 
             countData = countData + 1
 
-     end do READ_DATA_LINE
+        end do READ_DATA_LINE
 
-     write(0,*) 'Read ',countData,' data values of MT type ',trim(typeDict(iDt)%name),' from file'
+        write(0,*) 'Read ',countData,' data values of MT type ',trim(typeDict(iDt)%name),' from file'
 
-    ! Create a single-type data vector from the new values
-    call create_dataVectorMTX(nTx,newData)
-    newData%allocated = .TRUE.
-    errorBar = .TRUE.
-    SAVE_DATA: do i = 1,nTx
+        ! Create a single-type data vector from the new values
+	call create_dataVectorMTX(nTx,newData)
+	newData%allocated = .TRUE.
+	errorBar = .TRUE.
+        SAVE_DATA: do i = 1,nTx
 
-       ! Count how many receivers we really have for this transmitter
-       countRx = 0
-       do j = 1,nRx
-        if(count(exist(i,j,:))>0) then
-            countRx = countRx + 1
-        end if
-       end do
+	       ! Count how many receivers we really have for this transmitter
+	       countRx = 0
+	       do j = 1,nRx
+	        if(count(exist(i,j,:))>0) then
+	            countRx = countRx + 1
+	        end if
+	       end do
 
-       ! Create a data vector for this transmitter and data type
-       call create_dataVector(1,newData%d(i))
-       newData%d(i)%tx = new_Tx(i)
-       newData%d(i)%allocated = .TRUE.
-       call create_dataBlock(typeDict(iDt)%nComp,countRx,newData%d(i)%data(1),typeDict(iDt)%isComplex,errorBar)
-       k = 1
-       do j = 1,nRx
-           ! If no data for this receiver, skip it
-           if(count(exist(i,j,:))==0) then
-            cycle
-           end if
-           ! Otherwise, write all components to data vector
-           do icomp = 1,ncomp
-            if(typeDict(iDt)%isComplex) then
-               newData%d(i)%data(1)%value(2*icomp-1,k) = real(value(i,j,icomp))
-               newData%d(i)%data(1)%value(2*icomp  ,k) = imag(value(i,j,icomp))
-               newData%d(i)%data(1)%error(2*icomp-1,k) = error(i,j,icomp)
-               newData%d(i)%data(1)%error(2*icomp  ,k) = error(i,j,icomp)
-               newData%d(i)%data(1)%exist(2*icomp-1,k) = exist(i,j,icomp)
-               newData%d(i)%data(1)%exist(2*icomp  ,k) = exist(i,j,icomp)
-            else
-               newData%d(i)%data(1)%value(icomp,k) = real(value(i,j,icomp))
-               newData%d(i)%data(1)%error(icomp,k) = error(i,j,icomp)
-               newData%d(i)%data(1)%exist(icomp,k) = exist(i,j,icomp)
-            end if
-           end do
-           newData%d(i)%data(1)%rx(k) = new_Rx(j)
-           k = k+1
-       end do
-       newData%d(i)%data(1)%dataType = iDt
-       newData%d(i)%data(1)%tx = new_Tx(i)
-       newData%d(i)%data(1)%allocated = .TRUE.
+	       ! Create a data vector for this transmitter and data type
+	       call create_dataVector(1,newData%d(i))
+	       newData%d(i)%tx = new_Tx(i)
+	       newData%d(i)%txType = new_TxType(i)
+	       newData%d(i)%allocated = .TRUE.
+	       call create_dataBlock(typeDict(iDt)%nComp,countRx,newData%d(i)%data(1),typeDict(iDt)%isComplex,errorBar)
+	       k = 1
+	       do j = 1,nRx
+	           ! If no data for this receiver, skip it
+	           if(count(exist(i,j,:))==0) then
+	            cycle
+	           end if
+	           ! Otherwise, write all components to data vector
+	           do icomp = 1,ncomp
+	            if(typeDict(iDt)%isComplex) then
+	               newData%d(i)%data(1)%value(2*icomp-1,k) = real(value(i,j,icomp))
+	               newData%d(i)%data(1)%value(2*icomp  ,k) = imag(value(i,j,icomp))
+	               newData%d(i)%data(1)%error(2*icomp-1,k) = error(i,j,icomp)
+	               newData%d(i)%data(1)%error(2*icomp  ,k) = error(i,j,icomp)
+	               newData%d(i)%data(1)%exist(2*icomp-1,k) = exist(i,j,icomp)
+	               newData%d(i)%data(1)%exist(2*icomp  ,k) = exist(i,j,icomp)
+	            else
+	               newData%d(i)%data(1)%value(icomp,k) = real(value(i,j,icomp))
+	               newData%d(i)%data(1)%error(icomp,k) = error(i,j,icomp)
+	               newData%d(i)%data(1)%exist(icomp,k) = exist(i,j,icomp)
+	            end if
+	           end do
+	           newData%d(i)%data(1)%rx(k) = new_Rx(j)
+	           k = k+1
+	       end do
+	       newData%d(i)%data(1)%dataType = iDt
+	       newData%d(i)%data(1)%tx = new_Tx(i)
+	       newData%d(i)%data(1)%txType = new_TxType(i)
+	       newData%d(i)%data(1)%allocated = .TRUE.
 
-    end do SAVE_DATA
+        end do SAVE_DATA
 
-    ! Merge the new data into the main data vector
-    call merge_dataVectorMTX(allData,newData,allData)
+	! Merge the new data into the main data vector
+	call merge_dataVectorMTX(allData,newData,allData)
 
-    deallocate(value,error,exist,STAT=istat)
-    deallocate(new_Tx,new_Rx,STAT=istat)
-    call deall_dataVectorMTX(newData)
+	deallocate(value,error,exist,STAT=istat)
+	deallocate(new_TxType,new_Tx,new_Rx,STAT=istat)
+	call deall_dataVectorMTX(newData)
 
     end do READ_DATA_TYPE
 
@@ -610,12 +621,12 @@ Contains
     nTx = size(txDict)
     nRx = size(rxDict)
     do iTxt = 1,nTxt
-      do iDt = 1,nDt
-        allocate(fileInfo(iTxt,iDt)%tx_index(nTx),STAT=istat)
-        allocate(fileInfo(iTxt,iDt)%dt_index(nTx),STAT=istat)
-        allocate(fileInfo(iTxt,iDt)%rx_index(nTx,nRx),STAT=istat)
-        call index_dataVectorMTX(allData,iTxt,iDt,fileInfo(iTxt,iDt)%tx_index,fileInfo(iTxt,iDt)%dt_index,fileInfo(iTxt,iDt)%rx_index)
-      end do
+    	do iDt = 1,nDt
+		allocate(fileInfo(iTxt,iDt)%tx_index(nTx),STAT=istat)
+	        allocate(fileInfo(iTxt,iDt)%dt_index(nTx),STAT=istat)
+	        allocate(fileInfo(iTxt,iDt)%rx_index(nTx,nRx),STAT=istat)
+	        call index_dataVectorMTX(allData,iTxt,iDt,fileInfo(iTxt,iDt)%tx_index,fileInfo(iTxt,iDt)%dt_index,fileInfo(iTxt,iDt)%rx_index)
+	end do
     end do
 
    end subroutine read_Z_list
