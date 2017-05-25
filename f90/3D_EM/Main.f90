@@ -26,10 +26,13 @@ module Main
   !type (inverse_control), save								:: invCtrls
 
   ! forward solver control defined in EMsolve3D
-  type(EMsolve_control),save  :: solverParams
+  type(emsolve_control),save  :: solverParams
 
   ! this is used to set up the numerical grid in SensMatrix
   type(grid_t), save	        :: grid
+
+  ! air layers might be set from a file, but can also use the defaults
+  type(airLayers_t), save       :: airLayers
 
   ! impedance data structure
   type(dataVectorMTX_t), save		:: allData
@@ -73,6 +76,41 @@ Contains
         nTx_nPol=eAll_larg%nTx*eAll_larg%solns(1)%nPol   
     end subroutine read_Efiled_from_file    
 
+  !**********************************************************************
+  !   rewrite the defaults in the air layers structure
+  subroutine  initAirLayers(solverControl,airLayers)
+     type(emsolve_control), intent(in)    :: solverControl
+     type(airLayers_t), intent(inout)     :: airLayers
+
+     integer status
+
+     if (.not.solverControl%AirLayersPresent) then
+        ! do nothing - keep the defaults
+        return
+     end if
+
+     airLayers%method = solverControl%AirLayersMethod
+
+     if (airLayers%Nz .ne. solverControl%AirLayersNz) then
+        airLayers%Nz = solverControl%AirLayersNz
+        if (airLayers%allocated) then
+            deallocate(airLayers%Dz, STAT=status)
+        end if
+        allocate(airLayers%Dz(airLayers%Nz), STAT=status)
+        airLayers%allocated = .true.
+     end if
+
+     if (index(airLayers%method,'mirror')>0) then
+        airLayers%alpha = solverControl%AirLayersAlpha
+        airLayers%MinTopDz = 1.e3*solverControl%AirLayersMinTopDz
+     elseif (index(airLayers%method,'fixed height')>0) then
+        airLayers%MaxHeight = 1.e3*solverControl%AirLayersMaxHeight
+     elseif (index(airLayers%method,'read from file')>0) then
+        airLayers%Dz = solverControl%AirLayersDz
+     end if
+
+  end subroutine initAirLayers
+
   ! ***************************************************************************
   ! * InitGlobalData is the routine to call to initialize all derived data types
   ! * and other variables defined in modules basics, modeldef, datadef and
@@ -105,6 +143,13 @@ Contains
 	output_level = cUserDef%output_level
 
 	!--------------------------------------------------------------------------
+    !  Read forward solver control in EMsolve3D (or use defaults)
+    call readEMsolveControl(solverParams,cUserDef%rFile_fwdCtrl,exists,cUserDef%eps)
+
+    !  If solverParams contains air layers information, rewrite the defaults here
+    call initAirLayers(solverParams,airLayers)
+
+	!--------------------------------------------------------------------------
 	! Check whether model parametrization file exists and read it, if exists
 	inquire(FILE=cUserDef%rFile_Model,EXIST=exists)
 
@@ -113,17 +158,18 @@ Contains
        call read_modelParam(grid,sigma0,cUserDef%rFile_Model)
 
        ! Finish setting up the grid (if that is not done in the read subroutine)
-       call setup_grid(grid)
+       !call setup_grid(grid)
+
+       !  Initialize the air layers structure and update the air layers in the grid
+       call setup_airlayers(airLayers,grid)
+
+       !  Update air layers in the grid and run setup_grid
+       call update_airlayers(grid,airLayers%Nz,airLayers%Dz)
 
 	else
 	  call warning('No input model parametrization')
 	end if
 
-
-
-	!--------------------------------------------------------------------------
-    !  Read forward solver control in EMsolve3D (or use defaults)
-    call readEMsolveControl(solverParams,cUserDef%rFile_fwdCtrl,exists,cUserDef%eps)
 
 	!--------------------------------------------------------------------------
 	!  Read in data file (only a template on input--periods/sites)
@@ -170,7 +216,8 @@ Contains
 	   if (exists) then
 	      call deall_grid(grid)
 	   	  call read_modelParam(grid,dsigma,cUserDef%rFile_dModel)
-		  call setup_grid(grid) ! Added by Oat
+          call setup_airlayers(airLayers,grid)
+		  call update_airlayers(grid,airLayers%Nz,airLayers%Dz)
 	      if (output_level > 0) then
 	        write(*,*) 'Using the initial model perturbations from file ',trim(cUserDef%rFile_dModel)
 	      endif
@@ -302,7 +349,7 @@ Contains
 		call deall_sensMatrixMTX(sens)
 	end if
 
-	call deallEMsolveControl() ! 3D_MT/FWD/EMsolve3D.f90
+	call deallEMsolveControl(solverParams) ! 3D_MT/FWD/EMsolve3D.f90
 
 	call deall_CmSqrt()
 

@@ -33,7 +33,7 @@ module DataIO
       ! there is one entry per each transmitter type and data type... (iTxt,iDt)
       ! if there are multiple data blocks of the same transmitter & data types,
       ! the last value is used.
-      character(200) :: info_in_file
+      character(120) :: info_in_file
       character(20)  :: sign_info_in_file
       integer        :: sign_in_file
       character(20)  :: units_in_file
@@ -70,7 +70,7 @@ Contains
 
     integer, intent(in)         :: txType
     integer, intent(in)         :: dataType
-    character(200)              :: header
+    character(120)              :: header
 
     select case (dataType)
 

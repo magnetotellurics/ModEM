@@ -110,6 +110,8 @@
 	! By default assume 'LINEAR RHO' - Randie Mackie's linear resistivity format
     if (index(someChar,'LOGE')>0) then
        paramType = 'LOGE'
+    else if (index(someChar,'LOG10')>0) then
+	   paramType = 'LOG10'
     else
        paramType = 'LINEAR'
     end if
@@ -149,7 +151,7 @@
           ! in Randy Mackie's format, x varies the fastest
           read(fidRM,*) res
           if(returnCond) then
-            if(index(paramType,'LOGE')>0) then
+	      	if ((index(paramType,'LOGE')>0) .or. (index(paramType,'LOG10')>0)) then
               Cond%v(:,iy,iz) = - res
             else
               Cond%v(:,iy,iz) = 1./res
@@ -259,7 +261,7 @@
 	  write(fidRM, *)
 
       ! convert from conductivity to resistivity
-      if (index(paramType,'LOGE')>0) then
+      if ((index(paramType,'LOGE')>0) .or. (index(paramType,'LOG10')>0)) then
       	value = - Cond%v
       else if (index(paramType,'LINEAR')>0) then
        	value = ONE/Cond%v

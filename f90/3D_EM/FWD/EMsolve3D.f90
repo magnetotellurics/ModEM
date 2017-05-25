@@ -30,6 +30,11 @@ module EMsolve3D
     logical                   ::      read_E0_from_File=.false.
     character (len=80)        ::      E0fileName
     integer                   ::      ioE0
+    character (len=80)        ::      AirLayersMethod
+    integer                   ::      AirLayersNz
+    real(kind = 8)            ::      AirLayersMaxHeight, AirLayersAlpha, AirLayersMinTopDz
+    real(kind = 8), pointer, dimension(:)   :: AirLayersDz
+    logical                   ::      AirLayersPresent=.false.
   end type emsolve_control
 
   type :: emsolve_diag
@@ -586,46 +591,88 @@ end subroutine SdivCorr ! SdivCorr
 
 
 
-! Check if there is addtional line.
-! if yes, it is corresponde to the larger E field solution.
+    ! Check if there is addtional line.
+    ! if yes, it corresponds to the larger E field solution.
 
-      read(ioFwdCtrl,'(a48)',advance='no',iostat=istat) string
-      read(ioFwdCtrl,'(a80)',iostat=istat) solverControl%E0fileName      
-   if (istat .eq. 0 ) then
-     if (index(string,'#')>0) then
-      ! This is a comment line
-       solverControl%read_E0_from_File=.false.
-     else
-	     if (output_level > 2) then
-	       write (*,'(a12,a48,a80)') node_info,string,solverControl%E0fileName
-	     end if
-       solverControl%read_E0_from_File=.true.
-       solverControl%ioE0=ioE
-     end if
+    read(ioFwdCtrl,'(a48)',advance='no',iostat=istat) string
+    read(ioFwdCtrl,'(a80)',iostat=istat) solverControl%E0fileName
+    if (istat .eq. 0 ) then
+        inquire(FILE=solverControl%E0fileName,EXIST=exists)
+        if (index(string,'#')>0) then
+            ! This is a comment line
+            solverControl%read_E0_from_File=.false.
+        else if (.not.exists) then
+            write(*,*) node_info,'Nested E-field solution file not found and will not be used. '
+            solverControl%read_E0_from_File=.false.
+        else
+            if (output_level > 2) then
+                write (*,'(a12,a48,a80)') node_info,string,adjustl(solverControl%E0fileName)
+            end if
+            solverControl%read_E0_from_File=.true.
+            solverControl%ioE0=ioE
+        end if
 
- else
-     solverControl%read_E0_from_File=.false.
-  end if
+    else
+        solverControl%read_E0_from_File=.false.
+    end if
 
+    ! Now keep on reading for the air layers info
+    ! If the number of air layers conflicts with that from the model file, we
+    ! update the grid to use the controls
+    ! Method options are: mirror; fixed height; read from file
+    ! For backwards compatibility, defaults to what was previously hardcoded
 
+    read(ioFwdCtrl,'(a48)',advance='no',iostat=istat) string
+    read(ioFwdCtrl,'(a80)',iostat=istat) solverControl%AirLayersMethod
+    !if (output_level > 2) then
+    !    write (*,'(a12,a48,a80)') node_info,string,adjustl(solverControl%AirLayersMethod)
+    !end if
+    if (istat .eq. 0 ) then
+        solverControl%AirLayersPresent = .true.
+        if (index(solverControl%AirLayersMethod,'mirror')>0) then
+            read(ioFwdCtrl,'(a48)',advance='no',iostat=istat) string
+            read(ioFwdCtrl,*,iostat=istat) solverControl%AirLayersNz,solverControl%AirLayersAlpha,solverControl%AirLayersMinTopDz
+        else if (index(solverControl%AirLayersMethod,'fixed height')>0) then
+            read(ioFwdCtrl,'(a48)',advance='no',iostat=istat) string
+            read(ioFwdCtrl,*,iostat=istat) solverControl%AirLayersNz,solverControl%AirLayersMaxHeight
+        else if (index(solverControl%AirLayersMethod,'read from file')>0) then
+            read(ioFwdCtrl,'(a48)',advance='no',iostat=istat) string
+            read(ioFwdCtrl,'(i3)',advance='no',iostat=istat) solverControl%AirLayersNz
+            allocate(solverControl%AirLayersDz(solverControl%AirLayersNz), STAT=istat)
+            if (solverControl%AirLayersNz > 0) then
+                read(ioFwdCtrl,*,iostat=istat) solverControl%AirLayersDz
+            end if
+        else
+            solverControl%AirLayersPresent = .false.
+            call warning('Unknown air layers method option in readEMsolveControl')
+        end if
+    else
+        solverControl%AirLayersPresent = .false.
+    end if
 
-
-
-
-
-
+    if (solverControl%AirLayersNz <= 0) then
+        write(*,*) node_info,'Problem reading the air layers. Resort to defaults '
+        solverControl%AirLayersPresent = .false.
+    end if
 
     close(ioFwdCtrl)
 
     call setEMsolveControl(solverControl)
 
+
    end subroutine readEMsolveControl
+
 
   !**********************************************************************
   !   deallEMsolveControl deallocate
-  subroutine  deallEMsolveControl()
+  subroutine  deallEMsolveControl(solverControl)
+     type(emsolve_control), intent(inout),optional    :: solverControl
 
      integer istat
+
+     if (present(solverControl)) then
+        deallocate(solverControl%AirLayersDz, STAT=istat)
+     end if
 
      deallocate(EMrelErr, STAT=istat)
      deallocate(divJ, STAT=istat)

@@ -294,6 +294,20 @@ Contains
            write(0,*) 'Misfit tolerance for divergence correction    : 1.0e-5'
            write(0,*) 'Optional EM solution file name for nested BC  : nested.esoln'
            write(0,*)
+           write(0,*) 'To specify air layers, append one of these three options. Default ''mirror 10 3. 30.'' '
+           write(0,*)
+           write(0,*) 'Option 1:'
+           write(0,*) 'Air layers mirror|fixed height|read from file : mirror'
+           write(0,*) 'Number of air layers and min top dz in km     : 10 3. 30.'
+           write(0,*)
+           write(0,*) 'Option 2:'
+           write(0,*) 'Air layers mirror|fixed height|read from file : fixed height'
+           write(0,*) 'Number of air layers and max height in km     : 12 1000.'
+           write(0,*)
+           write(0,*) 'Option 3:'
+           write(0,*) 'Air layers mirror|fixed height|read from file : read from file'
+           write(0,*) 'Number of air layers and dz top to bottom km  : 10 500. 200. 100. 50. 20. 10. 5. 2. 1. 0.5'
+           write(0,*)
            stop
         else
 	       ctrl%rFile_Model = temp(1)
@@ -389,6 +403,8 @@ Contains
            write(0,*) 'Misfit tolerance for EM adjoint solver        : 1.0e-7'
            write(0,*) 'Misfit tolerance for divergence correction    : 1.0e-5'
            write(0,*) 'Optional EM solution file name for nested BC  : nested.esoln'
+           write(0,*) 'Air layers mirror|fixed height|read from file : fixed height'
+           write(0,*) 'Number of air layers and max height in km     : 12 1000'
            write(0,*)
            write(0,*) 'Optionally, may also supply'
            write(0,*)
@@ -506,6 +522,9 @@ Contains
            write(0,*) '  Tests the equality d^T Q m = m^T Q^T d for any model and data.'
            write(0,*) '  Optionally, outputs Q m and Q^T d.'
            write(0,*)
+           write(0,*) ' -A  O rFile_Model rFile_Data'
+           write(0,*) '  Tests all intermediate operators: grad, curl, div and grid elements.'
+           write(0,*)
            write(0,*) 'Finally, generates random 5% perturbations, if implemented:'
            write(0,*) ' -A  m rFile_Model wFile_Model [delta]'
            write(0,*) ' -A  d rFile_Data wFile_Data [delta]'
@@ -569,6 +588,9 @@ Contains
                 if (narg > 5) then
                     ctrl%wFile_Data = temp(6)
                 endif
+           case ('O')
+                ctrl%rFile_Model = temp(2)
+                ctrl%rFile_Data = temp(3)
            ! random perturbations ...
            case ('m')
                 ctrl%rFile_Model = temp(2)
