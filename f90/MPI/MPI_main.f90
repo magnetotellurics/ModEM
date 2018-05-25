@@ -898,7 +898,7 @@ if (trim(worker_job_task%what_to_do) .eq. 'FORWARD') then
 		       call set_e_soln(pol_index,e0)
 		       
 
-               call fwdSolve(per_index,e0,b0)
+		       call fwdSetup(per_index,e0,b0)
 		       call fwdSolve(per_index,e0,b0)
                call reset_e_soln(e0)
 
