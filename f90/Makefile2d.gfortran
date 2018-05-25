@@ -1,0 +1,168 @@
+# Makefile suited for building the Mod2DMT program
+# Generated using: ./fmkmf.pl [OPTIONS] Mod2DMT.f90 > Makefile
+# with command line options
+# -p .:INV:LAPACK:SENS:UTILS:2D_MT:2D_MT/DICT:2D_MT/modelParam:2D_MT/FWD:2D_MT/ioMod
+# -f90 ifort (compiler)
+# -opt -O3 -parallel (compiler optimisation)
+# -l -lblas -llapack -parallel (linking options)
+# -o ./objs/2D_MT/Release (output directory for object files)
+
+#  Uncomment these lines to make program for Solaris OS (legacy)
+# F90 = f90
+# FFLAGS = -dalign -g -C -w  -L/usr/local/lib
+# LIBS = -xlic_lib=sunperf
+#  Uncomment these lines to make program with g95
+# include Makefile.local
+# OBJDIR = ./objs/3D_MT/G95Debug
+# F90 = g95
+# FFLAGS = -O2
+# FFLAGS = -g -ftrace=frame -fbounds-check
+# MPIFLAGS = -cpp # for serial code
+# MODULE = -fmod=$(OBJDIR)
+# LIBS = -lblas -llapack
+#  Uncomment these lines to make program with Intel compiler
+# include Makefile.local
+# OBJDIR = ./objs/3D_MT/IFortDebug
+# F90 = ifort
+# FFLAGS = -O3 -parallel -openmp #-heap-arrays
+# FFLAGS = -debug all -check bounds -traceback -heap-arrays
+# MPIFLAGS = -cpp # for serial code
+# MODULE = -module $(OBJDIR)
+# LIBS = -lblas -llapack
+#  Uncomment these lines to make program with PGI compiler
+# include Makefile.local
+# OBJDIR = ./objs/3D_MT/PGIDebug
+# F90 = pgf95  # mpif90
+# FFLAGS = -O3
+# FFLAGS = -g -Mprof=lines -Mbounds
+# MPIFLAGS = -Mpreprocess # for serial code
+# MPIFLAGS = -Bstatic  -Mipa=fast  -Mextend  -Kieee -Mpreprocess -DMPI
+# MODULE = -module $(OBJDIR)
+# LIBS = -llapack -lblas
+# LIBS = -L/usr/lib64 -llapack -lblas -lpgftnrtl -Mprof=lines
+
+# ------------------Macro-Defs---------------------
+include Makefile.local
+OBJDIR = ./objs/2D_MT/GFortranDebug
+F90 = gfortran
+FFLAGS = -g -fbacktrace -fbounds-check -ffree-line-length-none
+MPIFLAGS = -cpp
+MODULE = -fintrinsic-modules-path $(OBJDIR)
+LIBS_PATH = 
+LIBS = -lblas -llapack
+
+# -------------------End-macro-Defs---------------------------
+OBJ = $(OBJDIR)/math_constants.o $(OBJDIR)/utilities.o $(OBJDIR)/file_units.o $(OBJDIR)/DataSpace.o $(OBJDIR)/GridDef.o $(OBJDIR)/EMfield.o $(OBJDIR)/ModelSpace.o $(OBJDIR)/SensMatrix.o $(OBJDIR)/EMfieldInterp.o $(OBJDIR)/transmitters.o $(OBJDIR)/SolnSpace.o $(OBJDIR)/receivers.o $(OBJDIR)/dataTypes.o $(OBJDIR)/DataFunc.o $(OBJDIR)/DataSens.o $(OBJDIR)/SolverSens.o $(OBJDIR)/WSfwd2D.o $(OBJDIR)/FwdTEmod.o $(OBJDIR)/FwdTMmod.o $(OBJDIR)/ForwardSolver.o $(OBJDIR)/SensComp.o $(OBJDIR)/SymmetryTest.o $(OBJDIR)/UserCtrl.o $(OBJDIR)/ioAscii.o $(OBJDIR)/DataIO.o $(OBJDIR)/Main.o $(OBJDIR)/NLCG.o $(OBJDIR)/DCG.o $(OBJDIR)/Mod2DMT.o 
+
+
+all: Mod2DMT_gfortran
+
+# Here is the link step 
+Mod2DMT_gfortran: $(OBJDIR) $(OBJ) 
+	 $(F90) -o $(OUTDIR)/Mod2DMT_gfortran $(OBJ) $(LIBS) $(LIBS_PATH)
+
+# Here are the compile steps 
+
+$(OBJDIR): 
+	mkdir -p $(OBJDIR)
+
+$(OBJDIR)/math_constants.o:UTILS/math_constants.f90  
+	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) UTILS/math_constants.f90 -o $(OBJDIR)/math_constants.o
+
+$(OBJDIR)/utilities.o:UTILS/utilities.f90 $(OBJDIR)/math_constants.o 
+	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) UTILS/utilities.f90 -o $(OBJDIR)/utilities.o
+
+$(OBJDIR)/file_units.o:UTILS/file_units.f90  
+	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) UTILS/file_units.f90 -o $(OBJDIR)/file_units.o
+
+$(OBJDIR)/DataSpace.o:SENS/DataSpace.f90 $(OBJDIR)/utilities.o $(OBJDIR)/math_constants.o 
+	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) SENS/DataSpace.f90 -o $(OBJDIR)/DataSpace.o
+
+$(OBJDIR)/GridDef.o:2D_MT/GridDef.f90 $(OBJDIR)/math_constants.o 
+	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) 2D_MT/GridDef.f90 -o $(OBJDIR)/GridDef.o
+
+$(OBJDIR)/EMfield.o:2D_MT/EMfield.f90 $(OBJDIR)/math_constants.o $(OBJDIR)/utilities.o $(OBJDIR)/GridDef.o 
+	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) 2D_MT/EMfield.f90 -o $(OBJDIR)/EMfield.o
+
+$(OBJDIR)/ModelSpace.o:2D_MT/modelParam/ModelSpace.f90 $(OBJDIR)/file_units.o $(OBJDIR)/math_constants.o $(OBJDIR)/utilities.o $(OBJDIR)/EMfield.o 2D_MT/modelParam/modelCov/Diffusion.hd 2D_MT/modelParam/ModelMap.inc 2D_MT/modelParam/modelCov/Diffusion.inc 2D_MT/modelParam/modelParamIO/Binary.inc 2D_MT/modelParam/modelParamIO/Mackie.inc
+	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) 2D_MT/modelParam/ModelSpace.f90 -o $(OBJDIR)/ModelSpace.o
+
+$(OBJDIR)/SensMatrix.o:SENS/SensMatrix.f90 $(OBJDIR)/math_constants.o $(OBJDIR)/file_units.o $(OBJDIR)/utilities.o $(OBJDIR)/DataSpace.o $(OBJDIR)/ModelSpace.o 
+	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) SENS/SensMatrix.f90 -o $(OBJDIR)/SensMatrix.o
+
+$(OBJDIR)/EMfieldInterp.o:2D_MT/EMfieldInterp.f90 $(OBJDIR)/math_constants.o $(OBJDIR)/utilities.o $(OBJDIR)/EMfield.o $(OBJDIR)/ModelSpace.o 
+	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) 2D_MT/EMfieldInterp.f90 -o $(OBJDIR)/EMfieldInterp.o
+
+$(OBJDIR)/transmitters.o:2D_MT/DICT/transmitters.f90 $(OBJDIR)/math_constants.o 
+	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) 2D_MT/DICT/transmitters.f90 -o $(OBJDIR)/transmitters.o
+
+$(OBJDIR)/SolnSpace.o:2D_MT/SolnSpace.f90 $(OBJDIR)/EMfieldInterp.o $(OBJDIR)/transmitters.o 
+	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) 2D_MT/SolnSpace.f90 -o $(OBJDIR)/SolnSpace.o
+
+$(OBJDIR)/receivers.o:2D_MT/DICT/receivers.f90 $(OBJDIR)/math_constants.o 
+	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) 2D_MT/DICT/receivers.f90 -o $(OBJDIR)/receivers.o
+
+$(OBJDIR)/dataTypes.o:2D_MT/DICT/dataTypes.f90 $(OBJDIR)/math_constants.o $(OBJDIR)/utilities.o 
+	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) 2D_MT/DICT/dataTypes.f90 -o $(OBJDIR)/dataTypes.o
+
+$(OBJDIR)/DataFunc.o:2D_MT/DataFunc.f90 $(OBJDIR)/EMfieldInterp.o $(OBJDIR)/ModelSpace.o $(OBJDIR)/SolnSpace.o $(OBJDIR)/transmitters.o $(OBJDIR)/receivers.o $(OBJDIR)/dataTypes.o 
+	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) 2D_MT/DataFunc.f90 -o $(OBJDIR)/DataFunc.o
+
+$(OBJDIR)/DataSens.o:SENS/DataSens.f90 $(OBJDIR)/math_constants.o $(OBJDIR)/utilities.o $(OBJDIR)/DataSpace.o $(OBJDIR)/DataFunc.o 
+	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) SENS/DataSens.f90 -o $(OBJDIR)/DataSens.o
+
+$(OBJDIR)/SolverSens.o:2D_MT/SolverSens.f90 $(OBJDIR)/math_constants.o $(OBJDIR)/utilities.o $(OBJDIR)/SolnSpace.o $(OBJDIR)/transmitters.o $(OBJDIR)/dataTypes.o 
+	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) 2D_MT/SolverSens.f90 -o $(OBJDIR)/SolverSens.o
+
+$(OBJDIR)/WSfwd2D.o:2D_MT/FWD/WSfwd2D.f90 $(OBJDIR)/math_constants.o 
+	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) 2D_MT/FWD/WSfwd2D.f90 -o $(OBJDIR)/WSfwd2D.o
+
+$(OBJDIR)/FwdTEmod.o:2D_MT/FWD/FwdTEmod.f90 $(OBJDIR)/math_constants.o $(OBJDIR)/WSfwd2D.o $(OBJDIR)/SolnSpace.o $(OBJDIR)/ModelSpace.o 
+	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) 2D_MT/FWD/FwdTEmod.f90 -o $(OBJDIR)/FwdTEmod.o
+
+$(OBJDIR)/FwdTMmod.o:2D_MT/FWD/FwdTMmod.f90 $(OBJDIR)/math_constants.o $(OBJDIR)/WSfwd2D.o $(OBJDIR)/SolnSpace.o $(OBJDIR)/ModelSpace.o 
+	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) 2D_MT/FWD/FwdTMmod.f90 -o $(OBJDIR)/FwdTMmod.o
+
+$(OBJDIR)/ForwardSolver.o:2D_MT/ForwardSolver.f90 $(OBJDIR)/math_constants.o $(OBJDIR)/utilities.o $(OBJDIR)/DataFunc.o $(OBJDIR)/DataSpace.o $(OBJDIR)/FwdTEmod.o $(OBJDIR)/FwdTMmod.o $(OBJDIR)/SolnSpace.o $(OBJDIR)/transmitters.o 
+	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) 2D_MT/ForwardSolver.f90 -o $(OBJDIR)/ForwardSolver.o
+
+$(OBJDIR)/SensComp.o:SENS/SensComp.f90 $(OBJDIR)/math_constants.o $(OBJDIR)/utilities.o $(OBJDIR)/SensMatrix.o $(OBJDIR)/DataSens.o $(OBJDIR)/SolverSens.o $(OBJDIR)/ForwardSolver.o 
+	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) SENS/SensComp.f90 -o $(OBJDIR)/SensComp.o
+
+$(OBJDIR)/SymmetryTest.o:SENS/SymmetryTest.f90 $(OBJDIR)/SensComp.o 
+	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) SENS/SymmetryTest.f90 -o $(OBJDIR)/SymmetryTest.o
+
+$(OBJDIR)/UserCtrl.o:./UserCtrl.f90 $(OBJDIR)/utilities.o 
+	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) ./UserCtrl.f90 -o $(OBJDIR)/UserCtrl.o
+
+$(OBJDIR)/ioAscii.o:2D_MT/ioMod/ioAscii.f90 $(OBJDIR)/math_constants.o $(OBJDIR)/EMfield.o $(OBJDIR)/DataSpace.o $(OBJDIR)/ForwardSolver.o $(OBJDIR)/utilities.o $(OBJDIR)/transmitters.o $(OBJDIR)/receivers.o $(OBJDIR)/dataTypes.o 
+	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) 2D_MT/ioMod/ioAscii.f90 -o $(OBJDIR)/ioAscii.o
+
+$(OBJDIR)/DataIO.o:2D_MT/DataIO.f90 $(OBJDIR)/math_constants.o $(OBJDIR)/file_units.o $(OBJDIR)/DataSpace.o $(OBJDIR)/transmitters.o $(OBJDIR)/receivers.o $(OBJDIR)/dataTypes.o 
+	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) 2D_MT/DataIO.f90 -o $(OBJDIR)/DataIO.o
+
+$(OBJDIR)/Main.o:2D_MT/Main.f90 $(OBJDIR)/ModelSpace.o $(OBJDIR)/DataSpace.o $(OBJDIR)/DataFunc.o $(OBJDIR)/ForwardSolver.o $(OBJDIR)/SensMatrix.o $(OBJDIR)/UserCtrl.o $(OBJDIR)/ioAscii.o $(OBJDIR)/DataIO.o 
+	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) 2D_MT/Main.f90 -o $(OBJDIR)/Main.o
+
+$(OBJDIR)/NLCG.o:INV/NLCG.f90 $(OBJDIR)/SensComp.o $(OBJDIR)/DataIO.o 
+	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) INV/NLCG.f90 -o $(OBJDIR)/NLCG.o
+
+$(OBJDIR)/DCG.o:INV/DCG.f90 $(OBJDIR)/math_constants.o $(OBJDIR)/utilities.o $(OBJDIR)/SensComp.o $(OBJDIR)/Main.o 
+	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) INV/DCG.f90 -o $(OBJDIR)/DCG.o
+
+$(OBJDIR)/Mod2DMT.o:Mod2DMT.f90 $(OBJDIR)/SensComp.o $(OBJDIR)/SymmetryTest.o $(OBJDIR)/Main.o $(OBJDIR)/NLCG.o $(OBJDIR)/DCG.o 
+	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) Mod2DMT.f90 -o $(OBJDIR)/Mod2DMT.o
+
+# Type " make clean " to get rid of all object and module files 
+clean: 
+	cd $(OBJDIR); \
+	rm -f *~ *.o *.obj *.mod *.d *.s00 *.dbg *.stackdump \
+	`find . -mindepth 1 -name "*~"` 
+
+cleanall: clean 
+	rm -f $(OUTDIR)/Mod2DMT 
+
+src: clean 
+	tar cvfz $(ARCHIVE).tgz * 
+
+  

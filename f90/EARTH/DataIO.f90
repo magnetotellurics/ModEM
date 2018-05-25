@@ -273,7 +273,7 @@ Contains
       if (new) then
         ifreq = getFreq(freqList,freq)
         if (ifreq > 0) then
-           write(6,'(a12,a32,i6,a2,es12.6,a5)') node_info,'Reading data for the period ',ifreq,': ',days,' days'!freqList%info(i)%value
+           write(6,'(a12,a32,i6,a2,es13.6,a5)') node_info,'Reading data for the period ',ifreq,': ',days,' days'!freqList%info(i)%value
            countFreq = countFreq + 1
         end if
       end if

@@ -60,6 +60,11 @@ module DataIO
   ! and defines the number of conceptually different types of sources
   type (data_file_block), pointer, save, private, dimension(:,:) :: fileInfo
 
+  ! we are converting from an "old format" to a "new format"
+  ! the only difference being that in the new format, there is
+  ! an additional line in the head that indicates transmitter type.
+  ! on output, use the same format as on input. AK 25 May 2018
+  logical, save, private  :: old_data_file_format = .true.
 
 Contains
 
@@ -169,7 +174,8 @@ Contains
     real(8), allocatable            :: error(:) ! (ncomp)
     logical, allocatable            :: exist(:) ! (ncomp)
     character(2)                    :: temp = '> '
-    character(40)                   :: siteid,ref_siteid,compid
+    character(50)                   :: siteid,ref_siteid,compid
+    character(20)                   :: sitename
     integer                         :: iTxt,iTx,iRx,iDt,icomp,i,j,k,istat,ios,nBlocks
     real(8)                         :: x(3),ref_x(3), Period,SI_factor,large
     real(8)                         :: lat,lon,ref_lat,ref_lon
@@ -232,13 +238,16 @@ Contains
       write(ioDat,*,iostat=ios) adjustl(trim(fileInfo(iTxt,iDt)%info_in_file))
       write(ioDat,'(a2)',advance='no') '# '
       write(ioDat,*,iostat=ios) adjustl(trim(DataBlockHeader(iTxt,iDt)))
-		! AK: the if statement below is commented out for JOINT version:
-		! we want to ALWAYS write out the transmitter type;
-		! activate the if statement for MT version to enable backwards compatibility.
-      !if (.not. (tx_type_name(iTxt) .eq. 'MT')) then
+
+      ! the new format is critical for JOINT modeling and inversion; otherwise, can stick
+      ! to the old format for backwards compatibility. Will always write in the same format
+      ! as the input data file
+      if (.not. old_data_file_format) then
             write(ioDat,'(a2)',advance='no') '+ '
             write(ioDat,*,iostat=ios) trim(tx_type_name(iTxt))
-      !end if
+      end if
+
+      ! write the remainder of data type header
       call compact(typeDict(iDt)%name)
       write(ioDat,'(a2)',advance='no') temp
       write(ioDat,*,iostat=ios) trim(typeDict(iDt)%name)
@@ -264,7 +273,7 @@ Contains
       isComplex = typeDict(iDt)%isComplex
       countData = 0
 
-      ! write data
+      ! write data in order that is consistent with all previous versions of ModEM
       do iRx = 1,size(rxDict)
         do iTx = 1,size(txDict)
 
@@ -282,20 +291,20 @@ Contains
             end if
             exist = allData%d(j)%data(i)%exist(:,k)
 
-                if (iTxt == CSEM) then
-				    Dipole = txDict(iTx)%Dipole
-				    Moment = txDict(iTx)%moment
-				    Azi = txDict(iTx)%AzimuthTx
-				    Dip = txDict(iTx)%dipTx
-				    Tx = txDict(iTx)%xyzTx
-				    !Txid = txDict(iTx)%id
-				end if
+            if (iTxt == CSEM) then
+                Dipole = txDict(iTx)%Dipole
+                Moment = txDict(iTx)%moment
+                Azi = txDict(iTx)%AzimuthTx
+                Dip = txDict(iTx)%dipTx
+                Tx = txDict(iTx)%xyzTx
+                !Txid = txDict(iTx)%id
+            end if
 
-				if (iTxt == TIDE) then
-				    Omega = txDict(iTx)%omega
-				    Amplitude = txDict(iTx)%amplitude
-				    Txid = txDict(iTx)%id
-				end if
+            if (iTxt == TIDE) then
+                Omega = txDict(iTx)%omega
+                Amplitude = txDict(iTx)%amplitude
+                Txid = txDict(iTx)%id
+            end if
 
             Period = txDict(iTx)%period
             siteid = rxDict(iRx)%id
@@ -310,9 +319,9 @@ Contains
                             cycle
                         end if
                         compid = typeDict(iDt)%id(icomp)
-                        write(ioDat,'(es12.6)',    iostat=ios,advance='no') Period
+                        write(ioDat,'(es13.6)',    iostat=ios,advance='no') Period
                         write(ioDat, '(a1)', iostat=ios,advance='no') ' '
-                        write(ioDat,'(a40,3f15.3)',iostat=ios,advance='no') trim(siteid),x(:)
+                        write(ioDat,'(a50,3f15.3)',iostat=ios,advance='no') trim(siteid),x(:)
                         if (conjugate) then
                             write(ioDat,'(a8,3es15.6)',iostat=ios) trim(compid),value(2*icomp-1),-value(2*icomp),error(2*icomp)
                         else
@@ -330,7 +339,7 @@ Contains
                         compid = typeDict(iDt)%id(icomp)
                         ref_siteid = rxDict(iRx)%id_ref
                         ref_x = rxDict(iRx)%r
-                        write(ioDat,'(es12.6)',    iostat=ios,advance='no') Period
+                        write(ioDat,'(es13.6)',    iostat=ios,advance='no') Period
                         write(ioDat, '(a1)', iostat=ios,advance='no') ' '
                         write(ioDat,'(a40,3f15.3)',iostat=ios,advance='no') trim(siteid),x(:)
                         write(ioDat,'(a40,3f15.3)',iostat=ios,advance='no') trim(ref_siteid),ref_x(:)
@@ -360,7 +369,7 @@ Contains
                                 error(icomp) = 10**error(icomp)
                             endif
                         end if
-                        write(ioDat,'(es12.6)',    iostat=ios,advance='no') Period
+                        write(ioDat,'(es13.6)',    iostat=ios,advance='no') Period
                         write(ioDat, '(a1)', iostat=ios,advance='no') ' '
                         write(ioDat,'(a40,3f15.3)',iostat=ios,advance='no') trim(siteid),x(:)
                         write(ioDat,'(a8,3es15.6)',iostat=ios) trim(compid),value(icomp),error(icomp)
@@ -385,12 +394,12 @@ Contains
 							    call compact(Txid)
                                 write(ioDat,'(a15)',  iostat=ios,advance='no') trim(Txid)
                                 write(ioDat, '(a1)', iostat=ios,advance='no') ' '
-                                write(ioDat,'(es12.6)',  iostat=ios,advance='no') Period
+                                write(ioDat,'(es13.6)',  iostat=ios,advance='no') Period
                                 write(ioDat, '(a1)', iostat=ios,advance='no') ' '
-                                write(ioDat,'(es12.6)',  iostat=ios,advance='no') Amplitude
+                                write(ioDat,'(es13.6)',  iostat=ios,advance='no') Amplitude
                                 write(ioDat, '(a1)', iostat=ios,advance='no') ' '
 							else
-							    write(ioDat,'(es12.6)',  iostat=ios,advance='no') Period
+							    write(ioDat,'(es13.6)',  iostat=ios,advance='no') Period
 							end if
                             write(ioDat,'(a40,3f15.3)',iostat=ios,advance='no') trim(siteid),x(:)
 							write(ioDat, '(a1)', iostat=ios,advance='no') ' '
@@ -462,7 +471,7 @@ end subroutine write_Z_list
     integer, allocatable            :: new_Rx(:) ! contains rxDict indices (nRx)
     character(2)                    :: temp
     character(200)                  :: txTypeName,typeName,typeInfo,typeHeader
-    character(40)                   :: siteid,ref_siteid,compid
+    character(50)                   :: siteid,ref_siteid,compid
     character(40)                   :: Txid
     integer                         :: nTxt,iTxt,iDt,i,j,k,istat,ios
     character(40)                   :: code,ref_code
@@ -501,6 +510,7 @@ end subroutine write_Z_list
         if (temp(1:1) == '+') then
             txTypeName = typeName
             read(ioDat,'(a2,a100)',iostat=ios) temp,typeName
+            old_data_file_format = .false.
         else
             txTypeName = 'MT'
         end if
@@ -537,7 +547,7 @@ end subroutine write_Z_list
         read(ioDat,*,iostat=ios) temp,fileInfo(iTxt,iDt)%geographic_orientation
         read(ioDat,*,iostat=ios) temp,fileInfo(iTxt,iDt)%origin_in_file(1),fileInfo(iTxt,iDt)%origin_in_file(2)
         read(ioDat,*,iostat=ios) temp,nTx,nRx
-        write(0,*) 'Reading nTx=',nTx,' nRx=',nRx,' ',trim(tx_type_name(iTxt)),': ',trim(typeDict(iDt)%name),' data block...'
+        !write(0,'(a6,i5,a18,i8,a24)') 'Found ',nTx,' transmitters and ',nRx,' receivers in data block'
 
 
         if (output_level > 3) then

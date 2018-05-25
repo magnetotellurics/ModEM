@@ -18,7 +18,6 @@ module Main
      integer (kind=4), save :: fidRead = 1
      integer (kind=4), save :: fidWrite = 2
      integer (kind=4), save :: fidError = 99
-     logical, public,  save :: Read_Efield_from_file
 
   ! ***************************************************************************
   ! * fwdCtrls: User-specified information about the forward solver relaxations
@@ -43,6 +42,11 @@ module Main
   type(modelParam_t), save		:: dsigma
   !  storage for the inverse solution
   type(modelParam_t), save		:: sigma1
+  !  currently only used for TEST_GRAD feature (otherwise, use allData)
+  type(dataVectorMTX_t), save       :: predData
+  !  also for TEST_GRAD feature...
+  type(modelParam_t), save      :: sigmaGrad
+  real(kind=prec), save         :: rms,mNorm,f1,f2,alpha
   !  storage for multi-Tx outputed from JT computation
   type(modelParam_t),pointer, dimension(:), save :: JT_multi_Tx_vec
 
@@ -52,29 +56,39 @@ module Main
   !  storage for EM solutions
   type(solnVectorMTX_t), save            :: eAll
 
-  !  storage for EM rhs (only for S test)
-  type(rhsVectorMTX_t), save            :: RHS
+  !  storage for EM rhs (currently only used for symmetry tests)
+  !type(rhsVectorMTX_t), save            :: bAll
 
-  logical                   :: write_model, write_data, write_EMsoln
+  logical                   :: write_model, write_data, write_EMsoln, write_EMrhs
 
 
 
 Contains
   ! ***************************************************************************
-   subroutine read_Efiled_from_file
+  ! reads the "large grid" file for nested modeling; Naser Meqbel's variables
+  ! Larg_Grid, eAll_larg and nTx_nPol are stored in the ForwardSolver module.
+  ! This inherently assumes an equal number of polarizations for all transmitters
+   subroutine read_Efield_from_file(solverControl)
+    type(emsolve_control), intent(in)           :: solverControl
+    ! local
     character (len=80)			                :: inFile
     character (len=20)                          :: fileVersion
-    Integer                                     :: iTx,iMod,filePer
-    integer			                            :: fileMode,ioNum
-    type(solnVector_t)                          :: e_temp
-    real (kind=prec)                        	:: Omega
-    integer										:: i,ios=0,istat=0
+    logical                                     :: exists
+
+    nestedEM_initialized = .false.
     
-        write(6,*) 'The Master reads E field from: ',trim(solverParams%E0fileName)
-        inFile = trim(solverParams%E0fileName)
+    if (solverControl%read_E0_from_File) then
+      inquire(FILE=solverControl%E0fileName,EXIST=exists)
+      if (exists) then
+        write(6,*) 'The Master reads E field from: ',trim(solverControl%E0fileName)
+        inFile = trim(solverControl%E0fileName)
         call read_solnVectorMTX(Larg_Grid,eAll_larg,inFile)
-        nTx_nPol=eAll_larg%nTx*eAll_larg%solns(1)%nPol   
-    end subroutine read_Efiled_from_file    
+        nTx_nPol=eAll_larg%nTx*eAll_larg%solns(1)%nPol
+        nestedEM_initialized = .true.
+      end if
+     end if
+
+    end subroutine read_Efield_from_file
 
   !**********************************************************************
   !   rewrite the defaults in the air layers structure
@@ -87,18 +101,14 @@ Contains
      if (.not.solverControl%AirLayersPresent) then
         ! do nothing - keep the defaults
         return
+     else
+        deallocate(airLayers%Dz, STAT=status)
      end if
 
      airLayers%method = solverControl%AirLayersMethod
-
-     if (airLayers%Nz .ne. solverControl%AirLayersNz) then
-        airLayers%Nz = solverControl%AirLayersNz
-        if (airLayers%allocated) then
-            deallocate(airLayers%Dz, STAT=status)
-        end if
-        allocate(airLayers%Dz(airLayers%Nz), STAT=status)
-        airLayers%allocated = .true.
-     end if
+     airLayers%Nz = solverControl%AirLayersNz
+     allocate(airLayers%Dz(airLayers%Nz), STAT=status)
+     airLayers%allocated = .true.
 
      if (index(airLayers%method,'mirror')>0) then
         airLayers%alpha = solverControl%AirLayersAlpha
@@ -106,7 +116,7 @@ Contains
      elseif (index(airLayers%method,'fixed height')>0) then
         airLayers%MaxHeight = 1.e3*solverControl%AirLayersMaxHeight
      elseif (index(airLayers%method,'read from file')>0) then
-        airLayers%Dz = solverControl%AirLayersDz
+        airLayers%Dz = 1.e3*solverControl%AirLayersDz
      end if
 
   end subroutine initAirLayers
@@ -149,6 +159,19 @@ Contains
     !  If solverParams contains air layers information, rewrite the defaults here
     call initAirLayers(solverParams,airLayers)
 
+    !--------------------------------------------------------------------------
+    ! Determine whether or not there is an input BC file to read
+    inquire(FILE=cUserDef%rFile_EMrhs,EXIST=exists)
+    if (exists) then
+       BC_FROM_RHS_FILE = .true.
+    end if
+    if (solverParams%read_E0_from_File) then
+      inquire(FILE=solverParams%E0fileName,EXIST=exists)
+      if (exists) then
+        NESTED_BC = .true.
+      end if
+    end if
+
 	!--------------------------------------------------------------------------
 	! Check whether model parametrization file exists and read it, if exists
 	inquire(FILE=cUserDef%rFile_Model,EXIST=exists)
@@ -181,18 +204,8 @@ Contains
     else
        call warning('No input data file - unable to set up dictionaries')
     end if
-
-
-    ! Check if a larg grid file with E field is defined:
-    ! NOTE: right now both grids share the same transmitters.
-    ! This why, reading and setting the large grid and its E solution comes after setting the trasnmitters Dictionary.
-
-     if (solverParams%read_E0_from_File) then
-         Read_Efield_from_file = .true.
-     end if    
     
-    
-	!--------------------------------------------------------------------------
+    !--------------------------------------------------------------------------
 	!  Initialize additional data as necessary
 	select case (cUserDef%job)
 
@@ -238,8 +251,8 @@ Contains
        end select
 
      case (APPLY_COV)
-	   inquire(FILE=cUserDef%rFile_Cov,EXIST=exists)
-	   if (exists) then
+       inquire(FILE=cUserDef%rFile_Cov,EXIST=exists)
+       if (exists) then
           call create_CmSqrt(sigma0,cUserDef%rFile_Cov)
        else
           call create_CmSqrt(sigma0)
@@ -255,6 +268,15 @@ Contains
        sigma1 = sigma0
        call zero(sigma1)
 
+     case (TEST_GRAD)
+         inquire(FILE=cUserDef%rFile_dModel,EXIST=exists)
+         if (exists) then
+             call deall_grid(grid)
+             call read_modelParam(grid,dsigma,cUserDef%rFile_dModel)
+         else
+             call warning('The input model perturbation file does not exist')
+         end if
+
      case (TEST_ADJ)
        select case (cUserDef%option)
            case('J','Q','P')
@@ -268,24 +290,23 @@ Contains
            case default
        end select
        select case (cUserDef%option)
-           case('L','P')
+           case('L','P','e')
                inquire(FILE=cUserDef%rFile_EMsoln,EXIST=exists)
                if (exists) then
                   call read_solnVectorMTX(grid,eAll,cUserDef%rFile_EMsoln)
                else
                   call warning('The input EM solution file does not exist')
                end if
+           case('S','b')
+               inquire(FILE=cUserDef%rFile_EMrhs,EXIST=exists)
+               if (exists) then
+                  call read_rhsVectorMTX(grid,bAll,cUserDef%rFile_EMrhs)
+               else
+                  call warning('The input EM RHS file does not exist')
+               end if
            case default
        end select
-       select case (cUserDef%option)
-           case('S')
-            call create_rhsVectorMTX(allData%ntx,RHS)
-            do iTx = 1,allData%ntx
-                RHS%combs(iTx)%nonzero_source = .true.
-                call create_rhsVector(grid,iTx,RHS%combs(iTx))
-            end do
-            call random_rhsVectorMTX(RHS,cUserDef%eps)
-       end select
+
     end select
 
 	!--------------------------------------------------------------------------
@@ -301,6 +322,10 @@ Contains
     write_EMsoln = .false.
     if (len_trim(cUserDef%wFile_EMsoln)>1) then
        write_EMsoln = .true.
+    end if
+    write_EMrhs = .false.
+    if (len_trim(cUserDef%wFile_EMrhs)>1) then
+       write_EMrhs = .true.
     end if
 
 	return

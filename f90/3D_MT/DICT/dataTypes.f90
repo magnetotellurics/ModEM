@@ -40,6 +40,8 @@ module dataTypes
 
      ! for 3D MT data types will initially be used only to distinguish
      ! between local transfer function types (later maybe add interstation TFs)
+     ! this is excessive in the current implementation since iDt always maps to
+     ! an integer index in the dataType dictionary... but I'll keep it for now [AK]
      integer		   :: tfType
 
      ! the units of the data type. If a value has different units, it's a new data type.
@@ -50,7 +52,7 @@ module dataTypes
 
      ! the (real or complex) data type components in a fixed order as given;
      ! the file can have a different component order on input.
-     character(15), pointer, dimension(:) :: id
+     character(20), pointer, dimension(:) :: id
 
   end type dataType
 
@@ -271,7 +273,7 @@ Contains
     icomp = 0
 
     do i = 1,ncomp
-        if (index(typeDict(dataType)%id(i),trim(compid))>0) then
+        if (index(trim(typeDict(dataType)%id(i)),trim(compid))>0) then
             icomp = i
             exit
         end if

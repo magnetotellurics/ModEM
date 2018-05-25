@@ -13,6 +13,8 @@ module UserCtrl
   character*1, parameter	:: MULT_BY_J_T_multi_Tx = 'x'
   character*1, parameter	:: INVERSE = 'I'
   character*1, parameter	:: APPLY_COV = 'C'
+  character*1, parameter    :: EXTRACT_BC = 'b'
+  character*1, parameter  :: TEST_GRAD = 'g'
   character*1, parameter  :: TEST_ADJ = 'A'
   character*1, parameter  :: TEST_SENS = 'S'
 
@@ -37,32 +39,30 @@ module UserCtrl
 	! Input files
 	character(80)       :: rFile_Grid, rFile_Model, rFile_Data
 	character(80)       :: rFile_dModel
-  character(80)       :: rFile_EMsoln, rFile_EMrhs, rFile_Prior
+    character(80)       :: rFile_EMsoln, rFile_EMrhs, rFile_Prior
 
 	! Output files
 	character(80)       :: wFile_Grid, wFile_Model, wFile_Data
 	character(80)       :: wFile_dModel
 	character(80)       :: wFile_EMsoln, wFile_EMrhs, wFile_Sens
+
 	! Specify covariance configuration
 	character(80)       :: rFile_Cov
 
 	! Choose the inverse search algorithm
 	character(80)       :: search
 
-  ! Choose the sort of test / procedure variant you wish to perform
-  character(80)       :: option
-
-
-
+    ! Choose the sort of test / procedure variant you wish to perform
+    character(80)       :: option
 
 	! Specify damping parameter for the inversion
 	real(8)             :: lambda
 
 	! Misfit tolerance for the forward solver
 	real(8)             :: eps
-  ! Specify the magnitude for random perturbations
-  real(8)             :: delta
 
+    ! Specify the magnitude for random perturbations
+    real(8)             :: delta
 
 	! Indicate how much output you want
 	integer             :: output_level
@@ -119,7 +119,6 @@ Contains
     write(ctrl%wFile_MPI,'(a13,a8,a1,a10,a5)') 'Nodes_Status_',date,'T',time,'.info'
 
   end subroutine initUserCtrl
-
 
   subroutine parseArgs(program,ctrl)
 
@@ -229,6 +228,14 @@ Contains
         write(*,*) '  Applies the model covariance to produce a smooth model output'
         write(*,*) '  Optionally, also specify the prior model to compute resistivities'
         write(*,*) '  from model perturbation: m = C_m^{1/2} \\tilde{m} + m_0'
+        write(*,*) '[EXTRACT_BC]'
+        write(*,*) ' -b rFile_Model rFile_Data wFile_EMrhs'
+        write(*,*) '  Initializes the forward solver and extracts the boundary conditions,'
+        write(*,*) '  writes to file.'
+        write(*,*) '[TEST_GRAD]'
+        write(*,*) ' -g  rFile_Model rFile_Data rFile_dModel [rFile_fwdCtrl rFile_EMrhs]'
+        write(*,*) '  Runs the ultimate test of the gradient computation based on'
+        write(*,*) '  Taylor series approximation.'
         write(*,*) '[TEST_ADJ]'
         write(*,*) ' -A  J rFile_Model rFile_dModel rFile_Data [wFile_Model wFile_Data]'
         write(*,*) '  Tests the equality d^T J m = m^T J^T d for any model and data.'
@@ -282,7 +289,7 @@ Contains
 
       case (FORWARD) !F
         if (narg < 3) then
-           write(0,*) 'Usage: -F  rFile_Model rFile_Data wFile_Data [wFile_EMsoln rFile_fwdCtrl]'
+           write(0,*) 'Usage: -F  rFile_Model rFile_Data wFile_Data [wFile_EMsoln rFile_fwdCtrl rFile_EMrhs]'
            write(0,*)
            write(0,*) 'Here, rFile_fwdCtrl is the forward solver control file in the format'
            write(0,*)
@@ -320,6 +327,9 @@ Contains
 	    if (narg > 4) then
 	       ctrl%rFile_fwdCtrl = temp(5)
 	    end if
+        if (narg > 5) then
+           ctrl%rFile_EMrhs = temp(6)
+        end if
 
       case (COMPUTE_J) ! J
         if (narg < 3) then
@@ -494,6 +504,45 @@ Contains
             ctrl%rFile_Prior = temp(5)
         end if
 
+      case (EXTRACT_BC) ! b
+        if (narg < 3) then
+           write(0,*) 'Usage: -b  rFile_Model rFile_Data wFile_EMrhs [rFile_fwdCtrl]'
+           write(0,*)
+           write(0,*) '  Initializes the forward solver and extracts the boundary conditions,'
+           write(0,*) '  writes to file.'
+           stop
+        else
+        ctrl%rFile_Model = temp(1)
+        ctrl%rFile_Data = temp(2)
+        ctrl%wFile_EMrhs = temp(3)
+        if (narg > 3) then
+            ctrl%rFile_fwdCtrl = temp(4)
+        end if
+        end if
+
+      case (TEST_GRAD) !g
+        if (narg < 3) then
+           write(0,*) 'Usage: -g  rFile_Model rFile_Data rFile_dModel [rFile_fwdCtrl rFile_EMrhs]'
+           write(0,*)
+           write(0,*) '  The ultimate test of the gradient computations. Based on the Taylor'
+           write(0,*) '  series approximation:'
+           write(0,*) '  Compute f(m0+dm) - f(m0)'
+           write(0,*) '  Compute df/dm|_m0 x dm as a dot product'
+           write(0,*) '  Compare the two resultant scalars'
+           write(0,*)
+           stop
+        else
+           ctrl%rFile_Model = temp(1)
+           ctrl%rFile_Data = temp(2)
+           ctrl%rFile_dModel = temp(3)
+        end if
+        if (narg > 3) then
+           ctrl%rFile_fwdCtrl = temp(4)
+        end if
+        if (narg > 4) then
+           ctrl%rFile_EMrhs = temp(5)
+        end if
+
       case (TEST_ADJ) ! A
         if (narg < 3) then
            write(0,*) 'Usage: Test the adjoint implementation for each of the critical'
@@ -528,11 +577,12 @@ Contains
            write(0,*) 'Finally, generates random 5% perturbations, if implemented:'
            write(0,*) ' -A  m rFile_Model wFile_Model [delta]'
            write(0,*) ' -A  d rFile_Data wFile_Data [delta]'
-           write(0,*) ' -A  e rFile_EMsoln wFile_EMsoln [delta]'
-           write(0,*) ' -A  b rFile_EMrhs wFile_EMrhs [delta]'
+           write(0,*) ' -A  e rFile_Model rFile_Data rFile_EMsoln wFile_EMsoln [delta]'
+           write(0,*) ' -A  b rFile_Model rFile_Data rFile_EMrhs wFile_EMrhs [delta]'
            stop
         else
            ctrl%option = temp(1)
+           ctrl%delta = 0.05
            select case (ctrl%option)
            ! tests of adjoint implementation ...
            case ('J')
@@ -591,7 +641,9 @@ Contains
            case ('O')
                 ctrl%rFile_Model = temp(2)
                 ctrl%rFile_Data = temp(3)
-           ! random perturbations ...
+           ! random perturbations ... in principle, shouldn't need model and data
+           ! to create random solution and RHS. But using these to create dictionaries.
+           ! This is an artifact of reading routines and can later be fixed.
            case ('m')
                 ctrl%rFile_Model = temp(2)
                 ctrl%wFile_Model = temp(3)
@@ -605,16 +657,20 @@ Contains
                     read(temp(4),*,iostat=istat) ctrl%delta
                 endif
            case ('e')
-                ctrl%rFile_EMsoln = temp(2)
-                ctrl%wFile_EMsoln = temp(3)
-                if (narg > 3) then
-                    read(temp(4),*,iostat=istat) ctrl%delta
+                ctrl%rFile_Model = temp(2)
+                ctrl%rFile_Data = temp(3)
+                ctrl%rFile_EMsoln = temp(4)
+                ctrl%wFile_EMsoln = temp(5)
+                if (narg > 5) then
+                    read(temp(6),*,iostat=istat) ctrl%delta
                 endif
            case ('b')
-                ctrl%rFile_EMrhs = temp(2)
-                ctrl%wFile_EMrhs = temp(3)
-                if (narg > 3) then
-                    read(temp(4),*,iostat=istat) ctrl%delta
+                ctrl%rFile_Model = temp(2)
+                ctrl%rFile_Data = temp(3)
+                ctrl%rFile_EMrhs = temp(4)
+                ctrl%wFile_EMrhs = temp(5)
+                if (narg > 5) then
+                    read(temp(6),*,iostat=istat) ctrl%delta
                 endif
            case default
                 write(0,*) 'Unknown operator. Usage: -A [J | L | S | P | Q] OR -A [m | d | e | b]'

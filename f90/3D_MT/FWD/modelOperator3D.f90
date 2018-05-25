@@ -1,4 +1,3 @@
-
 ! *****************************************************************************
 ! model_data is used for sharing the data for the joint forward modeling-
 ! inversion scheme. Data module where the current model definition (grid,
@@ -14,10 +13,19 @@ module modelOperator3D
   !     initializes or uses the equation coefficients are now in this module
   !     allowing arrays of equation coefficients, etc. to be private
   !       and essentially global to this module
+  !
+  !  A goal is to update this module to fully use the Curl, Div & Grad operators
+  !  in the sg_diff_oper.f90 module, and the general grid element matrices.
+  !  At present we are not doing this, since we found that doing so increases
+  !  run time by 20%. Once optimized, will incorporate this logic in modelOperator3D.
+  !  For now, we are including the operators module but keeping the logic intact.
+  !  This version is just as efficient as the original stable version.
+  !  Anna Kelbert, 14 May 2018.
 
   use math_constants
   use utilities
   use gridcalc             ! staggered grid definitions
+  use sg_diff_oper         ! will be used for operators in the future but not in this version
   use sg_vector            ! generic routines for vector operations on the
   use sg_boundary
   use ModelSpace
@@ -100,7 +108,7 @@ module modelOperator3D
   !     conductivity and/or frequency
 
   !  routine to set the boundary conditions (a wrapper for BC_x0_WS for now)
-  public                                :: SetBound
+  public                                :: ComputeBC
 
   !  routines from multA
   public                             	:: CurlcurleSetUp, CurlcurlE, CurlcurleCleanUp
@@ -126,6 +134,7 @@ module modelOperator3D
 
 Contains
 
+!**********************************************************************
   subroutine ModelDataInit(inGrid)
   !**********************************************************************
   ! *   Copies grid to mGrid
@@ -151,7 +160,13 @@ Contains
     ! Want to initialize them here in case the grid gets updated along the way.
     ! The reason for storing them in GridCalc is that they are also used
     !   by ModelMap, EMfieldInterp, nestedEM
-    Call EdgeVolume(mGrid, V_E)
+    Call EdgeLength(mGrid, l_E)
+    Call EdgeArea(mGrid, S_E)
+    Call EdgeVolume(mGrid, V_E, l_E, S_E)
+    Call FaceLength(mGrid, l_F)
+    Call FaceArea(mGrid, S_F)
+    Call FaceVolume(mGrid, V_F, l_F, S_F)
+    Call CellVolume(mGrid, V_C)
     Call NodeVolume(mGrid, V_N) ! used for divergence correction
 
     !  Allocate sigma_E, conductivity defined on computational cell edges
@@ -171,7 +186,13 @@ Contains
     call deall_grid(mGrid)
 
     ! and the grid elements stored in GridCalc
+    call deall_rvector(l_E)
+    call deall_rvector(S_E)
     call deall_rvector(V_E)
+    call deall_rvector(l_F)
+    call deall_rvector(S_F)
+    call deall_rvector(V_F)
+    call deall_rscalar(V_C)
     call deall_rscalar(V_N)
 
     ! and the edge conductivities
@@ -253,44 +274,85 @@ Contains
 ! Sets boundary conditions. Currently a wrapper for BC_x0_WS.
 ! Uses input 3D conductivity in cells sigma_C, that has to be initialized
 ! by updateCond before calling this routine. Also uses mGrid set by
-! ModelDataInit. Could use omega, which is set by updateFreq.
-  Subroutine SetBound(imode,period,E0,BC,iTx)
+! ModelDataInit. Uses omega, which is set by updateFreq.
+! We always run this after setting the private variable omega, anyway.
+  Subroutine ComputeBC(iTx,imode,E0,BC)
 
     !  Input mode, period
-    integer, intent(in)		:: imode
-    integer, intent(in)		:: iTx
-    real(kind=prec)	:: period
+    integer, intent(in)     :: imode
+    integer, intent(in)     :: iTx
+
+    ! local variable
+    real(kind=prec) :: period
 
     ! Output electric field first guess (for iterative solver)
-    type(cvector), intent(inout)	:: E0
+    type(cvector), intent(inout)    :: E0
     ! Output boundary conditions
-    type(cboundary), intent(inout)	:: BC
+    type(cboundary), intent(inout)  :: BC
 
+    period = (2*PI)/omega ! period is seconds
 
-
-    if (BC%read_E_from_file) then
-          
-          !   call to this routine is to initialize E0 for iterative solver;  BC
-          !   are   just overwritten -- in fact it would make more sense to
-          !   intialize from 2D solutions computed with the actual BC used!
-          call BC_x0_WS(imode,period,mGrid,sigma_C,E0,BC) 
-
-          ! The BC are already computed from a larger grid for all transmitters and modes and stored in BC_from_file.
-          ! Overwrite BC with BC_from_file.
-          ! Note: Right now we are using the same period layout for both grid. 
-          ! This why, it is enough to know the period and mode index to pick up the BC from BC_from_file vector.
-          BC = BC_from_file((iTx*2)-(2-imode))  
-    else
-         ! Compute the BC using Weerachai 2D approach 
-          call BC_x0_WS(imode,period,mGrid,sigma_C,E0,BC)                          
-    end if
+    ! Compute E0 using Weerachai 2D approach; can get BC from that
+    call BC_x0_WS(imode,period,mGrid,sigma_C,E0,BC)
     
+    !call getBC(E0,BC)
    
     ! Cell conductivity array is no longer needed
     ! NOT TRUE: needed for imode=2
     ! call deall_rscalar(sigma_C)
 
-  end subroutine SetBound
+  end subroutine ComputeBC
+
+!**********************************************************************
+! Sets boundary conditions. Currently a wrapper for BC_x0_WS.
+! Uses input 3D conductivity in cells sigma_C, that has to be initialized
+! by updateCond before calling this routine. Also uses mGrid set by
+! ModelDataInit. Uses omega, which is set by updateFreq.
+! We always run this after setting the private variable omega, anyway.
+!  Subroutine SetBound(imode,E0,BC,iTx)
+!
+!    !  Input mode, period
+!    integer, intent(in)		:: imode
+!    integer, intent(in)		:: iTx
+!
+!    ! local variable
+!    real(kind=prec)	:: period
+!
+!    ! Output electric field first guess (for iterative solver)
+!    type(cvector), intent(inout)	:: E0
+!    ! Output boundary conditions
+!    type(cboundary), intent(inout)	:: BC
+!
+!    period = (2*PI)/omega ! period is seconds
+!
+!    if (BC_AND_E0_FROM_FILE) then
+!       ! we are going to make a huge assumption here: nPol == 1 always for this case
+!       !  and of course transmitters are in same order always
+!       E0 = E0_from_file(iTx)
+!       call getBC(E0,BC)
+!       !   do we now need to set boundary edges of E0 == 0?
+!    else
+!       if (BC%read_E_from_file) then
+!
+!          call BC_x0_WS(imode,period,mGrid,sigma_C,E0,BC)
+!
+!          ! The BC are already computed from a larger grid for all transmitters and modes and stored in BC_from_file.
+!          ! Overwrite BC with BC_from_file.
+!          ! Note: Right now we are using the same period layout for both grid.
+!          ! This why, it is enough to know the period and mode index to pick up the BC from BC_from_file vector.
+!          BC = BC_from_file((iTx*2)-(2-imode))
+!       else
+!         ! Compute the BC using Weerachai 2D approach
+!          call BC_x0_WS(imode,period,mGrid,sigma_C,E0,BC)
+!       end if
+!   end if
+!
+!
+!    ! Cell conductivity array is no longer needed
+!    ! NOT TRUE: needed for imode=2
+!    ! call deall_rscalar(sigma_C)
+!
+!  end subroutine SetBound
 
 ! ****************************************************************************
 ! Routines from multA; set up finite difference operator for quasi-static
@@ -604,19 +666,32 @@ Contains
       write(0,*) 'Adiag in AdiagSetUp not allocated yet'
       stop
     end if
-
+!
+! We inserted the loops below to leave boundaries set to zero
+!
     do ix = 1, mGrid%nx
-       Adiag%x(ix,:,:) = CMPLX(0.0, 1.0, 8)*omega*MU_0*sigma_E%x(ix,:,:)
+     do iy = 2, mGrid%ny
+      do iz = 2, mGrid%nz
+       Adiag%x(ix,iy,iz) = CMPLX(0.0, 1.0, 8)*omega*MU_0*sigma_E%x(ix,iy,iz)
+      enddo
+     enddo
     enddo
 
     do iy = 1, mGrid%ny
-       Adiag%y(:,iy,:) = CMPLX(0.0, 1.0, 8)*omega*MU_0*sigma_E%y(:,iy,:)
+     do ix = 2, mGrid%nx
+      do iz = 2, mGrid%nz
+       Adiag%y(ix,iy,iz) = CMPLX(0.0, 1.0, 8)*omega*MU_0*sigma_E%y(ix,iy,iz)
+      enddo
+     enddo
     enddo
 
     do iz = 1, mGrid%nz
-       Adiag%z(:,:,iz) = CMPLX(0.0, 1.0, 8)*omega*MU_0*sigma_E%z(:,:,iz)
+     do ix = 2, mGrid%nx
+      do iy = 2, mGrid%ny
+       Adiag%z(ix,iy,iz) = CMPLX(0.0, 1.0, 8)*omega*MU_0*sigma_E%z(ix,iy,iz)
+      enddo
+     enddo
     enddo
-
 
   end subroutine AdiagSetUp
 
@@ -646,7 +721,7 @@ Contains
     logical, intent (in)                     :: adjt
     type (cvector), target, intent(inout)    :: outE
     ! output electrical field as complex vector
-    integer                                  :: diag_sign
+    complex (kind=prec)                      :: diag_sign ! changed by Lana, was integer
     integer                                  :: ix, iy, iz
     ! dummy variables
 

@@ -9,6 +9,9 @@ module transmitters
   public			:: setup_txDict, update_txDict, deall_txDict
 
   type :: MTtx
+     ! defines the kind of transmitter: here, MT only. Needed for compatibility
+     ! with more general versions of the code
+     character(10)		:: tx_type='MT'
      !  An MT source is defined by frequency and boundary conditions
      !   at present there does not seem to be much need for BC info ... add
      !    if needed.  Other sorts of EM data may have more
@@ -33,6 +36,9 @@ module transmitters
    !    in higher level routines
    type (MTtx), pointer, save, public, dimension (:)   :: txDict
 
+  ! transmitter types; correspond to index iTxt in the data vectors
+  !  these will be heavily used in inversion routines
+  integer, parameter   :: MT = 1
 
 Contains
 
@@ -157,5 +163,63 @@ Contains
     end if
 
   end subroutine deall_txDict
+
+! **************************************************************************
+! Used to compare two transmitters for updating the dictionary
+
+  function compare_tx(Txa,Txb) result (YESNO)
+
+    type(MTtx), intent(in):: Txa
+    type(MTtx), intent(in):: Txb
+    logical                  YESNO
+
+    YESNO = .false.
+    if (trim(Txa%Tx_type) .eq. 'MT') then
+      if(ABS(Txa%period - Txb%period) < TOL6  .and. Txa%nPol == Txb%nPol) then
+        YESNO = .true.
+      end if
+    else
+        write(0,*) 'Unknown transmitter type #',trim(Txa%Tx_type)
+    end if
+ 
+  end function compare_tx
+
+! **************************************************************************
+! Used to extract tx_type character name from transmitter type index iTxt
+!
+  function tx_type_name(iTxt) result (tx_type)
+
+    integer, intent(in)                 :: iTxt
+    character(10)                       :: tx_type
+
+    select case (iTxt)
+       case(MT)
+          tx_type = 'MT'
+       case default
+          write(0,*) 'Unknown transmitter type #',iTxt
+    end select
+
+  end function tx_type_name
+
+! **************************************************************************
+! Used to extract transmitter type index iTxt from transmitter type name.
+! All this is only needed because key-value lists aren't allowed in Fortran!
+! In the future, we should stick to the transmitter integer indicator
+! and keep the name for input/output only. The integer is all that
+! the data vector should ever know of.
+!
+  function tx_type_index(tx_type) result (iTxt)
+
+    character(*), intent(in)            :: tx_type
+    integer                             :: iTxt
+
+    select case (trim(adjustl(tx_type)))
+       case('MT')
+          iTxt = MT
+       case default
+          write(0,*) 'Unknown transmitter type: ',trim(tx_type)
+    end select
+
+  end function tx_type_index
 
 end module transmitters

@@ -24,6 +24,12 @@
 !        be in all applications we now have)
 !    8) format of impedance file changed: all site locations are in a second header
 !          record, all impedances for one frequency are in one sequential record
+!
+!   Modified by Kelbert, Apr. 2018 to add IO routines for RHS E-fields.
+!   To achieve joint inversion generality in the future, replaced ModeNames
+!   which were hardcoded to Ex, Ey by Pol_name(:), now stored in EMsoln & EMrhs.
+!   And of course we can and should now use read_cvector/write_cvector instead
+!   (this is not fixed yet). Ideally, convert everything to NetCDF or similar.
 
 ! *****************************************************************************
 module ioAscii
@@ -495,13 +501,9 @@ Contains
       integer           :: j,k,nMode = 2, ios,ig,cdot,filePer
       integer           :: iTx,nTx
       character (len=3)         :: igchar
-      character (len=20)        :: version = '',ModeNames(2)
+      character (len=20)        :: version = ''
       character (len=200)       :: fn_input
       real (kind=prec)   :: omega
-
-      ModeNames(1) = 'Ey'
-      ModeNames(2) = 'Ex'
-
 
 
           fn_input = trim(cfile)
@@ -518,17 +520,19 @@ Contains
 		  
 		  
           do j = 1,nTx
-             do k = 1,2
+       
+             do k = 1,eAll%solns(j)%nPol
 
                call EfileRead(ioE, j, k, omega, eAll%solns(j)%pol(k))
 
-               if (abs(omega - txDict(eAll%solns(j)%tx)%omega) > R_TINY) then
+               if (abs((omega - txDict(eAll%solns(j)%tx)%omega)/omega) > TOL6) then
                     write(0,*) 'Warning: frequencies don''t match on E-field input ',j
                endif
 
              enddo
           enddo
           close(ioE)
+
       end subroutine read_solnVectorMTX
 
 !******************************************************************
@@ -547,12 +551,9 @@ Contains
       !   local variables
       integer           :: j,k,nMode = 2, ios,ig,cdot
       character (len=3)         :: igchar
-      character (len=20) 		:: version = '',ModeNames(2)
+      character (len=20) 		:: version = ''
       character (len=200)       :: fn_output
       real (kind=prec)   :: omega
-
-      ModeNames(1) = 'Ey'
-      ModeNames(2) = 'Ex'
 
           fn_output = trim(cfile)
 
@@ -563,7 +564,7 @@ Contains
              do k = 1,eAll%solns(j)%nPol
                omega = txDict(eAll%solns(j)%tx)%omega
 
-               call EfileWrite(ioE, omega, j,  k, ModeNames(k), eAll%solns(j)%pol(k))
+               call EfileWrite(ioE, omega, j,  k, eAll%solns(j)%Pol_name(k), eAll%solns(j)%pol(k))
 
              enddo
           enddo
@@ -571,5 +572,230 @@ Contains
 
       end subroutine write_solnVectorMTX
 
+      !******************************************************************
+      subroutine read_rhsVectorMTX(grid,bAll,cfile,format)
+
+          ! reads an array of solution vectors for all transmitters & subgrids
+          ! currently uses the old binary format; will switch to NetCDF when
+          ! time allows
+          ! will allocate the grid from a full format file. for sparse files,
+          ! this will only work if the grid is preallocated and compatible
+
+          character(*), intent(in)                    :: cfile
+          type(rhsVectorMTX_t), intent(inout)         :: bAll
+          type(grid_t), intent(inout)                 :: grid
+          character(*), optional, intent(in)          :: format
+
+          !   local variables
+          integer           :: j,k,jj,kk,nMode = 2, ios,istat,ig,cdot,filePer, nPol
+          integer           :: iTx,nTx
+          character (len=3)         :: igchar
+          character (len=20)        :: version = '',source_type,tx_type,mode
+          character (len=30)        :: str
+          character (len=200)       :: fn_input
+          logical                   :: sparse
+          real (kind=prec)   :: omega, period
+
+          sparse = .true.
+
+          if (present(format)) then
+            if (trim(format) .eq. 'full') then
+                sparse = .false.
+            end if
+          end if
+
+          if (.not. sparse) then
+
+              fn_input = trim(cfile)
+
+              write(*,*) 'Reading RHS E-fields from file: ',trim(fn_input)
+              call FileReadInit(fn_input,ioE,grid,filePer,nMode,version,ios)
+              call setup_grid(grid)
+              nTx = filePer   ! Get nTx from the file
+
+              call create_rhsVectorMTX(nTx,bAll)
+              do iTx=1,nTx
+                  bAll%combs(iTx)%nonzero_BC = .false.
+                  bAll%combs(iTx)%nonzero_Source = .true.
+                  bAll%combs(iTx)%sparse_Source = .false.
+                  call create_rhsVector(grid,iTx,bAll%combs(iTx))
+              end do
+
+
+              do j = 1,nTx
+
+                  do k = 1,bAll%combs(j)%nPol
+
+                      call EfileRead(ioE, j, k, omega, bAll%combs(j)%b(k)%s)
+
+                      if (abs(omega - txDict(bAll%combs(j)%tx)%omega) > R_TINY) then
+                          write(0,*) 'Warning: frequencies don''t match on E-field input ',j
+                      endif
+
+                  enddo
+              enddo
+              close(ioE)
+
+          else
+
+              open (unit=ioE,file=cfile,STATUS='unknown', form ='formatted', iostat=ios)
+
+              if( ios/=0) then
+                  write(0,*) 'Error opening sparse vector output file in read_rhsVectorMTX: ', cfile
+              else
+                  read(ioE,'(a30,i5)',iostat=istat) str,nTx
+                  call create_rhsVectorMTX(nTx,bAll)
+                  do iTx=1,nTx
+                      bAll%combs(iTx)%nonzero_BC = .true.
+                      bAll%combs(iTx)%nonzero_Source = .true.
+                      bAll%combs(iTx)%sparse_Source = .true.
+                      call create_rhsVector(grid,iTx,bAll%combs(iTx))
+                  end do
+
+
+                  do j = 1,bAll%nTx
+
+                      ! now that everything is allocated, set them both to false
+                      ! because one of them could be missing from file...
+                      bAll%combs(j)%nonzero_BC = .false.
+                      bAll%combs(j)%nonzero_Source = .false.
+
+                      do k = 1,bAll%combs(j)%nPol
+                          ! now that everything is allocated, set them both to false
+                          ! because one of them could be missing from file...
+                          bAll%combs(j)%b(k)%nonzero_BC = .false.
+                          bAll%combs(j)%b(k)%nonzero_Source = .false.
+
+                          read(ioE,'(a30,a4,a10,i5)',iostat=istat) str, str, tx_type, nPol
+                          if ((trim(txDict(bAll%combs(j)%tx)%tx_type) .ne. trim(tx_type)) &
+                              .or. (bAll%combs(j)%nPol .ne. nPol)) then
+                              write(0,*) 'Warning: transmitter types don''t match on RHS E-field input ',j
+                          end if
+                          read(ioE,'(a30,i5,es14.6)',iostat=istat) str, jj, period
+                          write(*,*) str,jj,period
+                          read(ioE,'(a30,i5,a5,a20)',iostat=istat) str, kk, str, mode
+                          bAll%combs(j)%Pol_name(k) = mode
+                          if (abs((period - txDict(bAll%combs(j)%tx)%period)/period) > TOL6) then
+                              write(0,*) 'Warning: periods don''t match on RHS E-field input ',j
+                              write(0,*) period, txDict(bAll%combs(j)%tx)%period
+                          end if
+
+                          read(ioE,*,iostat=istat) source_type
+                          write(*,*) 'Reading... ',source_type
+
+                          if (trim(adjustl(source_type)) .eq. 'BC') then
+                              call read_cboundary(ioE,bAll%combs(j)%b(k)%bc,grid)
+                              bAll%combs(j)%b(k)%nonzero_BC = .true.
+                              bAll%combs(j)%nonzero_BC = .true.
+                              write(*,'(a34,i5,a6,a20)') 'Completed reading BC for period #',jj,' mode ',mode
+                          end if
+
+                          if (trim(adjustl(source_type)) .eq. 'SOURCE') then
+                              call read_sparsevecc(ioE,bAll%combs(j)%b(k)%sSparse,grid)
+                              bAll%combs(j)%b(k)%nonzero_Source = .true.
+                              bAll%combs(j)%nonzero_Source = .true.
+                              write(*,'(a38,i5,a6,a20)') 'Completed reading SOURCE for period #',jj,' mode ',mode
+                          end if
+
+                      enddo
+                  enddo
+                  close(ioE)
+              end if
+
+          end if
+
+      end subroutine read_rhsVectorMTX
+
+      !******************************************************************
+      subroutine write_rhsVectorMTX(bAll,cfile,format)
+
+          !  open cfile on unit fid, writes out object of
+          !   type cvector in standard format (readable by matlab
+          !   routine readcvector.m), closes file
+          !  NOT coded at present to specifically write out TE/TM
+          !    solutions, periods, etc. (can get this infor from
+          !    eAll%solns(j)%tx, but only with access to TXdict.
+
+          character(*), intent(in)                    :: cfile
+          type(rhsVectorMTX_t), intent(in)            :: bAll
+          character(*), intent(in), optional          :: format
+
+          !   local variables
+          type (cvector)    :: rhsFull
+          type (sparsevecc) :: rhsSparse
+          integer           :: j,k,nMode = 2, ios,istat,ig,cdot
+          character (len=3)         :: igchar
+          character (len=20)        :: version = ''
+          character (len=200)       :: fn_output
+          logical            :: sparse
+          real (kind=prec)   :: omega,period
+
+          sparse = .true.
+
+          if (present(format)) then
+            if (trim(format) .eq. 'full') then
+                sparse = .false.
+            end if
+          end if
+
+          fn_output = trim(cfile)
+
+          if (.not. sparse) then
+
+              call FileWriteInit(version,fn_output,ioE,bAll%combs(1)%grid,bAll%nTX,nMode,ios)
+              do j = 1,bAll%nTx
+                  do k = 1,bAll%combs(j)%nPol
+                      omega = txDict(bAll%combs(j)%tx)%omega
+
+                      if (bAll%combs(j)%b(k)%nonzero_Source) then
+                        call copy_cvector(rhsFull, bAll%combs(j)%b(k)%s)
+                      elseif (bAll%combs(j)%b(k)%sparse_Source) then
+                        call add_scvector(C_ONE, bAll%combs(j)%b(k)%sSparse, rhsFull)
+                      elseif (bAll%combs(j)%b(k)%nonzero_BC) then
+                        call copy_bcvector(bAll%combs(j)%b(k)%bc, rhsFull)
+                      end if
+
+                      call EfileWrite(ioE, omega, j,  k, bAll%combs(j)%Pol_name(k), rhsFull)
+
+                  enddo
+              enddo
+              close(ioE)
+
+          else
+
+              open (unit=ioE,file=cfile,STATUS='unknown', form ='formatted', iostat=ios)
+
+              if( ios/=0) then
+                  write(0,*) 'Error opening sparse vector output file in write_solnVectorMTX: ', cfile
+              else
+                  write(ioE,'(a30,i5)',iostat=istat) 'Number of transmitters      : ',bAll%nTx
+                  do j = 1,bAll%nTx
+                      do k = 1,bAll%combs(j)%nPol
+                          omega = txDict(bAll%combs(j)%tx)%omega
+                          period = txDict(bAll%combs(j)%tx)%period
+                          write(ioE,'(a30,a4,a10,i5)',iostat=istat) 'Transmitter type & nPol     : ','',txDict(bAll%combs(j)%tx)%tx_type, bAll%combs(j)%nPol
+                          write(ioE,'(a30,i5,es14.6)',iostat=istat) 'Period number & value (secs): ',j,period
+                          write(ioE,'(a30,i5,a5,a20)',iostat=istat) 'Polarization number & name  : ',k, '', bAll%combs(j)%Pol_name(k)
+
+                          if (bAll%combs(j)%b(k)%nonzero_BC) then
+                              write(ioE,'(a10)',iostat=istat) 'BC'
+                              call write_cboundary(ioE,bAll%combs(j)%b(k)%bc)
+                          end if
+
+                          if (bAll%combs(j)%b(k)%nonzero_Source .and. bAll%combs(j)%b(k)%sparse_Source) then
+                              write(ioE,'(a10)',iostat=istat) 'SOURCE'
+                              call write_sparsevecc(ioE,bAll%combs(j)%b(k)%sSparse)
+                          end if
+
+                      enddo
+                  enddo
+                  close(ioE)
+              end if
+
+          end if
+
+          write(*,*) 'RHS E-fields written to ',trim(fn_output)
+
+      end subroutine write_rhsVectorMTX
 
 end module ioAscii

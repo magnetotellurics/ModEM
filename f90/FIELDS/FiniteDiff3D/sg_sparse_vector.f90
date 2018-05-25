@@ -66,7 +66,7 @@ module sg_sparse_vector
 
   public			:: sparsevecc
   public			:: create_sparsevecc, deall_sparsevecc
-  public            :: read_sparsevecc, write_sparsevecc
+  public            :: read_sparsevecc, write_sparsevecc, random_sparsevecc
   public            :: scMult_sparsevecc
   public			:: newValueC_sparsevecc, newValueR_sparsevecc
   public			:: copyValue_csvector, conjg_sparsevecc_f
@@ -251,6 +251,42 @@ Contains
 
   end subroutine reall_sparsevecc
 
+  ! **********************************************************************
+  ! * Creates a random perturbation in cvector - used for testing
+
+  subroutine random_sparsevecc(LC,eps)
+
+    implicit none
+    type (sparsevecc), intent(inout)                 :: LC
+    real(8), intent(in), optional                    :: eps
+    ! local
+    real (kind(LC%c)), allocatable, dimension(:)     :: xr,xi
+    integer              :: nc,istat
+
+    if (.not. LC%allocated) then
+      call warning('sparsevecc not allocated in random_sparsevecc')
+      return
+    end if
+
+    ! make some random vectors
+    nc = LC%nCoeff
+    allocate(xr(nc),xi(nc),STAT=istat)
+    call random_number(xr)
+    call random_number(xi)
+    if (present(eps)) then
+        xr = xr * eps
+        xi = xi * eps
+    else
+        xr = xr * 0.05
+        xi = xi * 0.05
+    end if
+
+    LC%c = cmplx(xr,xi)
+
+    deallocate(xr,xi,STAT=istat)
+
+  end subroutine random_sparsevecc
+
   !******************************************************************************
   ! write_sparsevecc writes a sparse vector  in a simple ASCII format; vector has
   ! to exist and be allocated before calling this routine, and the file unit
@@ -262,6 +298,7 @@ Contains
 
       !  local variables
       integer                           :: ii, istat
+      character(1)                      :: comp
 
       if(.not. SV%allocated) then
          write(0, *) 'sparse vector must be allocated before call to write_sparsevecc'
@@ -271,7 +308,14 @@ Contains
       write(fid,'(i12,a10)',iostat=istat) SV%nCoeff,trim(SV%gridType)
 
       do ii = 1,SV%nCoeff
-         write(fid,'(4i5,2es14.6)',iostat=istat) SV%i(ii),SV%j(ii),SV%k(ii),SV%xyz(ii),real(SV%c(ii)),aimag(SV%c(ii))
+         if (SV%xyz(ii) == 1) then
+            comp = 'X'
+         elseif (SV%xyz(ii) == 2) then
+            comp = 'Y'
+         elseif (SV%xyz(ii) == 3) then
+            comp = 'Z'
+         endif
+         write(fid,'(3i5,a5,a1,2es14.6)',iostat=istat) SV%i(ii),SV%j(ii),SV%k(ii),'',comp,real(SV%c(ii)),aimag(SV%c(ii))
       end do
 
   end subroutine write_sparsevecc
@@ -290,6 +334,7 @@ Contains
       character(80)                     :: gridType
       integer                           :: ii, istat
       real (kind(SV%c))                  :: cr, ci
+      character(1)                      :: comp
 
       read(fid,*,iostat=istat) nCoeff,gridType
 
@@ -301,15 +346,26 @@ Contains
       endif
 
       do ii = 1,nCoeff
-        ! makes the acceptable formatting more flexible
-        read(fid,*,iostat=istat) SV%i(ii),SV%j(ii),SV%k(ii),SV%xyz(ii),cr,ci
-        SV%c(ii) = cmplx(cr,ci)
+         ! makes the acceptable formatting more flexible
+         read(fid,*,iostat=istat) SV%i(ii),SV%j(ii),SV%k(ii),comp,cr,ci
+         if (comp == 'X') then
+            SV%xyz(ii) = 1
+         elseif (comp == 'Y') then
+            SV%xyz(ii) = 2
+         elseif (comp == 'Z') then
+            SV%xyz(ii) = 3
+         endif
+         SV%c(ii) = cmplx(cr,ci)
       end do
+      write(*,*) 'Completed reading ',nCoeff,' sparse vector values'
 
       ! if grid is available, make sure the two are consistent
       if (present(grid)) then
-        if ((maxval(SV%i) > grid%nx) .or. (maxval(SV%j) > grid%ny) .or. (maxval(SV%k) > grid%nz)) then
+        if ((maxval(SV%i) > grid%nx+1) .or. (maxval(SV%j) > grid%ny+1) .or. (maxval(SV%k) > grid%nz+1)) then
             write(0, *) 'sparse vector size does not match the grid in read_sparsevecc'
+            write(0, *) 'NX: ',grid%nx,maxval(SV%i)
+            write(0, *) 'NY: ',grid%ny,maxval(SV%j)
+            write(0, *) 'NZ: ',grid%nz,maxval(SV%k)
             return
         endif
       endif

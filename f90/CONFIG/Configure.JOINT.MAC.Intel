@@ -53,8 +53,24 @@ fi
 if [ $3 = "spherical" ]; then
 	sed -i .bak 's/GridCalc\./GridCalcS\./g' $1
 	sed -i .bak 's/boundary_ws\./boundary_wsS\./g' $1	
+	sed -i .bak 's/_JT/_JT_sph/g' $1	
+	if [ $2 == "debug" ]; then
+		sed -i .bak 's/Mod3DMT /Mod3DJTs_dbg /g' $1
+	elif [ $2 == "release" ]; then
+		sed -i .bak 's/Mod3DMT /Mod3DJTs /g' $1
+	else
+		sed -i .bak 's/Mod3DMT /Mod3DJTs_MPI /g' $1
+	fi    
 	rm $1.bak
     echo 1>&2 Spherical version of the makefile ready to use.
 else
+	if [ $2 == "debug" ]; then
+		sed -i .bak 's/\/Mod3DMT/\/Mod3DJT_dbg/g' $1
+	elif [ $2 == "release" ]; then
+		sed -i .bak 's/\/Mod3DMT/\/Mod3DJT/g' $1
+	else
+		sed -i .bak 's/\/Mod3DMT/\/Mod3DJT_MPI/g' $1
+	fi  
+    rm $1.bak
     echo 1>&2 Cartesian version of the makefile ready to use.
 fi

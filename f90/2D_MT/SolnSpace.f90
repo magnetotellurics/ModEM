@@ -11,12 +11,12 @@ use transmitters
 implicit none
 
 interface assignment (=)
-   !MODULE PROCEDURE copy_rhsVector
+   MODULE PROCEDURE copy_rhsVector
    MODULE PROCEDURE copy_solnVrhsV
    MODULE PROCEDURE copy_solnVrhsVMTX
    MODULE PROCEDURE copy_solnVector
    MODULE PROCEDURE copy_solnVectorMTX
-   !MODULE PROCEDURE copy_sparseVector - doesn't exist yet
+   MODULE PROCEDURE copy_sparseVector
 end interface
 
 interface create
@@ -353,6 +353,21 @@ contains
 
      end subroutine deall_sparseVector
 
+   !************************************************************
+   subroutine copy_sparseVector(eOut,eIn)
+
+       !  2D  version
+       implicit none
+       type (sparseVector_t), intent(in)    :: eIn
+       type (sparseVector_t), intent(inout) :: eOut
+
+       ! local variables
+       integer              :: k
+
+       call copy_sparsevecc(eOut%L,eIn%L)
+
+   end subroutine copy_sparseVector
+
      !**********************************************************************
      subroutine linComb_sparseVector(Lin1,c1,Lin2,c2,Lout)
        ! linear combination of two sparseVector objects
@@ -473,6 +488,44 @@ contains
 
      end subroutine add_sparseVrhsV
 
+     !************************************************************
+     subroutine copy_rhsVector(bOut,bIn)
+
+       !  2D  version
+       implicit none
+       type (rhsVector_t), intent(in)   :: bIn
+       type (rhsVector_t), intent(inout)    :: bOut
+
+       ! local variables
+       integer              :: k
+
+       if (.not. bIn%allocated) then
+         call errStop('input EM RHS not allocated yet in copy_rhsVector')
+       endif
+
+       bOut%adj = bIn%adj
+       bOut%nonzero_Source = bIn%nonzero_Source
+       bOut%nonzero_BC = bIn%nonzero_BC
+       call create_rhsVector(bIn%grid,bIn%tx,bOut)
+
+       if (bOut%nonzero_Source) then
+        ! source cvector already created
+        call copy_cvector(bOut%source,bIn%source)
+       end if
+
+       if (bOut%nonzero_BC) then
+        ! BC vector already created
+        bOut%bc = bIn%bc
+       end if
+
+       bOut%allocated = bIn%allocated
+
+       !if (bIn%temporary) then
+       !   call deall_rhsVector(bIn)
+       !endif
+
+     end subroutine copy_rhsVector
+
      !**********************************************************************
      subroutine zero_rhsVector(e)
      !  zeros a solution space object
@@ -488,6 +541,112 @@ contains
        endif
      end subroutine zero_rhsVector
 
+   !**********************************************************************
+   subroutine random_rhsVector(e,eps)
+
+      type(rhsVector_t), intent(inout)     :: e
+      real(kind=prec), intent(in), optional    :: eps
+
+      !  local variables
+      integer                           :: j, istat
+      real(kind=prec), dimension(:,:), allocatable :: vr,vi
+      real(kind=prec), dimension(:), allocatable   :: br,bi
+
+      if (e%nonzero_source .and. e%allocated) then
+          allocate(vr(e%source%N1,e%source%N2),vi(e%source%N1,e%source%N2),STAT=istat)
+          call random_number(vr)
+          call random_number(vi)
+
+          if (present(eps)) then
+              e%source%v = cmplx(vr,vi) * eps
+          else
+              e%source%v = cmplx(vr,vi) * 0.05
+          end if
+
+          deallocate(vr,vi,STAT=istat)
+      end if
+
+      if(e%nonzero_bc .and. e%allocated) then
+          allocate(br(size(e%bc)),bi(size(e%bc)),STAT=istat)
+          call random_number(br)
+          call random_number(bi)
+          if (present(eps)) then
+              e%bc = cmplx(br,bi) * eps
+          else
+              e%bc = cmplx(br,bi) * 0.05
+          end if
+
+          deallocate(br,bi,STAT=istat)
+      endif
+
+   end subroutine random_rhsVector
+
+     !**********************************************************************
+
+     subroutine sparse2full_rhsVector(b)
+
+     !   Converts an rhsVector object from sparse to full representation,
+     !   by consolidating bc into the full cvector source.
+     !   The order of BCs in WSfwd2D is: left, surface, bottom, right.
+     ! CURRENTLY THIS IS NOT WORKING SO STEST CANNOT BE RUN. FIX THIS LATER.
+     ! AK 24 May 2018
+
+       type (rhsVector_t), intent(inout)             :: b
+
+       !  local variables
+       character(2)     :: mode
+       character(80)    :: gridType
+       integer ::       Nz,Ny,Nza,Nzi,nBC,k1,k2,istat
+
+       Nz = b%grid%Nz
+       Ny = b%grid%Ny
+       Nza = b%grid%Nza
+
+       mode = txDict(b%tx)%mode
+
+       if(mode .eq. 'TE') then
+          gridType = NODE
+          Nzi = Nz
+       else if(mode .eq. 'TM') then
+          gridType = NODE_EARTH
+          Nzi = Nz-Nza
+       else
+          call errStop('Unknown mode in sparse2full_rhsVector')
+       endif
+
+       nBC = 2*(Ny+1)+2*(Nzi+1)
+
+       if (.not. b%nonzero_source) then
+           ! Initialize full array for storage of source
+           call create_cvector(b%grid,gridType,b%source)
+       endif
+
+       if (b%nonzero_BC) then
+           ! left
+           k1 = 1
+           k2 = b%source%N2
+           b%source%v(1,1:b%source%N2) = b%BC(k1:k2)
+           ! surface
+           k1 = b%source%N2+1
+           k2 = b%source%N2+b%source%N1
+           b%source%v(1:b%source%N1,1) = b%BC(k1:k2)
+           ! bottom
+           k1 = b%source%N2+b%source%N1+1
+           k1 = b%source%N2+2*b%source%N1
+           b%source%v(1:b%source%N1,b%source%N2) = b%BC(k1:k2)
+           ! right
+           k1 = b%source%N2+2*b%source%N1+1
+           k1 = 2*b%source%N1+2*b%source%N2
+           b%source%v(b%source%N1,1:b%source%N2) = b%BC(k1:k2)
+       endif
+
+       deallocate(b%BC, STAT=istat)
+
+       b%nonzero_Source = .true.
+       b%nonzero_BC = .false.
+
+
+     end subroutine sparse2full_rhsVector
 !**********************************************************************
 !           combined solnVector/rhsVector methods
 !**********************************************************************
@@ -580,6 +739,29 @@ contains
       bAll%allocated = .false.
 
    end subroutine deall_rhsVectorMTX
+
+   !**********************************************************************
+   subroutine random_rhsVectorMTX(bAll,eps)
+
+      type(rhsVectorMTX_t), intent(inout)      :: bAll
+      real(kind=prec), intent(in), optional    :: eps
+
+      !  local variables
+      integer                           :: j, istat
+
+      if (.not. bAll%allocated) then
+        call errStop('input RHS vector not allocated in random_rhsVectorMTX')
+      end if
+
+      do j = 1,bAll%nTx
+        if (present(eps)) then
+            call random_rhsVector(bAll%combs(j),eps)
+        else
+            call random_rhsVector(bAll%combs(j),0.05*ONE)
+        end if
+      end do
+
+   end subroutine random_rhsVectorMTX
 
    !**********************************************************************
    subroutine copy_solnVrhsVMTX(eOut,eIn)

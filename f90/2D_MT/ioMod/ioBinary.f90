@@ -16,6 +16,13 @@ module ioBinary
    public	::  read_cvector,write_cvector,write_solnVectorMTX, &
 		read_grid, write_Z, read_Z
 
+      ! I/O units ... reuse generic read/write units if
+     !   possible; for those kept open during program run,
+     !   reserve a specific unit here
+     integer (kind=4), save :: fidRead = 1
+     integer (kind=4), save :: fidWrite = 2
+     integer (kind=4), save :: fidError = 99
+
    Contains
      !******************************************************************
       subroutine read_cvector(fid,cfile,vec)
@@ -147,30 +154,29 @@ module ioBinary
       end subroutine write_cvector
 
      !******************************************************************
-      subroutine write_solnVectorMTX(fid,cfile,eAll)
+      subroutine write_solnVectorMTX(cfile,eAll)
 
-      !  open cfile on unit fid, writes out object of
+      !  open cfile on unit fidWrite, writes out object of
       !   type cvector in standard format (readable by matlab
       !   routine readcvector.m), closes file
       !  NOT coded at present to specifically write out TE/TM
       !    solutions, periods, etc. (can get this infor from
       !    eAll%solns(j)%tx, but only with access to TXdict.
 
-      integer, intent(in)		:: fid
       character*80, intent(in)		:: cfile
       type(solnVectorMTX_t), intent(in)		:: eAll
 
       integer		:: j
 
-      open(unit=fid, file=cfile, form='unformatted',status='unknown')
+      open(unit=fidWrite, file=cfile, form='unformatted',status='unknown')
 
-      write(fid) eAll%nTx
+      write(fidWrite) eAll%nTx
       do j = 1,eAll%nTx
-         write(fid) eAll%solns(j)%vec%gridType
-         write(fid) eAll%solns(j)%vec%N1,eAll%solns(j)%vec%N2
-         write(fid) eAll%solns(j)%vec%v
+         write(fidWrite) eAll%solns(j)%vec%gridType
+         write(fidWrite) eAll%solns(j)%vec%N1,eAll%solns(j)%vec%N2
+         write(fidWrite) eAll%solns(j)%vec%v
       enddo
-      close(fid)
+      close(fidWrite)
       return
       end subroutine write_solnVectorMTX
 

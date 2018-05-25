@@ -9,10 +9,25 @@ module sg_boundary
   ! structures. Belongs to SG_Basics class: staggered cartesian grid, data
   ! types defined on this grid, and operations defined on these data types. Not
   ! specific to EM problem, no dependency on outside (from other classes) modules.
+  !
+  ! Dimensions:
+  !    E%xYMax(nx,nz+1)
+  !    E%zYMax(nx+1,nz)
+  !    E%xYMin(nx,nz+1)
+  !    E%zYMin(nx+1,nz)
+  !    E%yXMax(ny,nz+1)
+  !    E%zXMax(ny+1,nz)
+  !    E%yXMin(ny,nz+1)
+  !    E%zXMin(ny+1,nz)
+  !    E%xZMin(nx,ny+1)
+  !    E%yZMin(nx+1,ny)
+  !    E%xZMax(nx,ny+1)
+  !    E%yZMax(nx+1,ny)
 
   use math_constants
   use griddef
   use sg_vector
+  use sg_sparse_vector
   implicit none
 
   ! Generic interfaces are done through subroutines
@@ -71,21 +86,26 @@ module sg_boundary
   ! gets boundary conditions from the vector field
   INTERFACE getBC
      module procedure copy_cbvector
+     module procedure copy_sparseveccb
   END INTERFACE
 
   ! sets boundary nodes in the vector field
   INTERFACE setBC
      module procedure copy_bcvector
+     module procedure copy_bsparsevecc
   END INTERFACE
 
-  public                             	:: copy_cbvector, copy_bcvector
+  public                :: copy_cbvector, copy_bcvector
+  public                :: copy_sparseveccb, copy_bsparsevecc
   public				:: create_cboundary, &
        deall_cboundary, copy_cboundary, zero_cboundary, &
        scMult_cboundary, scMult_cboundary_f, add_cboundary, &
        add_cboundary_f, diagMult_cboundary, diagMult_cboundary_f, &
        dotProd_cboundary, &
        ! the two routines below are not part of any interface
-       linComb_cboundary, scMultAdd_cboundary
+       linComb_cboundary, scMultAdd_cboundary, random_cboundary, &
+       ! and these are for reading and writing
+       write_cboundary, read_cboundary
 
 
   ! ***************************************************************************
@@ -121,8 +141,7 @@ module sg_boundary
 
      ! allocated:  .true.  x, y, z arrays have been allocated
      logical		                              :: allocated = .false.
-     ! a Logical variable used to determined if we are going to read an electrical field solution from a larger grid.
-     logical                                      :: read_E_from_file=.false.
+
      ! pointer to parent grid
      type (grid_t), pointer                             :: grid
 
@@ -326,7 +345,6 @@ Contains
           E2%yZMin = E1%yZMin
           E2%xZMax = E1%xZMax
           E2%yZMax = E1%yZMax
-          E2%read_E_from_file = E1%read_E_from_file
 
        end if
 
@@ -366,6 +384,205 @@ Contains
 
   end subroutine zero_cboundary ! zero_cboundary
 
+  ! **********************************************************************
+  ! * Creates a random perturbation in cboundary;  AK 2018-04-25
+
+  subroutine random_cboundary(E,eps)
+
+    implicit none
+    type (cboundary), intent(inout)                  :: E
+    real(8), intent(in), optional                    :: eps
+    ! local
+    real (kind(E%xYMax)), allocatable, dimension(:,:) :: xr,xi
+    integer              :: nx,ny,nz,nmax,istat
+
+    if (.not. E%allocated) then
+      call warning('cboundary not allocated in random_cboundary')
+      return
+    end if
+
+    call zero_cboundary(E)
+
+    ! make some random vectors
+    nx = E%nx
+    ny = E%ny
+    nz = E%nz
+    nmax = max(max(nx+1,ny+1),nz+1)
+
+    allocate(xr(nmax,nmax),xi(nmax,nmax),STAT=istat)
+
+    call random_number(xr)
+    call random_number(xi)
+    E%xYMax = cmplx(xr(1:nx,1:nz+1),xi(1:nx,1:nz+1))
+
+    call random_number(xr)
+    call random_number(xi)
+    E%zYMax = cmplx(xr(1:nx+1,1:nz),xi(1:nx+1,1:nz))
+
+    call random_number(xr)
+    call random_number(xi)
+    E%xYMin = cmplx(xr(1:nx,1:nz+1),xi(1:nx,1:nz+1))
+
+    call random_number(xr)
+    call random_number(xi)
+    E%zYMin = cmplx(xr(1:nx+1,1:nz),xi(1:nx+1,1:nz))
+
+    call random_number(xr)
+    call random_number(xi)
+    E%yXMax = cmplx(xr(1:ny,1:nz+1),xi(1:ny,1:nz+1))
+
+    call random_number(xr)
+    call random_number(xi)
+    E%zXMax = cmplx(xr(1:ny+1,1:nz),xi(1:ny+1,1:nz))
+
+    call random_number(xr)
+    call random_number(xi)
+    E%yXMin = cmplx(xr(1:ny,1:nz+1),xi(1:ny,1:nz+1))
+
+    call random_number(xr)
+    call random_number(xi)
+    E%zXMin = cmplx(xr(1:ny+1,1:nz),xi(1:ny+1,1:nz))
+
+    call random_number(xr)
+    call random_number(xi)
+    E%xZMin = cmplx(xr(1:nx,1:ny+1),xi(1:nx,1:ny+1))
+
+    call random_number(xr)
+    call random_number(xi)
+    E%yZMin = cmplx(xr(1:nx+1,1:ny),xi(1:nx+1,1:ny))
+
+    call random_number(xr)
+    call random_number(xi)
+    E%xZMax = cmplx(xr(1:nx,1:ny+1),xi(1:nx,1:ny+1))
+
+    call random_number(xr)
+    call random_number(xi)
+    E%yZMax = cmplx(xr(1:nx+1,1:ny),xi(1:nx+1,1:ny))
+
+    deallocate(xr,xi,STAT=istat)
+
+    if (present(eps)) then
+       E%xYMax = E%xYMax * eps
+       E%zYMax = E%zYMax * eps
+       E%xYMin = E%xYMin * eps
+       E%zYMin = E%zYMin * eps
+       E%yXMax = E%yXMax * eps
+       E%zXMax = E%zXMax * eps
+       E%yXMin = E%yXMin * eps
+       E%zXMin = E%zXMin * eps
+       E%xZMin = E%xZMin * eps
+       E%yZMin = E%yZMin * eps
+       E%xZMax = E%xZMax * eps
+       E%yZMax = E%yZMax * eps
+    else
+       E%xYMax = E%xYMax * 0.05
+       E%zYMax = E%zYMax * 0.05
+       E%xYMin = E%xYMin * 0.05
+       E%zYMin = E%zYMin * 0.05
+       E%yXMax = E%yXMax * 0.05
+       E%zXMax = E%zXMax * 0.05
+       E%yXMin = E%yXMin * 0.05
+       E%zXMin = E%zXMin * 0.05
+       E%xZMin = E%xZMin * 0.05
+       E%yZMin = E%yZMin * 0.05
+       E%xZMax = E%xZMax * 0.05
+       E%yZMax = E%yZMax * 0.05
+    end if
+
+
+  end subroutine random_cboundary
+
+  !******************************************************************************
+  ! write_cboundary writes a BC vector  in a simple ASCII format; vector has
+  ! to exist and be allocated before calling this routine, and the file unit
+  ! must already be available for writing; AK 2018-04-25
+  subroutine write_cboundary(fid, E)
+
+      integer,          intent(in)      :: fid
+      type (cboundary), intent(in)      :: E
+
+      !  local variables
+      type (sparsevecc)                 :: SV
+      integer                           :: ii, istat
+
+      if(.not. E%allocated) then
+         write(0, *) 'BC vector must be allocated before call to write_cboundary'
+         return
+      endif
+
+      ! write as sparse vector in ascii
+      call copy_bsparsevecc(E,SV)
+      call write_sparsevecc(fid,SV)
+      call deall_sparsevecc(SV)
+
+!      do ii = 1,SV%nCoeff
+!         write(fid,'(4i5,2es14.6)',iostat=istat) SV%i(ii),SV%j(ii),SV%k(ii),SV%xyz(ii),real(SV%c(ii)),aimag(SV%c(ii))
+!      end do
+!
+!      write(fid,'(a11)',iostat=istat) 'xYMin xYMax'
+!      do k = 1,E%nz+1
+!          do i = 1,E%nx
+!              write(fid,'(3i5,6es14.6)',iostat=istat) i,k,E%xYMin(i,k),E%xYMax(i,k)
+!          end do
+!      end do
+!
+!      write(fid,'(a11)',iostat=istat) 'zYMin zYMax'
+!      do k = 1,E%nz
+!          do i = 1,E%nx+1
+!              write(fid,'(3i5,6es14.6)',iostat=istat) i,k,E%zYMin(i,k),E%zYMax(i,k)
+!          end do
+!      end do
+!
+!      write(fid,'(a11)',iostat=istat) 'yXMin yXMax'
+!      do k = 1,E%nz+1
+!          do j = 1,E%ny
+!              write(fid,'(3i5,6es14.6)',iostat=istat) j,k,E%yXMin(j,k),E%yXMax(j,k)
+!          end do
+!      end do
+
+
+  end subroutine write_cboundary
+
+  !**********************************************************************************
+  ! read_cboundary reads a BC vector in a simple ASCII format; vector must match
+  ! the input grid; file unit must already be available for reading; AK 2018-04-25
+  subroutine read_cboundary(fid, E, grid)
+
+      integer,        intent(in)          :: fid
+      type (cboundary), intent(inout)     :: E
+      type (grid_t), intent(in), optional :: grid
+
+      !  local variables
+      type (sparsevecc)                 :: SV
+      integer                           :: ii, istat
+
+      if (.not. E%allocated) then
+        if (present(grid)) then
+            call create_cboundary(grid,E)
+        else
+            write(0, *) 'BC vector not allocated: unable to read cboundary from file'
+            stop
+        end if
+      end if
+
+      ! write as sparse vector in ascii
+      call read_sparsevecc(fid,SV)
+
+      ! if grid is available, make sure the two are consistent
+      if (present(grid)) then
+        if ((maxval(SV%i) > grid%nx+1) .or. (maxval(SV%j) > grid%ny+1) .or. (maxval(SV%k) > grid%nz+1)) then
+            write(0, *) 'BC vector size does not match the grid in read_cboundary'
+            write(0, *) 'NX: ',grid%nx,maxval(SV%i)
+            write(0, *) 'NY: ',grid%ny,maxval(SV%j)
+            write(0, *) 'NZ: ',grid%nz,maxval(SV%k)
+            return
+        endif
+      endif
+
+      call copy_sparseveccb(SV,E)
+      call deall_sparsevecc(SV)
+
+  end subroutine read_cboundary
 
   !****************************************************************************
   ! scMult_cboundary multiplies vector stored as derived data type
@@ -982,5 +1199,335 @@ Contains
     endif
 
   end subroutine copy_bcvector
+
+  ! ***************************************************************************
+  ! * copy_sparsevectorb converts a compatible sparse vector directly into BC
+  ! * avoiding the sometimes unnecessary conversion to cvector. BC needs to be
+  ! * pre-allocated on input to this routine, and sparse vector needs to
+  ! * store the BC for this operation to make sense. AK 2018-04-25
+  subroutine copy_sparseveccb(inSV, outBC)
+
+    implicit none
+    type (sparsevecc), intent(in)                  :: inSV
+    type (cboundary), intent(inout)                :: outBC
+    integer                      :: ix, iy, iz, ic, ib, ibprev  ! dummy integers
+    integer                      :: nx, ny, nz, nCoeff, duplCoeff   ! dimensions
+    integer                      :: YMax, YMin       ! ends for BC writing
+    integer                      :: XMax, XMin       ! ends for BC writing
+    integer                      :: ZMin, ZMax       ! ends for BC writing
+
+
+    if (.not.inSV%allocated) then
+      write(0,*) 'inSV in copy_sparseveccb not allocated yet'
+      stop
+    end if
+
+    if (.not.outBC%allocated) then
+      write(0,*) 'outBC in copy_sparseveccb not allocated yet'
+      stop
+    else
+        nx = outBC%nx
+        ny = outBC%ny
+        nz = outBC%nz
+        nCoeff = 2*(nx*(nz+1)) + 2*((nx+1)*nz) + 2*(ny*(nz+1)) &
+               + 2*((ny+1)*nz) + 2*(nx*(ny+1)) + 2*((nx+1)*ny)
+        duplCoeff = 4*nx + 4*ny + 4*nz ! duplicate cube edges
+        if (inSV%nCoeff < nCoeff - duplCoeff) then
+            write(0,*) 'Error-complex sparse vector does not have complete BC info in copy_sparseveccb'
+            write(0,*) 'Values in BC sparse vector: ',inSV%nCoeff
+            write(0,*) 'Expected number of values : ',nCoeff,' less ',duplCoeff,' duplicate edges'
+            stop
+        elseif (inSV%gridType .ne. EDGE) then
+            write(0,*) 'Unable to copy sparsevecc of type ',trim(inSV%gridType),' to BC vector'
+            write(0,*) 'Input BC sparse vector is not defined on grid edges'
+            stop
+        end if
+    end if
+
+    YMax = outBC%ny+1
+    YMin = 1
+    XMax = outBC%nx+1
+    XMin = 1
+    ZMax = outBC%nz+1
+    ZMin = 1
+
+    ib = 0
+    ibprev = 0
+
+    do ic = 1,inSV%nCoeff
+        ix = inSV%i(ic)
+        iy = inSV%j(ic)
+        iz = inSV%k(ic)
+        ibprev = ib
+        ! passing boundary values for the YMin and YMax sides
+        if ((iy == YMin) .and. (inSV%xyz(ic) == 1)) then ! x-component YMin face
+            outBC%xYMin(ix, iz) = inSV%c(ic)
+            ib = ib+1
+        elseif ((iy == YMax) .and. (inSV%xyz(ic) == 1)) then ! x-component YMax face
+            outBC%xYMax(ix, iz) = inSV%c(ic)
+            ib = ib+1
+        elseif ((iy == YMin) .and. (inSV%xyz(ic) == 3)) then ! z-component YMin face
+            outBC%zYMin(ix, iz) = inSV%c(ic)
+            ib = ib+1
+        elseif ((iy == YMax) .and. (inSV%xyz(ic) == 3)) then ! z-component YMax face
+            outBC%zYMax(ix, iz) = inSV%c(ic)
+            ib = ib+1
+        end if
+        ! passing boundary values for the XMin and XMax sides
+        if ((ix == XMin) .and. (inSV%xyz(ic) == 2)) then ! y-component XMin face
+            outBC%yXMin(iy, iz) = inSV%c(ic)
+            ib = ib+1
+        elseif ((ix == XMax) .and. (inSV%xyz(ic) == 2)) then ! y-component XMax face
+            outBC%yXMax(iy, iz) = inSV%c(ic)
+            ib = ib+1
+        elseif ((ix == XMin) .and. (inSV%xyz(ic) == 3)) then ! z-component XMin face
+            outBC%zXMin(iy, iz) = inSV%c(ic)
+            ib = ib+1
+        elseif ((ix == XMax) .and. (inSV%xyz(ic) == 3)) then ! z-component XMax face
+            outBC%zXMax(iy, iz) = inSV%c(ic)
+            ib = ib+1
+        end if
+        ! passing boundary values for the ZMin and ZMax sides
+        if ((iz == ZMin) .and. (inSV%xyz(ic) == 1)) then ! x-component ZMin face
+            outBC%xZMin(ix, iy) = inSV%c(ic)
+            ib = ib+1
+        elseif ((iz == ZMax) .and. (inSV%xyz(ic) == 1)) then ! x-component ZMax face
+            outBC%xZMax(ix, iy) = inSV%c(ic)
+            ib = ib+1
+        elseif ((iz == ZMin) .and. (inSV%xyz(ic) == 2)) then ! y-component ZMin face
+            outBC%yZMin(ix, iy) = inSV%c(ic)
+            ib = ib+1
+        elseif ((iz == ZMax) .and. (inSV%xyz(ic) == 2)) then ! y-component ZMax face
+            outBC%yZMax(ix, iy) = inSV%c(ic)
+            ib = ib+1
+        end if
+    end do
+
+    if (ib .ne. nCoeff) then
+        write(0,*) 'Warning: BC copy from complex sparse vector might have failed in copy_sparseveccb'
+        write(0,*) 'copied ',ib,' values to fill in ',nCoeff,' values on BC edges...'
+    end if
+
+end subroutine copy_sparseveccb
+
+  ! ***************************************************************************
+  ! * copy_bsparsevector reads the boundary conditions as an input and writes
+  ! * them to a complex sparse vector; AK 2018-04-25
+  subroutine copy_bsparsevecc(inBC, outSV)
+
+    implicit none
+    type (cboundary), intent(in)     :: inBC
+    ! boundary conditions as an input
+    type (sparsevecc), intent(inout)    :: outSV
+    ! the electrical field as an output
+    integer                      :: ix, iy, iz, ic       ! dummy integers
+    integer                      :: nx, ny, nz, nCoeff   ! dimensions
+    integer                      :: YMax, YMin       ! ends for BC writing
+    integer                      :: XMax, XMin       ! ends for BC writing
+    integer                      :: ZMin, ZMax       ! ends for BC writing
+
+    if (.not.inBC%allocated) then
+      write(0,*) 'inBC in copy_bsparsevecc not allocated yet'
+      stop
+    end if
+
+    nx = inBC%nx
+    ny = inBC%ny
+    nz = inBC%nz
+
+    nCoeff = 2*(nx*(nz+1)) + 2*((nx+1)*nz) + 2*(ny*(nz+1)) &
+           + 2*((ny+1)*nz) + 2*(nx*(ny+1)) + 2*((nx+1)*ny) &
+           - (4*nx + 4*ny + 4*nz) ! no need to store duplicate edges
+
+    call create_sparsevecc(nCoeff,outSV,EDGE)
+
+    outSV%gridType = EDGE
+    ic = 1
+
+    YMax = inBC%ny+1
+    YMin = 1
+    XMax = inBC%nx+1
+    XMin = 1
+    ZMax = inBC%nz+1
+    ZMin = 1
+
+    ! NOTE: mind the 12 cube edges. Unless something special is done there,
+    ! x-components on x-edges at iy=1 iz=1, iy=YMax iz=1, iy=1 iz=ZMax, iy=YMax iz=ZMax get written twice
+    ! y-components on y-edges at ix=1 iz=1, ix=XMax iz=1, ix=1 iz=ZMax, ix=XMax iz=ZMax get written twice
+    ! z-components on z-edges at iy=1 ix=1, iy=YMax ix=1, iy=1 ix=XMax, iy=YMax ix=XMax get written twice
+
+    ! passing boundary condition values to the complete description
+    ! of the vector field. To avoid duplication at cube edges, wrap around
+    ! the cube and ignore the last set of edges for each side
+
+    ! Going around the cube, clockwise:
+    ! x-component - ZMin,YMax,ZMax,YMin
+    ! passing boundary values for the ZMin face
+    ! x-component at all y-edges except last
+    do ix = 1, nx
+        do iy = 1, ny
+            ! Passing the ZMin face
+            outSV%i(ic) = ix
+            outSV%j(ic) = iy
+            outSV%k(ic) = ZMin
+            outSV%xyz(ic) = 1
+            outSV%c(ic) = inBC%xZMin(ix, iy)
+            ic = ic+1
+        enddo   ! iy
+    enddo      ! ix
+    ! passing boundary values for the YMax face
+    ! x-component at all y-edges except last
+    do ix = 1, nx
+        do iz = 1, nz
+            ! Passing the YMax face
+            outSV%i(ic) = ix
+            outSV%j(ic) = YMax
+            outSV%k(ic) = iz
+            outSV%xyz(ic) = 1
+            outSV%c(ic) = inBC%xYMax(ix, iz)
+            ic = ic+1
+        enddo ! iz
+    enddo    ! ix
+    ! passing boundary values for the ZMax face
+    ! x-component at all y-edges except first
+    do ix = 1, nx
+        do iy = 2, ny+1
+            ! Passing the ZMax face
+            outSV%i(ic) = ix
+            outSV%j(ic) = iy
+            outSV%k(ic) = ZMax
+            outSV%xyz(ic) = 1
+            outSV%c(ic) = inBC%xZMax(ix, iy)
+            ic = ic+1
+        enddo   ! iy
+    enddo      ! ix
+    ! passing boundary values for the YMin face
+    ! x-component at all z-edges except first
+    do ix = 1, nx
+        do iz = 2, nz+1
+            ! Passing the YMin face
+            outSV%i(ic) = ix
+            outSV%j(ic) = YMin
+            outSV%k(ic) = iz
+            outSV%xyz(ic) = 1
+            outSV%c(ic) = inBC%xYMin(ix, iz)
+            ic = ic+1
+        enddo ! iz
+    enddo    ! ix
+
+    ! Going around the cube, clockwise:
+    ! y-component - ZMin,XMax,ZMax,XMin
+    ! passing boundary values for the ZMin face
+    ! y-component at all x-edges except last
+    do ix = 1, nx
+        do iy = 1, ny
+            ! Passing the ZMin face
+            outSV%i(ic) = ix
+            outSV%j(ic) = iy
+            outSV%k(ic) = ZMin
+            outSV%xyz(ic) = 2
+            outSV%c(ic) = inBC%yZMin(ix, iy)
+            ic = ic+1
+        enddo   ! ix
+    enddo      ! iy
+    ! passing boundary values for the XMax face
+    ! y-component at all z-edges except last
+    do iy = 1, ny
+        do iz = 1, nz
+            ! Passing the XMax face
+            outSV%i(ic) = XMax
+            outSV%j(ic) = iy
+            outSV%k(ic) = iz
+            outSV%xyz(ic) = 2
+            outSV%c(ic) = inBC%yXMax(iy, iz)
+            ic = ic+1
+        enddo  ! iy
+    enddo     ! iz
+    ! passing boundary values for the ZMax face
+    ! y-component at all x-edges except first
+    do ix = 2, nx+1
+        do iy = 1, ny
+            ! Passing the ZMax face
+            outSV%i(ic) = ix
+            outSV%j(ic) = iy
+            outSV%k(ic) = ZMax
+            outSV%xyz(ic) = 2
+            outSV%c(ic) = inBC%yZMax(ix, iy)
+            ic = ic+1
+        enddo   ! ix
+    enddo      ! iy
+    ! passing boundary values for the XMin face
+    ! y-component at all z-edges except first
+    do iy = 1, ny
+        do iz = 2, nz+1
+            ! Passing the XMin face
+            outSV%i(ic) = XMin
+            outSV%j(ic) = iy
+            outSV%k(ic) = iz
+            outSV%xyz(ic) = 2
+            outSV%c(ic) = inBC%yXMin(iy, iz)
+            ic = ic+1
+        enddo  ! iy
+    enddo     ! iz
+
+    ! Going around the cube, clockwise:
+    ! z-component = XMin,YMax,XMax,YMin
+    ! passing boundary values for the XMin face
+    ! z-component at all y-edges except last
+    do iy = 1, ny
+        do iz = 1, nz
+            ! Passing the XMin face
+            outSV%i(ic) = XMin
+            outSV%j(ic) = iy
+            outSV%k(ic) = iz
+            outSV%xyz(ic) = 3
+            outSV%c(ic) = inBC%zXMin(iy, iz)
+            ic = ic+1
+        enddo  ! iy
+    enddo     ! iz
+    ! passing boundary values for the YMax face
+    ! z-component at all x-edges except last
+    do ix = 1, nx
+        do iz = 1, nz
+            ! Passing the YMax face
+            outSV%i(ic) = ix
+            outSV%j(ic) = YMax
+            outSV%k(ic) = iz
+            outSV%xyz(ic) = 3
+            outSV%c(ic) = inBC%zYMax(ix, iz)
+            ic = ic+1
+        enddo  ! iz
+    enddo     ! ix
+    ! passing boundary values for the XMax face
+    ! z-component at all y-edges except first
+    do iy = 2, ny+1
+        do iz = 1, nz
+            ! Passing the XMax face
+            outSV%i(ic) = XMax
+            outSV%j(ic) = iy
+            outSV%k(ic) = iz
+            outSV%xyz(ic) = 3
+            outSV%c(ic) = inBC%zXMax(iy, iz)
+            ic = ic+1
+        enddo  ! iy
+    enddo     ! iz
+    ! passing boundary values for the YMin face
+    ! z-component at all x-edges except first
+    do ix = 2, nx+1
+        do iz = 1, nz
+            ! Passing the YMin face
+            outSV%i(ic) = ix
+            outSV%j(ic) = YMin
+            outSV%k(ic) = iz
+            outSV%xyz(ic) = 3
+            outSV%c(ic) = inBC%zYMin(ix, iz)
+            ic = ic+1
+        enddo  ! iz
+    enddo     ! ix
+
+    outSV%allocated = .true.
+    outSV%temporary = .false.
+
+end subroutine copy_bsparsevecc
 
 end module sg_boundary ! sg_boundary

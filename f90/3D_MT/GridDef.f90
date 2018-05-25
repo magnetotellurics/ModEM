@@ -455,12 +455,15 @@ Contains
         end do
 
     else if (index(airlayers%method,'read from file')>0) then
-            ! air layers have been read from file
-            if (present(DzAir)) then
-                airlayers%Dz = DzAir
-            else
-                write(0,*) 'Cannot set up air layers by reading from file: values not provided on input to setup_airlayers'
+        ! air layers have been read from file and are already stored in Dz
+        ! so only need to reallocate if passing a new array to it
+        if (present(DzAir)) then
+            if (airlayers%allocated) then
+                deallocate(airlayers%Dz, STAT=status)
             end if
+            allocate(airlayers%Dz(airlayers%Nz), STAT=status)
+            airlayers%Dz = DzAir
+        end if
     end if
 
     write (*,'(a60,a20)') 'Air layers setup complete according to the method : ',adjustl(airlayers%method)

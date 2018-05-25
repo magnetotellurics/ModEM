@@ -273,7 +273,7 @@ program earth
     !   write(0,'(2g15.7)') func2(ifunc)-func1(ifunc),dot_product(da(:),grad(ifunc,:))
     !end do
 
-    write(0,'(a37,es12.6)') 'The norm of the gradient was ',sqrt(dotProd(grad,grad))
+    write(0,'(a37,es13.6)') 'The norm of the gradient was ',sqrt(dotProd(grad,grad))
     write(0,*)
 
     write(0,'(a82)') 'Total derivative test based on Taylor series [f(m0+dm) ~ f(m0) + df/dm|_{m0} x dm]'
@@ -1032,7 +1032,7 @@ end program earth
 	grad = dmisfitSmooth
 
     gnorm = sqrt(dotProd(grad,grad))
-    write(*,'(a37,es12.6)') 'The norm of the gradient is ',gnorm
+    write(*,'(a37,es13.6)') 'The norm of the gradient is ',gnorm
 
     call deall_dataVectorMTX(allResp)
 	call deall_solnVectorMTX(H)

@@ -48,6 +48,7 @@ fi
 if [ $3 = "spherical" ]; then
 	sed -i .bak 's/GridCalc\./GridCalcS\./g' $1
 	sed -i .bak 's/boundary_ws\./boundary_wsS\./g' $1	
+	#sed -i .bak 's/\.\/objs\/3D_MT\/(\w+)/\.\/objs\/3D_MT\/(\w+)s/g' $1	
 	rm $1.bak
     echo 1>&2 Spherical version of the makefile ready to use.
 else

@@ -249,8 +249,8 @@ Contains
 	        m%cellCond%v = exp(m%cellCond%v)
 	        m%AirCond=exp(m%AirCond)
 	    else if(m%paramType == LOG_10) then
-            m%cellCond%v = 10.**m%cellCond%v
-            m%AirCond=10.**m%AirCond
+            m%cellCond%v = exp(m%cellCond%v * log(10.))
+            m%AirCond=exp(m%AirCond * log(10.))
         endif
      elseif ((m%paramType == LOGE) .and. (paramType == LOG_10)) then
         ! convert from natural log to log10
@@ -320,6 +320,34 @@ Contains
      zeroValued = m%zeroValued
 
    end function iszero_modelParam
+
+!**********************************************************************
+   subroutine random_modelParam(m,eps)
+
+     !  generated a random model parameter perturbation [0,1) in log
+     !  space; otherwise, exp of that in linear space
+
+     type(modelParam_t), intent(inout)  :: m
+     real(kind=prec), intent(in), optional :: eps
+
+     if (.not. m%allocated) then
+       call errStop('model parameter not allocated in random_modelParam')
+     end if
+
+     if (present(eps)) then
+        call random_rscalar(m%cellCond,eps)
+     else
+        call random_rscalar(m%cellCond)
+     endif
+
+     if(m%paramType == LINEAR) then
+        m%cellCond%v = exp(m%cellCond%v)
+     endif
+
+     m%updated = .true.
+     m%zeroValued = .false.
+
+   end subroutine random_modelParam
 
 !**********************************************************************
 

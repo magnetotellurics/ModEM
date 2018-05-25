@@ -40,6 +40,8 @@ module dataTypes
 
      ! for 3D MT data types will initially be used only to distinguish
      ! between local transfer function types (later maybe add interstation TFs)
+     ! this is excessive in the current implementation since iDt always maps to
+     ! an integer index in the dataType dictionary... but I'll keep it for now [AK]
      integer		   :: tfType
 
      ! the units of the data type. If a value has different units, it's a new data type.
@@ -259,10 +261,14 @@ Contains
 		   ! SI units for E/H
 		   factor1 = ONE * 1000.0 * 10000.0/(4*PI) ! approx. 796000.0
 		elseif (index(oldUnits,'[V/m]')>0) then
-		  factor1 = ONE
+		   factor1 = ONE
 		elseif (index(oldUnits,'[T]')>0) then
-		  factor1 = ONE
-		  else
+		   factor1 = ONE
+        elseif (index(oldUnits,'[nT]')>0) then
+           factor1 = ONE * 1.0e-9
+        elseif (index(oldUnits,'[A/m]')>0) then
+           factor1 = ONE * (4*PI*1.0e-7)
+		else
 		   call errStop('Unknown input units in ImpUnits: '//trim(oldUnits))
 		end if
 
@@ -280,6 +286,10 @@ Contains
 		   factor2 = ONE
 		elseif (index(newUnits,'[T]')>0) then
 		   factor2 = ONE
+        elseif (index(newUnits,'[nT]')>0) then
+           factor2 = ONE * 1.0e9
+        elseif (index(newUnits,'[A/m]')>0) then
+           factor2 = ONE / (4*PI*1.0e-7)
 		else	
 		   call errStop('Unknown output units in ImpUnits: '//trim(newUnits))
 		end if

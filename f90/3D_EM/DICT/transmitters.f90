@@ -30,6 +30,9 @@ module transmitters
     !   this is supported for some rare circumstances (e.g., tides);
     !   doesn't exist for MT problem and should be ignored by most users
     !type(sparsevecc)          :: jInt
+    ! for now, hard code the name in the ForwardSolver and read it there.
+    !   this is very crude but may just do for our purposes.
+    !character(120)            :: fn_intsource = ''
 		  
 !######################################################	 		  
 ! CSEM details
@@ -216,7 +219,9 @@ Contains
       if (trim(Txa%id) .eq. trim(Txb%id)) then
         YESNO = .true.
       end if
-    end if
+    else
+        write(0,*) 'Unknown transmitter type #',trim(Txa%Tx_type)
+   end if
  
   end function compare_tx
 
@@ -257,7 +262,7 @@ Contains
     character(*), intent(in)            :: tx_type
     integer                             :: iTxt
 
-    select case (tx_type)
+    select case (trim(adjustl(tx_type)))
        case('MT')
           iTxt = MT
        case('DC')

@@ -250,7 +250,7 @@ Contains
    freq => freqList%info(iTx)
 
    ! run FWD solver
-   write (*,'(a12,a12,a3,a20,i4,a2,es12.6,a5)') node_info, &
+   write (*,'(a12,a12,a3,a20,i4,a2,es13.6,a5)') node_info, &
     'Solving the 1D ',FWD,' problem for period ',iTx,': ',1/freq%value,' secs'
 
     period  = 1./freq%value     ! period in secs
@@ -329,7 +329,7 @@ Contains
    freq => freqList%info(iTx)
 
    ! run FWD/ADJ solver
-   write (*,'(a12,a12,a3,a20,i4,a2,es12.6,a5)') node_info, &
+   write (*,'(a12,a12,a3,a20,i4,a2,es13.6,a5)') node_info, &
     'Solving the ',FWD,' problem for period ',iTx,': ',1/freq%value,' secs'
 
    omega  = 2.0d0*pi*freq%value     ! angular frequency (radians/sec)
@@ -429,7 +429,7 @@ Contains
    freq => freqList%info(iTx)
 
    ! run FWD/ADJ solver
-   write (*,'(a12,a12,a3,a20,i4,a2,es12.6,a5)') node_info, &
+   write (*,'(a12,a12,a3,a20,i4,a2,es13.6,a5)') node_info, &
     'Solving the ',FWDorADJ,' problem for period ',iTx,': ',1/freq%value,' secs'
 
    omega  = 2.0d0*pi*freq%value     ! angular frequency (radians/sec)
