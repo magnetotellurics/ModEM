@@ -7,6 +7,7 @@ module EMfieldInterp
   use utilities
   use sg_sparse_vector
   use ModelSpace, sigC => ModelParamToOneEdge
+  use gridcalc
 
   implicit none
 
@@ -484,7 +485,7 @@ Contains
     integer					:: num = 4
     integer, dimension(4)			:: I,J,K,AXES
     real (kind=prec), dimension(3,2)   	:: w
-    complex (kind=prec), dimension(4)  	:: C
+    complex (kind=prec), dimension(4)  	:: C,Cold
     complex (kind=prec)   	       	:: c1,c2,i_omega_inv
     type (sparsevecc)				:: LConeH, LCH, LCtemp
     character (len=80)				:: gridType = ''
@@ -508,6 +509,7 @@ Contains
     ! compute coefficients for bi-linear spline interpolation of
     ! magnetic fields from grid cell faces to location x
     Call BinterpSetUp(inGrid,x,xyz,LCH)
+	 
     Call create_sparsevecc(num,LC,gridType)
 
     !   loop over coefficients for mag field interpolation
@@ -530,10 +532,20 @@ Contains
           K(2) = LCH%k(ii)+1
           K(3) = LCH%k(ii)
           K(4) = LCH%k(ii)
-          C(1) = 1./inGrid%dz(K(1))
-	  C(2) = -1./inGrid%dz(K(1))
-          C(3) = -1./inGrid%dy(J(1))
-          C(4) = 1./inGrid%dy(J(1))
+          ! ORIGINAL - LOOKS LIKE THE ORDER IS WRONG
+          Cold(1) = 1./inGrid%dz(K(1))
+          Cold(2) = -1./inGrid%dz(K(1))
+          Cold(3) = -1./inGrid%dy(J(1))
+          Cold(4) = 1./inGrid%dy(J(1))
+          ! h = e*sum(l)/S
+          C(1) = 1*L_E%y(I(1),J(1),K(1))/S_F%x(I(1),J(1),K(1))
+          C(2) = -1*L_E%y(I(2),J(2),K(2))/S_F%x(I(1),J(1),K(1))
+          C(3) = -1*L_E%z(I(3),J(3),K(3))/S_F%x(I(1),J(1),K(1))
+          C(4) = 1*L_E%z(I(4),J(4),K(4))/S_F%x(I(1),J(1),K(1))
+
+!           if (sum(abs(C-Cold)) > 1e-6) then
+!            write(0,*) 'WARNING for X at ',ii
+!           end if
 
        elseif(LCH%xyz(ii).eq.2) then
           AXES(1) = 3
@@ -552,11 +564,20 @@ Contains
           I(2) = LCH%i(ii)+1
           I(3) = LCH%i(ii)
           I(4) = LCH%i(ii)
-          C(1) = 1./inGrid%dx(I(1))
-          C(2) = -1./inGrid%dx(I(1))
-          C(3) = -1./inGrid%dz(K(1))
-          C(4) = 1./inGrid%dz(K(1))
-
+          ! ORIGINAL - LOOKS LIKE THE ORDER IS WRONG
+          Cold(1) = 1./inGrid%dx(I(1))
+          Cold(2) = -1./inGrid%dx(I(1))
+          Cold(3) = -1./inGrid%dz(K(1))
+          Cold(4) = 1./inGrid%dz(K(1))
+          ! 
+          C(1) = 1*L_E%z(I(1),J(1),K(1))/S_F%y(I(1),J(1),K(1))
+          C(2) = -1*L_E%z(I(2),J(2),K(2))/S_F%y(I(1),J(1),K(1))
+          C(3) = -1*L_E%x(I(3),J(3),K(3))/S_F%y(I(1),J(1),K(1))
+          C(4) = 1*L_E%x(I(4),J(4),K(4))/S_F%y(I(1),J(1),K(1))
+          
+!           if (sum(abs(C-Cold)) > 1e-6) then
+!             write(0,*) 'WARNING for Y at ',ii
+!           end if
        else
           AXES(1) = 1
           AXES(2) = 1
@@ -574,26 +595,38 @@ Contains
           J(2) = LCH%j(ii)+1
           J(3) = LCH%j(ii)
           J(4) = LCH%j(ii)
-          C(1) = 1./inGrid%dy(J(1))
-          C(2) = -1./inGrid%dy(J(1))
-          C(3) = -1./inGrid%dx(I(1))
-          C(4) = 1./inGrid%dx(I(1))
+          ! ORIGINAL - LOOKS LIKE THE ORDER IS WRONG
+          Cold(1) = 1./inGrid%dy(J(1))
+          Cold(2) = -1./inGrid%dy(J(1))
+          Cold(3) = -1./inGrid%dx(I(1))
+          Cold(4) = 1./inGrid%dx(I(1))
+          ! 
+          C(1) = 1*L_E%x(I(1),J(1),K(1))/S_F%z(I(1),J(1),K(1))
+          C(2) = -1*L_E%x(I(2),J(2),K(2))/S_F%z(I(1),J(1),K(1))
+          C(3) = -1*L_E%y(I(3),J(3),K(3))/S_F%z(I(1),J(1),K(1))
+          C(4) = 1*L_E%y(I(4),J(4),K(4))/S_F%z(I(1),J(1),K(1))
+
+          
+!           if (sum(abs(C-Cold)) > 1e-6) then
+!             write(0,*) 'WARNING for Z at ',ii
+!           end if
        endif
 
        if(ii.eq.1) then
           ! initialize LC (coefficients for H measurement functional:
           ! coefficients for first face
-          Call create_sparsevecc(num,LConeH,gridType)
-	  Call create_sparsevecc(num,LCtemp, gridType)
+      Call create_sparsevecc(num,LConeH,gridType)
+	    Call create_sparsevecc(num,LCtemp,gridType)
           LC%i = I
           LC%j = J
           LC%k = K
           LC%xyz = AXES
           LC%c= C*LCH%c(1)*i_omega_inv
+     
        else
           ! add coefficients for next face
           ! first store cumulative sum so far in LCtemp
-	  LCtemp = LC
+	        LCtemp = LC
           LConeH%i = I
           LConeH%j = J
           LConeH%k = K
@@ -603,10 +636,11 @@ Contains
           c1 = C_ONE
           c2 = LCH%c(ii)*i_omega_inv
           Call linComb_sparsevecc(LCtemp,c1,LConeH,c2,LC)
-
+                
        endif
 
     enddo
+	     
     ! do all the clean-up while exiting
     deallocate(LConeH%i, STAT=status)
     deallocate(LConeH%j, STAT=status)

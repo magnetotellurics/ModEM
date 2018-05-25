@@ -39,6 +39,7 @@ Contains
       th1=(th(j  )+th(j+1))/2.d0
        r1=( r(k  )+ r(k+1))/2.d0
 
+      ! integral & finite difference
       vijk=r1*dsin( th1 )*abs( (r(k)**2)-(r(k+1)**2) )*abs( th(j+1)-th(j) )*ph(i)/2.d0
 
       return
@@ -57,6 +58,8 @@ Contains
 !    ------ phai denotes interval
 !    ------ theta denotes angle from the north pole
 !    ------ r is measured from the center of the earth
+!    ------ modified to allow for boundaries [2014/02 AK]
+!    ------ zero longitude and poles still need special handling
 !   -----------------------------------------------------
 
       implicit none
@@ -67,13 +70,39 @@ Contains
       real(8),dimension(:)           :: r
       real(8)                        :: vijk2,th1,th2,r1,r2,dph
 
-      dph=(ph(i1 )+ph(i2 ))/2.d0
-      th1=(th(j  )+th(j+1))/2.d0
-      th2=(th(j+1)+th(j+2))/2.d0
-       r1=( r(k  )+ r(k+1))/2.d0
-       r2=( r(k+1)+ r(k+2))/2.d0
+      if (i1 < 1) then
+        dph = ( ph(i2 ) )/2.0d0
+      elseif (i2 > size(ph)) then
+        dph = ( ph(i1 ) )/2.0d0
+      else
+        dph = ( ph(i1 )+ph(i2 ) )/2.0d0
+      end if
 
-      vijk2=r(k+1)*dsin( th(j+1) )*abs( (r1**2)-(r2**2) )*abs( th2-th1 )*dph/2.d0
+      if (j == 0) then
+        th1 = th(j+1)
+        th2 = ( th(j+1)+th(j+2) )/2.0d0
+      elseif (j == size(th)-1) then
+        th1 = ( th(j  )+th(j+1) )/2.0d0
+        th2 = th(j+1)
+      else
+        th1 = ( th(j  )+th(j+1) )/2.0d0
+        th2 = ( th(j+1)+th(j+2) )/2.0d0
+      end if
+
+      if (k == 0) then
+        r1 = r(k+1)
+        r2 = ( r(k+1)+r(k+2) )/2.0d0
+      elseif (k == size(r)-1) then
+        r1 = ( r(k  )+r(k+1) )/2.0d0
+        r2 = r(k+1)
+      else
+        r1 = ( r(k  )+r(k+1) )/2.0d0
+        r2 = ( r(k+1)+r(k+2) )/2.0d0
+      end if
+
+      ! integral & finite difference
+      !!!vijk2=r(k+1)*dsin( th(j+1) )*abs( (r1**2)-(r2**2) )*abs( th2-th1 )*dph/2.d0
+      vijk2=((r1+r2)/2.0d0)*dsin( (th1+th2)/2.0d0 )*abs( (r1**2)-(r2**2) )*abs( th2-th1 )*dph/2.0d0  
 
       return
       end subroutine volume_vijk2
@@ -99,6 +128,7 @@ Contains
       real(8),dimension(:)	         :: r
       real(8)                        :: sijk
  
+      ! integral & finite difference
       sijk=abs( (r(k)**2)-(r(k+1)**2) )*abs( th(j+1)-th(j) )/2.d0
  
       return
@@ -117,6 +147,8 @@ Contains
 !    ------ phai denotes interval
 !    ------ theta denotes angle from the north pole
 !    ------ r is measured from the center of the earth
+!    ------ modified to allow for boundaries [2014/02 AK]
+!    ------ zero longitude and poles still need special handling
 !   -----------------------------------------------------
 
       implicit none
@@ -126,10 +158,29 @@ Contains
       real(8),dimension(:)			 :: r
       real(8)						 :: sijk2,th1,th2,r1,r2
  
-      th1=(th(j  )+th(j+1))/2.d0
-      th2=(th(j+1)+th(j+2))/2.d0
-       r1=( r(k  )+ r(k+1))/2.d0
-       r2=( r(k+1)+ r(k+2))/2.d0
+      if (j == 0) then
+        th1 = th(j+1)
+        th2 = ( th(j+1)+th(j+2) )/2.0d0
+      elseif (j == size(th)-1) then
+        th1 = ( th(j  )+th(j+1) )/2.0d0
+        th2 = th(j+1)
+      else
+        th1 = ( th(j  )+th(j+1) )/2.0d0
+        th2 = ( th(j+1)+th(j+2) )/2.0d0
+      end if
+
+      if (k == 0) then
+        r1 = r(k+1)
+        r2 = ( r(k+1)+r(k+2) )/2.0d0
+      elseif (k == size(r)-1) then
+        r1 = ( r(k  )+r(k+1) )/2.0d0
+        r2 = r(k+1)
+      else
+        r1 = ( r(k  )+r(k+1) )/2.0d0
+        r2 = ( r(k+1)+r(k+2) )/2.0d0
+      end if
+
+      ! integral & finite difference
       sijk2=abs( (r1**2)-(r2**2) )*abs( th2-th1 )/2.d0
  
       return
@@ -158,6 +209,7 @@ Contains
       real(8),dimension(:)         :: r
       real(8) sjki
  
+      ! integral & finite difference
       sjki=abs( (r(k)**2)-(r(k+1)**2) )* dsin( th(j) )*ph(i)/2.0d0
  
       return
@@ -176,6 +228,8 @@ Contains
 !    ------ phai denotes interval
 !    ------ theta denotes angle from the north pole
 !    ------ r is measured from the center of the earth
+!    ------ modified to allow for boundaries [2014/02 AK]
+!    ------ zero longitude and poles still need special handling
 !   -----------------------------------------------------
 
       implicit none
@@ -187,10 +241,29 @@ Contains
       real(8)                          :: sjki2
       real(8)                          :: dph,th1,r1,r2
  
-      dph = ( ph(i1 )+ph(i2 ) )/2.0d0
+      if (i1 < 1) then
+        dph = ( ph(i2 ) )/2.0d0
+      elseif (i2 > size(ph)) then
+        dph = ( ph(i1 ) )/2.0d0
+      else
+        dph = ( ph(i1 )+ph(i2 ) )/2.0d0
+      end if
+
+      if (k == 0) then
+        r1 = r(k+1)
+        r2 = ( r(k+1)+r(k+2) )/2.0d0
+      elseif (k == size(r)-1) then
+        r1 = ( r(k  )+r(k+1) )/2.0d0
+        r2 = r(k+1)
+      else
+        r1 = ( r(k  )+r(k+1) )/2.0d0
+        r2 = ( r(k+1)+r(k+2) )/2.0d0
+      end if
+
       th1 = ( th(j  )+th(j+1) )/2.0d0
-       r1 = (  r(k  )+ r(k+1) )/2.0d0
-       r2 = (  r(k+1)+ r(k+2) )/2.0d0
+
+
+      ! integral & finite difference
       sjki2=abs( (r1**2)-(r2**2) )* dsin( th1 )*dph/2.0d0
  
       return
@@ -219,7 +292,11 @@ Contains
       real(8),dimension(:)			:: r
       real(8)						:: skij
  
-      skij=(r(k)**2)*abs( dcos( th(j) )- dcos( th(j+1)) )*ph(i)
+      ! integral
+      !skij=(r(k)**2)*abs( dcos( th(j) )- dcos( th(j+1)) )*ph(i)
+
+      ! finite difference
+      skij=(r(k)**2)*abs( th(j) - th(j+1) )*abs( dsin( (th(j) + th(j+1))/2. ) )*ph(i)
  
       return
       end subroutine area_skij
@@ -237,6 +314,8 @@ Contains
 !    ------ phai denotes interval
 !    ------ theta denotes angle from the north pole
 !    ------ r is measured from the center of the earth
+!    ------ modified to allow for boundaries [2014/02 AK]
+!    ------ zero longitude and poles still need special handling
 !   -----------------------------------------------------
 
       implicit none
@@ -248,11 +327,33 @@ Contains
       real(8)                       :: skij2
       real(8)                       :: r1,th1,th2,dph
  
-      dph = ( ph(i1)+ph(i2) )/2.d0
-      th1 = ( th(j  )+th(j+1) )/2.d0
-      th2 = ( th(j+1)+th(j+2) )/2.d0
-       r1 = (  r(k  )+ r(k+1) )/2.d0
-      skij2=(r1**2)*abs( dcos( th1 )- dcos( th2 ) )*dph
+      if (i1 < 1) then
+        dph = ( ph(i2 ) )/2.0d0
+      elseif (i2 > size(ph)) then
+        dph = ( ph(i1 ) )/2.0d0
+      else
+        dph = ( ph(i1 )+ph(i2 ) )/2.0d0
+      end if
+
+      if (j == 0) then
+        th1 = th(j+1)
+        th2 = ( th(j+1)+th(j+2) )/2.0d0
+      elseif (j == size(th)-1) then
+        th1 = ( th(j  )+th(j+1) )/2.0d0
+        th2 = th(j+1)
+      else
+        th1 = ( th(j  )+th(j+1) )/2.0d0
+        th2 = ( th(j+1)+th(j+2) )/2.0d0
+      end if
+
+      r1 = (  r(k  )+ r(k+1) )/2.0d0
+
+
+      ! integral
+      !skij2=(r1**2)*abs( dcos( th1 )- dcos( th2 ) )*dph
+
+      ! finite difference
+      skij2=(r1**2)*abs( th1 - th2 )*abs( dsin( (th1 + th2)/2. ) )*dph
  
       return
       end subroutine area_skij2
@@ -295,6 +396,8 @@ Contains
 !    ------ phai denotes interval
 !    ------ theta denotes angle from the north pole
 !    ------ r is measured from the center of the earth
+!    ------ modified to allow for boundaries [2014/02 AK]
+!    ------ zero longitude and poles still need special handling
 !-------------------------------------------------------------
 
       implicit none
@@ -305,7 +408,13 @@ Contains
       real(8),dimension(:)            :: r
       real(8)                         :: xijk2,r1,th1,dph
 
-      dph = ( ph(i1 )+ph(i2 ) )/2.0d0
+      if (i1 < 1) then
+        dph = ( ph(i2 ) )/2.0d0
+      elseif (i2 > size(ph)) then
+        dph = ( ph(i1 ) )/2.0d0
+      else
+        dph = ( ph(i1 )+ph(i2 ) )/2.0d0
+      end if
       th1 = ( th(j  )+th(j+1) )/2.0d0
        r1 = (  r(k  )+ r(k+1) )/2.0d0
 
@@ -379,6 +488,8 @@ Contains
 !    ------ phai denotes interval
 !    ------ theta denotes angle from the north pole
 !    ------ r is measured from the center of the earth
+!    ------ modified to allow for boundaries [2014/02 AK]
+!    ------ zero longitude and poles still need special handling
 !-------------------------------------------------------------
 
       implicit none
@@ -388,9 +499,17 @@ Contains
       real(8),dimension(:)                  :: r
       real(8)                               :: yijk2,r1,th1,th2
 
-      th1 = ( th(j  )+th(j+1) )/2.0d0
-      th2 = ( th(j+1)+th(j+2) )/2.0d0
-       r1 = (  r(k  )+ r(k+1) )/2.0d0
+      if (j == 0) then
+        th1 = th(j+1)
+        th2 = ( th(j+1)+th(j+2) )/2.0d0
+      elseif (j == size(th)-1) then
+        th1 = ( th(j  )+th(j+1) )/2.0d0
+        th2 = th(j+1)
+      else
+        th1 = ( th(j  )+th(j+1) )/2.0d0
+        th2 = ( th(j+1)+th(j+2) )/2.0d0
+      end if
+      r1 = (  r(k  )+ r(k+1) )/2.0d0
 
       yijk2=r1*abs( th2-th1 )
 
@@ -461,6 +580,8 @@ Contains
 !    ------ phai denotes interval
 !    ------ theta denotes angle from the north pole
 !    ------ r is measured from the center of the earth
+!    ------ modified to allow for boundaries [2014/02 AK]
+!    ------ zero longitude and poles still need special handling
 !-------------------------------------------------------------
 
       implicit none
@@ -469,8 +590,16 @@ Contains
       real(8),dimension(:)              :: r
       real(8)                           :: zijk2,r1,r2
 
-      r1 = (  r(k  )+ r(k+1) )/2.0d0
-      r2 = (  r(k+1)+ r(k+2) )/2.0d0
+      if (k == 0) then
+        r1 = r(k+1)
+        r2 = ( r(k+1)+r(k+2) )/2.0d0
+      elseif (k == size(r)-1) then
+        r1 = ( r(k  )+r(k+1) )/2.0d0
+        r2 = r(k+1)
+      else
+        r1 = ( r(k  )+r(k+1) )/2.0d0
+        r2 = ( r(k+1)+r(k+2) )/2.0d0
+      end if
 
       zijk2=abs( r1-r2 )
 
@@ -706,7 +835,7 @@ Contains
       ii=nhx+nhy
       if (j > 1.and.j < m+1) then
          ii=ii+(l*(m-1)+2)*(k-2)+1+l*(j-2)+i
-      else if (j == 1) then
+      else if (k == 0) then
          ii=ii+(l*(m-1)+2)*(k-2)+1
       else if (j == m+1) then
          ii=ii+(l*(m-1)+2)*(k-1)

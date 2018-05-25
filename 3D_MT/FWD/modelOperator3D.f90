@@ -64,15 +64,38 @@ module modelOperator3D
   ! directions for adjacent faces for Ex term at ix, ij, ik point
   ! (collection of left/ right horizontal and top/ bottom vertical faces),
   !    etc.
-  real (kind=prec), pointer, dimension(:,:), private    :: xXY, xXZ
-  real (kind=prec), pointer, dimension(:,:), private    :: xY, xZ
-  real (kind=prec), pointer, dimension(:,:), private    :: xXO
-  real (kind=prec), pointer, dimension(:,:), private    :: yYX, yYZ
-  real (kind=prec), pointer, dimension(:,:), private    :: yX, yZ
-  real (kind=prec), pointer, dimension(:,:), private    :: yYO
-  real (kind=prec), pointer, dimension(:,:), private    :: zZX, zZY
-  real (kind=prec), pointer, dimension(:,:), private    :: zX, zY
-  real (kind=prec), pointer, dimension(:,:), private    :: zZO
+
+  real (kind=prec), pointer, dimension(:,:,:), private    :: xXYm, xXZm   ! Lana
+  real (kind=prec), pointer, dimension(:,:,:), private    :: xXYp, xXZp   ! Lana
+!
+! Extra 8 arrays for xY*, xZ*
+  real (kind=prec), pointer, dimension(:,:,:), private    :: xYmm, xZmm
+  real (kind=prec), pointer, dimension(:,:,:), private    :: xYmp, xZmp
+  real (kind=prec), pointer, dimension(:,:,:), private    :: xYpm, xZpm
+  real (kind=prec), pointer, dimension(:,:,:), private    :: xYpp, xZpp
+!
+  real (kind=prec), pointer, dimension(:,:,:), private    :: xXO 
+!
+
+  real (kind=prec), pointer, dimension(:,:,:), private    :: yYO
+  real (kind=prec), pointer, dimension(:,:,:), private    :: yYXm, yYZm   ! Lana
+  real (kind=prec), pointer, dimension(:,:,:), private    :: yYXp, yYZp   ! Lana
+!
+! Extra 8 arrays for yX*, yZ*
+  real (kind=prec), pointer, dimension(:,:,:), private    :: yXmm, yZmm
+  real (kind=prec), pointer, dimension(:,:,:), private    :: yXmp, yZmp
+  real (kind=prec), pointer, dimension(:,:,:), private    :: yXpm, yZpm
+  real (kind=prec), pointer, dimension(:,:,:), private    :: yXpp, yZpp
+!
+  real (kind=prec), pointer, dimension(:,:,:), private    :: zZO
+  real (kind=prec), pointer, dimension(:,:,:), private    :: zZXm, zZYm   ! Lana
+  real (kind=prec), pointer, dimension(:,:,:), private    :: zZXp, zZYp   ! Lana
+
+! Extra 8 arrays for zX*, zY*
+  real (kind=prec), pointer, dimension(:,:,:), private    :: zXmm, zYmm
+  real (kind=prec), pointer, dimension(:,:,:), private    :: zXmp, zYmp
+  real (kind=prec), pointer, dimension(:,:,:), private    :: zXpm, zYpm
+  real (kind=prec), pointer, dimension(:,:,:), private    :: zXpp, zYpp
 
   ! coefficients of diagonal of (unweighted) A operator
   type (cvector), private                                :: Adiag
@@ -371,136 +394,256 @@ Contains
     ! Output coefficients for curlcurlE (del X del X E)
     integer                     :: status     ! for dynamic memory allocation
     integer                     :: ix, iy, iz ! dummy variables
-
+    logical icheckarr
 
     ! Allocate memory for del x del operator coefficient arrays
     ! Coefficients for difference equation only uses interior
     ! nodes. however, we need boundary nodes for the adjoint problem
-    allocate(xXY(mGrid%ny+1, 2), STAT=status)   ! Allocate memory
-    allocate(xXZ(mGrid%nz+1, 2), STAT=status)   ! Allocate memory
-    allocate(xY(mGrid%nx, mGrid%ny+1), STAT=status)
-    allocate(xZ(mGrid%nx, mGrid%nz+1), STAT=status)
-    allocate(xXO(mGrid%ny, mGrid%nz), STAT=status)
+!
+    allocate(xXYm(mGrid%nx,mGrid%ny+1,mGrid%nz), STAT=status)  
+    allocate(xXZm(mGrid%nx,mGrid%ny,mGrid%nz+1), STAT=status) 
+    allocate(xXYp(mGrid%nx,mGrid%ny+1,mGrid%nz), STAT=status) 
+    allocate(xXZp(mGrid%nx,mGrid%ny,mGrid%nz+1), STAT=status) 
+    allocate(xXO(mGrid%nx,mGrid%ny,mGrid%nz), STAT=status)  
 
-    allocate(yYZ(mGrid%nz+1, 2), STAT=status)   ! Allocate memory
-    allocate(yYX(mGrid%nx+1, 2), STAT=status)   ! Allocate memory
-    allocate(yZ(mGrid%ny, mGrid%nz+1), STAT=status)
-    allocate(yX(mGrid%nx+1, mGrid%ny), STAT=status)
-    allocate(yYO(mGrid%nx, mGrid%nz), STAT=status)
-
-    allocate(zZX(mGrid%nx+1, 2), STAT=status)   ! Allocate memory
-    allocate(zZY(mGrid%ny+1, 2), STAT=status)   ! Allocate memory
-    allocate(zX(mGrid%nx+1, mGrid%nz), STAT=status)
-    allocate(zY(mGrid%ny+1, mGrid%nz), STAT=status)
-    allocate(zZO(mGrid%nx, mGrid%ny), STAT=status)
-
-
+! 8 extra arrays for xY*, xZ*
+    allocate(xYmm(mGrid%nx, mGrid%ny+1,mGrid%nz), STAT=status)
+    allocate(xZmm(mGrid%nx, mGrid%ny,mGrid%nz+1), STAT=status)
+    allocate(xYmp(mGrid%nx, mGrid%ny+1,mGrid%nz), STAT=status)
+    allocate(xZmp(mGrid%nx, mGrid%ny,mGrid%nz+1), STAT=status)
+    allocate(xYpm(mGrid%nx, mGrid%ny+1,mGrid%nz), STAT=status)
+    allocate(xZpm(mGrid%nx, mGrid%ny,mGrid%nz+1), STAT=status)
+    allocate(xYpp(mGrid%nx, mGrid%ny+1,mGrid%nz), STAT=status)
+    allocate(xZpp(mGrid%nx, mGrid%ny,mGrid%nz+1), STAT=status)
+!
+    allocate(yYZm(mGrid%nx,mGrid%ny,mGrid%nz+1), STAT=status)
+    allocate(yYZp(mGrid%nx,mGrid%ny,mGrid%nz+1), STAT=status)  
+    allocate(yYXm(mGrid%nx+1,mGrid%ny,mGrid%nz), STAT=status)   
+    allocate(yYXp(mGrid%nx+1,mGrid%ny,mGrid%nz), STAT=status)  
+!
+! Extra 8 arrays for yX*, yZ*
+    allocate(yZmm(mGrid%nx,mGrid%ny, mGrid%nz+1), STAT=status) 
+    allocate(yXmm(mGrid%nx+1, mGrid%ny,mGrid%nz), STAT=status) 
+    allocate(yZmp(mGrid%nx,mGrid%ny, mGrid%nz+1), STAT=status) 
+    allocate(yXmp(mGrid%nx+1, mGrid%ny,mGrid%nz), STAT=status) 
+    allocate(yZpm(mGrid%nx,mGrid%ny, mGrid%nz+1), STAT=status) 
+    allocate(yXpm(mGrid%nx+1, mGrid%ny,mGrid%nz), STAT=status) 
+    allocate(yZpp(mGrid%nx,mGrid%ny, mGrid%nz+1), STAT=status) 
+    allocate(yXpp(mGrid%nx+1, mGrid%ny,mGrid%nz), STAT=status) 
+    allocate(yYO(mGrid%nx, mGrid%ny, mGrid%nz), STAT=status) 
+!
+    allocate(zZXm(mGrid%nx+1,mGrid%ny,mGrid%nz), STAT=status)   
+    allocate(zZYm(mGrid%nx,mGrid%ny+1,mGrid%nz), STAT=status)  
+    allocate(zZXp(mGrid%nx+1,mGrid%ny,mGrid%nz), STAT=status) 
+    allocate(zZYp(mGrid%nx,mGrid%ny+1,mGrid%nz), STAT=status) 
+    allocate(zZO(mGrid%nx, mGrid%ny,mGrid%nz), STAT=status)     
+! extra 8 arrays for zX*, zY*
+    allocate(zXmm(mGrid%nx+1,mGrid%ny, mGrid%nz), STAT=status)     
+    allocate(zYmm(mGrid%nx,mGrid%ny+1, mGrid%nz), STAT=status)    
+    allocate(zXmp(mGrid%nx+1,mGrid%ny, mGrid%nz), STAT=status)     
+    allocate(zYmp(mGrid%nx,mGrid%ny+1, mGrid%nz), STAT=status)    
+    allocate(zXpm(mGrid%nx+1,mGrid%ny, mGrid%nz), STAT=status)     
+    allocate(zYpm(mGrid%nx,mGrid%ny+1, mGrid%nz), STAT=status)    
+    allocate(zXpp(mGrid%nx+1,mGrid%ny, mGrid%nz), STAT=status)     
+    allocate(zYpp(mGrid%nx,mGrid%ny+1, mGrid%nz), STAT=status)    
+!
     ! initalize all coefficients to zero (some remain zero)
-    xXY = 0.0
-    xXZ = 0.0
-    xY = 0.0
-    xZ = 0.0
+    xXYm=0;xXZm=0;xXYp=0;xXZp=0; 
+    xYmm = 0.0;xYmp = 0.0;xYpm = 0.0;xYpp = 0.0; 
+    xZmm = 0.0;xZmp = 0.0;xZpm = 0.0;xZpp = 0.0; 
     xXO = 0.0
-    yYX = 0.0
-    yYZ = 0.0
-    yX = 0.0
-    yZ = 0.0
-    zZX = 0.0
-    zZY = 0.0
-    zX = 0.0
-    zY = 0.0
+    yYXm=0;yYZm=0;yYXp=0;yYZp=0; 
+!
+    yXmm = 0.0;yXmp = 0.0;yXpm = 0.0;yXpp = 0.0; 
+    yZmm = 0.0;yZmp = 0.0;yZpm = 0.0;yZpp = 0.0; 
+    yYO = 0.0
+
+    zZXm=0;zZYm=0;zZXp=0;zZYp=0; 
+    zYmm = 0.0;zYmp = 0.0;zYpm = 0.0;zYpp = 0.0; 
+    zXmm = 0.0;zXmp = 0.0;zXpm = 0.0;zXpp = 0.0; 
     zZO = 0.0
+!
 
     ! coefficents for calculating Ex ; only loop over internal edges
     do iy = 2, mGrid%ny
-       xXY(iy, 2) = -1.0/ (mGrid%delY(iy) * mGrid%dy(iy))
-       xXY(iy, 1) = -1.0/ (mGrid%delY(iy) * mGrid%dy(iy-1))
+     do iz = 1, mGrid%nz                                    
+        xXYm(:,iy,iz) = - (l_E%x(:,iy-1,iz)*l_F%z(:,iy-1,iz)) &
+                           / (S_F%z(:,iy-1,iz)*S_E%x(:,iy,iz))
+        xXYp(:,iy,iz) = - (l_E%x(:,iy+1,iz)*l_F%z(:,iy,iz)) &
+                         / (S_F%z(:,iy,iz)*S_E%x(:,iy,iz))
+     enddo
     enddo
-
+!
     do iz = 2, mGrid%nz
-       xXZ(iz, 2) = -1.0/ (mGrid%delZ(iz) * mGrid%dz(iz))
-       xXZ(iz, 1) = -1.0/ (mGrid%delZ(iz) * mGrid%dz(iz-1))
+      do iy = 1, mGrid%ny             
+       xXZm(:,iy,iz) = - (l_E%x(:,iy,iz-1)*l_F%y(:,iy,iz-1)) &
+                  / (S_F%y(:,iy,iz-1)*S_E%x(:,iy,iz))
+       xXZp(:,iy,iz) = - (l_E%x(:,iy,iz+1)*l_F%y(:,iy,iz)) &
+                  / (S_F%y(:,iy,iz)*S_E%x(:,iy,iz))
+      enddo
     enddo
 
-    do iy = 2, mGrid%ny
-       do iz = 2, mGrid%nz
-          xXO(iy, iz) = -(xXY(iy,1) + xXY(iy,2) + &
-               xXZ(iz,1) + xXZ(iz,2))
-
-       enddo
+    do iy = 2, mGrid%ny                                    
+       do iz = 2, mGrid%nz                                 
+         xXO(:,iy,iz) = -(xXYm(:,iy,iz)/l_E%x(:,iy-1,iz) + xXYp(:,iy,iz)/l_E%x(:,iy+1,iz) + & 
+               xXZm(:,iy,iz)/l_E%x(:,iy,iz-1) + xXZp(:,iy,iz)/l_E%x(:,iy,iz+1))* &            
+               l_E%x(:,iy,iz)                                                                 
+       enddo                                            
     enddo
 
     do ix = 1, mGrid%nx
        do iy = 2, mGrid%ny
-          xY(ix, iy) = 1.0/ (mGrid%delY(iy)*mGrid%dx(ix))
+         do iz =1, mGrid%nz
+          xYmm(ix,iy,iz) = + (l_E%y(ix,iy-1,iz)*l_F%z(ix,iy-1,iz)) &
+                  / (S_F%z(ix,iy-1,iz)*S_E%x(ix,iy,iz))
+  
+          xYmp(ix,iy,iz) = + (l_E%y(ix,iy,iz)*l_F%z(ix,iy,iz)) &  
+                  / (S_F%z(ix,iy,iz)*S_E%x(ix,iy,iz))
+
+          xYpm(ix,iy,iz) = + (l_E%y(ix+1,iy-1,iz)*l_F%z(ix,iy-1,iz)) & 
+                  / (S_F%z(ix,iy-1,iz)*S_E%x(ix,iy,iz))
+
+          xYpp(ix,iy,iz) = + (l_E%y(ix+1,iy,iz)*l_F%z(ix,iy,iz)) &
+                  / (S_F%z(ix,iy,iz)*S_E%x(ix,iy,iz))
+         enddo
        enddo
     enddo
-
+!
     do ix = 1, mGrid%nx
        do iz = 2, mGrid%nz
-          xZ(ix, iz) = 1.0/ (mGrid%delZ(iz)*mGrid%dx(ix))
+         do iy = 1, mGrid%ny
+          xZmm(ix,iy,iz) = + (l_E%z(ix,iy,iz-1)*l_F%y(ix,iy,iz-1)) &  
+                  / (S_F%y(ix,iy,iz-1)*S_E%x(ix,iy,iz))           
+
+          xZmp(ix,iy,iz) = + (l_E%z(ix,iy,iz)*l_F%y(ix,iy,iz)) &
+                  / (S_F%y(ix,iy,iz)*S_E%x(ix,iy,iz))
+
+          xZpm(ix,iy,iz) = + (l_E%z(ix+1,iy,iz-1)*l_F%y(ix,iy,iz-1)) &
+                  / (S_F%y(ix,iy,iz-1)*S_E%x(ix,iy,iz))
+
+          xZpp(ix,iy,iz) = + (l_E%z(ix+1,iy,iz)*l_F%y(ix,iy,iz)) &    
+                  / (S_F%y(ix,iy,iz)*S_E%x(ix,iy,iz))
+         enddo
        enddo
     enddo
-    ! End of Ex coefficients
 
+    ! End of Ex coefficients
+!=================================================================================
     ! coefficents for calculating Ey; only loop over internal edges
     do iz = 2, mGrid%nz
-       yYZ(iz, 2) = -1.0/ (mGrid%delZ(iz)*mGrid%dz(iz))
-       yYZ(iz, 1) = -1.0/ (mGrid%delZ(iz)*mGrid%dz(iz-1))
+     do ix = 1, mGrid%nx  
+       yYZm(ix,:,iz) = - (l_E%y(ix,:,iz-1)*l_F%x(ix,:,iz-1)) & 
+                  / (S_F%x(ix,:,iz-1)*S_E%y(ix,:,iz))
+       yYZp(ix,:,iz) = - (l_E%y(ix,:,iz+1)*l_F%x(ix,:,iz)) &   
+                  / (S_F%x(ix,:,iz)*S_E%y(ix,:,iz))
+     enddo        
     enddo
-
+!
     do ix = 2, mGrid%nx
-       yYX(ix, 2) = -1.0/ (mGrid%delX(ix)*mGrid%dx(ix))
-       yYX(ix, 1) = -1.0/ (mGrid%delX(ix)*mGrid%dx(ix-1))
+     do iz = 1, mGrid%nz
+       yYXm(ix,:,iz) = - (l_E%y(ix-1,:,iz)*l_F%z(ix-1,:,iz)) & 
+                  / (S_F%z(ix-1,:,iz)*S_E%y(ix,:,iz))    
+       yYXp(ix,:,iz) = - (l_E%y(ix+1,:,iz)*l_F%z(ix,:,iz)) &   
+                  / (S_F%z(ix,:,iz)*S_E%y(ix,:,iz))
+     enddo
     enddo
 
     do ix = 2, mGrid%nx
        do iz = 2, mGrid%nz
-          yYO(ix, iz) = -(yYX(ix,1) + yYX(ix,2) + &
-               yYZ(iz,1) + yYZ(iz,2))
+          yYO(ix,:,iz) = -(yYXm(ix,:,iz)/l_E%y(ix-1,:,iz) + yYXp(ix,:,iz)/l_E%y(ix+1,:,iz) + &  
+               yYZm(ix,:,iz)/l_E%y(ix,:,iz-1) + yYZp(ix,:,iz)/l_E%y(ix,:,iz+1))*l_E%y(ix,:,iz)  
        enddo
     enddo
+
 
     do iy = 1, mGrid%ny
        do iz = 2, mGrid%nz
-          yZ(iy, iz) = 1.0/ (mGrid%delZ(iz)*mGrid%dy(iy))
+        do ix = 1, mGrid%nx
+          yZmm(ix,iy,iz) = + (l_E%z(ix,iy,iz-1)*l_F%x(ix,iy,iz-1)) &
+                  / (S_F%x(ix,iy,iz-1)*S_E%y(ix,iy,iz))
+          yZmp(ix,iy,iz) = + (l_E%z(ix,iy,iz)*l_F%x(ix,iy,iz)) &
+                  / (S_F%x(ix,iy,iz)*S_E%y(ix,iy,iz))
+          yZpm(ix,iy,iz) = + (l_E%z(ix,iy+1,iz-1)*l_F%x(ix,iy,iz-1)) &
+                  / (S_F%x(ix,iy,iz-1)*S_E%y(ix,iy,iz))
+          yZpp(ix,iy,iz) = + (l_E%z(ix,iy+1,iz)*l_F%x(ix,iy,iz)) &
+                  / (S_F%x(ix,iy,iz)*S_E%y(ix,iy,iz))
+        enddo
        enddo
     enddo
 
     do ix = 2, mGrid%nx
        do iy = 1, mGrid%ny
-          yX(ix, iy) = 1.0/ (mGrid%delX(ix)*mGrid%dy(iy))
+        do iz = 1, mGrid%nz
+          yXmm(ix,iy,iz) = + (l_E%x(ix-1,iy,iz)*l_F%z(ix-1,iy,iz)) &
+                  / (S_F%z(ix-1,iy,iz)*S_E%y(ix,iy,iz))
+          yXmp(ix,iy,iz) = + (l_E%x(ix,iy,iz)*l_F%z(ix,iy,iz)) &
+                  / (S_F%z(ix,iy,iz)*S_E%y(ix,iy,iz))
+          yXpm(ix,iy,iz) = + (l_E%x(ix-1,iy+1,iz)*l_F%z(ix-1,iy,iz)) &
+                  / (S_F%z(ix-1,iy,iz)*S_E%y(ix,iy,iz))
+          yXpp(ix,iy,iz) = + (l_E%x(ix,iy+1,iz)*l_F%z(ix,iy,iz)) &
+                  / (S_F%z(ix,iy,iz)*S_E%y(ix,iy,iz))
+        enddo
        enddo
     enddo
-    ! End of Ey coefficients
+!
 
+    ! End of Ey coefficients
+!=========================================================================
     ! coefficents for calculating Ez; only loop over internal edges
     do ix = 2, mGrid%nx
-       zZX(ix, 2) = -1.0/ (mGrid%delX(ix)*mGrid%dx(ix))
-       zZX(ix, 1) = -1.0/ (mGrid%delX(ix)*mGrid%dx(ix-1))
+       do iy = 1, mGrid%ny
+       zZXm(ix,iy,:) = - (l_E%z(ix-1,iy,:)*l_F%y(ix-1,iy,:)) & 
+                  / (S_F%y(ix-1,iy,:)*S_E%z(ix,iy,:)) 
+       zZXp(ix,iy,:) = - (l_E%z(ix+1,iy,:)*l_F%y(ix,iy,:)) &   
+                  / (S_F%y(ix,iy,:)*S_E%z(ix,iy,:))
+       enddo
     enddo
 
+
     do iy = 2, mGrid%ny
-       zZY(iy, 2) = -1.0/ (mGrid%delY(iy)*mGrid%dy(iy))
-       zZY(iy, 1) = -1.0/ (mGrid%delY(iy)*mGrid%dy(iy-1))
-    enddo
+     do ix = 1, mGrid%nx
+       zZYm(ix,iy,:) = - (l_E%z(ix,iy-1,:)*l_F%x(ix,iy-1,:)) & 
+                  / (S_F%x(ix,iy-1,:)*S_E%z(ix,iy,:))
+       zZYp(ix,iy,:) = - (l_E%z(ix,iy+1,:)*l_F%x(ix,iy,:)) &   
+                  / (S_F%x(ix,iy,:)*S_E%z(ix,iy,:))
+     enddo
+    enddo       
 
     do ix = 2, mGrid%nx
        do iy = 2, mGrid%ny
-          zZO(ix, iy) = -(zZX(ix,1) + zZX(ix,2) + &
-               zZY(iy,1) + zZY(iy,2))
+          zZO(ix, iy,:) = -(zZXm(ix,iy,:)/l_E%z(ix-1,iy,:) + zZXp(ix,iy,:)/l_E%z(ix+1,iy,:) + &  
+               zZYm(ix,iy,:)/l_E%z(ix,iy-1,:) + zZYp(ix,iy,:)/l_E%z(ix+1,iy,:))*l_E%z(ix,iy,:)   
        enddo
     enddo
 
     do ix = 2, mGrid%nx
        do iz = 1, mGrid%nz
-          zX(ix, iz) = 1.0/ (mGrid%delX(ix)*mGrid%dz(iz))
+        do iy = 1, mGrid%ny
+          zXmm(ix,iy,iz) = + (l_E%x(ix-1,iy,iz)*l_F%y(ix-1,iy,iz)) &
+                  / (S_F%y(ix-1,iy,iz)*S_E%z(ix,iy,iz))
+          zXmp(ix,iy,iz) = + (l_E%x(ix,iy,iz)*l_F%y(ix,iy,iz)) &
+                  / (S_F%y(ix,iy,iz)*S_E%z(ix,iy,iz))
+          zXpm(ix,iy,iz) = + (l_E%x(ix-1,iy,iz+1)*l_F%y(ix-1,iy,iz)) &
+                  / (S_F%y(ix-1,iy,iz)*S_E%z(ix,iy,iz))
+          zXpp(ix,iy,iz) = + (l_E%x(ix,iy,iz+1)*l_F%y(ix,iy,iz)) &
+                  / (S_F%y(ix,iy,iz)*S_E%z(ix,iy,iz))
+        enddo
        enddo
     enddo
 
+
     do iy = 2, mGrid%ny
        do iz = 1, mGrid%nz
-          zY(iy, iz) = 1.0/ (mGrid%delY(iy)*mGrid%dz(iz))
+         do ix = 1, mGrid%nx
+          zYmm(ix,iy,iz) = + (l_E%y(ix,iy-1,iz)*l_F%x(ix,iy-1,iz)) &
+                  / (S_F%x(ix,iy-1,iz)*S_E%z(ix,iy,iz))
+          zYmp(ix,iy,iz) = + (l_E%y(ix,iy,iz)*l_F%x(ix,iy,iz)) &
+                  / (S_F%x(ix,iy,iz)*S_E%z(ix,iy,iz))
+          zYpm(ix,iy,iz) = + (l_E%y(ix,iy-1,iz+1)*l_F%x(ix,iy-1,iz)) &
+                  / (S_F%x(ix,iy-1,iz)*S_E%z(ix,iy,iz))
+          zYpp(ix,iy,iz) = + (l_E%y(ix,iy,iz+1)*l_F%x(ix,iy,iz)) &
+                  / (S_F%x(ix,iy,iz)*S_E%z(ix,iy,iz))
+         enddo
        enddo
     enddo
     ! End of Ez coefficients
@@ -522,6 +665,11 @@ Contains
     type (cvector), target, intent(inout)  :: outE
     ! output electrical field as complex vector
     integer                                :: ix, iy, iz
+! inserted by Lana 
+    type (cvector)                           :: workF
+    ! workE is the complex vector that is used as a work space
+    call create_cvector(mGrid,workF,FACE)
+! end insert
     ! dummy variables
 
     if (.not.inE%allocated) then
@@ -540,73 +688,15 @@ Contains
          (inE%nz == outE%nz)) then
 
        if ((inE%gridType == outE%gridType)) then
-
-          ! Apply difference equation to compute Ex (only on interior nodes)
-          do iz = 2, inE%nz
-             do iy = 2, inE%ny
-                do ix = 1, inE%nx
-
-                   outE%x(ix,iy,iz) = xY(ix,iy)*(inE%y(ix+1,iy,iz)-&
-                  	inE%y(ix,iy,iz)-inE%y(ix+1,iy-1,iz)&
-                        +inE%y(ix,iy-1,iz))+&
-                  	xZ(ix,iz)*(inE%z(ix+1,iy,iz)-inE%z(ix,iy,iz)&
-                  	-inE%z(ix+1,iy,iz-1)+inE%z(ix,iy,iz-1))+&
-                  	xXY(iy,2)*inE%x(ix,iy+1,iz)+&
-                  	xXY(iy,1)*inE%x(ix,iy-1,iz)+&
-                  	xXZ(iz,2)*inE%x(ix,iy,iz+1)+&
-                  	xXZ(iz,1)*inE%x(ix,iy,iz-1)+&
-                  	xXO(iy,iz)*inE%x(ix,iy,iz)
-
-                enddo
-             enddo
-          enddo
-
-          ! Apply difference equation to compute Ey (only on interior nodes)
-          do iz = 2, inE%nz
-             do iy = 1, inE%ny
-                do ix = 2, inE%nx
-
-                   outE%y(ix,iy,iz) = yZ(iy,iz)*(inE%z(ix,iy+1,iz)-&
-                  	inE%z(ix,iy,iz)-inE%z(ix,iy+1,iz-1)+inE%z(ix,iy,iz-1))&
-                  	+yX(ix,iy)*(inE%x(ix,iy+1,iz)-inE%x(ix,iy,iz)&
-                  	-inE%x(ix-1,iy+1,iz)+inE%x(ix-1,iy,iz))+&
-                  	yYZ(iz,2)*inE%y(ix,iy,iz+1)+&
-                  	yYZ(iz,1)*inE%y(ix,iy,iz-1)+&
-                  	yYX(ix,2)*inE%y(ix+1,iy,iz)+&
-                  	yYX(ix,1)*inE%y(ix-1,iy,iz)+&
-                  	yYO(ix,iz)*inE%y(ix,iy,iz)
-
-                enddo
-             enddo
-          enddo
-
-          ! Apply difference equation to compute Ez (only on interior nodes)
-          do iz = 1, inE%nz
-             do iy = 2, inE%ny
-                do ix = 2, inE%nx
-
-                   outE%z(ix,iy,iz) = zX(ix,iz)*(inE%x(ix,iy,iz+1)-&
-                  	inE%x(ix,iy,iz)-inE%x(ix-1,iy,iz+1)+inE%x(ix-1,iy,iz))&
-                  	+zY(iy,iz)*(inE%y(ix,iy,iz+1)-inE%y(ix,iy,iz)&
-                  	-inE%y(ix,iy-1,iz+1)+inE%y(ix,iy-1,iz))+&
-                  	zZX(ix,2)*inE%z(ix+1,iy,iz)+&
-                  	zZX(ix,1)*inE%z(ix-1,iy,iz)+&
-                  	zZY(iy,2)*inE%z(ix,iy+1,iz)+&
-                  	zZY(iy,1)*inE%z(ix,iy-1,iz)+&
-                  	zZO(ix,iy)*inE%z(ix,iy,iz)
-
-                enddo
-             enddo
-          enddo
-
+          call Curl(inE,workF)
+          call Curl(workF,outE)        
        else
           write (0, *) 'CurlcurlE: not compatible usage for existing data types'
        end if
-
     else
        write(0, *) 'Error-complex vectors for CurlcurlE are not of same size'
     end if
-
+    call deall(workF) 
   end subroutine CurlcurlE        ! CurlcurlE
 
   ! ***************************************************************************
@@ -621,23 +711,52 @@ Contains
     ! Deallocate memory for del x del operator coefficient arrays
     ! Coefficients for difference equation only uses interior
     ! nodes. however, we need boundary nodes for the adjoint problem
-    deallocate(xXY, STAT=status)
-    deallocate(xXZ, STAT=status)
-    deallocate(xY, STAT=status)
-    deallocate(xZ, STAT=status)
-    deallocate(xXO, STAT=status)
-
-    deallocate(yYZ, STAT=status)
-    deallocate(yYX, STAT=status)
-    deallocate(yZ, STAT=status)
-    deallocate(yX, STAT=status)
+!
+    deallocate(xXYm, STAT=status) 
+    deallocate(xXZm, STAT=status) 
+    deallocate(xXYp, STAT=status) 
+    deallocate(xXZp, STAT=status) 
+!
+    deallocate(xYmm, STAT=status)
+    deallocate(xZmm, STAT=status)
+    deallocate(xYmp, STAT=status)
+    deallocate(xZmp, STAT=status)
+    deallocate(xYpm, STAT=status)
+    deallocate(xZpm, STAT=status)
+    deallocate(xYpp, STAT=status)
+    deallocate(xZpp, STAT=status)
+!
+    deallocate(xXO)
+!
+    deallocate(yYZm, STAT=status) 
+    deallocate(yYXm, STAT=status) 
+    deallocate(yYZp, STAT=status) 
+    deallocate(yYXp, STAT=status) 
     deallocate(yYO, STAT=status)
-
-    deallocate(zZX, STAT=status)
-    deallocate(zZY, STAT=status)
-    deallocate(zX, STAT=status)
-    deallocate(zY, STAT=status)
+!
+    deallocate(yZmm, STAT=status)
+    deallocate(yXmm, STAT=status)
+    deallocate(yZmp, STAT=status)
+    deallocate(yXmp, STAT=status)
+    deallocate(yZpm, STAT=status)
+    deallocate(yXpm, STAT=status)
+    deallocate(yZpp, STAT=status)
+    deallocate(yXpp, STAT=status)
+!
+    deallocate(zZXm, STAT=status) 
+    deallocate(zZYm, STAT=status) 
+    deallocate(zZXp, STAT=status) 
+    deallocate(zZYp, STAT=status) 
     deallocate(zZO, STAT=status)
+!
+    deallocate(zXmm, STAT=status)
+    deallocate(zYmm, STAT=status)
+    deallocate(zXmp, STAT=status)
+    deallocate(zYmp, STAT=status)
+    deallocate(zXpm, STAT=status)
+    deallocate(zYpm, STAT=status)
+    deallocate(zXpp, STAT=status)
+    deallocate(zYpp, STAT=status)
 
   end subroutine CurlcurleCleanUp
 
@@ -723,7 +842,15 @@ Contains
     ! output electrical field as complex vector
     complex (kind=prec)                      :: diag_sign ! changed by Lana, was integer
     integer                                  :: ix, iy, iz
-    ! dummy variables
+! inserted by Lana 
+    type (cvector)                           :: workF,workE
+    ! workE is the complex vector that is used as a work space
+    logical old ! switch to old code
+!
+    old=.false.
+    call create_cvector(mGrid,workF,FACE)
+    call create_cvector(mGrid,workE,EDGE)
+! end insert
 
     if (.not.inE%allocated) then
       write(0,*) 'inE in Maxwell not allocated yet'
@@ -748,6 +875,8 @@ Contains
              diag_sign = ISIGN
           end if
 
+          if(old)then  
+
           !$OMP PARALLEL DEFAULT(SHARED) PRIVATE(ix,iy,iz)
 
           ! Apply difference equation to compute Ex (only on interior nodes)
@@ -756,16 +885,17 @@ Contains
 	      do iz = 2, inE%nz
              do iy = 2, inE%ny
                 do ix = 1, inE%nx
-                   outE%x(ix,iy,iz) = xY(ix,iy)*(inE%y(ix+1,iy,iz)-&
-                  	inE%y(ix,iy,iz)-inE%y(ix+1,iy-1,iz)&
-                        +inE%y(ix,iy-1,iz))+&
-                  	xZ(ix,iz)*(inE%z(ix+1,iy,iz)-inE%z(ix,iy,iz)&
-                  	-inE%z(ix+1,iy,iz-1)+inE%z(ix,iy,iz-1))+&
-                  	xXY(iy,2)*inE%x(ix,iy+1,iz)+&
-                  	xXY(iy,1)*inE%x(ix,iy-1,iz)+&
-                  	xXZ(iz,2)*inE%x(ix,iy,iz+1)+&
-                  	xXZ(iz,1)*inE%x(ix,iy,iz-1)+&
-                  	(xXO(iy,iz)+diag_sign*Adiag%x(ix,iy,iz))*inE%x(ix,iy,iz)
+                   outE%x(ix,iy,iz) =  & 
+                        (xYpp(ix,iy,iz)*inE%y(ix+1,iy,iz)-&
+                  	xYmp(ix,iy,iz)*inE%y(ix,iy,iz)-xYpm(ix,iy,iz)*inE%y(ix+1,iy-1,iz)&
+                        +xYmm(ix,iy,iz)*inE%y(ix,iy-1,iz))+&
+                  	(xZpp(ix,iy,iz)*inE%z(ix+1,iy,iz)-xZmp(ix,iy,iz)*inE%z(ix,iy,iz)&
+                  	-xZpm(ix,iy,iz)*inE%z(ix+1,iy,iz-1)+xZmm(ix,iy,iz)*inE%z(ix,iy,iz-1))+&
+                  	xXYp(ix,iy,iz)*inE%x(ix,iy+1,iz)+& 
+                  	xXYm(ix,iy,iz)*inE%x(ix,iy-1,iz)+& 
+                  	xXZp(ix,iy,iz)*inE%x(ix,iy,iz+1)+& 
+                  	xXZm(ix,iy,iz)*inE%x(ix,iy,iz-1)+& 
+                  	(xXO(ix,iy,iz)+diag_sign*Adiag%x(ix,iy,iz))*inE%x(ix,iy,iz)
                 enddo
              enddo
           enddo
@@ -777,15 +907,17 @@ Contains
           do iz = 2, inE%nz
              do iy = 1, inE%ny
                 do ix = 2, inE%nx
-                   outE%y(ix,iy,iz) = yZ(iy,iz)*(inE%z(ix,iy+1,iz)-&
-                  	inE%z(ix,iy,iz)-inE%z(ix,iy+1,iz-1)+inE%z(ix,iy,iz-1))&
-                  	+yX(ix,iy)*(inE%x(ix,iy+1,iz)-inE%x(ix,iy,iz)&
-                  	-inE%x(ix-1,iy+1,iz)+inE%x(ix-1,iy,iz))+&
-                  	yYZ(iz,2)*inE%y(ix,iy,iz+1)+&
-                  	yYZ(iz,1)*inE%y(ix,iy,iz-1)+&
-                  	yYX(ix,2)*inE%y(ix+1,iy,iz)+&
-                  	yYX(ix,1)*inE%y(ix-1,iy,iz)+&
-                  	(yYO(ix,iz)+diag_sign*Adiag%y(ix,iy,iz))*inE%y(ix,iy,iz)
+                   outE%y(ix,iy,iz) = &
+                        (yZpp(ix,iy,iz)*inE%z(ix,iy+1,iz)-&
+                  	yZmp(ix,iy,iz)*inE%z(ix,iy,iz)-yZpm(ix,iy,iz)*inE%z(ix,iy+1,iz-1) & 
+                        +yZmm(ix,iy,iz)*inE%z(ix,iy,iz-1))&
+                  	+(yXpp(ix,iy,iz)*inE%x(ix,iy+1,iz)-yXpm(ix,iy,iz)*inE%x(ix,iy,iz) &
+                  	-yXmp(ix,iy,iz)*inE%x(ix-1,iy+1,iz)+yXmm(ix,iy,iz)*inE%x(ix-1,iy,iz))+&
+                  	yYZp(ix,iy,iz)*inE%y(ix,iy,iz+1)+&
+                  	yYZm(ix,iy,iz)*inE%y(ix,iy,iz-1)+&
+                  	yYXp(ix,iy,iz)*inE%y(ix+1,iy,iz)+&
+                  	yYXm(ix,iy,iz)*inE%y(ix-1,iy,iz)+&
+                  	(yYO(ix,iy,iz)+diag_sign*Adiag%y(ix,iy,iz))*inE%y(ix,iy,iz)
                 enddo
              enddo
           enddo
@@ -797,30 +929,38 @@ Contains
           do iz = 1, inE%nz
              do iy = 2, inE%ny
                 do ix = 2, inE%nx
-                   outE%z(ix,iy,iz) = zX(ix,iz)*(inE%x(ix,iy,iz+1)-&
-                  	inE%x(ix,iy,iz)-inE%x(ix-1,iy,iz+1)+inE%x(ix-1,iy,iz))&
-                  	+zY(iy,iz)*(inE%y(ix,iy,iz+1)-inE%y(ix,iy,iz)&
-                  	-inE%y(ix,iy-1,iz+1)+inE%y(ix,iy-1,iz))+&
-                  	zZX(ix,2)*inE%z(ix+1,iy,iz)+&
-                  	zZX(ix,1)*inE%z(ix-1,iy,iz)+&
-                  	zZY(iy,2)*inE%z(ix,iy+1,iz)+&
-                  	zZY(iy,1)*inE%z(ix,iy-1,iz)+&
-                  	(zZO(ix,iy)+diag_sign*Adiag%z(ix,iy,iz))*inE%z(ix,iy,iz)
+                   outE%z(ix,iy,iz) = &
+                        (zXpp(ix,iy,iz)*inE%x(ix,iy,iz+1)-&
+                  	zXpm(ix,iy,iz)*inE%x(ix,iy,iz)-zXmp(ix,iy,iz)*inE%x(ix-1,iy,iz+1) &
+                        +zXmm(ix,iy,iz)*inE%x(ix-1,iy,iz))&
+                  	+(zYpp(ix,iy,iz)*inE%y(ix,iy,iz+1)-zYpm(ix,iy,iz)*inE%y(ix,iy,iz)&
+                  	-zYmp(ix,iy,iz)*inE%y(ix,iy-1,iz+1)+zYmm(ix,iy,iz)*inE%y(ix,iy-1,iz))+&
+                  	zZXp(ix,iy,iz)*inE%z(ix+1,iy,iz)+&
+                  	zZXm(ix,iy,iz)*inE%z(ix-1,iy,iz)+&
+                  	zZYp(ix,iy,iz)*inE%z(ix,iy+1,iz)+&
+                  	zZYm(ix,iy,iz)*inE%z(ix,iy-1,iz)+&
+                  	(zZO(ix,iy,iz)+diag_sign*Adiag%z(ix,iy,iz))*inE%z(ix,iy,iz)
                 enddo
              enddo
           enddo
+
           !$OMP END DO NOWAIT
 
           !$OMP END PARALLEL
-
+         else ! New programming
+          call Curl(inE,workF)
+          call Curl(workF,outE)
+          call diagMult_cvector(Adiag,inE,workE)
+          call scMultAdd_cvector(diag_sign,workE,outE)  
+         endif
        else
           write (0, *) ' Maxwell: not compatible usage for existing data types'
        end if
-
     else
        write(0, *) 'Error-complex vectors for Maxwell are not of same size'
     end if
-
+    call deall(workF) 
+    call deall(workE) 
   end subroutine Maxwell        ! Maxwell
 
 
@@ -924,8 +1064,9 @@ Contains
          (inE%nz == outE%nz)) then
 
        if ((inE%gridType == outE%gridType)) then
-
+          !!!write(0,*)maxval(abs(xXYp-xXY2)),maxval(abs(xXYm-xXY1))
           Call Maxwell(inE, adjt, outE)
+
           ! done with preparing del X del X E +/- i*omega*mu*conductivity*E
 
           ! diagonally multiply the final results with weights (edge volume)
@@ -980,21 +1121,23 @@ Contains
     nx = eIn%nx
     ny = eIn%ny
     nz = eIn%nz
-
+    !write(0,*)'AdjtBC' ! It is never used for FWD?
 !  Ex components in x/z plane (iy=1; iy = ny+1)
 !  NOTE: C_ZERO = (0,0) (double complex) is defined in SG_Basics/math_constants.f90
     BC%xYMax(:,1) = C_ZERO
     BC%xYmin(:,1) = C_ZERO
     BC%xYMax(:,nz+1) = C_ZERO
     BC%xyMin(:,nz+1) = C_ZERO
+! CHANGES BELOW WERE NOT DEBUGGED since AdjtBC is never called by FWD
     do ix = 1, nx
        do iz = 2, nz
-          BC%xYmin(ix,iz) = - yX(ix,1)*Ein%y(ix,1,iz)       &
-                            + yX(ix+1,1)*Ein%y(ix+1,1,iz)   &
-                            + xXY(2,1)*Ein%x(ix,2,iz)
-          BC%xYmax(ix,iz) = + yX(ix,ny)*Ein%y(ix,ny,iz)     &
-                            - yX(ix+1,ny)*Ein%y(ix+1,ny,iz) &
-                            + xXY(ny,2)*Ein%x(ix,ny,iz)
+          BC%xYmin(ix,iz) = - yXmp(ix,1,iz)*Ein%y(ix,1,iz)       & 
+                            + yXmm(ix+1,1,iz)*Ein%y(ix+1,1,iz)   & 
+                            + xXYm(ix,2,iz)*Ein%x(ix,2,iz)          
+          BC%xYmax(ix,iz) = + yXpp(ix,ny,iz)*Ein%y(ix,ny,iz)     &  
+                            - yXpm(ix+1,ny,iz)*Ein%y(ix+1,ny,iz) &  
+                            + xXYp(ix,ny,iz)*Ein%x(ix,ny,iz)           
+ 
         enddo
      enddo
 
@@ -1005,12 +1148,12 @@ Contains
     BC%zYmax(nx+1,:) = C_ZERO
     do iz = 1, nz
        do ix = 2, nx
-          BC%zYmin(ix,iz) = - yZ(1,iz)*Ein%y(ix,1,iz)        &
-                            + yZ(1,iz+1)*Ein%y(ix,1,iz+1)    &
-                            + zZY(2,1)*Ein%z(ix,2,iz)
-          BC%zYmax(ix,iz) = + yZ(ny,iz)*Ein%y(ix,ny,iz)      &
-                            - yZ(ny,iz+1)*Ein%y(ix,ny,iz+1)  &
-                            + zZY(ny,2)*Ein%z(ix,ny,iz)
+          BC%zYmin(ix,iz) = - yZmp(ix,1,iz)*Ein%y(ix,1,iz)        &  
+                            + yZmm(ix,1,iz+1)*Ein%y(ix,1,iz+1)    &  
+                            + zZYm(ix,2,iz)*Ein%z(ix,2,iz)            
+          BC%zYmax(ix,iz) = + yZpp(ix,ny,iz)*Ein%y(ix,ny,iz)      &  
+                            - yZpm(ix,ny,iz+1)*Ein%y(ix,ny,iz+1)  &  
+                            + zZYp(ix,ny,iz)*Ein%z(ix,ny,iz)                
         enddo
      enddo
 
@@ -1021,12 +1164,12 @@ Contains
     BC%yXmax(:,nz+1) = C_ZERO
     do iy = 1, ny
        do iz = 2, nz
-          BC%yXmin(iy,iz) = - xY(1,iy)*Ein%x(1,iy,iz)        &
-                            + xY(1,iy+1)*Ein%x(1,iy+1,iz)    &
-                            + yYX(2,1)*Ein%y(2,iy,iz)
-          BC%yXmax(iy,iz) = + xY(nx,iy)*Ein%x(nx,iy,iz)      &
-                            - xY(nx,iy+1)*Ein%x(nx,iy+1,iz)  &
-                            + yYX(nx,2)*Ein%y(nx,iy,iz)
+          BC%yXmin(iy,iz) = - xYmp(1,iy,iz)*Ein%x(1,iy,iz)        & 
+                            + xYmm(1,iy+1,iz)*Ein%x(1,iy+1,iz)    & 
+                            + yYXm(2,iy,iz)*Ein%y(2,iy,iz)           
+          BC%yXmax(iy,iz) = + xYpp(nx,iy,iz)*Ein%x(nx,iy,iz)      & 
+                            - xYpm(nx,iy+1,iz)*Ein%x(nx,iy+1,iz)  & 
+                            + yYXp(nx,iy,iz)*Ein%y(nx,iy,iz)         
         enddo
      enddo
 
@@ -1037,12 +1180,13 @@ Contains
     BC%zXmax(ny+1,:) = C_ZERO
     do iz = 1, nz
        do iy = 2, ny
-          BC%zXmin(iy,iz) = - xZ(1,iz)*Ein%x(1,iy,iz)       &
-                            + xZ(1,iz+1)*Ein%x(1,iy,iz+1)   &
-                            + zZX(2,1)*Ein%z(2,iy,iz)
-          BC%zXmax(iy,iz) = + xZ(nx,iz)*Ein%x(nx,iy,iz)     &
-                            - xZ(nx,iz+1)*Ein%x(nx,iy,iz+1) &
-                            + zZX(nx,2)*Ein%z(nx,iy,iz)
+          BC%zXmin(iy,iz) = - xZmp(1,iy,iz)*Ein%x(1,iy,iz)       &
+                            + xZmm(1,iy,iz+1)*Ein%x(1,iy,iz+1)   &  
+                            + zZXm(2,iy,iz)*Ein%z(2,iy,iz)          
+          BC%zXmax(iy,iz) = + xZpp(nx,iy,iz)*Ein%x(nx,iy,iz)     & 
+                            - xZpm(nx,iy,iz+1)*Ein%x(nx,iy,iz+1) &  
+                            + zZXp(nx,iy,iz)*Ein%z(nx,iy,iz)        
+
         enddo
      enddo
 
@@ -1053,12 +1197,12 @@ Contains
     BC%xZmax(:,ny+1) = C_ZERO
     do ix = 1, nx
        do iy = 2, ny
-          BC%xZmin(ix,iy) = - zX(ix,1)*Ein%z(ix,iy,1)       &
-                            + zX(ix+1,1)*Ein%z(ix+1,iy,1)   &
-                            + xXZ(2,1)*Ein%x(ix,iy,2)
-          BC%xZmax(ix,iy) = + zX(ix,nz)*Ein%z(ix,iy,nz)     &
-                            - zX(ix+1,nz)*Ein%z(ix+1,iy,nz) &
-                            + xXZ(nz,2)*Ein%x(ix,iy,nz)
+          BC%xZmin(ix,iy) = - zXmp(ix,iy,1)*Ein%z(ix,iy,1)       & 
+                            + zXmm(ix+1,iy,1)*Ein%z(ix+1,iy,1)   & 
+                            + xXZm(ix,iy,2)*Ein%x(ix,iy,2)         
+          BC%xZmax(ix,iy) = + zXpp(ix,iy,nz)*Ein%z(ix,iy,nz)     & 
+                            - zXpm(ix+1,iy,nz)*Ein%z(ix+1,iy,nz) &  
+                            + xXZp(ix,iy,nz)*Ein%x(ix,iy,nz)        
         enddo
      enddo
 
@@ -1069,12 +1213,12 @@ Contains
     BC%yZmin(nx+1,:) = C_ZERO
     do iy = 1, ny
        do ix = 2, nx
-          BC%yZmin(ix,iy) = - zY(iy,1)*Ein%z(ix,iy,1)        &
-                            + zY(iy+1,1)*Ein%z(ix,iy+1,1)    &
-                            + yYZ(2,1)*Ein%y(ix,iy,2)
-          BC%yZmax(ix,iy) = + zY(iy,nz)*Ein%z(ix,iy,nz)      &
-                            - zY(iy+1,nz)*Ein%z(ix,iy+1,nz)  &
-                            + yYZ(nz,2)*Ein%y(ix,iy,nz)
+          BC%yZmin(ix,iy) = - zYmp(ix,iy,1)*Ein%z(ix,iy,1)        & 
+                            + zYmm(ix,iy+1,1)*Ein%z(ix,iy+1,1)    & 
+                            + yYZm(ix,iy,2)*Ein%y(ix,iy,2)           
+          BC%yZmax(ix,iy) = + zYpp(ix,iy,nz)*Ein%z(ix,iy,nz)      &
+                            - zYpm(ix,iy+1,nz)*Ein%z(ix,iy+1,nz)  & 
+                            + yYZp(ix,iy,nz)*Ein%y(ix,iy,nz)        
         enddo
      enddo
 
@@ -1142,10 +1286,11 @@ Contains
        do iy = 2, mGrid%ny
           do iz = 2, mGrid%nz
 
-             Dilu%x(ix, iy, iz) = xXO(iy,iz) - &
+             Dilu%x(ix, iy, iz) = xXO(ix,iy,iz) - & 
                   CMPLX(0.0, 1.0, 8)*omega*MU_0*sigma_E%x(ix, iy, iz)  &
-                  - xXY(iy, 1)*xXY(iy-1, 2)*Dilu%x(ix,iy-1,iz) &
-                  - xXZ(iz, 1)*xXZ(iz-1, 2)*Dilu%x(ix,iy,iz-1)
+                  - xXYm(ix,iy,iz)*xXYp(ix,iy-1,iz)*Dilu%x(ix,iy-1,iz) &  
+                  - xXZm(ix,iy,iz)*xXZp(ix,iy,iz-1)*Dilu%x(ix,iy,iz-1)
+
              Dilu%x(ix, iy, iz) = 1.0/ Dilu%x(ix, iy, iz)
 
           enddo
@@ -1158,10 +1303,11 @@ Contains
        do iz = 2, mGrid%nz
           do ix = 2, mGrid%nx
 
-             Dilu%y(ix, iy, iz) = yYO(ix,iz) - &
-                  CMPLX(0.0, 1.0, 8)*omega*MU_0*sigma_E%y(ix, iy, iz) &
-                  - yYZ(iz, 1)*yYZ(iz-1, 2)*Dilu%y(ix, iy, iz-1) &
-                  - yYX(ix, 1)*yYX(ix-1, 2)*Dilu%y(ix-1, iy, iz)
+             Dilu%y(ix, iy, iz) = yYO(ix,iy,iz) - &
+                  CMPLX(0.0, 1.0, 8)*omega*MU_0*sigma_E%y(ix, iy, iz) &    
+                  - yYZm(ix,iy,iz)*yYZp(ix,iy,iz-1)*Dilu%y(ix, iy, iz-1) & 
+                  - yYXm(ix,iy,iz)*yYXp(ix-1,iy,iz)*Dilu%y(ix-1, iy, iz)   
+
              Dilu%y(ix, iy, iz) = 1.0/ Dilu%y(ix, iy, iz)
 
           enddo
@@ -1174,10 +1320,11 @@ Contains
        do ix = 2, mGrid%nx
           do iy = 2, mGrid%ny
 
-             Dilu%z(ix, iy, iz) = zZO(ix,iy) - &
+             Dilu%z(ix, iy, iz) = zZO(ix,iy,iz) - &
                   CMPLX(0.0, 1.0, 8)*omega*MU_0*sigma_E%z(ix, iy, iz) &
-                  - zZX(ix, 1)*zZX(ix-1, 2)*Dilu%z(ix-1, iy, iz) &
-                  - zZY(iy, 1)*zZY(iy-1, 2)*Dilu%z(ix, iy-1, iz)
+                  - zZXm(ix,iy,iz)*zZXp(ix-1,iy,iz)*Dilu%z(ix-1, iy, iz) &
+                  - zZYm(ix,iy,iz)*zZYp(ix,iy-1,iz)*Dilu%z(ix, iy-1, iz)
+
              Dilu%z(ix, iy, iz) = 1.0/ Dilu%z(ix, iy, iz)
 
           enddo
@@ -1238,9 +1385,9 @@ Contains
                    do iy = 2, inE%ny
 
                       outE%x(ix, iy, iz) = (outE%x(ix, iy, iz) - &
-                           outE%x(ix, iy-1, iz)*xXY(iy, 1) - &
-                           outE%x(ix, iy, iz-1)*xXZ(iz, 1))* &
-                           Dilu%x(ix, iy, iz)
+                           outE%x(ix, iy-1, iz)*xXYm(ix,iy,iz) - & 
+                           outE%x(ix, iy, iz-1)*xXZm(ix,iy,iz))* & 
+                           Dilu%x(ix, iy, iz)                      
 
                    enddo
                 enddo
@@ -1255,9 +1402,9 @@ Contains
                 do iz = 2, inE%nz
                    do ix = 2, inE%nx
 
-                      outE%y(ix, iy, iz) = (outE%y(ix, iy, iz) - &
-                           outE%y(ix, iy, iz-1)*yYZ(iz, 1) - &
-                           outE%y(ix-1, iy, iz)*yYX(ix, 1))* &
+                      outE%y(ix, iy, iz) = (outE%y(ix, iy, iz) - & 
+                           outE%y(ix, iy, iz-1)*yYZm(ix,iy,iz) - & !
+                           outE%y(ix-1, iy, iz)*yYXm(ix,iy,iz))* & !
                            Dilu%y(ix, iy, iz)
 
                    enddo
@@ -1272,9 +1419,9 @@ Contains
                 do iy = 2, inE%ny
                    do ix = 2, inE%nx
 
-                      outE%z(ix, iy, iz) = (outE%z(ix, iy, iz) - &
-                           outE%z(ix-1, iy, iz)*zZX(ix, 1) - &
-                           outE%z(ix, iy-1, iz)*zZY(iy, 1))* &
+                      outE%z(ix, iy, iz) = (outE%z(ix, iy, iz) - & 
+                           outE%z(ix-1, iy, iz)*zZXm(ix,iy,iz) - & 
+                           outE%z(ix, iy-1, iz)*zZYm(ix,iy,iz))* & 
                            Dilu%z(ix, iy, iz)
 
                    enddo
@@ -1296,9 +1443,9 @@ Contains
                    do iz = inE%nz, 2, -1
 
                       outE%x(ix, iy, iz) = (inE%x(ix, iy, iz) - &
-                           outE%x(ix, iy+1, iz)*xXY(iy+1, 1) - &
-                           outE%x(ix, iy, iz+1)*xXZ(iz+1, 1))* &
-                           conjg(Dilu%x(ix, iy, iz))
+                           outE%x(ix, iy+1, iz)*xXYm(ix,iy+1,iz) - & 
+                           outE%x(ix, iy, iz+1)*xXZm(ix,iy,iz+1))* & 
+                           conjg(Dilu%x(ix, iy, iz))                 
 
                    enddo
                 enddo
@@ -1313,10 +1460,10 @@ Contains
                 do ix = inE%nx, 2, -1
                    do iz = inE%nz, 2, -1
 
-                      outE%y(ix, iy, iz) = (inE%y(ix, iy, iz) - &
-                           outE%y(ix, iy, iz+1)*yYZ(iz+1, 1) - &
-                           outE%y(ix+1, iy, iz)*yYX(ix+1, 1))* &
-                           conjg(Dilu%y(ix, iy, iz))
+                      outE%y(ix, iy, iz) = (inE%y(ix, iy, iz) - &      
+                           outE%y(ix, iy, iz+1)*yYZm(ix,iy,iz+1) - &   
+                           outE%y(ix+1, iy, iz)*yYXm(ix+1,iy,iz))* &   
+                           conjg(Dilu%y(ix, iy, iz))                   
 
                    enddo
                 enddo
@@ -1330,10 +1477,10 @@ Contains
                 do ix = inE%nx, 2, -1
                    do iy = inE%ny, 2, -1
 
-                      outE%z(ix, iy, iz) = (inE%z(ix, iy, iz) - &
-                           outE%z(ix+1, iy, iz)*zZX(ix+1, 1) - &
-                           outE%z(ix, iy+1, iz)*zZY(iy+1, 1))* &
-                           conjg(Dilu%z(ix, iy, iz))
+                      outE%z(ix, iy, iz) = (inE%z(ix, iy, iz) - &     
+                           outE%z(ix+1, iy, iz)*zZXm(ix+1,iy,iz) - &  
+                           outE%z(ix, iy+1, iz)*zZYm(ix,iy+1,iz))* &  
+                           conjg(Dilu%z(ix, iy, iz))                  
 
                    enddo
                 enddo
@@ -1399,9 +1546,9 @@ Contains
                    do iy = inE%ny, 2, -1
 
                       outE%x(ix, iy, iz) = inE%x(ix, iy, iz) - &
-                           ( outE%x(ix, iy+1, iz)*xXY(iy, 2) &
-                           + outE%x(ix, iy, iz+1)*xXZ(iz, 2))* &
-                           Dilu%x(ix, iy, iz)
+                           ( outE%x(ix, iy+1, iz)*xXYp(ix,iy,iz) &   
+                           + outE%x(ix, iy, iz+1)*xXZp(ix,iy,iz))* & 
+                           Dilu%x(ix, iy, iz)                        
 
                    enddo
                 enddo
@@ -1415,9 +1562,9 @@ Contains
                 do iz = inE%nz, 2, -1
                    do ix = inE%nx, 2, -1
 
-                      outE%y(ix, iy, iz) = inE%y(ix, iy, iz) - &
-                           ( outE%y(ix, iy, iz+1)*yYZ(iz, 2) &
-                           + outE%y(ix+1, iy, iz)*yYX(ix, 2))* &
+                      outE%y(ix, iy, iz) = inE%y(ix, iy, iz) - &     
+                           ( outE%y(ix, iy, iz+1)*yYZp(ix,iy,iz) &   
+                           + outE%y(ix+1, iy, iz)*yYXp(ix,iy,iz))* & 
                            Dilu%y(ix, iy, iz)
 
                    enddo
@@ -1432,9 +1579,9 @@ Contains
                 do iy = inE%ny, 2, -1
                    do ix = inE%nx, 2, -1
 
-                      outE%z(ix, iy, iz) = inE%z(ix, iy, iz) - &
-                           ( outE%z(ix+1, iy, iz)*zZX(ix, 2) &
-                           + outE%z(ix, iy+1, iz)*zZY(iy, 2))* &
+                      outE%z(ix, iy, iz) = inE%z(ix, iy, iz) - &     
+                           ( outE%z(ix+1, iy, iz)*zZXp(ix,iy,iz) &   
+                           + outE%z(ix, iy+1, iz)*zZYp(ix,iy,iz))* & 
                            Dilu%z(ix, iy, iz)
 
                    enddo
@@ -1455,10 +1602,10 @@ Contains
                    do iy = 2, inE%ny
 
                       outE%x(ix, iy, iz) = inE%x(ix, iy, iz) &
-                           - outE%x(ix, iy-1, iz)*xXY(iy-1, 2) &
-                           * conjg(Dilu%x(ix,iy-1,iz))   &
-                           - outE%x(ix, iy, iz-1)*xXZ(iz-1, 2) &
-                           * conjg(Dilu%x(ix, iy, iz-1))
+                           - outE%x(ix, iy-1, iz)*xXYp(ix,iy-1,iz) & 
+                           * conjg(Dilu%x(ix,iy-1,iz))   &           
+                           - outE%x(ix, iy, iz-1)*xXZp(ix,iy,iz-1) & 
+                           * conjg(Dilu%x(ix, iy, iz-1))             
 
                    enddo
                 enddo
@@ -1472,10 +1619,10 @@ Contains
                 do iz = 2, inE%nz
                    do ix = 2, inE%nx
 
-                      outE%y(ix, iy, iz) = inE%y(ix, iy, iz) &
-                           - outE%y(ix, iy, iz-1)*yYZ(iz-1, 2) &
-                           * conjg(Dilu%y(ix,iy,iz-1)) &
-                           - outE%y(ix-1, iy, iz)*yYX(ix-1, 2) &
+                      outE%y(ix, iy, iz) = inE%y(ix, iy, iz) &       
+                           - outE%y(ix, iy, iz-1)*yYZp(ix,iy,iz-1) & 
+                           * conjg(Dilu%y(ix,iy,iz-1)) &             
+                           - outE%y(ix-1, iy, iz)*yYXp(ix-1,iy,iz) & 
                            * conjg(Dilu%y(ix-1, iy, iz))
 
                    enddo
@@ -1490,11 +1637,11 @@ Contains
                 do iy = 2, inE%ny
                    do ix = 2, inE%nx
 
-                      outE%z(ix, iy, iz) = inE%z(ix, iy, iz) &
-                           - outE%z(ix-1, iy, iz)*zZX(ix-1, 2) &
-                           * conjg(Dilu%z(ix-1,iy,iz)) &
-                           - outE%z(ix, iy-1, iz)*zZY(iy-1, 2) &
-                           * conjg(Dilu%z(ix, iy-1, iz))
+                      outE%z(ix, iy, iz) = inE%z(ix, iy, iz) &       
+                           - outE%z(ix-1, iy, iz)*zZXp(ix-1,iy,iz) & 
+                           * conjg(Dilu%z(ix-1,iy,iz)) &             
+                           - outE%z(ix, iy-1, iz)*zZYp(ix,iy-1,iz) & 
+                           * conjg(Dilu%z(ix, iy-1, iz))             
 
                    enddo
                 enddo
@@ -1614,18 +1761,18 @@ Contains
        do iy = 2, mGrid%ny
           do ix = 2, mGrid%nx
 
-             db1%x(ix, iy, iz) = sigma_E%x(ix-1, iy, iz)/ &
-                  (mGrid%dx(ix-1)*mGrid%delX(ix))
-             db2%x(ix, iy, iz) = sigma_E%x(ix, iy, iz)/ &
-                  (mGrid%dx(ix)*mGrid%delX(ix))
-             db1%y(ix, iy, iz) = sigma_E%y(ix, iy-1, iz)/ &
-                  (mGrid%dy(iy-1)*mGrid%delY(iy))
-             db2%y(ix, iy, iz) = sigma_E%y(ix, iy, iz)/ &
-                  (mGrid%dy(iy)*mGrid%delY(iy))
-             db1%z(ix, iy, iz) = sigma_E%z(ix, iy, iz-1)/ &
-                  (mGrid%dz(iz-1)*mGrid%delZ(iz))
-             db2%z(ix, iy, iz) = sigma_E%z(ix, iy, iz)/ &
-                  (mGrid%dz(iz)*mGrid%delZ(iz))
+             db1%x(ix, iy, iz) = sigma_E%x(ix-1,iy,iz)*S_E%x(ix-1,iy,iz)/l_E%x(ix-1,iy,iz)
+
+             db2%x(ix, iy, iz) = sigma_E%x(ix,iy,iz)*S_E%x(ix,iy,iz)/l_E%x(ix,iy,iz)
+
+             db1%y(ix, iy, iz) = sigma_E%y(ix, iy-1,iz)*S_E%y(ix,iy-1,iz)/l_E%y(ix,iy-1,iz)
+ 
+             db2%y(ix, iy, iz) = sigma_E%y(ix, iy, iz)*S_E%y(ix,iy,iz)/l_E%y(ix,iy,iz)
+ 
+             db1%z(ix, iy, iz) = sigma_E%z(ix, iy, iz-1)*S_E%z(ix,iy,iz-1)/l_E%z(ix,iy,iz-1)
+
+             db2%z(ix, iy, iz) = sigma_E%z(ix, iy, iz)*S_E%z(ix,iy,iz)/l_E%z(ix,iy,iz)
+
              c%v(ix, iy, iz) = - (db1%x(ix, iy, iz) + &
                   db2%x(ix, iy, iz) + &
                   db1%y(ix, iy, iz) + &
@@ -1648,24 +1795,7 @@ Contains
           enddo
        enddo
     enddo
-
-    ! Multiply by corner volume elements to make operator symmetric
-    do iz = 2, mGrid%nz
-       do iy = 2, mGrid%ny
-          do ix = 2, mGrid%nx
-
-             db1%x(ix, iy, iz) = db1%x(ix, iy, iz)*V_N%v(ix, iy, iz)
-	     db1%y(ix, iy, iz) = db1%y(ix, iy, iz)*V_N%v(ix, iy, iz)
-	     db1%z(ix, iy, iz) = db1%z(ix, iy, iz)*V_N%v(ix, iy, iz)
-	     db2%x(ix, iy, iz) = db2%x(ix, iy, iz)*V_N%v(ix, iy, iz)
-	     db2%y(ix, iy, iz) = db2%y(ix, iy, iz)*V_N%v(ix, iy, iz)
-	     db2%z(ix, iy, iz) = db2%z(ix, iy, iz)*V_N%v(ix, iy, iz)
-
-          enddo
-       enddo
-    enddo
-    Call diagMult_rscalar(c, V_N, c)
-
+!!!!!!!!!!!!!!!
     !  To be explicit about forcing coefficients that multiply boundary
     !    nodes to be zero (this gaurantees that the BC on the potential
     !    is phi = 0):
@@ -1689,12 +1819,13 @@ Contains
                   db1%x(ix,iy,iz)*db2%x(ix-1,iy,iz)*d%v(ix-1,iy,iz)-&
                   db1%y(ix,iy,iz)*db2%y(ix,iy-1,iz)*d%v(ix,iy-1,iz)-&
                   db1%z(ix,iy,iz)*db2%z(ix,iy,iz-1)*d%v(ix,iy,iz-1)
+
 	     d%v(ix, iy, iz) = 1.0/ d%v(ix, iy, iz)
 
           enddo
        enddo
     enddo
-
+!
   end subroutine DivCorrSetUp	! DivCorrSetUp
 
 
@@ -1899,41 +2030,35 @@ Contains
 	        ! FOR NODES IN THE AIR ONLY
                 do iz = 2,outSc%grid%nzAir
                    outSc%v(ix, iy, iz) = &
-                        SIGMA_AIR*(inE%x(ix,iy,iz)-inE%x(ix - 1,iy,iz)) * &
-                        inE%grid%delXinv(ix)    &
-                        + SIGMA_AIR*(inE%y(ix,iy,iz)-inE%y(ix,iy - 1,iz)) * &
-                        inE%grid%delYinv(iy)    &
-                        + SIGMA_AIR*(inE%z(ix,iy,iz)-inE%z(ix,iy,iz - 1)) * &
-                        inE%grid%delZinv(iz)
+                        SIGMA_AIR*(inE%x(ix,iy,iz)*S_E%x(ix,iy,iz)-inE%x(ix-1,iy,iz)*S_E%x(ix-1,iy,iz))   & 
+                        + SIGMA_AIR*(inE%y(ix,iy,iz)*S_E%y(ix,iy,iz)-inE%y(ix,iy-1,iz)*S_E%y(ix,iy-1,iz)) & 
+                        + SIGMA_AIR*(inE%z(ix,iy,iz)*S_E%z(ix,iy,iz)-inE%z(ix,iy,iz-1)*S_E%z(ix,iy,iz-1))  
                 enddo   ! iz
 
 	        ! FOR NODES AT THE AIR-EARTH INTERFACE
                 iz = outSc%grid%nzAir+1
                    outSc%v(ix, iy, iz) = &
-                        (sigma_E%x(ix,iy,iz)*inE%x(ix, iy, iz) -         &
-                        sigma_E%x(ix - 1,iy,iz)*inE%x(ix - 1, iy, iz)) * &
-                        inE%grid%delXinv(ix)      &
-                        +  (sigma_E%y(ix,iy,iz)*inE%y(ix, iy, iz) -      &
-                        sigma_E%y(ix,iy - 1,iz)*inE%y(ix, iy - 1, iz)) * &
-                        inE%grid%delYinv(iy)      &
-                        +  (sigma_E%z(ix,iy,iz)*inE%z(ix, iy, iz) -      &
-                        SIGMA_AIR*inE%z(ix, iy, iz - 1)) * &
-                        inE%grid%delZinv(iz)
+                        (sigma_E%x(ix,iy,iz)*inE%x(ix, iy, iz)*S_E%x(ix,iy,iz) -         & 
+                        sigma_E%x(ix - 1,iy,iz)*inE%x(ix - 1, iy, iz)*S_E%x(ix-1,iy,iz)) & 
+                        +  (sigma_E%y(ix,iy,iz)*inE%y(ix, iy, iz)*S_E%y(ix,iy,iz) -      & 
+                        sigma_E%y(ix,iy - 1,iz)*inE%y(ix, iy - 1, iz)*S_E%y(ix,iy-1,iz)) & 
+                        +  (sigma_E%z(ix,iy,iz)*inE%z(ix, iy, iz)*S_E%z(ix,iy,iz) -      & 
+                        SIGMA_AIR*inE%z(ix, iy, iz - 1)*S_E%z(ix,iy,iz-1))                 
+
 
                 ! FOR NODES INSIDE THE EARTH ONLY
 		! THE TOP MOST EARTH NODE HAS AN INTERFACE WITH
 		! AIR, THEREFORE THAT ONE IS SKIPPED HERE
+
                 do iz = outSc%grid%nzAir+2, outSc%nz
                    outSc%v(ix, iy, iz) = &
-                        (sigma_E%x(ix,iy,iz)*inE%x(ix, iy, iz) -         &
-                        sigma_E%x(ix - 1,iy,iz)*inE%x(ix - 1, iy, iz)) * &
-                        inE%grid%delXinv(ix)      &
-                        +  (sigma_E%y(ix,iy,iz)*inE%y(ix, iy, iz) -      &
-                        sigma_E%y(ix,iy - 1,iz)*inE%y(ix, iy - 1, iz)) * &
-                        inE%grid%delYinv(iy)      &
-                        +  (sigma_E%z(ix,iy,iz)*inE%z(ix, iy, iz) -      &
-                        sigma_E%z(ix,iy,iz - 1)*inE%z(ix, iy, iz - 1)) * &
-                        inE%grid%delZinv(iz)
+                        (sigma_E%x(ix,iy,iz)*inE%x(ix, iy, iz)*S_E%x(ix,iy,iz) -       & 
+                        sigma_E%x(ix-1,iy,iz)*inE%x(ix-1, iy, iz)*S_E%x(ix-1 ,iy,iz))  & 
+                        +  (sigma_E%y(ix,iy,iz)*inE%y(ix, iy, iz)*S_E%y(ix,iy,iz) -    & 
+                        sigma_E%y(ix,iy-1,iz)*inE%y(ix, iy-1,iz)*S_E%y(ix,iy-1,iz))    & 
+                        +  (sigma_E%z(ix,iy,iz)*inE%z(ix, iy, iz)*S_E%z(ix, iy, iz) -  & 
+                        sigma_E%z(ix,iy,iz-1)*inE%z(ix,iy,iz-1)*S_E%z(ix,iy,iz-1))       
+
                 enddo   ! iz
 
              enddo      ! iy
@@ -1942,7 +2067,7 @@ Contains
        else
           write(0, *) 'Error: DivC: scalars not same size'
        end if
-
+       Call diagDiv_crscalar(outSc, V_N, outSc)
     else
        write(0, *) 'Error: DivC: output scalar not compatible use'
     end if

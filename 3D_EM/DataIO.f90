@@ -7,6 +7,7 @@ module DataIO
   use file_units
   use utilities
   use dataspace
+  use gridcalc
   use transmitters
   use receivers
   use datatypes
@@ -177,7 +178,7 @@ Contains
     character(50)                   :: siteid,ref_siteid,compid
     character(20)                   :: sitename
     integer                         :: iTxt,iTx,iRx,iDt,icomp,i,j,k,istat,ios,nBlocks
-    real(8)                         :: x(3),ref_x(3), Period,SI_factor,large
+    real(8)                         :: x(3),ref_x(3), Period,SI_factor,large,Xx(2)
     real(8)                         :: lat,lon,ref_lat,ref_lon
     logical                         :: conjugate, isComplex
 
@@ -321,7 +322,17 @@ Contains
                         compid = typeDict(iDt)%id(icomp)
                         write(ioDat,'(es13.6)',    iostat=ios,advance='no') Period
                         write(ioDat, '(a1)', iostat=ios,advance='no') ' '
-                        write(ioDat,'(a50,3f15.3)',iostat=ios,advance='no') trim(siteid),x(:)
+                        if (FindStr(gridCoords, CARTESIAN)>0) then
+                            write(ioDat,'(a50,3f15.3)',iostat=ios,advance='no') trim(siteid),x(:)
+                   
+                        elseif (FindStr(gridCoords, SPHERICAL)>0) then
+                            read(siteid,'(a20,2f15.3)',iostat=ios) sitename,Xx(1),Xx(2)
+                            
+                            write(ioDat,'(a20,5f15.3)',iostat=ios,advance='no') trim(sitename),x(1),x(2),Xx(1),Xx(2),x(3)
+                            
+                        end if
+                        
+
                         if (conjugate) then
                             write(ioDat,'(a8,3es15.6)',iostat=ios) trim(compid),value(2*icomp-1),-value(2*icomp),error(2*icomp)
                         else
@@ -691,7 +702,15 @@ end subroutine write_Z_list
 
                 ! Update the receiver dictionary and index (sets up if necessary)
                 ! For now, make lat & lon part of site ID; could use directly in the future
+                
+                if (FindStr(gridCoords, CARTESIAN)>0) then
                 write(siteid,'(a20,2f9.3)') code,lat,lon
+                   
+                elseif (FindStr(gridCoords, SPHERICAL)>0) then
+                write(siteid,'(a20,2f15.3)') code,x(1),x(2)
+                    x(1) = lat
+                    x(2) = lon
+                end if
                 iRx = update_rxDict(x,siteid)
 
             case(Full_Interstation_TF)

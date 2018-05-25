@@ -102,6 +102,12 @@ Subroutine Master_Job_fwdPred(sigma,d1,eAll)
     
         job_name= 'FORWARD'      
         call Master_job_Distribute_Taskes(job_name,nTx,sigma,eAll)   
+
+ ! Initialize only those grid elements on the master that are used in EMfieldInterp
+ ! (obviously a quick patch, needs to be fixed in a major way)
+ ! A.Kelbert 2018-01-28
+    Call EdgeLength(grid, l_E)
+    Call FaceArea(grid, S_F)
           
  ! Compute the model Responces           
    do iTx=1,nTx
@@ -113,6 +119,10 @@ Subroutine Master_Job_fwdPred(sigma,d1,eAll)
 		     end do
       end do
    end do   
+
+ ! clean up the grid elements stored in GridCalc on the master node
+    call deall_rvector(l_E)
+    call deall_rvector(S_F)
 
 
         write(ioMPI,*)'FWD: Finished calculating for (', nTx , ') Transmitters '
@@ -898,7 +908,7 @@ if (trim(worker_job_task%what_to_do) .eq. 'FORWARD') then
 		       call set_e_soln(pol_index,e0)
 		       
 
-               call fwdSolve(per_index,e0,b0)
+		       call fwdSetup(per_index,e0,b0)
 		       call fwdSolve(per_index,e0,b0)
                call reset_e_soln(e0)
 
@@ -972,10 +982,21 @@ isComplex = d%d(per_index)%data(dt_index)%isComplex
 		  call create_sparseVector(e0%grid,per_index,L(iFunc))
 	  end do
 	  
+ ! Initialize only those grid elements on the master that are used in EMfieldInterp
+ ! (obviously a quick patch, needs to be fixed in a major way)
+ ! A.Kelbert 2018-01-28
+    Call EdgeLength(e0%grid, l_E)
+    Call FaceArea(e0%grid, S_F)
+
    ! compute linearized data functional(s) : L
    call Lrows(e0,sigma,dt,stn_index,L)
    ! compute linearized data functional(s) : Q
-   call Qrows(e0,sigma,dt,stn_index,Qzero,Qreal,Qimag)	  		              
+   call Qrows(e0,sigma,dt,stn_index,Qzero,Qreal,Qimag)
+
+ ! clean up the grid elements stored in GridCalc on the master node
+    call deall_rvector(l_E)
+    call deall_rvector(S_F)
+
    ! loop over functionals  (e.g., for 2D TE/TM impedances nFunc = 1)
    do iFunc = 1,nFunc
 

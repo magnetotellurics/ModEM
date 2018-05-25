@@ -8,6 +8,8 @@
 module sg_diff_oper
 
   use math_constants
+  use griddef
+  use gridcalc
   use sg_vector
   use sg_scalar
   implicit none
@@ -52,13 +54,20 @@ Contains
           do ix = 2, outSc%nx
              do iy = 2, outSc%ny
                 do iz = 2, outSc%nz
-
                    outSc%v(ix, iy, iz) = (inV%x(ix, iy, iz) - &
-                        inV%x(ix - 1, iy, iz))/ inV%grid%delX(ix) + &
+                        inV%x(ix - 1, iy, iz))/ l_F%x(ix,iy,iz) + &
                         (inV%y(ix, iy, iz) - inV%y(ix, iy - 1, iz))/&
-                        inV%grid%delY(iy) + &
+                        l_F%y(ix,iy,iz) + &
                         (inV%z(ix, iy, iz) - inV%z(ix, iy, iz - 1))/&
-                        inV%grid%delZ(iz) 
+                        l_F%z(ix,iy,iz) 
+! Commented by Lana:
+! WAS:
+!                   outSc%v(ix, iy, iz) = (inV%x(ix, iy, iz) - &
+!                        inV%x(ix - 1, iy, iz))/ inV%grid%delX(ix) + &
+!                        (inV%y(ix, iy, iz) - inV%y(ix, iy - 1, iz))/&
+!                        inV%grid%delY(iy) + &
+!                        (inV%z(ix, iy, iz) - inV%z(ix, iy, iz - 1))/&
+!                        inV%grid%delZ(iz) 
 
                 enddo   ! iz
              enddo      ! iy
@@ -70,13 +79,20 @@ Contains
           do ix = 1, outSc%nx
              do iy = 1, outSc%ny
                 do iz = 1, outSc%nz
-
                    outSc%v(ix, iy, iz) = (inV%x(ix+1, iy, iz) - &
-                        inV%x(ix, iy, iz))/ inV%grid%dx(ix) + &
+                        inV%x(ix, iy, iz))/ l_E%x(ix,iy,iz) + &
                         (inV%y(ix, iy+1, iz) - inV%y(ix, iy, iz))/&
-                        inV%grid%dy(iy) + &
+                        l_E%y(ix,iy,iz) + &
                         (inV%z(ix, iy, iz+1) - inV%z(ix, iy, iz))/&
-                        inV%grid%dz(iz) 
+                        l_E%z(ix,iy,iz) 
+! Commented by Lana:
+! WAS:
+!                   outSc%v(ix, iy, iz) = (inV%x(ix+1, iy, iz) - &
+!                        inV%x(ix, iy, iz))/ inV%grid%dx(ix) + &
+!                        (inV%y(ix, iy+1, iz) - inV%y(ix, iy, iz))/&
+!                        inV%grid%dy(iy) + &
+!                        (inV%z(ix, iy, iz+1) - inV%z(ix, iy, iz))/&
+!                        inV%grid%dz(iz) 
 
                 enddo   ! iz
              enddo      ! iy
@@ -123,9 +139,12 @@ Contains
           do ix = 1, outV%nx 
              do iy = 2, outV%ny
                 do iz = 2, outV%nz
-
                    outV%x(ix, iy, iz) = (inSc%v(ix+1, iy, iz) - &
-                        inSc%v(ix, iy, iz))/ inSc%grid%dx(ix)
+                        inSc%v(ix, iy, iz))/ l_E%x(ix,iy,iz)
+! Commented by Lana:
+! WAS:
+!                   outV%x(ix, iy, iz) = (inSc%v(ix+1, iy, iz) - &
+!                        inSc%v(ix, iy, iz))/ inSc%grid%dx(ix)
 
                 enddo
              enddo
@@ -134,9 +153,12 @@ Contains
           do ix = 2, outV%nx 
              do iy = 1, outV%ny
                 do iz = 2, outV%nz
-
                    outV%y(ix, iy, iz) = (inSc%v(ix, iy+1, iz) - &
-                        inSc%v(ix, iy, iz))/ inSc%grid%dy(iy)
+                        inSc%v(ix, iy, iz))/ l_E%y(ix,iy,iz)
+! Commented by Lana:
+! WAS:
+!                   outV%y(ix, iy, iz) = (inSc%v(ix, iy+1, iz) - &
+!                        inSc%v(ix, iy, iz))/ inSc%grid%dy(iy)
 
                 enddo
              enddo
@@ -145,9 +167,12 @@ Contains
           do ix = 2, outV%nx 
              do iy = 2, outV%ny
                 do iz = 1, outV%nz  
-
                    outV%z(ix, iy, iz) = (inSc%v(ix, iy, iz+1) - &
-                        inSc%v(ix, iy, iz))/ inSc%grid%dz(iz)
+                        inSc%v(ix, iy, iz))/ l_E%z(ix,iy,iz)
+! Commented by Lana:
+! WAS:
+!                   outV%z(ix, iy, iz) = (inSc%v(ix, iy, iz+1) - &
+!                        inSc%v(ix, iy, iz))/ inSc%grid%dz(iz)
 
                 enddo
              enddo
@@ -159,9 +184,12 @@ Contains
           do ix = 2, outV%nx 
              do iy = 1, outV%ny
                 do iz = 1, outV%nz
-
                    outV%x(ix, iy, iz) = (inSc%v(ix, iy, iz) - &
-                        inSc%v(ix-1, iy, iz))/ inSc%grid%delX(ix)
+                        inSc%v(ix-1, iy, iz))/ l_F%x(ix,iy,iz)
+! Commented by Lana:
+! WAS:
+!                   outV%x(ix, iy, iz) = (inSc%v(ix, iy, iz) - &
+!                        inSc%v(ix-1, iy, iz))/ inSc%grid%delX(ix)
 
                 enddo
              enddo
@@ -170,9 +198,12 @@ Contains
           do ix = 1, outV%nx 
              do iy = 2, outV%ny
                 do iz = 1, outV%nz
-
                    outV%y(ix, iy, iz) = (inSc%v(ix, iy, iz) - &
-                        inSc%v(ix, iy-1, iz))/ inSc%grid%delY(iy)
+                        inSc%v(ix, iy-1, iz))/ l_F%y(ix,iy,iz)
+! Commented by Lana:
+! WAS:
+!                   outV%y(ix, iy, iz) = (inSc%v(ix, iy, iz) - &
+!                        inSc%v(ix, iy-1, iz))/ inSc%grid%delY(iy)
 
                 enddo
              enddo
@@ -180,10 +211,13 @@ Contains
 
           do ix = 1, outV%nx 
              do iy = 1, outV%ny
-                do iz = 2, outV%nz  
-
+                do iz = 2, outV%nz
                    outV%z(ix, iy, iz) = (inSc%v(ix, iy, iz) - &
-                        inSc%v(ix, iy, iz-1))/ inSc%grid%delZ(iz)
+                        inSc%v(ix, iy, iz-1))/ l_F%z(ix,iy,iz)  
+! Commented by Lana:
+! WAS:
+!                   outV%z(ix, iy, iz) = (inSc%v(ix, iy, iz) - &
+!                        inSc%v(ix, iy, iz-1))/ inSc%grid%delZ(iz)
 
                 enddo
              enddo
@@ -207,6 +241,8 @@ Contains
     implicit none
     type(cvector), intent(in)               :: V1
     type(cvector), intent(inout)            :: V2
+    ! local
+    type(cvector)                           :: Vtemp
     integer                                 :: nx,ny,nz,ix,iy,iz
     
     IF(.not.V1%allocated) THEN
@@ -226,13 +262,28 @@ Contains
 
     if((V1%gridType .eq. EDGE).and.(V2%gridType .eq. FACE)) then
 
+       call create_cvector(V1%grid,Vtemp,EDGE) ! Lana 05.13.2014
+
        !   H = curl E (for E defined on edges)
+
+       if (.not. l_E%allocated) then
+          call EdgeLength(V1%grid, l_E)
+       endif
+
+       if (.not. S_F%allocated) then
+          call FaceArea(V1%grid, S_F)
+       endif
+
+       Vtemp = V1
+
+       call diagMult_rcvector(l_E, V1, Vtemp)
+
        !  Hx
        do iy = 1,Ny
           do iz = 1,Nz
              V2%x(:,iy,iz) =  &
-                  (V1%z(:,iy+1,iz)-V1%z(:,iy,iz))*V1%grid%dYinv(iy) &
-                  -(V1%y(:,iy,iz+1)-V1%y(:,iy,iz))*V1%grid%dZinv(iz)
+                  (Vtemp%z(:,iy+1,iz)-Vtemp%z(:,iy,iz)) &
+                  -(Vtemp%y(:,iy,iz+1)-Vtemp%y(:,iy,iz))
           enddo
        enddo
 
@@ -240,8 +291,8 @@ Contains
        do iz = 1,Nz
           do ix = 1,Nx
              V2%y(ix,:,iz) = &
-                  (V1%x(ix,:,iz+1)-V1%x(ix,:,iz))*V1%grid%dZinv(iz) &
-                  -(V1%z(ix+1,:,iz)-V1%z(ix,:,iz))*V1%grid%dXinv(ix)
+                  (Vtemp%x(ix,:,iz+1)-Vtemp%x(ix,:,iz)) &
+                  -(Vtemp%z(ix+1,:,iz)-Vtemp%z(ix,:,iz))
           enddo
        enddo
 
@@ -249,21 +300,40 @@ Contains
        do ix = 1,Nx
           do iy = 1,Ny
              V2%z(ix,iy,:) = &
-                  (V1%y(ix+1,iy,:)-V1%y(ix,iy,:))*V1%grid%dXinv(ix) &
-                  -(V1%x(ix,iy+1,:)-V1%x(ix,iy,:))*V1%grid%dYinv(iy)
+                  (Vtemp%y(ix+1,iy,:)-Vtemp%y(ix,iy,:)) &
+                  -(Vtemp%x(ix,iy+1,:)-Vtemp%x(ix,iy,:))
           enddo
        enddo
 
-       elseif((V2%gridType .eq. EDGE).and.(V1%gridType .eq. FACE)) then
+       call diagDiv_crvector(V2, S_F, V2)
 
-          !   E = curl H (for H defined on edges)
-          !   NOTE: for this case boundary edge nodes are not computed
-          !  Ex
+       call deall_cvector(Vtemp) ! Lana 05.13.2014
+
+    elseif((V2%gridType .eq. EDGE).and.(V1%gridType .eq. FACE)) then
+
+       call create_cvector(V1%grid,Vtemp,FACE) ! Lana 05.13.2014
+
+       !   E = curl H (for H defined on edges)
+       !   NOTE: for this case boundary edge nodes are not computed
+
+       if (.not. l_F%allocated) then
+          call FaceLength(V1%grid, l_F)
+       endif
+
+       if (.not. S_E%allocated) then
+          call EdgeArea(V1%grid, S_E)
+       endif
+
+       Vtemp = V1
+
+       call diagMult_rcvector(l_F, V1, Vtemp)
+
+       !  Ex
        do iy = 2,Ny
           do iz = 2,Nz
              V2%x(:,iy,iz) =  &
-                  (V1%z(:,iy,iz)-V1%z(:,iy-1,iz))*V1%grid%delYinv(iy) &
-                  -(V1%y(:,iy,iz)-V1%y(:,iy,iz-1))*V1%grid%delZinv(iz)
+                  (Vtemp%z(:,iy,iz)-Vtemp%z(:,iy-1,iz)) &
+                  -(Vtemp%y(:,iy,iz)-Vtemp%y(:,iy,iz-1))
           enddo
        enddo
 
@@ -271,8 +341,8 @@ Contains
        do iz = 2,Nz
           do ix = 2,Nx
              V2%y(ix,:,iz) = &
-                  (V1%x(ix,:,iz)-V1%x(ix,:,iz-1))*V1%grid%delZinv(iz) &
-                  -(V1%z(ix,:,iz)-V1%z(ix-1,:,iz))*V1%grid%delXinv(ix)
+                  (Vtemp%x(ix,:,iz)-Vtemp%x(ix,:,iz-1)) &
+                  -(Vtemp%z(ix,:,iz)-Vtemp%z(ix-1,:,iz))
           enddo
        enddo
 
@@ -280,10 +350,15 @@ Contains
        do ix = 2,Nx
           do iy = 2,Ny
              V2%z(ix,iy,:) = &
-                  (V1%y(ix,iy,:)-V1%y(ix-1,iy,:))*V1%grid%delXinv(ix) &
-                  -(V1%x(ix,iy,:)-V1%x(ix,iy-1,:))*V1%grid%delYinv(iy)
+                  (Vtemp%y(ix,iy,:)-Vtemp%y(ix-1,iy,:)) &
+                  -(Vtemp%x(ix,iy,:)-Vtemp%x(ix,iy-1,:))
           enddo
        enddo
+
+       call diagDiv_crvector(V2, S_E, V2)
+
+       call deall_cvector(Vtemp) ! Lana 05.13.2014
+
     else
 
        !  incompatible grids ...
