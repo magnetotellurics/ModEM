@@ -15,3 +15,21 @@
 .*.swp
 .DS_store
 # Simulated Subversion default ignores end here
+/Test2D
+/Test3D
+/*.o
+/*.mod
+/ignore_list
+/Makefile
+/Makefile.test
+/Makefile2d.b
+/Makefile2d.local
+/Makefile2d.sav
+/Makefile3d.local
+/Mod2DMT
+/Mod3DMT
+/msg
+/pgf90
+/Test3D.f90
+/Test3D.sav.f90
+/tmp.err
