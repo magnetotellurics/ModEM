@@ -3,19 +3,31 @@
 \hoffset =-2.0cm
 \begin{document}
 
-\title{ModEM: User's Guide}
-\author{Anna Kelbert (COAS/OSU)}
+\title{ModEM: User's Guide: Rev. 1}
+\author{Gary Egbert, Anna Kelbert (COAS/OSU)}
 \maketitle
 
 \section{What is ModEM?}
 
-Modular EM (\textbf{ModEM}) is a flexible electromagnetic modelling and inversion program written in Fortran 95. It is currently available to use with 2D and 3D MT problems. It can also be quite easily extended to do other things, but code modification is beyond the scope of this document (see Egbert et al., 2011). The program has a command-line interface and will work with most Fortran 90/95 compilers on most platforms.
+(\textbf{ModEM}) was designed as a flexible electromagnetic modelling
+and inversion system, written in Fortran 95. Although the code can be (and has been)
+extended for inversion of more general types of EM data (e.g., controlled source, DC),
+here we describe the core, stable, system developed for 2D and 3D magnetotelluric
+(MT) problems. The design goal of the system was to allow
+simplified extension with regard to data types, modeling codes, parameterization
+and regularization, and invesion search algorithms (see Egbert and Kelbert, 2012;
+Kelbert et al. 2014).  However, such code modifications are beyond the scope of this
+document, which discusses only usage.
+The program has a command-line interface, which controls available program options,
+and specifies required and optional input and output files.
+This document primarily describes how to use these options and files to do the
+most common inversion and modeling tasks.
 
 \section{Where do I get it?}
 
 ModEM 2D and 3D MT modelling and inversion codes are currently available for non-commercial and academic use subject to the attached license agreement, see COPYRIGHT. The latest stable version of ModEM can always be obtained from our Subversion repository:
 \begin{verbatim}
-    http://mt.coas.oregonstate.edu/svn/ModEM/branches/stable
+    http://ohm.coas.oregonstate.edu/svn/ModEM/branches/stable
 \end{verbatim}
 
 It is advisable that you obtain the code through the Subversion repository, to keep your version up-to-date with bug fixes and updates. Please refer to the README file for details on obtaining and updating the code. Please contact the authors to obtain a username and password to the repository. Alternatively, the authors may be willing to provide a packaged archive or an executable.
@@ -33,16 +45,28 @@ The file structure of ModEM looks like this:
   \item[matlab/] Auxiliary Matlab scripts for file conversion, and others.
 \end{description}
 
-Unless you edit the code substantially, you wouldn't need to use any configuration scripts. Please use the provided makefiles instead.\\
-
-There are several makefile variants for both 2D and 3D MT. Please choose Makefile3d if you would like a serial version of the code, and Makefile3d.MPI for a parallel version. Then, copy your selection to a new makefile that you could easily edit, without conflicting with the configurations stored in Subversion control system, e.g.,
+The configuration scripts (A. Kelbert) are primarily useful for creating a new makefile
+after substantial code modifications.   Most users should never use these configuration
+scripts, but rather use the provided makefiles.
+There are several makefile variants for both 2D and 3D MT, which might need
+light editing for use in your environment. 
+\emph{Follow these instructions carefully when you do this!} 
+Choose Makefile3d if you would like a serial version of the code, 
+and Makefile3d.MPI for a parallel version. Then, copy your selection to 
+a new makefile that you could easily edit, without conflicting with 
+the configurations stored in Subversion control system, e.g.,
 \begin{verbatim}
 cd f90; cp Makefile3d Makefile
 \end{verbatim}
 
-Then, please open the Makefile and make sure that the uncommented compiler is available on your system. Then, the \verb"make" command will compile the 3D MT (or 2D MT) code for you (\verb"Mod3DMT" and \verb"Mod2DMT", respectively).\\
+Open the Makefile and make sure that the
+compiler is set to what you wish to use (and is available on your system).
+Some paths may also need to be modified.
+Then, the \verb"make" command will 
+compile the 3D MT (or 2D MT) code for you (\verb"Mod3DMT" and \verb"Mod2DMT", respectively).\\
 
-Running these programs without command line arguments will print the following lines:
+Running these programs with no command line arguments will print a brief summary of
+usage:
 \begin{verbatim}
  Output information to files, and progress report to screen (default).
  Usage: Mod3DMT -[job] [args]
