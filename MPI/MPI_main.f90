@@ -512,38 +512,59 @@ Subroutine Master_job_Jmult(mHat,m,d,eAll)
    type(modelParam_t), intent(in)			:: mHat,m
    type(solnVectorMTX_t), intent(in), optional	:: eAll
 
+   ! Local
+   type(modelParam_t)           :: dsigma_temp
+   type(modelParam_t)           :: Qcomb
+   type(solnVectorMTX_t)        :: eAll_out
+   type(solnVectorMTX_t)        :: eAll_temp
+   type(dataVectorMTX_t)        :: d_temp
+
    integer nTx,nTot,m_dimension,iDT,iTx,ndata,ndt
    logical savedSolns
    Integer        :: iper
    Integer        :: per_index,pol_index,stn_index
    type(dataVector_t) :: d1,d2
-   type(solnVectorMTX_t)      	:: eAll_out 
    character(80)  :: job_name
 
 
    savedSolns = present(eAll)
-  ! nTX is number of transmitters;
-   nTx = d%nTx
    ! nTot total number of data points
    nTot = countData(d) !d%Ndata
    starttime = MPI_Wtime()
 	  !  initialize the temporary data vectors
 	  d1 = d%d(1)
 	  d2 = d%d(1) 
+
+  ! nTX is number of transmitters;
+   nTx = d%nTx
+      if(.not. eAll_temp%allocated) then
+         call create_solnVectorMTX(d%nTx,eAll_temp)
+            do iTx=1,nTx
+                call create_solnVector(grid,iTx,e0)
+                call copy_solnVector(eAll_temp%solns(iTx),e0)
+             end do
+      end if
+if (.not. savedSolns )then
+    d_temp=d
+    call Master_Job_fwdPred(m,d_temp,eAll_temp)
+else
+      eAll_temp=eAll
+end if
       if(.not. eAll_out%allocated) then
          call create_solnVectorMTX(d%nTx,eAll_out)
             do iTx=1,nTx
-         		call create_solnVector(grid,iTx,e0)
-        		call copy_solnVector(eAll_out%solns(iTx),e0) 
-        	 end do 
-      end if   	  
+                call create_solnVector(grid,iTx,e0)
+                call copy_solnVector(eAll_out%solns(iTx),e0)
+                call deall (e0)
+             end do
+      end if
    ! First distribute m, mHat and d
     	    call Master_job_Distribute_Model(m,mHat)
 	        call Master_job_Distribute_Data(d)
 
 
        job_name= 'Jmult'
-       call Master_job_Distribute_Taskes(job_name,nTx,m,eAll_out,eAll)
+       call Master_job_Distribute_Taskes(job_name,nTx,m,eAll_out,eAll_temp)
 
   
 
@@ -554,8 +575,8 @@ Subroutine Master_job_Jmult(mHat,m,d,eAll)
             !e =eAll_out%solns(iper)
             d1 = d%d(iper)
 	        d2 = d%d(iper)
-	        call Lmult(eAll%solns(iper)  ,m,eAll_out%solns(iper),d1)
-	        call Qmult(eAll%solns(iper)  ,m,mHat,d2)
+	        call Lmult(eAll_temp%solns(iper)  ,m,eAll_out%solns(iper),d1)
+	        call Qmult(eAll_temp%solns(iper)  ,m,mHat,d2)
 	        call linComb_dataVector(ONE,d1,ONE,d2,d%d(iper))
          end do	
          
@@ -563,6 +584,7 @@ Subroutine Master_job_Jmult(mHat,m,d,eAll)
   	  call deall_dataVector(d1)
 	  call deall_dataVector(d2)       
    call deall (eAll_out)
+   call deall (eAll_temp)
    call deall (e0)  
         !DONE: Received soln for all transmitter from all nodes
         write(ioMPI,*)'Jmult: Finished calculating for (', d%nTx , ') Transmitters '
@@ -1096,12 +1118,14 @@ elseif (trim(worker_job_task%what_to_do) .eq. 'Jmult') then
                     call initSolver(per_index,sigma,grid,e0,e,comb) 
 		           
                    
+                    write(6,'(a12,a18,i5,a12)') node_info, ' Start Receiving ' , orginal_nPol, ' from Master'
 		          do ipol=1,orginal_nPol 
                     which_pol=ipol				  
 		            call create_e_param_place_holder(e0)
 		            call MPI_RECV(e_para_vec, Nbytes, MPI_PACKED, 0, FROM_MASTER,MPI_COMM_WORLD, STATUS, ierr)
 		            call Unpack_e_para_vec(e0)
                   end do
+                      write(6,'(a12,a18,i5,a12)') node_info, ' Finished Receiving ' , orginal_nPol, ' from Master'
 		            
                
             
