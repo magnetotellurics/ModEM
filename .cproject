@@ -1,77 +1,11 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<?fileVersion 4.0.0?><cproject>
+<?fileVersion 5.0.0?><cproject storage_type_id="org.eclipse.cdt.core.XmlProjectDescriptionStorage2">
 	<storageModule moduleId="org.eclipse.cdt.core.settings">
-		<cconfiguration id="photran.managedbuild.toolchain.gnu.fortran.exe.debug.2124300833.1666650850">
-			<storageModule buildSystemId="org.eclipse.cdt.managedbuilder.core.configurationDataProvider" id="photran.managedbuild.toolchain.gnu.fortran.exe.debug.2124300833.1666650850" moduleId="org.eclipse.cdt.core.settings" name="Linux">
-				<externalSettings/>
-				<extensions>
-					<extension id="org.eclipse.cdt.core.ELF" point="org.eclipse.cdt.core.BinaryParser"/>
-					<extension id="org.eclipse.cdt.core.GCCErrorParser" point="org.eclipse.cdt.core.ErrorParser"/>
-					<extension id="org.eclipse.cdt.core.GASErrorParser" point="org.eclipse.cdt.core.ErrorParser"/>
-					<extension id="org.eclipse.cdt.core.GmakeErrorParser" point="org.eclipse.cdt.core.ErrorParser"/>
-					<extension id="org.eclipse.cdt.core.CWDLocator" point="org.eclipse.cdt.core.ErrorParser"/>
-				</extensions>
-			</storageModule>
-			<storageModule moduleId="cdtBuildSystem" version="4.0.0">
-				<configuration artifactName="ModEM" buildProperties="" description="" id="photran.managedbuild.toolchain.gnu.fortran.exe.debug.2124300833.1666650850" name="Linux" parent="org.eclipse.cdt.build.core.emptycfg">
-					<folderInfo id="photran.managedbuild.toolchain.gnu.fortran.exe.debug.2124300833.1666650850." name="/" resourcePath="">
-						<toolChain id="photran.managedbuild.toolchain.gnu.fortran.exe.debug.146477117" name="photran.managedbuild.toolchain.gnu.fortran.exe.debug" superClass="photran.managedbuild.toolchain.gnu.fortran.exe.debug">
-							<targetPlatform archList="all" binaryParser="org.eclipse.cdt.core.ELF" id="photran.managedbuild.target.gnu.platform.exe.debug.1250782775" name="Debug Platform" osList="solaris,linux,hpux,aix,qnx" superClass="photran.managedbuild.target.gnu.platform.exe.debug"/>
-							<builder buildPath="${workspace_loc:/f90}" id="photran.managedbuild.target.gnu.builder.exe.debug.359377155" keepEnvironmentInBuildfile="false" managedBuildOn="false" name="Gnu Make" superClass="photran.managedbuild.target.gnu.builder.exe.debug"/>
-							<tool id="photran.managedbuild.tool.gnu.c.compiler.exe.debug.650109712" name="GCC C Compiler" superClass="photran.managedbuild.tool.gnu.c.compiler.exe.debug">
-								<inputType id="cdt.managedbuild.tool.gnu.c.compiler.input.1609213090" superClass="cdt.managedbuild.tool.gnu.c.compiler.input"/>
-							</tool>
-							<tool id="photran.managedbuild.tool.gnu.fortran.compiler.exe.debug.2082015516" name="GNU Fortran Compiler" superClass="photran.managedbuild.tool.gnu.fortran.compiler.exe.debug">
-								<inputType id="photran.managedbuild.tool.gnu.fortran.compiler.input.982507961" superClass="photran.managedbuild.tool.gnu.fortran.compiler.input"/>
-							</tool>
-							<tool id="photran.managedbuild.tool.gnu.fortran.linker.exe.debug.206891722" name="GNU Fortran Linker" superClass="photran.managedbuild.tool.gnu.fortran.linker.exe.debug">
-								<inputType id="photran.managedbuild.tool.gnu.fortran.linker.input.47122525" superClass="photran.managedbuild.tool.gnu.fortran.linker.input">
-									<additionalInput kind="additionalinputdependency" paths="$(USER_OBJS)"/>
-									<additionalInput kind="additionalinput" paths="$(LIBS)"/>
-								</inputType>
-							</tool>
-							<tool id="photran.managedbuild.tool.gnu.assembler.exe.debug.2110922635" name="GCC Assembler" superClass="photran.managedbuild.tool.gnu.assembler.exe.debug">
-								<inputType id="cdt.managedbuild.tool.gnu.assembler.input.544239197" superClass="cdt.managedbuild.tool.gnu.assembler.input"/>
-							</tool>
-						</toolChain>
-					</folderInfo>
-				</configuration>
-			</storageModule>
-			<storageModule moduleId="org.eclipse.cdt.core.externalSettings"/>
-			<storageModule moduleId="org.eclipse.cdt.core.language.mapping"/>
-			<storageModule moduleId="org.eclipse.cdt.internal.ui.text.commentOwnerProjectMappings"/>
-			<storageModule moduleId="org.eclipse.cdt.make.core.buildtargets">
-				<buildTargets>
-					<target name="Mod3DMT" path="" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
-						<buildCommand>make</buildCommand>
-						<buildArguments>-f Makefile3d.g95</buildArguments>
-						<buildTarget/>
-						<stopOnError>true</stopOnError>
-						<useDefaultCommand>false</useDefaultCommand>
-						<runAllBuilders>true</runAllBuilders>
-					</target>
-					<target name="Mod2DMT" path="" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
-						<buildCommand>make</buildCommand>
-						<buildArguments>-f Makefile2d.g95</buildArguments>
-						<buildTarget/>
-						<stopOnError>true</stopOnError>
-						<useDefaultCommand>false</useDefaultCommand>
-						<runAllBuilders>true</runAllBuilders>
-					</target>
-					<target name="Global3D" path="" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
-						<buildCommand>make</buildCommand>
-						<buildArguments>-f MakefileG.g95</buildArguments>
-						<buildTarget/>
-						<stopOnError>true</stopOnError>
-						<useDefaultCommand>false</useDefaultCommand>
-						<runAllBuilders>true</runAllBuilders>
-					</target>
-				</buildTargets>
-			</storageModule>
+		<cconfiguration id="photran.managedbuild.toolchain.xlf.fortran.macosx.exe.debug.120861961">
+			<storageModule externalCElementFile="photran.managedbuild.toolchain.xlf.fortran.macosx.exe.debug.120861961_org.eclipse.cdt.core.settings" id="photran.managedbuild.toolchain.xlf.fortran.macosx.exe.debug.120861961" name="Debug"/>
+			<storageModule externalCElementFile="photran.managedbuild.toolchain.xlf.fortran.macosx.exe.debug.120861961_cdtBuildSystem" version="4.0.0"/>
+			<storageModule externalCElementFile="photran.managedbuild.toolchain.xlf.fortran.macosx.exe.debug.120861961_org.eclipse.cdt.core.externalSettings"/>
 		</cconfiguration>
-	</storageModule>
-	<storageModule moduleId="cdtBuildSystem" version="4.0.0">
-		<project id="ModEM.null.430036696" name="ModEM"/>
 	</storageModule>
 	<storageModule moduleId="scannerConfiguration">
 		<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId="org.eclipse.cdt.make.core.GCCStandardMakePerProjectProfile"/>
@@ -321,6 +255,9 @@
 				</scannerInfoProvider>
 			</profile>
 		</scannerConfigBuildInfo>
+	</storageModule>
+	<storageModule moduleId="cdtBuildSystem" version="4.0.0">
+		<project id="f90-gridelements.null.164176933" name="f90-gridelements"/>
 	</storageModule>
 	<storageModule moduleId="org.eclipse.cdt.core.LanguageSettingsProviders"/>
 </cproject>

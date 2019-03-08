@@ -47,7 +47,8 @@ include Makefile.local
 OBJDIR = ./objs/3D_MT/IFortRelease_JT_sph
 F90 = ifort 
 #FFLAGS = -O3 -w  -xSSE4.2 -std03 -i8 -I/opt/intel/lib
-FFLAGS = -O2 -w  -xSSE4.2 -std03 -i8 -I/opt/intel/lib -g -check bounds -traceback
+#FFLAGS = -O2 -w  -xSSE4.2 -std03 -i8 -I/opt/intel/lib -g -check bounds -traceback
+FFLAGS = -O1 -w  -i8 -I/opt/intel/lib -g -check bounds -traceback
 MPIFLAGS = -cpp
 MODULE = -module $(OBJDIR)
 LIBS_PATH = -L/opt/intel/mkl/lib
