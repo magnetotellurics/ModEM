@@ -236,9 +236,9 @@ Contains
       ! write the data type header
       call compact(fileInfo(iTxt,iDt)%info_in_file)
       write(ioDat,'(a32)',advance='no') '# ModEM impedance responses for '
-      write(ioDat,*,iostat=ios) adjustl(trim(fileInfo(iTxt,iDt)%info_in_file))
+      write(ioDat,'(a100)',iostat=ios) adjustl(trim(fileInfo(iTxt,iDt)%info_in_file))
       write(ioDat,'(a2)',advance='no') '# '
-      write(ioDat,*,iostat=ios) adjustl(trim(DataBlockHeader(iTxt,iDt)))
+      write(ioDat,'(a100)',iostat=ios) adjustl(trim(DataBlockHeader(iTxt,iDt)))
 
       ! the new format is critical for JOINT modeling and inversion; otherwise, can stick
       ! to the old format for backwards compatibility. Will always write in the same format
@@ -259,7 +259,7 @@ Contains
       write(ioDat,'(a2)',advance='no') temp
       write(ioDat,*,iostat=ios) trim(fileInfo(iTxt,iDt)%units_in_file)
       write(ioDat,'(a2,f8.2)',iostat=ios) temp,fileInfo(iTxt,iDt)%geographic_orientation
-      write(ioDat,'(a2,2f8.3)',iostat=ios) temp,fileInfo(iTxt,iDt)%origin_in_file(1),fileInfo(iTxt,iDt)%origin_in_file(2)
+      write(ioDat,'(a2,2f9.3)',iostat=ios) temp,fileInfo(iTxt,iDt)%origin_in_file(1),fileInfo(iTxt,iDt)%origin_in_file(2)
       write(ioDat,'(a2,2i6)',iostat=ios) temp,nTx,nRx
 
       if (fileInfo(iTxt,iDt)%sign_in_file == ISIGN) then

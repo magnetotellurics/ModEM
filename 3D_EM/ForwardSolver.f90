@@ -640,16 +640,15 @@ end if
 		  
 elseif (txDict(iTx)%Tx_type=='MT') then
    !call fwdSetup(iTx,e0,b0)
-   do j = 1,e0%nPol
+   do iMode = 1,e0%nPol
       ! compute boundary conditions for polarization iMode
       !   uses cell conductivity already set by updateCond
       !call setBound(iTx,e0%Pol_index(iMode),e0%pol(imode),b0%bc)
       ! NOTE that in the MPI parallelization, e0 may only contain a single mode;
       ! mode number is determined by Pol_index, NOT by its order index in e0
-      iMode = e0%Pol_index(j)
       write (*,'(a12,a12,a3,a20,i4,a2,es13.6,a15,i2)') node_info, 'Solving the ','FWD', &
 				' problem for period ',iTx,': ',(2*PI)/omega,' secs & mode # ',iMode
-      call FWDsolve3D(b0%b(iMode),omega,e0%pol(iMode))
+      call FWDsolve3D(b0%b(e0%Pol_index(iMode)),omega,e0%pol(iMode))
       write (6,*)node_info,'FINISHED solve, nPol',e0%nPol
    enddo
 end if
