@@ -36,10 +36,23 @@ to improving the overall performance of our forward modeling codes.
 6.  Implementation of more efficient boundary conditions
 
 ## Parameterization and regularization
+We aim at obtaining a system that supports interchangeable parameterization and 
+regularization strategies. A key component of our research is to understand
+the interactions among optimization and regularization algorithms in order to
+implement robust and flexible inversion schemes.
+Some of research tasks in this area are:
 
-1.  Interchangeable parameterizations and regularization strategies
-
-
-## Flexible joint inversion
+1.  Develop interchangeable parameterizations and regularization strategies
+2.  Investigate the interaction between nonlinear conjugate algorithm and when
+    used with tikhonov like regularization functionals
+3.  Investigate additional regularization terms for electromagnetic inversion
+    considering anisotropy
+4.  Investigate incorporation of seismic data as a priori constraints
 
 ## User interface
+These are some work necessary in order to improve the way users interact with 
+the software package:
+*  Improve or replace the current command line based interface to the programs
+*  Work on a better file organization, input and output files should be made
+   compatible with the industry standards
+*  Deveopment of visualization tools
