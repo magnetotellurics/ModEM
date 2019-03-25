@@ -55,4 +55,4 @@ the software package:
 *  Improve or replace the current command line based interface to the programs
 *  Work on a better file organization, input and output files should be made
    compatible with the industry standards
-*  Deveopment of visualization tools
+*  Development of visualization tools
