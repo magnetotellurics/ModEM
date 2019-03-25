@@ -43,8 +43,8 @@ implement robust and flexible inversion schemes.
 Some of research tasks in this area are:
 
 1.  Develop interchangeable parameterizations and regularization strategies
-2.  Investigate the interaction between nonlinear conjugate algorithm and when
-    used with tikhonov like regularization functionals
+2.  Investigate the interaction between nonlinear conjugate algorithms and
+    tikhonov like regularization functionals
 3.  Investigate additional regularization terms for electromagnetic inversion
     considering anisotropy
 4.  Investigate incorporation of seismic data as a priori constraints
