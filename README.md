@@ -13,6 +13,7 @@ and abroad, to contribute for the understanding of complex geological formations
 associated with salt tectonics in sedimentary basins, today one of the greatest
 chalenges for Brazil's oil & gas industry.
 
+
 # Project goals
 ModEM-ON will be targeted on joint and cooperative inversion of electromagnetic
 data. It will have facilities for the inclusion of seismic and other geophysical
