@@ -1,8 +1,8 @@
 # ModEM-ON
 ModEM-ON is a software package for the joint inversion of 3D electromagnetic
-data with emphasis on geophysical applications. It is based on the ModEM code
-(http://www.modem-geophysics.com/) from Dr. Gary Egbert.
-
+data with emphasis on geophysical applications. It is based on the Modular Electromagnetic Inversion Software (ModEM):
+AUTHORS: Gary Egbert, Anna Kelbert & Naser Meqbel
+  
 # Summary
 We propose to implement workflows for the integration of multiphysics data using
 a 3D code for the joint inversion of MT and CSEM. Such workflows will
