@@ -5,7 +5,7 @@ data with emphasis on geophysical applications. It is based on the ModEM code
 
 # Summary
 We propose to implement workflows for the integration of multiphysics data using
-a 3D code for the joint inversion of CSEM, and seismic data. Such workflows will
+a 3D code for the joint inversion of MT and CSEM. Such workflows will
 be built based on extensions to the software ModEM. The developed workflows will
 help unveil complex geological structures, e.g. sub salt regions in sedimentary basins.
 We expect this new software to be utilized by EM methods experts, both in Brazil
