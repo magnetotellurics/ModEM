@@ -533,8 +533,8 @@ end if
                 omega = txDict(iTx)%omega
                 i_omega_mu = cmplx(0.,ISIGN*MU_0*omega,kind=prec)
                 ! Now finish up the computation of the general b0%s = - ISIGN * i\omega\mu_0 j
-                call diagMult(condAnomaly,E_P,b0%b(iMode)%s)
-                call scMult(-i_omega_mu,b0%b(iMode)%s,b0%b(iMode)%s)
+                call diagMult(condAnomaly,E_P,b0%b(j)%s)
+                call scMult(-i_omega_mu,b0%b(j)%s,b0%b(j)%s)
 
             case ('MT','TIDE')
                 if (BC_FROM_RHS_FILE) then
@@ -549,8 +549,8 @@ end if
                     !  and of course transmitters are in same order always
                     write (*,'(a12,a28,a12,i4,a15,i2)') node_info, 'Setting the BC from E0 file ', &
                         ' for period ',iTx,' & mode # ',iMode
-                    e0%pol(iMode) = E0_from_file(iTx)
-                    call getBC(e0%pol(iMode),BC)
+                    e0%pol(j) = E0_from_file(iTx)
+                    call getBC(e0%pol(j),BC)
                     !   do we now need to set boundary edges of E0 == 0?
 
                 elseif (NESTED_BC) then
@@ -563,15 +563,16 @@ end if
                     BC = BC_from_file((iTx*2)-(2-iMode))
 
                 elseif (COMPUTE_BC) then
+                    ! For e0 and b0, use the same fake polarization index j for MPI modeling context
                     write (*,'(a12,a28,a12,i4,a15,i2)') node_info, 'Computing the BC internally ', &
                         ' for period ',iTx,' & mode # ',iMode
-                    BC = b0%b(iMode)%bc
-                    call ComputeBC(iTx,iMode,e0%pol(iMode),BC)
+                    BC = b0%b(j)%bc
+                    call ComputeBC(iTx,iMode,e0%pol(j),BC)
 
                 end if
-                ! store the BC in b0 and set up the forward problem
-                b0%b(iMode)%adj = 'FWD'
-                b0%b(iMode)%bc = BC
+                ! store the BC in b0 and set up the forward problem - use fake indexing in MPI
+                b0%b(j)%adj = 'FWD'
+                b0%b(j)%bc = BC
 
             case default
                 write(0,*) node_info,'Unknown FWD problem type',trim(txDict(iTx)%Tx_type),'; unable to compute RHS'
@@ -646,9 +647,10 @@ elseif (txDict(iTx)%Tx_type=='MT') then
       !call setBound(iTx,e0%Pol_index(iMode),e0%pol(imode),b0%bc)
       ! NOTE that in the MPI parallelization, e0 may only contain a single mode;
       ! mode number is determined by Pol_index, NOT by its order index in e0
+      ! ... but b0 uses the same fake indexing as e0
       write (*,'(a12,a12,a3,a20,i4,a2,es13.6,a15,i2)') node_info, 'Solving the ','FWD', &
-				' problem for period ',iTx,': ',(2*PI)/omega,' secs & mode # ',iMode
-      call FWDsolve3D(b0%b(e0%Pol_index(iMode)),omega,e0%pol(iMode))
+				' problem for period ',iTx,': ',(2*PI)/omega,' secs & mode # ',e0%Pol_index(iMode)
+      call FWDsolve3D(b0%b(iMode),omega,e0%pol(iMode))
       write (6,*)node_info,'FINISHED solve, nPol',e0%nPol
    enddo
 end if
