@@ -44,10 +44,14 @@ character, pointer, dimension(:) :: eAll_para_vec       !! needed for MPI_pack/M
 character, pointer, dimension(:) :: e_para_vec          !! needed for MPI_pack/MPI_unpack; counted in bytes
 character, pointer, dimension(:) :: sigma_para_vec      !! needed for MPI_pack/MPI_unpack; counted in bytes
 character, pointer, dimension(:) :: data_para_vec      !! needed for MPI_pack/MPI_unpack; counted in bytes
+!ccyr
+character, allocatable, dimension(:) :: data_vec       !! needed for MPI_pack/MPI_unpack; counted in bytes
+integer, allocatable, dimension(:) :: worker_job_dataresp_metadata  !! needed for MPI_pack/MPI_unpack; counted in bytes
 character, pointer, dimension(:) :: worker_job_package  !! needed for MPI_pack/MPI_unpack; counted in bytes
 character, pointer, dimension(:) :: userdef_control_package !! needed for MPI_pack/MPI_unpack; counted in bytes
 
 Integer                          :: Nbytes              !! used in all MPI_pack/MPI_unpack
+Integer                          :: nMdt                !! used in dataresp parallelisation
 !********************************************************************
 
 

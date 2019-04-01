@@ -275,8 +275,8 @@ end subroutine ini_BC_from_file
       ! compute boundary conditions for polarization iMode
       !   uses cell conductivity already set by updateCond
       call SetBound(e0%Pol_index(iMode),e0%pol(imode),b0%bc,iTx)
-      write (*,'(a12,a12,a3,a20,i4,a2,es12.6,a15,i2)') node_info, 'Solving the ','FWD', &
-				' problem for period ',iTx,': ',(2*PI)/omega,' secs & mode # ',e0%Pol_index(iMode)
+!      write (*,'(a12,a12,a3,a20,i4,a2,es12.6,a15,i2)') node_info, 'Solving the ','FWD', &
+!				' problem for period ',iTx,': ',(2*PI)/omega,' secs & mode # ',e0%Pol_index(iMode)
       call FWDsolve3D(b0,omega,e0%pol(imode))
    enddo
 
@@ -310,8 +310,8 @@ end subroutine ini_BC_from_file
    period = txDict(iTx)%period
    do iMode = 1,e%nPol
       comb%b(e%Pol_index(iMode))%adj = FWDorADJ
-      write (*,'(a12,a12,a3,a20,i4,a2,es12.6,a15,i2)') node_info,'Solving the ',FWDorADJ, &
-				' problem for period ',iTx,': ',(2*PI)/omega,' secs & mode # ',e%Pol_index(iMode)
+!      write (*,'(a12,a12,a3,a20,i4,a2,es12.6,a15,i2)') node_info,'Solving the ',FWDorADJ, &
+!				' problem for period ',iTx,': ',(2*PI)/omega,' secs & mode # ',e%Pol_index(iMode)
       call FWDsolve3d(comb%b(e%Pol_index(iMode)),omega,e%pol(imode))
    enddo
 

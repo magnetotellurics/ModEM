@@ -165,7 +165,8 @@ module sg_vector
        diagDiv_rcvector_f, diagDiv_crvector_f, &
        dotProd_rvector_f, dotProd_cvector_f, &
        linComb_cvector, linComb_rvector, scMultAdd_cvector, conjg_cvector_f, &
-       cmplx_rvector_f, real_cvector_f, imag_cvector_f
+       cmplx_rvector_f, real_cvector_f, imag_cvector_f, efilewrite_prefix, &
+       efileread_prefix, efilerename_prefix, efiledelete_prefix
 
 
   ! ***************************************************************************
@@ -439,7 +440,7 @@ Contains
     E%nx = nx
     E%ny = ny
     E%nz = nz
-    ! print *, 'nx, ny, nz', nx, ny, nz
+
 
     ! gridType
     E%gridType = gridType
@@ -459,6 +460,7 @@ Contains
        E%allocated = E%allocated .and. (status .EQ. 0)
        allocate(E%z(nx+1,ny+1,nz), STAT=status)
        E%allocated = E%allocated .and. (status .EQ. 0)
+!     print *, 'sg_vector EDGE : nx, ny, nz, total ', nx, ny, nz, nx*(ny+1)*(nz+1)+(nx+1)*ny*(nz+1)+(nx+1)*(ny+1)*nz
     else if (E%gridType == FACE) then
 	   ! For spherical problem:
 	   ! 1) E%y(:,1,:) and E%y(:,ny+1,:) are undefined,
@@ -469,6 +471,7 @@ Contains
        E%allocated = E%allocated .and. (status .EQ. 0)
        allocate(E%z(nx,ny,nz+1), STAT=status)
        E%allocated = E%allocated .and. (status .EQ. 0)
+!     print *, 'sg_vector FACE : nx, ny, nz, total ', nx, ny, nz, nx*ny*(nz+1)+nx*ny*(nz+1)+(nx+1)*ny*nz
     else
        write (0, *) 'not a known tag'
     end if
@@ -2988,5 +2991,135 @@ Contains
     E2%temporary = .true.
 
   end function imag_cvector_f  ! imag_cvector_f
+
+  subroutine EfileWrite_prefix(prefix,iFreq,iMode,outE)
+
+    implicit none
+    character(len=*)                            :: prefix
+    integer, intent(in)				:: iFreq,iMode
+    type (cvector), intent(in)			:: outE
+
+    integer, parameter                          :: funit = 123
+    character(len=512)                          :: fn
+
+    write(fn,'(a,i4.4,a,i1,a)') trim(prefix)//'iTx',iFreq,'iPol',iMode,'.cvec'
+    write(*,'(2a40)') "efilewrite_prefix: ",fn
+    open(funit,file=trim(fn),action='write',form='unformatted',status='replace')
+
+    ! write the frequency header - 1 record
+    write(funit) outE%nx,outE%ny,outE%nz,outE%gridType
+
+    ! write the electrical field data - 3 records
+    write(funit) outE%x
+    write(funit) outE%y
+    write(funit) outE%z
+
+    close(funit)
+
+  end subroutine EfileWrite_prefix
+
+    subroutine EfileRead_prefix(prefix,iFreq,iMode,inE,delete)
+
+    implicit none
+    character(len=*)                            :: prefix
+    integer, intent(in)				:: iFreq,iMode
+    type (cvector)             			:: inE
+
+    logical, optional                           :: delete
+
+    integer                                     :: nx,ny,nz
+    character(len=80)                           :: gridType
+
+    integer, parameter                          :: funit = 123
+    character(len=512)                          :: fn
+
+    if( .not. inE%allocated ) then
+       write(0,*) "Cvector not allocated on entry to EfileRead_prefix"
+       stop
+    end if
+
+    write(fn,'(a,i4.4,a,i1,a)') trim(prefix)//'iTx',iFreq,'iPol',iMode,'.cvec'
+    write(*,'(2a40)') "efileread_prefix: ",fn
+    open(funit,file=trim(fn),action='read',form='unformatted',status='replace')
+
+    ! write the frequency header - 1 record
+    read(funit) nx,ny,nz,gridType
+
+    if( nx /= inE%nx .OR. ny /= inE%ny .OR. nz /= inE%nz .OR. gridType /= inE%gridType ) then
+       write(0,*) "Cvector in file not compatible with input cvector"
+       stop
+    end if
+
+    ! read the electrical field data - 3 records
+    read(funit) inE%x
+    read(funit) inE%y
+    read(funit) inE%z
+
+    if( present( delete ) ) then
+       if( delete ) then
+          close(funit,STATUS='DELETE')
+       else
+          close(funit)
+       end if
+    else
+       close(funit)
+    end if
+    
+  end subroutine EfileRead_prefix
+
+  subroutine EfileDelete_prefix(prefix,iFreq,iMode)
+
+    implicit none
+    character(len=*)                            :: prefix
+    integer, intent(in)				:: iFreq,iMode
+
+    integer, parameter                          :: funit = 123
+    character(len=512)                          :: fn
+
+    logical :: exists
+
+    write(fn,'(a,i4.4,a,i1,a)') trim(prefix)//'iTx',iFreq,'iPol',iMode,'.cvec'
+
+    ! In this case, deletion can succeed if the file doesn't exist
+    inquire(file=trim(fn),EXIST=exists)
+    if( exists ) then
+       open(funit,file=trim(fn))
+       close(funit,STATUS='DELETE')
+    end if
+
+  end subroutine EfileDelete_prefix
+
+  subroutine EfileRename_prefix(fromPrefix,toPrefix,iFreq,iMode)
+
+    implicit none
+    character(len=*)                            :: fromPrefix, toPrefix
+    integer, intent(in)				:: iFreq,iMode
+
+    integer, parameter                          :: funit = 123
+    character(len=512)                          :: fromfn, tofn
+
+    logical :: fromExists, toExists
+
+
+    write(fromfn,'(a,i4.4,a,i1,a)') trim(fromPrefix)//'iTx',iFreq,'iPol',iMode,'.cvec'
+    write(tofn,  '(a,i4.4,a,i1,a)') trim(  toPrefix)//'iTx',iFreq,'iPol',iMode,'.cvec'
+
+    ! Rename should fail if the fromfile doesn't exist, and tofile does
+    inquire(file=trim(fromfn),EXIST=fromExists)
+    if( fromExists ) then
+       inquire(file=trim(tofn),EXIST=toExists)
+       if ( .not. toExists ) then
+          call rename( trim(fromfn), trim(tofn) )
+       else
+          write(0,*) "Rename target file already exists"
+          stop
+       end if
+    else
+       write(0,*) "File to rename does not exist"
+       stop
+    end if
+
+  end subroutine EfileRename_prefix
+
 
 end module sg_vector ! sg_vector

@@ -164,7 +164,7 @@ Contains
     
     i_omega_mu = cmplx(0.,1.0d0*ISIGN*MU_0*omega,kind=prec)
 
-
+!    print *, "i_omega_mu=",i_omega_mu
     ! Using boundary condition and sources from rHS data structure
     ! construct vector b (defined only on interior nodes) for rHS of
     ! reduced (interior nodes only) linear system of equations
@@ -329,8 +329,8 @@ Contains
     end do loop
 
     if (output_level > 1) then
-       write (*,'(a12,a20,i8,g15.7)') node_info, 'finished solving:', nIterTotal, EMrelErr(nIterTotal)
-	   write (*,'(a12,a22,f12.6)')    node_info, ' time taken (mins) ', elapsed_time(timer)/60.0
+ if (taskid ==1) write (*,'(a12,a20,i8,g15.7)') node_info, 'finished solving:', nIterTotal, EMrelErr(nIterTotal)
+ if (taskid ==1) write (*,'(a12,a22,f12.6)')    node_info, ' time taken (mins) ', elapsed_time(timer)/60.0
     end if
 
     !  After solving symetrized system, need to do different things for

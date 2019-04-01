@@ -8,7 +8,11 @@ use dataio
 #ifdef MPI
   use MPI_main
   use MPI_sub
+
+#else
+  use userctrl, only: cUserDef
 #endif
+
 
 
    ! inherits datasens,  dataspace, dataFunc, SolnSpace,
@@ -193,7 +197,6 @@ Contains
     else
     	io_unit = 6
     end if
-
 	write(io_unit,'(a10)',advance='no') trim(comment)//':'
 	write(io_unit,'(a3,es12.6)',advance='no') ' f=',f
 	write(io_unit,'(a4,es12.6)',advance='no') ' m2=',mNorm
@@ -244,11 +247,20 @@ Contains
    !  compute predicted data for current model parameter m
    !   also sets up forward solutions for all transmitters in eAll
    !   (which is created on the fly if it doesn't exist)
+
+   if ( present(eAll) ) then
 #ifdef MPI
       call Master_Job_fwdPred(m,dHat,eAll)
 #else
       call fwdPred(m,dHat,eAll)
 #endif
+   else
+#ifdef MPI
+      call Master_Job_fwdPred(m,dHat)
+#else
+      call fwdPred(m,dHat)
+#endif
+   end if
 
 !	call write_Z_ascii(fidWrite,cfile,nPer,periods,modes, &
 !			nSites,sites,allData)
@@ -263,7 +275,6 @@ Contains
    call CdInvMult(res,Nres)
    SS = dotProd(res,Nres)
    Ndata = countData(res)
-
    ! compute the model norm
    mNorm = dotProd(mHat,mHat)
    Nmodel = countModelParam(mHat)
@@ -305,7 +316,7 @@ Contains
    type(modelParam_t), intent(in)           :: mHat
    type(modelParam_t), intent(inout)          :: grad
    type(dataVectorMTX_t), intent(inout)              :: dHat
-   type(solnVectorMTX_t), intent(inout)            :: eAll
+   type(solnVectorMTX_t), intent(inout),optional            :: eAll
 
    !  local variables
    real(kind=prec)       :: Ndata,Nmodel
@@ -328,11 +339,19 @@ Contains
 
    ! multiply by J^T
    call CdInvMult(res)
+if (present(eAll)) then
 #ifdef MPI
         call Master_job_JmultT(m,res,JTd,eAll)
 #else
         call JmultT(m,res,JTd,eAll)
 #endif
+ else
+#ifdef MPI
+        call Master_job_JmultT(m,res,JTd)
+#else
+        call JmultT(m,res,JTd)
+#endif
+endif
 
    call CmSqrtMult(JTd,CmJTd)
 
@@ -490,6 +509,7 @@ Contains
    character(100)       :: mFile, mHatFile, gradFile, dataFile, resFile, logFile
    type(solnVectorMTX_t)      :: eAll
 
+
    if (present(fname)) then
       call read_NLCGiterControl(iterControl,fname,ok)
       if (ok) then
@@ -507,9 +527,6 @@ Contains
    alpha = iterControl%alpha_1
    startdm = iterControl%startdm
 
-   write(*,'(a41,es8.1)') 'The initial damping parameter lambda is ',lambda
-   write(*,'(a55,f12.6)') 'The initial line search step size (in model units) is ',startdm
-
    write(ioLog,'(a41,es8.1)') 'The initial damping parameter lambda is ',lambda
    write(ioLog,'(a55,f12.6)') 'The initial line search step size (in model units) is ',startdm
 
@@ -523,7 +540,11 @@ Contains
    mHat = m
 
    !  compute the penalty functional and predicted data
-   call func(lambda,d,m0,mHat,value,mNorm,dHat,eAll,rms)
+   if( cUserDef%storeSolnsInFile ) then
+      call func(lambda,d,m0,mHat,value,mNorm,dHat,RMS=rms)
+   else
+      call func(lambda,d,m0,mHat,value,mNorm,dHat,eAll,rms)
+   endif
    call printf('START',lambda,alpha,value,mNorm,rms)
    call printf('START',lambda,alpha,value,mNorm,rms,logFile)
 	 nfunc = 1
@@ -542,7 +563,11 @@ Contains
    end if
 
    ! compute gradient of the full penalty functional
-   call gradient(lambda,d,m0,mHat,grad,dHat,eAll)
+   if( cUserDef%storeSolnsInFile ) then
+      call gradient(lambda,d,m0,mHat,grad,dHat)
+   else
+      call gradient(lambda,d,m0,mHat,grad,dHat,eAll)
+   end if
    if (output_level > 3) then
      gradFile = trim(iterControl%fname)//'_NLCG_'//iterChar//'.grt'
      call write_modelParam(grad,trim(gradFile))
@@ -550,13 +575,11 @@ Contains
 
    ! update the initial value of alpha if necessary
    gnorm = sqrt(dotProd(grad,grad))
-   write(*,'(a37,es12.6)') 'The initial norm of the gradient is ',gnorm
    write(ioLog,'(a37,es12.6)') 'The initial norm of the gradient is ',gnorm
    if (gnorm < TOL6) then
       call errStop('Problem with your gradient computations: first gradient is zero')
    else !if (alpha * gnorm > startdm) then
       alpha = startdm / gnorm
-      write(*,'(a39,es12.6)') 'The initial value of alpha updated to ',alpha
       write(ioLog,'(a39,es12.6)') 'The initial value of alpha updated to ',alpha
    end if
 
@@ -568,6 +591,7 @@ Contains
    h = g
 
    do
+      write(*,'(a30,i5,a8,d32.16)') "######## iter=",iter," RMS=",rms
       !  test for convergence ...
       if((rms.lt.iterControl%rmsTol).or.(iter.ge.iterControl%maxIter)) then
          exit
@@ -583,14 +607,23 @@ Contains
 	  ! at the end of line search, set mHat to the new value
 	  ! mHat = mHat + alpha*h  and evaluate gradient at new mHat
 	  ! data and solnVector only needed for output
-      write(*,'(a23)') 'Starting line search...'
       write(ioLog,'(a23)') 'Starting line search...'
 	  select case (flavor)
 	  case ('Cubic')
+
+         if( cUserDef%storeSolnsInFile ) then
+	  	call lineSearchCubic(lambda,d,m0,h,alpha,mHat,value,grad,rms,nLS,dHat)
+    else
 	  	call lineSearchCubic(lambda,d,m0,h,alpha,mHat,value,grad,rms,nLS,dHat,eAll)
+endif
 	  	!call deall(eAll)
 	  case ('Quadratic')
-	  	call lineSearchQuadratic(lambda,d,m0,h,alpha,mHat,value,grad,rms,nLS,dHat,eAll)
+
+         if( cUserDef%storeSolnsInFile ) then
+            call lineSearchQuadratic(lambda,d,m0,h,alpha,mHat,value,grad,rms,nLS,dHat)
+         else
+            call lineSearchQuadratic(lambda,d,m0,h,alpha,mHat,value,grad,rms,nLS,dHat,eAll)
+         endif
 	  	!call deall(eAll)
 	  case default
         call errStop('Unknown line search requested in NLCG')
@@ -598,13 +631,11 @@ Contains
 		nfunc = nfunc + nLS
 	  gPrev = g
 	  call linComb(MinusONE,grad,R_ZERO,grad,g)
-
 	  ! compute the starting step for the next line search
 	  alpha = 2*(value - valuePrev)/grad_dot_h
 
 	  ! adjust the starting step to ensure superlinear convergence properties
 	  alpha = (ONE+0.01)*alpha
-	  write(*,'(a25,i5)') 'Completed NLCG iteration ',iter
 	  write(ioLog,'(a25,i5)') 'Completed NLCG iteration ',iter
 	  Nmodel = countModelParam(mHat)
 	  mNorm = dotProd(mHat,mHat)/Nmodel
@@ -641,17 +672,14 @@ Contains
       		call update_damping_parameter(lambda,mHat,value,grad)
       		! update alpha
       		gnorm = sqrt(dotProd(grad,grad))
-            write(*,'(a34,es12.6)') 'The norm of the last gradient is ',gnorm
             write(ioLog,'(a34,es12.6)') 'The norm of the last gradient is ',gnorm
             !alpha = min(iterControl%alpha_1,startdm/gnorm)
       		alpha = min(ONE,startdm)/gnorm
-      		write(*,'(a48,es12.6)') 'The value of line search step alpha updated to ',alpha
             write(ioLog,'(a48,es12.6)') 'The value of line search step alpha updated to ',alpha
       		! g = - grad
 			call linComb(MinusONE,grad,R_ZERO,grad,g)
 			! check that lambda is still at a reasonable value
 			if (lambda < iterControl%lambdaTol) then
-				write(*,'(a55)') 'Unable to get out of a local minimum. Exiting...'
                 write(ioLog,'(a55)') 'Unable to get out of a local minimum. Exiting...'
 				! multiply by C^{1/2} and add m_0
                 call CmSqrtMult(mHat,m_minus_m0)
@@ -660,7 +688,6 @@ Contains
 				return
 			end if
 	  	! restart
-			write(*,'(a55)') 'Restarting NLCG with the damping parameter updated'
 			call printf('to',lambda,alpha,value,mNorm,rms)
 			write(ioLog,'(a55)') 'Restarting NLCG with the damping parameter updated'
 			call printf('to',lambda,alpha,value,mNorm,rms,logFile)
@@ -687,19 +714,16 @@ Contains
       	nCG = nCG + 1
 	  else
    	    ! restart
-		write(*,'(a45)') 'Restarting NLCG to restore orthogonality'
 		write(ioLog,'(a45)') 'Restarting NLCG to restore orthogonality'
         h = g
         nCG = 0
    	  end if
-
    end do
 
    ! multiply by C^{1/2} and add m_0
    call CmSqrtMult(mHat,m_minus_m0)
    call linComb(ONE,m_minus_m0,ONE,m0,m)
    d = dHat
-   write(*,'(a25,i5,a25,i5)') 'NLCG iterations:',iter,' function evaluations:',nfunc
    write(ioLog,'(a25,i5,a25,i5)') 'NLCG iterations:',iter,' function evaluations:',nfunc
    close(ioLog,iostat=ios)
 
@@ -712,7 +736,7 @@ Contains
    call deall_modelParam(g)
    call deall_modelParam(h)
    call deall_modelParam(gPrev)
-   call deall_solnVectorMTX(eAll)
+   if ( .not. cUserDef%storeSolnsInFile ) call deall_solnVectorMTX(eAll)
 
    end subroutine NLCGsolver
 
@@ -769,7 +793,7 @@ Contains
    real(kind=prec), intent(out)    :: rms
    integer,intent(out)                     :: niter
    type(dataVectorMTX_t), intent(out)         :: dHat
-   type(solnVectorMTX_t), intent(inout)          :: eAll
+   type(solnVectorMTX_t), intent(inout),optional          :: eAll
 
    ! optionally add relaxation (e.g. for Renormalised Steepest Descent)
    real(kind=prec), intent(in), optional :: gamma
@@ -785,6 +809,8 @@ Contains
    type(solnVectorMTX_t)                         :: eAll_1
    character(100)							:: logFile
 
+   character(80)                             :: prefix_tmp
+   integer :: iTx, ipol
    ! parameters
    c = iterControl%c
    !k = iterControl%alpha_k
@@ -822,7 +848,19 @@ Contains
    call linComb(ONE,mHat_0,alpha_1,h,mHat_1)
 
    !  compute the penalty functional and predicted data at mHat_1
-   call func(lambda,d,m0,mHat_1,f_1,mNorm_1,dHat_1,eAll_1,rms_1)
+
+   if( present(eAll) ) then
+      call func(lambda,d,m0,mHat_1,f_1,mNorm_1,dHat_1,eAll_1,rms_1)
+   else
+      ! Need to ensure these vector files have a 
+      ! different prefix before calling func
+      prefix_tmp = cUserDef%prefix
+      write(cUserDef%prefix,'(a)') trim(cUserDef%prefix)//'_1'
+      call func(lambda,d,m0,mHat_1,f_1,mNorm_1,dHat_1,RMS=rms_1)
+      ! Reset file prefix
+      cUserDef%prefix = prefix_tmp
+   end if
+
    call printf('STARTLS',lambda,alpha,f_1,mNorm_1,rms_1)
    call printf('STARTLS',lambda,alpha,f_1,mNorm_1,rms_1,logFile)
    niter = niter + 1
@@ -853,13 +891,16 @@ Contains
   !  	alpha = alpha_i/TWO ! reset alpha to ensure progress
   !  end if
     call linComb(ONE,mHat_0,alpha,h,mHat)
-    call func(lambda,d,m0,mHat,f,mNorm,dHat,eAll,rms)
+      if ( present(eAll) ) then
+         call func(lambda,d,m0,mHat,f,mNorm,dHat,eAll,rms)
+      else
+         call func(lambda,d,m0,mHat,f,mNorm,dHat,RMS=rms)
+      end if
     call printf('QUADLS',lambda,alpha,f,mNorm,rms)
     call printf('QUADLS',lambda,alpha,f,mNorm,rms,logFile)
     niter = niter + 1
     ! check whether the solution satisfies the sufficient decrease condition
     if (f < f_0 + c * alpha * g_0) then
-        write(*,'(a60)') 'Good enough value found, exiting line search'
         write(ioLog,'(a60)') 'Good enough value found, exiting line search'
     	exit
     end if
@@ -868,7 +909,6 @@ Contains
     ! Most likely, this is due to an inaccuracy in the gradient computations.
     ! In this case, we avoid an infinite loop by exiting the line search.
     if (f > f_0) then
-        write(*,'(a75)') 'Unable to fit a quadratic due to bad gradient estimate, exiting line search'
         write(ioLog,'(a75)') 'Unable to fit a quadratic due to bad gradient estimate, exiting line search'
    		exit
     end if
@@ -885,28 +925,59 @@ Contains
    if (starting_guess) then
    	alpha = alpha_1
    	dHat = dHat_1
-   	eAll = eAll_1
+
    	mHat = mHat_1
    	rms = rms_1
    	f = f_1
+
+      if ( present( eAll ) ) then
+         eAll = eAll_1
+      else
+         ! Rename all of the _1 files...
+         do iTx=1,d%nTx
+            do ipol=1,2
+               ! Existing files must be deleted first
+               call EfileDelete_prefix(trim(cUserDef%prefix),iTx,ipol)
+               call EfileRename_prefix(trim(cUserDef%prefix)//'_1',trim(cUserDef%prefix),iTx,ipol)
+            end do
+         end do
+      end if
+   else
+      if ( .not. present(eAll) ) then
+         ! Delete all of the _1 files
+         do iTx=1,d%nTx
+            do ipol=1,2
+               call EfileDelete_prefix(trim(cUserDef%prefix)//'_1',iTx,ipol)
+            end do
+         end do
+      end if
+
    end if
 
    ! compute gradient of the full penalty functional and exit
+
     if (relaxation) then
    		call linComb(ONE,mHat_0,gamma*alpha,h,mHat)
-    	call func(lambda,d,m0,mHat,f,mNorm,dHat,eAll,rms)
+      if ( present( eAll ) ) then
+         call func(lambda,d,m0,mHat,f,mNorm,dHat,eAll,rms)
+      else
+         call func(lambda,d,m0,mHat,f,mNorm,dHat,RMS=rms)
+      end if
    		call printf('RELAX',lambda,gamma*alpha,f,mNorm,rms)
    		call printf('RELAX',lambda,gamma*alpha,f,mNorm,rms,logFile)
    	end if
-    call gradient(lambda,d,m0,mHat,grad,dHat,eAll)
-    write(*,'(a39)') 'Gradient computed, line search finished'
+   if ( present( eAll ) ) then
+      call gradient(lambda,d,m0,mHat,grad,dHat,eAll)
+   else
+      call gradient(lambda,d,m0,mHat,grad,dHat)
+   endif
     write(ioLog,'(a39)') 'Gradient computed, line search finished'
 
    call deall_dataVectorMTX(dHat_1)
    call deall_modelParam(mHat_0)
    call deall_modelParam(mHat_1)
-   call deall_solnVectorMTX(eAll_1)
-
+   if ( present( eAll ) ) call deall_solnVectorMTX(eAll_1)
+   
   end subroutine lineSearchQuadratic
 
 
@@ -964,7 +1035,7 @@ Contains
    real(kind=prec), intent(out)    :: rms
    integer, intent(out)                    :: niter
    type(dataVectorMTX_t), intent(out)         :: dHat
-   type(solnVectorMTX_t), intent(inout)          :: eAll
+   type(solnVectorMTX_t), intent(inout),optional          :: eAll
 
    ! optionally add relaxation (e.g. for Renormalised Steepest Descent)
    real(kind=prec), intent(in), optional :: gamma
@@ -980,6 +1051,8 @@ Contains
    type(solnVectorMTX_t)                         :: eAll_1
    character(100)							:: logFile
 
+   character(80)                             :: prefix_tmp
+   integer                              :: iTx, ipol
    ! parameters
    c = iterControl%c
    !k = iterControl%alpha_k
@@ -1013,7 +1086,20 @@ Contains
    ! compute the trial mHat, f, dHat, eAll, rms
    mHat_1 = mHat_0
    call linComb(ONE,mHat_0,alpha_1,h,mHat_1)
-   call func(lambda,d,m0,mHat_1,f_1,mNorm_1,dHat_1,eAll_1,rms_1)
+
+   if ( present( eAll ) ) then
+      call func(lambda,d,m0,mHat_1,f_1,mNorm_1,dHat_1,eAll_1,rms_1)
+   else
+      ! Need to ensure these vector files have a 
+      ! different prefix before calling func
+      prefix_tmp = cUserDef%prefix
+      write(cUserDef%prefix,'(a)') trim(cUserDef%prefix)//'_1'
+      
+      call func(lambda,d,m0,mHat_1,f_1,mNorm_1,dHat_1,RMS=rms_1)
+      cUserDef%prefix = prefix_tmp
+   end if
+
+
    call printf('STARTLS',lambda,alpha,f_1,mNorm_1,rms_1)
    call printf('STARTLS',lambda,alpha,f_1,mNorm_1,rms_1,logFile)
    niter = niter + 1
@@ -1032,31 +1118,60 @@ Contains
 	starting_guess = .true.
   	alpha = alpha_1
    	dHat = dHat_1
-    eAll = eAll_1
+!    eAll = eAll_1
    	mHat = mHat_1
    	rms = rms_1
    	f = f_1
+
+      if( present( eAll ) ) then
+         eAll = eAll_1
+      else
+         ! Rename all the _1 files
+         do iTx=1,d%nTx
+            do ipol=1,2
+               ! Existing files must be deleted first
+               call EfileDelete_prefix(trim(cUserDef%prefix),iTx,ipol)
+               call EfileRename_prefix(trim(cUserDef%prefix)//'_1',trim(cUserDef%prefix),iTx,ipol)
+            end do
+         end do
+      end if
+
     ! compute the gradient and exit
     if (relaxation) then
    		call linComb(ONE,mHat_0,gamma*alpha,h,mHat)
-    	call func(lambda,d,m0,mHat,f,mNorm,dHat,eAll,rms)
+
+         if ( present( eAll) ) then
+            call func(lambda,d,m0,mHat,f,mNorm,dHat,eAll,rms)
+         else
+            call func(lambda,d,m0,mHat,f,mNorm,dHat,RMS=rms)
+         end if
+
    		call printf('RELAX',lambda,gamma*alpha,f,mNorm,rms)
    		call printf('RELAX',lambda,gamma*alpha,f,mNorm,rms,logFile)
    	end if
-    call gradient(lambda,d,m0,mHat,grad,dHat,eAll)
-    write(*,'(a45)') 'Quadratic has no minimum, exiting line search'
+         if ( present( eAll) ) then
+            call gradient(lambda,d,m0,mHat,grad,dHat,eAll)
+else
+            call gradient(lambda,d,m0,mHat,grad,dHat)
+            endif
     write(ioLog,'(a45)') 'Quadratic has no minimum, exiting line search'
 	call deall_dataVectorMTX(dHat_1)
 	call deall_modelParam(mHat_0)
 	call deall_modelParam(mHat_1)
-	call deall_solnVectorMTX(eAll_1)
+	if (present(eAll)) call deall_solnVectorMTX(eAll_1)
    	return
    end if
 
    ! otherwise compute the functional at the minimizer of the quadratic
    alpha = - b/(TWO*a)
    call linComb(ONE,mHat_0,alpha,h,mHat)
-   call func(lambda,d,m0,mHat,f,mNorm,dHat,eAll,rms)
+
+   if ( present( eAll ) ) then
+      call func(lambda,d,m0,mHat,f,mNorm,dHat,eAll,rms)
+   else
+      call func(lambda,d,m0,mHat,f,mNorm,dHat,RMS=rms)
+   end if
+
    call printf('QUADLS',lambda,alpha,f,mNorm,rms)
    call printf('QUADLS',lambda,alpha,f,mNorm,rms,logFile)
    niter = niter + 1
@@ -1067,26 +1182,53 @@ Contains
    		starting_guess = .true.
    		alpha = alpha_1
    		dHat = dHat_1
-     	eAll = eAll_1
+!     	eAll = eAll_1
    		mHat = mHat_1
    		rms = rms_1
    		f = f_1
+
+         if ( present( eAll ) ) then
+            eAll = eAll_1
+         else
+            ! Rename all the _1 files
+            do iTx=1,d%nTx
+               do ipol=1,2
+                  ! Existing files must be deleted first
+                  call EfileDelete_prefix(trim(cUserDef%prefix),iTx,ipol)
+                  call EfileRename_prefix(trim(cUserDef%prefix)//'_1',trim(cUserDef%prefix),iTx,ipol)
+               end do
+            end do
+         end if
+      else
+         ! Delete all the _1 files
+         do iTx=1,d%nTx
+            do ipol=1,2
+               call EfileDelete_prefix(trim(cUserDef%prefix)//'_1',iTx,ipol)
+            end do
+         end do
     end if
     ! compute the gradient and exit
     if (relaxation) then
    		call linComb(ONE,mHat_0,gamma*alpha,h,mHat)
-    	call func(lambda,d,m0,mHat,f,mNorm,dHat,eAll,rms)
+         if ( present ( eAll ) ) then
+            call func(lambda,d,m0,mHat,f,mNorm,dHat,eAll,rms)
+         else
+            call func(lambda,d,m0,mHat,f,mNorm,dHat,RMS=rms)
+         end if
+
    		call printf('RELAX',lambda,gamma*alpha,f,mNorm,rms)
    		call printf('RELAX',lambda,gamma*alpha,f,mNorm,rms,logFile)
    	end if
-
-    call gradient(lambda,d,m0,mHat,grad,dHat,eAll)
-    write(*,'(a60)') 'Sufficient decrease condition satisfied, exiting line search'
+      if ( present ( eAll ) ) then
+         call gradient(lambda,d,m0,mHat,grad,dHat,eAll)
+else
+         call gradient(lambda,d,m0,mHat,grad,dHat)
+         endif
     write(ioLog,'(a60)') 'Sufficient decrease condition satisfied, exiting line search'
 	call deall_dataVectorMTX(dHat_1)
 	call deall_modelParam(mHat_0)
 	call deall_modelParam(mHat_1)
-	call deall_solnVectorMTX(eAll_1)
+	if (present(eAll)) call deall_solnVectorMTX(eAll_1)
    	return
    end if
 
@@ -1099,7 +1241,6 @@ Contains
    ! for gradient computations if this happens.
    if (f > f_0) then
 
-    write(*,'(a75)') 'Unable to fit a quadratic due to bad gradient estimate, exiting line search'
     write(ioLog,'(a75)') 'Unable to fit a quadratic due to bad gradient estimate, exiting line search'
 
    else
@@ -1122,7 +1263,11 @@ Contains
         !  end if
         ! compute the penalty functional
         call linComb(ONE,mHat_0,alpha,h,mHat)
-        call func(lambda,d,m0,mHat,f,mNorm,dHat,eAll,rms)
+         if ( present( eAll ) ) then
+            call func(lambda,d,m0,mHat,f,mNorm,dHat,eAll,rms)
+         else
+            call func(lambda,d,m0,mHat,f,mNorm,dHat,RMS=rms)
+         end if
         call printf('CUBICLS',lambda,alpha,f,mNorm,rms)
         call printf('CUBICLS',lambda,alpha,f,mNorm,rms,logFile)
         niter = niter + 1
@@ -1137,7 +1282,6 @@ Contains
         f_j = f
         ! check that the function still decreases to avoid infinite loops in case of a bug
         if (abs(f_j - f_i) < TOL8) then
-           write(*,'(a69)') 'Warning: exiting cubic search since the function no longer decreases!'
            write(ioLog,'(a69)') 'Warning: exiting cubic search since the function no longer decreases!'
     	   exit
         end if
@@ -1152,27 +1296,53 @@ Contains
    if (starting_guess) then
    	alpha = alpha_1
    	dHat = dHat_1
-   	eAll = eAll_1
+
    	mHat = mHat_1
    	rms = rms_1
    	f = f_1
+      if ( present ( eAll ) ) then
+         eAll = eAll_1
+      else
+         ! Rename all the _1 files
+         do iTx=1,d%nTx
+            do ipol=1,2
+               ! Existing files must be deleted first
+               call EfileDelete_prefix(trim(cUserDef%prefix),iTx,ipol)
+               call EfileRename_prefix(trim(cUserDef%prefix)//'_1',trim(cUserDef%prefix),iTx,ipol)
+            end do
+         end do
+      end if
+   else
+      ! Delete all the _1 files
+      do iTx=1,d%nTx
+         do ipol=1,2
+            call EfileDelete_prefix(trim(cUserDef%prefix)//'_1',iTx,ipol)
+         end do
+      end do
    end if
 
    ! compute gradient of the full penalty functional and exit
     if (relaxation) then
    		call linComb(ONE,mHat_0,gamma*alpha,h,mHat)
-    	call func(lambda,d,m0,mHat,f,mNorm,dHat,eAll,rms)
+      if ( present ( eAll ) ) then
+         call func(lambda,d,m0,mHat,f,mNorm,dHat,eAll,rms)
+      else
+         call func(lambda,d,m0,mHat,f,mNorm,dHat,RMS=rms)
+      end if
    		call printf('RELAX',lambda,gamma*alpha,f,mNorm,rms)
    		call printf('RELAX',lambda,gamma*alpha,f,mNorm,rms,logFile)
    	end if
-    call gradient(lambda,d,m0,mHat,grad,dHat,eAll)
-	write(*,'(a39)') 'Gradient computed, line search finished'
+   if ( present( eAll ) ) then
+      call gradient(lambda,d,m0,mHat,grad,dHat,eAll)
+   else
+      call gradient(lambda,d,m0,mHat,grad,dHat)
+   endif
     write(ioLog,'(a39)') 'Gradient computed, line search finished'
 
    call deall_dataVectorMTX(dHat_1)
    call deall_modelParam(mHat_0)
    call deall_modelParam(mHat_1)
-   call deall_solnVectorMTX(eAll_1)
+   if (present(eAll)) call deall_solnVectorMTX(eAll_1)
 
   end subroutine lineSearchCubic
 

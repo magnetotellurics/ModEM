@@ -19,7 +19,7 @@ program Mod3DMT
      implicit none
 
      ! Character-based information specified by the user
-     type (userdef_control)	:: cUserDef
+!ccyr     type (userdef_control)	:: cUserDef
 
      ! Variable required for storing the date and time
      type (timer_t)         :: timer
@@ -41,7 +41,7 @@ program Mod3DMT
 			  else
 			       call RECV_cUserDef(cUserDef)
 			 end if
-
+    
 #else
              call parseArgs('Mod3DMT',cUserDef) ! OR readStartup(rFile_Startup,cUserDef)
 			 write(6,*)'I am a SERIAL version'
@@ -87,7 +87,6 @@ program Mod3DMT
 
 	 ! Start the (portable) clock
 	 call reset_time(timer)
-
      select case (cUserDef%job)
 
      case (READ_WRITE)

@@ -194,7 +194,7 @@ subroutine QMR(b,x, QMRiter)
   ! Norm of rhs, residual
   bnorm = CDSQRT(dotProd(b, b))
   rnorm = CDSQRT(dotProd(R, R))
-
+!  print *, "bnorm,rnorm=",bnorm,rnorm
   ! this usually means an inadequate model, in which case Maxwell's fails
   if (isnan(abs(bnorm))) then
       write(0,*) 'Error: b in QMR contains NaNs; exiting...'
@@ -313,6 +313,7 @@ subroutine QMR(b,x, QMRiter)
       Call scMultAdd(C_MinusONE,S,R)
       ! A new AX
       rnorm = CDSQRT(dotProd(R,R))
+!      print *,"iter=",iter,' rnorm=',rnorm
       iter = iter + 1
 
       ! Keeping track of errors

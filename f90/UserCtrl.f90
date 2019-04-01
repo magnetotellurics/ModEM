@@ -53,7 +53,8 @@ module UserCtrl
 
   ! Choose the sort of test / procedure variant you wish to perform
   character(80)       :: option
-
+     !  Out-of-core solution file prefix
+     character(80)       :: prefix
 
 
 
@@ -69,8 +70,11 @@ module UserCtrl
 	! Indicate how much output you want
 	integer             :: output_level
 
+     ! Out of core solution boolean
+     logical             :: storeSolnsInFile
   end type userdef_control
 
+  type (userdef_control),public:: cUserDef
 Contains
 
   ! Initialize userCtrl. The defaults are not empty strings.
@@ -109,7 +113,9 @@ Contains
   	ctrl%option = 'J'
   	ctrl%delta = 0.05
   	ctrl%output_level = 3
-
+!  output core ctrl
+        ctrl%prefix = 'n'
+        ctrl%storeSolnsInFile = .false.
     ! Using process ID in MPI output file name has the advantage that
     ! the user may run several instances of the program in one directory
     ! simultaneously. Unfortunately, getpid is one of the portability
@@ -133,7 +139,7 @@ Contains
      character(*), intent(in)            :: program
      type(userdef_control), intent(out)  :: ctrl
      logical :: res
-
+     integer  :: nfarg
      write(*,*) 'Copyright (c) 2004-2014 Oregon State University'
      write(*,*) 'AUTHORS  Gary Egbert, Anna Kelbert & Naser Meqbel'
      write(*,*) 'College of Earth, Ocean and Atmospheric Sciences'
@@ -144,28 +150,34 @@ Contains
      !  parse command line ...  for now just uses first argument
      !   to set job
      narg = iargc()
-
      !  quick fix against compilers which add additional parameters to mpirun;
      !   only read the first argument with a dash, or the argument -v followed
      !   by the verbose level; ignore the others
      verbose = 'regular'
+     nfarg=0
      if(narg .gt. 1) then
        k=1
        search_arg: &
 		   do
 		       k=k+1
-		       if (k .eq. narg) exit  search_arg
+                      if (k .eq. narg) then
+                         exit  search_arg
+                         endif
                call getarg ( k, arg )
                 if(arg(1:1).eq.'-') then
                   if (arg(2:2).eq.'v') then
-                    call getarg ( k+1, verbose )
-                  end if
-                  narg=k-1
+                     call getarg ( k+1, verbose )
+                     nfarg=nfarg+2
                   exit  search_arg
+               else if ( arg(2:2).eq.'P') then
+                  call getarg ( k+1, ctrl%prefix )
+                  ctrl%storeSolnsInFile = .true.
+                  nfarg=nfarg+2
+                  end if
                 end if
           end do search_arg
      end if
-
+     narg=narg-nfarg
 	 !  set the level of output based on the user input
 	 select case (verbose)
 	 case ('debug')
@@ -189,7 +201,6 @@ Contains
 	 case default
 	   ctrl%output_level = 3
 	 end select
-
      if(narg .gt. 0) then
         call getarg(1,arg)
         if(arg(1:1).eq.'-') job = arg(2:2)
@@ -245,6 +256,12 @@ Contains
         write(*,*)
         write(*,*) 'Optional final argument -v [debug|full|regular|compact|result|none]'
         write(*,*) 'indicates the desired level of output to screen and to files.'
+        write(*,*)
+!  out-of-core prefix
+        write(*,*) '-P [file_prefix]'
+        write(*,*) 'indicates that the partial solutions should be stored as '
+        write(*,*) 'temporary files on disk rather than in memory with file prefix'
+        write(*,*) '[file_prefix]'
         write(*,*)
         stop
      endif
@@ -695,6 +712,5 @@ Contains
 
      ! save this info for the main program
      ctrl%job = job
-
   end subroutine parseArgs
 end module UserCtrl

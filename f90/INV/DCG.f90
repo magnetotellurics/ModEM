@@ -236,8 +236,9 @@ end if
    res		=d
    d_Pred_m0=d
 
-   
+if( .not. cUserDef%storeSolnsInFile ) then   
 call deall_solnVectorMTX(eAll)     
+endif
 call zero_dataVectorMTX(JmHat)
 call zero_dataVectorMTX(b)
 
@@ -247,8 +248,11 @@ call zero_dataVectorMTX(b)
    
    
 ! Compute the predicted data for the current model m
-        call Calc_FWD(lambda,d,m,mHat,d_Pred,res,eAll,F,mNorm,rms)
-        
+if( cUserDef%storeSolnsInFile ) then   
+   call Calc_FWD(lambda,d,m,mHat,d_Pred,res,F,mNorm,rms)
+else
+   call Calc_FWD(lambda,d,m,mHat,d_Pred,res,F,mNorm,rms,eAll)
+endif
         call printf('START',lambda,f,mNorm,rms)
         call printf('START',lambda,f,mNorm,rms,logFile)
         
@@ -274,7 +278,17 @@ do
 
 	! Compute the right hand side vector (b) for the CG solver.
 	! b= (d-dPred)+ J(m-m0)
+
+if( cUserDef%storeSolnsInFile ) then   
 		    
+#ifdef MPI
+            JmHat=d
+            call zero_dataVectorMTX(JmHat)
+	        call Master_job_Jmult(mHat,m,JmHat) 
+#else
+	        call Jmult(mHat,m,JmHat)
+#endif
+else
 #ifdef MPI
             JmHat=d
             call zero_dataVectorMTX(JmHat)
@@ -282,27 +296,39 @@ do
 #else
 	        call Jmult(mHat,m,JmHat,eAll)
 #endif
+endif
+
 	
 	        b=d
 	        call linComb(ONE,res,ONE,JmHat,b)
 	        call normalize_dataVectorMTX(b,1)  
 	        call CG_DS_standard(b,dx,m,d,lambda,CGiter) 
             call normalize_with_dataVecMTX(dx,d,1)
-	 
+if( cUserDef%storeSolnsInFile ) then   	 
+#ifdef MPI           
+            call Master_job_JmultT(m,dx,mHat)              
+#else
+	        call JmultT(m,dx,mHat)
+#endif
+else
 #ifdef MPI           
             call Master_job_JmultT(m,dx,mHat,eAll)              
 #else
 	        call JmultT(m,dx,mHat,eAll)
 #endif
 
+endif
 	      Cm_mHat=  multBy_Cm(mHat) 
 	      mHat=Cm_mHat
 	        	     
 	     call linComb_modelParam(ONE,m0,ONE,mHat,m)
 	! Compute the predicted data for the current model m
          rmsPrev=rms
-         call Calc_FWD(lambda,d,m,mHat,d_Pred,res,eAll,F,mNorm,rms)
-         
+if( cUserDef%storeSolnsInFile ) then   	 
+         call Calc_FWD(lambda,d,m,mHat,d_Pred,res,F,mNorm,rms)
+else
+         call Calc_FWD(lambda,d,m,mHat,d_Pred,res,F,mNorm,rms,eAll)
+endif         
 	  write(*,'(a25,i5)') 'Completed DCG iteration ',DCG_iter
 	  write(ioLog,'(a25,i5)') 'Completed DCG iteration ',DCG_iter
       call printf('with',lambda,f,mNorm,rms)
@@ -456,12 +482,21 @@ lambdaP	=p
 
          call normalize_with_dataVecMTX(p_temp,d,1)              
 ! Compute   J^T  Cd^(-1/2) p                   
+if( cUserDef%storeSolnsInFile ) then   
+#ifdef MPI
+            call linComb(R_ZERO,d,ONE,p_temp,p_temp) 
+            call Master_job_JmultT(m,p_temp,JTp)
+#else
+            call JmultT(m,p_temp,JTp)
+#endif
+else
 #ifdef MPI
             call linComb(R_ZERO,d,ONE,p_temp,p_temp) 
             call Master_job_JmultT(m,p_temp,JTp,eAll)
 #else
             call JmultT(m,p_temp,JTp,eAll)
 #endif
+endif
 ! Compute  Cm  J^T  Cd^(-1/2) p 
             CmJTp_temp= multBy_Cm(JTp) 
             if(present(CmJTp)) then
@@ -469,12 +504,21 @@ lambdaP	=p
             end if            
 ! Compute J Cm  J^T  Cd^(-1/2) p = Ap 
 Ap=d    
+if( cUserDef%storeSolnsInFile ) then   
+#ifdef MPI
+            call Master_job_Jmult(CmJTp_temp,m,Ap)
+#else
+            call Jmult(CmJTp_temp,m,Ap)
+#endif
+
+else
 #ifdef MPI
             call Master_job_Jmult(CmJTp_temp,m,Ap,eAll)
 #else
             call Jmult(CmJTp_temp,m,Ap,eAll)
 #endif
 
+endif
 !Normalize: Cd^(-1/2)*Ap
             call normalize_with_dataVecMTX(Ap,d,1)
             !goto 999
@@ -538,7 +582,7 @@ subroutine printf(comment,lambda,f,mNorm,rms,logfile)
 
    end subroutine printf
 !**********************************************************************
-subroutine Calc_FWD(lambda,d,m,mHat,d_Pred,res,eAll,F,mNorm,rms)
+subroutine Calc_FWD(lambda,d,m,mHat,d_Pred,res,F,mNorm,rms,eAll)
 
    ! Compute the full penalty functional F
    ! Also output the predicted data and the EM solution
@@ -550,8 +594,8 @@ subroutine Calc_FWD(lambda,d,m,mHat,d_Pred,res,eAll,F,mNorm,rms)
 !Output   
    real(kind=prec),    intent(out)             :: F, mNorm
    type(dataVectorMTX_t), intent(inout)        :: d_Pred,res
-   type(solnVectorMTX_t),  intent(inout)       :: eAll
     real(kind=prec), intent(inout)             :: rms
+   type(solnVectorMTX_t),  intent(inout),optional   :: eAll
 
    !  local variables
    type(dataVectorMTX_t)    :: Nres
@@ -565,12 +609,19 @@ subroutine Calc_FWD(lambda,d,m,mHat,d_Pred,res,eAll,F,mNorm,rms)
    !  compute predicted data for current model parameter m
    !   also sets up forward solutions for all transmitters in eAll
    !   (which is created on the fly if it doesn't exist)
+   if ( present(eAll) ) then
 #ifdef MPI
       call Master_Job_fwdPred(m,d_Pred,eAll)
 #else
       call fwdPred(m,d_Pred,eAll)
 #endif
-
+      else
+#ifdef MPI
+      call Master_Job_fwdPred(m,d_Pred)
+#else
+      call fwdPred(m,d_Pred)
+#endif
+      endif
 
 
    ! initialize res

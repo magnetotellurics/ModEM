@@ -19,7 +19,7 @@ program Mod2DMT
      implicit none
 
      ! Character-based information specified by the user
-     type (userdef_control)	:: cUserDef
+!ccyr     type (userdef_control)	:: cUserDef
 
      ! Variable required for storing the date and time
      type (timer_t)         :: timer
