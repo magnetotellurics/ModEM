@@ -21,7 +21,7 @@ module transmitters
      real(kind=prec)            :: period = R_ZERO
      ! index number to frequency/ period in solution file
      integer                    :: iPer
-     character(2)               :: Tx_type
+     character(2)               :: Tx_type = 'MT'
    end type MTtx
 
    ! transmitter dictionary for MT data will be an array of
@@ -56,6 +56,7 @@ Contains
         txDict(iTx)%omega = (2*PI)/ txDict(iTx)%period
         txDict(iTx)%mode = modes(iTx)
         txDict(iTx)%iPer = iTx
+        txDict(iTx)%Tx_type = 'MT'
      enddo
 
   end subroutine setup_txDict

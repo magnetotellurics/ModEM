@@ -253,12 +253,15 @@ Contains
 ! Sets boundary conditions. Currently a wrapper for BC_x0_WS.
 ! Uses input 3D conductivity in cells sigma_C, that has to be initialized
 ! by updateCond before calling this routine. Also uses mGrid set by
-! ModelDataInit. Could use omega, which is set by updateFreq.
-  Subroutine SetBound(imode,period,E0,BC,iTx)
+! ModelDataInit. Uses omega, which is set by updateFreq.
+! We always run this after setting the private variable omega, anyway.
+  Subroutine SetBound(imode,E0,BC,iTx)
 
     !  Input mode, period
     integer, intent(in)		:: imode
     integer, intent(in)		:: iTx
+
+    ! local variable
     real(kind=prec)	:: period
 
     ! Output electric field first guess (for iterative solver)
@@ -266,7 +269,7 @@ Contains
     ! Output boundary conditions
     type(cboundary), intent(inout)	:: BC
 
-
+    period = (2*PI)/omega ! period is seconds
 
     if (BC%read_E_from_file) then
           

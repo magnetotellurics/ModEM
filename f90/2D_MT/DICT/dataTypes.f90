@@ -194,23 +194,6 @@ Contains
 
   end function ImpType
 
-!**********************************************************************
-! Sorts out the data type header
-
-  function ImpHeader(dataType) result (header)
-
-    integer, intent(in)         :: dataType
-    character(200)              :: header
-
-    select case (dataType)
-
-       case(TE_Impedance,TM_Impedance,Tzy_Impedance)
-          header = '# Period(s) Code GG_Lat GG_Lon X(m) Y(m) Z(m) Component Real Imag Error'
-       case(Rho_Phs_TM)
-          header = '# Period(s) Code GG_Lat GG_Lon X(m) Y(m) Z(m) Component Value Error'
-    end select
-
-  end function ImpHeader
 
 !**********************************************************************
 ! Figures out the component index from its name for any data type

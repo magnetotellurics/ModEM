@@ -2479,10 +2479,51 @@ Contains
     end if
 
   end subroutine scMultAdd_cscalar
-!****************************************************************** Lana
-  ! **********************************************************************
-  ! * Creates a random perturbation in cvector - used for testing
 
+  ! **********************************************************************
+  ! * Creates a random perturbation in rscalar - used for testing
+  ! * (developed by Lana Erofeeva & tested by Anna Kelbert)
+  subroutine random_rscalar(E,eps)
+
+    implicit none
+    type (rscalar), intent(inout)                    :: E
+    real(8), intent(in), optional                    :: eps
+    ! local
+    real (kind(E%v)), allocatable, dimension(:,:,:)  :: zr
+    integer              :: Nx,Ny,Nz,istat
+
+    if (.not. E%allocated) then
+      call warning('rscalar not allocated in random_rscalar')
+      return
+    end if
+
+    call zero_rscalar(E)
+
+    ! make some random vectors
+    Nx = E%nx
+    Ny = E%ny
+    Nz = E%nz
+    allocate(zr(Nx+1,Ny+1,Nz+1),STAT=istat)
+    call random_number(zr)
+    if (present(eps)) then
+        zr = zr * eps
+    else
+        zr = zr * 0.05
+    end if
+    if ((E%gridType == CENTER) .or. (E%gridType == CELL_EARTH)) then
+       E%v = zr(1:Nx,1:Ny,1:Nz)
+    else if (E%gridType == CORNER) then
+       E%v = zr
+    else
+       write (0, *) 'gridType == ',trim(E%gridType),' undefined in random_rscalar'
+    end if
+    deallocate(zr,STAT=istat)
+
+  end subroutine random_rscalar
+
+  ! **********************************************************************
+  ! * Creates a random perturbation in cscalar - used for testing
+  ! * (developed by Lana Erofeeva & tested by Anna Kelbert)
   subroutine random_cscalar(E,eps)
 
     implicit none
@@ -2518,10 +2559,10 @@ Contains
     else if (E%gridType == CORNER) then
 	   E%v = cmplx(zr,zi)
     else
-	   write (0, *) 'not a known tag'
+       write (0, *) 'gridType == ',trim(E%gridType),' undefined in random_cscalar'
     end if
     deallocate(zr,zi,STAT=istat)
 
   end subroutine random_cscalar
-!****************************************************************** Lana
+
 end module sg_scalar

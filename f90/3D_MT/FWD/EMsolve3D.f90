@@ -30,6 +30,11 @@ module EMsolve3D
     logical                   ::      read_E0_from_File=.false.
     character (len=80)        ::      E0fileName
     integer                   ::      ioE0
+    character (len=80)        ::      AirLayersMethod
+    integer                   ::      AirLayersNz
+    real(kind = 8)            ::      AirLayersMaxHeight, AirLayersAlpha, AirLayersMinTopDz
+    real(kind = 8), pointer, dimension(:)   :: AirLayersDz
+    logical                   ::      AirLayersPresent=.false.
   end type emsolve_control
 
   type :: emsolve_diag
@@ -86,7 +91,23 @@ Contains
 ! Solves the forward EM problem;
 !
 ! If bRHS%adj = 'TRN' solves transposed problem  A^T x = b
-
+!
+! Note [AK 2018-05-10]: any physical source has already been pre-multiplied
+! by [- ISIGN i\omega\mu_0] to yield [- ISIGN i\omega\mu_0 j] on input to this
+! routine. Note that this also holds for the secondary field formulation, 
+! where j = dsigma * e, as well as for the tidal forcing, where j = sigma (v x B).
+! However, we still want to pre-compute the source RHS outside of this routine, for
+! generality: specifically, Jmult supplies an interior source on the RHS that is
+! not physical and is not pre-multiplied by that factor (except in Pmult). So it's
+! cleaner to pass on the complete interior forcing in bRHS.
+! For divergence correction, we divide by [+ ISIGN i\omega\mu_0] to get [- Div(j)].
+! The plus sign is needed because we're taking the divergence of 
+!  curl(curl(E)) + ISIGN i\omega\mu_0 sigma E = f - curl(curl(b))
+! Terms 1 and 4 cancel, leaving Div(sigma E) - Div(f)/(+ ISIGN i\omega\mu_0) = 0.
+! For a physical source j, this is equivalent to Div(sigma E) + Div(j) = 0; but
+! the divergence correction may be applied also for non-physical sources, such as
+! in Jmult ('FWD') and JmultT ('TRN').
+    
   subroutine FWDsolve3D(bRHS,omega,eSol)
 
     ! redefine some of the interfaces (locally) for our convenience
@@ -107,6 +128,7 @@ Contains
     ! LOCAL VARIABLES
     logical				:: converged,trans,ltemp
     integer				:: status, iter
+    complex(kind=prec)			:: i_omega_mu
     complex(kind=prec)         	:: iOmegaMuInv
     type (cvector)			:: b,temp
     type (cscalar)			:: phi0
@@ -139,6 +161,9 @@ Contains
     if(bRHS%nonzero_Source) then
        call create_cscalar(bRHS%grid,phi0,CORNER)
     endif
+    
+    i_omega_mu = cmplx(0.,1.0d0*ISIGN*MU_0*omega,kind=prec)
+
 
     ! Using boundary condition and sources from rHS data structure
     ! construct vector b (defined only on interior nodes) for rHS of
@@ -185,27 +210,33 @@ Contains
           ltemp = .false.
           Call MultA_N(temp, ltemp, b)
 
-          !  change sign of result
+          !  change sign of result; obtained [- V_E A_IB b]
           Call scMult(MinusOne,b,b)
        endif
 
        ! Add internal sources if appropriate: Note that these must be multiplied
-       !  explictly by volume weights
+       !  explicitly by volume weights; in the interior of the domain,
+       ! [V_E^{-1} C_II^T V_F] C_II e + i\omega\mu_0 \sigma e = - i\omega\mu_0 j - [V_E^{-1} C_II^T V_F] C_IB b
+       ! Multiply by V_E throughout to obtain a symmetric system:
+       !    V_E A_II e = - i\omega\mu_0 V_E j - V_E A_IB b
+       ! where A_II = V_E^{-1} C_II^T V_F C_II + i\omega\mu_0 \sigma, and A_IB = V_E^{-1} C_II^T V_F C_IB.
        if (bRHS%nonzero_Source) then
           if (bRHS%sparse_Source) then
              ! temp  = bRHS%sSparse
              call zero(temp)
              call add_scvector(C_ONE,bRHS%sSparse,temp)
              call Div(temp,phi0)
-             ! temp = V_E*temp
-             call diagMult(V_E,temp,temp)
           else
-             ! temp = V_E*rhs%s
-             call Div(bRHS%s,phi0)
-             call diagMult(V_E,bRHS%s,temp)
+	     temp = bRHS%s
           endif
-          !  b = temp-b
-           !  LOOKS WRONG b is already -A_IB*b
+	  
+	  ! At this point, temp = - ISIGN * i\omega\mu_0 j
+	  ! Now Div(f) - will later divide by i_omega_mu to get the general divergence correction
+	  call Div(temp,phi0)
+
+          call diagMult(V_E,temp,temp)	  
+	  ! Now temp stores [-i\omega\mu_0 V_E j], and b stores [-V_E A_IB b]
+
           if(bRHS%nonzero_BC) then
              Call add(temp,b,b)
           else
@@ -215,10 +246,9 @@ Contains
     endif
 
     if(bRHS%nonzero_Source) then
-       iOmegaMuInv = ISIGN/cmplx(0.0,omega*MU_0,prec)
-       call scMult(iOmegaMuInv,phi0,phi0)
+       call scMult(C_ONE/i_omega_mu,phi0,phi0)
     endif
-
+    
     ! Need to make sure first guess is zero on boundaries
     ! tempBC has all zeros on the boundaries
     Call setBC(tempBC, eSol)
@@ -343,9 +373,15 @@ Contains
   end subroutine FWDsolve3D
 
 !**********************************************************************
-! solver_divcorrr contains the subroutine that would solve the divergence
-! correction. Solves the divergene correction using pre-conditioned
-! conjuagte gradient
+! solver_divcorr contains the subroutine that solves the divergence correction 
+! using pre-conditioned conjugate gradient.
+! Taking the divergence of curl(curl(E)) + i\omega\mu_0 sigma E = f, where f
+! is a general RHS, and since div(curl(xxx)) is identically zero, we get
+! i\omega\mu_0 div(sigma E) = div(f) => div(sigma E) - div(f)/(i\omega\mu_0) = 0.
+! This is what we want for a general adjoint solution. However, note that for
+! a physical current source j, we would have f = - i\omega\mu_0 j,
+! and would there have div(sigma E) + div(J) = 0, where J is the physical source
+! consistent with curl(H) = sigma E + J.
 subroutine SdivCorr(inE,outE,phi0)
   ! Purpose: driver routine to compute divergence correction for input electric
   ! field vector inE output corrected ! electric field in outE
@@ -425,7 +461,7 @@ subroutine SdivCorr(inE,outE,phi0)
   divJ(2,nDivCor) = sqrt(dotProd(phiRHS,phiRHS))
 
   ! output level defined in basic file_units module
-  if (output_level > 3) then
+  if (output_level > 2) then
      write(*,'(a12,a47,g15.7)') node_info, 'divergence of currents before correction: ', divJ(1, nDivCor)
      write(*,'(a12,a47,g15.7)') node_info, 'divergence of currents  after correction: ', divJ(2, nDivCor)
   end if
@@ -586,46 +622,88 @@ end subroutine SdivCorr ! SdivCorr
 
 
 
-! Check if there is addtional line.
-! if yes, it is corresponde to the larger E field solution.
+    ! Check if there is an additional line.
+    ! if yes, it corresponds to the larger E field solution.
 
-      read(ioFwdCtrl,'(a48)',advance='no',iostat=istat) string
-      read(ioFwdCtrl,'(a80)',iostat=istat) solverControl%E0fileName      
-   if (istat .eq. 0 ) then
-     if (index(string,'#')>0) then
-      ! This is a comment line
-       solverControl%read_E0_from_File=.false.
-     else
-	     if (output_level > 2) then
-	       write (*,'(a12,a48,a80)') node_info,string,solverControl%E0fileName
-	     end if
-       solverControl%read_E0_from_File=.true.
-       solverControl%ioE0=ioE
-     end if
+    read(ioFwdCtrl,'(a48)',advance='no',iostat=istat) string
+    read(ioFwdCtrl,'(a80)',iostat=istat) solverControl%E0fileName
+    if (istat .eq. 0 ) then
+        inquire(FILE=solverControl%E0fileName,EXIST=exists)
+        if (index(string,'#')>0) then
+            ! This is a comment line
+            solverControl%read_E0_from_File=.false.
+        else if (.not.exists) then
+            write(*,*) node_info,'Nested E-field solution file not found and will not be used. '
+            solverControl%read_E0_from_File=.false.
+        else
+            if (output_level > 2) then
+                write (*,'(a12,a48,a80)') node_info,string,adjustl(solverControl%E0fileName)
+            end if
+            solverControl%read_E0_from_File=.true.
+            solverControl%ioE0=ioE
+        end if
 
- else
-     solverControl%read_E0_from_File=.false.
-  end if
+    else
+        solverControl%read_E0_from_File=.false.
+    end if
 
+    ! Now keep on reading for the air layers info
+    ! If the number of air layers conflicts with that from the model file, we
+    ! update the grid to use the controls
+    ! Method options are: mirror; fixed height; read from file
+    ! For backwards compatibility, defaults to what was previously hardcoded
 
+    read(ioFwdCtrl,'(a48)',advance='no',iostat=istat) string
+    read(ioFwdCtrl,'(a80)',iostat=istat) solverControl%AirLayersMethod
+    !if (output_level > 2) then
+    !    write (*,'(a12,a48,a80)') node_info,string,adjustl(solverControl%AirLayersMethod)
+    !end if
+    if (istat .eq. 0 ) then
+        solverControl%AirLayersPresent = .true.
+        if (index(solverControl%AirLayersMethod,'mirror')>0) then
+            read(ioFwdCtrl,'(a48)',advance='no',iostat=istat) string
+            read(ioFwdCtrl,*,iostat=istat) solverControl%AirLayersNz,solverControl%AirLayersAlpha,solverControl%AirLayersMinTopDz
+        else if (index(solverControl%AirLayersMethod,'fixed height')>0) then
+            read(ioFwdCtrl,'(a48)',advance='no',iostat=istat) string
+            read(ioFwdCtrl,*,iostat=istat) solverControl%AirLayersNz,solverControl%AirLayersMaxHeight
+        else if (index(solverControl%AirLayersMethod,'read from file')>0) then
+            read(ioFwdCtrl,'(a48)',advance='no',iostat=istat) string
+            read(ioFwdCtrl,'(i3)',advance='no',iostat=istat) solverControl%AirLayersNz
+            allocate(solverControl%AirLayersDz(solverControl%AirLayersNz), STAT=istat)
+            if (solverControl%AirLayersNz > 0) then
+                read(ioFwdCtrl,*,iostat=istat) solverControl%AirLayersDz
+            end if
+        else
+            solverControl%AirLayersPresent = .false.
+            call warning('Unknown air layers method option in readEMsolveControl')
+        end if
+    else
+        solverControl%AirLayersPresent = .false.
+    end if
 
-
-
-
-
-
+    if (solverControl%AirLayersNz <= 0) then
+        write(*,*) node_info,'Problem reading the air layers. Resort to defaults '
+        solverControl%AirLayersPresent = .false.
+    end if
 
     close(ioFwdCtrl)
 
     call setEMsolveControl(solverControl)
 
+
    end subroutine readEMsolveControl
+
 
   !**********************************************************************
   !   deallEMsolveControl deallocate
-  subroutine  deallEMsolveControl()
+  subroutine  deallEMsolveControl(solverControl)
+     type(emsolve_control), intent(inout),optional    :: solverControl
 
      integer istat
+
+     if (present(solverControl)) then
+        deallocate(solverControl%AirLayersDz, STAT=istat)
+     end if
 
      deallocate(EMrelErr, STAT=istat)
      deallocate(divJ, STAT=istat)

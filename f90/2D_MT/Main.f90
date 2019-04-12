@@ -36,6 +36,13 @@ module Main
   type(modelParam_t), save		:: dsigma
   !  storage for the inverse solution
   type(modelParam_t), save		:: sigma1
+  !  currently only used for TEST_GRAD feature (otherwise, use allData)
+  type(dataVectorMTX_t), save       :: predData
+  !  also for TEST_GRAD feature...
+  type(modelParam_t), save      :: sigmaGrad
+  real(kind=prec), save         :: rms,mNorm,f1,f2,alpha
+  !  storage for multi-Tx outputed from JT computation
+  type(modelParam_t),pointer, dimension(:), save :: JT_multi_Tx_vec
 
   !  storage for the full sensitivity matrix (dimension nTx)
   type(sensMatrix_t), pointer, dimension(:), save	:: sens
@@ -43,7 +50,10 @@ module Main
   !  storage for EM solutions
   type(solnVectorMTX_t), save            :: eAll
 
-  logical   :: write_model, write_data, write_EMsoln, write_EMrhs
+  !  storage for EM rhs (currently only used for symmetry tests)
+  type(rhsVectorMTX_t), save            :: bAll
+
+  logical                   :: write_model, write_data, write_EMsoln, write_EMrhs
 
 
 
@@ -90,6 +100,9 @@ Contains
 
 	else
 	  call warning('No input model parametrization')
+
+	  ! set up an empty grid to avoid segmentation faults in sensitivity tests
+      call create_grid(1,1,1,grid)
 	end if
 
 	!--------------------------------------------------------------------------
@@ -138,6 +151,14 @@ Contains
 	        write(*,*) 'Starting search from the prior model ',trim(cUserDef%rFile_Model)
 	      endif
 	   end if
+       select case (cUserDef%search)
+       case ('NLCG')
+       case ('DCG')
+       case ('Hybrid')
+       case default
+          ! a placeholder for anything specific to a particular inversion algorithm;
+          ! currently empty
+       end select
 
      case (APPLY_COV)
        inquire(FILE=cUserDef%rFile_Cov,EXIST=exists)
@@ -157,32 +178,44 @@ Contains
        sigma1 = sigma0
        call zero(sigma1)
 
-	 case (TEST_ADJ)
-	   select case (cUserDef%option)
-	       case('J','Q')
-		       inquire(FILE=cUserDef%rFile_dModel,EXIST=exists)
-		       if (exists) then
-		          call deall_grid(grid)
-		          call read_modelParam(grid,dsigma,cUserDef%rFile_dModel)
-		       else
-		          call warning('The input model perturbation file does not exist')
-		       end if
-           case('L','e')
+     case (TEST_GRAD, TEST_SENS)
+         inquire(FILE=cUserDef%rFile_dModel,EXIST=exists)
+         if (exists) then
+             call deall_grid(grid)
+             call read_modelParam(grid,dsigma,cUserDef%rFile_dModel)
+         else
+             call warning('The input model perturbation file does not exist')
+         end if
+
+     case (TEST_ADJ)
+       select case (cUserDef%option)
+           case('J','Q','P')
+               inquire(FILE=cUserDef%rFile_dModel,EXIST=exists)
+               if (exists) then
+                  call deall_grid(grid)
+                  call read_modelParam(grid,dsigma,cUserDef%rFile_dModel)
+               else
+                  call warning('The input model perturbation file does not exist')
+               end if
+           case default
+       end select
+       select case (cUserDef%option)
+           case('L','P','e')
                inquire(FILE=cUserDef%rFile_EMsoln,EXIST=exists)
                if (exists) then
-                  call read_solnVectorMTX(ioRead,grid,eAll,cUserDef%rFile_EMsoln)
+                  call read_solnVectorMTX(grid,eAll,cUserDef%rFile_EMsoln)
                else
-                  call warning('The input solution vector file does not exist')
+                  call warning('The input EM solution file does not exist')
                end if
-           case('S')
+           case('S','b')
                inquire(FILE=cUserDef%rFile_EMrhs,EXIST=exists)
                if (exists) then
-                  call read_solnVectorMTX(ioRead,grid,eAll,cUserDef%rFile_EMrhs)
+                  call read_rhsVectorMTX(grid,bAll,cUserDef%rFile_EMrhs)
                else
-                  call warning('The input RHS solution vector file does not exist')
+                  call warning('The input EM RHS file does not exist')
                end if
-	       case default
-	   end select
+           case default
+       end select
 
     end select
 

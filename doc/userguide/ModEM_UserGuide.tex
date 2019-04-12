@@ -40,7 +40,7 @@
 \usepackage{babel}
 \begin{document}
 
-\title{ModEM: User's Guide: Revision 1.0}
+\title{ModEM: User's Guide: Revision 2.0 for Version 1.2.0}
 
 \author{Gary Egbert, Anna Kelbert, Naser Meqbel (COAS/OSU)}
 \maketitle
@@ -608,8 +608,8 @@ the number of integer resistivity codes, with nCodes = 0 used to indicate
 that resistivities are specified as actual values. This is the only
 option supported by ModEM, and this integer should be left set to
 0. (Otherwise the program will stop). The next entry on the line is
-a character string specifying LINEAR or LOGE resistivity. In fact
-the inversion always works in the log domain, even if input and output
+a character string specifying LINEAR, LOGE or LOG10 resistivity. In fact
+the inversion always works in the natural log domain, even if input and output
 use the linear option. Note that output files will match the convention
 used in the input file. 
 \item[(3)] The next lines give the grid spacing, in meters. Format is free,
@@ -1366,21 +1366,94 @@ IS USED IN THE SECOND RUN TO EXTRACT THE BOUNDARY VALUES AT
 THE EDGES OF THE NESTED GRID, USE THE SAME DATA FILE.
 %\selectlanguage{ngerman}%
 
+\section{Change Log for Release 1.2.0, April 12, 2019}
+
+This release incorporates a substantial update to the code, in preparation for some additional capabilities related to boundary conditions. However, the updates that are of relevance to the user community are few. 
+
+\subsection{Flexible Air Layers}
+	
+	Air layers can now be set in the forward solver configuration file. Options can be printed to screen using \verb|./Mod3DMT -F| command without the additional input arguments. The new capability can be executed by adding two more lines to the configuration file (lines 8 and 9), after the nested modeling file. If you are not using the nested modeling option but would like to change the air layers, you should still include line 7, but leave the name of the EM solution file in line 7 blank.  Flexible air layers are only implemented for 3D.
+	
+	Three options for the air layers are: \verb|mirror|, \verb|fixed height|, \verb|read from file|. For backwards compatibility, the default is '\verb|mirror 10 3. 30.|', so that the code should still produce identically the same results to the previous version, unless the air layers are changed. 
+	
+	\paragraph{Option 1: mirror} 
+	Mirrors the air layers based on the uppermost layers of the Earth resistivity model. In the code, air layers are counted from top to bottom (top is 1, bottom is N). The logic is as follows,
+	\begin{equation}
+	air layer((N+1)-j) = \alpha^{j-1} * earth layer(j),
+	\end{equation}
+	\noindent where $\alpha$ and the number of air layers $N$ are supplied by the user, and $j$ is an integer index from 1 to $N$. When $j=1$, the bottom air layer $N$ equals the top earth layer 1. When $j=N$, the top air layer 1 equals $\alpha^{N-1} * earth layer(N)$. Finally, the third user-supplied parameter \verb|MinTopDz| specifies the minimum width of the top air layer, in km. If the top layer happens to be thinner than specified by this parameter, it is adjusted to this value. The parameters are specified in the following order: $N$, $\alpha$,  \verb|MinTopDz|.
+	
+	\begin{verbatim}
+	Air layers mirror|fixed height|read from file : mirror
+	Number of air layers and min top dz in km     : 10 3. 30.
+	\end{verbatim}
+	
+	This procedure is unnecessarily complex, and has created an unreasonably large air domain for most grid setups in the past. It is maintained now as the default for backwards compatibility. However, this option is not recommended.
+	
+	\paragraph{Option 2: fixed height}
+	In this setup, the width of the air layers increases logarithmically until it reaches the user-defined height. Additionally, the user defines the total number of the air layers, and the logarithmic exponent is calculated automatically from these two parameters. This is the recommended option.
+	\begin{verbatim}
+	Air layers mirror|fixed height|read from file : fixed height	
+	Number of air layers and max height in km     : 12 1000.
+	\end{verbatim}
+	
+	\paragraph{Option 3: read from file}
+	In this setup, the user specifies the total number of the air layers, and their width from top to bottom, in km, directly in the forward solver configuration file. This provides additional flexibility for advanced users, allowing in particular to compare modeling results more directly to those produced by alternative codes or analytical solutions.
+    \begin{verbatim}
+	Air layers mirror|fixed height|read from file : read from file
+	Number of air layers and dz top to bottom km  : 10 500. 200. 100. ... 2. 1. 0.5
+    \end{verbatim}	
+    
+	Recommended air layers option is '\verb|fixed height 12 1000|'. The users will likely find out that different air layer setups create substantial differences in the modeled impedances. We suggest that this issue is carefully explored by the users before they switch to a different setup.
+	
+\subsection{LOG10 Resistivity Model File Option}
+
+To exercise this new option, create a WS or Mackie format model file with \verb|LOG10| resistivity instead of \verb|LOGE| or \verb|LINEAR|. This is specified in the second line of the resistivity model input file (the first line is a comment). Internally in the code, we are keeping \verb|LOGE| for all computations; but we convert \verb|LOG10| or \verb|LINEAR| to \verb|LOGE|, make note of the user preference, then convert back for output. This feature is particularly useful for synthetic models, since it makes the input/output files more readable. 
+
+Having said that, we should note that we appreciate the inadequacy of an ASCII input file format for modern high performance 3D modeling situations. An option utilizing modern binary input/output formats will be added in a future release.
+
+\subsection{New Unit Testing Features for Code Developers}
+
+This release includes a collection of fully developed and debugged symmetry tests, gradient test, and the full Jacobian test. The code now passes all tests; all symmetry tests (including S, i.e., the forward solver) are passed with arbitrary random perturbations as input. The symmetry test \verb|[TEST_ADJ]| has many sub-options, which can be explored by typing \verb|./Mod3DMT -A| command without the additional input arguments. Options to generate random perturbation files for model [-A m], data [-A d], RHS [-A b], E-soln [-A e] are also included.
+
+\begin{verbatim}
+[TEST_GRAD]
+-g  rFile_Model rFile_Data rFile_dModel [rFile_fwdCtrl rFile_EMrhs]
+Runs the ultimate test of the gradient computation based on
+Taylor series approximation.
+[TEST_ADJ]
+-A  J rFile_Model rFile_dModel rFile_Data [wFile_Model wFile_Data]
+Tests the equality d^T J m = m^T J^T d for any model and data.
+Optionally, outputs J m and J^T d.
+[TEST_SENS]
+-S  rFile_Model rFile_dModel rFile_Data wFile_Data [rFile_fwdCtrl]
+Multiplies by the full Jacobian, row by row, to get d = J m.
+Compare to the output of [MULT_BY_J] to test [COMPUTE_J]
+\end{verbatim}
+
+\subsection{Other Comments}
+
+Relative to the previous stable release, the value of \verb|LARGE_REAL| that defines the error bars for modeled data has changed from 2.0e15 to 1.0e13. This does not affect any computations but it may be confusing to the user as these values are output in place of the error bars for modeled MT data. Otherwise, impedances are exactly the same unless the air layers are changed. With modified air layers values are noticeably different and probably more accurate... because now the diagonals are exactly zero over a 1D area. Tippers are less noticeably affected by the air layers modifications.
+
+In addition to these user facing changes, this code has undergone substantial development, specifically to allow for flexibly boundary conditions in the future. We have also cleaned up the handling of non-zero sources in EMsolve3D.f90, specifically checked the physics and the maths, and added comments to clarify things.
+
 \section{Known Issues}
 
-\noindent Air layers are currently hard coded in the program, and
-are determined based the vertical discretization of the model. This
-can result in inaccurate forward solutions, particularly when the
-upper model layers are very thick (perhaps also when very thin). This
-will be changed soon, but current users should consider if changes
-in vertical grid discretization might influence solution accuracy.
-Test runs with a simple forward model, and various layer thicknesses
-could be useful.\\
+%\noindent Air layers are currently hard coded in the program, and
+%are determined based the vertical discretization of the model. This
+%can result in inaccurate forward solutions, particularly when the
+%upper model layers are very thick (perhaps also when very thin). This
+%will be changed soon, but current users should consider if changes
+%in vertical grid discretization might influence solution accuracy.
+%Test runs with a simple forward model, and various layer thicknesses
+%could be useful.\\
 
-Apparent resistivities in 3D MT are specified in the file as actual
+[POSSIBLY NOT AN ISSUE] As of revision 485 on July 24, 2014 , apparent resistivities in 3D MT are specified in the file as actual
 resistivity, but are converted to the log domain before inversion
 in the program. There is no way presently to invert apparent resistivity
-itself, only logs. Probably OK, but obtuse. Also, there in the stable
-version that most users have there is a but in error propagation.\\
+itself, only logs. Probably OK, but obtuse.\\
+
+[POSSIBLY OBSOLETE] Also, in the stable
+version that most users have there is a bug in error propagation for the apparent resistivities.\\
 
 \end{document}

@@ -166,18 +166,19 @@ end subroutine ini_BC_from_file
    call create_solnVector(grid,iTx,e0)
 
    if(initForSens) then
-      !  allocate for sensitivity solution, RHS
+      !  allocate for sensitivity solution, RHS - same for all TX types
+      !  assuming here that we don't use sparse storage ... we could!
       call create_solnVector(grid,iTx,e)
+      comb%nonzero_source = .true.
+      comb%sparse_source = .false.
+      comb%nonzero_bc = .false.
       call create_rhsVector(grid,iTx,comb)
-      do k = 1,comb%nPol
-        comb%b(k)%nonzero_source = .true.
-        comb%b(k)%nonzero_bc = .false.
-        !  assuming here that we don't use sparse storage ... we could!
-        comb%b(k)%sparse_Source = .false.
-        comb%b(k)%adj = ''
-        !  using all this information, reallocate storage for each polarization
-        call create_RHS(grid,iTx,comb%b(k))
-      enddo
+!      do k = 1,comb%nPol
+!        comb%b(k)%sparse_Source = .false.
+!        comb%b(k)%adj = ''
+!        !  using all this information, reallocate storage for each polarization
+!        call create_RHS(grid,iTx,comb%b(k))
+!      enddo
    endif
 
    if(.NOT.modelDataInitialized) then
@@ -215,8 +216,15 @@ end subroutine ini_BC_from_file
 
    ! local variables
    logical			:: initForSens
+   character(10)    :: txType
 
    initForSens = present(comb)
+
+   if(present(e0)) then
+      if(e0%allocated) then
+        txType = txDict(e0%tx)%tx_type
+      endif
+   endif
 
    call deall_RHS(b0)
    if(present(e0)) then
@@ -252,12 +260,11 @@ end subroutine ini_BC_from_file
    type(solnVector_t), intent(inout)	:: e0
 
    ! local variables
-   real(kind=prec)	:: period, omega
+   real(kind=prec)	:: omega
    integer			:: IER,iMode
    complex(kind=prec)	:: i_omega_mu
 
    omega = txDict(iTx)%omega
-   period = txDict(iTx)%period
    !  set period, complete setup of 3D EM equation system
    i_omega_mu = cmplx(0.,ISIGN*MU_0*omega,kind=prec)
 
@@ -267,7 +274,7 @@ end subroutine ini_BC_from_file
    do iMode = 1,e0%nPol
       ! compute boundary conditions for polarization iMode
       !   uses cell conductivity already set by updateCond
-      call SetBound(e0%Pol_index(iMode),period,e0%pol(imode),b0%bc,iTx)
+      call SetBound(e0%Pol_index(iMode),e0%pol(imode),b0%bc,iTx)
       write (*,'(a12,a12,a3,a20,i4,a2,es12.6,a15,i2)') node_info, 'Solving the ','FWD', &
 				' problem for period ',iTx,': ',(2*PI)/omega,' secs & mode # ',e0%Pol_index(iMode)
       call FWDsolve3D(b0,omega,e0%pol(imode))
@@ -296,10 +303,11 @@ end subroutine ini_BC_from_file
    integer      			:: IER,iMode
    real(kind=prec) 		:: omega, period
 
+!  zero starting solution, solve for all modes
+   call zero_solnVector(e)
+   
    omega = txDict(iTx)%omega
    period = txDict(iTx)%period
-   !  zero starting solution, solve for all modes
-   call zero_solnVector(e)
    do iMode = 1,e%nPol
       comb%b(e%Pol_index(iMode))%adj = FWDorADJ
       write (*,'(a12,a12,a3,a20,i4,a2,es12.6,a15,i2)') node_info,'Solving the ',FWDorADJ, &

@@ -26,10 +26,13 @@ module Main
   !type (inverse_control), save								:: invCtrls
 
   ! forward solver control defined in EMsolve3D
-  type(EMsolve_control),save  :: solverParams
+  type(emsolve_control),save  :: solverParams
 
   ! this is used to set up the numerical grid in SensMatrix
   type(grid_t), save	        :: grid
+
+  ! air layers might be set from a file, but can also use the defaults
+  type(airLayers_t), save       :: airLayers
 
   ! impedance data structure
   type(dataVectorMTX_t), save		:: allData
@@ -40,6 +43,11 @@ module Main
   type(modelParam_t), save		:: dsigma
   !  storage for the inverse solution
   type(modelParam_t), save		:: sigma1
+  !  currently only used for TEST_GRAD feature (otherwise, use allData)
+  type(dataVectorMTX_t), save       :: predData
+  !  also for TEST_GRAD feature...
+  type(modelParam_t), save      :: sigmaGrad
+  real(kind=prec), save         :: rms,mNorm,f1,f2,alpha
   !  storage for multi-Tx outputed from JT computation
   type(modelParam_t),pointer, dimension(:), save :: JT_multi_Tx_vec
 
@@ -49,10 +57,10 @@ module Main
   !  storage for EM solutions
   type(solnVectorMTX_t), save            :: eAll
 
-  !  storage for EM rhs (only for S test)
-  type(rhsVectorMTX_t), save            :: RHS
+  !  storage for EM rhs (currently only used for symmetry tests)
+  type(rhsVectorMTX_t), save            :: bAll
 
-  logical                   :: write_model, write_data, write_EMsoln
+  logical                   :: write_model, write_data, write_EMsoln, write_EMrhs
 
 
 
@@ -72,6 +80,37 @@ Contains
         call read_solnVectorMTX(Larg_Grid,eAll_larg,inFile)
         nTx_nPol=eAll_larg%nTx*eAll_larg%solns(1)%nPol   
     end subroutine read_Efiled_from_file    
+
+  !**********************************************************************
+  !   rewrite the defaults in the air layers structure
+  subroutine  initAirLayers(solverControl,airLayers)
+     type(emsolve_control), intent(in)    :: solverControl
+     type(airLayers_t), intent(inout)     :: airLayers
+
+     integer status
+
+     if (.not.solverControl%AirLayersPresent) then
+        ! do nothing - keep the defaults
+        return
+     else
+        deallocate(airLayers%Dz, STAT=status)
+     end if
+
+     airLayers%method = solverControl%AirLayersMethod
+     airLayers%Nz = solverControl%AirLayersNz
+     allocate(airLayers%Dz(airLayers%Nz), STAT=status)
+     airLayers%allocated = .true.
+
+     if (index(airLayers%method,'mirror')>0) then
+        airLayers%alpha = solverControl%AirLayersAlpha
+        airLayers%MinTopDz = 1.e3*solverControl%AirLayersMinTopDz
+     elseif (index(airLayers%method,'fixed height')>0) then
+        airLayers%MaxHeight = 1.e3*solverControl%AirLayersMaxHeight
+     elseif (index(airLayers%method,'read from file')>0) then
+        airLayers%Dz = 1.e3*solverControl%AirLayersDz
+     end if
+
+  end subroutine initAirLayers
 
   ! ***************************************************************************
   ! * InitGlobalData is the routine to call to initialize all derived data types
@@ -105,6 +144,13 @@ Contains
 	output_level = cUserDef%output_level
 
 	!--------------------------------------------------------------------------
+    !  Read forward solver control in EMsolve3D (or use defaults)
+    call readEMsolveControl(solverParams,cUserDef%rFile_fwdCtrl,exists,cUserDef%eps)
+
+    !  If solverParams contains air layers information, rewrite the defaults here
+    call initAirLayers(solverParams,airLayers)
+
+	!--------------------------------------------------------------------------
 	! Check whether model parametrization file exists and read it, if exists
 	inquire(FILE=cUserDef%rFile_Model,EXIST=exists)
 
@@ -113,17 +159,21 @@ Contains
        call read_modelParam(grid,sigma0,cUserDef%rFile_Model)
 
        ! Finish setting up the grid (if that is not done in the read subroutine)
-       call setup_grid(grid)
+       !call setup_grid(grid)
+
+       !  Initialize the air layers structure and update the air layers in the grid
+       call setup_airlayers(airLayers,grid)
+
+       !  Update air layers in the grid and run setup_grid
+       call update_airlayers(grid,airLayers%Nz,airLayers%Dz)
 
 	else
 	  call warning('No input model parametrization')
+
+	  ! set up an empty grid to avoid segmentation faults in sensitivity tests
+	  call create_grid(1,1,1,1,grid)
 	end if
 
-
-
-	!--------------------------------------------------------------------------
-    !  Read forward solver control in EMsolve3D (or use defaults)
-    call readEMsolveControl(solverParams,cUserDef%rFile_fwdCtrl,exists,cUserDef%eps)
 
 	!--------------------------------------------------------------------------
 	!  Read in data file (only a template on input--periods/sites)
@@ -170,7 +220,8 @@ Contains
 	   if (exists) then
 	      call deall_grid(grid)
 	   	  call read_modelParam(grid,dsigma,cUserDef%rFile_dModel)
-		  call setup_grid(grid) ! Added by Oat
+          call setup_airlayers(airLayers,grid)
+		  call update_airlayers(grid,airLayers%Nz,airLayers%Dz)
 	      if (output_level > 0) then
 	        write(*,*) 'Using the initial model perturbations from file ',trim(cUserDef%rFile_dModel)
 	      endif
@@ -191,8 +242,8 @@ Contains
        end select
 
      case (APPLY_COV)
-	   inquire(FILE=cUserDef%rFile_Cov,EXIST=exists)
-	   if (exists) then
+       inquire(FILE=cUserDef%rFile_Cov,EXIST=exists)
+       if (exists) then
           call create_CmSqrt(sigma0,cUserDef%rFile_Cov)
        else
           call create_CmSqrt(sigma0)
@@ -208,6 +259,15 @@ Contains
        sigma1 = sigma0
        call zero(sigma1)
 
+     case (TEST_GRAD, TEST_SENS)
+         inquire(FILE=cUserDef%rFile_dModel,EXIST=exists)
+         if (exists) then
+             call deall_grid(grid)
+             call read_modelParam(grid,dsigma,cUserDef%rFile_dModel)
+         else
+             call warning('The input model perturbation file does not exist')
+         end if
+
      case (TEST_ADJ)
        select case (cUserDef%option)
            case('J','Q','P')
@@ -221,24 +281,31 @@ Contains
            case default
        end select
        select case (cUserDef%option)
-           case('L','P')
+           case('L','P','e')
                inquire(FILE=cUserDef%rFile_EMsoln,EXIST=exists)
                if (exists) then
                   call read_solnVectorMTX(grid,eAll,cUserDef%rFile_EMsoln)
                else
                   call warning('The input EM solution file does not exist')
                end if
+           case('S','b')
+               inquire(FILE=cUserDef%rFile_EMrhs,EXIST=exists)
+               if (exists) then
+                  call read_rhsVectorMTX(grid,bAll,cUserDef%rFile_EMrhs)
+               else
+                  call warning('The input EM RHS file does not exist')
+               end if
            case default
        end select
-       select case (cUserDef%option)
-           case('S')
-            call create_rhsVectorMTX(allData%ntx,RHS)
-            do iTx = 1,allData%ntx
-                RHS%combs(iTx)%nonzero_source = .true.
-                call create_rhsVector(grid,iTx,RHS%combs(iTx))
-            end do
-            call random_rhsVectorMTX(RHS,cUserDef%eps)
-       end select
+!       select case (cUserDef%option)
+!           case('S')
+!            call create_rhsVectorMTX(allData%ntx,bAll)
+!            do iTx = 1,allData%ntx
+!                bAll%combs(iTx)%nonzero_source = .true.
+!                call create_rhsVector(grid,iTx,bAll%combs(iTx))
+!            end do
+!            call random_rhsVectorMTX(bAll,cUserDef%eps)
+!       end select
     end select
 
 	!--------------------------------------------------------------------------
@@ -255,6 +322,10 @@ Contains
     if (len_trim(cUserDef%wFile_EMsoln)>1) then
        write_EMsoln = .true.
     end if
+    write_EMrhs = .false.
+    if (len_trim(cUserDef%wFile_EMrhs)>1) then
+       write_EMrhs = .true.
+    end if
 
 	return
 
@@ -267,6 +338,8 @@ Contains
   subroutine deallGlobalData()
 
 	integer	:: i, istat
+
+    write(0,*) 'Cleaning up...'
 
 	! Deallocate global variables that have been allocated by InitGlobalData()
 	if (output_level > 3) then
@@ -302,7 +375,7 @@ Contains
 		call deall_sensMatrixMTX(sens)
 	end if
 
-	call deallEMsolveControl() ! 3D_MT/FWD/EMsolve3D.f90
+	call deallEMsolveControl(solverParams) ! 3D_MT/FWD/EMsolve3D.f90
 
 	call deall_CmSqrt()
 
