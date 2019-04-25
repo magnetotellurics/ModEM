@@ -595,7 +595,8 @@ Contains
 		     do j = 1,d%data(i)%nSite
 
 		        ! output is a real vector: complex values come in pairs
-		        call dataResp(emsoln,sigma,iDt,d%data(i)%rx(j),d%data(i)%value(:,j))
+              call dataResp(emsoln,sigma,iDt,d%data(i)%rx(j),d%data(i)%value(:,j), &
+                           d%data(i)%Azimuth(:,j))
 
 		     enddo
 

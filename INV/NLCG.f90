@@ -312,6 +312,11 @@ Contains
    type(dataVectorMTX_t)    :: res
    type(modelParam_t) :: m,JTd,CmJTd
 
+   ! 2019.04.23, Liu Zhongyin, add local vars for the transrotation
+   integer :: iTx,iDt,j,icomp,ncomp,ifunc,nfunc,isite
+   logical :: iscomplex,exists
+   complex(kind=prec) :: z(4)
+
    ! integer :: j, Ny, NzEarth
 
    ! compute the smoothed model parameter vector
@@ -328,6 +333,50 @@ Contains
 
    ! multiply by J^T
    call CdInvMult(res)
+
+   ! 2019.04.23, Liu Zhongyin,  Add transrotation
+   do iTx=1,res%ntx
+      do j=1,res%d(iTx)%ndt
+         iDt=res%d(iTx)%data(j)%dataType
+         ncomp=res%d(iTx)%data(j)%nComp
+         iscomplex=res%d(iTx)%data(j)%isComplex
+         if(iscomplex)then
+            if(mod(ncomp,2).ne.0)then
+               call errStop('for complex data # of components must be even in LmultT')
+            end if
+            nfunc=ncomp/2
+         else
+            nfunc=ncomp
+         end if
+         do isite=1,res%d(iTx)%data(j)%nSite
+            icomp=1
+            do ifunc=1,nfunc
+               exists=res%d(iTx)%data(j)%exist(icomp,isite)
+               if (iscomplex) then
+                  z(ifunc)=cmplx(res%d(iTx)%data(j)%value(icomp,isite),res%d(iTx)%data(j)%value(icomp+1,isite))
+                  icomp=icomp+2
+               else
+                  z(ifunc)=cmplx(res%d(iTx)%data(j)%value(icomp,isite),0)
+                  icomp=icomp+1
+               end if
+            end do !ifunc
+            call rotateZT(z,idt,res%d(iTx)%data(j)%Azimuth(icomp,isite))
+            icomp=1
+            do ifunc=1,nfunc
+               exists=res%d(iTx)%data(j)%exist(icomp,isite)
+               if (iscomplex) then
+                  res%d(iTx)%data(j)%value(icomp,isite)=real(z(ifunc))
+                  res%d(iTx)%data(j)%value(icomp+1,isite)=dimag(z(ifunc))                
+                  icomp=icomp+2
+               else
+                  res%d(iTx)%data(j)%value(icomp,isite)=real(z(ifunc))
+                  icomp=icomp+1
+               end if
+            end do !ifunc
+         end do !isite
+      end do !j  idt
+   end do !itx   
+
 #ifdef MPI
         call Master_job_JmultT(m,res,JTd,eAll)
 #else

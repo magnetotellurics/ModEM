@@ -109,7 +109,8 @@ Subroutine Master_Job_fwdPred(sigma,d1,eAll)
          d1%d(iTx)%data(i)%errorBar = .false.
          iDt = d1%d(iTx)%data(i)%dataType
 		     do j = 1,d1%d(iTx)%data(i)%nSite
-		        call dataResp(eAll%solns(iTx),sigma,iDt,d1%d(iTx)%data(i)%rx(j),d1%d(iTx)%data(i)%value(:,j))
+              call dataResp(eAll%solns(iTx),sigma,iDt,d1%d(iTx)%data(i)%rx(j),d1%d(iTx)%data(i)%value(:,j), &
+                           d1%d(iTx)%data(i)%Azimuth(:,j))
 		     end do
       end do
    end do   

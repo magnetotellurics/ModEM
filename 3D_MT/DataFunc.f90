@@ -29,17 +29,22 @@ module dataFunc
 
   !   Names of these routines must be as here, as these are called by
   !    top-level inversion routines
-  public                        :: dataResp, Lrows, Qrows
+  public                        :: dataResp, Lrows, Qrows, RotateZT
 
 
   !Keep the model responses as complex numbers (Z) which are required in Lrows subroutine.
   complex(kind=prec),save, private	:: Z(6)
 
+  interface dataResp
+      MODULE PROCEDURE dataResp_Binv
+      MODULE PROCEDURE dataResp_Angle
+  end interface
+
 
 Contains
 
 !******************************************************************************
-  subroutine dataResp(ef,Sigma,iDT,iRX,Resp,Binv)
+  subroutine dataResp_Binv(ef,Sigma,iDT,iRX,Resp,Binv)
   ! given electric field solutions (both modes--and note
   !    that the solution knows about the transmitter used),
   ! and indices into data types and receiver dictionaries for one
@@ -72,7 +77,7 @@ Contains
   !  			Z(1) = PhiXX , Z(2) = PhiXY, Z(3) = PhiYX, Z(4) = PhiYY
 
   !  optional argument, useful for linearized impedance
-  complex(kind=prec), intent(out), optional	:: Binv(2,2)
+  complex(kind=prec), intent(out)	:: Binv(2,2)
 
   !  local variables
   integer			:: iMode, i,j,xyz,ij, iComp,ncomp,iFunc,nFunc
@@ -269,9 +274,9 @@ Contains
 		       tempZ(2) = EE(2,1)*BB(1,1)+EE(2,2)*BB(2,1)
 
 			   Z(1)  = log10(abs(tempZ(1))**2*MU_0/omega)
-		       Z(2)  = atan2(ISIGN*dimag(tempZ(1)),real(tempZ(1)))*R2D
+		       Z(2)  = atan2(ISIGN*dimag(tempZ(1)),real(tempZ(1)))
 		       Z(3)  = log10(abs(tempZ(2))**2*MU_0/omega)
-		       Z(4)  = atan2(ISIGN*dimag(tempZ(2)),real(tempZ(2)))*R2D+180.0d0
+		       Z(4)  = atan2(ISIGN*dimag(tempZ(2)),real(tempZ(2)))
 
   		   case(Phase_Tensor)
 	         ! First calculate full impedance tensor
@@ -333,13 +338,13 @@ Contains
 	    endif
 	enddo
 
-  if(present(Binv)) then
+  !if(present(Binv)) then
       if(typeDict(iDT)%tfType .eq. Full_Interstation_TF) then
          Binv = RR(1:2,:)
       else
          Binv = BB(1:2,:)
       end if
-  endif
+  !endif
 
   ! clean up
   call deall_sparsevecc(Lex)
@@ -351,7 +356,328 @@ Contains
   call deall_sparsevecc(Lry)
   !deallocate(Z)
 
-  end subroutine dataResp
+  end subroutine dataResp_Binv
+
+!******************************************************************************
+  subroutine dataResp_Angle(ef,Sigma,iDT,iRX,Resp,Angle)
+   ! given electric field solutions (both modes--and note
+   !    that the solution knows about the transmitter used),
+   ! and indices into data types and receiver dictionaries for one
+   ! data vector compute the complex impedance tensor.
+   ! Binv is optional output argument, used needed for linearized
+   ! impedance calculation in this module (not used by higher levels)
+ 
+   implicit none
+   type (solnVector_t), intent(in)		:: ef
+   type (modelParam_t), intent(in) :: Sigma ! used to compute ef
+   integer, intent(in)			:: iDT
+   integer, intent(in) 			:: iRX
+   real(kind=prec), intent(inout)	:: Resp(:),Angle(:)
+ 
+ 
+ 
+ 
+   ! Definition of the impedance elements:
+   !   iDT=Full_Impedance
+   ! 			Z(1) = Zxx; Z(2) = Zxy; Z(3) = Zyx; Z(4) = Zyy
+   !   iDT=Off_Diagonal_Impedance
+   !  			Z(1) = Zxy, Z(2) = Zyx
+   !   iDT=Full_Vertical_Components
+   !  			Z(1) = Tx, Z(2) = Ty
+   !   iDT=Full_Interstation_TF
+   ! 		 	Z(1) = Mxx; Z(2) = Mxy; Z(3) = Myx; Z(4) = Myy
+   !   iDT=Off_Diagonal_Rho_Phase
+   !  			Z(1) = log(Rhoxy) , Z(2) = Phixy, Z(3) = log(Rhoyx), Z(4) = Phiyx
+   !   iDT=Phase_Tensor
+   !  			Z(1) = PhiXX , Z(2) = PhiXY, Z(3) = PhiYX, Z(4) = PhiYY
+ 
+ 
+   !  local variables
+   integer			:: iMode, i,j,xyz,ij, iComp,ncomp,iFunc,nFunc
+   real(kind=prec)	:: omega,x(3),x_ref(3),detX
+   complex(kind=prec)    :: tempZ(4)
+   complex(kind=prec)	:: BB(3,2),EE(2,2),RR(2,2)
+   complex(kind=prec)	:: det,i_omega,ctemp
+   type(sparsevecC)		:: Lex,Ley,Lbx,Lby,Lbz,Lrx,Lry
+   logical			:: ComputeHz,ComputeE
+ 
+   !  probably should dependence on omega into BinterpSetup, as in 2D!
+   omega = txDict(ef%tx)%omega
+ 
+   ncomp = typeDict(iDT)%ncomp
+   if(typeDict(iDT)%isComplex) then
+      !  data are complex; one sensitivity calculation can be
+      !   used for both real and imaginary parts
+      if(mod(ncomp,2).ne.0) then
+         call errStop('for complex data # of components must be even in dataResp')
+      endif
+      nFunc = ncomp/2
+   else
+      !  data are treated as real
+      nFunc = ncomp
+   endif
+   !allocate(Z(nFunc))
+ 
+  selectcase (iDT)
+      case(Full_Impedance)
+                x     = rxDict(iRX)%x         !Local site position (x,y,z)
+            ! First set up interpolation functionals for Ex, Ey
+            xyz = 1
+            call EinterpSetUp(ef%grid,x,xyz,Lex)
+            xyz = 2
+            call EinterpSetUp(ef%grid,x,xyz,Ley)
+           ! Then set up interpolation functionals for Bx, By
+            xyz = 1
+            call BfromESetUp(ef%grid,omega,x,xyz,Lbx)
+            xyz = 2
+            call BfromESetUp(ef%grid,omega,x,xyz,Lby)
+            ! loop over modes
+            do iMode = 1,2
+                ! electric fields
+                EE(1,iMode) =  dotProd_noConj_scvector_f(Lex,ef%pol(iMode))
+                EE(2,iMode) =  dotProd_noConj_scvector_f(Ley,ef%pol(iMode))
+                ! magnetic fields
+                BB(1,iMode) = dotProd_noConj_scvector_f(Lbx,ef%pol(iMode))
+                BB(2,iMode) = dotProd_noConj_scvector_f(Lby,ef%pol(iMode))
+           end do
+           !invert horizontal B matrix using Kramer's rule.
+            det = BB(1,1)*BB(2,2)-BB(1,2)*BB(2,1)
+            ctemp = BB(1,1)
+            BB(1,1) =  BB(2,2)/det
+            BB(2,2) =  ctemp/det
+            BB(1,2) = -BB(1,2)/det
+            BB(2,1) = -BB(2,1)/det
+ 
+               do j = 1,2
+                  do i = 1,2
+                     ij = 2*(i-1)+j
+                     Z(ij) = EE(i,1)*BB(1,j)+EE(i,2)*BB(2,j)
+                  enddo
+               enddo
+ 
+             ! 2019.03.20 Liu Zhongyin, Add rotateZ
+             call rotateZ(Z,iDT,Angle(1))
+ 
+      case(Off_Diagonal_Impedance)
+               x     = rxDict(iRX)%x          !Local site position (x,y,z)
+            ! First set up interpolation functionals for Ex, Ey
+            xyz = 1
+            call EinterpSetUp(ef%grid,x,xyz,Lex)
+            xyz = 2
+            call EinterpSetUp(ef%grid,x,xyz,Ley)
+           ! Then set up interpolation functionals for Bx, By
+            xyz = 1
+            call BfromESetUp(ef%grid,omega,x,xyz,Lbx)
+            xyz = 2
+            call BfromESetUp(ef%grid,omega,x,xyz,Lby)
+            ! loop over modes
+            do iMode = 1,2
+                ! electric fields
+                EE(1,iMode) =  dotProd_noConj_scvector_f(Lex,ef%pol(iMode))
+                EE(2,iMode) =  dotProd_noConj_scvector_f(Ley,ef%pol(iMode))
+                ! magnetic fields
+                BB(1,iMode) = dotProd_noConj_scvector_f(Lbx,ef%pol(iMode))
+                BB(2,iMode) = dotProd_noConj_scvector_f(Lby,ef%pol(iMode))
+           end do
+           !invert horizontal B matrix using Kramer's rule.
+            det = BB(1,1)*BB(2,2)-BB(1,2)*BB(2,1)
+            ctemp = BB(1,1)
+            BB(1,1) =  BB(2,2)/det
+            BB(2,2) =  ctemp/det
+            BB(1,2) = -BB(1,2)/det
+            BB(2,1) = -BB(2,1)/det
+ 
+              Z(1) = EE(1,1)*BB(1,2)+EE(1,2)*BB(2,2)
+             Z(2) = EE(2,1)*BB(1,1)+EE(2,2)*BB(2,1)
+ 
+             ! 2019.03.20 Liu Zhongyin, Add rotateZ
+             call rotateZ(Z,iDT,Angle(1))
+ 
+      case(Full_Vertical_Components)
+                x     = rxDict(iRX)%x          !Local site position (x,y,z)
+               !  Vertical field TF
+           ! First set up interpolation functionals for Bx, By, Bz
+            xyz = 1
+            call BfromESetUp(ef%grid,omega,x,xyz,Lbx)
+            xyz = 2
+            call BfromESetUp(ef%grid,omega,x,xyz,Lby)
+            xyz = 3
+              call BfromESetUp(ef%grid,omega,x,xyz,Lbz)
+            ! loop over modes
+            do iMode = 1,2
+                ! magnetic fields
+                BB(1,iMode) = dotProd_noConj_scvector_f(Lbx,ef%pol(iMode))
+                BB(2,iMode) = dotProd_noConj_scvector_f(Lby,ef%pol(iMode))
+                BB(3,iMode) = dotProd_noConj_scvector_f(Lbz,ef%pol(iMode))
+           end do
+           !invert horizontal B matrix using Kramer's rule.
+            det = BB(1,1)*BB(2,2)-BB(1,2)*BB(2,1)
+            ctemp = BB(1,1)
+            BB(1,1) =  BB(2,2)/det
+            BB(2,2) =  ctemp/det
+            BB(1,2) = -BB(1,2)/det
+            BB(2,1) = -BB(2,1)/det
+ 
+ 
+               Z(1) = BB(3,1)*BB(1,1)+BB(3,2)*BB(2,1)
+               Z(2) = BB(3,1)*BB(1,2)+BB(3,2)*BB(2,2)
+ 
+             ! 2019.03.20 Liu Zhongyin, Add rotateZ
+               call rotateZ(Z,iDT,Angle(1))
+ 
+      case(Full_Interstation_TF)
+               x     = rxDict(iRX)%x          !Local site position (x,y,z)
+               x_ref = rxDict(iRX)%r          !Reference site position (x,y,z)
+             ! First set up interpolation functionals for Bx, By at local site
+            xyz = 1
+            call BfromESetUp(ef%grid,omega,x,xyz,Lbx)
+            xyz = 2
+            call BfromESetUp(ef%grid,omega,x,xyz,Lby)
+            !Then set up interpolation functionals for Bx, By at the referance site
+            xyz = 1
+            call BfromESetUp(ef%grid,omega,x_ref,xyz,Lrx)
+            xyz = 2
+            call BfromESetUp(ef%grid,omega,x_ref,xyz,Lry)
+              do iMode = 1,2
+                ! magnetic fields at local station
+                BB(1,iMode) = dotProd_noConj_scvector_f(Lbx,ef%pol(iMode))
+                BB(2,iMode) = dotProd_noConj_scvector_f(Lby,ef%pol(iMode))
+                ! magnetic fields, at the REFERANCE station
+                RR(1,iMode) = dotProd_noConj_scvector_f(Lrx,ef%pol(iMode))
+                RR(2,iMode) = dotProd_noConj_scvector_f(Lry,ef%pol(iMode))
+              end do
+            ! Compute the inverse of RR using Kramer's rule
+            det = RR(1,1)*RR(2,2)-RR(1,2)*RR(2,1)
+            ctemp = RR(1,1)
+            RR(1,1) =  RR(2,2)/det
+            RR(2,2) =  ctemp/det
+            RR(1,2) = -RR(1,2)/det
+            RR(2,1) = -RR(2,1)/det
+            ! Z = BB * RR^-1
+                   do j = 1,2
+                     do i = 1,2
+                        ij = 2*(i-1)+j
+                        Z(ij) = BB(i,1)*RR(1,j)+BB(i,2)*RR(2,j)
+                     enddo
+                  enddo
+                  Z(1)= Z(1)-ONE
+                       Z(4)= Z(4)-ONE
+ 
+           case(Off_Diagonal_Rho_Phase)
+                 x     = rxDict(iRX)%x          !Local site position (x,y,z)
+            ! First set up interpolation functionals for Ex, Ey
+            xyz = 1
+            call EinterpSetUp(ef%grid,x,xyz,Lex)
+            xyz = 2
+            call EinterpSetUp(ef%grid,x,xyz,Ley)
+           ! Then set up interpolation functionals for Bx, By
+            xyz = 1
+            call BfromESetUp(ef%grid,omega,x,xyz,Lbx)
+            xyz = 2
+            call BfromESetUp(ef%grid,omega,x,xyz,Lby)
+            ! loop over modes
+            do iMode = 1,2
+                ! electric fields
+                EE(1,iMode) =  dotProd_noConj_scvector_f(Lex,ef%pol(iMode))
+                EE(2,iMode) =  dotProd_noConj_scvector_f(Ley,ef%pol(iMode))
+                ! magnetic fields
+                BB(1,iMode) = dotProd_noConj_scvector_f(Lbx,ef%pol(iMode))
+                BB(2,iMode) = dotProd_noConj_scvector_f(Lby,ef%pol(iMode))
+           end do
+           !invert horizontal B matrix using Kramer's rule.
+            det = BB(1,1)*BB(2,2)-BB(1,2)*BB(2,1)
+            ctemp = BB(1,1)
+            BB(1,1) =  BB(2,2)/det
+            BB(2,2) =  ctemp/det
+            BB(1,2) = -BB(1,2)/det
+            BB(2,1) = -BB(2,1)/det
+ 
+              tempZ(1) = EE(1,1)*BB(1,2)+EE(1,2)*BB(2,2)
+              tempZ(2) = EE(2,1)*BB(1,1)+EE(2,2)*BB(2,1)
+ 
+             ! 2019.03.20 Liu Zhongyin, Add rotateZ
+              call rotateZ(tempZ,iDT,Angle(1))
+ 
+              ! For Phase only, use rad, changed By LiuZhongyin 2017.05.27
+             Z(1)  = log10(abs(tempZ(1))**2*MU_0/omega)
+              Z(2)  = atan2(ISIGN*dimag(tempZ(1)),real(tempZ(1)))
+              Z(3)  = log10(abs(tempZ(2))**2*MU_0/omega)
+              Z(4)  = atan2(ISIGN*dimag(tempZ(2)),real(tempZ(2)))
+ 
+            case(Phase_Tensor)
+             ! First calculate full impedance tensor
+                x     = rxDict(iRX)%x         !Local site position (x,y,z)
+            ! First set up interpolation functionals for Ex, Ey
+            xyz = 1
+            call EinterpSetUp(ef%grid,x,xyz,Lex)
+            xyz = 2
+            call EinterpSetUp(ef%grid,x,xyz,Ley)
+           ! Then set up interpolation functionals for Bx, By
+            xyz = 1
+            call BfromESetUp(ef%grid,omega,x,xyz,Lbx)
+            xyz = 2
+            call BfromESetUp(ef%grid,omega,x,xyz,Lby)
+            ! loop over modes
+            do iMode = 1,2
+                ! electric fields
+                EE(1,iMode) =  dotProd_noConj_scvector_f(Lex,ef%pol(iMode))
+                EE(2,iMode) =  dotProd_noConj_scvector_f(Ley,ef%pol(iMode))
+                ! magnetic fields
+                BB(1,iMode) = dotProd_noConj_scvector_f(Lbx,ef%pol(iMode))
+                BB(2,iMode) = dotProd_noConj_scvector_f(Lby,ef%pol(iMode))
+           end do
+           !invert horizontal B matrix using Kramer's rule.
+            det = BB(1,1)*BB(2,2)-BB(1,2)*BB(2,1)
+            ctemp = BB(1,1)
+            BB(1,1) =  BB(2,2)/det
+            BB(2,2) =  ctemp/det
+            BB(1,2) = -BB(1,2)/det
+            BB(2,1) = -BB(2,1)/det
+ 
+               do j = 1,2
+                  do i = 1,2
+                     ij = 2*(i-1)+j
+                     tempZ(ij) = EE(i,1)*BB(1,j)+EE(i,2)*BB(2,j)
+                  enddo
+               enddo
+ 
+             ! 2019.03.20 Liu Zhongyin, Add rotateZ
+             call rotateZ(tempZ,iDT,Angle(1))
+ 
+             detX = dreal(tempZ(1))*dreal(tempZ(4))-dreal(tempZ(2))*dreal(tempZ(3))
+ 
+          Z(1) = ISIGN*(dreal(tempZ(4))*dimag(tempZ(1))-dreal(tempZ(2))*dimag(tempZ(3)))/detX
+          Z(2) = ISIGN*(dreal(tempZ(4))*dimag(tempZ(2))-dreal(tempZ(2))*dimag(tempZ(4)))/detX
+          Z(3) = ISIGN*(dreal(tempZ(1))*dimag(tempZ(3))-dreal(tempZ(3))*dimag(tempZ(1)))/detX
+          Z(4) = ISIGN*(dreal(tempZ(1))*dimag(tempZ(4))-dreal(tempZ(3))*dimag(tempZ(2)))/detX
+  end select
+ 
+   !  copy responses in Z (possibly complex) into real output vector Resp
+   !  Loop over components
+   iComp = 0
+   do iFunc  = 1, nFunc
+        if(typeDict(iDT)%isComplex) then
+           iComp = iComp + 1
+           Resp(iComp) = real(Z(iFunc))
+           iComp = iComp + 1
+           Resp(iComp) = dimag(Z(iFunc))
+        else
+           iComp = iComp + 1
+           Resp(iComp) = real(Z(iFunc))
+        endif
+    enddo
+ 
+   ! clean up
+   call deall_sparsevecc(Lex)
+   call deall_sparsevecc(Ley)
+   call deall_sparsevecc(Lbx)
+   call deall_sparsevecc(Lby)
+   call deall_sparsevecc(Lbz)
+   call deall_sparsevecc(Lrx)
+   call deall_sparsevecc(Lry)
+   !deallocate(Z)
+ 
+   end subroutine dataResp_Angle  
 !
 !****************************************************************************
   subroutine Lrows(e0,Sigma0,iDT,iRX,L)
@@ -532,19 +858,23 @@ Contains
 if (typeDict(iDT)%tfType .eq. Off_Diagonal_Rho_Phase) then
        do k=1,2 ! 2 modes
         ! PHSYX
-        c1 =dcmplx(0.0d0,1.0d0)*conjg(Z(3)) / (abs(Z(3))**TWO) *R2D
+        c1 =dcmplx(0.0d0,1.0d0)*conjg(Z(3)) / (abs(Z(3))**TWO)
 	     Call linComb_sparsevecc(L(2)%L(k),c1,L(2)%L(k),C_ZERO,L(4)%L(k))
 
 		 !log RHOYX
 	     c1 =  TWO*conjg(Z(3))/(abs(Z(3))**TWO)*dlog(10.0d0)
+		 ! devided by Ln10, Liuzhongyin 2017.06.04
+	     !c1 =  TWO*conjg(Z(3))/(abs(Z(3))**TWO)/dlog(10.0d0)
         Call linComb_sparsevecc(L(2)%L(k),c1,L(2)%L(k),C_ZERO,L(3)%L(k))
 
         ! PHSXY
-        c1 =dcmplx(0.0d0,1.0d0)*conjg(Z(2))/(abs(Z(2))**TWO)*R2D
+        c1 =dcmplx(0.0d0,1.0d0)*conjg(Z(2))/(abs(Z(2))**TWO)
 		Call linComb_sparsevecc(L(1)%L(k),c1,L(1)%L(k),C_ZERO,L(2)%L(k))
 
           !log(RHOXY)
          c1 =  TWO*conjg(Z(2))  /(abs(Z(2))**TWO)*dlog(10.0d0)
+          ! devided by Ln10, Liuzhongyin 2017.06.04
+          !c1 =  TWO*conjg(Z(2))  /(abs(Z(2))**TWO)/dlog(10.0d0)
 	     Call linComb_sparsevecc(L(1)%L(k),c1,L(1)%L(k),C_ZERO,L1)
         L(1)%L(k) = L1
 
@@ -726,5 +1056,117 @@ if (typeDict(iDT)%tfType .eq. Off_Diagonal_Rho_Phase) then
   !enddo
 
   end subroutine Qrows
+
+  ! **********************************************************************
+  ! 2019.03.20 Liu Zhongyin, Add rotate for Z
+  ! Note: For the Off_Diagonal_Rho_Phase, this subroutine should be 
+  ! called before the calculation of Rho and Phase
+  subroutine rotateZ(d,iDT,angle)
+   implicit none
+   complex(kind=prec), intent(inout)   :: d(4)
+   integer, intent(in)                 :: iDT
+   real(kind=prec), intent(in)         :: angle
+
+   ! local varialbles
+   complex(kind=prec)        :: d1, d2, d3, d4
+   real(kind=prec)           :: cos2a, sin2a, sina, cosa
+
+  selectcase (iDT)
+      case(Full_Impedance, Phase_Tensor)
+         cos2a = cos(2*angle*D2R)
+         sin2a = sin(2*angle*D2R)
+
+         d1 = 1/2.*((1+cos2a)*d(1)+sin2a*d(2)+sin2a*d(3)+(1-cos2a)*d(4))
+         d2 = 1/2.*(-sin2a*d(1)+(1+cos2a)*d(2)-(1-cos2a)*d(3)+sin2a*d(4))
+         d3 = 1/2.*(-sin2a*d(1)-(1-cos2a)*d(2)+(1+cos2a)*d(3)+sin2a*d(4))
+         d4 = 1/2.*((1-cos2a)*d(1)-sin2a*d(2)-sin2a*d(3)+(1+cos2a)*d(4))
+
+         d(1) = d1
+         d(2) = d2
+         d(3) = d3
+         d(4) = d4
+
+      case(Off_Diagonal_Impedance, Off_Diagonal_Rho_Phase)
+         cos2a = cos(2*angle*D2R)
+         sin2a = sin(2*angle*D2R)
+
+         d1 = 1/2.*((1+cos2a)*d(1)-(1-cos2a)*d(2))
+         d2 = 1/2.*(-(1-cos2a)*d(1)+(1+cos2a)*d(2))
+
+         d(1) = d1
+         d(2) = d2
+
+      case(Full_Vertical_Components)
+         sina = sin(angle*D2R)
+         cosa = cos(angle*D2R)
+
+         d1 =  d(1)*cosa+d(2)*sina
+         d2 = -d(1)*sina+d(2)*cosa
+
+         d(1) = d1
+         d(2) = d2
+
+      case(Full_Interstation_TF)
+
+  end select
+
+  end subroutine rotateZ
+
+! **********************************************************************
+  ! 2019.04.09 Liu Zhongyin, Add rotate transpose for Z
+  subroutine rotateZT(d,iDT,angle)
+   implicit none
+   complex(kind=prec), intent(inout)   :: d(4)
+   integer, intent(in)                 :: iDT
+   real(kind=prec), intent(in)         :: angle
+
+   ! local varialbles
+   complex(kind=prec)        :: d1, d2, d3, d4
+   real(kind=prec)           :: cos2a, sin2a, sina, cosa
+
+  selectcase (iDT)
+      case(Full_Impedance)
+         cos2a = cos(2*angle*D2R)
+         sin2a = sin(2*angle*D2R)
+
+         d1 = 1/2.*((1+cos2a)*d(1)-sin2a*d(2)-sin2a*d(3)+(1-cos2a)*d(4))
+         d2 = 1/2.*(sin2a*d(1)+(1+cos2a)*d(2)-(1-cos2a)*d(3)-sin2a*d(4))
+         d3 = 1/2.*(sin2a*d(1)-(1-cos2a)*d(2)+(1+cos2a)*d(3)-sin2a*d(4))
+         d4 = 1/2.*((1-cos2a)*d(1)+sin2a*d(2)+sin2a*d(3)+(1+cos2a)*d(4))
+
+         d(1) = d1
+         d(2) = d2
+         d(3) = d3
+         d(4) = d4
+
+      case(Off_Diagonal_Impedance)
+         cos2a = cos(2*angle*D2R)
+         sin2a = sin(2*angle*D2R)
+
+         d1 = 1/2.*((1+cos2a)*d(1)-(1-cos2a)*d(2))
+         d2 = 1/2.*(-(1-cos2a)*d(1)+(1+cos2a)*d(2))
+
+         d(1) = d1
+         d(2) = d2
+
+      case(Full_Vertical_Components)
+         sina = sin(angle*D2R)
+         cosa = cos(angle*D2R)
+
+         d1 = cosa*d(1)-sina*d(2)
+         d2 = sina*d(1)+cosa*d(2)
+
+         d(1) = d1
+         d(2) = d2
+
+      case(Full_Interstation_TF)
+
+      case(Off_Diagonal_Rho_Phase)
+
+      case(Phase_Tensor)
+
+  end select
+
+  end subroutine rotateZT
 
 end module dataFunc
