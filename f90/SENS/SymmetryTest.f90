@@ -156,11 +156,13 @@ Contains
 
        ! compute dot product #1: d^T L e
        r1 = dotProd(d%d(j),Le%d(j))
-       write(*,*) '... frequency #',j,' dot product #1: ',r1,'[d^T L e]'
+       write(*,'(a15,i4,a17)',advance='no') '... frequency #',j,' dot product #1: '
+       write(*,*) r1,'[d^T L e]'
 
        ! compute dot product #2: e^T L^T d
        c2 = dotProd(LTd,e%solns(j),Conj_case)
-       write(*,*) '... frequency #',j,' dot product #2: ',c2,'[e^T L^T d]'
+       write(*,'(a15,i4,a17)',advance='no') '... frequency #',j,' dot product #2: '
+       write(*,*) c2,'[e^T L^T d]'
 
        ! convert RHS to solution vectors for output
        !e%solns(j) = LTd
@@ -176,7 +178,6 @@ Contains
   end subroutine Ltest
 
   !**********************************************************************
-  ! NOT DEBUGGED YET
    subroutine Stest(m0,b,eAll)
 
    !  Tests the equality b^T S^{-1} b = b^T (S^{-1})^T b; outputs e = S^{-1} b.
@@ -219,13 +220,22 @@ Contains
       ! solve transpose problem with source in comb
       call sensSolve(iTx,ADJ,eAdj,b%combs(j))
 
+      ! convert RHS to full vector for dot product
+      comb = b%combs(j)
+      call sparse2full_rhsVector(comb)
+
       ! compute dot product #1: b^T S^{-1} b
-      r1 = dotProd(b%combs(j),eFwd,Conj_case)
-      write(*,*) '... frequency #',j,' dot product #1: ',r1,'[b^T S^{-1} b]'
+      r1 = dotProd(comb,eFwd,Conj_case)
+      write(*,'(a15,i4,a17)',advance='no') '... frequency #',j,' dot product #1: '
+      write(*,*) r1,'[b^T S^{-1} b]'
 
       ! compute dot product #2: b^T (S^{-1})^T b
-      r2 = dotProd(b%combs(j),eAdj,Conj_case)
-      write(*,*) '... frequency #',j,' dot product #2: ',r2,'[b^T (S^{-1})^T b]'
+      r2 = dotProd(comb,eAdj,Conj_case)
+      write(*,'(a15,i4,a17)',advance='no') '... frequency #',j,' dot product #2: '
+      write(*,*) r2,'[b^T (S^{-1})^T b]'
+
+      ! clean up
+      call deall_rhsVector(comb)
 
    enddo  ! tx
 
@@ -292,11 +302,13 @@ Contains
 
        ! compute dot product #1: e^T P m
        r1 = dotProd(Pm,e%solns(j),Conj_case)
-       write(*,*) '... frequency #',j,' dot product #1: ',r1,'[e^T P m]'
+       write(*,'(a15,i4,a17)',advance='no') '... frequency #',j,' dot product #1: '
+       write(*,*) r1,'[e^T P m]'
 
        ! compute dot product #2: m^T P^T e
        r2 = dotProd(m,PTe)
-       write(*,*) '... frequency #',j,' dot product #2: ',r2,'[m^T P^T e]'
+       write(*,'(a15,i4,a17)',advance='no') '... frequency #',j,' dot product #2: '
+       write(*,*) r2,'[m^T P^T e]'
 
        ! sum up models for output
        call scMultAdd(ONE,PTe,mTemp)
@@ -362,11 +374,13 @@ Contains
 
 	   ! compute dot product #1: d^T Q m
 	   r1 = dotProd(d%d(j),Qm%d(j))
-	   write(*,*) '... frequency #',j,' dot product #1: ',r1,'[d^T Q m]'
+       write(*,'(a15,i4,a17)',advance='no') '... frequency #',j,' dot product #1: '
+	   write(*,*) r1,'[d^T Q m]'
 
 	   ! compute dot product #2: m^T Q^T d
 	   r2 = dotProd(m,QTd)
-	   write(*,*) '... frequency #',j,' dot product #2: ',r2,'[m^T Q^T d]'
+       write(*,'(a15,i4,a17)',advance='no') '... frequency #',j,' dot product #2: '
+	   write(*,*) r2,'[m^T Q^T d]'
 
 	   ! sum up models for output
 	   call scMultAdd(ONE,QTd,mTemp)

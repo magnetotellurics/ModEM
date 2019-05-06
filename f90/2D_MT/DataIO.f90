@@ -35,8 +35,31 @@ module DataIO
   real,          allocatable, private, save :: origin_in_file(:,:) ! (nDt,2)
   real,          allocatable, private, save :: geographic_orientation(:)
 
+  ! we are converting from an "old format" to a "new format"
+  ! the only difference being that in the new format, there is
+  ! an additional line in the head that indicates transmitter type.
+  ! on output, use the same format as on input. AK 25 May 2018
+  logical, save, private  :: old_data_file_format = .true.
 
 Contains
+
+!**********************************************************************
+! Sorts out the data type header
+
+  function DataBlockHeader(dataType) result (header)
+
+    integer, intent(in)         :: dataType
+    character(200)              :: header
+
+    select case (dataType)
+
+       case(TE_Impedance,TM_Impedance,Tzy_Impedance)
+          header = '# Period(s) Code GG_Lat GG_Lon X(m) Y(m) Z(m) Component Real Imag Error'
+       case(Rho_Phs_TM)
+          header = '# Period(s) Code GG_Lat GG_Lon X(m) Y(m) Z(m) Component Value Error'
+    end select
+
+  end function DataBlockHeader
 
 !**********************************************************************
 ! writes data in the ASCII list data file; it is convenient to work
@@ -94,7 +117,16 @@ Contains
       call compact(info_in_file(iDt))
       write(ioDat,'(a32)',advance='no') '# ModEM impedance responses for '
       write(ioDat,'(a100)',iostat=ios) info_in_file(iDt)
-      write(ioDat,'(a100)',iostat=ios) ImpHeader(iDt)
+      write(ioDat,'(a100)',iostat=ios) DataBlockHeader(iDt)
+
+      ! the new format is critical for JOINT modeling and inversion; otherwise, can stick
+      ! to the old format for backwards compatibility. Will always write in the same format
+      ! as the input data file. AK 25 May 2018
+      if (.not. old_data_file_format) then
+            write(ioDat,'(a4)') '+ MT'
+      end if
+
+      ! write the remainder of data type header
       call compact(typeDict(iDt)%name)
       write(ioDat,'(a2)',advance='no') temp
       write(ioDat,*,iostat=ios) trim(typeDict(iDt)%name)
@@ -211,7 +243,7 @@ Contains
     character(2)                    :: temp
     character(200)                  :: typeName,typeInfo,typeHeader
     character(40)                   :: siteid,Mode
-    integer                         :: iDt,i,j,k,istat,ios
+    integer                         :: iTxt,iDt,i,j,k,istat,ios
     character(20)                   :: code
     real(8)                         :: x(3),Period,SI_factor,large
     real(8)                         :: lat,lon,ref_lat,ref_lon
@@ -239,6 +271,15 @@ Contains
     read(ioDat,'(a2,a200)',iostat=ios) temp,typeInfo
     read(ioDat,'(a2,a100)',iostat=ios) temp,typeHeader
     read(ioDat,'(a2,a100)',iostat=ios) temp,typeName
+
+    ! If transmitter name exists, it precedes the typeName; in 2D, not used
+    if (temp(1:1) == '+') then
+        read(ioDat,'(a2,a100)',iostat=ios) temp,typeName
+        old_data_file_format = .false.
+    else
+        old_data_file_format = .true.
+    end if
+    iTxt = 1
     if (ios /= 0) exit
 
     ! Read new data type
@@ -432,6 +473,7 @@ end select
            newData%d(i)%data(1)%rx(k) = new_Rx(j)
            k = k+1
        end do
+       newData%d(i)%data(1)%txType = 1
        newData%d(i)%data(1)%dataType = iDt
        newData%d(i)%data(1)%tx = new_Tx(i)
        newData%d(i)%data(1)%allocated = .TRUE.
@@ -455,11 +497,12 @@ end select
     ! Finally, set up the index vectors in the data type dictionary - used for output
     nTx = size(txDict)
     nRx = size(rxDict)
+    iTxt = 1
     do iDt = 1,nDt
         allocate(typeDict(iDt)%tx_index(nTx),STAT=istat)
         allocate(typeDict(iDt)%dt_index(nTx),STAT=istat)
         allocate(typeDict(iDt)%rx_index(nTx,nRx),STAT=istat)
-        call index_dataVectorMTX(allData,iDt,typeDict(iDt)%tx_index,typeDict(iDt)%dt_index,typeDict(iDt)%rx_index)
+        call index_dataVectorMTX(allData,iTxt,iDt,typeDict(iDt)%tx_index,typeDict(iDt)%dt_index,typeDict(iDt)%rx_index)
     end do
 
    end subroutine read_Z_list

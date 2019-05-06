@@ -29,7 +29,7 @@ module GridDef
   character(len=80), parameter		:: CELL_EARTH = 'CELL EARTH'
 
   ! ***************************************************************************
-  ! type grid_param consists of parameters that define the basic grid geometry
+  ! type grid_t consists of parameters that define the basic grid geometry
   ! used for three dimensional numerical modeling
   type :: grid_t
 
@@ -90,6 +90,22 @@ module GridDef
 
   end type grid_t
 
+  type :: airLayers_t
+    ! details needed to unambiguosly compute and/or store the air layers;
+    ! method options are: mirror; fixed height; read from file
+    ! for backwards compatibility, all of the defaults are set to what
+    ! was previously hard coded (AK; May 19, 2017)
+    ! For backwards compatibility, default is 'mirror 10 3. 30.'
+    ! but the use of 'fixed height 12 1000' is recommended
+    character (len=80)        ::      method = 'mirror'
+    integer                   ::      Nz = 10
+    real(kind = 8)            ::      MaxHeight = 1000000.
+    real(kind = 8)            ::      MinTopDz = 30000., alpha = 3.
+    real(kind = 8), pointer, dimension(:)   :: Dz
+    logical                                 :: allocated = .false.
+  end type airLayers_t
+
+
 Contains
 
   !************************************************************************
@@ -145,6 +161,45 @@ Contains
     grid%allocated = .true.
 
   end subroutine create_grid
+
+  !************************************************************************
+  subroutine update_airlayers(grid,NzAir,DzAir)
+    ! update_airlayers assumes that the grid is already defined, and merely
+    ! includes the new air layers in the grid
+    !
+    implicit none
+    integer, intent(in)                         :: NzAir
+    real(kind=prec), pointer, intent(in)        :: DzAir(:)
+    type (grid_t) , intent(inout)               :: grid
+    ! local
+    type (grid_t)                               :: oldgrid
+
+    ! first save the Earth part of the grid
+    call copy_grid(oldgrid,grid)
+
+    ! deallocate the grid and make a new one with the correct NzAir
+    call deall_grid(grid)
+    call create_grid(oldgrid%Nx,oldgrid%Ny,NzAir,oldgrid%NzEarth,grid)
+
+    ! set air layers to DzAir values and copy the rest
+    grid%Dz(1:NzAir) = DzAir
+    grid%Dz(NzAir+1:grid%Nz) = oldgrid%Dz(oldgrid%NzAir+1:oldgrid%Nz)
+    grid%Dy = oldgrid%Dy
+    grid%Dx = oldgrid%Dx
+    grid%ox = oldgrid%ox
+    grid%oy = oldgrid%oy
+    grid%oz = oldgrid%oz
+
+    grid%rotdeg = oldgrid%rotdeg
+    grid%geometry = oldgrid%geometry
+
+    ! setup the rest of the grid from scratch
+    call setup_grid(grid)
+
+    ! clean up the local variable oldgrid
+    call deall_grid(oldgrid)
+
+  end subroutine update_airlayers
 
   ! **************************************************************************
   subroutine copy_grid(gridOut,gridIn)
@@ -224,6 +279,8 @@ Contains
   ! and variables like xCenter, yEdge, etc. are given in the same coordinate
   ! system).  If argument origin is not present, whatever is set already in the grid
   ! origin is used; by default this is initialized to zero.
+  ! AK: as of May 19, 2017 the air layers are set up separately while maintaining
+  ! backwards compatibility. If we update the air layers, run this again.
   subroutine setup_grid(grid, origin)
 
     implicit none
@@ -233,26 +290,6 @@ Contains
     integer                               :: ix,iy,iz,i,j
     integer                               :: status
     real (kind=prec)                         :: xCum, yCum, zCum
-    real(kind=prec)                     :: alpha = 3.
-
-    !   Following is Kush's approach to setting air layers:
-    ! mirror imaging the dz values in the air layer with respect to
-    ! earth layer as far as we can using the following formulation
-    ! air layer(bottom:top) = (alpha)^(j-1) * earth layer(top:bottom)
-    if (minval(grid%dz) .le. R_ZERO) then
-	    i = grid%nzAir+1
-	    j = 0
-	    do iz = grid%nzAir, 1, -1
-	        j = j + 1
-	        grid%dz(iz) = ((alpha)**(j-1))*grid%dz(i)
-	        i = i + 1
-	    end do
-    end if
-
-    ! the topmost air layer has to be atleast 30 km
-    if (grid%dz(1).lt.30000) then
-        grid%dz(1) = 30000
-    end if
 
     grid%dxinv = 1/ grid%dx
     grid%dyinv = 1/ grid%dy
@@ -338,7 +375,113 @@ Contains
     enddo
     grid%zEdge(grid%nz+1) = grid%zEdge(grid%nz+1)-grid%zAirThick+grid%oz
 
+    !write(*,*) 'The top of the air layers is at ', grid%zAirThick/1000,' km'
+
 
   end subroutine setup_grid
+
+  ! **************************************************************************
+  ! setup_airlayers computes the Dz in the airlayers structure using the grid
+  ! to get the top layers Dz; all values expected in km on input
+  ! For backwards compatibility, default is 'mirror 10 3. 30.'
+  ! but the use of 'fixed height 12 1000' is recommended
+  subroutine setup_airlayers(airlayers, grid, method, NzAir, MaxHeight, MinTopDz, alpha, DzAir)
+
+    implicit none
+    type(airLayers_t), intent(inout)        :: airlayers
+    type(grid_t), intent(in)                :: grid
+    character(80), intent(in), optional     :: method
+    integer, intent(in), optional           :: NzAir
+    real(kind=prec), intent(in), optional   :: MaxHeight,MinTopDz,alpha
+    real(kind=prec), pointer, intent(in), optional :: DzAir
+    ! local
+    integer                               :: ix,iy,iz,i,j
+    integer                               :: status
+    real (kind=prec)                      :: z1_log,dlogz,z_log
+
+    if (present(method)) then
+        airlayers%method = method
+    end if
+
+    if (present(NzAir)) then
+        airlayers%Nz = NzAir
+    end if
+
+    if (.not.(index(airlayers%method,'read from file')>0)) then
+        if (airlayers%allocated) then
+            deallocate(airlayers%Dz, STAT=status)
+        end if
+        allocate(airlayers%Dz(airlayers%Nz), STAT=status)
+        airlayers%allocated = .true.
+    end if
+
+    if (present(MaxHeight)) then
+        airlayers%MaxHeight = 1000.*MaxHeight
+    end if
+
+    if (present(MinTopDz)) then
+        airlayers%MinTopDz = 1000.*MinTopDz
+    end if
+
+    if (present(alpha)) then
+        airlayers%alpha = alpha
+    end if
+
+    if (index(airlayers%method,'mirror')>0) then
+
+        !   Following is Kush's approach to setting air layers:
+        ! mirror imaging the dz values in the air layer with respect to
+        ! earth layer as far as we can using the following formulation
+        ! air layer(bottom:top) = (alpha)^(j-1) * earth layer(top:bottom)
+        do iz = airlayers%Nz, 1, -1
+            j = airlayers%Nz - iz + 1
+            airlayers%Dz(iz) = ((airlayers%alpha)**(j-1))*grid%Dz(grid%NzAir+j)
+        end do
+
+        ! the topmost air layer has to be at least 30 km
+        if (airlayers%Dz(1).lt.airlayers%MinTopDz) then
+            airlayers%Dz(1) = airlayers%MinTopDz
+        end if
+
+    else if (index(airlayers%method,'fixed height')>0) then
+
+        z1_log = log10(grid%Dz(grid%NzAir+1))
+        dlogz = (log10(airlayers%MaxHeight)-z1_log)/(airlayers%Nz)
+
+        z_log = z1_log
+        do iz = airlayers%Nz, 1, -1
+            airlayers%Dz(iz) = 10.**(z_log+dlogz) - 10.**(z_log)
+            z_log = z_log+dlogz
+        end do
+
+    else if (index(airlayers%method,'read from file')>0) then
+        ! air layers have been read from file and are already stored in Dz
+        ! so only need to reallocate if passing a new array to it
+        if (present(DzAir)) then
+            if (airlayers%allocated) then
+                deallocate(airlayers%Dz, STAT=status)
+            end if
+            allocate(airlayers%Dz(airlayers%Nz), STAT=status)
+            airlayers%Dz = DzAir
+        end if
+    end if
+
+    write (*,'(a60,a20)') 'Air layers setup complete according to the method : ',adjustl(airlayers%method)
+    write (*,'(a40,f15.3,a3)') 'The top of the air layers is at ', sum(airlayers%Dz)/1000,' km'
+
+
+  end subroutine setup_airlayers
+
+  ! **************************************************************************
+  subroutine deall_airlayers(airlayers)
+
+    type (airlayers_t) , intent(inout)   :: airlayers
+    ! local
+    integer     :: status
+
+    deallocate(airlayers%Dz, STAT=status)
+
+  end subroutine deall_airlayers
+
 
 end module GridDef

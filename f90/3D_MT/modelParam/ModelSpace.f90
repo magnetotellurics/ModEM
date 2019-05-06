@@ -34,6 +34,7 @@ module ModelSpace
 
   ! supported model parameter types (conductivity only)
    character(len=80), parameter		:: LOGE = 'LOGE'
+   character(len=80), parameter     :: LOG_10 = 'LOG10'
    character(len=80), parameter		:: LINEAR = 'LINEAR'
 
   type :: modelParam_t
@@ -62,9 +63,11 @@ module ModelSpace
      !  another logical that gets set to true every time the model
      !  parameter is modified; used by the ForwardSolver for updateCond
      logical			:: updated = .false.
-     !  supported paramType at present: LINEAR and LOGE
+     !  supported paramType at present: LINEAR, LOG10 and LOGE
      character (len=80)	:: paramType = ''
   end type modelParam_t
+
+  character(len=80), save           :: userParamType = 'LOGE'
 
 
 interface assignment (=)
@@ -182,6 +185,8 @@ Contains
      else
 		if(paramtype .eq. LOGE) then
 		   m%AirCond = log(SIGMA_AIR)
+		elseif(paramtype .eq. LOG_10) then
+		   m%AirCond = log10(SIGMA_AIR)
 		else
 		   m%AirCond = SIGMA_AIR
 		endif
@@ -229,14 +234,32 @@ Contains
 
 	 if(trim(paramType) .eq. trim(m%paramType)) then
 	    ! we are done
-	 else if((paramType == LOGE) .and. (m%paramType == LINEAR)) then
+	 elseif(m%paramType == LINEAR) then
 	    ! convert to log
-	    m%cellCond%v = log(m%cellCond%v)
-	    m%AirCond=log(m%AirCond)
-	 else if((paramType == LINEAR) .and. (m%paramType == LOGE)) then
-	    ! convert to cell
-	    m%cellCond%v = exp(m%cellCond%v)
-	    m%AirCond=exp(m%AirCond)
+	    if(paramType == LOGE) then
+	        m%cellCond%v = log(m%cellCond%v)
+	        m%AirCond=log(m%AirCond)
+	    else if(paramType == LOG_10) then
+            m%cellCond%v = log10(m%cellCond%v)
+            m%AirCond=log10(m%AirCond)
+	    endif
+	 elseif(paramType == LINEAR) then
+	    ! convert from log to linear
+	    if(m%paramType == LOGE) then
+	        m%cellCond%v = exp(m%cellCond%v)
+	        m%AirCond=exp(m%AirCond)
+	    else if(m%paramType == LOG_10) then
+            m%cellCond%v = exp(m%cellCond%v * log(10.))
+            m%AirCond=exp(m%AirCond * log(10.))
+        endif
+     elseif ((m%paramType == LOGE) .and. (paramType == LOG_10)) then
+        ! convert from natural log to log10
+        m%cellCond%v = m%cellCond%v / log(10.)
+        m%AirCond=m%AirCond / log(10.)
+     elseif ((m%paramType == LOG_10) .and. (paramType == LOGE)) then
+        ! convert from log10 to natural log
+        m%cellCond%v = m%cellCond%v * log(10.)
+        m%AirCond=m%AirCond * log(10.)
 	 else
         call errstop('unknown paramType in setType_modelParam')
      endif
@@ -297,6 +320,34 @@ Contains
      zeroValued = m%zeroValued
 
    end function iszero_modelParam
+
+!**********************************************************************
+   subroutine random_modelParam(m,eps)
+
+     !  generated a random model parameter perturbation [0,1) in log
+     !  space; otherwise, exp of that in linear space
+
+     type(modelParam_t), intent(inout)  :: m
+     real(kind=prec), intent(in), optional :: eps
+
+     if (.not. m%allocated) then
+       call errStop('model parameter not allocated in random_modelParam')
+     end if
+
+     if (present(eps)) then
+        call random_rscalar(m%cellCond,eps)
+     else
+        call random_rscalar(m%cellCond)
+     endif
+
+     if(m%paramType == LINEAR) then
+        m%cellCond%v = exp(m%cellCond%v)
+     endif
+
+     m%updated = .true.
+     m%zeroValued = .false.
+
+   end subroutine random_modelParam
 
 !**********************************************************************
 

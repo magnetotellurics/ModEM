@@ -40,6 +40,8 @@ module dataTypes
 
      ! for 3D MT data types will initially be used only to distinguish
      ! between local transfer function types (later maybe add interstation TFs)
+     ! this is excessive in the current implementation since iDt always maps to
+     ! an integer index in the dataType dictionary... but I'll keep it for now [AK]
      integer		   :: tfType
 
      ! the units of the data type. If a value has different units, it's a new data type.
@@ -50,14 +52,7 @@ module dataTypes
 
      ! the (real or complex) data type components in a fixed order as given;
      ! the file can have a different component order on input.
-     character(15), pointer, dimension(:) :: id
-
-     ! these lists contain the indices into the data vector for each data type;
-     ! they make it possible to sort the data by receiver for output.
-     ! no data denoted by zero index; dimensions (nTx) and (nTx,nRx).
-     integer, pointer, dimension(:)   :: tx_index
-     integer, pointer, dimension(:)   :: dt_index
-     integer, pointer, dimension(:,:) :: rx_index
+     character(20), pointer, dimension(:) :: id
 
   end type dataType
 
@@ -163,15 +158,6 @@ Contains
 	      if (associated(typeDict(j)%id)) then
 	         deallocate(typeDict(j)%id,STAT=istat)
 	      end if
-          if (associated(typeDict(j)%tx_index)) then
-             deallocate(typeDict(j)%tx_index,STAT=istat)
-          end if
-          if (associated(typeDict(j)%dt_index)) then
-             deallocate(typeDict(j)%dt_index,STAT=istat)
-          end if
-          if (associated(typeDict(j)%rx_index)) then
-             deallocate(typeDict(j)%rx_index,STAT=istat)
-          end if
 	   end do
 
        deallocate(typeDict,STAT=istat)
@@ -268,29 +254,6 @@ Contains
 
   end function ImpType
 
-!**********************************************************************
-! Sorts out the data type header
-
-  function ImpHeader(dataType) result (header)
-
-    integer, intent(in)         :: dataType
-    character(200)              :: header
-
-    select case (dataType)
-
-       case(Full_Impedance,Off_Diagonal_Impedance,Full_Vertical_Components)
-          header = '# Period(s) Code GG_Lat GG_Lon X(m) Y(m) Z(m) Component Real Imag Error'
-
-       case(Full_Interstation_TF)
-          header = '# Period(s) Code GG_Lat GG_Lon X(m) Y(m) Z(m) Ref_Code Ref_Lat '// &
-                   'Ref_Lon Ref_X(m) Ref_Y(m) Ref_Z(m) Component Real Imag Error'
-
-       case(Off_Diagonal_Rho_Phase,Phase_Tensor)
-          header = '# Period(s) Code GG_Lat GG_Lon X(m) Y(m) Z(m) Component Value Error'
-
-    end select
-
-  end function ImpHeader
 
 !**********************************************************************
 ! Figures out the component index from its name for any data type
@@ -310,7 +273,7 @@ Contains
     icomp = 0
 
     do i = 1,ncomp
-        if (index(typeDict(dataType)%id(i),trim(compid))>0) then
+        if (index(trim(typeDict(dataType)%id(i)),trim(compid))>0) then
             icomp = i
             exit
         end if

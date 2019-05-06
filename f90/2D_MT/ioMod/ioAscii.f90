@@ -25,7 +25,8 @@ module ioAscii
    private	::  read_cvector,write_cvector, &
 		read_grid, write_grid
 
-   public   :: write_Z, read_Z, write_solnVectorMTX
+   public   :: write_Z, read_Z
+   public   :: write_solnVectorMTX, read_solnVectorMTX
 
 
    Contains
@@ -159,66 +160,238 @@ module ioAscii
       end subroutine write_cvector
 
      !******************************************************************
-      subroutine write_solnVectorMTX(fid,cfile,eAll)
+      subroutine write_solnVectorMTX(eAll,cfile)
 
-      !  open cfile on unit fid, writes out object of
+      !  open cfile on unit ioE, writes out object of
       !   type cvector in standard format (readable by matlab
       !   routine readcvector.m), closes file
       !  NOT coded at present to specifically write out TE/TM
       !    solutions, periods, etc. (can get this infor from
       !    eAll%solns(j)%tx, but only with access to TXdict.
 
-      integer, intent(in)		:: fid
       character*80, intent(in)		:: cfile
       type(solnVectorMTX_t), intent(in)		:: eAll
 
       integer		:: j
 
-      open(unit=fid, file=cfile, form='unformatted',status='unknown')
+      open(unit=ioE, file=cfile, form='unformatted',status='unknown')
 
-      write(fid) eAll%nTx
+      write(ioE) eAll%nTx
       do j = 1,eAll%nTx
-         write(fid) eAll%solns(j)%vec%gridType
-         write(fid) eAll%solns(j)%vec%N1,eAll%solns(j)%vec%N2
-         write(fid) eAll%solns(j)%vec%v
+         write(ioE) eAll%solns(j)%vec%gridType
+         write(ioE) eAll%solns(j)%vec%N1,eAll%solns(j)%vec%N2
+         write(ioE) eAll%solns(j)%vec%v
       enddo
-      close(fid)
+      close(ioE)
       return
       end subroutine write_solnVectorMTX
 
      !******************************************************************
-      subroutine read_solnVectorMTX(fid,grid,eAll,cfile)
+      subroutine read_solnVectorMTX(grid,eAll,cfile)
 
-      !  open cfile on unit fid, writes out object of
+      !  open cfile on unit ioE, writes out object of
       !   type cvector in standard format (readable by matlab
       !   routine readcvector.m), closes file
       !  NOT coded at present to specifically write out TE/TM
       !    solutions, periods, etc. (can get this infor from
       !    eAll%solns(j)%tx, but only with access to TXdict.
 
-      integer, intent(in)       :: fid
       character*80, intent(in)      :: cfile
       type(grid_t), intent(in)      :: grid
       type(solnVectorMTX_t), intent(inout)     :: eAll
 
       integer       :: nTx,j
 
-      open(unit=fid, file=cfile, form='unformatted',status='unknown')
+      open(unit=ioE, file=cfile, form='unformatted',status='unknown')
       if(eAll%allocated) then
         call deall_solnVectorMTX(eAll)
       endif
-      read(fid) nTx
+      read(ioE) nTx
       call create_solnVectorMTX(nTx,eAll)
       eAll%nTx = nTx
       do j = 1,eAll%nTx
          call create_solnVector(grid,j,eAll%solns(j))
-         read(fid) eAll%solns(j)%vec%gridType
-         read(fid) eAll%solns(j)%vec%N1,eAll%solns(j)%vec%N2
-         read(fid) eAll%solns(j)%vec%v
+         read(ioE) eAll%solns(j)%vec%gridType
+         read(ioE) eAll%solns(j)%vec%N1,eAll%solns(j)%vec%N2
+         read(ioE) eAll%solns(j)%vec%v
       enddo
-      close(fid)
+      close(ioE)
       return
       end subroutine read_solnVectorMTX
+
+      !******************************************************************
+      subroutine read_rhsVectorMTX(grid,bAll,cfile,format)
+
+          ! reads an array of solution vectors for all transmitters & subgrids
+          ! currently uses the old binary format; will switch to NetCDF when
+          ! time allows
+          ! will allocate the grid from a full format file. for sparse files,
+          ! this will only work if the grid is preallocated and compatible
+
+          character(*), intent(in)                    :: cfile
+          type(rhsVectorMTX_t), intent(inout)         :: bAll
+          type(grid_t), intent(inout)                 :: grid
+          character(*), optional, intent(in)          :: format
+
+          !   local variables
+          integer           :: j,k,jj,kk,nMode = 2, ios,istat,ig,cdot,filePer, nPol
+          integer           :: iTx,nTx
+          character (len=3)         :: igchar
+          character (len=20)        :: version = '',source_type,tx_type
+          character (len=2)         :: tmp,mode
+          character (len=30)        :: str
+          character (len=200)       :: fn_input
+          logical                   :: sparse
+          real (kind=prec)   :: omega, period
+
+          sparse = .true.
+
+          if (present(format)) then
+            if (trim(format) .eq. 'full') then
+                sparse = .false.
+            end if
+          end if
+
+          if (.not. sparse) then
+
+              fn_input = trim(cfile)
+
+              write(*,*) 'Reading RHS E-fields from file: ',trim(fn_input)
+              call setup_grid(grid)
+
+              read(ioE) nTx
+              call create_rhsVectorMTX(nTx,bAll)
+              do iTx=1,nTx
+                  bAll%combs(iTx)%nonzero_BC = .false.
+                  bAll%combs(iTx)%nonzero_Source = .true.
+                  call create_rhsVector(grid,iTx,bAll%combs(iTx))
+              end do
+
+              do j = 1,bAll%nTx
+                  read(ioE) bAll%combs(j)%source%gridType
+                  read(ioE) bAll%combs(j)%source%N1,bAll%combs(j)%source%N2
+                  read(ioE) bAll%combs(j)%source%v
+              enddo
+              close(ioE)
+
+
+          else
+
+              open (unit=ioE,file=cfile,STATUS='unknown', form ='formatted', iostat=ios)
+
+              if( ios/=0) then
+                  write(0,*) 'Error opening sparse vector output file in read_rhsVectorMTX: ', cfile
+              else
+                  read(ioE,'(a30,i5)',iostat=istat) str,nTx
+                  call create_rhsVectorMTX(nTx,bAll)
+                  do iTx=1,nTx
+                      bAll%combs(iTx)%nonzero_BC = .true.
+                      bAll%combs(iTx)%nonzero_Source = .false.
+                      call create_rhsVector(grid,iTx,bAll%combs(iTx))
+                  end do
+
+
+                  do j = 1,bAll%nTx
+
+                          ! now that everything is allocated, set them both to false
+                          ! because one of them could be missing from file...
+                          bAll%combs(j)%nonzero_BC = .false.
+                          bAll%combs(j)%nonzero_Source = .false.
+
+                          read(ioE,'(a30,i5,es14.6,a2,a2)',iostat=istat) str, jj, period, tmp, mode
+                          write(*,*) str,jj,period,mode
+                          if (abs((period - txDict(bAll%combs(j)%tx)%period)/period) > TOL6) then
+                              write(0,*) 'Warning: periods don''t match on RHS E-field input ',j
+                              write(0,*) period, txDict(bAll%combs(j)%tx)%period
+                          end if
+
+                          read(ioE,*) bAll%combs(j)%bc
+                          bAll%combs(j)%nonzero_BC = .true.
+                          write(*,'(a34,i5,a6,a20)') 'Completed reading BC for period #',jj,' mode ',mode
+
+                  enddo
+                  close(ioE)
+              end if
+
+          end if
+
+      end subroutine read_rhsVectorMTX
+
+      !******************************************************************
+      subroutine write_rhsVectorMTX(bAll,cfile,format)
+
+          !  open cfile on unit fid, writes out object of
+          !   type cvector in standard format (readable by matlab
+          !   routine readcvector.m), closes file
+          !  NOT coded at present to specifically write out TE/TM
+          !    solutions, periods, etc. (can get this infor from
+          !    eAll%solns(j)%tx, but only with access to TXdict.
+
+          character(*), intent(in)                    :: cfile
+          type(rhsVectorMTX_t), intent(in)            :: bAll
+          character(*), intent(in), optional          :: format
+
+          !   local variables
+          type (cvector)    :: rhsFull
+          type (sparsevecc) :: rhsSparse
+          integer           :: j,k,nMode = 2, ios,istat,ig,cdot
+          character (len=3)         :: igchar
+          character (len=2)         :: mode
+          character (len=20)        :: version = ''
+          character (len=200)       :: fn_output
+          logical            :: sparse
+          real (kind=prec)   :: omega,period
+
+          sparse = .true.
+
+          if (present(format)) then
+            if (trim(format) .eq. 'full') then
+                sparse = .false.
+            end if
+          end if
+
+          fn_output = trim(cfile)
+
+          if (.not. sparse) then
+
+              open(unit=ioE, file=cfile, form='unformatted',status='unknown')
+
+              write(ioE) bAll%nTx
+              do j = 1,bAll%nTx
+                  if (bAll%combs(j)%nonzero_Source) then
+                    write(ioE) bAll%combs(j)%source%gridType
+                    write(ioE) bAll%combs(j)%source%N1,bAll%combs(j)%source%N2
+                    write(ioE) bAll%combs(j)%source%v
+                  end if
+              enddo
+              close(ioE)
+              return
+
+          else
+
+              open (unit=ioE,file=cfile,STATUS='unknown', form ='formatted', iostat=ios)
+
+              if( ios/=0) then
+                  write(0,*) 'Error opening sparse vector output file in write_rhsVectorMTX: ', cfile
+              else
+                  write(ioE,'(a30,i5)',iostat=istat) 'Number of transmitters      : ',bAll%nTx
+                  do j = 1,bAll%nTx
+                          omega = txDict(bAll%combs(j)%tx)%omega
+                          period = txDict(bAll%combs(j)%tx)%period
+                          mode = txDict(bAll%combs(j)%tx)%mode
+                          if (bAll%combs(j)%nonzero_BC) then
+                            write(ioE,'(a30,i5,es14.6,a2,a2)',iostat=istat) 'iTx, period (secs) and mode : ',j,period,'  ',mode
+                            write(ioE,*) bAll%combs(j)%bc
+                          end if
+                  enddo
+                  close(ioE)
+              end if
+
+          end if
+
+          write(*,*) 'RHS E-fields written to ',trim(fn_output)
+
+      end subroutine write_rhsVectorMTX
 
      !**********************************************************************
       subroutine write_Z(fid,cfile,nTx,periods,modes,nSites,sites,units,allData)
@@ -278,7 +451,7 @@ module ioAscii
 	         nSite = data%nSite
 	         nComp = data%nComp
 	         ! write period, number of sites for this period
-	         write(fid,'(es12.6,a5,i5)') periods(iTx),modes(iTx),nSite
+	         write(fid,'(es13.6,a5,i5)') periods(iTx),modes(iTx),nSite
 	         ! write site locations for this period
 	         allocate(siteTemp(2,nSite))
 	         do k = 1,nSite

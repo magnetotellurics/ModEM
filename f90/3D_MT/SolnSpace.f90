@@ -16,7 +16,7 @@ use transmitters
 implicit none
 
 interface assignment (=)
-   !MODULE PROCEDURE copy_rhsVector - doesn't exist yet
+   MODULE PROCEDURE copy_rhsVector
    MODULE PROCEDURE copy_solnVrhsV
    MODULE PROCEDURE copy_solnVector
    MODULE PROCEDURE copy_solnVectorMTX
@@ -61,8 +61,10 @@ end interface
     !! e.g. active source applications
 	!! NM: to make it possibile to have both MT and CSEM in one eAll solution, the nPol must be general.
 	!! Since nPol is defined from the Tx dictionary, there is NO need to have an abstract nPol.
+	!! AK: added Pol_name for more flexible read/write. 2018-04-27
     integer		          :: nPol  
     integer ,pointer      :: Pol_index(:) 	
+    character(20), pointer  :: Pol_name(:)
     type(cvector), pointer  :: pol(:)
 
     !! tx points to information in the transmitter dictionary about the source
@@ -111,9 +113,12 @@ end interface
      ! merges internal sources and boundary conditions into a single
      ! data structure; this is a compact representation of the right
      !  hand side for the induction equations for ONE mode
+     ! this logic is not obvious, BUT: this can contain both source
+     ! and BC; however, the source either has a sparse or full
+     ! representation, can't have both. So, if nonzero_Source,
+     ! check sparse_Source, otherwise, source is zero.
 
      character*3		:: adj = ''
-     character*2		:: polName ! Ex or Ey
      logical                    :: nonzero_BC     = .false.
      logical                    :: nonzero_Source = .false.
      logical                    :: sparse_Source  = .false.
@@ -130,8 +135,13 @@ end interface
      ! rhs data structure for multiple polarizations, the abstract
      !  full rhs used for the abstract full solnVector
      ! pointer to the grid needed for cleaner routines in this module.
+     ! this logic is not obvious, BUT: this can contain both source
+     ! and BC; however, the source either has a sparse or full
+     ! representation, can't have both. So, if nonzero_Source,
+     ! check sparse_Source, otherwise, source is zero.
 
      integer				:: nPol
+     character(20), pointer	:: Pol_name(:) ! Ex or Ey
      type (RHS_t), pointer	:: b(:)
      logical                    :: nonzero_BC     = .false.
      logical                    :: nonzero_Source = .false.
@@ -179,11 +189,23 @@ contains
 
        e%nPol = txDict(iTx)%nPol
 	   allocate(e%Pol_index(e%nPol), STAT=istat)
+       allocate(e%Pol_name(e%nPol), STAT=istat)
        
        do iPol=1,e%nPol
         e%Pol_index(iPol)=iPol
        end do
        
+       ! set up the mode names based on transmitter type;
+       ! for now, only set up for MT. Used for I/O.
+       if (trim(txDict(iTx)%tx_type) .eq. 'MT') then
+        if (e%nPol == 2) then
+            e%Pol_name(1) = 'Ex'
+            e%Pol_name(2) = 'Ey'
+        else
+         call errStop('problem creating MT modes in create_solnVector')
+        end if
+       end if
+
        allocate(e%pol(e%nPol), STAT=istat)
        do k = 1,e%nPol
           call create_cvector(grid,e%pol(k),EDGE)
@@ -206,6 +228,8 @@ contains
        integer				:: k, istat
 
        if (associated(e%pol)) then
+          deallocate(e%Pol_index, STAT=istat)
+          deallocate(e%Pol_name, STAT=istat)
           do k = 1,e%nPol
              call deall_cvector(e%pol(k))
           enddo
@@ -399,6 +423,50 @@ contains
 
    end subroutine copy_solnVectorMTX
 
+   ! **********************************************************************
+   ! * Creates a random perturbation in the EM soln - used for testing
+   subroutine random_solnVectorMTX(eAll,eps)
+
+        implicit none
+        type (solnVectorMTX_t), intent(inout)            :: eAll
+        real (kind=prec), intent(in), optional           :: eps
+        ! local
+        integer     :: j,k
+
+        if (.not. eAll%allocated) then
+          call errStop('EM solution not allocated in random_solnVectorMTX')
+        elseif (present(eps)) then
+          do j = 1,eAll%nTx
+            call random_solnVector(eAll%solns(j),eps)
+          end do
+        else
+          do j = 1,eAll%nTx
+            call random_solnVector(eAll%solns(j),0.05*ONE)
+          end do
+        end if
+
+   end subroutine random_solnVectorMTX
+
+   !**********************************************************************
+   subroutine getBC_solnVectorMTX(eAll,bAll)
+
+      type(solnVectorMTX_t), intent(in)    :: eAll
+      type(rhsVectorMTX_t), intent(inout)  :: bAll
+
+      !  local variables
+      integer                           :: j,istat
+
+      if (.not. eAll%allocated) then
+          call errStop('EM solution not allocated in getBC_solnVectorMTX')
+      end if
+
+      call create_rhsVectorMTX(eAll%nTx,bAll)
+      do j = 1,eAll%nTx
+          call getBC_solnVector(eAll%solns(j),bAll%combs(j))
+      end do
+
+   end subroutine getBC_solnVectorMTX
+
 !**********************************************************************
 !           Basic sparseVector methods
 !**********************************************************************
@@ -489,6 +557,30 @@ contains
        !endif
 
    end subroutine copy_sparseVector
+
+   ! **********************************************************************
+   ! * Creates a random perturbation in the EM sparse soln - used for testing
+   subroutine random_sparseVector(e,eps)
+
+        implicit none
+        type (sparseVector_t), intent(inout)             :: e
+        real (kind=prec), intent(in), optional           :: eps
+        ! local
+        integer     :: j,k
+
+        if (.not. e%allocated) then
+          call errStop('EM sparse vector not allocated in random_sparseVector')
+        elseif (present(eps)) then
+          do k = 1,e%nPol
+            call random_sparsevecc(e%L(k),eps)
+          end do
+        else
+          do k = 1,e%nPol
+            call random_sparsevecc(e%L(k),0.05*ONE)
+          end do
+        end if
+
+   end subroutine random_sparseVector
 
 !**********************************************************************
 !           combined solnVector/sparseVector methods
@@ -587,8 +679,46 @@ contains
 
      end subroutine deall_RHS
 
-     !**********************************************************************
+     !************************************************************
+     subroutine copy_RHS(bOut,bIn)
 
+       !  3D  version
+       implicit none
+       type (RHS_t), intent(in)   :: bIn
+       type (RHS_t), intent(inout)    :: bOut
+
+       ! local variables
+       integer              :: k
+
+       if (.not. bIn%allocated) then
+         call errStop('input EM RHS not allocated yet in copy_RHS')
+       endif
+
+       bOut%nonzero_Source = bIn%nonzero_Source
+       bOut%sparse_Source = bIn%sparse_Source
+       bOut%nonzero_BC = bIn%nonzero_BC
+       call create_RHS(bIn%grid,bIn%tx,bOut)
+
+       if (bIn%nonzero_BC) then
+          call copy_cboundary(bOut%bc,bIn%bc)
+       endif
+
+       if (bIn%nonzero_Source) then
+          if(bIn%sparse_Source) then
+            call copy_sparsevecc(bOut%sSparse,bIn%sSparse)
+          else
+            call copy_cvector(bOut%s,bIn%s)
+          endif
+       endif
+
+       bOut%adj = bIn%adj
+       bOut%allocated = bIn%allocated
+
+       !if (bIn%temporary) then
+       !   call deall_RHS(bIn)
+       !endif
+
+     end subroutine copy_RHS
 
      !**********************************************************************
      subroutine zero_RHS(b)
@@ -643,6 +773,19 @@ contains
 
        b%nPol = txDict(iTx)%nPol
        allocate(b%b(b%nPol), STAT=istat)
+       allocate(b%Pol_name(b%nPol), STAT=istat)
+
+       ! set up the mode names based on transmitter type;
+       ! for now, only set up for MT. Used for I/O.
+       if (trim(txDict(iTx)%tx_type) .eq. 'MT') then
+        if (b%nPol == 2) then
+            b%Pol_name(1) = 'Ex'
+            b%Pol_name(2) = 'Ey'
+        else
+         call errStop('problem creating MT modes in create_rhsVector')
+        end if
+       end if
+
        do k = 1,b%nPol
           b%b(k)%nonzero_bc = b%nonzero_bc
           b%b(k)%nonzero_source = b%nonzero_source
@@ -651,6 +794,8 @@ contains
        enddo
 
        b%tx = iTx
+       b%grid => grid
+
        b%allocated = .true.
 
      end subroutine create_rhsVector
@@ -666,6 +811,7 @@ contains
           do k = 1,b%nPol
              call deall_RHS(b%b(k))
           enddo
+          deallocate(b%Pol_name, STAT=istat)
           deallocate(b%b, STAT=istat)
        endif
 
@@ -673,36 +819,38 @@ contains
 
      end subroutine deall_rhsVector
 
-!     !************************************************************
-!     ! need copy_RHS for this... too complicated, will write this
-!     ! when it is needed
-!     subroutine copy_rhsVector(bOut,bIn)
-!
-!       !  3D  version
-!       implicit none
-!       type (rhsVector_t), intent(in)	:: bIn
-!       type (rhsVector_t), intent(inout)	:: bOut
-!
-!       ! local variables
-!       integer				:: k
-!
-!       if (.not. bIn%allocated) then
-!         call errStop('input EM RHS not allocated yet in copy_rhsVector')
-!       endif
-!
-!       call create_rhsVector(bIn%grid,bIn%tx,bOut)
-!
-!       do k = 1,bIn%nPol
-!          call copy_RHS(bOut%b(k),bIn%b(k))
-!       enddo
-!
-!       bOut%allocated = bIn%allocated
-!
-!       if (bIn%temporary) then
-!          call deall_rhsVector(bIn)
-!       endif
-!
-!     end subroutine copy_rhsVector
+     !************************************************************
+     ! need copy_RHS for this... done by AK 2018-04-25
+     subroutine copy_rhsVector(bOut,bIn)
+
+       !  3D  version
+       implicit none
+       type (rhsVector_t), intent(in)	:: bIn
+       type (rhsVector_t), intent(inout)	:: bOut
+
+       ! local variables
+       integer				:: k
+
+       if (.not. bIn%allocated) then
+         call errStop('input EM RHS not allocated yet in copy_rhsVector')
+       endif
+
+       bOut%nonzero_Source = bIn%nonzero_Source
+       bOut%sparse_Source = bIn%sparse_Source
+       bOut%nonzero_BC = bIn%nonzero_BC
+       call create_rhsVector(bIn%grid,bIn%tx,bOut)
+
+       do k = 1,bIn%nPol
+          call copy_RHS(bOut%b(k),bIn%b(k))
+       enddo
+
+       bOut%allocated = bIn%allocated
+
+       !if (bIn%temporary) then
+       !   call deall_rhsVector(bIn)
+       !endif
+
+     end subroutine copy_rhsVector
 
      !**********************************************************************
      subroutine zero_rhsVector(b)
@@ -717,34 +865,59 @@ contains
        enddo
      end subroutine zero_rhsVector
 
-  ! **********************************************************************
-  ! * Creates a random perturbation in the EM RHS - used for testing
-  subroutine random_rhsVector(b,eps)
+     ! **********************************************************************
+     ! * Creates a random perturbation in the EM RHS; AK 2018-04-25
+     subroutine random_rhsVector(b,eps)
 
-    implicit none
-    type (rhsVector_t), intent(inout)                :: b
-    real (kind=prec), intent(in), optional           :: eps
-    ! local
-    integer     :: k
+         implicit none
+         type (rhsVector_t), intent(inout)                :: b
+         real (kind=prec), intent(in), optional           :: eps
+         ! local
+         integer     :: k
 
-       do k = 1,b%nPol
-        if (.not. (b%b(k)%allocated .and. b%b(k)%nonzero_source)) then
-          call errStop('EM RHS not allocated in random_rhsVector')
-        elseif (present(eps)) then
-          call random_cvector(b%b(k)%s,eps)
-        else
-          call random_cvector(b%b(k)%s,0.05*ONE)
-        end if
-       enddo
+         ! allow for multiple types of information if needed
+         do k = 1,b%nPol
+             if (.not. b%b(k)%allocated) then
+                 call errStop('EM RHS not allocated in random_rhsVector')
+             else
 
-  end subroutine random_rhsVector
+                 if (b%b(k)%nonzero_Source) then
+                     if (b%b(k)%sparse_Source) then
+                         ! sparse vector nonzero source
+                         if (present(eps)) then
+                             call random_sparsevecc(b%b(k)%sSparse,eps)
+                         else
+                             call random_sparsevecc(b%b(k)%sSparse,0.05*ONE)
+                         end if
+                     else
+                         ! full vector nonzero source
+                         if (present(eps)) then
+                             call random_cvector(b%b(k)%s,eps)
+                         else
+                             call random_cvector(b%b(k)%s,0.05*ONE)
+                         end if
+                     end if
+                 end if
+
+                 ! nonzero boundary conditions
+                 if (b%b(k)%nonzero_BC) then
+                     if (present(eps)) then
+                         call random_cboundary(b%b(k)%bc,eps)
+                     else
+                         call random_cboundary(b%b(k)%bc,0.05*ONE)
+                     end if
+                 end if
+             end if
+         enddo
+
+     end subroutine random_rhsVector
 
      !**********************************************************************
      subroutine copy_solnVrhsV(b,e)
-     !  implements b = e
+     !  implements b = e; copies to a full source vector
 
-       type(rhsVector_t), intent(inout) :: b
-       type(solnVector_t), intent(in)   :: e
+       type(rhsVector_t), intent(inout)     :: b
+       type(solnVector_t), intent(in)       :: e
 
        integer          :: k
 
@@ -752,17 +925,81 @@ contains
          call errStop('input EM soln not allocated yet in copy_solnVrhsV')
        endif
 
+       b%nonzero_Source = .true.
+       b%sparse_Source = .false.
+       b%nonzero_BC = .false.
        call create_rhsVector(e%grid,e%tx,b)
 
        do k = 1,b%nPol
-          b%b(k)%nonzero_source = .true.
-          b%b(k)%s = e%pol(k)
-          b%b(k)%sparse_source = .false.
-          b%b(k)%nonzero_BC = .false.
-          b%b(k)%allocated = .true.
+            b%b(k)%s = e%pol(k)
+            b%b(k)%allocated = .true.
        enddo
+
      end subroutine copy_solnVrhsV
 
+     !**********************************************************************
+     subroutine getBC_solnVector(e,b)
+     !  extracts the BC from e to save in b
+
+       type(rhsVector_t), intent(inout)     :: b
+       type(solnVector_t), intent(in)       :: e
+
+       integer          :: k
+
+       if (.not. e%allocated) then
+         call errStop('input EM soln not allocated yet in getBC_solnVrhsV')
+       endif
+
+       b%nonzero_Source = .false.
+       b%sparse_Source = .false.
+       b%nonzero_BC = .true.
+       call create_rhsVector(e%grid,e%tx,b)
+
+       do k = 1,b%nPol
+            call getBC(e%pol(k),b%b(k)%bc)
+            b%b(k)%allocated = .true.
+       enddo
+
+     end subroutine getBC_solnVector
+
+     !**********************************************************************
+
+     subroutine sparse2full_rhsVector(b)
+
+     !   Converts an rhsVector object from sparse to full representation,
+     !   by consolidating sSparse and bc into a full cvector s
+
+       type (rhsVector_t), intent(inout)             :: b
+
+     !  local variables
+       type(sparsevecc)         :: temp
+       integer              :: k
+
+       do k = 1,b%nPol
+          if (.not. b%b(k)%s%allocated) then
+            call create_cvector(b%b(k)%grid,b%b(k)%s,EDGE)
+          end if
+          if(b%b(k)%nonzero_Source .and. b%b(k)%sparse_Source) then
+             ! add sparse vector to full
+             call add_scvector(C_ONE,b%b(k)%sSparse,b%b(k)%s)
+          end if
+          if(b%b(k)%nonzero_BC) then
+             ! convert BC to sparse vector and add to full
+             call copy_bsparsevecc(b%b(k)%bc,temp)
+             call add_scvector(C_ONE,temp,b%b(k)%s)
+             call deall_sparsevecc(temp)
+          end if
+          b%b(k)%nonzero_Source = .true.
+          b%b(k)%sparse_Source = .false.
+          b%b(k)%nonzero_BC = .false.
+       enddo
+
+       b%nonzero_Source = .true.
+       b%sparse_Source = .false.
+       b%nonzero_BC = .false.
+
+
+     end subroutine sparse2full_rhsVector
 
      !**********************************************************************
 
@@ -784,8 +1021,11 @@ contains
        type(sparsevecc)			:: temp
        integer				:: k
 
+       comb%nonzero_source = .true.
+
        do k = 1,comb%nPol
-          comb%b(k)%nonzero_source = .true.
+          comb%b(k)%nonzero_source = comb%nonzero_source
+          comb%b(k)%sparse_source = comb%sparse_source
           if(comb%b(k)%sparse_Source) then
              ! use sparse vector storage for output
              if(comb%b(k)%sSparse%allocated) then

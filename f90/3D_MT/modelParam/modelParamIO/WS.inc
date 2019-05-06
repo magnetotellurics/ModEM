@@ -39,11 +39,15 @@
 	  ! By default assume 'LINEAR RHO' - Weerachai's linear resistivity format
       if (index(someChar,'LOGE')>0) then
          paramType = 'LOGE'
+      else if (index(someChar,'LOG10')>0) then
+	  	 paramType = 'LOG10'
       else
          paramType = 'LINEAR'
       end if
 
 	  ! No information about the air layers in file. Hardcoded here.
+	  ! For backwards compatibility, keeping this logic for now...
+	  ! but it may be overwritten by forward solver configuration file.
 	  nzAir = 10
 
 	  ! Initialize and read in the grid
@@ -86,9 +90,9 @@
 
       ! Convert from conductivity to resistivity
       call copy_rscalar(ccond,rho)
-      if (index(paramType,trim(LOGE))>0) then
+      if ((index(paramType,'LOGE')>0) .or. (index(paramType,'LOG10')>0)) then
       	ccond%v = - rho%v
-      else if (index(paramType,trim(LINEAR))>0) then
+      else if (index(paramType,'LINEAR')>0) then
        	ccond%v = ONE/rho%v
  	  end if
 
@@ -112,8 +116,11 @@
 	  ! Finally create the model parameter
 	  call create_modelParam(grid,paramType,m,ccond)
 
-	  ! Convert modelParam to logarithmic for computations
-	  paramType = LOGE
+ 	  ! In ModelSpace, save the user paramType for output
+	  userParamType = paramType
+
+	  ! ALWAYS convert modelParam to natural log for computations
+	  paramType = 'LOGE'
 	  call setType_modelParam(m,paramType)
 
 	  ! now done with the rscalars, so deallocate
@@ -138,8 +145,8 @@
       character(80)                        :: paramType
       integer                              :: Nx, Ny, NzEarth, i, j, k
 
-	  ! Convert modelParam to natural log for output
-	  paramType = m%paramType !LOGE
+	  ! Convert modelParam to natural log or log10 for output
+	  paramType = userParamType
 	  call getValue_modelParam(m,paramType,ccond)
 
 	  grid = ccond%grid
@@ -176,9 +183,9 @@
 
       ! Convert conductivity to resistivity
       call copy_rscalar(rho,ccond)
-      if (index(paramType,trim(LOGE))>0) then
+      if ((index(paramType,'LOGE')>0) .or. (index(paramType,'LOG10')>0)) then
       	rho%v = - ccond%v
-      else if (index(paramType,trim(LINEAR))>0) then
+      else if (index(paramType,'LINEAR')>0) then
        	rho%v = ONE/ccond%v
  	  end if
 
