@@ -2,7 +2,7 @@ image: ubuntu:16.04
 
 before_script:
   - apt-get update
-  - apt-get install -y gcc g++ gfortran
+  - apt-get install -y gcc g++ gfortran  ubuntu-make
 
 job1:
   script: "cd f90 && make -f Makefile3d "
