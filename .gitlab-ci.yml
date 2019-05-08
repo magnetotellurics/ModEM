@@ -4,7 +4,7 @@ before_script:
   - apt-get update
   - apt-get install -y gfortran 
   - apt-get install -y libatlas-base-dev 
-  - apt-get install -y libmpich2-dev 
+  - apt-get install -y mpich 
   - apt-get install -y make
 
 job1:
