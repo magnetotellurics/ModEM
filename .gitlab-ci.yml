@@ -3,6 +3,7 @@ image: ubuntu:14.04
 before_script:
   - apt-get update
   - apt-get install -y gcc g++
+  - apt-get install gfortran
 stages:
   - build
   - test
@@ -10,12 +11,12 @@ stages:
 
 cache:
   paths:
-    - node_modules/
+    - f90/
 
 install_dependencies:
   stage: build
   script:
-    - npm install
+    - make
   artifacts:
     paths:
       - node_modules/
