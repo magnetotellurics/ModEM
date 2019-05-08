@@ -6,18 +6,15 @@ before_script:
   - apt-get install -y libatlas-base-dev 
   - apt-get install -y mpich 
   - apt-get install -y make
+  
 stages:
   - build
-  - test
-  
-Compile_the_code:
+    
+Compile_and_test_the_code:
   stage: build
   script:
     - cd f90
     - make -f Makefile3D_MT_GFortran
-  
-Test_the_code:
-  stage: test
-  script:
+    - cd ..
     - cd testing-folder
     - mpirun -n 2 ../f90/Mod3DMT -F pr.ws test_data_LatLongSites.dat test_pred.dat
