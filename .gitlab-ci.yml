@@ -1,8 +1,9 @@
 image: ubuntu:14.04
 
 before_script:
-  - apt-get update
-  - apt-get install -y gcc g++
+  - apt-get install gfortran
+  - apt-get install libatlas-base-dev
+  - apt-get install libmpich2-dev
 stages:
   - build
   - test
