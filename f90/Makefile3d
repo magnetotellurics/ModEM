@@ -45,9 +45,9 @@
 # ------------------Macro-Defs---------------------
 include Makefile.local
 OBJDIR = ./objs/3D_MT/GFortRelease
-F90 = gfortran 
+F90 = mpif90 
 FFLAGS = -O3 -ffree-line-length-none
-MPIFLAGS = -x f95-cpp-input
+MPIFLAGS = -x f95-cpp-input -DMPI
 MODULE = --sysroot=$(OBJDIR)
 LIBS_PATH = -L/usr/lib64
 LIBS = -llapack -lblas
