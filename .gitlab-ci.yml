@@ -9,6 +9,7 @@ before_script:
   
 stages:
   - build
+  - test
     
 Compile_and_test_the_code:
   stage: build
