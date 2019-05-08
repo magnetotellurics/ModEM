@@ -6,15 +6,21 @@ before_script:
   - apt-get install libmpich2-dev
 stages:
   - build
+  - test
+  - test2
 
 cache:
   paths:
-    - f90/
+    - node_modules/
 
 install_dependencies:
   stage: build
   script:
-    - make
+    - npm install
   artifacts:
     paths:
       - node_modules/
+
+test_with_lab:
+  stage: test
+  script: npm test
