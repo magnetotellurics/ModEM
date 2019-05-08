@@ -5,4 +5,6 @@ before_script:
   - apt-get install -y gcc g++ gfortran libatlas-base-dev make
 
 job1:
-  script: "cd f90 && make -f Makefile3d "
+  script:
+    - cd f90
+    - make -f Makefile3d
