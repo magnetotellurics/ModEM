@@ -10,8 +10,9 @@ stages:
   - build
   - test
   
-Compile_the_ode:
+Compile_the_code:
   stage: build
+  script:
     - cd f90
     - make -f Makefile3D_MT_GFortran
   
