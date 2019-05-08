@@ -2,7 +2,10 @@ image: ubuntu:16.04
 
 before_script:
   - apt-get update
-  - apt-get install -y gcc g++ gfortran libatlas-base-dev make
+  - apt-get install gfortran 
+  - apt-get install libatlas-base-dev 
+  - apt-get install libmpich2-dev 
+  - apt-get install make
 
 job1:
   script:
