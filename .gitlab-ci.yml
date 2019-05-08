@@ -5,8 +5,4 @@ before_script:
   - apt-get install -y gcc g++ gfortran
 
 job1:
-  script: "ls"
-job2:
-  script: "cd f90"  
-job3:
-  script: "make -f Makefile3d" 
+  script: "cd f90 && make -f Makefile3d "
