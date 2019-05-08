@@ -1,22 +1,5 @@
-image: node:latest
+image: ubuntu:14.04
 
-stages:
-  - build
-  - test
-  - test2
-
-cache:
-  paths:
-    - node_modules/
-
-install_dependencies:
-  stage: build
-  script:
-    - npm install
-  artifacts:
-    paths:
-      - node_modules/
-
-test_with_lab:
-  stage: test
-  script: npm test
+before_script:
+  - apt-get update
+  - apt-get install -y gcc g++
