@@ -3,7 +3,6 @@ image: ubuntu:14.04
 before_script:
   - apt-get update
   - apt-get install -y gcc g++
-  
 stages:
   - build
   - test
@@ -11,7 +10,7 @@ stages:
 
 cache:
   paths:
-    - f90/
+    - node_modules/
 
 install_dependencies:
   stage: build
