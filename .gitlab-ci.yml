@@ -6,8 +6,6 @@ before_script:
   - apt-get install gfortran
 stages:
   - build
-  - test
-  - test2
 
 cache:
   paths:
@@ -17,10 +15,3 @@ install_dependencies:
   stage: build
   script:
     - make
-  artifacts:
-    paths:
-      - node_modules/
-
-test_with_lab:
-  stage: test
-  script: npm test
