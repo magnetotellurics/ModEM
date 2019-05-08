@@ -15,8 +15,7 @@ Compile:
   script:
     - cd f90
     - make -f Makefile3D_MT_GFortran
-Test:
-  script:
     - cd ..
     - cd testing-folder
-    - mpirun -n 2 ../f90/Mod3DMT -F pr.ws test_data_LatLongSites.dat test_pred.dat   
+    - mpirun -n 2 ../f90/Mod3DMT -F pr.ws test_data_LatLongSites.dat test_pred.dat
+   
