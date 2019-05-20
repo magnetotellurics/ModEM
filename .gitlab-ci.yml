@@ -17,7 +17,7 @@ build1:
   stage: build
   script:
     - echo "Do your build here"
-    - /home/modem_on/ModEM/Stabel/f90/Mod3DMT
+    - pwd
 
 test1:
   stage: test
