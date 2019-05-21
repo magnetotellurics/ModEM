@@ -46,7 +46,7 @@
 include Makefile.local
 OBJDIR = ./objs/3D_MT/IFortReleaseMPI
 F90 = mpif90 
-FFLAGS =  -O2  -ffree-form -ffree-line-length-300 -m64 -Wno-
+FFLAGS =  -O2  -ffree-form -ffree-line-length-300 -m64 -Wall -Wtabs
 MPIFLAGS = -x f95-cpp-input -DMPI
 MODULE = -dir $(OBJDIR)
 #LIBS = -llapack -lblas
