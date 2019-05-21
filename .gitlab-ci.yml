@@ -19,6 +19,7 @@ build1:
     - echo "Do your build here"
     - cd f90
     - make -f Makefile3D_MT_GFortran
+    - ./Mod3DMT
 
 test1:
   stage: test
