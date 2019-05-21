@@ -17,7 +17,8 @@ build1:
   stage: build
   script:
     - echo "Do your build here"
-    - pwd
+    - cd f90
+    - make -f Makefile3D_MT_GFortran
 
 test1:
   stage: test
