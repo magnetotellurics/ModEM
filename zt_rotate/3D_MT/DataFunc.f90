@@ -29,22 +29,17 @@ module dataFunc
 
   !   Names of these routines must be as here, as these are called by
   !    top-level inversion routines
-  public                        :: dataResp, Lrows, Qrows, RotateZT
+  public                        :: dataResp, Lrows, Qrows
 
 
   !Keep the model responses as complex numbers (Z) which are required in Lrows subroutine.
   complex(kind=prec),save, private	:: Z(6)
 
-  interface dataResp
-      MODULE PROCEDURE dataResp_Binv
-      MODULE PROCEDURE dataResp_Angle
-  end interface
-
 
 Contains
 
 !******************************************************************************
-  subroutine dataResp_Binv(ef,Sigma,iDT,iRX,Resp,Binv)
+  subroutine dataResp(ef,Sigma,iDT,iRX,Resp,Angle,Binv,Eout,Bout)
   ! given electric field solutions (both modes--and note
   !    that the solution knows about the transmitter used),
   ! and indices into data types and receiver dictionaries for one
@@ -58,6 +53,9 @@ Contains
   integer, intent(in)			:: iDT
   integer, intent(in) 			:: iRX
   real(kind=prec), intent(inout)	:: Resp(:)
+
+  ! 2019.03.20, Liu Zhongyin, add Angle
+  real(kind=prec), intent(in)    :: Angle(:)
 
 
 
@@ -77,7 +75,7 @@ Contains
   !  			Z(1) = PhiXX , Z(2) = PhiXY, Z(3) = PhiYX, Z(4) = PhiYY
 
   !  optional argument, useful for linearized impedance
-  complex(kind=prec), intent(out)	:: Binv(2,2)
+  complex(kind=prec), optional, intent(out)	:: Binv(2,2),Eout(2,2),Bout(3,2)
 
   !  local variables
   integer			:: iMode, i,j,xyz,ij, iComp,ncomp,iFunc,nFunc
@@ -127,6 +125,12 @@ Contains
 			      BB(1,iMode) = dotProd_noConj_scvector_f(Lbx,ef%pol(iMode))
 			      BB(2,iMode) = dotProd_noConj_scvector_f(Lby,ef%pol(iMode))
 			 end do
+
+          ! 2019.05.16, Liu Zhongyin, Add Bout
+          if (present(Bout)) then
+               Bout = BB
+          endif
+
 			 !invert horizontal B matrix using Kramer's rule.
 			  det = BB(1,1)*BB(2,2)-BB(1,2)*BB(2,1)
 			  ctemp = BB(1,1)
@@ -135,151 +139,17 @@ Contains
 			  BB(1,2) = -BB(1,2)/det
 			  BB(2,1) = -BB(2,1)/det
 
-		        do j = 1,2
-		           do i = 1,2
-		              ij = 2*(i-1)+j
-		              Z(ij) = EE(i,1)*BB(1,j)+EE(i,2)*BB(2,j)
-		           enddo
-		        enddo
-
-     case(Off_Diagonal_Impedance)
-              x     = rxDict(iRX)%x          !Local site position (x,y,z)
-		     ! First set up interpolation functionals for Ex, Ey
-			  xyz = 1
-			  call EinterpSetUp(ef%grid,x,xyz,Lex)
-			  xyz = 2
-			  call EinterpSetUp(ef%grid,x,xyz,Ley)
-			 ! Then set up interpolation functionals for Bx, By
-			  xyz = 1
-			  call BfromESetUp(ef%grid,omega,x,xyz,Lbx)
-			  xyz = 2
-			  call BfromESetUp(ef%grid,omega,x,xyz,Lby)
-			  ! loop over modes
-			  do iMode = 1,2
-			      ! electric fields
-			      EE(1,iMode) =  dotProd_noConj_scvector_f(Lex,ef%pol(iMode))
-			      EE(2,iMode) =  dotProd_noConj_scvector_f(Ley,ef%pol(iMode))
-			      ! magnetic fields
-			      BB(1,iMode) = dotProd_noConj_scvector_f(Lbx,ef%pol(iMode))
-			      BB(2,iMode) = dotProd_noConj_scvector_f(Lby,ef%pol(iMode))
-			 end do
-			 !invert horizontal B matrix using Kramer's rule.
-			  det = BB(1,1)*BB(2,2)-BB(1,2)*BB(2,1)
-			  ctemp = BB(1,1)
-			  BB(1,1) =  BB(2,2)/det
-			  BB(2,2) =  ctemp/det
-			  BB(1,2) = -BB(1,2)/det
-			  BB(2,1) = -BB(2,1)/det
-
-    			Z(1) = EE(1,1)*BB(1,2)+EE(1,2)*BB(2,2)
-				Z(2) = EE(2,1)*BB(1,1)+EE(2,2)*BB(2,1)
-
-     case(Full_Vertical_Components)
-               x     = rxDict(iRX)%x          !Local site position (x,y,z)
-              !  Vertical field TF
-			 ! First set up interpolation functionals for Bx, By, Bz
-			  xyz = 1
-			  call BfromESetUp(ef%grid,omega,x,xyz,Lbx)
-			  xyz = 2
-			  call BfromESetUp(ef%grid,omega,x,xyz,Lby)
-			  xyz = 3
-     		  call BfromESetUp(ef%grid,omega,x,xyz,Lbz)
-			  ! loop over modes
-			  do iMode = 1,2
-			      ! magnetic fields
-			      BB(1,iMode) = dotProd_noConj_scvector_f(Lbx,ef%pol(iMode))
-			      BB(2,iMode) = dotProd_noConj_scvector_f(Lby,ef%pol(iMode))
-			      BB(3,iMode) = dotProd_noConj_scvector_f(Lbz,ef%pol(iMode))
-			 end do
-			 !invert horizontal B matrix using Kramer's rule.
-			  det = BB(1,1)*BB(2,2)-BB(1,2)*BB(2,1)
-			  ctemp = BB(1,1)
-			  BB(1,1) =  BB(2,2)/det
-			  BB(2,2) =  ctemp/det
-			  BB(1,2) = -BB(1,2)/det
-			  BB(2,1) = -BB(2,1)/det
-
-
-              Z(1) = BB(3,1)*BB(1,1)+BB(3,2)*BB(2,1)
-              Z(2) = BB(3,1)*BB(1,2)+BB(3,2)*BB(2,2)
-
-     case(Full_Interstation_TF)
-              x     = rxDict(iRX)%x          !Local site position (x,y,z)
-              x_ref = rxDict(iRX)%r          !Reference site position (x,y,z)
-  			 ! First set up interpolation functionals for Bx, By at local site
-			  xyz = 1
-			  call BfromESetUp(ef%grid,omega,x,xyz,Lbx)
-			  xyz = 2
-			  call BfromESetUp(ef%grid,omega,x,xyz,Lby)
-		     !Then set up interpolation functionals for Bx, By at the referance site
-			  xyz = 1
-			  call BfromESetUp(ef%grid,omega,x_ref,xyz,Lrx)
-			  xyz = 2
-			  call BfromESetUp(ef%grid,omega,x_ref,xyz,Lry)
-			    do iMode = 1,2
-			      ! magnetic fields at local station
-			      BB(1,iMode) = dotProd_noConj_scvector_f(Lbx,ef%pol(iMode))
-			      BB(2,iMode) = dotProd_noConj_scvector_f(Lby,ef%pol(iMode))
-			      ! magnetic fields, at the REFERANCE station
-			      RR(1,iMode) = dotProd_noConj_scvector_f(Lrx,ef%pol(iMode))
-			      RR(2,iMode) = dotProd_noConj_scvector_f(Lry,ef%pol(iMode))
-			    end do
-			  ! Compute the inverse of RR using Kramer's rule
-			  det = RR(1,1)*RR(2,2)-RR(1,2)*RR(2,1)
-			  ctemp = RR(1,1)
-			  RR(1,1) =  RR(2,2)/det
-			  RR(2,2) =  ctemp/det
-			  RR(1,2) = -RR(1,2)/det
-			  RR(2,1) = -RR(2,1)/det
-			  ! Z = BB * RR^-1
 			         do j = 1,2
 			           do i = 1,2
 			              ij = 2*(i-1)+j
-			              Z(ij) = BB(i,1)*RR(1,j)+BB(i,2)*RR(2,j)
+		              Z(ij) = EE(i,1)*BB(1,j)+EE(i,2)*BB(2,j)
 			           enddo
 			        enddo
-					  Z(1)= Z(1)-ONE
-                      Z(4)= Z(4)-ONE
 
-    	   case(Off_Diagonal_Rho_Phase)
-                x     = rxDict(iRX)%x          !Local site position (x,y,z)
-		     ! First set up interpolation functionals for Ex, Ey
-			  xyz = 1
-			  call EinterpSetUp(ef%grid,x,xyz,Lex)
-			  xyz = 2
-			  call EinterpSetUp(ef%grid,x,xyz,Ley)
-			 ! Then set up interpolation functionals for Bx, By
-			  xyz = 1
-			  call BfromESetUp(ef%grid,omega,x,xyz,Lbx)
-			  xyz = 2
-			  call BfromESetUp(ef%grid,omega,x,xyz,Lby)
-			  ! loop over modes
-			  do iMode = 1,2
-			      ! electric fields
-			      EE(1,iMode) =  dotProd_noConj_scvector_f(Lex,ef%pol(iMode))
-			      EE(2,iMode) =  dotProd_noConj_scvector_f(Ley,ef%pol(iMode))
-			      ! magnetic fields
-			      BB(1,iMode) = dotProd_noConj_scvector_f(Lbx,ef%pol(iMode))
-			      BB(2,iMode) = dotProd_noConj_scvector_f(Lby,ef%pol(iMode))
-			 end do
-			 !invert horizontal B matrix using Kramer's rule.
-			  det = BB(1,1)*BB(2,2)-BB(1,2)*BB(2,1)
-			  ctemp = BB(1,1)
-			  BB(1,1) =  BB(2,2)/det
-			  BB(2,2) =  ctemp/det
-			  BB(1,2) = -BB(1,2)/det
-			  BB(2,1) = -BB(2,1)/det
+         ! 2019.03.20 Liu Zhongyin, Add rotateZ
+          call rotateZ(Z,iDT,Angle(1))  
 
-		       tempZ(1) = EE(1,1)*BB(1,2)+EE(1,2)*BB(2,2)
-		       tempZ(2) = EE(2,1)*BB(1,1)+EE(2,2)*BB(2,1)
-
-			   Z(1)  = log10(abs(tempZ(1))**2*MU_0/omega)
-		       Z(2)  = atan2(ISIGN*dimag(tempZ(1)),real(tempZ(1)))
-		       Z(3)  = log10(abs(tempZ(2))**2*MU_0/omega)
-		       Z(4)  = atan2(ISIGN*dimag(tempZ(2)),real(tempZ(2)))
-
-  		   case(Phase_Tensor)
-	         ! First calculate full impedance tensor
+     case(Off_Diagonal_Impedance)
                x     = rxDict(iRX)%x         !Local site position (x,y,z)
 		     ! First set up interpolation functionals for Ex, Ey
 			  xyz = 1
@@ -300,146 +170,12 @@ Contains
 			      BB(1,iMode) = dotProd_noConj_scvector_f(Lbx,ef%pol(iMode))
 			      BB(2,iMode) = dotProd_noConj_scvector_f(Lby,ef%pol(iMode))
 			 end do
-			 !invert horizontal B matrix using Kramer's rule.
-			  det = BB(1,1)*BB(2,2)-BB(1,2)*BB(2,1)
-			  ctemp = BB(1,1)
-			  BB(1,1) =  BB(2,2)/det
-			  BB(2,2) =  ctemp/det
-			  BB(1,2) = -BB(1,2)/det
-			  BB(2,1) = -BB(2,1)/det
-
-		        do j = 1,2
-		           do i = 1,2
-		              ij = 2*(i-1)+j
-		              tempZ(ij) = EE(i,1)*BB(1,j)+EE(i,2)*BB(2,j)
-		           enddo
-		        enddo
-
-				detX = dreal(tempZ(1))*dreal(tempZ(4))-dreal(tempZ(2))*dreal(tempZ(3))
-
-			Z(1) = ISIGN*(dreal(tempZ(4))*dimag(tempZ(1))-dreal(tempZ(2))*dimag(tempZ(3)))/detX
-			Z(2) = ISIGN*(dreal(tempZ(4))*dimag(tempZ(2))-dreal(tempZ(2))*dimag(tempZ(4)))/detX
-			Z(3) = ISIGN*(dreal(tempZ(1))*dimag(tempZ(3))-dreal(tempZ(3))*dimag(tempZ(1)))/detX
-			Z(4) = ISIGN*(dreal(tempZ(1))*dimag(tempZ(4))-dreal(tempZ(3))*dimag(tempZ(2)))/detX
- end select
-
-  !  copy responses in Z (possibly complex) into real output vector Resp
-  !  Loop over components
-  iComp = 0
-  do iFunc  = 1, nFunc
-	    if(typeDict(iDT)%isComplex) then
-	       iComp = iComp + 1
-	       Resp(iComp) = real(Z(iFunc))
-	       iComp = iComp + 1
-	       Resp(iComp) = dimag(Z(iFunc))
-	    else
-	       iComp = iComp + 1
-	       Resp(iComp) = real(Z(iFunc))
-	    endif
-	enddo
-
-  !if(present(Binv)) then
-      if(typeDict(iDT)%tfType .eq. Full_Interstation_TF) then
-         Binv = RR(1:2,:)
-      else
-         Binv = BB(1:2,:)
-      end if
-  !endif
-
-  ! clean up
-  call deall_sparsevecc(Lex)
-  call deall_sparsevecc(Ley)
-  call deall_sparsevecc(Lbx)
-  call deall_sparsevecc(Lby)
-  call deall_sparsevecc(Lbz)
-  call deall_sparsevecc(Lrx)
-  call deall_sparsevecc(Lry)
-  !deallocate(Z)
-
-  end subroutine dataResp_Binv
-
-!******************************************************************************
-  subroutine dataResp_Angle(ef,Sigma,iDT,iRX,Resp,Angle)
-   ! given electric field solutions (both modes--and note
-   !    that the solution knows about the transmitter used),
-   ! and indices into data types and receiver dictionaries for one
-   ! data vector compute the complex impedance tensor.
-   ! Binv is optional output argument, used needed for linearized
-   ! impedance calculation in this module (not used by higher levels)
  
-   implicit none
-   type (solnVector_t), intent(in)		:: ef
-   type (modelParam_t), intent(in) :: Sigma ! used to compute ef
-   integer, intent(in)			:: iDT
-   integer, intent(in) 			:: iRX
-   real(kind=prec), intent(inout)	:: Resp(:),Angle(:)
- 
- 
- 
- 
-   ! Definition of the impedance elements:
-   !   iDT=Full_Impedance
-   ! 			Z(1) = Zxx; Z(2) = Zxy; Z(3) = Zyx; Z(4) = Zyy
-   !   iDT=Off_Diagonal_Impedance
-   !  			Z(1) = Zxy, Z(2) = Zyx
-   !   iDT=Full_Vertical_Components
-   !  			Z(1) = Tx, Z(2) = Ty
-   !   iDT=Full_Interstation_TF
-   ! 		 	Z(1) = Mxx; Z(2) = Mxy; Z(3) = Myx; Z(4) = Myy
-   !   iDT=Off_Diagonal_Rho_Phase
-   !  			Z(1) = log(Rhoxy) , Z(2) = Phixy, Z(3) = log(Rhoyx), Z(4) = Phiyx
-   !   iDT=Phase_Tensor
-   !  			Z(1) = PhiXX , Z(2) = PhiXY, Z(3) = PhiYX, Z(4) = PhiYY
- 
- 
-   !  local variables
-   integer			:: iMode, i,j,xyz,ij, iComp,ncomp,iFunc,nFunc
-   real(kind=prec)	:: omega,x(3),x_ref(3),detX
-   complex(kind=prec)    :: tempZ(4)
-   complex(kind=prec)	:: BB(3,2),EE(2,2),RR(2,2)
-   complex(kind=prec)	:: det,i_omega,ctemp
-   type(sparsevecC)		:: Lex,Ley,Lbx,Lby,Lbz,Lrx,Lry
-   logical			:: ComputeHz,ComputeE
- 
-   !  probably should dependence on omega into BinterpSetup, as in 2D!
-   omega = txDict(ef%tx)%omega
- 
-   ncomp = typeDict(iDT)%ncomp
-   if(typeDict(iDT)%isComplex) then
-      !  data are complex; one sensitivity calculation can be
-      !   used for both real and imaginary parts
-      if(mod(ncomp,2).ne.0) then
-         call errStop('for complex data # of components must be even in dataResp')
-      endif
-      nFunc = ncomp/2
-   else
-      !  data are treated as real
-      nFunc = ncomp
+          ! 2019.05.16, Liu Zhongyin, Add Bout
+          if (present(Bout)) then
+            Bout = BB
    endif
-   !allocate(Z(nFunc))
  
-  selectcase (iDT)
-      case(Full_Impedance)
-                x     = rxDict(iRX)%x         !Local site position (x,y,z)
-            ! First set up interpolation functionals for Ex, Ey
-            xyz = 1
-            call EinterpSetUp(ef%grid,x,xyz,Lex)
-            xyz = 2
-            call EinterpSetUp(ef%grid,x,xyz,Ley)
-           ! Then set up interpolation functionals for Bx, By
-            xyz = 1
-            call BfromESetUp(ef%grid,omega,x,xyz,Lbx)
-            xyz = 2
-            call BfromESetUp(ef%grid,omega,x,xyz,Lby)
-            ! loop over modes
-            do iMode = 1,2
-                ! electric fields
-                EE(1,iMode) =  dotProd_noConj_scvector_f(Lex,ef%pol(iMode))
-                EE(2,iMode) =  dotProd_noConj_scvector_f(Ley,ef%pol(iMode))
-                ! magnetic fields
-                BB(1,iMode) = dotProd_noConj_scvector_f(Lbx,ef%pol(iMode))
-                BB(2,iMode) = dotProd_noConj_scvector_f(Lby,ef%pol(iMode))
-           end do
            !invert horizontal B matrix using Kramer's rule.
             det = BB(1,1)*BB(2,2)-BB(1,2)*BB(2,1)
             ctemp = BB(1,1)
@@ -448,47 +184,15 @@ Contains
             BB(1,2) = -BB(1,2)/det
             BB(2,1) = -BB(2,1)/det
  
+    			!Z(1) = EE(1,1)*BB(1,2)+EE(1,2)*BB(2,2)
+            !Z(2) = EE(2,1)*BB(1,1)+EE(2,2)*BB(2,1)
+
                do j = 1,2
                   do i = 1,2
                      ij = 2*(i-1)+j
                      Z(ij) = EE(i,1)*BB(1,j)+EE(i,2)*BB(2,j)
                   enddo
                enddo
- 
-             ! 2019.03.20 Liu Zhongyin, Add rotateZ
-             call rotateZ(Z,iDT,Angle(1))
- 
-      case(Off_Diagonal_Impedance)
-               x     = rxDict(iRX)%x          !Local site position (x,y,z)
-            ! First set up interpolation functionals for Ex, Ey
-            xyz = 1
-            call EinterpSetUp(ef%grid,x,xyz,Lex)
-            xyz = 2
-            call EinterpSetUp(ef%grid,x,xyz,Ley)
-           ! Then set up interpolation functionals for Bx, By
-            xyz = 1
-            call BfromESetUp(ef%grid,omega,x,xyz,Lbx)
-            xyz = 2
-            call BfromESetUp(ef%grid,omega,x,xyz,Lby)
-            ! loop over modes
-            do iMode = 1,2
-                ! electric fields
-                EE(1,iMode) =  dotProd_noConj_scvector_f(Lex,ef%pol(iMode))
-                EE(2,iMode) =  dotProd_noConj_scvector_f(Ley,ef%pol(iMode))
-                ! magnetic fields
-                BB(1,iMode) = dotProd_noConj_scvector_f(Lbx,ef%pol(iMode))
-                BB(2,iMode) = dotProd_noConj_scvector_f(Lby,ef%pol(iMode))
-           end do
-           !invert horizontal B matrix using Kramer's rule.
-            det = BB(1,1)*BB(2,2)-BB(1,2)*BB(2,1)
-            ctemp = BB(1,1)
-            BB(1,1) =  BB(2,2)/det
-            BB(2,2) =  ctemp/det
-            BB(1,2) = -BB(1,2)/det
-            BB(2,1) = -BB(2,1)/det
- 
-              Z(1) = EE(1,1)*BB(1,2)+EE(1,2)*BB(2,2)
-             Z(2) = EE(2,1)*BB(1,1)+EE(2,2)*BB(2,1)
  
              ! 2019.03.20 Liu Zhongyin, Add rotateZ
              call rotateZ(Z,iDT,Angle(1))
@@ -510,6 +214,12 @@ Contains
                 BB(2,iMode) = dotProd_noConj_scvector_f(Lby,ef%pol(iMode))
                 BB(3,iMode) = dotProd_noConj_scvector_f(Lbz,ef%pol(iMode))
            end do
+          
+          ! 2019.05.16, Liu Zhongyin, Add Bout
+          if (present(Bout)) then
+            Bout = BB
+          endif
+
            !invert horizontal B matrix using Kramer's rule.
             det = BB(1,1)*BB(2,2)-BB(1,2)*BB(2,1)
             ctemp = BB(1,1)
@@ -546,6 +256,12 @@ Contains
                 RR(1,iMode) = dotProd_noConj_scvector_f(Lrx,ef%pol(iMode))
                 RR(2,iMode) = dotProd_noConj_scvector_f(Lry,ef%pol(iMode))
               end do
+             
+          ! 2019.05.16, Liu Zhongyin, Add Bout
+             if (present(Bout)) then
+               Bout(1:2,:) = RR
+            endif
+
             ! Compute the inverse of RR using Kramer's rule
             det = RR(1,1)*RR(2,2)-RR(1,2)*RR(2,1)
             ctemp = RR(1,1)
@@ -584,6 +300,12 @@ Contains
                 BB(1,iMode) = dotProd_noConj_scvector_f(Lbx,ef%pol(iMode))
                 BB(2,iMode) = dotProd_noConj_scvector_f(Lby,ef%pol(iMode))
            end do
+          
+          ! 2019.05.16, Liu Zhongyin, Add Bout
+          if (present(Bout)) then
+            Bout = BB
+         endif
+
            !invert horizontal B matrix using Kramer's rule.
             det = BB(1,1)*BB(2,2)-BB(1,2)*BB(2,1)
             ctemp = BB(1,1)
@@ -592,8 +314,15 @@ Contains
             BB(1,2) = -BB(1,2)/det
             BB(2,1) = -BB(2,1)/det
  
-              tempZ(1) = EE(1,1)*BB(1,2)+EE(1,2)*BB(2,2)
-              tempZ(2) = EE(2,1)*BB(1,1)+EE(2,2)*BB(2,1)
+		       !tempZ(1) = EE(1,1)*BB(1,2)+EE(1,2)*BB(2,2)
+             !tempZ(2) = EE(2,1)*BB(1,1)+EE(2,2)*BB(2,1)
+
+             do j = 1,2
+               do i = 1,2
+                  ij = 2*(i-1)+j
+                  tempZ(ij) = EE(i,1)*BB(1,j)+EE(i,2)*BB(2,j)
+               enddo
+            enddo
  
              ! 2019.03.20 Liu Zhongyin, Add rotateZ
               call rotateZ(tempZ,iDT,Angle(1))
@@ -626,6 +355,12 @@ Contains
                 BB(1,iMode) = dotProd_noConj_scvector_f(Lbx,ef%pol(iMode))
                 BB(2,iMode) = dotProd_noConj_scvector_f(Lby,ef%pol(iMode))
            end do
+          
+          ! 2019.05.16, Liu Zhongyin, Add Bout
+          if (present(Bout)) then
+            Bout = BB
+         endif
+
            !invert horizontal B matrix using Kramer's rule.
             det = BB(1,1)*BB(2,2)-BB(1,2)*BB(2,1)
             ctemp = BB(1,1)
@@ -667,6 +402,19 @@ Contains
         endif
     enddo
  
+  if(present(Binv)) then
+      if(typeDict(iDT)%tfType .eq. Full_Interstation_TF) then
+         Binv = RR(1:2,:)
+      else
+         Binv = BB(1:2,:)
+      end if
+  endif
+
+  ! 2019.05.15, Liu Zhongyin, Add Einv
+  if(present(Eout)) then
+      Eout = EE
+  endif
+
    ! clean up
    call deall_sparsevecc(Lex)
    call deall_sparsevecc(Ley)
@@ -677,10 +425,11 @@ Contains
    call deall_sparsevecc(Lry)
    !deallocate(Z)
  
-   end subroutine dataResp_Angle  
-!
+  end subroutine dataResp
+
 !****************************************************************************
-  subroutine Lrows(e0,Sigma0,iDT,iRX,L)
+  subroutine Lrows(e0,Sigma0,iDT,iRX,L,Angle)
+  !subroutine Lrows(e0,Sigma0,iDT,iRX,L)
   !  given input background electric field solution (both modes; e0),
   !  indices into data type/receiver dictionaries
   !  compute array of sparse complex vectors giving coefficients
@@ -697,6 +446,9 @@ Contains
   !        the 2D program should also be of type sparseVector!
   type(sparseVector_t), intent(inout)		:: L(:)
 
+  ! 2019.05.08, Liu Zhongyin, add para Angle
+  real(kind=prec), intent(in) :: Angle(:)
+
   !  local variables
   complex(kind=prec)	:: Binv(2,2)
   complex (kind=prec)	:: i_omega,c1,c2
@@ -705,6 +457,10 @@ Contains
   integer			:: i,j,k,nComp,IJ(3,6),xyz,n, iComp,predictedComp
   type(sparsevecC)		:: Lex,Ley,Lbx,Lby,Lbz,Lrx,Lry
   logical			:: ComputeHz
+
+  ! 2019.05.15, Liu Zhongyin, Add Eout,Bout
+  complex(kind=prec) :: Eout(2,2),Bout(3,2),c3
+  real(kind=prec) :: cos2a,sin2a,cosa,sina,det,det2
 
 
   omega = txDict(e0%tx)%omega
@@ -737,7 +493,9 @@ Contains
               IJ(3,2*(i-1)+j) = i
            enddo
         enddo
-        Call dataResp(e0,Sigma0,Full_Impedance,iRX,Resp,Binv)
+        ! Call dataResp(e0,Sigma0,Full_Impedance,iRX,Resp,Binv)
+        ! 2019.05.08, Liu Zhongyin, add Angle
+        Call dataResp(e0,Sigma0,Full_Impedance,iRX,Resp,Angle,Binv,Eout,Bout)
      case(Off_Diagonal_Impedance)
         nComp = 2
         ComputeHz = .false.
@@ -747,7 +505,9 @@ Contains
         IJ(2,2) = 1
         IJ(3,1) = 1
         IJ(3,2) = 2
-        Call dataResp(e0,Sigma0,Full_Impedance,iRX,Resp,Binv)
+        ! Call dataResp(e0,Sigma0,Full_Impedance,iRX,Resp,Binv)
+        ! 2019.05.08, Liu Zhongyin, add Angle
+        Call dataResp(e0,Sigma0,Full_Impedance,iRX,Resp,Angle,Binv,Eout,Bout)
       case(Full_Vertical_Components)
         nComp = 2
         ComputeHz = .true.
@@ -757,7 +517,9 @@ Contains
         IJ(2,2) = 2
         IJ(3,1) = 3
         IJ(3,2) = 3
-        Call dataResp(e0,Sigma0,Full_Vertical_Components,iRX,Resp,Binv)
+        ! Call dataResp(e0,Sigma0,Full_Vertical_Components,iRX,Resp,Binv)
+        ! 2019.05.08, Liu Zhongyin, add Angle
+        Call dataResp(e0,Sigma0,Full_Vertical_Components,iRX,Resp,Angle,Binv,Eout,Bout)
      case(Full_Interstation_TF)
         nComp = 4
         ComputeHz = .false.
@@ -768,7 +530,9 @@ Contains
               IJ(3,2*(i-1)+j) = i+3
            enddo
         enddo
-        Call dataResp(e0,Sigma0,Full_Interstation_TF,iRX,Resp,Binv)
+        ! Call dataResp(e0,Sigma0,Full_Interstation_TF,iRX,Resp,Binv)
+        ! 2019.05.08, Liu Zhongyin, add Angle
+        Call dataResp(e0,Sigma0,Full_Interstation_TF,iRX,Resp,Angle,Binv,Eout,Bout)
      case(Off_Diagonal_Rho_Phase)
         ! First calculate Off_Diagonal_Impedance Ls
         ! Rho_Phase actually has 4 (real) components, but nComp here refers to the
@@ -781,7 +545,9 @@ Contains
         IJ(2,2) = 1
         IJ(3,1) = 1
         IJ(3,2) = 2
-        Call dataResp(e0,Sigma0,Full_Impedance,iRX,Resp,Binv)
+        ! Call dataResp(e0,Sigma0,Full_Impedance,iRX,Resp,Binv)
+        ! 2019.05.08, Liu Zhongyin, add Angle
+        Call dataResp(e0,Sigma0,Full_Impedance,iRX,Resp,Angle,Binv,Eout,Bout)
      case(Phase_Tensor)
 	  ! First calculate Full_Impedances Ls
         nComp = 4
@@ -793,7 +559,9 @@ Contains
               IJ(3,2*(i-1)+j) = i
            enddo
         enddo
-        Call dataResp(e0,Sigma0,Full_Impedance,iRX,Resp,Binv)
+        ! Call dataResp(e0,Sigma0,Full_Impedance,iRX,Resp,Binv)
+        ! 2019.05.08, Liu Zhongyin, add Angle
+        Call dataResp(e0,Sigma0,Full_Impedance,iRX,Resp,Angle,Binv,Eout,Bout)
 
      endselect
 
@@ -815,46 +583,520 @@ Contains
      call BfromESetUp(e0%grid,omega,x,xyz,Lbz)
   endif
 
+  cos2a = cos(2*Angle(1)*D2R)
+  sin2a = sin(2*Angle(1)*D2R)
+  cosa  = cos(Angle(1)*D2R)
+  sina  = sin(Angle(1)*D2R)
+  det   = Bout(1,1)*Bout(2,2) - Bout(1,2)*Bout(2,1)
+  det2  = det*det
+  ! 2019.05.16, Liu Zhongyin, Add new methods for rotated impedance and tipper, replace the old one
+select case(iDT)
+case(Full_Impedance,Phase_Tensor)
+   ! zxx
+   ! mode1
+   ! Zxx/Ex1
+   c1 =  Bout(2,2) + cos2a*Bout(2,2) - Bout(1,2)*sin2a
+   c1 =  c1/2./det
+   ! Zxx/Hx1
+   c2 =  (Eout(1,2)*Bout(2,1) - Eout(1,1)*Bout(2,2))*((1+cos2a)*Bout(2,2) - Bout(1,2)*sin2a)
+   c2 =  c2 + Eout(2,1)*Bout(2,2)*((1-cos2a)*Bout(1,2) - Bout(2,2)*sin2a)
+   c2 =  c2 + Eout(2,2)*Bout(2,1)*((cos2a-1)*Bout(1,2) + Bout(2,2)*sin2a)
+   c2 =  c2/2./det2
+   ! Zxx/Hy1
+   c3 =  (Eout(1,2)*Bout(1,1) - Eout(1,1)*Bout(1,2))*((1+cos2a)*Bout(2,2) - Bout(1,2)*sin2a)
+   c3 =  c3 + Eout(2,1)*Bout(1,2)*((1-cos2a)*Bout(1,2) - Bout(2,2)*sin2a)
+   c3 =  c3 + Eout(2,2)*Bout(1,1)*((cos2a-1)*Bout(1,2) + Bout(2,2)*sin2a)
+   c3 = -c3/2./det2
+   Call linComb_sparsevecc(Lex,c1,Lbx,c2,L1)
+   Call linComb_sparsevecc(L1,C_ONE,Lby,c3,L(1)%L(1))
+   ! mode2
+   ! Zxx/Ex2
+   c1 =  Bout(2,1) + cos2a*Bout(2,1) - Bout(1,1)*sin2a
+   c1 = -c1/2./det
+   ! Zxx/Hx2
+   c2 =  Eout(1,2)*Bout(2,1)*((1+cos2a)*Bout(2,1) - Bout(1,1)*sin2a)
+   c2 =  c2 + Eout(2,2)*Bout(2,1)*((cos2a-1)*Bout(1,1) + Bout(2,1)*sin2a)
+   c2 =  c2 - Bout(2,2)*((cos2a-1)*Eout(2,1)*Bout(1,1) + Eout(2,1)*Bout(2,1)*sin2a + Eout(1,1)*((1+cos2a)*Bout(2,1) - Bout(1,1)*sin2a))
+   c2 = -c2/2./det2
+   ! Zxx/Hy2
+   c3 =  (Eout(1,2)*Bout(1,1) - Eout(1,1)*Bout(1,2))*(-(cos2a+1)*Bout(2,1) + Bout(1,1)*sin2a)
+   c3 =  c3 + Eout(2,2)*Bout(1,1)*((1-cos2a)*Bout(1,1) - Bout(2,1)*sin2a)
+   c3 =  c3 + Eout(2,1)*Bout(1,2)*((cos2a-1)*Bout(1,1) + Bout(2,1)*sin2a)
+   c3 = -c3/2./det2
+   Call linComb_sparsevecc(Lex,c1,Lbx,c2,L1)
+   call linComb_sparsevecc(L1,C_ONE,Lby,c3,L(1)%L(2))
+
+   ! zxy
+   ! mode1
+   ! Zxy/Ex1
+   c1 =  Bout(1,2) + cos2a*Bout(1,2) + Bout(2,2)*sin2a
+   c1 = -c1/2./det
+   ! Zxy/Hx1
+   c2 =  (Eout(2,2)*Bout(2,1) - Eout(2,1)*Bout(2,2))*((cos2a-1)*Bout(2,2) - Bout(1,2)*sin2a)
+   c2 =  c2 - Eout(1,2)*Bout(2,1)*((1+cos2a)*Bout(1,2) + Bout(2,2)*sin2a)
+   c2 =  c2 + Eout(1,1)*Bout(2,2)*((1+cos2a)*Bout(1,2) + Bout(2,2)*sin2a)
+   c2 =  c2/2./det2
+   ! Zxy/Hy1
+   c3 =  (Eout(2,2)*Bout(1,1) - Eout(2,1)*Bout(1,2))*((1-cos2a)*Bout(2,2) + Bout(1,2)*sin2a)
+   c3 =  c3 + Eout(1,2)*Bout(1,1)*((1+cos2a)*Bout(1,2) + Bout(2,2)*sin2a)
+   c3 =  c3 - Eout(1,1)*Bout(1,2)*((1+cos2a)*Bout(1,2) + Bout(2,2)*sin2a)
+   c3 =  c3/2./det2
+   Call linComb_sparsevecc(Lex,c1,Lbx,c2,L1)
+   Call linComb_sparsevecc(L1,C_ONE,Lby,c3,L(2)%L(1))
+   ! mode2
+   ! Zxy/Ex2
+   c1 =  Bout(1,1) + cos2a*Bout(1,1) + Bout(2,1)*sin2a
+   c1 =  c1/2./det
+   ! Zxy/Hx2
+   c2 =  Eout(2,2)*Bout(2,1)*((1-cos2a)*Bout(2,1) + Bout(1,1)*sin2a)
+   c2 =  c2 + Eout(1,2)*Bout(2,1)*((1+cos2a)*Bout(1,1) + Bout(2,1)*sin2a)
+   c2 =  c2 - Bout(2,2)*(Eout(2,1)*((1-cos2a)*Bout(2,1) + Bout(1,1)*sin2a) + Eout(1,1)*((1+cos2a)*Bout(1,1) + Bout(2,1)*sin2a))
+   c2 =  c2/2./det2
+   ! Zxy/Hy2
+   c3 =  (Eout(2,2)*Bout(1,1) - Eout(2,1)*Bout(1,2))*((1-cos2a)*Bout(2,1) + Bout(1,1)*sin2a)
+   c3 =  c3 + Eout(1,2)*Bout(1,1)*((1+cos2a)*Bout(1,1) + Bout(2,1)*sin2a)
+   c3 =  c3 - Eout(1,1)*Bout(1,2)*((1+cos2a)*Bout(1,1) + Bout(2,1)*sin2a)
+   c3 = -c3/2./det2
+   Call linComb_sparsevecc(Lex,c1,Lbx,c2,L1)
+   Call linComb_sparsevecc(L1,C_ONE,Lby,c3,L(2)%L(2))
+
+   ! zyx
+   ! mode1
+   ! Zyx/Ey1
+   c1 =  Bout(2,2) + cos2a*Bout(2,2) - Bout(1,2)*sin2a
+   c1 =  c1/2./det
+   ! Zyx/Hx1
+   c2 =  (Eout(2,2)*Bout(2,1) - Eout(2,1)*Bout(2,2))*((1+cos2a)*Bout(2,2) - Bout(1,2)*sin2a)
+   c2 =  c2 + Eout(1,2)*Bout(2,1)*((1-cos2a)*Bout(1,2) - Bout(2,2)*sin2a)
+   c2 =  c2 + Eout(1,1)*Bout(2,2)*((cos2a-1)*Bout(1,2) + Bout(2,2)*sin2a)
+   c2 =  c2/2./det2
+   ! Zyx/Hy1
+   c3 = -(Eout(2,2)*Bout(1,1) - Eout(2,1)*Bout(1,2))*((1+cos2a)*Bout(2,2) - Bout(1,2)*sin2a)
+   c3 =  c3 + Eout(1,1)*Bout(1,2)*((1-cos2a)*Bout(1,2) - Bout(2,2)*sin2a)
+   c3 =  c3 + Eout(1,2)*Bout(1,1)*((cos2a-1)*Bout(1,2) + Bout(2,2)*sin2a) 
+   c3 =  c3/2./det2
+   Call linComb_sparsevecc(Ley,c1,Lbx,c2,L1)
+   Call linComb_sparsevecc(L1,C_ONE,Lby,c3,L(3)%L(1))
+   ! mode2
+   ! Zyx/Ey2
+   c1 =  Bout(2,1) + cos2a*Bout(2,1) - Bout(1,1)*sin2a
+   c1 = -c1/2./det
+   ! Zyx/Hx2
+   c2 = -Eout(2,2)*Bout(2,1)*((1+cos2a)*Bout(2,1) - Bout(1,1)*sin2a) 
+   c2 =  c2 + Eout(2,1)*Bout(2,2)*((1+cos2a)*Bout(2,1) - Bout(1,1)*sin2a)
+   c2 =  c2 + Eout(1,1)*Bout(2,2)*((1-cos2a)*Bout(1,1) - Bout(2,1)*sin2a)
+   c2 =  c2 + Eout(1,2)*Bout(2,1)*((cos2a-1)*Bout(1,1) + Bout(2,1)*sin2a)
+   c2 =  c2/2./det2
+   ! Zyx/Hy2
+   c3 = -(Eout(2,2)*Bout(1,1) - Eout(2,1)*Bout(1,2))*(-(1+cos2a)*Bout(2,1) + Bout(1,1)*sin2a) 
+   c3 =  c3 + Eout(1,2)*Bout(1,1)*((1-cos2a)*Bout(1,1) - Bout(2,1)*sin2a)
+   c3 =  c3 + Eout(1,1)*Bout(1,2)*((cos2a-1)*Bout(1,1) + Bout(2,1)*sin2a)
+   c3 =  c3/2./det2
+   Call linComb_sparsevecc(Ley,c1,Lbx,c2,L1)
+   Call linComb_sparsevecc(L1,C_ONE,Lby,c3,L(3)%L(2))
+
+   ! zyy
+   ! mode1
+   ! Zyy/Ey1
+   c1 =  Bout(1,2) +cos2a*Bout(1,2) + Bout(2,2)*sin2a
+   c1 = -c1/2./det
+   ! Zyy/Hx1
+   c2 =  (Eout(1,2)*Bout(2,1) - Eout(1,1)*Bout(2,2))*((cos2a-1)*Bout(2,2) - Bout(1,2)*sin2a)
+   c2 =  c2 + Eout(2,2)*Bout(2,1)*((1+cos2a)*Bout(1,2) + Bout(2,2)*sin2a)
+   c2 =  c2 - Eout(2,1)*Bout(2,2)*((1+cos2a)*Bout(1,2) + Bout(2,2)*sin2a)
+   c2 = -c2/2./det2
+   ! Zyy/Hy1
+   c3 =  (Eout(1,2)*Bout(1,1) - Eout(1,1)*Bout(1,2))*((1-cos2a)*Bout(2,2) + Bout(1,2)*sin2a)
+   c3 =  c3 - Eout(2,2)*Bout(1,1)*((1+cos2a)*Bout(1,2) + Bout(2,2)*sin2a)
+   c3 =  c3 + Eout(2,1)*Bout(1,2)*((1+cos2a)*Bout(1,2) + Bout(2,2)*sin2a)
+   c3 = -c3/2./det2
+   Call linComb_sparsevecc(Ley,c1,Lbx,c2,L1)
+   Call linComb_sparsevecc(L1,C_ONE,Lby,c3,L(4)%L(1))
+   ! mode2
+   ! Zyy/Ey2
+   c1 =  Bout(1,1) + cos2a*Bout(1,1) + Bout(2,1)*sin2a
+   c1 =  c1/2./det
+   ! Zyy/Hx2
+   c2 =  Eout(1,2)*Bout(2,1)*((cos2a-1)*Bout(2,1) - Bout(1,1)*sin2a)
+   c2 =  c2 + Eout(2,2)*Bout(2,1)*((1+cos2a)*Bout(1,1) + Bout(2,1)*sin2a)
+   c2 =  c2 - Bout(2,2)*((cos2a-1)*Eout(1,1)*Bout(2,1) - Eout(1,1)*Bout(1,1)*sin2a + Eout(2,1)*((1+cos2a)*Bout(1,1) + Bout(2,1)*sin2a))
+   c2 =  c2/2./det2
+   ! Zyy/Hy2
+   c3 =  (Eout(1,2)*Bout(1,1) - Eout(1,1)*Bout(1,2))*((1-cos2a)*Bout(2,1) + Bout(1,1)*sin2a)
+   c3 =  c3 - Eout(2,2)*Bout(1,1)*((1+cos2a)*Bout(1,1) + Bout(2,1)*sin2a)
+   c3 =  c3 + Eout(2,1)*Bout(1,2)*((1+cos2a)*Bout(1,1) + Bout(2,1)*sin2a) 
+   c3 =  c3/2./det2
+   Call linComb_sparsevecc(Ley,c1,Lbx,c2,L1)
+   Call linComb_sparsevecc(L1,C_ONE,Lby,c3,L(4)%L(2))
+
+case(Off_Diagonal_Impedance,Off_Diagonal_Rho_Phase)
+   ! zxy
+   ! mode1
+   ! Zxy/Ex1
+   c1 =  Bout(1,2) + cos2a*Bout(1,2) + Bout(2,2)*sin2a
+   c1 = -c1/2./det
+   ! Zxy/Hx1
+   c2 =  (Eout(2,2)*Bout(2,1) - Eout(2,1)*Bout(2,2))*((cos2a-1)*Bout(2,2) - Bout(1,2)*sin2a)
+   c2 =  c2 - Eout(1,2)*Bout(2,1)*((1+cos2a)*Bout(1,2) + Bout(2,2)*sin2a)
+   c2 =  c2 + Eout(1,1)*Bout(2,2)*((1+cos2a)*Bout(1,2) + Bout(2,2)*sin2a)
+   c2 =  c2/2./det2
+   ! Zxy/Hy1
+   c3 =  (Eout(2,2)*Bout(1,1) - Eout(2,1)*Bout(1,2))*((1-cos2a)*Bout(2,2) + Bout(1,2)*sin2a)
+   c3 =  c3 + Eout(1,2)*Bout(1,1)*((1+cos2a)*Bout(1,2) + Bout(2,2)*sin2a)
+   c3 =  c3 - Eout(1,1)*Bout(1,2)*((1+cos2a)*Bout(1,2) + Bout(2,2)*sin2a)
+   c3 =  c3/2./det2
+   Call linComb_sparsevecc(Lex,c1,Lbx,c2,L1)
+   Call linComb_sparsevecc(L1,C_ONE,Lby,c3,L(1)%L(1))
+   ! mode2
+   ! Zxy/Ex2
+   c1 =  Bout(1,1) + cos2a*Bout(1,1) + Bout(2,1)*sin2a
+   c1 =  c1/2./det
+   ! Zxy/Hx2
+   c2 =  Eout(2,2)*Bout(2,1)*((1-cos2a)*Bout(2,1) + Bout(1,1)*sin2a)
+   c2 =  c2 + Eout(1,2)*Bout(2,1)*((1+cos2a)*Bout(1,1) + Bout(2,1)*sin2a)
+   c2 =  c2 - Bout(2,2)*(Eout(2,1)*((1-cos2a)*Bout(2,1) + Bout(1,1)*sin2a) + Eout(1,1)*((1+cos2a)*Bout(1,1) + Bout(2,1)*sin2a))
+   c2 =  c2/2./det2
+   ! Zxy/Hy2
+   c3 =  (Eout(2,2)*Bout(1,1) - Eout(2,1)*Bout(1,2))*((1-cos2a)*Bout(2,1) + Bout(1,1)*sin2a)
+   c3 =  c3 + Eout(1,2)*Bout(1,1)*((1+cos2a)*Bout(1,1) + Bout(2,1)*sin2a)
+   c3 =  c3 - Eout(1,1)*Bout(1,2)*((1+cos2a)*Bout(1,1) + Bout(2,1)*sin2a)
+   c3 = -c3/2./det2
+   Call linComb_sparsevecc(Lex,c1,Lbx,c2,L1)
+   Call linComb_sparsevecc(L1,C_ONE,Lby,c3,L(1)%L(2))
+
+   ! zyx
+   ! mode1
+   ! Zyx/Ey1
+   c1 =  Bout(2,2) + cos2a*Bout(2,2) - Bout(1,2)*sin2a
+   c1 =  c1/2./det
+   ! Zyx/Hx1
+   c2 =  (Eout(2,2)*Bout(2,1) - Eout(2,1)*Bout(2,2))*((1+cos2a)*Bout(2,2) - Bout(1,2)*sin2a)
+   c2 =  c2 + Eout(1,2)*Bout(2,1)*((1-cos2a)*Bout(1,2) - Bout(2,2)*sin2a)
+   c2 =  c2 + Eout(1,1)*Bout(2,2)*((cos2a-1)*Bout(1,2) + Bout(2,2)*sin2a)
+   c2 =  c2/2./det2
+   ! Zyx/Hy1
+   c3 = -(Eout(2,2)*Bout(1,1) - Eout(2,1)*Bout(1,2))*((1+cos2a)*Bout(2,2) - Bout(1,2)*sin2a)
+   c3 =  c3 + Eout(1,1)*Bout(1,2)*((1-cos2a)*Bout(1,2) - Bout(2,2)*sin2a)
+   c3 =  c3 + Eout(1,2)*Bout(1,1)*((cos2a-1)*Bout(1,2) + Bout(2,2)*sin2a) 
+   c3 =  c3/2./det2
+   Call linComb_sparsevecc(Ley,c1,Lbx,c2,L1)
+   Call linComb_sparsevecc(L1,C_ONE,Lby,c3,L(2)%L(1))
+   ! mode2
+   ! Zyx/Ey2
+   c1 =  Bout(2,1) + cos2a*Bout(2,1) - Bout(1,1)*sin2a
+   c1 = -c1/2./det
+   ! Zyx/Hx2
+   c2 = -Eout(2,2)*Bout(2,1)*((1+cos2a)*Bout(2,1) - Bout(1,1)*sin2a) 
+   c2 =  c2 + Eout(2,1)*Bout(2,2)*((1+cos2a)*Bout(2,1) - Bout(1,1)*sin2a)
+   c2 =  c2 + Eout(1,1)*Bout(2,2)*((1-cos2a)*Bout(1,1) - Bout(2,1)*sin2a)
+   c2 =  c2 + Eout(1,2)*Bout(2,1)*((cos2a-1)*Bout(1,1) + Bout(2,1)*sin2a)
+   c2 =  c2/2./det2
+   ! Zyx/Hy2
+   c3 = -(Eout(2,2)*Bout(1,1) - Eout(2,1)*Bout(1,2))*(-(1+cos2a)*Bout(2,1) + Bout(1,1)*sin2a) 
+   c3 =  c3 + Eout(1,2)*Bout(1,1)*((1-cos2a)*Bout(1,1) - Bout(2,1)*sin2a)
+   c3 =  c3 + Eout(1,1)*Bout(1,2)*((cos2a-1)*Bout(1,1) + Bout(2,1)*sin2a)
+   c3 =  c3/2./det2
+   Call linComb_sparsevecc(Ley,c1,Lbx,c2,L1)
+   Call linComb_sparsevecc(L1,C_ONE,Lby,c3,L(2)%L(2))
+
+case(Full_Vertical_Components)
+   ! tzx
+   ! mode1
+   ! Tzx/Hz1
+   c1 =  cosa*Bout(2,2) - Bout(1,2)*sina
+   c1 =  c1/det
+   ! Tzx/Hx1
+   c2 =  (-Bout(2,2)*Bout(3,1) + Bout(2,1)*Bout(3,2))*(-cosa*Bout(2,2) + Bout(1,2)*sina)
+   c2 =  c2/det2
+   ! Tzx/Hy1
+   c3 =  (Bout(1,2)*Bout(3,1) - Bout(1,1)*Bout(3,2))*(cosa*Bout(2,2) - Bout(1,2)*sina)
+   c3 =  c3/det2
+   Call linComb_sparsevecc(Lbz,c1,Lbx,c2,L1)
+   Call linComb_sparsevecc(L1,C_ONE,Lby,c3,L(1)%L(1))
+   ! mode2
+   ! Tzx/Hz2
+   c1 =  cosa*Bout(2,1) - Bout(1,1)*sina
+   c1 = -c1/det
+   ! Tzx/Hx2
+   c2 =  (Bout(2,2)*Bout(3,1) - Bout(2,1)*Bout(3,2))*(cosa*Bout(2,1) - Bout(1,1)*sina)
+   c2 =  c2/det2
+   ! Tzx/Hy2
+   c3 =  (Bout(1,2)*Bout(3,1) - Bout(1,1)*Bout(3,2))*(-cosa*Bout(2,1) + Bout(1,1)*sina)
+   c3 =  c3/det2
+   Call linComb_sparsevecc(Lbz,c1,Lbx,c2,L1)
+   Call linComb_sparsevecc(L1,C_ONE,Lby,c3,L(1)%L(2))
+
+   ! tzy
+   ! mode1
+   ! Tzy/Hz1
+   c1 =  cosa*Bout(1,2) + Bout(2,2)*sina
+   c1 = -c1/det
+   ! Tzy/Hx1
+   c2 =  (Bout(2,2)*Bout(3,1) - Bout(2,1)*Bout(3,2))*(cosa*Bout(1,2) + Bout(2,2)*sina)
+   c2 =  c2/det2
+   ! Tzy/Hy1
+   c3 =  (Bout(1,2)*Bout(3,1) - Bout(1,1)*Bout(3,2))*(cosa*Bout(1,2) + Bout(2,2)*sina)
+   c3 = -c3/det2
+   Call linComb_sparsevecc(Lbz,c1,Lbx,c2,L1)
+   Call linComb_sparsevecc(L1,C_ONE,Lby,c3,L(2)%L(1))
+   ! mode2
+   ! Tzy/Hz2
+   c1 =  cosa*Bout(1,1) + Bout(2,1)*sina
+   c1 =  c1/det
+   ! Tzy/Hx2
+   c2 =  (-Bout(2,2)*Bout(3,1) + Bout(2,1)*Bout(3,2))*(cosa*Bout(1,1) + Bout(2,1)*sina)
+   c2 =  c2/det2
+   ! Tzy/Hy2
+   c3 =  (Bout(1,2)*Bout(3,1) - Bout(1,1)*Bout(3,2))*(cosa*Bout(1,1) + Bout(2,1)*sina)
+   c3 =  c3/det2
+   Call linComb_sparsevecc(Lbz,c1,Lbx,c2,L1)
+   Call linComb_sparsevecc(L1,C_ONE,Lby,c3,L(2)%L(2))
+  
+
+case(Full_Interstation_TF)
+
+endselect
+   ! select case(iDT)
+   ! case(Full_Impedance,Phase_Tensor)
+   !    ! zxx
+   !    ! mode1
+   !    ! Zxx/Ex1
+   !    c1 = Binv(1,1)*(1+cos2a)/2. + Binv(1,2)*sin2a/2.
+   !    ! Zxx/Hx1
+   !    c2 = -z(1) + (1-cos2a)/2.*Eout(2,2)/Bout(2,2) + sin2a/2.*Eout(1,2)/Bout(2,2)
+   !    c2 = Binv(1,1)*c2
+   !    ! Zxx/Hy1
+   !    c3 = -z(1) + (1+cos2a)/2.*Eout(1,2)/Bout(1,2) + sin2a/2.*Eout(2,2)/Bout(1,2)
+   !    c3 = Binv(1,2)*c3
+   !    Call linComb_sparsevecc(Lex,c1,Lbx,c2,L1)
+   !    Call linComb_sparsevecc(L1,C_ONE,Lby,c3,L(1)%L(1))
+   !    ! mode2
+   !    ! Zxx/Ex2
+   !    c1 = Binv(2,1)*(1+cos2a)/2. + Binv(2,2)*sin2a/2.
+   !    ! Zxx/Hx2
+   !    c2 = -z(1) + (1-cos2a)/2.*Eout(2,1)/Bout(2,1) + sin2a/2.*Eout(1,1)/Bout(2,1)
+   !    c2 = Binv(2,1)*c2
+   !    ! Zxx/Hy2
+   !    c3 = -z(1) + (1+cos2a)/2.*Eout(1,1)/Bout(1,1) + sin2a/2.*Eout(2,1)/Bout(1,1)
+   !    c3 = Binv(2,2)*c3
+   !    Call linComb_sparsevecc(Lex,c1,Lbx,c2,L1)
+   !    call linComb_sparsevecc(L1,C_ONE,Lby,c3,L(1)%L(2))
+
+   !    ! zxy
+   !    ! mode1
+   !    ! Zxy/Ex1
+   !    c1 = Binv(1,2)*(1+cos2a)/2. - Binv(1,1)*sin2a/2.
+   !    ! Zxy/Hx1
+   !    c2 = -z(2) + (1+cos2a)/2.*Eout(1,2)/Bout(2,2) + sin2a/2.*Eout(2,2)/Bout(2,2)
+   !    c2 = Binv(1,1)*c2
+   !    ! Zxy/Hy1
+   !    c3 = -z(2) + (cos2a-1)/2.*Eout(2,2)/Bout(1,2) - sin2a/2.*Eout(1,2)/Bout(1,2)
+   !    c3 = Binv(1,2)*c3
+   !    Call linComb_sparsevecc(Lex,c1,Lbx,c2,L1)
+   !    Call linComb_sparsevecc(L1,C_ONE,Lby,c3,L(2)%L(1))
+   !    ! mode2
+   !    ! Zxy/Ex2
+   !    c1 = Binv(2,2)*(1+cos2a)/2. - Binv(2,1)*sin2a/2.
+   !    ! Zxy/Hx2
+   !    c2 = -z(2) +(1+cos2a)/2.*Eout(1,1)/Bout(2,1) + sin2a/2.*Eout(2,1)/Bout(2,1)
+   !    c2 = Binv(2,1)*c2
+   !    ! Zxy/Hy2
+   !    c3 = -z(2) +(cos2a-1)/2.*Eout(2,1)/Bout(1,1) - sin2a/2.*Eout(1,1)/Bout(1,1)
+   !    c3 = Binv(2,2)*c3
+   !    Call linComb_sparsevecc(Lex,c1,Lbx,c2,L1)
+   !    Call linComb_sparsevecc(L1,C_ONE,Lby,c3,L(2)%L(2))
+
+   !    ! zyx
+   !    ! mode1
+   !    ! Zyx/Ey1
+   !    c1 = Binv(1,1)*(1+cos2a)/2. + Binv(1,2)*sin2a/2.
+   !    ! Zyx/Hx1
+   !    c2 = -z(3) + (cos2a-1)/2.*Eout(1,2)/Bout(2,2) + sin2a/2.*Eout(2,2)/Bout(2,2)
+   !    c2 = Binv(1,1)*c2
+   !    ! Zyx/Hy1
+   !    c3 = -z(3) + (1+cos2a)/2.*Eout(2,2)/Bout(1,2) - sin2a/2.*Eout(1,2)/Bout(1,2)
+   !    c3 = Binv(1,2)*c3
+   !    Call linComb_sparsevecc(Ley,c1,Lbx,c2,L1)
+   !    Call linComb_sparsevecc(L1,C_ONE,Lby,c3,L(3)%L(1))
+   !    ! mode2
+   !    ! Zyx/Ey2
+   !    c1 = Binv(2,1)*(1+cos2a)/2. + Binv(2,2)*sin2a/2.
+   !    ! Zyx/Hx2
+   !    c2 = -z(3) + (cos2a-1)/2.*Eout(1,1)/Bout(2,1) + sin2a/2.*Eout(2,1)/Bout(2,1)
+   !    c2 = Binv(2,1)*c2
+   !    ! Zyx/Hy2
+   !    c3 = -z(3) + (1+cos2a)/2.*Eout(2,1)/Bout(1,1) - sin2a/2.*Eout(1,1)/Bout(1,1)
+   !    c3 = Binv(2,2)*c3
+   !    Call linComb_sparsevecc(Ley,c1,Lbx,c2,L1)
+   !    Call linComb_sparsevecc(L1,C_ONE,Lby,c3,L(3)%L(2))
+
+   !    ! zyy
+   !    ! mode1
+   !    ! Zyy/Ey1
+   !    c1 = Binv(1,2)*(1+cos2a)/2. - Binv(1,1)*sin2a/2.
+   !    ! Zyy/Hx1
+   !    c2 = -z(4) + (1+cos2a)/2.*Eout(2,2)/Bout(2,2) - sin2a/2.*Eout(1,2)/Bout(2,2)
+   !    c2 = Binv(1,1)*c2
+   !    ! Zyy/Hy1
+   !    c3 = -z(4) + (1-cos2a)/2.*Eout(1,2)/Bout(1,2) - sin2a/2.*Eout(2,2)/Bout(1,2)
+   !    c3 = Binv(1,2)*c3
+   !    Call linComb_sparsevecc(Ley,c1,Lbx,c2,L1)
+   !    Call linComb_sparsevecc(L1,C_ONE,Lby,c3,L(4)%L(1))
+   !    ! mode2
+   !    ! Zyy/Ey2
+   !    c1 = Binv(2,2)*(1+cos2a)/2. - Binv(2,1)*sin2a/2.
+   !    ! Zyy/Hx2
+   !    c2 = -z(4) + (1+cos2a)/2.*Eout(2,1)/Bout(2,1) - sin2a/2.*Eout(1,1)/Bout(2,1)
+   !    c2 = Binv(2,1)*c2
+   !    ! Zyy/Hyx
+   !    c3 = -z(4) + (1-cos2a)/2.*Eout(1,1)/Bout(1,1) -sin2a/2.*Eout(2,1)/Bout(1,1)
+   !    c3 = Binv(2,2)*c3
+   !    Call linComb_sparsevecc(Ley,c1,Lbx,c2,L1)
+   !    Call linComb_sparsevecc(L1,C_ONE,Lby,c3,L(4)%L(2))
+
+   ! case(Off_Diagonal_Impedance,Off_Diagonal_Rho_Phase)
+   !    ! zxy
+   !    ! mode1
+   !    ! Zxy/Ex1
+   !    c1 = Binv(1,2)*(1+cos2a)/2. - Binv(1,1)*sin2a/2.
+   !    ! Zxy/Hx1
+   !    c2 = -z(2) + (1+cos2a)/2.*Eout(1,2)/Bout(2,2) + sin2a/2.*Eout(2,2)/Bout(2,2)
+   !    c2 = Binv(1,1)*c2
+   !    ! Zxy/Hy1
+   !    c3 = -z(2) + (cos2a-1)/2.*Eout(2,2)/Bout(1,2) - sin2a/2.*Eout(1,2)/Bout(1,2)
+   !    c3 = Binv(1,2)*c3
+   !    Call linComb_sparsevecc(Lex,c1,Lbx,c2,L1)
+   !    Call linComb_sparsevecc(L1,C_ONE,Lby,c3,L(1)%L(1))
+   !    ! mode2
+   !    ! Zxy/Ex2
+   !    c1 = Binv(2,2)*(1+cos2a)/2. - Binv(2,1)*sin2a/2.
+   !    ! Zxy/Hx2
+   !    c2 = -z(2) +(1+cos2a)/2.*Eout(1,1)/Bout(2,1) + sin2a/2.*Eout(2,1)/Bout(2,1)
+   !    c2 = Binv(2,1)*c2
+   !    ! Zxy/Hy2
+   !    c3 = -z(2) +(cos2a-1)/2.*Eout(2,1)/Bout(1,1) - sin2a/2.*Eout(1,1)/Bout(1,1)
+   !    c3 = Binv(2,2)*c3
+   !    Call linComb_sparsevecc(Lex,c1,Lbx,c2,L1)
+   !    Call linComb_sparsevecc(L1,C_ONE,Lby,c3,L(1)%L(2))
+
+   !    ! zyx
+   !    ! mode1
+   !    ! Zyx/Ey1
+   !    c1 = Binv(1,1)*(1+cos2a)/2. + Binv(1,2)*sin2a/2.
+   !    ! Zyx/Hx1
+   !    c2 = -z(3) + (cos2a-1)/2.*Eout(1,2)/Bout(2,2) + sin2a/2.*Eout(2,2)/Bout(2,2)
+   !    c2 = Binv(1,1)*c2
+   !    ! Zyx/Hy1
+   !    c3 = -z(3) + (1+cos2a)/2.*Eout(2,2)/Bout(1,2) - sin2a/2.*Eout(1,2)/Bout(1,2)
+   !    c3 = Binv(1,2)*c3
+   !    Call linComb_sparsevecc(Ley,c1,Lbx,c2,L1)
+   !    Call linComb_sparsevecc(L1,C_ONE,Lby,c3,L(2)%L(1))
+   !    ! mode2
+   !    ! Zyx/Ey2
+   !    c1 = Binv(2,1)*(1+cos2a)/2. + Binv(2,2)*sin2a/2.
+   !    ! Zyx/Hx2
+   !    c2 = -z(3) + (cos2a-1)/2.*Eout(1,1)/Bout(2,1) + sin2a/2.*Eout(2,1)/Bout(2,1)
+   !    c2 = Binv(2,1)*c2
+   !    ! Zyx/Hy2
+   !    c3 = -z(3) + (1+cos2a)/2.*Eout(2,1)/Bout(1,1) - sin2a/2.*Eout(1,1)/Bout(1,1)
+   !    c3 = Binv(2,2)*c3
+   !    Call linComb_sparsevecc(Ley,c1,Lbx,c2,L1)
+   !    Call linComb_sparsevecc(L1,C_ONE,Lby,c3,L(2)%L(2))
+
+   ! case(Full_Vertical_Components)
+   !    ! tzx
+   !    ! mode1
+   !    ! Tzx/Hz1
+   !    c1 = Binv(1,1)*cosa + Binv(1,2)*sina
+   !    ! Tzx/Hx1
+   !    c2 = -z(1) + sina*Bout(3,2)/Bout(2,2)
+   !    c2 = Binv(1,1)*c2
+   !    ! Tzx/Hy1
+   !    c3 = -z(1) + cosa*Bout(3,2)/Bout(1,2)
+   !    c3 = Binv(1,2)*c3
+   !    Call linComb_sparsevecc(Lbz,c1,Lbx,c2,L1)
+   !    Call linComb_sparsevecc(L1,C_ONE,Lby,c3,L(1)%L(1))
+   !    ! mode2
+   !    ! Tzx/Hz2
+   !    c1 = Binv(2,1)*cosa + Binv(2,2)*sina
+   !    ! Tzx/Hx2
+   !    c2 = -z(1) + sina*Bout(3,1)/Bout(2,1)
+   !    c2 = Binv(2,1)*c2
+   !    ! Tzx/Hy2
+   !    c3 = -z(1) + cosa*Bout(3,1)/Bout(1,1)
+   !    c3 = Binv(2,2)*c3
+   !    Call linComb_sparsevecc(Lbz,c1,Lbx,c2,L1)
+   !    Call linComb_sparsevecc(L1,C_ONE,Lby,c3,L(1)%L(2))
+
+   !    ! tzy
+   !    ! mode1
+   !    ! Tzy/Hz1
+   !    c1 = Binv(1,2)*cosa - Binv(1,1)*sina
+   !    ! Tzy/Hx1
+   !    c2 = -z(2) + cosa*Bout(3,2)/Bout(2,2)
+   !    c2 = Binv(1,1)*c2
+   !    ! Tzy/Hy1
+   !    c3 = -z(2) -sina*Bout(3,2)/Bout(1,2)
+   !    c3 = Binv(1,2)*c3
+   !    Call linComb_sparsevecc(Lbz,c1,Lbx,c2,L1)
+   !    Call linComb_sparsevecc(L1,C_ONE,Lby,c3,L(2)%L(1))
+   !    ! mode2
+   !    ! Tzy/Hz2
+   !    c1 = Binv(2,2)*cosa - Binv(2,1)*sina
+   !    ! Tzy/Hx2
+   !    c2 = -z(2) + cosa*Bout(3,1)/Bout(2,1)
+   !    c2 = Binv(2,1)*c2
+   !    ! Tzy/Hy2
+   !    c3 = -z(2) - sina*Bout(3,1)/Bout(1,1)
+   !    c3 = Binv(2,2)*c3
+   !    Call linComb_sparsevecc(Lbz,c1,Lbx,c2,L1)
+   !    Call linComb_sparsevecc(L1,C_ONE,Lby,c3,L(2)%L(2))
+     
+
+   ! case(Full_Interstation_TF)
+
+   ! endselect
 
 
 
 
-  !  compute sparse vector representations of linearized functionals
-  do n = 1,nComp
-     !  i runs over rows of TF matrix, j runs over columns of TF
-     i = IJ(1,n)
-     j = IJ(2,n)
-     predictedComp = IJ(3,n)
-     c1 = Z(2*(i-1)+1)
-     c2 = Z(2*(i-1)+2)
-    if(typeDict(iDT)%tfType .eq. Full_Interstation_TF) then
-      Call linComb_sparsevecc(Lrx,c1,Lry,c2,L1)
-    else
-      Call linComb_sparsevecc(Lbx,c1,Lby,c2,L1)
-    end if
-     do k = 1,2
-        !  k defines which mode the linearized functional is
-        !   to be applied to
-        c1 = Binv(k,j)  !In case of interstaion TF, Binv = RRinv.
-        c2 = -c1
-        if(predictedComp.eq.1) then
-           !  component in x row of impedance tensor
-           Call linComb_sparsevecc(Lex,c1,L1,c2,L(n)%L(k))
-        elseif(predictedComp.eq.2) then
-           !  component in y row of impedance tensor
-           Call linComb_sparsevecc(Ley,c1,L1,c2,L(n)%L(k))
-        elseif(predictedComp.eq.3) then
-           !  component in Bz row (vertical field TF)
-           Call linComb_sparsevecc(Lbz,c1,L1,c2,L(n)%L(k))
-        elseif(predictedComp.eq.4) then
-           !  component in x row (interstation TF)
-           Call linComb_sparsevecc(Lbx,c1,L1,c2,L(n)%L(k))
-        elseif(predictedComp.eq.5) then
-           !  component in y row (interstation TF)
-           Call linComb_sparsevecc(Lby,c1,L1,c2,L(n)%L(k))
-        endif
-     enddo
-  enddo
+
+!   !  compute sparse vector representations of linearized functionals
+!   do n = 1,nComp
+!      !  i runs over rows of TF matrix, j runs over columns of TF
+!      i = IJ(1,n)
+!      j = IJ(2,n)
+!      predictedComp = IJ(3,n)
+!      c1 = Z(2*(i-1)+1)
+!      c2 = Z(2*(i-1)+2)
+!     if(typeDict(iDT)%tfType .eq. Full_Interstation_TF) then
+!       Call linComb_sparsevecc(Lrx,c1,Lry,c2,L1)
+!     else
+!       Call linComb_sparsevecc(Lbx,c1,Lby,c2,L1)
+!     end if
+!      do k = 1,2
+!         !  k defines which mode the linearized functional is
+!         !   to be applied to
+!         c1 = Binv(k,j)  !In case of interstaion TF, Binv = RRinv.
+!         c2 = -c1
+!         if(predictedComp.eq.1) then
+!            !  component in x row of impedance tensor
+!            Call linComb_sparsevecc(Lex,c1,L1,c2,L(n)%L(k))
+!         elseif(predictedComp.eq.2) then
+!            !  component in y row of impedance tensor
+!            Call linComb_sparsevecc(Ley,c1,L1,c2,L(n)%L(k))
+!         elseif(predictedComp.eq.3) then
+!            !  component in Bz row (vertical field TF)
+!            Call linComb_sparsevecc(Lbz,c1,L1,c2,L(n)%L(k))
+!         elseif(predictedComp.eq.4) then
+!            !  component in x row (interstation TF)
+!            Call linComb_sparsevecc(Lbx,c1,L1,c2,L(n)%L(k))
+!         elseif(predictedComp.eq.5) then
+!            !  component in y row (interstation TF)
+!            Call linComb_sparsevecc(Lby,c1,L1,c2,L(n)%L(k))
+!         endif
+!      enddo
+!   enddo
 if (typeDict(iDT)%tfType .eq. Off_Diagonal_Rho_Phase) then
        do k=1,2 ! 2 modes
         ! PHSYX
@@ -862,9 +1104,9 @@ if (typeDict(iDT)%tfType .eq. Off_Diagonal_Rho_Phase) then
 	     Call linComb_sparsevecc(L(2)%L(k),c1,L(2)%L(k),C_ZERO,L(4)%L(k))
 
 		 !log RHOYX
-	     c1 =  TWO*conjg(Z(3))/(abs(Z(3))**TWO)*dlog(10.0d0)
+	    ! c1 =  TWO*conjg(Z(3))/(abs(Z(3))**TWO)*dlog(10.0d0)
 		 ! devided by Ln10, Liuzhongyin 2017.06.04
-	     !c1 =  TWO*conjg(Z(3))/(abs(Z(3))**TWO)/dlog(10.0d0)
+	     c1 =  TWO*conjg(Z(3))/(abs(Z(3))**TWO)/dlog(10.0d0)
         Call linComb_sparsevecc(L(2)%L(k),c1,L(2)%L(k),C_ZERO,L(3)%L(k))
 
         ! PHSXY
@@ -872,9 +1114,9 @@ if (typeDict(iDT)%tfType .eq. Off_Diagonal_Rho_Phase) then
 		Call linComb_sparsevecc(L(1)%L(k),c1,L(1)%L(k),C_ZERO,L(2)%L(k))
 
           !log(RHOXY)
-         c1 =  TWO*conjg(Z(2))  /(abs(Z(2))**TWO)*dlog(10.0d0)
+          ! c1 =  TWO*conjg(Z(2))  /(abs(Z(2))**TWO)*dlog(10.0d0)
           ! devided by Ln10, Liuzhongyin 2017.06.04
-          !c1 =  TWO*conjg(Z(2))  /(abs(Z(2))**TWO)/dlog(10.0d0)
+          c1 =  TWO*conjg(Z(2))  /(abs(Z(2))**TWO)/dlog(10.0d0)
 	     Call linComb_sparsevecc(L(1)%L(k),c1,L(1)%L(k),C_ZERO,L1)
         L(1)%L(k) = L1
 
@@ -1090,11 +1332,15 @@ if (typeDict(iDT)%tfType .eq. Off_Diagonal_Rho_Phase) then
          cos2a = cos(2*angle*D2R)
          sin2a = sin(2*angle*D2R)
 
-         d1 = 1/2.*((1+cos2a)*d(1)-(1-cos2a)*d(2))
-         d2 = 1/2.*(-(1-cos2a)*d(1)+(1+cos2a)*d(2))
+         d1 = 1/2.*((1+cos2a)*d(1)+sin2a*d(2)+sin2a*d(3)+(1-cos2a)*d(4))
+         d2 = 1/2.*(-sin2a*d(1)+(1+cos2a)*d(2)-(1-cos2a)*d(3)+sin2a*d(4))
+         d3 = 1/2.*(-sin2a*d(1)-(1-cos2a)*d(2)+(1+cos2a)*d(3)+sin2a*d(4))
+         d4 = 1/2.*((1-cos2a)*d(1)-sin2a*d(2)-sin2a*d(3)+(1+cos2a)*d(4))
 
-         d(1) = d1
-         d(2) = d2
+         d(1) = d2
+         d(2) = d3
+         d(3) = cmplx(0,0)
+         d(4) = cmplx(0,0)
 
       case(Full_Vertical_Components)
          sina = sin(angle*D2R)
@@ -1111,62 +1357,5 @@ if (typeDict(iDT)%tfType .eq. Off_Diagonal_Rho_Phase) then
   end select
 
   end subroutine rotateZ
-
-! **********************************************************************
-  ! 2019.04.09 Liu Zhongyin, Add rotate transpose for Z
-  subroutine rotateZT(d,iDT,angle)
-   implicit none
-   complex(kind=prec), intent(inout)   :: d(4)
-   integer, intent(in)                 :: iDT
-   real(kind=prec), intent(in)         :: angle
-
-   ! local varialbles
-   complex(kind=prec)        :: d1, d2, d3, d4
-   real(kind=prec)           :: cos2a, sin2a, sina, cosa
-
-  selectcase (iDT)
-      case(Full_Impedance)
-         cos2a = cos(2*angle*D2R)
-         sin2a = sin(2*angle*D2R)
-
-         d1 = 1/2.*((1+cos2a)*d(1)-sin2a*d(2)-sin2a*d(3)+(1-cos2a)*d(4))
-         d2 = 1/2.*(sin2a*d(1)+(1+cos2a)*d(2)-(1-cos2a)*d(3)-sin2a*d(4))
-         d3 = 1/2.*(sin2a*d(1)-(1-cos2a)*d(2)+(1+cos2a)*d(3)-sin2a*d(4))
-         d4 = 1/2.*((1-cos2a)*d(1)+sin2a*d(2)+sin2a*d(3)+(1+cos2a)*d(4))
-
-         d(1) = d1
-         d(2) = d2
-         d(3) = d3
-         d(4) = d4
-
-      case(Off_Diagonal_Impedance)
-         cos2a = cos(2*angle*D2R)
-         sin2a = sin(2*angle*D2R)
-
-         d1 = 1/2.*((1+cos2a)*d(1)-(1-cos2a)*d(2))
-         d2 = 1/2.*(-(1-cos2a)*d(1)+(1+cos2a)*d(2))
-
-         d(1) = d1
-         d(2) = d2
-
-      case(Full_Vertical_Components)
-         sina = sin(angle*D2R)
-         cosa = cos(angle*D2R)
-
-         d1 = cosa*d(1)-sina*d(2)
-         d2 = sina*d(1)+cosa*d(2)
-
-         d(1) = d1
-         d(2) = d2
-
-      case(Full_Interstation_TF)
-
-      case(Off_Diagonal_Rho_Phase)
-
-      case(Phase_Tensor)
-
-  end select
-
-  end subroutine rotateZT
 
 end module dataFunc
