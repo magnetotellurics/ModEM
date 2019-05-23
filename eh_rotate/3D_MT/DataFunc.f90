@@ -39,7 +39,7 @@ module dataFunc
 Contains
 
 !******************************************************************************
-  subroutine dataResp(ef,Sigma,iDT,iRX,Resp,Binv)
+  subroutine dataResp(ef,Sigma,iDT,iRX,Resp,Angle,Binv)
   ! given electric field solutions (both modes--and note
   !    that the solution knows about the transmitter used),
   ! and indices into data types and receiver dictionaries for one
@@ -53,6 +53,9 @@ Contains
   integer, intent(in)			:: iDT
   integer, intent(in) 			:: iRX
   real(kind=prec), intent(inout)	:: Resp(:)
+
+  ! 2019.03.20, Liu Zhongyin, add Angle
+  real(kind=prec), intent(in)    :: Angle(:)
 
 
 
@@ -354,7 +357,8 @@ Contains
   end subroutine dataResp
 !
 !****************************************************************************
-  subroutine Lrows(e0,Sigma0,iDT,iRX,L)
+  subroutine Lrows(e0,Sigma0,iDT,iRX,L,Angle)
+  !subroutine Lrows(e0,Sigma0,iDT,iRX,L)
   !  given input background electric field solution (both modes; e0),
   !  indices into data type/receiver dictionaries
   !  compute array of sparse complex vectors giving coefficients
@@ -370,6 +374,9 @@ Contains
   !   NOTE:  in principal the comparable input arguments in
   !        the 2D program should also be of type sparseVector!
   type(sparseVector_t), intent(inout)		:: L(:)
+
+  ! 2019.05.08, Liu Zhongyin, add para Angle
+  real(kind=prec), intent(in) :: Angle(:)
 
   !  local variables
   complex(kind=prec)	:: Binv(2,2)
@@ -411,7 +418,9 @@ Contains
               IJ(3,2*(i-1)+j) = i
            enddo
         enddo
-        Call dataResp(e0,Sigma0,Full_Impedance,iRX,Resp,Binv)
+        ! Call dataResp(e0,Sigma0,Full_Impedance,iRX,Resp,Binv)
+        ! 2019.05.08, Liu Zhongyin, add Angle
+        Call dataResp(e0,Sigma0,Full_Impedance,iRX,Resp,Angle,Binv)
      case(Off_Diagonal_Impedance)
         nComp = 2
         ComputeHz = .false.
@@ -421,7 +430,9 @@ Contains
         IJ(2,2) = 1
         IJ(3,1) = 1
         IJ(3,2) = 2
-        Call dataResp(e0,Sigma0,Full_Impedance,iRX,Resp,Binv)
+        ! Call dataResp(e0,Sigma0,Full_Impedance,iRX,Resp,Binv)
+        ! 2019.05.08, Liu Zhongyin, add Angle
+        Call dataResp(e0,Sigma0,Full_Impedance,iRX,Resp,Angle,Binv)
       case(Full_Vertical_Components)
         nComp = 2
         ComputeHz = .true.
@@ -431,7 +442,9 @@ Contains
         IJ(2,2) = 2
         IJ(3,1) = 3
         IJ(3,2) = 3
-        Call dataResp(e0,Sigma0,Full_Vertical_Components,iRX,Resp,Binv)
+        ! Call dataResp(e0,Sigma0,Full_Vertical_Components,iRX,Resp,Binv)
+        ! 2019.05.08, Liu Zhongyin, add Angle
+        Call dataResp(e0,Sigma0,Full_Vertical_Components,iRX,Resp,Angle,Binv)
      case(Full_Interstation_TF)
         nComp = 4
         ComputeHz = .false.
@@ -442,7 +455,9 @@ Contains
               IJ(3,2*(i-1)+j) = i+3
            enddo
         enddo
-        Call dataResp(e0,Sigma0,Full_Interstation_TF,iRX,Resp,Binv)
+        ! Call dataResp(e0,Sigma0,Full_Interstation_TF,iRX,Resp,Binv)
+        ! 2019.05.08, Liu Zhongyin, add Angle
+        Call dataResp(e0,Sigma0,Full_Interstation_TF,iRX,Resp,Angle,Binv)
      case(Off_Diagonal_Rho_Phase)
         ! First calculate Off_Diagonal_Impedance Ls
         ! Rho_Phase actually has 4 (real) components, but nComp here refers to the
@@ -455,7 +470,9 @@ Contains
         IJ(2,2) = 1
         IJ(3,1) = 1
         IJ(3,2) = 2
-        Call dataResp(e0,Sigma0,Full_Impedance,iRX,Resp,Binv)
+        ! Call dataResp(e0,Sigma0,Full_Impedance,iRX,Resp,Binv)
+        ! 2019.05.08, Liu Zhongyin, add Angle
+        Call dataResp(e0,Sigma0,Full_Impedance,iRX,Resp,Angle,Binv)
      case(Phase_Tensor)
 	  ! First calculate Full_Impedances Ls
         nComp = 4
@@ -467,7 +484,9 @@ Contains
               IJ(3,2*(i-1)+j) = i
            enddo
         enddo
-        Call dataResp(e0,Sigma0,Full_Impedance,iRX,Resp,Binv)
+        ! Call dataResp(e0,Sigma0,Full_Impedance,iRX,Resp,Binv)
+        ! 2019.05.08, Liu Zhongyin, add Angle
+        Call dataResp(e0,Sigma0,Full_Impedance,iRX,Resp,Angle,Binv)
 
      endselect
 

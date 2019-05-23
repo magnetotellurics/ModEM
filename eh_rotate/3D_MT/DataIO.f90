@@ -163,6 +163,9 @@ Contains
     real(8)                         :: lat,lon,ref_lat,ref_lon
     logical                         :: conjugate, isComplex
 
+    ! 2019.04.23, Liu Zhongyin, add local varible azimu
+    real(8), allocatable            :: azimu(:) ! (ncomp)
+
     iTxt = 1
 
     open(unit=ioDat,file=cfile,form='formatted',status='unknown')
@@ -228,6 +231,10 @@ Contains
 
       ncomp = typeDict(iDt)%nComp
       allocate(value(ncomp),error(ncomp),exist(ncomp),STAT=istat)
+
+      ! 2019.04.23, Liu Zhongyin, add azimu allocation
+      allocate(azimu(ncomp),stat=istat)
+
       isComplex = typeDict(iDt)%isComplex
       countData = 0
 
@@ -252,6 +259,9 @@ Contains
             siteid = rxDict(iRx)%id
             x = rxDict(iRx)%x
 
+            ! 2019.04.23, Liu Zhongyin, assign azimuth to azimu
+            azimu = allData%d(j)%data(i)%Azimuth(:,k)
+
             select case (iDt)
 
                 case(Full_Impedance,Off_Diagonal_Impedance,Full_Vertical_Components)
@@ -264,10 +274,16 @@ Contains
                         write(ioDat,'(es12.6)',    iostat=ios,advance='no') Period
                         write(ioDat, '(a1)', iostat=ios,advance='no') ' '
                         write(ioDat,'(a40,3f15.3)',iostat=ios,advance='no') trim(siteid),x(:)
+                        !if (conjugate) then
+                        !    write(ioDat,'(a8,3es15.6)',iostat=ios) trim(compid),value(2*icomp-1),-value(2*icomp),error(2*icomp)
+                        !else
+                        !    write(ioDat,'(a8,3es15.6)',iostat=ios) trim(compid),value(2*icomp-1),value(2*icomp),error(2*icomp)
+                        !end if
+                        ! 2019.04.23, Liu Zhongyin, add azimu while writing
                         if (conjugate) then
-                            write(ioDat,'(a8,3es15.6)',iostat=ios) trim(compid),value(2*icomp-1),-value(2*icomp),error(2*icomp)
+                            write(ioDat,'(a8,4es15.6)',iostat=ios) trim(compid),value(2*icomp-1),-value(2*icomp),error(2*icomp),azimu(2*icomp)
                         else
-                            write(ioDat,'(a8,3es15.6)',iostat=ios) trim(compid),value(2*icomp-1),value(2*icomp),error(2*icomp)
+                            write(ioDat,'(a8,4es15.6)',iostat=ios) trim(compid),value(2*icomp-1),value(2*icomp),error(2*icomp),azimu(2*icomp)
                         end if
                         countData = countData + 1
                     end do
@@ -285,10 +301,16 @@ Contains
                         write(ioDat, '(a1)', iostat=ios,advance='no') ' '
                         write(ioDat,'(a40,3f15.3)',iostat=ios,advance='no') trim(siteid),x(:)
                         write(ioDat,'(a40,3f15.3)',iostat=ios,advance='no') trim(ref_siteid),ref_x(:)
+                        !if (conjugate) then
+                        !    write(ioDat,'(a8,3es15.6)',iostat=ios) trim(compid),value(2*icomp-1),-value(2*icomp),error(2*icomp)
+                        !else
+                        !    write(ioDat,'(a8,3es15.6)',iostat=ios) trim(compid),value(2*icomp-1),value(2*icomp),error(2*icomp)
+                        !end if
+                        ! 2019.04.23, Liu Zhongyin, add azimu while writing
                         if (conjugate) then
-                            write(ioDat,'(a8,3es15.6)',iostat=ios) trim(compid),value(2*icomp-1),-value(2*icomp),error(2*icomp)
+                            write(ioDat,'(a8,4es15.6)',iostat=ios) trim(compid),value(2*icomp-1),-value(2*icomp),error(2*icomp),azimu(2*icomp)
                         else
-                            write(ioDat,'(a8,3es15.6)',iostat=ios) trim(compid),value(2*icomp-1),value(2*icomp),error(2*icomp)
+                            write(ioDat,'(a8,4es15.6)',iostat=ios) trim(compid),value(2*icomp-1),value(2*icomp),error(2*icomp),azimu(2*icomp)
                         end if
                         countData = countData + 1
                     end do
@@ -314,7 +336,9 @@ Contains
                         write(ioDat,'(es12.6)',    iostat=ios,advance='no') Period
                         write(ioDat, '(a1)', iostat=ios,advance='no') ' '
                         write(ioDat,'(a40,3f15.3)',iostat=ios,advance='no') trim(siteid),x(:)
-                        write(ioDat,'(a8,3es15.6)',iostat=ios) trim(compid),value(icomp),error(icomp)
+                        !write(ioDat,'(a8,3es15.6)',iostat=ios) trim(compid),value(icomp),error(icomp)
+                        ! 2019.04.23, Liu Zhongyin, add azimu while writing
+                        write(ioDat,'(a8,4es15.6)',iostat=ios) trim(compid),value(icomp),error(icomp),azimu(icomp)
                         countData = countData + 1
                     end do
 
@@ -327,6 +351,8 @@ Contains
         write(0,*) 'Written ',countData,' data values of type MT: ',trim(typeDict(iDt)%name),' to file'
       end if
       deallocate(value, error, exist, STAT=istat)
+      ! 2019.04.23, Liu Zhongyin, deallocate azimu
+      deallocate(azimu,stat=istat)
 
     end do WRITE_DATA_TYPE ! data types
 
@@ -364,6 +390,10 @@ Contains
     real(8)                         :: lat,lon,ref_lat,ref_lon
     real(8)                         :: Zreal, Zimag, Zerr
     logical                         :: conjugate, errorBar, isComplex
+
+    ! 2019.03.18, Liu Zhongyin, add azimu variable
+    real(8), allocatable            :: azimu(:,:,:) ! (nTx,nRx,ncomp)
+    real(8)                         :: angle
 
     ! First, set up the data type dictionary, if it's not in existence yet
     call setup_typeDict()
@@ -437,6 +467,9 @@ Contains
         allocate(new_TxType(nTx),new_Tx(nTx),new_Rx(nRx),STAT=istat)
         allocate(value(nTx,nRx,ncomp),error(nTx,nRx,ncomp),exist(nTx,nRx,ncomp),STAT=istat)
 
+        ! 2019.04.23, Liu Zhongyin, add azimu allocation
+        allocate(azimu(nTx,nRx,ncomp),stat=istat)
+
         new_TxType(:) = 0
         new_Tx(:) = 0
         new_Rx(:) = 0
@@ -445,13 +478,18 @@ Contains
         exist(:,:,:) = .FALSE.
         countData = 0
 
+        ! 2019.04.23, Liu Zhongyin, add azimu initial
+        azimu(:,:,:) = R_ZERO
+
 
         READ_DATA_LINE: Do
 
             select case (iDt)
 
             case(Full_Impedance,Off_Diagonal_Impedance,Full_Vertical_Components)
-                read(ioDat,*,iostat=ios) Period,code,lat,lon,x(1),x(2),x(3),compid,Zreal,Zimag,Zerr
+                !read(ioDat,*,iostat=ios) Period,code,lat,lon,x(1),x(2),x(3),compid,Zreal,Zimag,Zerr
+                ! 2019.04.23, Liu Zhongyin, add angle while reading line
+                read(ioDat,*,iostat=ios) Period,code,lat,lon,x(1),x(2),x(3),compid,Zreal,Zimag,Zerr,angle
 
                 if (ios /= 0) then
                     backspace(ioDat)
@@ -470,8 +508,11 @@ Contains
                 iRx = update_rxDict(x,siteid)
 
             case(Full_Interstation_TF)
+                !read(ioDat,*,iostat=ios) Period,code,lat,lon,x(1),x(2),x(3), &
+                !    ref_code,ref_lat,ref_lon,ref_x(1),ref_x(2),ref_x(3),compid,Zreal,Zimag,Zerr
+                ! 2019.04.23, Liu Zhongyin, add angle while reading line
                 read(ioDat,*,iostat=ios) Period,code,lat,lon,x(1),x(2),x(3), &
-                    ref_code,ref_lat,ref_lon,ref_x(1),ref_x(2),ref_x(3),compid,Zreal,Zimag,Zerr
+                    ref_code,ref_lat,ref_lon,ref_x(1),ref_x(2),ref_x(3),compid,Zreal,Zimag,Zerr,angle
 
                 if (ios /= 0) then
                     backspace(ioDat)
@@ -492,7 +533,9 @@ Contains
 
 
             case(Off_Diagonal_Rho_Phase,Phase_Tensor)
-                read(ioDat,*,iostat=ios) Period,code,lat,lon,x(1),x(2),x(3),compid,Zreal,Zerr
+                !read(ioDat,*,iostat=ios) Period,code,lat,lon,x(1),x(2),x(3),compid,Zreal,Zerr
+                ! 2019.04.23, Liu Zhongyin, add angle while reading line
+                read(ioDat,*,iostat=ios) Period,code,lat,lon,x(1),x(2),x(3),compid,Zreal,Zerr,angle
 
                 if (ios /= 0) then
                     backspace(ioDat)
@@ -548,6 +591,9 @@ Contains
             error(i,j,icomp) = SI_factor * Zerr
             exist(i,j,icomp) = .TRUE.
 
+            ! 2019.04.23, Liu Zhongyin, assign angle to azimu
+            azimu(i,j,icomp) = angle
+
             countData = countData + 1
 
         end do READ_DATA_LINE
@@ -589,10 +635,17 @@ Contains
 	               newData%d(i)%data(1)%error(2*icomp  ,k) = error(i,j,icomp)
 	               newData%d(i)%data(1)%exist(2*icomp-1,k) = exist(i,j,icomp)
 	               newData%d(i)%data(1)%exist(2*icomp  ,k) = exist(i,j,icomp)
+                   
+                   ! 2019.04.23, Liu Zhongyin, add azimuth
+                   newData%d(i)%data(1)%Azimuth(2*icomp-1,k) = azimu(i,j,icomp)
+                   newData%d(i)%data(1)%Azimuth(2*icomp  ,k) = azimu(i,j,icomp)
 	            else
 	               newData%d(i)%data(1)%value(icomp,k) = real(value(i,j,icomp))
 	               newData%d(i)%data(1)%error(icomp,k) = error(i,j,icomp)
 	               newData%d(i)%data(1)%exist(icomp,k) = exist(i,j,icomp)
+                   
+                   ! 2019.04.23, Liu Zhongyin, add azimuth
+                   newData%d(i)%data(1)%Azimuth(icomp,k) = azimu(i,j,icomp)
 	            end if
 	           end do
 	           newData%d(i)%data(1)%rx(k) = new_Rx(j)
@@ -607,6 +660,9 @@ Contains
 
 	! Merge the new data into the main data vector
 	call merge_dataVectorMTX(allData,newData,allData)
+    
+    ! 2019.04.23, Liu Zhongyin, deallocate azimu
+    deallocate(azimu,stat=istat)
 
 	deallocate(value,error,exist,STAT=istat)
 	deallocate(new_TxType,new_Tx,new_Rx,STAT=istat)

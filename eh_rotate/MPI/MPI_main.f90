@@ -109,7 +109,8 @@ Subroutine Master_Job_fwdPred(sigma,d1,eAll)
          d1%d(iTx)%data(i)%errorBar = .false.
          iDt = d1%d(iTx)%data(i)%dataType
 		     do j = 1,d1%d(iTx)%data(i)%nSite
-		        call dataResp(eAll%solns(iTx),sigma,iDt,d1%d(iTx)%data(i)%rx(j),d1%d(iTx)%data(i)%value(:,j))
+              call dataResp(eAll%solns(iTx),sigma,iDt,d1%d(iTx)%data(i)%rx(j),d1%d(iTx)%data(i)%value(:,j), &
+                           d1%d(iTx)%data(i)%Azimuth(:,j))
 		     end do
       end do
    end do   
@@ -183,6 +184,10 @@ do iper=1,nTx
            do istn=1,nStn
               stn_index=stn_index+1
               worker_job_task%Stn_index= stn_index  
+
+              ! 2019.05.08, Liu Zhongyin, add iSite for rx in dataBlock_t
+              worker_job_task%iSite= istn
+
  	            dest=dest+1
 	            call create_worker_job_task_place_holder
 	            call Pack_worker_job_task
@@ -883,6 +888,10 @@ Subroutine Worker_job (sigma,d)
    type(modelParam_t), pointer    :: Qreal(:),Qimag(:)
    logical      :: Qzero
  
+   ! 2019.05.08, Liu Zhongyin, add isite for rx in dataBlock_t
+   integer                       :: isite
+
+ 
 
       
        
@@ -947,6 +956,9 @@ elseif (trim(worker_job_task%what_to_do) .eq. 'COMPUTE_J') then
           dt=worker_job_task%data_type
           worker_job_task%taskid=taskid
           
+          ! 2019.05.08, Liu Zhongyin, assign isite 
+          isite=worker_job_task%iSite
+          
 nComp = d%d(per_index)%data(dt_index)%nComp           
 isComplex = d%d(per_index)%data(dt_index)%isComplex
 
@@ -994,7 +1006,9 @@ isComplex = d%d(per_index)%data(dt_index)%isComplex
 	  end do
 	  
    ! compute linearized data functional(s) : L
-   call Lrows(e0,sigma,dt,stn_index,L)
+   ! call Lrows(e0,sigma,dt,stn_index,L)
+   ! 2019.05.08, Liu Zhongyin, add Angle
+   call Lrows(e0,sigma,dt,stn_index,L,d%d(per_index)%data(dt_index)%Azimuth(:,isite))
    ! compute linearized data functional(s) : Q
    call Qrows(e0,sigma,dt,stn_index,Qzero,Qreal,Qimag)	  		              
    ! loop over functionals  (e.g., for 2D TE/TM impedances nFunc = 1)
