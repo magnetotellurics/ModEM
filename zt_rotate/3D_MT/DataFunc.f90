@@ -459,7 +459,7 @@ Contains
   logical			:: ComputeHz
 
   ! 2019.05.15, Liu Zhongyin, Add Eout,Bout
-  complex(kind=prec) :: Eout(2,2),Bout(3,2),c3
+  complex(kind=prec) :: Eout(2,2),Bout(3,2),c3,c4
   real(kind=prec) :: cos2a,sin2a,cosa,sina,det,det2
 
 
@@ -597,137 +597,169 @@ case(Full_Impedance,Phase_Tensor)
    ! Zxx/Ex1
    c1 =  Bout(2,2) + cos2a*Bout(2,2) - Bout(1,2)*sin2a
    c1 =  c1/2./det
+   ! Zxx/Ey1
+   c2 =  (cos2a-1)*Bout(1,2) + Bout(2,2)*sin2a
+   c2 =  c2/2./det
    ! Zxx/Hx1
-   c2 =  (Eout(1,2)*Bout(2,1) - Eout(1,1)*Bout(2,2))*((1+cos2a)*Bout(2,2) - Bout(1,2)*sin2a)
-   c2 =  c2 + Eout(2,1)*Bout(2,2)*((1-cos2a)*Bout(1,2) - Bout(2,2)*sin2a)
-   c2 =  c2 + Eout(2,2)*Bout(2,1)*((cos2a-1)*Bout(1,2) + Bout(2,2)*sin2a)
-   c2 =  c2/2./det2
+   c3 =  (Eout(1,2)*Bout(2,1) - Eout(1,1)*Bout(2,2))*((1+cos2a)*Bout(2,2) - Bout(1,2)*sin2a)
+   c3 =  c3 + Eout(2,1)*Bout(2,2)*((1-cos2a)*Bout(1,2) - Bout(2,2)*sin2a)
+   c3 =  c3 + Eout(2,2)*Bout(2,1)*((cos2a-1)*Bout(1,2) + Bout(2,2)*sin2a)
+   c3 =  c3/2./det2
    ! Zxx/Hy1
-   c3 =  (Eout(1,2)*Bout(1,1) - Eout(1,1)*Bout(1,2))*((1+cos2a)*Bout(2,2) - Bout(1,2)*sin2a)
-   c3 =  c3 + Eout(2,1)*Bout(1,2)*((1-cos2a)*Bout(1,2) - Bout(2,2)*sin2a)
-   c3 =  c3 + Eout(2,2)*Bout(1,1)*((cos2a-1)*Bout(1,2) + Bout(2,2)*sin2a)
-   c3 = -c3/2./det2
-   Call linComb_sparsevecc(Lex,c1,Lbx,c2,L1)
-   Call linComb_sparsevecc(L1,C_ONE,Lby,c3,L(1)%L(1))
+   c4 =  (Eout(1,2)*Bout(1,1) - Eout(1,1)*Bout(1,2))*((1+cos2a)*Bout(2,2) - Bout(1,2)*sin2a)
+   c4 =  c4 + Eout(2,1)*Bout(1,2)*((1-cos2a)*Bout(1,2) - Bout(2,2)*sin2a)
+   c4 =  c4 + Eout(2,2)*Bout(1,1)*((cos2a-1)*Bout(1,2) + Bout(2,2)*sin2a)
+   c4 = -c4/2./det2
+   Call linComb_sparsevecc(Lex,c1,Ley,c2,L1)
+   Call linComb_sparsevecc(Lbx,c3,Lby,c4,L2)
+   Call linComb_sparsevecc(L1,C_ONE,L2,C_ONE,L(1)%L(1))
    ! mode2
    ! Zxx/Ex2
    c1 =  Bout(2,1) + cos2a*Bout(2,1) - Bout(1,1)*sin2a
    c1 = -c1/2./det
+   ! Zxx/Ey2
+   c2 =  Bout(1,1) - cos2a*Bout(1,1) - Bout(2,1)*sin2a
+   c2 =  c2/2./det
    ! Zxx/Hx2
-   c2 =  Eout(1,2)*Bout(2,1)*((1+cos2a)*Bout(2,1) - Bout(1,1)*sin2a)
-   c2 =  c2 + Eout(2,2)*Bout(2,1)*((cos2a-1)*Bout(1,1) + Bout(2,1)*sin2a)
-   c2 =  c2 - Bout(2,2)*((cos2a-1)*Eout(2,1)*Bout(1,1) + Eout(2,1)*Bout(2,1)*sin2a + Eout(1,1)*((1+cos2a)*Bout(2,1) - Bout(1,1)*sin2a))
-   c2 = -c2/2./det2
-   ! Zxx/Hy2
-   c3 =  (Eout(1,2)*Bout(1,1) - Eout(1,1)*Bout(1,2))*(-(cos2a+1)*Bout(2,1) + Bout(1,1)*sin2a)
-   c3 =  c3 + Eout(2,2)*Bout(1,1)*((1-cos2a)*Bout(1,1) - Bout(2,1)*sin2a)
-   c3 =  c3 + Eout(2,1)*Bout(1,2)*((cos2a-1)*Bout(1,1) + Bout(2,1)*sin2a)
+   c3 =  Eout(1,2)*Bout(2,1)*((1+cos2a)*Bout(2,1) - Bout(1,1)*sin2a)
+   c3 =  c3 + Eout(2,2)*Bout(2,1)*((cos2a-1)*Bout(1,1) + Bout(2,1)*sin2a)
+   c3 =  c3 - Bout(2,2)*((cos2a-1)*Eout(2,1)*Bout(1,1) + Eout(2,1)*Bout(2,1)*sin2a + Eout(1,1)*((1+cos2a)*Bout(2,1) - Bout(1,1)*sin2a))
    c3 = -c3/2./det2
-   Call linComb_sparsevecc(Lex,c1,Lbx,c2,L1)
-   call linComb_sparsevecc(L1,C_ONE,Lby,c3,L(1)%L(2))
+   ! Zxx/Hy2
+   c4 =  (Eout(1,2)*Bout(1,1) - Eout(1,1)*Bout(1,2))*(-(cos2a+1)*Bout(2,1) + Bout(1,1)*sin2a)
+   c4 =  c4 + Eout(2,2)*Bout(1,1)*((1-cos2a)*Bout(1,1) - Bout(2,1)*sin2a)
+   c4 =  c4 + Eout(2,1)*Bout(1,2)*((cos2a-1)*Bout(1,1) + Bout(2,1)*sin2a)
+   c4 = -c4/2./det2
+   Call linComb_sparsevecc(Lex,c1,Ley,c2,L1)
+   Call linComb_sparsevecc(Lbx,c3,Lby,c4,L2)
+   call linComb_sparsevecc(L1,C_ONE,L2,C_ONE,L(1)%L(2))
 
    ! zxy
    ! mode1
    ! Zxy/Ex1
    c1 =  Bout(1,2) + cos2a*Bout(1,2) + Bout(2,2)*sin2a
    c1 = -c1/2./det
+   ! Zxy/Ey1
+   c2 =  Bout(2,2) - cos2a*Bout(2,2) + Bout(1,2)*sin2a
+   c2 = -c2/2./det
    ! Zxy/Hx1
-   c2 =  (Eout(2,2)*Bout(2,1) - Eout(2,1)*Bout(2,2))*((cos2a-1)*Bout(2,2) - Bout(1,2)*sin2a)
-   c2 =  c2 - Eout(1,2)*Bout(2,1)*((1+cos2a)*Bout(1,2) + Bout(2,2)*sin2a)
-   c2 =  c2 + Eout(1,1)*Bout(2,2)*((1+cos2a)*Bout(1,2) + Bout(2,2)*sin2a)
-   c2 =  c2/2./det2
-   ! Zxy/Hy1
-   c3 =  (Eout(2,2)*Bout(1,1) - Eout(2,1)*Bout(1,2))*((1-cos2a)*Bout(2,2) + Bout(1,2)*sin2a)
-   c3 =  c3 + Eout(1,2)*Bout(1,1)*((1+cos2a)*Bout(1,2) + Bout(2,2)*sin2a)
-   c3 =  c3 - Eout(1,1)*Bout(1,2)*((1+cos2a)*Bout(1,2) + Bout(2,2)*sin2a)
+   c3 =  (Eout(2,2)*Bout(2,1) - Eout(2,1)*Bout(2,2))*((cos2a-1)*Bout(2,2) - Bout(1,2)*sin2a)
+   c3 =  c3 - Eout(1,2)*Bout(2,1)*((1+cos2a)*Bout(1,2) + Bout(2,2)*sin2a)
+   c3 =  c3 + Eout(1,1)*Bout(2,2)*((1+cos2a)*Bout(1,2) + Bout(2,2)*sin2a)
    c3 =  c3/2./det2
-   Call linComb_sparsevecc(Lex,c1,Lbx,c2,L1)
-   Call linComb_sparsevecc(L1,C_ONE,Lby,c3,L(2)%L(1))
+   ! Zxy/Hy1
+   c4 =  (Eout(2,2)*Bout(1,1) - Eout(2,1)*Bout(1,2))*((1-cos2a)*Bout(2,2) + Bout(1,2)*sin2a)
+   c4 =  c4 + Eout(1,2)*Bout(1,1)*((1+cos2a)*Bout(1,2) + Bout(2,2)*sin2a)
+   c4 =  c4 - Eout(1,1)*Bout(1,2)*((1+cos2a)*Bout(1,2) + Bout(2,2)*sin2a)
+   c4 =  c4/2./det2
+   Call linComb_sparsevecc(Lex,c1,Ley,c2,L1)
+   Call linComb_sparsevecc(Lbx,c3,Lby,c4,L2)
+   Call linComb_sparsevecc(L1,C_ONE,L2,C_ONE,L(2)%L(1))
    ! mode2
    ! Zxy/Ex2
    c1 =  Bout(1,1) + cos2a*Bout(1,1) + Bout(2,1)*sin2a
    c1 =  c1/2./det
+   ! Zxy/Ey2
+   c2 =  Bout(2,1) - cos2a*Bout(2,1) + Bout(1,1)*sin2a
+   c2 =  c2/2./det
    ! Zxy/Hx2
-   c2 =  Eout(2,2)*Bout(2,1)*((1-cos2a)*Bout(2,1) + Bout(1,1)*sin2a)
-   c2 =  c2 + Eout(1,2)*Bout(2,1)*((1+cos2a)*Bout(1,1) + Bout(2,1)*sin2a)
-   c2 =  c2 - Bout(2,2)*(Eout(2,1)*((1-cos2a)*Bout(2,1) + Bout(1,1)*sin2a) + Eout(1,1)*((1+cos2a)*Bout(1,1) + Bout(2,1)*sin2a))
-   c2 =  c2/2./det2
+   c3 =  Eout(2,2)*Bout(2,1)*((1-cos2a)*Bout(2,1) + Bout(1,1)*sin2a)
+   c3 =  c3 + Eout(1,2)*Bout(2,1)*((1+cos2a)*Bout(1,1) + Bout(2,1)*sin2a)
+   c3 =  c3 - Bout(2,2)*(Eout(2,1)*((1-cos2a)*Bout(2,1) + Bout(1,1)*sin2a) + Eout(1,1)*((1+cos2a)*Bout(1,1) + Bout(2,1)*sin2a))
+   c3 =  c3/2./det2
    ! Zxy/Hy2
-   c3 =  (Eout(2,2)*Bout(1,1) - Eout(2,1)*Bout(1,2))*((1-cos2a)*Bout(2,1) + Bout(1,1)*sin2a)
-   c3 =  c3 + Eout(1,2)*Bout(1,1)*((1+cos2a)*Bout(1,1) + Bout(2,1)*sin2a)
-   c3 =  c3 - Eout(1,1)*Bout(1,2)*((1+cos2a)*Bout(1,1) + Bout(2,1)*sin2a)
-   c3 = -c3/2./det2
-   Call linComb_sparsevecc(Lex,c1,Lbx,c2,L1)
-   Call linComb_sparsevecc(L1,C_ONE,Lby,c3,L(2)%L(2))
+   c4 =  (Eout(2,2)*Bout(1,1) - Eout(2,1)*Bout(1,2))*((1-cos2a)*Bout(2,1) + Bout(1,1)*sin2a)
+   c4 =  c4 + Eout(1,2)*Bout(1,1)*((1+cos2a)*Bout(1,1) + Bout(2,1)*sin2a)
+   c4 =  c4 - Eout(1,1)*Bout(1,2)*((1+cos2a)*Bout(1,1) + Bout(2,1)*sin2a)
+   c4 = -c4/2./det2
+   Call linComb_sparsevecc(Lex,c1,Ley,c2,L1)
+   Call linComb_sparsevecc(Lbx,c3,Lby,c4,L2)
+   Call linComb_sparsevecc(L1,C_ONE,L2,C_ONE,L(2)%L(2))
 
    ! zyx
    ! mode1
-   ! Zyx/Ey1
-   c1 =  Bout(2,2) + cos2a*Bout(2,2) - Bout(1,2)*sin2a
+   ! Zyx/Ex1
+   c1 =  Bout(1,2) - cos2a*Bout(1,2) - Bout(2,2)*sin2a
    c1 =  c1/2./det
+   ! Zyx/Ey1
+   c2 =  Bout(2,2) + cos2a*Bout(2,2) - Bout(1,2)*sin2a
+   c2 =  c2/2./det
    ! Zyx/Hx1
-   c2 =  (Eout(2,2)*Bout(2,1) - Eout(2,1)*Bout(2,2))*((1+cos2a)*Bout(2,2) - Bout(1,2)*sin2a)
-   c2 =  c2 + Eout(1,2)*Bout(2,1)*((1-cos2a)*Bout(1,2) - Bout(2,2)*sin2a)
-   c2 =  c2 + Eout(1,1)*Bout(2,2)*((cos2a-1)*Bout(1,2) + Bout(2,2)*sin2a)
-   c2 =  c2/2./det2
+   c3 =  (Eout(2,2)*Bout(2,1) - Eout(2,1)*Bout(2,2))*((1+cos2a)*Bout(2,2) - Bout(1,2)*sin2a)
+   c3 =  c3 + Eout(1,2)*Bout(2,1)*((1-cos2a)*Bout(1,2) - Bout(2,2)*sin2a)
+   c3 =  c3 + Eout(1,1)*Bout(2,2)*((cos2a-1)*Bout(1,2) + Bout(2,2)*sin2a)
+   c3 =  c3/2./det2
    ! Zyx/Hy1
-   c3 = -(Eout(2,2)*Bout(1,1) - Eout(2,1)*Bout(1,2))*((1+cos2a)*Bout(2,2) - Bout(1,2)*sin2a)
-   c3 =  c3 + Eout(1,1)*Bout(1,2)*((1-cos2a)*Bout(1,2) - Bout(2,2)*sin2a)
-   c3 =  c3 + Eout(1,2)*Bout(1,1)*((cos2a-1)*Bout(1,2) + Bout(2,2)*sin2a) 
-   c3 =  c3/2./det2
-   Call linComb_sparsevecc(Ley,c1,Lbx,c2,L1)
-   Call linComb_sparsevecc(L1,C_ONE,Lby,c3,L(3)%L(1))
+   c4 = -(Eout(2,2)*Bout(1,1) - Eout(2,1)*Bout(1,2))*((1+cos2a)*Bout(2,2) - Bout(1,2)*sin2a)
+   c4 =  c4 + Eout(1,1)*Bout(1,2)*((1-cos2a)*Bout(1,2) - Bout(2,2)*sin2a)
+   c4 =  c4 + Eout(1,2)*Bout(1,1)*((cos2a-1)*Bout(1,2) + Bout(2,2)*sin2a) 
+   c4 =  c4/2./det2
+   Call linComb_sparsevecc(Lex,c1,Ley,c2,L1)
+   Call linComb_sparsevecc(Lbx,c3,Lby,c4,L2)
+   Call linComb_sparsevecc(L1,C_ONE,L2,C_ONE,L(3)%L(1))
    ! mode2
+   ! Zyx/Ex2
+   c1 =  (cos2a-1)*Bout(1,1) + Bout(2,1)*sin2a
+   c1 =  c1/2./det
    ! Zyx/Ey2
-   c1 =  Bout(2,1) + cos2a*Bout(2,1) - Bout(1,1)*sin2a
-   c1 = -c1/2./det
+   c2 =  Bout(2,1) + cos2a*Bout(2,1) - Bout(1,1)*sin2a
+   c2 = -c2/2./det
    ! Zyx/Hx2
-   c2 = -Eout(2,2)*Bout(2,1)*((1+cos2a)*Bout(2,1) - Bout(1,1)*sin2a) 
-   c2 =  c2 + Eout(2,1)*Bout(2,2)*((1+cos2a)*Bout(2,1) - Bout(1,1)*sin2a)
-   c2 =  c2 + Eout(1,1)*Bout(2,2)*((1-cos2a)*Bout(1,1) - Bout(2,1)*sin2a)
-   c2 =  c2 + Eout(1,2)*Bout(2,1)*((cos2a-1)*Bout(1,1) + Bout(2,1)*sin2a)
-   c2 =  c2/2./det2
-   ! Zyx/Hy2
-   c3 = -(Eout(2,2)*Bout(1,1) - Eout(2,1)*Bout(1,2))*(-(1+cos2a)*Bout(2,1) + Bout(1,1)*sin2a) 
-   c3 =  c3 + Eout(1,2)*Bout(1,1)*((1-cos2a)*Bout(1,1) - Bout(2,1)*sin2a)
-   c3 =  c3 + Eout(1,1)*Bout(1,2)*((cos2a-1)*Bout(1,1) + Bout(2,1)*sin2a)
+   c3 = -Eout(2,2)*Bout(2,1)*((1+cos2a)*Bout(2,1) - Bout(1,1)*sin2a) 
+   c3 =  c3 + Eout(2,1)*Bout(2,2)*((1+cos2a)*Bout(2,1) - Bout(1,1)*sin2a)
+   c3 =  c3 + Eout(1,1)*Bout(2,2)*((1-cos2a)*Bout(1,1) - Bout(2,1)*sin2a)
+   c3 =  c3 + Eout(1,2)*Bout(2,1)*((cos2a-1)*Bout(1,1) + Bout(2,1)*sin2a)
    c3 =  c3/2./det2
-   Call linComb_sparsevecc(Ley,c1,Lbx,c2,L1)
-   Call linComb_sparsevecc(L1,C_ONE,Lby,c3,L(3)%L(2))
+   ! Zyx/Hy2
+   c4 = -(Eout(2,2)*Bout(1,1) - Eout(2,1)*Bout(1,2))*(-(1+cos2a)*Bout(2,1) + Bout(1,1)*sin2a) 
+   c4 =  c4 + Eout(1,2)*Bout(1,1)*((1-cos2a)*Bout(1,1) - Bout(2,1)*sin2a)
+   c4 =  c4 + Eout(1,1)*Bout(1,2)*((cos2a-1)*Bout(1,1) + Bout(2,1)*sin2a)
+   c4 =  c4/2./det2
+   Call linComb_sparsevecc(Lex,c1,Ley,c2,L1)
+   Call linComb_sparsevecc(Lbx,c3,Lby,c4,L2)
+   Call linComb_sparsevecc(L1,C_ONE,L2,C_ONE,L(3)%L(2))
 
    ! zyy
    ! mode1
-   ! Zyy/Ey1
-   c1 =  Bout(1,2) +cos2a*Bout(1,2) + Bout(2,2)*sin2a
-   c1 = -c1/2./det
-   ! Zyy/Hx1
-   c2 =  (Eout(1,2)*Bout(2,1) - Eout(1,1)*Bout(2,2))*((cos2a-1)*Bout(2,2) - Bout(1,2)*sin2a)
-   c2 =  c2 + Eout(2,2)*Bout(2,1)*((1+cos2a)*Bout(1,2) + Bout(2,2)*sin2a)
-   c2 =  c2 - Eout(2,1)*Bout(2,2)*((1+cos2a)*Bout(1,2) + Bout(2,2)*sin2a)
-   c2 = -c2/2./det2
-   ! Zyy/Hy1
-   c3 =  (Eout(1,2)*Bout(1,1) - Eout(1,1)*Bout(1,2))*((1-cos2a)*Bout(2,2) + Bout(1,2)*sin2a)
-   c3 =  c3 - Eout(2,2)*Bout(1,1)*((1+cos2a)*Bout(1,2) + Bout(2,2)*sin2a)
-   c3 =  c3 + Eout(2,1)*Bout(1,2)*((1+cos2a)*Bout(1,2) + Bout(2,2)*sin2a)
-   c3 = -c3/2./det2
-   Call linComb_sparsevecc(Ley,c1,Lbx,c2,L1)
-   Call linComb_sparsevecc(L1,C_ONE,Lby,c3,L(4)%L(1))
-   ! mode2
-   ! Zyy/Ey2
-   c1 =  Bout(1,1) + cos2a*Bout(1,1) + Bout(2,1)*sin2a
+   ! Zyy/Ex1
+   c1 =  Bout(2,2) - cos2a*Bout(2,2) + Bout(1,2)*sin2a
    c1 =  c1/2./det
+   ! Zyy/Ey1
+   c2 =  Bout(1,2) +cos2a*Bout(1,2) + Bout(2,2)*sin2a
+   c2 = -c2/2./det
+   ! Zyy/Hx1
+   c3 =  (Eout(1,2)*Bout(2,1) - Eout(1,1)*Bout(2,2))*((cos2a-1)*Bout(2,2) - Bout(1,2)*sin2a)
+   c3 =  c3 + Eout(2,2)*Bout(2,1)*((1+cos2a)*Bout(1,2) + Bout(2,2)*sin2a)
+   c3 =  c3 - Eout(2,1)*Bout(2,2)*((1+cos2a)*Bout(1,2) + Bout(2,2)*sin2a)
+   c3 = -c3/2./det2
+   ! Zyy/Hy1
+   c4 =  (Eout(1,2)*Bout(1,1) - Eout(1,1)*Bout(1,2))*((1-cos2a)*Bout(2,2) + Bout(1,2)*sin2a)
+   c4 =  c4 - Eout(2,2)*Bout(1,1)*((1+cos2a)*Bout(1,2) + Bout(2,2)*sin2a)
+   c4 =  c4 + Eout(2,1)*Bout(1,2)*((1+cos2a)*Bout(1,2) + Bout(2,2)*sin2a)
+   c4 = -c4/2./det2
+   Call linComb_sparsevecc(Lex,c1,Ley,c2,L1)
+   Call linComb_sparsevecc(Lbx,c3,Lby,c4,L2)
+   Call linComb_sparsevecc(L1,C_ONE,L2,C_ONE,L(4)%L(1))
+   ! mode2
+   ! Zyy/Ex2
+   c1 =  Bout(2,1) - cos2a*Bout(2,1) + Bout(1,1)*sin2a
+   c1 = -c1/2./det
+   ! Zyy/Ey2
+   c2 =  Bout(1,1) + cos2a*Bout(1,1) + Bout(2,1)*sin2a
+   c2 =  c2/2./det
    ! Zyy/Hx2
-   c2 =  Eout(1,2)*Bout(2,1)*((cos2a-1)*Bout(2,1) - Bout(1,1)*sin2a)
-   c2 =  c2 + Eout(2,2)*Bout(2,1)*((1+cos2a)*Bout(1,1) + Bout(2,1)*sin2a)
-   c2 =  c2 - Bout(2,2)*((cos2a-1)*Eout(1,1)*Bout(2,1) - Eout(1,1)*Bout(1,1)*sin2a + Eout(2,1)*((1+cos2a)*Bout(1,1) + Bout(2,1)*sin2a))
-   c2 =  c2/2./det2
-   ! Zyy/Hy2
-   c3 =  (Eout(1,2)*Bout(1,1) - Eout(1,1)*Bout(1,2))*((1-cos2a)*Bout(2,1) + Bout(1,1)*sin2a)
-   c3 =  c3 - Eout(2,2)*Bout(1,1)*((1+cos2a)*Bout(1,1) + Bout(2,1)*sin2a)
-   c3 =  c3 + Eout(2,1)*Bout(1,2)*((1+cos2a)*Bout(1,1) + Bout(2,1)*sin2a) 
+   c3 =  Eout(1,2)*Bout(2,1)*((cos2a-1)*Bout(2,1) - Bout(1,1)*sin2a)
+   c3 =  c3 + Eout(2,2)*Bout(2,1)*((1+cos2a)*Bout(1,1) + Bout(2,1)*sin2a)
+   c3 =  c3 - Bout(2,2)*((cos2a-1)*Eout(1,1)*Bout(2,1) - Eout(1,1)*Bout(1,1)*sin2a + Eout(2,1)*((1+cos2a)*Bout(1,1) + Bout(2,1)*sin2a))
    c3 =  c3/2./det2
-   Call linComb_sparsevecc(Ley,c1,Lbx,c2,L1)
-   Call linComb_sparsevecc(L1,C_ONE,Lby,c3,L(4)%L(2))
+   ! Zyy/Hy2
+   c4 =  (Eout(1,2)*Bout(1,1) - Eout(1,1)*Bout(1,2))*((1-cos2a)*Bout(2,1) + Bout(1,1)*sin2a)
+   c4 =  c4 - Eout(2,2)*Bout(1,1)*((1+cos2a)*Bout(1,1) + Bout(2,1)*sin2a)
+   c4 =  c4 + Eout(2,1)*Bout(1,2)*((1+cos2a)*Bout(1,1) + Bout(2,1)*sin2a) 
+   c4 =  c4/2./det2
+   Call linComb_sparsevecc(Lex,c1,Ley,c2,L1)
+   Call linComb_sparsevecc(Lbx,c3,Lby,c4,L2)
+   Call linComb_sparsevecc(L1,C_ONE,L2,C_ONE,L(4)%L(2))
 
 case(Off_Diagonal_Impedance,Off_Diagonal_Rho_Phase)
    ! zxy
@@ -735,69 +767,85 @@ case(Off_Diagonal_Impedance,Off_Diagonal_Rho_Phase)
    ! Zxy/Ex1
    c1 =  Bout(1,2) + cos2a*Bout(1,2) + Bout(2,2)*sin2a
    c1 = -c1/2./det
+   ! Zxy/Ey1
+   c2 =  Bout(2,2) - cos2a*Bout(2,2) + Bout(1,2)*sin2a
+   c2 = -c2/2./det
    ! Zxy/Hx1
-   c2 =  (Eout(2,2)*Bout(2,1) - Eout(2,1)*Bout(2,2))*((cos2a-1)*Bout(2,2) - Bout(1,2)*sin2a)
-   c2 =  c2 - Eout(1,2)*Bout(2,1)*((1+cos2a)*Bout(1,2) + Bout(2,2)*sin2a)
-   c2 =  c2 + Eout(1,1)*Bout(2,2)*((1+cos2a)*Bout(1,2) + Bout(2,2)*sin2a)
-   c2 =  c2/2./det2
-   ! Zxy/Hy1
-   c3 =  (Eout(2,2)*Bout(1,1) - Eout(2,1)*Bout(1,2))*((1-cos2a)*Bout(2,2) + Bout(1,2)*sin2a)
-   c3 =  c3 + Eout(1,2)*Bout(1,1)*((1+cos2a)*Bout(1,2) + Bout(2,2)*sin2a)
-   c3 =  c3 - Eout(1,1)*Bout(1,2)*((1+cos2a)*Bout(1,2) + Bout(2,2)*sin2a)
+   c3 =  (Eout(2,2)*Bout(2,1) - Eout(2,1)*Bout(2,2))*((cos2a-1)*Bout(2,2) - Bout(1,2)*sin2a)
+   c3 =  c3 - Eout(1,2)*Bout(2,1)*((1+cos2a)*Bout(1,2) + Bout(2,2)*sin2a)
+   c3 =  c3 + Eout(1,1)*Bout(2,2)*((1+cos2a)*Bout(1,2) + Bout(2,2)*sin2a)
    c3 =  c3/2./det2
-   Call linComb_sparsevecc(Lex,c1,Lbx,c2,L1)
-   Call linComb_sparsevecc(L1,C_ONE,Lby,c3,L(1)%L(1))
+   ! Zxy/Hy1
+   c4 =  (Eout(2,2)*Bout(1,1) - Eout(2,1)*Bout(1,2))*((1-cos2a)*Bout(2,2) + Bout(1,2)*sin2a)
+   c4 =  c4 + Eout(1,2)*Bout(1,1)*((1+cos2a)*Bout(1,2) + Bout(2,2)*sin2a)
+   c4 =  c4 - Eout(1,1)*Bout(1,2)*((1+cos2a)*Bout(1,2) + Bout(2,2)*sin2a)
+   c4 =  c4/2./det2
+   Call linComb_sparsevecc(Lex,c1,Ley,c2,L1)
+   Call linComb_sparsevecc(Lbx,c3,Lby,c4,L2)
+   Call linComb_sparsevecc(L1,C_ONE,L2,C_ONE,L(1)%L(1))
    ! mode2
    ! Zxy/Ex2
    c1 =  Bout(1,1) + cos2a*Bout(1,1) + Bout(2,1)*sin2a
    c1 =  c1/2./det
+   ! Zxy/Ey2
+   c2 =  Bout(2,1) - cos2a*Bout(2,1) + Bout(1,1)*sin2a
+   c2 =  c2/2./det
    ! Zxy/Hx2
-   c2 =  Eout(2,2)*Bout(2,1)*((1-cos2a)*Bout(2,1) + Bout(1,1)*sin2a)
-   c2 =  c2 + Eout(1,2)*Bout(2,1)*((1+cos2a)*Bout(1,1) + Bout(2,1)*sin2a)
-   c2 =  c2 - Bout(2,2)*(Eout(2,1)*((1-cos2a)*Bout(2,1) + Bout(1,1)*sin2a) + Eout(1,1)*((1+cos2a)*Bout(1,1) + Bout(2,1)*sin2a))
-   c2 =  c2/2./det2
+   c3 =  Eout(2,2)*Bout(2,1)*((1-cos2a)*Bout(2,1) + Bout(1,1)*sin2a)
+   c3 =  c3 + Eout(1,2)*Bout(2,1)*((1+cos2a)*Bout(1,1) + Bout(2,1)*sin2a)
+   c3 =  c3 - Bout(2,2)*(Eout(2,1)*((1-cos2a)*Bout(2,1) + Bout(1,1)*sin2a) + Eout(1,1)*((1+cos2a)*Bout(1,1) + Bout(2,1)*sin2a))
+   c3 =  c3/2./det2
    ! Zxy/Hy2
-   c3 =  (Eout(2,2)*Bout(1,1) - Eout(2,1)*Bout(1,2))*((1-cos2a)*Bout(2,1) + Bout(1,1)*sin2a)
-   c3 =  c3 + Eout(1,2)*Bout(1,1)*((1+cos2a)*Bout(1,1) + Bout(2,1)*sin2a)
-   c3 =  c3 - Eout(1,1)*Bout(1,2)*((1+cos2a)*Bout(1,1) + Bout(2,1)*sin2a)
-   c3 = -c3/2./det2
-   Call linComb_sparsevecc(Lex,c1,Lbx,c2,L1)
-   Call linComb_sparsevecc(L1,C_ONE,Lby,c3,L(1)%L(2))
+   c4 =  (Eout(2,2)*Bout(1,1) - Eout(2,1)*Bout(1,2))*((1-cos2a)*Bout(2,1) + Bout(1,1)*sin2a)
+   c4 =  c4 + Eout(1,2)*Bout(1,1)*((1+cos2a)*Bout(1,1) + Bout(2,1)*sin2a)
+   c4 =  c4 - Eout(1,1)*Bout(1,2)*((1+cos2a)*Bout(1,1) + Bout(2,1)*sin2a)
+   c4 = -c4/2./det2
+   Call linComb_sparsevecc(Lex,c1,Ley,c2,L1)
+   Call linComb_sparsevecc(Lbx,c3,Lby,c4,L2)
+   Call linComb_sparsevecc(L1,C_ONE,L2,C_ONE,L(1)%L(2))
 
    ! zyx
    ! mode1
-   ! Zyx/Ey1
-   c1 =  Bout(2,2) + cos2a*Bout(2,2) - Bout(1,2)*sin2a
+   ! Zyx/Ex1
+   c1 =  Bout(1,2) - cos2a*Bout(1,2) - Bout(2,2)*sin2a
    c1 =  c1/2./det
+   ! Zyx/Ey1
+   c2 =  Bout(2,2) + cos2a*Bout(2,2) - Bout(1,2)*sin2a
+   c2 =  c2/2./det
    ! Zyx/Hx1
-   c2 =  (Eout(2,2)*Bout(2,1) - Eout(2,1)*Bout(2,2))*((1+cos2a)*Bout(2,2) - Bout(1,2)*sin2a)
-   c2 =  c2 + Eout(1,2)*Bout(2,1)*((1-cos2a)*Bout(1,2) - Bout(2,2)*sin2a)
-   c2 =  c2 + Eout(1,1)*Bout(2,2)*((cos2a-1)*Bout(1,2) + Bout(2,2)*sin2a)
-   c2 =  c2/2./det2
+   c3 =  (Eout(2,2)*Bout(2,1) - Eout(2,1)*Bout(2,2))*((1+cos2a)*Bout(2,2) - Bout(1,2)*sin2a)
+   c3 =  c3 + Eout(1,2)*Bout(2,1)*((1-cos2a)*Bout(1,2) - Bout(2,2)*sin2a)
+   c3 =  c3 + Eout(1,1)*Bout(2,2)*((cos2a-1)*Bout(1,2) + Bout(2,2)*sin2a)
+   c3 =  c3/2./det2
    ! Zyx/Hy1
-   c3 = -(Eout(2,2)*Bout(1,1) - Eout(2,1)*Bout(1,2))*((1+cos2a)*Bout(2,2) - Bout(1,2)*sin2a)
-   c3 =  c3 + Eout(1,1)*Bout(1,2)*((1-cos2a)*Bout(1,2) - Bout(2,2)*sin2a)
-   c3 =  c3 + Eout(1,2)*Bout(1,1)*((cos2a-1)*Bout(1,2) + Bout(2,2)*sin2a) 
-   c3 =  c3/2./det2
-   Call linComb_sparsevecc(Ley,c1,Lbx,c2,L1)
-   Call linComb_sparsevecc(L1,C_ONE,Lby,c3,L(2)%L(1))
+   c4 = -(Eout(2,2)*Bout(1,1) - Eout(2,1)*Bout(1,2))*((1+cos2a)*Bout(2,2) - Bout(1,2)*sin2a)
+   c4 =  c4 + Eout(1,1)*Bout(1,2)*((1-cos2a)*Bout(1,2) - Bout(2,2)*sin2a)
+   c4 =  c4 + Eout(1,2)*Bout(1,1)*((cos2a-1)*Bout(1,2) + Bout(2,2)*sin2a) 
+   c4 =  c4/2./det2
+   Call linComb_sparsevecc(Lex,c1,Ley,c2,L1)
+   Call linComb_sparsevecc(Lbx,c3,Lby,c4,L2)
+   Call linComb_sparsevecc(L1,C_ONE,L2,C_ONE,L(2)%L(1))
    ! mode2
+   ! Zyx/Ex2
+   c1 =  (cos2a-1)*Bout(1,1) + Bout(2,1)*sin2a
+   c1 =  c1/2./det
    ! Zyx/Ey2
-   c1 =  Bout(2,1) + cos2a*Bout(2,1) - Bout(1,1)*sin2a
-   c1 = -c1/2./det
+   c2 =  Bout(2,1) + cos2a*Bout(2,1) - Bout(1,1)*sin2a
+   c2 = -c2/2./det
    ! Zyx/Hx2
-   c2 = -Eout(2,2)*Bout(2,1)*((1+cos2a)*Bout(2,1) - Bout(1,1)*sin2a) 
-   c2 =  c2 + Eout(2,1)*Bout(2,2)*((1+cos2a)*Bout(2,1) - Bout(1,1)*sin2a)
-   c2 =  c2 + Eout(1,1)*Bout(2,2)*((1-cos2a)*Bout(1,1) - Bout(2,1)*sin2a)
-   c2 =  c2 + Eout(1,2)*Bout(2,1)*((cos2a-1)*Bout(1,1) + Bout(2,1)*sin2a)
-   c2 =  c2/2./det2
-   ! Zyx/Hy2
-   c3 = -(Eout(2,2)*Bout(1,1) - Eout(2,1)*Bout(1,2))*(-(1+cos2a)*Bout(2,1) + Bout(1,1)*sin2a) 
-   c3 =  c3 + Eout(1,2)*Bout(1,1)*((1-cos2a)*Bout(1,1) - Bout(2,1)*sin2a)
-   c3 =  c3 + Eout(1,1)*Bout(1,2)*((cos2a-1)*Bout(1,1) + Bout(2,1)*sin2a)
+   c3 = -Eout(2,2)*Bout(2,1)*((1+cos2a)*Bout(2,1) - Bout(1,1)*sin2a) 
+   c3 =  c3 + Eout(2,1)*Bout(2,2)*((1+cos2a)*Bout(2,1) - Bout(1,1)*sin2a)
+   c3 =  c3 + Eout(1,1)*Bout(2,2)*((1-cos2a)*Bout(1,1) - Bout(2,1)*sin2a)
+   c3 =  c3 + Eout(1,2)*Bout(2,1)*((cos2a-1)*Bout(1,1) + Bout(2,1)*sin2a)
    c3 =  c3/2./det2
-   Call linComb_sparsevecc(Ley,c1,Lbx,c2,L1)
-   Call linComb_sparsevecc(L1,C_ONE,Lby,c3,L(2)%L(2))
+   ! Zyx/Hy2
+   c4 = -(Eout(2,2)*Bout(1,1) - Eout(2,1)*Bout(1,2))*(-(1+cos2a)*Bout(2,1) + Bout(1,1)*sin2a) 
+   c4 =  c4 + Eout(1,2)*Bout(1,1)*((1-cos2a)*Bout(1,1) - Bout(2,1)*sin2a)
+   c4 =  c4 + Eout(1,1)*Bout(1,2)*((cos2a-1)*Bout(1,1) + Bout(2,1)*sin2a)
+   c4 =  c4/2./det2
+   Call linComb_sparsevecc(Lex,c1,Ley,c2,L1)
+   Call linComb_sparsevecc(Lbx,c3,Lby,c4,L2)
+   Call linComb_sparsevecc(L1,C_ONE,L2,C_ONE,L(2)%L(2))
 
 case(Full_Vertical_Components)
    ! tzx
