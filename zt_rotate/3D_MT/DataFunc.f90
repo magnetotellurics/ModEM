@@ -1272,7 +1272,6 @@ if (typeDict(iDT)%tfType .eq. Off_Diagonal_Rho_Phase) then
 
  ! clean up
  if (typeDict(iDT)%tfType .eq. Phase_Tensor) then
-   call deall_sparsevecc(L2)
   call deall_sparsevecc(L3)
   call deall_sparsevecc(Lp11)
   call deall_sparsevecc(Lp12)
@@ -1280,6 +1279,9 @@ if (typeDict(iDT)%tfType .eq. Off_Diagonal_Rho_Phase) then
   call deall_sparsevecc(Lp22)
   end if
 
+  if(typeDict(iDT)%tfType .ne. Full_Vertical_Components)then
+   call deall_sparsevecc(L2)
+  end if
    call deall_sparsevecc(L1)
   call deall_sparsevecc(Lex)
   call deall_sparsevecc(Ley)
