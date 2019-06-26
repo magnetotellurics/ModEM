@@ -19,7 +19,10 @@ cd test_read_write/
 echo "#### START READ_WRITE MPI TEST WITH $ncores CORES AT $now ####\n" >> std_out.txt
 #
 #
-mpirun -n $ncores ../$EXEC -R ../inputs/rFile_Model.sw ../inputs/rFile_Data.dat &>> std_out.txt
+echo "#### COMMAND LINE: 'mpirun -n $ncores ../$EXEC -R ../inputs/rFile_Model.sw ../inputs/rFile_Data.dat -v full'\n" >> std_out.txt
+#
+#
+mpirun -n $ncores ../$EXEC -R ../inputs/rFile_Model.sw ../inputs/rFile_Data.dat -v full &>> std_out.txt
 #
 #
 echo "### FINISH READ_WRITE MPI TEST ###\n" >> std_out.txt
