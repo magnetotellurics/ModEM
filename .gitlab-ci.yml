@@ -55,8 +55,8 @@ test_plain:
             - outputs/test_plain*
         expire_in: 1 week
 #
-# TEST JOB 2:   RUN Mod3DMT -F WITH ALL MODELS AND DATA
-test_model_data:
+# STANDART TEST JOB 1:   READ_WRITE
+test_read_write:
     stage: test
     dependencies:
         - build_modem_on    # DEFINE THIS JOB DEPENDENCY FROM JOB build_modem_on
@@ -64,11 +64,11 @@ test_model_data:
     script:
         #
         # MODEL - DATA EXECUTION TEST
-        - bash scripts/test_model_data.sh inputs/models/ inputs/data/ src/Mod3DMT
+        - bash scripts/test_read_write.sh src/Mod3DMT
     #
     artifacts:
         paths:
-            - outputs/test_model_data*
+            - outputs/test_read_write*
         expire_in: 1 week
 #
 # TEST JOB 3:   RUN EVERY TEST AT tests/ DIR
