@@ -16,13 +16,13 @@ mkdir -p test_read_write
 cd test_read_write/
 #
 #
-echo "#### START READ_WRITE MPI TEST WITH $ncores CORES AT $now ####" >> std_out.txt
+echo "#### START READ_WRITE MPI TEST WITH $ncores CORES AT $now ####\n" >> std_out.txt
 #
 #
-mpirun -n $ncores ../$EXEC ../inputs/rFile_Model.sw ../inputs/rFile_Data.dat &>> std_out.txt
+mpirun -n $ncores ../$EXEC -R ../inputs/rFile_Model.sw ../inputs/rFile_Data.dat &>> std_out.txt
 #
 #
-echo "### FINISH READ_WRITE MPI TEST ###" >> std_out.txt
+echo "### FINISH READ_WRITE MPI TEST ###\n" >> std_out.txt
 #
 #
 cd ..
