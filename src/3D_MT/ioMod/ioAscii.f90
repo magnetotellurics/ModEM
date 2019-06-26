@@ -596,11 +596,11 @@ Contains
           logical                   :: sparse
           real (kind=prec)   :: omega, period
 
-          sparse = .true.
+          sparse = 1
 
           if (present(format)) then
             if (trim(format) .eq. 'full') then
-                sparse = .false.
+                sparse = 0
             end if
           end if
 
@@ -730,11 +730,11 @@ Contains
           logical            :: sparse
           real (kind=prec)   :: omega,period
 
-          sparse = .true.
+          sparse = 1
 
           if (present(format)) then
             if (trim(format) .eq. 'full') then
-                sparse = .false.
+                sparse = 0
             end if
           end if
 

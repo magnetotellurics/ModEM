@@ -1,6 +1,14 @@
-! *****************************************************************************
+!------------------------------------------------------------------------------
+! TITLE         : ModEM-ON
+! MODULE        : Main
+!> @author
+!> UNDENTIFIED
+!
+! DESCRIPTION:
+!> Module to hold the simulation class and its methods
+!------------------------------------------------------------------------------
 module Main
-	! These subroutines are called from the main program only
+	!> These subroutines are called from the main program only
 
   use ModelSpace
   use dataspace ! dataVectorMTX_t
@@ -12,9 +20,9 @@ module Main
   use dataio
   implicit none
 
-      ! I/O units ... reuse generic read/write units if
-     !   possible; for those kept open during program run,
-     !   reserve a specific unit here
+     !> I/O units ... reuse generic read/write units if
+     !>   possible; for those kept open during program run,
+     !>   reserve a specific unit here
      integer (kind=4), save :: fidRead = 1
      integer (kind=4), save :: fidWrite = 2
      integer (kind=4), save :: fidError = 99
@@ -25,47 +33,47 @@ module Main
   !type (emsolve_control), save								:: fwdCtrls
   !type (inverse_control), save								:: invCtrls
 
-  ! forward solver control defined in EMsolve3D
+  !> forward solver control defined in EMsolve3D
   type(emsolve_control),save  :: solverParams
 
-  ! this is used to set up the numerical grid in SensMatrix
+  !> this is used to set up the numerical grid in SensMatrix
   type(grid_t), save	        :: grid
 
-  ! air layers might be set from a file, but can also use the defaults
+  !> air layers might be set from a file, but can also use the defaults
   type(airLayers_t), save       :: airLayers
 
-  ! impedance data structure
+  !> impedance data structure
   type(dataVectorMTX_t), save		:: allData
 
-  !  storage for the "background" conductivity parameter
+  !>  storage for the "background" conductivity parameter
   type(modelParam_t), save		:: sigma0
-  !  storage for a perturbation to conductivity
+  !>  storage for a perturbation to conductivity
   type(modelParam_t), save		:: dsigma
-  !  storage for the inverse solution
+  !>  storage for the inverse solution
   type(modelParam_t), save		:: sigma1
-  !  currently only used for TEST_GRAD feature (otherwise, use allData)
+  !>  currently only used for TEST_GRAD feature (otherwise, use allData)
   type(dataVectorMTX_t), save       :: predData
-  !  also for TEST_GRAD feature...
+  !>  also for TEST_GRAD feature...
   type(modelParam_t), save      :: sigmaGrad
+  !> NEED COMMENTS
   real(kind=prec), save         :: rms,mNorm,f1,f2,alpha
-  !  storage for multi-Tx outputed from JT computation
+  !>  storage for multi-Tx outputed from JT computation
   type(modelParam_t),pointer, dimension(:), save :: JT_multi_Tx_vec
-
-  !  storage for the full sensitivity matrix (dimension nTx)
+  !>  storage for the full sensitivity matrix (dimension nTx)
   type(sensMatrix_t), pointer, dimension(:), save	:: sens
-
-  !  storage for EM solutions
+  !>  storage for EM solutions
   type(solnVectorMTX_t), save            :: eAll
-
-  !  storage for EM rhs (currently only used for symmetry tests)
+  !
+  !>  storage for EM rhs (currently only used for symmetry tests)
   type(rhsVectorMTX_t), save            :: bAll
-
+  !> NEED COMMENTS
   logical                   :: write_model, write_data, write_EMsoln, write_EMrhs
 
 
 
 Contains
   ! ***************************************************************************
+  !> NEED COMMENTS
    subroutine read_Efiled_from_file
     character (len=80)			                :: inFile
     character (len=20)                          :: fileVersion
@@ -81,8 +89,14 @@ Contains
         nTx_nPol=eAll_larg%nTx*eAll_larg%solns(1)%nPol   
     end subroutine read_Efiled_from_file    
 
-  !**********************************************************************
-  !   rewrite the defaults in the air layers structure
+  !****************************************************************************
+  !> @author UNDENTIFIED
+  !> @brief
+  !> rewrite the defaults in the air layers structure
+  !> @param[in] solverControl
+  !> @param[inout] airLayers
+!---------------------------------------------------------------------------
+!
   subroutine  initAirLayers(solverControl,airLayers)
      type(emsolve_control), intent(in)    :: solverControl
      type(airLayers_t), intent(inout)     :: airLayers
@@ -112,17 +126,21 @@ Contains
 
   end subroutine initAirLayers
 
-  ! ***************************************************************************
-  ! * InitGlobalData is the routine to call to initialize all derived data types
-  ! * and other variables defined in modules basics, modeldef, datadef and
-  ! * in this module. These include:
-  ! * 1) constants
-  ! * 2) grid information: nx,ny,nz,x,y,z, cell centre coordinates
-  ! * 3) model information: layers, coefficients, rho on the grid
-  ! * 4) periods/freq info: nfreq, freq
-  ! * 5) forward solver controls
-  ! * 6) output file names
-
+  !****************************************************************************
+  !> @author UNDENTIFIED
+  !> @brief
+  !> InitGlobalData is the routine to call to initialize all derived data types
+  !! and other variables defined in modules basics, modeldef, datadef and
+  !! in this module. These include:\n
+  !! 1) constants\n
+  !! 2) grid information: nx,ny,nz,x,y,z, cell centre coordinates\n
+  !! 3) model information: layers, coefficients, rho on the grid\n
+  !! 4) periods/freq info: nfreq, freq\n
+  !! 5) forward solver controls\n
+  !! 6) output file names
+  !> @param[in] cUserDef
+!---------------------------------------------------------------------------
+!
   subroutine initGlobalData(cUserDef)
 
 	implicit none
@@ -139,6 +157,7 @@ Contains
     Integer                                     :: iTx,iMod
     type(solnVector_t)                          :: e_temp
     real (kind=prec)                        	:: Omega
+
 	!--------------------------------------------------------------------------
 	! Set global output level stored with the file units
 	output_level = cUserDef%output_level
@@ -169,9 +188,6 @@ Contains
 
 	else
 	  call warning('No input model parametrization')
-
-	  ! set up an empty grid to avoid segmentation faults in sensitivity tests
-	  call create_grid(1,1,1,1,grid)
 	end if
 
 
@@ -332,9 +348,13 @@ Contains
   end subroutine initGlobalData	! initGlobalData
 
 
-  ! ***************************************************************************
-  ! * DeallGlobalData deallocates all allocatable data defined globally.
-
+  !****************************************************************************
+  !> @author UNDENTIFIED
+  !> @brief
+  !> DeallGlobalData deallocates all allocatable data defined globally.
+  !> @param[in] cUserDef
+!---------------------------------------------------------------------------
+!
   subroutine deallGlobalData()
 
 	integer	:: i, istat

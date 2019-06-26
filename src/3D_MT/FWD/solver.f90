@@ -341,6 +341,5 @@ subroutine QMR(b,x, QMRiter)
   Call deall(S)
 
 end subroutine qmr ! qmr
-
-
+! *****************************************************************************
 end module solver ! solver
