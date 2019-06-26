@@ -63,7 +63,6 @@ test_read_write:
     #
     script:
         #
-        # MODEL - DATA EXECUTION TEST
         - bash scripts/test_read_write.sh src/Mod3DMT
     #
     artifacts:
@@ -71,8 +70,23 @@ test_read_write:
             - outputs/test_read_write*
         expire_in: 1 week
 #
+# STANDART TEST JOB 2:   FORWARD
+test_forward:
+    stage: test
+    dependencies:
+        - build_modem_on    # DEFINE THIS JOB DEPENDENCY FROM JOB build_modem_on
+    #
+    script:
+        #
+        - bash scripts/test_forward.sh src/Mod3DMT
+    #
+    artifacts:
+        paths:
+            - outputs/test_forward*
+        expire_in: 1 week
+#
 # TEST JOB 3:   RUN EVERY TEST AT tests/ DIR
-test_engine_modem_on:
+.test_engine_modem_on:
     stage: test
     dependencies:
         - build_modem_on    # DEFINE THIS JOB DEPENDENCY FROM JOB build_modem_on
@@ -97,7 +111,7 @@ update_gitlab:
         - bash scripts/update_gitlab.sh "update_gitlab"
 #
 # DEPLOY: UPDATE PAGES
-pages:
+.pages:
     stage: deploy
     environment: staging
     script:
