@@ -1,6 +1,7 @@
 #!/bin/bash
 #
-# NO ARGUMENTS: 
+# ARGUMENTS: 1 - Mod3DMT EXECUTABLE
+EXEC=$1
 #
 # STRING NOW
 now=$(date "+%Y/%m/%d - %H:%M:%S")
@@ -18,7 +19,7 @@ cd test_read_write/
 echo "#### START READ_WRITE MPI TEST WITH $ncores CORES AT $now ####" >> std_out.txt
 #
 #
-mpirun -n $ncores ./src/Mod3DMT ../inputs/rFile_Model.sw ../inputs/rFile_Data.dat &>> std_out.txt
+mpirun -n $ncores ../$EXEC ../inputs/rFile_Model.sw ../inputs/rFile_Data.dat &>> std_out.txt
 #
 #
 echo "### FINISH READ_WRITE MPI TEST ###" >> std_out.txt
