@@ -1,7 +1,16 @@
 ! *****************************************************************************
+!------------------------------------------------------------------------------
+! TITLE         : ModEM-ON
+! MODULE        : DataIO
+!> @author
+!> UNDENTIFIED
+!
+! DESCRIPTION:
+!> This module contains io routines for reading and writing the data vectors\n
+!> Version: 3D MT
+!------------------------------------------------------------------------------
+
 module DataIO
-  ! This module contains io routines for reading and writing the data vectors
-  ! Version: 3D MT
 
   use math_constants
   use file_units
@@ -157,7 +166,6 @@ Contains
     logical, allocatable            :: exist(:) ! (ncomp)
     character(2)                    :: temp = '> '
     character(40)                   :: siteid,ref_siteid,compid
-    character(1000)                 :: strtemp
     integer                         :: iTxt,iTx,iRx,iDt,icomp,i,j,k,istat,ios,nBlocks
     real(8)                         :: x(3),ref_x(3), Period,SI_factor,large
     real(8)                         :: lat,lon,ref_lat,ref_lon
@@ -196,12 +204,10 @@ Contains
 
       ! write the data type header
       call compact(fileInfo(iTxt,iDt)%info_in_file)
-      write(strtemp,*) adjustl(trim(fileInfo(iTxt,iDt)%info_in_file))
       write(ioDat,'(a32)',advance='no') '# ModEM impedance responses for '
-      write(ioDat,*,iostat=ios) strtemp(1:100)
-      write(strtemp,*) adjustl(trim(DataBlockHeader(iTxt,iDt)))
+      write(ioDat,*,iostat=ios) adjustl(trim(fileInfo(iTxt,iDt)%info_in_file))
       write(ioDat,'(a2)',advance='no') '# '
-      write(ioDat,*,iostat=ios) strtemp(1:100)
+      write(ioDat,*,iostat=ios) adjustl(trim(DataBlockHeader(iTxt,iDt)))
       !if (.not. (tx_type_name(iTxt) .eq. 'MT')) then
       !    write(ioDat,'(a2)',advance='no') '+ '
       !    write(ioDat,*,iostat=ios) trim(tx_type_name(iTxt))
@@ -216,7 +222,7 @@ Contains
       write(ioDat,'(a2)',advance='no') temp
       write(ioDat,*,iostat=ios) trim(fileInfo(iTxt,iDt)%units_in_file)
       write(ioDat,'(a2,f8.2)',iostat=ios) temp,fileInfo(iTxt,iDt)%geographic_orientation
-      write(ioDat,'(a2,2f9.3)',iostat=ios) temp,fileInfo(iTxt,iDt)%origin_in_file(1),fileInfo(iTxt,iDt)%origin_in_file(2)
+      write(ioDat,'(a2,2f8.3)',iostat=ios) temp,fileInfo(iTxt,iDt)%origin_in_file(1),fileInfo(iTxt,iDt)%origin_in_file(2)
       write(ioDat,'(a2,2i6)',iostat=ios) temp,nTx,nRx
 
       if (fileInfo(iTxt,iDt)%sign_in_file == ISIGN) then

@@ -66,7 +66,6 @@ Contains
 
    !  local variables
    integer 		:: istat,ii,nFunc,nComp,iFunc
-   type(solnVector_t)               :: etemp
    type(sparseVector_t), pointer	:: L(:)
    type(modelParam_t), pointer    :: Qreal(:),Qimag(:)
    logical      :: Qzero
@@ -89,14 +88,11 @@ Contains
       call zero(Jimag(iFunc))
    enddo
 
-   ! save input parameter emsoln, which is a pointer to e0
-   etemp = emsoln
-
    !  manage any necessary initialization for this transmitter
    call initSolver(iTx,sigma0,grid,e0,e,comb)
 
    !  store the provided solnVector in e0
-   e0 = etemp
+   e0 = emsoln
 
    allocate(L(nFunc),STAT=istat)
    allocate(Qreal(nFunc),STAT=istat)
@@ -138,7 +134,6 @@ Contains
    deallocate(L,STAT=istat)
    deallocate(Qreal,STAT=istat)
    deallocate(Qimag,STAT=istat)
-   call deall_solnVector(etemp)
 
   end subroutine Jrows
 

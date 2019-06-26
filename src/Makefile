@@ -2,11 +2,11 @@
 # Generated using: ./fmkmf.pl [OPTIONS] Mod3DMT.f90 > Makefile
 # with command line options
 # -p .:INV:MPI:LAPACK:SENS:UTILS:FIELDS/FiniteDiff3D:3D_MT:3D_MT/DICT:3D_MT/modelParam:3D_MT/FWD:3D_MT/FWD/Mod2d:3D_MT/ioMod
-# -f90 ifort (compiler)
-# -opt -O3 -w  -xSSE4.2 -std03 (compiler optimisation)
-# -lp /opt/intel/Compiler/11.1/075/mkl/lib/em64t (linking options: path to libraries)
-# -l -llapack -lblas -lmkl_intel_lp64 -lmkl_intel_thread -lmkl_core  -lpthread -openmp -parallel (linking options)
-# -o ./objs/3D_MT/IFortReleaseMPI (output directory for object files)
+# -f90 mpif90 (compiler)
+# -opt -O3 -ffree-line-length-none -Wno-all (compiler optimisation)
+# -lp /usr/lib64 (linking options: path to libraries)
+# -l -llapack -lblas (linking options)
+# -o ./objs/3D_MT/GFortReleaseMPI (output directory for object files)
 
 #  Uncomment these lines to make program for Solaris OS (legacy)
 # F90 = f90
@@ -44,16 +44,16 @@
 
 # ------------------Macro-Defs---------------------
 include Makefile.local
-OBJDIR = ./objs/3D_MT/IFortReleaseMPI
+OBJDIR = ./objs/3D_MT/GFortReleaseMPI
 F90 = mpif90 
-FFLAGS =  -O2  -ffree-form -ffree-line-length-300 -m64 -Wno-all
+FFLAGS = -O3 -ffree-line-length-none -Wno-all
 MPIFLAGS = -x f95-cpp-input -DMPI
 MODULE = -J $(OBJDIR)
-#LIBS = -llapack -lblas
-
+LIBS_PATH = -L/usr/lib64
+LIBS = -llapack -lblas
 
 # -------------------End-macro-Defs---------------------------
-OBJ = $(OBJDIR)/math_constants.o $(OBJDIR)/utilities.o $(OBJDIR)/wsBLAS.o $(OBJDIR)/wsLAPACK.o $(OBJDIR)/file_units.o $(OBJDIR)/DataSpace.o $(OBJDIR)/GridDef.o $(OBJDIR)/sg_vector.o $(OBJDIR)/sg_scalar.o $(OBJDIR)/sg_spherical.o $(OBJDIR)/elements.o $(OBJDIR)/GridCalc.o $(OBJDIR)/sg_sparse_vector.o $(OBJDIR)/MPI_declaration.o $(OBJDIR)/ModelSpace.o $(OBJDIR)/SensMatrix.o $(OBJDIR)/EMfieldInterp.o $(OBJDIR)/sg_boundary.o $(OBJDIR)/transmitters.o $(OBJDIR)/SolnSpace.o $(OBJDIR)/receivers.o $(OBJDIR)/dataTypes.o $(OBJDIR)/DataFunc.o $(OBJDIR)/DataSens.o $(OBJDIR)/SolverSens.o $(OBJDIR)/sg_diff_oper.o $(OBJDIR)/WSfwd2Dpar.o $(OBJDIR)/WSutils.o $(OBJDIR)/WSfwd1Dmod.o $(OBJDIR)/WSfwd2Dmod.o $(OBJDIR)/FwdTEmod.o $(OBJDIR)/boundary_ws.o $(OBJDIR)/nestedEM.o $(OBJDIR)/modelOperator3D.o $(OBJDIR)/solver.o $(OBJDIR)/EMsolve3D.o $(OBJDIR)/ForwardSolver.o $(OBJDIR)/SensComp.o $(OBJDIR)/SymmetryTest.o $(OBJDIR)/UserCtrl.o $(OBJDIR)/ioAscii.o $(OBJDIR)/DataIO.o $(OBJDIR)/Main.o $(OBJDIR)/MPI_sub.o $(OBJDIR)/MPI_main.o $(OBJDIR)/NLCG.o $(OBJDIR)/DCG.o $(OBJDIR)/Mod3DMT.o 
+OBJ = $(OBJDIR)/math_constants.o $(OBJDIR)/utilities.o $(OBJDIR)/file_units.o $(OBJDIR)/DataSpace.o $(OBJDIR)/GridDef.o $(OBJDIR)/sg_vector.o $(OBJDIR)/sg_scalar.o $(OBJDIR)/sg_spherical.o $(OBJDIR)/elements.o $(OBJDIR)/GridCalc.o $(OBJDIR)/sg_sparse_vector.o $(OBJDIR)/MPI_declaration.o $(OBJDIR)/ModelSpace.o $(OBJDIR)/SensMatrix.o $(OBJDIR)/EMfieldInterp.o $(OBJDIR)/sg_boundary.o $(OBJDIR)/transmitters.o $(OBJDIR)/SolnSpace.o $(OBJDIR)/receivers.o $(OBJDIR)/dataTypes.o $(OBJDIR)/DataFunc.o $(OBJDIR)/DataSens.o $(OBJDIR)/SolverSens.o $(OBJDIR)/sg_diff_oper.o $(OBJDIR)/WSfwd2Dpar.o $(OBJDIR)/WSutils.o $(OBJDIR)/WSfwd1Dmod.o $(OBJDIR)/WSfwd2Dmod.o $(OBJDIR)/FwdTEmod.o $(OBJDIR)/boundary_ws.o $(OBJDIR)/nestedEM.o $(OBJDIR)/modelOperator3D.o $(OBJDIR)/solver.o $(OBJDIR)/EMsolve3D.o $(OBJDIR)/ForwardSolver.o $(OBJDIR)/SensComp.o $(OBJDIR)/SymmetryTest.o $(OBJDIR)/UserCtrl.o $(OBJDIR)/ioAscii.o $(OBJDIR)/DataIO.o $(OBJDIR)/Main.o $(OBJDIR)/MPI_sub.o $(OBJDIR)/MPI_main.o $(OBJDIR)/NLCG.o $(OBJDIR)/DCG.o $(OBJDIR)/Mod3DMT.o 
 
 
 all: Mod3DMT 
@@ -69,18 +69,12 @@ $(OBJDIR):
 
 $(OBJDIR)/math_constants.o:UTILS/math_constants.f90  
 	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) UTILS/math_constants.f90 -o $(OBJDIR)/math_constants.o
-	 	 
+
 $(OBJDIR)/utilities.o:UTILS/utilities.f90 $(OBJDIR)/math_constants.o 
 	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) UTILS/utilities.f90 -o $(OBJDIR)/utilities.o
 
 $(OBJDIR)/file_units.o:UTILS/file_units.f90  
 	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) UTILS/file_units.f90 -o $(OBJDIR)/file_units.o
-
-$(OBJDIR)/wsLAPACK.o:LAPACK/wsLAPACK.f90  
-	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) LAPACK/wsLAPACK.f90 -o $(OBJDIR)/wsLAPACK.o
-	 
-$(OBJDIR)/wsBLAS.o:LAPACK/wsBLAS.f90 $(OBJDIR)/utilities.o  $(OBJDIR)/wsLAPACK.o
-	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) LAPACK/wsBLAS.f90 -o $(OBJDIR)/wsBLAS.o	 
 
 $(OBJDIR)/DataSpace.o:SENS/DataSpace.f90 $(OBJDIR)/utilities.o $(OBJDIR)/math_constants.o 
 	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) SENS/DataSpace.f90 -o $(OBJDIR)/DataSpace.o
@@ -118,7 +112,7 @@ $(OBJDIR)/SensMatrix.o:SENS/SensMatrix.f90 $(OBJDIR)/math_constants.o $(OBJDIR)/
 $(OBJDIR)/EMfieldInterp.o:3D_MT/EMfieldInterp.f90 $(OBJDIR)/utilities.o $(OBJDIR)/sg_sparse_vector.o $(OBJDIR)/ModelSpace.o 
 	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) 3D_MT/EMfieldInterp.f90 -o $(OBJDIR)/EMfieldInterp.o
 
-$(OBJDIR)/sg_boundary.o:FIELDS/FiniteDiff3D/sg_boundary.f90 $(OBJDIR)/math_constants.o $(OBJDIR)/GridDef.o $(OBJDIR)/sg_vector.o 
+$(OBJDIR)/sg_boundary.o:FIELDS/FiniteDiff3D/sg_boundary.f90 $(OBJDIR)/math_constants.o $(OBJDIR)/GridDef.o $(OBJDIR)/sg_vector.o $(OBJDIR)/sg_sparse_vector.o 
 	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) FIELDS/FiniteDiff3D/sg_boundary.f90 -o $(OBJDIR)/sg_boundary.o
 
 $(OBJDIR)/transmitters.o:3D_MT/DICT/transmitters.f90 $(OBJDIR)/math_constants.o 
