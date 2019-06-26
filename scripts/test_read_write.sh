@@ -9,6 +9,9 @@ now=$(date "+%Y/%m/%d - %H:%M:%S")
 # GET ENVIROMENT NUMBER OF CORES 
 ncores=$(nproc)
 #
+# REMOVE TEST OUTPUT FOLDER FROM MAIN OUTPUT FOLDER
+rm -rf outputs/test_read_write/
+#
 # CREATE TEST OUTPUT FOLDER
 mkdir -p test_read_write
 #
