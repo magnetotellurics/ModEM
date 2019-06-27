@@ -29,6 +29,9 @@ if [ "$result" -ne "0" ]; then
 fi
 #
 #
+echo "#### FINISH UPDATE GITLAB FROM AT $now ####"
+#
+#
 exit 0
 #
 # END OF SCRIPT
