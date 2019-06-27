@@ -20,9 +20,6 @@ do
 	test_name=$TEST_DIR
 	test_name=${test_name/*\//$emptyspace}
 	#
-	# CREATE OUTPUT FOLDER FOR THE TEST
-	mkdir -p result_${test_name}
-	#
 	# EXECUTE BASH RUN 
 	bash run.sh ../$EXEC &>> std_out.txt
 	#
@@ -37,14 +34,14 @@ do
 	#
 	echo "$test_name PASS" >> std_out.txt
 	#
-	# MOVES TEST OUTPUT FOLDER TO MAIN OUTPUT FOLDER
-	cp -rf * result_${test_name}
-	#
-	# REMOVE OLD TEST FOLDER RESULT FROM outpus/
+	# REMOVE OLD TEST FOLDER RESULT FROM outputs/
 	rm -rf ../../outputs/result_${test_name}
 	#
-	# MOVE NEW TEST FOLDER RESULT FROM outpus/
-	mv result_${test_name} ../../outputs/
+	# CREATE NEW TEST FOLDER RESULT ON outputs/
+	rm -rf ../../outputs/result_${test_name}
+	#
+	# MOVE ALL FILES TO NEW TEST FOLDER RESULT ON outputs/
+	mv * ../../outputs/result_${test_name}
 	#
 	#
 	cd ..
