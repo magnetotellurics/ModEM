@@ -21,30 +21,31 @@ do
 	test_name=${test_name/*\//$emptyspace}
 	#
 	# CREATE OUTPUT FOLDER FOR THE TEST
-	mkdir -p ${test_name}
-	#
-	# ENTER IN OUTPUT FOLDER FOR THE TEST
-	cd ${test_name}
+	mkdir -p result_${test_name}
 	#
 	# EXECUTE BASH RUN 
-	bash ../run.sh ../../$EXEC #&>> std_out.txt
+	bash run.sh ../$EXEC &>> std_out.txt
 	#
 	# CATCH RESULT
     result=$?
 	#
 	# TEST RESULT
 	if [ "$result" -ne "0" ]; then
-	   echo "$test_name FAIL: $result" #>> std_out.txt
+	   echo "$test_name FAIL: $result" >> std_out.txt
 	   exit $result
 	fi
 	#
-	echo "$test_name PASS" #>> std_out.txt
-	#
-	#
-	cd ..
+	echo "$test_name PASS" >> std_out.txt
 	#
 	# MOVES TEST OUTPUT FOLDER TO MAIN OUTPUT FOLDER
-	mv ${test_name} ../../outputs/
+	cp -rf * result_${test_name}
+	#
+	# REMOVE OLD TEST FOLDER RESULT FROM outpus/
+	rm -rf ../../outputs/result_${test_name}
+	#
+	# MOVE NEW TEST FOLDER RESULT FROM outpus/
+	mv result_${test_name} ../../outputs/
+	#
 	#
 	cd ..
 	#
