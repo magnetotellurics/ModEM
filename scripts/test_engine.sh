@@ -8,7 +8,7 @@ EXEC=$1
 emptyspace=""
 #
 # STRING NOW
-now=$(date "+%Y_%m_%d_%H_%M_%S")
+now=$(date "+%Y/%m/%d - %H:%M:%S")
 #
 #
 # FOREACH TEST DIR ON tests/
@@ -21,10 +21,10 @@ do
 	test_name=${test_name/*\//$emptyspace}
 	#
 	# CREATE OUTPUT FOLDER FOR THE TEST
-	mkdir -p ${test_name}_$now
+	mkdir -p ${test_name}
 	#
 	# ENTER IN OUTPUT FOLDER FOR THE TEST
-	cd ${test_name}_$now
+	cd ${test_name}
 	#
 	# EXECUTE BASH RUN 
 	bash ../run.sh ../../$EXEC #&>> std_out.txt
@@ -44,7 +44,7 @@ do
 	cd ..
 	#
 	# MOVES TEST OUTPUT FOLDER TO MAIN OUTPUT FOLDER
-	#mv ${test_name}_$now ../../../outputs/
+	mv ${test_name} ../../outputs/
 	#
 	cd ..
 	#
