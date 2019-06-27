@@ -11,14 +11,23 @@ now=$(date "+%Y/%m/%d - %H:%M:%S")
 # GET ENVIROMENT NUMBER OF CORES 
 ncores=$(nproc)
 #
+# REMOVE TEST OUTPUT FOLDER FROM MAIN OUTPUT FOLDER
+rm -rf outputs/test_read_write/
+#
+# CREATE TEST OUTPUT FOLDER
+mkdir -p test_read_write
+#
+# ENTER TEST OUTPUT FOLDER
+cd test_read_write/
+#
 #
 echo "#### START READ_WRITE MPI TEST WITH $ncores CORES AT $now ####\n" >> std_out.txt
 #
 #
-echo "#### COMMAND LINE: [mpirun -n $ncores $EXEC -R $MODEL $DATA wFile_Model.sw wFile_Data.dat -v full]" >> std_out.txt
+echo "#### COMMAND LINE: [mpirun -n $ncores ../$EXEC -R ../inputs/rFile_Model.sw ../inputs/rFile_Data.dat wFile_Model.sw wFile_Data.dat -v full]" >> std_out.txt
 #
 #
-mpirun -n $ncores $EXEC -R $MODEL $DATA wFile_Model.sw wFile_Data.dat -v full &>> std_out.txt
+mpirun -n $ncores ../$EXEC -R ../$MODEL ../$DATA wFile_Model.sw wFile_Data.dat -v full &>> std_out.txt
 #
 # CATCH RESULT
 result=$?
@@ -30,20 +39,20 @@ if [ "$result" -ne "0" ]; then
 	echo "TEST READ_WRITE FAIL: $result"
 	#
 	#
+	cd ..
+	#
+	#
 	exit $result
 fi
 #
 #
 echo "### FINISH READ_WRITE MPI TEST ###\n" >> std_out.txt
 #
-# REMOVE OLD TEST FOLDER RESULT FROM outputs/
-rm -rf outputs/test_read_write
 #
-# CREATE NEW TEST FOLDER RESULT ON outputs/
-mkdir outputs/test_read_write
+cd ..
 #
-# MOVE ALL FILES TO NEW TEST FOLDER RESULT ON outputs/
-mv * outputs/test_read_write
+#
+mv test_read_write/ outputs/
 #
 #
 # END OF SCRIPT
