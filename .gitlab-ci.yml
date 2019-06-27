@@ -91,7 +91,7 @@ test_forward:
         expire_in: 1 week
 #
 # STANDART TEST JOB 3:   INVERSE
-test_forward:
+test_inverse:
     stage: test
     dependencies:
         - build_modem_on    # DEFINE THIS JOB DEPENDENCY FROM JOB build_modem_on
