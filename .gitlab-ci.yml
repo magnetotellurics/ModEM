@@ -107,13 +107,13 @@ build_modem_on:
         expire_in: 1 week
 #
 # DEPLOY: UPDATE GITLAB
-.update_gitlab:
+update_gitlab:
     stage: deploy
     environment: production
     script:
         #
-        # BASH: GITLAB UPDATES
-        - bash scripts/update_gitlab.sh "update_gitlab"
+        # BASH: UPDATES GITLAB
+        - bash scripts/update_gitlab.sh &>> outputs/update_gitlab.txt
 #
 # DEPLOY: UPDATE PAGES
 .pages:
