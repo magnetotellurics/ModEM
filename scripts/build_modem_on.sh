@@ -5,9 +5,6 @@
 # STRING NOW
 now=$(date "+%Y/%m/%d - %H:%M:%S")
 #
-# GENERATE MAIN OUTPUT FOLDER (IF NOT EXISTS)
-mkdir -p outputs/
-#
 #
 cd src/
 #

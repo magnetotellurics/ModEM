@@ -27,7 +27,7 @@ do
 	bash run.sh ../$EXEC &>> ${test_name}_std_out.txt
 	#
 	# CATCH RESULT
-    	result=$?
+    result=$?
 	#
 	# TEST RESULT
 	if [ "$result" -ne "0" ]; then
