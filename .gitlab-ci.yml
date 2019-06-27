@@ -18,6 +18,9 @@ build_modem_on:
         - echo "START build_modem_on SCRIPT"
     #
     script:
+        # GENERATE MAIN OUTPUT FOLDER (IF NOT EXISTS)
+        - mkdir -p outputs/
+        # BUILD SCRIPT
         - bash scripts/build_modem_on.sh &>> outputs/build_modem_on.txt
         #
         - bash scripts/update_doxygen.sh
