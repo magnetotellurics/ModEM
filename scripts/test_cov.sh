@@ -54,5 +54,7 @@ cd ..
 mv test_cov/ outputs/
 #
 #
+exit 0
+#
 # END OF SCRIPT
 

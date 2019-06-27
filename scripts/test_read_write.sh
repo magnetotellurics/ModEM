@@ -55,5 +55,7 @@ cd ..
 mv test_read_write/ outputs/
 #
 #
+exit 0
+#
 # END OF SCRIPT
 

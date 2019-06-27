@@ -12,5 +12,7 @@ mkdir -p public/
 cp -r docs/html/* public/
 #
 #
+exit 0
+#
 # END OF SCRIPT
 

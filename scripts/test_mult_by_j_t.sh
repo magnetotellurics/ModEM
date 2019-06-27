@@ -12,22 +12,22 @@ now=$(date "+%Y/%m/%d - %H:%M:%S")
 ncores=$(nproc)
 #
 # REMOVE TEST OUTPUT FOLDER FROM MAIN OUTPUT FOLDER
-rm -rf outputs/test_inverse/
+rm -rf outputs/test_mult_by_j_t/
 #
 # CREATE TEST OUTPUT FOLDER
-mkdir -p test_inverse
+mkdir -p test_mult_by_j_t
 #
 # ENTER TEST OUTPUT FOLDER
-cd test_inverse/
+cd test_mult_by_j_t/
 #
 #
-echo "#### START READ_WRITE MPI TEST WITH $ncores CORES AT $now ####\n" >> std_out.txt
+echo "#### START MULT_BY_J_T MPI TEST WITH $ncores CORES AT $now ####\n" >> std_out.txt
 #
 #
-echo "#### COMMAND LINE: [mpirun -n $ncores ../$EXEC -I NLCG ../$MODEL ../$DATA -v full]" >> std_out.txt
+echo "#### COMMAND LINE: [mpirun -n $ncores ../$EXEC -T ../$MODEL ../$DATA wFile_dModel -v full]" >> std_out.txt
 #
 #
-mpirun -n $ncores ../$EXEC -I NLCG ../$MODEL ../$DATA -v full &>> std_out.txt
+mpirun -n $ncores ../$EXEC -T ../$MODEL ../$DATA wFile_dModel -v full &>> std_out.txt
 #
 # CATCH RESULT
 result=$?
@@ -36,7 +36,7 @@ result=$?
 if [ "$result" -ne "0" ]; then
 	#
 	#
-	echo "TEST FORWARD FAIL: $result"
+	echo "TEST MULT_BY_J_T FAIL: $result"
 	#
 	#
 	cd ..
@@ -46,13 +46,13 @@ if [ "$result" -ne "0" ]; then
 fi
 #
 #
-echo "### FINISH FORWARD MPI TEST ###\n" >> std_out.txt
+echo "### FINISH MULT_BY_J_T MPI TEST ###\n" >> std_out.txt
 #
 #
 cd ..
 #
 #
-mv test_inverse/ outputs/
+mv test_mult_by_j_t/ outputs/
 #
 #
 exit 0

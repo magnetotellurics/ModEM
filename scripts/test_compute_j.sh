@@ -55,5 +55,7 @@ cd ..
 mv test_compute_j/ outputs/
 #
 #
+exit 0
+#
 # END OF SCRIPT
 

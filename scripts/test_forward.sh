@@ -55,5 +55,7 @@ cd ..
 mv test_forward/ outputs/
 #
 #
+exit 0
+#
 # END OF SCRIPT
 

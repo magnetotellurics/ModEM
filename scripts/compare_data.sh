@@ -36,4 +36,6 @@ cd ../$output_dir
 echo "### FINISH 'data_explorer' ###" >> std_out.txt
 #
 #
+exit 0
+#
 # END OF SCRIPT
