@@ -1,2 +1,0 @@
-bash: run.sh: No such file or directory
-sub01 FAIL: 127

@@ -44,7 +44,7 @@ do
 	cd ..
 	#
 	# MOVES TEST OUTPUT FOLDER TO MAIN OUTPUT FOLDER
-	mv ${test_name}_$now ../../outputs/
+	mv ${test_name}_$now ../../../outputs/
 	#
 	cd ..
 	#
