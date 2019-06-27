@@ -45,7 +45,7 @@ build_modem_on:
         - echo "FINISH build_modem_on"
 #
 # JOB TEST PLAIN:   RUN Mod3DMT WITHOUT ANY PARAMETER
-.test_plain:
+test_plain:
     stage: test
     dependencies:
         - build_modem_on    # DEFINE THIS JOB DEPENDENCY FROM JOB build_modem_on
@@ -53,11 +53,11 @@ build_modem_on:
     script:
         #
         # PLAIN EXECUTION TEST
-        - bash scripts/test_plain.sh   # ;)
+        - bash scripts/test_plain.sh &>> test_plain.txt
     #
     artifacts:
         paths:
-            - outputs/test_plain*
+            - outputs/test_plain.txt
         expire_in: 1 week
 #
 # STANDART TEST JOB 1:   READ_WRITE
