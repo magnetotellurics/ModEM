@@ -28,7 +28,7 @@ echo "#### START ADJ MPI TEST WITH $ncores CORES AT $now ####\n" >> std_out.txt
 echo "#### COMMAND LINE: [mpirun -n $ncores ../$EXEC -M ../$MODEL ../$dMODEL ../$DATA wFile_Data -v full]" >> std_out.txt
 #
 #
-mpirun -n $ncores ../$EXEC -A J ../$MODEL ../$dMODEL ../$DATA wFile_Data -v full &>> std_out.txt
+mpirun -n $ncores ../$EXEC -A J ../$MODEL ../$dMODEL ../$DATA wFile_Model wFile_Data -v full &>> std_out.txt
 #
 # CATCH RESULT
 result=$?
