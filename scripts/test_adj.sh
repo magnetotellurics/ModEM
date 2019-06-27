@@ -1,0 +1,62 @@
+#!/bin/bash
+#
+# ARGUMENTS: 1 - Mod3DMT EXECUTABLE, 2 - dMODEL FILE, 3 - DATA FILE, 4 - DATA FILE
+EXEC=$1
+MODEL=$2
+dMODEL=$3
+DATA=$4
+#
+# STRING NOW
+now=$(date "+%Y/%m/%d - %H:%M:%S")
+#
+# GET ENVIROMENT NUMBER OF CORES 
+ncores=$(nproc)
+#
+# REMOVE TEST OUTPUT FOLDER FROM MAIN OUTPUT FOLDER
+rm -rf outputs/test_adj/
+#
+# CREATE TEST OUTPUT FOLDER
+mkdir -p test_adj
+#
+# ENTER TEST OUTPUT FOLDER
+cd test_adj/
+#
+#
+echo "#### START ADJ MPI TEST WITH $ncores CORES AT $now ####\n" >> std_out.txt
+#
+#
+echo "#### COMMAND LINE: [mpirun -n $ncores ../$EXEC -M ../$MODEL ../$dMODEL ../$DATA wFile_Data -v full]" >> std_out.txt
+#
+#
+mpirun -n $ncores ../$EXEC -A J ../$MODEL ../$dMODEL ../$DATA wFile_Data -v full &>> std_out.txt
+#
+# CATCH RESULT
+result=$?
+#
+# TEST RESULT
+if [ "$result" -ne "0" ]; then
+	#
+	#
+	echo "TEST ADJ FAIL: $result"
+	#
+	#
+	cd ..
+	#
+	#
+	exit $result
+fi
+#
+#
+echo "### FINISH ADJ MPI TEST ###\n" >> std_out.txt
+#
+#
+cd ..
+#
+#
+mv test_adj outputs/
+#
+#
+exit 0
+#
+# END OF SCRIPT
+

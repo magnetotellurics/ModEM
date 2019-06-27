@@ -106,7 +106,7 @@ build_modem_on:
         expire_in: 1 week
 #
 # STANDART TEST MULT BY J
-.test_mult_by_j:
+test_mult_by_j:
     stage: test
     dependencies:
         - build_modem_on    # DEFINE THIS JOB DEPENDENCY FROM JOB build_modem_on
@@ -163,6 +163,21 @@ test_inverse:
     artifacts:
         paths:
             - outputs/test_cov/
+        expire_in: 1 week
+#
+# STANDART TEST adj
+test_adj:
+    stage: test
+    dependencies:
+        - build_modem_on    # DEFINE THIS JOB DEPENDENCY FROM JOB build_modem_on
+    #
+    script:
+        #
+        - bash scripts/test_adj.sh src/Mod3DMT inputs/rFile_Model.ws inputs/rFile_dModel inputs/rFile_Data.dat
+    #
+    artifacts:
+        paths:
+            - outputs/test_adj/
         expire_in: 1 week
 #
 # TEST JOB 3:   RUN EVERY TEST AT tests/ DIR
