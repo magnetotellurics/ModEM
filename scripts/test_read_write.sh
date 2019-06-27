@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# ARGUMENTS: 3 - Mod3DMT EXECUTABLE
+# ARGUMENTS: 1 - Mod3DMT EXECUTABLE, 2 - MODEL FILE, 3 - DATA FILE
 EXEC=$1
 MODEL=$2
 DATA=$3
@@ -28,6 +28,22 @@ echo "#### COMMAND LINE: [mpirun -n $ncores ../$EXEC -R ../inputs/rFile_Model.sw
 #
 #
 mpirun -n $ncores ../$EXEC -R $MODEL $DATA wFile_Model.sw wFile_Data.dat -v full &>> std_out.txt
+#
+# CATCH RESULT
+result=$?
+#
+# TEST RESULT
+if [ "$result" -ne "0" ]; then
+	#
+	#
+	echo "TEST READ_WRITE FAIL: $result"
+	#
+	#
+	cd ..
+	#
+	#
+	exit $result
+fi
 #
 #
 echo "### FINISH READ_WRITE MPI TEST ###\n" >> std_out.txt

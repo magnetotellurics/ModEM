@@ -12,37 +12,42 @@ mkdir -p outputs/
 cd src/
 #
 #
-echo "### START BUILD Mod3DMT AT $now ###" #>> build_modem.txt
+echo "### START BUILD Mod3DMT AT $now ###"
 #
 # 
-chmod 777 Configure.3D_MT.GFortran #&>> build_modem.txt
+chmod 777 Configure.3D_MT.GFortran
 #
 #
-./Configure.3D_MT.GFortran Makefile MPI OUT #&>> build_modem.txt
+./Configure.3D_MT.GFortran Makefile MPI
 #
 # REMOVE OLD OBJECTS
-rm -rf objs/3D_MT/GFortReleaseMPI/* #&>> build_modem.txt
+rm -rf objs/3D_MT/GFortReleaseMPI/*
 #
 # BUILD WITH PLAIN MAKE
-make #&>> build_modem.txt
+make
 #
 # CATCH RESULT
 result=$?
 #
 # TEST RESULT
 if [ "$result" -ne "0" ]; then
-   echo "build_modem_on FAIL: $result" #&>> build_modem.txt
-   exit $result
+	#
+	#
+	echo "build_modem_on FAIL: $result"
+	#
+	#
+	cd ..
+	#
+	#
+	exit $result
 fi
 #
 #
-echo "### FINISH BUILD Mod3DMT QMR ###" #>> build_modem.txt
-#
-#
-#mv build_modem.txt ../outputs/
+echo "### FINISH BUILD Mod3DMT QMR ###"
 #
 #
 cd ..
+#
 #
 exit 0
 #
