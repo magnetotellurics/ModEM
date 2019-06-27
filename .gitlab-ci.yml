@@ -105,7 +105,22 @@ build_modem_on:
             - outputs/test_compute_j/
         expire_in: 1 week
 #
-# STANDART TEST INVERSE
+# STANDART TEST MULT BY J
+test_mult_by_j:
+    stage: test
+    dependencies:
+        - build_modem_on    # DEFINE THIS JOB DEPENDENCY FROM JOB build_modem_on
+    #
+    script:
+        #
+        - bash scripts/test_mult_by_j.sh src/Mod3DMT inputs/rFile_Model.ws inputs/rFile_dModel inputs/rFile_Data.dat
+    #
+    artifacts:
+        paths:
+            - outputs/test_mult_by_j/
+        expire_in: 1 week
+#
+# STANDART TEST MULT BY J T
 test_mult_by_j_t:
     stage: test
     dependencies:
