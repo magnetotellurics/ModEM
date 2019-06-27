@@ -45,7 +45,7 @@ build_modem_on:
         - echo "FINISH build_modem_on"
 #
 # JOB TEST PLAIN:   RUN Mod3DMT WITHOUT ANY PARAMETER
-.test_plain:
+test_plain:
     stage: test
     dependencies:
         - build_modem_on    # DEFINE THIS JOB DEPENDENCY FROM JOB build_modem_on
@@ -60,8 +60,8 @@ build_modem_on:
             - outputs/test_plain.txt
         expire_in: 1 week
 #
-# STANDART TEST JOB 1:   READ_WRITE
-.test_read_write:
+# STANDART TEST READ_WRITE
+test_read_write:
     stage: test
     dependencies:
         - build_modem_on    # DEFINE THIS JOB DEPENDENCY FROM JOB build_modem_on
@@ -75,7 +75,7 @@ build_modem_on:
             - outputs/test_read_write/
         expire_in: 1 week
 #
-# STANDART TEST JOB 2:   FORWARD
+# STANDART TEST FORWARD
 test_forward:
     stage: test
     dependencies:
@@ -90,7 +90,7 @@ test_forward:
             - outputs/test_forward/
         expire_in: 1 week
 #
-# STANDART TEST JOB 3:   INVERSE
+# STANDART TEST INVERSE
 test_inverse:
     stage: test
     dependencies:
@@ -105,8 +105,23 @@ test_inverse:
             - outputs/test_inverse/
         expire_in: 1 week
 #
+# STANDART TEST COV
+test_cov:
+    stage: test
+    dependencies:
+        - build_modem_on    # DEFINE THIS JOB DEPENDENCY FROM JOB build_modem_on
+    #
+    script:
+        #
+        - bash scripts/test_cov.sh src/Mod3DMT inputs/rFile_Model.ws
+    #
+    artifacts:
+        paths:
+            - outputs/test_cov/
+        expire_in: 1 week
+#
 # TEST JOB 3:   RUN EVERY TEST AT tests/ DIR
-.test_engine_modem_on:
+test_engine_modem_on:
     stage: test
     dependencies:
         - build_modem_on    # DEFINE THIS JOB DEPENDENCY FROM JOB build_modem_on
@@ -131,7 +146,7 @@ update_gitlab:
         - bash scripts/update_gitlab.sh &>> outputs/update_gitlab.txt
 #
 # DEPLOY: UPDATE PAGES
-.pages:
+pages:
     stage: deploy
     environment: staging
     script:
