@@ -52,7 +52,7 @@ echo "### FINISH MULT_BY_J_T MPI TEST ###\n" >> std_out.txt
 cd ..
 #
 #
-mv test_mult_by_j_t outputs/
+mv test_mult_by_j_t/ outputs/
 #
 #
 exit 0

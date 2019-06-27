@@ -1,9 +1,10 @@
 #!/bin/bash
 #
-# ARGUMENTS: 1 - Mod3DMT EXECUTABLE, 2 - MODEL FILE, 3 - DATA FILE
+# ARGUMENTS: 1 - Mod3DMT EXECUTABLE, 2 - dMODEL FILE, 3 - DATA FILE, 4 - DATA FILE
 EXEC=$1
 MODEL=$2
-DATA=$3
+dMODEL=$3
+DATA=$4
 #
 # STRING NOW
 now=$(date "+%Y/%m/%d - %H:%M:%S")
@@ -12,22 +13,22 @@ now=$(date "+%Y/%m/%d - %H:%M:%S")
 ncores=$(nproc)
 #
 # REMOVE TEST OUTPUT FOLDER FROM MAIN OUTPUT FOLDER
-rm -rf outputs/test_mult_by_j_t/
+rm -rf outputs/test_mult_by_j/
 #
 # CREATE TEST OUTPUT FOLDER
-mkdir -p test_mult_by_j_t
+mkdir -p test_mult_by_j
 #
 # ENTER TEST OUTPUT FOLDER
-cd test_mult_by_j_t/
+cd test_mult_by_j/
 #
 #
-echo "#### START MULT_BY_J_T MPI TEST WITH $ncores CORES AT $now ####\n" >> std_out.txt
+echo "#### START MULT_BY_J MPI TEST WITH $ncores CORES AT $now ####\n" >> std_out.txt
 #
 #
-echo "#### COMMAND LINE: [mpirun -n $ncores ../$EXEC -T ../$MODEL ../$DATA wFile_dModel -v full]" >> std_out.txt
+echo "#### COMMAND LINE: [mpirun -n $ncores ../$EXEC -M ../$MODEL ../$dMODEL ../$DATA wFile_Data -v full]" >> std_out.txt
 #
 #
-mpirun -n $ncores ../$EXEC -T ../$MODEL ../$DATA wFile_dModel -v full &>> std_out.txt
+mpirun -n $ncores ../$EXEC -M ../$MODEL ../$dMODEL ../$DATA wFile_Data -v full &>> std_out.txt
 #
 # CATCH RESULT
 result=$?
@@ -36,7 +37,7 @@ result=$?
 if [ "$result" -ne "0" ]; then
 	#
 	#
-	echo "TEST MULT_BY_J_T FAIL: $result"
+	echo "TEST MULT_BY_J FAIL: $result"
 	#
 	#
 	cd ..
@@ -46,13 +47,13 @@ if [ "$result" -ne "0" ]; then
 fi
 #
 #
-echo "### FINISH MULT_BY_J_T MPI TEST ###\n" >> std_out.txt
+echo "### FINISH MULT_BY_J MPI TEST ###\n" >> std_out.txt
 #
 #
 cd ..
 #
 #
-mv test_mult_by_j_t outputs/
+mv test_mult_by_j/ outputs/
 #
 #
 exit 0

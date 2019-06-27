@@ -24,9 +24,6 @@ if [ "$result" -ne "0" ]; then
 	echo "TEST PLAIN FAIL: $result"
 	#
 	#
-	cd ..
-	#
-	#
 	exit $result
 fi
 #
