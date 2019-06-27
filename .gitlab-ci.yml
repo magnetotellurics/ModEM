@@ -45,7 +45,7 @@ build_modem_on:
         - echo "FINISH build_modem_on"
 #
 # JOB TEST PLAIN:   RUN Mod3DMT WITHOUT ANY PARAMETER
-test_plain:
+.test_plain:
     stage: test
     dependencies:
         - build_modem_on    # DEFINE THIS JOB DEPENDENCY FROM JOB build_modem_on
@@ -61,7 +61,7 @@ test_plain:
         expire_in: 1 week
 #
 # STANDART TEST READ_WRITE
-test_read_write:
+.test_read_write:
     stage: test
     dependencies:
         - build_modem_on    # DEFINE THIS JOB DEPENDENCY FROM JOB build_modem_on
@@ -76,7 +76,7 @@ test_read_write:
         expire_in: 1 week
 #
 # STANDART TEST FORWARD
-test_forward:
+.test_forward:
     stage: test
     dependencies:
         - build_modem_on    # DEFINE THIS JOB DEPENDENCY FROM JOB build_modem_on
@@ -91,7 +91,7 @@ test_forward:
         expire_in: 1 week
 #
 # STANDART TEST COMPUTE_J
-test_compute_j:
+.test_compute_j:
     stage: test
     dependencies:
         - build_modem_on    # DEFINE THIS JOB DEPENDENCY FROM JOB build_modem_on
@@ -106,7 +106,22 @@ test_compute_j:
         expire_in: 1 week
 #
 # STANDART TEST INVERSE
-test_inverse:
+.test_mult_by_j_t:
+    stage: test
+    dependencies:
+        - build_modem_on    # DEFINE THIS JOB DEPENDENCY FROM JOB build_modem_on
+    #
+    script:
+        #
+        - bash scripts/test_mult_by_j_t.sh src/Mod3DMT inputs/rFile_Model.ws inputs/rFile_Data.dat
+    #
+    artifacts:
+        paths:
+            - outputs/test_mult_by_j_t/
+        expire_in: 1 week
+#
+# STANDART TEST INVERSE
+.test_inverse:
     stage: test
     dependencies:
         - build_modem_on    # DEFINE THIS JOB DEPENDENCY FROM JOB build_modem_on
@@ -121,7 +136,7 @@ test_inverse:
         expire_in: 1 week
 #
 # STANDART TEST COV
-test_cov:
+.test_cov:
     stage: test
     dependencies:
         - build_modem_on    # DEFINE THIS JOB DEPENDENCY FROM JOB build_modem_on
@@ -136,7 +151,7 @@ test_cov:
         expire_in: 1 week
 #
 # TEST JOB 3:   RUN EVERY TEST AT tests/ DIR
-test_engine_modem_on:
+.test_engine_modem_on:
     stage: test
     dependencies:
         - build_modem_on    # DEFINE THIS JOB DEPENDENCY FROM JOB build_modem_on
