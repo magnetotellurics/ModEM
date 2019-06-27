@@ -12,13 +12,13 @@ now=$(date "+%Y/%m/%d - %H:%M:%S")
 ncores=$(nproc)
 #
 # REMOVE TEST OUTPUT FOLDER FROM MAIN OUTPUT FOLDER
-rm -rf outputs/test_forward/
+rm -rf outputs/test_inverse/
 #
 # CREATE TEST OUTPUT FOLDER
-mkdir -p test_forward
+mkdir -p test_inverse
 #
 # ENTER TEST OUTPUT FOLDER
-cd test_forward/
+cd test_inverse/
 #
 #
 echo "#### START READ_WRITE MPI TEST WITH $ncores CORES AT $now ####\n" >> std_out.txt
@@ -27,7 +27,7 @@ echo "#### START READ_WRITE MPI TEST WITH $ncores CORES AT $now ####\n" >> std_o
 echo "#### COMMAND LINE: [mpirun -n $ncores ../$EXEC -R ../inputs/rFile_Model.sw ../inputs/rFile_Data.dat wFile_Model.sw wFile_Data.dat -v full]" >> std_out.txt
 #
 #
-mpirun -n $ncores ../$EXEC -F ../$MODEL ../$DATA wFile_Data.dat -v full &>> std_out.txt
+mpirun -n $ncores ../$EXEC -I NLCG ../$MODEL ../$DATA -v full &>> std_out.txt
 #
 # CATCH RESULT
 result=$?
@@ -52,7 +52,7 @@ echo "### FINISH FORWARD MPI TEST ###\n" >> std_out.txt
 cd ..
 #
 #
-mv test_forward/ outputs/
+mv test_inverse/ outputs/
 #
 #
 # END OF SCRIPT
