@@ -121,7 +121,7 @@ test_mult_by_j:
         expire_in: 1 week
 #
 # STANDART TEST MULT BY J T
-test_mult_by_j_t:
+.test_mult_by_j_t:
     stage: test
     dependencies:
         - build_modem_on    # DEFINE THIS JOB DEPENDENCY FROM JOB build_modem_on
