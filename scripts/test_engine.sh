@@ -38,7 +38,7 @@ do
 	rm -rf ../../outputs/result_${test_name}
 	#
 	# CREATE NEW TEST FOLDER RESULT ON outputs/
-	rm -rf ../../outputs/result_${test_name}
+	mkdir ../../outputs/result_${test_name}
 	#
 	# MOVE ALL FILES TO NEW TEST FOLDER RESULT ON outputs/
 	mv * ../../outputs/result_${test_name}

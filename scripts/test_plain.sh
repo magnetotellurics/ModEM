@@ -3,23 +3,19 @@
 # NO ARGUMENTS: 
 #
 # STRING NOW
-now=$(date "+%Y_%m_%d_%H_%M_%S")
+now=$(date "+%Y/%m/%d - %H:%M:%S")
 #
 # GET ENVIROMENT NUMBER OF CORES 
 ncores=$(nproc)
 #
 #
-echo "### START Mod3DMT: $ncores CORES, WITH NO ARGUMENTS ###" >> test_plain_$now.txt
+echo "### START Mod3DMT: $ncores CORES, WITH NO ARGUMENTS ###"
 #
 #
-mpirun -n $ncores ./src/Mod3DMT &>> test_plain_$now.txt
+mpirun -n $ncores ./src/Mod3DMT
 #
 #
-echo "### FINISH Mod3DMT ###" >> test_plain_$now.txt
-#
-#
-mv test_plain_$now.txt outputs/
-#
+echo "### FINISH Mod3DMT ###"
 #
 # END OF SCRIPT
 
