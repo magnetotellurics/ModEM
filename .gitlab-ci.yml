@@ -91,7 +91,7 @@ test_plain:
         expire_in: 1 week
 #
 # TEST JOB 3:   RUN EVERY TEST AT tests/ DIR
-.test_engine_modem_on:
+test_engine_modem_on:
     stage: test
     dependencies:
         - build_modem_on    # DEFINE THIS JOB DEPENDENCY FROM JOB build_modem_on
@@ -103,7 +103,7 @@ test_plain:
         #
     artifacts:
         paths:
-            - outputs/*
+            - outputs/
         expire_in: 1 week
 #
 # DEPLOY: UPDATE GITLAB
