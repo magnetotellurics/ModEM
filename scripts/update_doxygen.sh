@@ -6,7 +6,7 @@
 now=$(date "+%Y/%m/%d - %H:%M:%S")
 #
 #
-echo "### START UPDATE DOXYGEN AT $now ###"
+echo "#### START UPDATE DOXYGEN AT $now ####"
 #
 #
 cd src/
@@ -31,7 +31,7 @@ if [ "$result" -ne "0" ]; then
 fi
 #
 #
-echo "### FINISH UPDATE DOXYGEN ###"
+echo "#### FINISH UPDATE DOXYGEN ####"
 #
 # REMOVE OLD html/ AT docs/
 rm -rf ../docs/html

@@ -9,7 +9,7 @@ now=$(date "+%Y/%m/%d - %H:%M:%S")
 cd src/
 #
 #
-echo "### START BUILD Mod3DMT AT $now ###"
+echo "#### START BUILD Mod3DMT AT $now ####"
 #
 # 
 chmod 777 Configure.3D_MT.GFortran
@@ -40,7 +40,7 @@ if [ "$result" -ne "0" ]; then
 fi
 #
 #
-echo "### FINISH BUILD Mod3DMT QMR ###"
+echo "#### FINISH BUILD Mod3DMT QMR ####"
 #
 #
 cd ..
