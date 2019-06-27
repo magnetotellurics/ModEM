@@ -61,7 +61,7 @@ build_modem_on:
         expire_in: 1 week
 #
 # STANDART TEST JOB 1:   READ_WRITE
-.test_read_write:
+test_read_write:
     stage: test
     dependencies:
         - build_modem_on    # DEFINE THIS JOB DEPENDENCY FROM JOB build_modem_on
@@ -72,7 +72,7 @@ build_modem_on:
     #
     artifacts:
         paths:
-            - outputs/test_read_write*
+            - outputs/test_read_write/
         expire_in: 1 week
 #
 # STANDART TEST JOB 2:   FORWARD
