@@ -177,7 +177,7 @@ test_extract_bc:
     #
     artifacts:
         paths:
-            - outputs/test_adj_j/
+            - outputs/test_extract_bc/
         expire_in: 1 week
 #
 # STANDART TEST ADJ
