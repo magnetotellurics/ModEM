@@ -1,9 +1,9 @@
 #!/bin/bash
 #
-# ARGUMENTS: 1 - Mod3DMT EXECUTABLE, 2 - MODEL FILE, 3 - dMODEL FILE, 4 - DATA FILE
+# ARGUMENTS: 1 - Mod3DMT EXECUTABLE, 2 - MODEL FILE, 3 - EMsoln FILE, 3 - DATA FILE
 EXEC=$1
 MODEL=$2
-dMODEL=$3
+EMsoln=$3
 DATA=$4
 #
 # STRING NOW
@@ -25,10 +25,10 @@ cd test_adj_l/
 echo "#### START ADJ L MPI TEST WITH $ncores CORES AT $now ####" >> std_out.txt
 #
 #
-echo "#### COMMAND LINE: [mpirun -n $ncores ../$EXEC -A J ../$MODEL ../$dMODEL ../$DATA wFile_Model wFile_Data -v full]" >> std_out.txt
+echo "#### COMMAND LINE: [mpirun -n $ncores ../$EXEC -A L ../$MODEL ../$EMsoln ../$DATA wFile_EMrhs wFile_Data -v full]" >> std_out.txt
 #
-#
-mpirun -n $ncores ../$EXEC -A L ../$MODEL ../$dMODEL ../$DATA wFile_Model wFile_Data -v full &>> std_out.txt
+#-A  L rFile_Model rFile_EMsoln rFile_Data [wFile_EMrhs wFile_Data]
+mpirun -n $ncores ../$EXEC -A L ../$MODEL ../$EMsoln ../$DATA wFile_EMrhs wFile_Data -v full &>> std_out.txt
 #
 # CATCH RESULT
 result=$?
