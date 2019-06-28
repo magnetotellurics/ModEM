@@ -123,14 +123,14 @@ Contains
                EE(2,iMode) =  dotProd_noConj_scvector_f(Ley,ef%pol(iMode))
                
                ! 2019.05.25, Liu Zhongyin, add rotate for ee
-               Call rotateO2L(EE(1,iMode),EE(2,iMode),Angle(1),Angle(1)+90.,0._prec)
+               Call rotateO2L(EE(1,iMode),EE(2,iMode),Angle(1))
 
 			      ! magnetic fields
 			      BB(1,iMode) = dotProd_noConj_scvector_f(Lbx,ef%pol(iMode))
                BB(2,iMode) = dotProd_noConj_scvector_f(Lby,ef%pol(iMode))
                
                ! 2019.05.25, Liu Zhongyin, add rotate for bb
-               Call rotateO2L(BB(1,iMode),BB(2,iMode),Angle(1),Angle(1)+90.,0._prec)
+               Call rotateO2L(BB(1,iMode),BB(2,iMode),Angle(1))
 			 end do
 			 !invert horizontal B matrix using Kramer's rule.
 			  det = BB(1,1)*BB(2,2)-BB(1,2)*BB(2,1)
@@ -166,14 +166,14 @@ Contains
                EE(2,iMode) =  dotProd_noConj_scvector_f(Ley,ef%pol(iMode))
                
                ! 2019.05.25, Liu Zhongyin, add rotate for ee
-               Call rotateO2L(EE(1,iMode),EE(2,iMode),Angle(1),Angle(1)+90.,0._prec)
+               Call rotateO2L(EE(1,iMode),EE(2,iMode),Angle(1))
 
 			      ! magnetic fields
 			      BB(1,iMode) = dotProd_noConj_scvector_f(Lbx,ef%pol(iMode))
                BB(2,iMode) = dotProd_noConj_scvector_f(Lby,ef%pol(iMode))
                
                ! 2019.05.25, Liu Zhongyin, add rotate for bb
-               Call rotateO2L(BB(1,iMode),BB(2,iMode),Angle(1),Angle(1)+90.,0._prec)
+               Call rotateO2L(BB(1,iMode),BB(2,iMode),Angle(1))
 			 end do
 			 !invert horizontal B matrix using Kramer's rule.
 			  det = BB(1,1)*BB(2,2)-BB(1,2)*BB(2,1)
@@ -204,7 +204,7 @@ Contains
                BB(3,iMode) = dotProd_noConj_scvector_f(Lbz,ef%pol(iMode))
                
                ! 2019.05.25, Liu Zhongyin, add rotate for bb
-               Call rotateO2L(BB(1,iMode),BB(2,iMode),Angle(1),Angle(1)+90.,0._prec)
+               Call rotateO2L(BB(1,iMode),BB(2,iMode),Angle(1))
 			 end do
 			 !invert horizontal B matrix using Kramer's rule.
 			  det = BB(1,1)*BB(2,2)-BB(1,2)*BB(2,1)
@@ -237,14 +237,14 @@ Contains
                BB(2,iMode) = dotProd_noConj_scvector_f(Lby,ef%pol(iMode))
                
                ! 2019.05.25, Liu Zhongyin, add rotate for bb
-               Call rotateO2L(BB(1,iMode),BB(2,iMode),Angle(1),Angle(1)+90.,0._prec)
+               Call rotateO2L(BB(1,iMode),BB(2,iMode),Angle(1))
 
 			      ! magnetic fields, at the REFERANCE station
 			      RR(1,iMode) = dotProd_noConj_scvector_f(Lrx,ef%pol(iMode))
                RR(2,iMode) = dotProd_noConj_scvector_f(Lry,ef%pol(iMode))
                
                ! 2019.05.025, Liu Zhongyin, add rotate for rr
-               Call rotateO2L(RR(1,iMode),RR(2,iMode),Angle(1),Angle(1)+90.,0._prec)
+               Call rotateO2L(RR(1,iMode),RR(2,iMode),Angle(1))
 			    end do
 			  ! Compute the inverse of RR using Kramer's rule
 			  det = RR(1,1)*RR(2,2)-RR(1,2)*RR(2,1)
@@ -282,14 +282,14 @@ Contains
                EE(2,iMode) =  dotProd_noConj_scvector_f(Ley,ef%pol(iMode))
                
                ! 2019.05.25, Liu Zhongyin, add rotate for ee
-               Call rotateO2L(EE(1,iMode),EE(2,iMode),Angle(1),Angle(1)+90.,0._prec)
+               Call rotateO2L(EE(1,iMode),EE(2,iMode),Angle(1))
 
 			      ! magnetic fields
 			      BB(1,iMode) = dotProd_noConj_scvector_f(Lbx,ef%pol(iMode))
                BB(2,iMode) = dotProd_noConj_scvector_f(Lby,ef%pol(iMode))
                
                ! 2019.05.25, Liu Zhongyin, add rotate for bb
-               Call rotateO2L(BB(1,iMode),BB(2,iMode),Angle(1),Angle(1)+90.,0._prec)
+               Call rotateO2L(BB(1,iMode),BB(2,iMode),Angle(1))
 			 end do
 			 !invert horizontal B matrix using Kramer's rule.
 			  det = BB(1,1)*BB(2,2)-BB(1,2)*BB(2,1)
@@ -327,14 +327,14 @@ Contains
                EE(2,iMode) =  dotProd_noConj_scvector_f(Ley,ef%pol(iMode))
                
                ! 2019.05.25, Liu Zhongyin, add rotate for ee
-               Call rotateO2L(EE(1,iMode),EE(2,iMode),Angle(1),Angle(1)+90.,0._prec)
+               Call rotateO2L(EE(1,iMode),EE(2,iMode),Angle(1))
 
 			      ! magnetic fields
 			      BB(1,iMode) = dotProd_noConj_scvector_f(Lbx,ef%pol(iMode))
                BB(2,iMode) = dotProd_noConj_scvector_f(Lby,ef%pol(iMode))
                
                ! 2019.05.25, Liu Zhongyin, add rotate for bb
-               Call rotateO2L(BB(1,iMode),BB(2,iMode),Angle(1),Angle(1)+90.,0._prec)
+               Call rotateO2L(BB(1,iMode),BB(2,iMode),Angle(1))
 			 end do
 			 !invert horizontal B matrix using Kramer's rule.
 			  det = BB(1,1)*BB(2,2)-BB(1,2)*BB(2,1)
@@ -550,8 +550,8 @@ Contains
   endif
 
   ! 2019.05.28, Liu Zhongyin, Add new methods for rotated eh, replace the old one
-  cosa = cos(Angle(1)*D2R)
-  sina = sin(Angle(1)*D2R)
+  cosa = cos(-Angle(1)*D2R)
+  sina = sin(-Angle(1)*D2R)
 selectcase (iDt)
 case(Full_Impedance,Phase_Tensor)
    ! Zxx
@@ -722,7 +722,7 @@ case(Full_Interstation_TF)
    ! Mxx/Hx1
    Call linComb_sparsevecc(Lbx,cosa*Binv(1,1),Lby,-sina*Binv(1,1),L1)
    ! Mxx/Rx1
-   Call linComb_sparsevecc(Lrx,-Z(1)*cosa*Binv(1,1),Lry,Z(1)*sina*Binv(1,1),L2)
+   Call linComb_sparsevecc(Lrx,-(Z(1)+1)*cosa*Binv(1,1),Lry,(Z(1)+1)*sina*Binv(1,1),L2)
    ! Mxx/Ry1
    Call linComb_sparsevecc(Lrx,-Z(2)*sina*Binv(1,1),Lry,-Z(2)*cosa*Binv(1,1),L3)
    Call linComb_sparsevecc(L1,C_ONE,L2,C_ONE,Lp12)
@@ -731,7 +731,7 @@ case(Full_Interstation_TF)
    ! Mxx/Hx2
    Call linComb_sparsevecc(Lbx,cosa*Binv(2,1),Lby,-sina*Binv(2,1),L1)
    ! Mxx/Rx2
-   Call linComb_sparsevecc(Lrx,-Z(1)*cosa*Binv(2,1),Lry,Z(1)*sina*Binv(2,1),L2)
+   Call linComb_sparsevecc(Lrx,-(Z(1)+1)*cosa*Binv(2,1),Lry,(Z(1)+1)*sina*Binv(2,1),L2)
    ! Mxx/Ry2
    Call linComb_sparsevecc(Lrx,-Z(2)*sina*Binv(2,1),Lry,-Z(2)*cosa*Binv(2,1),L3)
    Call linComb_sparsevecc(L1,C_ONE,L2,C_ONE,Lp12)
@@ -742,7 +742,7 @@ case(Full_Interstation_TF)
    ! Mxy/Hx1
    Call linComb_sparsevecc(Lbx,cosa*Binv(1,2),Lby,-sina*Binv(1,2),L1)
    ! Mxy/Rx1
-   Call linComb_sparsevecc(Lrx,-Z(1)*cosa*Binv(1,2),Lry,Z(1)*sina*Binv(1,2),L2)
+   Call linComb_sparsevecc(Lrx,-(Z(1)+1)*cosa*Binv(1,2),Lry,(Z(1)+1)*sina*Binv(1,2),L2)
    ! Mxy/Ry1
    Call linComb_sparsevecc(Lrx,-Z(2)*sina*Binv(1,2),Lry,-Z(2)*cosa*Binv(1,2),L3)
    Call linComb_sparsevecc(L1,C_ONE,L2,C_ONE,Lp12)
@@ -751,7 +751,7 @@ case(Full_Interstation_TF)
    ! Mxy/Hx2
    Call linComb_sparsevecc(Lbx,cosa*Binv(2,2),Lby,-sina*Binv(2,2),L1)
    ! Mxy/Rx2
-   Call linComb_sparsevecc(Lrx,-Z(1)*cosa*Binv(2,2),Lry,Z(1)*sina*Binv(2,2),L2)
+   Call linComb_sparsevecc(Lrx,-(Z(1)+1)*cosa*Binv(2,2),Lry,(Z(1)+1)*sina*Binv(2,2),L2)
    ! Mxy/Ry2
    Call linComb_sparsevecc(Lrx,-Z(2)*sina*Binv(2,2),Lry,-Z(2)*cosa*Binv(2,2),L3)
    Call linComb_sparsevecc(L1,C_ONE,L2,C_ONE,Lp12)
@@ -764,7 +764,7 @@ case(Full_Interstation_TF)
    ! Myx/Rx1
    Call linComb_sparsevecc(Lrx,-Z(3)*cosa*Binv(1,1),Lry,Z(3)*sina*Binv(1,1),L2)
    ! Myx/Ry1
-   Call linComb_sparsevecc(Lrx,-Z(4)*sina*Binv(1,1),Lry,-Z(4)*cosa*Binv(1,1),L3)
+   Call linComb_sparsevecc(Lrx,-(Z(4)+1)*sina*Binv(1,1),Lry,-(Z(4)+1)*cosa*Binv(1,1),L3)
    Call linComb_sparsevecc(L1,C_ONE,L2,C_ONE,Lp12)
    Call linComb_sparsevecc(L3,C_ONE,Lp12,C_ONE,L(3)%L(1))
    ! mode2
@@ -773,7 +773,7 @@ case(Full_Interstation_TF)
    ! Myx/Rx2
    Call linComb_sparsevecc(Lrx,-Z(3)*cosa*Binv(2,1),Lry,Z(3)*sina*Binv(2,1),L2)
    ! Myx/Ry2
-   Call linComb_sparsevecc(Lrx,-Z(4)*sina*Binv(2,1),Lry,-Z(4)*cosa*Binv(2,1),L3)
+   Call linComb_sparsevecc(Lrx,-(Z(4)+1)*sina*Binv(2,1),Lry,-(Z(4)+1)*cosa*Binv(2,1),L3)
    Call linComb_sparsevecc(L1,C_ONE,L2,C_ONE,Lp12)
    Call linComb_sparsevecc(L3,C_ONE,Lp12,C_ONE,L(3)%L(2))
 
@@ -784,7 +784,7 @@ case(Full_Interstation_TF)
    ! Myy/Rx1
    Call linComb_sparsevecc(Lrx,-Z(3)*cosa*Binv(1,2),Lry,Z(3)*sina*Binv(1,2),L2)
    ! Myy/Ry1
-   Call linComb_sparsevecc(Lrx,-Z(4)*sina*Binv(1,2),Lry,-Z(4)*cosa*Binv(1,2),L3)
+   Call linComb_sparsevecc(Lrx,-(Z(4)+1)*sina*Binv(1,2),Lry,-(Z(4)+1)*cosa*Binv(1,2),L3)
    Call linComb_sparsevecc(L1,C_ONE,L2,C_ONE,Lp12)
    Call linComb_sparsevecc(L3,C_ONE,Lp12,C_ONE,L(4)%L(1))
    ! mode2
@@ -793,7 +793,7 @@ case(Full_Interstation_TF)
    ! Myy/Rx2
    Call linComb_sparsevecc(Lrx,-Z(3)*cosa*Binv(2,2),Lry,Z(3)*sina*Binv(2,2),L2)
    ! Myy/Ry2
-   Call linComb_sparsevecc(Lrx,-Z(4)*sina*Binv(2,2),Lry,-Z(4)*cosa*Binv(2,2),L3)
+   Call linComb_sparsevecc(Lrx,-(Z(4)+1)*sina*Binv(2,2),Lry,-(Z(4)+1)*cosa*Binv(2,2),L3)
    Call linComb_sparsevecc(L1,C_ONE,L2,C_ONE,Lp12)
    Call linComb_sparsevecc(L3,C_ONE,Lp12,C_ONE,L(4)%L(2))
 
@@ -1041,10 +1041,10 @@ if (typeDict(iDT)%tfType .eq. Off_Diagonal_Rho_Phase) then
   !****************************************************************************
   ! 2019.05.25, Liu Zhongyin, Add rotate for field vector
   ! from Orthogional to original layout
-   subroutine rotateO2L(ch1,ch2,angle1,angle2,angle)
+   subroutine rotateO2L(ch1,ch2,angle)
    implicit none
    complex(kind=prec), intent(inout) :: ch1,ch2
-   real(kind=prec), intent(in) :: angle, angle1,angle2
+   real(kind=prec), intent(in) :: angle
 
    ! local vars
    complex(kind=prec) :: tmpch1,tmpch2
@@ -1052,11 +1052,8 @@ if (typeDict(iDT)%tfType .eq. Off_Diagonal_Rho_Phase) then
    tmpch1 = ch1
    tmpch2 = ch2
 
-   ch1 =  sin((angle2-angle)*D2R)*tmpch1 - sin((angle1-angle)*D2R)*tmpch2
-   ch1 =  ch1/sin((angle2-angle1)*D2R)
-   ch2 = -cos((angle2-angle)*D2R)*tmpch1 + cos((angle1-angle)*D2R)*tmpch2
-   ch2 =  ch2/sin((angle2-angle1)*D2R)
-
+   ch1 =  cos(angle*D2R)*tmpch1 + sin(angle*D2R)*tmpch2
+   ch2 = -sin(angle*D2R)*tmpch1 + cos(angle*D2R)*tmpch2
    end subroutine
 
 end module dataFunc
