@@ -45,7 +45,7 @@ build_modem_on:
         - echo "FINISH build_modem_on"
 #
 # JOB TEST PLAIN:   RUN Mod3DMT WITHOUT ANY PARAMETER
-.test_plain:
+test_plain:
     stage: test
     dependencies:
         - build_modem_on    # DEFINE THIS JOB DEPENDENCY FROM JOB build_modem_on
@@ -61,7 +61,7 @@ build_modem_on:
         expire_in: 1 week
 #
 # STANDART TEST READ_WRITE
-.test_read_write:
+test_read_write:
     stage: test
     dependencies:
         - build_modem_on    # DEFINE THIS JOB DEPENDENCY FROM JOB build_modem_on
@@ -76,7 +76,7 @@ build_modem_on:
         expire_in: 1 week
 #
 # STANDART TEST FORWARD
-.test_forward:
+test_forward:
     stage: test
     dependencies:
         - build_modem_on    # DEFINE THIS JOB DEPENDENCY FROM JOB build_modem_on
@@ -91,7 +91,7 @@ build_modem_on:
         expire_in: 1 week
 #
 # STANDART TEST COMPUTE_J
-.test_compute_j:
+test_compute_j:
     stage: test
     dependencies:
         - build_modem_on    # DEFINE THIS JOB DEPENDENCY FROM JOB build_modem_on
@@ -106,7 +106,7 @@ build_modem_on:
         expire_in: 1 week
 #
 # STANDART TEST MULT BY J
-.test_mult_by_j:
+test_mult_by_j:
     stage: test
     dependencies:
         - build_modem_on    # DEFINE THIS JOB DEPENDENCY FROM JOB build_modem_on
@@ -121,7 +121,7 @@ build_modem_on:
         expire_in: 1 week
 #
 # STANDART TEST MULT BY J T
-.test_mult_by_j_t:
+test_mult_by_j_t:
     stage: test
     dependencies:
         - build_modem_on    # DEFINE THIS JOB DEPENDENCY FROM JOB build_modem_on
@@ -136,7 +136,7 @@ build_modem_on:
         expire_in: 1 week
 #
 # STANDART TEST MULT BY J T MULTI TX
-.test_mult_by_j_t_multi_tx:
+test_mult_by_j_t_multi_tx:
     stage: test
     dependencies:
         - build_modem_on    # DEFINE THIS JOB DEPENDENCY FROM JOB build_modem_on
@@ -151,7 +151,7 @@ build_modem_on:
         expire_in: 1 week
 #
 # STANDART TEST INVERSE
-.test_inverse:
+test_inverse:
     stage: test
     dependencies:
         - build_modem_on    # DEFINE THIS JOB DEPENDENCY FROM JOB build_modem_on
@@ -166,7 +166,7 @@ build_modem_on:
         expire_in: 1 week
 #
 # STANDART TEST COV FWD
-.test_apply_cov_fwd:
+test_apply_cov_fwd:
     stage: test
     dependencies:
         - build_modem_on    # DEFINE THIS JOB DEPENDENCY FROM JOB build_modem_on
@@ -181,7 +181,7 @@ build_modem_on:
         expire_in: 1 week
 #
 # STANDART TEST COV INV
-.test_apply_cov_inv:
+test_apply_cov_inv:
     stage: test
     dependencies:
         - build_modem_on    # DEFINE THIS JOB DEPENDENCY FROM JOB build_modem_on
@@ -196,7 +196,7 @@ build_modem_on:
         expire_in: 1 week
 #
 # STANDART TEST EXTRACT BC
-.test_extract_bc:
+test_extract_bc:
     stage: test
     dependencies:
         - build_modem_on    # DEFINE THIS JOB DEPENDENCY FROM JOB build_modem_on
@@ -211,7 +211,7 @@ build_modem_on:
         expire_in: 1 week
 #
 # STANDART TEST GRAD
-.test_grad:
+test_grad:
     stage: test
     dependencies:
         - build_modem_on    # DEFINE THIS JOB DEPENDENCY FROM JOB build_modem_on
@@ -226,7 +226,7 @@ build_modem_on:
         expire_in: 1 week
 #
 # STANDART TEST ADJ J
-.test_adj_j:
+test_adj_j:
     stage: test
     dependencies:
         - build_modem_on    # DEFINE THIS JOB DEPENDENCY FROM JOB build_modem_on
@@ -241,7 +241,7 @@ build_modem_on:
         expire_in: 1 week
 #
 # STANDART TEST ADJ J
-.test_adj_l:
+test_adj_l:
     stage: test
     dependencies:
         - build_modem_on    # DEFINE THIS JOB DEPENDENCY FROM JOB build_modem_on
@@ -256,7 +256,7 @@ build_modem_on:
         expire_in: 1 week
 #
 # STANDART TEST ADJ S
-test_adj_s:
+.test_adj_s:
     stage: test
     dependencies:
         - build_modem_on    # DEFINE THIS JOB DEPENDENCY FROM JOB build_modem_on
@@ -271,7 +271,7 @@ test_adj_s:
         expire_in: 1 week
 #
 # STANDART TEST ADJ P
-.test_adj_p:
+test_adj_p:
     stage: test
     dependencies:
         - build_modem_on    # DEFINE THIS JOB DEPENDENCY FROM JOB build_modem_on
@@ -286,7 +286,7 @@ test_adj_s:
         expire_in: 1 week
 #
 # STANDART TEST ADJ Q
-.test_adj_q:
+test_adj_q:
     stage: test
     dependencies:
         - build_modem_on    # DEFINE THIS JOB DEPENDENCY FROM JOB build_modem_on
@@ -301,7 +301,7 @@ test_adj_s:
         expire_in: 1 week
 #
 # STANDART TEST ADJ M
-.test_adj_m:
+test_adj_m:
     stage: test
     dependencies:
         - build_modem_on    # DEFINE THIS JOB DEPENDENCY FROM JOB build_modem_on
@@ -316,7 +316,7 @@ test_adj_s:
         expire_in: 1 week
 #
 # STANDART TEST ADJ d
-test_adj_d:
+.test_adj_d:
     stage: test
     dependencies:
         - build_modem_on    # DEFINE THIS JOB DEPENDENCY FROM JOB build_modem_on
@@ -331,7 +331,7 @@ test_adj_d:
         expire_in: 1 week
 #
 # STANDART TEST ADJ e
-.test_adj_e:
+test_adj_e:
     stage: test
     dependencies:
         - build_modem_on    # DEFINE THIS JOB DEPENDENCY FROM JOB build_modem_on
@@ -346,7 +346,7 @@ test_adj_d:
         expire_in: 1 week
 #
 # STANDART TEST ADJ b
-.test_adj_b:
+test_adj_b:
     stage: test
     dependencies:
         - build_modem_on    # DEFINE THIS JOB DEPENDENCY FROM JOB build_modem_on
@@ -361,7 +361,7 @@ test_adj_d:
         expire_in: 1 week
 #
 # STANDART TEST SENS
-.test_sens:
+test_sens:
     stage: test
     dependencies:
         - build_modem_on    # DEFINE THIS JOB DEPENDENCY FROM JOB build_modem_on
@@ -376,7 +376,7 @@ test_adj_d:
         expire_in: 1 week
 #
 # TEST JOB 3:   RUN EVERY TEST AT tests/ DIR
-.test_engine_modem_on:
+test_engine_modem_on:
     stage: test
     dependencies:
         - build_modem_on    # DEFINE THIS JOB DEPENDENCY FROM JOB build_modem_on
