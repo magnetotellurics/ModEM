@@ -45,7 +45,7 @@ build_modem_on:
         - echo "FINISH build_modem_on"
 #
 # JOB TEST PLAIN:   RUN Mod3DMT WITHOUT ANY PARAMETER
-test_plain:
+.test_plain:
     stage: test
     dependencies:
         - build_modem_on    # DEFINE THIS JOB DEPENDENCY FROM JOB build_modem_on
@@ -61,7 +61,7 @@ test_plain:
         expire_in: 1 week
 #
 # STANDART TEST READ_WRITE
-test_read_write:
+.test_read_write:
     stage: test
     dependencies:
         - build_modem_on    # DEFINE THIS JOB DEPENDENCY FROM JOB build_modem_on
@@ -91,7 +91,7 @@ test_forward:
         expire_in: 1 week
 #
 # STANDART TEST COMPUTE_J
-test_compute_j:
+.test_compute_j:
     stage: test
     dependencies:
         - build_modem_on    # DEFINE THIS JOB DEPENDENCY FROM JOB build_modem_on
@@ -106,7 +106,7 @@ test_compute_j:
         expire_in: 1 week
 #
 # STANDART TEST MULT BY J
-test_mult_by_j:
+.test_mult_by_j:
     stage: test
     dependencies:
         - build_modem_on    # DEFINE THIS JOB DEPENDENCY FROM JOB build_modem_on
@@ -121,7 +121,7 @@ test_mult_by_j:
         expire_in: 1 week
 #
 # STANDART TEST MULT BY J T
-test_mult_by_j_t:
+.test_mult_by_j_t:
     stage: test
     dependencies:
         - build_modem_on    # DEFINE THIS JOB DEPENDENCY FROM JOB build_modem_on
@@ -136,7 +136,7 @@ test_mult_by_j_t:
         expire_in: 1 week
 #
 # STANDART TEST INVERSE
-test_inverse:
+.test_inverse:
     stage: test
     dependencies:
         - build_modem_on    # DEFINE THIS JOB DEPENDENCY FROM JOB build_modem_on
@@ -151,7 +151,7 @@ test_inverse:
         expire_in: 1 week
 #
 # STANDART TEST COV
-test_cov:
+.test_cov:
     stage: test
     dependencies:
         - build_modem_on    # DEFINE THIS JOB DEPENDENCY FROM JOB build_modem_on
@@ -196,7 +196,7 @@ test_adj_j:
         expire_in: 1 week
 #
 # STANDART TEST SENS
-test_sens:
+.test_sens:
     stage: test
     dependencies:
         - build_modem_on    # DEFINE THIS JOB DEPENDENCY FROM JOB build_modem_on
@@ -211,7 +211,7 @@ test_sens:
         expire_in: 1 week
 #
 # TEST JOB 3:   RUN EVERY TEST AT tests/ DIR
-test_engine_modem_on:
+.test_engine_modem_on:
     stage: test
     dependencies:
         - build_modem_on    # DEFINE THIS JOB DEPENDENCY FROM JOB build_modem_on
@@ -236,7 +236,7 @@ update_gitlab:
         - bash scripts/update_gitlab.sh &>> outputs/update_gitlab.txt
 #
 # DEPLOY: UPDATE PAGES
-.pages:
+pages:
     stage: deploy
     environment: staging
     script:
