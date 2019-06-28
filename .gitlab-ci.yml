@@ -53,7 +53,7 @@ test_plain:
     script:
         #
         # PLAIN EXECUTION TEST
-        - bash scripts/test_plain.sh &>> test_plain.txt
+        - bash scripts/test_plain.sh &>> outputs/test_plain.txt
     #
     artifacts:
         paths:
@@ -165,19 +165,34 @@ test_cov:
             - outputs/test_cov/
         expire_in: 1 week
 #
-# STANDART TEST ADJ
-test_adj:
+# STANDART TEST EXTRACT BC
+test_extract_bc:
     stage: test
     dependencies:
         - build_modem_on    # DEFINE THIS JOB DEPENDENCY FROM JOB build_modem_on
     #
     script:
         #
-        - bash scripts/test_adj.sh src/Mod3DMT inputs/rFile_Model.ws inputs/rFile_dModel inputs/rFile_Data.dat
+        - bash scripts/test_extract_bc.sh src/Mod3DMT inputs/rFile_Model.ws inputs/rFile_Data.dat
     #
     artifacts:
         paths:
-            - outputs/test_adj/
+            - outputs/test_adj_j/
+        expire_in: 1 week
+#
+# STANDART TEST ADJ
+test_adj_j:
+    stage: test
+    dependencies:
+        - build_modem_on    # DEFINE THIS JOB DEPENDENCY FROM JOB build_modem_on
+    #
+    script:
+        #
+        - bash scripts/test_adj_j.sh src/Mod3DMT inputs/rFile_Model.ws inputs/rFile_dModel inputs/rFile_Data.dat
+    #
+    artifacts:
+        paths:
+            - outputs/test_adj_j/
         expire_in: 1 week
 #
 # STANDART TEST SENS

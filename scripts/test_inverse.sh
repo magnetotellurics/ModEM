@@ -21,7 +21,7 @@ mkdir -p test_inverse
 cd test_inverse/
 #
 #
-echo "#### START READ_WRITE MPI TEST WITH $ncores CORES AT $now ####\n" >> std_out.txt
+echo "#### START INVERSE MPI TEST WITH $ncores CORES AT $now ####" >> std_out.txt
 #
 #
 echo "#### COMMAND LINE: [mpirun -n $ncores ../$EXEC -I NLCG ../$MODEL ../$DATA -v full]" >> std_out.txt
@@ -46,7 +46,7 @@ if [ "$result" -ne "0" ]; then
 fi
 #
 #
-echo "### FINISH FORWARD MPI TEST ###\n" >> std_out.txt
+echo "#### FINISH FORWARD MPI TEST ####" >> std_out.txt
 #
 #
 cd ..

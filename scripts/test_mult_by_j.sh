@@ -22,7 +22,7 @@ mkdir -p test_mult_by_j
 cd test_mult_by_j/
 #
 #
-echo "#### START MULT_BY_J MPI TEST WITH $ncores CORES AT $now ####\n" >> std_out.txt
+echo "#### START MULT_BY_J MPI TEST WITH $ncores CORES AT $now ####" >> std_out.txt
 #
 #
 echo "#### COMMAND LINE: [mpirun -n $ncores ../$EXEC -M ../$MODEL ../$dMODEL ../$DATA wFile_Data -v full]" >> std_out.txt
@@ -47,7 +47,7 @@ if [ "$result" -ne "0" ]; then
 fi
 #
 #
-echo "### FINISH MULT_BY_J MPI TEST ###\n" >> std_out.txt
+echo "#### FINISH MULT_BY_J MPI TEST ####" >> std_out.txt
 #
 #
 cd ..

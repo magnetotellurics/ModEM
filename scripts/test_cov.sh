@@ -20,7 +20,7 @@ mkdir -p test_cov
 cd test_cov/
 #
 #
-echo "#### START TEST_COV MPI TEST WITH $ncores CORES AT $now ####\n" >> std_out.txt
+echo "#### START TEST_COV MPI TEST WITH $ncores CORES AT $now ####" >> std_out.txt
 #
 #
 echo "#### COMMAND LINE: [mpirun -n $ncores ../$EXEC -C ../$MODEL wFile_Model.ws -v full]" >> std_out.txt
@@ -45,7 +45,7 @@ if [ "$result" -ne "0" ]; then
 fi
 #
 #
-echo "### FINISH TEST_COV MPI TEST ###\n" >> std_out.txt
+echo "#### FINISH TEST_COV MPI TEST ####" >> std_out.txt
 #
 #
 cd ..

@@ -13,22 +13,22 @@ now=$(date "+%Y/%m/%d - %H:%M:%S")
 ncores=$(nproc)
 #
 # REMOVE TEST OUTPUT FOLDER FROM MAIN OUTPUT FOLDER
-rm -rf outputs/test_sens/
+rm -rf outputs/test_adj_l/
 #
 # CREATE TEST OUTPUT FOLDER
-mkdir -p test_sens
+mkdir -p test_adj_l
 #
 # ENTER TEST OUTPUT FOLDER
-cd test_sens/
+cd test_adj_l/
 #
 #
-echo "#### START SENS MPI TEST WITH $ncores CORES AT $now ####" >> std_out.txt
+echo "#### START ADJ L MPI TEST WITH $ncores CORES AT $now ####" >> std_out.txt
 #
 #
-echo "#### COMMAND LINE: [mpirun -n $ncores ../$EXEC -S ../$MODEL ../$dMODEL ../$DATA wFile_Data wFile_Sens -v full]" >> std_out.txt
+echo "#### COMMAND LINE: [mpirun -n $ncores ../$EXEC -A J ../$MODEL ../$dMODEL ../$DATA wFile_Model wFile_Data -v full]" >> std_out.txt
 #
 #
-mpirun -n $ncores ../$EXEC -S ../$MODEL ../$dMODEL ../$DATA wFile_Data wFile_Sens -v full &>> std_out.txt
+mpirun -n $ncores ../$EXEC -A L ../$MODEL ../$dMODEL ../$DATA wFile_Model wFile_Data -v full &>> std_out.txt
 #
 # CATCH RESULT
 result=$?
@@ -37,7 +37,7 @@ result=$?
 if [ "$result" -ne "0" ]; then
 	#
 	#
-	echo "TEST SENS FAIL: $result"
+	echo "TEST ADJ L FAIL: $result"
 	#
 	#
 	cd ..
@@ -47,13 +47,13 @@ if [ "$result" -ne "0" ]; then
 fi
 #
 #
-echo "#### FINISH SENS MPI TEST ####" >> std_out.txt
+echo "#### FINISH ADJ L MPI TEST ####" >> std_out.txt
 #
 #
 cd ..
 #
 #
-mv test_sens/ outputs/
+mv test_adj_l/ outputs/
 #
 #
 exit 0

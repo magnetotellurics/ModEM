@@ -12,22 +12,22 @@ now=$(date "+%Y/%m/%d - %H:%M:%S")
 ncores=$(nproc)
 #
 # REMOVE TEST OUTPUT FOLDER FROM MAIN OUTPUT FOLDER
-rm -rf outputs/test_compute_j/
+rm -rf outputs/test_extract_bc/
 #
 # CREATE TEST OUTPUT FOLDER
-mkdir -p test_compute_j
+mkdir -p test_extract_bc
 #
 # ENTER TEST OUTPUT FOLDER
-cd test_compute_j/
+cd test_extract_bc/
 #
 #
-echo "#### START COMPUT_J MPI TEST WITH $ncores CORES AT $now ####" >> std_out.txt
+echo "#### START EXTRACT BC MPI TEST WITH $ncores CORES AT $now ####" >> std_out.txt
 #
 #
-echo "#### COMMAND LINE: [mpirun -n $ncores ../$EXEC -J ../$MODEL ../$DATA wFile_Sens -v full]" >> std_out.txt
+echo "#### COMMAND LINE: [mpirun -n $ncores ../$EXEC -b ../$MODEL ../$DATA wFile_EMrhs -v full]" >> std_out.txt
 #
 #
-mpirun -n $ncores ../$EXEC -J ../$MODEL ../$DATA wFile_Sens -v full &>> std_out.txt
+mpirun -n $ncores ../$EXEC -b ../$MODEL ../$DATA wFile_EMrhs -v full &>> std_out.txt
 #
 # CATCH RESULT
 result=$?
@@ -36,7 +36,7 @@ result=$?
 if [ "$result" -ne "0" ]; then
 	#
 	#
-	echo "TEST COMPUT_J FAIL: $result"
+	echo "TEST EXTRACT BC FAIL: $result"
 	#
 	#
 	cd ..
@@ -46,13 +46,13 @@ if [ "$result" -ne "0" ]; then
 fi
 #
 #
-echo "#### FINISH COMPUT_J MPI TEST ####" >> std_out.txt
+echo "#### FINISH EXTRACT BC MPI TEST ####" >> std_out.txt
 #
 #
 cd ..
 #
 #
-mv test_compute_j/ outputs/
+mv test_extract_bc/ outputs/
 #
 #
 exit 0

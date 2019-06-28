@@ -9,7 +9,7 @@ now=$(date "+%Y/%m/%d - %H:%M:%S")
 ncores=$(nproc)
 #
 #
-echo "#### START PLAIN MPI TEST WITH $ncores CORES AT $now ####\n"
+echo "#### START PLAIN MPI TEST WITH $ncores CORES AT $now ####"
 #
 #
 mpirun -n $ncores ./src/Mod3DMT
