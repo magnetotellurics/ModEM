@@ -30,7 +30,7 @@ Mod3DMT.f90 > $1
 
 else
 # MPI configuration (not tested)
-perl fmkmf.pl -f90 gfortran \
+perl fmkmf.pl -f90 mpif90 \
 -opt '-O3 -ffree-line-length-none' \
 -mpi '-x f95-cpp-input -DMPI' \
 -o './objs/3D_MT/GFortReleaseMPI' \
