@@ -226,6 +226,7 @@ program Mod3DMT
      case (EXTRACT_BC)
         ! no need to run the forward solution to extract the boundary
         ! conditions from the initial electric field
+        call setGrid(grid)
         call dryRun(sigma0,allData,bAll,eAll)
 
      case (TEST_GRAD)
