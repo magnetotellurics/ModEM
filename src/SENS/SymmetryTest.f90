@@ -42,9 +42,7 @@ module SymmetryTest
 !  created and initialized. These are heavily used by Level II routines
 !  in DataFunc, SolverSens and ForwardSolver, inherited by this module;
 !  "pointers" to dictionary entries are attached to data vector d.
-#ifdef MPI
-     Use MPI_main
-#endif
+
   use SensComp
 
   implicit none
@@ -80,26 +78,13 @@ Contains
    Jm = d
 
    ! compute background solution
-#ifdef MPI
-        call Master_job_fwdPred(m0,dPred,eAll)
-#else
-        call fwdPred(m0,dPred,eAll)
-#endif
+   call fwdPred(m0,dPred,eAll)
 
    ! compute J m
-#ifdef MPI
-            call Master_job_Jmult(m,m0,Jm,eAll)
-#else
-            call Jmult(m,m0,Jm,eAll)
-#endif
+   call Jmult(m,m0,Jm,eAll)
 
    ! compute J^T d
-#ifdef MPI
-         !call Master_job_fwdPred(sigma0,allData,eAll)
-         call Master_job_JmultT(m0,d,JTd,eAll)
-#else
-         call JmultT(m0,d,JTd,eAll)
-#endif
+   call JmultT(m0,d,JTd,eAll)
 
    ! compute dot product #1: d^T J m
    r1 = dotProd(d,Jm)
@@ -155,11 +140,7 @@ Contains
    ! compute background solution
    if (.not. present(ePred)) then
     dPred = d
-#ifdef MPI
-        call Master_job_fwdPred(m0,dPred,eAll)
-#else
-        call fwdPred(m0,dPred,eAll)
-#endif
+    call fwdPred(m0,dPred,eAll)
    else
     eAll = ePred
    endif
@@ -304,11 +285,7 @@ Contains
    ! compute background solution
    if (.not. present(ePred)) then
     dPred = dTemplate
-#ifdef MPI
-        call Master_job_fwdPred(m0,dPred,eAll)
-#else
-        call fwdPred(m0,dPred,eAll)
-#endif
+    call fwdPred(m0,dPred,eAll)
    else
     eAll = ePred
    endif
@@ -385,11 +362,7 @@ Contains
    call zero(mTemp)
 
    ! compute background solution
-#ifdef MPI
-        call Master_job_fwdPred(m0,dPred,eAll)
-#else
-        call fwdPred(m0,dPred,eAll)
-#endif
+   call fwdPred(m0,dPred,eAll)
 
    do j = 1,d%nTx
 

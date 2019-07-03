@@ -20,15 +20,21 @@ use transmitters
 
 implicit none
 
+! options for boundary conditions input or computation
+logical, save, public   :: COMPUTE_BC = .true.
+logical, save, public   :: BC_FROM_RHS_FILE = .false.
 !    keep data structures used only by
 !    routines in this module private
 !   rhs data structures for solving forward, sensitivity probs
-type(rhsVector_t), save, private		:: b0
+!type(rhsVector_t), save, private		:: b0
 !    keep track of which mode was solved for most recently
 !    (to minimize reinitialization ... not clear this is needed!)
   character*2, save, public		:: currentMode = '  '
 
-
+!=======================================================================
+!May 15, 2018== AK == New general RHS for all transmitters now stored
+!=======================================================================
+  type(rhsVectorMTX_t),save,public           ::  bAll
 !  initialization routines (call Fwd version if no sensitivities are
 !     are calculated).  Note that these routines are set up to
 !    automatically manage memory and to figure out which initialization
@@ -94,9 +100,8 @@ Contains
 
          !  not inital solution, but mode has changed from last
          !  sensitivity calculated: will need to reinitialize
-         !  solver + rhs/soln arrays ... first deallocate from
+         !  solver + e0 soln arrays ... first deallocate from
          !  previous mode
-         call deall_rhsVector(b0)
          call deall_solnVector(e0)
          if(initForSens) then
             call deall_rhsVector(comb)
@@ -130,13 +135,8 @@ Contains
 
       !  allocate for rhs for background, scratch sensitivity solutions
       if (output_level > 3) then
-         write(*,*) 'Initializing RHS and background solution for 2D forward solver... iTx=',iTx,' mode=',mode
+          write(*,*) 'Initializing background solution for 2D forward solver... iTx=',iTx,' mode=',mode
       endif
-      b0%nonzero_source = .false.
-      b0%nonzero_bc = .true.
-      b0%adj = 'FWD'
-      call create_rhsVector(grid,iTx,b0)
-
       !  allocate for background solution
       call create_solnVector(grid,iTx,e0)
 
@@ -191,7 +191,6 @@ Contains
 
    initForSens = present(comb)
 
-   call deall_rhsVector(b0)
    if(present(e0)) then
       call deall_solnVector(e0)
    endif
@@ -213,8 +212,71 @@ Contains
 
    end subroutine exitSolver
 
+!**********************************************************************
+! Sets boundary conditions in RHS b0, and the initial conditions in e0,
+! for a transmitter index iTx. Typically, this is done for all polarizations.
+! However in the MPI case, e0%nPol is artificially set to 1 to ensure optimal
+! load distribution, so need to be careful with the indexing here.
+! In all cases, this is meant to be called just before fwdSolve ONLY.
+! The difference with fwdSolve is that here b0 is computed; in fwdSolve
+! it is input only.
+!
+! Boundary conditions would have already been initialized from file
+! into bAll for option BC_FROM_RHS_FILE. Otherwise, need to be computed.
+! At present, we are not using this routine to set up the initial value
+! of e0, but we might do so in the future.
+!
+! We are doing all this in a separate routine because we want this to be
+! a high-level function that can be called from the upper level.
+!
+! A. Kelbert, 24 May 2018
+  Subroutine fwdSetup(iTx,e0,b0)
+
+    !  Input mode, period
+    integer, intent(in)     :: iTx
+    ! Output electric field first guess (for iterative solver)
+    type(solnVector_t), intent(inout) :: e0
+    ! Output boundary conditions
+    type(rhsVector_t), intent(inout)  :: b0
+
+   ! local variables
+   real(kind=prec)	:: period,omega
+   character*2          	:: mode
+
+   mode = txDict(iTx)%mode
+   period = txDict(iTx)%period
+
+   !  allocate for rhs for background, scratch sensitivity solutions
+   if (output_level > 3) then
+       write(*,*) 'Initializing RHS for 2D forward solver... iTx=',iTx,' mode=',mode
+   endif
+   b0%nonzero_source = .false.
+   b0%nonzero_bc = .true.
+   b0%adj = 'FWD'
+   call create_rhsVector(e0%grid,iTx,b0)
+
+   ! solve forward problem
+   if (BC_FROM_RHS_FILE) then
+       ! in this case, we've read bAll from RHS file already
+       write (*,'(a12,a29,a5,i4,a15,a2)') node_info, 'Setting the BC from RHS file ', &
+           ' for ',iTx,' & mode # ',mode
+       b0%bc = bAll%combs(iTx)%bc
+   else
+       select case (mode)
+           case ('TE')
+               ! compute boundary conditions for 2D TE forward problem
+               call SetBoundTE(period,b0%bc)
+           case ('TM')
+               ! compute boundary conditions for 2D TM forward problem
+               call SetBoundTM(period,b0%bc)
+           case default
+       end select
+   end if
+
+  end subroutine fwdSetup
+  
    !**********************************************************************
-   subroutine fwdSolve(iTx,e0)
+   subroutine fwdSolve(iTx,e0,b0)
 
    !  driver for 2d forward solver; sets up for transmitter iTx, returns
    !   solution in e0 ; rhs vector (b) is private to this module
@@ -224,6 +286,7 @@ Contains
 
    integer, intent(in)		:: iTx
    type(solnVector_t), intent(inout)	:: e0
+   type(rhsVector_t), intent(in)        :: b0
 
    ! local variables
    real(kind=prec)	:: period,omega
@@ -241,7 +304,7 @@ Contains
    select case (mode)
       case ('TE')
          ! compute boundary conditions for 2D TE forward problem
-         call SetBoundTE(period,b0%bc)
+         !call SetBoundTE(period,b0%bc)
          !  solve 2D TE equations, return solution in e0
          call Fwd2DsolveTE(b0,e0%vec%v,IER)
          if(IER .LT. 0) then
@@ -249,7 +312,7 @@ Contains
          endif
       case ('TM')
          ! compute boundary conditions for 2D TM forward problem
-         call SetBoundTM(period,b0%bc)
+         !call SetBoundTM(period,b0%bc)
          !  solve 2D TM equations, return solution in e0
          call Fwd2DsolveTM(b0,e0%vec%v,IER)
          if(IER .LT. 0) then

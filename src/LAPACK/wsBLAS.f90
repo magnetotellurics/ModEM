@@ -4602,12 +4602,12 @@
 !     ..
 !     .. External Functions ..
       REAL               ETIME
- !     EXTERNAL           ETIME
+      EXTERNAL           ETIME
 !     ..
 !     .. Executable Statements ..
 !
-  !    T1 = ETIME( TARRAY )
-  !    SECOND = TARRAY( 1 )
+      T1 = ETIME( TARRAY )
+      SECOND = TARRAY( 1 )
       RETURN
 !
 !     End of SECOND

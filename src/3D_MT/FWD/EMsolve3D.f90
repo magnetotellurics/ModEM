@@ -296,8 +296,9 @@ Contains
     endif
     loop: do while ((.not.converged).and.(.not.failed))
 
-
+       ! Call BiCG(b, eSol,QMRiter)
        Call QMR(b, eSol,QMRiter)
+
        ! algorithm is converged when the relative error is less than tolerance
        ! (in which case QMRiter%niter will be less than QMRiter%maxIt)
        converged = QMRiter%niter .lt. QMRiter%maxIt

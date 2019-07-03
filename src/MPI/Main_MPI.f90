@@ -1,5 +1,5 @@
 
-module MPI_main
+module Main_MPI
 #ifdef MPI
 
   use math_constants
@@ -10,8 +10,8 @@ module MPI_main
   use ForwardSolver
   use SensComp
   
-  use MPI_declaration
-  use MPI_sub
+  use Declaration_MPI
+  use Sub_MPI
       !use ioascii
 
   implicit none
@@ -20,7 +20,7 @@ module MPI_main
   ! temporary EM fields, that are saved for efficiency - to avoid
   !  memory allocation & deallocation for each transmitter
   type(solnVector_t), save, private		    :: e,e0
-  type(rhsVector_t) , save, private		    :: comb 
+  type(rhsVector_t) , save, private		    :: b0,comb
   type (grid_t), target, save, private     :: grid
   
   
@@ -35,7 +35,7 @@ Contains
 
 !###########################################  MPI_initialization   ############################################################
 
-Subroutine MPI_constructor
+Subroutine constructor_MPI
 
     implicit none
     include 'mpif.h'
@@ -45,7 +45,7 @@ Subroutine MPI_constructor
           call MPI_COMM_SIZE( MPI_COMM_WORLD, total_number_of_Proc, ierr )
           number_of_workers = total_number_of_Proc-1
 
-End Subroutine MPI_constructor
+End Subroutine constructor_MPI
 
 
 
@@ -102,6 +102,12 @@ Subroutine Master_Job_fwdPred(sigma,d1,eAll)
     
         job_name= 'FORWARD'      
         call Master_job_Distribute_Taskes(job_name,nTx,sigma,eAll)   
+
+ ! Initialize only those grid elements on the master that are used in EMfieldInterp
+ ! (obviously a quick patch, needs to be fixed in a major way)
+ ! A.Kelbert 2018-01-28
+    Call EdgeLength(grid, l_E)
+    Call FaceArea(grid, S_F)
           
  ! Compute the model Responces           
    do iTx=1,nTx
@@ -113,6 +119,10 @@ Subroutine Master_Job_fwdPred(sigma,d1,eAll)
 		     end do
       end do
    end do   
+
+ ! clean up the grid elements stored in GridCalc on the master node
+    call deall_rvector(l_E)
+    call deall_rvector(S_F)
 
 
         write(ioMPI,*)'FWD: Finished calculating for (', nTx , ') Transmitters '
@@ -920,7 +930,8 @@ if (trim(worker_job_task%what_to_do) .eq. 'FORWARD') then
 		       call set_e_soln(pol_index,e0)
 		       
 
-		       call fwdSolve(per_index,e0)  
+		       call fwdSetup(per_index,e0,b0)
+		       call fwdSolve(per_index,e0,b0)
                call reset_e_soln(e0)
 
      
@@ -993,10 +1004,21 @@ isComplex = d%d(per_index)%data(dt_index)%isComplex
 		  call create_sparseVector(e0%grid,per_index,L(iFunc))
 	  end do
 	  
+ ! Initialize only those grid elements on the master that are used in EMfieldInterp
+ ! (obviously a quick patch, needs to be fixed in a major way)
+ ! A.Kelbert 2018-01-28
+    Call EdgeLength(e0%grid, l_E)
+    Call FaceArea(e0%grid, S_F)
+
    ! compute linearized data functional(s) : L
    call Lrows(e0,sigma,dt,stn_index,L)
    ! compute linearized data functional(s) : Q
-   call Qrows(e0,sigma,dt,stn_index,Qzero,Qreal,Qimag)	  		              
+   call Qrows(e0,sigma,dt,stn_index,Qzero,Qreal,Qimag)
+
+ ! clean up the grid elements stored in GridCalc on the master node
+    call deall_rvector(l_E)
+    call deall_rvector(S_F)
+
    ! loop over functionals  (e.g., for 2D TE/TM impedances nFunc = 1)
    do iFunc = 1,nFunc
 
@@ -1472,11 +1494,11 @@ end subroutine setGrid_MPI
 
   end subroutine cleanUp_MPI
   
-subroutine MPI_destructor
+subroutine destructor_MPI
       call MPI_BARRIER(MPI_COMM_WORLD, ierr)
       call MPI_FINALIZE(ierr)
 
-end subroutine MPI_destructor
+end subroutine destructor_MPI
 #endif
-end module MPI_main
+end module Main_MPI
 

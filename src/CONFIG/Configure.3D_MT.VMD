@@ -1,0 +1,11 @@
+#!/bin/sh
+if [ $# -le 0 ]; then
+    echo 1>&2 Usage: $0 Makefile3d.local
+    exit 127
+fi
+if [ -e $1 ]; then
+    rm $1
+fi
+perl fmkmf.pl -d -f90 ifort -opt '-O3' -mpi '-cpp' -l '-lblas -llapack' -o './objs/3D_MT/Release' \
+-p .:INV:LAPACK:SENS:UTILS:FIELDS/FiniteDiff3D:3D_MT:3D_MT/DICT:3D_MT/modelParam:3D_MT/FWD:3D_MT/FWD/VMD1D:3D_MT/FWD/Mod2d:3D_MT/ioMod \
+Mod3DMT.f90 > $1

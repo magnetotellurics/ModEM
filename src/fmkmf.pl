@@ -245,7 +245,7 @@ if ($WIN) {
 } elsif ($f90 =~ /^gfortran$/){
 	print "MODULE = --sysroot=\$(OBJDIR)\n";	
 } else {
-	print "MODULE = -J \$(OBJDIR)\n";
+	print "MODULE = -module \$(OBJDIR)\n";
 }
 if ($libpath !~ /^(\s*)$/){
 	print "LIBS_PATH = -L$libpath\n";

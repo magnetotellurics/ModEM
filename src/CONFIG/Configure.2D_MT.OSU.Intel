@@ -11,37 +11,37 @@ if [ $2 = "debug" ]; then
 perl fmkmf.pl -f90 ifort \
 -opt '-debug all -debug extended -traceback -check bounds -heap-arrays' \
 -mpi '-cpp' \
--o './objs/3D_MT/IFortDebug' \
+-o './objs/2D_MT/IFortDebug' \
 -l '-llapack -lblas -lmkl_intel_lp64 -lmkl_intel_thread -lmkl_core  -lpthread -openmp -parallel' \
 -lp '/opt/intel/Compiler/11.1/075/mkl/lib/em64t' \
--p .:INV:LAPACK:SENS:UTILS:FIELDS/FiniteDiff3D:3D_MT:3D_MT/DICT:3D_MT/modelParam:3D_MT/FWD:3D_MT/FWD/Mod2d:3D_MT/ioMod \
-Mod3DMT.f90 > $1
+-p .:INV:LAPACK:SENS:UTILS:2D_MT:2D_MT/DICT:2D_MT/modelParam:2D_MT/FWD:2D_MT/ioMod \
+Mod2DMT.f90 > $1
 
 elif [ $2 = "release" ]; then
 # Release configuration
 perl fmkmf.pl -f90 ifort \
 -opt '-O3 -w  -xSSE4.2 -std03' \
 -mpi '-cpp' \
--o './objs/3D_MT/IFortRelease' \
+-o './objs/2D_MT/IFortRelease' \
 -l '-llapack -lblas -lmkl_intel_lp64 -lmkl_intel_thread -lmkl_core  -lpthread -openmp -parallel' \
 -lp '/opt/intel/Compiler/11.1/075/mkl/lib/em64t' \
--p .:INV:LAPACK:SENS:UTILS:FIELDS/FiniteDiff3D:3D_MT:3D_MT/DICT:3D_MT/modelParam:3D_MT/FWD:3D_MT/FWD/Mod2d:3D_MT/ioMod \
-Mod3DMT.f90 > $1
+-p .:INV:LAPACK:SENS:UTILS:2D_MT:2D_MT/DICT:2D_MT/modelParam:2D_MT/FWD:2D_MT/ioMod \
+Mod2DMT.f90 > $1
 
 else
 # MPI configuration (not tested)
 perl fmkmf.pl -f90 ifort \
 -opt '-O3 -w  -xSSE4.2 -std03' \
 -mpi '-cpp -DMPI' \
--o './objs/3D_MT/IFortReleaseMPI' \
+-o './objs/2D_MT/IFortReleaseMPI' \
 -l '-llapack -lblas -lmkl_intel_lp64 -lmkl_intel_thread -lmkl_core  -lpthread -openmp -parallel' \
 -lp '/opt/intel/Compiler/11.1/075/mkl/lib/em64t' \
--p .:INV:MPI:LAPACK:SENS:UTILS:FIELDS/FiniteDiff3D:3D_MT:3D_MT/DICT:3D_MT/modelParam:3D_MT/FWD:3D_MT/FWD/Mod2d:3D_MT/ioMod \
-Mod3DMT.f90 > $1
+-p .:INV:LAPACK:SENS:UTILS:2D_MT:2D_MT/DICT:2D_MT/modelParam:2D_MT/FWD:2D_MT/ioMod \
+Mod2DMT.f90 > $1
 fi
 
 if [ $# -le 2 ]; then
-    echo 1>&2 'Makefile for 3D MT inversion ready to use.'
+    echo 1>&2 Cartesian version of the makefile ready to use.
     exit
 fi
 

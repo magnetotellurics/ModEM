@@ -50,9 +50,6 @@ module Main
   !  storage for EM solutions
   type(solnVectorMTX_t), save            :: eAll
 
-  !  storage for EM rhs (currently only used for symmetry tests)
-  type(rhsVectorMTX_t), save            :: bAll
-
   logical                   :: write_model, write_data, write_EMsoln, write_EMrhs
 
 
@@ -100,6 +97,9 @@ Contains
 
 	else
 	  call warning('No input model parametrization')
+
+	  ! set up an empty grid to avoid segmentation faults in sensitivity tests
+          call create_grid(1,1,1,grid)
 	end if
 
 	!--------------------------------------------------------------------------

@@ -1,21 +1,31 @@
 
-Module MPI_declaration
+Module Declaration_MPI
 #ifdef MPI
      implicit none
+! consider building mpi binding and using 'use mpi' instead
 include 'mpif.h'
 
-! Decleration of general MPI stuff
+! Declaration of general MPI stuff
 !********************************************************************
 Integer        :: taskid,total_number_of_Proc,number_of_workers
 Integer        :: MASTER, FROM_MASTER, FROM_WORKER,TAG,ierr,dest
 INTEGER        :: STATUS(5)
 parameter         (MASTER=0,FROM_MASTER=1,FROM_WORKER=2,Tag=1)
 !********************************************************************
+! additional parameters needed by two-layered parallelization
+!********************************************************************
+integer        :: comm_world, comm_leader, comm_local
+integer        :: rank_world, rank_leader, rank_local
+integer        :: size_world, size_leader, size_local
+integer        :: group_world, group_leader
+! this is used to store the timer of each mpi sub-process
+DOUBLE PRECISION    :: previous_time
+integer, allocatable, dimension(:) :: prev_group_sizes
+! this is used for store the current name of proc/cpu to identify different
+! platforms, useful to group cpus from different nodes
+character*(80) ::  current_proc_name_MPI
 
-
-
-
-
+!********************************************************************
 ! Parameters required to create an MPI derived data types.
 !********************************************************************
 Integer        :: cvector_mpi_3D,gridDef3D_mpi,eAll_mpi,dvecMTX_mpi
@@ -61,8 +71,6 @@ DOUBLE PRECISION    :: starttime_total,endtime_total
 
 
 
-
-
 ! A drived data type to distribute Info. between Processors.
 !********************************************************************
 type :: define_worker_job
@@ -76,8 +84,6 @@ type :: define_worker_job
  end type define_worker_job
 type(define_worker_job), save :: worker_job_task
 !********************************************************************
-
-
 
 
 Contains
@@ -142,8 +148,24 @@ index=1
 
 end subroutine Unpack_worker_job_task
 
-
+subroutine gather_runtime(comm_current,time_passed,time_buff,ierr)
+! simple subroutine to get the runtime of each sub tasks to access the parallel 
+! efficiency 
+! collective on comm_current
+      implicit none
+      double precision,intent(in)                :: time_passed
+      integer,intent(in)                         :: comm_current,ierr
+      double precision,intent(out),pointer,dimension(:)   :: time_buff
+      integer                                    :: current_rank
+      integer                                    :: current_size,root=0
+      call MPI_COMM_RANK(comm_current,current_rank,ierr)
+      call MPI_COMM_SIZE(comm_current,current_size,ierr)
+      allocate(time_buff(current_size))
+      call MPI_Gather(time_passed, 1, MPI_DOUBLE_PRECISION, time_buff, 1,     &
+     &     MPI_DOUBLE_PRECISION, root,comm_current,ierr) 
+      return
+end subroutine gather_runtime
 
 #endif
- end  Module MPI_declaration
 
+end module Declaration_MPI

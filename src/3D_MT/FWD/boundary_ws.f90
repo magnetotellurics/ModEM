@@ -35,7 +35,7 @@ Contains
     ! Output electric field first guess (for iterative solver)
     type(cvector), intent(inout)	:: E0
     ! Output boundary conditions
-    type(cboundary), intent(inout)	:: BC
+    type(cboundary), optional, intent(inout)	:: BC
 
 
     ! local variables
@@ -149,7 +149,9 @@ Contains
     enddo
 
     !  Extract BC data from E0 ...
-    Call getBC(E0,BC)
+    if (present(BC)) then
+        Call getBC(E0,BC)
+    end if
     Call Fwd2DdeallTE()
     BC%xZMax = 0.0
     BC%yZMax = 0.0

@@ -1,28 +1,23 @@
 ! *****************************************************************************
-! TITLE         : ModEM-ON
-! MODULE        : dataFunc
-!
-! DESCRIPTION:
-!> 3D MT data functionals\n\n
-  !! This module contains\n
-  !!  (1) routines for evaluation of impedances, and ultimately other\n
-  !!       interpretation parameters\n
-  !!  (2) routines to compute data functionals for linearized\n
-  !!       impedances,  and ultimately other interpretation paramters\n
-  !!   The idea:\n
-  !!     -> first the dictionaries txDict, typeDict, rxDict are initialized\n
-  !!         by calling appropriate initialization/setup routines\n
-  !!     -> data are stored in structures (defined in module DataSpace)\n
-  !!        which contain indices into transmitter and receiver dictionaries\n
-  !!        in addition to actual data values.  These indices are used by\n
-  !!        the data functional computation routines to compute predicted data.\n\n
-  !!
-  !!
-  !!  This module is specific to 3D MT; similar modules will need to be written\n
-  !!     to implement data functionals for other problems\n
-!------------------------------------------------------------------------------
-
 module dataFunc
+  ! 3D MT data functionals
+
+  ! This module contains
+  !  (1) routines for evaluation of impedances, and ultimately other
+  !       interpretation parameters
+  !  (2) routines to compute data functionals for linearized
+  !       impedances,  and ultimately other interpretation paramters
+  !   The idea:
+  !     -> first the dictionaries txDict, typeDict, rxDict are initialized
+  !         by calling appropriate initialization/setup routines
+  !     -> data are stored in structures (defined in module DataSpace)
+  !        which contain indices into transmitter and receiver dictionaries
+  !        in addition to actual data values.  These indices are used by
+  !        the data functional computation routines to compute predicted data.
+  !
+  !
+  !  This module is specific to 3D MT; similar modules will need to be written
+  !     to implement data functionals for other problems
 
   use EMfieldInterp
   use SolnSpace

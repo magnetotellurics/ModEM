@@ -1,5 +1,5 @@
 
-module MPI_sub
+module Sub_MPI
 #ifdef MPI
 
 use math_constants
@@ -11,7 +11,7 @@ use ForwardSolver
 
 
 
-use MPI_declaration
+use Declaration_MPI
 
 Contains
 
@@ -510,4 +510,4 @@ end subroutine Unpack_eAll_para_vec
 
 #endif
 
-end module MPI_sub
+end module Sub_MPI

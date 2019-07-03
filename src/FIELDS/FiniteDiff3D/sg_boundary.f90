@@ -141,8 +141,7 @@ module sg_boundary
 
      ! allocated:  .true.  x, y, z arrays have been allocated
      logical		                              :: allocated = .false.
-     ! a Logical variable used to determined if we are going to read an electrical field solution from a larger grid.
-     logical                                      :: read_E_from_file=.false.
+
      ! pointer to parent grid
      type (grid_t), pointer                             :: grid
 
@@ -346,7 +345,6 @@ Contains
           E2%yZMin = E1%yZMin
           E2%xZMax = E1%xZMax
           E2%yZMax = E1%yZMax
-          E2%read_E_from_file = E1%read_E_from_file
 
        end if
 
