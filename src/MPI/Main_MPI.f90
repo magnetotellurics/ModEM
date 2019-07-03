@@ -947,7 +947,7 @@ if (trim(worker_job_task%what_to_do) .eq. 'FORWARD') then
 		      call MPI_SEND(e_para_vec, Nbytes, MPI_PACKED, 0,FROM_WORKER, MPI_COMM_WORLD, ierr) 
 
               !deallocate(e_para_vec,worker_job_package)
-              
+              call exitSolver(e0)
 
 
 elseif (trim(worker_job_task%what_to_do) .eq. 'COMPUTE_J') then
@@ -1068,7 +1068,7 @@ isComplex = d%d(per_index)%data(dt_index)%isComplex
                    call MPI_SEND(sigma_para_vec, Nbytes, MPI_PACKED, 0,FROM_WORKER, MPI_COMM_WORLD, ierr)
             end do    
             
-                                  		                      
+            call exitSolver(e0,e,comb)                      		                      
 elseif (trim(worker_job_task%what_to_do) .eq. 'JmultT') then
 
 
@@ -1107,7 +1107,7 @@ elseif (trim(worker_job_task%what_to_do) .eq. 'JmultT') then
                    call MPI_SEND(e_para_vec, Nbytes, MPI_PACKED, 0,FROM_WORKER, MPI_COMM_WORLD, ierr)
                    
                  !deallocate(e_para_vec,worker_job_package)
-
+                 call exitSolver(e0,e,comb)
                    
 elseif (trim(worker_job_task%what_to_do) .eq. 'Jmult') then
 
@@ -1150,6 +1150,7 @@ elseif (trim(worker_job_task%what_to_do) .eq. 'Jmult') then
                    call Pack_e_para_vec(e)
                    call MPI_SEND(e_para_vec, Nbytes, MPI_PACKED, 0,FROM_WORKER, MPI_COMM_WORLD, ierr)
 
+				   call exitSolver(e0,e,comb)
 
 elseif (trim(worker_job_task%what_to_do) .eq. 'Distribute nTx') then
      call MPI_BCAST(nTx,1, MPI_INTEGER,0, MPI_COMM_WORLD,ierr)
@@ -1489,7 +1490,7 @@ end subroutine setGrid_MPI
 
    ! Subroutine to deallocate all memory stored in this module
 
-   call exitSolver(e0,e,comb)
+   !call exitSolver(e0,e,comb)
    call deall_grid(grid)
 
   end subroutine cleanUp_MPI
