@@ -12,10 +12,10 @@ cd src/
 echo "#### START BUILD Mod3DMT AT $now ####"
 #
 # 
-chmod 777 ../CONFIG/Configure.3D_MT.OSU.GFortran
+chmod 777 CONFIG/Configure.3D_MT.OSU.GFortran
 #
 #
-../CONFIG/Configure.3D_MT.OSU.GFortran Makefile MPI
+./CONFIG/Configure.3D_MT.OSU.GFortran Makefile MPI
 #
 # REMOVE OLD OBJECTS
 rm -rf objs/3D_MT/GFortReleaseMPI/*
