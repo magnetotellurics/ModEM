@@ -95,7 +95,7 @@ test_forward:
         - master
 #
 # STANDART TEST COMPUTE_J
-test_compute_j:
+.test_compute_j:
     stage: test
     dependencies:
         - build_modem_on    # DEFINE THIS JOB DEPENDENCY FROM JOB build_modem_on
@@ -408,7 +408,7 @@ test_sens:
     #
     script:
         #
-        - bash scripts/test_sens.sh src/Mod3DMT inputs/rFile_Model inputs/rFile_dModel inputs/rFile_Data 64
+        - bash scripts/test_sens.sh src/Mod3DMT inputs/rFile_Model inputs/rFile_dModel inputs/rFile_Data 128
     #
     artifacts:
         paths:
