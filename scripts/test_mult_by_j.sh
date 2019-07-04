@@ -22,13 +22,13 @@ mkdir -p test_mult_by_j
 cd test_mult_by_j/
 #
 #
-echo "#### START MULT_BY_J MPI TEST WITH $ncores CORES AT $now ####" >> std_out.txt
+echo "#### START MULT_BY_J MPI TEST WITH $ncores CORES AT $now ####" | tee std_out.txt
 #
 #
-echo "#### COMMAND LINE: [mpirun -n $ncores ../$EXEC -M ../$MODEL ../$dMODEL ../$DATA wFile_Data -v full]" >> std_out.txt
+echo "#### COMMAND LINE: [mpirun -n $ncores ../$EXEC -M ../$MODEL ../$dMODEL ../$DATA wFile_Data -v full]" | tee std_out.txt
 #
 #
-mpirun -n $ncores ../$EXEC -M ../$MODEL ../$dMODEL ../$DATA wFile_Data -v full &>> std_out.txt
+mpirun -n $ncores ../$EXEC -M ../$MODEL ../$dMODEL ../$DATA wFile_Data -v full | tee std_out.txt
 #
 # CATCH RESULT
 result=$?
@@ -37,7 +37,7 @@ result=$?
 if [ "$result" -ne "0" ]; then
 	#
 	#
-	echo "TEST MULT_BY_J FAIL: $result"
+	echo "TEST MULT_BY_J FAIL: $result" | tee std_out.txt
 	#
 	#
 	cd ..
@@ -47,7 +47,7 @@ if [ "$result" -ne "0" ]; then
 fi
 #
 #
-echo "#### FINISH MULT_BY_J MPI TEST ####" >> std_out.txt
+echo "#### FINISH MULT_BY_J MPI TEST ####" | tee std_out.txt
 #
 #
 cd ..

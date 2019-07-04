@@ -21,13 +21,13 @@ mkdir -p test_read_write
 cd test_read_write/
 #
 #
-echo "#### START READ_WRITE MPI TEST WITH $ncores CORES AT $now ####" >> std_out.txt
+echo "#### START READ_WRITE MPI TEST WITH $ncores CORES AT $now ####" | tee std_out.txt
 #
 #
-echo "#### COMMAND LINE: [mpirun -n $ncores ../$EXEC -R ../$MODEL ../$DATA wFile_Model.sw wFile_Data.dat -v full]" >> std_out.txt
+echo "#### COMMAND LINE: [mpirun -n $ncores ../$EXEC -R ../$MODEL ../$DATA wFile_Model.sw wFile_Data.dat -v full]" | tee std_out.txt
 #
 #
-mpirun -n $ncores ../$EXEC -R ../$MODEL ../$DATA wFile_Model.sw wFile_Data.dat -v full &>> std_out.txt
+mpirun -n $ncores ../$EXEC -R ../$MODEL ../$DATA wFile_Model.sw wFile_Data.dat -v full | tee std_out.txt
 #
 # CATCH RESULT
 result=$?
@@ -36,7 +36,7 @@ result=$?
 if [ "$result" -ne "0" ]; then
 	#
 	#
-	echo "TEST READ_WRITE FAIL: $result"
+	echo "TEST READ_WRITE FAIL: $result" | tee std_out.txt
 	#
 	#
 	cd ..
@@ -46,7 +46,7 @@ if [ "$result" -ne "0" ]; then
 fi
 #
 #
-echo "#### FINISH READ_WRITE MPI TEST ####" >> std_out.txt
+echo "#### FINISH READ_WRITE MPI TEST ####" | tee std_out.txt
 #
 #
 cd ..

@@ -20,13 +20,13 @@ mkdir -p test_adj_d
 cd test_adj_d/
 #
 #
-echo "#### START ADJ D MPI TEST WITH $ncores CORES AT $now ####" >> std_out.txt
+echo "#### START ADJ D MPI TEST WITH $ncores CORES AT $now ####" | tee std_out.txt
 #
 #
-echo "#### COMMAND LINE: [mpirun -n $ncores ../$EXEC -A d ../$DATA wFile_Data -v full]" >> std_out.txt
+echo "#### COMMAND LINE: [mpirun -n $ncores ../$EXEC -A d ../$DATA wFile_Data -v full]" | tee std_out.txt
 #
 #-A  d rFile_Data wFile_Data [delta]
-mpirun -n $ncores ../$EXEC -A d ../$DATA wFile_Data -v full &>> std_out.txt
+mpirun -n $ncores ../$EXEC -A d ../$DATA wFile_Data -v full | tee std_out.txt
 #
 # CATCH RESULT
 result=$?
@@ -35,7 +35,7 @@ result=$?
 if [ "$result" -ne "0" ]; then
 	#
 	#
-	echo "TEST ADJ D FAIL: $result"
+	echo "TEST ADJ D FAIL: $result" | tee std_out.txt
 	#
 	#
 	cd ..
@@ -45,7 +45,7 @@ if [ "$result" -ne "0" ]; then
 fi
 #
 #
-echo "#### FINISH ADJ D MPI TEST ####" >> std_out.txt
+echo "#### FINISH ADJ D MPI TEST ####" | tee std_out.txt
 #
 #
 cd ..

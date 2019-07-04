@@ -22,13 +22,13 @@ mkdir -p test_adj_q
 cd test_adj_q/
 #
 #
-echo "#### START ADJ Q MPI TEST WITH $ncores CORES AT $now ####" >> std_out.txt
+echo "#### START ADJ Q MPI TEST WITH $ncores CORES AT $now ####" | tee std_out.txt
 #
 #
-echo "#### COMMAND LINE: [mpirun -n $ncores ../$EXEC -A Q ../$MODEL ../$dMODEL ../$DATA wFile_Model wFile_Data -v full]" >> std_out.txt
+echo "#### COMMAND LINE: [mpirun -n $ncores ../$EXEC -A Q ../$MODEL ../$dMODEL ../$DATA wFile_Model wFile_Data -v full]" | tee std_out.txt
 #
 #-A  Q rFile_Model rFile_dModel rFile_Data [wFile_Model wFile_Data]
-mpirun -n $ncores ../$EXEC -A Q ../$MODEL ../$dMODEL ../$DATA wFile_Model wFile_Data -v full &>> std_out.txt
+mpirun -n $ncores ../$EXEC -A Q ../$MODEL ../$dMODEL ../$DATA wFile_Model wFile_Data -v full | tee std_out.txt
 #
 # CATCH RESULT
 result=$?
@@ -37,7 +37,7 @@ result=$?
 if [ "$result" -ne "0" ]; then
 	#
 	#
-	echo "TEST ADJ Q FAIL: $result"
+	echo "TEST ADJ Q FAIL: $result" | tee std_out.txt
 	#
 	#
 	cd ..
@@ -47,7 +47,7 @@ if [ "$result" -ne "0" ]; then
 fi
 #
 #
-echo "#### FINISH ADJ Q MPI TEST ####" >> std_out.txt
+echo "#### FINISH ADJ Q MPI TEST ####" | tee std_out.txt
 #
 #
 cd ..

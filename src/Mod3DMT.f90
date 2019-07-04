@@ -296,10 +296,8 @@ program Mod3DMT
         write(0,'(a20,g15.7)') '|d| using calcJ: ',dotProd(allData,allData)
         write(0,'(a20,g15.7)') '|d| using Jmult: ',dotProd(predData,predData)
 
+	 call setGrid(grid)
      case (TEST_ADJ)
-#ifdef MPI
-       write(0,*) 'Adjoint symmetry tests are implemented to be run in serial only.'
-#else
        select case (cUserDef%option)
            case('J')
                call Jtest(sigma0,dsigma,allData)
@@ -334,7 +332,6 @@ program Mod3DMT
            write(*,*) 'Writing the data file...'
            call write_dataVectorMTX(allData,cUserDef%wFile_Data)
        end if
-#endif
 
      case default
 

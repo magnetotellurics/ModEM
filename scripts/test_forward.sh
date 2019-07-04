@@ -21,13 +21,13 @@ mkdir -p test_forward
 cd test_forward/
 #
 #
-echo "#### START FORWARD MPI TEST WITH $ncores CORES AT $now ####" >> std_out.txt
+echo "#### START FORWARD MPI TEST WITH $ncores CORES AT $now ####" | tee std_out.txt
 #
 #
-echo "#### COMMAND LINE: [mpirun -n $ncores ../$EXEC -F ../$MODEL ../$DATA wFile_Data.dat wFile_EMsoln -v full]" >> std_out.txt
+echo "#### COMMAND LINE: [mpirun -n $ncores ../$EXEC -F ../$MODEL ../$DATA wFile_Data.dat wFile_EMsoln -v full]" | tee std_out.txt
 #
 #
-mpirun -n $ncores ../$EXEC -F ../$MODEL ../$DATA wFile_Data.dat wFile_EMsoln -v full &>> std_out.txt
+mpirun -n $ncores ../$EXEC -F ../$MODEL ../$DATA wFile_Data.dat wFile_EMsoln -v full | tee std_out.txt
 #
 # CATCH RESULT
 result=$?
@@ -36,7 +36,7 @@ result=$?
 if [ "$result" -ne "0" ]; then
 	#
 	#
-	echo "TEST FORWARD FAIL: $result"
+	echo "TEST FORWARD FAIL: $result" | tee std_out.txt
 	#
 	#
 	cd ..
@@ -46,7 +46,7 @@ if [ "$result" -ne "0" ]; then
 fi
 #
 #
-echo "#### FINISH FORWARD MPI TEST ####" >> std_out.txt
+echo "#### FINISH FORWARD MPI TEST ####" | tee std_out.txt
 #
 #
 cd ..
