@@ -4,14 +4,14 @@
 #		$1 - MODELS FULL PATH
 #		$2 - DATA FULL PATH
 #		$3 - EXECUTABLE
+#		$4 - NUMBER OF CORES
 #
 MODELS_DIR=$1
 DATA_DIR=$2
 EXEC=$3
+ncores=$4   #GET ENVIROMENT NUMBER OF CORES
 #
 emptyspace=""
-#
-ncores=$(nproc)   #GET ENVIROMENT NUMBER OF CORES
 #
 # GENERATE MODEL DATA TEST OUTPUT FOLDER
 now=$(date "+%Y_%m_%d_%H_%M_%S")

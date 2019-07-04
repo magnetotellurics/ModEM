@@ -1,14 +1,12 @@
 #!/bin/bash
 #
-# ARGUMENTS: 1 - Mod3DMT EXECUTABLE, 2 - MODEL FILE
+# ARGUMENTS: 1 - Mod3DMT EXECUTABLE, 2 - MODEL FILE, 3 - NUMBER OF CORES
 EXEC=$1
 MODEL=$2
+ncores=$3
 #
 # STRING NOW
 now=$(date "+%Y/%m/%d - %H:%M:%S")
-#
-# GET ENVIROMENT NUMBER OF CORES 
-ncores=$(nproc)
 #
 # REMOVE TEST OUTPUT FOLDER FROM MAIN OUTPUT FOLDER
 rm -rf outputs/test_adj_m/

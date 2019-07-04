@@ -1,15 +1,14 @@
 #!/bin/bash
 #
-# ARGUMENTS: 1 - Mod3DMT EXECUTABLE, 2 - MODEL FILE, 3 - DATA FILE
+# ARGUMENTS: 1 - Mod3DMT EXECUTABLE, 2 - MODEL FILE, 3 - DATA FILE, 4 - NUMBER OF CORES
+
 EXEC=$1
 MODEL=$2
 DATA=$3
+ncores=$4
 #
 # STRING NOW
 now=$(date "+%Y/%m/%d - %H:%M:%S")
-#
-# GET ENVIROMENT NUMBER OF CORES 
-ncores=$(nproc)
 #
 # REMOVE TEST OUTPUT FOLDER FROM MAIN OUTPUT FOLDER
 rm -rf outputs/test_mult_by_j_t_multi_tx/
