@@ -44,7 +44,9 @@ module SymmetryTest
 !  "pointers" to dictionary entries are attached to data vector d.
 
   use SensComp
-
+#ifdef MPI
+     Use Main_MPI
+#endif
   implicit none
 
   public    :: Jtest, Ltest, Stest, Ptest, Qtest
@@ -77,14 +79,29 @@ Contains
    dPred = d
    Jm = d
 
-   ! compute background solution
-   call fwdPred(m0,dPred,eAll)
+! compute background solution
+#ifdef MPI
+        call Master_job_fwdPred(m0,dPred,eAll)
+#else
+        call fwdPred(m0,dPred,eAll)
+#endif
 
-   ! compute J m
-   call Jmult(m,m0,Jm,eAll)
 
-   ! compute J^T d
-   call JmultT(m0,d,JTd,eAll)
+! compute J m
+#ifdef MPI
+       call Master_job_Jmult(m,m0,Jm,eAll)
+#else
+       call Jmult(m,m0,Jm,eAll)
+#endif
+
+
+! compute J^T d
+#ifdef MPI
+         call Master_job_JmultT(m0,d,JTd,eAll)
+#else
+         call JmultT(m0,d,JTd,eAll)
+#endif
+
 
    ! compute dot product #1: d^T J m
    r1 = dotProd(d,Jm)
@@ -140,7 +157,11 @@ Contains
    ! compute background solution
    if (.not. present(ePred)) then
     dPred = d
-    call fwdPred(m0,dPred,eAll)
+#ifdef MPI
+        call Master_job_fwdPred(m0,dPred,eAll)
+#else
+        call fwdPred(m0,dPred,eAll)
+#endif	
    else
     eAll = ePred
    endif
@@ -285,7 +306,11 @@ Contains
    ! compute background solution
    if (.not. present(ePred)) then
     dPred = dTemplate
-    call fwdPred(m0,dPred,eAll)
+#ifdef MPI
+        call Master_job_fwdPred(m0,dPred,eAll)
+#else
+        call fwdPred(m0,dPred,eAll)
+#endif	
    else
     eAll = ePred
    endif
@@ -362,8 +387,11 @@ Contains
    call zero(mTemp)
 
    ! compute background solution
-   call fwdPred(m0,dPred,eAll)
-
+#ifdef MPI
+        call Master_job_fwdPred(m0,dPred,eAll)
+#else
+          call fwdPred(m0,dPred,eAll)
+#endif	
    do j = 1,d%nTx
 
 	   ! compute Q m
