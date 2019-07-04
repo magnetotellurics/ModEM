@@ -296,8 +296,9 @@ program Mod3DMT
         write(0,'(a20,g15.7)') '|d| using calcJ: ',dotProd(allData,allData)
         write(0,'(a20,g15.7)') '|d| using Jmult: ',dotProd(predData,predData)
 
-	 call setGrid(grid)
+	 
      case (TEST_ADJ)
+	   call setGrid(grid)
        select case (cUserDef%option)
            case('J')
                call Jtest(sigma0,dsigma,allData)
