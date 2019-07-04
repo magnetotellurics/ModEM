@@ -170,7 +170,7 @@ test_inverse:
     #
     script:
         #
-        - bash scripts/test_inverse.sh src/Mod3DMT inputs/rFile_Model inputs/rFile_Data 64
+        - bash scripts/test_inverse.sh src/Mod3DMT inputs/rFile_Model inputs/rFile_Data 9
     #
     artifacts:
         paths:
@@ -408,7 +408,7 @@ test_sens:
     #
     script:
         #
-        - bash scripts/test_sens.sh src/Mod3DMT inputs/rFile_Model inputs/rFile_dModel inputs/rFile_Data 128
+        - bash scripts/test_sens.sh src/Mod3DMT inputs/rFile_Model inputs/rFile_dModel inputs/rFile_Data 180
     #
     artifacts:
         paths:
