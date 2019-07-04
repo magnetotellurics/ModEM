@@ -21,11 +21,11 @@ build_modem_on:
         # GENERATE MAIN OUTPUT FOLDER (IF NOT EXISTS)
         - mkdir -p outputs/
         # BUILD SCRIPT
-        - bash scripts/build_modem_on.sh &>> outputs/build_modem_on.txt
+        - bash scripts/build_modem_on.sh | tee outputs/build_modem_on.txt
         # GENERATE DOCS FOLDER (IF NOT EXISTS)
         - mkdir -p docs/
         # RUN DOXYGEN ON src/
-        - bash scripts/update_doxygen.sh &>> outputs/update_doxygen.txt
+        - bash scripts/update_doxygen.sh | tee outputs/update_doxygen.txt
     #
     cache:
         key: build_modem_on_cache   # CACHE KEY TO ACCESS FROM OTHERS JOBS
