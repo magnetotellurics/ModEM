@@ -45,7 +45,7 @@ build_modem_on:
         - echo "FINISH build_modem_on"
 #
 # JOB TEST PLAIN:   RUN Mod3DMT WITHOUT ANY PARAMETER
-test_plain:
+.test_plain:
     stage: test
     dependencies:
         - build_modem_on    # DEFINE THIS JOB DEPENDENCY FROM JOB build_modem_on
@@ -248,7 +248,7 @@ test_plain:
         - master
 #
 # STANDART TEST ADJ J
-.test_adj_j:
+test_adj_j:
     stage: test
     dependencies:
         - build_modem_on    # DEFINE THIS JOB DEPENDENCY FROM JOB build_modem_on
@@ -282,7 +282,7 @@ test_plain:
         - master
 #
 # STANDART TEST ADJ S
-test_adj_s:
+.test_adj_s:
     stage: test
     dependencies:
         - build_modem_on    # DEFINE THIS JOB DEPENDENCY FROM JOB build_modem_on
@@ -350,7 +350,7 @@ test_adj_s:
         - master
 #
 # STANDART TEST ADJ d
-test_adj_d:
+.test_adj_d:
     stage: test
     dependencies:
         - build_modem_on    # DEFINE THIS JOB DEPENDENCY FROM JOB build_modem_on
