@@ -18,12 +18,25 @@ module transmitters
      !    complex tx descriptions
      ! required attribute - number of polarizations
      ! this could be different for e.g. active source 3D applications
-     integer					:: nPol = 2 ! = 2 for 3D MT
+     integer					:: nPol=2 !while setting up the Tx, nPol=2 for MT and 1 for CSEM
      ! angular frequency (radians/sec), and for convenience period (s)
      real(kind=prec)            :: omega = R_ZERO
      real(kind=prec)            :: period = R_ZERO
      ! index number to frequency/ period in solution file
      integer                    :: iPer
+!######################################################	 		  
+! CSEM detalies
+     ! Specific Dipole Type (Electric or Magnetic)
+     character(8)		:: Dipole
+     !   location of transmitter, relative to grid 
+     real(kind=prec)            :: xyzTx(3)
+	 ! Source azimuth from x axis (positive clockwise)
+     real(kind=prec)            :: azimuthTx ! (degrees) 
+     ! Vertical dip angle of source along azimuthTx, positive down 
+     real(kind=prec)            :: dipTx ! (degrees) 
+     ! Source dipole moment
+     real(kind=prec)            :: moment ! (A.m) for electric, (A.m^2) for magnetic
+!######################################################		 
    end type MTtx
 
    ! transmitter dictionary txDict for 3D-MT data will be an array of
@@ -39,7 +52,7 @@ module transmitters
   ! transmitter types; correspond to index iTxt in the data vectors
   !  these will be heavily used in inversion routines
   integer, parameter   :: MT = 1
-  integer, parameter   :: CSEM = 1
+  integer, parameter   :: CSEM = 2
 
 Contains
 
