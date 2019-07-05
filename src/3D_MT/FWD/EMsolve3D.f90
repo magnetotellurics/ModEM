@@ -35,6 +35,8 @@ module EMsolve3D
     real(kind = 8)            ::      AirLayersMaxHeight, AirLayersAlpha, AirLayersMinTopDz
     real(kind = 8), pointer, dimension(:)   :: AirLayersDz
     logical                   ::      AirLayersPresent=.false.
+    character (len=10)        ::      solver_name="QMR"
+
   end type emsolve_control
 
   type :: emsolve_diag
@@ -60,9 +62,11 @@ module EMsolve3D
   ! maximum number of PCG iterations for divergence correction
   integer, parameter    ::              MaxIterDivCorDef = 100
   ! misfit tolerance for convergence of EMsolve algorithm
-  real(kind=prec), parameter       ::      tolEMDef = 1E-7
+  real(kind=prec), parameter       ::   tolEMDef = 1E-7
   ! misfit tolerance for convergence of divergence correction solver
-  real(kind=prec), parameter       ::      tolDivCorDef = 1E-5
+  real(kind=prec), parameter       ::   tolDivCorDef = 1E-5
+  !Solver name, by default we use QMR
+  character (len=10)               ::   solver_name="QMR"
 
   save
 
@@ -94,20 +98,20 @@ Contains
 !
 ! Note [AK 2018-05-10]: any physical source has already been pre-multiplied
 ! by [- ISIGN i\omega\mu_0] to yield [- ISIGN i\omega\mu_0 j] on input to this
-! routine. Note that this also holds for the secondary field formulation, 
+! routine. Note that this also holds for the secondary field formulation,
 ! where j = dsigma * e, as well as for the tidal forcing, where j = sigma (v x B).
 ! However, we still want to pre-compute the source RHS outside of this routine, for
 ! generality: specifically, Jmult supplies an interior source on the RHS that is
 ! not physical and is not pre-multiplied by that factor (except in Pmult). So it's
 ! cleaner to pass on the complete interior forcing in bRHS.
 ! For divergence correction, we divide by [+ ISIGN i\omega\mu_0] to get [- Div(j)].
-! The plus sign is needed because we're taking the divergence of 
+! The plus sign is needed because we're taking the divergence of
 !  curl(curl(E)) + ISIGN i\omega\mu_0 sigma E = f - curl(curl(b))
 ! Terms 1 and 4 cancel, leaving Div(sigma E) - Div(f)/(+ ISIGN i\omega\mu_0) = 0.
 ! For a physical source j, this is equivalent to Div(sigma E) + Div(j) = 0; but
 ! the divergence correction may be applied also for non-physical sources, such as
 ! in Jmult ('FWD') and JmultT ('TRN').
-    
+
   subroutine FWDsolve3D(bRHS,omega,eSol)
 
     ! redefine some of the interfaces (locally) for our convenience
@@ -161,7 +165,7 @@ Contains
     if(bRHS%nonzero_Source) then
        call create_cscalar(bRHS%grid,phi0,CORNER)
     endif
-    
+
     i_omega_mu = cmplx(0.,1.0d0*ISIGN*MU_0*omega,kind=prec)
 
 
@@ -229,12 +233,12 @@ Contains
           else
 	     temp = bRHS%s
           endif
-	  
+
 	  ! At this point, temp = - ISIGN * i\omega\mu_0 j
 	  ! Now Div(f) - will later divide by i_omega_mu to get the general divergence correction
 	  call Div(temp,phi0)
 
-          call diagMult(V_E,temp,temp)	  
+          call diagMult(V_E,temp,temp)
 	  ! Now temp stores [-i\omega\mu_0 V_E j], and b stores [-V_E A_IB b]
 
           if(bRHS%nonzero_BC) then
@@ -248,7 +252,7 @@ Contains
     if(bRHS%nonzero_Source) then
        call scMult(C_ONE/i_omega_mu,phi0,phi0)
     endif
-    
+
     ! Need to make sure first guess is zero on boundaries
     ! tempBC has all zeros on the boundaries
     Call setBC(tempBC, eSol)
@@ -296,8 +300,14 @@ Contains
     endif
     loop: do while ((.not.converged).and.(.not.failed))
 
-       ! Call BiCG(b, eSol,QMRiter)
+    if (trim(solver_name) .eq. "QMR") then
        Call QMR(b, eSol,QMRiter)
+    elseif (trim(solver_name) .eq. "BICG") then
+       Call BICG(b, eSol,QMRiter)
+    else
+       Write(*,*)"Unknown Solver Method"
+    end if
+
 
        ! algorithm is converged when the relative error is less than tolerance
        ! (in which case QMRiter%niter will be less than QMRiter%maxIt)
@@ -374,7 +384,7 @@ Contains
   end subroutine FWDsolve3D
 
 !**********************************************************************
-! solver_divcorr contains the subroutine that solves the divergence correction 
+! solver_divcorr contains the subroutine that solves the divergence correction
 ! using pre-conditioned conjugate gradient.
 ! Taking the divergence of curl(curl(E)) + i\omega\mu_0 sigma E = f, where f
 ! is a general RHS, and since div(curl(xxx)) is identically zero, we get
@@ -521,6 +531,7 @@ end subroutine SdivCorr ! SdivCorr
         tolEMfwd = tolEMDef
         tolEMadj = tolEMDef
         tolDivCor = tolDivCorDef
+        solver_name="QMR"
      else
         IterPerDivCor = solverControl%IterPerDivCor
         MaxDivCor = solverControl%MaxDivCor
@@ -529,6 +540,7 @@ end subroutine SdivCorr ! SdivCorr
         tolEMfwd = solverControl%tolEMfwd
         tolEMadj = solverControl%tolEMadj
         tolDivCor = solverControl%tolDivCor
+        solver_name=solverControl%solver_name
      endif
 
      if (present(tolEM)) then
@@ -566,7 +578,12 @@ end subroutine SdivCorr ! SdivCorr
 	logical                             	:: exists
 	character(80)							:: string
 	integer									:: istat
-
+    character (len=1000) :: line_text
+ 	character(len=100),dimension(10) :: args
+ 	character(len=100)              :: search_string
+	integer                       :: nargs
+    real(kind = 8)            :: realval
+    integer					  :: intval
     ! Initialize inverse solver configuration
 
     inquire(FILE=rFile,EXIST=exists)
@@ -587,80 +604,91 @@ end subroutine SdivCorr ! SdivCorr
        write(*,*) node_info,'Reading EM solver configuration from file ',trim(rFile)
     end if
 
+
     !open (unit=ioFwdCtrl,file=rFile,status='old',iostat=ios)
      open (unit=ioFwdCtrl,file=rFile,form='formatted',status='old',iostat=ios)
     if(ios/=0) then
        write(0,*) node_info,'Error opening file: ', rFile
     end if
 
-    ! This is the list of options specified in the startup file
+solverControl%IterPerDivCor = IterPerDivCorDef
+solverControl%MaxDivCor     = IterPerDivCorDef
+solverControl%MaxIterDivCor = MaxIterDivCorDef
+solverControl%tolEMfwd      = tolEMDef
+solverControl%tolEMadj      = tolEMDef
+solverControl%tolDivCor     = tolDivCorDef
+solverControl%solver_name   = "QMR"
+do
+   read (ioFwdCtrl,"(a)",iostat=ierr) line_text ! Read line into character variable
+   line_text=trim(line_text)
+   if (ierr /= 0) exit                          ! End of the file
 
-    read (ioFwdCtrl,'(a48,i5)') string,solverControl%IterPerDivCor
-    if (output_level > 2) then
-       write (*,*)
-       write (*,'(a12,a48,i5)') node_info,string,solverControl%IterPerDivCor
-    end if
-    read (ioFwdCtrl,'(a48,i5)') string,solverControl%MaxDivCor
-    if (output_level > 2) then
-       write (*,'(a12,a48,i5)') node_info,string,solverControl%MaxDivCor
-    end if
-    read (ioFwdCtrl,'(a48,i5)') string,solverControl%MaxIterDivCor
-    if (output_level > 2) then
-       write (*,'(a12,a48,i5)') node_info,string,solverControl%MaxIterDivCor
-    end if
-    read (ioFwdCtrl,'(a48,g15.7)') string,solverControl%tolEMfwd
-    if (output_level > 2) then
-       write (*,'(a12,a48,g15.7)') node_info,string,solverControl%tolEMfwd
-    end if
-    read (ioFwdCtrl,'(a48,g15.7)') string,solverControl%tolEMadj
-    if (output_level > 2) then
-       write (*,'(a12,a48,g15.7)') node_info,string,solverControl%tolEMadj
-    end if
-    read (ioFwdCtrl,'(a48,g15.7)') string,solverControl%tolDivCor
-    if (output_level > 2) then
-       write (*,'(a12,a48,g15.7)') node_info,string,solverControl%tolDivCor
-    end if
+    if(index(line_text, "Number of QMR iters per divergence correction") .ne. 0)then
+        call parse(line_text,":",args,nargs)
+         READ(args(2),*)intval
+         solverControl%IterPerDivCor=intval
+         if (output_level > 2) then
+           write (*,'(a12,a,i5)') node_info,"Number of QMR iters per divergence correction: ",solverControl%IterPerDivCor
+          end if
+   elseif(index(line_text, "Maximum number of divergence correction calls") .ne. 0)then
+        call parse(line_text,":",args,nargs)
+         READ(args(2),*)intval
+         solverControl%MaxDivCor=intval
 
-
-
-    ! Check if there is an additional line.
-    ! if yes, it corresponds to the larger E field solution.
-
-    read(ioFwdCtrl,'(a48)',advance='no',iostat=istat) string
-    read(ioFwdCtrl,'(a80)',iostat=istat) solverControl%E0fileName
-    if (istat .eq. 0 ) then
-        inquire(FILE=solverControl%E0fileName,EXIST=exists)
-        if (index(string,'#')>0) then
-            ! This is a comment line
-            solverControl%read_E0_from_File=.false.
-        else if (.not.exists) then
-            write(*,*) node_info,'Nested E-field solution file not found and will not be used. '
-            solverControl%read_E0_from_File=.false.
-        else
-            if (output_level > 2) then
-                write (*,'(a12,a48,a80)') node_info,string,adjustl(solverControl%E0fileName)
-            end if
-            solverControl%read_E0_from_File=.true.
-            solverControl%ioE0=ioE
+        if (output_level > 2) then
+           write (*,'(a12,a,i5)') node_info,"Maximum number of divergence correction calls: ",solverControl%MaxDivCor
         end if
+    elseif(index(line_text, "Maximum number of divergence correction iters") .ne. 0)then
+        call parse(line_text,":",args,nargs)
+         READ(args(2),*)intval
+         solverControl%MaxIterDivCor=intval
 
-    else
-        solverControl%read_E0_from_File=.false.
-    end if
+        if (output_level > 2) then
+           write (*,'(a12,a,i5)') node_info,"Maximum number of divergence correction iters: ",solverControl%MaxIterDivCor
+        end if
+    elseif(index(line_text, "Misfit tolerance for EM forward solver") .ne. 0)then
+        call parse(line_text,":",args,nargs)
+        READ(args(2),*)realval
+         solverControl%tolEMfwd=realval
 
-    ! Now keep on reading for the air layers info
-    ! If the number of air layers conflicts with that from the model file, we
-    ! update the grid to use the controls
-    ! Method options are: mirror; fixed height; read from file
-    ! For backwards compatibility, defaults to what was previously hardcoded
+        if (output_level > 2) then
+           write (*,'(a12,a,g15.7)') node_info,"Misfit tolerance for EM forward solver: ",solverControl%tolEMfwd
+        end if
+    elseif(index(line_text, "Misfit tolerance for EM adjoint solver") .ne. 0)then
+        call parse(line_text,":",args,nargs)
+        READ(args(2),*)realval
+         solverControl%tolEMadj=realval
 
-    read(ioFwdCtrl,'(a48)',advance='no',iostat=istat) string
-    read(ioFwdCtrl,'(a80)',iostat=istat) solverControl%AirLayersMethod
-    !if (output_level > 2) then
-    !    write (*,'(a12,a48,a80)') node_info,string,adjustl(solverControl%AirLayersMethod)
-    !end if
-    if (istat .eq. 0 ) then
+        if (output_level > 2) then
+           write (*,'(a12,a,g15.7)') node_info,"Misfit tolerance for EM adjoint solver: ",solverControl%tolEMadj
+        end if
+    elseif(index(line_text, "Misfit tolerance for divergence correction") .ne. 0)then
+        call parse(line_text,":",args,nargs)
+        READ(args(2),*)realval
+         solverControl%tolDivCor=realval
+
+        if (output_level > 2) then
+           write (*,'(a12,a,g15.7)') node_info,"Misfit tolerance for divergence correction: ",solverControl%tolDivCor
+        end if
+    elseif(index(line_text, "Optional EM solution file name for nested BC") .ne. 0)then
+        call parse(line_text,":",args,nargs)
+         solverControl%E0fileName=args(2)
+         inquire(FILE=solverControl%E0fileName,EXIST=exists)
+            if (.not.exists) then
+                        write(*,*) node_info,'Nested E-field solution file not found and will not be used. '
+                        solverControl%read_E0_from_File=.false.
+            else
+                        if (output_level > 2) then
+                            write (*,'(a12,a,a80)') node_info,"Optional EM solution file name for nested BC: ",adjustl(solverControl%E0fileName)
+                        end if
+                        solverControl%read_E0_from_File=.true.
+                        solverControl%ioE0=ioE
+            end if
+    elseif(index(line_text, "Air layers mirror|fixed height|read from file") .ne. 0)then
         solverControl%AirLayersPresent = .true.
+        call parse(line_text,":",args,nargs)
+        solverControl%AirLayersMethod=trim(args(2))
+
         if (index(solverControl%AirLayersMethod,'mirror')>0) then
             read(ioFwdCtrl,'(a48)',advance='no',iostat=istat) string
             read(ioFwdCtrl,*,iostat=istat) solverControl%AirLayersNz,solverControl%AirLayersAlpha,solverControl%AirLayersMinTopDz
@@ -678,16 +706,28 @@ end subroutine SdivCorr ! SdivCorr
             solverControl%AirLayersPresent = .false.
             call warning('Unknown air layers method option in readEMsolveControl')
         end if
+
+        if (solverControl%AirLayersNz <= 0) then
+            write(*,*) node_info,'Problem reading the air layers. Resort to defaults '
+            solverControl%AirLayersPresent = .false.
+        end if
+    elseif(index(line_text, "Solver QMR|BICG") .ne. 0)then
+        call parse(line_text,":",args,nargs)
+         solverControl%solver_name=args(2)
+
+        if (output_level > 2) then
+           write (*,'(a12,a,a)') node_info,"Solver QMR|BICG: ",solverControl%solver_name
+        end if
     else
-        solverControl%AirLayersPresent = .false.
+        if (output_level > 2) then
+         write (*,'(a12,a,a)') node_info,"Unknown line in file: ",rFile
+        end if
     end if
 
-    if (solverControl%AirLayersNz <= 0) then
-        write(*,*) node_info,'Problem reading the air layers. Resort to defaults '
-        solverControl%AirLayersPresent = .false.
-    end if
+end do
 
-    close(ioFwdCtrl)
+
+close(ioFwdCtrl)
 
     call setEMsolveControl(solverControl)
 
