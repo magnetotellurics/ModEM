@@ -23,10 +23,10 @@ cd test_mult_by_j_t_multi_tx/
 echo "#### START MULT_BY_J_T_multi_Tx MPI TEST WITH $ncores CORES AT $now ####" | tee std_out.txt
 #
 #
-echo "#### COMMAND LINE: [mpirun -n $ncores ../$EXEC -x ../$MODEL ../$DATA wFile_dModel -v full]" | tee std_out.txt
+echo "#### COMMAND LINE: [mpirun -n $ncores ../$EXEC -x ../$MODEL ../$DATA wFile_dModel -v full]" | tee -a std_out.txt
 #
 #
-mpirun -n $ncores ../$EXEC -x ../$MODEL ../$DATA wFile_dModel -v full | tee std_out.txt
+mpirun -n $ncores ../$EXEC -x ../$MODEL ../$DATA wFile_dModel -v full | tee -a std_out.txt
 #
 # CATCH RESULT
 result=$?
@@ -35,7 +35,7 @@ result=$?
 if [ "$result" -ne "0" ]; then
 	#
 	#
-	echo "TEST MULT_BY_J_T_multi_Tx FAIL: $result" | tee std_out.txt
+	echo "TEST MULT_BY_J_T_multi_Tx FAIL: $result" | tee -a std_out.txt
 	#
 	#
 	cd ..
@@ -45,7 +45,7 @@ if [ "$result" -ne "0" ]; then
 fi
 #
 #
-echo "#### FINISH MULT_BY_J_T_multi_Tx MPI TEST ####" | tee std_out.txt
+echo "#### FINISH MULT_BY_J_T_multi_Tx MPI TEST ####" | tee -a std_out.txt
 #
 #
 cd ..

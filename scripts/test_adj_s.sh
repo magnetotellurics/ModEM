@@ -23,10 +23,10 @@ cd test_adj_s/
 echo "#### START ADJ S MPI TEST WITH $ncores CORES AT $now ####" | tee std_out.txt
 #
 #
-echo "#### COMMAND LINE: [mpirun -n $ncores ../$EXEC -A S ../$MODEL ../$EMrhs ../$DATA wFile_EMsoln -v full]" | tee std_out.txt
+echo "#### COMMAND LINE: [mpirun -n $ncores ../$EXEC -A S ../$MODEL ../$EMrhs ../$DATA wFile_EMsoln -v full]" | tee -a std_out.txt
 #
 #-A  S rFile_Model rFile_EMrhs rFile_Data [wFile_EMsoln]
-mpirun -n $ncores ../$EXEC -A S ../$MODEL ../$EMrhs ../$DATA wFile_EMsoln -v full | tee std_out.txt
+mpirun -n $ncores ../$EXEC -A S ../$MODEL ../$EMrhs ../$DATA wFile_EMsoln -v full | tee -a std_out.txt
 #
 # CATCH RESULT
 result=$?
@@ -35,7 +35,7 @@ result=$?
 if [ "$result" -ne "0" ]; then
 	#
 	#
-	echo "TEST ADJ S FAIL: $result" | tee std_out.txt
+	echo "TEST ADJ S FAIL: $result" | tee -a std_out.txt
 	#
 	#
 	cd ..
@@ -45,7 +45,7 @@ if [ "$result" -ne "0" ]; then
 fi
 #
 #
-echo "#### FINISH ADJ S MPI TEST ####" | tee std_out.txt
+echo "#### FINISH ADJ S MPI TEST ####" | tee -a std_out.txt
 #
 #
 cd ..

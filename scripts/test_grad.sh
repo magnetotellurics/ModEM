@@ -23,10 +23,10 @@ cd test_grad/
 echo "#### START GRAD MPI TEST WITH $ncores CORES AT $now ####" | tee std_out.txt
 #
 #
-echo "#### COMMAND LINE: [mpirun -n $ncores ../$EXEC -g ../$MODEL ../$DATA ../$dMODEL -v full]" | tee std_out.txt
+echo "#### COMMAND LINE: [mpirun -n $ncores ../$EXEC -g ../$MODEL ../$DATA ../$dMODEL -v full]" | tee -a std_out.txt
 #
 #
-mpirun -n $ncores ../$EXEC -g ../$MODEL ../$DATA ../$dMODEL -v full | tee std_out.txt
+mpirun -n $ncores ../$EXEC -g ../$MODEL ../$DATA ../$dMODEL -v full | tee -a std_out.txt
 #
 # CATCH RESULT
 result=$?
@@ -35,7 +35,7 @@ result=$?
 if [ "$result" -ne "0" ]; then
 	#
 	#
-	echo "TEST GRAD FAIL: $result" | tee std_out.txt
+	echo "TEST GRAD FAIL: $result" | tee -a std_out.txt
 	#
 	#
 	cd ..
@@ -45,7 +45,7 @@ if [ "$result" -ne "0" ]; then
 fi
 #
 #
-echo "#### FINISH GRAD MPI TEST ####" | tee std_out.txt
+echo "#### FINISH GRAD MPI TEST ####" | tee -a std_out.txt
 #
 #
 cd ..

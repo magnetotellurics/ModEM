@@ -28,11 +28,11 @@ do
 	#
 	# TEST RESULT
 	if [ "$result" -ne "0" ]; then
-	   echo "$test_name FAIL: $result" | tee std_out.txt
+	   echo "$test_name FAIL: $result" | tee -a std_out.txt
 	   exit $result
 	fi
 	#
-	echo "$test_name PASS" | tee std_out.txt
+	echo "$test_name PASS" | tee -a std_out.txt
 	#
 	# REMOVE OLD TEST FOLDER RESULT FROM outputs/
 	rm -rf ../../outputs/result_${test_name}

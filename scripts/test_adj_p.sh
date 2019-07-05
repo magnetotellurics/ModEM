@@ -24,10 +24,10 @@ cd test_adj_p/
 echo "#### START ADJ P MPI TEST WITH $ncores CORES AT $now ####" | tee std_out.txt
 #
 #
-echo "#### COMMAND LINE: [mpirun -n $ncores ../$EXEC -A P ../$MODEL ../$dMODEL ../$EMsoln ../$DATA wFile_Model wFile_EMrhs -v full]" | tee std_out.txt
+echo "#### COMMAND LINE: [mpirun -n $ncores ../$EXEC -A P ../$MODEL ../$dMODEL ../$EMsoln ../$DATA wFile_Model wFile_EMrhs -v full]" | tee -a std_out.txt
 #
 #-A  P rFile_Model rFile_dModel rFile_EMsoln rFile_Data [wFile_Model wFile_EMrhs]
-mpirun -n $ncores ../$EXEC -A P ../$MODEL ../$dMODEL ../$EMsoln ../$DATA wFile_Model wFile_EMrhs -v full | tee std_out.txt
+mpirun -n $ncores ../$EXEC -A P ../$MODEL ../$dMODEL ../$EMsoln ../$DATA wFile_Model wFile_EMrhs -v full | tee -a std_out.txt
 #
 # CATCH RESULT
 result=$?
@@ -36,7 +36,7 @@ result=$?
 if [ "$result" -ne "0" ]; then
 	#
 	#
-	echo "TEST ADJ P FAIL: $result" | tee std_out.txt
+	echo "TEST ADJ P FAIL: $result" | tee -a std_out.txt
 	#
 	#
 	cd ..
@@ -46,7 +46,7 @@ if [ "$result" -ne "0" ]; then
 fi
 #
 #
-echo "#### FINISH ADJ P MPI TEST ####" | tee std_out.txt
+echo "#### FINISH ADJ P MPI TEST ####" | tee -a std_out.txt
 #
 #
 cd ..

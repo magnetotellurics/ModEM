@@ -34,9 +34,9 @@ do
 		echo "### START Mod3DMT: $ncores CORES, FOR '$model_name' AND '$data_name' ###" | tee std_out.txt
 		#
 		# RUN MODEM-ON
-		mpirun -n $ncores ../$EXEC -F ../${MODELS_DIR}${model_name}.ws ../${DATA_DIR}${data_name}.dat w${data_name}.dat | tee std_out.txt
+		mpirun -n $ncores ../$EXEC -F ../${MODELS_DIR}${model_name}.ws ../${DATA_DIR}${data_name}.dat w${data_name}.dat | tee -a std_out.txt
 		#
-		echo "### FINISH Mod3DMT ###" | tee std_out.txt
+		echo "### FINISH Mod3DMT ###" | tee -a std_out.txt
 		#
 		# RUN COMPARE DATA SCRIPT
 		bash ../scripts/compare_data.sh w${data_name}.dat ../${DATA_DIR}${data_name}.dat test_model_data_$now/

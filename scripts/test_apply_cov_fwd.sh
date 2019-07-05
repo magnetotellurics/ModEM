@@ -21,10 +21,10 @@ cd test_apply_cov_fwd/
 echo "#### START TEST_APPLY COV FWD MPI TEST WITH $ncores CORES AT $now ####" | tee std_out.txt
 #
 #
-echo "#### COMMAND LINE: [mpirun -n $ncores ../$EXEC -C FWD ../$MODEL wFile_Model.ws -v full]" | tee std_out.txt
+echo "#### COMMAND LINE: [mpirun -n $ncores ../$EXEC -C FWD ../$MODEL wFile_Model.ws -v full]" | tee -a std_out.txt
 #
 #
-mpirun -n $ncores ../$EXEC -C FWD ../$MODEL wFile_Model.ws -v full | tee std_out.txt
+mpirun -n $ncores ../$EXEC -C FWD ../$MODEL wFile_Model.ws -v full | tee -a std_out.txt
 #
 # CATCH RESULT
 result=$?
@@ -33,7 +33,7 @@ result=$?
 if [ "$result" -ne "0" ]; then
 	#
 	#
-	echo "TEST_APPLY COV FWD FAIL: $result" | tee std_out.txt
+	echo "TEST_APPLY COV FWD FAIL: $result" | tee -a std_out.txt
 	#
 	#
 	cd ..
@@ -43,7 +43,7 @@ if [ "$result" -ne "0" ]; then
 fi
 #
 #
-echo "#### FINISH TEST_APPLY COV FWD MPI TEST ####" | tee std_out.txt
+echo "#### FINISH TEST_APPLY COV FWD MPI TEST ####" | tee -a std_out.txt
 #
 #
 cd ..

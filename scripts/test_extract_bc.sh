@@ -22,10 +22,10 @@ cd test_extract_bc/
 echo "#### START EXTRACT BC MPI TEST WITH $ncores CORES AT $now ####" | tee std_out.txt
 #
 #
-echo "#### COMMAND LINE: [mpirun -n $ncores ../$EXEC -b ../$MODEL ../$DATA wFile_EMrhs -v full]" | tee std_out.txt
+echo "#### COMMAND LINE: [mpirun -n $ncores ../$EXEC -b ../$MODEL ../$DATA wFile_EMrhs -v full]" | tee -a std_out.txt
 #
 #
-mpirun -n $ncores ../$EXEC -b ../$MODEL ../$DATA wFile_EMrhs -v full | tee std_out.txt
+mpirun -n $ncores ../$EXEC -b ../$MODEL ../$DATA wFile_EMrhs -v full | tee -a std_out.txt
 #
 # CATCH RESULT
 result=$?
@@ -34,7 +34,7 @@ result=$?
 if [ "$result" -ne "0" ]; then
 	#
 	#
-	echo "TEST EXTRACT BC FAIL: $result" | tee std_out.txt
+	echo "TEST EXTRACT BC FAIL: $result" | tee -a std_out.txt
 	#
 	#
 	cd ..
@@ -44,7 +44,7 @@ if [ "$result" -ne "0" ]; then
 fi
 #
 #
-echo "#### FINISH EXTRACT BC MPI TEST ####" | tee std_out.txt
+echo "#### FINISH EXTRACT BC MPI TEST ####" | tee -a std_out.txt
 #
 #
 cd ..
