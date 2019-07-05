@@ -80,8 +80,8 @@ subroutine PCG(b,x, PCGiter)
 
   Call A(x,r)
   Call linComb(C_ONE,b,C_MinusOne,r,r)
-  bnorm = sqrt(dotProd(b,b))
-  rnorm = sqrt(dotProd(r,r))
+  bnorm = dotProd(b,b)
+  rnorm = dotProd(r,r)
   i = 1
   PCGiter%rerr(i) = real(rnorm/bnorm)
 
@@ -101,7 +101,7 @@ subroutine PCG(b,x, PCGiter)
      Call scMultAdd(-alpha,q,r)
      deltaOld = delta
      i = i + 1
-     rnorm = sqrt(dotProd(r,r))
+     rnorm = dotProd(r,r)
      PCGiter%rerr(i) = real(rnorm/bnorm)
 
   end do loop
@@ -204,12 +204,12 @@ subroutine QMR(b,x, QMRiter)
   !  iter is iteration counter
   iter = 1
   QMRiter%rerr(iter) = real(rnorm/bnorm)
-  !L 
+
   VT = R
   ilu_adjt = .false.
   Call M1solve(VT,ilu_adjt,Y)
   RHO = CDSQRT(dotProd(Y,Y))
-  !U
+
   WT = R
   ilu_adjt = .true.
   Call M2solve(WT,ilu_adjt,Z)
@@ -222,8 +222,8 @@ subroutine QMR(b,x, QMRiter)
   loop: do while ((QMRiter%rerr(iter).gt.QMRiter%tol).and.&
        (iter.lt.QMRiter%maxIt))
       if ((RHO.eq.C_ZERO).or.(PSI.eq.C_ZERO)) then
-        QMRiter%failed = .true.
-        write(0,*) 'QMR FAILED TO CONVERGE : RHO'
+	QMRiter%failed = .true.
+	write(0,*) 'QMR FAILED TO CONVERGE : RHO'
         write(0,*) 'QMR FAILED TO CONVERGE : PSI'
         exit
       endif
@@ -318,6 +318,7 @@ subroutine QMR(b,x, QMRiter)
       ! Keeping track of errors
       ! QMR book-keeping between divergence correction calls
       QMRiter%rerr(iter) = real(rnorm/bnorm)
+
   end do loop
 
   QMRiter%niter = iter
@@ -340,14 +341,13 @@ subroutine QMR(b,x, QMRiter)
   Call deall(S)
 
 end subroutine qmr ! qmr
-
 ! *****************************************************************************
 subroutine BICG(b,x,BICGiter)
   ! Stablized version of BiConjugate Gradient, set up for solving
   ! A x = b using routines in  mult_Aii.
   ! solves for the interior (edge) field
   !
-  ! backported from the Sparse matrix version, which is modified from my matlab 
+  ! backported from the Sparse matrix version, which is modified from my matlab
   ! version of BICGstab...
   ! so the naming might sound a little different from conventional ones
 
@@ -356,7 +356,7 @@ subroutine BICG(b,x,BICGiter)
   ! generic routines for vector operations for edge/ face nodes
   ! in a staggered grid
   !
-  ! NOTE: this has not been extensively tested! - I believe it feels a 
+  ! NOTE: this has not been extensively tested! - I believe it feels a
   ! little unstable (dispite the name)...
   ! if you have time reading this, test it!
   use sg_vector
@@ -413,7 +413,7 @@ subroutine BICG(b,x,BICGiter)
       stop
   else if ( bnorm .eq. 0.0) then ! zero rhs -> zero solution
       write(0,*) 'Warning: b in BICG has all zeros, returning zero solution'
-      x = b 
+      x = b
       BICGiter%niter=1
       BICGiter%failed=.false.
       BICGiter%rerr=0.0
@@ -433,8 +433,8 @@ subroutine BICG(b,x,BICGiter)
       BICGiter%niter=1
       BICGiter%failed=.false.
       BICGiter%rerr(1)=rnorm/bnorm
-     return 
-  end if 
+     return
+  end if
 !================= Now start configuring the iteration ===================!
   ! the adjoint (shadow) residual
   rnormin = rnorm
@@ -453,11 +453,11 @@ subroutine BICG(b,x,BICGiter)
       if (RHO .eq. 0.0) then
           BICGiter%failed = .true.
           exit
-      end if 
+      end if
       if (iter .eq. 1) then
           P = R
-      else 
-          BETA = (RHO/RHO1)*(ALPHA/OMEGA) 
+      else
+          BETA = (RHO/RHO1)*(ALPHA/OMEGA)
           if (BETA .eq. 0.0) then
               BICGiter%failed = .true.
               exit
@@ -465,7 +465,7 @@ subroutine BICG(b,x,BICGiter)
           ! P= R + BETA * (P - OMEGA * V);
           Call linComb(C_One,P,-OMEGA,V,P)
           call linComb(C_One,R,BETA,P,P)
-      end if 
+      end if
       ! L
       ilu_adjt = .false.
       call M1solve(P,ilu_adjt,PT)
@@ -485,14 +485,14 @@ subroutine BICG(b,x,BICGiter)
           BICGiter%failed = .true.
           exit
       end if
-      ! xhalf = x + ALPHA*PH ! the first half of iteration      
+      ! xhalf = x + ALPHA*PH ! the first half of iteration
       call linComb(C_One,x,ALPHA,PH,xhalf)
       adjoint = .false.
       call A(xhalf,adjoint,AX)
       call linComb(C_One,b,C_MinusOne,AX,AX)
       rnorm = SQRT(dotProd(AX,AX))
       BICGiter%rerr(iter)=rnorm/bnorm
-      
+
       if (rnorm.lt.btol) then
           x = xhalf
           BICGiter%failed = .false.
@@ -547,14 +547,14 @@ subroutine BICG(b,x,BICGiter)
       !R = S - OMEGA * T  !residual for the 1.0 x
       call linComb(C_One,S,-OMEGA,T,R)
   end do
- 
+
   if (.not. converged) then
       ! it should be noted that this is the way my matlab version works
       ! the bicg will return the 'best' (smallest residual) iteration
       x = xmin; !comment this line
       BICGiter%niter=BICGiter%maxit
       BICGiter%rerr(BICGiter%maxit) = BICGiter%rerr(imin) ! and this line
-      ! to use the last iteration result instead of the 'best' 
+      ! to use the last iteration result instead of the 'best'
   end if
   Call deall(xhalf)
   Call deall(xmin)
@@ -571,6 +571,5 @@ subroutine BICG(b,x,BICGiter)
   Call deall(T)
 
 end subroutine BICG ! BICG
-
 
 end module solver ! solver
