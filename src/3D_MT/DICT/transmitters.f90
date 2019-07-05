@@ -39,6 +39,7 @@ module transmitters
   ! transmitter types; correspond to index iTxt in the data vectors
   !  these will be heavily used in inversion routines
   integer, parameter   :: MT = 1
+  integer, parameter   :: CSEM = 1
 
 Contains
 
