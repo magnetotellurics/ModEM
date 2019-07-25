@@ -175,19 +175,22 @@ Contains
 	!--------------------------------------------------------------------------
 	! Check whether model parametrization file exists and read it, if exists
 	inquire(FILE=cUserDef%rFile_Model,EXIST=exists)
-
+	!
 	if (exists) then
 	   ! Read background conductivity parameter and grid
        call read_modelParam(grid,sigma0,cUserDef%rFile_Model)
+	   !
 
        ! Finish setting up the grid (if that is not done in the read subroutine)
        !call setup_grid(grid)
 
        !  Initialize the air layers structure and update the air layers in the grid
        call setup_airlayers(airLayers,grid)
+	   !
 
        !  Update air layers in the grid and run setup_grid
        call update_airlayers(grid,airLayers%Nz,airLayers%Dz)
+	   !
 
 	else
 	  call warning('No input model parametrization')

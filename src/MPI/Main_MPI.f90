@@ -781,30 +781,25 @@ end  subroutine Master_job_keep_prev_eAll
 
 !############################################## Master_job_Distribute_userdef_control#########################################################
 Subroutine Master_job_Distribute_userdef_control(ctrl)
-    implicit none
-    include 'mpif.h'
-
-    type(userdef_control), intent(in)		:: ctrl
-    character(20)                               :: which_proc
-
-        which_proc='Master'
-        call check_userdef_control_MPI (which_proc,ctrl)
-
-
-
-
-		call create_userdef_control_place_holder
-		call pack_userdef_control(ctrl)
-        do dest=1,number_of_workers
-           call MPI_SEND(userdef_control_package,Nbytes, MPI_PACKED,dest, FROM_MASTER, MPI_COMM_WORLD, ierr)
-        end do
-
-
-
-
-
-
-
+	!
+	implicit none
+	include 'mpif.h'
+	!
+	type(userdef_control), intent(in)		:: ctrl
+	character(20)                           :: which_proc
+	!
+	which_proc='Master'
+	!
+	call check_userdef_control_MPI (which_proc,ctrl)
+	!
+	call create_userdef_control_place_holder
+	!
+	call pack_userdef_control(ctrl)
+	!
+	do dest=1,number_of_workers
+		call MPI_SEND(userdef_control_package,Nbytes, MPI_PACKED,dest, FROM_MASTER, MPI_COMM_WORLD, ierr)
+	end do
+	!
 end Subroutine Master_job_Distribute_userdef_control
 
 !##############################################    Master_job_Clean Memory ########################################################
