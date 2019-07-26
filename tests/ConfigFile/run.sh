@@ -3,7 +3,7 @@ EXEC=$1
 echo $1
 pwd
 ncores=64
-mpirun -n $ncores $EXEC -W rFile_config.txt
+mpirun -n $ncores ../$EXEC -W rFile_config.txt
 #
 # CATCH RESULT
 result=$?
