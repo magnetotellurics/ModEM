@@ -177,8 +177,9 @@ contains
     end function getNameId
     !
     subroutine validateConfigs( this )
-        class( configs ), intent( inout ) :: this
-        integer                           :: ifield_name, ilambda, ieps, irFile_invCtrl, irFile_fwdCtrl
+        class( configs ), intent( inout ) 	:: this
+        integer                           	:: ifield_name
+		logical								:: exists
         !
         !TEST JOB
         ifield_name = this%getNameId( 'job' )
