@@ -2,6 +2,7 @@
 EXEC=$1
 echo $1
 pwd
+ls
 ncores=64
 mpirun -n $ncores ../$EXEC -W rFile_config.txt
 #
