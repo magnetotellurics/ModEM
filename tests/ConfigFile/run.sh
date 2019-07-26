@@ -4,7 +4,8 @@ echo $1
 pwd
 ls
 ncores=64
-mpirun -n $ncores ../$EXEC -W rFile_config.txt
+echo "COMAND: [mpirun -n $ncores ../$EXEC -W rFile_Config.txt]"
+mpirun -n $ncores ../$EXEC -W rFile_Config.txt
 #
 # CATCH RESULT
 result=$?
@@ -19,7 +20,7 @@ if [ "$result" -ne "0" ]; then
 fi
 #
 #
-echo "#### FINISH GRAD MPI TEST ####" | tee -a std_out.txt
+echo "#### FINISH MPI TEST ####" | tee -a std_out.txt
 #.
 #
 exit 0
