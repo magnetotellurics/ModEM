@@ -438,16 +438,16 @@ test_engine_modem_on:
 # DEPLOY: UPDATE GITLAB
 update_gitlab:
     stage: deploy
-    environment: production
+    #environment: production
     script:
         #
         # BASH: UPDATES GITLAB
-        - bash scripts/update_gitlab.sh &>> outputs/update_gitlab.txt
+        - bash scripts/update_gitlab.sh $CI_COMMIT_REF_NAME &>> outputs/update_gitlab.txt
 #
 # DEPLOY: UPDATE PAGES
 pages:
     stage: deploy
-    environment: staging
+    #environment: staging
     script:
         #
         # BASH: PAGE UPDATES

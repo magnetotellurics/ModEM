@@ -68,9 +68,22 @@ program Mod3DMT
 		call RECV_cUserDef(cUserDef)
 	end if
 #else
-      call parseArgs('Mod3DMT',cUserDef) ! OR readStartup(rFile_Startup,cUserDef)
-	  !end if
-      write(6,*)'I am a SERIAL version'
+	call parseArgs('Mod3DMT',cUserDef)
+	!
+	write(6,*) 'BEFORE USER JOB: ', cUserDef%job
+	write(6,*) 'BEFORE USER rFile_Config: ', cUserDef%rFile_Config
+	write(6,*) 'BEFORE USER rFile_Model: ', cUserDef%rFile_Model
+	write(6,*) 'BEFORE USER rFile_Data: ', cUserDef%rFile_Data
+	!
+	! special case W - read from configuration file
+	if( cUserDef%job .eq. CONF_FILE ) then !W
+		!
+		call conf%config( cUserDef )
+		cUserDef = conf%getCtrl()
+		!
+	end if
+	!end if
+	write(6,*)'I am a SERIAL version'
 #endif
       call initGlobalData(cUserDef)
       ! set the grid for the numerical computations
