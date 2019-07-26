@@ -178,7 +178,7 @@ contains
     !
     subroutine validateConfigs( this )
         class( configs ), intent( inout ) :: this
-        integer                           :: ifield_name
+        integer                           :: ifield_name, ilambda, ieps, irFile_invCtrl, irFile_fwdCtrl
         !
         !TEST JOB
         ifield_name = this%getNameId( 'job' )
@@ -255,6 +255,12 @@ contains
                     ifield_name = this%getNameId( 'rFile_fwdCtrl' )
                     if( ifield_name /= 0 ) then
                         this%cUserDef%rFile_fwdCtrl = this%values( ifield_name )
+						inquire(FILE=this%cUserDef%rFile_fwdCtrl,EXIST=exists)
+						if ( .not. exists ) then
+							! problem - invalid argument
+							write(0,*) 'Please specify a valid fwd control file or damping parameter'
+							stop
+						end if
                     end if
                     !TEST rFile_EMrhs OPTIONAL
                     ifield_name = this%getNameId( 'rFile_EMrhs' )
@@ -292,6 +298,12 @@ contains
                     ifield_name = this%getNameId( 'rFile_fwdCtrl' )
                     if( ifield_name /= 0 ) then
                         this%cUserDef%rFile_fwdCtrl = this%values( ifield_name )
+						inquire(FILE=this%cUserDef%rFile_fwdCtrl,EXIST=exists)
+						if ( .not. exists ) then
+							! problem - invalid argument
+							write(0,*) 'Please specify a valid fwd control file or damping parameter'
+							stop
+						end if
                     end if
 
                 case ( 'MULT_BY_J' ) ! M
@@ -332,6 +344,12 @@ contains
                     ifield_name = this%getNameId( 'rFile_fwdCtrl' )
                     if( ifield_name /= 0 ) then
                         this%cUserDef%rFile_fwdCtrl = this%values( ifield_name )
+						inquire(FILE=this%cUserDef%rFile_fwdCtrl,EXIST=exists)
+						if ( .not. exists ) then
+							! problem - invalid argument
+							write(0,*) 'Please specify a valid fwd control file or damping parameter'
+							stop
+						end if
                     end if
 
                 case ( 'MULT_BY_J_T', 'MULT_BY_J_T_multi_Tx' ) ! J
@@ -364,17 +382,123 @@ contains
                     ifield_name = this%getNameId( 'rFile_fwdCtrl' )
                     if( ifield_name /= 0 ) then
                         this%cUserDef%rFile_fwdCtrl = this%values( ifield_name )
+						inquire(FILE=this%cUserDef%rFile_fwdCtrl,EXIST=exists)
+						if ( .not. exists ) then
+							! problem - invalid argument
+							write(0,*) 'Please specify a valid fwd control file or damping parameter'
+							stop
+						end if
                     end if
 
                 case ( 'INVERSE' ) ! I
                     write(0,*) 'Usage: -I NLCG rFile_Model rFile_Data [lambda eps]'
+					write(0,*) 'Usage: -I NLCG rFile_Model rFile_Data [rFile_invCtrl rFile_fwdCtrl]'
+					!
+					!TEST search
+                    ifield_name = this%getNameId( 'search' )
+                    if( ifield_name == 0 ) then
+                        write(*,*) 'There is no tag search!'
+                        call this%usage()
+                    else
+                        this%cUserDef%search = this%values( ifield_name )
+						select case ( this%cUserDef%search )
+							case ('NLCG','DCG','Hybrid','LBFGS')
+								write(*,*) 'Inverse search ',trim(this%cUserDef%search),' selected.'
+							case default
+								write(*,*) 'Unknown inverse search. Usage: -I [NLCG | DCG | Hybrid | LBFGS]'
+							stop
+						end select
+                    end if
+					!TEST rFile_Model
+                    ifield_name = this%getNameId( 'rFile_Model' )
+                    if( ifield_name == 0 ) then
+                        write(*,*) 'There is no tag rFile_Model!'
+                        call this%usage()
+                    else
+                        this%cUserDef%rFile_Model = this%values( ifield_name )
+                    end if
+					!TEST rFile_Data
+                    ifield_name = this%getNameId( 'rFile_Data' )
+                    if( ifield_name == 0 ) then
+                        write(*,*) 'There is no tag rFile_Data!'
+                        call this%usage()
+                    else
+                        this%cUserDef%rFile_Data = this%values( ifield_name )
+                    end if
+					!TEST lambda OPTIONAL
+                    ifield_name = this%getNameId( 'lambda' )
+                    if( ifield_name /= 0 ) then
+                        this%cUserDef%lambda = this%values( ifield_name )
+                    end if
+                    !TEST eps OPTIONAL
+                    ifield_name = this%getNameId( 'eps' )
+                    if( ifield_name /= 0 ) then
+                        this%cUserDef%eps = this%values( ifield_name )
+                    end if
+					!TEST rFile_invCtrl OPTIONAL
+                    ifield_name = this%getNameId( 'rFile_invCtrl' )
+                    if( ifield_name /= 0 ) then
+                        this%cUserDef%rFile_invCtrl = this%values( ifield_name )
+						inquire(FILE=this%cUserDef%rFile_invCtrl,EXIST=exists)
+						if ( .not. exists ) then
+							! problem - invalid argument
+							write(0,*) 'Please specify a valid inverse control file or damping parameter'
+							stop
+						end if
+                    end if
+                    !TEST rFile_fwdCtrl OPTIONAL
+                    ifield_name = this%getNameId( 'rFile_fwdCtrl' )
+                    if( ifield_name /= 0 ) then
+                        this%cUserDef%rFile_fwdCtrl = this%values( ifield_name )
+						inquire(FILE=this%cUserDef%rFile_fwdCtrl,EXIST=exists)
+						if ( .not. exists ) then
+							! problem - invalid argument
+							write(0,*) 'Please specify a valid fwd control file or damping parameter'
+							stop
+						end if
+                    end if
+					
 
                 case ( 'APPLY_COV' ) ! C
                     write(0,*) 'Usage: -C  [FWD|INV] rFile_Model wFile_Model [rFile_Cov rFile_Prior]'
 
                 case ( 'EXTRACT_BC' ) ! b
                     write(0,*) 'Usage: -b  rFile_Model rFile_Data wFile_EMrhs [rFile_fwdCtrl]'
-
+					!TEST rFile_Model
+                    ifield_name = this%getNameId( 'rFile_Model' )
+                    if( ifield_name == 0 ) then
+                        write(*,*) 'There is no tag rFile_Model!'
+                        call this%usage()
+                    else
+                        this%cUserDef%rFile_Model = this%values( ifield_name )
+                    end if
+                    !TEST rFile_Data
+                    ifield_name = this%getNameId( 'rFile_Data' )
+                    if( ifield_name == 0 ) then
+                        write(*,*) 'There is no tag rFile_Data!'
+                        call this%usage()
+                    else
+                        this%cUserDef%rFile_Data = this%values( ifield_name )
+                    end if
+                    !TEST wFile_EMrhs
+                    ifield_name = this%getNameId( 'wFile_EMrhs' )
+                    if( ifield_name == 0 ) then
+                        write(*,*) 'There is no tag wFile_EMrhs!'
+                        call this%usage()
+                    else
+                        this%cUserDef%wFile_EMrhs = this%values( ifield_name )
+                    end if
+                    !TEST rFile_fwdCtrl OPTIONAL
+                    ifield_name = this%getNameId( 'rFile_fwdCtrl' )
+                    if( ifield_name /= 0 ) then
+                        this%cUserDef%rFile_fwdCtrl = this%values( ifield_name )
+						inquire(FILE=this%cUserDef%rFile_fwdCtrl,EXIST=exists)
+						if ( .not. exists ) then
+							! problem - invalid argument
+							write(0,*) 'Please specify a valid fwd control file or damping parameter'
+							stop
+						end if
+                    end if
 
                 case ( 'TEST_GRAD' ) !g
                     write(0,*) 'Usage: -g  rFile_Model rFile_Data rFile_dModel [rFile_fwdCtrl rFile_EMrhs]'
@@ -406,6 +530,12 @@ contains
                     ifield_name = this%getNameId( 'rFile_fwdCtrl' )
                     if( ifield_name /= 0 ) then
                         this%cUserDef%rFile_fwdCtrl = this%values( ifield_name )
+						inquire(FILE=this%cUserDef%rFile_fwdCtrl,EXIST=exists)
+						if ( .not. exists ) then
+							! problem - invalid argument
+							write(0,*) 'Please specify a valid fwd control file or damping parameter'
+							stop
+						end if
                     end if
                     !TEST rFile_EMrhs OPTIONAL
                     ifield_name = this%getNameId( 'rFile_EMrhs' )

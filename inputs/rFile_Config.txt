@@ -1,4 +1,5 @@
 job	FORWARD
-rFile_Model	'rFile_Model'
-rFile_Data	'rFile_Data'
+rFile_Model	'inputs/rFile_Model'
+rFile_Data	'inputs/rFile_Data'
 wFile_Data	'wFile_Data.txt'
+rFile_fwdCtrl	'inputs/rFile_fwdCtrl'
