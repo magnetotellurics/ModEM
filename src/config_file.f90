@@ -429,12 +429,12 @@ contains
 					!TEST lambda OPTIONAL
                     ifield_name = this%getNameId( 'lambda' )
                     if( ifield_name /= 0 ) then
-                        this%cUserDef%lambda = real( this%values( ifield_name ),8 )
+						read( this%values( ifield_name ), '(f10.8)' )  this%cUserDef%lambda
                     end if
                     !TEST eps OPTIONAL
                     ifield_name = this%getNameId( 'eps' )
                     if( ifield_name /= 0 ) then
-                        this%cUserDef%eps = real( this%values( ifield_name ),8 )
+						read( this%values( ifield_name ), '(f10.8)' )  this%cUserDef%eps
                     end if
 					!TEST rFile_invCtrl OPTIONAL
                     ifield_name = this%getNameId( 'rFile_invCtrl' )
