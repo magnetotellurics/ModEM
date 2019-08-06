@@ -41,11 +41,6 @@ program Mod3DMT
 		!
 		call parseArgs('Mod3DMT',cUserDef)
 		!
-		write(6,*) 'BEFORE USER JOB: ', cUserDef%job
-		write(6,*) 'BEFORE USER rFile_Config: ', cUserDef%rFile_Config
-		write(6,*) 'BEFORE USER rFile_Model: ', cUserDef%rFile_Model
-		write(6,*) 'BEFORE USER rFile_Data: ', cUserDef%rFile_Data
-		!
 		! special case W - read from configuration file
 		if( cUserDef%job .eq. CONF_FILE ) then !W
 			!
@@ -56,11 +51,6 @@ program Mod3DMT
 		! OR readStartup(rFile_Startup,cUserDef)
 		write(6,*)'I am a PARALLEL version'
 		!
-		write(6,*) 'AFTER USER JOB: ', cUserDef%job
-		write(6,*) 'AFTER USER rFile_Config: ', cUserDef%rFile_Config
-		write(6,*) 'AFTER USER rFile_Model: ', cUserDef%rFile_Model
-		write(6,*) 'AFTER USER rFile_Data: ', cUserDef%rFile_Data
-		!
 		call Master_job_Distribute_userdef_control(cUserDef)
 		open(ioMPI,file=cUserDef%wFile_MPI)
 		write(ioMPI,*) 'Total Number of nodes= ', number_of_workers
@@ -69,11 +59,6 @@ program Mod3DMT
 	end if
 #else
 	call parseArgs('Mod3DMT',cUserDef)
-	!
-	write(6,*) 'BEFORE USER JOB: ', cUserDef%job
-	write(6,*) 'BEFORE USER rFile_Config: ', cUserDef%rFile_Config
-	write(6,*) 'BEFORE USER rFile_Model: ', cUserDef%rFile_Model
-	write(6,*) 'BEFORE USER rFile_Data: ', cUserDef%rFile_Data
 	!
 	! special case W - read from configuration file
 	if( cUserDef%job .eq. CONF_FILE ) then !W

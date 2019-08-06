@@ -1,0 +1,342 @@
+ Total Number of nodes=            9
+   FORWARD  : Send Per. #     1 : Pol #    1 to node #     1
+   FORWARD  : Send Per. #     1 : Pol #    2 to node #     2
+   FORWARD  : Send Per. #     2 : Pol #    1 to node #     3
+   FORWARD  : Send Per. #     2 : Pol #    2 to node #     4
+   FORWARD  : Send Per. #     3 : Pol #    1 to node #     5
+   FORWARD  : Send Per. #     3 : Pol #    2 to node #     6
+   FORWARD  : Send Per. #     4 : Pol #    1 to node #     7
+   FORWARD  : Send Per. #     4 : Pol #    2 to node #     8
+   FORWARD: Recieve Per #     3 and Pol    1      from     5
+   FORWARD: Recieve Per #     4 and Pol    1      from     7
+   FORWARD: Recieve Per #     2 and Pol    1      from     3
+   FORWARD: Recieve Per #     1 and Pol    1      from     1
+   FORWARD: Recieve Per #     3 and Pol    2      from     6
+   FORWARD: Recieve Per #     2 and Pol    2      from     4
+   FORWARD: Recieve Per #     1 and Pol    2      from     2
+   FORWARD: Recieve Per #     4 and Pol    2      from     8
+ FWD: Finished calculating for (           4 ) Transmitters 
+ FWD: TIME REQUIERED:   0.48606419563293457      s
+COMPUTE_J: Send Per. #     1 , data type #     1 and Site #    1 to node #     1
+COMPUTE_J: Send Per. #     1 , data type #     1 and Site #    2 to node #     2
+COMPUTE_J: Send Per. #     1 , data type #     1 and Site #    3 to node #     3
+COMPUTE_J: Send Per. #     1 , data type #     1 and Site #    4 to node #     4
+COMPUTE_J: Send Per. #     1 , data type #     1 and Site #    5 to node #     5
+COMPUTE_J: Send Per. #     1 , data type #     1 and Site #    6 to node #     6
+COMPUTE_J: Send Per. #     1 , data type #     1 and Site #    7 to node #     7
+COMPUTE_J: Send Per. #     1 , data type #     1 and Site #    8 to node #     8
+COMPUTE_J: Send Per. #     1 , data type #     1 and Site #    9 to node #     9
+COMPUTE_J: RECV Per. #     1 , data type #     1 and Site #    5 from node #     5
+COUNT--> COMPUTE_J: Send Per. #     1 , data type #     1 and Site #   10 to node #     5
+COMPUTE_J: RECV Per. #     1 , data type #     1 and Site #    1 from node #     1
+COUNT--> COMPUTE_J: Send Per. #     1 , data type #     1 and Site #   11 to node #     1
+COMPUTE_J: RECV Per. #     1 , data type #     1 and Site #    3 from node #     3
+COUNT--> COMPUTE_J: Send Per. #     1 , data type #     1 and Site #   12 to node #     3
+COMPUTE_J: RECV Per. #     1 , data type #     1 and Site #    7 from node #     7
+COUNT--> COMPUTE_J: Send Per. #     1 , data type #     1 and Site #   13 to node #     7
+COMPUTE_J: RECV Per. #     1 , data type #     1 and Site #    6 from node #     6
+COUNT--> COMPUTE_J: Send Per. #     1 , data type #     1 and Site #   14 to node #     6
+COMPUTE_J: RECV Per. #     1 , data type #     1 and Site #    2 from node #     2
+COUNT--> COMPUTE_J: Send Per. #     1 , data type #     1 and Site #   15 to node #     2
+COMPUTE_J: RECV Per. #     1 , data type #     1 and Site #    8 from node #     8
+COUNT--> COMPUTE_J: Send Per. #     1 , data type #     1 and Site #   16 to node #     8
+COMPUTE_J: RECV Per. #     1 , data type #     1 and Site #    4 from node #     4
+COUNT--> COMPUTE_J: Send Per. #     1 , data type #     1 and Site #   17 to node #     4
+COMPUTE_J: RECV Per. #     1 , data type #     1 and Site #    9 from node #     9
+COUNT--> COMPUTE_J: Send Per. #     1 , data type #     1 and Site #   18 to node #     9
+COMPUTE_J: RECV Per. #     1 , data type #     1 and Site #   10 from node #     5
+COUNT--> COMPUTE_J: Send Per. #     1 , data type #     1 and Site #   19 to node #     5
+COMPUTE_J: RECV Per. #     1 , data type #     1 and Site #   13 from node #     7
+COUNT--> COMPUTE_J: Send Per. #     1 , data type #     1 and Site #   20 to node #     7
+COMPUTE_J: RECV Per. #     1 , data type #     1 and Site #   11 from node #     1
+COUNT--> COMPUTE_J: Send Per. #     1 , data type #     1 and Site #   21 to node #     1
+COMPUTE_J: RECV Per. #     1 , data type #     1 and Site #   12 from node #     3
+COUNT--> COMPUTE_J: Send Per. #     1 , data type #     1 and Site #   22 to node #     3
+COMPUTE_J: RECV Per. #     1 , data type #     1 and Site #   14 from node #     6
+COUNT--> COMPUTE_J: Send Per. #     1 , data type #     1 and Site #   23 to node #     6
+COMPUTE_J: RECV Per. #     1 , data type #     1 and Site #   17 from node #     4
+COUNT--> COMPUTE_J: Send Per. #     1 , data type #     1 and Site #   24 to node #     4
+COMPUTE_J: RECV Per. #     1 , data type #     1 and Site #   15 from node #     2
+COUNT--> COMPUTE_J: Send Per. #     1 , data type #     1 and Site #   25 to node #     2
+COMPUTE_J: RECV Per. #     1 , data type #     1 and Site #   16 from node #     8
+COUNT--> COMPUTE_J: Send Per. #     1 , data type #     1 and Site #   26 to node #     8
+COMPUTE_J: RECV Per. #     1 , data type #     1 and Site #   18 from node #     9
+COUNT--> COMPUTE_J: Send Per. #     1 , data type #     1 and Site #   27 to node #     9
+COMPUTE_J: RECV Per. #     1 , data type #     1 and Site #   19 from node #     5
+COUNT--> COMPUTE_J: Send Per. #     1 , data type #     1 and Site #   28 to node #     5
+COMPUTE_J: RECV Per. #     1 , data type #     1 and Site #   22 from node #     3
+COUNT--> COMPUTE_J: Send Per. #     1 , data type #     1 and Site #   29 to node #     3
+COMPUTE_J: RECV Per. #     1 , data type #     1 and Site #   20 from node #     7
+COUNT--> COMPUTE_J: Send Per. #     1 , data type #     1 and Site #   30 to node #     7
+COMPUTE_J: RECV Per. #     1 , data type #     1 and Site #   21 from node #     1
+COUNT--> COMPUTE_J: Send Per. #     1 , data type #     1 and Site #   31 to node #     1
+COMPUTE_J: RECV Per. #     1 , data type #     1 and Site #   23 from node #     6
+COUNT--> COMPUTE_J: Send Per. #     1 , data type #     1 and Site #   32 to node #     6
+COMPUTE_J: RECV Per. #     1 , data type #     1 and Site #   28 from node #     5
+COUNT--> COMPUTE_J: Send Per. #     1 , data type #     1 and Site #   33 to node #     5
+COMPUTE_J: RECV Per. #     1 , data type #     1 and Site #   31 from node #     1
+COUNT--> COMPUTE_J: Send Per. #     1 , data type #     1 and Site #   34 to node #     1
+COMPUTE_J: RECV Per. #     1 , data type #     1 and Site #   24 from node #     4
+COUNT--> COMPUTE_J: Send Per. #     1 , data type #     1 and Site #   35 to node #     4
+COMPUTE_J: RECV Per. #     1 , data type #     1 and Site #   30 from node #     7
+COUNT--> COMPUTE_J: Send Per. #     1 , data type #     1 and Site #   36 to node #     7
+COMPUTE_J: RECV Per. #     1 , data type #     1 and Site #   29 from node #     3
+COUNT--> COMPUTE_J: Send Per. #     1 , data type #     1 and Site #   37 to node #     3
+COMPUTE_J: RECV Per. #     1 , data type #     1 and Site #   25 from node #     2
+COUNT--> COMPUTE_J: Send Per. #     1 , data type #     1 and Site #   38 to node #     2
+COMPUTE_J: RECV Per. #     1 , data type #     1 and Site #   26 from node #     8
+COUNT--> COMPUTE_J: Send Per. #     1 , data type #     1 and Site #   39 to node #     8
+COMPUTE_J: RECV Per. #     1 , data type #     1 and Site #   27 from node #     9
+COUNT--> COMPUTE_J: Send Per. #     1 , data type #     1 and Site #   40 to node #     9
+COMPUTE_J: RECV Per. #     1 , data type #     1 and Site #   32 from node #     6
+COUNT--> COMPUTE_J: Send Per. #     1 , data type #     1 and Site #   41 to node #     6
+COMPUTE_J: RECV Per. #     1 , data type #     1 and Site #   33 from node #     5
+COUNT--> COMPUTE_J: Send Per. #     1 , data type #     1 and Site #   42 to node #     5
+COMPUTE_J: RECV Per. #     1 , data type #     1 and Site #   34 from node #     1
+COUNT--> COMPUTE_J: Send Per. #     1 , data type #     1 and Site #   43 to node #     1
+COMPUTE_J: RECV Per. #     1 , data type #     1 and Site #   37 from node #     3
+COUNT--> COMPUTE_J: Send Per. #     1 , data type #     1 and Site #   44 to node #     3
+COMPUTE_J: RECV Per. #     1 , data type #     1 and Site #   36 from node #     7
+COUNT--> COMPUTE_J: Send Per. #     1 , data type #     1 and Site #   45 to node #     7
+COMPUTE_J: RECV Per. #     1 , data type #     1 and Site #   35 from node #     4
+COUNT--> COMPUTE_J: Send Per. #     1 , data type #     1 and Site #   46 to node #     4
+COMPUTE_J: RECV Per. #     1 , data type #     1 and Site #   38 from node #     2
+COUNT--> COMPUTE_J: Send Per. #     1 , data type #     1 and Site #   47 to node #     2
+COMPUTE_J: RECV Per. #     1 , data type #     1 and Site #   39 from node #     8
+COUNT--> COMPUTE_J: Send Per. #     1 , data type #     1 and Site #   48 to node #     8
+COMPUTE_J: RECV Per. #     1 , data type #     1 and Site #   40 from node #     9
+COUNT--> COMPUTE_J: Send Per. #     1 , data type #     1 and Site #   49 to node #     9
+COMPUTE_J: RECV Per. #     1 , data type #     1 and Site #   42 from node #     5
+COUNT--> COMPUTE_J: Send Per. #     1 , data type #     1 and Site #   50 to node #     5
+COMPUTE_J: RECV Per. #     1 , data type #     1 and Site #   41 from node #     6
+COUNT--> COMPUTE_J: Send Per. #     1 , data type #     1 and Site #   51 to node #     6
+COMPUTE_J: RECV Per. #     1 , data type #     1 and Site #   43 from node #     1
+COUNT--> COMPUTE_J: Send Per. #     1 , data type #     1 and Site #   52 to node #     1
+COMPUTE_J: RECV Per. #     1 , data type #     1 and Site #   44 from node #     3
+COUNT--> COMPUTE_J: Send Per. #     1 , data type #     1 and Site #   53 to node #     3
+COMPUTE_J: RECV Per. #     1 , data type #     1 and Site #   45 from node #     7
+COUNT--> COMPUTE_J: Send Per. #     1 , data type #     1 and Site #   54 to node #     7
+COMPUTE_J: RECV Per. #     1 , data type #     1 and Site #   50 from node #     5
+COUNT--> COMPUTE_J: Send Per. #     1 , data type #     1 and Site #   55 to node #     5
+COMPUTE_J: RECV Per. #     1 , data type #     1 and Site #   49 from node #     9
+COUNT--> COMPUTE_J: Send Per. #     1 , data type #     1 and Site #   56 to node #     9
+COMPUTE_J: RECV Per. #     1 , data type #     1 and Site #   48 from node #     8
+COUNT--> COMPUTE_J: Send Per. #     1 , data type #     1 and Site #   57 to node #     8
+COMPUTE_J: RECV Per. #     1 , data type #     1 and Site #   46 from node #     4
+COUNT--> COMPUTE_J: Send Per. #     1 , data type #     1 and Site #   58 to node #     4
+COMPUTE_J: RECV Per. #     1 , data type #     1 and Site #   47 from node #     2
+COUNT--> COMPUTE_J: Send Per. #     1 , data type #     1 and Site #   59 to node #     2
+COMPUTE_J: RECV Per. #     1 , data type #     1 and Site #   52 from node #     1
+COUNT--> COMPUTE_J: Send Per. #     1 , data type #     1 and Site #   60 to node #     1
+COMPUTE_J: RECV Per. #     1 , data type #     1 and Site #   53 from node #     3
+COUNT--> COMPUTE_J: Send Per. #     1 , data type #     1 and Site #   61 to node #     3
+COMPUTE_J: RECV Per. #     1 , data type #     1 and Site #   51 from node #     6
+COUNT--> COMPUTE_J: Send Per. #     1 , data type #     1 and Site #   62 to node #     6
+COMPUTE_J: RECV Per. #     1 , data type #     1 and Site #   54 from node #     7
+COUNT--> COMPUTE_J: Send Per. #     1 , data type #     1 and Site #   63 to node #     7
+COMPUTE_J: RECV Per. #     1 , data type #     1 and Site #   55 from node #     5
+COUNT--> COMPUTE_J: Send Per. #     1 , data type #     1 and Site #   64 to node #     5
+COMPUTE_J: RECV Per. #     1 , data type #     1 and Site #   60 from node #     1
+COUNT--> COMPUTE_J: Send Per. #     1 , data type #     1 and Site #   65 to node #     1
+COMPUTE_J: RECV Per. #     1 , data type #     1 and Site #   59 from node #     2
+COUNT--> COMPUTE_J: Send Per. #     1 , data type #     1 and Site #   66 to node #     2
+COMPUTE_J: RECV Per. #     1 , data type #     1 and Site #   56 from node #     9
+COUNT--> COMPUTE_J: Send Per. #     1 , data type #     1 and Site #   67 to node #     9
+COMPUTE_J: RECV Per. #     1 , data type #     1 and Site #   61 from node #     3
+COUNT--> COMPUTE_J: Send Per. #     1 , data type #     1 and Site #   68 to node #     3
+COMPUTE_J: RECV Per. #     1 , data type #     1 and Site #   58 from node #     4
+COUNT--> COMPUTE_J: Send Per. #     1 , data type #     1 and Site #   69 to node #     4
+COMPUTE_J: RECV Per. #     1 , data type #     1 and Site #   63 from node #     7
+COUNT--> COMPUTE_J: Send Per. #     1 , data type #     1 and Site #   70 to node #     7
+COMPUTE_J: RECV Per. #     1 , data type #     1 and Site #   57 from node #     8
+COUNT--> COMPUTE_J: Send Per. #     1 , data type #     1 and Site #   71 to node #     8
+COMPUTE_J: RECV Per. #     1 , data type #     1 and Site #   62 from node #     6
+COUNT--> COMPUTE_J: Send Per. #     1 , data type #     1 and Site #   72 to node #     6
+COMPUTE_J: RECV Per. #     1 , data type #     1 and Site #   64 from node #     5
+COUNT--> COMPUTE_J: Send Per. #     1 , data type #     1 and Site #   73 to node #     5
+COMPUTE_J: RECV Per. #     1 , data type #     1 and Site #   68 from node #     3
+COUNT--> COMPUTE_J: Send Per. #     1 , data type #     1 and Site #   74 to node #     3
+COMPUTE_J: RECV Per. #     1 , data type #     1 and Site #   65 from node #     1
+COUNT--> COMPUTE_J: Send Per. #     1 , data type #     1 and Site #   75 to node #     1
+COMPUTE_J: RECV Per. #     1 , data type #     1 and Site #   70 from node #     7
+COUNT--> COMPUTE_J: Send Per. #     1 , data type #     1 and Site #   76 to node #     7
+COMPUTE_J: RECV Per. #     1 , data type #     1 and Site #   67 from node #     9
+COUNT--> COMPUTE_J: Send Per. #     1 , data type #     1 and Site #   77 to node #     9
+COMPUTE_J: RECV Per. #     1 , data type #     1 and Site #   66 from node #     2
+COUNT--> COMPUTE_J: Send Per. #     1 , data type #     1 and Site #   78 to node #     2
+COMPUTE_J: RECV Per. #     1 , data type #     1 and Site #   69 from node #     4
+COUNT--> COMPUTE_J: Send Per. #     1 , data type #     1 and Site #   79 to node #     4
+COMPUTE_J: RECV Per. #     1 , data type #     1 and Site #   74 from node #     3
+COUNT--> COMPUTE_J: Send Per. #     1 , data type #     1 and Site #   80 to node #     3
+COMPUTE_J: RECV Per. #     1 , data type #     1 and Site #   71 from node #     8
+COUNT--> COMPUTE_J: Send Per. #     1 , data type #     1 and Site #   81 to node #     8
+COMPUTE_J: RECV Per. #     1 , data type #     1 and Site #   73 from node #     5
+COUNT--> COMPUTE_J: Send Per. #     1 , data type #     1 and Site #   82 to node #     5
+COMPUTE_J: RECV Per. #     1 , data type #     1 and Site #   72 from node #     6
+COUNT--> COMPUTE_J: Send Per. #     1 , data type #     1 and Site #   83 to node #     6
+COMPUTE_J: RECV Per. #     1 , data type #     1 and Site #   75 from node #     1
+COUNT--> COMPUTE_J: Send Per. #     1 , data type #     1 and Site #   84 to node #     1
+COMPUTE_J: RECV Per. #     1 , data type #     1 and Site #   76 from node #     7
+COUNT--> COMPUTE_J: Send Per. #     1 , data type #     1 and Site #   85 to node #     7
+COMPUTE_J: RECV Per. #     1 , data type #     1 and Site #   77 from node #     9
+COUNT--> COMPUTE_J: Send Per. #     1 , data type #     1 and Site #   86 to node #     9
+COMPUTE_J: RECV Per. #     1 , data type #     1 and Site #   80 from node #     3
+COUNT--> COMPUTE_J: Send Per. #     1 , data type #     1 and Site #   87 to node #     3
+COMPUTE_J: RECV Per. #     1 , data type #     1 and Site #   78 from node #     2
+COUNT--> COMPUTE_J: Send Per. #     1 , data type #     1 and Site #   88 to node #     2
+COMPUTE_J: RECV Per. #     1 , data type #     1 and Site #   79 from node #     4
+COUNT--> COMPUTE_J: Send Per. #     1 , data type #     1 and Site #   89 to node #     4
+COMPUTE_J: RECV Per. #     1 , data type #     1 and Site #   82 from node #     5
+COUNT--> COMPUTE_J: Send Per. #     1 , data type #     1 and Site #   90 to node #     5
+COMPUTE_J: RECV Per. #     1 , data type #     1 and Site #   85 from node #     7
+COUNT--> COMPUTE_J: Send Per. #     1 , data type #     1 and Site #   91 to node #     7
+COMPUTE_J: RECV Per. #     1 , data type #     1 and Site #   84 from node #     1
+COUNT--> COMPUTE_J: Send Per. #     1 , data type #     1 and Site #   92 to node #     1
+COMPUTE_J: RECV Per. #     1 , data type #     1 and Site #   81 from node #     8
+COUNT--> COMPUTE_J: Send Per. #     1 , data type #     1 and Site #   93 to node #     8
+COMPUTE_J: RECV Per. #     1 , data type #     1 and Site #   83 from node #     6
+COUNT--> COMPUTE_J: Send Per. #     1 , data type #     1 and Site #   94 to node #     6
+COMPUTE_J: RECV Per. #     1 , data type #     1 and Site #   87 from node #     3
+COUNT--> COMPUTE_J: Send Per. #     1 , data type #     1 and Site #   95 to node #     3
+COMPUTE_J: RECV Per. #     1 , data type #     1 and Site #   90 from node #     5
+COUNT--> COMPUTE_J: Send Per. #     1 , data type #     1 and Site #   96 to node #     5
+COMPUTE_J: RECV Per. #     1 , data type #     1 and Site #   86 from node #     9
+COUNT--> COMPUTE_J: Send Per. #     1 , data type #     1 and Site #   97 to node #     9
+COMPUTE_J: RECV Per. #     1 , data type #     1 and Site #   91 from node #     7
+COUNT--> COMPUTE_J: Send Per. #     1 , data type #     1 and Site #   98 to node #     7
+COMPUTE_J: RECV Per. #     1 , data type #     1 and Site #   92 from node #     1
+COUNT--> COMPUTE_J: Send Per. #     1 , data type #     1 and Site #   99 to node #     1
+COMPUTE_J: RECV Per. #     1 , data type #     1 and Site #   88 from node #     2
+COUNT--> COMPUTE_J: Send Per. #     1 , data type #     1 and Site #  100 to node #     2
+COMPUTE_J: RECV Per. #     1 , data type #     1 and Site #   89 from node #     4
+COUNT--> COMPUTE_J: Send Per. #     1 , data type #     1 and Site #  101 to node #     4
+COMPUTE_J: RECV Per. #     1 , data type #     1 and Site #   94 from node #     6
+COUNT--> COMPUTE_J: Send Per. #     1 , data type #     1 and Site #  102 to node #     6
+COMPUTE_J: RECV Per. #     1 , data type #     1 and Site #   93 from node #     8
+COUNT--> COMPUTE_J: Send Per. #     1 , data type #     1 and Site #  103 to node #     8
+COMPUTE_J: RECV Per. #     1 , data type #     1 and Site #   95 from node #     3
+COUNT--> COMPUTE_J: Send Per. #     1 , data type #     1 and Site #  104 to node #     3
+COMPUTE_J: RECV Per. #     1 , data type #     1 and Site #   96 from node #     5
+COUNT--> COMPUTE_J: Send Per. #     1 , data type #     1 and Site #  105 to node #     5
+COMPUTE_J: RECV Per. #     1 , data type #     1 and Site #   98 from node #     7
+COUNT--> COMPUTE_J: Send Per. #     1 , data type #     1 and Site #  106 to node #     7
+COMPUTE_J: RECV Per. #     1 , data type #     1 and Site #   99 from node #     1
+COUNT--> COMPUTE_J: Send Per. #     1 , data type #     1 and Site #  107 to node #     1
+COMPUTE_J: RECV Per. #     1 , data type #     1 and Site #   97 from node #     9
+COUNT--> COMPUTE_J: Send Per. #     1 , data type #     1 and Site #  108 to node #     9
+COMPUTE_J: RECV Per. #     1 , data type #     1 and Site #  103 from node #     8
+COUNT--> COMPUTE_J: Send Per. #     1 , data type #     1 and Site #  109 to node #     8
+COMPUTE_J: RECV Per. #     1 , data type #     1 and Site #  104 from node #     3
+COUNT--> COMPUTE_J: Send Per. #     1 , data type #     1 and Site #  110 to node #     3
+COMPUTE_J: RECV Per. #     1 , data type #     1 and Site #  100 from node #     2
+COUNT--> COMPUTE_J: Send Per. #     1 , data type #     1 and Site #  111 to node #     2
+COMPUTE_J: RECV Per. #     1 , data type #     1 and Site #  101 from node #     4
+COUNT--> COMPUTE_J: Send Per. #     1 , data type #     1 and Site #  112 to node #     4
+COMPUTE_J: RECV Per. #     1 , data type #     1 and Site #  102 from node #     6
+COUNT--> COMPUTE_J: Send Per. #     1 , data type #     1 and Site #  113 to node #     6
+COMPUTE_J: RECV Per. #     1 , data type #     1 and Site #  105 from node #     5
+COUNT--> COMPUTE_J: Send Per. #     1 , data type #     1 and Site #  114 to node #     5
+COMPUTE_J: RECV Per. #     1 , data type #     1 and Site #  106 from node #     7
+COUNT--> COMPUTE_J: Send Per. #     1 , data type #     1 and Site #  115 to node #     7
+COMPUTE_J: RECV Per. #     1 , data type #     1 and Site #  107 from node #     1
+COUNT--> COMPUTE_J: Send Per. #     1 , data type #     1 and Site #  116 to node #     1
+COMPUTE_J: RECV Per. #     1 , data type #     1 and Site #  110 from node #     3
+COUNT--> COMPUTE_J: Send Per. #     1 , data type #     1 and Site #  117 to node #     3
+COMPUTE_J: RECV Per. #     1 , data type #     1 and Site #  108 from node #     9
+COUNT--> COMPUTE_J: Send Per. #     1 , data type #     1 and Site #  118 to node #     9
+COMPUTE_J: RECV Per. #     1 , data type #     1 and Site #  113 from node #     6
+COUNT--> COMPUTE_J: Send Per. #     1 , data type #     1 and Site #  119 to node #     6
+COMPUTE_J: RECV Per. #     1 , data type #     1 and Site #  114 from node #     5
+COUNT--> COMPUTE_J: Send Per. #     1 , data type #     1 and Site #  120 to node #     5
+COMPUTE_J: RECV Per. #     1 , data type #     1 and Site #  112 from node #     4
+COUNT--> COMPUTE_J: Send Per. #     1 , data type #     1 and Site #  121 to node #     4
+COMPUTE_J: RECV Per. #     1 , data type #     1 and Site #  109 from node #     8
+COUNT--> COMPUTE_J: Send Per. #     1 , data type #     1 and Site #  122 to node #     8
+COMPUTE_J: RECV Per. #     1 , data type #     1 and Site #  111 from node #     2
+COUNT--> COMPUTE_J: Send Per. #     1 , data type #     1 and Site #  123 to node #     2
+COMPUTE_J: RECV Per. #     1 , data type #     1 and Site #  115 from node #     7
+COUNT--> COMPUTE_J: Send Per. #     1 , data type #     1 and Site #  124 to node #     7
+COMPUTE_J: RECV Per. #     1 , data type #     1 and Site #  116 from node #     1
+COUNT--> COMPUTE_J: Send Per. #     1 , data type #     1 and Site #  125 to node #     1
+COMPUTE_J: RECV Per. #     1 , data type #     1 and Site #  117 from node #     3
+COUNT--> COMPUTE_J: Send Per. #     1 , data type #     1 and Site #  126 to node #     3
+COMPUTE_J: RECV Per. #     1 , data type #     1 and Site #  119 from node #     6
+COUNT--> COMPUTE_J: Send Per. #     1 , data type #     1 and Site #  127 to node #     6
+COMPUTE_J: RECV Per. #     1 , data type #     1 and Site #  120 from node #     5
+COUNT--> COMPUTE_J: Send Per. #     1 , data type #     1 and Site #  128 to node #     5
+COMPUTE_J: RECV Per. #     1 , data type #     1 and Site #  118 from node #     9
+COUNT--> COMPUTE_J: Send Per. #     1 , data type #     1 and Site #  129 to node #     9
+COMPUTE_J: RECV Per. #     1 , data type #     1 and Site #  122 from node #     8
+COUNT--> COMPUTE_J: Send Per. #     1 , data type #     1 and Site #  130 to node #     8
+COMPUTE_J: RECV Per. #     1 , data type #     1 and Site #  124 from node #     7
+COUNT--> COMPUTE_J: Send Per. #     1 , data type #     1 and Site #  131 to node #     7
+COMPUTE_J: RECV Per. #     1 , data type #     1 and Site #  121 from node #     4
+COUNT--> COMPUTE_J: Send Per. #     1 , data type #     1 and Site #  132 to node #     4
+COMPUTE_J: RECV Per. #     1 , data type #     1 and Site #  125 from node #     1
+COUNT--> COMPUTE_J: Send Per. #     1 , data type #     1 and Site #  133 to node #     1
+COMPUTE_J: RECV Per. #     1 , data type #     1 and Site #  123 from node #     2
+COUNT--> COMPUTE_J: Send Per. #     1 , data type #     1 and Site #  134 to node #     2
+COMPUTE_J: RECV Per. #     1 , data type #     1 and Site #  126 from node #     3
+COUNT--> COMPUTE_J: Send Per. #     1 , data type #     1 and Site #  135 to node #     3
+COMPUTE_J: RECV Per. #     1 , data type #     1 and Site #  128 from node #     5
+COUNT--> COMPUTE_J: Send Per. #     1 , data type #     1 and Site #  136 to node #     5
+COMPUTE_J: RECV Per. #     1 , data type #     1 and Site #  131 from node #     7
+COUNT--> COMPUTE_J: Send Per. #     1 , data type #     1 and Site #  137 to node #     7
+COMPUTE_J: RECV Per. #     1 , data type #     1 and Site #  133 from node #     1
+COUNT--> COMPUTE_J: Send Per. #     1 , data type #     1 and Site #  138 to node #     1
+COMPUTE_J: RECV Per. #     1 , data type #     1 and Site #  127 from node #     6
+COUNT--> COMPUTE_J: Send Per. #     1 , data type #     1 and Site #  139 to node #     6
+COMPUTE_J: RECV Per. #     1 , data type #     1 and Site #  132 from node #     4
+COUNT--> COMPUTE_J: Send Per. #     1 , data type #     1 and Site #  140 to node #     4
+COMPUTE_J: RECV Per. #     1 , data type #     1 and Site #  130 from node #     8
+COUNT--> COMPUTE_J: Send Per. #     1 , data type #     1 and Site #  141 to node #     8
+COMPUTE_J: RECV Per. #     1 , data type #     1 and Site #  135 from node #     3
+COUNT--> COMPUTE_J: Send Per. #     1 , data type #     1 and Site #  142 to node #     3
+COMPUTE_J: RECV Per. #     1 , data type #     1 and Site #  129 from node #     9
+COUNT--> COMPUTE_J: Send Per. #     1 , data type #     1 and Site #  143 to node #     9
+COMPUTE_J: RECV Per. #     1 , data type #     1 and Site #  134 from node #     2
+COUNT--> COMPUTE_J: Send Per. #     1 , data type #     1 and Site #  144 to node #     2
+COMPUTE_J: RECV Per. #     1 , data type #     1 and Site #  137 from node #     7
+COUNT--> COMPUTE_J: Send Per. #     1 , data type #     1 and Site #  145 to node #     7
+COMPUTE_J: RECV Per. #     1 , data type #     1 and Site #  138 from node #     1
+COUNT--> COMPUTE_J: Send Per. #     1 , data type #     1 and Site #  146 to node #     1
+COMPUTE_J: RECV Per. #     1 , data type #     1 and Site #  139 from node #     6
+COUNT--> COMPUTE_J: Send Per. #     1 , data type #     1 and Site #  147 to node #     6
+COMPUTE_J: RECV Per. #     1 , data type #     1 and Site #  140 from node #     4
+COUNT--> COMPUTE_J: Send Per. #     1 , data type #     1 and Site #  148 to node #     4
+COMPUTE_J: RECV Per. #     1 , data type #     1 and Site #  142 from node #     3
+COUNT--> COMPUTE_J: Send Per. #     1 , data type #     1 and Site #  149 to node #     3
+COMPUTE_J: RECV Per. #     1 , data type #     1 and Site #  141 from node #     8
+COUNT--> COMPUTE_J: Send Per. #     1 , data type #     1 and Site #  150 to node #     8
+COMPUTE_J: RECV Per. #     1 , data type #     1 and Site #  143 from node #     9
+COUNT--> COMPUTE_J: Send Per. #     1 , data type #     1 and Site #  151 to node #     9
+COMPUTE_J: RECV Per. #     1 , data type #     1 and Site #  144 from node #     2
+COUNT--> COMPUTE_J: Send Per. #     1 , data type #     1 and Site #  152 to node #     2
+COMPUTE_J: RECV Per. #     1 , data type #     1 and Site #  146 from node #     1
+COUNT--> COMPUTE_J: Send Per. #     1 , data type #     1 and Site #  153 to node #     1
+COMPUTE_J: RECV Per. #     1 , data type #     1 and Site #  149 from node #     3
+COUNT--> COMPUTE_J: Send Per. #     1 , data type #     1 and Site #  154 to node #     3
+COMPUTE_J: RECV Per. #     1 , data type #     1 and Site #  147 from node #     6
+COUNT--> COMPUTE_J: Send Per. #     1 , data type #     1 and Site #  155 to node #     6
+COMPUTE_J: RECV Per. #     1 , data type #     1 and Site #  150 from node #     8
+COUNT--> COMPUTE_J: Send Per. #     1 , data type #     1 and Site #  156 to node #     8
+COMPUTE_J: RECV Per. #     1 , data type #     1 and Site #  151 from node #     9
+COUNT--> COMPUTE_J: Send Per. #     1 , data type #     1 and Site #  157 to node #     9
+COMPUTE_J: RECV Per. #     1 , data type #     1 and Site #  152 from node #     2
+COUNT--> COMPUTE_J: Send Per. #     1 , data type #     1 and Site #  158 to node #     2
+COMPUTE_J: RECV Per. #     1 , data type #     1 and Site #  153 from node #     1
+COUNT--> COMPUTE_J: Send Per. #     1 , data type #     1 and Site #  159 to node #     1
+COMPUTE_J: RECV Per. #     1 , data type #     1 and Site #  154 from node #     3
+COUNT--> COMPUTE_J: Send Per. #     1 , data type #     1 and Site #  160 to node #     3
+COMPUTE_J: RECV Per. #     1 , data type #     1 and Site #  156 from node #     8
+COUNT--> COMPUTE_J: Send Per. #     1 , data type #     1 and Site #  161 to node #     8
+COMPUTE_J: RECV Per. #     1 , data type #     1 and Site #  157 from node #     9
+COUNT--> COMPUTE_J: Send Per. #     1 , data type #     1 and Site #  162 to node #     9
+COMPUTE_J: RECV Per. #     1 , data type #     1 and Site #  158 from node #     2
+COUNT--> COMPUTE_J: Send Per. #     1 , data type #     1 and Site #  163 to node #     2
+COMPUTE_J: RECV Per. #     1 , data type #     1 and Site #  160 from node #     3
+COUNT--> COMPUTE_J: Send Per. #     1 , data type #     1 and Site #  164 to node #     3
+COMPUTE_J: RECV Per. #     1 , data type #     1 and Site #  163 from node #     2
+COUNT--> COMPUTE_J: Send Per. #     1 , data type #     1 and Site #  165 to node #     2
+COMPUTE_J: RECV Per. #     1 , data type #     1 and Site #  164 from node #     3
+COUNT--> COMPUTE_J: Send Per. #     1 , data type #     1 and Site #  166 to node #     3

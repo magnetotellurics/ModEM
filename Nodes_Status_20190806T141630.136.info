@@ -1,0 +1,29 @@
+ Total Number of nodes=            9
+   FORWARD  : Send Per. #     1 : Pol #    1 to node #     1
+   FORWARD  : Send Per. #     1 : Pol #    2 to node #     2
+   FORWARD  : Send Per. #     2 : Pol #    1 to node #     3
+   FORWARD  : Send Per. #     2 : Pol #    2 to node #     4
+   FORWARD  : Send Per. #     3 : Pol #    1 to node #     5
+   FORWARD  : Send Per. #     3 : Pol #    2 to node #     6
+   FORWARD  : Send Per. #     4 : Pol #    1 to node #     7
+   FORWARD  : Send Per. #     4 : Pol #    2 to node #     8
+   FORWARD: Recieve Per #     2 and Pol    1      from     3
+   FORWARD: Recieve Per #     3 and Pol    2      from     6
+   FORWARD: Recieve Per #     3 and Pol    1      from     5
+   FORWARD: Recieve Per #     4 and Pol    2      from     8
+   FORWARD: Recieve Per #     2 and Pol    2      from     4
+   FORWARD: Recieve Per #     4 and Pol    1      from     7
+   FORWARD: Recieve Per #     1 and Pol    1      from     1
+   FORWARD: Recieve Per #     1 and Pol    2      from     2
+ FWD: Finished calculating for (           4 ) Transmitters 
+ FWD: TIME REQUIERED:   0.45723128318786621      s
+ FWD: Sending stop message to all nodes
+ Node       :           1  status=  Job Completed
+ Node       :           2  status=  Job Completed
+ Node       :           3  status=  Job Completed
+ Node       :           4  status=  Job Completed
+ Node       :           5  status=  Job Completed
+ Node       :           6  status=  Job Completed
+ Node       :           7  status=  Job Completed
+ Node       :           8  status=  Job Completed
+ Node       :           9  status=  Job Completed

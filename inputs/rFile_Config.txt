@@ -1,5 +1,8 @@
-job	FORWARD
+job	TEST_ADJ
+option         J
+rFile_dModel	'inputs/rFile_dModel'
 rFile_Model	'inputs/rFile_Model'
 rFile_Data	'inputs/rFile_Data'
-wFile_Data	'wFile_Data.txt'
-rFile_fwdCtrl	'inputs/rFile_fwdCtrl'
+rFile_EMrhs	'inputs/rFile_EMrhs'
+
+

@@ -1,0 +1,1989 @@
+ Total Number of nodes=            7
+   FORWARD  : Send Per. #     1 : Pol #    1 to node #     1
+   FORWARD  : Send Per. #     1 : Pol #    2 to node #     2
+   FORWARD  : Send Per. #     2 : Pol #    1 to node #     3
+   FORWARD  : Send Per. #     2 : Pol #    2 to node #     4
+   FORWARD  : Send Per. #     3 : Pol #    1 to node #     5
+   FORWARD  : Send Per. #     3 : Pol #    2 to node #     6
+   FORWARD  : Send Per. #     4 : Pol #    1 to node #     7
+   FORWARD: Recieve Per #     3 and Pol    1      from     5
+   FORWARD  : Send Per. #     4 : Pol #    2 to node #     5
+   FORWARD: Recieve Per #     4 and Pol    1      from     7
+   FORWARD: Recieve Per #     2 and Pol    1      from     3
+   FORWARD: Recieve Per #     2 and Pol    2      from     4
+   FORWARD: Recieve Per #     3 and Pol    2      from     6
+   FORWARD: Recieve Per #     1 and Pol    2      from     2
+   FORWARD: Recieve Per #     1 and Pol    1      from     1
+   FORWARD: Recieve Per #     4 and Pol    2      from     5
+ FWD: Finished calculating for (           4 ) Transmitters 
+ FWD: TIME REQUIERED:   0.22867989540100098      s
+    JmultT  : Send Per. #     1 : Pol #    1 to node #     1
+    JmultT  : Send Per. #     1 : Pol #    2 to node #     2
+    JmultT  : Send Per. #     2 : Pol #    1 to node #     3
+    JmultT  : Send Per. #     2 : Pol #    2 to node #     4
+    JmultT  : Send Per. #     3 : Pol #    1 to node #     5
+    JmultT  : Send Per. #     3 : Pol #    2 to node #     6
+    JmultT  : Send Per. #     4 : Pol #    1 to node #     7
+    JmultT: Recieve Per #     4 and Pol    1      from     7
+    JmultT  : Send Per. #     4 : Pol #    2 to node #     7
+    JmultT: Recieve Per #     1 and Pol    2      from     2
+    JmultT: Recieve Per #     1 and Pol    1      from     1
+    JmultT: Recieve Per #     3 and Pol    2      from     6
+    JmultT: Recieve Per #     2 and Pol    1      from     3
+    JmultT: Recieve Per #     3 and Pol    1      from     5
+    JmultT: Recieve Per #     2 and Pol    2      from     4
+    JmultT: Recieve Per #     4 and Pol    2      from     7
+ JmultT: Finished calculating for (           4 ) Transmitters 
+ JmultT: TIME REQUIERED:    3.0924432277679443      s
+   FORWARD  : Send Per. #     1 : Pol #    1 to node #     1
+   FORWARD  : Send Per. #     1 : Pol #    2 to node #     2
+   FORWARD  : Send Per. #     2 : Pol #    1 to node #     3
+   FORWARD  : Send Per. #     2 : Pol #    2 to node #     4
+   FORWARD  : Send Per. #     3 : Pol #    1 to node #     5
+   FORWARD  : Send Per. #     3 : Pol #    2 to node #     6
+   FORWARD  : Send Per. #     4 : Pol #    1 to node #     7
+   FORWARD: Recieve Per #     3 and Pol    1      from     5
+   FORWARD  : Send Per. #     4 : Pol #    2 to node #     5
+   FORWARD: Recieve Per #     4 and Pol    1      from     7
+   FORWARD: Recieve Per #     2 and Pol    1      from     3
+   FORWARD: Recieve Per #     2 and Pol    2      from     4
+   FORWARD: Recieve Per #     1 and Pol    2      from     2
+   FORWARD: Recieve Per #     3 and Pol    2      from     6
+   FORWARD: Recieve Per #     1 and Pol    1      from     1
+   FORWARD: Recieve Per #     4 and Pol    2      from     5
+ FWD: Finished calculating for (           4 ) Transmitters 
+ FWD: TIME REQUIERED:   0.16886186599731445      s
+   FORWARD  : Send Per. #     1 : Pol #    1 to node #     1
+   FORWARD  : Send Per. #     1 : Pol #    2 to node #     2
+   FORWARD  : Send Per. #     2 : Pol #    1 to node #     3
+   FORWARD  : Send Per. #     2 : Pol #    2 to node #     4
+   FORWARD  : Send Per. #     3 : Pol #    1 to node #     5
+   FORWARD  : Send Per. #     3 : Pol #    2 to node #     6
+   FORWARD  : Send Per. #     4 : Pol #    1 to node #     7
+   FORWARD: Recieve Per #     3 and Pol    1      from     5
+   FORWARD  : Send Per. #     4 : Pol #    2 to node #     5
+   FORWARD: Recieve Per #     2 and Pol    1      from     3
+   FORWARD: Recieve Per #     3 and Pol    2      from     6
+   FORWARD: Recieve Per #     4 and Pol    1      from     7
+   FORWARD: Recieve Per #     2 and Pol    2      from     4
+   FORWARD: Recieve Per #     1 and Pol    2      from     2
+   FORWARD: Recieve Per #     1 and Pol    1      from     1
+   FORWARD: Recieve Per #     4 and Pol    2      from     5
+ FWD: Finished calculating for (           4 ) Transmitters 
+ FWD: TIME REQUIERED:   0.17703771591186523      s
+    JmultT  : Send Per. #     1 : Pol #    1 to node #     1
+    JmultT  : Send Per. #     1 : Pol #    2 to node #     2
+    JmultT  : Send Per. #     2 : Pol #    1 to node #     3
+    JmultT  : Send Per. #     2 : Pol #    2 to node #     4
+    JmultT  : Send Per. #     3 : Pol #    1 to node #     5
+    JmultT  : Send Per. #     3 : Pol #    2 to node #     6
+    JmultT  : Send Per. #     4 : Pol #    1 to node #     7
+    JmultT: Recieve Per #     4 and Pol    1      from     7
+    JmultT  : Send Per. #     4 : Pol #    2 to node #     7
+    JmultT: Recieve Per #     1 and Pol    2      from     2
+    JmultT: Recieve Per #     1 and Pol    1      from     1
+    JmultT: Recieve Per #     3 and Pol    2      from     6
+    JmultT: Recieve Per #     2 and Pol    2      from     4
+    JmultT: Recieve Per #     2 and Pol    1      from     3
+    JmultT: Recieve Per #     3 and Pol    1      from     5
+    JmultT: Recieve Per #     4 and Pol    2      from     7
+ JmultT: Finished calculating for (           4 ) Transmitters 
+ JmultT: TIME REQUIERED:    2.9636442661285400      s
+   FORWARD  : Send Per. #     1 : Pol #    1 to node #     1
+   FORWARD  : Send Per. #     1 : Pol #    2 to node #     2
+   FORWARD  : Send Per. #     2 : Pol #    1 to node #     3
+   FORWARD  : Send Per. #     2 : Pol #    2 to node #     4
+   FORWARD  : Send Per. #     3 : Pol #    1 to node #     5
+   FORWARD  : Send Per. #     3 : Pol #    2 to node #     6
+   FORWARD  : Send Per. #     4 : Pol #    1 to node #     7
+   FORWARD: Recieve Per #     3 and Pol    1      from     5
+   FORWARD  : Send Per. #     4 : Pol #    2 to node #     5
+   FORWARD: Recieve Per #     2 and Pol    1      from     3
+   FORWARD: Recieve Per #     1 and Pol    2      from     2
+   FORWARD: Recieve Per #     4 and Pol    1      from     7
+   FORWARD: Recieve Per #     3 and Pol    2      from     6
+   FORWARD: Recieve Per #     1 and Pol    1      from     1
+   FORWARD: Recieve Per #     2 and Pol    2      from     4
+   FORWARD: Recieve Per #     4 and Pol    2      from     5
+ FWD: Finished calculating for (           4 ) Transmitters 
+ FWD: TIME REQUIERED:   0.17477941513061523      s
+   FORWARD  : Send Per. #     1 : Pol #    1 to node #     1
+   FORWARD  : Send Per. #     1 : Pol #    2 to node #     2
+   FORWARD  : Send Per. #     2 : Pol #    1 to node #     3
+   FORWARD  : Send Per. #     2 : Pol #    2 to node #     4
+   FORWARD  : Send Per. #     3 : Pol #    1 to node #     5
+   FORWARD  : Send Per. #     3 : Pol #    2 to node #     6
+   FORWARD  : Send Per. #     4 : Pol #    1 to node #     7
+   FORWARD: Recieve Per #     2 and Pol    1      from     3
+   FORWARD  : Send Per. #     4 : Pol #    2 to node #     3
+   FORWARD: Recieve Per #     1 and Pol    2      from     2
+   FORWARD: Recieve Per #     4 and Pol    1      from     7
+   FORWARD: Recieve Per #     1 and Pol    1      from     1
+   FORWARD: Recieve Per #     3 and Pol    1      from     5
+   FORWARD: Recieve Per #     2 and Pol    2      from     4
+   FORWARD: Recieve Per #     3 and Pol    2      from     6
+   FORWARD: Recieve Per #     4 and Pol    2      from     3
+ FWD: Finished calculating for (           4 ) Transmitters 
+ FWD: TIME REQUIERED:   0.20228362083435059      s
+    JmultT  : Send Per. #     1 : Pol #    1 to node #     1
+    JmultT  : Send Per. #     1 : Pol #    2 to node #     2
+    JmultT  : Send Per. #     2 : Pol #    1 to node #     3
+    JmultT  : Send Per. #     2 : Pol #    2 to node #     4
+    JmultT  : Send Per. #     3 : Pol #    1 to node #     5
+    JmultT  : Send Per. #     3 : Pol #    2 to node #     6
+    JmultT  : Send Per. #     4 : Pol #    1 to node #     7
+    JmultT: Recieve Per #     1 and Pol    2      from     2
+    JmultT  : Send Per. #     4 : Pol #    2 to node #     2
+    JmultT: Recieve Per #     4 and Pol    1      from     7
+    JmultT: Recieve Per #     1 and Pol    1      from     1
+    JmultT: Recieve Per #     2 and Pol    2      from     4
+    JmultT: Recieve Per #     3 and Pol    2      from     6
+    JmultT: Recieve Per #     2 and Pol    1      from     3
+    JmultT: Recieve Per #     3 and Pol    1      from     5
+    JmultT: Recieve Per #     4 and Pol    2      from     2
+ JmultT: Finished calculating for (           4 ) Transmitters 
+ JmultT: TIME REQUIERED:    2.8091158866882324      s
+   FORWARD  : Send Per. #     1 : Pol #    1 to node #     1
+   FORWARD  : Send Per. #     1 : Pol #    2 to node #     2
+   FORWARD  : Send Per. #     2 : Pol #    1 to node #     3
+   FORWARD  : Send Per. #     2 : Pol #    2 to node #     4
+   FORWARD  : Send Per. #     3 : Pol #    1 to node #     5
+   FORWARD  : Send Per. #     3 : Pol #    2 to node #     6
+   FORWARD  : Send Per. #     4 : Pol #    1 to node #     7
+   FORWARD: Recieve Per #     2 and Pol    1      from     3
+   FORWARD  : Send Per. #     4 : Pol #    2 to node #     3
+   FORWARD: Recieve Per #     3 and Pol    1      from     5
+   FORWARD: Recieve Per #     2 and Pol    2      from     4
+   FORWARD: Recieve Per #     4 and Pol    1      from     7
+   FORWARD: Recieve Per #     1 and Pol    2      from     2
+   FORWARD: Recieve Per #     3 and Pol    2      from     6
+   FORWARD: Recieve Per #     1 and Pol    1      from     1
+   FORWARD: Recieve Per #     4 and Pol    2      from     3
+ FWD: Finished calculating for (           4 ) Transmitters 
+ FWD: TIME REQUIERED:   0.16592407226562500      s
+   FORWARD  : Send Per. #     1 : Pol #    1 to node #     1
+   FORWARD  : Send Per. #     1 : Pol #    2 to node #     2
+   FORWARD  : Send Per. #     2 : Pol #    1 to node #     3
+   FORWARD  : Send Per. #     2 : Pol #    2 to node #     4
+   FORWARD  : Send Per. #     3 : Pol #    1 to node #     5
+   FORWARD  : Send Per. #     3 : Pol #    2 to node #     6
+   FORWARD  : Send Per. #     4 : Pol #    1 to node #     7
+   FORWARD: Recieve Per #     3 and Pol    1      from     5
+   FORWARD  : Send Per. #     4 : Pol #    2 to node #     5
+   FORWARD: Recieve Per #     4 and Pol    1      from     7
+   FORWARD: Recieve Per #     1 and Pol    2      from     2
+   FORWARD: Recieve Per #     2 and Pol    1      from     3
+   FORWARD: Recieve Per #     2 and Pol    2      from     4
+   FORWARD: Recieve Per #     1 and Pol    1      from     1
+   FORWARD: Recieve Per #     3 and Pol    2      from     6
+   FORWARD: Recieve Per #     4 and Pol    2      from     5
+ FWD: Finished calculating for (           4 ) Transmitters 
+ FWD: TIME REQUIERED:   0.18956017494201660      s
+    JmultT  : Send Per. #     1 : Pol #    1 to node #     1
+    JmultT  : Send Per. #     1 : Pol #    2 to node #     2
+    JmultT  : Send Per. #     2 : Pol #    1 to node #     3
+    JmultT  : Send Per. #     2 : Pol #    2 to node #     4
+    JmultT  : Send Per. #     3 : Pol #    1 to node #     5
+    JmultT  : Send Per. #     3 : Pol #    2 to node #     6
+    JmultT  : Send Per. #     4 : Pol #    1 to node #     7
+    JmultT: Recieve Per #     4 and Pol    1      from     7
+    JmultT  : Send Per. #     4 : Pol #    2 to node #     7
+    JmultT: Recieve Per #     1 and Pol    1      from     1
+    JmultT: Recieve Per #     3 and Pol    1      from     5
+    JmultT: Recieve Per #     2 and Pol    1      from     3
+    JmultT: Recieve Per #     1 and Pol    2      from     2
+    JmultT: Recieve Per #     2 and Pol    2      from     4
+    JmultT: Recieve Per #     3 and Pol    2      from     6
+    JmultT: Recieve Per #     4 and Pol    2      from     7
+ JmultT: Finished calculating for (           4 ) Transmitters 
+ JmultT: TIME REQUIERED:    3.0197610855102539      s
+   FORWARD  : Send Per. #     1 : Pol #    1 to node #     1
+   FORWARD  : Send Per. #     1 : Pol #    2 to node #     2
+   FORWARD  : Send Per. #     2 : Pol #    1 to node #     3
+   FORWARD  : Send Per. #     2 : Pol #    2 to node #     4
+   FORWARD  : Send Per. #     3 : Pol #    1 to node #     5
+   FORWARD  : Send Per. #     3 : Pol #    2 to node #     6
+   FORWARD  : Send Per. #     4 : Pol #    1 to node #     7
+   FORWARD: Recieve Per #     2 and Pol    1      from     3
+   FORWARD  : Send Per. #     4 : Pol #    2 to node #     3
+   FORWARD: Recieve Per #     1 and Pol    2      from     2
+   FORWARD: Recieve Per #     3 and Pol    1      from     5
+   FORWARD: Recieve Per #     4 and Pol    1      from     7
+   FORWARD: Recieve Per #     1 and Pol    1      from     1
+   FORWARD: Recieve Per #     2 and Pol    2      from     4
+   FORWARD: Recieve Per #     3 and Pol    2      from     6
+   FORWARD: Recieve Per #     4 and Pol    2      from     3
+ FWD: Finished calculating for (           4 ) Transmitters 
+ FWD: TIME REQUIERED:   0.18716144561767578      s
+   FORWARD  : Send Per. #     1 : Pol #    1 to node #     1
+   FORWARD  : Send Per. #     1 : Pol #    2 to node #     2
+   FORWARD  : Send Per. #     2 : Pol #    1 to node #     3
+   FORWARD  : Send Per. #     2 : Pol #    2 to node #     4
+   FORWARD  : Send Per. #     3 : Pol #    1 to node #     5
+   FORWARD  : Send Per. #     3 : Pol #    2 to node #     6
+   FORWARD  : Send Per. #     4 : Pol #    1 to node #     7
+   FORWARD: Recieve Per #     2 and Pol    1      from     3
+   FORWARD  : Send Per. #     4 : Pol #    2 to node #     3
+   FORWARD: Recieve Per #     1 and Pol    2      from     2
+   FORWARD: Recieve Per #     4 and Pol    1      from     7
+   FORWARD: Recieve Per #     3 and Pol    1      from     5
+   FORWARD: Recieve Per #     1 and Pol    1      from     1
+   FORWARD: Recieve Per #     2 and Pol    2      from     4
+   FORWARD: Recieve Per #     3 and Pol    2      from     6
+   FORWARD: Recieve Per #     4 and Pol    2      from     3
+ FWD: Finished calculating for (           4 ) Transmitters 
+ FWD: TIME REQUIERED:   0.18686032295227051      s
+    JmultT  : Send Per. #     1 : Pol #    1 to node #     1
+    JmultT  : Send Per. #     1 : Pol #    2 to node #     2
+    JmultT  : Send Per. #     2 : Pol #    1 to node #     3
+    JmultT  : Send Per. #     2 : Pol #    2 to node #     4
+    JmultT  : Send Per. #     3 : Pol #    1 to node #     5
+    JmultT  : Send Per. #     3 : Pol #    2 to node #     6
+    JmultT  : Send Per. #     4 : Pol #    1 to node #     7
+    JmultT: Recieve Per #     4 and Pol    1      from     7
+    JmultT  : Send Per. #     4 : Pol #    2 to node #     7
+    JmultT: Recieve Per #     1 and Pol    1      from     1
+    JmultT: Recieve Per #     3 and Pol    1      from     5
+    JmultT: Recieve Per #     2 and Pol    1      from     3
+    JmultT: Recieve Per #     1 and Pol    2      from     2
+    JmultT: Recieve Per #     2 and Pol    2      from     4
+    JmultT: Recieve Per #     3 and Pol    2      from     6
+    JmultT: Recieve Per #     4 and Pol    2      from     7
+ JmultT: Finished calculating for (           4 ) Transmitters 
+ JmultT: TIME REQUIERED:    3.0614230632781982      s
+   FORWARD  : Send Per. #     1 : Pol #    1 to node #     1
+   FORWARD  : Send Per. #     1 : Pol #    2 to node #     2
+   FORWARD  : Send Per. #     2 : Pol #    1 to node #     3
+   FORWARD  : Send Per. #     2 : Pol #    2 to node #     4
+   FORWARD  : Send Per. #     3 : Pol #    1 to node #     5
+   FORWARD  : Send Per. #     3 : Pol #    2 to node #     6
+   FORWARD  : Send Per. #     4 : Pol #    1 to node #     7
+   FORWARD: Recieve Per #     2 and Pol    1      from     3
+   FORWARD  : Send Per. #     4 : Pol #    2 to node #     3
+   FORWARD: Recieve Per #     4 and Pol    1      from     7
+   FORWARD: Recieve Per #     1 and Pol    1      from     1
+   FORWARD: Recieve Per #     1 and Pol    2      from     2
+   FORWARD: Recieve Per #     3 and Pol    1      from     5
+   FORWARD: Recieve Per #     2 and Pol    2      from     4
+   FORWARD: Recieve Per #     3 and Pol    2      from     6
+   FORWARD: Recieve Per #     4 and Pol    2      from     3
+ FWD: Finished calculating for (           4 ) Transmitters 
+ FWD: TIME REQUIERED:   0.17797136306762695      s
+   FORWARD  : Send Per. #     1 : Pol #    1 to node #     1
+   FORWARD  : Send Per. #     1 : Pol #    2 to node #     2
+   FORWARD  : Send Per. #     2 : Pol #    1 to node #     3
+   FORWARD  : Send Per. #     2 : Pol #    2 to node #     4
+   FORWARD  : Send Per. #     3 : Pol #    1 to node #     5
+   FORWARD  : Send Per. #     3 : Pol #    2 to node #     6
+   FORWARD  : Send Per. #     4 : Pol #    1 to node #     7
+   FORWARD: Recieve Per #     2 and Pol    1      from     3
+   FORWARD  : Send Per. #     4 : Pol #    2 to node #     3
+   FORWARD: Recieve Per #     1 and Pol    2      from     2
+   FORWARD: Recieve Per #     4 and Pol    1      from     7
+   FORWARD: Recieve Per #     3 and Pol    2      from     6
+   FORWARD: Recieve Per #     3 and Pol    1      from     5
+   FORWARD: Recieve Per #     2 and Pol    2      from     4
+   FORWARD: Recieve Per #     1 and Pol    1      from     1
+   FORWARD: Recieve Per #     4 and Pol    2      from     3
+ FWD: Finished calculating for (           4 ) Transmitters 
+ FWD: TIME REQUIERED:   0.20110607147216797      s
+    JmultT  : Send Per. #     1 : Pol #    1 to node #     1
+    JmultT  : Send Per. #     1 : Pol #    2 to node #     2
+    JmultT  : Send Per. #     2 : Pol #    1 to node #     3
+    JmultT  : Send Per. #     2 : Pol #    2 to node #     4
+    JmultT  : Send Per. #     3 : Pol #    1 to node #     5
+    JmultT  : Send Per. #     3 : Pol #    2 to node #     6
+    JmultT  : Send Per. #     4 : Pol #    1 to node #     7
+    JmultT: Recieve Per #     4 and Pol    1      from     7
+    JmultT  : Send Per. #     4 : Pol #    2 to node #     7
+    JmultT: Recieve Per #     1 and Pol    1      from     1
+    JmultT: Recieve Per #     1 and Pol    2      from     2
+    JmultT: Recieve Per #     3 and Pol    1      from     5
+    JmultT: Recieve Per #     2 and Pol    1      from     3
+    JmultT: Recieve Per #     3 and Pol    2      from     6
+    JmultT: Recieve Per #     2 and Pol    2      from     4
+    JmultT: Recieve Per #     4 and Pol    2      from     7
+ JmultT: Finished calculating for (           4 ) Transmitters 
+ JmultT: TIME REQUIERED:    2.7720186710357666      s
+   FORWARD  : Send Per. #     1 : Pol #    1 to node #     1
+   FORWARD  : Send Per. #     1 : Pol #    2 to node #     2
+   FORWARD  : Send Per. #     2 : Pol #    1 to node #     3
+   FORWARD  : Send Per. #     2 : Pol #    2 to node #     4
+   FORWARD  : Send Per. #     3 : Pol #    1 to node #     5
+   FORWARD  : Send Per. #     3 : Pol #    2 to node #     6
+   FORWARD  : Send Per. #     4 : Pol #    1 to node #     7
+   FORWARD: Recieve Per #     2 and Pol    1      from     3
+   FORWARD  : Send Per. #     4 : Pol #    2 to node #     3
+   FORWARD: Recieve Per #     2 and Pol    2      from     4
+   FORWARD: Recieve Per #     4 and Pol    1      from     7
+   FORWARD: Recieve Per #     1 and Pol    1      from     1
+   FORWARD: Recieve Per #     1 and Pol    2      from     2
+   FORWARD: Recieve Per #     3 and Pol    1      from     5
+   FORWARD: Recieve Per #     3 and Pol    2      from     6
+   FORWARD: Recieve Per #     4 and Pol    2      from     3
+ FWD: Finished calculating for (           4 ) Transmitters 
+ FWD: TIME REQUIERED:   0.20367431640625000      s
+   FORWARD  : Send Per. #     1 : Pol #    1 to node #     1
+   FORWARD  : Send Per. #     1 : Pol #    2 to node #     2
+   FORWARD  : Send Per. #     2 : Pol #    1 to node #     3
+   FORWARD  : Send Per. #     2 : Pol #    2 to node #     4
+   FORWARD  : Send Per. #     3 : Pol #    1 to node #     5
+   FORWARD  : Send Per. #     3 : Pol #    2 to node #     6
+   FORWARD  : Send Per. #     4 : Pol #    1 to node #     7
+   FORWARD: Recieve Per #     2 and Pol    1      from     3
+   FORWARD  : Send Per. #     4 : Pol #    2 to node #     3
+   FORWARD: Recieve Per #     3 and Pol    1      from     5
+   FORWARD: Recieve Per #     1 and Pol    1      from     1
+   FORWARD: Recieve Per #     4 and Pol    1      from     7
+   FORWARD: Recieve Per #     1 and Pol    2      from     2
+   FORWARD: Recieve Per #     2 and Pol    2      from     4
+   FORWARD: Recieve Per #     3 and Pol    2      from     6
+   FORWARD: Recieve Per #     4 and Pol    2      from     3
+ FWD: Finished calculating for (           4 ) Transmitters 
+ FWD: TIME REQUIERED:   0.18305945396423340      s
+    JmultT  : Send Per. #     1 : Pol #    1 to node #     1
+    JmultT  : Send Per. #     1 : Pol #    2 to node #     2
+    JmultT  : Send Per. #     2 : Pol #    1 to node #     3
+    JmultT  : Send Per. #     2 : Pol #    2 to node #     4
+    JmultT  : Send Per. #     3 : Pol #    1 to node #     5
+    JmultT  : Send Per. #     3 : Pol #    2 to node #     6
+    JmultT  : Send Per. #     4 : Pol #    1 to node #     7
+    JmultT: Recieve Per #     4 and Pol    1      from     7
+    JmultT  : Send Per. #     4 : Pol #    2 to node #     7
+    JmultT: Recieve Per #     1 and Pol    1      from     1
+    JmultT: Recieve Per #     3 and Pol    1      from     5
+    JmultT: Recieve Per #     2 and Pol    1      from     3
+    JmultT: Recieve Per #     1 and Pol    2      from     2
+    JmultT: Recieve Per #     2 and Pol    2      from     4
+    JmultT: Recieve Per #     3 and Pol    2      from     6
+    JmultT: Recieve Per #     4 and Pol    2      from     7
+ JmultT: Finished calculating for (           4 ) Transmitters 
+ JmultT: TIME REQUIERED:    3.0436544418334961      s
+   FORWARD  : Send Per. #     1 : Pol #    1 to node #     1
+   FORWARD  : Send Per. #     1 : Pol #    2 to node #     2
+   FORWARD  : Send Per. #     2 : Pol #    1 to node #     3
+   FORWARD  : Send Per. #     2 : Pol #    2 to node #     4
+   FORWARD  : Send Per. #     3 : Pol #    1 to node #     5
+   FORWARD  : Send Per. #     3 : Pol #    2 to node #     6
+   FORWARD  : Send Per. #     4 : Pol #    1 to node #     7
+   FORWARD: Recieve Per #     2 and Pol    1      from     3
+   FORWARD  : Send Per. #     4 : Pol #    2 to node #     3
+   FORWARD: Recieve Per #     4 and Pol    1      from     7
+   FORWARD: Recieve Per #     3 and Pol    1      from     5
+   FORWARD: Recieve Per #     2 and Pol    2      from     4
+   FORWARD: Recieve Per #     1 and Pol    2      from     2
+   FORWARD: Recieve Per #     1 and Pol    1      from     1
+   FORWARD: Recieve Per #     3 and Pol    2      from     6
+   FORWARD: Recieve Per #     4 and Pol    2      from     3
+ FWD: Finished calculating for (           4 ) Transmitters 
+ FWD: TIME REQUIERED:   0.17573571205139160      s
+   FORWARD  : Send Per. #     1 : Pol #    1 to node #     1
+   FORWARD  : Send Per. #     1 : Pol #    2 to node #     2
+   FORWARD  : Send Per. #     2 : Pol #    1 to node #     3
+   FORWARD  : Send Per. #     2 : Pol #    2 to node #     4
+   FORWARD  : Send Per. #     3 : Pol #    1 to node #     5
+   FORWARD  : Send Per. #     3 : Pol #    2 to node #     6
+   FORWARD  : Send Per. #     4 : Pol #    1 to node #     7
+   FORWARD: Recieve Per #     2 and Pol    1      from     3
+   FORWARD  : Send Per. #     4 : Pol #    2 to node #     3
+   FORWARD: Recieve Per #     3 and Pol    1      from     5
+   FORWARD: Recieve Per #     4 and Pol    1      from     7
+   FORWARD: Recieve Per #     2 and Pol    2      from     4
+   FORWARD: Recieve Per #     1 and Pol    2      from     2
+   FORWARD: Recieve Per #     1 and Pol    1      from     1
+   FORWARD: Recieve Per #     3 and Pol    2      from     6
+   FORWARD: Recieve Per #     4 and Pol    2      from     3
+ FWD: Finished calculating for (           4 ) Transmitters 
+ FWD: TIME REQUIERED:   0.17643523216247559      s
+    JmultT  : Send Per. #     1 : Pol #    1 to node #     1
+    JmultT  : Send Per. #     1 : Pol #    2 to node #     2
+    JmultT  : Send Per. #     2 : Pol #    1 to node #     3
+    JmultT  : Send Per. #     2 : Pol #    2 to node #     4
+    JmultT  : Send Per. #     3 : Pol #    1 to node #     5
+    JmultT  : Send Per. #     3 : Pol #    2 to node #     6
+    JmultT  : Send Per. #     4 : Pol #    1 to node #     7
+    JmultT: Recieve Per #     4 and Pol    1      from     7
+    JmultT  : Send Per. #     4 : Pol #    2 to node #     7
+    JmultT: Recieve Per #     1 and Pol    1      from     1
+    JmultT: Recieve Per #     1 and Pol    2      from     2
+    JmultT: Recieve Per #     2 and Pol    1      from     3
+    JmultT: Recieve Per #     2 and Pol    2      from     4
+    JmultT: Recieve Per #     3 and Pol    1      from     5
+    JmultT: Recieve Per #     3 and Pol    2      from     6
+    JmultT: Recieve Per #     4 and Pol    2      from     7
+ JmultT: Finished calculating for (           4 ) Transmitters 
+ JmultT: TIME REQUIERED:    2.6903266906738281      s
+   FORWARD  : Send Per. #     1 : Pol #    1 to node #     1
+   FORWARD  : Send Per. #     1 : Pol #    2 to node #     2
+   FORWARD  : Send Per. #     2 : Pol #    1 to node #     3
+   FORWARD  : Send Per. #     2 : Pol #    2 to node #     4
+   FORWARD  : Send Per. #     3 : Pol #    1 to node #     5
+   FORWARD  : Send Per. #     3 : Pol #    2 to node #     6
+   FORWARD  : Send Per. #     4 : Pol #    1 to node #     7
+   FORWARD: Recieve Per #     1 and Pol    2      from     2
+   FORWARD  : Send Per. #     4 : Pol #    2 to node #     2
+   FORWARD: Recieve Per #     4 and Pol    1      from     7
+   FORWARD: Recieve Per #     2 and Pol    1      from     3
+   FORWARD: Recieve Per #     3 and Pol    1      from     5
+   FORWARD: Recieve Per #     3 and Pol    2      from     6
+   FORWARD: Recieve Per #     2 and Pol    2      from     4
+   FORWARD: Recieve Per #     1 and Pol    1      from     1
+   FORWARD: Recieve Per #     4 and Pol    2      from     2
+ FWD: Finished calculating for (           4 ) Transmitters 
+ FWD: TIME REQUIERED:   0.17597675323486328      s
+   FORWARD  : Send Per. #     1 : Pol #    1 to node #     1
+   FORWARD  : Send Per. #     1 : Pol #    2 to node #     2
+   FORWARD  : Send Per. #     2 : Pol #    1 to node #     3
+   FORWARD  : Send Per. #     2 : Pol #    2 to node #     4
+   FORWARD  : Send Per. #     3 : Pol #    1 to node #     5
+   FORWARD  : Send Per. #     3 : Pol #    2 to node #     6
+   FORWARD  : Send Per. #     4 : Pol #    1 to node #     7
+   FORWARD: Recieve Per #     2 and Pol    1      from     3
+   FORWARD  : Send Per. #     4 : Pol #    2 to node #     3
+   FORWARD: Recieve Per #     1 and Pol    2      from     2
+   FORWARD: Recieve Per #     2 and Pol    2      from     4
+   FORWARD: Recieve Per #     4 and Pol    1      from     7
+   FORWARD: Recieve Per #     3 and Pol    1      from     5
+   FORWARD: Recieve Per #     1 and Pol    1      from     1
+   FORWARD: Recieve Per #     3 and Pol    2      from     6
+   FORWARD: Recieve Per #     4 and Pol    2      from     3
+ FWD: Finished calculating for (           4 ) Transmitters 
+ FWD: TIME REQUIERED:   0.18072772026062012      s
+    JmultT  : Send Per. #     1 : Pol #    1 to node #     1
+    JmultT  : Send Per. #     1 : Pol #    2 to node #     2
+    JmultT  : Send Per. #     2 : Pol #    1 to node #     3
+    JmultT  : Send Per. #     2 : Pol #    2 to node #     4
+    JmultT  : Send Per. #     3 : Pol #    1 to node #     5
+    JmultT  : Send Per. #     3 : Pol #    2 to node #     6
+    JmultT  : Send Per. #     4 : Pol #    1 to node #     7
+    JmultT: Recieve Per #     4 and Pol    1      from     7
+    JmultT  : Send Per. #     4 : Pol #    2 to node #     7
+    JmultT: Recieve Per #     1 and Pol    2      from     2
+    JmultT: Recieve Per #     2 and Pol    1      from     3
+    JmultT: Recieve Per #     3 and Pol    2      from     6
+    JmultT: Recieve Per #     1 and Pol    1      from     1
+    JmultT: Recieve Per #     3 and Pol    1      from     5
+    JmultT: Recieve Per #     2 and Pol    2      from     4
+    JmultT: Recieve Per #     4 and Pol    2      from     7
+ JmultT: Finished calculating for (           4 ) Transmitters 
+ JmultT: TIME REQUIERED:    2.7166950702667236      s
+   FORWARD  : Send Per. #     1 : Pol #    1 to node #     1
+   FORWARD  : Send Per. #     1 : Pol #    2 to node #     2
+   FORWARD  : Send Per. #     2 : Pol #    1 to node #     3
+   FORWARD  : Send Per. #     2 : Pol #    2 to node #     4
+   FORWARD  : Send Per. #     3 : Pol #    1 to node #     5
+   FORWARD  : Send Per. #     3 : Pol #    2 to node #     6
+   FORWARD  : Send Per. #     4 : Pol #    1 to node #     7
+   FORWARD: Recieve Per #     2 and Pol    1      from     3
+   FORWARD  : Send Per. #     4 : Pol #    2 to node #     3
+   FORWARD: Recieve Per #     2 and Pol    2      from     4
+   FORWARD: Recieve Per #     4 and Pol    1      from     7
+   FORWARD: Recieve Per #     3 and Pol    1      from     5
+   FORWARD: Recieve Per #     1 and Pol    2      from     2
+   FORWARD: Recieve Per #     1 and Pol    1      from     1
+   FORWARD: Recieve Per #     3 and Pol    2      from     6
+   FORWARD: Recieve Per #     4 and Pol    2      from     3
+ FWD: Finished calculating for (           4 ) Transmitters 
+ FWD: TIME REQUIERED:   0.17829108238220215      s
+   FORWARD  : Send Per. #     1 : Pol #    1 to node #     1
+   FORWARD  : Send Per. #     1 : Pol #    2 to node #     2
+   FORWARD  : Send Per. #     2 : Pol #    1 to node #     3
+   FORWARD  : Send Per. #     2 : Pol #    2 to node #     4
+   FORWARD  : Send Per. #     3 : Pol #    1 to node #     5
+   FORWARD  : Send Per. #     3 : Pol #    2 to node #     6
+   FORWARD  : Send Per. #     4 : Pol #    1 to node #     7
+   FORWARD: Recieve Per #     2 and Pol    2      from     4
+   FORWARD  : Send Per. #     4 : Pol #    2 to node #     4
+   FORWARD: Recieve Per #     2 and Pol    1      from     3
+   FORWARD: Recieve Per #     4 and Pol    1      from     7
+   FORWARD: Recieve Per #     3 and Pol    1      from     5
+   FORWARD: Recieve Per #     1 and Pol    2      from     2
+   FORWARD: Recieve Per #     1 and Pol    1      from     1
+   FORWARD: Recieve Per #     3 and Pol    2      from     6
+   FORWARD: Recieve Per #     4 and Pol    2      from     4
+ FWD: Finished calculating for (           4 ) Transmitters 
+ FWD: TIME REQUIERED:   0.17454504966735840      s
+    JmultT  : Send Per. #     1 : Pol #    1 to node #     1
+    JmultT  : Send Per. #     1 : Pol #    2 to node #     2
+    JmultT  : Send Per. #     2 : Pol #    1 to node #     3
+    JmultT  : Send Per. #     2 : Pol #    2 to node #     4
+    JmultT  : Send Per. #     3 : Pol #    1 to node #     5
+    JmultT  : Send Per. #     3 : Pol #    2 to node #     6
+    JmultT  : Send Per. #     4 : Pol #    1 to node #     7
+    JmultT: Recieve Per #     4 and Pol    1      from     7
+    JmultT  : Send Per. #     4 : Pol #    2 to node #     7
+    JmultT: Recieve Per #     1 and Pol    1      from     1
+    JmultT: Recieve Per #     2 and Pol    1      from     3
+    JmultT: Recieve Per #     1 and Pol    2      from     2
+    JmultT: Recieve Per #     3 and Pol    1      from     5
+    JmultT: Recieve Per #     2 and Pol    2      from     4
+    JmultT: Recieve Per #     3 and Pol    2      from     6
+    JmultT: Recieve Per #     4 and Pol    2      from     7
+ JmultT: Finished calculating for (           4 ) Transmitters 
+ JmultT: TIME REQUIERED:    2.8294527530670166      s
+   FORWARD  : Send Per. #     1 : Pol #    1 to node #     1
+   FORWARD  : Send Per. #     1 : Pol #    2 to node #     2
+   FORWARD  : Send Per. #     2 : Pol #    1 to node #     3
+   FORWARD  : Send Per. #     2 : Pol #    2 to node #     4
+   FORWARD  : Send Per. #     3 : Pol #    1 to node #     5
+   FORWARD  : Send Per. #     3 : Pol #    2 to node #     6
+   FORWARD  : Send Per. #     4 : Pol #    1 to node #     7
+   FORWARD: Recieve Per #     2 and Pol    1      from     3
+   FORWARD  : Send Per. #     4 : Pol #    2 to node #     3
+   FORWARD: Recieve Per #     2 and Pol    2      from     4
+   FORWARD: Recieve Per #     1 and Pol    2      from     2
+   FORWARD: Recieve Per #     4 and Pol    1      from     7
+   FORWARD: Recieve Per #     3 and Pol    1      from     5
+   FORWARD: Recieve Per #     3 and Pol    2      from     6
+   FORWARD: Recieve Per #     1 and Pol    1      from     1
+   FORWARD: Recieve Per #     4 and Pol    2      from     3
+ FWD: Finished calculating for (           4 ) Transmitters 
+ FWD: TIME REQUIERED:   0.17684006690979004      s
+   FORWARD  : Send Per. #     1 : Pol #    1 to node #     1
+   FORWARD  : Send Per. #     1 : Pol #    2 to node #     2
+   FORWARD  : Send Per. #     2 : Pol #    1 to node #     3
+   FORWARD  : Send Per. #     2 : Pol #    2 to node #     4
+   FORWARD  : Send Per. #     3 : Pol #    1 to node #     5
+   FORWARD  : Send Per. #     3 : Pol #    2 to node #     6
+   FORWARD  : Send Per. #     4 : Pol #    1 to node #     7
+   FORWARD: Recieve Per #     1 and Pol    2      from     2
+   FORWARD  : Send Per. #     4 : Pol #    2 to node #     2
+   FORWARD: Recieve Per #     4 and Pol    1      from     7
+   FORWARD: Recieve Per #     3 and Pol    1      from     5
+   FORWARD: Recieve Per #     2 and Pol    1      from     3
+   FORWARD: Recieve Per #     2 and Pol    2      from     4
+   FORWARD: Recieve Per #     1 and Pol    1      from     1
+   FORWARD: Recieve Per #     3 and Pol    2      from     6
+   FORWARD: Recieve Per #     4 and Pol    2      from     2
+ FWD: Finished calculating for (           4 ) Transmitters 
+ FWD: TIME REQUIERED:   0.19163489341735840      s
+    JmultT  : Send Per. #     1 : Pol #    1 to node #     1
+    JmultT  : Send Per. #     1 : Pol #    2 to node #     2
+    JmultT  : Send Per. #     2 : Pol #    1 to node #     3
+    JmultT  : Send Per. #     2 : Pol #    2 to node #     4
+    JmultT  : Send Per. #     3 : Pol #    1 to node #     5
+    JmultT  : Send Per. #     3 : Pol #    2 to node #     6
+    JmultT  : Send Per. #     4 : Pol #    1 to node #     7
+    JmultT: Recieve Per #     4 and Pol    1      from     7
+    JmultT  : Send Per. #     4 : Pol #    2 to node #     7
+    JmultT: Recieve Per #     1 and Pol    1      from     1
+    JmultT: Recieve Per #     3 and Pol    2      from     6
+    JmultT: Recieve Per #     1 and Pol    2      from     2
+    JmultT: Recieve Per #     2 and Pol    1      from     3
+    JmultT: Recieve Per #     3 and Pol    1      from     5
+    JmultT: Recieve Per #     2 and Pol    2      from     4
+    JmultT: Recieve Per #     4 and Pol    2      from     7
+ JmultT: Finished calculating for (           4 ) Transmitters 
+ JmultT: TIME REQUIERED:    2.8908808231353760      s
+   FORWARD  : Send Per. #     1 : Pol #    1 to node #     1
+   FORWARD  : Send Per. #     1 : Pol #    2 to node #     2
+   FORWARD  : Send Per. #     2 : Pol #    1 to node #     3
+   FORWARD  : Send Per. #     2 : Pol #    2 to node #     4
+   FORWARD  : Send Per. #     3 : Pol #    1 to node #     5
+   FORWARD  : Send Per. #     3 : Pol #    2 to node #     6
+   FORWARD  : Send Per. #     4 : Pol #    1 to node #     7
+   FORWARD: Recieve Per #     2 and Pol    1      from     3
+   FORWARD  : Send Per. #     4 : Pol #    2 to node #     3
+   FORWARD: Recieve Per #     1 and Pol    2      from     2
+   FORWARD: Recieve Per #     3 and Pol    1      from     5
+   FORWARD: Recieve Per #     2 and Pol    2      from     4
+   FORWARD: Recieve Per #     3 and Pol    2      from     6
+   FORWARD: Recieve Per #     4 and Pol    1      from     7
+   FORWARD: Recieve Per #     1 and Pol    1      from     1
+   FORWARD: Recieve Per #     4 and Pol    2      from     3
+ FWD: Finished calculating for (           4 ) Transmitters 
+ FWD: TIME REQUIERED:   0.17120075225830078      s
+   FORWARD  : Send Per. #     1 : Pol #    1 to node #     1
+   FORWARD  : Send Per. #     1 : Pol #    2 to node #     2
+   FORWARD  : Send Per. #     2 : Pol #    1 to node #     3
+   FORWARD  : Send Per. #     2 : Pol #    2 to node #     4
+   FORWARD  : Send Per. #     3 : Pol #    1 to node #     5
+   FORWARD  : Send Per. #     3 : Pol #    2 to node #     6
+   FORWARD  : Send Per. #     4 : Pol #    1 to node #     7
+   FORWARD: Recieve Per #     3 and Pol    1      from     5
+   FORWARD  : Send Per. #     4 : Pol #    2 to node #     5
+   FORWARD: Recieve Per #     4 and Pol    1      from     7
+   FORWARD: Recieve Per #     1 and Pol    2      from     2
+   FORWARD: Recieve Per #     2 and Pol    1      from     3
+   FORWARD: Recieve Per #     1 and Pol    1      from     1
+   FORWARD: Recieve Per #     3 and Pol    2      from     6
+   FORWARD: Recieve Per #     2 and Pol    2      from     4
+   FORWARD: Recieve Per #     4 and Pol    2      from     5
+ FWD: Finished calculating for (           4 ) Transmitters 
+ FWD: TIME REQUIERED:   0.18762326240539551      s
+    JmultT  : Send Per. #     1 : Pol #    1 to node #     1
+    JmultT  : Send Per. #     1 : Pol #    2 to node #     2
+    JmultT  : Send Per. #     2 : Pol #    1 to node #     3
+    JmultT  : Send Per. #     2 : Pol #    2 to node #     4
+    JmultT  : Send Per. #     3 : Pol #    1 to node #     5
+    JmultT  : Send Per. #     3 : Pol #    2 to node #     6
+    JmultT  : Send Per. #     4 : Pol #    1 to node #     7
+    JmultT: Recieve Per #     4 and Pol    1      from     7
+    JmultT  : Send Per. #     4 : Pol #    2 to node #     7
+    JmultT: Recieve Per #     1 and Pol    2      from     2
+    JmultT: Recieve Per #     1 and Pol    1      from     1
+    JmultT: Recieve Per #     3 and Pol    2      from     6
+    JmultT: Recieve Per #     2 and Pol    1      from     3
+    JmultT: Recieve Per #     3 and Pol    1      from     5
+    JmultT: Recieve Per #     2 and Pol    2      from     4
+    JmultT: Recieve Per #     4 and Pol    2      from     7
+ JmultT: Finished calculating for (           4 ) Transmitters 
+ JmultT: TIME REQUIERED:    2.9991319179534912      s
+   FORWARD  : Send Per. #     1 : Pol #    1 to node #     1
+   FORWARD  : Send Per. #     1 : Pol #    2 to node #     2
+   FORWARD  : Send Per. #     2 : Pol #    1 to node #     3
+   FORWARD  : Send Per. #     2 : Pol #    2 to node #     4
+   FORWARD  : Send Per. #     3 : Pol #    1 to node #     5
+   FORWARD  : Send Per. #     3 : Pol #    2 to node #     6
+   FORWARD  : Send Per. #     4 : Pol #    1 to node #     7
+   FORWARD: Recieve Per #     2 and Pol    1      from     3
+   FORWARD  : Send Per. #     4 : Pol #    2 to node #     3
+   FORWARD: Recieve Per #     4 and Pol    1      from     7
+   FORWARD: Recieve Per #     3 and Pol    1      from     5
+   FORWARD: Recieve Per #     3 and Pol    2      from     6
+   FORWARD: Recieve Per #     2 and Pol    2      from     4
+   FORWARD: Recieve Per #     1 and Pol    1      from     1
+   FORWARD: Recieve Per #     1 and Pol    2      from     2
+   FORWARD: Recieve Per #     4 and Pol    2      from     3
+ FWD: Finished calculating for (           4 ) Transmitters 
+ FWD: TIME REQUIERED:   0.17051100730895996      s
+   FORWARD  : Send Per. #     1 : Pol #    1 to node #     1
+   FORWARD  : Send Per. #     1 : Pol #    2 to node #     2
+   FORWARD  : Send Per. #     2 : Pol #    1 to node #     3
+   FORWARD  : Send Per. #     2 : Pol #    2 to node #     4
+   FORWARD  : Send Per. #     3 : Pol #    1 to node #     5
+   FORWARD  : Send Per. #     3 : Pol #    2 to node #     6
+   FORWARD  : Send Per. #     4 : Pol #    1 to node #     7
+   FORWARD: Recieve Per #     2 and Pol    1      from     3
+   FORWARD  : Send Per. #     4 : Pol #    2 to node #     3
+   FORWARD: Recieve Per #     1 and Pol    2      from     2
+   FORWARD: Recieve Per #     3 and Pol    1      from     5
+   FORWARD: Recieve Per #     4 and Pol    1      from     7
+   FORWARD: Recieve Per #     2 and Pol    2      from     4
+   FORWARD: Recieve Per #     1 and Pol    1      from     1
+   FORWARD: Recieve Per #     3 and Pol    2      from     6
+   FORWARD: Recieve Per #     4 and Pol    2      from     3
+ FWD: Finished calculating for (           4 ) Transmitters 
+ FWD: TIME REQUIERED:   0.16885781288146973      s
+    JmultT  : Send Per. #     1 : Pol #    1 to node #     1
+    JmultT  : Send Per. #     1 : Pol #    2 to node #     2
+    JmultT  : Send Per. #     2 : Pol #    1 to node #     3
+    JmultT  : Send Per. #     2 : Pol #    2 to node #     4
+    JmultT  : Send Per. #     3 : Pol #    1 to node #     5
+    JmultT  : Send Per. #     3 : Pol #    2 to node #     6
+    JmultT  : Send Per. #     4 : Pol #    1 to node #     7
+    JmultT: Recieve Per #     4 and Pol    1      from     7
+    JmultT  : Send Per. #     4 : Pol #    2 to node #     7
+    JmultT: Recieve Per #     3 and Pol    2      from     6
+    JmultT: Recieve Per #     2 and Pol    1      from     3
+    JmultT: Recieve Per #     1 and Pol    2      from     2
+    JmultT: Recieve Per #     3 and Pol    1      from     5
+    JmultT: Recieve Per #     1 and Pol    1      from     1
+    JmultT: Recieve Per #     2 and Pol    2      from     4
+    JmultT: Recieve Per #     4 and Pol    2      from     7
+ JmultT: Finished calculating for (           4 ) Transmitters 
+ JmultT: TIME REQUIERED:    2.9225502014160156      s
+   FORWARD  : Send Per. #     1 : Pol #    1 to node #     1
+   FORWARD  : Send Per. #     1 : Pol #    2 to node #     2
+   FORWARD  : Send Per. #     2 : Pol #    1 to node #     3
+   FORWARD  : Send Per. #     2 : Pol #    2 to node #     4
+   FORWARD  : Send Per. #     3 : Pol #    1 to node #     5
+   FORWARD  : Send Per. #     3 : Pol #    2 to node #     6
+   FORWARD  : Send Per. #     4 : Pol #    1 to node #     7
+   FORWARD: Recieve Per #     2 and Pol    1      from     3
+   FORWARD  : Send Per. #     4 : Pol #    2 to node #     3
+   FORWARD: Recieve Per #     3 and Pol    1      from     5
+   FORWARD: Recieve Per #     3 and Pol    2      from     6
+   FORWARD: Recieve Per #     4 and Pol    1      from     7
+   FORWARD: Recieve Per #     1 and Pol    2      from     2
+   FORWARD: Recieve Per #     2 and Pol    2      from     4
+   FORWARD: Recieve Per #     1 and Pol    1      from     1
+   FORWARD: Recieve Per #     4 and Pol    2      from     3
+ FWD: Finished calculating for (           4 ) Transmitters 
+ FWD: TIME REQUIERED:   0.17711305618286133      s
+   FORWARD  : Send Per. #     1 : Pol #    1 to node #     1
+   FORWARD  : Send Per. #     1 : Pol #    2 to node #     2
+   FORWARD  : Send Per. #     2 : Pol #    1 to node #     3
+   FORWARD  : Send Per. #     2 : Pol #    2 to node #     4
+   FORWARD  : Send Per. #     3 : Pol #    1 to node #     5
+   FORWARD  : Send Per. #     3 : Pol #    2 to node #     6
+   FORWARD  : Send Per. #     4 : Pol #    1 to node #     7
+   FORWARD: Recieve Per #     2 and Pol    1      from     3
+   FORWARD  : Send Per. #     4 : Pol #    2 to node #     3
+   FORWARD: Recieve Per #     1 and Pol    2      from     2
+   FORWARD: Recieve Per #     2 and Pol    2      from     4
+   FORWARD: Recieve Per #     4 and Pol    1      from     7
+   FORWARD: Recieve Per #     3 and Pol    1      from     5
+   FORWARD: Recieve Per #     3 and Pol    2      from     6
+   FORWARD: Recieve Per #     1 and Pol    1      from     1
+   FORWARD: Recieve Per #     4 and Pol    2      from     3
+ FWD: Finished calculating for (           4 ) Transmitters 
+ FWD: TIME REQUIERED:   0.19096899032592773      s
+    JmultT  : Send Per. #     1 : Pol #    1 to node #     1
+    JmultT  : Send Per. #     1 : Pol #    2 to node #     2
+    JmultT  : Send Per. #     2 : Pol #    1 to node #     3
+    JmultT  : Send Per. #     2 : Pol #    2 to node #     4
+    JmultT  : Send Per. #     3 : Pol #    1 to node #     5
+    JmultT  : Send Per. #     3 : Pol #    2 to node #     6
+    JmultT  : Send Per. #     4 : Pol #    1 to node #     7
+    JmultT: Recieve Per #     4 and Pol    1      from     7
+    JmultT  : Send Per. #     4 : Pol #    2 to node #     7
+    JmultT: Recieve Per #     1 and Pol    2      from     2
+    JmultT: Recieve Per #     1 and Pol    1      from     1
+    JmultT: Recieve Per #     2 and Pol    1      from     3
+    JmultT: Recieve Per #     3 and Pol    1      from     5
+    JmultT: Recieve Per #     3 and Pol    2      from     6
+    JmultT: Recieve Per #     2 and Pol    2      from     4
+    JmultT: Recieve Per #     4 and Pol    2      from     7
+ JmultT: Finished calculating for (           4 ) Transmitters 
+ JmultT: TIME REQUIERED:    2.9813029766082764      s
+   FORWARD  : Send Per. #     1 : Pol #    1 to node #     1
+   FORWARD  : Send Per. #     1 : Pol #    2 to node #     2
+   FORWARD  : Send Per. #     2 : Pol #    1 to node #     3
+   FORWARD  : Send Per. #     2 : Pol #    2 to node #     4
+   FORWARD  : Send Per. #     3 : Pol #    1 to node #     5
+   FORWARD  : Send Per. #     3 : Pol #    2 to node #     6
+   FORWARD  : Send Per. #     4 : Pol #    1 to node #     7
+   FORWARD: Recieve Per #     2 and Pol    1      from     3
+   FORWARD  : Send Per. #     4 : Pol #    2 to node #     3
+   FORWARD: Recieve Per #     3 and Pol    2      from     6
+   FORWARD: Recieve Per #     2 and Pol    2      from     4
+   FORWARD: Recieve Per #     4 and Pol    1      from     7
+   FORWARD: Recieve Per #     1 and Pol    2      from     2
+   FORWARD: Recieve Per #     3 and Pol    1      from     5
+   FORWARD: Recieve Per #     1 and Pol    1      from     1
+   FORWARD: Recieve Per #     4 and Pol    2      from     3
+ FWD: Finished calculating for (           4 ) Transmitters 
+ FWD: TIME REQUIERED:   0.17159318923950195      s
+   FORWARD  : Send Per. #     1 : Pol #    1 to node #     1
+   FORWARD  : Send Per. #     1 : Pol #    2 to node #     2
+   FORWARD  : Send Per. #     2 : Pol #    1 to node #     3
+   FORWARD  : Send Per. #     2 : Pol #    2 to node #     4
+   FORWARD  : Send Per. #     3 : Pol #    1 to node #     5
+   FORWARD  : Send Per. #     3 : Pol #    2 to node #     6
+   FORWARD  : Send Per. #     4 : Pol #    1 to node #     7
+   FORWARD: Recieve Per #     2 and Pol    1      from     3
+   FORWARD  : Send Per. #     4 : Pol #    2 to node #     3
+   FORWARD: Recieve Per #     3 and Pol    1      from     5
+   FORWARD: Recieve Per #     4 and Pol    1      from     7
+   FORWARD: Recieve Per #     2 and Pol    2      from     4
+   FORWARD: Recieve Per #     1 and Pol    2      from     2
+   FORWARD: Recieve Per #     3 and Pol    2      from     6
+   FORWARD: Recieve Per #     1 and Pol    1      from     1
+   FORWARD: Recieve Per #     4 and Pol    2      from     3
+ FWD: Finished calculating for (           4 ) Transmitters 
+ FWD: TIME REQUIERED:   0.17709374427795410      s
+    JmultT  : Send Per. #     1 : Pol #    1 to node #     1
+    JmultT  : Send Per. #     1 : Pol #    2 to node #     2
+    JmultT  : Send Per. #     2 : Pol #    1 to node #     3
+    JmultT  : Send Per. #     2 : Pol #    2 to node #     4
+    JmultT  : Send Per. #     3 : Pol #    1 to node #     5
+    JmultT  : Send Per. #     3 : Pol #    2 to node #     6
+    JmultT  : Send Per. #     4 : Pol #    1 to node #     7
+    JmultT: Recieve Per #     4 and Pol    1      from     7
+    JmultT  : Send Per. #     4 : Pol #    2 to node #     7
+    JmultT: Recieve Per #     1 and Pol    2      from     2
+    JmultT: Recieve Per #     3 and Pol    2      from     6
+    JmultT: Recieve Per #     1 and Pol    1      from     1
+    JmultT: Recieve Per #     3 and Pol    1      from     5
+    JmultT: Recieve Per #     2 and Pol    1      from     3
+    JmultT: Recieve Per #     2 and Pol    2      from     4
+    JmultT: Recieve Per #     4 and Pol    2      from     7
+ JmultT: Finished calculating for (           4 ) Transmitters 
+ JmultT: TIME REQUIERED:    2.9248566627502441      s
+   FORWARD  : Send Per. #     1 : Pol #    1 to node #     1
+   FORWARD  : Send Per. #     1 : Pol #    2 to node #     2
+   FORWARD  : Send Per. #     2 : Pol #    1 to node #     3
+   FORWARD  : Send Per. #     2 : Pol #    2 to node #     4
+   FORWARD  : Send Per. #     3 : Pol #    1 to node #     5
+   FORWARD  : Send Per. #     3 : Pol #    2 to node #     6
+   FORWARD  : Send Per. #     4 : Pol #    1 to node #     7
+   FORWARD: Recieve Per #     2 and Pol    1      from     3
+   FORWARD  : Send Per. #     4 : Pol #    2 to node #     3
+   FORWARD: Recieve Per #     4 and Pol    1      from     7
+   FORWARD: Recieve Per #     2 and Pol    2      from     4
+   FORWARD: Recieve Per #     3 and Pol    2      from     6
+   FORWARD: Recieve Per #     3 and Pol    1      from     5
+   FORWARD: Recieve Per #     1 and Pol    2      from     2
+   FORWARD: Recieve Per #     1 and Pol    1      from     1
+   FORWARD: Recieve Per #     4 and Pol    2      from     3
+ FWD: Finished calculating for (           4 ) Transmitters 
+ FWD: TIME REQUIERED:   0.17757940292358398      s
+   FORWARD  : Send Per. #     1 : Pol #    1 to node #     1
+   FORWARD  : Send Per. #     1 : Pol #    2 to node #     2
+   FORWARD  : Send Per. #     2 : Pol #    1 to node #     3
+   FORWARD  : Send Per. #     2 : Pol #    2 to node #     4
+   FORWARD  : Send Per. #     3 : Pol #    1 to node #     5
+   FORWARD  : Send Per. #     3 : Pol #    2 to node #     6
+   FORWARD  : Send Per. #     4 : Pol #    1 to node #     7
+   FORWARD: Recieve Per #     2 and Pol    1      from     3
+   FORWARD  : Send Per. #     4 : Pol #    2 to node #     3
+   FORWARD: Recieve Per #     1 and Pol    2      from     2
+   FORWARD: Recieve Per #     3 and Pol    1      from     5
+   FORWARD: Recieve Per #     3 and Pol    2      from     6
+   FORWARD: Recieve Per #     2 and Pol    2      from     4
+   FORWARD: Recieve Per #     4 and Pol    1      from     7
+   FORWARD: Recieve Per #     1 and Pol    1      from     1
+   FORWARD: Recieve Per #     4 and Pol    2      from     3
+ FWD: Finished calculating for (           4 ) Transmitters 
+ FWD: TIME REQUIERED:   0.16490268707275391      s
+    JmultT  : Send Per. #     1 : Pol #    1 to node #     1
+    JmultT  : Send Per. #     1 : Pol #    2 to node #     2
+    JmultT  : Send Per. #     2 : Pol #    1 to node #     3
+    JmultT  : Send Per. #     2 : Pol #    2 to node #     4
+    JmultT  : Send Per. #     3 : Pol #    1 to node #     5
+    JmultT  : Send Per. #     3 : Pol #    2 to node #     6
+    JmultT  : Send Per. #     4 : Pol #    1 to node #     7
+    JmultT: Recieve Per #     4 and Pol    1      from     7
+    JmultT  : Send Per. #     4 : Pol #    2 to node #     7
+    JmultT: Recieve Per #     1 and Pol    1      from     1
+    JmultT: Recieve Per #     3 and Pol    2      from     6
+    JmultT: Recieve Per #     1 and Pol    2      from     2
+    JmultT: Recieve Per #     2 and Pol    1      from     3
+    JmultT: Recieve Per #     3 and Pol    1      from     5
+    JmultT: Recieve Per #     2 and Pol    2      from     4
+    JmultT: Recieve Per #     4 and Pol    2      from     7
+ JmultT: Finished calculating for (           4 ) Transmitters 
+ JmultT: TIME REQUIERED:    2.8528451919555664      s
+   FORWARD  : Send Per. #     1 : Pol #    1 to node #     1
+   FORWARD  : Send Per. #     1 : Pol #    2 to node #     2
+   FORWARD  : Send Per. #     2 : Pol #    1 to node #     3
+   FORWARD  : Send Per. #     2 : Pol #    2 to node #     4
+   FORWARD  : Send Per. #     3 : Pol #    1 to node #     5
+   FORWARD  : Send Per. #     3 : Pol #    2 to node #     6
+   FORWARD  : Send Per. #     4 : Pol #    1 to node #     7
+   FORWARD: Recieve Per #     2 and Pol    1      from     3
+   FORWARD  : Send Per. #     4 : Pol #    2 to node #     3
+   FORWARD: Recieve Per #     1 and Pol    2      from     2
+   FORWARD: Recieve Per #     4 and Pol    1      from     7
+   FORWARD: Recieve Per #     3 and Pol    1      from     5
+   FORWARD: Recieve Per #     3 and Pol    2      from     6
+   FORWARD: Recieve Per #     2 and Pol    2      from     4
+   FORWARD: Recieve Per #     1 and Pol    1      from     1
+   FORWARD: Recieve Per #     4 and Pol    2      from     3
+ FWD: Finished calculating for (           4 ) Transmitters 
+ FWD: TIME REQUIERED:   0.18602919578552246      s
+   FORWARD  : Send Per. #     1 : Pol #    1 to node #     1
+   FORWARD  : Send Per. #     1 : Pol #    2 to node #     2
+   FORWARD  : Send Per. #     2 : Pol #    1 to node #     3
+   FORWARD  : Send Per. #     2 : Pol #    2 to node #     4
+   FORWARD  : Send Per. #     3 : Pol #    1 to node #     5
+   FORWARD  : Send Per. #     3 : Pol #    2 to node #     6
+   FORWARD  : Send Per. #     4 : Pol #    1 to node #     7
+   FORWARD: Recieve Per #     2 and Pol    1      from     3
+   FORWARD  : Send Per. #     4 : Pol #    2 to node #     3
+   FORWARD: Recieve Per #     2 and Pol    2      from     4
+   FORWARD: Recieve Per #     3 and Pol    1      from     5
+   FORWARD: Recieve Per #     4 and Pol    1      from     7
+   FORWARD: Recieve Per #     3 and Pol    2      from     6
+   FORWARD: Recieve Per #     1 and Pol    2      from     2
+   FORWARD: Recieve Per #     1 and Pol    1      from     1
+   FORWARD: Recieve Per #     4 and Pol    2      from     3
+ FWD: Finished calculating for (           4 ) Transmitters 
+ FWD: TIME REQUIERED:   0.17712664604187012      s
+    JmultT  : Send Per. #     1 : Pol #    1 to node #     1
+    JmultT  : Send Per. #     1 : Pol #    2 to node #     2
+    JmultT  : Send Per. #     2 : Pol #    1 to node #     3
+    JmultT  : Send Per. #     2 : Pol #    2 to node #     4
+    JmultT  : Send Per. #     3 : Pol #    1 to node #     5
+    JmultT  : Send Per. #     3 : Pol #    2 to node #     6
+    JmultT  : Send Per. #     4 : Pol #    1 to node #     7
+    JmultT: Recieve Per #     4 and Pol    1      from     7
+    JmultT  : Send Per. #     4 : Pol #    2 to node #     7
+    JmultT: Recieve Per #     2 and Pol    1      from     3
+    JmultT: Recieve Per #     1 and Pol    1      from     1
+    JmultT: Recieve Per #     1 and Pol    2      from     2
+    JmultT: Recieve Per #     3 and Pol    2      from     6
+    JmultT: Recieve Per #     3 and Pol    1      from     5
+    JmultT: Recieve Per #     2 and Pol    2      from     4
+    JmultT: Recieve Per #     4 and Pol    2      from     7
+ JmultT: Finished calculating for (           4 ) Transmitters 
+ JmultT: TIME REQUIERED:    2.9256768226623535      s
+   FORWARD  : Send Per. #     1 : Pol #    1 to node #     1
+   FORWARD  : Send Per. #     1 : Pol #    2 to node #     2
+   FORWARD  : Send Per. #     2 : Pol #    1 to node #     3
+   FORWARD  : Send Per. #     2 : Pol #    2 to node #     4
+   FORWARD  : Send Per. #     3 : Pol #    1 to node #     5
+   FORWARD  : Send Per. #     3 : Pol #    2 to node #     6
+   FORWARD  : Send Per. #     4 : Pol #    1 to node #     7
+   FORWARD: Recieve Per #     2 and Pol    1      from     3
+   FORWARD  : Send Per. #     4 : Pol #    2 to node #     3
+   FORWARD: Recieve Per #     2 and Pol    2      from     4
+   FORWARD: Recieve Per #     3 and Pol    1      from     5
+   FORWARD: Recieve Per #     1 and Pol    2      from     2
+   FORWARD: Recieve Per #     3 and Pol    2      from     6
+   FORWARD: Recieve Per #     1 and Pol    1      from     1
+   FORWARD: Recieve Per #     4 and Pol    1      from     7
+   FORWARD: Recieve Per #     4 and Pol    2      from     3
+ FWD: Finished calculating for (           4 ) Transmitters 
+ FWD: TIME REQUIERED:   0.16157770156860352      s
+   FORWARD  : Send Per. #     1 : Pol #    1 to node #     1
+   FORWARD  : Send Per. #     1 : Pol #    2 to node #     2
+   FORWARD  : Send Per. #     2 : Pol #    1 to node #     3
+   FORWARD  : Send Per. #     2 : Pol #    2 to node #     4
+   FORWARD  : Send Per. #     3 : Pol #    1 to node #     5
+   FORWARD  : Send Per. #     3 : Pol #    2 to node #     6
+   FORWARD  : Send Per. #     4 : Pol #    1 to node #     7
+   FORWARD: Recieve Per #     2 and Pol    1      from     3
+   FORWARD  : Send Per. #     4 : Pol #    2 to node #     3
+   FORWARD: Recieve Per #     4 and Pol    1      from     7
+   FORWARD: Recieve Per #     2 and Pol    2      from     4
+   FORWARD: Recieve Per #     3 and Pol    1      from     5
+   FORWARD: Recieve Per #     1 and Pol    2      from     2
+   FORWARD: Recieve Per #     3 and Pol    2      from     6
+   FORWARD: Recieve Per #     1 and Pol    1      from     1
+   FORWARD: Recieve Per #     4 and Pol    2      from     3
+ FWD: Finished calculating for (           4 ) Transmitters 
+ FWD: TIME REQUIERED:   0.18401670455932617      s
+    JmultT  : Send Per. #     1 : Pol #    1 to node #     1
+    JmultT  : Send Per. #     1 : Pol #    2 to node #     2
+    JmultT  : Send Per. #     2 : Pol #    1 to node #     3
+    JmultT  : Send Per. #     2 : Pol #    2 to node #     4
+    JmultT  : Send Per. #     3 : Pol #    1 to node #     5
+    JmultT  : Send Per. #     3 : Pol #    2 to node #     6
+    JmultT  : Send Per. #     4 : Pol #    1 to node #     7
+    JmultT: Recieve Per #     4 and Pol    1      from     7
+    JmultT  : Send Per. #     4 : Pol #    2 to node #     7
+    JmultT: Recieve Per #     1 and Pol    2      from     2
+    JmultT: Recieve Per #     2 and Pol    1      from     3
+    JmultT: Recieve Per #     1 and Pol    1      from     1
+    JmultT: Recieve Per #     3 and Pol    2      from     6
+    JmultT: Recieve Per #     3 and Pol    1      from     5
+    JmultT: Recieve Per #     2 and Pol    2      from     4
+    JmultT: Recieve Per #     4 and Pol    2      from     7
+ JmultT: Finished calculating for (           4 ) Transmitters 
+ JmultT: TIME REQUIERED:    2.5999619960784912      s
+   FORWARD  : Send Per. #     1 : Pol #    1 to node #     1
+   FORWARD  : Send Per. #     1 : Pol #    2 to node #     2
+   FORWARD  : Send Per. #     2 : Pol #    1 to node #     3
+   FORWARD  : Send Per. #     2 : Pol #    2 to node #     4
+   FORWARD  : Send Per. #     3 : Pol #    1 to node #     5
+   FORWARD  : Send Per. #     3 : Pol #    2 to node #     6
+   FORWARD  : Send Per. #     4 : Pol #    1 to node #     7
+   FORWARD: Recieve Per #     3 and Pol    2      from     6
+   FORWARD  : Send Per. #     4 : Pol #    2 to node #     6
+   FORWARD: Recieve Per #     4 and Pol    1      from     7
+   FORWARD: Recieve Per #     1 and Pol    2      from     2
+   FORWARD: Recieve Per #     2 and Pol    1      from     3
+   FORWARD: Recieve Per #     3 and Pol    1      from     5
+   FORWARD: Recieve Per #     2 and Pol    2      from     4
+   FORWARD: Recieve Per #     1 and Pol    1      from     1
+   FORWARD: Recieve Per #     4 and Pol    2      from     6
+ FWD: Finished calculating for (           4 ) Transmitters 
+ FWD: TIME REQUIERED:   0.18081593513488770      s
+   FORWARD  : Send Per. #     1 : Pol #    1 to node #     1
+   FORWARD  : Send Per. #     1 : Pol #    2 to node #     2
+   FORWARD  : Send Per. #     2 : Pol #    1 to node #     3
+   FORWARD  : Send Per. #     2 : Pol #    2 to node #     4
+   FORWARD  : Send Per. #     3 : Pol #    1 to node #     5
+   FORWARD  : Send Per. #     3 : Pol #    2 to node #     6
+   FORWARD  : Send Per. #     4 : Pol #    1 to node #     7
+   FORWARD: Recieve Per #     1 and Pol    2      from     2
+   FORWARD  : Send Per. #     4 : Pol #    2 to node #     2
+   FORWARD: Recieve Per #     2 and Pol    1      from     3
+   FORWARD: Recieve Per #     3 and Pol    1      from     5
+   FORWARD: Recieve Per #     2 and Pol    2      from     4
+   FORWARD: Recieve Per #     3 and Pol    2      from     6
+   FORWARD: Recieve Per #     1 and Pol    1      from     1
+   FORWARD: Recieve Per #     4 and Pol    1      from     7
+   FORWARD: Recieve Per #     4 and Pol    2      from     2
+ FWD: Finished calculating for (           4 ) Transmitters 
+ FWD: TIME REQUIERED:   0.19844913482666016      s
+    JmultT  : Send Per. #     1 : Pol #    1 to node #     1
+    JmultT  : Send Per. #     1 : Pol #    2 to node #     2
+    JmultT  : Send Per. #     2 : Pol #    1 to node #     3
+    JmultT  : Send Per. #     2 : Pol #    2 to node #     4
+    JmultT  : Send Per. #     3 : Pol #    1 to node #     5
+    JmultT  : Send Per. #     3 : Pol #    2 to node #     6
+    JmultT  : Send Per. #     4 : Pol #    1 to node #     7
+    JmultT: Recieve Per #     4 and Pol    1      from     7
+    JmultT  : Send Per. #     4 : Pol #    2 to node #     7
+    JmultT: Recieve Per #     1 and Pol    1      from     1
+    JmultT: Recieve Per #     1 and Pol    2      from     2
+    JmultT: Recieve Per #     3 and Pol    2      from     6
+    JmultT: Recieve Per #     2 and Pol    1      from     3
+    JmultT: Recieve Per #     3 and Pol    1      from     5
+    JmultT: Recieve Per #     2 and Pol    2      from     4
+    JmultT: Recieve Per #     4 and Pol    2      from     7
+ JmultT: Finished calculating for (           4 ) Transmitters 
+ JmultT: TIME REQUIERED:    2.6138567924499512      s
+   FORWARD  : Send Per. #     1 : Pol #    1 to node #     1
+   FORWARD  : Send Per. #     1 : Pol #    2 to node #     2
+   FORWARD  : Send Per. #     2 : Pol #    1 to node #     3
+   FORWARD  : Send Per. #     2 : Pol #    2 to node #     4
+   FORWARD  : Send Per. #     3 : Pol #    1 to node #     5
+   FORWARD  : Send Per. #     3 : Pol #    2 to node #     6
+   FORWARD  : Send Per. #     4 : Pol #    1 to node #     7
+   FORWARD: Recieve Per #     2 and Pol    1      from     3
+   FORWARD  : Send Per. #     4 : Pol #    2 to node #     3
+   FORWARD: Recieve Per #     1 and Pol    2      from     2
+   FORWARD: Recieve Per #     2 and Pol    2      from     4
+   FORWARD: Recieve Per #     3 and Pol    2      from     6
+   FORWARD: Recieve Per #     3 and Pol    1      from     5
+   FORWARD: Recieve Per #     4 and Pol    1      from     7
+   FORWARD: Recieve Per #     1 and Pol    1      from     1
+   FORWARD: Recieve Per #     4 and Pol    2      from     3
+ FWD: Finished calculating for (           4 ) Transmitters 
+ FWD: TIME REQUIERED:   0.16525268554687500      s
+   FORWARD  : Send Per. #     1 : Pol #    1 to node #     1
+   FORWARD  : Send Per. #     1 : Pol #    2 to node #     2
+   FORWARD  : Send Per. #     2 : Pol #    1 to node #     3
+   FORWARD  : Send Per. #     2 : Pol #    2 to node #     4
+   FORWARD  : Send Per. #     3 : Pol #    1 to node #     5
+   FORWARD  : Send Per. #     3 : Pol #    2 to node #     6
+   FORWARD  : Send Per. #     4 : Pol #    1 to node #     7
+   FORWARD: Recieve Per #     2 and Pol    1      from     3
+   FORWARD  : Send Per. #     4 : Pol #    2 to node #     3
+   FORWARD: Recieve Per #     2 and Pol    2      from     4
+   FORWARD: Recieve Per #     1 and Pol    2      from     2
+   FORWARD: Recieve Per #     4 and Pol    1      from     7
+   FORWARD: Recieve Per #     3 and Pol    1      from     5
+   FORWARD: Recieve Per #     3 and Pol    2      from     6
+   FORWARD: Recieve Per #     1 and Pol    1      from     1
+   FORWARD: Recieve Per #     4 and Pol    2      from     3
+ FWD: Finished calculating for (           4 ) Transmitters 
+ FWD: TIME REQUIERED:   0.18644857406616211      s
+    JmultT  : Send Per. #     1 : Pol #    1 to node #     1
+    JmultT  : Send Per. #     1 : Pol #    2 to node #     2
+    JmultT  : Send Per. #     2 : Pol #    1 to node #     3
+    JmultT  : Send Per. #     2 : Pol #    2 to node #     4
+    JmultT  : Send Per. #     3 : Pol #    1 to node #     5
+    JmultT  : Send Per. #     3 : Pol #    2 to node #     6
+    JmultT  : Send Per. #     4 : Pol #    1 to node #     7
+    JmultT: Recieve Per #     4 and Pol    1      from     7
+    JmultT  : Send Per. #     4 : Pol #    2 to node #     7
+    JmultT: Recieve Per #     1 and Pol    1      from     1
+    JmultT: Recieve Per #     1 and Pol    2      from     2
+    JmultT: Recieve Per #     3 and Pol    2      from     6
+    JmultT: Recieve Per #     2 and Pol    1      from     3
+    JmultT: Recieve Per #     3 and Pol    1      from     5
+    JmultT: Recieve Per #     2 and Pol    2      from     4
+    JmultT: Recieve Per #     4 and Pol    2      from     7
+ JmultT: Finished calculating for (           4 ) Transmitters 
+ JmultT: TIME REQUIERED:    2.6192476749420166      s
+   FORWARD  : Send Per. #     1 : Pol #    1 to node #     1
+   FORWARD  : Send Per. #     1 : Pol #    2 to node #     2
+   FORWARD  : Send Per. #     2 : Pol #    1 to node #     3
+   FORWARD  : Send Per. #     2 : Pol #    2 to node #     4
+   FORWARD  : Send Per. #     3 : Pol #    1 to node #     5
+   FORWARD  : Send Per. #     3 : Pol #    2 to node #     6
+   FORWARD  : Send Per. #     4 : Pol #    1 to node #     7
+   FORWARD: Recieve Per #     4 and Pol    1      from     7
+   FORWARD  : Send Per. #     4 : Pol #    2 to node #     7
+   FORWARD: Recieve Per #     2 and Pol    1      from     3
+   FORWARD: Recieve Per #     3 and Pol    1      from     5
+   FORWARD: Recieve Per #     3 and Pol    2      from     6
+   FORWARD: Recieve Per #     2 and Pol    2      from     4
+   FORWARD: Recieve Per #     1 and Pol    2      from     2
+   FORWARD: Recieve Per #     1 and Pol    1      from     1
+   FORWARD: Recieve Per #     4 and Pol    2      from     7
+ FWD: Finished calculating for (           4 ) Transmitters 
+ FWD: TIME REQUIERED:   0.19562268257141113      s
+   FORWARD  : Send Per. #     1 : Pol #    1 to node #     1
+   FORWARD  : Send Per. #     1 : Pol #    2 to node #     2
+   FORWARD  : Send Per. #     2 : Pol #    1 to node #     3
+   FORWARD  : Send Per. #     2 : Pol #    2 to node #     4
+   FORWARD  : Send Per. #     3 : Pol #    1 to node #     5
+   FORWARD  : Send Per. #     3 : Pol #    2 to node #     6
+   FORWARD  : Send Per. #     4 : Pol #    1 to node #     7
+   FORWARD: Recieve Per #     2 and Pol    1      from     3
+   FORWARD  : Send Per. #     4 : Pol #    2 to node #     3
+   FORWARD: Recieve Per #     4 and Pol    1      from     7
+   FORWARD: Recieve Per #     1 and Pol    2      from     2
+   FORWARD: Recieve Per #     3 and Pol    1      from     5
+   FORWARD: Recieve Per #     2 and Pol    2      from     4
+   FORWARD: Recieve Per #     3 and Pol    2      from     6
+   FORWARD: Recieve Per #     1 and Pol    1      from     1
+   FORWARD: Recieve Per #     4 and Pol    2      from     3
+ FWD: Finished calculating for (           4 ) Transmitters 
+ FWD: TIME REQUIERED:   0.17866992950439453      s
+    JmultT  : Send Per. #     1 : Pol #    1 to node #     1
+    JmultT  : Send Per. #     1 : Pol #    2 to node #     2
+    JmultT  : Send Per. #     2 : Pol #    1 to node #     3
+    JmultT  : Send Per. #     2 : Pol #    2 to node #     4
+    JmultT  : Send Per. #     3 : Pol #    1 to node #     5
+    JmultT  : Send Per. #     3 : Pol #    2 to node #     6
+    JmultT  : Send Per. #     4 : Pol #    1 to node #     7
+    JmultT: Recieve Per #     4 and Pol    1      from     7
+    JmultT  : Send Per. #     4 : Pol #    2 to node #     7
+    JmultT: Recieve Per #     1 and Pol    1      from     1
+    JmultT: Recieve Per #     1 and Pol    2      from     2
+    JmultT: Recieve Per #     2 and Pol    1      from     3
+    JmultT: Recieve Per #     3 and Pol    2      from     6
+    JmultT: Recieve Per #     3 and Pol    1      from     5
+    JmultT: Recieve Per #     2 and Pol    2      from     4
+    JmultT: Recieve Per #     4 and Pol    2      from     7
+ JmultT: Finished calculating for (           4 ) Transmitters 
+ JmultT: TIME REQUIERED:    2.7424697875976562      s
+   FORWARD  : Send Per. #     1 : Pol #    1 to node #     1
+   FORWARD  : Send Per. #     1 : Pol #    2 to node #     2
+   FORWARD  : Send Per. #     2 : Pol #    1 to node #     3
+   FORWARD  : Send Per. #     2 : Pol #    2 to node #     4
+   FORWARD  : Send Per. #     3 : Pol #    1 to node #     5
+   FORWARD  : Send Per. #     3 : Pol #    2 to node #     6
+   FORWARD  : Send Per. #     4 : Pol #    1 to node #     7
+   FORWARD: Recieve Per #     2 and Pol    1      from     3
+   FORWARD  : Send Per. #     4 : Pol #    2 to node #     3
+   FORWARD: Recieve Per #     3 and Pol    1      from     5
+   FORWARD: Recieve Per #     4 and Pol    1      from     7
+   FORWARD: Recieve Per #     2 and Pol    2      from     4
+   FORWARD: Recieve Per #     1 and Pol    2      from     2
+   FORWARD: Recieve Per #     3 and Pol    2      from     6
+   FORWARD: Recieve Per #     1 and Pol    1      from     1
+   FORWARD: Recieve Per #     4 and Pol    2      from     3
+ FWD: Finished calculating for (           4 ) Transmitters 
+ FWD: TIME REQUIERED:   0.17490673065185547      s
+   FORWARD  : Send Per. #     1 : Pol #    1 to node #     1
+   FORWARD  : Send Per. #     1 : Pol #    2 to node #     2
+   FORWARD  : Send Per. #     2 : Pol #    1 to node #     3
+   FORWARD  : Send Per. #     2 : Pol #    2 to node #     4
+   FORWARD  : Send Per. #     3 : Pol #    1 to node #     5
+   FORWARD  : Send Per. #     3 : Pol #    2 to node #     6
+   FORWARD  : Send Per. #     4 : Pol #    1 to node #     7
+   FORWARD: Recieve Per #     2 and Pol    1      from     3
+   FORWARD  : Send Per. #     4 : Pol #    2 to node #     3
+   FORWARD: Recieve Per #     4 and Pol    1      from     7
+   FORWARD: Recieve Per #     1 and Pol    2      from     2
+   FORWARD: Recieve Per #     3 and Pol    2      from     6
+   FORWARD: Recieve Per #     3 and Pol    1      from     5
+   FORWARD: Recieve Per #     2 and Pol    2      from     4
+   FORWARD: Recieve Per #     1 and Pol    1      from     1
+   FORWARD: Recieve Per #     4 and Pol    2      from     3
+ FWD: Finished calculating for (           4 ) Transmitters 
+ FWD: TIME REQUIERED:   0.18153977394104004      s
+    JmultT  : Send Per. #     1 : Pol #    1 to node #     1
+    JmultT  : Send Per. #     1 : Pol #    2 to node #     2
+    JmultT  : Send Per. #     2 : Pol #    1 to node #     3
+    JmultT  : Send Per. #     2 : Pol #    2 to node #     4
+    JmultT  : Send Per. #     3 : Pol #    1 to node #     5
+    JmultT  : Send Per. #     3 : Pol #    2 to node #     6
+    JmultT  : Send Per. #     4 : Pol #    1 to node #     7
+    JmultT: Recieve Per #     4 and Pol    1      from     7
+    JmultT  : Send Per. #     4 : Pol #    2 to node #     7
+    JmultT: Recieve Per #     1 and Pol    1      from     1
+    JmultT: Recieve Per #     2 and Pol    1      from     3
+    JmultT: Recieve Per #     3 and Pol    1      from     5
+    JmultT: Recieve Per #     1 and Pol    2      from     2
+    JmultT: Recieve Per #     3 and Pol    2      from     6
+    JmultT: Recieve Per #     2 and Pol    2      from     4
+    JmultT: Recieve Per #     4 and Pol    2      from     7
+ JmultT: Finished calculating for (           4 ) Transmitters 
+ JmultT: TIME REQUIERED:    2.7284111976623535      s
+   FORWARD  : Send Per. #     1 : Pol #    1 to node #     1
+   FORWARD  : Send Per. #     1 : Pol #    2 to node #     2
+   FORWARD  : Send Per. #     2 : Pol #    1 to node #     3
+   FORWARD  : Send Per. #     2 : Pol #    2 to node #     4
+   FORWARD  : Send Per. #     3 : Pol #    1 to node #     5
+   FORWARD  : Send Per. #     3 : Pol #    2 to node #     6
+   FORWARD  : Send Per. #     4 : Pol #    1 to node #     7
+   FORWARD: Recieve Per #     2 and Pol    2      from     4
+   FORWARD  : Send Per. #     4 : Pol #    2 to node #     4
+   FORWARD: Recieve Per #     4 and Pol    1      from     7
+   FORWARD: Recieve Per #     1 and Pol    2      from     2
+   FORWARD: Recieve Per #     3 and Pol    2      from     6
+   FORWARD: Recieve Per #     3 and Pol    1      from     5
+   FORWARD: Recieve Per #     2 and Pol    1      from     3
+   FORWARD: Recieve Per #     1 and Pol    1      from     1
+   FORWARD: Recieve Per #     4 and Pol    2      from     4
+ FWD: Finished calculating for (           4 ) Transmitters 
+ FWD: TIME REQUIERED:   0.19602823257446289      s
+   FORWARD  : Send Per. #     1 : Pol #    1 to node #     1
+   FORWARD  : Send Per. #     1 : Pol #    2 to node #     2
+   FORWARD  : Send Per. #     2 : Pol #    1 to node #     3
+   FORWARD  : Send Per. #     2 : Pol #    2 to node #     4
+   FORWARD  : Send Per. #     3 : Pol #    1 to node #     5
+   FORWARD  : Send Per. #     3 : Pol #    2 to node #     6
+   FORWARD  : Send Per. #     4 : Pol #    1 to node #     7
+   FORWARD: Recieve Per #     2 and Pol    1      from     3
+   FORWARD  : Send Per. #     4 : Pol #    2 to node #     3
+   FORWARD: Recieve Per #     4 and Pol    1      from     7
+   FORWARD: Recieve Per #     1 and Pol    2      from     2
+   FORWARD: Recieve Per #     2 and Pol    2      from     4
+   FORWARD: Recieve Per #     3 and Pol    1      from     5
+   FORWARD: Recieve Per #     3 and Pol    2      from     6
+   FORWARD: Recieve Per #     1 and Pol    1      from     1
+   FORWARD: Recieve Per #     4 and Pol    2      from     3
+ FWD: Finished calculating for (           4 ) Transmitters 
+ FWD: TIME REQUIERED:   0.16337418556213379      s
+    JmultT  : Send Per. #     1 : Pol #    1 to node #     1
+    JmultT  : Send Per. #     1 : Pol #    2 to node #     2
+    JmultT  : Send Per. #     2 : Pol #    1 to node #     3
+    JmultT  : Send Per. #     2 : Pol #    2 to node #     4
+    JmultT  : Send Per. #     3 : Pol #    1 to node #     5
+    JmultT  : Send Per. #     3 : Pol #    2 to node #     6
+    JmultT  : Send Per. #     4 : Pol #    1 to node #     7
+    JmultT: Recieve Per #     4 and Pol    1      from     7
+    JmultT  : Send Per. #     4 : Pol #    2 to node #     7
+    JmultT: Recieve Per #     1 and Pol    2      from     2
+    JmultT: Recieve Per #     1 and Pol    1      from     1
+    JmultT: Recieve Per #     3 and Pol    2      from     6
+    JmultT: Recieve Per #     2 and Pol    1      from     3
+    JmultT: Recieve Per #     3 and Pol    1      from     5
+    JmultT: Recieve Per #     2 and Pol    2      from     4
+    JmultT: Recieve Per #     4 and Pol    2      from     7
+ JmultT: Finished calculating for (           4 ) Transmitters 
+ JmultT: TIME REQUIERED:    2.6582016944885254      s
+   FORWARD  : Send Per. #     1 : Pol #    1 to node #     1
+   FORWARD  : Send Per. #     1 : Pol #    2 to node #     2
+   FORWARD  : Send Per. #     2 : Pol #    1 to node #     3
+   FORWARD  : Send Per. #     2 : Pol #    2 to node #     4
+   FORWARD  : Send Per. #     3 : Pol #    1 to node #     5
+   FORWARD  : Send Per. #     3 : Pol #    2 to node #     6
+   FORWARD  : Send Per. #     4 : Pol #    1 to node #     7
+   FORWARD: Recieve Per #     1 and Pol    2      from     2
+   FORWARD  : Send Per. #     4 : Pol #    2 to node #     2
+   FORWARD: Recieve Per #     3 and Pol    1      from     5
+   FORWARD: Recieve Per #     2 and Pol    1      from     3
+   FORWARD: Recieve Per #     4 and Pol    1      from     7
+   FORWARD: Recieve Per #     2 and Pol    2      from     4
+   FORWARD: Recieve Per #     3 and Pol    2      from     6
+   FORWARD: Recieve Per #     1 and Pol    1      from     1
+   FORWARD: Recieve Per #     4 and Pol    2      from     2
+ FWD: Finished calculating for (           4 ) Transmitters 
+ FWD: TIME REQUIERED:   0.19375014305114746      s
+   FORWARD  : Send Per. #     1 : Pol #    1 to node #     1
+   FORWARD  : Send Per. #     1 : Pol #    2 to node #     2
+   FORWARD  : Send Per. #     2 : Pol #    1 to node #     3
+   FORWARD  : Send Per. #     2 : Pol #    2 to node #     4
+   FORWARD  : Send Per. #     3 : Pol #    1 to node #     5
+   FORWARD  : Send Per. #     3 : Pol #    2 to node #     6
+   FORWARD  : Send Per. #     4 : Pol #    1 to node #     7
+   FORWARD: Recieve Per #     2 and Pol    2      from     4
+   FORWARD  : Send Per. #     4 : Pol #    2 to node #     4
+   FORWARD: Recieve Per #     4 and Pol    1      from     7
+   FORWARD: Recieve Per #     1 and Pol    2      from     2
+   FORWARD: Recieve Per #     2 and Pol    1      from     3
+   FORWARD: Recieve Per #     3 and Pol    1      from     5
+   FORWARD: Recieve Per #     3 and Pol    2      from     6
+   FORWARD: Recieve Per #     1 and Pol    1      from     1
+   FORWARD: Recieve Per #     4 and Pol    2      from     4
+ FWD: Finished calculating for (           4 ) Transmitters 
+ FWD: TIME REQUIERED:   0.17083764076232910      s
+    JmultT  : Send Per. #     1 : Pol #    1 to node #     1
+    JmultT  : Send Per. #     1 : Pol #    2 to node #     2
+    JmultT  : Send Per. #     2 : Pol #    1 to node #     3
+    JmultT  : Send Per. #     2 : Pol #    2 to node #     4
+    JmultT  : Send Per. #     3 : Pol #    1 to node #     5
+    JmultT  : Send Per. #     3 : Pol #    2 to node #     6
+    JmultT  : Send Per. #     4 : Pol #    1 to node #     7
+    JmultT: Recieve Per #     4 and Pol    1      from     7
+    JmultT  : Send Per. #     4 : Pol #    2 to node #     7
+    JmultT: Recieve Per #     1 and Pol    2      from     2
+    JmultT: Recieve Per #     1 and Pol    1      from     1
+    JmultT: Recieve Per #     2 and Pol    1      from     3
+    JmultT: Recieve Per #     3 and Pol    1      from     5
+    JmultT: Recieve Per #     3 and Pol    2      from     6
+    JmultT: Recieve Per #     2 and Pol    2      from     4
+    JmultT: Recieve Per #     4 and Pol    2      from     7
+ JmultT: Finished calculating for (           4 ) Transmitters 
+ JmultT: TIME REQUIERED:    2.6516735553741455      s
+   FORWARD  : Send Per. #     1 : Pol #    1 to node #     1
+   FORWARD  : Send Per. #     1 : Pol #    2 to node #     2
+   FORWARD  : Send Per. #     2 : Pol #    1 to node #     3
+   FORWARD  : Send Per. #     2 : Pol #    2 to node #     4
+   FORWARD  : Send Per. #     3 : Pol #    1 to node #     5
+   FORWARD  : Send Per. #     3 : Pol #    2 to node #     6
+   FORWARD  : Send Per. #     4 : Pol #    1 to node #     7
+   FORWARD: Recieve Per #     2 and Pol    1      from     3
+   FORWARD  : Send Per. #     4 : Pol #    2 to node #     3
+   FORWARD: Recieve Per #     2 and Pol    2      from     4
+   FORWARD: Recieve Per #     1 and Pol    2      from     2
+   FORWARD: Recieve Per #     3 and Pol    1      from     5
+   FORWARD: Recieve Per #     3 and Pol    2      from     6
+   FORWARD: Recieve Per #     4 and Pol    1      from     7
+   FORWARD: Recieve Per #     1 and Pol    1      from     1
+   FORWARD: Recieve Per #     4 and Pol    2      from     3
+ FWD: Finished calculating for (           4 ) Transmitters 
+ FWD: TIME REQUIERED:   0.17165064811706543      s
+   FORWARD  : Send Per. #     1 : Pol #    1 to node #     1
+   FORWARD  : Send Per. #     1 : Pol #    2 to node #     2
+   FORWARD  : Send Per. #     2 : Pol #    1 to node #     3
+   FORWARD  : Send Per. #     2 : Pol #    2 to node #     4
+   FORWARD  : Send Per. #     3 : Pol #    1 to node #     5
+   FORWARD  : Send Per. #     3 : Pol #    2 to node #     6
+   FORWARD  : Send Per. #     4 : Pol #    1 to node #     7
+   FORWARD: Recieve Per #     1 and Pol    2      from     2
+   FORWARD  : Send Per. #     4 : Pol #    2 to node #     2
+   FORWARD: Recieve Per #     2 and Pol    2      from     4
+   FORWARD: Recieve Per #     2 and Pol    1      from     3
+   FORWARD: Recieve Per #     4 and Pol    1      from     7
+   FORWARD: Recieve Per #     3 and Pol    1      from     5
+   FORWARD: Recieve Per #     1 and Pol    1      from     1
+   FORWARD: Recieve Per #     3 and Pol    2      from     6
+   FORWARD: Recieve Per #     4 and Pol    2      from     2
+ FWD: Finished calculating for (           4 ) Transmitters 
+ FWD: TIME REQUIERED:   0.19287681579589844      s
+    JmultT  : Send Per. #     1 : Pol #    1 to node #     1
+    JmultT  : Send Per. #     1 : Pol #    2 to node #     2
+    JmultT  : Send Per. #     2 : Pol #    1 to node #     3
+    JmultT  : Send Per. #     2 : Pol #    2 to node #     4
+    JmultT  : Send Per. #     3 : Pol #    1 to node #     5
+    JmultT  : Send Per. #     3 : Pol #    2 to node #     6
+    JmultT  : Send Per. #     4 : Pol #    1 to node #     7
+    JmultT: Recieve Per #     4 and Pol    1      from     7
+    JmultT  : Send Per. #     4 : Pol #    2 to node #     7
+    JmultT: Recieve Per #     1 and Pol    2      from     2
+    JmultT: Recieve Per #     3 and Pol    2      from     6
+    JmultT: Recieve Per #     2 and Pol    1      from     3
+    JmultT: Recieve Per #     2 and Pol    2      from     4
+    JmultT: Recieve Per #     3 and Pol    1      from     5
+    JmultT: Recieve Per #     1 and Pol    1      from     1
+    JmultT: Recieve Per #     4 and Pol    2      from     7
+ JmultT: Finished calculating for (           4 ) Transmitters 
+ JmultT: TIME REQUIERED:    2.6618101596832275      s
+   FORWARD  : Send Per. #     1 : Pol #    1 to node #     1
+   FORWARD  : Send Per. #     1 : Pol #    2 to node #     2
+   FORWARD  : Send Per. #     2 : Pol #    1 to node #     3
+   FORWARD  : Send Per. #     2 : Pol #    2 to node #     4
+   FORWARD  : Send Per. #     3 : Pol #    1 to node #     5
+   FORWARD  : Send Per. #     3 : Pol #    2 to node #     6
+   FORWARD  : Send Per. #     4 : Pol #    1 to node #     7
+   FORWARD: Recieve Per #     1 and Pol    2      from     2
+   FORWARD  : Send Per. #     4 : Pol #    2 to node #     2
+   FORWARD: Recieve Per #     3 and Pol    1      from     5
+   FORWARD: Recieve Per #     4 and Pol    1      from     7
+   FORWARD: Recieve Per #     2 and Pol    1      from     3
+   FORWARD: Recieve Per #     2 and Pol    2      from     4
+   FORWARD: Recieve Per #     1 and Pol    1      from     1
+   FORWARD: Recieve Per #     3 and Pol    2      from     6
+   FORWARD: Recieve Per #     4 and Pol    2      from     2
+ FWD: Finished calculating for (           4 ) Transmitters 
+ FWD: TIME REQUIERED:   0.19489145278930664      s
+   FORWARD  : Send Per. #     1 : Pol #    1 to node #     1
+   FORWARD  : Send Per. #     1 : Pol #    2 to node #     2
+   FORWARD  : Send Per. #     2 : Pol #    1 to node #     3
+   FORWARD  : Send Per. #     2 : Pol #    2 to node #     4
+   FORWARD  : Send Per. #     3 : Pol #    1 to node #     5
+   FORWARD  : Send Per. #     3 : Pol #    2 to node #     6
+   FORWARD  : Send Per. #     4 : Pol #    1 to node #     7
+   FORWARD: Recieve Per #     2 and Pol    2      from     4
+   FORWARD  : Send Per. #     4 : Pol #    2 to node #     4
+   FORWARD: Recieve Per #     3 and Pol    1      from     5
+   FORWARD: Recieve Per #     2 and Pol    1      from     3
+   FORWARD: Recieve Per #     1 and Pol    2      from     2
+   FORWARD: Recieve Per #     4 and Pol    1      from     7
+   FORWARD: Recieve Per #     1 and Pol    1      from     1
+   FORWARD: Recieve Per #     3 and Pol    2      from     6
+   FORWARD: Recieve Per #     4 and Pol    2      from     4
+ FWD: Finished calculating for (           4 ) Transmitters 
+ FWD: TIME REQUIERED:   0.19331264495849609      s
+    JmultT  : Send Per. #     1 : Pol #    1 to node #     1
+    JmultT  : Send Per. #     1 : Pol #    2 to node #     2
+    JmultT  : Send Per. #     2 : Pol #    1 to node #     3
+    JmultT  : Send Per. #     2 : Pol #    2 to node #     4
+    JmultT  : Send Per. #     3 : Pol #    1 to node #     5
+    JmultT  : Send Per. #     3 : Pol #    2 to node #     6
+    JmultT  : Send Per. #     4 : Pol #    1 to node #     7
+    JmultT: Recieve Per #     4 and Pol    1      from     7
+    JmultT  : Send Per. #     4 : Pol #    2 to node #     7
+    JmultT: Recieve Per #     1 and Pol    2      from     2
+    JmultT: Recieve Per #     3 and Pol    2      from     6
+    JmultT: Recieve Per #     1 and Pol    1      from     1
+    JmultT: Recieve Per #     2 and Pol    1      from     3
+    JmultT: Recieve Per #     3 and Pol    1      from     5
+    JmultT: Recieve Per #     2 and Pol    2      from     4
+    JmultT: Recieve Per #     4 and Pol    2      from     7
+ JmultT: Finished calculating for (           4 ) Transmitters 
+ JmultT: TIME REQUIERED:    2.6293785572052002      s
+   FORWARD  : Send Per. #     1 : Pol #    1 to node #     1
+   FORWARD  : Send Per. #     1 : Pol #    2 to node #     2
+   FORWARD  : Send Per. #     2 : Pol #    1 to node #     3
+   FORWARD  : Send Per. #     2 : Pol #    2 to node #     4
+   FORWARD  : Send Per. #     3 : Pol #    1 to node #     5
+   FORWARD  : Send Per. #     3 : Pol #    2 to node #     6
+   FORWARD  : Send Per. #     4 : Pol #    1 to node #     7
+   FORWARD: Recieve Per #     1 and Pol    2      from     2
+   FORWARD  : Send Per. #     4 : Pol #    2 to node #     2
+   FORWARD: Recieve Per #     2 and Pol    2      from     4
+   FORWARD: Recieve Per #     4 and Pol    1      from     7
+   FORWARD: Recieve Per #     3 and Pol    1      from     5
+   FORWARD: Recieve Per #     2 and Pol    1      from     3
+   FORWARD: Recieve Per #     1 and Pol    1      from     1
+   FORWARD: Recieve Per #     3 and Pol    2      from     6
+   FORWARD: Recieve Per #     4 and Pol    2      from     2
+ FWD: Finished calculating for (           4 ) Transmitters 
+ FWD: TIME REQUIERED:   0.20171689987182617      s
+   FORWARD  : Send Per. #     1 : Pol #    1 to node #     1
+   FORWARD  : Send Per. #     1 : Pol #    2 to node #     2
+   FORWARD  : Send Per. #     2 : Pol #    1 to node #     3
+   FORWARD  : Send Per. #     2 : Pol #    2 to node #     4
+   FORWARD  : Send Per. #     3 : Pol #    1 to node #     5
+   FORWARD  : Send Per. #     3 : Pol #    2 to node #     6
+   FORWARD  : Send Per. #     4 : Pol #    1 to node #     7
+   FORWARD: Recieve Per #     3 and Pol    1      from     5
+   FORWARD  : Send Per. #     4 : Pol #    2 to node #     5
+   FORWARD: Recieve Per #     2 and Pol    2      from     4
+   FORWARD: Recieve Per #     1 and Pol    1      from     1
+   FORWARD: Recieve Per #     2 and Pol    1      from     3
+   FORWARD: Recieve Per #     1 and Pol    2      from     2
+   FORWARD: Recieve Per #     4 and Pol    1      from     7
+   FORWARD: Recieve Per #     3 and Pol    2      from     6
+   FORWARD: Recieve Per #     4 and Pol    2      from     5
+ FWD: Finished calculating for (           4 ) Transmitters 
+ FWD: TIME REQUIERED:   0.17355322837829590      s
+    JmultT  : Send Per. #     1 : Pol #    1 to node #     1
+    JmultT  : Send Per. #     1 : Pol #    2 to node #     2
+    JmultT  : Send Per. #     2 : Pol #    1 to node #     3
+    JmultT  : Send Per. #     2 : Pol #    2 to node #     4
+    JmultT  : Send Per. #     3 : Pol #    1 to node #     5
+    JmultT  : Send Per. #     3 : Pol #    2 to node #     6
+    JmultT  : Send Per. #     4 : Pol #    1 to node #     7
+    JmultT: Recieve Per #     4 and Pol    1      from     7
+    JmultT  : Send Per. #     4 : Pol #    2 to node #     7
+    JmultT: Recieve Per #     1 and Pol    2      from     2
+    JmultT: Recieve Per #     3 and Pol    2      from     6
+    JmultT: Recieve Per #     1 and Pol    1      from     1
+    JmultT: Recieve Per #     2 and Pol    1      from     3
+    JmultT: Recieve Per #     3 and Pol    1      from     5
+    JmultT: Recieve Per #     2 and Pol    2      from     4
+    JmultT: Recieve Per #     4 and Pol    2      from     7
+ JmultT: Finished calculating for (           4 ) Transmitters 
+ JmultT: TIME REQUIERED:    2.5760538578033447      s
+   FORWARD  : Send Per. #     1 : Pol #    1 to node #     1
+   FORWARD  : Send Per. #     1 : Pol #    2 to node #     2
+   FORWARD  : Send Per. #     2 : Pol #    1 to node #     3
+   FORWARD  : Send Per. #     2 : Pol #    2 to node #     4
+   FORWARD  : Send Per. #     3 : Pol #    1 to node #     5
+   FORWARD  : Send Per. #     3 : Pol #    2 to node #     6
+   FORWARD  : Send Per. #     4 : Pol #    1 to node #     7
+   FORWARD: Recieve Per #     2 and Pol    2      from     4
+   FORWARD  : Send Per. #     4 : Pol #    2 to node #     4
+   FORWARD: Recieve Per #     1 and Pol    2      from     2
+   FORWARD: Recieve Per #     4 and Pol    1      from     7
+   FORWARD: Recieve Per #     3 and Pol    1      from     5
+   FORWARD: Recieve Per #     2 and Pol    1      from     3
+   FORWARD: Recieve Per #     3 and Pol    2      from     6
+   FORWARD: Recieve Per #     1 and Pol    1      from     1
+   FORWARD: Recieve Per #     4 and Pol    2      from     4
+ FWD: Finished calculating for (           4 ) Transmitters 
+ FWD: TIME REQUIERED:   0.17778396606445312      s
+   FORWARD  : Send Per. #     1 : Pol #    1 to node #     1
+   FORWARD  : Send Per. #     1 : Pol #    2 to node #     2
+   FORWARD  : Send Per. #     2 : Pol #    1 to node #     3
+   FORWARD  : Send Per. #     2 : Pol #    2 to node #     4
+   FORWARD  : Send Per. #     3 : Pol #    1 to node #     5
+   FORWARD  : Send Per. #     3 : Pol #    2 to node #     6
+   FORWARD  : Send Per. #     4 : Pol #    1 to node #     7
+   FORWARD: Recieve Per #     1 and Pol    2      from     2
+   FORWARD  : Send Per. #     4 : Pol #    2 to node #     2
+   FORWARD: Recieve Per #     4 and Pol    1      from     7
+   FORWARD: Recieve Per #     2 and Pol    1      from     3
+   FORWARD: Recieve Per #     2 and Pol    2      from     4
+   FORWARD: Recieve Per #     1 and Pol    1      from     1
+   FORWARD: Recieve Per #     3 and Pol    1      from     5
+   FORWARD: Recieve Per #     3 and Pol    2      from     6
+   FORWARD: Recieve Per #     4 and Pol    2      from     2
+ FWD: Finished calculating for (           4 ) Transmitters 
+ FWD: TIME REQUIERED:   0.19336342811584473      s
+    JmultT  : Send Per. #     1 : Pol #    1 to node #     1
+    JmultT  : Send Per. #     1 : Pol #    2 to node #     2
+    JmultT  : Send Per. #     2 : Pol #    1 to node #     3
+    JmultT  : Send Per. #     2 : Pol #    2 to node #     4
+    JmultT  : Send Per. #     3 : Pol #    1 to node #     5
+    JmultT  : Send Per. #     3 : Pol #    2 to node #     6
+    JmultT  : Send Per. #     4 : Pol #    1 to node #     7
+    JmultT: Recieve Per #     4 and Pol    1      from     7
+    JmultT  : Send Per. #     4 : Pol #    2 to node #     7
+    JmultT: Recieve Per #     1 and Pol    2      from     2
+    JmultT: Recieve Per #     1 and Pol    1      from     1
+    JmultT: Recieve Per #     3 and Pol    2      from     6
+    JmultT: Recieve Per #     2 and Pol    1      from     3
+    JmultT: Recieve Per #     3 and Pol    1      from     5
+    JmultT: Recieve Per #     2 and Pol    2      from     4
+    JmultT: Recieve Per #     4 and Pol    2      from     7
+ JmultT: Finished calculating for (           4 ) Transmitters 
+ JmultT: TIME REQUIERED:    2.5575325489044189      s
+   FORWARD  : Send Per. #     1 : Pol #    1 to node #     1
+   FORWARD  : Send Per. #     1 : Pol #    2 to node #     2
+   FORWARD  : Send Per. #     2 : Pol #    1 to node #     3
+   FORWARD  : Send Per. #     2 : Pol #    2 to node #     4
+   FORWARD  : Send Per. #     3 : Pol #    1 to node #     5
+   FORWARD  : Send Per. #     3 : Pol #    2 to node #     6
+   FORWARD  : Send Per. #     4 : Pol #    1 to node #     7
+   FORWARD: Recieve Per #     4 and Pol    1      from     7
+   FORWARD  : Send Per. #     4 : Pol #    2 to node #     7
+   FORWARD: Recieve Per #     1 and Pol    2      from     2
+   FORWARD: Recieve Per #     3 and Pol    1      from     5
+   FORWARD: Recieve Per #     2 and Pol    1      from     3
+   FORWARD: Recieve Per #     1 and Pol    1      from     1
+   FORWARD: Recieve Per #     2 and Pol    2      from     4
+   FORWARD: Recieve Per #     3 and Pol    2      from     6
+   FORWARD: Recieve Per #     4 and Pol    2      from     7
+ FWD: Finished calculating for (           4 ) Transmitters 
+ FWD: TIME REQUIERED:   0.19102764129638672      s
+   FORWARD  : Send Per. #     1 : Pol #    1 to node #     1
+   FORWARD  : Send Per. #     1 : Pol #    2 to node #     2
+   FORWARD  : Send Per. #     2 : Pol #    1 to node #     3
+   FORWARD  : Send Per. #     2 : Pol #    2 to node #     4
+   FORWARD  : Send Per. #     3 : Pol #    1 to node #     5
+   FORWARD  : Send Per. #     3 : Pol #    2 to node #     6
+   FORWARD  : Send Per. #     4 : Pol #    1 to node #     7
+   FORWARD: Recieve Per #     2 and Pol    2      from     4
+   FORWARD  : Send Per. #     4 : Pol #    2 to node #     4
+   FORWARD: Recieve Per #     4 and Pol    1      from     7
+   FORWARD: Recieve Per #     3 and Pol    1      from     5
+   FORWARD: Recieve Per #     2 and Pol    1      from     3
+   FORWARD: Recieve Per #     1 and Pol    1      from     1
+   FORWARD: Recieve Per #     1 and Pol    2      from     2
+   FORWARD: Recieve Per #     3 and Pol    2      from     6
+   FORWARD: Recieve Per #     4 and Pol    2      from     4
+ FWD: Finished calculating for (           4 ) Transmitters 
+ FWD: TIME REQUIERED:   0.20573163032531738      s
+    JmultT  : Send Per. #     1 : Pol #    1 to node #     1
+    JmultT  : Send Per. #     1 : Pol #    2 to node #     2
+    JmultT  : Send Per. #     2 : Pol #    1 to node #     3
+    JmultT  : Send Per. #     2 : Pol #    2 to node #     4
+    JmultT  : Send Per. #     3 : Pol #    1 to node #     5
+    JmultT  : Send Per. #     3 : Pol #    2 to node #     6
+    JmultT  : Send Per. #     4 : Pol #    1 to node #     7
+    JmultT: Recieve Per #     4 and Pol    1      from     7
+    JmultT  : Send Per. #     4 : Pol #    2 to node #     7
+    JmultT: Recieve Per #     1 and Pol    2      from     2
+    JmultT: Recieve Per #     3 and Pol    2      from     6
+    JmultT: Recieve Per #     1 and Pol    1      from     1
+    JmultT: Recieve Per #     2 and Pol    1      from     3
+    JmultT: Recieve Per #     3 and Pol    1      from     5
+    JmultT: Recieve Per #     2 and Pol    2      from     4
+    JmultT: Recieve Per #     4 and Pol    2      from     7
+ JmultT: Finished calculating for (           4 ) Transmitters 
+ JmultT: TIME REQUIERED:    2.5830304622650146      s
+   FORWARD  : Send Per. #     1 : Pol #    1 to node #     1
+   FORWARD  : Send Per. #     1 : Pol #    2 to node #     2
+   FORWARD  : Send Per. #     2 : Pol #    1 to node #     3
+   FORWARD  : Send Per. #     2 : Pol #    2 to node #     4
+   FORWARD  : Send Per. #     3 : Pol #    1 to node #     5
+   FORWARD  : Send Per. #     3 : Pol #    2 to node #     6
+   FORWARD  : Send Per. #     4 : Pol #    1 to node #     7
+   FORWARD: Recieve Per #     1 and Pol    2      from     2
+   FORWARD  : Send Per. #     4 : Pol #    2 to node #     2
+   FORWARD: Recieve Per #     4 and Pol    1      from     7
+   FORWARD: Recieve Per #     2 and Pol    1      from     3
+   FORWARD: Recieve Per #     3 and Pol    1      from     5
+   FORWARD: Recieve Per #     2 and Pol    2      from     4
+   FORWARD: Recieve Per #     1 and Pol    1      from     1
+   FORWARD: Recieve Per #     3 and Pol    2      from     6
+   FORWARD: Recieve Per #     4 and Pol    2      from     2
+ FWD: Finished calculating for (           4 ) Transmitters 
+ FWD: TIME REQUIERED:   0.19219541549682617      s
+   FORWARD  : Send Per. #     1 : Pol #    1 to node #     1
+   FORWARD  : Send Per. #     1 : Pol #    2 to node #     2
+   FORWARD  : Send Per. #     2 : Pol #    1 to node #     3
+   FORWARD  : Send Per. #     2 : Pol #    2 to node #     4
+   FORWARD  : Send Per. #     3 : Pol #    1 to node #     5
+   FORWARD  : Send Per. #     3 : Pol #    2 to node #     6
+   FORWARD  : Send Per. #     4 : Pol #    1 to node #     7
+   FORWARD: Recieve Per #     1 and Pol    2      from     2
+   FORWARD  : Send Per. #     4 : Pol #    2 to node #     2
+   FORWARD: Recieve Per #     3 and Pol    1      from     5
+   FORWARD: Recieve Per #     2 and Pol    2      from     4
+   FORWARD: Recieve Per #     4 and Pol    1      from     7
+   FORWARD: Recieve Per #     2 and Pol    1      from     3
+   FORWARD: Recieve Per #     1 and Pol    1      from     1
+   FORWARD: Recieve Per #     3 and Pol    2      from     6
+   FORWARD: Recieve Per #     4 and Pol    2      from     2
+ FWD: Finished calculating for (           4 ) Transmitters 
+ FWD: TIME REQUIERED:   0.19339132308959961      s
+    JmultT  : Send Per. #     1 : Pol #    1 to node #     1
+    JmultT  : Send Per. #     1 : Pol #    2 to node #     2
+    JmultT  : Send Per. #     2 : Pol #    1 to node #     3
+    JmultT  : Send Per. #     2 : Pol #    2 to node #     4
+    JmultT  : Send Per. #     3 : Pol #    1 to node #     5
+    JmultT  : Send Per. #     3 : Pol #    2 to node #     6
+    JmultT  : Send Per. #     4 : Pol #    1 to node #     7
+    JmultT: Recieve Per #     4 and Pol    1      from     7
+    JmultT  : Send Per. #     4 : Pol #    2 to node #     7
+    JmultT: Recieve Per #     1 and Pol    1      from     1
+    JmultT: Recieve Per #     1 and Pol    2      from     2
+    JmultT: Recieve Per #     3 and Pol    2      from     6
+    JmultT: Recieve Per #     2 and Pol    1      from     3
+    JmultT: Recieve Per #     3 and Pol    1      from     5
+    JmultT: Recieve Per #     2 and Pol    2      from     4
+    JmultT: Recieve Per #     4 and Pol    2      from     7
+ JmultT: Finished calculating for (           4 ) Transmitters 
+ JmultT: TIME REQUIERED:    2.5618045330047607      s
+   FORWARD  : Send Per. #     1 : Pol #    1 to node #     1
+   FORWARD  : Send Per. #     1 : Pol #    2 to node #     2
+   FORWARD  : Send Per. #     2 : Pol #    1 to node #     3
+   FORWARD  : Send Per. #     2 : Pol #    2 to node #     4
+   FORWARD  : Send Per. #     3 : Pol #    1 to node #     5
+   FORWARD  : Send Per. #     3 : Pol #    2 to node #     6
+   FORWARD  : Send Per. #     4 : Pol #    1 to node #     7
+   FORWARD: Recieve Per #     2 and Pol    1      from     3
+   FORWARD  : Send Per. #     4 : Pol #    2 to node #     3
+   FORWARD: Recieve Per #     1 and Pol    2      from     2
+   FORWARD: Recieve Per #     2 and Pol    2      from     4
+   FORWARD: Recieve Per #     4 and Pol    1      from     7
+   FORWARD: Recieve Per #     1 and Pol    1      from     1
+   FORWARD: Recieve Per #     3 and Pol    1      from     5
+   FORWARD: Recieve Per #     3 and Pol    2      from     6
+   FORWARD: Recieve Per #     4 and Pol    2      from     3
+ FWD: Finished calculating for (           4 ) Transmitters 
+ FWD: TIME REQUIERED:   0.19356632232666016      s
+   FORWARD  : Send Per. #     1 : Pol #    1 to node #     1
+   FORWARD  : Send Per. #     1 : Pol #    2 to node #     2
+   FORWARD  : Send Per. #     2 : Pol #    1 to node #     3
+   FORWARD  : Send Per. #     2 : Pol #    2 to node #     4
+   FORWARD  : Send Per. #     3 : Pol #    1 to node #     5
+   FORWARD  : Send Per. #     3 : Pol #    2 to node #     6
+   FORWARD  : Send Per. #     4 : Pol #    1 to node #     7
+   FORWARD: Recieve Per #     2 and Pol    1      from     3
+   FORWARD  : Send Per. #     4 : Pol #    2 to node #     3
+   FORWARD: Recieve Per #     1 and Pol    2      from     2
+   FORWARD: Recieve Per #     4 and Pol    1      from     7
+   FORWARD: Recieve Per #     2 and Pol    2      from     4
+   FORWARD: Recieve Per #     3 and Pol    1      from     5
+   FORWARD: Recieve Per #     3 and Pol    2      from     6
+   FORWARD: Recieve Per #     1 and Pol    1      from     1
+   FORWARD: Recieve Per #     4 and Pol    2      from     3
+ FWD: Finished calculating for (           4 ) Transmitters 
+ FWD: TIME REQUIERED:   0.18767189979553223      s
+    JmultT  : Send Per. #     1 : Pol #    1 to node #     1
+    JmultT  : Send Per. #     1 : Pol #    2 to node #     2
+    JmultT  : Send Per. #     2 : Pol #    1 to node #     3
+    JmultT  : Send Per. #     2 : Pol #    2 to node #     4
+    JmultT  : Send Per. #     3 : Pol #    1 to node #     5
+    JmultT  : Send Per. #     3 : Pol #    2 to node #     6
+    JmultT  : Send Per. #     4 : Pol #    1 to node #     7
+    JmultT: Recieve Per #     4 and Pol    1      from     7
+    JmultT  : Send Per. #     4 : Pol #    2 to node #     7
+    JmultT: Recieve Per #     1 and Pol    2      from     2
+    JmultT: Recieve Per #     1 and Pol    1      from     1
+    JmultT: Recieve Per #     3 and Pol    2      from     6
+    JmultT: Recieve Per #     2 and Pol    1      from     3
+    JmultT: Recieve Per #     3 and Pol    1      from     5
+    JmultT: Recieve Per #     2 and Pol    2      from     4
+    JmultT: Recieve Per #     4 and Pol    2      from     7
+ JmultT: Finished calculating for (           4 ) Transmitters 
+ JmultT: TIME REQUIERED:    2.6641271114349365      s
+   FORWARD  : Send Per. #     1 : Pol #    1 to node #     1
+   FORWARD  : Send Per. #     1 : Pol #    2 to node #     2
+   FORWARD  : Send Per. #     2 : Pol #    1 to node #     3
+   FORWARD  : Send Per. #     2 : Pol #    2 to node #     4
+   FORWARD  : Send Per. #     3 : Pol #    1 to node #     5
+   FORWARD  : Send Per. #     3 : Pol #    2 to node #     6
+   FORWARD  : Send Per. #     4 : Pol #    1 to node #     7
+   FORWARD: Recieve Per #     1 and Pol    2      from     2
+   FORWARD  : Send Per. #     4 : Pol #    2 to node #     2
+   FORWARD: Recieve Per #     2 and Pol    1      from     3
+   FORWARD: Recieve Per #     4 and Pol    1      from     7
+   FORWARD: Recieve Per #     1 and Pol    1      from     1
+   FORWARD: Recieve Per #     3 and Pol    1      from     5
+   FORWARD: Recieve Per #     2 and Pol    2      from     4
+   FORWARD: Recieve Per #     3 and Pol    2      from     6
+   FORWARD: Recieve Per #     4 and Pol    2      from     2
+ FWD: Finished calculating for (           4 ) Transmitters 
+ FWD: TIME REQUIERED:   0.19884395599365234      s
+   FORWARD  : Send Per. #     1 : Pol #    1 to node #     1
+   FORWARD  : Send Per. #     1 : Pol #    2 to node #     2
+   FORWARD  : Send Per. #     2 : Pol #    1 to node #     3
+   FORWARD  : Send Per. #     2 : Pol #    2 to node #     4
+   FORWARD  : Send Per. #     3 : Pol #    1 to node #     5
+   FORWARD  : Send Per. #     3 : Pol #    2 to node #     6
+   FORWARD  : Send Per. #     4 : Pol #    1 to node #     7
+   FORWARD: Recieve Per #     4 and Pol    1      from     7
+   FORWARD  : Send Per. #     4 : Pol #    2 to node #     7
+   FORWARD: Recieve Per #     1 and Pol    2      from     2
+   FORWARD: Recieve Per #     2 and Pol    1      from     3
+   FORWARD: Recieve Per #     2 and Pol    2      from     4
+   FORWARD: Recieve Per #     3 and Pol    1      from     5
+   FORWARD: Recieve Per #     3 and Pol    2      from     6
+   FORWARD: Recieve Per #     1 and Pol    1      from     1
+   FORWARD: Recieve Per #     4 and Pol    2      from     7
+ FWD: Finished calculating for (           4 ) Transmitters 
+ FWD: TIME REQUIERED:   0.19392800331115723      s
+    JmultT  : Send Per. #     1 : Pol #    1 to node #     1
+    JmultT  : Send Per. #     1 : Pol #    2 to node #     2
+    JmultT  : Send Per. #     2 : Pol #    1 to node #     3
+    JmultT  : Send Per. #     2 : Pol #    2 to node #     4
+    JmultT  : Send Per. #     3 : Pol #    1 to node #     5
+    JmultT  : Send Per. #     3 : Pol #    2 to node #     6
+    JmultT  : Send Per. #     4 : Pol #    1 to node #     7
+    JmultT: Recieve Per #     4 and Pol    1      from     7
+    JmultT  : Send Per. #     4 : Pol #    2 to node #     7
+    JmultT: Recieve Per #     1 and Pol    2      from     2
+    JmultT: Recieve Per #     1 and Pol    1      from     1
+    JmultT: Recieve Per #     3 and Pol    2      from     6
+    JmultT: Recieve Per #     2 and Pol    1      from     3
+    JmultT: Recieve Per #     3 and Pol    1      from     5
+    JmultT: Recieve Per #     2 and Pol    2      from     4
+    JmultT: Recieve Per #     4 and Pol    2      from     7
+ JmultT: Finished calculating for (           4 ) Transmitters 
+ JmultT: TIME REQUIERED:    2.9006986618041992      s
+   FORWARD  : Send Per. #     1 : Pol #    1 to node #     1
+   FORWARD  : Send Per. #     1 : Pol #    2 to node #     2
+   FORWARD  : Send Per. #     2 : Pol #    1 to node #     3
+   FORWARD  : Send Per. #     2 : Pol #    2 to node #     4
+   FORWARD  : Send Per. #     3 : Pol #    1 to node #     5
+   FORWARD  : Send Per. #     3 : Pol #    2 to node #     6
+   FORWARD  : Send Per. #     4 : Pol #    1 to node #     7
+   FORWARD: Recieve Per #     1 and Pol    2      from     2
+   FORWARD  : Send Per. #     4 : Pol #    2 to node #     2
+   FORWARD: Recieve Per #     2 and Pol    2      from     4
+   FORWARD: Recieve Per #     2 and Pol    1      from     3
+   FORWARD: Recieve Per #     4 and Pol    1      from     7
+   FORWARD: Recieve Per #     1 and Pol    1      from     1
+   FORWARD: Recieve Per #     3 and Pol    1      from     5
+   FORWARD: Recieve Per #     3 and Pol    2      from     6
+   FORWARD: Recieve Per #     4 and Pol    2      from     2
+ FWD: Finished calculating for (           4 ) Transmitters 
+ FWD: TIME REQUIERED:   0.20316505432128906      s
+   FORWARD  : Send Per. #     1 : Pol #    1 to node #     1
+   FORWARD  : Send Per. #     1 : Pol #    2 to node #     2
+   FORWARD  : Send Per. #     2 : Pol #    1 to node #     3
+   FORWARD  : Send Per. #     2 : Pol #    2 to node #     4
+   FORWARD  : Send Per. #     3 : Pol #    1 to node #     5
+   FORWARD  : Send Per. #     3 : Pol #    2 to node #     6
+   FORWARD  : Send Per. #     4 : Pol #    1 to node #     7
+   FORWARD: Recieve Per #     2 and Pol    2      from     4
+   FORWARD  : Send Per. #     4 : Pol #    2 to node #     4
+   FORWARD: Recieve Per #     1 and Pol    2      from     2
+   FORWARD: Recieve Per #     4 and Pol    1      from     7
+   FORWARD: Recieve Per #     2 and Pol    1      from     3
+   FORWARD: Recieve Per #     3 and Pol    1      from     5
+   FORWARD: Recieve Per #     3 and Pol    2      from     6
+   FORWARD: Recieve Per #     1 and Pol    1      from     1
+   FORWARD: Recieve Per #     4 and Pol    2      from     4
+ FWD: Finished calculating for (           4 ) Transmitters 
+ FWD: TIME REQUIERED:   0.20408344268798828      s
+    JmultT  : Send Per. #     1 : Pol #    1 to node #     1
+    JmultT  : Send Per. #     1 : Pol #    2 to node #     2
+    JmultT  : Send Per. #     2 : Pol #    1 to node #     3
+    JmultT  : Send Per. #     2 : Pol #    2 to node #     4
+    JmultT  : Send Per. #     3 : Pol #    1 to node #     5
+    JmultT  : Send Per. #     3 : Pol #    2 to node #     6
+    JmultT  : Send Per. #     4 : Pol #    1 to node #     7
+    JmultT: Recieve Per #     4 and Pol    1      from     7
+    JmultT  : Send Per. #     4 : Pol #    2 to node #     7
+    JmultT: Recieve Per #     1 and Pol    2      from     2
+    JmultT: Recieve Per #     1 and Pol    1      from     1
+    JmultT: Recieve Per #     3 and Pol    1      from     5
+    JmultT: Recieve Per #     3 and Pol    2      from     6
+    JmultT: Recieve Per #     2 and Pol    2      from     4
+    JmultT: Recieve Per #     2 and Pol    1      from     3
+    JmultT: Recieve Per #     4 and Pol    2      from     7
+ JmultT: Finished calculating for (           4 ) Transmitters 
+ JmultT: TIME REQUIERED:    2.8665785789489746      s
+   FORWARD  : Send Per. #     1 : Pol #    1 to node #     1
+   FORWARD  : Send Per. #     1 : Pol #    2 to node #     2
+   FORWARD  : Send Per. #     2 : Pol #    1 to node #     3
+   FORWARD  : Send Per. #     2 : Pol #    2 to node #     4
+   FORWARD  : Send Per. #     3 : Pol #    1 to node #     5
+   FORWARD  : Send Per. #     3 : Pol #    2 to node #     6
+   FORWARD  : Send Per. #     4 : Pol #    1 to node #     7
+   FORWARD: Recieve Per #     2 and Pol    2      from     4
+   FORWARD  : Send Per. #     4 : Pol #    2 to node #     4
+   FORWARD: Recieve Per #     4 and Pol    1      from     7
+   FORWARD: Recieve Per #     2 and Pol    1      from     3
+   FORWARD: Recieve Per #     1 and Pol    2      from     2
+   FORWARD: Recieve Per #     3 and Pol    1      from     5
+   FORWARD: Recieve Per #     1 and Pol    1      from     1
+   FORWARD: Recieve Per #     3 and Pol    2      from     6
+   FORWARD: Recieve Per #     4 and Pol    2      from     4
+ FWD: Finished calculating for (           4 ) Transmitters 
+ FWD: TIME REQUIERED:   0.20139837265014648      s
+   FORWARD  : Send Per. #     1 : Pol #    1 to node #     1
+   FORWARD  : Send Per. #     1 : Pol #    2 to node #     2
+   FORWARD  : Send Per. #     2 : Pol #    1 to node #     3
+   FORWARD  : Send Per. #     2 : Pol #    2 to node #     4
+   FORWARD  : Send Per. #     3 : Pol #    1 to node #     5
+   FORWARD  : Send Per. #     3 : Pol #    2 to node #     6
+   FORWARD  : Send Per. #     4 : Pol #    1 to node #     7
+   FORWARD: Recieve Per #     2 and Pol    2      from     4
+   FORWARD  : Send Per. #     4 : Pol #    2 to node #     4
+   FORWARD: Recieve Per #     4 and Pol    1      from     7
+   FORWARD: Recieve Per #     2 and Pol    1      from     3
+   FORWARD: Recieve Per #     1 and Pol    1      from     1
+   FORWARD: Recieve Per #     3 and Pol    1      from     5
+   FORWARD: Recieve Per #     3 and Pol    2      from     6
+   FORWARD: Recieve Per #     1 and Pol    2      from     2
+   FORWARD: Recieve Per #     4 and Pol    2      from     4
+ FWD: Finished calculating for (           4 ) Transmitters 
+ FWD: TIME REQUIERED:   0.21672391891479492      s
+    JmultT  : Send Per. #     1 : Pol #    1 to node #     1
+    JmultT  : Send Per. #     1 : Pol #    2 to node #     2
+    JmultT  : Send Per. #     2 : Pol #    1 to node #     3
+    JmultT  : Send Per. #     2 : Pol #    2 to node #     4
+    JmultT  : Send Per. #     3 : Pol #    1 to node #     5
+    JmultT  : Send Per. #     3 : Pol #    2 to node #     6
+    JmultT  : Send Per. #     4 : Pol #    1 to node #     7
+    JmultT: Recieve Per #     4 and Pol    1      from     7
+    JmultT  : Send Per. #     4 : Pol #    2 to node #     7
+    JmultT: Recieve Per #     1 and Pol    2      from     2
+    JmultT: Recieve Per #     1 and Pol    1      from     1
+    JmultT: Recieve Per #     2 and Pol    1      from     3
+    JmultT: Recieve Per #     3 and Pol    1      from     5
+    JmultT: Recieve Per #     3 and Pol    2      from     6
+    JmultT: Recieve Per #     2 and Pol    2      from     4
+    JmultT: Recieve Per #     4 and Pol    2      from     7
+ JmultT: Finished calculating for (           4 ) Transmitters 
+ JmultT: TIME REQUIERED:    2.7720263004302979      s
+   FORWARD  : Send Per. #     1 : Pol #    1 to node #     1
+   FORWARD  : Send Per. #     1 : Pol #    2 to node #     2
+   FORWARD  : Send Per. #     2 : Pol #    1 to node #     3
+   FORWARD  : Send Per. #     2 : Pol #    2 to node #     4
+   FORWARD  : Send Per. #     3 : Pol #    1 to node #     5
+   FORWARD  : Send Per. #     3 : Pol #    2 to node #     6
+   FORWARD  : Send Per. #     4 : Pol #    1 to node #     7
+   FORWARD: Recieve Per #     1 and Pol    2      from     2
+   FORWARD  : Send Per. #     4 : Pol #    2 to node #     2
+   FORWARD: Recieve Per #     4 and Pol    1      from     7
+   FORWARD: Recieve Per #     2 and Pol    2      from     4
+   FORWARD: Recieve Per #     2 and Pol    1      from     3
+   FORWARD: Recieve Per #     1 and Pol    1      from     1
+   FORWARD: Recieve Per #     3 and Pol    1      from     5
+   FORWARD: Recieve Per #     3 and Pol    2      from     6
+   FORWARD: Recieve Per #     4 and Pol    2      from     2
+ FWD: Finished calculating for (           4 ) Transmitters 
+ FWD: TIME REQUIERED:   0.18966937065124512      s
+   FORWARD  : Send Per. #     1 : Pol #    1 to node #     1
+   FORWARD  : Send Per. #     1 : Pol #    2 to node #     2
+   FORWARD  : Send Per. #     2 : Pol #    1 to node #     3
+   FORWARD  : Send Per. #     2 : Pol #    2 to node #     4
+   FORWARD  : Send Per. #     3 : Pol #    1 to node #     5
+   FORWARD  : Send Per. #     3 : Pol #    2 to node #     6
+   FORWARD  : Send Per. #     4 : Pol #    1 to node #     7
+   FORWARD: Recieve Per #     1 and Pol    2      from     2
+   FORWARD  : Send Per. #     4 : Pol #    2 to node #     2
+   FORWARD: Recieve Per #     2 and Pol    1      from     3
+   FORWARD: Recieve Per #     4 and Pol    1      from     7
+   FORWARD: Recieve Per #     1 and Pol    1      from     1
+   FORWARD: Recieve Per #     2 and Pol    2      from     4
+   FORWARD: Recieve Per #     3 and Pol    1      from     5
+   FORWARD: Recieve Per #     3 and Pol    2      from     6
+   FORWARD: Recieve Per #     4 and Pol    2      from     2
+ FWD: Finished calculating for (           4 ) Transmitters 
+ FWD: TIME REQUIERED:   0.19496083259582520      s
+    JmultT  : Send Per. #     1 : Pol #    1 to node #     1
+    JmultT  : Send Per. #     1 : Pol #    2 to node #     2
+    JmultT  : Send Per. #     2 : Pol #    1 to node #     3
+    JmultT  : Send Per. #     2 : Pol #    2 to node #     4
+    JmultT  : Send Per. #     3 : Pol #    1 to node #     5
+    JmultT  : Send Per. #     3 : Pol #    2 to node #     6
+    JmultT  : Send Per. #     4 : Pol #    1 to node #     7
+    JmultT: Recieve Per #     4 and Pol    1      from     7
+    JmultT  : Send Per. #     4 : Pol #    2 to node #     7
+    JmultT: Recieve Per #     3 and Pol    1      from     5
+    JmultT: Recieve Per #     1 and Pol    1      from     1
+    JmultT: Recieve Per #     1 and Pol    2      from     2
+    JmultT: Recieve Per #     2 and Pol    1      from     3
+    JmultT: Recieve Per #     3 and Pol    2      from     6
+    JmultT: Recieve Per #     2 and Pol    2      from     4
+    JmultT: Recieve Per #     4 and Pol    2      from     7
+ JmultT: Finished calculating for (           4 ) Transmitters 
+ JmultT: TIME REQUIERED:    2.6297338008880615      s
+   FORWARD  : Send Per. #     1 : Pol #    1 to node #     1
+   FORWARD  : Send Per. #     1 : Pol #    2 to node #     2
+   FORWARD  : Send Per. #     2 : Pol #    1 to node #     3
+   FORWARD  : Send Per. #     2 : Pol #    2 to node #     4
+   FORWARD  : Send Per. #     3 : Pol #    1 to node #     5
+   FORWARD  : Send Per. #     3 : Pol #    2 to node #     6
+   FORWARD  : Send Per. #     4 : Pol #    1 to node #     7
+   FORWARD: Recieve Per #     2 and Pol    1      from     3
+   FORWARD  : Send Per. #     4 : Pol #    2 to node #     3
+   FORWARD: Recieve Per #     4 and Pol    1      from     7
+   FORWARD: Recieve Per #     1 and Pol    1      from     1
+   FORWARD: Recieve Per #     1 and Pol    2      from     2
+   FORWARD: Recieve Per #     3 and Pol    2      from     6
+   FORWARD: Recieve Per #     2 and Pol    2      from     4
+   FORWARD: Recieve Per #     3 and Pol    1      from     5
+   FORWARD: Recieve Per #     4 and Pol    2      from     3
+ FWD: Finished calculating for (           4 ) Transmitters 
+ FWD: TIME REQUIERED:   0.20598435401916504      s
+   FORWARD  : Send Per. #     1 : Pol #    1 to node #     1
+   FORWARD  : Send Per. #     1 : Pol #    2 to node #     2
+   FORWARD  : Send Per. #     2 : Pol #    1 to node #     3
+   FORWARD  : Send Per. #     2 : Pol #    2 to node #     4
+   FORWARD  : Send Per. #     3 : Pol #    1 to node #     5
+   FORWARD  : Send Per. #     3 : Pol #    2 to node #     6
+   FORWARD  : Send Per. #     4 : Pol #    1 to node #     7
+   FORWARD: Recieve Per #     2 and Pol    1      from     3
+   FORWARD  : Send Per. #     4 : Pol #    2 to node #     3
+   FORWARD: Recieve Per #     2 and Pol    2      from     4
+   FORWARD: Recieve Per #     4 and Pol    1      from     7
+   FORWARD: Recieve Per #     1 and Pol    2      from     2
+   FORWARD: Recieve Per #     1 and Pol    1      from     1
+   FORWARD: Recieve Per #     3 and Pol    2      from     6
+   FORWARD: Recieve Per #     3 and Pol    1      from     5
+   FORWARD: Recieve Per #     4 and Pol    2      from     3
+ FWD: Finished calculating for (           4 ) Transmitters 
+ FWD: TIME REQUIERED:   0.19719815254211426      s
+    JmultT  : Send Per. #     1 : Pol #    1 to node #     1
+    JmultT  : Send Per. #     1 : Pol #    2 to node #     2
+    JmultT  : Send Per. #     2 : Pol #    1 to node #     3
+    JmultT  : Send Per. #     2 : Pol #    2 to node #     4
+    JmultT  : Send Per. #     3 : Pol #    1 to node #     5
+    JmultT  : Send Per. #     3 : Pol #    2 to node #     6
+    JmultT  : Send Per. #     4 : Pol #    1 to node #     7
+    JmultT: Recieve Per #     4 and Pol    1      from     7
+    JmultT  : Send Per. #     4 : Pol #    2 to node #     7
+    JmultT: Recieve Per #     3 and Pol    2      from     6
+    JmultT: Recieve Per #     1 and Pol    1      from     1
+    JmultT: Recieve Per #     1 and Pol    2      from     2
+    JmultT: Recieve Per #     3 and Pol    1      from     5
+    JmultT: Recieve Per #     2 and Pol    1      from     3
+    JmultT: Recieve Per #     2 and Pol    2      from     4
+    JmultT: Recieve Per #     4 and Pol    2      from     7
+ JmultT: Finished calculating for (           4 ) Transmitters 
+ JmultT: TIME REQUIERED:    2.5476083755493164      s
+   FORWARD  : Send Per. #     1 : Pol #    1 to node #     1
+   FORWARD  : Send Per. #     1 : Pol #    2 to node #     2
+   FORWARD  : Send Per. #     2 : Pol #    1 to node #     3
+   FORWARD  : Send Per. #     2 : Pol #    2 to node #     4
+   FORWARD  : Send Per. #     3 : Pol #    1 to node #     5
+   FORWARD  : Send Per. #     3 : Pol #    2 to node #     6
+   FORWARD  : Send Per. #     4 : Pol #    1 to node #     7
+   FORWARD: Recieve Per #     1 and Pol    2      from     2
+   FORWARD  : Send Per. #     4 : Pol #    2 to node #     2
+   FORWARD: Recieve Per #     4 and Pol    1      from     7
+   FORWARD: Recieve Per #     2 and Pol    1      from     3
+   FORWARD: Recieve Per #     3 and Pol    2      from     6
+   FORWARD: Recieve Per #     3 and Pol    1      from     5
+   FORWARD: Recieve Per #     2 and Pol    2      from     4
+   FORWARD: Recieve Per #     1 and Pol    1      from     1
+   FORWARD: Recieve Per #     4 and Pol    2      from     2
+ FWD: Finished calculating for (           4 ) Transmitters 
+ FWD: TIME REQUIERED:   0.19190096855163574      s
+   FORWARD  : Send Per. #     1 : Pol #    1 to node #     1
+   FORWARD  : Send Per. #     1 : Pol #    2 to node #     2
+   FORWARD  : Send Per. #     2 : Pol #    1 to node #     3
+   FORWARD  : Send Per. #     2 : Pol #    2 to node #     4
+   FORWARD  : Send Per. #     3 : Pol #    1 to node #     5
+   FORWARD  : Send Per. #     3 : Pol #    2 to node #     6
+   FORWARD  : Send Per. #     4 : Pol #    1 to node #     7
+   FORWARD: Recieve Per #     4 and Pol    1      from     7
+   FORWARD  : Send Per. #     4 : Pol #    2 to node #     7
+   FORWARD: Recieve Per #     1 and Pol    2      from     2
+   FORWARD: Recieve Per #     2 and Pol    1      from     3
+   FORWARD: Recieve Per #     1 and Pol    1      from     1
+   FORWARD: Recieve Per #     2 and Pol    2      from     4
+   FORWARD: Recieve Per #     3 and Pol    1      from     5
+   FORWARD: Recieve Per #     3 and Pol    2      from     6
+   FORWARD: Recieve Per #     4 and Pol    2      from     7
+ FWD: Finished calculating for (           4 ) Transmitters 
+ FWD: TIME REQUIERED:   0.18730568885803223      s
+    JmultT  : Send Per. #     1 : Pol #    1 to node #     1
+    JmultT  : Send Per. #     1 : Pol #    2 to node #     2
+    JmultT  : Send Per. #     2 : Pol #    1 to node #     3
+    JmultT  : Send Per. #     2 : Pol #    2 to node #     4
+    JmultT  : Send Per. #     3 : Pol #    1 to node #     5
+    JmultT  : Send Per. #     3 : Pol #    2 to node #     6
+    JmultT  : Send Per. #     4 : Pol #    1 to node #     7
+    JmultT: Recieve Per #     4 and Pol    1      from     7
+    JmultT  : Send Per. #     4 : Pol #    2 to node #     7
+    JmultT: Recieve Per #     3 and Pol    2      from     6
+    JmultT: Recieve Per #     1 and Pol    1      from     1
+    JmultT: Recieve Per #     1 and Pol    2      from     2
+    JmultT: Recieve Per #     3 and Pol    1      from     5
+    JmultT: Recieve Per #     2 and Pol    1      from     3
+    JmultT: Recieve Per #     2 and Pol    2      from     4
+    JmultT: Recieve Per #     4 and Pol    2      from     7
+ JmultT: Finished calculating for (           4 ) Transmitters 
+ JmultT: TIME REQUIERED:    2.6236779689788818      s
+ FWD: Sending stop message to all nodes
+ Node       :           1  status=  Job Completed
+ Node       :           2  status=  Job Completed
+ Node       :           3  status=  Job Completed
+ Node       :           4  status=  Job Completed
+ Node       :           5  status=  Job Completed
+ Node       :           6  status=  Job Completed
+ Node       :           7  status=  Job Completed

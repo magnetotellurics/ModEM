@@ -1,0 +1,40 @@
+ The initial damping parameter lambda is  1.0E+01
+    START: f= 1.02546E+02 m2= 0.00000E+00 rms=  10.126486 lambda= 1.00000E+01
+Relative CG-error:
+CG-Iter=     1, error =  1.00000E+00  Lambda=  1.00000E+01
+CG-Iter=     2, error =  4.38298E-01  Lambda=  1.00000E+01
+CG-Iter=     3, error =  3.65367E-01  Lambda=  1.00000E+01
+CG-Iter=     4, error =  2.88645E-01  Lambda=  1.00000E+01
+CG-Iter=     5, error =  1.83419E-01  Lambda=  1.00000E+01
+CG-Iter=     6, error =  1.77172E-01  Lambda=  1.00000E+01
+CG-Iter=     7, error =  1.58071E-01  Lambda=  1.00000E+01
+CG-Iter=     8, error =  1.30530E-01  Lambda=  1.00000E+01
+CG-Iter=     9, error =  4.53384E-02  Lambda=  1.00000E+01
+CG-Iter=    10, error =  5.91390E-02  Lambda=  1.00000E+01
+CG-Iter=    11, error =  2.65483E-02  Lambda=  1.00000E+01
+CG-Iter=    12, error =  2.17337E-02  Lambda=  1.00000E+01
+CG-Iter=    13, error =  1.26088E-02  Lambda=  1.00000E+01
+CG-Iter=    14, error =  6.60239E-03  Lambda=  1.00000E+01
+CG-Iter=    15, error =  4.61297E-03  Lambda=  1.00000E+01
+CG-Iter=    16, error =  4.16109E-03  Lambda=  1.00000E+01
+CG-Iter=    17, error =  2.31344E-03  Lambda=  1.00000E+01
+CG-Iter=    18, error =  1.71320E-03  Lambda=  1.00000E+01
+CG-Iter=    19, error =  8.38256E-04  Lambda=  1.00000E+01
+ Completed DCG iteration     1
+     with: f= 9.04916E+00 m2= 1.11463E+03 rms=   2.706632 lambda= 1.00000E+01
+Relative CG-error:
+CG-Iter=     1, error =  1.00000E+00  Lambda=  1.00000E+01
+CG-Iter=     2, error =  3.33005E-01  Lambda=  1.00000E+01
+CG-Iter=     3, error =  1.78958E-01  Lambda=  1.00000E+01
+CG-Iter=     4, error =  1.17006E-01  Lambda=  1.00000E+01
+CG-Iter=     5, error =  7.20553E-02  Lambda=  1.00000E+01
+CG-Iter=     6, error =  5.59063E-02  Lambda=  1.00000E+01
+CG-Iter=     7, error =  5.26231E-02  Lambda=  1.00000E+01
+CG-Iter=     8, error =  1.86083E-02  Lambda=  1.00000E+01
+CG-Iter=     9, error =  1.32073E-02  Lambda=  1.00000E+01
+CG-Iter=    10, error =  7.02078E-03  Lambda=  1.00000E+01
+CG-Iter=    11, error =  3.41273E-03  Lambda=  1.00000E+01
+CG-Iter=    12, error =  1.40363E-03  Lambda=  1.00000E+01
+CG-Iter=    13, error =  7.13283E-04  Lambda=  1.00000E+01
+ Completed DCG iteration     2
+     with: f= 3.99133E+00 m2= 1.11290E+03 rms=   1.506886 lambda= 1.00000E+01
