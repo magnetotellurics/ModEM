@@ -16,8 +16,8 @@ module config_file
         private
         integer                     :: nlines
         character(50), pointer      :: names(:), values(:)
-        ! Character-based information specified by the user
         type (userdef_control)      :: cUserDef
+        !
     contains
         procedure, public           :: init     => initConfigs
         procedure, public           :: print    => printConfigs
@@ -32,7 +32,7 @@ module config_file
     !
 contains
     !
-    ! INIT READ CONFIGURATION FILE
+    !
     subroutine initConfigs( this, cUserDef )
         implicit none
         !
@@ -53,19 +53,20 @@ contains
         ! READ FIRST LINE
         read( ioConfig, *, iostat=io_stat ) new_name, new_value
         !
-        allocate( this%names(1) )
-        this%names(1) = trim(new_name)
-        !
-        allocate( this%values(1) )
-        this%values(1) = trim(new_value)
-        !
-        ! READ THE REST OF THE LINES
-        this%nlines = 1
+        if( new_name(1:1) /= '#'  ) then
+            allocate( this%names(1) )
+            this%names(1) = trim(new_name)
+            !
+            allocate( this%values(1) )
+            this%values(1) = trim(new_value)
+            !
+            this%nlines = 1
+        end if
         do while( io_stat == 0 )
             !
             read( ioConfig, *, iostat=io_stat ) new_name, new_value
             !
-            if( io_stat == 0 ) then
+            if( io_stat == 0 .and. new_name(1:1) /= '#'  ) then
                 allocate( aux_names( this%nlines + 1 ) )
                 aux_names( 1 : this%nlines ) = this%names
                 aux_names( this%nlines + 1 ) = trim(new_name)
@@ -92,12 +93,14 @@ contains
         !
     end subroutine initConfigs
     !
+    !
     function getcUserDef( this ) result( cUserDef )
         class( configs ), intent( inout )   :: this
         type (userdef_control)              :: cUserDef
         !
         cUserDef = this%cUserDef
     end function getcUserDef
+    !
     !
     function getValidJob( this ) result( job )
         class( configs ), intent( inout )   :: this
@@ -166,8 +169,8 @@ contains
         character(*), intent( in )          :: field_name
         integer                             :: name_id
         !
-        ! LOOKS FOR field_name TAG
         name_id = 0
+        !
         do i = 1, this%nlines
             if( index( this%names(i), trim(field_name) ) /= 0 ) then
                 name_id = i
@@ -175,6 +178,7 @@ contains
         end do
         !
     end function getNameId
+    !
     !
     subroutine validateConfigs( this )
         !
@@ -187,12 +191,16 @@ contains
         !
         if( ifield_name == 0 ) then
             write(*,*) 'There is no tag job!'
+            write(0,*) ' '
+            write(0,*) 'Your configuration file must have a line like this:'
+            write(0,*) ' '
+            write(0,*) 'job         <name>'
             stop
         else
             !
             select case ( this%cUserDef%job )
 
-                case ( 'READ_WRITE' ) !R
+                case ( 'READ_WRITE', 'R' )
                     !TEST rFile_Model
                     ifield_name = this%getNameId( 'rFile_Model' )
                     if( ifield_name == 0 ) then
@@ -230,7 +238,7 @@ contains
                         this%cUserDef%wFile_Data = this%values( ifield_name )
                     end if
 
-                case ( 'FORWARD' ) !F
+                case ( 'FORWARD', 'F' )
                     !TEST rFile_Model
                     ifield_name = this%getNameId( 'rFile_Model' )
                     if( ifield_name == 0 ) then
@@ -276,7 +284,6 @@ contains
                         this%cUserDef%rFile_fwdCtrl = this%values( ifield_name )
                         inquire(FILE=this%cUserDef%rFile_fwdCtrl,EXIST=exists)
                         if ( .not. exists ) then
-                            ! problem - invalid argument
                             write(0,*) 'Please specify a valid rFile_fwdCtrl'
                             stop
                         end if
@@ -287,13 +294,12 @@ contains
                         this%cUserDef%rFile_EMrhs = this%values( ifield_name )
                         inquire(FILE=this%cUserDef%rFile_EMrhs,EXIST=exists)
                         if ( .not. exists ) then
-                            ! problem - invalid argument
                             write(0,*) 'Please specify a valid rFile_EMrhs'
                             stop
                         end if
                     end if
 
-                case ( 'COMPUTE_J' ) ! J
+                case ( 'COMPUTE_J', 'J' )
                     !TEST rFile_Model
                     ifield_name = this%getNameId( 'rFile_Model' )
                     if( ifield_name == 0 ) then
@@ -334,13 +340,12 @@ contains
                         this%cUserDef%rFile_fwdCtrl = this%values( ifield_name )
                         inquire(FILE=this%cUserDef%rFile_fwdCtrl,EXIST=exists)
                         if ( .not. exists ) then
-                            ! problem - invalid argument
                             write(0,*) 'Please specify a valid rFile_fwdCtrl'
                             stop
                         end if
                     end if
 
-                case ( 'MULT_BY_J' ) ! M
+                case ( 'MULT_BY_J', 'M' )
                     !TEST rFile_Model
                     ifield_name = this%getNameId( 'rFile_Model' )
                     if( ifield_name == 0 ) then
@@ -394,13 +399,12 @@ contains
                         this%cUserDef%rFile_fwdCtrl = this%values( ifield_name )
                         inquire(FILE=this%cUserDef%rFile_fwdCtrl,EXIST=exists)
                         if ( .not. exists ) then
-                            ! problem - invalid argument
                             write(0,*) 'Please specify a valid rFile_fwdCtrl'
                             stop
                         end if
                     end if
 
-                case ( 'MULT_BY_J_T', 'MULT_BY_J_T_multi_Tx' ) ! J
+                case ( 'MULT_BY_J_T', 'T', 'MULT_BY_J_T_multi_Tx', 'x' )
                     !TEST rFile_Model
                     ifield_name = this%getNameId( 'rFile_Model' )
                     if( ifield_name == 0 ) then
@@ -427,13 +431,13 @@ contains
                             stop
                         end if
                     end if
-                    !TEST wFile_Sens
-                    ifield_name = this%getNameId( 'wFile_Sens' )
+                    !TEST wFile_dModel
+                    ifield_name = this%getNameId( 'wFile_dModel' )
                     if( ifield_name == 0 ) then
-                        write(*,*) 'There is no tag wFile_Sens!'
+                        write(*,*) 'There is no tag wFile_dModel!'
                         call this%usage()
                     else
-                        this%cUserDef%wFile_Sens = this%values( ifield_name )
+                        this%cUserDef%wFile_dModel = this%values( ifield_name )
                     end if
                     !TEST rFile_fwdCtrl OPTIONAL
                     ifield_name = this%getNameId( 'rFile_fwdCtrl' )
@@ -441,13 +445,12 @@ contains
                         this%cUserDef%rFile_fwdCtrl = this%values( ifield_name )
                         inquire(FILE=this%cUserDef%rFile_fwdCtrl,EXIST=exists)
                         if ( .not. exists ) then
-                            ! problem - invalid argument
                             write(0,*) 'Please specify a valid rFile_fwdCtrl'
                             stop
                         end if
                     end if
 
-                case ( 'INVERSE' ) ! I
+                case ( 'INVERSE', 'I' )
                     !TEST search
                     ifield_name = this%getNameId( 'search' )
                     if( ifield_name == 0 ) then
@@ -505,7 +508,6 @@ contains
                         this%cUserDef%rFile_invCtrl = this%values( ifield_name )
                         inquire(FILE=this%cUserDef%rFile_invCtrl,EXIST=exists)
                         if ( .not. exists ) then
-                            ! problem - invalid argument
                             write(0,*) 'Please specify a valid inverse control file or damping parameter'
                             stop
                         end if
@@ -516,14 +518,12 @@ contains
                         this%cUserDef%rFile_fwdCtrl = this%values( ifield_name )
                         inquire(FILE=this%cUserDef%rFile_fwdCtrl,EXIST=exists)
                         if ( .not. exists ) then
-                            ! problem - invalid argument
                             write(0,*) 'Please specify a valid fwd control file or damping parameter'
                             stop
                         end if
                     end if
 
-
-                case ( 'APPLY_COV' ) ! C
+                case ( 'APPLY_COV', 'C' )
                     !TEST option
                     ifield_name = this%getNameId( 'option' )
                     if( ifield_name == 0 ) then
@@ -581,7 +581,7 @@ contains
                         end if
                     end if
 
-                case ( 'EXTRACT_BC' ) ! b
+                case ( 'EXTRACT_BC', 'b' )
                     !TEST rFile_Model
                     ifield_name = this%getNameId( 'rFile_Model' )
                     if( ifield_name == 0 ) then
@@ -622,13 +622,12 @@ contains
                         this%cUserDef%rFile_fwdCtrl = this%values( ifield_name )
                         inquire(FILE=this%cUserDef%rFile_fwdCtrl,EXIST=exists)
                         if ( .not. exists ) then
-                            ! problem - invalid argument
                             write(0,*) 'Please specify a valid fwd control file or damping parameter'
                             stop
                         end if
                     end if
 
-                case ( 'TEST_GRAD' ) !g
+                case ( 'TEST_GRAD', 'g' )
                     !TEST rFile_Model
                     ifield_name = this%getNameId( 'rFile_Model' )
                     if( ifield_name == 0 ) then
@@ -674,7 +673,6 @@ contains
                         this%cUserDef%rFile_fwdCtrl = this%values( ifield_name )
                         inquire(FILE=this%cUserDef%rFile_fwdCtrl,EXIST=exists)
                         if ( .not. exists ) then
-                            ! problem - invalid argument
                             write(0,*) 'Please specify a valid rFile_fwdCtrl'
                             stop
                         end if
@@ -685,13 +683,12 @@ contains
                         this%cUserDef%rFile_EMrhs = this%values( ifield_name )
                         inquire(FILE=this%cUserDef%rFile_EMrhs,EXIST=exists)
                         if ( .not. exists ) then
-                            ! problem - invalid argument
                             write(0,*) 'Please specify a valid rFile_EMrhs'
                             stop
                         end if
                     end if
 
-                case ( 'TEST_ADJ' ) ! A
+                case ( 'TEST_ADJ', 'A' )
                     !TEST option
                     ifield_name = this%getNameId( 'option' )
                     if( ifield_name == 0 ) then
@@ -826,7 +823,6 @@ contains
                                     this%cUserDef%rFile_EMrhs = this%values( ifield_name )
                                     inquire(FILE=this%cUserDef%rFile_EMrhs,EXIST=exists)
                                     if ( .not. exists ) then
-                                        ! problem - invalid argument
                                         write(0,*) 'Please specify a valid rFile_EMrhs'
                                         stop
                                     end if
@@ -1139,7 +1135,6 @@ contains
                                     this%cUserDef%rFile_EMrhs = this%values( ifield_name )
                                     inquire(FILE=this%cUserDef%rFile_EMrhs,EXIST=exists)
                                     if ( .not. exists ) then
-                                        ! problem - invalid argument
                                         write(0,*) 'Please specify a valid rFile_EMrhs'
                                         stop
                                     end if
@@ -1166,7 +1161,7 @@ contains
                         end select
                     end if
 
-                case ( 'TEST_SENS' ) ! S
+                case ( 'TEST_SENS', 'S' )
                     !TEST rFile_dModel
                     ifield_name = this%getNameId( 'rFile_dModel' )
                     if( ifield_name == 0 ) then
@@ -1207,7 +1202,6 @@ contains
                         this%cUserDef%rFile_fwdCtrl = this%values( ifield_name )
                         inquire(FILE=this%cUserDef%rFile_fwdCtrl,EXIST=exists)
                         if ( .not. exists ) then
-                            ! problem - invalid argument
                             write(0,*) 'Please specify a valid rFile_fwdCtrl'
                             stop
                         end if
@@ -1223,9 +1217,9 @@ contains
                     write(0,*) ' '
                     write(0,*) 'Valis job names:'
                     write(0,*) ' '
-                    write(0,*) 'READ_WRITE, FORWARD, COMPUTE_J, MULT_BY_J_T'
-                    write(0,*) 'MULT_BY_J_T_multi_Tx, INVERSE, APPLY_COV'
-                    write(0,*) 'EXTRACT_BC, TEST_GRAD, TEST_ADJ and TEST_SENS'
+                    write(0,*) '[READ_WRITE or R], [FORWARD or F], [COMPUTE_J or J], [MULT_BY_J_T or T],'
+                    write(0,*) '[MULT_BY_J_T_multi_Tx or x], [INVERSE or I], [APPLY_COV or C],'
+                    write(0,*) '[EXTRACT_BC or b], [TEST_GRAD or g], [TEST_ADJ or A], [TEST_SENS or S]'
                     stop
 
             end select
@@ -1235,14 +1229,13 @@ contains
         end if
     end subroutine validateConfigs
     !
+    !
     subroutine configUserDef( this, cUserDef )
         class( configs ), intent( inout ) :: this
         type ( userdef_control ), intent( in )      :: cUserDef
         !
-        ! special case W - read from configuration file
         if( cUserDef%job .eq. CONF_FILE ) then !W
             !
-            ! IF CONFIG FILE EXIST...
             inquire( file=cUserDef%rFile_Config, exist=config_file_exists )
             !
             if ( config_file_exists ) then
@@ -1258,28 +1251,29 @@ contains
         end if
     end subroutine configUserDef
     !
+    !
     subroutine printUsage( this )
         class( configs ), intent( in ) :: this
         !
         select case ( this%cUserDef%job )
 
-            case ('READ_WRITE') !R
+            case ( 'READ_WRITE', 'R' )
                 write(0,*) 'Usage: -R  rFile_Model rFile_Data [wFile_Model wFile_Data]'
                 write(0,*) ' '
                 write(0,*) 'Your configuration file must have these fields:'
                 write(0,*) ' '
-                write(0,*) 'job         READ_WRITE'
+                write(0,*) 'job         READ_WRITE or R'
                 write(0,*) 'rFile_Model <path>'
                 write(0,*) 'rFile_Data  <path>'
                 write(0,*) 'wFile_Model <name> [OPTIONAL]'
                 write(0,*) 'wFile_Data  <name> [OPTIONAL]'
 
-            case ('FORWARD') !F
+            case ( 'FORWARD', 'F' )
                 write(0,*) 'Usage: -F  rFile_Model rFile_Data wFile_Data [wFile_EMsoln rFile_fwdCtrl rFile_EMrhs]'
                 write(0,*) ' '
                 write(0,*) 'Your configuration file must have these fields:'
                 write(0,*) ' '
-                write(0,*) 'job             FORWARD'
+                write(0,*) 'job             FORWARD or F'
                 write(0,*) 'rFile_Model     <path>'
                 write(0,*) 'rFile_Data      <path>'
                 write(0,*) 'wFile_Data      <name>'
@@ -1287,60 +1281,60 @@ contains
                 write(0,*) 'rFile_fwdCtrl   <path> [OPTIONAL]'
                 write(0,*) 'rFile_EMrhs     <path> [OPTIONAL]'
 
-            case ('COMPUTE_J') ! J
+            case ( 'COMPUTE_J', 'J' )
                 write(0,*) 'Usage: -J  rFile_Model rFile_Data wFile_Sens [rFile_fwdCtrl]'
                 write(0,*) ' '
                 write(0,*) 'Your configuration file must have these fields:'
                 write(0,*) ' '
-                write(0,*) 'job             COMPUTE_J'
+                write(0,*) 'job             COMPUTE_J or J'
                 write(0,*) 'rFile_Model     <path>'
                 write(0,*) 'rFile_Data      <path>'
                 write(0,*) 'wFile_Sens      <name>'
                 write(0,*) 'rFile_fwdCtrl   <path> [OPTIONAL]'
 
-            case ( 'MULT_BY_J' ) ! M
+            case ( 'MULT_BY_J', 'M' )
                 write(0,*) 'Usage: -M  rFile_Model rFile_dModel rFile_Data wFile_Data [rFile_fwdCtrl]'
                 write(0,*) ' '
                 write(0,*) 'Your configuration file must have these fields:'
                 write(0,*) ' '
-                write(0,*) 'job             MULT_BY_J'
+                write(0,*) 'job             MULT_BY_J or M'
                 write(0,*) 'rFile_Model     <path>'
                 write(0,*) 'rFile_dModel    <path>'
                 write(0,*) 'rFile_Data      <path>'
                 write(0,*) 'wFile_Data      <name>'
                 write(0,*) 'rFile_fwdCtrl   <path> [OPTIONAL]'
 
-            case ('MULT_BY_J_T') ! T
+            case ( 'MULT_BY_J_T', 'T' )
                 write(0,*) 'Usage: -T  rFile_Model rFile_Data wFile_dModel [rFile_fwdCtrl]'
                 write(0,*) ' '
                 write(0,*) 'Your configuration file must have these fields:'
                 write(0,*) ' '
-                write(0,*) 'job             MULT_BY_J_T'
+                write(0,*) 'job             MULT_BY_J_T or T'
                 write(0,*) 'rFile_Model     <path>'
                 write(0,*) 'rFile_Data      <path>'
                 write(0,*) 'wFile_dModel    <name>'
                 write(0,*) 'rFile_fwdCtrl   <path> [OPTIONAL]'
 
-            case ('MULT_BY_J_T_multi_Tx') ! x
+            case ( 'MULT_BY_J_T_multi_Tx', 'x' )
                 write(0,*) 'Usage: -x  rFile_Model rFile_Data wFile_dModel [rFile_fwdCtrl]'
                 write(0,*) ' '
                 write(0,*) 'Your configuration file must have these fields:'
                 write(0,*) ' '
-                write(0,*) 'job             MULT_BY_J_T_multi_Tx'
+                write(0,*) 'job             MULT_BY_J_T_multi_Tx or x'
                 write(0,*) 'rFile_Model     <path>'
                 write(0,*) 'rFile_Data      <path>'
                 write(0,*) 'wFile_dModel    <name>'
                 write(0,*) 'rFile_fwdCtrl   <path> [OPTIONAL]'
 
-            case ('INVERSE') ! I
+            case ( 'INVERSE', 'I' ) ! I
                 write(0,*) 'Usage: -I NLCG rFile_Model rFile_Data [lambda eps]'
                 write(0,*) 'or'
                 write(0,*) 'Usage: -I NLCG rFile_Model rFile_Data [rFile_invCtrl rFile_fwdCtrl]'
                 write(0,*) ' '
                 write(0,*) 'Your configuration file must have these fields:'
                 write(0,*) ' '
-                write(0,*) 'job             INVERSE'
-                write(0,*) 'search          <NLCG, DCG, Hybrid, LBFGS>'
+                write(0,*) 'job             INVERSE or I'
+                write(0,*) 'search          <NLCG, DCG, Hybrid or LBFGS>'
                 write(0,*) 'rFile_Model     <path>'
                 write(0,*) 'rFile_Data      <path>'
                 write(0,*) 'lambda          <value> [OPTIONAL]'
@@ -1348,50 +1342,51 @@ contains
                 write(0,*) 'rFile_invCtrl   <path>  [OPTIONAL]'
                 write(0,*) 'rFile_fwdCtrl   <path>  [OPTIONAL]'
 
-            case ('APPLY_COV') ! C
+            case ( 'APPLY_COV', 'C' ) ! C
                 write(0,*) 'Usage: -C [FWD|INV] rFile_Model wFile_Model [rFile_Cov rFile_Prior]'
                 write(0,*) ' '
                 write(0,*) 'Your configuration file must have these fields:'
                 write(0,*) ' '
-                write(0,*) 'job             APPLY_COV'
-                write(0,*) 'option          FWD or INV'
+                write(0,*) 'job             APPLY_COV or C'
+                write(0,*) 'option          <FWD or INV>'
                 write(0,*) 'rFile_Model     <path>'
                 write(0,*) 'wFile_Model     <name>'
                 write(0,*) 'rFile_Cov       <path> [OPTIONAL]'
                 write(0,*) 'rFile_Prior     <path> [OPTIONAL]'
 
-            case ('EXTRACT_BC') ! b
+            case ( 'EXTRACT_BC', 'b' ) ! b
                 write(0,*) 'Usage: -b  rFile_Model rFile_Data wFile_EMrhs [rFile_fwdCtrl]'
                 write(0,*) ' '
                 write(0,*) 'Your configuration file must have these fields:'
                 write(0,*) ' '
-                write(0,*) 'job             EXTRACT_BC'
+                write(0,*) 'job             EXTRACT_BC or b'
                 write(0,*) 'rFile_Model     <path>'
                 write(0,*) 'rFile_Data      <path>'
                 write(0,*) 'wFile_EMrhs     <name>'
                 write(0,*) 'rFile_fwdCtrl   <path> [OPTIONAL]'
 
-            case ('TEST_GRAD') !g
+            case ( 'TEST_GRAD', 'g' ) !g
                 write(0,*) 'Usage: -g  rFile_Model rFile_Data rFile_dModel [rFile_fwdCtrl rFile_EMrhs]'
                 write(0,*) ' '
                 write(0,*) 'Your configuration file must have these fields:'
                 write(0,*) ' '
-                write(0,*) 'job             TEST_GRAD'
+                write(0,*) 'job             TEST_GRAD or g'
                 write(0,*) 'rFile_Model     <path>'
                 write(0,*) 'rFile_Data      <path>'
                 write(0,*) 'rFile_dModel    <path>'
                 write(0,*) 'rFile_fwdCtrl   <path> [OPTIONAL]'
                 write(0,*) 'rFile_EMrhs     <path> [OPTIONAL]'
 
-            case ('TEST_ADJ') ! A
+            case ( 'TEST_ADJ', 'A' )
 
+                write(0,*) 'Option: ', this%cUserDef%option
                 select case ( this%cUserDef%option )
                     case ( 'J' )
                         write(0,*) 'Usage: -A  J rFile_Model rFile_dModel rFile_Data [wFile_Model wFile_Data]'
                         write(0,*) ' '
                         write(0,*) 'Your configuration file must have these fields:'
                         write(0,*) ' '
-                        write(0,*) 'job             TEST_ADJ'
+                        write(0,*) 'job             TEST_ADJ or A'
                         write(0,*) 'option          J'
                         write(0,*) 'rFile_Model     <path>'
                         write(0,*) 'rFile_dModel    <path>'
@@ -1404,7 +1399,7 @@ contains
                         write(0,*) ' '
                         write(0,*) 'Your configuration file must have these fields:'
                         write(0,*) ' '
-                        write(0,*) 'job             TEST_ADJ'
+                        write(0,*) 'job             TEST_ADJ or A'
                         write(0,*) 'option          L'
                         write(0,*) 'rFile_Model     <path>'
                         write(0,*) 'rFile_EMsoln    <path>'
@@ -1417,7 +1412,7 @@ contains
                         write(0,*) ' '
                         write(0,*) 'Your configuration file must have these fields:'
                         write(0,*) ' '
-                        write(0,*) 'job             TEST_ADJ'
+                        write(0,*) 'job             TEST_ADJ or A'
                         write(0,*) 'option          S'
                         write(0,*) 'rFile_Model     <path>'
                         write(0,*) 'rFile_EMrhs     <path>'
@@ -1429,7 +1424,7 @@ contains
                         write(0,*) ' '
                         write(0,*) 'Your configuration file must have these fields:'
                         write(0,*) ' '
-                        write(0,*) 'job             TEST_ADJ'
+                        write(0,*) 'job             TEST_ADJ or A'
                         write(0,*) 'option          P'
                         write(0,*) 'rFile_Model     <path>'
                         write(0,*) 'rFile_dModel    <path>'
@@ -1443,7 +1438,7 @@ contains
                         write(0,*) ' '
                         write(0,*) 'Your configuration file must have these fields:'
                         write(0,*) ' '
-                        write(0,*) 'job             TEST_ADJ'
+                        write(0,*) 'job             TEST_ADJ or A'
                         write(0,*) 'option          Q'
                         write(0,*) 'rFile_Model     <path>'
                         write(0,*) 'rFile_dModel    <path>'
@@ -1456,7 +1451,7 @@ contains
                         write(0,*) ' '
                         write(0,*) 'Your configuration file must have these fields:'
                         write(0,*) ' '
-                        write(0,*) 'job             TEST_ADJ'
+                        write(0,*) 'job             TEST_ADJ or A'
                         write(0,*) 'option          O'
                         write(0,*) 'rFile_Model     <path>'
                         write(0,*) 'rFile_Data      <path>'
@@ -1466,7 +1461,7 @@ contains
                         write(0,*) ' '
                         write(0,*) 'Your configuration file must have these fields:'
                         write(0,*) ' '
-                        write(0,*) 'job             TEST_ADJ'
+                        write(0,*) 'job             TEST_ADJ or A'
                         write(0,*) 'option          m'
                         write(0,*) 'rFile_Model     <path>'
                         write(0,*) 'wFile_Model     <name>'
@@ -1477,7 +1472,7 @@ contains
                         write(0,*) ' '
                         write(0,*) 'Your configuration file must have these fields:'
                         write(0,*) ' '
-                        write(0,*) 'job             TEST_ADJ'
+                        write(0,*) 'job             TEST_ADJ or A'
                         write(0,*) 'option          d'
                         write(0,*) 'rFile_Data      <path>'
                         write(0,*) 'wFile_Data      <name>'
@@ -1488,7 +1483,7 @@ contains
                         write(0,*) ' '
                         write(0,*) 'Your configuration file must have these fields:'
                         write(0,*) ' '
-                        write(0,*) 'job             TEST_ADJ'
+                        write(0,*) 'job             TEST_ADJ or A'
                         write(0,*) 'option          e'
                         write(0,*) 'rFile_Model     <path>'
                         write(0,*) 'rFile_Data      <path>'
@@ -1501,7 +1496,7 @@ contains
                         write(0,*) ' '
                         write(0,*) 'Your configuration file must have these fields:'
                         write(0,*) ' '
-                        write(0,*) 'job             TEST_ADJ'
+                        write(0,*) 'job             TEST_ADJ or A'
                         write(0,*) 'option          b'
                         write(0,*) 'rFile_Model     <path>'
                         write(0,*) 'rFile_Data      <path>'
@@ -1511,17 +1506,17 @@ contains
 
                     case default
                         write(0,*) 'Unknown option. Please check your configuration file'
-                        write(0,*) 'Valid options: [J, L, S, P, Q, O, m, d, e, b]'
+                        write(0,*) 'Valid options: [J, L, S, P, Q, O, m, d, e or b]'
                         stop
 
                 end select
 
-            case ('TEST_SENS') ! S
+            case ( 'TEST_SENS', 'S' )
                 write(0,*) 'Usage: -S  rFile_Model rFile_dModel rFile_Data wFile_Data [rFile_fwdCtrl wFile_Sens]'
                 write(0,*) ' '
                 write(0,*) 'Your configuration file must have these fields:'
                 write(0,*) ' '
-                write(0,*) 'job             TEST_SENS'
+                write(0,*) 'job             TEST_SENS or S'
                 write(0,*) 'rFile_Model     <path>'
                 write(0,*) 'rFile_dModel    <path>'
                 write(0,*) 'rFile_Data      <path>'
@@ -1534,13 +1529,13 @@ contains
                 write(0,*) ' '
                 write(0,*) 'Valis job names:'
                 write(0,*) ' '
-                write(0,*) 'READ_WRITE, FORWARD, COMPUTE_J, MULT_BY_J_T'
-                write(0,*) 'MULT_BY_J_T_multi_Tx, INVERSE, APPLY_COV'
-                write(0,*) 'EXTRACT_BC, TEST_GRAD, TEST_ADJ and TEST_SENS'
+                write(0,*) '[READ_WRITE or R], [FORWARD or F], [COMPUTE_J or J], [MULT_BY_J_T or T],'
+                write(0,*) '[MULT_BY_J_T_multi_Tx or x], [INVERSE or I], [APPLY_COV or C],'
+                write(0,*) '[EXTRACT_BC or b], [TEST_GRAD or g], [TEST_ADJ or A], [TEST_SENS or S]'
         end select
         !
         stop
-            !
+        !
     end subroutine printUsage
     !
     !
