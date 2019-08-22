@@ -636,7 +636,9 @@ Contains
       end if
 
 	  ! if alpha is too small, we are not making progress: update lambda
-      if (abs(rmsPrev - rms) < iterControl%fdiffTol) then
+      ! Change to relative diff, changed by Liuzhongyin 2017.06.26
+      ! if (abs(rmsPrev - rms) < iterControl%fdiffTol) then
+      if (abs((rmsPrev - rms)/rmsPrev) < iterControl%fdiffTol) then
       		! update lambda, penalty functional and gradient
       		call update_damping_parameter(lambda,mHat,value,grad)
       		! update alpha

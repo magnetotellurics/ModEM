@@ -333,6 +333,16 @@ Contains
                                 error(icomp) = 10**error(icomp)
                             endif
                         end if
+
+                        ! For Phase only, Rad Used, Writen by LiuZhongyin
+                        ! 2017.05.27
+                        if (index(compid,'PHS')>0) then
+                            if (conjugate) then
+                             value(icomp) = value(icomp)*R2D
+                            else
+                                value(icomp) = -value(icomp)*R2D
+                            endif
+                        end if
                         write(ioDat,'(es12.6)',    iostat=ios,advance='no') Period
                         write(ioDat, '(a1)', iostat=ios,advance='no') ' '
                         write(ioDat,'(a40,3f15.3)',iostat=ios,advance='no') trim(siteid),x(:)
@@ -547,8 +557,19 @@ Contains
 
                 ! For apparent resistivities only, use log10 of the values
                 if (index(compid,'RHO')>0) then
+                    Zerr  = Zerr/Zreal/dlog(10.0d0)
                     Zreal = log10(Zreal)
-                    Zerr  = log10(Zerr)
+                    ! Zerr  = log10(Zerr)
+                end if
+
+            ! For Phase only, use rad, Writen by LiuZhongyin 2017.05.27
+            if (index(compid,'PHS')>0) then
+                    if (conjugate) then
+                Zreal = Zreal*D2R
+                    else
+                        Zreal = -Zreal*D2R
+                    endif
+                Zerr  = Zerr*D2R
                 end if
 
                 ! Update the transmitter dictionary and the index (sets up if necessary)
