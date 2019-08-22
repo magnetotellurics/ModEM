@@ -337,7 +337,11 @@ Contains
                         ! For Phase only, Rad Used, Writen by LiuZhongyin
                         ! 2017.05.27
                         if (index(compid,'PHS')>0) then
+                            if (conjugate) then
                              value(icomp) = value(icomp)*R2D
+                            else
+                                value(icomp) = -value(icomp)*R2D
+                            endif
                         end if
                         write(ioDat,'(es12.6)',    iostat=ios,advance='no') Period
                         write(ioDat, '(a1)', iostat=ios,advance='no') ' '
@@ -559,7 +563,11 @@ Contains
 
             ! For Phase only, use rad, Writen by LiuZhongyin 2017.05.27
             if (index(compid,'PHS')>0) then
+                    if (conjugate) then
                 Zreal = Zreal*D2R
+                    else
+                        Zreal = -Zreal*D2R
+                    endif
                 Zerr  = Zerr*D2R
                 end if
 
