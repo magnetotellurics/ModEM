@@ -170,10 +170,12 @@ while (@ARGV){
 
 $mainprogfile=$arg;
 
+print "##### ARG $arg ####";
 # Generate a name for the executable file
 $execfile=$mainprogfile;
 $execfile=~s/\.${sftag}//;
 $execfile=~s|.*/||;
+print "##### ARG $execfile ####";
 
 # Output makefile header
 print "# Makefile suited for building the $execfile program\n";

@@ -369,6 +369,9 @@ Contains
 	  alpha = (ONE+0.01)*alpha
 	  write(*,'(a25,i5)') 'Completed NLCG iteration ',iter
 	  write(ioLog,'(a25,i5)') 'Completed NLCG iteration ',iter
+	  ! 
+
+	  
 	  Nmodel = countModelParam(mHat)
 	  mNorm = dotProd(mHat,mHat)/Nmodel
       call printf('with',lambda,alpha,value,mNorm,rms)

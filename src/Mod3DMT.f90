@@ -119,7 +119,12 @@ program Mod3DMT
 #endif
       ! Start the (portable) clock
       call reset_time(timer)
-
+		! Open a file for the solver's diagonestic; The file will include informatiosn about the solver (either QMR or BICG).
+		! These information will be used for plotting to compare the performace of the solver(s).
+		! Naser and Paulo 02.10.2019
+		open (unit=ioSolverStat,file="solverStatFile.txt",status='unknown',iostat=ios)
+		
+		
       select case (cUserDef%job)
       case (READ_WRITE)
         if (output_level > 3) then
@@ -137,7 +142,11 @@ program Mod3DMT
       case (FORWARD)
         write(6,*) 'Calculating predicted data...'
 #ifdef MPI
+		!
+        write(ioSolverStat,'(a60)')"#Job_Name Period Polarization Number_of_Iteration Residual"
         call Master_job_fwdPred(sigma0,allData,eAll)
+		!
+		
 #else
         call fwdPred(sigma0,allData,eAll)
 #endif
@@ -196,6 +205,7 @@ program Mod3DMT
          close(ioSens)
 
      case (INVERSE)
+	     write(ioSolverStat,'(a85)')"#INV_Iteration_number Job_Name Period Polarization Number_of_Iteration Residual"
          if (trim(cUserDef%search) == 'NLCG') then
             ! sigma1 contains mHat on input (zero = starting from the prior)
              write(6,*) 'Starting the NLCG search...'
@@ -364,6 +374,8 @@ program Mod3DMT
         write(0,*) 'No job ',trim(cUserDef%job),' defined.'
 
      end select
+     
+	  close(ioSolverStat)
 
      if (write_EMsoln) then
          ! write out EM solutions

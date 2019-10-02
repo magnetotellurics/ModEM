@@ -63,5 +63,7 @@ module file_units
   integer, parameter							:: ioResp=25
   integer, parameter                            :: ioC=23, ioD=24
   integer, parameter                            :: ioAvgC=33, ioAvgD=34
+  
+  integer, parameter                            :: ioSolverStat=50
 
 end module file_units
