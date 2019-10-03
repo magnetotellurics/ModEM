@@ -173,6 +173,11 @@ Contains
     real(8)                         :: lat,lon,ref_lat,ref_lon
     logical                         :: conjugate, isComplex
 
+	!For CSEM part
+	character(8)                    :: Dipole
+	character(40)              		:: Txid=''
+    real(8) 						:: Moment, Azi, Dip, LatTx, LongTx, Tx(3)
+	
     iTxt = 1
 
     open(unit=ioDat,file=cfile,form='formatted',status='unknown')
@@ -264,12 +269,38 @@ Contains
                 error = LARGE_REAL
             end if
             exist = allData%d(j)%data(i)%exist(:,k)
-            Period = txDict(iTx)%period
+
             siteid = rxDict(iRx)%id
+				Dipole = txDict(iTx)%Dipole
+				Period = txDict(iTx)%period
+				Moment = txDict(iTx)%moment
+				Azi = txDict(iTx)%AzimuthTx
+				Dip = txDict(iTx)%dipTx
+				Tx = txDict(iTx)%xyzTx			
+			
             x = rxDict(iRx)%x
 
             select case (iDt)
-
+                case(Ex_Field,Ey_Field,Bx_Field,By_Field,Bz_Field)
+				
+						do icomp = 1,ncomp/2
+							if (.not. exist(2*icomp-1)) then
+								cycle
+							end if
+							compid = typeDict(iDt)%id(icomp)
+							write(ioDat,'(a8)',iostat=ios,advance='no') trim(Dipole)
+							write(ioDat, '(a1)', iostat=ios,advance='no') ' '
+							write(ioDat,'(2es12.6)', iostat=ios, advance='no') Period
+							write(ioDat, '(a1)', iostat=ios,advance='no') ' '
+							write(ioDat,'(2es12.6)', iostat=ios, advance='no') Moment
+							write(ioDat,'(2f9.3, 3f12.3)',iostat=ios,advance='no') Azi, Dip, Tx
+							write(ioDat,'(a15,3f12.3)',iostat=ios,advance='no') trim(siteid),x(:)
+							write(ioDat, '(a1)', iostat=ios,advance='no') ' '
+!							write(ioDat,'(a8,3es15.6)',iostat=ios) trim(compid),value(2*icomp-1),value(2*icomp), error(2*icomp)
+!							error(2*icomp) = sqrt(value(2*icomp-1)*value(2*icomp-1) + value(2*icomp)*value(2*icomp))/100.0;
+							write(ioDat,'(a8,3es15.6)',iostat=ios) trim(compid),value(2*icomp-1),value(2*icomp), error(2*icomp)
+							countData = countData + 1
+                        end do				
                 case(Full_Impedance,Off_Diagonal_Impedance,Full_Vertical_Components)
 
                     do icomp = 1,ncomp/2
@@ -389,8 +420,14 @@ Contains
     real(8)                         :: lat,lon,ref_lat,ref_lon
     real(8)                         :: Zreal, Zimag, Zerr
     logical                         :: conjugate, errorBar, isComplex
-
-    ! First, set up the data type dictionary, if it's not in existence yet
+    
+	!Local
+    character(8)                    :: Dipole
+    real(8) 						:: Moment, Azi, Dip, LatTx, LongTx, Tx(3)
+    type(MTtx)				:: aTx
+    
+	
+	! First, set up the data type dictionary, if it's not in existence yet
     call setup_typeDict()
 
     ! Save the user preferences
@@ -474,8 +511,44 @@ Contains
 
         READ_DATA_LINE: Do
 
-            select case (iDt)
+        select case (iDt)
+              
+			case(Ex_Field,Ey_Field,Bx_Field,By_Field,Bz_Field)
+				read(ioDat,*,iostat=ios) Dipole, Period, Moment, Azi, Dip, Tx(1), Tx(2), Tx(3), code, x(1), x(2), x(3), compid, Zreal, Zimag, Zerr
+				if (ios /= 0 ) then
+					backspace(ioDat)
+					exit
+				end if
+            			
+            		    aTx%Tx_type='CSEM'
+						aTx%nPol=1
+            			aTx%Dipole = Dipole
+				        aTx%period = Period
+            			aTx%omega = 2.0d0*PI/Period            		
+            			aTx%xyzTx = Tx
+            			aTx%azimuthTx = Azi
+            			aTx%dipTx = Dip
+            			atx%moment = Moment
+						
+                ! Find component id for this value
+                icomp = ImpComp(compid,iDt)
 
+                ! Update the transmitter dictionary and the index (sets up if necessary)
+                iTx = update_txDict(aTx)
+
+                ! Update the receiver dictionary and index (sets up if necessary)
+                ! For now, make lat & lon part of site ID; could use directly in the future
+                
+                if (FindStr(gridCoords, CARTESIAN)>0) then
+                    write(siteid,'(a20,2f9.3)') code,lat,lon
+                   
+                elseif (FindStr(gridCoords, SPHERICAL)>0) then
+                write(siteid,'(a20,2f15.3)') code,x(1),x(2)
+                    x(1) = lat
+                    x(2) = lon
+                end if
+                iRx = update_rxDict(x,siteid)			
+			
             case(Full_Impedance,Off_Diagonal_Impedance,Full_Vertical_Components)
                 read(ioDat,*,iostat=ios) Period,code,lat,lon,x(1),x(2),x(3),compid,Zreal,Zimag,Zerr
 
@@ -483,12 +556,16 @@ Contains
                     backspace(ioDat)
                     exit
                 end if
-
+            		    aTx%Tx_type='MT'
+						aTx%nPol=2
+				        aTx%period = Period
+            			aTx%omega = 2.0d0*PI/Period            		
+						
                 ! Find component id for this value
                 icomp = ImpComp(compid,iDt)
 
                 ! Update the transmitter dictionary and the index (sets up if necessary)
-                iTx = update_txDict(Period,2)
+                iTx = update_txDict(aTx)
 
                 ! Update the receiver dictionary and index (sets up if necessary)
                 ! For now, make lat & lon part of site ID; could use directly in the future
@@ -511,12 +588,15 @@ Contains
                     backspace(ioDat)
                     exit
                 end if
-
+            		    aTx%Tx_type='MT'
+						aTx%nPol=2
+				        aTx%period = Period
+            			aTx%omega = 2.0d0*PI/Period
                 ! Find component id for this value
                 icomp = ImpComp(compid,iDt)
 
                 ! Update the transmitter dictionary and the index (sets up if necessary)
-                iTx = update_txDict(Period,2)
+                iTx = update_txDict(aTx)
 
                 ! Update the receiver dictionary and index (sets up if necessary)
                 ! For now, make lat & lon part of site ID; could use directly in the future
@@ -532,7 +612,10 @@ Contains
                     backspace(ioDat)
                     exit
                 end if
-
+            		    aTx%Tx_type='MT'
+						aTx%nPol=2
+				        aTx%period = Period
+            			aTx%omega = 2.0d0*PI/Period
                 ! Find component id for this value
                 icomp = ImpComp(compid,iDt)
 
@@ -543,14 +626,16 @@ Contains
                 end if
 
                 ! Update the transmitter dictionary and the index (sets up if necessary)
-                iTx = update_txDict(Period,2)
+                iTx = update_txDict(aTx)
 
                 ! Update the receiver dictionary and index (sets up if necessary)
                 ! For now, make lat & lon part of site ID; could use directly in the future
                 write(siteid,'(a22,2f9.3)') code,lat,lon
                 iRx = update_rxDict(x,siteid)
 
-            end select
+        end select
+
+
 
             ! complete transmitter dictionary update
             do i = 1,nTx

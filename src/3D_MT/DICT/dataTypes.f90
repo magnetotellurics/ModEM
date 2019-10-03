@@ -68,6 +68,13 @@ module dataTypes
   integer, parameter   :: Full_Interstation_TF = 4
   integer, parameter   :: Off_Diagonal_Rho_Phase = 5
   integer, parameter   :: Phase_Tensor = 6
+  
+  !Adding the CSEM data types: Ex, Ey,Ez,Bz,By and Bz
+  integer, parameter   :: Ex_Field = 7
+  integer, parameter   :: Ey_Field = 8
+  integer, parameter   :: Bx_Field = 9
+  integer, parameter   :: By_Field = 10
+  integer, parameter   :: Bz_Field = 11
  
 
 Contains
@@ -79,7 +86,7 @@ Contains
 
   	 integer     :: istat
 
-     allocate(typeDict(6),STAT=istat)
+     allocate(typeDict(11),STAT=istat)
 
      typeDict(Full_Impedance)%name = 'Full_Impedance'
      typeDict(Full_Impedance)%isComplex = .true.
@@ -142,8 +149,50 @@ Contains
      typeDict(Phase_Tensor)%id(2) = 'PTXY'
      typeDict(Phase_Tensor)%id(3) = 'PTYX'
      typeDict(Phase_Tensor)%id(4) = 'PTYY'
-	 
 
+! Adding the CSEM datatypes
+     typeDict(Ex_Field)%name = 'Ex_Field'
+     typeDict(Ex_Field)%isComplex = .true.
+     typeDict(Ex_Field)%tfType    = Ex_Field	
+     typeDict(Ex_Field)%units     = '[V/m]'
+     typeDict(Ex_Field)%nComp     = 2
+     allocate(typeDict(Ex_Field)%id(1),STAT=istat)
+     typeDict(Ex_Field)%id(1)    = 'EX'
+
+     typeDict(Ey_Field)%name = 'Ey_Field'
+     typeDict(Ey_Field)%isComplex = .true.
+     typeDict(Ey_Field)%tfType    = Ey_Field	
+     typeDict(Ey_Field)%units     = '[V/m]'
+     typeDict(Ey_Field)%nComp     = 2
+     allocate(typeDict(Ey_Field)%id(1),STAT=istat)
+     typeDict(Ey_Field)%id(1)    = 'EY'
+	 
+     typeDict(Bx_Field)%name = 'Bx_Field'
+     typeDict(Bx_Field)%isComplex = .true.
+     typeDict(Bx_Field)%tfType    = Bx_Field	
+     typeDict(Bx_Field)%units     = '[T]'
+     typeDict(Bx_Field)%nComp     = 2
+     allocate(typeDict(Bx_Field)%id(1),STAT=istat)
+     typeDict(Bx_Field)%id(1)    = 'BX'
+
+     typeDict(By_Field)%name = 'By_Field'
+     typeDict(By_Field)%isComplex = .true.
+     typeDict(By_Field)%tfType    = By_Field	
+     typeDict(By_Field)%units     = '[T]'
+     typeDict(By_Field)%nComp     = 2
+     allocate(typeDict(By_Field)%id(1),STAT=istat)
+     typeDict(By_Field)%id(1)    = 'BY'
+
+     typeDict(Bz_Field)%name = 'Bz_Field'
+     typeDict(Bz_Field)%isComplex = .true.
+     typeDict(Bz_Field)%tfType    = Bz_Field	
+     typeDict(Bz_Field)%units     = '[T]'
+     typeDict(Bz_Field)%nComp     = 2
+     allocate(typeDict(Bz_Field)%id(1),STAT=istat)
+     typeDict(Bz_Field)%id(1)    = 'BZ'
+
+	 
+	 
   end subroutine setup_typeDict
 
 ! **************************************************************************
@@ -196,6 +245,12 @@ Contains
 		else if ((index(oldUnits,'[V/m]/[A/m]')>0) .or. (index(oldUnits,'Ohm')>0)) then
 		   ! SI units for E/H
 		   factor1 = ONE * 1000.0 * 10000.0/(4*PI) ! approx. 796000.0
+		elseif (index(oldUnits,'[V/m]')>0) then
+		   ! SI units for E
+		   factor1 = ONE
+		elseif (index(oldUnits,'[T]')>0) then
+		   ! SI units for B
+		   factor1 = ONE 		   
 		else
 		   call errStop('Unknown input units in ImpUnits: '//trim(oldUnits))
 		end if
@@ -210,6 +265,12 @@ Contains
 		else if ((index(newUnits,'[V/m]/[A/m]')>0) .or. (index(newUnits,'Ohm')>0)) then
 		   ! SI units for E/H
 		   factor2 = ONE / (1000.0 * 10000.0/(4*PI))
+		elseif (index(newUnits,'[V/m]')>0) then
+		   ! SI units for E
+		   factor2 = ONE
+		elseif (index(newUnits,'[T]')>0) then
+		   ! SI units for B
+		   factor2 = ONE		   
 		else
 		   call errStop('Unknown output units in ImpUnits: '//trim(newUnits))
 		end if
@@ -246,7 +307,17 @@ Contains
 		  		  
       case('Phase_Tensor')
           dataType = Phase_Tensor
-		  
+!Adding the CSEM case		  
+      case('Ex_Field')
+          dataType = Ex_Field
+      case('Ey_Field')
+          dataType = Ey_Field
+      case('Bx_Field')
+          dataType = Bx_Field
+      case('By_Field')
+          dataType = By_Field
+      case('Bz_Field')
+          dataType = Bz_Field			  
        case default
           call errStop('Unknown data type:'//trim(typeName))
 
@@ -315,7 +386,7 @@ Contains
              dataType =  Off_Diagonal_Impedance
           elseif (index(compids(1),'Rhoxy')>0) then
              dataType =  Off_Diagonal_Rho_Phase
-          end if
+          end if		 
     end select
 
     do j = 1,nComp

@@ -92,32 +92,25 @@ Contains
 ! This is not efficient; but this would only be used a few times, with
 ! a small number of values, so convenience is much more of an issue here!
 
-  function update_txDict(Period,nPol) result (iTx)
+  function update_txDict(aTx) result (iTx)
 
-     real(kind=prec), intent(in)        :: Period
-     integer, intent(in), optional		:: nPol
-     integer                            :: iTx
+     type(MTtx)              :: aTx
+     integer                 :: iTx
+	 
      ! local
-     type(MTtx)                         :: new
      type(MTtx), pointer, dimension(:)  :: temp
      integer                            :: nTx, istat,i
      logical							:: new_Tx
 
 
      ! Create a transmitter for this period
-     new%period = Period
-     new%omega  = (2*PI)/Period
-     if (present(nPol)) then
-     	new%nPol = nPol
-     else
-     	new%nPol = 2
-     end if
-     new%iPer   = nTx + 1
-
+     nTx = size(txDict)
+     aTx%iPer=nTx+1
+	 
      ! If txDict doesn't yet exist, create it
      if(.not. associated(txDict)) then
      	allocate(txDict(1),STAT=istat)
-     	txDict(1) = new
+     	txDict(1) = aTx
      	iTx = 1
 	    new_Tx = .true.
      	return
@@ -125,12 +118,10 @@ Contains
 
 
      nTx = size(txDict)
-       ! If this period isn't new, do nothing
-     do i = 1,nTx
-     	if ((abs(Period - txDict(i)%period) .lt. TOL6) .and. (new%nPol == txDict(i)%nPol)) then
-     	itx=i
-	    new_Tx=.false.
-     	return
+     ! If this period isn't new, do nothing
+     do iTx = 1,nTx
+     	if (IsTxExist(aTx,txDict(iTx) ) ) then
+     	  return
      	end if
      end do
 
@@ -138,7 +129,7 @@ Contains
      new_Tx = .true.
      allocate(temp(nTx+1),STAT=istat)
      temp(1:nTx) = txDict
-     temp(nTx+1) = new
+     temp(nTx+1) = aTx
      deallocate(txDict,STAT=istat)
      allocate(txDict(nTx+1),STAT=istat)
      txDict = temp
@@ -146,7 +137,36 @@ Contains
      iTx = nTx+1
 
   end function update_txDict
+  
+!**********************************************************************
+! A function to compare between two transmitter and return YESNO=True if Txa=Txb
+  function IsTxExist(Txa,Txb) result (YESNO)
+  type(MTtx), intent(in):: Txa
+  type(MTtx), intent(in):: Txb
+  logical                  YESNO
 
+  YESNO = .FALSE.
+if (Txa%Tx_type=='CSEM') then
+  if( ABS(Txa%Period - Txb%period) < TOL6  .AND.      &
+      ABS(Txa%xyzTx(1) - Txb%xyzTx(1)) < TOL6 .AND.   &
+      ABS(Txa%xyzTx(2) - Txb%xyzTx(2)) < TOL6 .AND.   &
+      ABS(Txa%xyzTx(3) - Txb%xyzTx(3)) < TOL6 .AND.   &
+      ABS(Txa%moment - Txb%moment) < TOL6 .AND. &
+      ABS(Txa%azimuthTx - Txb%azimuthTx) < TOL6 .AND. &
+      ABS(Txa%dipTx - Txb%dipTx) < TOL6 ) then
+      if (Txa%Dipole .Eq. Txb%Dipole) then
+    	  YESNO = .true.
+      end if
+  end if
+elseif (Txa%Tx_type=='MT') then
+   if(ABS(Txa%Period - Txb%period) < TOL6  .and. Txa%nPol == Txb%nPol) then
+    YESNO = .true.
+  end if
+end if
+ 
+
+  return
+  end function IsTxExist
 !**********************************************************************
 ! Writes the transmitter dictionary to screen. Useful for debugging.
 
