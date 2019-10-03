@@ -36,6 +36,7 @@ module transmitters
      real(kind=prec)            :: dipTx ! (degrees) 
      ! Source dipole moment
      real(kind=prec)            :: moment ! (A.m) for electric, (A.m^2) for magnetic
+	 
 !######################################################		 
    end type MTtx
 
