@@ -17,7 +17,7 @@ use dataspace
 use solnspace
 use emsolve3d
 use transmitters
-
+use CSEM_module
 implicit none
 
 ! options for boundary conditions input or computation
