@@ -161,7 +161,7 @@ subroutine set1DModel(sigma)
    !   (2) sig1D => ! (S/m) Layer conductivities 
    !   (3) zlay1D => ! (m)   Depth to top of each layer, first layer ignored the 1D Model  z_P, sigma_P
   
-   type(modelParam_t),intent(in), target		:: sigma 
+   type(modelParam_t),intent(in)		:: sigma 
 
 
    !   local variables ... this is an easy, but not necessarily most efficient
