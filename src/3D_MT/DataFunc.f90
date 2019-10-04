@@ -101,6 +101,31 @@ Contains
   !allocate(Z(nFunc))
 
  selectcase (iDT)
+       case (Ex_Field)
+     	   x = rxDict(iRX)%x     	
+	       xyz = 1
+	       call EinterpSetUp(ef%grid,x,xyz,Lex)		
+     	   Z = dotProd_noConj_scvector_f(Lex,ef%pol(1))
+      case (Ey_Field)
+     	   x = rxDict(iRX)%x     	
+	       xyz = 2
+	       call EinterpSetUp(ef%grid,x,xyz,Ley)		
+           Z = dotProd_noConj_scvector_f(Ley,ef%pol(1))
+	  case (Bx_Field)
+		   x = rxDict(iRX)%x
+		   xyz = 1
+		   call BfromESetUp(ef%grid,omega,x,xyz,Lbx)		
+		   Z = dotProd_noConj_scvector_f(Lbx,ef%pol(1))
+	  case (By_Field)
+		   x = rxDict(iRX)%x
+		   xyz = 2
+		   call BfromESetUp(ef%grid,omega,x,xyz,Lby)		
+		   Z = dotProd_noConj_scvector_f(Lby,ef%pol(1))
+	  case (Bz_Field)
+		   x = rxDict(iRX)%x
+		   xyz = 3
+		   call BfromESetUp(ef%grid,omega,x,xyz,Lbz)   
+		   Z = dotProd_noConj_scvector_f(Lbz,ef%pol(1))	 
      case(Full_Impedance)
                x     = rxDict(iRX)%x         !Local site position (x,y,z)
 		     ! First set up interpolation functionals for Ex, Ey
