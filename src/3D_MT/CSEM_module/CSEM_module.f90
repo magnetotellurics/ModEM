@@ -92,7 +92,7 @@ integer ix,iy,iz,counter
 end subroutine create_Ep  
 !#############################################
 subroutine initilize_1d_vectors(grid)
-
+ type(grid_t), intent(in)        :: grid 
 !Local
 integer n1D,counter
 
