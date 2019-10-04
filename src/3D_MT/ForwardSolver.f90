@@ -300,6 +300,10 @@ end subroutine copyE0fromFile
         b0%nonzero_Source = .false.
         b0%sparse_Source = .false.
         b0%nonzero_BC = .true.
+	  case ('CSEM')
+      	b0%nonzero_Source = .true.
+		b0%sparse_Source = .false.
+        b0%nonzero_BC = .false.  	  
       case default
         write(0,*) node_info,'Unknown FWD problem type',trim(txDict(iTx)%Tx_type),'; unable to initialize RHS'
       end select
@@ -352,7 +356,18 @@ end subroutine copyE0fromFile
                 ! store the BC in b0 and set up the forward problem - use fake indexing in MPI
                 b0%b(j)%adj = 'FWD'
                 b0%b(j)%bc = BC
+             case ('CSEM')
+			     ! Naser Meqbel 04.10.2019
+			     ! As  b0%nonzero_BC=true for CSEM, NO need to setup the BC for it. 
+				 ! However, b0%s needs to be filled with Secondary field obtained:
+				 ! b0%s=i_omega_mu*(sigma-sigma1d)*Ep
+				 ! Ep is the primary E-field obtained from the 1D solution
 
+                 ! First, we need to set/get the 1D conductivity model:
+				  	xTx1D = txDict(iTx)%xyzTx(1)
+					yTx1D = txDict(iTx)%xyzTx(2)   
+					Call set1DModel(sigma,xTx1D,yTx1D)
+				 
             case default
                 write(0,*) node_info,'Unknown FWD problem type',trim(txDict(iTx)%Tx_type),'; unable to compute RHS'
         end select
