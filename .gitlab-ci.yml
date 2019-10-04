@@ -418,7 +418,7 @@ test_sens:
         - master
 #
 # TEST JOB 3:   RUN EVERY TEST AT tests/ DIR
-.test_engine_modem_on:
+test_engine_modem_on:
     stage: test
     dependencies:
         - build_modem_on    # DEFINE THIS JOB DEPENDENCY FROM JOB build_modem_on
@@ -438,16 +438,16 @@ test_sens:
 # DEPLOY: UPDATE GITLAB
 update_gitlab:
     stage: deploy
-    environment: production
+    #environment: production
     script:
         #
         # BASH: UPDATES GITLAB
-        - bash scripts/update_gitlab.sh &>> outputs/update_gitlab.txt
+        - bash scripts/update_gitlab.sh $CI_COMMIT_REF_NAME &>> outputs/update_gitlab.txt
 #
 # DEPLOY: UPDATE PAGES
 pages:
     stage: deploy
-    environment: staging
+    #environment: staging
     script:
         #
         # BASH: PAGE UPDATES
