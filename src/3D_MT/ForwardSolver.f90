@@ -364,7 +364,7 @@ end subroutine copyE0fromFile
 				 ! b0%s=i_omega_mu*(sigma-sigma1d)*Ep
 				 ! Ep is the primary E-field obtained from the 1D solution
 
-                 call get_source_for_csem(sigma_temp,solnVector_t%grid,iTx,b0%b(j)%s)
+                 call get_source_for_csem(sigma_temp,e0%grid,iTx,b0%b(j)%s)
 				 
 				 
             case default
