@@ -19,9 +19,10 @@ implicit none
    type(rvector), save, private :: condAnomaly ! Anomalous conductivity (on edge) --> the 3D model which contains the differance: cond-condNomaly; cond is the current 3D conductivity model    
  Contains
  
-subroutine get_source_for_csem(sigma,iTx,source)
+subroutine get_source_for_csem(sigma,grid,iTx,source)
  
  type(modelParam_t),intent(in), target		:: sigma
+ type(grid_t), intent(in)        :: grid 
  integer, intent(in)                        :: iTx
  type (cvector), intent(inout)              :: source
  !Local
@@ -30,11 +31,11 @@ subroutine get_source_for_csem(sigma,iTx,source)
  
  
  !b0%s=i_omega_mu*(sigma-sigma1d)*Ep
- call initilize_1d_vectors(sigma%grid)
+ call initilize_1d_vectors(grid)
  Call set1DModel(sigma)
  call setAnomConductivity(sigma)
  call comp_dipole1D                  ! Calculate E-Field by Key's code
- call create_Ep(sigma%grid)
+ call create_Ep(grid)
  
    omega = txDict(iTx)%omega
    period = txDict(iTx)%period
@@ -177,9 +178,7 @@ subroutine set1DModel(sigma)
    real(kind=prec)	:: wt,vAir,asigma
    character(len=256)   ::       PrimaryFile
    
-   IF( PRESENT(FromFile) ) THEN
-	write(*,*) "Under Develop ^^"
-   Else
+
 
 	!   first define conductivity on cells  
    	!   (extract into variable which is public)
@@ -227,7 +226,7 @@ subroutine set1DModel(sigma)
    		end do
    		call getValue_modelParam(sigma,paramType,model,vAir)
 
-   END IF
+
 
    
 	
