@@ -409,11 +409,16 @@ end subroutine copyE0fromFile
 		! NOTE that in the MPI parallelization, e0 may only contain a single mode;
 		! mode number is determined by Pol_index, NOT by its order index in e0
 		! ... but b0 uses the same fake indexing as e0
-		write (*,'(a12,a12,a3,a20,i4,a2,es13.6,a15,i2)') node_info, 'Solving the ','FWD', &
+		write (*,'(a12,a12,a6,a20,i4,a2,es13.6,a15,i2)') node_info, 'Solving the ','MT FWD', &
 				' problem for period ',iTx,': ',(2*PI)/omega,' secs & mode # ',e0%Pol_index(iMode)
 		call FWDsolve3D(b0%b(iMode),omega,e0%pol(iMode))
 		write (6,*)node_info,'FINISHED solve, nPol',e0%nPol
    	   enddo
+   elseif (txDict(iTx)%Tx_type=='CSEM') then
+		write (*,'(a12,a40,i4,a2,es13.6,a15,i2)') node_info, 'Solving the CSEM FWD problem for period ',iTx,': ',(2*PI)/omega,' secs & mode # ',e0%Pol_index(iMode)
+		call FWDsolve3D(b0%b(1),omega,e0%pol(1))
+		call add(E_p,e0%pol(1),e0%pol(1))
+		write (6,*)node_info,'FINISHED solve, nPol',e0%nPol    
    else
        write(0,*) node_info,'Unknown FWD problem type',trim(txDict(iTx)%Tx_type),'; unable to run fwdSolve'
    endif
