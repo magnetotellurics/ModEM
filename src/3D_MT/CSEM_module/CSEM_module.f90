@@ -94,7 +94,8 @@ end subroutine create_Ep
 subroutine initilize_1d_vectors(grid)
  type(grid_t), intent(in)        :: grid 
 !Local
-integer n1D,counter
+integer n1D,counter,ix,iy,iz
+
 
 	  n1D = (grid%Nx)*(grid%Ny+1)*(grid%Nz+1)
 	  n1D = n1D + (grid%Nx+1)*(grid%Ny)*(grid%Nz+1)
