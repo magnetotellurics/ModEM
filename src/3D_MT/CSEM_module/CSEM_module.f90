@@ -4,8 +4,10 @@ module CSEM_module
 ! Created by Naser Meqbel 04.10.2019
 
 use math_constants
+use datafunc
 use dataspace
 use solnspace
+use emsolve3d
 use transmitters
 !This module uses Kerry Key's 1D code required to construct the b0%s in the secondary field formulation
 use Dipole1D
