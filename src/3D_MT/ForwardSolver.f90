@@ -25,7 +25,7 @@ logical, save, public   :: COMPUTE_BC = .true.
 logical, save, public   :: NESTED_BC = .false.
 logical, save, public   :: BC_FROM_RHS_FILE = .false.
 logical, save, public   :: BC_FROM_E0_FILE = .false.
-
+type(modelParam_t),save,private		:: sigma_temp
 
 !=======================================================================
 !Mar. 13, 2011============================== Use only for MT Calculation
@@ -212,6 +212,7 @@ end subroutine copyE0fromFile
 !     with what is stored)
 !  if(sigmaNotCurrent) then
        call updateCond(sigma)
+	   call copy_modelParam(sigma_temp,sigma) 
 !      sigmaNotCurrent = .false.
 !   endif
 
@@ -363,7 +364,7 @@ end subroutine copyE0fromFile
 				 ! b0%s=i_omega_mu*(sigma-sigma1d)*Ep
 				 ! Ep is the primary E-field obtained from the 1D solution
 
-                 b0%b(j)%s=get_s_for_csem(sigma,iTx)
+                 b0%b(j)%s=get_source_for_csem(sigma_temp,iTx)
 				 
 				 
             case default
