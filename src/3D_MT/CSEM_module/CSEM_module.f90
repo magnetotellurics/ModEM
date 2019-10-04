@@ -32,7 +32,7 @@ subroutine get_source_for_csem(sigma,grid,iTx,source)
  
  !b0%s=i_omega_mu*(sigma-sigma1d)*Ep
  call initilize_1d_vectors(grid)
- Call set1DModel(sigma)
+ call set1DModel(sigma)
  call setAnomConductivity(sigma)
  call comp_dipole1D                  ! Calculate E-Field by Key's code
  call create_Ep(grid)
@@ -152,6 +152,7 @@ integer n1D,counter
 			  End Do
 		  End Do
 	  End Do
+end subroutine 	initilize_1d_vectors  
 !#############################################
 subroutine set1DModel(sigma)
 
