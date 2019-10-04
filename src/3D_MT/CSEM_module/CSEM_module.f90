@@ -17,7 +17,7 @@ implicit none
    type(rvector), save, private :: condAnomaly ! Anomalous conductivity (on edge) --> the 3D model which contains the differance: cond-condNomaly; cond is the current 3D conductivity model    
  Contains
  
-function get_source_for_csem(sigma,iTx) result (source)
+subroutine get_source_for_csem(sigma,iTx,source)
  
  type(modelParam_t),intent(in), target		:: sigma
  integer, intent(in)                        :: iTx
@@ -44,7 +44,7 @@ function get_source_for_csem(sigma,iTx) result (source)
  
  
  
-end function get_source_for_csem
+end subroutine get_source_for_csem
 !#############################################
 subroutine create_Ep(grid)
 
