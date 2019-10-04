@@ -359,14 +359,12 @@ end subroutine copyE0fromFile
              case ('CSEM')
 			     ! Naser Meqbel 04.10.2019
 			     ! As  b0%nonzero_BC=true for CSEM, NO need to setup the BC for it. 
-				 ! However, b0%s needs to be filled with Secondary field obtained:
+				 ! However, b0%s is needed to be filled later with Secondary field obtained:
 				 ! b0%s=i_omega_mu*(sigma-sigma1d)*Ep
 				 ! Ep is the primary E-field obtained from the 1D solution
 
-                 ! First, we need to set/get the 1D conductivity model:
-				  	xTx1D = txDict(iTx)%xyzTx(1)
-					yTx1D = txDict(iTx)%xyzTx(2)   
-					Call set1DModel(sigma,xTx1D,yTx1D)
+                 b0%b(j)%s=get_s_for_csem(sigma,iTx)
+				 
 				 
             case default
                 write(0,*) node_info,'Unknown FWD problem type',trim(txDict(iTx)%Tx_type),'; unable to compute RHS'
