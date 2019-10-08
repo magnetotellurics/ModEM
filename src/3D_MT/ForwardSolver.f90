@@ -415,7 +415,7 @@ end subroutine copyE0fromFile
 		write (6,*)node_info,'FINISHED solve, nPol',e0%nPol
    	   enddo
    elseif (txDict(iTx)%Tx_type=='CSEM') then
-		write (*,'(a12,a40,i4,a2,es13.6,a15,i2)') node_info, 'Solving the CSEM FWD problem for period ',iTx,': ',(2*PI)/omega,' secs & mode # ',e0%Pol_index(iMode)
+		write (*,'(a12,a40,i4,a2,es13.6,a15,i2)') node_info, 'Solving the CSEM FWD problem for period ',iTx,': ',(2*PI)/omega,' secs & mode # ',e0%Pol_index(1)
 		call FWDsolve3D(b0%b(1),omega,e0%pol(1))
 		call add(E_p,e0%pol(1),e0%pol(1))
 		write (6,*)node_info,'FINISHED solve, nPol',e0%nPol    

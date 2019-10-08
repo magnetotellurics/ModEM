@@ -29,6 +29,27 @@ subroutine get_source_for_csem(sigma,grid,iTx,source)
  real(kind=prec)	    :: period, omega
  complex(kind=prec)	    :: i_omega_mu
  
+ ! Get the Transmitter setting:
+		xTx1D = txDict(iTx)%xyzTx(1)
+		yTx1D = txDict(iTx)%xyzTx(2)
+		zTx1D = txDict(iTx)%xyzTx(3)
+		write(20,*) txDict(iTx)%xyzTx(1),txDict(iTx)%xyzTx(2),txDict(iTx)%xyzTx(3),txDict(iTx)%PERIOD,txDict(iTx)%Moment, txDict(iTx)%azimuthTx,txDict(iTx)%dipTx
+		ftx1D = 1.0d0/txDict(iTx)%PERIOD
+		sdm1D = txDict(iTx)%Moment           ! (Am), dipole moment. Normalize to unit source moment
+		azimuthTx1D = txDict(iTx)%azimuthTx ! (degrees) 
+		dipTx1D     = txDict(iTx)%dipTx
+		
+		HTmethod1D      = 'kk_ht_201'    ! Use 201 point HT digital filters.
+		outputdomain1D  = 'spatial'      ! Assume spatial domain comps
+		lbcomp          = .false.        ! This is changed to true if magnetics in data file
+		lUseSpline1D    = .true.         ! Use spline interpolation for faster 1D computations
+		linversion      = .false.        ! Compute derivatives with respect to sigma(layers)
+		
+		phaseConvention = 'lag'          ! The usual default is lag, where phase becomes larger 
+										 !    positive values with increasing range.
+		lenTx1D         = 0000.d0        ! (m) Dipole length 0 = point dipole
+		numIntegPts     = 0             ! Number of points to use for Gauss quadrature integration for finite dipole
+ 
  
  !b0%s=i_omega_mu*(sigma-sigma1d)*Ep
  call initilize_1d_vectors(grid)
@@ -40,7 +61,7 @@ subroutine get_source_for_csem(sigma,grid,iTx,source)
    omega = txDict(iTx)%omega
    period = txDict(iTx)%period
    i_omega_mu = cmplx(0.,-1.0d0*ISIGN*MU_0*omega,kind=prec)
-   
+    write(10,*)omega,period,2.0d0*PI/Period,i_omega_mu 
    call diagMult(condAnomaly,E_P,source)
    call scMult(i_omega_mu,source,source)
  
@@ -63,7 +84,8 @@ integer ix,iy,iz,counter
 	   Do iz = 1,grid%Nz+1 !Edge Z
 		  Do iy = 1,grid%Ny+1 !Edge Y
 			  Do ix = 1,grid%Nx !Center X	  		  	  
-				  E_p%x(ix,iy,iz) = ex1D(counter)				  
+				  E_p%x(ix,iy,iz) = ex1D(counter)	
+                   write(11,*) 	ex1D(counter)			  
 				  counter = counter + 1
 			  End Do
 		  End Do
@@ -74,6 +96,7 @@ integer ix,iy,iz,counter
 		  Do iy = 1,grid%Ny !Center y
 			  Do ix = 1,grid%Nx+1 !Edge x	  				  
 				  E_p%y(ix,iy,iz) = ey1D(counter)
+				   write(12,*) 	ey1D(counter)	
 				  counter = counter + 1
 			  End Do
 		  End Do
@@ -84,6 +107,7 @@ integer ix,iy,iz,counter
 		  Do iy = 1,grid%Ny+1 !Edge y
 			  Do ix = 1,grid%Nx+1 !Edge x
 				  E_p%z(ix,iy,iz) = jz1D(counter)
+				  write(13,*) 	jz1D(counter)	
 				  counter = counter + 1
 			  End Do
 		  End Do
@@ -94,7 +118,7 @@ end subroutine create_Ep
 subroutine initilize_1d_vectors(grid)
  type(grid_t), intent(in)        :: grid 
 !Local
-integer n1D,counter,ix,iy,iz
+integer counter,ix,iy,iz
 
 
 	  n1D = (grid%Nx)*(grid%Ny+1)*(grid%Nz+1)

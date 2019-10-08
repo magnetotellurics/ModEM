@@ -92,7 +92,8 @@ Contains
 
        case(Off_Diagonal_Rho_Phase,Phase_Tensor)
           header = 'Period(s) Code GG_Lat GG_Lon X(m) Y(m) Z(m) Component Value Error'
-
+       case(Ex_Field,Ey_Field,Bx_Field,By_Field,Bz_Field)
+          header = 'Tx_Dipole Tx_Period(s) Tx_Moment(Am) Tx_Azi Tx_Dip Tx_X(m) Tx_Y(x) Tx_Z(m) Code X(m) Y(x) Z(m) Component Real Imag, Error'
     end select
 
   end function DataBlockHeader
@@ -294,6 +295,7 @@ Contains
 							write(ioDat, '(a1)', iostat=ios,advance='no') ' '
 							write(ioDat,'(2es12.6)', iostat=ios, advance='no') Moment
 							write(ioDat,'(2f9.3, 3f12.3)',iostat=ios,advance='no') Azi, Dip, Tx
+							write(ioDat, '(a1)', iostat=ios,advance='no') ' '
 							write(ioDat,'(a15,3f12.3)',iostat=ios,advance='no') trim(siteid),x(:)
 							write(ioDat, '(a1)', iostat=ios,advance='no') ' '
 !							write(ioDat,'(a8,3es15.6)',iostat=ios) trim(compid),value(2*icomp-1),value(2*icomp), error(2*icomp)

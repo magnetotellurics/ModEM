@@ -157,7 +157,7 @@ Contains
      typeDict(Ex_Field)%units     = '[V/m]'
      typeDict(Ex_Field)%nComp     = 2
      allocate(typeDict(Ex_Field)%id(1),STAT=istat)
-     typeDict(Ex_Field)%id(1)    = 'EX'
+     typeDict(Ex_Field)%id(1)    = 'Ex_Field'
 
      typeDict(Ey_Field)%name = 'Ey_Field'
      typeDict(Ey_Field)%isComplex = .true.
@@ -165,7 +165,7 @@ Contains
      typeDict(Ey_Field)%units     = '[V/m]'
      typeDict(Ey_Field)%nComp     = 2
      allocate(typeDict(Ey_Field)%id(1),STAT=istat)
-     typeDict(Ey_Field)%id(1)    = 'EY'
+     typeDict(Ey_Field)%id(1)    = 'Ey_Field'
 	 
      typeDict(Bx_Field)%name = 'Bx_Field'
      typeDict(Bx_Field)%isComplex = .true.
@@ -173,7 +173,7 @@ Contains
      typeDict(Bx_Field)%units     = '[T]'
      typeDict(Bx_Field)%nComp     = 2
      allocate(typeDict(Bx_Field)%id(1),STAT=istat)
-     typeDict(Bx_Field)%id(1)    = 'BX'
+     typeDict(Bx_Field)%id(1)    = 'Bx_Field'
 
      typeDict(By_Field)%name = 'By_Field'
      typeDict(By_Field)%isComplex = .true.
@@ -181,7 +181,7 @@ Contains
      typeDict(By_Field)%units     = '[T]'
      typeDict(By_Field)%nComp     = 2
      allocate(typeDict(By_Field)%id(1),STAT=istat)
-     typeDict(By_Field)%id(1)    = 'BY'
+     typeDict(By_Field)%id(1)    = 'By_Field'
 
      typeDict(Bz_Field)%name = 'Bz_Field'
      typeDict(Bz_Field)%isComplex = .true.
@@ -189,7 +189,7 @@ Contains
      typeDict(Bz_Field)%units     = '[T]'
      typeDict(Bz_Field)%nComp     = 2
      allocate(typeDict(Bz_Field)%id(1),STAT=istat)
-     typeDict(Bz_Field)%id(1)    = 'BZ'
+     typeDict(Bz_Field)%id(1)    = 'Bz_Field'
 
 	 
 	 
