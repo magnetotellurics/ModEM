@@ -781,30 +781,25 @@ end  subroutine Master_job_keep_prev_eAll
 
 !############################################## Master_job_Distribute_userdef_control#########################################################
 Subroutine Master_job_Distribute_userdef_control(ctrl)
-    implicit none
-    include 'mpif.h'
-
-    type(userdef_control), intent(in)		:: ctrl
-    character(20)                               :: which_proc
-
-        which_proc='Master'
-        call check_userdef_control_MPI (which_proc,ctrl)
-
-
-
-
-		call create_userdef_control_place_holder
-		call pack_userdef_control(ctrl)
-        do dest=1,number_of_workers
-           call MPI_SEND(userdef_control_package,Nbytes, MPI_PACKED,dest, FROM_MASTER, MPI_COMM_WORLD, ierr)
-        end do
-
-
-
-
-
-
-
+	!
+	implicit none
+	include 'mpif.h'
+	!
+	type(userdef_control), intent(in)		:: ctrl
+	character(20)                           :: which_proc
+	!
+	which_proc='Master'
+	!
+	call check_userdef_control_MPI (which_proc,ctrl)
+	!
+	call create_userdef_control_place_holder
+	!
+	call pack_userdef_control(ctrl)
+	!
+	do dest=1,number_of_workers
+		call MPI_SEND(userdef_control_package,Nbytes, MPI_PACKED,dest, FROM_MASTER, MPI_COMM_WORLD, ierr)
+	end do
+	!
 end Subroutine Master_job_Distribute_userdef_control
 
 !##############################################    Master_job_Clean Memory ########################################################
@@ -1309,6 +1304,9 @@ subroutine Master_job_Distribute_Taskes(job_name,nTx,sigma,eAll_out,eAll_in)
                    !if (nPol_MPI==1)  which_pol=1
                    call Unpack_e_para_vec(eAll_out%solns(which_per))
                    write(ioMPI,'(a10,a16,i5,a8,i5,a11,i5)')trim(job_name) ,': Recieve Per # ',which_per ,' and Pol # ', which_pol ,' from ', who 
+                   ! Writting into the solver's diagonestic file.
+				   ! Naser and Paulo 02.10.2019
+				   write(ioSolverStat,'(a10,g15.7,i5,i5,g15.7)')trim(job_name),which_per,which_pol,worker_job_task%solver_number_of_iterations ,worker_job_task%solver_residual
                    received_answers=received_answers+1
                     
                    
