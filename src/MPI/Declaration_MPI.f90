@@ -77,10 +77,11 @@ type :: define_worker_job
      SEQUENCE
      character*80  :: what_to_do='NOTHING'
      Integer       :: per_index,Stn_index,pol_index,data_type_index,data_type
-     Integer       :: taskid
+     Integer       :: taskid,solver_number_of_iterations
      logical       :: keep_E_soln=.false.
      logical       :: several_Tx=.false.
      logical       :: create_your_own_e0=.false.
+	 DOUBLE PRECISION    :: solver_residual
  end type define_worker_job
 type(define_worker_job), save :: worker_job_task
 !********************************************************************
@@ -92,13 +93,14 @@ Contains
 subroutine create_worker_job_task_place_holder
 
      implicit none
-     integer index,Nbytes1,Nbytes2,Nbytes3
+     integer index,Nbytes1,Nbytes2,Nbytes3,Nbytes4
 
        CALL MPI_PACK_SIZE(80, MPI_CHARACTER, MPI_COMM_WORLD, Nbytes1,  ierr)
-       CALL MPI_PACK_SIZE(6, MPI_INTEGER, MPI_COMM_WORLD, Nbytes2,  ierr)
+       CALL MPI_PACK_SIZE(7, MPI_INTEGER, MPI_COMM_WORLD, Nbytes2,  ierr)
        CALL MPI_PACK_SIZE(3, MPI_LOGICAL, MPI_COMM_WORLD, Nbytes3,  ierr)
+	   CALL MPI_PACK_SIZE(1, MPI_DOUBLE_PRECISION, MPI_COMM_WORLD, Nbytes4,  ierr)
 
-         Nbytes=(Nbytes1+Nbytes2+Nbytes3)+1
+         Nbytes=(Nbytes1+Nbytes2+Nbytes3+Nbytes4)+1
 
          if(.not. associated(worker_job_package)) then
             allocate(worker_job_package(Nbytes))
@@ -122,10 +124,13 @@ index=1
         call MPI_Pack(worker_job_task%data_type_index ,1 , 	MPI_INTEGER  , worker_job_package, Nbytes, index, MPI_COMM_WORLD, ierr)
         call MPI_Pack(worker_job_task%data_type ,1 , 		MPI_INTEGER  , worker_job_package, Nbytes, index, MPI_COMM_WORLD, ierr)
         call MPI_Pack(worker_job_task%taskid ,1 , 			MPI_INTEGER  , worker_job_package, Nbytes, index, MPI_COMM_WORLD, ierr)
+		call MPI_Pack(worker_job_task%solver_number_of_iterations,1, 		MPI_INTEGER, worker_job_package, Nbytes, index, MPI_COMM_WORLD, ierr)
 
         call MPI_Pack(worker_job_task%keep_E_soln,1, 		MPI_LOGICAL, worker_job_package, Nbytes, index, MPI_COMM_WORLD, ierr)
         call MPI_Pack(worker_job_task%several_Tx,1, 		MPI_LOGICAL, worker_job_package, Nbytes, index, MPI_COMM_WORLD, ierr)
         call MPI_Pack(worker_job_task%create_your_own_e0,1, 		MPI_LOGICAL, worker_job_package, Nbytes, index, MPI_COMM_WORLD, ierr)
+	
+		call MPI_Pack(worker_job_task%solver_residual,1, 		MPI_DOUBLE_PRECISION, worker_job_package, Nbytes, index, MPI_COMM_WORLD, ierr)
 
 end subroutine Pack_worker_job_task
 
@@ -141,10 +146,14 @@ index=1
         call MPI_Unpack(worker_job_package, Nbytes, index, worker_job_task%data_type_index ,1 , MPI_INTEGER,MPI_COMM_WORLD, ierr)
         call MPI_Unpack(worker_job_package, Nbytes, index, worker_job_task%data_type ,1 , MPI_INTEGER,MPI_COMM_WORLD, ierr)
         call MPI_Unpack(worker_job_package, Nbytes, index, worker_job_task%taskid ,1 , MPI_INTEGER,MPI_COMM_WORLD, ierr)
+		call MPI_Unpack(worker_job_package, Nbytes, index, worker_job_task%solver_number_of_iterations,1, MPI_INTEGER,MPI_COMM_WORLD, ierr)
         
         call MPI_Unpack(worker_job_package, Nbytes, index, worker_job_task%keep_E_soln,1, MPI_LOGICAL,MPI_COMM_WORLD, ierr)
         call MPI_Unpack(worker_job_package, Nbytes, index, worker_job_task%several_Tx,1, MPI_LOGICAL,MPI_COMM_WORLD, ierr)
         call MPI_Unpack(worker_job_package, Nbytes, index, worker_job_task%create_your_own_e0,1, MPI_LOGICAL,MPI_COMM_WORLD, ierr)
+		
+		call MPI_Unpack(worker_job_package, Nbytes, index, worker_job_task%solver_residual,1, MPI_DOUBLE_PRECISION,MPI_COMM_WORLD, ierr)
+
 
 end subroutine Unpack_worker_job_task
 
