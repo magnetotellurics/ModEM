@@ -30,13 +30,13 @@ build_modem_on:
     cache:
         key: build_modem_on_cache   # CACHE KEY TO ACCESS FROM OTHERS JOBS
         paths:
-            - src/Mod3DMT   # PATH TO BE UPLOADED
+            - ../Mod3DMT   # PATH TO BE UPLOADED
             - outputs/
             - docs/
     #
     artifacts:
         paths:
-            - src/Mod3DMT   # PATH TO BE UPLOADED
+            - ../Mod3DMT   # PATH TO BE UPLOADED
             - outputs
             - docs
         expire_in: 1 week
@@ -68,7 +68,7 @@ test_read_write:
     #
     script:
         #
-        - bash scripts/test_read_write.sh src/Mod3DMT inputs/rFile_Model inputs/rFile_Data 10
+        - bash scripts/test_read_write.sh ../Mod3DMT inputs/rFile_Model inputs/rFile_Data 10
     #
     artifacts:
         paths:
@@ -85,7 +85,7 @@ test_forward:
     #
     script:
         #
-        - bash scripts/test_forward.sh src/Mod3DMT inputs/rFile_Model inputs/rFile_Data 10
+        - bash scripts/test_forward.sh ../Mod3DMT inputs/rFile_Model inputs/rFile_Data 10
     #
     artifacts:
         paths:
@@ -102,7 +102,7 @@ test_forward:
     #
     script:
         #
-        - bash scripts/test_compute_j.sh src/Mod3DMT inputs/rFile_Model inputs/rFile_Data 64
+        - bash scripts/test_compute_j.sh ../Mod3DMT inputs/rFile_Model inputs/rFile_Data 64
     #
     artifacts:
         paths:
@@ -119,7 +119,7 @@ test_mult_by_j:
     #
     script:
         #
-        - bash scripts/test_mult_by_j.sh src/Mod3DMT inputs/rFile_Model inputs/rFile_dModel inputs/rFile_Data 10
+        - bash scripts/test_mult_by_j.sh ../Mod3DMT inputs/rFile_Model inputs/rFile_dModel inputs/rFile_Data 10
     #
     artifacts:
         paths:
@@ -136,7 +136,7 @@ test_mult_by_j_t:
     #
     script:
         #
-        - bash scripts/test_mult_by_j_t.sh src/Mod3DMT inputs/rFile_Model inputs/rFile_Data 10
+        - bash scripts/test_mult_by_j_t.sh ../Mod3DMT inputs/rFile_Model inputs/rFile_Data 10
     #
     artifacts:
         paths:
@@ -153,7 +153,7 @@ test_mult_by_j_t_multi_tx:
     #
     script:
         #
-        - bash scripts/test_mult_by_j_t_multi_tx.sh src/Mod3DMT inputs/rFile_Model inputs/rFile_Data 10
+        - bash scripts/test_mult_by_j_t_multi_tx.sh ../Mod3DMT inputs/rFile_Model inputs/rFile_Data 10
     #
     artifacts:
         paths:
@@ -170,7 +170,7 @@ test_inverse:
     #
     script:
         #
-        - bash scripts/test_inverse.sh src/Mod3DMT inputs/rFile_Model inputs/rFile_Data 9
+        - bash scripts/test_inverse.sh ../Mod3DMT inputs/rFile_Model inputs/rFile_Data 9
     #
     artifacts:
         paths:
@@ -187,7 +187,7 @@ test_apply_cov_fwd:
     #
     script:
         #
-        - bash scripts/test_apply_cov_fwd.sh src/Mod3DMT inputs/rFile_Model 10
+        - bash scripts/test_apply_cov_fwd.sh ../Mod3DMT inputs/rFile_Model 10
     #
     artifacts:
         paths:
@@ -204,7 +204,7 @@ test_apply_cov_inv:
     #
     script:
         #
-        - bash scripts/test_apply_cov_inv.sh src/Mod3DMT inputs/rFile_Model 10
+        - bash scripts/test_apply_cov_inv.sh ../Mod3DMT inputs/rFile_Model 10
     #
     artifacts:
         paths:
@@ -221,7 +221,7 @@ test_extract_bc:
     #
     script:
         #
-        - bash scripts/test_extract_bc.sh src/Mod3DMT inputs/rFile_Model inputs/rFile_Data 10
+        - bash scripts/test_extract_bc.sh ../Mod3DMT inputs/rFile_Model inputs/rFile_Data 10
     #
     artifacts:
         paths:
@@ -238,7 +238,7 @@ test_grad:
     #
     script:
         #
-        - bash scripts/test_grad.sh src/Mod3DMT inputs/rFile_Model inputs/rFile_Data inputs/rFile_dModel 10
+        - bash scripts/test_grad.sh ../Mod3DMT inputs/rFile_Model inputs/rFile_Data inputs/rFile_dModel 10
     #
     artifacts:
         paths:
@@ -255,7 +255,7 @@ test_adj_j:
     #
     script:
         #
-        - bash scripts/test_adj_j.sh src/Mod3DMT inputs/rFile_Model inputs/rFile_dModel inputs/rFile_Data 10
+        - bash scripts/test_adj_j.sh ../Mod3DMT inputs/rFile_Model inputs/rFile_dModel inputs/rFile_Data 10
     #
     artifacts:
         paths:
@@ -272,7 +272,7 @@ test_adj_l:
     #
     script:
         #
-        - bash scripts/test_adj_l.sh src/Mod3DMT inputs/rFile_Model inputs/rFile_EMsoln inputs/rFile_Data 10
+        - bash scripts/test_adj_l.sh ../Mod3DMT inputs/rFile_Model inputs/rFile_EMsoln inputs/rFile_Data 10
     #
     artifacts:
         paths:
@@ -289,7 +289,7 @@ test_adj_s:
     #
     script:
         #
-        - bash scripts/test_adj_s.sh src/Mod3DMT inputs/rFile_Model inputs/rFile_EMrhs inputs/rFile_Data 10
+        - bash scripts/test_adj_s.sh ../Mod3DMT inputs/rFile_Model inputs/rFile_EMrhs inputs/rFile_Data 10
     #
     artifacts:
         paths:
@@ -306,7 +306,7 @@ test_adj_p:
     #
     script:
         #
-        - bash scripts/test_adj_p.sh src/Mod3DMT inputs/rFile_Model inputs/rFile_dModel inputs/rFile_EMsoln inputs/rFile_Data 10
+        - bash scripts/test_adj_p.sh ../Mod3DMT inputs/rFile_Model inputs/rFile_dModel inputs/rFile_EMsoln inputs/rFile_Data 10
     #
     artifacts:
         paths:
@@ -323,7 +323,7 @@ test_adj_q:
     #
     script:
         #
-        - bash scripts/test_adj_q.sh src/Mod3DMT inputs/rFile_Model inputs/rFile_dModel inputs/rFile_Data 10
+        - bash scripts/test_adj_q.sh ../Mod3DMT inputs/rFile_Model inputs/rFile_dModel inputs/rFile_Data 10
     #
     artifacts:
         paths:
@@ -340,7 +340,7 @@ test_adj_m:
     #
     script:
         #
-        - bash scripts/test_adj_m.sh src/Mod3DMT inputs/rFile_Model 10
+        - bash scripts/test_adj_m.sh ../Mod3DMT inputs/rFile_Model 10
     #
     artifacts:
         paths:
@@ -357,7 +357,7 @@ test_adj_d:
     #
     script:
         #
-        - bash scripts/test_adj_d.sh src/Mod3DMT inputs/rFile_Data 10
+        - bash scripts/test_adj_d.sh ../Mod3DMT inputs/rFile_Data 10
     #
     artifacts:
         paths:
@@ -374,7 +374,7 @@ test_adj_e:
     #
     script:
         #
-        - bash scripts/test_adj_e.sh src/Mod3DMT inputs/rFile_Model inputs/rFile_Data inputs/rFile_EMsoln 10
+        - bash scripts/test_adj_e.sh ../Mod3DMT inputs/rFile_Model inputs/rFile_Data inputs/rFile_EMsoln 10
     #
     artifacts:
         paths:
@@ -391,7 +391,7 @@ test_adj_b:
     #
     script:
         #
-        - bash scripts/test_adj_b.sh src/Mod3DMT inputs/rFile_Model inputs/rFile_Data inputs/rFile_EMrhs 10
+        - bash scripts/test_adj_b.sh ../Mod3DMT inputs/rFile_Model inputs/rFile_Data inputs/rFile_EMrhs 10
     #
     artifacts:
         paths:
@@ -408,7 +408,7 @@ test_sens:
     #
     script:
         #
-        - bash scripts/test_sens.sh src/Mod3DMT inputs/rFile_Model inputs/rFile_dModel inputs/rFile_Data 180
+        - bash scripts/test_sens.sh ../Mod3DMT inputs/rFile_Model inputs/rFile_dModel inputs/rFile_Data 180
     #
     artifacts:
         paths:
@@ -426,7 +426,7 @@ test_engine_modem_on:
     script:
         #
         # USER DEFINED TESTS
-        - bash scripts/test_engine.sh src/Mod3DMT
+        - bash scripts/test_engine.sh ../Mod3DMT
         #
     artifacts:
         paths:
