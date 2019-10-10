@@ -1,0 +1,4 @@
+job	FORWARD
+rFile_Model	'../../inputs/rFile_Model'
+rFile_Data	'../../inputs/rFile_Data'
+wFile_Data	'wFile_Data.txt'

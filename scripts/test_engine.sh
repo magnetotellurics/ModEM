@@ -45,8 +45,6 @@ do
 	#
 	#
 	cd ..
-	#
-	cd ..
 done
 #
 exit 0

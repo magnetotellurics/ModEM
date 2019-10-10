@@ -11,6 +11,7 @@ program Mod3DMT
      use NLCG
      use DCG
      use LBFGS
+	 use config_file
      !use mtinvsetup
 
 #ifdef MPI
@@ -29,21 +30,45 @@ program Mod3DMT
      character(80)          :: header
      integer                :: ios
 
+	 !
+	 ! WERDT
+	 !
+     type(configs) :: conf
+	 !
 #ifdef MPI
-      call  constructor_MPI
-      if (taskid==0) then
-          call parseArgs('Mod3DMT',cUserDef)  
-          ! OR readStartup(rFile_Startup,cUserDef)
-          write(6,*)'I am a PARALLEL version'
-          call Master_job_Distribute_userdef_control(cUserDef)
-          open(ioMPI,file=cUserDef%wFile_MPI)
-          write(ioMPI,*) 'Total Number of nodes= ', number_of_workers
-      else
-          call RECV_cUserDef(cUserDef)
-      end if
+	call  constructor_MPI
+	if (taskid==0) then
+		!
+		call parseArgs('Mod3DMT',cUserDef)
+		!
+		! special case W - read from configuration file
+		if( cUserDef%job .eq. CONF_FILE ) then !W
+			!
+			call conf%config( cUserDef )
+			cUserDef = conf%getCtrl()
+			!
+		end if
+		! OR readStartup(rFile_Startup,cUserDef)
+		write(6,*)'I am a PARALLEL version'
+		!
+		call Master_job_Distribute_userdef_control(cUserDef)
+		open(ioMPI,file=cUserDef%wFile_MPI)
+		write(ioMPI,*) 'Total Number of nodes= ', number_of_workers
+	else
+		call RECV_cUserDef(cUserDef)
+	end if
 #else
-      call parseArgs('Mod3DMT',cUserDef) ! OR readStartup(rFile_Startup,cUserDef)
-      write(6,*)'I am a SERIAL version'
+	call parseArgs('Mod3DMT',cUserDef)
+	!
+	! special case W - read from configuration file
+	if( cUserDef%job .eq. CONF_FILE ) then !W
+		!
+		call conf%config( cUserDef )
+		cUserDef = conf%getCtrl()
+		!
+	end if
+	!end if
+	write(6,*)'I am a SERIAL version'
 #endif
       call initGlobalData(cUserDef)
       ! set the grid for the numerical computations
@@ -94,7 +119,12 @@ program Mod3DMT
 #endif
       ! Start the (portable) clock
       call reset_time(timer)
-
+		! Open a file for the solver's diagonestic; The file will include informatiosn about the solver (either QMR or BICG).
+		! These information will be used for plotting to compare the performace of the solver(s).
+		! Naser and Paulo 02.10.2019
+		open (unit=ioSolverStat,file="solverStatFile.txt",status='unknown',iostat=ios)
+		
+		
       select case (cUserDef%job)
       case (READ_WRITE)
         if (output_level > 3) then
@@ -102,17 +132,21 @@ program Mod3DMT
             call print_rxDict()
         end if
         if (write_model .and. write_data) then
-            write(*,*) 'Writing model and data files and exiting...'
+            write(6,*) 'Writing model and data files and exiting...'
             call write_modelParam(sigma0,cUserDef%wFile_Model)
             call write_dataVectorMTX(allData,cUserDef%wFile_Data)
         else if (write_model) then
-            write(*,*) 'Writing model and exiting...'
+            write(6,*) 'Writing model and exiting...'
             call write_modelParam(sigma0,cUserDef%wFile_Model)
         end if
       case (FORWARD)
         write(6,*) 'Calculating predicted data...'
 #ifdef MPI
+		!
+        write(ioSolverStat,'(a60)')"#Job_Name Period Polarization Number_of_Iteration Residual"
         call Master_job_fwdPred(sigma0,allData,eAll)
+		!
+		
 #else
         call fwdPred(sigma0,allData,eAll)
 #endif
@@ -122,7 +156,7 @@ program Mod3DMT
         call write_dataVectorMTX(allData,cUserDef%wFile_Data)
 
      case (COMPUTE_J)
-        write(*,*) 'Calculating the full sensitivity matrix...'
+        write(6,*) 'Calculating the full sensitivity matrix...'
 #ifdef MPI
         call Master_job_fwdPred(sigma0,allData,eAll)
         call Master_job_calcJ(allData,sigma0,sens,eAll)
@@ -132,7 +166,7 @@ program Mod3DMT
         call write_sensMatrixMTX(sens,cUserDef%wFile_Sens)
 
      case (MULT_BY_J)
-        write(*,*) 'Multiplying by J...'
+        write(6,*) 'Multiplying by J...'
 
 #ifdef MPI
         call Master_job_Jmult(dsigma,sigma0,allData)
@@ -144,7 +178,7 @@ program Mod3DMT
         call write_dataVectorMTX(allData,cUserDef%wFile_Data)
 
      case (MULT_BY_J_T)
-         write(*,*) 'Multiplying by J^T...'
+         write(6,*) 'Multiplying by J^T...'
 #ifdef MPI
          !call Master_job_fwdPred(sigma0,allData,eAll)
          call Master_job_JmultT(sigma0,allData,dsigma)
@@ -155,7 +189,7 @@ program Mod3DMT
          call write_modelParam(dsigma,cUserDef%wFile_dModel)
          
      case (MULT_BY_J_T_multi_Tx)
-         write(*,*) 'Multiplying by J^T...output multi-Tx model vectors'
+         write(6,*) 'Multiplying by J^T...output multi-Tx model vectors'
 #ifdef MPI
          call Master_job_fwdPred(sigma0,allData,eAll)
          call Master_job_JmultT(sigma0,allData,dsigma,eAll,JT_multi_Tx_vec)
@@ -171,28 +205,29 @@ program Mod3DMT
          close(ioSens)
 
      case (INVERSE)
+	     write(ioSolverStat,'(a85)')"#INV_Iteration_number Job_Name Period Polarization Number_of_Iteration Residual"
          if (trim(cUserDef%search) == 'NLCG') then
             ! sigma1 contains mHat on input (zero = starting from the prior)
-             write(*,*) 'Starting the NLCG search...'
+             write(6,*) 'Starting the NLCG search...'
              sigma1 = dsigma
              call NLCGsolver(allData,cUserDef%lambda,sigma0,sigma1,       &
      &            cUserDef%rFile_invCtrl)
 
          elseif (trim(cUserDef%search) == 'DCG') then
-             write(*,*) 'Starting the DCG search...'
+             write(6,*) 'Starting the DCG search...'
              sigma1 = dsigma
              call DCGsolver(allData,sigma0,sigma1,cUserDef%lambda,        &
      &            cUserDef%rFile_invCtrl)
             !call Marquardt_M_space(allData,sigma0,sigma1,cUserDef%lambda)
          elseif (trim(cUserDef%search) == 'LBFGS') then
             ! sigma1 contains mHat on input (zero = starting from the prior)
-             write(*,*) 'Starting the LBFGS search...'
+             write(6,*) 'Starting the LBFGS search...'
              sigma1 = dsigma
              call LBFGSsolver2(allData,cUserDef%lambda,sigma0,sigma1,       &
      &            cUserDef%rFile_invCtrl)
 
          else
-           write(*,*) 'Inverse search ',trim(cUserDef%search),            &
+           write(6,*) 'Inverse search ',trim(cUserDef%search),            &
      &          ' not yet implemented. Exiting...'
            stop
          end if
@@ -209,11 +244,11 @@ program Mod3DMT
 #else
         select case (cUserDef%option)
             case('FWD')
-                write(*,*) 'Multiplying input model parameter by square root of the covariance ...'
+                write(6,*) 'Multiplying input model parameter by square root of the covariance ...'
                 sigma1 = multBy_CmSqrt(dsigma)
                 call linComb(ONE,sigma1,ONE,sigma0,sigma1)
             case('INV')
-                write(*,*) 'Multiplying input model parameter by inverse square root of the covariance ...'
+                write(6,*) 'Multiplying input model parameter by inverse square root of the covariance ...'
                 call linComb(ONE,dsigma,MinusONE,sigma0,dsigma)
                 sigma1 = multBy_CmSqrtInv(dsigma)
             case default
@@ -270,7 +305,7 @@ program Mod3DMT
 
      case (TEST_SENS)
         ! compute d = J m row by row using the full sensitivity matrix
-        write(*,*) 'Calculating the full sensitivity matrix...'
+        write(6,*) 'Calculating the full sensitivity matrix...'
 #ifdef MPI
         call Master_job_fwdPred(sigma0,allData,eAll)
         call Master_job_calcJ(allData,sigma0,sens,eAll)
@@ -284,7 +319,7 @@ program Mod3DMT
         call write_dataVectorMTX(allData,cUserDef%wFile_Data)
 
         ! now, compute d = J m using Jmult
-        write(*,*) 'Multiplying by J...'
+        write(6,*) 'Multiplying by J...'
 
 #ifdef MPI
         call Master_job_Jmult(dsigma,sigma0,predData,eAll)
@@ -325,12 +360,12 @@ program Mod3DMT
 
        ! file writing...
        if (write_model) then
-           write(*,*) 'Writing the model file...'
+           write(6,*) 'Writing the model file...'
            call write_modelParam(dsigma,cUserDef%wFile_Model)
        end if
 
        if (write_data) then
-           write(*,*) 'Writing the data file...'
+           write(6,*) 'Writing the data file...'
            call write_dataVectorMTX(allData,cUserDef%wFile_Data)
        end if
 
@@ -339,20 +374,22 @@ program Mod3DMT
         write(0,*) 'No job ',trim(cUserDef%job),' defined.'
 
      end select
+     
+	  close(ioSolverStat)
 
      if (write_EMsoln) then
          ! write out EM solutions
-         write(*,*) 'Saving the EM solution...'
+         write(6,*) 'Saving the EM solution...'
          call write_solnVectorMTX(eAll,cUserDef%wFile_EMsoln)
      end if
 
      if (write_EMrhs) then
          ! write out the RHS
-         write(*,*) 'Saving the RHS...'
+         write(6,*) 'Saving the RHS...'
          call write_rhsVectorMTX(bAll,cUserDef%wFile_EMrhs,'sparse')
      end if
 
-     write(*,*) 'Exiting...'
+     write(6,*) 'Exiting...'
 
 
 #ifdef MPI
