@@ -170,12 +170,10 @@ while (@ARGV){
 
 $mainprogfile=$arg;
 
-print "##### ARG $arg ####";
 # Generate a name for the executable file
 $execfile=$mainprogfile;
 $execfile=~s/\.${sftag}//;
 $execfile=~s|.*/||;
-print "##### ARG $execfile ####";
 
 # Output makefile header
 print "# Makefile suited for building the $execfile program\n";
@@ -236,8 +234,7 @@ process_fsource($mainprogfile);
 print "\n# ------------------Macro-Defs---------------------\n";
 
 print "include Makefile.local\n";
-print "OBJDIR = $linkdir\n";
-print "OUTDIR = ../../\n";
+print "OBJDIR = ../../objs/3D_MT/GFortReleaseMPI\n";
 print "F90 = $f90 \n";
 print "FFLAGS = $optim\n";
 print "MPIFLAGS = $mpiflags\n";
