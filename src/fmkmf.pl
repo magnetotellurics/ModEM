@@ -237,6 +237,7 @@ print "\n# ------------------Macro-Defs---------------------\n";
 
 print "include Makefile.local\n";
 print "OBJDIR = $linkdir\n";
+print "OUTDIR = ../../\n";
 print "F90 = $f90 \n";
 print "FFLAGS = $optim\n";
 print "MPIFLAGS = $mpiflags\n";

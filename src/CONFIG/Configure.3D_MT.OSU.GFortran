@@ -33,7 +33,7 @@ else
 perl fmkmf.pl -f90 mpif90 \
 -opt '-O3 -ffree-line-length-none -Wno-all' \
 -mpi '-x f95-cpp-input -DMPI' \
--o './objs/3D_MT/GFortReleaseMPI' \
+-o '../../objs/3D_MT/GFortReleaseMPI' \
 -l '-llapack -lblas' \
 -lp '/usr/lib64' \
 -p .:MPI:INV:LAPACK:SENS:UTILS:FIELDS/FiniteDiff3D:3D_MT:3D_MT/DICT:3D_MT/modelParam:3D_MT/CSEM_module:3D_MT/CSEM_module/Dipole1D:3D_MT/FWD:3D_MT/FWD/Mod2d:3D_MT/ioMod \
