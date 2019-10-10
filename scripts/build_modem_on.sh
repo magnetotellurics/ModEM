@@ -43,7 +43,7 @@ fi
 echo "#### FINISH BUILD Mod3DMT QMR ####"
 #
 #
-rm Makefile
+#rm Makefile
 #
 #
 cd ..
