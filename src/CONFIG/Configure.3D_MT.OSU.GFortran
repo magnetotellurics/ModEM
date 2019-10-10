@@ -55,4 +55,7 @@ if [ $3 = "spherical" ]; then
 else
     echo 1>&2 Cartesian version of the makefile ready to use.
 fi
+<<<<<<< HEAD
 
+=======
+>>>>>>> b4a71305aae91e503b82d05d04a3bcddd18a67ad
