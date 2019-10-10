@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 #!/bin/sh
 if [ $# -le 1 ]; then
     echo 1>&2 Usage: $0 Makefile [debug|release|MPI] [spherical]
@@ -56,62 +55,3 @@ if [ $3 = "spherical" ]; then
 else
     echo 1>&2 Cartesian version of the makefile ready to use.
 fi
-=======
-#!/bin/sh
-if [ $# -le 1 ]; then
-    echo 1>&2 Usage: $0 Makefile [debug|release|MPI] [spherical]
-    exit 127
-fi
-if [ -e $1 ]; then
-    rm $1
-fi
-if [ $2 = "debug" ]; then
-# Debug configuration
-perl fmkmf.pl -f90 gfortran \
--opt '-g -fbacktrace -fbounds-check -ffree-line-length-none' \
--mpi '-x f95-cpp-input' \
--o './objs/3D_MT/GFortDebug' \
--l '-llapack -lblas' \
--lp '/usr/lib64' \
--p .:INV:LAPACK:SENS:UTILS:FIELDS/FiniteDiff3D:3D_MT:3D_MT/DICT:3D_MT/modelParam:3D_MT/FWD:3D_MT/FWD/Mod2d:3D_MT/ioMod \
-Mod3DMT.f90 > $1
-
-elif [ $2 = "release" ]; then
-# Release configuration
-perl fmkmf.pl -f90 gfortran \
--opt '-O3 -ffree-line-length-none' \
--mpi '-x f95-cpp-input' \
--o './objs/3D_MT/GFortRelease' \
--l '-llapack -lblas' \
--lp '/usr/lib64' \
--p .:INV:LAPACK:SENS:UTILS:FIELDS/FiniteDiff3D:3D_MT:3D_MT/DICT:3D_MT/modelParam:3D_MT/FWD:3D_MT/FWD/Mod2d:3D_MT/ioMod \
-Mod3DMT.f90 > $1
-
-else
-# MPI configuration (not tested)
-perl fmkmf.pl -f90 mpif90 \
--opt '-O3 -ffree-line-length-none -Wno-all' \
--mpi '-x f95-cpp-input -DMPI' \
--o './objs/3D_MT/GFortReleaseMPI' \
--l '-llapack -lblas' \
--lp '/usr/lib64' \
--p .:INV:MPI:LAPACK:SENS:UTILS:FIELDS/FiniteDiff3D:3D_MT:3D_MT/DICT:3D_MT/modelParam:3D_MT/FWD:3D_MT/FWD/Mod2d:3D_MT/ioMod \
-Mod3DMT.f90 > $1
-fi
-
-# Fix the MODULE directory for temporary object files - done in fmkmf.pl already
-# sed -i 's/-module/-fintrinsic-modules-path/' $1
-
-if [ $# -le 2 ]; then
-    echo 1>&2 Cartesian version of the makefile ready to use.
-    exit
-fi
-
-if [ $3 = "spherical" ]; then
-	sed -i 's/GridCalc\./GridCalcS\./g' $1
-	sed -i 's/boundary_ws\./boundary_wsS\./g' $1	
-    echo 1>&2 Spherical version of the makefile ready to use.
-else
-    echo 1>&2 Cartesian version of the makefile ready to use.
-fi
->>>>>>> origin/dev_user_ctrl
