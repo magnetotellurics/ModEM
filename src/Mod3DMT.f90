@@ -29,7 +29,8 @@ program Mod3DMT
      ! Output variable
      character(80)          :: header
      integer                :: ios
-
+    character(8) date
+    character(10) time
 	 !
 	 ! WERDT
 	 !
@@ -122,7 +123,8 @@ program Mod3DMT
 		! Open a file for the solver's diagonestic; The file will include informatiosn about the solver (either QMR or BICG).
 		! These information will be used for plotting to compare the performace of the solver(s).
 		! Naser and Paulo 02.10.2019
-		open (unit=ioSolverStat,file="solverStatFile.txt",status='unknown',iostat=ios)
+		call date_and_time(date,time)
+		open (unit=ioSolverStat,file=trim(solverParams%solver_name)//"_SolverStatFile_"//date//"_"//time//".txt",status='unknown',iostat=ios)
 		
 		
       select case (cUserDef%job)
@@ -143,7 +145,7 @@ program Mod3DMT
         write(6,*) 'Calculating predicted data...'
 #ifdef MPI
 		!
-        write(ioSolverStat,'(a60)')"#Job_Name Period Polarization Number_of_Iteration Residual"
+        write(ioSolverStat,'(a80)')"#Job_Name Period Period_Index Polarization_Index Number_of_Iteration Residual"
         call Master_job_fwdPred(sigma0,allData,eAll)
 		!
 		

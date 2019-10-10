@@ -301,8 +301,10 @@ Contains
     loop: do while ((.not.converged).and.(.not.failed))
 
     if (trim(solver_name) .eq. "QMR") then
+	   write(*,*) 'I am using QMR'
        Call QMR(b, eSol,QMRiter)
     elseif (trim(solver_name) .eq. "BICG") then
+	write(*,*) 'I am using BICG'
        Call BICG(b, eSol,QMRiter)
     else
        Write(*,*)"Unknown Solver Method"
@@ -348,6 +350,8 @@ Contains
 	! Naser and Paulo 02.10.2019
 	worker_job_task%solver_residual = EMrelErr(nIterTotal)
 	worker_job_task%solver_number_of_iterations = nIterTotal
+	worker_job_task%period=(2*PI)/omega
+	worker_job_task%solver_name=trim(solver_name)
 	!
     !  After solving symetrized system, need to do different things for
     !   transposed, standard cases
