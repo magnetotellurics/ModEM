@@ -385,5 +385,41 @@ Contains
 
   end subroutine deallGlobalData	! deallGlobalData
 
+  !***************************************************************
+  ! Liu Zhongyin, 2019.10.07, add subroutine rotating datas
+   subroutine RotateAllData(angle)
+   implicit none
+   real(8),intent(in):: angle
+
+   integer :: i,j,k,l,iDt
+   complex(kind=prec)   :: z(4)
+   
+   do i = 1, allData%ntx
+      do j = 1, allData%d(i)%ndt
+         iDt = allData%d(i)%data(j)%dataType
+         if (iDt .eq. Full_Impedance) then
+            do k = 1, allData%d(i)%data(j)%nSite
+               z(1) = cmplx(allData%d(i)%data(j)%value(1,k),allData%d(i)%data(j)%value(2,k))
+               z(2) = cmplx(allData%d(i)%data(j)%value(3,k),allData%d(i)%data(j)%value(4,k))
+               z(3) = cmplx(allData%d(i)%data(j)%value(5,k),allData%d(i)%data(j)%value(6,k))
+               z(4) = cmplx(allData%d(i)%data(j)%value(7,k),allData%d(i)%data(j)%value(8,k)) 
+
+               call rotateZ(z, iDT, angle)
+
+               allData%d(i)%data(j)%value(1,k) = real(z(1))
+               allData%d(i)%data(j)%value(2,k) = aimag(z(1))
+               allData%d(i)%data(j)%value(3,k) = real(z(2))
+               allData%d(i)%data(j)%value(4,k) = aimag(z(2))
+               allData%d(i)%data(j)%value(5,k) = real(z(3))
+               allData%d(i)%data(j)%value(6,k) = aimag(z(3))
+               allData%d(i)%data(j)%value(7,k) = real(z(4))
+               allData%d(i)%data(j)%value(8,k) = aimag(z(4))                                                                     
+            enddo
+         endif
+      enddo
+   enddo
+
+   end subroutine
+
 
 end module Main

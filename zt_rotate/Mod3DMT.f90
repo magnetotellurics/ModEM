@@ -95,6 +95,10 @@ program Mod3DMT
             call print_txDict()
             call print_rxDict()
         end if
+        ! Liu Zhongyin, 2019.10.07, add rotate operation
+        if (abs(cUserDef%angle-0.0) .gt. 1e-7) then
+            call RotateAllData(cUserDef%angle)
+        endif
         if (write_model .and. write_data) then
         	write(*,*) 'Writing model and data files and exiting...'
         	call write_modelParam(sigma0,cUserDef%wFile_Model)

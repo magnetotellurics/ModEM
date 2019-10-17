@@ -69,6 +69,9 @@ module UserCtrl
 	! Indicate how much output you want
 	integer             :: output_level
 
+   ! Liu Zhongyin, 2019.10.07, add rotate angle
+   real(8)             :: angle
+
   end type userdef_control
 
 Contains
@@ -109,6 +112,9 @@ Contains
   	ctrl%option = 'J'
   	ctrl%delta = 0.05
   	ctrl%output_level = 3
+
+   ! Liu Zhongyin, 2019.10.07, add rotate angle
+   ctrl%angle = 0.0
 
     ! Using process ID in MPI output file name has the advantage that
     ! the user may run several instances of the program in one directory
@@ -284,6 +290,10 @@ Contains
 	    if (narg > 3) then
 	       ctrl%wFile_Data = temp(4)
 	    end if
+       ! Liu Zhongyin, 2019.10.07, add rotate operation
+       if (narg > 4) then
+         read(temp(5),*) ctrl%angle
+       endif
 
       case (FORWARD) !F
         if (narg < 3) then

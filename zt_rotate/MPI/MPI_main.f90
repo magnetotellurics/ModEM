@@ -36,9 +36,13 @@ Contains
 !###########################################  MPI_initialization   ############################################################
 
 Subroutine MPI_constructor
-
+#ifdef MPIMOD
+    use mpi
+    implicit none
+#else
     implicit none
     include 'mpif.h'
+#endif
 
           call MPI_INIT( ierr )
           call MPI_COMM_RANK( MPI_COMM_WORLD, taskid, ierr )
@@ -55,9 +59,13 @@ End Subroutine MPI_constructor
 
 
 Subroutine Master_Job_fwdPred(sigma,d1,eAll)
-
+#ifdef MPIMOD
+    use mpi
+    implicit none
+#else
     implicit none
     include 'mpif.h'
+#endif
    type(modelParam_t), intent(in)	    :: sigma
    type(dataVectorMTX_t), intent(inout)	:: d1
    type(solnVectorMTX_t), intent(inout)	:: eAll
@@ -379,9 +387,13 @@ end subroutine Master_job_calcJ
 
 !##############################################    Master_job_JmultT #########################################################
 Subroutine Master_job_JmultT(sigma,d,dsigma,eAll,s_hat)
-
+#ifdef MPIMOD
+   use mpi
+   implicit none
+#else
    implicit none
     include 'mpif.h'
+#endif
 
    type(modelParam_t), intent(in)	:: sigma
    type(dataVectorMTX_t), intent(in)		:: d
@@ -499,9 +511,13 @@ end Subroutine Master_job_JmultT
 
 !##############################################    Master_job_Jmult #########################################################
 Subroutine Master_job_Jmult(mHat,m,d,eAll)
-
+#ifdef MPIMOD
+    use mpi
+    implicit none
+#else
     implicit none
     include 'mpif.h'
+#endif
 
    type(dataVectorMTX_t), intent(inout)		:: d
    type(modelParam_t), intent(in)			:: mHat,m
@@ -591,8 +607,13 @@ end Subroutine Master_job_Jmult
 
 !############################################## Master_job_Distribute_Data #########################################################
 Subroutine Master_job_Distribute_Data(d)
+#ifdef MPIMOD
+   use mpi
+    implicit none
+#else
     implicit none
     include 'mpif.h'
+#endif
     type(dataVectorMTX_t), intent(in)		:: d
     integer                                 :: nTx
 
@@ -634,8 +655,13 @@ end Subroutine Master_job_Distribute_Data
 
 !############################################## Master_job_Distribute_Model #########################################################
 Subroutine Master_job_Distribute_Model(sigma,delSigma)
+#ifdef MPIMOD
+   use mpi
+    implicit none
+#else
     implicit none
     include 'mpif.h'
+#endif
     type(modelParam_t), intent(in) 	:: sigma
     type(modelParam_t), intent(in), optional :: delSigma
     !local
@@ -688,8 +714,13 @@ end Subroutine Master_job_Distribute_Model
 
 !############################################## Master_job_Distribute_eAll #########################################################
 Subroutine Master_job_Distribute_eAll(d,eAll)
+#ifdef MPIMOD
+   use mpi
+    implicit none
+#else
     implicit none
     include 'mpif.h'
+#endif
    type(dataVectorMTX_t), intent(in)		:: d
    type(solnVectorMTX_t), intent(in)  	:: eAll
        integer nTx,nTot
@@ -717,8 +748,13 @@ end Subroutine Master_job_Distribute_eAll
 
 !############################################## Master_job_Collect_eAll #########################################################
 Subroutine Master_job_Collect_eAll(d,eAll)
+#ifdef MPIMOD
+   use mpi
+    implicit none
+#else
     implicit none
     include 'mpif.h'
+#endif
    type(dataVectorMTX_t), intent(in)		:: d
    type(solnVectorMTX_t), intent(inout)	:: eAll
    integer nTx,nTot,iTx
@@ -760,8 +796,13 @@ Subroutine Master_job_Collect_eAll(d,eAll)
 end Subroutine Master_job_Collect_eAll
 !############################################## Master_job_keep_prev_eAll #########################################################
 subroutine Master_job_keep_prev_eAll
+#ifdef MPIMOD
+   use mpi
+    implicit none
+#else
     implicit none
     include 'mpif.h'
+#endif
 
         do dest=1,number_of_workers
             worker_job_task%what_to_do='keep_prev_eAll'
@@ -776,8 +817,13 @@ end  subroutine Master_job_keep_prev_eAll
 
 !############################################## Master_job_Distribute_userdef_control#########################################################
 Subroutine Master_job_Distribute_userdef_control(ctrl)
+#ifdef MPIMOD
+   use mpi
+    implicit none
+#else
     implicit none
     include 'mpif.h'
+#endif
 
     type(userdef_control), intent(in)		:: ctrl
     character(20)                               :: which_proc
@@ -804,9 +850,13 @@ end Subroutine Master_job_Distribute_userdef_control
 
 !##############################################    Master_job_Clean Memory ########################################################
 Subroutine Master_job_Clean_Memory
-
+#ifdef MPIMOD
+   use mpi
+    implicit none
+#else
     implicit none
     include 'mpif.h'
+#endif
 
           write(ioMPI,*)'Sending Clean memory message to all nodes'
 
@@ -825,9 +875,13 @@ end Subroutine Master_job_Clean_Memory
 
 !##############################################    Master_job_Stop_MESSAGE ########################################################
 Subroutine Master_job_Stop_MESSAGE
-
+#ifdef MPIMOD
+   use mpi
+    implicit none
+#else
     implicit none
     include 'mpif.h'
+#endif
 
           write(ioMPI,*)'FWD: Sending stop message to all nodes'
 
@@ -858,8 +912,13 @@ end Subroutine Master_job_Stop_MESSAGE
 
 !############################################################   Worker_job :High Level Subroutine   #####################################################################
 Subroutine Worker_job (sigma,d)
+#ifdef MPIMOD
+   use mpi
+    implicit none
+#else
     implicit none
     include 'mpif.h'
+#endif
 
 
 

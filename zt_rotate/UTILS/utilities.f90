@@ -636,4 +636,35 @@ function is_digit(ch) result(res)
 	return
 
 end function is_digit
+
+subroutine strcount(str,delims,nargs)
+
+  ! Parses the string 'str' into arguments args(1), ..., args(nargs) based on
+  ! the delimiters contained in the string 'delims'. Preceding a delimiter in
+  ! 'str' by a backslash (\) makes this particular instance not a delimiter.
+  ! The integer output variable nargs contains the number of arguments found.
+
+  ! Liu Zhongyin, 2019.08.27, copied from "parse", used to get str count
+    implicit none
+    character(len=*) :: str,delims
+    character(len=len_trim(str)) :: strsav
+    character(len=len_trim(str)) :: args
+    integer                     :: lenstr,isp,ich,k,i,nargs
+    strsav=str
+    call compact(str)
+    args = ' '
+    nargs=0
+    lenstr=len_trim(str)
+    if(lenstr==0) return
+    k=0
+  
+    do
+       if(len_trim(str) == 0) exit
+       nargs=nargs+1
+       call split(str,delims,args)
+       call removebksl(args)
+    end do
+    str=strsav
+  
+  end subroutine strcount
 end module utilities

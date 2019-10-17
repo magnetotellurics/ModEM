@@ -1,8 +1,13 @@
 
 Module MPI_declaration
 #ifdef MPI
+#ifdef MPIMOD
+use mpi
+     implicit none
+#else
      implicit none
 include 'mpif.h'
+#endif
 
 ! Decleration of general MPI stuff
 !********************************************************************

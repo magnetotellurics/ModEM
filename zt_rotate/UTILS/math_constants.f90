@@ -74,4 +74,7 @@ module math_constants
   character (len=80), parameter  :: REGION = 'Regional'
   character (len=80), parameter  :: SPHERE = 'Global'
 
+  ! Liu Zhongyin, 2019.10.08, add Ln10
+  real (kind=prec), parameter	   :: Ln10 = dlog(10.0_prec)
+
 end module math_constants !math_constants

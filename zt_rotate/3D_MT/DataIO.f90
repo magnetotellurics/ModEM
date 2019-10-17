@@ -330,7 +330,9 @@ Contains
                             if (error(icomp) .ge. LARGE_REAL) then
                                 error(icomp) = LARGE_REAL
                             else
-                                error(icomp) = 10**error(icomp)
+                                ! error(icomp) = 10**error(icomp)
+                                ! Liu Zhongyin, 2019.10.08, change the error
+                                error(icomp) = value(icomp)*error(icomp)*Ln10
                             endif
                         endif
 
@@ -403,6 +405,8 @@ Contains
     ! 2019.03.18, Liu Zhongyin, add azimu variable
     real(8), allocatable            :: azimu(:,:,:) ! (nTx,nRx,ncomp)
     real(8)                         :: angle
+    integer                         :: ncount
+    character(1000)                 :: tmpline    
 
     ! First, set up the data type dictionary, if it's not in existence yet
     call setup_typeDict()
@@ -498,12 +502,26 @@ Contains
             case(Full_Impedance,Off_Diagonal_Impedance,Full_Vertical_Components)
                 !read(ioDat,*,iostat=ios) Period,code,lat,lon,x(1),x(2),x(3),compid,Zreal,Zimag,Zerr
                 ! 2019.04.23, Liu Zhongyin, add angle while reading line
-                read(ioDat,*,iostat=ios) Period,code,lat,lon,x(1),x(2),x(3),compid,Zreal,Zimag,Zerr,angle
+                !read(ioDat,*,iostat=ios) Period,code,lat,lon,x(1),x(2),x(3),compid,Zreal,Zimag,Zerr,angle
+                read(ioDat,'(a)',iostat=ios) tmpline
 
                 if (ios /= 0) then
                     backspace(ioDat)
                     exit
                 end if
+
+                ! Liu Zhongyin, 2019.08.27, add new codes for reading data
+                backspace(ioDat)
+                call strcount(tmpline, ' ', ncount)
+                select case (ncount)
+                case(11)
+                    read(ioDat,*,iostat=ios) Period,code,lat,lon,x(1),x(2),x(3),compid,Zreal,Zimag,Zerr
+                    angle = 0.0
+                case(12)
+                    read(ioDat,*,iostat=ios) Period,code,lat,lon,x(1),x(2),x(3),compid,Zreal,Zimag,Zerr,angle
+                case default
+                    call errStop('read datafile error')
+                end select
 
                 ! Find component id for this value
                 icomp = ImpComp(compid,iDt)
@@ -520,13 +538,29 @@ Contains
                 !read(ioDat,*,iostat=ios) Period,code,lat,lon,x(1),x(2),x(3), &
                 !    ref_code,ref_lat,ref_lon,ref_x(1),ref_x(2),ref_x(3),compid,Zreal,Zimag,Zerr
                 ! 2019.04.23, Liu Zhongyin, add angle while reading line
-                read(ioDat,*,iostat=ios) Period,code,lat,lon,x(1),x(2),x(3), &
-                    ref_code,ref_lat,ref_lon,ref_x(1),ref_x(2),ref_x(3),compid,Zreal,Zimag,Zerr,angle
+                ! read(ioDat,*,iostat=ios) Period,code,lat,lon,x(1),x(2),x(3), &
+                !     ref_code,ref_lat,ref_lon,ref_x(1),ref_x(2),ref_x(3),compid,Zreal,Zimag,Zerr,angle
+                read(ioDat,'(a)',iostat=ios) tmpline
 
                 if (ios /= 0) then
                     backspace(ioDat)
                     exit
                 end if
+
+                ! Liu Zhongyin, 2019.08.27, add new codes for reading data
+                backspace(ioDat)
+                call strcount(tmpline, ' ', ncount)
+                select case (ncount)
+                case(17)
+                    read(ioDat,*,iostat=ios) Period,code,lat,lon,x(1),x(2),x(3), &
+                        ref_code,ref_lat,ref_lon,ref_x(1),ref_x(2),ref_x(3),compid,Zreal,Zimag,Zerr
+                    angle = 0.0
+                case(18)
+                    read(ioDat,*,iostat=ios) Period,code,lat,lon,x(1),x(2),x(3), &
+                        ref_code,ref_lat,ref_lon,ref_x(1),ref_x(2),ref_x(3),compid,Zreal,Zimag,Zerr,angle
+                case default
+                    call errStop('read datafile error')
+                end select
 
                 ! Find component id for this value
                 icomp = ImpComp(compid,iDt)
@@ -544,19 +578,33 @@ Contains
             case(Off_Diagonal_Rho_Phase,Phase_Tensor)
                 !read(ioDat,*,iostat=ios) Period,code,lat,lon,x(1),x(2),x(3),compid,Zreal,Zerr
                 ! 2019.04.23, Liu Zhongyin, add angle while reading line
-                read(ioDat,*,iostat=ios) Period,code,lat,lon,x(1),x(2),x(3),compid,Zreal,Zerr,angle
+                ! read(ioDat,*,iostat=ios) Period,code,lat,lon,x(1),x(2),x(3),compid,Zreal,Zerr,angle
+                read(ioDat,'(a)',iostat=ios) tmpline
 
                 if (ios /= 0) then
                     backspace(ioDat)
                     exit
                 end if
 
+                ! Liu Zhongyin, 2019.08.27, add new codes for reading data
+                backspace(ioDat)
+                call strcount(tmpline, ' ', ncount)
+                select case (ncount)
+                case(10)
+                    read(ioDat,*,iostat=ios) Period,code,lat,lon,x(1),x(2),x(3),compid,Zreal,Zerr
+                    angle = 0.0
+                case(11)
+                    read(ioDat,*,iostat=ios) Period,code,lat,lon,x(1),x(2),x(3),compid,Zreal,Zerr,angle
+                case default
+                    call errStop('read datafile error')
+                end select
+
                 ! Find component id for this value
                 icomp = ImpComp(compid,iDt)
 
                 ! For apparent resistivities only, use log10 of the values
                 if (index(compid,'RHO')>0) then
-                Zerr  = Zerr/Zreal/dlog(10.0d0)
+                    Zerr  = Zerr/Zreal/Ln10
                     Zreal = log10(Zreal)
             !   Zerr  = log10(Zerr)
             end if
@@ -612,7 +660,8 @@ Contains
             exist(i,j,icomp) = .TRUE.
 
             ! 2019.04.23, Liu Zhongyin, assign angle to azimu
-            azimu(i,j,icomp) = angle
+            ! azimu(i,j,icomp) = angle
+            azimu(i,j,:) = angle
 
             countData = countData + 1
 
