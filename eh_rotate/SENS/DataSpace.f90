@@ -125,10 +125,6 @@ module DataSpace
 
       ! needed to avoid memory leaks for temporary function outputs
       logical		:: temporary = .false.
-
-      ! 2019.04.23 Liu Zhongyin, Add Azimuth for storing data azimuth
-      real(kind=prec), pointer, dimension(:,:)    ::  Azimuth 
-
   end type dataBlock_t
 
 
@@ -276,10 +272,6 @@ Contains
     d%normalized = 0
     d%allocated = .true.
 
-    ! 2019.04.23, Liu Zhongyin, Add azimuth allocation
-    allocate(d%Azimuth(nComp,nSite), stat=istat)
-    d%Azimuth = R_ZERO
-
   end subroutine create_dataBlock
 
   !**********************************************************************
@@ -298,10 +290,6 @@ Contains
        !  deallocate everything relevant
        deallocate(d%value, d%exist, d%rx, STAT=istat)
        if (associated(d%error)) deallocate(d%error, STAT=istat)
-
-
-       ! 2019.04.23, Liu Zhongyin, add azimuth deallocation
-       deallocate(d%Azimuth, stat=istat)
     endif
 
     d%tx = 0
@@ -331,9 +319,6 @@ Contains
        d%value = R_ZERO
        if (associated(d%error)) d%error = R_ZERO
        d%errorBar = .false.
-
-       ! 2019.04.23, Liu Zhongyin, add azimuth zero
-       d%Azimuth = R_ZERO
     endif
 
   end subroutine zero_dataBlock
@@ -403,9 +388,6 @@ Contains
     d2%dataType = d1%dataType
     d2%scalingFactor = d1%scalingFactor
 
-    ! 2019.04.23, Liu Zhongyin, add azimuth copy
-    d2%Azimuth = d1%Azimuth
-
     ! if input is a temporary function output, deallocate
     if (d1%temporary) then
     	call deall_dataBlock(d1)
@@ -427,7 +409,7 @@ Contains
 
     ! local variables
     logical					:: errBar = .false.
-    integer					:: istat,i,j
+    integer					:: istat
 
     ! check to see if inputs (d1, d2) are both allocated
     if ((.not. d1%allocated) .or. (.not. d2%allocated)) then
@@ -468,15 +450,6 @@ Contains
        call errStop('input and output dataVecs not consistent in linComb_dataBlock')
     endif
 
-    ! Liu Zhongyin, 2019.04.23, check to see if d1 and d2 have the same azimuth
-    do i=1,d1%nComp
-      do j=1,d1%nSite
-         if (d1%Azimuth(i,j) .ne. d2%Azimuth(i,j)) then
-            call errStop('input Azimuthes do not match')
-         endif
-      enddo
-   enddo
-
 	! set the receiver indices to those of d1
 	dOut%tx = d1%tx
     dOut%txType = d1%txType
@@ -493,9 +466,6 @@ Contains
 	! set errBar=.true. if at least one of the inputs has error bars
 	errBar = (d1%errorBar .or. d2%errorBar)
 	dOut%errorBar = errBar
-
-   ! 2019.04.25, Liu Zhongyin, set Azimuth
-   dOut%Azimuth = d1%Azimuth
 
 	! allocate error bars, if needed
     if (errBar .and. .not. associated(dOut%error)) then
@@ -659,8 +629,6 @@ Contains
     integer, allocatable    :: rxList(:)
     logical                 :: newRx, errorBar
     integer                 :: i,j,iRx,nComp,nSite,nSiteMax,istat
-    ! 2019.04.23, Liu Zhongyin, add local variable azimu
-    real(8),allocatable     :: azimu(:,:)
 
     if(.not. d1%allocated .and. .not. d2%allocated) then
         call errStop('both input data blocks not allocated in merge_dataBlock')
@@ -695,9 +663,6 @@ Contains
     allocate(exists(nComp,nSiteMax),STAT=istat)
     nSite = 0
 
-    ! 2019.04.23, Liu Zhongyin, add azimu allocation
-    allocate(azimu(nComp,nSiteMax),stat=istat)
-
     do i = 1,d1%nSite
         iRx = d1%rx(i)
         newRx = .true.
@@ -715,9 +680,6 @@ Contains
                 errors(:,nSite) = d1%error(:,i)
             endif
             exists(:,nSite) = d1%exist(:,i)
-
-            ! 2019.04.23, Liu Zhongyin, add azimu assignment
-            azimu(:,nSite) = d1%Azimuth(:,i)
         endif
     enddo
 
@@ -738,9 +700,6 @@ Contains
                 errors(:,nSite) = d2%error(:,i)
             endif
             exists(:,nSite) = d2%exist(:,i)
-
-            ! 2019.04.23, Liu Zhongyin, add azimu assignment
-            azimu(:,nSite) = d2%Azimuth(:,i)
         endif
     enddo
 
@@ -758,18 +717,12 @@ Contains
     d%normalized = d1%normalized
     d%allocated = .true.
 
-    ! 2019.04.23, Liu Zhongyin, add azimuth assignment
-    d%Azimuth = azimu(1:nComp,1:nSite)
-
     deallocate(rxList,STAT=istat)
     deallocate(values,STAT=istat)
     if(errorBar) then
         deallocate(errors,STAT=istat)
     endif
     deallocate(exists,STAT=istat)
-
-    ! 2019.04.23, Liu Zhongyin, add azimuth deallocation
-    deallocate(azimu,stat=istat)
 
   end subroutine merge_dataBlock
 

@@ -93,9 +93,7 @@ Contains
 	     ! at one site, for one data type.
 	     !   Lrows returns one Lz for each of nFunc functionals
 	     iRx = d%data(j)%rx(iSite)
-		  ! call Lrows(e0,Sigma0,iDt,iRx,Lz)
-		  ! 2019.05.08, Liu Zhongyin, add Angle
-		  call Lrows(e0,Sigma0,iDt,iRx,Lz,d%data(j)%Azimuth(:,iSite))
+		  call Lrows(e0,Sigma0,iDt,iRx,Lz)
 	     iComp = 1
 	     do iFunc  = 1, nFunc
 	        exists = d%data(j)%exist(iComp,iSite)
@@ -191,9 +189,7 @@ Contains
 	     ! at one site, for one data type.
 	     !   Lrows returns one Lz for each of nFunc functionals
 	     iRx = d%data(j)%rx(iSite)
-		  ! call Lrows(e0,Sigma0,iDt,iRx,Lz)
-		  ! 2019.05.08, Liu Zhongyin, add Angle
-		  call Lrows(e0,Sigma0,iDt,iRx,Lz,d%data(j)%Azimuth(:,iSite))
+		  call Lrows(e0,Sigma0,iDt,iRx,Lz)
 	     iComp = 1
 	     do iFunc  = 1, nFunc
 	        exists = d%data(j)%exist(iComp,iSite)

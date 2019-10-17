@@ -39,7 +39,7 @@ module dataFunc
 Contains
 
 !******************************************************************************
-  subroutine dataResp(ef,Sigma,iDT,iRX,Resp,Angle,Binv)
+  subroutine dataResp(ef,Sigma,iDT,iRX,Resp,Binv)
   ! given electric field solutions (both modes--and note
   !    that the solution knows about the transmitter used),
   ! and indices into data types and receiver dictionaries for one
@@ -53,12 +53,6 @@ Contains
   integer, intent(in)			:: iDT
   integer, intent(in) 			:: iRX
   real(kind=prec), intent(inout)	:: Resp(:)
-
-  ! 2019.03.20, Liu Zhongyin, add Angle
-  real(kind=prec), intent(in)    :: Angle(:)
-
-
-
 
   ! Definition of the impedance elements:
   !   iDT=Full_Impedance
@@ -86,6 +80,9 @@ Contains
   type(sparsevecC)		:: Lex,Ley,Lbx,Lby,Lbz,Lrx,Lry
   logical			:: ComputeHz,ComputeE
 
+  ! Liu Zhongyin, 2019.08.26, local vars
+  real(kind=prec) :: HxAngle,ExAngle,HxAngle_ref;
+
   !  probably should dependence on omega into BinterpSetup, as in 2D!
   omega = txDict(ef%tx)%omega
 
@@ -106,6 +103,11 @@ Contains
  selectcase (iDT)
      case(Full_Impedance)
                x     = rxDict(iRX)%x         !Local site position (x,y,z)
+         
+         ! Liu Zhongyin, 2019.08.26, add hxazimuth, exazimuth
+         HxAngle = rxDict(iRX)%HxAzimuth
+         ExAngle = rxDict(iRX)%ExAzimuth
+
 		     ! First set up interpolation functionals for Ex, Ey
 			  xyz = 1
 			  call EinterpSetUp(ef%grid,x,xyz,Lex)
@@ -123,14 +125,14 @@ Contains
                EE(2,iMode) =  dotProd_noConj_scvector_f(Ley,ef%pol(iMode))
                
                ! 2019.05.25, Liu Zhongyin, add rotate for ee
-               Call rotateO2L(EE(1,iMode),EE(2,iMode),Angle(1))
+            Call rotate_Model2Data(EE(1,iMode),EE(2,iMode),ExAngle,ExAngle+90.0_prec,0.0_prec)
 
 			      ! magnetic fields
 			      BB(1,iMode) = dotProd_noConj_scvector_f(Lbx,ef%pol(iMode))
                BB(2,iMode) = dotProd_noConj_scvector_f(Lby,ef%pol(iMode))
                
                ! 2019.05.25, Liu Zhongyin, add rotate for bb
-               Call rotateO2L(BB(1,iMode),BB(2,iMode),Angle(1))
+            Call rotate_Model2Data(BB(1,iMode),BB(2,iMode),HxAngle,HxAngle+90.0_prec,0.0_prec)
 			 end do
 			 !invert horizontal B matrix using Kramer's rule.
 			  det = BB(1,1)*BB(2,2)-BB(1,2)*BB(2,1)
@@ -149,6 +151,11 @@ Contains
 
      case(Off_Diagonal_Impedance)
               x     = rxDict(iRX)%x          !Local site position (x,y,z)
+
+         ! Liu Zhongyin, 2019.08.26, add hxazimuth, exazimuth
+         HxAngle = rxDict(iRX)%HxAzimuth
+         ExAngle = rxDict(iRX)%ExAzimuth
+
 		     ! First set up interpolation functionals for Ex, Ey
 			  xyz = 1
 			  call EinterpSetUp(ef%grid,x,xyz,Lex)
@@ -166,14 +173,14 @@ Contains
                EE(2,iMode) =  dotProd_noConj_scvector_f(Ley,ef%pol(iMode))
                
                ! 2019.05.25, Liu Zhongyin, add rotate for ee
-               Call rotateO2L(EE(1,iMode),EE(2,iMode),Angle(1))
+            Call rotate_Model2Data(EE(1,iMode),EE(2,iMode),ExAngle,ExAngle+90.0_prec,0.0_prec)
 
 			      ! magnetic fields
 			      BB(1,iMode) = dotProd_noConj_scvector_f(Lbx,ef%pol(iMode))
                BB(2,iMode) = dotProd_noConj_scvector_f(Lby,ef%pol(iMode))
                
                ! 2019.05.25, Liu Zhongyin, add rotate for bb
-               Call rotateO2L(BB(1,iMode),BB(2,iMode),Angle(1))
+            Call rotate_Model2Data(BB(1,iMode),BB(2,iMode),HxAngle,HxAngle+90.0_prec,0.0_prec)
 			 end do
 			 !invert horizontal B matrix using Kramer's rule.
 			  det = BB(1,1)*BB(2,2)-BB(1,2)*BB(2,1)
@@ -188,6 +195,10 @@ Contains
 
      case(Full_Vertical_Components)
                x     = rxDict(iRX)%x          !Local site position (x,y,z)
+
+         ! Liu Zhongyin, 2019.08.26, add hxazimuth
+         HxAngle = rxDict(iRX)%HxAzimuth
+
               !  Vertical field TF
 			 ! First set up interpolation functionals for Bx, By, Bz
 			  xyz = 1
@@ -204,7 +215,7 @@ Contains
                BB(3,iMode) = dotProd_noConj_scvector_f(Lbz,ef%pol(iMode))
                
                ! 2019.05.25, Liu Zhongyin, add rotate for bb
-               Call rotateO2L(BB(1,iMode),BB(2,iMode),Angle(1))
+            Call rotate_Model2Data(BB(1,iMode),BB(2,iMode),HxAngle,HxAngle+90.0_prec,0.0_prec)
 			 end do
 			 !invert horizontal B matrix using Kramer's rule.
 			  det = BB(1,1)*BB(2,2)-BB(1,2)*BB(2,1)
@@ -221,6 +232,11 @@ Contains
      case(Full_Interstation_TF)
               x     = rxDict(iRX)%x          !Local site position (x,y,z)
               x_ref = rxDict(iRX)%r          !Reference site position (x,y,z)
+
+         ! Liu Zhongyin, 2019.08.26, add hxazimuth, hxazimuth_ref
+         HxAngle = rxDict(iRX)%HxAzimuth
+         HxAngle_ref = rxDict(iRX)%HxAzimuth_ref
+
   			 ! First set up interpolation functionals for Bx, By at local site
 			  xyz = 1
 			  call BfromESetUp(ef%grid,omega,x,xyz,Lbx)
@@ -237,14 +253,14 @@ Contains
                BB(2,iMode) = dotProd_noConj_scvector_f(Lby,ef%pol(iMode))
                
                ! 2019.05.25, Liu Zhongyin, add rotate for bb
-               Call rotateO2L(BB(1,iMode),BB(2,iMode),Angle(1))
+            Call rotate_Model2Data(BB(1,iMode),BB(2,iMode),HxAngle,HxAngle+90.0_prec,0.0_prec)
 
 			      ! magnetic fields, at the REFERANCE station
 			      RR(1,iMode) = dotProd_noConj_scvector_f(Lrx,ef%pol(iMode))
                RR(2,iMode) = dotProd_noConj_scvector_f(Lry,ef%pol(iMode))
                
                ! 2019.05.025, Liu Zhongyin, add rotate for rr
-               Call rotateO2L(RR(1,iMode),RR(2,iMode),Angle(1))
+            Call rotate_Model2Data(RR(1,iMode),RR(2,iMode),HxAngle_ref,HxAngle_ref+90.0_prec,0.0_prec)
 			    end do
 			  ! Compute the inverse of RR using Kramer's rule
 			  det = RR(1,1)*RR(2,2)-RR(1,2)*RR(2,1)
@@ -265,6 +281,11 @@ Contains
 
     	   case(Off_Diagonal_Rho_Phase)
                 x     = rxDict(iRX)%x          !Local site position (x,y,z)
+
+         ! Liu Zhongyin, 2019.08.26, add hxazimuth, exazimuth
+         HxAngle = rxDict(iRX)%HxAzimuth
+         ExAngle = rxDict(iRX)%ExAzimuth
+         
 		     ! First set up interpolation functionals for Ex, Ey
 			  xyz = 1
 			  call EinterpSetUp(ef%grid,x,xyz,Lex)
@@ -282,14 +303,14 @@ Contains
                EE(2,iMode) =  dotProd_noConj_scvector_f(Ley,ef%pol(iMode))
                
                ! 2019.05.25, Liu Zhongyin, add rotate for ee
-               Call rotateO2L(EE(1,iMode),EE(2,iMode),Angle(1))
+            Call rotate_Model2Data(EE(1,iMode),EE(2,iMode),ExAngle,ExAngle+90.0_prec,0.0_prec)
 
 			      ! magnetic fields
 			      BB(1,iMode) = dotProd_noConj_scvector_f(Lbx,ef%pol(iMode))
                BB(2,iMode) = dotProd_noConj_scvector_f(Lby,ef%pol(iMode))
                
                ! 2019.05.25, Liu Zhongyin, add rotate for bb
-               Call rotateO2L(BB(1,iMode),BB(2,iMode),Angle(1))
+            Call rotate_Model2Data(BB(1,iMode),BB(2,iMode),HxAngle,HxAngle+90.0_prec,0.0_prec)
 			 end do
 			 !invert horizontal B matrix using Kramer's rule.
 			  det = BB(1,1)*BB(2,2)-BB(1,2)*BB(2,1)
@@ -311,6 +332,11 @@ Contains
   		   case(Phase_Tensor)
 	         ! First calculate full impedance tensor
                x     = rxDict(iRX)%x         !Local site position (x,y,z)
+
+         ! Liu Zhongyin, 2019.08.26, add hxazimuth, exazimuth
+         HxAngle = rxDict(iRX)%HxAzimuth
+         ExAngle = rxDict(iRX)%ExAzimuth
+            
 		     ! First set up interpolation functionals for Ex, Ey
 			  xyz = 1
 			  call EinterpSetUp(ef%grid,x,xyz,Lex)
@@ -328,14 +354,14 @@ Contains
                EE(2,iMode) =  dotProd_noConj_scvector_f(Ley,ef%pol(iMode))
                
                ! 2019.05.25, Liu Zhongyin, add rotate for ee
-               Call rotateO2L(EE(1,iMode),EE(2,iMode),Angle(1))
+            Call rotate_Model2Data(EE(1,iMode),EE(2,iMode),ExAngle,ExAngle+90.0_prec,0.0_prec)
 
 			      ! magnetic fields
 			      BB(1,iMode) = dotProd_noConj_scvector_f(Lbx,ef%pol(iMode))
                BB(2,iMode) = dotProd_noConj_scvector_f(Lby,ef%pol(iMode))
                
                ! 2019.05.25, Liu Zhongyin, add rotate for bb
-               Call rotateO2L(BB(1,iMode),BB(2,iMode),Angle(1))
+            Call rotate_Model2Data(BB(1,iMode),BB(2,iMode),HxAngle,HxAngle+90.0_prec,0.0_prec)
 			 end do
 			 !invert horizontal B matrix using Kramer's rule.
 			  det = BB(1,1)*BB(2,2)-BB(1,2)*BB(2,1)
@@ -396,7 +422,7 @@ Contains
   end subroutine dataResp
 !
 !****************************************************************************
-  subroutine Lrows(e0,Sigma0,iDT,iRX,L,Angle)
+  subroutine Lrows(e0,Sigma0,iDT,iRX,L)
   !subroutine Lrows(e0,Sigma0,iDT,iRX,L)
   !  given input background electric field solution (both modes; e0),
   !  indices into data type/receiver dictionaries
@@ -414,9 +440,6 @@ Contains
   !        the 2D program should also be of type sparseVector!
   type(sparseVector_t), intent(inout)		:: L(:)
 
-  ! 2019.05.08, Liu Zhongyin, add para Angle
-  real(kind=prec), intent(in) :: Angle(:)
-
   !  local variables
   complex(kind=prec)	:: Binv(2,2)
   complex (kind=prec)	:: i_omega,c1,c2
@@ -427,12 +450,19 @@ Contains
   logical			:: ComputeHz
 
   ! 2019.05.28, Liu Zhongyin add other local vars
-  real(kind=prec) :: cosa,sina
+  real(kind=prec)  :: cosa1,sina1,cosa3,sina3,cosa5,sina5
+  real(kind=prec)  :: HxAngle,ExAngle,HxAngle_ref,HyAngle,EyAngle,HyAngle_ref
+  type(sparsevecC) :: Lex_rot,Ley_rot,Lbx_rot,Lby_rot,Lrx_rot,Lry_rot
 
 
   omega = txDict(e0%tx)%omega
   	 x     = rxDict(iRX)%x
      x_ref = rxDict(iRX)%r          !Reference site position (x,y,z)
+
+     ! Liu Zhongyin, 2019.08.26, Add hxazimuth, exazimuth, hxazimuth_ref
+     HxAngle = rxDict(iRX)%HxAzimuth
+     ExAngle = rxDict(iRX)%ExAzimuth
+     HxAngle_ref = rxDict(iRX)%HxAzimuth_ref
 
   !  set up which components are needed,  ... and ! evaluate
   !   impedance, Binv for background solution
@@ -460,9 +490,7 @@ Contains
               IJ(3,2*(i-1)+j) = i
            enddo
         enddo
-        ! Call dataResp(e0,Sigma0,Full_Impedance,iRX,Resp,Binv)
-        ! 2019.05.08, Liu Zhongyin, add Angle
-        Call dataResp(e0,Sigma0,Full_Impedance,iRX,Resp,Angle,Binv)
+        Call dataResp(e0,Sigma0,Full_Impedance,iRX,Resp,Binv)
      case(Off_Diagonal_Impedance)
         nComp = 2
         ComputeHz = .false.
@@ -472,9 +500,7 @@ Contains
         IJ(2,2) = 1
         IJ(3,1) = 1
         IJ(3,2) = 2
-        ! Call dataResp(e0,Sigma0,Full_Impedance,iRX,Resp,Binv)
-        ! 2019.05.08, Liu Zhongyin, add Angle
-        Call dataResp(e0,Sigma0,Full_Impedance,iRX,Resp,Angle,Binv)
+        Call dataResp(e0,Sigma0,Full_Impedance,iRX,Resp,Binv)
       case(Full_Vertical_Components)
         nComp = 2
         ComputeHz = .true.
@@ -484,9 +510,7 @@ Contains
         IJ(2,2) = 2
         IJ(3,1) = 3
         IJ(3,2) = 3
-        ! Call dataResp(e0,Sigma0,Full_Vertical_Components,iRX,Resp,Binv)
-        ! 2019.05.08, Liu Zhongyin, add Angle
-        Call dataResp(e0,Sigma0,Full_Vertical_Components,iRX,Resp,Angle,Binv)
+        Call dataResp(e0,Sigma0,Full_Vertical_Components,iRX,Resp,Binv)
      case(Full_Interstation_TF)
         nComp = 4
         ComputeHz = .false.
@@ -497,9 +521,7 @@ Contains
               IJ(3,2*(i-1)+j) = i+3
            enddo
         enddo
-        ! Call dataResp(e0,Sigma0,Full_Interstation_TF,iRX,Resp,Binv)
-        ! 2019.05.08, Liu Zhongyin, add Angle
-        Call dataResp(e0,Sigma0,Full_Interstation_TF,iRX,Resp,Angle,Binv)
+        Call dataResp(e0,Sigma0,Full_Interstation_TF,iRX,Resp,Binv)
      case(Off_Diagonal_Rho_Phase)
         ! First calculate Off_Diagonal_Impedance Ls
         ! Rho_Phase actually has 4 (real) components, but nComp here refers to the
@@ -512,9 +534,7 @@ Contains
         IJ(2,2) = 1
         IJ(3,1) = 1
         IJ(3,2) = 2
-        ! Call dataResp(e0,Sigma0,Full_Impedance,iRX,Resp,Binv)
-        ! 2019.05.08, Liu Zhongyin, add Angle
-        Call dataResp(e0,Sigma0,Full_Impedance,iRX,Resp,Angle,Binv)
+        Call dataResp(e0,Sigma0,Full_Impedance,iRX,Resp,Binv)
      case(Phase_Tensor)
 	  ! First calculate Full_Impedances Ls
         nComp = 4
@@ -526,9 +546,7 @@ Contains
               IJ(3,2*(i-1)+j) = i
            enddo
         enddo
-        ! Call dataResp(e0,Sigma0,Full_Impedance,iRX,Resp,Binv)
-        ! 2019.05.08, Liu Zhongyin, add Angle
-        Call dataResp(e0,Sigma0,Full_Impedance,iRX,Resp,Angle,Binv)
+        Call dataResp(e0,Sigma0,Full_Impedance,iRX,Resp,Binv)
 
      endselect
 
@@ -550,296 +568,356 @@ Contains
      call BfromESetUp(e0%grid,omega,x,xyz,Lbz)
   endif
 
-  ! 2019.05.28, Liu Zhongyin, Add new methods for rotated eh, replace the old one
-  cosa = cos(-Angle(1)*D2R)
-  sina = sin(-Angle(1)*D2R)
-selectcase (iDt)
-case(Full_Impedance,Phase_Tensor)
-   ! Zxx
-   ! mode1
-   ! Zxx/Ex1
-   Call linComb_sparsevecc(Lex,cosa*Binv(1,1),Ley,-sina*Binv(1,1),L1)
-   ! Zxx/Hx1
-   Call linComb_sparsevecc(Lbx,-Z(1)*cosa*Binv(1,1),Lby,Z(1)*sina*Binv(1,1),L2)
-   ! Zxx/Hy1
-   Call linComb_sparsevecc(Lbx,-Z(2)*sina*Binv(1,1),Lby,-Z(2)*cosa*Binv(1,1),L3)
-   Call linComb_sparsevecc(L1,C_ONE,L2,C_ONE,Lp12)
-   Call linComb_sparsevecc(L3,C_ONE,Lp12,C_ONE,L(1)%L(1))
-   ! mode2
-   ! Zxx/Ex2
-   Call linComb_sparsevecc(Lex,cosa*Binv(2,1),Ley,-sina*Binv(2,1),L1)
-   ! Zxx/Hx2
-   Call linComb_sparsevecc(Lbx,-Z(1)*cosa*Binv(2,1),Lby,Z(1)*sina*Binv(2,1),L2)
-   ! Zxx/Hy2
-   Call linComb_sparsevecc(Lbx,-Z(2)*sina*Binv(2,1),Lby,-Z(2)*cosa*Binv(2,1),L3)
-   Call linComb_sparsevecc(L1,C_ONE,L2,C_ONE,Lp12)
-   Call linComb_sparsevecc(L3,C_ONE,Lp12,C_ONE,L(1)%L(2))
+  ! Liu Zhongyin, 2019.09.04, Add modification according to Anna Kelbert
+   !  c1 = cos(ExAngle*D2R)
+   !  c2 = cos((ExAngle+90.0)*D2R)
+   !  call linComb_sparsevecc(Lex,c1,Ley,c2,Lex_rot)
 
-   ! Zxy
-   ! mode1
-   ! Zxy/Ex1
-   Call linComb_sparsevecc(Lex,cosa*Binv(1,2),Ley,-sina*Binv(1,2),L1)
-   ! Zxy/Hx1
-   Call linComb_sparsevecc(Lbx,-Z(1)*cosa*Binv(1,2),Lby,Z(1)*sina*Binv(1,2),L2)
-   ! Zxy/Hy1
-   Call linComb_sparsevecc(Lbx,-Z(2)*sina*Binv(1,2),Lby,-Z(2)*cosa*Binv(1,2),L3)
-   Call linComb_sparsevecc(L1,C_ONE,L2,C_ONE,Lp12)
-   Call linComb_sparsevecc(L3,C_ONE,Lp12,C_ONE,L(2)%L(1))
-   ! mode2
-   ! Zxy/Ex2
-   Call linComb_sparsevecc(Lex,cosa*Binv(2,2),Ley,-sina*Binv(2,2),L1)
-   ! Zxy/Hx2
-   Call linComb_sparsevecc(Lbx,-Z(1)*cosa*Binv(2,2),Lby,Z(1)*sina*Binv(2,2),L2)
-   ! Zxy/Hy2
-   Call linComb_sparsevecc(Lbx,-Z(2)*sina*Binv(2,2),Lby,-Z(2)*cosa*Binv(2,2),L3)
-   Call linComb_sparsevecc(L1,C_ONE,L2,C_ONE,Lp12)
-   Call linComb_sparsevecc(L3,C_ONE,Lp12,C_ONE,L(2)%L(2))
+   !  c1 = sin(ExAngle*D2R)
+   !  c2 = sin((ExAngle+90.0)*D2R)
+   !  call linComb_sparsevecc(Lex,c1,Ley,c2,Ley_rot)
 
-   ! Zyx
-   ! mode1
-   ! Zyx/Ey1
-   Call linComb_sparsevecc(Lex,sina*Binv(1,1),Ley,cosa*Binv(1,1),L1)
-   ! Zyx/Hx1
-   Call linComb_sparsevecc(Lbx,-Z(3)*cosa*Binv(1,1),Lby,Z(3)*sina*Binv(1,1),L2)
-   ! Zyx/Hy1
-   Call linComb_sparsevecc(Lbx,-Z(4)*sina*Binv(1,1),Lby,-Z(4)*cosa*Binv(1,1),L3)
-   Call linComb_sparsevecc(L1,C_ONE,L2,C_ONE,Lp12)
-   Call linComb_sparsevecc(L3,C_ONE,Lp12,C_ONE,L(3)%L(1))
-   ! mode2
-   ! Zyx/Ey2
-   Call linComb_sparsevecc(Lex,sina*Binv(2,1),Ley,cosa*Binv(2,1),L1)
-   ! Zyx/Hx2
-   Call linComb_sparsevecc(Lbx,-Z(3)*cosa*Binv(2,1),Lby,Z(3)*sina*Binv(2,1),L2)
-   ! Zyx/Hy2
-   Call linComb_sparsevecc(Lbx,-Z(4)*sina*Binv(2,1),Lby,-Z(4)*cosa*Binv(2,1),L3)
-   Call linComb_sparsevecc(L1,C_ONE,L2,C_ONE,Lp12)
-   Call linComb_sparsevecc(L3,C_ONE,Lp12,C_ONE,L(3)%L(2))
+   !  c1 = cos(HxAngle*D2R)
+   !  c2 = cos((HxAngle+90.0)*D2R)
+   !  call linComb_sparsevecc(Lbx,c1,Lby,c2,Lbx_rot)
 
-   ! Zyy
-   ! mode1
-   ! Zyy/Ey1
-   Call linComb_sparsevecc(Lex,sina*Binv(1,2),Ley,cosa*Binv(1,2),L1)
-   ! Zyy/Hx1
-   Call linComb_sparsevecc(Lbx,-Z(3)*cosa*Binv(1,2),Lby,Z(3)*sina*Binv(1,2),L2)
-   ! Zyy/Hy1
-   Call linComb_sparsevecc(Lbx,-Z(4)*sina*Binv(1,2),Lby,-Z(4)*cosa*Binv(1,2),L3)
-   Call linComb_sparsevecc(L1,C_ONE,L2,C_ONE,Lp12)
-   Call linComb_sparsevecc(L3,C_ONE,Lp12,C_ONE,L(4)%L(1))
-   ! mode2
-   ! Zyy/Ey2
-   Call linComb_sparsevecc(Lex,sina*Binv(2,2),Ley,cosa*Binv(2,2),L1)
-   ! Zyy/Hx2
-   Call linComb_sparsevecc(Lbx,-Z(3)*cosa*Binv(2,2),Lby,Z(3)*sina*Binv(2,2),L2)
-   ! Zyy/Hy2
-   Call linComb_sparsevecc(Lbx,-Z(4)*sina*Binv(2,2),Lby,-Z(4)*cosa*Binv(2,2),L3)
-   Call linComb_sparsevecc(L1,C_ONE,L2,C_ONE,Lp12)
-   Call linComb_sparsevecc(L3,C_ONE,Lp12,C_ONE,L(4)%L(2))
+   !  c1 = sin(HxAngle*D2R)
+   !  c2 = sin((HxAngle+90.0)*D2R)
+   !  call linComb_sparsevecc(Lbx,c1,Lby,c2,Lby_rot)
 
-case(Off_Diagonal_Impedance,Off_Diagonal_Rho_Phase)
-   ! Zxy
-   ! mode1
-   ! Zxy/Ex1
-   Call linComb_sparsevecc(Lex,cosa*Binv(1,2),Ley,-sina*Binv(1,2),L1)
-   ! Zxy/Hx1
-   Call linComb_sparsevecc(Lbx,-Z(1)*cosa*Binv(1,2),Lby,Z(1)*sina*Binv(1,2),L2)
-   ! Zxy/Hy1
-   Call linComb_sparsevecc(Lbx,-Z(2)*sina*Binv(1,2),Lby,-Z(2)*cosa*Binv(1,2),L3)
-   Call linComb_sparsevecc(L1,C_ONE,L2,C_ONE,Lp12)
-   Call linComb_sparsevecc(L3,C_ONE,Lp12,C_ONE,L(1)%L(1))
-   ! mode2
-   ! Zxy/Ex2
-   Call linComb_sparsevecc(Lex,cosa*Binv(2,2),Ley,-sina*Binv(2,2),L1)
-   ! Zxy/Hx2
-   Call linComb_sparsevecc(Lbx,-Z(1)*cosa*Binv(2,2),Lby,Z(1)*sina*Binv(2,2),L2)
-   ! Zxy/Hy2
-   Call linComb_sparsevecc(Lbx,-Z(2)*sina*Binv(2,2),Lby,-Z(2)*cosa*Binv(2,2),L3)
-   Call linComb_sparsevecc(L1,C_ONE,L2,C_ONE,Lp12)
-   Call linComb_sparsevecc(L3,C_ONE,Lp12,C_ONE,L(1)%L(2))
+   !  c1 = cos(HxAngle_ref*D2R)
+   !  c2 = cos((HxAngle_ref+90.0)*D2R)
+   !  call linComb_sparsevecc(Lrx,c1,Lry,c2,Lrx_rot)
 
-   ! Zyx
-   ! mode1
-   ! Zyx/Ey1
-   Call linComb_sparsevecc(Lex,sina*Binv(1,1),Ley,cosa*Binv(1,1),L1)
-   ! Zyx/Hx1
-   Call linComb_sparsevecc(Lbx,-Z(3)*cosa*Binv(1,1),Lby,Z(3)*sina*Binv(1,1),L2)
-   ! Zyx/Hy1
-   Call linComb_sparsevecc(Lbx,-Z(4)*sina*Binv(1,1),Lby,-Z(4)*cosa*Binv(1,1),L3)
-   Call linComb_sparsevecc(L1,C_ONE,L2,C_ONE,Lp12)
-   Call linComb_sparsevecc(L3,C_ONE,Lp12,C_ONE,L(2)%L(1))
-   ! mode2
-   ! Zyx/Ey2
-   Call linComb_sparsevecc(Lex,sina*Binv(2,1),Ley,cosa*Binv(2,1),L1)
-   ! Zyx/Hx2
-   Call linComb_sparsevecc(Lbx,-Z(3)*cosa*Binv(2,1),Lby,Z(3)*sina*Binv(2,1),L2)
-   ! Zyx/Hy2
-   Call linComb_sparsevecc(Lbx,-Z(4)*sina*Binv(2,1),Lby,-Z(4)*cosa*Binv(2,1),L3)
-   Call linComb_sparsevecc(L1,C_ONE,L2,C_ONE,Lp12)
-   Call linComb_sparsevecc(L3,C_ONE,Lp12,C_ONE,L(2)%L(2))
+   !  c1 = sin(HxAngle_ref*D2R)
+   !  c2 = sin((HxAngle_ref+90.0)*D2R)
+   !  call linComb_sparsevecc(Lrx,c1,Lry,c2,Lry_rot)
 
-case(Full_Vertical_Components)
-   ! Tzx
-   ! mode1
-   ! Tzx/Hz1
-   Call scMult_sparsevecc(Binv(1,1),Lbz,L1)
-   ! Tzx/Hx1
-   Call linComb_sparsevecc(Lbx,-Z(1)*cosa*Binv(1,1),Lby,Z(1)*sina*Binv(1,1),L2)
-   ! Tzx/Hy1
-   Call linComb_sparsevecc(Lbx,-Z(2)*sina*Binv(1,1),Lby,-Z(2)*cosa*Binv(1,1),L3)
-   Call linComb_sparsevecc(L1,C_ONE,L2,C_ONE,Lp12)
-   Call linComb_sparseVecc(L3,C_ONE,Lp12,C_ONE,L(1)%L(1))
-   ! mode1
-   ! Tzx/Hz2
-   Call scMult_sparsevecc(Binv(2,1),Lbz,L1)
-   ! Tzx/Hx2
-   Call linComb_sparsevecc(Lbx,-Z(1)*cosa*Binv(2,1),Lby,Z(1)*sina*Binv(2,1),L2)
-   ! Tzx/Hy2
-   Call linComb_sparsevecc(Lbx,-Z(2)*sina*Binv(2,1),Lby,-Z(2)*cosa*Binv(2,1),L3)
-   Call linComb_sparsevecc(L1,C_ONE,L2,C_ONE,Lp12)
-   Call linComb_sparsevecc(L3,C_ONE,Lp12,C_ONE,L(1)%L(2))
+  ! Liu Zhongyin, 2019.09.06, Add another modification according to Anna Kelbert
+  EyAngle = (ExAngle + 90.0)*D2R
+  ExAngle = ExAngle*D2R
+  HyAngle = (HxAngle + 90.0)*D2R
+  HxAngle = HxAngle*D2R
+  HyAngle_ref = (HxAngle_ref + 90.0)*D2R
+  HxAngle_ref = HxAngle_ref*D2R
+  c1 = sin(EyAngle) / sin(EyAngle-ExAngle)
+  c2 = - cos(EyAngle) / sin(EyAngle-ExAngle)
+  call linComb_sparsevecc(Lex,c1,Ley,c2,Lex_rot)
 
-   ! Tzy
-   ! mode1
-   ! Tzy/Hz1
-   Call scMult_sparsevecc(Binv(1,2),Lbz,L1)
-   ! Tzy/Hx1
-   Call linComb_sparsevecc(Lbx,-Z(1)*cosa*Binv(1,2),Lby,Z(1)*sina*Binv(1,2),L2)
-   ! Tzy/Hy1
-   Call linComb_sparsevecc(Lbx,-Z(2)*sina*Binv(1,2),Lby,-Z(2)*cosa*Binv(1,2),L3)
-   Call linComb_sparsevecc(L1,C_ONE,L2,C_ONE,Lp12)
-   Call linComb_sparsevecc(L3,C_ONE,Lp12,C_ONE,L(2)%L(1))
-   ! mode2
-   ! Tzy/Hz2
-   Call scMult_sparsevecc(Binv(2,2),Lbz,L1)
-   ! Tzy/Hx2
-   Call linComb_sparsevecc(Lbx,-Z(1)*cosa*Binv(2,2),Lby,Z(1)*sina*Binv(2,2),L2)
-   ! Tzy/Hy2
-   Call linComb_sparsevecc(Lbx,-Z(2)*sina*Binv(2,2),Lby,-Z(2)*cosa*Binv(2,2),L3)
-   Call linComb_sparsevecc(L1,C_ONE,L2,C_ONE,Lp12)
-   Call linComb_sparsevecc(L3,C_ONE,Lp12,C_ONE,L(2)%L(2))
+   c1 = - sin(ExAngle) / sin(EyAngle-ExAngle)
+   c2 = cos(ExAngle) / sin(EyAngle-ExAngle)
+   call linComb_sparsevecc(Lex,c1,Ley,c2,Ley_rot)
 
-case(Full_Interstation_TF)
-   ! Mxx
-   ! mode1
-   ! Mxx/Hx1
-   Call linComb_sparsevecc(Lbx,cosa*Binv(1,1),Lby,-sina*Binv(1,1),L1)
-   ! Mxx/Rx1
-   Call linComb_sparsevecc(Lrx,-(Z(1)+1)*cosa*Binv(1,1),Lry,(Z(1)+1)*sina*Binv(1,1),L2)
-   ! Mxx/Ry1
-   Call linComb_sparsevecc(Lrx,-Z(2)*sina*Binv(1,1),Lry,-Z(2)*cosa*Binv(1,1),L3)
-   Call linComb_sparsevecc(L1,C_ONE,L2,C_ONE,Lp12)
-   Call linComb_sparsevecc(L3,C_ONE,Lp12,C_ONE,L(1)%L(1))
-   ! mode2
-   ! Mxx/Hx2
-   Call linComb_sparsevecc(Lbx,cosa*Binv(2,1),Lby,-sina*Binv(2,1),L1)
-   ! Mxx/Rx2
-   Call linComb_sparsevecc(Lrx,-(Z(1)+1)*cosa*Binv(2,1),Lry,(Z(1)+1)*sina*Binv(2,1),L2)
-   ! Mxx/Ry2
-   Call linComb_sparsevecc(Lrx,-Z(2)*sina*Binv(2,1),Lry,-Z(2)*cosa*Binv(2,1),L3)
-   Call linComb_sparsevecc(L1,C_ONE,L2,C_ONE,Lp12)
-   Call linComb_sparsevecc(L3,C_ONE,Lp12,C_ONE,L(1)%L(2))
+   c1 = sin(HyAngle) / sin(HyAngle-HxAngle)
+   c2 = - cos(HyAngle) / sin(HyAngle-HxAngle)
+   call linComb_sparsevecc(Lbx,c1,Lby,c2,Lbx_rot)
 
-   ! Mxy
-   ! mode1
-   ! Mxy/Hx1
-   Call linComb_sparsevecc(Lbx,cosa*Binv(1,2),Lby,-sina*Binv(1,2),L1)
-   ! Mxy/Rx1
-   Call linComb_sparsevecc(Lrx,-(Z(1)+1)*cosa*Binv(1,2),Lry,(Z(1)+1)*sina*Binv(1,2),L2)
-   ! Mxy/Ry1
-   Call linComb_sparsevecc(Lrx,-Z(2)*sina*Binv(1,2),Lry,-Z(2)*cosa*Binv(1,2),L3)
-   Call linComb_sparsevecc(L1,C_ONE,L2,C_ONE,Lp12)
-   Call linComb_sparsevecc(L3,C_ONE,Lp12,C_ONE,L(2)%L(1))
-   ! mode2
-   ! Mxy/Hx2
-   Call linComb_sparsevecc(Lbx,cosa*Binv(2,2),Lby,-sina*Binv(2,2),L1)
-   ! Mxy/Rx2
-   Call linComb_sparsevecc(Lrx,-(Z(1)+1)*cosa*Binv(2,2),Lry,(Z(1)+1)*sina*Binv(2,2),L2)
-   ! Mxy/Ry2
-   Call linComb_sparsevecc(Lrx,-Z(2)*sina*Binv(2,2),Lry,-Z(2)*cosa*Binv(2,2),L3)
-   Call linComb_sparsevecc(L1,C_ONE,L2,C_ONE,Lp12)
-   Call linComb_sparsevecc(L3,C_ONE,Lp12,C_ONE,L(2)%L(2))
+   c1 = - sin(HxAngle) / sin(HyAngle-HxAngle)
+   c2 = cos(HxAngle) / sin(HyAngle-HxAngle)
+   call linComb_sparsevecc(Lbx,c1,Lby,c2,Lby_rot)
 
-   ! Myx
-   ! mode1
-   ! Myx/Hy1
-   Call linComb_sparsevecc(Lbx,sina*Binv(1,1),Lby,cosa*Binv(1,1),L1)
-   ! Myx/Rx1
-   Call linComb_sparsevecc(Lrx,-Z(3)*cosa*Binv(1,1),Lry,Z(3)*sina*Binv(1,1),L2)
-   ! Myx/Ry1
-   Call linComb_sparsevecc(Lrx,-(Z(4)+1)*sina*Binv(1,1),Lry,-(Z(4)+1)*cosa*Binv(1,1),L3)
-   Call linComb_sparsevecc(L1,C_ONE,L2,C_ONE,Lp12)
-   Call linComb_sparsevecc(L3,C_ONE,Lp12,C_ONE,L(3)%L(1))
-   ! mode2
-   ! Myx/Hy2
-   Call linComb_sparsevecc(Lbx,sina*Binv(2,1),Lby,cosa*Binv(2,1),L1)
-   ! Myx/Rx2
-   Call linComb_sparsevecc(Lrx,-Z(3)*cosa*Binv(2,1),Lry,Z(3)*sina*Binv(2,1),L2)
-   ! Myx/Ry2
-   Call linComb_sparsevecc(Lrx,-(Z(4)+1)*sina*Binv(2,1),Lry,-(Z(4)+1)*cosa*Binv(2,1),L3)
-   Call linComb_sparsevecc(L1,C_ONE,L2,C_ONE,Lp12)
-   Call linComb_sparsevecc(L3,C_ONE,Lp12,C_ONE,L(3)%L(2))
+   c1 = sin(HyAngle_ref) / sin(HyAngle_ref-HxAngle_ref)
+   c2 = - cos(HyAngle_ref) / sin(HyAngle_ref-HxAngle_ref)
+   call linComb_sparsevecc(Lrx,c1,Lry,c2,Lrx_rot)
 
-   ! Myy
-   ! mode1
-   ! Myy/Hy1
-   Call linComb_sparsevecc(Lbx,sina*Binv(1,2),Lby,cosa*Binv(1,2),L1)
-   ! Myy/Rx1
-   Call linComb_sparsevecc(Lrx,-Z(3)*cosa*Binv(1,2),Lry,Z(3)*sina*Binv(1,2),L2)
-   ! Myy/Ry1
-   Call linComb_sparsevecc(Lrx,-(Z(4)+1)*sina*Binv(1,2),Lry,-(Z(4)+1)*cosa*Binv(1,2),L3)
-   Call linComb_sparsevecc(L1,C_ONE,L2,C_ONE,Lp12)
-   Call linComb_sparsevecc(L3,C_ONE,Lp12,C_ONE,L(4)%L(1))
-   ! mode2
-   ! Myy/Hy2
-   Call linComb_sparsevecc(Lbx,sina*Binv(2,2),Lby,cosa*Binv(2,2),L1)
-   ! Myy/Rx2
-   Call linComb_sparsevecc(Lrx,-Z(3)*cosa*Binv(2,2),Lry,Z(3)*sina*Binv(2,2),L2)
-   ! Myy/Ry2
-   Call linComb_sparsevecc(Lrx,-(Z(4)+1)*sina*Binv(2,2),Lry,-(Z(4)+1)*cosa*Binv(2,2),L3)
-   Call linComb_sparsevecc(L1,C_ONE,L2,C_ONE,Lp12)
-   Call linComb_sparsevecc(L3,C_ONE,Lp12,C_ONE,L(4)%L(2))
+   c1 = - sin(HxAngle_ref) / sin(HyAngle_ref-HxAngle_ref)
+   c2 = cos(HxAngle_ref) / sin(HyAngle_ref-HxAngle_ref)
+   call linComb_sparsevecc(Lrx,c1,Lry,c2,Lry_rot)
 
-endselect
+!   ! 2019.05.28, Liu Zhongyin, Add new methods for rotated eh, replace the old one
+!   cosa1 = cos(HxAngle*D2R)
+!   sina1 = sin(HxAngle*D2R)
+!   cosa3 = cos(ExAngle*D2R)
+!   sina3 = sin(ExAngle*D2R)
+!   cosa5 = cos(HxAngle_ref*D2R)
+!   sina5 = sin(HxAngle_ref*D2R)
+! selectcase (iDt)
+! case(Full_Impedance,Phase_Tensor)
+!    ! Zxx
+!    ! mode1
+!    ! Zxx/Ex1
+!    Call linComb_sparsevecc(Lex,cosa3*Binv(1,1),Ley,-sina3*Binv(1,1),L1)
+!    ! Zxx/Hx1
+!    Call linComb_sparsevecc(Lbx,-Z(1)*cosa1*Binv(1,1),Lby,Z(1)*sina1*Binv(1,1),L2)
+!    ! Zxx/Hy1
+!    Call linComb_sparsevecc(Lbx,-Z(2)*sina1*Binv(1,1),Lby,-Z(2)*cosa1*Binv(1,1),L3)
+!    Call linComb_sparsevecc(L1,C_ONE,L2,C_ONE,Lp12)
+!    Call linComb_sparsevecc(L3,C_ONE,Lp12,C_ONE,L(1)%L(1))
+!    ! mode2
+!    ! Zxx/Ex2
+!    Call linComb_sparsevecc(Lex,cosa3*Binv(2,1),Ley,-sina3*Binv(2,1),L1)
+!    ! Zxx/Hx2
+!    Call linComb_sparsevecc(Lbx,-Z(1)*cosa1*Binv(2,1),Lby,Z(1)*sina1*Binv(2,1),L2)
+!    ! Zxx/Hy2
+!    Call linComb_sparsevecc(Lbx,-Z(2)*sina1*Binv(2,1),Lby,-Z(2)*cosa1*Binv(2,1),L3)
+!    Call linComb_sparsevecc(L1,C_ONE,L2,C_ONE,Lp12)
+!    Call linComb_sparsevecc(L3,C_ONE,Lp12,C_ONE,L(1)%L(2))
+
+!    ! Zxy
+!    ! mode1
+!    ! Zxy/Ex1
+!    Call linComb_sparsevecc(Lex,cosa3*Binv(1,2),Ley,-sina3*Binv(1,2),L1)
+!    ! Zxy/Hx1
+!    Call linComb_sparsevecc(Lbx,-Z(1)*cosa1*Binv(1,2),Lby,Z(1)*sina1*Binv(1,2),L2)
+!    ! Zxy/Hy1
+!    Call linComb_sparsevecc(Lbx,-Z(2)*sina1*Binv(1,2),Lby,-Z(2)*cosa1*Binv(1,2),L3)
+!    Call linComb_sparsevecc(L1,C_ONE,L2,C_ONE,Lp12)
+!    Call linComb_sparsevecc(L3,C_ONE,Lp12,C_ONE,L(2)%L(1))
+!    ! mode2
+!    ! Zxy/Ex2
+!    Call linComb_sparsevecc(Lex,cosa3*Binv(2,2),Ley,-sina3*Binv(2,2),L1)
+!    ! Zxy/Hx2
+!    Call linComb_sparsevecc(Lbx,-Z(1)*cosa1*Binv(2,2),Lby,Z(1)*sina1*Binv(2,2),L2)
+!    ! Zxy/Hy2
+!    Call linComb_sparsevecc(Lbx,-Z(2)*sina1*Binv(2,2),Lby,-Z(2)*cosa1*Binv(2,2),L3)
+!    Call linComb_sparsevecc(L1,C_ONE,L2,C_ONE,Lp12)
+!    Call linComb_sparsevecc(L3,C_ONE,Lp12,C_ONE,L(2)%L(2))
+
+!    ! Zyx
+!    ! mode1
+!    ! Zyx/Ey1
+!    Call linComb_sparsevecc(Lex,sina3*Binv(1,1),Ley,cosa3*Binv(1,1),L1)
+!    ! Zyx/Hx1
+!    Call linComb_sparsevecc(Lbx,-Z(3)*cosa1*Binv(1,1),Lby,Z(3)*sina1*Binv(1,1),L2)
+!    ! Zyx/Hy1
+!    Call linComb_sparsevecc(Lbx,-Z(4)*sina1*Binv(1,1),Lby,-Z(4)*cosa1*Binv(1,1),L3)
+!    Call linComb_sparsevecc(L1,C_ONE,L2,C_ONE,Lp12)
+!    Call linComb_sparsevecc(L3,C_ONE,Lp12,C_ONE,L(3)%L(1))
+!    ! mode2
+!    ! Zyx/Ey2
+!    Call linComb_sparsevecc(Lex,sina3*Binv(2,1),Ley,cosa3*Binv(2,1),L1)
+!    ! Zyx/Hx2
+!    Call linComb_sparsevecc(Lbx,-Z(3)*cosa1*Binv(2,1),Lby,Z(3)*sina1*Binv(2,1),L2)
+!    ! Zyx/Hy2
+!    Call linComb_sparsevecc(Lbx,-Z(4)*sina1*Binv(2,1),Lby,-Z(4)*cosa1*Binv(2,1),L3)
+!    Call linComb_sparsevecc(L1,C_ONE,L2,C_ONE,Lp12)
+!    Call linComb_sparsevecc(L3,C_ONE,Lp12,C_ONE,L(3)%L(2))
+
+!    ! Zyy
+!    ! mode1
+!    ! Zyy/Ey1
+!    Call linComb_sparsevecc(Lex,sina3*Binv(1,2),Ley,cosa3*Binv(1,2),L1)
+!    ! Zyy/Hx1
+!    Call linComb_sparsevecc(Lbx,-Z(3)*cosa1*Binv(1,2),Lby,Z(3)*sina1*Binv(1,2),L2)
+!    ! Zyy/Hy1
+!    Call linComb_sparsevecc(Lbx,-Z(4)*sina1*Binv(1,2),Lby,-Z(4)*cosa1*Binv(1,2),L3)
+!    Call linComb_sparsevecc(L1,C_ONE,L2,C_ONE,Lp12)
+!    Call linComb_sparsevecc(L3,C_ONE,Lp12,C_ONE,L(4)%L(1))
+!    ! mode2
+!    ! Zyy/Ey2
+!    Call linComb_sparsevecc(Lex,sina3*Binv(2,2),Ley,cosa3*Binv(2,2),L1)
+!    ! Zyy/Hx2
+!    Call linComb_sparsevecc(Lbx,-Z(3)*cosa1*Binv(2,2),Lby,Z(3)*sina1*Binv(2,2),L2)
+!    ! Zyy/Hy2
+!    Call linComb_sparsevecc(Lbx,-Z(4)*sina1*Binv(2,2),Lby,-Z(4)*cosa1*Binv(2,2),L3)
+!    Call linComb_sparsevecc(L1,C_ONE,L2,C_ONE,Lp12)
+!    Call linComb_sparsevecc(L3,C_ONE,Lp12,C_ONE,L(4)%L(2))
+
+! case(Off_Diagonal_Impedance,Off_Diagonal_Rho_Phase)
+!    ! Zxy
+!    ! mode1
+!    ! Zxy/Ex1
+!    Call linComb_sparsevecc(Lex,cosa3*Binv(1,2),Ley,-sina3*Binv(1,2),L1)
+!    ! Zxy/Hx1
+!    Call linComb_sparsevecc(Lbx,-Z(1)*cosa1*Binv(1,2),Lby,Z(1)*sina1*Binv(1,2),L2)
+!    ! Zxy/Hy1
+!    Call linComb_sparsevecc(Lbx,-Z(2)*sina1*Binv(1,2),Lby,-Z(2)*cosa1*Binv(1,2),L3)
+!    Call linComb_sparsevecc(L1,C_ONE,L2,C_ONE,Lp12)
+!    Call linComb_sparsevecc(L3,C_ONE,Lp12,C_ONE,L(1)%L(1))
+!    ! mode2
+!    ! Zxy/Ex2
+!    Call linComb_sparsevecc(Lex,cosa3*Binv(2,2),Ley,-sina3*Binv(2,2),L1)
+!    ! Zxy/Hx2
+!    Call linComb_sparsevecc(Lbx,-Z(1)*cosa1*Binv(2,2),Lby,Z(1)*sina1*Binv(2,2),L2)
+!    ! Zxy/Hy2
+!    Call linComb_sparsevecc(Lbx,-Z(2)*sina1*Binv(2,2),Lby,-Z(2)*cosa1*Binv(2,2),L3)
+!    Call linComb_sparsevecc(L1,C_ONE,L2,C_ONE,Lp12)
+!    Call linComb_sparsevecc(L3,C_ONE,Lp12,C_ONE,L(1)%L(2))
+
+!    ! Zyx
+!    ! mode1
+!    ! Zyx/Ey1
+!    Call linComb_sparsevecc(Lex,sina3*Binv(1,1),Ley,cosa3*Binv(1,1),L1)
+!    ! Zyx/Hx1
+!    Call linComb_sparsevecc(Lbx,-Z(3)*cosa1*Binv(1,1),Lby,Z(3)*sina1*Binv(1,1),L2)
+!    ! Zyx/Hy1
+!    Call linComb_sparsevecc(Lbx,-Z(4)*sina1*Binv(1,1),Lby,-Z(4)*cosa1*Binv(1,1),L3)
+!    Call linComb_sparsevecc(L1,C_ONE,L2,C_ONE,Lp12)
+!    Call linComb_sparsevecc(L3,C_ONE,Lp12,C_ONE,L(2)%L(1))
+!    ! mode2
+!    ! Zyx/Ey2
+!    Call linComb_sparsevecc(Lex,sina3*Binv(2,1),Ley,cosa3*Binv(2,1),L1)
+!    ! Zyx/Hx2
+!    Call linComb_sparsevecc(Lbx,-Z(3)*cosa1*Binv(2,1),Lby,Z(3)*sina1*Binv(2,1),L2)
+!    ! Zyx/Hy2
+!    Call linComb_sparsevecc(Lbx,-Z(4)*sina1*Binv(2,1),Lby,-Z(4)*cosa1*Binv(2,1),L3)
+!    Call linComb_sparsevecc(L1,C_ONE,L2,C_ONE,Lp12)
+!    Call linComb_sparsevecc(L3,C_ONE,Lp12,C_ONE,L(2)%L(2))
+
+! case(Full_Vertical_Components)
+!    ! Tzx
+!    ! mode1
+!    ! Tzx/Hz1
+!    Call scMult_sparsevecc(Binv(1,1),Lbz,L1)
+!    ! Tzx/Hx1
+!    Call linComb_sparsevecc(Lbx,-Z(1)*cosa1*Binv(1,1),Lby,Z(1)*sina1*Binv(1,1),L2)
+!    ! Tzx/Hy1
+!    Call linComb_sparsevecc(Lbx,-Z(2)*sina1*Binv(1,1),Lby,-Z(2)*cosa1*Binv(1,1),L3)
+!    Call linComb_sparsevecc(L1,C_ONE,L2,C_ONE,Lp12)
+!    Call linComb_sparseVecc(L3,C_ONE,Lp12,C_ONE,L(1)%L(1))
+!    ! mode1
+!    ! Tzx/Hz2
+!    Call scMult_sparsevecc(Binv(2,1),Lbz,L1)
+!    ! Tzx/Hx2
+!    Call linComb_sparsevecc(Lbx,-Z(1)*cosa1*Binv(2,1),Lby,Z(1)*sina1*Binv(2,1),L2)
+!    ! Tzx/Hy2
+!    Call linComb_sparsevecc(Lbx,-Z(2)*sina1*Binv(2,1),Lby,-Z(2)*cosa1*Binv(2,1),L3)
+!    Call linComb_sparsevecc(L1,C_ONE,L2,C_ONE,Lp12)
+!    Call linComb_sparsevecc(L3,C_ONE,Lp12,C_ONE,L(1)%L(2))
+
+!    ! Tzy
+!    ! mode1
+!    ! Tzy/Hz1
+!    Call scMult_sparsevecc(Binv(1,2),Lbz,L1)
+!    ! Tzy/Hx1
+!    Call linComb_sparsevecc(Lbx,-Z(1)*cosa1*Binv(1,2),Lby,Z(1)*sina1*Binv(1,2),L2)
+!    ! Tzy/Hy1
+!    Call linComb_sparsevecc(Lbx,-Z(2)*sina1*Binv(1,2),Lby,-Z(2)*cosa1*Binv(1,2),L3)
+!    Call linComb_sparsevecc(L1,C_ONE,L2,C_ONE,Lp12)
+!    Call linComb_sparsevecc(L3,C_ONE,Lp12,C_ONE,L(2)%L(1))
+!    ! mode2
+!    ! Tzy/Hz2
+!    Call scMult_sparsevecc(Binv(2,2),Lbz,L1)
+!    ! Tzy/Hx2
+!    Call linComb_sparsevecc(Lbx,-Z(1)*cosa1*Binv(2,2),Lby,Z(1)*sina1*Binv(2,2),L2)
+!    ! Tzy/Hy2
+!    Call linComb_sparsevecc(Lbx,-Z(2)*sina1*Binv(2,2),Lby,-Z(2)*cosa1*Binv(2,2),L3)
+!    Call linComb_sparsevecc(L1,C_ONE,L2,C_ONE,Lp12)
+!    Call linComb_sparsevecc(L3,C_ONE,Lp12,C_ONE,L(2)%L(2))
+
+! case(Full_Interstation_TF)
+!    ! Mxx
+!    ! mode1
+!    ! Mxx/Hx1
+!    Call linComb_sparsevecc(Lbx,cosa1*Binv(1,1),Lby,-sina1*Binv(1,1),L1)
+!    ! Mxx/Rx1
+!    Call linComb_sparsevecc(Lrx,-(Z(1)+1)*cosa5*Binv(1,1),Lry,(Z(1)+1)*sina5*Binv(1,1),L2)
+!    ! Mxx/Ry1
+!    Call linComb_sparsevecc(Lrx,-Z(2)*sina5*Binv(1,1),Lry,-Z(2)*cosa5*Binv(1,1),L3)
+!    Call linComb_sparsevecc(L1,C_ONE,L2,C_ONE,Lp12)
+!    Call linComb_sparsevecc(L3,C_ONE,Lp12,C_ONE,L(1)%L(1))
+!    ! mode2
+!    ! Mxx/Hx2
+!    Call linComb_sparsevecc(Lbx,cosa1*Binv(2,1),Lby,-sina1*Binv(2,1),L1)
+!    ! Mxx/Rx2
+!    Call linComb_sparsevecc(Lrx,-(Z(1)+1)*cosa5*Binv(2,1),Lry,(Z(1)+1)*sina5*Binv(2,1),L2)
+!    ! Mxx/Ry2
+!    Call linComb_sparsevecc(Lrx,-Z(2)*sina5*Binv(2,1),Lry,-Z(2)*cosa5*Binv(2,1),L3)
+!    Call linComb_sparsevecc(L1,C_ONE,L2,C_ONE,Lp12)
+!    Call linComb_sparsevecc(L3,C_ONE,Lp12,C_ONE,L(1)%L(2))
+
+!    ! Mxy
+!    ! mode1
+!    ! Mxy/Hx1
+!    Call linComb_sparsevecc(Lbx,cosa1*Binv(1,2),Lby,-sina1*Binv(1,2),L1)
+!    ! Mxy/Rx1
+!    Call linComb_sparsevecc(Lrx,-(Z(1)+1)*cosa5*Binv(1,2),Lry,(Z(1)+1)*sina5*Binv(1,2),L2)
+!    ! Mxy/Ry1
+!    Call linComb_sparsevecc(Lrx,-Z(2)*sina5*Binv(1,2),Lry,-Z(2)*cosa5*Binv(1,2),L3)
+!    Call linComb_sparsevecc(L1,C_ONE,L2,C_ONE,Lp12)
+!    Call linComb_sparsevecc(L3,C_ONE,Lp12,C_ONE,L(2)%L(1))
+!    ! mode2
+!    ! Mxy/Hx2
+!    Call linComb_sparsevecc(Lbx,cosa1*Binv(2,2),Lby,-sina1*Binv(2,2),L1)
+!    ! Mxy/Rx2
+!    Call linComb_sparsevecc(Lrx,-(Z(1)+1)*cosa5*Binv(2,2),Lry,(Z(1)+1)*sina5*Binv(2,2),L2)
+!    ! Mxy/Ry2
+!    Call linComb_sparsevecc(Lrx,-Z(2)*sina5*Binv(2,2),Lry,-Z(2)*cosa5*Binv(2,2),L3)
+!    Call linComb_sparsevecc(L1,C_ONE,L2,C_ONE,Lp12)
+!    Call linComb_sparsevecc(L3,C_ONE,Lp12,C_ONE,L(2)%L(2))
+
+!    ! Myx
+!    ! mode1
+!    ! Myx/Hy1
+!    Call linComb_sparsevecc(Lbx,sina1*Binv(1,1),Lby,cosa1*Binv(1,1),L1)
+!    ! Myx/Rx1
+!    Call linComb_sparsevecc(Lrx,-Z(3)*cosa5*Binv(1,1),Lry,Z(3)*sina5*Binv(1,1),L2)
+!    ! Myx/Ry1
+!    Call linComb_sparsevecc(Lrx,-(Z(4)+1)*sina5*Binv(1,1),Lry,-(Z(4)+1)*cosa5*Binv(1,1),L3)
+!    Call linComb_sparsevecc(L1,C_ONE,L2,C_ONE,Lp12)
+!    Call linComb_sparsevecc(L3,C_ONE,Lp12,C_ONE,L(3)%L(1))
+!    ! mode2
+!    ! Myx/Hy2
+!    Call linComb_sparsevecc(Lbx,sina1*Binv(2,1),Lby,cosa1*Binv(2,1),L1)
+!    ! Myx/Rx2
+!    Call linComb_sparsevecc(Lrx,-Z(3)*cosa5*Binv(2,1),Lry,Z(3)*sina5*Binv(2,1),L2)
+!    ! Myx/Ry2
+!    Call linComb_sparsevecc(Lrx,-(Z(4)+1)*sina5*Binv(2,1),Lry,-(Z(4)+1)*cosa5*Binv(2,1),L3)
+!    Call linComb_sparsevecc(L1,C_ONE,L2,C_ONE,Lp12)
+!    Call linComb_sparsevecc(L3,C_ONE,Lp12,C_ONE,L(3)%L(2))
+
+!    ! Myy
+!    ! mode1
+!    ! Myy/Hy1
+!    Call linComb_sparsevecc(Lbx,sina1*Binv(1,2),Lby,cosa1*Binv(1,2),L1)
+!    ! Myy/Rx1
+!    Call linComb_sparsevecc(Lrx,-Z(3)*cosa5*Binv(1,2),Lry,Z(3)*sina5*Binv(1,2),L2)
+!    ! Myy/Ry1
+!    Call linComb_sparsevecc(Lrx,-(Z(4)+1)*sina5*Binv(1,2),Lry,-(Z(4)+1)*cosa5*Binv(1,2),L3)
+!    Call linComb_sparsevecc(L1,C_ONE,L2,C_ONE,Lp12)
+!    Call linComb_sparsevecc(L3,C_ONE,Lp12,C_ONE,L(4)%L(1))
+!    ! mode2
+!    ! Myy/Hy2
+!    Call linComb_sparsevecc(Lbx,sina1*Binv(2,2),Lby,cosa1*Binv(2,2),L1)
+!    ! Myy/Rx2
+!    Call linComb_sparsevecc(Lrx,-Z(3)*cosa5*Binv(2,2),Lry,Z(3)*sina5*Binv(2,2),L2)
+!    ! Myy/Ry2
+!    Call linComb_sparsevecc(Lrx,-(Z(4)+1)*sina5*Binv(2,2),Lry,-(Z(4)+1)*cosa5*Binv(2,2),L3)
+!    Call linComb_sparsevecc(L1,C_ONE,L2,C_ONE,Lp12)
+!    Call linComb_sparsevecc(L3,C_ONE,Lp12,C_ONE,L(4)%L(2))
+
+! endselect
 
 
 
 
 
-!   !  compute sparse vector representations of linearized functionals
-!   do n = 1,nComp
-!      !  i runs over rows of TF matrix, j runs over columns of TF
-!      i = IJ(1,n)
-!      j = IJ(2,n)
-!      predictedComp = IJ(3,n)
-!      c1 = Z(2*(i-1)+1)
-!      c2 = Z(2*(i-1)+2)
-!     if(typeDict(iDT)%tfType .eq. Full_Interstation_TF) then
-!       Call linComb_sparsevecc(Lrx,c1,Lry,c2,L1)
-!     else
-!       Call linComb_sparsevecc(Lbx,c1,Lby,c2,L1)
-!     end if
-!      do k = 1,2
-!         !  k defines which mode the linearized functional is
-!         !   to be applied to
-!         c1 = Binv(k,j)  !In case of interstaion TF, Binv = RRinv.
-!         c2 = -c1
-!         if(predictedComp.eq.1) then
-!            !  component in x row of impedance tensor
-!            Call linComb_sparsevecc(Lex,c1,L1,c2,L(n)%L(k))
-!         elseif(predictedComp.eq.2) then
-!            !  component in y row of impedance tensor
-!            Call linComb_sparsevecc(Ley,c1,L1,c2,L(n)%L(k))
-!         elseif(predictedComp.eq.3) then
-!            !  component in Bz row (vertical field TF)
-!            Call linComb_sparsevecc(Lbz,c1,L1,c2,L(n)%L(k))
-!         elseif(predictedComp.eq.4) then
-!            !  component in x row (interstation TF)
-!            Call linComb_sparsevecc(Lbx,c1,L1,c2,L(n)%L(k))
-!         elseif(predictedComp.eq.5) then
-!            !  component in y row (interstation TF)
-!            Call linComb_sparsevecc(Lby,c1,L1,c2,L(n)%L(k))
-!         endif
-!      enddo
-!   enddo
+  !  compute sparse vector representations of linearized functionals
+  do n = 1,nComp
+     !  i runs over rows of TF matrix, j runs over columns of TF
+     i = IJ(1,n)
+     j = IJ(2,n)
+     predictedComp = IJ(3,n)
+     c1 = Z(2*(i-1)+1)
+     c2 = Z(2*(i-1)+2)
+    if(typeDict(iDT)%tfType .eq. Full_Interstation_TF) then
+      Call linComb_sparsevecc(Lrx_rot,c1,Lry_rot,c2,L1)
+    else
+      Call linComb_sparsevecc(Lbx_rot,c1,Lby_rot,c2,L1)
+    end if
+     do k = 1,2
+        !  k defines which mode the linearized functional is
+        !   to be applied to
+        c1 = Binv(k,j)  !In case of interstaion TF, Binv = RRinv.
+        c2 = -c1
+        if(predictedComp.eq.1) then
+           !  component in x row of impedance tensor
+           Call linComb_sparsevecc(Lex_rot,c1,L1,c2,L(n)%L(k))
+        elseif(predictedComp.eq.2) then
+           !  component in y row of impedance tensor
+           Call linComb_sparsevecc(Ley_rot,c1,L1,c2,L(n)%L(k))
+        elseif(predictedComp.eq.3) then
+           !  component in Bz row (vertical field TF)
+           Call linComb_sparsevecc(Lbz,c1,L1,c2,L(n)%L(k))
+        elseif(predictedComp.eq.4) then
+           !  component in x row (interstation TF)
+           Call linComb_sparsevecc(Lbx_rot,c1,L1,c2,L(n)%L(k))
+        elseif(predictedComp.eq.5) then
+           !  component in y row (interstation TF)
+           Call linComb_sparsevecc(Lby_rot,c1,L1,c2,L(n)%L(k))
+        endif
+     enddo
+  enddo
 if (typeDict(iDT)%tfType .eq. Off_Diagonal_Rho_Phase) then
        do k=1,2 ! 2 modes
         ! PHSYX
@@ -984,6 +1062,13 @@ if (typeDict(iDT)%tfType .eq. Off_Diagonal_Rho_Phase) then
   call deall_sparsevecc(Lrx)
   call deall_sparsevecc(Lry)
 
+  call deall_sparsevecc(Lex_rot)
+  call deall_sparsevecc(Ley_rot)
+  call deall_sparsevecc(Lbx_rot)
+  call deall_sparsevecc(Lby_rot)
+  call deall_sparsevecc(Lrx_rot)
+  call deall_sparsevecc(Lry_rot)
+
   end subroutine Lrows
 !
 !****************************************************************************
@@ -1046,19 +1131,32 @@ if (typeDict(iDT)%tfType .eq. Off_Diagonal_Rho_Phase) then
   !****************************************************************************
   ! 2019.05.25, Liu Zhongyin, Add rotate for field vector
   ! from Orthogional to original layout
-   subroutine rotateO2L(ch1,ch2,angle)
+   subroutine rotate_Model2Data(ch1,ch2,angle1,angle2,angle)
    implicit none
    complex(kind=prec), intent(inout) :: ch1,ch2
-   real(kind=prec), intent(in) :: angle
+   real(kind=prec), intent(in) :: angle1,angle2,angle
 
    ! local vars
    complex(kind=prec) :: tmpch1,tmpch2
+   real(kind=prec) :: tmpv
 
    tmpch1 = ch1
    tmpch2 = ch2
+   tmpv = 1/(sin(angle2*D2R - angle1*D2R))
 
-   ch1 =  cos(angle*D2R)*tmpch1 + sin(angle*D2R)*tmpch2
-   ch2 = -sin(angle*D2R)*tmpch1 + cos(angle*D2R)*tmpch2
-   end subroutine
+   ! ch1 =  sin(angle2*D2R - angle*D2R)*tmpch1 - sin(angle1*D2R - angle*D2R)*tmpch2
+   ! ch1 =  ch1/tmpv
+   ! ch2 = -cos(angle2*D2R - angle*D2R)*tmpch1 + cos(angle1*D2R - angle*D2R)*tmpch2
+   ! ch2 =  ch2/tmpv
+
+   ch1 =  sin(angle2*D2R - angle*D2R)*tmpch1 - cos(angle2*D2R - angle*D2R)*tmpch2
+   ch1 =  ch1/tmpv
+   ch2 = -sin(angle1*D2R - angle*D2R)*tmpch1 + cos(angle1*D2R - angle*D2R)*tmpch2
+   ch2 =  ch2/tmpv
+
+   ! ch1 = cos(angle1*D2R - angle*D2R)*tmpch1 + cos(angle2*D2R - angle*D2R)*tmpch2
+   ! ch2 = sin(angle1*D2R - angle*D2R)*tmpch1 + sin(angle2*D2R - angle*D2R)*tmpch2
+
+   end subroutine rotate_Model2Data
 
 end module dataFunc

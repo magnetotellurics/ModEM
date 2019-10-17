@@ -31,6 +31,10 @@ module receivers
      ! site ID used for input/output and for searching through the list
      character(50)                      ::  id=''
      character(50)                      ::  id_ref=''
+
+     ! Liu Zhongyin, 2019.08.26, Add HxAzimuth, ExAzimuth
+     real(kind=prec)                    ::  HxAzimuth=0.0, ExAzimuth=0.0
+     real(kind=prec)                    ::  HxAzimuth_ref=0.0
   end type MTrx
 
   ! receiver dictionary for 3D MT data will be an array of
@@ -162,6 +166,9 @@ function update_rxDict(loc,id,loc_ref,id_ref) result (iRx)
      write(*,*) 'Receiver dictionary:'
      do iRx = 1, size(rxDict)
         write(*,'(i6,a50,3f15.6,a50)') iRx,trim(rxDict(iRx)%id),rxDict(iRx)%x,trim(rxDict(iRx)%id_ref)
+
+        ! Liu Zhongyin, 2019.08.26, add HxAzimuth, ExAzimuth
+        write(*,'(f15.6,f15.6)') rxDict(iRx)%HxAzimuth, rxDict(iRx)%ExAzimuth
      enddo
 
   end subroutine print_rxDict

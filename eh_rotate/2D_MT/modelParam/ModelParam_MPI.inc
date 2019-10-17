@@ -3,8 +3,13 @@
 
 !#####################################################################################
 subroutine create_model_param_place_holder(sigma_mpi)
+#ifdef MPIMOD
+    use mpi
+    implicit none
+#else
     implicit none
     include 'mpif.h'
+#endif
 
      type (modelParam_t), intent(in)   	        :: sigma_mpi
      integer                                    ::v_size,Nbytes1                  
@@ -38,8 +43,13 @@ end subroutine create_model_param_place_holder
 !#####################################################################################
 
 subroutine Pack_model_para_values(sigma_mpi)
+#ifdef MPIMOD
+    use mpi
+    implicit none
+#else
     implicit none
     include 'mpif.h'
+#endif
     
     type (modelParam_t), intent(in)   	        :: sigma_mpi
     integer                                     :: index,v_size
@@ -59,8 +69,13 @@ end subroutine Pack_model_para_values
 !#####################################################################################
 
 subroutine Unpack_model_para_values(sigma_mpi)
+#ifdef MPIMOD
+    use mpi
+    implicit none
+#else
     implicit none
     include 'mpif.h'
+#endif
     
     type (modelParam_t), intent(inout)   	    :: sigma_mpi
     integer                                     :: index,v_size

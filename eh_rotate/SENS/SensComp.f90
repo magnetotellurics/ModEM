@@ -42,9 +42,7 @@ module SensComp
 Contains
 
   !**********************************************************************
-   ! 2019.05.08, Liu Zhongyin, add Angle
-   subroutine Jrows(iTx,iDt,iRx,sigma0,emsoln,Jreal,Jimag,Angle)
-   ! subroutine Jrows(iTx,iDt,iRx,sigma0,emsoln,Jreal,Jimag)
+   subroutine Jrows(iTx,iDt,iRx,sigma0,emsoln,Jreal,Jimag)
    !  Given background model parameter sigma0 and background
    !  solution vector emsoln, calculate a row of sensitivity matrix
    !  for specified transmitter, data type and receiver,
@@ -65,9 +63,6 @@ Contains
    !   NOTE: Jreal and Jimag both exist regardless of whether the data
    !     are real or complex, since J itself is complex
    type(modelParam_t), pointer   	          :: Jreal(:), Jimag(:)
-
-   ! 2019.05.08, Liu Zhongyin, add Angle
-   real(kind=prec), intent(in)                :: Angle(:)
 
    !  local variables
    integer 		:: istat,ii,nFunc,nComp,iFunc
@@ -111,9 +106,7 @@ Contains
 		  call create_sparseVector(e0%grid,iTx,L(iFunc))
 	  end do
    ! compute linearized data functional(s) : L
-   ! call Lrows(e0,sigma0,iDt,iRx,L)
-   ! 2019.05.08, Liu Zhongyin, add Angle
-   call Lrows(e0,sigma0,iDt,iRx,L,Angle) 
+   call Lrows(e0,sigma0,iDt,iRx,L)
 
    ! compute linearized data functional(s) : Q
    call Qrows(e0,sigma0,iDt,iRx,Qzero,Qreal,Qimag)
@@ -237,9 +230,7 @@ Contains
            iRx = dTemplate%rx(k)
 
            ! compute the sensitivities for these transmitter, data type & receiver
-           ! call Jrows(iTx,iDt,iRx,sigma0,e0,Jreal,Jimag)
-           ! 2019.05.08, Liu Zhongyin, add Angle
-           call Jrows(iTx,iDt,iRx,sigma0,e0,Jreal,Jimag,d%d(iTx)%data(iDT)%Azimuth(:,k))
+           call Jrows(iTx,iDt,iRx,sigma0,e0,Jreal,Jimag)
 
            ! store in the full sensitivity matrix
            ii = 1
@@ -604,8 +595,7 @@ Contains
 		     do j = 1,d%data(i)%nSite
 
 		        ! output is a real vector: complex values come in pairs
-              call dataResp(emsoln,sigma,iDt,d%data(i)%rx(j),d%data(i)%value(:,j), &
-                           d%data(i)%Azimuth(:,j))
+              call dataResp(emsoln,sigma,iDt,d%data(i)%rx(j),d%data(i)%value(:,j))
 
 		     enddo
 
