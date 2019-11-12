@@ -188,7 +188,7 @@ program Mod3DMT
             ! sigma1 contains mHat on input (zero = starting from the prior)
              write(*,*) 'Starting the LBFGS search...'
              sigma1 = dsigma
-             call LBFGSsolver2(allData,cUserDef%lambda,sigma0,sigma1,       &
+             call LBFGSsolver(allData,cUserDef%lambda,sigma0,sigma1,       &
      &            cUserDef%rFile_invCtrl)
 
          else

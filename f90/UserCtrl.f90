@@ -66,6 +66,8 @@ module UserCtrl
 
 	! Indicate how much output you want
 	integer             :: output_level
+    ! add covariance Type here
+    integer             :: covType
 
   end type userdef_control
 
@@ -107,6 +109,7 @@ Contains
   	ctrl%option = 'J'
   	ctrl%delta = 0.05
   	ctrl%output_level = 3
+  	ctrl%covType = 3   ! 1 for 1D AR, 2 for L2 (LTL), 3 for L1 (()L^0.5)T(L)^0.5)
 
     ! Using process ID in MPI output file name has the advantage that
     ! the user may run several instances of the program in one directory

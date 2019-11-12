@@ -1,0 +1,150 @@
+!----------------------------------------------------------------------!
+! Definitions of model covariance operator:                            !
+! Combined the                                                         !
+!              RecusiveAR operator defined by Gary Egbert and Anna     !
+!                                                             Kelbert. !
+!              Laplacian operator defined by Gary Egbert and Bo Yang.  !
+!              and a buy one get one gradient operator                 !
+!----------------------------------------------------------------------!
+
+!----------------------------------------------------------------------!
+! 1) modelCov_t data type with private attributes
+!----------------------------------------------------------------------!
+
+! NOTE:  there is no real need to have a datatype for the covariance 
+!        ... just have module variables
+!        I think it would be better to include hd files that are specific 
+!        to different covariances, to make it easier to add new ones; for 
+!        now I keep them all in one file.
+!        It is not clear if these module variables might need to be saved 
+!        -- as long as the Model_Space module does not go out of scope, 
+!        all module variables (and these are all included in Model_Space) 
+!        will be saved anyway. We were saving the CmSqrt object
+!
+! type :: modelCov_t
+! private
+!
+! flag to specify the operator.
+! 1 for RecursiveAR.
+! 2 for Laplacian (L2)
+! 3 for L1 (half of Laplacian)
+!
+	integer,private                            :: flagCov = 1
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!
+!  variables relevant to all
+
+! dimensions of the grid 
+!
+	integer,private, save                      :: Nx, Ny, NzEarth
+!
+! true when all arrays are allocated, initialized and ready to use
+!
+	logical, private, save                     :: CovAllocated
+!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!
+! special variables for RecursiveAR.
+!
+! the number of times the smoothing operator should be applied
+!
+	integer,private,save                       :: N
+!
+! general rules for smoothing in the X,Y and Z-directions, dimension(NzEarth)
+!
+    real (kind=prec), pointer, dimension(:),private, save   :: Sx, Sy, Sz
+!
+!
+!   real (kind=prec),private                                :: Sz
+!
+! special rules for smoothing across a surface stored as a sparse array
+!
+	type (sparsevecc),private, save                         :: S
+!
+! an integer array that defines regions for smoothing and scaling purposes
+!
+	type (iscalar),private, save                            :: mask
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!
+! special variables for Laplacian smoother:   these should be read from file ultimately
+!
+    integer, private, save		      ::   laplaceGridType = 0 
+    real (kind=prec), private, save   ::   laplaceVerticalScale = 0.3
+    real (kind=prec), private, save   ::   laplaceHorizontalScale = 0.3
+    real (kind=prec), private, save   ::   laplaceConstantScale = 1D+03
+    type(grid_t), private, save       ::   modelGrid   ! with #air set to 0
+
+    type (rvector) , private, save     :: Lm, Lp
+!   Fm, Fp contains coefficients of the stencil for shift -1, +1 
+
+!  Lc contains diagonal part of stencil, not sure about O, d yet
+    type (rscalar) , private, save    ::  Lc,Ld 
+    type (rscalar) , private, save    ::  logcond, logcondSmth
+
+!    type(solverControl_t)       :: PCG_Iter    ! to simplify module use I 
+!    am going to dispense with solverControl object and just us module variables
+!    for control of PCG solver used for Laplacian Smoother
+     integer, private, save                                  :: LaplaceMaxIt = 1000
+     ! convergence criteria: return from solver if relative error < tol
+     real (kind=prec), private, save                         :: LaplaceTol = 1.0e-8
+     ! actual number of iterations before return
+     integer, save                                           :: LaplaceNiter
+     ! relative error for each iteration
+     real (kind=prec), pointer, dimension(:), save           :: LaplaceRerr
+     ! logical variable indicating if algorithm "failed"
+     logical, save                                           :: LaplaceFailed = .false.
+
+!  end type
+
+!----------------------------------------------------------------------!
+! define the mask for air and ocean here. By default, we do not switch off
+! the smoothing between the air & ocean and the rest of the model. However,
+! we do set the scaling to zero for both of these regions.
+!----------------------------------------------------------------------!
+
+	integer,parameter,private                  :: AIR   = 0
+	integer,parameter,private                  :: OCEAN = 9
+	integer,parameter,private                  :: FREE  = 1 ! anything 1-8
+
+!----------------------------------------------------------------------!
+!       Covariance type ...
+!               
+        integer, parameter, private		:: Recursive_AR = 1
+        integer, parameter, private		:: Laplacian = 2
+        integer, parameter, private		:: Gradient = 3
+
+!----------------------------------------------------------------------!
+!       grid types for Laplace ... just set for now, need to read from 
+!               file ultimately
+        integer, parameter, private		:: UNIFORM_GRID = 0
+        integer, parameter, private		:: MODEL_GRID = 1
+
+!----------------------------------------------------------------------!
+! 2) CmSqrt (an instance of modelCov_t), saved and private to the modelParam module
+!----------------------------------------------------------------------!
+!   NOTE this data type is not needed and use has been eliminated
+!   in this version
+!	type (modelCov_t), private, save   ::  CmSqrt
+
+!----------------------------------------------------------------------!
+! 3) public procedures to create, deallocate and multiply by Covariance
+!----------------------------------------------------------------------!
+
+	public    :: create_CmSqrt, deall_CmSqrt, multBy_CmSqrt, multBy_Cm
+	public    :: read_Cm
+
+!----------------------------------------------------------------------!
+! 4) any private procedures required for the model covariance
+!----------------------------------------------------------------------!
+! member functions for Laplace regularization.
+!
+	private   :: setLaplaceGrid, initializeLaplace, deall_Laplace
+    private   :: read_Cm_Laplacian
+    private   :: PCG_Poisson, Minv
+    public    :: setLaplaceCov, Hinv
+!
+! member functions for RecursiveAR operator.
+!
+	private   :: RecursiveAR, SmoothX, SmoothY, SmoothZ, Scaling

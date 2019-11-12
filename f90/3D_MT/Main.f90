@@ -223,27 +223,38 @@ Contains
 
      case (INVERSE)
 	   inquire(FILE=cUserDef%rFile_Cov,EXIST=exists)
-	   if (exists) then
-          call create_CmSqrt(sigma0,cUserDef%rFile_Cov)
+       if (cUserDef%covType .ge. 2) then
+           call setLaplaceCov(0,1D+02,3.0D-01,3.0D-01)
+       endif
+       if (exists) then 
+           call create_CmSqrt(sigma0,cUserDef%covType,cUserDef%rFile_Cov)
        else
-          call create_CmSqrt(sigma0)
+           write(6,*) 'cUserDef%covType = ', cUserDef%covType
+           call create_CmSqrt(sigma0,cUserDef%covType)
        end if
+
 	   inquire(FILE=cUserDef%rFile_dModel,EXIST=exists)
 	   if (exists) then
 	      call deall_grid(grid)
-	   	  call read_modelParam(grid,dsigma,cUserDef%rFile_dModel)
+	      call read_modelParam(grid,dsigma,cUserDef%rFile_dModel)
+          ! comment this line below to use smoothed model (un-transformed model space)!
+          ! dsigma = multBy_CmSqrt(dsigma)
+          ! call linComb_modelParam(ONE, dsigma, ONE, sigma0, dsigma)
           call setup_airlayers(airLayers,grid)
 		  call update_airlayers(grid,airLayers%Nz,airLayers%Dz)
 	      if (output_level > 0) then
 	        write(*,*) 'Using the initial model perturbations from file ',trim(cUserDef%rFile_dModel)
 	      endif
 	   else
-	      dsigma = sigma0
-	      call zero_modelParam(dsigma)
-	      if (output_level > 0) then
-	        write(*,*) 'Starting search from the prior model ',trim(cUserDef%rFile_Model)
-	      endif
+          dsigma = sigma0
+          ! comment this line below to use smoothed model (un-transformed model space)!
+          ! call zero_modelParam(dsigma)
+          if (output_level > 0) then
+              write(*,*) 'Starting search from the prior model ',&
+                 trim(cUserDef%rFile_Model)
+          endif
 	   end if
+
        select case (cUserDef%search)
        case ('NLCG')
        case ('DCG')
@@ -255,10 +266,13 @@ Contains
 
      case (APPLY_COV)
        inquire(FILE=cUserDef%rFile_Cov,EXIST=exists)
+       if (cUserDef%covType .ge. 2) then
+           call setLaplaceCov(0,1D+02,3.0D-01,3.0D-01)
+       endif
        if (exists) then
-          call create_CmSqrt(sigma0,cUserDef%rFile_Cov)
+           call create_CmSqrt(sigma0,cUserDef%covType,cUserDef%rFile_Cov)
        else
-          call create_CmSqrt(sigma0)
+           call create_CmSqrt(sigma0,cUserDef%covType)
        end if
        dsigma = sigma0
        inquire(FILE=cUserDef%rFile_Prior,EXIST=exists)
