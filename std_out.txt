@@ -1,0 +1,2 @@
+#### START FORWARD MPI TEST WITH 9 CORES AT 2020/01/21 - 12:40:46 ####
+#### COMMAND LINE: [mpirun -n 9 ../src/Mod3DMT -F .././inputs/rFile_Model .././inputs/rFile_Data wFile_Data.dat wFile_EMsoln -v full]

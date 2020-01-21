@@ -322,6 +322,7 @@ Contains
        !  update diagnostics output from QMR
        do iter = 1,QMRiter%niter
            EMrelErr(nIterTotal+iter) = QMRiter%rerr(iter)
+		   worker_job_task%solver_residual_vec(nIterTotal+iter) = QMRiter%rerr(iter)
        enddo
        nIterTotal = nIterTotal + QMRiter%niter
 
@@ -348,7 +349,7 @@ Contains
 	!
 	! send these info to master so that master will write these info into the solver's diagonestic file.
 	! Naser and Paulo 02.10.2019
-	worker_job_task%solver_residual = EMrelErr(nIterTotal)
+	
 	worker_job_task%solver_number_of_iterations = nIterTotal
 	worker_job_task%period=(2*PI)/omega
 	worker_job_task%solver_name=trim(solver_name)
@@ -562,6 +563,10 @@ end subroutine SdivCorr ! SdivCorr
      if(associated(EMrelErr)) then
         deallocate(EMrelErr)
      endif
+     if(associated(worker_job_task%solver_residual_vec)) then
+        deallocate(worker_job_task%solver_residual_vec)
+     endif
+	 
      if(associated(divJ)) then
         deallocate(divJ)
      endif
@@ -570,6 +575,7 @@ end subroutine SdivCorr ! SdivCorr
      endif
      !   then allocate all arrays
      allocate(EMrelErr(MaxIterTotal))
+	 allocate(worker_job_task%solver_residual_vec(MaxIterTotal))
      allocate(divJ(2,MaxDivCor))
      allocate(DivCorRelErr(MaxIterDivCor,MaxDivCor))
 

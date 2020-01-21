@@ -333,7 +333,7 @@ end subroutine copyE0fromFile
                     !  and of course transmitters are in same order always
                     write (*,'(a12,a28,a12,i4,a15,i2)') node_info, 'Setting the BC from E0 file ', &
                         ' for period ',iTx,' & mode # ',iMode
-                    e0%pol(j) = E0_from_file(iTx)
+                    e0%pol(j) = E0_from_file((iTx*2)-(2-iMode))
                     call getBC(e0%pol(j),BC)
                     !   do we now need to set boundary edges of E0 == 0?
 
@@ -411,6 +411,7 @@ end subroutine copyE0fromFile
 		! ... but b0 uses the same fake indexing as e0
 		write (*,'(a12,a12,a6,a20,i4,a2,es13.6,a15,i2)') node_info, 'Solving the ','MT FWD', &
 				' problem for period ',iTx,': ',(2*PI)/omega,' secs & mode # ',e0%Pol_index(iMode)
+		!call zero_solnVector(e0)
 		call FWDsolve3D(b0%b(iMode),omega,e0%pol(iMode))
 		write (6,*)node_info,'FINISHED solve, nPol',e0%nPol
    	   enddo

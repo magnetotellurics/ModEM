@@ -1236,7 +1236,7 @@ subroutine Master_job_Distribute_Taskes(job_name,nTx,sigma,eAll_out,eAll_in)
         type(solnVectorMTX_t), intent(inout), optional	    :: eAll_out     
         !Local
         Integer        :: iper,ipol,ipol1
-        Integer        :: per_index,pol_index
+        Integer        :: per_index,pol_index,solver_residual_iter
         logical keep_soln,savedSolns
 
         
@@ -1305,8 +1305,13 @@ subroutine Master_job_Distribute_Taskes(job_name,nTx,sigma,eAll_out,eAll_in)
                    write(ioMPI,'(a10,a16,i5,a8,i5,a11,i5)')trim(job_name) ,': Recieve Per # ',which_per ,' and Pol # ', which_pol ,' from ', who 
                    ! Writting into the solver's diagonestic file.
 				   ! Naser and Paulo 02.10.2019
-				   write(ioSolverStat,'(a20,g20.7,i20,i20,i20,g20.7)')trim(job_name), worker_job_task%period, which_per, which_pol, worker_job_task%solver_number_of_iterations, worker_job_task%solver_residual
-                   received_answers=received_answers+1
+				   
+				   do solver_residual_iter = 1,size(worker_job_task%solver_residual_vec)
+					   if (worker_job_task%solver_residual_vec(solver_residual_iter) .gt. R_ZERO) then
+						   write(ioSolverStat,'(a20,g20.7,i20,i20,i20,g20.7)')trim(job_name), worker_job_task%period, which_per, which_pol, solver_residual_iter, worker_job_task%solver_residual_vec(solver_residual_iter)
+					   end if
+				   end do
+				   received_answers=received_answers+1
                     
                    
         ! Check if we send all transmitters and polarizations, if not then send the next transmitter to the worker who is free now....
