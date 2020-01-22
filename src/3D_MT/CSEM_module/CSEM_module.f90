@@ -53,7 +53,7 @@ subroutine get_source_for_csem(sigma,grid,iTx,source)
  
  !b0%s=i_omega_mu*(sigma-sigma1d)*Ep
  call initilize_1d_vectors(grid)
- call set1DModel(sigma)
+ call set1DModel(sigma,xTx1D,yTx1D)
  call setAnomConductivity(sigma)
  call comp_dipole1D                  ! Calculate E-Field by Key's code
  call create_Ep(grid)
@@ -179,7 +179,7 @@ integer counter,ix,iy,iz
 	  End Do
 end subroutine 	initilize_1d_vectors  
 !#############################################
-subroutine set1DModel(sigma)
+subroutine set1DModel(sigma,xTx1D,yTx1D,FromFile)
 
    !   this is a private routine, used to extract layer averages from
    !   a 3D conductivity parameter (sigma) and set up
@@ -188,7 +188,8 @@ subroutine set1DModel(sigma)
    !   (3) zlay1D => ! (m)   Depth to top of each layer, first layer ignored the 1D Model  z_P, sigma_P
   
 type(modelParam_t),intent(in)		:: sigma 
-
+real(kind=prec),intent(in)                           :: xTx1D,yTx1D 
+logical, intent(in), optional                        :: FromFile
 
    !   local variables ... this is an easy, but not necessarily most efficient
    !   way to get an average background layered conductivity ...
@@ -203,6 +204,7 @@ type(modelParam_t),intent(in)		:: sigma
    integer	:: nzEarth,Nz,nzAir,i,j,k,ixTx,iyTx
    real(kind=prec)	:: wt,vAir,asigma
    character(len=256)   ::       PrimaryFile
+   !character(len=20)    ::       get_1D_from
    
 
 
@@ -215,7 +217,7 @@ type(modelParam_t),intent(in)		:: sigma
           
 		 ixTx= minNode(xTx1D, sigmaCell%grid%xEdge)  
 		 iyTx= minNode(yTx1D, sigmaCell%grid%yEdge)  
-
+         !get_1D_from= Trim(solverControl%get_1D_from)
    		!   for layer boundaries use z-edges of 3D grid
    		  	 if(allocated(zlay1D)) then
 			    Deallocate(zlay1D, sig1D)
@@ -238,17 +240,32 @@ type(modelParam_t),intent(in)		:: sigma
    		sig1D(1:nzAir) = sigmaCell%v(1,1,1:nzAir)
    		do k = nzAir+1,nlay1D
  		    sig1D(k) = R_ZERO
- 			wt = R_ZERO
-       			do i = 1,sigmaCell%grid%Nx
-          			do j = 1,sigmaCell%grid%Ny
-              				wt = wt + sigmaCell%grid%dx(i)*sigmaCell%grid%dy(j)
-              				sig1D(k) = sig1D(k) + log(sigmaCell%v(i,j,k))* &
- 						    sigmaCell%grid%dx(i)*sigmaCell%grid%dy(j)
-          			end do
-       			end do           
-       			sig1D(k) = sig1D(k)/wt
-      			sig1D(k) = exp(sig1D(k)) !sigmaCell%v(1,1,k) !exp(sig1D(k)) 
-				write(22,*)k,1.0/sig1D(k),1.0/sigmaCell%v(1,1,k)
+			     if (get_1D_from =="Geometric_mean") then
+						wt = R_ZERO
+							do i = 1,sigmaCell%grid%Nx
+								do j = 1,sigmaCell%grid%Ny
+										wt = wt + sigmaCell%grid%dx(i)*sigmaCell%grid%dy(j)
+										sig1D(k) = sig1D(k) + log(sigmaCell%v(i,j,k))* &
+										sigmaCell%grid%dx(i)*sigmaCell%grid%dy(j)
+								end do
+							end do           
+							sig1D(k) = sig1D(k)/wt
+							sig1D(k) = exp(sig1D(k)) !sigmaCell%v(1,1,k) !exp(sig1D(k)) 
+					elseif (get_1D_from =="At_Tx_Position") then
+					    sig1D(k)=sigmaCell%v(ixTx,iyTx,k)
+					elseif (get_1d_from=="Geometric_mean_around_Tx") then
+						wt = R_ZERO
+							do i = ixTx-2,ixTx+2
+								do j = iyTx-2,iyTx+2
+										wt = wt + sigmaCell%grid%dx(i)*sigmaCell%grid%dy(j)
+										sig1D(k) = sig1D(k) + log(sigmaCell%v(i,j,k))* &
+										sigmaCell%grid%dx(i)*sigmaCell%grid%dy(j)
+								end do
+							end do           
+							sig1D(k) = sig1D(k)/wt
+							sig1D(k) = exp(sig1D(k)) !sigmaCell%v(1,1,k) !exp(sig1D(k)) 					
+                  end if					
+				write(22,*)k,1.0/sig1D(k),get_1d_from
    		end do
    		call getValue_modelParam(sigma,paramType,model,vAir)
 
