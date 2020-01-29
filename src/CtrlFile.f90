@@ -506,7 +506,7 @@ contains
                         inquire(FILE=this%cUserDef%rFile_invCtrl,EXIST=exists)
                         if ( .not. exists ) then
                             ! problem - invalid argument
-                            write(0,*) 'Please specify a valid inverse control file or damping parameter'
+                            write(0,*) 'Please specify a valid inverse control file'
                             stop
                         end if
                     end if
@@ -517,11 +517,32 @@ contains
                         inquire(FILE=this%cUserDef%rFile_fwdCtrl,EXIST=exists)
                         if ( .not. exists ) then
                             ! problem - invalid argument
-                            write(0,*) 'Please specify a valid fwd control file or damping parameter'
+                            write(0,*) 'Please specify a valid fwd control file'
                             stop
                         end if
                     end if
-
+					!TEST rFile_Cov OPTIONAL
+                    ifield_name = this%getNameId( 'rFile_Cov' )
+                    if( ifield_name /= 0 ) then
+                        this%cUserDef%rFile_Cov = this%values( ifield_name )
+                        inquire(FILE=this%cUserDef%rFile_Cov,EXIST=exists)
+                        if ( .not. exists ) then
+                            ! problem - invalid argument
+                            write(0,*) 'Please specify a valid covariance file'
+                            stop
+                        end if
+                    end if
+					!TEST rFile_dModel OPTIONAL
+                    ifield_name = this%getNameId( 'rFile_dModel' )
+                    if( ifield_name /= 0 ) then
+                        this%cUserDef%rFile_dModel = this%values( ifield_name )
+                        inquire(FILE=this%cUserDef%rFile_dModel,EXIST=exists)
+                        if ( .not. exists ) then
+                            ! problem - invalid argument
+                            write(0,*) 'Please specify a valid dModel file'
+                            stop
+                        end if
+                    end if
 
                 case ( 'APPLY_COV' ) ! C
                     !TEST option
@@ -1348,6 +1369,8 @@ contains
                 write(0,*) 'eps             <value> [OPTIONAL]'
                 write(0,*) 'rFile_invCtrl   <path>  [OPTIONAL]'
                 write(0,*) 'rFile_fwdCtrl   <path>  [OPTIONAL]'
+				write(0,*) 'rFile_Cov       <path>  [OPTIONAL]'
+                write(0,*) 'rFile_dModel    <path>  [OPTIONAL]'
 
             case ('APPLY_COV') ! C
                 write(0,*) 'Usage: -C [FWD|INV] rFile_Model wFile_Model [rFile_Cov rFile_Prior]'
