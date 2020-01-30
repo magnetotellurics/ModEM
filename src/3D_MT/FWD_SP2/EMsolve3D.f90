@@ -36,7 +36,8 @@ module EMsolve3D
     real(kind = 8)            ::      AirLayersMaxHeight, AirLayersAlpha, AirLayersMinTopDz
     real(kind = 8), pointer, dimension(:)   :: AirLayersDz
     logical                   ::      AirLayersPresent=.false.
-	character (len=10)        ::      solver_name="QMR"												   
+	character (len=10)        ::      solver_name="QMR"		
+	character (len=50) , public      ::   get_1D_from="Geometric_mean"	
   end type emsolve_control
 
   type :: emsolve_diag
@@ -66,6 +67,7 @@ module EMsolve3D
   real(kind=prec), parameter       ::      tolDivCorDef = 1E-7
   !Solver name, by default we use QMR
   character (len=10)  		 ::   solver_name="QMR"
+  character (len=50) , public      ::   get_1D_from="Geometric_mean"
 							 
 
   save
@@ -307,7 +309,9 @@ Contains
        ! update diagnostics output from KSS
        do iter = 1,KSSiter%niter
            EMrelErr(nIterTotal+iter) = KSSiter%rerr(iter)
+		   worker_job_task%solver_residual_vec(nIterTotal+iter) = KSSiter%rerr(iter)
        end do
+	   
        if (KSSiter%niter.eq.0) then ! in case a initial guess is good enough
            KSSiter%niter = 1
            EMrelErr(KSSiter%niter) = KSSiter%rerr(1)
@@ -336,7 +340,7 @@ Contains
        write (*,'(a12,a22,f12.6)')    node_info, ' time taken (mins) ',   &
    &            elapsed_time(timer)/60.0
     end if
-	worker_job_task%solver_residual = EMrelErr(nIterTotal)
+
 	worker_job_task%solver_number_of_iterations = nIterTotal
 	worker_job_task%period=(2*PI)/omega
 	worker_job_task%solver_name=trim(solver_name)
@@ -523,6 +527,7 @@ end subroutine SdivCorr ! SdivCorr
         tolEMadj = tolEMDef
         tolDivCor = tolDivCorDef
         solver_name="QMR"
+		get_1D_from="Geometric_mean"
      else
         IterPerDivCor = solverControl%IterPerDivCor
         MaxDivCor = solverControl%MaxDivCor
@@ -532,6 +537,7 @@ end subroutine SdivCorr ! SdivCorr
         tolEMadj = solverControl%tolEMadj
         tolDivCor = solverControl%tolDivCor
         solver_name=solverControl%solver_name
+		get_1D_from=solverControl%get_1D_from
      endif
 
      if (present(tolEM)) then
@@ -609,6 +615,7 @@ solverControl%tolEMfwd      = tolEMDef
 solverControl%tolEMadj      = tolEMDef
 solverControl%tolDivCor     = tolDivCorDef
 solverControl%solver_name   = "QMR"
+solverControl%get_1D_from   = "Geometric_mean"
 do
    read (ioFwdCtrl,"(a)",iostat=ierr) line_text ! Read line into character variable
    line_text=trim(line_text)
@@ -709,6 +716,12 @@ do
         if (output_level > 2) then
            write (*,'(a12,a,a)') node_info,"Solver QMR|BICG: ",solverControl%solver_name
         end if
+    elseif(index(line_text, "1D model for Ep in CSEM Geometric_mean|At_Tx_Position|Geometric_mean_around_Tx") .ne. 0)then
+        call parse(line_text,":",args,nargs)
+         solverControl%get_1D_from=args(2)
+        if (output_level > 2) then
+           write (*,'(a50,a15)') node_info,"1D model for Ep in CSEM Geometric_mean|At_Tx_Position|Geometric_mean_around_Tx: ",solverControl%solver_name
+        end if	
     else
         if (output_level > 2) then
          write (*,'(a12,a,a)') node_info,"Unknown line in file: ",rFile
