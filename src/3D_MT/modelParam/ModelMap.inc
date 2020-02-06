@@ -175,7 +175,7 @@
 	call diagMult(V_C,temp,Ctemp)
 	call Cell2Edge(m%grid,Ctemp,Etemp)
 	Econd = Etemp
-	call diagDiv(Etemp,V_E_ghost,Econd)
+	call diagDiv(Etemp,V_E,Econd)
 	
 	call deall_rvector(V_E_ghost)
 	call deall_rscalar(temp)

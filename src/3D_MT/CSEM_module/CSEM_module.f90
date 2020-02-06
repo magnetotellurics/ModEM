@@ -33,7 +33,6 @@ subroutine get_source_for_csem(sigma,grid,iTx,source)
 		xTx1D = txDict(iTx)%xyzTx(1)
 		yTx1D = txDict(iTx)%xyzTx(2)
 		zTx1D = txDict(iTx)%xyzTx(3)
-		write(20,*) txDict(iTx)%xyzTx(1),txDict(iTx)%xyzTx(2),txDict(iTx)%xyzTx(3),txDict(iTx)%PERIOD,txDict(iTx)%Moment, txDict(iTx)%azimuthTx,txDict(iTx)%dipTx
 		ftx1D = 1.0d0/txDict(iTx)%PERIOD
 		sdm1D = txDict(iTx)%Moment           ! (Am), dipole moment. Normalize to unit source moment
 		azimuthTx1D = txDict(iTx)%azimuthTx ! (degrees) 
@@ -61,7 +60,6 @@ subroutine get_source_for_csem(sigma,grid,iTx,source)
    omega = txDict(iTx)%omega
    period = txDict(iTx)%period
    i_omega_mu = cmplx(0.,-1.0d0*ISIGN*MU_0*omega,kind=prec)
-    write(10,*)omega,period,2.0d0*PI/Period,i_omega_mu 
    call diagMult(condAnomaly,E_P,source)
    call scMult(i_omega_mu,source,source)
  
@@ -84,8 +82,7 @@ integer ix,iy,iz,counter
 	   Do iz = 1,grid%Nz+1 !Edge Z
 		  Do iy = 1,grid%Ny+1 !Edge Y
 			  Do ix = 1,grid%Nx !Center X	  		  	  
-				  E_p%x(ix,iy,iz) = ex1D(counter)	
-                   write(11,*) 	ex1D(counter)			  
+				  E_p%x(ix,iy,iz) = ex1D(counter)				  
 				  counter = counter + 1
 			  End Do
 		  End Do
@@ -96,7 +93,6 @@ integer ix,iy,iz,counter
 		  Do iy = 1,grid%Ny !Center y
 			  Do ix = 1,grid%Nx+1 !Edge x	  				  
 				  E_p%y(ix,iy,iz) = ey1D(counter)
-				   write(12,*) 	ey1D(counter)	
 				  counter = counter + 1
 			  End Do
 		  End Do
@@ -107,7 +103,6 @@ integer ix,iy,iz,counter
 		  Do iy = 1,grid%Ny+1 !Edge y
 			  Do ix = 1,grid%Nx+1 !Edge x
 				  E_p%z(ix,iy,iz) = jz1D(counter)
-				  write(13,*) 	jz1D(counter)	
 				  counter = counter + 1
 			  End Do
 		  End Do
@@ -201,8 +196,8 @@ logical, intent(in), optional                        :: FromFile
    type(rvector)::  cond
 
 
-   integer	:: nzEarth,Nz,nzAir,i,j,k,ixTx,iyTx
-   real(kind=prec)	:: wt,vAir,asigma
+   integer	:: nzEarth,Nz,nzAir,i,j,k,ixTx,iyTx,counter
+   real(kind=prec)	:: wt,vAir,asigma,temp_sigma_value
    character(len=256)   ::       PrimaryFile
    !character(len=20)    ::       get_1D_from
    
@@ -238,23 +233,29 @@ logical, intent(in), optional                        :: FromFile
    		! For earth layer, The Geometric mean is be used to create sig1D
 
    		sig1D(1:nzAir) = sigmaCell%v(1,1,1:nzAir)
-   		do k = nzAir+1,nlay1D
- 		    sig1D(k) = R_ZERO
-			     if (get_1D_from =="Geometric_mean") then
+
+			     if (trim(get_1D_from) =="Geometric_mean") then
+				       do k = nzAir+1,nlay1D
 						wt = R_ZERO
+						temp_sigma_value=R_ZERO
 							do i = 1,sigmaCell%grid%Nx
 								do j = 1,sigmaCell%grid%Ny
 										wt = wt + sigmaCell%grid%dx(i)*sigmaCell%grid%dy(j)
-										sig1D(k) = sig1D(k) + log(sigmaCell%v(i,j,k))* &
+										temp_sigma_value = temp_sigma_value + log(sigmaCell%v(i,j,k))* &
 										sigmaCell%grid%dx(i)*sigmaCell%grid%dy(j)
 								end do
 							end do           
-							sig1D(k) = sig1D(k)/wt
-							sig1D(k) = exp(sig1D(k)) !sigmaCell%v(1,1,k) !exp(sig1D(k)) 
-					elseif (get_1D_from =="At_Tx_Position") then
-					    sig1D(k)=sigmaCell%v(ixTx,iyTx,k)
-					elseif (get_1d_from=="Geometric_mean_around_Tx") then
-						wt = R_ZERO
+							sig1D(k) = exp(temp_sigma_value/wt)
+					       write(22,*)k,1.0/sig1D(k),sig1D(k),get_1d_from
+   		               end do
+					elseif (trim(get_1D_from) =="At_Tx_Position") then
+					   do k = nzAir+1,nlay1D
+					       sig1D(k)=sigmaCell%v(ixTx,iyTx,k)
+					       write(22,*)k,1.0/sig1D(k),sig1D(k),get_1d_from
+   		               end do						
+					elseif (trim(get_1d_from)=="Geometric_mean_around_Tx") then
+					    do k = nzAir+1,nlay1D
+						  wt = R_ZERO
 							do i = ixTx-2,ixTx+2
 								do j = iyTx-2,iyTx+2
 										wt = wt + sigmaCell%grid%dx(i)*sigmaCell%grid%dy(j)
@@ -262,11 +263,28 @@ logical, intent(in), optional                        :: FromFile
 										sigmaCell%grid%dx(i)*sigmaCell%grid%dy(j)
 								end do
 							end do           
-							sig1D(k) = sig1D(k)/wt
-							sig1D(k) = exp(sig1D(k)) !sigmaCell%v(1,1,k) !exp(sig1D(k)) 					
-                  end if					
-				write(22,*)k,1.0/sig1D(k),get_1d_from
-   		end do
+							sig1D(k) = exp(sig1D(k)/wt)	
+						  write(22,*)k,1.0/sig1D(k),sig1D(k),get_1d_from
+   		                end do
+					elseif (trim(get_1d_from)=="Full_Geometric_mean") then
+					    wt = R_ZERO
+						temp_sigma_value=R_ZERO
+						counter=0
+						do k = nzAir+1,nlay1D
+							do i = 1,sigmaCell%grid%Nx
+								do j = 1,sigmaCell%grid%Ny
+								counter=counter+1
+										wt = wt + sigmaCell%grid%dx(i)*sigmaCell%grid%dy(j)*sigmaCell%grid%dz(k)
+										temp_sigma_value = temp_sigma_value + log(sigmaCell%v(i,j,k))
+								end do
+							end do           
+   		                end do
+                        do k = nzAir+1,nlay1D
+						  sig1D(k) =sigmaCell%v(1,1,k)	
+						  write(22,*)k,1.0/sig1D(k),sig1D(k),get_1d_from,sigmaCell%v(1,1,k)
+                        end do						  
+					
+                    end if	
    		call getValue_modelParam(sigma,paramType,model,vAir)
 
 

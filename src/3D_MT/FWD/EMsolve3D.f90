@@ -299,13 +299,21 @@ Contains
        nDivCor = 1
        Call SdivCorr(temp,eSol,phi0)
     endif
-    loop: do while ((.not.converged).and.(.not.failed))
 
     if (trim(solver_name) .eq. "QMR") then
 	   write(*,*) 'I am using QMR'
+    elseif (trim(solver_name) .eq. "BICG") then
+	   write(*,*) 'I am using BICG'
+    else
+       Write(*,*)"Unknown Solver Method"
+    end if
+
+	
+    loop: do while ((.not.converged).and.(.not.failed))
+
+    if (trim(solver_name) .eq. "QMR") then
        Call QMR(b, eSol,QMRiter)
     elseif (trim(solver_name) .eq. "BICG") then
-	write(*,*) 'I am using BICG'
        Call BICG(b, eSol,QMRiter)
     else
        Write(*,*)"Unknown Solver Method"
@@ -323,7 +331,9 @@ Contains
        !  update diagnostics output from QMR
        do iter = 1,QMRiter%niter
            EMrelErr(nIterTotal+iter) = QMRiter%rerr(iter)
+#ifdef MPI		   
 		   worker_job_task%solver_residual_vec(nIterTotal+iter) = QMRiter%rerr(iter)
+#endif		   
        enddo
        nIterTotal = nIterTotal + QMRiter%niter
 
@@ -350,10 +360,11 @@ Contains
 	!
 	! send these info to master so that master will write these info into the solver's diagonestic file.
 	! Naser and Paulo 02.10.2019
-	
+#ifdef MPI	
 	worker_job_task%solver_number_of_iterations = nIterTotal
 	worker_job_task%period=(2*PI)/omega
 	worker_job_task%solver_name=trim(solver_name)
+#endif	
 	!
     !  After solving symetrized system, need to do different things for
     !   transposed, standard cases
@@ -566,10 +577,11 @@ end subroutine SdivCorr ! SdivCorr
      if(associated(EMrelErr)) then
         deallocate(EMrelErr)
      endif
+#ifdef MPI	 
      if(associated(worker_job_task%solver_residual_vec)) then
         deallocate(worker_job_task%solver_residual_vec)
      endif
-	 
+#endif	 
      if(associated(divJ)) then
         deallocate(divJ)
      endif
@@ -578,7 +590,9 @@ end subroutine SdivCorr ! SdivCorr
      endif
      !   then allocate all arrays
      allocate(EMrelErr(MaxIterTotal))
+#ifdef MPI	 
 	 allocate(worker_job_task%solver_residual_vec(MaxIterTotal))
+#endif	 
      allocate(divJ(2,MaxDivCor))
      allocate(DivCorRelErr(MaxIterDivCor,MaxDivCor))
 
@@ -641,15 +655,16 @@ do
    read (ioFwdCtrl,"(a)",iostat=ierr) line_text ! Read line into character variable
    line_text=trim(line_text)
    if (ierr /= 0) exit                          ! End of the file
-
-    if(index(line_text, "Number of QMR iters per divergence correction") .ne. 0)then
+    if(index(line_text, "#") .ne. 0)then
+	!DO NOTHING it is just a comment line
+    elseif(index(line_text, "Number of QMR iters per divergence correction") .ne. 0)then
         call parse(line_text,":",args,nargs)
          READ(args(2),*)intval
          solverControl%IterPerDivCor=intval
          if (output_level > 2) then
            write (*,'(a12,a,i5)') node_info,"Number of QMR iters per divergence correction: ",solverControl%IterPerDivCor
           end if
-   elseif(index(line_text, "Maximum number of divergence correction calls") .ne. 0)then
+    elseif(index(line_text, "Maximum number of divergence correction calls") .ne. 0)then
         call parse(line_text,":",args,nargs)
          READ(args(2),*)intval
          solverControl%MaxDivCor=intval
@@ -735,13 +750,13 @@ do
          solverControl%solver_name=args(2)
 
         if (output_level > 2) then
-           write (*,'(a12,a,a)') node_info,"Solver QMR|BICG: ",solverControl%solver_name
+           write (*,'(a12,a,a)') node_info,"Solver QMR|BICG: ",trim(solverControl%solver_name)
         end if
 	elseif(index(line_text, "1D model for Ep in CSEM Geometric_mean|At_Tx_Position|Geometric_mean_around_Tx") .ne. 0)then
         call parse(line_text,":",args,nargs)
          solverControl%get_1D_from=args(2)
         if (output_level > 2) then
-           write (*,'(a50,a15)') node_info,"1D model for Ep in CSEM Geometric_mean|At_Tx_Position|Geometric_mean_around_Tx: ",solverControl%solver_name
+           write (*,'(a12,a,a)') node_info,"1D model for Ep in CSEM Geometric_mean|At_Tx_Position|Geometric_mean_around_Tx: ",solverControl%get_1D_from
         end if	
     else
         if (output_level > 2) then

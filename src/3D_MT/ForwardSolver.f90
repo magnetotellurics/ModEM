@@ -363,7 +363,10 @@ end subroutine copyE0fromFile
 				 ! However, b0%s is needed to be filled later with Secondary field obtained:
 				 ! b0%s=i_omega_mu*(sigma-sigma1d)*Ep
 				 ! Ep is the primary E-field obtained from the 1D solution
-
+					b0%b(j)%nonzero_Source = .true.
+					b0%b(j)%sparse_Source = .false.
+					b0%b(j)%nonzero_BC = .false. 
+					b0%b(j)%adj = 'FWD'		
                  call get_source_for_csem(sigma_temp,e0%grid,iTx,b0%b(j)%s)
 				 
 				 
@@ -417,6 +420,8 @@ end subroutine copyE0fromFile
    	   enddo
    elseif (txDict(iTx)%Tx_type=='CSEM') then
 		write (*,'(a12,a40,i4,a2,es13.6,a15,i2)') node_info, 'Solving the CSEM FWD problem for period ',iTx,': ',(2*PI)/omega,' secs & mode # ',e0%Pol_index(1)
+		call zero(e0%pol(1))
+		!e0%pol(1)=E_P
 		call FWDsolve3D(b0%b(1),omega,e0%pol(1))
 		call add(E_p,e0%pol(1),e0%pol(1))
 		write (6,*)node_info,'FINISHED solve, nPol',e0%nPol    
