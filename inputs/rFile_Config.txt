@@ -1,5 +1,5 @@
 job	INVERSE
-search NLCG
+
 rFile_Model 'inputs/rFile_Model'
 rFile_Data 'inputs/rFile_Data'
 wFile_Data 'outputs/wFile_Data'

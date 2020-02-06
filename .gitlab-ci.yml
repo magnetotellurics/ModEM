@@ -91,8 +91,8 @@ test_forward:
         paths:
             - outputs/test_forward/
         expire_in: 1 week
-    only:
-        - master
+    #only:
+        #- master
 #
 # STANDART TEST COMPUTE_J
 .test_compute_j:
@@ -176,8 +176,8 @@ test_inverse:
         paths:
             - outputs/test_inverse/
         expire_in: 1 week
-    only:
-        - master
+    #only:
+        #- master
 #
 # STANDART TEST COV FWD
 test_apply_cov_fwd:
