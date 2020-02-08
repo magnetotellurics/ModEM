@@ -33,13 +33,13 @@ module UserCtrl
 	! File to set up forward solver controls
 	character(80)       :: rFile_fwdCtrl
 
-    ! Output file name for MPI nodes status info
-    character(80)       :: wFile_MPI
+	! Output file name for MPI nodes status info
+	character(80)       :: wFile_MPI
 
 	! Input files
 	character(80)       :: rFile_Grid, rFile_Model, rFile_Data
 	character(80)       :: rFile_dModel
-    character(80)       :: rFile_EMsoln, rFile_EMrhs, rFile_Prior
+	character(80)       :: rFile_EMsoln, rFile_EMrhs, rFile_Prior
 
 	! Output files
 	character(80)       :: wFile_Grid, wFile_Model, wFile_Data
@@ -52,8 +52,8 @@ module UserCtrl
 	! Choose the inverse search algorithm
 	character(80)       :: search
 
-    ! Choose the sort of test / procedure variant you wish to perform
-    character(80)       :: option
+	! Choose the sort of test / procedure variant you wish to perform
+	character(80)       :: option
 
 	! Specify damping parameter for the inversion
 	real(8)             :: lambda
@@ -61,8 +61,8 @@ module UserCtrl
 	! Misfit tolerance for the forward solver
 	real(8)             :: eps
 
-    ! Specify the magnitude for random perturbations
-    real(8)             :: delta
+	! Specify the magnitude for random perturbations
+	real(8)             :: delta
 
 	! Indicate how much output you want
 	integer             :: output_level
@@ -211,6 +211,8 @@ Contains
         write(*,*) '      the model covariance configuration file   [rFile_Cov]'
         write(*,*) '      the starting model parameter perturbation [rFile_dModel]'
         write(*,*) '  Runs an inverse search to yield an inverse model at every iteration'
+        write(*,*) '  NOTE: NLCG can be replaced with DCG or LBFGS to '
+        write(*,*) '      select a different inverse algorithm'
         write(*,*) '[COMPUTE_J]'
         write(*,*) ' -J  rFile_Model rFile_Data wFile_Sens [rFile_fwdCtrl]'
         write(*,*) '  Calculates and saves the full J(acobian)'
@@ -241,7 +243,7 @@ Contains
         write(*,*) '  Tests the equality d^T J m = m^T J^T d for any model and data.'
         write(*,*) '  Optionally, outputs J m and J^T d.'
         write(*,*) '[TEST_SENS]'
-        write(*,*) ' -S  rFile_Model rFile_dModel rFile_Data wFile_Data [wFile_Sens]'
+        write(*,*) ' -S  rFile_Model rFile_dModel rFile_Data wFile_Data [rFile_fwdCtrl]'
         write(*,*) '  Multiplies by the full Jacobian, row by row, to get d = J m.'
         write(*,*) '  Compare to the output of [MULT_BY_J] to test [COMPUTE_J]'
         write(*,*)
@@ -393,6 +395,9 @@ Contains
            write(0,*) 'OR'
            write(0,*) 'Usage: -I NLCG rFile_Model rFile_Data [rFile_invCtrl rFile_fwdCtrl]'
            write(0,*)
+           write(*,*) 'NOTE: NLCG can be replaced with DCG or LBFGS to '
+           write(*,*) '      select a different inverse algorithm'
+           write(0,*)
            write(0,*) 'Here, rFile_invCtrl = the inversion control file in the format'
            write(0,*)
            write(0,*) 'Model and data output file name    : Example'
@@ -403,6 +408,9 @@ Contains
            write(0,*) 'Exit search when rms is less than  : 1.05'
            write(0,*) 'Exit when lambda is less than      : 1.0e-4'
            write(0,*) 'Maximum number of iterations       : 120'
+           write(0,*)
+           write(0,*) 'NOTE: change the maximum number of iterations to '
+           write(0,*) '    a value < 20 if DCG is the inverse algorithm'
            write(0,*)
            write(0,*) '      rFile_fwdCtrl = the forward solver control file in the format'
            write(0,*)
@@ -425,11 +433,11 @@ Contains
         else
            ctrl%search = temp(1)
            select case (ctrl%search)
-           case ('NLCG','DCG','Hybrid')
+           case ('NLCG','DCG','Hybrid','LBFGS')
               	! write(0,*) 'Inverse search ',trim(ctrl%search),' selected.'
            case default
-				write(0,*) 'Unknown inverse search. Usage: -I [NLCG | DCG | Hybrid]'
-				stop
+		write(0,*) 'Unknown inverse search. Usage: -I [NLCG | DCG | Hybrid | LBFGS]'
+		stop
            end select
 	       ctrl%rFile_Model = temp(2)
 	       ctrl%rFile_Data = temp(3)
@@ -443,8 +451,8 @@ Contains
             inquire(FILE=ctrl%rFile_invCtrl,EXIST=exists)
             if (.not. exists) then
             	! problem - invalid argument
-				write(0,*) 'Please specify a valid inverse control file or damping parameter'
-				stop
+		write(0,*) 'Please specify a valid inverse control file or damping parameter'
+		stop
             end if
           end if
         end if
@@ -457,8 +465,8 @@ Contains
             inquire(FILE=ctrl%rFile_fwdCtrl,EXIST=exists)
             if (.not. exists) then
             	! problem - invalid argument
-				write(0,*) 'Please specify a valid forward solver control file or misfit tolerance'
-				stop
+		write(0,*) 'Please specify a valid forward solver control file or misfit tolerance'
+		stop
             end if
           end if
         end if
@@ -471,8 +479,8 @@ Contains
             inquire(FILE=ctrl%rFile_dModel,EXIST=exists)
             if (.not. exists) then
             	! problem - invalid argument
-				write(0,*) 'Please specify a valid starting model file'
-				stop
+		write(0,*) 'Please specify a valid starting model file'
+		stop
             end if
         end if
 
@@ -680,7 +688,7 @@ Contains
 
       case (TEST_SENS) ! S
         if (narg < 4) then
-           write(0,*) 'Usage: -S  rFile_Model rFile_dModel rFile_Data wFile_Data [wFile_Sens]'
+           write(0,*) 'Usage: -S  rFile_Model rFile_dModel rFile_Data wFile_Data [rFile_fwdCtrl wFile_Sens]'
            stop
         else
            ctrl%rFile_Model = temp(1)
@@ -689,10 +697,10 @@ Contains
            ctrl%wFile_Data = temp(4)
         end if
         if (narg > 4) then
-           ctrl%wFile_Sens = temp(5)
+           ctrl%rFile_fwdCtrl = temp(5)
         end if
         if (narg > 5) then
-           ctrl%rFile_fwdCtrl = temp(6)
+           ctrl%wFile_Sens = temp(6)
         end if
 
       case default

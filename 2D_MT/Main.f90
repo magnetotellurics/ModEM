@@ -50,7 +50,7 @@ module Main
   !  storage for EM solutions
   type(solnVectorMTX_t), save            :: eAll
 
-  logical   :: write_model, write_data, write_EMsoln, write_EMrhs
+  logical                   :: write_model, write_data, write_EMsoln, write_EMrhs
 
 
 
@@ -97,6 +97,9 @@ Contains
 
 	else
 	  call warning('No input model parametrization')
+
+	  ! set up an empty grid to avoid segmentation faults in sensitivity tests
+          call create_grid(1,1,1,grid)
 	end if
 
 	!--------------------------------------------------------------------------
@@ -172,7 +175,7 @@ Contains
        sigma1 = sigma0
        call zero(sigma1)
 
-     case (TEST_GRAD)
+     case (TEST_GRAD, TEST_SENS)
          inquire(FILE=cUserDef%rFile_dModel,EXIST=exists)
          if (exists) then
              call deall_grid(grid)

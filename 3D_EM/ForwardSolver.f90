@@ -49,14 +49,14 @@ logical, save, public   :: BC_FROM_E0_FILE = .false.
 !=======================================================================
   type(rhsVectorMTX_t),save,public           ::  bAll
 
-!!  initialization routines (call Fwd version if no sensitivities are
-!!     are calculated).  Note that these routines are set up to
-!!    automatically manage memory and to figure out which initialization
-!!    (or reinitialization) steps are required (e.g., when the frequency
-!!    changes from the previous solver call, appropriate solver
-!!    coefficients are updated, matrices factored, etc.).  This
-!!    functionality needs to be maintained in implementations for new
-!!    problems!
+!  initialization routines (call Fwd version if no sensitivities are
+!     are calculated).  Note that these routines are set up to
+!    automatically manage memory and to figure out which initialization
+!    (or reinitialization) steps are required (e.g., when the frequency
+!    changes from the previous solver call, appropriate solver
+!    coefficients are updated, matrices factored, etc.).  This
+!    functionality needs to be maintained in implementations for new
+!    problems!
 
 !=======================================================================
 !Mar. 13, 2011============== Special Variable added for CSEM calculation 
@@ -101,18 +101,18 @@ subroutine Interpolate_BC(grid)
   integer       :: iTx,ix,iy,iz
   
 
-	!In case of interpolating the BC from eAll_larg   
-	! If eAll_ larg solution is already allocated, then use that to interpolate the BC from it
+  !In case of interpolating the BC from eAll_larg   
+  ! If eAll_ larg solution is already allocated, then use that to interpolate the BC from it
      
-	  if (eAll_larg%allocated) then
-           write(15,*) ' Start interploating',grid%nx,grid%ny,grid%nz
-		call Interpolate_BC_from_E_soln (eAll_larg,Larg_Grid,Grid)
+  if (eAll_larg%allocated) then
+  	write(15,*) ' Start interpolating',grid%nx,grid%ny,grid%nz
+	call Interpolate_BC_from_E_soln (eAll_larg,Larg_Grid,Grid)
         !Once we are ready from eAll_larg, deallocate it, and keep track, that BC_from_file are already Initialized.
         call deall(eAll_larg)
         call deall_grid(Larg_Grid)
-         BC_from_file_Initialized=.true.
-      end if
-        write(15,*) ' End interploating',BC_from_file(1)%yXMin(10,11)
+        BC_from_file_Initialized=.true.
+  end if
+  write(15,*) ' End interpolating',BC_from_file(1)%yXMin(10,11)
   
 
 
@@ -556,7 +556,7 @@ end if
                 elseif (NESTED_BC) then
                     ! The BC are already computed from a larger grid for all transmitters and modes and stored in BC_from_file.
                     ! Overwrite BC with BC_from_file.
-                    ! Note: Right now we are using the same period layout for both grid.
+                    ! Note [NM]: Right now we are using the same period layout for both grid.
                     ! This why, it is enough to know the period and mode index to pick up the BC from BC_from_file vector.
                     write (*,'(a12,a35,a12,i4,a15,i2)') node_info, 'Setting the BC from nested E0 file ', &
                         ' for period ',iTx,' & mode # ',iMode
@@ -641,20 +641,22 @@ end if
 		  
 elseif (txDict(iTx)%Tx_type=='MT') then
    !call fwdSetup(iTx,e0,b0)
-   do iMode = 1,e0%nPol
-      ! compute boundary conditions for polarization iMode
-      !   uses cell conductivity already set by updateCond
-      !call setBound(iTx,e0%Pol_index(iMode),e0%pol(imode),b0%bc)
-      ! NOTE that in the MPI parallelization, e0 may only contain a single mode;
-      ! mode number is determined by Pol_index, NOT by its order index in e0
-      ! ... but b0 uses the same fake indexing as e0
-      write (*,'(a12,a12,a3,a20,i4,a2,es13.6,a15,i2)') node_info, 'Solving the ','FWD', &
+   	do iMode = 1,e0%nPol
+		! compute boundary conditions for polarization iMode
+		!   uses cell conductivity already set by updateCond
+		!call setBound(iTx,e0%Pol_index(iMode),e0%pol(imode),b0%bc)
+		! NOTE that in the MPI parallelization, e0 may only contain a single mode;
+		! mode number is determined by Pol_index, NOT by its order index in e0
+		! ... but b0 uses the same fake indexing as e0
+		write (*,'(a12,a12,a3,a20,i4,a2,es13.6,a15,i2)') node_info, 'Solving the ','FWD', &
 				' problem for period ',iTx,': ',(2*PI)/omega,' secs & mode # ',e0%Pol_index(iMode)
-      call FWDsolve3D(b0%b(iMode),omega,e0%pol(iMode))
-      write (6,*)node_info,'FINISHED solve, nPol',e0%nPol
-   enddo
-end if
-   
+		call FWDsolve3D(b0%b(iMode),omega,e0%pol(iMode))
+		write (6,*)node_info,'FINISHED solve, nPol',e0%nPol
+   	enddo
+   elseif
+    write(0,*) node_info,'Unknown FWD problem type',trim(txDict(iTx)%Tx_type),'; unable to run fwdSolve'
+   endif
+
    ! update pointer to the transmitter in solnVector
    e0%tx = iTx
 
@@ -682,21 +684,23 @@ end if
    call zero_solnVector(e)
    
 if (txDict(iTx)%Tx_type=='MT' .or. txDict(iTx)%Tx_type=='CSEM' ) then 
-   omega = txDict(iTx)%omega
-   period = txDict(iTx)%period
-   do iMode = 1,e%nPol
-      comb%b(e%Pol_index(iMode))%adj = FWDorADJ
-      write (*,'(a12,a12,a3,a20,i4,a2,es13.6,a15,i2)') node_info,'Solving the ',FWDorADJ, &
+   	omega = txDict(iTx)%omega
+   	period = txDict(iTx)%period
+   	do iMode = 1,e%nPol
+      		comb%b(e%Pol_index(iMode))%adj = FWDorADJ
+      		write (*,'(a12,a12,a3,a20,i4,a2,es13.6,a15,i2)') node_info,'Solving the ',FWDorADJ, &
 				' problem for period ',iTx,': ',(2*PI)/omega,' secs & mode # ',e%Pol_index(iMode)
-      call FWDsolve3d(comb%b(e%Pol_index(iMode)),omega,e%pol(imode))
-   enddo
+      		call FWDsolve3d(comb%b(e%Pol_index(iMode)),omega,e%pol(imode))
+   	enddo
 elseif (txDict(iTx)%Tx_type=='DC') then
       AdjFWD_DC='Adj_DC'
      call extract_RHS_for_Adjoint_DC (comb)
 	 call FWDsolve3D_DC
      call put_v_in_e(e)
      !call de_ini_private_data_DC
-end if
+   elseif
+    write(0,*) node_info,'Unknown FWD problem type',trim(txDict(iTx)%Tx_type),'; unable to run sensSolve'
+   endif
 
    ! update pointer to the transmitter in solnVector
    e%tx = iTx

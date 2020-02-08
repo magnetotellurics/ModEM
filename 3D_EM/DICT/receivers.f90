@@ -24,7 +24,7 @@ module receivers
      ! x gives location of EM measurements;
   	 ! x(1) points North, x(2) points East, x(3) points down
 
-  	 ! NM: add addtional vector to store the location of a refernace station.
+  	 ! NM: add addtional vector to store the location of a reference station.
      ! Same as x: r(1) points North, r(2) points East, r(3) points down
      real (kind=prec)                   ::  x(3)
      real (kind=prec)                   ::  r(3)
@@ -96,6 +96,7 @@ function update_rxDict(loc,id,loc_ref,id_ref) result (iRx)
      ! Create a receiver for this location
      new%id = id
      new%x  = loc
+
      if (present(loc_ref)) then
      	new%r  = loc_ref
      	new%id_ref=id_ref

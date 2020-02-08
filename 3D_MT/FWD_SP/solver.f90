@@ -1,12 +1,17 @@
 ! *****************************************************************************
 ! module containing iterative equation solvers. Uses operators and
 ! pre-conditioners defined in SG3DFWC1 to solve equations for divergence
-! correction, induction operator. Source code is completely general; only the
+! correction, induction operator. 
+! Source code is completely general; only the
 ! module interface is  specific to implementation of operators in SG3DFWC1
+! 
+! modified to translate cvectors into normal arrays to be used with sparse 
+! matrix operation
 module solver
 
-   use math_constants	! math/ physics constants
+   use math_constants   ! math/ physics constants
    use utilities, only: isnan
+   use spoptools        ! for sparse-matrix operations
    !use griddef	! staggered grid definitions
    !use sg_scalar
    !use sg_vector
@@ -18,11 +23,11 @@ module solver
      ! maximum number of iterations in one call to iterative solver
      integer                                               :: maxIt
      ! convergence criteria: return from solver if relative error < tol
-     real (kind=prec)                              :: tol
+     real (kind=prec)                                      :: tol
      ! actual number of iterations before return
      integer                                               :: niter
      ! relative error for each iteration
-     real (kind=prec), pointer, dimension(:)   :: rerr
+     real (kind=prec), pointer, dimension(:)               :: rerr
      ! logical variable indicating if algorithm "failed"
      logical                                               :: failed = .false.
   end type solverControl_t
@@ -31,169 +36,165 @@ Contains
 
 
 ! *****************************************************************************
-! Solver contains subroutines for: a) PCG- a quasi-generic pre-conditioned
-! congugate gradient, and b) QMR - Quasi-Minimal Residual method
-! (pre-conditioned, no look-ahead)
+! Solver contains subroutines for: 
+! a) PCG- a quasi-generic pre-conditioned congugate gradient, and 
+! b) QMR - Quasi-Minimal Residual method (pre-conditioned, no look-ahead)
+! c) BICG - bicgstab Stablilized Biconjugate Gradient method
 ! *****************************************************************************
 
-subroutine PCG(b,x, PCGiter)
+subroutine PCG(b,x,PCGiter)
   ! Purpose: a quasi-generic pre-conditioned conjugate gradient
-  ! routine, set up for solving DivCgrad phiSOL = phiEMrhs using
-  ! routines in divCor.  Actual code is generic, but the interface
-  ! is not
-
-   ! inteface..............
-   ! redefining some of the interfaces for our convenience (locally)
-   ! generic routines for scalar operations on corner/ center nodes
-   ! on a staggered grid
-    use sg_scalar
-
-  ! routines for divergence correction
-  use modeloperator3D, only:  A => DivCgrad, Minv => DivCgradILU
+  ! routine.
+  ! solves Ax = b
+  ! 
+  ! modified to translate cvectors/scalars into normal arrays to be used with 
+  ! sparse matrix operation. That said, the implementation is still the old way
+  ! used in matrix free method:
+  ! the real A is already defined in the DivCgrad function for divergence 
+  ! correction.
+    use modeloperator3d, only: A => DivCgrad, Minv => DivCgradILU
 
   implicit none
-  type (cscalar), intent(in)	        :: b
-  type (cscalar), intent(inout)	        :: x
-  type (solverControl_t), intent(inout) 	:: PCGiter
+  complex (kind=prec), intent(in), dimension(:)    :: b
+  complex (kind=prec), intent(inout),dimension(:)  :: x
+  type (solverControl_t), intent(inout)            :: PCGiter
 
   ! local variables
-  type (cscalar)	:: r,s,p,q
-  complex(kind=prec)	:: beta,alpha,delta,deltaOld
-  complex(kind=prec)	:: bnorm, rnorm
-  integer		:: i
+  complex(kind=prec),allocatable,dimension(:)  :: r,s,p,q
+  complex(kind=prec)    :: beta,alpha,delta,deltaOld
+  real(kind=prec)       :: bnorm, rnorm
+  integer               :: i
+  integer               :: xsize
 
-  if (.not.b%allocated) then
-      write(0,*) 'b in PCG not allocated yet'
-      stop
-  end if
 
-  if (.not.x%allocated) then
-      write(0,*) 'x in PCG not allocated yet'
-      stop
-  end if
-
+  xsize=size(x,1)
   ! Allocation of r, z, p, q
-  Call create(x%grid, r, x%gridType)
-  Call create(x%grid, s, x%gridType)
-  Call create(x%grid, p, x%gridType)
-  Call create(x%grid, q, x%gridType)
+  ! residual
+  allocate(r(xsize))
+  allocate(s(xsize))
+  allocate(p(xsize))
+  allocate(q(xsize))
 
-  Call A(x,r)
-  Call linComb(C_ONE,b,C_MinusOne,r,r)
-  bnorm = sqrt(dotProd(b,b))
-  rnorm = sqrt(dotProd(r,r))
+  ! r = b-A*x
+  call A(x,r) ! in DivCorr, x should be zero (no initial guess)
+  r = b - r   ! hence r should be indentical to b
+  bnorm = sqrt(dot_product(b,b))
+  if (isnan(bnorm)) then
+  ! this usually means an inadequate model, in which case Maxwell's fails
+      write(0,*) 'Error: b in PCG contains NaNs; exiting...'
+      stop
+  endif
+  rnorm = sqrt(dot_product(r,r))
   i = 1
-  PCGiter%rerr(i) = real(rnorm/bnorm)
+  PCGiter%rerr(i) =real(rnorm/bnorm)
 
   loop: do while ((PCGiter%rerr(i).gt.PCGiter%tol).and.(i.lt.PCGiter%maxIt))
-     Call Minv(r,s)
-     delta = dotProd(r,s)
+     ! precondiction first
+     call Minv(r,s)
+     delta = dot_product(r,s)
      if(i.eq.1) then
         p = s
      else
         beta = delta/deltaOld
-        Call linComb(C_ONE,s,beta,p,p)
+        p = s + beta*p
      end if
-
-     Call A(p,q)
-     alpha = delta/dotProd(p,q)
-     Call scMultAdd(alpha,p,x)
-     Call scMultAdd(-alpha,q,r)
+     call A(p,q)
+     alpha = delta/dot_product(p,q)
+     x = x + p * alpha
+     r = r - q * alpha
      deltaOld = delta
      i = i + 1
-     rnorm = sqrt(dotProd(r,r))
+     rnorm = sqrt(dot_product(r,r))
+     if (isnan(rnorm)) then
+         write(0,*) 'Error: residual in PCG contains NaNs; exiting...'
+         stop
+     endif
      PCGiter%rerr(i) = real(rnorm/bnorm)
-
   end do loop
 
   PCGiter%niter = i
 
-  ! deallocate all the work arrays
-  Call deall(r)
-  Call deall(s)
-  Call deall(p)
-  Call deall(q)
+  ! explicitly deallocate the temperary work arrays
+  ! seems not necesary in fortran
+  deallocate(r)
+  deallocate(s)
+  deallocate(p)
+  deallocate(q)
 
 end subroutine PCG ! PCG
 
 
 ! *****************************************************************************
-subroutine QMR(b,x, QMRiter)
+subroutine QMR(b,x,QMRiter)
   ! Purpose ... a quasi-minimal residual method routine, set up for solving
-  ! A x = b using routines in  multA. Actual code is generic, but interface
+  ! A x = b using routines in  mult_A. Actual code is generic, but interface
   ! is fairly specific
 
   ! interface...........
   ! redefining some of the interfaces for our convenience (locally)
   ! generic routines for vector operations for edge/ face nodes
   ! in a staggered grid
-  use sg_vector
-
-  ! routines for solving Maxwell's equation
-  use modeloperator3D, only: A => multA_N, M1solve, M2solve
+  ! 
+  ! modified to be used with sparse matrix operators
+  ! Again this is not that generic as the A is already defined in Mult_Aii... 
+  use modeloperator3d, only: A => mult_Aii, M1solve => PC_Lsolve,        &
+     &                         M2solve => PC_Usolve
 
   implicit none
   !  b is right hand side
-  type (cvector), intent(in)      	:: b
+  complex (kind=prec), intent(in), dimension(:)    :: b
   !  solution vector is x ... on input is provided with the initial
-  !   guess, on output is the most recent iterate
-  type (cvector), intent(inout)   	:: x
-  type (solverControl_t), intent(inout)	:: QMRiter
+  !  guess, on output is the most recent iterate
+  complex (kind=prec), intent(inout),dimension(:)  :: x
+  type (solverControl_t), intent(inout) :: QMRiter
 
    ! local variables
-  type (cvector)      	    :: AX,R,VT
-  type (cvector)	    :: Y,Z,WT,V,W,YT,ZT,P,Q,PT,D,S
-  logical                   :: adjoint, ilu_adjt
+  complex(kind=prec),allocatable,dimension(:)  :: XMIN,R,VT
+  complex(kind=prec),allocatable,dimension(:)  :: Y,Z,WT,V,W,YT,ZT
+  complex(kind=prec),allocatable,dimension(:)  :: P,Q,PT,D,S
   complex (kind=prec)          :: ETA,PDE,EPSIL,RDE,BETA,DELTA,RHO
   complex (kind=prec)          :: PSI,RHO1,GAMM,GAMM1,THET,THET1,TM2
-  complex (kind=prec)          :: bnorm,rnorm
+  real (kind=prec)             :: bnorm,rnorm,rnormin
   complex (kind=prec)          :: rhoInv,psiInv
-  integer                   :: iter
+  integer                      :: iter, xsize
+  logical                      :: adjoint, ilu_adjt
 
-  if (.not.b%allocated) then
-      write(0,*) 'Error: b in QMR not allocated yet'
-      stop
-  end if
-
-  if (.not.x%allocated) then
-      write(0,*) 'Error: x in QMR not allocated yet'
-      stop
-  end if
-
+  xsize=size(x,1)
   ! Allocate work arrays
-  Call create(x%grid, AX, x%gridType)
-  Call create(x%grid, R, x%gridType)
-  Call create(x%grid, VT, x%gridType)
-  Call create(x%grid, Y,x%gridType)
-  Call create(x%grid, Z,x%gridType)
-  Call create(x%grid, WT,x%gridType)
-  Call create(x%grid, V,x%gridType)
-  Call create(x%grid, W,x%gridType)
-  Call create(x%grid, YT,x%gridType)
-  Call create(x%grid, ZT,x%gridType)
-  Call create(x%grid, P,x%gridType)
-  Call create(x%grid, Q,x%gridType)
-  Call create(x%grid, PT,x%gridType)
-  Call create(x%grid, D,x%gridType)
-  Call create(x%grid, S,x%gridType)
+  allocate(XMIN(xsize))
+  allocate(R(xsize))
+  allocate(VT(xsize))
+  allocate(Y(xsize))
+  allocate(Z(xsize))
+  allocate(WT(xsize))
+  allocate(V(xsize))
+  allocate(W(xsize))
+  allocate(YT(xsize))
+  allocate(ZT(xsize))
+  allocate(P(xsize))
+  allocate(Q(xsize))
+  allocate(PT(xsize))
+  allocate(D(xsize))
+  allocate(S(xsize))
 
   ! NOTE: this iterative solver is QMR without look-ahead
   ! patterned after the scheme given on page 24 of Barrett et al.
   ! "Templates for the solution of linear systems of equations:
   ! Building blocks for iterative methods"
   ! Note that there are a couple of small differences, due to
-  ! the fact that our system is complex (agrees with
-  ! matlab6 version of qmr)
+  ! the fact that our system is complex
 
+  ! R=b-Ax 
   adjoint = .false.
-  ! R is Ax
-  Call A(x, adjoint, R)
-  ! b - Ax, for inital guess x, that has been inputted to the routine
-  Call linComb(C_ONE,b,C_MinusOne,R,R)
+  call A(x,adjoint,R)
+  ! R= b - Ax, for inital guess x, that has been inputted to the routine
+  R = b - R
 
   ! Norm of rhs, residual
-  bnorm = CDSQRT(dotProd(b, b))
-  rnorm = CDSQRT(dotProd(R, R))
+  bnorm = CDSQRT(dot_product(b, b))
+  rnorm = CDSQRT(dot_product(R, R))
+  rnormin = rnorm
+  XMIN = x
 
   ! this usually means an inadequate model, in which case Maxwell's fails
   if (isnan(abs(bnorm))) then
@@ -204,16 +205,20 @@ subroutine QMR(b,x, QMRiter)
   !  iter is iteration counter
   iter = 1
   QMRiter%rerr(iter) = real(rnorm/bnorm)
-  !L 
+  ! write(6,*) 'initial residual:', QMRiter%rerr(iter) 
+
+  ! L
   VT = R
   ilu_adjt = .false.
-  Call M1solve(VT,ilu_adjt,Y)
-  RHO = CDSQRT(dotProd(Y,Y))
-  !U
+  call M1solve(VT,ilu_adjt,Y)
+!  Y = VT
+  RHO = CDSQRT(dot_product(Y,Y))
+  ! U
   WT = R
   ilu_adjt = .true.
-  Call M2solve(WT,ilu_adjt,Z)
-  PSI  = CDSQRT(dotProd(Z,Z))
+  call M2solve(WT,ilu_adjt,Z)
+!  Z = WT
+  PSI  = CDSQRT(dot_product(Z,Z))
   GAMM = C_ONE
   ETA  = C_MinusONE
 
@@ -225,17 +230,17 @@ subroutine QMR(b,x, QMRiter)
         QMRiter%failed = .true.
         write(0,*) 'QMR FAILED TO CONVERGE : RHO'
         write(0,*) 'QMR FAILED TO CONVERGE : PSI'
-        exit
+        stop
       endif
 
       rhoInv = (1/RHO)*cmplx(1.0, 0.0, 8)
       psiInv = (1/PSI)*cmplx(1.0, 0.0, 8)
-      Call scMult(rhoInv, VT, V)
-      Call scMult(psiInv, WT, W)
-      Call scMult(rhoInv, Y, Y)
-      Call scMult(psiInv, Z, Z)
+      V = VT * rhoInv
+      W = WT * psiInv
+      Y = Y * rhoinv
+      Z = Z * psiinv
 
-      DELTA = dotProd(Z,Y)
+      DELTA = dot_product(Z,Y)
       if(DELTA.eq.C_ZERO) then
         QMRiter%failed = .true.
         write(0,*) 'QMR FAILS TO CONVERGE : DELTA'
@@ -243,24 +248,26 @@ subroutine QMR(b,x, QMRiter)
       endif
 
       ilu_adjt = .false.
-      Call M2solve(Y,ilu_adjt,YT)
+      call M2solve(Y,ilu_adjt,YT)
+!      YT = Y
       ilu_adjt = .true.
       Call M1solve(Z,ilu_adjt,ZT)
+!      ZT = Z
 
       if (iter.eq.1) then
         P = YT
         Q = ZT
       else
-      	! these calculations are only done when iter greater than 1
-        PDE = -PSI*DELTA/EPSIL
-        RDE = -RHO*CONJG(DELTA/EPSIL)
-        Call linComb(C_ONE,YT,PDE,P,P)
-        Call linComb(C_ONE,ZT,RDE,Q,Q)
+      ! these calculations are only done when iter greater than 1
+        PDE = PSI*DELTA/EPSIL
+        RDE = RHO*CONJG(DELTA/EPSIL)
+        P = YT - PDE * P
+        Q = ZT - RDE * Q
       endif
 
       adjoint = .false.
       Call A(P, adjoint, PT)
-      EPSIL = dotProd(Q,PT)
+      EPSIL = dot_product(Q,PT)
       if (EPSIL.eq.C_ZERO) then
         QMRiter%failed = .true.
         write(0,*) 'QMR FAILED TO CONVERGE : EPSIL'
@@ -273,20 +280,22 @@ subroutine QMR(b,x, QMRiter)
         write(0,*) 'QMR FAILED TO CONVERGE : BETA'
         exit
       endif
-      Call linComb(C_ONE,PT,-BETA,V,VT)
+      VT = PT - BETA * V
 
       RHO1 = RHO
       ilu_adjt = .false.
       Call M1solve(VT, ilu_adjt, Y)
-      RHO = CDSQRT(dotProd(Y,Y))
+!      Y = VT
+      RHO = CDSQRT(dot_product(Y,Y))
 
       adjoint = .true.
       Call A(Q, adjoint, WT)
-      Call scMultAdd(-conjg(BETA),W,WT)
+      WT = WT - conjg(BETA) * W
 
       ilu_adjt = .true.
       Call M2solve(WT,ilu_adjt,Z)
-      PSI = CDSQRT(dotProd(Z,Z))
+!      Z = WT
+      PSI = CDSQRT(dot_product(Z,Z))
 
       if (iter.gt.1) then
         THET1 = THET
@@ -301,113 +310,126 @@ subroutine QMR(b,x, QMRiter)
 
       ETA = -ETA*RHO1*GAMM*GAMM/(BETA*GAMM1*GAMM1)
       if (iter.eq.1) then
-        Call scMult(ETA, P, D)
-        Call scMult(ETA, PT, S)
+        D = ETA * P
+        S = ETA * PT
       else
         TM2 = THET1*THET1*GAMM*GAMM
-        Call linComb(ETA,P,TM2,D,D)
-        Call linComb(ETA,PT,TM2,S,S)
+        D =  ETA*P + TM2*D
+        S =  ETA*PT + TM2*S
       endif
 
-      Call scMultAdd(C_ONE,D,x)
-      Call scMultAdd(C_MinusONE,S,R)
-      ! A new AX
-      rnorm = CDSQRT(dotProd(R,R))
+      x = x + D
+      R = R - S
+      rnorm = CDSQRT(dot_product(R,R))
+      if (rnorm .lt. rnormin) then! update the best solution so far
+         rnormin = rnorm
+         XMIN = X
+      end if
       iter = iter + 1
 
       ! Keeping track of errors
       ! QMR book-keeping between divergence correction calls
       QMRiter%rerr(iter) = real(rnorm/bnorm)
+      !write(6,*) 'iter # ', iter, 'residual:', QMRiter%rerr(iter)
   end do loop
 
   QMRiter%niter = iter
+  ! x = XMIN ! use the last instead of the best
+  QMRiter%rerr(iter) = real(rnormin/bnorm)
 
   ! deallocate all the work arrays
-  Call deall(AX)
-  Call deall(R)
-  Call deall(VT)
-  Call deall(Y)
-  Call deall(Z)
-  Call deall(WT)
-  Call deall(V)
-  Call deall(W)
-  Call deall(YT)
-  Call deall(ZT)
-  Call deall(P)
-  Call deall(Q)
-  Call deall(PT)
-  Call deall(D)
-  Call deall(S)
+  ! seems not necesary here
+  deallocate(XMIN)
+  deallocate(R)
+  deallocate(VT)
+  deallocate(Y)
+  deallocate(Z)
+  deallocate(WT)
+  deallocate(V)
+  deallocate(W)
+  deallocate(YT)
+  deallocate(ZT)
+  deallocate(P)
+  deallocate(Q)
+  deallocate(PT)
+  deallocate(D)
+  deallocate(S)
 
 end subroutine qmr ! qmr
 
 ! *****************************************************************************
-subroutine BICG(b,x,BICGiter)
+subroutine BICG(b,x,BICGiter,adjt)
   ! Stablized version of BiConjugate Gradient, set up for solving
   ! A x = b using routines in  mult_Aii.
   ! solves for the interior (edge) field
   !
-  ! backported from the Sparse matrix version, which is modified from my matlab 
-  ! version of BICGstab...
+  ! modified from my matlab version of BICGstab...
   ! so the naming might sound a little different from conventional ones
-
+  ! also added the optional adjoint to solve adjoint system A^Tx = b
+  ! 
+  ! NOTE: BICG actually performs two sub (or half) line searches within a 
+  !       iteration, but here we only store the relerr for the second sub
+  !       just to be compatitive with QMR
+  !
+  ! 
   ! interface...........
   ! redefining some of the interfaces for our convenience (locally)
   ! generic routines for vector operations for edge/ face nodes
   ! in a staggered grid
   !
-  ! NOTE: this has not been extensively tested! - I believe it feels a 
+  ! NOTE: this has not been extensively tested - I believe it feels a 
   ! little unstable (dispite the name)...
   ! if you have time reading this, test it!
-  use sg_vector
-  ! routines for solving Maxwell's equation
-  use modeloperator3D, only: A => multA_N, M1solve, M2solve
+  use modeloperator3d, only: A => mult_Aii, M1solve => PC_Lsolve,        &
+     &                                      M2solve => PC_Usolve
+
   implicit none
   !  b is right hand side
-  type (cvector), intent(in)            :: b
+  complex (kind=prec), intent(in), dimension(:)    :: b
   !  solution vector is x ... on input is provided with the initial
-  !   guess, on output is the most recent iterate
-  type (cvector), intent(inout)         :: x
-  type (solverControl_t), intent(inout) :: BICGiter
+  !  guess, on output is the iterate with smallest residual. 
+  !
+  complex (kind=prec), intent(inout),dimension(:)  :: x
+  type (solverControl_t), intent(inout)            :: BICGiter
+  logical,intent(in),optional                      :: adjt
 
-   ! local variables
-  type (cvector)            :: R,RT,V,T
-  type (cvector)            :: P,PT,PH,S,ST,SH,AX
-  type (cvector)            :: xhalf,xmin
+  ! local variables
+  complex (kind=prec),allocatable,dimension(:)  :: R, RT, V,T
+  complex (kind=prec),allocatable,dimension(:)  :: P,PT,PH,S,ST,SH,AX
+  complex (kind=prec),allocatable,dimension(:)  :: xhalf,xmin
   real    (kind=prec)                           :: rnorm, bnorm, rnormin, btol
   complex (kind=prec)                           :: RHO, ALPHA, BETA, OMEGA
   complex (kind=prec)                           :: RTV,TT,RHO1
-  integer                                       :: iter, imin
+  integer                                       :: iter, xsize, imin
   integer                                       :: maxiter
   logical                                       :: adjoint, ilu_adjt, converged
-  if (.not.b%allocated) then
-      write(0,*) 'Error: b in BICG not allocated yet'
-      stop
-  end if
-
-  if (.not.x%allocated) then
-      write(0,*) 'Error: x in BICG not allocated yet'
-      stop
-  end if
-
+ 
+  if (present(adjt)) then
+      adjoint = adjt
+      ilu_adjt = adjt
+  else
+      adjoint = .false.
+      ilu_adjt = .false.
+  endif
+  xsize = size(x,1)
   ! allocate the local variables
-  Call create(x%grid, xhalf, x%gridType)
-  Call create(x%grid, xmin, x%gridType)
-  Call create(x%grid, AX, x%gridType)
-  Call create(x%grid, R,x%gridType)
-  Call create(x%grid, RT,x%gridType)
-  Call create(x%grid, P,x%gridType)
-  Call create(x%grid, PT,x%gridType)
-  Call create(x%grid, PH,x%gridType)
-  Call create(x%grid, S,x%gridType)
-  Call create(x%grid, ST,x%gridType)
-  Call create(x%grid, SH,x%gridType)
-  Call create(x%grid, V,x%gridType)
-  Call create(x%grid, T,x%gridType)
+  allocate(xhalf(xsize))
+  allocate(xmin(xsize))
+  allocate(AX(xsize))
+  allocate(R(xsize))
+  allocate(RT(xsize))
+  allocate(P(xsize))
+  allocate(PT(xsize))
+  allocate(PH(xsize))
+  allocate(S(xsize))
+  allocate(ST(xsize))
+  allocate(SH(xsize))
+  allocate(V(xsize))
+  allocate(T(xsize))
 
   ! Norm of rhs
-  bnorm = SQRT(dotProd(b, b))
-  if (isnan(abs(bnorm))) then
+  bnorm = SQRT(dot_product(b, b))
+  if (isnan(bnorm)) then
   ! this usually means an inadequate model, in which case Maxwell's fails
       write(0,*) 'Error: b in BICG contains NaNs; exiting...'
       stop
@@ -420,36 +442,37 @@ subroutine BICG(b,x,BICGiter)
       return
   endif
   ! now calculate the (original) residual
-  adjoint = .false.
   call A(x,adjoint,R)
   ! R= b - Ax, for inital guess x, that has been inputted to the routine
-  rnorm = CDSQRT(dotProd(R, R))
-  Call linComb(C_ONE,b,C_MinusOne,R,R)
+  rnorm = CDSQRT(dot_product(R, R))
+  R = b - R
   ! Norm of residual
-  rnorm = CDSQRT(dotProd(R, R))
+  rnorm = CDSQRT(dot_product(R, R))
   btol = BICGiter%tol * bnorm
   if ( rnorm .le. btol ) then ! the first guess is already good enough
      ! returning
       BICGiter%niter=1
       BICGiter%failed=.false.
-      BICGiter%rerr(1)=rnorm/bnorm
+      BICGiter%rerr(1)=real(rnorm/bnorm)
      return 
   end if 
 !================= Now start configuring the iteration ===================!
   ! the adjoint (shadow) residual
   rnormin = rnorm
-  BICGiter%rerr(1) = rnormin/bnorm
-  write(6,*) 'initial residual: ', BICGiter%rerr(1)
+  BICGiter%rerr(1) = real(rnormin/bnorm)
+  ! write(6,*) 'initial residual',  BICGiter%rerr(1)
   converged = .false.
-  maxiter = BICGiter%maxit
+  maxiter = BICGiter%maxit 
   imin = 0
   RHO = C_ONE
   OMEGA = C_ONE
-  RT = R ! use the overloaded =
+  RT = R
+  xmin = x
+  imin = 1
 !============================== looooops! ================================!
   do iter= 1, maxiter
       RHO1 = RHO
-      RHO = dotProd(RT, R)
+      RHO = dot_product(RT,R)
       if (RHO .eq. 0.0) then
           BICGiter%failed = .true.
           exit
@@ -462,20 +485,15 @@ subroutine BICG(b,x,BICGiter)
               BICGiter%failed = .true.
               exit
           end if
-          ! P= R + BETA * (P - OMEGA * V);
-          Call linComb(C_One,P,-OMEGA,V,P)
-          call linComb(C_One,R,BETA,P,P)
+          P= R + BETA * (P - OMEGA * V);
       end if 
       ! L
-      ilu_adjt = .false.
       call M1solve(P,ilu_adjt,PT)
       ! U
-      ilu_adjt = .false.
       call M2solve(PT,ilu_adjt,PH)
 !      PH = P
-      adjoint = .false.
       call A(PH,adjoint,V)
-      RTV = dotProd(RT, V)
+      RTV = dot_product(RT,V)
       if (RTV.eq.0.0) then
           BICGiter%failed = .true.
           exit
@@ -485,14 +503,12 @@ subroutine BICG(b,x,BICGiter)
           BICGiter%failed = .true.
           exit
       end if
-      ! xhalf = x + ALPHA*PH ! the first half of iteration      
-      call linComb(C_One,x,ALPHA,PH,xhalf)
-      adjoint = .false.
+      xhalf = x + ALPHA*PH ! the first half of iteration
       call A(xhalf,adjoint,AX)
-      call linComb(C_One,b,C_MinusOne,AX,AX)
-      rnorm = SQRT(dotProd(AX,AX))
-      BICGiter%rerr(iter)=rnorm/bnorm
-      
+      AX = b - AX
+      rnorm = CDSQRT(dot_product(AX,AX))
+      BICGiter%rerr(iter)=real(rnorm/bnorm)
+      ! write(6,*) 'iter # ',iter,' xhalf residual: ', BICGiter%rerr(2*iter-1)
       if (rnorm.lt.btol) then
           x = xhalf
           BICGiter%failed = .false.
@@ -505,34 +521,29 @@ subroutine BICG(b,x,BICGiter)
           xmin = xhalf
           imin = iter
       end if
-      ! S = R - ALPHA*V  !residual for the 0.5 x
-      call linComb(C_One,R,-ALPHA,V,S)
+      S = R - ALPHA*V  !residual for the 0.5 x
       ! L
-      ilu_adjt = .false.
       call M1solve(S,ilu_adjt,ST)
       ! U
-      ilu_adjt = .false.
       call M2solve(ST,ilu_adjt,SH)
-!     SH = S
-      adjoint = .false.
+!      SH = S
       call A(SH,adjoint,T)
-      TT = dotProd(T,T)
+      TT = dot_product(T,T)
       if (TT.eq.0.0) then
           BICGiter%failed = .true.
           exit
       end if
-      OMEGA = dotProd(T,S)/TT
+      OMEGA = dot_product(T,S)/TT
       if (OMEGA.eq.0.0) then
           BICGiter%failed = .true.
           exit
       end if
-      ! x = xhalf + OMEGA * SH  ! the second half (shadow) of iteration
-      call linComb(C_One,xhalf,OMEGA,SH,x)
-      adjoint = .false.
+      x = xhalf + OMEGA * SH  ! the second half of iteration
       call A(x,adjoint,AX)
-      call linComb(C_One,b,C_MinusOne,AX,AX)
-      rnorm = SQRT(dotProd(AX,AX))
-      BICGiter%rerr(iter) = rnorm / bnorm
+      AX = b - AX
+      rnorm = CDSQRT(dot_product(AX,AX))
+      BICGiter%rerr(iter) = real(rnorm / bnorm)
+      ! write(6,*) 'iter # ',iter,' x residual: ', BICGiter%rerr(2*iter)
       if (rnorm.lt.btol) then
           BICGiter%failed = .false.
           BICGiter%niter = iter
@@ -544,33 +555,31 @@ subroutine BICG(b,x,BICGiter)
           xmin = x
           imin = iter
       end if
-      !R = S - OMEGA * T  !residual for the 1.0 x
-      call linComb(C_One,S,-OMEGA,T,R)
+      R = S - OMEGA * T  !residual for the 1.0 x
   end do
  
-  if (.not. converged) then
+  if (.not. converged) then 
       ! it should be noted that this is the way my matlab version works
       ! the bicg will return the 'best' (smallest residual) iteration
-      x = xmin; !comment this line
+      x = xmin;  ! comment this line 
       BICGiter%niter=BICGiter%maxit
-      BICGiter%rerr(BICGiter%maxit) = BICGiter%rerr(imin) ! and this line
-      ! to use the last iteration result instead of the 'best' 
+      BICGiter%rerr(BICGiter%maxit) = BICGiter%rerr(imin)  ! and this line
+      ! to use the last iteration result instead of the 'best'
   end if
-  Call deall(xhalf)
-  Call deall(xmin)
-  Call deall(AX)
-  Call deall(R)
-  Call deall(RT)
-  Call deall(P)
-  Call deall(PT)
-  Call deall(PH)
-  Call deall(S)
-  Call deall(ST)
-  Call deall(SH)
-  Call deall(V)
-  Call deall(T)
 
+  deallocate(xhalf)
+  deallocate(xmin)
+  deallocate(AX)
+  deallocate(R)
+  deallocate(RT)
+  deallocate(P)
+  deallocate(PT)
+  deallocate(PH)
+  deallocate(S)
+  deallocate(ST)
+  deallocate(SH)
+  deallocate(V)
+  deallocate(T)
 end subroutine BICG ! BICG
 
-
-end module solver ! solver
+end module solver ! spsolver

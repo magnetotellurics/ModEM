@@ -25,8 +25,11 @@ module DataIO
 	MODULE PROCEDURE write_Z_list
   end interface
 
+  interface deall_dataFileInfo
+    MODULE PROCEDURE deall_fileInfo
+  end interface
 
-  public     :: read_dataVectorMTX, write_dataVectorMTX
+  public     :: read_dataVectorMTX, write_dataVectorMTX, deall_dataFileInfo
 
   type :: data_file_block
 
@@ -34,7 +37,7 @@ module DataIO
       ! there is one entry per each transmitter type and data type... (iTxt,iDt)
       ! if there are multiple data blocks of the same transmitter & data types,
       ! the last value is used.
-      character(120) :: info_in_file
+      character(200) :: info_in_file
       character(20)  :: sign_info_in_file
       integer        :: sign_in_file
       character(20)  :: units_in_file
@@ -76,7 +79,7 @@ Contains
 
     integer, intent(in)         :: txType
     integer, intent(in)         :: dataType
-    character(120)              :: header
+    character(200)              :: header
 
     select case (dataType)
 
@@ -176,7 +179,7 @@ Contains
     logical, allocatable            :: exist(:) ! (ncomp)
     character(2)                    :: temp = '> '
     character(50)                   :: siteid,ref_siteid,compid
-    character(20)                   :: sitename
+    character(1000)                 :: strtemp
     integer                         :: iTxt,iTx,iRx,iDt,icomp,i,j,k,istat,ios,nBlocks
     real(8)                         :: x(3),ref_x(3), Period,SI_factor,large,Xx(2)
     real(8)                         :: lat,lon,ref_lat,ref_lon
@@ -235,10 +238,12 @@ Contains
 
       ! write the data type header
       call compact(fileInfo(iTxt,iDt)%info_in_file)
+      write(strtemp,*) adjustl(trim(fileInfo(iTxt,iDt)%info_in_file))
       write(ioDat,'(a32)',advance='no') '# ModEM impedance responses for '
-      write(ioDat,'(a100)',iostat=ios) adjustl(trim(fileInfo(iTxt,iDt)%info_in_file))
+      write(ioDat,*,iostat=ios) strtemp(1:100)
+      write(strtemp,*) adjustl(trim(DataBlockHeader(iTxt,iDt)))
       write(ioDat,'(a2)',advance='no') '# '
-      write(ioDat,'(a100)',iostat=ios) adjustl(trim(DataBlockHeader(iTxt,iDt)))
+      write(ioDat,*,iostat=ios) strtemp(1:100)
 
       ! the new format is critical for JOINT modeling and inversion; otherwise, can stick
       ! to the old format for backwards compatibility. Will always write in the same format
@@ -704,7 +709,7 @@ end subroutine write_Z_list
                 ! For now, make lat & lon part of site ID; could use directly in the future
                 
                 if (FindStr(gridCoords, CARTESIAN)>0) then
-                write(siteid,'(a20,2f9.3)') code,lat,lon
+                    write(siteid,'(a20,2f9.3)') code,lat,lon
                    
                 elseif (FindStr(gridCoords, SPHERICAL)>0) then
                 write(siteid,'(a20,2f15.3)') code,x(1),x(2)

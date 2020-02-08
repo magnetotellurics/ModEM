@@ -5,8 +5,8 @@ module DCG
     use senscomp
     use main
 #ifdef MPI
-	Use MPI_main
-	use MPI_sub
+	Use Main_MPI
+	use Sub_MPI
 #endif
 implicit none
   type  :: DCGiterControl_t
@@ -381,7 +381,7 @@ r_norm=dotProd(r,r)
 ii = 1
 CGiter%rerr(ii) = r_norm/b_norm
  write(ioLog,'(a18)') 'Relative CG-error:'
- write(ioLog,'(a9,i5,a10,es12.6,a10,es12.6)') 'CG-Iter= ',ii,', error = ', r_norm/b_norm, ' Lambda= ', lambda
+ write(ioLog,'(a9,i5,a10,es12.5,a10,es12.5)') 'CG-Iter= ',ii,', error = ', r_norm/b_norm, ' Lambda= ', lambda
 loop: do while ((CGiter%rerr(ii).gt.CGiter%tol).and.(ii.lt.CGiter%maxIt))
 
              
@@ -418,7 +418,7 @@ loop: do while ((CGiter%rerr(ii).gt.CGiter%tol).and.(ii.lt.CGiter%maxIt))
           
        ii=ii+1
        CGiter%rerr(ii) = r_norm/b_norm 
-        write(ioLog,'(a9,i5,a10,es12.6,a10,es12.6)') 'CG-Iter= ',ii,', error = ', r_norm/b_norm, ' Lambda= ', lambda
+        write(ioLog,'(a9,i5,a10,es12.5,a10,es12.5)') 'CG-Iter= ',ii,', error = ', r_norm/b_norm, ' Lambda= ', lambda
   end do loop
 
 CGiter%niter = ii
@@ -525,10 +525,10 @@ subroutine printf(comment,lambda,f,mNorm,rms,logfile)
     end if
 
 	write(io_unit,'(a10)',advance='no') trim(comment)//':'
-	write(io_unit,'(a3,es12.6)',advance='no') ' f=',f
-	write(io_unit,'(a4,es12.6)',advance='no') ' m2=',mNorm
+	write(io_unit,'(a3,es12.5)',advance='no') ' f=',f
+	write(io_unit,'(a4,es12.5)',advance='no') ' m2=',mNorm
 	write(io_unit,'(a5,f11.6)',advance='no') ' rms=',rms
-	write(io_unit,'(a8,es12.6)') ' lambda=',lambda
+	write(io_unit,'(a8,es12.5)') ' lambda=',lambda
 
 	! flush(io_unit): this has the effect of flushing the buffer
 	if (present(logfile)) then

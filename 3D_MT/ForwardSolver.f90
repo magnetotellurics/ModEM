@@ -41,6 +41,7 @@ logical, save, public   :: BC_FROM_E0_FILE = .false.
 !May 15, 2018== AK == New general RHS for all transmitters now stored
 !=======================================================================
   type(rhsVectorMTX_t),save,public           ::  bAll
+
 !  initialization routines (call Fwd version if no sensitivities are
 !     are calculated).  Note that these routines are set up to
 !    automatically manage memory and to figure out which initialization
@@ -56,6 +57,9 @@ public exitSolver
 
 ! solver routines
 public fwdSolve, sensSolve
+#ifdef PETSC
+public fwdSolve_petsc,sensSolve_petsc
+#endif
 
 logical, save, private		:: modelDataInitialized = .false.
 logical, save, private		:: BC_from_file_Initialized = .false.
@@ -78,22 +82,19 @@ subroutine Interpolate_BC(grid)
   integer       :: iTx,ix,iy,iz
   
 
-	!In case of interpolating the BC from eAll_larg   
-	! If eAll_ larg solution is already allocated, then use that to interpolate the BC from it
+  !In case of interpolating the BC from eAll_larg   
+  ! If eAll_ larg solution is already allocated, then use that to interpolate the BC from it
      
-	  if (eAll_larg%allocated) then
-           write(15,*) ' Start interploating',grid%nx,grid%ny,grid%nz
-		call Interpolate_BC_from_E_soln (eAll_larg,Larg_Grid,Grid)
+  if (eAll_larg%allocated) then
+  	write(15,*) ' Start interpolating',grid%nx,grid%ny,grid%nz
+	call Interpolate_BC_from_E_soln (eAll_larg,Larg_Grid,Grid)
         !Once we are ready from eAll_larg, deallocate it, and keep track, that BC_from_file are already Initialized.
         call deall(eAll_larg)
         call deall_grid(Larg_Grid)
-         BC_from_file_Initialized=.true.
-      end if
-        write(15,*) ' End interploating',BC_from_file(1)%yXMin(10,11)
+        BC_from_file_Initialized=.true.
+  end if
+  write(15,*) ' End interpolating',BC_from_file(1)%yXMin(10,11)
   
-
-
-        
       
 end subroutine Interpolate_BC
 !**********************************************************************
@@ -199,6 +200,8 @@ end subroutine copyE0fromFile
       modelDataInitialized = .true.
    endif
 
+   ! now calls this all-at-once
+   ! call UpdateFreqCond(txDict(iTx)%omega, sigma)
 !    the following needs work ... want to avoid reinitializing
 !     operator coefficients when conductivity does not change;
 !     need to have a way to reset sigmaNotCurrent to false when
@@ -227,15 +230,8 @@ end subroutine copyE0fromFile
 
    ! local variables
    logical			:: initForSens
-   character(10)    :: txType
 
    initForSens = present(comb)
-
-   if(present(e0)) then
-      if(e0%allocated) then
-        txType = txDict(e0%tx)%tx_type
-      endif
-   endif
 
    if(present(e0)) then
       call deall_solnVector(e0)
@@ -254,9 +250,6 @@ end subroutine copyE0fromFile
    endif
 
    end subroutine exitSolver
-
-
-
 
 
 !**********************************************************************
@@ -292,10 +285,10 @@ end subroutine copyE0fromFile
     real(kind=prec)     :: omega
     complex(kind=prec)  :: i_omega_mu
 
+
     ! Initialize the RHS vector; should we always clean it up on input?
     if (.not. b0%allocated) then
       select case (txDict(iTx)%Tx_type)
-
       case ('MT')
         b0%nonzero_Source = .false.
         b0%sparse_Source = .false.
@@ -315,8 +308,6 @@ end subroutine copyE0fromFile
 
         select case (txDict(iTx)%Tx_type)
 
-
-
             case ('MT')
                 if (BC_FROM_RHS_FILE) then
                     ! in this case, we've read bAll from RHS file already
@@ -325,34 +316,35 @@ end subroutine copyE0fromFile
                     BC = bAll%combs(iTx)%b(iMode)%bc
 
                 elseif (BC_FROM_E0_FILE) then
-                    ! TEMPORARY, TO REPLICATE TIDES - WILL FIX THIS LATER
+                    ! THIS OPTION SHOULD BE CLEANED UP
                     ! we are going to make a huge assumption here: nPol == 1 always for this case
                     !  and of course transmitters are in same order always
                     write (*,'(a12,a28,a12,i4,a15,i2)') node_info, 'Setting the BC from E0 file ', &
                         ' for period ',iTx,' & mode # ',iMode
-                    e0%pol(iMode) = E0_from_file(iTx)
-                    call getBC(e0%pol(iMode),BC)
+                    e0%pol(j) = E0_from_file(iTx)
+                    call getBC(e0%pol(j),BC)
                     !   do we now need to set boundary edges of E0 == 0?
 
                 elseif (NESTED_BC) then
                     ! The BC are already computed from a larger grid for all transmitters and modes and stored in BC_from_file.
                     ! Overwrite BC with BC_from_file.
-                    ! Note: Right now we are using the same period layout for both grid.
+                    ! Note [NM]: Right now we are using the same period layout for both grid.
                     ! This why, it is enough to know the period and mode index to pick up the BC from BC_from_file vector.
                     write (*,'(a12,a35,a12,i4,a15,i2)') node_info, 'Setting the BC from nested E0 file ', &
                         ' for period ',iTx,' & mode # ',iMode
                     BC = BC_from_file((iTx*2)-(2-iMode))
 
                 elseif (COMPUTE_BC) then
+                    ! For e0 and b0, use the same fake polarization index j for MPI modeling context
                     write (*,'(a12,a28,a12,i4,a15,i2)') node_info, 'Computing the BC internally ', &
                         ' for period ',iTx,' & mode # ',iMode
-                    BC = b0%b(iMode)%bc
-                    call ComputeBC(iTx,iMode,e0%pol(iMode),BC)
+                    BC = b0%b(j)%bc
+                    call ComputeBC(iTx,iMode,e0%pol(j),BC)
 
                 end if
-                ! store the BC in b0 and set up the forward problem
-                b0%b(iMode)%adj = 'FWD'
-                b0%b(iMode)%bc = BC
+                ! store the BC in b0 and set up the forward problem - use fake indexing in MPI
+                b0%b(j)%adj = 'FWD'
+                b0%b(j)%bc = BC
 
             case default
                 write(0,*) node_info,'Unknown FWD problem type',trim(txDict(iTx)%Tx_type),'; unable to compute RHS'
@@ -369,6 +361,8 @@ end subroutine copyE0fromFile
    !   boundary conditions are set internally (NOTE: could use transmitter
    !   dictionary to indireclty provide information about boundary
    !    conditions.  Presently we set BC using WS approach.
+   !
+   ! this *should* works with the SP versions as well
 
    integer, intent(in)		:: iTx
    type(solnVector_t), intent(inout)	:: e0
@@ -386,14 +380,22 @@ end subroutine copyE0fromFile
    !  complete operator intialization, for this frequency
    !  call UpdateFreq(txDict(iTx)%omega)
    !  loop over polarizations
-   do iMode = 1,e0%nPol
-      ! compute boundary conditions for polarization iMode
-      !   uses cell conductivity already set by updateCond
-      !call SetBound(e0%Pol_index(iMode),e0%pol(imode),b0%bc,iTx)
-      write (*,'(a12,a12,a3,a20,i4,a2,es13.6,a15,i2)') node_info, 'Solving the ','FWD', &
+   if (txDict(iTx)%Tx_type=='MT') then
+       do iMode = 1,e0%nPol
+		! compute boundary conditions for polarization iMode
+		!   uses cell conductivity already set by updateCond
+		!call setBound(iTx,e0%Pol_index(iMode),e0%pol(imode),b0%bc)
+		! NOTE that in the MPI parallelization, e0 may only contain a single mode;
+		! mode number is determined by Pol_index, NOT by its order index in e0
+		! ... but b0 uses the same fake indexing as e0
+		write (*,'(a12,a12,a3,a20,i4,a2,es13.6,a15,i2)') node_info, 'Solving the ','FWD', &
 				' problem for period ',iTx,': ',(2*PI)/omega,' secs & mode # ',e0%Pol_index(iMode)
-      call FWDsolve3D(b0%b(iMode),omega,e0%pol(iMode))
-   enddo
+		call FWDsolve3D(b0%b(iMode),omega,e0%pol(iMode))
+		write (6,*)node_info,'FINISHED solve, nPol',e0%nPol
+   	   enddo
+   else
+       write(0,*) node_info,'Unknown FWD problem type',trim(txDict(iTx)%Tx_type),'; unable to run fwdSolve'
+   endif
 
    ! update pointer to the transmitter in solnVector
    e0%tx = iTx
@@ -421,14 +423,18 @@ end subroutine copyE0fromFile
 !  zero starting solution, solve for all modes
    call zero_solnVector(e)
    
-   omega = txDict(iTx)%omega
-   period = txDict(iTx)%period
-   do iMode = 1,e%nPol
-      comb%b(e%Pol_index(iMode))%adj = FWDorADJ
-      write (*,'(a12,a12,a3,a20,i4,a2,es13.6,a15,i2)') node_info,'Solving the ',FWDorADJ, &
-				' problem for period ',iTx,': ',(2*PI)/omega,' secs & mode # ',e%Pol_index(iMode)
-      call FWDsolve3d(comb%b(e%Pol_index(iMode)),omega,e%pol(imode))
-   enddo
+   if (txDict(iTx)%Tx_type=='MT') then 
+   	omega = txDict(iTx)%omega
+   	period = txDict(iTx)%period
+   	do iMode = 1,e%nPol
+      	comb%b(e%Pol_index(iMode))%adj = FWDorADJ
+      	write (*,'(a12,a12,a3,a20,i4,a2,es13.6,a15,i2)') node_info,'Solving the ',FWDorADJ, &
+		' problem for period ',iTx,': ',(2*PI)/omega,' secs & mode # ',e%Pol_index(iMode)
+      	call FWDsolve3d(comb%b(e%Pol_index(iMode)),omega,e%pol(imode))
+   	enddo
+   else
+    write(0,*) node_info,'Unknown FWD problem type',trim(txDict(iTx)%Tx_type),'; unable to run sensSolve'
+   endif
 
    ! update pointer to the transmitter in solnVector
    e%tx = iTx
@@ -439,6 +445,10 @@ end subroutine copyE0fromFile
   !**********************************************************************
   ! uses nestedEM module to extract the boundary conditions directly from
   ! a full EMsolnMTX vector on a larger (and coarser) grid
+  ! NOTE: at present, this sets up BC_from_file array that is stored in
+  !       nestedEM module. No interaction with the bAll variable needed.
+  !       Used to require b0 as input but that was merely for initialization.
+  !       Anyway, we might want to rewrite this somewhat. [AK 20 May 2019] 
 
   subroutine Interpolate_BC_from_E_soln(eAll_larg,Larg_Grid,grid)
 

@@ -261,11 +261,10 @@ Contains
        d%errorBar = .false.
     endif
 
-    ! don't forget to check d%errorBar before accessing d%error in the code
-    if (d%errorBar) then
-       allocate(d%error(nComp, nSite), STAT=istat)
-       d%error = R_ZERO
-    endif
+    ! with or without the error bars, allocating for them, anyway: otherwise,
+    ! too much bookkeeping is needed in MPI for sending data packages
+    allocate(d%error(nComp, nSite), STAT=istat)
+    d%error = R_ZERO
 
     ! by default, all data exist
     allocate(d%exist(nComp, nSite), STAT=istat)

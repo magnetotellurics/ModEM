@@ -10,10 +10,11 @@ program Mod2DMT
      use Main
      use NLCG
      use DCG
+     use LBFGS
      !use mtinvsetup
 
 #ifdef MPI
-     Use MPI_main
+     Use Main_MPI
 #endif
 
      implicit none
@@ -24,9 +25,14 @@ program Mod2DMT
      ! Variable required for storing the date and time
      type (timer_t)         :: timer
 
+     ! Output variable
+     character(80)          :: header
+     integer                :: ios
+
+
 
 #ifdef MPI
-              call  MPI_constructor
+              call  constructor_MPI
 			  if (taskid==0) then
 			      call parseArgs('Mod2DMT',cUserDef) ! OR readStartup(rFile_Startup,cUserDef)
 			      write(6,*)'I am a PARALLEL version'
@@ -61,7 +67,7 @@ program Mod2DMT
 	            if (trim(worker_job_task%what_to_do) .eq. 'Job Completed')  then
 	               	 call deallGlobalData()
 		             call cleanUp_MPI()
-	                 call MPI_destructor
+	                 call destructor_MPI
 	              stop
 	            end if
     end if
@@ -137,6 +143,22 @@ program Mod2DMT
 #endif
 
          call write_modelParam(dsigma,cUserDef%wFile_dModel)
+         
+     case (MULT_BY_J_T_multi_Tx)
+        write(*,*) 'Multiplying by J^T...output multi-Tx model vectors'
+#ifdef MPI
+         call Master_job_fwdPred(sigma0,allData,eAll)
+         call Master_job_JmultT(sigma0,allData,dsigma,eAll,JT_multi_Tx_vec)
+#else
+         call fwdPred(sigma0,allData,eAll)
+         call JmultT(sigma0,allData,dsigma,eAll,JT_multi_Tx_vec)
+#endif
+         open(unit=ioSens, file=cUserDef%wFile_dModel, form='unformatted', iostat=ios)
+         write(0,*) 'Output JT_multi_Tx_vec...'
+         write(header,*) 'JT multi_Tx vectors'
+         !write(ioSens) header
+         call writeVec_modelParam_binary(size(JT_multi_Tx_vec),JT_multi_Tx_vec,header,cUserDef%wFile_dModel)
+         close(ioSens)
 
      case (INVERSE)
      	if (trim(cUserDef%search) == 'NLCG') then
@@ -157,6 +179,14 @@ program Mod2DMT
 #ifdef MPI
         	call Master_job_STOP_MESSAGE
 #endif
+         elseif (trim(cUserDef%search) == 'LBFGS') then
+            ! sigma1 contains mHat on input (zero = starting from the prior)
+             write(*,*) 'Starting the LBFGS search...'
+             sigma1 = dsigma
+             call LBFGSsolver(allData,cUserDef%lambda,sigma0,sigma1,cUserDef%rFile_invCtrl)
+#ifdef MPI
+            call Master_job_STOP_MESSAGE
+#endif
 
        else
         	write(*,*) 'Inverse search ',trim(cUserDef%search),' not yet implemented. Exiting...'
@@ -169,7 +199,10 @@ program Mod2DMT
         	call write_dataVectorMTX(allData,cUserDef%wFile_Data)
         end if
 
-     case (APPLY_COV)
+    case (APPLY_COV)
+#ifdef MPI
+       write(0,*) 'Covariance options can be run in serial only.'
+#else
         select case (cUserDef%option)
             case('FWD')
                 write(*,*) 'Multiplying input model parameter by square root of the covariance ...'
@@ -185,6 +218,7 @@ program Mod2DMT
                stop
         end select
         call write_modelParam(sigma1,cUserDef%wFile_Model)
+#endif
 
      case (EXTRACT_BC)
         ! no need to run the forward solution to extract the boundary
@@ -230,7 +264,38 @@ program Mod2DMT
         write(0,'(a20,g15.7)') 'f(m0+dm) - f(m0): ',f2-f1
         write(0,'(a20,g15.7)') 'df/dm|_{m0} x dm: ',dotProd(dsigma,sigmaGrad)
 
+     case (TEST_SENS)
+        ! compute d = J m row by row using the full sensitivity matrix
+        write(*,*) 'Calculating the full sensitivity matrix...'
+#ifdef MPI
+        call Master_job_fwdPred(sigma0,allData,eAll)
+        call Master_job_calcJ(allData,sigma0,sens,eAll)
+#else
+        call calcJ(allData,sigma0,sens)
+#endif
+
+        call multBy_sensMatrixMTX(sens,dsigma,predData)
+        allData = predData
+
+        call write_dataVectorMTX(allData,cUserDef%wFile_Data)
+
+        ! now, compute d = J m using Jmult
+        write(*,*) 'Multiplying by J...'
+
+#ifdef MPI
+        call Master_job_Jmult(dsigma,sigma0,predData,eAll)
+#else
+        call Jmult(dsigma,sigma0,predData)
+#endif
+
+        write(0,'(a82)') 'Comparison between d = J m using full Jacobian, row by row (calcJ) and using Jmult'
+        write(0,'(a20,g15.7)') '|d| using calcJ: ',dotProd(allData,allData)
+        write(0,'(a20,g15.7)') '|d| using Jmult: ',dotProd(predData,predData)
+
      case (TEST_ADJ)
+#ifdef MPI
+       write(0,*) 'Adjoint symmetry tests are implemented to be run in serial only.'
+#else
        select case (cUserDef%option)
            case('J')
                call Jtest(sigma0,dsigma,allData)
@@ -264,6 +329,7 @@ program Mod2DMT
            write(*,*) 'Writing the data file...'
            call write_dataVectorMTX(allData,cUserDef%wFile_Data)
        end if
+#endif
 
      case default
 
@@ -289,6 +355,7 @@ program Mod2DMT
 	 ! cleaning up
 	 call deallGlobalData()
 #ifdef MPI
+            call Master_job_STOP_MESSAGE
             close(ioMPI)
 	    call cleanUp_MPI()
 #else
@@ -297,7 +364,7 @@ program Mod2DMT
 
 #ifdef MPI
 	 write(0,*) ' elapsed time (mins) ',elapsed_time(timer)/60.0
-	 call MPI_destructor
+	 call destructor_MPI
 #else
 	 write(0,*) ' elapsed time (mins) ',elapsed_time(timer)/60.0
 #endif

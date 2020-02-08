@@ -1,0 +1,79 @@
+#!/bin/sh
+if [ $# -le 1 ]; then
+    echo 1>&2 Usage: $0 Makefile [debug|release|MPI] [spherical]
+    exit 127
+fi
+if [ -e $1 ]; then
+    rm $1
+fi
+
+MT_path_dir="3D_MT:3D_MT/DICT:3D_MT/modelParam:3D_MT/FWD:3D_MT/FWD/Mod2d:3D_MT/ioMod"
+EM_path_dir="3D_EM:3D_EM/DICT:3D_EM/modelParam:3D_EM/Dipole1D:3D_EM/DC_Geoelec:3D_EM/FWD:3D_EM/FWD/Mod2d:3D_EM/ioMod"
+SP_path_dir="3D_EM/FWD_SP2:3D_EM/SP_Topology"
+INV_dir="INV"
+
+if [ $2 = "debug" ]; then
+# Debug configuration
+perl fmkmf.pl -f90 ifort \
+-opt '-debug all -debug extended -traceback -check bounds -heap-arrays -i8 -I/opt/intel/lib' \
+-mpi '-cpp' \
+-o './objs/3D_MT/IFortDebug_SP2_JT' \
+-l '-lmkl_lapack95_ilp64 -lmkl_intel_ilp64 -lmkl_intel_thread -lmkl_core  -lpthread -qopenmp -parallel' \
+-lp '/opt/intel/mkl/lib' \
+-p .:$INV_dir:LAPACK:SENS:UTILS:FIELDS/FiniteDiff3D:$SP_path_dir:$EM_path_dir \
+Mod3DMT.f90 > $1
+
+elif [ $2 = "release" ]; then
+# Release configuration
+perl fmkmf.pl -f90 ifort \
+-opt '-O3 -w  -xSSE4.2 -std03 -i8 -I/opt/intel/lib' \
+-mpi '-cpp' \
+-o './objs/3D_MT/IFortRelease_SP2_JT' \
+-l '-lmkl_lapack95_ilp64 -lmkl_intel_ilp64 -lmkl_intel_thread -lmkl_core  -lpthread -qopenmp -parallel' \
+-lp '/opt/intel/mkl/lib' \
+-p .:$INV_dir:LAPACK:SENS:UTILS:FIELDS/FiniteDiff3D:$SP_path_dir:$EM_path_dir \
+Mod3DMT.f90 > $1
+
+else
+# MPI configuration
+perl fmkmf.pl -f90 ifort \
+-opt '-O3 -w  -xSSE4.2 -std03 -i8 -I/opt/intel/lib' \
+-mpi '-cpp -DMPI' \
+-o './objs/3D_MT/IFortReleaseMPI_SP2_JT' \
+-l '-lmkl_lapack95_ilp64 -lmkl_intel_ilp64 -lmkl_intel_thread -lmkl_core  -lpthread -qopenmp -parallel' \
+-lp '/opt/intel/mkl/lib' \
+-p .:MPI:$INV_dir:LAPACK:SENS:UTILS:FIELDS/FiniteDiff3D:$SP_path_dir:$EM_path_dir \
+Mod3DMT.f90 > $1
+fi
+
+if [ $# -le 2 ]; then
+    sed -i .bak 's/\/Mod3DMT/\/Mod3DJT_SP2/g' $1
+    echo 1>&2 Cartesian version of the makefile ready to use.
+    exit
+fi
+
+if [ $3 = "spherical" ]; then
+	sed -i .bak 's/GridCalc\./GridCalcS\./g' $1
+	sed -i .bak 's/boundary_ws\./boundary_wsS\./g' $1
+  sed -i .bak 's/MetricElements_CSG\./MetricElements_SSG\./g' $1
+	sed -i .bak 's/_JT/_JT_sph/g' $1
+	if [ $2 == "debug" ]; then
+		sed -i .bak 's/Mod3DMT /Mod3DJTs_SP2_dbg /g' $1
+	elif [ $2 == "release" ]; then
+		sed -i .bak 's/Mod3DMT /Mod3DJTs_SP2 /g' $1
+	else
+		sed -i .bak 's/Mod3DMT /Mod3DJTs_SP2_MPI /g' $1
+	fi
+	rm $1.bak
+    echo 1>&2 Spherical version of the makefile ready to use.
+else
+	if [ $2 == "debug" ]; then
+		sed -i .bak 's/\/Mod3DMT/\/Mod3DJT_SP2_dbg/g' $1
+	elif [ $2 == "release" ]; then
+		sed -i .bak 's/\/Mod3DMT/\/Mod3DJT_SP2/g' $1
+	else
+		sed -i .bak 's/\/Mod3DMT/\/Mod3DJT_SP2_MPI/g' $1
+	fi
+    rm $1.bak
+    echo 1>&2 Cartesian version of the makefile ready to use.
+fi

@@ -264,18 +264,21 @@ Contains
 	write(ioSens) nAll
 
     nTx = size(sens)
+    write(ioSens) nTx
 
     do i = 1,nTx
 
       nDt = sens(i)%nDt
       iTx = sens(i)%tx
-
+      write(ioSens) nDt
+      
       do j = 1,nDt
 
         nComp = sens(i)%v(j)%nComp
         nSite = sens(i)%v(j)%nSite
         iDt   = sens(i)%v(j)%dataType
-
+        write(ioSens) nSite
+	
         do k = 1,nSite
         	! append to the file: writes nComp, header and the values;
         	! could also write the full transmitter, receiver and data type...
@@ -347,6 +350,8 @@ Contains
       d%d(i)%allocated = .true.
 
     end do  ! tx
+
+    d%allocated = .true.
 
   end subroutine multBy_sensMatrixMTX
 

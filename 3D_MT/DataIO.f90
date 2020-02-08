@@ -7,6 +7,7 @@ module DataIO
   use file_units
   use utilities
   use dataspace
+  use gridcalc
   use transmitters
   use receivers
   use datatypes
@@ -24,8 +25,11 @@ module DataIO
 	MODULE PROCEDURE write_Z_list
   end interface
 
+  interface deall_dataFileInfo
+    MODULE PROCEDURE deall_fileInfo
+  end interface
 
-  public     :: read_dataVectorMTX, write_dataVectorMTX
+  public     :: read_dataVectorMTX, write_dataVectorMTX, deall_dataFileInfo
 
   type :: data_file_block
 
@@ -33,7 +37,7 @@ module DataIO
       ! there is one entry per each transmitter type and data type... (iTxt,iDt)
       ! if there are multiple data blocks of the same transmitter & data types,
       ! the last value is used.
-      character(120) :: info_in_file
+      character(200) :: info_in_file
       character(20)  :: sign_info_in_file
       integer        :: sign_in_file
       character(20)  :: units_in_file
@@ -75,7 +79,7 @@ Contains
 
     integer, intent(in)         :: txType
     integer, intent(in)         :: dataType
-    character(120)              :: header
+    character(200)              :: header
 
     select case (dataType)
 
@@ -163,8 +167,9 @@ Contains
     character(2)                    :: temp = '> '
     character(50)                   :: siteid,ref_siteid,compid
     character(20)                   :: sitename
+    character(1000)                 :: strtemp
     integer                         :: iTxt,iTx,iRx,iDt,icomp,i,j,k,istat,ios,nBlocks
-    real(8)                         :: x(3),ref_x(3), Period,SI_factor,large
+    real(8)                         :: x(3),ref_x(3),Xx(3),Period,SI_factor,large
     real(8)                         :: lat,lon,ref_lat,ref_lon
     logical                         :: conjugate, isComplex
 
@@ -201,10 +206,12 @@ Contains
 
       ! write the data type header
       call compact(fileInfo(iTxt,iDt)%info_in_file)
+      write(strtemp,*) adjustl(trim(fileInfo(iTxt,iDt)%info_in_file))
       write(ioDat,'(a32)',advance='no') '# ModEM impedance responses for '
-      write(ioDat,*,iostat=ios) adjustl(trim(fileInfo(iTxt,iDt)%info_in_file))
+      write(ioDat,*,iostat=ios) strtemp(1:100)
+      write(strtemp,*) adjustl(trim(DataBlockHeader(iTxt,iDt)))
       write(ioDat,'(a2)',advance='no') '# '
-      write(ioDat,*,iostat=ios) adjustl(trim(DataBlockHeader(iTxt,iDt)))
+      write(ioDat,*,iostat=ios) strtemp(1:100)
 
       ! the new format is critical for JOINT modeling and inversion; otherwise, can stick
       ! to the old format for backwards compatibility. Will always write in the same format
@@ -225,7 +232,7 @@ Contains
       write(ioDat,'(a2)',advance='no') temp
       write(ioDat,*,iostat=ios) trim(fileInfo(iTxt,iDt)%units_in_file)
       write(ioDat,'(a2,f8.2)',iostat=ios) temp,fileInfo(iTxt,iDt)%geographic_orientation
-      write(ioDat,'(a2,2f8.3)',iostat=ios) temp,fileInfo(iTxt,iDt)%origin_in_file(1),fileInfo(iTxt,iDt)%origin_in_file(2)
+      write(ioDat,'(a2,2f9.3)',iostat=ios) temp,fileInfo(iTxt,iDt)%origin_in_file(1),fileInfo(iTxt,iDt)%origin_in_file(2)
       write(ioDat,'(a2,2i6)',iostat=ios) temp,nTx,nRx
 
       if (fileInfo(iTxt,iDt)%sign_in_file == ISIGN) then
@@ -272,7 +279,16 @@ Contains
                         compid = typeDict(iDt)%id(icomp)
                         write(ioDat,'(es13.6)',    iostat=ios,advance='no') Period
                         write(ioDat, '(a1)', iostat=ios,advance='no') ' '
-                        write(ioDat,'(a50,3f15.3)',iostat=ios,advance='no') trim(siteid),x(:)
+                        if (FindStr(gridCoords, CARTESIAN)>0) then
+                            write(ioDat,'(a50,3f15.3)',iostat=ios,advance='no') trim(siteid),x(:)
+                   
+                        elseif (FindStr(gridCoords, SPHERICAL)>0) then
+                            read(siteid,'(a20,2f15.3)',iostat=ios) sitename,Xx(1),Xx(2)
+                            write(ioDat,'(a20,5f15.3)',iostat=ios,advance='no') trim(sitename),x(1),x(2),Xx(1),Xx(2),x(3)
+                            
+                        end if
+                        
+
                         if (conjugate) then
                             write(ioDat,'(a8,3es15.6)',iostat=ios) trim(compid),value(2*icomp-1),-value(2*icomp),error(2*icomp)
                         else
@@ -432,7 +448,6 @@ Contains
         read(ioDat,*,iostat=ios) temp,fileInfo(iTxt,iDt)%geographic_orientation
         read(ioDat,*,iostat=ios) temp,fileInfo(iTxt,iDt)%origin_in_file(1),fileInfo(iTxt,iDt)%origin_in_file(2)
         read(ioDat,*,iostat=ios) temp,nTx,nRx
-        !write(0,'(a6,i5,a18,i8,a24)') 'Found ',nTx,' transmitters and ',nRx,' receivers in data block'
 
 
         if (output_level > 3) then
@@ -477,7 +492,15 @@ Contains
 
                 ! Update the receiver dictionary and index (sets up if necessary)
                 ! For now, make lat & lon part of site ID; could use directly in the future
-                write(siteid,'(a20,2f9.3)') code,lat,lon
+                
+                if (FindStr(gridCoords, CARTESIAN)>0) then
+                    write(siteid,'(a20,2f9.3)') code,lat,lon
+                   
+                elseif (FindStr(gridCoords, SPHERICAL)>0) then
+                write(siteid,'(a20,2f15.3)') code,x(1),x(2)
+                    x(1) = lat
+                    x(2) = lon
+                end if
                 iRx = update_rxDict(x,siteid)
 
             case(Full_Interstation_TF)

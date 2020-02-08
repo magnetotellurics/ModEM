@@ -191,6 +191,9 @@ Contains
 
 	else
 	  call warning('No input model parametrization')
+
+	  ! set up an empty grid to avoid segmentation faults in sensitivity tests
+	  call create_grid(1,1,1,1,grid)
 	end if
 
 
@@ -205,7 +208,7 @@ Contains
        call warning('No input data file - unable to set up dictionaries')
     end if
     
-    !--------------------------------------------------------------------------
+	!--------------------------------------------------------------------------
 	!  Initialize additional data as necessary
 	select case (cUserDef%job)
 
@@ -268,7 +271,7 @@ Contains
        sigma1 = sigma0
        call zero(sigma1)
 
-     case (TEST_GRAD)
+     case (TEST_GRAD, TEST_SENS)
          inquire(FILE=cUserDef%rFile_dModel,EXIST=exists)
          if (exists) then
              call deall_grid(grid)
@@ -306,7 +309,15 @@ Contains
                end if
            case default
        end select
-
+!       select case (cUserDef%option)
+!           case('S')
+!            call create_rhsVectorMTX(allData%ntx,bAll)
+!            do iTx = 1,allData%ntx
+!                bAll%combs(iTx)%nonzero_source = .true.
+!                call create_rhsVector(grid,iTx,bAll%combs(iTx))
+!            end do
+!            call random_rhsVectorMTX(bAll,cUserDef%eps)
+!       end select
     end select
 
 	!--------------------------------------------------------------------------
@@ -340,6 +351,8 @@ Contains
 
 	integer	:: i, istat
 
+    write(0,*) 'Cleaning up...'
+
 	! Deallocate global variables that have been allocated by InitGlobalData()
 	if (output_level > 3) then
 	   write(0,*) 'Cleaning up grid...'
@@ -350,6 +363,7 @@ Contains
 	   write(0,*) 'Cleaning up data...'
 	endif
 	call deall_dataVectorMTX(allData)
+	call deall_dataFileInfo()
 
 	if (output_level > 3) then
 	   write(0,*) 'Cleaning up EM soln...'

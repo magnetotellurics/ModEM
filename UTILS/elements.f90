@@ -835,7 +835,7 @@ Contains
       ii=nhx+nhy
       if (j > 1.and.j < m+1) then
          ii=ii+(l*(m-1)+2)*(k-2)+1+l*(j-2)+i
-      else if (k == 0) then
+      else if (j == 1) then
          ii=ii+(l*(m-1)+2)*(k-2)+1
       else if (j == m+1) then
          ii=ii+(l*(m-1)+2)*(k-1)
