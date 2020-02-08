@@ -842,15 +842,6 @@ Contains
     ! output electrical field as complex vector
     complex (kind=prec)                      :: diag_sign ! changed by Lana, was integer
     integer                                  :: ix, iy, iz
-! inserted by Lana 
-    type (cvector)                           :: workF,workE
-    ! workE is the complex vector that is used as a work space
-    logical old ! switch to old code
-!
-    old=.false.
-    call create_cvector(mGrid,workF,FACE)
-    call create_cvector(mGrid,workE,EDGE)
-! end insert
 
     if (.not.inE%allocated) then
       write(0,*) 'inE in Maxwell not allocated yet'
@@ -874,8 +865,6 @@ Contains
           else
              diag_sign = ISIGN
           end if
-
-          if(old)then  
 
           !$OMP PARALLEL DEFAULT(SHARED) PRIVATE(ix,iy,iz)
 
@@ -947,20 +936,12 @@ Contains
           !$OMP END DO NOWAIT
 
           !$OMP END PARALLEL
-         else ! New programming
-          call Curl(inE,workF)
-          call Curl(workF,outE)
-          call diagMult_cvector(Adiag,inE,workE)
-          call scMultAdd_cvector(diag_sign,workE,outE)  
-         endif
        else
           write (0, *) ' Maxwell: not compatible usage for existing data types'
        end if
     else
        write(0, *) 'Error-complex vectors for Maxwell are not of same size'
     end if
-    call deall(workF) 
-    call deall(workE) 
   end subroutine Maxwell        ! Maxwell
 
 

@@ -845,9 +845,6 @@ Contains
 ! inserted by Lana 
     type (cvector)                           :: workF,workE
     ! workE is the complex vector that is used as a work space
-    logical old ! switch to old code
-!
-    old=.false.
     call create_cvector(mGrid,workF,FACE)
     call create_cvector(mGrid,workE,EDGE)
 ! end insert
@@ -875,84 +872,11 @@ Contains
              diag_sign = ISIGN
           end if
 
-          if(old)then  
-
-          !$OMP PARALLEL DEFAULT(SHARED) PRIVATE(ix,iy,iz)
-
-          ! Apply difference equation to compute Ex (only on interior nodes)
-          ! the diagonal nodes have the imaginary component added
-          !$OMP DO SCHEDULE(STATIC)
-	      do iz = 2, inE%nz
-             do iy = 2, inE%ny
-                do ix = 1, inE%nx
-                   outE%x(ix,iy,iz) =  & 
-                        (xYpp(ix,iy,iz)*inE%y(ix+1,iy,iz)-&
-                  	xYmp(ix,iy,iz)*inE%y(ix,iy,iz)-xYpm(ix,iy,iz)*inE%y(ix+1,iy-1,iz)&
-                        +xYmm(ix,iy,iz)*inE%y(ix,iy-1,iz))+&
-                  	(xZpp(ix,iy,iz)*inE%z(ix+1,iy,iz)-xZmp(ix,iy,iz)*inE%z(ix,iy,iz)&
-                  	-xZpm(ix,iy,iz)*inE%z(ix+1,iy,iz-1)+xZmm(ix,iy,iz)*inE%z(ix,iy,iz-1))+&
-                  	xXYp(ix,iy,iz)*inE%x(ix,iy+1,iz)+& 
-                  	xXYm(ix,iy,iz)*inE%x(ix,iy-1,iz)+& 
-                  	xXZp(ix,iy,iz)*inE%x(ix,iy,iz+1)+& 
-                  	xXZm(ix,iy,iz)*inE%x(ix,iy,iz-1)+& 
-                  	(xXO(ix,iy,iz)+diag_sign*Adiag%x(ix,iy,iz))*inE%x(ix,iy,iz)
-                enddo
-             enddo
-          enddo
-          !$OMP END DO NOWAIT
-
-          ! Apply difference equation to compute Ey (only on interior nodes)
-	      ! the diagonal nodes have the imaginary component added
-          !$OMP DO SCHEDULE(STATIC)
-          do iz = 2, inE%nz
-             do iy = 1, inE%ny
-                do ix = 2, inE%nx
-                   outE%y(ix,iy,iz) = &
-                        (yZpp(ix,iy,iz)*inE%z(ix,iy+1,iz)-&
-                  	yZmp(ix,iy,iz)*inE%z(ix,iy,iz)-yZpm(ix,iy,iz)*inE%z(ix,iy+1,iz-1) & 
-                        +yZmm(ix,iy,iz)*inE%z(ix,iy,iz-1))&
-                  	+(yXpp(ix,iy,iz)*inE%x(ix,iy+1,iz)-yXpm(ix,iy,iz)*inE%x(ix,iy,iz) &
-                  	-yXmp(ix,iy,iz)*inE%x(ix-1,iy+1,iz)+yXmm(ix,iy,iz)*inE%x(ix-1,iy,iz))+&
-                  	yYZp(ix,iy,iz)*inE%y(ix,iy,iz+1)+&
-                  	yYZm(ix,iy,iz)*inE%y(ix,iy,iz-1)+&
-                  	yYXp(ix,iy,iz)*inE%y(ix+1,iy,iz)+&
-                  	yYXm(ix,iy,iz)*inE%y(ix-1,iy,iz)+&
-                  	(yYO(ix,iy,iz)+diag_sign*Adiag%y(ix,iy,iz))*inE%y(ix,iy,iz)
-                enddo
-             enddo
-          enddo
-          !$OMP END DO NOWAIT
-
-          ! Apply difference equation to compute Ey (only on interior nodes)
-	      ! the diagonal nodes have the imaginary component added
-          !$OMP DO SCHEDULE(STATIC)
-          do iz = 1, inE%nz
-             do iy = 2, inE%ny
-                do ix = 2, inE%nx
-                   outE%z(ix,iy,iz) = &
-                        (zXpp(ix,iy,iz)*inE%x(ix,iy,iz+1)-&
-                  	zXpm(ix,iy,iz)*inE%x(ix,iy,iz)-zXmp(ix,iy,iz)*inE%x(ix-1,iy,iz+1) &
-                        +zXmm(ix,iy,iz)*inE%x(ix-1,iy,iz))&
-                  	+(zYpp(ix,iy,iz)*inE%y(ix,iy,iz+1)-zYpm(ix,iy,iz)*inE%y(ix,iy,iz)&
-                  	-zYmp(ix,iy,iz)*inE%y(ix,iy-1,iz+1)+zYmm(ix,iy,iz)*inE%y(ix,iy-1,iz))+&
-                  	zZXp(ix,iy,iz)*inE%z(ix+1,iy,iz)+&
-                  	zZXm(ix,iy,iz)*inE%z(ix-1,iy,iz)+&
-                  	zZYp(ix,iy,iz)*inE%z(ix,iy+1,iz)+&
-                  	zZYm(ix,iy,iz)*inE%z(ix,iy-1,iz)+&
-                  	(zZO(ix,iy,iz)+diag_sign*Adiag%z(ix,iy,iz))*inE%z(ix,iy,iz)
-                enddo
-             enddo
-          enddo
-
-          !$OMP END DO NOWAIT
-
-          !$OMP END PARALLEL
-         else ! New programming
           call Curl(inE,workF)
           call Curl(workF,outE)
           call diagMult_cvector(Adiag,inE,workE)
           call scMultAdd_cvector(diag_sign,workE,outE)  
-         endif
+
        else
           write (0, *) ' Maxwell: not compatible usage for existing data types'
        end if
