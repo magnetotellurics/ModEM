@@ -280,7 +280,7 @@ logical, intent(in), optional                        :: FromFile
 							end do           
    		                end do
                         do k = nzAir+1,nlay1D
-						  sig1D(k) =sigmaCell%v(1,1,k)	
+						  sig1D(k) = exp(temp_sigma_value/counter)	
 						  write(22,*)k,1.0/sig1D(k),sig1D(k),get_1d_from,sigmaCell%v(1,1,k)
                         end do						  
 					
