@@ -5,23 +5,53 @@
 # STRING NOW
 now=$(date "+%Y/%m/%d - %H:%M:%S")
 #
+# CREATE bin FOLDER
+mkdir -p bin
+#
 #
 cd src/
 #
+########################
+# STANDART VERSION
+########################
 #
-echo "#### START BUILD Mod3DMT AT $now ####"
+echo "#### START BUILD STANDART Mod3DMT AT $now ####"
 #
-# 
+# GRANT PERMISSION TO Configure.3D_MT.OSU.GFortran
 chmod 777 CONFIG/Configure.3D_MT.OSU.GFortran
 #
-#
-./CONFIG/Configure.3D_MT.OSU.GFortran Makefile MPI
+# CREATE Makefile_STD
+./CONFIG/Configure.3D_MT.OSU.GFortran Makefile_STD MPI
 #
 # REMOVE OLD OBJECTS
-rm -rf objs/3D_MT/GFortReleaseMPI/*
+rm -rf ../../objs/
 #
 # BUILD WITH PLAIN MAKE
-make
+make -f Makefile_STD
+#
+# RENAME EXE
+mv Mod3DMT ../bin/Mod3DMT_STD
+#
+########################
+# SP2 VERSION
+########################
+#
+echo "#### START BUILD SP2 Mod3DMT AT $now ####"
+#
+# GRANT PERMISSION TO Configure.3D_MT_SP2.OSU.GFortran
+chmod 777 CONFIG/Configure.3D_MT_SP2.OSU.GFortran
+#
+# CREATE Makefile_STD
+./CONFIG/Configure.3D_MT_SP2.OSU.GFortran Makefile_SP2 MPI
+#
+# REMOVE OLD OBJECTS
+rm -rf ../../objs/
+#
+# BUILD WITH PLAIN MAKE
+make -f Makefile_SP2
+#
+# RENAME EXE
+mv Mod3DMT ../bin/Mod3DMT_SP2
 #
 # CATCH RESULT
 result=$?
