@@ -636,8 +636,9 @@ do
    read (ioFwdCtrl,"(a)",iostat=ierr) line_text ! Read line into character variable
    line_text=trim(line_text)
    if (ierr /= 0) exit                          ! End of the file
-
-    if(index(line_text, "Number of QMR iters per divergence correction") .ne. 0)then
+    if(index(line_text, "#") .ne. 0)then
+	! this is a comment line: DO NOTHING
+    elseif(index(line_text, "Number of QMR iters per divergence correction") .ne. 0)then
         call parse(line_text,":",args,nargs)
          READ(args(2),*)intval
          solverControl%IterPerDivCor=intval
