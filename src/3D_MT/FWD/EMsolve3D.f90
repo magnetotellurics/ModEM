@@ -289,7 +289,10 @@ Contains
     QMRiter%maxIt = IterPerDivCor
     allocate(QMRiter%rerr(IterPerDivCor), STAT=status)
     QMRiter%rerr = 0.0
-
+#ifdef MPI	
+    worker_job_task%solver_residual_vec=0.0
+	worker_job_task%solver_number_of_iterations=0
+#endif	
     converged = .false.
     failed = .false.
     !  idea to test: for non-zero source START with divergence

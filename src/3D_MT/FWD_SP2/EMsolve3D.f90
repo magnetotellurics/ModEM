@@ -276,6 +276,11 @@ Contains
     KSSiter%rerr = 0.0
     converged = .false.
     failed = .false.
+	
+#ifdef MPI	
+    worker_job_task%solver_residual_vec=0.0
+	worker_job_task%solver_number_of_iterations=0
+#endif	
     !   just take the interior elements
     !   Note: e here can be used for some initial guess
     ei = e(EDGEi)
@@ -309,7 +314,9 @@ Contains
        ! update diagnostics output from KSS
        do iter = 1,KSSiter%niter
            EMrelErr(nIterTotal+iter) = KSSiter%rerr(iter)
+#ifdef MPI		   
 		   worker_job_task%solver_residual_vec(nIterTotal+iter) = KSSiter%rerr(iter)
+#endif	
        end do
 	   
        if (KSSiter%niter.eq.0) then ! in case a initial guess is good enough
@@ -341,10 +348,11 @@ Contains
    &            elapsed_time(timer)/60.0
     end if
 
+#ifdef MPI	
 	worker_job_task%solver_number_of_iterations = nIterTotal
 	worker_job_task%period=(2*PI)/omega
 	worker_job_task%solver_name=trim(solver_name)
-	
+#endif	
     e(EDGEi) = ei
     !  After solving symetrized system, need to do different things for
     !   transposed, standard cases
@@ -550,6 +558,11 @@ end subroutine SdivCorr ! SdivCorr
      if(associated(EMrelErr)) then
         deallocate(EMrelErr)
      endif
+#ifdef MPI	 
+     if(associated(worker_job_task%solver_residual_vec)) then
+        deallocate(worker_job_task%solver_residual_vec)
+     endif
+#endif	 
      if(associated(divJ)) then
         deallocate(divJ)
      endif
@@ -558,6 +571,9 @@ end subroutine SdivCorr ! SdivCorr
      endif
      !   then allocate all arrays
      allocate(EMrelErr(MaxIterTotal))
+#ifdef MPI	 
+	 allocate(worker_job_task%solver_residual_vec(MaxIterTotal))
+#endif		 
      allocate(divJ(2,MaxDivCor))
      allocate(DivCorRelErr(MaxIterDivCor,MaxDivCor))
 
