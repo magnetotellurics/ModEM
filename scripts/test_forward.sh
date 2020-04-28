@@ -48,9 +48,12 @@ echo "#### FINISH FORWARD $EXEC MPI TEST ####" | tee -a std_out.txt
 #
 cd ..
 #
-#
+# BUILD bin/SolverDiagnostic3D
 cd tools/SolverDiagnostic3D/
 bash build_linux.sh
+#
+cd ../../test_forward_$exec_name
+../tools/SolverDiagnostic3D/bin/SolverDiagnostic3D QMR*
 #
 #
 mv test_forward_$exec_name/ outputs/temp/

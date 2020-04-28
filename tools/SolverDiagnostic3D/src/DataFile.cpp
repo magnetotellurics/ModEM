@@ -93,8 +93,8 @@ void DataFile :: createHtml( void )
 	"<head>\n" <<
 	"<meta charset='utf-8'>\n" <<
 	"<title>" << path << "</title>\n" <<
-	"<script src='build/mathbox-bundle.js'></script>\n" <<
-	"<link rel='stylesheet' href='build/mathbox.css'>\n" <<
+	"<script src='../../../tools/MathBox/mathbox-bundle.js'></script>\n" <<
+	"<link rel='stylesheet' href='../../../tools/MathBox/mathbox.css'>\n" <<
 	"<meta name='viewport' content='initial-scale=1, maximum-scale=1'>\n" <<
 	"</head>\n" <<
 	"<body>\n" <<
