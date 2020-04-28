@@ -11,9 +11,9 @@ mkdir -p outputs/temp
 #
 bash scripts/build_modem_on.sh | tee outputs/temp/build_modem_on.txt
 #
-mkdir -p docs/
+#mkdir -p docs/
 #
-bash scripts/update_doxygen.sh | tee outputs/temp/update_doxygen.txt
+#bash scripts/update_doxygen.sh | tee outputs/temp/update_doxygen.txt
 #
 bash scripts/test_plain_std.sh nproc | tee outputs/temp/test_plain_std.txt
 #
