@@ -1,8 +1,0 @@
-Model and data output file name    : Paip
-Initial damping factor lambda      : 1.0
-To update lambda divide by         : 10.0
-Initial search step in model units : 10.0
-Restart when rms diff is less than : 0.0010
-Exit search when rms is less than  : 1.05
-Exit when lambda is less than      : 1.0e-8
-Maximum number of iterations       : 500
