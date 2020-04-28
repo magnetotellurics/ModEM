@@ -9,13 +9,13 @@ ncores		=$3
 EXEC_NAME="${EXEC_PATH##*/}"
 #
 # CREATE TEST OUTPUT FOLDER
-mkdir -p test_forward_$EXEC_NAME
+mkdir -p test_forward_modelling_$EXEC_NAME
 #
 # ENTER TEST OUTPUT FOLDER
-cd test_forward_$EXEC_NAME/
+cd test_forward_modelling_$EXEC_NAME/
 #
 #
-echo "#### START FORWARD $EXEC_NAME MPI TEST WITH $ncores CORES AT $now ####" | tee std_out.txt
+echo "#### START FORWARD MODELLING $EXEC_NAME MPI TEST WITH $ncores CORES AT $now ####" | tee std_out.txt
 #
 #
 echo "#### COMMAND LINE: [mpirun -n $ncores ../$EXEC_PATH -W ../$USER_CTRL -v full]" | tee -a std_out.txt
@@ -30,7 +30,7 @@ result=$?
 if [ "$result" -ne "0" ]; then
 	#
 	#
-	echo "TEST FORWARD $EXEC_NAME FAIL: $result" | tee -a std_out.txt
+	echo "TEST FORWARD MODELLING $EXEC_NAME FAIL: $result" | tee -a std_out.txt
 	#
 	#
 	cd ..
@@ -40,12 +40,12 @@ if [ "$result" -ne "0" ]; then
 fi
 #
 #
-echo "#### FINISH FORWARD $EXEC_PATH MPI TEST ####" | tee -a std_out.txt
+echo "#### FINISH FORWARD MODELLING $EXEC_PATH MPI TEST ####" | tee -a std_out.txt
 #
 #
 cd ..
 #
-mv test_forward_$EXEC_NAME/ outputs/temp/
+mv test_forward_modelling_$EXEC_NAME/ outputs/temp/
 #
 #
 exit 0

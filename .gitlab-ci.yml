@@ -94,22 +94,6 @@ test_forward_std:
             - outputs/temp/test_forward_*
         expire_in: 1 week
 #
-# STANDART TEST FORWARD MODELLING
-test_forward_modelling:
-    stage: test
-    dependencies:
-        - build_modem_on    # DEFINE THIS JOB DEPENDENCY FROM JOB build_modem_on
-    #
-    script:
-        #
-        - bash scripts/test_forward_modelling.sh bin/Mod3DMT_STD inputs/rFile_userCtrl 10
-        #
-    #
-    artifacts:
-        paths:
-            - outputs/temp/test_forward_*
-        expire_in: 1 week
-#
 # STANDART TEST FORWARD
 test_forward_sp2:
     stage: test
@@ -124,6 +108,22 @@ test_forward_sp2:
     artifacts:
         paths:
             - outputs/temp/test_forward_*
+        expire_in: 1 week
+#
+# STANDART TEST FORWARD MODELLING
+test_forward_modelling:
+    stage: test
+    dependencies:
+        - build_modem_on    # DEFINE THIS JOB DEPENDENCY FROM JOB build_modem_on
+    #
+    script:
+        #
+        - bash scripts/test_forward_modelling.sh bin/Mod3DMT_STD inputs/rFile_userCtrl 10
+        #
+    #
+    artifacts:
+        paths:
+            - outputs/temp/test_forward_modelling*
         expire_in: 1 week
 #
 # DEPLOY: UPDATE GITLAB
