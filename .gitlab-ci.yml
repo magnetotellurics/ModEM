@@ -62,6 +62,22 @@ test_plain_std:
             - outputs/temp/test_plain_std.txt
         expire_in: 1 week
 #
+# JOB TEST PLAIN STD:   RUN Mod3DMT STD WITHOUT ANY PARAMETER
+test_plain_sp2:
+    stage: test
+    dependencies:
+        - build_modem_on    # DEFINE THIS JOB DEPENDENCY FROM JOB build_modem_on
+    #
+    script:
+        #
+        # PLAIN EXECUTION TEST WITH 1 CORE
+        - bash scripts/test_plain_sp2.sh 1 | tee outputs/temp/test_plain_sp2.txt
+    #
+    artifacts:
+        paths:
+            - outputs/temp/test_plain_sp2.txt
+        expire_in: 1 week
+#
 # STANDART TEST FORWARD
 test_forward_std:
     stage: test
@@ -70,12 +86,28 @@ test_forward_std:
     #
     script:
         #
-        - bash scripts/test_forward_std.sh bin/Mod3DMT_STD inputs/rFile_Model inputs/rFile_Data 10
+        - bash scripts/test_forward.sh bin/Mod3DMT_STD inputs/rFile_Model inputs/rFile_Data 10
         #
     #
     artifacts:
         paths:
-            - outputs/temp/test_forward_std/
+            - outputs/temp/test_forward_*/
+        expire_in: 1 week
+#
+# STANDART TEST FORWARD
+test_forward_sp2:
+    stage: test
+    dependencies:
+        - build_modem_on    # DEFINE THIS JOB DEPENDENCY FROM JOB build_modem_on
+    #
+    script:
+        #
+        - bash scripts/test_forward.sh bin/Mod3DMT_SP2 inputs/rFile_Model inputs/rFile_Data 10
+        #
+    #
+    artifacts:
+        paths:
+            - outputs/temp/test_forward_*/
         expire_in: 1 week
 #
 # DEPLOY: UPDATE GITLAB
