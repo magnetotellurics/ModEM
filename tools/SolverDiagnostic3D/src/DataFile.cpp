@@ -331,7 +331,7 @@ void DataFile :: createHtml( void )
 	std::stringstream output_file_name;
 	output_file_name << "HTML_OUTPUT_" << name.substr( 0, name.find( "." ) ) << ".html";
 	std::ofstream html_file;
-	html_file.open ( output_file_name.str() );
+	html_file.open ( output_file_name.str().c_str() );
 	html_file << html_content.str();
 	html_file.close();
 }

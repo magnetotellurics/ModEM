@@ -6,6 +6,9 @@ MODEL=$2
 DATA=$3
 ncores=$4
 #
+# STRING NOW
+now=$(date "+%Y/%m/%d - %H:%M:%S")
+#
 exec_name="${EXEC##*/}"
 #
 # CREATE TEST OUTPUT FOLDER

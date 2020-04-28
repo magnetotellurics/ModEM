@@ -25,4 +25,8 @@ bash scripts/test_forward.sh bin/Mod3DMT_SP2 inputs/rFile_Model inputs/rFile_Dat
 #
 bash scripts/test_forward_modelling.sh bin/Mod3DMT_STD inputs/rFile_userCtrl nproc
 #
+output_folder=output_$(date "+%Y_%m_%d_%H_%M_%S")
+#
+mv outputs/temp outputs/$output_folder
+#
 echo "FINISH LOCAL PIPELINE SCRIPT"
