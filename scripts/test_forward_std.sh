@@ -6,20 +6,14 @@ MODEL=$2
 DATA=$3
 ncores=$4
 #
-# STRING NOW
-now=$(date "+%Y/%m/%d - %H:%M:%S")
-#
-# REMOVE TEST OUTPUT FOLDER FROM MAIN OUTPUT FOLDER
-rm -rf outputs/test_forward/
-#
 # CREATE TEST OUTPUT FOLDER
-mkdir -p test_forward
+mkdir -p test_forward_std
 #
 # ENTER TEST OUTPUT FOLDER
-cd test_forward/
+cd test_forward_std/
 #
 #
-echo "#### START FORWARD MPI TEST WITH $ncores CORES AT $now ####" | tee std_out.txt
+echo "#### START FORWARD STD MPI TEST WITH $ncores CORES AT $now ####" | tee std_out.txt
 #
 #
 echo "#### COMMAND LINE: [mpirun -n $ncores ../$EXEC -F ../$MODEL ../$DATA wFile_Data.dat wFile_EMsoln -v full]" | tee -a std_out.txt
@@ -34,7 +28,7 @@ result=$?
 if [ "$result" -ne "0" ]; then
 	#
 	#
-	echo "TEST FORWARD FAIL: $result" | tee -a std_out.txt
+	echo "TEST FORWARD STD FAIL: $result" | tee -a std_out.txt
 	#
 	#
 	cd ..
@@ -44,13 +38,12 @@ if [ "$result" -ne "0" ]; then
 fi
 #
 #
-echo "#### FINISH FORWARD MPI TEST ####" | tee -a std_out.txt
+echo "#### FINISH FORWARD STD MPI TEST ####" | tee -a std_out.txt
 #
 #
 cd ..
 #
-#
-mv test_forward/ outputs/
+mv test_forward_std/ outputs/temp/
 #
 #
 exit 0

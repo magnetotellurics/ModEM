@@ -5,10 +5,6 @@
 # STRING NOW
 now=$(date "+%Y/%m/%d - %H:%M:%S")
 #
-# CREATE bin FOLDER
-mkdir -p bin
-#
-#
 cd src/
 #
 ########################
@@ -71,9 +67,6 @@ fi
 #
 #
 echo "#### FINISH BUILD Mod3DMT QMR ####"
-#
-#
-#rm Makefile
 #
 #
 cd ..

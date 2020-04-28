@@ -9,10 +9,10 @@ ncores=$1
 now=$(date "+%Y/%m/%d - %H:%M:%S")
 #
 #
-echo "#### START PLAIN MPI TEST WITH $ncores CORES AT $now ####"
+echo "#### START STD PLAIN MPI TEST WITH $ncores CORES AT $now ####"
 #
 #
-mpirun -n $ncores ./src/Mod3DMT
+mpirun -n $ncores ./bin/Mod3DMT_STD
 #
 # CATCH RESULT
 result=$?
@@ -21,13 +21,13 @@ result=$?
 if [ "$result" -ne "0" ]; then
 	#
 	#
-	echo "TEST PLAIN FAIL: $result"
+	echo "TEST STD PLAIN FAIL: $result"
 	#
 	#
 	exit $result
 fi
 #
-echo "#### FINISH PLAIN TEST ####"
+echo "#### FINISH STD PLAIN TEST ####"
 #
 #
 exit 0

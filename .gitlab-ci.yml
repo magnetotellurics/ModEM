@@ -18,34 +18,36 @@ build_modem_on:
         - echo "START build_modem_on SCRIPT"
     #
     script:
+        # GENERATE BIN FOLDER (IF NOT EXISTS)
+        - mkdir -p bin
         # GENERATE MAIN OUTPUT FOLDER (IF NOT EXISTS)
-        - mkdir -p outputs/
+        - mkdir -p outputs/temp
         # BUILD SCRIPT
-        - bash scripts/build_modem_on.sh | tee outputs/build_modem_on.txt
+        - bash scripts/build_modem_on.sh | tee outputs/temp/build_modem_on.txt
         # GENERATE DOCS FOLDER (IF NOT EXISTS)
         - mkdir -p docs/
         # RUN DOXYGEN ON src/
-        - bash scripts/update_doxygen.sh | tee outputs/update_doxygen.txt
+        - bash scripts/update_doxygen.sh | tee outputs/temp/update_doxygen.txt
     #
     cache:
         key: build_modem_on_cache   # CACHE KEY TO ACCESS FROM OTHERS JOBS
         paths:
-            - src/Mod3DMT   # PATH TO BE UPLOADED
-            - outputs/
+            - bin/
+            - outputs/temp/
             - docs/
     #
     artifacts:
         paths:
-            - src/Mod3DMT   # PATH TO BE UPLOADED
-            - outputs
+            - bin/
+            - outputs/temp/
             - docs
         expire_in: 1 week
     #
     after_script:
         - echo "FINISH build_modem_on"
 #
-# JOB TEST PLAIN:   RUN Mod3DMT WITHOUT ANY PARAMETER
-test_plain:
+# JOB TEST PLAIN STD:   RUN Mod3DMT STD WITHOUT ANY PARAMETER
+test_plain_std:
     stage: test
     dependencies:
         - build_modem_on    # DEFINE THIS JOB DEPENDENCY FROM JOB build_modem_on
@@ -53,401 +55,54 @@ test_plain:
     script:
         #
         # PLAIN EXECUTION TEST WITH 1 CORE
-        - bash scripts/test_plain.sh 1 | tee outputs/test_plain.txt
+        - bash scripts/test_plain_std.sh 1 | tee outputs/temp/test_plain_std.txt
     #
     artifacts:
         paths:
-            - outputs/test_plain.txt
+            - outputs/temp/test_plain_std.txt
         expire_in: 1 week
-#
-# STANDART TEST READ_WRITE
-.test_read_write:
-    stage: test
-    dependencies:
-        - build_modem_on    # DEFINE THIS JOB DEPENDENCY FROM JOB build_modem_on
-    #
-    script:
-        #
-        - bash scripts/test_read_write.sh src/Mod3DMT inputs/rFile_Model inputs/rFile_Data 10
-    #
-    artifacts:
-        paths:
-            - outputs/test_read_write/
-        expire_in: 1 week
-    only:
-        - master
 #
 # STANDART TEST FORWARD
-test_forward:
+test_forward_std:
     stage: test
     dependencies:
         - build_modem_on    # DEFINE THIS JOB DEPENDENCY FROM JOB build_modem_on
     #
     script:
         #
-        - bash scripts/test_forward.sh src/Mod3DMT inputs/rFile_Model inputs/rFile_Data 10
+        - bash scripts/test_forward_std.sh bin/Mod3DMT_STD inputs/rFile_Model inputs/rFile_Data 10
+        #
     #
     artifacts:
         paths:
-            - outputs/test_forward/
+            - outputs/temp/test_forward_std/
         expire_in: 1 week
-    #only:
-        #- master
-#
-# STANDART TEST COMPUTE_J
-.test_compute_j:
-    stage: test
-    dependencies:
-        - build_modem_on    # DEFINE THIS JOB DEPENDENCY FROM JOB build_modem_on
-    #
-    script:
-        #
-        - bash scripts/test_compute_j.sh src/Mod3DMT inputs/rFile_Model inputs/rFile_Data 64
-    #
-    artifacts:
-        paths:
-            - outputs/test_compute_j/
-        expire_in: 1 week
-    only:
-        - master
-#
-# STANDART TEST MULT BY J
-.test_mult_by_j:
-    stage: test
-    dependencies:
-        - build_modem_on    # DEFINE THIS JOB DEPENDENCY FROM JOB build_modem_on
-    #
-    script:
-        #
-        - bash scripts/test_mult_by_j.sh src/Mod3DMT inputs/rFile_Model inputs/rFile_dModel inputs/rFile_Data 10
-    #
-    artifacts:
-        paths:
-            - outputs/test_mult_by_j/
-        expire_in: 1 week
-    only:
-        - master
-#
-# STANDART TEST MULT BY J T
-.test_mult_by_j_t:
-    stage: test
-    dependencies:
-        - build_modem_on    # DEFINE THIS JOB DEPENDENCY FROM JOB build_modem_on
-    #
-    script:
-        #
-        - bash scripts/test_mult_by_j_t.sh src/Mod3DMT inputs/rFile_Model inputs/rFile_Data 10
-    #
-    artifacts:
-        paths:
-            - outputs/test_mult_by_j_t/
-        expire_in: 1 week
-    only:
-        - master
-#
-# STANDART TEST MULT BY J T MULTI TX
-.test_mult_by_j_t_multi_tx:
-    stage: test
-    dependencies:
-        - build_modem_on    # DEFINE THIS JOB DEPENDENCY FROM JOB build_modem_on
-    #
-    script:
-        #
-        - bash scripts/test_mult_by_j_t_multi_tx.sh src/Mod3DMT inputs/rFile_Model inputs/rFile_Data 10
-    #
-    artifacts:
-        paths:
-            - outputs/test_mult_by_j_t_multi_tx/
-        expire_in: 1 week
-    only:
-        - master
-#
-# STANDART TEST INVERSE
-.test_inverse:
-    stage: test
-    dependencies:
-        - build_modem_on    # DEFINE THIS JOB DEPENDENCY FROM JOB build_modem_on
-    #
-    script:
-        #
-        - bash scripts/test_inverse.sh src/Mod3DMT inputs/rFile_Model inputs/rFile_Data 9
-    #
-    artifacts:
-        paths:
-            - outputs/test_inverse/
-        expire_in: 1 week
-    #only:
-        #- master
-#
-# STANDART TEST COV FWD
-.test_apply_cov_fwd:
-    stage: test
-    dependencies:
-        - build_modem_on    # DEFINE THIS JOB DEPENDENCY FROM JOB build_modem_on
-    #
-    script:
-        #
-        - bash scripts/test_apply_cov_fwd.sh src/Mod3DMT inputs/rFile_Model 10
-    #
-    artifacts:
-        paths:
-            - outputs/test_apply_cov_fwd/
-        expire_in: 1 week
-    only:
-        - master
-#
-# STANDART TEST COV INV
-.test_apply_cov_inv:
-    stage: test
-    dependencies:
-        - build_modem_on    # DEFINE THIS JOB DEPENDENCY FROM JOB build_modem_on
-    #
-    script:
-        #
-        - bash scripts/test_apply_cov_inv.sh src/Mod3DMT inputs/rFile_Model 10
-    #
-    artifacts:
-        paths:
-            - outputs/test_apply_cov_inv/
-        expire_in: 1 week
-    only:
-        - master
-#
-# STANDART TEST EXTRACT BC
-.test_extract_bc:
-    stage: test
-    dependencies:
-        - build_modem_on    # DEFINE THIS JOB DEPENDENCY FROM JOB build_modem_on
-    #
-    script:
-        #
-        - bash scripts/test_extract_bc.sh src/Mod3DMT inputs/rFile_Model inputs/rFile_Data 10
-    #
-    artifacts:
-        paths:
-            - outputs/test_extract_bc/
-        expire_in: 1 week
-    only:
-        - master
-#
-# STANDART TEST GRAD
-.test_grad:
-    stage: test
-    dependencies:
-        - build_modem_on    # DEFINE THIS JOB DEPENDENCY FROM JOB build_modem_on
-    #
-    script:
-        #
-        - bash scripts/test_grad.sh src/Mod3DMT inputs/rFile_Model inputs/rFile_Data inputs/rFile_dModel 10
-    #
-    artifacts:
-        paths:
-            - outputs/test_grad/
-        expire_in: 1 week
-    only:
-        - master
-#
-# STANDART TEST ADJ J
-.test_adj_j:
-    stage: test
-    dependencies:
-        - build_modem_on    # DEFINE THIS JOB DEPENDENCY FROM JOB build_modem_on
-    #
-    script:
-        #
-        - bash scripts/test_adj_j.sh src/Mod3DMT inputs/rFile_Model inputs/rFile_dModel inputs/rFile_Data 10
-    #
-    artifacts:
-        paths:
-            - outputs/test_adj_j/
-        expire_in: 1 week
-    only:
-        - master
-#
-# STANDART TEST ADJ J
-.test_adj_l:
-    stage: test
-    dependencies:
-        - build_modem_on    # DEFINE THIS JOB DEPENDENCY FROM JOB build_modem_on
-    #
-    script:
-        #
-        - bash scripts/test_adj_l.sh src/Mod3DMT inputs/rFile_Model inputs/rFile_EMsoln inputs/rFile_Data 10
-    #
-    artifacts:
-        paths:
-            - outputs/test_adj_l/
-        expire_in: 1 week
-    only:
-        - master
-#
-# STANDART TEST ADJ S
-.test_adj_s:
-    stage: test
-    dependencies:
-        - build_modem_on    # DEFINE THIS JOB DEPENDENCY FROM JOB build_modem_on
-    #
-    script:
-        #
-        - bash scripts/test_adj_s.sh src/Mod3DMT inputs/rFile_Model inputs/rFile_EMrhs inputs/rFile_Data 10
-    #
-    artifacts:
-        paths:
-            - outputs/test_adj_s/
-        expire_in: 1 week
-    only:
-        - master
-#
-# STANDART TEST ADJ P
-.test_adj_p:
-    stage: test
-    dependencies:
-        - build_modem_on    # DEFINE THIS JOB DEPENDENCY FROM JOB build_modem_on
-    #
-    script:
-        #
-        - bash scripts/test_adj_p.sh src/Mod3DMT inputs/rFile_Model inputs/rFile_dModel inputs/rFile_EMsoln inputs/rFile_Data 10
-    #
-    artifacts:
-        paths:
-            - outputs/test_adj_p/
-        expire_in: 1 week
-    only:
-        - master
-#
-# STANDART TEST ADJ Q
-.test_adj_q:
-    stage: test
-    dependencies:
-        - build_modem_on    # DEFINE THIS JOB DEPENDENCY FROM JOB build_modem_on
-    #
-    script:
-        #
-        - bash scripts/test_adj_q.sh src/Mod3DMT inputs/rFile_Model inputs/rFile_dModel inputs/rFile_Data 10
-    #
-    artifacts:
-        paths:
-            - outputs/test_adj_q/
-        expire_in: 1 week
-    only:
-        - master
-#
-# STANDART TEST ADJ M
-.test_adj_m:
-    stage: test
-    dependencies:
-        - build_modem_on    # DEFINE THIS JOB DEPENDENCY FROM JOB build_modem_on
-    #
-    script:
-        #
-        - bash scripts/test_adj_m.sh src/Mod3DMT inputs/rFile_Model 10
-    #
-    artifacts:
-        paths:
-            - outputs/test_adj_m/
-        expire_in: 1 week
-    only:
-        - master
-#
-# STANDART TEST ADJ d
-.test_adj_d:
-    stage: test
-    dependencies:
-        - build_modem_on    # DEFINE THIS JOB DEPENDENCY FROM JOB build_modem_on
-    #
-    script:
-        #
-        - bash scripts/test_adj_d.sh src/Mod3DMT inputs/rFile_Data 10
-    #
-    artifacts:
-        paths:
-            - outputs/test_adj_d/
-        expire_in: 1 week
-    only:
-        - master
-#
-# STANDART TEST ADJ e
-.test_adj_e:
-    stage: test
-    dependencies:
-        - build_modem_on    # DEFINE THIS JOB DEPENDENCY FROM JOB build_modem_on
-    #
-    script:
-        #
-        - bash scripts/test_adj_e.sh src/Mod3DMT inputs/rFile_Model inputs/rFile_Data inputs/rFile_EMsoln 10
-    #
-    artifacts:
-        paths:
-            - outputs/test_adj_e/
-        expire_in: 1 week
-    only:
-        - master
-#
-# STANDART TEST ADJ b
-.test_adj_b:
-    stage: test
-    dependencies:
-        - build_modem_on    # DEFINE THIS JOB DEPENDENCY FROM JOB build_modem_on
-    #
-    script:
-        #
-        - bash scripts/test_adj_b.sh src/Mod3DMT inputs/rFile_Model inputs/rFile_Data inputs/rFile_EMrhs 10
-    #
-    artifacts:
-        paths:
-            - outputs/test_adj_b/
-        expire_in: 1 week
-    only:
-        - master
-#
-# STANDART TEST SENS
-.test_sens:
-    stage: test
-    dependencies:
-        - build_modem_on    # DEFINE THIS JOB DEPENDENCY FROM JOB build_modem_on
-    #
-    script:
-        #
-        - bash scripts/test_sens.sh src/Mod3DMT inputs/rFile_Model inputs/rFile_dModel inputs/rFile_Data 180
-    #
-    artifacts:
-        paths:
-            - outputs/test_sens/
-        expire_in: 1 week
-    only:
-        - master
-#
-# TEST JOB 3:   RUN EVERY TEST AT tests/ DIR
-.test_engine_modem_on:
-    stage: test
-    dependencies:
-        - build_modem_on    # DEFINE THIS JOB DEPENDENCY FROM JOB build_modem_on
-    #
-    script:
-        #
-        # USER DEFINED TESTS
-        - bash scripts/test_engine.sh src/Mod3DMT
-        #
-    artifacts:
-        paths:
-            - outputs/
-        expire_in: 1 week
-    except:
-        - master
 #
 # DEPLOY: UPDATE GITLAB
 update_gitlab:
     stage: deploy
-    #environment: production
+    environment: production
     script:
         #
+        # CREATE FOLDER UNIQUE NAME
+        - output_folder=output_$(date "+%Y_%m_%d_%H_%M_%S")
+        #
+        # CHANGE TEMP NAME
+        - mv outputs/temp outputs/$output_folder
+        #
         # BASH: UPDATES GITLAB
-        - bash scripts/update_gitlab.sh $CI_COMMIT_REF_NAME &>> outputs/update_gitlab.txt
+        - bash scripts/update_gitlab.sh | tee outputs/$output_folder/update_gitlab.txt
+        #
+    #
+    artifacts:
+        paths:
+            - outputs/$output_folder/
+        expire_in: 1 week
 #
 # DEPLOY: UPDATE PAGES
 pages:
     stage: deploy
-    #environment: staging
+    environment: staging
     script:
         #
         # BASH: PAGE UPDATES

@@ -8,13 +8,15 @@ ncores=$4
 #
 # STRING NOW
 now=$(date "+%Y/%m/%d - %H:%M:%S")
-date_name=$(date "+%Y%m%d%H%M%S")
+#
+# REMOVE TEST OUTPUT FOLDER FROM MAIN OUTPUT FOLDER
+rm -rf outputs/test_inverse/
 #
 # CREATE TEST OUTPUT FOLDER
-mkdir -p test_inverse_$date_name
+mkdir -p test_inverse
 #
 # ENTER TEST OUTPUT FOLDER
-cd test_inverse_$date_name/
+cd test_inverse/
 #
 #
 echo "#### START INVERSE MPI TEST WITH $ncores CORES AT $now ####" | tee std_out.txt
@@ -48,7 +50,7 @@ echo "#### FINISH FORWARD MPI TEST ####" | tee -a std_out.txt
 cd ..
 #
 #
-mv test_inverse_$date_name/ outputs/
+mv test_inverse/ outputs/
 #
 #
 exit 0
