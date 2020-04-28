@@ -91,7 +91,7 @@ update_gitlab:
         - mv outputs/temp outputs/$output_folder
         #
         # BASH: UPDATES GITLAB
-        - bash scripts/update_gitlab.sh | tee outputs/$output_folder/update_gitlab.txt
+        - bash scripts/update_gitlab.sh $CI_COMMIT_REF_NAME | tee outputs/$output_folder/update_gitlab.txt
         #
     #
     artifacts:
