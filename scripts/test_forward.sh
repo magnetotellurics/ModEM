@@ -54,6 +54,7 @@ bash build_linux.sh
 #
 cd ../../test_forward_$exec_name
 ../tools/SolverDiagnostic3D/bin/SolverDiagnostic3D QMR*
+cd ..
 #
 #
 mv test_forward_$exec_name/ outputs/temp/
