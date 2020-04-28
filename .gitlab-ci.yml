@@ -91,7 +91,7 @@ test_forward_std:
     #
     artifacts:
         paths:
-            - outputs/temp/test_forward_*/
+            - outputs/temp/test_forward_*
         expire_in: 1 week
 #
 # STANDART TEST FORWARD
@@ -107,7 +107,7 @@ test_forward_sp2:
     #
     artifacts:
         paths:
-            - outputs/temp/test_forward_*/
+            - outputs/temp/test_forward_*
         expire_in: 1 week
 #
 # DEPLOY: UPDATE GITLAB
