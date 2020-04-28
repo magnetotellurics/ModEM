@@ -6,14 +6,16 @@ MODEL=$2
 DATA=$3
 ncores=$4
 #
+exec_name="${EXEC##*/}"
+#
 # CREATE TEST OUTPUT FOLDER
-mkdir -p test_forward_$EXEC
+mkdir -p test_forward_$exec_name
 #
 # ENTER TEST OUTPUT FOLDER
-cd test_forward_$EXEC/
+cd test_forward_$exec_name/
 #
 #
-echo "#### START FORWARD $EXEC MPI TEST WITH $ncores CORES AT $now ####" | tee std_out.txt
+echo "#### START FORWARD $exec_name MPI TEST WITH $ncores CORES AT $now ####" | tee std_out.txt
 #
 #
 echo "#### COMMAND LINE: [mpirun -n $ncores ../$EXEC -F ../$MODEL ../$DATA wFile_Data.dat wFile_EMsoln -v full]" | tee -a std_out.txt
@@ -28,7 +30,7 @@ result=$?
 if [ "$result" -ne "0" ]; then
 	#
 	#
-	echo "TEST FORWARD $EXEC FAIL: $result" | tee -a std_out.txt
+	echo "TEST FORWARD $exec_name FAIL: $result" | tee -a std_out.txt
 	#
 	#
 	cd ..
@@ -43,7 +45,7 @@ echo "#### FINISH FORWARD $EXEC MPI TEST ####" | tee -a std_out.txt
 #
 cd ..
 #
-mv test_forward_$EXEC/ outputs/temp/
+mv test_forward_$exec_name/ outputs/temp/
 #
 #
 exit 0
