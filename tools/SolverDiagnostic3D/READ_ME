@@ -1,0 +1,11 @@
+1) INSTALL "mingw-get-setup" OR DOWNLOAD IT FRM HERE: "https://osdn.net/projects/mingw/releases/"
+
+2) ADD "C:\MinGW\bin" INTO YOUR "Enviroment Variables > System Variables > Path"
+
+3) RUN "build_windows.bat"
+
+4) THE EXECUTABLE "SolverDiagnostic3D" WILL BE AT /bin
+
+5) TO RUN "SolverDiagnostic3D" JUST PASS THE TARGET FILE PATH AS ARGUMENT
+
+6) THE GENERATED FILE "HTML_OUTPUT_" MUST BE IN THE SAME DIRECTORY AS THE build/
