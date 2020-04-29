@@ -18,10 +18,17 @@ DataFile :: DataFile( std::string path, std::string math_box_path )
 }
 DataFile :: ~DataFile( void ){}
 
-int DataFile :: existPeriod( double target_value )
+int DataFile :: existPeriodByValue( double target_value )
 {
 	for( int pid = 0; pid < (int) _periods.size(); pid++ )
 		if( _periods[ pid ]->period == target_value )
+			return pid;
+	return -1;
+}
+int DataFile :: existPeriodByIndex( int target_index )
+{
+	for( int pid = 0; pid < (int) _periods.size(); pid++ )
+		if( _periods[ pid ]->index == target_index )
 			return pid;
 	return -1;
 }
@@ -29,63 +36,76 @@ void DataFile :: loadValues( void )
 {
 	int max_iteration = 0;
 	//
+	max_polarization_index = 0;
+	//
 	lx = ly = lz = hx = hy = hz = 0.0;
 	//
 	for( size_t lid = 0; lid < _lines.size(); lid++ )
 	{
 		std::vector< std::string > _line_parts = split( _lines[ lid ] );
-		//
-		Period * period = NULL;
-		//
-		double period_value = log10( atof( _line_parts[ 1 ].c_str() ) );
-		//
-		int period_index 	= atoi( _line_parts[ 2 ].c_str() );
-		int polarization_index 	= atoi( _line_parts[ 3 ].c_str() );
-		int iteration 	= atoi( _line_parts[ 4 ].c_str() );
-		double residual = log10( atof( _line_parts[ 5 ].c_str() ) );
-		//
-		//
-		lz = ( ( lz == 0.0 ) ? period_value : ( period_value < lz ) ? period_value : lz );
-		hz = ( ( hz == 0.0 ) ? period_value : ( period_value > hz ) ? period_value : hz );
-		//
-		ly = ( ( ly == 0.0 ) ? residual : ( residual < ly ) ? residual : ly );
-		hy = ( ( hy == 0.0 ) ? residual : ( residual > hy ) ? residual : hy );
-		//
-		lx = ( ( lx == 0.0 ) ? iteration : ( iteration < lx ) ? iteration : lx );
-		hx = ( ( hx == 0.0 ) ? iteration : ( iteration > hx ) ? iteration : hx );
-		//
-		//
-		if( atoi( _line_parts[ 4 ].c_str() ) > max_iteration )
-			max_iteration = atoi( _line_parts[ 4 ].c_str() );
-		//
-		int founded_index = existPeriod( period_value );
-		//
-		if( founded_index == -1 )
-			period = new Period;
-		else
-			period = _periods[ founded_index ];
-		//
-		period->index = period_index;
-		period->period = period_value;
-		//
-		switch( polarization_index )
+		if( _line_parts.size() == 6 )
 		{
-			case 1:
-				period->_pol_1_residuals.push_back( residual );
-				break;
-			case 2:
-				period->_pol_2_residuals.push_back( residual );
-				break;
-			default:
-				std::cout << "Wrong polarization: " << period_index << std::endl;
+			Period * period = NULL;
+			//
+			double period_value = log10( atof( _line_parts[ 1 ].c_str() ) );
+			//
+			int period_index 	= atoi( _line_parts[ 2 ].c_str() );
+			int polarization_index 	= atoi( _line_parts[ 3 ].c_str() );
+			//
+			if( polarization_index > max_polarization_index )
+				max_polarization_index = polarization_index;
+			//
+			int iteration 	= atoi( _line_parts[ 4 ].c_str() );
+			double residual = log10( atof( _line_parts[ 5 ].c_str() ) );
+			//
+			lz = ( ( lz == 0.0 ) ? period_value : ( period_value < lz ) ? period_value : lz );
+			hz = ( ( hz == 0.0 ) ? period_value : ( period_value > hz ) ? period_value : hz );
+			//
+			ly = ( ( ly == 0.0 ) ? residual : ( residual < ly ) ? residual : ly );
+			hy = ( ( hy == 0.0 ) ? residual : ( residual > hy ) ? residual : hy );
+			//
+			lx = ( ( lx == 0.0 ) ? iteration : ( iteration < lx ) ? iteration : lx );
+			hx = ( ( hx == 0.0 ) ? iteration : ( iteration > hx ) ? iteration : hx );
+			//
+			if( atoi( _line_parts[ 4 ].c_str() ) > max_iteration )
+				max_iteration = atoi( _line_parts[ 4 ].c_str() );
+			//
+			//int founded_index = existPeriodByValue( period_value );
+			int founded_index = existPeriodByIndex( period_index );
+			//
+			if( founded_index == -1 )
+				period = new Period;
+			else
+				period = _periods[ founded_index ];
+			//
+			period->index = period_index;
+			period->period = period_value;
+			//
+			switch( polarization_index )
+			{
+				case 1:
+					period->_pol_1_residuals.push_back( residual );
+					break;
+				case 2:
+					period->_pol_2_residuals.push_back( residual );
+					break;
+				default:
+					std::cout << "Wrong polarization: " << period_index << std::endl;
+			}
+			//
+			if( founded_index == -1 )
+				_periods.push_back( period );
+			else
+				_periods[ founded_index ] = period;
 		}
-		//
-		if( founded_index == -1 )
-			_periods.push_back( period );
 		else
-			_periods[ founded_index ] = period;
-		//
+			std::cout << "Line [" << lid+2 << " : [" << _lines[ lid ] << "] is wrong!" << std::endl;
 	}
+	//
+	std::cout << "X [" << lx << ", " << hx << "]" << std::endl;
+	std::cout << "Y [" << ly << ", " << hy << "]" << std::endl;
+	std::cout << "Z [" << lz << ", " << hz << "]" << std::endl;
+	//
 }
 std::string DataFile :: getMathBoxBundleContent( void )
 {
@@ -126,18 +146,6 @@ void DataFile :: createHtml( void )
 	"three.controls.maxDistance = 10;\n" <<
 	"three.renderer.setClearColor( new THREE.Color(0xFAFAF8), 1.0 );\n" <<
 
-	"view_pol_1 = mathbox.cartesian({\n" <<
-	"range: [[0, 2], [0, 1], [0, 1]],\n" <<
-	"scale: [3, 1, 1],\n" <<
-	"position: [5, 0, 0],\n" <<
-	"});\n" <<
-
-	"view_pol_2 = mathbox.cartesian({\n" <<
-	"range: [[0, 2], [0, 1], [0, 1]],\n" <<
-	"scale: [3, 1, 1],\n" <<
-	"position: [-5, 0, 0],\n" <<
-	"});\n" <<
-
 	"var dataMaximums = [" << hx << ", " << hy << ", " << lz << "];\n" <<
 	"var dataMinimums = [" << lx << ", " << ly << ", " << hz << "];\n" <<
 	"var dataRanges = [0,1,2,3].map(function(i){ return dataMaximums[i] - dataMinimums[i] })\n" <<
@@ -159,154 +167,88 @@ void DataFile :: createHtml( void )
 	"vals.push(Math.round(10 * (lo + (hi - lo)*(i/n)))/10);\n" <<
 	"}\n" <<
 	"return vals;\n" <<
-	"}\n" <<
+	"}\n";
 
-	"view_pol_1.scale({\n" <<
-	"divide: 5,\n" <<
-	"origin: [0,0,1,0],\n" <<
-	"axis: 'x',\n" <<
-	"}).text({\n" <<
-	"live: false,\n" <<
-	"data: interpolate(dataMinimums[0], dataMaximums[0], 5)\n" <<
-	"}).label({\n" <<
-	"color: colors.x,\n" <<
-	"})\n" <<
-
-	"view_pol_1.scale({\n" <<
-	"divide: 3,\n" <<
-	"origin: [0,0,1,0],\n" <<
-	"axis: 'y',\n" <<
-	"}).text({\n" <<
-	"live: false,\n" <<
-	"data: interpolate(dataMinimums[1], dataMaximums[1], 3)\n" <<
-	"}).label({\n" <<
-	"color: colors.y,\n" <<
-	"offset: [-16, 0]\n" <<
-	"})\n" <<
-
-	"view_pol_1.scale({\n" <<
-	"divide: 3,\n" <<
-	"origin: [2,0,0,0],\n" <<
-	"axis: 'z',\n" <<
-	"}).text({\n" <<
-	"live: false,\n" <<
-	"data: interpolate(dataMinimums[2], dataMaximums[2], 3)\n" <<
-	"}).label({\n" <<
-	"color: colors.z,\n" <<
-	"offset: [16, 0]\n" <<
-	"})\n" <<
-
-	"view_pol_2.scale({\n" <<
-	"divide: 5,\n" <<
-	"origin: [0,0,1,0],\n" <<
-	"axis: 'x',\n" <<
-	"}).text({\n" <<
-	"live: false,\n" <<
-	"data: interpolate(dataMinimums[0], dataMaximums[0], 5)\n" <<
-	"}).label({\n" <<
-	"color: colors.x,\n" <<
-	"})\n" <<
-
-	"view_pol_2.scale({\n" <<
-	"divide: 3,\n" <<
-	"origin: [0,0,1,0],\n" <<
-	"axis: 'y',\n" <<
-	"}).text({\n" <<
-	"live: false,\n" <<
-	"data: interpolate(dataMinimums[1], dataMaximums[1], 3)\n" <<
-	"}).label({\n" <<
-	"color: colors.y,\n" <<
-	"offset: [-16, 0]\n" <<
-	"})\n" <<
-
-	"view_pol_2.scale({\n" <<
-	"divide: 3,\n" <<
-	"origin: [2,0,0,0],\n" <<
-	"axis: 'z',\n" <<
-	"}).text({\n" <<
-	"live: false,\n" <<
-	"data: interpolate(dataMinimums[2], dataMaximums[2], 3)\n" <<
-	"}).label({\n" <<
-	"color: colors.z,\n" <<
-	"offset: [16, 0]\n" <<
-	"})\n" <<
-
-	"view_pol_1.grid({\n" <<
-	"axes: 'xy',\n" <<
-	"divideX: 3,\n" <<
-	"divideY: 3,\n" <<
-	"width: 5,\n" <<
-	"})\n" <<
-	".grid({\n" <<
-	"axes: 'xz',\n" <<
-	"divideX: 3,\n" <<
-	"divideY: 3,\n" <<
-	"width: 5,\n" <<
-	"})\n" <<
-	".grid({\n" <<
-	"axes: 'yz',\n" <<
-	"divideX: 3,\n" <<
-	"divideY: 3,\n" <<
-	"width: 5,\n" <<
-	"})\n" <<
-
-	"view_pol_2.grid({\n" <<
-	"axes: 'xy',\n" <<
-	"divideX: 3,\n" <<
-	"divideY: 3,\n" <<
-	"width: 5,\n" <<
-	"})\n" <<
-	".grid({\n" <<
-	"axes: 'xz',\n" <<
-	"divideX: 3,\n" <<
-	"divideY: 3,\n" <<
-	"width: 5,\n" <<
-	"})\n" <<
-	".grid({\n" <<
-	"axes: 'yz',\n" <<
-	"divideX: 3,\n" <<
-	"divideY: 3,\n" <<
-	"width: 5,\n" <<
-	"})\n" <<
-
-	"view_pol_1.array({\n" <<
-	"data: [[dataMaximums[0]/2, dataMinimums[1] - 1, dataMaximums[2] - 1], [dataMinimums[0] - 20, dataMaximums[1] + 1, dataMinimums[2]/2], [dataMaximums[0] + 20, dataMinimums[1], dataMinimums[2]/2]],\n" <<
-	"channels: 3,\n" <<
-	"live: false,\n" <<
-	"})\n" <<
-	".transform({\n" <<
-	"scale: dataRanges.slice(0,3).map(function(d,i){return i ? 1/d : 2/d}),\n" <<
-	"position: dataScaledMinimums.slice(0,3).map(function(d,i){return i ? -d : -2*d}),\n" <<
-	"})\n" <<
-	".text({\n" <<
-	"data: ['Iteration', 'LOG10 [Error]', 'LOG10[Period (s)]'],\n" <<
-	"font: 'Helvetica', weight: 'bold', style: 'normal'\n" <<
-	"})\n" <<
-	".label({\n" <<
-	"color: 0x000,\n" <<
-	"size: 12\n" <<
-	"});	\n" <<
-
-	"view_pol_2.array({\n" <<
-	"data: [[dataMaximums[0]/2, dataMinimums[1] - 1, dataMaximums[2] - 1], [dataMinimums[0] - 20, dataMaximums[1] + 1, dataMinimums[2]/2], [dataMaximums[0] + 20, dataMinimums[1], dataMinimums[2]/2]],\n" <<
-	"channels: 3,\n" <<
-	"live: false,\n" <<
-	"})\n" <<
-	".transform({\n" <<
-	"scale: dataRanges.slice(0,3).map(function(d,i){return i ? 1/d : 2/d}),\n" <<
-	"position: dataScaledMinimums.slice(0,3).map(function(d,i){return i ? -d : -2*d}),\n" <<
-	"})\n" <<
-	".text({\n" <<
-	"data: ['Iteration', 'LOG10 [Error]', 'LOG10[Period (s)]'],\n" <<
-	"font: 'Helvetica', weight: 'bold', style: 'normal'\n" <<
-	"})\n" <<
-	".label({\n" <<
-	"color: 0x000,\n" <<
-	"size: 12\n" <<
-	"});\n";
-
-	for( int pol = 1; pol <= 2; pol++ )
+	for( int pol = 1; pol <= max_polarization_index; pol++ )
 	{
+		html_content << "view_pol_" << pol << " = mathbox.cartesian({\n" <<
+		"range: [[0, 2], [0, 1], [0, 1]],\n" <<
+		"scale: [3, 1, 1],\n" <<
+		"position: [" << ( pol == 1 ? "" : "-" ) << "5, 0, 0],\n" <<
+		"});\n" <<
+
+		"view_pol_" << pol << ".scale({\n" <<
+		"divide: 5,\n" <<
+		"origin: [0,0,1,0],\n" <<
+		"axis: 'x',\n" <<
+		"}).text({\n" <<
+		"live: false,\n" <<
+		"data: interpolate(dataMinimums[0], dataMaximums[0], 5)\n" <<
+		"}).label({\n" <<
+		"color: colors.x,\n" <<
+		"})\n" <<
+
+		"view_pol_" << pol << ".scale({\n" <<
+		"divide: 3,\n" <<
+		"origin: [0,0,1,0],\n" <<
+		"axis: 'y',\n" <<
+		"}).text({\n" <<
+		"live: false,\n" <<
+		"data: interpolate(dataMinimums[1], dataMaximums[1], 3)\n" <<
+		"}).label({\n" <<
+		"color: colors.y,\n" <<
+		"offset: [-16, 0]\n" <<
+		"})\n" <<
+
+		"view_pol_" << pol << ".scale({\n" <<
+		"divide: 3,\n" <<
+		"origin: [2,0,0,0],\n" <<
+		"axis: 'z',\n" <<
+		"}).text({\n" <<
+		"live: false,\n" <<
+		"data: interpolate(dataMinimums[2], dataMaximums[2], 3)\n" <<
+		"}).label({\n" <<
+		"color: colors.z,\n" <<
+		"offset: [16, 0]\n" <<
+		"})\n" <<
+
+		"view_pol_" << pol << ".grid({\n" <<
+		"axes: 'xy',\n" <<
+		"divideX: 3,\n" <<
+		"divideY: 3,\n" <<
+		"width: 5,\n" <<
+		"})\n" <<
+		".grid({\n" <<
+		"axes: 'xz',\n" <<
+		"divideX: 3,\n" <<
+		"divideY: 3,\n" <<
+		"width: 5,\n" <<
+		"})\n" <<
+		".grid({\n" <<
+		"axes: 'yz',\n" <<
+		"divideX: 3,\n" <<
+		"divideY: 3,\n" <<
+		"width: 5,\n" <<
+		"})\n" <<
+
+		"view_pol_" << pol << ".array({\n" <<
+		"data: [ [ dataMaximums[0]/2, dataMinimums[1], dataMaximums[2] + dataMaximums[2]/5.0 ], [dataMinimums[0] - 20, dataMaximums[1] + 1, dataMinimums[2]/2], [dataMaximums[0] + 20, dataMinimums[1], dataMinimums[2]/2]],\n" <<
+		"channels: 3,\n" <<
+		"live: false,\n" <<
+		"})\n" <<
+		".transform({\n" <<
+		"scale: dataRanges.slice(0,3).map(function(d,i){return i ? 1/d : 2/d}),\n" <<
+		"position: dataScaledMinimums.slice(0,3).map(function(d,i){return i ? -d : -2*d}),\n" <<
+		"})\n" <<
+		".text({\n" <<
+		"data: ['Iteration', 'LOG10 [Error]', 'LOG10[Period (s)]'],\n" <<
+		"font: 'Helvetica', weight: 'bold', style: 'normal'\n" <<
+		"})\n" <<
+		".label({\n" <<
+		"color: 0x000,\n" <<
+		"size: 12\n" <<
+		"});	\n";
+	
 		for( size_t pid = 0; pid < _periods.size(); pid++ )
 		{
 			html_content << "view_pol_" << pol << ".array({\n" <<
