@@ -9,12 +9,13 @@ ncores=$3
 now=$(date "+%Y/%m/%d - %H:%M:%S")
 #
 exec_name="${EXEC##*/}"
+ctrl_name="${CTRL##*/}"
 #
 # CREATE TEST OUTPUT FOLDER
-mkdir -p test_forward_$exec_name
+mkdir -p test_forward_${exec_name}_${ctrl_name}
 #
 # ENTER TEST OUTPUT FOLDER
-cd test_forward_$exec_name/
+cd test_forward_${exec_name}_${ctrl_name}/
 #
 #
 echo "#### START FORWARD $exec_name MPI TEST WITH $ncores CORES AT $now ####" | tee std_out.txt
@@ -51,12 +52,12 @@ cd ..
 cd tools/SolverDiagnostic3D/
 bash build_linux.sh
 #
-cd ../../test_forward_$exec_name
+cd ../../test_forward_${exec_name}_${ctrl_name}
 ../tools/SolverDiagnostic3D/bin/SolverDiagnostic3D QMR* ../tools/MathBox/mathbox-bundle.js
 cd ..
 #
 #
-mv test_forward_$exec_name/ outputs/temp/
+mv test_forward_${exec_name}_${ctrl_name}/ outputs/temp/
 #
 #
 exit 0
