@@ -78,47 +78,47 @@ test_plain_sp2:
             - outputs/temp/test_plain_sp2.txt
         expire_in: 1 week
 #
-# STANDART TEST FORWARD
-test_forward_std:
+# STANDART TEST FORWARD MODELLING STD QMR
+test_forward_std_qmr:
     stage: test
     dependencies:
         - build_modem_on    # DEFINE THIS JOB DEPENDENCY FROM JOB build_modem_on
     #
     script:
         #
-        - bash scripts/test_forward.sh bin/Mod3DMT_STD inputs/rFile_Model inputs/rFile_Data 10
+        - bash scripts/test_forward.sh bin/Mod3DMT_STD inputs/rFile_userCtrl_QMR 10
         #
     #
     artifacts:
         paths:
-            - outputs/temp/test_forward_*
+            - outputs/temp/test_forward_modelling*
         expire_in: 1 week
 #
-# STANDART TEST FORWARD
-test_forward_sp2:
+# STANDART TEST FORWARD MODELLING STD BICG
+test_forward_std_bicg:
     stage: test
     dependencies:
         - build_modem_on    # DEFINE THIS JOB DEPENDENCY FROM JOB build_modem_on
     #
     script:
         #
-        - bash scripts/test_forward.sh bin/Mod3DMT_SP2 inputs/rFile_Model inputs/rFile_Data 10
+        - bash scripts/test_forward.sh bin/Mod3DMT_STD inputs/rFile_userCtrl_BICG 10
         #
     #
     artifacts:
         paths:
-            - outputs/temp/test_forward_*
+            - outputs/temp/test_forward_modelling*
         expire_in: 1 week
 #
-# STANDART TEST FORWARD MODELLING
-test_forward_modelling:
+# STANDART TEST FORWARD MODELLING STD BICG
+test_forward_sp2_bicg:
     stage: test
     dependencies:
         - build_modem_on    # DEFINE THIS JOB DEPENDENCY FROM JOB build_modem_on
     #
     script:
         #
-        - bash scripts/test_forward_modelling.sh bin/Mod3DMT_STD inputs/rFile_userCtrl 10
+        - bash scripts/test_forward.sh bin/Mod3DMT_SP2 inputs/rFile_userCtrl_BICG 10
         #
     #
     artifacts:

@@ -1,0 +1,6 @@
+job	FORWARD
+
+rFile_Model '../inputs/rFile_Model'
+rFile_Data '../inputs/rFile_Data'
+rFile_fwdCtrl '../inputs/rFile_fwdCtrl_BICG'
+wFile_Data 'wFile_Data'
