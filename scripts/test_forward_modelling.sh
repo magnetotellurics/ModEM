@@ -3,7 +3,7 @@
 # ARGUMENTS: 1 - Mod3DMT EXECUTABLE, 2 - CTRL FILE, 3 - NUMER OF CORES
 EXEC=$1
 CTRL=$2
-ncores=$4
+ncores=$3
 #
 # STRING NOW
 now=$(date "+%Y/%m/%d - %H:%M:%S")
@@ -20,7 +20,7 @@ cd test_forward_modelling_$exec_name/
 echo "#### START FORWARD $exec_name MPI TEST WITH $ncores CORES AT $now ####" | tee std_out.txt
 #
 #
-echo "#### COMMAND LINE: [mpirun -n $ncores ../$EXEC -F ../$CTRL ../$DATA wFile_Data.dat wFile_EMsoln -v full]" | tee -a std_out.txt
+echo "#### COMMAND LINE: [mpirun -n $ncores ../$EXEC -W ../$CTRL -v full]" | tee -a std_out.txt
 #
 #
 mpirun -n $ncores ../$EXEC -W ../$CTRL -v full | tee -a std_out.txt
