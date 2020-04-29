@@ -1,24 +1,26 @@
 #!/bin/bash
 #
-# ARGUMENTS: 1 - Mod3DMT PATH, 2 - CTRL FILE, 3 - NUMER OF CORES
+# ARGUMENTS: 1 - Mod3DMT EXECUTABLE, 2 - CTRL FILE, 3 - NUMER OF CORES
+EXEC=$1
+CTRL=$2
+ncores=$4
 #
-EXEC	=$1
-CTRL	=$2
-ncores	=$3
+# STRING NOW
+now=$(date "+%Y/%m/%d - %H:%M:%S")
 #
-NAME="${EXEC##*/}"
+exec_name="${EXEC##*/}"
 #
 # CREATE TEST OUTPUT FOLDER
-mkdir -p test_forward_modelling_$NAME
+mkdir -p test_forward_modelling_$exec_name
 #
 # ENTER TEST OUTPUT FOLDER
-cd test_forward_modelling_$NAME/
+cd test_forward_modelling_$exec_name/
 #
 #
-echo "#### START FORWARD MODELLING $NAME MPI TEST WITH $ncores CORES AT $now ####" | tee std_out.txt
+echo "#### START FORWARD $exec_name MPI TEST WITH $ncores CORES AT $now ####" | tee std_out.txt
 #
 #
-echo "#### COMMAND LINE: [mpirun -n $ncores ../$EXEC -W ../$CTRL -v full]" | tee -a std_out.txt
+echo "#### COMMAND LINE: [mpirun -n $ncores ../$EXEC -F ../$CTRL ../$DATA wFile_Data.dat wFile_EMsoln -v full]" | tee -a std_out.txt
 #
 #
 mpirun -n $ncores ../$EXEC -W ../$CTRL -v full | tee -a std_out.txt
@@ -30,7 +32,7 @@ result=$?
 if [ "$result" -ne "0" ]; then
 	#
 	#
-	echo "TEST FORWARD MODELLING $NAME FAIL: $result" | tee -a std_out.txt
+	echo "TEST FORWARD $exec_name FAIL: $result" | tee -a std_out.txt
 	#
 	#
 	cd ..
@@ -40,12 +42,21 @@ if [ "$result" -ne "0" ]; then
 fi
 #
 #
-echo "#### FINISH FORWARD MODELLING $EXEC MPI TEST ####" | tee -a std_out.txt
+echo "#### FINISH FORWARD $EXEC MPI TEST ####" | tee -a std_out.txt
 #
 #
 cd ..
 #
-mv test_forward_modelling_$NAME/ outputs/temp/
+# BUILD bin/SolverDiagnostic3D
+cd tools/SolverDiagnostic3D/
+bash build_linux.sh
+#
+cd ../../test_forward_modelling_$exec_name
+../tools/SolverDiagnostic3D/bin/SolverDiagnostic3D QMR* ../tools/MathBox/mathbox-bundle.js
+cd ..
+#
+#
+mv test_forward_modelling_$exec_name/ outputs/temp/
 #
 #
 exit 0
