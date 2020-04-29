@@ -91,7 +91,7 @@ test_forward_std_qmr:
     #
     artifacts:
         paths:
-            - outputs/temp/test_forward_modelling*
+            - outputs/temp/test_forward*
         expire_in: 1 week
 #
 # STANDART TEST FORWARD MODELLING STD BICG
@@ -107,7 +107,7 @@ test_forward_std_bicg:
     #
     artifacts:
         paths:
-            - outputs/temp/test_forward_modelling*
+            - outputs/temp/test_forward*
         expire_in: 1 week
 #
 # STANDART TEST FORWARD MODELLING STD BICG
@@ -123,7 +123,7 @@ test_forward_sp2_bicg:
     #
     artifacts:
         paths:
-            - outputs/temp/test_forward_modelling*
+            - outputs/temp/test_forward*
         expire_in: 1 week
 #
 # DEPLOY: UPDATE GITLAB
