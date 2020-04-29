@@ -1,4 +1,4 @@
-1) INSTALL "mingw-get-setup" OR DOWNLOAD IT FRM HERE: "https://osdn.net/projects/mingw/releases/"
+1) INSTALL "mingw-get-setup" OR DOWNLOAD IT FROM HERE: "https://osdn.net/projects/mingw/releases/"
 
 2) ADD "C:\MinGW\bin" INTO YOUR "Enviroment Variables > System Variables > Path"
 

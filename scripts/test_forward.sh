@@ -53,7 +53,7 @@ cd tools/SolverDiagnostic3D/
 bash build_linux.sh
 #
 cd ../../test_forward_$exec_name
-../tools/SolverDiagnostic3D/bin/SolverDiagnostic3D QMR*
+../tools/SolverDiagnostic3D/bin/SolverDiagnostic3D QMR* ../tools/MathBox/mathbox-bundle.js
 cd ..
 #
 #

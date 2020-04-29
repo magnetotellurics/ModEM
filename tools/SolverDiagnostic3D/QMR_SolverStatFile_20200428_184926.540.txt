@@ -1,0 +1,11 @@
+           #Job_Name              Period        Period_Index  Polarization_Index Number_of_Iteration            Residual
+             FORWARD        10.00000                       2                   1                   1       0.3091944E-07
+             FORWARD        100.0000                       3                   1                   1       0.3760463E-08
+             FORWARD        1000.000                       4                   1                   1       0.2747853E-07
+             FORWARD        1000.000                       4                   2                   1       0.2684920E-07
+             FORWARD        10.00000                       2                   2                   1       0.3021131E-07
+             FORWARD        100.0000                       3                   2                   1       0.3674339E-08
+             FORWARD        1.000000                       1                   2                   1       0.3021131E-06
+             FORWARD        1.000000                       1                   2                   2       0.4571448E-13
+             FORWARD        1.000000                       1                   1                   1       0.3091944E-06
+             FORWARD        1.000000                       1                   1                   2       0.4854104E-13

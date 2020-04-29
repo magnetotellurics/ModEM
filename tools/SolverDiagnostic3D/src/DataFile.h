@@ -10,13 +10,16 @@
 //
 class DataFile : public TextFile {
 public:
-	DataFile( std::string );
+	DataFile( std::string, std::string );
 	~DataFile( void );
 	//
 	void loadValues( void );
 	void createHtml( void );
 	int existPeriod( double );
+	//
+	std::string getMathBoxBundleContent( void );
 private:
+	std::string math_box_path;
 	std::vector< Period* > _periods;
 	//
 	double lx, ly, lz;

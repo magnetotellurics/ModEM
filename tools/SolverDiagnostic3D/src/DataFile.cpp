@@ -7,9 +7,11 @@
 #include <cstdlib>
 #include <cmath>
 
-DataFile :: DataFile( std::string path )
+DataFile :: DataFile( std::string path, std::string math_box_path )
 :TextFile( path )
 {
+	this->math_box_path = math_box_path;
+	//
 	loadValues();
 	//
 	createHtml();
@@ -85,6 +87,19 @@ void DataFile :: loadValues( void )
 		//
 	}
 }
+std::string DataFile :: getMathBoxBundleContent( void )
+{
+	// READ FILE LINES TO VECTOR _LINES
+	std::ifstream math_box_bundle( math_box_path.c_str() );
+	//
+	if ( math_box_bundle.is_open() )
+	{
+		std::string file_content( ( std :: istreambuf_iterator<char>( math_box_bundle ) ), std :: istreambuf_iterator<char>() );
+		return file_content.c_str();
+	}
+	std::cout << "NO MATH BOX BUNDLE FOUND" << std::endl;
+	return "NO MATH BOX BUNDLE FOUND";
+}
 void DataFile :: createHtml( void )
 {
 	std::stringstream html_content;
@@ -93,7 +108,7 @@ void DataFile :: createHtml( void )
 	"<head>\n" <<
 	"<meta charset='utf-8'>\n" <<
 	"<title>" << path << "</title>\n" <<
-	"<script src='../../../tools/MathBox/mathbox-bundle.js'></script>\n" <<
+	"<script>" << getMathBoxBundleContent() << "</script>\n" <<
 	"<link rel='stylesheet' href='../../../tools/MathBox/mathbox.css'>\n" <<
 	"<meta name='viewport' content='initial-scale=1, maximum-scale=1'>\n" <<
 	"</head>\n" <<
