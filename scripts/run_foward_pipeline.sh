@@ -40,13 +40,13 @@ echo "####### START test_forward_std_qmr #######"
 #
 echo "test_forward STD QMR MT = update_doxygen.txt" >> outputs/temp/summary.txt
 #
-bash scripts/test_forward.sh bin/Mod3DMT_STD inputs/rFile_userCtrl_MT-QMR $(nproc)
+bash scripts/test_forward.sh bin/Mod3DMT_STD inputs_workbench/rFile_userCtrl_MT-QMR $(nproc)
 #
 echo "#" >> outputs/temp/summary.txt
 #
 echo "test_forward STD QMR MT = update_doxygen.txt" >> outputs/temp/summary.txt
 #
-bash scripts/test_forward.sh bin/Mod3DMT_STD inputs/rFile_userCtrl_CSEM-QMR $(nproc)
+bash scripts/test_forward.sh bin/Mod3DMT_STD inputs_workbench/rFile_userCtrl_CSEM-QMR $(nproc)
 #
 echo "test_forward STD QMR CSEM = ????.txt" >> outputs/temp/summary.txt
 #
@@ -56,12 +56,12 @@ echo "####### START test_forward_std_bicg #######"
 echo "update_doxygen = update_doxygen.txt" >> outputs/temp/summary.txt
 echo "#" >> outputs/temp/summary.txt
 #
-bash scripts/test_forward.sh bin/Mod3DMT_STD inputs/rFile_userCtrl_MT-BICG $(nproc)
+bash scripts/test_forward.sh bin/Mod3DMT_STD inputs_workbench/rFile_userCtrl_MT-BICG $(nproc)
 #
 echo "update_doxygen = update_doxygen.txt" >> outputs/temp/summary.txt
 echo "#" >> outputs/temp/summary.txt
 #
-bash scripts/test_forward.sh bin/Mod3DMT_STD inputs/rFile_userCtrl_CSEM-BICG $(nproc)
+bash scripts/test_forward.sh bin/Mod3DMT_STD inputs_workbench/rFile_userCtrl_CSEM-BICG $(nproc)
 #
 #
 echo "####### START test_forward_sp2_bicg #######"
@@ -69,12 +69,12 @@ echo "####### START test_forward_sp2_bicg #######"
 echo "update_doxygen = update_doxygen.txt" >> outputs/temp/summary.txt
 echo "#" >> outputs/temp/summary.txt
 #
-bash scripts/test_forward.sh bin/Mod3DMT_SP2 inputs/rFile_userCtrl_MT-BICG $(nproc)
+bash scripts/test_forward.sh bin/Mod3DMT_SP2 inputs_workbench/rFile_userCtrl_MT-BICG $(nproc)
 #
 echo "update_doxygen = update_doxygen.txt" >> outputs/temp/summary.txt
 echo "#" >> outputs/temp/summary.txt
 #
-bash scripts/test_forward.sh bin/Mod3DMT_SP2 inputs/rFile_userCtrl_CSEM-BICG $(nproc)
+bash scripts/test_forward.sh bin/Mod3DMT_SP2 inputs_workbench/rFile_userCtrl_CSEM-BICG $(nproc)
 #
 #
 mv outputs/temp outputs/$output_folder

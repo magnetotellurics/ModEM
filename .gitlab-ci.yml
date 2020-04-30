@@ -86,9 +86,9 @@ test_forward_std_qmr:
     #
     script:
         #
-        - bash scripts/test_forward.sh bin/Mod3DMT_STD inputs/rFile_userCtrl_MT-QMR 10
+        - bash scripts/test_forward.sh bin/Mod3DMT_STD inputs_workbench/rFile_userCtrl_MT-QMR $(nproc)
         #
-        - bash scripts/test_forward.sh bin/Mod3DMT_STD inputs/rFile_userCtrl_CSEM-QMR 10
+        - bash scripts/test_forward.sh bin/Mod3DMT_STD inputs_workbench/rFile_userCtrl_CSEM-QMR $(nproc)
         #
     #
     artifacts:
@@ -104,9 +104,9 @@ test_forward_std_bicg:
     #
     script:
         #
-        - bash scripts/test_forward.sh bin/Mod3DMT_STD inputs/rFile_userCtrl_MT-BICG 10
+        - bash scripts/test_forward.sh bin/Mod3DMT_STD inputs_workbench/rFile_userCtrl_MT-BICG $(nproc)
         #
-        - bash scripts/test_forward.sh bin/Mod3DMT_STD inputs/rFile_userCtrl_CSEM-BICG 10
+        - bash scripts/test_forward.sh bin/Mod3DMT_STD inputs_workbench/rFile_userCtrl_CSEM-BICG $(nproc)
         #
     #
     artifacts:
@@ -122,9 +122,9 @@ test_forward_sp2_bicg:
     #
     script:
         #
-        - bash scripts/test_forward.sh bin/Mod3DMT_SP2 inputs/rFile_userCtrl_MT-BICG 10
+        - bash scripts/test_forward.sh bin/Mod3DMT_SP2 inputs_workbench/rFile_userCtrl_MT-BICG $(nproc)
         #
-        - bash scripts/test_forward.sh bin/Mod3DMT_SP2 inputs/rFile_userCtrl_CSEM-BICG 10
+        - bash scripts/test_forward.sh bin/Mod3DMT_SP2 inputs_workbench/rFile_userCtrl_CSEM-BICG $(nproc)
         #
     #
     artifacts:
