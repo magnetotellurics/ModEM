@@ -139,7 +139,7 @@ update_gitlab:
     script:
         #
         # CREATE FOLDER UNIQUE NAME
-        - output_folder=output_$(date "+%Y_%m_%d_%H_%M_%S")
+        - output_folder=pipeline_$(date "+%Y_%m_%d_%H_%M_%S")
         #
         # CHANGE TEMP NAME
         - mv outputs/temp outputs/$output_folder
