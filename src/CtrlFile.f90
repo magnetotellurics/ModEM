@@ -15,7 +15,7 @@ module CtrlFile
         !
         private
         integer                     :: nlines
-        character(50), pointer      :: names(:), values(:)
+        character(100), pointer      :: names(:), values(:)
         ! Character-based information specified by the user
         type (userdef_control)      :: cUserDef
     contains
@@ -38,8 +38,8 @@ contains
         !
         class( configs ), intent( inout )           :: this
         type ( userdef_control ), intent( in )      :: cUserDef
-        character(50), pointer                      :: aux_names(:), aux_values(:)
-        character(50)                               :: new_name, new_value
+        character(100), pointer                      :: aux_names(:), aux_values(:)
+        character(100)                               :: new_name, new_value
         integer                                     :: io_stat
         !
         this%cUserDef = cUserDef
@@ -101,7 +101,7 @@ contains
     !
     function getValidJob( this ) result( job )
         class( configs ), intent( inout )   :: this
-        character(50)                       :: str_job
+        character(100)                       :: str_job
         character(1)                        :: job
         !
         ifield_name = this%getNameId( 'job' )

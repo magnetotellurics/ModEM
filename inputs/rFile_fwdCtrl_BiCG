@@ -1,6 +1,6 @@
 #
 # DEFAULT QMR, BICG
-Solver QMR|BICG : QMR
+Solver QMR|BICG : BICG
 #
 # DEFAULT 40
 Number of QMR iters per divergence correction : 40
