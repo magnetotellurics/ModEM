@@ -234,7 +234,41 @@ Contains
              ! normal source
              call getVector(bRHS%s, s)
           endif
-          temp = Vedge*s
+		 
+!		 iOmegaMuInv = ISIGN/cmplx(0.0,omega*MU_0,prec)
+!		  temp=Vedge/s*iOmegaMuInv
+          iOmegaMuInv = ISIGN/cmplx(0.0,omega*MU_0,prec)
+
+		! temp=s/iOmegaMuInv*Vedge
+
+
+       !b = s(EDGEi) ! taking only the interior edges
+       ! b = s(EDGEi)*iOmegaMuInv /Vedge(EDGEi)
+       ! call RMATxCVEC(GDii,b,stemp)          !ee
+	   ! e(EDGEb) = s(EDGEb)
+	   ! Call Mult_Aib(e(EDGEb), trans, stemp) ! obj.A(ii,ib)*e(ib)
+       ! stemp = Vedge(EDGEi)*stemp
+       ! temp = s(EDGEi) - stemp
+
+       b = s(EDGEi) ! taking only the interior edges
+       b = b * iOmegaMuInv / Vedge(EDGEi)
+       call RMATxCVEC(GDii,b,stemp)
+       stemp = Vedge(EDGEi)*stemp
+       b = s(EDGEi) + stemp
+       Call Mult_Aib(e(EDGEb), .false., stemp)
+       stemp = stemp/Vedge(EDGEi)
+       temp = b + stemp
+
+	   
+	   
+
+        !cnst =ISIGN/cmplx(0.0,omega*MU_0,prec)
+        !b=s*cnst 
+		!ee = M3earth*obj.modOp.G*M2earth*obj.modOp.Gadj*M1earth*b;
+		!rhs=Vedge(EDGEi).*(s(EDGEi)+ee(EDGEi)) - obj.A(ii,ib)*e(ib); 
+
+
+
           if(bRHS%nonzero_BC) then
              b = temp(EDGEi) - b
           else
@@ -737,7 +771,7 @@ do
         call parse(line_text,":",args,nargs)
          solverControl%get_1D_from=args(2)
         if (output_level > 2) then
-           write (*,'(a50,a15)') node_info,"1D model for Ep in CSEM Geometric_mean|At_Tx_Position|Geometric_mean_around_Tx: ",solverControl%solver_name
+           write (*,'(a12,a,a)') node_info,"1D model for Ep in CSEM Geometric_mean|At_Tx_Position|Geometric_mean_around_Tx: ",trim(solverControl%get_1D_from)
         end if	
     else
         if (output_level > 2) then

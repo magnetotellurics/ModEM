@@ -46,7 +46,7 @@ subroutine get_source_for_csem(sigma,grid,iTx,source)
 		
 		phaseConvention = 'lag'          ! The usual default is lag, where phase becomes larger 
 										 !    positive values with increasing range.
-		lenTx1D         = 0000.d0        ! (m) Dipole length 0 = point dipole
+		lenTx1D         = 00.d0        ! (m) Dipole length 0 = point dipole
 		numIntegPts     = 0             ! Number of points to use for Gauss quadrature integration for finite dipole
  
  
@@ -64,7 +64,7 @@ subroutine get_source_for_csem(sigma,grid,iTx,source)
    call scMult(i_omega_mu,source,source)
  
  
- 
+
  
 end subroutine get_source_for_csem
 !#############################################
@@ -246,25 +246,25 @@ logical, intent(in), optional                        :: FromFile
 								end do
 							end do           
 							sig1D(k) = exp(temp_sigma_value/wt)
-					       write(22,*)k,1.0/sig1D(k),sig1D(k),get_1d_from
+					       write(220,*)k,zlay1D(k),1.0/sig1D(k),sig1D(k),get_1d_from
    		               end do
 					elseif (trim(get_1D_from) =="At_Tx_Position") then
 					   do k = nzAir+1,nlay1D
 					       sig1D(k)=sigmaCell%v(ixTx,iyTx,k)
-					       write(22,*)k,1.0/sig1D(k),sig1D(k),get_1d_from
+					       write(230,*)k,zlay1D(k),1.0/sig1D(k),sig1D(k),get_1d_from
    		               end do						
 					elseif (trim(get_1d_from)=="Geometric_mean_around_Tx") then
 					    do k = nzAir+1,nlay1D
 						  wt = R_ZERO
-							do i = ixTx-2,ixTx+2
-								do j = iyTx-2,iyTx+2
+							do i = ixTx-5,ixTx+5
+								do j = iyTx-5,iyTx+5
 										wt = wt + sigmaCell%grid%dx(i)*sigmaCell%grid%dy(j)
 										sig1D(k) = sig1D(k) + log(sigmaCell%v(i,j,k))* &
 										sigmaCell%grid%dx(i)*sigmaCell%grid%dy(j)
 								end do
 							end do           
 							sig1D(k) = exp(sig1D(k)/wt)	
-						  write(22,*)k,1.0/sig1D(k),sig1D(k),get_1d_from
+						  write(240,*)k,zlay1D(k),1.0/sig1D(k),sig1D(k),get_1d_from
    		                end do
 					elseif (trim(get_1d_from)=="Full_Geometric_mean") then
 					    wt = R_ZERO
@@ -281,14 +281,21 @@ logical, intent(in), optional                        :: FromFile
    		                end do
                         do k = nzAir+1,nlay1D
 						  sig1D(k) = exp(temp_sigma_value/counter)	
-						  write(22,*)k,1.0/sig1D(k),sig1D(k),get_1d_from,sigmaCell%v(1,1,k)
-                        end do						  
-					
+						  write(250,*)k,zlay1D(k),1.0/sig1D(k),sig1D(k),get_1d_from
+                        end do	
+                    elseif (trim(get_1d_from)=="Fixed_Value") then
+					    temp_sigma_value=sigmaCell%v(ixTx,iyTx,nzAir+1) !the value exactly below the Tx
+	                     do k = nzAir+1,nlay1D
+						  sig1D(k) = temp_sigma_value
+						  write(260,*)k,zlay1D(k),1.0/sig1D(k),sig1D(k),get_1d_from
+                        end do					
                     end if	
    		call getValue_modelParam(sigma,paramType,model,vAir)
 
 
-
+   do k = 1,nlay1D
+   write(333,*)k,1.0/sig1D(k),zlay1D(k)/1000.0,get_1d_from
+   end do
    
 	
    ! Put the background (Primary) "condNomaly" conductivities in ModEM model format
