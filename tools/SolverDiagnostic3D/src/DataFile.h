@@ -15,7 +15,8 @@ public:
 	//
 	void loadValues( void );
 	void createHtml( void );
-	int existPeriod( double );
+	int existPeriodByIndex( int );
+	int existPeriodByValue( double );
 	//
 	std::string getMathBoxBundleContent( void );
 private:
@@ -24,6 +25,8 @@ private:
 	//
 	double lx, ly, lz;
 	double hx, hy, hz;
+	//
+	int max_polarization_index;
 };
 //
 #endif
