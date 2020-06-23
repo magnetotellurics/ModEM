@@ -1,0 +1,62 @@
+#!/bin/bash
+#
+# ARGUMENTS: 1 - Mod3DMT EXECUTABLE, 2 - MODEL FILE, 3 - DATA FILE, 4 - NUMBER OF CORES
+EXEC=$1
+MODEL=$2
+DATA=$3
+ncores=$4
+#
+# STRING NOW
+now=$(date "+%Y/%m/%d - %H:%M:%S")
+#
+# GET ENVIROMENT NUMBER OF CORES 
+ncores=$(nproc)
+#
+# REMOVE TEST OUTPUT FOLDER FROM MAIN OUTPUT FOLDER
+rm -rf outputs/test_mult_by_j_t/
+#
+# CREATE TEST OUTPUT FOLDER
+mkdir -p test_mult_by_j_t
+#
+# ENTER TEST OUTPUT FOLDER
+cd test_mult_by_j_t/
+#
+#
+echo "#### START MULT_BY_J_T MPI TEST WITH $ncores CORES AT $now ####" | tee std_out.txt
+#
+#
+echo "#### COMMAND LINE: [mpirun -n $ncores ../$EXEC -T ../$MODEL ../$DATA wFile_dModel -v full]" | tee -a std_out.txt
+#
+#
+mpirun -n $ncores ../$EXEC -T ../$MODEL ../$DATA wFile_dModel -v full | tee -a std_out.txt
+#
+# CATCH RESULT
+result=$?
+#
+# TEST RESULT
+if [ "$result" -ne "0" ]; then
+	#
+	#
+	echo "TEST MULT_BY_J_T FAIL: $result" | tee -a std_out.txt
+	#
+	#
+	cd ..
+	#
+	#
+	exit $result
+fi
+#
+#
+echo "#### FINISH MULT_BY_J_T MPI TEST ####" | tee -a std_out.txt
+#
+#
+cd ..
+#
+#
+mv test_mult_by_j_t/ outputs/
+#
+#
+exit 0
+#
+# END OF SCRIPT
+
