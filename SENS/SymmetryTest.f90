@@ -169,6 +169,9 @@ Contains
 
    enddo  ! tx
 
+   ! pass back Le for possible output
+   d = Le
+
    ! clean up
    call deall(dPred)
    call deall(eAll)

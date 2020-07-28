@@ -100,11 +100,11 @@ Contains
   	ctrl%wFile_EMsoln = 'n'
   	ctrl%rFile_Prior = 'n'
   	ctrl%wFile_Sens = 'n'
-  	ctrl%lambda = 10.
-  	ctrl%eps = 1.0e-7
   	ctrl%rFile_Cov = 'n'
   	ctrl%search = 'NLCG'
   	ctrl%option = 'J'
+  	ctrl%lambda = 10.
+  	ctrl%eps = 1.0e-7
   	ctrl%delta = 0.05
   	ctrl%output_level = 3
 
@@ -231,7 +231,7 @@ Contains
         write(*,*) '  Optionally, also specify the prior model to compute resistivities'
         write(*,*) '  from model perturbation: m = C_m^{1/2} \\tilde{m} + m_0'
         write(*,*) '[EXTRACT_BC]'
-        write(*,*) ' -b rFile_Model rFile_Data wFile_EMrhs'
+        write(*,*) ' -b rFile_Model rFile_Data wFile_EMrhs [rFile_fwdCtrl]'
         write(*,*) '  Initializes the forward solver and extracts the boundary conditions,'
         write(*,*) '  writes to file.'
         write(*,*) '[TEST_GRAD]'
@@ -520,12 +520,12 @@ Contains
            write(0,*) '  writes to file.'
            stop
         else
-        ctrl%rFile_Model = temp(1)
-        ctrl%rFile_Data = temp(2)
-        ctrl%wFile_EMrhs = temp(3)
-        if (narg > 3) then
-            ctrl%rFile_fwdCtrl = temp(4)
-        end if
+            ctrl%rFile_Model = temp(1)
+            ctrl%rFile_Data = temp(2)
+            ctrl%wFile_EMrhs = temp(3)
+            if (narg > 3) then
+                ctrl%rFile_fwdCtrl = temp(4)
+            end if
         end if
 
       case (TEST_GRAD) !g
@@ -560,11 +560,11 @@ Contains
            write(0,*) '  Tests the equality d^T J m = m^T J^T d for any model and data.'
            write(0,*) '  Optionally, outputs J m and J^T d.'
            write(0,*)
-           write(0,*) ' -A  L rFile_Model rFile_EMsoln rFile_Data [wFile_EMrhs wFile_Data]'
+           write(0,*) ' -A  L rFile_Model rFile_EMsoln rFile_Data [wFile_EMrhs wFile_Data rFile_fwdCtrl]'
            write(0,*) '  Tests the equality d^T L e = e^T L^T d for any EMsoln and data.'
            write(0,*) '  Optionally, outputs L e and L^T d.'
            write(0,*)
-           write(0,*) ' -A  S rFile_Model rFile_EMrhs rFile_Data [wFile_EMsoln]'
+           write(0,*) ' -A  S rFile_Model rFile_EMrhs rFile_Data [wFile_EMsoln rFile_fwdCtrl]'
            write(0,*) '  Tests the equality b^T S^{-1} b = b^T (S^{-1})^T b for any EMrhs.'
            write(0,*) '  For simplicity, use one EMrhs for forward and transpose solvers.'
            write(0,*) '  Data file only needed to set up dictionaries.'
@@ -585,8 +585,8 @@ Contains
            write(0,*) 'Finally, generates random 5% perturbations, if implemented:'
            write(0,*) ' -A  m rFile_Model wFile_Model [delta]'
            write(0,*) ' -A  d rFile_Data wFile_Data [delta]'
-           write(0,*) ' -A  e rFile_Model rFile_Data rFile_EMsoln wFile_EMsoln [delta]'
-           write(0,*) ' -A  b rFile_Model rFile_Data rFile_EMrhs wFile_EMrhs [delta]'
+           write(0,*) ' -A  e rFile_Model rFile_Data rFile_EMsoln wFile_EMsoln [delta rFile_fwdCtrl]'
+           write(0,*) ' -A  b rFile_Model rFile_Data rFile_EMrhs wFile_EMrhs [delta rFile_fwdCtrl]'
            stop
         else
            ctrl%option = temp(1)
@@ -613,6 +613,9 @@ Contains
                 if (narg > 5) then
                     ctrl%wFile_Data = temp(6)
                 endif
+                if (narg > 6) then
+                    ctrl%rFile_fwdCtrl = temp(7)
+                endif
            case ('S')
                 ctrl%rFile_Model = temp(2)
                 ctrl%rFile_EMrhs = temp(3)
@@ -620,12 +623,15 @@ Contains
                 if (narg > 4) then
                     ctrl%wFile_EMsoln = temp(5)
                 endif
+                if (narg > 5) then
+                    ctrl%rFile_fwdCtrl = temp(6)
+                endif
            case ('P')
                 ctrl%rFile_Model = temp(2)
                 ctrl%rFile_dModel = temp(3)
                 ctrl%rFile_EMsoln = temp(4)
                 if (narg < 5) then
-                    write(0,*) 'Usage: -P rFile_Model rFile_mgCtrl rFile_dModel rFile_EMsoln rFile_Data [wFile_Model wFile_EMrhs]'
+                    write(0,*) 'Usage: -P rFile_Model rFile_dModel rFile_EMsoln rFile_Data [wFile_Model wFile_EMrhs]'
                     write(0,*) 'Please specify data template file to set up the transmitter dictionary'
                     stop
                 endif
@@ -672,6 +678,9 @@ Contains
                 if (narg > 5) then
                     read(temp(6),*,iostat=istat) ctrl%delta
                 endif
+                if (narg > 6) then
+                    ctrl%rFile_fwdCtrl = temp(7)
+                endif
            case ('b')
                 ctrl%rFile_Model = temp(2)
                 ctrl%rFile_Data = temp(3)
@@ -679,6 +688,9 @@ Contains
                 ctrl%wFile_EMrhs = temp(5)
                 if (narg > 5) then
                     read(temp(6),*,iostat=istat) ctrl%delta
+                endif
+                if (narg > 6) then
+                    ctrl%rFile_fwdCtrl = temp(7)
                 endif
            case default
                 write(0,*) 'Unknown operator. Usage: -A [J | L | S | P | Q] OR -A [m | d | e | b]'

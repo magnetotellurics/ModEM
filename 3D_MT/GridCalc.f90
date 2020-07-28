@@ -592,7 +592,7 @@ Contains
   ! *************************************************************************
   ! * Cell2Node will be used by modified system equation with "node based
   ! * scaling factor
-  ! * not sure this will be useful or not, yet.
+  ! * used by ModelParamToNode (currently only employed in SP2)
   ! * essentially this maps cell based scalar value onto Nodes.  
 
   subroutine Cell2Node(grid,C,N)

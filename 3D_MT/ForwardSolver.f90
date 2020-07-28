@@ -57,9 +57,6 @@ public exitSolver
 
 ! solver routines
 public fwdSolve, sensSolve
-#ifdef PETSC
-public fwdSolve_petsc,sensSolve_petsc
-#endif
 
 logical, save, private		:: modelDataInitialized = .false.
 logical, save, private		:: BC_from_file_Initialized = .false.
@@ -155,16 +152,16 @@ end subroutine copyE0fromFile
    !   NOTE: e and comb are optional calling arguments;
    !     both should be present if one is
 
-   integer, intent(in)				:: iTx
+   integer, intent(in)				            :: iTx
    type(modelParam_t),intent(in), target		:: sigma
-   type(grid_t), intent(in), target         :: grid
+   type(grid_t), intent(in), target             :: grid
    !  following structures are initialized
    !	solution vector for forward problem
    type(solnVector_t), intent(inout)			:: e0
    !	solution vector for sensitivity
    type(solnVector_t), intent(inout), optional	:: e
    !	forcing for sensitivity
-   type(rhsVector_t), intent(inout), optional		:: comb
+   type(rhsVector_t), intent(inout), optional   :: comb
 
    !  local variables
    integer		:: IER,k
@@ -199,7 +196,6 @@ end subroutine copyE0fromFile
       call ModelOperatorSetup()
       modelDataInitialized = .true.
    endif
-
    ! now calls this all-at-once
    ! call UpdateFreqCond(txDict(iTx)%omega, sigma)
 !    the following needs work ... want to avoid reinitializing
@@ -218,7 +214,6 @@ end subroutine copyE0fromFile
    ! This needs to be called before solving for a different frequency
    !!!!!!!  BUT AFTER UPDATECOND !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    call UpdateFreq(txDict(iTx)%omega)
-
    end subroutine initSolver
 
    !**********************************************************************
@@ -345,6 +340,7 @@ end subroutine copyE0fromFile
                 ! store the BC in b0 and set up the forward problem - use fake indexing in MPI
                 b0%b(j)%adj = 'FWD'
                 b0%b(j)%bc = BC
+                call deall_cboundary(BC)
 
             case default
                 write(0,*) node_info,'Unknown FWD problem type',trim(txDict(iTx)%Tx_type),'; unable to compute RHS'
@@ -354,7 +350,7 @@ end subroutine copyE0fromFile
   end subroutine fwdSetup
 
    !**********************************************************************
-   subroutine fwdSolve(iTx,e0,b0)
+   subroutine fwdSolve(iTx,e0,b0,comm_local)
 
    !  driver for 3d forward solver; sets up for transmitter iTx, returns
    !   solution in e0 ; rhs vector (b0) is generated locally--i.e.
@@ -362,11 +358,14 @@ end subroutine copyE0fromFile
    !   dictionary to indireclty provide information about boundary
    !    conditions.  Presently we set BC using WS approach.
    !
-   ! this *should* works with the SP versions as well
+   ! this *should* works with the SP/SP2/SPETSc2 versions as well
 
    integer, intent(in)		:: iTx
    type(solnVector_t), intent(inout)	:: e0
    type(rhsVector_t), intent(in)        :: b0
+   ! NOTE: this is only needed for two layer parallelization
+   ! normal (none-petsc) programmes have no need of this
+   integer, intent(in), optional        :: comm_local
 
    ! local variables
    real(kind=prec)	:: omega
@@ -390,7 +389,11 @@ end subroutine copyE0fromFile
 		! ... but b0 uses the same fake indexing as e0
 		write (*,'(a12,a12,a3,a20,i4,a2,es13.6,a15,i2)') node_info, 'Solving the ','FWD', &
 				' problem for period ',iTx,': ',(2*PI)/omega,' secs & mode # ',e0%Pol_index(iMode)
-		call FWDsolve3D(b0%b(iMode),omega,e0%pol(iMode))
+        if (present(comm_local)) then
+            call FWDsolve3D(b0%b(iMode),omega,e0%pol(iMode), comm_local)
+        else
+            call FWDsolve3D(b0%b(iMode),omega,e0%pol(iMode))
+        end if
 		write (6,*)node_info,'FINISHED solve, nPol',e0%nPol
    	   enddo
    else
@@ -403,18 +406,23 @@ end subroutine copyE0fromFile
    end subroutine fwdSolve
 
    !**********************************************************************
-   subroutine sensSolve(iTx,FWDorADJ,e,comb)
+   subroutine sensSolve(iTx,FWDorADJ,e,comb,comm_local)
    !   Uses forcing input from comb, which must be set before calling
    !    solves forward or adjoint problem, depending on comb%ADJ
    !  NOTE that this routine DOES NOT call UpdateFreq routine to complete
    !   initialization of solver for a particular frequency.
    !  This final initialization step must (at present) be done by
    !    calling fwdSolve before calling this routine.
+   !
+   ! this *should* works with the SP/SP2/SPETSc2 versions as well
 
    integer, intent(in)          	:: iTx
    character*3, intent(in)		:: FWDorADJ
    type(solnVector_t), intent(inout)		:: e
    type(rhsVector_t), intent(inout)		:: comb
+   ! NOTE: this is only needed for two layer parallelization
+   ! normal (none-petsc) programmes have no need of this
+   integer, intent(in), optional        :: comm_local
 
    ! local variables
    integer      			:: IER,iMode
@@ -430,7 +438,12 @@ end subroutine copyE0fromFile
       	comb%b(e%Pol_index(iMode))%adj = FWDorADJ
       	write (*,'(a12,a12,a3,a20,i4,a2,es13.6,a15,i2)') node_info,'Solving the ',FWDorADJ, &
 		' problem for period ',iTx,': ',(2*PI)/omega,' secs & mode # ',e%Pol_index(iMode)
-      	call FWDsolve3d(comb%b(e%Pol_index(iMode)),omega,e%pol(imode))
+        if (present(comm_local)) then
+            call FWDsolve3d(comb%b(e%Pol_index(iMode)),omega,           &
+     &           e%pol(imode), comm_local)
+        else
+            call FWDsolve3d(comb%b(e%Pol_index(iMode)),omega,e%pol(imode))
+        end if
    	enddo
    else
     write(0,*) node_info,'Unknown FWD problem type',trim(txDict(iTx)%Tx_type),'; unable to run sensSolve'

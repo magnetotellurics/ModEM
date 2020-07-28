@@ -51,6 +51,8 @@ module modelOperator3D
                                          !  as the Air part should be zero?
                                          !  int.-int.
    !   divergence correction operators
+   !   these are (should) not allocated in modified system of equations.
+   type(spMatCSR_Real)         ::  Gai   ! grad: all nodes -> inner edges 
    type(spMatCSR_Real)         ::  VDiv  ! div : edges->nodes (interior only)
    type(spMatCSR_Real)         ::  VDsG  !   operator for div correction
    type(spMatCSR_Real)         ::  VDs   !     divergence of current operator
@@ -105,11 +107,27 @@ Contains
       call setVnode(mGrid)
       call setVedge(mGrid)
 
+      ! Use the grid (which, potentially, maybe have been updated!) to set up
+      !   all the grid length, surface and volume elements stored in GridCalc.
+      ! Want to initialize them here in case the grid gets updated along the way.
+      ! The reason for storing them in GridCalc is that they are also used
+      !   by ModelMap, EMfieldInterp, nestedEM
+      ! THIS IS CLEARLY A CONCEPTUAL DUPLICATE OF MetricElements but including
+      ! it here for now for compatibility - needed for EMfieldInterp
+      Call EdgeLength(mGrid, l_E)
+      Call EdgeArea(mGrid, S_E)
+      Call EdgeVolume(mGrid, V_E, l_E, S_E)
+      Call FaceLength(mGrid, l_F)
+      Call FaceArea(mGrid, S_F)
+      Call FaceVolume(mGrid, V_F, l_F, S_F)
+      Call CellVolume(mGrid, V_C)
+      Call NodeVolume(mGrid, V_N) ! used for divergence correction
+
       ! set a default omega
       omega = 0.0
       !  specific model operators
       call CurlCurlSetup()
-      ! don't really need this with modified system equation
+      ! uncomment the following line to do divergence correction in CCGD 
       ! call DivCorInit()
 
    end subroutine ModelDataInit
@@ -123,7 +141,7 @@ Contains
       call deall_spMatCSR(G)
       call CurlCurlCleanup()
       call deall_PC()
-      ! don't really need this with modified system equation
+      ! uncomment the following line to do divergence correction in CCGD 
       ! call deall_DivCor()
 
       !    interior and edge indicies
@@ -135,7 +153,13 @@ Contains
       call deall_MetricElements()
 
       ! and the grid elements stored in GridCalc
+      call deall_rvector(l_E)
+      call deall_rvector(S_E)
       call deall_rvector(V_E)
+      call deall_rvector(l_F)
+      call deall_rvector(S_F)
+      call deall_rvector(V_F)
+      call deall_rscalar(V_C)
       call deall_rscalar(V_N)
 
       ! and the edge conductivities
@@ -155,13 +179,8 @@ Contains
       real (kind=prec), intent (in)             :: inOmega
 
       call updateOmegaMuSig(inOmega)
-#ifdef PETSC
-      ! don't really need this as we will use preconditioners from PETSc
-#else
       call PC_setup()
-#endif
-      ! don't really need this with modified system equation
-      ! or do we?
+      ! uncomment the following line to do divergence correction in CCGD 
       ! call DivCorSetup()
 
    end subroutine UpdateFreq  ! UpdateFreq
@@ -171,13 +190,11 @@ Contains
 
        implicit none
        type(modelParam_t), intent(in)      :: CondParam      ! input conductivity
+       ! local 
        type(rvector)                           :: sigTemp
        type(rscalar)                           :: sigTemp2
-       real(kind=prec), pointer, dimension(:)  :: sigVec
-       real(kind=prec), pointer, dimension(:)  :: sigVec2
-       real(kind=prec), allocatable, dimension(:)  :: SigEdge
-       real(kind=prec), allocatable, dimension(:)  :: SigNode
-       integer                                 :: Ne,Nn
+       real(kind=prec), pointer, dimension(:)  :: sigEdge
+       real(kind=prec), pointer, dimension(:)  :: sigNode
 
        ! COPIED OVER FROM MATRIX FREE VERSION FOR CONSISTENCY. CURRENTLY NOT USED
        ! BUT NECESSARY FOR REUSE OF THE SAME FORWARD SOLVER MODULE
@@ -185,38 +202,34 @@ Contains
        call create(mGrid,sigTemp2,CORNER)
        call ModelParamToEdge(CondParam,sigTemp)
        call ModelParamToNode(CondParam,sigTemp2)
-       if(associated(sigVec)) then
-           nullify(sigVec)
+       if(associated(SigEdge)) then
+           nullify(SigEdge)
        endif
-       if(associated(sigVec2)) then
-           nullify(sigVec2)
+       if(associated(SigNode)) then
+           nullify(SigNode)
        endif
-       call getVector(sigTemp,sigVec)
-       call getScalar(sigTemp2,sigVec2)
+       call getVector(sigTemp,SigEdge)
+       call getScalar(sigTemp2,SigNode)
        call deall(sigTemp)
        call deall(sigTemp2)
-       Ne = size(EDGEi)+size(EDGEb)
-       Nn = size(NODEi)+size(NODEb)
-       allocate(SigEdge(Ne))
-       allocate(SigNode(Nn))
-       SigEdge = sigVec
-       SigNode = sigVec2
-       SigEdge(EDGEb) = 0.0 !force the boundary to be zeros...
-       SigNode(NODEb) = 0.0 !force the boundary to be zeros...
+       SigEdge(EDGEb) = R_ZERO !force the boundary to be zeros...
+       ! note: we don't really want to do this for the nodes as we will be
+       ! using 1./SigNode as scaling factor
+       ! SigNode(NODEb) = R_ZERO !force the boundary to be zeros...
        ! modify the system equation here,
        ! as the GD should be updated whenever the omega or the conductivity
        ! is updated
        ! could find a better place for this
        call GradDivSetup2(SigEdge,SigNode)
-       omega = 1.0 ! setup an (arbitary) working omega
-       VomegaMuSig = MU_0*Omega*sigVec(EDGEi)*Vedge(EDGEi)
-       deallocate(sigVec)
-       deallocate(sigVec2)
+       omega = ONE ! setup an (arbitary) working omega
+       VomegaMuSig = MU_0*Omega*SigEdge(EDGEi)*Vedge(EDGEi)
       ! TEMPORARY; REQUIRED FOR BOUNDARY CONDITIONS
       !  set static array for cell conductivities
       !  this stores conductivity values in a module structure
       !  that is readily accesible to boundary condition routines
       !  rvector sigma_C is created if it is not yet allocated
+       deallocate(SigEdge)
+       deallocate(SigNode)
        call ModelParamToCell(CondParam, sigma_C)
 
    end subroutine UpdateCond  ! UpdateCond
@@ -229,13 +242,8 @@ Contains
       real (kind=prec), intent (in)       :: inOmega
 
       call updateOmegaMuSig(inOmega,CondParam)
-#ifdef PETSC
-      ! don't really need this as we will use preconditioners from PETSc
-#else
       call PC_setup()
-#endif
-      ! don't really need this with modified system equation
-      ! or do we?
+      ! uncomment the following line to do divergence correction in CCGD 
       ! call DivCorSetup()
 
       ! TEMPORARY; REQUIRED FOR BOUNDARY CONDITIONS
@@ -252,46 +260,40 @@ Contains
 
       real (kind=prec), intent (in)       :: inOmega
       type(modelParam_t), intent(in),optional :: m
+      ! local variables 
       type(rvector)                           :: sigTemp
       type(rscalar)                           :: sigTemp2
-      real(kind=prec), pointer, dimension(:)  :: sigVec
-      real(kind=prec), pointer, dimension(:)  :: sigVec2
-      real(kind=prec), allocatable, dimension(:)  :: SigEdge
-      real(kind=prec), allocatable, dimension(:)  :: SigNode
-      integer                                 :: Ne,Nn
+      real(kind=prec), pointer, dimension(:)  :: SigEdge
+      real(kind=prec), pointer, dimension(:)  :: SigNode
 
       if(present(m)) then
          call create(mGrid,sigTemp,EDGE)
          call create(mGrid,sigTemp2,CORNER)
          call ModelParamToEdge(m,sigTemp)
          call ModelParamToNode(m,sigTemp2)
-         if(associated(sigVec)) then
-             nullify(sigVec)
+         if(associated(SigEdge)) then
+             nullify(SigEdge)
          endif
-         if(associated(sigVec2)) then
-             nullify(sigVec2)
+         if(associated(SigNode)) then
+             nullify(SigNode)
          endif
-         call getVector(sigTemp,sigVec)
-         call getScalar(sigTemp2,sigVec2)
+         call getVector(sigTemp,SigEdge)
+         call getScalar(sigTemp2,SigNode)
          call deall(sigTemp)
          call deall(sigTemp2)
-         Ne = size(EDGEi)+size(EDGEb)
-         Nn = size(NODEi)+size(NODEb)
-         allocate(SigEdge(Ne))
-         allocate(SigNode(Nn))
-         SigEdge = sigVec
-         SigNode = sigVec2
          SigEdge(EDGEb) = 0.0 !force the boundary to be zeros...
-         SigNode(NODEb) = 0.0 !force the boundary to be zeros...
+         ! note: we don't really want to do this for the nodes as we will be
+         ! using 1./SigNode as scaling factor
+         ! SigNode(NODEb) = 0.0 !force the boundary to be zeros...
          ! modify the system equation here,
          ! as the GD should be updated whenever the omega or the conductivity
          ! is updated
          ! could find a better place for this
          call GradDivSetup2(SigEdge,SigNode)
-         VomegaMuSig = MU_0*inOmega*sigVec(EDGEi)*Vedge(EDGEi)
-         deallocate(sigVec)
-         deallocate(sigVec2)
+         VomegaMuSig = MU_0*inOmega*SigEdge(EDGEi)*Vedge(EDGEi)
          omega = inOmega
+         deallocate(SigEdge)
+         deallocate(SigNode)
       else
          if(omega.gt.0) then
             VomegaMuSig = VomegaMuSig/omega
@@ -698,7 +700,7 @@ Contains
          allNodes(i) = i
       enddo
       call DIAGxRMAT(d,G,Temp)
-      call subMatrix_Real(Temp,EDGEi,allNodes,G)
+      call subMatrix_Real(Temp,EDGEi,allNodes,Gai)
       call deall_spMatCSR(Temp)
       deallocate(allNodes)
       deallocate(d)
@@ -732,11 +734,12 @@ Contains
       call RMATxDIAG(VDiv,d,VDs)
       ! Construct VDsG   ...  symmetric operator for divergence correction
       !      solver
-      allocate(allNodes(G%nRow))
-      do i=1,G%nRow
+      allocate(allNodes(Gai%nRow))
+      do i=1,Gai%nRow
          allNodes(i) = i
       enddo
-      call subMatrix_Real(G,allNodes,NODEi,Temp)
+      ! take only inner nodes here
+      call subMatrix_Real(Gai,allNodes,NODEi,Temp)
       call RMATxRMAT(VDs,Temp,VDsG)
       ! Setup preconditioner
       call Dilu_Real(VDsG,VDsG_L,VDsG_U)
@@ -750,6 +753,7 @@ Contains
 !*****************************************************************************
    subroutine deall_DivCor()
    !   implement the sparse matrix multiply for curl-curl operator
+      call deall_spMatCSR(Gai)
       call deall_spMatCSR(VDiv)
       call deall_spMatCSR(VDs)
       call deall_spMatCSR(VDsG)
@@ -781,11 +785,12 @@ Contains
    end subroutine
 !*****************************************************************************
    subroutine DivC(inE,outPhi)
-   !   implement multiplication by DivC
+   !  implement multiplication by DivC mapping from inner edges -> all nodes
+   !  mapping 
       implicit none
       complex(kind=prec),intent(in)    :: inE(:)
       complex(kind=prec),intent(inout)    :: outPhi(:)
-        call RMATxCVEC(VDs,inE,outPhi)
+      call RMATxCVEC(VDs,inE,outPhi)
       return
    end subroutine
 !*****************************************************************************
@@ -794,7 +799,7 @@ Contains
       implicit none
       complex(kind=prec),intent(in)    :: inPhi(:)
       complex(kind=prec),intent(inout)    :: outE(:)
-        call RMATxCVEC(G,inPhi,outE)
+      call RMATxCVEC(Gai,inPhi,outE)
       return
    end subroutine
 
@@ -805,7 +810,7 @@ Contains
       complex(kind=prec),intent(in)       :: inE(:)
       complex(kind=prec),intent(inout)    :: outPhi(:)
       type(spMatCSR_Real)                 :: D
-      call RMATtrans(G,D)
+      call RMATtrans(Gai,D)
       call RMATxCVEC(D,inE,outPhi)
       call deall_spMatCSR(D)
       return

@@ -96,6 +96,22 @@ Contains
       call setVnode(mGrid)
       call setVedge(mGrid)
 
+      ! Use the grid (which, potentially, maybe have been updated!) to set up
+      !   all the grid length, surface and volume elements stored in GridCalc.
+      ! Want to initialize them here in case the grid gets updated along the way.
+      ! The reason for storing them in GridCalc is that they are also used
+      !   by ModelMap, EMfieldInterp, nestedEM
+      ! THIS IS CLEARLY A CONCEPTUAL DUPLICATE OF MetricElements but including
+      ! it here for now for compatibility - needed for EMfieldInterp
+      Call EdgeLength(mGrid, l_E)
+      Call EdgeArea(mGrid, S_E)
+      Call EdgeVolume(mGrid, V_E, l_E, S_E)
+      Call FaceLength(mGrid, l_F)
+      Call FaceArea(mGrid, S_F)
+      Call FaceVolume(mGrid, V_F, l_F, S_F)
+      Call CellVolume(mGrid, V_C)
+      Call NodeVolume(mGrid, V_N) ! used for divergence correction
+
       ! set a default omega
       omega = 0.0
       !  specific model operators
@@ -124,7 +140,13 @@ Contains
       call deall_MetricElements()
 
       ! and the grid elements stored in GridCalc
+      call deall_rvector(l_E)
+      call deall_rvector(S_E)
       call deall_rvector(V_E)
+      call deall_rvector(l_F)
+      call deall_rvector(S_F)
+      call deall_rvector(V_F)
+      call deall_rscalar(V_C)
       call deall_rscalar(V_N)
 
       ! and the edge conductivities
@@ -167,8 +189,9 @@ Contains
        call ModelParamToEdge(CondParam,sigTemp)
        call getVector(sigTemp,sigVec)
        call deall(sigTemp)
-       omega = 1.0 ! setup an (arbitary) working omega
+       omega = ONE ! setup an (arbitary) working omega
        VomegaMuSig = MU_0*omega*sigVec(EDGEi)*Vedge(EDGEi)
+       deallocate(sigVec)
       ! TEMPORARY; REQUIRED FOR BOUNDARY CONDITIONS
       !  set static array for cell conductivities
       !  this stores conductivity values in a module structure

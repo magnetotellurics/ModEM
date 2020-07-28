@@ -30,6 +30,7 @@ module GridCalc
   public      :: EdgeLength, FaceLength
   public      :: EdgeArea,   FaceArea
   public      :: Cell2Edge,  Edge2Cell
+  public      :: Cell2Node
 
   !!!!!!!>>>>>>>>> global parameter key to enable switching
   !!!!!!!>>>>>>>>> between cartesian and spherical grids
@@ -784,6 +785,192 @@ Contains
 
   end subroutine Cell2Edge
 
+  ! *************************************************************************
+  ! * Cell2Node will be used by modified system equation with "node based
+  ! * scaling factor
+  ! * used by ModelParamToNode (currently only employed in SP2)
+  ! * essentially this maps cell based scalar value onto Nodes.  
+
+  subroutine Cell2Node(grid,C,N)
+      type(grid_t), intent(in)      :: grid
+      type(rscalar), intent(in)     :: C
+      type(rscalar), intent(out)    :: N
+      ! local variables
+      integer                   :: ix,iy,iz
+      call create_rscalar(grid, N, CORNER) ! node-based
+      ! non-boundary nodes
+      do ix = 2,grid%nx
+         do iy = 2,grid%ny
+            do iz = 2,grid%nz
+            ! i-1,j-1,k-1
+               N%v(ix, iy, iz) = N%v(ix, iy, iz) + C%v(ix-1, iy-1,iz-1)/8.0d0
+            ! i-1,j-1,k
+               N%v(ix, iy, iz) = N%v(ix, iy, iz) + C%v(ix-1, iy-1, iz)/8.0d0
+            ! i-1,j,k-1
+               N%v(ix, iy, iz) = N%v(ix, iy, iz) + C%v(ix-1, iy, iz-1)/8.0d0
+            ! i-1,j,k
+               N%v(ix, iy, iz) = N%v(ix, iy, iz) + C%v(ix-1, iy, iz)/8.0d0
+            ! i,j-1,k-1
+               N%v(ix, iy, iz) = N%v(ix, iy, iz) + C%v(ix, iy-1, iz-1)/8.0d0
+            ! i,j-1,k
+               N%v(ix, iy, iz) = N%v(ix, iy, iz) + C%v(ix, iy-1, iz)/8.0d0
+            ! i,j,k-1
+               N%v(ix, iy, iz) = N%v(ix, iy, iz) + C%v(ix, iy, iz-1)/8.0d0
+            ! i,j,k
+               N%v(ix, iy, iz) = N%v(ix, iy, iz) + C%v(ix, iy, iz)/8.0d0
+            enddo
+         enddo
+      enddo
+
+      ! left boundary
+      iy = 1
+      do ix = 2,grid%nx
+          do iz = 2,grid%nz
+            N%v(ix, iy, iz) = N%v(ix, iy, iz) + C%v(ix-1, iy, iz-1)/4.0d0
+            N%v(ix, iy, iz) = N%v(ix, iy, iz) + C%v(ix, iy, iz-1)/4.0d0
+            N%v(ix, iy, iz) = N%v(ix, iy, iz) + C%v(ix-1, iy, iz)/4.0d0
+            N%v(ix, iy, iz) = N%v(ix, iy, iz) + C%v(ix, iy, iz)/4.0d0
+          enddo
+      enddo
+
+      ! right boundary
+      iy = grid%ny+1
+      do ix = 2,grid%nx
+          do iz = 2,grid%nz
+            N%v(ix, iy, iz) = N%v(ix, iy, iz) + C%v(ix-1, iy-1, iz-1)/4.0d0
+            N%v(ix, iy, iz) = N%v(ix, iy, iz) + C%v(ix, iy-1, iz-1)/4.0d0
+            N%v(ix, iy, iz) = N%v(ix, iy, iz) + C%v(ix-1, iy-1, iz)/4.0d0
+            N%v(ix, iy, iz) = N%v(ix, iy, iz) + C%v(ix, iy-1, iz)/4.0d0
+          enddo
+      enddo
+
+
+      ! front boundary
+      ix = 1
+      do iy = 2,grid%ny
+          do iz = 2,grid%nz
+            N%v(ix, iy, iz) = N%v(ix, iy, iz) + C%v(ix, iy-1, iz-1)/4.0d0
+            N%v(ix, iy, iz) = N%v(ix, iy, iz) + C%v(ix, iy, iz-1)/4.0d0
+            N%v(ix, iy, iz) = N%v(ix, iy, iz) + C%v(ix, iy-1, iz)/4.0d0
+            N%v(ix, iy, iz) = N%v(ix, iy, iz) + C%v(ix, iy, iz)/4.0d0
+          enddo
+      enddo
+      ! back boundary
+      ix = grid%nx+1
+      do iy = 2,grid%ny
+          do iz = 2,grid%nz
+            N%v(ix, iy, iz) = N%v(ix, iy, iz) + C%v(ix-1, iy-1, iz-1)/4.0d0
+            N%v(ix, iy, iz) = N%v(ix, iy, iz) + C%v(ix-1, iy, iz-1)/4.0d0
+            N%v(ix, iy, iz) = N%v(ix, iy, iz) + C%v(ix-1, iy-1, iz)/4.0d0
+            N%v(ix, iy, iz) = N%v(ix, iy, iz) + C%v(ix-1, iy, iz)/4.0d0
+          enddo
+      enddo
+
+      ! upper boundary
+      iz = 1
+      do iy = 2,grid%ny
+          do ix = 2,grid%nx
+            N%v(ix, iy, iz) = N%v(ix, iy, iz) + C%v(ix-1, iy-1, iz)/4.0d0
+            N%v(ix, iy, iz) = N%v(ix, iy, iz) + C%v(ix, iy-1, iz)/4.0d0
+            N%v(ix, iy, iz) = N%v(ix, iy, iz) + C%v(ix-1, iy, iz)/4.0d0
+            N%v(ix, iy, iz) = N%v(ix, iy, iz) + C%v(ix, iy, iz)/4.0d0
+          enddo
+      enddo
+
+      ! lower boundary
+      iz = grid%nz+1
+      do iy = 2,grid%ny
+          do ix = 2,grid%nx
+            N%v(ix, iy, iz) = N%v(ix, iy, iz) + C%v(ix-1, iy-1, iz-1)/4.0d0
+            N%v(ix, iy, iz) = N%v(ix, iy, iz) + C%v(ix, iy-1, iz-1)/4.0d0
+            N%v(ix, iy, iz) = N%v(ix, iy, iz) + C%v(ix-1, iy, iz-1)/4.0d0
+            N%v(ix, iy, iz) = N%v(ix, iy, iz) + C%v(ix, iy, iz-1)/4.0d0
+          enddo
+      enddo
+      ! 12 edges of the model domain
+      ! average of two cells
+      ! x edges
+      do ix = 2, grid%nx
+          ! upper, left
+          iy = 1
+          iz = 1
+          N%v(ix, iy, iz) = N%v(ix, iy, iz) + C%v(ix-1, iy, iz)/2.0d0
+          N%v(ix, iy, iz) = N%v(ix, iy, iz) + C%v(ix, iy, iz)/2.0d0
+          ! lower, left
+          iz = grid%nz+1
+          N%v(ix, iy, iz) = N%v(ix, iy, iz) + C%v(ix-1, iy, iz-1)/2.0d0
+          N%v(ix, iy, iz) = N%v(ix, iy, iz) + C%v(ix, iy, iz-1)/2.0d0
+          ! upper, right
+          iy = grid%ny+1
+          iz = 1
+          N%v(ix, iy, iz) = N%v(ix, iy, iz) + C%v(ix-1, iy-1, iz)/2.0d0
+          N%v(ix, iy, iz) = N%v(ix, iy, iz) + C%v(ix, iy-1, iz)/2.0d0
+          ! lower, right
+          iz = grid%nz+1
+          N%v(ix, iy, iz) = N%v(ix, iy, iz) + C%v(ix-1, iy-1, iz-1)/2.0d0
+          N%v(ix, iy, iz) = N%v(ix, iy, iz) + C%v(ix, iy-1, iz-1)/2.0d0
+      enddo
+      ! y edges
+      do iy = 2, grid%ny
+          ! upper, front
+          ix = 1
+          iz = 1
+          N%v(ix, iy, iz) = N%v(ix, iy, iz) + C%v(ix, iy-1, iz)/2.0d0
+          N%v(ix, iy, iz) = N%v(ix, iy, iz) + C%v(ix, iy, iz)/2.0d0
+          ! lower, front
+          iz = grid%nz+1
+          N%v(ix, iy, iz) = N%v(ix, iy, iz) + C%v(ix, iy-1, iz-1)/2.0d0
+          N%v(ix, iy, iz) = N%v(ix, iy, iz) + C%v(ix, iy, iz-1)/2.0d0
+          ! upper, back
+          ix = grid%nx+1
+          iz = 1
+          N%v(ix, iy, iz) = N%v(ix, iy, iz) + C%v(ix-1, iy-1, iz)/2.0d0
+          N%v(ix, iy, iz) = N%v(ix, iy, iz) + C%v(ix-1, iy, iz)/2.0d0
+          ! lower, back
+          iz = grid%nz+1
+          N%v(ix, iy, iz) = N%v(ix, iy, iz) + C%v(ix-1, iy-1, iz-1)/2.0d0
+          N%v(ix, iy, iz) = N%v(ix, iy, iz) + C%v(ix-1, iy, iz-1)/2.0d0
+      enddo
+      ! z edges
+      do iz = 2, grid%nz
+          ! front, left
+          ix = 1
+          iy = 1
+          N%v(ix, iy, iz) = N%v(ix, iy, iz) + C%v(ix, iy, iz-1)/2.0d0
+          N%v(ix, iy, iz) = N%v(ix, iy, iz) + C%v(ix, iy, iz)/2.0d0
+          ! front, right
+          iy = grid%ny+1
+          N%v(ix, iy, iz) = N%v(ix, iy, iz) + C%v(ix, iy-1, iz-1)/2.0d0
+          N%v(ix, iy, iz) = N%v(ix, iy, iz) + C%v(ix, iy-1, iz)/2.0d0
+          ! back, left
+          ix = grid%nx+1
+          iy = 1
+          N%v(ix, iy, iz) = N%v(ix, iy, iz) + C%v(ix-1, iy, iz-1)/2.0d0
+          N%v(ix, iy, iz) = N%v(ix, iy, iz) + C%v(ix-1, iy, iz)/2.0d0
+          ! back, right
+          iy = grid%ny+1
+          N%v(ix, iy, iz) = N%v(ix, iy, iz) + C%v(ix-1, iy-1, iz-1)/2.0d0
+          N%v(ix, iy, iz) = N%v(ix, iy, iz) + C%v(ix-1, iy-1, iz)/2.0d0
+      enddo
+      ! 8 corners of the model domain
+      ! front, left, upper
+      N%v(1,1,1) = C%v(1,1,1)
+      ! back, left, upper
+      N%v(grid%nx+1,1,1) = C%v(grid%nx,1,1)
+      ! front, right, upper
+      N%v(1,grid%ny+1,1) = C%v(1,grid%ny,1)
+      ! back, right, upper
+      N%v(grid%nx+1,grid%ny+1,1) = C%v(grid%nx,grid%ny,1)
+      ! front, left, lower
+      N%v(1,1,grid%nz+1) = C%v(1,1,grid%nz)
+      ! back, left, lower
+      N%v(grid%nx+1,1,grid%nz+1) = C%v(grid%nx,1,grid%nz)
+      ! front, right, lower
+      N%v(1,grid%ny+1,grid%nz+1) = C%v(1,grid%ny,grid%nz)
+      ! back, right, upper
+      N%v(grid%nx+1,grid%ny+1,grid%nz+1) = C%v(grid%nx,grid%ny,grid%nz)
+      !
+  end subroutine Cell2Node
   ! *************************************************************************
   ! * Edge2Cell will be used by adjoint model mappings
 

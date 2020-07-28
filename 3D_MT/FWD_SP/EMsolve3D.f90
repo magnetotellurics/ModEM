@@ -92,7 +92,7 @@ Contains
 ! modified to use the sparse matrix data structure defined in
 ! sp modelOperator3D module
 ! If bRHS%adj = 'TRN' solves transposed problem  A^T x = b
-  subroutine FWDsolve3D(bRHS,omega,eSol)
+  subroutine FWDsolve3D(bRHS,omega,eSol,comm_local)
 
     ! redefine some of the interfaces (locally) for our convenience
     use sg_vector !, only: copy => copy_cvector, &
@@ -107,6 +107,8 @@ Contains
     !  INPUTS:
     type (RHS_t), intent(in)      :: bRHS
     real(kind=prec), intent(in)   :: omega
+    !dummy parameter for compatibiliy
+    integer, intent(in),optional    :: comm_local 
     !  OUTPUTS:
     !  eSol must be allocated before calling this routine
     type (cvector), intent(inout) :: eSol
@@ -194,7 +196,7 @@ Contains
           endif ! otherwise the eSol should be all zeros
           return
        endif
-       !  note that Div is formed from all edges to all nodes
+       !  note that Div is formed from inner edges to all nodes
        b = s(EDGEi) ! taking only the interior edges
        call Div(b,phi0)
     else ! trans = .false.
@@ -250,10 +252,6 @@ Contains
     ! e = current best solution (only on interior edges)
     ! b = rHS
     !
-    ! at present we don't really have the option to skip
-    ! the divergence correction.  Not sure how/if this should
-    ! be done.
-
     ! resetting
     nIterTotal = 0
     nDivCor = 0
@@ -314,7 +312,7 @@ Contains
           ! max number of divergence corrections exceeded; convergence failed
           failed = .true.
        endif
-       if (output_level > 2) then
+       if (output_level > 3) then
            write (6,*) 'iter: ', nIterTotal, ' residual: ',                 &
    &    EMrelErr(nIterTotal)
        end if

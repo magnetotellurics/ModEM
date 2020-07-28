@@ -764,6 +764,13 @@ Contains
 
    grid = newgrid
 
+   if (.not. grid%allocated) then
+    call errStop('grid is not allocated in setGrid; exiting')
+   else if ((grid%Nx <= 0) .or. (grid%Ny <= 0) .or. (grid%Nz <= 0)) then
+    write(0,*) 'Grid information: Nx=',grid%Nx,' Ny=',grid%Ny,' Nz=',grid%Nz
+    call errStop('grid is not set up properly in setGrid; exiting')
+   end if
+
   end subroutine setGrid
 
 
