@@ -455,7 +455,7 @@ end subroutine copyE0fromFile
 !  zero starting solution, solve for all modes
    call zero_solnVector(e)
    
-   if (txDict(iTx)%Tx_type=='MT') then 
+   if (txDict(iTx)%Tx_type=='MT' .or. txDict(iTx)%Tx_type=='CSEM') then 
    	omega = txDict(iTx)%omega
    	period = txDict(iTx)%period
    	do iMode = 1,e%nPol
