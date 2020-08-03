@@ -63,7 +63,7 @@ test_plain_std:
         expire_in: 1 week
 #
 # STANDART TEST FORWARD
-test_forward_std:
+.test_forward_std:
     stage: test
     dependencies:
         - build_modem_on    # DEFINE THIS JOB DEPENDENCY FROM JOB build_modem_on
