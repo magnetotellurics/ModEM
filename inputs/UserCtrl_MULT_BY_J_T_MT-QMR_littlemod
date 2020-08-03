@@ -1,0 +1,6 @@
+job	MULT_BY_J_T
+
+rFile_Model 'inputs/rFile_Model'
+rFile_Data 'inputs/rFile_Data'
+rFile_fwdCtrl 'inputs_workbench/rFile_fwdCtrl_QMR'
+wFile_dModel 'wFile_dModel'

@@ -427,13 +427,13 @@ contains
                             stop
                         end if
                     end if
-                    !TEST wFile_Sens
-                    ifield_name = this%getNameId( 'wFile_Sens' )
+                    !TEST wFile_dModel
+                    ifield_name = this%getNameId( 'wFile_dModel' )
                     if( ifield_name == 0 ) then
-                        write(*,*) 'There is no tag wFile_Sens!'
+                        write(*,*) 'There is no tag wFile_dModel!'
                         call this%usage()
                     else
-                        this%cUserDef%wFile_Sens = this%values( ifield_name )
+                        this%cUserDef%wFile_dModel = this%values( ifield_name )
                     end if
                     !TEST rFile_fwdCtrl OPTIONAL
                     ifield_name = this%getNameId( 'rFile_fwdCtrl' )
