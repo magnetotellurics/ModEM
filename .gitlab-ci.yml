@@ -63,7 +63,7 @@ test_plain_std:
         expire_in: 1 week
 #
 # STANDART TEST FORWARD
-.test_forward_std:
+test_forward_std:
     stage: test
     dependencies:
         - build_modem_on    # DEFINE THIS JOB DEPENDENCY FROM JOB build_modem_on
@@ -77,8 +77,9 @@ test_plain_std:
         paths:
             - outputs/temp/test_forward_std/
         expire_in: 1 week
-    only:
-        - master
+    #only:
+        #- master
+        #
 #
 # DEPLOY: UPDATE GITLAB
 update_gitlab:
