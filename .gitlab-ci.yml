@@ -101,8 +101,8 @@ update_gitlab:
         paths:
             - outputs/$output_folder/
         expire_in: 1 week
-    only:
-        - master
+    #only:
+        #- master
 #
 # DEPLOY: UPDATE PAGES
 pages:
