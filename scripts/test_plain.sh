@@ -30,10 +30,10 @@ cd test_plain_${EXEC_NAME}/
 echo "#### START MODEM MPI TEST WITH $ncores CORES AT $now ####" | tee -a std_out.txt
 #
 #
-echo "#### COMMAND LINE: [mpirun -n $ncores ../$EXEC -v full]" | tee -a std_out.txt
+echo "#### COMMAND LINE: [mpirun -n $ncores ../$EXEC]" | tee -a std_out.txt
 #
 #
-mpirun -n $ncores ../$EXEC -v full | tee -a std_out.txt
+mpirun -n $ncores ../$EXEC | tee -a std_out.txt
 #
 # CATCH RESULT
 result=$?

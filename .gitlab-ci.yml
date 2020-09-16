@@ -63,7 +63,7 @@ test_plain_std:
         expire_in: 1 week
 #
 # JOB TEST PLAIN SP2:   RUN Mod3DMT SP2 WITHOUT ANY PARAMETER
-test_plain_std:
+test_plain_sp2:
     stage: test
     dependencies:
         - build_modem_on    # DEFINE THIS JOB DEPENDENCY FROM JOB build_modem_on
