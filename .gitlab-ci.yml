@@ -70,7 +70,7 @@ test_read_write_std:
     #
     script:
         #
-        - bash scripts/test_read_write.sh bin/Mod3DMT_STD inputs/rFile_Model inputs/rFile_Data 10
+        - bash scripts/test_read_write.sh bin/Mod3DMT_STD inputs/rFile_Model inputs/rFile_Data 1
     #
     artifacts:
         paths:
@@ -85,7 +85,7 @@ test_read_write_sp2:
     #
     script:
         #
-        - bash scripts/test_read_write.sh bin/Mod3DMT_SP2 inputs/rFile_Model inputs/rFile_Data 10
+        - bash scripts/test_read_write.sh bin/Mod3DMT_SP2 inputs/rFile_Model inputs/rFile_Data 1
     #
     artifacts:
         paths:
@@ -97,6 +97,9 @@ update_gitlab:
     stage: deploy
     environment: production
     script:
+        #
+        # REMOVE BINARIES
+        - rm -rf bin/
         #
         # CREATE FOLDER UNIQUE NAME
         - output_folder=output_$(date "+%Y_%m_%d_%H_%M_%S")

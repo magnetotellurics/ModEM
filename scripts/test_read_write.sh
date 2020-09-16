@@ -20,22 +20,22 @@ now=$(date "+%Y/%m/%d - %H:%M:%S")
 ncores=$(nproc)
 #
 # REMOVE TEST OUTPUT FOLDER FROM MAIN OUTPUT FOLDER
-rm -rf outputs/test_read_write/
+rm -rf outputs/test_read_write_${EXEC_NAME}/
 #
 # CREATE TEST OUTPUT FOLDER
-mkdir -p test_read_write
+mkdir -p test_read_write_${EXEC_NAME}
 #
 # ENTER TEST OUTPUT FOLDER
-cd test_read_write/
+cd test_read_write_${EXEC_NAME}/
 #
 #
-echo "#### START READ_WRITE MPI TEST WITH $ncores CORES AT $now ####" | tee -a ${EXEC_NAME}_std_out.txt
+echo "#### START READ_WRITE MPI TEST WITH $ncores CORES AT $now ####" | tee -a std_out.txt
 #
 #
-echo "#### COMMAND LINE: [mpirun -n $ncores ../$EXEC -R ../$MODEL ../$DATA wFile_Model.sw wFile_Data.dat -v full]" | tee -a ${EXEC_NAME}_std_out.txt
+echo "#### COMMAND LINE: [mpirun -n $ncores ../$EXEC -R ../$MODEL ../$DATA wFile_Model.sw wFile_Data.dat -v full]" | tee -a std_out.txt
 #
 #
-mpirun -n $ncores ../$EXEC -R ../$MODEL ../$DATA wFile_Model.sw wFile_Data.dat -v full | tee -a ${EXEC_NAME}_std_out.txt
+mpirun -n $ncores ../$EXEC -R ../$MODEL ../$DATA wFile_Model.sw wFile_Data.dat -v full | tee -a std_out.txt
 #
 # CATCH RESULT
 result=$?
@@ -44,7 +44,7 @@ result=$?
 if [ "$result" -ne "0" ]; then
 	#
 	#
-	echo "TEST READ_WRITE FAIL: $result" | tee -a ${EXEC_NAME}_std_out.txt
+	echo "TEST READ_WRITE FAIL: $result" | tee -a std_out.txt
 	#
 	#
 	cd ..
@@ -54,13 +54,13 @@ if [ "$result" -ne "0" ]; then
 fi
 #
 #
-echo "#### FINISH READ_WRITE MPI TEST ####" | tee -a ${EXEC_NAME}_std_out.txt
+echo "#### FINISH READ_WRITE MPI TEST ####" | tee -a std_out.txt
 #
 #
 cd ..
 #
 #
-mv test_read_write/ outputs/temp/
+mv test_read_write_${EXEC_NAME}/ outputs/temp/
 #
 #
 exit 0
