@@ -70,7 +70,7 @@ test_read_write_std:
     #
     script:
         #
-        - bash scripts/test_read_write.sh src/bin/Mod3DMT_STD inputs/rFile_Model inputs/rFile_Data 10
+        - bash scripts/test_read_write.sh bin/Mod3DMT_STD inputs/rFile_Model inputs/rFile_Data 10
     #
     artifacts:
         paths:
@@ -85,7 +85,7 @@ test_read_write_sp2:
     #
     script:
         #
-        - bash scripts/test_read_write.sh src/bin/Mod3DMT_SP2 inputs/rFile_Model inputs/rFile_Data 10
+        - bash scripts/test_read_write.sh bin/Mod3DMT_SP2 inputs/rFile_Model inputs/rFile_Data 10
     #
     artifacts:
         paths:
