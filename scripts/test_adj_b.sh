@@ -52,7 +52,7 @@ echo "#### FINISH ADJ b MPI TEST ####" | tee -a std_out.txt
 cd ..
 #
 #
-mv test_adj_b/ outputs/
+mv test_adj_b/ outputs/temp/
 #
 #
 exit 0

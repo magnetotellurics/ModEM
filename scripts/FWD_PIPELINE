@@ -62,20 +62,24 @@ test_plain_std:
             - outputs/temp/test_plain_std.txt
         expire_in: 1 week
 #
-# STANDART TEST ADJ b
-test_adj_b:
+# STANDART TEST FORWARD
+test_forward_std:
     stage: test
     dependencies:
         - build_modem_on    # DEFINE THIS JOB DEPENDENCY FROM JOB build_modem_on
     #
     script:
         #
-        - bash scripts/test_adj_b.sh src/Mod3DMT inputs/rFile_Model inputs/rFile_Data inputs/rFile_EMrhs 10
+        - bash scripts/test_forward_std.sh bin/Mod3DMT_STD inputs/rFile_Model inputs/rFile_Data 10
+        #
     #
     artifacts:
         paths:
-            - outputs/temp/test_adj_b/
+            - outputs/temp/test_forward_std/
         expire_in: 1 week
+    #only:
+        #- master
+        #
 #
 # DEPLOY: UPDATE GITLAB
 update_gitlab:
