@@ -55,11 +55,27 @@ test_plain_std:
     script:
         #
         # PLAIN EXECUTION TEST WITH 1 CORE
-        - bash scripts/test_plain_std.sh 1 | tee outputs/temp/test_plain_std.txt
+        - bash scripts/test_plain.sh bin/Mod3DMT_STD 1
     #
     artifacts:
         paths:
-            - outputs/temp/test_plain_std.txt
+            - outputs/temp/test_plain*
+        expire_in: 1 week
+#
+# JOB TEST PLAIN SP2:   RUN Mod3DMT SP2 WITHOUT ANY PARAMETER
+test_plain_std:
+    stage: test
+    dependencies:
+        - build_modem_on    # DEFINE THIS JOB DEPENDENCY FROM JOB build_modem_on
+    #
+    script:
+        #
+        # PLAIN EXECUTION TEST WITH 1 CORE
+        - bash scripts/test_plain.sh bin/Mod3DMT_SP2 1
+    #
+    artifacts:
+        paths:
+            - outputs/temp/test_plain*
         expire_in: 1 week
 #
 # STANDART TEST READ_WRITE STD
@@ -74,7 +90,7 @@ test_read_write_std:
     #
     artifacts:
         paths:
-            - outputs/temp/test_read_write/
+            - outputs/temp/test_read_write*
         expire_in: 1 week
 #
 # STANDART TEST READ_WRITE STD
@@ -89,7 +105,7 @@ test_read_write_sp2:
     #
     artifacts:
         paths:
-            - outputs/temp/test_read_write/
+            - outputs/temp/test_read_write*
         expire_in: 1 week
 #
 # DEPLOY: UPDATE GITLAB
