@@ -53,13 +53,15 @@ test_plain_std:
         - build_modem_on    # DEFINE THIS JOB DEPENDENCY FROM JOB build_modem_on
     #
     script:
+        # GENERATE BIN FOLDER (IF NOT EXISTS)
+        - mkdir -p outputs/temp/test_plain
         #
         # PLAIN EXECUTION TEST WITH 1 CORE
-        - bash scripts/test_plain.sh bin/Mod3DMT_STD 1
+        - bash scripts/test_plain.sh bin/Mod3DMT_STD
     #
     artifacts:
         paths:
-            - outputs/temp/test_plain*
+            - outputs/temp/test_plain
         expire_in: 1 week
 #
 # JOB TEST PLAIN SP2:   RUN Mod3DMT SP2 WITHOUT ANY PARAMETER
@@ -69,13 +71,15 @@ test_plain_sp2:
         - build_modem_on    # DEFINE THIS JOB DEPENDENCY FROM JOB build_modem_on
     #
     script:
+        # GENERATE BIN FOLDER (IF NOT EXISTS)
+        - mkdir -p outputs/temp/test_plain
         #
         # PLAIN EXECUTION TEST WITH 1 CORE
-        - bash scripts/test_plain.sh bin/Mod3DMT_SP2 1
+        - bash scripts/test_plain.sh bin/Mod3DMT_SP2
     #
     artifacts:
         paths:
-            - outputs/temp/test_plain*
+            - outputs/temp/test_plain
         expire_in: 1 week
 #
 # STANDART TEST READ_WRITE STD
@@ -86,7 +90,7 @@ test_read_write_std:
     #
     script:
         #
-        - bash scripts/test_read_write.sh bin/Mod3DMT_STD inputs/rFile_Model inputs/rFile_Data 1
+        - bash scripts/test_read_write.sh bin/Mod3DMT_STD inputs/rFile_Model inputs/rFile_Data
     #
     artifacts:
         paths:
@@ -101,7 +105,7 @@ test_read_write_sp2:
     #
     script:
         #
-        - bash scripts/test_read_write.sh bin/Mod3DMT_SP2 inputs/rFile_Model inputs/rFile_Data 1
+        - bash scripts/test_read_write.sh bin/Mod3DMT_SP2 inputs/rFile_Model inputs/rFile_Data
     #
     artifacts:
         paths:

@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# ARGUMENTS: 1 - Mod3DMT EXECUTABLE, 2 - MODEL FILE, 3 - DATA FILE, 4 - NUMBER_OF CORES
+# ARGUMENTS: 1 - Mod3DMT EXECUTABLE, 2 - MODEL FILE, 3 - DATA FILE
 EXEC=$1
 EXEC_NAME=$EXEC
 emptyspace=""
@@ -11,7 +11,6 @@ EXEC_NAME=${EXEC_NAME/*\//$emptyspace}
 #
 MODEL=$2
 DATA=$3
-ncores=$4
 #
 # STRING NOW
 now=$(date "+%Y/%m/%d - %H:%M:%S")
