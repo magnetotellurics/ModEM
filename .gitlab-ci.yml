@@ -50,7 +50,7 @@ build_modem_on:
 test_plain_std:
     stage: test
     dependencies:
-        - build_modem_on    # DEFINE THIS JOB DEPENDENCY FROM JOB build_modem_on
+        - build_modem_on            # NEEDS bin/Mod3DMT_STD FROM build_modem_on
     #
     script:
         #
@@ -69,7 +69,7 @@ test_plain_std:
 test_plain_sp2:
     stage: test
     dependencies:
-        - build_modem_on    # DEFINE THIS JOB DEPENDENCY FROM JOB build_modem_on
+        - build_modem_on            # NEEDS bin/Mod3DMT_STD FROM build_modem_on
     #
     script:
         #
@@ -88,7 +88,7 @@ test_plain_sp2:
 test_read_write_std:
     stage: test
     dependencies:
-        - build_modem_on    # DEFINE THIS JOB DEPENDENCY FROM JOB build_modem_on
+        - build_modem_on            # NEEDS bin/Mod3DMT_STD FROM build_modem_on
     #
     script:
         #
@@ -107,7 +107,7 @@ test_read_write_std:
 test_read_write_sp2:
     stage: test
     dependencies:
-        - build_modem_on    # DEFINE THIS JOB DEPENDENCY FROM JOB build_modem_on
+        - build_modem_on            # NEEDS bin/Mod3DMT_STD FROM build_modem_on
     #
     script:
         #
@@ -122,11 +122,11 @@ test_read_write_sp2:
             - outputs/temp/test_read_write
         expire_in: 1 week
 #
-# STANDART TEST READ_WRITE STD
+# STANDART TEST MULT BY J T STD
 test_mult_by_j_t_std:
     stage: test
     dependencies:
-        - build_modem_on    # DEFINE THIS JOB DEPENDENCY FROM JOB build_modem_on
+        - build_modem_on            # NEEDS bin/Mod3DMT_STD FROM build_modem_on
     #
     script:
         #
@@ -141,11 +141,11 @@ test_mult_by_j_t_std:
             - outputs/temp/test_mult_by_j_t
         expire_in: 1 week
 #
-# STANDART TEST READ_WRITE SP2
+# STANDART TEST MULT BY J T SP2
 test_mult_by_j_t_sp2:
     stage: test
     dependencies:
-        - build_modem_on    # DEFINE THIS JOB DEPENDENCY FROM JOB build_modem_on
+        - build_modem_on            # NEEDS bin/Mod3DMT_SP2 FROM build_modem_on
     #
     script:
         #
@@ -158,6 +158,48 @@ test_mult_by_j_t_sp2:
     artifacts:
         paths:
             - outputs/temp/test_mult_by_j_t
+        expire_in: 1 week
+#
+# STANDART TEST ADJ J STD
+test_adj_j_std:
+    stage: test
+    dependencies:
+        - build_modem_on            # NEEDS bin/Mod3DMT_STD FROM build_modem_on
+        #
+        - test_mult_by_j_t_std      # NEEDS outputs/wFile_dModel FROM test_mult_by_j_t_std
+    #
+    script:
+        #
+        # CREATE OUTPUT FOLDER
+        - mkdir -p outputs/temp/test_adj_j
+        #
+        # STD READ RIGHT TEST WITH NPROC
+        - bash scripts/test_adj_j.sh bin/Mod3DMT_STD inputs/rFile_Model outputs/temp/test_mult_by_j_t/Mod3DMT_STD/wFile_dModel inputs/rFile_Data
+    #
+    artifacts:
+        paths:
+            - outputs/temp/test_adj_j
+        expire_in: 1 week
+#
+# STANDART TEST ADJ J SP2
+test_adj_j_sp2:
+    stage: test
+    dependencies:
+        - build_modem_on            # NEEDS bin/Mod3DMT_SP2 FROM build_modem_on
+        #
+        - test_mult_by_j_t_sp2      # NEEDS outputs/wFile_dModel FROM test_mult_by_j_t_sp2
+    #
+    script:
+        #
+        # CREATE OUTPUT FOLDER
+        - mkdir -p outputs/temp/test_adj_j
+        #
+        # SP2 READ RIGHT TEST WITH NPROC
+        - bash scripts/test_adj_j.sh bin/Mod3DMT_SP2 inputs/rFile_Model outputs/temp/test_mult_by_j_t/Mod3DMT_SP2/wFile_dModel inputs/rFile_Data
+    #
+    artifacts:
+        paths:
+            - outputs/temp/test_adj_j
         expire_in: 1 week
 #
 # DEPLOY: UPDATE GITLAB
