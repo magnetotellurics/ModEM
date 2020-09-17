@@ -3,6 +3,7 @@
 stages:
     - build
     - test
+    - analysis
     - deploy
 #
 #
@@ -162,7 +163,7 @@ test_mult_by_j_t_sp2:
 #
 # STANDART TEST ADJ J STD
 test_adj_j_std:
-    stage: test
+    stage: analysis
     dependencies:
         - build_modem_on            # NEEDS bin/Mod3DMT_STD FROM build_modem_on
         #
@@ -183,7 +184,7 @@ test_adj_j_std:
 #
 # STANDART TEST ADJ J SP2
 test_adj_j_sp2:
-    stage: test
+    stage: analysis
     dependencies:
         - build_modem_on            # NEEDS bin/Mod3DMT_SP2 FROM build_modem_on
         #
