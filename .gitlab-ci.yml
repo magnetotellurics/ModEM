@@ -103,7 +103,7 @@ test_read_write_std:
             - outputs/temp/test_read_write
         expire_in: 1 week
 #
-# STANDART TEST READ_WRITE STD
+# STANDART TEST READ_WRITE SP2
 test_read_write_sp2:
     stage: test
     dependencies:
@@ -120,6 +120,44 @@ test_read_write_sp2:
     artifacts:
         paths:
             - outputs/temp/test_read_write
+        expire_in: 1 week
+#
+# STANDART TEST READ_WRITE STD
+test_mult_by_j_t_std:
+    stage: test
+    dependencies:
+        - build_modem_on    # DEFINE THIS JOB DEPENDENCY FROM JOB build_modem_on
+    #
+    script:
+        #
+        # CREATE OUTPUT FOLDER
+        - mkdir -p outputs/temp/test_mult_by_j_t
+        #
+        # STD READ RIGHT TEST WITH NPROC
+        - bash scripts/test_mult_by_j_t.sh bin/Mod3DMT_STD inputs/rFile_Model inputs/rFile_Data
+    #
+    artifacts:
+        paths:
+            - outputs/temp/test_mult_by_j_t
+        expire_in: 1 week
+#
+# STANDART TEST READ_WRITE SP2
+test_mult_by_j_t_sp2:
+    stage: test
+    dependencies:
+        - build_modem_on    # DEFINE THIS JOB DEPENDENCY FROM JOB build_modem_on
+    #
+    script:
+        #
+        # CREATE OUTPUT FOLDER
+        - mkdir -p outputs/temp/test_mult_by_j_t
+        #
+        # SP2 READ RIGHT TEST WITH NPROC
+        - bash scripts/test_mult_by_j_t.sh bin/Mod3DMT_SP2 inputs/rFile_Model inputs/rFile_Data
+    #
+    artifacts:
+        paths:
+            - outputs/temp/test_mult_by_j_t
         expire_in: 1 week
 #
 # DEPLOY: UPDATE GITLAB
