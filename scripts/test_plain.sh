@@ -10,10 +10,10 @@ EXEC_NAME=${EXEC_NAME/.txt/$emptyspace}
 EXEC_NAME=${EXEC_NAME/*\//$emptyspace}
 #
 # STRING NOW
-now=$(date "+%Y/%m/%d - %H:%M:%S")
+NOW=$(date "+%Y/%m/%d - %H:%M:%S")
 #
 # GET ENVIROMENT NUMBER OF CORES 
-ncores=$(nproc)
+NCORES=$(nproc)
 #
 # CREATE TEST OUTPUT FOLDER
 mkdir -p ${EXEC_NAME}
@@ -22,28 +22,28 @@ mkdir -p ${EXEC_NAME}
 cd ${EXEC_NAME}/
 #
 #
-echo "#### START MODEM MPI TEST WITH $ncores CORES AT $now ####" | tee -a std_out.txt
+echo "#### START MODEM MPI TEST WITH $NCORES CORES AT $NOW ####" | tee -a std_out.txt
 #
 #
-echo "#### COMMAND LINE: [mpirun -n $ncores ../$EXEC]" | tee -a std_out.txt
+echo "#### COMMAND LINE: [mpirun -n $NCORES ../$EXEC]" | tee -a std_out.txt
 #
 #
-mpirun -n $ncores ../$EXEC | tee -a std_out.txt
+mpirun -n $NCORES ../$EXEC | tee -a std_out.txt
 #
 # CATCH RESULT
-result=$?
+RESULT=$?
 #
 # TEST RESULT
-if [ "$result" -ne "0" ]; then
+if [ "$RESULT" -ne "0" ]; then
 	#
 	#
-	echo "TEST PLAIN FAIL: $result" | tee -a std_out.txt
+	echo "TEST PLAIN FAIL: $RESULT" | tee -a std_out.txt
 	#
 	#
 	cd ..
 	#
 	#
-	exit $result
+	exit $RESULT
 fi
 #
 #

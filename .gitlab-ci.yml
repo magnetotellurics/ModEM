@@ -18,13 +18,13 @@ build_modem_on:
         - echo "START build_modem_on SCRIPT"
     #
     script:
-        # GENERATE BIN FOLDER (IF NOT EXISTS)
+        # CREATE BIN FOLDER (IF NOT EXISTS)
         - mkdir -p bin
-        # GENERATE MAIN OUTPUT FOLDER (IF NOT EXISTS)
+        # CREATE MAIN OUTPUT FOLDER (IF NOT EXISTS)
         - mkdir -p outputs/temp
         # BUILD SCRIPT
         - bash scripts/build_modem_on.sh | tee outputs/temp/build_modem_on.txt
-        # GENERATE DOCS FOLDER (IF NOT EXISTS)
+        # CREATE DOCS FOLDER (IF NOT EXISTS)
         - mkdir -p docs/
         # RUN DOXYGEN ON src/
         - bash scripts/update_doxygen.sh | tee outputs/temp/update_doxygen.txt
@@ -53,10 +53,11 @@ test_plain_std:
         - build_modem_on    # DEFINE THIS JOB DEPENDENCY FROM JOB build_modem_on
     #
     script:
-        # GENERATE BIN FOLDER (IF NOT EXISTS)
+        #
+        # CREATE OUTPUT FOLDER
         - mkdir -p outputs/temp/test_plain
         #
-        # PLAIN EXECUTION TEST WITH 1 CORE
+        # STD PLAIN EXECUTION TEST WITH NPROC
         - bash scripts/test_plain.sh bin/Mod3DMT_STD
     #
     artifacts:
@@ -71,10 +72,11 @@ test_plain_sp2:
         - build_modem_on    # DEFINE THIS JOB DEPENDENCY FROM JOB build_modem_on
     #
     script:
-        # GENERATE BIN FOLDER (IF NOT EXISTS)
+        #
+        # CREATE OUTPUT FOLDER
         - mkdir -p outputs/temp/test_plain
         #
-        # PLAIN EXECUTION TEST WITH 1 CORE
+        # SP2 PLAIN EXECUTION TEST WITH NPROC
         - bash scripts/test_plain.sh bin/Mod3DMT_SP2
     #
     artifacts:
@@ -90,11 +92,15 @@ test_read_write_std:
     #
     script:
         #
+        # CREATE OUTPUT FOLDER
+        - mkdir -p outputs/temp/test_read_write
+        #
+        # STD READ RIGHT TEST WITH NPROC
         - bash scripts/test_read_write.sh bin/Mod3DMT_STD inputs/rFile_Model inputs/rFile_Data
     #
     artifacts:
         paths:
-            - outputs/temp/test_read_write*
+            - outputs/temp/test_read_write
         expire_in: 1 week
 #
 # STANDART TEST READ_WRITE STD
@@ -105,11 +111,15 @@ test_read_write_sp2:
     #
     script:
         #
+        # CREATE OUTPUT FOLDER
+        - mkdir -p outputs/temp/test_read_write
+        #
+        # SP2 READ RIGHT TEST WITH NPROC
         - bash scripts/test_read_write.sh bin/Mod3DMT_SP2 inputs/rFile_Model inputs/rFile_Data
     #
     artifacts:
         paths:
-            - outputs/temp/test_read_write*
+            - outputs/temp/test_read_write
         expire_in: 1 week
 #
 # DEPLOY: UPDATE GITLAB
