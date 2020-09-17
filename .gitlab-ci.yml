@@ -200,7 +200,7 @@ test_forward_sp2:
         expire_in: 1 week
 #
 # TEST ADJ J STD
-test_adj_j_std:
+test_symmetry_std:
     stage: analysis
     dependencies:
         - build_modem_on            # NEEDS bin/Mod3DMT_STD FROM build_modem_on
@@ -210,18 +210,18 @@ test_adj_j_std:
     script:
         #
         # CREATE OUTPUT FOLDER
-        - mkdir -p outputs/temp/test_adj_j
+        - mkdir -p outputs/temp/test_symmetry
         #
         # STD READ RIGHT TEST WITH NPROC
         - bash scripts/test_adj_j.sh bin/Mod3DMT_STD inputs/rFile_Model outputs/temp/test_mult_by_j_t/Mod3DMT_STD/wFile_dModel inputs/rFile_Data
     #
     artifacts:
         paths:
-            - outputs/temp/test_adj_j
+            - outputs/temp/test_symmetry
         expire_in: 1 week
 #
 # TEST ADJ J SP2
-test_adj_j_sp2:
+test_symmetry_sp2:
     stage: analysis
     dependencies:
         - build_modem_on            # NEEDS bin/Mod3DMT_SP2 FROM build_modem_on
@@ -231,14 +231,14 @@ test_adj_j_sp2:
     script:
         #
         # CREATE OUTPUT FOLDER
-        - mkdir -p outputs/temp/test_adj_j
+        - mkdir -p outputs/temp/test_symmetry
         #
         # SP2 READ RIGHT TEST WITH NPROC
         - bash scripts/test_adj_j.sh bin/Mod3DMT_SP2 inputs/rFile_Model outputs/temp/test_mult_by_j_t/Mod3DMT_SP2/wFile_dModel inputs/rFile_Data
     #
     artifacts:
         paths:
-            - outputs/temp/test_adj_j
+            - outputs/temp/test_symmetry
         expire_in: 1 week
 #
 # DEPLOY: UPDATE GITLAB

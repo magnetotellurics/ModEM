@@ -40,18 +40,36 @@ RESULT=$?
 # TEST RESULT
 if [ "$RESULT" -ne "0" ]; then
 	#
-	#
 	echo "TEST ADJ J FAIL: $RESULT" | tee -a std_out.txt
 	#
-	#
 	cd ..
-	#
 	#
 	exit $RESULT
 fi
 #
+echo "TEST ADJ J OK" | tee -a std_out.txt
 #
-echo "#### FINISH ADJ J MPI TEST ####" | tee -a std_out.txt
+# CREATE FILE WITH 2 dot product LINES
+grep -hnr "dot product" std_out.txt > dot_product.txt
+#
+# GET VALUES
+DOT1=$(sed '1q;d' dot_product.txt | awk '{ print $5 }')
+DOT2=$(sed '2q;d' dot_product.txt | awk '{ print $5 }')
+#
+D1=$(echo $DOT1 | cut -c1-8)
+D2=$(echo $DOT2 | cut -c1-8)
+#
+# SYMMETRY RESULT
+if [ "$D1" -ne "$D2" ]; then
+	#
+	echo "SYMMETRY TEST FAIL: $RESULT" | tee -a std_out.txt
+	#
+	cd ..
+	#
+	exit 1
+fi
+
+echo "#### SYMMETRY TEST OK####" | tee -a std_out.txt
 #
 #
 cd ..
