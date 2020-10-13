@@ -1,33 +1,59 @@
 #!/bin/bash
 #
-# ARGUMENTS: 1 - NUMBER OF CORES
-#
-# GET ENVIROMENT NUMBER OF CORES 
-ncores=$1
+# ARGUMENTS: 1 - Mod3DMT EXECUTABLE
+EXEC=$1
+EXEC_NAME=$EXEC
+emptyspace=""
+EXEC_NAME=${EXEC_NAME/.exe/$emptyspace}
+EXEC_NAME=${EXEC_NAME/.sh/$emptyspace}
+EXEC_NAME=${EXEC_NAME/.txt/$emptyspace}
+EXEC_NAME=${EXEC_NAME/*\//$emptyspace}
 #
 # STRING NOW
-now=$(date "+%Y/%m/%d - %H:%M:%S")
+NOW=$(date "+%Y/%m/%d - %H:%M:%S")
+#
+# GET ENVIROMENT NUMBER OF CORES 
+NCORES=$(nproc)
+#
+# CREATE TEST OUTPUT FOLDER
+mkdir -p ${EXEC_NAME}
+#
+# ENTER TEST OUTPUT FOLDER
+cd ${EXEC_NAME}/
 #
 #
-echo "#### START PLAIN MPI TEST WITH $ncores CORES AT $now ####"
+echo "#### START MODEM MPI TEST WITH $NCORES CORES AT $NOW ####" | tee -a std_out.txt
 #
 #
-mpirun -n $ncores ./src/Mod3DMT
+echo "#### COMMAND LINE: [mpirun -n $NCORES ../$EXEC]" | tee -a std_out.txt
+#
+#
+mpirun -n $NCORES ../$EXEC | tee -a std_out.txt
 #
 # CATCH RESULT
-result=$?
+RESULT=$?
 #
 # TEST RESULT
-if [ "$result" -ne "0" ]; then
+if [ "$RESULT" -ne "0" ]; then
 	#
 	#
-	echo "TEST PLAIN FAIL: $result"
+	echo "TEST PLAIN FAIL: $RESULT" | tee -a std_out.txt
 	#
 	#
-	exit $result
+	cd ..
+	#
+	#
+	exit $RESULT
 fi
 #
-echo "#### FINISH PLAIN TEST ####"
+#
+echo "#### FINISH PAIN MPI TEST ####" | tee -a std_out.txt
+#
+#
+cd ..
+#
+#
+mv ${EXEC_NAME}/ outputs/temp/test_plain/
 #
 #
 exit 0

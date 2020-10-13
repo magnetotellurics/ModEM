@@ -3,6 +3,7 @@
 stages:
     - build
     - test
+    - analysis
     - deploy
 #
 #
@@ -18,13 +19,13 @@ build_modem_on:
         - echo "START build_modem_on SCRIPT"
     #
     script:
-        # GENERATE BIN FOLDER (IF NOT EXISTS)
+        # CREATE BIN FOLDER (IF NOT EXISTS)
         - mkdir -p bin
-        # GENERATE MAIN OUTPUT FOLDER (IF NOT EXISTS)
+        # CREATE MAIN OUTPUT FOLDER (IF NOT EXISTS)
         - mkdir -p outputs/temp
         # BUILD SCRIPT
         - bash scripts/build_modem_on.sh | tee outputs/temp/build_modem_on.txt
-        # GENERATE DOCS FOLDER (IF NOT EXISTS)
+        # CREATE DOCS FOLDER (IF NOT EXISTS)
         - mkdir -p docs/
         # RUN DOXYGEN ON src/
         - bash scripts/update_doxygen.sh | tee outputs/temp/update_doxygen.txt
@@ -46,46 +47,208 @@ build_modem_on:
     after_script:
         - echo "FINISH build_modem_on"
 #
-# JOB TEST PLAIN STD:   RUN Mod3DMT STD WITHOUT ANY PARAMETER
+# TEST PLAIN STD:   RUN Mod3DMT STD WITHOUT ANY PARAMETER
 test_plain_std:
     stage: test
     dependencies:
-        - build_modem_on    # DEFINE THIS JOB DEPENDENCY FROM JOB build_modem_on
+        - build_modem_on            # NEEDS bin/Mod3DMT_STD FROM build_modem_on
     #
     script:
         #
-        # PLAIN EXECUTION TEST WITH 1 CORE
-        - bash scripts/test_plain_std.sh 1 | tee outputs/temp/test_plain_std.txt
+        # CREATE OUTPUT FOLDER
+        - mkdir -p outputs/temp/test_plain
+        #
+        # STD PLAIN EXECUTION TEST WITH NPROC
+        - bash scripts/test_plain.sh bin/Mod3DMT_STD
     #
     artifacts:
         paths:
-            - outputs/temp/test_plain_std.txt
+            - outputs/temp/test_plain
         expire_in: 1 week
 #
-# STANDART TEST FORWARD
+# TEST PLAIN SP2:   RUN Mod3DMT SP2 WITHOUT ANY PARAMETER
+test_plain_sp2:
+    stage: test
+    dependencies:
+        - build_modem_on            # NEEDS bin/Mod3DMT_STD FROM build_modem_on
+    #
+    script:
+        #
+        # CREATE OUTPUT FOLDER
+        - mkdir -p outputs/temp/test_plain
+        #
+        # SP2 PLAIN EXECUTION TEST WITH NPROC
+        - bash scripts/test_plain.sh bin/Mod3DMT_SP2
+    #
+    artifacts:
+        paths:
+            - outputs/temp/test_plain
+        expire_in: 1 week
+#
+# TEST READ_WRITE STD
+test_read_write_std:
+    stage: test
+    dependencies:
+        - build_modem_on            # NEEDS bin/Mod3DMT_STD FROM build_modem_on
+    #
+    script:
+        #
+        # CREATE OUTPUT FOLDER
+        - mkdir -p outputs/temp/test_read_write
+        #
+        # STD READ RIGHT TEST WITH NPROC
+        - bash scripts/test_read_write.sh bin/Mod3DMT_STD inputs/rFile_Model inputs/rFile_Data
+    #
+    artifacts:
+        paths:
+            - outputs/temp/test_read_write
+        expire_in: 1 week
+#
+# TEST READ_WRITE SP2
+test_read_write_sp2:
+    stage: test
+    dependencies:
+        - build_modem_on            # NEEDS bin/Mod3DMT_STD FROM build_modem_on
+    #
+    script:
+        #
+        # CREATE OUTPUT FOLDER
+        - mkdir -p outputs/temp/test_read_write
+        #
+        # SP2 READ RIGHT TEST WITH NPROC
+        - bash scripts/test_read_write.sh bin/Mod3DMT_SP2 inputs/rFile_Model inputs/rFile_Data
+    #
+    artifacts:
+        paths:
+            - outputs/temp/test_read_write
+        expire_in: 1 week
+#
+# TEST MULT BY J T STD
+test_mult_by_j_t_std:
+    stage: test
+    dependencies:
+        - build_modem_on            # NEEDS bin/Mod3DMT_STD FROM build_modem_on
+    #
+    script:
+        #
+        # CREATE OUTPUT FOLDER
+        - mkdir -p outputs/temp/test_mult_by_j_t
+        #
+        # STD READ RIGHT TEST WITH NPROC
+        - bash scripts/test_mult_by_j_t.sh bin/Mod3DMT_STD inputs/rFile_Model inputs/rFile_Data
+    #
+    artifacts:
+        paths:
+            - outputs/temp/test_mult_by_j_t
+        expire_in: 1 week
+#
+# TEST MULT BY J T SP2
+test_mult_by_j_t_sp2:
+    stage: test
+    dependencies:
+        - build_modem_on            # NEEDS bin/Mod3DMT_SP2 FROM build_modem_on
+    #
+    script:
+        #
+        # CREATE OUTPUT FOLDER
+        - mkdir -p outputs/temp/test_mult_by_j_t
+        #
+        # SP2 READ RIGHT TEST WITH NPROC
+        - bash scripts/test_mult_by_j_t.sh bin/Mod3DMT_SP2 inputs/rFile_Model inputs/rFile_Data
+    #
+    artifacts:
+        paths:
+            - outputs/temp/test_mult_by_j_t
+        expire_in: 1 week
+#
+# TEST MULT BY J T STD
 test_forward_std:
     stage: test
     dependencies:
-        - build_modem_on    # DEFINE THIS JOB DEPENDENCY FROM JOB build_modem_on
+        - build_modem_on            # NEEDS bin/Mod3DMT_STD FROM build_modem_on
     #
     script:
         #
-        - bash scripts/test_forward_std.sh bin/Mod3DMT_STD inputs/rFile_Model inputs/rFile_Data 10
+        # CREATE OUTPUT FOLDER
+        - mkdir -p outputs/temp/test_forward
         #
+        # STD READ RIGHT TEST WITH NPROC
+        - bash scripts/test_forward.sh bin/Mod3DMT_STD inputs/rFile_Model inputs/rFile_Data
     #
     artifacts:
         paths:
-            - outputs/temp/test_forward_std/
+            - outputs/temp/test_forward
         expire_in: 1 week
-    #only:
-        #- master
+#
+# TEST MULT BY J T SP2
+test_forward_sp2:
+    stage: test
+    dependencies:
+        - build_modem_on            # NEEDS bin/Mod3DMT_SP2 FROM build_modem_on
+    #
+    script:
         #
+        # CREATE OUTPUT FOLDER
+        - mkdir -p outputs/temp/test_forward
+        #
+        # SP2 READ RIGHT TEST WITH NPROC
+        - bash scripts/test_forward.sh bin/Mod3DMT_SP2 inputs/rFile_Model inputs/rFile_Data
+    #
+    artifacts:
+        paths:
+            - outputs/temp/test_forward
+        expire_in: 1 week
+#
+# TEST ADJ J STD
+test_symmetry_std:
+    stage: analysis
+    dependencies:
+        - build_modem_on            # NEEDS bin/Mod3DMT_STD FROM build_modem_on
+        #
+        - test_mult_by_j_t_std      # NEEDS outputs/wFile_dModel FROM test_mult_by_j_t_std
+    #
+    script:
+        #
+        # CREATE OUTPUT FOLDER
+        - mkdir -p outputs/temp/test_symmetry
+        #
+        # STD READ RIGHT TEST WITH NPROC
+        - bash scripts/test_adj_j.sh bin/Mod3DMT_STD inputs/rFile_Model outputs/temp/test_mult_by_j_t/Mod3DMT_STD/wFile_dModel inputs/rFile_Data
+    #
+    artifacts:
+        paths:
+            - outputs/temp/test_symmetry
+        expire_in: 1 week
+#
+# TEST ADJ J SP2
+test_symmetry_sp2:
+    stage: analysis
+    dependencies:
+        - build_modem_on            # NEEDS bin/Mod3DMT_SP2 FROM build_modem_on
+        #
+        - test_mult_by_j_t_sp2      # NEEDS outputs/wFile_dModel FROM test_mult_by_j_t_sp2
+    #
+    script:
+        #
+        # CREATE OUTPUT FOLDER
+        - mkdir -p outputs/temp/test_symmetry
+        #
+        # SP2 READ RIGHT TEST WITH NPROC
+        - bash scripts/test_adj_j.sh bin/Mod3DMT_SP2 inputs/rFile_Model outputs/temp/test_mult_by_j_t/Mod3DMT_SP2/wFile_dModel inputs/rFile_Data
+    #
+    artifacts:
+        paths:
+            - outputs/temp/test_symmetry
+        expire_in: 1 week
 #
 # DEPLOY: UPDATE GITLAB
 update_gitlab:
     stage: deploy
     environment: production
     script:
+        #
+        # REMOVE BINARIES
+        - rm -rf bin/
         #
         # CREATE FOLDER UNIQUE NAME
         - output_folder=output_$(date "+%Y_%m_%d_%H_%M_%S")
@@ -117,7 +280,7 @@ pages:
         paths:
             - public
         expire_in: 30 days
-    only:
-        - master
+    #only:
+        #- master
 #
 # END MAIN SCRIPT
