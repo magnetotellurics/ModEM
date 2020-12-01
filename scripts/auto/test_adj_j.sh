@@ -75,7 +75,7 @@ echo "#### SYMMETRY TEST OK####" | tee -a std_out.txt
 cd ..
 #
 #
-mv ${EXEC_NAME}/ outputs/temp/test_adj_j
+mv ${EXEC_NAME}/ outputs/temp/test_symmetry
 #
 #
 exit 0

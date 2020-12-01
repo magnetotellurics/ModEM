@@ -8,9 +8,9 @@ now=$(date "+%Y/%m/%d - %H:%M:%S")
 #
 cd src/
 #
-########################
-# STANDART VERSION
-########################
+# REMOVE OLD OBJECTS
+rm -rf objs/
+#
 #
 echo "#### START BUILD STANDART Mod3DMT AT $now ####"
 #
@@ -23,9 +23,6 @@ chmod 777 CONFIG/Configure.3D_MT.OSU.GFortran
 #
 # CREATE Makefile_STD
 ./CONFIG/Configure.3D_MT.OSU.GFortran Makefile_STD MPI
-#
-# REMOVE OLD OBJECTS
-rm -rf ../../objs/
 #
 # BUILD WITH PLAIN MAKE
 make -f Makefile_STD
@@ -54,55 +51,11 @@ echo "	> Time Spent: $(( ( $T_END - $T_START ) / 1000 )) seconds" | tee -a ../ou
 echo "	#" | tee -a ../outputs/temp/summary.txt
 #
 # RENAME EXE
-mv Mod3DMT ../bin/Mod3DMT_STD
+mv Mod3DMT ../bin/ModEM_baseline
 #
-########################
-# SP2 VERSION
-########################
+# REMOVE NEW OBJECTS
+rm -rf objs/
 #
-echo "#### START BUILD SP2 Mod3DMT AT $now ####"
-#
-T_START=$(date +%s%3N)
-#
-echo "	> START BUILD MODEM SP2" | tee -a ../outputs/temp/summary.txt
-#
-# GRANT PERMISSION TO Configure.3D_MT_SP2.OSU.GFortran
-chmod 777 CONFIG/Configure.3D_MT_SP2.OSU.GFortran
-#
-# CREATE Makefile_STD
-./CONFIG/Configure.3D_MT_SP2.OSU.GFortran Makefile_SP2 MPI
-#
-# REMOVE OLD OBJECTS
-rm -rf ../../objs/
-#
-# BUILD WITH PLAIN MAKE
-make -f Makefile_SP2
-#
-# CATCH RESULT
-RESULT=$?
-#
-# TEST RESULT
-if [ "$RESULT" -ne "0" ]; then
-	#
-	echo "	> BUILD MODEM SP2 FAIL: $RESULT" | tee -a ../outputs/temp/summary.txt
-	T_END=$(date +%s%3N)
-	echo "	> Time Spent: $(( ( $T_END - $T_START ) / 1000 )) seconds" | tee -a ../outputs/temp/summary.txt
-	echo "	#" | tee -a ../outputs/temp/summary.txt
-	#
-	cd ..
-	#
-	exit $RESULT
-fi
-#
-echo "#### FINISH BUILD Mod3DMT SP2 ####"
-#
-echo "	> BUILD MODEM SP2 PASS: $RESULT" | tee -a ../outputs/temp/summary.txt
-T_END=$(date +%s%3N)
-echo "	> Time Spent: $(( ( $T_END - $T_START ) / 1000 )) seconds" | tee -a ../outputs/temp/summary.txt
-echo "	#" | tee -a ../outputs/temp/summary.txt
-#
-# RENAME EXE
-mv Mod3DMT ../bin/Mod3DMT_SP2
 #
 cd ..
 #

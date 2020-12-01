@@ -19,5 +19,5 @@ echo ${node_param}
 #
 cd ${work_dir}
 #
-echo "scripts/fwd_modem.sh $app $model $data $em_soln $fwd_ctrl $out_dir" | qsub -l ${node_param} -N FWD_$(date "+%m%d%H%M") -o ${out_dir}/pbs_output.txt -e ${out_dir}/pbs_error.txt
+echo "scripts/pbs/fwd_modem.sh $app $model $data $em_soln $fwd_ctrl $out_dir" | qsub -l ${node_param} -N FWD_$(date "+%m%d%H%M") -o ${out_dir}/pbs_output.txt -e ${out_dir}/pbs_error.txt
 #

@@ -37,9 +37,7 @@ for DIR in $DIRS; do
 		#
 		echo "#### COMMAND LINE: [bash scripts/fwd_pbs_modem.sh $EXEC $DIR/rFile_Model $DIR/rFile_Data outputs/temp/test_forward/${DIR_NAME}/${EXEC_NAME}]" | tee -a std_out.txt
 		#
-		bash scripts/fwd_pbs_modem.sh $EXEC $DIR/rFile_Model $DIR/rFile_Data outputs/temp/test_forward/${DIR_NAME}/${EXEC_NAME}
-		#
-		#mpirun -n $NCORES ../../../../../$EXEC -F ../../../../../$DIR/rFile_Model ../../../../../$DIR/rFile_Data wFile_Data wFile_EMsoln -v full | tee -a std_out.txt
+		bash scripts/pbs/fwd_pbs_modem.sh $EXEC $DIR/rFile_Model $DIR/rFile_Data outputs/temp/test_forward/${DIR_NAME}/${EXEC_NAME}
 		#
 		# CATCH RESULT
 		RESULT=$?

@@ -100,7 +100,7 @@ test_forward_std:
         - mkdir -p outputs/temp/test_forward
         #
         # STD READ RIGHT TEST WITH NPROC
-        - bash scripts/pbs_tests/test_forward.sh bin/Mod3DMT_STD
+        - bash scripts/auto/test_forward.sh bin/Mod3DMT_STD
     #
     artifacts:
         paths:
@@ -121,7 +121,7 @@ test_forward_sp2:
         - mkdir -p outputs/temp/test_forward
         #
         # SP2 READ RIGHT TEST WITH NPROC
-        - bash scripts/pbs_tests/test_forward.sh bin/Mod3DMT_SP2
+        - bash scripts/auto/test_forward.sh bin/Mod3DMT_SP2
     #
     artifacts:
         paths:
@@ -142,7 +142,7 @@ test_forward_sp2:
         - mkdir -p outputs/temp/test_mult_by_j_t
         #
         # STD READ RIGHT TEST WITH NPROC
-        - bash scripts/test_mult_by_j_t.sh bin/Mod3DMT_STD
+        - bash scripts/auto/test_mult_by_j_t.sh bin/Mod3DMT_STD
     #
     artifacts:
         paths:
@@ -163,7 +163,7 @@ test_forward_sp2:
         - mkdir -p outputs/temp/test_mult_by_j_t
         #
         # SP2 READ RIGHT TEST WITH NPROC
-        - bash scripts/test_mult_by_j_t.sh bin/Mod3DMT_SP2
+        - bash scripts/auto/test_mult_by_j_t.sh bin/Mod3DMT_SP2
     #
     artifacts:
         paths:
@@ -186,7 +186,7 @@ test_forward_sp2:
         - mkdir -p outputs/temp/test_symmetry
         #
         # STD READ RIGHT TEST WITH NPROC
-        - bash scripts/test_symmetry.sh bin/Mod3DMT_STD
+        - bash scripts/auto/test_symmetry.sh bin/Mod3DMT_STD
     #
     artifacts:
         paths:
@@ -209,7 +209,7 @@ test_forward_sp2:
         - mkdir -p outputs/temp/test_symmetry
         #
         # SP2 READ RIGHT TEST WITH NPROC
-        - bash scripts/test_symmetry.sh bin/Mod3DMT_SP2
+        - bash scripts/auto/test_symmetry.sh bin/Mod3DMT_SP2
     #
     artifacts:
         paths:
