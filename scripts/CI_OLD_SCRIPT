@@ -100,7 +100,7 @@ test_forward_std:
         - mkdir -p outputs/temp/test_forward
         #
         # STD READ RIGHT TEST WITH NPROC
-        - bash scripts/pbs_tests/test_forward.sh bin/Mod3DMT_STD
+        - bash scripts/test_forward.sh bin/Mod3DMT_STD
     #
     artifacts:
         paths:
@@ -121,7 +121,7 @@ test_forward_sp2:
         - mkdir -p outputs/temp/test_forward
         #
         # SP2 READ RIGHT TEST WITH NPROC
-        - bash scripts/pbs_tests/test_forward.sh bin/Mod3DMT_SP2
+        - bash scripts/test_forward.sh bin/Mod3DMT_SP2
     #
     artifacts:
         paths:
@@ -129,7 +129,7 @@ test_forward_sp2:
         expire_in: 1 week
 #
 # TEST MULT BY J T STD
-.test_mult_by_j_t_std:
+test_mult_by_j_t_std:
     stage: test
     dependencies:
         - build_modem_on            # NEEDS bin/Mod3DMT_STD FROM build_modem_on
@@ -150,7 +150,7 @@ test_forward_sp2:
         expire_in: 1 week
 #
 # TEST MULT BY J T SP2
-.test_mult_by_j_t_sp2:
+test_mult_by_j_t_sp2:
     stage: test
     dependencies:
         - build_modem_on            # NEEDS bin/Mod3DMT_SP2 FROM build_modem_on
@@ -171,7 +171,7 @@ test_forward_sp2:
         expire_in: 1 week
 #
 # TEST ADJ J STD
-.test_symmetry_std:
+test_symmetry_std:
     stage: analyse
     dependencies:
         - build_modem_on            # NEEDS bin/Mod3DMT_STD FROM build_modem_on
@@ -194,7 +194,7 @@ test_forward_sp2:
         expire_in: 1 week
 #
 # TEST ADJ J SP2
-.test_symmetry_sp2:
+test_symmetry_sp2:
     stage: analyse
     dependencies:
         - build_modem_on            # NEEDS bin/Mod3DMT_SP2 FROM build_modem_on

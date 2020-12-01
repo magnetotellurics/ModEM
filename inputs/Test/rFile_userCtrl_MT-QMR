@@ -1,6 +1,0 @@
-job	FORWARD
-
-rFile_Model '../inputs_workbench/Naser/Land_based_model_10ohmLowerPart.mod'
-rFile_Data '../inputs_workbench/Naser/Template_Data_file_for_Land_based_Model_MT.dat'
-rFile_fwdCtrl '../inputs_workbench/rFile_fwdCtrl_QMR'
-wFile_Data 'wFile_Data'

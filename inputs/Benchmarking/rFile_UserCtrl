@@ -1,0 +1,4 @@
+job FORWARD
+rFile_Data '/home/pwerdt/modem-on/inputs/Benchmarking/rFile_Data'
+rFile_Model '/home/pwerdt/modem-on/inputs/Benchmarking/rFile_Model'
+wFile_Data '/home/pwerdt/modem-on/inputs/Benchmarking/Predicted_data'

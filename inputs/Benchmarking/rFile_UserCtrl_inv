@@ -1,0 +1,7 @@
+job	INVERSE
+search NLCG
+rFile_Model /home/pwerdt/test_artur/rsantos.rho
+rFile_Data /home/pwerdt/test_artur/dataset_santos_ef10_5.dat 
+rFile_invCtrl /home/pwerdt/test_artur/control.inv 
+rFile_fwdCtrl /home/pwerdt/test_artur/control.fwd 
+rFile_Cov /home/pwerdt/test_artur/rsantos.cov
