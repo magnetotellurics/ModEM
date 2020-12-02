@@ -29,17 +29,8 @@ for DIR in $DIRS; do
 		DIR_NAME=$DIR
 		DIR_NAME=${DIR_NAME/*\//$emptyspace}
 		#
-		# CREATE TEST OUTPUT FOLDER
-		mkdir -p outputs/temp/test_forward/${DIR_NAME}
-		#
-		# ENTER TEST OUTPUT FOLDER
-		cd outputs/temp/test_forward/${DIR_NAME}
-		#
-		# CREATE TEST OUTPUT FOLDER
-		mkdir -p ${EXEC_NAME}
-		#
-		# ENTER TEST OUTPUT FOLDER
-		cd ${EXEC_NAME}
+		# CREATE AND ENTER TEST OUTPUT FOLDER
+		mkdir -p outputs/temp/test_forward/${DIR_NAME}/${EXEC_NAME} && cd "$_"
 		#
 		T_START=$(date +%s%3N)
 		#
@@ -75,10 +66,8 @@ for DIR in $DIRS; do
 		#
 		T_START=$(date +%s%3N)
 		#
-		cd ../../../../..
-		#
 		# BUILD bin/SolverDiagnostic3D
-		cd tools/SolverDiagnostic3D/
+		cd ../../../../../tools/SolverDiagnostic3D/
 		bash build_linux.sh
 		#
 		cd ../../outputs/temp/test_forward/${DIR_NAME}/${EXEC_NAME}

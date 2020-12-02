@@ -6,6 +6,7 @@ stages:
     - test
     - analyse
     - deploy
+    - finish
 #
 #
 # MAIN BEFORE SCRIPT
@@ -129,7 +130,7 @@ test_forward_sp2:
         expire_in: 1 week
 #
 # TEST MULT BY J T STD
-.test_mult_by_j_t_std:
+test_mult_by_j_t_std:
     stage: test
     dependencies:
         - build_modem_on            # NEEDS bin/ModEM_STD FROM build_modem_on
@@ -150,7 +151,7 @@ test_forward_sp2:
         expire_in: 1 week
 #
 # TEST MULT BY J T SP2
-.test_mult_by_j_t_sp2:
+test_mult_by_j_t_sp2:
     stage: test
     dependencies:
         - build_modem_on            # NEEDS bin/ModEM_SP2 FROM build_modem_on
@@ -171,7 +172,7 @@ test_forward_sp2:
         expire_in: 1 week
 #
 # TEST ADJ J STD
-.test_symmetry_std:
+test_symmetry_std:
     stage: analyse
     dependencies:
         - build_modem_on            # NEEDS bin/ModEM_STD FROM build_modem_on
@@ -194,7 +195,7 @@ test_forward_sp2:
         expire_in: 1 week
 #
 # TEST ADJ J SP2
-.test_symmetry_sp2:
+test_symmetry_sp2:
     stage: analyse
     dependencies:
         - build_modem_on            # NEEDS bin/ModEM_SP2 FROM build_modem_on
@@ -257,5 +258,13 @@ pages:
         expire_in: 30 days
     #only:
         #- master
+#
+#
+clean_cache:
+  stage: finish
+  script:
+    - echo "Cleaning up"
+    - rm -rf "%CACHE_PATH%/%CI_PIPELINE_ID%"
+  when: always
 #
 # END MAIN SCRIPT

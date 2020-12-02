@@ -29,17 +29,8 @@ for DIR in $DIRS; do
 		DIR_NAME=$DIR
 		DIR_NAME=${DIR_NAME/*\//$emptyspace}
 		#
-		# CREATE TEST OUTPUT FOLDER
-		mkdir -p outputs/temp/test_mult_by_j_t/${DIR_NAME}
-		#
-		# ENTER TEST OUTPUT FOLDER
-		cd outputs/temp/test_mult_by_j_t/${DIR_NAME}
-		#
-		# CREATE TEST OUTPUT FOLDER
-		mkdir -p ${EXEC_NAME}
-		#
-		# ENTER TEST OUTPUT FOLDER
-		cd ${EXEC_NAME}
+		# CREATE AND ENTER TEST OUTPUT FOLDER
+		mkdir -p outputs/temp/test_mult_by_j_t/${DIR_NAME}/${EXEC_NAME} && cd "$_"
 		#
 		T_START=$(date +%s%3N)
 		#
