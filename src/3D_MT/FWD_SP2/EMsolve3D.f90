@@ -36,8 +36,9 @@ module EMsolve3D
     real(kind = 8)            ::      AirLayersMaxHeight, AirLayersAlpha, AirLayersMinTopDz
     real(kind = 8), pointer, dimension(:)   :: AirLayersDz
     logical                   ::      AirLayersPresent=.false.
-	character (len=10)        ::      solver_name="QMR"		
+	character (len=10)        ::      solver_name="BICG"		
 	character (len=50) , public      ::   get_1D_from="Geometric_mean"	
+    character (len=50) , public      ::   compute_1D_from="EM1D"
   end type emsolve_control
 
   type :: emsolve_diag
@@ -65,10 +66,10 @@ module EMsolve3D
   real(kind=prec), parameter       ::      tolEMDef = 1E-10
   ! misfit tolerance for convergence of divergence correction solver
   real(kind=prec), parameter       ::      tolDivCorDef = 1E-7
-  !Solver name, by default we use QMR
-  character (len=10)  		 ::   solver_name="QMR"
+  !Solver name, by default we use BICG
+  character (len=10)  		       ::   solver_name="BICG"
   character (len=50) , public      ::   get_1D_from="Geometric_mean"
-							 
+  character (len=50) , public      ::   compute_1D_from="EM1D"							 
 
   save
 
@@ -272,7 +273,7 @@ Contains
           if(bRHS%nonzero_BC) then
              b = temp(EDGEi) - b
           else
-             b = temp(EDGEi)
+             b = temp
           endif
        else
        !   no source
@@ -568,8 +569,9 @@ end subroutine SdivCorr ! SdivCorr
         tolEMfwd = tolEMDef
         tolEMadj = tolEMDef
         tolDivCor = tolDivCorDef
-        solver_name="QMR"
+        solver_name="BICG"
 		get_1D_from="Geometric_mean"
+        compute_1D_from="EM1D"
      else
         IterPerDivCor = solverControl%IterPerDivCor
         MaxDivCor = solverControl%MaxDivCor
@@ -580,6 +582,7 @@ end subroutine SdivCorr ! SdivCorr
         tolDivCor = solverControl%tolDivCor
         solver_name=solverControl%solver_name
 		get_1D_from=solverControl%get_1D_from
+        compute_1D_from=solverControl%compute_1D_from
      endif
 
      if (present(tolEM)) then
@@ -657,15 +660,17 @@ end subroutine SdivCorr ! SdivCorr
     if(ios/=0) then
        write(0,*) node_info,'Error opening file: ', rFile
     end if
+	
 
 solverControl%IterPerDivCor = IterPerDivCorDef
 solverControl%MaxDivCor     = IterPerDivCorDef
 solverControl%MaxIterDivCor = MaxIterDivCorDef
-solverControl%tolEMfwd      = tolEMDef
+solverControl%tolEMfwd      = tolEMfwd
 solverControl%tolEMadj      = tolEMDef
 solverControl%tolDivCor     = tolDivCorDef
-solverControl%solver_name   = "QMR"
+solverControl%solver_name   = "BICG"
 solverControl%get_1D_from   = "Geometric_mean"
+solverControl%compute_1D_from= "EM1D"
 do
    read (ioFwdCtrl,"(a)",iostat=ierr) line_text ! Read line into character variable
    line_text=trim(line_text)
@@ -773,6 +778,12 @@ do
         if (output_level > 2) then
            write (*,'(a12,a,a)') node_info,"1D model for Ep in CSEM Geometric_mean|At_Tx_Position|Geometric_mean_around_Tx: ",trim(solverControl%get_1D_from)
         end if	
+    elseif(index(line_text, "Compute 1D solution using Dipole1D|EM1D") .ne. 0)then
+         call parse(line_text,":",args,nargs)
+         solverControl%compute_1D_from=args(2)
+        if (output_level > 2) then
+           write (*,'(a12,a,a)') node_info,"Compute 1D solution using Dipole1D|EM1D: ",trim(solverControl%compute_1D_from)
+        end if     
     else
         if (output_level > 2) then
          write (*,'(a12,a,a)') node_info,"Unknown line in file: ",rFile
