@@ -19,10 +19,10 @@ T_START=$(date +%s%3N)
 echo "	> START BUILD MODEM STD" | tee -a ../outputs/temp/summary.txt
 #
 # GRANT PERMISSION TO Configure.3D_MT.OSU.GFortran
-chmod 777 CONFIG/Configure.3D_MT.OSU.GFortran
+chmod 777 CONFIG/Configure.3D_MT_EM1DCSEM.OSU.GFortran
 #
 # CREATE Makefile_STD
-./CONFIG/Configure.3D_MT.OSU.GFortran Makefile_STD MPI
+./CONFIG/Configure.3D_MT_EM1DCSEM.OSU.GFortran Makefile_STD MPI
 #
 # REMOVE OLD OBJECTS
 rm -rf ../../objs/
@@ -67,10 +67,10 @@ T_START=$(date +%s%3N)
 echo "	> START BUILD MODEM SP2" | tee -a ../outputs/temp/summary.txt
 #
 # GRANT PERMISSION TO Configure.3D_MT_SP2.OSU.GFortran
-chmod 777 CONFIG/Configure.3D_MT_SP2.OSU.GFortran
+chmod 777 CONFIG/Configure.3D_MT_SP2_EM1DCSEM.OSU.GFortran
 #
 # CREATE Makefile_STD
-./CONFIG/Configure.3D_MT_SP2.OSU.GFortran Makefile_SP2 MPI
+./CONFIG/Configure.3D_MT_SP2_EM1DCSEM.OSU.GFortran Makefile_SP2 MPI
 #
 # REMOVE OLD OBJECTS
 rm -rf ../../objs/

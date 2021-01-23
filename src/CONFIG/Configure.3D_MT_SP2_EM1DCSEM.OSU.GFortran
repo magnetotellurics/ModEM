@@ -35,7 +35,7 @@ perl fmkmf.pl -f90 mpif90 \
 -mpi '-x f95-cpp-input -DMPI -I/usr/include/' \
 -o './objs/3D_MT/GFortReleaseMPI' \
 -l '-llapack -lblas -lfftw3l -lfftw3f -lfftw3' \
--lp '/usr/lib64  /usr/lib/x86_64-linux-gnu' \
+-lp '/usr/lib64  -L/usr/lib/x86_64-linux-gnu' \
 -p .:MPI:INV:LAPACK:SENS:UTILS:FIELDS/FiniteDiff3D:3D_MT/FWD_SP2:3D_MT/SP_Topology:3D_MT:3D_MT/DICT:3D_MT/modelParam:3D_MT/CSEM_module:3D_MT/CSEM_module/Dipole1D:3D_MT/CSEM_module/EM1D/src:3D_MT/CSEM_module/EM1D:3D_MT/FWD:3D_MT/FWD/Mod2d:3D_MT/ioMod \
 Mod3DMT.f90 > $1
 fi
