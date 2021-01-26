@@ -124,7 +124,8 @@ program Mod3DMT
 		! These information will be used for plotting to compare the performace of the solver(s).
 		! Naser and Paulo 02.10.2019
 		call date_and_time(date,time)
-		open (unit=ioSolverStat,file=trim(solverParams%solver_name)//"_SolverStatFile_"//date//"_"//time//".txt",status='unknown',iostat=ios)
+		open (unit=ioSolverStat,file=trim(solverParams%solver_name)&
+                        //"_SolverStatFile_"//date//"_"//time//".txt",status='unknown',iostat=ios)
 		
 		
       select case (cUserDef%job)
@@ -145,7 +146,8 @@ program Mod3DMT
         write(6,*) 'Calculating predicted data...'
 #ifdef MPI
 		!
-        write(ioSolverStat,'(a20, a20, a20, a20, a20, a20)')"#Job_Name", "Period", "Period_Index", "Polarization_Index", "Number_of_Iteration", "Residual"
+        write(ioSolverStat,'(a20, a20, a20, a20, a20, a20)')&
+                "#Job_Name", "Period", "Period_Index", "Polarization_Index", "Number_of_Iteration", "Residual"
         call Master_job_fwdPred(sigma0,allData,eAll)
 		!
 		
@@ -207,7 +209,8 @@ program Mod3DMT
          close(ioSens)
 
      case (INVERSE)
-	     write(ioSolverStat,'(a20, a20, a20, a20, a20, a20)') "#INV_Iteration_number", "Job_Name", "Period", "Polarization", "Number_of_Iteration", "Residual"
+        write(ioSolverStat,'(a20, a20, a20, a20, a20, a20)') &
+                "#INV_Iteration_number", "Job_Name", "Period", "Polarization", "Number_of_Iteration", "Residual"
          if (trim(cUserDef%search) == 'NLCG') then
             ! sigma1 contains mHat on input (zero = starting from the prior)
              write(6,*) 'Starting the NLCG search...'

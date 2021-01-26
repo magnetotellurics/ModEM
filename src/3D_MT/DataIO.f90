@@ -93,7 +93,8 @@ Contains
        case(Off_Diagonal_Rho_Phase,Phase_Tensor)
           header = 'Period(s) Code GG_Lat GG_Lon X(m) Y(m) Z(m) Component Value Error'
        case(Ex_Field,Ey_Field,Bx_Field,By_Field,Bz_Field)
-          header = 'Tx_Dipole Tx_Period(s) Tx_Moment(Am) Tx_Azi Tx_Dip Tx_X(m) Tx_Y(x) Tx_Z(m) Code X(m) Y(x) Z(m) Component Real Imag, Error'
+          header = 'Tx_Dipole Tx_Period(s) Tx_Moment(Am) Tx_Azi Tx_Dip &
+                  Tx_X(m) Tx_Y(x) Tx_Z(m) Code X(m) Y(x) Z(m) Component Real Imag, Error'
     end select
 
   end function DataBlockHeader
@@ -515,23 +516,25 @@ Contains
 
         select case (iDt)
               
-			case(Ex_Field,Ey_Field,Bx_Field,By_Field,Bz_Field)
-				read(ioDat,*,iostat=ios) Dipole, Period, Moment, Azi, Dip, Tx(1), Tx(2), Tx(3), code, x(1), x(2), x(3), compid, Zreal, Zimag, Zerr
-				if (ios /= 0 ) then
-					backspace(ioDat)
-					exit
-				end if
-            			
-            		    aTx%Tx_type='CSEM'
-						aTx%nPol=1
-            			aTx%Dipole = Dipole
-				        aTx%period = Period
-            			aTx%omega = 2.0d0*PI/Period            		
-            			aTx%xyzTx = Tx
-            			aTx%azimuthTx = Azi
-            			aTx%dipTx = Dip
-            			atx%moment = Moment
-						
+                case(Ex_Field,Ey_Field,Bx_Field,By_Field,Bz_Field)
+                        read(ioDat,*,iostat=ios) Dipole, Period, Moment, Azi, Dip, &
+                        Tx(1), Tx(2), Tx(3), code, x(1), x(2), x(3), compid, Zreal, Zimag, Zerr
+                        
+                        if (ios /= 0 ) then
+                                backspace(ioDat)
+                                exit
+                        end if
+      
+                        aTx%Tx_type='CSEM'
+                        aTx%nPol=1
+                        aTx%Dipole = Dipole
+                        aTx%period = Period
+                        aTx%omega = 2.0d0*PI/Period
+                        aTx%xyzTx = Tx
+                        aTx%azimuthTx = Azi
+                        aTx%dipTx = Dip
+                        atx%moment = Moment
+
                 ! Find component id for this value
                 icomp = ImpComp(compid,iDt)
 
@@ -549,8 +552,8 @@ Contains
                     x(1) = lat
                     x(2) = lon
                 end if
-                iRx = update_rxDict(x,siteid)			
-			
+                iRx = update_rxDict(x,siteid)
+
             case(Full_Impedance,Off_Diagonal_Impedance,Full_Vertical_Components)
                 read(ioDat,*,iostat=ios) Period,code,lat,lon,x(1),x(2),x(3),compid,Zreal,Zimag,Zerr
 
@@ -558,11 +561,11 @@ Contains
                     backspace(ioDat)
                     exit
                 end if
-            		    aTx%Tx_type='MT'
-						aTx%nPol=2
-				        aTx%period = Period
-            			aTx%omega = 2.0d0*PI/Period            		
-						
+                aTx%Tx_type='MT'
+                aTx%nPol=2
+                aTx%period = Period
+                aTx%omega = 2.0d0*PI/Period
+
                 ! Find component id for this value
                 icomp = ImpComp(compid,iDt)
 
@@ -745,12 +748,13 @@ Contains
     nTx = size(txDict)
     nRx = size(rxDict)
     do iTxt = 1,nTxt
-    	do iDt = 1,nDt
-		allocate(fileInfo(iTxt,iDt)%tx_index(nTx),STAT=istat)
-	        allocate(fileInfo(iTxt,iDt)%dt_index(nTx),STAT=istat)
-	        allocate(fileInfo(iTxt,iDt)%rx_index(nTx,nRx),STAT=istat)
-	        call index_dataVectorMTX(allData,iTxt,iDt,fileInfo(iTxt,iDt)%tx_index,fileInfo(iTxt,iDt)%dt_index,fileInfo(iTxt,iDt)%rx_index)
-	end do
+        do iDt = 1,nDt
+                allocate(fileInfo(iTxt,iDt)%tx_index(nTx),STAT=istat)
+                allocate(fileInfo(iTxt,iDt)%dt_index(nTx),STAT=istat)
+                allocate(fileInfo(iTxt,iDt)%rx_index(nTx,nRx),STAT=istat)
+                call index_dataVectorMTX(allData,iTxt,iDt,&
+                        fileInfo(iTxt,iDt)%tx_index,fileInfo(iTxt,iDt)%dt_index,fileInfo(iTxt,iDt)%rx_index)
+        end do
     end do
 
    end subroutine read_Z_list

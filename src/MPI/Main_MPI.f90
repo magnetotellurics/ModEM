@@ -1238,49 +1238,46 @@ subroutine Master_job_Distribute_Taskes(job_name,nTx,sigma,eAll_out,eAll_in)
         Integer        :: iper,ipol,ipol1
         Integer        :: per_index,pol_index,solver_residual_iter
         logical keep_soln,savedSolns
-
         
-        
-
- savedSolns = present(eAll_in)
+        savedSolns = present(eAll_in)
   
-                dest=0
-                per_index=0
-                worker_job_task%what_to_do=trim(job_name) 
-                    do iper=1,nTx
-                          per_index=per_index+1
-                          worker_job_task%per_index= per_index
-                          pol_index=0
-                          call get_nPol_MPI(eAll_out%solns(per_index)) 
-                          do ipol=1,nPol_MPI
-                              pol_index=pol_index+1
-                              worker_job_task%pol_index= pol_index
-	                          dest=dest+1
-	            			  call create_worker_job_task_place_holder
-	            			  call Pack_worker_job_task
-	            			  call MPI_SEND(worker_job_package,Nbytes, MPI_PACKED,dest, FROM_MASTER, MPI_COMM_WORLD, ierr)
-                  	             
-	            			     if (trim(job_name).eq. 'JmultT' .or. trim(job_name).eq. 'Jmult')then
-								 ! In case of JmultT and Jmult the compleate eAll solution(the background solution) must be send to each node.
-								 ! In the 3D MT case there are two polarisation.
-								 ! In the 3D CSEM case there are one polarisation (for now).
-								 ! In the 2D MT case there are one polarisation.
-								 	    which_per=per_index
-								        do ipol1=1,nPol_MPI
-                                           which_pol=ipol1
-			        				       call create_e_param_place_holder(eAll_in%solns(which_per))
-				    				       call Pack_e_para_vec(eAll_in%solns(which_per))
-				    				       call MPI_SEND(e_para_vec, Nbytes, MPI_PACKED, dest,FROM_MASTER, MPI_COMM_WORLD, ierr) 
-										end do   
-                                 end if	  
-	                          write(ioMPI,'(a10,a16,i5,a8,i5,a11,i5)')trim(job_name),': Send Per. # ',per_index , ' : Pol #', pol_index,' to node # ',dest
-	                          if (dest .ge. number_of_workers) then
-	                            goto 10
-	                          end if
-	                      end do    
-                    end do
+        dest=0
+        per_index=0
+        worker_job_task%what_to_do=trim(job_name) 
+        do iper=1,nTx
+                per_index=per_index+1
+                worker_job_task%per_index= per_index
+                pol_index=0
+                call get_nPol_MPI(eAll_out%solns(per_index)) 
+                do ipol=1,nPol_MPI
+                        pol_index=pol_index+1
+                        worker_job_task%pol_index= pol_index
+                        dest=dest+1
+                        call create_worker_job_task_place_holder
+                        call Pack_worker_job_task
+                        call MPI_SEND(worker_job_package,Nbytes, MPI_PACKED,dest, FROM_MASTER, MPI_COMM_WORLD, ierr)             
+                        if (trim(job_name).eq. 'JmultT' .or. trim(job_name).eq. 'Jmult')then
+                                ! In case of JmultT and Jmult the compleate eAll solution(the background solution) must be send to each node.
+                                ! In the 3D MT case there are two polarisation.
+                                ! In the 3D CSEM case there are one polarisation (for now).
+                                ! In the 2D MT case there are one polarisation.
+                                which_per=per_index
+                                do ipol1=1,nPol_MPI
+                                        which_pol=ipol1
+                                        call create_e_param_place_holder(eAll_in%solns(which_per))
+                                        call Pack_e_para_vec(eAll_in%solns(which_per))
+                                        call MPI_SEND(e_para_vec, Nbytes, MPI_PACKED, dest,FROM_MASTER, MPI_COMM_WORLD, ierr) 
+                                end do   
+                        end if  
+                        write(ioMPI,'(a10,a16,i5,a8,i5,a11,i5)')trim(job_name),&
+                                ': Send Per. # ',per_index , ' : Pol #', pol_index,' to node # ',dest
+                        if (dest .ge. number_of_workers) then
+                                goto 10
+                        end if
+                end do    
+        end do
                     
-10         continue
+10      continue
 
 
        call count_number_of_meaasges_to_RECV(eAll_out)
@@ -1292,30 +1289,31 @@ subroutine Master_job_Distribute_Taskes(job_name,nTx,sigma,eAll_out,eAll_in)
             call MPI_RECV(worker_job_package, Nbytes, MPI_PACKED ,MPI_ANY_SOURCE, FROM_WORKER,MPI_COMM_WORLD,STATUS, ierr)
             call Unpack_worker_job_task
 
-                       who=worker_job_task%taskid
-                       which_per=worker_job_task%per_index
-                       which_pol=worker_job_task%pol_index
+            who=worker_job_task%taskid
+            which_per=worker_job_task%per_index
+            which_pol=worker_job_task%pol_index
+                   
+            call create_e_param_place_holder(eAll_out%solns(which_per))
+            call MPI_RECV(e_para_vec, Nbytes, MPI_PACKED, who, FROM_WORKER,MPI_COMM_WORLD, STATUS, ierr)
+            !call get_nPol_MPI(eAll_out%solns(which_per)) 
+            !if (nPol_MPI==1)  which_pol=1
+            call Unpack_e_para_vec(eAll_out%solns(which_per))
+            write(ioMPI,'(a10,a16,i5,a8,i5,a11,i5)')trim(job_name) ,&
+                    ': Recieve Per # ',which_per ,' and Pol # ', which_pol ,' from ', who 
+            ! Writting into the solver's diagonestic file.
+            ! Naser and Paulo 02.10.2019   
+            do solver_residual_iter = 1,size(worker_job_task%solver_residual_vec)
+                if (worker_job_task%solver_residual_vec(solver_residual_iter) .gt. R_ZERO) then
+                        write(ioSolverStat,'(a20,g20.7,i20,i20,i20,g20.7)')trim(job_name), &
+                                worker_job_task%period, which_per, which_pol, solver_residual_iter, &
+                                worker_job_task%solver_residual_vec(solver_residual_iter)
+                end if
+            end do
 
-                   
-                   call create_e_param_place_holder(eAll_out%solns(which_per))
-                   call MPI_RECV(e_para_vec, Nbytes, MPI_PACKED, who, FROM_WORKER,MPI_COMM_WORLD, STATUS, ierr)
-                   !call get_nPol_MPI(eAll_out%solns(which_per)) 
-                   !if (nPol_MPI==1)  which_pol=1
-                   call Unpack_e_para_vec(eAll_out%solns(which_per))
-                   write(ioMPI,'(a10,a16,i5,a8,i5,a11,i5)')trim(job_name) ,': Recieve Per # ',which_per ,' and Pol # ', which_pol ,' from ', who 
-                   ! Writting into the solver's diagonestic file.
-				   ! Naser and Paulo 02.10.2019
-				   
-				   do solver_residual_iter = 1,size(worker_job_task%solver_residual_vec)
-					   if (worker_job_task%solver_residual_vec(solver_residual_iter) .gt. R_ZERO) then
-						   write(ioSolverStat,'(a20,g20.7,i20,i20,i20,g20.7)')trim(job_name), worker_job_task%period, which_per, which_pol, solver_residual_iter, worker_job_task%solver_residual_vec(solver_residual_iter)
-					   end if
-				   end do
-				   received_answers=received_answers+1
-                    
-                   
-        ! Check if we send all transmitters and polarizations, if not then send the next transmitter to the worker who is free now....
-        ! This part is very important if we have less workers than transmitters.           
+            received_answers=received_answers+1
+                                   
+! Check if we send all transmitters and polarizations, if not then send the next transmitter to the worker who is free now....
+! This part is very important if we have less workers than transmitters.           
 !write(6,*)'Per_index ',Per_index,'pol_index ',pol_index,'received_answers',received_answers,' out of ',answers_to_receive
 
 if (Per_index ==  nTx .and. pol_index ==nPol_MPI) goto 1500 
@@ -1344,17 +1342,18 @@ pol_index=pol_index+1
             call Pack_worker_job_task
             call MPI_SEND(worker_job_package,Nbytes, MPI_PACKED,who, FROM_MASTER, MPI_COMM_WORLD, ierr)
             if (trim(job_name).eq. 'JmultT' .or. trim(job_name).eq. 'Jmult')then
-	            which_per=per_index
+                which_per=per_index
                 call get_nPol_MPI(eAll_out%solns(per_index)) 
-				do ipol1=1,nPol_MPI
-                    which_pol=ipol1
-			        call create_e_param_place_holder(eAll_in%solns(which_per))
-				    call Pack_e_para_vec(eAll_in%solns(which_per))
-				    call MPI_SEND(e_para_vec, Nbytes, MPI_PACKED, who,FROM_MASTER, MPI_COMM_WORLD, ierr) 
-				end do  
-		    end if 
-		     	                      
-           write(ioMPI,'(a10,a16,i5,a8,i5,a11,i5)')trim(job_name),': Send Per. # ',per_index , ' : Pol #', pol_index,' to node # ',who
+                do ipol1=1,nPol_MPI
+                        which_pol=ipol1
+                        call create_e_param_place_holder(eAll_in%solns(which_per))
+                        call Pack_e_para_vec(eAll_in%solns(which_per))
+                        call MPI_SEND(e_para_vec, Nbytes, MPI_PACKED, who,FROM_MASTER, MPI_COMM_WORLD, ierr) 
+                end do  
+            end if 
+                      
+            write(ioMPI,'(a10,a16,i5,a8,i5,a11,i5)')trim(job_name),&
+                    ': Send Per. # ',per_index , ' : Pol #', pol_index,' to node # ',who
                            
                            
 
@@ -1379,7 +1378,7 @@ subroutine create_data_vec_place_holder(d)
 
      implicit none
      integer Nbytes1,Nbytes2,ndata,iper,ndt,sum1,sum2
-     type(dataVectorMTX_t), intent(in)		:: d
+     type(dataVectorMTX_t), intent(in) :: d
 
 
 
@@ -1407,7 +1406,7 @@ end subroutine create_data_vec_place_holder
  subroutine Pack_data_para_vec(d)
     implicit none
 
-     type(dataVectorMTX_t), intent(in)		:: d
+     type(dataVectorMTX_t), intent(in) :: d
      integer index
      integer ndata,iper,ndt
 
@@ -1417,10 +1416,12 @@ end subroutine create_data_vec_place_holder
       do iper=1,d%nTx
         do ndt=1,d%d(iper)%ndt
              ndata=size(d%d(iper)%data(ndt)%value)            
-             call MPI_Pack(d%d(iper)%data(ndt)%value(1,1),ndata, MPI_DOUBLE_PRECISION, data_para_vec, Nbytes, index, MPI_COMM_WORLD, ierr)
-             call MPI_Pack(d%d(iper)%data(ndt)%error(1,1),ndata, MPI_DOUBLE_PRECISION, data_para_vec, Nbytes, index, MPI_COMM_WORLD, ierr)
-             call MPI_Pack(d%d(iper)%data(ndt)%errorBar,1,       MPI_LOGICAL,          data_para_vec, Nbytes, index, MPI_COMM_WORLD, ierr)
-             call MPI_Pack(d%d(iper)%data(ndt)%allocated,1,       MPI_LOGICAL,          data_para_vec, Nbytes, index, MPI_COMM_WORLD, ierr)
+             call MPI_Pack(d%d(iper)%data(ndt)%value(1,1), &
+                     ndata, MPI_DOUBLE_PRECISION, data_para_vec, Nbytes, index, MPI_COMM_WORLD, ierr)
+             call MPI_Pack(d%d(iper)%data(ndt)%error(1,1), &
+                     ndata, MPI_DOUBLE_PRECISION, data_para_vec, Nbytes, index, MPI_COMM_WORLD, ierr)
+             call MPI_Pack(d%d(iper)%data(ndt)%errorBar,1, MPI_LOGICAL, data_para_vec, Nbytes, index, MPI_COMM_WORLD, ierr)
+             call MPI_Pack(d%d(iper)%data(ndt)%allocated,1, MPI_LOGICAL, data_para_vec, Nbytes, index, MPI_COMM_WORLD, ierr)
        end do
      end do  
 
@@ -1430,7 +1431,7 @@ end subroutine Pack_data_para_vec
 subroutine UnPack_data_para_vec(d)
     implicit none
 
-     type(dataVectorMTX_t), intent(inout)		:: d
+     type(dataVectorMTX_t), intent(inout) :: d
      integer index
      integer ndata,iper,ndt
 
@@ -1439,10 +1440,12 @@ subroutine UnPack_data_para_vec(d)
       do iper=1,d%nTx
         do ndt=1,d%d(iper)%ndt
              ndata=size(d%d(iper)%data(ndt)%value)            
-             call MPI_Unpack(data_para_vec, Nbytes, index,d%d(iper)%data(ndt)%value(1,1),ndata, MPI_DOUBLE_PRECISION, MPI_COMM_WORLD, ierr)
-             call MPI_Unpack(data_para_vec, Nbytes, index,d%d(iper)%data(ndt)%error(1,1),ndata, MPI_DOUBLE_PRECISION, MPI_COMM_WORLD, ierr)
-             call MPI_Unpack(data_para_vec, Nbytes, index,d%d(iper)%data(ndt)%errorBar  ,1,     MPI_LOGICAL,          MPI_COMM_WORLD, ierr)
-             call MPI_Unpack(data_para_vec, Nbytes, index,d%d(iper)%data(ndt)%allocated  ,1,     MPI_LOGICAL,          MPI_COMM_WORLD, ierr)
+             call MPI_Unpack(data_para_vec, &
+                     Nbytes, index,d%d(iper)%data(ndt)%value(1,1), ndata, MPI_DOUBLE_PRECISION, MPI_COMM_WORLD, ierr)
+             call MPI_Unpack(data_para_vec, &
+                     Nbytes, index,d%d(iper)%data(ndt)%error(1,1), ndata, MPI_DOUBLE_PRECISION, MPI_COMM_WORLD, ierr)
+             call MPI_Unpack(data_para_vec, Nbytes, index,d%d(iper)%data(ndt)%errorBar, 1, MPI_LOGICAL, MPI_COMM_WORLD, ierr)
+             call MPI_Unpack(data_para_vec, Nbytes, index,d%d(iper)%data(ndt)%allocated, 1, MPI_LOGICAL, MPI_COMM_WORLD, ierr)
        end do
      end do  
 
@@ -1462,7 +1465,8 @@ type (userdef_control),intent(inout)	:: cUserDef
              
  
           call create_userdef_control_place_holder
-          call MPI_RECV(userdef_control_package, Nbytes, MPI_PACKED ,0, FROM_MASTER,MPI_COMM_WORLD,STATUS, ierr)
+          call MPI_RECV(userdef_control_package, &
+                  Nbytes, MPI_PACKED ,0, FROM_MASTER,MPI_COMM_WORLD,STATUS, ierr)
           call unpack_userdef_control (cUserDef)
 
 	   if (taskid==1 ) then

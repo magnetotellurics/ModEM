@@ -669,7 +669,8 @@ subroutine get_source_for_csem_EM1D_test(sigma,grid,iTx,source)
   src(nsorec)%nelem(1) = nelem
   
   allocate(src(nsorec)%pos(3,nelem), stat=ierr)
-  allocate(src(nsorec)%ljx(nelem),src(nsorec)%ljy(nelem),src(nsorec)%ljz(nelem),src(nsorec)%akx(nelem),src(nsorec)%aky(nelem),src(nsorec)%akz(nelem), stat=ierr)
+  allocate(src(nsorec)%ljx(nelem),src(nsorec)%ljy(nelem),&
+          src(nsorec)%ljz(nelem),src(nsorec)%akx(nelem),src(nsorec)%aky(nelem),src(nsorec)%akz(nelem), stat=ierr)
   
   src(nsorec)%pos(1,nelem)=0.0
   src(nsorec)%pos(2,nelem)=0.0

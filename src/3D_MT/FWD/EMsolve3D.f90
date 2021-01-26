@@ -620,7 +620,7 @@ end subroutine SdivCorr ! SdivCorr
     character (len=1000) :: line_text
  	character(len=100),dimension(10) :: args
  	character(len=100)              :: search_string
-	integer                       :: nargs
+	integer                       :: nargs, ierr
     real(kind = 8)            :: realval
     integer					  :: intval
     ! Initialize inverse solver configuration
@@ -721,7 +721,8 @@ do
                         solverControl%read_E0_from_File=.false.
             else
                         if (output_level > 2) then
-                            write (*,'(a12,a,a80)') node_info,"Optional EM solution file name for nested BC: ",adjustl(solverControl%E0fileName)
+                            write (*,'(a12,a,a80)') node_info,&
+                                    "Optional EM solution file name for nested BC: ",adjustl(solverControl%E0fileName)
                         end if
                         solverControl%read_E0_from_File=.true.
                         solverControl%ioE0=ioE
@@ -764,7 +765,8 @@ do
         call parse(line_text,":",args,nargs)
          solverControl%get_1D_from=args(2)
         if (output_level > 2) then
-           write (*,'(a12,a,a)') node_info,"1D model for Ep in CSEM Geometric_mean|At_Tx_Position|Geometric_mean_around_Tx: ",solverControl%get_1D_from
+           write (*,'(a12,a,a)') node_info,&
+                   "1D model for Ep in CSEM Geometric_mean|At_Tx_Position|Geometric_mean_around_Tx: ",solverControl%get_1D_from
         end if	
     elseif(index(line_text, "Compute 1D solution using Dipole1D|EM1D") .ne. 0)then
          call parse(line_text,":",args,nargs)

@@ -120,24 +120,21 @@ integer index,size_of_res_vector
 
 index=1
 size_of_res_vector=size(worker_job_task%solver_residual_vec)
-        call MPI_Pack(worker_job_task%what_to_do,80, MPI_CHARACTER, worker_job_package, Nbytes, index, MPI_COMM_WORLD, ierr)
-
-        call MPI_Pack(worker_job_task%per_index ,1 , 		MPI_INTEGER  , worker_job_package, Nbytes, index, MPI_COMM_WORLD, ierr)
-        call MPI_Pack(worker_job_task%Stn_index ,1 ,	 	MPI_INTEGER  , worker_job_package, Nbytes, index, MPI_COMM_WORLD, ierr)
-        call MPI_Pack(worker_job_task%pol_index ,1 , 		MPI_INTEGER  , worker_job_package, Nbytes, index, MPI_COMM_WORLD, ierr)
-        call MPI_Pack(worker_job_task%data_type_index ,1 , 	MPI_INTEGER  , worker_job_package, Nbytes, index, MPI_COMM_WORLD, ierr)
-        call MPI_Pack(worker_job_task%data_type ,1 , 		MPI_INTEGER  , worker_job_package, Nbytes, index, MPI_COMM_WORLD, ierr)
-        call MPI_Pack(worker_job_task%taskid ,1 , 			MPI_INTEGER  , worker_job_package, Nbytes, index, MPI_COMM_WORLD, ierr)
-		call MPI_Pack(worker_job_task%solver_number_of_iterations,1, 		MPI_INTEGER, worker_job_package, Nbytes, index, MPI_COMM_WORLD, ierr)
-
-        call MPI_Pack(worker_job_task%keep_E_soln,1, 		MPI_LOGICAL, worker_job_package, Nbytes, index, MPI_COMM_WORLD, ierr)
-        call MPI_Pack(worker_job_task%several_Tx,1, 		MPI_LOGICAL, worker_job_package, Nbytes, index, MPI_COMM_WORLD, ierr)
-        call MPI_Pack(worker_job_task%create_your_own_e0,1, 		MPI_LOGICAL, worker_job_package, Nbytes, index, MPI_COMM_WORLD, ierr)
-	
-		call MPI_Pack(worker_job_task%solver_residual_vec(1),size_of_res_vector, 		MPI_DOUBLE_PRECISION, worker_job_package, Nbytes, index, MPI_COMM_WORLD, ierr)
-		call MPI_Pack(worker_job_task%period,1, 		MPI_DOUBLE_PRECISION, worker_job_package, Nbytes, index, MPI_COMM_WORLD, ierr)
-		
-		call MPI_Pack(worker_job_task%solver_name,10, MPI_CHARACTER, worker_job_package, Nbytes, index, MPI_COMM_WORLD, ierr)
+call MPI_Pack(worker_job_task%what_to_do,80, MPI_CHARACTER, worker_job_package, Nbytes, index, MPI_COMM_WORLD, ierr)
+call MPI_Pack(worker_job_task%per_index ,1 , MPI_INTEGER  , worker_job_package, Nbytes, index, MPI_COMM_WORLD, ierr)
+call MPI_Pack(worker_job_task%Stn_index ,1 ,MPI_INTEGER  , worker_job_package, Nbytes, index, MPI_COMM_WORLD, ierr)
+call MPI_Pack(worker_job_task%pol_index ,1 , MPI_INTEGER  , worker_job_package, Nbytes, index, MPI_COMM_WORLD, ierr)
+call MPI_Pack(worker_job_task%data_type_index ,1 , MPI_INTEGER  , worker_job_package, Nbytes, index, MPI_COMM_WORLD, ierr)
+call MPI_Pack(worker_job_task%data_type ,1 , MPI_INTEGER  , worker_job_package, Nbytes, index, MPI_COMM_WORLD, ierr)
+call MPI_Pack(worker_job_task%taskid ,1 , MPI_INTEGER  , worker_job_package, Nbytes, index, MPI_COMM_WORLD, ierr)
+call MPI_Pack(worker_job_task%solver_number_of_iterations,1, MPI_INTEGER, worker_job_package, Nbytes, index, MPI_COMM_WORLD, ierr)
+call MPI_Pack(worker_job_task%keep_E_soln,1, MPI_LOGICAL, worker_job_package, Nbytes, index, MPI_COMM_WORLD, ierr)
+call MPI_Pack(worker_job_task%several_Tx,1, MPI_LOGICAL, worker_job_package, Nbytes, index, MPI_COMM_WORLD, ierr)
+call MPI_Pack(worker_job_task%create_your_own_e0,1, MPI_LOGICAL, worker_job_package, Nbytes, index, MPI_COMM_WORLD, ierr)
+call MPI_Pack(worker_job_task%solver_residual_vec(1),&
+        size_of_res_vector, MPI_DOUBLE_PRECISION, worker_job_package, Nbytes, index, MPI_COMM_WORLD, ierr)
+call MPI_Pack(worker_job_task%period,1, MPI_DOUBLE_PRECISION, worker_job_package, Nbytes, index, MPI_COMM_WORLD, ierr)
+call MPI_Pack(worker_job_task%solver_name,10, MPI_CHARACTER, worker_job_package, Nbytes, index, MPI_COMM_WORLD, ierr)
 
 end subroutine Pack_worker_job_task
 
@@ -147,24 +144,21 @@ integer index,size_of_res_vector
 index=1
 size_of_res_vector=size(worker_job_task%solver_residual_vec)
 
-        call MPI_Unpack(worker_job_package, Nbytes, index, worker_job_task%what_to_do,80, MPI_CHARACTER,MPI_COMM_WORLD, ierr)
-
-        call MPI_Unpack(worker_job_package, Nbytes, index, worker_job_task%per_index ,1 , MPI_INTEGER,MPI_COMM_WORLD, ierr)
-        call MPI_Unpack(worker_job_package, Nbytes, index, worker_job_task%Stn_index ,1 , MPI_INTEGER,MPI_COMM_WORLD, ierr)
-        call MPI_Unpack(worker_job_package, Nbytes, index, worker_job_task%pol_index ,1 , MPI_INTEGER,MPI_COMM_WORLD, ierr)
-        call MPI_Unpack(worker_job_package, Nbytes, index, worker_job_task%data_type_index ,1 , MPI_INTEGER,MPI_COMM_WORLD, ierr)
-        call MPI_Unpack(worker_job_package, Nbytes, index, worker_job_task%data_type ,1 , MPI_INTEGER,MPI_COMM_WORLD, ierr)
-        call MPI_Unpack(worker_job_package, Nbytes, index, worker_job_task%taskid ,1 , MPI_INTEGER,MPI_COMM_WORLD, ierr)
-		call MPI_Unpack(worker_job_package, Nbytes, index, worker_job_task%solver_number_of_iterations,1, MPI_INTEGER,MPI_COMM_WORLD, ierr)
-        
-        call MPI_Unpack(worker_job_package, Nbytes, index, worker_job_task%keep_E_soln,1, MPI_LOGICAL,MPI_COMM_WORLD, ierr)
-        call MPI_Unpack(worker_job_package, Nbytes, index, worker_job_task%several_Tx,1, MPI_LOGICAL,MPI_COMM_WORLD, ierr)
-        call MPI_Unpack(worker_job_package, Nbytes, index, worker_job_task%create_your_own_e0,1, MPI_LOGICAL,MPI_COMM_WORLD, ierr)
-		
-		call MPI_Unpack(worker_job_package, Nbytes, index, worker_job_task%solver_residual_vec(1),size_of_res_vector, MPI_DOUBLE_PRECISION,MPI_COMM_WORLD, ierr)
-		call MPI_Unpack(worker_job_package, Nbytes, index, worker_job_task%period,1, MPI_DOUBLE_PRECISION,MPI_COMM_WORLD, ierr)
-		
-		call MPI_Unpack(worker_job_package, Nbytes, index, worker_job_task%solver_name,10, MPI_CHARACTER,MPI_COMM_WORLD, ierr)
+call MPI_Unpack(worker_job_package, Nbytes, index, worker_job_task%what_to_do,80, MPI_CHARACTER,MPI_COMM_WORLD, ierr)
+call MPI_Unpack(worker_job_package, Nbytes, index, worker_job_task%per_index ,1 , MPI_INTEGER,MPI_COMM_WORLD, ierr)
+call MPI_Unpack(worker_job_package, Nbytes, index, worker_job_task%Stn_index ,1 , MPI_INTEGER,MPI_COMM_WORLD, ierr)
+call MPI_Unpack(worker_job_package, Nbytes, index, worker_job_task%pol_index ,1 , MPI_INTEGER,MPI_COMM_WORLD, ierr)
+call MPI_Unpack(worker_job_package, Nbytes, index, worker_job_task%data_type_index ,1 , MPI_INTEGER,MPI_COMM_WORLD, ierr)
+call MPI_Unpack(worker_job_package, Nbytes, index, worker_job_task%data_type ,1 , MPI_INTEGER,MPI_COMM_WORLD, ierr)
+call MPI_Unpack(worker_job_package, Nbytes, index, worker_job_task%taskid ,1 , MPI_INTEGER,MPI_COMM_WORLD, ierr)
+call MPI_Unpack(worker_job_package, Nbytes, index, worker_job_task%solver_number_of_iterations,1, MPI_INTEGER,MPI_COMM_WORLD, ierr)        
+call MPI_Unpack(worker_job_package, Nbytes, index, worker_job_task%keep_E_soln,1, MPI_LOGICAL,MPI_COMM_WORLD, ierr)
+call MPI_Unpack(worker_job_package, Nbytes, index, worker_job_task%several_Tx,1, MPI_LOGICAL,MPI_COMM_WORLD, ierr)
+call MPI_Unpack(worker_job_package, Nbytes, index, worker_job_task%create_your_own_e0,1, MPI_LOGICAL,MPI_COMM_WORLD, ierr)
+call MPI_Unpack(worker_job_package, Nbytes, index, &
+        worker_job_task%solver_residual_vec(1),size_of_res_vector, MPI_DOUBLE_PRECISION,MPI_COMM_WORLD, ierr)
+call MPI_Unpack(worker_job_package, Nbytes, index, worker_job_task%period,1, MPI_DOUBLE_PRECISION,MPI_COMM_WORLD, ierr)
+call MPI_Unpack(worker_job_package, Nbytes, index, worker_job_task%solver_name,10, MPI_CHARACTER,MPI_COMM_WORLD, ierr)
 
 
 end subroutine Unpack_worker_job_task

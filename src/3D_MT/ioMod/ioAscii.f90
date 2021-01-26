@@ -773,9 +773,11 @@ Contains
                       do k = 1,bAll%combs(j)%nPol
                           omega = txDict(bAll%combs(j)%tx)%omega
                           period = txDict(bAll%combs(j)%tx)%period
-                          write(ioE,'(a30,a4,a10,i5)',iostat=istat) 'Transmitter type & nPol     : ','',txDict(bAll%combs(j)%tx)%tx_type, bAll%combs(j)%nPol
+                          write(ioE,'(a30,a4,a10,i5)',iostat=istat) 'Transmitter type & nPol     : ',&
+                                  '',txDict(bAll%combs(j)%tx)%tx_type, bAll%combs(j)%nPol
                           write(ioE,'(a30,i5,es14.6)',iostat=istat) 'Period number & value (secs): ',j,period
-                          write(ioE,'(a30,i5,a5,a20)',iostat=istat) 'Polarization number & name  : ',k, '', bAll%combs(j)%Pol_name(k)
+                          write(ioE,'(a30,i5,a5,a20)',iostat=istat) 'Polarization number & name  : ',&
+                                  k, '', bAll%combs(j)%Pol_name(k)
 
                           if (bAll%combs(j)%b(k)%nonzero_BC) then
                               write(ioE,'(a10)',iostat=istat) 'BC'
