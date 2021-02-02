@@ -518,9 +518,6 @@ Contains
             select case (iDt)
 
             case(Full_Impedance,Off_Diagonal_Impedance,Full_Vertical_Components)
-                !read(ioDat,*,iostat=ios) Period,code,lat,lon,x(1),x(2),x(3),compid,Zreal,Zimag,Zerr
-                ! 2019.04.23, Liu Zhongyin, add angle while reading line
-                !read(ioDat,*,iostat=ios) Period,code,lat,lon,x(1),x(2),x(3),compid,Zreal,Zimag,Zerr,angle
                 read(ioDat,'(a)',iostat=ios) tmpline
 
                 if (ios /= 0) then
@@ -548,7 +545,7 @@ Contains
                     Exangle = Exangle + fileInfo(iTxt,iDt)%geographic_orientation
                     Hxangle_ref = 0.0
                 case default
-                    call errStop('read datafile error')
+                    exit
                 end select
 
                 ! Find component id for this value
@@ -566,11 +563,6 @@ Contains
                 rxDict(iRx)%HxAzimuth_ref = Hxangle_ref
 
             case(Full_Interstation_TF)
-                !read(ioDat,*,iostat=ios) Period,code,lat,lon,x(1),x(2),x(3), &
-                !    ref_code,ref_lat,ref_lon,ref_x(1),ref_x(2),ref_x(3),compid,Zreal,Zimag,Zerr
-                ! 2019.04.23, Liu Zhongyin, add angle while reading line
-                ! read(ioDat,*,iostat=ios) Period,code,lat,lon,x(1),x(2),x(3), &
-                !     ref_code,ref_lat,ref_lon,ref_x(1),ref_x(2),ref_x(3),compid,Zreal,Zimag,Zerr,angle
                 read(ioDat,'(a)',iostat=ios) tmpline
 
                 if (ios /= 0) then
@@ -601,7 +593,7 @@ Contains
                     Exangle = 0.0
                     Hxangle_ref = Hxangle_ref + fileInfo(iTxt,iDt)%geographic_orientation
                 case default
-                    call errStop('read datafile error')
+                    exit
                 end select
 
                 ! Find component id for this value
@@ -621,9 +613,6 @@ Contains
 
 
             case(Off_Diagonal_Rho_Phase,Phase_Tensor)
-                !read(ioDat,*,iostat=ios) Period,code,lat,lon,x(1),x(2),x(3),compid,Zreal,Zerr
-                ! 2019.04.23, Liu Zhongyin, add angle while reading line
-                ! read(ioDat,*,iostat=ios) Period,code,lat,lon,x(1),x(2),x(3),compid,Zreal,Zerr,angle
                 read(ioDat,'(a)',iostat=ios) tmpline
 
                 if (ios /= 0) then
@@ -651,7 +640,7 @@ Contains
                     Exangle = Exangle + fileInfo(iTxt,iDt)%geographic_orientation
                     Hxangle_ref = 0.0
                 case default
-                    call errStop('read datafile error')
+                    exit
                 end select
 
                 ! Find component id for this value
