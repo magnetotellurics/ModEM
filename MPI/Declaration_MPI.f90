@@ -12,20 +12,11 @@ Integer        :: MASTER, FROM_MASTER, FROM_WORKER,TAG,ierr,dest
 INTEGER        :: STATUS(MPI_STATUS_SIZE)
 parameter         (MASTER=0,FROM_MASTER=1,FROM_WORKER=2,Tag=1)
 !********************************************************************
-! additional parameters needed by two-layered parallelization
-!********************************************************************
-integer        :: comm_world, comm_leader, comm_local
-integer        :: rank_world, rank_leader, rank_local
-integer        :: size_world, size_leader, size_local
-integer        :: group_world, group_leader
-! this is used to store the timer of each mpi sub-process
-DOUBLE PRECISION    :: previous_time
-integer, allocatable, dimension(:) :: prev_group_sizes
-! this is used for store the current name of proc/cpu to identify different
-! platforms, useful to group cpus from different nodes
-character*(80) ::  current_proc_name_MPI
 
-!********************************************************************
+
+
+
+
 ! Parameters required to create an MPI derived data types.
 !********************************************************************
 Integer        :: cvector_mpi_3D,gridDef3D_mpi,eAll_mpi,dvecMTX_mpi
