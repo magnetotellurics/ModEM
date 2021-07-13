@@ -1,5 +1,4 @@
-
-module MPI_main
+module Main_MPI
 #ifdef MPI
 
   use math_constants
@@ -10,8 +9,8 @@ module MPI_main
   use ForwardSolver
   use SensComp
   
-  use MPI_declaration
-  use MPI_sub
+  use Declaration_MPI
+  use Sub_MPI
       !use ioascii
 
   implicit none
@@ -35,7 +34,7 @@ Contains
 
 !###########################################  MPI_initialization   ############################################################
 
-Subroutine MPI_constructor
+Subroutine constructor_MPI
 
     implicit none
     include 'mpif.h'
@@ -45,7 +44,7 @@ Subroutine MPI_constructor
           call MPI_COMM_SIZE( MPI_COMM_WORLD, total_number_of_Proc, ierr )
           number_of_workers = total_number_of_Proc-1
 
-End Subroutine MPI_constructor
+End Subroutine constructor_MPI
 
 
 
@@ -1046,7 +1045,7 @@ isComplex = d%d(per_index)%data(dt_index)%isComplex
                    call MPI_SEND(sigma_para_vec, Nbytes, MPI_PACKED, 0,FROM_WORKER, MPI_COMM_WORLD, ierr)
             end do    
             
-                                  		                      
+            call exitSolver(e0,e,comb)                      		                      
 elseif (trim(worker_job_task%what_to_do) .eq. 'JmultT') then
 
 
@@ -1085,7 +1084,7 @@ elseif (trim(worker_job_task%what_to_do) .eq. 'JmultT') then
                    call MPI_SEND(e_para_vec, Nbytes, MPI_PACKED, 0,FROM_WORKER, MPI_COMM_WORLD, ierr)
                    
                  !deallocate(e_para_vec,worker_job_package)
-
+                 call exitSolver(e0,e,comb)
                    
 elseif (trim(worker_job_task%what_to_do) .eq. 'Jmult') then
 
@@ -1128,6 +1127,7 @@ elseif (trim(worker_job_task%what_to_do) .eq. 'Jmult') then
                    call Pack_e_para_vec(e)
                    call MPI_SEND(e_para_vec, Nbytes, MPI_PACKED, 0,FROM_WORKER, MPI_COMM_WORLD, ierr)
 
+				   call exitSolver(e0,e,comb)
 
 elseif (trim(worker_job_task%what_to_do) .eq. 'Distribute nTx') then
      call MPI_BCAST(nTx,1, MPI_INTEGER,0, MPI_COMM_WORLD,ierr)
@@ -1467,16 +1467,15 @@ end subroutine setGrid_MPI
 
    ! Subroutine to deallocate all memory stored in this module
 
-   call exitSolver(e0,e,comb)
+   !call exitSolver(e0,e,comb)
    call deall_grid(grid)
 
   end subroutine cleanUp_MPI
   
-subroutine MPI_destructor
+subroutine destructor_MPI
       call MPI_BARRIER(MPI_COMM_WORLD, ierr)
       call MPI_FINALIZE(ierr)
 
-end subroutine MPI_destructor
+end subroutine destructor_MPI
 #endif
-end module MPI_main
-
+end module Main_MPI

@@ -244,6 +244,8 @@ if ($WIN) {
 	print "MODULE = -fmod=\$(OBJDIR)\n";
 } elsif ($f90 =~ /^gfortran$/){
 	print "MODULE = --sysroot=\$(OBJDIR)\n";	
+} elsif ($f90 =~ /^mpif90$/){
+	print "MODULE = -J \$(OBJDIR)\n";	
 } else {
 	print "MODULE = -module \$(OBJDIR)\n";
 }

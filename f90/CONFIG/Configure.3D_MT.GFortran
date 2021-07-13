@@ -29,9 +29,9 @@ perl fmkmf.pl -f90 gfortran \
 Mod3DMT.f90 > $1
 
 else
-# MPI configuration (not tested)
-perl fmkmf.pl -f90 gfortran \
--opt '-O3 -ffree-line-length-none' \
+# MPI configuration
+perl fmkmf.pl -f90 mpif90 \
+-opt '-O3 -ffree-line-length-none -fallow-argument-mismatch' \
 -mpi '-x f95-cpp-input -DMPI' \
 -o './objs/3D_MT/GFortReleaseMPI' \
 -l '-llapack -lblas' \

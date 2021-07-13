@@ -1,5 +1,5 @@
 
-Module MPI_declaration
+Module Declaration_MPI
 #ifdef MPI
      implicit none
 include 'mpif.h'
@@ -145,5 +145,5 @@ end subroutine Unpack_worker_job_task
 
 
 #endif
- end  Module MPI_declaration
 
+end module Declaration_MPI
