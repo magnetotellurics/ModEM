@@ -1,6 +1,6 @@
 #!/bin/sh
 if [ $# -le 1 ]; then
-    echo 1>&2 Usage: $0 Makefile [debug|release|MPI]
+    echo 1>&2 Usage: $0 Makefile [debug|release|MPI] [spherical]
     exit 127
 fi
 if [ -e $1 ]; then
@@ -41,7 +41,14 @@ Mod3DMT.f90 > $1
 fi
 
 if [ $# -le 2 ]; then
-    echo 1>&2 'Makefile for 3D MT inversion ready to use.'
+    echo 1>&2 Cartesian version of the makefile ready to use.
     exit
 fi
 
+if [ $3 = "spherical" ]; then
+	sed -i 's/GridCalc\./GridCalcS\./g' $1
+	sed -i 's/boundary_ws\./boundary_wsS\./g' $1	
+    echo 1>&2 Spherical version of the makefile ready to use.
+else
+    echo 1>&2 Cartesian version of the makefile ready to use.
+fi
