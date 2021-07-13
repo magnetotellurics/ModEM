@@ -216,15 +216,8 @@ end subroutine ini_BC_from_file
 
    ! local variables
    logical			:: initForSens
-   character(10)    :: txType
 
    initForSens = present(comb)
-
-   if(present(e0)) then
-      if(e0%allocated) then
-        txType = txDict(e0%tx)%tx_type
-      endif
-   endif
 
    call deall_RHS(b0)
    if(present(e0)) then

@@ -1,5 +1,5 @@
 
-module MPI_main
+module Main_MPI
 #ifdef MPI
 
   use math_constants
@@ -10,8 +10,8 @@ module MPI_main
   use ForwardSolver
   use SensComp
   
-  use MPI_declaration
-  use MPI_sub
+  use Declaration_MPI
+  use Sub_MPI
       !use ioascii
 
   implicit none
@@ -35,7 +35,7 @@ Contains
 
 !###########################################  MPI_initialization   ############################################################
 
-Subroutine MPI_constructor
+Subroutine constructor_MPI
     implicit none
     include 'mpif.h'
           call MPI_INIT( ierr )
@@ -43,7 +43,7 @@ Subroutine MPI_constructor
           call MPI_COMM_SIZE( MPI_COMM_WORLD, total_number_of_Proc, ierr )
           number_of_workers = total_number_of_Proc-1
 
-End Subroutine MPI_constructor
+End Subroutine constructor_MPI
 
 
 
@@ -1976,11 +1976,11 @@ end subroutine setGrid_MPI
 
   end subroutine cleanUp_MPI
   
-subroutine MPI_destructor
+subroutine destructor_MPI
       call MPI_BARRIER(MPI_COMM_WORLD, ierr)
       call MPI_FINALIZE(ierr)
 
-end subroutine MPI_destructor
+end subroutine destructor_MPI
 #endif
-end module MPI_main
+end module Main_MPI
 

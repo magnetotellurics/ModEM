@@ -33,45 +33,49 @@ module UserCtrl
 	! File to set up forward solver controls
 	character(80)       :: rFile_fwdCtrl
 
-    ! Output file name for MPI nodes status info
-    character(80)       :: wFile_MPI
+	! Output file name for MPI nodes status info
+	character(80)       :: wFile_MPI
+
+	! Option to supply configuration file in place of command line
+	character(80)       :: rFile_Config
 
 	! Input files
 	character(80)       :: rFile_Grid, rFile_Model, rFile_Data
 	character(80)       :: rFile_dModel
-  character(80)       :: rFile_EMsoln, rFile_EMrhs, rFile_Prior
+	character(80)       :: rFile_EMsoln, rFile_EMrhs, rFile_Prior
 
 	! Output files
 	character(80)       :: wFile_Grid, wFile_Model, wFile_Data
 	character(80)       :: wFile_dModel
 	character(80)       :: wFile_EMsoln, wFile_EMrhs, wFile_Sens
+
 	! Specify covariance configuration
 	character(80)       :: rFile_Cov
 
 	! Choose the inverse search algorithm
 	character(80)       :: search
 
-  ! Choose the sort of test / procedure variant you wish to perform
-  character(80)       :: option
-     !  Out-of-core solution file prefix
-     character(80)       :: prefix
+	! Choose the sort of test / procedure variant you wish to perform
+	character(80)       :: option
 
-
+    ! Out-of-core file prefix for storing working E-field solutions (NCI)
+    character(80)       :: prefix
 
 	! Specify damping parameter for the inversion
 	real(8)             :: lambda
 
 	! Misfit tolerance for the forward solver
 	real(8)             :: eps
-  ! Specify the magnitude for random perturbations
-  real(8)             :: delta
 
+	! Specify the magnitude for random perturbations
+	real(8)             :: delta
 
 	! Indicate how much output you want
 	integer             :: output_level
 
-     ! Out of core solution boolean
-     logical             :: storeSolnsInFile
+    ! Reduce master memory usage by storing E-fields in files (NCI)
+    logical             :: storeSolnsInFile
+
   end type userdef_control
 
   type (userdef_control),public:: cUserDef
@@ -92,6 +96,8 @@ Contains
   	ctrl%job = ''
   	ctrl%rFile_invCtrl = 'n'
   	ctrl%rFile_fwdCtrl = 'n'
+  	ctrl%wFile_MPI = 'n'
+  	ctrl%rFile_Config = 'n'
   	ctrl%rFile_Grid = 'n'
   	ctrl%wFile_Grid = 'n'
   	ctrl%rFile_Model = 'n'
@@ -106,16 +112,16 @@ Contains
   	ctrl%wFile_EMsoln = 'n'
   	ctrl%rFile_Prior = 'n'
   	ctrl%wFile_Sens = 'n'
-  	ctrl%lambda = 10.
-  	ctrl%eps = 1.0e-7
   	ctrl%rFile_Cov = 'n'
   	ctrl%search = 'NLCG'
   	ctrl%option = 'J'
+  	ctrl%lambda = 10.
+  	ctrl%eps = 1.0e-7
   	ctrl%delta = 0.05
-  	ctrl%output_level = 3
-!  output core ctrl
-        ctrl%prefix = 'n'
-        ctrl%storeSolnsInFile = .false.
+  	ctrl%output_level = 3	
+	ctrl%prefix = 'n'
+	ctrl%storeSolnsInFile = .false.
+
     ! Using process ID in MPI output file name has the advantage that
     ! the user may run several instances of the program in one directory
     ! simultaneously. Unfortunately, getpid is one of the portability
@@ -201,6 +207,7 @@ Contains
 	 case default
 	   ctrl%output_level = 3
 	 end select
+
      if(narg .gt. 0) then
         call getarg(1,arg)
         if(arg(1:1).eq.'-') job = arg(2:2)
@@ -712,5 +719,6 @@ Contains
 
      ! save this info for the main program
      ctrl%job = job
+
   end subroutine parseArgs
 end module UserCtrl

@@ -13,7 +13,7 @@ program Mod3DMT
      !use mtinvsetup
 
 #ifdef MPI
-     Use MPI_main
+     Use Main_MPI
 #endif
 
      implicit none
@@ -31,25 +31,21 @@ program Mod3DMT
 
 
 #ifdef MPI
-              call  MPI_constructor
-			  if (taskid==0) then
-			      call parseArgs('Mod3DMT',cUserDef) ! OR readStartup(rFile_Startup,cUserDef)
-			      write(6,*)'I am a PARALLEL version'
-			      call Master_job_Distribute_userdef_control(cUserDef)
-	              open(ioMPI,file=cUserDef%wFile_MPI)
-	              write(ioMPI,*) 'Total Number of nodes= ', number_of_workers
-			  else
-			       call RECV_cUserDef(cUserDef)
-			 end if
-    
+      call  constructor_MPI
+      if (taskid==0) then
+          call parseArgs('Mod3DMT',cUserDef)  
+          ! OR readStartup(rFile_Startup,cUserDef)
+          write(6,*)'I am a PARALLEL version'
+          call Master_job_Distribute_userdef_control(cUserDef)
+          open(ioMPI,file=cUserDef%wFile_MPI)
+          write(ioMPI,*) 'Total Number of nodes= ', number_of_workers
+      else
+          call RECV_cUserDef(cUserDef)
+      end if
 #else
-             call parseArgs('Mod3DMT',cUserDef) ! OR readStartup(rFile_Startup,cUserDef)
-			 write(6,*)'I am a SERIAL version'
+      call parseArgs('Mod3DMT',cUserDef) ! OR readStartup(rFile_Startup,cUserDef)
+      write(6,*)'I am a SERIAL version'
 #endif
-
-
-
-
       call initGlobalData(cUserDef)
       ! set the grid for the numerical computations
 
@@ -77,7 +73,7 @@ program Mod3DMT
 	            if (trim(worker_job_task%what_to_do) .eq. 'Job Completed')  then
 	               	 call deallGlobalData()
 		             !call cleanUp_MPI()
-	                 call MPI_destructor
+	                 call destructor_MPI
 	              stop
 	            end if
     end if
@@ -131,16 +127,16 @@ program Mod3DMT
         write(*,*) 'Multiplying by J...'
 
 #ifdef MPI
-            call Master_job_Jmult(dsigma,sigma0,allData)
+        call Master_job_Jmult(dsigma,sigma0,allData)
 #else
-            call Jmult(dsigma,sigma0,allData)
+        call Jmult(dsigma,sigma0,allData)
 #endif
 
 
         call write_dataVectorMTX(allData,cUserDef%wFile_Data)
 
      case (MULT_BY_J_T)
-        write(*,*) 'Multiplying by J^T...'
+         write(*,*) 'Multiplying by J^T...'
 #ifdef MPI
          !call Master_job_fwdPred(sigma0,allData,eAll)
          call Master_job_JmultT(sigma0,allData,dsigma)
@@ -151,7 +147,7 @@ program Mod3DMT
          call write_modelParam(dsigma,cUserDef%wFile_dModel)
          
      case (MULT_BY_J_T_multi_Tx)
-        write(*,*) 'Multiplying by J^T...output multi-Tx model vectors'
+         write(*,*) 'Multiplying by J^T...output multi-Tx model vectors'
 #ifdef MPI
          call Master_job_fwdPred(sigma0,allData,eAll)
          call Master_job_JmultT(sigma0,allData,dsigma,eAll,JT_multi_Tx_vec)
@@ -349,17 +345,11 @@ program Mod3DMT
 #endif
 
 
-
-
-
 #ifdef MPI
-	 write(0,*) ' elapsed time (mins) ',elapsed_time(timer)/60.0
-	 call MPI_destructor
+      write(0,*) ' elapsed time (mins) ',elapsed_time(timer)/60.0
+      call destructor_MPI
 #else
-	 write(0,*) ' elapsed time (mins) ',elapsed_time(timer)/60.0
+      write(0,*) ' elapsed time (mins) ',elapsed_time(timer)/60.0
 #endif
 
-
-
 end program
-
