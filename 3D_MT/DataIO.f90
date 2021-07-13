@@ -7,6 +7,7 @@ module DataIO
   use file_units
   use utilities
   use dataspace
+  use gridcalc
   use transmitters
   use receivers
   use datatypes
@@ -24,8 +25,11 @@ module DataIO
 	MODULE PROCEDURE write_Z_list
   end interface
 
+  interface deall_dataFileInfo
+    MODULE PROCEDURE deall_fileInfo
+  end interface
 
-  public     :: read_dataVectorMTX, write_dataVectorMTX
+  public     :: read_dataVectorMTX, write_dataVectorMTX, deall_dataFileInfo
 
   type :: data_file_block
 
@@ -60,6 +64,11 @@ module DataIO
   ! and defines the number of conceptually different types of sources
   type (data_file_block), pointer, save, private, dimension(:,:) :: fileInfo
 
+  ! we are converting from an "old format" to a "new format"
+  ! the only difference being that in the new format, there is
+  ! an additional line in the head that indicates transmitter type.
+  ! on output, use the same format as on input. AK 25 May 2018
+  logical, save, private  :: old_data_file_format = .true.
 
 Contains
 
@@ -156,10 +165,11 @@ Contains
     real(8), allocatable            :: error(:) ! (ncomp)
     logical, allocatable            :: exist(:) ! (ncomp)
     character(2)                    :: temp = '> '
-    character(40)                   :: siteid,ref_siteid,compid
+    character(50)                   :: siteid,ref_siteid,compid
+    character(20)                   :: sitename
     character(1000)                 :: strtemp
     integer                         :: iTxt,iTx,iRx,iDt,icomp,i,j,k,istat,ios,nBlocks
-    real(8)                         :: x(3),ref_x(3), Period,SI_factor,large
+    real(8)                         :: x(3),ref_x(3),Xx(3),Period,SI_factor,large
     real(8)                         :: lat,lon,ref_lat,ref_lon
     logical                         :: conjugate, isComplex
 
@@ -202,10 +212,16 @@ Contains
       write(strtemp,*) adjustl(trim(DataBlockHeader(iTxt,iDt)))
       write(ioDat,'(a2)',advance='no') '# '
       write(ioDat,*,iostat=ios) strtemp(1:100)
-      !if (.not. (tx_type_name(iTxt) .eq. 'MT')) then
-      !    write(ioDat,'(a2)',advance='no') '+ '
-      !    write(ioDat,*,iostat=ios) trim(tx_type_name(iTxt))
-      !end if
+
+      ! the new format is critical for JOINT modeling and inversion; otherwise, can stick
+      ! to the old format for backwards compatibility. Will always write in the same format
+      ! as the input data file
+      if (.not. old_data_file_format) then
+            write(ioDat,'(a2)',advance='no') '+ '
+            write(ioDat,*,iostat=ios) trim(tx_type_name(iTxt))
+      end if
+
+      ! write the remainder of data type header
       call compact(typeDict(iDt)%name)
       write(ioDat,'(a2)',advance='no') temp
       write(ioDat,*,iostat=ios) trim(typeDict(iDt)%name)
@@ -231,7 +247,7 @@ Contains
       isComplex = typeDict(iDt)%isComplex
       countData = 0
 
-      ! write data
+      ! write data in order that is consistent with all previous versions of ModEM
       do iRx = 1,size(rxDict)
         do iTx = 1,size(txDict)
 
@@ -261,9 +277,18 @@ Contains
                             cycle
                         end if
                         compid = typeDict(iDt)%id(icomp)
-                        write(ioDat,'(es12.6)',    iostat=ios,advance='no') Period
+                        write(ioDat,'(es13.6)',    iostat=ios,advance='no') Period
                         write(ioDat, '(a1)', iostat=ios,advance='no') ' '
-                        write(ioDat,'(a40,3f15.3)',iostat=ios,advance='no') trim(siteid),x(:)
+                        if (FindStr(gridCoords, CARTESIAN)>0) then
+                            write(ioDat,'(a50,3f15.3)',iostat=ios,advance='no') trim(siteid),x(:)
+                   
+                        elseif (FindStr(gridCoords, SPHERICAL)>0) then
+                            read(siteid,'(a20,2f15.3)',iostat=ios) sitename,Xx(1),Xx(2)
+                            write(ioDat,'(a20,5f15.3)',iostat=ios,advance='no') trim(sitename),x(1),x(2),Xx(1),Xx(2),x(3)
+                            
+                        end if
+                        
+
                         if (conjugate) then
                             write(ioDat,'(a8,3es15.6)',iostat=ios) trim(compid),value(2*icomp-1),-value(2*icomp),error(2*icomp)
                         else
@@ -281,7 +306,7 @@ Contains
                         compid = typeDict(iDt)%id(icomp)
                         ref_siteid = rxDict(iRx)%id_ref
                         ref_x = rxDict(iRx)%r
-                        write(ioDat,'(es12.6)',    iostat=ios,advance='no') Period
+                        write(ioDat,'(es13.6)',    iostat=ios,advance='no') Period
                         write(ioDat, '(a1)', iostat=ios,advance='no') ' '
                         write(ioDat,'(a40,3f15.3)',iostat=ios,advance='no') trim(siteid),x(:)
                         write(ioDat,'(a40,3f15.3)',iostat=ios,advance='no') trim(ref_siteid),ref_x(:)
@@ -311,7 +336,7 @@ Contains
                                 error(icomp) = 10**error(icomp)
                             endif
                         end if
-                        write(ioDat,'(es12.6)',    iostat=ios,advance='no') Period
+                        write(ioDat,'(es13.6)',    iostat=ios,advance='no') Period
                         write(ioDat, '(a1)', iostat=ios,advance='no') ' '
                         write(ioDat,'(a40,3f15.3)',iostat=ios,advance='no') trim(siteid),x(:)
                         write(ioDat,'(a8,3es15.6)',iostat=ios) trim(compid),value(icomp),error(icomp)
@@ -357,7 +382,7 @@ Contains
     integer, allocatable            :: new_Rx(:) ! contains rxDict indices (nRx)
     character(2)                    :: temp
     character(200)                  :: txTypeName,typeName,typeInfo,typeHeader
-    character(40)                   :: siteid,ref_siteid,compid
+    character(50)                   :: siteid,ref_siteid,compid
     integer                         :: nTxt,iTxt,iDt,i,j,k,istat,ios
     character(40)                   :: code,ref_code
     real(8)                         :: x(3),ref_x(3), Period,SI_factor,large
@@ -386,6 +411,7 @@ Contains
         if (temp(1:1) == '+') then
             txTypeName = typeName
             read(ioDat,'(a2,a100)',iostat=ios) temp,typeName
+            old_data_file_format = .false.
         else
             txTypeName = 'MT'
         end if
@@ -466,7 +492,15 @@ Contains
 
                 ! Update the receiver dictionary and index (sets up if necessary)
                 ! For now, make lat & lon part of site ID; could use directly in the future
-                write(siteid,'(a20,2f9.3)') code,lat,lon
+                
+                if (FindStr(gridCoords, CARTESIAN)>0) then
+                    write(siteid,'(a20,2f9.3)') code,lat,lon
+                   
+                elseif (FindStr(gridCoords, SPHERICAL)>0) then
+                write(siteid,'(a20,2f15.3)') code,x(1),x(2)
+                    x(1) = lat
+                    x(2) = lon
+                end if
                 iRx = update_rxDict(x,siteid)
 
             case(Full_Interstation_TF)

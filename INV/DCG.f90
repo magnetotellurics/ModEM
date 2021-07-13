@@ -5,8 +5,8 @@ module DCG
     use senscomp
     use main
 #ifdef MPI
-	Use MPI_main
-	use MPI_sub
+	Use Main_MPI
+	use Sub_MPI
 #endif
 implicit none
   type  :: DCGiterControl_t
@@ -194,8 +194,9 @@ subroutine DCGsolver(d,m0,m,lambda,fname)
    type(dataVectorMTX_t)        :: dHat, b,dx,d_Pred,res,Nres,JmHat,Jm0,d_Pred_m0
    type(modelParam_t)			:: mHat,CmJTd,Cm_mHat
    real(kind=prec)		  		:: value,rms_old,F,mNorm,rms,rmsPrev
-   integer						:: iter, ndata,DS_iter,DCG_iter
-   character(100)       		:: file_name_suffix,logFile,mFile, mHatFile, gradFile, dataFile, resFile
+   integer						:: iter, ndata,DS_iter,DCG_iter,nfunc
+   character(100)       		:: file_name_suffix,logFile,mFile 
+   character(100)               :: mHatFile, gradFile, dataFile, resFile
    type(iterControl_t)			:: CGiter
    character(3)        			:: iterChar
    integer                      :: i,j,iDt,k,ios
@@ -251,6 +252,9 @@ call zero_dataVectorMTX(b)
         
         call printf('START',lambda,f,mNorm,rms)
         call printf('START',lambda,f,mNorm,rms,logFile)
+
+        ! initial function call
+        nfunc = 1
         
         write(iterChar,'(i3.3)') 0
         
@@ -289,11 +293,13 @@ do
 	        call CG_DS_standard(b,dx,m,d,lambda,CGiter) 
             call normalize_with_dataVecMTX(dx,d,1)
 	 
+            nfunc = nfunc + CGiter%niter
 #ifdef MPI           
             call Master_job_JmultT(m,dx,mHat,eAll)              
 #else
 	        call JmultT(m,dx,mHat,eAll)
 #endif
+            nfunc = nfunc + CGiter%niter
 
 	      Cm_mHat=  multBy_Cm(mHat) 
 	      mHat=Cm_mHat
@@ -302,6 +308,7 @@ do
 	! Compute the predicted data for the current model m
          rmsPrev=rms
          call Calc_FWD(lambda,d,m,mHat,d_Pred,res,eAll,F,mNorm,rms)
+         nfunc = nfunc + 1
          
 	  write(*,'(a25,i5)') 'Completed DCG iteration ',DCG_iter
 	  write(ioLog,'(a25,i5)') 'Completed DCG iteration ',DCG_iter
@@ -339,6 +346,8 @@ do
       DCG_iter=DCG_iter+1
 end do
 d=d_Pred
+   write(*,'(a25,i5,a25,i5)') 'DCG   iterations:',DCG_iter,' function evaluations:',nfunc
+   write(ioLog,'(a25,i5,a25,i5)') 'DCG   iterations:',DCG_iter,' function evaluations:',nfunc
 
     ! cleaning up
    call deall_dataVectorMTX(JmHat)
@@ -381,7 +390,7 @@ r_norm=dotProd(r,r)
 ii = 1
 CGiter%rerr(ii) = r_norm/b_norm
  write(ioLog,'(a18)') 'Relative CG-error:'
- write(ioLog,'(a9,i5,a10,es12.6,a10,es12.6)') 'CG-Iter= ',ii,', error = ', r_norm/b_norm, ' Lambda= ', lambda
+ write(ioLog,'(a9,i5,a10,es12.5,a10,es12.5)') 'CG-Iter= ',ii,', error = ', r_norm/b_norm, ' Lambda= ', lambda
 loop: do while ((CGiter%rerr(ii).gt.CGiter%tol).and.(ii.lt.CGiter%maxIt))
 
              
@@ -418,7 +427,7 @@ loop: do while ((CGiter%rerr(ii).gt.CGiter%tol).and.(ii.lt.CGiter%maxIt))
           
        ii=ii+1
        CGiter%rerr(ii) = r_norm/b_norm 
-        write(ioLog,'(a9,i5,a10,es12.6,a10,es12.6)') 'CG-Iter= ',ii,', error = ', r_norm/b_norm, ' Lambda= ', lambda
+        write(ioLog,'(a9,i5,a10,es12.5,a10,es12.5)') 'CG-Iter= ',ii,', error = ', r_norm/b_norm, ' Lambda= ', lambda
   end do loop
 
 CGiter%niter = ii
@@ -525,10 +534,10 @@ subroutine printf(comment,lambda,f,mNorm,rms,logfile)
     end if
 
 	write(io_unit,'(a10)',advance='no') trim(comment)//':'
-	write(io_unit,'(a3,es12.6)',advance='no') ' f=',f
-	write(io_unit,'(a4,es12.6)',advance='no') ' m2=',mNorm
+	write(io_unit,'(a3,es12.5)',advance='no') ' f=',f
+	write(io_unit,'(a4,es12.5)',advance='no') ' m2=',mNorm
 	write(io_unit,'(a5,f11.6)',advance='no') ' rms=',rms
-	write(io_unit,'(a8,es12.6)') ' lambda=',lambda
+	write(io_unit,'(a8,es12.5)') ' lambda=',lambda
 
 	! flush(io_unit): this has the effect of flushing the buffer
 	if (present(logfile)) then

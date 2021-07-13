@@ -33,38 +33,36 @@ module UserCtrl
 	! File to set up forward solver controls
 	character(80)       :: rFile_fwdCtrl
 
-    ! Output file name for MPI nodes status info
-    character(80)       :: wFile_MPI
+	! Output file name for MPI nodes status info
+	character(80)       :: wFile_MPI
 
 	! Input files
 	character(80)       :: rFile_Grid, rFile_Model, rFile_Data
 	character(80)       :: rFile_dModel
-  character(80)       :: rFile_EMsoln, rFile_EMrhs, rFile_Prior
+	character(80)       :: rFile_EMsoln, rFile_EMrhs, rFile_Prior
 
 	! Output files
 	character(80)       :: wFile_Grid, wFile_Model, wFile_Data
 	character(80)       :: wFile_dModel
 	character(80)       :: wFile_EMsoln, wFile_EMrhs, wFile_Sens
+
 	! Specify covariance configuration
 	character(80)       :: rFile_Cov
 
 	! Choose the inverse search algorithm
 	character(80)       :: search
 
-  ! Choose the sort of test / procedure variant you wish to perform
-  character(80)       :: option
-
-
-
+	! Choose the sort of test / procedure variant you wish to perform
+	character(80)       :: option
 
 	! Specify damping parameter for the inversion
 	real(8)             :: lambda
 
 	! Misfit tolerance for the forward solver
 	real(8)             :: eps
-  ! Specify the magnitude for random perturbations
-  real(8)             :: delta
 
+	! Specify the magnitude for random perturbations
+	real(8)             :: delta
 
 	! Indicate how much output you want
 	integer             :: output_level
@@ -102,11 +100,11 @@ Contains
   	ctrl%wFile_EMsoln = 'n'
   	ctrl%rFile_Prior = 'n'
   	ctrl%wFile_Sens = 'n'
-  	ctrl%lambda = 10.
-  	ctrl%eps = 1.0e-7
   	ctrl%rFile_Cov = 'n'
   	ctrl%search = 'NLCG'
   	ctrl%option = 'J'
+  	ctrl%lambda = 10.
+  	ctrl%eps = 1.0e-7
   	ctrl%delta = 0.05
   	ctrl%output_level = 3
 
@@ -213,6 +211,8 @@ Contains
         write(*,*) '      the model covariance configuration file   [rFile_Cov]'
         write(*,*) '      the starting model parameter perturbation [rFile_dModel]'
         write(*,*) '  Runs an inverse search to yield an inverse model at every iteration'
+        write(*,*) '  NOTE: NLCG can be replaced with DCG or LBFGS to '
+        write(*,*) '      select a different inverse algorithm'
         write(*,*) '[COMPUTE_J]'
         write(*,*) ' -J  rFile_Model rFile_Data wFile_Sens [rFile_fwdCtrl]'
         write(*,*) '  Calculates and saves the full J(acobian)'
@@ -230,6 +230,10 @@ Contains
         write(*,*) '  Applies the model covariance to produce a smooth model output'
         write(*,*) '  Optionally, also specify the prior model to compute resistivities'
         write(*,*) '  from model perturbation: m = C_m^{1/2} \\tilde{m} + m_0'
+        write(*,*) '[EXTRACT_BC]'
+        write(*,*) ' -b rFile_Model rFile_Data wFile_EMrhs [rFile_fwdCtrl]'
+        write(*,*) '  Initializes the forward solver and extracts the boundary conditions,'
+        write(*,*) '  writes to file.'
         write(*,*) '[TEST_GRAD]'
         write(*,*) ' -g  rFile_Model rFile_Data rFile_dModel [rFile_fwdCtrl rFile_EMrhs]'
         write(*,*) '  Runs the ultimate test of the gradient computation based on'
@@ -287,7 +291,7 @@ Contains
 
       case (FORWARD) !F
         if (narg < 3) then
-           write(0,*) 'Usage: -F  rFile_Model rFile_Data wFile_Data [wFile_EMsoln rFile_fwdCtrl]'
+           write(0,*) 'Usage: -F  rFile_Model rFile_Data wFile_Data [wFile_EMsoln rFile_fwdCtrl rFile_EMrhs]'
            write(0,*)
            write(0,*) 'Here, rFile_fwdCtrl is the forward solver control file in the format'
            write(0,*)
@@ -391,6 +395,9 @@ Contains
            write(0,*) 'OR'
            write(0,*) 'Usage: -I NLCG rFile_Model rFile_Data [rFile_invCtrl rFile_fwdCtrl]'
            write(0,*)
+           write(*,*) 'NOTE: NLCG can be replaced with DCG or LBFGS to '
+           write(*,*) '      select a different inverse algorithm'
+           write(0,*)
            write(0,*) 'Here, rFile_invCtrl = the inversion control file in the format'
            write(0,*)
            write(0,*) 'Model and data output file name    : Example'
@@ -401,6 +408,9 @@ Contains
            write(0,*) 'Exit search when rms is less than  : 1.05'
            write(0,*) 'Exit when lambda is less than      : 1.0e-4'
            write(0,*) 'Maximum number of iterations       : 120'
+           write(0,*)
+           write(0,*) 'NOTE: change the maximum number of iterations to '
+           write(0,*) '    a value < 20 if DCG is the inverse algorithm'
            write(0,*)
            write(0,*) '      rFile_fwdCtrl = the forward solver control file in the format'
            write(0,*)
@@ -423,11 +433,11 @@ Contains
         else
            ctrl%search = temp(1)
            select case (ctrl%search)
-           case ('NLCG','DCG','Hybrid')
+           case ('NLCG','DCG','Hybrid','LBFGS')
               	! write(0,*) 'Inverse search ',trim(ctrl%search),' selected.'
            case default
-				write(0,*) 'Unknown inverse search. Usage: -I [NLCG | DCG | Hybrid]'
-				stop
+		write(0,*) 'Unknown inverse search. Usage: -I [NLCG | DCG | Hybrid | LBFGS]'
+		stop
            end select
 	       ctrl%rFile_Model = temp(2)
 	       ctrl%rFile_Data = temp(3)
@@ -441,8 +451,8 @@ Contains
             inquire(FILE=ctrl%rFile_invCtrl,EXIST=exists)
             if (.not. exists) then
             	! problem - invalid argument
-				write(0,*) 'Please specify a valid inverse control file or damping parameter'
-				stop
+		write(0,*) 'Please specify a valid inverse control file or damping parameter'
+		stop
             end if
           end if
         end if
@@ -455,8 +465,8 @@ Contains
             inquire(FILE=ctrl%rFile_fwdCtrl,EXIST=exists)
             if (.not. exists) then
             	! problem - invalid argument
-				write(0,*) 'Please specify a valid forward solver control file or misfit tolerance'
-				stop
+		write(0,*) 'Please specify a valid forward solver control file or misfit tolerance'
+		stop
             end if
           end if
         end if
@@ -469,8 +479,8 @@ Contains
             inquire(FILE=ctrl%rFile_dModel,EXIST=exists)
             if (.not. exists) then
             	! problem - invalid argument
-				write(0,*) 'Please specify a valid starting model file'
-				stop
+		write(0,*) 'Please specify a valid starting model file'
+		stop
             end if
         end if
 
@@ -510,12 +520,12 @@ Contains
            write(0,*) '  writes to file.'
            stop
         else
-        ctrl%rFile_Model = temp(1)
-        ctrl%rFile_Data = temp(2)
-        ctrl%wFile_EMrhs = temp(3)
-        if (narg > 3) then
-            ctrl%rFile_fwdCtrl = temp(4)
-        end if
+            ctrl%rFile_Model = temp(1)
+            ctrl%rFile_Data = temp(2)
+            ctrl%wFile_EMrhs = temp(3)
+            if (narg > 3) then
+                ctrl%rFile_fwdCtrl = temp(4)
+            end if
         end if
 
       case (TEST_GRAD) !g
@@ -546,34 +556,37 @@ Contains
            write(0,*) 'Usage: Test the adjoint implementation for each of the critical'
            write(0,*) '       operators in J = L S^{-1} P + Q'
            write(0,*)
-           write(0,*) ' -A  J rFile_Model rFile_dModel rFile_Data [wFile_Model wFile_Data]'
-           write(0,*) '  Tests the equality d^T J m = m^T J^T d for any model and data.'
-           write(0,*) '  Optionally, outputs J m and J^T d.'
+           write(0,*) '-A J rFile_Model rFile_dModel rFile_Data [wFile_Model wFile_Data rFile_fwdCtrl]'
+           write(0,*) ' Tests the equality d^T J m = m^T J^T d for any model and data.'
+           write(0,*) ' Optionally, outputs J m and J^T d.'
            write(0,*)
-           write(0,*) ' -A  L rFile_Model rFile_EMsoln rFile_Data [wFile_EMrhs wFile_Data]'
-           write(0,*) '  Tests the equality d^T L e = e^T L^T d for any EMsoln and data.'
-           write(0,*) '  Optionally, outputs L e and L^T d.'
+           write(0,*) '-A L rFile_Model rFile_EMsoln rFile_Data [wFile_EMrhs wFile_Data rFile_fwdCtrl]'
+           write(0,*) ' Tests the equality d^T L e = e^T L^T d for any EMsoln and data.'
+           write(0,*) ' Optionally, outputs L e and L^T d.'
            write(0,*)
-           write(0,*) ' -A  S rFile_Model rFile_EMrhs rFile_Data [wFile_EMsoln]'
-           write(0,*) '  Tests the equality b^T S^{-1} b = b^T (S^{-1})^T b for any EMrhs.'
-           write(0,*) '  For simplicity, use one EMrhs for forward and transpose solvers.'
-           write(0,*) '  Data file only needed to set up dictionaries.'
-           write(0,*) '  Optionally, outputs e = S^{-1} b.'
+           write(0,*) '-A S rFile_Model rFile_EMrhs rFile_Data [wFile_EMsoln rFile_fwdCtrl]'
+           write(0,*) ' Tests the equality b^T S^{-1} b = b^T (S^{-1})^T b for any EMrhs.'
+           write(0,*) ' For simplicity, use one EMrhs for forward and transpose solvers.'
+           write(0,*) ' Data file only needed to set up dictionaries.'
+           write(0,*) ' Optionally, outputs e = S^{-1} b.'
            write(0,*)
-           write(0,*) ' -A  P rFile_Model rFile_dModel rFile_EMsoln rFile_Data [wFile_Model wFile_EMrhs]'
-           write(0,*) '  Tests the equality e^T P m = m^T P^T e for any EMsoln and data.'
-           write(0,*) '  The data template isn''t needed here except to set up the transmitters.'
-           write(0,*) '  Optionally, outputs P m and P^T e.'
+           write(0,*) '-A P rFile_Model rFile_dModel rFile_EMsoln rFile_Data [wFile_Model wFile_EMrhs]'
+           write(0,*) ' Tests the equality e^T P m = m^T P^T e for any EMsoln and data.'
+           write(0,*) ' The data template isn''t needed here except to set up the transmitters.'
+           write(0,*) ' Optionally, outputs P m and P^T e.'
            write(0,*)
-           write(0,*) ' -A  Q rFile_Model rFile_dModel rFile_Data [wFile_Model wFile_Data]'
-           write(0,*) '  Tests the equality d^T Q m = m^T Q^T d for any model and data.'
-           write(0,*) '  Optionally, outputs Q m and Q^T d.'
+           write(0,*) '-A Q rFile_Model rFile_dModel rFile_Data [wFile_Model wFile_Data]'
+           write(0,*) ' Tests the equality d^T Q m = m^T Q^T d for any model and data.'
+           write(0,*) ' Optionally, outputs Q m and Q^T d.'
+           write(0,*)
+           write(0,*) '-A O rFile_Model rFile_Data [rFile_fwdCtrl]'
+           write(0,*) ' Tests all intermediate operators: grad, curl, div and grid elements.'
            write(0,*)
            write(0,*) 'Finally, generates random 5% perturbations, if implemented:'
            write(0,*) ' -A  m rFile_Model wFile_Model [delta]'
            write(0,*) ' -A  d rFile_Data wFile_Data [delta]'
-           write(0,*) ' -A  e rFile_Model rFile_Data rFile_EMsoln wFile_EMsoln [delta]'
-           write(0,*) ' -A  b rFile_Model rFile_Data rFile_EMrhs wFile_EMrhs [delta]'
+           write(0,*) ' -A  e rFile_Model rFile_Data rFile_EMsoln wFile_EMsoln [delta rFile_fwdCtrl]'
+           write(0,*) ' -A  b rFile_Model rFile_Data rFile_EMrhs wFile_EMrhs [delta rFile_fwdCtrl]'
            stop
         else
            ctrl%option = temp(1)
@@ -590,6 +603,9 @@ Contains
                 if (narg > 5) then
                     ctrl%wFile_Data = temp(6)
                 endif
+                if (narg > 6) then
+                    ctrl%rFile_fwdCtrl = temp(7)
+                endif
            case ('L')
                 ctrl%rFile_Model = temp(2)
                 ctrl%rFile_EMsoln = temp(3)
@@ -600,6 +616,9 @@ Contains
                 if (narg > 5) then
                     ctrl%wFile_Data = temp(6)
                 endif
+                if (narg > 6) then
+                    ctrl%rFile_fwdCtrl = temp(7)
+                endif
            case ('S')
                 ctrl%rFile_Model = temp(2)
                 ctrl%rFile_EMrhs = temp(3)
@@ -607,12 +626,15 @@ Contains
                 if (narg > 4) then
                     ctrl%wFile_EMsoln = temp(5)
                 endif
+                if (narg > 5) then
+                    ctrl%rFile_fwdCtrl = temp(6)
+                endif
            case ('P')
                 ctrl%rFile_Model = temp(2)
                 ctrl%rFile_dModel = temp(3)
                 ctrl%rFile_EMsoln = temp(4)
                 if (narg < 5) then
-                    write(0,*) 'Usage: -P rFile_Model rFile_mgCtrl rFile_dModel rFile_EMsoln rFile_Data [wFile_Model wFile_EMrhs]'
+                    write(0,*) 'Usage: -P rFile_Model rFile_dModel rFile_EMsoln rFile_Data [wFile_Model wFile_EMrhs]'
                     write(0,*) 'Please specify data template file to set up the transmitter dictionary'
                     stop
                 endif
@@ -632,6 +654,12 @@ Contains
                 endif
                 if (narg > 5) then
                     ctrl%wFile_Data = temp(6)
+                endif
+           case ('O')
+                ctrl%rFile_Model = temp(2)
+                ctrl%rFile_Data = temp(3)
+                if (narg > 3) then
+                    ctrl%rFile_fwdCtrl = temp(4)
                 endif
            ! random perturbations ... in principle, shouldn't need model and data
            ! to create random solution and RHS. But using these to create dictionaries.
@@ -656,6 +684,9 @@ Contains
                 if (narg > 5) then
                     read(temp(6),*,iostat=istat) ctrl%delta
                 endif
+                if (narg > 6) then
+                    ctrl%rFile_fwdCtrl = temp(7)
+                endif
            case ('b')
                 ctrl%rFile_Model = temp(2)
                 ctrl%rFile_Data = temp(3)
@@ -663,6 +694,9 @@ Contains
                 ctrl%wFile_EMrhs = temp(5)
                 if (narg > 5) then
                     read(temp(6),*,iostat=istat) ctrl%delta
+                endif
+                if (narg > 6) then
+                    ctrl%rFile_fwdCtrl = temp(7)
                 endif
            case default
                 write(0,*) 'Unknown operator. Usage: -A [J | L | S | P | Q] OR -A [m | d | e | b]'
@@ -672,7 +706,7 @@ Contains
 
       case (TEST_SENS) ! S
         if (narg < 4) then
-           write(0,*) 'Usage: -S  rFile_Model rFile_dModel rFile_Data wFile_Data [rFile_fwdCtrl]'
+           write(0,*) 'Usage: -S  rFile_Model rFile_dModel rFile_Data wFile_Data [rFile_fwdCtrl wFile_Sens]'
            stop
         else
            ctrl%rFile_Model = temp(1)
@@ -682,6 +716,9 @@ Contains
         end if
         if (narg > 4) then
            ctrl%rFile_fwdCtrl = temp(5)
+        end if
+        if (narg > 5) then
+           ctrl%wFile_Sens = temp(6)
         end if
 
       case default

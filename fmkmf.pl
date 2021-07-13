@@ -7,6 +7,8 @@
 #
 # Format modified by Anna Kelbert, 2005-2009.
 #
+# Slightly modified to be working with PETSc lib (Hao Dong, 2017, 1)
+#
 # A basic makefile entry for bork.f90 would be
 # bork.o:bork.f90
 # <-tab->$(F90) -c bork.f90
@@ -98,6 +100,7 @@ else {
 
 # By default, use the current directory for object files
 $linkdir=".";
+$petscdir=".";
 
 #------------------------------
 # Done with environment variables. Now we need to process commandline args
@@ -106,6 +109,7 @@ $linkdir=".";
 
 my ($optiond)=0;
 my  $DMPI = 0;
+my  $DPETSC = 0;
 
 while (@ARGV){
 
@@ -135,7 +139,14 @@ while (@ARGV){
     if ($mpiflags =~ /MPI/) {
     	$DMPI = 1; # MPI is defined
     }
+    if ($mpiflags =~ /PETSC/) {
+    	$DPETSC = 1; # PETSC is defined
+    }
     print STDERR "# Using compiler MPI flags $mpiflags from cmd line\n";
+  }
+  if ($arg =~ /^-pdir$/){
+    $petscdir=shift;
+    print STDERR "# Using PETSC path $petscdir from cmd line\n";
   }
   if ($arg =~ /^-lp$/){
     $libpath=shift;
@@ -233,6 +244,11 @@ process_fsource($mainprogfile);
 
 print "\n# ------------------Macro-Defs---------------------\n";
 
+if ($DPETSC) {
+print "PETSC_DIR = ${petscdir}\n";
+print "include ${petscdir}/lib/petsc/conf/variables\n";
+print "include ${petscdir}/lib/petsc/conf/rules\n";
+}
 print "include Makefile.local\n";
 print "OBJDIR = $linkdir\n";
 print "F90 = $f90 \n";
@@ -244,6 +260,8 @@ if ($WIN) {
 	print "MODULE = -fmod=\$(OBJDIR)\n";
 } elsif ($f90 =~ /^gfortran$/){
 	print "MODULE = --sysroot=\$(OBJDIR)\n";	
+} elsif ($f90 =~ /^mpif90$/){
+	print "MODULE = -J \$(OBJDIR)\n";	
 } else {
 	print "MODULE = -module \$(OBJDIR)\n";
 }
@@ -287,7 +305,7 @@ print STDOUT @global_outlines;
 
 print "\n# Type \" make clean \" to get rid of all object and module files \n";
 
-print "clean: \n";
+print "clean:: \n";
 print "\tcd \$(OBJDIR); \\\n";
 print "\trm -f *~ *.o *.obj *.mod *.d *.s00 *.dbg *.stackdump \\\n";
 print "\t`find . -mindepth 1 -name \"*~\"` \n\n";

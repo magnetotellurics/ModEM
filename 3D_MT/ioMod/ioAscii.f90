@@ -78,6 +78,7 @@ Contains
     integer, intent(out)                        :: filePer
     integer, intent(out)                        :: fileMode
     integer, intent(out)                        :: ios
+    integer (kind=4)                            :: filePer4,fileMode4,nx,ny,nz,nzAir
 
     open (unit=ioNum,file=inFile,status='old', form ='unformatted',iostat=ios)
 
@@ -85,9 +86,17 @@ Contains
        WRITE(0,*) 'Error opening file: ', inFile
     else
        ! read the header
-       read(ioNum) fileVersion, filePer, fileMode, &
-	fileGrid%nx, fileGrid%ny, fileGrid%nz, fileGrid%nzAir, &
+       read(ioNum) fileVersion, filePer4, fileMode4, &
+	nx, ny, nz, nzAir, &
 	fileGrid%ox, fileGrid%oy, fileGrid%oz, fileGrid%rotdeg
+
+	   ! convert integer*4 to default integer precision
+	   filePer = int(filePer4)
+	   fileMode = int(fileMode4)
+	   fileGrid%nx = int(nx)
+	   fileGrid%ny = int(ny)
+	   fileGrid%nz = int(nz)
+	   fileGrid%nzAir = int(nzAir)
 
        ! the basic grid information is also stored in the header
        ! (don't we need to allocate first???)
@@ -197,7 +206,7 @@ Contains
     else
        ! write the header (contains the basic information for the forward
        ! modeling). the header is 4 lines
-       write(ioNum) version,nPer,nMode,inGrid%nx,inGrid%ny,inGrid%nz,inGrid%nzAir, &
+       write(ioNum) version,int(nPer,4),int(nMode,4),int(inGrid%nx,4),int(inGrid%ny,4),int(inGrid%nz,4),int(inGrid%nzAir,4), &
        inGrid%ox, inGrid%oy, inGrid%oz, inGrid%rotdeg
        write(ioNum) inGrid%dx
        write(ioNum) inGrid%dy
@@ -334,7 +343,7 @@ Contains
 !    integer                    :: iskip
 
     !  following could be optional oututs
-    integer             :: fileIfreq, fileMode
+    integer (kind=4)        :: fileIfreq, fileMode
     character (len = 20)                :: ModeName
 
     !  hard code number of modes for now
@@ -372,7 +381,7 @@ Contains
     type (cvector), intent(in)			:: outE
 
     ! write the frequency header - 1 record
-    write(ioNum) Omega, iFreq, iMode,ModeName
+    write(ioNum) Omega, int(iFreq,4), int(iMode,4),ModeName
 
     ! write the electrical field data - 3 records
     write(ioNum) outE%x
@@ -505,17 +514,24 @@ Contains
       character (len=200)       :: fn_input
       real (kind=prec)   :: omega
 
+      fn_input = trim(cfile)
 
-          fn_input = trim(cfile)
+      write(*,*) 'Reading E-fields from file: ',trim(fn_input)
+      call FileReadInit(fn_input,ioE,Larg_Grid,filePer,nMode,version,ios)
+      call setup_grid(Larg_Grid)
+      nTx = filePer   ! Get nTx from the file
 
-          write(*,*) 'Reading E-fields from file: ',trim(fn_input)
-          call FileReadInit(fn_input,ioE,Larg_Grid,filePer,nMode,version,ios)
-		  call setup_grid(Larg_Grid)
-          nTx = filePer   ! Get nTx from the file
+       ! Test that the grid is read properly, at least on a basic level
+      if (.not. Larg_Grid%allocated) then
+          write(0,*) 'WARNING: grid is not allocated in read_solnVectorMTX'
+      else if ((Larg_Grid%Nx <= 0) .or. (Larg_Grid%Ny <= 0) .or. (Larg_Grid%Nz <= 0)) then
+          write(0,*) 'Grid information: Nx=',Larg_Grid%Nx,' Ny=',Larg_Grid%Ny,' Nz=',Larg_Grid%Nz
+          write(0,*) 'WARNING: grid is not set up properly in read_solnVectorMTX'
+      end if
 
       call create_solnVectorMTX(nTx,eAll)
       do iTx=1,nTx
-         call create_solnVector(Larg_Grid,iTx,eAll%solns(iTx))
+          call create_solnVector(Larg_Grid,iTx,eAll%solns(iTx))
       end do		  
 		  
 		  
@@ -556,6 +572,14 @@ Contains
       real (kind=prec)   :: omega
 
           fn_output = trim(cfile)
+
+           ! Test that the output grid is well-defined, at least on a basic level
+          if (.not. eAll%solns(1)%grid%allocated) then
+              write(0,*) 'WARNING: E-field grid is not allocated in write_solnVectorMTX'
+          else if ((eAll%solns(1)%grid%Nx <= 0) .or. (eAll%solns(1)%grid%Ny <= 0) .or. (eAll%solns(1)%grid%Nz <= 0)) then
+              write(0,*) 'Grid information: Nx=',eAll%solns(1)%grid%Nx,' Ny=',eAll%solns(1)%grid%Ny,' Nz=',eAll%solns(1)%grid%Nz
+              write(0,*) 'WARNING: E-field grid is not output properly in write_solnVectorMTX'
+          end if
 
           write(*,*) 'E-fields written to ',trim(fn_output)
 
