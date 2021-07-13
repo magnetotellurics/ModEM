@@ -6,8 +6,8 @@ use senscomp
 use dataio
 
 #ifdef MPI
-  use MPI_main
-  use MPI_sub
+  use Main_MPI
+  use Sub_MPI
 #endif
 
 

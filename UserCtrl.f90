@@ -36,6 +36,9 @@ module UserCtrl
 	! Output file name for MPI nodes status info
 	character(80)       :: wFile_MPI
 
+	! Option to supply configuration file in place of command line
+	character(80)       :: rFile_Config
+
 	! Input files
 	character(80)       :: rFile_Grid, rFile_Model, rFile_Data
 	character(80)       :: rFile_dModel
@@ -55,6 +58,9 @@ module UserCtrl
 	! Choose the sort of test / procedure variant you wish to perform
 	character(80)       :: option
 
+    ! Out-of-core file prefix for storing working E-field solutions (NCI)
+    character(80)       :: prefix
+
 	! Specify damping parameter for the inversion
 	real(8)             :: lambda
 
@@ -66,6 +72,9 @@ module UserCtrl
 
 	! Indicate how much output you want
 	integer             :: output_level
+
+    ! Reduce master memory usage by storing E-fields in files (NCI)
+    logical             :: storeSolnsInFile
 
   end type userdef_control
 
@@ -86,6 +95,8 @@ Contains
   	ctrl%job = ''
   	ctrl%rFile_invCtrl = 'n'
   	ctrl%rFile_fwdCtrl = 'n'
+  	ctrl%wFile_MPI = 'n'
+  	ctrl%rFile_Config = 'n'
   	ctrl%rFile_Grid = 'n'
   	ctrl%wFile_Grid = 'n'
   	ctrl%rFile_Model = 'n'
@@ -106,7 +117,9 @@ Contains
   	ctrl%lambda = 10.
   	ctrl%eps = 1.0e-7
   	ctrl%delta = 0.05
-  	ctrl%output_level = 3
+  	ctrl%output_level = 3	
+	ctrl%prefix = 'n'
+	ctrl%storeSolnsInFile = .false.
 
     ! Using process ID in MPI output file name has the advantage that
     ! the user may run several instances of the program in one directory
