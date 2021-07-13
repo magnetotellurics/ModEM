@@ -108,7 +108,7 @@ Contains
 ! the divergence correction may be applied also for non-physical sources, such as
 ! in Jmult ('FWD') and JmultT ('TRN').
     
-  subroutine FWDsolve3D(bRHS,omega,eSol)
+  subroutine FWDsolve3D(bRHS,omega,eSol,comm_local)
 
     ! redefine some of the interfaces (locally) for our convenience
     use sg_vector !, only: copy => copy_cvector, &
@@ -121,6 +121,8 @@ Contains
     !  INPUTS:
     type (RHS_t), intent(in)		:: bRHS
     real(kind=prec), intent(in)	:: omega
+    !dummy parameter for compatibility
+    integer, intent(in),optional    :: comm_local
     !  OUTPUTS:
     !     eSol must be allocated before calling this routine
     type (cvector), intent(inout)	:: eSol
@@ -164,7 +166,7 @@ Contains
     
     i_omega_mu = cmplx(0.,1.0d0*ISIGN*MU_0*omega,kind=prec)
 
-!    print *, "i_omega_mu=",i_omega_mu
+
     ! Using boundary condition and sources from rHS data structure
     ! construct vector b (defined only on interior nodes) for rHS of
     ! reduced (interior nodes only) linear system of equations
@@ -221,29 +223,28 @@ Contains
        !    V_E A_II e = - i\omega\mu_0 V_E j - V_E A_IB b
        ! where A_II = V_E^{-1} C_II^T V_F C_II + i\omega\mu_0 \sigma, and A_IB = V_E^{-1} C_II^T V_F C_IB.
        if (bRHS%nonzero_Source) then
-          if (bRHS%sparse_Source) then
-             ! temp  = bRHS%sSparse
-             call zero(temp)
-             call add_scvector(C_ONE,bRHS%sSparse,temp)
-             call Div(temp,phi0)
-          else
-	     temp = bRHS%s
-          endif
+           if (bRHS%sparse_Source) then
+               ! temp  = bRHS%sSparse
+               call zero(temp)
+               call add_scvector(C_ONE,bRHS%sSparse,temp)
+           else
+               temp = bRHS%s
+           endif
 	  
-	  ! At this point, temp = - ISIGN * i\omega\mu_0 j
-	  ! Now Div(f) - will later divide by i_omega_mu to get the general divergence correction
-	  call Div(temp,phi0)
+           ! At this point, temp = - ISIGN * i\omega\mu_0 j
+           ! Now Div(f) - will later divide by i_omega_mu to get the general divergence correction
+           call Div(temp,phi0)
 
-          call diagMult(V_E,temp,temp)	  
-	  ! Now temp stores [-i\omega\mu_0 V_E j], and b stores [-V_E A_IB b]
+           call diagMult(V_E,temp,temp)
+           ! Now temp stores [-i\omega\mu_0 V_E j], and b stores [-V_E A_IB b]
 
-          if(bRHS%nonzero_BC) then
-             Call add(temp,b,b)
-          else
-             Call copy_cvector(b,temp)
-          endif
+           if(bRHS%nonzero_BC) then
+               Call add(temp,b,b)
+           else
+               Call copy_cvector(b,temp)
+           endif
        endif
-    endif
+   endif
 
     if(bRHS%nonzero_Source) then
        call scMult(C_ONE/i_omega_mu,phi0,phi0)
@@ -296,6 +297,7 @@ Contains
     endif
     loop: do while ((.not.converged).and.(.not.failed))
 
+       ! Call BiCG(b, eSol,QMRiter)
        Call QMR(b, eSol,QMRiter)
 
        ! algorithm is converged when the relative error is less than tolerance

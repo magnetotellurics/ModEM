@@ -20,7 +20,7 @@ module Main_MPI
   ! temporary EM fields, that are saved for efficiency - to avoid
   !  memory allocation & deallocation for each transmitter
   type(solnVector_t), save, private		    :: e,e0
-  type(rhsVector_t) , save, private		    :: comb 
+  type(rhsVector_t) , save, private		    :: b0,comb
   type (grid_t), target, save, private     :: grid
   
   
@@ -996,7 +996,8 @@ if (trim(worker_job_task%what_to_do) .eq. 'FORWARD') then
 		       call set_e_soln(pol_index,e0)
 		       
 
-		       call fwdSolve(per_index,e0)  
+		       call fwdSetup(per_index,e0,b0)
+		       call fwdSolve(per_index,e0,b0)
                call reset_e_soln(e0)
 
                if( cUserDef%storeSolnsInFile ) then

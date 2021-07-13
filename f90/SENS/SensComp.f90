@@ -36,7 +36,7 @@ module SensComp
   ! temporary EM fields, that are saved for efficiency - to avoid
   !  memory allocation & deallocation for each transmitter
   type(solnVector_t), save, private		:: e,e0
-  type(rhsVector_t) , save, private		:: comb
+  type(rhsVector_t) , save, private		:: b0,comb
 
 
 Contains
@@ -66,6 +66,7 @@ Contains
 
    !  local variables
    integer 		:: istat,ii,nFunc,nComp,iFunc
+   type(solnVector_t)               :: etemp
    type(sparseVector_t), pointer	:: L(:)
    type(modelParam_t), pointer    :: Qreal(:),Qimag(:)
    logical      :: Qzero
@@ -88,11 +89,14 @@ Contains
       call zero(Jimag(iFunc))
    enddo
 
+   ! save input parameter emsoln, which is a pointer to e0
+   etemp = emsoln
+
    !  manage any necessary initialization for this transmitter
    call initSolver(iTx,sigma0,grid,e0,e,comb)
 
    !  store the provided solnVector in e0
-   e0 = emsoln
+   e0 = etemp
 
    allocate(L(nFunc),STAT=istat)
    allocate(Qreal(nFunc),STAT=istat)
@@ -134,6 +138,7 @@ Contains
    deallocate(L,STAT=istat)
    deallocate(Qreal,STAT=istat)
    deallocate(Qimag,STAT=istat)
+   call deall_solnVector(etemp)
 
   end subroutine Jrows
 
@@ -182,8 +187,11 @@ Contains
       !  manage any necessary initilization for this transmitter
       call initSolver(iTx,sigma0,grid,e0,e,comb)
 
+      ! compute initial conditions and the RHS
+      call fwdSetup(iTx,e0,b0)
+
       !  solve forward problem; result is stored in e0
-      call fwdSolve(iTx,e0)
+      call fwdSolve(iTx,e0,b0)
 
       ! now loop over data types
       do i = 1,d%d(j)%nDt
@@ -305,8 +313,11 @@ Contains
 	     ! e0 = emsoln
 	     call copy_solnVector(e0,emsoln)
 	  else
+         ! compute initial conditions and the RHS
+         call fwdSetup(iTx,e0,b0)
+
 	     ! solve forward problem; result is stored in e0
-	     call fwdSolve(iTx,e0)
+	     call fwdSolve(iTx,e0,b0)
 	  endif
 
 	  !  compute rhs (stored in comb) for forward sensitivity
@@ -435,8 +446,11 @@ Contains
 	     ! e0 = e1
 	     call copy_solnVector(e0,emsoln)
 	  else
+         ! compute initial conditions and the RHS
+         call fwdSetup(iTx,e0,b0)
+
 	     ! solve forward problem; result is stored in e0
-	     call fwdSolve(iTx,e0)
+	     call fwdSolve(iTx,e0,b0)
 	  endif
 
     ! set up comb using linearized data functionals
@@ -574,8 +588,11 @@ Contains
       !  do any necessary initialization for transmitter iTx
       call initSolver(iTx,sigma,grid,emsoln)
 
+      ! compute initial conditions and the RHS
+      call fwdSetup(iTx,emsoln,b0)
+
       ! compute forward solution
-      call fwdSolve(iTx,emsoln)
+      call fwdSolve(iTx,emsoln,b0)
 
       ! cycle over data types
       do i = 1,d%nDt
@@ -649,6 +666,90 @@ Contains
 
   end subroutine fwdPred
 
+  !**********************************************************************
+  subroutine dryRun(sigma,d,bAll,eAll)
+
+   !  The "dry run" version of the forward solver fwdPred. Runs initSolver
+   !  for dataVectorMTX object d and for conductivity parameter sigma.
+   !  Useful to extract initial and boundary conditions, and for debugging.
+   !
+   !  First need to set up transmitter, receiver, dataType dictionaries;
+   !  "pointers" to dictionaries are attached to multi-transmitter
+   !   data vector d .
+   !
+   !   sigma is input conductivity parameter
+   type(modelParam_t), intent(in)   :: sigma
+   !   d is the computed (output) data vector, also used to identify
+   !     receiver/transmitter
+   type(dataVectorMTX_t), intent(inout) :: d
+   !  structure containing array of boundary conditions
+   type(rhsVectorMTX_t), optional, intent(inout)  :: bAll
+   !  structure containing array of boundary conditions
+   type(solnVectorMTX_t), optional, intent(inout) :: eAll
+
+   ! local variables
+   integer              :: j,iTx,iMode
+
+   if(.not.d%allocated) then
+      call errStop('data vector not allocated on input to dryRun')
+   end if
+
+   if(present(bAll)) then
+      if(.not. bAll%allocated) then
+         call create_rhsVectorMTX(d%nTx,bAll)
+      else if(d%nTx .ne. bAll%nTx) then
+         call errStop('dimensions of bAll and d do not agree in dryRun')
+      endif
+   endif
+
+   if(present(eAll)) then
+      if(.not. eAll%allocated) then
+         call create_solnVectorMTX(d%nTx,eAll)
+      else if(d%nTx .ne. eAll%nTx) then
+         call errStop('dimensions of eAll and d do not agree in dryRun')
+      endif
+   endif
+
+   ! loop over transmitters: solve forward system for each,
+   !    apply (non-linear) data functionals
+   do j = 1,d%nTx
+
+      ! get index into transmitter dictionary for this dataVector
+      iTx = d%d(j)%tx
+
+      !  do any necessary initialization for transmitter iTx
+      call initSolver(iTx,sigma,grid,e0)
+
+!      ! initialize the RHS vector
+!      b0%nonzero_BC = .true.
+!      call create_rhsVector(e0%grid,iTx,b0)
+
+      ! compute initial conditions and the RHS
+      call fwdSetup(iTx,e0,b0)
+
+!      !  now set boundary conditions just like we do for fwdSolve
+!      do iMode = 1,e0%nPol
+!      ! compute boundary conditions for polarization iMode
+!      !   uses cell conductivity already set by updateCond
+!        call setBound(iTx,e0%Pol_index(iMode),e0%pol(iMode),b0%b(iMode)%bc)
+!        write (*,'(a12,a19,a3,a20,i4,a15,i2)') node_info, 'Setting the BC for ','FWD', &
+!                ' problem for period ',iTx,' & mode # ',e0%Pol_index(iMode)
+!      enddo
+
+      if(present(bAll)) then
+         call copy_rhsVector(bAll%combs(j),b0)
+      endif
+
+      if(present(eAll)) then
+         call copy_solnVector(eAll%solns(j),e0)
+      endif
+
+      call deall_solnVector(e0)
+      call deall_rhsVector(b0)
+
+   enddo
+
+  end subroutine dryRun
 
   !**********************************************************************
   subroutine setGrid(newgrid)
@@ -662,6 +763,13 @@ Contains
    type(grid_t), intent(in)     :: newgrid
 
    grid = newgrid
+
+   if (.not. grid%allocated) then
+    call errStop('grid is not allocated in setGrid; exiting')
+   else if ((grid%Nx <= 0) .or. (grid%Ny <= 0) .or. (grid%Nz <= 0)) then
+    write(0,*) 'Grid information: Nx=',grid%Nx,' Ny=',grid%Ny,' Nz=',grid%Nz
+    call errStop('grid is not set up properly in setGrid; exiting')
+   end if
 
   end subroutine setGrid
 

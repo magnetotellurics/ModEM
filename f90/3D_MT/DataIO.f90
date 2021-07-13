@@ -24,8 +24,11 @@ module DataIO
 	MODULE PROCEDURE write_Z_list
   end interface
 
+  interface deall_dataFileInfo
+    MODULE PROCEDURE deall_fileInfo
+  end interface
 
-  public     :: read_dataVectorMTX, write_dataVectorMTX
+  public     :: read_dataVectorMTX, write_dataVectorMTX, deall_dataFileInfo
 
   type :: data_file_block
 

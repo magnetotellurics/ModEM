@@ -217,7 +217,7 @@ Contains
        endif
     elseif(i0.le.0) then
        w(1,2) = 1
-       UseCOnd = .false.
+       UseCond = .false.
     else
        w(1,2) = 0
        UseCond = .false.
