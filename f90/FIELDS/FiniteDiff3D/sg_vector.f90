@@ -3040,7 +3040,7 @@ Contains
 
     write(fn,'(a,i4.4,a,i1,a)') trim(prefix)//'iTx',iFreq,'iPol',iMode,'.cvec'
     write(*,'(2a40)') "efileread_prefix: ",fn
-    open(funit,file=trim(fn),action='read',form='unformatted',status='replace')
+    open(funit,file=trim(fn),action='read',form='unformatted',status='old')
 
     ! write the frequency header - 1 record
     read(funit) nx,ny,nz,gridType
