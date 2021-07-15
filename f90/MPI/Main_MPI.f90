@@ -1,4 +1,3 @@
-
 module Main_MPI
 #ifdef MPI
 
@@ -36,8 +35,10 @@ Contains
 !###########################################  MPI_initialization   ############################################################
 
 Subroutine constructor_MPI
+
     implicit none
     include 'mpif.h'
+
           call MPI_INIT( ierr )
           call MPI_COMM_RANK( MPI_COMM_WORLD, taskid, ierr )
           call MPI_COMM_SIZE( MPI_COMM_WORLD, total_number_of_Proc, ierr )
@@ -58,7 +59,7 @@ Subroutine Master_Job_fwdPred(sigma,d1,eAll)
     include 'mpif.h'
    type(modelParam_t), intent(in)	    :: sigma
    type(dataVectorMTX_t), intent(inout)	:: d1
-   type(solnVectorMTX_t), intent(inout),optional	:: eAll
+   type(solnVectorMTX_t), intent(inout), optional	:: eAll
    integer nTx
 
 
@@ -67,7 +68,7 @@ Subroutine Master_Job_fwdPred(sigma,d1,eAll)
    Integer        :: per_index,pol_index,stn_index,iTx,i,iDt,j
    character(80)                        :: job_name
 
-   complex(kind=prec)   :: temp  
+
 
 
 
@@ -76,6 +77,7 @@ Subroutine Master_Job_fwdPred(sigma,d1,eAll)
    
 
      starttime = MPI_Wtime()
+
 
 
 
@@ -108,7 +110,11 @@ Subroutine Master_Job_fwdPred(sigma,d1,eAll)
       call Master_job_Distribute_Taskes(job_name,nTx,sigma)
    end if
 
-
+ ! Initialize only those grid elements on the master that are used in EMfieldInterp
+ ! (obviously a quick patch, needs to be fixed in a major way)
+ ! A.Kelbert 2018-01-28
+    Call EdgeLength(grid, l_E)
+    Call FaceArea(grid, S_F)
         
 ! Compute the model Responces
    if( cUserDef%storeSolnsInFile ) then
@@ -128,6 +134,9 @@ Subroutine Master_Job_fwdPred(sigma,d1,eAll)
    end do   
 endif
 
+ ! clean up the grid elements stored in GridCalc on the master node
+    call deall_rvector(l_E)
+    call deall_rvector(S_F)
 
         write(ioMPI,*)'FWD: Finished calculating for (', nTx , ') Transmitters '
 
@@ -409,7 +418,7 @@ Subroutine Master_job_JmultT(sigma,d,dsigma,eAll,s_hat)
    Integer        :: iper,ipol,nTx,iTx
    Integer        :: per_index,pol_index,stn_index
    character(80)  :: job_name,file_name
-   complex(kind=prec)   :: temp  
+ 
 
    
    savedSolns = present(eAll)
@@ -552,7 +561,7 @@ Subroutine Master_job_Jmult(mHat,m,d,eAll)
    Integer        :: per_index,pol_index,stn_index
    type(dataVector_t) :: d1,d2
    character(80)  :: job_name
-   complex(kind=prec)   :: temp  
+
 
    savedSolns = present(eAll)
    ! nTot total number of data points
@@ -580,15 +589,12 @@ else
                 call copy_solnVector(eAll_temp%solns(iTx),e0)
              end do
       end if
-
-
 if (.not. savedSolns )then
     d_temp=d
     call Master_Job_fwdPred(m,d_temp,eAll_temp)
 else
       eAll_temp=eAll
 end if
-
       if(.not. eAll_out%allocated) then
          call create_solnVectorMTX(d%nTx,eAll_out)
             do iTx=1,nTx
@@ -601,8 +607,8 @@ end if
 endif
 
    ! First distribute m, mHat and d
-        call Master_job_Distribute_Model(m,mHat)
-         call Master_job_Distribute_Data(d)
+    	    call Master_job_Distribute_Model(m,mHat)
+	        call Master_job_Distribute_Data(d)
 
    if ( cUserDef%storeSolnsInFile ) then
       call Master_job_Distribute_prefix(cUserDef%prefix)
@@ -1075,10 +1081,21 @@ isComplex = d%d(per_index)%data(dt_index)%isComplex
 		  call create_sparseVector(e0%grid,per_index,L(iFunc))
 	  end do
 	  
+ ! Initialize only those grid elements on the master that are used in EMfieldInterp
+ ! (obviously a quick patch, needs to be fixed in a major way)
+ ! A.Kelbert 2018-01-28
+    Call EdgeLength(e0%grid, l_E)
+    Call FaceArea(e0%grid, S_F)
+
    ! compute linearized data functional(s) : L
    call Lrows(e0,sigma,dt,stn_index,L)
    ! compute linearized data functional(s) : Q
-   call Qrows(e0,sigma,dt,stn_index,Qzero,Qreal,Qimag)	  		              
+   call Qrows(e0,sigma,dt,stn_index,Qzero,Qreal,Qimag)
+
+ ! clean up the grid elements stored in GridCalc on the master node
+    call deall_rvector(l_E)
+    call deall_rvector(S_F)
+
    ! loop over functionals  (e.g., for 2D TE/TM impedances nFunc = 1)
    do iFunc = 1,nFunc
 
@@ -1126,7 +1143,7 @@ isComplex = d%d(per_index)%data(dt_index)%isComplex
                    call MPI_SEND(sigma_para_vec, Nbytes, MPI_PACKED, 0,FROM_WORKER, MPI_COMM_WORLD, ierr)
             end do    
             
-                                  		                      
+            call exitSolver(e0,e,comb)                      		                      
 elseif (trim(worker_job_task%what_to_do) .eq. 'JmultT') then
 
 
@@ -1136,6 +1153,7 @@ elseif (trim(worker_job_task%what_to_do) .eq. 'JmultT') then
             
                     call initSolver(per_index,sigma,grid,e0,e,comb)   
                     call get_nPol_MPI(e0)
+                    write(6,'(a12,a18,i5,a12)') node_info, ' Start Receiving ' , orginal_nPol, ' from Master'
       if( cUserDef%storeSolnsInFile ) then
          do ipol=1,nPol_MPI 
             call Efileread_prefix(cUserDef%prefix,per_index,ipol,e0%pol(ipol))
@@ -1147,6 +1165,7 @@ elseif (trim(worker_job_task%what_to_do) .eq. 'JmultT') then
 		            call MPI_RECV(e_para_vec, Nbytes, MPI_PACKED, 0, FROM_MASTER,MPI_COMM_WORLD, STATUS, ierr)
                     call Unpack_e_para_vec(e0)
                   end do
+                      write(6,'(a12,a18,i5,a12)') node_info, ' Finished Receiving ' , orginal_nPol, ' from Master'
                    endif
 
             call LmultT(e0,sigma,d%d(per_index),comb)
@@ -1220,7 +1239,9 @@ elseif (trim(worker_job_task%what_to_do) .eq. 'Jmult') then
                    call create_e_param_place_holder(e)
                    call Pack_e_para_vec(e)
                    call MPI_SEND(e_para_vec, Nbytes, MPI_PACKED, 0,FROM_WORKER, MPI_COMM_WORLD, ierr)
-                endif
+
+				   call exitSolver(e0,e,comb)
+       endif
 
 elseif (trim(worker_job_task%what_to_do) .eq. 'Distribute nTx') then
      call MPI_BCAST(nTx,1, MPI_INTEGER,0, MPI_COMM_WORLD,ierr)
@@ -1972,7 +1993,7 @@ end subroutine setGrid_MPI
 
    ! Subroutine to deallocate all memory stored in this module
 
-   call exitSolver(e0,e,comb)
+   !call exitSolver(e0,e,comb)
    call deall_grid(grid)
 
   end subroutine cleanUp_MPI

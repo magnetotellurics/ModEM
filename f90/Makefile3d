@@ -106,7 +106,7 @@ $(OBJDIR)/ModelSpace.o:3D_MT/modelParam/ModelSpace.f90 $(OBJDIR)/GridCalc.o $(OB
 $(OBJDIR)/SensMatrix.o:SENS/SensMatrix.f90 $(OBJDIR)/math_constants.o $(OBJDIR)/file_units.o $(OBJDIR)/utilities.o $(OBJDIR)/DataSpace.o $(OBJDIR)/ModelSpace.o 
 	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) SENS/SensMatrix.f90 -o $(OBJDIR)/SensMatrix.o
 
-$(OBJDIR)/EMfieldInterp.o:3D_MT/EMfieldInterp.f90 $(OBJDIR)/utilities.o $(OBJDIR)/sg_sparse_vector.o $(OBJDIR)/ModelSpace.o 
+$(OBJDIR)/EMfieldInterp.o:3D_MT/EMfieldInterp.f90 $(OBJDIR)/utilities.o $(OBJDIR)/sg_sparse_vector.o $(OBJDIR)/ModelSpace.o $(OBJDIR)/GridCalc.o 
 	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) 3D_MT/EMfieldInterp.f90 -o $(OBJDIR)/EMfieldInterp.o
 
 $(OBJDIR)/sg_boundary.o:FIELDS/FiniteDiff3D/sg_boundary.f90 $(OBJDIR)/math_constants.o $(OBJDIR)/GridDef.o $(OBJDIR)/sg_vector.o $(OBJDIR)/sg_sparse_vector.o 
@@ -160,7 +160,7 @@ $(OBJDIR)/nestedEM.o:3D_MT/FWD/nestedEM.f90 $(OBJDIR)/EMfieldInterp.o $(OBJDIR)/
 $(OBJDIR)/modelOperator3D.o:3D_MT/FWD/modelOperator3D.f90 $(OBJDIR)/math_constants.o $(OBJDIR)/utilities.o $(OBJDIR)/GridCalc.o $(OBJDIR)/sg_diff_oper.o $(OBJDIR)/sg_vector.o $(OBJDIR)/sg_boundary.o $(OBJDIR)/ModelSpace.o $(OBJDIR)/boundary_ws.o $(OBJDIR)/nestedEM.o 
 	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) 3D_MT/FWD/modelOperator3D.f90 -o $(OBJDIR)/modelOperator3D.o
 
-$(OBJDIR)/solver.o:3D_MT/FWD/solver.f90 $(OBJDIR)/math_constants.o $(OBJDIR)/utilities.o $(OBJDIR)/sg_scalar.o $(OBJDIR)/modelOperator3D.o $(OBJDIR)/sg_vector.o $(OBJDIR)/modelOperator3D.o 
+$(OBJDIR)/solver.o:3D_MT/FWD/solver.f90 $(OBJDIR)/math_constants.o $(OBJDIR)/utilities.o $(OBJDIR)/sg_scalar.o $(OBJDIR)/modelOperator3D.o $(OBJDIR)/sg_vector.o $(OBJDIR)/modelOperator3D.o $(OBJDIR)/sg_vector.o $(OBJDIR)/modelOperator3D.o 
 	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) 3D_MT/FWD/solver.f90 -o $(OBJDIR)/solver.o
 
 $(OBJDIR)/EMsolve3D.o:3D_MT/FWD/EMsolve3D.f90 $(OBJDIR)/sg_boundary.o $(OBJDIR)/sg_diff_oper.o $(OBJDIR)/sg_sparse_vector.o $(OBJDIR)/modelOperator3D.o $(OBJDIR)/solver.o $(OBJDIR)/SolnSpace.o $(OBJDIR)/sg_vector.o $(OBJDIR)/sg_scalar.o 
@@ -181,7 +181,7 @@ $(OBJDIR)/UserCtrl.o:./UserCtrl.f90 $(OBJDIR)/utilities.o
 $(OBJDIR)/ioAscii.o:3D_MT/ioMod/ioAscii.f90 $(OBJDIR)/GridDef.o $(OBJDIR)/math_constants.o $(OBJDIR)/EMsolve3D.o $(OBJDIR)/DataSpace.o $(OBJDIR)/DataFunc.o $(OBJDIR)/ForwardSolver.o $(OBJDIR)/transmitters.o $(OBJDIR)/receivers.o $(OBJDIR)/dataTypes.o 
 	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) 3D_MT/ioMod/ioAscii.f90 -o $(OBJDIR)/ioAscii.o
 
-$(OBJDIR)/DataIO.o:3D_MT/DataIO.f90 $(OBJDIR)/math_constants.o $(OBJDIR)/file_units.o $(OBJDIR)/utilities.o $(OBJDIR)/DataSpace.o $(OBJDIR)/transmitters.o $(OBJDIR)/receivers.o $(OBJDIR)/dataTypes.o 
+$(OBJDIR)/DataIO.o:3D_MT/DataIO.f90 $(OBJDIR)/math_constants.o $(OBJDIR)/file_units.o $(OBJDIR)/utilities.o $(OBJDIR)/DataSpace.o $(OBJDIR)/GridCalc.o $(OBJDIR)/transmitters.o $(OBJDIR)/receivers.o $(OBJDIR)/dataTypes.o 
 	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) 3D_MT/DataIO.f90 -o $(OBJDIR)/DataIO.o
 
 $(OBJDIR)/Main.o:3D_MT/Main.f90 $(OBJDIR)/ModelSpace.o $(OBJDIR)/DataSpace.o $(OBJDIR)/DataFunc.o $(OBJDIR)/ForwardSolver.o $(OBJDIR)/SensMatrix.o $(OBJDIR)/UserCtrl.o $(OBJDIR)/ioAscii.o $(OBJDIR)/DataIO.o 
