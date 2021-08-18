@@ -499,6 +499,7 @@ subroutine BICG(b,x,BICGiter)
           BICGiter%failed = .false.
           BICGiter%niter = iter
           converged = .true.
+          write(6,*) 'half iteration complete, final residual: ',BICGiter%rerr(iter)
           exit
       end if
       if (rnorm .lt. rnormin) then
@@ -539,7 +540,7 @@ subroutine BICG(b,x,BICGiter)
           BICGiter%failed = .false.
           BICGiter%niter = iter
           converged = .true.
-          write(6,*) 'final residual: ',BICGiter%rerr(iter)
+          write(6,*) 'full iteration complete, final residual: ',BICGiter%rerr(iter)
           exit
       end if
       if (rnorm .lt. rnormin) then

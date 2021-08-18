@@ -555,7 +555,6 @@ Contains
        enddo
     enddo
 
-
     do iy = 1, mGrid%ny
        do iz = 2, mGrid%nz
         do ix = 1, mGrid%nx
@@ -589,6 +588,7 @@ Contains
 
     ! End of Ey coefficients
 !=========================================================================
+
     ! coefficents for calculating Ez; only loop over internal edges
     do ix = 2, mGrid%nx
        do iy = 1, mGrid%ny
@@ -597,8 +597,7 @@ Contains
        zZXp(ix,iy,:) = - (l_E%z(ix+1,iy,:)*l_F%y(ix,iy,:)) &   
                   / (S_F%y(ix,iy,:)*S_E%z(ix,iy,:))
        enddo
-    enddo
-
+    enddo 
 
     do iy = 2, mGrid%ny
      do ix = 1, mGrid%nx
@@ -607,12 +606,12 @@ Contains
        zZYp(ix,iy,:) = - (l_E%z(ix,iy+1,:)*l_F%x(ix,iy,:)) &   
                   / (S_F%x(ix,iy,:)*S_E%z(ix,iy,:))
      enddo
-    enddo       
+    enddo    
 
     do ix = 2, mGrid%nx
        do iy = 2, mGrid%ny
           zZO(ix, iy,:) = -(zZXm(ix,iy,:)/l_E%z(ix-1,iy,:) + zZXp(ix,iy,:)/l_E%z(ix+1,iy,:) + &  
-               zZYm(ix,iy,:)/l_E%z(ix,iy-1,:) + zZYp(ix,iy,:)/l_E%z(ix+1,iy,:))*l_E%z(ix,iy,:)   
+               zZYm(ix,iy,:)/l_E%z(ix,iy-1,:) + zZYp(ix,iy,:)/l_E%z(ix,iy+1,:))*l_E%z(ix,iy,:)   
        enddo
     enddo
 
@@ -630,7 +629,6 @@ Contains
         enddo
        enddo
     enddo
-
 
     do iy = 2, mGrid%ny
        do iz = 1, mGrid%nz
@@ -840,6 +838,136 @@ Contains
   ! * it does use the contribution from the boundary edges. The coefficients
   ! * are  calculated in CurlcurleSetUp. Remember, in the operators that are
   ! * used in iterative fashion, output is always initialized outside
+  subroutine Maxwell_old(inE, adjt, outE)
+
+    implicit none
+    type (cvector), intent(in)               :: inE
+    ! input electrical field as complex vector
+    logical, intent (in)                     :: adjt
+    type (cvector), target, intent(inout)    :: outE
+    ! output electrical field as complex vector
+    complex (kind=prec)                      :: diag_sign ! changed by Lana, was integer
+    integer                                  :: ix, iy, iz
+
+    if (.not.inE%allocated) then
+      write(0,*) 'inE in Maxwell not allocated yet'
+      stop
+    end if
+
+    if (.not.outE%allocated) then
+      write(0,*) 'outE in Maxwell not allocated yet'
+      stop
+    end if
+
+    ! Check whether the bounds are the same
+    if ((inE%nx == outE%nx).and.&
+         (inE%ny == outE%ny).and.&
+         (inE%nz == outE%nz)) then
+
+       if ((inE%gridType == outE%gridType)) then
+
+          if (adjt) then
+             diag_sign = -1*ISIGN
+          else
+             diag_sign = ISIGN
+          end if
+
+          !$OMP PARALLEL DEFAULT(SHARED) PRIVATE(ix,iy,iz)
+
+          ! Apply difference equation to compute Ex (only on interior nodes)
+          ! the diagonal nodes have the imaginary component added
+          !$OMP DO SCHEDULE(STATIC)
+	      do iz = 2, inE%nz
+             do iy = 2, inE%ny
+                do ix = 1, inE%nx
+                   outE%x(ix,iy,iz) =  & 
+                        (xYpp(ix,iy,iz)*inE%y(ix+1,iy,iz)-&
+                  	xYmp(ix,iy,iz)*inE%y(ix,iy,iz)-xYpm(ix,iy,iz)*inE%y(ix+1,iy-1,iz)&
+                        +xYmm(ix,iy,iz)*inE%y(ix,iy-1,iz))+&
+                  	(xZpp(ix,iy,iz)*inE%z(ix+1,iy,iz)-xZmp(ix,iy,iz)*inE%z(ix,iy,iz)&
+                  	-xZpm(ix,iy,iz)*inE%z(ix+1,iy,iz-1)+xZmm(ix,iy,iz)*inE%z(ix,iy,iz-1))+&
+                  	xXYp(ix,iy,iz)*inE%x(ix,iy+1,iz)+& 
+                  	xXYm(ix,iy,iz)*inE%x(ix,iy-1,iz)+& 
+                  	xXZp(ix,iy,iz)*inE%x(ix,iy,iz+1)+& 
+                  	xXZm(ix,iy,iz)*inE%x(ix,iy,iz-1)+& 
+                  	(xXO(ix,iy,iz)+diag_sign*Adiag%x(ix,iy,iz))*inE%x(ix,iy,iz)
+                enddo
+             enddo
+          enddo
+          !$OMP END DO NOWAIT
+
+          ! Apply difference equation to compute Ey (only on interior nodes)
+	      ! the diagonal nodes have the imaginary component added
+          !$OMP DO SCHEDULE(STATIC)
+          do iz = 2, inE%nz
+             do iy = 1, inE%ny
+                do ix = 2, inE%nx
+                   outE%y(ix,iy,iz) = &
+                        (yZpp(ix,iy,iz)*inE%z(ix,iy+1,iz)-&
+                  	yZmp(ix,iy,iz)*inE%z(ix,iy,iz)-yZpm(ix,iy,iz)*inE%z(ix,iy+1,iz-1) & 
+                        +yZmm(ix,iy,iz)*inE%z(ix,iy,iz-1))&
+                  	+(yXpp(ix,iy,iz)*inE%x(ix,iy+1,iz)-yXmp(ix,iy,iz)*inE%x(ix,iy,iz) &
+                  	-yXpm(ix,iy,iz)*inE%x(ix-1,iy+1,iz)+yXmm(ix,iy,iz)*inE%x(ix-1,iy,iz))+&
+                  	yYZp(ix,iy,iz)*inE%y(ix,iy,iz+1)+&
+                  	yYZm(ix,iy,iz)*inE%y(ix,iy,iz-1)+&
+                  	yYXp(ix,iy,iz)*inE%y(ix+1,iy,iz)+&
+                  	yYXm(ix,iy,iz)*inE%y(ix-1,iy,iz)+&
+                  	(yYO(ix,iy,iz)+diag_sign*Adiag%y(ix,iy,iz))*inE%y(ix,iy,iz)
+                enddo
+             enddo
+          enddo
+          !$OMP END DO NOWAIT
+
+          ! Apply difference equation to compute Ey (only on interior nodes)
+	      ! the diagonal nodes have the imaginary component added
+          !$OMP DO SCHEDULE(STATIC)
+          do iz = 1, inE%nz
+             do iy = 2, inE%ny
+                do ix = 2, inE%nx
+                   outE%z(ix,iy,iz) = &
+                        (zXpp(ix,iy,iz)*inE%x(ix,iy,iz+1)-&
+                  	zXmp(ix,iy,iz)*inE%x(ix,iy,iz)-zXpm(ix,iy,iz)*inE%x(ix-1,iy,iz+1) &
+                        +zXmm(ix,iy,iz)*inE%x(ix-1,iy,iz))&
+                  	+(zYpp(ix,iy,iz)*inE%y(ix,iy,iz+1)-zYpm(ix,iy,iz)*inE%y(ix,iy-1,iz+1)&
+                  	-zYmp(ix,iy,iz)*inE%y(ix,iy,iz)+zYmm(ix,iy,iz)*inE%y(ix,iy-1,iz))+&
+                  	zZXp(ix,iy,iz)*inE%z(ix+1,iy,iz)+&
+                  	zZXm(ix,iy,iz)*inE%z(ix-1,iy,iz)+&
+                  	zZYp(ix,iy,iz)*inE%z(ix,iy+1,iz)+&
+                  	zZYm(ix,iy,iz)*inE%z(ix,iy-1,iz)+&
+                  	(zZO(ix,iy,iz)+diag_sign*Adiag%z(ix,iy,iz))*inE%z(ix,iy,iz)
+                enddo
+             enddo
+          enddo
+
+          !$OMP END DO NOWAIT
+
+          !$OMP END PARALLEL
+       else
+          write (0, *) ' Maxwell: not compatible usage for existing data types'
+       end if
+    else
+       write(0, *) 'Error-complex vectors for Maxwell are not of same size'
+    end if
+
+	!write(0,*) 'Maxwell OLD DEBUG x: ',sum(outE%x(:,:,:))
+	!write(0,*) 'Maxwell OLD DEBUG y: ',sum(outE%y(:,:,:))
+	!write(0,*) 'Maxwell OLD DEBUG z: ',sum(outE%z(:,:,:))
+    !do ix = 1, inE%nx
+ 	!	write(0,*) 'Maxwell OLD DEBUG in  y values iy=2 iz=1 ',ix,inE%y(ix,2,1)
+	!end do
+    !do ix = 1, inE%nx
+ 	!	write(0,*) 'Maxwell OLD DEBUG out z values iy=2 iz=1 ',ix,outE%z(ix,2,1)
+	!end do
+
+  end subroutine Maxwell_old        ! Maxwell
+
+  ! ***************************************************************************
+  ! * Maxwell computes the finite difference equation in complex vectors
+  ! * for del X del X E +/- i*omega*mu*conductivity*E in unsymmetrical form.
+  ! * Note that the difference equation is only for interior edges. However,
+  ! * it does use the contribution from the boundary edges. The coefficients
+  ! * are  calculated in CurlcurleSetUp. Remember, in the operators that are
+  ! * used in iterative fashion, output is always initialized outside
   subroutine Maxwell(inE, adjt, outE)
 
     implicit none
@@ -898,6 +1026,14 @@ Contains
     else
        write(0, *) 'Error-complex vectors for Maxwell are not of same size'
     end if
+
+	!write(0,*) 'Maxwell NEW DEBUG x: ',sum(outE%x(:,:,:))
+	!write(0,*) 'Maxwell NEW DEBUG y: ',sum(outE%y(:,:,:))
+	!write(0,*) 'Maxwell NEW DEBUG z: ',sum(outE%z(:,:,:))
+    !do ix = 1, inE%nx
+ 	!	write(0,*) 'Maxwell NEW DEBUG z values iy=2 iz=1 ',ix,outE%z(ix,2,1)
+	!end do
+
   end subroutine Maxwell        ! Maxwell
 
 
