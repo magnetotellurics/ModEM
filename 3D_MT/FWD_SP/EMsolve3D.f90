@@ -332,8 +332,8 @@ Contains
        Call SdivCorr(ei,phi0)
     endif
     loop: do while ((.not.converged).and.(.not.failed))
-       ! Call BICG(b, ei, KSSiter)
-       Call QMR(b, ei, KSSiter)
+       Call BICG(b, ei, KSSiter)
+       ! Call QMR(b, ei, KSSiter)
        ! algorithm is converged when the relative error is less than tolerance
        ! (in which case KSSiter%niter will be less than KSSiter%maxIt)
        converged = KSSiter%niter .lt. KSSiter%maxIt

@@ -664,13 +664,14 @@ Contains
     ! input electrical field as complex vector
     type (cvector), target, intent(inout)  :: outE
     ! output electrical field as complex vector
-    integer                                :: ix, iy, iz
-! inserted by Lana 
-    type (cvector)                           :: workF
-    ! workE is the complex vector that is used as a work space
-    call create_cvector(mGrid,workF,FACE)
-! end insert
+
     ! dummy variables
+    integer                                :: ix, iy, iz
+    type (cvector)                         :: tempF
+	type (cboundary)						:: tempBC
+
+    ! tempF is the complex vector that is used as a work space
+    call create_cvector(mGrid,tempF,FACE)
 
     if (.not.inE%allocated) then
       write(0,*) 'inE in CurlcurlE not allocated yet'
@@ -688,15 +689,22 @@ Contains
          (inE%nz == outE%nz)) then
 
        if ((inE%gridType == outE%gridType)) then
-          call Curl(inE,workF)
-          call Curl(workF,outE)        
+          call Curl(inE,tempF)
+          call Curl(tempF,outE)
+
+		  ! make sure that the BCs are zero
+		  call create_cboundary(mGrid,tempBC)
+		  call zero(tempBC)
+		  call setBC(tempBC,outE)
+   
        else
           write (0, *) 'CurlcurlE: not compatible usage for existing data types'
        end if
     else
        write(0, *) 'Error-complex vectors for CurlcurlE are not of same size'
     end if
-    call deall(workF) 
+    call deall(tempF)
+	call deall(tempBC) 
   end subroutine CurlcurlE        ! CurlcurlE
 
   ! ***************************************************************************
@@ -843,6 +851,7 @@ Contains
     complex (kind=prec)                      :: diag_sign ! changed by Lana, was integer
     integer                                  :: ix, iy, iz
 	type (cvector) 							  :: tempE
+	type (cboundary)						  :: tempBC
 
     if (.not.inE%allocated) then
       write(0,*) 'inE in Maxwell not allocated yet'
@@ -873,9 +882,15 @@ Contains
 		  call CurlCurlE(inE, outE)
 		  call diagMult_cvector(Adiag, inE, tempE)
 		  call linComb_cvector(C_ONE, outE, diag_sign, tempE, outE)
+
+		  ! make sure that the BCs are zero
+		  call create_cboundary(mGrid,tempBC)
+		  call zero(tempBC)
+		  call setBC(tempBC,outE)
 		  
 		  ! clean up
 		  call deall_cvector(tempE)
+		  call deall_cboundary(tempBC)
 
        else
           write (0, *) ' Maxwell: not compatible usage for existing data types'
