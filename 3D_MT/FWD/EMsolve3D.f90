@@ -223,29 +223,28 @@ Contains
        !    V_E A_II e = - i\omega\mu_0 V_E j - V_E A_IB b
        ! where A_II = V_E^{-1} C_II^T V_F C_II + i\omega\mu_0 \sigma, and A_IB = V_E^{-1} C_II^T V_F C_IB.
        if (bRHS%nonzero_Source) then
-          if (bRHS%sparse_Source) then
-             ! temp  = bRHS%sSparse
-             call zero(temp)
-             call add_scvector(C_ONE,bRHS%sSparse,temp)
-             call Div(temp,phi0)
-          else
-	     temp = bRHS%s
-          endif
+           if (bRHS%sparse_Source) then
+               ! temp  = bRHS%sSparse
+               call zero(temp)
+               call add_scvector(C_ONE,bRHS%sSparse,temp)
+           else
+               temp = bRHS%s
+           endif
 	  
-	  ! At this point, temp = - ISIGN * i\omega\mu_0 j
-	  ! Now Div(f) - will later divide by i_omega_mu to get the general divergence correction
-	  call Div(temp,phi0)
+           ! At this point, temp = - ISIGN * i\omega\mu_0 j
+           ! Now Div(f) - will later divide by i_omega_mu to get the general divergence correction
+           call Div(temp,phi0)
 
-          call diagMult(V_E,temp,temp)	  
-	  ! Now temp stores [-i\omega\mu_0 V_E j], and b stores [-V_E A_IB b]
+           call diagMult(V_E,temp,temp)
+           ! Now temp stores [-i\omega\mu_0 V_E j], and b stores [-V_E A_IB b]
 
-          if(bRHS%nonzero_BC) then
-             Call add(temp,b,b)
-          else
-             Call copy_cvector(b,temp)
-          endif
+           if(bRHS%nonzero_BC) then
+               Call add(temp,b,b)
+           else
+               Call copy_cvector(b,temp)
+           endif
        endif
-    endif
+   endif
 
     if(bRHS%nonzero_Source) then
        call scMult(C_ONE/i_omega_mu,phi0,phi0)

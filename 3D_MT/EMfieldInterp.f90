@@ -511,6 +511,14 @@ Contains
     Call BinterpSetUp(inGrid,x,xyz,LCH)
     Call create_sparsevecc(num,LC,gridType)
 
+    ! we won't need these grid elements for SP/SP2 so we create them on the fly
+    if (.not. l_E%allocated) then
+        call EdgeLength(inGrid,l_E)
+    end if
+    if (.not. S_F%allocated) then
+        call FaceArea(inGrid,S_F)
+    end if
+
     !   loop over coefficients for mag field interpolation
     do ii = 1,LCH%nCoeff
 

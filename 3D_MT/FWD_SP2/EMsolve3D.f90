@@ -5,8 +5,8 @@
 
 module EMsolve3D
   use sg_boundary! work between different data types
- ! (between boundary conditions and
-! complex vectors)
+  ! (between boundary conditions and
+  ! complex vectors)
   use sg_sparse_vector, only: add_scvector
   use modelOperator3D  ! Maxwell operator module for sp
   use vectranslate     ! translate back and forth between Cvec and vec
@@ -21,9 +21,10 @@ module EMsolve3D
 
   type :: emsolve_control
     ! Values of solver control parameters, e.g., read in from file
-    !   plus other information on how the solver is to be initialized, called, etc.
-    !  idea is that this is the public access version of this info, which is
-    !   copied into private version for actual solver control
+    ! plus other information on how the solver is to be initialized, 
+    ! called, etc.
+    ! idea is that this is the public access version of this info, which is
+    ! copied into private version for actual solver control
     integer                   ::      IterPerDivCor, MaxDivCor, MaxIterDivCor
     real(kind = 8)            ::      tolEMfwd, tolEMadj, tolDivCor
     logical                   ::      E0fromFile
@@ -40,9 +41,9 @@ module EMsolve3D
 
   type :: emsolve_diag
     ! Solver diagnostic arrays, computed during run of forward solver.
-    !  idea is that this is the public access version of this info, which is
-    !   copied from the private version in module em_solve where this info is
-    !   initially stored
+    ! idea is that this is the public access version of this info, which is
+    ! copied from the private version in module em_solve where this info is
+    ! initially stored
     logical                   :: diagOut
     character (len=80)        :: fn_diagn
     integer                   :: ioDiag
@@ -73,7 +74,7 @@ module EMsolve3D
   !  of em_solve; are saved between calls, private to this module
   integer,  private        ::      IterPerDivCor, MaxDivCor, MaxIterDivCor
   integer,  private        ::      MaxIterTotal ! = MaxDivCor*IterPerDivCor
-  real(kind=prec), private   ::      tolEMfwd, tolEMadj, tolDivCor
+  real(kind=prec), private ::      tolEMfwd, tolEMadj, tolDivCor
 
   ! EMsolve diagnostics: these are computed during execution of em_solve
   !   can be retrieved by call to getEmsolveDiag
@@ -92,6 +93,33 @@ Contains
 ! modified to use the sparse matrix data structure defined in
 ! sp modelOperator3D module
 ! If bRHS%adj = 'TRN' solves transposed problem  A^T x = b
+!
+! below is Anna's comment copied from the MF equivalent subroutine
+!
+! Note [AK 2018-05-10]:
+! Any physical source has already been pre-multiplied by
+!       [- ISIGN i\omega\mu_0]
+! to yield
+!       [- ISIGN i\omega\mu_0 j]
+! on input to this routine. Note that this also holds for the secondary field
+! formulation, where
+!       j = dsigma * e,
+! as well as for the tidal forcing, where
+!       j = sigma (v x B).
+! However, we still want to pre-compute the source RHS outside of this
+! routine, for "generality".
+! Specifically, Jmult supplies an interior source on the RHS that is
+! not physical and is not pre-multiplied by that factor (except in Pmult).
+! So it's cleaner to pass on the complete interior forcing in bRHS.
+! For divergence correction, we divide by [+ ISIGN i\omega\mu_0] to get
+!       i[- Div(j)].
+! The plus sign is needed because we're taking the divergence of
+!       curl(curl(E)) + ISIGN i\omega\mu_0 sigma E = f - curl(curl(b))
+! Terms 1 and 4 vanishes, leaving:
+!       Div(sigma E) - Div(f)/(+ ISIGN i\omega\mu_0) =  0.
+! For a physical source j, this is equivalent to Div(sigma E) + Div(j) = 0;
+! but the divergence correction may be applied also for non-physical sources,
+! such  as in Jmult ('FWD') and JmultT ('TRN').
   subroutine FWDsolve3D(bRHS,omega,eSol,comm_local)
 
     ! redefine some of the interfaces (locally) for our convenience
@@ -108,7 +136,7 @@ Contains
     type (RHS_t), intent(in)      :: bRHS
     real(kind=prec), intent(in)   :: omega
     !dummy parameter for compatibiliy
-    integer, intent(in),optional    :: comm_local 
+    integer, intent(in),optional  :: comm_local 
     !  OUTPUTS:
     !  eSol must be allocated before calling this routine
     type (cvector), intent(inout) :: eSol
@@ -120,8 +148,8 @@ Contains
     complex(kind=prec)          :: iOmegaMuInv
     ! e(lectric field) s(ource) b(rhs) phi0(div(s))
     complex(kind=prec), pointer, dimension (:) :: e,s,b
-    complex(kind=prec), allocatable, dimension (:) :: ei,phi0,phii
-    complex(kind=prec), allocatable, dimension (:) :: temp,stemp
+    complex(kind=prec), allocatable, dimension (:) :: ei,si,phi0
+    complex(kind=prec), allocatable, dimension (:) :: temp, stemp
     character(80)                                  :: cfile
     !  band-aid cvector ...
     type (cvector)              :: tvec
@@ -135,6 +163,7 @@ Contains
     DivCorRelErr = R_ZERO
     failed = .false.
     trans = (bRHS%adj .eq. TRN)
+    iOmegaMuInv = C_ONE/cmplx(0.0,1.0d0*ISIGN*omega*MU_0,kind=prec) 
     if (.not.eSol%allocated) then
        write(0,*) 'eSol in EMsolve not allocated yet'
        stop
@@ -144,6 +173,10 @@ Contains
     !   since these will be private after debugging
         Nei = size(EDGEi,1)
         Ne = size(EDGEb,1)+Nei
+        if (output_level > 3) then
+            write(*,'(a36,i8,a4,i8)') 'FWDsolve3D model grid #edges: Nei=', &
+                Nei,' Ne=',Ne
+        end if
     end if
     ! allocate/initialize local data structures
     ! cboundary is a quite complex type...
@@ -154,19 +187,22 @@ Contains
     allocate(e(Ne))
     allocate(ei(Nei))
     allocate(s(Ne))
+    allocate(si(Nei))
     allocate(b(Nei))
-    allocate(stemp(Nei))
     allocate(temp(Ne))
+    allocate(stemp(Nei))
     ! at this point e should be all zeros if there's no initial guess
     call getCVector(eSol,e)
-    ! uncomment the following 6 lines to try divergence correction in CCGD
-    ! make sure you want to do this, first!
-    ! if(bRHS%nonZero_Source) then ! source (TRN)
-    !    !   this is for *all* nodes
-    !    Nni = size(NODEi,1)
-    !    Nn  = size(NODEb,1) + Nni
-    !    allocate(phi0(Nn))
-    ! endif
+    if(bRHS%nonZero_Source) then ! source (TRN)
+        !   this is for *all* nodes
+        Nni = size(NODEi,1)
+        Nn  = size(NODEb,1) + Nni
+        if (output_level > 3) then
+            write(*,'(a36,i8,a4,i8)') 'FWDsolve3D source grid #nodes: Nni=',    Nni,' Nn=',Nn
+        end if
+    ! uncomment the following line to try divergence correction in CCGD
+    !    allocate(phi0(Nn)) ! make sure you *WANT* to do this, first!
+    endif
     ! Using boundary condition and sources from rHS data structure
     ! construct vector b (defined only on interior nodes) for rHS of
     ! reduced (interior nodes only) linear system of equations
@@ -182,7 +218,7 @@ Contains
              ! for now it is just a walkaround, probably not going to
              ! be used by most
               call add_scvector(C_ONE,bRHS%sSparse,tvec)
-              call getVector(tvec,s)
+              call getVector(tvec,s) !s is of size nEdge (all edges)
           else
              ! normal source
               call getVector(bRHS%s,s)
@@ -199,21 +235,22 @@ Contains
           endif ! otherwise the eSol should be all zeros
           return
        endif
-       iOmegaMuInv = ISIGN/cmplx(0.0,omega*MU_0,prec)
-       b = s(EDGEi) ! taking only the interior edges
+       ! NOTE that here we DO NOT divide the source by volume weights before
+       ! the Div as the divcorr operation in SP is using VDiv instead of Div
+       si = s(EDGEi) ! taking only the interior edges
+       ! note that Div is formed from inner edges to all nodes
        ! uncomment the following line, to do divergence correction
-       ! call Div(b,phi0)
-       b = b * iOmegaMuInv / Vedge(EDGEi)
-       call RMATxCVEC(GDii,b,stemp)
-       stemp = Vedge(EDGEi)*stemp
-       b = s(EDGEi) + stemp
-       Call Mult_Aib(e(EDGEb), .false., stemp)
-       stemp = stemp/Vedge(EDGEi)
-       b = b + stemp
+       ! call Div(si,phi0)
+       ! divide by iOmegaMu and Volume weight to get the source term j
+       si = si * iOmegaMuInv / Vedge(EDGEi)
+       ! calculate the modification term V_E GD_II j
+       call RMATxCVEC(GDii,si,stemp)
+       ! now i\omega\mu_0 V_E j + V_E GD_II j
+       b = s(EDGEi) + stemp * Vedge(EDGEi)
     else ! trans = .false.
-       ! In the usual forward model case BC do enter into forcing
-       !   First compute contribution of BC term to RHS of reduced interior
-       !    node system of equations : - A_IB*b
+       ! In the usual forward model case BC does enter into forcing
+       ! First compute contribution of BC term to RHS of reduced interior
+       ! node system of equations : - A_IB*b
        if (bRHS%nonzero_BC) then
           !   copy from rHS structure into zeroed complex edge vector
           !   note that bRHS%bc is a cboundary type
@@ -223,13 +260,24 @@ Contains
           !   but only the boundary parts
           e(EDGEb) = s(EDGEb)
           !   Then multiply by curl_curl operator (use Mult_Aib ...
-          !   Note that Mult_Aib already multiplies by volume weights
-          !   required to symetrize problem, so the result is V*A_IB*b)
+          !   Note that Mult_Aib is already multiplied by volume weights
+          !   required to symmetrize the problem, so the result is V*A_IB*b)
           !   essentially b = A(i,b)*e(b)
           Call Mult_Aib(e(EDGEb), trans, b)
        endif
-       ! Add internal sources if appropriate: Note that these must be multiplied
-       !  explictly by volume weights
+       ! Add internal sources if appropriate:
+       ! Note that these must be multiplied explictly by volume weights
+       !     [V_E^{-1} C_II^T V_F] C_II e + i\omega\mu_0\sigma e
+       !   = - i\omega\mu_0  j - V_E^{-1} G_IA \Lambda D_AI j 
+       !     - [V_E^{-1} C_II^T V_F] C_IB b
+       ! here we multiply by V_E throughout to obtain a symmetric system:
+       !      V_E A_II e = - i\omega\mu_0 V_E j - V_E GD_II j - V_E A_IB b
+       ! where
+       !      A_II = V_E^{-1} C_II^T V_F C_II + i\omega\mu_0 \sigma,
+       ! while
+       !      A_IB = V_E^{-1} C_II^T V_F C_IB, 
+       ! and 
+       !      GD_II = V_E{-1} G_IA \Lambda D_AI.  
        if (bRHS%nonzero_Source) then
           if (bRHS%sparse_Source) then
              ! sparse source
@@ -240,22 +288,33 @@ Contains
              ! normal source
              call getVector(bRHS%s, s)
           endif
-          iOmegaMuInv = ISIGN/cmplx(0.0,omega*MU_0,prec)
-          b = s(EDGEi) ! taking only the interior edges
-          b = b * iOmegaMuInv/Vedge(EDGEi)
-          call RMATxCVEC(GDii,b,stemp)
-          stemp = Vedge(EDGEi)*stemp
-          temp = s(EDGEi) + stemp
+          ! At this point, s = - ISIGN * i\omega\mu_0 j
+          ! Now Div(s) - will later divide by i_omega_mu to get the general
+          ! divergence correction (j)
+          temp = s*Vedge
+          ! uncomment the following line to do divergence correction 
+          ! call Div(temp(EDGEi), phi0)
+          ! now temp = - ISIGN * i\omega\mu_0 V_E j
+          ! divide by iOmegaMu to get the source term (j)
+          si = s(EDGEi) * iOmegaMuInv 
+          ! calculate the modification term GD_II j
+          call RMATxCVEC(GDii,si,stemp)
+          ! i\omega\mu_0 V_E j + V_E GD_II j
+          stemp = temp(EDGEi) + stemp * Vedge(EDGEi)
+          ! now add the V_E A_IB b term
           if(bRHS%nonzero_BC) then
-             b = temp(EDGEi) - b
+             b = stemp - b
           else
-             b = temp(EDGEi)
+             b = stemp
           endif
-       else
-       !   no source
-           b = -b
-       endif
+      else ! there is no source
+          b = -b
+      endif 
     endif
+    ! uncomment the following 3 lines to do divergence correction 
+    ! if (bRHS%nonzero_Source) then
+    !     phi0 = phi0 * iOmegaMuInv ! 1/i_omega_mu
+    ! endif
     ! Outer part of KSS loop ... alternates between Calls to KSS solver
     ! and Calls to divcor  ... this will be part of EMsolve
     !
@@ -364,6 +423,7 @@ Contains
     deallocate(ei)
     deallocate(temp)
     deallocate(stemp)
+    deallocate(si)
     ! uncomment the following lines for divergence correction
     ! if(bRHS%nonzero_Source) then
     !     deallocate(phi0)

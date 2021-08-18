@@ -413,6 +413,7 @@ Contains
       ! everything is allocated and correct on entry
       
       if(A%nCol.ne.size(x)) then
+         write(0,*) ' Error: A%nCol=',A%nCol,' size(x)=',size(x)
          call errStop('RMATxCVEC: matrix and vector sizes incompatible')
       endif
 
@@ -1476,7 +1477,7 @@ Contains
       type(spMatCSR_Cmplx), pointer, intent(in)        ::  A(:)
       type(spMatCSR_Cmplx),intent(inout)     ::  B
  
-      integer     :: nBlks,nRowB,nColB,nzB,i,i1,j1,i2,j2,k1
+      integer     :: nBlks,nRowB,nColB,nzB,i,j,i1,j1,i2,j2,k1
 
       nBlks = size(A) 
       nRowB = 0
@@ -1500,7 +1501,17 @@ Contains
          j2 = j1 + A(i)%row(A(i)%nRow+1)-2
          B%row(i1:i2) = A(i)%row(1:A(i)%nrow)+j1-1  
          B%col(j1:j2) = A(i)%col + k1
-         B%val(j1:j2) = A(i)%val
+         !AK: COMPILER BUG: ifort (IFORT) 19.0.4.233 20190416 produced a segmentation fault with SP2 only (not with SP!)
+         !    at the first encounter of the line "B%val(j1:j2) = A(i)%val" in BlkDiag_Cmplx in module spOpTools.f90.
+         !    Something to do with vectorization, since this doesn't occur in debug mode. Rewritten to use a loop
+         !    with error checking, for now. This is most likely a temporary fix that could be eliminated later.
+         !B%val(j1:j2) = A(i)%val
+         do j = 1,size(A(i)%val)
+            if (isnan(real(A(i)%val(j)))) then
+                write(0,*) 'ERROR: NaN in BlkDiag_Cmplx for i=',i,' and j=',j
+            endif
+            B%val(j1+j-1) = A(i)%val(j)
+         enddo
          i1 = i2 + 1
          j1 = j2 + 1
          k1 = k1 + A(i)%nCol

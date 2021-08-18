@@ -1969,7 +1969,6 @@ Contains
 
   end subroutine DivCgrad	! DivCgrad
 
-
   !**********************************************************************
   ! Purpose is to compute div sigma inE (input electrical field)
   ! where sigma is the edge conductivity. Thus, in practice, this computes
@@ -1979,6 +1978,54 @@ Contains
   ! This is done as a separate specialized routine to avoid carrying
   ! around multiple edge conductivities
   subroutine DivC(inE, outSc)
+
+    implicit none
+    type (cvector), intent(in)		         :: inE
+    type (cscalar), intent(inout)		 :: outSc
+    integer                                      :: ix, iy, iz
+    type (rvector)   :: sigma_temp
+    type (cvector)   :: Etemp
+
+    IF(.not.inE%allocated) THEN
+ 	WRITE(0,*) 'inE not allocated in DivC'
+ 	STOP
+    ENDIF
+
+    IF(.not.outSc%allocated) THEN
+ 	WRITE(0,*) 'outSc not allocated in DivC'
+ 	STOP
+    ENDIF
+
+   if (outSc%gridType == CORNER) then
+
+      sigma_temp = sigma_E
+      sigma_temp%x(:,:,1:outSc%grid%nzAir) = SIGMA_AIR
+      sigma_temp%y(:,:,1:outSc%grid%nzAir) = SIGMA_AIR
+      sigma_temp%z(:,:,1:outSc%grid%nzAir) = SIGMA_AIR
+
+      Etemp = inE
+      Call diagMult_crvector(inE, sigma_temp, Etemp)
+      call Div(Etemp,outSc)
+
+      ! clean up temporary variables
+      call deall_cvector(Etemp)
+      call deall_rvector(sigma_temp)
+
+   else
+          write(0, *) 'Error: DivC: scalars not same size'
+   end if
+
+  end subroutine DivC	! DivC
+
+  !**********************************************************************
+  ! Purpose is to compute div sigma inE (input electrical field)
+  ! where sigma is the edge conductivity. Thus, in practice, this computes
+  ! divergence of currents.
+  ! NOTE that conductivity in air is modified to SIGMA_AIR for this
+  ! subroutine.
+  ! This is done as a separate specialized routine to avoid carrying
+  ! around multiple edge conductivities
+  subroutine DivC_old(inE, outSc)
 
     implicit none
     type (cvector), intent(in)		         :: inE
@@ -2052,6 +2099,6 @@ Contains
        write(0, *) 'Error: DivC: output scalar not compatible use'
     end if
 
-  end subroutine DivC	! DivC
+  end subroutine DivC_old	! DivC
 
 end  module modelOperator3D

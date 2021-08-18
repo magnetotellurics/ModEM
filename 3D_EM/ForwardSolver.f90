@@ -426,15 +426,18 @@ end if
 
    ! local variables
    logical			:: initForSens
-   character(10)    :: txType
-
+   character(10)    :: txType = 'MT'
+ 
    initForSens = present(comb)
 
-   if(present(e0)) then
-      if(e0%allocated) then
-        txType = txDict(e0%tx)%tx_type
-      endif
-   endif
+   !if(present(e0)) then
+   !   if(e0%allocated) then
+   !     txType = txDict(e0%tx)%tx_type
+   !     if (txType =='DC') then
+   !      call de_ini_private_data_DC
+   !     end if
+   !   endif
+   !endif
 
    if(present(e0)) then
       call deall_solnVector(e0)
@@ -452,15 +455,7 @@ end if
       modelDataInitialized = .false.
    endif
 
-   if (txType =='DC') then
-     call de_ini_private_data_DC
-   end if
-   
-   
    end subroutine exitSolver
-
-
-
 
 
 !**********************************************************************
@@ -612,7 +607,7 @@ end if
    !   due to the disturbance of conductivity
    !
 
- if (txDict(iTx)%Tx_type=='DC') then 
+   if (txDict(iTx)%Tx_type=='DC') then 
      AdjFWD_DC='FWD_DC'
      !call compute_Pri_potential
      !call put_v_in_V_P(e0)
@@ -622,7 +617,7 @@ end if
 	   call FWDsolve3D_DC
        call put_v_in_e(e0)
        !call de_ini_private_data_DC
- elseif (txDict(iTx)%Tx_type=='CSEM') then 
+   elseif (txDict(iTx)%Tx_type=='CSEM') then 
  
    ! Now finish up the computation of the general b0%s = - ISIGN * i\omega\mu_0 j
    !call diagMult(condAnomaly,E_P,b0%s)
@@ -639,7 +634,7 @@ end if
 	  !term=1.0/10.0 ! txDict(iTx)%Moment  
       !call scMult(term,e0%pol(1),e0%pol(1))
 		  
-elseif (txDict(iTx)%Tx_type=='MT') then
+   elseif (txDict(iTx)%Tx_type=='MT') then
    !call fwdSetup(iTx,e0,b0)
    	do iMode = 1,e0%nPol
 		! compute boundary conditions for polarization iMode
@@ -653,7 +648,7 @@ elseif (txDict(iTx)%Tx_type=='MT') then
 		call FWDsolve3D(b0%b(iMode),omega,e0%pol(iMode))
 		write (6,*)node_info,'FINISHED solve, nPol',e0%nPol
    	enddo
-   elseif
+   else
     write(0,*) node_info,'Unknown FWD problem type',trim(txDict(iTx)%Tx_type),'; unable to run fwdSolve'
    endif
 
@@ -683,7 +678,7 @@ elseif (txDict(iTx)%Tx_type=='MT') then
 !  zero starting solution, solve for all modes
    call zero_solnVector(e)
    
-if (txDict(iTx)%Tx_type=='MT' .or. txDict(iTx)%Tx_type=='CSEM' ) then 
+   if (txDict(iTx)%Tx_type=='MT' .or. txDict(iTx)%Tx_type=='CSEM' ) then 
    	omega = txDict(iTx)%omega
    	period = txDict(iTx)%period
    	do iMode = 1,e%nPol
@@ -692,13 +687,13 @@ if (txDict(iTx)%Tx_type=='MT' .or. txDict(iTx)%Tx_type=='CSEM' ) then
 				' problem for period ',iTx,': ',(2*PI)/omega,' secs & mode # ',e%Pol_index(iMode)
       		call FWDsolve3d(comb%b(e%Pol_index(iMode)),omega,e%pol(imode))
    	enddo
-elseif (txDict(iTx)%Tx_type=='DC') then
+   elseif (txDict(iTx)%Tx_type=='DC') then
       AdjFWD_DC='Adj_DC'
      call extract_RHS_for_Adjoint_DC (comb)
 	 call FWDsolve3D_DC
      call put_v_in_e(e)
      !call de_ini_private_data_DC
-   elseif
+   else
     write(0,*) node_info,'Unknown FWD problem type',trim(txDict(iTx)%Tx_type),'; unable to run sensSolve'
    endif
 

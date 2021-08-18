@@ -171,9 +171,9 @@ contains
      !  number of polarization obtained from the transmitter dictionary
 
        implicit none
-       type(grid_t), intent(in), target     :: grid
+       type(grid_t), intent(in), target	    :: grid
        integer, intent(in)                  :: iTx
-       type (solnVector_t), intent(inout)   :: e
+       type (solnVector_t), intent(inout)		:: e
 
        ! local variables
        integer				:: k,istat,iPol
@@ -188,11 +188,11 @@ contains
        end if
 
        e%nPol = txDict(iTx)%nPol
-       allocate(e%Pol_index(e%nPol), STAT=istat)
+	   allocate(e%Pol_index(e%nPol), STAT=istat)
        allocate(e%Pol_name(e%nPol), STAT=istat)
        
        do iPol=1,e%nPol
-           e%Pol_index(iPol)=iPol
+        e%Pol_index(iPol)=iPol
        end do
        
        ! set up the mode names based on transmitter type;
@@ -213,7 +213,7 @@ contains
        e%tx = iTx
        e%grid => grid
 
-       e%allocated = .true.
+	   e%allocated = .true.
 
      end subroutine create_solnVector
 
@@ -225,7 +225,7 @@ contains
        type (solnVector_t), intent(inout)   :: e
 
        ! local variables
-       integer                              :: k, istat
+       integer				:: k, istat
 
        if (associated(e%pol)) then
           deallocate(e%Pol_index, STAT=istat)

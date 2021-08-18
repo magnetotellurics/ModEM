@@ -204,10 +204,10 @@ Contains
   ! **************************************************************************
   subroutine copy_grid(gridOut,gridIn)
 
-    !  copies gridIn to gridOut; cannot overwrite, of course!
+  !  copies gridIn to gridOut; cannot overwrite, of course!
 
-    type(grid_t),intent(in)		    :: gridIn
-    type(grid_t),intent(inout)		:: gridOut
+  type(grid_t),intent(in)		    :: gridIn
+  type(grid_t),intent(inout)		:: gridOut
 
      if(gridOut%allocated) then
         !  just deallocate, and start over cleanly
@@ -284,8 +284,8 @@ Contains
   subroutine setup_grid(grid, origin)
 
     implicit none
-    type(grid_t), target, intent(inout)     :: grid
-    real(kind=prec), intent(in), optional	:: origin(3)
+    type(grid_t), target, intent(inout)    :: grid
+    real(kind=prec), intent(in), optional	  :: origin(3)
 
     integer                               :: ix,iy,iz,i,j
     integer                               :: status

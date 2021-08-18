@@ -8,8 +8,8 @@ if [ -e $1 ]; then
 fi
 
 MT_path_dir="3D_MT:3D_MT/DICT:3D_MT/modelParam:3D_MT/FWD:3D_MT/FWD/Mod2d:3D_MT/ioMod"
-EM_path_dir="3D_EM:3D_EM/DICT:3D_EM/modelParam:3D_EM/Dipole1D:3D_EM/DC_Geoelec:3D_EM/FWD:3D_EM/FWD/Mod2d:3D_EM/ioMod"
-INV_dir="JINV"
+EM_path_dir="3D_EM:3D_EM/DICT:3D_EM/Dipole1D:3D_EM/DC_Geoelec"
+INV_dir="INV" # NOTE: to convert to JINV, some work needed!
 	
 if [ $2 = "debug" ]; then
 # Debug configuration
@@ -17,9 +17,9 @@ perl fmkmf.pl -f90 ifort \
 -opt '-debug all -debug extended -traceback -check bounds -heap-arrays -i8 -I/opt/intel/lib' \
 -mpi '-cpp' \
 -o './objs/3D_MT/IFortDebug_JT' \
--l '-lmkl_lapack95_ilp64 -lmkl_intel_ilp64 -lmkl_intel_thread -lmkl_core  -lpthread -openmp -parallel' \
--lp '/opt/intel/mkl/lib' \
--p .:$INV_dir:LAPACK:SENS:UTILS:FIELDS/FiniteDiff3D:$EM_path_dir \
+-l '-lmkl_lapack95_ilp64 -lmkl_intel_ilp64 -lmkl_intel_thread -lmkl_core  -lpthread -qopenmp -parallel' \
+-lp '/opt/intel/oneapi/mkl/latest/lib' \
+-p .:$INV_dir:LAPACK:SENS:UTILS:FIELDS/FiniteDiff3D:$EM_path_dir:$MT_path_dir \
 Mod3DMT.f90 > $1
 
 elif [ $2 = "release" ]; then
@@ -28,9 +28,9 @@ perl fmkmf.pl -f90 ifort \
 -opt '-O3 -w  -xSSE4.2 -std03 -i8 -I/opt/intel/lib' \
 -mpi '-cpp' \
 -o './objs/3D_MT/IFortRelease_JT' \
--l '-lmkl_lapack95_ilp64 -lmkl_intel_ilp64 -lmkl_intel_thread -lmkl_core  -lpthread -openmp -parallel' \
--lp '/opt/intel/mkl/lib' \
--p .:$INV_dir:LAPACK:SENS:UTILS:FIELDS/FiniteDiff3D:$EM_path_dir \
+-l '-lmkl_lapack95_ilp64 -lmkl_intel_ilp64 -lmkl_intel_thread -lmkl_core  -lpthread -qopenmp -parallel' \
+-lp '/opt/intel/oneapi/mkl/latest/lib' \
+-p .:$INV_dir:LAPACK:SENS:UTILS:FIELDS/FiniteDiff3D:$EM_path_dir:$MT_path_dir \
 Mod3DMT.f90 > $1
 
 else
@@ -39,9 +39,9 @@ perl fmkmf.pl -f90 ifort \
 -opt '-O3 -w  -xSSE4.2 -std03 -i8 -I/opt/intel/lib' \
 -mpi '-cpp -DMPI' \
 -o './objs/3D_MT/IFortReleaseMPI_JT' \
--l '-lmkl_lapack95_ilp64 -lmkl_intel_ilp64 -lmkl_intel_thread -lmkl_core  -lpthread -openmp -parallel' \
--lp '/opt/intel/mkl/lib' \
--p .:MPI:$INV_dir:LAPACK:SENS:UTILS:FIELDS/FiniteDiff3D:$EM_path_dir \
+-l '-lmkl_lapack95_ilp64 -lmkl_intel_ilp64 -lmkl_intel_thread -lmkl_core  -lpthread -qopenmp -parallel' \
+-lp '/opt/intel/oneapi/mkl/latest/lib' \
+-p .:MPI:$INV_dir:LAPACK:SENS:UTILS:FIELDS/FiniteDiff3D:$EM_path_dir:$MT_path_dir \
 Mod3DMT.f90 > $1
 fi
 
@@ -51,26 +51,31 @@ if [ $# -le 2 ]; then
 fi
 
 if [ $3 = "spherical" ]; then
+	sed -i .bak 's/IFort/IFortS/g' $1
 	sed -i .bak 's/GridCalc\./GridCalcS\./g' $1
-	sed -i .bak 's/boundary_ws\./boundary_wsS\./g' $1	
-	sed -i .bak 's/_JT/_JT_sph/g' $1	
+	sed -i .bak 's/boundary_ws\./boundary_wsS\./g' $1
+  	sed -i .bak 's/MetricElements_CSG\./MetricElements_SSG\./g' $1
+	sed -i .bak 's/3DMT /3DJT_sph /g' $1
+	sed -i .bak 's/3DMT:/3DJT_sph:/g' $1	
 	if [ $2 == "debug" ]; then
-		sed -i .bak 's/Mod3DMT /Mod3DJTs_dbg /g' $1
+		sed -i .bak 's/3DJT_sph/3DJT_sph_dbg/g' $1
 	elif [ $2 == "release" ]; then
-		sed -i .bak 's/Mod3DMT /Mod3DJTs /g' $1
+		sed -i .bak 's/3DJT_sph/3DJT_sph/g' $1
 	else
-		sed -i .bak 's/Mod3DMT /Mod3DJTs_MPI /g' $1
+		sed -i .bak 's/3DJT_sph/3DJT_sph_MPI/g' $1
 	fi    
 	rm $1.bak
     echo 1>&2 Spherical version of the makefile ready to use.
 else
+	sed -i .bak 's/3DMT /3DJT /g' $1
+	sed -i .bak 's/3DMT:/3DJT:/g' $1
 	if [ $2 == "debug" ]; then
-		sed -i .bak 's/\/Mod3DMT/\/Mod3DJT_dbg/g' $1
+		sed -i .bak 's/3DJT/3DJT_dbg/g' $1
 	elif [ $2 == "release" ]; then
-		sed -i .bak 's/\/Mod3DMT/\/Mod3DJT/g' $1
+		sed -i .bak 's/3DJT/3DJT/g' $1
 	else
-		sed -i .bak 's/\/Mod3DMT/\/Mod3DJT_MPI/g' $1
-	fi  
+		sed -i .bak 's/3DJT/3DJT_MPI/g' $1
+	fi    
     rm $1.bak
     echo 1>&2 Cartesian version of the makefile ready to use.
 fi

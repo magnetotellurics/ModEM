@@ -178,7 +178,7 @@ Contains
     real(8), allocatable            :: error(:) ! (ncomp)
     logical, allocatable            :: exist(:) ! (ncomp)
     character(2)                    :: temp = '> '
-    character(50)                   :: siteid,ref_siteid,compid
+    character(50)                   :: siteid,ref_siteid,compid,sitename
     character(1000)                 :: strtemp
     integer                         :: iTxt,iTx,iRx,iDt,icomp,i,j,k,istat,ios,nBlocks
     real(8)                         :: x(3),ref_x(3), Period,SI_factor,large,Xx(2)
