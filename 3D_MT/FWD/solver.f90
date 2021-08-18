@@ -492,6 +492,7 @@ subroutine BICG(b,x,BICGiter)
       call linComb(C_One,b,C_MinusOne,AX,AX)
       rnorm = SQRT(dotProd(AX,AX))
       BICGiter%rerr(iter)=rnorm/bnorm
+      !write(6,*) 'BICG residual 1: ', iter, BICGiter%rerr(iter)
       
       if (rnorm.lt.btol) then
           x = xhalf
@@ -533,6 +534,7 @@ subroutine BICG(b,x,BICGiter)
       call linComb(C_One,b,C_MinusOne,AX,AX)
       rnorm = SQRT(dotProd(AX,AX))
       BICGiter%rerr(iter) = rnorm / bnorm
+      !write(6,*) 'BICG residual 2: ', iter, BICGiter%rerr(iter)
       if (rnorm.lt.btol) then
           BICGiter%failed = .false.
           BICGiter%niter = iter

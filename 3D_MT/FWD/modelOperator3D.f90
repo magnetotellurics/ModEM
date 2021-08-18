@@ -842,6 +842,7 @@ Contains
     ! output electrical field as complex vector
     complex (kind=prec)                      :: diag_sign ! changed by Lana, was integer
     integer                                  :: ix, iy, iz
+	type (cvector) 							  :: tempE
 
     if (.not.inE%allocated) then
       write(0,*) 'inE in Maxwell not allocated yet'
@@ -866,76 +867,16 @@ Contains
              diag_sign = ISIGN
           end if
 
-          !$OMP PARALLEL DEFAULT(SHARED) PRIVATE(ix,iy,iz)
-
-          ! Apply difference equation to compute Ex (only on interior nodes)
+          ! Apply difference equation to compute E (only on interior nodes)
           ! the diagonal nodes have the imaginary component added
-          !$OMP DO SCHEDULE(STATIC)
-	      do iz = 2, inE%nz
-             do iy = 2, inE%ny
-                do ix = 1, inE%nx
-                   outE%x(ix,iy,iz) =  & 
-                        (xYpp(ix,iy,iz)*inE%y(ix+1,iy,iz)-&
-                  	xYmp(ix,iy,iz)*inE%y(ix,iy,iz)-xYpm(ix,iy,iz)*inE%y(ix+1,iy-1,iz)&
-                        +xYmm(ix,iy,iz)*inE%y(ix,iy-1,iz))+&
-                  	(xZpp(ix,iy,iz)*inE%z(ix+1,iy,iz)-xZmp(ix,iy,iz)*inE%z(ix,iy,iz)&
-                  	-xZpm(ix,iy,iz)*inE%z(ix+1,iy,iz-1)+xZmm(ix,iy,iz)*inE%z(ix,iy,iz-1))+&
-                  	xXYp(ix,iy,iz)*inE%x(ix,iy+1,iz)+& 
-                  	xXYm(ix,iy,iz)*inE%x(ix,iy-1,iz)+& 
-                  	xXZp(ix,iy,iz)*inE%x(ix,iy,iz+1)+& 
-                  	xXZm(ix,iy,iz)*inE%x(ix,iy,iz-1)+& 
-                  	(xXO(ix,iy,iz)+diag_sign*Adiag%x(ix,iy,iz))*inE%x(ix,iy,iz)
-                enddo
-             enddo
-          enddo
-          !$OMP END DO NOWAIT
+		  tempE = inE
+		  call CurlCurlE(inE, outE)
+		  call diagMult_cvector(Adiag, inE, tempE)
+		  call linComb_cvector(C_ONE, outE, diag_sign, tempE, outE)
+		  
+		  ! clean up
+		  call deall_cvector(tempE)
 
-          ! Apply difference equation to compute Ey (only on interior nodes)
-	      ! the diagonal nodes have the imaginary component added
-          !$OMP DO SCHEDULE(STATIC)
-          do iz = 2, inE%nz
-             do iy = 1, inE%ny
-                do ix = 2, inE%nx
-                   outE%y(ix,iy,iz) = &
-                        (yZpp(ix,iy,iz)*inE%z(ix,iy+1,iz)-&
-                  	yZmp(ix,iy,iz)*inE%z(ix,iy,iz)-yZpm(ix,iy,iz)*inE%z(ix,iy+1,iz-1) & 
-                        +yZmm(ix,iy,iz)*inE%z(ix,iy,iz-1))&
-                  	+(yXpp(ix,iy,iz)*inE%x(ix,iy+1,iz)-yXpm(ix,iy,iz)*inE%x(ix,iy,iz) &
-                  	-yXmp(ix,iy,iz)*inE%x(ix-1,iy+1,iz)+yXmm(ix,iy,iz)*inE%x(ix-1,iy,iz))+&
-                  	yYZp(ix,iy,iz)*inE%y(ix,iy,iz+1)+&
-                  	yYZm(ix,iy,iz)*inE%y(ix,iy,iz-1)+&
-                  	yYXp(ix,iy,iz)*inE%y(ix+1,iy,iz)+&
-                  	yYXm(ix,iy,iz)*inE%y(ix-1,iy,iz)+&
-                  	(yYO(ix,iy,iz)+diag_sign*Adiag%y(ix,iy,iz))*inE%y(ix,iy,iz)
-                enddo
-             enddo
-          enddo
-          !$OMP END DO NOWAIT
-
-          ! Apply difference equation to compute Ey (only on interior nodes)
-	      ! the diagonal nodes have the imaginary component added
-          !$OMP DO SCHEDULE(STATIC)
-          do iz = 1, inE%nz
-             do iy = 2, inE%ny
-                do ix = 2, inE%nx
-                   outE%z(ix,iy,iz) = &
-                        (zXpp(ix,iy,iz)*inE%x(ix,iy,iz+1)-&
-                  	zXpm(ix,iy,iz)*inE%x(ix,iy,iz)-zXmp(ix,iy,iz)*inE%x(ix-1,iy,iz+1) &
-                        +zXmm(ix,iy,iz)*inE%x(ix-1,iy,iz))&
-                  	+(zYpp(ix,iy,iz)*inE%y(ix,iy,iz+1)-zYpm(ix,iy,iz)*inE%y(ix,iy,iz)&
-                  	-zYmp(ix,iy,iz)*inE%y(ix,iy-1,iz+1)+zYmm(ix,iy,iz)*inE%y(ix,iy-1,iz))+&
-                  	zZXp(ix,iy,iz)*inE%z(ix+1,iy,iz)+&
-                  	zZXm(ix,iy,iz)*inE%z(ix-1,iy,iz)+&
-                  	zZYp(ix,iy,iz)*inE%z(ix,iy+1,iz)+&
-                  	zZYm(ix,iy,iz)*inE%z(ix,iy-1,iz)+&
-                  	(zZO(ix,iy,iz)+diag_sign*Adiag%z(ix,iy,iz))*inE%z(ix,iy,iz)
-                enddo
-             enddo
-          enddo
-
-          !$OMP END DO NOWAIT
-
-          !$OMP END PARALLEL
        else
           write (0, *) ' Maxwell: not compatible usage for existing data types'
        end if
@@ -1742,17 +1683,17 @@ Contains
        do iy = 2, mGrid%ny
           do ix = 2, mGrid%nx
 
-             db1%x(ix, iy, iz) = sigma_E%x(ix-1,iy,iz)*S_E%x(ix-1,iy,iz)/l_E%x(ix-1,iy,iz)
+             db1%x(ix, iy, iz) = sigma_E%x(ix-1,iy,iz)/(l_E%x(ix-1,iy,iz)*l_F%x(ix,iy,iz))
 
-             db2%x(ix, iy, iz) = sigma_E%x(ix,iy,iz)*S_E%x(ix,iy,iz)/l_E%x(ix,iy,iz)
+             db2%x(ix, iy, iz) = sigma_E%x(ix,iy,iz)/(l_E%x(ix,iy,iz)*l_F%x(ix,iy,iz))
 
-             db1%y(ix, iy, iz) = sigma_E%y(ix, iy-1,iz)*S_E%y(ix,iy-1,iz)/l_E%y(ix,iy-1,iz)
+             db1%y(ix, iy, iz) = sigma_E%y(ix, iy-1,iz)/(l_E%y(ix,iy-1,iz)*l_F%y(ix,iy,iz))
  
-             db2%y(ix, iy, iz) = sigma_E%y(ix, iy, iz)*S_E%y(ix,iy,iz)/l_E%y(ix,iy,iz)
+             db2%y(ix, iy, iz) = sigma_E%y(ix, iy, iz)/(l_E%y(ix,iy,iz)*l_F%y(ix,iy,iz))
  
-             db1%z(ix, iy, iz) = sigma_E%z(ix, iy, iz-1)*S_E%z(ix,iy,iz-1)/l_E%z(ix,iy,iz-1)
+             db1%z(ix, iy, iz) = sigma_E%z(ix, iy, iz-1)/(l_E%z(ix,iy,iz-1)*l_F%z(ix,iy,iz))
 
-             db2%z(ix, iy, iz) = sigma_E%z(ix, iy, iz)*S_E%z(ix,iy,iz)/l_E%z(ix,iy,iz)
+             db2%z(ix, iy, iz) = sigma_E%z(ix, iy, iz)/(l_E%z(ix,iy,iz)*l_F%z(ix,iy,iz))
 
              c%v(ix, iy, iz) = - (db1%x(ix, iy, iz) + &
                   db2%x(ix, iy, iz) + &
@@ -1776,7 +1717,24 @@ Contains
           enddo
        enddo
     enddo
-!!!!!!!!!!!!!!!
+
+    ! Multiply by corner volume elements to make operator symmetric
+    do iz = 2, mGrid%nz
+       do iy = 2, mGrid%ny
+          do ix = 2, mGrid%nx
+
+             db1%x(ix, iy, iz) = db1%x(ix, iy, iz)*V_N%v(ix, iy, iz)
+             db1%y(ix, iy, iz) = db1%y(ix, iy, iz)*V_N%v(ix, iy, iz)
+             db1%z(ix, iy, iz) = db1%z(ix, iy, iz)*V_N%v(ix, iy, iz)
+             db2%x(ix, iy, iz) = db2%x(ix, iy, iz)*V_N%v(ix, iy, iz)
+             db2%y(ix, iy, iz) = db2%y(ix, iy, iz)*V_N%v(ix, iy, iz)
+             db2%z(ix, iy, iz) = db2%z(ix, iy, iz)*V_N%v(ix, iy, iz)
+
+          enddo
+       enddo
+    enddo
+    Call diagMult_rscalar(c, V_N, c)
+
     !  To be explicit about forcing coefficients that multiply boundary
     !    nodes to be zero (this gaurantees that the BC on the potential
     !    is phi = 0):
@@ -2017,88 +1975,5 @@ Contains
 
   end subroutine DivC	! DivC
 
-  !**********************************************************************
-  ! Purpose is to compute div sigma inE (input electrical field)
-  ! where sigma is the edge conductivity. Thus, in practice, this computes
-  ! divergence of currents.
-  ! NOTE that conductivity in air is modified to SIGMA_AIR for this
-  ! subroutine.
-  ! This is done as a separate specialized routine to avoid carrying
-  ! around multiple edge conductivities
-  subroutine DivC_old(inE, outSc)
-
-    implicit none
-    type (cvector), intent(in)		         :: inE
-    type (cscalar), intent(inout)		 :: outSc
-    integer                                      :: ix, iy, iz
-
-    IF(.not.inE%allocated) THEN
- 	WRITE(0,*) 'inE not allocated in DivC'
- 	STOP
-    ENDIF
-
-    IF(.not.outSc%allocated) THEN
- 	WRITE(0,*) 'outSc not allocated in DivC'
- 	STOP
-    ENDIF
-
-    if (outSc%gridType == CORNER) then
-
-       ! Check whether all the inputs/ outputs involved are even of the same
-       ! size
-       if ((inE%nx == outSc%nx).and.&
-            (inE%ny == outSc%ny).and.&
-            (inE%nz == outSc%nz)) then
-
-          ! computation done only for internal nodes
-          do ix = 2, outSc%nx
-             do iy = 2, outSc%ny
-
-	        ! FOR NODES IN THE AIR ONLY
-                do iz = 2,outSc%grid%nzAir
-                   outSc%v(ix, iy, iz) = &
-                        SIGMA_AIR*(inE%x(ix,iy,iz)*S_E%x(ix,iy,iz)-inE%x(ix-1,iy,iz)*S_E%x(ix-1,iy,iz))   & 
-                        + SIGMA_AIR*(inE%y(ix,iy,iz)*S_E%y(ix,iy,iz)-inE%y(ix,iy-1,iz)*S_E%y(ix,iy-1,iz)) & 
-                        + SIGMA_AIR*(inE%z(ix,iy,iz)*S_E%z(ix,iy,iz)-inE%z(ix,iy,iz-1)*S_E%z(ix,iy,iz-1))  
-                enddo   ! iz
-
-	        ! FOR NODES AT THE AIR-EARTH INTERFACE
-                iz = outSc%grid%nzAir+1
-                   outSc%v(ix, iy, iz) = &
-                        (sigma_E%x(ix,iy,iz)*inE%x(ix, iy, iz)*S_E%x(ix,iy,iz) -         & 
-                        sigma_E%x(ix - 1,iy,iz)*inE%x(ix - 1, iy, iz)*S_E%x(ix-1,iy,iz)) & 
-                        +  (sigma_E%y(ix,iy,iz)*inE%y(ix, iy, iz)*S_E%y(ix,iy,iz) -      & 
-                        sigma_E%y(ix,iy - 1,iz)*inE%y(ix, iy - 1, iz)*S_E%y(ix,iy-1,iz)) & 
-                        +  (sigma_E%z(ix,iy,iz)*inE%z(ix, iy, iz)*S_E%z(ix,iy,iz) -      & 
-                        SIGMA_AIR*inE%z(ix, iy, iz - 1)*S_E%z(ix,iy,iz-1))                 
-
-
-                ! FOR NODES INSIDE THE EARTH ONLY
-		! THE TOP MOST EARTH NODE HAS AN INTERFACE WITH
-		! AIR, THEREFORE THAT ONE IS SKIPPED HERE
-
-                do iz = outSc%grid%nzAir+2, outSc%nz
-                   outSc%v(ix, iy, iz) = &
-                        (sigma_E%x(ix,iy,iz)*inE%x(ix, iy, iz)*S_E%x(ix,iy,iz) -       & 
-                        sigma_E%x(ix-1,iy,iz)*inE%x(ix-1, iy, iz)*S_E%x(ix-1 ,iy,iz))  & 
-                        +  (sigma_E%y(ix,iy,iz)*inE%y(ix, iy, iz)*S_E%y(ix,iy,iz) -    & 
-                        sigma_E%y(ix,iy-1,iz)*inE%y(ix, iy-1,iz)*S_E%y(ix,iy-1,iz))    & 
-                        +  (sigma_E%z(ix,iy,iz)*inE%z(ix, iy, iz)*S_E%z(ix, iy, iz) -  & 
-                        sigma_E%z(ix,iy,iz-1)*inE%z(ix,iy,iz-1)*S_E%z(ix,iy,iz-1))       
-
-                enddo   ! iz
-
-             enddo      ! iy
-          enddo         ! ix
-
-       else
-          write(0, *) 'Error: DivC: scalars not same size'
-       end if
-       Call diagDiv_crscalar(outSc, V_N, outSc)
-    else
-       write(0, *) 'Error: DivC: output scalar not compatible use'
-    end if
-
-  end subroutine DivC_old	! DivC
 
 end  module modelOperator3D
