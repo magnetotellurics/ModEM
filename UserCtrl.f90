@@ -36,6 +36,9 @@ module UserCtrl
 	! Output file name for MPI nodes status info
 	character(80)       :: wFile_MPI
 
+	! Option to supply configuration file in place of command line
+	character(80)       :: rFile_Config
+
 	! Input files
 	character(80)       :: rFile_Grid, rFile_Model, rFile_Data
 	character(80)       :: rFile_dModel
@@ -55,6 +58,9 @@ module UserCtrl
 	! Choose the sort of test / procedure variant you wish to perform
 	character(80)       :: option
 
+    ! Out-of-core file prefix for storing working E-field solutions (NCI)
+    character(80)       :: prefix
+
 	! Specify damping parameter for the inversion
 	real(8)             :: lambda
 
@@ -66,6 +72,9 @@ module UserCtrl
 
 	! Indicate how much output you want
 	integer             :: output_level
+
+    ! Reduce master memory usage by storing E-fields in files (NCI)
+    logical             :: storeSolnsInFile
 
   end type userdef_control
 
@@ -86,6 +95,8 @@ Contains
   	ctrl%job = ''
   	ctrl%rFile_invCtrl = 'n'
   	ctrl%rFile_fwdCtrl = 'n'
+  	ctrl%wFile_MPI = 'n'
+  	ctrl%rFile_Config = 'n'
   	ctrl%rFile_Grid = 'n'
   	ctrl%wFile_Grid = 'n'
   	ctrl%rFile_Model = 'n'
@@ -106,7 +117,9 @@ Contains
   	ctrl%lambda = 10.
   	ctrl%eps = 1.0e-7
   	ctrl%delta = 0.05
-  	ctrl%output_level = 3
+  	ctrl%output_level = 3	
+	ctrl%prefix = 'n'
+	ctrl%storeSolnsInFile = .false.
 
     ! Using process ID in MPI output file name has the advantage that
     ! the user may run several instances of the program in one directory
@@ -556,31 +569,31 @@ Contains
            write(0,*) 'Usage: Test the adjoint implementation for each of the critical'
            write(0,*) '       operators in J = L S^{-1} P + Q'
            write(0,*)
-           write(0,*) ' -A  J rFile_Model rFile_dModel rFile_Data [wFile_Model wFile_Data]'
-           write(0,*) '  Tests the equality d^T J m = m^T J^T d for any model and data.'
-           write(0,*) '  Optionally, outputs J m and J^T d.'
+           write(0,*) '-A J rFile_Model rFile_dModel rFile_Data [wFile_Model wFile_Data rFile_fwdCtrl]'
+           write(0,*) ' Tests the equality d^T J m = m^T J^T d for any model and data.'
+           write(0,*) ' Optionally, outputs J m and J^T d.'
            write(0,*)
-           write(0,*) ' -A  L rFile_Model rFile_EMsoln rFile_Data [wFile_EMrhs wFile_Data rFile_fwdCtrl]'
-           write(0,*) '  Tests the equality d^T L e = e^T L^T d for any EMsoln and data.'
-           write(0,*) '  Optionally, outputs L e and L^T d.'
+           write(0,*) '-A L rFile_Model rFile_EMsoln rFile_Data [wFile_EMrhs wFile_Data rFile_fwdCtrl]'
+           write(0,*) ' Tests the equality d^T L e = e^T L^T d for any EMsoln and data.'
+           write(0,*) ' Optionally, outputs L e and L^T d.'
            write(0,*)
-           write(0,*) ' -A  S rFile_Model rFile_EMrhs rFile_Data [wFile_EMsoln rFile_fwdCtrl]'
-           write(0,*) '  Tests the equality b^T S^{-1} b = b^T (S^{-1})^T b for any EMrhs.'
-           write(0,*) '  For simplicity, use one EMrhs for forward and transpose solvers.'
-           write(0,*) '  Data file only needed to set up dictionaries.'
-           write(0,*) '  Optionally, outputs e = S^{-1} b.'
+           write(0,*) '-A S rFile_Model rFile_EMrhs rFile_Data [wFile_EMsoln rFile_fwdCtrl]'
+           write(0,*) ' Tests the equality b^T S^{-1} b = b^T (S^{-1})^T b for any EMrhs.'
+           write(0,*) ' For simplicity, use one EMrhs for forward and transpose solvers.'
+           write(0,*) ' Data file only needed to set up dictionaries.'
+           write(0,*) ' Optionally, outputs e = S^{-1} b.'
            write(0,*)
-           write(0,*) ' -A  P rFile_Model rFile_dModel rFile_EMsoln rFile_Data [wFile_Model wFile_EMrhs]'
-           write(0,*) '  Tests the equality e^T P m = m^T P^T e for any EMsoln and data.'
-           write(0,*) '  The data template isn''t needed here except to set up the transmitters.'
-           write(0,*) '  Optionally, outputs P m and P^T e.'
+           write(0,*) '-A P rFile_Model rFile_dModel rFile_EMsoln rFile_Data [wFile_Model wFile_EMrhs]'
+           write(0,*) ' Tests the equality e^T P m = m^T P^T e for any EMsoln and data.'
+           write(0,*) ' The data template isn''t needed here except to set up the transmitters.'
+           write(0,*) ' Optionally, outputs P m and P^T e.'
            write(0,*)
-           write(0,*) ' -A  Q rFile_Model rFile_dModel rFile_Data [wFile_Model wFile_Data]'
-           write(0,*) '  Tests the equality d^T Q m = m^T Q^T d for any model and data.'
-           write(0,*) '  Optionally, outputs Q m and Q^T d.'
+           write(0,*) '-A Q rFile_Model rFile_dModel rFile_Data [wFile_Model wFile_Data]'
+           write(0,*) ' Tests the equality d^T Q m = m^T Q^T d for any model and data.'
+           write(0,*) ' Optionally, outputs Q m and Q^T d.'
            write(0,*)
-           write(0,*) ' -A  O rFile_Model rFile_Data'
-           write(0,*) '  Tests all intermediate operators: grad, curl, div and grid elements.'
+           write(0,*) '-A O rFile_Model rFile_Data [rFile_fwdCtrl]'
+           write(0,*) ' Tests all intermediate operators: grad, curl, div and grid elements.'
            write(0,*)
            write(0,*) 'Finally, generates random 5% perturbations, if implemented:'
            write(0,*) ' -A  m rFile_Model wFile_Model [delta]'
@@ -602,6 +615,9 @@ Contains
                 endif
                 if (narg > 5) then
                     ctrl%wFile_Data = temp(6)
+                endif
+                if (narg > 6) then
+                    ctrl%rFile_fwdCtrl = temp(7)
                 endif
            case ('L')
                 ctrl%rFile_Model = temp(2)
@@ -655,6 +671,9 @@ Contains
            case ('O')
                 ctrl%rFile_Model = temp(2)
                 ctrl%rFile_Data = temp(3)
+                if (narg > 3) then
+                    ctrl%rFile_fwdCtrl = temp(4)
+                endif
            ! random perturbations ... in principle, shouldn't need model and data
            ! to create random solution and RHS. But using these to create dictionaries.
            ! This is an artifact of reading routines and can later be fixed.

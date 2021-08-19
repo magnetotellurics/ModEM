@@ -1,4 +1,3 @@
-
 module Main_MPI
 #ifdef MPI
 
@@ -60,7 +59,7 @@ Subroutine Master_Job_fwdPred(sigma,d1,eAll)
     include 'mpif.h'
    type(modelParam_t), intent(in)	    :: sigma
    type(dataVectorMTX_t), intent(inout)	:: d1
-   type(solnVectorMTX_t), intent(inout)	:: eAll
+   type(solnVectorMTX_t), intent(inout), optional	:: eAll
    integer nTx
 
 
@@ -414,26 +413,25 @@ Subroutine Master_job_JmultT(sigma,d,dsigma,eAll,s_hat)
    nTx = d%nTx
       if(.not. eAll_temp%allocated) then
          call create_solnVectorMTX(d%nTx,eAll_temp)
-            do iTx=1,nTx
-         		call create_solnVector(grid,iTx,e0)
-        		call copy_solnVector(eAll_temp%solns(iTx),e0) 
-        	 end do 
-      end if 
-if (.not. savedSolns )then
-    d_temp=d
-    call Master_Job_fwdPred(sigma,d_temp,eAll_temp)
-else
-      eAll_temp=eAll 
-end if
-      if(.not. eAll_out%allocated) then
+         do iTx=1,nTx
+            call create_solnVector(grid,iTx,e0)
+            call copy_solnVector(eAll_temp%solns(iTx),e0) 
+         end do
+      end if
+      if (.not. savedSolns) then
+         d_temp=d
+         call Master_Job_fwdPred(sigma,d_temp,eAll_temp)
+      else
+         eAll_temp=eAll 
+      end if
+      if(.not. eAll_out%allocated)  then
          call create_solnVectorMTX(d%nTx,eAll_out)
-            do iTx=1,nTx
-         		call create_solnVector(grid,iTx,e0)
-        		call copy_solnVector(eAll_out%solns(iTx),e0) 
-                call deall (e0)  
-        	 end do 
-      end if 
-
+         do iTx=1,nTx
+            call create_solnVector(grid,iTx,e0)
+            call copy_solnVector(eAll_out%solns(iTx),e0) 
+            call deall (e0)  
+         end do
+      end if
 
   if (returne_m_vectors) then
       if (.not. associated(s_hat)) then
@@ -947,7 +945,7 @@ if (trim(worker_job_task%what_to_do) .eq. 'FORWARD') then
 		      call MPI_SEND(e_para_vec, Nbytes, MPI_PACKED, 0,FROM_WORKER, MPI_COMM_WORLD, ierr) 
 
               !deallocate(e_para_vec,worker_job_package)
-              
+              call exitSolver(e0)
 
 
 elseif (trim(worker_job_task%what_to_do) .eq. 'COMPUTE_J') then
@@ -1049,8 +1047,6 @@ isComplex = d%d(per_index)%data(dt_index)%isComplex
    		                            
                 ! call Jrows(per_index,dt_index,stn_index,sigma,e0,Jreal,Jimag)        
 
-                
-                
  		      ! Create worker job package and send it to the master
 		            call create_worker_job_task_place_holder
 		            call Pack_worker_job_task
@@ -1068,7 +1064,7 @@ isComplex = d%d(per_index)%data(dt_index)%isComplex
                    call MPI_SEND(sigma_para_vec, Nbytes, MPI_PACKED, 0,FROM_WORKER, MPI_COMM_WORLD, ierr)
             end do    
             
-                                  		                      
+            call exitSolver(e0,e,comb)                      		                      
 elseif (trim(worker_job_task%what_to_do) .eq. 'JmultT') then
 
 
@@ -1107,7 +1103,7 @@ elseif (trim(worker_job_task%what_to_do) .eq. 'JmultT') then
                    call MPI_SEND(e_para_vec, Nbytes, MPI_PACKED, 0,FROM_WORKER, MPI_COMM_WORLD, ierr)
                    
                  !deallocate(e_para_vec,worker_job_package)
-
+                 call exitSolver(e0,e,comb)
                    
 elseif (trim(worker_job_task%what_to_do) .eq. 'Jmult') then
 
@@ -1150,6 +1146,7 @@ elseif (trim(worker_job_task%what_to_do) .eq. 'Jmult') then
                    call Pack_e_para_vec(e)
                    call MPI_SEND(e_para_vec, Nbytes, MPI_PACKED, 0,FROM_WORKER, MPI_COMM_WORLD, ierr)
 
+				   call exitSolver(e0,e,comb)
 
 elseif (trim(worker_job_task%what_to_do) .eq. 'Distribute nTx') then
      call MPI_BCAST(nTx,1, MPI_INTEGER,0, MPI_COMM_WORLD,ierr)
@@ -1496,7 +1493,7 @@ end subroutine setGrid_MPI
 
    ! Subroutine to deallocate all memory stored in this module
 
-   call exitSolver(e0,e,comb)
+   !call exitSolver(e0,e,comb)
    call deall_grid(grid)
 
   end subroutine cleanUp_MPI
@@ -1508,4 +1505,3 @@ subroutine destructor_MPI
 end subroutine destructor_MPI
 #endif
 end module Main_MPI
-

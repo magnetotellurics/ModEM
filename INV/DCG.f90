@@ -194,8 +194,9 @@ subroutine DCGsolver(d,m0,m,lambda,fname)
    type(dataVectorMTX_t)        :: dHat, b,dx,d_Pred,res,Nres,JmHat,Jm0,d_Pred_m0
    type(modelParam_t)			:: mHat,CmJTd,Cm_mHat
    real(kind=prec)		  		:: value,rms_old,F,mNorm,rms,rmsPrev
-   integer						:: iter, ndata,DS_iter,DCG_iter
-   character(100)       		:: file_name_suffix,logFile,mFile, mHatFile, gradFile, dataFile, resFile
+   integer						:: iter, ndata,DS_iter,DCG_iter,nfunc
+   character(100)       		:: file_name_suffix,logFile,mFile 
+   character(100)               :: mHatFile, gradFile, dataFile, resFile
    type(iterControl_t)			:: CGiter
    character(3)        			:: iterChar
    integer                      :: i,j,iDt,k,ios
@@ -251,6 +252,9 @@ call zero_dataVectorMTX(b)
         
         call printf('START',lambda,f,mNorm,rms)
         call printf('START',lambda,f,mNorm,rms,logFile)
+
+        ! initial function call
+        nfunc = 1
         
         write(iterChar,'(i3.3)') 0
         
@@ -289,11 +293,13 @@ do
 	        call CG_DS_standard(b,dx,m,d,lambda,CGiter) 
             call normalize_with_dataVecMTX(dx,d,1)
 	 
+            nfunc = nfunc + CGiter%niter
 #ifdef MPI           
             call Master_job_JmultT(m,dx,mHat,eAll)              
 #else
 	        call JmultT(m,dx,mHat,eAll)
 #endif
+            nfunc = nfunc + CGiter%niter
 
 	      Cm_mHat=  multBy_Cm(mHat) 
 	      mHat=Cm_mHat
@@ -302,6 +308,7 @@ do
 	! Compute the predicted data for the current model m
          rmsPrev=rms
          call Calc_FWD(lambda,d,m,mHat,d_Pred,res,eAll,F,mNorm,rms)
+         nfunc = nfunc + 1
          
 	  write(*,'(a25,i5)') 'Completed DCG iteration ',DCG_iter
 	  write(ioLog,'(a25,i5)') 'Completed DCG iteration ',DCG_iter
@@ -339,6 +346,8 @@ do
       DCG_iter=DCG_iter+1
 end do
 d=d_Pred
+   write(*,'(a25,i5,a25,i5)') 'DCG   iterations:',DCG_iter,' function evaluations:',nfunc
+   write(ioLog,'(a25,i5,a25,i5)') 'DCG   iterations:',DCG_iter,' function evaluations:',nfunc
 
     ! cleaning up
    call deall_dataVectorMTX(JmHat)

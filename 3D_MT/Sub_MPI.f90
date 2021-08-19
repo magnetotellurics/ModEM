@@ -8,42 +8,32 @@ use SolnSpace
 use UserCtrl
 use ForwardSolver
 
-
-
-
 use Declaration_MPI
 
 Contains
 
-!##############################################   Start Nested_parameters #########################################################
+!#########################  Start Nested_parameters ###########################
 subroutine Master_job_Distribute_nTx_nPol(nTx_nPol)
    integer, intent(in) :: nTx_nPol
    integer             :: j
   
-           
-   
-
-          
-           call MPI_BCAST(nTx_nPol,1, MPI_INTEGER,0, MPI_COMM_WORLD,ierr) 
-
+       call MPI_BCAST(nTx_nPol,1, MPI_INTEGER,0, MPI_COMM_WORLD,ierr) 
        do j=1, nTx_nPol    
             call create_boundary_param_place_holder(BC_from_file(j))
             call Pack_boundary_para_vec(BC_from_file(j))
             call MPI_BCAST(e_para_vec,Nbytes, MPI_PACKED,0, MPI_COMM_WORLD,ierr)    
        end do     
-           
    
 end subroutine Master_job_Distribute_nTx_nPol   
-!*****************************************************************************************
+!********************************************************************************
 subroutine RECV_nTx_nPol
         
        call MPI_BCAST(nTx_nPol,1, MPI_INTEGER,0, MPI_COMM_WORLD,ierr)           
             
 end subroutine RECV_nTx_nPol
-!***************************************************************************************** 
+!******************************************************************************** 
 subroutine RECV_BC_form_Master
 integer          :: j
-
         do j=1, nTx_nPol    
             call create_boundary_param_place_holder(BC_from_file(j))
             call MPI_BCAST(e_para_vec,Nbytes, MPI_PACKED,0, MPI_COMM_WORLD,ierr) 
@@ -51,8 +41,8 @@ integer          :: j
         end do  
         
 end subroutine RECV_BC_form_Master      
-!***************************************************************************************** 
-!##############################################   End Nested_parameters #########################################################
+!******************************************************************************* 
+!##########################   End Nested_parameters ############################
 subroutine set_e_soln(pol_index,emsoln)
     Integer, intent(in)                :: pol_index
     type(solnVector_t), intent(inout)  :: emsoln
@@ -62,16 +52,16 @@ subroutine set_e_soln(pol_index,emsoln)
 		    emsoln%Pol_index(1)=pol_index
 
 end subroutine set_e_soln
-!*****************************************************************************************
+!******************************************************************************
 
-!*****************************************************************************************
+!******************************************************************************
 subroutine reset_e_soln(emsoln)
     type(solnVector_t), intent(inout)  :: emsoln
 
             emsoln%nPol=orginal_nPol
 
 end subroutine reset_e_soln
-!*****************************************************************************************
+!*****************************************************************************
 
 subroutine get_nPol_MPI(emsoln)
 
@@ -81,7 +71,7 @@ subroutine get_nPol_MPI(emsoln)
             nPol_MPI= emsoln%nPol
 
 end subroutine get_nPol_MPI
-!*****************************************************************************************
+!****************************************************************************
 
 subroutine count_number_of_meaasges_to_RECV(eAll1)
 
@@ -103,21 +93,19 @@ end subroutine count_number_of_meaasges_to_RECV
   !1- Allocate a place holder
  subroutine create_userdef_control_place_holder
 
-     implicit none
-     integer Nbytes1,Nbytes2,Nbytes3,Nbytes4
-
-
-
-       CALL MPI_PACK_SIZE(80*20, MPI_CHARACTER,        MPI_COMM_WORLD, Nbytes1,  ierr)
-       CALL MPI_PACK_SIZE(3,     MPI_DOUBLE_PRECISION, MPI_COMM_WORLD, Nbytes2,  ierr)
-       CALL MPI_PACK_SIZE(1,     MPI_INTEGER,          MPI_COMM_WORLD, Nbytes3,  ierr)
-        Nbytes=(Nbytes1+Nbytes2+Nbytes3)+1
-
-         if(.not. associated(userdef_control_package)) then
-            allocate(userdef_control_package(Nbytes))
-         end if
-             
-
+	implicit none
+	integer Nbytes1,Nbytes2,Nbytes3,Nbytes4
+	!
+	CALL MPI_PACK_SIZE(80*23, MPI_CHARACTER,        MPI_COMM_WORLD, Nbytes1,  ierr)
+	CALL MPI_PACK_SIZE(3,     MPI_DOUBLE_PRECISION, MPI_COMM_WORLD, Nbytes2,  ierr)
+	CALL MPI_PACK_SIZE(1,     MPI_INTEGER,          MPI_COMM_WORLD, Nbytes3,  ierr)
+	CALL MPI_PACK_SIZE(1,     MPI_LOGICAL,          MPI_COMM_WORLD, Nbytes4,  ierr)
+	Nbytes=(Nbytes1+Nbytes2+Nbytes3+Nbytes4)+1
+	!
+	if(.not. associated(userdef_control_package)) then
+		allocate(userdef_control_package(Nbytes))
+	end if
+	!          
  end subroutine create_userdef_control_place_holder
 
     !*************************************************************************
@@ -128,11 +116,12 @@ end subroutine count_number_of_meaasges_to_RECV
      	type(userdef_control), intent(in)   :: ctrl
         integer index
 
-       index=1
+		index=1
 
-        call MPI_Pack(ctrl%job,80*20, MPI_CHARACTER, userdef_control_package, Nbytes, index, MPI_COMM_WORLD, ierr)
+        call MPI_Pack(ctrl%job,80*23, MPI_CHARACTER, userdef_control_package, Nbytes, index, MPI_COMM_WORLD, ierr)
         call MPI_Pack(ctrl%lambda,3, MPI_DOUBLE_PRECISION, userdef_control_package, Nbytes, index, MPI_COMM_WORLD, ierr)
         call MPI_Pack(ctrl%output_level,1, MPI_INTEGER, userdef_control_package, Nbytes, index, MPI_COMM_WORLD, ierr)
+        call MPI_Pack(ctrl%storeSolnsInFile,1,MPI_LOGICAL, userdef_control_package, Nbytes, index, MPI_COMM_WORLD, ierr)
 
 end subroutine pack_userdef_control
 
@@ -150,12 +139,15 @@ end subroutine pack_userdef_control
    call MPI_Unpack(userdef_control_package, Nbytes, index, ctrl%rFile_invCtrl,80, MPI_CHARACTER,MPI_COMM_WORLD, ierr)
    call MPI_Unpack(userdef_control_package, Nbytes, index, ctrl%rFile_fwdCtrl,80, MPI_CHARACTER,MPI_COMM_WORLD, ierr)
    call MPI_Unpack(userdef_control_package, Nbytes, index, ctrl%wFile_MPI,80, MPI_CHARACTER,MPI_COMM_WORLD, ierr)
+   call MPI_Unpack(userdef_control_package, Nbytes, index, ctrl%rFile_Config,80, MPI_CHARACTER,MPI_COMM_WORLD, ierr)
    call MPI_Unpack(userdef_control_package, Nbytes, index, ctrl%rFile_Grid,80, MPI_CHARACTER,MPI_COMM_WORLD, ierr)
    call MPI_Unpack(userdef_control_package, Nbytes, index, ctrl%rFile_Model,80, MPI_CHARACTER,MPI_COMM_WORLD, ierr)
    call MPI_Unpack(userdef_control_package, Nbytes, index, ctrl%rFile_Data,80, MPI_CHARACTER,MPI_COMM_WORLD, ierr)
    call MPI_Unpack(userdef_control_package, Nbytes, index, ctrl%rFile_dModel,80, MPI_CHARACTER,MPI_COMM_WORLD, ierr)
    call MPI_Unpack(userdef_control_package, Nbytes, index, ctrl%rFile_EMsoln,80, MPI_CHARACTER,MPI_COMM_WORLD, ierr)
    call MPI_Unpack(userdef_control_package, Nbytes, index, ctrl%rFile_EMrhs,80, MPI_CHARACTER,MPI_COMM_WORLD, ierr)
+   call MPI_Unpack(userdef_control_package, Nbytes, index, ctrl%rFile_Prior,80, MPI_CHARACTER,MPI_COMM_WORLD, ierr)
+
    call MPI_Unpack(userdef_control_package, Nbytes, index, ctrl%wFile_Grid,80, MPI_CHARACTER,MPI_COMM_WORLD, ierr)
    call MPI_Unpack(userdef_control_package, Nbytes, index, ctrl%wFile_Model,80, MPI_CHARACTER,MPI_COMM_WORLD, ierr)
    call MPI_Unpack(userdef_control_package, Nbytes, index, ctrl%wFile_Data,80, MPI_CHARACTER,MPI_COMM_WORLD, ierr)
@@ -163,16 +155,18 @@ end subroutine pack_userdef_control
    call MPI_Unpack(userdef_control_package, Nbytes, index, ctrl%wFile_EMsoln,80, MPI_CHARACTER,MPI_COMM_WORLD, ierr)
    call MPI_Unpack(userdef_control_package, Nbytes, index, ctrl%wFile_EMrhs,80, MPI_CHARACTER,MPI_COMM_WORLD, ierr)
    call MPI_Unpack(userdef_control_package, Nbytes, index, ctrl%wFile_Sens,80, MPI_CHARACTER,MPI_COMM_WORLD, ierr)
+
    call MPI_Unpack(userdef_control_package, Nbytes, index, ctrl%rFile_Cov,80, MPI_CHARACTER,MPI_COMM_WORLD, ierr)
    call MPI_Unpack(userdef_control_package, Nbytes, index, ctrl%search,80, MPI_CHARACTER,MPI_COMM_WORLD, ierr)
    call MPI_Unpack(userdef_control_package, Nbytes, index, ctrl%option,80, MPI_CHARACTER,MPI_COMM_WORLD, ierr)
+   call MPI_Unpack(userdef_control_package, Nbytes, index, ctrl%prefix,80, MPI_CHARACTER,MPI_COMM_WORLD, ierr)
 
    call MPI_Unpack(userdef_control_package, Nbytes, index, ctrl%lambda,1, MPI_DOUBLE_PRECISION,MPI_COMM_WORLD, ierr)
    call MPI_Unpack(userdef_control_package, Nbytes, index, ctrl%eps,1, MPI_DOUBLE_PRECISION,MPI_COMM_WORLD, ierr)
    call MPI_Unpack(userdef_control_package, Nbytes, index, ctrl%delta,1, MPI_DOUBLE_PRECISION,MPI_COMM_WORLD, ierr)
 
    call MPI_Unpack(userdef_control_package, Nbytes, index, ctrl%output_level,1, MPI_INTEGER,MPI_COMM_WORLD, ierr)
-
+   call MPI_Unpack(userdef_control_package, Nbytes, index, ctrl%storeSolnsInFile,1, MPI_LOGICAL,MPI_COMM_WORLD, ierr)
 end subroutine unpack_userdef_control
 
 !********************************************************************
@@ -189,6 +183,9 @@ subroutine check_userdef_control_MPI (which_proc,ctrl)
        write(6,*)trim(which_proc),' : ctrl%output_level ',ctrl%output_level
        write(6,*)trim(which_proc),' : ctrl%rFile_fwdCtrl ',trim(ctrl%rFile_fwdCtrl)
        write(6,*)trim(which_proc),' : ctrl%rFile_invCtrl ',trim(ctrl%rFile_invCtrl)
+	   write(6,*)trim(which_proc),' : ctrl%rFile_Config ',trim(ctrl%rFile_Config)
+       write(6,*)trim(which_proc),' : ctrl%prefix ',trim(ctrl%prefix)
+       write(6,*)trim(which_proc),' : ctrl%storeSolnsInfile ',ctrl%storeSolnsInfile
 
 
 end subroutine check_userdef_control_MPI

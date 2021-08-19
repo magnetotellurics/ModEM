@@ -49,7 +49,7 @@ program Mod3DMT
       ! set the grid for the numerical computations
 #ifdef MPI
       call setGrid_MPI(grid)
-    ! Check if a larg grid file with E field is defined:
+    ! Check if a large grid file with E field is defined:
     ! NOTE: right now both grids share the same transmitters.
     ! This why, reading and setting the large grid and its E solution comes after setting the trasnmitters Dictionary.
     if (NESTED_BC) then
@@ -82,6 +82,8 @@ program Mod3DMT
 #endif
 
 #ifdef MPI
+      ! for debug
+      ! write(6,*)'Reporting from Node #', taskid
       if (taskid.gt.0) then
           call Worker_job(sigma0,allData)
           if (trim(worker_job_task%what_to_do) .eq. 'Job Completed')  then

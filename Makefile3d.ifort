@@ -3,9 +3,9 @@
 # with command line options
 # -p .:INV:LAPACK:SENS:UTILS:FIELDS/FiniteDiff3D:3D_MT:3D_MT/DICT:3D_MT/modelParam:3D_MT/FWD:3D_MT/FWD/Mod2d:3D_MT/ioMod
 # -f90 ifort (compiler)
-# -opt -O3 -w  -xSSE4.2 -std03 (compiler optimisation)
-# -lp /opt/intel/Compiler/11.1/075/mkl/lib/em64t (linking options: path to libraries)
-# -l -llapack -lblas -lmkl_intel_lp64 -lmkl_intel_thread -lmkl_core  -lpthread -qopenmp -parallel (linking options)
+# -opt -O3 -w  -xSSE4.2 -std03 -i8 -I/opt/intel/lib (compiler optimisation)
+# -lp /opt/intel/oneapi/mkl/latest/lib (linking options: path to libraries)
+# -l -lmkl_lapack95_ilp64 -lmkl_intel_ilp64 -lmkl_intel_thread -lmkl_core  -lpthread -qopenmp -parallel (linking options)
 # -o ./objs/3D_MT/IFortRelease (output directory for object files)
 
 #  Uncomment these lines to make program for Solaris OS (legacy)
@@ -46,11 +46,11 @@
 include Makefile.local
 OBJDIR = ./objs/3D_MT/IFortRelease
 F90 = ifort 
-FFLAGS = -O3 -w  -xSSE4.2 -std03
+FFLAGS = -O3 -w  -xSSE4.2 -std03 -i8 -I/opt/intel/lib
 MPIFLAGS = -cpp
 MODULE = -module $(OBJDIR)
-LIBS_PATH = -L/opt/intel/mkl/lib #-L/opt/intel/Compiler/11.1/075/mkl/lib/em64t
-LIBS = -llapack -lblas -lmkl_intel_lp64 -lmkl_intel_thread -lmkl_core  -lpthread -qopenmp -parallel
+LIBS_PATH = -L/opt/intel/oneapi/mkl/latest/lib
+LIBS = -lmkl_lapack95_ilp64 -lmkl_intel_ilp64 -lmkl_intel_thread -lmkl_core  -lpthread -qopenmp -parallel
 
 # -------------------End-macro-Defs---------------------------
 OBJ = $(OBJDIR)/math_constants.o $(OBJDIR)/utilities.o $(OBJDIR)/file_units.o $(OBJDIR)/DataSpace.o $(OBJDIR)/GridDef.o $(OBJDIR)/sg_vector.o $(OBJDIR)/sg_scalar.o $(OBJDIR)/sg_spherical.o $(OBJDIR)/elements.o $(OBJDIR)/GridCalc.o $(OBJDIR)/sg_sparse_vector.o $(OBJDIR)/ModelSpace.o $(OBJDIR)/SensMatrix.o $(OBJDIR)/EMfieldInterp.o $(OBJDIR)/sg_boundary.o $(OBJDIR)/transmitters.o $(OBJDIR)/SolnSpace.o $(OBJDIR)/receivers.o $(OBJDIR)/dataTypes.o $(OBJDIR)/DataFunc.o $(OBJDIR)/DataSens.o $(OBJDIR)/SolverSens.o $(OBJDIR)/sg_diff_oper.o $(OBJDIR)/WSfwd2Dpar.o $(OBJDIR)/WSutils.o $(OBJDIR)/WSfwd1Dmod.o $(OBJDIR)/WSfwd2Dmod.o $(OBJDIR)/FwdTEmod.o $(OBJDIR)/boundary_ws.o $(OBJDIR)/nestedEM.o $(OBJDIR)/modelOperator3D.o $(OBJDIR)/solver.o $(OBJDIR)/EMsolve3D.o $(OBJDIR)/ForwardSolver.o $(OBJDIR)/SensComp.o $(OBJDIR)/SymmetryTest.o $(OBJDIR)/UserCtrl.o $(OBJDIR)/ioAscii.o $(OBJDIR)/DataIO.o $(OBJDIR)/Main.o $(OBJDIR)/INVcore.o $(OBJDIR)/NLCG.o $(OBJDIR)/DCG.o $(OBJDIR)/LBFGS.o $(OBJDIR)/Mod3DMT.o 
