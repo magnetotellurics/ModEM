@@ -165,11 +165,17 @@ Contains
     if (exists) then
        BC_FROM_RHS_FILE = .true.
     end if
+    ! ... or whether we're setting up BCs from a nested grid
     if (solverParams%read_E0_from_File) then
       inquire(FILE=solverParams%E0fileName,EXIST=exists)
       if (exists) then
         NESTED_BC = .true.
       end if
+    end if
+    ! Determine whether or not there is a primary solution file to read
+    inquire(FILE=cUserDef%rFile_EMsoln,EXIST=exists)
+    if (exists .and. (cUserDef%job==SECONDARY_FIELD)) then
+       PRIMARY_E_FROM_FILE = .true.
     end if
 
 	!--------------------------------------------------------------------------

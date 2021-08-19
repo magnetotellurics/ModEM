@@ -7,6 +7,7 @@ module UserCtrl
 
   character*1, parameter  :: READ_WRITE = 'R'
   character*1, parameter	:: FORWARD = 'F'
+  character*1, parameter	:: SECONDARY_FIELD = 'E'
   character*1, parameter	:: COMPUTE_J = 'J'
   character*1, parameter	:: MULT_BY_J = 'M'
   character*1, parameter	:: MULT_BY_J_T = 'T'
@@ -214,6 +215,15 @@ Contains
         write(*,*) '[FORWARD]'
         write(*,*) ' -F  rFile_Model rFile_Data wFile_Data [wFile_EMsoln rFile_fwdCtrl]'
         write(*,*) '  Calculates the predicted data and saves the EM solution'
+        write(*,*) '[SECONDARY_FIELD]'
+        write(*,*) ' -E  rFile_dModel rFile_Data wFile_Data ... rFile_EMsoln [rFile_EMrhs]'
+        write(*,*) '  Calculates the predicted data and saves the EM solution'
+        write(*,*) '      using the primary field E1D defined on grid edges'
+        write(*,*) '      from an external file rFile_EMsoln. Unless BCs are supplied,'
+        write(*,*) '      will set them to zero to accommodate secondary field formulation.'
+        write(*,*) '      rFile_dModel is assumed to store the anomalous conductivity.'
+        write(*,*) '      Total field E = E1D + dE is computed.'
+        write(*,*) '      NOT FOR TRADITIONAL MT MODELING. ONLY ONE MODE CURRENTLY SUPPORTED.'
         write(*,*) '[INVERSE]'
         write(*,*) ' -I NLCG rFile_Model rFile_Data [lambda eps]'
         write(*,*) '  Here, lambda = the initial damping parameter for inversion'
@@ -302,9 +312,18 @@ Contains
 	       ctrl%wFile_Data = temp(4)
 	    end if
 
-      case (FORWARD) !F
+      case (FORWARD,SECONDARY_FIELD) !F,E
         if (narg < 3) then
            write(0,*) 'Usage: -F  rFile_Model rFile_Data wFile_Data [wFile_EMsoln rFile_fwdCtrl rFile_EMrhs]'
+           write(0,*)
+           write(0,*) 'or, for the secondary field formulation, use the command'
+           write(0,*)
+           write(0,*) '       -E  rFile_dModel rFile_Data wFile_Data wFile_EMsoln rFile_fwdCtrl rFile_EMsoln'
+           write(0,*)
+           write(0,*) 'where rFile_EMsoln specifies the primary field E1D for some 1D model. Then, can use'
+           write(0,*) '(sigma-sigma1d)*E1D for the interior source. This option sets BCs to zero.'
+           write(0,*) 'Use rFile_dModel to store the difference (sigma-sigma1d).'
+           write(0,*) 'Assumes the primary field on the same grid as model and at the correct frequencies.'
            write(0,*)
            write(0,*) 'Here, rFile_fwdCtrl is the forward solver control file in the format'
            write(0,*)
@@ -342,9 +361,16 @@ Contains
 	    if (narg > 4) then
 	       ctrl%rFile_fwdCtrl = temp(5)
 	    end if
-        if (narg > 5) then
-           ctrl%rFile_EMrhs = temp(6)
-        end if
+       if (narg > 5) then
+          if (job == FORWARD) then 
+            ctrl%rFile_EMrhs = temp(6)
+          elseif (job == SECONDARY_FIELD) then
+            ctrl%rFile_EMsoln = temp(6)
+            if (narg > 6) then
+               ctrl%rFile_EMrhs = temp(7)
+            end if
+          end if
+       end if
 
       case (COMPUTE_J) ! J
         if (narg < 3) then

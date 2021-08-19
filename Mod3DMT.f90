@@ -75,9 +75,19 @@ program Mod3DMT
             ! need to logic to fetch the BCs from the master node
         end if
     end if
+    if (PRIMARY_E_FROM_FILE) then
+        if (taskid==0) then
+            call read_solnVectorMTX(grid,eAllPrimary,cUserDef%rFile_EMsoln)
+        else
+            ! need to logic to fetch the interior source from the master node
+        end if
+    end if
 #else
     if (BC_FROM_RHS_FILE) then
         call read_rhsVectorMTX(grid,bAll,cUserDef%rFile_EMrhs)
+    end if
+    if (PRIMARY_E_FROM_FILE) then
+        call read_solnVectorMTX(grid,eAllPrimary,cUserDef%rFile_EMsoln)
     end if
 #endif
 
@@ -111,7 +121,7 @@ program Mod3DMT
             write(*,*) 'Writing model and exiting...'
             call write_modelParam(sigma0,cUserDef%wFile_Model)
         end if
-      case (FORWARD)
+      case (FORWARD,SECONDARY_FIELD)
         write(6,*) 'Calculating predicted data...'
 #ifdef MPI
         call Master_job_fwdPred(sigma0,allData,eAll)

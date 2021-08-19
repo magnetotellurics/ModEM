@@ -28,7 +28,8 @@ module txTypes
   integer, parameter, public   :: DC = 2
   integer, parameter, public   :: CSEM = 3
   integer, parameter, public   :: TIDE = 4
-  integer, parameter, public   :: GLOBAL = 5
+  integer, parameter, public   :: SFF = 5
+  integer, parameter, public   :: GLOBAL = 6
 
 !**************************************************************************
 ! Initializes and sets up transmitter type dictionary
@@ -70,6 +71,14 @@ module txTypes
      txTypeDict(TIDE)%dataTypes(3) = Bx_Field
      txTypeDict(TIDE)%dataTypes(4) = By_Field
      txTypeDict(TIDE)%dataTypes(5) = Bz_Field
+
+     allocate(txTypeDict(SFF)%dataTypes(6),STAT=istat)
+     txTypeDict(SFF)%dataTypes(1) = Ex_Field
+     txTypeDict(SFF)%dataTypes(2) = Ey_Field
+     txTypeDict(SFF)%dataTypes(3) = Bx_Field
+     txTypeDict(SFF)%dataTypes(4) = By_Field
+     txTypeDict(SFF)%dataTypes(5) = Bz_Field
+     txTypeDict(SFF)%dataTypes(6) = Full_Impedance
 
      allocate(txTypeDict(GLOBAL)%dataTypes(6),STAT=istat)
      txTypeDict(GLOBAL)%dataTypes(1) = Bx_Field
@@ -122,6 +131,9 @@ module txTypes
 
        case('TIDE')
           txType = TIDE
+
+       case('SFF')
+          txType = SFF
 
        case('GLOBAL')
           txType = GLOBAL

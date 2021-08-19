@@ -33,6 +33,9 @@ logical, save, public   :: NESTED_BC = .false.
 logical, save, public   :: BC_FROM_RHS_FILE = .false.
 logical, save, public   :: BC_FROM_E0_FILE = .false.
 
+! option to read a primary solution from file for SFF
+logical, save, public   :: PRIMARY_E_FROM_FILE = .false.
+
 
 !=======================================================================
 !Mar. 13, 2011============================== Use only for MT Calculation
@@ -48,6 +51,12 @@ logical, save, public   :: BC_FROM_E0_FILE = .false.
 !May 15, 2018== AK == New general RHS for all transmitters now stored
 !=======================================================================
   type(rhsVectorMTX_t),save,public           ::  bAll
+
+!=======================================================================
+!Aug 18, 2021== AK == Also store an array of primary fields (not good
+!in terms of memory usage, will read each from file as needed ...)
+!=======================================================================
+  type(solnVectorMTX_t),save,public           ::  eAllPrimary
 
 !  initialization routines (call Fwd version if no sensitivities are
 !     are calculated).  Note that these routines are set up to
@@ -190,7 +199,7 @@ end subroutine copyE0fromFile
 
    !  local variables
    integer		:: IER,k,ix,iy,iz,counter,nzAir
-   character*80 :: gridType,paramtype,file_name
+   character*80 :: gridType,paramtype
    logical		:: initForSens,sigmaNotCurrent
 
    type(timer_t) :: timeDipole
@@ -219,6 +228,7 @@ end subroutine copyE0fromFile
 !        call create_RHS(grid,iTx,comb%b(k))
 !      enddo
    endif
+
 
    if(.NOT.modelDataInitialized) then
    !   Initialize modelData, setup model operators
@@ -270,6 +280,12 @@ end subroutine copyE0fromFile
           call setAnomCond(sigma)
           call create_cvector(grid,V_p,EDGE)
      end if	
+   
+   if (txDict(iTx)%Tx_type=='SFF') then
+      ! assume that sigma is already the anomalous conductivity and map it onto edges
+      Call ModelParamToEdge(sigma,condAnomaly)
+   end if
+ 
 if (.NOT. initForSens) then
 
    if (txDict(iTx)%Tx_type=='CSEM') then	
@@ -475,7 +491,7 @@ end if
 ! We are doing all this in a separate routine because we want this to be
 ! a high-level function that can be called from the upper level.
 !
-! A. Kelbert, 24 May 2018
+! A. Kelbert, 24 May 2018; last edited 18 Aug 2021
   Subroutine fwdSetup(iTx,e0,b0)
 
     !  Input mode, period
@@ -491,18 +507,29 @@ end if
     real(kind=prec)     :: omega
     complex(kind=prec)  :: i_omega_mu
 
+    ! local variables for TIDE
+   integer		 :: ios,istat
+   character*80 :: file_name,comment
+   character*2  :: tidal_component
+   logical		 :: exists
+   type(sparsevecc) :: jInt
+
     ! For RHS vector, the major differences between MT and CSEM are
     ! (1) Boundary condition for MT isn't zeros while CSEM is zeros
     ! (2) CSEM has a source term while that of MT is zeros
     ! Initialize the RHS vector; should we always clean it up on input?
     if (.not. b0%allocated) then
       select case (txDict(iTx)%Tx_type)
-      case ('CSEM','DC')
+      case ('CSEM','DC','SFF')
         b0%nonzero_Source = .true.
         b0%sparse_Source = .false.
         b0%nonzero_BC = .false.
-      case ('MT','TIDE')
+      case ('MT')
         b0%nonzero_Source = .false.
+        b0%sparse_Source = .false.
+        b0%nonzero_BC = .true.
+      case('TIDE')
+        b0%nonzero_Source = .true.
         b0%sparse_Source = .false.
         b0%nonzero_BC = .true.
       case default
@@ -531,7 +558,22 @@ end if
                 call diagMult(condAnomaly,E_P,b0%b(j)%s)
                 call scMult(-i_omega_mu,b0%b(j)%s,b0%b(j)%s)
 
-            case ('MT','TIDE')
+            case ('SFF')
+                ! this is currently implemented only for 1 mode - check for this...
+                if (iMode .ne. 1) then
+                  write(0,*) 'ERROR: SFF only implemented for one mode at present. Exiting...'
+                  stop
+                end if
+                ! we've read eAllPrimary from EM soln file already
+                E_P = eAllPrimary%solns(iTx)%pol(iMode)
+                !  set period, complete setup of 3D EM equation system
+                omega = txDict(iTx)%omega
+                i_omega_mu = cmplx(0.,ISIGN*MU_0*omega,kind=prec)
+                ! Now finish up the computation of the general b0%s = - ISIGN * i\omega\mu_0 j
+                call diagMult(condAnomaly,E_P,b0%b(j)%s)
+                call scMult(-i_omega_mu,b0%b(j)%s,b0%b(j)%s)
+
+            case ('MT')
                 if (BC_FROM_RHS_FILE) then
                     ! in this case, we've read bAll from RHS file already
                     write (*,'(a12,a29,a12,i4,a15,i2)') node_info, 'Setting the BC from RHS file ', &
@@ -568,6 +610,29 @@ end if
                 ! store the BC in b0 and set up the forward problem - use fake indexing in MPI
                 b0%b(j)%adj = 'FWD'
                 b0%b(j)%bc = BC
+
+            case ('TIDE') ! in the future, may use the BC options from MT block above
+
+               file_name = trim(txDict(iTx)%id)//'.source'
+               inquire(FILE=file_name,EXIST=exists)
+               if (exists) then
+                  write(*,*) node_info,'Reading source - i \omega \mu \sigma_E (v x B) from interior source file: ',trim(file_name)
+                  open(ioREAD,file=file_name,status='unknown',form='formatted',iostat=ios)
+                  read(ioREAD,'(a35)',iostat=istat) comment
+                  read(ioREAD,'(a2)',iostat=istat) tidal_component
+                  if (tidal_component .ne. trim(txDict(iTx)%id)) then
+                     write(0,*) node_info,'Warning: tidal component ',tidal_component,' is read from file ',trim(file_name)
+                  end if
+                  call read_sparsevecc(ioREAD,jInt)
+                  close(ioREAD)
+               end if
+
+               ! Assume that the source - i \omega \mu \sigma_E (v x B) in on the edges
+               if(jInt%allocated) then
+                  write(0,*) node_info,'Using interior forcing to compute the RHS for the FWD problem'
+                  call add_scvector(ISIGN*C_ONE,jInt,b0%b(j)%s)
+                  call deall_sparsevecc(jInt)
+               end if
 
             case default
                 write(0,*) node_info,'Unknown FWD problem type',trim(txDict(iTx)%Tx_type),'; unable to compute RHS'
@@ -617,7 +682,7 @@ end if
 	   call FWDsolve3D_DC
        call put_v_in_e(e0)
        !call de_ini_private_data_DC
-   elseif (txDict(iTx)%Tx_type=='CSEM') then 
+   elseif ((txDict(iTx)%Tx_type=='CSEM') .or. (txDict(iTx)%Tx_type=='SFF')) then 
  
    ! Now finish up the computation of the general b0%s = - ISIGN * i\omega\mu_0 j
    !call diagMult(condAnomaly,E_P,b0%s)
@@ -634,7 +699,7 @@ end if
 	  !term=1.0/10.0 ! txDict(iTx)%Moment  
       !call scMult(term,e0%pol(1),e0%pol(1))
 		  
-   elseif (txDict(iTx)%Tx_type=='MT') then
+   elseif ((txDict(iTx)%Tx_type=='MT') .or. (txDict(iTx)%Tx_type=='TIDE')) then
    !call fwdSetup(iTx,e0,b0)
    	do iMode = 1,e0%nPol
 		! compute boundary conditions for polarization iMode
