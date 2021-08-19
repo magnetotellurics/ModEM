@@ -10,7 +10,7 @@ module transmitters
 
   type :: transmitter_t
 
-    ! defines the kind of transmitter: MT, DC, CSEM, TIDE
+    ! defines the kind of transmitter: MT, DC, CSEM, TIDE, SFF
     character(10)		        :: tx_type=''
     ! attributes common for all transmitter types:
 	integer					    :: nPol !while setting up the Tx, nPol=2 for MT and 1 for CSEM
@@ -70,7 +70,8 @@ module transmitters
   integer, parameter   :: DC = 2
   integer, parameter   :: CSEM = 3
   integer, parameter   :: TIDE = 4
-  integer, parameter   :: GLOBAL = 5
+  integer, parameter   :: SFF = 5
+  integer, parameter   :: GLOBAL = 6
 
 Contains
 
@@ -242,6 +243,8 @@ Contains
           tx_type = 'CSEM'
        case(TIDE)
           tx_type = 'TIDE'
+       case(SFF)
+          tx_type = 'SFF'
        case(GLOBAL)
           tx_type = 'GLOBAL'
        case default
@@ -271,6 +274,8 @@ Contains
           iTxt = CSEM
        case('TIDE')
           iTxt = TIDE
+       case('SFF')
+          iTxt = SFF
        case('GLOBAL')
           iTxt = GLOBAL
        case default
