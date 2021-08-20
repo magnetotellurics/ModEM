@@ -57,6 +57,7 @@ logical, save, public   :: PRIMARY_E_FROM_FILE = .false.
 !in terms of memory usage, will read each from file as needed ...)
 !=======================================================================
   type(solnVectorMTX_t),save,public           ::  eAllPrimary
+  type(modelParam_t),save,public              ::  sigmaPrimary
 
 !  initialization routines (call Fwd version if no sensitivities are
 !     are calculated).  Note that these routines are set up to
@@ -202,6 +203,7 @@ end subroutine copyE0fromFile
    character*80 :: gridType,paramtype
    logical		:: initForSens,sigmaNotCurrent
 
+   type (modelParam_t) :: sigmaTemp
    type(timer_t) :: timeDipole
    real :: timeD
    
@@ -282,8 +284,11 @@ end subroutine copyE0fromFile
      end if	
    
    if (txDict(iTx)%Tx_type=='SFF') then
-      ! assume that sigma is already the anomalous conductivity and map it onto edges
-      Call ModelParamToEdge(sigma,condAnomaly)
+      ! compute sigma-sigma1D for the source... NOT PHYSICAL!
+      Call linComb_modelParam(ONE,sigma,MinusONE,sigmaPrimary,sigmaTemp)
+      ! sigmaTemp is the anomalous conductivity, map it onto edges
+      Call ModelParamToEdge(sigmaTemp,condAnomaly)
+      write(0,*) 'DEBUG size condAnomaly ',condAnomaly%nx,condAnomaly%ny,condAnomaly%nz
    end if
  
 if (.NOT. initForSens) then
@@ -560,10 +565,10 @@ end if
 
             case ('SFF')
                 ! this is currently implemented only for 1 mode - check for this...
-                if (iMode .ne. 1) then
-                  write(0,*) 'ERROR: SFF only implemented for one mode at present. Exiting...'
-                  stop
-                end if
+                !if (iMode .ne. 1) then
+                !  write(0,*) 'ERROR: SFF only implemented for one mode at present. Exiting...'
+                !  stop
+                !end if
                 ! we've read eAllPrimary from EM soln file already
                 E_P = eAllPrimary%solns(iTx)%pol(iMode)
                 !  set period, complete setup of 3D EM equation system
@@ -682,7 +687,7 @@ end if
 	   call FWDsolve3D_DC
        call put_v_in_e(e0)
        !call de_ini_private_data_DC
-   elseif ((txDict(iTx)%Tx_type=='CSEM') .or. (txDict(iTx)%Tx_type=='SFF')) then 
+   elseif (txDict(iTx)%Tx_type=='CSEM') then 
  
    ! Now finish up the computation of the general b0%s = - ISIGN * i\omega\mu_0 j
    !call diagMult(condAnomaly,E_P,b0%s)
@@ -698,20 +703,40 @@ end if
    call add(E_p,e0%pol(1),e0%pol(1))
 	  !term=1.0/10.0 ! txDict(iTx)%Moment  
       !call scMult(term,e0%pol(1),e0%pol(1))
-		  
+
+   elseif (txDict(iTx)%Tx_type=='SFF') then 
+ 
+      ! General b0%s = - ISIGN * i\omega\mu_0 (sigma-sigma1d) E1D already computed
+      do iMode = 1,e0%nPol
+         ! Extract primary solution again...
+         E_P = eAllPrimary%solns(iTx)%pol(iMode)
+		   ! call forward solver, compute secondary field
+         ! set the starting solution to zero
+		   ! NOTE that in the MPI parallelization, e0 may only contain a single mode;
+		   ! mode number is determined by Pol_index, NOT by its order index in e0
+		   ! ... but b0 uses the same fake indexing as e0
+		   write (*,'(a12,a12,a3,a20,i4,a2,es13.6,a15,i2)') node_info, 'Solving the ','SFF', &
+			   	' problem for period ',iTx,': ',(2*PI)/omega,' secs & mode # ',e0%Pol_index(iMode)
+         call zero(e0%pol(iMode))
+		   call FWDsolve3D(b0%b(iMode),omega,e0%pol(iMode))
+		   write (6,*)node_info,'FINISHED solve, nPol',e0%nPol
+         ! now add primary field to secondary field
+         call add(E_p,e0%pol(1),e0%pol(1))
+   	enddo
+
    elseif ((txDict(iTx)%Tx_type=='MT') .or. (txDict(iTx)%Tx_type=='TIDE')) then
    !call fwdSetup(iTx,e0,b0)
    	do iMode = 1,e0%nPol
-		! compute boundary conditions for polarization iMode
-		!   uses cell conductivity already set by updateCond
-		!call setBound(iTx,e0%Pol_index(iMode),e0%pol(imode),b0%bc)
-		! NOTE that in the MPI parallelization, e0 may only contain a single mode;
-		! mode number is determined by Pol_index, NOT by its order index in e0
-		! ... but b0 uses the same fake indexing as e0
-		write (*,'(a12,a12,a3,a20,i4,a2,es13.6,a15,i2)') node_info, 'Solving the ','FWD', &
-				' problem for period ',iTx,': ',(2*PI)/omega,' secs & mode # ',e0%Pol_index(iMode)
-		call FWDsolve3D(b0%b(iMode),omega,e0%pol(iMode))
-		write (6,*)node_info,'FINISHED solve, nPol',e0%nPol
+		   ! compute boundary conditions for polarization iMode
+		   !   uses cell conductivity already set by updateCond
+		   !call setBound(iTx,e0%Pol_index(iMode),e0%pol(imode),b0%bc)
+		   ! NOTE that in the MPI parallelization, e0 may only contain a single mode;
+		   ! mode number is determined by Pol_index, NOT by its order index in e0
+		   ! ... but b0 uses the same fake indexing as e0
+		   write (*,'(a12,a12,a3,a20,i4,a2,es13.6,a15,i2)') node_info, 'Solving the ','FWD', &
+			   	' problem for period ',iTx,': ',(2*PI)/omega,' secs & mode # ',e0%Pol_index(iMode)
+		   call FWDsolve3D(b0%b(iMode),omega,e0%pol(iMode))
+		   write (6,*)node_info,'FINISHED solve, nPol',e0%nPol
    	enddo
    else
     write(0,*) node_info,'Unknown FWD problem type',trim(txDict(iTx)%Tx_type),'; unable to run fwdSolve'

@@ -212,7 +212,7 @@ Contains
               YESNO = .true.
           end if
       end if
-    elseif (trim(Txa%Tx_type) .eq. 'MT') then
+    elseif ((trim(Txa%Tx_type) .eq. 'MT') .or. (trim(Txa%Tx_type) .eq. 'SFF')) then
       if(ABS(Txa%period - Txb%period) < TOL6  .and. Txa%nPol == Txb%nPol) then
         YESNO = .true.
       end if
@@ -221,7 +221,7 @@ Contains
         YESNO = .true.
       end if
     else
-        write(0,*) 'Unknown transmitter type #',trim(Txa%Tx_type)
+        write(0,*) 'Unknown transmitter type ',trim(Txa%Tx_type)
    end if
  
   end function compare_tx

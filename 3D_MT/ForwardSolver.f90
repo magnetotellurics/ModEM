@@ -49,6 +49,7 @@ logical, save, public   :: PRIMARY_E_FROM_FILE = .false.
 !in terms of memory usage, will read each from file as needed ...)
 !=======================================================================
   type(solnVectorMTX_t),save,public           ::  eAllPrimary
+  type(modelParam_t),save,public              ::  sigmaPrimary
 
 !  initialization routines (call Fwd version if no sensitivities are
 !     are calculated).  Note that these routines are set up to

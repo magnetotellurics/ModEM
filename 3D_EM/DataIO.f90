@@ -508,7 +508,7 @@ end subroutine write_Z_list
     call setup_typeDict()
 
     ! Save the user preferences
-    nTxt = 5
+    nTxt = 6
     nDt = size(typeDict)
     call init_fileInfo(nTxt,nDt)
 
@@ -672,6 +672,9 @@ end subroutine write_Z_list
 
                 end if
 
+                ! Now overwrite aTx%Tx_type with txTypeName... allows for general SFF computation
+                aTx%Tx_type = tx_type_name(iTxt)
+
                 iTx = update_txDict(aTx)
 
                 ! Update the receiver dictionary and index (sets up if necessary)
@@ -702,6 +705,8 @@ end subroutine write_Z_list
 
 !            	write(Txid,'(2f9.3)') LatTx,LongTx
 !            	aTx%id = Txid
+                ! Now overwrite aTx%Tx_type with txTypeName... allows for general SFF computation
+                aTx%Tx_type = tx_type_name(iTxt)
 
                 iTx = update_txDict(aTx)
 

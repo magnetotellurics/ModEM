@@ -143,7 +143,8 @@
 
     airCond = m%airCond
     call create_rscalar(m%grid,temp,CENTER)
-    call setup_grid(temp%grid)
+    !call setup_grid(temp%grid)
+    temp%grid = m%grid
 
     if(m%paramType .EQ. LOGE) then
        if(linearizedMapping) then
@@ -172,6 +173,7 @@
 	call Cell2Edge(m%grid,V_C,V_E_ghost) 	
 	
 	Ctemp = temp
+   write(0,*) 'DEBUG ',size(V_C%v),size(temp%v)
 	call diagMult(V_C,temp,Ctemp)
 	call Cell2Edge(m%grid,Ctemp,Etemp)
 	Econd = Etemp
