@@ -234,7 +234,7 @@ process_fsource($mainprogfile);
 print "\n# ------------------Macro-Defs---------------------\n";
 
 print "include Makefile.local\n";
-print "OBJDIR = ../../objs/3D_MT/GFortReleaseMPI\n";
+print "OBJDIR = ../../objs/MT3D_OO\n";
 print "F90 = $f90 \n";
 print "FFLAGS = $optim\n";
 print "MPIFLAGS = $mpiflags\n";
@@ -243,7 +243,7 @@ if ($WIN) {
 } elsif ($f90 =~ /^g95$/){
 	print "MODULE = -fmod=\$(OBJDIR)\n";
 } elsif ($f90 =~ /^gfortran$/){
-	print "MODULE = --sysroot=\$(OBJDIR)\n";	
+	print "MODULE = -J \$(OBJDIR)\n";
 } else {
 	print "MODULE = -J \$(OBJDIR)\n";
 }

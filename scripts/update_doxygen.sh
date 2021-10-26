@@ -2,17 +2,13 @@
 #
 # NO ARGUMENTS: 
 #
-# STRING NOW
-now=$(date "+%Y/%m/%d - %H:%M:%S")
-#
-#
-echo "#### START UPDATE DOXYGEN AT $now ####"
-#
+echo "#### START UPDATE DOXYGEN DOCUMENTATION FOR ModEM-OO AT $(date "+%Y/%m/%d - %H:%M:%S")" | tee -a outputs/temp/summary.txt
+echo "   #" | tee -a outputs/temp/summary.txt
 #
 cd src/
 #
 #
-doxygen ../docs/doxygen_modem_on_config
+doxygen ../docs/doxygen_modem_oo_config
 #
 # CATCH RESULT
 result=$?

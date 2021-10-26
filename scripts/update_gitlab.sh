@@ -15,7 +15,7 @@ git config --global user.name "protew"
 git config --global user.email "paulowerdt@gmail.com"
 git add .
 git commit -m "GitLab '$branch_name' Runner Push [skip ci]"
-git push https://protew:BGgwESV8qpGsBBdUZ8yk@gitlab.com/on.multiphysics/modem-on.git HEAD:$branch_name
+git push https://protew:vqGq1Kd_ChzbkcZAqz4Y@gitlab.com/on.multiphysics/modem-oo.git HEAD:$branch_name
 #
 # CATCH RESULT
 result=$?
