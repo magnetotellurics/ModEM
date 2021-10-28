@@ -196,17 +196,17 @@ contains
             case( "Bx" )
                call h%interpFunc( self%location, "x", lh )
                call model_operator%multCurlT( lh, self%Lbx )
-               call self%Lbx%Mult_s( ( isign * ONE_I/MU_0 ) * comega )
+               call self%Lbx%mults( ( isign * ONE_I/MU_0 ) * comega )
             !
             case( "By" )
                call h%interpFunc( self%location, "y", lh )
                call model_operator%multCurlT( lh, self%Lby )
-               call self%Lby%Mult_s( ( isign * ONE_I/MU_0 ) * comega )
+               call self%Lby%mults( ( isign * ONE_I/MU_0 ) * comega )
             !
             case( "Bz" )
                call h%interpFunc( self%location, "z", lh )
                call model_operator%multCurlT( lh, self%Lbz )
-               call self%Lbz%Mult_s( ( isign * ONE_I/MU_0 ) * comega )
+               call self%Lbz%mults( ( isign * ONE_I/MU_0 ) * comega )
             !
          end select
          !

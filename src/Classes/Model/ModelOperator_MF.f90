@@ -73,9 +73,8 @@ module ModelOperator_MF
      type(rScalar3D_SG_t) :: c     
      
    contains
-     private
-
-     procedure, public :: UpdateFrequency
+     
+	 !procedure, public :: UpdateFrequency
      procedure, public :: SetEquations
      procedure, public :: SetCond
      procedure, public :: Amult
@@ -227,12 +226,12 @@ contains
     self%is_allocated = .false.
   end subroutine deallocateModelOperatorMF
 
-  subroutine updateFrequency(self, omega)
-    class(ModelOperator_MF_t) :: self
-    real(kind = prec), intent(in) :: omega
+  !subroutine updateFrequency(self, omega)
+    !class(ModelOperator_MF_t) :: self
+    !real(kind = prec), intent(in) :: omega
 
-    self%omega = omega
-  end subroutine updateFrequency
+    !self%omega = omega
+  !end subroutine updateFrequency
   
   !**
   ! SetEquations
@@ -461,13 +460,12 @@ contains
   ! This does the matrix-vector multiply (A+iwB)inE = outE
   ! parameterized by input frequency omega
   !*
-  function Amult(self, x, p_adjt) result(y)
-    ! Arguments
-    class(ModelOperator_MF_t), intent(in) :: self
-    class(cVector_t)         , intent(in) :: x
-    logical                  , intent(in), optional :: p_adjt    
-    ! Local variables
-    class(cVector_t), allocatable :: y
+  function Amult(self, x, p_adjt, omega) result(y)
+       class(ModelOperator_MF_t), intent(in)           :: self
+       class(cVector_t)      , intent(in)           :: x
+       logical               , intent(in), optional :: p_adjt
+	   real( kind = prec ), intent(in), optional    :: omega
+       class(cVector_t), allocatable :: y
     ! Local variables
     integer :: ix, iy, iz
     complex(kind = prec) :: c
@@ -549,9 +547,9 @@ contains
           end select
           
           if (adjt) then
-             c = -C_ONE*self%omega*ISIGN*MU_0
+             c = -C_ONE * omega * ISIGN * MU_0
           else
-             c = C_ONE*self%omega*ISIGN*MU_0
+             c = C_ONE * omega * ISIGN * MU_0
           end if
           
           WorkE1 = x *self%Sigma_E

@@ -1,13 +1,17 @@
 module Solver
+  !
   use Constants
   use cVector
-
-  
-  private
-
-  public :: Solver_t
-  
+  !
   type, abstract :: Solver_t
+    !
+	integer                        :: max_iter
+	real(kind = prec)              :: tolerance
+	real(kind = prec), allocatable :: relErr(:) ! relative error at each iteration
+	!
+	logical :: failed
+	logical :: converged
+	!
    contains
      procedure(iface_Solve), deferred, public :: Solve
      

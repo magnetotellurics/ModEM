@@ -1,21 +1,15 @@
-Module Solver_QMR
+module Solver_QMR
+  !
   use Constants
   use ModelOperator
   use PreConditioner
   use cVector
-  use Solver
-
-  implicit none
-
-  private
-
-  public :: Solver_QMR_t
-  
-  type, extends(Solver_t):: Solver_QMR_t
-     class(ModelOperator_t), pointer :: ModOp
-     class(PreConditioner_t), pointer :: preCond
-
-     real(kind = prec) :: omega
+  use Solver_PCG
+  !
+  type, extends(Solver_PCG_t):: Solver_QMR_t
+     !
+     !class(ModelOperator_t), pointer :: model_operator
+     !class(PreConditioner_t), pointer :: preconditioner
    contains
      !procedure, public :: Create
      !procedure, public :: Allocate
@@ -26,13 +20,13 @@ Module Solver_QMR
   
 contains
   
-  subroutine setOperators(self, ModOp, PreCond)
+  subroutine setOperators(self, model_operator, preconditioner)
     class(Solver_QMR_t) :: self
-    class(ModelOperator_t) , pointer :: ModOp
-    class(Preconditioner_t), pointer :: preCond
+    class(ModelOperator_t) , pointer :: model_operator
+    class(Preconditioner_t), pointer :: preconditioner
     
-    self%modOp => ModOp
-    self%preCond => preCond
+    self%model_operator => model_operator
+    self%preconditioner => preconditioner
   end subroutine setOperators
 
   !**
@@ -92,9 +86,12 @@ contains
     self%failed = .false.
     adjoint = .false.
     ! R is Ax
-    R = self%ModOp%Amult(R, adjoint, omega)
+    R = self%model_operator%Amult(R, adjoint, omega)
     ! b - Ax, for inital guess x, that has been input to the routine
-    R = b%linComb(C_ONE, R, C_MinusOne)
+    !
+	! IMPLEMENT linComb ON VECTOR
+	!
+	!R = b%linComb(C_ONE, R, C_MinusOne)
     
     ! Norm of rhs, residual
     bnorm = CDSQRT(b%dotProd(b))
@@ -102,22 +99,21 @@ contains
 
     ! this usually means an inadequate model, in which case Maxwell's fails
     if (isnan(abs(bnorm))) then
-       write(0,*) 'Error: b in QMR contains NaNs; exiting...'
-       stop
+       stop 'Error: b in QMR contains NaNs; exiting...'
     end if
     
     !  iter is iteration counter
     iter = 1
     self%relErr(iter) = real(rnorm/bnorm)
 
-    VT = R%copy()
+    VT = R
     ilu_adjt = .false.
-    Y = self%preCond%LTsolve(VT, ilu_adjt)
+    Y = self%preconditioner%LTsolve(VT, ilu_adjt)
     RHO = CDSQRT(Y%dotProd(Y))
     
-    WT = R%copy()
+    WT = R
     ilu_adjt = .true.
-    Z = self%preCond%UTsolve(WT,ilu_adjt)
+    Z = self%preconditioner%UTsolve(WT,ilu_adjt)
     PSI  = CDSQRT(Z%dotProd(Z))
     GAMM = C_ONE
     ETA  = C_MinusONE
@@ -125,12 +121,11 @@ contains
     ! the do loop goes on while the relative error is greater than the tolerance
     ! and the iterations are less than maxIt
     do while ((self%relErr(iter).gt.self%tolerance).and.&
-         (iter.lt.self%maxIter))
+         (iter.lt.self%max_iter))
        if ((RHO.eq.C_ZERO).or.(PSI.eq.C_ZERO)) then
           self%failed = .true.
           write(0,*) 'QMR FAILED TO CONVERGE : RHO'
-          write(0,*) 'QMR FAILED TO CONVERGE : PSI'
-          exit
+          stop 'QMR FAILED TO CONVERGE : PSI'
        end if
 
        rhoInv = (1/RHO)*cmplx(1.0, 0.0, 8)
@@ -143,57 +138,54 @@ contains
        DELTA = Z%dotProd(Y)
        if (DELTA.eq.C_ZERO) then
           self%failed = .true.
-          write(0,*) 'QMR FAILS TO CONVERGE : DELTA'
-          exit
+          stop 'QMR FAILS TO CONVERGE : DELTA'
        end if
 
        ilu_adjt = .false.
-       YT = self%preCond%UTsolve(Y,ilu_adjt)
+       YT = self%preconditioner%UTsolve(Y,ilu_adjt)
        ilu_adjt = .true.
-       ZT = self%preCond%LTsolve(Z,ilu_adjt)
+       ZT = self%preconditioner%LTsolve(Z,ilu_adjt)
        
        if (iter.eq.1) then
-          P = YT%Copy()
-          Q = ZT%Copy()
+          P = YT
+          Q = ZT
        else
           ! these calculations are only done when iter greater than 1
           PDE = -PSI*DELTA/EPSIL
           RDE = -RHO*CONJG(DELTA/EPSIL)
-          P = YT%linComb(C_ONE,P,PDE)
-          Q = ZT%linComb(C_ONE,Q,RDE)
+          !P = YT%linComb(C_ONE,P,PDE)
+          !Q = ZT%linComb(C_ONE,Q,RDE)
        end if
        
        adjoint = .false.
        call PT%Zeros()
-       PT = self%ModOp%Amult(P,adjoint,omega)
+       PT = self%model_operator%Amult(P,adjoint,omega)
        EPSIL = Q%dotProd(PT)
        if (EPSIL.eq.C_ZERO) then
           self%failed = .true.
-          write(0,*) 'QMR FAILED TO CONVERGE : EPSIL'
-          exit
+          stop 'QMR FAILED TO CONVERGE : EPSIL'
        end if
        
        BETA = EPSIL/DELTA
        if (BETA.eq.C_ZERO) then
           self%failed = .true.
-          write(0,*) 'QMR FAILED TO CONVERGE : BETA'
-          exit
+          stop 'QMR FAILED TO CONVERGE : BETA'
        end if
-       VT = PT%linComb(C_ONE,V,-BETA)
+       !VT = PT%linComb(C_ONE,V,-BETA)
 
        RHO1 = RHO
        ilu_adjt = .false.
-       Y = self%preCond%LTsolve(VT, ilu_adjt)
+       Y = self%preconditioner%LTsolve(VT, ilu_adjt)
        RHO = CDSQRT(Y%dotProd(Y))
 
        adjoint = .true.
        call WT%Zeros()
-       WT = self%ModOp%Amult(Q,adjoint,omega)
+       WT = self%model_operator%Amult(Q,adjoint,omega)
        !  perhaps should use linComb here ...
-       WT = W%scMultAdd(-conjg(BETA), WT)
+       !WT = W%scMultAdd(-conjg(BETA), WT)
        
        ilu_adjt = .true.
-       Z = self%preCond%UTsolve(WT,ilu_adjt)
+       Z = self%preconditioner%UTsolve(WT,ilu_adjt)
        PSI = CDSQRT(Z%dotProd(Z))
        
        if (iter.gt.1) then
@@ -204,22 +196,21 @@ contains
        GAMM = C_ONE/CDSQRT(C_ONE + THET*THET)
        if (GAMM.eq.C_ZERO) then
           self%failed = .true.
-          write(0,*) 'QMR FAILS TO CONVERGE : GAMM'
-          exit
+          stop 'QMR FAILS TO CONVERGE : GAMM'
        end if
 
        ETA = -ETA*RHO1*GAMM*GAMM/(BETA*GAMM1*GAMM1)
        if (iter.eq.1) then
-          D = P%scMult(ETA)
-          S = PT%scMult(ETA)
+          !D = P%scMult(ETA)
+          !S = PT%scMult(ETA)
        else
           TM2 = THET1*THET1*GAMM*GAMM
-          D = P%linComb(ETA,D,TM2)
-          S = PT%linComb(ETA,S,TM2)
+          !D = P%linComb(ETA,D,TM2)
+          !S = PT%linComb(ETA,S,TM2)
        end if
        
-       x = D%scMultadd(C_ONE,x)
-       R = S%scMultadd(C_MinusONE,R)
+       !x = D%scMultadd(C_ONE,x)
+       !R = S%scMultadd(C_MinusONE,R)
        ! A new AX
        rnorm = CDSQRT(R%dotProd(R))
        iter = iter + 1

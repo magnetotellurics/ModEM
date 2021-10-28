@@ -17,52 +17,52 @@ module rVector
      !**
      ! Input/Output
      !*
-     procedure(iface_Read) , deferred, public :: Read
-     procedure(iface_Write), deferred, public :: Write
+     procedure(iface_Read) , deferred, public :: read
+     procedure(iface_Write), deferred, public :: write
      
      !**
      ! Boundary operations
      !*
-     procedure(iface_SetAllBoundary), deferred :: SetAllBoundary
-     procedure(iface_SetOneBoundary), deferred :: SetOneBoundary
-     procedure(iface_SetAllInterior), deferred :: SetAllInterior
-     procedure(iface_IntBdryIndices), deferred :: IntBdryIndices
+     procedure(iface_setAllBoundary), deferred :: setAllBoundary
+     procedure(iface_setOneBoundary), deferred :: setOneBoundary
+     procedure(iface_setAllInterior), deferred :: setAllInterior
+     procedure(iface_intBdryIndices), deferred :: intBdryIndices
           
      !**
      ! Data access
      !*
-     procedure(iface_Length)  , deferred :: Length
-     procedure(iface_GetArray), deferred :: GetArray
-     procedure(iface_SetArray), deferred :: SetArray
+     procedure(iface_length)  , deferred :: length
+     procedure(iface_getArray), deferred :: getArray
+     procedure(iface_setArray), deferred :: setArray
      
      !**
      ! Arithmetic/algebraic operations
-     procedure(iface_Zeros), deferred, public :: Zeros
+     procedure(iface_zeros), deferred, public :: zeros
 
-     procedure(iface_Add_1) , deferred, public :: Add_1
-     generic :: Add => Add_1
-     generic :: operator(+) => Add_1
+     procedure(iface_add1) , deferred, public :: add1
+     generic :: add => add1
+     generic :: operator(+) => add1
      
-     procedure(iface_Sub_1) , deferred, public :: Sub_1
-     generic :: Sub => Sub_1
-     generic :: operator(-) => Sub_1
+     procedure(iface_sub1) , deferred, public :: sub1
+     generic :: sub => sub1
+     generic :: operator(-) => sub1
      
-     procedure(iface_Mult_1), deferred, public :: Mult_1
-     procedure(iface_Mult_2), deferred, public, pass(self) :: Mult_2  
-     generic :: Mult => Mult_1, Mult_2
-     generic :: operator(*) => Mult_1, Mult_2
+     procedure(iface_mult1), deferred, public :: mult1
+     procedure(iface_mult2), deferred, public, pass(self) :: mult2  
+     generic :: mult => mult1, mult2
+     generic :: operator(*) => mult1, mult2
      
-     procedure(iface_Div_1) , deferred, public :: div_1
-     generic :: Div => Div_1
-     generic :: operator(/) => Div_1
+     procedure(iface_div1) , deferred, public :: div1
+     generic :: div => div1
+     generic :: operator(/) => div1
      
      procedure(iface_dotProd), deferred, public :: dotProd
      generic :: operator(.dot.) => dotProd
      
      procedure(iface_diagMult), deferred, public :: diagMult
 
-     procedure(iface_CopyFrom), deferred, public :: CopyFrom
-     generic :: assignment(=) => CopyFrom
+     procedure(iface_copyFrom), deferred, public :: copyFrom
+     generic :: assignment(=) => copyFrom
 
      !**
      ! Miscellaneous
@@ -102,116 +102,116 @@ module rVector
      !*
 
      !**
-     ! SetAllBoundary
+     ! setAllBoundary
      !*
-     subroutine iface_SetAllBoundary(self, c_in)
+     subroutine iface_setAllBoundary(self, c_in)
        import :: rVector_t, prec
        class(rVector_t) , intent(inout) :: self
        real(kind = prec), intent(in)    :: c_in
-     end subroutine iface_SetAllBoundary
+     end subroutine iface_setAllBoundary
 
      !**
-     ! SetOneBoundary
+     ! setOneBoundary
      !*
-     subroutine iface_SetOneBoundary(self, bdry, c, int_only)
+     subroutine iface_setOneBoundary(self, bdry, c, int_only)
        import :: rVector_t, prec
        class(rVector_t) , intent(inout) :: self
        character(*)     , intent(in)    :: bdry
        real(kind = prec), intent(in)    :: c
        logical, optional, intent(in)    :: int_only
-     end subroutine iface_SetOneBoundary
+     end subroutine iface_setOneBoundary
 
      !**
-     ! SetAllInterior
+     ! setAllInterior
      !*
-     subroutine iface_SetAllInterior(self, c_in)
+     subroutine iface_setAllInterior(self, c_in)
        import :: rVector_t, prec
        class(rVector_t) , intent(inout) :: self
        real(kind = prec), intent(in)    :: c_in
-     end subroutine iface_SetAllInterior
+     end subroutine iface_setAllInterior
 
      !**
-     ! IntBdryIndices
+     ! intBdryIndices
      !*
-     subroutine iface_IntBdryIndices(self, ind_i, ind_b)
+     subroutine iface_intBdryIndices(self, ind_i, ind_b)
        import :: rVector_t
        class(rVector_t)    , intent(in)  :: self
        integer, allocatable, intent(out) :: ind_i(:), ind_b(:)
-     end subroutine Iface_IntBdryIndices
+     end subroutine Iface_intBdryIndices
 
      !**
      ! Data access
      !*
 
      !**
-     ! Length
+     ! length
      !*
-     function iface_Length(self) result(n)
+     function iface_length(self) result(n)
        import :: rVector_t
        class(rVector_t), intent(in) :: self
        integer :: n
-     end function iface_Length
+     end function iface_length
 
      !**
-     ! GetArray
+     ! getArray
      !*
-     subroutine iface_GetArray(self, v)
+     subroutine iface_getArray(self, v)
        import :: rVector_t, prec
        class(rVector_t), intent(in)  :: self
        real(kind = prec), allocatable, intent(out) :: v(:)
-     end subroutine Iface_GetArray
+     end subroutine Iface_getArray
 
      !**
-     ! SetArray
+     ! setArray
      !*
-     subroutine iface_SetArray(self, v)
+     subroutine iface_setArray(self, v)
        import :: rVector_t, prec
        class(rVector_t) , intent(inout) :: self
        real(kind = prec), intent(in)    :: v(:)
-     end subroutine iface_SetArray
+     end subroutine iface_setArray
      
      !**
      ! Arithmetic/algebraic operations
      !*
      
      !**
-     ! Zeros
+     ! zeros
      !*
-     subroutine iface_Zeros(self)
+     subroutine iface_zeros(self)
        import :: rVector_t
        class(rVector_t), intent(inout) :: self
-     end subroutine iface_Zeros
+     end subroutine iface_zeros
 
-     function iface_Add_1(lhs, rhs) result(Eout)
+     function iface_add1(lhs, rhs) result(Eout)
        import :: rVector_t
        class(rVector_t), intent(in)  :: lhs, rhs
        class(rVector_t), allocatable :: Eout
-     end function iface_Add_1
+     end function iface_add1
 
-     function iface_Sub_1(lhs, rhs) result(Eout)
+     function iface_sub1(lhs, rhs) result(Eout)
        import :: rVector_t
        class(rVector_t), intent(in) :: lhs, rhs
        class(rVector_t), allocatable :: Eout
-     end function iface_Sub_1
+     end function iface_sub1
 
-     function iface_Mult_1(lhs, rhs) result(Eout)
+     function iface_mult1(lhs, rhs) result(Eout)
        import :: rVector_t
        class(rVector_t), intent(in) :: lhs, rhs
        class(rVector_t), allocatable :: Eout
-     end function iface_Mult_1
+     end function iface_mult1
      
-     function iface_Mult_2(c, self) result(Eout)
+     function iface_mult2(c, self) result(Eout)
        import :: rVector_t, prec
        real(kind = prec), intent(in) :: c
        class(rVector_t) , intent(in) :: self
        class(rVector_t), allocatable :: Eout
-     end function iface_Mult_2
+     end function iface_mult2
      
-     function iface_Div_1(lhs, rhs) result(Eout)
+     function iface_div1(lhs, rhs) result(Eout)
        import :: rVector_t
        class(rVector_t), intent(in) :: lhs, rhs
        class(rVector_t), allocatable :: Eout
-     end function iface_Div_1
+     end function iface_div1
 
      function iface_dotProd(lhs, rhs) result(r)
        import :: rVector_t, prec
@@ -233,11 +233,11 @@ module rVector
        logical :: status
      end function iface_isCompatible
 
-     subroutine iface_CopyFrom(self, rhs)
+     subroutine iface_copyFrom(self, rhs)
        import :: rVector_t
        class(rVector_t), intent(inout) :: self
        class(rVector_t), intent(in)    :: rhs
-     end subroutine iface_CopyFrom
+     end subroutine iface_copyFrom
 
      !**
      ! Create a Vector object containing weights needed for

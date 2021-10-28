@@ -11,10 +11,15 @@ module ForwardSolver
   use Constants
   use cVector
   use Source
+  use ModelOperator
   !
   type, abstract :: ForwardSolver_t
     !
+	class( ModelOperator_t ), allocatable :: model_operator
     class( cVector_t ), allocatable :: e_solution
+	!
+	integer :: nIterTotal
+	logical :: failed
     !
   contains
     !
@@ -27,13 +32,11 @@ module ForwardSolver
   !
   abstract interface
     !
-    function interface_get_e_solution_fwd( self, period, imode, source ) result( e_solution )
+    function interface_get_e_solution_fwd( self, source ) result( e_solution )
       import :: ForwardSolver_t, prec, cVector_t, Source_t
       !
-      class( ForwardSolver_t ), intent( inout )  :: self
-      real( kind=prec ), intent( in )            :: period
-      integer, intent( in )                      :: imode
-      class( Source_t ), allocatable, intent( in )   :: source
+      class( ForwardSolver_t ), intent( inout )    :: self
+      class( Source_t ), allocatable, intent( in ) :: source
       !
       class( cVector_t ), allocatable :: e_solution
       !

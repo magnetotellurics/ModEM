@@ -17,8 +17,8 @@ module cScalar
      !**
      ! Input/Output
      !*
-     procedure(iface_Read) , deferred, public :: Read
-     procedure(iface_Write), deferred, public :: Write
+     procedure(iface_Read) , deferred, public :: read
+     procedure(iface_Write), deferred, public :: write
      
      !**
      ! Boundary operations
@@ -43,22 +43,26 @@ module cScalar
      generic :: Add => Add_1
      
      procedure(iface_Sub_1) , deferred, public :: Sub_1
-     generic :: Sub => Sub_1
+	 generic :: Sub => Sub_1
+     generic :: operator(-) => Sub_1
      
      procedure(iface_Mult_1), deferred, public :: Mult_1
      generic :: Mult => Mult_1
+     generic :: operator(*) => Mult_1
      
      procedure(iface_Div_1) , deferred, public :: div_1
      generic :: Div => Div_1
+     generic :: operator(/) => Div_1
      
      procedure(iface_dotProd), deferred, public :: dotProd
+	 generic :: operator(.dot.) => dotProd
 
      !**
      ! Miscellaneous
      !*
      procedure(iface_isCompatible), deferred, public :: isCompatible
-     procedure(iface_CopyFrom), deferred, public :: CopyFrom
-     generic :: assignment(=) => CopyFrom
+     procedure(iface_copyFrom), deferred, public :: copyFrom
+     generic :: assignment(=) => copyFrom
      
   end type cScalar_t
   
@@ -258,11 +262,11 @@ module cScalar
        logical :: status
      end function iface_isCompatible
 
-     subroutine iface_CopyFrom(self, rhs)
+     subroutine iface_copyFrom(self, rhs)
        import :: cScalar_t
        class(cScalar_t), intent(inout) :: self
        class(cScalar_t), intent(in)    :: rhs
-     end subroutine iface_CopyFrom
+     end subroutine iface_copyFrom
 
   end interface
   

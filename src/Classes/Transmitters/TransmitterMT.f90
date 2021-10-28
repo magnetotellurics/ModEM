@@ -52,8 +52,8 @@ contains
       self%id = id
       self%n_pol = 2
       self%period = period
-     !
-      self%forward_solver => ForwardSolverFromFile_t()
+      !
+      self%forward_solver => ForwardSolverFromFile_t( self%period, self%n_pol )
       !
      self%DATA_TITLE = "Period(s) Code GG_Lat GG_Lon X(m) Y(m) Z(m) Component Real Imag Error"
      !
@@ -89,10 +89,10 @@ contains
       if ( .not. self%forward_solver%e_solution%isAllocated ) write(*, *) 'TX E SOLUTION isAllocated = false'
       !
       ! Add first polarization to Tx e_solution
-      call self%e_solution%add( self%forward_solver%getESolution( self%period, 1, self%source ) )
+      call self%e_solution%add( self%forward_solver%getESolution( self%source ) )
       !
       ! Add second polarization to Tx e_solution
-      call self%e_solution%add( self%forward_solver%getESolution( self%period, 2, self%source ) )
+      call self%e_solution%add( self%forward_solver%getESolution( self%source ) )
       !
    end subroutine solveFWDTransmitterMT
    !

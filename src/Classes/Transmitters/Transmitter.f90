@@ -11,6 +11,7 @@ module Transmitter
    use Constants
    use Source
    use ForwardSolverFromFile
+   use ForwardSolverDC
    use IntegerArray
    use VectorArray
    use ModelOperator
@@ -22,9 +23,9 @@ module Transmitter
       real( kind=prec ) :: period
       !
       class( ForwardSolver_t ), pointer :: forward_solver 
-      class( VectorArray_t ), pointer   :: e_solution
       class( Source_t ), allocatable    :: source
       !
+	  class( VectorArray_t ), pointer   :: e_solution
       class( IntegerArray_t ), pointer  :: receiver_indexes
       !
 	  character(:), allocatable :: DATA_TITLE

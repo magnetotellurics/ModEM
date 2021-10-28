@@ -3,12 +3,6 @@ module cVector
   use rScalar
   use rVector
   
-  implicit none
-
-  private
-
-  public :: cVector_t
-  
   type, abstract :: cVector_t
      
      logical :: isAllocated = .false.
@@ -18,62 +12,62 @@ module cVector
      !**
      ! Input/Output
      !*
-     procedure(iface_Read) , deferred, public :: Read
-     procedure(iface_Write), deferred, public :: Write
+     procedure(iface_Read) , deferred, public :: read
+     procedure(iface_Write), deferred, public :: write
      
      !**
-     ! Boundary operations
+     ! boundary operations
      !*
-     procedure(iface_SetAllBoundary), deferred :: SetAllBoundary
-     procedure(iface_SetOneBoundary), deferred :: SetOneBoundary
-     procedure(iface_SetAllInterior), deferred :: SetAllInterior
-     procedure(iface_IntBdryIndices), deferred :: IntBdryIndices
-     procedure(iface_Boundary)      , deferred :: Boundary
-     procedure(iface_Interior)      , deferred :: Interior
+     procedure(iface_setAllboundary), deferred :: setAllboundary
+     procedure(iface_setOneboundary), deferred :: setOneboundary
+     procedure(iface_setAllinterior), deferred :: setAllinterior
+     procedure(iface_intBdryIndices), deferred :: intBdryIndices
+     procedure(iface_boundary)      , deferred :: boundary
+     procedure(iface_interior)      , deferred :: interior
 
      !**
      ! Data access
      !*
-     procedure(iface_Length)  , deferred :: Length
-     procedure(iface_GetArray), deferred :: GetArray
-     procedure(iface_SetArray), deferred :: SetArray
+     procedure(iface_length)  , deferred :: length
+     procedure(iface_getArray), deferred :: getArray
+     procedure(iface_setArray), deferred :: setArray
      
      !**
      ! Arithmetic/algebraic operations
-     procedure(iface_Zeros), deferred, public :: Zeros
+     procedure(iface_zeros_cVector), deferred, public :: zeros
 
-     procedure(iface_Add_1) , deferred, public :: Add_1
-     generic :: Add => Add_1
-     generic :: operator(+) => Add_1
+     procedure(iface_add1) , deferred, public :: add1
+     generic :: add => add1
+     generic :: operator(+) => add1
      
-     procedure(iface_Sub_1) , deferred, public :: Sub_1
-     generic :: Sub => Sub_1
-     generic :: operator(-) => Sub_1
+     procedure(iface_sub1) , deferred, public :: sub1
+     generic :: sub => sub1
+     generic :: operator(-) => sub1
      
-     procedure(iface_Mult_1), deferred, public :: Mult_1
-     procedure(iface_Mult_2), deferred, public, pass(self) :: Mult_2
-     procedure(iface_Mult_3), deferred, public :: Mult_3     
-     generic :: Mult => Mult_1, Mult_2, Mult_3
-     generic :: operator(*) => Mult_1, Mult_2, Mult_3
+     procedure(iface_mult1), deferred, public :: mult1
+     procedure(iface_mult2), deferred, public, pass(self) :: mult2
+     procedure(iface_mult3), deferred, public :: mult3     
+     generic :: mult => mult1, mult2, mult3
+     generic :: operator(*) => mult1, mult2, mult3
 
-     procedure(iface_Mult_s_1), deferred, public :: Mult_s_1
-     generic :: Mult_s => Mult_s_1
+     procedure(iface_mults1), deferred, public :: mults1
+     generic :: mults => mults1
      
-     procedure(iface_Div_1) , deferred, public :: div_1
-     procedure(iface_Div_2) , deferred, public :: div_2     
-     generic :: Div => Div_1, Div_2
-     generic :: operator(/) => Div_1, Div_2
+     procedure(iface_div1) , deferred, public :: div1
+     procedure(iface_div2) , deferred, public :: div2     
+     generic :: div => div1, div2
+     generic :: operator(/) => div1, div2
      
      procedure(iface_dotProd), deferred, public :: dotProd
      generic :: operator(.dot.) => dotProd
 
-     procedure(iface_CopyFrom), deferred, public :: CopyFrom
-     generic :: assignment(=) => CopyFrom
+     procedure(iface_copyFrom_cVector), deferred, public :: copyFrom
+     generic :: assignment(=) => copyFrom
      
      !**
      ! Miscellaneous
      !*     
-     procedure(iface_interpFunc), deferred :: InterpFunc
+     procedure(iface_interpFunc), deferred :: interpFunc
 
   end type cVector_t
   
@@ -101,64 +95,64 @@ module cVector
      end subroutine iface_Write
      
      !**
-     ! Boundary operations
+     ! boundary operations
      !*
 
      !**
-     ! SetAllBoundary
+     ! setAllboundary
      !*
-     subroutine iface_SetAllBoundary(self, c_in)
+     subroutine iface_setAllboundary(self, c_in)
        import :: cVector_t, prec
        class(cVector_t)    , intent(inout) :: self
        complex(kind = prec), intent(in)    :: c_in
-     end subroutine iface_SetAllBoundary
+     end subroutine iface_setAllboundary
 
      !**
-     ! SetOneBoundary
+     ! setOneboundary
      !*
-     subroutine iface_SetOneBoundary(self, bdry, c, int_only)
+     subroutine iface_setOneboundary(self, bdry, c, int_only)
        import :: cVector_t, prec
        class(cVector_t)    , intent(inout) :: self
        character(*)        , intent(in)    :: bdry
        complex(kind = prec), intent(in)    :: c
        logical, optional, intent(in)    :: int_only
-     end subroutine iface_SetOneBoundary
+     end subroutine iface_setOneboundary
 
      !**
-     ! SetAllInterior
+     ! setAllinterior
      !*
-     subroutine iface_SetAllInterior(self, c_in)
+     subroutine iface_setAllinterior(self, c_in)
        import :: cVector_t, prec
        class(cVector_t)    , intent(inout) :: self
        complex(kind = prec), intent(in)    :: c_in
-     end subroutine iface_SetAllInterior
+     end subroutine iface_setAllinterior
 
      !**
-     ! IntBdryIndices
+     ! intBdryIndices
      !*
-     subroutine iface_IntBdryIndices(self, ind_i, ind_b)
+     subroutine iface_intBdryIndices(self, ind_i, ind_b)
        import :: cVector_t
        class(cVector_t)    , intent(in)  :: self
        integer, allocatable, intent(out) :: ind_i(:), ind_b(:)
-     end subroutine Iface_IntBdryIndices
+     end subroutine Iface_intBdryIndices
      
      !**
-     ! Boundary
+     ! boundary
      !*
-     function iface_Boundary(self) result(E)
+     function iface_boundary(self) result(E)
        import :: cVector_t
        class(cVector_t), intent(in) :: self
        class(cVector_t), allocatable :: E
-     end function Iface_Boundary
+     end function Iface_boundary
 
      !**
-     ! Interior
+     ! interior
      !*
-     function iface_Interior(self) result(E)
+     function iface_interior(self) result(E)
        import :: cVector_t
        class(cVector_t), intent(in) :: self
        class(cVector_t), allocatable :: E
-     end function Iface_Interior
+     end function Iface_interior
 
 
      !**
@@ -166,95 +160,95 @@ module cVector
      !*
 
      !**
-     ! Length
+     ! length
      !*
-     function iface_Length(self) result(n)
+     function iface_length(self) result(n)
        import :: cVector_t
        class(cVector_t), intent(in) :: self
        integer :: n
-     end function iface_Length
+     end function iface_length
 
      !**
-     ! GetArray
+     ! getArray
      !*
-     subroutine iface_GetArray(self, v)
+     subroutine iface_getArray(self, v)
        import :: cVector_t, prec
        class(cVector_t), intent(in)  :: self
        complex(kind = prec), allocatable, intent(out) :: v(:)
-     end subroutine Iface_GetArray
+     end subroutine Iface_getArray
 
      !**
-     ! SetArray
+     ! setArray
      !*
-     subroutine iface_SetArray(self, v)
+     subroutine iface_setArray(self, v)
        import :: cVector_t, prec
        class(cVector_t)    , intent(inout) :: self
        complex(kind = prec), intent(in)    :: v(:)
-     end subroutine iface_SetArray
+     end subroutine iface_setArray
      
      !**
      ! Arithmetic/algebraic operations
      !*
      
      !**
-     ! Zeros
+     ! zeros
      !*
-     subroutine iface_Zeros(self)
+     subroutine iface_zeros_cVector(self)
        import :: cVector_t
        class(cVector_t), intent(inout) :: self
-     end subroutine iface_Zeros
+     end subroutine iface_zeros_cVector
 
-     function iface_Add_1(lhs, rhs) result(Eout)
+     function iface_add1(lhs, rhs) result(Eout)
        import :: cVector_t
        class(cVector_t), intent(in)  :: lhs, rhs
        class(cVector_t), allocatable :: Eout
-     end function iface_Add_1
+     end function iface_add1
 
-     function iface_Sub_1(lhs, rhs) result(Eout)
+     function iface_sub1(lhs, rhs) result(Eout)
        import :: cVector_t
        class(cVector_t), intent(in) :: lhs, rhs
        class(cVector_t), allocatable :: Eout
-     end function iface_Sub_1
+     end function iface_sub1
 
-     function iface_Mult_1(lhs, rhs) result(Eout)
+     function iface_mult1(lhs, rhs) result(Eout)
        import :: cVector_t
        class(cVector_t), intent(in) :: lhs, rhs
        class(cVector_t), allocatable :: Eout
-     end function iface_Mult_1
+     end function iface_mult1
 
-     function iface_Mult_2(c, self) result(Eout)
+     function iface_mult2(c, self) result(Eout)
        import :: cVector_t, prec
        complex(kind = prec), intent(in) :: c
        class(cVector_t)    , intent(in) :: self
        class(cVector_t), allocatable :: Eout
-     end function iface_Mult_2
+     end function iface_mult2
 
-     function iface_Mult_3(lhs, rhs) result(Eout)
+     function iface_mult3(lhs, rhs) result(Eout)
        import :: cVector_t, rVector_t
        class(cVector_t), intent(in) :: lhs
        class(rVector_t), intent(in) :: rhs       
        class(cVector_t), allocatable :: Eout
-     end function iface_Mult_3
+     end function iface_mult3
      
-     subroutine iface_Mult_s_1(self, c)
+     subroutine iface_mults1(self, c)
        import :: cVector_t, prec
        class(cVector_t)    , intent(inout) :: self
        complex(kind = prec), intent(in) :: c       
-     end subroutine iface_Mult_s_1
+     end subroutine iface_mults1
      
-     function iface_Div_1(lhs, rhs) result(Eout)
+     function iface_div1(lhs, rhs) result(Eout)
        import :: cVector_t
        class(cVector_t), intent(in) :: lhs
        class(cVector_t), intent(in) :: rhs
        class(cVector_t), allocatable :: Eout
-     end function iface_Div_1
+     end function iface_div1
 
-     function iface_Div_2(lhs, rhs) result(Eout)
+     function iface_div2(lhs, rhs) result(Eout)
        import :: cVector_t, rVector_t
        class(cVector_t), intent(in) :: lhs
        class(rVector_t), intent(in) :: rhs
        class(cVector_t), allocatable :: Eout
-     end function iface_Div_2
+     end function iface_div2
      
      function iface_dotProd(lhs, rhs) result(r)
        import :: cVector_t, prec
@@ -262,23 +256,23 @@ module cVector
        complex(kind = prec) :: r
      end function iface_dotProd
 
-     subroutine iface_CopyFrom(self, rhs)
+     subroutine iface_copyFrom_cVector(self, rhs)
        import :: cVector_t
        class(cVector_t), intent(inout) :: self
        class(cVector_t), intent(in)    :: rhs
-     end subroutine iface_CopyFrom
+     end subroutine iface_copyFrom_cVector
      
      !**
      ! Create a Vector object containing weights needed for
      ! interpolation of xyz component of obj1 to location.
      !*
-     subroutine iface_InterpFunc(self, location, xyz, E)
+     subroutine iface_interpFunc(self, location, xyz, E)
        import :: cVector_t, prec
        class(cVector_t) , intent(in)  :: self
        real(kind = prec), intent(in)  :: location(3)
        character        , intent(in)  :: xyz
        class(cVector_t) , intent(out), allocatable :: E
-     end subroutine iface_InterpFunc
+     end subroutine iface_interpFunc
      
   end interface
   
