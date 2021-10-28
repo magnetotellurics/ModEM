@@ -55,8 +55,8 @@ module cScalar3D_SG
      !**
      ! Input/Output
      !*
-     procedure, public :: Read
-     procedure, public :: Write
+     procedure, public :: read => readCScalar3D_SG
+     procedure, public :: write => writeCScalar3D_SG
      
      !**
      ! Boundary operations
@@ -94,7 +94,7 @@ module cScalar3D_SG
 
      ! Overriden methods
      procedure, public :: isCompatible
-     procedure, public :: CopyFrom
+     procedure, public :: copyFrom => copyFromCScalar3D_SG
      
   end type cScalar3D_SG_t
   
@@ -205,10 +205,10 @@ contains
   !
 
   !**
-  ! Read
+  ! readCScalar3D_SG
   !
   !*
-  subroutine Read(self, fid, ftype)
+  subroutine readCScalar3D_SG(self, fid, ftype)
     implicit none
     ! Arguments
     class(cScalar3D_SG_t), intent (inout) :: self
@@ -236,14 +236,14 @@ contains
     ! check that the file is unformatted if binary, formatted if ascii
     if ((index(isbinary, 'yes') > 0.or.index(isbinary, 'YES') > 0) &
          .and. .not.binary) then       
-       write(*, *) 'ERROR:cScalar3D_SG_t::Read: '
+       write(*, *) 'ERROR:cScalar3D_SG_t::readCScalar3D_SG: '
        write(*, *) '      Unable to read vector from unformatted file ', &
             trim(fname), '.Exiting.'
 
        STOP
     else if ((index(isbinary, 'no') > 0.or.index(isbinary, 'NO') > 0) &
          .and.binary) then
-       write(*, *) 'ERROR:cScalar3D_SG_t::Read: '
+       write(*, *) 'ERROR:cScalar3D_SG_t::readCScalar3D_SG: '
        write(*, *) '      Unable to read vector from formatted file ', &
             trim(fname), '. Exiting.'
        
@@ -268,12 +268,12 @@ contains
        if (istat /= 0) exit
        
        if ((k1 < 0) .or. (k2 > Nz)) then
-          write(*, *) 'ERROR:cScalar3D_SG::Read: '
+          write(*, *) 'ERROR:cScalar3D_SG::readCScalar3D_SG: '
           write(*, *) '      While reading the ', i, 'th block. Exiting.'
           
           STOP
        else if (k1 > k2) then
-          write(*, *) 'WARNING:cScalar3D_SG::Read: '
+          write(*, *) 'WARNING:cScalar3D_SG::readCScalar3D_SG: '
           write(*, *) '        Block ', i, ' will be ignored.'
        end if
        
@@ -281,7 +281,7 @@ contains
           read(fid, *, iostat = istat) temp
           
           if (istat /= 0) then
-             write(*, *) 'ERROR:cScalar3D_SG::Read: '
+             write(*, *) 'ERROR:cScalar3D_SG::readCScalar3D_SG: '
              write(*, *) '      While reading the ', j, 'th row in ', i,'th block. Exiting.'
              
              STOP
@@ -297,13 +297,13 @@ contains
        i = i + 1
        
     end do
-  end subroutine Read
+  end subroutine readCScalar3D_SG
 
   !**
-  ! Write
+  ! writeCScalar3D_SG
   !
   !*
-  subroutine Write(self, fid, ftype)
+  subroutine writeCScalar3D_SG(self, fid, ftype)
     implicit none
     ! Arguments
     class(cScalar3D_SG_t), intent(in) :: self
@@ -317,7 +317,7 @@ contains
     character(80) :: fname, isbinary, gridType
 
     if (.not.self%isAllocated) then
-       write(0, *) 'ERROR:cScalar3D_SG::Write: '
+       write(0, *) 'ERROR:cScalar3D_SG::writeCScalar3D_SG: '
        write(0, *) '      Not allocated. Exiting.'
        
        STOP
@@ -336,14 +336,14 @@ contains
     
     if ((index(isbinary, 'yes') > 0.or.index(isbinary, 'YES') > 0) &
          .and..not.binary) then       
-       write(*, *) 'ERROR:cScalar3D_SG::Write: '
+       write(*, *) 'ERROR:cScalar3D_SG::writeCScalar3D_SG: '
        write(*, *) '      Unable to write vector to unformatted file ', &
             trim(fname), '. Exiting.'
        
        STOP
     else if ((index(isbinary,'no') > 0.or.index(isbinary,'NO') > 0) &
          .and.binary) then
-       write(*, *) 'ERROR:cScalar3D_SG::Write: '
+       write(*, *) 'ERROR:cScalar3D_SG::writeCScalar3D_SG: '
        write(*, *) ' Unable to write vector to formatted file ', &
             trim(fname), '. Exiting.'
        
@@ -383,7 +383,7 @@ contains
        write(fid, '(2i5)', iostat = istat) k1, k2
        
        if (istat /= 0) then
-          write(*, *) 'ERROR:cScalar3D_SG::Write: '
+          write(*, *) 'ERROR:cScalar3D_SG::writeCScalar3D_SG: '
           write(*, *) '      Failed while writing to file. Exiting.'
           
           STOP
@@ -404,7 +404,7 @@ contains
        if (k1 > Nz) exit
     end do
     
-  end subroutine Write
+  end subroutine writeCScalar3D_SG
   
   !
   !************************
@@ -893,13 +893,13 @@ contains
     end if
   end function IsCompatible
 
-  subroutine CopyFrom(self, rhs)
+  subroutine copyFromCScalar3D_SG(self, rhs)
     ! Arguments
     class(cScalar3D_SG_t), intent(inout) :: self
     class(cScalar_t)     , intent(in)    :: rhs
 
     if (.not.rhs%isAllocated) then
-       write(*, *) 'ERROR:cScalar3D_SG::CopyFrom'
+       write(*, *) 'ERROR:cScalar3D_SG::copyFromCScalar3D_SG'
        write(*, *) '  Input not allocated. Exiting.'
        
        STOP
@@ -929,17 +929,17 @@ contains
              self%v = rhs%v
              self%isAllocated = .true.
           else
-             write(*, *) 'ERROR:cScalar3D_SG::CopyFrom'
+             write(*, *) 'ERROR:cScalar3D_SG::copyFromCScalar3D_SG'
              write(*, *) '  Incompatible input. Exiting.'
              
              STOP
           end if
        end if
     class default
-       write(*, *) 'ERROR:cScalar3D_SG::CopyFrom:'
+       write(*, *) 'ERROR:cScalar3D_SG::copyFromCScalar3D_SG:'
        write(*, *) '      Incompatible input type. Exiting.'
        STOP 
     end select
-  end subroutine CopyFrom
+  end subroutine copyFromCScalar3D_SG
 
 end module cScalar3D_SG

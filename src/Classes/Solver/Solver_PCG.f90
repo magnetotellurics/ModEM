@@ -12,14 +12,13 @@ module Solver_PCG
   public :: Solver_PCG_t
   
   type, extends(Solver_t) :: Solver_PCG_t
-     real(kind = prec) :: tol
-     integer           :: maxIter 
-     integer           :: nIter 
-     real(kind = prec), allocatable :: relErr(:) ! relative error at each iteration
-     logical           :: failed = .false.
+     real( kind = prec ) :: omega
+	 real(kind = prec)   :: tol
+     integer             :: maxIter 
+     integer             :: nIter 
      
-     class(ModelOperator_t) , pointer :: ModOp
-     class(PreConditioner_t), pointer :: preCond
+     class(ModelOperator_t) , pointer :: model_operator
+     class(PreConditioner_t), pointer :: preconditioner
    contains
      procedure, public :: Solve
   end type Solver_PCG_t
@@ -31,13 +30,13 @@ contains
   
   !**
   !*
-  function Solver_PCG_ctor(ModOp, PreCond) result(obj)
-    class(ModelOperator_t) , target :: ModOp
-    class(PreConditioner_t), target :: preCond
+  function Solver_PCG_ctor(model_operator, preconditioner) result(obj)
+    class(ModelOperator_t) , target :: model_operator
+    class(PreConditioner_t), target :: preconditioner
     type(Solver_PCG_t) :: obj
     
-    obj%modOp   => ModOp
-    obj%preCond => preCond
+    obj%model_operator   => model_operator
+    obj%preconditioner => preconditioner
   end function Solver_PCG_ctor
   
   !**
@@ -72,7 +71,7 @@ contains
     allocate(q, source = x)
     call q%Zeros()
     
-    r = self%ModOp%Amult(x)
+    r = self%model_operator%Amult(x)
         
     r = b - r
     bnorm = b.dot.b
@@ -81,7 +80,7 @@ contains
     self%relErr(i) = real(rnorm/bnorm)
     
     do while ((self%relErr(i).gt.self%tol).and.(i.lt.self%maxIter))
-       call self%preCond%Minv(r, s)
+       call self%preconditioner%Minv(r, s)
        delta = r.dot.s
        if (i.eq.1) then
           p = s
@@ -89,7 +88,7 @@ contains
           beta = delta/deltaOld
           p = s + beta*p
        end if
-       q = self%Modop%Amult(p)
+       q = self%model_operator%Amult(p)
        alpha = delta/(p.dot.q)
        x = x + alpha*p
        r = q - alpha*r

@@ -14,7 +14,8 @@ module ForwardSolverFromFile
   type, extends( ForwardSolver_t ), public :: ForwardSolverFromFile_t
     !
     character(:), allocatable :: file_name
-    integer                   :: IoE
+    integer                   :: IoE, imode
+	real( kind=prec )         :: period
     !
     contains
       !
@@ -31,14 +32,18 @@ module ForwardSolverFromFile
 contains
   !
   !
-  function ForwardSolverFromFile_ctor() result( self )
+  function ForwardSolverFromFile_ctor( period, imode ) result( self )
     !
-    class( ForwardSolverFromFile_t ), pointer :: self
+    class( ForwardSolverFromFile_t ), pointer  :: self
+	real( kind=prec ), intent( in )            :: period
+      integer, intent( in )                    :: imode
     !
     !write(*,*) "Constructor ForwardSolverFromFile_t"
     !
     allocate( ForwardSolverFromFile_t :: self )
     !
+	self%period = period
+	self%imode = imode
     call self%init()
     !
     self%IoE = 901
@@ -58,12 +63,10 @@ contains
   end subroutine ForwardSolverFromFile_dtor
   !
   !
-  function getESolutionForwardSolverFromFile( self, period, imode, source ) result( e_solution )
+  function getESolutionForwardSolverFromFile( self, source ) result( e_solution )
     implicit none
     !
     class( ForwardSolverFromFile_t ), intent( inout ) :: self
-    real( kind=prec ), intent(in)                     :: period
-    integer, intent(in)                               :: imode
     class( Source_t ), allocatable, intent( in )      :: source
     !
     class( cVector_t ), allocatable :: e_solution
@@ -73,7 +76,7 @@ contains
     integer       :: nx, ny, nz, io_stat
     !
     ! Construct the file name
-    write ( file_name, '(a,I4.4,a,I1,a)' ) '../inputs/esol/E_solution_Per', int( period ), '_Pol', imode, '.soln'
+    write ( file_name, '(a,I4.4,a,I1,a)' ) '../inputs/esol/E_solution_Per', int( self%period ), '_Pol', self%imode, '.soln'
     !
     ! Open the File Unit for the file name
     open ( unit=self%ioE, file=file_name, status='unknown', form ='unformatted', iostat=io_stat )
@@ -99,7 +102,7 @@ contains
         allocate( e_solution, source = self%e_solution )
         !
         ! Print the e_solution result
-        write( *, * ) "                         Polarization:", imode
+        write( *, * ) "                         Polarization:", self%imode
         select type( e_solution )
             class is( cVector3D_SG_t )
                 write( *, * ) "                         ", e_solution%nx, e_solution%ny, e_solution%nz

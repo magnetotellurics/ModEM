@@ -1,6 +1,7 @@
 module rScalar
   use Constants
   use Grid
+  use cScalar
   
   implicit none
   
@@ -17,43 +18,44 @@ module rScalar
      !**
      ! Input/Output
      !*
-     procedure(iface_Read) , deferred, public :: Read
-     procedure(iface_Write), deferred, public :: Write
+     procedure(iface_Read) , deferred, public :: read
+     procedure(iface_Write), deferred, public :: write
      
      !**
      ! Boundary operations
      !*
-     procedure(iface_SetAllBoundary), deferred, public :: SetAllBoundary
-     procedure(iface_SetOneBoundary), deferred, public :: SetOneBoundary
-     procedure(iface_SetAllInterior), deferred, public :: SetAllInterior
-     procedure(iface_IntBdryIndices), deferred, public :: IntBdryIndices
+     procedure(iface_setAllBoundary), deferred, public :: setAllBoundary
+     procedure(iface_setOneBoundary), deferred, public :: setOneBoundary
+     procedure(iface_setAllInterior), deferred, public :: setAllInterior
+     procedure(iface_intBdryIndices), deferred, public :: intBdryIndices
           
      !**
      ! Data access
      !*
-     procedure(iface_Length)  , deferred, public :: Length
-     procedure(iface_GetArray), deferred, public :: GetArray
-     procedure(iface_SetArray), deferred, public :: SetArray
+     procedure(iface_length)  , deferred, public :: length
+     procedure(iface_getArray), deferred, public :: getArray
+     procedure(iface_setArray), deferred, public :: setArray
      
      !**
      ! Arithmetic/algebraic operations
      !*
-     procedure(iface_Zeros) , deferred, public :: Zeros
-     procedure(iface_Add_1) , deferred, public :: Add_1
-     generic :: Add => Add_1
-     generic :: operator(+) => Add_1
+     procedure(iface_zeros) , deferred, public :: zeros
+     procedure(iface_add1) , deferred, public :: add1
+     generic :: add => add1
+     generic :: operator(+) => add1
      
-     procedure(iface_Sub_1) , deferred, public :: Sub_1
-     generic :: Sub => Sub_1
-     generic :: operator(-) => Sub_1
+     procedure(iface_sub1) , deferred, public :: sub1
+     generic :: sub => sub1
+     generic :: operator(-) => sub1
      
-     procedure(iface_Mult_1), deferred, public :: Mult_1
-     generic :: Mult => Mult_1
-     generic :: operator(*) => Mult_1
+     procedure(iface_mult1), deferred, public :: mult1
+	 procedure(iface_mult2), deferred, public :: mult2
+     generic :: mult => mult1, mult2
+     generic :: operator(*) => mult1, mult2
      
-     procedure(iface_Div_1) , deferred, public :: div_1
-     generic :: Div => Div_1
-     generic :: operator(/) => Div_1
+     procedure(iface_div1) , deferred, public :: div1
+     generic :: div => div1
+     generic :: operator(/) => div1
      
      procedure(iface_dotProd), deferred, public :: dotProd
      generic :: operator(.dot.) => dotProd
@@ -62,8 +64,8 @@ module rScalar
      ! Miscellaneous
      !*
      procedure(iface_isCompatible), deferred, public :: isCompatible
-     procedure(iface_CopyFrom), deferred, public :: CopyFrom
-     generic :: assignment(=) => CopyFrom
+     procedure(iface_copyFrom), deferred, public :: copyFrom
+     generic :: assignment(=) => copyFrom
      
   end type rScalar_t
   
@@ -95,7 +97,7 @@ module rScalar
      !
 
      !**
-     ! SetAllBoundary Set all boundary edges to specific constant.
+     ! setAllBoundary Set all boundary edges to specific constant.
      !
      ! All interior edges are set to zero (Overwrites previous values).
      !
@@ -103,15 +105,15 @@ module rScalar
      !       self  Reference to the instance of scalar_real_t class.
      !       c_in  (defaults to 1.0) Constant value to set boundary edges.
      !*
-     subroutine iface_SetAllBoundary(self, c_in)
+     subroutine iface_setAllBoundary(self, c_in)
        use Constants
        import :: rScalar_t
        class(rScalar_t) , intent(inout) :: self
        real(kind = prec), intent(in)    :: c_in
-     end subroutine iface_SetAllBoundary
+     end subroutine iface_setAllBoundary
 
      !**
-     ! SetOneBoundary Set all edges (faces) on specified boundary to a constant.
+     ! setOneBoundary Set all edges (faces) on specified boundary to a constant.
      !
      ! Possible values for bdry : 'x1','x2','y1',y2','z1','z2'
      !
@@ -126,34 +128,34 @@ module rScalar
      !          c  Constant value.
      !   int_only  See documentation note above.
      !*
-     subroutine iface_SetOneBoundary(self, bdry, c, int_only)
+     subroutine iface_setOneBoundary(self, bdry, c, int_only)
        use Constants
        import :: rScalar_t
        class(rScalar_t) , intent(inout) :: self
        character(*)     , intent(in) :: bdry
        real(kind = prec), intent(in) :: c
        logical       , intent(in), optional :: int_only
-     end subroutine iface_SetOneBoundary
+     end subroutine iface_setOneBoundary
 
      !**
      ! SetallInterior
      !*
-     subroutine iface_SetAllInterior(self, c_in)
+     subroutine iface_setAllInterior(self, c_in)
        use Constants
        import :: rScalar_t
        class(rScalar_t) , intent(inout) :: self
        real(kind = prec), intent(in)    :: c_in
-     end subroutine iface_SetAllInterior
+     end subroutine iface_setAllInterior
      
      !**
-     ! IntBdryIndices
+     ! intBdryIndices
      !*
-     subroutine iface_IntBdryIndices(self, ind_i, ind_b)
+     subroutine iface_intBdryIndices(self, ind_i, ind_b)
        use Constants
        import :: rScalar_t
        class(rScalar_t)    , intent(in)  :: self
        integer, allocatable, intent(out) :: ind_i(:), ind_b(:)
-     end subroutine iface_IntBdryIndices
+     end subroutine iface_intBdryIndices
 
      !
      !****************************************
@@ -162,7 +164,7 @@ module rScalar
      !
 
      !**
-     ! Length
+     ! length
      ! Returns the total number of elements in this vector.
      !
      ! INPUTS:
@@ -171,14 +173,14 @@ module rScalar
      ! OUTPUTS:
      !          n  The total number of elements (edges/faces) in this vector.
      !*
-     function iface_Length(self) result(n)
+     function iface_length(self) result(n)
        import :: rScalar_t
        class(rScalar_t), intent(in) :: self
        integer :: n
-     end function iface_Length
+     end function iface_length
      
      !**
-     ! GetArray
+     ! getArray
      ! Return 1D array with all elements in this vector.
      !
      ! Follows Matlab/Fortran ordering for multidimensional arrays.
@@ -189,15 +191,15 @@ module rScalar
      ! OUTPUTS:
      !          v  1D array with vector elements.
      !*
-     subroutine iface_GetArray(self, v)
+     subroutine iface_getArray(self, v)
        use Constants
        import :: rScalar_t
        class(rScalar_t)              , intent(in)  :: self
        real(kind = prec), allocatable, intent(out) :: v(:)
-     end subroutine iface_GetArray
+     end subroutine iface_getArray
      
      !**
-     ! SetArray
+     ! setArray
      ! Set vector components from 1D array.
      !
      ! Follows Matlab/Fortran ordering for multidimensional arrays.
@@ -207,48 +209,55 @@ module rScalar
      !          v  1D array with vector elements.
      !
      !*
-     subroutine iface_SetArray(self, v)
+     subroutine iface_setArray(self, v)
        use Constants
        import :: rScalar_t
        class(rScalar_t)  , intent(inout) :: self
        real(kind = prec), intent(in)    :: v(:)
-     end subroutine iface_SetArray
+     end subroutine iface_setArray
      
      !**
      ! Arithmetic operations
      !*
 
      !**
-     ! Zeros
+     ! zeros
      !*
-     subroutine iface_Zeros(self)
+     subroutine iface_zeros(self)
        import :: rScalar_t
        class(rScalar_t), intent(inout) :: self
-     end subroutine iface_Zeros
+     end subroutine iface_zeros
 
-     function iface_Add_1(lhs, rhs) result(Eout)
+     function iface_add1(lhs, rhs) result(Eout)
        import :: rScalar_t
        class(rScalar_t), intent(in)  :: lhs, rhs
        class(rScalar_t), allocatable :: Eout
-     end function iface_Add_1
+     end function iface_add1
 
-     function iface_Sub_1(lhs, rhs) result(Eout)
+     function iface_sub1(lhs, rhs) result(Eout)
        import :: rScalar_t
        class(rScalar_t), intent(in) :: lhs, rhs
        class(rScalar_t), allocatable :: Eout
-     end function iface_Sub_1
+     end function iface_sub1
 
-     function iface_Mult_1(lhs, rhs) result(Eout)
+     function iface_mult1(lhs, rhs) result(Eout)
        import :: rScalar_t
        class(rScalar_t), intent(in) :: lhs, rhs
        class(rScalar_t), allocatable :: Eout
-     end function iface_Mult_1
+     end function iface_mult1
+	 
+	 function iface_mult2(lhs, rhs) result(Eout)
+       import :: rScalar_t, cScalar_t
+       class(rScalar_t), intent(in)  :: lhs
+	   class(cScalar_t), intent(in)  :: rhs
+       class(cScalar_t), allocatable :: Eout
+     end function iface_mult2
      
-     function iface_Div_1(lhs, rhs) result(Eout)
+     function iface_div1(lhs, rhs) result(Eout)
        import :: rScalar_t
        class(rScalar_t), intent(in) :: lhs, rhs
        class(rScalar_t), allocatable :: Eout
-     end function iface_Div_1
+     end function iface_div1
 
      function iface_dotProd(lhs, rhs) result(r)
        import :: rScalar_t, prec
@@ -263,11 +272,11 @@ module rScalar
        logical :: status
      end function iface_isCompatible
 
-     subroutine iface_CopyFrom(self, rhs)
+     subroutine iface_copyFrom(self, rhs)
        import :: rScalar_t
        class(rScalar_t), intent(inout) :: self
        class(rScalar_t), intent(in)    :: rhs
-     end subroutine iface_CopyFrom
+     end subroutine iface_copyFrom
 
 
   end interface

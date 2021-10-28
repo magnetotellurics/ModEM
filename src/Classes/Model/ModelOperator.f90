@@ -10,12 +10,12 @@ module ModelOperator
   type, abstract :: ModelOperator_t
      !
      class( Grid_t ), pointer  :: grid
-     real( kind = prec )       :: omega
+     !real( kind = prec )      :: omega
      logical                   :: is_allocated = .false.
      !
      contains 
      !
-     procedure( iface_UpdateFrequency ), deferred, public :: UpdateFrequency
+     !procedure( iface_UpdateFrequency ), deferred, public :: UpdateFrequency
      procedure( iface_SetEquations ), deferred, public    :: SetEquations
      procedure( iface_SetCond )     , deferred, public    :: SetCond
      procedure( iface_AMult )       , deferred, public    :: Amult
@@ -68,11 +68,12 @@ module ModelOperator
        class(cVector_t)       , intent(out), allocatable :: outE       
      end subroutine iface_MultCurlT
      
-     function iface_Amult(self, x, p_adjt) result(y)
+     function iface_Amult(self, x, p_adjt, omega) result(y)
        import :: ModelOperator_t, cVector_t, prec
-       class(ModelOperator_t), intent(in)  :: self
-       class(cVector_t)      , intent(in)  :: x
-       logical               , intent(in), optional :: p_adjt    
+       class(ModelOperator_t), intent(in)           :: self
+       class(cVector_t)      , intent(in)           :: x
+       logical               , intent(in), optional :: p_adjt
+	   real( kind = prec ), intent(in), optional    :: omega
        class(cVector_t), allocatable :: y
      end function iface_Amult
           

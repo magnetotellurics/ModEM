@@ -65,51 +65,51 @@ module rVector3D_SG
      !**
      ! Input/Output
      !*
-     procedure, public :: Read
-     procedure, public :: Write
+     procedure, public :: read  => readRVector3D_SG
+     procedure, public :: write => writeRVector3D_SG
      
      !**
      ! Boundary operations
      !*
-     procedure, public :: SetAllBoundary
-     procedure, public :: SetOneBoundary
-     procedure, public :: SetAllInterior
-     procedure, public :: IntBdryIndices
+     procedure, public :: setAllBoundary => setAllBoundaryRVector3D_SG
+     procedure, public :: setOneBoundary => setOneBoundaryRVector3D_SG
+     procedure, public :: setAllInterior => setAllInteriorRVector3D_SG
+     procedure, public :: intBdryIndices => intBdryIndicesRVector3D_SG
      !procedure, public :: Boundary
      !procedure, public :: Interior
      
      !**
      ! Data access
      !*
-     procedure, public :: Length
-     procedure, public :: GetArray
-     procedure, public :: SetArray
-     procedure, public :: SetVecComponents
+     procedure, public :: length => lengthRVector3D_SG
+     procedure, public :: getArray => getArrayRVector3D_SG
+     procedure, public :: setArray => setArrayRVector3D_SG
+     procedure, public :: setVecComponents => setVecComponentsRVector3D_SG
           
      !**
      ! Arithmetic operations
      !*
 
-     procedure, public :: Zeros
-     procedure, public :: Add_1
-     procedure, public :: Sub_1
-     procedure, public :: Mult_1
-     procedure, public, pass(self) :: Mult_2
-     procedure, public :: Div_1
-     procedure, public :: dotProd
-     procedure, public :: diagMult
+     procedure, public :: zeros => zerosRVector3D_SG
+     procedure, public :: add1 => add1RVector3D_SG
+     procedure, public :: sub1 => sub1RVector3D_SG
+     procedure, public :: mult1 => mult1RVector3D_SG
+     procedure, public, pass(self) :: mult2 => mult2RVector3D_SG
+     procedure, public :: div1 => div1RVector3D_SG
+     procedure, public :: dotProd => dotProdRVector3D_SG
+     procedure, public :: diagMult => diagMultRVector3D_SG
 
      !**
      ! Miscellaneous
      !*
 
-     procedure, public :: isCompatible
-     procedure, public :: CopyFrom
+     procedure, public :: isCompatible => isCompatibleRVector3D_SG
+     procedure, public :: copyFrom => copyFromRVector3D_SG
      
-     procedure, public :: SumEdges
-     procedure, public :: SumCells
+     procedure, public :: sumEdges => sumEdgesRVector3D_SG
+     procedure, public :: SumCells => SumCellsRVector3D_SG
 
-     procedure, public :: interpFunc
+     procedure, public :: interpFunc => interpFuncRVector3D_SG
      
   end type rVector3D_SG_t
   
@@ -186,8 +186,8 @@ contains
        E%NdZ = (/E%nx, E%ny, E%nz + 1/)
        
     else
-       write(*, *) 'ERROR:rVector3D_SG_ctor:'
-       write(*, *) '      Only EDGE or FACE types allowed. Exiting.'
+       write(*,*) 'ERROR:rVector3D_SG_ctor:'
+       write(*,*) '      Only EDGE or FACE types allowed. Exiting.'
        
        STOP       
     end if
@@ -197,8 +197,8 @@ contains
        E%y = R_ZERO
        E%z = R_ZERO      
     else
-       write(*, *) 'ERROR:rVector3D_SG_ctor'
-       write(*, *) '      Unable to allocate vector. Exiting.'
+       write(*,*) 'ERROR:rVector3D_SG_ctor'
+       write(*,*) '      Unable to allocate vector. Exiting.'
        
        STOP
     end if
@@ -240,9 +240,9 @@ contains
   !
 
   !**
-  ! Read
+  ! readRVector3D_SG
   !*
-  subroutine Read(self, fid)
+  subroutine readRVector3D_SG(self, fid)
     implicit none
     ! Arguments
     class(rVector3D_SG_t), intent(inout) :: self
@@ -260,15 +260,15 @@ contains
     ! Check that the file is unformatted if binary, formatted if ascii.
     if ((index(isbinary, 'yes') > 0 .or.index(isbinary, 'YES') > 0) &
          .and. .not.binary ) then
-       write(0, *) 'ERROR:rVector3D_SG::Read: '
-       write(0, *) '      Unable to read vector from unformatted file. ', &
+       write(0,*) 'ERROR:rVector3D_SG::readRVector3D_SG: '
+       write(0,*) '      Unable to readRVector3D_SG vector from unformatted file. ', &
             trim(fname), '. Exiting.'
        
        STOP
     else if ((index(isbinary, 'no') > 0 .or.index(isbinary, 'NO') > 0) &
          .and.binary) then
-       write(0, *) 'ERROR:rVector3D_SG::Read: '
-       write(0, *) '      Unable to read vector from formatted file ', &
+       write(0,*) 'ERROR:rVector3D_SG::readRVector3D_SG: '
+       write(0,*) '      Unable to readRVector3D_SG vector from formatted file ', &
             trim(fname), '. Exiting.'
        STOP
     end if
@@ -276,21 +276,21 @@ contains
     read(fid) Nx, Ny, Nz, gridType
     
     if (.not.self%isAllocated) then
-       write(*, *) 'ERROR:rVector3D_SG::Read: '
-       write(*, *) '      Vector must be allocated before reading from ', &
+       write(*,*) 'ERROR:rVector3D_SG::readRVector3D_SG: '
+       write(*,*) '      Vector must be allocated before readRVector3D_SGing from ', &
             trim(fname), '. Exiting.'
        
        STOP
     else if (self%gridType.ne.gridType) then
-       write (*, *) 'ERROR:rVector3D_SG::Read: '
-       write (*, *) '      Vector must be of type ', gridType, &
-            &       '      before reading from ', trim (fname), '. Exiting.'
+       write(*,*) 'ERROR:rVector3D_SG::readRVector3D_SG: '
+       write(*,*) '      Vector must be of type ', gridType, &
+            &       '      before readRVector3D_SGing from ', trim (fname), '. Exiting.'
        
        STOP
     else if ((self%nx.ne.Nx).or. &
          (self%ny.ne.Ny).or.(self%nz.ne.Nz)) then
-       write(*, *) 'ERROR:rVector3D_SG_t::Read: '
-       write(*, *) '      Wrong size of vector on input from ', trim (fname), '. Exiting.'
+       write(*,*) 'ERROR:rVector3D_SG_t::readRVector3D_SG: '
+       write(*,*) '      Wrong size of vector on input from ', trim (fname), '. Exiting.'
 
        STOP
     end if
@@ -299,12 +299,12 @@ contains
     read(fid) self%y
     read(fid) self%z          
     
-  end subroutine Read
+  end subroutine readRVector3D_SG
   
   !**
-  ! Write
+  ! writeRVector3D_SG
   !*
-  subroutine Write(self, fid)
+  subroutine writeRVector3D_SG(self, fid)
     implicit none
     ! Arguments
     class(rVector3D_SG_t), intent(in) :: self
@@ -317,8 +317,8 @@ contains
     character(80) :: fname, isbinary
     
     if (.not.self%isAllocated) then
-       write(*, *) 'ERROR:rVector3D_SG::Write: '
-       write(*, *) '      Not allocated. Exiting.'
+       write(*,*) 'ERROR:rVector3D_SG::writeRVector3D_SG: '
+       write(*,*) '      Not allocated. Exiting.'
 
        STOP
     end if
@@ -328,15 +328,15 @@ contains
     ! Check that the file is unformatted if binary, formatted if ascii.
     if ((index(isbinary, 'yes') > 0.or.index(isbinary, 'YES') > 0) &
          .and. .not.binary) then
-       write (0, *) 'ERROR:rVector3D_SG::Write: '
-       write (0, *) '      Unable to write vector to unformatted file. ', &
+       write(*,*) 'ERROR:rVector3D_SG::writeRVector3D_SG: '
+       write(*,*) '      Unable to writeRVector3D_SG vector to unformatted file. ', &
             trim(fname), '. Exiting.'
        
        STOP
     else if ((index(isbinary,'no') > 0.or.index(isbinary,'NO') > 0) &
          .and.binary) then
-       write (0, *) 'ERROR:rVector3D_SG::Write: '
-       write (0, *) '      Unable to write vector to formatted file. ', &
+       write(*,*) 'ERROR:rVector3D_SG::writeRVector3D_SG: '
+       write(*,*) '      Unable to writeRVector3D_SG vector to formatted file. ', &
             trim(fname), '. Exiting.'
        
        STOP
@@ -347,7 +347,7 @@ contains
     write(fid) self%y
     write(fid) self%z          
     
-  end subroutine Write
+  end subroutine writeRVector3D_SG
   
   !
   !************************************************
@@ -356,10 +356,10 @@ contains
   !
 
   !** 
-  ! SetAllBoundary
+  ! setAllBoundaryRVector3D_SG
   !
   !*
-  subroutine SetAllBoundary(self, c_in)
+  subroutine setAllBoundaryRVector3D_SG(self, c_in)
     implicit none
     ! Arguments
     class(rVector3D_SG_t), intent(inout) :: self
@@ -380,19 +380,19 @@ contains
        self%z(:, :, (/1, self%NdZ(3)/)) = c_in
 
     case default
-       write(*, *) 'ERROR:rVector3D_SG::SetAllBoundary: '
-       write(*, *) '      Invalid grid type. Exiting.'
+       write(*,*) 'ERROR:rVector3D_SG::setAllBoundaryRVector3D_SG: '
+       write(*,*) '      Invalid grid type. Exiting.'
        
        STOP
     end select
     
-  end subroutine SetAllBoundary
+  end subroutine setAllBoundaryRVector3D_SG
   
   !** 
-  ! SetAllInterior
+  ! setAllInteriorRVector3D_SG
   !
   !*
-  subroutine SetAllInterior(self, c_in)
+  subroutine setAllInteriorRVector3D_SG(self, c_in)
     implicit none
     ! Arguments
     class(rVector3D_SG_t), intent(inout) :: self
@@ -413,19 +413,19 @@ contains
        self%z(:, :, 2:self%NdZ(3)-1) = c_in
        
     case default
-       write(*, *) 'ERROR:rVector3D_SG::SetAllInterior:'
-       write(*, *) '      Invalid grid type. Exiting.'
+       write(*,*) 'ERROR:rVector3D_SG::setAllInteriorRVector3D_SG:'
+       write(*,*) '      Invalid grid type. Exiting.'
        
        STOP
     end select
     
-  end subroutine SetAllInterior
+  end subroutine setAllInteriorRVector3D_SG
 
   !**
-  ! SetOneBoundary
+  ! setOneBoundaryRVector3D_SG
   !
   !*
-  subroutine SetOneBoundary(self, bdry, c, int_only)
+  subroutine setOneBoundaryRVector3D_SG(self, bdry, c, int_only)
     implicit none
     ! Arguments
     class(rVector3D_SG_t), intent(inout) :: self
@@ -518,18 +518,18 @@ contains
           self%z(:, :, self%NdZ(3)) = c          
        end select
     case default
-       write(*, *) 'ERROR:rVector3D_SG::SetOneBoundary:'
-       write(*, *) '      Invalid grid type. Exiting.'
+       write(*,*) 'ERROR:rVector3D_SG::setOneBoundaryRVector3D_SG:'
+       write(*,*) '      Invalid grid type. Exiting.'
        
        STOP
     end select
     
-  end subroutine SetOneBoundary
+  end subroutine setOneBoundaryRVector3D_SG
 
   !**
-  ! IntBdryIndices
+  ! intBdryIndicesRVector3D_SG
   !*
-  subroutine IntBdryIndices(self, ind_i, ind_b)
+  subroutine intBdryIndicesRVector3D_SG(self, ind_i, ind_b)
     implicit none
     ! Arguments
     class(rVector3D_SG_t), intent(in)  :: self
@@ -545,8 +545,8 @@ contains
            E = rVector3D_SG_t(grid, self%gridType)
        end select
     else
-       write(*, *) 'ERROR:rVector3D_SG:IntBdryIndices:'
-       write(*, *) '      Not allocated. Exiting.'
+       write(*,*) 'ERROR:rVector3D_SG:intBdryIndicesRVector3D_SG:'
+       write(*,*) '      Not allocated. Exiting.'
 
        STOP
     end if
@@ -573,7 +573,7 @@ contains
        E%z(:, 1, :) = 1
        E%z(:, E%ny + 1, :) = 1
 
-       call E%GetArray(temp)       
+       call E%getArray(temp)       
 
     case(FACE)
        nVec(1) = size(E%x)
@@ -590,7 +590,7 @@ contains
        E%z(:, :, 1) = 1
        E%z(:, :, E%nz + 1) = 1
        
-       call E%GetArray(temp) 
+       call E%getArray(temp) 
        
     end select
     
@@ -623,7 +623,7 @@ contains
        end if
     end do
     
-  end subroutine IntBdryIndices
+  end subroutine intBdryIndicesRVector3D_SG
   
   ! !**
   ! ! Boundary
@@ -635,7 +635,7 @@ contains
   !   type(rVector3D_SG_t) :: E
     
   !   E = self
-  !   call E%SetAllInterior(R_ZERO)
+  !   call E%setAllInteriorRVector3D_SG(R_ZERO)
     
   ! end function Boundary
   
@@ -649,7 +649,7 @@ contains
   !   type(rVector3D_SG_t) :: E
 
   !   E = self
-  !   call E%SetAllBoundary(R_ZERO)
+  !   call E%setAllBoundaryRVector3D_SG(R_ZERO)
     
   ! end function Interior
   
@@ -660,10 +660,10 @@ contains
   !
 
   !**
-  ! Length
+  ! lengthRVector3D_SG
   !
   !*
-  function Length(self) result(n)
+  function lengthRVector3D_SG(self) result(n)
     implicit none
     ! Arguments
     class(rVector3D_SG_t), intent(in) :: self
@@ -672,29 +672,29 @@ contains
     
     n = self%Nxyz(1) + self%Nxyz(2) + self%Nxyz(3)
     
-  end function Length
+  end function lengthRVector3D_SG
 
   !**
-  ! GetArray
+  ! getArrayRVector3D_SG
   !
   !*
-  subroutine GetArray(self, v)
+  subroutine getArrayRVector3D_SG(self, v)
     implicit none
     ! Arguments
     class(rVector3D_SG_t), intent(in)  :: self
     real(kind = prec), allocatable, intent(out) :: v(:)
-    allocate (v(self%Length ()))
+    allocate (v(self%length()))
     v = (/reshape(self%x, (/self%Nxyz(1), 1/)), &
          reshape(self%y, (/self%Nxyz(2), 1/)), &
          reshape(self%z, (/self%Nxyz(3), 1/))/)
     
-  end subroutine GetArray
+  end subroutine getArrayRVector3D_SG
   
   !**
-  ! SetArray
+  ! setArrayRVector3D_SG
   !
   !*
-  subroutine SetArray(self, v)
+  subroutine setArrayRVector3D_SG(self, v)
     implicit none
     ! Arguments
     class(rVector3D_SG_t), intent(inout) :: self
@@ -714,13 +714,13 @@ contains
     i1 = i2 + 1; i2 = i2 + self%Nxyz(3)
     self%z = reshape(v(i1:i2), self%NdZ)
     
-  end subroutine SetArray
+  end subroutine setArrayRVector3D_SG
   
   !**
-  ! SetVecComponents
+  ! setVecComponentsRVector3D_SG
   !
   !*
-  subroutine SetVecComponents(self, xyz, &
+  subroutine setVecComponentsRVector3D_SG(self, xyz, &
        &                      xmin, xstep, xmax, &
        &                      ymin, ystep, ymax, &
        &                      zmin, zstep, zmax, c)
@@ -779,13 +779,13 @@ contains
        self%z(x1:x2:xstep, y1:y2:ystep, z1:z2:zstep) = c
 
     case default
-       write(*, *) 'ERROR:rVector3D_SG::SetVecComponents:'
-       write(*, *) '      Invalid "xyz" argument. Exiting.'
+       write(*,*) 'ERROR:rVector3D_SG::setVecComponentsRVector3D_SG:'
+       write(*,*) '      Invalid "xyz" argument. Exiting.'
        
        STOP
     end select
     
-  end subroutine SetVecComponents
+  end subroutine setVecComponentsRVector3D_SG
 
   !
   !************************************************
@@ -794,9 +794,9 @@ contains
   !
 
   !**
-  ! Zeros
+  ! zerosRVector3D_SG
   !*
-  subroutine Zeros(self)
+  subroutine zerosRVector3D_SG(self)
     implicit none
     class(rVector3D_SG_t), intent(inout) :: self
 
@@ -804,12 +804,12 @@ contains
     self%y = R_ZERO
     self%z = R_ZERO
     
-  end subroutine Zeros
+  end subroutine zerosRVector3D_SG
 
   !**
-  ! Add_1
+  ! add1RVector3D_SG
   !*
-  function Add_1(lhs, rhs) result(Eout)
+  function add1RVector3D_SG(lhs, rhs) result(Eout)
     class(rVector3D_SG_t), intent(in) :: lhs
     class(rVector_t)     , intent(in) :: rhs
     class(rVector_t), allocatable :: Eout
@@ -826,17 +826,17 @@ contains
           end select
        end select
     else
-       write(*, *) 'ERROR:rVector3D_SG::Add_1'
-       write(*, *) '  Incompatible inputs. Exiting.'
+       write(*,*) 'ERROR:rVector3D_SG::add1RVector3D_SG'
+       write(*,*) '  Incompatible inputs. Exiting.'
        
        STOP
     end if
-  end function Add_1
+  end function add1RVector3D_SG
 
   !**
-  ! Sub_1
+  ! sub1RVector3D_SG
   !*
-  function Sub_1(lhs, rhs) result(Eout)
+  function sub1RVector3D_SG(lhs, rhs) result(Eout)
     class(rVector3D_SG_t), intent(in) :: lhs
     class(rVector_t)     , intent(in) :: rhs
     class(rVector_t), allocatable :: Eout
@@ -853,17 +853,17 @@ contains
           end select
        end select
     else
-       write(*, *) 'ERROR:rVector3D_SG::Sub_1'
-       write(*, *) '  Incompatible inputs. Exiting.'
+       write(*,*) 'ERROR:rVector3D_SG::sub1RVector3D_SG'
+       write(*,*) '  Incompatible inputs. Exiting.'
        
        STOP
     end if
-  end function Sub_1
+  end function sub1RVector3D_SG
 
   !**
-  ! Mult_1
+  ! mult1RVector3D_SG
   !*
-  function Mult_1(lhs, rhs) result(Eout)
+  function mult1RVector3D_SG(lhs, rhs) result(Eout)
     class(rVector3D_SG_t), intent(in) :: lhs
     class(rVector_t)     , intent(in) :: rhs
     class(rVector_t), allocatable :: Eout
@@ -880,17 +880,17 @@ contains
           end select
        end select
     else
-       write(*, *) 'ERROR:rVector3D_SG::mult_1'
-       write(*, *) '  Incompatible inputs. Exiting.'
+       write(*,*) 'ERROR:rVector3D_SG::mult_1'
+       write(*,*) '  Incompatible inputs. Exiting.'
        
        STOP
     end if
-  end function Mult_1
+  end function mult1RVector3D_SG
 
   !**
-  ! Mult_2
+  ! mult2RVector3D_SG
   !*
-  function Mult_2(c, self) result(Eout)
+  function mult2RVector3D_SG(c, self) result(Eout)
     real(kind = prec)    , intent(in) :: c
     class(rVector3D_SG_t), intent(in) :: self
     class(rVector_t), allocatable :: Eout
@@ -903,12 +903,12 @@ contains
        Eout%z = c * self%z             
     end select
     
-  end function Mult_2
+  end function mult2RVector3D_SG
 
   !**
-  ! Div_1
+  ! div1RVector3D_SG
   !*
-  function Div_1(lhs, rhs) result(Eout)
+  function div1RVector3D_SG(lhs, rhs) result(Eout)
     class(rVector3D_SG_t), intent(in) :: lhs
     class(rVector_t)     , intent(in) :: rhs
     class(rVector_t), allocatable :: Eout
@@ -925,14 +925,14 @@ contains
           end select
        end select
     else
-       write(*, *) 'ERROR:rVector3D_SG::Div_1'
-       write(*, *) '  Incompatible inputs. Exiting.'
+       write(*,*) 'ERROR:rVector3D_SG::div1RVector3D_SG'
+       write(*,*) '  Incompatible inputs. Exiting.'
        
        STOP
     end if
-  end function Div_1
+  end function div1RVector3D_SG
   
-  function dotProd(lhs, rhs) result(r)
+  function dotProdRVector3D_SG(lhs, rhs) result(r)
     ! Arguments
     class(rVector3D_SG_t), intent(in) :: lhs
     class(rVector_t)     , intent(in) :: rhs
@@ -943,8 +943,8 @@ contains
     r = R_ZERO
     
     if ((.not.lhs%isAllocated).or.(.not.rhs%isAllocated)) then
-       write(*, *) 'ERROR:rVector3D_SG::dotProd: '
-       write(*, *) '      Input vectors not allocated. Exiting.'
+       write(*,*) 'ERROR:rVector3D_SG::dotProdRVector3D_SG: '
+       write(*,*) '      Input vectors not allocated. Exiting.'
 
        STOP
     end if
@@ -961,18 +961,18 @@ contains
           r = r + sum(lhs%z * rhs%z)
        end select
     else
-       write(*, *) 'ERROR:rVector3D_SG:dotProd:'
-       write(*, *) '      Incompatible input. Exiting.'
+       write(*,*) 'ERROR:rVector3D_SG:dotProdRVector3D_SG:'
+       write(*,*) '      Incompatible input. Exiting.'
        
        STOP
     end if
-  end function dotProd
+  end function dotProdRVector3D_SG
   
     !****************************************************************************
-    ! diagMult_rvector multiplies two vectors self, rhs stored as derived data
+    ! diagMultRVector3D_SG_rvector multiplies two vectors self, rhs stored as derived data
     ! type rvector pointwise; subroutine version
-    ! mult can overwrite self or rhs
-    function diagMult( self, rhs ) result ( diag_mult )
+    ! mult can overwriteRVector3D_SG self or rhs
+    function diagMultRVector3D_SG( self, rhs ) result ( diag_mult )
         implicit none
         ! Arguments
         class(rVector3D_SG_t), intent(in) :: self
@@ -992,19 +992,19 @@ contains
                 end select
             end select
             else
-                write(*, *) 'ERROR:rVector3D_SG::diagMult'
+                write(*,*) 'ERROR:rVector3D_SG::diagMultRVector3D_SG'
                 STOP '  Incompatible inputs. Exiting.'
         end if
 
-    end function diagMult ! diagMult_rvector
+    end function diagMultRVector3D_SG ! diagMultRVector3D_SG_rvector
   
   !**
-  ! SumEdges
+  ! sumEdgesRVector3D_SG
   ! Sum all edges (or faces) that bound a cell, return as
   ! rScalar object.
   ! If interior only is true, only sum over interior edges (faces).
   !*
-  function SumEdges(self, interiorOnly) result(cellObj)
+  function sumEdgesRVector3D_SG(self, interiorOnly) result(cellObj)
     implicit none
     class(rVector3D_SG_t), intent(in) :: self
     logical  , optional  , intent(in) :: interiorOnly
@@ -1018,7 +1018,7 @@ contains
     E_tmp = self
     
     if (interiorOnly) then
-       call E_tmp%SetAllBoundary(R_ZERO)
+       call E_tmp%setAllBoundary(R_ZERO)
     end if
     
     allocate(cellObj, source = rScalar3D_SG_t(E_tmp%grid, CELL))
@@ -1060,16 +1060,16 @@ contains
                E_tmp%z(:,:,1:z_zend-1) + E_tmp%z(:,:,2:z_zend)
        end select
     end select
-  end function SumEdges
+  end function sumEdgesRVector3D_SG
 
   !**
-  ! SumCells
+  ! SumCellsRVector3D_SG
   ! Sum scalar object (cell type only) onto rVector object;
   ! default is to sum onto all bounding interior edges;
   ! boundary edges are presently zero;
   ! faces case is coded now.
   !*
-  subroutine SumCells(self, E_in, ptype)
+  subroutine SumCellsRVector3D_SG(self, E_in, ptype)
     class(rVector3D_SG_t), intent(inout) :: self
     class(rScalar_t)     , intent(in)    :: E_in
     character(*)         , intent(in), optional :: ptype
@@ -1079,8 +1079,8 @@ contains
     integer :: v_xend, v_yend, v_zend
     
     if (index(self%gridType, CELL) > 0) then
-       write(*, *) 'ERROR:rVector3D_SG_t::SumCells:'
-       write(*, *) '      Only CELL type supported. Exiting.'
+       write(*,*) 'ERROR:rVector3D_SG_t::SumCellsRVector3D_SG:'
+       write(*,*) '      Only CELL type supported. Exiting.'
        
        STOP
     end if
@@ -1132,19 +1132,19 @@ contains
           self%z(:, :, 2:zend-1) = E_in%v(:, :, 1:v_zend-1) + E_in%v(:, :, 2:v_zend)
        end select
     class default
-       write(*, *) 'ERROR:rVector3D_SG::SumCells:'
-       write(*, *) '      Incompatible input rScalar_t. Exiting.'
+       write(*,*) 'ERROR:rVector3D_SG::SumCellsRVector3D_SG:'
+       write(*,*) '      Incompatible input rScalar_t. Exiting.'
        
        STOP
     end select
-  end subroutine SumCells
+  end subroutine SumCellsRVector3D_SG
   
   !**
   ! InterpFunc
   ! Creates a Vector object containing weights needed for
   ! interpolation of xyz component of obj1 to location.
   !*
-  function InterpFunc(self, location, xyz) result(E)
+  function interpFuncRVector3D_SG(self, location, xyz) result(E)
     implicit none
     class(rVector3D_SG_t), intent(in) :: self
     real(kind = prec)    , intent(in) :: location(3)
@@ -1290,9 +1290,9 @@ contains
        end select
     end select
     
-  end function InterpFunc
+  end function interpFuncRVector3D_SG
   
-  function isCompatible(self, rhs) result(status)
+  function isCompatibleRVector3D_SG(self, rhs) result(status)
     ! Arguments
     class(rVector3D_SG_t), intent(in) :: self
     class(rVector_t), intent(in) :: rhs
@@ -1309,16 +1309,16 @@ contains
           end if
        end select
     end if
-  end function IsCompatible
+  end function isCompatibleRVector3D_SG
 
-  subroutine CopyFrom(self, rhs)
+  subroutine copyFromRVector3D_SG(self, rhs)
     ! Arguments
     class(rVector3D_SG_t), intent(inout) :: self
     class(rVector_t)     , intent(in)    :: rhs
     
     if (.not.rhs%isAllocated) then
-       write(*, *) 'ERROR:rVector3D_SG::CopyFrom'
-       write(*, *) '  Input not allocated. Exiting.'
+       write(*,*) 'ERROR:rVector3D_SG::copyFromRVector3D_SG'
+       write(*,*) '  Input not allocated. Exiting.'
        
        STOP
     end if
@@ -1357,17 +1357,17 @@ contains
              
              self%isAllocated = .true.
           else
-             write(*, *) 'ERROR:rVector3D_SG::CopyFrom'
-             write(*, *) '  Incompatible input. Exiting.'
+             write(*,*) 'ERROR:rVector3D_SG::copyFromRVector3D_SG'
+             write(*,*) '  Incompatible input. Exiting.'
              
              STOP
           end if
        end if
     class default
-       write(*, *) 'ERROR:rVector3D_SG::CopyFrom:'
-       write(*, *) '      Incompatible input type. Exiting.'
+       write(*,*) 'ERROR:rVector3D_SG::copyFromRVector3D_SG:'
+       write(*,*) '      Incompatible input type. Exiting.'
        STOP 
     end select
-  end subroutine CopyFrom
+  end subroutine copyFromRVector3D_SG
   
 end module rVector3D_SG
