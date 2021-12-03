@@ -4,7 +4,17 @@ module MetricElements
   use rScalar
   
   type, abstract :: MetricElements_t
-     
+     !
+	 class(Grid_t), pointer :: grid
+     !   these have now been added to abstract class -- for specific extensions
+     !     different types of rVector/rScalar may be needed    
+     class(rVector_t), allocatable :: EdgeLength
+     class(rVector_t), allocatable :: FaceArea
+     class(rVector_t), allocatable :: DualFaceArea
+     class(rVector_t), allocatable :: DualEdgeLength
+     class(rScalar_t), allocatable :: Vnode
+     class(rScalar_t), allocatable :: Vcell
+     class(rVector_t), allocatable :: Vedge
    contains
      
      procedure(iface_SetEdgeLength)    , deferred, public :: SetEdgeLength

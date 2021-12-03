@@ -86,13 +86,13 @@ contains
       ! Set Vectors Lex, Ley, Lbx, Lby
       call self%evaluationFunction( model_operator, omega )
       !
-      ! get e_solution from the Tx 1st polarization
-      !e_tx_pol_1 = transmitter%e_solution%get( 1 ) ! SHOULD BE LIKE THIS???
-      allocate( e_tx_pol_1, source = transmitter%e_solution%get( 1 ) )
+      ! get e_all from the Tx 1st polarization
+      !e_tx_pol_1 = transmitter%e_all%get( 1 ) ! SHOULD BE LIKE THIS???
+      allocate( e_tx_pol_1, source = transmitter%e_all%get( 1 ) )
       !
-      ! get e_solution from the Tx 2nd polarization
-      !e_tx_pol_2 = transmitter%e_solution%get( 2 )
-      allocate( e_tx_pol_2, source = transmitter%e_solution%get( 2 ) )
+      ! get e_all from the Tx 2nd polarization
+      !e_tx_pol_2 = transmitter%e_all%get( 2 )
+      allocate( e_tx_pol_2, source = transmitter%e_all%get( 2 ) )
       !
       allocate( complex(kind=prec) :: self%EE( 2, 2 ) )
       !
@@ -158,8 +158,8 @@ contains
    subroutine writeReceiverOffDiagonalImpedance( self )
       class( ReceiverOffDiagonalImpedance_t ), intent( in ) :: self
       !
-      integer                     :: iDg, nDg
-      class( DataGroup_t ), pointer   :: data_group
+      integer                           :: iDg, nDg
+      class( DataGroup_t ), allocatable :: data_group
       !
       nDg = self%getNDg()
       !
@@ -167,7 +167,7 @@ contains
       " N Data Groups: ", nDg
       !
       do iDg = 1, nDg
-         data_group => self%get( iDg )
+         data_group = self%get( iDg )
          call data_group%write()
       enddo
       !

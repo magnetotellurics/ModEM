@@ -1,106 +1,149 @@
 module Solver_PCG
-  use Constants
-  use cVector
-  use ModelOperator
-  use PreConditioner
-  use Solver
-  
-  implicit none
-  
-  private
-
-  public :: Solver_PCG_t
-  
-  type, extends(Solver_t) :: Solver_PCG_t
-     real( kind = prec ) :: omega
-	 real(kind = prec)   :: tol
-     integer             :: maxIter 
-     integer             :: nIter 
-     
-     class(ModelOperator_t) , pointer :: model_operator
-     class(PreConditioner_t), pointer :: preconditioner
+   !
+   use Solver
+   use cScalar
+   use ModelOperator_MF
+   use PreConditioner_MF_DC
+   !
+   !   solver object for PCG -- used only for Divergence Correction
+   type, extends(Solver_t), public :: Solver_PCG_t
+      !
+      contains
+         !
+         final :: Solver_PCG_dtor
+         !
+         procedure, public :: solve => solvePCG
+         !procedure, public :: setOperators => setOperatorsSolver_PCG
+         !
+   end type Solver_PCG_t
+   !
+   interface Solver_PCG_t
+      module procedure Solver_PCG_ctor
+   end interface Solver_PCG_t
+   !
    contains
-     procedure, public :: Solve
-  end type Solver_PCG_t
+      !
+      function Solver_PCG_ctor( preconditioner ) result( self )
+         implicit none
+         !
+         class( PreConditioner_MF_DC_t ), target, intent( in ) :: preconditioner
+         type( Solver_PCG_t ) :: self
+         !
+         !write(*,*) "Constructor Solver_PCG_t"
+         !
+         call self%init()
+         !
+	     self%preconditioner => preconditioner
+         self%model_operator => preconditioner%model_operator
+         !
+         !  NOTE: need default solver parameters to use here -- but more generally]
+         !    need to set these to what user requests in setup program!!!
+         call self%setParameters( 10, TOL6 )
 
-  interface Solver_PCG_t
-     module procedure Solver_PCG_ctor
-  end interface Solver_PCG_t
-contains
-  
-  !**
-  !*
-  function Solver_PCG_ctor(model_operator, preconditioner) result(obj)
-    class(ModelOperator_t) , target :: model_operator
-    class(PreConditioner_t), target :: preconditioner
-    type(Solver_PCG_t) :: obj
-    
-    obj%model_operator   => model_operator
-    obj%preconditioner => preconditioner
-  end function Solver_PCG_ctor
-  
-  !**
-  ! This is the PCG solver, using operators
-  ! (including pre-conditioner solvers),
-  ! defined through pointers as object data.
-  !
-  ! on input x is initial guess, b is rhs
-  ! on output x is approximate solution
-  ! diagnostic variables nIter, relErr are set.
-  !  
-  !*
-  subroutine Solve(self, x, b) 
-    class(Solver_PCG_t), intent(inout) :: self
-    class(cVector_t)   , intent(inout) :: x
-    class(cVector_t)   , intent(in)    :: b    
-    ! Local variables
-    class(cVector_t), allocatable:: r, s, p, q
-    complex(kind = prec) :: beta, alpha, delta, deltaOld
-    complex(kind = prec) :: bnorm, rnorm
-    integer :: i
+         call self%zeroDiagnostics()
+         !
+         ! THIS SHOULD BE CREATE AT HIGHER LEVEL
+         !allocate( self%preconditioner, source = PreConditioner_MF_DC_t( model_operator ) )
+         !
+         ! call self%setOperators( model_operator, preconditioner )
+         !
+      end function Solver_PCG_ctor
+      !
+      ! Solver_PCG destructor
+      subroutine Solver_PCG_dtor( self )
+          implicit none
+          !
+          type( Solver_PCG_t ), intent( inout ) :: self
+          !
+          !write(*,*) "Destructor Solver_PCG_t"
+          !
+          call self%dealloc()
+          !
+      end subroutine Solver_PCG_dtor
+      !
+      !************************************************   
+      subroutine solvePCG( self, x, b )
+         !   This is the PCG solver, using operators
+         !    (including pre-conditioner solvers),
+         !    defined through pointers as object data`
+         !
+         !  on input x is initial guess, b is rhs
+         !  on output x is approximate solution
+         !  diagnostic variables nIter, relErr are set
+         !  
+         ! Code is taken from subroutine PCG in solvers.f90
 
-    allocate(r, source = x)
-    call r%Zeros()
-    
-    allocate(s, source = x)
-    call s%Zeros()
+         !   import :: Solver_t   -- is this needed????
+         class( Solver_PCG_t ), intent(inout)           :: self
+         class( cScalar_t ), allocatable, intent(inout) :: x
+         class( cScalar_t ), intent(in)                 :: b
+         ! local variables
+         !   these will have to be created in a way to match
+         !    the specific type of the input cScalar_t ...
+         !   Can we just declare these to be of the abstract type?
+         class ( cScalar_t ), allocatable :: r, s, p, q
+         complex( kind=prec )        :: beta, alpha, delta, deltaOld
+         complex( kind=prec )        :: bnorm, rnorm
+         integer                     :: i
 
-    allocate(p, source = x)
-    call p%Zeros()
+         !  create local cScalar objects -- could we also use modOp%createCScalar?
+         call x%zeros()
+         allocate( r, source = x )
+         allocate( s, source = x )
+         allocate( p, source = x )
+         allocate( q, source = x )
+         
+         ! just like
+         !call self%model_operator%Amult( x, r )
+         !   if we can make AMult generic, with versions that operate on cScalar/cVector
+         !    this could be more generic ...   also could change the name of this operator
+         !     to make this more obvious
+         call self%model_operator%divCgrad( x, r )
+         !
+         call r%linCombS(b,C_ONE,C_MinusOne)
+         !
+         bnorm = b%dotProd(b)
+         rnorm = r%dotProd(r)
+         i = 1
+         self%relErr(1) = real(rnorm/bnorm)
+         !   relErr is allocated on creation of object -- should not allocate here!
+!         if( allocated( self%relErr ) ) deallocate( self%relErr )
+!         allocate( self%relErr(i), source = real(rnorm/bnorm) )
+         !
+         loop: do while ( (self%relErr(i).gt.self%tolerance ).and.(i.lt.self%max_iter))
+            !
+            ! JUST PUTTED FALSE FOR ADJ
+            call self%preconditioner%LUsolve( r, s, .false. ) 
+            delta = r%dotProd(s)
+            if(i.eq.1) then
+               beta = C_ZERO   
+            else
+               beta = delta/deltaOld
+            endif
+            !   p = s * C_ONE + p * beta
+            call p%linCombS(s,C_ONE,beta)
+            call q%Zeros()
+            call self%model_operator%divCgrad( p, q )
+            !
+            alpha = delta/p%dotProd(q)
+            !   this returns x = x + alpha*p
+            call p%scMultAddS(x,alpha)
+            !   this returns r = r - alpha*q
+            call q%scMultAddS(r,-alpha)
+            deltaOld = delta
+            i = i + 1
+            rnorm = r%dotProd(r)
+            self%relErr(i) = real(rnorm/bnorm)
+         enddo loop
 
-    allocate(q, source = x)
-    call q%Zeros()
-    
-    r = self%model_operator%Amult(x)
-        
-    r = b - r
-    bnorm = b.dot.b
-    rnorm = r.dot.r
-    i = 1
-    self%relErr(i) = real(rnorm/bnorm)
-    
-    do while ((self%relErr(i).gt.self%tol).and.(i.lt.self%maxIter))
-       call self%preconditioner%Minv(r, s)
-       delta = r.dot.s
-       if (i.eq.1) then
-          p = s
-       else
-          beta = delta/deltaOld
-          p = s + beta*p
-       end if
-       q = self%model_operator%Amult(p)
-       alpha = delta/(p.dot.q)
-       x = x + alpha*p
-       r = q - alpha*r
-       deltaOld = delta
-       i = i + 1
-       rnorm = r%dotProd(r)
-       self%relErr(i) = real(rnorm/bnorm)
-       
-    end do
-    
-    self%niter = i
-    
-  end subroutine Solve
-  
+         self%n_iter = i
+
+         ! deallocate all the work arrays
+         !  deallocate( r )   !   --- supposedly this is automatic?
+         !  deallocate( s )
+         !  deallocate( p )
+         !  deallocate( q )
+         !
+      end subroutine solvePCG ! PCG
+
 end module Solver_PCG

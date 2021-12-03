@@ -22,15 +22,14 @@ module MetricElements_CSG
   use rScalar3D_SG
   
   type, extends(MetricElements_t) :: MetricElements_CSG_t
-     class(Grid3D_SG_t), pointer :: grid
-     
-     type(rVector3D_SG_t) :: EdgeLength
-     type(rVector3D_SG_t) :: FaceArea
-     type(rVector3D_SG_t) :: DualFaceArea
-     type(rVector3D_SG_t) :: DualEdgeLength
-     type(rScalar3D_SG_t) :: Vnode
-     type(rScalar3D_SG_t) :: Vcell
-     type(rVector3D_SG_t) :: Vedge
+     !
+     !type(rVector3D_SG_t) :: EdgeLength
+     !type(rVector3D_SG_t) :: FaceArea
+     !type(rVector3D_SG_t) :: DualFaceArea
+     !type(rVector3D_SG_t) :: DualEdgeLength
+     !type(rScalar3D_SG_t) :: Vnode
+     !type(rScalar3D_SG_t) :: Vcell
+     !type(rVector3D_SG_t) :: Vedge
      
      integer :: nx = 0
      integer :: ny = 0
@@ -77,17 +76,18 @@ contains
     implicit none
     class(MetricElements_CSG_t), intent(inout) :: self
     class(Grid3D_SG_t)         , intent(in), target :: inGrid
-    
+    !
     self%Grid => inGrid
     self%nx = inGrid%nx
     self%ny = inGrid%ny
     self%nz = inGrid%nz
-    
+    !
     call self%allocate()
-    
-    call self%SetFaceArea()    
+    !
+    call self%SetFaceArea()
+    !
     call self%SetEdgeLength()
-    
+    !
   end subroutine createMetricElements_CSG
   
   !**
@@ -96,13 +96,16 @@ contains
   subroutine allocateMetricElements_CSG(self)
     implicit none
     class(MetricElements_CSG_t), intent(inout) :: self
-
-    self%EdgeLength     = rVector3D_SG_t(self%grid, EDGE)
-    self%FaceArea       = rVector3D_SG_t(self%grid, FACE)
-    self%DualEdgeLength = rVector3D_SG_t(self%grid, FACE)
-    self%DualFaceArea   = rVector3D_SG_t(self%grid, EDGE)
-    self%Vedge          = rVector3D_SG_t(self%grid, EDGE)
-    self%VNode          = rScalar3D_SG_t(self%grid, NODE)
+    !
+       select type( grid => self%grid )
+       class is( Grid3D_SG_t )
+           allocate( self%EdgeLength, source = rVector3D_SG_t( grid, EDGE ) )
+           allocate( self%FaceArea, source = rVector3D_SG_t( grid, FACE ) )
+           allocate( self%DualEdgeLength, source = rVector3D_SG_t( grid, FACE ) )
+           allocate( self%DualFaceArea, source = rVector3D_SG_t( grid, EDGE ) )
+           allocate( self%Vedge, source = rVector3D_SG_t( grid, EDGE ) )
+           allocate( self%VNode, source = rScalar3D_SG_t( grid, NODE ) )
+       end select
 
   end subroutine allocateMetricElements_CSG
 
@@ -125,21 +128,27 @@ contains
     class(MetricElements_CSG_t), intent(inout) :: self
     ! Local variables
     integer :: ix, iy, iz
+    !
+    select type( edge_length => self%EdgeLength )
+       class is( rVector3D_SG_t )
+           
+            ! x-component edge length elements
+            do ix = 1, self%nx
+               edge_length%x(ix, :, :) = self%grid%dx(ix)
+            end do
+
+            ! y-component edge length elements
+            do iy = 1, self%ny
+               edge_length%y(:, iy, :) = self%grid%dy(iy)
+            end do
+
+            ! z-component edge length elements
+            do iz = 1, self%nz
+               edge_length%z(:, :, iz) = self%grid%dz(iz)
+            end do
+           
+    end select
     
-    ! x-component edge length elements
-    do ix = 1, self%nx
-       self%EdgeLength%x(ix, :, :) = self%grid%dx(ix)
-    end do
-    
-    ! y-component edge length elements
-    do iy = 1, self%ny
-       self%EdgeLength%y(:, iy, :) = self%grid%dy(iy)
-    end do
-    
-    ! z-component edge length elements
-    do iz = 1, self%nz
-       self%EdgeLength%z(:, :, iz) = self%grid%dz(iz)
-    end do
   end subroutine SetEdgeLength
   
   !**
@@ -154,20 +163,25 @@ contains
     ! Local variables
     integer :: ix, iy, iz
     
-    ! x-component edge length elements
-    do ix = 1, self%nx
-       self%DualEdgeLength%x(ix, :, :) = self%grid%delX(ix)
-    end do
-    
-    ! y-component edge length elements
-    do iy = 1, self%ny
-       self%DualEdgeLength%y(:, iy, :) = self%grid%delY(iy)
-    end do
-    
-    ! z-component edge length elements
-    do iz = 1, self%nz
-       self%DualEdgeLength%z(:, :, iz) = self%grid%delZ(iz)
-    end do
+    select type( dual_edge_length => self%DualEdgeLength )
+       class is( rVector3D_SG_t )
+           
+          ! x-component edge length elements
+            do ix = 1, self%nx+1
+               dual_edge_length%x(ix, :, :) = self%grid%delX(ix)
+            end do
+            
+            ! y-component edge length elements
+            do iy = 1, self%ny+1
+               dual_edge_length%y(:, iy, :) = self%grid%delY(iy)
+            end do
+            
+            ! z-component edge length elements
+            do iz = 1, self%nz+1
+               dual_edge_length%z(:, :, iz) = self%grid%delZ(iz)
+            end do
+           
+    end select
     
   end subroutine SetDualEdgeLength
   
@@ -182,32 +196,39 @@ contains
     ! Local variables
     integer :: ix, iy, iz
     
-    ! x-components
-    do ix = 1, self%nx + 1
-       do iy = 1, self%ny
-          do iz = 1, self%nz
-             self%FaceArea%x(ix, iy, iz) = self%grid%dy(iy) * self%grid%dz(iz)
-          end do
-       end do
-    end do
+    select type( face_area => self%FaceArea )
+       class is( rVector3D_SG_t )
+           
+          ! x-components
+            do ix = 1, self%nx + 1
+               do iy = 1, self%ny
+                  do iz = 1, self%nz
+                     face_area%x(ix, iy, iz) = self%grid%dy(iy) * self%grid%dz(iz)
+                  end do
+               end do
+            end do
+            
+            ! y-components
+            do ix = 1, self%nx
+               do iy = 1, self%ny + 1
+                  do iz = 1,self%nz
+                     face_area%y(ix, iy, iz) = self%grid%dx(ix) * self%grid%dz(iz)
+                  end do
+               end do
+            end do
+            
+            ! z-components
+            do ix = 1, self%nx
+               do iy = 1, self%ny
+                  do iz = 1, self%nz + 1
+                     face_area%z(ix, iy, iz) = self%grid%dx(ix) * self%grid%dy(iy)
+                  end do
+               end do
+            end do
+           
+    end select
     
-    ! y-components
-    do ix = 1, self%nx
-       do iy = 1, self%ny + 1
-          do iz = 1,self%nz
-             self%FaceArea%y(ix, iy, iz) = self%grid%dx(ix) * self%grid%dz(iz)
-          end do
-       end do
-    end do
     
-    ! z-components
-    do ix = 1, self%nx
-       do iy = 1, self%ny
-          do iz = 1, self%nz + 1
-             self%FaceArea%z(ix, iy, iz) = self%grid%dx(ix) * self%grid%dy(iy)
-          end do
-       end do
-    end do
     
   end subroutine SetFaceArea
   
@@ -225,32 +246,38 @@ contains
     ! Local variables
     integer :: ix, iy, iz
     
-    ! x-components
-    do ix = 1, self%nx + 1
-       do iy = 1, self%ny
-          do iz = 1, self%nz
-             self%DualFaceArea%x(ix, iy, iz) = self%grid%delY(iy) * self%grid%delZ(iz)
-          end do
-       end do
-    end do
+    select type( dual_face_area => self%DualFaceArea )
+       class is( rVector3D_SG_t )
+           
+          ! x-components
+            do ix = 1, self%nx
+               do iy = 1, self%ny+1
+                  do iz = 1, self%nz+1
+                     dual_face_area%x(ix, iy, iz) = self%grid%delY(iy) * self%grid%delZ(iz)
+                  end do
+               end do
+            end do
+            
+            ! y-components
+            do ix = 1,self%nx + 1
+               do iy = 1,self%ny
+                  do iz = 1,self%nz + 1
+                     dual_face_area%y(ix, iy, iz) = self%grid%delX(ix) * self%grid%delZ(iz)
+                  end do
+               end do
+            end do
+            
+            ! z-components
+            do ix = 1, self%nx + 1
+               do iy = 1, self%ny + 1
+                  do iz = 1, self%nz
+                     dual_face_area%z(ix, iy, iz) = self%grid%delX(ix) * self%grid%delY(iy)
+                  end do
+               end do
+            end do
+           
+    end select
     
-    ! y-components
-    do ix = 1,self%nx
-       do iy = 1,self%ny + 1
-          do iz = 1,self%nz
-             self%DualFaceArea%y(ix, iy, iz) = self%grid%delX(ix) * self%grid%delZ(iz)
-          end do
-       end do
-    end do
-    
-    ! z-components
-    do ix = 1, self%nx
-       do iy = 1, self%ny
-          do iz = 1, self%nz + 1
-             self%DualFaceArea%z(ix, iy, iz) = self%grid%delX(ix) * self%grid%delY(iy)
-          end do
-       end do
-    end do
   end subroutine SetDualFaceArea
   
   !**
@@ -262,15 +289,21 @@ contains
     ! Local variables
     integer :: i, j, k
     
-    do i = 1, self%nx + 1
-       do j = 1, self%ny + 1
-          do k = 1, self%nz + 1
-             ! note that we are multiplying
-             ! using the distances with corner of a cell as a center
-             self%Vnode%v(i, j, k) = self%grid%delX(i) * self%grid%delY(j) * self%grid%delZ(k)
-          end do
-       end do
-    end do
+    select type( vnode => self%Vnode )
+       class is( rScalar3D_SG_t )
+           
+            do i = 1, self%nx + 1
+               do j = 1, self%ny + 1
+                  do k = 1, self%nz + 1
+                     ! note that we are multiplying
+                     ! using the distances with corner of a cell as a center
+                     vnode%v(i, j, k) = self%grid%delX(i) * self%grid%delY(j) * self%grid%delZ(k)
+                  end do
+               end do
+            end do
+           
+    end select
+    
   end subroutine SetNodeVolume
   
   !**
@@ -284,13 +317,19 @@ contains
     ! Local variables
     integer :: i, j, k
     
-    do i = 1, self%nx + 1
-       do j = 1, self%ny + 1
-          do k = 1, self%nz + 1
-             self%Vcell%v(i, j, k) = self%grid%dx(i) * self%grid%dy(j) * self%grid%dz(k)
-          end do
-       end do
-    end do
+	select type( vcell => self%Vcell )
+       class is( rScalar3D_SG_t )
+           
+            do i = 1, self%nx 
+			   do j = 1, self%ny
+				  do k = 1, self%nz
+					 vcell%v(i, j, k) = self%grid%dx(i) * self%grid%dy(j) * self%grid%dz(k)
+				  end do
+			   end do
+			end do
+           
+    end select
+	
   end subroutine SetCellVolume
   
   !**

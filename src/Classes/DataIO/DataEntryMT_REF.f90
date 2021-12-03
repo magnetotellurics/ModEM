@@ -20,9 +20,8 @@ module DataEntryMT_REF
       !
    contains
       !
-      final :: DataEntryMT_REF_dtor
-      !
       procedure, public   :: write => writeDataEntryMT_REF
+	  procedure, public   :: getCopy => getCopyDataEntryMT_REF
       !
    end type DataEntryMT_REF_t
    !
@@ -38,16 +37,14 @@ contains
          latitude_ref, longitude_ref, xyz_ref, component, real, imaginary, error ) result ( self )
       implicit none
       !
-      class( DataEntryMT_REF_t ), pointer   :: self
-      integer, intent( in )            :: id
-      character(:), allocatable, intent( in )      :: type, code, code_ref, component
-      real( kind=prec ), intent( in )      :: period, latitude, longitude, latitude_ref, longitude_ref, &
-                                 xyz(3), xyz_ref(3)
-      real( kind=prec ), intent( in )      :: real, imaginary, error
-      !
-      ! write(*,*) "Costructor DataEntryMT_REF_t"
-      !
-      allocate( DataEntryMT_REF_t :: self )
+      type( DataEntryMT_REF_t ) :: self
+	  !
+      integer, intent( in )                   :: id
+      character(:), allocatable, intent( in ) :: type, code, code_ref, component
+      real( kind=prec ), intent( in )         :: period, latitude, longitude, &
+	                                             latitude_ref, longitude_ref, &
+                                                 xyz(3), xyz_ref(3)
+      real( kind=prec ), intent( in )         :: real, imaginary, error
       !
       self%id = id
       self%type = type
@@ -67,14 +64,18 @@ contains
       !
    end function DataEntryMT_REF_ctor
    !
-   subroutine DataEntryMT_REF_dtor( self )
+   function getCopyDataEntryMT_REF( self ) result ( copy )
       implicit none
       !
-      type( DataEntryMT_REF_t ), intent( in out ) :: self
+      class( DataEntryMT_REF_t ), intent( in ) :: self
+	  class( DataEntry_t ), allocatable        :: copy
       !
-      ! write(*,*) "Destructor DataEntryMT_REF_t"
+      allocate( copy, source = DataEntryMT_REF_t( self%id, self%type,   &
+                self%period, self%code, self%latitude, self%longitude, self%xyz, self%code_ref,   &
+                self%latitude_ref, self%longitude_ref, self%xyz_ref, self%component, &
+				self%real, self%imaginary, self%error ) )
       !
-   end subroutine DataEntryMT_REF_dtor
+   end function getCopyDataEntryMT_REF
    !
    subroutine writeDataEntryMT_REF( self )
       class( DataEntryMT_REF_t ), intent(in)   :: self

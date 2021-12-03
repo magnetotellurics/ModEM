@@ -35,7 +35,7 @@ perl fmkmf.pl -f90 gfortran \
 -o 'objs/MT3D_OO' \
 -l '-llapack -lblas' \
 -lp '/usr/lib64' \
--p .:Classes:Classes/DataIO:Classes/DataSpace:Classes/DataSpace:Classes/ForwardSolver:Classes/Model:Classes/Receivers:Classes/Solver:Classes/Source:Classes/Transmitters:Classes/Utils:Classes/Vectors \
+-p .:Classes:Classes/1D:Classes/2D:Classes/DataIO:Classes/DataSpace:Classes/ForwardSolver:Classes/ModelOperator:Classes/ModelParameter:Classes/Receivers:Classes/Solver:Classes/Source:Classes/Transmitters:Classes/Utils:Classes/Vectors \
 $3 > $1
     
 else

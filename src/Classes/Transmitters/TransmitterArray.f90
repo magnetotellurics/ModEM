@@ -14,9 +14,9 @@ module TransmitterArray
    !
    type, private :: Element_t
    !
-   class( Transmitter_t ), pointer   :: transmitter
-   type( Element_t ), pointer   :: next => null()
-   type( Element_t ), pointer   :: prev => null()
+   class( Transmitter_t ), allocatable :: transmitter
+   type( Element_t ), pointer          :: next => null()
+   type( Element_t ), pointer          :: prev => null()
    !
    end type Element_t
    !
@@ -31,7 +31,7 @@ module TransmitterArray
       !
       final :: TransmitterArray_dtor
       !
-      procedure, public :: size   => getSizeTransmitterArray
+      procedure, public :: size  => getSizeTransmitterArray
       procedure, public :: has   => hasTransmitter
       procedure, public :: add   => addTransmitter
       procedure, public :: get   => getTransmitter
@@ -47,15 +47,10 @@ contains
    function TransmitterArray_ctor() result( self )
       implicit none
       !
-      ! Local variables
-      class( TransmitterArray_t ), pointer :: self
+      type( TransmitterArray_t ) :: self
       !
-      ! write(*,*) "Constructor TransmitterArray_t"
-      !
-      allocate( TransmitterArray_t :: self )
-      !
-      self%first   => null()
-      self%last   => null()
+      self%first => null()
+      self%last  => null()
       !
    end function TransmitterArray_ctor
    !
@@ -64,9 +59,9 @@ contains
       !
       type( TransmitterArray_t ), intent( in out ) :: self
       !
-      type( Element_t ), pointer   :: element
+      type( Element_t ), pointer :: element
       !
-      !write(*,*) "Destructor TransmitterArray_t"
+      write(*,*) "Destructor TransmitterArray_t"
       !
       element => self%first
       do while( associated( element ) )
@@ -74,15 +69,18 @@ contains
          element => element%next
       end do
       !
+      self%first => null()
+      self%last  => null()
+      !
    end subroutine TransmitterArray_dtor
    !
    function getSizeTransmitterArray( self ) result( counter )
       implicit none
-      ! Arguments
-      class( TransmitterArray_t ), intent( in )   :: self
-      ! Local variables
-      type( Element_t ), pointer      :: element
-      integer                     :: counter
+      !
+      class( TransmitterArray_t ), intent( in ) :: self
+	  integer                                   :: counter
+      !
+      type( Element_t ), pointer :: element
       !
       counter = 0
       element => self%first
@@ -94,10 +92,12 @@ contains
    end function getSizeTransmitterArray
    !
    function hasTransmitter( self, transmitter ) result( exist )
-      class( TransmitterArray_t ), intent( in )   :: self
-      class( Transmitter_t ), intent( in )   :: transmitter
+      implicit none
       !
-      logical                        :: exist
+	  class( TransmitterArray_t ), intent( in ) :: self
+      class( Transmitter_t ), intent( in )      :: transmitter
+	  logical                                   :: exist
+      !
       integer                        :: iTx, nTx
       !
       exist = .FALSE.
@@ -116,14 +116,15 @@ contains
    subroutine addTransmitter( self, transmitter )
       implicit none
       !
-      class( TransmitterArray_t )   , intent( in out )   :: self
-      class( Transmitter_t ), pointer, intent( in )   :: transmitter
+      class( TransmitterArray_t ), intent( inout ) :: self
+      class( Transmitter_t ),intent( in )          :: transmitter
       !
-      type( Element_t ), pointer      :: element
+      type( Element_t ), pointer :: element
       !
       allocate( element )
       !
-      element%transmitter => transmitter
+      element%transmitter = transmitter
+	  
       element%next => null()
       !
       if( .not.associated( self%first ) ) then  
@@ -143,12 +144,12 @@ contains
    function getTransmitter( self, index ) result( transmitter )
       implicit none
       !
-      class( TransmitterArray_t ), intent( in )   :: self
-      integer, intent( in )                  :: index
+      class( TransmitterArray_t ), intent( in ) :: self
+      integer, intent( in )                     :: index
+	  class( Transmitter_t ), pointer           :: transmitter
       !
-      type( Element_t ), pointer            :: element
-      class( Transmitter_t ), pointer         :: transmitter
-      integer                           :: counter
+      type( Element_t ), pointer :: element
+      integer                    :: counter
       !
       element => self%first
       counter = 1
@@ -162,7 +163,7 @@ contains
          STOP 'TransmitterArray.f08: Transmitter index not found.'
       end if
       !
-      transmitter => element%transmitter
+      allocate( transmitter, source = element%transmitter )
       !
    end function getTransmitter
    !

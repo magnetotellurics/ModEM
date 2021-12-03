@@ -14,9 +14,9 @@ module ReceiverArray
    !
    type, private :: Element_t
       !
-      class( Receiver_t ), pointer :: receiver
-      type( Element_t ), pointer   :: next => null()
-      type( Element_t ), pointer   :: prev => null()
+      class( Receiver_t ), allocatable :: receiver
+      type( Element_t ), pointer :: next => null()
+      type( Element_t ), pointer :: prev => null()
       !
    end type Element_t
    !
@@ -47,11 +47,7 @@ contains
    function ReceiverArray_ctor() result( self )
       implicit none
       !
-      class( ReceiverArray_t ), pointer   :: self
-      !
-      ! write(*,*) "Constructor ReceiverArray_t"
-      !
-      allocate( ReceiverArray_t :: self )
+      type( ReceiverArray_t ) :: self
       !
       self%first   => null()
       self%last   => null()
@@ -61,11 +57,11 @@ contains
    subroutine ReceiverArray_dtor( self )
       implicit none
       !
-      type( ReceiverArray_t ), intent( in out )   :: self
+      type( ReceiverArray_t ), intent( inout ) :: self
       !
-      type( Element_t ), pointer            :: element
+      type( Element_t ), pointer               :: element
       !
-      ! write(*,*) "Destructor ReceiverArray_t"
+      !write(*,*) "Destructor ReceiverArray_t"
       !
       element => self%first
       do while( associated( element ) )
@@ -78,9 +74,9 @@ contains
    function getSizeReceiverArray( self ) result( counter )
       implicit none
       !
-      class( ReceiverArray_t ), intent( in )   :: self
-      type( Element_t ), pointer            :: element
-      integer                           :: counter
+      class( ReceiverArray_t ), intent( in ) :: self
+      type( Element_t ), pointer             :: element
+      integer                                :: counter
       !
       counter = 0
       element => self%first
@@ -92,10 +88,11 @@ contains
    end function getSizeReceiverArray
    !
    function hasReceiver( self, receiver ) result( exist )
-      class( ReceiverArray_t ), intent( in )   :: self
-      class( Receiver_t ), intent( in )   :: receiver
-      logical                        :: exist
-      integer                        :: iRx, nRx
+      class( ReceiverArray_t ), intent( in ) :: self
+      class( Receiver_t ), intent( in )      :: receiver
+      logical                                :: exist
+	  !
+      integer :: iRx, nRx
       !
       exist = .FALSE.
       !
@@ -113,14 +110,15 @@ contains
    subroutine addReceiver( self, receiver )
       implicit none
       !
-      class( ReceiverArray_t )   , intent(in out):: self
-      class( Receiver_t ), pointer, intent( in )   :: receiver
+      class( ReceiverArray_t ), intent( inout ) :: self
+      class( Receiver_t ), intent( in )         :: receiver
       !
-      type( Element_t ), pointer            :: element
+      type( Element_t ), pointer :: element
       !
       allocate( element )
       !
-      element%receiver => receiver
+      element%receiver = receiver
+	  !
       element%next => null()
       !
       if( .not.associated( self%first ) ) then  
@@ -140,16 +138,16 @@ contains
    function getReceiver( self, index ) result( receiver )
       implicit none
       !
-      class( ReceiverArray_t ), intent( in )   :: self
+      class( ReceiverArray_t ), intent( in ) :: self
       integer, intent( in )                  :: index
+	  class( Receiver_t ), pointer           :: receiver
       !
-      type( Element_t ), pointer         :: element
-      class( Receiver_t ), pointer         :: receiver
-      integer                           :: counter
+      type( Element_t ), pointer :: element
+      integer                    :: counter
       !
       element => self%first
       counter = 1
-      do while(associated( element ) )
+      do while( associated( element ) )
          if( counter == index ) exit
        counter = counter + 1
          element => element%next
@@ -159,7 +157,7 @@ contains
          STOP 'ReceiverArray.f08: Receiver index not found.'
       end if
       !
-      receiver => element%receiver
+      allocate( receiver, source = element%receiver )
       !
    end function getReceiver
    !

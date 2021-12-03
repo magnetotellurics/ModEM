@@ -20,6 +20,7 @@ module DataEntry
    contains
       !
       procedure( interface_write ), deferred, public :: write
+	  procedure( interface_get_copy_data_entry ), deferred, public :: getCopy
       !
       procedure, public :: isEqual   => isEqualDe
       procedure, public :: isComplex => isComplexDe
@@ -32,6 +33,15 @@ module DataEntry
          import :: DataEntry_t
          class( DataEntry_t ), intent(in) :: self
       end subroutine interface_write
+      !
+	  !
+      function interface_get_copy_data_entry( self ) result ( copy )
+         import :: DataEntry_t
+         !
+         class( DataEntry_t ), intent( in ) :: self
+	     class( DataEntry_t ), allocatable  :: copy
+         !
+      end function interface_get_copy_data_entry
       !
    end interface
    !

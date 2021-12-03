@@ -5,6 +5,8 @@
 module Grid3D_SG
   use Constants
   use Grid
+  use Grid1D
+  use Grid2D
 
   implicit none
   
@@ -44,6 +46,11 @@ module Grid3D_SG
      procedure, public :: GetCellSizes
 
      procedure, public :: Copy_from
+	 
+	 procedure, public :: Slice1D => Slice1DGrid3D_SG
+	 procedure, public :: Slice2D => Slice2DGrid3D_SG
+	 
+	 
   end type Grid3D_SG_t
 
   !**
@@ -61,7 +68,7 @@ module Grid3D_SG
      real(kind = 8)       :: minTopDz  = 30000.
      real(kind = 8)       :: alpha      = 3.
      real(kind = 8), pointer :: dz(:)
-     logical              :: allocated  = .false.     
+     logical              :: allocated  = .false.
   end type TAirLayers
 
   interface Grid3D_SG_t
@@ -69,7 +76,24 @@ module Grid3D_SG
   end interface Grid3D_SG_t
   
 contains
+  function Slice1DGrid3D_SG(self) result(g1D)
+      implicit none
+      class(Grid3D_SG_t), intent(in) :: self
+      type(Grid1D_t) :: g1D
+      !
+      g1D = Grid1D_t( self%nzAir, self%nzEarth, self%dz )
 
+  end function Slice1DGrid3D_SG
+  !
+  function Slice2DGrid3D_SG(self) result(g2D)
+      implicit none
+      class(Grid3D_SG_t), intent(in) :: self
+      type(Grid2D_t) :: g2D
+      !
+	  ! Should be diferent for the polarization
+      g2D = Grid2D_t( self%ny, self%nzAir, self%nzEarth, self%dy, self%dz )
+
+  end function Slice2DGrid3D_SG
   !**
   ! Class constructor for simple tensor product grid
   ! Usage obj = Grid_t3D(Dx,Dy,Dz,Nza)
@@ -775,4 +799,5 @@ contains
     class(Grid3D_SG_t), intent(inout) :: self
     class(Grid_t)     , intent(in)    :: g
   end subroutine Copy_from
+  
 end module Grid3D_SG

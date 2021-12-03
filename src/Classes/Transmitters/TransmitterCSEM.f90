@@ -12,9 +12,7 @@ module TransmitterCSEM
    !
    type, extends( Transmitter_t ), public :: TransmitterCSEM_t
       !
-      real( kind=prec )   :: location(3)
-      !
-      real( kind=prec )   :: azimuth
+      real( kind=prec ) :: location(3), azimuth
       !
       contains
          !
@@ -29,16 +27,16 @@ module TransmitterCSEM
          !
    end type TransmitterCSEM_t
    !
-   interface Transmitter_t
+   interface TransmitterCSEM_t
       module procedure TransmitterCSEM_ctor
-   end interface Transmitter_t
+   end interface TransmitterCSEM_t
    !
 contains
    !
    ! Parametrized constructor
    function TransmitterCSEM_ctor( id, period, location ) result ( self )
       !
-      class( TransmitterCSEM_t ), pointer   :: self
+      type( TransmitterCSEM_t ) :: self
       !
       integer, intent( in )            :: id
       real( kind=prec ), intent( in )      :: period
@@ -46,18 +44,12 @@ contains
       !
       ! write(*,*) "Constructor TransmitterCSEM_t"
       !
-      allocate( TransmitterCSEM_t :: self )
-      !
       call self%init()
       !
       self%id = id
       self%n_pol = 1
       self%period = period
       self%location = location
-      !
-      ! INSTANCIATE SOURCE CSEM ????
-      !
-      !source => Source_CSEM_t()
       !
    end function TransmitterCSEM_ctor
    !
@@ -73,10 +65,9 @@ contains
       !
    end subroutine TransmitterCSEM_dtor
    !
-   subroutine solveFWDTransmitterCSEM( self, model_operator )
+   subroutine solveFWDTransmitterCSEM( self )
       !
-      class( TransmitterCSEM_t ), intent(inout)  :: self
-      class( ModelOperator_t ), allocatable, intent( in ) :: model_operator
+      class( TransmitterCSEM_t ), intent( inout ) :: self
       !
       write(*,*) "implementing solveFWD TransmitterCSEM_t: ", self%id
       !

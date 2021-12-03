@@ -33,11 +33,11 @@ contains
    !
    function ReceiverFullImpedance_ctor( id, location ) result( self )
       !
-      class( ReceiverFullImpedance_t ), pointer :: self
-      integer, intent( in )                     :: id
-      real( kind=prec ), intent( in )           :: location(3)
+      integer, intent( in )           :: id
+      real( kind=prec ), intent( in ) :: location(3)
+      type( ReceiverFullImpedance_t ) :: self
       !
-      allocate( ReceiverFullImpedance_t :: self )
+      !write(*,*) "Constructor ReceiverFullImpedance_t"
       !
       call self%init()
       !
@@ -69,7 +69,7 @@ contains
       !
       type( ReceiverFullImpedance_t ), intent( in out ) :: self
       !
-      !write(*,*) "Destructor ReceiverFullImpedance_t"
+      !write(*,*) "Destructor ReceiverFullImpedance_t:", self%id
       !
       call self%dealloc()
       !
@@ -77,9 +77,9 @@ contains
    !
    subroutine predictedDataFullImpedance( self, model_operator, transmitter )
       !
-      class( ReceiverFullImpedance_t ), intent( inout )   :: self
-      class( ModelOperator_t ), allocatable, intent( in ) :: model_operator
-      class( Transmitter_t ), pointer, intent( in )       :: transmitter
+      class( ReceiverFullImpedance_t ), intent( inout ) :: self
+      class( ModelOperator_t ), intent( in )            :: model_operator
+      class( Transmitter_t ), intent( in )              :: transmitter
       !
       class( cVector_t ), allocatable :: e_tx_pol_1, e_tx_pol_2
       complex(kind=prec), allocatable :: BB(:,:), det
@@ -90,14 +90,14 @@ contains
       !
       ! Set Vectors Lex, Ley, Lbx, Lby
       call self%evaluationFunction( model_operator, omega )
+	  !
+      ! get e_all from the Tx 1st polarization
+      !e_tx_pol_1 = transmitter%e_all%get( 1 ) ! SHOULD BE LIKE THIS???
+      allocate( e_tx_pol_1, source = transmitter%e_all%get( 1 ) )
       !
-      ! get e_solution from the Tx 1st polarization
-      !e_tx_pol_1 = transmitter%e_solution%get( 1 ) ! SHOULD BE LIKE THIS???
-      allocate( e_tx_pol_1, source = transmitter%e_solution%get( 1 ) )
-      !
-      ! get e_solution from the Tx 2nd polarization
-      !e_tx_pol_2 = transmitter%e_solution%get( 2 )
-      allocate( e_tx_pol_2, source = transmitter%e_solution%get( 2 ) )
+      ! get e_all from the Tx 2nd polarization
+      !e_tx_pol_2 = transmitter%e_all%get( 2 )
+      allocate( e_tx_pol_2, source = transmitter%e_all%get( 2 ) )
       !
       allocate( complex(kind=prec) :: self%EE( 2, 2 ) )
       !
@@ -133,9 +133,9 @@ contains
          STOP "ReceiverFullImpedance.f90: Determinant is Zero!"
       endif
       !
-     !write(*,*) "Inverse BB:"
-     !write(*,*) self%I_BB( 1, 1 ), self%I_BB( 1, 2 )
-     !write(*,*) self%I_BB( 2, 1 ), self%I_BB( 2, 2 )
+      !write(*,*) "Inverse BB:"
+      !write(*,*) self%I_BB( 1, 1 ), self%I_BB( 1, 2 )
+      !write(*,*) self%I_BB( 2, 1 ), self%I_BB( 2, 2 )
       !
       if( .not. allocated( self%Z ) ) allocate( complex(kind=prec) :: self%Z( 4 ) )
       !
@@ -178,7 +178,7 @@ contains
       class( ReceiverFullImpedance_t ), intent( in ) :: self
       !
       integer                       :: iDg, nDg
-      class( DataGroup_t ), pointer :: data_group
+      class( DataGroup_t ), allocatable :: data_group
       !
       nDg = self%getNDg()
       !
@@ -186,7 +186,7 @@ contains
       " N Data Groups: ", nDg
       !
       do iDg = 1, nDg
-         data_group => self%get( iDg )
+         data_group = self%get( iDg )
          call data_group%write()
       enddo
       !

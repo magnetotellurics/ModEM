@@ -2,7 +2,7 @@
 ! 
 ! Base class to define a Transmitter
 ! 
-! Last modified at 08/06/2021 by Paulo Werdt
+! Last modified at 10/11/2021 by Paulo Werdt
 ! 
 ! *************
 ! 
@@ -10,11 +10,9 @@ module Transmitter
    ! 
    use Constants
    use Source
-   use ForwardSolverFromFile
-   use ForwardSolverDC
+   use ForwardSolver
    use IntegerArray
    use VectorArray
-   use ModelOperator
    !
    type, abstract :: Transmitter_t
       !
@@ -23,12 +21,13 @@ module Transmitter
       real( kind=prec ) :: period
       !
       class( ForwardSolver_t ), pointer :: forward_solver 
-      class( Source_t ), allocatable    :: source
+      class( Source_t ), pointer        :: source
       !
-	  class( VectorArray_t ), pointer   :: e_solution
+      class( VectorArray_t ), pointer   :: e_all
       class( IntegerArray_t ), pointer  :: receiver_indexes
       !
-	  character(:), allocatable :: DATA_TITLE
+      character(:), allocatable :: DATA_TITLE
+      !
    contains
       !
       procedure, public :: init    => initializeTx
@@ -42,9 +41,8 @@ module Transmitter
       procedure, public :: getNRx => getNumberOfReceivers
       !
       procedure( interface_solve_fwd_tx ), deferred, public  :: solveFWD
-      procedure( interface_get_source_tx ), deferred, public :: getSource
       !
-	  procedure( interface_get_type_tx ), deferred, public   :: getType
+      procedure( interface_get_type_tx ), deferred, public   :: getType
       procedure( interface_is_equal_tx ), deferred, public   :: isEqual
       procedure( interface_write_tx ), deferred, public      :: write
       !
@@ -52,16 +50,10 @@ module Transmitter
    !
    abstract interface
       !
-      subroutine interface_solve_fwd_tx( self, model_operator )
-         import :: Transmitter_t, ModelOperator_t
-         class( Transmitter_t ), intent( inout )             :: self
-         class( ModelOperator_t ), allocatable, intent( in ) :: model_operator
-      end subroutine interface_solve_fwd_tx
-      !
-      subroutine interface_get_source_tx( self )
+      subroutine interface_solve_fwd_tx( self )
          import :: Transmitter_t
-         class( Transmitter_t ), intent( in ) :: self
-      end subroutine interface_get_source_tx
+         class( Transmitter_t ), intent( inout ) :: self
+      end subroutine interface_solve_fwd_tx
       !
       function interface_get_type_tx( self ) result( type )
          import :: Transmitter_t
@@ -85,28 +77,37 @@ module Transmitter
    contains
    !
    subroutine initializeTx( self )
+      implicit none
+      !
       class( Transmitter_t ), intent( inout ) :: self
       !
       call self%updateFwdKey()
       !
-      self%e_solution => VectorArray_t()
+      self%forward_solver => null()
+      self%source         => null()
       !
-      self%receiver_indexes => IntegerArray_t()
+      allocate( self%e_all, source = VectorArray_t() )
+      !
+      allocate( self%receiver_indexes, source = IntegerArray_t() )
       !
    end subroutine initializeTx
    !
    subroutine deallocateTx( self )
+      implicit none
+      !
       class( Transmitter_t ), intent( inout ) :: self
       !
-      deallocate( self%forward_solver )
-      deallocate( self%e_solution )
-      deallocate( self%source )
+      !if( associated( self%forward_solver ) ) deallocate( self%forward_solver )
+      !if( associated( self%source ) ) deallocate( self%source )
       !
-      deallocate( self%receiver_indexes )
+      !if( associated( self%e_all ) ) deallocate( self%e_all )
+      !deallocate( self%receiver_indexes )
       !
    end subroutine deallocateTx
    !
    subroutine updateFwdKey( self )
+      implicit none
+      !
       class( Transmitter_t ), intent( inout ) :: self
       !
       call date_and_time( values=self%fwd_key )
@@ -114,18 +115,21 @@ module Transmitter
    end subroutine updateFwdKey
    !
    function hasReceiverTx( self, receiver_index ) result( found )
+      implicit none
+      !
       class( Transmitter_t ), intent( in ) :: self
       integer, intent( in )                :: receiver_index
       !
+      integer :: i_rx, n_rx
       logical :: found
       !
       found = .FALSE.
       !
-      nRx = self%receiver_indexes%size()
+      n_rx = self%receiver_indexes%size()
       !
-      do iRx = 1, nRx
+      do i_rx = 1, n_rx
          !
-         if( receiver_index == self%receiver_indexes%get( iRx ) ) then
+         if( receiver_index == self%receiver_indexes%get( i_rx ) ) then
             found = .TRUE.
          end if
       end do
@@ -133,24 +137,30 @@ module Transmitter
    end function hasReceiverTx
    !
    subroutine addReceiverTx( self, receiver_index )
-      class( Transmitter_t ), intent( inout )      :: self
-      integer, pointer, intent( in )            :: receiver_index
+      implicit none
+      !
+      class( Transmitter_t ), intent( inout ) :: self
+      integer, intent( in )                   :: receiver_index
       !
       call self%receiver_indexes%add( receiver_index )
       !
    end subroutine addReceiverTx
    !
    function getReceiverTx( self, index ) result( receiver_index )
-      class( Transmitter_t ), intent( in )   :: self
-      integer                            :: index, receiver_index
+      implicit none
+      !
+      class( Transmitter_t ), intent( in ) :: self
+      integer                              :: index, receiver_index
       !
       receiver_index = self%receiver_indexes%Get( index )
       !
    end function getReceiverTx
    !
    function getNumberOfReceivers( self ) result( counter )
-      class( Transmitter_t ), intent( in )   :: self
-      integer                            :: counter
+      implicit none
+      !
+      class( Transmitter_t ), intent( in ) :: self
+      integer                              :: counter
       !
       counter = self%receiver_indexes%size()
       !

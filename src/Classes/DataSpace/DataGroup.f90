@@ -40,13 +40,9 @@ contains
    function DataGroup_ctor( id, n_data ) result ( self )
       implicit none
       !
-      class( DataGroup_t ), pointer   :: self
+      type( DataGroup_t ) :: self
       !
       integer, intent( in )               :: id, n_data
-      !
-      allocate( DataGroup_t :: self )
-      !
-      ! write(*,*) "Constructor DataGroup_t"
       !
       self%id = id
       self%n_data = n_data
@@ -66,7 +62,7 @@ contains
       !
       type( DataGroup_t ), intent( in out ) :: self
       !
-      !write(*,*) "Destructor DataGroup_t"
+      !write(*,*) "Destructor DataGroup_t: ", self%id
       !
       deallocate( self%reals )
       deallocate( self%imaginaries )

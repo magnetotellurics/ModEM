@@ -2,50 +2,46 @@
 ! 
 ! Derived class to define a MT Transmitter
 ! 
-! Last modified at 08/06/2021 by Paulo Werdt
+! Last modified at 10/11/2021 by Paulo Werdt
 ! 
 ! *************
 ! 
 module TransmitterMT
    ! 
    use Transmitter
-   use Grid3D_SG
-   use cVector3D_SG
-   use Source_MT
    !
    type, extends( Transmitter_t ), public :: TransmitterMT_t
       !
-      ! source polarizations for MT
-      real( kind=prec ) :: pol! = {'X','Y'}
-      ! 
+      ! PROPERTIES HERE
+      !
       contains
          !
          final :: TransmitterMT_dtor
          !
-         procedure, public :: solveFWD => solveFWDTransmitterMT
-         procedure, public :: getSource => getSourceTransmitterMT
+         procedure, public :: solveFWD  => solveFWDTransmitterMT
          !
          procedure, public :: getType => getTypeTransmitterMT
          procedure, public :: isEqual => isEqualTransmitterMT
-         procedure, public :: write => writeTransmitterMT
+         procedure, public :: write   => writeTransmitterMT
          !
    end type TransmitterMT_t
    !
-   interface Transmitter_t
+   interface TransmitterMT_t
       module procedure TransmitterMT_ctor
-   end interface Transmitter_t
+   end interface TransmitterMT_t
    !
-contains
+   contains
    !
+   ! TransmitterMT constructor
    function TransmitterMT_ctor( id, period ) result ( self )
+      implicit none
       !
-      class( TransmitterMT_t ), pointer :: self
-      integer, intent( in )             :: id
-      real( kind=prec ), intent( in )   :: period
+      type( TransmitterMT_t ) :: self
       !
-      ! write(*,*) "Constructor TransmitterMT_t"
+      integer, intent( in )           :: id
+      real( kind=prec ), intent( in ) :: period
       !
-      allocate( TransmitterMT_t :: self )
+      !write(*,*) "Constructor TransmitterMT_t"
       !
       call self%init()
       !
@@ -53,60 +49,58 @@ contains
       self%n_pol = 2
       self%period = period
       !
-      self%forward_solver => ForwardSolverFromFile_t( self%period, self%n_pol )
+      self%DATA_TITLE = "Period(s) Code GG_Lat GG_Lon X(m) Y(m) Z(m) Component Real Imag Error"
       !
-     self%DATA_TITLE = "Period(s) Code GG_Lat GG_Lon X(m) Y(m) Z(m) Component Real Imag Error"
-     !
    end function TransmitterMT_ctor
    !
-   ! Destructor
+   ! TransmitterMT destructor
    subroutine TransmitterMT_dtor( self )
       implicit none
       !
-      type( TransmitterMT_t ), intent( in out ) :: self
+      type( TransmitterMT_t ), intent( inout ) :: self
       !
-      !write(*,*) "Destructor TransmitterMT_t"
+      !write(*,*) "Destructor TransmitterMT_t:", self%id
       !
       call self%dealloc()
       !
    end subroutine TransmitterMT_dtor
    !
-   subroutine solveFWDTransmitterMT( self, model_operator )
+   ! Set self%e_all from forward modelling solver
+   subroutine solveFWDTransmitterMT( self )
+      implicit none
       !
-      class( TransmitterMT_t ), intent(inout)  :: self
-      class( ModelOperator_t ), allocatable, intent( in ) :: model_operator
+      class( TransmitterMT_t ), intent( inout ) :: self
       !
-	  ! Define Source
-      allocate( self%source, source=Source_MT_t( model_operator, 2.0 * PI / self%period, 'X' ) )
+      integer           :: i_pol
+      real( kind=prec ) :: omega
       !
-	  ! Define Forward Solver ESolution
-      select type( grid => model_operator%grid )
-          class is( Grid3D_SG_t )
-              allocate( self%forward_solver%e_solution, source=cVector3D_SG_t( grid, EDGE ) )
-      end select
+      ! verbosis
+      write( *, * ) "   Solving FWD for Tx", self%id
+	  !
+      omega = 2.0 * PI / self%period
       !
-      if ( .not. allocated( self%forward_solver%e_solution ) ) write(*, *) 'TX E SOLUTION NOT ALLOCATTED'
-      if ( .not. self%forward_solver%e_solution%isAllocated ) write(*, *) 'TX E SOLUTION isAllocated = false'
+      ! Set ForwardSolver Frequency
+      call self%forward_solver%setPeriod( self%period )
       !
-      ! Add first polarization to Tx e_solution
-      call self%e_solution%add( self%forward_solver%getESolution( self%source ) )
+      ! Loop over all polarizations (MT n_pol = 2)
+      do i_pol = 1, self%n_pol
       !
-      ! Add second polarization to Tx e_solution
-      call self%e_solution%add( self%forward_solver%getESolution( self%source ) )
+         write(*,*) "MT Tx Solve for Polarization", i_pol
+         !
+         ! Set Source E
+         call self%source%setE( omega, i_pol )
+		 !
+         ! Add polarization e_solution to self%e_all
+         call self%e_all%add( self%forward_solver%getESolution( self%source, i_pol ) )
+      !
+      enddo
       !
    end subroutine solveFWDTransmitterMT
    !
-   !
-   subroutine getSourceTransmitterMT( self )
-      !
-      class( TransmitterMT_t ), intent(in)   :: self
-      !
-      write(*,*) "To implement getSource TransmitterMT_t: ", self%id
-      !
-   end subroutine getSourceTransmitterMT
-   !
-   !
+   ! Get class string name
    function getTypeTransmitterMT( self ) result( type )
+      implicit none
+      !
       class( TransmitterMT_t ), intent( in ) :: self
       character(:), allocatable              :: type
       !
@@ -114,11 +108,13 @@ contains
       !
    end function getTypeTransmitterMT
    !
-   !
+   ! Compare two transmitters
    function isEqualTransmitterMT( self, other ) result( equal )
-      class( TransmitterMT_t ), intent( in )   :: self
+      implicit none
+      !
+      class( TransmitterMT_t ), intent( in ) :: self
       class( Transmitter_t ), intent( in )   :: other
-      logical                           :: equal
+      logical                                :: equal
       !
       equal = .FALSE.
       !
@@ -134,10 +130,13 @@ contains
       !
    end function isEqualTransmitterMT
    !
+   ! Print TransmitterMT info
    subroutine writeTransmitterMT( self )
+      implicit none
       !
-      class( TransmitterMT_t ), intent(in)   :: self
-      integer                           :: iRx, nRx
+      class( TransmitterMT_t ), intent( in ) :: self
+      !
+      integer :: iRx, nRx
       !
       nRx = self%getNRx()
       !

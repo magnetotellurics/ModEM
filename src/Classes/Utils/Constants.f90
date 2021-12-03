@@ -8,6 +8,24 @@
 module Constants
   implicit none
   
+  character (len = 4), parameter  :: NODE   = 'NODE'
+  character (len = 4), parameter  :: FACE   = 'FACE'
+  character (len = 4), parameter  :: EDGE   = 'EDGE'
+  character (len = 6), parameter  :: CENTER = 'CELL'
+  character (len = 6), parameter  :: CORNER = 'NODE'
+  character (len = 4), parameter  :: CELL = 'CELL'  
+  character (len = 10), parameter :: CELL_EARTH = 'CELL EARTH'
+
+  !**
+  ! Possible node types:
+  !*  
+  character(len = 5), parameter :: XFACE = 'XFACE'
+  character(len = 5), parameter :: XEDGE = 'XEDGE'
+  character(len = 5), parameter :: YFACE = 'YFACE'
+  character(len = 5), parameter :: YEDGE = 'YEDGE'
+  character(len = 5), parameter :: ZFACE = 'ZFACE'
+  character(len = 5), parameter :: ZEDGE = 'ZEDGE'
+  
   ! Use this to select single or double precision
   integer, parameter :: SP = selected_real_kind (6, 37)
   integer, parameter :: DP = selected_real_kind (15, 307)

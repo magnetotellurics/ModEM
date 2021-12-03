@@ -5,38 +5,7 @@
 !*
 module Grid
   use Constants
-
-  implicit none
-  
-  private
-
-  public :: Grid_t
-  
-  public :: NODE, FACE, EDGE, CELL, CENTER, CORNER, CELL_EARTH
-  public :: XFACE, XEDGE, YFACE, YEDGE, ZFACE, ZEDGE
-
-  !**
-  ! Possible grid types for EMfield, storing
-  ! the intention of use for types such as vectors
-  ! and scalars.
-  !*
-  character (len = 4), parameter  :: NODE   = 'NODE'
-  character (len = 4), parameter  :: FACE   = 'FACE'
-  character (len = 4), parameter  :: EDGE   = 'EDGE'
-  character (len = 6), parameter  :: CENTER = 'CELL'
-  character (len = 6), parameter  :: CORNER = 'NODE'
-  character (len = 4), parameter  :: CELL = 'CELL'  
-  character (len = 10), parameter :: CELL_EARTH = 'CELL EARTH'
-
-  !**
-  ! Possible node types:
-  !*  
-  character(len = 5), parameter :: XFACE = 'XFACE'
-  character(len = 5), parameter :: XEDGE = 'XEDGE'
-  character(len = 5), parameter :: YFACE = 'YFACE'
-  character(len = 5), parameter :: YEDGE = 'YEDGE'
-  character(len = 5), parameter :: ZFACE = 'ZFACE'
-  character(len = 5), parameter :: ZEDGE = 'ZEDGE'
+  use Grid2D
 
   type, abstract :: Grid_t
      
@@ -124,12 +93,13 @@ module Grid
      procedure(iface_Copy_from), deferred, public :: Copy_from
 
      procedure(iface_SetCellSizes), deferred, public :: SetCellSizes
+	 procedure(iface_Slice2D), deferred, public :: Slice2D
      
      procedure, public :: SetOrigin
      procedure, public :: GetOrigin
 
      procedure, public :: SetGridRotation
-     procedure, public :: GetGridRotation     
+     procedure, public :: GetGridRotation
 
      procedure, public :: SetGridGeometry
      procedure, public :: GetGridGeometry
@@ -232,6 +202,12 @@ module Grid
        class(Grid_t), intent(inout) :: self
        real(kind = prec) , dimension(:), intent(in) :: dx, dy, dz
      end subroutine iface_SetCellSizes
+	 
+	 function iface_Slice2D(self) result( g2D )
+      import :: Grid_t, Grid2D_t
+      class(Grid_t), intent(in) :: self
+      type(Grid2D_t) :: g2D
+     end function iface_Slice2D
      
   end interface
   

@@ -113,8 +113,8 @@ contains
    subroutine writeReceiverSingleField( self )
       class( ReceiverSingleField_t ), intent( in ) :: self
       !
-      integer                     :: iDg, nDg
-      class( DataGroup_t ), pointer   :: data_group
+      integer                           :: iDg, nDg
+      class( DataGroup_t ), allocatable :: data_group
       !
       nDg = self%getNDg()
       !
@@ -122,7 +122,7 @@ contains
       " N Data Groups: ", nDg
       !
       do iDg = 1, nDg
-         data_group => self%get( iDg )
+         data_group = self%get( iDg )
          call data_group%write()
       enddo
       !

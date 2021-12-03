@@ -38,21 +38,18 @@ contains
       integer, intent( in )                   :: funit
       character(:), allocatable, intent( in ) :: fname
 	  !
-	  class( StandardDataFile_t ), pointer :: self
+	  type( StandardDataFile_t ) :: self
       !
       character(1000)                   :: full_line_text
       character(len=200), dimension(20) :: args
-      !1111
-      class( DataEntry_t ), pointer     :: data_entry
+      !
       character(:), allocatable         :: line_text, actual_type, code, code_ref, component, dipole
       integer                           :: iDe, io_stat, p_nargs, header_counter, mt_counter, csem_counter
       real( kind=prec )                 :: period, real, imaginary, error
       real( kind=prec )                 :: xyz_ref(3), latitude_ref, longitude_ref
       real( kind=prec )                 :: latitude, longitude, xyz(3), tx_xyz(3), moment, azimuth, dip
       !
-      ! write(*,*) "Constructor StandardDataFile_t"
-      !
-      allocate( StandardDataFile_t :: self )
+      !write(*,*) "Constructor StandardDataFile_t"
       !
       call self%init()
       !
@@ -79,7 +76,7 @@ contains
             call Parse( line_text, " ", args, p_nargs )
             !
             if( index( line_text, "#" ) == 0 .and. index( line_text, ">" ) == 0 ) then
-                !
+			    !
                 iDe = self%data_entries%size() + 1
                 !
                 selectcase( actual_type )
@@ -102,11 +99,8 @@ contains
                         read( args(10), '(f15.5)' )   imaginary
                         read( args(11), '(f15.5)' )   error
                         !
-                        data_entry => DataEntryMT_t( iDe, actual_type, period, code, &
-                        latitude, longitude, xyz, component, real, imaginary, error )
-                        !
-                        !if( .NOT. self%data_entries%has( data_entry ) ) then 
-                            call self%data_entries%add( data_entry )
+						call self%data_entries%add( DataEntryMT_t( iDe, actual_type, period, code, &
+                        latitude, longitude, xyz, component, real, imaginary, error ) )
                         !end if
                         !
                         mt_counter = mt_counter + 1
@@ -134,13 +128,9 @@ contains
                         read( args(16), '(f15.5)' )   imaginary
                         read( args(17), '(f15.5)' )   error
                         !
-                        data_entry => DataEntryMT_REF_t( iDe, actual_type,   &
+                        call self%data_entries%add( DataEntryMT_REF_t( iDe, actual_type,   &
                         period, code, latitude, longitude, xyz, code_ref,   &
-                        latitude_ref, longitude_ref, xyz_ref, component, real, imaginary, error )
-                        !
-                        !if( .NOT. self%data_entries%has( data_entry ) ) then 
-                            call self%data_entries%add( data_entry )
-                        !end if
+                        latitude_ref, longitude_ref, xyz_ref, component, real, imaginary, error ) )
                         !
                         mt_counter = mt_counter + 1
                         !
@@ -166,13 +156,9 @@ contains
                         read( args(15), '(f15.5)' )   imaginary
                         read( args(16), '(f15.5)' )   error
                         !
-                        data_entry => DataEntryCSEM_t( iDe, actual_type,   &
+                        call self%data_entries%add( DataEntryCSEM_t( iDe, actual_type,   &
                         dipole, period, moment, azimuth, dip, tx_xyz,   &
-                        code, xyz, component, real, imaginary, error )
-                        !
-                        !if( .NOT. self%data_entries%has( data_entry ) ) then 
-                            call self%data_entries%add( data_entry )
-                        !end if
+                        code, xyz, component, real, imaginary, error ) )
                         !
                         csem_counter = csem_counter + 1
                         !
@@ -193,7 +179,7 @@ contains
             end if
          end do
          !
-10        close( unit = funit )
+10       close( unit = funit )
          !
          write(*,*) 'Finish read file [', fname, ']:'
          if( mt_counter > 0 )   write(*,*) mt_counter, ' MT Entries'
@@ -208,9 +194,9 @@ contains
       !
       type( StandardDataFile_t ), intent( in out ) :: self
       !
-      ! write(*,*) "Destructor StandardDataFile_t"
+      !write(*,*) "Destructor StandardDataFile_t"
       !
-      deallocate( self%data_entries )
+      call self%dealloc()
       !
    end subroutine StandardDataFile_dtor
    !

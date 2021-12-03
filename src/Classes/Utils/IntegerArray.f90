@@ -11,25 +11,25 @@ module IntegerArray
    implicit none
    !
    type, private :: Element_t
-   !
-   integer                  :: int_value
-   type( Element_t ), pointer   :: next => null()
-   type( Element_t ), pointer   :: prev => null()
-   !
+	   !
+	   integer                    :: int_value
+	   type( Element_t ), pointer :: next => null()
+	   type( Element_t ), pointer :: prev => null()
+	   !
    end type Element_t
    !
    type, public :: IntegerArray_t
-   !
-   private
-   !
-   type( Element_t ), pointer   :: first
-   type( Element_t ), pointer   :: last
-   !
+	   !
+	   private
+	   !
+	   type( Element_t ), pointer   :: first
+	   type( Element_t ), pointer   :: last
+	   !
    contains
       !
       final :: IntegerArray_dtor
       !
-      procedure, public :: size   => getSizeIntegerArray
+      procedure, public :: size  => getSizeIntegerArray
       procedure, public :: has   => hasInteger
       procedure, public :: add   => addInteger
       procedure, public :: get   => getInteger
@@ -45,36 +45,34 @@ contains
    function IntegerArray_ctor() result( self )
       implicit none
       !
-      ! Local variables
-      class( IntegerArray_t ), pointer :: self
+      type( IntegerArray_t ) :: self
       !
-      ! write(*,*) "Constructor IntegerArray_t"
-      !
-      allocate( IntegerArray_t :: self )
-      !
-      self%first   => null()
-      self%last   => null()
+      self%first => null()
+      self%last  => null()
       !
    end function IntegerArray_ctor
    !
    subroutine IntegerArray_dtor( self )
       implicit none
       !
-      type( IntegerArray_t ), intent( in out ) :: self
+      type( IntegerArray_t ), intent( inout ) :: self
       !
-      type( Element_t ), pointer   :: element
+      type( Element_t ), pointer :: element
       !
-      ! write(*,*) "Destructor IntegerArray_t"
+      !write(*,*) "Destructor IntegerArray_t"
+      !
+      self%first => null()
+      self%last  => null()
       !
    end subroutine IntegerArray_dtor
    !
    function getSizeIntegerArray( self ) result( counter )
       implicit none
-      ! Arguments
-      class( IntegerArray_t ), intent( in )   :: self
-      ! Local variables
-      type( Element_t ), pointer      :: element
-      integer                     :: counter
+      !
+      class( IntegerArray_t ), intent( in ) :: self
+	  integer                               :: counter
+      !
+      type( Element_t ), pointer :: element
       !
       counter = 0
       element => self%first
@@ -86,11 +84,11 @@ contains
    end function getSizeIntegerArray
    !
    function hasInteger( self, int_value ) result( exist )
-      class( IntegerArray_t ), intent( in )   :: self
-      integer, intent( in )               :: int_value
-      !
-      logical                        :: exist
-      integer                        :: index, size
+      class( IntegerArray_t ), intent( in ) :: self
+      integer, intent( in )                 :: int_value
+      logical                               :: exist
+	  !
+      integer :: index, size
       !
       exist = .FALSE.
       !
@@ -108,15 +106,16 @@ contains
    subroutine addInteger( self, int_value )
       implicit none
       !
-      class( IntegerArray_t )   , intent( in out )   :: self
-      integer, intent( in )                  :: int_value
+      class( IntegerArray_t ), intent( inout ) :: self
+      integer, intent( in )                    :: int_value
       !
       type( Element_t ), pointer      :: element
       !
       allocate( element )
       !
       element%int_value = int_value
-      element%next => null()
+      !
+	  element%next => null()
       !
       if( .not.associated( self%first ) ) then  
          element%prev => null()
@@ -135,11 +134,11 @@ contains
    function getInteger( self, index ) result( int_value )
       implicit none
       !
-      class( IntegerArray_t ), intent( in )   :: self
-      integer, intent( in )               :: index
+      class( IntegerArray_t ), intent( in ) :: self
+      integer, intent( in )                 :: index
       !
-      type( Element_t ), pointer   :: element
-      integer                  :: int_value, counter
+      type( Element_t ), pointer :: element
+      integer                    :: int_value, counter
       !
       element => self%first
       counter = 1

@@ -13,27 +13,27 @@ module DataEntryArray
    implicit none
    !
    type, private :: Element_t
-   !
-   class( DataEntry_t ), pointer   :: data_entry
-   type( Element_t ), pointer   :: next => null()
-   type( Element_t ), pointer   :: prev => null()
-   !
+      !
+      class( DataEntry_t ), allocatable :: data_entry
+      type( Element_t ), pointer :: next => null()
+      type( Element_t ), pointer :: prev => null()
+      !
    end type Element_t
    !
    type, public :: DataEntryArray_t
-   !
-   type( Element_t ), pointer   :: first
-   type( Element_t ), pointer   :: last
-   !
-   contains
       !
-      final :: DataEntryArray_dtor
+      type( Element_t ), pointer :: first
+      type( Element_t ), pointer :: last
       !
-      procedure, public :: size   => getSizeDataEntryArray
-      procedure, public :: has   => hasDataEntry
-      procedure, public :: add   => addDataEntry
-      procedure, public :: get   => getDataEntry
-      !
+      contains
+        !
+        final :: DataEntryArray_dtor
+        !
+        procedure, public :: size  => getSizeDataEntryArray
+        procedure, public :: has   => hasDataEntry
+        procedure, public :: add   => addDataEntry
+        procedure, public :: get   => getDataEntry
+        !
    end type DataEntryArray_t
    !
    interface DataEntryArray_t
@@ -45,11 +45,9 @@ contains
    function DataEntryArray_ctor() result( self )
       implicit none
       !
-      class( DataEntryArray_t ), pointer   :: self
+      type( DataEntryArray_t ) :: self
       !
-      ! write(*,*) "Constructor DataEntryArray_t"
-      !
-      allocate( DataEntryArray_t :: self )
+      !write(*,*) "Constructor DataEntryArray_t"
       !
       self%first => null()
       self%last  => null()
@@ -63,7 +61,7 @@ contains
       !
       type( Element_t ), pointer :: element
       !
-      !write(*,*) "Destructor DataEntryArray_t"
+      write(*,*) "Destructor DataEntryArray_t"
       !
       element => self%first
       do while( associated( element ) )
@@ -71,15 +69,18 @@ contains
          element => element%next
       end do
       !
+      self%first => null()
+      self%last  => null()
+      !
    end subroutine DataEntryArray_dtor
    !
    function getSizeDataEntryArray( self ) result( counter )
       implicit none
       !
-      class( DataEntryArray_t ), intent( in )   :: self
+      class( DataEntryArray_t ), intent( in ) :: self
+	  integer                                 :: counter
       !
-      type( Element_t ), pointer      :: element
-      integer                     :: counter
+      type( Element_t ), pointer  :: element
       !
       counter = 0
       element => self%first
@@ -91,8 +92,8 @@ contains
    end function getSizeDataEntryArray
    !
    function hasDataEntry( self, data_entry ) result( exist )
-      class( DataEntryArray_t ), intent( in )   :: self
-      class( DataEntry_t ), intent( in )   :: data_entry
+      class( DataEntryArray_t ), intent( in ) :: self
+      class( DataEntry_t ), intent( in )      :: data_entry
       !
       logical                        :: exist
       integer                        :: iDe, nDe
@@ -112,14 +113,15 @@ contains
    subroutine addDataEntry( self, data_entry )
       implicit none
       !
-      class( DataEntryArray_t )   , intent( in out )   :: self
-      class( DataEntry_t ), pointer, intent( in )      :: data_entry
+      class( DataEntryArray_t ), intent( inout ) :: self
+      class( DataEntry_t ), intent( in )         :: data_entry
       !
-      type( Element_t ), pointer            :: element
+      type( Element_t ), pointer :: element
       !
       allocate( element )
       !
-      element%data_entry => data_entry
+      element%data_entry = data_entry
+	  !
       element%next => null()
       !
       if( .not.associated( self%first ) ) then  
@@ -139,26 +141,26 @@ contains
    function getDataEntry( self, de_index ) result( data_entry )
       implicit none
       !
-      class( DataEntryArray_t ), intent( in )   :: self
-      integer, intent( in )               :: de_index
+      class( DataEntryArray_t ), intent( in ) :: self
+      integer, intent( in )                   :: de_index
+	  class( DataEntry_t ), pointer           :: data_entry
       !
-      type( Element_t ), pointer         :: element
-      class( DataEntry_t ), pointer      :: data_entry
-      integer                        :: counter
+      type( Element_t ), pointer :: element
+      integer                    :: counter
       !
       element => self%first
       counter = 1
-      do while(associated( element ) )
-         if( counter == de_index ) exit
-       counter = counter + 1
+      do while( associated( element ) )
+	     if( counter == de_index ) exit
+         counter = counter + 1
          element => element%next
       end do
       !
-      if(.not.associated(element)) then
-         STOP 'DataEntry_array.f08: DataEntry index not found.'
+      if( .not. associated( element ) ) then
+         STOP 'DataEntryArray.f08: DataEntry index not found.'
       end if
       !
-      data_entry => element%data_entry
+      allocate( data_entry, source = element%data_entry )
       !
    end function getDataEntry
    !

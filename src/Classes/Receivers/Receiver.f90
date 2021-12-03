@@ -34,7 +34,7 @@ module Receiver
       !
       class( cVector_t ), allocatable    :: Lex, Ley, Lez, Lbx, Lby, Lbz
       !
-      class( DataGroupArray_t ), pointer :: data_groups => null()
+      class( DataGroupArray_t ), pointer :: data_groups
       !
    contains
       !
@@ -102,7 +102,7 @@ contains
       !
       self%grid => null()
       !
-      self%data_groups => DataGroupArray_t()
+      allocate( self%data_groups, source = DataGroupArray_t() )
       !
    end subroutine initializeRx
    !
@@ -132,18 +132,18 @@ contains
       !
       if( allocated( self%Lbz ) ) deallocate( self%Lbz )
       !
-      deallocate( self%data_groups )
-      !
+	  !deallocate( self%data_groups )
+	  !
    end subroutine deallocateRx
    !
    subroutine evaluationFunctionRx( self, model_operator, omega )
       implicit none
       !
-      class( Receiver_t ), intent( inout )                :: self
-      class( ModelOperator_t ), allocatable, intent( in ) :: model_operator
+      class( Receiver_t ), intent( inout )   :: self
+      class( ModelOperator_t ), intent( in ) :: model_operator
+	  real( kind=prec ), intent( in )        :: omega
       !
       integer              :: k
-      real( kind=prec )    :: omega
       complex( kind=prec ) :: comega
       !
       ! THESE SHOULD BE rVECTORS ????
@@ -194,10 +194,11 @@ contains
                call e%interpFunc( self%location, "z", self%Lez )
             !
             case( "Bx" )
-               call h%interpFunc( self%location, "x", lh )
+			   !
+			   call h%interpFunc( self%location, "x", lh )
                call model_operator%multCurlT( lh, self%Lbx )
                call self%Lbx%mults( ( isign * ONE_I/MU_0 ) * comega )
-            !
+			   !
             case( "By" )
                call h%interpFunc( self%location, "y", lh )
                call model_operator%multCurlT( lh, self%Lby )
@@ -254,8 +255,8 @@ contains
    end function hasDataGroupRx
    !
    subroutine addDataGroupRx( self, data_group )
-      class( Receiver_t ), intent( inout )        :: self
-      class( DataGroup_t ), pointer, intent( in ) :: data_group
+      class( Receiver_t ), intent( inout ) :: self
+      class( DataGroup_t ), intent( in )   :: data_group
       !
       call self%data_groups%add( data_group )
       !
@@ -264,9 +265,9 @@ contains
    function getDataGroupRx( self, index ) result( data_group )
       class( Receiver_t ), intent( in ) :: self
       integer, intent( in )             :: index
-      class( DataGroup_t ), pointer     :: data_group
+      class( DataGroup_t ), allocatable :: data_group
       !
-      data_group => self%data_groups%get( index )
+      data_group = self%data_groups%get( index )
       !
    end function getDataGroupRx
    !

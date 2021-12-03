@@ -17,9 +17,8 @@ module DataEntryCSEM
       !
    contains
       !
-      final :: DataEntryCSEM_dtor
-      !
       procedure, public   :: write => writeDataEntryCSEM
+	  procedure, public :: getCopy => getCopyDataEntryCSEM
       !
    end type DataEntryCSEM_t
    !
@@ -33,15 +32,13 @@ contains
    function DataEntryCSEM_ctor( id, type, dipole, period, moment, azimuth, &
       dip, tx_xyz, code, xyz, component, real, imaginary, error ) result( self )
       implicit none
-      class( DataEntryCSEM_t ), pointer      :: self
+      type( DataEntryCSEM_t ) :: self
       integer, intent( in )               :: id
       character(:), allocatable, intent( in )   :: type, dipole, code, component
       real( kind=prec ), intent( in )        :: period, moment, azimuth, dip, xyz(3), tx_xyz(3)
       real( kind=prec ), intent( in )         :: real, imaginary, error
       !
-      ! write(*,*) "Constructor DataEntryCSEM_t"
-      !
-      allocate( DataEntryCSEM_t :: self )
+      !write(*,*) "Constructor DataEntryCSEM_t"
       !
       self%id = id
       self%type = type
@@ -60,14 +57,17 @@ contains
       !
    end function DataEntryCSEM_ctor
    !
-   subroutine DataEntryCSEM_dtor( self )
+   function getCopyDataEntryCSEM( self ) result ( copy )
       implicit none
       !
-      type( DataEntryCSEM_t ), intent( in out ) :: self
+      class( DataEntryCSEM_t ), intent( in ) :: self
+	  class( DataEntry_t ), allocatable      :: copy
       !
-      ! write(*,*) "Destructor DataEntryCSEM_t"
+      allocate( copy, source = DataEntryCSEM_t( self%id, self%type,   &
+                self%dipole, self%period, self%moment, self%azimuth, self%dip, self%tx_xyz,   &
+                self%code, self%xyz, self%component, self%real, self%imaginary, self%error ) )
       !
-   end subroutine DataEntryCSEM_dtor
+   end function getCopyDataEntryCSEM
    !
    subroutine writeDataEntryCSEM( self )
       class( DataEntryCSEM_t ), intent( in ) :: self

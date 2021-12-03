@@ -14,9 +14,9 @@ module DataGroupArray
    !
    type, private :: Element_t
       !
-      class( DataGroup_t ), pointer   :: data_group
-      type( Element_t ), pointer      :: next => null()
-      type( Element_t ), pointer      :: prev => null()
+      class( DataGroup_t ), allocatable :: data_group
+      type( Element_t ), pointer :: next => null()
+      type( Element_t ), pointer :: prev => null()
       !
    end type Element_t
    !
@@ -29,7 +29,7 @@ module DataGroupArray
          !
          final :: DataGroupArray_dtor
          !
-         procedure, public :: Size
+         procedure, public :: size
          procedure, public :: has => hasDataGroup
          procedure, public :: add => addDataGroup
          procedure, public :: get => getDataGroup
@@ -45,11 +45,7 @@ contains
    function DataGroupArray_ctor() result( self )
       implicit none
       !
-      class( DataGroupArray_t ), pointer   :: self
-      !
-      ! write(*,*) "Constructor DataGroupArray_t"
-      !
-      allocate( DataGroupArray_t :: self )
+      type( DataGroupArray_t ) :: self
       !
       self%first   => null()
       self%last   => null()
@@ -59,11 +55,11 @@ contains
    subroutine DataGroupArray_dtor( self )
       implicit none
       !
-      type( DataGroupArray_t ), intent( in out )   :: self
+      type( DataGroupArray_t ), intent( inout ) :: self
       !
-      type( Element_t ), pointer               :: element
+      type( Element_t ), pointer                :: element
       !
-      ! write(*,*) "Destructor DataGroupArray_t"
+      write(*,*) "Destructor DataGroupArray_t"
       !
       element => self%first
       do while( associated( element ) )
@@ -73,28 +69,29 @@ contains
       !
    end subroutine DataGroupArray_dtor
    !
-   function Size( self ) result( counterer )
+   function size( self ) result( counter )
       implicit none
-      ! Arguments
-      class( DataGroupArray_t ), intent( in )   :: self
-      ! Local variables
-      type( Element_t ), pointer      :: element
-      integer                     :: counterer
       !
-      counterer = 0
+      class( DataGroupArray_t ), intent( in ) :: self
+	  integer                                 :: counter
+      !
+      type( Element_t ), pointer :: element
+      !
+      counter = 0
       element => self%first
       do while( associated( element ) )
-         counterer = counterer + 1
+         counter = counter + 1
          element => element%next
       end do
       !
-   end function Size
+   end function size
    !
    function hasDataGroup( self, data_group ) result( exist )
-      class( DataGroupArray_t ), intent( in )   :: self
-      class( DataGroup_t ), intent( in )   :: data_group
-      logical                        :: exist
-      integer                        :: iDg, nDg
+      class( DataGroupArray_t ), intent( in ) :: self
+      class( DataGroup_t ), intent( in )      :: data_group
+      logical                                 :: exist
+	  !
+      integer :: iDg, nDg
       !
       exist = .FALSE.
       !
@@ -112,14 +109,15 @@ contains
    subroutine addDataGroup( self, data_group )
       implicit none
       !
-      class( DataGroupArray_t )   , intent( in out )   :: self
-      class( DataGroup_t ), pointer, intent( in )      :: data_group
+      class( DataGroupArray_t )   , intent( in out ) :: self
+      class( DataGroup_t ), intent( in )             :: data_group
       !
-      type( Element_t ), pointer   :: element
+      type( Element_t ), pointer :: element
       !
       allocate( element )
       !
-      element%data_group => data_group
+      element%data_group = data_group
+	  !
       element%next => null()
       !
       if( .not.associated( self%first ) ) then  
@@ -139,12 +137,12 @@ contains
    function getDataGroup( self, index ) result( data_group )
       implicit none
       !
-      class( DataGroupArray_t ), intent( in )   :: self
-      integer, intent( in )               :: index
+      class( DataGroupArray_t ), intent( in ) :: self
+      integer, intent( in )                   :: index
+	  class( DataGroup_t ), allocatable       :: data_group
       !
-      type( Element_t ), pointer            :: element
-      class( DataGroup_t ), pointer         :: data_group
-      integer                           :: counter
+      type( Element_t ), pointer :: element
+      integer                    :: counter
       !
       element => self%first
       counter = 1
@@ -158,7 +156,7 @@ contains
          STOP 'DataGroupArray.f08: DataGroup index not found.'
       end if
       !
-      data_group => element%data_group
+      data_group = element%data_group
       !
    end function getDataGroup
    !

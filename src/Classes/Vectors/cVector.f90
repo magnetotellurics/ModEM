@@ -1,279 +1,325 @@
 module cVector
-  use Constants
-  use rScalar
-  use rVector
-  
-  type, abstract :: cVector_t
-     
-     logical :: isAllocated = .false.
-          
-   contains
-     
-     !**
-     ! Input/Output
-     !*
-     procedure(iface_Read) , deferred, public :: read
-     procedure(iface_Write), deferred, public :: write
-     
-     !**
-     ! boundary operations
-     !*
-     procedure(iface_setAllboundary), deferred :: setAllboundary
-     procedure(iface_setOneboundary), deferred :: setOneboundary
-     procedure(iface_setAllinterior), deferred :: setAllinterior
-     procedure(iface_intBdryIndices), deferred :: intBdryIndices
-     procedure(iface_boundary)      , deferred :: boundary
-     procedure(iface_interior)      , deferred :: interior
+   !
+   use Constants
+   use rScalar
+   use rVector
+   !
+   type, abstract :: cVector_t
+       
+       logical :: isAllocated = .false.
+	   !
+    contains
+       
+       !**
+       ! Input/Output
+       !*
+       procedure( interface_read_c_vector ) , deferred, public :: read
+       procedure( interface_write_c_vector ), deferred, public :: write
+       
+       !**
+       ! boundary operations
+       !*
+       procedure( interface_set_all_boundary_c_vector ), deferred :: setAllboundary
+       procedure( interface_set_one_boundary_c_vector ), deferred :: setOneboundary
+       procedure( interface_set_all_interior_c_vector ), deferred :: setAllinterior
+       procedure( interface_int_bdry_indices_c_vector ), deferred :: intBdryIndices
+       procedure( interface_boundary_c_vector )         , deferred :: boundary
+       procedure( interface_interior_c_vector )         , deferred :: interior
 
-     !**
-     ! Data access
-     !*
-     procedure(iface_length)  , deferred :: length
-     procedure(iface_getArray), deferred :: getArray
-     procedure(iface_setArray), deferred :: setArray
-     
-     !**
-     ! Arithmetic/algebraic operations
-     procedure(iface_zeros_cVector), deferred, public :: zeros
+       !**
+       ! Data access
+       !*
+       procedure( interface_length_c_vector )   , deferred :: length
+       procedure( interface_get_array_c_vector ), deferred :: getArray
+       procedure( interface_set_array_c_vector ), deferred :: setArray
+       
+       !**
+       ! Arithmetic/algebraic operations
+       procedure( interface_zeros_c_vector ), deferred, public :: zeros
 
-     procedure(iface_add1) , deferred, public :: add1
-     generic :: add => add1
-     generic :: operator(+) => add1
-     
-     procedure(iface_sub1) , deferred, public :: sub1
-     generic :: sub => sub1
-     generic :: operator(-) => sub1
-     
-     procedure(iface_mult1), deferred, public :: mult1
-     procedure(iface_mult2), deferred, public, pass(self) :: mult2
-     procedure(iface_mult3), deferred, public :: mult3     
-     generic :: mult => mult1, mult2, mult3
-     generic :: operator(*) => mult1, mult2, mult3
+       procedure( interface_add1_c_vector ) , deferred, public :: add1
+       generic :: add => add1
+       generic :: operator(+) => add1
+       
+       procedure( interface_sub1_c_vector ) , deferred, public :: sub1
+       generic :: sub => sub1
+       generic :: operator(-) => sub1
+       
+       procedure( interface_mult1_c_vector ), deferred, public :: mult1
+       procedure( interface_mult2_c_vector ), deferred, public, pass(self) :: mult2
+       procedure( interface_mult3_c_vector ), deferred, public :: mult3       
+       generic :: mult => mult1, mult2, mult3
+       generic :: operator(*) => mult1, mult2, mult3
 
-     procedure(iface_mults1), deferred, public :: mults1
-     generic :: mults => mults1
-     
-     procedure(iface_div1) , deferred, public :: div1
-     procedure(iface_div2) , deferred, public :: div2     
-     generic :: div => div1, div2
-     generic :: operator(/) => div1, div2
-     
-     procedure(iface_dotProd), deferred, public :: dotProd
-     generic :: operator(.dot.) => dotProd
+       procedure( interface_mults1_c_vector ), deferred, public :: mults1
+       procedure( interface_mults3_c_vector ), deferred, public :: mults3
+       generic :: mults => mults1, mults3
+       
+       procedure( interface_div1_c_vector ) , deferred, public :: div1
+       procedure( interface_div2_c_vector ) , deferred, public :: div2       
+       generic :: div => div1, div2
+       generic :: operator(/) => div1, div2
+       
+       procedure( interface_divs2_c_vector ) , deferred, public :: divs2
+       generic :: divs =>  divs2
 
-     procedure(iface_copyFrom_cVector), deferred, public :: copyFrom
-     generic :: assignment(=) => copyFrom
-     
-     !**
-     ! Miscellaneous
-     !*     
-     procedure(iface_interpFunc), deferred :: interpFunc
+       procedure( interface_linCombS_c_vector ) , deferred, public :: linCombS
+	   procedure( interface_scMultAddS_c_vector ) , deferred, public :: scMultAddS
 
-  end type cVector_t
-  
-  abstract interface
-     !**
-     ! Input/Output
-     !*
+       procedure( interface_dot_product_c_vector ), deferred, public :: dotProd
+       generic :: operator(.dot.) => dotProd
 
-     !**
-     ! Read
-     !*
-     subroutine iface_Read(self, fid)
-       import :: cVector_t
-       class(cVector_t), intent(inout) :: self
-       integer         , intent(in)    :: fid
-     end subroutine iface_Read
+       procedure( interface_copy_from_c_vector ), deferred, public :: copyFrom
+       generic :: assignment(=) => copyFrom
+	   
+	   procedure( interface_print_c_vector ), deferred, public :: print
+       
+       !**
+       ! Miscellaneous
 
-     !**
-     ! write
-     !*
-     subroutine iface_Write(self, fid)
-       import :: cVector_t
-       class(cVector_t), intent(in) :: self
-       integer         , intent(in) :: fid
-     end subroutine iface_Write
-     
-     !**
-     ! boundary operations
-     !*
+       !*       
+       procedure( interface_interp_func_c_vector ), deferred :: interpFunc
 
-     !**
-     ! setAllboundary
-     !*
-     subroutine iface_setAllboundary(self, c_in)
-       import :: cVector_t, prec
-       class(cVector_t)    , intent(inout) :: self
-       complex(kind = prec), intent(in)    :: c_in
-     end subroutine iface_setAllboundary
+   end type cVector_t
+   
+   abstract interface
+       !**
+       ! Input/Output
+       !*
 
-     !**
-     ! setOneboundary
-     !*
-     subroutine iface_setOneboundary(self, bdry, c, int_only)
-       import :: cVector_t, prec
-       class(cVector_t)    , intent(inout) :: self
-       character(*)        , intent(in)    :: bdry
-       complex(kind = prec), intent(in)    :: c
-       logical, optional, intent(in)    :: int_only
-     end subroutine iface_setOneboundary
+       !**
+       ! Read
+       !*
+       subroutine interface_read_c_vector(self, fid)
+          import :: cVector_t
+          class(cVector_t), intent(inout) :: self
+          integer             , intent(in)      :: fid
+       end subroutine interface_read_c_vector
 
-     !**
-     ! setAllinterior
-     !*
-     subroutine iface_setAllinterior(self, c_in)
-       import :: cVector_t, prec
-       class(cVector_t)    , intent(inout) :: self
-       complex(kind = prec), intent(in)    :: c_in
-     end subroutine iface_setAllinterior
+       !**
+       ! write
+       !*
+       subroutine interface_write_c_vector(self, fid)
+          import :: cVector_t
+          class(cVector_t), intent(in) :: self
+          integer             , intent(in) :: fid
+       end subroutine interface_write_c_vector
+       
+       !**
+       ! boundary operations
+       !*
 
-     !**
-     ! intBdryIndices
-     !*
-     subroutine iface_intBdryIndices(self, ind_i, ind_b)
-       import :: cVector_t
-       class(cVector_t)    , intent(in)  :: self
-       integer, allocatable, intent(out) :: ind_i(:), ind_b(:)
-     end subroutine Iface_intBdryIndices
-     
-     !**
-     ! boundary
-     !*
-     function iface_boundary(self) result(E)
-       import :: cVector_t
-       class(cVector_t), intent(in) :: self
-       class(cVector_t), allocatable :: E
-     end function Iface_boundary
+       !**
+       ! setAllboundary
+       !*
+       subroutine interface_set_all_boundary_c_vector(self, c_in)
+          import :: cVector_t, prec
+          class(cVector_t)      , intent(inout) :: self
+          complex(kind = prec), intent(in)      :: c_in
+       end subroutine interface_set_all_boundary_c_vector
 
-     !**
-     ! interior
-     !*
-     function iface_interior(self) result(E)
-       import :: cVector_t
-       class(cVector_t), intent(in) :: self
-       class(cVector_t), allocatable :: E
-     end function Iface_interior
+       !**
+       ! setOneboundary
+       !*
+       subroutine interface_set_one_boundary_c_vector(self, bdry, c, int_only)
+          import :: cVector_t, prec
+          class(cVector_t)      , intent(inout) :: self
+          character(*)            , intent(in)      :: bdry
+          complex(kind = prec), intent(in)      :: c
+          logical, optional, intent(in)      :: int_only
+       end subroutine interface_set_one_boundary_c_vector
+
+       !**
+       ! setAllinterior
+       !*
+       subroutine interface_set_all_interior_c_vector(self, c_in)
+          import :: cVector_t, prec
+          class(cVector_t)      , intent(inout) :: self
+          complex(kind = prec), intent(in)      :: c_in
+       end subroutine interface_set_all_interior_c_vector
+
+       !**
+       ! intBdryIndices
+       !*
+       subroutine interface_int_bdry_indices_c_vector(self, ind_i, ind_b)
+          import :: cVector_t
+          class(cVector_t)      , intent(in)   :: self
+          integer, allocatable, intent(out) :: ind_i(:), ind_b(:)
+       end subroutine interface_int_bdry_indices_c_vector
+       
+       !**
+       ! boundary
+       !*
+       function interface_boundary_c_vector(self) result(E)
+          import :: cVector_t
+          class(cVector_t), intent(in) :: self
+          class(cVector_t), allocatable :: E
+       end function interface_boundary_c_vector
+
+       !**
+       ! interior
+       !*
+       function interface_interior_c_vector(self) result(E)
+          import :: cVector_t
+          class(cVector_t), intent(in) :: self
+          class(cVector_t), allocatable :: E
+       end function interface_interior_c_vector
 
 
-     !**
-     ! Data access
-     !*
+       !**
+       ! Data access
+       !*
 
-     !**
-     ! length
-     !*
-     function iface_length(self) result(n)
-       import :: cVector_t
-       class(cVector_t), intent(in) :: self
-       integer :: n
-     end function iface_length
+       !**
+       ! length
+       !*
+       function interface_length_c_vector(self) result(n)
+          import :: cVector_t
+          class(cVector_t), intent(in) :: self
+          integer :: n
+       end function interface_length_c_vector
 
-     !**
-     ! getArray
-     !*
-     subroutine iface_getArray(self, v)
-       import :: cVector_t, prec
-       class(cVector_t), intent(in)  :: self
-       complex(kind = prec), allocatable, intent(out) :: v(:)
-     end subroutine Iface_getArray
+       !**
+       ! getArray
+       !*
+       subroutine interface_get_array_c_vector(self, v)
+          import :: cVector_t, prec
+          class(cVector_t), intent(in)   :: self
+          complex(kind = prec), allocatable, intent(out) :: v(:)
+       end subroutine interface_get_array_c_vector
 
-     !**
-     ! setArray
-     !*
-     subroutine iface_setArray(self, v)
-       import :: cVector_t, prec
-       class(cVector_t)    , intent(inout) :: self
-       complex(kind = prec), intent(in)    :: v(:)
-     end subroutine iface_setArray
-     
-     !**
-     ! Arithmetic/algebraic operations
-     !*
-     
-     !**
-     ! zeros
-     !*
-     subroutine iface_zeros_cVector(self)
-       import :: cVector_t
-       class(cVector_t), intent(inout) :: self
-     end subroutine iface_zeros_cVector
+       !**
+       ! setArray
+       !*
+       subroutine interface_set_array_c_vector(self, v)
+          import :: cVector_t, prec
+          class(cVector_t)      , intent(inout) :: self
+          complex(kind = prec), intent(in)      :: v(:)
+       end subroutine interface_set_array_c_vector
+       
+       !**
+       ! Arithmetic/algebraic operations
+       !*
+       
+       !**
+       ! zeros
+       !*
+       subroutine interface_zeros_c_vector(self)
+          import :: cVector_t
+          class(cVector_t), intent(inout) :: self
+       end subroutine interface_zeros_c_vector
 
-     function iface_add1(lhs, rhs) result(Eout)
-       import :: cVector_t
-       class(cVector_t), intent(in)  :: lhs, rhs
-       class(cVector_t), allocatable :: Eout
-     end function iface_add1
+       function interface_add1_c_vector(lhs, rhs) result(Eout)
+          import :: cVector_t
+          class(cVector_t), intent(in)   :: lhs, rhs
+          class(cVector_t), allocatable :: Eout
+       end function interface_add1_c_vector
 
-     function iface_sub1(lhs, rhs) result(Eout)
-       import :: cVector_t
-       class(cVector_t), intent(in) :: lhs, rhs
-       class(cVector_t), allocatable :: Eout
-     end function iface_sub1
+       function interface_sub1_c_vector(lhs, rhs) result(Eout)
+          import :: cVector_t
+          class(cVector_t), intent(in) :: lhs, rhs
+          class(cVector_t), allocatable :: Eout
+       end function interface_sub1_c_vector
 
-     function iface_mult1(lhs, rhs) result(Eout)
-       import :: cVector_t
-       class(cVector_t), intent(in) :: lhs, rhs
-       class(cVector_t), allocatable :: Eout
-     end function iface_mult1
+       function interface_mult1_c_vector(lhs, rhs) result(Eout)
+          import :: cVector_t
+          class(cVector_t), intent(in) :: lhs, rhs
+          class(cVector_t), allocatable :: Eout
+       end function interface_mult1_c_vector
 
-     function iface_mult2(c, self) result(Eout)
-       import :: cVector_t, prec
-       complex(kind = prec), intent(in) :: c
-       class(cVector_t)    , intent(in) :: self
-       class(cVector_t), allocatable :: Eout
-     end function iface_mult2
+       function interface_mult2_c_vector(c, self) result(Eout)
+          import :: cVector_t, prec
+          complex(kind = prec), intent(in) :: c
+          class(cVector_t)      , intent(in) :: self
+          class(cVector_t), allocatable :: Eout
+       end function interface_mult2_c_vector
 
-     function iface_mult3(lhs, rhs) result(Eout)
-       import :: cVector_t, rVector_t
-       class(cVector_t), intent(in) :: lhs
-       class(rVector_t), intent(in) :: rhs       
-       class(cVector_t), allocatable :: Eout
-     end function iface_mult3
-     
-     subroutine iface_mults1(self, c)
-       import :: cVector_t, prec
-       class(cVector_t)    , intent(inout) :: self
-       complex(kind = prec), intent(in) :: c       
-     end subroutine iface_mults1
-     
-     function iface_div1(lhs, rhs) result(Eout)
-       import :: cVector_t
-       class(cVector_t), intent(in) :: lhs
-       class(cVector_t), intent(in) :: rhs
-       class(cVector_t), allocatable :: Eout
-     end function iface_div1
+       function interface_mult3_c_vector(lhs, rhs) result(Eout)
+          import :: cVector_t, rVector_t
+          class(cVector_t), intent(in) :: lhs
+          class(rVector_t), intent(in) :: rhs          
+          class(cVector_t), allocatable :: Eout
+       end function interface_mult3_c_vector
+       
+       subroutine interface_mults3_c_vector(lhs, rhs)
+         !   subroutine version that overwrites lhs with lhs*rhs
+          import :: cVector_t, rVector_t
+          class(cVector_t), intent(inout) :: lhs
+          class(rVector_t), intent(in) :: rhs          
+          class(cVector_t), allocatable :: Eout
+       end subroutine interface_mults3_c_vector
 
-     function iface_div2(lhs, rhs) result(Eout)
-       import :: cVector_t, rVector_t
-       class(cVector_t), intent(in) :: lhs
-       class(rVector_t), intent(in) :: rhs
-       class(cVector_t), allocatable :: Eout
-     end function iface_div2
-     
-     function iface_dotProd(lhs, rhs) result(r)
-       import :: cVector_t, prec
-       class(cVector_t), intent(in) :: lhs, rhs
-       complex(kind = prec) :: r
-     end function iface_dotProd
+       subroutine interface_mults1_c_vector(self, c)
+          import :: cVector_t, prec
+          class(cVector_t)      , intent(inout) :: self
+          complex(kind = prec), intent(in) :: c          
+       end subroutine interface_mults1_c_vector
+       
+       function interface_div1_c_vector(lhs, rhs) result(Eout)
+          import :: cVector_t
+          class(cVector_t), intent(in) :: lhs
+          class(cVector_t), intent(in) :: rhs
+          class(cVector_t), allocatable :: Eout
+       end function interface_div1_c_vector
 
-     subroutine iface_copyFrom_cVector(self, rhs)
-       import :: cVector_t
-       class(cVector_t), intent(inout) :: self
-       class(cVector_t), intent(in)    :: rhs
-     end subroutine iface_copyFrom_cVector
-     
-     !**
-     ! Create a Vector object containing weights needed for
-     ! interpolation of xyz component of obj1 to location.
-     !*
-     subroutine iface_interpFunc(self, location, xyz, E)
-       import :: cVector_t, prec
-       class(cVector_t) , intent(in)  :: self
-       real(kind = prec), intent(in)  :: location(3)
-       character        , intent(in)  :: xyz
-       class(cVector_t) , intent(out), allocatable :: E
-     end subroutine iface_interpFunc
-     
-  end interface
-  
+       function interface_div2_c_vector(lhs, rhs) result(Eout)
+          import :: cVector_t, rVector_t
+          class(cVector_t), intent(in) :: lhs
+          class(rVector_t), intent(in) :: rhs
+          class(cVector_t), allocatable :: Eout
+       end function interface_div2_c_vector
+
+       subroutine interface_divs2_c_vector(lhs, rhs)
+          import :: cVector_t, rVector_t
+          class(cVector_t), intent(inout) :: lhs
+          class(rVector_t), intent(in) :: rhs
+          class(cVector_t), allocatable :: Eout
+       end subroutine interface_divs2_c_vector
+
+       subroutine interface_linCombS_c_vector(lhs, rhs, c1, c2)
+          import :: cVector_t,  prec
+          class(cVector_t), intent(inout) :: lhs
+          class(cVector_t), intent(in) :: rhs
+          complex(kind=prec), intent(in)  :: c1
+          complex(kind=prec), intent(in)  :: c2
+       end subroutine interface_linCombS_c_vector
+       
+		subroutine interface_scMultAddS_c_vector(lhs, rhs, c)
+			import :: cVector_t, prec
+			class(cVector_t), intent(in) :: lhs
+			class(cVector_t)       , intent(inout) :: rhs
+			complex(kind=prec), intent(in)  :: c
+		end subroutine interface_scMultAddS_c_vector
+   
+       function interface_dot_product_c_vector(lhs, rhs) result(r)
+          import :: cVector_t, prec
+          class(cVector_t), intent(in) :: lhs, rhs
+          complex(kind = prec) :: r
+       end function interface_dot_product_c_vector
+
+       subroutine interface_copy_from_c_vector(self, rhs)
+          import :: cVector_t
+          class(cVector_t), intent(inout) :: self
+          class(cVector_t), intent(in)      :: rhs
+       end subroutine interface_copy_from_c_vector
+       
+       !**
+       ! Create a Vector object containing weights needed for
+       ! interpolation of xyz component of obj1 to location.
+       !*
+       subroutine interface_interp_func_c_vector(self, location, xyz, E)
+          import :: cVector_t, prec
+          class(cVector_t) , intent(in)   :: self
+          real(kind = prec), intent(in)   :: location(3)
+          character            , intent(in)   :: xyz
+          class(cVector_t) , intent(out), allocatable :: E
+       end subroutine interface_interp_func_c_vector
+	   
+	   subroutine interface_print_c_vector( self )
+	      import :: cVector_t
+          class(cVector_t) , intent(in)   :: self
+	   end subroutine interface_print_c_vector
+       
+   end interface
+   
 end module cVector

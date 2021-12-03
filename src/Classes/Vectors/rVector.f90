@@ -1,281 +1,277 @@
 module rVector
-  use Constants
-  use rScalar
-  
-  implicit none
+   !
+   use Constants
+   use rScalar
+   !
+   type, abstract :: rVector_t
+       
+       logical :: isAllocated = .false.
+	   !
+               
+    contains
+       
+       !**
+       ! Input/Output
+       !*
+       procedure( interface_read_r_vector ) , deferred, public :: read
+       procedure( interface_write_r_vector ), deferred, public :: write
+       
+       !**
+       ! Boundary operations
+       !*
+       procedure( interface_set_all_boundary_r_vector ), deferred :: setAllBoundary
+       procedure( interface_set_one_boundary_r_vector ), deferred :: setOneBoundary
+       procedure( interface_set_all_interior_r_vector ), deferred :: setAllInterior
+       procedure( interface_int_bdry_indices_r_vector ), deferred :: intBdryIndices
+               
+       !**
+       ! Data access
+       !*
+       procedure( interface_length_r_vector )   , deferred :: length
+       procedure( interface_get_array_r_vector ), deferred :: getArray
+       procedure( interface_set_array_r_vector ), deferred :: setArray
+       
+       !**
+       ! Arithmetic/algebraic operations
+       procedure( interface_zeros_r_vector ), deferred, public :: zeros
 
-  private
-  
-  public :: rVector_t
-  
-  type, abstract :: rVector_t
-     
-     logical :: isAllocated = .false.
-          
-   contains
-     
-     !**
-     ! Input/Output
-     !*
-     procedure(iface_Read) , deferred, public :: read
-     procedure(iface_Write), deferred, public :: write
-     
-     !**
-     ! Boundary operations
-     !*
-     procedure(iface_setAllBoundary), deferred :: setAllBoundary
-     procedure(iface_setOneBoundary), deferred :: setOneBoundary
-     procedure(iface_setAllInterior), deferred :: setAllInterior
-     procedure(iface_intBdryIndices), deferred :: intBdryIndices
-          
-     !**
-     ! Data access
-     !*
-     procedure(iface_length)  , deferred :: length
-     procedure(iface_getArray), deferred :: getArray
-     procedure(iface_setArray), deferred :: setArray
-     
-     !**
-     ! Arithmetic/algebraic operations
-     procedure(iface_zeros), deferred, public :: zeros
+       procedure( interface_add1_r_vector ) , deferred, public :: add1
+       generic :: add => add1
+       generic :: operator(+) => add1
+       
+       procedure( interface_sub1_r_vector ) , deferred, public :: sub1
+       generic :: sub => sub1
+       generic :: operator(-) => sub1
+       
+       procedure( interface_mult1_r_vector ), deferred, public :: mult1
+       procedure( interface_mult2_r_vector ), deferred, public, pass(self) :: mult2   
+       generic :: mult => mult1, mult2
+       generic :: operator(*) => mult1, mult2
+       
+       procedure( interface_div1_r_vector ) , deferred, public :: div1
+       generic :: div => div1
+       generic :: operator(/) => div1
+       
+       procedure( interface_dot_product_r_vector ), deferred, public :: dotProd
+       generic :: operator(.dot.) => dotProd
+       
+       procedure( interface_diag_mult_r_vector ), deferred, public :: diagMult
 
-     procedure(iface_add1) , deferred, public :: add1
-     generic :: add => add1
-     generic :: operator(+) => add1
-     
-     procedure(iface_sub1) , deferred, public :: sub1
-     generic :: sub => sub1
-     generic :: operator(-) => sub1
-     
-     procedure(iface_mult1), deferred, public :: mult1
-     procedure(iface_mult2), deferred, public, pass(self) :: mult2  
-     generic :: mult => mult1, mult2
-     generic :: operator(*) => mult1, mult2
-     
-     procedure(iface_div1) , deferred, public :: div1
-     generic :: div => div1
-     generic :: operator(/) => div1
-     
-     procedure(iface_dotProd), deferred, public :: dotProd
-     generic :: operator(.dot.) => dotProd
-     
-     procedure(iface_diagMult), deferred, public :: diagMult
+       procedure( interface_copy_from_r_vector ), deferred, public :: copyFrom
+       generic :: assignment(=) => copyFrom
 
-     procedure(iface_copyFrom), deferred, public :: copyFrom
-     generic :: assignment(=) => copyFrom
+       !**
+       ! Miscellaneous
+       !*
+       procedure( interface_is_compatible_r_vector ), deferred, public :: isCompatible
+       procedure( interface_interp_func_r_vector ), deferred, public :: InterpFunc
 
-     !**
-     ! Miscellaneous
-     !*
-     procedure(iface_isCompatible), deferred, public :: isCompatible
-     procedure(iface_interpFunc), deferred, public :: InterpFunc
+       procedure( interface_sum_edges_r_vector ), deferred, public :: SumEdges       
+       procedure( interface_sum_cells_r_vector ), deferred, public :: SumCells
+   end type rVector_t
+   
+   abstract interface
+       !**
+       ! Input/Output
+       !*
 
-     procedure(iface_SumEdges), deferred, public :: SumEdges     
-     procedure(iface_SumCells), deferred, public :: SumCells
-  end type rVector_t
-  
-  abstract interface
-     !**
-     ! Input/Output
-     !*
+       !**
+       ! Read
+       !*
+       subroutine interface_read_r_vector(self, fid)
+          import :: rVector_t
+          class(rVector_t), intent(inout) :: self
+          integer             , intent(in)      :: fid
+       end subroutine interface_read_r_vector
 
-     !**
-     ! Read
-     !*
-     subroutine iface_Read(self, fid)
-       import :: rVector_t
-       class(rVector_t), intent(inout) :: self
-       integer         , intent(in)    :: fid
-     end subroutine iface_Read
+       !**
+       ! write
+       !*
+       subroutine interface_write_r_vector(self, fid)
+          import :: rVector_t
+          class(rVector_t), intent(in) :: self
+          integer             , intent(in) :: fid
+       end subroutine interface_write_r_vector
+       
+       !**
+       ! Boundary operations
+       !*
 
-     !**
-     ! write
-     !*
-     subroutine iface_Write(self, fid)
-       import :: rVector_t
-       class(rVector_t), intent(in) :: self
-       integer         , intent(in) :: fid
-     end subroutine iface_Write
-     
-     !**
-     ! Boundary operations
-     !*
+       !**
+       ! setAllBoundary
+       !*
+       subroutine interface_set_all_boundary_r_vector(self, c_in)
+          import :: rVector_t, prec
+          class(rVector_t) , intent(inout) :: self
+          real(kind = prec), intent(in)      :: c_in
+       end subroutine interface_set_all_boundary_r_vector
 
-     !**
-     ! setAllBoundary
-     !*
-     subroutine iface_setAllBoundary(self, c_in)
-       import :: rVector_t, prec
-       class(rVector_t) , intent(inout) :: self
-       real(kind = prec), intent(in)    :: c_in
-     end subroutine iface_setAllBoundary
+       !**
+       ! setOneBoundary
+       !*
+       subroutine interface_set_one_boundary_r_vector(self, bdry, c, int_only)
+          import :: rVector_t, prec
+          class(rVector_t) , intent(inout) :: self
+          character(*)       , intent(in)      :: bdry
+          real(kind = prec), intent(in)      :: c
+          logical, optional, intent(in)      :: int_only
+       end subroutine interface_set_one_boundary_r_vector
 
-     !**
-     ! setOneBoundary
-     !*
-     subroutine iface_setOneBoundary(self, bdry, c, int_only)
-       import :: rVector_t, prec
-       class(rVector_t) , intent(inout) :: self
-       character(*)     , intent(in)    :: bdry
-       real(kind = prec), intent(in)    :: c
-       logical, optional, intent(in)    :: int_only
-     end subroutine iface_setOneBoundary
+       !**
+       ! setAllInterior
+       !*
+       subroutine interface_set_all_interior_r_vector(self, c_in)
+          import :: rVector_t, prec
+          class(rVector_t) , intent(inout) :: self
+          real(kind = prec), intent(in)      :: c_in
+       end subroutine interface_set_all_interior_r_vector
 
-     !**
-     ! setAllInterior
-     !*
-     subroutine iface_setAllInterior(self, c_in)
-       import :: rVector_t, prec
-       class(rVector_t) , intent(inout) :: self
-       real(kind = prec), intent(in)    :: c_in
-     end subroutine iface_setAllInterior
+       !**
+       ! intBdryIndices
+       !*
+       subroutine interface_int_bdry_indices_r_vector(self, ind_i, ind_b)
+          import :: rVector_t
+          class(rVector_t)      , intent(in)   :: self
+          integer, allocatable, intent(out) :: ind_i(:), ind_b(:)
+       end subroutine interface_int_bdry_indices_r_vector
 
-     !**
-     ! intBdryIndices
-     !*
-     subroutine iface_intBdryIndices(self, ind_i, ind_b)
-       import :: rVector_t
-       class(rVector_t)    , intent(in)  :: self
-       integer, allocatable, intent(out) :: ind_i(:), ind_b(:)
-     end subroutine Iface_intBdryIndices
+       !**
+       ! Data access
+       !*
 
-     !**
-     ! Data access
-     !*
+       !**
+       ! length
+       !*
+       function interface_length_r_vector(self) result(n)
+          import :: rVector_t
+          class(rVector_t), intent(in) :: self
+          integer :: n
+       end function interface_length_r_vector
 
-     !**
-     ! length
-     !*
-     function iface_length(self) result(n)
-       import :: rVector_t
-       class(rVector_t), intent(in) :: self
-       integer :: n
-     end function iface_length
+       !**
+       ! getArray
+       !*
+       subroutine interface_get_array_r_vector(self, v)
+          import :: rVector_t, prec
+          class(rVector_t), intent(in)   :: self
+          real(kind = prec), allocatable, intent(out) :: v(:)
+       end subroutine interface_get_array_r_vector
 
-     !**
-     ! getArray
-     !*
-     subroutine iface_getArray(self, v)
-       import :: rVector_t, prec
-       class(rVector_t), intent(in)  :: self
-       real(kind = prec), allocatable, intent(out) :: v(:)
-     end subroutine Iface_getArray
+       !**
+       ! setArray
+       !*
+       subroutine interface_set_array_r_vector(self, v)
+          import :: rVector_t, prec
+          class(rVector_t) , intent(inout) :: self
+          real(kind = prec), intent(in)      :: v(:)
+       end subroutine interface_set_array_r_vector
+       
+       !**
+       ! Arithmetic/algebraic operations
+       !*
+       
+       !**
+       ! zeros
+       !*
+       subroutine interface_zeros_r_vector(self)
+          import :: rVector_t
+          class(rVector_t), intent(inout) :: self
+       end subroutine interface_zeros_r_vector
 
-     !**
-     ! setArray
-     !*
-     subroutine iface_setArray(self, v)
-       import :: rVector_t, prec
-       class(rVector_t) , intent(inout) :: self
-       real(kind = prec), intent(in)    :: v(:)
-     end subroutine iface_setArray
-     
-     !**
-     ! Arithmetic/algebraic operations
-     !*
-     
-     !**
-     ! zeros
-     !*
-     subroutine iface_zeros(self)
-       import :: rVector_t
-       class(rVector_t), intent(inout) :: self
-     end subroutine iface_zeros
+       function interface_add1_r_vector(lhs, rhs) result(Eout)
+          import :: rVector_t
+          class(rVector_t), intent(in)   :: lhs, rhs
+          class(rVector_t), allocatable :: Eout
+       end function interface_add1_r_vector
 
-     function iface_add1(lhs, rhs) result(Eout)
-       import :: rVector_t
-       class(rVector_t), intent(in)  :: lhs, rhs
-       class(rVector_t), allocatable :: Eout
-     end function iface_add1
+       function interface_sub1_r_vector(lhs, rhs) result(Eout)
+          import :: rVector_t
+          class(rVector_t), intent(in) :: lhs, rhs
+          class(rVector_t), allocatable :: Eout
+       end function interface_sub1_r_vector
 
-     function iface_sub1(lhs, rhs) result(Eout)
-       import :: rVector_t
-       class(rVector_t), intent(in) :: lhs, rhs
-       class(rVector_t), allocatable :: Eout
-     end function iface_sub1
+       function interface_mult1_r_vector(lhs, rhs) result(Eout)
+          import :: rVector_t
+          class(rVector_t), intent(in) :: lhs, rhs
+          class(rVector_t), allocatable :: Eout
+       end function interface_mult1_r_vector
+       
+       function interface_mult2_r_vector(c, self) result(Eout)
+          import :: rVector_t, prec
+          real(kind = prec), intent(in) :: c
+          class(rVector_t) , intent(in) :: self
+          class(rVector_t), allocatable :: Eout
+       end function interface_mult2_r_vector
+       
+       function interface_div1_r_vector(lhs, rhs) result(Eout)
+          import :: rVector_t
+          class(rVector_t), intent(in) :: lhs, rhs
+          class(rVector_t), allocatable :: Eout
+       end function interface_div1_r_vector
 
-     function iface_mult1(lhs, rhs) result(Eout)
-       import :: rVector_t
-       class(rVector_t), intent(in) :: lhs, rhs
-       class(rVector_t), allocatable :: Eout
-     end function iface_mult1
-     
-     function iface_mult2(c, self) result(Eout)
-       import :: rVector_t, prec
-       real(kind = prec), intent(in) :: c
-       class(rVector_t) , intent(in) :: self
-       class(rVector_t), allocatable :: Eout
-     end function iface_mult2
-     
-     function iface_div1(lhs, rhs) result(Eout)
-       import :: rVector_t
-       class(rVector_t), intent(in) :: lhs, rhs
-       class(rVector_t), allocatable :: Eout
-     end function iface_div1
+       function interface_dot_product_r_vector(lhs, rhs) result(r)
+          import :: rVector_t, prec
+          class(rVector_t), intent(in) :: lhs, rhs
+          real(kind = prec) :: r
+       end function interface_dot_product_r_vector
+       !
+      function interface_diag_mult_r_vector( self, rhs ) result ( diag_mult )
+            import :: rVector_t
+            class(rVector_t), intent(in)   :: self
+            class(rVector_t), intent(in)   :: rhs
+            class(rVector_t), allocatable :: diag_mult
+      end function interface_diag_mult_r_vector
 
-     function iface_dotProd(lhs, rhs) result(r)
-       import :: rVector_t, prec
-       class(rVector_t), intent(in) :: lhs, rhs
-       real(kind = prec) :: r
-     end function iface_dotProd
-     !
-    function iface_diagMult( self, rhs ) result ( diag_mult )
-        import :: rVector_t
-        class(rVector_t), intent(in)  :: self
-        class(rVector_t), intent(in)  :: rhs
-        class(rVector_t), allocatable :: diag_mult
-    end function iface_diagMult
+       function interface_is_compatible_r_vector(self, rhs) result(status)
+          import :: rVector_t
+          class(rVector_t), intent(in) :: self
+          class(rVector_t), intent(in) :: rhs
+          logical :: status
+       end function interface_is_compatible_r_vector
 
-     function iface_isCompatible(self, rhs) result(status)
-       import :: rVector_t
-       class(rVector_t), intent(in) :: self
-       class(rVector_t), intent(in) :: rhs
-       logical :: status
-     end function iface_isCompatible
+       subroutine interface_copy_from_r_vector(self, rhs)
+          import :: rVector_t
+          class(rVector_t), intent(inout) :: self
+          class(rVector_t), intent(in)      :: rhs
+       end subroutine interface_copy_from_r_vector
 
-     subroutine iface_copyFrom(self, rhs)
-       import :: rVector_t
-       class(rVector_t), intent(inout) :: self
-       class(rVector_t), intent(in)    :: rhs
-     end subroutine iface_copyFrom
+       !**
+       ! Create a Vector object containing weights needed for
+       ! interpolation of xyz component of obj1 to location.
+       !*
+       function interface_interp_func_r_vector(self, location, xyz) result(E)
+          import :: rVector_t, prec
+          class(rVector_t)   , intent(in) :: self
+          real(kind = prec), intent(in) :: location(3)
+          character            , intent(in) :: xyz
+          class(rVector_t), allocatable :: E
+       end function interface_interp_func_r_vector
 
-     !**
-     ! Create a Vector object containing weights needed for
-     ! interpolation of xyz component of obj1 to location.
-     !*
-     function iface_InterpFunc(self, location, xyz) result(E)
-       import :: rVector_t, prec
-       class(rVector_t)  , intent(in) :: self
-       real(kind = prec), intent(in) :: location(3)
-       character        , intent(in) :: xyz
-       class(rVector_t), allocatable :: E
-     end function iface_InterpFunc
+       !**
+       ! SumEdges
+       ! Sum all edges (or faces) that bound a cell, return as
+       ! rScalar object.
+       ! If interior only is true, only sum over interior edges (faces).
+       function interface_sum_edges_r_vector(self, InteriorOnly) result(cellObj)
+          import :: rVector_t, rScalar_t
+          class(rVector_t) , intent(in) :: self
+          logical, optional, intent(in) :: InteriorOnly
+          class(rScalar_t), allocatable :: cellObj
+       end function interface_sum_edges_r_vector
 
-     !**
-     ! SumEdges
-     ! Sum all edges (or faces) that bound a cell, return as
-     ! rScalar object.
-     ! If interior only is true, only sum over interior edges (faces).
-     function iface_SumEdges(self, InteriorOnly) result(cellObj)
-       import :: rVector_t, rScalar_t
-       class(rVector_t) , intent(in) :: self
-       logical, optional, intent(in) :: InteriorOnly
-       class(rScalar_t), allocatable :: cellObj
-     end function iface_SumEdges
-
-     !**
-     ! SumCells
-     ! Sum scalar object (cell type only) onto rVector object;
-     ! default is to sum onto all bounding interior edges;
-     ! boundary edges are presently zero;
-     ! faces case is coded now.
-     !*
-     subroutine iface_SumCells(self, E_in, ptype)
-       import :: rVector_t, rScalar_t
-       class(rVector_t), intent(inout) :: self
-       class(rScalar_t), intent(in)    :: E_in
-       character(*)    , intent(in), optional :: ptype
-     end subroutine iface_SumCells
-  end interface
-  
+       !**
+       ! SumCells
+       ! Sum scalar object (cell type only) onto rVector object;
+       ! default is to sum onto all bounding interior edges;
+       ! boundary edges are presently zero;
+       ! faces case is coded now.
+       !*
+       subroutine interface_sum_cells_r_vector(self, E_in, ptype)
+          import :: rVector_t, rScalar_t
+          class(rVector_t), intent(inout) :: self
+          class(rScalar_t), intent(in)      :: E_in
+          character(*)      , intent(in), optional :: ptype
+       end subroutine interface_sum_cells_r_vector
+   end interface
+   
 end module rVector

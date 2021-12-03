@@ -26,11 +26,14 @@ module DataManager
    class( TransmitterArray_t ), pointer, save, public :: transmitters
    !
    ! Global Array of Receivers
-   class( ReceiverArray_t ), pointer, save, public :: receivers
+   class( ReceiverArray_t ), pointer, save, public    :: receivers
+   !
+   ! Global Array of DataGroups
+   class( DataGroupArray_t ), pointer, save, public   :: data_groups
    !
    type :: DataManager_t 
       !
-      class( DataFile_t ), pointer :: data_file
+      class( DataFile_t ), allocatable :: data_file
       !
    contains
       !
@@ -50,13 +53,10 @@ contains
    function DataManager_ctor( file_name) result( self )
       !
       character(:), allocatable, intent( in ) :: file_name
-	  type( DataManager_t ), pointer          :: self
+     !
+     type( DataManager_t ) :: self
       !
-      ! write(*,*) "Constructor DataManager_t"
-      !
-      allocate( DataManager_t :: self )
-      !
-      self%data_file => StandardDataFile_t( ioStartup, file_name )
+      allocate( self%data_file, source = StandardDataFile_t( ioStartup, file_name ) )
       !
       call self%loadReceiversAndTransmitters()
       !
@@ -66,6 +66,8 @@ contains
       !
       write( *, * ) transmitters%size(), " Transmitters"
       !
+      write( *, * ) data_groups%size(), " Data Groups"
+      !
    end function DataManager_ctor 
    !
    subroutine DataManager_dtor( self )
@@ -73,9 +75,7 @@ contains
       !
       type( DataManager_t ), intent( in out ) :: self
       !
-      !write(*,*) "Destructor DataManager_t"
-      !
-      deallocate( self%data_file )
+      write(*,*) "Destructor DataManager_t"
       !
    end subroutine DataManager_dtor
    !
@@ -85,57 +85,57 @@ contains
       !
       class( DataManager_t ), intent( inout ) :: self
       !
-      class( DataEntry_t ), pointer   :: data_entry
-      class( Receiver_t ), pointer    :: receiver
-      class( Transmitter_t ), pointer :: transmitter
-      integer                         :: iDe, nDe, iRx, iTx
-      real ( kind=prec )              :: azimuth
+      class( DataEntry_t ), pointer     :: data_entry
+      class( Receiver_t ), pointer      :: receiver
+      class( Transmitter_t ), pointer   :: transmitter
+      integer                           :: iDe, nDe, iRx, iTx
+      real ( kind=prec )                :: azimuth
       !
-      receivers => ReceiverArray_t()
+      allocate( receivers, source = ReceiverArray_t() )
       !
-      transmitters => TransmitterArray_t()
+      allocate( transmitters, source = TransmitterArray_t() )
       !
       ! Loop over all Data Entries...
       nDe = self%data_file%data_entries%size()
       !
       do iDe = 1, nDe
          !
-         data_entry => self%data_file%get( iDe )
-         !
+         data_entry => self%data_file%data_entries%get( iDe )
+       !
          ! RECEIVERS
          !
          iRx = receivers%size() + 1
-         !
+       !
          selectcase( data_entry%type )
             !
             case( "Ex_Field" )
                !
                azimuth = 1.0
-               receiver => ReceiverSingleField_t( iRx, data_entry%xyz, azimuth )
+               allocate( receiver, source = ReceiverSingleField_t( iRx, data_entry%xyz, azimuth ) )
                !
             case( "Ey_Field" )
                !
                azimuth = 2.0
-               receiver => ReceiverSingleField_t( iRx, data_entry%xyz, azimuth )
+               allocate( receiver, source = ReceiverSingleField_t( iRx, data_entry%xyz, azimuth ) )
                !
             case( "Bx_Field" )
                !
                azimuth = 3.0
-               receiver => ReceiverSingleField_t( iRx, data_entry%xyz, azimuth )
+               allocate( receiver, source = ReceiverSingleField_t( iRx, data_entry%xyz, azimuth ) )
                !
             case( "By_Field" )
                !
                azimuth = 4.0
-               receiver => ReceiverSingleField_t( iRx, data_entry%xyz, azimuth )
+               allocate( receiver, source = ReceiverSingleField_t( iRx, data_entry%xyz, azimuth ) )
                !
             case( "Bz_Field" )
                !
                azimuth = 5.0
-               receiver => ReceiverSingleField_t( iRx, data_entry%xyz, azimuth )
+               allocate( receiver, source = ReceiverSingleField_t( iRx, data_entry%xyz, azimuth ) )
                !
             case( "Full_Impedance" )
                !
-               receiver => ReceiverFullImpedance_t( iRx, data_entry%xyz )
+               allocate( receiver, source = ReceiverFullImpedance_t( iRx, data_entry%xyz ) )
                !
             case( "Full_Interstation_TF" )
                !
@@ -151,11 +151,11 @@ contains
                !
             case( "Off_Diagonal_Impedance" )
                !
-               receiver => ReceiverOffDiagonalImpedance_t( iRx, data_entry%xyz )
+               allocate( receiver, source = ReceiverOffDiagonalImpedance_t( iRx, data_entry%xyz ) )
                !
             case( "Full_Vertical_Components", "Full_Vertical_Magnetic" )
                !
-               receiver => ReceiverFullVerticalMagnetic_t( iRx, data_entry%xyz )
+               allocate( receiver, source = ReceiverFullVerticalMagnetic_t( iRx, data_entry%xyz ) )
                !
             case default
                write(*,*) "unknow component type :[", data_entry%type, "]"
@@ -165,8 +165,8 @@ contains
          !
          receiver%is_complex = data_entry%isComplex()
          !
-		 receiver%code = data_entry%code
-		 !
+         receiver%code = data_entry%code
+         !
          if( .NOT. receivers%has( receiver ) ) then 
             call receivers%add( receiver )
          end if
@@ -175,26 +175,30 @@ contains
          !
          iTx = transmitters%size() + 1
          !
-         selecttype ( data_entry )
+         select type ( data_entry )
             !
             class is ( DataEntryMT_t )
                !
-               transmitter => Transmitter_t( iTx, data_entry%period )
+               allocate( transmitter, source = TransmitterMT_t( iTx, data_entry%period ) )
                !
             class is ( DataEntryMT_REF_t )
                !
-               transmitter => Transmitter_t( iTx, data_entry%period )
+               allocate( transmitter, source = TransmitterMT_t( iTx, data_entry%period ) )
                !
             class is ( DataEntryCSEM_t )
                !
-               transmitter => Transmitter_t( iTx, data_entry%period, data_entry%tx_xyz )
+               allocate( transmitter, source = TransmitterCSEM_t( iTx, data_entry%period, data_entry%tx_xyz ) )
                !
          end select
+		 !
+		 deallocate( data_entry )
          !
          if( .NOT. transmitters%has( transmitter ) ) then 
             call transmitters%add( transmitter )
          end if
          !
+		 deallocate( transmitter )
+		 !
       enddo
       !
    end subroutine loadReceiversAndTransmitters
@@ -203,13 +207,15 @@ contains
    subroutine relateData( self )
       implicit none
       !
-      class( DataManager_t ), intent( in out ) :: self
-	  !
+      class( DataManager_t ), intent( inout ) :: self
+     !
       class( DataEntry_t ), pointer   :: data_entry
       class( Transmitter_t ), pointer :: transmitter
       class( Receiver_t ), pointer    :: receiver
       class( DataGroup_t ), pointer   :: data_group
       integer                         :: iDg, iDe, nDe, iRx, nRx, iTx, nTx, counter
+      !
+      allocate( data_groups, source = DataGroupArray_t() )
       !
       iDg = 1
       !
@@ -219,21 +225,21 @@ contains
       iDe = 1
       do while ( iDe <= nDe ) 
          !
-         data_entry => self%data_file%get( iDe )
+         data_entry => self%data_file%data_entries%get( iDe )
          !
          selectcase( data_entry%type )
             !
             case( "Ex_Field", "Ey_Field", "Bx_Field", "By_Field","Bz_Field" )
                !
-               data_group => DataGroup_t( iDg, 1 )
+               allocate( data_group, source = DataGroup_t( iDg, 1 ) )
                !
             case( "Full_Impedance", "Full_Interstation_TF", "Off_Diagonal_Rho_Phase", "Phase_Tensor" )
                !
-               data_group => DataGroup_t( iDg, 4 )
+               allocate( data_group, source = DataGroup_t( iDg, 4 ) )
                !
             case( "Off_Diagonal_Impedance", "Full_Vertical_Components" )
                !
-               data_group => DataGroup_t( iDg, 2 )
+               allocate( data_group, source = DataGroup_t( iDg, 2 ) )
                !
             case default
                write(*,*) "unknow type :[", data_entry%type, "]"
@@ -244,7 +250,7 @@ contains
          call data_group%add( data_entry%component, data_entry%real, data_entry%imaginary, data_entry%error )
          !
          do counter = 1, data_group%n_data - 1
-            data_entry => self%data_file%get( iDe + counter )
+          data_entry => self%data_file%data_entries%get( iDe + counter )
             call data_group%add( data_entry%component, data_entry%real, data_entry%imaginary, data_entry%error )
          end do
          !
@@ -255,8 +261,8 @@ contains
             receiver => receivers%get( iRx )
             !
             if( receiver%location(1) == data_entry%xyz(1) .AND.   &
-               receiver%location(2) == data_entry%xyz(2) .AND.   &
-               receiver%location(3) == data_entry%xyz(3) ) then
+                receiver%location(2) == data_entry%xyz(2) .AND.   &
+                receiver%location(3) == data_entry%xyz(3) ) then
                !
                data_group%id_rx = receiver%id
                !
@@ -284,6 +290,8 @@ contains
                   call transmitter%add( receiver%id )
                end if
                !
+			   deallocate( receiver )
+			   !
                exit
                !
             endif
@@ -291,6 +299,10 @@ contains
          enddo
          !
          iDe = iDe + data_group%n_data
+         !
+         if( .NOT. data_groups%has( data_group ) ) then
+            call data_groups%add( data_group )
+         end if
          !
          if( iDe < nDe ) iDg = iDg + 1
          !

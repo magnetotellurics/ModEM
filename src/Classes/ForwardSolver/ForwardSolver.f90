@@ -7,55 +7,96 @@
 ! *************
 ! 
 module ForwardSolver
-  !
-  use Constants
-  use cVector
-  use Source
-  use ModelOperator
-  !
-  type, abstract :: ForwardSolver_t
-    !
-	class( ModelOperator_t ), allocatable :: model_operator
-    class( cVector_t ), allocatable :: e_solution
-	!
-	integer :: nIterTotal
-	logical :: failed
-    !
-  contains
-    !
-    procedure, public :: init    => initializeFWD
-    procedure, public :: dealloc => deallocateFWD
-    !
-    procedure( interface_get_e_solution_fwd ), deferred, public :: getESolution
-    !
-  end type ForwardSolver_t
-  !
-  abstract interface
-    !
-    function interface_get_e_solution_fwd( self, source ) result( e_solution )
-      import :: ForwardSolver_t, prec, cVector_t, Source_t
+   !
+   use Constants
+   use cVector
+   use Source
+   use ModelOperator
+   use Solver
+   !
+   type, abstract :: ForwardSolver_t
       !
-      class( ForwardSolver_t ), intent( inout )    :: self
-      class( Source_t ), allocatable, intent( in ) :: source
+      real( kind=prec ) :: period
       !
-      class( cVector_t ), allocatable :: e_solution
+	  ! Pointers to previously instantiated objects
+      class( ModelOperator_t ), pointer :: model_operator
+      class( Solver_t ), pointer        :: solver
       !
-    end function interface_get_e_solution_fwd
-    !
-  end interface
-  !
-  contains
-  !
-  subroutine initializeFWD( self )
-    class( ForwardSolver_t ), intent( inout ) :: self
-    !
-  end subroutine initializeFWD
-  !
-  subroutine deallocateFWD( self )
-    class( ForwardSolver_t ), intent( inout )  :: self
-    !
-    if( allocated( self%e_solution ) ) deallocate( self%e_solution )
-    !
-  end subroutine deallocateFWD
-  !
+      class( cVector_t ), allocatable   :: e_solution
+      !
+      integer :: n_iter_total = 0
+      logical :: failed = .false.
+      !
+   contains
+      !
+      procedure, public :: init    => initializeFWD
+      procedure, public :: dealloc => deallocateFWD
+      !
+      procedure, public :: setModelOperator  => setModelOperatorFWD
+      procedure, public :: setSolver         => setSolverFWD
+      !
+	  procedure( interface_set_period_fwd ), deferred, public     :: setPeriod
+      procedure( interface_get_e_solution_fwd ), deferred, public :: getESolution
+      !
+   end type ForwardSolver_t
+   !
+   abstract interface
+      !
+      subroutine interface_set_period_fwd( self, period )
+         import :: ForwardSolver_t, prec
+         !
+         class( ForwardSolver_t ), intent( inout ) :: self
+         real( kind=prec ), intent( in )           :: period
+         !
+      end subroutine interface_set_period_fwd
+      !
+      function interface_get_e_solution_fwd( self, source, polarization ) result( e_solution )
+         import :: ForwardSolver_t, prec, cVector_t, Source_t
+         !
+         class( ForwardSolver_t ), intent( inout ) :: self
+         class( Source_t ), intent( in )           :: source
+		 integer, intent( in )                     :: polarization
+         !
+         class( cVector_t ), allocatable           :: e_solution
+         !
+      end function interface_get_e_solution_fwd
+      !
+   end interface
+   !
+   contains
+   !
+   subroutine initializeFWD( self )
+      class( ForwardSolver_t ), intent( inout ) :: self
+      !
+	  self%model_operator => null()
+	  !
+      self%solver         => null()
+	  !
+   end subroutine initializeFWD
+   !
+   subroutine deallocateFWD( self )
+      class( ForwardSolver_t ), intent( inout )   :: self
+      !
+      if( allocated( self%e_solution ) ) deallocate( self%e_solution )
+      !
+   end subroutine deallocateFWD
+   !
+   subroutine setModelOperatorFWD( self, model_operator )
+      !
+      class( ForwardSolver_t ), intent( inout )      :: self
+      class( ModelOperator_t ), target, intent( in ) :: model_operator
+      !
+      self%model_operator => model_operator
+      !
+   end subroutine setModelOperatorFWD
+   !
+   subroutine setSolverFWD( self, solver )
+      !
+      class( ForwardSolver_t ), intent( inout ) :: self
+      class( Solver_t ), target, intent( in )   :: solver
+      !
+      self%solver => solver
+      !
+   end subroutine setSolverFWD
+   !
 end module ForwardSolver
