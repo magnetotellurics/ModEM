@@ -90,8 +90,10 @@ module TransmitterMT
          ! Set Source E
          call self%source%setE( omega, i_pol )
 		 !
+		 write(*,*) "2"
          ! Add polarization e_solution to self%e_all
          call self%e_all%add( self%forward_solver%getESolution( self%source, i_pol ) )
+		 write(*,*) "3"
       !
       enddo
       !

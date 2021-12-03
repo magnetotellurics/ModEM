@@ -8,13 +8,16 @@
 !
 module ModEMControlFile
    !
+   use Constants
    use String
    !
    type :: ModEMControlFile_t
       !
+      character(:), allocatable :: grid_reader
 	  character(:), allocatable :: grid_type
-	  character(:), allocatable :: grid_reader
-	  !
+      character(:), allocatable :: forward_solver
+	  character(:), allocatable :: source
+      !
    contains
       !
       final :: ModEMControlFile_dtor
@@ -33,31 +36,31 @@ contains
       !
       integer, intent( in )                   :: funit
       character(:), allocatable, intent( in ) :: fname
-	  !
-	  class( ModEMControlFile_t ), pointer    :: self
+      !
+      class( ModEMControlFile_t ), pointer    :: self
       !
       character(1000)                   :: full_line_text
       character(len=200), dimension(20) :: args
       character(:), allocatable         :: line_text
-	  integer                           :: line_counter, io_stat, p_nargs
+      integer                           :: line_counter, io_stat, p_nargs
       !
-      !write(*,*) "Constructor ModEMControlFile_t"
+      !write( *,* ) "Constructor ModEMControlFile_t"
       !
       allocate( ModEMControlFile_t :: self )
       !
       call Compact( fname )
       !
-      open( unit = funit, file = fname, iostat = io_stat, status = 'old' )
+      open( unit = funit, file = fname, iostat = io_stat, status = "old" )
       !
       if( io_stat /= 0 ) then
-         write(*,*) 'Unable to open [', fname, '], Stat: ', io_stat
+         write( *,* ) "Unable to open [", fname, "], Stat: ", io_stat
       else
          line_counter = getLineNumber( funit )
          !
          rewind( funit )
          !
          do
-            read( funit, '(a)', END = 10 ) full_line_text
+            read( funit, "(a)", END = 10 ) full_line_text
             line_text = adjustl( full_line_text )
             line_text = trim( line_text )
             !
@@ -65,22 +68,83 @@ contains
             !
             if( index( line_text, "#" ) == 0 .and. index( line_text, ">" ) == 0 ) then
                 !
-				if( index( line_text, "Grid Type" ) > 0 ) then
-				self%grid_type = trim( args(2) )
-				end if
+                if( index( line_text, "grid_header" ) > 0 ) then
+                   self%grid_type = trim( args(2) )
+                end if
                 !
-				if( index( line_text, "Grid Reader" ) > 0 ) then
-				self%grid_reader = trim( args(2) )
-				end if
+                if( index( line_text, "grid_type" ) > 0 ) then
+                   self%grid_reader = trim( args(2) )
+                end if
+                !
+                if( index( line_text, "forward_solver" ) > 0 ) then
+                   self%forward_solver = trim( args(2) )
+                end if
+                !
+                if( index( line_text, "source" ) > 0 ) then
+                   self%source = trim( args(2) )
+                end if
                 !
             end if
          end do
          !
 10       close( unit = funit )
          !
-         write(*,*) 'Finish read file [', fname, ']:'
-         if ( allocated( self%grid_type ) ) write(*,*) '     Set grid_type = ', self%grid_type
-         if ( allocated( self%grid_reader ) ) write(*,*) '     Set grid_reader = ', self%grid_reader
+		 ! GRID TYPE
+		 !
+         if ( allocated( self%grid_type ) ) then
+            write( *, "(A20, A10)" ) "      grid_type =", self%grid_type
+            !
+            select case ( self%grid_type )
+               case( "SG" )
+                  grid_type = GRID_SG
+               case( "MR" )
+                  grid_type = GRID_MR
+               case default
+                  grid_type = ""
+                  STOP "Wrong grid_type control, use [SG|MR]"
+            end select
+            !
+         endif
+         !
+		 ! GRID READER
+		 !
+         if ( allocated( self%grid_reader ) ) then
+            write( *, "(A20, A10)" ) "      grid_reader =", self%grid_reader
+         endif
+         !
+		 ! FOWARD SOLVER
+		 !
+         if ( allocated( self%forward_solver ) ) then
+            write( *, "(A20, A10)" ) "      forward_solver =", self%forward_solver
+            !
+            select case ( self%forward_solver )
+               case( "FILE" )
+                  forward_solver_type = FWD_FILE
+               case( "DC" )
+                  forward_solver_type = FWD_DC
+               case default
+                  forward_solver_type = ""
+                  STOP "Wrong forward_solver control, use [FILE|DC]"
+            end select
+            !
+         endif
+         !
+		 ! SOURCE
+		 !
+         if ( allocated( self%source ) ) then
+		    write( *, "(A20, A10)" ) "source =", self%source
+            !
+			select case ( self%source )
+               case( "1D" )
+                  source_type = SRC_MT_1D
+               case( "2D" )
+                  source_type = SRC_MT_2D
+               case default
+                  source_type = ""
+                  STOP "Wrong source control, use [1D|2D]"
+            end select
+            !
+         endif
          !
       end if
       !
@@ -91,7 +155,7 @@ contains
       !
       type( ModEMControlFile_t ), intent( in out ) :: self
       !
-      ! write(*,*) "Destructor ModEMControlFile_t"
+      ! write( *,* ) "Destructor ModEMControlFile_t"
       !
    end subroutine ModEMControlFile_dtor
    !

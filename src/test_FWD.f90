@@ -1,4 +1,4 @@
-program Test_FWD
+program ModEM
    !
    use DataManager
    use ModEMControlFile
@@ -58,119 +58,149 @@ contains
    subroutine forward()
       implicit none
       !
-      type( DivergenceCorrection_t ), target, save  :: divergence_correction
+      ! These objects must be instantiated only once in the Master
+      type( DivergenceCorrection_t ), target, save :: divergence_correction
       !
-      type( PreConditioner_MF_CC_t ), target, save  :: preconditioner_cc
+      type( PreConditioner_MF_DC_t ), target, save :: preconditioner_dc
       !
-      type( PreConditioner_MF_DC_t ), target, save  :: preconditioner_dc
+      type( Solver_PCG_t ), target, save           :: solver_pcg
       !
-      type( Solver_PCG_t ), target, save            :: solver_pcg
-      !
-      type( Solver_QMR_t ), target, save            :: solver_qmr
+      ! These objects are frequency dependent,
+      ! must be instantiated on each Worker
+      type( Solver_QMR_t ), target, save                  :: solver_qmr
       !
       class( ForwardSolver_t ), allocatable, target, save :: fwd_solver
       !
       class( Source_t ), allocatable, target, save        :: fwd_source 
       !
+      type( PreConditioner_MF_CC_t ), target, save        :: preconditioner_cc
       !
-      class( Transmitter_t ), allocatable :: tx
-      class( Receiver_t ), allocatable    :: rx
+      ! Temporary alias pointers
+      class( Transmitter_t ), allocatable :: Tx
+      class( Receiver_t ), allocatable    :: Rx
       !
+      ! Local variables
       integer :: iTx, nTx, iRx, nRx
       real( kind=prec ) :: omega
       character(:), allocatable :: transmitter_type
       !
-      transmitter_type = "Unknow"
-      !
-      if( .not. has_data_file ) stop " - Missing data file!"
-      !
-      if( .not. has_model_file ) stop " - Missing model file!"
-      !
+      ! Verbosis
       write ( *, * ) "   > Start forward modelling."
       !
-      ! Load model, define main_grid, model_operator, model_parameter
-      call handleModelFile()
+      ! Tx type for predicted_data header changes
+      transmitter_type = "Unknow"
       !
-      ! Load data, construct the relation between txs and rxs
-      call handleDataFile()
+      ! Reads Model File: instantiates Grid, ModelOperator and ModelParameter
+      if( .not. has_model_file ) then 
+         stop " - Missing Model file!"
+      else
+         call handleModelFile()
+      endif
       !
-      ! Set right object types from control file:
+      ! Reads Data File: instantiates and builds the Data relation between Txs and Txs
+      if( .not. has_data_file ) then 
+         stop " - Missing Data file!"
+      else
+         call handleDataFile()
+      endif
       !
+      ! High-level object instantiation
+      ! Some types are chosen from the control file
+      !
+      ! PreConditioners need to be instantiated within the selection case
+      ! as they receive a specific ModelOperator
       select type( model_operator )
          class is( ModelOperator_MF_t )
-            !
-            ! 1) PreConditioner CC
-            preconditioner_cc = PreConditioner_MF_CC_t( model_operator )
-            !
-            ! 2) PreConditioner DC
-            preconditioner_dc = PreConditioner_MF_DC_t( model_operator )
-            !
+           !
+           ! PreConditioner CC
+           preconditioner_cc = PreConditioner_MF_CC_t( model_operator )
+           !
+           ! PreConditioner DC
+           preconditioner_dc = PreConditioner_MF_DC_t( model_operator )
+           !
       end select
       !
-      ! 3) Solver PCG
-      solver_pcg = Solver_PCG_t( preconditioner_dc )
-      !
-      ! 4) DivergenceCorrection
-      divergence_correction = DivergenceCorrection_t( solver_pcg )
-      !
-      ! 5) Solver QMR
+      ! Specific Solver QMR
       solver_qmr = Solver_QMR_t( preconditioner_cc )
       !
-      ! 6) ForwardSolver
-      !allocate( fwd_solver, source = ForwardSolverFromFile_t() )
-      allocate( fwd_solver, source = ForwardSolverDC_t( solver_qmr, divergence_correction ) )
+      ! Specific Solver PCG
+      solver_pcg = Solver_PCG_t( preconditioner_dc )
       !
-      ! Allocate Forward Solver e_solution
-      select type( grid => model_operator%grid )
-          class is( Grid3D_SG_t )
-              allocate( fwd_solver%e_solution, source=cVector3D_SG_t( grid, EDGE ) )
+      ! DivergenceCorrection has only one type for now
+      divergence_correction = DivergenceCorrection_t( solver_pcg )
+      !
+      ! ForwardSolver - Chosen from control file
+      select case ( forward_solver_type )
+         !
+         case( FWD_FILE )
+            allocate( fwd_solver, source = ForwardSolverFromFile_t( model_operator ) )
+            !
+         case( FWD_DC )
+            allocate( fwd_solver, source = ForwardSolverDC_t( solver_qmr, divergence_correction ) )
+            !
+         case default
+            allocate( fwd_solver, source = ForwardSolverDC_t( solver_qmr, divergence_correction ) )
+         !
       end select
       !
-      ! 7) Source
-      allocate( fwd_source, source = SourceMT_1D_t( model_operator, model_parameter ) )
+      ! Source - Chosen from control file
+     select case ( source_type )
+         !
+         case( SRC_MT_1D )
+            allocate( fwd_source, source = SourceMT_1D_t( model_operator, model_parameter ) )
+            !
+         case( SRC_MT_2D )
+            allocate( fwd_source, source = SourceMT_2D_t( model_operator, model_parameter ) )
+            !
+         case default
+            allocate( fwd_source, source = SourceMT_1D_t( model_operator, model_parameter ) )
+            !
+      end select
+      !
+      ! Forward Modelling
       !
       ! Loop over all Transmitters
       nTx = transmitters%size()
-      write( *, * ) nTx, " Transmitters"
       !
       do iTx = 1, nTx
          !
-         ! Temporary generic Tx
-         tx = transmitters%get( iTx )
+         ! Temporary Transmitter alias
+         Tx = transmitters%get( iTx )
          !
-         ! verbosis
-         write( *, * ) "   Tx Id:", tx%id, "Period:", int( tx%period )
+         ! Verbosis...
+         write( *, * ) "   Tx Id:", Tx%id, "Period:", int( Tx%period )
          !
          ! Write the proper header in the 'predicted_data.dat' file
-         call writePredictedDataHeader( tx, transmitter_type )
+         call writePredictedDataHeader( Tx, transmitter_type )
          !
-         ! Set forward solver on the Tx
-       call fwd_solver%setSolver( solver_qmr )
-         allocate( tx%forward_solver, source = fwd_solver )
+         ! Tx points to its due Source
+         call Tx%setSource( fwd_source )
          !
-         ! Set source on the Tx
-         allocate( tx%source, source = fwd_source )
+         ! Tx points to its due ForwardSolver
+         call Tx%setForwardSolver( fwd_solver )
+		 !
+         ! Solve Tx Forward Modelling
+         call Tx%solveFWD()
          !
-         ! Solve Tx Forward modelling
-         call tx%solveFWD()
-         !
-         ! Loop over receivers of each transmitter
-         nRx = tx%getNRx()
-         write( *, * ) nRx, " Receivers"
+         ! Loop over Receivers of each Transmitter
+         nRx = Tx%getNRx()
          !
          do iRx = 1, nRx
             !
-            rx = receivers%get( tx%get( iRx ) )
+            ! Temporary Receiver alias
+            Rx = receivers%get( Tx%get( iRx ) )
             !
-            !write( *, * ) "                   Rx Id:", rx%id, "XYZ:", rx%location
+            ! Verbosis...
+            !write( *, * ) "                  Rx Id:", Rx%id, "XYZ:", Rx%location
             !
-            call rx%predictedData( model_operator, tx )
+            ! Calculate Rx Predicted Data
+            call Rx%predictedData( model_operator, Tx )
             !
-            deallocate( rx )
+            deallocate( Rx )
             !
          enddo
          !
-         deallocate( tx )
+         deallocate( Tx )
          !
       enddo
       !
@@ -203,7 +233,7 @@ contains
       !
       write( *, * ) "   -> Control File: [", control_file_name, "]"
       !
-     ! Instantiate the ControlFile object
+      ! Instantiate the ControlFile object
       ! Read control file options
       allocate( control_file, source = ModEMControlFile_t( ioStartup, control_file_name ) )
       !
@@ -218,12 +248,12 @@ contains
    subroutine handleDataFile()
       implicit none
       !
-     ! Local object to dealt data, self-destructs at the end of the subroutine
-      type( DataManager_t )    :: data_manager
-     !
-     data_manager = DataManager_t( data_file_name )
+      ! Local object to dealt data, self-destructs at the end of the subroutine
+      type( DataManager_t ) :: data_manager
       !
       write( *, * ) "   -> Data File: [", data_file_name, "]"
+      !
+      data_manager = DataManager_t( data_file_name )
       !
    end subroutine handleDataFile
    !
@@ -240,24 +270,19 @@ contains
       !
       ! Instantiate the ModelOperator object
       select type( main_grid )
-          !
-          class is( Grid3D_SG_t )
-              !
-              allocate( model_operator, source = ModelOperator_MF_t( main_grid ) )
-              !
-              call model_operator%SetEquations()
-              !
-              call model_operator%SetCond( model_parameter )
-              !
-          class default
-              stop "Unclassified main_grid"
-          !
+         !
+         class is( Grid3D_SG_t )
+             !
+             allocate( model_operator, source = ModelOperator_MF_t( main_grid ) )
+             !
+             call model_operator%SetEquations()
+             !
+             call model_operator%SetCond( model_parameter )
+             !
+         class default
+             stop "Unclassified main_grid"
+         !
       end select
-      !
-      ! Instantiate the PreConditioner object
-    !allocate( preconditioner, source = PreConditioner_MF_DC_t( model_operator ) )
-     !
-      write( *, * ) "   -> Readed Model File: [", model_file_name, "]"
       !
    end subroutine handleModelFile
    !
@@ -265,93 +290,93 @@ contains
    subroutine handleArguments()
       implicit none
       !
-      if (command_argument_count() == 0 ) then
-      !
-      call printHelp()
-      stop
-      !
+      if ( command_argument_count() == 0 ) then
+         !
+         call printHelp()
+         stop
+         !
       else
-      !
-      argument_index = 1
-      !
-      do while(argument_index <= command_argument_count()) 
-      !
-      call get_command_argument( argument_index, argument )
-      !
-      select case ( argument )
-      !
-      case ( "-c", "--control" )
          !
-         call get_command_argument( argument_index + 1, argument )
-         control_file_name = trim( argument )
+         argument_index = 1
          !
-         if ( len( control_file_name ) > 0 ) has_control_file = .true.
+         do while(argument_index <= command_argument_count()) 
+             !
+             call get_command_argument( argument_index, argument )
+             !
+             select case ( argument )
+                 !
+                 case ( "-c", "--control" )
+                   !
+                   call get_command_argument( argument_index + 1, argument )
+                   control_file_name = trim( argument )
+                   !
+                   if ( len( control_file_name ) > 0 ) has_control_file = .true.
+                   !
+                   argument_index = argument_index + 2
+                   !
+                 case ( "-d", "--data" )
+                   !
+                   call get_command_argument( argument_index + 1, argument )
+                   data_file_name = trim( argument )
+                   !
+                   if ( len( data_file_name ) > 0 ) has_data_file = .true.
+                   !
+                   argument_index = argument_index + 2
+                   !
+                 case ( "-f", "--forward" )
+                   !
+                   modem_job = "forward"
+                   !
+                   argument_index = argument_index + 1
+                   !
+                 case ( "-m", "--model" )
+                   !
+                   call get_command_argument( argument_index + 1, argument )
+                   model_file_name = trim(argument)
+                   !
+                   if ( len( model_file_name ) > 0 ) has_model_file = .true.
+                   !
+                   argument_index = argument_index + 2
+                   !
+                 case ( "-v", "--version" )
+                   !
+                   write( *, * ) "   + ModEM-OO version 1.0.0"
+                   stop
+                   !
+                 case ( "-h", "--help" )
+                   !
+                   call printHelp()
+                   stop
+                   !
+                 case default
+                   !
+                   write( *, * ) "   - Unknow Argument: [", trim( argument ), "]"
+                   call printHelp()
+                   stop
+                   !
+             end select
+             !
+         end do
          !
-         argument_index = argument_index + 2
-         !
-      case ( "-d", "--data" )
-         !
-         call get_command_argument( argument_index + 1, argument )
-         data_file_name = trim( argument )
-         !
-         if ( len( data_file_name ) > 0 ) has_data_file = .true.
-         !
-         argument_index = argument_index + 2
-         !
-      case ( "-f", "--forward" )
-         !
-         modem_job = "forward"
-         !
-         argument_index = argument_index + 1
-         !
-      case ( "-m", "--model" )
-         !
-         call get_command_argument( argument_index + 1, argument )
-         model_file_name = trim(argument)
-         !
-         if ( len( model_file_name ) > 0 ) has_model_file = .true.
-         !
-         argument_index = argument_index + 2
-         !
-      case ( "-v", "--version" )
-         !
-         write( *, * ) "   + ModEM-OO version 1.0.0"
-         stop
-         !
-      case ( "-h", "--help" )
-         !
-         call printHelp()
-         stop
-         !
-      case default
-         !
-         write( *, * ) "   - Unknow Argument: [", trim( argument ), "]"
-         call printHelp()
-         stop
-         !
-      end select
-      !
-      end do
-      !
       end if
-      !
       !
    end subroutine handleArguments
    !
    !
-   subroutine writePredictedDataHeader( tx, transmitter_type )
+   subroutine writePredictedDataHeader( Tx, transmitter_type )
       implicit none
-    class( Transmitter_t ), intent( in )          :: tx
-    character(:), allocatable, intent( inout ) :: transmitter_type
       !
-      if( ( index( transmitter_type, "Unknow" ) /= 0 ) .OR. transmitter_type /= tx%getType() ) then
+      class( Transmitter_t ), intent( in )       :: Tx
+      character(:), allocatable, intent( inout ) :: transmitter_type
+      !
+      if( ( index( transmitter_type, "Unknow" ) /= 0 ) .OR. transmitter_type /= Tx%getType() ) then
          !
-         transmitter_type = tx%getType()
+         transmitter_type = Tx%getType()
          !
          open( 666, file = 'predicted_data.dat', action='write', position='append' )
          !
          write( 666, * ) '#', DATA_FILE_TITLE
-         write( 666, * ) '#', tx%DATA_TITLE
+         write( 666, * ) '#', Tx%DATA_TITLE
          !
          close( 666 )
          !
@@ -362,15 +387,21 @@ contains
    subroutine printHelp()
       implicit none
       !
-      write( *, * ) "Arguments to define the ModEM task:"
-      write( *, * ) "[-f], [--forward] : Forward modelling."
+      write( *, * ) "ModEM-OO Usage:"
+      write( *, * ) ""
+      write( *, * ) "   Flags to define a job:"
+      write( *, * ) "      [-f], [--forward] : Forward modelling."
+      write( *, * ) "      [-i], [--inverse] : Inversion modelling."
       write( *, * )
-      write( *, * ) "Other arguments:"
-      write( *, * ) "[-d], [--data]      : Preceding argument for data file path."
-      write( *, * ) "[-m], [--model]    : Preceding argument for model file path."
-      write( *, * ) "[-v], [--version] : Print version."
-      write( *, * ) "[-h], [--help]      : Print usage information."
+      write( *, * ) "   Other arguments:"
+      write( *, * ) "      [-d], [--data]    : Flags for data file path."
+      write( *, * ) "      [-m], [--model]   : Flags for model file path."
+      write( *, * ) "      [-c], [--control] : Flags for user control file path."
+      write( *, * ) "      [-v], [--version] : Print version."
+      write( *, * ) "      [-h], [--help]    : Print usage information."
       !
+      write( *, * ) ""
+      write( *, * ) "Version 1.0.0"
    end subroutine printHelp
 
-end program Test_FWD
+end program ModEM

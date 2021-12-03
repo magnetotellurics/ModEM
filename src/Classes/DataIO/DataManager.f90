@@ -51,10 +51,13 @@ contains
    !
    ! Create Data File object, create Receivers, create transmitters and create
    function DataManager_ctor( file_name) result( self )
+      implicit none
       !
       character(:), allocatable, intent( in ) :: file_name
-     !
-     type( DataManager_t ) :: self
+      !
+      type( DataManager_t ) :: self
+      !
+      !write(*,*) "Constructor DataManager_t"
       !
       allocate( self%data_file, source = StandardDataFile_t( ioStartup, file_name ) )
       !
@@ -73,9 +76,9 @@ contains
    subroutine DataManager_dtor( self )
       implicit none
       !
-      type( DataManager_t ), intent( in out ) :: self
+      type( DataManager_t ), intent( inout ) :: self
       !
-      write(*,*) "Destructor DataManager_t"
+      !write(*,*) "Destructor DataManager_t"
       !
    end subroutine DataManager_dtor
    !

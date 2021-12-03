@@ -59,7 +59,7 @@ contains
       !
       type( Element_t ), pointer                :: element
       !
-      write(*,*) "Destructor DataGroupArray_t"
+      !write(*,*) "Destructor DataGroupArray_t"
       !
       element => self%first
       do while( associated( element ) )

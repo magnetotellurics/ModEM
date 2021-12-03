@@ -156,7 +156,6 @@ contains
    !
    ! Set RHS from self%E
    subroutine setRHSMT_1D( self )
-      !
       implicit none
       !
       class( SourceMT_1D_t ), intent(inout) :: self
@@ -184,13 +183,12 @@ contains
    !
    ! Set e0 from self%E
    subroutine setE0MT_1D( self )
-      !
       implicit none
       !
-      class( SourceMT_1D_t ), intent(inout) :: self
+      class( SourceMT_1D_t ), intent( inout ) :: self
       !
-      if( .not. allocated( self%e0 ) ) &
-         allocate( self%e0, source = self%E%Interior() )
+      if( allocated( self%e0 ) ) deallocate( self%e0 )
+      allocate( self%e0, source = self%E%Interior() )
       !
    end subroutine setE0MT_1D
    !

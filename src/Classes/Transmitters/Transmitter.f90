@@ -33,6 +33,9 @@ module Transmitter
       procedure, public :: init    => initializeTx
       procedure, public :: dealloc => deallocateTx
       !
+	  procedure, public :: setSource => setSourceTx
+	  procedure, public :: setForwardSolver => setForwardSolverTx
+	  !
       procedure, public :: updateFwdKey
       !
       procedure, public :: has    => hasReceiverTx
@@ -165,5 +168,23 @@ module Transmitter
       counter = self%receiver_indexes%size()
       !
    end function getNumberOfReceivers
+   !
+   subroutine setForwardSolverTx( self, forward_solver )
+      !
+      class( Transmitter_t ), intent( inout ) :: self
+      class( ForwardSolver_t ), target, intent( in )   :: forward_solver
+      !
+      self%forward_solver => forward_solver
+      !
+   end subroutine setForwardSolverTx
+   !
+   subroutine setSourceTx( self, source )
+      !
+      class( Transmitter_t ), intent( inout ) :: self
+      class( Source_t ), target, intent( in ) :: source
+      !
+      self%source => source
+      !
+   end subroutine setSourceTx
    !
 end module Transmitter

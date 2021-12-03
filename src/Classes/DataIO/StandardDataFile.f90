@@ -181,7 +181,7 @@ contains
          !
 10       close( unit = funit )
          !
-         write(*,*) 'Finish read file [', fname, ']:'
+		 !
          if( mt_counter > 0 )   write(*,*) mt_counter, ' MT Entries'
          if( csem_counter > 0 )   write(*,*) csem_counter, ' CSEM Entries'
          !
