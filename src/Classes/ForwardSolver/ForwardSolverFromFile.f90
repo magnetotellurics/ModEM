@@ -9,6 +9,7 @@
 module ForwardSolverFromFile
    !
    use ForwardSolver
+   use Grid3D_SG
    use cVector3D_SG
    !
    type, extends( ForwardSolver_t ), public :: ForwardSolverFromFile_t
@@ -31,13 +32,20 @@ module ForwardSolverFromFile
    !
 contains
    !
-   function ForwardSolverFromFile_ctor() result( self )
+   function ForwardSolverFromFile_ctor( model_operator ) result( self )
       !
+	  class( ModelOperator_t ), intent( in )  :: model_operator
       type( ForwardSolverFromFile_t ) :: self
       !
       !write(*,*) "Constructor ForwardSolverFromFile_t"
       !
       call self%init()
+	  !
+      ! Allocate e_solution based on the grid
+      select type( grid => model_operator%grid )
+         class is( Grid3D_SG_t )
+             allocate( self%e_solution, source=cVector3D_SG_t( grid, EDGE ) )
+      end select
       !
       self%IoE = 901
       !
@@ -70,7 +78,7 @@ contains
       !
       class( ForwardSolverFromFile_t ), intent( inout ) :: self
       class( Source_t ), intent( in )                   :: source
-      integer, intent( in )                                :: polarization
+      integer, intent( in )                             :: polarization
       !
       class( cVector_t ), allocatable :: e_solution
       !
@@ -116,14 +124,5 @@ contains
       endif
       !
    end function getESolutionForwardSolverFromFile
-   !
-   !
-   subroutine defineSource( self )
-      !
-      class( ForwardSolverFromFile_t ), intent(in)   :: self
-      !
-      write(*,*) "defineSource ForwardSolverFromFile: "
-      !
-   end subroutine defineSource
    !
 end module ForwardSolverFromFile

@@ -79,7 +79,7 @@ contains
       integer :: nx, ny, nz, nzAir
       character(30) :: paramType
       !
-      write(*,*) "Constructor ModelParameterCell_SG_t"
+      !write(*,*) "Constructor ModelParameterCell_SG_t"
       !
       if (.not.present(p_paramType)) then
          paramType = LOGE;
@@ -114,12 +114,11 @@ contains
    !
    ! ModelParameterCell_SG_ destructor
    subroutine ModelParameterCell_SG_dtor( self )
-      !
       implicit none
       !
       type( ModelParameterCell_SG_t ), intent( inout ) :: self
       !
-      write(*,*) "Destructor ModelParameterCell_SG_t"
+      !write(*,*) "Destructor ModelParameterCell_SG_t"
       !
 	  !call self%deallocate()
 	  !

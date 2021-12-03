@@ -9,20 +9,19 @@
 module ForwardSolver
    !
    use Constants
-   use cVector
+   use cVector3D_SG
    use Source
-   use ModelOperator
    use Solver
+   use Grid3D_SG
    !
    type, abstract :: ForwardSolver_t
       !
       real( kind=prec ) :: period
       !
 	  ! Pointers to previously instantiated objects
-      class( ModelOperator_t ), pointer :: model_operator
-      class( Solver_t ), pointer        :: solver
+      class( Solver_t ), pointer      :: solver
       !
-      class( cVector_t ), allocatable   :: e_solution
+      class( cVector_t ), allocatable :: e_solution
       !
       integer :: n_iter_total = 0
       logical :: failed = .false.
@@ -32,7 +31,6 @@ module ForwardSolver
       procedure, public :: init    => initializeFWD
       procedure, public :: dealloc => deallocateFWD
       !
-      procedure, public :: setModelOperator  => setModelOperatorFWD
       procedure, public :: setSolver         => setSolverFWD
       !
 	  procedure( interface_set_period_fwd ), deferred, public     :: setPeriod
@@ -68,8 +66,6 @@ module ForwardSolver
    subroutine initializeFWD( self )
       class( ForwardSolver_t ), intent( inout ) :: self
       !
-	  self%model_operator => null()
-	  !
       self%solver         => null()
 	  !
    end subroutine initializeFWD
@@ -81,21 +77,18 @@ module ForwardSolver
       !
    end subroutine deallocateFWD
    !
-   subroutine setModelOperatorFWD( self, model_operator )
-      !
-      class( ForwardSolver_t ), intent( inout )      :: self
-      class( ModelOperator_t ), target, intent( in ) :: model_operator
-      !
-      self%model_operator => model_operator
-      !
-   end subroutine setModelOperatorFWD
-   !
    subroutine setSolverFWD( self, solver )
       !
       class( ForwardSolver_t ), intent( inout ) :: self
       class( Solver_t ), target, intent( in )   :: solver
       !
       self%solver => solver
+      !
+      ! Allocate e_solution based on the grid
+      select type( grid => solver%model_operator%grid )
+         class is( Grid3D_SG_t )
+             allocate( self%e_solution, source=cVector3D_SG_t( grid, EDGE ) )
+      end select
       !
    end subroutine setSolverFWD
    !

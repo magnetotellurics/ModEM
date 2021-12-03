@@ -2,6 +2,7 @@ module ForwardSolverDC
    !
    use ForwardSolver
    use DivergenceCorrection
+   use ModelOperator_MF
    use Solver_QMR
    !
    !   ModEM classic -- iterative solution with QMR or BiCG, divergence
@@ -299,7 +300,7 @@ module ForwardSolverDC
        !    but I suspect we will be better off just using subroutines in terms
        !    of efficiency
        if( source%adjt ) then
-          select type( modOp => self%model_operator )
+          select type( modOp => self%solver%model_operator )
              class is ( ModelOperator_MF_t )
              !
              e_solution = e_solution * modOp%Metric%Vedge
