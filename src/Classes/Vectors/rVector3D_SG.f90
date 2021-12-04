@@ -93,6 +93,12 @@ module rVector3D_SG
        procedure, public :: diagMult => diagMultRVector3D_SG
 
        !**
+       !    Subroutine versions -- first argument is overwritten
+       !
+       procedure, public :: divS1 => divS1RVector3D_SG
+       procedure, public :: multS1 => multS1RVector3D_SG
+       procedure, public :: multS2 => multS2RVector3D_SG
+       !**
        ! Miscellaneous
        !*
 
@@ -924,6 +930,54 @@ contains
           STOP
       end if
    end function div1RVector3D_SG
+   
+   !   Arithmetic operations -- subroutine versions, first argument overwritten
+   subroutine divS1RVector3D_SG
+       class(rVector3D_SG_t), intent(inout)   :: lhs
+       class(rVector_t)       , intent(in)   :: rhs
+ 
+       if (lhs%isCompatible(rhs)) then
+          select type(rhs)
+            class is(cScalar3D_SG_t)
+                lhs%x = lhs%x / rhs%x
+                lhs%y = lhs%y / rhs%y
+                lhs%z = lhs%z / rhs%z
+          end select
+       else
+           write(*, *) 'ERROR:rVector3D_SG::divS1RVector3D_SG'
+           write(*, *) '   Incompatible inputs. Exiting.'
+           STOP
+       end if
+   end subroutine divS1RVector3D_SG
+
+   subroutine multS1RVector3D_SG
+       class(rVector3D_SG_t), intent(inout)   :: lhs
+       class(rVector_t)       , intent(in)   :: rhs
+ 
+       if (lhs%isCompatible(rhs)) then
+          select type(rhs)
+            class is(cScalar3D_SG_t)
+                lhs%x = lhs%x * rhs%x
+                lhs%y = lhs%y * rhs%y
+                lhs%z = lhs%z * rhs%z
+          end select
+       else
+           write(*, *) 'ERROR:rVector3D_SG::multS1RVector3D_SG'
+           write(*, *) '   Incompatible inputs. Exiting.'
+           STOP
+       end if
+   end subroutine multS1RVector3D_SG
+   
+   subroutine multS2RVector3D_SG
+       class(rVector3D_SG_t), intent(inout)   :: lhs
+       real(kind=prec) ,     intent(in)      :: r
+ 
+       lhs%x = lhs%x * r
+       lhs%y = lhs%y * r
+       lhs%z = lhs%z * r
+   end subroutine multS1RVector3D_SG
+
+   !   end subroutine versions
    
    function dotProdRVector3D_SG(lhs, rhs) result(r)
       ! Arguments

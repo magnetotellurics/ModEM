@@ -28,11 +28,12 @@ module ModelParameterCell_SG
        !
        ! Pointer to the original grid
        class( Grid3D_SG_t ), pointer :: grid
+
+       ! Pointer to metric elements -- useful for model mappings
+       !    provides Viedge, Vcell
+       class( MetricElements_CSG_t ), pointer :: metric
        
        type( rScalar3D_SG_t ) :: cellCond
-       type( rVector3D_SG_t ) :: V_Ex4    ! edge volume times 4 -- also provides an
-                              ! instance of an edge vector.
-       type( rScalar3D_SG_t ) :: V_C       ! cell volume -- also an
 
     contains
 	   !
@@ -43,9 +44,6 @@ module ModelParameterCell_SG
        procedure, public :: Zeros
        procedure, public :: CopyFrom
     
-       procedure, public :: EdgeLength
-       procedure, public :: EdgeArea
-       
        ! Model mapping methods
        procedure, public :: PDEmapping
        procedure, public :: dPDEmapping
@@ -264,6 +262,8 @@ contains
      self%airCond    = rhs%airCond
      self%paramType = rhs%paramType
      self%mKey         = rhs%mKey
+     self%metric => rhs%metric    !   added these pointer assignments
+     self%grid => rhs%grid    !   added these pointer assignments
       class default
      write(*, *) 'ERROR:ModelParameterCell:CopyFrom'
      write(*, *) '         Incompatible input. Exiting.'
@@ -271,83 +271,7 @@ contains
       end select
    end subroutine CopyFrom
    !
-   function EdgeLength( self ) result ( length )
-
-         class(ModelParameterCell_SG_t), intent( in ) :: self
-         type( rVector3D_SG_t )                   :: length
-      !
-         ! local variables
-         integer :: ix, iy, iz
-
-         length = rVector3D_SG_t( self%grid, EDGE )
-
-         ! x-component edge length elements
-         do ix = 1, self%grid%nx
-        length%x(ix, :, :) = self%grid%dx(ix)
-         enddo
-
-         ! y-component edge length elements
-         do iy = 1, self%grid%ny
-        length%y(:, iy, :) = self%grid%dy(iy)
-         enddo
-
-         ! z-component edge length elements
-         do iz = 1, self%grid%nz
-        length%z(:, :, iz) = self%grid%dz(iz)
-         enddo
-
-   end function EdgeLength
-   !
-   function EdgeArea( self ) result ( area )
-
-         class(ModelParameterCell_SG_t), intent( in ) :: self
-         type( rVector3D_SG_t )                   :: area
-      ! local variables
-      integer                  :: ix,iy,iz
-
-      area = rVector3D_SG_t( self%grid, EDGE )
-
-      ! edge areas are made for all the edges
-      ! for x-components
-      do ix = 1, self%grid%nx
-       do iy = 1, self%grid%ny+1
-         do iz = 1, self%grid%nz+1
-
-        ! area%x values are centered within dx.
-        area%x(ix, iy, iz) = self%grid%delY(iy)*self%grid%delZ(iz)
-
-         enddo
-       enddo
-      enddo
-
-      ! edge areas are made for all the edges
-      ! for y-components
-      do ix = 1, self%grid%nx+1
-       do iy = 1, self%grid%ny
-         do iz = 1, self%grid%nz+1
-
-        ! area%y values are centered within dy.
-        area%y(ix, iy, iz) = self%grid%delX(ix) * self%grid%delZ(iz)
-
-         enddo
-       enddo
-      enddo
-
-      ! edge areas are made for all the edges
-      ! for z-components
-      do ix = 1, self%grid%nx+1
-       do iy = 1, self%grid%ny+1
-         do iz = 1, self%grid%nz
-
-        ! area%z values are centered within dz.
-        area%z(ix, iy, iz) = self%grid%delX(ix) * self%grid%delY(iy)
-
-         enddo
-       enddo
-      enddo
-
-   end function EdgeArea
-
+   !   NOT SURE WE WANT THESE MAPPINGS TO BE FUNCTIONS ...
    function PDEmapping( self ) result( eVec )
       implicit none
       ! Arguments
@@ -372,30 +296,15 @@ contains
       ! in cells is generally transformed -- SigMap converts to linear
       SigmaCell%v(:, :, k1:k2) = self%SigMap(self%cellCond%v)
       !
-      self%V_C = rScalar3D_SG_t( self%grid, CENTER )
-      !
-      do i = 1, self%grid%nx
-       do j = 1, self%grid%ny
-       do k = 1, self%grid%nz
-           self%V_C%v(i, j, k) = self%grid%dx(i)*self%grid%dy(j)*self%grid%dz(k)
-       enddo
-       enddo
-      enddo
-      !
-      ! Form Conductivity--cell volume product
-      sigmaCell = sigmaCell * self%V_C
+      ! Form Conductivity--cell volume product  -- now using Vcell from MetricElements
+      call sigmaCell%mults(self%metric%Vcell)
       ! Sum onto edges
       call eVec%SumCells( SigmaCell )
-      !
-      length = self%EdgeLength()
-      !
-      area = self%EdgeArea()
-      !
-      self%V_Ex4 = length%diagMult( area )
-      !
       ! Divide by total volume -- sum of 4 cells
       ! surrounding edge -- just 4*V_E      
-      eVec = eVec / self%V_Ex4
+      call eVec%divs(self%metric%Vedge)
+      !  still need to divide by 4 ...
+      call evec%mults(0.25_prec)
       
    end function PDEmapping
    
@@ -415,26 +324,31 @@ contains
 
       select type(dm)
       class is(modelParameterCell_SG_t)
-     allocate(eVec, source = rVector3D_SG_t(self%paramGrid, EDGE))
-     SigmaCell = rScalar3D_SG_t(self%ParamGrid, CELL)
+      allocate(eVec, source = rVector3D_SG_t(self%grid, EDGE))
+      SigmaCell = rScalar3D_SG_t(self%grid, CELL)
      
-     ! Set Earth cells using m0, SigMap and dm
-     ! I am doing this explicitly -- could make SigmaCell on ParamGrid
-     ! then move Earth part to a Vector on ModelGrid (this is how we
-     ! would do this more generally, when model space was really different
-     ! from modeling grid.
-     k0 = self%ParamGrid%NzAir
-     k1 = k0 + 1
-     k2 = self%ParamGrid%Nz
+      ! Set Earth cells using m0, SigMap and dm
+      ! I am doing this explicitly -- could make SigmaCell on ParamGrid
+      ! then move Earth part to a Vector on ModelGrid (this is how we
+      ! would do this more generally, when model space was really different
+      ! from modeling grid.
+      k0 = self%ParamGrid%NzAir
+      k1 = k0 + 1
+      k2 = self%ParamGrid%Nz
      
-     SigmaCell%v(:,:,k1:k2) = self%SigMap(self%cellCond%v, JOB)
+      SigmaCell%zeros    !   need to zero to make sure values in air are zero
+      SigmaCell%v(:,:,k1:k2) = self%SigMap(self%cellCond%v, JOB)
+      SigmaCell%v(:,:,k1:k2) = SigmaCell%v(:,:,k1:k2)*dm%cellCond%v
      
-     SigmaCell%v(:,:,k1:k2) = SigmaCell%v(:,:,k1:k2)*dm%cellCond%v
-     
-     ! Average onto edges, as in PDEmapping ...
-     sigmaCell = sigmaCell * self%V_C
-     call eVec%SumCells(SigmaCell)
-     eVec = eVec / self%V_Ex4
+      ! Average onto edges, as in PDEmapping ...
+      call sigmaCell%multS(self%metric%Vcell)
+      ! Sum onto edges
+      call eVec%SumCells( SigmaCell )
+      ! Divide by total volume -- sum of 4 cells
+      ! surrounding edge -- just 4*V_E
+      call eVec%divs(self%metric%Vedge)
+      !  still need to divide by 4 ...
+      call evec%mults(0.25_prec)
      
       class default
      write(*, *) 'ERROR:ModelParameterCell_SG:dPDEmapping:'
@@ -451,8 +365,8 @@ contains
       implicit none
       class(ModelParameterCell_SG_t), intent(in)      :: self
       class(rVector_t)           , intent(in)      :: eVec
-      ! Local variables
-      class(rScalar_t), allocatable :: sigmaCell
+        ! Local variables   -- don't think local variable has to be of abstract class!
+      type(rScalar3D_SG_t), allocatable :: sigmaCell
       type(rVector3D_SG_t) :: vTemp
       character(len = 5), parameter :: JOB = 'DERIV'
       integer :: k0, k1, k2
@@ -466,29 +380,30 @@ contains
      select type(dm)
      class is(ModelParameterCell_SG_t)
           ! Create local temporary scalar and vector
-          vTemp = rVector3D_SG_t(grid, EDGE)
+          vTemp = eVec%interior()
+          ! Divide by total volume -- sum of 4 cells
+          ! surrounding edge -- just 4*V_E
+          call vTemp%divs(self%metric%Vedge)
+          !  still need to divide by 4 ...
+          call vTemp%mults(0.25_prec)
           
-          vTemp = eVec / self%V_Ex4
-          call vTemp%SetAllBoundary(R_ZERO) 
-
           sigmaCell = vTemp%SumEdges()
-          sigmaCell = sigmaCell * self%V_C
-          dm%cellCond%v = self%SigMap(self%cellCond%v) 
+          call sigmaCellmultS(self%metric%Vcell)
+
+          dm%cellCond%v = self%SigMap(self%cellCond%v,JOB) 
 
           k0 = self%ParamGrid%NzAir
           k1 = k0 + 1
           k2 = self%ParamGrid%Nz
           
-          select type(sigmaCell)
-          class is(rScalar3D_SG_t)
-              dm%cellCond%v = dm%cellCond%v * SigmaCell%v(:,:,k1:k2)
-          end select
-     end select
+          !    deleted select type for SigmaCell -- can't see how we need this, since
+          !     this is local variable declared with explicit type!
+          dm%cellCond%v = dm%cellCond%v * SigmaCell%v(:,:,k1:k2)
       class default
-     write(*, *) 'ERROR:ModelParameterCell_SG:dPDEmappingT:'
-     write(*, *) '         Incompatible input [eVec]. Exiting.'
+         write(*, *) 'ERROR:ModelParameterCell_SG:dPDEmappingT:'
+         write(*, *) '         Incompatible input [eVec]. Exiting.'
      
-     STOP
+         STOP
       end select
       
    end function dPDEmappingT

@@ -83,6 +83,13 @@ module rScalar3D_SG
        procedure, public :: dotProd => dotProdRScalar3D_SG
        
        !**
+       ! Arithmetic operations, subroutine versions: first argument is overwritrten
+       !*
+       !procedure, public :: divS1 => divS1RScalar3D_SG
+       !procedure, public :: multS1 => multS1RScalar3D_SG
+       !procedure, public :: multS2 => multS2RScalar3D_SG
+
+       !**
        ! Miscellaneous
        !*
 

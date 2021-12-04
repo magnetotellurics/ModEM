@@ -99,14 +99,16 @@ module ModelOperator_MF
 contains
    
    ! class constructor
-   function ModelOperator_MF_ctor( inGrid ) result( self )
+   function ModelOperator_MF_ctor( inGrid, metric ) result( self )
       class( Grid3D_SG_t ), target, intent(in) :: inGrid
+      class( MetricElements_CSG_t ), target, intent(in) :: metric
       !
       type( ModelOperator_MF_t ) :: self
       !
       !write(*,*) "Constructor ModelOperator_MF_t"
       !
       call self%create( inGrid )
+      self%metric => metric
       !
    end function ModelOperator_MF_ctor
    !
@@ -131,8 +133,8 @@ contains
       class( ModelOperator_MF_t ), intent( inout ) :: self
       class( Grid3D_SG_t ), target, intent( in ) :: inGrid
       !
-	  self%is_allocated = .false.
-	  !
+      self%is_allocated = .false.
+      !
       self%grid => inGrid
       self%nx = inGrid%nx
       self%ny = inGrid%ny
@@ -202,8 +204,8 @@ contains
          ! The metric element type for MF.
          ! Will always be CSG.
          !
-      !
-         allocate( self%metric, source = MetricElements_CSG_t( grid ) )
+      !    create metricElements object outside of ModelOperator, pass pointer to creator
+      !      allocate( self%metric, source = MetricElements_CSG_t( grid ) )
           
       end select
 

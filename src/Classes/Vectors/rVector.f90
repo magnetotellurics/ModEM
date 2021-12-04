@@ -51,6 +51,17 @@ module rVector
        procedure( interface_div1_r_vector ) , deferred, public :: div1
        generic :: div => div1
        generic :: operator(/) => div1
+
+      !   subroutine versions -- all overwrite first argument
+      !     divide rVector by rVector
+      procedure(iface_divS1) , deferred, public :: divS1
+      generic :: divS => divS1
+      !     multiply rVector by rVector
+      procedure(iface_multS1) , deferred, public :: multS1
+      !     multiply rVector by real
+      procedure(iface_multS2) , deferred, public :: multS2
+      generic :: multS => multS1, multS2
+
        
        procedure( interface_dot_product_r_vector ), deferred, public :: dotProd
        generic :: operator(.dot.) => dotProd
@@ -208,6 +219,27 @@ module rVector
           class(rVector_t), intent(in) :: lhs, rhs
           class(rVector_t), allocatable :: Eout
        end function interface_div1_r_vector
+
+       !   subroutine versions
+       subroutine iface_divS1(lhs,rhs)
+          import :: rVector
+          class(rVector_t), intent(inout) :: lhs
+          class(rVector_t), intent(in)    :: rhs
+       end subroutine iface_divS1
+
+       subroutine iface_multS1(lhs,rhs)
+          import :: rVector
+          class(rVector_t), intent(inout) :: lhs
+          class(rVector_t), intent(in)    :: rhs
+       end subroutine iface_multS1
+
+       subroutine iface_multS2(lhs,r)
+          import :: rVector, prec
+          class(rVector_t), intent(inout) :: lhs
+          real(kind=prec), intent(in)    :: r
+       end subroutine iface_multS2
+       !   end subroutine versions
+
 
        function interface_dot_product_r_vector(lhs, rhs) result(r)
           import :: rVector_t, prec

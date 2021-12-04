@@ -1,0 +1,18 @@
+ModelParameter/
+Grid classes are not really part of ModelParameter -- perhaps best to make a separate subdirectory
+
+ModelParameter  :   abstract slice functions could be problematic -- what do ix, iy mean in general
+       just thinking at this point -- probably OK
+       Before we do inversion we will need vector operations (pretty much everything, arithmentic + dot products
+        in the abstract class; can pretty much mirror what was done for cVector
+
+       Arguably "grid" should be a property of the abstract class
+
+ModelParameterCell_SG :   I guess we do not want to have V_C and V_E stored in the actual ModelParameter,
+       because there are going to be LOTS of copies of Model Parameters -- we do vector space operations in
+      the inversion routines, copying repeatedly.   Instead, maybe we should make a pointer to the
+       MetricElements -- perhaps even through the ModelOperator.   Note that these are needed for
+        model mappings, and in detail are specific to the particular ModelParameter/ModelOperator implementation.
+       ARGUABLY: the volume elements should be attached to the grid!
+      DECISION:   MetricElements will be created outside of ModelOperator, which will now contain a pointer to this
+        object.   ModelParameter can point to the same object, giving access to Vcell (i.e., V_C) and Vedge (V_E).

@@ -11,7 +11,7 @@ module ModelOperator
      !
      class( Grid_t ), pointer :: grid
      !
-     class( MetricElements_t ), allocatable :: metric
+     class( MetricElements_t ), pointer :: metric
      !
      logical                   :: is_allocated = .false.
      !
