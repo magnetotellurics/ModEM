@@ -5,6 +5,7 @@
 !*
 module Grid
   use Constants
+  use Grid1D
   use Grid2D
 
   type, abstract :: Grid_t
@@ -93,7 +94,9 @@ module Grid
      procedure(iface_Copy_from), deferred, public :: Copy_from
 
      procedure(iface_SetCellSizes), deferred, public :: SetCellSizes
-	 procedure(iface_Slice2D), deferred, public :: Slice2D
+	 
+	 procedure(interface_slice_1d_grid), deferred, public :: Slice1D
+	 procedure(interface_slice_2d_grid), deferred, public :: Slice2D
      
      procedure, public :: SetOrigin
      procedure, public :: GetOrigin
@@ -203,11 +206,17 @@ module Grid
        real(kind = prec) , dimension(:), intent(in) :: dx, dy, dz
      end subroutine iface_SetCellSizes
 	 
-	 function iface_Slice2D(self) result( g2D )
+	 function interface_slice_1d_grid(self) result( g1D )
+      import :: Grid_t, Grid1D_t
+      class(Grid_t), intent(in) :: self
+      type(Grid1D_t) :: g1D
+     end function interface_slice_1d_grid
+	 
+	 function interface_slice_2d_grid(self) result( g2D )
       import :: Grid_t, Grid2D_t
       class(Grid_t), intent(in) :: self
       type(Grid2D_t) :: g2D
-     end function iface_Slice2D
+     end function interface_slice_2d_grid
      
   end interface
   

@@ -85,9 +85,9 @@ module rScalar3D_SG
        !**
        ! Arithmetic operations, subroutine versions: first argument is overwritrten
        !*
-       !procedure, public :: divS1 => divS1RScalar3D_SG
-       !procedure, public :: multS1 => multS1RScalar3D_SG
-       !procedure, public :: multS2 => multS2RScalar3D_SG
+       procedure, public :: divS1 => divS1RScalar3D_SG
+       procedure, public :: multS1 => multS1RScalar3D_SG
+       procedure, public :: multS2 => multS2RScalar3D_SG
 
        !**
        ! Miscellaneous
@@ -830,6 +830,48 @@ contains
       
    end function dotProdRScalar3D_SG
    
+   subroutine divS1RScalar3D_SG(lhs, rhs)
+      class(rScalar3D_SG_t), intent(inout) :: lhs
+      class(rScalar_t)       , intent(in)  :: rhs
+
+      if (lhs%isCompatible(rhs)) then
+         select type(rhs)
+           class is(rScalar3D_SG_t)
+               lhs%v = lhs%v / rhs%v
+         end select
+      else
+          write(*, *) 'ERROR:rScalar3D_SG::divs1RScalar3D_SG'
+          write(*, *) '   Incompatible inputs. Exiting.'
+          STOP
+      end if
+   end subroutine divS1RScalar3D_SG
+   
+   subroutine multS1RScalar3D_SG(lhs, rhs)
+      class(rScalar3D_SG_t), intent(inout)   :: lhs
+      class(rScalar_t)       , intent(in)   :: rhs
+
+      if (lhs%isCompatible(rhs)) then
+         select type(rhs)
+           class is(rScalar3D_SG_t)
+               lhs%v = lhs%v * rhs%v
+         end select
+      else
+          write(*, *) 'ERROR:rScalar3D_SG::mults1RScalar3D_SG'
+          write(*, *) '   Incompatible inputs. Exiting.'
+          STOP
+      end if
+   end subroutine multS1RScalar3D_SG
+   !**
+   !   mults2CScalar3D_SG
+   !**
+   subroutine multS2RScalar3D_SG(lhs, r)
+      class(rScalar3D_SG_t), intent(inout)   :: lhs
+      real( kind=prec ), intent(in) :: r
+
+         lhs%v = lhs%v * r
+
+   end subroutine multS2RScalar3D_SG
+   
    !
    !********************
    ! Miscellaneous
@@ -884,16 +926,21 @@ contains
       !if (same_type_as(self, rhs)) then
 
           select type(rhs)
-          class is(rScalar3D_SG_t)
-
+          class is( rScalar3D_SG_t )
+               !
                if((self%nx == rhs%nx).and.(self%ny == rhs%ny).and.(self%nz == rhs%nz)) then 
-
+                   !
                    if (self%gridType == rhs%gridType) then
-
+                        !
                         status = .true.
                    end if
                end if
+		  class default
+			write(*, *) 'ERROR:rScalar3D_SG_t:isCompatible1RScalar3D_SG:'
+			STOP '         Unknow rhs. Exiting.'
+			!
           end select
+		  !
       !end if
    end function isCompatible1RScalar3D_SG
 
@@ -937,8 +984,8 @@ contains
                    write(*, *) '   Incompatible input. Exiting.'
                    
                    STOP
-               end if
-          end if
+               endif
+          endif
       class default
           write(*, *) 'ERROR:rScalar3D_SG::copyFromCompatibleRScalar3D_SG:'
           write(*, *) '         Incompatible input type. Exiting.'

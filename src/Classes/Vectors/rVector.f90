@@ -6,79 +6,81 @@ module rVector
    type, abstract :: rVector_t
        
        logical :: isAllocated = .false.
-	   !
-               
+       !
     contains
        
-       !**
-       ! Input/Output
-       !*
-       procedure( interface_read_r_vector ) , deferred, public :: read
-       procedure( interface_write_r_vector ), deferred, public :: write
-       
-       !**
-       ! Boundary operations
-       !*
-       procedure( interface_set_all_boundary_r_vector ), deferred :: setAllBoundary
-       procedure( interface_set_one_boundary_r_vector ), deferred :: setOneBoundary
-       procedure( interface_set_all_interior_r_vector ), deferred :: setAllInterior
-       procedure( interface_int_bdry_indices_r_vector ), deferred :: intBdryIndices
-               
-       !**
-       ! Data access
-       !*
-       procedure( interface_length_r_vector )   , deferred :: length
-       procedure( interface_get_array_r_vector ), deferred :: getArray
-       procedure( interface_set_array_r_vector ), deferred :: setArray
-       
-       !**
-       ! Arithmetic/algebraic operations
-       procedure( interface_zeros_r_vector ), deferred, public :: zeros
+        !**
+        ! Input/Output
+        !*
+        procedure( interface_read_r_vector ) , deferred, public :: read
+        procedure( interface_write_r_vector ), deferred, public :: write
 
-       procedure( interface_add1_r_vector ) , deferred, public :: add1
-       generic :: add => add1
-       generic :: operator(+) => add1
-       
-       procedure( interface_sub1_r_vector ) , deferred, public :: sub1
-       generic :: sub => sub1
-       generic :: operator(-) => sub1
-       
-       procedure( interface_mult1_r_vector ), deferred, public :: mult1
-       procedure( interface_mult2_r_vector ), deferred, public, pass(self) :: mult2   
-       generic :: mult => mult1, mult2
-       generic :: operator(*) => mult1, mult2
-       
-       procedure( interface_div1_r_vector ) , deferred, public :: div1
-       generic :: div => div1
-       generic :: operator(/) => div1
+        !**
+        ! Boundary operations
+        !*
+        procedure( interface_set_all_boundary_r_vector ), deferred :: setAllBoundary
+        procedure( interface_set_one_boundary_r_vector ), deferred :: setOneBoundary
+        procedure( interface_set_all_interior_r_vector ), deferred :: setAllInterior
+        procedure( interface_int_bdry_indices_r_vector ), deferred :: intBdryIndices
+		procedure( interface_boundary_r_vector )         , deferred :: boundary
+        procedure( interface_interior_r_vector )         , deferred :: interior
 
-      !   subroutine versions -- all overwrite first argument
-      !     divide rVector by rVector
-      procedure(iface_divS1) , deferred, public :: divS1
-      generic :: divS => divS1
-      !     multiply rVector by rVector
-      procedure(iface_multS1) , deferred, public :: multS1
-      !     multiply rVector by real
-      procedure(iface_multS2) , deferred, public :: multS2
-      generic :: multS => multS1, multS2
+        !**
+        ! Data access
+        !*
+        procedure( interface_length_r_vector )   , deferred :: length
+        procedure( interface_get_array_r_vector ), deferred :: getArray
+        procedure( interface_set_array_r_vector ), deferred :: setArray
 
-       
-       procedure( interface_dot_product_r_vector ), deferred, public :: dotProd
-       generic :: operator(.dot.) => dotProd
-       
-       procedure( interface_diag_mult_r_vector ), deferred, public :: diagMult
+        !**
+        ! Arithmetic/algebraic operations
+        procedure( interface_zeros_r_vector ), deferred, public :: zeros
 
-       procedure( interface_copy_from_r_vector ), deferred, public :: copyFrom
-       generic :: assignment(=) => copyFrom
+        procedure( interface_add1_r_vector ) , deferred, public :: add1
+        generic :: add => add1
+        generic :: operator(+) => add1
 
-       !**
-       ! Miscellaneous
-       !*
-       procedure( interface_is_compatible_r_vector ), deferred, public :: isCompatible
-       procedure( interface_interp_func_r_vector ), deferred, public :: InterpFunc
+        procedure( interface_sub1_r_vector ) , deferred, public :: sub1
+        generic :: sub => sub1
+        generic :: operator(-) => sub1
 
-       procedure( interface_sum_edges_r_vector ), deferred, public :: SumEdges       
-       procedure( interface_sum_cells_r_vector ), deferred, public :: SumCells
+        procedure( interface_mult1_r_vector ), deferred, public :: mult1
+        procedure( interface_mult2_r_vector ), deferred, public, pass(self) :: mult2   
+        generic :: mult => mult1, mult2
+        generic :: operator(*) => mult1, mult2
+
+        procedure( interface_div1_r_vector ) , deferred, public :: div1
+        generic :: div => div1
+        generic :: operator(/) => div1
+
+        !   subroutine versions -- all overwrite first argument
+        !     divide rVector by rVector
+        procedure( interface_divs1_r_vector ) , deferred, public :: divS1
+        generic :: divS => divS1
+        !     multiply rVector by rVector
+        procedure( interface_mults1_r_vector ) , deferred, public :: multS1
+        !     multiply rVector by real
+        procedure( interface_mults2_r_vector ) , deferred, public :: multS2
+        generic :: multS => multS1, multS2
+
+
+        procedure( interface_dot_product_r_vector ), deferred, public :: dotProd
+        generic :: operator(.dot.) => dotProd
+
+        procedure( interface_diag_mult_r_vector ), deferred, public :: diagMult
+
+        procedure( interface_copy_from_r_vector ), deferred, public :: copyFrom
+        generic :: assignment(=) => copyFrom
+
+        !**
+        ! Miscellaneous
+        !*
+        procedure( interface_is_compatible_r_vector ), deferred, public :: isCompatible
+        procedure( interface_interp_func_r_vector ), deferred, public :: InterpFunc
+
+        procedure( interface_sum_edges_r_vector ), deferred, public :: SumEdges
+        procedure( interface_sum_cells_r_vector ), deferred, public :: SumCells
+		
    end type rVector_t
    
    abstract interface
@@ -146,6 +148,23 @@ module rVector
           integer, allocatable, intent(out) :: ind_i(:), ind_b(:)
        end subroutine interface_int_bdry_indices_r_vector
 
+       !**
+       ! boundary
+       !*
+       function interface_boundary_r_vector(self) result(E)
+          import :: rVector_t
+          class(rVector_t), intent(in) :: self
+          class(rVector_t), allocatable :: E
+       end function interface_boundary_r_vector
+
+       !**
+       ! interior
+       !*
+       function interface_interior_r_vector(self) result(E)
+          import :: rVector_t
+          class(rVector_t), intent(in) :: self
+          class(rVector_t), allocatable :: E
+       end function interface_interior_r_vector
        !**
        ! Data access
        !*
@@ -220,26 +239,24 @@ module rVector
           class(rVector_t), allocatable :: Eout
        end function interface_div1_r_vector
 
-       !   subroutine versions
-       subroutine iface_divS1(lhs,rhs)
-          import :: rVector
+       subroutine interface_divs1_r_vector( lhs, rhs )
+          import :: rVector_t
           class(rVector_t), intent(inout) :: lhs
           class(rVector_t), intent(in)    :: rhs
-       end subroutine iface_divS1
+       end subroutine interface_divs1_r_vector
 
-       subroutine iface_multS1(lhs,rhs)
-          import :: rVector
+       subroutine interface_mults1_r_vector(lhs,rhs)
+          import :: rVector_t
           class(rVector_t), intent(inout) :: lhs
           class(rVector_t), intent(in)    :: rhs
-       end subroutine iface_multS1
+       end subroutine interface_mults1_r_vector
 
-       subroutine iface_multS2(lhs,r)
-          import :: rVector, prec
+       subroutine interface_mults2_r_vector(lhs,r)
+          import :: rVector_t, prec
           class(rVector_t), intent(inout) :: lhs
           real(kind=prec), intent(in)    :: r
-       end subroutine iface_multS2
+       end subroutine interface_mults2_r_vector
        !   end subroutine versions
-
 
        function interface_dot_product_r_vector(lhs, rhs) result(r)
           import :: rVector_t, prec
@@ -304,6 +321,7 @@ module rVector
           class(rScalar_t), intent(in)      :: E_in
           character(*)      , intent(in), optional :: ptype
        end subroutine interface_sum_cells_r_vector
+       
    end interface
    
 end module rVector

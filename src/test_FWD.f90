@@ -7,6 +7,10 @@ program ModEM
    use ModelReader_Weerachai
    use ModelOperator_MF
    use ModelParameterCell_SG
+   
+   use Grid3D_SG
+   !
+   use MetricElements_CSG
    !
    use Solver_QMR
    use Solver_PCG
@@ -25,6 +29,7 @@ program ModEM
    class( ModEMControlFile_t ), allocatable :: control_file
    !
    class( Grid_t ), allocatable           :: main_grid
+   class( MetricElements_t ), allocatable :: metric_elemements
    class( ModelParameter_t ), allocatable :: model_parameter
    class( ModelOperator_t ), allocatable  :: model_operator
    !
@@ -272,13 +277,17 @@ contains
       select type( main_grid )
          !
          class is( Grid3D_SG_t )
+		     !
+			 allocate( metric_elemements, source = MetricElements_CSG_t( main_grid ) )
              !
-             allocate( model_operator, source = ModelOperator_MF_t( main_grid ) )
+             allocate( model_operator, source = ModelOperator_MF_t( metric_elemements ) )
              !
              call model_operator%SetEquations()
              !
+			 call model_parameter%setMetric( metric_elemements )
+			 !
              call model_operator%SetCond( model_parameter )
-             !
+			 !
          class default
              stop "Unclassified main_grid"
          !

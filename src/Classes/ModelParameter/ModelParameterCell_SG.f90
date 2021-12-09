@@ -7,7 +7,6 @@
 module ModelParameterCell_SG
    !
    use Constants
-   use Grid
    use Grid3D_SG
    use rScalar
    use rVector
@@ -26,12 +25,6 @@ module ModelParameterCell_SG
        ! completely different grid.
        type( Grid3D_SG_t ) :: paramGrid
        !
-       ! Pointer to the original grid
-       class( Grid3D_SG_t ), pointer :: grid
-
-       ! Pointer to metric elements -- useful for model mappings
-       !    provides Viedge, Vcell
-       class( MetricElements_CSG_t ), pointer :: metric
        
        type( rScalar3D_SG_t ) :: cellCond
 
@@ -283,28 +276,42 @@ contains
       !
       type( rVector3D_SG_t ) :: length, area
       
-      allocate( eVec, source = rVector3D_SG_t( self%grid, EDGE ) )
-      
-      SigmaCell = rScalar3D_SG_t( self%grid, CELL )
-      
-      k0 =   self%ParamGrid%nzAir
-      k1 = k0 + 1
-      k2 = self%ParamGrid%Nz
-      SigmaCell%v(:, :, 1:k0) = self%airCond
-      
-      ! Note: AirCond should always be in linear domain, but conductivity
-      ! in cells is generally transformed -- SigMap converts to linear
-      SigmaCell%v(:, :, k1:k2) = self%SigMap(self%cellCond%v)
-      !
-      ! Form Conductivity--cell volume product  -- now using Vcell from MetricElements
-      call sigmaCell%mults(self%metric%Vcell)
-      ! Sum onto edges
-      call eVec%SumCells( SigmaCell )
-      ! Divide by total volume -- sum of 4 cells
-      ! surrounding edge -- just 4*V_E      
-      call eVec%divs(self%metric%Vedge)
-      !  still need to divide by 4 ...
-      call evec%mults(0.25_prec)
+	  !
+	  select type( grid => self%grid )
+	  class is( Grid3D_SG_t )
+	      !
+		  allocate( eVec, source = rVector3D_SG_t( grid, EDGE ) )
+          !
+		  SigmaCell = rScalar3D_SG_t( grid, CELL )
+		  !
+		  k0 =   self%ParamGrid%nzAir
+		  k1 = k0 + 1
+		  k2 = self%ParamGrid%Nz
+		  SigmaCell%v(:, :, 1:k0) = self%airCond
+		  !
+		  ! Note: AirCond should always be in linear domain, but conductivity
+		  ! in cells is generally transformed -- SigMap converts to linear
+		  SigmaCell%v(:, :, k1:k2) = self%SigMap(self%cellCond%v)
+		  !
+		  ! Form Conductivity--cell volume product  -- now using Vcell from MetricElements
+		  call sigmaCell%mults( self%metric%Vcell )
+		  !
+		  ! Sum onto edges
+		  call eVec%SumCells( SigmaCell )
+		  !
+		  ! Divide by total volume -- sum of 4 cells
+		  ! surrounding edge -- just 4*V_E      
+		  call eVec%divs( self%metric%Vedge )
+		  !
+		  !  still need to divide by 4 ...
+		  call evec%mults(0.25_prec)
+		  !
+		  
+	  class default
+		 write(*, *) 'ERROR:ModelParameterCell_SG:PDEmapping:'
+		 STOP '         Incompatible grid. Exiting.'
+	
+	  end select
       
    end function PDEmapping
    
@@ -323,38 +330,49 @@ contains
       class(rVector_t), allocatable :: eVec
 
       select type(dm)
-      class is(modelParameterCell_SG_t)
-      allocate(eVec, source = rVector3D_SG_t(self%grid, EDGE))
-      SigmaCell = rScalar3D_SG_t(self%grid, CELL)
-     
-      ! Set Earth cells using m0, SigMap and dm
-      ! I am doing this explicitly -- could make SigmaCell on ParamGrid
-      ! then move Earth part to a Vector on ModelGrid (this is how we
-      ! would do this more generally, when model space was really different
-      ! from modeling grid.
-      k0 = self%ParamGrid%NzAir
-      k1 = k0 + 1
-      k2 = self%ParamGrid%Nz
-     
-      SigmaCell%zeros    !   need to zero to make sure values in air are zero
-      SigmaCell%v(:,:,k1:k2) = self%SigMap(self%cellCond%v, JOB)
-      SigmaCell%v(:,:,k1:k2) = SigmaCell%v(:,:,k1:k2)*dm%cellCond%v
-     
-      ! Average onto edges, as in PDEmapping ...
-      call sigmaCell%multS(self%metric%Vcell)
-      ! Sum onto edges
-      call eVec%SumCells( SigmaCell )
-      ! Divide by total volume -- sum of 4 cells
-      ! surrounding edge -- just 4*V_E
-      call eVec%divs(self%metric%Vedge)
-      !  still need to divide by 4 ...
-      call evec%mults(0.25_prec)
-     
-      class default
-     write(*, *) 'ERROR:ModelParameterCell_SG:dPDEmapping:'
-     write(*, *) '         Incompatible input [dm]. Exiting.'
-     STOP
+		  class is( modelParameterCell_SG_t )
+		      !
+			  select type( grid => self%grid )
+		      class is( Grid3D_SG_t )
+				  allocate( eVec, source = rVector3D_SG_t( grid, EDGE ) )
+				  SigmaCell = rScalar3D_SG_t( grid, CELL )
+				 
+				  ! Set Earth cells using m0, SigMap and dm
+				  ! I am doing this explicitly -- could make SigmaCell on ParamGrid
+				  ! then move Earth part to a Vector on ModelGrid (this is how we
+				  ! would do this more generally, when model space was really different
+				  ! from modeling grid.
+				  k0 = self%ParamGrid%NzAir
+				  k1 = k0 + 1
+				  k2 = self%ParamGrid%Nz
+				 
+				  call SigmaCell%zeros()    !   need to zero to make sure values in air are zero
+				  SigmaCell%v(:,:,k1:k2) = self%SigMap(self%cellCond%v, JOB)
+				  SigmaCell%v(:,:,k1:k2) = SigmaCell%v(:,:,k1:k2)*dm%cellCond%v
+				 
+				  ! Average onto edges, as in PDEmapping ...
+				  !
+				  call sigmaCell%multS( self%metric%Vcell )
+				  ! Sum onto edges
+				  call eVec%SumCells( SigmaCell )
+				  ! Divide by total volume -- sum of 4 cells
+				  ! surrounding edge -- just 4*V_E
+				  call eVec%divs( self%metric%Vedge )
+				  !  still need to divide by 4 ...
+				  call evec%mults( 0.25_prec )
+				  
+		      class default
+			     write(*, *) 'ERROR:ModelParameterCell_SG:dPDEmapping:'
+			     STOP '         Incompatible grid. Exiting.'
+
+              end select
+			  
+		  class default
+			  write(*, *) 'ERROR:ModelParameterCell_SG:dPDEmapping:'
+			  STOP '         Incompatible input [dm]. Exiting.'
+
       end select
+	  
    end function dPDEmapping
    
    !**
@@ -375,37 +393,37 @@ contains
 
       select type(eVec)
       class is(rVector3D_SG_t)
-     allocate(dm, source = ModelParameterCell_SG_t(self%paramGrid, self%cellCond, self%paramType))
+         allocate(dm, source = ModelParameterCell_SG_t(self%paramGrid, self%cellCond, self%paramType))
 
-     select type(dm)
-     class is(ModelParameterCell_SG_t)
-          ! Create local temporary scalar and vector
-          vTemp = eVec%interior()
-          ! Divide by total volume -- sum of 4 cells
-          ! surrounding edge -- just 4*V_E
-          call vTemp%divs(self%metric%Vedge)
-          !  still need to divide by 4 ...
-          call vTemp%mults(0.25_prec)
+         select type(dm)
+            class is(ModelParameterCell_SG_t)
+               ! Create local temporary scalar and vector
+               vTemp = eVec%interior()
+               ! Divide by total volume -- sum of 4 cells
+               ! surrounding edge -- just 4*V_E
+               call vTemp%divs(self%metric%Vedge)
+               !  still need to divide by 4 ...
+               call vTemp%mults(0.25_prec)
           
-          sigmaCell = vTemp%SumEdges()
-          call sigmaCellmultS(self%metric%Vcell)
+               sigmaCell = vTemp%SumEdges()
+               call sigmaCell%multS(self%metric%Vcell)
 
-          dm%cellCond%v = self%SigMap(self%cellCond%v,JOB) 
+               dm%cellCond%v = self%SigMap(self%cellCond%v,JOB) 
 
-          k0 = self%ParamGrid%NzAir
-          k1 = k0 + 1
-          k2 = self%ParamGrid%Nz
+               k0 = self%ParamGrid%NzAir
+               k1 = k0 + 1
+               k2 = self%ParamGrid%Nz
           
-          !    deleted select type for SigmaCell -- can't see how we need this, since
-          !     this is local variable declared with explicit type!
-          dm%cellCond%v = dm%cellCond%v * SigmaCell%v(:,:,k1:k2)
-      class default
-         write(*, *) 'ERROR:ModelParameterCell_SG:dPDEmappingT:'
-         write(*, *) '         Incompatible input [eVec]. Exiting.'
-     
-         STOP
+               !    deleted select type for SigmaCell -- can't see how we need this, since
+               !     this is local variable declared with explicit type!
+               dm%cellCond%v = dm%cellCond%v * SigmaCell%v(:,:,k1:k2)
+            class default
+               write(*, *) 'ERROR:ModelParameterCell_SG:dPDEmappingT:'
+               STOP '         Incompatible input [eVec]. Exiting.'
+
+           end select
       end select
-      
+	  
    end function dPDEmappingT
    
    !**

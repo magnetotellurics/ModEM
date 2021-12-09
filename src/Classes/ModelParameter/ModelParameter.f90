@@ -6,9 +6,19 @@ module ModelParameter
    use Grid2D
    use ModelParameter1D
    use ModelParameter2D
+   use Grid
+   use MetricElements
    !
    type, abstract :: ModelParameter_t
        !
+	   !
+       ! Pointer to the original grid
+       class( Grid_t ), pointer :: grid
+
+       ! Pointer to metric elements -- useful for model mappings
+       !    provides Viedge, Vcell
+       class( MetricElements_t ), pointer :: metric
+	   !
 	   integer             :: mKey
        character(len = 80) :: paramType    = ''       
        real(kind = prec)   :: airCond       = 1E-7_prec
@@ -38,6 +48,7 @@ module ModelParameter
        !
        procedure(iface_SetType), deferred, public :: SetType
        procedure, public :: GetType
+	   procedure, public :: setMetric => setMetricModelOperator
        !
    end type ModelParameter_t
 
@@ -195,5 +206,16 @@ contains
 
       pType = trim(self%paramType)
    end function GetType
+   
+   !
+   subroutine setMetricModelOperator( self, metric )
+      !
+      class( ModelParameter_t ), intent( inout )       :: self
+      class( MetricElements_t ), target, intent( in )  :: metric
+      !
+      self%metric => metric
+      !
+   end subroutine setMetricModelOperator
+   !
    
 end module ModelParameter
