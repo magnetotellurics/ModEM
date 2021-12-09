@@ -99,15 +99,19 @@ module ModelOperator_MF
 contains
    
    !
-   function ModelOperator_MF_ctor( metric ) result( self )
-      class( MetricElements_t ), target, intent(in) :: metric
+   function ModelOperator_MF_ctor( grid ) result( self )
+      implicit none
+      !
+	  class( Grid3D_SG_t ), target, intent( in ) :: grid
       !
       type( ModelOperator_MF_t ) :: self
       !
       !write(*,*) "Constructor ModelOperator_MF"
       !
-      call self%create( metric%grid )
-      self%metric => metric
+	  ! Instantiation of the specific object MetricElements
+	  allocate( self%metric, source = MetricElements_CSG_t( grid ) )
+	  !
+      call self%create( grid )
       !
    end function ModelOperator_MF_ctor
    !

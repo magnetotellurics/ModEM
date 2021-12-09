@@ -21,8 +21,6 @@ module ForwardSolver
 	  ! Pointers to previously instantiated objects
       class( Solver_t ), pointer      :: solver
       !
-      class( cVector_t ), allocatable :: e_solution
-      !
       integer :: n_iter_total = 0
       logical :: failed = .false.
       !
@@ -73,8 +71,6 @@ module ForwardSolver
    subroutine deallocateFWD( self )
       class( ForwardSolver_t ), intent( inout )   :: self
       !
-      if( allocated( self%e_solution ) ) deallocate( self%e_solution )
-      !
    end subroutine deallocateFWD
    !
    subroutine setSolverFWD( self, solver )
@@ -83,12 +79,6 @@ module ForwardSolver
       class( Solver_t ), target, intent( in )   :: solver
       !
       self%solver => solver
-      !
-      ! Allocate e_solution based on the grid
-      select type( grid => solver%model_operator%grid )
-         class is( Grid3D_SG_t )
-             allocate( self%e_solution, source=cVector3D_SG_t( grid, EDGE ) )
-      end select
       !
    end subroutine setSolverFWD
    !

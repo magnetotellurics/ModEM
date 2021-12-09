@@ -11,7 +11,8 @@ module ModelOperator
      !
      class( Grid_t ), pointer :: grid
      !
-     class( MetricElements_t ), pointer :: metric
+	 ! MetricElements is a property of this object and must be instantiated by it.
+     class( MetricElements_t ), allocatable :: metric
      !
      logical                   :: is_allocated = .false.
      !

@@ -12,10 +12,14 @@ there will be if/case statements to implement specific user choices for some thi
 Create, for appropriate specific type (usually just one choice so far, but this will change)
    1)  ModelOperator; this also contains a MetricElements operator of appropriate type; Metric
        element object is part of the ModelOperator (not a pointer)
+	   (DONE!!!)
+	   
    2)  Preconditioner:  when we use the divergence correction (as we will to start) two preconditioner
         objects need to be created, one of type Preconditoner_MF_CC, one of type Precondtioner_MF_DC
         Both Preoconditioner objects have a pointer to the ModelOperator_MF object (which thus must be
           created first)
+		(DONE!!!)
+	   
    3)  Solver:   again, when we use the divergence correction two solver objects need to be created,
        a Solver_QMR and a Solver_PCG; each will have a pointer to the ModelOperator object (same for both) and 
        each will have a pointer to the appropriate Preconditioner object (*MF_CC for QMR and *MF_DC for PCG).
@@ -23,18 +27,28 @@ Create, for appropriate specific type (usually just one choice so far, but this 
        alternative explicit classes.    Since solver objects point to PreConditoner object that should already
        exits, Solvers need to be created (or at least have these pointers set) after those preconditioners are
        set in the calling program
+	   (DONE!!!)
+	   
    4)  ON FURTHER THOUGHT THIS IS A BIT MORE COMPLEX!   There will need to be a separate Solver_QMR created 
        for EACH transmitter (in MT -- more specifically, for each distinct frequency).   Each of these will
        have to point to a distinct PreConditioner -- since this also depends on frequency.   But there will
        can be a single ModelOperator  (but might have several copies, on different nodes, when we get to
        parallelization.
+	   (TO DISCUSS... Maybe it's better if Tx owns the entire ForwardSolver object)
+	   
    5)  DivergenceCorrection: points to model_operator, and to solver (which points to preconditioner)
        Since none of this is frequency dependent, a single DivergenceCorrection object can be created.
        The figure (ForwardObjects.ppt)
+	   (DONE!!!)
+	   
    6)  ForwardModel : In general a separate ForwardModel object is required for each frequency.  Each requires
        a pointer to the ModelOperator object (one, or a few, of those) and to the Solver object (distinct
        instance for each Forward object.  When we use a divergence correction, there should also be a pointer
        to the DivergenceCorrection object -- as for ModelOperator one of these (or a few)
+	   (TO DISCUSS... 
+	   1- Should each ForwardSolver have its own Solver? If so, Solver will be a property of it and will be instantiated within it.
+	   2- I don't understand the need for a pointer to ModelOperator as it can be accessed through Solver
+	   3- ForwardSolverDC already has pointer to DivergendeCorrection)
 
 ForwardSolver/
 
@@ -47,10 +61,13 @@ DivergenceCorrection : this has a pointer to ModelOperator, and to Solver.
     Could possibly hard code property solver to be of type Solver_PCG_t, and store this in the 
     DivergenceCorrection object (not a pointer).  But I prefer a generic DivCor wita pointers to
     solver and preconditioner obkjects created at a higher level.
+	(It seems to me that it is already generic as required.
+     Again I don't understand the need for pointer to ModelOperator, since pointer to Solver already exists.)
 
 ForwardSolver : abstract class should have a *pointer* to ModelOperator; not sure why cVector eSolution is a 
    property of this object, but I might be missing something (please explain why this should be a property of
    this object!) 
+   
    Further thoughts: 1) if eSolution is needed to define the explicit cVector class, why can't we use
    self%model_operator%createVector?  This gives access to appopriate read routines, etc.
    2)   Should a pointer to an object of class Solver_t be include in the abstract ForwardSolver?
@@ -60,6 +77,11 @@ ForwardSolver : abstract class should have a *pointer* to ModelOperator; not sur
     what we are going to want.
    3) ACTUALLY: since ForwardSolver => Solver => ModelOperator we probably don't really need a separate
     pointer to the model_operator -- but probably keeping this does not hurt?
+	
+	(DONE!!! 
+	You are right, there is no need for e_solution to be a ForwardSolver property. 
+	In fact it is even a serious waste of memory. REMOVED)
+   
 
 ForwardSolverDC : needs to have a pointer to Solver (but should this be declared in abstract class?)
       DOES NOT NEED a pointer to the Preconditioner -- the Solver (created before the ForwardSolver object)
@@ -71,5 +93,7 @@ ForwardSolverDC : needs to have a pointer to Solver (but should this be declared
 
       SetFreqeuncy has call to preconditioner method SetPreConditioner.  (a) this routine requires argument
        omega (for preconditioner_MF_CC); (b)  not sure we want this call here?  OK for now.
+	   
+	  (TO DISCUSS... Follows the same discussion as above)
 
 
