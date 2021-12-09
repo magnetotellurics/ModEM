@@ -93,21 +93,20 @@ module ModelOperator_MF
    end type ModelOperator_MF_t
    
    interface ModelOperator_MF_t
-       module procedure ModelOperator_MF_ctor
+	   module procedure ModelOperator_MF_ctor
    end interface ModelOperator_MF_t
    
 contains
    
-   ! class constructor
-   function ModelOperator_MF_ctor( inGrid, metric ) result( self )
-      class( Grid3D_SG_t ), target, intent(in) :: inGrid
-      class( MetricElements_CSG_t ), target, intent(in) :: metric
+   !
+   function ModelOperator_MF_ctor( metric ) result( self )
+      class( MetricElements_t ), target, intent(in) :: metric
       !
       type( ModelOperator_MF_t ) :: self
       !
-      !write(*,*) "Constructor ModelOperator_MF_t"
+      !write(*,*) "Constructor ModelOperator_MF"
       !
-      call self%create( inGrid )
+      call self%create( metric%grid )
       self%metric => metric
       !
    end function ModelOperator_MF_ctor
@@ -127,11 +126,11 @@ contains
    !**
    ! Create -- since this just calls allocateModelOperatorMF.
    !*
-   subroutine createModelOperatorMF(self, inGrid)
+   subroutine createModelOperatorMF( self, inGrid )
       implicit none
       !
       class( ModelOperator_MF_t ), intent( inout ) :: self
-      class( Grid3D_SG_t ), target, intent( in ) :: inGrid
+      class( Grid_t ), target, intent( in ) :: inGrid
       !
       self%is_allocated = .false.
       !
@@ -411,17 +410,15 @@ contains
    !**
    ! SetCond
    !*
-   subroutine SetCond(self, condParam)
+   subroutine SetCond( self, condParam )
       ! Arguments
-      class(ModelOperator_MF_t), intent(inout) :: self
-      class(ModelParameter_t)   , intent(inout)      :: condParam    
-      ! Local variables
-      complex( kind=prec ) :: c
+      class( ModelOperator_MF_t), intent( inout ) :: self
+      class( ModelParameter_t), intent( inout )   :: condParam
       !
       self%sigma_E = condParam%PDEmapping()
       !
       call self%DivCorSetUp()
-      
+	  !
    end subroutine SetCond
    
    !**

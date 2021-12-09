@@ -21,7 +21,7 @@ module MetricElements_CSG
   use rVector3D_SG
   use rScalar3D_SG
   
-  type, extends(MetricElements_t) :: MetricElements_CSG_t
+  type, extends( MetricElements_t ) :: MetricElements_CSG_t
      !
      !type(rVector3D_SG_t) :: EdgeLength
      !type(rVector3D_SG_t) :: FaceArea
@@ -60,13 +60,15 @@ contains
   !**
   ! MetricElements_CSG constructor
   !*
-  function MetricElements_CSG_ctor(inGrid) result(Metric)
+  function MetricElements_CSG_ctor( inGrid ) result( self )
     implicit none
-    class(Grid3D_SG_t), intent(in) :: inGrid
-    type(MetricElements_CSG_t) :: Metric
+    class( Grid3D_SG_t ), intent(in) :: inGrid
+    type( MetricElements_CSG_t ) :: self
     !
-    call Metric%create( inGrid )
-    
+	!write(*,*) "Constructor MetricElements_CSG_t"
+	!
+    call self%create( inGrid )
+	!
   end function MetricElements_CSG_Ctor
   
   !**
@@ -87,6 +89,8 @@ contains
     call self%SetFaceArea()
     !
     call self%SetEdgeLength()
+	!
+	call self%SetCellVolume()
     !
   end subroutine createMetricElements_CSG
   
@@ -105,6 +109,7 @@ contains
            allocate( self%DualFaceArea, source = rVector3D_SG_t( grid, EDGE ) )
            allocate( self%Vedge, source = rVector3D_SG_t( grid, EDGE ) )
            allocate( self%VNode, source = rScalar3D_SG_t( grid, NODE ) )
+		   allocate( self%Vcell, source = rScalar3D_SG_t( grid, CELL ) )
        end select
 
   end subroutine allocateMetricElements_CSG
@@ -316,10 +321,10 @@ contains
     class(MetricElements_CSG_t), intent(inout) :: self
     ! Local variables
     integer :: i, j, k
-    
+    !
 	select type( vcell => self%Vcell )
        class is( rScalar3D_SG_t )
-           
+           !
             do i = 1, self%nx 
 			   do j = 1, self%ny
 				  do k = 1, self%nz

@@ -6,6 +6,7 @@ module MetricElements
   type, abstract :: MetricElements_t
      !
 	 class(Grid_t), pointer :: grid
+	 !
      !   these have now been added to abstract class -- for specific extensions
      !     different types of rVector/rScalar may be needed    
      class(rVector_t), allocatable :: EdgeLength

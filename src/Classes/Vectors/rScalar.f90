@@ -51,13 +51,13 @@ module rScalar
        
        !   subroutine versions -- all overwrite first argument
        !     divide rScalar by rScalar
-       ! procedure(iface_divS1) , deferred, public :: divS1
-       ! generic :: divS => divS1
+        procedure(iface_divS1) , deferred, public :: divS1
+        generic :: divS => divS1
        !     multiply rScalar by rScalar
-       ! procedure(iface_multS1) , deferred, public :: multS1
+        procedure(iface_multS1) , deferred, public :: multS1
        !     multiply rScalar by real
-       ! procedure(iface_multS2) , deferred, public :: multS2
-       ! generic :: multS => multS1, multS2
+        procedure(iface_multS2) , deferred, public :: multS2
+        generic :: multS => multS1, multS2
 
        !   dot product
        procedure(iface_dotProd), deferred, public :: dotProd
@@ -257,23 +257,23 @@ module rScalar
        end function iface_div1
 
        !   subroutine versions
-!       subroutine iface_divS1(lhs,rhs)
-!          import :: rScalar
-!          class(rScalar_t), intent(inout) :: lhs
-!          class(rScalar_t), intent(in)    :: rhs
-!       end subroutine iface_divS1
-!
-!       subroutine iface_multS1(lhs,rhs)
-!          import :: rScalar
-!          class(rScalar_t), intent(inout) :: lhs
-!          class(rScalar_t), intent(in)    :: rhs
-!       end subroutine iface_multS1
-!
-!       subroutine iface_multS2(lhs,r)
-!          import :: rScalar, prec
-!          class(rScalar_t), intent(inout) :: lhs
-!          real(kind=prec), intent(in)    :: r
-!       end subroutine iface_multS2
+       subroutine iface_divS1(lhs,rhs)
+          import :: rScalar_t
+          class(rScalar_t), intent(inout) :: lhs
+          class(rScalar_t), intent(in)    :: rhs
+       end subroutine iface_divS1
+
+       subroutine iface_multS1(lhs,rhs)
+          import :: rScalar_t
+          class(rScalar_t), intent(inout) :: lhs
+          class(rScalar_t), intent(in)    :: rhs
+       end subroutine iface_multS1
+
+       subroutine iface_multS2(lhs,r)
+          import :: rScalar_t, prec
+          class(rScalar_t), intent(inout) :: lhs
+          real(kind=prec), intent(in)    :: r
+       end subroutine iface_multS2
        !   end subroutine versions
 
        function iface_dotProd(lhs, rhs) result(r)

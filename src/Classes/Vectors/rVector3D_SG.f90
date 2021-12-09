@@ -68,8 +68,8 @@ module rVector3D_SG
        procedure, public :: setOneBoundary => setOneBoundaryRVector3D_SG
        procedure, public :: setAllInterior => setAllInteriorRVector3D_SG
        procedure, public :: intBdryIndices => intBdryIndicesRVector3D_SG
-       !procedure, public :: Boundary
-       !procedure, public :: Interior
+       procedure, public :: boundary => boundaryRVector3D_SG
+       procedure, public :: interior => interiorRVector3D_SG
        
        !**
        ! Data access
@@ -624,33 +624,34 @@ contains
       
    end subroutine intBdryIndicesRVector3D_SG
    
-   ! !**
-   ! ! Boundary
-   ! ! Returns a copy of this vector with all interior elements ser to zero.
-   ! !*
-   ! function Boundary(self) result(E)
-   !    class(rVector3D_SG_t), intent(in) :: self
-   !    ! Local variables
-   !    type(rVector3D_SG_t) :: E
-      
-   !    E = self
-   !    call E%setAllInteriorRVector3D_SG(R_ZERO)
-      
-   ! end function Boundary
+   !**
+   ! boundaryRVector3D_SG
+   ! Returns a copy of this vector with all interiorRVector3D_SG elements ser to zero.
+   !*
+   function boundaryRVector3D_SG(self) result(E)
+      class(rVector3D_SG_t), intent(in) :: self
+      ! Local variables
+      class(rVector_t), allocatable :: E
+      !
+      allocate(E, source = self)
+	  !
+      call E%setAllInterior(R_ZERO)
+	  !
+   end function boundaryRVector3D_SG
    
-   ! !**
-   ! ! Interior
-   ! ! Returns a copy of this vector with all boundary elements ser to zero.
-   ! !*
-   ! function Interior(self) result(E)
-   !    class(rVector3D_SG_t), intent(in) :: self
-   !    ! Local variables
-   !    type(rVector3D_SG_t) :: E
+   !**
+   ! interiorCVector3D_SG
+   ! Returns a copy of this vector with all boundaryCVector3D_SG elements ser to zero.
+   !*
+   function interiorRVector3D_SG(self) result(E)
+      class(rVector3D_SG_t), intent(in) :: self
+      ! Local variables
+      class(rVector_t), allocatable :: E
 
-   !    E = self
-   !    call E%setAllBoundaryRVector3D_SG(R_ZERO)
+      allocate(E, source = self)
+      call E%setAllboundary(R_ZERO)
       
-   ! end function Interior
+   end function interiorRVector3D_SG
    
    !
    !************************************************
@@ -932,13 +933,13 @@ contains
    end function div1RVector3D_SG
    
    !   Arithmetic operations -- subroutine versions, first argument overwritten
-   subroutine divS1RVector3D_SG
+   subroutine divS1RVector3D_SG( lhs, rhs )
        class(rVector3D_SG_t), intent(inout)   :: lhs
        class(rVector_t)       , intent(in)   :: rhs
  
        if (lhs%isCompatible(rhs)) then
           select type(rhs)
-            class is(cScalar3D_SG_t)
+            class is(rVector3D_SG_t)
                 lhs%x = lhs%x / rhs%x
                 lhs%y = lhs%y / rhs%y
                 lhs%z = lhs%z / rhs%z
@@ -950,13 +951,13 @@ contains
        end if
    end subroutine divS1RVector3D_SG
 
-   subroutine multS1RVector3D_SG
+   subroutine multS1RVector3D_SG( lhs, rhs )
        class(rVector3D_SG_t), intent(inout)   :: lhs
        class(rVector_t)       , intent(in)   :: rhs
  
        if (lhs%isCompatible(rhs)) then
           select type(rhs)
-            class is(cScalar3D_SG_t)
+            class is(rVector3D_SG_t)
                 lhs%x = lhs%x * rhs%x
                 lhs%y = lhs%y * rhs%y
                 lhs%z = lhs%z * rhs%z
@@ -968,14 +969,14 @@ contains
        end if
    end subroutine multS1RVector3D_SG
    
-   subroutine multS2RVector3D_SG
+   subroutine multS2RVector3D_SG( lhs, r )
        class(rVector3D_SG_t), intent(inout)   :: lhs
        real(kind=prec) ,     intent(in)      :: r
  
        lhs%x = lhs%x * r
        lhs%y = lhs%y * r
        lhs%z = lhs%z * r
-   end subroutine multS1RVector3D_SG
+   end subroutine multS2RVector3D_SG
 
    !   end subroutine versions
    
