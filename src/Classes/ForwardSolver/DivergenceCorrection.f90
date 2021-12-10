@@ -44,11 +44,12 @@ contains
       !
       !
       function DivergenceCorrection_ctor( model_operator ) result( self )
+         implicit none
          !
-         class( ModelOperator_t ), target, intent( in ) :: model_operator
-         type( DivergenceCorrection_t ) :: self
+         class( ModelOperator_t ), intent( in ) :: model_operator
+         type( DivergenceCorrection_t )         :: self
          !
-         write(*,*) "Constructor DivergenceCorrection_t"
+         !write(*,*) "Constructor DivergenceCorrection_t"
          !
          ! Specific Solver PCG
          self%solver = Solver_PCG_t( model_operator )
@@ -63,9 +64,6 @@ contains
         !
         !write(*,*) "Destructor DivergenceCorrection_t"
         !
-        !self%solver%model_operator => null()
-        !self%solver => null()
-
       end subroutine DivergenceCorrection_dtor
       !
       subroutine rhsDivCor( self, omega, source, phi0 )

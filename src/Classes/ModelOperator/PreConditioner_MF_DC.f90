@@ -60,7 +60,7 @@ contains
      !
      type( PreConditioner_MF_DC_t ), intent( inout ) :: self
      !
-     write(*,*) "Destructor PreConditioner_MF_DC_t"
+     !write(*,*) "Destructor PreConditioner_MF_DC_t"
      !
      !call self%dealloc()
      !

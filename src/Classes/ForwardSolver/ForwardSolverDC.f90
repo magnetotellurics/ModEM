@@ -70,13 +70,14 @@ module ForwardSolverDC
    contains
    !
    function ForwardSolverDC_ctor( model_operator, divergence_correction ) result( self )
+      implicit none
       !
-	  class( ModelOperator_t ), target, intent( in ) :: model_operator
+	  class( ModelOperator_t ), intent( in )                :: model_operator
 	  class( DivergenceCorrection_t ), target, intent( in ) :: divergence_correction
 	  !
       type( ForwardSolverDC_t ) :: self
       !
-      write(*,*) "Constructor ForwardSolverDC_t"
+      !write(*,*) "Constructor ForwardSolverDC_t"
       !
       call self%init()
       !
@@ -119,18 +120,20 @@ module ForwardSolverDC
     !
     !   creator and destructor ... still need these
    subroutine setIterDefaults( self )
-      class( ForwardSolverDC_t ), intent( inout ) :: self
+      implicit none
+      !
+	  class( ForwardSolverDC_t ), intent( inout ) :: self
       !   this just sets iteration control parameters to default
       !    values -- should be good enough to get us started!
       !    Note that some of the parameters are set in solver object 
       !
       self%max_div_cor = max_div_corDef
       self%max_iter_total = self%max_div_cor * self%solver%max_iter
-     !
+      !
       !select type( solver => self%solver )
       !class is (Solver_QMR_t)
         self%iter_per_div_cor = iter_per_div_corDefQMR
-     !class is (Solver_BiCG_t)
+      !class is (Solver_BiCG_t)
         !self%iter_per_div_cor = iter_per_div_corDefBCG
       !end select
 
@@ -142,6 +145,7 @@ module ForwardSolverDC
     end subroutine setIterDefaults
       !***********************************************************
     subroutine createDiagnosticArrays( self )
+        implicit none
         !
         class( ForwardSolverDC_t ), intent( inout ) :: self
         !   this allocates arrays for storage of solver diagnostics
@@ -167,7 +171,6 @@ module ForwardSolverDC
      end subroutine createDiagnosticArrays
      !*****************************************************
      subroutine initDiagnosticArrays( self )
-        !
         implicit none
         !
         class( ForwardSolverDC_t ), intent( inout ) :: self
@@ -183,6 +186,7 @@ module ForwardSolverDC
      end subroutine initDiagnosticArrays    
      !*****************************************************
      subroutine setFrequencyForwardSolverDC( self, omega )
+        implicit none
         !   this is not specific to DC solver -- can we implement
         !     in abstract class?
         class( ForwardSolverDC_t ), intent( inout ) :: self
@@ -196,7 +200,7 @@ module ForwardSolverDC
         self%omega = omega
         self%solver%omega = omega
         call self%solver%preconditioner%SetPreconditioner( omega )
-		!
+       !
      end subroutine setFrequencyForwardSolverDC
      !*****************************************************
      function getESolutionForwardSolverDC( self, source, polarization ) result( e_solution )
@@ -213,11 +217,13 @@ module ForwardSolverDC
         class( cScalar_t ), allocatable :: phi0
         integer :: iter
         !
+        write(*,*) "getESolution ForwardSolverDC for pol:", polarization
+        !
         !   initialize diagnostics -- am assuming that setting of solver parameters
         !     is done in a set up step (once in the run) outside this object
         call self%initDiagnosticArrays()
         !
-        call self%solver%zeroDiagnostics
+        call self%solver%zeroDiagnostics()
         !
         !   initialize solution
         allocate( e_solution, source = source%e0 )
@@ -229,15 +235,17 @@ module ForwardSolverDC
         !
         !   set up source term for divergence correction equations
         if( source%non_zero_source ) then
-           !phi0 =  self%model_operator%p   !   make a copy of TScalar using
-                                   !   model_operator template
-            call self%divergence_correction%rhsDivCor( self%omega, source, phi0 )
-           !allocate( phi0, source = self%divergence_correction%rhsDivCor( self%omega, source ) )
+          !
+          ! make a copy of TScalar using model_operator template
+          allocate( phi0, source = self%solver%model_operator%createScalar() )
+           !
+           call self%divergence_correction%rhsDivCor( self%omega, source, phi0 )
+           !
         endif
         !
         allocate( temp, source = e_solution )    !  copy of solution for input to DC
         !
-        loop: do while ((.not.self%solver%converged).and.(.not.self%solver%failed))
+        loop: do while ( ( .not.self%solver%converged ).and.( .not.self%solver%failed ) )
            !
            ! TEMPORARY SELECT CASE
            !
@@ -267,22 +275,22 @@ module ForwardSolverDC
            self%n_iter_total = self%n_iter_total + self%solver%n_iter
            !
            self%nDivCor = self%nDivCor+1
-		   !
+           !
            if( self%nDivCor < self%max_div_cor ) then
               ! do divergence correction
               e_solution = temp !    assuming temp is already allocated,
                                 ! don"t want to reallocate!
-			  !
-              if( source%non_zero_source ) then
-                 !
-			     call self%divergence_correction%DivCorr( e_solution, e_solution, phi0 )
-                 !
-              else
-			     !
-                 call self%divergence_correction%DivCorr( e_solution, e_solution )
-                 !
-              endif
-			  !
+       	   !
+           if( source%non_zero_source ) then
+             !
+       	     call self%divergence_correction%DivCorr( e_solution, e_solution, phi0 )
+             !
+           else
+       	     !
+             call self%divergence_correction%DivCorr( e_solution, e_solution )
+             !
+           endif
+       	  !
           else
              ! max number of divergence corrections exceeded; convergence solver%failed
              self%solver%failed = .true.
@@ -315,7 +323,14 @@ module ForwardSolverDC
           e_solution = e_solution + source%bdry
           !
        endif
-
+       !
+       select type( e_solution )
+          class is( cVector3D_SG_t )
+       	     write( *, * ) "         ", e_solution%nx, e_solution%ny, e_solution%nz, e_solution%gridType
+          class default
+       	     stop "Unclassified ForwardSolverDC e_solution"
+       end select
+       !
        !  deallocate local objects
        if( allocated( temp ) ) deallocate(temp)
        if( allocated( b ) )    deallocate(b)

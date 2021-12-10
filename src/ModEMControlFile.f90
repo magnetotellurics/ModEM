@@ -37,7 +37,7 @@ contains
       integer, intent( in )                   :: funit
       character(:), allocatable, intent( in ) :: fname
       !
-      class( ModEMControlFile_t ), pointer    :: self
+      type( ModEMControlFile_t ) :: self
       !
       character(1000)                   :: full_line_text
       character(len=200), dimension(20) :: args
@@ -45,8 +45,6 @@ contains
       integer                           :: line_counter, io_stat, p_nargs
       !
       !write( *,* ) "Constructor ModEMControlFile_t"
-      !
-      allocate( ModEMControlFile_t :: self )
       !
       call Compact( fname )
       !
@@ -145,7 +143,7 @@ contains
             end select
             !
          endif
-         !
+		 !
       end if
       !
    end function ModEMControlFile_ctor
@@ -153,9 +151,14 @@ contains
    subroutine ModEMControlFile_dtor( self )
       implicit none
       !
-      type( ModEMControlFile_t ), intent( in out ) :: self
+      type( ModEMControlFile_t ), intent( inout ) :: self
       !
-      ! write( *,* ) "Destructor ModEMControlFile_t"
+      !write( *,* ) "Destructor ModEMControlFile_t"
+      !
+      if( allocated( self%grid_reader ) ) deallocate( self%grid_reader )
+      if( allocated( self%grid_type ) ) deallocate( self%grid_type )
+      if( allocated( self%forward_solver ) ) deallocate( self%forward_solver )
+      if( allocated( self%source ) ) deallocate( self%source )
       !
    end subroutine ModEMControlFile_dtor
    !

@@ -30,7 +30,7 @@ module Receiver
       !
       character(3), allocatable          :: comp_names(:)
       !
-      complex(kind=prec), allocatable    :: I_BB(:,:), EE(:,:), Z(:)
+      complex( kind=prec ), allocatable    :: I_BB(:,:), EE(:,:), Z(:)
       !
       class( cVector_t ), allocatable    :: Lex, Ley, Lez, Lbx, Lby, Lbz
       !
@@ -64,9 +64,10 @@ module Receiver
       subroutine interface_predicted_data( self, model_operator, transmitter )
          !
          import :: Receiver_t, ModelOperator_t, Transmitter_t
-         class( Receiver_t ), intent( inout )                :: self
-         class( ModelOperator_t ), allocatable, intent( in ) :: model_operator
-         class( Transmitter_t ), intent( in )                :: transmitter
+         !
+         class( Receiver_t ), intent( inout )  :: self
+         class( ModelOperator_t ),intent( in ) :: model_operator
+         class( Transmitter_t ), intent( in )  :: transmitter
          !
       end subroutine interface_predicted_data
       !
@@ -74,15 +75,17 @@ module Receiver
       subroutine interface_write_predicted_data_rx( self, tx )
          !
          import :: Receiver_t, Transmitter_t
+         !
          class( Receiver_t ), intent( in )    :: self
          class( Transmitter_t ), intent( in ) :: tx
-		 !
+         !
       end subroutine interface_write_predicted_data_rx
       !
       !
       subroutine interface_write_rx( self )
          !
          import :: Receiver_t
+         !
          class( Receiver_t ), intent(in) :: self
          !
       end subroutine interface_write_rx
@@ -92,6 +95,8 @@ module Receiver
 contains
    !
    subroutine initializeRx( self )
+      implicit none
+      !
       class( Receiver_t ), intent( inout ) :: self
       !
       self%id = 0
@@ -107,7 +112,8 @@ contains
    end subroutine initializeRx
    !
    subroutine deallocateRx( self )
-    !
+      implicit none
+      !
       class( Receiver_t ), intent( inout ) :: self
       !
       if( associated( self%grid ) ) deallocate( self%grid )
@@ -132,8 +138,8 @@ contains
       !
       if( allocated( self%Lbz ) ) deallocate( self%Lbz )
       !
-	  !deallocate( self%data_groups )
-	  !
+      !deallocate( self%data_groups )
+      !
    end subroutine deallocateRx
    !
    subroutine evaluationFunctionRx( self, model_operator, omega )
@@ -141,7 +147,7 @@ contains
       !
       class( Receiver_t ), intent( inout )   :: self
       class( ModelOperator_t ), intent( in ) :: model_operator
-	  real( kind=prec ), intent( in )        :: omega
+      real( kind=prec ), intent( in )        :: omega
       !
       integer              :: k
       complex( kind=prec ) :: comega
@@ -194,11 +200,11 @@ contains
                call e%interpFunc( self%location, "z", self%Lez )
             !
             case( "Bx" )
-			   !
-			   call h%interpFunc( self%location, "x", lh )
+               !
+               call h%interpFunc( self%location, "x", lh )
                call model_operator%multCurlT( lh, self%Lbx )
                call self%Lbx%mults( ( isign * ONE_I/MU_0 ) * comega )
-			   !
+               !
             case( "By" )
                call h%interpFunc( self%location, "y", lh )
                call model_operator%multCurlT( lh, self%Lby )
@@ -219,6 +225,8 @@ contains
    end subroutine evaluationFunctionRx
    !
    function isEqualRx( self, other ) result( equal )
+      implicit none
+      !
       class( Receiver_t ), intent( in ) :: self
       class( Receiver_t ), intent( in ) :: other
       !
@@ -235,6 +243,8 @@ contains
    end function isEqualRx
    !
    function hasDataGroupRx( self, data_group ) result( found )
+      implicit none
+      !
       class( Receiver_t ), intent( in )  :: self
       class( DataGroup_t ), intent( in ) :: data_group
       !
@@ -255,6 +265,8 @@ contains
    end function hasDataGroupRx
    !
    subroutine addDataGroupRx( self, data_group )
+      implicit none
+      !
       class( Receiver_t ), intent( inout ) :: self
       class( DataGroup_t ), intent( in )   :: data_group
       !
@@ -263,6 +275,8 @@ contains
    end subroutine addDataGroupRx
    !
    function getDataGroupRx( self, index ) result( data_group )
+      implicit none
+      !
       class( Receiver_t ), intent( in ) :: self
       integer, intent( in )             :: index
       class( DataGroup_t ), allocatable :: data_group
@@ -272,6 +286,8 @@ contains
    end function getDataGroupRx
    !
    function getNumberOfDataGroupRx( self ) result( counter )
+      implicit none
+      !
       class( Receiver_t ), intent( in ) :: self
       integer                           :: counter
       !

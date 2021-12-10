@@ -25,11 +25,12 @@ module Solver_QMR
 contains
    !
    function Solver_QMR_ctor( model_operator ) result( self )
+      implicit none
       !
       class( ModelOperator_t ), target, intent( in ) :: model_operator
       type( Solver_QMR_t ) :: self
       !
-      write(*,*) "Constructor Solver_QMR_t"
+      !write(*,*) "Constructor Solver_QMR_t"
       !
       call self%init()
       !
@@ -39,10 +40,13 @@ contains
       ! as they receive a specific ModelOperator
       select type( model_operator )
          class is( ModelOperator_MF_t )
-           !
-           ! PreConditioner CC
-           self%preconditioner = PreConditioner_MF_CC_t( model_operator )
-           !
+              !
+              ! PreConditioner CC
+              self%preconditioner = PreConditioner_MF_CC_t( model_operator )
+              !
+		 class default
+            write(*, *) "ERROR:Solver_QMR::Constructor:"
+            STOP "         Unknow model_operator type."
       end select
       !
    end function Solver_QMR_ctor

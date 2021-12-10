@@ -26,11 +26,12 @@ module Solver_PCG
    contains
       !
       function Solver_PCG_ctor( model_operator ) result( self )
+         implicit none
          !
          class( ModelOperator_t ), target, intent( in ) :: model_operator
          type( Solver_PCG_t ) :: self
          !
-         write(*,*) "Constructor Solver_PCG_t"
+         !write(*,*) "Constructor Solver_PCG_t"
          !
          call self%init()
          !
@@ -40,10 +41,13 @@ module Solver_PCG
          ! as they receive a specific ModelOperator
          select type( model_operator )
             class is( ModelOperator_MF_t )
-            !
-            ! PreConditioner CC
-            self%preconditioner = PreConditioner_MF_DC_t( model_operator )
-            !
+               !
+               ! PreConditioner DC
+               self%preconditioner = PreConditioner_MF_DC_t( model_operator )
+               !
+			class default
+                 write(*, *) "ERROR:Solver_PCG::Constructor:"
+                 STOP "         Unknow model_operator type."
          end select
          !
          !  NOTE: need default solver parameters to use here -- but more generally]

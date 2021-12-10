@@ -34,9 +34,9 @@ contains
         !   actually, this set routine will be the same for all
         !    extensions -- should this be abstract
         ! import :: Solver_t  is this needed here????
-        class( Solver_t ), intent(inout) :: self
-        integer, intent( in )            :: max_iter
-        real( kind=prec ), intent(in)    :: tolerance
+        class( Solver_t ), intent( inout ) :: self
+        integer, intent( in )              :: max_iter
+        real( kind=prec ), intent( in )    :: tolerance
         integer :: status
 
         self%max_iter = max_iter

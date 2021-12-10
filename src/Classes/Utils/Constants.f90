@@ -8,6 +8,7 @@
 module Constants
    implicit none
    !
+   ! CONTROL FILE TYPES
    character(:), allocatable :: grid_type
    character (len = 12), parameter   :: GRID_SG = "StandardGrid"
    character (len = 19), parameter   :: GRID_MR = "MultiresolutionGrid"
@@ -19,6 +20,7 @@ module Constants
    character(:), allocatable :: source_type
    character (len = 11), parameter   :: SRC_MT_1D = "SourceMT_1D"
    character (len = 11), parameter   :: SRC_MT_2D = "SourceMT_2D"
+   !
    !
    character (len = 4), parameter   :: NODE       = "NODE"
    character (len = 4), parameter   :: FACE       = "FACE"
