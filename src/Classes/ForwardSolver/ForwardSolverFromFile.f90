@@ -15,7 +15,8 @@ module ForwardSolverFromFile
    !
    type, extends( ForwardSolver_t ), public :: ForwardSolverFromFile_t
       !
-	  class( ModelOperator_t ), pointer  :: model_operator
+      class( ModelOperator_t ), pointer  :: model_operator
+      !
       character(:), allocatable :: file_name
       integer                   :: IoE
       !
@@ -36,14 +37,14 @@ contains
    !
    function ForwardSolverFromFile_ctor( model_operator ) result( self )
       !
-	  class( ModelOperator_t ), target, intent( in )  :: model_operator
-      type( ForwardSolverFromFile_t ) :: self
+      class( ModelOperator_t ), target, intent( in ) :: model_operator
+      type( ForwardSolverFromFile_t )                :: self
       !
       !write(*,*) "Constructor ForwardSolverFromFile_t"
       !
       call self%init()
-	  !
-	  self%model_operator => model_operator
+      !
+      self%model_operator => model_operator
       !
       self%IoE = 901
       !
@@ -53,7 +54,7 @@ contains
    subroutine ForwardSolverFromFile_dtor( self )
       implicit none
       !
-      type( ForwardSolverFromFile_t ), intent( in out ) :: self
+      type( ForwardSolverFromFile_t ), intent( inout ) :: self
       !
       !write(*,*) "Destructor ForwardSolverFromFile_t"
       !
@@ -83,7 +84,7 @@ contains
       character(80) :: grid_type, file_name
       complex          :: x, y, z
       integer          :: nx, ny, nz, io_stat
-   !
+      !
       ! Construct the file name
       write ( file_name, '(a,I4.4,a,I1,a)' ) '../inputs/esol/E_solution_Per', int( self%period ), '_Pol', polarization, '.soln'
       !
@@ -101,7 +102,7 @@ contains
             select type( grid => self%model_operator%grid )
                class is( Grid3D_SG_t )
                   !
-				  allocate( e_solution, source = cVector3D_SG_t( grid, EDGE ) )
+                  allocate( e_solution, source = cVector3D_SG_t( grid, EDGE ) )
                   !
                   ! Read and Save cVector e_solution
                   call e_solution%Read( self%ioE )
@@ -115,16 +116,16 @@ contains
                   ! Print the e_solution result
                   write( *, * ) "    Polarization:", polarization
                   !
-				  select type( e_solution )
+                  select type( e_solution )
                      class is( cVector3D_SG_t )
                         write( *, * ) "         ", e_solution%nx, e_solution%ny, e_solution%nz, e_solution%gridType
                      class default
                         stop "Unclassified ForwardSolverFromFile e_solution"
-				  end select
-				  !
-			   class default
+                  end select
+                  !
+               class default
                   stop "Unclassified ForwardSolverFromFile grid"
-				!
+                  !
             end select
             !
       endif

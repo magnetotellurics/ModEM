@@ -101,7 +101,6 @@ contains
                         !
 						call self%data_entries%add( DataEntryMT_t( iDe, actual_type, period, code, &
                         latitude, longitude, xyz, component, real, imaginary, error ) )
-                        !end if
                         !
                         mt_counter = mt_counter + 1
                         !
@@ -192,7 +191,7 @@ contains
    subroutine StandardDataFile_dtor( self )
       implicit none
       !
-      type( StandardDataFile_t ), intent( in out ) :: self
+      type( StandardDataFile_t ), intent( inout ) :: self
       !
       !write(*,*) "Destructor StandardDataFile_t"
       !
@@ -204,7 +203,7 @@ contains
    function getLineNumber( funit ) result( line_counter )
       implicit none
       !
-      integer, intent( in )      :: funit
+      integer, intent( in ) :: funit
       !
       integer               :: line_counter
       character(80)         :: line_text
@@ -222,7 +221,7 @@ contains
          end if
       end do
       !
-10      return
+10    return
       !
    end function getLineNumber
    !

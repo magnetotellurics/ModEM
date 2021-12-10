@@ -50,7 +50,7 @@ module DataManager
 contains
    !
    ! Create Data File object, create Receivers, create transmitters and create
-   function DataManager_ctor( file_name) result( self )
+   function DataManager_ctor( file_name ) result( self )
       implicit none
       !
       character(:), allocatable, intent( in ) :: file_name
@@ -59,7 +59,7 @@ contains
       !
       !write(*,*) "Constructor DataManager_t"
       !
-      allocate( self%data_file, source = StandardDataFile_t( ioStartup, file_name ) )
+      self%data_file = StandardDataFile_t( ioStartup, file_name )
       !
       call self%loadReceiversAndTransmitters()
       !

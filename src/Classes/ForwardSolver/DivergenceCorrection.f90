@@ -1,16 +1,14 @@
 Module DivergenceCorrection
    !
    use Solver_PCG
+   use ModelOperator
    use cScalar3D_SG
    use cVector3D_SG
    use Source
    !
    type, public :: DivergenceCorrection_t
-      !  need to think about public/private
-      class( ModelOperator_t ), pointer :: model_operator !    this should be a pointer
-         !  and this is the abstract type ...  when setting up will need to use the
-         !   correct model operator sub-type
-      class( Solver_t ), pointer :: solver ! think this should be abstract class!
+      !
+      class( Solver_t ), allocatable :: solver ! think this should be abstract class!
          !     want this to work for MR soon enough!
          !   OK -- "Solver" objects will correspond to specific solver methods
          !      solver control parameters, and diagnostics will be propertiess
@@ -45,16 +43,17 @@ Module DivergenceCorrection
 contains
       !
       !
-      function DivergenceCorrection_ctor( solver ) result( self )
-        !
-        class( Solver_t ), target, intent( in ) :: solver
-		type( DivergenceCorrection_t ) :: self
-		!
-        !write(*,*) "Constructor DivergenceCorrection_t"
-        !
-		self%solver => solver
-        self%model_operator => solver%model_operator
-        !
+      function DivergenceCorrection_ctor( model_operator ) result( self )
+         implicit none
+         !
+         class( ModelOperator_t ), intent( in ) :: model_operator
+         type( DivergenceCorrection_t )         :: self
+         !
+         !write(*,*) "Constructor DivergenceCorrection_t"
+         !
+         ! Specific Solver PCG
+         self%solver = Solver_PCG_t( model_operator )
+         !
       end function DivergenceCorrection_ctor
       !
       ! Destructor
@@ -65,9 +64,6 @@ contains
         !
         !write(*,*) "Destructor DivergenceCorrection_t"
         !
-        self%model_operator => null()
-        !self%solver => null()
-
       end subroutine DivergenceCorrection_dtor
       !
       subroutine rhsDivCor( self, omega, source, phi0 )
@@ -78,7 +74,7 @@ contains
          implicit none
       !
          class( DivergenceCorrection_t ) :: self
-         real ( kind=prec ), intent( in )             :: omega
+         real ( kind=prec ), intent( in ) :: omega
          class( Source_t ), intent( in ) :: source
          class( cScalar_t ), intent(inout)         :: phi0
          !
@@ -95,14 +91,14 @@ contains
           
          !   take divergence of sourceInterior, and return as cScalar of
          !    appropriate explicit type
-         call self%model_operator%Div(sourceInterior,phi0) 
+         call self%solver%model_operator%Div( sourceInterior, phi0 ) 
          !  multiply result by cFactor (in place)
          call phi0%mults( cFactor )
          !  multiply result by VNode -- add to rhs of symetrized
          !   current conservation equation
          !
-		 ! CREATE MULTS TO OVERWRITE RHS -- phi0 ????
-		 call phi0%mults( self%model_operator%metric%Vnode )
+       ! CREATE MULTS TO OVERWRITE RHS -- phi0 ????
+       call phi0%mults( self%solver%model_operator%metric%Vnode )
      
       end subroutine rhsDivCor
       !****************************************************************
@@ -137,12 +133,12 @@ contains
         !   I DO NOT WANT select type at this level -- 
         !     make procedures in ForwardModeling generic, with no reference to
         !     specific classes
-		!
-        allocate( phiSol, source = self%model_operator%createScalar() )
-        allocate( phiRHS, source = self%model_operator%createScalar() )
+      !
+        allocate( phiSol, source = self%solver%model_operator%createScalar() )
+        allocate( phiRHS, source = self%solver%model_operator%createScalar() )
         !
         ! compute divergence of currents for input electric field
-        call self%model_operator%DivC(inE, phiRHS )
+        call self%solver%model_operator%DivC(inE, phiRHS )
 
         !  If source term is present, subtract from divergence of currents
         !  probably OK to use function here -- but could replace with subroutine
@@ -157,18 +153,18 @@ contains
 
         ! point-wise multiplication with volume weights centered on corner nodes
         !
-		! CREATE MULTS TO OVERWRITE RHS -- phiRHS ????
-		call phiRHS%mults( self%model_operator%metric%Vnode )
+      ! CREATE MULTS TO OVERWRITE RHS -- phiRHS ????
+      call phiRHS%mults( self%solver%model_operator%metric%Vnode )
 
         !   solve system of equations -- solver will have to know about
         !    (a) the equations to solve -- the divergence correction operator
         !       is modOp%divCgrad
         !    (b) preconditioner: object, and preconditioner matrix
-		!
-		select type( solver => self%solver )
+      !
+      select type( solver => self%solver )
            class is( Solver_PCG_t )
               call solver%solve( phiRHS, phiSol )
-		   class default
+         class default
               write(*, *) 'ERROR:DivergenceCorrection::DivCorr:'
               STOP '         Unknow solver type.'
         end select
@@ -181,14 +177,14 @@ contains
        !end if
 
        ! compute gradient of phiSol (Divergence correction for inE)
-       call self%model_operator%grad(phiSol,outE)
+       call self%solver%model_operator%grad(phiSol,outE)
 
        ! subtract Divergence correction from inE
        call outE%linCombS(inE,C_MinusOne,C_ONE)
        !   this is outE = inE - outE
 
        ! divergence of the corrected output electrical field
-       call self%model_operator%DivC(outE,phiRHS)
+       call self%solver%model_operator%DivC(outE,phiRHS)
 
        !  If source term is present, subtract from divergence of currents
        if(SourceTerm) then

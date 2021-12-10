@@ -9,17 +9,16 @@
 module ForwardSolver
    !
    use Constants
-   use cVector3D_SG
+   use cVector
    use Source
    use Solver
-   use Grid3D_SG
    !
    type, abstract :: ForwardSolver_t
       !
       real( kind=prec ) :: period
       !
-	  ! Pointers to previously instantiated objects
-      class( Solver_t ), pointer      :: solver
+	  ! Solver as a property of this
+      class( Solver_t ), allocatable :: solver
       !
       integer :: n_iter_total = 0
       logical :: failed = .false.
@@ -28,8 +27,6 @@ module ForwardSolver
       !
       procedure, public :: init    => initializeFWD
       procedure, public :: dealloc => deallocateFWD
-      !
-      procedure, public :: setSolver         => setSolverFWD
       !
 	  procedure( interface_set_period_fwd ), deferred, public     :: setPeriod
       procedure( interface_get_e_solution_fwd ), deferred, public :: getESolution
@@ -64,22 +61,11 @@ module ForwardSolver
    subroutine initializeFWD( self )
       class( ForwardSolver_t ), intent( inout ) :: self
       !
-      self%solver         => null()
-	  !
    end subroutine initializeFWD
    !
    subroutine deallocateFWD( self )
       class( ForwardSolver_t ), intent( inout )   :: self
       !
    end subroutine deallocateFWD
-   !
-   subroutine setSolverFWD( self, solver )
-      !
-      class( ForwardSolver_t ), intent( inout ) :: self
-      class( Solver_t ), target, intent( in )   :: solver
-      !
-      self%solver => solver
-      !
-   end subroutine setSolverFWD
    !
 end module ForwardSolver

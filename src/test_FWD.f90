@@ -10,9 +10,6 @@ program ModEM
    !
    use Grid3D_SG
    !
-   use Solver_QMR
-   use Solver_PCG
-   !
    use DivergenceCorrection
    !
    use ForwardSolverFromFile
@@ -21,20 +18,14 @@ program ModEM
    use SourceMT_1D
    use SourceMT_2D
    !
-   use PreConditioner_MF_CC
-   use PreConditioner_MF_DC
-   !
-   class( ModEMControlFile_t ), allocatable :: control_file
-   !
+   ! 
    class( Grid_t ), allocatable           :: main_grid
    class( ModelParameter_t ), allocatable :: model_parameter
    class( ModelOperator_t ), allocatable  :: model_operator
    !
-   character(200) :: argument
-   integer        :: argument_index
-   !
    character(:), allocatable :: control_file_name, model_file_name, data_file_name, modem_job
    logical                   :: has_control_file = .false., has_model_file = .false., has_data_file = .false.
+   !
    !
    modem_job = "unknow"
    !
@@ -60,22 +51,14 @@ contains
    subroutine forward()
       implicit none
       !
-      ! These objects must be instantiated only once in the Master
+      ! This object must be instantiated only once in the Master
       type( DivergenceCorrection_t ), target, save :: divergence_correction
-      !
-      type( PreConditioner_MF_DC_t ), target, save :: preconditioner_dc
-      !
-      type( Solver_PCG_t ), target, save           :: solver_pcg
       !
       ! These objects are frequency dependent,
       ! must be instantiated on each Worker
-      type( Solver_QMR_t ), target, save                  :: solver_qmr
-      !
       class( ForwardSolver_t ), allocatable, target, save :: fwd_solver
       !
       class( Source_t ), allocatable, target, save        :: fwd_source 
-      !
-      type( PreConditioner_MF_CC_t ), target, save        :: preconditioner_cc
       !
       ! Temporary alias pointers
       class( Transmitter_t ), allocatable :: Tx
@@ -83,7 +66,6 @@ contains
       !
       ! Local variables
       integer :: iTx, nTx, iRx, nRx
-      real( kind=prec ) :: omega
       character(:), allocatable :: transmitter_type
       !
       ! Verbosis
@@ -109,27 +91,8 @@ contains
       ! High-level object instantiation
       ! Some types are chosen from the control file
       !
-      ! PreConditioners need to be instantiated within the selection case
-      ! as they receive a specific ModelOperator
-      select type( model_operator )
-         class is( ModelOperator_MF_t )
-           !
-           ! PreConditioner CC
-           preconditioner_cc = PreConditioner_MF_CC_t( model_operator )
-           !
-           ! PreConditioner DC
-           preconditioner_dc = PreConditioner_MF_DC_t( model_operator )
-           !
-      end select
-      !
-      ! Specific Solver QMR
-      solver_qmr = Solver_QMR_t( preconditioner_cc )
-      !
-      ! Specific Solver PCG
-      solver_pcg = Solver_PCG_t( preconditioner_dc )
-      !
       ! DivergenceCorrection has only one type for now
-      divergence_correction = DivergenceCorrection_t( solver_pcg )
+      divergence_correction = DivergenceCorrection_t( model_operator )
       !
       ! ForwardSolver - Chosen from control file
       select case ( forward_solver_type )
@@ -138,10 +101,10 @@ contains
             allocate( fwd_solver, source = ForwardSolverFromFile_t( model_operator ) )
             !
          case( FWD_DC )
-            allocate( fwd_solver, source = ForwardSolverDC_t( solver_qmr, divergence_correction ) )
+            allocate( fwd_solver, source = ForwardSolverDC_t( model_operator, divergence_correction ) )
             !
          case default
-            allocate( fwd_solver, source = ForwardSolverDC_t( solver_qmr, divergence_correction ) )
+            allocate( fwd_solver, source = ForwardSolverDC_t( model_operator, divergence_correction ) )
          !
       end select
       !
@@ -172,7 +135,8 @@ contains
          ! Verbosis...
          write( *, * ) "   Tx Id:", Tx%id, "Period:", int( Tx%period )
          !
-         ! Write the proper header in the 'predicted_data.dat' file
+         ! According to its type,
+         ! write the proper header in the 'predicted_data.dat' file
          call writePredictedDataHeader( Tx, transmitter_type )
          !
          ! Tx points to its due Source
@@ -180,7 +144,7 @@ contains
          !
          ! Tx points to its due ForwardSolver
          call Tx%setForwardSolver( fwd_solver )
-		 !
+         !
          ! Solve Tx Forward Modelling
          call Tx%solveFWD()
          !
@@ -224,7 +188,6 @@ contains
          !
          write( *, * ) "   - Unknow job: [", trim( modem_job ), "]"
          call printHelp()
-         stop
          !
       end select
       !
@@ -233,16 +196,13 @@ contains
    subroutine handleControlFile()
       implicit none
       !
+      type( ModEMControlFile_t ) :: control_file
+      !
       write( *, * ) "   -> Control File: [", control_file_name, "]"
       !
       ! Instantiate the ControlFile object
-      ! Read control file options
-      allocate( control_file, source = ModEMControlFile_t( ioStartup, control_file_name ) )
-      !
-      ! SET TYPE OF SOLVER, PRECONDITIONER... AND POINT THEM
-      !
-      ! Dispose memory controls that will no longer be used.
-      deallocate( control_file )
+      ! Reads control file and sets the options in the Constants module
+      control_file = ModEMControlFile_t( ioStartup, control_file_name )
       !
    end subroutine handleControlFile
    !
@@ -274,15 +234,15 @@ contains
       select type( main_grid )
          !
          class is( Grid3D_SG_t )
-		     !
-             allocate( model_operator, source = ModelOperator_MF_t( main_grid ) )
+             !
+             model_operator = ModelOperator_MF_t( main_grid )
              !
              call model_operator%SetEquations()
              !
-			 call model_parameter%setMetric( model_operator%metric )
-			 !
+             call model_parameter%setMetric( model_operator%metric )
+             !
              call model_operator%SetCond( model_parameter )
-			 !
+             !
          class default
              stop "Unclassified main_grid"
          !
@@ -294,10 +254,12 @@ contains
    subroutine handleArguments()
       implicit none
       !
+      character(200) :: argument
+      integer        :: argument_index
+      !
       if ( command_argument_count() == 0 ) then
          !
          call printHelp()
-         stop
          !
       else
          !
@@ -350,13 +312,11 @@ contains
                  case ( "-h", "--help" )
                    !
                    call printHelp()
-                   stop
                    !
                  case default
                    !
                    write( *, * ) "   - Unknow Argument: [", trim( argument ), "]"
                    call printHelp()
-                   stop
                    !
              end select
              !
@@ -377,12 +337,12 @@ contains
          !
          transmitter_type = Tx%getType()
          !
-         open( 666, file = 'predicted_data.dat', action='write', position='append' )
+         open( ioPredData, file = 'predicted_data.dat', action='write', position='append' )
          !
-         write( 666, * ) '#', DATA_FILE_TITLE
-         write( 666, * ) '#', Tx%DATA_TITLE
+         write( ioPredData, * ) '#', DATA_FILE_TITLE
+         write( ioPredData, * ) '#', Tx%DATA_TITLE
          !
-         close( 666 )
+         close( ioPredData )
          !
       endif
       !
@@ -406,6 +366,9 @@ contains
       !
       write( *, * ) ""
       write( *, * ) "Version 1.0.0"
+	  !
+	  stop
+      !
    end subroutine printHelp
 
 end program ModEM

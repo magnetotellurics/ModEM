@@ -66,7 +66,6 @@ contains
    !
    ! SourceMT_1D destructor
    subroutine SourceMT_1D_dtor( self )
-      !
       implicit none
       !
       type( SourceMT_1D_t ), intent( inout ) :: self

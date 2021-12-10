@@ -6,7 +6,7 @@ module FileUnits
 
   ! User-defined parameter that sets the level of output
   integer, save                           :: output_level=0
-  character(12), save                           :: node_info=''
+  character(12), save                     :: node_info=''
 
   ! Startup and control files
   integer, parameter                     :: ioStartup=101
@@ -20,7 +20,7 @@ module FileUnits
    integer, parameter                     :: ioWeighting=222  
    
   ! Weighting Log file
-   integer, parameter                     :: ioConfig=666 
+   integer, parameter                     :: ioPredData=666 
 
   ! MPI Log file
   integer, parameter                            :: ioMPI=2000
