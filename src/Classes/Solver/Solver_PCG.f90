@@ -6,15 +6,17 @@ module Solver_PCG
    use PreConditioner_MF_DC
    !
    !   solver object for PCG -- used only for Divergence Correction
-   type, extends(Solver_t), public :: Solver_PCG_t
+   type, extends( Solver_t ), public :: Solver_PCG_t
+      !
+      ! PROPERTIES HERE
       !
       contains
-         !
-         final :: Solver_PCG_dtor
-         !
-         procedure, public :: solve => solvePCG
-         !procedure, public :: setOperators => setOperatorsSolver_PCG
-         !
+      !
+      final :: Solver_PCG_dtor
+      !
+      procedure, public :: solve => solvePCG
+      !procedure, public :: setOperators => setOperatorsSolver_PCG
+      !
    end type Solver_PCG_t
    !
    interface Solver_PCG_t
@@ -23,29 +25,32 @@ module Solver_PCG
    !
    contains
       !
-      function Solver_PCG_ctor( preconditioner ) result( self )
-         implicit none
+      function Solver_PCG_ctor( model_operator ) result( self )
          !
-         class( PreConditioner_MF_DC_t ), target, intent( in ) :: preconditioner
+         class( ModelOperator_t ), target, intent( in ) :: model_operator
          type( Solver_PCG_t ) :: self
          !
-         !write(*,*) "Constructor Solver_PCG_t"
+         write(*,*) "Constructor Solver_PCG_t"
          !
          call self%init()
          !
-	     self%preconditioner => preconditioner
-         self%model_operator => preconditioner%model_operator
+         self%model_operator => model_operator
+         !
+         ! PreConditioners need to be instantiated within the selection case
+         ! as they receive a specific ModelOperator
+         select type( model_operator )
+            class is( ModelOperator_MF_t )
+            !
+            ! PreConditioner CC
+            self%preconditioner = PreConditioner_MF_DC_t( model_operator )
+            !
+         end select
          !
          !  NOTE: need default solver parameters to use here -- but more generally]
          !    need to set these to what user requests in setup program!!!
          call self%setParameters( 10, TOL6 )
 
          call self%zeroDiagnostics()
-         !
-         ! THIS SHOULD BE CREATE AT HIGHER LEVEL
-         !allocate( self%preconditioner, source = PreConditioner_MF_DC_t( model_operator ) )
-         !
-         ! call self%setOperators( model_operator, preconditioner )
          !
       end function Solver_PCG_ctor
       !

@@ -14,7 +14,9 @@ module Solver
       logical :: failed = .false., converged = .false.
       !
       class( ModelOperator_t ), pointer  :: model_operator
-      class( PreConditioner_t ), pointer :: preconditioner
+	  !
+	  ! PreConditioner as a property of this
+      class( PreConditioner_t ), allocatable :: preconditioner
       !
       contains
          !

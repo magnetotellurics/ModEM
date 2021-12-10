@@ -10,9 +10,6 @@ program ModEM
    !
    use Grid3D_SG
    !
-   use Solver_QMR
-   use Solver_PCG
-   !
    use DivergenceCorrection
    !
    use ForwardSolverFromFile
@@ -20,9 +17,6 @@ program ModEM
    !
    use SourceMT_1D
    use SourceMT_2D
-   !
-   use PreConditioner_MF_CC
-   use PreConditioner_MF_DC
    !
    class( ModEMControlFile_t ), allocatable :: control_file
    !
@@ -63,19 +57,12 @@ contains
       ! These objects must be instantiated only once in the Master
       type( DivergenceCorrection_t ), target, save :: divergence_correction
       !
-      type( PreConditioner_MF_DC_t ), target, save :: preconditioner_dc
-      !
-      type( Solver_PCG_t ), target, save           :: solver_pcg
-      !
       ! These objects are frequency dependent,
       ! must be instantiated on each Worker
-      type( Solver_QMR_t ), target, save                  :: solver_qmr
       !
       class( ForwardSolver_t ), allocatable, target, save :: fwd_solver
       !
       class( Source_t ), allocatable, target, save        :: fwd_source 
-      !
-      type( PreConditioner_MF_CC_t ), target, save        :: preconditioner_cc
       !
       ! Temporary alias pointers
       class( Transmitter_t ), allocatable :: Tx
@@ -109,27 +96,8 @@ contains
       ! High-level object instantiation
       ! Some types are chosen from the control file
       !
-      ! PreConditioners need to be instantiated within the selection case
-      ! as they receive a specific ModelOperator
-      select type( model_operator )
-         class is( ModelOperator_MF_t )
-           !
-           ! PreConditioner CC
-           preconditioner_cc = PreConditioner_MF_CC_t( model_operator )
-           !
-           ! PreConditioner DC
-           preconditioner_dc = PreConditioner_MF_DC_t( model_operator )
-           !
-      end select
-      !
-      ! Specific Solver QMR
-      solver_qmr = Solver_QMR_t( preconditioner_cc )
-      !
-      ! Specific Solver PCG
-      solver_pcg = Solver_PCG_t( preconditioner_dc )
-      !
       ! DivergenceCorrection has only one type for now
-      divergence_correction = DivergenceCorrection_t( solver_pcg )
+      divergence_correction = DivergenceCorrection_t( model_operator )
       !
       ! ForwardSolver - Chosen from control file
       select case ( forward_solver_type )
@@ -138,10 +106,10 @@ contains
             allocate( fwd_solver, source = ForwardSolverFromFile_t( model_operator ) )
             !
          case( FWD_DC )
-            allocate( fwd_solver, source = ForwardSolverDC_t( solver_qmr, divergence_correction ) )
+            allocate( fwd_solver, source = ForwardSolverDC_t( model_operator, divergence_correction ) )
             !
          case default
-            allocate( fwd_solver, source = ForwardSolverDC_t( solver_qmr, divergence_correction ) )
+            allocate( fwd_solver, source = ForwardSolverDC_t( model_operator, divergence_correction ) )
          !
       end select
       !

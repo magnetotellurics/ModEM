@@ -16,6 +16,7 @@ module ForwardSolverFromFile
    type, extends( ForwardSolver_t ), public :: ForwardSolverFromFile_t
       !
 	  class( ModelOperator_t ), pointer  :: model_operator
+	  !
       character(:), allocatable :: file_name
       integer                   :: IoE
       !

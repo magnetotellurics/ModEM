@@ -2,7 +2,7 @@ module ForwardSolverDC
    !
    use ForwardSolver
    use DivergenceCorrection
-   use ModelOperator_MF
+   use ModelOperator
    use Solver_QMR
    !
    !   ModEM classic -- iterative solution with QMR or BiCG, divergence
@@ -69,19 +69,19 @@ module ForwardSolverDC
    !
    contains
    !
-   !
-   function ForwardSolverDC_ctor( solver, divergence_correction ) result( self )
+   function ForwardSolverDC_ctor( model_operator, divergence_correction ) result( self )
       !
-      class( Solver_t ), target, intent( in )               :: solver
+	  class( ModelOperator_t ), target, intent( in ) :: model_operator
 	  class( DivergenceCorrection_t ), target, intent( in ) :: divergence_correction
+	  !
       type( ForwardSolverDC_t ) :: self
       !
-      !write(*,*) "Constructor ForwardSolverDC_t"
+      write(*,*) "Constructor ForwardSolverDC_t"
       !
       call self%init()
       !
-      self%solver => solver
-      !
+	  self%solver = Solver_QMR_t( model_operator )
+	  !
       self%divergence_correction => divergence_correction
       !
       call self%setIterDefaults()
