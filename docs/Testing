@@ -1,0 +1,35 @@
+Proposed testing: divide and conquer!  The forward model involves the following:
+1) Read in grid and conductivity, construct model operator A
+This uses: Grid, ModelOperator, ModelParameter  -- plus Vectors, Utils
+The "bottom line" procedure is Amult which implements A*x,
+where x is a cVector3D_SG .   
+    We should test this, by computing
+     this matrix-vector product for a series of vectors, and comparing to
+     alternative computations of this product.   Two ways to do this:
+       1) use stable- to do the same matrix-vector products.  The advantage
+          of this approach is that if the test fails, we can start looking
+         at intermediate results, because both Fortran versions implement the
+         same algorithm (e.g., there are arrays of coefficients that could
+         be printed out and compared -- or could maybe use debugger?)
+       2) use matlab -- but note that in the OO fortran we do not form
+          the matrix A explictly.  But comparing the two Ax products would
+           not be hard, and could mostly be done in matlab using tools that
+           mostly exist, and matlab is inherently interactive, so debugging is
+          easy,   Also note that we could even make the matrix A, by looping 
+          over a series of vectors e_ijk  ( = 1 for ijk component, 0 otherwise)
+
+2) Create a RHS (source) vector that is correct-- I suggest here using only
+     the simplest 1D MT BC, which is basically what is implemented in stable-
+    The test here is simple: compute the rhs vectors in both programs and compare,
+      either by writing out, or using the debugger.  Call this vector b.
+
+3) Solve the system of equations Ax = b.   This is accomplished by ForwardSolver_DC;
+this in turn requiers that the preconditioned QMR works, and that the 
+DivergenceCorrection works.   QMR requires Preconditioner_CC to work, and the QMR
+algorithm to work.  I think these can be pretty easiliy tested independently, but with
+some work (or maybe with help from debugger)  Divergence correction requires PCG and
+preconditioner_DC to work -- plus a bunch of ModelOperator procedures called by 
+DivergenceCorrection.   If we could provide a known matrix A, we can compare QMR and PCG
+to functioning of solvers that we know work (either in matlab or stable-)  But if 
+we are using Amult in the comparison, we have to first verify that this is really
+identical to what we are comparing to
