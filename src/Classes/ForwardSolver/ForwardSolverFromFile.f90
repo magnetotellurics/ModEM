@@ -76,7 +76,7 @@ contains
       implicit none
       !
       class( ForwardSolverFromFile_t ), intent( inout ) :: self
-      class( Source_t ), intent( in )                   :: source
+      class( Source_t ), intent( inout )                :: source
       integer, intent( in )                             :: polarization
       !
       class( cVector_t ), allocatable :: e_solution

@@ -11,10 +11,8 @@ program ModEM
    !
    use Grid3D_SG
    !
-   use DivergenceCorrection
-   !
    use ForwardSolverFromFile
-   use ForwardSolverDC
+   use ForwardSolverIT_DC
    !
    use SourceMT_1D
    use SourceMT_2D
@@ -51,9 +49,6 @@ contains
    !
    subroutine forward()
       implicit none
-      !
-      ! This object must be instantiated only once in the Master
-      type( DivergenceCorrection_t ), target, save :: divergence_correction
       !
       ! These objects are frequency dependent,
       ! must be instantiated on each Worker
@@ -92,9 +87,6 @@ contains
       ! High-level object instantiation
       ! Some types are chosen from the control file
       !
-      ! DivergenceCorrection has only one type for now
-      divergence_correction = DivergenceCorrection_t( model_operator )
-      !
       ! ForwardSolver - Chosen from control file
       select case ( forward_solver_type )
          !
@@ -102,10 +94,10 @@ contains
             allocate( fwd_solver, source = ForwardSolverFromFile_t( model_operator ) )
             !
          case( FWD_DC )
-            allocate( fwd_solver, source = ForwardSolverDC_t( model_operator, divergence_correction ) )
+            allocate( fwd_solver, source = ForwardSolverIT_DC_t( model_operator ) )
             !
          case default
-            allocate( fwd_solver, source = ForwardSolverDC_t( model_operator, divergence_correction ) )
+            allocate( fwd_solver, source = ForwardSolverIT_DC_t( model_operator ) )
          !
       end select
       !

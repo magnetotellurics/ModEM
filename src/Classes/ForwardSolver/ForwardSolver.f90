@@ -47,7 +47,7 @@ module ForwardSolver
          import :: ForwardSolver_t, prec, cVector_t, Source_t
          !
          class( ForwardSolver_t ), intent( inout ) :: self
-         class( Source_t ), intent( in )           :: source
+         class( Source_t ), intent( inout )        :: source
 		 integer, intent( in )                     :: polarization
          !
          class( cVector_t ), allocatable           :: e_solution
