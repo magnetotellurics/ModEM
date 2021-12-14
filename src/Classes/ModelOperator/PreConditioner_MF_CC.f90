@@ -19,27 +19,26 @@ module PreConditioner_MF_CC
       type( cVector3D_SG_t ) :: Dilu ! diagonal of D-ILU used for 
       !
       contains
-           !
-           final :: PreConditioner_MF_CC_dtor
-           !
-           ! Main routines used externally
-           procedure, public :: create => createPreConditioner_MF_CC
-           procedure, public :: allocate => allocatePreConditioner_MF_CC
-           procedure, public :: deallocate => deallocatePreConditioner_MF_CC
-           procedure, public :: setPreConditioner => setPreConditioner_MF_CC ! This needs to be called by Solver   object
-           !
-           procedure, public :: LTSolve => LTSolvePreConditioner_MF_CC ! These are left (M1) and right (M2)
-           procedure, public :: UTSolve => UTSolvePreConditioner_MF_CC ! preconditioning matrices for curl-curl equation.
-           procedure, public :: LUSolve => LUSolvePreConditioner_MF_CC ! preconditoner for symmetric divCgrad operator
-           !
+         !
+         final :: PreConditioner_MF_CC_dtor
+         !
+         ! Main routines used externally
+         procedure, public :: create => createPreConditioner_MF_CC
+         procedure, public :: allocate => allocatePreConditioner_MF_CC
+         procedure, public :: deallocate => deallocatePreConditioner_MF_CC
+         procedure, public :: setPreConditioner => setPreConditioner_MF_CC ! This needs to be called by Solver   object
+         !
+         procedure, public :: LTSolve => LTSolvePreConditioner_MF_CC ! These are left (M1) and right (M2)
+         procedure, public :: UTSolve => UTSolvePreConditioner_MF_CC ! preconditioning matrices for curl-curl equation.
+         procedure, public :: LUSolve => LUSolvePreConditioner_MF_CC ! preconditoner for symmetric divCgrad operator
+         !
    end type PreConditioner_MF_CC_t
    !
    interface PreConditioner_MF_CC_t
-       module procedure PreConditioner_MF_CC_ctor
+      module procedure PreConditioner_MF_CC_ctor
    end interface PreConditioner_MF_CC_t
-   
+   !
 contains
-   
    !**
    ! Class constructor
    !*
@@ -121,11 +120,11 @@ contains
       !
       integer              :: status, ix, iy, iz
       complex( kind=prec ) :: cFac
-      
+      !
       ! Save omega in object, to record
       self%omega = omega
       cFac = C_ONE*omega*MU_0
-      
+      !
       ! Initialize the non-interior values
       ! only the interior edge values are really used
       self%Dilu%x(:,1,:) = C_ONE
@@ -134,54 +133,54 @@ contains
       self%Dilu%y(:,:,1) = C_ONE
       self%Dilu%z(1,:,:) = C_ONE
       self%Dilu%z(:,1,:) = C_ONE
-      
+      !
       ! Now set interior values
       do ix = 1, self%model_operator%grid%nx
-          do iy = 2, self%model_operator%grid%ny
-               do iz = 2, self%model_operator%grid%nz
-                   self%Dilu%x(ix, iy, iz) = self%model_operator%xXO(iy,iz) - &
-                           cFac*self%model_operator%Sigma_E%x(ix, iy, iz)   &
-                           - self%model_operator%xXY(iy, 1)*self%model_operator%xXY(iy-1, 2) &
-                           *self%Dilu%x(ix,iy-1,iz) &
-                           - self%model_operator%xXZ(iz, 1)*self%model_operator%xXZ(iz-1, 2) &
-                           *self%Dilu%x(ix,iy,iz-1)
-                   self%Dilu%x(ix, iy, iz) = ONE/self%Dilu%x(ix, iy, iz)
-               end do
-          end do
+         do iy = 2, self%model_operator%grid%ny
+            do iz = 2, self%model_operator%grid%nz
+               self%Dilu%x(ix, iy, iz) = self%model_operator%xXO(iy,iz) - &
+               cFac*self%model_operator%Sigma_E%x(ix, iy, iz)   &
+               - self%model_operator%xXY(iy, 1)*self%model_operator%xXY(iy-1, 2) &
+               *self%Dilu%x(ix,iy-1,iz) &
+               - self%model_operator%xXZ(iz, 1)*self%model_operator%xXZ(iz-1, 2) &
+               *self%Dilu%x(ix,iy,iz-1)
+               self%Dilu%x(ix, iy, iz) = ONE/self%Dilu%x(ix, iy, iz)
+            end do
+         end do
       end do
-      
+      !
       ! The coefficients for y are only for the interior nodes
       ! but need to initialize edges for recursive algorithm.
       do iy = 1, self%model_operator%grid%ny
-          do iz = 2, self%model_operator%grid%nz
-               do ix = 2, self%model_operator%grid%nx
-                   self%Dilu%y(ix, iy, iz) = self%model_operator%yYO(ix,iz) - &
-                           cFac*self%model_operator%Sigma_E%y(ix, iy, iz) &
-                           - self%model_operator%yYZ(iz, 1)*self%model_operator%yYZ(iz-1, 2) &
-                           *self%Dilu%y(ix, iy, iz-1) &
-                           - self%model_operator%yYX(ix, 1)*self%model_operator%yYX(ix-1, 2) &
-                           *self%Dilu%y(ix-1, iy, iz)
-                   self%Dilu%y(ix, iy, iz) = ONE/self%Dilu%y(ix, iy, iz)
-               end do
-          end do
+         do iz = 2, self%model_operator%grid%nz
+            do ix = 2, self%model_operator%grid%nx
+               self%Dilu%y(ix, iy, iz) = self%model_operator%yYO(ix,iz) - &
+               cFac*self%model_operator%Sigma_E%y(ix, iy, iz) &
+               - self%model_operator%yYZ(iz, 1)*self%model_operator%yYZ(iz-1, 2) &
+               *self%Dilu%y(ix, iy, iz-1) &
+               - self%model_operator%yYX(ix, 1)*self%model_operator%yYX(ix-1, 2) &
+               *self%Dilu%y(ix-1, iy, iz)
+               self%Dilu%y(ix, iy, iz) = ONE/self%Dilu%y(ix, iy, iz)
+            end do
+         end do
       end do
-      
+      !
       ! The coefficients for z are only for the interior nodes
       ! but need to initialize edges for recursive algorithm.
       do iz = 1, self%model_operator%grid%nz
-          do ix = 2, self%model_operator%grid%nx
-               do iy = 2, self%model_operator%grid%ny
-                   self%Dilu%z(ix, iy, iz) = self%model_operator%zZO(ix,iy) - &
-                           cFac*self%model_operator%Sigma_E%z(ix, iy, iz) &
-                           - self%model_operator%zZX(ix, 1)*self%model_operator%zZX(ix-1, 2)*   &
-                           self%Dilu%z(ix-1, iy, iz) &
-                           - self%model_operator%zZY(iy, 1)*self%model_operator%zZY(iy-1, 2) &
-                           *self%Dilu%z(ix, iy-1, iz)
-                   self%Dilu%z(ix, iy, iz) = ONE/self%Dilu%z(ix, iy, iz)
-               end do
-          end do
+         do ix = 2, self%model_operator%grid%nx
+            do iy = 2, self%model_operator%grid%ny
+               self%Dilu%z(ix, iy, iz) = self%model_operator%zZO(ix,iy) - &
+               cFac*self%model_operator%Sigma_E%z(ix, iy, iz) &
+               - self%model_operator%zZX(ix, 1)*self%model_operator%zZX(ix-1, 2)*   &
+               self%Dilu%z(ix-1, iy, iz) &
+               - self%model_operator%zZY(iy, 1)*self%model_operator%zZY(iy-1, 2) &
+               *self%Dilu%z(ix, iy-1, iz)
+               self%Dilu%z(ix, iy, iz) = ONE/self%Dilu%z(ix, iy, iz)
+            end do
+         end do
       end do
-      
+      !
    end subroutine setPreConditioner_MF_CC
    
    !**
@@ -197,106 +196,106 @@ contains
       logical, intent( in )                            :: adjt
       !
       integer :: ix, iy, iz
-      
+
       !    as usual I am cutting some of the error checking, which is not
       !    consistent with new classes
-      
+
       select type( inE )
+      class is( cVector3D_SG_t )
+         !
+         select type( outE )
          class is( cVector3D_SG_t )
             !
-            select type( outE )
-               class is( cVector3D_SG_t )
-                  !
-                  if ( .not. outE%isAllocated ) then
-                     STOP "outE in LTsolve not allocated yet"
-                  endif
-                  !
-                  if ( .not. adjt ) then
-                      !   we will need element/by element division (rdvide   in matlab)
-                      !                  Call diagDiv(inE, V_E, outE)   !    this is ModEM routine
-                      !    I am assuming that this TVector function implements inE./Vedge
-                  !
-                  outE = inE   ! assuming this works as copy?
-                  !
-                  call outE%divs( self%model_operator%Metric%Vedge )
-                      
-                  do ix = 1, inE%nx
-                      do iz = 2, inE%nz
-                           do iy = 2, inE%ny
-                               outE%x(ix, iy, iz) = (outE%x(ix, iy, iz) - &
-                               outE%x(ix, iy-1, iz)*self%model_operator%xXY(iy, 1) - &
-                               outE%x(ix, iy, iz-1)*self%model_operator%xXZ(iz, 1))* &
-                               self%Dilu%x(ix, iy, iz)
-                           end do
-                      end do
-                  end do
+            if ( .not. outE%isAllocated ) then
+               STOP "outE in LTsolve not allocated yet"
+            endif
+            !
+            if ( .not. adjt ) then
+               !   we will need element/by element division (rdvide   in matlab)
+               !                  Call diagDiv(inE, V_E, outE)   !    this is ModEM routine
+               !    I am assuming that this TVector function implements inE./Vedge
+               !
+               outE = inE   ! assuming this works as copy?
+               !
+               call outE%divs( self%model_operator%Metric%Vedge )
 
-                  do iy = 1, inE%ny
-                      do iz = 2, inE%nz
-                           do ix = 2, inE%nx
-                               outE%y(ix, iy, iz) = (outE%y(ix, iy, iz) - &
-                                       outE%y(ix, iy, iz-1)*self%model_operator%yYZ(iz, 1) - &
-                                       outE%y(ix-1, iy, iz)*self%model_operator%yYX(ix, 1))* &
-                                       self%Dilu%y(ix, iy, iz)
-                           end do
-                      end do
+               do ix = 1, inE%nx
+                  do iz = 2, inE%nz
+                     do iy = 2, inE%ny
+                        outE%x(ix, iy, iz) = (outE%x(ix, iy, iz) - &
+                        outE%x(ix, iy-1, iz)*self%model_operator%xXY(iy, 1) - &
+                        outE%x(ix, iy, iz-1)*self%model_operator%xXZ(iz, 1))* &
+                        self%Dilu%x(ix, iy, iz)
+                     end do
                   end do
-                      
-                  do iz = 1, inE%nz
-                      do iy = 2, inE%ny
-                           do ix = 2, inE%nx
-                               outE%z(ix, iy, iz) = (outE%z(ix, iy, iz) - &
-                                    outE%z(ix-1, iy, iz)*self%model_operator%zZX(ix, 1) - &
-                                           outE%z(ix, iy-1, iz)*self%model_operator%zZY(iy, 1))* &
-                                           self%Dilu%z(ix, iy, iz)
-                           end do
-                      end do
-                  end do
-             else
-                  ! adjoint = .true. -- reverse mapping in to out
-                  !    need to make sure that outE is zero on boundaries initially -- this is not
-                  !      done explicitly in ModEM stable!
-                  call outE%zeros()    !   let"s do explicitly -- but consider if necessary
-                  do ix = 1, inE%nx
-                      do iy = inE%ny, 2, -1
-                           do iz = inE%nz, 2, -1
-                               outE%x(ix, iy, iz) = (inE%x(ix, iy, iz) - &
-                                       outE%x(ix, iy+1, iz)*self%model_operator%xXY(iy+1, 1) - &
-                                       outE%x(ix, iy, iz+1)*self%model_operator%xXZ(iz+1, 1))* &
-                                       conjg(self%Dilu%x(ix, iy, iz))
-                           end do
-                      end do
-                  end do
-                      
-                  ! The coefficients for y are only for the interior nodes
-                  do iy = 1, inE%ny
-                      do ix = inE%nx, 2, -1
-                           do iz = inE%nz, 2, -1
-                               outE%y(ix, iy, iz) = (inE%y(ix, iy, iz) - &
-                                       outE%y(ix, iy, iz+1)*self%model_operator%yYZ(iz+1, 1) - &
-                                       outE%y(ix+1, iy, iz)*self%model_operator%yYX(ix+1, 1))* &
-                                       conjg(self%Dilu%y(ix, iy, iz))
-                           end do
-                      end do
-                  end do
-                      
-                  do iz = 1, inE%nz
-                      do ix = inE%nx, 2, -1
-                           do iy = inE%ny, 2, -1
-                               outE%z(ix, iy, iz) = (inE%z(ix, iy, iz) - &
-                                       outE%z(ix+1, iy, iz)*self%model_operator%zZX(ix+1, 1) - &
-                                       outE%z(ix, iy+1, iz)*self%model_operator%zZY(iy+1, 1))* &
-                                       conjg(self%Dilu%z(ix, iy, iz))
-                           end do
-                      end do
-                  end do
+               end do
 
-                  !    for adjoint to the division by volume elements last
-                  call outE%divs(self%model_operator%Metric%Vedge)
-             end if 
+               do iy = 1, inE%ny
+                  do iz = 2, inE%nz
+                     do ix = 2, inE%nx
+                        outE%y(ix, iy, iz) = (outE%y(ix, iy, iz) - &
+                        outE%y(ix, iy, iz-1)*self%model_operator%yYZ(iz, 1) - &
+                        outE%y(ix-1, iy, iz)*self%model_operator%yYX(ix, 1))* &
+                        self%Dilu%y(ix, iy, iz)
+                     end do
+                  end do
+               end do
+
+               do iz = 1, inE%nz
+                  do iy = 2, inE%ny
+                        do ix = 2, inE%nx
+                        outE%z(ix, iy, iz) = (outE%z(ix, iy, iz) - &
+                        outE%z(ix-1, iy, iz)*self%model_operator%zZX(ix, 1) - &
+                        outE%z(ix, iy-1, iz)*self%model_operator%zZY(iy, 1))* &
+                        self%Dilu%z(ix, iy, iz)
+                     end do
+                  end do
+               end do
+            else
+               ! adjoint = .true. -- reverse mapping in to out
+               !    need to make sure that outE is zero on boundaries initially -- this is not
+               !      done explicitly in ModEM stable!
+               call outE%zeros()    !   let"s do explicitly -- but consider if necessary
+               do ix = 1, inE%nx
+                  do iy = inE%ny, 2, -1
+                     do iz = inE%nz, 2, -1
+                        outE%x(ix, iy, iz) = (inE%x(ix, iy, iz) - &
+                        outE%x(ix, iy+1, iz)*self%model_operator%xXY(iy+1, 1) - &
+                        outE%x(ix, iy, iz+1)*self%model_operator%xXZ(iz+1, 1))* &
+                        conjg(self%Dilu%x(ix, iy, iz))
+                     end do
+                  end do
+               end do
+               !
+               ! The coefficients for y are only for the interior nodes
+               do iy = 1, inE%ny
+                  do ix = inE%nx, 2, -1
+                     do iz = inE%nz, 2, -1
+                        outE%y(ix, iy, iz) = (inE%y(ix, iy, iz) - &
+                        outE%y(ix, iy, iz+1)*self%model_operator%yYZ(iz+1, 1) - &
+                        outE%y(ix+1, iy, iz)*self%model_operator%yYX(ix+1, 1))* &
+                        conjg(self%Dilu%y(ix, iy, iz))
+                     end do
+                  end do
+               end do
+
+               do iz = 1, inE%nz
+                  do ix = inE%nx, 2, -1
+                     do iy = inE%ny, 2, -1
+                        outE%z(ix, iy, iz) = (inE%z(ix, iy, iz) - &
+                        outE%z(ix+1, iy, iz)*self%model_operator%zZX(ix+1, 1) - &
+                        outE%z(ix, iy+1, iz)*self%model_operator%zZY(iy+1, 1))* &
+                        conjg(self%Dilu%z(ix, iy, iz))
+                     end do
+                  end do
+               end do
+
+               !    for adjoint to the division by volume elements last
+               call outE%divs(self%model_operator%Metric%Vedge)
+            end if 
          end select
-   end select
-      
+      end select
+      !
    end subroutine LTSolvePreConditioner_MF_CC
    
    !**
@@ -314,86 +313,87 @@ contains
       integer :: ix, iy, iz
       !
       select type( inE )
-            class is( cVector3D_SG_t )
-            select type( outE )
-                class is( cVector3D_SG_t )
-                            
-                !   to be safe, zero out outR
-                call outE%zeros()
-                if (.not.adjt) then
-                      ! for standard upper triangular solution
-                      
-                     do ix = 1, inE%nx
-                         do iz = inE%nz, 2, -1
-                              do iy = inE%ny, 2, -1
-                                  outE%x(ix, iy, iz) = inE%x(ix, iy, iz) - &
-                                       ( outE%x(ix, iy+1, iz)*self%model_operator%xXY(iy, 2) &
-                                       + outE%x(ix, iy, iz+1)*self%model_operator%xXZ(iz, 2))* &
-                                       self%Dilu%x(ix, iy, iz)
-                              end do
-                         end do
+      class is( cVector3D_SG_t )
+         !
+         select type( outE )
+         class is( cVector3D_SG_t )
+            !
+            !   to be safe, zero out outR
+            call outE%zeros()
+            if (.not.adjt) then
+               ! for standard upper triangular solution
+               !
+               do ix = 1, inE%nx
+                  do iz = inE%nz, 2, -1
+                     do iy = inE%ny, 2, -1
+                        outE%x(ix, iy, iz) = inE%x(ix, iy, iz) - &
+                        ( outE%x(ix, iy+1, iz)*self%model_operator%xXY(iy, 2) &
+                        + outE%x(ix, iy, iz+1)*self%model_operator%xXZ(iz, 2))* &
+                        self%Dilu%x(ix, iy, iz)
                      end do
-                      
-                     do iy = 1, inE%ny
-                         do iz = inE%nz, 2, -1
-                              do ix = inE%nx, 2, -1
-                                  outE%y(ix, iy, iz) = inE%y(ix, iy, iz) - &
-                                       ( outE%y(ix, iy, iz+1)*self%model_operator%yYZ(iz, 2) &
-                                       + outE%y(ix+1, iy, iz)*self%model_operator%yYX(ix, 2))* &
-                                       self%Dilu%y(ix, iy, iz)
-                              end do
-                         end do
+                  end do
+               end do
+               !
+               do iy = 1, inE%ny
+                  do iz = inE%nz, 2, -1
+                     do ix = inE%nx, 2, -1
+                        outE%y(ix, iy, iz) = inE%y(ix, iy, iz) - &
+                        ( outE%y(ix, iy, iz+1)*self%model_operator%yYZ(iz, 2) &
+                        + outE%y(ix+1, iy, iz)*self%model_operator%yYX(ix, 2))* &
+                        self%Dilu%y(ix, iy, iz)
                      end do
-
-                     do iz = 1, inE%nz
-                         do iy = inE%ny, 2, -1
-                              do ix = inE%nx, 2, -1
-                                  outE%z(ix, iy, iz) = inE%z(ix, iy, iz) - &
-                                       ( outE%z(ix+1, iy, iz)*self%model_operator%zZX(ix, 2) &
-                                       + outE%z(ix, iy+1, iz)*self%model_operator%zZY(iy, 2))* &
-                                       self%Dilu%z(ix, iy, iz)
-                              end do
-                         end do
+                  end do
+               end do
+               !
+               do iz = 1, inE%nz
+                  do iy = inE%ny, 2, -1
+                     do ix = inE%nx, 2, -1
+                        outE%z(ix, iy, iz) = inE%z(ix, iy, iz) - &
+                        ( outE%z(ix+1, iy, iz)*self%model_operator%zZX(ix, 2) &
+                        + outE%z(ix, iy+1, iz)*self%model_operator%zZY(iy, 2))* &
+                        self%Dilu%z(ix, iy, iz)
                      end do
-                else
-                     ! adjoint = .true.
-                     do ix = 1, inE%nx
-                         do iz = 2, inE%nz
-                              do iy = 2, inE%ny
-                                  outE%x(ix, iy, iz) = inE%x(ix, iy, iz) &
-                                       - outE%x(ix, iy-1, iz)*self%model_operator%xXY(iy-1, 2) &
-                                       * conjg(self%Dilu%x(ix,iy-1,iz))    &
-                                       - outE%x(ix, iy, iz-1)*self%model_operator%xXZ(iz-1, 2) &
-                                       * conjg(self%Dilu%x(ix, iy, iz-1))
-                              end do
-                         end do
+                  end do
+               end do
+            else
+               ! adjoint = .true.
+               do ix = 1, inE%nx
+                  do iz = 2, inE%nz
+                     do iy = 2, inE%ny
+                        outE%x(ix, iy, iz) = inE%x(ix, iy, iz) &
+                        - outE%x(ix, iy-1, iz)*self%model_operator%xXY(iy-1, 2) &
+                        * conjg(self%Dilu%x(ix,iy-1,iz))    &
+                        - outE%x(ix, iy, iz-1)*self%model_operator%xXZ(iz-1, 2) &
+                        * conjg(self%Dilu%x(ix, iy, iz-1))
                      end do
-                      
-                     do iy = 1, inE%ny
-                         do iz = 2, inE%nz
-                              do ix = 2, inE%nx
-                                  outE%y(ix, iy, iz) = inE%y(ix, iy, iz) &
-                                        - outE%y(ix, iy, iz-1)*self%model_operator%yYZ(iz-1, 2) &
-                                        * conjg(self%Dilu%y(ix,iy,iz-1)) &
-                                        - outE%y(ix-1, iy, iz)*self%model_operator%yYX(ix-1, 2) &
-                                        * conjg(self%Dilu%y(ix-1, iy, iz))
-                              end do
-                         end do
+                  end do
+               end do
+               !
+               do iy = 1, inE%ny
+                  do iz = 2, inE%nz
+                     do ix = 2, inE%nx
+                        outE%y(ix, iy, iz) = inE%y(ix, iy, iz) &
+                        - outE%y(ix, iy, iz-1)*self%model_operator%yYZ(iz-1, 2) &
+                        * conjg(self%Dilu%y(ix,iy,iz-1)) &
+                        - outE%y(ix-1, iy, iz)*self%model_operator%yYX(ix-1, 2) &
+                        * conjg(self%Dilu%y(ix-1, iy, iz))
                      end do
-                      
-                     do iz = 1, inE%nz
-                         do iy = 2, inE%ny
-                              do ix = 2, inE%nx
-                                  outE%z(ix, iy, iz) = inE%z(ix, iy, iz) &
-                                        - outE%z(ix-1, iy, iz)*self%model_operator%zZX(ix-1, 2) &
-                                        * conjg(self%Dilu%z(ix-1,iy,iz)) &
-                                        - outE%z(ix, iy-1, iz)*self%model_operator%zZY(iy-1, 2) &
-                                        * conjg(self%Dilu%z(ix, iy-1, iz))
-                              end do
-                         end do
+                  end do
+               end do
+               !
+               do iz = 1, inE%nz
+                  do iy = 2, inE%ny
+                     do ix = 2, inE%nx
+                        outE%z(ix, iy, iz) = inE%z(ix, iy, iz) &
+                        - outE%z(ix-1, iy, iz)*self%model_operator%zZX(ix-1, 2) &
+                        * conjg(self%Dilu%z(ix-1,iy,iz)) &
+                        - outE%z(ix, iy-1, iz)*self%model_operator%zZY(iy-1, 2) &
+                        * conjg(self%Dilu%z(ix, iy-1, iz))
                      end do
-                end if
-            end select
+                  end do
+               end do
+            end if
+         end select
       end select
       !
    end subroutine UTSolvePreConditioner_MF_CC
