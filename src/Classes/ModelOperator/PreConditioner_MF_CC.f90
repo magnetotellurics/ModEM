@@ -19,7 +19,7 @@ module PreConditioner_MF_CC
       type( cVector3D_SG_t ) :: Dilu ! diagonal of D-ILU used for 
       !
       contains
-	       !
+           !
            final :: PreConditioner_MF_CC_dtor
            !
            ! Main routines used externally
@@ -203,10 +203,10 @@ contains
       
       select type( inE )
          class is( cVector3D_SG_t )
-		    !
+            !
             select type( outE )
                class is( cVector3D_SG_t )
-			      !
+                  !
                   if ( .not. outE%isAllocated ) then
                      STOP "outE in LTsolve not allocated yet"
                   endif
@@ -215,9 +215,9 @@ contains
                       !   we will need element/by element division (rdvide   in matlab)
                       !                  Call diagDiv(inE, V_E, outE)   !    this is ModEM routine
                       !    I am assuming that this TVector function implements inE./Vedge
-				  !
+                  !
                   outE = inE   ! assuming this works as copy?
-				  !
+                  !
                   call outE%divs( self%model_operator%Metric%Vedge )
                       
                   do ix = 1, inE%nx
@@ -406,8 +406,8 @@ contains
       class( PreConditioner_MF_CC_t ), intent( inout ) :: self
       class( cScalar_t ), intent( in )                 :: inPhi
       class( cScalar_t ), intent( inout )              :: outPhi
-	  logical, intent( in )                            :: adjt
-	  !
+      logical, intent( in )                            :: adjt
+      !
       STOP "ERROR: LUsolve is not coded for this pre-conditioner class"
       !
    end subroutine LUSolvePreConditioner_MF_CC

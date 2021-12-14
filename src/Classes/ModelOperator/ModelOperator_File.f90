@@ -10,7 +10,7 @@ module ModelOperator_File
        !     imaginary part of the diagonal to be handled internally
        real( kind=prec ), allocatable, dimension(:,:) :: A
        character(:), allocatable                      :: Matrix_File_Name
-	   !
+       !
     contains
        !
        final :: ModelOperator_File_dtor
@@ -22,7 +22,7 @@ module ModelOperator_File
    end type ModelOperator_File_t
    !
    interface ModelOperator_File_t
-	   module procedure ModelOperator_File_ctor
+       module procedure ModelOperator_File_ctor
    end interface ModelOperator_File_t
    !
 contains
@@ -63,7 +63,7 @@ contains
    subroutine setCoefficientMatrix( self, fname )
       implicit none
       !
-	  class( ModelOperator_File_t ), intent( inout ) :: self
+      class( ModelOperator_File_t ), intent( inout ) :: self
       character(:), allocatable, intent( in )        :: fname
       !
       !   local variables
@@ -123,11 +123,11 @@ contains
       select type( x )
       class is( cVector3D_SG_t )
           !
-		  if(.not.y%isAllocated) then
+          if(.not.y%isAllocated) then
                write(*,*) 'ERROR: amult in   ModelOperator_MF'
                stop       'output vector y not allocated'
           endif
-		  !
+          !
           select type( y )
           class is( cVector3D_SG_t )
              !
@@ -145,7 +145,7 @@ contains
              call y%mults3( self%metric%Vedge )
              !
           end select
-		  !
+          !
       class default
           write(*, *) 'ERROR:ModelOperator_MF::amult:'
           stop        '         Incompatible input [x]. Exiting.'

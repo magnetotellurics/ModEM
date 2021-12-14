@@ -93,7 +93,7 @@ module ModelOperator_MF
    end type ModelOperator_MF_t
    
    interface ModelOperator_MF_t
-	   module procedure ModelOperator_MF_ctor
+       module procedure ModelOperator_MF_ctor
    end interface ModelOperator_MF_t
    
 contains
@@ -101,15 +101,15 @@ contains
    function ModelOperator_MF_ctor( grid ) result( self )
       implicit none
       !
-	  class( Grid3D_SG_t ), target, intent( in ) :: grid
+      class( Grid3D_SG_t ), target, intent( in ) :: grid
       !
       type( ModelOperator_MF_t ) :: self
       !
       !write(*,*) "Constructor ModelOperator_MF"
       !
-	  ! Instantiation of the specific object MetricElements
-	  allocate( self%metric, source = MetricElements_CSG_t( grid ) )
-	  !
+      ! Instantiation of the specific object MetricElements
+      allocate( self%metric, source = MetricElements_CSG_t( grid ) )
+      !
       call self%create( grid )
       !
    end function ModelOperator_MF_ctor
@@ -122,8 +122,8 @@ contains
       !
       !write(*,*) "Destructor ModelOperator_MF_t"
       !
-	  call self%deallocate()
-	  !
+      call self%deallocate()
+      !
    end subroutine ModelOperator_MF_dtor
    !
    !**
@@ -256,21 +256,21 @@ contains
       class( ModelOperator_MF_t ), intent( in ) :: self
       character(len=80), intent( in ), optional :: gridType
       class( cVector_t ), allocatable           :: cVec
-	  !
+      !
       ! do we really need select type here?????
       select type( grid => self%grid )
          class is( Grid3D_SG_t )
-		 !
-		    if( present( gridType ) ) then
-		       !
+         !
+            if( present( gridType ) ) then
+               !
                allocate( cVec, source = cVector3D_SG_t( grid, gridType ) )
             else
-			   !
+               !
                !   EDGE gridType by default
                allocate( cVec, source = cVector3D_SG_t( grid, EDGE ) )
             endif
       end select
-	  !
+      !
    end function createVectorModelOperatorMF
    !***
    !    createScalar
@@ -292,7 +292,7 @@ contains
                allocate( cSclr, source = cScalar3D_SG_t( grid, NODE ) )
             endif
       end select
-	  !
+      !
    end function createScalarModelOperatorMF
 
    !**
@@ -421,7 +421,7 @@ contains
       self%sigma_E = condParam%PDEmapping()
       !
       call self%divCorsetUp()
-	  !
+      !
    end subroutine setCondModelOperatorMF
    
    !**
@@ -481,33 +481,33 @@ contains
       ! interior nodes only    -- note that 6 edges meet in each node, and
       !      coefficients for the corresponding edge are stored in x, y, z conmponens
       !      of rVector objects (some components are zero/not used near boundaries)
-	  
-	  select type( vnode => self%Metric%Vnode )
+      
+      select type( vnode => self%Metric%Vnode )
        class is( rScalar3D_SG_t )
            
                do iz = 2, self%nz
-				  do iy = 2, self%ny
-					   do ix = 2, self%nx
-					self%db1%x(ix, iy, iz) = self%db1%x(ix, iy, iz) * &
-						   vnode%v(ix,iy,iz)
-					
-					self%db1%y(ix, iy, iz) = self%db1%y(ix, iy, iz) * &
-						   vnode%v(ix,iy,iz)
-					
-					self%db1%z(ix, iy, iz) = self%db1%z(ix, iy, iz) * &
-						   vnode%v(ix,iy,iz)
-					
-					self%db2%x(ix, iy, iz) = self%db2%x(ix, iy, iz) * &
-						   vnode%v(ix,iy,iz)
-					
-					self%db2%y(ix, iy, iz) = self%db2%y(ix, iy, iz) * &
-						   vnode%v(ix,iy,iz)
-					
-					self%db2%z(ix, iy, iz) = self%db2%z(ix, iy, iz) * &
-						   vnode%v(ix,iy,iz)
-					   end do
-				  end do
-			  end do
+                  do iy = 2, self%ny
+                       do ix = 2, self%nx
+                    self%db1%x(ix, iy, iz) = self%db1%x(ix, iy, iz) * &
+                           vnode%v(ix,iy,iz)
+                    
+                    self%db1%y(ix, iy, iz) = self%db1%y(ix, iy, iz) * &
+                           vnode%v(ix,iy,iz)
+                    
+                    self%db1%z(ix, iy, iz) = self%db1%z(ix, iy, iz) * &
+                           vnode%v(ix,iy,iz)
+                    
+                    self%db2%x(ix, iy, iz) = self%db2%x(ix, iy, iz) * &
+                           vnode%v(ix,iy,iz)
+                    
+                    self%db2%y(ix, iy, iz) = self%db2%y(ix, iy, iz) * &
+                           vnode%v(ix,iy,iz)
+                    
+                    self%db2%z(ix, iy, iz) = self%db2%z(ix, iy, iz) * &
+                           vnode%v(ix,iy,iz)
+                       end do
+                  end do
+              end do
            
     end select
 
@@ -691,41 +691,41 @@ contains
                ! Apply adjoint curl on uint grid
                !*
                !
-			   allocate( outE, source = cVector3D_SG_t( inH%grid, EDGE ) )
-			   !
-			   select type(outE)
+               allocate( outE, source = cVector3D_SG_t( inH%grid, EDGE ) )
+               !
+               select type(outE)
                   class is(cVector3D_SG_t)
-				  !
-				  !
-					   ! Ex
-					   do iy = 2, inH%Ny
-						  do iz = 2, inH%Nz
-							  outE%x(:, iy, iz) =   (inH%z(:, iy, iz) - &
-									  inH%z(:, iy - 1, iz)) - &
-									  (inH%y(:, iy, iz) - inH%y(:, iy, iz - 1))
-						  end do
-					   end do
-					   
-					   ! Ey
-					   do iz = 2, inH%Nz
-						  do ix = 2, inH%Nx
-							  outE%y(ix, :, iz) = (inH%x(ix, :, iz) - &
-								inH%x(ix, :, iz - 1)) - &
-								(inH%z(ix, :, iz) - inH%z(ix - 1, :, iz))
-						   end do
-					   end do
-					   
-					   ! Ez
-					   do ix = 2, inH%Nx
-						   do iy = 2, inH%Ny
-							  outE%z(ix,iy,:) = (inH%y(ix, iy, :) - &
-									   inH%y(ix - 1, iy, :)) - &
-									   (inH%x(ix, iy, :) - inH%x(ix, iy - 1, :))
-						   end do
-					   end do
-				
-			   
-				class default
+                  !
+                  !
+                       ! Ex
+                       do iy = 2, inH%Ny
+                          do iz = 2, inH%Nz
+                              outE%x(:, iy, iz) =   (inH%z(:, iy, iz) - &
+                                      inH%z(:, iy - 1, iz)) - &
+                                      (inH%y(:, iy, iz) - inH%y(:, iy, iz - 1))
+                          end do
+                       end do
+                       
+                       ! Ey
+                       do iz = 2, inH%Nz
+                          do ix = 2, inH%Nx
+                              outE%y(ix, :, iz) = (inH%x(ix, :, iz) - &
+                                inH%x(ix, :, iz - 1)) - &
+                                (inH%z(ix, :, iz) - inH%z(ix - 1, :, iz))
+                           end do
+                       end do
+                       
+                       ! Ez
+                       do ix = 2, inH%Nx
+                           do iy = 2, inH%Ny
+                              outE%z(ix,iy,:) = (inH%y(ix, iy, :) - &
+                                       inH%y(ix - 1, iy, :)) - &
+                                       (inH%x(ix, iy, :) - inH%x(ix, iy - 1, :))
+                           end do
+                       end do
+                
+               
+                class default
                  write(*, *) 'ERROR:ModelOperator_MF::multCurlT:'
                  stop        '         Incompatible input [outE]'
            end select
@@ -734,12 +734,12 @@ contains
                write(*, *) 'ERROR:ModelOperator_MF::multCurlT:'
                stop        '         Incompatible input [inH]'
           end select
-		  	   !
+                 !
                !**
                ! Post multiply by edge length
                !*
-			   call outE%mults( self%metric%EdgeLength )
-			   !
+               call outE%mults( self%metric%EdgeLength )
+               !
    end subroutine multCurlTModelOperatorMF
    
    !**
@@ -805,11 +805,11 @@ contains
       select type(outPhi)
       class is(cScalar3D_SG_t)
           !
-		  if(.not.outPhi%isAllocated) then
+          if(.not.outPhi%isAllocated) then
                write(*, *) 'ERROR:ModelOperator_MF::divC'
                stop        '       Output cScalar object not allocated'
           endif
-		  !
+          !
           select type( inE )
              class is ( cVector3D_SG_t )
                 call outPhi%Zeros()

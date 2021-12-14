@@ -7,7 +7,7 @@ module cVector
    type, abstract :: cVector_t
        
        logical :: isAllocated = .false.
-	   !
+       !
     contains
        
        !**
@@ -64,15 +64,15 @@ module cVector
        generic :: divs =>  divs2
 
        procedure( interface_linCombS_c_vector ) , deferred, public :: linCombS
-	   procedure( interface_scMultAddS_c_vector ) , deferred, public :: scMultAddS
+       procedure( interface_scMultAddS_c_vector ) , deferred, public :: scMultAddS
 
        procedure( interface_dot_product_c_vector ), deferred, public :: dotProd
        generic :: operator(.dot.) => dotProd
 
        procedure( interface_copy_from_c_vector ), deferred, public :: copyFrom
        generic :: assignment(=) => copyFrom
-	   
-	   procedure( interface_print_c_vector ), deferred, public :: print
+       
+       procedure( interface_print_c_vector ), deferred, public :: print
        
        !**
        ! Miscellaneous
@@ -284,12 +284,12 @@ module cVector
           complex(kind=prec), intent(in)  :: c2
        end subroutine interface_linCombS_c_vector
        
-		subroutine interface_scMultAddS_c_vector(lhs, rhs, c)
-			import :: cVector_t, prec
-			class(cVector_t), intent(in) :: lhs
-			class(cVector_t)       , intent(inout) :: rhs
-			complex(kind=prec), intent(in)  :: c
-		end subroutine interface_scMultAddS_c_vector
+        subroutine interface_scMultAddS_c_vector(lhs, rhs, c)
+            import :: cVector_t, prec
+            class(cVector_t), intent(in) :: lhs
+            class(cVector_t)       , intent(inout) :: rhs
+            complex(kind=prec), intent(in)  :: c
+        end subroutine interface_scMultAddS_c_vector
    
        function interface_dot_product_c_vector(lhs, rhs) result(r)
           import :: cVector_t, prec
@@ -314,11 +314,11 @@ module cVector
           character            , intent(in)   :: xyz
           class(cVector_t) , intent(out), allocatable :: E
        end subroutine interface_interp_func_c_vector
-	   
-	   subroutine interface_print_c_vector( self )
-	      import :: cVector_t
+       
+       subroutine interface_print_c_vector( self )
+          import :: cVector_t
           class(cVector_t) , intent(in)   :: self
-	   end subroutine interface_print_c_vector
+       end subroutine interface_print_c_vector
        
    end interface
    

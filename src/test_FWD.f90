@@ -367,8 +367,8 @@ contains
       !
       write( *, * ) ""
       write( *, * ) "Version 1.0.0"
-	  !
-	  stop
+      !
+      stop
       !
    end subroutine printHelp
 

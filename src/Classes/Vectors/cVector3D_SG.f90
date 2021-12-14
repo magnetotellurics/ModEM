@@ -109,7 +109,7 @@ module cVector3D_SG
        procedure, public :: copyFrom    => copyFromCVector3D_SG
        procedure, public :: interpFunc => interpFuncCVector3D_SG
        
-	   procedure, public :: print => printCVector3D_SG
+       procedure, public :: print => printCVector3D_SG
    end type cVector3D_SG_t
    
    interface cVector3D_SG_t
@@ -636,9 +636,9 @@ contains
       class(cVector_t), allocatable :: E
       !
       allocate(E, source = self)
-	  !
+      !
       call E%setAllInterior(C_ZERO)
-	  !
+      !
    end function boundaryCVector3D_SG
    
    !**
@@ -1378,23 +1378,23 @@ contains
       ! Arguments
       class(cVector3D_SG_t), intent(in) :: self
       !
-	  write(*,*) self%nx, self%ny, self%nz
-	  do ix = 1, self%nx
-		  do iy = 1, self%ny 
-			  do iz = 1, self%nz
-				  if( self%x( ix, iy, iz ) /= 0 ) then
-					 write(*,*) "X", ix, ":[", self%x( ix, iy, iz ), "]"
-				  endif
-				  if( self%y( ix, iy, iz ) /= 0 ) then
-					 write(*,*) "Y", iy, ":[", self%y( ix, iy, iz ), "]"
-				  endif
-				  if( self%z( ix, iy, iz ) /= 0 ) then
-					 write(*,*) "Z", iz, ":[", self%z( ix, iy, iz ), "]"
-				  endif
-			  enddo
-		  enddo
-	  enddo
-	  !
+      write(*,*) self%nx, self%ny, self%nz
+      do ix = 1, self%nx
+          do iy = 1, self%ny 
+              do iz = 1, self%nz
+                  if( self%x( ix, iy, iz ) /= 0 ) then
+                     write(*,*) "X", ix, ":[", self%x( ix, iy, iz ), "]"
+                  endif
+                  if( self%y( ix, iy, iz ) /= 0 ) then
+                     write(*,*) "Y", iy, ":[", self%y( ix, iy, iz ), "]"
+                  endif
+                  if( self%z( ix, iy, iz ) /= 0 ) then
+                     write(*,*) "Z", iz, ":[", self%z( ix, iy, iz ), "]"
+                  endif
+              enddo
+          enddo
+      enddo
+      !
    end subroutine printCVector3D_SG
    
 end module cVector3D_SG

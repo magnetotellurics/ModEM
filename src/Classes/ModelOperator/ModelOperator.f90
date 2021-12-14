@@ -11,7 +11,7 @@ module ModelOperator
      !
      class( Grid_t ), pointer :: grid
      !
-	 ! MetricElements is a property of this object and must be instantiated by it.
+     ! MetricElements is a property of this object and must be instantiated by it.
      class( MetricElements_t ), allocatable :: metric
      !
      logical                   :: is_allocated = .false.
@@ -35,7 +35,7 @@ module ModelOperator
      !     for specific ModelOperator implementation
      !    I see no need for real versions -- but we can add if needed!
      !
-	 procedure( interface_create_scalar_model_operator ), deferred, public :: createScalar
+     procedure( interface_create_scalar_model_operator ), deferred, public :: createScalar
      procedure( interface_create_vector_model_operator ), deferred, public :: createVector
      
   end type ModelOperator_t

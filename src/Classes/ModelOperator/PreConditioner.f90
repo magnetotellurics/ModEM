@@ -11,60 +11,60 @@ module PreConditioner
    use ModelOperator_MF
    !
    type, abstract :: PreConditioner_t
+   !
+   ! preconditioner of divergence correction equation
+   ! Pointer to model operator defining system
+   ! of equations that this preconditoner is for
+   class( ModelOperator_MF_t ), pointer :: model_operator
+   !
+   contains
       !
-      !      preconditioner of divergence correction equation
-      ! Pointer to model operator defining system
-      ! of equations that this preconditoner is for
-      class( ModelOperator_MF_t ), pointer :: model_operator
+      procedure( iface_set_preconditioner ), deferred, public :: setPreconditioner
       !
-      contains
-         !
-         procedure( iface_set_preconditioner ), deferred, public :: setPreconditioner
-         !
-         procedure( iface_ltsolve_preconditioner ), deferred, public :: LTsolve
-         procedure( iface_utsolve_preconditioner ), deferred, public :: UTsolve
-         procedure( iface_lusolve_preconditioner ), deferred, public :: LUsolve
-         !
+      procedure( iface_ltsolve_preconditioner ), deferred, public :: LTsolve
+      procedure( iface_utsolve_preconditioner ), deferred, public :: UTsolve
+      procedure( iface_lusolve_preconditioner ), deferred, public :: LUsolve
+      !
    end type PreConditioner_t
-   
+   !
    abstract interface
-       !
-       subroutine iface_set_preconditioner( self, omega )
-            import :: PreConditioner_t, prec
-            !
+      !
+      subroutine iface_set_preconditioner( self, omega )
+         import :: PreConditioner_t, prec
+         !
          class( PreConditioner_t ), intent( inout ) :: self
-      real( kind=prec ), intent( in )                  :: omega
-    end subroutine iface_set_preconditioner
-    !
-       subroutine iface_ltsolve_preconditioner( self, inE, outE, adjt )
-          import :: PreConditioner_t, cVector_t
-          !
-       class( PreConditioner_t ), intent( inout ) :: self
-          class( cVector_t ), intent( in )                :: inE
-          class( cVector_t ), intent( inout )            :: outE
-          logical, intent( in )                                 :: adjt
-       end subroutine iface_ltsolve_preconditioner
-
-       subroutine iface_utsolve_preconditioner( self, inE, outE, adjt )
-            import :: PreConditioner_t, cVector_t
-            !
+         real( kind=prec ), intent( in ) :: omega
+      end subroutine iface_set_preconditioner
+      !
+      subroutine iface_ltsolve_preconditioner( self, inE, outE, adjt )
+         import :: PreConditioner_t, cVector_t
+         !
          class( PreConditioner_t ), intent( inout ) :: self
-            class( cVector_t ), intent( in )                :: inE
-            class( cVector_t ), intent( inout )            :: outE
-            logical, intent( in )                                 :: adjt
-       end subroutine iface_utsolve_preconditioner
-
-       subroutine iface_lusolve_preconditioner( self, inPhi, outPhi, adjt )
-          !      this operates on sclars, and does both LTsolve and UTsolve
-          !       together for symeteric problems 
-          import :: PreConditioner_t, cScalar_t
-          !
-       class( PreConditioner_t ), intent( inout ) :: self
-          class( cScalar_t ), intent( in )                :: inPhi
-          class( cScalar_t ), intent( inout )            :: outPhi
-       logical, intent( in )                                 :: adjt
-       !
-       end subroutine iface_lusolve_preconditioner
-
+         class( cVector_t ), intent( in )   :: inE
+         class( cVector_t ), intent( inout ) :: outE
+         logical, intent( in )            :: adjt
+      end subroutine iface_ltsolve_preconditioner
+      !
+      subroutine iface_utsolve_preconditioner( self, inE, outE, adjt )
+         import :: PreConditioner_t, cVector_t
+         !
+         class( PreConditioner_t ), intent( inout ) :: self
+         class( cVector_t ), intent( in )   :: inE
+         class( cVector_t ), intent( inout ) :: outE
+         logical, intent( in )            :: adjt
+      end subroutine iface_utsolve_preconditioner
+      !
+      subroutine iface_lusolve_preconditioner( self, inPhi, outPhi, adjt )
+         !     this operates on sclars, and does both LTsolve and UTsolve
+         !      together for symeteric problems 
+         import :: PreConditioner_t, cScalar_t
+         !
+         class( PreConditioner_t ), intent( inout ) :: self
+         class( cScalar_t ), intent( in )   :: inPhi
+         class( cScalar_t ), intent( inout ) :: outPhi
+         logical, intent( in )            :: adjt
+      end subroutine iface_lusolve_preconditioner
+      !
    end interface
+   !
 end module PreConditioner

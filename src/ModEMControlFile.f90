@@ -14,9 +14,9 @@ module ModEMControlFile
    type :: ModEMControlFile_t
       !
       character(:), allocatable :: grid_reader
-	  character(:), allocatable :: grid_type
+      character(:), allocatable :: grid_type
       character(:), allocatable :: forward_solver
-	  character(:), allocatable :: source
+      character(:), allocatable :: source
       !
    contains
       !
@@ -87,8 +87,8 @@ contains
          !
 10       close( unit = funit )
          !
-		 ! GRID TYPE
-		 !
+         ! GRID TYPE
+         !
          if ( allocated( self%grid_type ) ) then
             write( *, "(A20, A10)" ) "      grid_type =", self%grid_type
             !
@@ -104,14 +104,14 @@ contains
             !
          endif
          !
-		 ! GRID READER
-		 !
+         ! GRID READER
+         !
          if ( allocated( self%grid_reader ) ) then
             write( *, "(A20, A10)" ) "      grid_reader =", self%grid_reader
          endif
          !
-		 ! FOWARD SOLVER
-		 !
+         ! FOWARD SOLVER
+         !
          if ( allocated( self%forward_solver ) ) then
             write( *, "(A20, A10)" ) "      forward_solver =", self%forward_solver
             !
@@ -127,12 +127,12 @@ contains
             !
          endif
          !
-		 ! SOURCE
-		 !
+         ! SOURCE
+         !
          if ( allocated( self%source ) ) then
-		    write( *, "(A20, A10)" ) "source =", self%source
+            write( *, "(A20, A10)" ) "source =", self%source
             !
-			select case ( self%source )
+            select case ( self%source )
                case( "1D" )
                   source_type = SRC_MT_1D
                case( "2D" )
@@ -143,7 +143,7 @@ contains
             end select
             !
          endif
-		 !
+         !
       end if
       !
    end function ModEMControlFile_ctor

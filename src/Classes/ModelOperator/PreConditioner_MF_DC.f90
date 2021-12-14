@@ -15,10 +15,10 @@ module PreConditioner_MF_DC
        type( cScalar3D_SG_t ) :: d       !    diagonal of D-ILU used for
        !
     contains
-	   !
-	   final :: PreConditioner_MF_DC_dtor
        !
-	   ! Main routines used externally
+       final :: PreConditioner_MF_DC_dtor
+       !
+       ! Main routines used externally
        procedure, public :: create => createPreConditioner_MF_DC
 !       procedure, public :: allocate => allocatePreConditioner_MF_DC
        procedure, public :: deallocate => deallocatePreConditioner_MF_DC
@@ -43,13 +43,13 @@ contains
    function PreConditioner_MF_DC_ctor( model_operator ) result( self ) 
       implicit none
       !
-	  class( ModelOperator_MF_t ), target, intent( in ) :: model_operator
+      class( ModelOperator_MF_t ), target, intent( in ) :: model_operator
       type( PreConditioner_MF_DC_t ) :: self
       !
       !write(*,*) "Constructor PreConditioner_MF_DC_t"
       !
       self%model_operator => model_operator
-	  !
+      !
       call self%create()
       !
    end function PreConditioner_MF_DC_ctor
@@ -72,11 +72,11 @@ contains
    subroutine createPreConditioner_MF_DC( self )
       implicit none
       !
-	  class( PreConditioner_MF_DC_t ), intent( inout ) :: self
+      class( PreConditioner_MF_DC_t ), intent( inout ) :: self
       !
       !      can"t we just use this???
       self%d = self%model_operator%createScalar()
-	!
+    !
       !      call self%allocate()
    end subroutine createPreConditioner_MF_DC
    
@@ -86,11 +86,11 @@ contains
    !subroutine allocatePreConditioner_MF_DC(self)
    !   class(PreConditioner_MF_DC_t), intent(inout) :: self
       !
-	!select type( grid => self%model_operator%grid )
+    !select type( grid => self%model_operator%grid )
    !         class is( Grid3D_SG_t )
    !               allocate( self%Dilu, source = cVector3D_SG_t( grid, EDGE ) )
    !   end select
-	!!!
+    !!!
    !end subroutine allocatePreConditioner_MF_DC
 
    !**
@@ -108,8 +108,8 @@ contains
    subroutine setPreConditioner_MF_DC( self, omega )
       implicit none
       !
-	  class( PreConditioner_MF_DC_t ), intent( inout ) :: self
-	  real( kind=prec ), intent( in )                  :: omega
+      class( PreConditioner_MF_DC_t ), intent( inout ) :: self
+      real( kind=prec ), intent( in )                  :: omega
       !
       integer :: ix,iy,iz
       
@@ -140,7 +140,7 @@ contains
    subroutine LTSolvePreConditioner_MF_DC(self, inE, outE, adjt)
       implicit none
       !
-	  class( PreConditioner_MF_DC_t ), intent( inout ) :: self
+      class( PreConditioner_MF_DC_t ), intent( inout ) :: self
       class( cVector_t ), intent( in )                 :: inE
       class( cVector_t ), intent( inout )              :: outE
       logical, intent( in )                            :: adjt
@@ -152,7 +152,7 @@ contains
    subroutine UTSolvePreConditioner_MF_DC( self, inE, outE, adjt )
       implicit none
       !
-	  class( PreConditioner_MF_DC_t ), intent( inout ) :: self
+      class( PreConditioner_MF_DC_t ), intent( inout ) :: self
       class( cVector_t ), intent( in )                 :: inE
       class( cVector_t ), intent( inout )              :: outE
       logical, intent( in )                            :: adjt
@@ -166,11 +166,11 @@ contains
    subroutine LUSolvePreConditioner_MF_DC( self, inPhi, outphi, adjt )
       implicit none
       !
-	  class( PreConditioner_MF_DC_t ), intent( inout ) :: self
+      class( PreConditioner_MF_DC_t ), intent( inout ) :: self
       class( cScalar_t ), intent( in )                 :: inPhi
       class( cScalar_t ), intent( inout )              :: outPhi
-	  logical, intent( in )                            :: adjt
-	  !
+      logical, intent( in )                            :: adjt
+      !
       integer :: ix, iy, iz
       
       select type(inPhi)
@@ -212,8 +212,8 @@ contains
                      end do
                 end do
             end do
-	end select
-	end select
+    end select
+    end select
    end subroutine LUSolvePreConditioner_MF_DC
 
 end module PreConditioner_MF_DC
