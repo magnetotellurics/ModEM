@@ -59,8 +59,8 @@ module cVector3D_SG
        !**
        ! Input/Output
        !*
-       procedure, public :: read   => readCVector3D_SG
-       procedure, public :: write  => writeCVector3D_SG
+       procedure, public :: read  => readCVector3D_SG
+       procedure, public :: write => writeCVector3D_SG
        
        !**
        ! boundaryCVector3D_SG operations

@@ -93,41 +93,41 @@ contains
       !
       ! If the file not exist
       if( io_stat /= 0 ) then
-            write(*,*) "Unable to open [", trim(file_name), "], Stat: ", io_stat
+         write(*,*) "Unable to open [", trim(file_name), "], Stat: ", io_stat
       else
-            !
-            ! Save the file name
-            self%file_name = trim( file_name )
-            ! Allocate e_solution based on the grid
-            select type( grid => self%model_operator%grid )
-               class is( Grid3D_SG_t )
-                  !
-                  allocate( e_solution, source = cVector3D_SG_t( grid, EDGE ) )
-                  !
-                  ! Read and Save cVector e_solution
-                  call e_solution%Read( self%ioE )
-                  !
-                  ! Close the Unit
-                  close( self%ioE )
-                  !
-                  ! Increase the Unit
-                  self%ioE = self%ioE + 1
-                  !
-                  ! Print the e_solution result
-                  write( *, * ) "    Polarization:", polarization
-                  !
-                  select type( e_solution )
-                     class is( cVector3D_SG_t )
-                        write( *, * ) "         ", e_solution%nx, e_solution%ny, e_solution%nz, e_solution%gridType
-                     class default
-                        stop "Unclassified ForwardSolverFromFile e_solution"
-                  end select
-                  !
-               class default
-                  stop "Unclassified ForwardSolverFromFile grid"
-                  !
-            end select
-            !
+         !
+         ! Save the file name
+         self%file_name = trim( file_name )
+         ! Allocate e_solution based on the grid
+         select type( grid => self%model_operator%grid )
+            class is( Grid3D_SG_t )
+              !
+              allocate( e_solution, source = cVector3D_SG_t( grid, EDGE ) )
+              !
+              ! Read cVector e_solution
+              call e_solution%Read( self%ioE )
+              !
+              ! Close the Unit
+              close( self%ioE )
+              !
+              ! Increase the Unit
+              self%ioE = self%ioE + 1
+              !
+              ! Print the e_solution result
+              write( *, * ) "    Polarization:", polarization
+              !
+              select type( e_solution )
+                class is( cVector3D_SG_t )
+                  write( *, * ) "         ", e_solution%nx, e_solution%ny, e_solution%nz, e_solution%gridType
+                class default
+                  stop "Unclassified ForwardSolverFromFile e_solution"
+              end select
+              !
+            class default
+              stop "Unclassified ForwardSolverFromFile grid"
+              !
+         end select
+         !
       endif
       !
    end function getESolutionForwardSolverFromFile

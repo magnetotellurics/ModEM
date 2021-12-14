@@ -5,40 +5,41 @@ module ForwardSolverDC
    use ModelOperator
    use Solver_QMR
    !
-   !   ModEM classic -- iterative solution with QMR or BiCG, divergence
-   !   correction (DC) in usual way.   A slight variant/extension would be
-   !   required for secondary field formulation.
+   ! ModEM classic -- iterative solution with QMR or BiCG, divergence
+   ! correction (DC) in usual way.   A slight variant/extension would be
+   ! required for secondary field formulation.
 
-   !   default values for solver control 
-   !    since reasonable defaults depend on the details of forward solver
-   !    details, set the defaults for parameters declared in solver object
-   !    here also
-   !    this will be default max_iter for QMR/BiCG solver
-   integer, parameter         :: iter_per_div_corDefQMR = 40
-   integer, parameter         :: iter_per_div_corDefBCG = 80
+   ! default values for solver control 
+   ! since reasonable defaults depend on the details of forward solver
+   ! details, set the defaults for parameters declared in solver object
+   ! here also
+   ! this will be default max_iter for QMR/BiCG solver
+   integer, parameter :: iter_per_div_corDefQMR = 40
+   !
+   integer, parameter :: iter_per_div_corDefBCG = 80
    ! maximum number of divergence correction calls allowed
-   integer, parameter         :: max_div_corDef = 20
-   !   for DC object default max_iter_total = iter_per_div_cor*max_div_cor
-   !     compute from other defaults, depending on solver
+   integer, parameter :: max_div_corDef = 20
+   ! for DC object default max_iter_total = iter_per_div_cor*max_div_cor
+   !  compute from other defaults, depending on solver
    ! maximum number of PCG iterations for divergence correction
-   !    this will be default max_iter for Solver_PCG object
-   integer, parameter         :: max_iterDivCorDef = 100
+   ! this will be default max_iter for Solver_PCG object
+   integer, parameter :: max_iterDivCorDef = 100
    !
    ! misfit tolerance for curl-curl (QMR or BCG)
-   real(kind=prec), parameter ::   tolEMDef = 1E-7
+   real( kind=prec ), parameter :: tolEMDef = 1E-7
    ! misfit tolerance for convergence of divergence correction solver
-   real(kind=prec), parameter ::   tolDivCorDef = 1E-5
+   real( kind=prec ), parameter :: tolDivCorDef = 1E-5
    !
    type, extends( ForwardSolver_t ), public :: ForwardSolverDC_t
       !
-      class( DivergenceCorrection_t ), pointer :: divergence_correction !  pointer to divergence correction
+      class( DivergenceCorrection_t ), pointer :: divergence_correction ! pointer to divergence correction
       !
       real( kind=prec )                              :: omega = 0.0
       real( kind=prec ), allocatable, dimension(:)   :: EMrelErr
       real( kind=prec ), allocatable, dimension(:,:) :: divJ, DivCorRelErr
       !
       integer :: nDivCor = 0
-      !   next two are not independent of max_iter_total
+      ! next two are not independent of max_iter_total
       integer :: max_iter_total = 0
       integer :: max_div_cor = 0
       integer :: iter_per_div_cor = 0
@@ -53,10 +54,10 @@ module ForwardSolverDC
       procedure, public :: createDiagnosticArrays
       procedure, public :: initDiagnosticArrays
       procedure, public :: getESolution => getESolutionForwardSolverDC
-      !   set routines for iteration control parameters (specific to DC)
+      ! set routines for iteration control parameters (specific to DC)
       !procedure, public :: set_max_div_cor
       !procedure, public :: set_iter_per_div_cor
-      !   get routines for diagonstics
+      ! get routines for diagonstics
       !procedure, public :: get_nDivCor
       !procedure, public :: get_divJ
       !procedure, public :: get_DivCorRelErr
@@ -118,14 +119,14 @@ module ForwardSolverDC
    end subroutine setPeriodForwardSolverDC
    !
     !
-    !   creator and destructor ... still need these
+    ! creator and destructor ... still need these
    subroutine setIterDefaults( self )
       implicit none
       !
 	  class( ForwardSolverDC_t ), intent( inout ) :: self
-      !   this just sets iteration control parameters to default
-      !    values -- should be good enough to get us started!
-      !    Note that some of the parameters are set in solver object 
+      ! this just sets iteration control parameters to default
+      ! values -- should be good enough to get us started!
+      ! Note that some of the parameters are set in solver object 
       !
       self%max_div_cor = max_div_corDef
       self%max_iter_total = self%max_div_cor * self%solver%max_iter
@@ -137,8 +138,8 @@ module ForwardSolverDC
         !self%iter_per_div_cor = iter_per_div_corDefBCG
       !end select
 
-      !   these are parameters in the solver objects, for curl-curl
-      !      and for DC
+      ! these are parameters in the solver objects, for curl-curl
+      !   and for DC
       !self%solver%setParameters(self%IterDivCor,tolEMDef)
       call self%solver%setParameters( max_iterDivCorDef, tolDivCorDef )
 
@@ -148,7 +149,7 @@ module ForwardSolverDC
         implicit none
         !
         class( ForwardSolverDC_t ), intent( inout ) :: self
-        !   this allocates arrays for storage of solver diagnostics
+        ! this allocates arrays for storage of solver diagnostics
 
         ! Forward object: EMrelErr, divJ, DivCorRelErr
         if( allocated( self%divJ ) ) deallocate( self%divJ )
@@ -163,7 +164,7 @@ module ForwardSolverDC
         !
         allocate( self%DivCorRelErr( self%solver%max_iter, self%max_div_cor ) )
         !
-        !  Solver objects
+        ! Solver objects
         if( allocated( self%solver%relErr ) ) deallocate( self%solver%relErr )
         !
         allocate( self%solver%relErr( self%solver%max_iter ) )
@@ -174,7 +175,7 @@ module ForwardSolverDC
         implicit none
         !
         class( ForwardSolverDC_t ), intent( inout ) :: self
-        !   this zero"s diagnostic arrays for storage of solver diagnostics
+        ! this zero"s diagnostic arrays for storage of solver diagnostics
         self%n_iter_total = 0
         self%nDivCor = 0
         self%EMrelErr = R_ZERO
@@ -187,13 +188,13 @@ module ForwardSolverDC
      !*****************************************************
      subroutine setFrequencyForwardSolverDC( self, omega )
         implicit none
-        !   this is not specific to DC solver -- can we implement
-        !     in abstract class?
+        ! this is not specific to DC solver -- can we implement
+        !  in abstract class?
         class( ForwardSolverDC_t ), intent( inout ) :: self
         real( kind=prec ), intent( in )             :: omega
         if(abs(self%omega-omega) .lt. TOL8) then
-          !   omega is close enough to input -- no need to reset
-          !    freqeuncy dependent properties
+          ! omega is close enough to input -- no need to reset
+          ! freqeuncy dependent properties
           return
         end if
         ! otherwise need to update some things ...
@@ -211,39 +212,39 @@ module ForwardSolverDC
         integer, intent( in )                       :: polarization
         !
         class( cVector_t ), allocatable :: e_solution
-        !   local variables
-        class( cVector_t ), allocatable :: b    !  copy of RHS--do we really need?
+        ! local variables
+        class( cVector_t ), allocatable :: b    ! copy of RHS--do we really need?
         class( cVector_t ), allocatable :: temp
         class( cScalar_t ), allocatable :: phi0
         integer :: iter
         !
         write(*,*) "getESolution ForwardSolverDC for pol:", polarization
         !
-        !   initialize diagnostics -- am assuming that setting of solver parameters
-        !     is done in a set up step (once in the run) outside this object
+        ! initialize diagnostics -- am assuming that setting of solver parameters
+        !  is done in a set up step (once in the run) outside this object
         call self%initDiagnosticArrays()
         !
         call self%solver%zeroDiagnostics()
         !
-        !   initialize solution
+        ! initialize solution
         allocate( e_solution, source = source%e0 )
         !
-        !   not sure about allocation here -- solution will exist
-        !    (and might be allocated) in calling routine, but b is local
-        !   Note that rhs will be a TVector of same type as solution
+        ! not sure about allocation here -- solution will exist
+        ! (and might be allocated) in calling routine, but b is local
+        ! Note that rhs will be a TVector of same type as solution
         allocate( b, source = source%rhs )
         !
-        !   set up source term for divergence correction equations
+        ! set up source term for divergence correction equations
         if( source%non_zero_source ) then
           !
           ! make a copy of TScalar using model_operator template
           allocate( phi0, source = self%solver%model_operator%createScalar() )
-           !
-           call self%divergence_correction%rhsDivCor( self%omega, source, phi0 )
-           !
+          !
+          call self%divergence_correction%rhsDivCor( self%omega, source, phi0 )
+          !
         endif
         !
-        allocate( temp, source = e_solution )    !  copy of solution for input to DC
+        allocate( temp, source = e_solution )    ! copy of solution for input to DC
         !
         loop: do while ( ( .not.self%solver%converged ).and.( .not.self%solver%failed ) )
            !
@@ -254,19 +255,19 @@ module ForwardSolverDC
                  call solver%solve( b, e_solution )
               class default
                  write(*, *) "ERROR:ForwardSolverDC::getESolutionForwardSolverDC:"
-                 STOP "         Unknow solver type."
+                 STOP        "         Unknow solver type."
            end select
            !
-           !   I am just copying this -- while we work on this should
-           !     reconsider implementation
+           ! I am just copying this -- while we work on this should
+           !  reconsider implementation
            ! solver%converged when the relative error is less than tolerance
            self%solver%converged = self%solver%n_iter .lt. self%solver%max_iter
            !
            ! there are two ways of failing: 1) QMR did not work or
-           !        2) total number of divergence corrections exceeded
+           !     2) total number of divergence corrections exceeded
            self%solver%failed = self%solver%failed .or. self%failed
            !
-           !  update solver diagnostics 
+           ! update solver diagnostics 
            do iter = 1, self%solver%n_iter
               ! why are we using an explicit loop here?
               self%EMrelErr( self%n_iter_total + iter ) = self%solver%relErr(iter)
@@ -278,7 +279,7 @@ module ForwardSolverDC
            !
            if( self%nDivCor < self%max_div_cor ) then
               ! do divergence correction
-              e_solution = temp !    assuming temp is already allocated,
+              e_solution = temp ! assuming temp is already allocated,
                                 ! don"t want to reallocate!
        	   !
            if( source%non_zero_source ) then
@@ -298,15 +299,15 @@ module ForwardSolverDC
 	   !
        enddo loop
        !
-       !   finish up solution--I am omitting boundary values for adjt case --
-       !    we never used boundary of adjoint--sensitivity to boundary data,
-       !    just use interior part of adjoint soln to compute sensitivity to model
-       !    parameters
+       ! finish up solution--I am omitting boundary values for adjt case --
+       ! we never used boundary of adjoint--sensitivity to boundary data,
+       ! just use interior part of adjoint soln to compute sensitivity to model
+       ! parameters
 
        ! note that here I am assuming things like mult and add are subroutines.
-       !   we need to sort out conventions!   In Solver_QMR I assumed functions,
-       !    but I suspect we will be better off just using subroutines in terms
-       !    of efficiency
+       ! we need to sort out conventions! In Solver_QMR I assumed functions,
+       ! but I suspect we will be better off just using subroutines in terms
+       ! of efficiency
        if( source%adjt ) then
           select type( modOp => self%solver%model_operator )
              class is ( ModelOperator_MF_t )
@@ -317,7 +318,7 @@ module ForwardSolverDC
                 write(*, *) "ERROR:ForwardSolverDC_t::getESolutionForwardSolverDC:"
                 STOP        "model_operator type unknow"
           end select
-         !   just leave bdry values set to 0
+         ! just leave bdry values set to 0
        else
           !
           e_solution = e_solution + source%bdry
@@ -331,7 +332,7 @@ module ForwardSolverDC
        	     stop "Unclassified ForwardSolverDC e_solution"
        end select
        !
-       !  deallocate local objects
+       ! deallocate local objects
        if( allocated( temp ) ) deallocate(temp)
        if( allocated( b ) )    deallocate(b)
        if( allocated( phi0 ) ) deallocate(phi0)

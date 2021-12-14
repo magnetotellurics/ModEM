@@ -33,25 +33,25 @@ module PreConditioner
          import :: PreConditioner_t, prec
          !
          class( PreConditioner_t ), intent( inout ) :: self
-         real( kind=prec ), intent( in ) :: omega
+         real( kind=prec ), intent( in )            :: omega
       end subroutine iface_set_preconditioner
       !
       subroutine iface_ltsolve_preconditioner( self, inE, outE, adjt )
          import :: PreConditioner_t, cVector_t
          !
          class( PreConditioner_t ), intent( inout ) :: self
-         class( cVector_t ), intent( in )   :: inE
-         class( cVector_t ), intent( inout ) :: outE
-         logical, intent( in )            :: adjt
+         class( cVector_t ), intent( in )           :: inE
+         class( cVector_t ), intent( inout )        :: outE
+         logical, intent( in )                      :: adjt
       end subroutine iface_ltsolve_preconditioner
       !
       subroutine iface_utsolve_preconditioner( self, inE, outE, adjt )
          import :: PreConditioner_t, cVector_t
          !
          class( PreConditioner_t ), intent( inout ) :: self
-         class( cVector_t ), intent( in )   :: inE
-         class( cVector_t ), intent( inout ) :: outE
-         logical, intent( in )            :: adjt
+         class( cVector_t ), intent( in )           :: inE
+         class( cVector_t ), intent( inout )        :: outE
+         logical, intent( in )                      :: adjt
       end subroutine iface_utsolve_preconditioner
       !
       subroutine iface_lusolve_preconditioner( self, inPhi, outPhi, adjt )
@@ -60,9 +60,9 @@ module PreConditioner
          import :: PreConditioner_t, cScalar_t
          !
          class( PreConditioner_t ), intent( inout ) :: self
-         class( cScalar_t ), intent( in )   :: inPhi
-         class( cScalar_t ), intent( inout ) :: outPhi
-         logical, intent( in )            :: adjt
+         class( cScalar_t ), intent( in )           :: inPhi
+         class( cScalar_t ), intent( inout )        :: outPhi
+         logical, intent( in )                      :: adjt
       end subroutine iface_lusolve_preconditioner
       !
    end interface
