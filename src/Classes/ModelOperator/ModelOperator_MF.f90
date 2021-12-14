@@ -13,7 +13,7 @@ module ModelOperator_MF
    !
    type, extends( ModelOperator_t ) :: ModelOperator_MF_t
        !
-       logical :: eqSet = .false. ! Set to true after equations,
+       logical :: eqset = .false. ! set to true after equations,
                                   ! (part independent of sigma) is set.
        integer(8) :: mKey = 0     ! For use with fortran DATE_AND_TIME subroutine.
        !
@@ -70,25 +70,25 @@ module ModelOperator_MF
        !
        final :: ModelOperator_MF_dtor
        !
-       procedure, public :: SetEquations
-       procedure, public :: SetCond
-       procedure, public :: Amult
-       procedure, public :: MultAib
-       procedure, public :: MultCurlT
-       procedure :: divCgrad 
-       procedure :: divC
-       procedure :: Grad
-       procedure :: Div
+       procedure, public :: setEquations => setEquationsModelOperatorMF
+       procedure, public :: setCond => setCondModelOperatorMF
+       procedure, public :: amult => amultModelOperatorMF
+       procedure, public :: multAib => multAibModelOperatorMF
+       procedure, public :: multCurlT => multCurlTModelOperatorMF
+       procedure :: divCgrad  => divCgradModelOperatorMF
+       procedure :: divC => divCModelOperatorMF
+       procedure :: grad => gradModelOperatorMF
+       procedure :: div => divModelOperatorMF
        !
-       procedure, public :: createScalar
-       procedure, public :: createVector
+       procedure, public :: createScalar => createScalarModelOperatorMF
+       procedure, public :: createVector => createVectorModelOperatorMF
        !
        ! Private methods
        procedure :: create     => createModelOperatorMF 
        procedure :: allocate   => allocateModelOperatorMF
        procedure :: deallocate => deallocateModelOperatorMF
-       !    this is used only inside this ModelOperator (called from SetCond)
-       procedure :: DivCorSetUp
+       !    this is used only inside this ModelOperator (called from setCond)
+       procedure :: divCorsetUp => divCorsetUpModelOperatorMF
        
    end type ModelOperator_MF_t
    
@@ -97,7 +97,6 @@ module ModelOperator_MF
    end interface ModelOperator_MF_t
    
 contains
-   
    !
    function ModelOperator_MF_ctor( grid ) result( self )
       implicit none
@@ -251,7 +250,7 @@ contains
    !***
    !    createVector
    !***
-   function createVector( self, gridType ) result( cVec )
+   function createVectorModelOperatorMF( self, gridType ) result( cVec )
       !    this just returns a cVector of correct type
       !       for this model operator -- 
       class( ModelOperator_MF_t ), intent( in ) :: self
@@ -272,11 +271,11 @@ contains
             endif
       end select
 	  !
-   end function createVector
+   end function createVectorModelOperatorMF
    !***
    !    createScalar
    !***
-   function createScalar( self, gridType ) result( cSclr )
+   function createScalarModelOperatorMF( self, gridType ) result( cSclr )
       !    this just returns a cScalar` of correct type
       !       for this model operator -- 
       class( ModelOperator_MF_t ), intent( in ) :: self
@@ -294,12 +293,12 @@ contains
             endif
       end select
 	  !
-   end function createScalar
+   end function createScalarModelOperatorMF
 
    !**
-   ! SetEquations
+   ! setEquations
    !*
-   subroutine SetEquations(self)
+   subroutine setEquationsModelOperatorMF(self)
       ! Arguments
       class(ModelOperator_MF_t), intent(inout) :: self
       ! Local variables
@@ -403,32 +402,32 @@ contains
       !**
       ! Equations are set, so change flag to true
       !*
-      self%eqSet = .true.
+      self%eqset = .true.
       
       ! Note that divergence correction coefficients depend on conductivity
       ! and need to be reset whenever conductivity changes -- so these are
       ! not set here.
       
-   end subroutine SetEquations
+   end subroutine setEquationsModelOperatorMF
    
    !**
-   ! SetCond
+   ! setCond
    !*
-   subroutine SetCond( self, condParam )
+   subroutine setCondModelOperatorMF( self, condParam )
       ! Arguments
       class( ModelOperator_MF_t), intent( inout ) :: self
       class( ModelParameter_t), intent( inout )   :: condParam
       !
       self%sigma_E = condParam%PDEmapping()
       !
-      call self%DivCorSetUp()
+      call self%divCorsetUp()
 	  !
-   end subroutine SetCond
+   end subroutine setCondModelOperatorMF
    
    !**
-   ! DivcorSetup
+   ! divcorsetup
    !*
-   subroutine DivCorSetUp(self)
+   subroutine divCorsetUpModelOperatorMF(self)
       ! Arguments
       class(ModelOperator_MF_t) :: self
       ! Local variables
@@ -478,7 +477,7 @@ contains
           end do
       end do
       
-      ! Multiply by corner volume elements to make operator symmetric
+      ! multiply by corner volume elements to make operator symmetric
       ! interior nodes only    -- note that 6 edges meet in each node, and
       !      coefficients for the corresponding edge are stored in x, y, z conmponens
       !      of rVector objects (some components are zero/not used near boundaries)
@@ -524,14 +523,14 @@ contains
       self%db2%y(:, self%ny, :) = R_ZERO
       self%db2%z(:, :, self%nz) = R_ZERO
 
-   end subroutine DivCorSetup
+   end subroutine divCorsetupModelOperatorMF
    
    !**
-   ! AMult -- converted to subroutine
+   ! Amult -- converted to subroutine
    ! This does the matrix-vector multiply (A+iwB)inE = outE
    ! parameterized by input frequency omega
    !*
-   subroutine Amult(self, omega, x, y, p_adjt)
+   subroutine amultModelOperatorMF(self, omega, x, y, p_adjt)
       class(ModelOperator_MF_t), intent(in)                :: self
       real( kind = prec ), intent(in), optional      :: omega
       !   do these have to be abstract????
@@ -559,7 +558,7 @@ contains
       select type(x)
       class is(cVector3D_SG_t)
           if(.not.y%isAllocated) then
-               write(*,*) 'ERROR: Amult in   ModelOperator_MF'
+               write(*,*) 'ERROR: amult in   ModelOperator_MF'
                write(*,*) 'output vector y not allocated'
                STOP
           endif
@@ -626,22 +625,22 @@ contains
 
           end select
       class default
-          write(*, *) 'ERROR:ModelOperator_MF::Amult:'
+          write(*, *) 'ERROR:ModelOperator_MF::amult:'
           write(*, *) '         Incompatible input [x]. Exiting.'
           
           STOP
       end select
 
-   end subroutine Amult
+   end subroutine amultModelOperatorMF
    
    !**
-   ! MultAib
+   ! multAib
    ! This multiplies boundary values by the real matrix Aib -- converts
    ! boundary data to interior forcing.
    ! NOTE: Make sure interior edges are zeroed before calling
    ! this function.
    !*
-   subroutine MultAib(self, bdry, outE)
+   subroutine multAibModelOperatorMF( self, bdry, outE )
       ! Arguments
       class(ModelOperator_MF_t), intent(in)   :: self
          !    again do these need to be abstract -- and OK if they are?
@@ -651,16 +650,16 @@ contains
       real(kind=prec) omega
       !
       if(.not.outE%isAllocated) then
-          write(*,*) 'ERROR: MultAib in   ModelOperator_MF'
+          write(*,*) 'ERROR: multAib in   ModelOperator_MF'
           write(*,*) 'output vector not allocated'
           STOP
       endif
    !
       omega = R_ZERO    ! diagonal part or A does not enter into this
    !
-      call self%Amult(omega,bdry,outE) 
+      call self%amult(omega,bdry,outE) 
    !
-   end subroutine multAib
+   end subroutine multAibModelOperatorMF
    
    !**
    ! This multiplies Vector defined on faces (hence inH) by the transpose of
@@ -671,7 +670,7 @@ contains
    ! matrix Model Operator implementations) computation of data functionals
    ! for computing magnetic fields.
    !*
-   subroutine MultCurlT(self, inH, outE)
+   subroutine multCurlTModelOperatorMF(self, inH, outE)
       implicit none
       ! Arguments
       class(ModelOperator_MF_t), intent( in )        :: self
@@ -727,17 +726,13 @@ contains
 				
 			   
 				class default
-                 write(*, *) 'ERROR:ModelOperator_MF::MultCurlT:'
-                 write(*, *) '         Incompatible input [outE]'
-               
-                 STOP
+                 write(*, *) 'ERROR:ModelOperator_MF::multCurlT:'
+                 stop        '         Incompatible input [outE]'
            end select
                ! 
           class default
-               write(*, *) 'ERROR:ModelOperator_MF::MultCurlT:'
-               write(*, *) '         Incompatible input [inH]'
-               
-               STOP
+               write(*, *) 'ERROR:ModelOperator_MF::multCurlT:'
+               stop        '         Incompatible input [inH]'
           end select
 		  	   !
                !**
@@ -745,12 +740,12 @@ contains
                !*
 			   call outE%mults( self%metric%EdgeLength )
 			   !
-   end subroutine MultCurlT
+   end subroutine multCurlTModelOperatorMF
    
    !**
-   ! Multiply by divergence correction operator.
+   ! multiply by divergence correction operator.
    !*
-   subroutine divCgrad(self, inPhi, outPhi)
+   subroutine divCgradModelOperatorMF(self, inPhi, outPhi)
       ! Arguments
       class(ModelOperator_MF_t), intent(in) :: self
       ! inphi, outphi have to be abstract to use in generic solver??
@@ -762,7 +757,7 @@ contains
       class is(cScalar3D_SG_t)
           if(.not.outPhi%isAllocated) then
                write(*, *) 'ERROR:ModelOperator_MF::divCgrad'
-               write(*, *) '       Output cScalar object not allocated'
+               stop        '       Output cScalar object not allocated'
                STOP
           endif
           select type(inPhi)
@@ -788,19 +783,17 @@ contains
              end do
           end select
           class default
-               write(*, *) 'ERROR:ModelOperator_MF::Amult:'
-               write(*, *) '         Incompatible input [x]. Exiting.'
-          
-               STOP
+               write(*, *) 'ERROR:ModelOperator_MF::amult:'
+               stop        '         Incompatible input [x]. Exiting.'
           end select
-   end subroutine divCgrad
+   end subroutine divCgradModelOperatorMF
    
    !**
-   ! Multiply by edge conductivity, apply
+   ! multiply by edge conductivity, apply
    ! divergence ==> source for divergence
    ! correction solver.
    !*
-   subroutine divC(self, inE, outPhi)
+   subroutine divCModelOperatorMF(self, inE, outPhi)
       ! Arguments
       class( ModelOperator_MF_t ), intent(in) :: self
       class( cVector_t ), intent(in)               :: inE
@@ -811,11 +804,12 @@ contains
 
       select type(outPhi)
       class is(cScalar3D_SG_t)
-          if(.not.outPhi%isAllocated) then
+          !
+		  if(.not.outPhi%isAllocated) then
                write(*, *) 'ERROR:ModelOperator_MF::divC'
-               write(*, *) '       Output cScalar object not allocated'
-               STOP
+               stop        '       Output cScalar object not allocated'
           endif
+		  !
           select type( inE )
              class is ( cVector3D_SG_t )
                 call outPhi%Zeros()
@@ -873,12 +867,12 @@ contains
        STOP            "outPhi type unknow"
       end select
 
-   end subroutine divC
+   end subroutine divCModelOperatorMF
    
    !**
-   ! Gradient
+   ! gradient
    !*
-   subroutine Grad( self, inPhi, outE )
+   subroutine gradModelOperatorMF( self, inPhi, outE )
       ! Arguments
       class( ModelOperator_MF_t ), intent(in) :: self
       class( cScalar_t ), intent(in)               :: inPhi
@@ -890,8 +884,7 @@ contains
       class is(cVector3D_SG_t)
          if(.not.outE%isAllocated) then
              write(*, *) 'ERROR:ModelOperator_MF::grad'
-             write(*, *) '       Output cVector object not allocated'
-             STOP
+             stop        '       Output cVector object not allocated'
          endif
          select type( inPhi )
          class is ( cScalar3D_SG_t )
@@ -925,18 +918,18 @@ contains
                end do
             end do
          class default
-             write(*, *) "ERROR:ModelOperator_MF_t::Grad:"
+             write(*, *) "ERROR:ModelOperator_MF_t::grad:"
              STOP            "inPhi type unknow"
          end select
       class default
        write(*, *) "ERROR:ModelOperator_MF_t::divC:"
        STOP            "outE type unknow"
       end select
-   end subroutine Grad
+   end subroutine gradModelOperatorMF
    !**
    ! divergence, without multiplication by edge conductivity
    !*
-   subroutine div(self, inE, outPhi)
+   subroutine divModelOperatorMF( self, inE, outPhi )
       ! Arguments
       class(ModelOperator_MF_t), intent(in) :: self
       class(cVector_t)      , intent(in) :: inE
@@ -976,6 +969,6 @@ contains
             write(*, *) "ERROR:ModelOperator_MF_t:div:"
             STOP            "outPhi type unknow"
        end select
-   end subroutine div
+   end subroutine divModelOperatorMF
    
 end module ModelOperator_MF

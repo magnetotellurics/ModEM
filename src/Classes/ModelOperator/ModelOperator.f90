@@ -19,118 +19,118 @@ module ModelOperator
      contains 
      !
      !procedure( iface_UpdateFrequency ), deferred, public :: UpdateFrequency
-     procedure( iface_SetEquations ), deferred, public    :: SetEquations
-     procedure( iface_SetCond )     , deferred, public    :: SetCond
-     procedure( iface_AMult )       , deferred, public    :: Amult
-     procedure( iface_MultAib )     , deferred, public    :: MultAib
-     procedure( iface_MultCurlT )   , deferred, public    :: MultCurlT
+     procedure( interface_set_equations_model_operator ), deferred, public :: setEquations
+     procedure( interface_set_cond_model_operator ), deferred, public      :: setCond
+     procedure( interface_amult_model_operator ), deferred, public         :: amult
+     procedure( interface_multaib_model_operator ), deferred, public       :: multAib
+     procedure( interface_multcurl_t_model_operator ), deferred, public    :: multCurlT
      !   following procedures are generally used for divergence correction
      !   and might in some cases (e.g., model operator for "SP2" case)
      !   only be implemented as dummy procedures
-     procedure( iface_DivCgrad )    , deferred, public    :: DivCgrad
-     procedure( iface_DivC )        , deferred, public    :: DivC
-     procedure( iface_Grad )        , deferred, public    :: Grad
-     procedure( iface_Div )         , deferred, public    :: Div
+     procedure( interface_divc_grad_model_operator ), deferred, public :: divCgrad
+     procedure( interface_divc_model_operator ), deferred, public      :: divC
+     procedure( interface_grad_model_operator ), deferred, public      :: grad
+     procedure( interface_div_model_operator ), deferred, public       :: div
      !   these will be coded to return cScalar/cVector of type appropriate
      !     for specific ModelOperator implementation
      !    I see no need for real versions -- but we can add if needed!
      !
-	 procedure( iface_createScalar )   , deferred, public    :: createScalar
-     procedure( iface_createVector )   , deferred, public    :: createVector
+	 procedure( interface_create_scalar_model_operator ), deferred, public :: createScalar
+     procedure( interface_create_vector_model_operator ), deferred, public :: createVector
      
   end type ModelOperator_t
   
   abstract interface
 
      !**
-     ! SetEquations
+     ! setEquations
      !*
-     subroutine iface_SetEquations(self)
+     subroutine interface_set_equations_model_operator( self )
        import :: ModelOperator_t
-       class(ModelOperator_t), intent(inout) :: self
-     end subroutine iface_SetEquations
+       class( ModelOperator_t ), intent(inout) :: self
+     end subroutine interface_set_equations_model_operator
 
      !**
-     ! SetCond
-     subroutine iface_SetCond(self, CondParam) 
+     ! setCond
+     subroutine interface_set_cond_model_operator( self, CondParam ) 
        import :: ModelOperator_t, ModelParameter_t
-       class(ModelOperator_t) , intent(inout) :: self
-       class(ModelParameter_t), intent(inout)    :: CondParam
-     end subroutine iface_SetCond
+       class( ModelOperator_t ), intent( inout )  :: self
+       class( ModelParameter_t ), intent( inout ) :: CondParam
+     end subroutine interface_set_cond_model_operator
      
      !**
-     ! MultAib
+     ! multAib
      !*
-     subroutine iface_MultAib(self, bdry,outE)
+     subroutine interface_multaib_model_operator( self, bdry, outE )
        import :: ModelOperator_t, cVector_t
-       class(ModelOperator_t), intent(in) :: self
-       class(cVector_t)      , intent(in)  :: bdry
-       class(cVector_t)      , intent(inout) :: outE
-     end subroutine iface_MultAib
+       class( ModelOperator_t ), intent( in ) :: self
+       class( cVector_t ), intent( in )       :: bdry
+       class( cVector_t ), intent( inout )    :: outE
+     end subroutine interface_multaib_model_operator
      
      !**
-     ! MultCurlT
+     ! multCurlT
      !*
-     subroutine iface_MultCurlT(self, inH, outE)
+     subroutine interface_multcurl_t_model_operator(self, inH, outE)
        import :: ModelOperator_t, cVector_t
        class(ModelOperator_t) , intent(in)    :: self
        class(cVector_t)       , intent(inout) :: inH
        class(cVector_t), allocatable, intent(inout) :: outE
-     end subroutine iface_MultCurlT
+     end subroutine interface_multcurl_t_model_operator
      
-     subroutine iface_Amult(self, omega, x, y, p_adjt)
+     subroutine interface_amult_model_operator(self, omega, x, y, p_adjt)
        import :: ModelOperator_t, cVector_t, prec
        class(ModelOperator_t), intent(in)           :: self
        real( kind = prec ), intent(in), optional    :: omega
        class(cVector_t)      , intent(in)           :: x
        class(cVector_t)      , intent(inout)        :: y
        logical               , intent(in), optional :: p_adjt
-     end subroutine iface_Amult
+     end subroutine interface_amult_model_operator
 !
 !     these are for divergence correction, might be dummies in some cases
-     subroutine iface_DivCgrad(self, inPhi, outPhi)
+     subroutine interface_divc_grad_model_operator(self, inPhi, outPhi)
        import :: ModelOperator_t, cScalar_t
        class(ModelOperator_t) , intent(in) :: self
        class(cScalar_t)       , intent(in) :: inPhi
        class(cScalar_t)       , intent(inout) :: outPhi       
-     end subroutine iface_DivCgrad
+     end subroutine interface_divc_grad_model_operator
 
-     subroutine iface_DivC(self, inE, outPhi)
+     subroutine interface_divc_model_operator(self, inE, outPhi)
        import :: ModelOperator_t, cVector_t, cScalar_t
        class(ModelOperator_t) , intent(in) :: self
        class(cVector_t)       , intent(in) :: inE
        class(cScalar_t)       , intent(inout) :: outPhi       
-     end subroutine iface_DivC
+     end subroutine interface_divc_model_operator
 
-     subroutine iface_Grad(self, inPhi, outE)
+     subroutine interface_grad_model_operator(self, inPhi, outE)
        import :: ModelOperator_t, cVector_t, cScalar_t
        class(ModelOperator_t) , intent(in) :: self
        class(cScalar_t)       , intent(in) :: inPhi
        class(cVector_t)       , intent(inout) :: outE       
-     end subroutine iface_Grad
+     end subroutine interface_grad_model_operator
 
-     subroutine iface_Div(self, inE, outPhi)
+     subroutine interface_div_model_operator(self, inE, outPhi)
        import :: ModelOperator_t, cVector_t, cScalar_t
        class(ModelOperator_t) , intent(in) :: self
        class(cVector_t)       , intent(in) :: inE
        class(cScalar_t)       , intent(inout) :: outPhi       
-     end subroutine iface_Div
+     end subroutine interface_div_model_operator
      !
-     function iface_createVector( self, gridType ) result(cVec)
+     function interface_create_vector_model_operator( self, gridType ) result(cVec)
        !
        import :: ModelOperator_t, cVector_t
        class(ModelOperator_t) , intent(in) :: self
        character(len=80), intent(in), optional :: gridType
        class(cVector_t), allocatable :: cVec
-     end function iface_createVector
+     end function interface_create_vector_model_operator
 
-     function iface_createScalar( self, gridType ) result(cSclr)
+     function interface_create_scalar_model_operator( self, gridType ) result(cSclr)
        !
        import :: ModelOperator_t, cScalar_t
        class(ModelOperator_t) , intent(in) :: self
        character(len=80), intent(in), optional :: gridType
        class(cScalar_t), allocatable :: cSclr
-     end function iface_createScalar
+     end function interface_create_scalar_model_operator
 
   end interface
   
