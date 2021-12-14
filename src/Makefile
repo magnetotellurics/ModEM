@@ -53,7 +53,7 @@ LIBS_PATH = -L/usr/lib64
 LIBS = -llapack -lblas
 
 # -------------------End-macro-Defs---------------------------
-OBJ = $(OBJDIR)/FileUnits.o $(OBJDIR)/Constants.o $(OBJDIR)/String.o $(OBJDIR)/DataEntry.o $(OBJDIR)/DataEntryArray.o $(OBJDIR)/DataFile.o $(OBJDIR)/DataEntryMT.o $(OBJDIR)/DataEntryMT_REF.o $(OBJDIR)/DataEntryCSEM.o $(OBJDIR)/StandardDataFile.o $(OBJDIR)/DataGroup.o $(OBJDIR)/DataGroupArray.o $(OBJDIR)/Grid1D.o $(OBJDIR)/Grid2D.o $(OBJDIR)/Grid.o $(OBJDIR)/rScalar.o $(OBJDIR)/rVector.o $(OBJDIR)/cVector.o $(OBJDIR)/cScalar.o $(OBJDIR)/MetricElements.o $(OBJDIR)/ModelParameter1D.o $(OBJDIR)/Esoln2DTM.o $(OBJDIR)/ModelParameter2D.o $(OBJDIR)/ModelParameter.o $(OBJDIR)/ModelOperator.o $(OBJDIR)/Source.o $(OBJDIR)/Grid3D_SG.o $(OBJDIR)/rScalar3D_SG.o $(OBJDIR)/cScalar3D_SG.o $(OBJDIR)/MatUtils.o $(OBJDIR)/rVector3D_SG.o $(OBJDIR)/cVector3D_SG.o $(OBJDIR)/MetricElements_CSG.o $(OBJDIR)/ModelOperator_MF.o $(OBJDIR)/PreConditioner.o $(OBJDIR)/Solver.o $(OBJDIR)/ForwardSolver.o $(OBJDIR)/IntegerArray.o $(OBJDIR)/VectorArray.o $(OBJDIR)/Transmitter.o $(OBJDIR)/Receiver.o $(OBJDIR)/ReceiverFullImpedance.o $(OBJDIR)/ReceiverFullVerticalMagnetic.o $(OBJDIR)/ReceiverOffDiagonalImpedance.o $(OBJDIR)/ReceiverSingleField.o $(OBJDIR)/ReceiverArray.o $(OBJDIR)/TransmitterMT.o $(OBJDIR)/TransmitterCSEM.o $(OBJDIR)/TransmitterArray.o $(OBJDIR)/DataManager.o $(OBJDIR)/ModEMControlFile.o $(OBJDIR)/ModelReader.o $(OBJDIR)/ModelParameterCell_SG.o $(OBJDIR)/ModelReader_Weerachai.o $(OBJDIR)/ModelOperator_File.o $(OBJDIR)/PreConditioner_MF_DC.o $(OBJDIR)/Solver_PCG.o $(OBJDIR)/DivergenceCorrection.o $(OBJDIR)/ForwardSolverFromFile.o $(OBJDIR)/PreConditioner_MF_CC.o $(OBJDIR)/Solver_QMR.o $(OBJDIR)/ForwardSolverDC.o $(OBJDIR)/Forward1D.o $(OBJDIR)/SourceMT_1D.o $(OBJDIR)/Forward2D.o $(OBJDIR)/SourceMT_2D.o $(OBJDIR)/test_FWD.o 
+OBJ = $(OBJDIR)/FileUnits.o $(OBJDIR)/Constants.o $(OBJDIR)/String.o $(OBJDIR)/DataEntry.o $(OBJDIR)/DataEntryArray.o $(OBJDIR)/DataFile.o $(OBJDIR)/DataEntryMT.o $(OBJDIR)/DataEntryMT_REF.o $(OBJDIR)/DataEntryCSEM.o $(OBJDIR)/StandardDataFile.o $(OBJDIR)/DataGroup.o $(OBJDIR)/DataGroupArray.o $(OBJDIR)/Grid1D.o $(OBJDIR)/Grid2D.o $(OBJDIR)/Grid.o $(OBJDIR)/rScalar.o $(OBJDIR)/rVector.o $(OBJDIR)/cVector.o $(OBJDIR)/cScalar.o $(OBJDIR)/MetricElements.o $(OBJDIR)/ModelParameter1D.o $(OBJDIR)/Esoln2DTM.o $(OBJDIR)/ModelParameter2D.o $(OBJDIR)/ModelParameter.o $(OBJDIR)/ModelOperator.o $(OBJDIR)/Source.o $(OBJDIR)/Grid3D_SG.o $(OBJDIR)/rScalar3D_SG.o $(OBJDIR)/cScalar3D_SG.o $(OBJDIR)/MatUtils.o $(OBJDIR)/rVector3D_SG.o $(OBJDIR)/cVector3D_SG.o $(OBJDIR)/MetricElements_CSG.o $(OBJDIR)/ModelOperator_MF.o $(OBJDIR)/PreConditioner.o $(OBJDIR)/Solver.o $(OBJDIR)/ForwardSolver.o $(OBJDIR)/IntegerArray.o $(OBJDIR)/VectorArray.o $(OBJDIR)/Transmitter.o $(OBJDIR)/Receiver.o $(OBJDIR)/ReceiverFullImpedance.o $(OBJDIR)/ReceiverFullVerticalMagnetic.o $(OBJDIR)/ReceiverOffDiagonalImpedance.o $(OBJDIR)/ReceiverSingleField.o $(OBJDIR)/ReceiverArray.o $(OBJDIR)/TransmitterMT.o $(OBJDIR)/TransmitterCSEM.o $(OBJDIR)/TransmitterArray.o $(OBJDIR)/DataManager.o $(OBJDIR)/ModEMControlFile.o $(OBJDIR)/ModelReader.o $(OBJDIR)/ModelParameterCell_SG.o $(OBJDIR)/ModelReader_Weerachai.o $(OBJDIR)/ModelOperator_File.o $(OBJDIR)/ForwardSolverFromFile.o $(OBJDIR)/PreConditioner_MF_DC.o $(OBJDIR)/Solver_PCG.o $(OBJDIR)/DivergenceCorrection.o $(OBJDIR)/PreConditioner_MF_CC.o $(OBJDIR)/Solver_QMR.o $(OBJDIR)/ForwardSolverIT.o $(OBJDIR)/ForwardSolverIT_DC.o $(OBJDIR)/Forward1D.o $(OBJDIR)/SourceMT_1D.o $(OBJDIR)/Forward2D.o $(OBJDIR)/SourceMT_2D.o $(OBJDIR)/test_FWD.o 
 
 
 all: test_FWD 
@@ -232,6 +232,9 @@ $(OBJDIR)/ModelReader_Weerachai.o:Classes/ModelParameter/ModelReader_Weerachai.f
 $(OBJDIR)/ModelOperator_File.o:Classes/ModelOperator/ModelOperator_File.f90 $(OBJDIR)/ModelOperator_MF.o 
 	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) Classes/ModelOperator/ModelOperator_File.f90 -o $(OBJDIR)/ModelOperator_File.o
 
+$(OBJDIR)/ForwardSolverFromFile.o:Classes/ForwardSolver/ForwardSolverFromFile.f90 $(OBJDIR)/ForwardSolver.o $(OBJDIR)/Grid3D_SG.o $(OBJDIR)/cVector3D_SG.o $(OBJDIR)/ModelOperator.o 
+	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) Classes/ForwardSolver/ForwardSolverFromFile.f90 -o $(OBJDIR)/ForwardSolverFromFile.o
+
 $(OBJDIR)/PreConditioner_MF_DC.o:Classes/ModelOperator/PreConditioner_MF_DC.f90 $(OBJDIR)/Constants.o $(OBJDIR)/Grid.o $(OBJDIR)/cScalar.o $(OBJDIR)/cScalar3D_SG.o $(OBJDIR)/ModelOperator_MF.o $(OBJDIR)/PreConditioner.o 
 	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) Classes/ModelOperator/PreConditioner_MF_DC.f90 -o $(OBJDIR)/PreConditioner_MF_DC.o
 
@@ -241,17 +244,17 @@ $(OBJDIR)/Solver_PCG.o:Classes/Solver/Solver_PCG.f90 $(OBJDIR)/Solver.o $(OBJDIR
 $(OBJDIR)/DivergenceCorrection.o:Classes/ForwardSolver/DivergenceCorrection.f90 $(OBJDIR)/Solver_PCG.o $(OBJDIR)/ModelOperator.o $(OBJDIR)/cScalar3D_SG.o $(OBJDIR)/cVector3D_SG.o $(OBJDIR)/Source.o 
 	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) Classes/ForwardSolver/DivergenceCorrection.f90 -o $(OBJDIR)/DivergenceCorrection.o
 
-$(OBJDIR)/ForwardSolverFromFile.o:Classes/ForwardSolver/ForwardSolverFromFile.f90 $(OBJDIR)/ForwardSolver.o $(OBJDIR)/Grid3D_SG.o $(OBJDIR)/cVector3D_SG.o $(OBJDIR)/ModelOperator.o 
-	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) Classes/ForwardSolver/ForwardSolverFromFile.f90 -o $(OBJDIR)/ForwardSolverFromFile.o
-
 $(OBJDIR)/PreConditioner_MF_CC.o:Classes/ModelOperator/PreConditioner_MF_CC.f90 $(OBJDIR)/Constants.o $(OBJDIR)/Grid.o $(OBJDIR)/cVector.o $(OBJDIR)/cVector3D_SG.o $(OBJDIR)/cScalar3D_SG.o $(OBJDIR)/ModelOperator_MF.o $(OBJDIR)/PreConditioner.o 
 	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) Classes/ModelOperator/PreConditioner_MF_CC.f90 -o $(OBJDIR)/PreConditioner_MF_CC.o
 
 $(OBJDIR)/Solver_QMR.o:Classes/Solver/Solver_QMR.f90 $(OBJDIR)/Solver.o $(OBJDIR)/cVector.o $(OBJDIR)/ModelOperator_MF.o $(OBJDIR)/PreConditioner_MF_CC.o 
 	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) Classes/Solver/Solver_QMR.f90 -o $(OBJDIR)/Solver_QMR.o
 
-$(OBJDIR)/ForwardSolverDC.o:Classes/ForwardSolver/ForwardSolverDC.f90 $(OBJDIR)/ForwardSolver.o $(OBJDIR)/DivergenceCorrection.o $(OBJDIR)/ModelOperator.o $(OBJDIR)/Solver_QMR.o 
-	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) Classes/ForwardSolver/ForwardSolverDC.f90 -o $(OBJDIR)/ForwardSolverDC.o
+$(OBJDIR)/ForwardSolverIT.o:Classes/ForwardSolver/ForwardSolverIT.f90 $(OBJDIR)/ForwardSolver.o $(OBJDIR)/DivergenceCorrection.o $(OBJDIR)/ModelOperator.o $(OBJDIR)/Solver_QMR.o 
+	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) Classes/ForwardSolver/ForwardSolverIT.f90 -o $(OBJDIR)/ForwardSolverIT.o
+
+$(OBJDIR)/ForwardSolverIT_DC.o:Classes/ForwardSolver/ForwardSolverIT_DC.f90 $(OBJDIR)/ForwardSolverIT.o $(OBJDIR)/DivergenceCorrection.o $(OBJDIR)/ModelOperator.o $(OBJDIR)/Solver_QMR.o 
+	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) Classes/ForwardSolver/ForwardSolverIT_DC.f90 -o $(OBJDIR)/ForwardSolverIT_DC.o
 
 $(OBJDIR)/Forward1D.o:Classes/1D/Forward1D.f90 $(OBJDIR)/Constants.o $(OBJDIR)/Grid1D.o $(OBJDIR)/ModelParameter1D.o 
 	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) Classes/1D/Forward1D.f90 -o $(OBJDIR)/Forward1D.o
@@ -265,7 +268,7 @@ $(OBJDIR)/Forward2D.o:Classes/2D/Forward2D.f90 $(OBJDIR)/Constants.o $(OBJDIR)/G
 $(OBJDIR)/SourceMT_2D.o:Classes/Source/SourceMT_2D.f90 $(OBJDIR)/Constants.o $(OBJDIR)/Source.o $(OBJDIR)/cVector3D_SG.o $(OBJDIR)/Grid3D_SG.o $(OBJDIR)/Forward2D.o 
 	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) Classes/Source/SourceMT_2D.f90 -o $(OBJDIR)/SourceMT_2D.o
 
-$(OBJDIR)/test_FWD.o:test_FWD.f90 $(OBJDIR)/DataManager.o $(OBJDIR)/ModEMControlFile.o $(OBJDIR)/ModelReader.o $(OBJDIR)/ModelReader_Weerachai.o $(OBJDIR)/ModelOperator_MF.o $(OBJDIR)/ModelOperator_File.o $(OBJDIR)/ModelParameterCell_SG.o $(OBJDIR)/Grid3D_SG.o $(OBJDIR)/DivergenceCorrection.o $(OBJDIR)/ForwardSolverFromFile.o $(OBJDIR)/ForwardSolverDC.o $(OBJDIR)/SourceMT_1D.o $(OBJDIR)/SourceMT_2D.o 
+$(OBJDIR)/test_FWD.o:test_FWD.f90 $(OBJDIR)/DataManager.o $(OBJDIR)/ModEMControlFile.o $(OBJDIR)/ModelReader.o $(OBJDIR)/ModelReader_Weerachai.o $(OBJDIR)/ModelOperator_MF.o $(OBJDIR)/ModelOperator_File.o $(OBJDIR)/ModelParameterCell_SG.o $(OBJDIR)/Grid3D_SG.o $(OBJDIR)/ForwardSolverFromFile.o $(OBJDIR)/ForwardSolverIT_DC.o $(OBJDIR)/SourceMT_1D.o $(OBJDIR)/SourceMT_2D.o 
 	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) test_FWD.f90 -o $(OBJDIR)/test_FWD.o
 
 # Type " make clean " to get rid of all object and module files 
