@@ -38,7 +38,7 @@ contains
       !
       type( ModelOperator_File_t ) :: self
       !
-      write( *, * ) "Constructor ModelOperator_File"
+      !write( *, * ) "Constructor ModelOperator_File"
       !
       ! Instantiation of the specific object MetricElements
       allocate( self%metric, source = MetricElements_CSG_t( grid ) )
@@ -119,11 +119,11 @@ contains
           adjt = .false.
       end if
       !
-      if ( adjt ) then
-          c = -C_ONE * omega * ISIGN * MU_0
-      else
-          c = C_ONE * omega * ISIGN * MU_0
-      end if
+      !if ( adjt ) then
+          !c = -C_ONE * omega * ISIGN * MU_0
+      !else
+          !c = C_ONE * omega * ISIGN * MU_0
+      !end if
       !
       select type( x )
       class is( cVector3D_SG_t )
@@ -139,9 +139,10 @@ contains
              !   convert input cVector to column format 
              call x%getArray( xVec )
              !
-             write( *, * ) "xVec:"
+			 xVec = C_ZERO!
+             write( 1111, * ) "xVec:"
              do i = 1, self%n
-                if( xVec( i ) /= 0 ) write( *, * ) xVec( i )
+                if( xVec( i ) /= 0 ) write( 1111, * ) xVec( i )
              enddo
              !
              !   allocate for product A*xVec
@@ -150,19 +151,19 @@ contains
              do i = 1, self%n
                 yVec( i ) = C_ZERO
                 do j = 1, self%n
-                   yVec( i ) = yVec( i ) + self%A( i, j ) * xVec( j )
+                   yVec( i ) = yVec( i ) + complex( self%A( i, j ), 0.0 ) * xVec( j )
                 enddo
              enddo
              !
              !   add in imaginary diagonal part of operator
-             yVec = yVec + c * xVec
+             !yVec = yVec + c * xVec
              !
              !   convert result back to cVector`
              call y%setArray( yVec )
              !
-             write( *, * ) "yVec:"
+             write( 2222, * ) "yVec:"
              do i = 1, self%n
-                if( yVec( i ) /= 0 ) write( *, * ) yVec( i )
+                if( yVec( i ) /= 0 ) write( 2222, * ) yVec( i )
              enddo
              !
              call y%print( 666 )

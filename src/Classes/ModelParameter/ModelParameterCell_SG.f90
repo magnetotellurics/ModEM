@@ -156,17 +156,16 @@ contains
       real(kind=prec), allocatable, dimension(:) :: CondSlice
       real(kind=prec) :: wt, temp_sigma_value
       integer :: i, j, k
-	  write(*,*) "mp1"
+	  !
       !   extract 1D grid
       grid1 = self%grid%Slice1D()
-	  write(*,*) "mp2"
+	  !
       !   create 1D model parameter
       m1D = ModelParameter1D_t( grid1 )
-	  write(*,*) "mp3"
+	  !
       !   comnductivity slice
       allocate( CondSlice( grid1%nzEarth ) )
       !
-	  write(*,*) "mp4"
       do k = 1, self%grid%nzEarth
         wt = R_ZERO
         temp_sigma_value = R_ZERO
