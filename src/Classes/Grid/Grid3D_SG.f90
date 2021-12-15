@@ -401,11 +401,12 @@ contains
        
     else if (index(airLayers%method, 'fixed height') > 0) then 
        z1Log = log10(self%dz(self%nzAir + 1))
-       dlogz = (log10(airLayers%maxHeight) - z1Log)/(airLayers%nz)
+       dlogz = (log10(airLayers%maxHeight) - z1Log)/(airLayers%nz-1)
        
        zLog = z1Log
-       do iz = airLayers%Nz, 1, -1
-          airLayers%dz(iz) = 10.**(zLog + dlogz) - 10.**(zLog)
+       airLayers%dz(airLayers%Nz) = 10.**z1Log
+       do iz = airLayers%Nz-1, 1, -1
+          airLayers%dz(iz) = 10.**(zLog + dlogz) - airLayers%dz(iz+1)
           zLog = zLog + dlogz
        end do
        
