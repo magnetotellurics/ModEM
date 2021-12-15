@@ -142,22 +142,22 @@ contains
          call Tx%solveFWD()
          !
          ! Loop over Receivers of each Transmitter
-         nRx = Tx%getNRx()
+         !nRx = Tx%getNRx()
          !
-         do iRx = 1, nRx
+         !do iRx = 1, nRx
             !
             ! Temporary Receiver alias
-            Rx = receivers%get( Tx%get( iRx ) )
+            !Rx = receivers%get( Tx%get( iRx ) )
             !
             ! Verbosis...
             !write( *, * ) "                  Rx Id:", Rx%id, "XYZ:", Rx%location
             !
             ! Calculate Rx Predicted Data
-            call Rx%predictedData( model_operator, Tx )
+            !call Rx%predictedData( model_operator, Tx )
             !
-            deallocate( Rx )
+            !deallocate( Rx )
             !
-         enddo
+         !enddo
          !
          deallocate( Tx )
          !
@@ -218,6 +218,10 @@ contains
       ! It remains to standardize ????
       type( ModelReader_Weerachai_t ) :: model_reader
       !
+      character(:), allocatable :: fname
+      !
+      fname = "/mnt/c/Users/protew/Desktop/ON/GITLAB_PROJECTS/modem-oo/inputs/Full_A_Matrix_TinyModel"
+      !
       write( *, * ) "   -> Model File: [", model_file_name, "]"
       !
       ! Read Grid and ModelParameter with ModelReader_Weerachai
@@ -228,13 +232,16 @@ contains
          !
          class is( Grid3D_SG_t )
              !
-             model_operator = ModelOperator_MF_t( main_grid )
+             ! 
+             model_operator = ModelOperator_File_t( main_grid, fname )
              !
-             call model_operator%SetEquations()
+             !model_operator = ModelOperator_MF_t( main_grid )
              !
-             call model_parameter%setMetric( model_operator%metric )
+             !call model_operator%SetEquations()
              !
-             call model_operator%SetCond( model_parameter )
+             !call model_parameter%setMetric( model_operator%metric )
+             !
+             !call model_operator%SetCond( model_parameter )
              !
          class default
              stop "Unclassified main_grid"

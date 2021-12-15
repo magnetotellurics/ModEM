@@ -148,21 +148,25 @@ contains
       !   extracts slice corresponding to column j of model parameter
       implicit none
       ! Arguments
-      class(ModelParameterCell_SG_t), intent(in) :: self
+      class( ModelParameterCell_SG_t ), intent(in) :: self
       !
-      type(ModelParameter1D_t) ::  m1D 
+      type( ModelParameter1D_t ) :: m1D 
       !   local variables
       type(Grid1D_t) :: grid1
       real(kind=prec), allocatable, dimension(:) :: CondSlice
       real(kind=prec) :: wt, temp_sigma_value
       integer :: i, j, k
+	  write(*,*) "mp1"
       !   extract 1D grid
       grid1 = self%grid%Slice1D()
+	  write(*,*) "mp2"
       !   create 1D model parameter
       m1D = ModelParameter1D_t( grid1 )
+	  write(*,*) "mp3"
       !   comnductivity slice
       allocate( CondSlice( grid1%nzEarth ) )
       !
+	  write(*,*) "mp4"
       do k = 1, self%grid%nzEarth
         wt = R_ZERO
         temp_sigma_value = R_ZERO

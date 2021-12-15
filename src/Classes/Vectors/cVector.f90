@@ -23,8 +23,8 @@ module cVector
        procedure( interface_set_one_boundary_c_vector ), deferred :: setOneboundary
        procedure( interface_set_all_interior_c_vector ), deferred :: setAllinterior
        procedure( interface_int_bdry_indices_c_vector ), deferred :: intBdryIndices
-       procedure( interface_boundary_c_vector )         , deferred :: boundary
-       procedure( interface_interior_c_vector )         , deferred :: interior
+       procedure( interface_boundary_c_vector ), deferred         :: boundary
+       procedure( interface_interior_c_vector ), deferred         :: interior
 
        !**
        ! Data access
@@ -311,13 +311,14 @@ module cVector
           import :: cVector_t, prec
           class(cVector_t) , intent(in)   :: self
           real(kind = prec), intent(in)   :: location(3)
-          character            , intent(in)   :: xyz
+          character, intent(in)         :: xyz
           class(cVector_t) , intent(out), allocatable :: E
        end subroutine interface_interp_func_c_vector
        
-       subroutine interface_print_c_vector( self )
+       subroutine interface_print_c_vector( self, io_unit )
           import :: cVector_t
-          class(cVector_t) , intent(in)   :: self
+          class( cVector_t ) , intent( in ) :: self
+		  integer, intent( in ), optional   :: io_unit
        end subroutine interface_print_c_vector
        
    end interface

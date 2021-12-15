@@ -91,6 +91,8 @@ module ModelOperator_MF
            !    this is used only inside this ModelOperator (called from setCond)
            procedure :: divCorsetUp => divCorsetUpModelOperatorMF
            !
+           procedure, public :: print => printModelOperatorMF
+           !
    end type ModelOperator_MF_t
    !
    interface ModelOperator_MF_t
@@ -257,7 +259,7 @@ contains
    function createVectorModelOperatorMF( self, gridType ) result( cVec )
       implicit none
       !
-     !    this just returns a cVector of correct type
+      !    this just returns a cVector of correct type
       !       for this model operator -- 
       class( ModelOperator_MF_t ), intent( in )   :: self
       character( len=80 ), intent( in ), optional :: gridType
@@ -308,7 +310,7 @@ contains
    subroutine setEquationsModelOperatorMF( self )
       implicit none
       !
-     ! Arguments
+      ! Arguments
       class( ModelOperator_MF_t ), intent( inout ) :: self
       ! Local variables
       integer :: status, ix, iy, iz 
@@ -423,7 +425,7 @@ contains
    subroutine setCondModelOperatorMF( self, condParam )
       implicit none
       !
-     ! Arguments
+      ! Arguments
       class( ModelOperator_MF_t), intent( inout ) :: self
       class( ModelParameter_t), intent( inout )   :: condParam
       !
@@ -438,7 +440,7 @@ contains
    subroutine divCorsetUpModelOperatorMF( self )
       implicit none
       !
-     ! Arguments
+      ! Arguments
       class( ModelOperator_MF_t ) :: self
       ! Local variables
       integer :: ix, iy, iz
@@ -542,7 +544,7 @@ contains
    subroutine amultModelOperatorMF( self, omega, x, y, p_adjt )
       implicit none
       !
-     class( ModelOperator_MF_t ), intent( in )   :: self
+      class( ModelOperator_MF_t ), intent( in )   :: self
       real( kind = prec ), intent( in ), optional :: omega
       !   do these have to be abstract????
       class( cVector_t ), intent( in )            :: x
@@ -633,7 +635,7 @@ contains
             ! Modified to add diagonal part in main loop ...
 
             ! Finally multiply by VEdge (in place)
-            call y%mults3(self%metric%Vedge)
+            call y%mults3( self%metric%Vedge )
             !
          end select
          !
@@ -1004,5 +1006,14 @@ contains
       end select
       !
    end subroutine divModelOperatorMF
+   !
+   subroutine printModelOperatorMF( self )
+      implicit none
+      !
+      class( ModelOperator_MF_t ), intent(in) :: self
+      !
+      stop "subroutine print mot implemented for ModelOperator_MF"
+      !
+   end subroutine printModelOperatorMF
    !
 end module ModelOperator_MF

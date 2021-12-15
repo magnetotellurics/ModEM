@@ -37,6 +37,8 @@ module ModelOperator
        !
        procedure( interface_create_scalar_model_operator ), deferred, public :: createScalar
        procedure( interface_create_vector_model_operator ), deferred, public :: createVector
+	   !
+	   procedure( interface_print_model_operator ), deferred, public :: print
        
    end type ModelOperator_t
    
@@ -137,6 +139,11 @@ module ModelOperator
           class( cScalar_t ), allocatable             :: cSclr
        end function interface_create_scalar_model_operator
        !
+	   subroutine interface_print_model_operator( self )
+          import :: ModelOperator_t
+          !
+          class( ModelOperator_t ), intent( in ) :: self
+       end subroutine interface_print_model_operator
    end interface
    !
 end module ModelOperator

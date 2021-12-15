@@ -44,7 +44,7 @@ contains
               ! PreConditioner CC
               self%preconditioner = PreConditioner_MF_CC_t( model_operator )
               !
-		 class default
+         class default
             write(*, *) "ERROR:Solver_QMR::Constructor:"
             STOP "         Unknow model_operator type."
       end select
@@ -89,38 +89,30 @@ contains
       !
       class( Solver_QMR_t ), intent( inout ) :: self
       class( cVector_t ), intent( inout )    :: x
-      class( cVector_t ), intent(in)         :: b
+      class( cVector_t ), intent( in )       :: b
       !
       class( cVector_t ), allocatable :: AX, R, VT
       class( cVector_t ), allocatable :: Y, Z, WT, V, W, YT, ZT, P, Q, PT, D, S
       logical              :: adjoint, ilu_adjt
-      complex( kind=prec ) :: ETA, PDE, EPSIL, RDE, BETA, DELTA, RHO
+      complex( kind=prec ) :: ETA, PDE, EPSIL, RDE, BETA, DELTA, RHO, DELTA_EPSIL
       complex( kind=prec ) :: PSI, RHO1, GAMM, GAMM1, THET, THET1, TM2
       complex( kind=prec ) :: bnorm,rnorm
       complex( kind=prec ) :: rhoInv,psiInv
       integer              :: iter
-      real( kind=prec )    :: omega
-      !
-      ! local copy of omega to simplify code slightly
-      omega = self%omega
       !
       ! Allocate work TVector objects -- questions as in PCG
       call x%zeros()
-      allocate(AX, source = x)
-      allocate(R, source = x)
-      allocate(VT, source = x)
-      allocate(Y, source = x)
-      allocate(Z, source = x)
-      allocate(WT, source = x)
-      allocate(V, source = x)
-      allocate(W, source = x)
-      allocate(YT, source = x)
-      allocate(ZT, source = x)
-      allocate(P, source = x)
-     allocate(Q, source = x)
-      allocate(PT, source = x)
-      allocate(D, source = x)
-      allocate(S, source = x)
+      allocate( AX, source = x )
+      allocate( R, source = x )
+      allocate( Y, source = x )
+	  allocate( V, source = x )
+	  allocate( W, source = x )
+      allocate( Z, source = x )
+      allocate( YT, source = x )
+      allocate( ZT, source = x )
+      allocate( PT, source = x )
+      allocate( D, source = x )
+      allocate( S, source = x )
       !
       ! NOTE: this iterative solver is QMR without look-ahead
       ! patterned after the scheme given on page 24 of Barrett et al.
@@ -133,144 +125,155 @@ contains
       self%failed = .false.
       adjoint = .false.
       ! R is Ax
-      call self%model_operator%Amult( omega, x, R, adjoint )
+      !
+      call self%model_operator%Amult( self%omega, x, R, adjoint )
       ! b - Ax, for inital guess x, that has been input to the routine
       call R%linCombS( b, C_MinusOne, C_ONE )
       !
       ! Norm of rhs, residual
-      bnorm = CDSQRT(b%dotProd(b))
-      rnorm = CDSQRT(R%dotProd(R))
+      bnorm = CDSQRT( b%dotProd( b ) )
+      rnorm = CDSQRT( R%dotProd( R ) )
       !
       ! this usually means an inadequate model, in which case Maxwell"s fails
-      if (isnan(abs(bnorm))) then
+      if( isnan( abs( bnorm ) ) ) then
           stop "Error: b in QMR contains NaNs; exiting..."
       end if
       !
       !   iter is iteration counter
       iter = 1
-      self%relErr(iter) = real(rnorm/bnorm)
-      !   why did we deallocate and then reallocate??  Don"t want to do this here!
-      VT = R
-      ilu_adjt = .false.
-      call self%preconditioner%LTsolve(VT,Y,ilu_adjt)
-      RHO = CDSQRT(Y%dotProd(Y))
+      self%relErr( iter ) = real( rnorm / bnorm )
       !
-      WT=R
+      allocate( VT, source = R )
+      ilu_adjt = .false.
+      call self%preconditioner%LTsolve( VT, Y, ilu_adjt )
+      RHO = CDSQRT( Y%dotProd( Y ) )
+      !
+      allocate( WT, source = R )
       ilu_adjt = .true.
-      call self%preconditioner%UTsolve(WT,Z,ilu_adjt)
-      PSI   = CDSQRT(Z%dotProd(Z))
+      call self%preconditioner%UTsolve( WT, Z, ilu_adjt )
+      PSI  = CDSQRT( Z%dotProd( Z ) )
       GAMM = C_ONE
-      ETA   = C_MinusONE
+      ETA  = C_MinusONE
       !
       ! the do loop goes on while the relative error is greater than the tolerance
       ! and the iterations are less than maxIt
-      do while ((self%relErr(iter).gt.self%tolerance).and.&
-             (iter.lt.self%max_iter))
-          if ((RHO.eq.C_ZERO).or.(PSI.eq.C_ZERO)) then
-               self%failed = .true.
-               write(0,*) "QMR FAILED TO CONVERGE : RHO"
-               stop "QMR FAILED TO CONVERGE : PSI"
+      do while( ( self%relErr( iter ) .gt. self%tolerance ) &
+                .and. &
+                ( iter .lt. self%max_iter ) )
+          !
+          if( (RHO .eq. C_ZERO ) .or. ( PSI .eq. C_ZERO ) ) then
+             self%failed = .true.
+             write(0,*) "QMR FAILED TO CONVERGE : RHO"
+             stop "QMR FAILED TO CONVERGE : PSI"
           end if
-        !
-          rhoInv = (1/RHO)*C_ONE
-          psiInv = (1/PSI)*C_ONE
-        !
+          !
+          rhoInv = ( 1 / RHO ) * C_ONE
+          psiInv = ( 1 / PSI ) * C_ONE
+          !
           !   use functions here -- could make subroutines that don"t overwrite
-          V = VT%mult(rhoInv)
-          W = WT%mult(psiInv)
+          V = VT%mult( rhoInv )
+          W = WT%mult( psiInv )
           !
-         !  use subroutines here to overwrite with rescalled vectors
-          call Y%multS(rhoInv)
-          call Z%multS(rhoInv)
+          !  use subroutines here to overwrite with rescalled vectors
+          call Y%multS( rhoInv )
+          call Z%multS( rhoInv )
           !
-          DELTA = Z%dotProd(Y)
-          if (DELTA.eq.C_ZERO) then
+          DELTA = Z%dotProd( Y )
+          if( DELTA .eq. C_ZERO ) then
                self%failed = .true.
                stop "QMR FAILS TO CONVERGE : DELTA"
           end if
           !
           ilu_adjt = .false.
-          call self%preconditioner%UTsolve(Y,YT,ilu_adjt)
+          call self%preconditioner%UTsolve( Y, YT, ilu_adjt )
+		  !
           ilu_adjt = .true.
-          call self%preconditioner%LTsolve(Z,ZT,ilu_adjt)
+          call self%preconditioner%LTsolve( Z, ZT, ilu_adjt )
           !
-          if ( iter .eq. 1 ) then
+          if( iter .eq. 1 ) then
              !
-           P = YT
-             Q = ZT
-           !
+             allocate( P, source = YT )
+			 allocate( Q, source = ZT )
+             !
           else
              ! these calculations are only done when iter > 1
-             PDE = -PSI*DELTA/EPSIL
-             RDE = -RHO*CONJG(DELTA/EPSIL)
+			 DELTA_EPSIL = DELTA / EPSIL
+             PDE = -PSI * DELTA_EPSIL
+             RDE = -RHO * CONJG( DELTA_EPSIL )
+			 !
              call P%linCombS( YT, PDE, C_ONE )
-             !   P = YT + PDE*P
+             !
              call Q%linCombS( ZT, RDE, C_ONE )
-             !   Q = ZT + RDE*Q)
+             !
           end if
           !
           adjoint = .false.
           call PT%Zeros()
-          call self%model_operator%Amult( omega, P, PT, adjoint )
-          EPSIL = Q%dotProd(PT)
-          if (EPSIL.eq.C_ZERO) then
+          call self%model_operator%Amult( self%omega, P, PT, adjoint )
+          EPSIL = Q%dotProd( PT )
+		  !
+          if( EPSIL .eq. C_ZERO ) then
                self%failed = .true.
                stop "QMR FAILED TO CONVERGE : EPSIL"
           end if
           !
           BETA = EPSIL/DELTA
-          if (BETA.eq.C_ZERO) then
+          if( BETA .eq. C_ZERO ) then
                self%failed = .true.
                stop "QMR FAILED TO CONVERGE : BETA"
           end if
           !    together these amount to VT = PT-BETA*V
           VT = PT
-          call V%scMultAddS(VT,-BETA)
+		  !
+          call V%scMultAddS( VT, -BETA )
           !
           RHO1 = RHO
           ilu_adjt = .false.
-          call self%preconditioner%LTsolve(VT,Y,ilu_adjt)
-          RHO = CDSQRT(Y%dotProd(Y))
+          call self%preconditioner%LTsolve( VT, Y, ilu_adjt )
+          RHO = CDSQRT( Y%dotProd( Y ) )
           !
           adjoint = .true.
           call WT%Zeros()
-          call self%model_operator%Amult( omega, Q, WT, adjoint )
-          !   WT = WT -conjg(BETA)*W
-          call W%scMultAddS(WT,-conjg(BETA))
+          call self%model_operator%Amult( self%omega, Q, WT, adjoint )
+          !
+          call W%scMultAddS( WT, -conjg( BETA ) )
           !
           ilu_adjt = .true.
-          call self%preconditioner%UTsolve(WT,Z,ilu_adjt)
-          PSI = CDSQRT(Z%dotProd(Z))
-          
-          if (iter.gt.1) then
-               THET1 = THET
+          call self%preconditioner%UTsolve( WT, Z, ilu_adjt )
+          PSI = CDSQRT( Z%dotProd( Z ) )
+          !
+          if( iter .gt. 1 ) then
+             THET1 = THET
           end if
-          THET = RHO/(GAMM*CDABS(BETA))
+		  !
+          THET = RHO / ( GAMM * CDABS( BETA ) )
           GAMM1 = GAMM
-          GAMM = C_ONE/CDSQRT(C_ONE + THET*THET)
-          if (GAMM.eq.C_ZERO) then
+          GAMM = C_ONE / CDSQRT( C_ONE + THET * THET )
+          !
+		  if( GAMM .eq. C_ZERO ) then
                self%failed = .true.
                stop "QMR FAILS TO CONVERGE : GAMM"
           end if
-
-          ETA = -ETA*RHO1*GAMM*GAMM/(BETA*GAMM1*GAMM1)
-          if (iter.eq.1) then
-             D = P%mult(ETA)    !   using function: D = ETA*P
-             S = PT%mult(ETA)    !   using function: S = ETA * PT
+          !
+          ETA = -ETA * RHO1 * GAMM * GAMM / ( BETA * GAMM1 * GAMM1 )
+          !
+		  if( iter .eq. 1 ) then
+             D = P%mult( ETA )    !   using function: D = ETA*P
+             S = PT%mult( ETA )    !   using function: S = ETA * PT
           else
-             TM2 = THET1*THET1*GAMM*GAMM
-             call D%linCombS(P,TM2,ETA)    !  D = TM2 * D + ETA * P 
-             call S%linCombS(PT,TM2,ETA)   !  S = TM2 * S + ETA * PT 
+             TM2 = THET1 * THET1 * GAMM * GAMM
+             call D%linCombS( P, TM2, ETA )    !  D = TM2 * D + ETA * P 
+             call S%linCombS( PT, TM2, ETA )   !  S = TM2 * S + ETA * PT 
           end if
           !
-          call D%scMultAddS(x,C_ONE)   !  x = x + C_ONE * D
-          call S%scMultAddS(R,C_MinusONE)   !  R = R + C_MinusONE * S
-          rnorm = CDSQRT(R%dotProd(R))
+          call D%scMultAddS( x, C_ONE )   !  x = x + C_ONE * D
+          call S%scMultAddS( R, C_MinusONE )   !  R = R + C_MinusONE * S
+          rnorm = CDSQRT( R%dotProd( R ) )
           iter = iter + 1
-          
+          !
           ! Keeping track of errors
           ! QMR book-keeping between divergence correction calls
-          self%relErr(iter) = real(rnorm/bnorm)          
+          self%relErr( iter ) = real( rnorm / bnorm )
       end do
       !
    end subroutine solveQMR

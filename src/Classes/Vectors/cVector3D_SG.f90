@@ -65,12 +65,12 @@ module cVector3D_SG
        !**
        ! boundaryCVector3D_SG operations
        !*
-       procedure, public :: setAllboundary   => setAllboundaryCVector3D_SG
-       procedure, public :: setOneboundary   => setOneboundaryCVector3D_SG
-       procedure, public :: setAllinterior   => setAllinteriorCVector3D_SG
+       procedure, public :: setAllboundary => setAllboundaryCVector3D_SG
+       procedure, public :: setOneboundary => setOneboundaryCVector3D_SG
+       procedure, public :: setAllinterior => setAllinteriorCVector3D_SG
        procedure, public :: intBdryIndices => intBdryIndicesCVector3D_SG
-       procedure, public :: boundary => boundaryCVector3D_SG
-       procedure, public :: interior => interiorCVector3D_SG
+       procedure, public :: boundary       => boundaryCVector3D_SG
+       procedure, public :: interior       => interiorCVector3D_SG
 
        !**
        ! Data access
@@ -84,10 +84,10 @@ module cVector3D_SG
        ! Arithmetic operations
        !*
 
-       procedure, public :: zeros => zerosCVector3D_SG
-       procedure, public :: add1 => add1CVector3D_SG
-       procedure, public :: sub1 => sub1CVector3D_SG
-       procedure, public :: mult1 => mult1CVector3D_SG
+       procedure, public :: zeros   => zerosCVector3D_SG
+       procedure, public :: add1    => add1CVector3D_SG
+       procedure, public :: sub1    => sub1CVector3D_SG
+       procedure, public :: mult1   => mult1CVector3D_SG
        procedure, public, pass(self) :: mult2 => mult2CVector3D_SG
        procedure, public :: mult3 => mult3CVector3D_SG
        procedure, public :: mults1 => mults1CVector3D_SG
@@ -107,7 +107,7 @@ module cVector3D_SG
        generic :: isCompatible => isCompatible1, isCompatible2
        
        procedure, public :: copyFrom    => copyFromCVector3D_SG
-       procedure, public :: interpFunc => interpFuncCVector3D_SG
+       procedure, public :: interpFunc  => interpFuncCVector3D_SG
        
        procedure, public :: print => printCVector3D_SG
    end type cVector3D_SG_t
@@ -250,7 +250,7 @@ contains
       integer :: Nx, Ny, Nz
       character(80) :: gridType
       integer :: i, j, k, ii, jj, kk, istat
-      real(kind = prec), allocatable, dimension(:, :, :) :: x, y, z      
+      real(kind = prec), allocatable, dimension(:, :, :) :: x, y, z
       logical :: ok, hasname, binary = .true.
       character(80) :: fname, isbinary
       
@@ -700,7 +700,7 @@ contains
       implicit none
       ! Arguments
       class(cVector3D_SG_t), intent(inout) :: self
-      complex(kind = prec) , intent(in)      :: v(:)
+      complex(kind = prec) , intent(in)    :: v(:)
       ! Local variables
       integer :: i1, i2
       
@@ -800,7 +800,8 @@ contains
    !*
    subroutine zerosCVector3D_SG(self)
       implicit none
-      class(cVector3D_SG_t), intent(inout) :: self
+      !
+     class(cVector3D_SG_t), intent(inout) :: self
 
       self%x = R_ZERO
       self%y = R_ZERO
@@ -824,7 +825,7 @@ contains
                class is(cVector3D_SG_t)
                    Eout%x = lhs%x + rhs%x
                    Eout%y = lhs%y + rhs%y
-                   Eout%z = lhs%z + rhs%z                   
+                   Eout%z = lhs%z + rhs%z
                end select
           end select
       !else
@@ -1059,7 +1060,7 @@ contains
                class is(rVector3D_SG_t)
                    Eout%x = lhs%x / rhs%x
                    Eout%y = lhs%y / rhs%y
-                   Eout%z = lhs%z / rhs%z                   
+                   Eout%z = lhs%z / rhs%z
                end select
           end select
       else
@@ -1374,25 +1375,57 @@ contains
       end select
    end function isCompatible2CVector3D_SG
    
-   subroutine printCVector3D_SG( self )
-      ! Arguments
-      class(cVector3D_SG_t), intent(in) :: self
+   subroutine printCVector3D_SG( self, io_unit )
+      implicit none
       !
-      write(*,*) self%nx, self%ny, self%nz
+      ! Arguments
+      class( cVector3D_SG_t ), intent( in ) :: self
+      integer, intent( in ), optional       :: io_unit
+      !
+      integer :: ix, iy, iz
+      !
+      if( present( io_unit ) ) then
+         write( io_unit, * ) self%nx, self%ny, self%nz
+      else
+         write( *, * ) self%nx, self%ny, self%nz
+      endif
+      !
       do ix = 1, self%nx
-          do iy = 1, self%ny 
-              do iz = 1, self%nz
-                  if( self%x( ix, iy, iz ) /= 0 ) then
-                     write(*,*) "X", ix, ":[", self%x( ix, iy, iz ), "]"
+         do iy = 1, self%ny 
+            do iz = 1, self%nz
+               !
+               if( self%x( ix, iy, iz ) /= 0.0 ) then
+                  !
+                  if( present( io_unit ) ) then
+                     write( io_unit, * ) "X", ix, ":[", self%x( ix, iy, iz ), "]"
+                  else
+                     write( *, * ) "X", ix, ":[", self%x( ix, iy, iz ), "]"
                   endif
-                  if( self%y( ix, iy, iz ) /= 0 ) then
-                     write(*,*) "Y", iy, ":[", self%y( ix, iy, iz ), "]"
+                  !
+               endif
+               !
+               if( self%y( ix, iy, iz ) /= 0.0 ) then
+                  !
+                  if( present( io_unit ) ) then
+                     write( io_unit, * ) "Y", iy, ":[", self%y( ix, iy, iz ), "]"
+                  else
+                     write( *, * ) "Y", iy, ":[", self%y( ix, iy, iz ), "]"
                   endif
-                  if( self%z( ix, iy, iz ) /= 0 ) then
-                     write(*,*) "Z", iz, ":[", self%z( ix, iy, iz ), "]"
+                  !
+               endif
+               !
+               if( self%z( ix, iy, iz ) /= 0.0 ) then
+                  !
+                  if( present( io_unit ) ) then
+                     write( io_unit, * ) "Z", iz, ":[", self%z( ix, iy, iz ), "]"
+                  else
+                     write( *, * ) "Z", iz, ":[", self%z( ix, iy, iz ), "]"
                   endif
-              enddo
-          enddo
+                  !
+               endif
+               !
+            enddo
+         enddo
       enddo
       !
    end subroutine printCVector3D_SG

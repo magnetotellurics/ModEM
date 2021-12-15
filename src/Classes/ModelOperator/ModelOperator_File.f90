@@ -4,7 +4,7 @@ module ModelOperator_File
    !
    type, extends( ModelOperator_MF_t ) :: ModelOperator_File_t
        !   These are additional variables ...
-       integer  :: n
+       integer  :: n = 0
        !    note the full A matrix has a complex diagonal -- will
        !    only write out the real part, leaving the frequncy dependent
        !     imaginary part of the diagonal to be handled internally
@@ -18,6 +18,8 @@ module ModelOperator_File
        procedure, public :: amult
        !    this last procedure is unique to this class extension
        procedure, public :: setCoefficientMatrix
+       !
+       procedure, public :: print
        !
    end type ModelOperator_File_t
    !
@@ -36,7 +38,7 @@ contains
       !
       type( ModelOperator_File_t ) :: self
       !
-      write(*,*) "Constructor ModelOperator_File"
+      write( *, * ) "Constructor ModelOperator_File"
       !
       ! Instantiation of the specific object MetricElements
       allocate( self%metric, source = MetricElements_CSG_t( grid ) )
@@ -52,7 +54,7 @@ contains
       !
       type( ModelOperator_File_t ), intent( inout ) :: self
       !
-      !write(*,*) "Destructor ModelOperator_File"
+      !write( *, * ) "Destructor ModelOperator_File"
       !
       call self%deallocate()
      
@@ -67,7 +69,7 @@ contains
       character(:), allocatable, intent( in )        :: fname
       !
       !   local variables
-      integer :: inUnit, n
+      integer :: inUnit
       !
       !    not sure we need a separate routine for this
       !    just do directly in ctor?
@@ -77,10 +79,11 @@ contains
       inUnit = 77
       open( inUnit, file = fname, form = 'unformatted', action = 'read' )
       !    first sequential record is matrix size
-      read( inUnit ) n
-      allocate( self%A( n, n ) )
+      read( inUnit ) self%n
+      allocate( self%A( self%n, self%n ) )
       !    second sequential record is real part of coefficient matrix
       read( inUnit ) self%A
+      !
       close( inUnit )
       !
    end subroutine setCoefficientMatrix
@@ -95,6 +98,8 @@ contains
    !    loaded from file
    !*
    subroutine amult( self, omega, x, y, p_adjt )
+      implicit none
+      !
       class( ModelOperator_File_t ), intent( in ) :: self
       real( kind=prec ), intent( in ), optional   :: omega
       !   do these have to be abstract????
@@ -103,7 +108,7 @@ contains
       logical, intent( in ), optional             :: p_adjt
       !
       ! Local variables
-      integer :: ix, iy, iz
+      integer :: i, j
       complex( kind=prec ), allocatable, dimension(:) :: xVec, yVec
       complex( kind=prec ) :: c
       logical :: adjt
@@ -114,7 +119,7 @@ contains
           adjt = .false.
       end if
       !
-      if (adjt) then
+      if ( adjt ) then
           c = -C_ONE * omega * ISIGN * MU_0
       else
           c = C_ONE * omega * ISIGN * MU_0
@@ -123,35 +128,72 @@ contains
       select type( x )
       class is( cVector3D_SG_t )
           !
-          if(.not.y%isAllocated) then
-               write(*,*) 'ERROR: amult in   ModelOperator_MF'
-               stop       'output vector y not allocated'
-          endif
-          !
           select type( y )
           class is( cVector3D_SG_t )
              !
+             if( .not. y%isAllocated ) then
+                write( *, * ) 'ERROR: amult in   ModelOperator_MF'
+                stop       'output vector y not allocated'
+             endif
+             !
              !   convert input cVector to column format 
              call x%getArray( xVec )
+             !
+             write( *, * ) "xVec:"
+             do i = 1, self%n
+                if( xVec( i ) /= 0 ) write( *, * ) xVec( i )
+             enddo
+             !
              !   allocate for product A*xVec
-             allocate( yVec( n ) )
-             !   direct matrix-vector multiplication`
-             yVec = A*xVec
+             allocate( yVec( self%n ) )
+             !
+             do i = 1, self%n
+                yVec( i ) = C_ZERO
+                do j = 1, self%n
+                   yVec( i ) = yVec( i ) + self%A( i, j ) * xVec( j )
+                enddo
+             enddo
+             !
              !   add in imaginary diagonal part of operator
-             yVec = yVec + c*xVec
+             yVec = yVec + c * xVec
+             !
              !   convert result back to cVector`
              call y%setArray( yVec )
-             ! Finally multiply by VEdge (in place)
-             call y%mults3( self%metric%Vedge )
+             !
+             write( *, * ) "yVec:"
+             do i = 1, self%n
+                if( yVec( i ) /= 0 ) write( *, * ) yVec( i )
+             enddo
+             !
+             call y%print( 666 )
              !
           end select
           !
       class default
-          write(*, *) 'ERROR:ModelOperator_MF::amult:'
+          write( *, * ) 'ERROR:ModelOperator_MF::amult:'
           stop        '         Incompatible input [x]. Exiting.'
           !
       end select
       !
    end subroutine amult
+   !
+   subroutine print( self )
+      implicit none
+      !
+      ! Arguments
+      class( ModelOperator_File_t ), intent(in) :: self
+      integer :: i, j
+      !
+      write( 1111, * ) "Matrix A, n=", self%n
+      write( 1111, * ) "i", "j", "non_zero_value"
+      do i = 1, self%n
+         do j = 1, self%n
+            if( self%A( i, j ) /= 0 ) then
+               write( 1111, * ) i, j, ":[", self%A( i, j ), "]"
+            endif
+         enddo
+      enddo
+      !
+   end subroutine print
    !
 end module ModelOperator_File

@@ -68,7 +68,7 @@ module Forward1D
    !
    !**********
    !
-   subroutine Solve(self,E1D)
+   subroutine Solve( self, E1D )
       !   solve 1D equations for model parameter m, frequncy omega, returning
       !   solution in complex array E1D on grid defined by m%grid (pointer to
       !   numerical grid)
@@ -248,7 +248,7 @@ module Forward1D
        E1D(:) = E1D(:)*scaleFactor
 
 
-       deallocate(interfaceDepth)
+       !if( allocated( interfaceDepth) ) deallocate( interfaceDepth )
 
    end subroutine GridedSolution
 
