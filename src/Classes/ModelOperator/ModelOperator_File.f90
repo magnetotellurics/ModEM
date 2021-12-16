@@ -110,6 +110,7 @@ contains
       ! Local variables
       integer :: i, j
       complex( kind=prec ), allocatable, dimension(:) :: xVec, yVec
+      real( kind=prec ), allocatable, dimension(:) :: sigma
       complex( kind=prec ) :: c
       logical :: adjt
       !
@@ -119,11 +120,11 @@ contains
           adjt = .false.
       end if
       !
-      !if ( adjt ) then
-          !c = -C_ONE * omega * ISIGN * MU_0
-      !else
-          !c = C_ONE * omega * ISIGN * MU_0
-      !end if
+      if ( adjt ) then
+          c = -C_ONE * omega * ISIGN * MU_0
+      else
+          c = C_ONE * omega * ISIGN * MU_0
+      end if
       !
       select type( x )
       class is( cVector3D_SG_t )
@@ -139,7 +140,6 @@ contains
              !   convert input cVector to column format 
              call x%getArray( xVec )
              !
-             xvec = C_ZERO
              write( 1111, * ) "xVec:"
              do i = 1, self%n
                 if( abs(xVec( i )) .gt. R_TINY ) write( 1111, * ) xVec( i )
@@ -156,7 +156,8 @@ contains
              enddo
              !
              !   add in imaginary diagonal part of operator
-             yVec = yVec + c * xVec
+             call self%Sigma_E%getArray(sigma)
+             yVec = yVec + c * sigma * xVec
              !
              !   convert result back to cVector`
              call y%setArray( yVec )
@@ -176,6 +177,8 @@ contains
           !
       end select
       !
+      write(*,*) 'done with first call to Amult'
+      stop
    end subroutine amult
    !
    subroutine print( self )
