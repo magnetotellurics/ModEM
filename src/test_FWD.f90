@@ -220,7 +220,8 @@ contains
       !
       character(:), allocatable :: fname
       !
-      fname = "/mnt/c/Users/protew/Desktop/ON/GITLAB_PROJECTS/modem-oo/inputs/Full_A_Matrix_TinyModel"
+      !      fname = "/mnt/c/Users/protew/Desktop/ON/GITLAB_PROJECTS/modem-oo/inputs/Full_A_Matrix_TinyModel"
+      fname = "/Users/garyegbert/Desktop/ModEM_ON/modem-oo/inputs/Full_A_Matrix_TinyModel"
       !
       write( *, * ) "   -> Model File: [", model_file_name, "]"
       !
