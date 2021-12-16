@@ -705,15 +705,18 @@ contains
       integer :: i1, i2
       
       ! Ex
-      i1 = 1; i2 = self%Nxyz(1)
+      i1 = 1
+      i2 = self%Nxyz(1)
       self%x = reshape(v(i1:i2), self%NdX)
       
       ! Ey
-      i1 = i2 + 1; i2 = i2 + self%Nxyz(2)
+      i1 = i2 + 1
+      i2 = i2 + self%Nxyz(2)
       self%y = reshape(v(i1:i2), self%NdY)
       
       ! Ez
-      i1 = i2 + 1; i2 = i2 + self%Nxyz(3)
+      i1 = i2 + 1
+      i2 = i2 + self%Nxyz(3)
       self%z = reshape(v(i1:i2), self%NdZ)
       
    end subroutine setArrayCVector3D_SG
@@ -1390,44 +1393,41 @@ contains
          write( *, * ) self%nx, self%ny, self%nz
       endif
       !
-      do ix = 1, self%nx
-         do iy = 1, self%ny 
-            do iz = 1, self%nz
-               !
-               if( self%x( ix, iy, iz ) /= 0.0 ) then
-                  !
-                  if( present( io_unit ) ) then
-                     write( io_unit, * ) "X", ix, ":[", self%x( ix, iy, iz ), "]"
-                  else
-                     write( *, * ) "X", ix, ":[", self%x( ix, iy, iz ), "]"
+      !
+      write(*,*) 'x-component',self%NdX
+      do ix = 1, self%NdX(1)
+          do iy = 1, self%NdX(2)
+              do iz = 1, self%NdX(3)
+                  if( self%x( ix, iy, iz ) /= 0 ) then
+                     write(*,*) ix,iy,iz, ":[", self%x( ix, iy, iz ), "]"
                   endif
-                  !
-               endif
-               !
-               if( self%y( ix, iy, iz ) /= 0.0 ) then
-                  !
-                  if( present( io_unit ) ) then
-                     write( io_unit, * ) "Y", iy, ":[", self%y( ix, iy, iz ), "]"
-                  else
-                     write( *, * ) "Y", iy, ":[", self%y( ix, iy, iz ), "]"
-                  endif
-                  !
-               endif
-               !
-               if( self%z( ix, iy, iz ) /= 0.0 ) then
-                  !
-                  if( present( io_unit ) ) then
-                     write( io_unit, * ) "Z", iz, ":[", self%z( ix, iy, iz ), "]"
-                  else
-                     write( *, * ) "Z", iz, ":[", self%z( ix, iy, iz ), "]"
-                  endif
-                  !
-               endif
-               !
-            enddo
-         enddo
+              enddo
+          enddo
       enddo
       !
+      write(*,*) 'y-component',self%NdY
+      do ix = 1, self%NdY(1)
+          do iy = 1, self%NdY(2)
+              do iz = 1, self%NdY(3)
+                  if( self%y( ix, iy, iz ) /= 0 ) then
+                     write(*,*) ix,iy,iz, ":[", self%y( ix, iy, iz ), "]"
+                  endif
+              enddo
+          enddo
+      enddo
+      !
+      write(*,*) 'z-component',self%NdZ
+      do ix = 1, self%NdZ(1)
+          do iy = 1, self%NdZ(2)
+              do iz = 1, self%NdZ(3)
+                  if( self%z( ix, iy, iz ) /= 0 ) then
+                     write(*,*) ix,iy,iz, ":[", self%x( ix, iy, iz ), "]"
+                  endif
+              enddo
+          enddo
+      enddo
+      !
+
    end subroutine printCVector3D_SG
    
 end module cVector3D_SG

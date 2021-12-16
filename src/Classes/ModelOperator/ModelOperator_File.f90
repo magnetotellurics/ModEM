@@ -139,10 +139,10 @@ contains
              !   convert input cVector to column format 
              call x%getArray( xVec )
              !
-			 xVec = C_ZERO!
+             xvec = C_ZERO
              write( 1111, * ) "xVec:"
              do i = 1, self%n
-                if( xVec( i ) /= 0 ) write( 1111, * ) xVec( i )
+                if( abs(xVec( i )) .gt. R_TINY ) write( 1111, * ) xVec( i )
              enddo
              !
              !   allocate for product A*xVec
@@ -156,14 +156,14 @@ contains
              enddo
              !
              !   add in imaginary diagonal part of operator
-             !yVec = yVec + c * xVec
+             yVec = yVec + c * xVec
              !
              !   convert result back to cVector`
              call y%setArray( yVec )
              !
              write( 2222, * ) "yVec:"
              do i = 1, self%n
-                if( yVec( i ) /= 0 ) write( 2222, * ) yVec( i )
+                if( abs(yVec( i )) .gt. R_TINY ) write( 2222, * ) yVec( i )
              enddo
              !
              call y%print( 666 )
