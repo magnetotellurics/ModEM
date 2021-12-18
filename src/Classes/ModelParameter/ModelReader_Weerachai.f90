@@ -74,44 +74,10 @@ contains
           paramType = "LINEAR"
       end if
 
-      ! No information about the air layers in file. Hardcoded here.
-      ! For backwards compatibility, keeping this logic for now...
-      ! but it may be overwritten by forward solver configuration file.
-      nzAir = 10
-      
-      allocate(dx(nx))
-      allocate(dy(ny))
-      allocate(dz(nzAir + nzEarth))
-      
-      read(ioPrm, *) (dx(j), j = 1, nx)
-      read(ioPrm, *) (dy(j), j = 1, ny)
-      read(ioPrm, *) (dz(j), j = nzAir + 1, nzAir + nzEarth)
-
-      !**
-      ! ** AirLayers setup **
-      !
-      ! Following is Kush"s approach to setting air layers:
-      ! mirror imaging the dz values in the air layer with respect to
-      ! earth layer as far as we can using the following formulation
-      ! air layer(bottom:top) = (alpha)^(j-1) * earth layer(top:bottom).
-      i = nzAir + 1
-      j = 0
-      do k = nzAir, 1, -1
-          j = j + 1
-          dz(k) = ((ALPHA)**(j-1))*dz(i)
-          i = i + 1
-      end do
-
-      ! The topmost air layer has to be at least 30 km.
-      if (dz(1).lt.30000) then
-          dz(1) = 30000
-      end if
-      !
-      ! End - Setting air layers.
-      !*
+      ! The default method for creating air layers in the grid has been deleted
       
       !**
-      ! Create the grid object
+      ! Create the grid object with nzAir = 0 -- no air layers so far
       allocate(grid, source = Grid3D_SG_t(nx, ny, nzAir, nzEarth, dx, dy, dz))
 
       !**

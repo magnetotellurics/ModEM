@@ -1,0 +1,25 @@
+Making a new test program "test_Amult" -- cut down from test_FWD
+
+ModelReader_Weerachai.f90  -- removed default setting of airlayers
+before inital creation of grid .   Now after reading grid HAVE TO
+SET AIR LAYERS:   as an example see test_Amult:
+! Read Grid and ModelParameter with ModelReader_Weerachai
+ 97       call model_reader%Read( model_file_name, main_grid, model_parameter )
+ 98       !
+ 99       select type( main_grid )
+100          !
+101          class is( Grid3D_SG_t )
+102             !   ADD Air Layers to grid -- this has to be done in general now!!!
+103             !    I am just setting this explicitly for the A from file case --
+104             !    More generally, could have a default ---  but I think we should
+105             !    set this explicitly outside of the gridReader procedure(s)
+106 
+107             call main_grid%SetupAirLayers(air_layer, method, nzAir,maxHeight)
+108             !   as coded have to use air_layer data structure to update grid
+109             call main_grid%UpdateAirLayers(air_layer%nz, air_layer%dz)
+
+NOT TESTED (but it finally compiles!)
+
+Made new test program test_Amult   -- but cannot get it to compile.
+I try to create cVector3D_SG_t objects x and y, but get very strange error messages,
+that I cannot understand.

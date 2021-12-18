@@ -59,11 +59,13 @@ module Grid3D_SG
   ! for backwards compatibility, all of the defaults are set to what
   ! was previously hard coded (AK; May 19, 2017)
   ! For backwards compatibility, default is 'mirror 10 3. 30.'
-  ! but the use of 'fixed height 12 1000' is recommended
+  !  GDE 12/17/21 : new method 'undefined' is default -- force
+  !    explicit setting of air layers (can still hard code a default
+  !     in the driver program!)
   !*
   type :: TAirLayers
-     character(len = 80)  :: method     = 'mirror'
-     integer              :: nz         = 10
+     character(len = 80)  :: method     = 'undefined'
+     integer              :: nz         = 0
      real(kind = 8)       :: maxHeight  = 1000000.
      real(kind = 8)       :: minTopDz  = 30000.
      real(kind = 8)       :: alpha      = 3.

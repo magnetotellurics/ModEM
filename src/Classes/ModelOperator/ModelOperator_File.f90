@@ -97,7 +97,7 @@ contains
    ! parameterized by input frequency omega, but using real matrix self%A
    !    loaded from file
    !*
-   subroutine amult( self, omega, x, y, p_adjt )
+   subroutine Amult( self, omega, x, y, p_adjt )
       implicit none
       !
       class( ModelOperator_File_t ), intent( in ) :: self
@@ -136,6 +136,8 @@ contains
                 write( *, * ) 'ERROR: amult in   ModelOperator_MF'
                 stop       'output vector y not allocated'
              endif
+             write(*,*) 'grid dimensions on input to Amult'
+             write(*,*) x%grid%nx, x%grid%ny, x%grid%nz, x%grid%nzAir
              !
              !   convert input cVector to column format 
              call x%getArray( xVec )

@@ -238,11 +238,11 @@ contains
              !
              !model_operator = ModelOperator_MF_t( main_grid )
              !
-             !call model_operator%SetEquations()
+             call model_operator%SetEquations()
              !
-             !call model_parameter%setMetric( model_operator%metric )
+             call model_parameter%setMetric( model_operator%metric )
              !
-             !call model_operator%SetCond( model_parameter )
+             call model_operator%SetCond( model_parameter )
              !
          class default
              stop "Unclassified main_grid"
