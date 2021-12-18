@@ -40,9 +40,9 @@ program test_MultA
    !   read in cVector x (one for now)
    xFile = '../inputs/Xvec_Tiny_1.dat'
    gridType = EDGE
-   !   create CVectors
-   x = cVector3D_SG_t(main_grid,gridType)
-   y = cVector3D_SG_t(main_grid,gridType)
+   !   create CVectors in handleModelFile?
+   !x = cVector3D_SG_t(main_grid,gridType)
+   !y = cVector3D_SG_t(main_grid,gridType)
    !   open input file, read in x
    open(file = xFile,unit = fid, form='unformatted')
    select type(x)
@@ -108,6 +108,9 @@ contains
             !   as coded have to use air_layer data structure to update grid
             call main_grid%UpdateAirLayers(air_layer%nz, air_layer%dz)
 
+            !   create CVectors
+            x = cVector3D_SG_t(main_grid,gridType)
+            y = cVector3D_SG_t(main_grid,gridType)
             ! Instantiate the ModelOperator object
             ! 
             model_operator = ModelOperator_File_t( main_grid, fnameA )
