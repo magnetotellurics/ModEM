@@ -56,7 +56,18 @@ contains
       ! Now read the second line with the grid dimensions
       read(ioPrm, "(a80)") someChar
       read(someChar, *) nx, ny, nzEarth, someIndex
-      
+
+      ! Now read the second line with the grid dimensions
+      nzAir = 0
+
+      allocate(dx(nx))
+      allocate(dy(ny))
+      allocate(dz(nzAir + nzEarth))
+
+      read(ioPrm, *) (dx(j), j = 1, nx)
+      read(ioPrm, *) (dy(j), j = 1, ny)
+      read(ioPrm, *) (dz(j), j = nzAir + 1, nzAir + nzEarth)
+
       if (someIndex /= 0) then
           write(0, *) "ERROR:WeerachaiSG_GridReader_t:"
           write(*, *) "   Mapping not supported."
@@ -78,6 +89,7 @@ contains
       
       !**
       ! Create the grid object with nzAir = 0 -- no air layers so far
+
       allocate(grid, source = Grid3D_SG_t(nx, ny, nzAir, nzEarth, dx, dy, dz))
 
       !**

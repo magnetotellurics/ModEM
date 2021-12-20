@@ -110,6 +110,7 @@ contains
     type(Grid3D_SG_t) :: grid
     
     call grid%Create(nx, ny, nzAir, nzEarth)
+
     call grid%SetCellSizes(dx, dy, dz)
     call grid%Setup()
     
@@ -357,10 +358,14 @@ contains
     
     if (present(method)) then
        airlayers%method = method
+       write(*,*) 'method', method
+       write(*,*) 'method', AirLayers%method
     end if
     
     if (present(nzAir)) then
        airlayers%nz = nzAir
+       write(*,*) 'nzAir',nzAir
+       write(*,*) 'nz',airLayers%nz
     end if
     
     if (.not.(index(airLayers%method, 'read from file') > 0)) then
@@ -373,6 +378,7 @@ contains
     
     if (present(maxHeight)) then
        airLayers%maxHeight = 1000.*maxHeight
+       write(*,*) airLayers%maxHeight
     end if
     
     if (present(minTopDz)) then
@@ -402,6 +408,7 @@ contains
        end if
        
     else if (index(airLayers%method, 'fixed height') > 0) then 
+       write(*,*) 'using fixed height method'
        z1Log = log10(self%dz(self%nzAir + 1))
        dlogz = (log10(airLayers%maxHeight) - z1Log)/(airLayers%nz-1)
        
@@ -552,7 +559,7 @@ contains
     real(kind = prec) , intent(out) :: dx(:), dy(:), dz(:)
 
     if (.not.self%IsAllocated()) then
-       write(*, *) 'ERROR:Grid3D_SG_t:SetCellSizes:'
+       write(*, *) 'ERROR:Grid3D_SG_t:GetCellSizes:'
        write(*, *) '  Grid not allocated.'
 
        STOP
@@ -562,7 +569,7 @@ contains
     if ((size(dx).ne.size(self%dx)).or.&
          (size(dy).ne.size(self%dy)).or.&
          (size(dz).ne.size(self%dz))) then
-       write(*, *) 'ERROR:Grid3D_SG_t:SetCellSizes:'
+       write(*, *) 'ERROR:Grid3D_SG_t:GetCellSizes:'
        write(*, *) '  Incompatible sizes for cell arrays.'
        
        STOP

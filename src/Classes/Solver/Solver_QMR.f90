@@ -105,8 +105,8 @@ contains
       allocate( AX, source = x )
       allocate( R, source = x )
       allocate( Y, source = x )
-	  allocate( V, source = x )
-	  allocate( W, source = x )
+      allocate( V, source = x )
+      allocate( W, source = x )
       allocate( Z, source = x )
       allocate( YT, source = x )
       allocate( ZT, source = x )
@@ -186,21 +186,21 @@ contains
           !
           ilu_adjt = .false.
           call self%preconditioner%UTsolve( Y, YT, ilu_adjt )
-		  !
+          !
           ilu_adjt = .true.
           call self%preconditioner%LTsolve( Z, ZT, ilu_adjt )
           !
           if( iter .eq. 1 ) then
              !
              allocate( P, source = YT )
-			 allocate( Q, source = ZT )
+             allocate( Q, source = ZT )
              !
           else
              ! these calculations are only done when iter > 1
-			 DELTA_EPSIL = DELTA / EPSIL
+             DELTA_EPSIL = DELTA / EPSIL
              PDE = -PSI * DELTA_EPSIL
              RDE = -RHO * CONJG( DELTA_EPSIL )
-			 !
+             !
              call P%linCombS( YT, PDE, C_ONE )
              !
              call Q%linCombS( ZT, RDE, C_ONE )
@@ -211,7 +211,7 @@ contains
           call PT%Zeros()
           call self%model_operator%Amult( self%omega, P, PT, adjoint )
           EPSIL = Q%dotProd( PT )
-		  !
+          !
           if( EPSIL .eq. C_ZERO ) then
                self%failed = .true.
                stop "QMR FAILED TO CONVERGE : EPSIL"
@@ -224,7 +224,7 @@ contains
           end if
           !    together these amount to VT = PT-BETA*V
           VT = PT
-		  !
+          !
           call V%scMultAddS( VT, -BETA )
           !
           RHO1 = RHO
@@ -245,19 +245,19 @@ contains
           if( iter .gt. 1 ) then
              THET1 = THET
           end if
-		  !
+          !
           THET = RHO / ( GAMM * CDABS( BETA ) )
           GAMM1 = GAMM
           GAMM = C_ONE / CDSQRT( C_ONE + THET * THET )
           !
-		  if( GAMM .eq. C_ZERO ) then
+          if( GAMM .eq. C_ZERO ) then
                self%failed = .true.
                stop "QMR FAILS TO CONVERGE : GAMM"
           end if
           !
           ETA = -ETA * RHO1 * GAMM * GAMM / ( BETA * GAMM1 * GAMM1 )
           !
-		  if( iter .eq. 1 ) then
+          if( iter .eq. 1 ) then
              D = P%mult( ETA )    !   using function: D = ETA*P
              S = PT%mult( ETA )    !   using function: S = ETA * PT
           else

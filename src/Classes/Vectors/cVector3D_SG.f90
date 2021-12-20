@@ -248,7 +248,7 @@ contains
       integer                     , intent(in)      :: fid
       ! Local variables
       integer :: Nx, Ny, Nz
-      character(80) :: gridType
+      character(4) :: gridType
       integer :: i, j, k, ii, jj, kk, istat
       real(kind = prec), allocatable, dimension(:, :, :) :: x, y, z
       logical :: ok, hasname, binary = .true.
@@ -274,6 +274,8 @@ contains
       end if
       
       read( fid ) Nx, Ny, Nz, gridType
+      write(*,*) 'Nx,Ny,Nz', Nx,Ny,Nz
+      write(*,*) 'gridType',gridType
       
       if (.not.self%isAllocated) then
           write(*, *) 'ERROR:cVector3D_SG_t::readCVector3D_SG: '
