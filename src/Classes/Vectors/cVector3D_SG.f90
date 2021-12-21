@@ -1387,12 +1387,14 @@ contains
       class( cVector3D_SG_t ), intent( in ) :: self
       integer, intent( in ), optional       :: io_unit
       !
-      integer :: ix, iy, iz
+      integer :: ix, iy, iz,fid
       !
       if( present( io_unit ) ) then
          write( io_unit, * ) self%nx, self%ny, self%nz
+         fid = io_unit
       else
          write( *, * ) self%nx, self%ny, self%nz
+         fid = 6   !   usually this will work to write to standard output
       endif
       !
       !
@@ -1401,7 +1403,7 @@ contains
           do iy = 1, self%NdX(2)
               do iz = 1, self%NdX(3)
                   if( self%x( ix, iy, iz ) /= 0 ) then
-                     write(*,*) ix,iy,iz, ":[", self%x( ix, iy, iz ), "]"
+                     write(fid,*) ix,iy,iz, ":[", self%x( ix, iy, iz ), "]"
                   endif
               enddo
           enddo
@@ -1412,7 +1414,7 @@ contains
           do iy = 1, self%NdY(2)
               do iz = 1, self%NdY(3)
                   if( self%y( ix, iy, iz ) /= 0 ) then
-                     write(*,*) ix,iy,iz, ":[", self%y( ix, iy, iz ), "]"
+                     write(fid,*) ix,iy,iz, ":[", self%y( ix, iy, iz ), "]"
                   endif
               enddo
           enddo
@@ -1423,12 +1425,12 @@ contains
           do iy = 1, self%NdZ(2)
               do iz = 1, self%NdZ(3)
                   if( self%z( ix, iy, iz ) /= 0 ) then
-                     write(*,*) ix,iy,iz, ":[", self%x( ix, iy, iz ), "]"
+                     write(fid,*) ix,iy,iz, ":[", self%x( ix, iy, iz ), "]"
                   endif
               enddo
           enddo
       enddo
-      !
+      !mb'ay'b
 
    end subroutine printCVector3D_SG
    

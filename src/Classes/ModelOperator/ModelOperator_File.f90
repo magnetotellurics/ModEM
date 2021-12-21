@@ -125,6 +125,7 @@ contains
       else
           c = C_ONE * omega * ISIGN * MU_0
       end if
+      write(*,*)  'c = ',c
       !
       select type( x )
       class is( cVector3D_SG_t )
@@ -159,7 +160,8 @@ contains
              !
              !   add in imaginary diagonal part of operator
              call self%Sigma_E%getArray(sigma)
-             yVec = yVec + c * sigma * xVec
+             !yVec = yVec + c * sigma * xVec
+             yVec = yVec + c * xVec
              !
              !   convert result back to cVector`
              call y%setArray( yVec )
