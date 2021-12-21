@@ -71,6 +71,8 @@ module rScalar
        procedure(iface_copyFrom), deferred, public :: copyFrom
        generic :: assignment(=) => copyFrom
        
+       procedure( interface_print_r_scalar ), deferred, public :: print
+       
    end type rScalar_t
    
    abstract interface
@@ -294,7 +296,13 @@ module rScalar
           class(rScalar_t), intent(inout) :: self
           class(rScalar_t), intent(in)      :: rhs
        end subroutine iface_copyFrom
-
+      
+       subroutine interface_print_r_scalar( self, io_unit ,title )
+           import :: rScalar_t
+           class( rScalar_t ) , intent( in ) :: self
+           integer, intent( in ), optional   :: io_unit
+           character(*), intent( in ), optional   :: title
+       end subroutine interface_print_r_scalar
 
    end interface
    

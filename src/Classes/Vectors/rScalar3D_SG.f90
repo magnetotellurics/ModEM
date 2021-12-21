@@ -96,6 +96,8 @@ module rScalar3D_SG
        procedure, public :: isCompatible1 => isCompatible1RScalar3D_SG
        procedure, public :: copyFrom => copyFromCompatibleRScalar3D_SG
                
+       procedure, public :: print => printRScalar3D_SG
+
    end type rScalar3D_SG_t
    
    ! Constructors for Scalar3d_csg_real_t
@@ -993,4 +995,39 @@ contains
       end select
    end subroutine copyFromCompatibleRScalar3D_SG
    
+   subroutine printRScalar3D_SG( self, io_unit, title )
+      implicit none
+      !
+      ! Arguments
+      class( rScalar3D_SG_t ), intent( in ) :: self
+      integer, intent( in ), optional       :: io_unit
+      character(*), intent( in ), optional       :: title
+      !
+      integer :: ix, iy, iz,fid
+      !
+      if( present( io_unit ) ) then
+         fid = io_unit
+      else
+         fid = 6   !   usually this will work to write to standard output
+      endif
+      if(present(title)) then
+        write(fid,*) title
+      end if
+
+      write( fid, * ) self%nx, self%ny, self%nz
+      !
+      !
+      write(fid,*) 'scalar field'
+      do ix = 1, self%nx
+          do iy = 1, self%ny
+              do iz = 1, self%nz
+                  if( self%v( ix, iy, iz ) /= 0 ) then
+                     write(fid,*) ix,iy,iz, ":[", self%v( ix, iy, iz ), "]"
+                  endif
+              enddo
+          enddo
+      enddo
+
+   end subroutine printRScalar3D_SG
+
 end module rScalar3D_SG

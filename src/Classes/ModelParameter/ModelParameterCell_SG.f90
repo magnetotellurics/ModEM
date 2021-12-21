@@ -284,7 +284,7 @@ contains
          class is( Grid3D_SG_t )
             !
             allocate( eVec, source = rVector3D_SG_t( grid, EDGE ) )
-            !
+            !   should this local object be constructed in the same way???
             SigmaCell = rScalar3D_SG_t( grid, CELL )
             !
             k0 = self%ParamGrid%nzAir
@@ -295,9 +295,14 @@ contains
             ! Note: AirCond should always be in linear domain, but conductivity
             ! in cells is generally transformed -- SigMap converts to linear
             SigmaCell%v(:, :, k1:k2) = self%SigMap(self%cellCond%v)
+
+            call SigmaCell%print(330,'Cell conductivity')
             !
             ! Form Conductivity--cell volume product  -- now using Vcell from MetricElements
             call sigmaCell%mults( self%metric%Vcell )
+            call self%metric%Vcell%print(331, 'Cell volumes')
+            call SigmaCell%print(332, 'Sigma * V')
+
             !
             ! Sum onto edges
             call eVec%SumCells( SigmaCell )

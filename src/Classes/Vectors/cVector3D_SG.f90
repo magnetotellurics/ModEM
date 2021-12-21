@@ -1380,25 +1380,29 @@ contains
       end select
    end function isCompatible2CVector3D_SG
    
-   subroutine printCVector3D_SG( self, io_unit )
+   subroutine printCVector3D_SG( self, io_unit, title )
       implicit none
       !
       ! Arguments
       class( cVector3D_SG_t ), intent( in ) :: self
       integer, intent( in ), optional       :: io_unit
+      character(*), intent( in ), optional       :: title
       !
       integer :: ix, iy, iz,fid
       !
       if( present( io_unit ) ) then
-         write( io_unit, * ) self%nx, self%ny, self%nz
          fid = io_unit
       else
-         write( *, * ) self%nx, self%ny, self%nz
          fid = 6   !   usually this will work to write to standard output
       endif
+      if(present(title)) then
+        write(fid,*) title
+      end if
+
+      write( fid, * ) self%nx, self%ny, self%nz
       !
       !
-      write(*,*) 'x-component',self%NdX
+      write(fid,*) 'x-component',self%NdX
       do ix = 1, self%NdX(1)
           do iy = 1, self%NdX(2)
               do iz = 1, self%NdX(3)
@@ -1409,7 +1413,7 @@ contains
           enddo
       enddo
       !
-      write(*,*) 'y-component',self%NdY
+      write(fid,*) 'y-component',self%NdY
       do ix = 1, self%NdY(1)
           do iy = 1, self%NdY(2)
               do iz = 1, self%NdY(3)
@@ -1420,7 +1424,7 @@ contains
           enddo
       enddo
       !
-      write(*,*) 'z-component',self%NdZ
+      write(fid,*) 'z-component',self%NdZ
       do ix = 1, self%NdZ(1)
           do iy = 1, self%NdZ(2)
               do iz = 1, self%NdZ(3)

@@ -315,10 +315,11 @@ module cVector
           class(cVector_t) , intent(out), allocatable :: E
        end subroutine interface_interp_func_c_vector
        
-       subroutine interface_print_c_vector( self, io_unit )
+       subroutine interface_print_c_vector( self, io_unit, title )
           import :: cVector_t
           class( cVector_t ) , intent( in ) :: self
           integer, intent( in ), optional   :: io_unit
+          character(*), intent( in ), optional   :: title
        end subroutine interface_print_c_vector
        
    end interface
