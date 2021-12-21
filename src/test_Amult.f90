@@ -20,12 +20,12 @@ program test_MultA
    !use SourceMT_2D
    !
    ! 
-   class(Grid_t ), allocatable           :: main_grid
+   class(Grid_t ), allocatable, target           :: main_grid
    class( ModelParameter_t ), allocatable :: model_parameter
    class( ModelOperator_t ), allocatable  :: model_operator
    !   other things I make explicit types
-   class( CVector_t), allocatable   :: x, y
-   type( TAirLayers), allocatable   :: air_layer
+   class( CVector3D_SG_t), allocatable   :: x, y
+   type( TAirLayers)   :: air_layer
    !
    character(:), allocatable :: control_file_name, model_file_name, data_file_name, modem_job
    character(:), allocatable :: xFile,yFile,gridType
@@ -39,7 +39,6 @@ program test_MultA
    call handleModelFile()    !   this reads model file, sets up model_operator
    !   read in cVector x (one for now)
    xFile = '../inputs/Xvec_Tiny_1.dat'
-   gridType = EDGE
    !   create CVectors in handleModelFile?
    !x = cVector3D_SG_t(main_grid,gridType)
    !y = cVector3D_SG_t(main_grid,gridType)
@@ -85,7 +84,7 @@ contains
       !    parameters for setting Air Layers for Tiny Model
       character(12) :: method = 'fixed height'
       integer :: nzAir = 2
-      real(kind=prec) :: maxHeight = 1500 
+      real(kind=prec) :: maxHeight = 1.5  !   this should be in km, not meters
       !
       !      fname = "/mnt/c/Users/protew/Desktop/ON/GITLAB_PROJECTS/modem-oo/inputs/Full_A_Matrix_TinyModel"
       fnameA = "/Users/garyegbert/Desktop/ModEM_ON/modem-oo/inputs/Full_A_Matrix_TinyModel"
@@ -109,8 +108,11 @@ contains
             call main_grid%UpdateAirLayers(air_layer%nz, air_layer%dz)
 
             !   create CVectors
-            x = cVector3D_SG_t(main_grid,gridType)
-            y = cVector3D_SG_t(main_grid,gridType)
+            gridType = EDGE
+            allocate(x, source = cVector3D_SG_t(main_grid,gridType))
+            write(*,*) 'x created'
+            allocate(y, source = cVector3D_SG_t(main_grid,gridType))
+            write(*,*) 'x and y  created'
             ! Instantiate the ModelOperator object
             ! 
             model_operator = ModelOperator_File_t( main_grid, fnameA )
