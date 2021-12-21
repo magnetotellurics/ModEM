@@ -121,9 +121,9 @@ contains
       end if
       !
       if ( adjt ) then
-          c = -C_ONE * omega * ISIGN * MU_0
+          c = -ONE_I * omega * ISIGN * MU_0
       else
-          c = C_ONE * omega * ISIGN * MU_0
+          c = ONE_I * omega * ISIGN * MU_0
       end if
       write(*,*)  'c = ',c
       !
@@ -139,14 +139,15 @@ contains
              endif
              write(*,*) 'grid dimensions on input to Amult'
              write(*,*) x%grid%nx, x%grid%ny, x%grid%nz, x%grid%nzAir
+             call x%print(665)
              !
              !   convert input cVector to column format 
              call x%getArray( xVec )
              !
-             write( 1111, * ) "xVec:"
-             do i = 1, self%n
-                if( abs(xVec( i )) .gt. R_TINY ) write( 1111, * ) xVec( i )
-             enddo
+            !write( 1111, * ) "xVec:"
+            ! do i = 1, self%n
+            !    if( abs(xVec( i )) .gt. R_TINY ) write( 1111, * ) xVec( i )
+            ! enddo
              !
              !   allocate for product A*xVec
              allocate( yVec( self%n ) )
@@ -160,16 +161,17 @@ contains
              !
              !   add in imaginary diagonal part of operator
              call self%Sigma_E%getArray(sigma)
+             call self%sigma_E%print(664)
              !yVec = yVec + c * sigma * xVec
              yVec = yVec + c * xVec
              !
              !   convert result back to cVector`
              call y%setArray( yVec )
              !
-             write( 2222, * ) "yVec:"
-             do i = 1, self%n
-                if( abs(yVec( i )) .gt. R_TINY ) write( 2222, * ) yVec( i )
-             enddo
+            ! write( 2222, * ) "yVec:"
+            ! do i = 1, self%n
+            !    if( abs(yVec( i )) .gt. R_TINY ) write( 2222, * ) yVec( i )
+            ! enddo
              !
              call y%print( 666 )
              !

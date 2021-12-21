@@ -22,7 +22,7 @@ module rVector
         procedure( interface_set_one_boundary_r_vector ), deferred :: setOneBoundary
         procedure( interface_set_all_interior_r_vector ), deferred :: setAllInterior
         procedure( interface_int_bdry_indices_r_vector ), deferred :: intBdryIndices
-		procedure( interface_boundary_r_vector )         , deferred :: boundary
+        procedure( interface_boundary_r_vector )         , deferred :: boundary
         procedure( interface_interior_r_vector )         , deferred :: interior
 
         !**
@@ -72,6 +72,8 @@ module rVector
         procedure( interface_copy_from_r_vector ), deferred, public :: copyFrom
         generic :: assignment(=) => copyFrom
 
+        procedure( interface_print_r_vector ), deferred, public :: print
+
         !**
         ! Miscellaneous
         !*
@@ -80,7 +82,7 @@ module rVector
 
         procedure( interface_sum_edges_r_vector ), deferred, public :: SumEdges
         procedure( interface_sum_cells_r_vector ), deferred, public :: SumCells
-		
+
    end type rVector_t
    
    abstract interface
@@ -321,6 +323,13 @@ module rVector
           class(rScalar_t), intent(in)      :: E_in
           character(*)      , intent(in), optional :: ptype
        end subroutine interface_sum_cells_r_vector
+
+       subroutine interface_print_r_vector( self, io_unit )
+          import :: rVector_t
+          class( rVector_t ) , intent( in ) :: self
+          integer, intent( in ), optional   :: io_unit
+       end subroutine interface_print_r_vector
+
        
    end interface
    

@@ -110,6 +110,7 @@ module rVector3D_SG
 
        procedure, public :: interpFunc => interpFuncRVector3D_SG
        
+       procedure, public :: print => printRVector3D_SG
    end type rVector3D_SG_t
    
    interface rVector3D_SG_t
@@ -1417,5 +1418,61 @@ contains
           STOP 
       end select
    end subroutine copyFromRVector3D_SG
+
+   subroutine printRVector3D_SG( self, io_unit )
+       implicit none
+       !
+       ! Arguments
+       class( rVector3D_SG_t ), intent( in ) :: self
+       integer, intent( in ), optional       :: io_unit
+       !
+       integer :: ix, iy, iz,fid
+       !
+       if( present( io_unit ) ) then
+          write( io_unit, * ) self%nx, self%ny, self%nz
+          fid = io_unit
+       else
+          write( *, * ) self%nx, self%ny, self%nz
+          fid = 6   !   usually this will work to write to standard output
+       endif
+       !
+       !
+       write(*,*) 'x-component',self%NdX
+       do ix = 1, self%NdX(1)
+           do iy = 1, self%NdX(2)
+               do iz = 1, self%NdX(3)
+                   if( self%x( ix, iy, iz ) /= 0 ) then
+                      write(fid,*) ix,iy,iz, ":[", self%x( ix, iy, iz ), "]"
+                   endif
+               enddo
+           enddo
+       enddo
+       !
+       write(*,*) 'y-component',self%NdY
+       do ix = 1, self%NdY(1)
+           do iy = 1, self%NdY(2)
+               do iz = 1, self%NdY(3)
+                   if( self%y( ix, iy, iz ) /= 0 ) then
+                      write(fid,*) ix,iy,iz, ":[", self%y( ix, iy, iz ), "]"
+                   endif
+               enddo
+           enddo
+       enddo
+       !
+       write(*,*) 'z-component',self%NdZ
+       do ix = 1, self%NdZ(1)
+           do iy = 1, self%NdZ(2)
+               do iz = 1, self%NdZ(3)
+                   if( self%z( ix, iy, iz ) /= 0 ) then
+                      write(fid,*) ix,iy,iz, ":[", self%x( ix, iy, iz ), "]"
+                   endif
+               enddo
+           enddo
+       enddo
+       !
+
+    end subroutine printRVector3D_SG
+
+
    
 end module rVector3D_SG

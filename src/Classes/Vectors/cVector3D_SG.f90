@@ -1430,7 +1430,7 @@ contains
               enddo
           enddo
       enddo
-      !mb'ay'b
+      !
 
    end subroutine printCVector3D_SG
    
