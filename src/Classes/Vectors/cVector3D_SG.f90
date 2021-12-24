@@ -1429,7 +1429,7 @@ contains
           do iy = 1, self%NdZ(2)
               do iz = 1, self%NdZ(3)
                   if( self%z( ix, iy, iz ) /= 0 ) then
-                     write(fid,*) ix,iy,iz, ":[", self%x( ix, iy, iz ), "]"
+                     write(fid,*) ix,iy,iz, ":[", self%z( ix, iy, iz ), "]"
                   endif
               enddo
           enddo

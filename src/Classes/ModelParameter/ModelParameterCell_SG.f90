@@ -97,7 +97,9 @@ contains
       if ( present( p_paramType ) ) then
          call self%SetSigMap( p_paramType )
          ! We initially specify airCond as linear conductivity!
-         self%AirCond = self%SigMap( self%airCond, 'inverse' )
+      !   self%AirCond = self%SigMap( self%airCond, 'inverse' )
+      !   GDE:  we should always keep AirCond as actual linear conductvity!
+      !     Never apply SigMap to air layers!!!
       end if
       !
       self%isAllocated = .true.
@@ -156,13 +158,13 @@ contains
       real(kind=prec), allocatable, dimension(:) :: CondSlice
       real(kind=prec) :: wt, temp_sigma_value
       integer :: i, j, k
-	  !
+      !
       !   extract 1D grid
       grid1 = self%grid%Slice1D()
-	  !
+      !
       !   create 1D model parameter
       m1D = ModelParameter1D_t( grid1 )
-	  !
+      !
       !   comnductivity slice
       allocate( CondSlice( grid1%nzEarth ) )
       !
@@ -275,7 +277,7 @@ contains
       class( ModelParameterCell_SG_t ), intent( inout ) :: self
       class( rVector_t ), allocatable                   :: eVec
       ! Local variables
-      type( rScalar3D_SG_t ) :: SigmaCell
+      type( rScalar3D_SG_t ), allocatable :: SigmaCell
       integer :: i, j, k, k0, k1, k2
       !
       type( rVector3D_SG_t ) :: length, area
@@ -285,24 +287,19 @@ contains
             !
             allocate( eVec, source = rVector3D_SG_t( grid, EDGE ) )
             !   should this local object be constructed in the same way???
-            SigmaCell = rScalar3D_SG_t( grid, CELL )
+            allocate( SigmaCell, source = rScalar3D_SG_t( grid, CELL ))
             !
-            k0 = self%ParamGrid%nzAir
+            k0 = self%grid%nzAir
             k1 = k0 + 1
-            k2 = self%ParamGrid%Nz
+            k2 = self%grid%Nz
             SigmaCell%v(:, :, 1:k0) = self%airCond
             !
             ! Note: AirCond should always be in linear domain, but conductivity
             ! in cells is generally transformed -- SigMap converts to linear
             SigmaCell%v(:, :, k1:k2) = self%SigMap(self%cellCond%v)
-
-            call SigmaCell%print(330,'Cell conductivity')
             !
             ! Form Conductivity--cell volume product  -- now using Vcell from MetricElements
             call sigmaCell%mults( self%metric%Vcell )
-            call self%metric%Vcell%print(331, 'Cell volumes')
-            call SigmaCell%print(332, 'Sigma * V')
-
             !
             ! Sum onto edges
             call eVec%SumCells( SigmaCell )
@@ -312,7 +309,7 @@ contains
             call eVec%divs( self%metric%Vedge )
             !
             !  still need to divide by 4 ...
-            call evec%mults( 0.25_prec )
+            call eVec%mults( 0.25_prec )
             !
          class default
             write(*, *) 'ERROR:ModelParameterCell_SG:PDEmapping:'
@@ -329,9 +326,9 @@ contains
    function dPDEmapping( self, dm ) result( eVec )
       implicit none
       !
-	  class( ModelParameterCell_SG_t ), intent( in ) :: self
+      class( ModelParameterCell_SG_t ), intent( in ) :: self
       class( ModelParameter_t ), intent( in )        :: dm
-	  class( rVector_t ), allocatable                :: eVec
+      class( rVector_t ), allocatable                :: eVec
       ! Local variables
       type( rScalar3D_SG_t ) :: SigmaCell
       character( len=5 ), parameter :: JOB = 'DERIV'

@@ -1419,25 +1419,26 @@ contains
       end select
    end subroutine copyFromRVector3D_SG
 
-   subroutine printRVector3D_SG( self, io_unit )
+   subroutine printRVector3D_SG( self, io_unit, title )
        implicit none
        !
        ! Arguments
        class( rVector3D_SG_t ), intent( in ) :: self
        integer, intent( in ), optional       :: io_unit
+       character(*), intent( in ), optional       :: title
        !
        integer :: ix, iy, iz,fid
        !
        if( present( io_unit ) ) then
-          write( io_unit, * ) self%nx, self%ny, self%nz
           fid = io_unit
        else
-          write( *, * ) self%nx, self%ny, self%nz
           fid = 6   !   usually this will work to write to standard output
        endif
        !
        !
-       write(*,*) 'x-component',self%NdX
+       write( fid, * ) title
+       write( fid, * ) self%nx, self%ny, self%nz
+       write(fid, * ) 'x-component',self%NdX
        do ix = 1, self%NdX(1)
            do iy = 1, self%NdX(2)
                do iz = 1, self%NdX(3)
@@ -1448,7 +1449,7 @@ contains
            enddo
        enddo
        !
-       write(*,*) 'y-component',self%NdY
+       write(fid,*) 'y-component',self%NdY
        do ix = 1, self%NdY(1)
            do iy = 1, self%NdY(2)
                do iz = 1, self%NdY(3)
@@ -1459,12 +1460,12 @@ contains
            enddo
        enddo
        !
-       write(*,*) 'z-component',self%NdZ
+       write(fid,*) 'z-component',self%NdZ
        do ix = 1, self%NdZ(1)
            do iy = 1, self%NdZ(2)
                do iz = 1, self%NdZ(3)
                    if( self%z( ix, iy, iz ) /= 0 ) then
-                      write(fid,*) ix,iy,iz, ":[", self%x( ix, iy, iz ), "]"
+                      write(fid,*) ix,iy,iz, ":[", self%z( ix, iy, iz ), "]"
                    endif
                enddo
            enddo
@@ -1472,7 +1473,5 @@ contains
        !
 
     end subroutine printRVector3D_SG
-
-
    
 end module rVector3D_SG

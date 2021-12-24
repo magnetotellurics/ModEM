@@ -324,10 +324,11 @@ module rVector
           character(*)      , intent(in), optional :: ptype
        end subroutine interface_sum_cells_r_vector
 
-       subroutine interface_print_r_vector( self, io_unit )
+       subroutine interface_print_r_vector( self, io_unit, title )
           import :: rVector_t
           class( rVector_t ) , intent( in ) :: self
           integer, intent( in ), optional   :: io_unit
+          character(*), intent( in ), optional   :: title
        end subroutine interface_print_r_vector
 
        

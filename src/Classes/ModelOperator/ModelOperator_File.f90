@@ -110,7 +110,7 @@ contains
       ! Local variables
       integer :: i, j
       complex( kind=prec ), allocatable, dimension(:) :: xVec, yVec
-      real( kind=prec ), allocatable, dimension(:) :: sigma
+      real( kind=prec ), allocatable, dimension(:) :: Sigma, Vedge
       complex( kind=prec ) :: c
       logical :: adjt
       !
@@ -125,7 +125,8 @@ contains
       else
           c = ONE_I * omega * ISIGN * MU_0
       end if
-      write(*,*)  'c = ',c
+      !call self%print()
+      write(*,*)  'omega = ',omega
       !
       select type( x )
       class is( cVector3D_SG_t )
@@ -139,7 +140,7 @@ contains
              endif
              write(*,*) 'grid dimensions on input to Amult'
              write(*,*) x%grid%nx, x%grid%ny, x%grid%nz, x%grid%nzAir
-             call x%print(665)
+             call x%print(664,'input x-vector')
              !
              !   convert input cVector to column format 
              call x%getArray( xVec )
@@ -160,20 +161,17 @@ contains
              enddo
              !
              !   add in imaginary diagonal part of operator
-             call self%Sigma_E%getArray(sigma)
-             call self%sigma_E%print(664)
-             !yVec = yVec + c * sigma * xVec
-             yVec = yVec + c * xVec
+             call self%Sigma_E%getArray(Sigma)
+             call self%Metric%Vedge%getArray(Vedge)
+             !call self%sigma_E%print(665,'edge conductivity')
+             yVec = yVec + c * sigma * Vedge * xVec
+             !yVec = yVec + c * xVec
              !
              !   convert result back to cVector`
              call y%setArray( yVec )
              !
-            ! write( 2222, * ) "yVec:"
-            ! do i = 1, self%n
-            !    if( abs(yVec( i )) .gt. R_TINY ) write( 2222, * ) yVec( i )
-            ! enddo
              !
-             call y%print( 666 )
+             call y%print( 666,'output y-vector' )
              !
           end select
           !

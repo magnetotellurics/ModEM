@@ -39,6 +39,13 @@ module Constants
    character(len = 5), parameter :: YEDGE = "YEDGE"
    character(len = 5), parameter :: ZFACE = "ZFACE"
    character(len = 5), parameter :: ZEDGE = "ZEDGE"
+
+   !**
+   !  Possible parameter transformation cases
+   !
+   character(len = 7), parameter :: FORWARD = "FORWARD"
+   character(len = 7), parameter :: INVERSE = "INVERSE"
+   character(len = 5), parameter :: DERIV = "DERIV"
    
    ! Use this to select single or double precision
    integer, parameter :: SP = selected_real_kind (6, 37)

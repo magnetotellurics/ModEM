@@ -20,7 +20,7 @@ module ModelParameter
        !
        integer             :: mKey
        character(len = 80) :: paramType    = ''       
-       real( kind=prec )   :: airCond       = 1E-7_prec
+       real( kind=prec )   :: airCond       = SIGMA_AIR
        logical             :: zeroValued   = .false.
        logical             :: isAllocated = .false.
        !
@@ -200,11 +200,19 @@ contains
       character(30) :: job
       !
       if (.not.present( p_job ) ) then
-          job = 'forward'
+          job = FORWARD
       else
           job = p_job
       end if
       !
+      select case(job)
+         case (FORWARD)
+            y = exp(x)
+         case (DERIV)
+            y = exp(x)
+         case (INVERSE)
+            y = log(x)
+      end select
    end function SigMap_Log
    !
    function GetType( self ) result( pType )

@@ -1030,4 +1030,4 @@ contains
 
    end subroutine printRScalar3D_SG
 
-end module rScalar3D_SG
+END module rScalar3D_SG

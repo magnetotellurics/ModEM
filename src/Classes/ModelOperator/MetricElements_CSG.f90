@@ -79,11 +79,8 @@ contains
       !
       call self%allocate()
       !
-      call self%SetFaceArea()
-      !
-      call self%SetEdgeLength()
-     !
-     call self%SetCellVolume()
+      !   if were going to allocate storage for all, just set all now!
+      call self%SetMetricElements()
       !
    end subroutine createMetricElements_CSG
    !**
@@ -340,8 +337,10 @@ contains
 
       ! Vedge = EdgeLength*DualFaceArea --- simplest implementation
       ! is just to create these (but they might already be created--
-      call self%SetEdgeLength()
-      call self%SetDualFaceArea()
+      !    let's assume they are--the way metric element objects are created
+      !     this is always true
+      !call self%SetEdgeLength()
+      !call self%SetDualFaceArea()
       !
       self%Vedge = self%EdgeLength * self%DualFaceArea
       !
