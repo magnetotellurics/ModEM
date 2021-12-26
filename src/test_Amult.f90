@@ -39,6 +39,13 @@ program test_MultA
    call handleModelFile()    !   this reads model file, sets up model_operator
    !   read in cVector x (one for now)
    xFile = '../inputs/Xvec_Tiny_1.dat'
+   select type(model_operator)
+       class is(ModelOperator_MF_t) 
+          yFile = '../inputs/Yvec_Tiny_MF_1.dat'
+       class is(ModelOperator_File_t)
+          yFile = '../inputs/Yvec_Tiny_File_1.dat'
+   end select
+
    !   create CVectors in handleModelFile?
    !x = cVector3D_SG_t(main_grid,gridType)
    !y = cVector3D_SG_t(main_grid,gridType)
@@ -53,6 +60,7 @@ program test_MultA
    end select
 
    close(fid)
+
    !    multiply by A
    omega = R_ONE
    call model_operator%Amult(omega,x,y)
@@ -66,7 +74,8 @@ program test_MultA
          stop
    end select
    close(fid)
-
+   !   also print result to ascii file
+   call y%print(667,'y = A*x')
 
    write ( *, * )
    write ( *, * ) "Finish ModEM-OO."
@@ -110,21 +119,17 @@ contains
             !   create CVectors
             gridType = EDGE
             allocate(x, source = cVector3D_SG_t(main_grid,gridType))
-            write(*,*) 'x created'
             allocate(y, source = cVector3D_SG_t(main_grid,gridType))
-            write(*,*) 'x and y  created'
             ! Instantiate the ModelOperator object
             ! 
-            model_operator = ModelOperator_File_t( main_grid, fnameA )
-            !model_operator = ModelOperator_MF_t( main_grid )
+            !model_operator = ModelOperator_File_t( main_grid, fnameA )
+            model_operator = ModelOperator_MF_t( main_grid )
             !
             call model_operator%SetEquations()
             !
             call model_parameter%setMetric( model_operator%metric )
             !
             call model_operator%SetCond( model_parameter )
-            !
-            !
             !
          class default
              stop "Unclassified main_grid"

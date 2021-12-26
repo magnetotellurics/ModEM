@@ -563,9 +563,9 @@ contains
       end if
       !
       if (adjt) then
-         c = -C_ONE * omega * ISIGN * MU_0
+         c = -ONE_I * omega * ISIGN * MU_0
       else
-         c = C_ONE * omega * ISIGN * MU_0
+         c = ONE_I * omega * ISIGN * MU_0
       end if
       !
       select type(x)

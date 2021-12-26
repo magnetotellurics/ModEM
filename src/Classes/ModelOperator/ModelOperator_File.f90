@@ -180,9 +180,6 @@ contains
           stop        '         Incompatible input [x]. Exiting.'
           !
       end select
-      !
-      write(*,*) 'done with first call to Amult'
-      stop
    end subroutine amult
    !
    subroutine print( self )
