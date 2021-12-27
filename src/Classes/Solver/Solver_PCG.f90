@@ -15,7 +15,7 @@ module Solver_PCG
       final :: Solver_PCG_dtor
       !
       procedure, public :: solve => solvePCG
-      !procedure, public :: setOperators => setOperatorsSolver_PCG
+      procedure, public :: SetDefaults => setDefaults_PCG
       !
    end type Solver_PCG_t
    !
@@ -45,7 +45,7 @@ module Solver_PCG
                ! PreConditioner DC
                self%preconditioner = PreConditioner_MF_DC_t( model_operator )
                !
-			class default
+            class default
                  write(*, *) "ERROR:Solver_PCG::Constructor:"
                  STOP "         Unknow model_operator type."
          end select
@@ -69,6 +69,18 @@ module Solver_PCG
           call self%dealloc()
           !
       end subroutine Solver_PCG_dtor
+      !
+      subroutine SetDefaults_PCG(self)
+         class(Solver_PCG_t),intent(inout) :: self
+         !    sets default iteration control parameters for QMR solver
+         !    local variables
+         integer, parameter :: max_iter = 100
+         real(kind=prec),parameter ::  tolerance = 1E-5
+
+         call self%SetParameters(max_iter,tolerance)
+
+      end subroutine SetDefaults_PCG
+
       !
       !************************************************   
       subroutine solvePCG( self, x, b )

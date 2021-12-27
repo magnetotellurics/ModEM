@@ -15,6 +15,7 @@ module Solver_QMR
        !
        !procedure, public :: setOperators
        procedure, public :: solve => solveQMR
+       procedure, public :: SetDefaults => setDefaults_QMR
        !
     end type Solver_QMR_t
     !
@@ -29,8 +30,6 @@ contains
       !
       class( ModelOperator_t ), target, intent( in ) :: model_operator
       type( Solver_QMR_t ) :: self
-      !
-      !write(*,*) "Constructor Solver_QMR_t"
       !
       call self%init()
       !
@@ -53,25 +52,26 @@ contains
    !
    ! Solver_QMR destructor
    subroutine Solver_QMR_dtor( self )
-     implicit none
-     !
-     type( Solver_QMR_t ), intent( inout ) :: self
-     !
-     !write(*,*) "Destructor Solver_QMR_t"
-     !
-     call self%dealloc()
-     !
+      implicit none
+      !
+      type( Solver_QMR_t ), intent( inout ) :: self
+      !
+      !write(*,*) "Destructor Solver_QMR_t"
+      !
+      call self%dealloc()
+      !
    end subroutine Solver_QMR_dtor
    !
-   !subroutine setOperators( self, model_operator, preconditioner )
-   !   class(Solver_QMR_t) :: self
-   !   class(ModelOperator_t) , target, intent(in) :: model_operator
-   !   class(Preconditioner_t), target, intent(in) :: preconditioner
-   !   
-   !   self%model_operator => model_operator
-   !   self%preconditioner => preconditioner
-   !end subroutine setOperators
+   subroutine SetDefaults_QMR(self)
+      class(Solver_QMR_t), intent(inout) :: self
+      !    sets default iteration control parameters for QMR solver
+      !    local variables
+      integer, parameter :: max_iter = 800
+      real(kind=prec),parameter ::  tolerance = 1E-7
 
+      call self%SetParameters(max_iter,tolerance)
+
+   end subroutine SetDefaults_QMR
    !**
    ! This is the QMR solver, using operators
    ! (including pre-conditioner solvers),

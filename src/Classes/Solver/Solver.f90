@@ -14,11 +14,13 @@ module Solver
       logical :: failed = .false., converged = .false.
       !
       class( ModelOperator_t ), pointer  :: model_operator
-	  !
-	  ! PreConditioner as a property of this
+      !
+      ! PreConditioner as a property of this
       class( PreConditioner_t ), allocatable :: preconditioner
       !
       contains
+         !   deferred (abstract class) proedures
+         procedure( interface_set_solver_defaults), deferred, public    :: SetDefaults
          !
          procedure, public :: init    => initializeSolver
          procedure, public :: dealloc => deallocateSolver
@@ -27,6 +29,16 @@ module Solver
          procedure, public :: zeroDiagnostics
          !
    end type Solver_t
+   !
+   abstract interface
+      !
+      !    each type of solver will have own defaults, hard code in solver extension
+      subroutine interface_set_solver_defaults(self)
+         import :: Solver_t
+         class( Solver_t ), intent(inout) :: self
+      end subroutine interface_set_solver_defaults
+
+   end interface
    !
 contains
     !
@@ -42,34 +54,37 @@ contains
         self%max_iter = max_iter
         self%tolerance = tolerance
         !   perhaps check if relErr is already allocated; if so deallocate
+        if(allocated(self%relErr)) deallocate(self%relErr)
         allocate(self%relErr(max_iter),STAT=status)
         !  if we are not going to check "status" of allocate, why 
         !    return this?
 
     end subroutine setParameters
-    !************************************************
+    !
+    !********
+    !
     subroutine zeroDiagnostics( self )
-        !   zeros diagnostics for solver object
-        class( Solver_t ), intent( inout ) :: self
-        self%n_iter = 0
-        self%relErr = R_ZERO
+       !   zeros diagnostics for solver object
+       class( Solver_t ), intent( inout ) :: self
+       self%n_iter = 0
+       self%relErr = R_ZERO
     end subroutine zeroDiagnostics 
+    !
+    !********
     !
     subroutine initializeSolver( self )
       implicit none
       !
-	  class( Solver_t ), intent( inout ) :: self
-	  !
-	  self%model_operator => null()
-	  !
-      self%max_iter = 0
-	  self%n_iter = 0
-      self%omega = 0.0
-	  self%tolerance = 0.0
+      class( Solver_t ), intent( inout ) :: self
       !
-	  self%failed = .false.
-	  self%converged = .false.
-	  !
+      self%model_operator => null()
+      !
+      self%n_iter = 0
+      self%omega = 0.0
+      !
+      self%failed = .false.
+      self%converged = .false.
+      !
    end subroutine initializeSolver
    !
    subroutine deallocateSolver( self )

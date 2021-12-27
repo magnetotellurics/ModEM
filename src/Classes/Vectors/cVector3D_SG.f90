@@ -949,7 +949,6 @@ contains
       class(rVector_t)       , intent(in) :: rhs
 
       if (lhs%isCompatible(rhs)) then
-        !   is this necessary -- maybe if rVector is abstract it is?
            select type(rhs)
                class is(rVector3D_SG_t)
                    lhs%x = lhs%x * rhs%x
