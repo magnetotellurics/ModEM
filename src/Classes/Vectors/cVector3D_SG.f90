@@ -403,13 +403,9 @@ contains
       
       select case(self%gridType)
       case(EDGE)
-          self%x(:, 2:self%NdX(2)-1, :) = c_in
-          self%x(:, :, 2:self%NdX(3)-1) = c_in
-          self%y(2:self%NdY(1)-1, :, :) = c_in
-          self%y(:, :, 2:self%NdY(3)-1) = c_in
-          self%z(:, 2:self%NdZ(2)-1, :) = c_in
-          self%z(2:self%NdZ(1)-1, :, :) = c_in
-          
+          self%x(:, 2:self%NdX(2)-1, 2:self%NdX(3)-1) = c_in
+          self%y(2:self%NdY(1)-1, :, 2:self%NdY(3)-1) = c_in
+          self%z(2:self%NdZ(1), 2:self%NdZ(2)-1, :) = c_in
       case(FACE)
           self%x(2:self%NdX(1)-1, :, :) = c_in
           self%y(:, 2:self%NdY(2)-1, :) = c_in

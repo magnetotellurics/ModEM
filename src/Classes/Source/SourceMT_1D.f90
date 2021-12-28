@@ -47,8 +47,8 @@ contains
        !
        type( SourceMT_1D_t ) :: self
        !
-	   call self%init()
-	   !
+       call self%init()
+       !
        self%model_operator => model_operator
        self%model_parameter => model_parameter
        !
@@ -81,8 +81,8 @@ contains
      implicit none
      !
      class( SourceMT_1D_t ), intent( inout )  :: self
-	 real( kind=prec ), intent( in )          :: omega
-	 integer, intent( in )                    :: polarization
+     real( kind=prec ), intent( in )          :: omega
+     integer, intent( in )                    :: polarization
      !
      class( ModelParameter1D_t ), allocatable        :: model_parameter_1D
      class( Forward1D_t ), allocatable               :: forward_1D
@@ -162,6 +162,8 @@ contains
       class( cVector_t ), allocatable :: bdry
       !
       allocate( bdry, source = self%E%Boundary() )
+      allocate(self%bdry, source = bdry)   !   temporary debugging ...
+      call bdry%print(440,'Boundary Values')
       !
       if( allocated( self%rhs ) ) deallocate( self%rhs )
       !
@@ -171,6 +173,7 @@ contains
          allocate( self%rhs, source = cVector3D_SG_t( E%grid, EDGE ) )
          !
          call self%model_operator%MultAib( bdry, self%rhs )
+         call self%rhs%print(441,'-RHS')
          !
          self%rhs = C_MinusOne * self%rhs
          !

@@ -4,6 +4,7 @@ module Solver_QMR
    use cVector
    use ModelOperator_MF
    use PreConditioner_MF_CC
+   use PreConditioner_None
    !
    type, extends( Solver_t ), public :: Solver_QMR_t
        !
