@@ -163,7 +163,7 @@ contains
       !
       allocate( bdry, source = self%E%Boundary() )
       allocate(self%bdry, source = bdry)   !   temporary debugging ...
-      call bdry%print(440,'Boundary Values')
+                        !   or should we save bdry in source object?
       !
       if( allocated( self%rhs ) ) deallocate( self%rhs )
       !

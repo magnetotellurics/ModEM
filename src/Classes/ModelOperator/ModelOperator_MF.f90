@@ -757,6 +757,7 @@ contains
    end subroutine multCurlTModelOperatorMF
    !**
    ! multiply by divergence correction operator.
+   !   SEE NOTE BELOW ABOUT SIGN
    !*
    subroutine divCgradModelOperatorMF( self, inPhi, outPhi )
       implicit none
@@ -780,7 +781,7 @@ contains
          select type( inPhi )
          class is( cScalar3D_SG_t )
             !
-            ! zero solution (already allocated) to start
+            ! zero output (already allocated) to start
             call outPhi%Zeros()
             !
             ! The coefficients are only for interior nodes
@@ -798,6 +799,15 @@ contains
                   end do
                end do
             end do
+            ! NOTE: the coefficients db1, db2, c implement:
+            !     phiOut = [div sigma grad] phiIn
+            !  IN FACT this is a NEGATIVE DEFINITE OPERATOR!
+            !   FLIP SIGN OF phiOut before output to make this 
+            !    POSITIVE DEFINITE -- note that (a) solving with PCG
+            !      seems to work in ModEM stable without this change, but
+            !      this probably depends on specific preconditioner used
+            !      (b)  preconditioner, and rhs need to also have signs flipped!
+            outPhi%v = -outPhi%v
          end select
          !
       class default

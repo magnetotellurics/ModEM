@@ -23,7 +23,7 @@ module rVector3D_SG
        ! string defined in GridDef as a parameter: EDGE
        ! or FACE are two possibilities.
        !*
-       character(len = 80) :: gridType = ""
+       character(len = 4) :: gridType = ""
 
        !**
        ! Grid Dimensions:
@@ -249,7 +249,7 @@ contains
       integer                     , intent(in)      :: fid
       ! Local variables
       integer :: Nx, Ny, Nz
-      character(80) :: gridType
+      character(4) :: gridType
       integer :: i, j, k, ii, jj, kk, istat
       real(kind = prec), allocatable, dimension(:, :, :) :: x, y, z      
       logical :: ok, hasname, binary = .true.

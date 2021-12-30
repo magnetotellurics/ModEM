@@ -24,7 +24,7 @@ module cVector3D_SG
        ! string defined in GridDef as a parameter: EDGE
        ! or FACE are two possibilities.
        !*
-       character(len = 80) :: gridType = ""
+       character(len = 4) :: gridType = ""
 
        !**
        ! Grid Dimensions:

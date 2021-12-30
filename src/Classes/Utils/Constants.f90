@@ -25,8 +25,8 @@ module Constants
    character (len = 4), parameter   :: NODE       = "NODE"
    character (len = 4), parameter   :: FACE       = "FACE"
    character (len = 4), parameter   :: EDGE       = "EDGE"
-   character (len = 6), parameter   :: CENTER     = "CELL"
-   character (len = 6), parameter   :: CORNER     = "NODE"
+   character (len = 4), parameter   :: CENTER     = "CELL"
+   character (len = 4), parameter   :: CORNER     = "NODE"
    character (len = 4), parameter   :: CELL       = "CELL"   
    character (len = 10), parameter  :: CELL_EARTH = "CELL EARTH"
 

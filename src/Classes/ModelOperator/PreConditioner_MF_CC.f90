@@ -400,13 +400,12 @@ contains
    !**
    ! this is dummy routine required by abstract preconditioner class
    !*
-   subroutine LUSolvePreConditioner_MF_CC( self, inPhi, outPhi, adjt )
+   subroutine LUSolvePreConditioner_MF_CC( self, inPhi, outPhi )
       implicit none
       !
       class( PreConditioner_MF_CC_t ), intent( inout ) :: self
       class( cScalar_t ), intent( in )                 :: inPhi
       class( cScalar_t ), intent( inout )              :: outPhi
-      logical, intent( in )                            :: adjt
       !
       STOP "ERROR: LUsolve is not coded for this pre-conditioner class"
       !

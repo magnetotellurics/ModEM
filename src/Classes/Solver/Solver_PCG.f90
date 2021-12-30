@@ -83,7 +83,7 @@ module Solver_PCG
 
       !
       !************************************************   
-      subroutine solvePCG( self, x, b )
+      subroutine solvePCG( self, b, x )
          !   This is the PCG solver, using operators
          !    (including pre-conditioner solvers),
          !    defined through pointers as object data`
@@ -96,8 +96,8 @@ module Solver_PCG
 
          !   import :: Solver_t   -- is this needed????
          class( Solver_PCG_t ), intent(inout)           :: self
-         class( cScalar_t ), allocatable, intent(inout) :: x
          class( cScalar_t ), intent(in)                 :: b
+         class( cScalar_t ), allocatable, intent(inout) :: x
          ! local variables
          !   these will have to be created in a way to match
          !    the specific type of the input cScalar_t ...
@@ -108,11 +108,11 @@ module Solver_PCG
          integer                     :: i
 
          !  create local cScalar objects -- could we also use modOp%createCScalar?
-         call x%zeros()
-         allocate( r, source = x )
-         allocate( s, source = x )
-         allocate( p, source = x )
-         allocate( q, source = x )
+         allocate( r, source = x )   ! cannot zero x, since it is first guess
+         call r%zeros()
+         allocate( s, source = r )
+         allocate( p, source = r )
+         allocate( q, source = r )
          
          ! just like
          !call self%model_operator%Amult( x, r )
@@ -121,20 +121,17 @@ module Solver_PCG
          !     to make this more obvious
          call self%model_operator%divCgrad( x, r )
          !
-         call r%linCombS(b,C_ONE,C_MinusOne)
+         !    r = b-r
+         call r%linCombS(b,C_MinusOne,C_ONE)
          !
          bnorm = b%dotProd(b)
          rnorm = r%dotProd(r)
          i = 1
          self%relErr(1) = real(rnorm/bnorm)
-         !   relErr is allocated on creation of object -- should not allocate here!
-!         if( allocated( self%relErr ) ) deallocate( self%relErr )
-!         allocate( self%relErr(i), source = real(rnorm/bnorm) )
          !
          loop: do while ( (self%relErr(i).gt.self%tolerance ).and.(i.lt.self%max_iter))
             !
-            ! JUST PUTTED FALSE FOR ADJ
-            call self%preconditioner%LUsolve( r, s, .false. ) 
+            call self%preconditioner%LUsolve( r, s ) 
             delta = r%dotProd(s)
             if(i.eq.1) then
                beta = C_ZERO   
@@ -142,7 +139,7 @@ module Solver_PCG
                beta = delta/deltaOld
             endif
             !   p = s * C_ONE + p * beta
-            call p%linCombS(s,C_ONE,beta)
+            call p%linCombS(s,beta,C_ONE)
             call q%Zeros()
             call self%model_operator%divCgrad( p, q )
             !
@@ -156,14 +153,8 @@ module Solver_PCG
             rnorm = r%dotProd(r)
             self%relErr(i) = real(rnorm/bnorm)
          enddo loop
-
+         !
          self%n_iter = i
-
-         ! deallocate all the work arrays
-         !  deallocate( r )   !   --- supposedly this is automatic?
-         !  deallocate( s )
-         !  deallocate( p )
-         !  deallocate( q )
          !
       end subroutine solvePCG ! PCG
 

@@ -164,14 +164,13 @@ contains
    !**
    ! apply pre-conditioner, LU solve
    !*
-   subroutine LUSolvePreConditioner_MF_DC( self, inPhi, outphi, adjt )
+   subroutine LUSolvePreConditioner_MF_DC( self, inPhi, outphi )
       implicit none
       !
       class( PreConditioner_MF_DC_t ), intent( inout ) :: self
       class( cScalar_t ), intent( in )                 :: inPhi
       class( cScalar_t ), intent( inout )              :: outPhi
-      logical, intent( in )                            :: adjt
-      !
+        !    no adjoint for this case .. ever as far as I can see!
       integer :: ix, iy, iz
 
       select type(inPhi)

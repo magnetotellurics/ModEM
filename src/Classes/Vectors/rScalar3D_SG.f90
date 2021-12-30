@@ -24,7 +24,7 @@ module rScalar3D_SG
        ! string defined in GridDef as a parameter: EDGE
        ! or FACE are two possibilities.
        !*
-       character(len = 80) :: gridType = ""
+       character(len = 4) :: gridType = ""
        
        !**
        ! Grid Dimensions:
@@ -218,7 +218,7 @@ contains
       character(*)             , intent (in), optional :: ftype
       ! Local variables
       integer :: Nx, Ny, Nz
-      character(80) :: gridType
+      character(4) :: gridType
       integer :: i, j, k, k1, k2, istat
       real(kind = prec), allocatable, dimension (:) :: temp      
       logical :: ok, hasname, binary
@@ -316,7 +316,7 @@ contains
       integer :: i, j, k, k1, k2, istat
       real(kind = prec), allocatable, dimension(:, :) :: temp
       logical :: ok, hasname, binary
-      character(80) :: fname, isbinary, gridType
+      character(80) :: fname, isbinary
 
       if (.not.self%isAllocated) then
           write(0, *) 'ERROR:rScalar3D_SG::writeRScalar3D_SG: '
@@ -352,10 +352,8 @@ contains
           STOP
       end if
       
-      gridType = self%gridType
-
       if (binary) then
-          write(fid) self%nx, self%ny, self%nz, gridType
+          write(fid) self%nx, self%ny, self%nz, self%gridType
           write(fid) self%v          
           return
       end if
@@ -364,7 +362,7 @@ contains
       ! ASCII format
       !*
       write(fid, '(3i5,a10)', iostat = istat) self%nx, &
-             self%ny, self%nz, trim(gridType)
+             self%ny, self%nz, trim(self%gridType)
 
       Nx = size(self%v, 1)
       Ny = size(self%v, 2)

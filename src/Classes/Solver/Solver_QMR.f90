@@ -85,15 +85,17 @@ contains
    !   
    ! Code is taken from subroutine QMR in solvers.f90
    !*
-   subroutine solveQMR( self, x, b )
+   subroutine solveQMR( self, b, x )
+      ! I prefer to have rhs (b) appear before solution (x) in argument list--
+      !    this is consistent with ModEM (and matlab, etc.)
       implicit none
       !
       class( Solver_QMR_t ), intent( inout ) :: self
-      class( cVector_t ), intent( inout )    :: x
       class( cVector_t ), intent( in )       :: b
+      class( cVector_t ), intent( inout )    :: x
       !
-      class( cVector_t ), allocatable :: AX, R, VT
-      class( cVector_t ), allocatable :: Y, Z, WT, V, W, YT, ZT, P, Q, PT, D, S
+      class( cVector_t ), allocatable ::  R
+      class( cVector_t ), allocatable :: Y, Z, V, W, YT, ZT, VT, WT, P, Q, PT, D, S
       logical              :: adjoint, ilu_adjt
       complex( kind=prec ) :: ETA, PDE, EPSIL, RDE, BETA, DELTA, RHO, DELTA_EPSIL
       complex( kind=prec ) :: PSI, RHO1, GAMM, GAMM1, THET, THET1, TM2
@@ -101,19 +103,23 @@ contains
       complex( kind=prec ) :: rhoInv,psiInv
       integer              :: iter
       !
-      ! Allocate work TVector objects -- questions as in PCG
-      call x%zeros()
-      allocate( AX, source = x )
+      ! Allocate work CVector objects -- questions as in PCG
       allocate( R, source = x )
-      allocate( Y, source = x )
-      allocate( V, source = x )
-      allocate( W, source = x )
-      allocate( Z, source = x )
-      allocate( YT, source = x )
-      allocate( ZT, source = x )
-      allocate( PT, source = x )
-      allocate( D, source = x )
-      allocate( S, source = x )
+      call R%zeros()   !  can't zero x -- if this is to be used as starting guess
+                       !  also, never use AX -- which somehow is declared in ModEM!
+      allocate( Y, source = R )
+      allocate( Z, source = R )
+      allocate( V, source = R )
+      allocate( W, source = R )
+      allocate( YT, source = R )
+      allocate( ZT, source = R )
+      allocate( VT, source = R )
+      allocate( WT, source = R )
+      allocate( P, source = R )
+      allocate( Q, source = R )
+      allocate( PT, source = R )
+      allocate( D, source = R )
+      allocate( S, source = R )
       !
       ! NOTE: this iterative solver is QMR without look-ahead
       ! patterned after the scheme given on page 24 of Barrett et al.
@@ -144,12 +150,12 @@ contains
       iter = 1
       self%relErr( iter ) = real( rnorm / bnorm )
       !
-      allocate( VT, source = R )
+      VT = R 
       ilu_adjt = .false.
       call self%preconditioner%LTsolve( VT, Y, ilu_adjt )
       RHO = CDSQRT( Y%dotProd( Y ) )
       !
-      allocate( WT, source = R )
+      WT = R 
       ilu_adjt = .true.
       call self%preconditioner%UTsolve( WT, Z, ilu_adjt )
       PSI  = CDSQRT( Z%dotProd( Z ) )
@@ -159,8 +165,7 @@ contains
       ! the do loop goes on while the relative error is greater than the tolerance
       ! and the iterations are less than maxIt
       do while( ( self%relErr( iter ) .gt. self%tolerance ) &
-                .and. &
-                ( iter .lt. self%max_iter ) )
+                .and.  ( iter .lt. self%max_iter ) )
           !
           if( (RHO .eq. C_ZERO ) .or. ( PSI .eq. C_ZERO ) ) then
              self%failed = .true.
@@ -168,8 +173,8 @@ contains
              stop "QMR FAILED TO CONVERGE : PSI"
           end if
           !
-          rhoInv = ( 1 / RHO ) * C_ONE
-          psiInv = ( 1 / PSI ) * C_ONE
+          rhoInv = ( 1 / RHO )
+          psiInv = ( 1 / PSI )
           !
           !   use functions here -- could make subroutines that don"t overwrite
           V = VT%mult( rhoInv )
@@ -177,7 +182,7 @@ contains
           !
           !  use subroutines here to overwrite with rescalled vectors
           call Y%multS( rhoInv )
-          call Z%multS( rhoInv )
+          call Z%multS( psiInv )
           !
           DELTA = Z%dotProd( Y )
           if( DELTA .eq. C_ZERO ) then
@@ -193,8 +198,8 @@ contains
           !
           if( iter .eq. 1 ) then
              !
-             allocate( P, source = YT )
-             allocate( Q, source = ZT )
+             P = YT 
+             Q = ZT 
              !
           else
              ! these calculations are only done when iter > 1
@@ -225,7 +230,7 @@ contains
           end if
           !    together these amount to VT = PT-BETA*V
           VT = PT
-          !
+          !    VT = VT-BETA*V
           call V%scMultAddS( VT, -BETA )
           !
           RHO1 = RHO
@@ -237,6 +242,7 @@ contains
           call WT%Zeros()
           call self%model_operator%Amult( self%omega, Q, WT, adjoint )
           !
+          !    WT = WT - conjg(BETA)*W
           call W%scMultAddS( WT, -conjg( BETA ) )
           !
           ilu_adjt = .true.
@@ -276,6 +282,7 @@ contains
           ! QMR book-keeping between divergence correction calls
           self%relErr( iter ) = real( rnorm / bnorm )
       end do
+      self%n_iter = iter
       !
    end subroutine solveQMR
    

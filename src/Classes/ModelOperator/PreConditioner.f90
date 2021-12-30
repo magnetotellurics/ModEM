@@ -54,15 +54,15 @@ module PreConditioner
          logical, intent( in )                      :: adjt
       end subroutine iface_utsolve_preconditioner
       !
-      subroutine iface_lusolve_preconditioner( self, inPhi, outPhi, adjt )
+      subroutine iface_lusolve_preconditioner( self, inPhi, outPhi )
          !     this operates on sclars, and does both LTsolve and UTsolve
          !      together for symeteric problems 
+         !   Never an adjiont case for this!
          import :: PreConditioner_t, cScalar_t
          !
          class( PreConditioner_t ), intent( inout ) :: self
          class( cScalar_t ), intent( in )           :: inPhi
          class( cScalar_t ), intent( inout )        :: outPhi
-         logical, intent( in )                      :: adjt
       end subroutine iface_lusolve_preconditioner
       !
    end interface

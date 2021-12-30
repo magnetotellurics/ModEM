@@ -127,15 +127,14 @@ contains
       !
    end subroutine UTSolvePreConditioner_None
    !**
-   ! this is dummy routine required by abstract preconditioner class
+   ! No precond for scalar symmetric problems
    !*
-   subroutine LUSolvePreConditioner_None( self, inPhi, outPhi, adjt )
+   subroutine LUSolvePreConditioner_None( self, inPhi, outPhi )
       implicit none
       !
       class( PreConditioner_None_t ), intent( inout ) :: self
       class( cScalar_t ), intent( in )                 :: inPhi
       class( cScalar_t ), intent( inout )              :: outPhi
-      logical, intent( in )                            :: adjt
       !
       select type(inPhi)
        class is(cScalar3D_SG_t)
