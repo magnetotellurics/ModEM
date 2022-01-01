@@ -445,6 +445,9 @@ contains
          write(*, *) 'ERROR:ModelPArameterCell_t:SetType:'
          stop '         Not allocated.'
       end if
+      !  NOTE: always keep AirCond linear (actual conductivity)
+      !   parameter transformation is only needed for inversion,
+      !   and we do not invert for AirCond!
       
       if (trim(paramType) .eq. trim(self%paramType)) then
          ! We are done
@@ -454,28 +457,28 @@ contains
          ! Convert to log
          if (paramType == LOGE) then
             self%cellCond%v = log(self%cellCond%v)
-            self%airCond = log(self%AirCond)
+            !self%airCond = log(self%AirCond)
          else if (paramType == LOG_10) then
             self%cellCond%v = log10(self%cellCond%v)
-            self%airCond = log10(self%airCond)
+            !self%airCond = log10(self%airCond)
          end if
       else if (paramType == LINEAR) then
          ! Convert from log to linear
          if (self%paramType == LOGE) then
             self%cellCond%v = exp(self%cellCond%v)
-            self%airCond = exp(self%airCond)
+            !self%airCond = exp(self%airCond)
          else if(self%paramType == LOG_10) then
             self%cellCond%v = exp(self%cellCond%v * log(10.))
-            self%airCond = exp(self%AirCond * log(10.))
+            !self%airCond = exp(self%AirCond * log(10.))
          end if
       else if ((self%paramType == LOGE) .and. (paramType == LOG_10)) then
          ! Convert from natural log to log10
          self%cellCond%v = self%cellCond%v / log(10.)
-         self%airCond = self%airCond / log(10.)
+         !self%airCond = self%airCond / log(10.)
       else if ((self%paramType == LOG_10) .and. (paramType == LOGE)) then
          ! Convert from log10 to natural log
          self%cellCond%v = self%cellCond%v * log(10.)
-         self%airCond = self%airCond * log(10.)
+         !self%airCond = self%airCond * log(10.)
       else
          write(*, *) 'ERROR:ModelParameterCell_t:SetType:'
          stop '         Unknown paramType.'

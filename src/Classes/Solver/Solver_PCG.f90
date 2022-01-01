@@ -124,13 +124,14 @@ module Solver_PCG
          !    r = b-r
          call r%linCombS(b,C_MinusOne,C_ONE)
          !
-         bnorm = b%dotProd(b)
-         rnorm = r%dotProd(r)
+         bnorm = sqrt(real(b%dotProd(b)))
+         rnorm = sqrt(real(r%dotProd(r)))
          i = 1
-         self%relErr(1) = real(rnorm/bnorm)
+         self%relErr(1) = rnorm/bnorm
          !
          loop: do while ( (self%relErr(i).gt.self%tolerance ).and.(i.lt.self%max_iter))
             !
+            write(*,*) 'iter = ', i, ' relErr = ',self%relErr(i)
             call self%preconditioner%LUsolve( r, s ) 
             delta = r%dotProd(s)
             if(i.eq.1) then
@@ -140,7 +141,7 @@ module Solver_PCG
             endif
             !   p = s * C_ONE + p * beta
             call p%linCombS(s,beta,C_ONE)
-            call q%Zeros()
+            !call q%Zeros()
             call self%model_operator%divCgrad( p, q )
             !
             alpha = delta/p%dotProd(q)
@@ -150,8 +151,8 @@ module Solver_PCG
             call q%scMultAddS(r,-alpha)
             deltaOld = delta
             i = i + 1
-            rnorm = r%dotProd(r)
-            self%relErr(i) = real(rnorm/bnorm)
+            rnorm = sqrt(real(r%dotProd(r)))
+            self%relErr(i) = rnorm/bnorm
          enddo loop
          !
          self%n_iter = i

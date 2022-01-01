@@ -1,4 +1,4 @@
-program test_Solver
+ program test_Solver
    !
    !use DataManager
    !use ModEMControlFile
@@ -34,6 +34,8 @@ program test_Solver
    !   other things I make explicit types  -- seemed to work, but now not sure!
    class( CVector_t), allocatable   :: x, y
    class( CScalar_t), allocatable   :: phiIn, phiOut
+   class( RVector_t), allocatable   :: xR, yR
+   class( RScalar_t), allocatable   :: phiInR, phiOutR
    type( TAirLayers)   :: air_layer
    !
    character(:), allocatable :: control_file_name, model_file_name, data_file_name, modem_job
@@ -101,10 +103,16 @@ contains
             gridType = EDGE
             allocate(x, source = cVector3D_SG_t(main_grid,gridType))
             allocate(y, source = cVector3D_SG_t(main_grid,gridType))
+            !   create RVectors
+            allocate(xR, source = rVector3D_SG_t(main_grid,gridType))
+            allocate(yR, source = rVector3D_SG_t(main_grid,gridType))
             !   create CScalars
             gridType = NODE
             allocate(phiIn, source = cScalar3D_SG_t(main_grid,gridType))
             allocate(phiOut, source = cScalar3D_SG_t(main_grid,gridType))
+            !   create RScalars
+            allocate(phiInR, source = rScalar3D_SG_t(main_grid,gridType))
+            allocate(phiOutR, source = rScalar3D_SG_t(main_grid,gridType))
             !
             ! Instantiate the ModelOperator object
             ! 
@@ -142,7 +150,7 @@ contains
             !   read in cVector x used for test of A*x = y
             !   these are hard-coded at present
             xFile = '../inputs/Xvec_Tiny_1.dat'
-            call readVector()
+            call readCVector()
             !    multiply by A
             call model_operator%Amult(omega,x,y)
             !
@@ -155,12 +163,12 @@ contains
             class is(ModelOperator_File_t)
                yFile = '../inputs/Yvec_Tiny_File_1.dat'
             end select
-            call writeVector()
+            call writeCVector()
          case("QMR")
             !   TEST OF QMR SOLVER
             !   read in cVector used for test -- rhs in A*y = x           
             xFile = '../inputs/RHS_Tiny.dat'
-            call readVector()
+            call readCVector()
             !  create and setup Solver object ...
             call slvrQMR%SetDefaults()   !   set default convergence parameters
             !   first test w/o preconditioner
@@ -178,12 +186,12 @@ contains
                class default
                  stop "test program not coded for this solver type"
             end select
-            call writeVector()
+            call writeCVector()
          case("RHS")
            !   TEST OF RHS COMPUTATIONS -- does not test 1D modeling!
             !   read in array E from file, create and output rhs cVector
             xFile = '../inputs/E_Tiny.dat'
-            call readVector()
+            call readCVector()
             !   put cVector E into source object
             allocate(src%E, source = x)
             write(*,*)  'src%E'
@@ -192,21 +200,28 @@ contains
             call src%SetRHS()
             y = src%bdry
             yFile = '../inputs/BDRYcompTiny.dat'
-            call writeVector()
+            call writeCVector()
             y = src%rhs
             yFile = '../inputs/RHScompTiny.dat'
-            call writeVector()
+            call writeCVector()
             !    compute E0 and output
             call src%setE0
             y = src%E0
             yFile = '../inputs/E0compTiny.dat'
-            call writeVector()
+            call writeCVector()
           case("MultDC")
+            !    write out Sigma_E after setting ... 
+            select type(model_operator)
+               class is( ModelOperator_MF_t)
+                  yR = model_operator%Sigma_E
+                  yFile = '../inputs/Sigma_E.dat'
+                  call writeRVector()
+            end select
             !   TEST OF ModOp.divCgrad * phi_in
             !   read in cVector x used for test of A*x = y
             !   these are hard-coded at present
             xFile = '../inputs/PhiIn_Tiny.dat'
-            call readScalar()
+            call readCScalar()
             !    multiply by divCgrad
             call model_operator%divCgrad(phiIn,phiOut)
             !
@@ -214,12 +229,12 @@ contains
             !      ... different for different model_operator types
             !           so results can be compared ...
             yFile = '../inputs/PhiOut_Tiny.dat'
-            call writeScalar()
+            call writeCScalar()
          case("PCG")
             !   TEST OF PCG SOLVER
             !   read in cScalar used for test -- rhs in A*y = x           
             xFile = '../inputs/PhiIn_Tiny.dat'
-            call readScalar()
+            call readCScalar()
             !  create and setup Solver object ...
             call slvrPCG%SetDefaults()   !   set default convergence parameters
             !   first test w/o preconditioner
@@ -239,14 +254,14 @@ contains
                class default
                  stop "test program not coded for this solver type"
             end select
-            call writeScalar()
+            call writeCScalar()
           end select
 
      end subroutine runTest
      !
      ! ********
      !
-     subroutine readVector()
+     subroutine readCVector()
         integer :: fid
 
         !   open input file, read in x
@@ -260,11 +275,11 @@ contains
               stop
         end select
         close(fid)
-     end subroutine readVector
+     end subroutine readCVector
      !
      ! ********
      !
-     subroutine writeVector()
+     subroutine writeCVector()
         integer :: fid
 
         !  open output file, write out y 
@@ -278,11 +293,11 @@ contains
               stop
         end select
         close(fid)
-     end subroutine writeVector
+     end subroutine writeCVector
      !
      ! ********
      !
-     subroutine readScalar()
+     subroutine readCScalar()
         integer :: fid
 
         !   open input file, read in x
@@ -298,11 +313,11 @@ contains
               stop
         end select
         close(fid)
-     end subroutine readScalar
+     end subroutine readCScalar
      !
      ! ********
      !
-     subroutine writeScalar()
+     subroutine writeCScalar()
         integer :: fid
 
         !  open output file, write out y 
@@ -314,8 +329,82 @@ contains
             class default
                write(*,*)  'CScalar of incorrect class'
               stop
+        end select
+        close(fid)
+     end subroutine writeCScalar
+     !
+     ! ********
+     !
+     subroutine readRVector()
+        integer :: fid
+
+        !   open input file, read in x
+        fid = 55
+        open(file = xFile,unit = fid, form='unformatted')
+        select type(xR)
+           class is (rVector3D_SG_t)
+              call xR%read(fid)
+           class default
+              write(*,*)  'CVector of incorrect class'
+              stop
+        end select
+        close(fid)
+     end subroutine readRVector
+     !
+     ! ********
+     !
+     subroutine writeRVector()
+        integer :: fid
+
+        !  open output file, write out y 
+        fid = 55
+        open(file = yFile,unit = fid, form='unformatted')
+        select type(yR)
+            class is (RVector3D_SG_t)
+               call yR%write(fid)
+            class default
+               write(*,*)  'CVector of incorrect class'
+              stop
+        end select
+        close(fid)
+     end subroutine writeRVector
+     !
+     ! ********
+     !
+     subroutine readRScalar()
+        integer :: fid
+
+        !   open input file, read in x
+        fid = 55
+        open(file = xFile,unit = fid, form='unformatted')
+        select type(phiInR)
+           class is (rScalar3D_SG_t)
+              call phiInR%read(fid,'b')   !   read for CScalar requires
+                                         !  specification of 'b' for binary
+              write(*,*) 'phiIn read'
+           class default
+              write(*,*)  'CScalar of incorrect class'
+              stop
+        end select
+        close(fid)
+     end subroutine readRScalar
+     !
+     ! ********
+     !
+     subroutine writeRScalar()
+        integer :: fid
+
+        !  open output file, write out y 
+        fid = 55
+        open(file = yFile,unit = fid, form='unformatted')
+        select type(phiOutR)
+            class is (RScalar3D_SG_t)
+               call phiOutR%write(fid,'b')
+            class default
+               write(*,*)  'CScalar of incorrect class'
+              stop
        end select
        close(fid)
-    end subroutine writeScalar
+    end subroutine writeRScalar
 
 end program test_Solver

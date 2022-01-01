@@ -59,7 +59,7 @@ module Constants
    integer, parameter :: ISIGN = -1
    
    ! Conductivity of the air for computational purposes
-   real (kind = prec), parameter :: SIGMA_AIR = 1.0e-10
+   real (kind = prec), parameter :: SIGMA_AIR = 1.0d-10
    
    ! Variable used to decide if a cell is air or ground
    ! in the presence of topography:
