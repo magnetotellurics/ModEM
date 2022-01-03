@@ -17,8 +17,8 @@
    use Solver_QMR
    use Solver_PCG
    use SourceMT_1D
+   use ForwardSolverIT
    !
-   !use ForwardSolverFromFile
    !use ForwardSolverIT_DC
    !
    !use SourceMT_1D
@@ -31,6 +31,7 @@
    class( ModelOperator_t ), allocatable  :: model_operator
    class( Solver_t ), allocatable  :: slvrQMR,slvrPCG
    class( Source_t ), allocatable  :: src
+   class( ForwardSolver_t ), allocatable  :: fwdIT
    !   other things I make explicit types  -- seemed to work, but now not sure!
    class( CVector_t), allocatable   :: x, y
    class( CScalar_t), allocatable   :: phiIn, phiOut
@@ -40,14 +41,15 @@
    !
    character(:), allocatable :: control_file_name, model_file_name, data_file_name, modem_job
    character(:), allocatable :: xFile,yFile,gridType
-   integer  :: printUnit
-   real(kind = prec) :: omega
+   integer  :: printUnit, maxIter
+   real(kind = prec) :: omega, T, tolerance
    !
    !   frequency is hard coded -- just test for a single frequency at a time
-   omega = 2*pi/.1
+   T = .1
+   omega = 2*pi/T
    !
    !   test job is also hard coded : options- Amult, QMR, RHS
-   modem_job = 'PCG'    
+   modem_job = 'FWD_IT'    
    fid = 1
    printUnit = 667   !   change this to get output y vector in a different ascii file
    !
@@ -132,6 +134,9 @@ contains
             !   Instantiate the Source object
             ! 
             src = SourceMT_1D_t(model_operator,model_parameter)
+            !
+            !   Instantiate the forward modeling object
+            fwdIT = ForwardSolverIT_t(model_operator)
 
          class default
              stop "Unclassified main_grid"
@@ -171,9 +176,13 @@ contains
             call readCVector()
             !  create and setup Solver object ...
             call slvrQMR%SetDefaults()   !   set default convergence parameters
+            maxIter = 20
+            tolerance = 1d-7
+            call slvrQMR%setParameters(maxIter,tolerance)   !   set convergence parameters
             !   first test w/o preconditioner
             slvrQMR%omega = omega
-            slvrQMR%preconditioner = PreConditioner_None_t()
+            call slvrQMR%preconditioner%SetPreconditioner(omega)   !   set preconditioner
+            !slvrQMR%preconditioner = PreConditioner_None_t()
             select type(slvrQMR)
                class is(Solver_QMR_t)
                   call slvrQMR%solve(x,y)
@@ -192,7 +201,7 @@ contains
             !   read in array E from file, create and output rhs cVector
             xFile = '../inputs/E_Tiny.dat'
             call readCVector()
-            !   put cVector E into source object
+            !   cvector x into E in: source object
             allocate(src%E, source = x)
             write(*,*)  'src%E'
             !call src%E%print()
@@ -230,31 +239,59 @@ contains
             !           so results can be compared ...
             yFile = '../inputs/PhiOut_Tiny.dat'
             call writeCScalar()
+         case("LUsolve")
+            xFile = '../inputs/PhiIn_Tiny.dat'
+            call readCScalar()
+            call slvrPCG%SetDefaults()   !   set default convergence parameters
+            call slvrPCG%preconditioner%LUsolve(phiIn,phiOut)
+            yFile = '../inputs/LU_Tiny_PCG.dat'
+            call writeCScalar()
+            
          case("PCG")
             !   TEST OF PCG SOLVER
             !   read in cScalar used for test -- rhs in A*y = x           
             xFile = '../inputs/PhiIn_Tiny.dat'
             call readCScalar()
             !  create and setup Solver object ...
-            call slvrPCG%SetDefaults()   !   set default convergence parameters
+            maxIter = 100
+            tolerance = 1d-7
+            call slvrPCG%setParameters(maxIter,tolerance)   !   set convergence parameters
+                                          !   just testing -- defaults are 100, 1e-5
+            call slvrPCG%preconditioner%SetPreconditioner(omega)   !   set preconditioner
+                  !   NOTE: this will have to be done every time model parameter changes
             !   first test w/o preconditioner
             ! slvrPCG%omega = omega   !   don't need to set omega in this case
-            slvrPCG%preconditioner = PreConditioner_None_t()
+            !slvrPCG%preconditioner = PreConditioner_None_t()
             select type(slvrPCG)
                class is(Solver_PCG_t)
-                  write(*,*) 'class is Solver_PCG_t'
 
                   call slvrPCG%solve(phiIn,phiOut)
                   write(*,*) 'n_iter',slvrPCG%n_iter
-                  write(*,*) 'relative residual',slvrPCG%relErr(slvrPCG%n_iter)
-                  write(57,*) slvrPCG%relErr(1:slvrPCG%n_iter)
+                  write(*,*) 'relative residual',slvrPCG%relErr(slvrPCG%n_iter+1)
+                  write(57,*) slvrPCG%relErr(1:slvrPCG%n_iter+1)
 
                   !   file name for output
                   yFile = '../inputs/Soln_Tiny_PCG.dat'
                class default
                  stop "test program not coded for this solver type"
-            end select
+              end select
             call writeCScalar()
+         case ("FWD_IT")
+            !   read in cVector used for test -- rhs in A*y = x           
+            !    this file contains src%E for 1D problem
+            xFile = '../inputs/RHS_Tiny.dat'
+            call readCVector()
+            !  copy cvector x into E in: source object
+            allocate(src%E, source = x)
+            !  set RHS
+            call src%SetRHS()
+            !  finish setup of fwd object
+            call fwdIT%setPeriod( T )
+            !
+            y = fwdIT%getESolution( src )
+            !
+            yFile = '../inputs/Soln_Tiny_FWD_IT.dat'
+            call writeCvector()
           end select
 
      end subroutine runTest

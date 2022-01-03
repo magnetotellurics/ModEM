@@ -17,7 +17,7 @@ module ForwardSolver
       !
       real( kind=prec ) :: period
       !
-	  ! Solver as a property of this
+      ! Solver as a property of this
       class( Solver_t ), allocatable :: solver
       !
       integer :: n_iter_total = 0
@@ -28,7 +28,7 @@ module ForwardSolver
       procedure, public :: init    => initializeFWD
       procedure, public :: dealloc => deallocateFWD
       !
-	  procedure( interface_set_period_fwd ), deferred, public     :: setPeriod
+      procedure( interface_set_period_fwd ), deferred, public     :: setPeriod
       procedure( interface_get_e_solution_fwd ), deferred, public :: getESolution
       !
    end type ForwardSolver_t
@@ -43,12 +43,13 @@ module ForwardSolver
          !
       end subroutine interface_set_period_fwd
       !
-      function interface_get_e_solution_fwd( self, source, polarization ) result( e_solution )
+      !    I have eliminated polarization here -- this information could be carried
+      !      in source object, if needed (as for Forward_File)
+      function interface_get_e_solution_fwd( self, source ) result( e_solution )
          import :: ForwardSolver_t, prec, cVector_t, Source_t
          !
          class( ForwardSolver_t ), intent( inout ) :: self
          class( Source_t ), intent( inout )        :: source
-		 integer, intent( in )                     :: polarization
          !
          class( cVector_t ), allocatable           :: e_solution
          !

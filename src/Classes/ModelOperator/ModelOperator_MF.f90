@@ -445,17 +445,6 @@ contains
       ! Local variables
       integer :: ix, iy, iz
       !
-      !    This make no sense   !!!
-      !   do iz = 1, self%grid%nzAir
-      !       do iy = 1, self%ny
-      !            do ix = 1, self%nx
-      !                self%sigma_E%x(ix, iy, iz) = SIGMA_AIR
-      !                self%sigma_E%y(ix, iy, iz) = SIGMA_AIR
-      !                self%sigma_E%z(ix, iy, iz) = SIGMA_AIR
-      !            end do
-      !       end do
-      !   end do
-      !
       ! The coefficients are only for the interior nodes
       ! these coefficients have not been multiplied by volume elements yet
       do iz = 2, self%nz
@@ -807,7 +796,7 @@ contains
             !      seems to work in ModEM stable without this change, but
             !      this probably depends on specific preconditioner used
             !      (b)  preconditioner, and rhs need to also have signs flipped!
-            outPhi%v = -outPhi%v
+            outPhi%v = outPhi%v
          end select
          !
       class default

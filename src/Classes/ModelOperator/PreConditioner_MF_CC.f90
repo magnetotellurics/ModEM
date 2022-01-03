@@ -123,7 +123,8 @@ contains
       !
       ! Save omega in object, to record
       self%omega = omega
-      cFac = C_ONE*omega*MU_0
+      cFac = ISIGN*ONE_I*omega*MU_0
+      write(*,*) 'cFac = ',cFac
       !
       ! Initialize the non-interior values
       ! only the interior edge values are really used
@@ -138,13 +139,13 @@ contains
       do ix = 1, self%model_operator%grid%nx
          do iy = 2, self%model_operator%grid%ny
             do iz = 2, self%model_operator%grid%nz
-               self%Dilu%x(ix, iy, iz) = self%model_operator%xXO(iy,iz) - &
+               self%Dilu%x(ix, iy, iz) = self%model_operator%xXO(iy,iz) + &
                cFac*self%model_operator%Sigma_E%x(ix, iy, iz)   &
                - self%model_operator%xXY(iy, 1)*self%model_operator%xXY(iy-1, 2) &
                *self%Dilu%x(ix,iy-1,iz) &
                - self%model_operator%xXZ(iz, 1)*self%model_operator%xXZ(iz-1, 2) &
                *self%Dilu%x(ix,iy,iz-1)
-               self%Dilu%x(ix, iy, iz) = ONE/self%Dilu%x(ix, iy, iz)
+               self%Dilu%x(ix, iy, iz) = C_ONE/self%Dilu%x(ix, iy, iz)
             end do
          end do
       end do
@@ -154,13 +155,13 @@ contains
       do iy = 1, self%model_operator%grid%ny
          do iz = 2, self%model_operator%grid%nz
             do ix = 2, self%model_operator%grid%nx
-               self%Dilu%y(ix, iy, iz) = self%model_operator%yYO(ix,iz) - &
+               self%Dilu%y(ix, iy, iz) = self%model_operator%yYO(ix,iz) + &
                cFac*self%model_operator%Sigma_E%y(ix, iy, iz) &
                - self%model_operator%yYZ(iz, 1)*self%model_operator%yYZ(iz-1, 2) &
                *self%Dilu%y(ix, iy, iz-1) &
                - self%model_operator%yYX(ix, 1)*self%model_operator%yYX(ix-1, 2) &
                *self%Dilu%y(ix-1, iy, iz)
-               self%Dilu%y(ix, iy, iz) = ONE/self%Dilu%y(ix, iy, iz)
+               self%Dilu%y(ix, iy, iz) = C_ONE/self%Dilu%y(ix, iy, iz)
             end do
          end do
       end do
@@ -170,13 +171,13 @@ contains
       do iz = 1, self%model_operator%grid%nz
          do ix = 2, self%model_operator%grid%nx
             do iy = 2, self%model_operator%grid%ny
-               self%Dilu%z(ix, iy, iz) = self%model_operator%zZO(ix,iy) - &
+               self%Dilu%z(ix, iy, iz) = self%model_operator%zZO(ix,iy) + &
                cFac*self%model_operator%Sigma_E%z(ix, iy, iz) &
                - self%model_operator%zZX(ix, 1)*self%model_operator%zZX(ix-1, 2)*   &
                self%Dilu%z(ix-1, iy, iz) &
                - self%model_operator%zZY(iy, 1)*self%model_operator%zZY(iy-1, 2) &
                *self%Dilu%z(ix, iy-1, iz)
-               self%Dilu%z(ix, iy, iz) = ONE/self%Dilu%z(ix, iy, iz)
+               self%Dilu%z(ix, iy, iz) = C_ONE/self%Dilu%z(ix, iy, iz)
             end do
          end do
       end do

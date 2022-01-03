@@ -281,6 +281,7 @@ contains
           ! Keeping track of errors
           ! QMR book-keeping between divergence correction calls
           self%relErr( iter ) = real( rnorm / bnorm )
+          write(*,*) 'iter = ',iter,'   relErr = ',self%relErr(iter)
       end do
       self%n_iter = iter
       !

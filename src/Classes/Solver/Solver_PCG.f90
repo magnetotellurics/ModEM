@@ -50,10 +50,9 @@ module Solver_PCG
                  STOP "         Unknow model_operator type."
          end select
          !
-         !  NOTE: need default solver parameters to use here -- but more generally]
-         !    need to set these to what user requests in setup program!!!
-         call self%setParameters( 10, TOL6 )
-
+         !  Set defaults upon creation
+         call self%SetDefaults()
+         !
          call self%zeroDiagnostics()
          !
       end function Solver_PCG_ctor
@@ -126,15 +125,14 @@ module Solver_PCG
          !
          bnorm = sqrt(real(b%dotProd(b)))
          rnorm = sqrt(real(r%dotProd(r)))
-         i = 1
          self%relErr(1) = rnorm/bnorm
+         i = 0
          !
-         loop: do while ( (self%relErr(i).gt.self%tolerance ).and.(i.lt.self%max_iter))
+         loop: do while ( (self%relErr(i+1).gt.self%tolerance ).and.(i.lt.self%max_iter))
             !
-            write(*,*) 'iter = ', i, ' relErr = ',self%relErr(i)
             call self%preconditioner%LUsolve( r, s ) 
             delta = r%dotProd(s)
-            if(i.eq.1) then
+            if(i.eq.0) then
                beta = C_ZERO   
             else
                beta = delta/deltaOld
@@ -152,7 +150,8 @@ module Solver_PCG
             deltaOld = delta
             i = i + 1
             rnorm = sqrt(real(r%dotProd(r)))
-            self%relErr(i) = rnorm/bnorm
+            self%relErr(i+1) = rnorm/bnorm
+            write(*,*) 'iter = ', i, ' relErr = ',self%relErr(i+1)
          enddo loop
          !
          self%n_iter = i
