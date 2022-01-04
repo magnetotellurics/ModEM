@@ -128,6 +128,9 @@ contains
         !
         self%omega = omega
         self%solver%omega = omega
+        write(*,*) 'about to set preconditioner'
+        write(*,*) 'omega = ',omega
+
         call self%solver%preconditioner%SetPreconditioner( omega )
        !
      end subroutine setFrequencyForwardSolverIT
@@ -139,13 +142,13 @@ contains
      !  for "File" version we need to pass this via the source (makes more sense to have
      !      any information that defines the file in "source" object -- need an source type
      !      tailored to file input ...
-     function getESolutionForwardSolverIT( self, source ) result( e_solution )
+     subroutine getESolutionForwardSolverIT( self, source, e_solution )
         implicit none
         !
         class( ForwardSolverIT_t ), intent( inout ) :: self
         class( Source_t ), intent( inout )          :: source
-        !
-        class( cVector_t ), allocatable :: e_solution, temp
+        class( cVector_t ), intent(inout) :: e_solution
+          
         integer :: iter
         !
         ! initialize diagnostics -- am assuming that setting of solver parameters
@@ -153,13 +156,12 @@ contains
         call self%initDiagnosticArrays()
         !
         call self%solver%zeroDiagnostics()
-        !
-        ! initialize solution
-        allocate( e_solution, source = source%e0 )
+        write(*,*) 'diagnostic arrays initialized and zeroed'
         !
         select type( solver => self%solver )
             class is( Solver_QMR_t )
                call solver%solve( source%rhs, e_solution )
+               write(*,*) 'n_iter = ',self%solver%n_iter
             class default
                write(*, *) "ERROR:ForwardSolverIT::getESolutionForwardSolverIT:"
                stop        "         Unknow solver type."
@@ -196,7 +198,7 @@ contains
                 stop "Unclassified ForwardSolverIT e_solution"
         end select
         !
-    end function getESolutionForwardSolverIT
+    end subroutine getESolutionForwardSolverIT
    !
 end Module ForwardSolverIT
  

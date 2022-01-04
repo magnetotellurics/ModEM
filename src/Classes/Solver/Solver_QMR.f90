@@ -149,6 +149,9 @@ contains
       !   iter is iteration counter
       iter = 1
       self%relErr( iter ) = real( rnorm / bnorm )
+      write(*,*) 'in QMR'
+      write(*,*) 'rnorm, bnorm ', rnorm, bnorm
+      write(*,*) 'max_iter, tolerance',self%max_iter,self%tolerance
       !
       VT = R 
       ilu_adjt = .false.

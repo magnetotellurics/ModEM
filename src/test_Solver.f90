@@ -48,7 +48,8 @@
    T = .1
    omega = 2*pi/T
    !
-   !   test job is also hard coded : options- Amult, QMR, RHS
+   !   test job is also hard coded : options- Amult, QMR, RHS, MULT_DC, 
+   !            LUsolve, PCG, FWD_IT
    modem_job = 'FWD_IT'    
    fid = 1
    printUnit = 667   !   change this to get output y vector in a different ascii file
@@ -176,9 +177,9 @@ contains
             call readCVector()
             !  create and setup Solver object ...
             call slvrQMR%SetDefaults()   !   set default convergence parameters
-            maxIter = 20
-            tolerance = 1d-7
-            call slvrQMR%setParameters(maxIter,tolerance)   !   set convergence parameters
+            !maxIter = 20
+            !tolerance = 1d-7
+            !call slvrQMR%setParameters(maxIter,tolerance)   !   set convergence parameters
             !   first test w/o preconditioner
             slvrQMR%omega = omega
             call slvrQMR%preconditioner%SetPreconditioner(omega)   !   set preconditioner
@@ -218,7 +219,7 @@ contains
             y = src%E0
             yFile = '../inputs/E0compTiny.dat'
             call writeCVector()
-          case("MultDC")
+         case("MultDC")
             !    write out Sigma_E after setting ... 
             select type(model_operator)
                class is( ModelOperator_MF_t)
@@ -277,18 +278,24 @@ contains
               end select
             call writeCScalar()
          case ("FWD_IT")
+            !  finish setup of fwd object
+            call fwdIT%setPeriod( T )
             !   read in cVector used for test -- rhs in A*y = x           
             !    this file contains src%E for 1D problem
-            xFile = '../inputs/RHS_Tiny.dat'
+            xFile = '../inputs/E_Tiny.dat'
             call readCVector()
             !  copy cvector x into E in: source object
             allocate(src%E, source = x)
             !  set RHS
             call src%SetRHS()
-            !  finish setup of fwd object
-            call fwdIT%setPeriod( T )
+            write(*,*) 'RHS set up'
+            y = src%rhs
+            yFile = '../inputs/RHSfwdIT1.dat'
+            call writeCVector()
             !
-            y = fwdIT%getESolution( src )
+            call y%zeros
+            write(*,*) 'calling getEsolution'
+            call fwdIT%getESolution( src, y )
             !
             yFile = '../inputs/Soln_Tiny_FWD_IT.dat'
             call writeCvector()

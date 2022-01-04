@@ -45,15 +45,15 @@ module ForwardSolver
       !
       !    I have eliminated polarization here -- this information could be carried
       !      in source object, if needed (as for Forward_File)
-      function interface_get_e_solution_fwd( self, source ) result( e_solution )
+      subroutine interface_get_e_solution_fwd( self, source , e_solution )
          import :: ForwardSolver_t, prec, cVector_t, Source_t
          !
          class( ForwardSolver_t ), intent( inout ) :: self
+         !   why should source be inout???
          class( Source_t ), intent( inout )        :: source
+         class( cVector_t ), intent( inout)           :: e_solution
          !
-         class( cVector_t ), allocatable           :: e_solution
-         !
-      end function interface_get_e_solution_fwd
+      end subroutine interface_get_e_solution_fwd
       !
    end interface
    !
