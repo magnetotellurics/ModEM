@@ -12,11 +12,13 @@ module ForwardSolverIT_DC
    ! correction (DC) in usual way.   A slight variant/extension would be
    ! required for secondary field formulation.
 
+   ! NEED TO THINK ABOUT MANAGING DEFAULTS/USER CONTROL
    ! default values for solver control 
-   ! since reasonable defaults depend on the details of forward solver
-   ! details, set the defaults for parameters declared in solver object
-   ! here also
-   ! this will be default max_iter for QMR/BiCG solver
+   !   NOTE:   QMR and BiCG will have solver default set appropriate for 
+   !    a general iterative solution WITHOUT DC -- these defaults will be
+   !    changed for the DC case (to iter_per_div_cor)  
+   !   NOT SURE we want to have these solver dependent parameters set explicitly
+   !    here, but for now OK
    integer, parameter :: iter_per_div_corDefQMR = 40
    !
    integer, parameter :: iter_per_div_corDefBCG = 80
@@ -30,6 +32,8 @@ module ForwardSolverIT_DC
    !
    ! misfit tolerance for convergence of divergence correction solver
    real( kind=prec ), parameter :: tolDivCorDef = 1E-5
+   !   this default is used to set overall tolerance for ForwardSolver object
+   real( kind=prec ), parameter :: tolCurlCurlDef = 1E-7
    !
    type, extends( ForwardSolverIT_t ), public :: ForwardSolverIT_DC_t
       !
@@ -39,27 +43,23 @@ module ForwardSolverIT_DC
       !
       integer :: nDivCor = 0
       !
-      integer :: max_div_cor = 0
-      integer :: iter_per_div_cor = 0
+      integer :: max_div_cor
+      integer :: max_iterDivCor
+      real(knd=prec) :: tolDivCor 
       !
    contains
       !
       final :: ForwardSolverIT_DC_dtor
       !
+      !   procedures with abstract interfaces
       procedure, public :: setPeriod => setPeriodForwardSolverIT_DC
-      procedure, public :: setFrequency => setFrequencyForwardSolverIT_DC
-      procedure, public :: setIterDefaults
-      procedure, public :: createDiagnosticArrays
-      procedure, public :: initDiagnosticArrays
+      procedure, public :: setIterControl => setIterControlForwardSolverIT_DC
+      procedure, public :: initDiagnostics => initDiagnosticsForwardSolverIT_DC
       procedure, public :: getESolution => getESolutionForwardSolverIT_DC
-      ! set routines for iteration control parameters (specific to DC)
-      !procedure, public :: set_max_div_cor
-      !procedure, public :: set_iter_per_div_cor
-      ! get routines for diagonstics
-      !procedure, public :: get_nDivCor
-      !procedure, public :: get_divJ
-      !procedure, public :: get_DivCorRelErr
       !
+      !   procedure unique to DC
+      procedure, public :: setIterDefaultsDC
+
    end type ForwardSolverIT_DC_t
    !
    interface ForwardSolverIT_DC_t
@@ -68,140 +68,158 @@ module ForwardSolverIT_DC
    !
    contains
    !
-   function ForwardSolverIT_DC_ctor( model_operator ) result( self )
-      implicit none
-      !
-	  class( ModelOperator_t ), intent( in ) :: model_operator
-	  !
-      type( ForwardSolverIT_DC_t ) :: self
-      !
-      !write(*,*) "Constructor ForwardSolverIT_DC_t"
-      !
-      call self%init()
-      !
-      ! DivergenceCorrection has only one type for now
-      self%divergence_correction = DivergenceCorrection_t( model_operator )
-      !
-	  self%solver = Solver_QMR_t( model_operator )
-	  !
-      call self%setIterDefaults()
-      !
-      call self%createDiagnosticArrays()
-      !
-   end function ForwardSolverIT_DC_ctor
-   !
-   ! Destructor
-   subroutine ForwardSolverIT_DC_dtor( self )
-      implicit none
-      !
-      type( ForwardSolverIT_DC_t ), intent( in out ) :: self
-      !
-      !write(*,*) "Destructor ForwardSolverIT_DC_t"
-      !
-      call self%dealloc()
-      !
-   end subroutine ForwardSolverIT_DC_dtor
-   !
-   subroutine setPeriodForwardSolverIT_DC( self, period )
-      implicit none
-      !
-      class( ForwardSolverIT_DC_t ), intent( inout ) :: self
-      real( kind=prec ), intent( in )             :: period
-      !
-      self%period = period
-      !
-      self%omega = 2.0 * PI / period
-      !
-      call self%setFrequency( self%omega )
-   !
-   end subroutine setPeriodForwardSolverIT_DC
-   !
+    function ForwardSolverIT_DC_ctor( model_operator, solver_type ) result( self )
+       implicit none
+       class( ModelOperator_t ), intent( in ) :: model_operator
+       character(*), intent(in)    :: solver_type
+       type( ForwardSolverIT_DC_t ) :: self
+ 
+       integer :: maxIter, maxItTotal
+       real(kind=prec)  :: tol
+       !
+       !write(*,*) "Constructor ForwardSolverIT_DC_t"
+       !
+       call self%init()   ! is this needed -- why?
+       !
+       ! DivergenceCorrection has only one type (might change components,
+       !    but basic scheme implemented is not going to change)
+       self%divergence_correction = DivergenceCorrection_t( model_operator )
+ 
+       !   solver will soon have options
+       select case(solver_type)
+          case(QMR)
+             self%solver = Solver_QMR_t( model_operator )
+             maxIter = iter_per_div_corDefQMR
+          case(BiCG)
+             maxIter = iter_per_div_corDefBCG
+             write(*,*) 'Not yet coded for Bi-Conjugate Gradients'
+             stop
+       end select
+       !
+       !    set solver iteration control parameters using defaults
+       call self%solver%setParameters(maxIter,tolCurlCurlDef)
+ 
+       !    set remaining default iteration control for DC
+       call self%setIterDefaultsDC()
+       !
+       !    initialize Fwd operator iteration control, diagonstic arrays
+       !     using defaults from solver
+       maxItTotal = self%max_div_cor * self%solver%max_iter
+       tol = self%solver%tolerance
+       call self%setIterControl(maxItTotal,tol)
+       !
+       call self%initDiagnostics()
+       !
+    end function ForwardSolverIT_DC_ctor
     !
-    ! creator and destructor ... still need these
-   subroutine setIterDefaults( self )
-      implicit none
-      !
-	  class( ForwardSolverIT_DC_t ), intent( inout ) :: self
-      ! this just sets iteration control parameters to default
-      ! values -- should be good enough to get us started!
-      ! Note that some of the parameters are set in solver object 
-      !
-      self%max_div_cor = max_div_corDef
-      self%max_iter_total = self%max_div_cor * self%solver%max_iter
-      !
-      !select type( solver => self%solver )
-      !class is (Solver_QMR_t)
-        self%iter_per_div_cor = iter_per_div_corDefQMR
-      !class is (Solver_BiCG_t)
-        !self%iter_per_div_cor = iter_per_div_corDefBCG
-      !end select
+    ! Destructor
+    subroutine ForwardSolverIT_DC_dtor( self )
+       implicit none
+       !
+       type( ForwardSolverIT_DC_t ), intent( in out ) :: self
+       !
+       !write(*,*) "Destructor ForwardSolverIT_DC_t"
+       !
+       call self%dealloc()
+       !
+    end subroutine ForwardSolverIT_DC_dtor
+    !
+    !   perhaps this can be in base class?   I guess this is always the same
+    subroutine setPeriodForwardSolverIT_DC( self, period )
+       implicit none
+       !
+       class( ForwardSolverIT_DC_t ), intent( inout ) :: self
+       real( kind=prec ), intent( in )             :: period
+       !
+       self%period = period
+       !
+       self%omega = 2.0 * PI / period
+       !   set frequency in solver object
+       self%solver%omega = omega
+       !     set preconditoner (depends on frequency in general)
+       call self%solver%preconditioner%SetPreconditioner( omega )
+       !
+    end subroutine setPeriodForwardSolverIT_DC
+    !
+    !**********
+    ! 
+    !   This is a base class procedure, intended to make it easy to change
+    !   overall solution tolerance, and overall maximum number of iterations
+    !   For DC case we use these to adjust some other parameters; for full
+    !   control we need a routine that can set all DC iteration control parameters
+    subroutine setIterControlForwardSolverIT_DC( self, maxit, tol )
+       implicit none
+       class( ForwardSolverIT_t ), intent( inout ) :: self
+       integer, intent(in)                         :: maxit
+       real(kind=prec), intent(in)                 :: tol
+       !
+       integer  :: itPerDC
+       !    
+       !    tolerance is property of base class -- overall tolerance for
+       !    convergence (also used to set tolerance in solver--these are always same`
+       self%tolerance = tol
+       !   self%solver%max_iter is number of iterations per DC -- leave
+       !    this as is, and adjust max_div_cor
+       itPerDC = self%solver%max_iter
+       self%max_div_cor = nint(maxit/itPerDC)
+       self%max_iter_total = itPerDC*self%max_div_cor
+       !
+       !   reset solver iteration control 
+       call self%solver%setParameters(itPerDC,tol)
 
-      ! these are parameters in the solver objects, for curl-curl
-      !   and for DC
-      !self%solver%setParameters(self%IterDivCor,tolEMDef)
-      call self%solver%setParameters( max_iterDivCorDef, tolDivCorDef )
+    end subroutine setIterControlForwardSolverIT_DC
+    !
+    !********
+    !
+    subroutine setIterDefaultsDC( self )
+       implicit none
+       class( ForwardSolverIT_DC_t ), intent( inout ) :: self
+       ! this just sets iteration control parameters specific to DC to default
+       ! values -- should be good enough to get us started!
+       !  Rationale:   this keeps all iteration control parameters needed
+       !    for curl-curl and DC solvers.   Defaults are parameters, but 
+       !    we need to allow all of these to be changed by users, so actual
+       !    values are variables stored in ForwardSolver object
+       !    need a way to set these 4 parameters
+       !    to what the (experienced) user asks for ...
+       !
+       self%max_div_cor = max_div_corDef
+       !   this is max_iter for PCG in DC
+       self%maxIterDivCor = self%maxIterDivCorDef
+       !   this is tolerance for PCG in DC
+       self%tolDivCor = self%tolDivCorDef
 
-    end subroutine setIterDefaults
-      !***********************************************************
-    subroutine createDiagnosticArrays( self )
+    end subroutine setIterDefaultsDC
+
+    !
+    !***********************************************************
+    !
+    subroutine initDiagnosticsForwardSolverIT_DC( self )
         implicit none
-        !
         class( ForwardSolverIT_DC_t ), intent( inout ) :: self
         ! this allocates arrays for storage of solver diagnostics
 
-        ! Forward object: EMrelErr, divJ, DivCorRelErr
-        if( allocated( self%divJ ) ) deallocate( self%divJ )
+        self%n_iter_actual = 0
+        self%relResFinal = R_ZERO
         !
+        !   vector of all relative residuals (concatenated over all divergence
+        !    correction steps)
+        if allocated(self%relResVec) deallocate(self%relResVec)
+        allocate(self%relResVec(self%max_iter_total))
+        !
+        ! Intermediate solution divergence  -- one for each DC step
+        if( allocated( self%divJ ) ) deallocate( self%divJ )
         allocate( self%divJ( 2, self%max_div_cor ) )
         !
-        if( allocated( self%EMrelErr) ) deallocate( self%EMrelErr )
-        !
-        allocate( self%EMrelErr( self%max_iter_total ) )
-        !
+        !   convergence of PCG solver for all divergence corrections
+        !  (probably not needed?  Do we ever really look at this?  Naser?)
         if( allocated( self%DivCorRelErr ) ) deallocate( self%DivCorRelErr )
+        allocate( self%DivCorRelErr( self%solver%maxIterDivCor, self%max_div_cor ) )
         !
-        allocate( self%DivCorRelErr( self%solver%max_iter, self%max_div_cor ) )
-        !
-        ! Solver objects
-        if( allocated( self%solver%relErr ) ) deallocate( self%solver%relErr )
-        !
-        allocate( self%solver%relErr( self%solver%max_iter ) )
-
-     end subroutine createDiagnosticArrays
-     !*****************************************************
-     subroutine initDiagnosticArrays( self )
-        implicit none
-        !
-        class( ForwardSolverIT_DC_t ), intent( inout ) :: self
-        ! this zero"s diagnostic arrays for storage of solver diagnostics
-        self%n_iter_total = 0
-        self%nDivCor = 0
-        self%EMrelErr = R_ZERO
-        self%divJ = R_ZERO
-        self%DivCorRelErr = R_ZERO
-        self%solver%failed = .false.
-        self%solver%converged = .false.
-        !
-     end subroutine initDiagnosticArrays    
-     !*****************************************************
-     subroutine setFrequencyForwardSolverIT_DC( self, omega )
-        implicit none
-        ! this is not specific to DC solver -- can we implement
-        !  in abstract class?
-        class( ForwardSolverIT_DC_t ), intent( inout ) :: self
-        real( kind=prec ), intent( in )             :: omega
-        if(abs(self%omega-omega) .lt. TOL8) then
-          ! omega is close enough to input -- no need to reset
-          ! freqeuncy dependent properties
-          return
-        end if
-        ! otherwise need to update some things ...
-        self%omega = omega
-        self%solver%omega = omega
-        call self%solver%preconditioner%SetPreconditioner( omega )
-       !
-     end subroutine setFrequencyForwardSolverIT_DC
-     !*****************************************************
+     end subroutine initDiagnosticsForwardSolverIT_DC
+     !
+     !*********
+     !
      function getESolutionForwardSolverIT_DC( self, source, polarization ) result( e_solution )
         implicit none
         !

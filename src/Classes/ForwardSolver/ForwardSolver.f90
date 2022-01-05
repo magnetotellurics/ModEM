@@ -20,8 +20,21 @@ module ForwardSolver
       ! Solver as a property of this
       class( Solver_t ), allocatable :: solver
       !
-      integer :: n_iter_total = 0
-      logical :: failed = .false.
+      !   I think these iteration control/diagnositc variables  would always be used
+      !     (at least for an iterative solver!)
+      !
+      !    control parameters: these need to be set before running
+      !     set with procedures in instantiable class
+      real(kind=prec) :: tolerance  !  target relative residuals
+      integer :: max_iter_total     !  limit on number of iteration
+      !    iterative solver diagnostics -- these will be set with procedures in
+      !      instantiable class, 
+      integer :: n_iter_actual           !  actual total number of iterations
+      real(kind=prec) :: relResFinal     !  achieved relative residual
+      real(kind=prec), allocatable, dimension(:)  :: relResVec 
+                             !  relative residual as a function of iteration
+      logical :: failed = .false.   !  flag set to true if target relRes is not achieved
+                                    !   maybe this should be an integer "status"?
       !
    contains
       !
@@ -29,6 +42,8 @@ module ForwardSolver
       procedure, public :: dealloc => deallocateFWD
       !
       procedure( interface_set_period_fwd ), deferred, public     :: setPeriod
+      procedure( interface_set_iter_fwd ), deferred, public       :: setIterControl
+      procedure( interface_init_diag_fwd), deferred, public       :: initDiagnostics
       procedure( interface_get_e_solution_fwd ), deferred, public :: getESolution
       !
    end type ForwardSolver_t
@@ -42,6 +57,20 @@ module ForwardSolver
          real( kind=prec ), intent( in )           :: period
          !
       end subroutine interface_set_period_fwd
+      !
+      subroutine interface_set_iter_fwd( self, maxit, tol )
+         import :: ForwardSolver_t, prec
+         real(kind=prec), intent(in)  :: tol
+         integer  ::  maxit
+         class( ForwardSolver_t ), intent( inout ) :: self
+         !
+      end subroutine interface_set_iter_fwd
+      !
+      subroutine interface_init_diag_fwd( self )
+         import :: ForwardSolver_t
+         class( ForwardSolver_t ), intent( inout ) :: self
+         !
+      end subroutine interface_init_diag_fwd
       !
       !    I have eliminated polarization here -- this information could be carried
       !      in source object, if needed (as for Forward_File)

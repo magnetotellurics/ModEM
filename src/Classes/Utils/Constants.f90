@@ -17,6 +17,11 @@ module Constants
    character (len = 21), parameter   :: FWD_FILE  = "ForwardSolverFromFile"
    character (len = 15), parameter   :: FWD_DC    = "ForwardSolverDC"
    !
+   character(:), allocatable :: solver_type
+   character (len = 3), parameter   :: QMR  = "QMR"
+   character (len = 3), parameter   :: PCG  = "PCG"
+   character (len = 4), parameter   :: BiCG  = "BiCG"
+   !
    character(:), allocatable :: source_type
    character (len = 11), parameter   :: SRC_MT_1D = "SourceMT_1D"
    character (len = 11), parameter   :: SRC_MT_2D = "SourceMT_2D"
