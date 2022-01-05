@@ -18,6 +18,8 @@
    use Solver_PCG
    use SourceMT_1D
    use ForwardSolverIT
+   use DivergenceCorrection
+   use ForwardSolverIT_DC
    !
    !use ForwardSolverIT_DC
    !
@@ -31,7 +33,8 @@
    class( ModelOperator_t ), allocatable  :: model_operator
    class( Solver_t ), allocatable  :: slvrQMR,slvrPCG
    class( Source_t ), allocatable  :: src
-   class( ForwardSolver_t ), allocatable  :: fwdIT
+   class( ForwardSolver_t ), allocatable  :: fwdIT, fwdIT_DC
+   type( DivergenceCorrection_t)  :: divCor
    !   other things I make explicit types  -- seemed to work, but now not sure!
    class( CVector_t), allocatable   :: x, y
    class( CScalar_t), allocatable   :: phiIn, phiOut
@@ -49,7 +52,7 @@
    omega = 2*pi/T
    !
    !   test job is also hard coded : options- Amult, QMR, RHS, MULT_DC, 
-   !            LUsolve, PCG, FWD_IT
+   !            LUsolve, PCG, FWD_IT, DC, FWD_IT_DC
    modem_job = 'FWD_IT'    
    fid = 1
    printUnit = 667   !   change this to get output y vector in a different ascii file
@@ -136,8 +139,15 @@ contains
             ! 
             src = SourceMT_1D_t(model_operator,model_parameter)
             !
-            !   Instantiate the forward modeling object
-            fwdIT = ForwardSolverIT_t(model_operator)
+            !   Instantiate the forward modeling objects
+            fwdIT = ForwardSolverIT_t(model_operator,QMR)
+            fwdIT_DC = ForwardSolverIT_DC_t(model_operator,QMR)
+            !
+            !   Instnatiatee the DivergenceCorrection object
+            !     note that this creates the PGC solver automatically
+            !      creates preConditioner, and sets iteration controls to 
+            !      default values
+            divCor = DivergenceCorrection_t(model_operator)
 
          class default
              stop "Unclassified main_grid"
@@ -177,9 +187,9 @@ contains
             call readCVector()
             !  create and setup Solver object ...
             call slvrQMR%SetDefaults()   !   set default convergence parameters
-            !maxIter = 20
-            !tolerance = 1d-7
-            !call slvrQMR%setParameters(maxIter,tolerance)   !   set convergence parameters
+            maxIter = 20
+            tolerance = 1d-7
+            call slvrQMR%setParameters(maxIter,tolerance)   !   set convergence parameters
             !   first test w/o preconditioner
             slvrQMR%omega = omega
             call slvrQMR%preconditioner%SetPreconditioner(omega)   !   set preconditioner
@@ -191,8 +201,14 @@ contains
                   write(*,*) 'relative residual',slvrQMR%relErr(slvrQMR%n_iter)
                   write(57,*) slvrQMR%relErr(1:slvrQMR%n_iter)
 
-                  !   file name for output
-                  yFile = '../inputs/Soln_Tiny_QMR.dat'
+                  !   file name for output -- run with max_iter = 20 to make an
+                  !     input for testing DC
+                  if(slvrQMR%max_iter .eq. 20) then
+                     yFile = '../inputs/QMR20.dat'
+                  else
+                     yFile = '../inputs/Soln_Tiny_QMR.dat'
+                  endif
+                  
                class default
                  stop "test program not coded for this solver type"
             end select
@@ -291,6 +307,22 @@ contains
             write(*,*) 'RHS set up'
             y = src%rhs
             yFile = '../inputs/RHSfwdIT1.dat'
+            call writeCVector()
+            !
+            call y%zeros
+            write(*,*) 'calling getEsolution'
+            call fwdIT%getESolution( src, y )
+            !
+            yFile = '../inputs/Soln_Tiny_FWD_IT.dat'
+            call writeCvector()
+         case ("DC")
+            !   read in cVector used for test -- in this case start
+            !   with QMR solution after a small number of iterations (20)
+            !   and then apply divergence correction
+            xFile = '../inputs/QMR20.dat'
+            call readCVector()
+            call divCor%DivCorr(x,y)
+
             call writeCVector()
             !
             call y%zeros

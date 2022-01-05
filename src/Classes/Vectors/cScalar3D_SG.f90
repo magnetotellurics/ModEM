@@ -80,12 +80,12 @@ module cScalar3D_SG
        procedure, public :: sub1 => sub1CScalar3D_SG
        procedure, public :: mult1 => mult1CScalar3D_SG
        procedure, public :: mult2 => mult2CScalar3D_SG
-	   procedure, public :: mult3 => mult3CScalar3D_SG
-	   !
+       procedure, public :: mult3 => mult3CScalar3D_SG
+       !
        procedure, public :: mults1 => mults1CScalar3D_SG
        procedure, public :: mults2 => mults2CScalar3D_SG
        procedure, public :: mults3 => mults3CScalar3D_SG
-	   !
+       !
        procedure, public :: div1 => div1CScalar3D_SG
        !
        procedure, public :: divs3 => divs3CScalar3D_SG

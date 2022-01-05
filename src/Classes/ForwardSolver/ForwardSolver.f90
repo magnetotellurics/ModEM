@@ -61,9 +61,9 @@ module ForwardSolver
       !
       subroutine interface_set_iter_fwd( self, maxit, tol )
          import :: ForwardSolver_t, prec
-         real(kind=prec), intent(in)  :: tol
-         integer  ::  maxit
-         class( ForwardSolver_t ), intent( inout ) :: self
+         class( ForwardSolver_t ), intent( inout )  :: self
+         real(kind=prec), intent(in)                :: tol
+         integer, intent(in)                        ::  maxit
          !
       end subroutine interface_set_iter_fwd
       !

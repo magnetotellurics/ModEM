@@ -23,7 +23,7 @@ module ForwardSolverIT
       procedure, public :: setPeriod              => setPeriodForwardSolverIT
       procedure, public :: initDiagnostics        => initDiagnosticsForwardSolverIT
       procedure, public :: zeroDiagnostics        => zeroDiagnosticsForwardSolverIT
-      procedure, public :: setIterControl         => SetIterControlSolverIT
+      procedure, public :: setIterControl         => SetIterControlForwardSolverIT
       procedure, public :: getESolution           => getESolutionForwardSolverIT
       !
    end type ForwardSolverIT_t
@@ -38,9 +38,9 @@ module ForwardSolverIT
       !    
       function ForwardSolverIT_ctor( model_operator, solver_type ) result( self )
          implicit none
-         class( ModelOperator_t ), intent( in ) :: model_operator
-         character(*), intent(in)   :: solver_type
-         type( ForwardSolverIT_t )              :: self
+         class( ModelOperator_t ), intent( in )  :: model_operator
+         character(*), intent(in)                :: solver_type
+         type( ForwardSolverIT_t )               :: self
          !
          !write(*,*) "Constructor ForwardSolverIT_t"
          !
@@ -91,9 +91,9 @@ module ForwardSolverIT
          self%omega = 2.0 * PI / period
          !
          !   set frequency in solver object
-         self%solver%omega = omega
+         self%solver%omega = self%omega
          !     set preconditoner (depends on frequency in general)
-         call self%solver%preconditioner%SetPreconditioner( omega )
+         call self%solver%preconditioner%SetPreconditioner(self%omega )
          !
        end subroutine setPeriodForwardSolverIT
       !
@@ -101,9 +101,9 @@ module ForwardSolverIT
       !    Init the arrays used for diagnostic analysis.
       subroutine setIterControlForwardSolverIT( self, maxit, tol )
          implicit none
-         class( ForwardSolverIT_t ), intent( inout ) :: self
-         integer, intent(in)  :: maxit
-         real(kind=prec)      :: tol
+         class( ForwardSolverIT_t ), intent( inout )  :: self
+         integer, intent(in)                          :: maxit
+         real(kind=prec), intent(in)                  :: tol
          !
          self%max_iter_total = maxit
          self%tolerance = tol
@@ -128,7 +128,7 @@ module ForwardSolverIT
          self%n_iter_actual = 0
          self%relResFinal = R_ZERO
          !
-         if allocated(self%relResVec) deallocate(self%relResVec)
+         if(allocated(self%relResVec)) deallocate(self%relResVec)
          allocate(self%relResVec(self%max_iter_total))
          !
       end subroutine initDiagnosticsForwardSolverIT 
@@ -137,10 +137,10 @@ module ForwardSolverIT
       !
       subroutine zeroDiagnosticsForwardSolverIT(self)
          implicit none
-         class( ForwardSolverIT_DC_t ), intent( inout ) :: self
+         class( ForwardSolverIT_t ), intent( inout ) :: self
 
-           self%relErr = R_ZERO
-           self%solver%zeroDiagnostics
+           self%relResVec = R_ZERO
+           call self%solver%zeroDiagnostics()
 
       end subroutine zeroDiagnosticsForwardSolverIT
       !
@@ -170,9 +170,9 @@ module ForwardSolverIT
          !
          ! update solver diagnostic array EMrelErr -- in this case just a copy of the
          !   relErr array in solver ...
-         self%EMrelErr(1:self%solver%n_iter) = self%solver%relErr(1:self%solver%n_iter)
+         self%relResVec(1:self%solver%n_iter) = self%solver%relErr(1:self%solver%n_iter)
          !
-         self%n_iter_total = self%solver%n_iter
+         self%n_iter_actual = self%solver%n_iter
          !
          if( source%adjt ) then
             select type( modOp => self%solver%model_operator )

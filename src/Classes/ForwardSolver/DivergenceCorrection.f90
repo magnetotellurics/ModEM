@@ -96,10 +96,10 @@ contains
         !  Optional argument phi0 is scaled divergence of source term
         !    computed by rhsDivCor
         !
-        class( DivergenceCorrection_t )                         :: self
-        class( cVector_t ), allocatable, intent( in )           :: inE
-        class( cVector_t ), allocatable, intent(inout)          :: outE
-        class( cScalar_t ), allocatable, intent( in ), optional :: phi0
+        class( DivergenceCorrection_t )            :: self
+        class( cVector_t ), intent( in )           :: inE
+        class( cVector_t ), intent(inout)          :: outE
+        class( cScalar_t ), intent( in ), optional :: phi0
         !
         !  local variables
         class( cScalar_t ), allocatable :: phiSol, phiRHS
@@ -158,7 +158,7 @@ contains
         !   have to decide how to manage output
         !if (output_level > 2) then
         write (*,*) "finished divergence correction:"
-        write (*,"(i5,g15.7)") self%solverr%niter, self%solver%relErr(self%solver%niter)
+        write (*,"(i5,g15.7)") self%solver%n_iter, self%solver%relErr(self%solver%n_iter)
        !end if
 
        ! compute gradient of phiSol (Divergence correction for inE)

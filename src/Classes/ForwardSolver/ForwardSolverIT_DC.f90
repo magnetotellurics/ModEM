@@ -48,7 +48,7 @@ module ForwardSolverIT_DC
       !
       integer :: max_div_cor
       integer :: max_iterDivCor
-      real(knd=prec) :: tolDivCor 
+      real(kind=prec) :: tolDivCor 
       !
    contains
       !
@@ -139,9 +139,9 @@ module ForwardSolverIT_DC
        !
        self%omega = 2.0 * PI / period
        !   set frequency in solver object
-       self%solver%omega = omega
+       self%solver%omega = self%omega
        !     set preconditoner (depends on frequency in general)
-       call self%solver%preconditioner%SetPreconditioner( omega )
+       call self%solver%preconditioner%SetPreconditioner( self%omega )
        !
     end subroutine setPeriodForwardSolverIT_DC
     !
@@ -153,7 +153,7 @@ module ForwardSolverIT_DC
     !   control we need a routine that can set all DC iteration control parameters
     subroutine setIterControlForwardSolverIT_DC( self, maxit, tol )
        implicit none
-       class( ForwardSolverIT_t ), intent( inout ) :: self
+       class( ForwardSolverIT_DC_t ), intent( inout ) :: self
        integer, intent(in)                         :: maxit
        real(kind=prec), intent(in)                 :: tol
        !
@@ -165,7 +165,7 @@ module ForwardSolverIT_DC
        !   self%solver%max_iter is number of iterations per DC -- leave
        !    this as is, and adjust max_div_cor
        itPerDC = self%solver%max_iter
-       self%max_div_cor = nint(maxit/itPerDC)
+       self%max_div_cor = maxit/itPerDC
        self%max_iter_total = itPerDC*self%max_div_cor
        !
        !   reset solver iteration control 
@@ -189,9 +189,9 @@ module ForwardSolverIT_DC
        !
        self%max_div_cor = max_div_corDef
        !   this is max_iter for PCG in DC
-       self%maxIterDivCor = self%maxIterDivCorDef
+       self%max_IterDivCor = max_IterDivCorDef
        !   this is tolerance for PCG in DC
-       self%tolDivCor = self%tolDivCorDef
+       self%tolDivCor = tolDivCorDef
 
     end subroutine setIterDefaultsDC
 
@@ -208,7 +208,7 @@ module ForwardSolverIT_DC
         !
         !   vector of all relative residuals (concatenated over all divergence
         !    correction steps)
-        if allocated(self%relResVec) deallocate(self%relResVec)
+        if(allocated(self%relResVec)) deallocate(self%relResVec)
         allocate(self%relResVec(self%max_iter_total))
         !
         ! Intermediate solution divergence before/after  -- one for each DC step
@@ -218,22 +218,22 @@ module ForwardSolverIT_DC
         !   convergence of PCG solver for all divergence corrections
         !  (probably not needed?  Do we ever really look at this?  Naser?)
         if( allocated( self%DivCorRelErr ) ) deallocate( self%DivCorRelErr )
-        allocate( self%DivCorRelErr( self%solver%maxIterDivCor, self%max_div_cor ) )
+        allocate( self%DivCorRelErr( self%max_IterDivCor, self%max_div_cor ) )
         !
      end subroutine initDiagnosticsForwardSolverIT_DC
      !
      !*********
      !
-     subroutine zeroDiagnosticsForwardIT_DC(self)
+     subroutine zeroDiagnosticsForwardSolverIT_DC(self)
         implicit none
         class( ForwardSolverIT_DC_t ), intent( inout ) :: self
 
           self%relResVec = R_ZERO
           self%divJ = R_ZERO
           self%DivCorRelErr = R_ZERO
-          self%solver%zeroDiagnostics
+          call self%solver%zeroDiagnostics()
 
-     end subroutine zeroDiagnostics
+     end subroutine zeroDiagnosticsForwardSolverIT_DC
      !
      !*********
      !
@@ -292,26 +292,22 @@ module ForwardSolverIT_DC
            ! update solver diagnostics 
            do iter = 1, self%solver%n_iter
               ! why are we using an explicit loop here?
-              self%EMrelErr( self%n_iter_total + iter ) = self%solver%relErr(iter)
+              self%relResVec( self%n_iter_actual + iter ) = self%solver%relErr(iter)
            enddo
-           !
-           self%n_iter_total = self%n_iter_total + self%solver%n_iter
-           !
+           self%n_iter_actual = self%n_iter_actual + self%solver%n_iter
            self%nDivCor = self%nDivCor+1
            !
            if( self%nDivCor < self%max_div_cor ) then
-              ! do divergence correction
-              e_solution = temp ! assuming temp is already allocated,
-                                ! don"t want to reallocate!
-       	   !
-           if( source%non_zero_source ) then
-             !
-       	     call self%divergence_correction%DivCorr( e_solution, e_solution, phi0 )
-             !
-           else
-       	     !
-             call self%divergence_correction%DivCorr( e_solution, e_solution )
-             !
+              !  copy current e_solution into temp (discuss if this is this needed?)
+              temp = e_solution
+              if( source%non_zero_source ) then
+                 !
+                 call self%divergence_correction%DivCorr( temp, e_solution, phi0 )
+                 !
+              else
+                 !
+                 call self%divergence_correction%DivCorr( temp, e_solution )
+                 !
            endif
        	  !
           else
@@ -359,7 +355,7 @@ module ForwardSolverIT_DC
        if( allocated( b ) )    deallocate(b)
        if( allocated( phi0 ) ) deallocate(phi0)
 
-   end function getESolutionForwardSolverIT_DC
+   end subroutine getESolutionForwardSolverIT_DC
         
 end Module ForwardSolverIT_DC
  
