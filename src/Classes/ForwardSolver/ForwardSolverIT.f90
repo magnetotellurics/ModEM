@@ -22,6 +22,7 @@ module ForwardSolverIT
       !
       procedure, public :: setPeriod              => setPeriodForwardSolverIT
       procedure, public :: initDiagnostics        => initDiagnosticsForwardSolverIT
+      procedure, public :: zeroDiagnostics        => zeroDiagnosticsForwardSolverIT
       procedure, public :: setIterControl         => SetIterControlSolverIT
       procedure, public :: getESolution           => getESolutionForwardSolverIT
       !
@@ -58,9 +59,8 @@ module ForwardSolverIT
          !    initialize Fwd operator iteration control, diagonstic arrays
          !     using defaults from solver
          call self%setIterControl(self%solver%max_iter,self%solver%tolerance)
+         !
          call self%initDiagnostics()
-
-         allocate( self%EMrelErr( self%max_iter_total ) )
          !
       end function ForwardSolverIT_ctor
       !
@@ -133,6 +133,17 @@ module ForwardSolverIT
          !
       end subroutine initDiagnosticsForwardSolverIT 
       !
+      !*********
+      !
+      subroutine zeroDiagnosticsForwardSolverIT(self)
+         implicit none
+         class( ForwardSolverIT_DC_t ), intent( inout ) :: self
+
+           self%relErr = R_ZERO
+           self%solver%zeroDiagnostics
+
+      end subroutine zeroDiagnosticsForwardSolverIT
+      !
       !**********
       !
       subroutine getESolutionForwardSolverIT( self, source, e_solution )
@@ -144,12 +155,9 @@ module ForwardSolverIT
           
          integer :: iter
          !
-         ! initialize diagnostics -- am assuming that setting of solver parameters
+         ! zero diagnostics, including for solver
          !  is done in a set up step (once in the run) outside this object
-         call self%initDiagnosticArrays()
-         !
-         call self%solver%zeroDiagnostics()
-         write(*,*) 'diagnostic arrays initialized and zeroed'
+         call self%zeroDiagnostics()
          !
          select type( solver => self%solver )
             class is( Solver_QMR_t )

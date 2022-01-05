@@ -44,6 +44,7 @@ module ForwardSolver
       procedure( interface_set_period_fwd ), deferred, public     :: setPeriod
       procedure( interface_set_iter_fwd ), deferred, public       :: setIterControl
       procedure( interface_init_diag_fwd), deferred, public       :: initDiagnostics
+      procedure( interface_zero_diag_fwd), deferred, public       :: zeroDiagnostics
       procedure( interface_get_e_solution_fwd ), deferred, public :: getESolution
       !
    end type ForwardSolver_t
@@ -71,6 +72,12 @@ module ForwardSolver
          class( ForwardSolver_t ), intent( inout ) :: self
          !
       end subroutine interface_init_diag_fwd
+      !
+      subroutine interface_zero_diag_fwd( self )
+         import :: ForwardSolver_t
+         class( ForwardSolver_t ), intent( inout ) :: self
+         !
+      end subroutine interface_zero_diag_fwd
       !
       !    I have eliminated polarization here -- this information could be carried
       !      in source object, if needed (as for Forward_File)

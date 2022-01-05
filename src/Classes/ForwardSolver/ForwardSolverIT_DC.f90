@@ -39,7 +39,10 @@ module ForwardSolverIT_DC
       !
       class( DivergenceCorrection_t ), allocatable :: divergence_correction ! pointer to divergence correction
       !
+      !    array of relative residuals for PCG convergence, all DC steps
       real( kind=prec ), allocatable, dimension(:,:) :: DivCorRelErr
+      !    current divergence before and after each divergence correction step
+      real( kind=prec ), allocatable, dimension(:,:) :: divJ
       !
       integer :: nDivCor = 0
       !
@@ -55,6 +58,7 @@ module ForwardSolverIT_DC
       procedure, public :: setPeriod => setPeriodForwardSolverIT_DC
       procedure, public :: setIterControl => setIterControlForwardSolverIT_DC
       procedure, public :: initDiagnostics => initDiagnosticsForwardSolverIT_DC
+      procedure, public :: zeroDiagnostics => zeroDiagnosticsForwardSolverIT_DC
       procedure, public :: getESolution => getESolutionForwardSolverIT_DC
       !
       !   procedure unique to DC
@@ -207,7 +211,7 @@ module ForwardSolverIT_DC
         if allocated(self%relResVec) deallocate(self%relResVec)
         allocate(self%relResVec(self%max_iter_total))
         !
-        ! Intermediate solution divergence  -- one for each DC step
+        ! Intermediate solution divergence before/after  -- one for each DC step
         if( allocated( self%divJ ) ) deallocate( self%divJ )
         allocate( self%divJ( 2, self%max_div_cor ) )
         !
@@ -220,30 +224,32 @@ module ForwardSolverIT_DC
      !
      !*********
      !
-     function getESolutionForwardSolverIT_DC( self, source, polarization ) result( e_solution )
+     subroutine zeroDiagnosticsForwardIT_DC(self)
         implicit none
-        !
+        class( ForwardSolverIT_DC_t ), intent( inout ) :: self
+
+          self%relResVec = R_ZERO
+          self%divJ = R_ZERO
+          self%DivCorRelErr = R_ZERO
+          self%solver%zeroDiagnostics
+
+     end subroutine zeroDiagnostics
+     !
+     !*********
+     !
+     subroutine getESolutionForwardSolverIT_DC( self, source, e_solution) 
+        implicit none
         class( ForwardSolverIT_DC_t ), intent( inout ) :: self
         class( Source_t ), intent( inout )             :: source
-        integer, intent( in )                          :: polarization
-        !
-        class( cVector_t ), allocatable :: e_solution
+        class( cVector_t ), intent( inout)             :: e_solution
         ! local variables
         class( cVector_t ), allocatable :: b    ! copy of RHS--do we really need?
         class( cVector_t ), allocatable :: temp
         class( cScalar_t ), allocatable :: phi0
         integer :: iter
         !
-        write(*,*) "getESolution ForwardSolverIT_DC for pol:", polarization
-        !
-        ! initialize diagnostics -- am assuming that setting of solver parameters
-        !  is done in a set up step (once in the run) outside this object
-        call self%initDiagnosticArrays()
-        !
+        ! zero solver diagnostic arrays
         call self%solver%zeroDiagnostics()
-        !
-        ! initialize solution
-        allocate( e_solution, source = source%e0 )
         !
         ! not sure about allocation here -- solution will exist
         ! (and might be allocated) in calling routine, but b is local

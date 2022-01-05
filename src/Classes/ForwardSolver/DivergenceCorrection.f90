@@ -8,25 +8,9 @@ Module DivergenceCorrection
    !
    type, public :: DivergenceCorrection_t
       !
-      class( Solver_t ), allocatable :: solver ! think this should be abstract class!
-         !     want this to work for MR soon enough!
-         !   OK -- "Solver" objects will correspond to specific solver methods
-         !      solver control parameters, and diagnostics will be propertiess
-         !      of these objects.   Right now we have three extensions of the
-         !      base class "Solver" -- QMR, BiCG, solver_pcg; one property of the solver
-         !      will be a pointer to the "Preconditioner" 
-         !    I am assuming here that we only use solver_pcg for divergence correction,
-         !      since this is fast and works well for symmetric real problems
-         !      But we could easily change this--I think by just using a different
-         !      type here?
-         !   ALSO: with the scheme I am imagining now, solver_pcg will always require
-         !        RHS to be a TScalar, while QMR and BiCG will require a TVector!
+      class( Solver_t ), allocatable :: solver
       real( kind=prec ) :: divJ(2) = 0.0 !   divergence of currents computed at most
-                                   ! recent call to DivCor -- save these in EMsolver
-                                   !  object to keep a record of divergence correction
-                                   !  For any other diagnostice to collect, add as
-                                   ! object properties, and collect after each call to
-                                   ! DivCor
+                                   ! recent call to DivCor -- before and after
    contains
          !
          final :: DivergenceCorrection_dtor
@@ -53,7 +37,9 @@ contains
          !
          ! Specific Solver PCG
          self%solver = Solver_PCG_t( model_operator )
-         !
+         !   set default iteration control for divergence correction step
+         call self%solver%setDefaults()
+
       end function DivergenceCorrection_ctor
       !
       ! Destructor
@@ -67,6 +53,9 @@ contains
       end subroutine DivergenceCorrection_dtor
       !
       subroutine rhsDivCor( self, omega, source, phi0 )
+      !  NOTE: not used for MT fwd -- but will be used for sensitivity 
+      !   calculations, and for CSEM
+      !
       !   this routine will calculate the RHS (phi0) for divergence
       !    correction equations when the source term for the curl-curl
       !    equations has non-zero source
@@ -83,11 +72,11 @@ contains
          !   want this to be abstract also!
          class( cVector_t ), allocatable :: sourceInterior
      
-         cFactor = -C_ONE/(mu_0*ISIGN*omega)   ! 1/(isign*1i*w*mu)
+         cFactor = -ONE_I/(mu_0*ISIGN*omega)   ! 1/(isign*1i*w*mu)
          !   I am assuming that in the case of an interior source, this is
-         !    stored in the cVector source%E -- i
+         !    stored in the cVector source%E
          !    proedure "interior" zeros the boundary edges
-         sourceInterior = source%E%interior()
+         allocate(sourceInterior, source = source%E%interior())
           
          !   take divergence of sourceInterior, and return as cScalar of
          !    appropriate explicit type
@@ -96,9 +85,7 @@ contains
          call phi0%mults( cFactor )
          !  multiply result by VNode -- add to rhs of symetrized
          !   current conservation equation
-         !
-       ! CREATE MULTS TO OVERWRITE RHS -- phi0 ????
-       call phi0%mults( self%solver%model_operator%metric%Vnode )
+         call phi0%mults( self%solver%model_operator%metric%Vnode )
      
       end subroutine rhsDivCor
       !****************************************************************
@@ -133,7 +120,7 @@ contains
         !   I DO NOT WANT select type at this level -- 
         !     make procedures in ForwardModeling generic, with no reference to
         !     specific classes
-      !
+        !
         allocate( phiSol, source = self%solver%model_operator%createScalar() )
         allocate( phiRHS, source = self%solver%model_operator%createScalar() )
         !
@@ -143,25 +130,23 @@ contains
         !  If source term is present, subtract from divergence of currents
         !  probably OK to use function here -- but could replace with subroutine
         if( SourceTerm ) then
-            phiRHS = phiRHS - phi0
+           call phi0%scMultAddS(phiRHS,C_MinusOne)
+           ! phiRHS = phiRHS - phi0
         endif
 
         ! compute the size of current Divergence before (using dot product)
-        !   this will be part of diagnostics -- need to develop before including
-        !    anything specific here
+        !   this will be part of diagnostics
         self%divJ(1) = sqrt( phiRHS .dot. phiRHS )
 
         ! point-wise multiplication with volume weights centered on corner nodes
-        !
-      ! CREATE MULTS TO OVERWRITE RHS -- phiRHS ????
-      call phiRHS%mults( self%solver%model_operator%metric%Vnode )
+        call phiRHS%mults( self%solver%model_operator%metric%Vnode )
 
         !   solve system of equations -- solver will have to know about
         !    (a) the equations to solve -- the divergence correction operator
         !       is modOp%divCgrad
         !    (b) preconditioner: object, and preconditioner matrix
-      !
-      select type( solver => self%solver )
+        !
+        select type( solver => self%solver )
            class is( Solver_PCG_t )
               call solver%solve( phiRHS, phiSol )
          class default
@@ -172,31 +157,32 @@ contains
 
         !   have to decide how to manage output
         !if (output_level > 2) then
-       !   write (*,"(a12,a32,i5,g15.7)") node_info, &
-       !      "finished divergence correction:", solver_pcgiter%niter, solver_pcgiter%rerr(solver_pcgiter%niter)
+        write (*,*) "finished divergence correction:"
+        write (*,"(i5,g15.7)") self%solverr%niter, self%solver%relErr(self%solver%niter)
        !end if
 
        ! compute gradient of phiSol (Divergence correction for inE)
        call self%solver%model_operator%grad(phiSol,outE)
 
        ! subtract Divergence correction from inE
+       !      outE = inE - outE
        call outE%linCombS(inE,C_MinusOne,C_ONE)
-       !   this is outE = inE - outE
 
        ! divergence of the corrected output electrical field
        call self%solver%model_operator%DivC(outE,phiRHS)
 
        !  If source term is present, subtract from divergence of currents
        if(SourceTerm) then
-          phiRHS = phiRHS - phi0
+          !    phiRHS = phiRHS - phi0
+          call phi0%scMultAddS(phiRHS,C_MinusOne)
        endif
        ! compute the size of current Divergence after
        self%divJ(2) = sqrt( phiRHS .dot. phiRHS )
 
        ! deallocate the temporary work arrays  ... how do we handle deallocation?
        !   do we need to do this????
-       deallocate( phiSol )
-       deallocate( phiRHS )
+       !deallocate( phiSol )
+       !deallocate( phiRHS )
 
    end subroutine DivCorr
 
