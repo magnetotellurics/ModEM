@@ -15,6 +15,7 @@ module Source
   type, abstract :: Source_t
      !
      real( kind=prec ) :: omega
+	 integer :: polarization
      !
      class( ModelOperator_t ), pointer  :: model_operator
      class( ModelParameter_t ), pointer :: model_parameter

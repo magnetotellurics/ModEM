@@ -15,7 +15,7 @@ module ForwardSolver
    !
    type, abstract :: ForwardSolver_t
       !
-      real( kind=prec ) :: period
+      real( kind=prec ) :: period = 0.0
       !
       ! Solver as a property of this
       class( Solver_t ), allocatable :: solver
@@ -25,13 +25,13 @@ module ForwardSolver
       !
       !    control parameters: these need to be set before running
       !     set with procedures in instantiable class
-      real(kind=prec) :: tolerance  !  target relative residuals
-      integer :: max_iter_total     !  limit on number of iteration
+      real( kind=prec ) :: tolerance = 0.0  !  target relative residuals
+      integer :: max_iter_total = 0     !  limit on number of iteration
       !    iterative solver diagnostics -- these will be set with procedures in
       !      instantiable class, 
-      integer :: n_iter_actual           !  actual total number of iterations
-      real(kind=prec) :: relResFinal     !  achieved relative residual
-      real(kind=prec), allocatable, dimension(:)  :: relResVec 
+      integer :: n_iter_actual = 0           !  actual total number of iterations
+      real( kind=prec ) :: relResFinal = 0.0     !  achieved relative residual
+      real( kind=prec ), allocatable, dimension(:)  :: relResVec 
                              !  relative residual as a function of iteration
       logical :: failed = .false.   !  flag set to true if target relRes is not achieved
                                     !   maybe this should be an integer "status"?
@@ -62,7 +62,7 @@ module ForwardSolver
       subroutine interface_set_iter_fwd( self, maxit, tol )
          import :: ForwardSolver_t, prec
          class( ForwardSolver_t ), intent( inout )  :: self
-         real(kind=prec), intent(in)                :: tol
+         real( kind=prec ), intent(in)                :: tol
          integer, intent(in)                        ::  maxit
          !
       end subroutine interface_set_iter_fwd
@@ -87,7 +87,7 @@ module ForwardSolver
          class( ForwardSolver_t ), intent( inout ) :: self
          !   why should source be inout???
          class( Source_t ), intent( inout )        :: source
-         class( cVector_t ), intent( inout)           :: e_solution
+         class( cVector_t ), intent( inout )       :: e_solution
          !
       end subroutine interface_get_e_solution_fwd
       !

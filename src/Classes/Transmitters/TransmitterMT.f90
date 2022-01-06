@@ -71,12 +71,13 @@ module TransmitterMT
       !
       class( TransmitterMT_t ), intent( inout ) :: self
       !
+      class( cVector_t ), allocatable           :: e_solution
       integer           :: i_pol
       real( kind=prec ) :: omega
       !
       ! verbosis
       write( *, * ) "   Solving FWD for Tx", self%id
-	  !
+      !
       omega = 2.0 * PI / self%period
       !
       ! Set ForwardSolver Frequency
@@ -84,15 +85,21 @@ module TransmitterMT
       !
       ! Loop over all polarizations (MT n_pol = 2)
       do i_pol = 1, self%n_pol
-      !
+         !
          write(*,*) "MT Tx Solve for Polarization", i_pol
          !
          ! Set Source E
          call self%source%setE( omega, i_pol )
-		 !
+         !
+         if( allocated( e_solution ) ) deallocate( e_solution )
+         !
+         allocate( e_solution, source = self%source%model_operator%createVector() )
+         !
+         call self%forward_solver%getESolution( self%source, e_solution )
+         !
          ! Add polarization e_solution to self%e_all
-         call self%e_all%add( self%forward_solver%getESolution( self%source, i_pol ) )
-      !
+         call self%e_all%add( e_solution )
+         !
       enddo
       !
    end subroutine solveFWDTransmitterMT

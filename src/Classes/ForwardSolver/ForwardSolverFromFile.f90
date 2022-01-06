@@ -24,8 +24,11 @@ module ForwardSolverFromFile
          !
          final :: ForwardSolverFromFile_dtor
          !
-         procedure, public :: setPeriod => setPeriodForwardSolverFromFile
-         procedure, public :: getESolution => getESolutionForwardSolverFromFile
+		 procedure, public :: setIterControl  => SetIterControlForwardSolverFromFile
+		 procedure, public :: initDiagnostics => initDiagnosticsForwardSolverFromFile
+		 procedure, public :: zeroDiagnostics => zeroDiagnosticsForwardSolverFromFile
+         procedure, public :: setPeriod       => setPeriodForwardSolverFromFile
+         procedure, public :: getESolution    => getESolutionForwardSolverFromFile
          !
    end type ForwardSolverFromFile_t
    !
@@ -72,21 +75,71 @@ contains
    !
    end subroutine setPeriodForwardSolverFromFile
    !
-   function getESolutionForwardSolverFromFile( self, source, polarization ) result( e_solution )
+      !*********
+      !
+      subroutine zeroDiagnosticsForwardSolverFromFile(self)
+         implicit none
+         class( ForwardSolverFromFile_t ), intent( inout ) :: self
+
+           self%relResVec = R_ZERO
+           call self%solver%zeroDiagnostics()
+
+      end subroutine zeroDiagnosticsForwardSolverFromFile
+      !
+      !**********
+      !
+      ! ForwardSolverIT initDiagnostic:
+      !    Init the arrays used for diagnostic analysis.
+      !   NOTE: this should be called AFTER any reset of iteration
+      !    control parameters
+      subroutine initDiagnosticsForwardSolverFromFile( self )
+         implicit none
+         class( ForwardSolverFromFile_t ), intent( inout ) :: self
+         !
+         self%n_iter_actual = 0
+         self%relResFinal = R_ZERO
+         !
+         if(allocated(self%relResVec)) deallocate(self%relResVec)
+         allocate(self%relResVec(self%max_iter_total))
+         !
+      end subroutine initDiagnosticsForwardSolverFromFile
+      !
+      !*********
+      !
+      ! ForwardSolverIT initDiagnostic:
+      !    Init the arrays used for diagnostic analysis.
+      subroutine setIterControlForwardSolverFromFile( self, maxit, tol )
+         implicit none
+         class( ForwardSolverFromFile_t ), intent( inout )  :: self
+         integer, intent(in)                          :: maxit
+         real(kind=prec), intent(in)                  :: tol
+         !
+         self%max_iter_total = maxit
+         self%tolerance = tol
+         !
+         !   if this is not called from ctor, input tol and maxit may
+         !    not match what is set in solver -- set explicitly
+         !     to make sure this is correct
+         call self%solver%setParameters(maxit,tol)
+
+      end subroutine setIterControlForwardSolverFromFile
+      !
+      !**********
+      !
+   subroutine getESolutionForwardSolverFromFile( self, source, e_solution )
       implicit none
       !
       class( ForwardSolverFromFile_t ), intent( inout ) :: self
       class( Source_t ), intent( inout )                :: source
-      integer, intent( in )                             :: polarization
-      !
-      class( cVector_t ), allocatable :: e_solution
+      !integer, intent( in )                            :: polarization
+      class( cVector_t ), intent( inout )               :: e_solution
       !
       character(80) :: grid_type, file_name
       complex          :: x, y, z
       integer          :: nx, ny, nz, io_stat
       !
       ! Construct the file name
-      write ( file_name, '(a,I4.4,a,I1,a)' ) '../inputs/esol/E_solution_Per', int( self%period ), '_Pol', polarization, '.soln'
+      write ( file_name, '(a,I4.4,a,I1,a)' ) '../inputs/esol/E_solution_Per', int( self%period ), '_Pol', source%polarization, '.soln'
       !
       ! Open the File Unit for the file name
       open ( unit=self%ioE, file=file_name, status='unknown', form ='unformatted', iostat=io_stat )
@@ -99,37 +152,25 @@ contains
          ! Save the file name
          self%file_name = trim( file_name )
          ! Allocate e_solution based on the grid
-         select type( grid => self%model_operator%grid )
-            class is( Grid3D_SG_t )
-              !
-              allocate( e_solution, source = cVector3D_SG_t( grid, EDGE ) )
-              !
-              ! Read cVector e_solution
-              call e_solution%Read( self%ioE )
-              !
-              ! Close the Unit
-              close( self%ioE )
-              !
-              ! Increase the Unit
-              self%ioE = self%ioE + 1
-              !
-              ! Print the e_solution result
-              write( *, * ) "    Polarization:", polarization
-              !
-              select type( e_solution )
-                class is( cVector3D_SG_t )
-                  write( *, * ) "         ", e_solution%nx, e_solution%ny, e_solution%nz, e_solution%gridType
-                class default
-                  stop "Unclassified ForwardSolverFromFile e_solution"
-              end select
-              !
-            class default
-              stop "Unclassified ForwardSolverFromFile grid"
-              !
-         end select
+         call e_solution%Read( self%ioE )
          !
+         ! Close the Unit
+         close( self%ioE )
+         !
+         ! Increase the Unit
+         self%ioE = self%ioE + 1
+         !
+         ! Print the e_solution result
+         write( *, * ) "    Polarization:", source%polarization
+         !
+         select type( e_solution )
+             class is( cVector3D_SG_t )
+                write( *, * ) "         ", e_solution%nx, e_solution%ny, e_solution%nz, e_solution%gridType
+             class default
+                stop "Unclassified ForwardSolverFromFile e_solution"
+         end select
       endif
       !
-   end function getESolutionForwardSolverFromFile
+   end subroutine getESolutionForwardSolverFromFile
    !
 end module ForwardSolverFromFile

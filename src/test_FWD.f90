@@ -47,7 +47,7 @@ program ModEM
    !
 contains
    !
-   subroutine forward()
+   subroutine ForwardModelling()
       implicit none
       !
       ! These objects are frequency dependent,
@@ -91,18 +91,18 @@ contains
       select case ( forward_solver_type )
          !
          case( FWD_FILE )
-            allocate( fwd_solver, source = ForwardSolverFromFile_t( model_operator ) )
+            fwd_solver = ForwardSolverFromFile_t( model_operator )
             !
          case( FWD_DC )
-            allocate( fwd_solver, source = ForwardSolverIT_DC_t( model_operator ) )
+            fwd_solver = ForwardSolverIT_DC_t( model_operator, "QMR" )
             !
          case default
-            allocate( fwd_solver, source = ForwardSolverIT_DC_t( model_operator ) )
+            fwd_solver = ForwardSolverIT_DC_t( model_operator, "QMR" )
          !
       end select
       !
       ! Source - Chosen from control file
-     select case ( source_type )
+      select case ( source_type )
          !
          case( SRC_MT_1D )
             allocate( fwd_source, source = SourceMT_1D_t( model_operator, model_parameter ) )
@@ -142,22 +142,22 @@ contains
          call Tx%solveFWD()
          !
          ! Loop over Receivers of each Transmitter
-         !nRx = Tx%getNRx()
+         nRx = Tx%getNRx()
          !
-         !do iRx = 1, nRx
+         do iRx = 1, nRx
             !
             ! Temporary Receiver alias
-            !Rx = receivers%get( Tx%get( iRx ) )
+            Rx = receivers%get( Tx%get( iRx ) )
             !
             ! Verbosis...
             !write( *, * ) "                  Rx Id:", Rx%id, "XYZ:", Rx%location
             !
             ! Calculate Rx Predicted Data
-            !call Rx%predictedData( model_operator, Tx )
+            call Rx%predictedData( model_operator, Tx )
             !
-            !deallocate( Rx )
+            deallocate( Rx )
             !
-         !enddo
+         enddo
          !
          deallocate( Tx )
          !
@@ -165,7 +165,7 @@ contains
       !
       deallocate( data_groups )
       !
-   end subroutine forward
+   end subroutine ForwardModelling
    !
    !
    subroutine handleJob()
@@ -175,7 +175,7 @@ contains
          !
       case ( "forward" )
          !
-         call forward()
+         call ForwardModelling()
          !
       case default
          !
@@ -220,8 +220,8 @@ contains
       !
       character(:), allocatable :: fname
       !
-      !      fname = "/mnt/c/Users/protew/Desktop/ON/GITLAB_PROJECTS/modem-oo/inputs/Full_A_Matrix_TinyModel"
-      fname = "/Users/garyegbert/Desktop/ModEM_ON/modem-oo/inputs/Full_A_Matrix_TinyModel"
+      fname = "/mnt/c/Users/protew/Desktop/ON/GITLAB_PROJECTS/modem-oo/inputs/Full_A_Matrix_TinyModel"
+      !fname = "/Users/garyegbert/Desktop/ModEM_ON/modem-oo/inputs/Full_A_Matrix_TinyModel"
       !
       write( *, * ) "   -> Model File: [", model_file_name, "]"
       !
@@ -232,11 +232,10 @@ contains
       select type( main_grid )
          !
          class is( Grid3D_SG_t )
-             !
              ! 
-             model_operator = ModelOperator_File_t( main_grid, fname )
+             !model_operator = ModelOperator_File_t( main_grid, fname )
              !
-             !model_operator = ModelOperator_MF_t( main_grid )
+             model_operator = ModelOperator_MF_t( main_grid )
              !
              call model_operator%SetEquations()
              !

@@ -90,6 +90,8 @@ contains
      !
      integer :: ix, iy
      !
+     self%polarization = polarization
+     !
      ! Get Model1D from average conductivity 3D
      model_parameter_1D = self%model_parameter%AvgModel1D()
      !
@@ -162,8 +164,6 @@ contains
       class( cVector_t ), allocatable :: bdry
       !
       allocate( bdry, source = self%E%Boundary() )
-      allocate(self%bdry, source = bdry)   !   temporary debugging ...
-                        !   or should we save bdry in source object?
       !
       if( allocated( self%rhs ) ) deallocate( self%rhs )
       !
@@ -173,7 +173,8 @@ contains
          allocate( self%rhs, source = cVector3D_SG_t( E%grid, EDGE ) )
          !
          call self%model_operator%MultAib( bdry, self%rhs )
-         call self%rhs%print(441,'-RHS')
+         !
+         call self%rhs%print( 441,'-RHS' )
          !
          self%rhs = C_MinusOne * self%rhs
          !

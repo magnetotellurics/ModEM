@@ -46,9 +46,9 @@ module ForwardSolverIT_DC
       !
       integer :: nDivCor = 0
       !
-      integer :: max_div_cor
-      integer :: max_iterDivCor
-      real(kind=prec) :: tolDivCor 
+      integer :: max_div_cor = 0
+      integer :: max_iterDivCor = 0
+      real( kind=prec ) :: tolDivCor = 0.0
       !
    contains
       !
@@ -74,7 +74,7 @@ module ForwardSolverIT_DC
    !
     function ForwardSolverIT_DC_ctor( model_operator, solver_type ) result( self )
        implicit none
-       class( ModelOperator_t ), intent( in ) :: model_operator
+       class( ModelOperator_t ), target, intent( in ) :: model_operator
        character(*), intent(in)    :: solver_type
        type( ForwardSolverIT_DC_t ) :: self
  
@@ -133,7 +133,7 @@ module ForwardSolverIT_DC
        implicit none
        !
        class( ForwardSolverIT_DC_t ), intent( inout ) :: self
-       real( kind=prec ), intent( in )             :: period
+       real( kind=prec ), intent( in )                :: period
        !
        self%period = period
        !
@@ -237,11 +237,13 @@ module ForwardSolverIT_DC
      !
      !*********
      !
-     subroutine getESolutionForwardSolverIT_DC( self, source, e_solution) 
-        implicit none
-        class( ForwardSolverIT_DC_t ), intent( inout ) :: self
-        class( Source_t ), intent( inout )             :: source
-        class( cVector_t ), intent( inout)             :: e_solution
+     subroutine getESolutionForwardSolverIT_DC( self, source, e_solution )
+      implicit none
+      !
+      class( ForwardSolverIT_DC_t ), intent( inout ) :: self
+      class( Source_t ), intent( inout )                :: source
+      !integer, intent( in )                            :: polarization
+	  class( cVector_t ), intent( inout )               :: e_solution
         ! local variables
         class( cVector_t ), allocatable :: b    ! copy of RHS--do we really need?
         class( cVector_t ), allocatable :: temp

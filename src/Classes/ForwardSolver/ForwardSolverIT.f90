@@ -38,7 +38,7 @@ module ForwardSolverIT
       !    
       function ForwardSolverIT_ctor( model_operator, solver_type ) result( self )
          implicit none
-         class( ModelOperator_t ), intent( in )  :: model_operator
+         class( ModelOperator_t ), target, intent( in )  :: model_operator
          character(*), intent(in)                :: solver_type
          type( ForwardSolverIT_t )               :: self
          !
@@ -147,11 +147,12 @@ module ForwardSolverIT
       !**********
       !
       subroutine getESolutionForwardSolverIT( self, source, e_solution )
-         implicit none
-         !
-         class( ForwardSolverIT_t ), intent( inout ) :: self
-         class( Source_t ), intent( inout )          :: source
-         class( cVector_t ), intent(inout) :: e_solution
+      implicit none
+      !
+      class( ForwardSolverIT_t ), intent( inout ) :: self
+      class( Source_t ), intent( inout )                :: source
+      !integer, intent( in )                            :: polarization
+	  class( cVector_t ), intent( inout )               :: e_solution
           
          integer :: iter
          !
