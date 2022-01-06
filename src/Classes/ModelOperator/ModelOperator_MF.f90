@@ -796,7 +796,7 @@ contains
             !      seems to work in ModEM stable without this change, but
             !      this probably depends on specific preconditioner used
             !      (b)  preconditioner, and rhs need to also have signs flipped!
-            outPhi%v = outPhi%v
+            !outPhi%v = outPhi%v
          end select
          !
       class default

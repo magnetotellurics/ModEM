@@ -103,9 +103,11 @@ contains
         !
         !  local variables
         class( cScalar_t ), allocatable :: phiSol, phiRHS
+        class( rVector_t ), allocatable :: SigE
         complex( kind=prec)   :: c2
         integer               :: status
         logical               :: SourceTerm
+        integer :: fid
         !
         SourceTerm = present( phi0 )
 
@@ -124,9 +126,42 @@ contains
         allocate( phiSol, source = self%solver%model_operator%createScalar() )
         allocate( phiRHS, source = self%solver%model_operator%createScalar() )
         !
+        fid = 55
+        open(file = '../inputs/inE.dat',unit = fid, form='unformatted')
+        call inE%write(fid)
+        close(fid)
+        ! compute divergence of currents for input electric field
+        !call self%solver%model_operator%DivC(inE, phiRHS )
         ! compute divergence of currents for input electric field
         call self%solver%model_operator%DivC(inE, phiRHS )
+        ! fid = 55
+        !open(file = '../inputs/divE.dat',unit = fid, form='unformatted')
+        !call phiRHS%write(fid,'b')
+        !close(fid)
+        !select type(modOp=>self%solver%model_operator)
+        !class is (ModelOperator_MF_t)
+           !   compute current
+        !   allocate( sigE, source = ModOp%Sigma_E )
+       !    open(file = '../inputs/sigmaE.dat',unit = fid, form='unformatted')
+       !    call SigE%write(fid)
+       !    close(fid)
+       ! class default
+       ! end select
+       ! select type(SigE)
+       !    class is(rVector3D_SG_t)
+       !      write(*,*) 'SigE is an rVector3D_SG_t_'
+       !      class default
+       !      end select
+        !call inE%mults(SigE)
+        !open(file = '../inputs/J.dat',unit = fid, form='unformatted')
+        !call inE%write(fid)
+        !close(fid)
+        !call self%solver%model_operator%Div(inE, phiRHS )
+        !open(file = '../inputs/divJ.dat',unit = fid, form='unformatted')
+        !call phiRHS%write(fid,'b')
+        !close(fid)
 
+        !
         !  If source term is present, subtract from divergence of currents
         !  probably OK to use function here -- but could replace with subroutine
         if( SourceTerm ) then
@@ -141,6 +176,10 @@ contains
         ! point-wise multiplication with volume weights centered on corner nodes
         call phiRHS%mults( self%solver%model_operator%metric%Vnode )
 
+        fid = 55
+        open(file = '../inputs/VphiRHS.dat',unit = fid, form='unformatted')
+        call phiRHS%write(fid,'b')
+        close(fid)
         !   solve system of equations -- solver will have to know about
         !    (a) the equations to solve -- the divergence correction operator
         !       is modOp%divCgrad

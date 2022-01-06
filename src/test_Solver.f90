@@ -53,7 +53,7 @@
    !
    !   test job is also hard coded : options- Amult, QMR, RHS, MULT_DC, 
    !            LUsolve, PCG, FWD_IT, DC, FWD_IT_DC
-   modem_job = 'FWD_IT'    
+   modem_job = 'DC'    
    fid = 1
    printUnit = 667   !   change this to get output y vector in a different ascii file
    !
@@ -321,16 +321,11 @@ contains
             !   and then apply divergence correction
             xFile = '../inputs/QMR20.dat'
             call readCVector()
+            !
             call divCor%DivCorr(x,y)
-
+            !
+            yFile = '../inputs/QMR20_DC.dat'
             call writeCVector()
-            !
-            call y%zeros
-            write(*,*) 'calling getEsolution'
-            call fwdIT%getESolution( src, y )
-            !
-            yFile = '../inputs/Soln_Tiny_FWD_IT.dat'
-            call writeCvector()
           end select
 
      end subroutine runTest
