@@ -75,6 +75,7 @@ module ModelOperator_MF
            procedure, public :: amult        => amultModelOperatorMF
            procedure, public :: multAib      => multAibModelOperatorMF
            procedure, public :: multCurlT    => multCurlTModelOperatorMF
+           procedure, public :: divCorSetUp => divCorsetUpModelOperatorMF
            !
            procedure :: divCgrad => divCgradModelOperatorMF
            procedure :: divC     => divCModelOperatorMF
@@ -88,8 +89,6 @@ module ModelOperator_MF
            procedure :: create     => createModelOperatorMF 
            procedure :: allocate   => allocateModelOperatorMF
            procedure :: deallocate => deallocateModelOperatorMF
-           !    this is used only inside this ModelOperator (called from setCond)
-           procedure :: divCorsetUp => divCorsetUpModelOperatorMF
            !
            procedure, public :: print => printModelOperatorMF
            !
@@ -286,7 +285,7 @@ contains
    function createScalarModelOperatorMF( self, gridType ) result( cSclr )
       implicit none
       !
-      !    this just returns a cScalar` of correct type
+      !    this just returns a cScalar of correct type
       !       for this model operator -- 
       class( ModelOperator_MF_t ), intent( in ) :: self
       character(len=80), intent( in ), optional :: gridType
@@ -422,16 +421,14 @@ contains
    !**
    ! setCond
    !*
-   subroutine setCondModelOperatorMF( self, condParam )
+   subroutine setCondModelOperatorMF( self, ModPar )
       implicit none
       !
       ! Arguments
       class( ModelOperator_MF_t), intent( inout ) :: self
-      class( ModelParameter_t), intent( inout )   :: condParam
+      class( ModelParameter_t), intent( inout )   :: ModPar
       !
-      self%sigma_E = condParam%PDEmapping()
-      !
-      call self%divCorsetUp()
+      self%sigma_E = ModPar%PDEmapping()
       !
    end subroutine setCondModelOperatorMF
    !**
@@ -441,7 +438,7 @@ contains
       implicit none
       !
       ! Arguments
-      class( ModelOperator_MF_t ) :: self
+      class( ModelOperator_MF_t ), intent(inout) :: self
       ! Local variables
       integer :: ix, iy, iz
       !

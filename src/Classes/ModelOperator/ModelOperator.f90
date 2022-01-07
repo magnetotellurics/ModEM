@@ -27,6 +27,7 @@ module ModelOperator
        !    following procedures are generally used for divergence correction
        !    and might in some cases (e.g., model operator for "SP2" case)
        !    only be implemented as dummy procedures
+       procedure( interface_divcor_setup_model_operator ), deferred, public :: divCorSetup
        procedure( interface_divc_grad_model_operator ), deferred, public :: divCgrad
        procedure( interface_divc_model_operator ), deferred, public      :: divC
        procedure( interface_grad_model_operator ), deferred, public      :: grad
@@ -53,11 +54,11 @@ module ModelOperator
        end subroutine interface_set_equations_model_operator
        !**
        ! setCond
-       subroutine interface_set_cond_model_operator( self, CondParam ) 
+       subroutine interface_set_cond_model_operator( self, ModPar ) 
           import :: ModelOperator_t, ModelParameter_t
           !
           class( ModelOperator_t ), intent( inout )  :: self
-          class( ModelParameter_t ), intent( inout ) :: CondParam
+          class( ModelParameter_t ), intent( inout ) :: ModPar
        end subroutine interface_set_cond_model_operator
        !**
        ! multAib
@@ -91,6 +92,11 @@ module ModelOperator
        end subroutine interface_amult_model_operator
        !
        ! these are for divergence correction, might be dummies in some cases
+       subroutine interface_divcor_setup_model_operator( self )
+          import :: ModelOperator_t
+          class( ModelOperator_t ) , intent( inout )       :: self
+       end subroutine interface_divcor_setup_model_operator
+       !
        subroutine interface_divc_grad_model_operator( self, inPhi, outPhi )
           import :: ModelOperator_t, cScalar_t
           !

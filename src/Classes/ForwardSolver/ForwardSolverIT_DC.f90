@@ -56,6 +56,7 @@ module ForwardSolverIT_DC
       !
       !   procedures with abstract interfaces
       procedure, public :: setPeriod => setPeriodForwardSolverIT_DC
+      procedure, public :: setCond => setCondForwardSolverIT_DC
       procedure, public :: setIterControl => setIterControlForwardSolverIT_DC
       procedure, public :: initDiagnostics => initDiagnosticsForwardSolverIT_DC
       procedure, public :: zeroDiagnostics => zeroDiagnosticsForwardSolverIT_DC
@@ -135,15 +136,39 @@ module ForwardSolverIT_DC
        class( ForwardSolverIT_DC_t ), intent( inout ) :: self
        real( kind=prec ), intent( in )                :: period
        !
+       relDif = (self%period-period)/period
+ 
        self%period = period
        !
        self%omega = 2.0 * PI / period
+       !
        !   set frequency in solver object
        self%solver%omega = self%omega
        !     set preconditoner (depends on frequency in general)
-       call self%solver%preconditioner%SetPreconditioner( self%omega )
+       !   but only if there is a large enough change in period
+       if(relDef.gt.TOL4) then
+          call self%solver%preconditioner%SetPreconditioner(self%omega )
+       endif
        !
     end subroutine setPeriodForwardSolverIT_DC
+    !
+    !    Sets Condctivity
+    !
+    subroutine setCondForwardSolverIT_DC( self, ModPar )
+       implicit none
+       !
+       class( ForwardSolverIT_t ), intent( inout ) :: self
+       class( ModelParameter_t ), intent( inout )     :: ModPar
+       !
+       !   set conductivity in model_operator object
+       call self%solver%model_operator%setCond(ModPar)
+       !   set arrays in model_operator needed for divergence correction
+       call self%divergenceCorrection%SetCond()
+       !     set preconditoner for (PCG) solver (depends only on conductivity
+       !       in this case)
+       call self%solver%preconditioner%SetPreconditioner(self%omega )
+       !
+     end subroutine setCondForwardSolverIT_DC
     !
     !**********
     ! 

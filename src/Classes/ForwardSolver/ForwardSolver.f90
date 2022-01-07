@@ -11,6 +11,7 @@ module ForwardSolver
    use Constants
    use cVector
    use Source
+   use ModelParameter
    use Solver
    !
    type, abstract :: ForwardSolver_t
@@ -42,6 +43,7 @@ module ForwardSolver
       procedure, public :: dealloc => deallocateFWD
       !
       procedure( interface_set_period_fwd ), deferred, public     :: setPeriod
+      procedure( interface_set_cond_fwd ), deferred, public       :: setCond
       procedure( interface_set_iter_fwd ), deferred, public       :: setIterControl
       procedure( interface_init_diag_fwd), deferred, public       :: initDiagnostics
       procedure( interface_zero_diag_fwd), deferred, public       :: zeroDiagnostics
@@ -58,6 +60,14 @@ module ForwardSolver
          real( kind=prec ), intent( in )           :: period
          !
       end subroutine interface_set_period_fwd
+      !
+      subroutine interface_set_cond_fwd( self, modPar )
+         import :: ForwardSolver_t, ModelParameter_t
+         !
+         class( ForwardSolver_t ), intent( inout ) :: self
+         class( ModelParameter_t ), intent( in ) :: modPar
+         !
+      end subroutine interface_set_cond_fwd
       !
       subroutine interface_set_iter_fwd( self, maxit, tol )
          import :: ForwardSolver_t, prec

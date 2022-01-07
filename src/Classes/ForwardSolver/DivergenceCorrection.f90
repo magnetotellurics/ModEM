@@ -15,6 +15,7 @@ Module DivergenceCorrection
          !
          final :: DivergenceCorrection_dtor
          !
+         procedure, public :: setCond 
          procedure, public :: rhsDivCor
          procedure, public :: DivCorr
        !
@@ -39,7 +40,7 @@ contains
          self%solver = Solver_PCG_t( model_operator )
          !   set default iteration control for divergence correction step
          call self%solver%setDefaults()
-
+         !
       end function DivergenceCorrection_ctor
       !
       ! Destructor
@@ -51,6 +52,21 @@ contains
         !write(*,*) "Destructor DivergenceCorrection_t"
         !
       end subroutine DivergenceCorrection_dtor
+      !
+      ! some extra things that need to be done for dvergence correction, whenever\
+      !     conductivity (model parameter) changs
+      subroutine setCond( self )
+        implicit none
+        class( DivergenceCorrection_t ), intent( inout ) :: self
+        !
+        !   set DivCorr arrays in model operator ... 
+        call self%solver%model_operator%divCorSetup
+        !   set preconditioner
+        call self%solver%preconditioner%setPreconditioner(self%solver%omega)
+        !
+      end subroutine setCond
+      !
+      !**********
       !
       subroutine rhsDivCor( self, omega, source, phi0 )
       !  NOTE: not used for MT fwd -- but will be used for sensitivity 
@@ -126,41 +142,8 @@ contains
         allocate( phiSol, source = self%solver%model_operator%createScalar() )
         allocate( phiRHS, source = self%solver%model_operator%createScalar() )
         !
-        fid = 55
-        open(file = '../inputs/inE.dat',unit = fid, form='unformatted')
-        call inE%write(fid)
-        close(fid)
-        ! compute divergence of currents for input electric field
-        !call self%solver%model_operator%DivC(inE, phiRHS )
         ! compute divergence of currents for input electric field
         call self%solver%model_operator%DivC(inE, phiRHS )
-        ! fid = 55
-        !open(file = '../inputs/divE.dat',unit = fid, form='unformatted')
-        !call phiRHS%write(fid,'b')
-        !close(fid)
-        !select type(modOp=>self%solver%model_operator)
-        !class is (ModelOperator_MF_t)
-           !   compute current
-        !   allocate( sigE, source = ModOp%Sigma_E )
-       !    open(file = '../inputs/sigmaE.dat',unit = fid, form='unformatted')
-       !    call SigE%write(fid)
-       !    close(fid)
-       ! class default
-       ! end select
-       ! select type(SigE)
-       !    class is(rVector3D_SG_t)
-       !      write(*,*) 'SigE is an rVector3D_SG_t_'
-       !      class default
-       !      end select
-        !call inE%mults(SigE)
-        !open(file = '../inputs/J.dat',unit = fid, form='unformatted')
-        !call inE%write(fid)
-        !close(fid)
-        !call self%solver%model_operator%Div(inE, phiRHS )
-        !open(file = '../inputs/divJ.dat',unit = fid, form='unformatted')
-        !call phiRHS%write(fid,'b')
-        !close(fid)
-
         !
         !  If source term is present, subtract from divergence of currents
         !  probably OK to use function here -- but could replace with subroutine
@@ -172,14 +155,11 @@ contains
         ! compute the size of current Divergence before (using dot product)
         !   this will be part of diagnostics
         self%divJ(1) = sqrt( phiRHS .dot. phiRHS )
+        write(*,*) 'divJ = ',self%divJ
 
         ! point-wise multiplication with volume weights centered on corner nodes
         call phiRHS%mults( self%solver%model_operator%metric%Vnode )
 
-        fid = 55
-        open(file = '../inputs/VphiRHS.dat',unit = fid, form='unformatted')
-        call phiRHS%write(fid,'b')
-        close(fid)
         !   solve system of equations -- solver will have to know about
         !    (a) the equations to solve -- the divergence correction operator
         !       is modOp%divCgrad
