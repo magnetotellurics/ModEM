@@ -87,11 +87,10 @@ module ForwardSolverIT
          class( ForwardSolverIT_t ), intent( inout ) :: self
          real( kind=prec ), intent( in )             :: period
          !
-         !   local variable
-         real(kind=prec)      ::    relDif
-         
-         relDif = (self%period-period)/period
-
+         real( kind=prec ) :: rel_diff
+         !
+         rel_diff = ( self%period - period ) / period
+         !
          self%period = period
          !
          self%omega = 2.0 * PI / period
@@ -100,26 +99,26 @@ module ForwardSolverIT
          self%solver%omega = self%omega
          !     set preconditoner (depends on frequency in general)
          !   but only if there is a large enough change in period
-         if(relDif.gt.TOL4) then
-            call self%solver%preconditioner%SetPreconditioner(self%omega )
+         if( rel_diff.gt.TOL4 ) then
+            call self%solver%preconditioner%SetPreconditioner( self%omega )
          endif
          !
        end subroutine setPeriodForwardSolverIT
-      !
-      !    Sets Condctivity
-      subroutine setCondForwardSolverIT( self, ModPar )
-         implicit none
-         !
-         class( ForwardSolverIT_t ), intent( inout ) :: self
-         class( ModelParameter_t ), intent( inout )     :: ModPar
-         !
-         !   set conductivity in model_operator object
-         call self%solver%model_operator%setCond(ModPar)
-         !     set preconditoner (depends on conductivity and period, in general)
-         call self%solver%preconditioner%SetPreconditioner(self%omega )
-         !
-       end subroutine setCondForwardSolverIT
-      !
+        !
+        !    Sets Condctivity
+        subroutine setCondForwardSolverIT( self, modPar )
+            implicit none
+            !
+            class( ForwardSolverIT_t ), intent( inout ) :: self
+            class( ModelParameter_t ), intent( inout )  :: modPar
+            !
+            !   set conductivity in model_operator object
+            call self%solver%model_operator%setCond( modPar )
+            !     set preconditoner (depends on conductivity and period, in general)
+            call self%solver%preconditioner%SetPreconditioner( self%omega )
+            !
+        end subroutine setCondForwardSolverIT
+        !
       ! ForwardSolverIT initDiagnostic:
       !    Init the arrays used for diagnostic analysis.
       subroutine setIterControlForwardSolverIT( self, maxit, tol )
@@ -175,7 +174,7 @@ module ForwardSolverIT
       class( ForwardSolverIT_t ), intent( inout ) :: self
       class( Source_t ), intent( inout )                :: source
       !integer, intent( in )                            :: polarization
-	  class( cVector_t ), intent( inout )               :: e_solution
+      class( cVector_t ), intent( inout )               :: e_solution
           
          integer :: iter
          !

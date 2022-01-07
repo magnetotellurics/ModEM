@@ -175,7 +175,7 @@ $(OBJDIR)/PreConditioner.o:Classes/ModelOperator/PreConditioner.f90 $(OBJDIR)/cV
 $(OBJDIR)/Solver.o:Classes/Solver/Solver.f90 $(OBJDIR)/Constants.o $(OBJDIR)/cVector.o $(OBJDIR)/ModelOperator.o $(OBJDIR)/PreConditioner.o 
 	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) Classes/Solver/Solver.f90 -o $(OBJDIR)/Solver.o
 
-$(OBJDIR)/ForwardSolver.o:Classes/ForwardSolver/ForwardSolver.f90 $(OBJDIR)/Constants.o $(OBJDIR)/cVector.o $(OBJDIR)/Source.o $(OBJDIR)/Solver.o 
+$(OBJDIR)/ForwardSolver.o:Classes/ForwardSolver/ForwardSolver.f90 $(OBJDIR)/Constants.o $(OBJDIR)/cVector.o $(OBJDIR)/Source.o $(OBJDIR)/ModelParameter.o $(OBJDIR)/Solver.o 
 	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) Classes/ForwardSolver/ForwardSolver.f90 -o $(OBJDIR)/ForwardSolver.o
 
 $(OBJDIR)/IntegerArray.o:Classes/Utils/IntegerArray.f90  

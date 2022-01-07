@@ -237,6 +237,7 @@ contains
              !
              model_operator = ModelOperator_MF_t( main_grid )
              !
+             ! complete model operator setup
              call model_operator%SetEquations()
              !
              call model_parameter%setMetric( model_operator%metric )

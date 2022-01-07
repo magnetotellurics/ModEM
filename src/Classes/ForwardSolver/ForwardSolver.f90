@@ -45,8 +45,8 @@ module ForwardSolver
       procedure( interface_set_period_fwd ), deferred, public     :: setPeriod
       procedure( interface_set_cond_fwd ), deferred, public       :: setCond
       procedure( interface_set_iter_fwd ), deferred, public       :: setIterControl
-      procedure( interface_init_diag_fwd), deferred, public       :: initDiagnostics
-      procedure( interface_zero_diag_fwd), deferred, public       :: zeroDiagnostics
+      procedure( interface_init_diag_fwd ), deferred, public      :: initDiagnostics
+      procedure( interface_zero_diag_fwd ), deferred, public      :: zeroDiagnostics
       procedure( interface_get_e_solution_fwd ), deferred, public :: getESolution
       !
    end type ForwardSolver_t
@@ -64,8 +64,8 @@ module ForwardSolver
       subroutine interface_set_cond_fwd( self, modPar )
          import :: ForwardSolver_t, ModelParameter_t
          !
-         class( ForwardSolver_t ), intent( inout ) :: self
-         class( ModelParameter_t ), intent( in ) :: modPar
+         class( ForwardSolver_t ), intent( inout )  :: self
+         class( ModelParameter_t ), intent( inout ) :: modPar
          !
       end subroutine interface_set_cond_fwd
       !

@@ -24,10 +24,11 @@ module ForwardSolverFromFile
          !
          final :: ForwardSolverFromFile_dtor
          !
-		 procedure, public :: setIterControl  => SetIterControlForwardSolverFromFile
-		 procedure, public :: initDiagnostics => initDiagnosticsForwardSolverFromFile
-		 procedure, public :: zeroDiagnostics => zeroDiagnosticsForwardSolverFromFile
+       procedure, public :: setIterControl  => SetIterControlForwardSolverFromFile
+       procedure, public :: initDiagnostics => initDiagnosticsForwardSolverFromFile
+       procedure, public :: zeroDiagnostics => zeroDiagnosticsForwardSolverFromFile
          procedure, public :: setPeriod       => setPeriodForwardSolverFromFile
+       procedure, public :: setCond         => setCondForwardSolverFromFile
          procedure, public :: getESolution    => getESolutionForwardSolverFromFile
          !
    end type ForwardSolverFromFile_t
@@ -75,57 +76,68 @@ contains
    !
    end subroutine setPeriodForwardSolverFromFile
    !
-      !*********
+   !
+   subroutine setCondForwardSolverFromFile( self, modPar )
+      implicit none
       !
-      subroutine zeroDiagnosticsForwardSolverFromFile(self)
-         implicit none
-         class( ForwardSolverFromFile_t ), intent( inout ) :: self
-
-           self%relResVec = R_ZERO
-           call self%solver%zeroDiagnostics()
-
-      end subroutine zeroDiagnosticsForwardSolverFromFile
+      class( ForwardSolverFromFile_t ), intent( inout ) :: self
+      class( ModelParameter_t ), intent( inout )        :: modPar
       !
-      !**********
+   end subroutine setCondForwardSolverFromFile
+   !
+   !
+   subroutine zeroDiagnosticsForwardSolverFromFile(self)
+      implicit none
       !
-      ! ForwardSolverIT initDiagnostic:
-      !    Init the arrays used for diagnostic analysis.
-      !   NOTE: this should be called AFTER any reset of iteration
-      !    control parameters
-      subroutine initDiagnosticsForwardSolverFromFile( self )
-         implicit none
-         class( ForwardSolverFromFile_t ), intent( inout ) :: self
-         !
-         self%n_iter_actual = 0
-         self%relResFinal = R_ZERO
-         !
-         if(allocated(self%relResVec)) deallocate(self%relResVec)
-         allocate(self%relResVec(self%max_iter_total))
-         !
-      end subroutine initDiagnosticsForwardSolverFromFile
+      class( ForwardSolverFromFile_t ), intent( inout ) :: self
       !
-      !*********
+      self%relResVec = R_ZERO
+      call self%solver%zeroDiagnostics()
       !
-      ! ForwardSolverIT initDiagnostic:
-      !    Init the arrays used for diagnostic analysis.
-      subroutine setIterControlForwardSolverFromFile( self, maxit, tol )
-         implicit none
-         class( ForwardSolverFromFile_t ), intent( inout )  :: self
-         integer, intent(in)                          :: maxit
-         real(kind=prec), intent(in)                  :: tol
-         !
-         self%max_iter_total = maxit
-         self%tolerance = tol
-         !
-         !   if this is not called from ctor, input tol and maxit may
-         !    not match what is set in solver -- set explicitly
-         !     to make sure this is correct
-         call self%solver%setParameters(maxit,tol)
-
-      end subroutine setIterControlForwardSolverFromFile
+   end subroutine zeroDiagnosticsForwardSolverFromFile
+   !
+   !**********
+   !
+   ! ForwardSolverIT initDiagnostic:
+   !    Init the arrays used for diagnostic analysis.
+   !   NOTE: this should be called AFTER any reset of iteration
+   !    control parameters
+   subroutine initDiagnosticsForwardSolverFromFile( self )
+      implicit none
       !
-      !**********
+      class( ForwardSolverFromFile_t ), intent( inout ) :: self
       !
+      self%n_iter_actual = 0
+      self%relResFinal = R_ZERO
+      !
+      if(allocated(self%relResVec)) deallocate(self%relResVec)
+      allocate(self%relResVec(self%max_iter_total))
+      !
+   end subroutine initDiagnosticsForwardSolverFromFile
+   !
+   !*********
+   !
+   ! ForwardSolverIT initDiagnostic:
+   !    Init the arrays used for diagnostic analysis.
+   subroutine setIterControlForwardSolverFromFile( self, maxit, tol )
+      implicit none
+      !
+      class( ForwardSolverFromFile_t ), intent( inout )  :: self
+      integer, intent(in)                          :: maxit
+      real(kind=prec), intent(in)                  :: tol
+      !
+      self%max_iter_total = maxit
+      self%tolerance = tol
+      !
+      !   if this is not called from ctor, input tol and maxit may
+      !    not match what is set in solver -- set explicitly
+      !     to make sure this is correct
+      call self%solver%setParameters(maxit,tol)
+      !
+   end subroutine setIterControlForwardSolverFromFile
+   !
+   !**********
+   !
    subroutine getESolutionForwardSolverFromFile( self, source, e_solution )
       implicit none
       !
@@ -164,10 +176,10 @@ contains
          write( *, * ) "    Polarization:", source%polarization
          !
          select type( e_solution )
-             class is( cVector3D_SG_t )
-                write( *, * ) "         ", e_solution%nx, e_solution%ny, e_solution%nz, e_solution%gridType
-             class default
-                stop "Unclassified ForwardSolverFromFile e_solution"
+            class is( cVector3D_SG_t )
+               write( *, * ) "         ", e_solution%nx, e_solution%ny, e_solution%nz, e_solution%gridType
+            class default
+               stop "Unclassified ForwardSolverFromFile e_solution"
          end select
       endif
       !

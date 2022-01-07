@@ -28,7 +28,7 @@
    !
    !    THIS IS BASED ON test_Amult -- extended to also test source, solvers ...
    ! 
-   class(Grid_t ), allocatable, target           :: main_grid
+   class( Grid_t ), allocatable, target   :: main_grid
    class( ModelParameter_t ), allocatable :: model_parameter
    class( ModelOperator_t ), allocatable  :: model_operator
    class( Solver_t ), allocatable  :: slvrQMR,slvrPCG
@@ -84,9 +84,10 @@ contains
       integer :: nzAir = 2
       real(kind=prec) :: maxHeight = 1.5  !   this should be in km, not meters
       !
-      !      fname = "/mnt/c/Users/protew/Desktop/ON/GITLAB_PROJECTS/modem-oo/inputs/Full_A_Matrix_TinyModel"
-      fnameA = "/Users/garyegbert/Desktop/ModEM_ON/modem-oo/inputs/Full_A_Matrix_TinyModel"
-      model_file_name = "/Users/garyegbert/Desktop/ModEM_ON/modem-oo/inputs/rFile_Model_Tiny"
+      fnameA = "/mnt/c/Users/protew/Desktop/ON/GITLAB_PROJECTS/modem-oo/inputs/Full_A_Matrix_TinyModel"
+      !fnameA = "/Users/garyegbert/Desktop/ModEM_ON/modem-oo/inputs/Full_A_Matrix_TinyModel"
+      model_file_name = "/mnt/c/Users/protew/Desktop/ON/GITLAB_PROJECTS/modem-oo/inputs/rFile_Model_Tiny"
+	  !model_file_name = "/Users/garyegbert/Desktop/ModEM_ON/modem-oo/inputs/rFile_Model_Tiny"
       !
       write( *, * ) "   -> Model File: [", model_file_name, "]"
       !

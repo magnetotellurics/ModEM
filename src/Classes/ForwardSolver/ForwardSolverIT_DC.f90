@@ -136,7 +136,9 @@ module ForwardSolverIT_DC
        class( ForwardSolverIT_DC_t ), intent( inout ) :: self
        real( kind=prec ), intent( in )                :: period
        !
-       relDif = (self%period-period)/period
+       real( kind=prec ) :: rel_diff
+       !
+       rel_diff = ( self%period - period ) / period
  
        self%period = period
        !
@@ -146,27 +148,27 @@ module ForwardSolverIT_DC
        self%solver%omega = self%omega
        !     set preconditoner (depends on frequency in general)
        !   but only if there is a large enough change in period
-       if(relDef.gt.TOL4) then
-          call self%solver%preconditioner%SetPreconditioner(self%omega )
+       if( rel_diff.gt.TOL4 ) then
+          call self%solver%preconditioner%SetPreconditioner( self%omega )
        endif
        !
     end subroutine setPeriodForwardSolverIT_DC
     !
     !    Sets Condctivity
     !
-    subroutine setCondForwardSolverIT_DC( self, ModPar )
+    subroutine setCondForwardSolverIT_DC( self, modPar )
        implicit none
        !
-       class( ForwardSolverIT_t ), intent( inout ) :: self
-       class( ModelParameter_t ), intent( inout )     :: ModPar
+       class( ForwardSolverIT_DC_t ), intent( inout ) :: self
+       class( ModelParameter_t ), intent( inout )     :: modPar
        !
        !   set conductivity in model_operator object
-       call self%solver%model_operator%setCond(ModPar)
+       call self%solver%model_operator%setCond( modPar )
        !   set arrays in model_operator needed for divergence correction
-       call self%divergenceCorrection%SetCond()
+       call self%divergence_correction%SetCond()
        !     set preconditoner for (PCG) solver (depends only on conductivity
        !       in this case)
-       call self%solver%preconditioner%SetPreconditioner(self%omega )
+       call self%solver%preconditioner%SetPreconditioner( self%omega )
        !
      end subroutine setCondForwardSolverIT_DC
     !
@@ -178,6 +180,7 @@ module ForwardSolverIT_DC
     !   control we need a routine that can set all DC iteration control parameters
     subroutine setIterControlForwardSolverIT_DC( self, maxit, tol )
        implicit none
+	   !
        class( ForwardSolverIT_DC_t ), intent( inout ) :: self
        integer, intent(in)                         :: maxit
        real(kind=prec), intent(in)                 :: tol
