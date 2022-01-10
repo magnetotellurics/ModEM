@@ -274,7 +274,7 @@ contains
    function PDEmapping( self ) result( eVec )
       implicit none
       ! Arguments
-      class( ModelParameterCell_SG_t ), intent( inout ) :: self
+      class( ModelParameterCell_SG_t ), intent( in ) :: self
       class( rVector_t ), allocatable                   :: eVec
       ! Local variables
       type( rScalar3D_SG_t ), allocatable :: SigmaCell

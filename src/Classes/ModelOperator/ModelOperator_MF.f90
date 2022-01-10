@@ -426,7 +426,7 @@ contains
       !
       ! Arguments
       class( ModelOperator_MF_t), intent( inout ) :: self
-      class( ModelParameter_t), intent( inout )   :: ModPar
+      class( ModelParameter_t), intent( in )   :: ModPar
       !
       self%sigma_E = ModPar%PDEmapping()
       !

@@ -58,7 +58,7 @@ module ModelOperator
           import :: ModelOperator_t, ModelParameter_t
           !
           class( ModelOperator_t ), intent( inout )  :: self
-          class( ModelParameter_t ), intent( inout ) :: ModPar
+          class( ModelParameter_t ), intent( in ) :: ModPar
        end subroutine interface_set_cond_model_operator
        !**
        ! multAib

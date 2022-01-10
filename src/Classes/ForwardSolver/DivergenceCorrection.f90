@@ -53,8 +53,8 @@ contains
         !
       end subroutine DivergenceCorrection_dtor
       !
-      ! some extra things that need to be done for dvergence correction, whenever\
-      !     conductivity (model parameter) changs
+      ! some extra things that need to be done for divergence correction, whenever
+      !     conductivity (model parameter) changes
       subroutine setCond( self )
         implicit none
         class( DivergenceCorrection_t ), intent( inout ) :: self
@@ -155,7 +155,7 @@ contains
         ! compute the size of current Divergence before (using dot product)
         !   this will be part of diagnostics
         self%divJ(1) = sqrt( phiRHS .dot. phiRHS )
-        write(*,*) 'divJ = ',self%divJ
+        write(*,*) 'divJ  before correction  ',self%divJ(1)
 
         ! point-wise multiplication with volume weights centered on corner nodes
         call phiRHS%mults( self%solver%model_operator%metric%Vnode )
@@ -197,6 +197,7 @@ contains
        endif
        ! compute the size of current Divergence after
        self%divJ(2) = sqrt( phiRHS .dot. phiRHS )
+       write(*,*) 'divJ after correction  ',self%divJ(2)
 
        ! deallocate the temporary work arrays  ... how do we handle deallocation?
        !   do we need to do this????

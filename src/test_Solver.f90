@@ -53,7 +53,7 @@
    !
    !   test job is also hard coded : options- Amult, QMR, RHS, MULT_DC, 
    !            LUsolve, PCG, FWD_IT, DC, FWD_IT_DC
-   modem_job = 'DC'    
+   modem_job = 'FWD_IT_DC'    
    fid = 1
    printUnit = 667   !   change this to get output y vector in a different ascii file
    !
@@ -67,7 +67,7 @@
    call runTest()
 
    write ( *, * )
-   write ( *, * ) "Finish test Solver"
+   write ( *, * ) "Finish test Solver for job ",modem_job
    write ( *, * )
    !
 contains
@@ -84,10 +84,10 @@ contains
       integer :: nzAir = 2
       real(kind=prec) :: maxHeight = 1.5  !   this should be in km, not meters
       !
-      fnameA = "/mnt/c/Users/protew/Desktop/ON/GITLAB_PROJECTS/modem-oo/inputs/Full_A_Matrix_TinyModel"
-      !fnameA = "/Users/garyegbert/Desktop/ModEM_ON/modem-oo/inputs/Full_A_Matrix_TinyModel"
-      model_file_name = "/mnt/c/Users/protew/Desktop/ON/GITLAB_PROJECTS/modem-oo/inputs/rFile_Model_Tiny"
-	  !model_file_name = "/Users/garyegbert/Desktop/ModEM_ON/modem-oo/inputs/rFile_Model_Tiny"
+      !fnameA = "/mnt/c/Users/protew/Desktop/ON/GITLAB_PROJECTS/modem-oo/inputs/Full_A_Matrix_TinyModel"
+      fnameA = "/Users/garyegbert/Desktop/ModEM_ON/modem-oo/inputs/Full_A_Matrix_TinyModel"
+!      model_file_name = "/mnt/c/Users/protew/Desktop/ON/GITLAB_PROJECTS/modem-oo/inputs/rFile_Model_Tiny"
+      model_file_name = "/Users/garyegbert/Desktop/ModEM_ON/modem-oo/inputs/rFile_Model_Tiny"
       !
       write( *, * ) "   -> Model File: [", model_file_name, "]"
       !
@@ -125,11 +125,15 @@ contains
             ! 
             !model_operator = ModelOperator_File_t( main_grid, fnameA )
             model_operator = ModelOperator_MF_t( main_grid )
+            call model_parameter%setMetric( model_operator%metric )
             !
             !   complete model operator setup
-               call model_operator%SetEquations()
-               call model_parameter%setMetric( model_operator%metric )
-               call model_operator%SetCond( model_parameter )
+            call model_operator%SetEquations()
+            call model_operator%SetCond( model_parameter )
+            !
+            !   set pointer to metric elements in model parameter
+            !    (note: this is needed because model_parameter does not depend
+            !        on model_operator, which already has a pointer to metricElements)
             !
             !   Instantiate the Solver objects
             ! 
@@ -142,14 +146,20 @@ contains
             !
             !   Instantiate the forward modeling objects
             fwdIT = ForwardSolverIT_t(model_operator,QMR)
+            call fwdIT%setCond(model_parameter)
+            call fwdIT%setPeriod(T)
             fwdIT_DC = ForwardSolverIT_DC_t(model_operator,QMR)
+            call fwdIT_DC%setCond(model_parameter)
+            call fwdIT_DC%setPeriod(T)
             !
             !   Instnatiatee the DivergenceCorrection object
             !     note that this creates the PGC solver automatically
             !      creates preConditioner, and sets iteration controls to 
             !      default values
             divCor = DivergenceCorrection_t(model_operator)
-
+            write(*,*) 'divCor created'
+            call divCor%setCond()   !   this has to be called AFTER setting
+                                    !   conductivity in ModelOperator
          class default
              stop "Unclassified main_grid"
          !
@@ -188,10 +198,11 @@ contains
             call readCVector()
             !  create and setup Solver object ...
             call slvrQMR%SetDefaults()   !   set default convergence parameters
-            maxIter = 20
-            tolerance = 1d-7
-            call slvrQMR%setParameters(maxIter,tolerance)   !   set convergence parameters
+            !maxIter = 20
+            !tolerance = 1d-7
+            !call slvrQMR%setParameters(maxIter,tolerance)   !   set convergence parameters
             !   first test w/o preconditioner
+            write(*,*) 'before setting omega explicitly', slvrQMR%omega
             slvrQMR%omega = omega
             call slvrQMR%preconditioner%SetPreconditioner(omega)   !   set preconditioner
             !slvrQMR%preconditioner = PreConditioner_None_t()
@@ -296,7 +307,7 @@ contains
             call writeCScalar()
          case ("FWD_IT")
             !  finish setup of fwd object
-            call fwdIT%setPeriod( T )
+            !call fwdIT%setPeriod( T )
             !   read in cVector used for test -- rhs in A*y = x           
             !    this file contains src%E for 1D problem
             xFile = '../inputs/E_Tiny.dat'
@@ -310,7 +321,8 @@ contains
             yFile = '../inputs/RHSfwdIT1.dat'
             call writeCVector()
             !
-            call y%zeros
+            call y%zeros   !   could try different initialization
+                           !   E0 from input E_Tiny -- need to test
             write(*,*) 'calling getEsolution'
             call fwdIT%getESolution( src, y )
             !
@@ -327,6 +339,31 @@ contains
             !
             yFile = '../inputs/QMR20_DC.dat'
             call writeCVector()
+         case ("FWD_IT_DC")
+            !  finish setup of fwd object
+            call fwdIT_DC%setPeriod( T )
+            !   read in cVector used for test -- rhs in A*y = x           
+            !    this file contains src%E for 1D problem
+            xFile = '../inputs/E_Tiny.dat'
+            call readCVector()
+            !  copy cvector x into E in: source object
+            allocate(src%E, source = x)
+            !  set RHS
+            call src%SetRHS()
+            write(*,*) 'RHS set up'
+            y = src%rhs
+            !
+            maxIter = 20
+            tolerance = 1d-7
+            call fwdIT_DC%solver%setParameters(maxIter,tolerance)
+            call y%zeros   !  try different initialization
+            write(*,*) 'calling getEsolution'
+            call fwdIT_DC%getESolution( src, y )
+            !
+            write(*,*) 'niter:  ',fwdIT_DC%n_iter_actual,   &
+              '  Relative Residual',fwdIT_DC%relResFinal
+            yFile = '../inputs/Soln_Tiny_FWD_IT_DC.dat'
+            call writeCvector()
           end select
 
      end subroutine runTest

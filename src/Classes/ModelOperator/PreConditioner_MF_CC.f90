@@ -76,7 +76,6 @@ contains
       !
       class( PreConditioner_MF_CC_t ), intent( inout ) :: self
       !
-      !      can"t we just use this???
       self%Dilu = self%model_operator%createVector()
       !
    end subroutine createPreConditioner_MF_CC

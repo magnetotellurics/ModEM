@@ -160,7 +160,7 @@ module ForwardSolverIT_DC
        implicit none
        !
        class( ForwardSolverIT_DC_t ), intent( inout ) :: self
-       class( ModelParameter_t ), intent( inout )     :: modPar
+       class( ModelParameter_t ), intent( in )     :: modPar
        !
        !   set conductivity in model_operator object
        call self%solver%model_operator%setCond( modPar )
@@ -266,12 +266,12 @@ module ForwardSolverIT_DC
      !*********
      !
      subroutine getESolutionForwardSolverIT_DC( self, source, e_solution )
-      implicit none
-      !
-      class( ForwardSolverIT_DC_t ), intent( inout ) :: self
-      class( Source_t ), intent( inout )                :: source
-      !integer, intent( in )                            :: polarization
-	  class( cVector_t ), intent( inout )               :: e_solution
+        implicit none
+        !
+        class( ForwardSolverIT_DC_t ), intent( inout ) :: self
+        class( Source_t ), intent( inout )                :: source
+        !integer, intent( in )                            :: polarization
+        class( cVector_t ), intent( inout )               :: e_solution
         ! local variables
         class( cVector_t ), allocatable :: b    ! copy of RHS--do we really need?
         class( cVector_t ), allocatable :: temp
@@ -346,6 +346,8 @@ module ForwardSolverIT_DC
           endif
 	   !
        enddo loop
+       !
+       self%relResFinal = self%relResVec(self%n_iter_actual)
        !
        ! finish up solution--I am omitting boundary values for adjt case --
        ! we never used boundary of adjoint--sensitivity to boundary data,

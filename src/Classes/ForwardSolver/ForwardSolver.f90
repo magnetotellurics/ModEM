@@ -65,7 +65,7 @@ module ForwardSolver
          import :: ForwardSolver_t, ModelParameter_t
          !
          class( ForwardSolver_t ), intent( inout )  :: self
-         class( ModelParameter_t ), intent( inout ) :: modPar
+         class( ModelParameter_t ), intent( in ) :: modPar
          !
       end subroutine interface_set_cond_fwd
       !

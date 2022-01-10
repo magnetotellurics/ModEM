@@ -124,7 +124,7 @@ module ModelParameter
        !*
        function interface_pdemapping_model_parameter( self ) result( eVec )
           import :: ModelParameter_t, rVector_t
-          class( ModelParameter_t ), intent( inout ) :: self
+          class( ModelParameter_t ), intent( in ) :: self
           class( rVector_t ), allocatable            :: eVec
        end function interface_pdemapping_model_parameter
        !**

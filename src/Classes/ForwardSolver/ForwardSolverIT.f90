@@ -99,9 +99,9 @@ module ForwardSolverIT
          self%solver%omega = self%omega
          !     set preconditoner (depends on frequency in general)
          !   but only if there is a large enough change in period
-         if( rel_diff.gt.TOL4 ) then
+         !if( rel_diff.gt.TOL4 ) then
             call self%solver%preconditioner%SetPreconditioner( self%omega )
-         endif
+         !endif
          !
        end subroutine setPeriodForwardSolverIT
         !
@@ -110,7 +110,7 @@ module ForwardSolverIT
             implicit none
             !
             class( ForwardSolverIT_t ), intent( inout ) :: self
-            class( ModelParameter_t ), intent( inout )  :: modPar
+            class( ModelParameter_t ), intent( in )  :: modPar
             !
             !   set conductivity in model_operator object
             call self%solver%model_operator%setCond( modPar )
@@ -213,14 +213,15 @@ module ForwardSolverIT
             e_solution = e_solution + source%bdry
             !
          endif
+         self%relResFinal = self%relResVec(self%n_iter_actual)
          !
          ! JUST TO SEE THE E_SOLUTION RESULT
-         select type( e_solution )
-            class is( cVector3D_SG_t )
-                write( *, * ) "         ", e_solution%nx, e_solution%ny, e_solution%nz, e_solution%gridType
-           class default
-                stop "Unclassified ForwardSolverIT e_solution"
-        end select
+         !select type( e_solution )
+         !   class is( cVector3D_SG_t )
+         !       write( *, * ) "         ", e_solution%nx, e_solution%ny, e_solution%nz, e_solution%gridType
+         !  class default
+         !       stop "Unclassified ForwardSolverIT e_solution"
+         ! end select
         !
      end subroutine getESolutionForwardSolverIT
    !
