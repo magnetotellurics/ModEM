@@ -15,7 +15,8 @@ module Constants
    !
    character(:), allocatable :: forward_solver_type
    character (len = 21), parameter   :: FWD_FILE  = "ForwardSolverFromFile"
-   character (len = 15), parameter   :: FWD_DC    = "ForwardSolverDC"
+   character (len = 15), parameter   :: FWD_IT    = "ForwardSolverIT"
+   character (len = 18), parameter   :: FWD_IT_DC = "ForwardSolverIT_DC"
    !
    character(:), allocatable :: solver_type
    character (len = 3), parameter   :: QMR  = "QMR"

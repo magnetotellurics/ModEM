@@ -113,16 +113,18 @@ contains
          ! FOWARD SOLVER
          !
          if ( allocated( self%forward_solver ) ) then
-            write( *, "(A20, A10)" ) "      forward_solver =", self%forward_solver
+            write( *, "(A20, A10)" ) "      fwd_solver =", self%forward_solver
             !
             select case ( self%forward_solver )
                case( "FILE" )
                   forward_solver_type = FWD_FILE
-               case( "DC" )
-                  forward_solver_type = FWD_DC
+				case( "IT" )
+                  forward_solver_type = FWD_IT
+               case( "IT_DC" )
+                  forward_solver_type = FWD_IT_DC
                case default
                   forward_solver_type = ""
-                  STOP "Wrong forward_solver control, use [FILE|DC]"
+                  STOP "Wrong forward_solver control, use [FILE|IT|IT_DC]"
             end select
             !
          endif

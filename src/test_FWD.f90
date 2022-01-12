@@ -93,7 +93,10 @@ contains
          case( FWD_FILE )
             fwd_solver = ForwardSolverFromFile_t( model_operator )
             !
-         case( FWD_DC )
+         case( FWD_IT )
+            fwd_solver = ForwardSolverIT_t( model_operator, "QMR" )
+            !
+         case( FWD_IT_DC )
             fwd_solver = ForwardSolverIT_DC_t( model_operator, "QMR" )
             !
          case default
