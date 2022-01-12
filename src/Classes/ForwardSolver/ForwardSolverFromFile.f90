@@ -79,10 +79,10 @@ contains
    !
    subroutine setCondForwardSolverFromFile( self, modPar )
       implicit none
-      !
-      class( ForwardSolverFromFile_t ), intent( inout ) :: self
-      class( ModelParameter_t ), intent( inout )        :: modPar
-      !
+        !
+        class( ForwardSolverFromFile_t ), intent( inout )  :: self
+        class( ModelParameter_t ), intent( in )    :: modPar
+        !
    end subroutine setCondForwardSolverFromFile
    !
    !
