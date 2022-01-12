@@ -45,8 +45,6 @@ module ForwardSolverIT
          !
          !write(*,*) "Constructor ForwardSolverIT_t"
          !
-         call self%init()  !   is this really needed????
-         !
          select case(solver_type)
             case(QMR)
                self%solver = Solver_QMR_t( model_operator )
@@ -75,8 +73,6 @@ module ForwardSolverIT
          type( ForwardSolverIT_t ), intent( in out ) :: self
          !
          !write(*,*) "Destructor ForwardSolverIT_t"
-         !
-         call self%dealloc()
          !
       end subroutine ForwardSolverIT_dtor
       !

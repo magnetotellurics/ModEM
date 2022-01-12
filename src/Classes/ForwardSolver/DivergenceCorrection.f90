@@ -40,6 +40,8 @@ contains
          self%solver = Solver_PCG_t( model_operator )
          !   set default iteration control for divergence correction step
          call self%solver%setDefaults()
+		 !
+		 call self%setCond()
          !
       end function DivergenceCorrection_ctor
       !

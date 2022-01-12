@@ -105,6 +105,7 @@ contains
       !
       ! Allocate work CVector objects -- questions as in PCG
       allocate( R, source = x )
+	  !
       call R%zeros()   !  can't zero x -- if this is to be used as starting guess
                        !  also, never use AX -- which somehow is declared in ModEM!
       allocate( Y, source = R )
@@ -149,9 +150,9 @@ contains
       !   iter is iteration counter
       iter = 1
       self%relErr( iter ) = real( rnorm / bnorm )
-      write(*,*) 'in QMR'
-      write(*,*) 'rnorm, bnorm ', rnorm, bnorm
-      write(*,*) 'max_iter, tolerance',self%max_iter,self%tolerance
+      !write(*,*) 'in QMR'
+      !write(*,*) 'rnorm, bnorm ', rnorm, bnorm
+      !write(*,*) 'max_iter, tolerance', self%max_iter,self%tolerance
       !
       VT = R 
       ilu_adjt = .false.
@@ -170,7 +171,11 @@ contains
       do while( ( self%relErr( iter ) .gt. self%tolerance ) &
                 .and.  ( iter .lt. self%max_iter ) )
           !
-          if( (RHO .eq. C_ZERO ) .or. ( PSI .eq. C_ZERO ) ) then
+          !
+		  !write(0,*) "iter:", iter
+		  !write(*,*) 'RHO, PSI', RHO, PSI
+		  !
+          if( ( RHO .eq. C_ZERO ) .or. ( PSI .eq. C_ZERO ) ) then
              self%failed = .true.
              write(0,*) "QMR FAILED TO CONVERGE : RHO"
              stop "QMR FAILED TO CONVERGE : PSI"
@@ -284,7 +289,7 @@ contains
           ! Keeping track of errors
           ! QMR book-keeping between divergence correction calls
           self%relErr( iter ) = real( rnorm / bnorm )
-          write(*,*) 'iter = ',iter,'   relErr = ',self%relErr(iter)
+          write(*,*) 'iter qmr= ',iter,'   relErr = ', self%relErr(iter)
       end do
       self%n_iter = iter
       !

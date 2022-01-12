@@ -53,7 +53,7 @@
    !
    !   test job is also hard coded : options- Amult, QMR, RHS, MULT_DC, 
    !            LUsolve, PCG, FWD_IT, DC, FWD_IT_DC
-   modem_job = 'FWD_IT_DC'    
+   modem_job = "FWD_IT_DC"    
    fid = 1
    printUnit = 667   !   change this to get output y vector in a different ascii file
    !
@@ -80,14 +80,14 @@ contains
       !
       character(:), allocatable :: fnameA
       !    parameters for setting Air Layers for Tiny Model
-      character(12) :: method = 'fixed height'
+      character(12) :: method = "fixed height"
       integer :: nzAir = 2
       real(kind=prec) :: maxHeight = 1.5  !   this should be in km, not meters
       !
-      !fnameA = "/mnt/c/Users/protew/Desktop/ON/GITLAB_PROJECTS/modem-oo/inputs/Full_A_Matrix_TinyModel"
-      fnameA = "/Users/garyegbert/Desktop/ModEM_ON/modem-oo/inputs/Full_A_Matrix_TinyModel"
-!      model_file_name = "/mnt/c/Users/protew/Desktop/ON/GITLAB_PROJECTS/modem-oo/inputs/rFile_Model_Tiny"
-      model_file_name = "/Users/garyegbert/Desktop/ModEM_ON/modem-oo/inputs/rFile_Model_Tiny"
+      fnameA = "/mnt/c/Users/protew/Desktop/ON/GITLAB_PROJECTS/modem-oo/inputs/Full_A_Matrix_TinyModel"
+      !fnameA = "/Users/garyegbert/Desktop/ModEM_ON/modem-oo/inputs/Full_A_Matrix_TinyModel"
+      model_file_name = "/mnt/c/Users/protew/Desktop/ON/GITLAB_PROJECTS/modem-oo/inputs/rFile_Model_Tiny"
+      !model_file_name = "/Users/garyegbert/Desktop/ModEM_ON/modem-oo/inputs/rFile_Model_Tiny"
       !
       write( *, * ) "   -> Model File: [", model_file_name, "]"
       !
@@ -157,7 +157,7 @@ contains
             !      creates preConditioner, and sets iteration controls to 
             !      default values
             divCor = DivergenceCorrection_t(model_operator)
-            write(*,*) 'divCor created'
+            write(*,*) "divCor created"
             call divCor%setCond()   !   this has to be called AFTER setting
                                     !   conductivity in ModelOperator
          class default
@@ -170,13 +170,13 @@ contains
    subroutine runTest()
       implicit none
       !
-      write(*,*) 'JOB = ', modem_job
+      write(*,*) "JOB = ", modem_job
       select case(modem_job)
          case("Amult")
             !   TEST OF CURL-CURL OPERATOR
             !   read in cVector x used for test of A*x = y
             !   these are hard-coded at present
-            xFile = '../inputs/Xvec_Tiny_1.dat'
+            xFile = "../inputs/Xvec_Tiny_1.dat"
             call readCVector()
             !    multiply by A
             call model_operator%Amult(omega,x,y)
@@ -186,15 +186,15 @@ contains
             !           so results can be compared ...
             select type(model_operator)
                class is(ModelOperator_MF_t) 
-               yFile = '../inputs/Yvec_Tiny_MF_1.dat'
+               yFile = "../inputs/Yvec_Tiny_MF_1.dat"
             class is(ModelOperator_File_t)
-               yFile = '../inputs/Yvec_Tiny_File_1.dat'
+               yFile = "../inputs/Yvec_Tiny_File_1.dat"
             end select
             call writeCVector()
          case("QMR")
             !   TEST OF QMR SOLVER
             !   read in cVector used for test -- rhs in A*y = x           
-            xFile = '../inputs/RHS_Tiny.dat'
+            xFile = "../inputs/RHS_Tiny.dat"
             call readCVector()
             !  create and setup Solver object ...
             call slvrQMR%SetDefaults()   !   set default convergence parameters
@@ -202,23 +202,23 @@ contains
             !tolerance = 1d-7
             !call slvrQMR%setParameters(maxIter,tolerance)   !   set convergence parameters
             !   first test w/o preconditioner
-            write(*,*) 'before setting omega explicitly', slvrQMR%omega
+            write(*,*) "before setting omega explicitly", slvrQMR%omega
             slvrQMR%omega = omega
             call slvrQMR%preconditioner%SetPreconditioner(omega)   !   set preconditioner
             !slvrQMR%preconditioner = PreConditioner_None_t()
             select type(slvrQMR)
                class is(Solver_QMR_t)
                   call slvrQMR%solve(x,y)
-                  write(*,*) 'n_iter',slvrQMR%n_iter
-                  write(*,*) 'relative residual',slvrQMR%relErr(slvrQMR%n_iter)
+                  write(*,*) "n_iter",slvrQMR%n_iter
+                  write(*,*) "relative residual",slvrQMR%relErr(slvrQMR%n_iter)
                   write(57,*) slvrQMR%relErr(1:slvrQMR%n_iter)
 
                   !   file name for output -- run with max_iter = 20 to make an
                   !     input for testing DC
                   if(slvrQMR%max_iter .eq. 20) then
-                     yFile = '../inputs/QMR20.dat'
+                     yFile = "../inputs/QMR20.dat"
                   else
-                     yFile = '../inputs/Soln_Tiny_QMR.dat'
+                     yFile = "../inputs/Soln_Tiny_QMR.dat"
                   endif
                   
                class default
@@ -228,37 +228,37 @@ contains
          case("RHS")
            !   TEST OF RHS COMPUTATIONS -- does not test 1D modeling!
             !   read in array E from file, create and output rhs cVector
-            xFile = '../inputs/E_Tiny.dat'
+            xFile = "../inputs/E_Tiny.dat"
             call readCVector()
             !   cvector x into E in: source object
             allocate(src%E, source = x)
-            write(*,*)  'src%E'
+            write(*,*)  "src%E"
             !call src%E%print()
             !    compute RHS and output
             call src%SetRHS()
             y = src%bdry
-            yFile = '../inputs/BDRYcompTiny.dat'
+            yFile = "../inputs/BDRYcompTiny.dat"
             call writeCVector()
             y = src%rhs
-            yFile = '../inputs/RHScompTiny.dat'
+            yFile = "../inputs/RHScompTiny.dat"
             call writeCVector()
             !    compute E0 and output
             call src%setE0
             y = src%E0
-            yFile = '../inputs/E0compTiny.dat'
+            yFile = "../inputs/E0compTiny.dat"
             call writeCVector()
          case("MultDC")
             !    write out Sigma_E after setting ... 
             select type(model_operator)
                class is( ModelOperator_MF_t)
                   yR = model_operator%Sigma_E
-                  yFile = '../inputs/Sigma_E.dat'
+                  yFile = "../inputs/Sigma_E.dat"
                   call writeRVector()
             end select
             !   TEST OF ModOp.divCgrad * phi_in
             !   read in cVector x used for test of A*x = y
             !   these are hard-coded at present
-            xFile = '../inputs/PhiIn_Tiny.dat'
+            xFile = "../inputs/PhiIn_Tiny.dat"
             call readCScalar()
             !    multiply by divCgrad
             call model_operator%divCgrad(phiIn,phiOut)
@@ -266,20 +266,20 @@ contains
             !   set output file name for this test
             !      ... different for different model_operator types
             !           so results can be compared ...
-            yFile = '../inputs/PhiOut_Tiny.dat'
+            yFile = "../inputs/PhiOut_Tiny.dat"
             call writeCScalar()
          case("LUsolve")
-            xFile = '../inputs/PhiIn_Tiny.dat'
+            xFile = "../inputs/PhiIn_Tiny.dat"
             call readCScalar()
             call slvrPCG%SetDefaults()   !   set default convergence parameters
             call slvrPCG%preconditioner%LUsolve(phiIn,phiOut)
-            yFile = '../inputs/LU_Tiny_PCG.dat'
+            yFile = "../inputs/LU_Tiny_PCG.dat"
             call writeCScalar()
             
          case("PCG")
             !   TEST OF PCG SOLVER
             !   read in cScalar used for test -- rhs in A*y = x           
-            xFile = '../inputs/PhiIn_Tiny.dat'
+            xFile = "../inputs/PhiIn_Tiny.dat"
             call readCScalar()
             !  create and setup Solver object ...
             maxIter = 100
@@ -289,18 +289,18 @@ contains
             call slvrPCG%preconditioner%SetPreconditioner(omega)   !   set preconditioner
                   !   NOTE: this will have to be done every time model parameter changes
             !   first test w/o preconditioner
-            ! slvrPCG%omega = omega   !   don't need to set omega in this case
+            ! slvrPCG%omega = omega   !   don"t need to set omega in this case
             !slvrPCG%preconditioner = PreConditioner_None_t()
             select type(slvrPCG)
                class is(Solver_PCG_t)
 
                   call slvrPCG%solve(phiIn,phiOut)
-                  write(*,*) 'n_iter',slvrPCG%n_iter
-                  write(*,*) 'relative residual',slvrPCG%relErr(slvrPCG%n_iter+1)
+                  write(*,*) "n_iter",slvrPCG%n_iter
+                  write(*,*) "relative residual",slvrPCG%relErr(slvrPCG%n_iter+1)
                   write(57,*) slvrPCG%relErr(1:slvrPCG%n_iter+1)
 
                   !   file name for output
-                  yFile = '../inputs/Soln_Tiny_PCG.dat'
+                  yFile = "../inputs/Soln_Tiny_PCG.dat"
                class default
                  stop "test program not coded for this solver type"
               end select
@@ -310,59 +310,59 @@ contains
             !call fwdIT%setPeriod( T )
             !   read in cVector used for test -- rhs in A*y = x           
             !    this file contains src%E for 1D problem
-            xFile = '../inputs/E_Tiny.dat'
+            xFile = "../inputs/E_Tiny.dat"
             call readCVector()
             !  copy cvector x into E in: source object
             allocate(src%E, source = x)
             !  set RHS
             call src%SetRHS()
-            write(*,*) 'RHS set up'
+            write(*,*) "RHS set up"
             y = src%rhs
-            yFile = '../inputs/RHSfwdIT1.dat'
+            yFile = "../inputs/RHSfwdIT1.dat"
             call writeCVector()
             !
             call y%zeros   !   could try different initialization
                            !   E0 from input E_Tiny -- need to test
-            write(*,*) 'calling getEsolution'
+            write(*,*) "calling getEsolution"
             call fwdIT%getESolution( src, y )
             !
-            yFile = '../inputs/Soln_Tiny_FWD_IT.dat'
+            yFile = "../inputs/Soln_Tiny_FWD_IT.dat"
             call writeCvector()
          case ("DC")
             !   read in cVector used for test -- in this case start
             !   with QMR solution after a small number of iterations (20)
             !   and then apply divergence correction
-            xFile = '../inputs/QMR20.dat'
+            xFile = "../inputs/QMR20.dat"
             call readCVector()
             !
             call divCor%DivCorr(x,y)
             !
-            yFile = '../inputs/QMR20_DC.dat'
+            yFile = "../inputs/QMR20_DC.dat"
             call writeCVector()
          case ("FWD_IT_DC")
             !  finish setup of fwd object
             call fwdIT_DC%setPeriod( T )
             !   read in cVector used for test -- rhs in A*y = x           
             !    this file contains src%E for 1D problem
-            xFile = '../inputs/E_Tiny.dat'
+            xFile = "../inputs/E_Tiny.dat"
             call readCVector()
             !  copy cvector x into E in: source object
             allocate(src%E, source = x)
             !  set RHS
             call src%SetRHS()
-            write(*,*) 'RHS set up'
+            write(*,*) "RHS set up"
             y = src%rhs
             !
             maxIter = 20
             tolerance = 1d-7
             call fwdIT_DC%solver%setParameters(maxIter,tolerance)
             call y%zeros   !  try different initialization
-            write(*,*) 'calling getEsolution'
+            write(*,*) "calling getEsolution"
             call fwdIT_DC%getESolution( src, y )
             !
-            write(*,*) 'niter:  ',fwdIT_DC%n_iter_actual,   &
-              '  Relative Residual',fwdIT_DC%relResFinal
-            yFile = '../inputs/Soln_Tiny_FWD_IT_DC.dat'
+            write(*,*) "niter:  ",fwdIT_DC%n_iter_actual,   &
+              "  Relative Residual",fwdIT_DC%relResFinal
+            yFile = "../inputs/Soln_Tiny_FWD_IT_DC.dat"
             call writeCvector()
           end select
 
@@ -375,12 +375,12 @@ contains
 
         !   open input file, read in x
         fid = 55
-        open(file = xFile,unit = fid, form='unformatted')
+        open(file = xFile,unit = fid, form="unformatted")
         select type(x)
            class is (cVector3D_SG_t)
               call x%read(fid)
            class default
-              write(*,*)  'CVector of incorrect class'
+              write(*,*)  "CVector of incorrect class"
               stop
         end select
         close(fid)
@@ -393,12 +393,12 @@ contains
 
         !  open output file, write out y 
         fid = 55
-        open(file = yFile,unit = fid, form='unformatted')
+        open(file = yFile,unit = fid, form="unformatted")
         select type(y)
             class is (CVector3D_SG_t)
                call y%write(fid)
             class default
-               write(*,*)  'CVector of incorrect class'
+               write(*,*)  "CVector of incorrect class"
               stop
         end select
         close(fid)
@@ -411,14 +411,14 @@ contains
 
         !   open input file, read in x
         fid = 55
-        open(file = xFile,unit = fid, form='unformatted')
+        open(file = xFile,unit = fid, form="unformatted")
         select type(phiIn)
            class is (cScalar3D_SG_t)
-              call phiIn%read(fid,'b')   !   read for CScalar requires
-                                         !  specification of 'b' for binary
-              write(*,*) 'phiIn read'
+              call phiIn%read(fid,"b")   !   read for CScalar requires
+                                         !  specification of "b" for binary
+              write(*,*) "phiIn read"
            class default
-              write(*,*)  'CScalar of incorrect class'
+              write(*,*)  "CScalar of incorrect class"
               stop
         end select
         close(fid)
@@ -431,12 +431,12 @@ contains
 
         !  open output file, write out y 
         fid = 55
-        open(file = yFile,unit = fid, form='unformatted')
+        open(file = yFile,unit = fid, form="unformatted")
         select type(phiOut)
             class is (CScalar3D_SG_t)
-               call phiOut%write(fid,'b')
+               call phiOut%write(fid,"b")
             class default
-               write(*,*)  'CScalar of incorrect class'
+               write(*,*)  "CScalar of incorrect class"
               stop
         end select
         close(fid)
@@ -449,12 +449,12 @@ contains
 
         !   open input file, read in x
         fid = 55
-        open(file = xFile,unit = fid, form='unformatted')
+        open(file = xFile,unit = fid, form="unformatted")
         select type(xR)
            class is (rVector3D_SG_t)
               call xR%read(fid)
            class default
-              write(*,*)  'CVector of incorrect class'
+              write(*,*)  "CVector of incorrect class"
               stop
         end select
         close(fid)
@@ -467,12 +467,12 @@ contains
 
         !  open output file, write out y 
         fid = 55
-        open(file = yFile,unit = fid, form='unformatted')
+        open(file = yFile,unit = fid, form="unformatted")
         select type(yR)
             class is (RVector3D_SG_t)
                call yR%write(fid)
             class default
-               write(*,*)  'CVector of incorrect class'
+               write(*,*)  "CVector of incorrect class"
               stop
         end select
         close(fid)
@@ -485,14 +485,14 @@ contains
 
         !   open input file, read in x
         fid = 55
-        open(file = xFile,unit = fid, form='unformatted')
+        open(file = xFile,unit = fid, form="unformatted")
         select type(phiInR)
            class is (rScalar3D_SG_t)
-              call phiInR%read(fid,'b')   !   read for CScalar requires
-                                         !  specification of 'b' for binary
-              write(*,*) 'phiIn read'
+              call phiInR%read(fid,"b")   !   read for CScalar requires
+                                         !  specification of "b" for binary
+              write(*,*) "phiIn read"
            class default
-              write(*,*)  'CScalar of incorrect class'
+              write(*,*)  "CScalar of incorrect class"
               stop
         end select
         close(fid)
@@ -505,12 +505,12 @@ contains
 
         !  open output file, write out y 
         fid = 55
-        open(file = yFile,unit = fid, form='unformatted')
+        open(file = yFile,unit = fid, form="unformatted")
         select type(phiOutR)
             class is (RScalar3D_SG_t)
-               call phiOutR%write(fid,'b')
+               call phiOutR%write(fid,"b")
             class default
-               write(*,*)  'CScalar of incorrect class'
+               write(*,*)  "CScalar of incorrect class"
               stop
        end select
        close(fid)

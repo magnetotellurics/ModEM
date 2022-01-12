@@ -99,6 +99,8 @@ module TransmitterMT
          !
          ! Add polarization e_solution to self%e_all
          call self%e_all%add( e_solution )
+		 !
+		 call e_solution%print( 6666, "ESOL_IT_DC" )
          !
       enddo
       !

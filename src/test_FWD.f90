@@ -104,6 +104,8 @@ contains
          !
       end select
       !
+      call fwd_solver%setCond( model_parameter )
+      !
       ! Source - Chosen from control file
       select case ( source_type )
          !
@@ -131,12 +133,15 @@ contains
          ! Verbosis...
          write( *, * ) "   Tx Id:", Tx%id, "Period:", int( Tx%period )
          !
-         ! According to its type,
+         ! According to Tx type,
          ! write the proper header in the 'predicted_data.dat' file
          call writePredictedDataHeader( Tx, transmitter_type )
          !
          ! Tx points to its due Source
          call Tx%setSource( fwd_source )
+         !
+         ! Set ForwardSolver Period
+         call fwd_solver%setPeriod( Tx%period )
          !
          ! Tx points to its due ForwardSolver
          call Tx%setForwardSolver( fwd_solver )
@@ -223,6 +228,13 @@ contains
       !
       character(:), allocatable :: fname
       !
+      type( TAirLayers )   :: air_layer
+      !
+      !    parameters for setting Air Layers for Tiny Model
+      character(12) :: method = "fixed height"
+      integer :: nzAir = 10
+      real(kind=prec) :: maxHeight = 200.0  !   this should be in km, not meters
+      !
       fname = "/mnt/c/Users/protew/Desktop/ON/GITLAB_PROJECTS/modem-oo/inputs/Full_A_Matrix_TinyModel"
       !fname = "/Users/garyegbert/Desktop/ModEM_ON/modem-oo/inputs/Full_A_Matrix_TinyModel"
       !
@@ -230,11 +242,17 @@ contains
       !
       ! Read Grid and ModelParameter with ModelReader_Weerachai
       call model_reader%Read( model_file_name, main_grid, model_parameter ) 
-      !
+        !
       ! Instantiate the ModelOperator object
       select type( main_grid )
          !
          class is( Grid3D_SG_t )
+        !
+
+        call main_grid%SetupAirLayers( air_layer, method, nzAir, maxHeight )
+        !   as coded have to use air_layer data structure to update grid
+        call main_grid%UpdateAirLayers( air_layer%nz, air_layer%dz )
+        !
              ! 
              !model_operator = ModelOperator_File_t( main_grid, fname )
              !

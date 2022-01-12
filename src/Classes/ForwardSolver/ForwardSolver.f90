@@ -27,20 +27,19 @@ module ForwardSolver
       !    control parameters: these need to be set before running
       !     set with procedures in instantiable class
       real( kind=prec ) :: tolerance = 0.0  !  target relative residuals
-      integer :: max_iter_total = 0     !  limit on number of iteration
+      integer           :: max_iter_total = 0     !  limit on number of iteration
       !    iterative solver diagnostics -- these will be set with procedures in
       !      instantiable class, 
-      integer :: n_iter_actual = 0           !  actual total number of iterations
-      real( kind=prec ) :: relResFinal = 0.0     !  achieved relative residual
-      real( kind=prec ), allocatable, dimension(:)  :: relResVec 
+      integer           :: n_iter_actual = 0           !  actual total number of iterations
+      !
+	  real( kind=prec ) :: relResFinal = 0.0     !  achieved relative residual
+      !
+	  real( kind=prec ), allocatable, dimension(:)  :: relResVec 
                              !  relative residual as a function of iteration
       logical :: failed = .false.   !  flag set to true if target relRes is not achieved
                                     !   maybe this should be an integer "status"?
       !
    contains
-      !
-      procedure, public :: init    => initializeFWD
-      procedure, public :: dealloc => deallocateFWD
       !
       procedure( interface_set_period_fwd ), deferred, public     :: setPeriod
       procedure( interface_set_cond_fwd ), deferred, public       :: setCond
@@ -104,15 +103,5 @@ module ForwardSolver
    end interface
    !
    contains
-   !
-   subroutine initializeFWD( self )
-      class( ForwardSolver_t ), intent( inout ) :: self
-      !
-   end subroutine initializeFWD
-   !
-   subroutine deallocateFWD( self )
-      class( ForwardSolver_t ), intent( inout )   :: self
-      !
-   end subroutine deallocateFWD
    !
 end module ForwardSolver

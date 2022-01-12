@@ -84,21 +84,18 @@ module ForwardSolverIT_DC
        !
        !write(*,*) "Constructor ForwardSolverIT_DC_t"
        !
-       call self%init()   ! is this needed -- why?
-       !
        ! DivergenceCorrection has only one type (might change components,
        !    but basic scheme implemented is not going to change)
        self%divergence_correction = DivergenceCorrection_t( model_operator )
- 
+	   !
        !   solver will soon have options
-       select case(solver_type)
-          case(QMR)
+       select case( solver_type )
+          case( QMR )
              self%solver = Solver_QMR_t( model_operator )
              maxIter = iter_per_div_corDefQMR
-          case(BiCG)
+          case( BiCG )
              maxIter = iter_per_div_corDefBCG
-             write(*,*) 'Not yet coded for Bi-Conjugate Gradients'
-             stop
+             stop "Not yet coded for Bi-Conjugate Gradients"
        end select
        !
        !    set solver iteration control parameters using defaults
@@ -111,7 +108,7 @@ module ForwardSolverIT_DC
        !     using defaults from solver
        maxItTotal = self%max_div_cor * self%solver%max_iter
        tol = self%solver%tolerance
-       call self%setIterControl(maxItTotal,tol)
+       call self%setIterControl( maxItTotal,tol )
        !
        call self%initDiagnostics()
        !
@@ -124,8 +121,6 @@ module ForwardSolverIT_DC
        type( ForwardSolverIT_DC_t ), intent( in out ) :: self
        !
        !write(*,*) "Destructor ForwardSolverIT_DC_t"
-       !
-       call self%dealloc()
        !
     end subroutine ForwardSolverIT_DC_dtor
     !
@@ -148,7 +143,7 @@ module ForwardSolverIT_DC
        self%solver%omega = self%omega
        !     set preconditoner (depends on frequency in general)
        !   but only if there is a large enough change in period
-       if( rel_diff.gt.TOL4 ) then
+       if( rel_diff .gt. TOL4 ) then
           call self%solver%preconditioner%SetPreconditioner( self%omega )
        endif
        !

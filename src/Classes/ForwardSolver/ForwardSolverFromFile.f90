@@ -46,8 +46,6 @@ contains
       !
       !write(*,*) "Constructor ForwardSolverFromFile_t"
       !
-      call self%init()
-      !
       self%model_operator => model_operator
       !
       self%IoE = 901
@@ -61,8 +59,6 @@ contains
       type( ForwardSolverFromFile_t ), intent( inout ) :: self
       !
       !write(*,*) "Destructor ForwardSolverFromFile_t"
-      !
-      call self%dealloc()
       !
    end subroutine ForwardSolverFromFile_dtor
    !
