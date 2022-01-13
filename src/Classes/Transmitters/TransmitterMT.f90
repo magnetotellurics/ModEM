@@ -74,6 +74,7 @@ module TransmitterMT
       class( cVector_t ), allocatable           :: e_solution
       integer           :: i_pol
       real( kind=prec ) :: omega
+	  character(200) :: title
       !
       ! verbosis
       write( *, * ) "   Solving FWD for Tx", self%id
@@ -100,7 +101,9 @@ module TransmitterMT
          ! Add polarization e_solution to self%e_all
          call self%e_all%add( e_solution )
 		 !
-		 call e_solution%print( 6666, "ESOL_IT_DC" )
+		 !write( title, '(A15, 1pe12.6, i5)' ) "ESOLUTION", self%period, i_pol
+         !
+		 !call e_solution%print( 0, title )
          !
       enddo
       !

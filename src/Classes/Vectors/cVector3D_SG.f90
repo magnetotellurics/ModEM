@@ -813,17 +813,20 @@ contains
    !**
    ! add1CVector3D_SG
    !*
-   function add1CVector3D_SG(lhs, rhs) result(Eout)
-      class(cVector3D_SG_t), intent(in) :: lhs
-      class(cVector_t)       , intent(in) :: rhs
-      class(cVector_t), allocatable :: Eout
+   function add1CVector3D_SG(lhs, rhs) result( Eout )
+      class( cVector3D_SG_t ), intent(in)   :: lhs
+      class( cVector_t )       , intent(in) :: rhs
+      class( cVector_t ), allocatable       :: Eout
 
       !if (lhs%isCompatible(rhs)) then
           allocate(Eout, source = cVector3D_SG_t(lhs%grid, lhs%gridType))
+		  write(*, *) 'EOUT ALLOCATED'
           select type(Eout)
           class is(cVector3D_SG_t)
+		       write(*, *) 'EOUT is cVector3D_SG_t'
                select type(rhs)
                class is(cVector3D_SG_t)
+			       write(*, *) 'RHS is cVector3D_SG_t'
                    Eout%x = lhs%x + rhs%x
                    Eout%y = lhs%y + rhs%y
                    Eout%z = lhs%z + rhs%z

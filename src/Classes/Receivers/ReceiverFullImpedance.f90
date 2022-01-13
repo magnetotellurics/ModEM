@@ -101,7 +101,6 @@ contains
       ! get e_all from the Tx 2nd polarization
       allocate( e_tx_pol_2, source = transmitter%e_all%get( 2 ) )
       !
-      !
       allocate( complex( kind=prec ) :: self%EE( 2, 2 ) )
       !
       self%EE( 1, 1 ) = self%Lex .dot. e_tx_pol_1
@@ -109,19 +108,28 @@ contains
       self%EE( 1, 2 ) = self%Lex .dot. e_tx_pol_2
       self%EE( 2, 2 ) = self%Ley .dot. e_tx_pol_2
       !
+	  call self%Lex%print( 1111, "LEX" )
+	  call self%Ley%print( 2222, "LEY" )
+	  !
       allocate( complex( kind=prec ) :: BB( 2, 2 ) )
       !
+	  call self%Lbx%print( 3333, "LBX1" )
+	  call self%Lby%print( 4444, "LBY1" )
+	  !
       BB( 1, 1 ) = self%Lbx .dot. e_tx_pol_1
       BB( 2, 1 ) = self%Lby .dot. e_tx_pol_1
       BB( 1, 2 ) = self%Lbx .dot. e_tx_pol_2
       BB( 2, 2 ) = self%Lby .dot. e_tx_pol_2
       !
+	  call self%Lbx%print( 5555, "LBX2" )
+	  call self%Lby%print( 6666, "LBY2" )
+	  !
       deallocate( e_tx_pol_1 )
       deallocate( e_tx_pol_2 )
       !
-      !write(*,*) "BB:"
-      !write(*,*) BB( 1, 1 ), BB( 1, 2 )
-      !write(*,*) BB( 2, 1 ), BB( 2, 2 )
+      write(*,*) "BB:"
+      write(*,*) BB( 1, 1 ), BB( 1, 2 )
+      write(*,*) BB( 2, 1 ), BB( 2, 2 )
       !
       !invert horizontal B matrix using Kramer's rule.
       det = BB( 1, 1 ) * BB( 2, 2 ) - BB( 1, 2 ) * BB( 2, 1 )

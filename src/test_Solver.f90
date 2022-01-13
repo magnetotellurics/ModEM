@@ -40,7 +40,7 @@
    class( CScalar_t), allocatable   :: phiIn, phiOut
    class( RVector_t), allocatable   :: xR, yR
    class( RScalar_t), allocatable   :: phiInR, phiOutR
-   type( TAirLayers)   :: air_layer
+   type( TAirLayers )   :: air_layer
    !
    character(:), allocatable :: control_file_name, model_file_name, data_file_name, modem_job
    character(:), allocatable :: xFile,yFile,gridType
@@ -360,6 +360,7 @@ contains
             write(*,*) "calling getEsolution"
             call fwdIT_DC%getESolution( src, y )
             !
+			! OUTPUT THIS!
             write(*,*) "niter:  ",fwdIT_DC%n_iter_actual,   &
               "  Relative Residual",fwdIT_DC%relResFinal
             yFile = "../inputs/Soln_Tiny_FWD_IT_DC.dat"

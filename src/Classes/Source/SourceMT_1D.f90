@@ -161,9 +161,8 @@ contains
       !
       class( SourceMT_1D_t ), intent(inout) :: self
       !
-      class( cVector_t ), allocatable :: bdry
-      !
-      allocate( bdry, source = self%E%Boundary() )
+	  if( allocated( self%bdry ) ) deallocate( self%bdry )
+      allocate( self%bdry, source = self%E%Boundary() )
       !
       if( allocated( self%rhs ) ) deallocate( self%rhs )
       !
@@ -172,15 +171,13 @@ contains
          !
          allocate( self%rhs, source = cVector3D_SG_t( E%grid, EDGE ) )
          !
-         call self%model_operator%MultAib( bdry, self%rhs )
+         call self%model_operator%MultAib( self%bdry, self%rhs )
          !
          call self%rhs%print( 441,'-RHS' )
          !
          self%rhs = C_MinusOne * self%rhs
          !
       end select
-      !
-      deallocate( bdry )
       !
    end subroutine setRHSMT_1D
    !

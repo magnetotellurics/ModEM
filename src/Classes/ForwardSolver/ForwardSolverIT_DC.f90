@@ -99,7 +99,7 @@ module ForwardSolverIT_DC
        end select
        !
        !    set solver iteration control parameters using defaults
-       call self%solver%setParameters(maxIter,tolCurlCurlDef)
+       call self%solver%setParameters( maxIter, tolCurlCurlDef )
  
        !    set remaining default iteration control for DC
        call self%setIterDefaultsDC()
@@ -321,7 +321,7 @@ module ForwardSolverIT_DC
            enddo
            self%n_iter_actual = self%n_iter_actual + self%solver%n_iter
            self%nDivCor = self%nDivCor+1
-           !
+		   !
            if( self%nDivCor < self%max_div_cor ) then
               !  copy current e_solution into temp (discuss if this is this needed?)
               temp = e_solution
@@ -342,6 +342,8 @@ module ForwardSolverIT_DC
 	   !
        enddo loop
        !
+	   call e_solution%print( 7777, "ESolution after Solve loop" )
+	   !
        self%relResFinal = self%relResVec(self%n_iter_actual)
        !
        ! finish up solution--I am omitting boundary values for adjt case --
@@ -353,6 +355,7 @@ module ForwardSolverIT_DC
        ! we need to sort out conventions! In Solver_QMR I assumed functions,
        ! but I suspect we will be better off just using subroutines in terms
        ! of efficiency
+	   !
        if( source%adjt ) then
           select type( modOp => self%solver%model_operator )
              class is ( ModelOperator_MF_t )
@@ -366,16 +369,14 @@ module ForwardSolverIT_DC
          ! just leave bdry values set to 0
        else
           !
+	   call e_solution%print( 8888, "ESolution before + bdy" )
+	      !
           e_solution = e_solution + source%bdry
           !
        endif
-       !
-       select type( e_solution )
-          class is( cVector3D_SG_t )
-       	     write( *, * ) "         ", e_solution%nx, e_solution%ny, e_solution%nz, e_solution%gridType
-          class default
-       	     stop "Unclassified ForwardSolverIT_DC e_solution"
-       end select
+	   !
+	   call e_solution%print( 9999, "ESolution after adj if" )
+	   !
        !
        ! deallocate local objects
        if( allocated( temp ) ) deallocate(temp)

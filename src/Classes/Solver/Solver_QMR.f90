@@ -289,8 +289,12 @@ contains
           ! Keeping track of errors
           ! QMR book-keeping between divergence correction calls
           self%relErr( iter ) = real( rnorm / bnorm )
-          write(*,*) 'iter qmr= ',iter,'   relErr = ', self%relErr(iter)
+          !write(*,*) 'iter qmr= ',iter,'   relErr = ', self%relErr(iter)
+		  !
       end do
+	  !
+	  !call x%print( 5555, "X after QMR" )
+	  !
       self%n_iter = iter
       !
    end subroutine solveQMR
