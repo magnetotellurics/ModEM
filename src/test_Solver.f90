@@ -52,8 +52,8 @@
    omega = 2*pi/T
    !
    !   test job is also hard coded : options- Amult, QMR, RHS, MULT_DC, 
-   !            LUsolve, PCG, FWD_IT, DC, FWD_IT_DC
-   modem_job = "FWD_IT_DC"    
+   !            LUsolve, PCG, FWD_IT, DC, FWD_IT_DC, CurlT
+   modem_job = "CurlT"    
    fid = 1
    printUnit = 667   !   change this to get output y vector in a different ascii file
    !
@@ -84,10 +84,10 @@ contains
       integer :: nzAir = 2
       real(kind=prec) :: maxHeight = 1.5  !   this should be in km, not meters
       !
-      fnameA = "/mnt/c/Users/protew/Desktop/ON/GITLAB_PROJECTS/modem-oo/inputs/Full_A_Matrix_TinyModel"
-      !fnameA = "/Users/garyegbert/Desktop/ModEM_ON/modem-oo/inputs/Full_A_Matrix_TinyModel"
-      model_file_name = "/mnt/c/Users/protew/Desktop/ON/GITLAB_PROJECTS/modem-oo/inputs/rFile_Model_Tiny"
-      !model_file_name = "/Users/garyegbert/Desktop/ModEM_ON/modem-oo/inputs/rFile_Model_Tiny"
+      !fnameA = "/mnt/c/Users/protew/Desktop/ON/GITLAB_PROJECTS/modem-oo/inputs/Full_A_Matrix_TinyModel"
+      fnameA = "/Users/garyegbert/Desktop/ModEM_ON/modem-oo/inputs/Full_A_Matrix_TinyModel"
+      !model_file_name = "/mnt/c/Users/protew/Desktop/ON/GITLAB_PROJECTS/modem-oo/inputs/rFile_Model_Tiny"
+      model_file_name = "/Users/garyegbert/Desktop/ModEM_ON/modem-oo/inputs/rFile_Model_Tiny"
       !
       write( *, * ) "   -> Model File: [", model_file_name, "]"
       !
@@ -110,7 +110,8 @@ contains
             gridType = EDGE
             allocate(x, source = cVector3D_SG_t(main_grid,gridType))
             allocate(y, source = cVector3D_SG_t(main_grid,gridType))
-            !   create RVectors
+            !   create RVectors (EDGE again)
+            gridType = EDGE
             allocate(xR, source = rVector3D_SG_t(main_grid,gridType))
             allocate(yR, source = rVector3D_SG_t(main_grid,gridType))
             !   create CScalars
@@ -360,11 +361,29 @@ contains
             write(*,*) "calling getEsolution"
             call fwdIT_DC%getESolution( src, y )
             !
-			! OUTPUT THIS!
+            ! OUTPUT THIS!
             write(*,*) "niter:  ",fwdIT_DC%n_iter_actual,   &
               "  Relative Residual",fwdIT_DC%relResFinal
             yFile = "../inputs/Soln_Tiny_FWD_IT_DC.dat"
             call writeCvector()
+         case ("CurlT")
+            !   TEST OF CURL transpose OPERATOR
+            !   read in cVector x used for test of C'*x = y
+            !     x has to be a "FACE" cVector
+            xFile = "../inputs/Hvec_Tiny_1.dat"
+            select type( main_grid )
+               class is( Grid3D_SG_t )
+                  deallocate(x)
+                  gridType = FACE
+                  allocate(x, source = cVector3D_SG_t(main_grid,gridType))
+            end select
+            call readCVector()
+            !    multiply by C'
+            call model_operator%MultCurlT(x,y)
+            !
+            !   set output file name for this test
+            yFile = "../inputs/CurlTxH_Tiny1.dat"
+            call writeCVector()
           end select
 
      end subroutine runTest
