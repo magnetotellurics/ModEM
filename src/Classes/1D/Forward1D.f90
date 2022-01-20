@@ -201,8 +201,8 @@ module Forward1D
       ! local variables
       integer :: n,nlayer,nz,i,j,layerInd
       real(kind=prec), allocatable, dimension(:)  :: interfaceDepth, z
-      complex(kind=prec)  :: d, u
-      real(kind=prec)  :: zLayer,scaleFactor
+      complex(kind=prec)  :: d, u,scaleFactor
+      real(kind=prec)  :: zLayer
 		!
       n = size(b)
       nlayer = size(beta)
@@ -244,7 +244,7 @@ module Forward1D
              E1D(i) = C_ONE + beta(1)*(b(2)-b(1))*z(i)
           endif
        enddo
-       scaleFactor = R_ONE/E1D(1)
+       scaleFactor = C_ONE/E1D(1)
        E1D(:) = E1D(:)*scaleFactor
 
 

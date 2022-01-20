@@ -680,6 +680,13 @@ contains
       class( cVector_t ), allocatable, intent( inout ) :: outE
       ! Local variables
       integer :: ix, iy, iz
+
+      !  NOTE: this only computes outputs for interior edges --  fine
+      !   as long as observation locations are not in cell adjacent to boundary --
+      !     but othewise should also use boundary edeges to compute H!
+      !     Also would need to modify to compute Lrows, since don't want to
+      !       force on boundary!
+      !
       !    modified so that there are no local cVectors allocated
       !
       !    do we really need this here?
@@ -689,11 +696,18 @@ contains
          !    this overwrites input inH   -- need to be aware of this in using!
          call inH%divs(self%Metric%FaceArea)
          !**
-         ! Apply adjoint curl on uint grid
+         ! Apply adjoint curl on unit grid
          !*
+         !  EVERY OTHER ROUTINE IN MODEL OPERATOR ASSUMES THAT the output
+         !    is allocated before calling -- going to follow this convention
+         !     for this subroutine also!!!!
+         ! allocate( outE, source = cVector3D_SG_t( inH%grid, EDGE ) )
          !
-         allocate( outE, source = cVector3D_SG_t( inH%grid, EDGE ) )
-         !
+         if(.not.outE%isAllocated) then
+             write(*,*) 'ERROR: multCurlT in   ModelOperator_MF'
+             stop   'output vector not allocated'
+         endif
+
          select type(outE)
          class is(cVector3D_SG_t)
             !
