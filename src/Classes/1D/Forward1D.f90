@@ -194,7 +194,7 @@ module Forward1D
       !   given coefficients b, complex wavenumbers beta, layer thickness h
       !   compute electric field solution E1D evaluated at grid levels
       !   specfied in z , and normalized so that E1D(1) = 1.0
-	  class(Forward1D_t), intent(in) :: self
+      class(Forward1D_t), intent(in) :: self
       complex(kind=prec), intent(in), dimension(:) :: beta,b
       real(kind=prec), intent(in), dimension(:) :: h
       complex(kind=prec), dimension(:) :: E1D
@@ -203,13 +203,14 @@ module Forward1D
       real(kind=prec), allocatable, dimension(:)  :: interfaceDepth, z
       complex(kind=prec)  :: d, u,scaleFactor
       real(kind=prec)  :: zLayer
-		!
+
       n = size(b)
       nlayer = size(beta)
-	  !
-	  z = self%m%grid%zEdge
+      !
+      z = self%m%grid%zEdge
       nz = size(z)
-	  !
+      write(*,*) 'length of E1D = ', nz
+      !
       allocate(interfaceDepth(nlayer))
       interfaceDepth = R_ZERO
       do i = 2,nlayer

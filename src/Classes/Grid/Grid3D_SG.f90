@@ -65,9 +65,9 @@ module Grid3D_SG
   !*
   type :: TAirLayers
      character(len = 80)  :: method     = 'undefined'
-     integer              :: nz         = 0
-     real(kind = 8)       :: maxHeight  = 1000000.
-     real(kind = 8)       :: minTopDz  = 30000.
+     integer              :: nz         = 10
+     real(kind = 8)       :: maxHeight  = 200.
+     real(kind = 8)       :: minTopDz  = 30.
      real(kind = 8)       :: alpha      = 3.
      real(kind = 8), pointer :: dz(:)
      logical              :: allocated  = .false.
@@ -354,7 +354,7 @@ contains
     ! Local variables
     integer :: ix, iy, iz, i, j
     integer :: status
-    real(kind = prec) :: z1Log, dlogz, zLog
+    real(kind = prec) :: z1Log, dlogz, zLog, height1, height2
     
     if (present(method)) then
        airlayers%method = method
@@ -411,12 +411,14 @@ contains
        write(*,*) 'using fixed height method'
        z1Log = log10(self%dz(self%nzAir + 1))
        dlogz = (log10(airLayers%maxHeight) - z1Log)/(airLayers%nz-1)
-       
        zLog = z1Log
-       airLayers%dz(airLayers%Nz) = 10.**z1Log
+       height1 = 10.**z1log
+       airLayers%dz(airLayers%Nz) = height1
        do iz = airLayers%Nz-1, 1, -1
-          airLayers%dz(iz) = 10.**(zLog + dlogz) - airLayers%dz(iz+1)
           zLog = zLog + dlogz
+          height2 = 10.**zLog 
+          airLayers%dz(iz) = height2-height1
+          height1 = height2
        end do
        
     else if (index(airLayers%method, 'read from file') > 0) then

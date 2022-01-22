@@ -100,48 +100,50 @@ contains
      call forward_1D%SetFreq( omega )
      !
      if( allocated( E1D ) ) deallocate( E1D )
-     allocate( E1D( self%model_operator%grid%nz ) )
+     !    NOTE: E1D is defined at layer interfaces -- dzEdge(nz+1) 
+     allocate( E1D( self%model_operator%grid%nz +1 ) )
      !
      ! Solve 1D and store the result in E1D structure
      call forward_1D%solve( E1D )
      !
-     do ix = 1, self%model_operator%grid%nx
-       !
-       do iy = 1, self%model_operator%grid%ny
+     ! Allocate and construct self%E => E3D
+     select type( grid => self%model_operator%grid )
+        class is( Grid3D_SG_t )
            !
-           ! Allocate and construct self%E => E3D
-           select type( grid => self%model_operator%grid )
-           class is( Grid3D_SG_t )
+           if( .not. allocated( self%E ) ) then
               !
-              if( .not. allocated( self%E ) ) then
-                 !
-                 allocate( self%E, source = cVector3D_SG_t( grid, EDGE ) )
-                 !
-                 call self%E%zeros()
-              endif
+              allocate( self%E, source = cVector3D_SG_t( grid, EDGE ) )
               !
-              ! Fill E3D (cVector3D_SG) from E1D (Esoln1DTM_t)
-              select type( E3D => self%E )
+           endif
+           !   if zeroing needs to be done, it would be in the case where
+           !     E is already allocated ...
+           call self%E%zeros()
+              !
+           ! Fill E3D (cVector3D_SG) from E1D (Esoln1DTM_t)
+           !    Note that Ez components are all left set to 9
+           select type( E3D => self%E )
               class is( cVector3D_SG_t )
-                 !
-                 ! 1st polarization case: Only x components are non-zero
-                 if( polarization == 1 ) then
-                    E3D%x( ix, iy, : ) = E1D
-                 !
-                 ! 2nd polarization case: Only y components are non-zero
-                 else
-                    E3D%y( ix, iy, : ) = E1D
-                 endif
-                 !
-                 E3D%z( ix, iy, : ) = E1D
-                 !
-              end select
               !
+              ! 1st polarization case: Only x components are non-zero
+              if( polarization == 1 ) then
+                 do ix = 1, self%model_operator%grid%nx
+                    do iy = 1, self%model_operator%grid%ny+1
+                       E3D%x( ix, iy, : ) = E1D
+                    enddo
+                 enddo
+                 ! 2nd polarization case: Only y components are non-zero
+              else
+                 do ix = 1, self%model_operator%grid%nx+1
+                    do iy = 1, self%model_operator%grid%ny
+                       E3D%x( ix, iy, : ) = E1D
+                    enddo
+                 enddo
+              endif
            end select
+              !
+     end select
            !
-        enddo
-        !
-     enddo
+     !    Do we need to do these deallocations???
      !
      deallocate( E1D )
      deallocate( model_parameter_1D )
