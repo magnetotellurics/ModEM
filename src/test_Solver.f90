@@ -47,7 +47,7 @@
    character(:), allocatable :: control_file_name, model_file_name, data_file_name, modem_job
    character(:), allocatable :: xFile,yFile,gridType
    complex(kind=prec), allocatable :: E1D(:)
-   integer  :: printUnit, maxIter, nz, nza, fid
+   integer  :: printUnit, maxIter, nz, nza, fid, polarization
    real(kind = prec) :: omega, T, tolerance
    !
    !   frequency is hard coded -- just test for a single frequency at a time
@@ -391,8 +391,8 @@ contains
             !   set output file name for this test
             yFile = "../inputs/CurlTxH_Tiny1.dat"
             call writeCVector()
-          case ("Source1D")
-             !   test of 1D BC 
+          case ("Fwd1D")
+             !   test of 1D BC ... explicit testing of 1D forward modeling ...
              ! Get Model1D from corner of grid
              model_parameter_1D = model_parameter%Slice1D(1,1)
              fid = 111
@@ -416,7 +416,28 @@ contains
              fid = 222
              write(fid) nz+1
              write(fid) E1D
+          case ("Source1D")
+             !   test of 1D BC Source object (src -- allocated in handle_model)
+             polarization = 1
+             call src%setE( omega, polarization )
+             y = src%E
+             yFile = "../inputs/E_MT1D_1.dat"
+             call writeCVector()
 
+             call src%SetRHS()
+             y = src%rhs
+             yFile = "../inputs/RHS_MT1D_1.dat"
+             call writeCVector()
+             !
+             polarization = 2
+             call src%setE( omega, polarization )
+             call src%SetRHS()
+             y = src%E
+             yFile = "../inputs/E_MT1D_2.dat"
+             call writeCVector()
+             y = src%rhs
+             yFile = "../inputs/RHS_MT1D_2.dat"
+             call writeCVector()
           end select
 
      end subroutine runTest

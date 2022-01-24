@@ -135,7 +135,7 @@ contains
               else
                  do ix = 1, self%model_operator%grid%nx+1
                     do iy = 1, self%model_operator%grid%ny
-                       E3D%x( ix, iy, : ) = E1D
+                       E3D%y( ix, iy, : ) = E1D
                     enddo
                  enddo
               endif
