@@ -154,16 +154,16 @@ contains
       !
       type( ModelParameter1D_t ) :: m1D 
       !   local variables
-      type(Grid1D_t) :: grid1
+      type(Grid1D_t) :: grid1d
       real(kind=prec), allocatable, dimension(:) :: CondSlice
       real(kind=prec) :: wt, temp_sigma_value
       integer :: i, j, k
       !
       !   extract 1D grid
-      grid1 = self%grid%Slice1D()
+      grid1d = self%grid%Slice1D()
       !
       !   create 1D model parameter
-      m1D = ModelParameter1D_t( grid1 )
+      m1D = ModelParameter1D_t( grid1d )
       !
       !   comnductivity slice
       allocate( CondSlice( grid1%nzEarth ) )

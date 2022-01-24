@@ -342,8 +342,6 @@ module ForwardSolverIT_DC
 	   !
        enddo loop
        !
-	   call e_solution%print( 7777, "ESolution after Solve loop" )
-	   !
        self%relResFinal = self%relResVec(self%n_iter_actual)
        !
        ! finish up solution--I am omitting boundary values for adjt case --
@@ -369,15 +367,10 @@ module ForwardSolverIT_DC
          ! just leave bdry values set to 0
        else
           !
-	   call e_solution%print( 8888, "ESolution before + bdy" )
-	      !
           e_solution = e_solution + source%bdry
           !
        endif
 	   !
-	   call e_solution%print( 9999, "ESolution after adj if" )
-	   !
-       !
        ! deallocate local objects
        if( allocated( temp ) ) deallocate(temp)
        if( allocated( b ) )    deallocate(b)

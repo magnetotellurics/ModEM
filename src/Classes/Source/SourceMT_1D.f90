@@ -105,6 +105,8 @@ contains
      ! Solve 1D and store the result in E1D structure
      call forward_1D%solve( E1D )
      !
+	 write(*,*) "E1D"
+	 write(*,*) E1D
      do ix = 1, self%model_operator%grid%nx
        !
        do iy = 1, self%model_operator%grid%ny
@@ -125,7 +127,7 @@ contains
               class is( cVector3D_SG_t )
                  !
                  ! 1st polarization case: Only x components are non-zero
-                 if( polarization == 1 ) then
+                 if(                                             == 1 ) then
                     E3D%x( ix, iy, : ) = E1D
                  !
                  ! 2nd polarization case: Only y components are non-zero
@@ -159,7 +161,7 @@ contains
    subroutine setRHSMT_1D( self )
       implicit none
       !
-      class( SourceMT_1D_t ), intent(inout) :: self
+      class( SourceMT_1D_t ), intent( inout ) :: self
       !
 	  if( allocated( self%bdry ) ) deallocate( self%bdry )
       allocate( self%bdry, source = self%E%Boundary() )
@@ -172,8 +174,6 @@ contains
          allocate( self%rhs, source = cVector3D_SG_t( E%grid, EDGE ) )
          !
          call self%model_operator%MultAib( self%bdry, self%rhs )
-         !
-         call self%rhs%print( 441,'-RHS' )
          !
          self%rhs = C_MinusOne * self%rhs
          !

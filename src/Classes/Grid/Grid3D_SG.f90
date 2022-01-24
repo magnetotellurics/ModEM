@@ -58,16 +58,16 @@ module Grid3D_SG
   ! method options are: mirror; fixed height; read from file
   ! for backwards compatibility, all of the defaults are set to what
   ! was previously hard coded (AK; May 19, 2017)
-  ! For backwards compatibility, default is 'mirror 10 3. 30.'
-  !  GDE 12/17/21 : new method 'undefined' is default -- force
+  ! For backwards compatibility, default is "mirror 10 3. 30."
+  !  GDE 12/17/21 : new method "undefined" is default -- force
   !    explicit setting of air layers (can still hard code a default
   !     in the driver program!)
   !*
   type :: TAirLayers
-     character(len = 80)  :: method     = 'undefined'
-     integer              :: nz         = 0
-     real(kind = 8)       :: maxHeight  = 1000000.
-     real(kind = 8)       :: minTopDz  = 30000.
+     character(len = 80)  :: method     = "fixed height"
+     integer              :: nz         = 10
+     real(kind = 8)       :: maxHeight  = 200.0
+     real(kind = 8)       :: minTopDz   = 100.0
      real(kind = 8)       :: alpha      = 3.
      real(kind = 8), pointer :: dz(:)
      logical              :: allocated  = .false.
@@ -267,7 +267,7 @@ contains
     end do
     
     ! NOTE: adjust for origin later to get airthickness, 
-    ! reference to origin at Earth's surface correct!
+    ! reference to origin at Earth"s surface correct!
     do iz = 1, self%nz
        zCum = zCum + self%dz(iz)
        self%zEdge(iz + 1) = zCum
@@ -320,7 +320,7 @@ contains
     end do
     
     ! Need to be careful here ... grid origin is given
-    ! at Earth's surface, not top of model domain!
+    ! at Earth"s surface, not top of model domain!
     do iz = 1, self%nz
        self%zCenter(iz) = self%zCenter(iz) - self%zAirThick + oz
        self%zEdge(iz) = self%zEdge(iz) - self%zAirThick + oz
@@ -328,9 +328,9 @@ contains
     self%zEdge(self%nz + 1) = self%zEdge(self%nz + 1) - &
          self%zAirThick + oz
     
-    write(*, *) 'INFO:Grid3D_SG_t:Setup:'
-    write(*, *) '  The top of the air layers is at ', &
-         self%zAirThick/1000, ' km'
+    write(*, *) "INFO:Grid3D_SG_t:Setup:"
+    write(*, *) "  The top of the air layers is at ", &
+         self%zAirThick/1000, " km"
     
   end subroutine Setup
 
@@ -338,8 +338,8 @@ contains
   ! SetupAirLayers computes the Dz in the airlayers structure
   ! using the grid to get the top layers Dz;
   ! all values expected in km on input
-  ! For backwards compatibility, default is 'mirror 10 3. 30.'
-  ! but the use of 'fixed height 12 1000' is recommended
+  ! For backwards compatibility, default is "mirror 10 3. 30."
+  ! but the use of "fixed height 12 1000" is recommended
   !*
   subroutine SetupAirLayers(self, airLayers, method, &
        &                    nzAir, maxHeight, minTopDz, &
@@ -358,17 +358,17 @@ contains
     
     if (present(method)) then
        airlayers%method = method
-       write(*,*) 'method', method
-       write(*,*) 'method', AirLayers%method
+       write(*,*) "method", method
+       write(*,*) "method", AirLayers%method
     end if
     
     if (present(nzAir)) then
        airlayers%nz = nzAir
-       write(*,*) 'nzAir',nzAir
-       write(*,*) 'nz',airLayers%nz
+       write(*,*) "nzAir",nzAir
+       write(*,*) "nz",airLayers%nz
     end if
     
-    if (.not.(index(airLayers%method, 'read from file') > 0)) then
+    if (.not.(index(airLayers%method, "read from file") > 0)) then
        if (airLayers%allocated) then
           deallocate(airlayers%dz, STAT = status)
        end if
@@ -389,9 +389,9 @@ contains
        airLayers%alpha = alpha
     end if
     
-    if (index(airLayers%method, 'mirror') > 0) then
+    if (index(airLayers%method, "mirror") > 0) then
        !**
-       ! Following is Kush's approach to setting air layers:
+       ! Following is Kush"s approach to setting air layers:
        ! mirror imaging the dz values in the air layer with respect to
        ! earth layer as far as we can using the following formulation
        ! air layer(bottom:top) = (alpha)^(j-1) * earth layer(top:bottom)
@@ -407,8 +407,8 @@ contains
           airLayers%dz(1) = airLayers%minTopDz
        end if
        
-    else if (index(airLayers%method, 'fixed height') > 0) then 
-       write(*,*) 'using fixed height method'
+    else if (index(airLayers%method, "fixed height") > 0) then 
+       write(*,*) "using fixed height method"
        z1Log = log10(self%dz(self%nzAir + 1))
        dlogz = (log10(airLayers%maxHeight) - z1Log)/(airLayers%nz-1)
        
@@ -419,7 +419,7 @@ contains
           zLog = zLog + dlogz
        end do
        
-    else if (index(airLayers%method, 'read from file') > 0) then
+    else if (index(airLayers%method, "read from file") > 0) then
        !**
        ! Air layers have been read from file and are
        ! already stored in Dz, so only need to reallocate
@@ -434,15 +434,15 @@ contains
        end if
     end if
     
-    write(*, *) 'INFO:Grid3D_SG_t:SetupAirLayers: '
-    write(*, '(a60,a20)') &
-         '  Air layers setup complete according to the method: ', &
+    write(*, *) "INFO:Grid3D_SG_t:SetupAirLayers: "
+    write(*, "(a60,a20)") &
+         "  Air layers setup complete according to the method: ", &
          adjustl(airLayers%method)
 
-    write(*, *) 'INFO:Grid3D_SG_t:SetupAirLayers: '
-    write(*, '(a40,f15.3,a3)') &
-         'The top of the air layers is at ', &
-         sum(airLayers%Dz)/1000, ' km'
+    write(*, *) "INFO:Grid3D_SG_t:SetupAirLayers: "
+    write(*, "(a40,f15.3,a3)") &
+         "The top of the air layers is at ", &
+         sum(airLayers%Dz)/1000, " km"
 
   end subroutine SetupAirLayers
 
@@ -479,8 +479,8 @@ contains
     character(len = 80) :: geometry_old
     
     if (.not.self%allocated) then
-       write(*, *) 'ERROR:Grid3D_SG_t:UpdateAirLayers'
-       write(*, *) '  Grid not allocated.'
+       write(*, *) "ERROR:Grid3D_SG_t:UpdateAirLayers"
+       write(*, *) "  Grid not allocated."
        
        STOP
     end if
@@ -531,8 +531,8 @@ contains
     real(kind = prec) , dimension(:), intent(in) :: dx, dy, dz
 
     if (.not.self%IsAllocated()) then
-       write(*, *) 'ERROR:Grid3D_SG_t:SetCellSizes:'
-       write(*, *) '  Grid not allocated.'
+       write(*, *) "ERROR:Grid3D_SG_t:SetCellSizes:"
+       write(*, *) "  Grid not allocated."
 
        STOP
     end if
@@ -541,8 +541,8 @@ contains
     if ((size(dx).ne.size(self%dx)).or.&
          (size(dy).ne.size(self%dy)).or.&
          (size(dz).ne.size(self%dz))) then
-       write(*, *) 'ERROR:Grid3D_SG_t:SetCellSizes:'
-       write(*, *) '  Incompatible sizes for cell arrays.'
+       write(*, *) "ERROR:Grid3D_SG_t:SetCellSizes:"
+       write(*, *) "  Incompatible sizes for cell arrays."
 
        STOP
     end if
@@ -559,8 +559,8 @@ contains
     real(kind = prec) , intent(out) :: dx(:), dy(:), dz(:)
 
     if (.not.self%IsAllocated()) then
-       write(*, *) 'ERROR:Grid3D_SG_t:GetCellSizes:'
-       write(*, *) '  Grid not allocated.'
+       write(*, *) "ERROR:Grid3D_SG_t:GetCellSizes:"
+       write(*, *) "  Grid not allocated."
 
        STOP
     end if
@@ -569,8 +569,8 @@ contains
     if ((size(dx).ne.size(self%dx)).or.&
          (size(dy).ne.size(self%dy)).or.&
          (size(dz).ne.size(self%dz))) then
-       write(*, *) 'ERROR:Grid3D_SG_t:GetCellSizes:'
-       write(*, *) '  Incompatible sizes for cell arrays.'
+       write(*, *) "ERROR:Grid3D_SG_t:GetCellSizes:"
+       write(*, *) "  Incompatible sizes for cell arrays."
        
        STOP
     end if
@@ -592,13 +592,13 @@ contains
     ! Local variables
     integer :: nx, ny, nz
     
-    call self%Limits('XEDGE', nx, ny, nz)
+    call self%Limits("XEDGE", nx, ny, nz)
     nXedge = nx*ny*nz
     
-    call self%Limits('YEDGE', nx, ny, nz)
+    call self%Limits("YEDGE", nx, ny, nz)
     nYedge = nx*ny*nz
 
-    call self%Limits('ZEDGE', nx, ny, nz)
+    call self%Limits("ZEDGE", nx, ny, nz)
     nZedge = nx*ny*nz
     
   end subroutine NumberOfEdges
@@ -614,13 +614,13 @@ contains
     ! Local variables
     integer :: nx, ny, nz
     
-    call self%Limits('XFACE', nx, ny, nz)
+    call self%Limits("XFACE", nx, ny, nz)
     nXface = nx*ny*nz
     
-    call self%Limits('YFACE', nx, ny, nz)
+    call self%Limits("YFACE", nx, ny, nz)
     nYface = nx*ny*nz
     
-    call self%Limits('ZFACE', nx, ny, nz)
+    call self%Limits("ZFACE", nx, ny, nz)
     nZface = nx*ny*nz
     
   end subroutine NumberOfFaces
@@ -661,17 +661,17 @@ contains
     nVec = size(indVec)
     
     if (nVec.ne.size(i)) then
-       print *, 'Size of "ind_vec" and "i" do not agree.'
+       print *, "Size of 'ind_vec' and 'i' do not agree."
        STOP
     end if
     
     if (nVec.ne.size(j)) then
-       print *, 'Size of "ind_vec" and "j" do not agree.'
+       print *, "Size of 'ind_vec' and 'j' do not agree."
        STOP
     end if
     
     if (nVec.ne.size(k)) then
-       print *, 'Size of "ind_vec" and "k" do not agree.'
+       print *, "Size of 'ind_vec' and 'k' do not agree."
        STOP
     end if
     
@@ -712,17 +712,17 @@ contains
     nVec = size(indVec)
     
     if (nVec.ne.size (i)) then
-       print *, 'Size of "ind_vec" and "i" do not agree.'
+       print *, "Size of 'ind_vec' and 'i' do not agree."
        STOP
     end if
     
     if (nVec.ne.size (J)) then
-       print *, 'Size of "ind_vec" and "j" do not agree.'
+       print *, "Size of 'ind_vec' and 'j' do not agree."
        STOP
     end if
     
     if (nVec.ne.size (K)) then
-       print *, 'Size of "ind_cec" and "k" do not agree.'
+       print *, "Size of 'ind_cec' and 'k' do not agree."
        STOP
     end if
     

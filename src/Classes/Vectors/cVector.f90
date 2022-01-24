@@ -309,17 +309,19 @@ module cVector
        !*
        subroutine interface_interp_func_c_vector(self, location, xyz, E)
           import :: cVector_t, prec
-          class(cVector_t) , intent(in)   :: self
-          real(kind = prec), intent(in)   :: location(3)
+          class(cVector_t) , intent(in) :: self
+          real(kind = prec), intent(in) :: location(3)
           character, intent(in)         :: xyz
           class(cVector_t) , intent(out), allocatable :: E
        end subroutine interface_interp_func_c_vector
        
-       subroutine interface_print_c_vector( self, io_unit, title )
+       subroutine interface_print_c_vector( self, io_unit, title, append )
           import :: cVector_t
           class( cVector_t ) , intent( in ) :: self
           integer, intent( in ), optional   :: io_unit
-          character(*), intent( in ), optional   :: title
+		  character(*), intent( in ), optional   :: title
+		  logical, intent( in ), optional   :: append
+          
        end subroutine interface_print_c_vector
        
    end interface

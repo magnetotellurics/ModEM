@@ -564,7 +564,7 @@ contains
          !
          select type(y)
          class is(cVector3D_SG_t)
-            call y%Zeros()               
+            call y%Zeros()
             ! Apply difference equation to compute Ex
             ! (compute only on interior nodes)
             do iz = 2, x%nz
@@ -600,7 +600,7 @@ contains
                   end do
                end do
             end do
-            !
+			!
             ! Apply difference equation to compute Ez (only on interior nodes)
             do iz = 1, x%nz
                do iy = 2, x%ny
@@ -619,10 +619,9 @@ contains
             end do
             !
             ! Modified to add diagonal part in main loop ...
-
             ! Finally multiply by VEdge (in place)
             call y%mults3( self%metric%Vedge )
-            !
+			!
          end select
          !
          class default
@@ -658,7 +657,7 @@ contains
       !
       omega = R_ZERO    ! diagonal part or A does not enter into this
       !
-      call self%amult(omega,bdry,outE) 
+      call self%amult( omega, bdry, outE ) 
       !
    end subroutine multAibModelOperatorMF
    

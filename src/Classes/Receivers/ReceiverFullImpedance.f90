@@ -94,13 +94,15 @@ contains
       ! Set Vectors Lex, Ley, Lbx, Lby
       call self%evaluationFunction( model_operator, omega )
       !
-      !
       ! get e_all from the Tx 1st polarization
       allocate( e_tx_pol_1, source = transmitter%e_all%get( 1 ) )
       !
       ! get e_all from the Tx 2nd polarization
       allocate( e_tx_pol_2, source = transmitter%e_all%get( 2 ) )
       !
+	  call e_tx_pol_1%print( 111, "e_tx_pol_1" )
+	  call e_tx_pol_2%print( 222, "e_tx_pol_2" )
+	  !
       allocate( complex( kind=prec ) :: self%EE( 2, 2 ) )
       !
       self%EE( 1, 1 ) = self%Lex .dot. e_tx_pol_1
@@ -108,21 +110,18 @@ contains
       self%EE( 1, 2 ) = self%Lex .dot. e_tx_pol_2
       self%EE( 2, 2 ) = self%Ley .dot. e_tx_pol_2
       !
-	  call self%Lex%print( 1111, "LEX" )
-	  call self%Ley%print( 2222, "LEY" )
-	  !
       allocate( complex( kind=prec ) :: BB( 2, 2 ) )
       !
-	  call self%Lbx%print( 3333, "LBX1" )
-	  call self%Lby%print( 4444, "LBY1" )
+	  call self%Lbx%print( 333, "LBX1" )
+	  call self%Lby%print( 444, "LBY1" )
 	  !
       BB( 1, 1 ) = self%Lbx .dot. e_tx_pol_1
       BB( 2, 1 ) = self%Lby .dot. e_tx_pol_1
       BB( 1, 2 ) = self%Lbx .dot. e_tx_pol_2
       BB( 2, 2 ) = self%Lby .dot. e_tx_pol_2
       !
-	  call self%Lbx%print( 5555, "LBX2" )
-	  call self%Lby%print( 6666, "LBY2" )
+	  call self%Lbx%print( 555, "LBX2" )
+	  call self%Lby%print( 666, "LBY2" )
 	  !
       deallocate( e_tx_pol_1 )
       deallocate( e_tx_pol_2 )

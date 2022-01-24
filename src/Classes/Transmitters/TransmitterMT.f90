@@ -101,9 +101,9 @@ module TransmitterMT
          ! Add polarization e_solution to self%e_all
          call self%e_all%add( e_solution )
 		 !
-		 !write( title, '(A15, 1pe12.6, i5)' ) "ESOLUTION", self%period, i_pol
+		 write( title, '(A15, 1pe12.6, i5)' ) "TX_ESOLUTION", self%period, i_pol
          !
-		 !call e_solution%print( 0, title )
+		 call e_solution%print( 1111, title, .TRUE. )
          !
       enddo
       !

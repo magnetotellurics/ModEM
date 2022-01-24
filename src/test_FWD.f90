@@ -226,14 +226,9 @@ contains
       ! It remains to standardize ????
       type( ModelReader_Weerachai_t ) :: model_reader
       !
-      character(:), allocatable :: fname
+      character(:), allocatable       :: fname
       !
-      type( TAirLayers )   :: air_layer
-      !
-      !    parameters for setting Air Layers for Tiny Model
-      character(12) :: method = "fixed height"
-      integer :: nzAir = 10
-      real(kind=prec) :: maxHeight = 200.0  !   this should be in km, not meters
+      type( TAirLayers )              :: air_layer
       !
       fname = "/mnt/c/Users/protew/Desktop/ON/GITLAB_PROJECTS/modem-oo/inputs/Full_A_Matrix_TinyModel"
       !fname = "/Users/garyegbert/Desktop/ModEM_ON/modem-oo/inputs/Full_A_Matrix_TinyModel"
@@ -247,24 +242,22 @@ contains
       select type( main_grid )
          !
          class is( Grid3D_SG_t )
-        !
-
-        call main_grid%SetupAirLayers( air_layer, method, nzAir, maxHeight )
-        !   as coded have to use air_layer data structure to update grid
-        call main_grid%UpdateAirLayers( air_layer%nz, air_layer%dz )
-        !
-             ! 
-             !model_operator = ModelOperator_File_t( main_grid, fname )
-             !
-             model_operator = ModelOperator_MF_t( main_grid )
-             !
-             ! complete model operator setup
-             call model_operator%SetEquations()
-             !
-             call model_parameter%setMetric( model_operator%metric )
-             !
-             call model_operator%SetCond( model_parameter )
-             !
+            !
+            call main_grid%SetupAirLayers( air_layer, model_method, model_n_air_layer, model_max_height )
+            !   as coded have to use air_layer data structure to update grid
+            call main_grid%UpdateAirLayers( air_layer%nz, air_layer%dz )
+            !
+            !model_operator = ModelOperator_File_t( main_grid, fname )
+            !
+            model_operator = ModelOperator_MF_t( main_grid )
+            !
+            ! complete model operator setup
+            call model_operator%SetEquations()
+            !
+            call model_parameter%setMetric( model_operator%metric )
+            !
+            call model_operator%SetCond( model_parameter )
+            !
          class default
              stop "Unclassified main_grid"
          !

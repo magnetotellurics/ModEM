@@ -21,12 +21,15 @@ module Constants
    character(:), allocatable :: solver_type
    character (len = 3), parameter   :: QMR  = "QMR"
    character (len = 3), parameter   :: PCG  = "PCG"
-   character (len = 4), parameter   :: BiCG  = "BiCG"
+   character (len = 4), parameter   :: BiCG = "BiCG"
    !
    character(:), allocatable :: source_type
    character (len = 11), parameter   :: SRC_MT_1D = "SourceMT_1D"
    character (len = 11), parameter   :: SRC_MT_2D = "SourceMT_2D"
-   !
+   
+   character(:), allocatable :: model_method
+   character (len = 12), parameter  :: MM_METHOD_FIXED_H = "fixed height"
+   character (len = 6), parameter   :: MM_METHOD_MIRROR  = "mirror"
    !
    character (len = 4), parameter   :: NODE       = "NODE"
    character (len = 4), parameter   :: FACE       = "FACE"
@@ -58,6 +61,13 @@ module Constants
    integer, parameter :: DP = selected_real_kind (15, 307)
    integer, parameter :: prec = DP
 
+   !
+   ! MODEL DEFAULTS
+   integer :: model_n_air_layer = 10
+   real( kind=prec ) :: model_max_height = 200.0
+   !
+   !
+   
    real (kind = prec), parameter :: PI    = 3.14159265357898_prec
    complex (kind = prec), parameter :: MU_0 = PI*.0000004_prec
    
