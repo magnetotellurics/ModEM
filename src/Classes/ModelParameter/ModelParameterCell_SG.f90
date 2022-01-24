@@ -139,7 +139,8 @@ contains
       !   comnductivity slice
       allocate(CondSlice(grid1%nz))
       !
-      CondSlice = self%CellCond%v( ix, iy, : )
+      !  extract slice; convert to linear conductivity:
+      CondSlice = self%SigMap(self%cellCond%v(ix,iy,:))
       !
       call m1d%SetConductivity(CondSlice, self%AirCond, &
       self%paramType, self%mKey)
@@ -165,6 +166,8 @@ contains
       !   create 1D model parameter
       m1D = ModelParameter1D_t( grid1d )
       !
+      !     average transformed   model parameter -- then transform?
+      !       or transform first????
       !   comnductivity slice
       allocate( CondSlice( grid1%nzEarth ) )
       !
@@ -179,7 +182,7 @@ contains
            end do
         end do
         !
-        CondSlice( k ) = exp( temp_sigma_value / wt )
+        CondSlice( k ) = self%SigMap( temp_sigma_value / wt )
         !
         !write(*,*) k, self%CellCond%v( 1, 1, k ), CondSlice( k ), 1.0 / CondSlice( k )
       end do
@@ -211,11 +214,12 @@ contains
      allocate( CondSlice( grid2%ny, grid2%nzEarth ) )
      !
      if( axis == 1 ) then
-       CondSlice = self%CellCond%v(j,:,:)
+      !  extract slice; convert to linear conductivity:
+        CondSlice = self%SigMap(Self%cellCond%v(j,:,:))
      else if( axis == 2 ) then
-        CondSlice = self%CellCond%v(:,j,:)
+        CondSlice = self%SigMap(Self%cellCond%v(:,j,:))
      else if( axis == 3 ) then
-        CondSlice = self%CellCond%v(:,:,j)
+        CondSlice = self%SigMap(Self%cellCond%v(:,:,j))
      else
         stop "ModelParameter:Slice2D: wrong axis"
      endif

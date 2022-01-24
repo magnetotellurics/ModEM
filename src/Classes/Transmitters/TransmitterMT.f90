@@ -82,7 +82,8 @@ module TransmitterMT
       omega = 2.0 * PI / self%period
       !
       ! Set ForwardSolver Frequency
-      call self%forward_solver%setPeriod( self%period )
+      !   I don't think this should ever be done inside solveFWD
+      ! call self%forward_solver%setPeriod( self%period )
       !
       ! Loop over all polarizations (MT n_pol = 2)
       do i_pol = 1, self%n_pol
@@ -90,6 +91,8 @@ module TransmitterMT
          write(*,*) "MT Tx Solve for Polarization", i_pol
          !
          ! Set Source E
+         !   DO NOT WANT TO MODIFY SOURCE INSIDE FWDsolve (for inversion!)
+         !    I guess this means we need to make some changes to source objects ...
          call self%source%setE( omega, i_pol )
          !
          if( allocated( e_solution ) ) deallocate( e_solution )

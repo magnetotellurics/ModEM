@@ -30,11 +30,13 @@
    ! 
    class( Grid_t ), allocatable, target   :: main_grid
    class( ModelParameter_t ), allocatable :: model_parameter
+   class( ModelParameter1D_t ), allocatable :: model_parameter_1D
    class( ModelOperator_t ), allocatable  :: model_operator
    class( Solver_t ), allocatable  :: slvrQMR,slvrPCG
    class( Source_t ), allocatable  :: src
    class( ForwardSolver_t ), allocatable  :: fwdIT, fwdIT_DC
    type( DivergenceCorrection_t)  :: divCor
+   type( Forward1D_t)  :: fwd1D
    !   other things I make explicit types  -- seemed to work, but now not sure!
    class( CVector_t), allocatable   :: x, y
    class( CScalar_t), allocatable   :: phiIn, phiOut
@@ -44,7 +46,8 @@
    !
    character(:), allocatable :: control_file_name, model_file_name, data_file_name, modem_job
    character(:), allocatable :: xFile,yFile,gridType
-   integer  :: printUnit, maxIter
+   complex(kind=prec), allocatable :: E1D(:)
+   integer  :: printUnit, maxIter, nz, nza, fid, polarization
    real(kind = prec) :: omega, T, tolerance
    !
    !   frequency is hard coded -- just test for a single frequency at a time
@@ -52,9 +55,8 @@
    omega = 2*pi/T
    !
    !   test job is also hard coded : options- Amult, QMR, RHS, MULT_DC, 
-   !            LUsolve, PCG, FWD_IT, DC, FWD_IT_DC, CurlT
-   modem_job = "CurlT"    
-   fid = 1
+   !            LUsolve, PCG, FWD_IT, DC, FWD_IT_DC, CurlT, Source1D
+   modem_job = "Source1D"    
    printUnit = 667   !   change this to get output y vector in a different ascii file
    !
    write ( *, * )
@@ -81,13 +83,18 @@ contains
       character(:), allocatable :: fnameA
       !    parameters for setting Air Layers for Tiny Model
       character(12) :: method = "fixed height"
-      integer :: nzAir = 2
-      real(kind=prec) :: maxHeight = 1.5  !   this should be in km, not meters
+      !integer :: nzAir = 2
+      !real(kind=prec) :: maxHeight = 1.5  !   this should be in km, not meters
+      !    parameters for setting Air Layers for Block2 model (rFile_Model)
+      integer :: nzAir = 10
+      real(kind=prec) :: maxHeight = 200  !   this should be in km, not meters
       !
       !fnameA = "/mnt/c/Users/protew/Desktop/ON/GITLAB_PROJECTS/modem-oo/inputs/Full_A_Matrix_TinyModel"
       fnameA = "/Users/garyegbert/Desktop/ModEM_ON/modem-oo/inputs/Full_A_Matrix_TinyModel"
       !model_file_name = "/mnt/c/Users/protew/Desktop/ON/GITLAB_PROJECTS/modem-oo/inputs/rFile_Model_Tiny"
-      model_file_name = "/Users/garyegbert/Desktop/ModEM_ON/modem-oo/inputs/rFile_Model_Tiny"
+      !model_file_name = "/Users/garyegbert/Desktop/ModEM_ON/modem-oo/inputs/rFile_Model_Tiny"
+      !    standard block2 test model -- small but not tiny
+      model_file_name = "/Users/garyegbert/Desktop/ModEM_ON/modem-oo/inputs/rFile_Model"
       !
       write( *, * ) "   -> Model File: [", model_file_name, "]"
       !
@@ -384,6 +391,53 @@ contains
             !   set output file name for this test
             yFile = "../inputs/CurlTxH_Tiny1.dat"
             call writeCVector()
+          case ("Fwd1D")
+             !   test of 1D BC ... explicit testing of 1D forward modeling ...
+             ! Get Model1D from corner of grid
+             model_parameter_1D = model_parameter%Slice1D(1,1)
+             fid = 111
+             nz = model_parameter_1D%grid%nz
+             nza = model_parameter_1D%grid%nz-model_parameter_1D%paramGrid%nz
+             write(fid) nz,nza
+             write(fid) model_parameter_1D%grid%dz
+             write(fid) model_parameter_1D%cellCond
+
+             ! create forward_1D object
+             Fwd1D = Forward1D_t( model_parameter_1D )
+
+             call Fwd1D%SetFreq( omega )
+             !
+             allocate( E1D( main_grid%nz + 1 ) )
+             !
+             ! Solve 1D and store the result in E1D structure
+             call Fwd1D%solve( E1D )
+             write(*,*) 'E1D'
+             write(*,*) E1D
+             fid = 222
+             write(fid) nz+1
+             write(fid) E1D
+          case ("Source1D")
+             !   test of 1D BC Source object (src -- allocated in handle_model)
+             polarization = 1
+             call src%setE( omega, polarization )
+             y = src%E
+             yFile = "../inputs/E_MT1D_1.dat"
+             call writeCVector()
+
+             call src%SetRHS()
+             y = src%rhs
+             yFile = "../inputs/RHS_MT1D_1.dat"
+             call writeCVector()
+             !
+             polarization = 2
+             call src%setE( omega, polarization )
+             call src%SetRHS()
+             y = src%E
+             yFile = "../inputs/E_MT1D_2.dat"
+             call writeCVector()
+             y = src%rhs
+             yFile = "../inputs/RHS_MT1D_2.dat"
+             call writeCVector()
           end select
 
      end subroutine runTest
