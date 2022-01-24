@@ -161,7 +161,7 @@ contains
    subroutine setRHSMT_1D( self )
       implicit none
       !
-      class( SourceMT_1D_t ), intent(inout) :: self
+      class( SourceMT_1D_t ), intent( inout ) :: self
       !
 	  if( allocated( self%bdry ) ) deallocate( self%bdry )
       allocate( self%bdry, source = self%E%Boundary() )
@@ -174,8 +174,6 @@ contains
          allocate( self%rhs, source = cVector3D_SG_t( E%grid, EDGE ) )
          !
          call self%model_operator%MultAib( self%bdry, self%rhs )
-         !
-         call self%rhs%print( 441,'-RHS' )
          !
          self%rhs = C_MinusOne * self%rhs
          !

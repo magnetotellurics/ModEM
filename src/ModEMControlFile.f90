@@ -17,6 +17,7 @@ module ModEMControlFile
       character(:), allocatable :: grid_type
       character(:), allocatable :: forward_solver
       character(:), allocatable :: source
+      character(:), allocatable :: model_method, model_n_air_layer, model_max_height
       !
    contains
       !
@@ -82,6 +83,18 @@ contains
                    self%source = trim( args(2) )
                 end if
                 !
+                if( index( line_text, "model_method" ) > 0 ) then
+                   self%model_method = trim( args(2) )
+                end if
+                !
+                if( index( line_text, "model_n_air_layer" ) > 0 ) then
+                   self%model_n_air_layer = trim( args(2) )
+                end if
+                !
+                if( index( line_text, "model_max_height" ) > 0 ) then
+                   self%model_max_height = trim( args(2) )
+                end if
+                !
             end if
          end do
          !
@@ -118,7 +131,7 @@ contains
             select case ( self%forward_solver )
                case( "FILE" )
                   forward_solver_type = FWD_FILE
-				case( "IT" )
+                case( "IT" )
                   forward_solver_type = FWD_IT
                case( "IT_DC" )
                   forward_solver_type = FWD_IT_DC
@@ -132,7 +145,7 @@ contains
          ! SOURCE
          !
          if ( allocated( self%source ) ) then
-            write( *, "(A20, A10)" ) "source =", self%source
+            write( *, "(A20, A10)" ) "      source =", self%source
             !
             select case ( self%source )
                case( "1D" )
@@ -143,6 +156,39 @@ contains
                   source_type = ""
                   STOP "Wrong source control, use [1D|2D]"
             end select
+            !
+         endif
+         !
+         ! MODEL METHOD
+         !
+         if ( allocated( self%model_method ) ) then
+            write( *, "(A20, A10)" ) "      model_method =", self%model_method
+            !
+            select case ( self%model_method )
+               case( "fixed height" )
+                  model_method = MM_METHOD_FIXED_H
+               case default
+                  model_method = ""
+                  STOP "Wrong model_method control, use [none|fixed height]"
+            end select
+            !
+         endif
+         !
+         ! MODEL NZAIR
+         !
+         if ( allocated( self%model_n_air_layer ) ) then
+            write( *, "(A20, A30)" ) "      model_n_air_layer =", self%model_n_air_layer
+            !
+			read( self%model_n_air_layer, '(i5)' )   model_n_air_layer
+            !
+         endif
+         !
+         ! MODEL NZAIR
+         !
+         if ( allocated( self%model_max_height ) ) then
+            write( *, "(A20, A30)" ) "      model_max_height =", self%model_max_height
+            !
+			read( self%model_max_height, '(f15.5)' )   model_max_height
             !
          endif
          !

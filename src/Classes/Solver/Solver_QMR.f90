@@ -102,7 +102,7 @@ contains
       complex( kind=prec ) :: bnorm,rnorm
       complex( kind=prec ) :: rhoInv,psiInv
       integer              :: iter
-      !
+	  !
       ! Allocate work CVector objects -- questions as in PCG
       allocate( R, source = x )
 	  !
@@ -293,7 +293,7 @@ contains
 		  !
       end do
 	  !
-	  !call x%print( 5555, "X after QMR" )
+	  call x%print( 5555, "X after QMR" )
 	  !
       self%n_iter = iter
       !

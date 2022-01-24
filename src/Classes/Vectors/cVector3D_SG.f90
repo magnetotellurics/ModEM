@@ -1126,9 +1126,7 @@ contains
           end select
       else
           write(*, *) 'ERROR:cVector3D_SG:dotProdCVector3D_SG:'
-          write(*, *) '         Incompatible input. Exiting'
-          
-          STOP
+          stop        '         Incompatible input. Exiting'
       end if
    end function dotProdCVector3D_SG
    
@@ -1378,32 +1376,36 @@ contains
       end select
    end function isCompatible2CVector3D_SG
    
-   subroutine printCVector3D_SG( self, io_unit, title )
+   subroutine printCVector3D_SG( self, io_unit, title, append )
       implicit none
       !
       ! Arguments
       class( cVector3D_SG_t ), intent( in ) :: self
       integer, intent( in ), optional       :: io_unit
-      character(*), intent( in ), optional       :: title
+      character(*), intent( in ), optional  :: title
+	  logical, intent( in ), optional       :: append
       !
       integer :: ix, iy, iz,fid
       !
       if( present( io_unit ) ) then
          fid = io_unit
       else
-         fid = 6   !   usually this will work to write to standard output
+         fid = 0   !   usually this will work to write to standard output
       endif
+	  !
       if(present(title)) then
-        write(fid,*) title
+        write( fid, * ) title
       end if
-
+      !
+	  !if ( present( append ) .AND. append ) open( fid, position="append", action="write" )
+      !
       write( fid, * ) self%nx, self%ny, self%nz
       !
       !
-      write(fid,*) 'x-component',self%NdX
-      do ix = 1, self%NdX(1)
+      write( fid, * ) 'x-component',self%NdX
+      do iz = 1, self%NdX(3)
           do iy = 1, self%NdX(2)
-              do iz = 1, self%NdX(3)
+              do ix = 1, self%NdX(1)
                   if( self%x( ix, iy, iz ) /= 0 ) then
                      write(fid,*) ix,iy,iz, ":[", self%x( ix, iy, iz ), "]"
                   endif
@@ -1412,9 +1414,9 @@ contains
       enddo
       !
       write(fid,*) 'y-component',self%NdY
-      do ix = 1, self%NdY(1)
+      do iz = 1, self%NdY(3)
           do iy = 1, self%NdY(2)
-              do iz = 1, self%NdY(3)
+              do ix = 1, self%NdY(1)
                   if( self%y( ix, iy, iz ) /= 0 ) then
                      write(fid,*) ix,iy,iz, ":[", self%y( ix, iy, iz ), "]"
                   endif
@@ -1423,9 +1425,9 @@ contains
       enddo
       !
       write(fid,*) 'z-component',self%NdZ
-      do ix = 1, self%NdZ(1)
+      do iz = 1, self%NdZ(3)
           do iy = 1, self%NdZ(2)
-              do iz = 1, self%NdZ(3)
+              do ix = 1, self%NdZ(1)
                   if( self%z( ix, iy, iz ) /= 0 ) then
                      write(fid,*) ix,iy,iz, ":[", self%z( ix, iy, iz ), "]"
                   endif
