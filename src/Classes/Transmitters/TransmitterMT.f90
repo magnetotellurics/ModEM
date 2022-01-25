@@ -81,10 +81,6 @@ module TransmitterMT
       !
       omega = 2.0 * PI / self%period
       !
-      ! Set ForwardSolver Frequency
-      !   I don't think this should ever be done inside solveFWD
-      ! call self%forward_solver%setPeriod( self%period )
-      !
       ! Loop over all polarizations (MT n_pol = 2)
       do i_pol = 1, self%n_pol
          !
@@ -105,8 +101,6 @@ module TransmitterMT
          call self%e_all%add( e_solution )
 		 !
 		 write( title, '(A15, 1pe12.6, i5)' ) "TX_ESOLUTION", self%period, i_pol
-         !
-		 call e_solution%print( 1111, title, .TRUE. )
          !
       enddo
       !

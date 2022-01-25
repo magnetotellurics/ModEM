@@ -206,7 +206,7 @@ module ForwardSolverIT
             ! just leave bdry values set to 0 ???
          else
             !
-            e_solution = e_solution + source%bdry
+            e_solution = e_solution + source%E%Boundary()
             !
          endif
          self%relResFinal = self%relResVec(self%n_iter_actual)

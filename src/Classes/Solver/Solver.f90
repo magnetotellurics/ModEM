@@ -5,6 +5,11 @@ module Solver
    use ModelOperator
    use PreConditioner
    !
+   character(:), allocatable :: solver_type
+   character (len = 3), parameter   :: QMR  = "QMR"
+   character (len = 3), parameter   :: PCG  = "PCG"
+   character (len = 4), parameter   :: BiCG = "BiCG"
+   !
    type, abstract :: Solver_t
       !
       integer                        :: max_iter, n_iter
