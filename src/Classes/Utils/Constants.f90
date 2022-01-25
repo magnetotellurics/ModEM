@@ -8,29 +8,6 @@
 module Constants
    implicit none
    !
-   ! CONTROL FILE TYPES
-   character(:), allocatable :: grid_type
-   character (len = 12), parameter   :: GRID_SG = "StandardGrid"
-   character (len = 19), parameter   :: GRID_MR = "MultiresolutionGrid"
-   !
-   character(:), allocatable :: forward_solver_type
-   character (len = 21), parameter   :: FWD_FILE  = "ForwardSolverFromFile"
-   character (len = 15), parameter   :: FWD_IT    = "ForwardSolverIT"
-   character (len = 18), parameter   :: FWD_IT_DC = "ForwardSolverIT_DC"
-   !
-   character(:), allocatable :: solver_type
-   character (len = 3), parameter   :: QMR  = "QMR"
-   character (len = 3), parameter   :: PCG  = "PCG"
-   character (len = 4), parameter   :: BiCG = "BiCG"
-   !
-   character(:), allocatable :: source_type
-   character (len = 11), parameter   :: SRC_MT_1D = "SourceMT_1D"
-   character (len = 11), parameter   :: SRC_MT_2D = "SourceMT_2D"
-   
-   character(:), allocatable :: model_method
-   character (len = 12), parameter  :: MM_METHOD_FIXED_H = "fixed height"
-   character (len = 6), parameter   :: MM_METHOD_MIRROR  = "mirror"
-   !
    character (len = 4), parameter   :: NODE       = "NODE"
    character (len = 4), parameter   :: FACE       = "FACE"
    character (len = 4), parameter   :: EDGE       = "EDGE"
@@ -60,13 +37,6 @@ module Constants
    integer, parameter :: SP = selected_real_kind (6, 37)
    integer, parameter :: DP = selected_real_kind (15, 307)
    integer, parameter :: prec = DP
-
-   !
-   ! MODEL DEFAULTS
-   integer :: model_n_air_layer = 10
-   real( kind=prec ) :: model_max_height = 200.0
-   !
-   !
    
    real (kind = prec), parameter :: PI    = 3.14159265357898_prec
    complex (kind = prec), parameter :: MU_0 = PI*.0000004_prec

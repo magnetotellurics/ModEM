@@ -169,7 +169,7 @@ contains
       !     average transformed   model parameter -- then transform?
       !       or transform first????
       !   comnductivity slice
-      allocate( CondSlice( grid1%nzEarth ) )
+      allocate( CondSlice( grid1d%nzEarth ) )
       !
       do k = 1, self%grid%nzEarth
         wt = R_ZERO

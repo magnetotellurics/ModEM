@@ -10,13 +10,18 @@ module ModEMControlFile
    !
    use Constants
    use String
+   use Grid
+   use ForwardSolver
+   use Solver
+   use Source
+   use ModelParameter
    !
    type :: ModEMControlFile_t
       !
-      character(:), allocatable :: grid_reader
+      character(:), allocatable :: grid_reader_type
       character(:), allocatable :: grid_type
-      character(:), allocatable :: forward_solver
-      character(:), allocatable :: source
+      character(:), allocatable :: forward_solver_type
+      character(:), allocatable :: source_type
       character(:), allocatable :: model_method, model_n_air_layer, model_max_height
       !
    contains
@@ -67,20 +72,20 @@ contains
             !
             if( index( line_text, "#" ) == 0 .and. index( line_text, ">" ) == 0 ) then
                 !
-                if( index( line_text, "grid_header" ) > 0 ) then
+                if( index( line_text, "grid_reader" ) > 0 ) then
                    self%grid_type = trim( args(2) )
                 end if
                 !
-                if( index( line_text, "grid_type" ) > 0 ) then
-                   self%grid_reader = trim( args(2) )
+                if( index( line_text, "grid" ) > 0 ) then
+                   self%grid_reader_type = trim( args(2) )
                 end if
                 !
                 if( index( line_text, "forward_solver" ) > 0 ) then
-                   self%forward_solver = trim( args(2) )
+                   self%forward_solver_type = trim( args(2) )
                 end if
                 !
                 if( index( line_text, "source" ) > 0 ) then
-                   self%source = trim( args(2) )
+                   self%source_type = trim( args(2) )
                 end if
                 !
                 if( index( line_text, "model_method" ) > 0 ) then
@@ -103,7 +108,7 @@ contains
          ! GRID TYPE
          !
          if ( allocated( self%grid_type ) ) then
-            write( *, "(A20, A10)" ) "      grid_type =", self%grid_type
+            write( *, "(A20, A10)" ) "      grid =", self%grid_type
             !
             select case ( self%grid_type )
                case( "SG" )
@@ -119,16 +124,16 @@ contains
          !
          ! GRID READER
          !
-         if ( allocated( self%grid_reader ) ) then
-            write( *, "(A20, A10)" ) "      grid_reader =", self%grid_reader
+         if ( allocated( self%grid_reader_type ) ) then
+            write( *, "(A20, A10)" ) "      grid_reader =", self%grid_reader_type
          endif
          !
          ! FOWARD SOLVER
          !
-         if ( allocated( self%forward_solver ) ) then
-            write( *, "(A20, A10)" ) "      fwd_solver =", self%forward_solver
+         if ( allocated( self%forward_solver_type ) ) then
+            write( *, "(A20, A10)" ) "      fwd_solver =", self%forward_solver_type
             !
-            select case ( self%forward_solver )
+            select case ( self%forward_solver_type )
                case( "FILE" )
                   forward_solver_type = FWD_FILE
                 case( "IT" )
@@ -142,12 +147,12 @@ contains
             !
          endif
          !
-         ! SOURCE
+         ! source_type
          !
-         if ( allocated( self%source ) ) then
-            write( *, "(A20, A10)" ) "      source =", self%source
+         if ( allocated( self%source_type ) ) then
+            write( *, "(A20, A10)" ) "      source =", self%source_type
             !
-            select case ( self%source )
+            select case ( self%source_type )
                case( "1D" )
                   source_type = SRC_MT_1D
                case( "2D" )
@@ -203,10 +208,10 @@ contains
       !
       !write( *,* ) "Destructor ModEMControlFile_t"
       !
-      if( allocated( self%grid_reader ) ) deallocate( self%grid_reader )
+      if( allocated( self%grid_reader_type ) ) deallocate( self%grid_reader_type )
       if( allocated( self%grid_type ) ) deallocate( self%grid_type )
-      if( allocated( self%forward_solver ) ) deallocate( self%forward_solver )
-      if( allocated( self%source ) ) deallocate( self%source )
+      if( allocated( self%forward_solver_type ) ) deallocate( self%forward_solver_type )
+      if( allocated( self%source_type ) ) deallocate( self%source_type )
       !
    end subroutine ModEMControlFile_dtor
    !

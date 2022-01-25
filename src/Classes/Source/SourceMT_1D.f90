@@ -26,7 +26,6 @@ module SourceMT_1D
           final :: SourceMT_1D_dtor
           !
           procedure, public :: setRHS => setRHSMT_1D
-          procedure, public :: setE0  => setE0MT_1D
           procedure, public :: setE   => setESourceMT_1D
           !
    end type SourceMT_1D_T
@@ -57,8 +56,6 @@ contains
           allocate( self%E, source = E )
           !
           call self%setRHS()
-          !
-          call self%setE0()
           !
        endif
        !
@@ -149,11 +146,7 @@ contains
      deallocate( model_parameter_1D )
      deallocate( forward_1D )
      !
-     !call self%E%print
-     !
      call self%setRHS()
-     !
-     call self%setE0()
      !
    end subroutine setESourceMT_1D
    !
@@ -163,9 +156,6 @@ contains
       !
       class( SourceMT_1D_t ), intent( inout ) :: self
       !
-	  if( allocated( self%bdry ) ) deallocate( self%bdry )
-      allocate( self%bdry, source = self%E%Boundary() )
-      !
       if( allocated( self%rhs ) ) deallocate( self%rhs )
       !
       select type( E => self%E )
@@ -173,23 +163,12 @@ contains
          !
          allocate( self%rhs, source = cVector3D_SG_t( E%grid, EDGE ) )
          !
-         call self%model_operator%MultAib( self%bdry, self%rhs )
+         call self%model_operator%MultAib( self%E%Boundary(), self%rhs )
          !
          self%rhs = C_MinusOne * self%rhs
          !
       end select
       !
    end subroutine setRHSMT_1D
-   !
-   ! Set e0 from self%E
-   subroutine setE0MT_1D( self )
-      implicit none
-      !
-      class( SourceMT_1D_t ), intent( inout ) :: self
-      !
-      if( allocated( self%e0 ) ) deallocate( self%e0 )
-      allocate( self%e0, source = self%E%Interior() )
-      !
-   end subroutine setE0MT_1D
    !
 end module SourceMT_1D

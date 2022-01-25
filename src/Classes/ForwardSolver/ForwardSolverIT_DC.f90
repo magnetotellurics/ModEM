@@ -367,7 +367,7 @@ module ForwardSolverIT_DC
          ! just leave bdry values set to 0
        else
           !
-          e_solution = e_solution + source%bdry
+          e_solution = e_solution + source%E%Boundary()
           !
        endif
 	   !

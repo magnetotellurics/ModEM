@@ -200,18 +200,53 @@ contains
                call e%interpFunc( self%location, "z", self%Lez )
             !
             case( "Bx" )
-               !
+			   !
                call h%interpFunc( self%location, "x", lh )
+			   !
+			   select type( lh )
+                  class is(cVector3D_SG_t)
+			         if( allocated( self%Lbx ) ) deallocate( self%Lbx )
+			         allocate( self%Lbx, source = cVector3D_SG_t( lh%grid, EDGE ) )
+					 !
+                  class default
+                     write(*, *) 'ERROR:Receiver::evaluationFunction:'
+                     stop        '         Unkonow lh type'
+               end select
+               !
                call model_operator%multCurlT( lh, self%Lbx )
                call self%Lbx%mults( isign * ONE_I / comega )
                !
             case( "By" )
+			   ! 
                call h%interpFunc( self%location, "y", lh )
+			   !
+			   select type( lh )
+                  class is(cVector3D_SG_t)
+			         if( allocated( self%Lby ) ) deallocate( self%Lby )
+			         allocate( self%Lby, source = cVector3D_SG_t( lh%grid, EDGE ) )
+					 !
+                  class default
+                     write(*, *) 'ERROR:Receiver::evaluationFunction:'
+                     stop        '         Unkonow lh type'
+               end select
+               !
                call model_operator%multCurlT( lh, self%Lby )
                call self%Lby%mults( isign * ONE_I / comega )
             !
             case( "Bz" )
+			   !
                call h%interpFunc( self%location, "z", lh )
+			   !
+			   select type( lh )
+                  class is(cVector3D_SG_t)
+			         if( allocated( self%Lbz ) ) deallocate( self%Lbz )
+			         allocate( self%Lbz, source = cVector3D_SG_t( lh%grid, EDGE ) )
+					 !
+                  class default
+                     write(*, *) 'ERROR:Receiver::evaluationFunction:'
+                     stop        '         Unkonow lh type'
+               end select
+               !
                call model_operator%multCurlT( lh, self%Lbz )
                call self%Lbz%mults( isign * ONE_I / comega )
             !

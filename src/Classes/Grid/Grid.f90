@@ -4,10 +4,15 @@
 ! 
 !*
 module Grid
+  !
   use Constants
   use Grid1D
   use Grid2D
-
+  !
+  character(:), allocatable :: grid_type
+  character (len = 12), parameter :: GRID_SG = "StandardGrid"
+  character (len = 19), parameter :: GRID_MR = "MultiresolutionGrid"
+  !
   type, abstract :: Grid_t
      
      !**

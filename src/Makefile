@@ -46,7 +46,7 @@
 include Makefile.local
 OBJDIR = ../../objs/MT3D_OO
 F90 = gfortran 
-FFLAGS = -g -ffree-line-length-none
+FFLAGS = -O3 -ffree-line-length-none
 MPIFLAGS =  
 MODULE = -J $(OBJDIR)
 LIBS_PATH = -L/usr/lib64
@@ -217,7 +217,7 @@ $(OBJDIR)/TransmitterArray.o:Classes/Transmitters/TransmitterArray.f90 $(OBJDIR)
 $(OBJDIR)/DataManager.o:Classes/DataIO/DataManager.f90 $(OBJDIR)/FileUnits.o $(OBJDIR)/StandardDataFile.o $(OBJDIR)/DataGroupArray.o $(OBJDIR)/ReceiverFullImpedance.o $(OBJDIR)/ReceiverFullVerticalMagnetic.o $(OBJDIR)/ReceiverOffDiagonalImpedance.o $(OBJDIR)/ReceiverSingleField.o $(OBJDIR)/ReceiverArray.o $(OBJDIR)/TransmitterMT.o $(OBJDIR)/TransmitterCSEM.o $(OBJDIR)/TransmitterArray.o 
 	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) Classes/DataIO/DataManager.f90 -o $(OBJDIR)/DataManager.o
 
-$(OBJDIR)/ModEMControlFile.o:./ModEMControlFile.f90 $(OBJDIR)/Constants.o $(OBJDIR)/String.o 
+$(OBJDIR)/ModEMControlFile.o:./ModEMControlFile.f90 $(OBJDIR)/Constants.o $(OBJDIR)/String.o $(OBJDIR)/Grid.o $(OBJDIR)/ForwardSolver.o $(OBJDIR)/Solver.o $(OBJDIR)/Source.o $(OBJDIR)/ModelParameter.o 
 	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) ./ModEMControlFile.f90 -o $(OBJDIR)/ModEMControlFile.o
 
 $(OBJDIR)/ModelReader.o:Classes/ModelParameter/ModelReader.f90 $(OBJDIR)/Grid.o $(OBJDIR)/ModelParameter.o 

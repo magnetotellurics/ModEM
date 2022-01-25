@@ -24,7 +24,6 @@ module SourceMT_2D
           final :: SourceMT_2D_dtor
           !
           procedure, public :: setRHS => setRHSMT_2D
-          procedure, public :: setE0  => setE0MT_2D
           procedure, public :: setE   => setESourceMT_2D
           !
    end type SourceMT_2D_T
@@ -58,8 +57,6 @@ contains
           allocate( self%E, source = E )
           !
           call self%setRHS()
-          !
-          call self%setE0()
           !
        endif
        !
@@ -174,34 +171,14 @@ contains
    !
    ! Set RHS from self%E
    subroutine setRHSMT_2D( self )
-      !
       implicit none
       !
-      class( SourceMT_2D_t ), intent(inout) :: self
-      !
-      class( cVector_t ), allocatable :: bdry
-      !
-      if( allocated( bdry ) ) deallocate( bdry )
-         allocate( bdry, source = self%E%Boundary() )
-      !
-      call self%model_operator%MultAib( bdry, self%rhs )
+      class( SourceMT_2D_t ), intent( inout ) :: self
+      !!
+      call self%model_operator%MultAib( self%E%Boundary(), self%rhs )
       !
       self%rhs = C_MinusOne * self%rhs
       !
-      deallocate( bdry )
-      !
    end subroutine setRHSMT_2D
-   !
-   ! Set e0 from self%E
-   subroutine setE0MT_2D( self )
-      !
-      implicit none
-      !
-      class( SourceMT_2D_t ), intent(inout) :: self
-      !
-      if( .not. allocated( self%e0 ) ) &
-         allocate( self%e0, source = self%E%Interior() )
-      !
-   end subroutine setE0MT_2D
    !
 end module SourceMT_2D
