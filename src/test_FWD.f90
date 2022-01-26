@@ -250,11 +250,11 @@ contains
             !model_operator = ModelOperator_File_t( main_grid, fname )
             !
             model_operator = ModelOperator_MF_t( main_grid )
+			!
+			call model_parameter%setMetric( model_operator%metric )
             !
             ! complete model operator setup
             call model_operator%SetEquations()
-            !
-            call model_parameter%setMetric( model_operator%metric )
             !
             call model_operator%SetCond( model_parameter )
             !
