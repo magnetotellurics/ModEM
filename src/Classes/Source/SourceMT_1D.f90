@@ -90,7 +90,7 @@ contains
      self%polarization = polarization
      !
      ! Get Model1D from average conductivity 3D
-     model_parameter_1D = self%model_parameter%AvgModel1D()
+     model_parameter_1D = self%model_parameter%slice1D( 1, 1 )
      !
      forward_1D = Forward1D_t( model_parameter_1D )
      !

@@ -372,9 +372,9 @@ module ForwardSolverIT_DC
        endif
 	   !
        ! deallocate local objects
-       if( allocated( temp ) ) deallocate(temp)
-       if( allocated( b ) )    deallocate(b)
-       if( allocated( phi0 ) ) deallocate(phi0)
+       if( allocated( temp ) ) deallocate( temp )
+       if( allocated( b ) )    deallocate( b )
+       if( allocated( phi0 ) ) deallocate( phi0 )
 
    end subroutine getESolutionForwardSolverIT_DC
         

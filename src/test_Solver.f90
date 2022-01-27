@@ -109,9 +109,9 @@ contains
             !    More generally, could have a default ---  but I think we should
             !    set this explicitly outside of the gridReader procedure(s)
 
-            call main_grid%SetupAirLayers(air_layer, method, nzAir,maxHeight)
+            call main_grid%SetupAirLayers( air_layer, method, nzAir, maxHeight )
             !   as coded have to use air_layer data structure to update grid
-            call main_grid%UpdateAirLayers(air_layer%nz, air_layer%dz)
+            call main_grid%UpdateAirLayers( air_layer%nz, air_layer%dz )
 
             !   create CVectors
             gridType = EDGE

@@ -358,8 +358,6 @@ contains
     
     if (present(method)) then
        airlayers%method = method
-       write(*,*) "method", method
-       write(*,*) "method", AirLayers%method
     end if
     
     if (present(nzAir)) then

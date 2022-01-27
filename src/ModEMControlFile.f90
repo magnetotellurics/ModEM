@@ -172,9 +172,11 @@ contains
             select case ( self%model_method )
                case( "fixed height" )
                   model_method = MM_METHOD_FIXED_H
+			   case( "mirror" )
+                  model_method = MM_METHOD_MIRROR
                case default
                   model_method = ""
-                  STOP "Wrong model_method control, use [none|fixed height]"
+                  STOP "Wrong model_method control, use [mirror|fixed height]"
             end select
             !
          endif
