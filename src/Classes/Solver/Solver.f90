@@ -10,6 +10,10 @@ module Solver
    character (len = 3), parameter   :: PCG  = "PCG"
    character (len = 4), parameter   :: BiCG = "BiCG"
    !
+   ! SOLVER DEFAULTS
+   integer  :: maxIter = 20
+   real( kind=prec) :: tolerance = 1d-7
+   !
    type, abstract :: Solver_t
       !
       integer                        :: max_iter, n_iter

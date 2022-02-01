@@ -47,6 +47,9 @@ module TransmitterMT
       !
       self%id = id
       self%n_pol = 2
+	  !
+	  allocate( cVector3D_SG_t :: self%e_all( self%n_pol ) )
+	  !
       self%period = period
       !
       self%DATA_TITLE = "Period(s) Code GG_Lat GG_Lon X(m) Y(m) Z(m) Component Real Imag Error"
@@ -71,11 +74,10 @@ module TransmitterMT
       !
       class( TransmitterMT_t ), intent( inout ) :: self
       !
-      class( cVector_t ), allocatable           :: e_solution
       integer           :: i_pol
       real( kind=prec ) :: omega
-	  character(200) :: title
-      !
+	  class( cVector_t ), allocatable :: e_solution
+	  !
       ! verbosis
       write( *, * ) "   Solving FWD for Tx", self%id
       !
@@ -92,16 +94,13 @@ module TransmitterMT
          call self%source%setE( omega, i_pol )
          !
          if( allocated( e_solution ) ) deallocate( e_solution )
-         !
          allocate( e_solution, source = self%source%model_operator%createVector() )
          !
          call self%forward_solver%getESolution( self%source, e_solution )
          !
          ! Add polarization e_solution to self%e_all
-         call self%e_all%add( e_solution )
+         self%e_all( i_pol ) = e_solution
 		 !
-		 write( title, '(A15, 1pe12.6, i5)' ) "TX_ESOLUTION", self%period, i_pol
-         !
       enddo
       !
    end subroutine solveFWDTransmitterMT

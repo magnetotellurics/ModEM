@@ -108,7 +108,7 @@ module ForwardSolverIT_DC
        !     using defaults from solver
        maxItTotal = self%max_div_cor * self%solver%max_iter
        tol = self%solver%tolerance
-       call self%setIterControl( maxItTotal,tol )
+       call self%setIterControl( maxItTotal, tol )
        !
        call self%initDiagnostics()
        !
@@ -141,11 +141,8 @@ module ForwardSolverIT_DC
        !
        !   set frequency in solver object
        self%solver%omega = self%omega
-       !     set preconditoner (depends on frequency in general)
-       !   but only if there is a large enough change in period
-       if( rel_diff .gt. TOL4 ) then
-          call self%solver%preconditioner%SetPreconditioner( self%omega )
-       endif
+       !
+	   call self%solver%preconditioner%SetPreconditioner( self%omega )
        !
     end subroutine setPeriodForwardSolverIT_DC
     !

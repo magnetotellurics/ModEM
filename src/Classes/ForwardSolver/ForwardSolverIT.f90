@@ -57,7 +57,7 @@ module ForwardSolverIT
          !
          !    initialize Fwd operator iteration control, diagonstic arrays
          !     using defaults from solver
-         call self%setIterControl(self%solver%max_iter,self%solver%tolerance)
+         call self%setIterControl( self%solver%max_iter, self%solver%tolerance )
          !
          call self%initDiagnostics()
          !
