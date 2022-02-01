@@ -23,7 +23,7 @@ module Transmitter
       class( ForwardSolver_t ), pointer :: forward_solver 
       class( Source_t ), pointer        :: source
       !
-      class( VectorArray_t ), pointer   :: e_all
+      class( cVector_t ), allocatable   :: e_all(:)
       class( IntegerArray_t ), pointer  :: receiver_indexes
       !
       character(:), allocatable :: DATA_TITLE
@@ -88,8 +88,6 @@ module Transmitter
       !
       self%forward_solver => null()
       self%source         => null()
-      !
-      allocate( self%e_all, source = VectorArray_t() )
       !
       allocate( self%receiver_indexes, source = IntegerArray_t() )
       !

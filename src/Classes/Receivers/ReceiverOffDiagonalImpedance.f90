@@ -88,10 +88,10 @@ contains
       call self%evaluationFunction( model_operator, omega )
       !
       ! get e_all from the Tx 1st polarization
-      allocate( e_tx_pol_1, source = transmitter%e_all%get( 1 ) )
+      allocate( e_tx_pol_1, source = transmitter%e_all( 1 ) )
       !
       ! get e_all from the Tx 2nd polarization
-      allocate( e_tx_pol_2, source = transmitter%e_all%get( 2 ) )
+      allocate( e_tx_pol_2, source = transmitter%e_all( 2 ) )
       !
       !
       allocate( complex( kind=prec ) :: self%EE( 2, 2 ) )

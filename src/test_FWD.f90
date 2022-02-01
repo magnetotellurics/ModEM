@@ -94,13 +94,13 @@ contains
             fwd_solver = ForwardSolverFromFile_t( model_operator )
             !
          case( FWD_IT )
-            fwd_solver = ForwardSolverIT_t( model_operator, "QMR" )
+            fwd_solver = ForwardSolverIT_t( model_operator, QMR )
             !
          case( FWD_IT_DC )
-            fwd_solver = ForwardSolverIT_DC_t( model_operator, "QMR" )
+            fwd_solver = ForwardSolverIT_DC_t( model_operator, QMR )
             !
          case default
-            fwd_solver = ForwardSolverIT_DC_t( model_operator, "QMR" )
+            fwd_solver = ForwardSolverIT_DC_t( model_operator, QMR )
          !
       end select
       !
@@ -244,8 +244,6 @@ contains
       select type( main_grid )
          !
          class is( Grid3D_SG_t )
-            !
-			write( *,* ) "3.model_method, model_n_air_layer, model_max_height", model_method, model_n_air_layer, model_max_height
             !
 			call main_grid%SetupAirLayers( air_layer, model_method, model_n_air_layer, model_max_height )
             !   as coded have to use air_layer data structure to update grid
