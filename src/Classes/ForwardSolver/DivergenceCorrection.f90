@@ -10,7 +10,7 @@ Module DivergenceCorrection
       !
       class( Solver_t ), allocatable :: solver
       real( kind=prec ) :: divJ(2) = 0.0 !   divergence of currents computed at most
-                                   ! recent call to DivCor -- before and after
+                                         ! recent call to DivCor -- before and after
    contains
          !
          final :: DivergenceCorrection_dtor
@@ -94,7 +94,7 @@ contains
          !   I am assuming that in the case of an interior source, this is
          !    stored in the cVector source%E
          !    proedure "interior" zeros the boundary edges
-         allocate(sourceInterior, source = source%E%interior())
+         allocate( sourceInterior, source = source%E%interior() )
           
          !   take divergence of sourceInterior, and return as cScalar of
          !    appropriate explicit type
@@ -193,7 +193,7 @@ contains
        call self%solver%model_operator%DivC(outE,phiRHS)
 
        !  If source term is present, subtract from divergence of currents
-       if(SourceTerm) then
+       if( SourceTerm ) then
           !    phiRHS = phiRHS - phi0
           call phi0%scMultAddS(phiRHS,C_MinusOne)
        endif

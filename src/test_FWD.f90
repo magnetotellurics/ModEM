@@ -131,7 +131,7 @@ contains
          Tx = transmitters%get( iTx )
          !
          ! Verbosis...
-         write( *, * ) "   Tx Id:", Tx%id, "Period:", int( Tx%period )
+         !write( *, * ) "   Tx Id:", Tx%id, "Period:", int( Tx%period )
          !
          ! According to Tx type,
          ! write the proper header in the 'predicted_data.dat' file

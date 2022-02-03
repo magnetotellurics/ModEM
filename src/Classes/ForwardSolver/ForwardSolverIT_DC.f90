@@ -262,7 +262,6 @@ module ForwardSolverIT_DC
         !
         class( ForwardSolverIT_DC_t ), intent( inout ) :: self
         class( Source_t ), intent( inout )                :: source
-        !integer, intent( in )                            :: polarization
         class( cVector_t ), intent( inout )               :: e_solution
         ! local variables
         class( cVector_t ), allocatable :: b    ! copy of RHS--do we really need?
@@ -272,6 +271,8 @@ module ForwardSolverIT_DC
         !
         ! zero solver diagnostic arrays
         call self%solver%zeroDiagnostics()
+		self%solver%converged = .false.
+		self%solver%failed    = .false.
         !
         ! not sure about allocation here -- solution will exist
         ! (and might be allocated) in calling routine, but b is local
@@ -365,7 +366,7 @@ module ForwardSolverIT_DC
        else
           !
           e_solution = e_solution + source%E%Boundary()
-          !
+		  !
        endif
 	   !
        ! deallocate local objects

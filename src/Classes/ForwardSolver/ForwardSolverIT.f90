@@ -45,10 +45,10 @@ module ForwardSolverIT
          !
          !write(*,*) "Constructor ForwardSolverIT_t"
          !
-         select case(solver_type)
-            case(QMR)
+         select case( solver_type )
+            case( QMR )
                self%solver = Solver_QMR_t( model_operator )
-            case(BiCG)
+            case( BiCG )
                write(*,*) 'Not yet coded for Bi-Conjugate Gradients'
                stop
          end select
