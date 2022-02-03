@@ -87,6 +87,8 @@ contains
      !
      integer :: ix, iy
      !
+     write(*,*) "SourceMT_1D_t setE -> omega, pol:", omega, polarization
+     !
      self%polarization = polarization
      !
      ! Get Model1D from average conductivity 3D
@@ -121,25 +123,27 @@ contains
            select type( E3D => self%E )
               class is( cVector3D_SG_t )
               !
-              ! 1st polarization case: Only x components are non-zero
+              ! 1st polarization case: Only y components are non-zero
               if( polarization == 1 ) then
-                 do ix = 1, self%model_operator%grid%nx
-                    do iy = 1, self%model_operator%grid%ny+1
-                       E3D%x( ix, iy, : ) = E1D
-                    enddo
-                 enddo
-                 ! 2nd polarization case: Only y components are non-zero
-              else
                  do ix = 1, self%model_operator%grid%nx+1
                     do iy = 1, self%model_operator%grid%ny
                        E3D%y( ix, iy, : ) = E1D
                     enddo
                  enddo
+				 !
+                 ! 2nd polarization case: Only x components are non-zero
+              else
+                 do ix = 1, self%model_operator%grid%nx
+                    do iy = 1, self%model_operator%grid%ny+1
+                       E3D%x( ix, iy, : ) = E1D
+                    enddo
+                 enddo
+				 !
               endif
            end select
               !
      end select
-           !
+	 !
      !    Do we need to do these deallocations???
      !
      deallocate( E1D )

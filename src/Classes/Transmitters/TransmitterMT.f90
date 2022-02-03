@@ -79,7 +79,7 @@ module TransmitterMT
 	  class( cVector_t ), allocatable :: e_solution
 	  !
       ! verbosis
-      write( *, * ) "   Solving FWD for Tx", self%id
+      write( *, * ) "   SolveFWD for Tx", self%id
       !
       omega = 2.0 * PI / self%period
       !
@@ -102,7 +102,7 @@ module TransmitterMT
          self%e_all( i_pol ) = e_solution
 		 !
       enddo
-      !
+	  !
    end subroutine solveFWDTransmitterMT
    !
    ! Get class string name

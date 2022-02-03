@@ -293,8 +293,6 @@ contains
 		  !
       end do
 	  !
-	  call x%print( 5555, "X after QMR" )
-	  !
       self%n_iter = iter
       !
    end subroutine solveQMR
