@@ -87,7 +87,7 @@ module ForwardSolverIT_DC
        ! DivergenceCorrection has only one type (might change components,
        !    but basic scheme implemented is not going to change)
        self%divergence_correction = DivergenceCorrection_t( model_operator )
-	   !
+       !
        !   solver will soon have options
        select case( solver_type )
           case( QMR )
@@ -142,7 +142,7 @@ module ForwardSolverIT_DC
        !   set frequency in solver object
        self%solver%omega = self%omega
        !
-	   call self%solver%preconditioner%SetPreconditioner( self%omega )
+       call self%solver%preconditioner%SetPreconditioner( self%omega )
        !
     end subroutine setPeriodForwardSolverIT_DC
     !
@@ -172,7 +172,7 @@ module ForwardSolverIT_DC
     !   control we need a routine that can set all DC iteration control parameters
     subroutine setIterControlForwardSolverIT_DC( self, maxit, tol )
        implicit none
-	   !
+       !
        class( ForwardSolverIT_DC_t ), intent( inout ) :: self
        integer, intent(in)                         :: maxit
        real(kind=prec), intent(in)                 :: tol
@@ -271,8 +271,9 @@ module ForwardSolverIT_DC
         !
         ! zero solver diagnostic arrays
         call self%solver%zeroDiagnostics()
-		self%solver%converged = .false.
-		self%solver%failed    = .false.
+        !
+        self%solver%converged = .false.
+        self%solver%failed    = .false.
         !
         ! not sure about allocation here -- solution will exist
         ! (and might be allocated) in calling routine, but b is local
@@ -319,7 +320,7 @@ module ForwardSolverIT_DC
            enddo
            self%n_iter_actual = self%n_iter_actual + self%solver%n_iter
            self%nDivCor = self%nDivCor+1
-		   !
+           !
            if( self%nDivCor < self%max_div_cor ) then
               !  copy current e_solution into temp (discuss if this is this needed?)
               temp = e_solution
@@ -332,12 +333,12 @@ module ForwardSolverIT_DC
                  call self%divergence_correction%DivCorr( temp, e_solution )
                  !
            endif
-       	  !
+             !
           else
              ! max number of divergence corrections exceeded; convergence solver%failed
              self%solver%failed = .true.
           endif
-	   !
+       !
        enddo loop
        !
        self%relResFinal = self%relResVec(self%n_iter_actual)
@@ -351,7 +352,7 @@ module ForwardSolverIT_DC
        ! we need to sort out conventions! In Solver_QMR I assumed functions,
        ! but I suspect we will be better off just using subroutines in terms
        ! of efficiency
-	   !
+       !
        if( source%adjt ) then
           select type( modOp => self%solver%model_operator )
              class is ( ModelOperator_MF_t )
@@ -366,9 +367,9 @@ module ForwardSolverIT_DC
        else
           !
           e_solution = e_solution + source%E%Boundary()
-		  !
+          !
        endif
-	   !
+       !
        ! deallocate local objects
        if( allocated( temp ) ) deallocate( temp )
        if( allocated( b ) )    deallocate( b )

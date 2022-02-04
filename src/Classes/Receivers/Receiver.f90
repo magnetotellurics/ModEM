@@ -12,6 +12,7 @@ module Receiver
    use cVector3D_SG
    use ModelOperator
    use DataGroupArray
+   use DataEntryArray
    use Grid3D_SG
    !
    type, abstract :: Receiver_t
@@ -36,11 +37,14 @@ module Receiver
       !
       class( DataGroupArray_t ), pointer :: data_groups
       !
+	  class( DataEntryArray_t ), pointer :: predicted_data_entries
+	  !
    contains
       !
       ! DEFERRED INTERFACES
       procedure( interface_predicted_data ), deferred, public :: predictedData
       !
+	  procedure( interface_save_predicted_data_rx ), deferred, public  :: savePredictedData
       procedure( interface_write_predicted_data_rx ), deferred, public :: writePredictedData
       procedure( interface_write_rx ), deferred, public                :: write
       !
@@ -71,16 +75,22 @@ module Receiver
          !
       end subroutine interface_predicted_data
       !
-      !
-      subroutine interface_write_predicted_data_rx( self, tx )
+      subroutine interface_save_predicted_data_rx( self, tx )
          !
          import :: Receiver_t, Transmitter_t
          !
          class( Receiver_t ), intent( in )    :: self
          class( Transmitter_t ), intent( in ) :: tx
          !
-      end subroutine interface_write_predicted_data_rx
+      end subroutine interface_save_predicted_data_rx
       !
+      subroutine interface_write_predicted_data_rx( self )
+         !
+         import :: Receiver_t
+         !
+         class( Receiver_t ), intent( in ) :: self
+         !
+      end subroutine interface_write_predicted_data_rx
       !
       subroutine interface_write_rx( self )
          !
@@ -108,6 +118,8 @@ contains
       self%grid => null()
       !
       allocate( self%data_groups, source = DataGroupArray_t() )
+      !
+	  allocate( self%predicted_data_entries, source = DataEntryArray_t() )
       !
    end subroutine initializeRx
    !

@@ -163,11 +163,23 @@ contains
             ! Calculate Rx Predicted Data
             call Rx%predictedData( model_operator, Tx )
             !
-            deallocate( Rx )
-            !
          enddo
          !
          deallocate( Tx )
+         !
+      enddo
+      !
+      ! Loop over all Receivers
+      nRx = receivers%size()
+      !
+      do iRx = 1, nRx
+         !
+         ! Temporary Receiver alias
+         Rx = receivers%get( iRx )
+         !
+         call Rx%writePredictedData()
+         !
+         deallocate( Rx )
          !
       enddo
       !
@@ -234,8 +246,8 @@ contains
       !fname = "/Users/garyegbert/Desktop/ModEM_ON/modem-oo/inputs/Full_A_Matrix_TinyModel"
       !
       write( *, * ) "   -> Model File: [", model_file_name, "]"
-	  !
-	  model_method = MM_METHOD_FIXED_H
+     !
+     model_method = MM_METHOD_FIXED_H
       !
       ! Read Grid and ModelParameter with ModelReader_Weerachai
       call model_reader%Read( model_file_name, main_grid, model_parameter ) 
@@ -245,15 +257,15 @@ contains
          !
          class is( Grid3D_SG_t )
             !
-			call main_grid%SetupAirLayers( air_layer, model_method, model_n_air_layer, model_max_height )
+         call main_grid%SetupAirLayers( air_layer, model_method, model_n_air_layer, model_max_height )
             !   as coded have to use air_layer data structure to update grid
             call main_grid%UpdateAirLayers( air_layer%nz, air_layer%dz )
-			!
+         !
             !model_operator = ModelOperator_File_t( main_grid, fname )
             !
             model_operator = ModelOperator_MF_t( main_grid )
-			!
-			call model_parameter%setMetric( model_operator%metric )
+         !
+         call model_parameter%setMetric( model_operator%metric )
             !
             ! complete model operator setup
             call model_operator%SetEquations()

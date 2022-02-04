@@ -187,10 +187,10 @@ $(OBJDIR)/VectorArray.o:Classes/Utils/VectorArray.f90 $(OBJDIR)/cVector.o
 $(OBJDIR)/Transmitter.o:Classes/Transmitters/Transmitter.f90 $(OBJDIR)/Constants.o $(OBJDIR)/Source.o $(OBJDIR)/ForwardSolver.o $(OBJDIR)/IntegerArray.o $(OBJDIR)/VectorArray.o 
 	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) Classes/Transmitters/Transmitter.f90 -o $(OBJDIR)/Transmitter.o
 
-$(OBJDIR)/Receiver.o:Classes/Receivers/Receiver.f90 $(OBJDIR)/Transmitter.o $(OBJDIR)/cVector3D_SG.o $(OBJDIR)/ModelOperator.o $(OBJDIR)/DataGroupArray.o $(OBJDIR)/Grid3D_SG.o 
+$(OBJDIR)/Receiver.o:Classes/Receivers/Receiver.f90 $(OBJDIR)/Transmitter.o $(OBJDIR)/cVector3D_SG.o $(OBJDIR)/ModelOperator.o $(OBJDIR)/DataGroupArray.o $(OBJDIR)/DataEntryArray.o $(OBJDIR)/Grid3D_SG.o 
 	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) Classes/Receivers/Receiver.f90 -o $(OBJDIR)/Receiver.o
 
-$(OBJDIR)/ReceiverFullImpedance.o:Classes/Receivers/ReceiverFullImpedance.f90 $(OBJDIR)/FileUnits.o $(OBJDIR)/Receiver.o 
+$(OBJDIR)/ReceiverFullImpedance.o:Classes/Receivers/ReceiverFullImpedance.f90 $(OBJDIR)/FileUnits.o $(OBJDIR)/DataEntryMT.o $(OBJDIR)/Receiver.o 
 	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) Classes/Receivers/ReceiverFullImpedance.f90 -o $(OBJDIR)/ReceiverFullImpedance.o
 
 $(OBJDIR)/ReceiverFullVerticalMagnetic.o:Classes/Receivers/ReceiverFullVerticalMagnetic.f90 $(OBJDIR)/FileUnits.o $(OBJDIR)/Receiver.o 

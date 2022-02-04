@@ -21,6 +21,7 @@ module ReceiverFullVerticalMagnetic
          !
          procedure, public :: predictedData => predictedDataFullVerticalMagnetic
          !
+		 procedure, public :: savePredictedData => savePredictedDataFullVerticalMagnetic
          procedure, public :: writePredictedData => writePredictedDataFullVerticalMagnetic
          procedure, public :: write => writeReceiverFullVerticalMagnetic
          !
@@ -144,7 +145,7 @@ contains
       self%Z(2) = self%I_BB(3,1) * self%I_BB(1,2) + self%I_BB(3,2) * self%I_BB(2,2)
       !
       ! WRITE ON PredictedFile.dat
-      call self%writePredictedData( transmitter )
+      call self%savePredictedData( transmitter )
       !
       deallocate( BB )
       deallocate( self%I_BB )
@@ -152,8 +153,7 @@ contains
       !
    end subroutine predictedDataFullVerticalMagnetic
    !
-   !
-   subroutine writePredictedDataFullVerticalMagnetic( self, tx )
+   subroutine savePredictedDataFullVerticalMagnetic( self, tx )
       implicit none
       !
       class( ReceiverFullVerticalMagnetic_t ), intent( in ) :: self
@@ -167,6 +167,13 @@ contains
       write( ioPredData, '(1pe12.6, A8, f9.3, f9.3, f13.3, f13.3, f13.3, A4, 1pe16.6, 1pe16.6, 1pe16.6)' ) tx%period, self%code, R_ZERO, R_ZERO, self%location(1), self%location(2), self%location(3), self%comp_names( 4 ), aimag( self%Z( 4 ) ), dimag( self%Z( 4 )), 1.0
       !
       close( ioPredData )
+      !
+   end subroutine savePredictedDataFullVerticalMagnetic
+   !
+   subroutine writePredictedDataFullVerticalMagnetic( self )
+      implicit none
+      !
+      class( ReceiverFullVerticalMagnetic_t ), intent( in ) :: self
       !
    end subroutine writePredictedDataFullVerticalMagnetic
    !

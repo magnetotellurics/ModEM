@@ -21,6 +21,7 @@ module ReceiverSingleField
          !
          procedure, public :: predictedData => predictedDataSingleField
          !
+		 procedure, public :: savePredictedData => savePredictedDataSingleField
          procedure, public :: writePredictedData => writePredictedDataSingleField
          procedure, public :: write => writeReceiverSingleField
          !
@@ -94,7 +95,7 @@ contains
    end subroutine predictedDataSingleField
    !
    !
-   subroutine writePredictedDataSingleField( self, tx )
+   subroutine savePredictedDataSingleField( self, tx )
       implicit none
       !
       class( ReceiverSingleField_t ), intent( in ) :: self
@@ -108,6 +109,13 @@ contains
       write( ioPredData, '(1pe12.6, A8, f9.3, f9.3, f13.3, f13.3, f13.3, A4, 1pe16.6, 1pe16.6, 1pe16.6)' ) tx%period, self%code, R_ZERO, R_ZERO, self%location(1), self%location(2), self%location(3), self%comp_names( 4 ), aimag( self%Z( 4 ) ), dimag( self%Z( 4 )), 1.0
       !
       close( ioPredData )
+      !
+   end subroutine savePredictedDataSingleField
+   !
+   subroutine writePredictedDataSingleField( self )
+      implicit none
+      !
+      class( ReceiverSingleField_t ), intent( in ) :: self
       !
    end subroutine writePredictedDataSingleField
    !

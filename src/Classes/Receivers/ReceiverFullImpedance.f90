@@ -9,6 +9,7 @@
 module ReceiverFullImpedance
    !
    use FileUnits
+   use DataEntryMT
    use Receiver
    !
    type, extends( Receiver_t ), public :: ReceiverFullImpedance_t
@@ -21,6 +22,7 @@ module ReceiverFullImpedance
          !
          procedure, public :: predictedData => predictedDataFullImpedance
          !
+         procedure, public :: savePredictedData => savePredictedDataFullImpedance
          procedure, public :: writePredictedData => writePredictedDataFullImpedance
          procedure, public :: write => writeReceiverFullImpedance
          !
@@ -99,7 +101,7 @@ contains
       !
       ! get e_all from the Tx 2nd polarization
       allocate( e_tx_pol_2, source = transmitter%e_all( 2 ) )
-	  !
+      !
       allocate( complex( kind=prec ) :: self%EE( 2, 2 ) )
       !
       self%EE( 1, 1 ) = self%Lex .dot. e_tx_pol_1
@@ -125,7 +127,7 @@ contains
       !write(*,*) BB( 1, 1 ), BB( 1, 2 )
       !write(*,*) BB( 2, 1 ), BB( 2, 2 )
       !
-      !invert horizontal B matrix using Kramer's rule.
+      !invert horizontal B matrix using Kramer"s rule.
       det = BB( 1, 1 ) * BB( 2, 2 ) - BB( 1, 2 ) * BB( 2, 1 )
       !
       !write(*,*) "det:", det
@@ -155,7 +157,7 @@ contains
       enddo
       !
       ! WRITE ON PredictedFile.dat
-      call self%writePredictedData( transmitter )
+      call self%savePredictedData( transmitter )
       !
       deallocate( self%EE )
       deallocate( BB )
@@ -165,18 +167,57 @@ contains
    end subroutine predictedDataFullImpedance
    !
    !
-   subroutine writePredictedDataFullImpedance( self, tx )
+   subroutine savePredictedDataFullImpedance( self, tx )
       implicit none
       !
       class( ReceiverFullImpedance_t ), intent( in ) :: self
       class( Transmitter_t ), intent( in )           :: tx
       !
-      open( ioPredData, file = 'predicted_data.dat', action='write', position='append' )
+      character(:), allocatable         :: type, code, component
+      integer                           :: i, iDe
+      real( kind=prec )                 :: period, real_part, imaginary, error
+      real( kind=prec )                 :: latitude, longitude, xyz(3)
+      !#Period(s) Code GG_Lat GG_Lon X(m) Y(m) Z(m) Component Real Imag Error
       !
-      write( ioPredData, '(1pe12.6, A8, f9.3, f9.3, f13.3, f13.3, f13.3, A4, 1pe16.6, 1pe16.6, 1pe16.6)' ) tx%period, self%code, R_ZERO, R_ZERO, self%location(1), self%location(2), self%location(3), self%comp_names( 1 ), aimag( self%Z( 1 ) ), dimag( self%Z( 1 )), 1.0
-      write( ioPredData, '(1pe12.6, A8, f9.3, f9.3, f13.3, f13.3, f13.3, A4, 1pe16.6, 1pe16.6, 1pe16.6)' ) tx%period, self%code, R_ZERO, R_ZERO, self%location(1), self%location(2), self%location(3), self%comp_names( 2 ), aimag( self%Z( 2 ) ), dimag( self%Z( 2 )), 1.0
-      write( ioPredData, '(1pe12.6, A8, f9.3, f9.3, f13.3, f13.3, f13.3, A4, 1pe16.6, 1pe16.6, 1pe16.6)' ) tx%period, self%code, R_ZERO, R_ZERO, self%location(1), self%location(2), self%location(3), self%comp_names( 3 ), aimag( self%Z( 3 ) ), dimag( self%Z( 3 )), 1.0
-      write( ioPredData, '(1pe12.6, A8, f9.3, f9.3, f13.3, f13.3, f13.3, A4, 1pe16.6, 1pe16.6, 1pe16.6)' ) tx%period, self%code, R_ZERO, R_ZERO, self%location(1), self%location(2), self%location(3), self%comp_names( 4 ), aimag( self%Z( 4 ) ), dimag( self%Z( 4 )), 1.0
+      do i = 1, 4
+          !
+          type = "Output"
+          iDe = self%predicted_data_entries%size() + i
+          period = real( tx%period, kind=prec )
+          code = trim( self%code )
+          latitude = R_ZERO
+          longitude = R_ZERO
+          xyz = self%location
+          component = trim( self%comp_names( i ) )
+          real_part = real( self%Z( i ), kind=prec )
+          imaginary = real( aimag( self%Z( i ) ), kind=prec )
+          error = 1.0
+          !
+          call self%predicted_data_entries%add( DataEntryMT_t( iDe, type, period, code, latitude, longitude, xyz, component, real_part, imaginary, error ) )
+          !
+      enddo
+   end subroutine savePredictedDataFullImpedance
+   !
+   subroutine writePredictedDataFullImpedance( self )
+      implicit none
+      !
+      class( ReceiverFullImpedance_t ), intent( in ) :: self
+      !
+      class( DataEntry_t ), allocatable :: data_entry
+      integer :: iDe, Nde
+      !
+      open( ioPredData, file = "predicted_data.dat", action="write", position="append" )
+      !
+      nDe = self%predicted_data_entries%size()
+      !
+      do iDe = 1, nDe
+          !
+          data_entry = self%predicted_data_entries%get( iDe )
+          !
+          !#Period(s) Code GG_Lat GG_Lon X(m) Y(m) Z(m) Component Real Imag Error
+          write( ioPredData, "(1pe12.6, A8, f9.3, f9.3, f13.3, f13.3, f13.3, A4, 1pe16.6, 1pe16.6, 1pe16.6)" ) data_entry%period, data_entry%code, R_ZERO, R_ZERO, data_entry%xyz(1), data_entry%xyz(2), data_entry%xyz(3), data_entry%component, data_entry%real, data_entry%imaginary, 1.0
+          !
+      enddo
       !
       close( ioPredData )
       !

@@ -96,8 +96,8 @@ contains
                         read( args(7), '(f15.5)' )   xyz(3)
                         component = trim( args(8) )
                         read( args(9), '(f15.5)' )   real
-                        read( args(10), '(f15.5)' )   imaginary
-                        read( args(11), '(f15.5)' )   error
+                        read( args(10), '(f15.5)' )  imaginary
+                        read( args(11), '(f15.5)' )  error
                         !
 						call self%data_entries%add( DataEntryMT_t( iDe, actual_type, period, code, &
                         latitude, longitude, xyz, component, real, imaginary, error ) )
