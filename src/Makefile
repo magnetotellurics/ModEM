@@ -205,7 +205,7 @@ $(OBJDIR)/ReceiverSingleField.o:Classes/Receivers/ReceiverSingleField.f90 $(OBJD
 $(OBJDIR)/ReceiverArray.o:Classes/Receivers/ReceiverArray.f90 $(OBJDIR)/Receiver.o 
 	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) Classes/Receivers/ReceiverArray.f90 -o $(OBJDIR)/ReceiverArray.o
 
-$(OBJDIR)/TransmitterMT.o:Classes/Transmitters/TransmitterMT.f90 $(OBJDIR)/Transmitter.o 
+$(OBJDIR)/TransmitterMT.o:Classes/Transmitters/TransmitterMT.f90 $(OBJDIR)/FileUnits.o $(OBJDIR)/Transmitter.o 
 	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) Classes/Transmitters/TransmitterMT.f90 -o $(OBJDIR)/TransmitterMT.o
 
 $(OBJDIR)/TransmitterCSEM.o:Classes/Transmitters/TransmitterCSEM.f90 $(OBJDIR)/Transmitter.o 

@@ -37,14 +37,14 @@ module Receiver
       !
       class( DataGroupArray_t ), pointer :: data_groups
       !
-	  class( DataEntryArray_t ), pointer :: predicted_data_entries
-	  !
+      class( DataEntryArray_t ), pointer :: predicted_data_entries
+      !
    contains
       !
       ! DEFERRED INTERFACES
       procedure( interface_predicted_data ), deferred, public :: predictedData
       !
-	  procedure( interface_save_predicted_data_rx ), deferred, public  :: savePredictedData
+      procedure( interface_save_predicted_data_rx ), deferred, public  :: savePredictedData
       procedure( interface_write_predicted_data_rx ), deferred, public :: writePredictedData
       procedure( interface_write_rx ), deferred, public                :: write
       !
@@ -119,7 +119,7 @@ contains
       !
       allocate( self%data_groups, source = DataGroupArray_t() )
       !
-	  allocate( self%predicted_data_entries, source = DataEntryArray_t() )
+      allocate( self%predicted_data_entries, source = DataEntryArray_t() )
       !
    end subroutine initializeRx
    !
@@ -168,7 +168,8 @@ contains
       class( cVector_t ), allocatable :: e, h
       class( cVector_t ), allocatable :: lh
       !
-      comega = cmplx( 1./omega, 0.0, kind=prec )
+      !comega = cmplx( 1./omega, 0.0, kind=prec )
+      comega = cmplx( 0.0, 1./omega, kind=prec )
       !
       do k = 1, self%n_comp
          !
@@ -212,55 +213,58 @@ contains
                call e%interpFunc( self%location, "z", self%Lez )
             !
             case( "Bx" )
-			   !
+               !
                call h%interpFunc( self%location, "x", lh )
-			   !
-			   select type( lh )
+               !
+               select type( lh )
                   class is(cVector3D_SG_t)
-			         if( allocated( self%Lbx ) ) deallocate( self%Lbx )
-			         allocate( self%Lbx, source = cVector3D_SG_t( lh%grid, EDGE ) )
-					 !
+                     if( allocated( self%Lbx ) ) deallocate( self%Lbx )
+                     allocate( self%Lbx, source = cVector3D_SG_t( lh%grid, EDGE ) )
+                     !
                   class default
                      write(*, *) 'ERROR:Receiver::evaluationFunction:'
                      stop        '         Unkonow lh type'
                end select
                !
                call model_operator%multCurlT( lh, self%Lbx )
-               call self%Lbx%mults( isign * ONE_I / comega )
+               !call self%Lbx%mults( isign * ONE_I / comega )
+			   call self%Lbx%mults( isign * comega )
                !
             case( "By" )
-			   ! 
+               ! 
                call h%interpFunc( self%location, "y", lh )
-			   !
-			   select type( lh )
+               !
+               select type( lh )
                   class is(cVector3D_SG_t)
-			         if( allocated( self%Lby ) ) deallocate( self%Lby )
-			         allocate( self%Lby, source = cVector3D_SG_t( lh%grid, EDGE ) )
-					 !
+                     if( allocated( self%Lby ) ) deallocate( self%Lby )
+                     allocate( self%Lby, source = cVector3D_SG_t( lh%grid, EDGE ) )
+                     !
                   class default
                      write(*, *) 'ERROR:Receiver::evaluationFunction:'
                      stop        '         Unkonow lh type'
                end select
                !
                call model_operator%multCurlT( lh, self%Lby )
-               call self%Lby%mults( isign * ONE_I / comega )
+               !call self%Lby%mults( isign * ONE_I / comega )
+			   call self%Lby%mults( isign * comega )
             !
             case( "Bz" )
-			   !
+               !
                call h%interpFunc( self%location, "z", lh )
-			   !
-			   select type( lh )
+               !
+               select type( lh )
                   class is(cVector3D_SG_t)
-			         if( allocated( self%Lbz ) ) deallocate( self%Lbz )
-			         allocate( self%Lbz, source = cVector3D_SG_t( lh%grid, EDGE ) )
-					 !
+                     if( allocated( self%Lbz ) ) deallocate( self%Lbz )
+                     allocate( self%Lbz, source = cVector3D_SG_t( lh%grid, EDGE ) )
+                     !
                   class default
                      write(*, *) 'ERROR:Receiver::evaluationFunction:'
                      stop        '         Unkonow lh type'
                end select
                !
                call model_operator%multCurlT( lh, self%Lbz )
-               call self%Lbz%mults( isign * ONE_I / comega )
+               !call self%Lbz%mults( isign * ONE_I / comega )
+			   call self%Lbz%mults( isign * comega )
             !
          end select
          !

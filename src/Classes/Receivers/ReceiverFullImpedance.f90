@@ -187,7 +187,7 @@ contains
           code = trim( self%code )
           latitude = R_ZERO
           longitude = R_ZERO
-          xyz = self%location
+          xyz = (/real( self%location( 1 ), kind=prec ), real( self%location( 2 ), kind=prec ), real( self%location( 3 ), kind=prec )/)
           component = trim( self%comp_names( i ) )
           real_part = real( self%Z( i ), kind=prec )
           imaginary = real( aimag( self%Z( i ) ), kind=prec )
@@ -196,6 +196,7 @@ contains
           call self%predicted_data_entries%add( DataEntryMT_t( iDe, type, period, code, latitude, longitude, xyz, component, real_part, imaginary, error ) )
           !
       enddo
+	  !
    end subroutine savePredictedDataFullImpedance
    !
    subroutine writePredictedDataFullImpedance( self )
@@ -215,7 +216,7 @@ contains
           data_entry = self%predicted_data_entries%get( iDe )
           !
           !#Period(s) Code GG_Lat GG_Lon X(m) Y(m) Z(m) Component Real Imag Error
-          write( ioPredData, "(1pe12.6, A8, f9.3, f9.3, f13.3, f13.3, f13.3, A4, 1pe16.6, 1pe16.6, 1pe16.6)" ) data_entry%period, data_entry%code, R_ZERO, R_ZERO, data_entry%xyz(1), data_entry%xyz(2), data_entry%xyz(3), data_entry%component, data_entry%real, data_entry%imaginary, 1.0
+          write( ioPredData, "(1pe12.6, A8, f9.3, f9.3, f13.3, f13.3, f13.3, A4, 1pe16.6, 1pe16.6, 1pe16.6)" ) data_entry%period, data_entry%code, R_ZERO, R_ZERO, data_entry%xyz(1) / 10.0, data_entry%xyz(2) / 10.0, data_entry%xyz(3) / 10.0, data_entry%component, data_entry%real, data_entry%imaginary, 1.0
           !
       enddo
       !

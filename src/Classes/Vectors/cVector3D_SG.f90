@@ -329,7 +329,7 @@ contains
       inquire(fid, opened = ok, named = hasname, name = fname, unformatted = isbinary)
       
       ! Check that the file is unformatted if binary, formatted if ascii.
-      if ((index(isbinary, 'yes') > 0.or.index(isbinary, 'YES') > 0) &
+      if ((index(isbinary, 'yes') > 0 .or. index(isbinary, 'YES') > 0) &
              .and. .not.binary) then
           write(*, *) 'ERROR:cVector3D_SG::writeCVector3D_SG: '
           write(*, *) '         Unable to writeCVector3D_SG vector to unformatted file. ', &

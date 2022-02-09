@@ -20,7 +20,8 @@ module FileUnits
    integer, parameter                     :: ioWeighting=222  
    
   ! Weighting Log file
-   integer, parameter                     :: ioPredData=666 
+   integer, parameter                     :: ioPredData=666
+   integer, parameter                     :: ioESolution=665
 
   ! MPI Log file
   integer, parameter                            :: ioMPI=2000

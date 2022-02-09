@@ -12,7 +12,7 @@ module Solver
    !
    ! SOLVER DEFAULTS
    integer  :: maxIter = 20
-   real( kind=prec) :: tolerance = 1d-7
+   real( kind=prec) :: tolerance = 0.0000000001
    !
    type, abstract :: Solver_t
       !

@@ -87,17 +87,17 @@ contains
                         !
                         !# Period(s) Code GG_Lat GG_Lon X(m) Y(m) Z(m) Component Real Imag Error
                         !
-                        read( args(1), '(f15.5)' )   period
+                        read( args(1), '(f16.6)' )   period
                         code = trim( args(2) )
-                        read( args(3), '(f15.5)' )   latitude
-                        read( args(4), '(f15.5)' )   longitude
-                        read( args(5), '(f15.5)' )   xyz(1)
-                        read( args(6), '(f15.5)' )   xyz(2)
-                        read( args(7), '(f15.5)' )   xyz(3)
+                        read( args(3), '(f16.6)' )   latitude
+                        read( args(4), '(f16.6)' )   longitude
+                        read( args(5), '(f16.6)' )   xyz(1)
+                        read( args(6), '(f16.6)' )   xyz(2)
+                        read( args(7), '(f16.6)' )   xyz(3)
                         component = trim( args(8) )
-                        read( args(9), '(f15.5)' )   real
-                        read( args(10), '(f15.5)' )  imaginary
-                        read( args(11), '(f15.5)' )  error
+                        read( args(9), '(f16.6)' )   real
+                        read( args(10), '(f16.6)' )  imaginary
+                        read( args(11), '(f16.6)' )  error
                         !
 						call self%data_entries%add( DataEntryMT_t( iDe, actual_type, period, code, &
                         latitude, longitude, xyz, component, real, imaginary, error ) )
@@ -109,23 +109,23 @@ contains
                         !
                         !# Period(s) Code GG_Lat GG_Lon X(m) Y(m) Z(m) Code_REF GG_Lat_REF GG_Lon_REF X(m)_REF Y(m)_REF Z(m)_REF Component Real Imag Error
                         !
-                        read( args(1), '(f15.5)' )   period
+                        read( args(1), '(f16.6)' )   period
                         code = trim( args(2) )
-                        read( args(3), '(f15.5)' )   latitude
-                        read( args(4), '(f15.5)' )   longitude
-                        read( args(5), '(f15.5)' )   xyz(1)
-                        read( args(6), '(f15.5)' )   xyz(2)
-                        read( args(7), '(f15.5)' )   xyz(3)
+                        read( args(3), '(f16.6)' )   latitude
+                        read( args(4), '(f16.6)' )   longitude
+                        read( args(5), '(f16.6)' )   xyz(1)
+                        read( args(6), '(f16.6)' )   xyz(2)
+                        read( args(7), '(f16.6)' )   xyz(3)
                         code_ref = trim( args(8) )
-                        read( args(9), '(f15.5)' )   latitude_ref
-                        read( args(10), '(f15.5)' )   longitude_ref
-                        read( args(11), '(f15.5)' )   xyz_ref(1)
-                        read( args(12), '(f15.5)' )   xyz_ref(2)
-                        read( args(13), '(f15.5)' )   xyz_ref(3)
+                        read( args(9), '(f16.6)' )   latitude_ref
+                        read( args(10), '(f16.6)' )   longitude_ref
+                        read( args(11), '(f16.6)' )   xyz_ref(1)
+                        read( args(12), '(f16.6)' )   xyz_ref(2)
+                        read( args(13), '(f16.6)' )   xyz_ref(3)
                         component = trim( args(14) )
-                        read( args(15), '(f15.5)' )   real
-                        read( args(16), '(f15.5)' )   imaginary
-                        read( args(17), '(f15.5)' )   error
+                        read( args(15), '(f16.6)' )   real
+                        read( args(16), '(f16.6)' )   imaginary
+                        read( args(17), '(f16.6)' )   error
                         !
                         call self%data_entries%add( DataEntryMT_REF_t( iDe, actual_type,   &
                         period, code, latitude, longitude, xyz, code_ref,   &
@@ -139,21 +139,21 @@ contains
                         !# Dipole Period(s) Moment(Am) Azi Dip Tx_X(m) Tx_Y(x) Tx_Z(m) Code X(m) Y(x) Z(m) Component Real Imag, Error
                         !
                         dipole = args(1)
-                        read( args(2), '(f15.5)' )  period
-                        read( args(3), '(f15.5)' )  moment
-                        read( args(4), '(f15.5)' )  azimuth
-                        read( args(5), '(f15.5)' )  dip
-                        read( args(6), '(f15.5)' )  tx_xyz(1)
-                        read( args(7), '(f15.5)' )  tx_xyz(2)
-                        read( args(8), '(f15.5)' )  tx_xyz(3)
+                        read( args(2), '(f16.6)' )  period
+                        read( args(3), '(f16.6)' )  moment
+                        read( args(4), '(f16.6)' )  azimuth
+                        read( args(5), '(f16.6)' )  dip
+                        read( args(6), '(f16.6)' )  tx_xyz(1)
+                        read( args(7), '(f16.6)' )  tx_xyz(2)
+                        read( args(8), '(f16.6)' )  tx_xyz(3)
                         code = trim( args(9) )
-                        read( args(10), '(f15.5)' )   xyz(1)
-                        read( args(11), '(f15.5)' )   xyz(2)
-                        read( args(12), '(f15.5)' )   xyz(3)
+                        read( args(10), '(f16.6)' )   xyz(1)
+                        read( args(11), '(f16.6)' )   xyz(2)
+                        read( args(12), '(f16.6)' )   xyz(3)
                         component = trim( args(13) )
-                        read( args(14), '(f15.5)' )   real
-                        read( args(15), '(f15.5)' )   imaginary
-                        read( args(16), '(f15.5)' )   error
+                        read( args(14), '(f16.6)' )   real
+                        read( args(15), '(f16.6)' )   imaginary
+                        read( args(16), '(f16.6)' )   error
                         !
                         call self%data_entries%add( DataEntryCSEM_t( iDe, actual_type,   &
                         dipole, period, moment, azimuth, dip, tx_xyz,   &

@@ -8,6 +8,7 @@
 ! 
 module TransmitterMT
    ! 
+   use FileUnits
    use Transmitter
    !
    type, extends( Transmitter_t ), public :: TransmitterMT_t
@@ -83,6 +84,8 @@ module TransmitterMT
       !
       omega = 2.0 * PI / self%period
       !
+	  open( ioESolution, file = 'e_solution', action='write', position='append', form ='unformatted' )
+	  !
       ! Loop over all polarizations (MT n_pol = 2)
       do i_pol = 1, self%n_pol
          !
@@ -97,11 +100,15 @@ module TransmitterMT
          allocate( e_solution, source = self%source%model_operator%createVector() )
          !
          call self%forward_solver%getESolution( self%source, e_solution )
+		 !
+		 call e_solution%write( ioESolution )
          !
          ! Add polarization e_solution to self%e_all
          self%e_all( i_pol ) = e_solution
 		 !
       enddo
+	  !
+	  close( ioESolution )
 	  !
    end subroutine solveFWDTransmitterMT
    !
