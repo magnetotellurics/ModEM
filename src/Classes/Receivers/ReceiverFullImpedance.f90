@@ -216,7 +216,7 @@ contains
           data_entry = self%predicted_data_entries%get( iDe )
           !
           !#Period(s) Code GG_Lat GG_Lon X(m) Y(m) Z(m) Component Real Imag Error
-          write( ioPredData, "(1pe12.6, A8, f9.3, f9.3, f13.3, f13.3, f13.3, A4, 1pe16.6, 1pe16.6, 1pe16.6)" ) data_entry%period, data_entry%code, R_ZERO, R_ZERO, data_entry%xyz(1) / 10.0, data_entry%xyz(2) / 10.0, data_entry%xyz(3) / 10.0, data_entry%component, data_entry%real, data_entry%imaginary, 1.0
+          write( ioPredData, "(es12.6, A20, f15.3, f15.3, f15.3, f15.3, f15.3, A20, es16.6, es16.6, es16.6)" ) data_entry%period, data_entry%code, R_ZERO, R_ZERO, data_entry%xyz(1), data_entry%xyz(2), data_entry%xyz(3), data_entry%component, data_entry%real, data_entry%imaginary, 1.0
           !
       enddo
       !

@@ -21,7 +21,7 @@ module Receiver
       !
       character(:), allocatable          :: code
       !
-      real ( kind=prec )                 :: location(3)
+      real( kind=prec )                  :: location(3)
       !
       logical                            :: is_complex = .FALSE., interpolation_set = .FALSE.
       !
@@ -31,7 +31,7 @@ module Receiver
       !
       character(3), allocatable          :: comp_names(:)
       !
-      complex( kind=prec ), allocatable    :: I_BB(:,:), EE(:,:), Z(:)
+      complex( kind=prec ), allocatable  :: I_BB(:,:), EE(:,:), Z(:)
       !
       class( cVector_t ), allocatable    :: Lex, Ley, Lez, Lbx, Lby, Lbz
       !
