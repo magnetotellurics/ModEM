@@ -63,6 +63,10 @@ contains
       ! Local variables
       integer :: iTx, nTx, iRx, nRx
       character(:), allocatable :: transmitter_type
+	  !
+	  ! implement separated routine
+	  integer				:: nMode, ios
+	  character (len=20)    :: version
       !
       ! Verbosis
       write ( *, * ) "   > Start forward modelling."
@@ -121,10 +125,28 @@ contains
       end select
       !
       ! Forward Modelling
-      !
+	  !
       ! Loop over all Transmitters
       nTx = transmitters%size()
       !
+	  open( ioESolution, file = 'e_solution', action='write', position='append', form ='unformatted',&
+         iostat=ios)
+	  !
+	  if( ios/=0) then
+         write(0,*) 'Error opening file in FileWriteInit: e_solution'
+      else
+	     nMode = 2
+		 version = ""
+         ! write the header (contains the basic information for the forward
+         ! modeling). the header is 4 lines
+         write( ioESolution ) version, nTx,nMode, main_grid%nx,main_grid%ny,main_grid%nz,main_grid%nzAir, &
+         main_grid%ox, main_grid%oy, main_grid%oz, main_grid%rotdeg
+         write( ioESolution ) main_grid%dx
+         write( ioESolution ) main_grid%dy
+         write( ioESolution ) main_grid%dz
+      endif
+      !
+	  !
       do iTx = 1, nTx
          !
          ! Temporary Transmitter alias
@@ -186,7 +208,6 @@ contains
       deallocate( data_groups )
       !
    end subroutine ForwardModelling
-   !
    !
    subroutine handleJob()
       implicit none

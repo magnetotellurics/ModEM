@@ -24,7 +24,7 @@ module TransmitterMT
          procedure, public :: getType => getTypeTransmitterMT
          procedure, public :: isEqual => isEqualTransmitterMT
          procedure, public :: write   => writeTransmitterMT
-         !
+		 !
    end type TransmitterMT_t
    !
    interface TransmitterMT_t
@@ -79,6 +79,12 @@ module TransmitterMT
       real( kind=prec ) :: omega
 	  class( cVector_t ), allocatable :: e_solution
 	  !
+	  ! LATER SOUBROUTINE
+	  integer 				:: ioNum,iFreq,iMode
+      character (len=20) 	:: ModeName
+
+    
+	  !
       ! verbosis
       write( *, * ) "   SolveFWD for Tx", self%id
       !
@@ -100,6 +106,16 @@ module TransmitterMT
          allocate( e_solution, source = self%source%model_operator%createVector() )
          !
          call self%forward_solver%getESolution( self%source, e_solution )
+		 !
+		 !
+		 if( i_pol == 1 ) then
+		    ModeName = "Ey"
+		 else
+		    ModeName = "Ex"
+		 endif
+		 !
+		 ! write the frequency header - 1 record
+         write( ioESolution ) omega, self%id, i_pol, ModeName
 		 !
 		 call e_solution%write( ioESolution )
          !

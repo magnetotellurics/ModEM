@@ -300,7 +300,7 @@ contains
       
       read( fid ) self%x
       read( fid ) self%y
-      read( fid ) self%z               
+      read( fid ) self%z
       
    end subroutine readCVector3D_SG
    
@@ -345,7 +345,7 @@ contains
           STOP
       end if
       
-      write( fid ) self%nx, self%ny, self%nz, self%gridType
+      !write( fid ) self%nx, self%ny, self%nz, self%gridType
       write( fid ) self%x
       write( fid ) self%y
       write( fid ) self%z               
