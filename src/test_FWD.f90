@@ -129,6 +129,7 @@ contains
       ! Loop over all Transmitters
       nTx = transmitters%size()
       !
+	  
 	  open( ioESolution, file = 'e_solution', action='write', position='append', form ='unformatted',&
          iostat=ios)
 	  !

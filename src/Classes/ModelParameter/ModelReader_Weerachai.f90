@@ -128,15 +128,16 @@ contains
       !*
       ! In case the grid origin is stored next (in metres!)...
       read(ioPrm, *, iostat = istat) ox, oy, oz
-      
+      !
       ! Defaults to the grid centre at the Earth"s surface
       if (istat /= 0) then
           ox = -sum(dx)/2.0
           oy = -sum(dy)/2.0
           oz = 0.0
       end if
-
+	  !
       call grid%SetOrigin(ox, oy, oz)
+	  !
       read(ioPrm, *, iostat = istat) rotDeg
       if (istat /= 0) then
           rotDeg = 0.0
@@ -147,6 +148,7 @@ contains
       ! Clean up
       !*
       close(ioPrm)
+	  !
       
    end subroutine Read
 

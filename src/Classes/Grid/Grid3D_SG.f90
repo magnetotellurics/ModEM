@@ -240,16 +240,19 @@ contains
     self%dyInv = 1/self%dy
     self%dzInv = 1/self%dz
 
+	write( *,* ) "1", self%ox, self%oy, self%oz
     call self%GetOrigin(ox, oy, oz)
-    
+    write( *,* ) "2", self%ox, self%oy, self%oz
     if (present(origin)) then
+	   write( *,* ) "origin", origin(1), origin(2), origin(3)
+	   
        ox = origin(1)
        oy = origin(2)
        oz = origin(3)
 
        call self%SetOrigin(ox, oy, oz)
     end if
-    
+    write( *,* ) "3", self%ox, self%oy, self%oz
     self%xEdge(1) = ox
     self%yEdge(1) = oy
     self%zEdge(1) = oz
