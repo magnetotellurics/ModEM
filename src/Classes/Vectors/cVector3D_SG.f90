@@ -1209,11 +1209,7 @@ contains
                zC = CumSum([0._prec, grid%dz])
           end select
       end select
-	  
-	  grid%ox = 0.0
-	  grid%oy = 0.0
-	  grid%oz = 0.0
-	  
+
       xC = xC - grid%ox
       yC = yC - grid%oy
       zC = zC - sum(grid%dz(1:grid%nzAir)) - grid%oz

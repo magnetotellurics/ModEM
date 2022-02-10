@@ -46,11 +46,11 @@ module Grid3D_SG
      procedure, public :: GetCellSizes
 
      procedure, public :: Copy_from
-	 
-	 procedure, public :: Slice1D => Slice1DGrid3D_SG
-	 procedure, public :: Slice2D => Slice2DGrid3D_SG
-	 
-	 
+     
+     procedure, public :: Slice1D => Slice1DGrid3D_SG
+     procedure, public :: Slice2D => Slice2DGrid3D_SG
+     
+     
   end type Grid3D_SG_t
 
   !**
@@ -92,7 +92,7 @@ contains
       class(Grid3D_SG_t), intent(in) :: self
       type(Grid2D_t) :: g2D
       !
-	  ! Should be diferent for the polarization
+      ! Should be diferent for the polarization
       g2D = Grid2D_t( self%ny, self%nzAir, self%nzEarth, self%dy, self%dz )
 
   end function Slice2DGrid3D_SG
@@ -112,7 +112,9 @@ contains
     call grid%Create(nx, ny, nzAir, nzEarth)
 
     call grid%SetCellSizes(dx, dy, dz)
+	!
     call grid%Setup()
+	!
     
   end function Grid3D_SG_t_ctor
 
@@ -189,7 +191,7 @@ contains
     ! Arguments
     class(Grid3D_SG_t), intent(inout) :: self
     
-	!
+    !
     if (.not.self%allocated) return
 
     deallocate(self%dx)
@@ -239,20 +241,22 @@ contains
     self%dxInv = 1/self%dx
     self%dyInv = 1/self%dy
     self%dzInv = 1/self%dz
-
-	write( *,* ) "1", self%ox, self%oy, self%oz
+    write( *,* ) "1", self%ox, self%oy, self%oz
+    !
     call self%GetOrigin(ox, oy, oz)
-    write( *,* ) "2", self%ox, self%oy, self%oz
+    !
     if (present(origin)) then
-	   write( *,* ) "origin", origin(1), origin(2), origin(3)
-	   
+       
        ox = origin(1)
        oy = origin(2)
        oz = origin(3)
 
        call self%SetOrigin(ox, oy, oz)
     end if
-    write( *,* ) "3", self%ox, self%oy, self%oz
+	
+	
+	write( *,* ) "2", self%ox, self%oy, self%oz
+    !
     self%xEdge(1) = ox
     self%yEdge(1) = oy
     self%zEdge(1) = oz
@@ -497,6 +501,12 @@ contains
     dy_old = self%dy
     dz_old = self%dz
     geometry_old = self%GetGridGeometry()
+	
+	ox_old = self%ox
+    oy_old = self%oy
+    oz_old = self%oz
+	
+	rotdeg_old = self%rotdeg
     
     call self%Deallocate()
     call self%Create(nx_old, ny_old, nzAir, nzEarth_old)
