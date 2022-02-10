@@ -1,17 +1,5 @@
  #Synthetic 3D MT data written by ModEM-OO
  #Period(s) Code GG_Lat GG_Lon X(m) Y(m) Z(m) Component Real Imag Error
- #Synthetic 3D MT data written by ModEM-OO
- #Period(s) Code GG_Lat GG_Lon X(m) Y(m) Z(m) Component Real Imag Error
- #Synthetic 3D MT data written by ModEM-OO
- #Period(s) Code GG_Lat GG_Lon X(m) Y(m) Z(m) Component Real Imag Error
- #Synthetic 3D MT data written by ModEM-OO
- #Period(s) Code GG_Lat GG_Lon X(m) Y(m) Z(m) Component Real Imag Error
- #Synthetic 3D MT data written by ModEM-OO
- #Period(s) Code GG_Lat GG_Lon X(m) Y(m) Z(m) Component Real Imag Error
- #Synthetic 3D MT data written by ModEM-OO
- #Period(s) Code GG_Lat GG_Lon X(m) Y(m) Z(m) Component Real Imag Error
- #Synthetic 3D MT data written by ModEM-OO
- #Period(s) Code GG_Lat GG_Lon X(m) Y(m) Z(m) Component Real Imag Error
 1.000000E+00             006-006          0.000          0.000      41000.000      39375.000          0.000                 ZXX    1.460949E+03    3.830087E+01    1.000000E+00
 1.000000E+00             006-006          0.000          0.000      41000.000      39375.000          0.000                 ZXY   -1.133006E+04    1.291327E+04    1.000000E+00
 1.000000E+00             006-006          0.000          0.000      41000.000      39375.000          0.000                 ZYX    1.816406E+04   -1.671002E+04    1.000000E+00
