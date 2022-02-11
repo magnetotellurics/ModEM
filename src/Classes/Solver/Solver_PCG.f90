@@ -151,7 +151,8 @@ module Solver_PCG
             i = i + 1
             rnorm = sqrt(real(r%dotProd(r)))
             self%relErr(i+1) = rnorm/bnorm
-            !write(*,*) 'iter = ', i, ' relErr = ',self%relErr(i+1)
+            !
+			!write(*,*) 'iter = ', i, ' relErr = ',self%relErr(i+1)
          enddo loop
          !
          self%n_iter = i

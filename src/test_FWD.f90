@@ -133,10 +133,10 @@ contains
          Tx = transmitters%get( iTx )
          !
          ! Verbosis...
-         !write( *, * ) "   Tx Id:", Tx%id, "Period:", int( Tx%period )
+         write( *, * ) "   Tx Id:", Tx%id, "Period:", int( Tx%period )
          !
          ! According to Tx type,
-         ! write the proper header in the 'predicted_data.dat' file
+         ! write the proper header in the "predicted_data.dat" file
          call writePredictedDataHeader( Tx, transmitter_type )
          !
          ! Tx points to its due Source
@@ -364,10 +364,10 @@ contains
       integer               :: ios
       character (len=20)    :: version
       !
-      open( ioESolution, file = 'e_solution', action='write', form ='unformatted', iostat=ios)
+      open( ioESolution, file = "e_solution", action="write", form ="unformatted", iostat=ios)
       !
       if( ios/=0) then
-         write(0,*) 'Error opening file in FileWriteInit: e_solution'
+         write(0,*) "Error opening file in FileWriteInit: e_solution"
       else
          !
          version = ""
@@ -390,33 +390,40 @@ contains
       !
       class( Transmitter_t ), intent( in )       :: Tx
       character(:), allocatable, intent( inout ) :: transmitter_type
-	  !
-	  logical :: tx_changed = .false.
       !
-	  if( ( index( transmitter_type, "Unknow" ) /= 0 ) .OR. transmitter_type /= trim( Tx%getType() ) ) then
-	     !
-	     tx_changed = .true.
+	  integer :: nTx, nRx
+      logical :: tx_changed = .false.
+      !
+      if( ( index( transmitter_type, "Unknow" ) /= 0 ) .OR. transmitter_type /= trim( Tx%type ) ) then
+         !
+         tx_changed = .true.
          !
       endif
-	  !
+      !
       if( ( index( transmitter_type, "Unknow" ) /= 0 ) ) then
          !
-         open( ioPredData, file = 'predicted_data.dat', action='write' )
-		 !
-      else if( transmitter_type /= trim( Tx%getType() ) ) then
-	     !
-         open( ioPredData, file = 'predicted_data.dat', action='write', position='append' )
+         open( ioPredData, file = "predicted_data.dat", action="write", form ="formatted" )
+         !
+      else if( transmitter_type /= trim( Tx%type ) ) then
+         !
+         open( ioPredData, file = "predicted_data.dat", action="write", form ="formatted", position="append" )
          !
       endif
       !
-	  if( tx_changed ) then
-	     !
-         write( ioPredData, * ) '#', DATA_FILE_TITLE
-         write( ioPredData, * ) '#', Tx%DATA_TITLE
+      if( tx_changed ) then
+         !
+         write( ioPredData, "(4A, 100A)" ) "#   ", DATA_FILE_TITLE
+         write( ioPredData, "(4A, 100A)" ) "#   ", Tx%DATA_TITLE
+         write( ioPredData, "(4A, 100A)" ) ">   ", trim( Tx%type )
+         write( ioPredData, "(4A, 100A)" ) ">   ", "exp(-i\omega t)"
+         write( ioPredData, "(4A, 100A)" ) ">   ", "[V/m]/[T]"
+         write( ioPredData, "(7A, 100A)" ) ">      ", "0.00"
+         write( ioPredData, "(7A, 100A)" ) ">      ", "0.000   0.000"
+         write( ioPredData, "(A3, i8, i8)" ) ">      ", transmitters%size(), receivers%size()
          !
          close( ioPredData )
          !
-         transmitter_type = trim( Tx%getType() )
+         transmitter_type = trim( Tx%type )
          !
       endif
       !

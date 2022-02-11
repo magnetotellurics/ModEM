@@ -274,6 +274,7 @@ module ForwardSolverIT_DC
         !
         self%solver%converged = .false.
         self%solver%failed    = .false.
+        self%nDivCor = 0
         !
         ! not sure about allocation here -- solution will exist
         ! (and might be allocated) in calling routine, but b is local

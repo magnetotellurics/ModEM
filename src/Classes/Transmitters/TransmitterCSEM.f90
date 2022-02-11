@@ -21,7 +21,6 @@ module TransmitterCSEM
          procedure, public   :: solveFWD => solveFWDTransmitterCSEM
          procedure, public   :: getSource => getSourceTransmitterCSEM
          !
-		 procedure, public   :: getType => getTypeTransmitterCSEM
          procedure, public   :: isEqual => isEqualTransmitterCSEM
          procedure, public   :: write => writeTransmitterCSEM
          !
@@ -34,13 +33,14 @@ module TransmitterCSEM
 contains
    !
    ! Parametrized constructor
-   function TransmitterCSEM_ctor( id, period, location ) result ( self )
+   function TransmitterCSEM_ctor( id, period, location, type ) result ( self )
       !
       type( TransmitterCSEM_t ) :: self
       !
-      integer, intent( in )            :: id
-      real( kind=prec ), intent( in )      :: period
-      real( kind=prec )               :: location(3)
+      integer, intent( in )                             :: id
+      real( kind=prec ), intent( in )                   :: period
+      real( kind=prec ), intent( in )                   :: location(3)
+      character(:), allocatable, optional, intent( in ) :: type
       !
       ! write(*,*) "Constructor TransmitterCSEM_t"
       !
@@ -50,6 +50,12 @@ contains
       self%n_pol = 1
       self%period = period
       self%location = location
+      !
+      if( present( type ) ) then
+         self%type = type
+      else
+         self%type = "TransmitterCSEM_t"
+      endif
       !
    end function TransmitterCSEM_ctor
    !
@@ -83,15 +89,6 @@ contains
       write(*,*) "getSource TransmitterCSEM_t: ", self%location
       !
    end subroutine getSourceTransmitterCSEM
-   !
-   !
-   function getTypeTransmitterCSEM( self ) result( type )
-      class( TransmitterCSEM_t ), intent( in ) :: self
-      character(:), allocatable                :: type
-      !
-      type = "TransmitterCSEM_t"
-      !
-   end function getTypeTransmitterCSEM
    !
    !
    function isEqualTransmitterCSEM( self, other ) result( equal )

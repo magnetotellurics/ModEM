@@ -182,15 +182,15 @@ contains
             !
             class is ( DataEntryMT_t )
                !
-               allocate( transmitter, source = TransmitterMT_t( iTx, data_entry%period ) )
+               allocate( transmitter, source = TransmitterMT_t( iTx, data_entry%period, data_entry%type ) )
                !
             class is ( DataEntryMT_REF_t )
                !
-               allocate( transmitter, source = TransmitterMT_t( iTx, data_entry%period ) )
+               allocate( transmitter, source = TransmitterMT_t( iTx, data_entry%period, data_entry%type ) )
                !
             class is ( DataEntryCSEM_t )
                !
-               allocate( transmitter, source = TransmitterCSEM_t( iTx, data_entry%period, data_entry%tx_xyz ) )
+               allocate( transmitter, source = TransmitterCSEM_t( iTx, data_entry%period, data_entry%tx_xyz, data_entry%type ) )
                !
          end select
 		 !

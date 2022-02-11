@@ -170,9 +170,6 @@ contains
              !   convert result back to cVector`
              call y%setArray( yVec )
              !
-             !
-             call y%print( 666,'output y-vector' )
-             !
           end select
           !
       class default

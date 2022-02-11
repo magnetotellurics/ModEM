@@ -241,7 +241,6 @@ contains
     self%dxInv = 1/self%dx
     self%dyInv = 1/self%dy
     self%dzInv = 1/self%dz
-    write( *,* ) "1", self%ox, self%oy, self%oz
     !
     call self%GetOrigin(ox, oy, oz)
     !
@@ -253,10 +252,7 @@ contains
 
        call self%SetOrigin(ox, oy, oz)
     end if
-	
-	
-	write( *,* ) "2", self%ox, self%oy, self%oz
-    !
+	!
     self%xEdge(1) = ox
     self%yEdge(1) = oy
     self%zEdge(1) = oz

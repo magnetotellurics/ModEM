@@ -18,6 +18,8 @@ module Transmitter
       !
       integer           :: id, n_pol, fwd_key(8)
       !
+      character(:), allocatable :: type
+      !
       real( kind=prec ) :: period
       !
       class( ForwardSolver_t ), pointer :: forward_solver 
@@ -45,7 +47,6 @@ module Transmitter
       !
       procedure( interface_solve_fwd_tx ), deferred, public  :: solveFWD
       !
-      procedure( interface_get_type_tx ), deferred, public   :: getType
       procedure( interface_is_equal_tx ), deferred, public   :: isEqual
       procedure( interface_write_tx ), deferred, public      :: write
       !
@@ -57,12 +58,6 @@ module Transmitter
          import :: Transmitter_t
          class( Transmitter_t ), intent( inout ) :: self
       end subroutine interface_solve_fwd_tx
-      !
-      function interface_get_type_tx( self ) result( type )
-         import :: Transmitter_t
-         class( Transmitter_t ), intent( in ) :: self
-         character(:), allocatable            :: type
-      end function interface_get_type_tx
       !
       function interface_is_equal_tx( self, other ) result( equal )
          import :: Transmitter_t

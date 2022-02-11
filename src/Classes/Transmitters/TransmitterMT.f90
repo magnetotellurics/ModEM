@@ -21,10 +21,9 @@ module TransmitterMT
          !
          procedure, public :: solveFWD  => solveFWDTransmitterMT
          !
-         procedure, public :: getType => getTypeTransmitterMT
          procedure, public :: isEqual => isEqualTransmitterMT
          procedure, public :: write   => writeTransmitterMT
-		 !
+         !
    end type TransmitterMT_t
    !
    interface TransmitterMT_t
@@ -34,13 +33,14 @@ module TransmitterMT
    contains
    !
    ! TransmitterMT constructor
-   function TransmitterMT_ctor( id, period ) result ( self )
+   function TransmitterMT_ctor( id, period, type ) result ( self )
       implicit none
       !
       type( TransmitterMT_t ) :: self
       !
       integer, intent( in )           :: id
       real( kind=prec ), intent( in ) :: period
+      character(:), allocatable, optional, intent( in ) :: type
       !
       !write(*,*) "Constructor TransmitterMT_t"
       !
@@ -48,10 +48,16 @@ module TransmitterMT
       !
       self%id = id
       self%n_pol = 2
-	  !
-	  allocate( cVector3D_SG_t :: self%e_all( self%n_pol ) )
-	  !
+      !
+      allocate( cVector3D_SG_t :: self%e_all( self%n_pol ) )
+      !
       self%period = period
+      !
+      if( present( type ) ) then
+         self%type = type
+      else
+         self%type = "TransmitterMT_t"
+      endif
       !
       self%DATA_TITLE = "Period(s) Code GG_Lat GG_Lon X(m) Y(m) Z(m) Component Real Imag Error"
       !
@@ -77,19 +83,19 @@ module TransmitterMT
       !
       integer           :: i_pol
       real( kind=prec ) :: omega
-	  class( cVector_t ), allocatable :: e_solution
-	  !
-	  ! LATER SOUBROUTINE
-	  integer 				:: ioNum,iFreq,iMode
-      character (len=20) 	:: ModeName
-	  !
+      class( cVector_t ), allocatable :: e_solution
+      !
+      ! LATER SOUBROUTINE
+      integer                 :: ioNum,iFreq,iMode
+      character (len=20)     :: ModeName
+      !
       ! verbosis
       write( *, * ) "   SolveFWD for Tx", self%id
       !
       omega = 2.0 * PI / self%period
       !
-	  open( ioESolution, file = 'e_solution', action='write', position='append', form ='unformatted' )
-	  !
+      open( ioESolution, file = 'e_solution', action='write', position='append', form ='unformatted' )
+      !
       ! Loop over all polarizations (MT n_pol = 2)
       do i_pol = 1, self%n_pol
          !
@@ -104,38 +110,27 @@ module TransmitterMT
          allocate( e_solution, source = self%source%model_operator%createVector() )
          !
          call self%forward_solver%getESolution( self%source, e_solution )
-		 !
-		 !
-		 if( i_pol == 1 ) then
-		    ModeName = "Ey"
-		 else
-		    ModeName = "Ex"
-		 endif
-		 !
-		 ! write the frequency header - 1 record
+         !
+         !
+         if( i_pol == 1 ) then
+            ModeName = "Ey"
+         else
+            ModeName = "Ex"
+         endif
+         !
+         ! write the frequency header - 1 record
          write( ioESolution ) omega, self%id, i_pol, ModeName
-		 !
-		 call e_solution%write( ioESolution )
+         !
+         call e_solution%write( ioESolution )
          !
          ! Add polarization e_solution to self%e_all
          self%e_all( i_pol ) = e_solution
-		 !
+         !
       enddo
-	  !
-	  close( ioESolution )
-	  !
+      !
+      close( ioESolution )
+      !
    end subroutine solveFWDTransmitterMT
-   !
-   ! Get class string name
-   function getTypeTransmitterMT( self ) result( type )
-      implicit none
-      !
-      class( TransmitterMT_t ), intent( in ) :: self
-      character(:), allocatable              :: type
-      !
-      type = "TransmitterMT_t"
-      !
-   end function getTypeTransmitterMT
    !
    ! Compare two transmitters
    function isEqualTransmitterMT( self, other ) result( equal )
