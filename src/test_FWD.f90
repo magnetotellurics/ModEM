@@ -63,10 +63,6 @@ contains
       ! Local variables
       integer :: iTx, nTx, iRx, nRx
       character(:), allocatable :: transmitter_type
-	  !
-	  ! implement separated routine
-	  integer				:: nMode, ios
-	  character (len=20)    :: version
       !
       ! Verbosis
       write ( *, * ) "   > Start forward modelling."
@@ -125,29 +121,12 @@ contains
       end select
       !
       ! Forward Modelling
-	  !
+      !
       ! Loop over all Transmitters
       nTx = transmitters%size()
       !
-	  
-	  open( ioESolution, file = 'e_solution', action='write', position='append', form ='unformatted',&
-         iostat=ios)
-	  !
-	  if( ios/=0) then
-         write(0,*) 'Error opening file in FileWriteInit: e_solution'
-      else
-	     nMode = 2
-		 version = ""
-         ! write the header (contains the basic information for the forward
-         ! modeling). the header is 4 lines
-         write( ioESolution ) version, nTx,nMode, main_grid%nx,main_grid%ny,main_grid%nz,main_grid%nzAir, &
-         main_grid%ox, main_grid%oy, main_grid%oz, main_grid%rotdeg
-         write( ioESolution ) main_grid%dx
-         write( ioESolution ) main_grid%dy
-         write( ioESolution ) main_grid%dz
-      endif
+      call writeEsolutionHeader( nTx, 2 )
       !
-	  !
       do iTx = 1, nTx
          !
          ! Temporary Transmitter alias
@@ -377,23 +356,67 @@ contains
       !
    end subroutine handleArguments
    !
+   subroutine writeEsolutionHeader( nTx, nMode )
+      implicit none
+      !
+      ! implement separated routine
+      integer, intent( in ) :: nTx, nMode
+      integer               :: ios
+      character (len=20)    :: version
+      !
+      open( ioESolution, file = 'e_solution', action='write', form ='unformatted', iostat=ios)
+      !
+      if( ios/=0) then
+         write(0,*) 'Error opening file in FileWriteInit: e_solution'
+      else
+         !
+         version = ""
+         ! write the header (contains the basic information for the forward
+         ! modeling). the header is 4 lines
+         write( ioESolution ) version, nTx, nMode, &
+         main_grid%nx, main_grid%ny, main_grid%nz, main_grid%nzAir, &
+         main_grid%ox, main_grid%oy, main_grid%oz, main_grid%rotdeg
+         !
+         write( ioESolution ) main_grid%dx
+         write( ioESolution ) main_grid%dy
+         write( ioESolution ) main_grid%dz
+      endif
+      !
+      !
+   end subroutine writeEsolutionHeader
    !
    subroutine writePredictedDataHeader( Tx, transmitter_type )
       implicit none
       !
       class( Transmitter_t ), intent( in )       :: Tx
       character(:), allocatable, intent( inout ) :: transmitter_type
+	  !
+	  logical :: tx_changed = .false.
       !
-      if( ( index( transmitter_type, "Unknow" ) /= 0 ) .OR. transmitter_type /= Tx%getType() ) then
+	  if( ( index( transmitter_type, "Unknow" ) /= 0 ) .OR. transmitter_type /= trim( Tx%getType() ) ) then
+	     !
+	     tx_changed = .true.
          !
-         transmitter_type = Tx%getType()
+      endif
+	  !
+      if( ( index( transmitter_type, "Unknow" ) /= 0 ) ) then
          !
+         open( ioPredData, file = 'predicted_data.dat', action='write' )
+		 !
+      else if( transmitter_type /= trim( Tx%getType() ) ) then
+	     !
          open( ioPredData, file = 'predicted_data.dat', action='write', position='append' )
          !
+      endif
+      !
+	  if( tx_changed ) then
+	     !
          write( ioPredData, * ) '#', DATA_FILE_TITLE
          write( ioPredData, * ) '#', Tx%DATA_TITLE
          !
          close( ioPredData )
+         !
+         transmitter_type = trim( Tx%getType() )
          !
       endif
       !

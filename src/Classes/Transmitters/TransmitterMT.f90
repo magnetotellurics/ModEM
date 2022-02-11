@@ -82,8 +82,6 @@ module TransmitterMT
 	  ! LATER SOUBROUTINE
 	  integer 				:: ioNum,iFreq,iMode
       character (len=20) 	:: ModeName
-
-    
 	  !
       ! verbosis
       write( *, * ) "   SolveFWD for Tx", self%id

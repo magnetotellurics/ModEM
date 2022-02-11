@@ -348,7 +348,7 @@ contains
       write( fid ) self%nx, self%ny, self%nz, self%gridType
       write( fid ) self%x
       write( fid ) self%y
-      write( fid ) self%z               
+      write( fid ) self%z
       
    end subroutine writeCVector3D_SG
    
