@@ -345,7 +345,7 @@ contains
           STOP
       end if
       
-      !write( fid ) self%nx, self%ny, self%nz, self%gridType
+      write( fid ) self%nx, self%ny, self%nz, self%gridType
       write( fid ) self%x
       write( fid ) self%y
       write( fid ) self%z               

@@ -47,11 +47,11 @@
    character(:), allocatable :: control_file_name, model_file_name, data_file_name, modem_job
    character(:), allocatable :: xFile,yFile,gridType
    complex(kind=prec), allocatable :: E1D(:)
-   integer  :: printUnit, maxIter, nz, nza, fid, polarization
-   real(kind = prec) :: omega, T, tolerance
+   integer  :: printUnit, maxIt, nz, nza, fid, polarization
+   real(kind = prec) :: omega, T, tol
    !
    !   frequency is hard coded -- just test for a single frequency at a time
-   T = .1
+   T = 1
    omega = 2*pi/T
    !
    !   test job is also hard coded : options- Amult, QMR, RHS, MULT_DC, 
@@ -94,7 +94,7 @@ contains
       !model_file_name = "/mnt/c/Users/protew/Desktop/ON/GITLAB_PROJECTS/modem-oo/inputs/rFile_Model_Tiny"
       !model_file_name = "/Users/garyegbert/Desktop/ModEM_ON/modem-oo/inputs/rFile_Model_Tiny"
       !    standard block2 test model -- small but not tiny
-      model_file_name = "/Users/garyegbert/Desktop/ModEM_ON/modem-oo/inputs/rFile_Model"
+      model_file_name = "/Users/garyegbert/Desktop/ModEM_ON/modem-oo/inputs/simple_2_blocks.cpr"
       !
       write( *, * ) "   -> Model File: [", model_file_name, "]"
       !
@@ -206,9 +206,9 @@ contains
             call readCVector()
             !  create and setup Solver object ...
             call slvrQMR%SetDefaults()   !   set default convergence parameters
-            !maxIter = 20
-            !tolerance = 1d-7
-            !call slvrQMR%setParameters(maxIter,tolerance)   !   set convergence parameters
+            !maxIt = 20
+            !tol = 1d-7
+            !call slvrQMR%setParameters(maxIt,tol)   !   set convergence parameters
             !   first test w/o preconditioner
             write(*,*) "before setting omega explicitly", slvrQMR%omega
             slvrQMR%omega = omega
@@ -244,15 +244,14 @@ contains
             !call src%E%print()
             !    compute RHS and output
             call src%SetRHS()
-            y = src%bdry
+            y = src%E%boundary()
             yFile = "../inputs/BDRYcompTiny.dat"
             call writeCVector()
             y = src%rhs
             yFile = "../inputs/RHScompTiny.dat"
             call writeCVector()
             !    compute E0 and output
-            call src%setE0
-            y = src%E0
+            y = src%E%interior()
             yFile = "../inputs/E0compTiny.dat"
             call writeCVector()
          case("MultDC")
@@ -290,9 +289,9 @@ contains
             xFile = "../inputs/PhiIn_Tiny.dat"
             call readCScalar()
             !  create and setup Solver object ...
-            maxIter = 100
-            tolerance = 1d-7
-            call slvrPCG%setParameters(maxIter,tolerance)   !   set convergence parameters
+            maxIt = 100
+            tol = 1d-7
+            call slvrPCG%setParameters(maxIt,tol)   !   set convergence parameters
                                           !   just testing -- defaults are 100, 1e-5
             call slvrPCG%preconditioner%SetPreconditioner(omega)   !   set preconditioner
                   !   NOTE: this will have to be done every time model parameter changes
@@ -362,8 +361,8 @@ contains
             y = src%rhs
             !
             maxIter = 20
-            tolerance = 1d-7
-            call fwdIT_DC%solver%setParameters(maxIter,tolerance)
+            tol = 1d-7
+            call fwdIT_DC%solver%setParameters(maxIter,tol)
             call y%zeros   !  try different initialization
             write(*,*) "calling getEsolution"
             call fwdIT_DC%getESolution( src, y )
