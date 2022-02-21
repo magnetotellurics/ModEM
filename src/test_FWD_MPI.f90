@@ -24,7 +24,10 @@ program ModEM
    class( ModelOperator_t ), allocatable  :: model_operator
    !
    character(:), allocatable :: control_file_name, model_file_name, data_file_name, modem_job
-   logical                 :: has_control_file = .false., has_model_file = .false., has_data_file = .false.
+   logical                   :: has_control_file = .false., has_model_file = .false., has_data_file = .false.
+   !
+   ! ????
+   type( MPI_Comm ) :: hostcomm
    !
    modem_job = "unknow"
    !
@@ -35,6 +38,10 @@ program ModEM
    !
    ! SET mpi_rank WITH PROCESS ID
    call MPI_COMM_RANK( MPI_COMM_WORLD, mpi_rank, mpi_err )
+   !
+   !call MPI_Comm_split_type( MPI_COMM_WORLD, MPI_COMM_TYPE_SHARED, 0, MPI_INFO_NULL, hostcomm )
+   !
+   ! MASTER
    !
    if ( mpi_rank == 0 ) then
       !
@@ -51,17 +58,25 @@ program ModEM
       ! Execute the modem_job
       call handleJob()
       !
+      call MPI_FINALIZE( mpi_err )
+      !
       write ( *, * )
       write ( *, * ) "Finish ModEM-OO."
       write ( *, * )
-      !
+   !
+   ! WORKER
+   !
    else
       !
       do while ( job_master .ne. job_finish )
          !
+         write ( *, * ) "WORKER: ", mpi_rank, " WAITING MASTER"
+         !
          call receiveFrom( master_id )
          !
-         job_master = job_info%name
+         write ( *, * ) "WORKER: ", mpi_rank, " RECEIVE JOB: ", job_info%name
+         !
+         job_master = trim( job_info%name )
          !
          select case ( job_master )
             !
@@ -70,23 +85,20 @@ program ModEM
                call workerForwardModelling()
                !
             case ( "STOP_JOBS" )
-               write(*,*) "### WORKER: ", mpi_rank, " RECEIVE STOP JOBS"
-            !
+               !
+               job_info%name = job_ok
+               !
+               write ( *, * ) "WORKER: ", mpi_rank, " SEND JOB: ", job_info%name, " TO MASTER"
+               !
+               call sendTo( master_id )
+               !
          end select
-         !
-         job_info%name = job_ok
-         !
-         call sendTo( master_id )
          !
        enddo
        !
-       write(*,*) "WORKER", mpi_rank, "FINISH !!!", " ==> ", mpi_err
-       !
-       call MPI_BARRIER( MPI_COMM_WORLD, mpi_err )
+       call MPI_FINALIZE( mpi_err )
        !
     endif
-    !
-    call MPI_FINALIZE( mpi_err )
     !
 contains
    !
@@ -97,7 +109,7 @@ contains
       ! must be instantiated on each Worker
       class( ForwardSolver_t ), allocatable, target, save :: fwd_solver
       !
-      class( Source_t ), allocatable, target, save       :: fwd_source 
+      class( Source_t ), allocatable, target, save        :: fwd_source 
       !
       ! Temporary alias pointers
       class( Transmitter_t ), pointer :: Tx
@@ -177,9 +189,6 @@ contains
           ! Temporary Transmitter alias
           Tx => transmitters%get( iTx )
           !
-          ! Verbosis...
-          write( *, * ) "#### MASTER #### Tx Id:", Tx%id, "Period:", int( Tx%period )
-          !
           ! According to Tx type,
           ! write the proper header in the "predicted_data.dat" file
           call writePredictedDataHeader( Tx, transmitter_type )
@@ -193,6 +202,8 @@ contains
           ! Tx points to its due ForwardSolver
           call Tx%setForwardSolver( fwd_solver )
           !
+          write ( *, * ) "MASTER SEND JOB: ", job_info%name, " TO WORKER: ", iTx
+          !
           ! SEND FORWARD JOB TO WORKER
           call sendTo( iTx )
           !
@@ -201,11 +212,11 @@ contains
       ! RECEIVE FOREACH WORKER
       do iTx = 1, nTx
           !
-          write(*,*) "MASTER WAINTING WORKER", iTx
+          write ( *, * ) "MASTER WAITING WORKER: ", iTx
           !
           call receiveFrom( iTx )
           !
-          write(*,*) "MASTER RECEIVED JOB", job_info%name, "FROM WORKER", iTx
+          write ( *, * ) "MASTER RECEIVED JOB: ", job_info%name, " FROM WORKER: ", iTx
           !
       enddo
       !
@@ -215,6 +226,8 @@ contains
       ! SEND FOREACH WORK PROCESS
       do iTx = 1, nTx
           !
+          write ( *, * ) "MASTER SEND JOB: ", job_info%name, " TO WORKER: ", iTx
+          !
           call sendTo( iTx )
           !
       enddo
@@ -222,13 +235,13 @@ contains
       ! RECEIVE FOREACH WORK PROCESS
       do iTx = 1, nTx
           !
+          write ( *, * ) "MASTER WAITING WORKER: ", iTx
+          !
           call receiveFrom( iTx )
           !
+          write ( *, * ) "MASTER RECEIVED JOB: ", job_info%name, " FROM WORKER: ", iTx
+          !
       enddo
-      !
-      call MPI_BARRIER( MPI_COMM_WORLD, mpi_err )
-      !
-      write(*,*) "MASTER FINISH FORWARD MODELLING!!!", " ==> ", mpi_err
       !
    end subroutine masterForwardModelling
    !
@@ -241,14 +254,16 @@ contains
       !
       ! Local variables
       integer :: iRx, nRx
+     !
+     call sleep(  mpi_rank * 5 )
       !
-      write(*,*) "### WORKER: ", mpi_rank, " START FORWARD JOBS"
+      !write(*,*) "### WORKER: ", mpi_rank, " START JOB:", job_info%name
       !
       ! Temporary Transmitter alias
       !Tx = transmitters%get( mpi_rank )
       !
       ! Verbosis...
-      !write( *, * ) "#### WORKER #### Tx Id:", Tx%id, "Period:", int( Tx%period )
+      !write( *, * ) "WORKER Tx Id:", Tx%id, "Period:", int( Tx%period )
       !
       ! Solve Tx Forward Modelling
       !call Tx%solveFWD()
@@ -270,6 +285,12 @@ contains
       !enddo
       !
       !deallocate( Tx )
+      !
+      job_info%name = job_ok
+      !
+      write ( *, * ) "WORKER: ", mpi_rank, " SEND JOB: ", job_info%name, " TO MASTER"
+      !
+      call sendTo( master_id )
       !
    end subroutine workerForwardModelling
    !

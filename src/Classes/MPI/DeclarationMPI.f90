@@ -8,7 +8,7 @@
 !
 module DeclarationMPI
 	!
-	use mpi
+	use mpi_f08
 	!
 	character, pointer, dimension(:)	:: job_package
 	integer								:: nbytes
@@ -77,7 +77,7 @@ module DeclarationMPI
 		!
 		integer, intent(in)	:: target_id
 		!
-		write( *, * ) "<", mpi_rank, " RECV: ", job_info%name, " FROM: ", target_id
+		!write( *, * ) "<<<< ", mpi_rank, " RECV: ", job_info%name, " FROM: ", target_id
 		!
 		call allocateJobPackage
 		call MPI_RECV( job_package, nbytes, MPI_PACKED, target_id, tag, MPI_COMM_WORLD, MPI_STATUS_IGNORE, ierr)
@@ -90,7 +90,7 @@ module DeclarationMPI
 		!
 		integer, intent(in)	:: target_id
 		!
-		write( *, * ) ">", mpi_rank, " SEND: ", job_info%name, " TO: ", target_id
+		!write( *, * ) ">>>> ", mpi_rank, " SEND: ", job_info%name, " TO: ", target_id
 		!
 		call allocateJobPackage
 		call packJobTask
