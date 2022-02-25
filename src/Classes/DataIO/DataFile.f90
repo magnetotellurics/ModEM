@@ -15,6 +15,8 @@ module DataFile
    !
    type, abstract :: DataFile_t
       !
+	  integer                            :: nTx, nRx
+	  !
       class( DataEntryArray_t ), pointer :: data_entries
       !
    contains

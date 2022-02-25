@@ -171,10 +171,50 @@ contains
                 header_counter = 0
                 !
             else
+				!# Synthetic 3D MT data written in Matlab
+				!# Period(s) Code GG_Lat GG_Lon X(m) Y(m) Z(m) Component Real Imag Error
+				!> Full_Impedance
+				!> exp(-i\omega t)
+				!> [V/m]/[T]
+				!> 0.00
+				!> 0.000 0.000
+				!> 4 2
                 header_counter = header_counter + 1
-                if( header_counter == 3 ) then
-                    actual_type = args(2)
-                end if
+				selectcase( header_counter )
+                   !
+				   ! Main Header
+                   case( 1 )
+				   !
+				   ! Data Fields
+                   case( 2 )
+				   !
+				   ! Data Type
+                   case( 3 )
+                      actual_type = args(2)
+				   !
+				   ! exp(-i\omega t) ????
+                   case( 4 )
+				   !
+				   ! [V/m]/[T] ????
+                   case( 5 )
+				   !
+				   ! 0.00 ????
+                   case( 6 )
+				   ! 0.000 0.000 ????
+                   case( 7 )
+				   ! nTx, nRx
+                   case( 8 )
+				      read( args(2), '(I8)' ) self%nTx
+					  read( args(3), '(I8)' ) self%nRx
+					  !
+					  write( *, * ) "self%nTx, self%nRx", self%nTx, self%nRx
+				   !
+                   case default
+                      !
+                      write(*,*) "unknow header format in line :[", header_counter, "]"
+                      STOP "StandardDataFile.f08: StandardDataFile_ctor()"
+                      !
+                end select
             end if
          end do
          !

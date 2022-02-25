@@ -14,6 +14,9 @@ module DeclarationMPI
 	integer								:: nbytes
 	!
 	! MPI VARIABLES
+	!
+    type( MPI_Comm ) :: main_comm
+    !
 	integer 							:: mpi_rank, mpi_size, mpi_err
 	!
 	! PROGRAM GLOBAL VARIABLES
@@ -37,8 +40,8 @@ module DeclarationMPI
 		!
 		integer nbytes1, nbytes2
 		!
-		call MPI_PACK_SIZE( 15, MPI_CHARACTER, MPI_COMM_WORLD, nbytes1, ierr )
-		call MPI_PACK_SIZE( 1, MPI_INTEGER, MPI_COMM_WORLD, nbytes2, ierr )
+		call MPI_PACK_SIZE( 15, MPI_CHARACTER, main_comm, nbytes1, ierr )
+		call MPI_PACK_SIZE( 1, MPI_INTEGER, main_comm, nbytes2, ierr )
 		!
 		nbytes = ( nbytes1 + nbytes2 ) + 1
 		!
@@ -55,8 +58,8 @@ module DeclarationMPI
 		!
 		index = 1
 		!
-		call MPI_PACK( job_info%name, 15, MPI_CHARACTER, job_package, nbytes, index, MPI_COMM_WORLD, ierr )
-		call MPI_PACK( job_info%id_rank, 1, MPI_INTEGER, job_package, nbytes, index, MPI_COMM_WORLD, ierr )
+		call MPI_PACK( job_info%name, 15, MPI_CHARACTER, job_package, nbytes, index, main_comm, ierr )
+		call MPI_PACK( job_info%id_rank, 1, MPI_INTEGER, job_package, nbytes, index, main_comm, ierr )
 		!
 	end subroutine packJobTask
 	!
@@ -67,8 +70,8 @@ module DeclarationMPI
 		!
 		index = 1
 		!
-		call MPI_UNPACK( job_package, nbytes, index, job_info%name, 15, MPI_CHARACTER, MPI_COMM_WORLD, ierr )
-		call MPI_UNPACK( job_package, nbytes, index, job_info%id_rank , 1, MPI_INTEGER, MPI_COMM_WORLD, ierr )
+		call MPI_UNPACK( job_package, nbytes, index, job_info%name, 15, MPI_CHARACTER, main_comm, ierr )
+		call MPI_UNPACK( job_package, nbytes, index, job_info%id_rank , 1, MPI_INTEGER, main_comm, ierr )
 		!
 	end subroutine unpackJobTask
 	!
@@ -80,7 +83,7 @@ module DeclarationMPI
 		!write( *, * ) "<<<< ", mpi_rank, " RECV: ", job_info%name, " FROM: ", target_id
 		!
 		call allocateJobPackage
-		call MPI_RECV( job_package, nbytes, MPI_PACKED, target_id, tag, MPI_COMM_WORLD, MPI_STATUS_IGNORE, ierr)
+		call MPI_RECV( job_package, nbytes, MPI_PACKED, target_id, tag, main_comm, MPI_STATUS_IGNORE, ierr)
 		call unpackJobTask
 		!
 	end subroutine receiveFrom
@@ -94,7 +97,7 @@ module DeclarationMPI
 		!
 		call allocateJobPackage
 		call packJobTask
-		call MPI_SEND( job_package, nbytes, MPI_PACKED, target_id, tag, MPI_COMM_WORLD, ierr )
+		call MPI_SEND( job_package, nbytes, MPI_PACKED, target_id, tag, main_comm, ierr )
 		!
 	end subroutine sendTo
 	!

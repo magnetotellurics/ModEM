@@ -26,9 +26,6 @@ program ModEM
    character(:), allocatable :: control_file_name, model_file_name, data_file_name, modem_job
    logical                   :: has_control_file = .false., has_model_file = .false., has_data_file = .false.
    !
-   ! ????
-   type( MPI_Comm ) :: hostcomm
-   !
    modem_job = "unknow"
    !
    call MPI_INIT( mpi_err )
@@ -39,7 +36,9 @@ program ModEM
    ! SET mpi_rank WITH PROCESS ID
    call MPI_COMM_RANK( MPI_COMM_WORLD, mpi_rank, mpi_err )
    !
-   !call MPI_Comm_split_type( MPI_COMM_WORLD, MPI_COMM_TYPE_SHARED, 0, MPI_INFO_NULL, hostcomm )
+   !call MPI_Comm_split_type( MPI_COMM_WORLD, MPI_COMM_TYPE_SHARED, 0, MPI_INFO_NULL, main_comm )
+   !
+   !call MPI_Alloc_mem( nSIZE, MPI_INFO_NULL, baseptr, mpi_err)
    !
    ! MASTER
    !
@@ -68,6 +67,8 @@ program ModEM
    !
    else
       !
+	  call sleep( 20 )
+	  !
       do while ( job_master .ne. job_finish )
          !
          write ( *, * ) "WORKER: ", mpi_rank, " WAITING MASTER"
@@ -174,7 +175,7 @@ contains
             allocate( fwd_source, source = SourceMT_1D_t( model_operator, model_parameter ) )
             !
       end select
-      !
+	  !
       ! Forward Modelling
       !
       job_info%name = "FORWARD"
@@ -254,16 +255,16 @@ contains
       !
       ! Local variables
       integer :: iRx, nRx
-     !
-     call sleep(  mpi_rank * 5 )
+      !
+      call sleep(  mpi_rank * 5 )
       !
       !write(*,*) "### WORKER: ", mpi_rank, " START JOB:", job_info%name
       !
       ! Temporary Transmitter alias
-      !Tx = transmitters%get( mpi_rank )
+      Tx = transmitters%get( mpi_rank )
       !
       ! Verbosis...
-      !write( *, * ) "WORKER Tx Id:", Tx%id, "Period:", int( Tx%period )
+      write( *, * ) "WORKER Tx Id:", Tx%id, "Period:", int( Tx%period )
       !
       ! Solve Tx Forward Modelling
       !call Tx%solveFWD()

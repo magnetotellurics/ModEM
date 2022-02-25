@@ -65,9 +65,23 @@ contains
       !
       call self%relateData()
       !
-      write( *, * ) receivers%size(), " Receivers"
+	  if( receivers%size() == self%data_file%nRx ) then
+          write( *, * ) receivers%size(), " Receivers checked!"
+	  else
+	      !
+          write(*,*) "Number of Rx mismatched from Header :[", receivers%size(), " and ", self%data_file%nRx, "]"
+          STOP "DataManager.f08: DataManager_ctor()"
+          !
+	  endif
       !
-      write( *, * ) transmitters%size(), " Transmitters"
+	  if( transmitters%size() == self%data_file%nTx ) then
+          write( *, * ) transmitters%size(), " Transmitters checked!"
+	  else
+	      !
+          write(*,*) "Number of Tx mismatched from Header :[", transmitters%size(), " and ", self%data_file%nTx, "]"
+          STOP "DataManager.f08: DataManager_ctor()"
+          !
+	  endif
       !
       write( *, * ) data_groups%size(), " Data Groups"
       !
