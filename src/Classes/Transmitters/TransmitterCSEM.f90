@@ -21,6 +21,7 @@ module TransmitterCSEM
          procedure, public   :: solveFWD => solveFWDTransmitterCSEM
          procedure, public   :: getSource => getSourceTransmitterCSEM
          !
+		 !procedure, public   :: sizeOf => sizeOfTransmitterCSEM
          procedure, public   :: isEqual => isEqualTransmitterCSEM
          procedure, public   :: write => writeTransmitterCSEM
          !
@@ -133,5 +134,26 @@ contains
       enddo
       !
    end subroutine writeTransmitterCSEM
+   !
+   !function sizeOfTransmitterCSEM( self ) result( size )
+      !
+      !class( TransmitterCSEM_t ), intent( in ) :: self
+      !integer                                :: size
+	  !
+	  !size = sizeof( self%id ) + &
+	         !sizeof( self%n_pol ) + &
+			 !sizeof( self%fwd_key ) + &
+			 !sizeof( self%type ) + &
+	         !sizeof( self%period ) + &
+			 !sizeof( self%forward_solver ) + &
+			 !sizeof( self%e_all ) + &
+			 !sizeof( self%receiver_indexes ) + &
+			 !sizeof( self%DATA_TITLE )
+			 !sizeof( self%location ) + &
+			 !sizeof( self%azimuth )
+			 !
+	  !write( *, * ) "Size: ", size
+	  !
+   !end function sizeOfTransmitterCSEM
    !
 end module TransmitterCSEM

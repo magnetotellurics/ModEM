@@ -8,21 +8,29 @@
 !
 module DeclarationMPI
 	!
+	use, intrinsic :: iso_c_binding, only: c_ptr, c_f_pointer
+    !
+	!use mpi
 	use mpi_f08
 	!
-	character, pointer, dimension(:)	:: job_package
-	integer								:: nbytes
+	type( MPI_Win )  :: nodewin
+	type( MPI_Comm ) :: main_comm, shared_comm
 	!
-	! MPI VARIABLES
+	character, pointer, dimension(:) :: job_package
 	!
-    type( MPI_Comm ) :: main_comm
+	integer							 ::	nbytes, &
+										disp_unit = 0, node_size, node_rank, nodestringlen, &
+										mpi_rank, mpi_size, ierr
+	!
+    integer( MPI_ADDRESS_KIND ) :: winsize
     !
-	integer 							:: mpi_rank, mpi_size, mpi_err
+    character*( MPI_MAX_PROCESSOR_NAME ) :: nodename
+    type( c_ptr ) :: baseptr
 	!
 	! PROGRAM GLOBAL VARIABLES
-	integer 							:: number_of_shots, number_of_steps, number_of_workers, tag = 666, master_id = 0
+	integer			:: tag = 666, master_id = 0
 	!
-	character*15						:: job_master = "OKAY_BOSS", job_worker, job_finish = "STOP_JOBS", job_ok = "OKAY_BOSS"
+	character*15	:: job_master = "OKAY_BOSS", job_worker, job_finish = "STOP_JOBS", job_ok = "OKAY_BOSS"
 	!
 	! STRUCT job_info
 	type :: struct_job_info
@@ -40,8 +48,8 @@ module DeclarationMPI
 		!
 		integer nbytes1, nbytes2
 		!
-		call MPI_PACK_SIZE( 15, MPI_CHARACTER, main_comm, nbytes1, ierr )
-		call MPI_PACK_SIZE( 1, MPI_INTEGER, main_comm, nbytes2, ierr )
+		call MPI_PACK_SIZE( 15, MPI_CHARACTER, shared_comm, nbytes1, ierr )
+		call MPI_PACK_SIZE( 1, MPI_INTEGER, shared_comm, nbytes2, ierr )
 		!
 		nbytes = ( nbytes1 + nbytes2 ) + 1
 		!
@@ -58,8 +66,8 @@ module DeclarationMPI
 		!
 		index = 1
 		!
-		call MPI_PACK( job_info%name, 15, MPI_CHARACTER, job_package, nbytes, index, main_comm, ierr )
-		call MPI_PACK( job_info%id_rank, 1, MPI_INTEGER, job_package, nbytes, index, main_comm, ierr )
+		call MPI_PACK( job_info%name, 15, MPI_CHARACTER, job_package, nbytes, index, shared_comm, ierr )
+		call MPI_PACK( job_info%id_rank, 1, MPI_INTEGER, job_package, nbytes, index, shared_comm, ierr )
 		!
 	end subroutine packJobTask
 	!
@@ -70,8 +78,8 @@ module DeclarationMPI
 		!
 		index = 1
 		!
-		call MPI_UNPACK( job_package, nbytes, index, job_info%name, 15, MPI_CHARACTER, main_comm, ierr )
-		call MPI_UNPACK( job_package, nbytes, index, job_info%id_rank , 1, MPI_INTEGER, main_comm, ierr )
+		call MPI_UNPACK( job_package, nbytes, index, job_info%name, 15, MPI_CHARACTER, shared_comm, ierr )
+		call MPI_UNPACK( job_package, nbytes, index, job_info%id_rank , 1, MPI_INTEGER, shared_comm, ierr )
 		!
 	end subroutine unpackJobTask
 	!
@@ -83,7 +91,7 @@ module DeclarationMPI
 		!write( *, * ) "<<<< ", mpi_rank, " RECV: ", job_info%name, " FROM: ", target_id
 		!
 		call allocateJobPackage
-		call MPI_RECV( job_package, nbytes, MPI_PACKED, target_id, tag, main_comm, MPI_STATUS_IGNORE, ierr)
+		call MPI_RECV( job_package, nbytes, MPI_PACKED, target_id, tag, shared_comm, MPI_STATUS_IGNORE, ierr)
 		call unpackJobTask
 		!
 	end subroutine receiveFrom
@@ -97,7 +105,7 @@ module DeclarationMPI
 		!
 		call allocateJobPackage
 		call packJobTask
-		call MPI_SEND( job_package, nbytes, MPI_PACKED, target_id, tag, main_comm, ierr )
+		call MPI_SEND( job_package, nbytes, MPI_PACKED, target_id, tag, shared_comm, ierr )
 		!
 	end subroutine sendTo
 	!

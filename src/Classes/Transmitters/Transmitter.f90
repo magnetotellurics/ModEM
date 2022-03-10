@@ -47,6 +47,7 @@ module Transmitter
       !
       procedure( interface_solve_fwd_tx ), deferred, public  :: solveFWD
       !
+	  !procedure( interface_size_of_tx ), deferred, public   :: sizeOf
       procedure( interface_is_equal_tx ), deferred, public   :: isEqual
       procedure( interface_write_tx ), deferred, public      :: write
       !
@@ -58,6 +59,12 @@ module Transmitter
          import :: Transmitter_t
          class( Transmitter_t ), intent( inout ) :: self
       end subroutine interface_solve_fwd_tx
+      !
+      !function interface_size_of_tx( self ) result( size )
+         !import :: Transmitter_t
+         !class( Transmitter_t ), intent( in ) :: self
+         !integer                              :: size
+      !end function interface_size_of_tx
       !
       function interface_is_equal_tx( self, other ) result( equal )
          import :: Transmitter_t

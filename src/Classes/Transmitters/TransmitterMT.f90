@@ -21,6 +21,7 @@ module TransmitterMT
          !
          procedure, public :: solveFWD  => solveFWDTransmitterMT
          !
+         !procedure, public :: sizeOf => sizeOfTransmitterMT
          procedure, public :: isEqual => isEqualTransmitterMT
          procedure, public :: write   => writeTransmitterMT
          !
@@ -175,5 +176,24 @@ module TransmitterMT
       enddo
       !
    end subroutine writeTransmitterMT
+   !
+   !function sizeOfTransmitterMT( self ) result( size )
+      !
+      !class( TransmitterMT_t ), intent( in ) :: self
+      !integer                                :: size
+	  !
+	  !size = sizeof( self%id ) + &
+	         !sizeof( self%n_pol ) + &
+			 !sizeof( self%fwd_key ) + &
+			 !sizeof( self%type ) + &
+	         !sizeof( self%period ) + &
+			 !sizeof( self%forward_solver ) + &
+			 !sizeof( self%e_all ) + &
+			 !sizeof( self%receiver_indexes ) + &
+			 !sizeof( self%DATA_TITLE )
+	  !
+	  !write( *, * ) "Size: ", size
+	  !
+   !end function sizeOfTransmitterMT
    !
 end module TransmitterMT

@@ -29,7 +29,7 @@ module DataGroupArray
          !
          final :: DataGroupArray_dtor
          !
-         procedure, public :: size
+         procedure, public :: size => sizeDataGroupArray
          procedure, public :: has => hasDataGroup
          procedure, public :: add => addDataGroup
          procedure, public :: get => getDataGroup
@@ -69,7 +69,7 @@ contains
       !
    end subroutine DataGroupArray_dtor
    !
-   function size( self ) result( counter )
+   function sizeDataGroupArray( self ) result( counter )
       implicit none
       !
       class( DataGroupArray_t ), intent( in ) :: self
@@ -84,7 +84,7 @@ contains
          element => element%next
       end do
       !
-   end function size
+   end function sizeDataGroupArray
    !
    function hasDataGroup( self, data_group ) result( exist )
       class( DataGroupArray_t ), intent( in ) :: self

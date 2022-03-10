@@ -20,13 +20,14 @@ module DataManager
    use ReceiverArray
    use TransmitterMT
    use TransmitterCSEM
-   use TransmitterArray
+   !use TransmitterArray
+   use TransmitterFArray
    !
    ! Global Array of Transmitters
-   class( TransmitterArray_t ), pointer, save, public :: transmitters
+   !class( TransmitterArray_t ), pointer, save, public :: transmitters => NULL()
    !
    ! Global Array of Receivers
-   class( ReceiverArray_t ), pointer, save, public    :: receivers
+   class( ReceiverArray_t ), pointer, save, public    :: receivers => NULL()
    !
    ! Global Array of DataGroups
    class( DataGroupArray_t ), pointer, save, public   :: data_groups
@@ -74,11 +75,11 @@ contains
           !
 	  endif
       !
-	  if( transmitters%size() == self%data_file%nTx ) then
-          write( *, * ) transmitters%size(), " Transmitters checked!"
+	  if( size( transmitters ) == self%data_file%nTx ) then
+          write( *, * ) size( transmitters ), " Transmitters checked!"
 	  else
 	      !
-          write(*,*) "Number of Tx mismatched from Header :[", transmitters%size(), " and ", self%data_file%nTx, "]"
+          write(*,*) "Number of Tx mismatched from Header :[", size( transmitters ), " and ", self%data_file%nTx, "]"
           STOP "DataManager.f08: DataManager_ctor()"
           !
 	  endif
@@ -104,14 +105,14 @@ contains
       !
       class( DataEntry_t ), pointer     :: data_entry
       class( Receiver_t ), pointer      :: receiver
-      class( Transmitter_t ), pointer   :: transmitter
+      class( Transmitter_t ), allocatable   :: transmitter
       integer                           :: iDe, nDe, iRx, iTx
       real ( kind=prec )                :: azimuth
       !
       allocate( receivers, source = ReceiverArray_t() )
       !
-      allocate( transmitters, source = TransmitterArray_t() )
-      !
+      !allocate( transmitters, source = TransmitterArray_t() )
+	  !
       ! Loop over all Data Entries...
       nDe = self%data_file%data_entries%size()
       !
@@ -190,7 +191,7 @@ contains
          !
          ! TRANSMITTERS
          !
-         iTx = transmitters%size() + 1
+         iTx = size( transmitters ) + 1
          !
          select type ( data_entry )
             !
@@ -210,9 +211,11 @@ contains
 		 !
 		 deallocate( data_entry )
          !
-         if( .NOT. transmitters%has( transmitter ) ) then 
-            call transmitters%add( transmitter )
-         end if
+		 call updateTransmitterArray( transmitter )
+         !
+		 !if( .NOT. transmitters%has( transmitter ) ) then 
+            !call transmitters%add( transmitter )
+         !end if
          !
 		 deallocate( transmitter )
 		 !
@@ -294,10 +297,11 @@ contains
          enddo
          !
          ! LOOP OVER TRANSMITTERS
-         nTx = transmitters%size()
+         nTx = size( transmitters )
          do iTx = 1, nTx
             !
-            transmitter => transmitters%get( iTx )
+            !transmitter => transmitters%get( iTx )
+			transmitter => getTransmitter( iTx )
             !
             if( ABS( transmitter%period - data_entry%period ) < TOL6 ) then
                !

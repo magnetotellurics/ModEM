@@ -1,6 +1,6 @@
 #!/bin/sh
 if [ $# -le 1 ]; then
-    echo 1>&2 Usage: $0 Makefile [debug|release|MPI|OO] 
+    echo 1>&2 Usage: $0 Makefile [SERIAL|MPI] 
     exit 127
 fi
 if [ -e $1 ]; then
