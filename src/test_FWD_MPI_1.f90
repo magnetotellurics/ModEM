@@ -25,8 +25,6 @@ program ModEM
    type( ModelOperator_MF_t ), pointer   :: model_operator_ptr => null()
    type( DataManager_t ) :: data_manager
    !
-   integer, pointer, dimension(:) :: test_mpi_ptr
-   !
    !
    character(:), allocatable :: control_file_name, model_file_name, data_file_name, modem_job
    logical                   :: has_control_file = .false., has_model_file = .false., has_data_file = .false.
@@ -51,10 +49,7 @@ program ModEM
    call MPI_Comm_rank( shared_comm, node_rank, ierr )
    !
    write( *, * ) "Rank ", mpi_rank," in COMM_WORLD is ", node_rank, &
-             " in SHARED_COMM on Node: ", nodename(1:nodestringlen)
-   !
-   write( *, * ) "node_size: ", node_size
-   !
+             " in shared_comm on Node: ", nodename(1:nodestringlen)
    !
    ! MASTER
    !
@@ -120,8 +115,6 @@ program ModEM
             !
          enddo
          !
-		 call MPI_Win_fence( 0, nodewin, ierr )
-		 !
          call MPI_FINALIZE( ierr )
          !
       else
@@ -273,17 +266,6 @@ contains
           !
       enddo
       !
-	  !
-	  call MPI_Win_fence( 0, nodewin, ierr )
-	  !
-	  do iTx = 1, 5
-          !
-		  write ( *, * ) "MASTER test_mpi_ptr(iTx): ", test_mpi_ptr(iTx)
-          !
-      enddo
-      !
-	  !call MPI_Win_fence( 0, nodewin, ierr )
-	  !
       call MPI_FINALIZE( ierr )
       !
    end subroutine masterForwardModelling
@@ -294,7 +276,6 @@ contains
       ! Temporary alias pointers
       class( Transmitter_t ), pointer :: Tx
       class( Receiver_t ), allocatable    :: Rx
-	  integer, pointer, dimension(:) :: test_mpi_ptrl
      !
       ! Local variables
       integer :: iRx, nRx
@@ -305,20 +286,20 @@ contains
       !
       call MPI_Win_shared_query( nodewin, 0, winsize, disp_unit, baseptr, ierr )
       !
+      !
       if( ierr == MPI_SUCCESS ) then
          write( *, * ) "!!!! WORKER MPI_Win_shared_query SUCCEDED: ", baseptr
       else
          write( *, * ) "!!!! WORKER MPI_Win_shared_query FAILS: ", baseptr
       endif
       !
-	  !write( *, * ) "test_mpi_ptr:[", test_mpi_ptrl, "]"
-	  !
-      call c_f_pointer( baseptr, test_mpi_ptrl, (/winsize/) )
+        call c_f_pointer( baseptr, model_operator_ptr )
+       !
+      write( *, * ) "AFTER mpi_rank, winsize, disp_unit, baseptr, ierr", mpi_rank, winsize, disp_unit, baseptr, ierr
+     !
+      !write( *, * ) "GRID Nx, Ny, Nz:", model_operator_ptrl%grid%nx, model_operator_ptrl%grid%ny, model_operator_ptrl%grid%nz
       !
-	  write( *, * ) "test_mpi_ptr:[", test_mpi_ptrl, "]"
-	  !
-	  test_mpi_ptrl( node_rank+1 ) = node_rank
-	  !
+     !
       ! Temporary Transmitter alias
       !Tx => getTransmitter( mpi_rank )
       !
@@ -442,10 +423,7 @@ contains
               !
               class is( ModelOperator_MF_t )
               !
-			  allocate( test_mpi_ptr(5) )
-			  test_mpi_ptr = (/-1, -1, -1, -1, -1/)
-			  !
-			  winsize = size( test_mpi_ptr )
+              winsize = sizeof( model_operator )
               !
               call MPI_Win_allocate_shared( winsize, 0, MPI_INFO_NULL, shared_comm, baseptr, nodewin, ierr )
               !
@@ -454,11 +432,11 @@ contains
               else
                  write( *, * ) "!!!! MASTER MPI_Win_allocate_shared FAILS: ", winsize, baseptr
               endif
-			  !
-              !model_operator_ptr => model_operator
               !
-              call c_f_pointer( baseptr, test_mpi_ptr, (/winsize/) )
+              model_operator_ptr => model_operator
               !
+              call c_f_pointer( baseptr, model_operator_ptr )
+           !
            end select
            !
         class default

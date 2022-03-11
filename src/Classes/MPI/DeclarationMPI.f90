@@ -20,7 +20,7 @@ module DeclarationMPI
 	!
 	integer							 ::	nbytes, &
 										disp_unit = 0, node_size, node_rank, nodestringlen, &
-										mpi_rank, mpi_size, ierr
+										intsize, mpi_rank, mpi_size, ierr
 	!
     integer( MPI_ADDRESS_KIND ) :: winsize
     !
