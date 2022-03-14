@@ -26,7 +26,7 @@ module TransmitterFArray
 	!type( Tx_t ), pointer, save, public, dimension(:)	:: transmitters
 	type( Tx_t ), pointer, dimension(:)	:: transmitters
     !
-	integer                             	:: index_of_tx_array
+	integer                             :: index_of_tx_array
     !
 	public :: getTransmitter, addTransmitter, showTransmitterArray
     public :: initTransmitterArray, updateTransmitterArray

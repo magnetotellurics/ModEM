@@ -25,7 +25,7 @@ program ModEM
    type( ModelOperator_MF_t ), pointer   :: model_operator_ptr => null()
    type( DataManager_t ) :: data_manager
    !
-   integer, pointer, dimension(:) :: test_mpi_ptr
+   integer, pointer, dimension(:), save :: test_mpi_ptr
    !
    !
    character(:), allocatable :: control_file_name, model_file_name, data_file_name, modem_job
@@ -120,8 +120,8 @@ program ModEM
             !
          enddo
          !
-		 call MPI_Win_fence( 0, nodewin, ierr )
-		 !
+         call MPI_Win_fence( 0, nodewin, ierr )
+         !
          call MPI_FINALIZE( ierr )
          !
       else
@@ -273,17 +273,17 @@ contains
           !
       enddo
       !
-	  !
-	  call MPI_Win_fence( 0, nodewin, ierr )
-	  !
-	  do iTx = 1, 5
+      !
+      call MPI_Win_fence( 0, nodewin, ierr )
+      !
+      do iTx = 1, 5
           !
-		  write ( *, * ) "MASTER test_mpi_ptr(iTx): ", test_mpi_ptr(iTx)
+          write ( *, * ) "MASTER test_mpi_ptr(iTx): ", test_mpi_ptr(iTx)
           !
       enddo
       !
-	  !call MPI_Win_fence( 0, nodewin, ierr )
-	  !
+      !call MPI_Win_fence( 0, nodewin, ierr )
+      !
       call MPI_FINALIZE( ierr )
       !
    end subroutine masterForwardModelling
@@ -292,10 +292,9 @@ contains
       implicit none
       !
       ! Temporary alias pointers
-      class( Transmitter_t ), pointer :: Tx
-      class( Receiver_t ), allocatable    :: Rx
-	  integer, pointer, dimension(:) :: test_mpi_ptrl
-     !
+      class( Transmitter_t ), pointer  :: Tx
+      class( Receiver_t ), allocatable :: Rx
+      !
       ! Local variables
       integer :: iRx, nRx
       !
@@ -306,19 +305,20 @@ contains
       call MPI_Win_shared_query( nodewin, 0, winsize, disp_unit, baseptr, ierr )
       !
       if( ierr == MPI_SUCCESS ) then
-         write( *, * ) "!!!! WORKER MPI_Win_shared_query SUCCEDED: ", baseptr
+         write( *, * ) "!!!! WORKER MPI_Win_shared_query SUCCEDED: ", winsize, baseptr
       else
-         write( *, * ) "!!!! WORKER MPI_Win_shared_query FAILS: ", baseptr
+         write( *, * ) "!!!! WORKER MPI_Win_shared_query FAILS: ", winsize, baseptr
       endif
       !
-	  !write( *, * ) "test_mpi_ptr:[", test_mpi_ptrl, "]"
-	  !
-      call c_f_pointer( baseptr, test_mpi_ptrl, (/winsize/) )
+      !write( *, * ) "test_mpi_ptr:[", test_mpi_ptrl, "]"
       !
-	  write( *, * ) "test_mpi_ptr:[", test_mpi_ptrl, "]"
-	  !
-	  test_mpi_ptrl( node_rank+1 ) = node_rank
-	  !
+      call c_f_pointer( baseptr, test_mpi_ptr, (/winsize/) )
+	  !call c_f_pointer( baseptr, model_operator_ptrl )
+      !
+      !write( *, * ) "model_operator_ptrl:[", model_operator_ptrl%grid%nx, model_operator_ptrl%grid%ny, model_operator_ptrl%grid%nz, "]"
+      !
+      test_mpi_ptr( node_rank+1 ) = node_rank * 10
+      !
       ! Temporary Transmitter alias
       !Tx => getTransmitter( mpi_rank )
       !
@@ -442,22 +442,26 @@ contains
               !
               class is( ModelOperator_MF_t )
               !
-			  allocate( test_mpi_ptr(5) )
-			  test_mpi_ptr = (/-1, -1, -1, -1, -1/)
-			  !
-			  winsize = size( test_mpi_ptr )
+              allocate( test_mpi_ptr(5) )
               !
-              call MPI_Win_allocate_shared( winsize, 0, MPI_INFO_NULL, shared_comm, baseptr, nodewin, ierr )
+              !winsize = size( test_mpi_ptr )
+			  winsize = sizeof( model_operator )
+              !
+              call MPI_Win_allocate_shared( winsize, disp_unit, MPI_INFO_NULL, shared_comm, baseptr, nodewin, ierr )
               !
               if( ierr == MPI_SUCCESS ) then
                  write( *, * ) "!!!! MASTER MPI_Win_allocate_shared SUCCEDED: ", winsize, baseptr
               else
                  write( *, * ) "!!!! MASTER MPI_Win_allocate_shared FAILS: ", winsize, baseptr
               endif
-			  !
-              !model_operator_ptr => model_operator
               !
               call c_f_pointer( baseptr, test_mpi_ptr, (/winsize/) )
+			  !call c_f_pointer( baseptr, model_operator_ptr )
+              !
+			  test_mpi_ptr = (/-1, -1, -1, -1, -1/)
+			  !allocate( model_operator_ptr, source = model_operator )
+			  !
+              !write( *, * ) "### MASTER model_operator_ptr:[", model_operator_ptr%grid%nx, model_operator_ptr%grid%ny, model_operator_ptr%grid%nz, "]"
               !
            end select
            !
