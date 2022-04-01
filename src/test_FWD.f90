@@ -123,14 +123,14 @@ contains
       ! Forward Modelling
       !
       ! Loop over all Transmitters
-      nTx = transmitters%size()
+      nTx = size( transmitters )
       !
       call writeEsolutionHeader( nTx, 2 )
       !
       do iTx = 1, nTx
          !
          ! Temporary Transmitter alias
-         Tx = transmitters%get( iTx )
+         Tx = getTransmitter( iTx )
          !
          ! Verbosis...
          write( *, * ) "   Tx Id:", Tx%id, "Period:", int( Tx%period )
@@ -419,7 +419,7 @@ contains
          write( ioPredData, "(4A, 100A)" ) ">   ", "[V/m]/[T]"
          write( ioPredData, "(7A, 100A)" ) ">      ", "0.00"
          write( ioPredData, "(7A, 100A)" ) ">      ", "0.000   0.000"
-         write( ioPredData, "(A3, i8, i8)" ) ">      ", transmitters%size(), receivers%size()
+         write( ioPredData, "(A3, i8, i8)" ) ">      ", size( transmitters ), receivers%size()
          !
          close( ioPredData )
          !
