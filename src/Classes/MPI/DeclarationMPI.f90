@@ -1022,32 +1022,32 @@ module DeclarationMPI
     end function allocateModelOperatorBuffer
     !
     function BiArrayToArray( d2_array ) result ( d1_array )
-      !
-      real( kind=prec ), intent( in ) :: d2_array(:,:)
-      real( kind=prec ), allocatable  :: d1_array(:)
-      !
-      integer :: size_array, dim_d2_array(2)
-      !
-      dim_d2_array = shape( d2_array )
-      size_array = product( dim_d2_array )
-      !
-      allocate( d1_array( size_array ) )
-      d1_array = (/reshape( d1_array, (/size_array, 1/))/)
-      
+        !
+        real( kind=prec ), intent( in ) :: d2_array(:,:)
+        real( kind=prec ), allocatable  :: d1_array(:)
+        !
+        integer :: size_array, dim_d2_array(2)
+        !
+        dim_d2_array = shape( d2_array )
+        size_array = product( dim_d2_array )
+        !
+        allocate( d1_array( size_array ) )
+        d1_array = (/reshape( d1_array, (/size_array, 1/))/)
+        !
    end function BiArrayToArray
    !
    !
    function arrayToBiArray( d1_array, x, y ) result ( d2_array )
-      !
-      real( kind=prec ), intent( in ) :: d1_array(:)
-      integer, intent( in ) :: x, y
-      !
-      real( kind=prec ), allocatable  :: d2_array(:,:)
-      !
-      allocate( d2_array( x, y ) )
-      !
-      d2_array = reshape( d1_array, (/x, y/) )
-      !
+        !
+        real( kind=prec ), intent( in ) :: d1_array(:)
+        integer, intent( in ) :: x, y
+        !
+        real( kind=prec ), allocatable  :: d2_array(:,:)
+        !
+        allocate( d2_array( x, y ) )
+        !
+        d2_array = reshape( d1_array, (/x, y/) )
+        !
    end function arrayToBiArray
    !
    !
