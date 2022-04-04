@@ -16,7 +16,7 @@ module Transmitter
       !
       integer           :: id, n_pol, fwd_key(8)
       !
-      character(:), allocatable :: type
+      character(:), allocatable :: type_name
       !
       real( kind=prec ) :: period
       !

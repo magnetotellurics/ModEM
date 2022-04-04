@@ -33,13 +33,13 @@ module TransmitterCSEM
 contains
    !
    ! Parametrized constructor
-   function TransmitterCSEM_ctor( period, location, type ) result ( self )
+   function TransmitterCSEM_ctor( period, location, type_name ) result ( self )
       !
       type( TransmitterCSEM_t ) :: self
       !
       real( kind=prec ), intent( in )                   :: period
       real( kind=prec ), intent( in )                   :: location(3)
-      character(:), allocatable, optional, intent( in ) :: type
+      character(:), allocatable, optional, intent( in ) :: type_name
       !
       ! write(*,*) "Constructor TransmitterCSEM_t"
       !
@@ -49,10 +49,10 @@ contains
       self%period = period
       self%location = location
       !
-      if( present( type ) ) then
-         self%type = type
+      if( present( type_name ) ) then
+         self%type_name = type_name
       else
-         self%type = "TransmitterCSEM_t"
+         self%type_name = "TransmitterCSEM_t"
       endif
       !
    end function TransmitterCSEM_ctor

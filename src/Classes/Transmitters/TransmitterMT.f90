@@ -33,13 +33,13 @@ module TransmitterMT
    contains
    !
    ! TransmitterMT constructor
-   function TransmitterMT_ctor( period, type ) result ( self )
+   function TransmitterMT_ctor( period, type_name ) result ( self )
       implicit none
       !
       type( TransmitterMT_t ) :: self
       !
       real( kind=prec ), intent( in ) :: period
-      character(:), allocatable, optional, intent( in ) :: type
+      character(:), allocatable, optional, intent( in ) :: type_name
       !
       !write(*,*) "Constructor TransmitterMT_t"
       !
@@ -51,10 +51,10 @@ module TransmitterMT
       !
       self%period = period
       !
-      if( present( type ) ) then
-         self%type = type
+      if( present( type_name ) ) then
+         self%type_name = type_name
       else
-         self%type = "TransmitterMT_t"
+         self%type_name = "TransmitterMT_t"
       endif
       !
       self%DATA_TITLE = "Period(s) Code GG_Lat GG_Lon X(m) Y(m) Z(m) Component Real Imag Error"

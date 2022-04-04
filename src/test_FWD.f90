@@ -394,7 +394,7 @@ contains
 	  integer :: nTx, nRx
       logical :: tx_changed = .false.
       !
-      if( ( index( transmitter_type, "Unknow" ) /= 0 ) .OR. transmitter_type /= trim( Tx%type ) ) then
+      if( ( index( transmitter_type, "Unknow" ) /= 0 ) .OR. transmitter_type /= trim( Tx%type_name ) ) then
          !
          tx_changed = .true.
          !
@@ -404,7 +404,7 @@ contains
          !
          open( ioPredData, file = "predicted_data.dat", action="write", form ="formatted" )
          !
-      else if( transmitter_type /= trim( Tx%type ) ) then
+      else if( transmitter_type /= trim( Tx%type_name ) ) then
          !
          open( ioPredData, file = "predicted_data.dat", action="write", form ="formatted", position="append" )
          !
@@ -414,7 +414,7 @@ contains
          !
          write( ioPredData, "(4A, 100A)" ) "#   ", DATA_FILE_TITLE
          write( ioPredData, "(4A, 100A)" ) "#   ", Tx%DATA_TITLE
-         write( ioPredData, "(4A, 100A)" ) ">   ", trim( Tx%type )
+         write( ioPredData, "(4A, 100A)" ) ">   ", trim( Tx%type_name )
          write( ioPredData, "(4A, 100A)" ) ">   ", "exp(-i\omega t)"
          write( ioPredData, "(4A, 100A)" ) ">   ", "[V/m]/[T]"
          write( ioPredData, "(7A, 100A)" ) ">      ", "0.00"
@@ -423,7 +423,7 @@ contains
          !
          close( ioPredData )
          !
-         transmitter_type = trim( Tx%type )
+         transmitter_type = trim( Tx%type_name )
          !
       endif
       !

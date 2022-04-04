@@ -113,8 +113,8 @@ program ModEM
             !
          enddo
          !
-		 write ( *, * )  "WORKER: ", mpi_rank, " DONE FOR THE DAY!"
-		 !
+         write ( *, * )  "WORKER: ", mpi_rank, " DONE FOR THE DAY!"
+         !
          call MPI_Win_fence( 0, shared_window, ierr )
          !
          call MPI_Finalize( ierr )
@@ -223,36 +223,48 @@ contains
       !
    end subroutine masterForwardModelling
    !
-   subroutine showProcessState( process_name )
+   subroutine masterExposeSharedMemory()
       implicit none
       !
-      character(:), allocatable :: process_name
-      !
-      !
-      write( *, * ) trim( process_name )
-      !
-      write( *, * ) "#### GRID:[", main_grid%allocated, main_grid%nx, main_grid%ny, main_grid%nz, "]"
-      !
-      write( *, * ) "#### MODEL_OPERATOR:"
       select type( model_operator )
         !
         class is( ModelOperator_MF_t )
             !
-            call model_operator%Sigma_E%print()
-            write( *, * ) "#### Sigma_E GRID TYPE:[", model_operator%Sigma_E%gridType, "]"
-            call model_operator%c%print()
+            call allocateSharedBuffer( main_grid, model_operator, model_parameter )
+            !
+            shared_window_size = shared_buffer_size
+            disp_unit = 1
+            !
+            call MPI_Win_allocate_shared( shared_window_size, disp_unit, MPI_INFO_NULL, child_comm, shared_c_ptr, shared_window, ierr )
+            !
+            if( ierr == MPI_SUCCESS ) then
+                write( *, * ) "!!!! MASTER MPI_Win_allocate_shared SUCCEDED: ", shared_window_size, disp_unit, shared_c_ptr
+            else
+                write( *, * ) "!!!! MASTER MPI_Win_allocate_shared FAILS: ", shared_window_size, disp_unit, shared_c_ptr
+            endif
+            !
+            call c_f_pointer( shared_c_ptr, shared_buffer, (/shared_window_size/) )
+            !
+            call packSharedBuffer( main_grid, model_operator, model_parameter )
+            !
+            process_name = "#### MASTER ####"
+            call showProcessState( process_name )
             !
       end select
       !
-      write( *, * ) "#### MODEL PARAMETER:"
-      select type( model_parameter )
-        !
-        class is( ModelParameterCell_SG_t )
-            !
-            write( *, * ) "#### PARAM GRID:[", model_parameter%paramGrid%nx, model_parameter%paramGrid%ny, model_parameter%paramGrid%nz, "]"
-            !call model_parameter%cellCond%print()
-            !
-      end select
+   end subroutine masterExposeSharedMemory
+   !
+   subroutine showProcessState( process_name )
+      implicit none
+      !
+      character(:), allocatable :: process_name
+      class( Transmitter_t ), allocatable :: transmitter
+      !
+      !
+      write( *, * ) trim( process_name )
+      !
+      transmitter = getTransmitter( 1 )
+      call transmitter%e_all(1)%print()
       !
    end subroutine showProcessState
    !
@@ -273,9 +285,6 @@ contains
       !
       call unpackSharedBuffer( int( shared_window_size ), main_grid, model_operator, model_parameter )
       !
-      process_name = "#### WORKER ####"
-      call showProcessState( process_name )
-      !
    end subroutine workerQuerySharedMemory
    !
    subroutine workerForwardModelling()
@@ -287,16 +296,35 @@ contains
       !
       ! Temporary alias pointers
       class( Receiver_t ), allocatable     :: Rx
-      class( Transmitter_t ), allocatable  :: Tx
+      class( Transmitter_t ), pointer  :: Tx
+      !
+      type( TAirLayers )            :: air_layer
       !
       ! Local variablesh
-      integer :: iTx, iRx, nRx
-      !
-      ! High-level object instantiation
-      ! Some types are chosen from the control file
+      integer :: iRx, nRx
       !
       write( *, * ) "INIT WORWER FWD"
       !
+      select type( main_grid )
+        !
+        class is( Grid3D_SG_t )
+           !
+           model_method = MM_METHOD_FIXED_H
+           !
+           call main_grid%SetupAirLayers( air_layer, model_method, model_n_air_layer, model_max_height )
+           !
+           call main_grid%UpdateAirLayers( air_layer%nz, air_layer%dz )
+           !
+        class default
+              stop "Unclassified main_grid"
+           !
+      end select
+        !
+        call model_parameter%setMetric( model_operator%metric )
+        !
+        ! complete model operator setup
+        call model_operator%SetEquations()
+        !
       ! ForwardSolver - Chosen from control file
       select case ( forward_solver_type )
          !
@@ -342,26 +370,29 @@ contains
       !
       !
       ! Temporary Transmitter alias
-      !Tx = getTransmitter( iTx )
+      Tx => getTransmitter( job_info%tx_index )
       !
       ! Verbosis...
-      !write( *, * ) "   Tx Id:", Tx%id, "Period:", int( Tx%period )
+      write( *, * ) "   Tx Id:", Tx%id, "Period:", int( Tx%period )
       !
       ! According to Tx type,
       ! write the proper header in the "predicted_data.dat" file
       !call writePredictedDataHeader( Tx, transmitter_type )
       !
       ! Tx points to its due Source
-      !call Tx%setSource( fwd_source )
+      call Tx%setSource( fwd_source )
       !
       ! Set ForwardSolver Period
-      !call fwd_solver%setPeriod( Tx%period )
+      call fwd_solver%setPeriod( Tx%period )
       !
       ! Tx points to its due ForwardSolver
-      !call Tx%setForwardSolver( fwd_solver )
+      call Tx%setForwardSolver( fwd_solver )
       !
       ! Solve Tx Forward Modelling
-      !call Tx%solveFWD()
+      call Tx%solveFWD()
+      !
+      !process_name = "#### WORKER ####"
+      !call showProcessState( process_name )
       !
       ! Loop over Receivers of each Transmitter
       !nRx = size( Tx%receiver_indexes )
@@ -489,37 +520,6 @@ contains
       !
    end subroutine handleModelFile
    !
-   subroutine masterExposeSharedMemory()
-      implicit none
-      !
-      select type( model_operator )
-        !
-        class is( ModelOperator_MF_t )
-            !
-            call allocateSharedBuffer( main_grid, model_operator, model_parameter )
-            !
-            shared_window_size = shared_buffer_size
-            disp_unit = 1
-            !
-            call MPI_Win_allocate_shared( shared_window_size, disp_unit, MPI_INFO_NULL, child_comm, shared_c_ptr, shared_window, ierr )
-            !
-            if( ierr == MPI_SUCCESS ) then
-                write( *, * ) "!!!! MASTER MPI_Win_allocate_shared SUCCEDED: ", shared_window_size, disp_unit, shared_c_ptr
-            else
-                write( *, * ) "!!!! MASTER MPI_Win_allocate_shared FAILS: ", shared_window_size, disp_unit, shared_c_ptr
-            endif
-            !
-            call c_f_pointer( shared_c_ptr, shared_buffer, (/shared_window_size/) )
-            !
-            call packSharedBuffer( main_grid, model_operator, model_parameter )
-            !
-            process_name = "#### MASTER ####"
-            call showProcessState( process_name )
-            !
-      end select
-      !
-   end subroutine masterExposeSharedMemory
-   !
    subroutine handleArguments()
       implicit none
       !
@@ -632,7 +632,7 @@ contains
       !
       logical :: tx_changed = .false.
       !
-      if( ( index( transmitter_type, "Unknow" ) /= 0 ) .OR. transmitter_type /= trim( Tx%type ) ) then
+      if( ( index( transmitter_type, "Unknow" ) /= 0 ) .OR. transmitter_type /= trim( Tx%type_name ) ) then
         !
         tx_changed = .true.
         !
@@ -642,7 +642,7 @@ contains
         !
         open( ioPredData, file = "predicted_data.dat", action="write", form ="formatted" )
         !
-      else if( transmitter_type /= trim( Tx%type ) ) then
+      else if( transmitter_type /= trim( Tx%type_name ) ) then
         !
         open( ioPredData, file = "predicted_data.dat", action="write", form ="formatted", position="append" )
         !
@@ -652,7 +652,7 @@ contains
         !
         write( ioPredData, "(4A, 100A)" ) "#   ", DATA_FILE_TITLE
         write( ioPredData, "(4A, 100A)" ) "#   ", Tx%DATA_TITLE
-        write( ioPredData, "(4A, 100A)" ) ">   ", trim( Tx%type )
+        write( ioPredData, "(4A, 100A)" ) ">   ", trim( Tx%type_name )
         write( ioPredData, "(4A, 100A)" ) ">   ", "exp(-i\omega t)"
         write( ioPredData, "(4A, 100A)" ) ">   ", "[V/m]/[T]"
         write( ioPredData, "(7A, 100A)" ) ">      ", "0.00"
@@ -661,7 +661,7 @@ contains
         !
         close( ioPredData )
         !
-        transmitter_type = trim( Tx%type )
+        transmitter_type = trim( Tx%type_name )
         !
       endif
       !
