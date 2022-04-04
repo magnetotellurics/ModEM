@@ -22,11 +22,6 @@ program ModEM
    class( Grid_t ), allocatable           :: main_grid
    class( ModelParameter_t ), allocatable :: model_parameter
    class( ModelOperator_t ), allocatable, target  :: model_operator
-   type( ModelOperator_MF_t ), pointer   :: model_operator_ptr => null()
-   type( DataManager_t ) :: data_manager
-   !
-   integer, pointer, dimension(:), save :: test_mpi_ptr
-   !
    !
    character(:), allocatable :: control_file_name, model_file_name, data_file_name, modem_job
    logical                   :: has_control_file = .false., has_model_file = .false., has_data_file = .false.
@@ -41,20 +36,17 @@ program ModEM
    ! SET mpi_rank WITH PROCESS ID FOR MPI_COMM_WORLD
    call MPI_Comm_rank( main_comm, mpi_rank, ierr )
    !
-   ! SPLIT MPI_COMM_WORLD into shared subcommunicator: shared_comm
-   call MPI_Comm_split_type( main_comm, MPI_COMM_TYPE_SHARED, 0, MPI_INFO_NULL, shared_comm, ierr )
+   ! SPLIT MPI_COMM_WORLD into shared subcommunicator: child_comm
+   call MPI_Comm_split_type( main_comm, MPI_COMM_TYPE_SHARED, mpi_rank, MPI_INFO_NULL, child_comm, ierr )
    !
-   call MPI_Get_processor_name( nodename, nodestringlen, ierr )
+   call MPI_Get_processor_name( node_name, nodestringlen, ierr )
    !
-   call MPI_Comm_size( shared_comm, node_size, ierr )
+   call MPI_Comm_size( child_comm, node_size, ierr )
    !
-   call MPI_Comm_rank( shared_comm, node_rank, ierr )
+   call MPI_Comm_rank( child_comm, node_rank, ierr )
    !
-   write( *, * ) "Rank ", mpi_rank," in COMM_WORLD is ", node_rank, &
-             " in SHARED_COMM on Node: ", nodename(1:nodestringlen)
-   !
-   write( *, * ) "node_size: ", node_size
-   !
+   write( *, * ) "Rank ", mpi_rank," in COMM_WORLD (", mpi_size, ") is ", node_rank, &
+             " in SHARED_COMM (", node_size, ") on Node: ", node_name(1:nodestringlen)
    !
    ! MASTER
    !
@@ -85,12 +77,11 @@ program ModEM
    !
    else
       !
-      call MPI_Win_allocate_shared( winsize, 0, MPI_INFO_NULL, shared_comm, baseptr, nodewin, ierr )
-      !
+      call MPI_Win_allocate_shared( shared_window_size, disp_unit, MPI_INFO_NULL, child_comm, shared_c_ptr, shared_window, ierr )
       !
       if( ierr == MPI_SUCCESS ) then
          !
-         write( *, * ) "!!!! WORKER MPI_Win_allocate_shared SUCCEDED: ", baseptr
+         write( *, * ) "!!!! WORKER MPI_Win_allocate_shared SUCCEDED: ", shared_window_size, disp_unit, shared_c_ptr
          !
          do while ( job_master .ne. job_finish )
             !
@@ -98,31 +89,25 @@ program ModEM
             !
             call receiveFrom( master_id )
             !
-            write ( *, * ) "WORKER: ", mpi_rank, " RECEIVE JOB: ", job_info%name
-            !
             job_master = trim( job_info%name )
             !
             select case ( job_master )
                 !
+                case ( "SHARE_MEM" )
+                    !
+                    call workerQuerySharedMemory()
+                    !
                 case ( "FORWARD" )
                     !
                     call workerForwardModelling()
                     !
-                case ( "STOP_JOBS" )
-                    !
-                    job_info%name = job_ok
-                    !
-                    write ( *, * ) "WORKER: ", mpi_rank, " SEND JOB: ", job_info%name, " TO MASTER"
-                    !
-                    call sendTo( master_id )
-                !
             end select
             !
          enddo
          !
-         call MPI_Win_fence( 0, nodewin, ierr )
+         call MPI_Win_fence( 0, shared_window, ierr )
          !
-         call MPI_FINALIZE( ierr )
+         call MPI_Finalize( ierr )
          !
       else
          stop "WORKER MPI_Win_allocate_shared FAILS !!!"
@@ -135,18 +120,8 @@ contains
    subroutine masterForwardModelling()
       implicit none
       !
-      ! These objects are frequency dependent,
-      ! must be instantiated on each Worker
-      class( ForwardSolver_t ), allocatable, target, save :: fwd_solver
-      !
-      class( Source_t ), allocatable, target, save        :: fwd_source 
-      !
-      ! Temporary alias pointers
-      class( Transmitter_t ), pointer  :: Tx
-      class( Receiver_t ), allocatable :: Rx
-      !
       ! Local variables
-      integer :: iTx, nTx, iRx, nRx
+      integer :: pid, worker_rank = 1, tx_received = 0, tx_index = 0
       character(:), allocatable :: transmitter_type
       !
       ! Verbosis
@@ -156,174 +131,191 @@ contains
       transmitter_type = "Unknow"
       !
       ! Reads Model File: instantiates Grid, ModelOperator and ModelParameter
-      if( .not. has_model_file ) then 
-        stop " - Missing Model file!"
+      if( .NOT. has_model_file ) then 
+         stop " - Missing Model file!"
       else
-        call handleModelFile()
+         call handleModelFile()
       endif
+      !
+      ! SHARE MEM WITH ALL WORKERS
+      call masterExposeSharedMemory()
+      !
+      do pid = 1, mpi_size - 1
+          !
+          job_info%name = "SHARE_MEM"
+          !
+          call sendTo( pid )
+          !
+      enddo
       !
       ! Reads Data File: instantiates and builds the Data relation between Txs and Txs
-      if( .not. has_data_file ) then 
-        stop " - Missing Data file!"
+      if( .NOT. has_data_file ) then 
+         stop " - Missing Data file!"
       else
-        call handleDataFile()
+         call handleDataFile()
       endif
       !
-      ! High-level object instantiation
-      ! Some types are chosen from the control file
+      ! SEND 1 TRANSMITTER TO EACH WORKER
+      do while ( worker_rank <= ( mpi_size - 1 ) )
+         !
+         tx_index = tx_index + 1
+         !
+         job_info%name = "FORWARD"
+         job_info%worker_rank = worker_rank
+         job_info%tx_index = tx_index
+         !
+         call sendTo( worker_rank )
+         !
+         worker_rank = worker_rank + 1
+         !
+      end do
       !
-      ! ForwardSolver - Chosen from control file
-      select case ( forward_solver_type )
+      ! SEND 1 TRANSMITTER TO FIRST AVAILABLE WORKER
+      do while( tx_index < size( transmitters ) )
+         !
+         write ( *, * ) "THERES", ( size( transmitters ) - tx_index ), " TX LEFT!"
+         !
+         call receiveFromAny()
+         !
+         tx_received = tx_received + 1
+         !
+         tx_index = tx_index + 1
+         !
+         job_info%name = "FORWARD"
+         job_info%tx_index = tx_index
+         !
+         call sendTo( job_info%worker_rank )
+         !
+      end do
+      !
+      ! RECEIVES job_done FROM EACH FINISHED WORKER
+      do while ( tx_received < size( transmitters ) )
+          !
+          write ( *, * ) "MASTER WAITING ANY WORKER"
+          !
+          call receiveFromAny()
+          !
+          tx_received = tx_received + 1
+          !
+          job_info%name = "STOP_JOBS"
+          !
+          call sendTo( job_info%worker_rank )
+          !
+      enddo
+      !
+      call MPI_Win_fence( 0, shared_window, ierr )
+      !
+      ! Verbosis
+      write ( *, * ) "   > Finish forward modelling."
+      !
+      select type( model_operator )
         !
-        case( FWD_FILE )
-           fwd_solver = ForwardSolverFromFile_t( model_operator )
-           !
-        case( FWD_IT )
-           fwd_solver = ForwardSolverIT_t( model_operator, QMR )
-           !
-        case( FWD_IT_DC )
-           fwd_solver = ForwardSolverIT_DC_t( model_operator, QMR )
-           !
-        case default
-           fwd_solver = ForwardSolverIT_DC_t( model_operator, QMR )
-           !
-      end select
-      !
-      call fwd_solver%setCond( model_parameter )
-      !
-      ! Source - Chosen from control file
-      select case ( source_type )
-         !
-         case( SRC_MT_1D )
-            allocate( fwd_source, source = SourceMT_1D_t( model_operator, model_parameter ) )
+        class is( ModelOperator_MF_t )
             !
-         case( SRC_MT_2D )
-            allocate( fwd_source, source = SourceMT_2D_t( model_operator, model_parameter ) )
+            write( *, * ) "### FINAL VECTOR STATE:"
+            call model_operator%Sigma_E%print()
+            write( *, * ) "### FINAL GRID STATE:[", main_grid%allocated, main_grid%nx, main_grid%ny, main_grid%nz, "]"
             !
-         case default
-            allocate( fwd_source, source = SourceMT_1D_t( model_operator, model_parameter ) )
-            !
-      end select
+        end select
       !
-      job_info%name = "FORWARD"
-      !
-      ! Loop over all Transmitters
-      nTx = size( transmitters )
-      !
-      call writeEsolutionHeader( nTx, 2 )
-      !
-      do iTx = 1, nTx
-         !
-         ! Temporary Transmitter alias
-         Tx => getTransmitter( iTx )
-         !
-         write( *, * ) "FOR PERIOD: ", Tx%period
-         !
-         ! According to Tx type,
-         ! write the proper header in the "predicted_data.dat" file
-         !call writePredictedDataHeader( Tx, transmitter_type )
-         !
-         ! Tx points to its due Source
-         call Tx%setSource( fwd_source )
-         !
-         ! Set ForwardSolver Period
-         call fwd_solver%setPeriod( Tx%period )
-         !
-         ! Tx points to its due ForwardSolver
-         call Tx%setForwardSolver( fwd_solver )
-         !
-         write ( *, * ) "MASTER SEND JOB: ", job_info%name, " TO WORKER: ", iTx
-         !
-         ! SEND FORWARD JOB TO WORKER
-         call sendTo( iTx )
-         !
-      enddo
-      !
-      ! RECEIVE FOREACH WORKER
-      do iTx = 1, nTx
-          !
-          write ( *, * ) "MASTER WAITING WORKER: ", iTx
-          !
-          call receiveFrom( iTx )
-          !
-          write ( *, * ) "MASTER RECEIVED JOB: ", job_info%name, " FROM WORKER: ", iTx
-          !
-      enddo
-      !
-      ! DISTRIBUTE STOP_JOBS
-      job_info%name = "STOP_JOBS"
-      !
-      ! SEND FOREACH WORK PROCESS
-      do iTx = 1, nTx
-          !
-          write ( *, * ) "MASTER SEND JOB: ", job_info%name, " TO WORKER: ", iTx
-          !
-          call sendTo( iTx )
-          !
-      enddo
-      !
-      ! RECEIVE FOREACH WORK PROCESS
-      do iTx = 1, nTx
-          !
-          write ( *, * ) "MASTER WAITING WORKER: ", iTx
-          !
-          call receiveFrom( iTx )
-          !
-          write ( *, * ) "MASTER RECEIVED JOB: ", job_info%name, " FROM WORKER: ", iTx
-          !
-      enddo
-      !
-      !
-      call MPI_Win_fence( 0, nodewin, ierr )
-      !
-      do iTx = 1, 5
-          !
-          write ( *, * ) "MASTER test_mpi_ptr(iTx): ", test_mpi_ptr(iTx)
-          !
-      enddo
-      !
-      !call MPI_Win_fence( 0, nodewin, ierr )
-      !
-      call MPI_FINALIZE( ierr )
+      call MPI_Finalize( ierr )
       !
    end subroutine masterForwardModelling
+   !
+   subroutine workerQuerySharedMemory()
+      implicit none
+      !
+      call MPI_Win_shared_query( shared_window, master_id, shared_window_size, disp_unit, shared_c_ptr, ierr )
+      !
+      if( ierr == MPI_SUCCESS ) then
+         write( *, * ) "!!!! WORKER [", mpi_rank, "] MPI_Win_shared_query SUCCEDED: ", shared_window_size, disp_unit, shared_c_ptr
+      else
+         write( *, * ) "!!!! WORKER MPI_Win_shared_query FAILS: ", shared_window_size, disp_unit, shared_c_ptr
+         stop
+      endif
+      !
+      call c_f_pointer( shared_c_ptr, shared_buffer, (/shared_window_size/) )
+      !
+      call unpackSharedBuffer( int( shared_window_size ), main_grid, model_operator )
+      !
+      !
+      select type( model_operator )
+        !
+        class is( ModelOperator_MF_t )
+            !
+            write( *, * ) "### WORKER VECTOR STATE:"
+            call model_operator%Sigma_E%print()
+            !
+      end select
+      !
+      write( *, * ) "### WORKER GRID STATE:[", main_grid%allocated, main_grid%nx, main_grid%ny, main_grid%nz, "]"
+      !
+   end subroutine workerQuerySharedMemory
    !
    subroutine workerForwardModelling()
       implicit none
       !
-      ! Temporary alias pointers
-      class( Transmitter_t ), pointer  :: Tx
-      class( Receiver_t ), allocatable :: Rx
+      class( ForwardSolver_t ), allocatable :: fwd_solver
       !
-      ! Local variables
+      class( Source_t ), allocatable        :: fwd_source 
+      !
+      ! Temporary alias pointers
+      class( Receiver_t ), allocatable :: Rx
+      class( Transmitter_t ), pointer  :: Tx
+      !
+      ! Local variablesh
       integer :: iRx, nRx
       !
-      !call sleep(  mpi_rank * 5 )
+      ! ForwardSolver - Chosen from control file
+      !select case ( forward_solver_type )
+        !
+        !case( FWD_FILE )
+           !fwd_solver = ForwardSolverFromFile_t()
+           !
+        !case( FWD_IT )
+           !fwd_solver = ForwardSolverIT_t( QMR )
+           !
+        !case( FWD_IT_DC )
+           !fwd_solver = ForwardSolverIT_DC_t( QMR )
+           !
+        !case default
+           !fwd_solver = ForwardSolverIT_DC_t( QMR )
+           !
+      !end select
       !
-      write( *, * ) "### WORKER: ", mpi_rank, " START JOB:", job_info%name
+      !call fwd_solver%setCond( model_parameter )
       !
-      call MPI_Win_shared_query( nodewin, 0, winsize, disp_unit, baseptr, ierr )
+      ! Source - Chosen from control file
+      !select case ( source_type )
+         !
+         !case( SRC_MT_1D )
+            !allocate( fwd_source, source = SourceMT_1D_t() )
+            !
+         !case( SRC_MT_2D )
+            !allocate( fwd_source, source = SourceMT_2D_t() )
+            !
+         !case default
+            !allocate( fwd_source, source = SourceMT_1D_t() )
+            !
+      !end select
       !
-      if( ierr == MPI_SUCCESS ) then
-         write( *, * ) "!!!! WORKER MPI_Win_shared_query SUCCEDED: ", winsize, baseptr
-      else
-         write( *, * ) "!!!! WORKER MPI_Win_shared_query FAILS: ", winsize, baseptr
-      endif
+      !Tx => getTransmitter( job_info%tx_index )
       !
-      !write( *, * ) "test_mpi_ptr:[", test_mpi_ptrl, "]"
+      ! According to Tx type,
+      ! write the proper header in the "predicted_data.dat" file
+      !call writePredictedDataHeader( Tx, job_info%transmitter_type )
       !
-      call c_f_pointer( baseptr, test_mpi_ptr, (/winsize/) )
-	  !call c_f_pointer( baseptr, model_operator_ptrl )
+      ! Tx points to its due Source
+      !call Tx%setSource( fwd_source )
       !
-      !write( *, * ) "model_operator_ptrl:[", model_operator_ptrl%grid%nx, model_operator_ptrl%grid%ny, model_operator_ptrl%grid%nz, "]"
+      ! Set ForwardSolver Period
+      !call fwd_solver%setPeriod( Tx%period )
       !
-      test_mpi_ptr( node_rank+1 ) = node_rank * 10
-      !
-      ! Temporary Transmitter alias
-      !Tx => getTransmitter( mpi_rank )
+      ! Tx points to its due ForwardSolver
+      !call Tx%setForwardSolver( fwd_solver )
       !
       ! Verbosis...
-      !write( *, * ) "WORKER Tx Id:", Tx%id, "Period:", int( Tx%period )
+      !write( *, * ) "Tx Id:", Tx%id, "Period:", int( Tx%period )
       !
       ! Solve Tx Forward Modelling
       !call Tx%solveFWD()
@@ -346,9 +338,9 @@ contains
       !
       !deallocate( Tx )
       !
-      job_info%name = job_ok
-      !
-      write ( *, * ) "WORKER: ", mpi_rank, " SEND JOB: ", job_info%name, " TO MASTER"
+      ! SEND FORWARD JOB TO WORKER
+      job_info%name = job_done
+      job_info%worker_rank = mpi_rank
       !
       call sendTo( master_id )
       !
@@ -385,16 +377,24 @@ contains
       !
    end subroutine handleControlFile
    !
-   !
    subroutine handleDataFile()
       implicit none
       !
-      ! Local object to dealt data, self-destructs at the end of the subroutine
-      !type( DataManager_t ) :: data_manager
+      type( DataManager_t ) :: data_manager
       !
       write( *, * ) "   -> Data File: [", data_file_name, "]"
       !
       data_manager = DataManager_t( data_file_name )
+      !
+      if( ( mpi_size - 1 ) > size( transmitters ) ) then
+         write( *, * ) "There are more MPI worker processes than necessary!!!"
+         write( *, * ) "    ", size( transmitters ), " Transmitters"
+         write( *, * ) "    ", ( mpi_size - 1 ), " MPI processes"
+         !
+         call MPI_Abort( main_comm, ierr )
+         !
+         stop
+      endif
       !
    end subroutine handleDataFile
    !
@@ -404,16 +404,11 @@ contains
       ! It remains to standardize ????
       type( ModelReader_Weerachai_t ) :: model_reader
       !
-      character(:), allocatable      :: fname
-      !
       type( TAirLayers )            :: air_layer
       !
-      fname = "/mnt/c/Users/protew/Desktop/ON/GITLAB_PROJECTS/modem-oo/inputs/Full_A_Matrix_TinyModel"
-      !fname = "/Users/garyegbert/Desktop/ModEM_ON/modem-oo/inputs/Full_A_Matrix_TinyModel"
-      !
       write( *, * ) "   -> Model File: [", model_file_name, "]"
-     !
-     model_method = MM_METHOD_FIXED_H
+      !
+      model_method = MM_METHOD_FIXED_H
       !
       ! Read Grid and ModelParameter with ModelReader_Weerachai
       call model_reader%Read( model_file_name, main_grid, model_parameter ) 
@@ -424,10 +419,8 @@ contains
         class is( Grid3D_SG_t )
            !
            call main_grid%SetupAirLayers( air_layer, model_method, model_n_air_layer, model_max_height )
-           !   as coded have to use air_layer data structure to update grid
-           call main_grid%UpdateAirLayers( air_layer%nz, air_layer%dz )
            !
-           !model_operator = ModelOperator_File_t( main_grid, fname )
+           call main_grid%UpdateAirLayers( air_layer%nz, air_layer%dz )
            !
            model_operator = ModelOperator_MF_t( main_grid )
            !
@@ -436,42 +429,44 @@ contains
            ! complete model operator setup
            call model_operator%SetEquations()
            !
-           call model_operator%SetCond( model_parameter )
+           class default
+              stop "Unclassified main_grid"
            !
-           select type( model_operator )
-              !
-              class is( ModelOperator_MF_t )
-              !
-              allocate( test_mpi_ptr(5) )
-              !
-              !winsize = size( test_mpi_ptr )
-			  winsize = sizeof( model_operator )
-              !
-              call MPI_Win_allocate_shared( winsize, disp_unit, MPI_INFO_NULL, shared_comm, baseptr, nodewin, ierr )
-              !
-              if( ierr == MPI_SUCCESS ) then
-                 write( *, * ) "!!!! MASTER MPI_Win_allocate_shared SUCCEDED: ", winsize, baseptr
-              else
-                 write( *, * ) "!!!! MASTER MPI_Win_allocate_shared FAILS: ", winsize, baseptr
-              endif
-              !
-              call c_f_pointer( baseptr, test_mpi_ptr, (/winsize/) )
-			  !call c_f_pointer( baseptr, model_operator_ptr )
-              !
-			  test_mpi_ptr = (/-1, -1, -1, -1, -1/)
-			  !allocate( model_operator_ptr, source = model_operator )
-			  !
-              !write( *, * ) "### MASTER model_operator_ptr:[", model_operator_ptr%grid%nx, model_operator_ptr%grid%ny, model_operator_ptr%grid%nz, "]"
-              !
-           end select
-           !
-        class default
-            stop "Unclassified main_grid"
-        !
       end select
       !
    end subroutine handleModelFile
    !
+   subroutine masterExposeSharedMemory()
+      implicit none
+      !
+      select type( model_operator )
+        !
+        class is( ModelOperator_MF_t )
+            !
+            call allocateSharedBuffer( main_grid, model_operator )
+            !
+            shared_window_size = shared_buffer_size
+            disp_unit = 1
+            !
+            call MPI_Win_allocate_shared( shared_window_size, disp_unit, MPI_INFO_NULL, child_comm, shared_c_ptr, shared_window, ierr )
+            !
+            if( ierr == MPI_SUCCESS ) then
+                write( *, * ) "!!!! MASTER MPI_Win_allocate_shared SUCCEDED: ", shared_window_size, disp_unit, shared_c_ptr
+            else
+                write( *, * ) "!!!! MASTER MPI_Win_allocate_shared FAILS: ", shared_window_size, disp_unit, shared_c_ptr
+            endif
+            !
+            call c_f_pointer( shared_c_ptr, shared_buffer, (/shared_window_size/) )
+            !
+            call packSharedBuffer( main_grid, model_operator )
+            !
+            write( *, * ) "### MASTER VECTOR STATE:"
+            call model_operator%Sigma_E%print()
+            write( *, * ) "### MASTER GRID STATE:[", main_grid%allocated, main_grid%nx, main_grid%ny, main_grid%nz, "]"
+            !
+      end select
+      !
+   end subroutine masterExposeSharedMemory
    !
    subroutine handleArguments()
       implicit none
@@ -548,12 +543,12 @@ contains
       !
    end subroutine handleArguments
    !
-   subroutine writeEsolutionHeader( nTx, nMode )
+   subroutine writeEsolutionHeader( nMode )
       implicit none
       !
       ! implement separated routine
-      integer, intent( in ) :: nTx, nMode
-      integer             :: ios
+      integer, intent( in ) :: nMode
+      integer               :: ios
       character (len=20)    :: version
       !
       open( ioESolution, file = "e_solution", action="write", form ="unformatted", iostat=ios)
@@ -565,7 +560,7 @@ contains
         version = ""
         ! write the header (contains the basic information for the forward
         ! modeling). the header is 4 lines
-        write( ioESolution ) version, nTx, nMode, &
+        write( ioESolution ) version, size( transmitters ), nMode, &
         main_grid%nx, main_grid%ny, main_grid%nz, main_grid%nzAir, &
         main_grid%ox, main_grid%oy, main_grid%oz, main_grid%rotdeg
         !
@@ -580,10 +575,9 @@ contains
    subroutine writePredictedDataHeader( Tx, transmitter_type )
       implicit none
       !
-      class( Transmitter_t ), intent( in )      :: Tx
+      class( Transmitter_t ), intent( in )       :: Tx
       character(:), allocatable, intent( inout ) :: transmitter_type
       !
-      integer :: nTx, nRx
       logical :: tx_changed = .false.
       !
       if( ( index( transmitter_type, "Unknow" ) /= 0 ) .OR. transmitter_type /= trim( Tx%type ) ) then
@@ -611,7 +605,7 @@ contains
         write( ioPredData, "(4A, 100A)" ) ">   ", "[V/m]/[T]"
         write( ioPredData, "(7A, 100A)" ) ">      ", "0.00"
         write( ioPredData, "(7A, 100A)" ) ">      ", "0.000   0.000"
-        write( ioPredData, "(A3, i8, i8)" ) ">      ", size( transmitters ), receivers%size()
+        write( ioPredData, "(A3, i8, i8)" ) ">      ", size( transmitters ), size( receivers )
         !
         close( ioPredData )
         !

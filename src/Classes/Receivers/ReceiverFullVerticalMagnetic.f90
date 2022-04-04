@@ -8,7 +8,6 @@
 ! 
 module ReceiverFullVerticalMagnetic
    !
-   use FileUnits 
    use Receiver
    !
    type, extends( Receiver_t ), public :: ReceiverFullVerticalMagnetic_t
@@ -21,8 +20,6 @@ module ReceiverFullVerticalMagnetic
          !
          procedure, public :: predictedData => predictedDataFullVerticalMagnetic
          !
-		 procedure, public :: savePredictedData => savePredictedDataFullVerticalMagnetic
-         procedure, public :: writePredictedData => writePredictedDataFullVerticalMagnetic
          procedure, public :: write => writeReceiverFullVerticalMagnetic
          !
    end type ReceiverFullVerticalMagnetic_t
@@ -33,10 +30,9 @@ module ReceiverFullVerticalMagnetic
    !
 contains
    !
-   function ReceiverFullVerticalMagnetic_ctor( id, location ) result( self )
+   function ReceiverFullVerticalMagnetic_ctor( location ) result( self )
       implicit none
       !
-      integer, intent( in )                  :: id
       real( kind=prec ), intent( in )        :: location(3)
       type( ReceiverFullVerticalMagnetic_t ) :: self
       !
@@ -44,7 +40,6 @@ contains
       !
       call self%init()
       !
-      self%id = id
       self%location = location
       !
       self%n_comp = 2
@@ -152,29 +147,5 @@ contains
       deallocate( self%Z )
       !
    end subroutine predictedDataFullVerticalMagnetic
-   !
-   subroutine savePredictedDataFullVerticalMagnetic( self, tx )
-      implicit none
-      !
-      class( ReceiverFullVerticalMagnetic_t ), intent( in ) :: self
-      class( Transmitter_t ), intent( in )                  :: tx
-      !
-      open( ioPredData, file = 'predicted_data.dat', action='write', position='append' )
-      !
-      write( ioPredData, '(1pe12.6, A8, f9.3, f9.3, f13.3, f13.3, f13.3, A4, 1pe16.6, 1pe16.6, 1pe16.6)' ) tx%period, self%code, R_ZERO, R_ZERO, self%location(1), self%location(2), self%location(3), self%comp_names( 1 ), aimag( self%Z( 1 ) ), dimag( self%Z( 1 )), 1.0
-      write( ioPredData, '(1pe12.6, A8, f9.3, f9.3, f13.3, f13.3, f13.3, A4, 1pe16.6, 1pe16.6, 1pe16.6)' ) tx%period, self%code, R_ZERO, R_ZERO, self%location(1), self%location(2), self%location(3), self%comp_names( 2 ), aimag( self%Z( 2 ) ), dimag( self%Z( 2 )), 1.0
-      write( ioPredData, '(1pe12.6, A8, f9.3, f9.3, f13.3, f13.3, f13.3, A4, 1pe16.6, 1pe16.6, 1pe16.6)' ) tx%period, self%code, R_ZERO, R_ZERO, self%location(1), self%location(2), self%location(3), self%comp_names( 3 ), aimag( self%Z( 3 ) ), dimag( self%Z( 3 )), 1.0
-      write( ioPredData, '(1pe12.6, A8, f9.3, f9.3, f13.3, f13.3, f13.3, A4, 1pe16.6, 1pe16.6, 1pe16.6)' ) tx%period, self%code, R_ZERO, R_ZERO, self%location(1), self%location(2), self%location(3), self%comp_names( 4 ), aimag( self%Z( 4 ) ), dimag( self%Z( 4 )), 1.0
-      !
-      close( ioPredData )
-      !
-   end subroutine savePredictedDataFullVerticalMagnetic
-   !
-   subroutine writePredictedDataFullVerticalMagnetic( self )
-      implicit none
-      !
-      class( ReceiverFullVerticalMagnetic_t ), intent( in ) :: self
-      !
-   end subroutine writePredictedDataFullVerticalMagnetic
    !
 end module ReceiverFullVerticalMagnetic

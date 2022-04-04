@@ -15,7 +15,7 @@ module ModelOperator_MF
        !
        logical :: eqset = .false. ! set to true after equations,
                                   ! (part independent of sigma) is set.
-       integer(8) :: mKey = 0     ! For use with fortran DATE_AND_TIME subroutine.
+       integer :: mKey(8) = 0     ! For use with fortran DATE_AND_TIME subroutine.
        !
        integer :: nx = 0, ny = 0, nz = 0   ! Redundant with what is in grid,
                                            ! but makes code easier to read

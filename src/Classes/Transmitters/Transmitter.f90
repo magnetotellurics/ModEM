@@ -11,8 +11,6 @@ module Transmitter
    use Constants
    use Source
    use ForwardSolver
-   use IntegerArray
-   use VectorArray
    !
    type, abstract :: Transmitter_t
       !
@@ -25,8 +23,8 @@ module Transmitter
       class( ForwardSolver_t ), pointer :: forward_solver 
       class( Source_t ), pointer        :: source
       !
-      class( cVector_t ), allocatable   :: e_all(:)
-      class( IntegerArray_t ), pointer  :: receiver_indexes
+      class( cVector_t ), allocatable    :: e_all(:)
+      integer, allocatable, dimension(:) :: receiver_indexes
       !
       character(:), allocatable :: DATA_TITLE
       !
@@ -35,19 +33,15 @@ module Transmitter
       procedure, public :: init    => initializeTx
       procedure, public :: dealloc => deallocateTx
       !
-	  procedure, public :: setSource => setSourceTx
-	  procedure, public :: setForwardSolver => setForwardSolverTx
-	  !
+      procedure, public :: setSource => setSourceTx
+      procedure, public :: setForwardSolver => setForwardSolverTx
+      !
       procedure, public :: updateFwdKey
       !
-      procedure, public :: has    => hasReceiverTx
-      procedure, public :: add    => addReceiverTx
-      procedure, public :: get    => getReceiverTx
-      procedure, public :: getNRx => getNumberOfReceivers
+      procedure, public :: updateReceiverIndexesArray
       !
       procedure( interface_solve_fwd_tx ), deferred, public  :: solveFWD
       !
-	  !procedure( interface_size_of_tx ), deferred, public   :: sizeOf
       procedure( interface_is_equal_tx ), deferred, public   :: isEqual
       procedure( interface_write_tx ), deferred, public      :: write
       !
@@ -59,12 +53,6 @@ module Transmitter
          import :: Transmitter_t
          class( Transmitter_t ), intent( inout ) :: self
       end subroutine interface_solve_fwd_tx
-      !
-      !function interface_size_of_tx( self ) result( size )
-         !import :: Transmitter_t
-         !class( Transmitter_t ), intent( in ) :: self
-         !integer                              :: size
-      !end function interface_size_of_tx
       !
       function interface_is_equal_tx( self, other ) result( equal )
          import :: Transmitter_t
@@ -91,20 +79,12 @@ module Transmitter
       self%forward_solver => null()
       self%source         => null()
       !
-      allocate( self%receiver_indexes, source = IntegerArray_t() )
-      !
    end subroutine initializeTx
    !
    subroutine deallocateTx( self )
       implicit none
       !
       class( Transmitter_t ), intent( inout ) :: self
-      !
-      !if( associated( self%forward_solver ) ) deallocate( self%forward_solver )
-      !if( associated( self%source ) ) deallocate( self%source )
-      !
-      !if( associated( self%e_all ) ) deallocate( self%e_all )
-      !deallocate( self%receiver_indexes )
       !
    end subroutine deallocateTx
    !
@@ -116,58 +96,6 @@ module Transmitter
       call date_and_time( values=self%fwd_key )
       !
    end subroutine updateFwdKey
-   !
-   function hasReceiverTx( self, receiver_index ) result( found )
-      implicit none
-      !
-      class( Transmitter_t ), intent( in ) :: self
-      integer, intent( in )                :: receiver_index
-      !
-      integer :: i_rx, n_rx
-      logical :: found
-      !
-      found = .FALSE.
-      !
-      n_rx = self%receiver_indexes%size()
-      !
-      do i_rx = 1, n_rx
-         !
-         if( receiver_index == self%receiver_indexes%get( i_rx ) ) then
-            found = .TRUE.
-         end if
-      end do
-      !
-   end function hasReceiverTx
-   !
-   subroutine addReceiverTx( self, receiver_index )
-      implicit none
-      !
-      class( Transmitter_t ), intent( inout ) :: self
-      integer, intent( in )                   :: receiver_index
-      !
-      call self%receiver_indexes%add( receiver_index )
-      !
-   end subroutine addReceiverTx
-   !
-   function getReceiverTx( self, index ) result( receiver_index )
-      implicit none
-      !
-      class( Transmitter_t ), intent( in ) :: self
-      integer                              :: index, receiver_index
-      !
-      receiver_index = self%receiver_indexes%Get( index )
-      !
-   end function getReceiverTx
-   !
-   function getNumberOfReceivers( self ) result( counter )
-      implicit none
-      !
-      class( Transmitter_t ), intent( in ) :: self
-      integer                              :: counter
-      !
-      counter = self%receiver_indexes%size()
-      !
-   end function getNumberOfReceivers
    !
    subroutine setForwardSolverTx( self, forward_solver )
       !
@@ -187,4 +115,33 @@ module Transmitter
       !
    end subroutine setSourceTx
    !
+   subroutine updateReceiverIndexesArray( self, new_int )
+        implicit none
+        !
+        class( Transmitter_t ), intent( inout ) :: self
+        integer, intent( in )                   :: new_int
+        !
+        integer, allocatable, dimension(:)      :: temp_array
+        integer                                 :: idx, istat
+        !
+        if( .NOT. allocated( self%receiver_indexes )  ) then
+            allocate( self%receiver_indexes(1) )
+            self%receiver_indexes(1) = new_int
+        else
+            !
+            do idx = 1, size( self%receiver_indexes )
+                if ( new_int == self%receiver_indexes( idx ) ) then
+                    return
+                end if
+            end do
+            !
+            allocate( temp_array( size( self%receiver_indexes ) + 1 ), STAT=istat )
+            temp_array( 1 : size( self%receiver_indexes ) ) = self%receiver_indexes
+            temp_array( size( self%receiver_indexes ) + 1 ) = new_int
+            self%receiver_indexes = temp_array
+            !
+        endif
+        !
+    end subroutine updateReceiverIndexesArray
+    !
 end module Transmitter

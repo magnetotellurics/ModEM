@@ -8,7 +8,6 @@
 ! 
 module ReceiverSingleField
    !
-   use FileUnits
    use Receiver
    !
    type, extends( Receiver_t ), public :: ReceiverSingleField_t
@@ -21,8 +20,6 @@ module ReceiverSingleField
          !
          procedure, public :: predictedData => predictedDataSingleField
          !
-		 procedure, public :: savePredictedData => savePredictedDataSingleField
-         procedure, public :: writePredictedData => writePredictedDataSingleField
          procedure, public :: write => writeReceiverSingleField
          !
    end type ReceiverSingleField_t
@@ -33,10 +30,9 @@ module ReceiverSingleField
    !
 contains
    !
-   function ReceiverSingleField_ctor( id, location, azimuth ) result( self )
+   function ReceiverSingleField_ctor( location, azimuth ) result( self )
       implicit none
       !
-      integer, intent( in )           :: id
       real( kind=prec ), intent( in ) :: location(3)
       real( kind=prec ), intent( in ) :: azimuth
       type( ReceiverSingleField_t )   :: self
@@ -45,7 +41,6 @@ contains
       !
       call self%init()
       !
-      self%id = id
       self%location = location
       self%azimuth = azimuth
       !
@@ -93,31 +88,6 @@ contains
       !Z(1) = dotProd_noConj_scvector_f( Lex,ef%pol(1) )
       !
    end subroutine predictedDataSingleField
-   !
-   !
-   subroutine savePredictedDataSingleField( self, tx )
-      implicit none
-      !
-      class( ReceiverSingleField_t ), intent( in ) :: self
-      class( Transmitter_t ), intent( in )         :: tx
-      !
-      open( ioPredData, file = 'predicted_data.dat', action='write', position='append' )
-      !
-      write( ioPredData, '(1pe12.6, A8, f9.3, f9.3, f13.3, f13.3, f13.3, A4, 1pe16.6, 1pe16.6, 1pe16.6)' ) tx%period, self%code, R_ZERO, R_ZERO, self%location(1), self%location(2), self%location(3), self%comp_names( 1 ), aimag( self%Z( 1 ) ), dimag( self%Z( 1 )), 1.0
-      write( ioPredData, '(1pe12.6, A8, f9.3, f9.3, f13.3, f13.3, f13.3, A4, 1pe16.6, 1pe16.6, 1pe16.6)' ) tx%period, self%code, R_ZERO, R_ZERO, self%location(1), self%location(2), self%location(3), self%comp_names( 2 ), aimag( self%Z( 2 ) ), dimag( self%Z( 2 )), 1.0
-      write( ioPredData, '(1pe12.6, A8, f9.3, f9.3, f13.3, f13.3, f13.3, A4, 1pe16.6, 1pe16.6, 1pe16.6)' ) tx%period, self%code, R_ZERO, R_ZERO, self%location(1), self%location(2), self%location(3), self%comp_names( 3 ), aimag( self%Z( 3 ) ), dimag( self%Z( 3 )), 1.0
-      write( ioPredData, '(1pe12.6, A8, f9.3, f9.3, f13.3, f13.3, f13.3, A4, 1pe16.6, 1pe16.6, 1pe16.6)' ) tx%period, self%code, R_ZERO, R_ZERO, self%location(1), self%location(2), self%location(3), self%comp_names( 4 ), aimag( self%Z( 4 ) ), dimag( self%Z( 4 )), 1.0
-      !
-      close( ioPredData )
-      !
-   end subroutine savePredictedDataSingleField
-   !
-   subroutine writePredictedDataSingleField( self )
-      implicit none
-      !
-      class( ReceiverSingleField_t ), intent( in ) :: self
-      !
-   end subroutine writePredictedDataSingleField
    !
    subroutine writeReceiverSingleField( self )
       implicit none

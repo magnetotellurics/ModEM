@@ -152,12 +152,12 @@ contains
          call Tx%solveFWD()
          !
          ! Loop over Receivers of each Transmitter
-         nRx = Tx%getNRx()
+         nRx = size( Tx%receiver_indexes )
          !
          do iRx = 1, nRx
             !
             ! Temporary Receiver alias
-            Rx = receivers%get( Tx%get( iRx ) )
+            Rx = getReceiver( Tx%receiver_indexes( iRx ) )
             !
             ! Verbosis...
             !write( *, * ) "                  Rx Id:", Rx%id, "XYZ:", Rx%location
@@ -172,12 +172,12 @@ contains
       enddo
       !
       ! Loop over all Receivers
-      nRx = receivers%size()
+      nRx = size( receivers )
       !
       do iRx = 1, nRx
          !
          ! Temporary Receiver alias
-         Rx = receivers%get( iRx )
+         Rx = getReceiver( iRx )
          !
          call Rx%writePredictedData()
          !
@@ -419,7 +419,7 @@ contains
          write( ioPredData, "(4A, 100A)" ) ">   ", "[V/m]/[T]"
          write( ioPredData, "(7A, 100A)" ) ">      ", "0.00"
          write( ioPredData, "(7A, 100A)" ) ">      ", "0.000   0.000"
-         write( ioPredData, "(A3, i8, i8)" ) ">      ", size( transmitters ), receivers%size()
+         write( ioPredData, "(A3, i8, i8)" ) ">      ", size( transmitters ), size( receivers )
          !
          close( ioPredData )
          !

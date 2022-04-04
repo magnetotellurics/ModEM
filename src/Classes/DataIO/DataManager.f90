@@ -17,17 +17,10 @@ module DataManager
    use ReceiverFullVerticalMagnetic
    use ReceiverOffDiagonalImpedance
    use ReceiverSingleField
-   use ReceiverArray
+   use ReceiverFArray
    use TransmitterMT
    use TransmitterCSEM
-   !use TransmitterArray
    use TransmitterFArray
-   !
-   ! Global Array of Transmitters
-   !class( TransmitterArray_t ), pointer, save, public :: transmitters => NULL()
-   !
-   ! Global Array of Receivers
-   class( ReceiverArray_t ), pointer, save, public    :: receivers => NULL()
    !
    ! Global Array of DataGroups
    class( DataGroupArray_t ), pointer, save, public   :: data_groups
@@ -66,23 +59,25 @@ contains
       !
       call self%relateData()
       !
-	  if( receivers%size() == self%data_file%nRx ) then
-          write( *, * ) receivers%size(), " Receivers checked!"
-	  else
-	      !
-          write(*,*) "Number of Rx mismatched from Header :[", receivers%size(), " and ", self%data_file%nRx, "]"
+      if( size( receivers ) == self%data_file%nRx ) then
+          write( *, * ) size( receivers ), " Receivers checked!"
+      else
+          !
+          write(*,*) "Number of Rx mismatched from Header :[", size( receivers ), " and ", self%data_file%nRx, "]"
           STOP "DataManager.f08: DataManager_ctor()"
           !
-	  endif
+      endif
       !
-	  if( size( transmitters ) == self%data_file%nTx ) then
+      if( size( transmitters ) == self%data_file%nTx ) then
           write( *, * ) size( transmitters ), " Transmitters checked!"
-	  else
-	      !
+          !
+          call printTransmitterArray()
+      else
+          !
           write(*,*) "Number of Tx mismatched from Header :[", size( transmitters ), " and ", self%data_file%nTx, "]"
           STOP "DataManager.f08: DataManager_ctor()"
           !
-	  endif
+      endif
       !
       write( *, * ) data_groups%size(), " Data Groups"
       !
@@ -105,55 +100,49 @@ contains
       !
       class( DataEntry_t ), pointer     :: data_entry
       class( Receiver_t ), pointer      :: receiver
-      class( Transmitter_t ), allocatable   :: transmitter
-      integer                           :: iDe, nDe, iRx, iTx
+      class( Transmitter_t ), pointer   :: transmitter
+      integer                           :: iDe, nDe
       real ( kind=prec )                :: azimuth
       !
-      allocate( receivers, source = ReceiverArray_t() )
-      !
-      !allocate( transmitters, source = TransmitterArray_t() )
-	  !
       ! Loop over all Data Entries...
       nDe = self%data_file%data_entries%size()
       !
       do iDe = 1, nDe
          !
          data_entry => self%data_file%data_entries%get( iDe )
-       !
+         !
          ! RECEIVERS
          !
-         iRx = receivers%size() + 1
-       !
          selectcase( data_entry%type )
             !
             case( "Ex_Field" )
                !
                azimuth = 1.0
-               allocate( receiver, source = ReceiverSingleField_t( iRx, data_entry%xyz, azimuth ) )
+               allocate( receiver, source = ReceiverSingleField_t( data_entry%xyz, azimuth ) )
                !
             case( "Ey_Field" )
                !
                azimuth = 2.0
-               allocate( receiver, source = ReceiverSingleField_t( iRx, data_entry%xyz, azimuth ) )
+               allocate( receiver, source = ReceiverSingleField_t( data_entry%xyz, azimuth ) )
                !
             case( "Bx_Field" )
                !
                azimuth = 3.0
-               allocate( receiver, source = ReceiverSingleField_t( iRx, data_entry%xyz, azimuth ) )
+               allocate( receiver, source = ReceiverSingleField_t( data_entry%xyz, azimuth ) )
                !
             case( "By_Field" )
                !
                azimuth = 4.0
-               allocate( receiver, source = ReceiverSingleField_t( iRx, data_entry%xyz, azimuth ) )
+               allocate( receiver, source = ReceiverSingleField_t( data_entry%xyz, azimuth ) )
                !
             case( "Bz_Field" )
                !
                azimuth = 5.0
-               allocate( receiver, source = ReceiverSingleField_t( iRx, data_entry%xyz, azimuth ) )
+               allocate( receiver, source = ReceiverSingleField_t( data_entry%xyz, azimuth ) )
                !
             case( "Full_Impedance" )
                !
-               allocate( receiver, source = ReceiverFullImpedance_t( iRx, data_entry%xyz ) )
+               allocate( receiver, source = ReceiverFullImpedance_t( data_entry%xyz ) )
                !
             case( "Full_Interstation_TF" )
                !
@@ -169,11 +158,11 @@ contains
                !
             case( "Off_Diagonal_Impedance" )
                !
-               allocate( receiver, source = ReceiverOffDiagonalImpedance_t( iRx, data_entry%xyz ) )
+               allocate( receiver, source = ReceiverOffDiagonalImpedance_t( data_entry%xyz ) )
                !
             case( "Full_Vertical_Components", "Full_Vertical_Magnetic" )
                !
-               allocate( receiver, source = ReceiverFullVerticalMagnetic_t( iRx, data_entry%xyz ) )
+               allocate( receiver, source = ReceiverFullVerticalMagnetic_t( data_entry%xyz ) )
                !
             case default
                write(*,*) "unknow component type :[", data_entry%type, "]"
@@ -185,40 +174,34 @@ contains
          !
          receiver%code = data_entry%code
          !
-         if( .NOT. receivers%has( receiver ) ) then 
-            call receivers%add( receiver )
-         end if
+         call updateReceiverArray( receiver )
+         !
+         deallocate( receiver )
          !
          ! TRANSMITTERS
-         !
-         iTx = size( transmitters ) + 1
          !
          select type ( data_entry )
             !
             class is ( DataEntryMT_t )
                !
-               allocate( transmitter, source = TransmitterMT_t( iTx, data_entry%period, data_entry%type ) )
+               allocate( transmitter, source = TransmitterMT_t( data_entry%period, data_entry%type ) )
                !
             class is ( DataEntryMT_REF_t )
                !
-               allocate( transmitter, source = TransmitterMT_t( iTx, data_entry%period, data_entry%type ) )
+               allocate( transmitter, source = TransmitterMT_t( data_entry%period, data_entry%type ) )
                !
             class is ( DataEntryCSEM_t )
                !
-               allocate( transmitter, source = TransmitterCSEM_t( iTx, data_entry%period, data_entry%tx_xyz, data_entry%type ) )
+               allocate( transmitter, source = TransmitterCSEM_t( data_entry%period, data_entry%tx_xyz, data_entry%type ) )
                !
          end select
-		 !
-		 deallocate( data_entry )
          !
-		 call updateTransmitterArray( transmitter )
+         deallocate( data_entry )
          !
-		 !if( .NOT. transmitters%has( transmitter ) ) then 
-            !call transmitters%add( transmitter )
-         !end if
+         call updateTransmitterArray( transmitter )
          !
-		 deallocate( transmitter )
-		 !
+         deallocate( transmitter )
+         !
       enddo
       !
    end subroutine loadReceiversAndTransmitters
@@ -275,10 +258,10 @@ contains
          end do
          !
          ! LOOP OVER RECEIVERS
-         nRx = receivers%size()
+         nRx = size( receivers )
          do iRx = 1, nRx
             !
-            receiver => receivers%get( iRx )
+            receiver => getReceiver( iRx )
             !
             if( receiver%location(1) == data_entry%xyz(1) .AND.   &
                 receiver%location(2) == data_entry%xyz(2) .AND.   &
@@ -300,19 +283,14 @@ contains
          nTx = size( transmitters )
          do iTx = 1, nTx
             !
-            !transmitter => transmitters%get( iTx )
-			transmitter => getTransmitter( iTx )
+            transmitter => getTransmitter( iTx )
             !
             if( ABS( transmitter%period - data_entry%period ) < TOL6 ) then
                !
                data_group%id_tx = transmitter%id
                !
-               if( .NOT. transmitter%has( receiver%id ) ) then
-                  call transmitter%add( receiver%id )
-               end if
+               call transmitter%updateReceiverIndexesArray( receiver%id )
                !
-			   deallocate( receiver )
-			   !
                exit
                !
             endif

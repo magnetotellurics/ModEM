@@ -21,7 +21,6 @@ module TransmitterCSEM
          procedure, public   :: solveFWD => solveFWDTransmitterCSEM
          procedure, public   :: getSource => getSourceTransmitterCSEM
          !
-		 !procedure, public   :: sizeOf => sizeOfTransmitterCSEM
          procedure, public   :: isEqual => isEqualTransmitterCSEM
          procedure, public   :: write => writeTransmitterCSEM
          !
@@ -34,11 +33,10 @@ module TransmitterCSEM
 contains
    !
    ! Parametrized constructor
-   function TransmitterCSEM_ctor( id, period, location, type ) result ( self )
+   function TransmitterCSEM_ctor( period, location, type ) result ( self )
       !
       type( TransmitterCSEM_t ) :: self
       !
-      integer, intent( in )                             :: id
       real( kind=prec ), intent( in )                   :: period
       real( kind=prec ), intent( in )                   :: location(3)
       character(:), allocatable, optional, intent( in ) :: type
@@ -47,7 +45,6 @@ contains
       !
       call self%init()
       !
-      self%id = id
       self%n_pol = 1
       self%period = period
       self%location = location
@@ -77,8 +74,6 @@ contains
       class( TransmitterCSEM_t ), intent( inout ) :: self
       !
       write(*,*) "implementing solveFWD TransmitterCSEM_t: ", self%id
-      !
-      !call self%e_solution%add( self%forward_solver%getESolution( 333, 1, 1, self%period  ) )
       !
    end subroutine solveFWDTransmitterCSEM
    !
@@ -118,20 +113,18 @@ contains
    subroutine writeTransmitterCSEM( self )
       !
       class( TransmitterCSEM_t ), intent(in)   :: self
-      integer                           :: iRx, nRx
-      !
-      nRx = self%getNRx()
+      integer                           :: iRx
       !
       write(*,*) "Write TransmitterCSEM_t Id: ", self%id,   &
       ", Period: ",   self%period,   &
       ", Location: ",   self%location,   &
       "fwd_key: ",   self%fwd_key(1), self%fwd_key(2), self%fwd_key(3), self%fwd_key(4),   &
                   self%fwd_key(5), self%fwd_key(6), self%fwd_key(7), self%fwd_key(8),   &
-      " N Receivers: ", nRx
+      " N Receivers: ", size( self%receiver_indexes )
       !
-      do iRx = 1, nRx
-         write(*,*) "   ", self%get( iRx )
-      enddo
+      !do iRx = 1, nRx
+         !write(*,*) "   ", self%get( iRx )
+      !enddo
       !
    end subroutine writeTransmitterCSEM
    !
@@ -139,21 +132,21 @@ contains
       !
       !class( TransmitterCSEM_t ), intent( in ) :: self
       !integer                                :: size
-	  !
-	  !size = sizeof( self%id ) + &
-	         !sizeof( self%n_pol ) + &
-			 !sizeof( self%fwd_key ) + &
-			 !sizeof( self%type ) + &
-	         !sizeof( self%period ) + &
-			 !sizeof( self%forward_solver ) + &
-			 !sizeof( self%e_all ) + &
-			 !sizeof( self%receiver_indexes ) + &
-			 !sizeof( self%DATA_TITLE )
-			 !sizeof( self%location ) + &
-			 !sizeof( self%azimuth )
-			 !
-	  !write( *, * ) "Size: ", size
-	  !
+      !
+      !size = sizeof( self%id ) + &
+             !sizeof( self%n_pol ) + &
+             !sizeof( self%fwd_key ) + &
+             !sizeof( self%type ) + &
+             !sizeof( self%period ) + &
+             !sizeof( self%forward_solver ) + &
+             !sizeof( self%e_all ) + &
+             !sizeof( self%receiver_indexes ) + &
+             !sizeof( self%DATA_TITLE )
+             !sizeof( self%location ) + &
+             !sizeof( self%azimuth )
+             !
+      !write( *, * ) "Size: ", size
+      !
    !end function sizeOfTransmitterCSEM
    !
 end module TransmitterCSEM

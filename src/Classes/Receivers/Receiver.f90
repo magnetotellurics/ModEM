@@ -8,11 +8,13 @@
 !
 module Receiver
    !
+   use FileUnits
    use Transmitter
    use cVector3D_SG
    use ModelOperator
    use DataGroupArray
    use DataEntryArray
+   use DataEntryMT
    use Grid3D_SG
    !
    type, abstract :: Receiver_t
@@ -44,8 +46,6 @@ module Receiver
       ! DEFERRED INTERFACES
       procedure( interface_predicted_data ), deferred, public :: predictedData
       !
-      procedure( interface_save_predicted_data_rx ), deferred, public  :: savePredictedData
-      procedure( interface_write_predicted_data_rx ), deferred, public :: writePredictedData
       procedure( interface_write_rx ), deferred, public                :: write
       !
       ! CLASS PROCEDURES
@@ -60,6 +60,9 @@ module Receiver
       procedure, public :: add => addDataGroupRx
       procedure, public :: get => getDataGroupRx
       procedure, public :: getNdg => getNumberOfDataGroupRx
+	  !
+      procedure, public :: savePredictedData
+      procedure, public :: writePredictedData
       !
    end type Receiver_t
    !
@@ -177,20 +180,20 @@ contains
             !
             case( "Ex", "Ey" )
                !
-                select type( grid => model_operator%grid )
+                select type( grid => model_operator%metric%grid )
                     class is( Grid3D_SG_t )
                         if( .not. allocated( e ) ) allocate( e, source = cVector3D_SG_t( grid, EDGE ) )
                     class default
-                        stop "Receiver: Unclassified model_operator%grid for e"
+                        stop "Receiver: Unclassified model_operator%metric%grid for e"
                 end select
                !
             case( "Bx", "By", "Bz" )
                !
-                select type( grid => model_operator%grid )
+                select type( grid => model_operator%metric%grid )
                     class is( Grid3D_SG_t )
                         if( .not. allocated(h) ) allocate( h, source = cVector3D_SG_t( grid, FACE ) )
                     class default
-                        stop "Receiver: Unclassified model_operator%grid for h"
+                        stop "Receiver: Unclassified model_operator%metric%grid for h"
                 end select
                !
          end select
@@ -345,5 +348,63 @@ contains
       counter = self%data_groups%size()
       !
    end function getNumberOfDataGroupRx
+   !
+   !
+   subroutine savePredictedData( self, tx )
+      implicit none
+      !
+      class( Receiver_t ), intent( in ) :: self
+      class( Transmitter_t ), intent( in )           :: tx
+      !
+      character(:), allocatable         :: type, code, component
+      integer                           :: i, iDe
+      real( kind=prec )                 :: period, real_part, imaginary, error
+      real( kind=prec )                 :: latitude, longitude, xyz(3)
+      !#Period(s) Code GG_Lat GG_Lon X(m) Y(m) Z(m) Component Real Imag Error
+      !
+      do i = 1, self%n_comp
+          !
+          type = "Output"
+          iDe = self%predicted_data_entries%size() + i
+          period = real( tx%period, kind=prec )
+          code = trim( self%code )
+          latitude = R_ZERO
+          longitude = R_ZERO
+          xyz = (/real( self%location( 1 ), kind=prec ), real( self%location( 2 ), kind=prec ), real( self%location( 3 ), kind=prec )/)
+          component = trim( self%comp_names( i ) )
+          real_part = real( self%Z( i ), kind=prec )
+          imaginary = real( aimag( self%Z( i ) ), kind=prec )
+          error = 1.0
+          !
+          call self%predicted_data_entries%add( DataEntryMT_t( iDe, type, period, code, latitude, longitude, xyz, component, real_part, imaginary, error ) )
+          !
+      enddo
+	  !
+   end subroutine savePredictedData
+   !
+   subroutine writePredictedData( self )
+      implicit none
+      !
+      class( Receiver_t ), intent( in ) :: self
+      !
+      class( DataEntry_t ), allocatable :: data_entry
+      integer :: iDe, Nde
+      !
+      open( ioPredData, file = "predicted_data.dat", action="write", position="append" )
+      !
+      nDe = self%predicted_data_entries%size()
+      !
+      do iDe = 1, nDe
+          !
+          data_entry = self%predicted_data_entries%get( iDe )
+          !
+          !#Period(s) Code GG_Lat GG_Lon X(m) Y(m) Z(m) Component Real Imag Error
+          write( ioPredData, "(es12.6, A20, f15.3, f15.3, f15.3, f15.3, f15.3, A20, es16.6, es16.6, es16.6)" ) data_entry%period, data_entry%code, R_ZERO, R_ZERO, data_entry%xyz(1), data_entry%xyz(2), data_entry%xyz(3), data_entry%component, data_entry%real, data_entry%imaginary, 1.0
+          !
+      enddo
+      !
+      close( ioPredData )
+      !
+   end subroutine writePredictedData
    !
 end module Receiver
