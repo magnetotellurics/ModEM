@@ -103,10 +103,18 @@ program ModEM
                     !
                     call workerForwardModelling()
                     !
+                    ! SEND FORWARD JOB TO WORKER
+                    job_info%name = job_done
+                    job_info%worker_rank = mpi_rank
+                    !
+                    call sendTo( master_id )
+                    !
             end select
             !
          enddo
          !
+		 write ( *, * )  "WORKER: ", mpi_rank, " DONE FOR THE DAY!"
+		 !
          call MPI_Win_fence( 0, shared_window, ierr )
          !
          call MPI_Finalize( ierr )
@@ -139,6 +147,13 @@ contains
          call handleModelFile()
       endif
       !
+      ! Reads Data File: instantiates and builds the Data relation between Txs and Txs
+      if( .NOT. has_data_file ) then 
+         stop " - Missing Data file!"
+      else
+         call handleDataFile()
+      endif
+      !
       ! SHARE MEM WITH ALL WORKERS
       call masterExposeSharedMemory()
       !
@@ -149,13 +164,6 @@ contains
           call sendTo( pid )
           !
       enddo
-      !
-      ! Reads Data File: instantiates and builds the Data relation between Txs and Txs
-      if( .NOT. has_data_file ) then 
-         stop " - Missing Data file!"
-      else
-         call handleDataFile()
-      endif
       !
       ! SEND 1 TRANSMITTER TO EACH WORKER
       do while ( worker_rank <= ( mpi_size - 1 ) )
@@ -199,17 +207,17 @@ contains
           !
           tx_received = tx_received + 1
           !
-          job_info%name = "STOP_JOBS"
+          job_info%name = job_finish
           !
           call sendTo( job_info%worker_rank )
           !
       enddo
       !
       call MPI_Win_fence( 0, shared_window, ierr )
-		!
-		process_name = "#### FINAL ####"
-		call showProcessState( process_name )
-		!
+      !
+      process_name = "#### FINAL ####"
+      call showProcessState( process_name )
+      !
       ! Verbosis
       write ( *, * ) "   > Finish forward modelling."
       !
@@ -231,6 +239,7 @@ contains
         class is( ModelOperator_MF_t )
             !
             call model_operator%Sigma_E%print()
+            write( *, * ) "#### Sigma_E GRID TYPE:[", model_operator%Sigma_E%gridType, "]"
             call model_operator%c%print()
             !
       end select
@@ -264,9 +273,9 @@ contains
       !
       call unpackSharedBuffer( int( shared_window_size ), main_grid, model_operator, model_parameter )
       !
-		process_name = "#### WORKER ####"
-		call showProcessState( process_name )
-		!
+      process_name = "#### WORKER ####"
+      call showProcessState( process_name )
+      !
    end subroutine workerQuerySharedMemory
    !
    subroutine workerForwardModelling()
@@ -277,50 +286,70 @@ contains
       class( Source_t ), allocatable        :: fwd_source 
       !
       ! Temporary alias pointers
-      class( Receiver_t ), allocatable :: Rx
-      class( Transmitter_t ), pointer  :: Tx
+      class( Receiver_t ), allocatable     :: Rx
+      class( Transmitter_t ), allocatable  :: Tx
       !
       ! Local variablesh
-      integer :: iRx, nRx
+      integer :: iTx, iRx, nRx
+      !
+      ! High-level object instantiation
+      ! Some types are chosen from the control file
+      !
+      write( *, * ) "INIT WORWER FWD"
       !
       ! ForwardSolver - Chosen from control file
-      !select case ( forward_solver_type )
-        !
-        !case( FWD_FILE )
-           !fwd_solver = ForwardSolverFromFile_t()
-           !
-        !case( FWD_IT )
-           !fwd_solver = ForwardSolverIT_t( QMR )
-           !
-        !case( FWD_IT_DC )
-           !fwd_solver = ForwardSolverIT_DC_t( QMR )
-           !
-        !case default
-           !fwd_solver = ForwardSolverIT_DC_t( QMR )
-           !
-      !end select
+      select case ( forward_solver_type )
+         !
+         case( FWD_FILE )
+            fwd_solver = ForwardSolverFromFile_t( model_operator )
+            !
+         case( FWD_IT )
+            fwd_solver = ForwardSolverIT_t( model_operator, QMR )
+            !
+         case( FWD_IT_DC )
+            fwd_solver = ForwardSolverIT_DC_t( model_operator, QMR )
+            !
+         case default
+            fwd_solver = ForwardSolverIT_DC_t( model_operator, QMR )
+         !
+      end select
       !
-      !call fwd_solver%setCond( model_parameter )
+      write( *, * ) "WORWER FWD SET SOLVER OK"
+      !
+      call fwd_solver%setCond( model_parameter )
+      !
+      write( *, * ) "WORWER FWD SET SOLVER COND OK"
       !
       ! Source - Chosen from control file
-      !select case ( source_type )
+      select case ( source_type )
          !
-         !case( SRC_MT_1D )
-            !allocate( fwd_source, source = SourceMT_1D_t() )
+         case( SRC_MT_1D )
+            allocate( fwd_source, source = SourceMT_1D_t( model_operator, model_parameter ) )
             !
-         !case( SRC_MT_2D )
-            !allocate( fwd_source, source = SourceMT_2D_t() )
+         case( SRC_MT_2D )
+            allocate( fwd_source, source = SourceMT_2D_t( model_operator, model_parameter ) )
             !
-         !case default
-            !allocate( fwd_source, source = SourceMT_1D_t() )
+         case default
+            allocate( fwd_source, source = SourceMT_1D_t( model_operator, model_parameter ) )
             !
-      !end select
+      end select
       !
-      !Tx => getTransmitter( job_info%tx_index )
+      write( *, * ) "WORWER FWD SET SOURCE COND OK"
+      !
+      ! Forward Modelling
+      !
+      !call writeEsolutionHeader( size( transmitters ), 2 )
+      !
+      !
+      ! Temporary Transmitter alias
+      !Tx = getTransmitter( iTx )
+      !
+      ! Verbosis...
+      !write( *, * ) "   Tx Id:", Tx%id, "Period:", int( Tx%period )
       !
       ! According to Tx type,
       ! write the proper header in the "predicted_data.dat" file
-      !call writePredictedDataHeader( Tx, job_info%transmitter_type )
+      !call writePredictedDataHeader( Tx, transmitter_type )
       !
       ! Tx points to its due Source
       !call Tx%setSource( fwd_source )
@@ -331,35 +360,42 @@ contains
       ! Tx points to its due ForwardSolver
       !call Tx%setForwardSolver( fwd_solver )
       !
-      ! Verbosis...
-      !write( *, * ) "Tx Id:", Tx%id, "Period:", int( Tx%period )
-      !
       ! Solve Tx Forward Modelling
       !call Tx%solveFWD()
       !
       ! Loop over Receivers of each Transmitter
-      !nRx = Tx%getNRx()
+      !nRx = size( Tx%receiver_indexes )
       !
       !do iRx = 1, nRx
-         !
-         ! Temporary Receiver alias
-         !Rx = receivers%get( Tx%get( iRx ) )
-         !
-         ! Verbosis...
-         !write( *, * ) "                Rx Id:", Rx%id, "XYZ:", Rx%location
-         !
-         ! Calculate Rx Predicted Data
-         !call Rx%predictedData( model_operator, Tx )
-         !
+      !
+      ! Temporary Receiver alias
+      !Rx = getReceiver( Tx%receiver_indexes( iRx ) )
+      !
+      ! Verbosis...
+      !write( *, * ) "                  Rx Id:", Rx%id, "XYZ:", Rx%location
+      !
+      ! Calculate Rx Predicted Data
+      !call Rx%predictedData( model_operator, Tx )
+      !
       !enddo
       !
       !deallocate( Tx )
       !
-      ! SEND FORWARD JOB TO WORKER
-      job_info%name = job_done
-      job_info%worker_rank = mpi_rank
+      ! Loop over all Receivers
+      !nRx = size( receivers )
       !
-      call sendTo( master_id )
+      !do iRx = 1, nRx
+         !
+         ! Temporary Receiver alias
+         !Rx = getReceiver( iRx )
+         !
+         !call Rx%writePredictedData()
+         !
+         !deallocate( Rx )
+         !
+      !enddo
+      !
+      !deallocate( data_groups )
       !
    end subroutine workerForwardModelling
    !
@@ -477,7 +513,7 @@ contains
             !
             call packSharedBuffer( main_grid, model_operator, model_parameter )
             !
-			process_name = "#### MASTER ####"
+            process_name = "#### MASTER ####"
             call showProcessState( process_name )
             !
       end select
