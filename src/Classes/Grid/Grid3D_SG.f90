@@ -7,45 +7,39 @@ module Grid3D_SG
   use Grid
   use Grid1D
   use Grid2D
-
+  !
   implicit none
-  
-  private
-  
-  public :: Grid3D_SG_t, TAirLayers
-
-  type, extends(Grid_t) :: Grid3D_SG_t
+  !
+  type, extends( Grid_t ) :: Grid3D_SG_t
     
    contains
-     private
-
      !**
      ! Overriden methods
      !*
-     procedure, public :: NumberOfEdges
-     procedure, public :: NumberOfFaces
-     procedure, public :: NumberOfNodes
-     procedure, public :: GridIndex
-     procedure, public :: VectorIndex
-     procedure, public :: Limits
-     procedure, public :: IsAllocated
-     procedure, public :: Length
+     procedure, public :: NumberOfEdges => NumberOfEdgesGrid3D_SG
+     procedure, public :: NumberOfFaces => NumberOfFacesGrid3D_SG
+     procedure, public :: NumberOfNodes => NumberOfNodesGrid3D_SG
+     procedure, public :: GridIndex => GridIndexGrid3D_SG
+     procedure, public :: VectorIndex => VectorIndexGrid3D_SG
+     procedure, public :: Limits => LimitsGrid3D_SG
+     procedure, public :: IsAllocated => IsAllocatedGrid3D_SG
+     procedure, public :: Length => LengthGrid3D_SG
      
      !**
      !
-     procedure, public :: Create
-     procedure, public :: Allocate
-     procedure, public :: DeAllocate
-     procedure, public :: Setup
-     procedure, public :: SetupAirLayers
-     procedure, public :: UpdateAirLayers
+     procedure, public :: Create => CreateGrid3D_SG
+     procedure, public :: Allocate => AllocateGrid3D_SG
+     procedure, public :: DeAllocate => DeAllocateGrid3D_SG
+     procedure, public :: Setup => SetupGrid3D_SG
+     procedure, public :: SetupAirLayers => SetupAirLayersGrid3D_SG
+     procedure, public :: UpdateAirLayers => UpdateAirLayersGrid3D_SG
     
      ! 
-     procedure, public :: GetDimensions
-     procedure, public :: SetCellSizes
-     procedure, public :: GetCellSizes
+     procedure, public :: GetDimensions => GetDimensionsGrid3D_SG
+     procedure, public :: SetCellSizes => SetCellSizesGrid3D_SG
+     procedure, public :: GetCellSizes => GetCellSizesGrid3D_SG
 
-     procedure, public :: Copy_from
+     procedure, public :: Copy_from => Copy_fromGrid3D_SG
      
      procedure, public :: Slice1D => Slice1DGrid3D_SG
      procedure, public :: Slice2D => Slice2DGrid3D_SG
@@ -118,7 +112,7 @@ contains
     
   end function Grid3D_SG_t_ctor
 
-  subroutine Create(self, nx, ny, nzAir, nzEarth)
+  subroutine CreateGrid3D_SG(self, nx, ny, nzAir, nzEarth)
     ! Arguments
     class(Grid3D_SG_t), intent(inout) :: self
     integer           , intent(in)    :: nx, ny, nzAir, nzEarth
@@ -136,9 +130,9 @@ contains
     
     call self%Allocate()
 
-  end subroutine Create
+  end subroutine CreateGrid3D_SG
   
-  subroutine Allocate(self)
+  subroutine AllocateGrid3D_SG(self)
     ! Arguments
     class(Grid3D_SG_t), intent(inout) :: self
     ! Local variables
@@ -185,9 +179,9 @@ contains
     
     self%allocated = .true.
     
-  end subroutine Allocate
+  end subroutine AllocateGrid3D_SG
 
-  subroutine DeAllocate(self)
+  subroutine DeAllocateGrid3D_SG(self)
     ! Arguments
     class(Grid3D_SG_t), intent(inout) :: self
     
@@ -219,14 +213,14 @@ contains
     
     self%allocated = .false.
     
-  end subroutine DeAllocate
+  end subroutine DeAllocateGrid3D_SG
   
   !**
   ! Setup does calculations for grid geometry, which cannot be done
   ! until dx, dy, dz, and the origin are set.
   !
   !*
-  subroutine Setup(self, origin)
+  subroutine SetupGrid3D_SG(self, origin)
     implicit none
     ! Arguments
     class(Grid3D_SG_t), intent(inout)        :: self
@@ -335,7 +329,7 @@ contains
     write(*, *) "  The top of the air layers is at ", &
          self%zAirThick/1000, " km"
     
-  end subroutine Setup
+  end subroutine SetupGrid3D_SG
 
   !**
   ! SetupAirLayers computes the Dz in the airlayers structure
@@ -344,7 +338,7 @@ contains
   ! For backwards compatibility, default is "mirror 10 3. 30."
   ! but the use of "fixed height 12 1000" is recommended
   !*
-  subroutine SetupAirLayers(self, airLayers, method, &
+  subroutine SetupAirLayersGrid3D_SG(self, airLayers, method, &
        &                    nzAir, maxHeight, minTopDz, &
        &                    alpha, dzAir)
     ! Arguments
@@ -447,12 +441,12 @@ contains
          "The top of the air layers is at ", &
          sum(airLayers%Dz)/1000, " km"
 
-  end subroutine SetupAirLayers
+  end subroutine SetupAirLayersGrid3D_SG
 
   !**
   !
   !*
-  subroutine DeallocateAirLayers(self, airLayers)
+  subroutine DeallocateAirLayersGrid3D_SG(self, airLayers)
     ! Arguments
     class(Grid3D_SG_t), intent(inout) :: self
     type(TAirLayers)  , intent(inout) :: airLayers
@@ -461,13 +455,13 @@ contains
     
     deallocate(airLayers%dz, STAT = status)
     
-  end subroutine DeallocateAirLayers
+  end subroutine DeallocateAirLayersGrid3D_SG
   
   !**
   ! Assumes that the grid is already defined, and merely
   ! includes the new air layers in the grid.
   !*
-  subroutine UpdateAirLayers(self, nzAir, dzAir)
+  subroutine UpdateAirLayersGrid3D_SG(self, nzAir, dzAir)
     implicit none
     ! Arguments
     class(Grid3D_SG_t), intent(inout) :: self
@@ -521,9 +515,9 @@ contains
     ! Setup the rest of the grid from scratch
     call self%Setup()
     
-  end subroutine UpdateAirLayers
+  end subroutine UpdateAirLayersGrid3D_SG
 
-  subroutine GetDimensions(self, nx, ny, nz, nzAir)
+  subroutine GetDimensionsGrid3D_SG(self, nx, ny, nz, nzAir)
     ! Arguments
     class(Grid3D_SG_t), intent(in)  :: self
     integer           , intent(out) :: nx, ny, nz, nzAir
@@ -532,9 +526,9 @@ contains
     ny = self%ny
     nz = self%nz
     nzAir = self%nzAir
-  end subroutine GetDimensions
+  end subroutine GetDimensionsGrid3D_SG
 
-  subroutine SetCellSizes(self, dx, dy, dz)
+  subroutine SetCellSizesGrid3D_SG(self, dx, dy, dz)
     ! Arguments
     class(Grid3D_SG_t), intent(inout) :: self
     real(kind = prec) , dimension(:), intent(in) :: dx, dy, dz
@@ -560,9 +554,9 @@ contains
     self%dy = dy
     self%dz = dz
 
-  end subroutine SetCellSizes
+  end subroutine SetCellSizesGrid3D_SG
   
-  subroutine GetCellSizes(self, dx, dy, dz)
+  subroutine GetCellSizesGrid3D_SG(self, dx, dy, dz)
     ! Arguments
     class(Grid3D_SG_t), intent(in) :: self
     real(kind = prec) , intent(out) :: dx(:), dy(:), dz(:)
@@ -588,13 +582,13 @@ contains
     dy = self%dy
     dz = self%dz    
     
-  end subroutine GetCellSizes
+  end subroutine GetCellSizesGrid3D_SG
 
   !**
   ! NumberOfEdges
   !
   !*
-  subroutine NumberOfEdges(self, nXedge, nYedge, nZedge)
+  subroutine NumberOfEdgesGrid3D_SG(self, nXedge, nYedge, nZedge)
     ! Arguments
     class(Grid3D_SG_t), intent(in)  :: self
     integer           , intent(out) :: nXedge, nYedge, nZedge
@@ -610,13 +604,13 @@ contains
     call self%Limits("ZEDGE", nx, ny, nz)
     nZedge = nx*ny*nz
     
-  end subroutine NumberOfEdges
+  end subroutine NumberOfEdgesGrid3D_SG
   
   !**
   ! NumberOfFaces
   !
   !*
-  subroutine NumberOfFaces(self, nXface, nYface, nZface) 
+  subroutine NumberOfFacesGrid3D_SG(self, nXface, nYface, nZface) 
     ! Arguments
     class(Grid3D_SG_t), intent(in)  :: self
     integer           , intent(out) :: nXface, nYface, nZface
@@ -632,13 +626,13 @@ contains
     call self%Limits("ZFACE", nx, ny, nz)
     nZface = nx*ny*nz
     
-  end subroutine NumberOfFaces
+  end subroutine NumberOfFacesGrid3D_SG
   
   !**
   ! NumberOfNodes
   !
   !*
-  function NumberOfNodes(self) result(n)
+  function NumberOfNodesGrid3D_SG(self) result(n)
     ! Arguments
     class(Grid3D_SG_t), intent(in) :: self
     ! Local variables
@@ -646,7 +640,7 @@ contains
     
     n = (self%nx + 1)*(self%ny + 1)*(self%nz + 1)
 
-  end function NumberOfNodes
+  end function NumberOfNodesGrid3D_SG
   
   !**
   ! GridIndex
@@ -656,7 +650,7 @@ contains
   ! e.g., among the list of y-Faces.   An offset needs to be
   ! added to get index in list of all faces (for example).
   !*
-  subroutine GridIndex(self, nodeType, indVec, i, j, k)
+  subroutine GridIndexGrid3D_SG(self, nodeType, indVec, i, j, k)
     ! Arguments
     class(Grid3D_SG_t), intent(in)  :: self
     character(*)      , intent(in)  :: nodeType
@@ -697,7 +691,7 @@ contains
     where(j.eq.0) j = ny
     where(k.eq.0) k = nz
 
-  end subroutine GridIndex
+  end subroutine GridIndexGrid3D_SG
 
   !**
   ! VectorIndex
@@ -707,7 +701,7 @@ contains
   ! the list for nodeType; need to add an offset for position
   ! in full list of all faces or edges (not nodes and cells).
   !*
-  subroutine VectorIndex(self, nodeType, i, j, k, indVec)
+  subroutine VectorIndexGrid3D_SG(self, nodeType, i, j, k, indVec)
     ! Arguments
     class(Grid3D_SG_t), intent(in)  :: self
     character(*)      , intent(in)  :: nodeType
@@ -740,13 +734,13 @@ contains
        indVec(ii) = (K(ii) - 1) * nxy + (j(ii) - 1) * nx + i(ii)
     end do
     
-  end subroutine VectorIndex
+  end subroutine VectorIndexGrid3D_SG
   
   !**
   ! Limits
   !
   !*
-  subroutine Limits(self, nodeType, nx, ny, nz)
+  subroutine LimitsGrid3D_SG(self, nodeType, nx, ny, nz)
     ! Arguments
     class(Grid3D_SG_t), intent(in)  :: self
     character(*)      , intent(in)  :: nodeType
@@ -795,28 +789,28 @@ contains
        
     end select
     
-  end subroutine Limits
+  end subroutine LimitsGrid3D_SG
 
-  function IsAllocated(self) result(f)
+  function IsAllocatedGrid3D_SG(self) result(f)
     ! Arguments
     class(Grid3D_SG_t), intent(in) :: self
     ! Local variables
     logical :: f
 
     f = self%allocated
-  end function IsAllocated
+  end function IsAllocatedGrid3D_SG
 
-  function Length(self) result(n)
+  function LengthGrid3D_SG(self) result(n)
     class(Grid3D_SG_t), intent(in) :: self
     integer :: n
 
     n = self%nx*self%ny*self%nz
-  end function Length
+  end function LengthGrid3D_SG
 
-  subroutine Copy_from(self, g)
+  subroutine Copy_fromGrid3D_SG(self, g)
     implicit none
     class(Grid3D_SG_t), intent(inout) :: self
     class(Grid_t)     , intent(in)    :: g
-  end subroutine Copy_from
+  end subroutine Copy_fromGrid3D_SG
   
 end module Grid3D_SG

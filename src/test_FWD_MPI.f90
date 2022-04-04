@@ -19,6 +19,8 @@ program ModEM
    use SourceMT_1D
    use SourceMT_2D
    !
+   character(:), allocatable :: process_name
+   !
    class( Grid_t ), allocatable           :: main_grid
    class( ModelParameter_t ), allocatable :: model_parameter
    class( ModelOperator_t ), allocatable, target  :: model_operator
@@ -204,23 +206,47 @@ contains
       enddo
       !
       call MPI_Win_fence( 0, shared_window, ierr )
-      !
+		!
+		process_name = "#### FINAL ####"
+		call showProcessState( process_name )
+		!
       ! Verbosis
       write ( *, * ) "   > Finish forward modelling."
       !
+   end subroutine masterForwardModelling
+   !
+   subroutine showProcessState( process_name )
+      implicit none
+      !
+      character(:), allocatable :: process_name
+      !
+      !
+      write( *, * ) trim( process_name )
+      !
+      write( *, * ) "#### GRID:[", main_grid%allocated, main_grid%nx, main_grid%ny, main_grid%nz, "]"
+      !
+      write( *, * ) "#### MODEL_OPERATOR:"
       select type( model_operator )
         !
         class is( ModelOperator_MF_t )
             !
-            write( *, * ) "### FINAL VECTOR STATE:"
             call model_operator%Sigma_E%print()
-            write( *, * ) "### FINAL GRID STATE:[", main_grid%allocated, main_grid%nx, main_grid%ny, main_grid%nz, "]"
+            call model_operator%c%print()
             !
-        end select
+      end select
       !
-      call MPI_Finalize( ierr )
+      write( *, * ) "#### MODEL PARAMETER:"
+      select type( model_parameter )
+        !
+        class is( ModelParameterCell_SG_t )
+            !
+            write( *, * ) "#### PARAM GRID:[", model_parameter%paramGrid%nx, model_parameter%paramGrid%ny, model_parameter%paramGrid%nz, "]"
+            !call model_parameter%cellCond%print()
+            !
+      end select
       !
-   end subroutine masterForwardModelling
+   end subroutine showProcessState
+   !
    !
    subroutine workerQuerySharedMemory()
       implicit none
@@ -236,20 +262,11 @@ contains
       !
       call c_f_pointer( shared_c_ptr, shared_buffer, (/shared_window_size/) )
       !
-      call unpackSharedBuffer( int( shared_window_size ), main_grid, model_operator )
+      call unpackSharedBuffer( int( shared_window_size ), main_grid, model_operator, model_parameter )
       !
-      !
-      select type( model_operator )
-        !
-        class is( ModelOperator_MF_t )
-            !
-            write( *, * ) "### WORKER VECTOR STATE:"
-            call model_operator%Sigma_E%print()
-            !
-      end select
-      !
-      write( *, * ) "### WORKER GRID STATE:[", main_grid%allocated, main_grid%nx, main_grid%ny, main_grid%nz, "]"
-      !
+		process_name = "#### WORKER ####"
+		call showProcessState( process_name )
+		!
    end subroutine workerQuerySharedMemory
    !
    subroutine workerForwardModelling()
@@ -443,7 +460,7 @@ contains
         !
         class is( ModelOperator_MF_t )
             !
-            call allocateSharedBuffer( main_grid, model_operator )
+            call allocateSharedBuffer( main_grid, model_operator, model_parameter )
             !
             shared_window_size = shared_buffer_size
             disp_unit = 1
@@ -458,11 +475,10 @@ contains
             !
             call c_f_pointer( shared_c_ptr, shared_buffer, (/shared_window_size/) )
             !
-            call packSharedBuffer( main_grid, model_operator )
+            call packSharedBuffer( main_grid, model_operator, model_parameter )
             !
-            write( *, * ) "### MASTER VECTOR STATE:"
-            call model_operator%Sigma_E%print()
-            write( *, * ) "### MASTER GRID STATE:[", main_grid%allocated, main_grid%nx, main_grid%ny, main_grid%nz, "]"
+			process_name = "#### MASTER ####"
+            call showProcessState( process_name )
             !
       end select
       !

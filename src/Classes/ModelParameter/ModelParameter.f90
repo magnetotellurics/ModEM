@@ -27,7 +27,7 @@ module ModelParameter
        !    provides Viedge, Vcell
        class( MetricElements_t ), pointer :: metric
        !
-       integer             :: mKey
+       integer             :: mKey(8)
        character(len = 80) :: paramType    = ''       
        real( kind=prec )   :: airCond       = SIGMA_AIR
        logical             :: zeroValued   = .false.
