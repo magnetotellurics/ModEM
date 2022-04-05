@@ -13,15 +13,30 @@ module DeclarationMPI
     use mpi_f08
     !
     use Grid3D_SG
+    !
     use rVector3D_SG
     use rScalar3D_SG
     use cVector3D_SG
     use cScalar3D_SG
+    !
     use MetricElements_CSG
+    !
     use ModelOperator_MF
+    !
     use ModelParameterCell_SG
     !
     use TransmitterFArray
+    use TransmitterMT
+    use TransmitterCSEM
+    !
+    use ReceiverFArray
+    use ReceiverFullImpedance
+    use ReceiverFullVerticalMagnetic
+    use ReceiverOffDiagonalImpedance
+    use ReceiverSingleField
+    !
+    ! Global Array of Transmitters
+    character(:), pointer, save, public :: actual_tx_type
     !
     type( MPI_Comm ) :: main_comm, child_comm
     !
@@ -61,19 +76,27 @@ module DeclarationMPI
     integer, parameter :: transmitter_mt = 1
     integer, parameter :: transmitter_csem = 2
     !
+    integer    :: receiver_derived_type, receivers_size
+    integer, parameter :: receiver_full_impedance = 1
+    integer, parameter :: receiver_full_vertical_magnetic = 2
+    integer, parameter :: receiver_off_diagonal_impedance = 3
+    integer, parameter :: receiver_single_field = 4
+    !
     character*( MPI_MAX_PROCESSOR_NAME ) :: node_name
     !
     ! PROGRAM GLOBAL VARIABLES
     integer :: tag = 666, master_id = 0, max_procs = 4
     !
-    character*15    :: job_master = "MASTER_JOB", job_finish = "STOP_JOBS", job_done = "FINISH_JOB"
+    character*20    :: job_master = "MASTER_JOB", job_finish = "STOP_JOBS", job_done = "FINISH_JOB"
     !
     ! STRUCT job_info
     type :: struct_job_info
+        !
         SEQUENCE
-        character*50 :: name
-        integer      :: tx_index
-        integer      :: worker_rank
+        !
+        character*20 :: job_name
+        integer   :: tx_index, worker_rank
+        !
     end type struct_job_info
     !
     type( struct_job_info ), save :: job_info
@@ -88,8 +111,10 @@ module DeclarationMPI
         class( ModelOperator_t ), intent( in )  :: model_operator
         class( ModelParameter_t ), intent( in ) :: model_parameter
         !
+        integer :: i, nbytes(4)
         !
-        integer :: tx_id, nbytes
+        call MPI_PACK_SIZE( 1, MPI_INTEGER, child_comm, nbytes(1), ierr )
+        call MPI_PACK_SIZE( len( actual_tx_type ), MPI_CHARACTER, child_comm, nbytes(2), ierr )
         !
         shared_buffer_size = shared_buffer_size + allocateGridBuffer( grid )
         !
@@ -103,14 +128,25 @@ module DeclarationMPI
         !
         write( *, * ) "MPI Allocated model_parameter, size: ", shared_buffer_size
         !
-        call MPI_PACK_SIZE( 1, MPI_INTEGER, child_comm, nbytes, ierr )
-        shared_buffer_size = shared_buffer_size + nbytes
+        call MPI_PACK_SIZE( 1, MPI_INTEGER, child_comm, nbytes(3), ierr )
         !
-        do tx_id = 1, size( transmitters )
-            shared_buffer_size = shared_buffer_size + allocateTransmitterBuffer( getTransmitter( tx_id ) )
+        do i = 1, size( transmitters )
+            shared_buffer_size = shared_buffer_size + allocateTransmitterBuffer( getTransmitter( i ) )
         end do
         !
         write( *, * ) "MPI Allocated trasmitters, size: ", shared_buffer_size
+        !
+        call MPI_PACK_SIZE( 1, MPI_INTEGER, child_comm, nbytes(4), ierr )
+        !
+        do i = 1, size( receivers )
+            shared_buffer_size = shared_buffer_size + allocateReceiverBuffer()
+        end do
+        !
+        write( *, * ) "MPI Allocated receivers, size: ", shared_buffer_size
+        !
+        do i = 1, size( nbytes )
+            shared_buffer_size = shared_buffer_size + nbytes(i)
+        end do
         !
         if( .NOT. associated( shared_buffer ) ) then
             allocate( shared_buffer( shared_buffer_size ) )
@@ -118,7 +154,7 @@ module DeclarationMPI
         !
     end subroutine allocateSharedBuffer
     !
-    ! PACK job_info STRUCT TO Grid Object
+    !
     subroutine packSharedBuffer( grid, model_operator, model_parameter )
         implicit none
         !
@@ -126,7 +162,10 @@ module DeclarationMPI
         class( ModelOperator_t ), intent( in )  :: model_operator
         class( ModelParameter_t ), intent( in ) :: model_parameter
         !
-        integer :: tx_id, index = 1
+        integer :: i, index = 1
+        !
+        call MPI_PACK( len( actual_tx_type ), 1, MPI_INTEGER, shared_buffer, shared_buffer_size, index, child_comm, ierr )
+        call MPI_PACK( actual_tx_type, len( actual_tx_type ), MPI_CHARACTER, shared_buffer, shared_buffer_size, index, child_comm, ierr )
         !
         call packGridBuffer( grid, index )
         !
@@ -142,11 +181,21 @@ module DeclarationMPI
         !
         call MPI_PACK( size( transmitters ), 1, MPI_INTEGER, shared_buffer, shared_buffer_size, index, child_comm, ierr )
         !
-        do tx_id = 1, size( transmitters )
+        do i = 1, size( transmitters )
             !
-            call packTransmitterBuffer( getTransmitter( tx_id ), index )
+            call packTransmitterBuffer( getTransmitter( i ), index )
             !
-            write( *, * ) "MPI packed transmitter[", tx_id, ", size: ", index
+            write( *, * ) "MPI packed transmitter [", i, "], size: ", index
+            !
+        end do
+        !
+        call MPI_PACK( size( receivers ), 1, MPI_INTEGER, shared_buffer, shared_buffer_size, index, child_comm, ierr )
+        !
+        do i = 1, size( receivers )
+            !
+            call packReceiverBuffer( getReceiver( i ), index )
+            !
+            !write( *, * ) "MPI packed receiver [", i, "], size: ", index
             !
         end do
         !
@@ -154,7 +203,6 @@ module DeclarationMPI
         !
     end subroutine packSharedBuffer
     !
-    ! PACK job_info STRUCT TO Grid Object
     subroutine unpackSharedBuffer( buffer_size, grid, model_operator, model_parameter )
         implicit none
         !
@@ -162,12 +210,20 @@ module DeclarationMPI
         class( ModelOperator_t ), allocatable, intent( inout )  :: model_operator
         class( ModelParameter_t ), allocatable, intent( inout ) :: model_parameter
         !
+        class( Transmitter_t ), allocatable :: transmitter
+        class( Receiver_t ), allocatable    :: receiver
+        !
         !
         integer, intent( in ) :: buffer_size
         !
-        integer :: tx_id, index = 1
+        integer :: i, aux_size, index = 1
+        !
         !
         shared_buffer_size = buffer_size
+        !
+        call MPI_UNPACK( shared_buffer, shared_buffer_size, index, aux_size, 1, MPI_INTEGER, child_comm, ierr )
+        allocate( character( aux_size ) :: actual_tx_type )
+        call MPI_UNPACK( shared_buffer, shared_buffer_size, index, actual_tx_type, aux_size, MPI_CHARACTER, child_comm, ierr )
         !
         grid = unpackGridBuffer( index )
         !
@@ -181,13 +237,31 @@ module DeclarationMPI
         !
         write( *, * ) "MPI unpacked model_parameter, size: ", index
         !
-        call MPI_UNPACK( shared_buffer, shared_buffer_size, index, transmitters_size, 1, MPI_INTEGER, child_comm, ierr )
+        call MPI_UNPACK( shared_buffer, shared_buffer_size, index, aux_size, 1, MPI_INTEGER, child_comm, ierr )
         !
-        do tx_id = 1, transmitters_size
+        do i = 1, aux_size
             !
-            call updateTransmitterArray( unpackTransmitterBuffer( grid, index ) )
+            call unpackTransmitterBuffer( grid, transmitter, index )
             !
-            write( *, * ) "MPI unpacked transmitter[", tx_id, ", size: ", index
+            call updateTransmitterArray( transmitter )
+            !
+            write( *, * ) "MPI unpacked transmitter[", i, ", size: ", index
+            !
+            deallocate( transmitter )
+            !
+        end do
+        !
+        call MPI_UNPACK( shared_buffer, shared_buffer_size, index, aux_size, 1, MPI_INTEGER, child_comm, ierr )
+        !
+        do i = 1, aux_size
+            !
+            call unpackReceiverBuffer( grid, receiver, index )
+            !
+            call updateReceiverArray( receiver )
+            !
+            !write( *, * ) "MPI unpacked receiver[", i, ", size: ", index
+            !
+            deallocate( receiver )
             !
         end do
         !
@@ -735,7 +809,7 @@ module DeclarationMPI
         !
     end function allocateGridBuffer
     !
-    ! PACK job_info STRUCT TO Grid Object
+    !
     subroutine packGridBuffer( grid, index )
         implicit none
         !
@@ -808,7 +882,7 @@ module DeclarationMPI
         !
     end subroutine packGridBuffer
     !
-    ! UNPACK job_buffer TO job_info STRUCT
+    !
     function unpackGridBuffer( index ) result ( grid )
         implicit none
         !
@@ -1230,7 +1304,7 @@ module DeclarationMPI
 
     end subroutine packModelOperatorBuffer
     !
-    ! UNPACK job_buffer TO job_info STRUCT
+    !
     function unpackModelOperatorBuffer( grid, index ) result ( model_operator )
         implicit none
         !
@@ -1465,7 +1539,7 @@ module DeclarationMPI
 
     end subroutine packModelParameterBuffer
     !
-    ! UNPACK job_buffer TO job_info STRUCT
+    !
     function unpackModelParameterBuffer( grid, metric, index ) result ( model_parameter )
         implicit none
         !
@@ -1606,7 +1680,7 @@ module DeclarationMPI
                 call MPI_PACK( len( transmitter%DATA_TITLE ), 1, MPI_INTEGER, shared_buffer, shared_buffer_size, index, child_comm, ierr )
                 call MPI_PACK( transmitter%type_name, len( transmitter%type_name ), MPI_CHARACTER, shared_buffer, shared_buffer_size, index, child_comm, ierr )
                 !
-				call MPI_PACK( transmitter%period, 1, MPI_DOUBLE_PRECISION, shared_buffer, shared_buffer_size, index, child_comm, ierr )
+                call MPI_PACK( transmitter%period, 1, MPI_DOUBLE_PRECISION, shared_buffer, shared_buffer_size, index, child_comm, ierr )
                 !
                 !do i = 1, size( transmitter%e_all )
                    !call packCVectorBuffer( transmitter%e_all(i), index )
@@ -1647,14 +1721,13 @@ module DeclarationMPI
 
     end subroutine packTransmitterBuffer
     !
-    ! UNPACK job_buffer TO job_info STRUCT
-    function unpackTransmitterBuffer( grid, index ) result ( transmitter )
+    !
+    subroutine unpackTransmitterBuffer( grid, transmitter, index )
         implicit none
         !
-        class( Grid_t ), target, intent( in )           :: grid
-        integer, intent( inout )                        :: index
-        !
-        class( Transmitter_t ), allocatable :: transmitter
+        class( Grid_t ), target, intent( in )                :: grid
+        class( Transmitter_t ), allocatable, intent( inout ) :: transmitter
+        integer, intent( inout )                             :: index
         !
         integer :: i, transmitter_type, transmitter_e_all, transmitter_receiver_indexes, transmitter_DATA_TITLE
         !
@@ -1673,11 +1746,11 @@ module DeclarationMPI
                         ! SYZES
                         call MPI_UNPACK( shared_buffer, shared_buffer_size, index, transmitter%id, 1, MPI_INTEGER, child_comm, ierr )
                         !
-						call MPI_UNPACK( shared_buffer, shared_buffer_size, index, transmitter%n_pol, 1, MPI_INTEGER, child_comm, ierr )
+                        call MPI_UNPACK( shared_buffer, shared_buffer_size, index, transmitter%n_pol, 1, MPI_INTEGER, child_comm, ierr )
                         !
-						call MPI_UNPACK( shared_buffer, shared_buffer_size, index, transmitter%fwd_key(1), 8, MPI_INTEGER, child_comm, ierr )
+                        call MPI_UNPACK( shared_buffer, shared_buffer_size, index, transmitter%fwd_key(1), 8, MPI_INTEGER, child_comm, ierr )
                         !
-						call MPI_UNPACK( shared_buffer, shared_buffer_size, index, transmitter_type, 1, MPI_INTEGER, child_comm, ierr )
+                        call MPI_UNPACK( shared_buffer, shared_buffer_size, index, transmitter_type, 1, MPI_INTEGER, child_comm, ierr )
                         call MPI_UNPACK( shared_buffer, shared_buffer_size, index, transmitter_e_all, 1, MPI_INTEGER, child_comm, ierr )
                         call MPI_UNPACK( shared_buffer, shared_buffer_size, index, transmitter_receiver_indexes, 1, MPI_INTEGER, child_comm, ierr )
                         call MPI_UNPACK( shared_buffer, shared_buffer_size, index, transmitter_DATA_TITLE, 1, MPI_INTEGER, child_comm, ierr )
@@ -1745,14 +1818,111 @@ module DeclarationMPI
            !
         end select
         !
-    end function unpackTransmitterBuffer
+    end subroutine unpackTransmitterBuffer
+    !
+    !
+    function allocateReceiverBuffer() result( receiver_size_bytes )
+        implicit none
+        !
+        integer :: i, receiver_size_bytes
+        integer :: nbytes(2)
+        !
+        receiver_size_bytes = 0
+        !
+        call MPI_PACK_SIZE( 2, MPI_INTEGER, child_comm, nbytes(1), ierr )
+        call MPI_PACK_SIZE( 3, MPI_DOUBLE_PRECISION, child_comm, nbytes(2), ierr )
+        !
+        do i = 1, size( nbytes )
+            receiver_size_bytes = receiver_size_bytes + nbytes(i)
+        end do
+        !
+    end function allocateReceiverBuffer
+    !
+    !
+    subroutine packReceiverBuffer( receiver, index )
+        implicit none
+        !
+        class( Receiver_t ), intent( in ) :: receiver
+        integer, intent( inout )             :: index
+        !
+        select type( receiver )
+           !
+           class is( ReceiverFullImpedance_t )
+                !
+                call MPI_PACK( receiver_full_impedance, 1, MPI_INTEGER, shared_buffer, shared_buffer_size, index, child_comm, ierr )
+                !
+           class is( ReceiverFullVerticalMagnetic_t )
+                !
+                call MPI_PACK( receiver_full_vertical_magnetic, 1, MPI_INTEGER, shared_buffer, shared_buffer_size, index, child_comm, ierr )
+                !
+            class is( ReceiverOffDiagonalImpedance_t )
+                !
+                call MPI_PACK( receiver_off_diagonal_impedance, 1, MPI_INTEGER, shared_buffer, shared_buffer_size, index, child_comm, ierr )
+                !
+            class is( ReceiverSingleField_t )
+                !
+                call MPI_PACK( receiver_single_field, 1, MPI_INTEGER, shared_buffer, shared_buffer_size, index, child_comm, ierr )
+                !
+           class default
+              stop "allocateReceiverBuffer: Unclassified receiver"
+           !
+        end select
+        !
+        call MPI_PACK( receiver%id, 1, MPI_INTEGER, shared_buffer, shared_buffer_size, index, child_comm, ierr )
+        call MPI_PACK( receiver%location, 3, MPI_DOUBLE_PRECISION, shared_buffer, shared_buffer_size, index, child_comm, ierr )
+        !
+    end subroutine packReceiverBuffer
+    !
+    !
+    subroutine unpackReceiverBuffer( grid, receiver, index )
+        implicit none
+        !
+        class( Grid_t ), target, intent( in )             :: grid
+        class( Receiver_t ), allocatable, intent( inout ) :: receiver
+        integer, intent( inout )                          :: index
+        !
+        integer :: receiver_id
+        !
+        real( kind=prec ) :: receiver_location(3)
+        !
+        call MPI_UNPACK( shared_buffer, shared_buffer_size, index, receiver_derived_type, 1, MPI_INTEGER, child_comm, ierr )
+        !
+        call MPI_UNPACK( shared_buffer, shared_buffer_size, index, receiver_id, 1, MPI_INTEGER, child_comm, ierr )
+        call MPI_UNPACK( shared_buffer, shared_buffer_size, index, receiver_location(1), 3, MPI_DOUBLE_PRECISION, child_comm, ierr )
+        !
+        select case( receiver_derived_type )
+           !
+           case( receiver_full_impedance )
+                !
+                allocate( receiver, source = ReceiverFullImpedance_t( receiver_location ) )
+                !
+           case( receiver_full_vertical_magnetic )
+                !
+                allocate( receiver, source = ReceiverFullVerticalMagnetic_t( receiver_location ) )
+                !
+           case( receiver_off_diagonal_impedance )
+                !
+                allocate( receiver, source = ReceiverOffDiagonalImpedance_t( receiver_location ) )
+                !
+           case( receiver_single_field )
+                !
+                allocate( receiver, source = ReceiverFullImpedance_t( receiver_location ) )
+                !
+           case default
+              stop "allocateReceiverBuffer: Unclassified receiver"
+           !
+        end select
+        !
+        receiver%id = receiver_id
+        !
+    end subroutine unpackReceiverBuffer
     !
     ! ALLOCATE job_buffer
     subroutine allocateJobBuffer
         !
         integer nbytes1, nbytes2
         !
-        call MPI_PACK_SIZE( 50, MPI_CHARACTER, child_comm, nbytes1, ierr )
+        call MPI_PACK_SIZE( 20, MPI_CHARACTER, child_comm, nbytes1, ierr )
         call MPI_PACK_SIZE( 2, MPI_INTEGER, child_comm, nbytes2, ierr )
         !
         job_size_bytes = ( nbytes1 + nbytes2 ) + 1
@@ -1770,7 +1940,7 @@ module DeclarationMPI
         !
         index = 1
         !
-        call MPI_PACK( job_info%name, 50, MPI_CHARACTER, job_buffer, job_size_bytes, index, child_comm, ierr )
+        call MPI_PACK( job_info%job_name, 20, MPI_CHARACTER, job_buffer, job_size_bytes, index, child_comm, ierr )
         call MPI_PACK( job_info%tx_index, 1, MPI_INTEGER, job_buffer, job_size_bytes, index, child_comm, ierr )
         call MPI_PACK( job_info%worker_rank, 1, MPI_INTEGER, job_buffer, job_size_bytes, index, child_comm, ierr )
         !
@@ -1783,16 +1953,16 @@ module DeclarationMPI
         !
         index = 1
         !
-        call MPI_UNPACK( job_buffer, job_size_bytes, index, job_info%name, 50, MPI_CHARACTER, child_comm, ierr )
-        call MPI_UNPACK( job_buffer, job_size_bytes, index, job_info%tx_index , 1, MPI_INTEGER, child_comm, ierr )
-        call MPI_UNPACK( job_buffer, job_size_bytes, index, job_info%worker_rank , 1, MPI_INTEGER, child_comm, ierr )
+        call MPI_UNPACK( job_buffer, job_size_bytes, index, job_info%job_name, 20, MPI_CHARACTER, child_comm, ierr )
+        call MPI_UNPACK( job_buffer, job_size_bytes, index, job_info%tx_index, 1, MPI_INTEGER, child_comm, ierr )
+        call MPI_UNPACK( job_buffer, job_size_bytes, index, job_info%worker_rank, 1, MPI_INTEGER, child_comm, ierr )
         !
     end subroutine unpackJobBuffer
     !
     ! RECEIVE job_info FROM ANY TARGET
     subroutine receiveFromAny()
         !
-        write( *, * ) "<<<< ", mpi_rank, " JOB: ", job_info%name, " FROM: ", job_info%worker_rank
+        write( *, * ) "<<<< ", mpi_rank, " JOB: ", job_info%job_name, " FROM: ", job_info%worker_rank
         !
         call allocateJobBuffer
         call MPI_RECV( job_buffer, job_size_bytes, MPI_PACKED, MPI_ANY_SOURCE, tag, child_comm, MPI_STATUS_IGNORE, ierr )
@@ -1805,7 +1975,7 @@ module DeclarationMPI
         !
         integer, intent( in )    :: target_id
         !
-        write( *, * ) "<<<< ", mpi_rank, " JOB: ", job_info%name, " FROM: ", target_id
+        write( *, * ) "<<<< ", mpi_rank, " JOB: ", job_info%job_name, " FROM: ", target_id
         !
         call allocateJobBuffer
         call MPI_RECV( job_buffer, job_size_bytes, MPI_PACKED, target_id, tag, child_comm, MPI_STATUS_IGNORE, ierr )
@@ -1818,7 +1988,7 @@ module DeclarationMPI
         !
         integer, intent( in )    :: target_id
         !
-        write( *, * ) ">>>> ", mpi_rank, " JOB: ", job_info%name, " TO: ", target_id
+        write( *, * ) ">>>> ", mpi_rank, " JOB: ", job_info%job_name, " TO: ", target_id
         !
         call allocateJobBuffer
         call packJobBuffer
