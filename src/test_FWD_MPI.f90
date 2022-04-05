@@ -35,6 +35,12 @@ program ModEM
     ! SET mpi_size WITH n FROM MPIRUN FOR MPI_COMM_WORLD
     call MPI_Comm_size( main_comm, mpi_size, ierr )
     !
+    if( mpi_size < 2 ) then
+        write( *, * ) "A minimum of two MPI processes are required!!!"
+        call MPI_Finalize( ierr )
+        stop
+    end if 
+    !
     ! SET mpi_rank WITH PROCESS ID FOR MPI_COMM_WORLD
     call MPI_Comm_rank( main_comm, mpi_rank, ierr )
     !
@@ -53,27 +59,29 @@ program ModEM
     ! MASTER
     !
     if ( mpi_rank == 0 ) then
-         !
-         modem_job = "unknow"
-         !
-         ! MASTER
-         !
-         ! Validate arguments, set model_file_name, data_file_name
-         call handleArguments()
-         !
-         write ( *, * )
-         write ( *, * ) "Start ModEM-OO."
-         write ( *, * )
-         !
-         ! Check parameters at the control file
-         if( has_control_file ) call handleControlFile()
-         !
-         ! Execute the modem_job
-         call handleJob()
-         !
-         write ( *, * )
-         write ( *, * ) "Finish ModEM-OO."
-         write ( *, * )
+        !
+        modem_job = "unknow"
+        !
+        ! MASTER
+        !
+        ! Validate arguments, set model_file_name, data_file_name
+        call handleArguments()
+        !
+        write ( *, * )
+        write ( *, * ) "Start ModEM-OO."
+        write ( *, * )
+        !
+        ! Check parameters at the control file
+        if( has_control_file ) call handleControlFile()
+        !
+        ! Execute the modem_job
+        call handleJob()
+        !
+        call MPI_Finalize( ierr )
+        !
+        write ( *, * )
+        write ( *, * ) "Finish ModEM-OO."
+        write ( *, * )
     !
     ! WORKER
     !
@@ -94,20 +102,20 @@ program ModEM
                 job_master = trim( fwd_info%job_name )
                 !
                 select case ( job_master )
-                     !
-                     case ( "SHARE_MEMORY" )
-                          !
-                          call workerQuerySharedMemory()
-                          !
-                     case ( "JOB_FORWARD" )
-                          !
-                          call workerForwardModelling()
-                          !
+                !
+                case ( "SHARE_MEMORY" )
+                    !
+                    call workerQuerySharedMemory()
+                    !
+                    call MPI_Win_fence( 0, shared_window, ierr )
+                    !
+                case ( "JOB_FORWARD" )
+                    !
+                    call workerForwardModelling()
+                    !
                 end select
                 !
             enddo
-            !
-            call MPI_Win_fence( 0, shared_window, ierr )
             !
             call MPI_Finalize( ierr )
             !
@@ -159,24 +167,33 @@ contains
              !
         enddo
         !
-        !transmitter = getTransmitter( 1 )
-        !actual_tx_type = trim( transmitter%type_name )
-        call writePredictedDataHeader( getTransmitter( 1 ), .TRUE. )
+        call MPI_Win_fence( 0, shared_window, ierr )
+        !
+        transmitter = getTransmitter(1)
+        actual_tx_type = trim( transmitter%type_name )
+        call writePredictedDataHeader( getTransmitter(1), .TRUE. )
         !
         ! SEND 1 TRANSMITTER TO EACH WORKER
         do while ( worker_rank <= ( mpi_size - 1 ) )
             !
             tx_index = tx_index + 1
             !
-            !transmitter = getTransmitter( tx_index )
+            fwd_info%job_name    = job_forward
+            fwd_info%tx_index    = tx_index
+            fwd_info%worker_rank = worker_rank
             !
-            fwd_info%job_name         = job_forward
-            fwd_info%tx_index         = tx_index
-            fwd_info%worker_rank      = worker_rank
-            !fwd_info%tx_changed       = actual_tx_type /= trim( transmitter%type_name )
+            transmitter = getTransmitter( tx_index )
+            if( actual_tx_type /= trim( transmitter%type_name ) ) then
+               actual_tx_type = trim( transmitter%type_name )
+               fwd_info%tx_changed  = .TRUE.
+            else
+               fwd_info%tx_changed  = .FALSE.
+            end if
             !
-            !deallocate( transmitter )
+            deallocate( transmitter )
             !
+            forward_solver_type  = fwd_info%forward_solver_type
+            source_type          = fwd_info%source_type
             !
             call sendTo( worker_rank )
             !
@@ -195,8 +212,21 @@ contains
             !
             tx_index = tx_index + 1
             !
-            fwd_info%job_name = job_forward
-            fwd_info%tx_index = tx_index
+            fwd_info%job_name    = job_forward
+            fwd_info%tx_index    = tx_index
+            !
+            transmitter = getTransmitter( tx_index )
+            if( actual_tx_type /= trim( transmitter%type_name ) ) then
+               actual_tx_type = trim( transmitter%type_name )
+               fwd_info%tx_changed  = .TRUE.
+            else
+               fwd_info%tx_changed  = .FALSE.
+            end if
+            !
+            deallocate( transmitter )
+            !
+            forward_solver_type  = fwd_info%forward_solver_type
+            source_type          = fwd_info%source_type
             !
             call sendTo( fwd_info%worker_rank )
             !
@@ -216,8 +246,6 @@ contains
              call sendTo( fwd_info%worker_rank )
              !
         enddo
-        !
-        call MPI_Win_fence( 0, shared_window, ierr )
         !
         ! Verbosis
         write ( *, * ) "    > Finish forward modelling."
@@ -276,7 +304,7 @@ contains
         !
         ! Temporary alias pointers
         class( Receiver_t ), allocatable :: Rx
-        class( Transmitter_t ), pointer  :: Tx
+        class( Transmitter_t ), allocatable  :: Tx
         !
         type( TAirLayers ) :: air_layer
         !
@@ -303,7 +331,7 @@ contains
         call model_operator%SetEquations()
         !
         ! ForwardSolver - Chosen from control file
-        select case ( forward_solver_type )
+        select case ( trim( fwd_info%forward_solver_type ) )
             !
             case( FWD_FILE )
                 fwd_solver = ForwardSolverFromFile_t( model_operator )
@@ -322,7 +350,7 @@ contains
         call fwd_solver%setCond( model_parameter )
         !
         ! Source - Chosen from control file
-        select case ( source_type )
+        select case ( trim( fwd_info%source_type ) )
             !
             case( SRC_MT_1D )
                 allocate( fwd_source, source = SourceMT_1D_t( model_operator, model_parameter ) )
@@ -335,7 +363,7 @@ contains
             !
         end select
         !
-        Tx => getTransmitter( fwd_info%tx_index )
+        Tx = getTransmitter( fwd_info%tx_index )
         !
         call writeEsolutionHeader( Tx%n_pol )
         !
@@ -344,7 +372,7 @@ contains
         !
         ! According to Tx type,
         ! write the proper header in the "predicted_data.dat" file
-        if( fwd_info%tx_changed ) call writePredictedDataHeader( Tx, fwd_info%tx_changed )
+        if( fwd_info%tx_changed ) call writePredictedDataHeader( Tx, .FALSE. )
         !
         ! Tx points to its due Source
         call Tx%setSource( fwd_source )
@@ -375,7 +403,7 @@ contains
         enddo
         !
         ! Loop over all Receivers
-        nRx = size( receivers )
+        !nRx = size( receivers )
         !
         do iRx = 1, nRx
             !
@@ -386,7 +414,7 @@ contains
             !
         enddo
         !
-        write ( *, * ) "WORKER ", mpi_rank, "FINISHS FWD FOR TX ", Tx%id
+        write ( *, * ) "WORKER ", mpi_rank, "FINISHES FWD FOR TX ", Tx%id
         !
         ! SEND JOB DONE TO MASTER
         fwd_info%job_name    = job_done
@@ -440,7 +468,7 @@ contains
         if( ( mpi_size - 1 ) > size( transmitters ) ) then
             write( *, * ) "There are more MPI worker processes than necessary!!!"
             write( *, * ) "     ", size( transmitters ), " Transmitters"
-            write( *, * ) "     ", ( mpi_size - 1 ), " MPI processes"
+            write( *, * ) "     ", ( mpi_size - 1 ), " MPI worker processes"
             !
             call MPI_Abort( main_comm, ierr )
             !
