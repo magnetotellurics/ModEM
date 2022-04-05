@@ -108,11 +108,6 @@ module Constants
    character (len = 80), parameter :: REGION = "Regional"
    character (len = 80), parameter :: SPHERE = "Global"
    
-   ! Job options
-   character(*), parameter :: JOB_KEY            = "JOB"
-   character(*), parameter :: JOB_FORWARD      = "FORWARD"
-   character(*), parameter :: JOB_READ_WRITE = "READ_WRITE"
-   
    ! Grid Options
    character(*), parameter :: GRID_KEY                         = "GRID TYPE"
    character(*), parameter :: GRID_STANDARD_CSG            = "CARTESIAN"    
