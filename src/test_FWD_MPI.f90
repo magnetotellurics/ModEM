@@ -130,12 +130,13 @@ contains
         implicit none
         !
         ! Local variables
-        integer :: pid, worker_rank = 1, tx_received = 0, tx_index = 0
+        integer :: i, worker_rank = 1, tx_received = 0, tx_index = 0
         !
         class( Transmitter_t ), pointer :: aux_tx
         character(:), allocatable :: actual_tx_type
         !
         type( PredictedDataHandle_t ), allocatable :: data_entries(:)
+        type( PredictedDataHandle_t ), allocatable :: all_data_entries(:)
         !
         ! Verbosis
         write ( *, * ) "    > Start forward modelling."
@@ -157,12 +158,12 @@ contains
         ! SHARE MEM WITH ALL WORKERS
         call masterExposeSharedMemory()
         !
-        do pid = 1, ( mpi_size - 1 )
-             !
-             fwd_info%job_name = job_share_memory
-             !
-             call sendTo( pid )
-             !
+        do i = 1, ( mpi_size - 1 )
+            !
+            fwd_info%job_name = job_share_memory
+            !
+            call sendTo( i )
+            !
         enddo
         !
         ! ?????
@@ -207,6 +208,10 @@ contains
             !
             data_entries = receiveData()
             !
+            do i = 1, size( data_entries )
+                call updateTxPredictedDataArray( all_data_entries, data_entries( i ) )
+            end do
+            !
             tx_received = tx_received + 1
             !
             tx_index = tx_index + 1
@@ -238,6 +243,10 @@ contains
             !
             data_entries = receiveData()
             !
+            do i = 1, size( data_entries )
+                call updateTxPredictedDataArray( all_data_entries, data_entries( i ) )
+            end do
+            !
             tx_received = tx_received + 1
             !
             fwd_info%job_name = job_finish
@@ -246,10 +255,46 @@ contains
              
         enddo
         !
+        !
+        call writeTxPredictedData( all_data_entries )
+        !
         ! Verbosis
         write ( *, * ) "    > Finish forward modelling."
         !
     end subroutine masterForwardModelling
+    !
+    subroutine writeTxPredictedData( data_entries )
+        implicit none
+        !
+        type( PredictedDataHandle_t ), allocatable, intent( inout ) :: data_entries(:)
+        type( PredictedDataHandle_t ) :: aux_data_entry
+        !
+        integer :: i, j
+        !
+        do i = 1, size( data_entries ) - 1
+            !
+            do j = i + 1, size( data_entries )
+                !
+                if( data_entries(i)%period > data_entries(j)%period ) then
+                    aux_data_entry = data_entries(i)
+                    data_entries(i) = data_entries(j)
+                    data_entries(j) = aux_data_entry
+                endif
+                !
+            enddo
+        enddo
+        !
+        open( ioPredData, file = "predicted_data.dat", action="write", position="append" )
+        !
+        do i = 1, size( data_entries )
+            !
+            write( ioPredData, "(es12.6, A20, f15.3, f15.3, f15.3, f15.3, f15.3, A20, es16.6, es16.6, es16.6)" ) data_entries(i)%period, data_entries(i)%code, R_ZERO, R_ZERO, data_entries(i)%xyz(1), data_entries(i)%xyz(2), data_entries(i)%xyz(3), data_entries(i)%component, data_entries(i)%real, data_entries(i)%imaginary, 1.0
+            !
+        enddo
+        !
+        close( ioPredData )
+        !
+    end subroutine writeTxPredictedData
     !
     subroutine masterExposeSharedMemory()
         implicit none
@@ -306,8 +351,8 @@ contains
         class( Source_t ), allocatable        :: fwd_source 
         !
         ! Temporary alias pointers
-        class( Receiver_t ), pointer :: Rx
-        class( Transmitter_t ), pointer  :: Tx
+        class( Receiver_t ), pointer    :: Rx
+        class( Transmitter_t ), pointer :: Tx
         !
         type( PredictedDataHandle_t ), allocatable :: tx_data_entries(:)
         !
@@ -423,7 +468,7 @@ contains
         fwd_info%tx_index    = Tx%id
         fwd_info%worker_rank = mpi_rank
         !
-        !call createDataBuffer( tx_data_entries )
+        call allocateDataBuffer( tx_data_entries )
         fwd_info%n_data      = size( tx_data_entries )
         fwd_info%data_size   = predicted_data_buffer_size
         !
