@@ -369,7 +369,7 @@ contains
              xyz = (/real( self%location( 1 ), kind=prec ), real( self%location( 2 ), kind=prec ), real( self%location( 3 ), kind=prec )/)
              component = trim( self%comp_names( i ) )
              real_part = real( self%Z( i ), kind=prec )
-             imaginary = real( aimag( self%Z( i ) ), kind=prec )
+             imaginary = real( imag( self%Z( i ) ), kind=prec )
              !
              call self%updatePredictedDataArray( buildPredictedDataHandle( code, component, period, xyz, real_part, imaginary ) )
              !

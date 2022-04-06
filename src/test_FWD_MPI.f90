@@ -89,8 +89,6 @@ program ModEM
         !
         if( ierr == MPI_SUCCESS ) then
             !
-            write( *, "(A50, i8, i8, i8)" ) "MPI Allocated window size:", shared_window_size, shared_disp_unit, shared_c_ptr
-            !
             do while ( job_master .ne. job_finish )
                 !
                 write ( *, * ) "WORKER: ", mpi_rank, " WAITING MASTER"
@@ -134,8 +132,10 @@ contains
         ! Local variables
         integer :: pid, worker_rank = 1, tx_received = 0, tx_index = 0
         !
-        class( Transmitter_t ), allocatable :: transmitter
+        class( Transmitter_t ), pointer :: aux_tx
         character(:), allocatable :: actual_tx_type
+        !
+        type( PredictedDataHandle_t ), allocatable :: data_entries(:)
         !
         ! Verbosis
         write ( *, * ) "    > Start forward modelling."
@@ -165,13 +165,14 @@ contains
              !
         enddo
         !
+        ! ?????
         call MPI_Win_fence( 0, shared_window, ierr )
         !
-        transmitter = getTransmitter(1)
-        actual_tx_type = trim( transmitter%type_name )
+        aux_tx => getTransmitter(1)
+        actual_tx_type = trim( aux_tx%type_name )
         call writePredictedDataHeader( getTransmitter(1), .TRUE. )
         !
-        ! SEND 1 TRANSMITTER TO EACH WORKER
+        ! SEND 1 TRANSMITTER TO FIRST np WORKERS
         do while ( worker_rank <= ( mpi_size - 1 ) )
             !
             tx_index = tx_index + 1
@@ -180,15 +181,13 @@ contains
             fwd_info%tx_index    = tx_index
             fwd_info%worker_rank = worker_rank
             !
-            transmitter = getTransmitter( tx_index )
-            if( actual_tx_type /= trim( transmitter%type_name ) ) then
-               actual_tx_type = trim( transmitter%type_name )
+            aux_tx => getTransmitter( tx_index )
+            if( actual_tx_type /= trim( aux_tx%type_name ) ) then
+               actual_tx_type = trim( aux_tx%type_name )
                fwd_info%tx_changed  = .TRUE.
             else
                fwd_info%tx_changed  = .FALSE.
             end if
-            !
-            deallocate( transmitter )
             !
             forward_solver_type  = fwd_info%forward_solver_type
             source_type          = fwd_info%source_type
@@ -206,6 +205,8 @@ contains
             !
             call receiveFromAny()
             !
+            data_entries = receiveData()
+            !
             tx_received = tx_received + 1
             !
             tx_index = tx_index + 1
@@ -213,15 +214,13 @@ contains
             fwd_info%job_name    = job_forward
             fwd_info%tx_index    = tx_index
             !
-            transmitter = getTransmitter( tx_index )
-            if( actual_tx_type /= trim( transmitter%type_name ) ) then
-               actual_tx_type = trim( transmitter%type_name )
+            aux_tx => getTransmitter( tx_index )
+            if( actual_tx_type /= trim( aux_tx%type_name ) ) then
+               actual_tx_type = trim( aux_tx%type_name )
                fwd_info%tx_changed  = .TRUE.
             else
                fwd_info%tx_changed  = .FALSE.
             end if
-            !
-            deallocate( transmitter )
             !
             forward_solver_type  = fwd_info%forward_solver_type
             source_type          = fwd_info%source_type
@@ -232,17 +231,19 @@ contains
         !
         ! RECEIVES job_done FROM EACH FINISHED WORKER
         do while ( tx_received < size( transmitters ) )
-             !
-             write ( *, * ) "MASTER WAITING ANY WORKER TO FINISH"
-             !
-             call receiveFromAny()
-             !
-             tx_received = tx_received + 1
-             !
-             fwd_info%job_name = job_finish
-             !
-             call sendTo( fwd_info%worker_rank )
-             !
+            !
+            write ( *, * ) "MASTER WAITING ANY WORKER TO FINISH"
+            !
+            call receiveFromAny()
+            !
+            data_entries = receiveData()
+            !
+            tx_received = tx_received + 1
+            !
+            fwd_info%job_name = job_finish
+            !
+            call sendTo( fwd_info%worker_rank )
+             
         enddo
         !
         ! Verbosis
@@ -282,9 +283,13 @@ contains
         !
         call MPI_Win_shared_query( shared_window, master_id, shared_window_size, shared_disp_unit, shared_c_ptr, ierr )
         !
-        if( ierr /= MPI_SUCCESS ) then
-             write( *, "(A50, i8, i8)" ) "MPI Win_shared_query fails on worker, ierr:", mpi_rank, ierr
-             stop
+        if( ierr == MPI_SUCCESS ) then
+            !
+            write( *, "(A50, i8, i8, i8)" ) "MPI Allocated window size:", shared_window_size
+            !
+        else
+            write( *, "(A50, i8, i8)" ) "MPI Win_shared_query fails on worker, ierr:", mpi_rank, ierr
+            stop
         endif
         !
         call c_f_pointer( shared_c_ptr, shared_buffer, (/shared_window_size/) )
@@ -301,12 +306,14 @@ contains
         class( Source_t ), allocatable        :: fwd_source 
         !
         ! Temporary alias pointers
-        class( Receiver_t ), allocatable :: Rx
-        class( Transmitter_t ), allocatable  :: Tx
+        class( Receiver_t ), pointer :: Rx
+        class( Transmitter_t ), pointer  :: Tx
+        !
+        type( PredictedDataHandle_t ), allocatable :: tx_data_entries(:)
         !
         type( TAirLayers ) :: air_layer
         !
-        integer :: iRx, nRx
+        integer :: iRx, nRx, iDe
         !
         select type( main_grid )
             !
@@ -329,6 +336,7 @@ contains
         call model_operator%SetEquations()
         !
         ! ForwardSolver - Chosen from control file
+        if( allocated( fwd_solver ) ) deallocate( fwd_solver )
         select case ( trim( fwd_info%forward_solver_type ) )
             !
             case( FWD_FILE )
@@ -348,6 +356,7 @@ contains
         call fwd_solver%setCond( model_parameter )
         !
         ! Source - Chosen from control file
+        if( allocated( fwd_source ) ) deallocate( fwd_source )
         select case ( trim( fwd_info%source_type ) )
             !
             case( SRC_MT_1D )
@@ -361,7 +370,7 @@ contains
             !
         end select
         !
-        Tx = getTransmitter( fwd_info%tx_index )
+        Tx => getTransmitter( fwd_info%tx_index )
         !
         call writeEsolutionHeader( Tx%n_pol )
         !
@@ -384,13 +393,14 @@ contains
         ! Solve Tx Forward Modelling
         call Tx%solveFWD()
         !
+        if( allocated( tx_data_entries ) ) deallocate( tx_data_entries )
         ! Loop over Receivers of each Transmitter
         nRx = size( Tx%receiver_indexes )
         !
         do iRx = 1, nRx
             !
             ! Temporary Receiver alias
-            Rx = getReceiver( Tx%receiver_indexes( iRx ) )
+            Rx => getReceiver( Tx%receiver_indexes( iRx ) )
             !
             ! Verbosis...
             !write( *, * ) "                        Rx Id:", Rx%id, "XYZ:", Rx%location
@@ -398,24 +408,55 @@ contains
             ! Calculate Rx Predicted Data
             call Rx%predictedData( model_operator, Tx )
             !
-            call Rx%writePredictedData()
+            do iDe = 1, size( Rx%predicted_data_entries )
+            !
+                call updateTxPredictedDataArray( tx_data_entries, Rx%predicted_data_entries(iDe) )
+            !
+            end do
             !
         enddo
         !
-        write ( *, * ) "WORKER ", mpi_rank, "FINISHES FWD FOR TX ", Tx%id
+        write ( *, * ) "WORKER ", mpi_rank, "FINISHES FWD FOR TX ", Tx%id, size( tx_data_entries )
         !
         ! SEND JOB DONE TO MASTER
-        fwd_info%job_name    = job_done
+        fwd_info%job_name    = job_fwd_done
         fwd_info%tx_index    = Tx%id
         fwd_info%worker_rank = mpi_rank
         !
-        fwd_info%n_data
-        fwd_info%data_size
+        !call createDataBuffer( tx_data_entries )
+        fwd_info%n_data      = size( tx_data_entries )
+        fwd_info%data_size   = predicted_data_buffer_size
         !
         call sendTo( master_id )
         !
+        call sendData( tx_data_entries )
+        !
     end subroutine workerForwardModelling
     !
+    subroutine updateTxPredictedDataArray( data_entries, new_data )
+          implicit none
+          !
+          type( PredictedDataHandle_t ), allocatable, intent( inout ) :: data_entries(:)
+          type( PredictedDataHandle_t ), intent( in ) :: new_data
+          !
+          !
+          type( PredictedDataHandle_t ), allocatable, dimension(:) :: temp_array
+          integer :: istat
+          !
+          if( .NOT. allocated( data_entries )  ) then
+                allocate( data_entries(1) )
+                data_entries(1) = new_data
+          else
+                !
+                allocate( temp_array( size( data_entries ) + 1 ), STAT = istat )
+                temp_array( 1 : size( data_entries ) ) = data_entries
+                temp_array( size( data_entries ) + 1 ) = new_data
+                data_entries = temp_array
+                !
+          endif
+          !
+     end subroutine updateTxPredictedDataArray
+     !
     subroutine handleJob()
         implicit none
         !

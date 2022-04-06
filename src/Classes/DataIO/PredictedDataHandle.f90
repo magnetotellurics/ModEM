@@ -11,7 +11,7 @@ module PredictedDataHandle
     !
     type :: PredictedDataHandle_t
         !
-        character(:), allocatable :: code, component
+        character*20              :: code, component
         real( kind=prec )         :: period, xyz(3)
         real( kind=prec )         :: real, imaginary
         !
