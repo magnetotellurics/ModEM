@@ -19,11 +19,9 @@ program ModEM
     use SourceMT_1D
     use SourceMT_2D
     !
-    character(:), allocatable :: process_name
-    !
-    class( Grid_t ), allocatable                  :: main_grid
-    class( ModelParameter_t ), allocatable        :: model_parameter
-    class( ModelOperator_t ), allocatable, target :: model_operator
+    class( Grid_t ), allocatable           :: main_grid
+    class( ModelParameter_t ), allocatable :: model_parameter
+    class( ModelOperator_t ), allocatable  :: model_operator
     !
     character(:), allocatable :: control_file_name, model_file_name, data_file_name, modem_job
     logical                   :: has_control_file = .false., has_model_file = .false., has_data_file = .false.
@@ -87,11 +85,11 @@ program ModEM
     !
     else
         !
-        call MPI_Win_allocate_shared( shared_window_size, disp_unit, MPI_INFO_NULL, child_comm, shared_c_ptr, shared_window, ierr )
+        call MPI_Win_allocate_shared( shared_window_size, shared_disp_unit, MPI_INFO_NULL, child_comm, shared_c_ptr, shared_window, ierr )
         !
         if( ierr == MPI_SUCCESS ) then
             !
-            write( *, "(A50, i8, i8, i8)" ) "MPI Allocated window size:", shared_window_size, disp_unit, shared_c_ptr
+            write( *, "(A50, i8, i8, i8)" ) "MPI Allocated window size:", shared_window_size, shared_disp_unit, shared_c_ptr
             !
             do while ( job_master .ne. job_finish )
                 !
@@ -262,9 +260,9 @@ contains
                 call allocateSharedBuffer( main_grid, model_operator, model_parameter )
                 !
                 shared_window_size = shared_buffer_size
-                disp_unit = 1
+                shared_disp_unit = 1
                 !
-                call MPI_Win_allocate_shared( shared_window_size, disp_unit, MPI_INFO_NULL, child_comm, shared_c_ptr, shared_window, ierr )
+                call MPI_Win_allocate_shared( shared_window_size, shared_disp_unit, MPI_INFO_NULL, child_comm, shared_c_ptr, shared_window, ierr )
                 !
                 if( ierr /= MPI_SUCCESS ) then
                      write( *, "(A50, i8)" ) "MPI Win_allocate_shared fails on master:", ierr
@@ -282,7 +280,7 @@ contains
     subroutine workerQuerySharedMemory()
         implicit none
         !
-        call MPI_Win_shared_query( shared_window, master_id, shared_window_size, disp_unit, shared_c_ptr, ierr )
+        call MPI_Win_shared_query( shared_window, master_id, shared_window_size, shared_disp_unit, shared_c_ptr, ierr )
         !
         if( ierr /= MPI_SUCCESS ) then
              write( *, "(A50, i8, i8)" ) "MPI Win_shared_query fails on worker, ierr:", mpi_rank, ierr
@@ -400,16 +398,6 @@ contains
             ! Calculate Rx Predicted Data
             call Rx%predictedData( model_operator, Tx )
             !
-        enddo
-        !
-        ! Loop over all Receivers
-        !nRx = size( receivers )
-        !
-        do iRx = 1, nRx
-            !
-            ! Temporary Receiver alias
-            Rx = getReceiver( iRx )
-            !
             call Rx%writePredictedData()
             !
         enddo
@@ -420,6 +408,9 @@ contains
         fwd_info%job_name    = job_done
         fwd_info%tx_index    = Tx%id
         fwd_info%worker_rank = mpi_rank
+        !
+        fwd_info%n_data
+        fwd_info%data_size
         !
         call sendTo( master_id )
         !

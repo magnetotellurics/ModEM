@@ -6,39 +6,39 @@
 !
 !*************
 !
-module StandardDataFile
+module DataFileStandard
    !
    use DataFile
    use DataEntryMT
    use DataEntryMT_REF
    use DataEntryCSEM
    !
-   type, extends( DataFile_t ) :: StandardDataFile_t
+   type, extends( DataFile_t ) :: DataFileStandard_t
       !
       integer :: line_counter = 0
       !
    contains
       !
-      final :: StandardDataFile_dtor
+      final :: DataFileStandard_dtor
       !
-   end type StandardDataFile_t
+   end type DataFileStandard_t
    !
-   interface StandardDataFile_t
-      module procedure StandardDataFile_ctor
-   end interface StandardDataFile_t
+   interface DataFileStandard_t
+      module procedure DataFileStandard_ctor
+   end interface DataFileStandard_t
    !
    public :: getLineNumber
    !
 contains
    !
    ! Read line by line of the data file, create Data Entry objects (MT, MT_REF or CSEM)
-   function StandardDataFile_ctor( funit, fname ) result( self )
+   function DataFileStandard_ctor( funit, fname ) result( self )
       implicit none
       !
       integer, intent( in )                   :: funit
       character(:), allocatable, intent( in ) :: fname
 	  !
-	  type( StandardDataFile_t ) :: self
+	  type( DataFileStandard_t ) :: self
       !
       character(1000)                   :: full_line_text
       character(len=200), dimension(20) :: args
@@ -49,7 +49,7 @@ contains
       real( kind=prec )                 :: xyz_ref(3), latitude_ref, longitude_ref
       real( kind=prec )                 :: latitude, longitude, xyz(3), tx_xyz(3), moment, azimuth, dip
       !
-      !write(*,*) "Constructor StandardDataFile_t"
+      !write(*,*) "Constructor DataFileStandard_t"
       !
       call self%init()
       !
@@ -164,7 +164,7 @@ contains
                     case default
                         !
                         write(*,*) "unknow type :[", actual_type, "]"
-                        STOP "StandardDataFile.f08: StandardDataFile_ctor()"
+                        STOP "DataFileStandard.f08: DataFileStandard_ctor()"
                         !
                 end select
                 !
@@ -212,7 +212,7 @@ contains
                    case default
                       !
                       write(*,*) "unknow header format in line :[", header_counter, "]"
-                      STOP "StandardDataFile.f08: StandardDataFile_ctor()"
+                      STOP "DataFileStandard.f08: DataFileStandard_ctor()"
                       !
                 end select
             end if
@@ -226,18 +226,18 @@ contains
          !
       end if
       !
-   end function StandardDataFile_ctor
+   end function DataFileStandard_ctor
    !
-   subroutine StandardDataFile_dtor( self )
+   subroutine DataFileStandard_dtor( self )
       implicit none
       !
-      type( StandardDataFile_t ), intent( inout ) :: self
+      type( DataFileStandard_t ), intent( inout ) :: self
       !
-      !write(*,*) "Destructor StandardDataFile_t"
+      !write(*,*) "Destructor DataFileStandard_t"
       !
       call self%dealloc()
       !
-   end subroutine StandardDataFile_dtor
+   end subroutine DataFileStandard_dtor
    !
    ! Return the number of lines of a given file
    function getLineNumber( funit ) result( line_counter )
@@ -265,4 +265,4 @@ contains
       !
    end function getLineNumber
    !
-end module StandardDataFile
+end module DataFileStandard

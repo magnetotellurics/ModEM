@@ -11,7 +11,7 @@ module DataManager
    !
    use FileUnits
    !
-   use StandardDataFile
+   use DataFileStandard
    use DataGroupArray
    use ReceiverFullImpedance
    use ReceiverFullVerticalMagnetic
@@ -53,7 +53,7 @@ contains
       !
       !write(*,*) "Constructor DataManager_t"
       !
-      self%data_file = StandardDataFile_t( ioStartup, file_name )
+      self%data_file = DataFileStandard_t( ioStartup, file_name )
       !
       call self%loadReceiversAndTransmitters()
       !

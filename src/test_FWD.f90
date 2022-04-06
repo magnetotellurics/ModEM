@@ -57,8 +57,8 @@ contains
         class( Source_t ), allocatable, target, save          :: fwd_source 
         !
         ! Temporary alias pointers
-        class( Transmitter_t ), allocatable :: Tx
-        class( Receiver_t ), allocatable     :: Rx
+        class( Transmitter_t ), pointer :: Tx
+        class( Receiver_t ), pointer    :: Rx
         !
         ! Local variables
         integer :: iTx, nTx, iRx, nRx
@@ -130,7 +130,7 @@ contains
         do iTx = 1, nTx
             !
             ! Temporary Transmitter alias
-            Tx = getTransmitter( iTx )
+            Tx => getTransmitter( iTx )
             !
             ! Verbosis...
             write( *, * ) "    Tx Id:", Tx%id, "Period:", int( Tx%period )
@@ -157,7 +157,7 @@ contains
             do iRx = 1, nRx
                 !
                 ! Temporary Receiver alias
-                Rx = getReceiver( Tx%receiver_indexes( iRx ) )
+                Rx => getReceiver( Tx%receiver_indexes( iRx ) )
                 !
                 ! Verbosis...
                 !write( *, * ) "                        Rx Id:", Rx%id, "XYZ:", Rx%location
@@ -177,7 +177,7 @@ contains
         do iRx = 1, nRx
             !
             ! Temporary Receiver alias
-            Rx = getReceiver( iRx )
+            Rx => getReceiver( iRx )
             !
             call Rx%writePredictedData()
             !
