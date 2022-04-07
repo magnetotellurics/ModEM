@@ -75,13 +75,27 @@ contains
         !
         integer :: i, j, ios
         !
-      ! Order by receiver
+        ! Order by transmitter
+        do i = 1, size( data_handles ) - 1
+            !
+            do j = i + 1, size( data_handles )
+                !
+                if( data_handles(i)%period > data_handles(j)%period ) then
+                    aux_data_entry  = data_handles(i)
+                    data_handles(i) = data_handles(j)
+                    data_handles(j) = aux_data_entry
+                endif
+                !
+            enddo
+        enddo
+        !
+        ! Order by receiver
         do i = 1, size( data_handles ) - 1
             !
             do j = i + 1, size( data_handles )
                 !
                 if( data_handles(i)%rx_id > data_handles(j)%rx_id ) then
-                    aux_data_entry = data_handles(i)
+                    aux_data_entry  = data_handles(i)
                     data_handles(i) = data_handles(j)
                     data_handles(j) = aux_data_entry
                 endif

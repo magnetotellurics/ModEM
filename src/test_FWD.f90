@@ -18,7 +18,7 @@ program ModEM
     use SourceMT_2D
     !
     ! 
-    class( Grid_t ), allocatable              :: main_grid
+    class( Grid_t ), allocatable           :: main_grid
     class( ModelParameter_t ), allocatable :: model_parameter
     class( ModelOperator_t ), allocatable  :: model_operator
     !
@@ -34,6 +34,9 @@ program ModEM
     write ( *, * )
     write ( *, * ) "Start ModEM-OO."
     write ( *, * )
+	!
+	!
+	call setupDefaultParameters()
     !
     ! Check parameters at the control file
     if( has_control_file ) call handleControlFile()
@@ -235,16 +238,9 @@ contains
         ! It remains to standardize ????
         type( ModelReader_Weerachai_t ) :: model_reader
         !
-        character(:), allocatable         :: fname
-        !
-        type( TAirLayers )                  :: air_layer
-        !
-        fname = "/mnt/c/Users/protew/Desktop/ON/GITLAB_PROJECTS/modem-oo/inputs/Full_A_Matrix_TinyModel"
-        !fname = "/Users/garyegbert/Desktop/ModEM_ON/modem-oo/inputs/Full_A_Matrix_TinyModel"
+        type( TAirLayers )              :: air_layer
         !
         write( *, * ) "    -> Model File: [", model_file_name, "]"
-      !
-      model_method = MM_METHOD_FIXED_H
         !
         ! Read Grid and ModelParameter with ModelReader_Weerachai
         call model_reader%Read( model_file_name, main_grid, model_parameter ) 
@@ -255,16 +251,13 @@ contains
             class is( Grid3D_SG_t )
                 !
                 call main_grid%SetupAirLayers( air_layer, model_method, model_n_air_layer, model_max_height )
-                !    as coded have to use air_layer data structure to update grid
-                call main_grid%UpdateAirLayers( air_layer%nz, air_layer%dz )
                 !
-                !model_operator = ModelOperator_File_t( main_grid, fname )
+                call main_grid%UpdateAirLayers( air_layer%nz, air_layer%dz )
                 !
                 model_operator = ModelOperator_MF_t( main_grid )
                 !
                 call model_parameter%setMetric( model_operator%metric )
                 !
-                ! complete model operator setup
                 call model_operator%SetEquations()
                 !
                 call model_operator%SetCond( model_parameter )
@@ -351,6 +344,19 @@ contains
         end if
         !
     end subroutine handleArguments
+    !
+    subroutine setupDefaultParameters()
+        implicit none
+        !
+        model_method      = MM_METHOD_FIXED_H
+        model_n_air_layer = 10
+        model_max_height  = 200.0
+        !
+        source_type = SRC_MT_1D
+        !
+        forward_solver_type = FWD_IT_DC
+        !
+    end subroutine setupDefaultParameters
     !
     subroutine writeEsolutionHeader( nTx, nMode )
         implicit none

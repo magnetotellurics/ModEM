@@ -87,23 +87,21 @@ module DeclarationMPI
     ! PROGRAM GLOBAL VARIABLES
     integer :: tag = 2022, master_id = 0
     !
-    character*20    :: job_master = "MASTER_JOB", job_finish = "STOP_JOBS", job_fwd_done = "FINISH_FWD_JOB"
-    character*20    :: job_share_memory = "SHARE_MEMORY", job_forward = "JOB_FORWARD"
+    character*15    :: job_master = "MASTER_JOB", job_finish = "STOP_JOBS", job_fwd_done = "FINISH_FWD_JOB"
+    character*15    :: job_share_memory = "SHARE_MEMORY", job_forward = "JOB_FORWARD"
     !
     ! STRUCT job_info
     type :: FWDInfo_t
         !
         SEQUENCE
         !
-        character*20 :: job_name
+        character*15 :: job_name
         integer      :: worker_rank
         integer      :: tx_index
         integer      :: n_data
         integer      :: data_size
         logical      :: tx_changed
-        character*25 :: forward_solver_type
-        character*15 :: source_type
-        !
+		!
     end type FWDInfo_t
     !
     type( FWDInfo_t ), save :: fwd_info
@@ -119,8 +117,12 @@ module DeclarationMPI
         class( ModelOperator_t ), intent( in )  :: model_operator
         class( ModelParameter_t ), intent( in ) :: model_parameter
         !
-        integer :: i, last_size, nbytes(2)
+        integer :: i, last_size, nbytes(5)
         !
+		call MPI_PACK_SIZE( 4, MPI_INTEGER, child_comm, nbytes(1), ierr )
+		call MPI_PACK_SIZE( 1, MPI_DOUBLE_PRECISION, child_comm, nbytes(2), ierr )
+		call MPI_PACK_SIZE( 44, MPI_CHARACTER, child_comm, nbytes(3), ierr )
+		!
         shared_buffer_size = shared_buffer_size + allocateGridBuffer( grid )
         !
         write( *, "(A50, i8)" ) "MPI Allocated grid size:", shared_buffer_size
@@ -136,7 +138,7 @@ module DeclarationMPI
         write( *, "(A50, i8)" ) "MPI Allocated model_parameter size:", shared_buffer_size - last_size
         last_size = shared_buffer_size
         !
-        call MPI_PACK_SIZE( 1, MPI_INTEGER, child_comm, nbytes(1), ierr )
+        call MPI_PACK_SIZE( 1, MPI_INTEGER, child_comm, nbytes(4), ierr )
         !
         do i = 1, size( transmitters )
             shared_buffer_size = shared_buffer_size + allocateTransmitterBuffer( getTransmitter( i ) )
@@ -149,7 +151,7 @@ module DeclarationMPI
         write( *, "(A50, i8)" ) "MPI Allocated transmitters size:", shared_buffer_size - last_size
         last_size = shared_buffer_size
         !
-        call MPI_PACK_SIZE( 1, MPI_INTEGER, child_comm, nbytes(2), ierr )
+        call MPI_PACK_SIZE( 1, MPI_INTEGER, child_comm, nbytes(5), ierr )
         !
         do i = 1, size( receivers )
             shared_buffer_size = shared_buffer_size + allocateReceiverBuffer( getReceiver(i) )
@@ -184,6 +186,15 @@ module DeclarationMPI
         integer :: i, index
         !
         index = 1
+        !
+		call MPI_PACK( len( model_method ), 1, MPI_INTEGER, shared_buffer, shared_buffer_size, index, child_comm, ierr )
+        call MPI_PACK( len( forward_solver_type ), 1, MPI_INTEGER, shared_buffer, shared_buffer_size, index, child_comm, ierr )
+        call MPI_PACK( len( source_type ), 1, MPI_INTEGER, shared_buffer, shared_buffer_size, index, child_comm, ierr )
+        call MPI_PACK( model_n_air_layer, 1, MPI_INTEGER, shared_buffer, shared_buffer_size, index, child_comm, ierr )
+        call MPI_PACK( model_max_height, 1, MPI_DOUBLE_PRECISION, shared_buffer, shared_buffer_size, index, child_comm, ierr )
+        call MPI_PACK( model_method, len( model_method ), MPI_CHARACTER, shared_buffer, shared_buffer_size, index, child_comm, ierr )
+        call MPI_PACK( forward_solver_type, len( forward_solver_type ), MPI_CHARACTER, shared_buffer, shared_buffer_size, index, child_comm, ierr )
+        call MPI_PACK( source_type, len( source_type ), MPI_CHARACTER, shared_buffer, shared_buffer_size, index, child_comm, ierr )
         !
         call packGridBuffer( grid, index )
         !
@@ -222,11 +233,26 @@ module DeclarationMPI
         !
         integer, intent( in ) :: buffer_size
         !
-        integer :: i, aux_size, index
+        integer :: i, aux_size, n_model_method, n_forward_solver_type, n_source_type, index
         !
         index = 1
         !
         shared_buffer_size = buffer_size
+        !
+		call MPI_UNPACK( shared_buffer, shared_buffer_size, index, n_model_method, 1, MPI_INTEGER, child_comm, ierr )
+        call MPI_UNPACK( shared_buffer, shared_buffer_size, index, n_forward_solver_type, 1, MPI_INTEGER, child_comm, ierr )
+        call MPI_UNPACK( shared_buffer, shared_buffer_size, index, n_source_type, 1, MPI_INTEGER, child_comm, ierr )
+        call MPI_UNPACK( shared_buffer, shared_buffer_size, index, model_n_air_layer, 1, MPI_INTEGER, child_comm, ierr )
+        call MPI_UNPACK( shared_buffer, shared_buffer_size, index, model_max_height, 1, MPI_DOUBLE_PRECISION, child_comm, ierr )
+        !
+		allocate( character( n_model_method ) :: model_method )
+        call MPI_UNPACK( shared_buffer, shared_buffer_size, index, model_method, n_model_method, MPI_CHARACTER, child_comm, ierr )
+        !
+		allocate( character( n_forward_solver_type ) :: forward_solver_type )
+		call MPI_UNPACK( shared_buffer, shared_buffer_size, index, forward_solver_type, n_forward_solver_type, MPI_CHARACTER, child_comm, ierr )
+        !
+		allocate( character( n_source_type ) :: source_type )
+		call MPI_UNPACK( shared_buffer, shared_buffer_size, index, source_type, n_source_type, MPI_CHARACTER, child_comm, ierr )
         !
         grid = unpackGridBuffer( index )
         !
@@ -2053,12 +2079,11 @@ module DeclarationMPI
         !
         integer nbytes1, nbytes2, nbytes3
         !
-        call MPI_PACK_SIZE( 20, MPI_CHARACTER, child_comm, nbytes1, ierr )
+        call MPI_PACK_SIZE( 15, MPI_CHARACTER, child_comm, nbytes1, ierr )
         call MPI_PACK_SIZE( 4, MPI_INTEGER, child_comm, nbytes2, ierr )
         call MPI_PACK_SIZE( 1, MPI_LOGICAL, child_comm, nbytes3, ierr )
-        call MPI_PACK_SIZE( 40, MPI_CHARACTER, child_comm, nbytes4, ierr )
         !
-        fwd_info_buffer_size = ( nbytes1 + nbytes2 + nbytes3 + nbytes4 ) + 1
+        fwd_info_buffer_size = ( nbytes1 + nbytes2 + nbytes3 ) + 1
         !
         if( .NOT. associated( fwd_info_buffer ) ) then
             allocate( fwd_info_buffer( fwd_info_buffer_size ) )
@@ -2073,14 +2098,12 @@ module DeclarationMPI
         !
         index = 1
         !
-        call MPI_PACK( fwd_info%job_name, 20, MPI_CHARACTER, fwd_info_buffer, fwd_info_buffer_size, index, child_comm, ierr )
+        call MPI_PACK( fwd_info%job_name, 15, MPI_CHARACTER, fwd_info_buffer, fwd_info_buffer_size, index, child_comm, ierr )
         call MPI_PACK( fwd_info%worker_rank, 1, MPI_INTEGER, fwd_info_buffer, fwd_info_buffer_size, index, child_comm, ierr )
         call MPI_PACK( fwd_info%tx_index, 1, MPI_INTEGER, fwd_info_buffer, fwd_info_buffer_size, index, child_comm, ierr )
         call MPI_PACK( fwd_info%n_data, 1, MPI_INTEGER, fwd_info_buffer, fwd_info_buffer_size, index, child_comm, ierr )
         call MPI_PACK( fwd_info%data_size, 1, MPI_INTEGER, fwd_info_buffer, fwd_info_buffer_size, index, child_comm, ierr )
         call MPI_PACK( fwd_info%tx_changed, 1, MPI_LOGICAL, fwd_info_buffer, fwd_info_buffer_size, index, child_comm, ierr )
-        call MPI_PACK( fwd_info%forward_solver_type, 25, MPI_CHARACTER, fwd_info_buffer, fwd_info_buffer_size, index, child_comm, ierr )
-        call MPI_PACK( fwd_info%source_type, 15, MPI_CHARACTER, fwd_info_buffer, fwd_info_buffer_size, index, child_comm, ierr )
         !
     end subroutine packFWDInfoBuffer
     !
@@ -2091,14 +2114,12 @@ module DeclarationMPI
         !
         index = 1
         !
-        call MPI_UNPACK( fwd_info_buffer, fwd_info_buffer_size, index, fwd_info%job_name, 20, MPI_CHARACTER, child_comm, ierr )
+        call MPI_UNPACK( fwd_info_buffer, fwd_info_buffer_size, index, fwd_info%job_name, 15, MPI_CHARACTER, child_comm, ierr )
         call MPI_UNPACK( fwd_info_buffer, fwd_info_buffer_size, index, fwd_info%worker_rank, 1, MPI_INTEGER, child_comm, ierr )
         call MPI_UNPACK( fwd_info_buffer, fwd_info_buffer_size, index, fwd_info%tx_index, 1, MPI_INTEGER, child_comm, ierr )
         call MPI_UNPACK( fwd_info_buffer, fwd_info_buffer_size, index, fwd_info%n_data, 1, MPI_INTEGER, child_comm, ierr )
         call MPI_UNPACK( fwd_info_buffer, fwd_info_buffer_size, index, fwd_info%data_size, 1, MPI_INTEGER, child_comm, ierr )
         call MPI_UNPACK( fwd_info_buffer, fwd_info_buffer_size, index, fwd_info%tx_changed, 1, MPI_LOGICAL, child_comm, ierr )
-        call MPI_UNPACK( fwd_info_buffer, fwd_info_buffer_size, index, fwd_info%forward_solver_type, 25, MPI_CHARACTER, child_comm, ierr )
-        call MPI_UNPACK( fwd_info_buffer, fwd_info_buffer_size, index, fwd_info%source_type, 15, MPI_CHARACTER, child_comm, ierr )
         !
     end subroutine unpackFWDInfoBuffer
     !

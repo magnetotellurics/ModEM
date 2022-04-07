@@ -71,6 +71,9 @@ program ModEM
         write ( *, * ) "Start ModEM-OO."
         write ( *, * )
         !
+        !
+        call setupDefaultParameters()
+        !
         ! Check parameters at the control file
         if( has_control_file ) call handleControlFile()
         !
@@ -192,9 +195,6 @@ contains
                fwd_info%tx_changed  = .FALSE.
             end if
             !
-            forward_solver_type  = fwd_info%forward_solver_type
-            source_type          = fwd_info%source_type
-            !
             call sendTo( worker_rank )
             !
             worker_rank = worker_rank + 1
@@ -228,9 +228,6 @@ contains
             else
                fwd_info%tx_changed  = .FALSE.
             end if
-            !
-            forward_solver_type  = fwd_info%forward_solver_type
-            source_type          = fwd_info%source_type
             !
             call sendTo( fwd_info%worker_rank )
             !
@@ -332,10 +329,7 @@ contains
             !
             class is( Grid3D_SG_t )
                 !
-                model_method = MM_METHOD_FIXED_H
-                !
                 call main_grid%SetupAirLayers( air_layer, model_method, model_n_air_layer, model_max_height )
-                !
                 call main_grid%UpdateAirLayers( air_layer%nz, air_layer%dz )
                 !
             class default
@@ -343,14 +337,17 @@ contains
             !
         end select
         !
+        call model_operator%metric%SetMetricElements()
+        !
+        call model_parameter%SetSigMap( model_parameter%paramType )
+        call model_parameter%SetType( "LOGE" )
         call model_parameter%setMetric( model_operator%metric )
         !
-        ! complete model operator setup
         call model_operator%SetEquations()
+        call model_operator%SetCond( model_parameter )
         !
         ! ForwardSolver - Chosen from control file
-        if( allocated( fwd_solver ) ) deallocate( fwd_solver )
-        select case ( trim( fwd_info%forward_solver_type ) )
+        select case ( trim( forward_solver_type ) )
             !
             case( FWD_FILE )
                 fwd_solver = ForwardSolverFromFile_t( model_operator )
@@ -370,7 +367,7 @@ contains
         !
         ! Source - Chosen from control file
         if( allocated( fwd_source ) ) deallocate( fwd_source )
-        select case ( trim( fwd_info%source_type ) )
+        select case ( trim( source_type ) )
             !
             case( SRC_MT_1D )
                 allocate( fwd_source, source = SourceMT_1D_t( model_operator, model_parameter ) )
@@ -392,7 +389,6 @@ contains
         !
         ! According to Tx type,
         ! write the proper header in the "predicted_data.dat" file
-        if( fwd_info%tx_changed ) stop "MUDOU"
         if( fwd_info%tx_changed ) call writePredictedDataHeader( Tx, .FALSE. )
         !
         ! Tx points to its due Source
@@ -514,8 +510,6 @@ contains
         !
         write( *, * ) "    -> Model File: [", model_file_name, "]"
         !
-        model_method = MM_METHOD_FIXED_H
-        !
         ! Read Grid and ModelParameter with ModelReader_Weerachai
         call model_reader%Read( model_file_name, main_grid, model_parameter ) 
         !
@@ -523,6 +517,8 @@ contains
         select type( main_grid )
           !
           class is( Grid3D_SG_t )
+              !
+              write( *, * ) "MASTER GRID: model_method, model_n_air_layer, model_max_height", model_method, model_n_air_layer, model_max_height
               !
               call main_grid%SetupAirLayers( air_layer, model_method, model_n_air_layer, model_max_height )
               !
@@ -615,6 +611,19 @@ contains
         end if
         !
     end subroutine handleArguments
+    !
+    subroutine setupDefaultParameters()
+        implicit none
+        !
+        model_method      = MM_METHOD_FIXED_H
+        model_n_air_layer = 10
+        model_max_height  = 200.0
+        !
+        source_type = SRC_MT_1D
+        !
+        forward_solver_type = FWD_IT_DC
+        !
+    end subroutine setupDefaultParameters
     !
     subroutine writeEsolutionHeader( nMode )
         implicit none
