@@ -234,7 +234,7 @@ process_fsource($mainprogfile);
 print "\n# ------------------Macro-Defs---------------------\n";
 
 print "include Makefile.local\n";
-print "OBJDIR = ../../objs/MT3D_OO\n";
+print "OBJDIR = $linkdir\n";
 print "F90 = $f90 \n";
 print "FFLAGS = $optim\n";
 print "MPIFLAGS = $mpiflags\n";

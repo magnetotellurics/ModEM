@@ -1,5 +1,7 @@
 program ModEM
     !
+    use FileUnits
+    !
     use DeclarationMPI
     !
     use DataManager
@@ -135,8 +137,8 @@ contains
         class( Transmitter_t ), pointer :: aux_tx
         character(:), allocatable :: actual_tx_type
         !
-        type( PredictedDataHandle_t ), allocatable :: data_entries(:)
-        type( PredictedDataHandle_t ), allocatable :: all_data_entries(:)
+        type( PredictedDataHandle_t ), allocatable :: data_handles(:)
+        type( PredictedDataHandle_t ), allocatable :: all_data_handles(:)
         !
         ! Verbosis
         write ( *, * ) "    > Start forward modelling."
@@ -171,7 +173,7 @@ contains
         !
         aux_tx => getTransmitter(1)
         actual_tx_type = trim( aux_tx%type_name )
-        call writePredictedDataHeader( getTransmitter(1), .TRUE. )
+        call writePredictedDataHeader( aux_tx, .TRUE. )
         !
         ! SEND 1 TRANSMITTER TO FIRST np WORKERS
         do while ( worker_rank <= ( mpi_size - 1 ) )
@@ -206,10 +208,10 @@ contains
             !
             call receiveFromAny()
             !
-            data_entries = receiveData()
+            data_handles = receiveData()
             !
-            do i = 1, size( data_entries )
-                call updateTxPredictedDataArray( all_data_entries, data_entries( i ) )
+            do i = 1, size( data_handles )
+                call updateDataHandleArray( all_data_handles, data_handles( i ) )
             end do
             !
             tx_received = tx_received + 1
@@ -241,10 +243,10 @@ contains
             !
             call receiveFromAny()
             !
-            data_entries = receiveData()
+            data_handles = receiveData()
             !
-            do i = 1, size( data_entries )
-                call updateTxPredictedDataArray( all_data_entries, data_entries( i ) )
+            do i = 1, size( data_handles )
+                call updateDataHandleArray( all_data_handles, data_handles( i ) )
             end do
             !
             tx_received = tx_received + 1
@@ -255,46 +257,12 @@ contains
              
         enddo
         !
-        !
-        call writeTxPredictedData( all_data_entries )
+        call writeDataHandleArray( all_data_handles )
         !
         ! Verbosis
         write ( *, * ) "    > Finish forward modelling."
         !
     end subroutine masterForwardModelling
-    !
-    subroutine writeTxPredictedData( data_entries )
-        implicit none
-        !
-        type( PredictedDataHandle_t ), allocatable, intent( inout ) :: data_entries(:)
-        type( PredictedDataHandle_t ) :: aux_data_entry
-        !
-        integer :: i, j
-        !
-        do i = 1, size( data_entries ) - 1
-            !
-            do j = i + 1, size( data_entries )
-                !
-                if( data_entries(i)%period > data_entries(j)%period ) then
-                    aux_data_entry = data_entries(i)
-                    data_entries(i) = data_entries(j)
-                    data_entries(j) = aux_data_entry
-                endif
-                !
-            enddo
-        enddo
-        !
-        open( ioPredData, file = "predicted_data.dat", action="write", position="append" )
-        !
-        do i = 1, size( data_entries )
-            !
-            write( ioPredData, "(es12.6, A20, f15.3, f15.3, f15.3, f15.3, f15.3, A20, es16.6, es16.6, es16.6)" ) data_entries(i)%period, data_entries(i)%code, R_ZERO, R_ZERO, data_entries(i)%xyz(1), data_entries(i)%xyz(2), data_entries(i)%xyz(3), data_entries(i)%component, data_entries(i)%real, data_entries(i)%imaginary, 1.0
-            !
-        enddo
-        !
-        close( ioPredData )
-        !
-    end subroutine writeTxPredictedData
     !
     subroutine masterExposeSharedMemory()
         implicit none
@@ -354,7 +322,7 @@ contains
         class( Receiver_t ), pointer    :: Rx
         class( Transmitter_t ), pointer :: Tx
         !
-        type( PredictedDataHandle_t ), allocatable :: tx_data_entries(:)
+        type( PredictedDataHandle_t ), allocatable :: tx_data_handles(:)
         !
         type( TAirLayers ) :: air_layer
         !
@@ -424,6 +392,7 @@ contains
         !
         ! According to Tx type,
         ! write the proper header in the "predicted_data.dat" file
+        if( fwd_info%tx_changed ) stop "MUDOU"
         if( fwd_info%tx_changed ) call writePredictedDataHeader( Tx, .FALSE. )
         !
         ! Tx points to its due Source
@@ -438,7 +407,9 @@ contains
         ! Solve Tx Forward Modelling
         call Tx%solveFWD()
         !
-        if( allocated( tx_data_entries ) ) deallocate( tx_data_entries )
+        deallocate( fwd_solver )
+        deallocate( fwd_source )
+        !
         ! Loop over Receivers of each Transmitter
         nRx = size( Tx%receiver_indexes )
         !
@@ -453,55 +424,34 @@ contains
             ! Calculate Rx Predicted Data
             call Rx%predictedData( model_operator, Tx )
             !
-            do iDe = 1, size( Rx%predicted_data_entries )
+            do iDe = 1, size( Rx%data_handles )
             !
-                call updateTxPredictedDataArray( tx_data_entries, Rx%predicted_data_entries(iDe) )
+                call updateDataHandleArray( tx_data_handles, Rx%data_handles(iDe) )
             !
             end do
             !
         enddo
         !
-        write ( *, * ) "WORKER ", mpi_rank, "FINISHES FWD FOR TX ", Tx%id, size( tx_data_entries )
+        write ( *, * ) "WORKER ", mpi_rank, "FINISHES FWD FOR TX ", Tx%id, size( tx_data_handles )
         !
         ! SEND JOB DONE TO MASTER
         fwd_info%job_name    = job_fwd_done
         fwd_info%tx_index    = Tx%id
         fwd_info%worker_rank = mpi_rank
         !
-        call allocateDataBuffer( tx_data_entries )
-        fwd_info%n_data      = size( tx_data_entries )
+        call allocateDataBuffer( tx_data_handles )
+        fwd_info%n_data      = size( tx_data_handles )
         fwd_info%data_size   = predicted_data_buffer_size
         !
         call sendTo( master_id )
         !
-        call sendData( tx_data_entries )
+        call sendData( tx_data_handles )
+        !
+        deallocate( tx_data_handles )
         !
     end subroutine workerForwardModelling
     !
-    subroutine updateTxPredictedDataArray( data_entries, new_data )
-          implicit none
-          !
-          type( PredictedDataHandle_t ), allocatable, intent( inout ) :: data_entries(:)
-          type( PredictedDataHandle_t ), intent( in ) :: new_data
-          !
-          !
-          type( PredictedDataHandle_t ), allocatable, dimension(:) :: temp_array
-          integer :: istat
-          !
-          if( .NOT. allocated( data_entries )  ) then
-                allocate( data_entries(1) )
-                data_entries(1) = new_data
-          else
-                !
-                allocate( temp_array( size( data_entries ) + 1 ), STAT = istat )
-                temp_array( 1 : size( data_entries ) ) = data_entries
-                temp_array( size( data_entries ) + 1 ) = new_data
-                data_entries = temp_array
-                !
-          endif
-          !
-     end subroutine updateTxPredictedDataArray
-     !
+    !
     subroutine handleJob()
         implicit none
         !
@@ -700,18 +650,18 @@ contains
     subroutine writePredictedDataHeader( Tx, create_file )
         implicit none
         !
-        class( Transmitter_t ), intent( in ) :: Tx
-        logical, intent( in )                :: create_file
+        class( Transmitter_t ), pointer, intent( in ) :: Tx
+        logical, intent( in )                         :: create_file
         !
         integer :: ios
         !
         if( create_file ) then
             !
-            open( ioPredData, file = "predicted_data.dat", action="write", form ="formatted", iostat=ios )
+            open( ioPredData, file = "predicted_data.dat", action="write", form = "formatted", iostat = ios )
             !
         else
             !
-            open( ioPredData, file = "predicted_data.dat", action="write", form ="formatted", position="append", iostat=ios )
+            open( ioPredData, file = "predicted_data.dat", action= "write", form = "formatted", position = "append", iostat = ios )
             !
         endif
         !
@@ -729,8 +679,7 @@ contains
             close( ioPredData )
             !
         else
-            write( *, * ) "writePredictedDataHeader: e_solution"
-            stop
+            stop "Error opening predicted_data.dat in writePredictedDataHeader"
         endif
         !
     end subroutine writePredictedDataHeader

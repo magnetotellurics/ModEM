@@ -10,7 +10,7 @@ if [ $2 = "SERIAL" ]; then
 # Serial Version
 perl fmkmf.pl -f90 gfortran \
 -opt '-O3 -ffree-line-length-none' \
--o 'objs/MT3D_OO_SERIAL' \
+-o '../../objs/MT3D_OO_SERIAL' \
 -l '-llapack -lblas' \
 -lp '/usr/lib64' \
 -p .:Classes:Classes/1D:Classes/2D:Classes/DataIO:Classes/DataSpace:Classes/Fields:Classes/ForwardSolver:Classes/Grid:Classes/ModelOperator:Classes/ModelParameter:Classes/Receivers:Classes/Solver:Classes/Source:Classes/Transmitters:Classes/Utils \
@@ -20,7 +20,7 @@ elif [ $2 = "MPI" ]; then
 perl fmkmf.pl -f90 mpif90 \
 -opt '-O3 -ffree-line-length-none -Wno-all' \
 -mpi '-x f95-cpp-input -DMPI' \
--o 'objs/MT3D_OO_MPI' \
+-o '../../objs/MT3D_OO_MPI' \
 -l '-llapack -lblas' \
 -lp '/usr/lib64' \
 -p .:Classes:Classes/1D:Classes/2D:Classes/DataIO:Classes/DataSpace:Classes/Fields:Classes/ForwardSolver:Classes/Grid:Classes/ModelOperator:Classes/ModelParameter:Classes/MPI:Classes/Receivers:Classes/Solver:Classes/Source:Classes/Transmitters:Classes/Utils \

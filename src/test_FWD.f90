@@ -54,15 +54,16 @@ contains
         ! must be instantiated on each Worker
         class( ForwardSolver_t ), allocatable, target, save :: fwd_solver
         !
-        class( Source_t ), allocatable, target, save          :: fwd_source 
+        class( Source_t ), allocatable, target, save        :: fwd_source 
         !
         ! Temporary alias pointers
         class( Transmitter_t ), pointer :: Tx
         class( Receiver_t ), pointer    :: Rx
         !
-        ! Local variables
-        integer :: iTx, nTx, iRx, nRx
+        integer :: iTx, nTx, iRx, nRx, iDh
         character(:), allocatable :: transmitter_type
+        !
+        type( PredictedDataHandle_t ), allocatable :: all_data_handles(:)
         !
         ! Verbosis
         write ( *, * ) "    > Start forward modelling."
@@ -165,26 +166,21 @@ contains
                 ! Calculate Rx Predicted Data
                 call Rx%predictedData( model_operator, Tx )
                 !
+                do iDh = 1, size( Rx%data_handles )
+                    call updateDataHandleArray( all_data_handles, Rx%data_handles( iDh ) )
+                end do
+                !
             enddo
             !
             deallocate( Tx )
             !
         enddo
         !
-        ! Loop over all Receivers
-        nRx = size( receivers )
         !
-        do iRx = 1, nRx
-            !
-            ! Temporary Receiver alias
-            Rx => getReceiver( iRx )
-            !
-            call Rx%writePredictedData()
-            !
-            deallocate( Rx )
-            !
-        enddo
+        call writeDataHandleArray( all_data_handles )
         !
+        !
+        deallocate( all_data_handles )
         deallocate( data_groups )
         !
     end subroutine ForwardModelling
@@ -361,13 +357,13 @@ contains
         !
         ! implement separated routine
         integer, intent( in ) :: nTx, nMode
-        integer                    :: ios
-        character (len=20)     :: version
+        integer               :: ios
+        character (len=20)    :: version
         !
         open( ioESolution, file = "e_solution", action="write", form ="unformatted", iostat=ios)
         !
-        if( ios/=0) then
-            write(0,*) "Error opening file in FileWriteInit: e_solution"
+        if( ios /= 0 ) then
+            write( *, * ) "Error opening file in FileWriteInit: e_solution"
         else
             !
             version = ""
@@ -388,29 +384,22 @@ contains
     subroutine writePredictedDataHeader( Tx, transmitter_type )
         implicit none
         !
-        class( Transmitter_t ), intent( in )         :: Tx
+        class( Transmitter_t ), intent( in )       :: Tx
         character(:), allocatable, intent( inout ) :: transmitter_type
         !
-      integer :: nTx, nRx
-        logical :: tx_changed = .false.
+        integer :: nTx, nRx, ios
         !
-        if( ( index( transmitter_type, "Unknow" ) /= 0 ) .OR. transmitter_type /= trim( Tx%type_name ) ) then
+        if( ( index( transmitter_type, "Unknow" ) == 0 ) ) then
             !
-            tx_changed = .true.
-            !
-        endif
-        !
-        if( ( index( transmitter_type, "Unknow" ) /= 0 ) ) then
-            !
-            open( ioPredData, file = "predicted_data.dat", action="write", form ="formatted" )
+            open( ioPredData, file = "predicted_data.dat", action = "write", form = "formatted", iostat = ios )
             !
         else if( transmitter_type /= trim( Tx%type_name ) ) then
             !
-            open( ioPredData, file = "predicted_data.dat", action="write", form ="formatted", position="append" )
+            open( ioPredData, file = "predicted_data.dat", action = "write", form = "formatted", position = "append", iostat = ios )
             !
         endif
         !
-        if( tx_changed ) then
+        if( ios == 0 ) then
             !
             write( ioPredData, "(4A, 100A)" ) "#    ", DATA_FILE_TITLE
             write( ioPredData, "(4A, 100A)" ) "#    ", Tx%DATA_TITLE
@@ -425,6 +414,8 @@ contains
             !
             transmitter_type = trim( Tx%type_name )
             !
+        else
+            stop "Error opening predicted_data.dat in writePredictedDataHeader"
         endif
         !
     end subroutine writePredictedDataHeader

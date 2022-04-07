@@ -1943,7 +1943,7 @@ module DeclarationMPI
         !
         do i = 1, size( data_entries )
             !
-            call MPI_PACK_SIZE( 2, MPI_INTEGER, child_comm, nbytes(1), ierr )
+            call MPI_PACK_SIZE( 3, MPI_INTEGER, child_comm, nbytes(1), ierr )
             call MPI_PACK_SIZE( len( data_entries(i)%code ), MPI_CHARACTER, child_comm, nbytes(2), ierr )
             call MPI_PACK_SIZE( len( data_entries(i)%component ), MPI_CHARACTER, child_comm, nbytes(3), ierr )
             call MPI_PACK_SIZE( 1, MPI_DOUBLE_PRECISION, child_comm, nbytes(4), ierr )
@@ -1975,6 +1975,7 @@ module DeclarationMPI
         !
         do i = 1, size( data_entries )
             !
+            call MPI_PACK( data_entries(i)%rx_id, 1, MPI_INTEGER, predicted_data_buffer, predicted_data_buffer_size, index, child_comm, ierr )
             call MPI_PACK( len( data_entries(i)%code ), 1, MPI_INTEGER, predicted_data_buffer, predicted_data_buffer_size, index, child_comm, ierr )
             call MPI_PACK( len( data_entries(i)%component ), 1, MPI_INTEGER, predicted_data_buffer, predicted_data_buffer_size, index, child_comm, ierr )
             call MPI_PACK( data_entries(i)%code, len( data_entries(i)%code ), MPI_CHARACTER, predicted_data_buffer, predicted_data_buffer_size, index, child_comm, ierr )
@@ -1986,7 +1987,7 @@ module DeclarationMPI
             call MPI_PACK( data_entries(i)%imaginary, 1, MPI_DOUBLE_PRECISION, predicted_data_buffer, predicted_data_buffer_size, index, child_comm, ierr )
             !
         end do
-		!
+        !
     end subroutine packDataBuffer
     !
     ! UNPACK predicted_data_buffer TO predicted_data STRUCT
@@ -2004,6 +2005,7 @@ module DeclarationMPI
         !
         do i = 1, size( data_entries )
             !
+            call MPI_UNPACK( predicted_data_buffer, predicted_data_buffer_size, index, data_entries(i)%rx_id, 1, MPI_INTEGER, child_comm, ierr )
             call MPI_UNPACK( predicted_data_buffer, predicted_data_buffer_size, index, data_entries_code, 1, MPI_INTEGER, child_comm, ierr )
             call MPI_UNPACK( predicted_data_buffer, predicted_data_buffer_size, index, data_entries_component, 1, MPI_INTEGER, child_comm, ierr )
             !
