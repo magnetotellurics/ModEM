@@ -6,7 +6,7 @@
 # -opt -O3 -ffree-line-length-none -Wno-all (compiler optimisation)
 # -lp /usr/lib64 (linking options: path to libraries)
 # -l -llapack -lblas (linking options)
-# -o ../../objs/MT3D_OO_MPI (output directory for object files)
+# -o objs/MT3D_OO_MPI (output directory for object files)
 
 #  Uncomment these lines to make program for Solaris OS (legacy)
 # F90 = f90
@@ -44,9 +44,9 @@
 
 # ------------------Macro-Defs---------------------
 include Makefile.local
-OBJDIR = ../../objs/MT3D_OO_MPI
+OBJDIR = ../../objs/MT3D_OO
 F90 = mpif90 
-FFLAGS = -g -ffree-line-length-none -Wno-all
+FFLAGS = -O3 -ffree-line-length-none -Wno-all
 MPIFLAGS = -x f95-cpp-input -DMPI
 MODULE = -J $(OBJDIR)
 LIBS_PATH = -L/usr/lib64

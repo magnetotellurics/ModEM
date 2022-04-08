@@ -6,7 +6,7 @@
 # -opt -O3 -ffree-line-length-none (compiler optimisation)
 # -lp /usr/lib64 (linking options: path to libraries)
 # -l -llapack -lblas (linking options)
-# -o ../../objs/MT3D_OO_SERIAL (output directory for object files)
+# -o objs/MT3D_OO_SERIAL (output directory for object files)
 
 #  Uncomment these lines to make program for Solaris OS (legacy)
 # F90 = f90
@@ -44,7 +44,7 @@
 
 # ------------------Macro-Defs---------------------
 include Makefile.local
-OBJDIR = ../../objs/MT3D_OO_SERIAL
+OBJDIR = ../../objs/MT3D_OO
 F90 = gfortran 
 FFLAGS = -O3 -ffree-line-length-none
 MPIFLAGS =  
@@ -181,10 +181,10 @@ $(OBJDIR)/ForwardSolver.o:Classes/ForwardSolver/ForwardSolver.f90 $(OBJDIR)/Cons
 $(OBJDIR)/Transmitter.o:Classes/Transmitters/Transmitter.f90 $(OBJDIR)/Constants.o $(OBJDIR)/Source.o $(OBJDIR)/ForwardSolver.o 
 	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) Classes/Transmitters/Transmitter.f90 -o $(OBJDIR)/Transmitter.o
 
-$(OBJDIR)/PredictedDataHandle.o:Classes/DataIO/PredictedDataHandle.f90 $(OBJDIR)/Constants.o $(OBJDIR)/DataEntryMT.o $(OBJDIR)/DataEntryMT_REF.o $(OBJDIR)/DataEntryCSEM.o 
+$(OBJDIR)/PredictedDataHandle.o:Classes/DataIO/PredictedDataHandle.f90 $(OBJDIR)/Constants.o $(OBJDIR)/FileUnits.o $(OBJDIR)/DataEntryMT.o $(OBJDIR)/DataEntryMT_REF.o $(OBJDIR)/DataEntryCSEM.o 
 	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) Classes/DataIO/PredictedDataHandle.f90 -o $(OBJDIR)/PredictedDataHandle.o
 
-$(OBJDIR)/Receiver.o:Classes/Receivers/Receiver.f90 $(OBJDIR)/FileUnits.o $(OBJDIR)/Transmitter.o $(OBJDIR)/cVector3D_SG.o $(OBJDIR)/ModelOperator.o $(OBJDIR)/DataGroupArray.o $(OBJDIR)/PredictedDataHandle.o $(OBJDIR)/Grid3D_SG.o 
+$(OBJDIR)/Receiver.o:Classes/Receivers/Receiver.f90 $(OBJDIR)/Transmitter.o $(OBJDIR)/cVector3D_SG.o $(OBJDIR)/ModelOperator.o $(OBJDIR)/DataGroupArray.o $(OBJDIR)/PredictedDataHandle.o $(OBJDIR)/Grid3D_SG.o 
 	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) Classes/Receivers/Receiver.f90 -o $(OBJDIR)/Receiver.o
 
 $(OBJDIR)/ReceiverFullImpedance.o:Classes/Receivers/ReceiverFullImpedance.f90 $(OBJDIR)/DataEntryMT.o $(OBJDIR)/Receiver.o 
