@@ -8,7 +8,6 @@
 !
 module Receiver
     !
-    use FileUnits
     use Transmitter
     use cVector3D_SG
     use ModelOperator
@@ -38,7 +37,7 @@ module Receiver
         !
         class( DataGroupArray_t ), pointer :: data_groups
         !
-        type( PredictedDataHandle_t ), allocatable :: predicted_data_entries(:)
+        type( PredictedDataHandle_t ), allocatable :: data_handles(:)
         !
     contains
         !
@@ -60,9 +59,7 @@ module Receiver
         procedure, public :: get => getDataGroupRx
         procedure, public :: getNdg => getNumberOfDataGroupRx
         !
-        procedure, public :: updatePredictedDataArray
         procedure, public :: savePredictedData
-        procedure, public :: writePredictedData
         !
     end type Receiver_t
     !
@@ -360,7 +357,7 @@ contains
         integer                   :: i
         !#Period(s) Code GG_Lat GG_Lon X(m) Y(m) Z(m) Component Real Imag Error
         !
-        if( allocated( self%predicted_data_entries ) ) deallocate( self%predicted_data_entries )
+        if( allocated( self%data_handles ) ) deallocate( self%data_handles )
         !
         do i = 1, self%n_comp
              !
@@ -371,54 +368,10 @@ contains
              real_part = real( self%Z( i ), kind=prec )
              imaginary = real( imag( self%Z( i ) ), kind=prec )
              !
-             call self%updatePredictedDataArray( buildPredictedDataHandle( code, component, period, xyz, real_part, imaginary ) )
+             call updateDataHandleArray( self%data_handles, buildDataHandle( self%id, code, component, period, xyz, real_part, imaginary ) )
              !
         enddo
         !
     end subroutine savePredictedData
     !
-    subroutine writePredictedData( self )
-        implicit none
-        !
-        class( Receiver_t ), intent( in ) :: self
-        !
-        integer :: i
-        !
-        open( ioPredData, file = "predicted_data.dat", action="write", position="append" )
-        !
-        !
-        do i = 1, size( self%predicted_data_entries )
-            !
-            write( ioPredData, "(es12.6, A20, f15.3, f15.3, f15.3, f15.3, f15.3, A20, es16.6, es16.6, es16.6)" ) self%predicted_data_entries(i)%period, self%predicted_data_entries(i)%code, R_ZERO, R_ZERO, self%predicted_data_entries(i)%xyz(1), self%predicted_data_entries(i)%xyz(2), self%predicted_data_entries(i)%xyz(3), self%predicted_data_entries(i)%component, self%predicted_data_entries(i)%real, self%predicted_data_entries(i)%imaginary, 1.0
-            !
-        enddo
-        !
-        close( ioPredData )
-        !
-    end subroutine writePredictedData
-    !
-    subroutine updatePredictedDataArray( self, new_data )
-          implicit none
-          !
-          class( Receiver_t ), intent( inout )        :: self
-          type( PredictedDataHandle_t ), intent( in ) :: new_data
-          !
-          !
-          type( PredictedDataHandle_t ), allocatable, dimension(:) :: temp_array
-          integer :: istat
-          !
-          if( .NOT. allocated( self%predicted_data_entries )  ) then
-                allocate( self%predicted_data_entries(1) )
-                self%predicted_data_entries(1) = new_data
-          else
-                !
-                allocate( temp_array( size( self%predicted_data_entries ) + 1 ), STAT = istat )
-                temp_array( 1 : size( self%predicted_data_entries ) ) = self%predicted_data_entries
-                temp_array( size( self%predicted_data_entries ) + 1 ) = new_data
-                self%predicted_data_entries = temp_array
-                !
-          endif
-          !
-     end subroutine updatePredictedDataArray
-     !
 end module Receiver

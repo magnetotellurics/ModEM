@@ -18,7 +18,7 @@ program ModEM
     use SourceMT_2D
     !
     ! 
-    class( Grid_t ), allocatable              :: main_grid
+    class( Grid_t ), allocatable           :: main_grid
     class( ModelParameter_t ), allocatable :: model_parameter
     class( ModelOperator_t ), allocatable  :: model_operator
     !
@@ -34,6 +34,9 @@ program ModEM
     write ( *, * )
     write ( *, * ) "Start ModEM-OO."
     write ( *, * )
+	!
+	!
+	call setupDefaultParameters()
     !
     ! Check parameters at the control file
     if( has_control_file ) call handleControlFile()
@@ -54,15 +57,16 @@ contains
         ! must be instantiated on each Worker
         class( ForwardSolver_t ), allocatable, target, save :: fwd_solver
         !
-        class( Source_t ), allocatable, target, save          :: fwd_source 
+        class( Source_t ), allocatable, target, save        :: fwd_source 
         !
         ! Temporary alias pointers
         class( Transmitter_t ), pointer :: Tx
         class( Receiver_t ), pointer    :: Rx
         !
-        ! Local variables
-        integer :: iTx, nTx, iRx, nRx
+        integer :: iTx, nTx, iRx, nRx, iDh
         character(:), allocatable :: transmitter_type
+        !
+        type( PredictedDataHandle_t ), allocatable :: all_data_handles(:)
         !
         ! Verbosis
         write ( *, * ) "    > Start forward modelling."
@@ -165,26 +169,21 @@ contains
                 ! Calculate Rx Predicted Data
                 call Rx%predictedData( model_operator, Tx )
                 !
+                do iDh = 1, size( Rx%data_handles )
+                    call updateDataHandleArray( all_data_handles, Rx%data_handles( iDh ) )
+                end do
+                !
             enddo
             !
             deallocate( Tx )
             !
         enddo
         !
-        ! Loop over all Receivers
-        nRx = size( receivers )
         !
-        do iRx = 1, nRx
-            !
-            ! Temporary Receiver alias
-            Rx => getReceiver( iRx )
-            !
-            call Rx%writePredictedData()
-            !
-            deallocate( Rx )
-            !
-        enddo
+        call writeDataHandleArray( all_data_handles )
         !
+        !
+        deallocate( all_data_handles )
         deallocate( data_groups )
         !
     end subroutine ForwardModelling
@@ -239,16 +238,9 @@ contains
         ! It remains to standardize ????
         type( ModelReader_Weerachai_t ) :: model_reader
         !
-        character(:), allocatable         :: fname
-        !
-        type( TAirLayers )                  :: air_layer
-        !
-        fname = "/mnt/c/Users/protew/Desktop/ON/GITLAB_PROJECTS/modem-oo/inputs/Full_A_Matrix_TinyModel"
-        !fname = "/Users/garyegbert/Desktop/ModEM_ON/modem-oo/inputs/Full_A_Matrix_TinyModel"
+        type( TAirLayers )              :: air_layer
         !
         write( *, * ) "    -> Model File: [", model_file_name, "]"
-      !
-      model_method = MM_METHOD_FIXED_H
         !
         ! Read Grid and ModelParameter with ModelReader_Weerachai
         call model_reader%Read( model_file_name, main_grid, model_parameter ) 
@@ -259,16 +251,13 @@ contains
             class is( Grid3D_SG_t )
                 !
                 call main_grid%SetupAirLayers( air_layer, model_method, model_n_air_layer, model_max_height )
-                !    as coded have to use air_layer data structure to update grid
-                call main_grid%UpdateAirLayers( air_layer%nz, air_layer%dz )
                 !
-                !model_operator = ModelOperator_File_t( main_grid, fname )
+                call main_grid%UpdateAirLayers( air_layer%nz, air_layer%dz )
                 !
                 model_operator = ModelOperator_MF_t( main_grid )
                 !
                 call model_parameter%setMetric( model_operator%metric )
                 !
-                ! complete model operator setup
                 call model_operator%SetEquations()
                 !
                 call model_operator%SetCond( model_parameter )
@@ -356,18 +345,31 @@ contains
         !
     end subroutine handleArguments
     !
+    subroutine setupDefaultParameters()
+        implicit none
+        !
+        model_method      = MM_METHOD_FIXED_H
+        model_n_air_layer = 10
+        model_max_height  = 200.0
+        !
+        source_type = SRC_MT_1D
+        !
+        forward_solver_type = FWD_IT_DC
+        !
+    end subroutine setupDefaultParameters
+    !
     subroutine writeEsolutionHeader( nTx, nMode )
         implicit none
         !
         ! implement separated routine
         integer, intent( in ) :: nTx, nMode
-        integer                    :: ios
-        character (len=20)     :: version
+        integer               :: ios
+        character (len=20)    :: version
         !
         open( ioESolution, file = "e_solution", action="write", form ="unformatted", iostat=ios)
         !
-        if( ios/=0) then
-            write(0,*) "Error opening file in FileWriteInit: e_solution"
+        if( ios /= 0 ) then
+            write( *, * ) "Error opening file in FileWriteInit: e_solution"
         else
             !
             version = ""
@@ -388,29 +390,22 @@ contains
     subroutine writePredictedDataHeader( Tx, transmitter_type )
         implicit none
         !
-        class( Transmitter_t ), intent( in )         :: Tx
+        class( Transmitter_t ), intent( in )       :: Tx
         character(:), allocatable, intent( inout ) :: transmitter_type
         !
-      integer :: nTx, nRx
-        logical :: tx_changed = .false.
+        integer :: nTx, nRx, ios
         !
-        if( ( index( transmitter_type, "Unknow" ) /= 0 ) .OR. transmitter_type /= trim( Tx%type_name ) ) then
+        if( ( index( transmitter_type, "Unknow" ) == 0 ) ) then
             !
-            tx_changed = .true.
-            !
-        endif
-        !
-        if( ( index( transmitter_type, "Unknow" ) /= 0 ) ) then
-            !
-            open( ioPredData, file = "predicted_data.dat", action="write", form ="formatted" )
+            open( ioPredData, file = "predicted_data.dat", action = "write", form = "formatted", iostat = ios )
             !
         else if( transmitter_type /= trim( Tx%type_name ) ) then
             !
-            open( ioPredData, file = "predicted_data.dat", action="write", form ="formatted", position="append" )
+            open( ioPredData, file = "predicted_data.dat", action = "write", form = "formatted", position = "append", iostat = ios )
             !
         endif
         !
-        if( tx_changed ) then
+        if( ios == 0 ) then
             !
             write( ioPredData, "(4A, 100A)" ) "#    ", DATA_FILE_TITLE
             write( ioPredData, "(4A, 100A)" ) "#    ", Tx%DATA_TITLE
@@ -425,6 +420,8 @@ contains
             !
             transmitter_type = trim( Tx%type_name )
             !
+        else
+            stop "Error opening predicted_data.dat in writePredictedDataHeader"
         endif
         !
     end subroutine writePredictedDataHeader
