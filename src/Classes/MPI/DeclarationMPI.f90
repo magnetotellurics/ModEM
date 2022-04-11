@@ -35,6 +35,8 @@ module DeclarationMPI
     use ReceiverOffDiagonalImpedance
     use ReceiverSingleField
     !
+    use PredictedDataHandle
+    !
     type( MPI_Comm ) :: main_comm, child_comm
     !
     integer :: mpi_rank, mpi_size, node_rank, node_size, &
@@ -44,13 +46,15 @@ module DeclarationMPI
     !
     type( MPI_Win )             :: shared_window
     integer( MPI_ADDRESS_KIND ) :: shared_window_size
-    integer                     :: disp_unit = 1
+    integer                     :: shared_disp_unit = 1
     !
     character, dimension(:), pointer :: shared_buffer
     character, dimension(:), pointer :: fwd_info_buffer
+    character, dimension(:), pointer :: predicted_data_buffer
     !
     integer :: shared_buffer_size = 1
     integer :: fwd_info_buffer_size = 1
+    integer :: predicted_data_buffer_size = 1
     !
     type( c_ptr ) :: shared_c_ptr
     !
@@ -81,29 +85,28 @@ module DeclarationMPI
     integer, parameter :: receiver_single_field = 4
     !
     ! PROGRAM GLOBAL VARIABLES
-    integer :: tag = 130182, master_id = 0
+    integer :: tag = 2022, master_id = 0
     !
-    character*20    :: job_master = "MASTER_JOB", job_finish = "STOP_JOBS", job_done = "FINISH_JOB"
-    character*20    :: job_share_memory = "SHARE_MEMORY", job_forward = "JOB_FORWARD"
+    character*15    :: job_master = "MASTER_JOB", job_finish = "STOP_JOBS", job_fwd_done = "FINISH_FWD_JOB"
+    character*15    :: job_share_memory = "SHARE_MEMORY", job_forward = "JOB_FORWARD"
     !
     ! STRUCT job_info
     type :: FWDInfo_t
         !
         SEQUENCE
         !
-        character*20 :: job_name
+        character*15 :: job_name
         integer      :: worker_rank
         integer      :: tx_index
+        integer      :: n_data
+        integer      :: data_size
         logical      :: tx_changed
-        character*25 :: forward_solver_type
-        character*15 :: source_type
-        
-        !
+		!
     end type FWDInfo_t
     !
     type( FWDInfo_t ), save :: fwd_info
     !
-
+    !
     contains
     !
     ! ALLOCATE shared_buffer
@@ -114,8 +117,12 @@ module DeclarationMPI
         class( ModelOperator_t ), intent( in )  :: model_operator
         class( ModelParameter_t ), intent( in ) :: model_parameter
         !
-        integer :: i, last_size, nbytes(2)
+        integer :: i, last_size, nbytes(5)
         !
+		call MPI_PACK_SIZE( 4, MPI_INTEGER, child_comm, nbytes(1), ierr )
+		call MPI_PACK_SIZE( 1, MPI_DOUBLE_PRECISION, child_comm, nbytes(2), ierr )
+		call MPI_PACK_SIZE( 44, MPI_CHARACTER, child_comm, nbytes(3), ierr )
+		!
         shared_buffer_size = shared_buffer_size + allocateGridBuffer( grid )
         !
         write( *, "(A50, i8)" ) "MPI Allocated grid size:", shared_buffer_size
@@ -131,7 +138,7 @@ module DeclarationMPI
         write( *, "(A50, i8)" ) "MPI Allocated model_parameter size:", shared_buffer_size - last_size
         last_size = shared_buffer_size
         !
-        call MPI_PACK_SIZE( 1, MPI_INTEGER, child_comm, nbytes(1), ierr )
+        call MPI_PACK_SIZE( 1, MPI_INTEGER, child_comm, nbytes(4), ierr )
         !
         do i = 1, size( transmitters )
             shared_buffer_size = shared_buffer_size + allocateTransmitterBuffer( getTransmitter( i ) )
@@ -144,7 +151,7 @@ module DeclarationMPI
         write( *, "(A50, i8)" ) "MPI Allocated transmitters size:", shared_buffer_size - last_size
         last_size = shared_buffer_size
         !
-        call MPI_PACK_SIZE( 1, MPI_INTEGER, child_comm, nbytes(2), ierr )
+        call MPI_PACK_SIZE( 1, MPI_INTEGER, child_comm, nbytes(5), ierr )
         !
         do i = 1, size( receivers )
             shared_buffer_size = shared_buffer_size + allocateReceiverBuffer( getReceiver(i) )
@@ -176,8 +183,18 @@ module DeclarationMPI
         class( ModelOperator_t ), intent( in )  :: model_operator
         class( ModelParameter_t ), intent( in ) :: model_parameter
         !
-        integer :: i, index = 1
+        integer :: i, index
         !
+        index = 1
+        !
+		call MPI_PACK( len( model_method ), 1, MPI_INTEGER, shared_buffer, shared_buffer_size, index, child_comm, ierr )
+        call MPI_PACK( len( forward_solver_type ), 1, MPI_INTEGER, shared_buffer, shared_buffer_size, index, child_comm, ierr )
+        call MPI_PACK( len( source_type ), 1, MPI_INTEGER, shared_buffer, shared_buffer_size, index, child_comm, ierr )
+        call MPI_PACK( model_n_air_layer, 1, MPI_INTEGER, shared_buffer, shared_buffer_size, index, child_comm, ierr )
+        call MPI_PACK( model_max_height, 1, MPI_DOUBLE_PRECISION, shared_buffer, shared_buffer_size, index, child_comm, ierr )
+        call MPI_PACK( model_method, len( model_method ), MPI_CHARACTER, shared_buffer, shared_buffer_size, index, child_comm, ierr )
+        call MPI_PACK( forward_solver_type, len( forward_solver_type ), MPI_CHARACTER, shared_buffer, shared_buffer_size, index, child_comm, ierr )
+        call MPI_PACK( source_type, len( source_type ), MPI_CHARACTER, shared_buffer, shared_buffer_size, index, child_comm, ierr )
         !
         call packGridBuffer( grid, index )
         !
@@ -216,10 +233,26 @@ module DeclarationMPI
         !
         integer, intent( in ) :: buffer_size
         !
-        integer :: i, aux_size, index = 1
+        integer :: i, aux_size, n_model_method, n_forward_solver_type, n_source_type, index
         !
+        index = 1
         !
         shared_buffer_size = buffer_size
+        !
+		call MPI_UNPACK( shared_buffer, shared_buffer_size, index, n_model_method, 1, MPI_INTEGER, child_comm, ierr )
+        call MPI_UNPACK( shared_buffer, shared_buffer_size, index, n_forward_solver_type, 1, MPI_INTEGER, child_comm, ierr )
+        call MPI_UNPACK( shared_buffer, shared_buffer_size, index, n_source_type, 1, MPI_INTEGER, child_comm, ierr )
+        call MPI_UNPACK( shared_buffer, shared_buffer_size, index, model_n_air_layer, 1, MPI_INTEGER, child_comm, ierr )
+        call MPI_UNPACK( shared_buffer, shared_buffer_size, index, model_max_height, 1, MPI_DOUBLE_PRECISION, child_comm, ierr )
+        !
+		allocate( character( n_model_method ) :: model_method )
+        call MPI_UNPACK( shared_buffer, shared_buffer_size, index, model_method, n_model_method, MPI_CHARACTER, child_comm, ierr )
+        !
+		allocate( character( n_forward_solver_type ) :: forward_solver_type )
+		call MPI_UNPACK( shared_buffer, shared_buffer_size, index, forward_solver_type, n_forward_solver_type, MPI_CHARACTER, child_comm, ierr )
+        !
+		allocate( character( n_source_type ) :: source_type )
+		call MPI_UNPACK( shared_buffer, shared_buffer_size, index, source_type, n_source_type, MPI_CHARACTER, child_comm, ierr )
         !
         grid = unpackGridBuffer( index )
         !
@@ -1858,7 +1891,7 @@ module DeclarationMPI
         call MPI_PACK( len( receiver%code ), 1, MPI_INTEGER, shared_buffer, shared_buffer_size, index, child_comm, ierr )
         call MPI_PACK( receiver%code, len( receiver%code ), MPI_CHARACTER, shared_buffer, shared_buffer_size, index, child_comm, ierr )
         !
-        call MPI_PACK( receiver%location, 3, MPI_DOUBLE_PRECISION, shared_buffer, shared_buffer_size, index, child_comm, ierr )
+        call MPI_PACK( receiver%location(1), 3, MPI_DOUBLE_PRECISION, shared_buffer, shared_buffer_size, index, child_comm, ierr )
         !
     end subroutine packReceiverBuffer
     !
@@ -1914,17 +1947,143 @@ module DeclarationMPI
         !
     end subroutine unpackReceiverBuffer
     !
+    subroutine createDataBuffer()
+        implicit none
+        !
+        predicted_data_buffer_size = fwd_info%data_size
+        !
+        if( .NOT. associated( predicted_data_buffer ) ) then
+            allocate( predicted_data_buffer( predicted_data_buffer_size ) )
+        endif
+        !
+    end subroutine createDataBuffer
+    !
+    subroutine allocateDataBuffer( data_entries )
+        implicit none
+        !
+        type( PredictedDataHandle_t ), dimension(:), intent( in ) :: data_entries
+        !
+        integer i, j, nbytes(7)
+        !
+        predicted_data_buffer_size = 1
+        !
+        do i = 1, size( data_entries )
+            !
+            call MPI_PACK_SIZE( 3, MPI_INTEGER, child_comm, nbytes(1), ierr )
+            call MPI_PACK_SIZE( len( data_entries(i)%code ), MPI_CHARACTER, child_comm, nbytes(2), ierr )
+            call MPI_PACK_SIZE( len( data_entries(i)%component ), MPI_CHARACTER, child_comm, nbytes(3), ierr )
+            call MPI_PACK_SIZE( 1, MPI_DOUBLE_PRECISION, child_comm, nbytes(4), ierr )
+            call MPI_PACK_SIZE( 3, MPI_DOUBLE_PRECISION, child_comm, nbytes(5), ierr )
+            call MPI_PACK_SIZE( 1, MPI_DOUBLE_PRECISION, child_comm, nbytes(6), ierr )
+            call MPI_PACK_SIZE( 1, MPI_DOUBLE_PRECISION, child_comm, nbytes(7), ierr )
+            !
+            do j = 1, size( nbytes )
+                predicted_data_buffer_size = predicted_data_buffer_size + nbytes(j)
+            end do
+            !
+        end do
+        !
+        if( .NOT. associated( predicted_data_buffer ) ) then
+            allocate( predicted_data_buffer( predicted_data_buffer_size ) )
+        endif
+        !
+    end subroutine allocateDataBuffer
+    !
+    !
+    subroutine packDataBuffer( data_entries )
+        implicit none
+        !
+        type( PredictedDataHandle_t ), dimension(:), intent( in ) :: data_entries
+        !
+        integer :: i, index
+        !
+        index = 1
+        !
+        do i = 1, size( data_entries )
+            !
+            call MPI_PACK( data_entries(i)%rx_id, 1, MPI_INTEGER, predicted_data_buffer, predicted_data_buffer_size, index, child_comm, ierr )
+            call MPI_PACK( len( data_entries(i)%code ), 1, MPI_INTEGER, predicted_data_buffer, predicted_data_buffer_size, index, child_comm, ierr )
+            call MPI_PACK( len( data_entries(i)%component ), 1, MPI_INTEGER, predicted_data_buffer, predicted_data_buffer_size, index, child_comm, ierr )
+            call MPI_PACK( data_entries(i)%code, len( data_entries(i)%code ), MPI_CHARACTER, predicted_data_buffer, predicted_data_buffer_size, index, child_comm, ierr )
+            call MPI_PACK( data_entries(i)%component, len( data_entries(i)%component ), MPI_CHARACTER, predicted_data_buffer, predicted_data_buffer_size, index, child_comm, ierr )
+            !
+            call MPI_PACK( data_entries(i)%period, 1, MPI_DOUBLE_PRECISION, predicted_data_buffer, predicted_data_buffer_size, index, child_comm, ierr )
+            call MPI_PACK( data_entries(i)%xyz(1), 3, MPI_DOUBLE_PRECISION, predicted_data_buffer, predicted_data_buffer_size, index, child_comm, ierr )
+            call MPI_PACK( data_entries(i)%real, 1, MPI_DOUBLE_PRECISION, predicted_data_buffer, predicted_data_buffer_size, index, child_comm, ierr )
+            call MPI_PACK( data_entries(i)%imaginary, 1, MPI_DOUBLE_PRECISION, predicted_data_buffer, predicted_data_buffer_size, index, child_comm, ierr )
+            !
+        end do
+        !
+    end subroutine packDataBuffer
+    !
+    ! UNPACK predicted_data_buffer TO predicted_data STRUCT
+    function unpackDataBuffer() result( data_entries )
+        implicit none
+        !
+        type( PredictedDataHandle_t ), allocatable, dimension(:) :: data_entries
+        !
+        integer :: i, data_entries_code, data_entries_component, index
+        !
+        index = 1
+        !
+        if( allocated( data_entries ) ) deallocate( data_entries )
+        allocate( data_entries( fwd_info%n_data ) )
+        !
+        do i = 1, size( data_entries )
+            !
+            call MPI_UNPACK( predicted_data_buffer, predicted_data_buffer_size, index, data_entries(i)%rx_id, 1, MPI_INTEGER, child_comm, ierr )
+            call MPI_UNPACK( predicted_data_buffer, predicted_data_buffer_size, index, data_entries_code, 1, MPI_INTEGER, child_comm, ierr )
+            call MPI_UNPACK( predicted_data_buffer, predicted_data_buffer_size, index, data_entries_component, 1, MPI_INTEGER, child_comm, ierr )
+            !
+            allocate( character( data_entries_code ) :: data_entries(i)%code )
+            call MPI_UNPACK( predicted_data_buffer, predicted_data_buffer_size, index, data_entries(i)%code, data_entries_code, MPI_CHARACTER, child_comm, ierr )
+            !
+            allocate( character( data_entries_component ) :: data_entries(i)%component )
+            call MPI_UNPACK( predicted_data_buffer, predicted_data_buffer_size, index, data_entries(i)%component, data_entries_component, MPI_CHARACTER, child_comm, ierr )
+            !
+            call MPI_UNPACK( predicted_data_buffer, predicted_data_buffer_size, index, data_entries(i)%period, 1, MPI_DOUBLE_PRECISION, child_comm, ierr )
+            call MPI_UNPACK( predicted_data_buffer, predicted_data_buffer_size, index, data_entries(i)%xyz(1), 3, MPI_DOUBLE_PRECISION, child_comm, ierr )
+            call MPI_UNPACK( predicted_data_buffer, predicted_data_buffer_size, index, data_entries(i)%real, 1, MPI_DOUBLE_PRECISION, child_comm, ierr )
+            call MPI_UNPACK( predicted_data_buffer, predicted_data_buffer_size, index, data_entries(i)%imaginary, 1, MPI_DOUBLE_PRECISION, child_comm, ierr )
+            !
+        end do
+        !
+    end function unpackDataBuffer
+    !
+    ! RECEIVE predicted_data FROM ANY TARGET
+    function receiveData() result( data_entries )
+        implicit none
+        !
+        type( PredictedDataHandle_t ), allocatable, dimension(:) :: data_entries
+        !
+        call createDataBuffer
+        call MPI_RECV( predicted_data_buffer, predicted_data_buffer_size, MPI_PACKED, fwd_info%worker_rank, MPI_ANY_TAG, child_comm, MPI_STATUS_IGNORE, ierr )
+        !
+        data_entries = unpackDataBuffer()
+        !
+    end function receiveData
+    !
+    ! SEND fwd_info FROM target_id
+    subroutine sendData( data_entries )
+        !
+        type( PredictedDataHandle_t ), allocatable, dimension(:), intent( in ) :: data_entries
+        !
+        call packDataBuffer( data_entries )
+        !
+        call MPI_SEND( predicted_data_buffer, predicted_data_buffer_size, MPI_PACKED, master_id, tag, child_comm, ierr )
+        !
+    end subroutine sendData
+    !
     ! ALLOCATE fwd_info_buffer
     subroutine allocateFWDInfoBuffer
         !
         integer nbytes1, nbytes2, nbytes3
         !
-        call MPI_PACK_SIZE( 20, MPI_CHARACTER, child_comm, nbytes1, ierr )
-        call MPI_PACK_SIZE( 2, MPI_INTEGER, child_comm, nbytes2, ierr )
+        call MPI_PACK_SIZE( 15, MPI_CHARACTER, child_comm, nbytes1, ierr )
+        call MPI_PACK_SIZE( 4, MPI_INTEGER, child_comm, nbytes2, ierr )
         call MPI_PACK_SIZE( 1, MPI_LOGICAL, child_comm, nbytes3, ierr )
-        call MPI_PACK_SIZE( 40, MPI_CHARACTER, child_comm, nbytes4, ierr )
         !
-        fwd_info_buffer_size = ( nbytes1 + nbytes2 + nbytes3 + nbytes4 ) + 1
+        fwd_info_buffer_size = ( nbytes1 + nbytes2 + nbytes3 ) + 1
         !
         if( .NOT. associated( fwd_info_buffer ) ) then
             allocate( fwd_info_buffer( fwd_info_buffer_size ) )
@@ -1939,12 +2098,12 @@ module DeclarationMPI
         !
         index = 1
         !
-        call MPI_PACK( fwd_info%job_name, 20, MPI_CHARACTER, fwd_info_buffer, fwd_info_buffer_size, index, child_comm, ierr )
+        call MPI_PACK( fwd_info%job_name, 15, MPI_CHARACTER, fwd_info_buffer, fwd_info_buffer_size, index, child_comm, ierr )
         call MPI_PACK( fwd_info%worker_rank, 1, MPI_INTEGER, fwd_info_buffer, fwd_info_buffer_size, index, child_comm, ierr )
         call MPI_PACK( fwd_info%tx_index, 1, MPI_INTEGER, fwd_info_buffer, fwd_info_buffer_size, index, child_comm, ierr )
+        call MPI_PACK( fwd_info%n_data, 1, MPI_INTEGER, fwd_info_buffer, fwd_info_buffer_size, index, child_comm, ierr )
+        call MPI_PACK( fwd_info%data_size, 1, MPI_INTEGER, fwd_info_buffer, fwd_info_buffer_size, index, child_comm, ierr )
         call MPI_PACK( fwd_info%tx_changed, 1, MPI_LOGICAL, fwd_info_buffer, fwd_info_buffer_size, index, child_comm, ierr )
-        call MPI_PACK( fwd_info%forward_solver_type, 25, MPI_CHARACTER, fwd_info_buffer, fwd_info_buffer_size, index, child_comm, ierr )
-        call MPI_PACK( fwd_info%source_type, 15, MPI_CHARACTER, fwd_info_buffer, fwd_info_buffer_size, index, child_comm, ierr )
         !
     end subroutine packFWDInfoBuffer
     !
@@ -1955,12 +2114,12 @@ module DeclarationMPI
         !
         index = 1
         !
-        call MPI_UNPACK( fwd_info_buffer, fwd_info_buffer_size, index, fwd_info%job_name, 20, MPI_CHARACTER, child_comm, ierr )
+        call MPI_UNPACK( fwd_info_buffer, fwd_info_buffer_size, index, fwd_info%job_name, 15, MPI_CHARACTER, child_comm, ierr )
         call MPI_UNPACK( fwd_info_buffer, fwd_info_buffer_size, index, fwd_info%worker_rank, 1, MPI_INTEGER, child_comm, ierr )
         call MPI_UNPACK( fwd_info_buffer, fwd_info_buffer_size, index, fwd_info%tx_index, 1, MPI_INTEGER, child_comm, ierr )
+        call MPI_UNPACK( fwd_info_buffer, fwd_info_buffer_size, index, fwd_info%n_data, 1, MPI_INTEGER, child_comm, ierr )
+        call MPI_UNPACK( fwd_info_buffer, fwd_info_buffer_size, index, fwd_info%data_size, 1, MPI_INTEGER, child_comm, ierr )
         call MPI_UNPACK( fwd_info_buffer, fwd_info_buffer_size, index, fwd_info%tx_changed, 1, MPI_LOGICAL, child_comm, ierr )
-        call MPI_UNPACK( fwd_info_buffer, fwd_info_buffer_size, index, fwd_info%forward_solver_type, 25, MPI_CHARACTER, child_comm, ierr )
-        call MPI_UNPACK( fwd_info_buffer, fwd_info_buffer_size, index, fwd_info%source_type, 15, MPI_CHARACTER, child_comm, ierr )
         !
     end subroutine unpackFWDInfoBuffer
     !
@@ -1968,10 +2127,10 @@ module DeclarationMPI
     subroutine receiveFromAny()
         !
         call allocateFWDInfoBuffer
-        call MPI_RECV( fwd_info_buffer, fwd_info_buffer_size, MPI_PACKED, MPI_ANY_SOURCE, tag, child_comm, MPI_STATUS_IGNORE, ierr )
+        call MPI_RECV( fwd_info_buffer, fwd_info_buffer_size, MPI_PACKED, MPI_ANY_SOURCE, MPI_ANY_TAG, child_comm, MPI_STATUS_IGNORE, ierr )
         call unpackFWDInfoBuffer
         !
-        write( *, * ) "<<<< ", mpi_rank, " JOB: ", fwd_info%job_name, " FROM: ", fwd_info%worker_rank
+        write( *, * ) mpi_rank, " RECV ", fwd_info%job_name, " FROM ", fwd_info%worker_rank
         !
     end subroutine receiveFromAny
     !
@@ -1981,10 +2140,10 @@ module DeclarationMPI
         integer, intent( in )    :: target_id
         !
         call allocateFWDInfoBuffer
-        call MPI_RECV( fwd_info_buffer, fwd_info_buffer_size, MPI_PACKED, target_id, tag, child_comm, MPI_STATUS_IGNORE, ierr )
+        call MPI_RECV( fwd_info_buffer, fwd_info_buffer_size, MPI_PACKED, target_id, MPI_ANY_TAG, child_comm, MPI_STATUS_IGNORE, ierr )
         call unpackFWDInfoBuffer
         !
-        write( *, * ) "<<<< ", mpi_rank, " JOB: ", fwd_info%job_name, " FROM: ", target_id
+        write( *, * ) mpi_rank, " RECV ", fwd_info%job_name, " FROM ", target_id
         !
     end subroutine receiveFrom
     !
@@ -1993,15 +2152,14 @@ module DeclarationMPI
         !
         integer, intent( in )    :: target_id
         !
-        write( *, * ) ">>>> ", mpi_rank, " JOB: ", fwd_info%job_name, " TO: ", target_id
-        !
         call allocateFWDInfoBuffer
         call packFWDInfoBuffer
         call MPI_SEND( fwd_info_buffer, fwd_info_buffer_size, MPI_PACKED, target_id, tag, child_comm, ierr )
         !
+        write( *, * ) mpi_rank, " SEND ", fwd_info%job_name, " TO ", target_id
+        !
     end subroutine sendTo
     !
-
     function BiArrayToArray( d2_array ) result ( d1_array )
         !
         real( kind=prec ), intent( in ) :: d2_array(:,:)
