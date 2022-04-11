@@ -9,13 +9,13 @@ module ModelParameter
    use Grid
    use MetricElements
    !
-   character (len = 12), parameter  :: MM_METHOD_FIXED_H = "fixed height"
-   character (len = 6), parameter   :: MM_METHOD_MIRROR  = "mirror"
+   character ( len=12 ), parameter  :: MM_METHOD_FIXED_H = "fixed height"
+   character ( len=6 ), parameter   :: MM_METHOD_MIRROR  = "mirror"
    character(:), allocatable :: model_method
    !
-   ! MODEL DEFAULTS
-   integer :: model_n_air_layer = 10
-   real( kind=prec ) :: model_max_height = 200.0
+   ! MODEL PARAMETERS
+   integer :: model_n_air_layer
+   real( kind=prec ) :: model_max_height
    !
    !
    type, abstract :: ModelParameter_t
@@ -27,7 +27,7 @@ module ModelParameter
        !    provides Viedge, Vcell
        class( MetricElements_t ), pointer :: metric
        !
-       integer             :: mKey
+       integer             :: mKey(8)
        character(len = 80) :: paramType    = ''       
        real( kind=prec )   :: airCond       = SIGMA_AIR
        logical             :: zeroValued   = .false.

@@ -35,7 +35,7 @@ module ModelParameter2D
      ! NzAir = 0 -- more generally this might be a
      ! completely different grid.
      real(kind=prec), allocatable, dimension(:,:) :: cellCond
-     integer             :: mKey = 0
+     integer             :: mKey(8) = 0
 	 character(:), allocatable :: paramType
      real(kind = prec)   :: airCond     = 1E-10
      class(Grid2D_t), allocatable :: grid 
@@ -150,7 +150,7 @@ contains
     character(:), allocatable, intent(in)       :: paramType
     real(kind=prec), intent(in), dimension(:,:) :: CellCond
     real(kind=prec), intent(in)                 :: AirCond
-    integer, intent(in)                         :: mKey
+    integer, intent(in)                         :: mKey(8)
     !  local variables
     integer  :: nyz(2)
     

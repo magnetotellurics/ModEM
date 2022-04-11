@@ -225,7 +225,7 @@ contains
      endif
      !
      call m2D%SetConductivity(CondSlice, self%AirCond, &
-       paramType, self%mKey)
+       paramType, self%mKey )
    !
    end function Slice2DModelParameterCell
    !

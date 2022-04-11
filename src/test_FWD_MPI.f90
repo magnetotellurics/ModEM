@@ -1,647 +1,719 @@
 program ModEM
-   !
-   use DeclarationMPI
-   !
-   use DataManager
-   use ModEMControlFile
-   !
-   use ModelReader
-   use ModelReader_Weerachai
-   use ModelOperator_MF
-   use ModelOperator_File
-   use ModelParameterCell_SG
-   !
-   use Grid3D_SG
-   !
-   use ForwardSolverFromFile
-   use ForwardSolverIT_DC
-   !
-   use SourceMT_1D
-   use SourceMT_2D
-   !
-   class( Grid_t ), allocatable           :: main_grid
-   class( ModelParameter_t ), allocatable :: model_parameter
-   class( ModelOperator_t ), allocatable, target  :: model_operator
-   type( ModelOperator_MF_t ), pointer   :: model_operator_ptr => null()
-   type( DataManager_t ) :: data_manager
-   !
-   integer, pointer, dimension(:), save :: test_mpi_ptr
-   !
-   !
-   character(:), allocatable :: control_file_name, model_file_name, data_file_name, modem_job
-   logical                   :: has_control_file = .false., has_model_file = .false., has_data_file = .false.
-   !
-   main_comm = MPI_COMM_WORLD
-   !
-   call MPI_Init( ierr )
-   !
-   ! SET mpi_size WITH n FROM MPIRUN FOR MPI_COMM_WORLD
-   call MPI_Comm_size( main_comm, mpi_size, ierr )
-   !
-   ! SET mpi_rank WITH PROCESS ID FOR MPI_COMM_WORLD
-   call MPI_Comm_rank( main_comm, mpi_rank, ierr )
-   !
-   ! SPLIT MPI_COMM_WORLD into shared subcommunicator: shared_comm
-   call MPI_Comm_split_type( main_comm, MPI_COMM_TYPE_SHARED, 0, MPI_INFO_NULL, shared_comm, ierr )
-   !
-   call MPI_Get_processor_name( nodename, nodestringlen, ierr )
-   !
-   call MPI_Comm_size( shared_comm, node_size, ierr )
-   !
-   call MPI_Comm_rank( shared_comm, node_rank, ierr )
-   !
-   write( *, * ) "Rank ", mpi_rank," in COMM_WORLD is ", node_rank, &
-             " in SHARED_COMM on Node: ", nodename(1:nodestringlen)
-   !
-   write( *, * ) "node_size: ", node_size
-   !
-   !
-   ! MASTER
-   !
-   if ( mpi_rank == 0 ) then
-       !
-       modem_job = "unknow"
-       !
-       ! MASTER
-       !
-       ! Validate arguments, set model_file_name, data_file_name
-       call handleArguments()
-       !
-       write ( *, * )
-       write ( *, * ) "Start ModEM-OO."
-       write ( *, * )
-       !
-       ! Check parameters at the control file
-       if( has_control_file ) call handleControlFile()
-       !
-       ! Execute the modem_job
-       call handleJob()
-       !
-       write ( *, * )
-       write ( *, * ) "Finish ModEM-OO."
-       write ( *, * )
-   !
-   ! WORKER
-   !
-   else
-      !
-      call MPI_Win_allocate_shared( winsize, 0, MPI_INFO_NULL, shared_comm, baseptr, nodewin, ierr )
-      !
-      !
-      if( ierr == MPI_SUCCESS ) then
-         !
-         write( *, * ) "!!!! WORKER MPI_Win_allocate_shared SUCCEDED: ", baseptr
-         !
-         do while ( job_master .ne. job_finish )
+    !
+    use FileUnits
+    !
+    use DeclarationMPI
+    !
+    use DataManager
+    use ModEMControlFile
+    !
+    use ModelReader
+    use ModelReader_Weerachai
+    use ModelOperator_MF
+    use ModelOperator_File
+    use ModelParameterCell_SG
+    !
+    use Grid3D_SG
+    !
+    use ForwardSolverFromFile
+    use ForwardSolverIT_DC
+    !
+    use SourceMT_1D
+    use SourceMT_2D
+    !
+    class( Grid_t ), allocatable           :: main_grid
+    class( ModelParameter_t ), allocatable :: model_parameter
+    class( ModelOperator_t ), allocatable  :: model_operator
+    !
+    character(:), allocatable :: control_file_name, model_file_name, data_file_name, modem_job
+    logical                   :: has_control_file = .false., has_model_file = .false., has_data_file = .false.
+    !
+    main_comm = MPI_COMM_WORLD
+    !
+    call MPI_Init( ierr )
+    !
+    ! SET mpi_size WITH n FROM MPIRUN FOR MPI_COMM_WORLD
+    call MPI_Comm_size( main_comm, mpi_size, ierr )
+    !
+    if( mpi_size < 2 ) then
+        write( *, * ) "A minimum of two MPI processes are required!!!"
+        call MPI_Finalize( ierr )
+        stop
+    end if 
+    !
+    ! SET mpi_rank WITH PROCESS ID FOR MPI_COMM_WORLD
+    call MPI_Comm_rank( main_comm, mpi_rank, ierr )
+    !
+    ! SPLIT MPI_COMM_WORLD into shared subcommunicator: child_comm
+    call MPI_Comm_split_type( main_comm, MPI_COMM_TYPE_SHARED, mpi_rank, MPI_INFO_NULL, child_comm, ierr )
+    !
+    call MPI_Get_processor_name( node_name, nodestringlen, ierr )
+    !
+    call MPI_Comm_size( child_comm, node_size, ierr )
+    !
+    call MPI_Comm_rank( child_comm, node_rank, ierr )
+    !
+    write( *, * ) "MPI Rank ", mpi_rank," in COMM_WORLD (", mpi_size, ") is ", node_rank, &
+                 " in SHARED_COMM (", node_size, ") on Node: ", node_name(1:nodestringlen)
+    !
+    ! MASTER
+    !
+    if ( mpi_rank == 0 ) then
+        !
+        modem_job = "unknow"
+        !
+        ! MASTER
+        !
+        ! Validate arguments, set model_file_name, data_file_name
+        call handleArguments()
+        !
+        write ( *, * )
+        write ( *, * ) "Start ModEM-OO."
+        write ( *, * )
+        !
+        !
+        call setupDefaultParameters()
+        !
+        ! Check parameters at the control file
+        if( has_control_file ) call handleControlFile()
+        !
+        ! Execute the modem_job
+        call handleJob()
+        !
+        call MPI_Finalize( ierr )
+        !
+        write ( *, * )
+        write ( *, * ) "Finish ModEM-OO."
+        write ( *, * )
+    !
+    ! WORKER
+    !
+    else
+        !
+        call MPI_Win_allocate_shared( shared_window_size, shared_disp_unit, MPI_INFO_NULL, child_comm, shared_c_ptr, shared_window, ierr )
+        !
+        if( ierr == MPI_SUCCESS ) then
             !
-            write ( *, * ) "WORKER: ", mpi_rank, " WAITING MASTER"
-            !
-            call receiveFrom( master_id )
-            !
-            write ( *, * ) "WORKER: ", mpi_rank, " RECEIVE JOB: ", job_info%name
-            !
-            job_master = trim( job_info%name )
-            !
-            select case ( job_master )
+            do while ( job_master .ne. job_finish )
                 !
-                case ( "FORWARD" )
+                write ( *, * ) "WORKER: ", mpi_rank, " WAITING MASTER"
+                !
+                call receiveFrom( master_id )
+                !
+                job_master = trim( fwd_info%job_name )
+                !
+                select case ( job_master )
+                !
+                case ( "SHARE_MEMORY" )
+                    !
+                    call workerQuerySharedMemory()
+                    !
+                    call MPI_Win_fence( 0, shared_window, ierr )
+                    !
+                case ( "JOB_FORWARD" )
                     !
                     call workerForwardModelling()
                     !
-                case ( "STOP_JOBS" )
-                    !
-                    job_info%name = job_ok
-                    !
-                    write ( *, * ) "WORKER: ", mpi_rank, " SEND JOB: ", job_info%name, " TO MASTER"
-                    !
-                    call sendTo( master_id )
+                end select
                 !
-            end select
+            enddo
             !
-         enddo
-         !
-         call MPI_Win_fence( 0, nodewin, ierr )
-         !
-         call MPI_FINALIZE( ierr )
-         !
-      else
-         stop "WORKER MPI_Win_allocate_shared FAILS !!!"
-      endif
-      !
-    endif
-   !
+            call MPI_Finalize( ierr )
+            !
+        else
+            !
+            write( *, "(A50, i8)" ) "MPI Win_allocate_shared fails for process:", mpi_rank
+            !
+            stop
+        endif
+        !
+     endif
+    !
 contains
-   !
-   subroutine masterForwardModelling()
-      implicit none
-      !
-      ! These objects are frequency dependent,
-      ! must be instantiated on each Worker
-      class( ForwardSolver_t ), allocatable, target, save :: fwd_solver
-      !
-      class( Source_t ), allocatable, target, save        :: fwd_source 
-      !
-      ! Temporary alias pointers
-      class( Transmitter_t ), pointer  :: Tx
-      class( Receiver_t ), allocatable :: Rx
-      !
-      ! Local variables
-      integer :: iTx, nTx, iRx, nRx
-      character(:), allocatable :: transmitter_type
-      !
-      ! Verbosis
-      write ( *, * ) "   > Start forward modelling."
-      !
-      ! Tx type for predicted_data header changes
-      transmitter_type = "Unknow"
-      !
-      ! Reads Model File: instantiates Grid, ModelOperator and ModelParameter
-      if( .not. has_model_file ) then 
-        stop " - Missing Model file!"
-      else
-        call handleModelFile()
-      endif
-      !
-      ! Reads Data File: instantiates and builds the Data relation between Txs and Txs
-      if( .not. has_data_file ) then 
-        stop " - Missing Data file!"
-      else
-        call handleDataFile()
-      endif
-      !
-      ! High-level object instantiation
-      ! Some types are chosen from the control file
-      !
-      ! ForwardSolver - Chosen from control file
-      select case ( forward_solver_type )
+    !
+    subroutine masterForwardModelling()
+        implicit none
         !
-        case( FWD_FILE )
-           fwd_solver = ForwardSolverFromFile_t( model_operator )
-           !
-        case( FWD_IT )
-           fwd_solver = ForwardSolverIT_t( model_operator, QMR )
-           !
-        case( FWD_IT_DC )
-           fwd_solver = ForwardSolverIT_DC_t( model_operator, QMR )
-           !
-        case default
-           fwd_solver = ForwardSolverIT_DC_t( model_operator, QMR )
-           !
-      end select
-      !
-      call fwd_solver%setCond( model_parameter )
-      !
-      ! Source - Chosen from control file
-      select case ( source_type )
-         !
-         case( SRC_MT_1D )
-            allocate( fwd_source, source = SourceMT_1D_t( model_operator, model_parameter ) )
+        ! Local variables
+        integer :: i, worker_rank = 1, tx_received = 0, tx_index = 0
+        !
+        class( Transmitter_t ), pointer :: aux_tx
+        character(:), allocatable :: actual_tx_type
+        !
+        type( PredictedDataHandle_t ), allocatable :: data_handles(:)
+        type( PredictedDataHandle_t ), allocatable :: all_data_handles(:)
+        !
+        ! Verbosis
+        write ( *, * ) "    > Start forward modelling."
+        !
+        ! Reads Model File: instantiates Grid, ModelOperator and ModelParameter
+        if( .NOT. has_model_file ) then 
+            stop " - Missing Model file!"
+        else
+            call handleModelFile()
+        endif
+        !
+        ! Reads Data File: instantiates and builds the Data relation between Txs and Txs
+        if( .NOT. has_data_file ) then 
+            stop " - Missing Data file!"
+        else
+            call handleDataFile()
+        endif
+        !
+        ! SHARE MEM WITH ALL WORKERS
+        call masterExposeSharedMemory()
+        !
+        do i = 1, ( mpi_size - 1 )
             !
-         case( SRC_MT_2D )
-            allocate( fwd_source, source = SourceMT_2D_t( model_operator, model_parameter ) )
+            fwd_info%job_name = job_share_memory
             !
-         case default
-            allocate( fwd_source, source = SourceMT_1D_t( model_operator, model_parameter ) )
+            call sendTo( i )
             !
-      end select
-      !
-      job_info%name = "FORWARD"
-      !
-      ! Loop over all Transmitters
-      nTx = size( transmitters )
-      !
-      call writeEsolutionHeader( nTx, 2 )
-      !
-      do iTx = 1, nTx
-         !
-         ! Temporary Transmitter alias
-         Tx => getTransmitter( iTx )
-         !
-         write( *, * ) "FOR PERIOD: ", Tx%period
-         !
-         ! According to Tx type,
-         ! write the proper header in the "predicted_data.dat" file
-         !call writePredictedDataHeader( Tx, transmitter_type )
-         !
-         ! Tx points to its due Source
-         call Tx%setSource( fwd_source )
-         !
-         ! Set ForwardSolver Period
-         call fwd_solver%setPeriod( Tx%period )
-         !
-         ! Tx points to its due ForwardSolver
-         call Tx%setForwardSolver( fwd_solver )
-         !
-         write ( *, * ) "MASTER SEND JOB: ", job_info%name, " TO WORKER: ", iTx
-         !
-         ! SEND FORWARD JOB TO WORKER
-         call sendTo( iTx )
-         !
-      enddo
-      !
-      ! RECEIVE FOREACH WORKER
-      do iTx = 1, nTx
-          !
-          write ( *, * ) "MASTER WAITING WORKER: ", iTx
-          !
-          call receiveFrom( iTx )
-          !
-          write ( *, * ) "MASTER RECEIVED JOB: ", job_info%name, " FROM WORKER: ", iTx
-          !
-      enddo
-      !
-      ! DISTRIBUTE STOP_JOBS
-      job_info%name = "STOP_JOBS"
-      !
-      ! SEND FOREACH WORK PROCESS
-      do iTx = 1, nTx
-          !
-          write ( *, * ) "MASTER SEND JOB: ", job_info%name, " TO WORKER: ", iTx
-          !
-          call sendTo( iTx )
-          !
-      enddo
-      !
-      ! RECEIVE FOREACH WORK PROCESS
-      do iTx = 1, nTx
-          !
-          write ( *, * ) "MASTER WAITING WORKER: ", iTx
-          !
-          call receiveFrom( iTx )
-          !
-          write ( *, * ) "MASTER RECEIVED JOB: ", job_info%name, " FROM WORKER: ", iTx
-          !
-      enddo
-      !
-      !
-      call MPI_Win_fence( 0, nodewin, ierr )
-      !
-      do iTx = 1, 5
-          !
-          write ( *, * ) "MASTER test_mpi_ptr(iTx): ", test_mpi_ptr(iTx)
-          !
-      enddo
-      !
-      !call MPI_Win_fence( 0, nodewin, ierr )
-      !
-      call MPI_FINALIZE( ierr )
-      !
-   end subroutine masterForwardModelling
-   !
-   subroutine workerForwardModelling()
-      implicit none
-      !
-      ! Temporary alias pointers
-      class( Transmitter_t ), pointer  :: Tx
-      class( Receiver_t ), allocatable :: Rx
-      !
-      ! Local variables
-      integer :: iRx, nRx
-      !
-      !call sleep(  mpi_rank * 5 )
-      !
-      write( *, * ) "### WORKER: ", mpi_rank, " START JOB:", job_info%name
-      !
-      call MPI_Win_shared_query( nodewin, 0, winsize, disp_unit, baseptr, ierr )
-      !
-      if( ierr == MPI_SUCCESS ) then
-         write( *, * ) "!!!! WORKER MPI_Win_shared_query SUCCEDED: ", winsize, baseptr
-      else
-         write( *, * ) "!!!! WORKER MPI_Win_shared_query FAILS: ", winsize, baseptr
-      endif
-      !
-      !write( *, * ) "test_mpi_ptr:[", test_mpi_ptrl, "]"
-      !
-      call c_f_pointer( baseptr, test_mpi_ptr, (/winsize/) )
-	  !call c_f_pointer( baseptr, model_operator_ptrl )
-      !
-      !write( *, * ) "model_operator_ptrl:[", model_operator_ptrl%grid%nx, model_operator_ptrl%grid%ny, model_operator_ptrl%grid%nz, "]"
-      !
-      test_mpi_ptr( node_rank+1 ) = node_rank * 10
-      !
-      ! Temporary Transmitter alias
-      !Tx => getTransmitter( mpi_rank )
-      !
-      ! Verbosis...
-      !write( *, * ) "WORKER Tx Id:", Tx%id, "Period:", int( Tx%period )
-      !
-      ! Solve Tx Forward Modelling
-      !call Tx%solveFWD()
-      !
-      ! Loop over Receivers of each Transmitter
-      !nRx = Tx%getNRx()
-      !
-      !do iRx = 1, nRx
-         !
-         ! Temporary Receiver alias
-         !Rx = receivers%get( Tx%get( iRx ) )
-         !
-         ! Verbosis...
-         !write( *, * ) "                Rx Id:", Rx%id, "XYZ:", Rx%location
-         !
-         ! Calculate Rx Predicted Data
-         !call Rx%predictedData( model_operator, Tx )
-         !
-      !enddo
-      !
-      !deallocate( Tx )
-      !
-      job_info%name = job_ok
-      !
-      write ( *, * ) "WORKER: ", mpi_rank, " SEND JOB: ", job_info%name, " TO MASTER"
-      !
-      call sendTo( master_id )
-      !
-   end subroutine workerForwardModelling
-   !
-   subroutine handleJob()
-      implicit none
-      !
-      select case ( modem_job )
+        enddo
         !
-      case ( "forward" )
+        ! ?????
+        call MPI_Win_fence( 0, shared_window, ierr )
         !
-        call masterForwardModelling()
+        aux_tx => getTransmitter(1)
+        actual_tx_type = trim( aux_tx%type_name )
+        call writePredictedDataHeader( aux_tx, .TRUE. )
         !
-      case default
-        !
-        write( *, * ) "   - Unknow job: [", trim( modem_job ), "]"
-        call printHelp()
-        !
-      end select
-      !
-   end subroutine handleJob
-   !
-   subroutine handleControlFile()
-      implicit none
-      !
-      type( ModEMControlFile_t ) :: control_file
-      !
-      write( *, * ) "   -> Control File: [", control_file_name, "]"
-      !
-      ! Instantiate the ControlFile object
-      ! Reads control file and sets the options in the Constants module
-      control_file = ModEMControlFile_t( ioStartup, control_file_name )
-      !
-   end subroutine handleControlFile
-   !
-   !
-   subroutine handleDataFile()
-      implicit none
-      !
-      ! Local object to dealt data, self-destructs at the end of the subroutine
-      !type( DataManager_t ) :: data_manager
-      !
-      write( *, * ) "   -> Data File: [", data_file_name, "]"
-      !
-      data_manager = DataManager_t( data_file_name )
-      !
-   end subroutine handleDataFile
-   !
-   subroutine handleModelFile()
-      implicit none
-      !
-      ! It remains to standardize ????
-      type( ModelReader_Weerachai_t ) :: model_reader
-      !
-      character(:), allocatable      :: fname
-      !
-      type( TAirLayers )            :: air_layer
-      !
-      fname = "/mnt/c/Users/protew/Desktop/ON/GITLAB_PROJECTS/modem-oo/inputs/Full_A_Matrix_TinyModel"
-      !fname = "/Users/garyegbert/Desktop/ModEM_ON/modem-oo/inputs/Full_A_Matrix_TinyModel"
-      !
-      write( *, * ) "   -> Model File: [", model_file_name, "]"
-     !
-     model_method = MM_METHOD_FIXED_H
-      !
-      ! Read Grid and ModelParameter with ModelReader_Weerachai
-      call model_reader%Read( model_file_name, main_grid, model_parameter ) 
-      !
-      ! Instantiate the ModelOperator object
-      select type( main_grid )
-        !
-        class is( Grid3D_SG_t )
-           !
-           call main_grid%SetupAirLayers( air_layer, model_method, model_n_air_layer, model_max_height )
-           !   as coded have to use air_layer data structure to update grid
-           call main_grid%UpdateAirLayers( air_layer%nz, air_layer%dz )
-           !
-           !model_operator = ModelOperator_File_t( main_grid, fname )
-           !
-           model_operator = ModelOperator_MF_t( main_grid )
-           !
-           call model_parameter%setMetric( model_operator%metric )
-           !
-           ! complete model operator setup
-           call model_operator%SetEquations()
-           !
-           call model_operator%SetCond( model_parameter )
-           !
-           select type( model_operator )
-              !
-              class is( ModelOperator_MF_t )
-              !
-              allocate( test_mpi_ptr(5) )
-              !
-              !winsize = size( test_mpi_ptr )
-			  winsize = sizeof( model_operator )
-              !
-              call MPI_Win_allocate_shared( winsize, disp_unit, MPI_INFO_NULL, shared_comm, baseptr, nodewin, ierr )
-              !
-              if( ierr == MPI_SUCCESS ) then
-                 write( *, * ) "!!!! MASTER MPI_Win_allocate_shared SUCCEDED: ", winsize, baseptr
-              else
-                 write( *, * ) "!!!! MASTER MPI_Win_allocate_shared FAILS: ", winsize, baseptr
-              endif
-              !
-              call c_f_pointer( baseptr, test_mpi_ptr, (/winsize/) )
-			  !call c_f_pointer( baseptr, model_operator_ptr )
-              !
-			  test_mpi_ptr = (/-1, -1, -1, -1, -1/)
-			  !allocate( model_operator_ptr, source = model_operator )
-			  !
-              !write( *, * ) "### MASTER model_operator_ptr:[", model_operator_ptr%grid%nx, model_operator_ptr%grid%ny, model_operator_ptr%grid%nz, "]"
-              !
-           end select
-           !
-        class default
-            stop "Unclassified main_grid"
-        !
-      end select
-      !
-   end subroutine handleModelFile
-   !
-   !
-   subroutine handleArguments()
-      implicit none
-      !
-      character(200) :: argument
-      integer       :: argument_index
-      !
-      if ( command_argument_count() == 0 ) then
-        !
-        call printHelp()
-        !
-      else
-        !
-        argument_index = 1
-        !
-        do while(argument_index <= command_argument_count()) 
+        ! SEND 1 TRANSMITTER TO FIRST np WORKERS
+        do while ( worker_rank <= ( mpi_size - 1 ) )
             !
-            call get_command_argument( argument_index, argument )
+            tx_index = tx_index + 1
             !
-            select case ( argument )
-               !
-               case ( "-c", "--control" )
-                 !
-                 call get_command_argument( argument_index + 1, argument )
-                 control_file_name = trim( argument )
-                 !
-                 if ( len( control_file_name ) > 0 ) has_control_file = .true.
-                 !
-                 argument_index = argument_index + 2
-                 !
-               case ( "-d", "--data" )
-                 !
-                 call get_command_argument( argument_index + 1, argument )
-                 data_file_name = trim( argument )
-                 !
-                 if ( len( data_file_name ) > 0 ) has_data_file = .true.
-                 !
-                 argument_index = argument_index + 2
-                 !
-               case ( "-f", "--forward" )
-                 !
-                 modem_job = "forward"
-                 !
-                 argument_index = argument_index + 1
-                 !
-               case ( "-m", "--model" )
-                 !
-                 call get_command_argument( argument_index + 1, argument )
-                 model_file_name = trim(argument)
-                 !
-                 if ( len( model_file_name ) > 0 ) has_model_file = .true.
-                 !
-                 argument_index = argument_index + 2
-                 !
-               case ( "-v", "--version" )
-                 !
-                 write( *, * ) "   + ModEM-OO version 1.0.0"
-                 stop
-                 !
-               case ( "-h", "--help" )
-                 !
-                 call printHelp()
-                 !
-               case default
-                 !
-                 write( *, * ) "   - Unknow Argument: [", trim( argument ), "]"
-                 call printHelp()
-                 !
-            end select
+            fwd_info%job_name    = job_forward
+            fwd_info%tx_index    = tx_index
+            fwd_info%worker_rank = worker_rank
+            !
+            aux_tx => getTransmitter( tx_index )
+            if( actual_tx_type /= trim( aux_tx%type_name ) ) then
+               actual_tx_type = trim( aux_tx%type_name )
+               fwd_info%tx_changed  = .TRUE.
+            else
+               fwd_info%tx_changed  = .FALSE.
+            end if
+            !
+            call sendTo( worker_rank )
+            !
+            worker_rank = worker_rank + 1
             !
         end do
         !
-      end if
-      !
-   end subroutine handleArguments
-   !
-   subroutine writeEsolutionHeader( nTx, nMode )
-      implicit none
-      !
-      ! implement separated routine
-      integer, intent( in ) :: nTx, nMode
-      integer             :: ios
-      character (len=20)    :: version
-      !
-      open( ioESolution, file = "e_solution", action="write", form ="unformatted", iostat=ios)
-      !
-      if( ios/=0) then
-        write(0,*) "Error opening file in FileWriteInit: e_solution"
-      else
+        ! SEND 1 TRANSMITTER TO FIRST AVAILABLE WORKER
+        do while( tx_index < size( transmitters ) )
+            !
+            write ( *, * ) "THERES", ( size( transmitters ) - tx_index ), " TX LEFT!"
+            !
+            call receiveFromAny()
+            !
+            data_handles = receiveData()
+            !
+            do i = 1, size( data_handles )
+                call updateDataHandleArray( all_data_handles, data_handles( i ) )
+            end do
+            !
+            tx_received = tx_received + 1
+            !
+            tx_index = tx_index + 1
+            !
+            fwd_info%job_name    = job_forward
+            fwd_info%tx_index    = tx_index
+            !
+            aux_tx => getTransmitter( tx_index )
+            if( actual_tx_type /= trim( aux_tx%type_name ) ) then
+               actual_tx_type = trim( aux_tx%type_name )
+               fwd_info%tx_changed  = .TRUE.
+            else
+               fwd_info%tx_changed  = .FALSE.
+            end if
+            !
+            call sendTo( fwd_info%worker_rank )
+            !
+        end do
         !
-        version = ""
-        ! write the header (contains the basic information for the forward
-        ! modeling). the header is 4 lines
-        write( ioESolution ) version, nTx, nMode, &
-        main_grid%nx, main_grid%ny, main_grid%nz, main_grid%nzAir, &
-        main_grid%ox, main_grid%oy, main_grid%oz, main_grid%rotdeg
+        ! RECEIVES job_done FROM EACH FINISHED WORKER
+        do while ( tx_received < size( transmitters ) )
+            !
+            write ( *, * ) "MASTER WAITING ANY WORKER TO FINISH"
+            !
+            call receiveFromAny()
+            !
+            data_handles = receiveData()
+            !
+            do i = 1, size( data_handles )
+                call updateDataHandleArray( all_data_handles, data_handles( i ) )
+            end do
+            !
+            tx_received = tx_received + 1
+            !
+            fwd_info%job_name = job_finish
+            !
+            call sendTo( fwd_info%worker_rank )
+             
+        enddo
         !
-        write( ioESolution ) main_grid%dx
-        write( ioESolution ) main_grid%dy
-        write( ioESolution ) main_grid%dz
-      endif
-      !
-      !
-   end subroutine writeEsolutionHeader
-   !
-   subroutine writePredictedDataHeader( Tx, transmitter_type )
-      implicit none
-      !
-      class( Transmitter_t ), intent( in )      :: Tx
-      character(:), allocatable, intent( inout ) :: transmitter_type
-      !
-      integer :: nTx, nRx
-      logical :: tx_changed = .false.
-      !
-      if( ( index( transmitter_type, "Unknow" ) /= 0 ) .OR. transmitter_type /= trim( Tx%type ) ) then
+        call writeDataHandleArray( all_data_handles )
         !
-        tx_changed = .true.
+        ! Verbosis
+        write ( *, * ) "    > Finish forward modelling."
         !
-      endif
-      !
-      if( ( index( transmitter_type, "Unknow" ) /= 0 ) ) then
+    end subroutine masterForwardModelling
+    !
+    subroutine masterExposeSharedMemory()
+        implicit none
         !
-        open( ioPredData, file = "predicted_data.dat", action="write", form ="formatted" )
+        select type( model_operator )
+          !
+          class is( ModelOperator_MF_t )
+                !
+                call allocateSharedBuffer( main_grid, model_operator, model_parameter )
+                !
+                shared_window_size = shared_buffer_size
+                shared_disp_unit = 1
+                !
+                call MPI_Win_allocate_shared( shared_window_size, shared_disp_unit, MPI_INFO_NULL, child_comm, shared_c_ptr, shared_window, ierr )
+                !
+                if( ierr /= MPI_SUCCESS ) then
+                     write( *, "(A50, i8)" ) "MPI Win_allocate_shared fails on master:", ierr
+                     stop
+                endif
+                !
+                call c_f_pointer( shared_c_ptr, shared_buffer, (/shared_window_size/) )
+                !
+                call packSharedBuffer( main_grid, model_operator, model_parameter )
+                !
+        end select
         !
-      else if( transmitter_type /= trim( Tx%type ) ) then
+    end subroutine masterExposeSharedMemory
+    !
+    subroutine workerQuerySharedMemory()
+        implicit none
         !
-        open( ioPredData, file = "predicted_data.dat", action="write", form ="formatted", position="append" )
+        call MPI_Win_shared_query( shared_window, master_id, shared_window_size, shared_disp_unit, shared_c_ptr, ierr )
         !
-      endif
-      !
-      if( tx_changed ) then
+        if( ierr == MPI_SUCCESS ) then
+            !
+            write( *, "(A50, i8, i8, i8)" ) "MPI Allocated window size:", shared_window_size
+            !
+        else
+            write( *, "(A50, i8, i8)" ) "MPI Win_shared_query fails on worker, ierr:", mpi_rank, ierr
+            stop
+        endif
         !
-        write( ioPredData, "(4A, 100A)" ) "#   ", DATA_FILE_TITLE
-        write( ioPredData, "(4A, 100A)" ) "#   ", Tx%DATA_TITLE
-        write( ioPredData, "(4A, 100A)" ) ">   ", trim( Tx%type )
-        write( ioPredData, "(4A, 100A)" ) ">   ", "exp(-i\omega t)"
-        write( ioPredData, "(4A, 100A)" ) ">   ", "[V/m]/[T]"
-        write( ioPredData, "(7A, 100A)" ) ">      ", "0.00"
-        write( ioPredData, "(7A, 100A)" ) ">      ", "0.000   0.000"
-        write( ioPredData, "(A3, i8, i8)" ) ">      ", size( transmitters ), receivers%size()
+        call c_f_pointer( shared_c_ptr, shared_buffer, (/shared_window_size/) )
         !
-        close( ioPredData )
+        call unpackSharedBuffer( int( shared_window_size ), main_grid, model_operator, model_parameter )
         !
-        transmitter_type = trim( Tx%type )
+    end subroutine workerQuerySharedMemory
+    !
+    subroutine workerForwardModelling()
+        implicit none
         !
-      endif
-      !
-   end subroutine writePredictedDataHeader
-   !
-   subroutine printHelp()
-      implicit none
-      !
-      write( *, * ) "ModEM-OO Usage:"
-      write( *, * ) ""
-      write( *, * ) "   Flags to define a job:"
-      write( *, * ) "      [-f], [--forward] : Forward modelling."
-      write( *, * ) "      [-i], [--inverse] : Inversion modelling."
-      write( *, * )
-      write( *, * ) "   Other arguments:"
-      write( *, * ) "      [-d], [--data]    : Flags for data file path."
-      write( *, * ) "      [-m], [--model]   : Flags for model file path."
-      write( *, * ) "      [-c], [--control] : Flags for user control file path."
-      write( *, * ) "      [-v], [--version] : Print version."
-      write( *, * ) "      [-h], [--help]    : Print usage information."
-      !
-      write( *, * ) ""
-      write( *, * ) "Version 1.0.0"
-      !
-      stop
-      !
-   end subroutine printHelp
+        class( ForwardSolver_t ), allocatable :: fwd_solver
+        !
+        class( Source_t ), allocatable        :: fwd_source 
+        !
+        ! Temporary alias pointers
+        class( Receiver_t ), pointer    :: Rx
+        class( Transmitter_t ), pointer :: Tx
+        !
+        type( PredictedDataHandle_t ), allocatable :: tx_data_handles(:)
+        !
+        type( TAirLayers ) :: air_layer
+        !
+        integer :: iRx, nRx, iDe
+        !
+        select type( main_grid )
+            !
+            class is( Grid3D_SG_t )
+                !
+                call main_grid%SetupAirLayers( air_layer, model_method, model_n_air_layer, model_max_height )
+                call main_grid%UpdateAirLayers( air_layer%nz, air_layer%dz )
+                !
+            class default
+                stop "Unclassified main_grid"
+            !
+        end select
+        !
+        call model_operator%metric%SetMetricElements()
+        !
+        call model_parameter%SetSigMap( model_parameter%paramType )
+        call model_parameter%SetType( "LOGE" )
+        call model_parameter%setMetric( model_operator%metric )
+        !
+        call model_operator%SetEquations()
+        call model_operator%SetCond( model_parameter )
+        !
+        ! ForwardSolver - Chosen from control file
+        select case ( trim( forward_solver_type ) )
+            !
+            case( FWD_FILE )
+                fwd_solver = ForwardSolverFromFile_t( model_operator )
+            !
+            case( FWD_IT )
+                fwd_solver = ForwardSolverIT_t( model_operator, QMR )
+            !
+            case( FWD_IT_DC )
+                fwd_solver = ForwardSolverIT_DC_t( model_operator, QMR )
+            !
+            case default
+                fwd_solver = ForwardSolverIT_DC_t( model_operator, QMR )
+            !
+        end select
+        !
+        call fwd_solver%setCond( model_parameter )
+        !
+        ! Source - Chosen from control file
+        if( allocated( fwd_source ) ) deallocate( fwd_source )
+        select case ( trim( source_type ) )
+            !
+            case( SRC_MT_1D )
+                allocate( fwd_source, source = SourceMT_1D_t( model_operator, model_parameter ) )
+            !
+            case( SRC_MT_2D )
+                allocate( fwd_source, source = SourceMT_2D_t( model_operator, model_parameter ) )
+            !
+            case default
+                allocate( fwd_source, source = SourceMT_1D_t( model_operator, model_parameter ) )
+            !
+        end select
+        !
+        Tx => getTransmitter( fwd_info%tx_index )
+        !
+        call writeEsolutionHeader( Tx%n_pol )
+        !
+        ! Verbosis...
+        write( *, * ) "    Tx Id:", Tx%id, "Period:", int( Tx%period )
+        !
+        ! According to Tx type,
+        ! write the proper header in the "predicted_data.dat" file
+        if( fwd_info%tx_changed ) call writePredictedDataHeader( Tx, .FALSE. )
+        !
+        ! Tx points to its due Source
+        call Tx%setSource( fwd_source )
+        !
+        ! Set ForwardSolver Period
+        call fwd_solver%setPeriod( Tx%period )
+        !
+        ! Tx points to its due ForwardSolver
+        call Tx%setForwardSolver( fwd_solver )
+        !
+        ! Solve Tx Forward Modelling
+        call Tx%solveFWD()
+        !
+        deallocate( fwd_solver )
+        deallocate( fwd_source )
+        !
+        ! Loop over Receivers of each Transmitter
+        nRx = size( Tx%receiver_indexes )
+        !
+        do iRx = 1, nRx
+            !
+            ! Temporary Receiver alias
+            Rx => getReceiver( Tx%receiver_indexes( iRx ) )
+            !
+            ! Verbosis...
+            !write( *, * ) "                        Rx Id:", Rx%id, "XYZ:", Rx%location
+            !
+            ! Calculate Rx Predicted Data
+            call Rx%predictedData( model_operator, Tx )
+            !
+            do iDe = 1, size( Rx%data_handles )
+            !
+                call updateDataHandleArray( tx_data_handles, Rx%data_handles(iDe) )
+            !
+            end do
+            !
+        enddo
+        !
+        write ( *, * ) "WORKER ", mpi_rank, "FINISHES FWD FOR TX ", Tx%id, size( tx_data_handles )
+        !
+        ! SEND JOB DONE TO MASTER
+        fwd_info%job_name    = job_fwd_done
+        fwd_info%tx_index    = Tx%id
+        fwd_info%worker_rank = mpi_rank
+        !
+        call allocateDataBuffer( tx_data_handles )
+        fwd_info%n_data      = size( tx_data_handles )
+        fwd_info%data_size   = predicted_data_buffer_size
+        !
+        call sendTo( master_id )
+        !
+        call sendData( tx_data_handles )
+        !
+        deallocate( tx_data_handles )
+        !
+    end subroutine workerForwardModelling
+    !
+    !
+    subroutine handleJob()
+        implicit none
+        !
+        select case ( modem_job )
+          !
+        case ( "forward" )
+          !
+          call masterForwardModelling()
+          !
+        case default
+          !
+          write( *, * ) "    - Unknow job: [", trim( modem_job ), "]"
+          call printHelp()
+          !
+        end select
+        !
+    end subroutine handleJob
+    !
+    subroutine handleControlFile()
+        implicit none
+        !
+        type( ModEMControlFile_t ) :: control_file
+        !
+        write( *, * ) "    -> Control File: [", control_file_name, "]"
+        !
+        ! Instantiate the ControlFile object
+        ! Reads control file and sets the options in the Constants module
+        control_file = ModEMControlFile_t( ioStartup, control_file_name )
+        !
+    end subroutine handleControlFile
+    !
+    subroutine handleDataFile()
+        implicit none
+        !
+        type( DataManager_t ) :: data_manager
+        !
+        write( *, * ) "    -> Data File: [", data_file_name, "]"
+        !
+        data_manager = DataManager_t( data_file_name )
+        !
+        if( ( mpi_size - 1 ) > size( transmitters ) ) then
+            write( *, * ) "There are more MPI worker processes than necessary!!!"
+            write( *, * ) "     ", size( transmitters ), " Transmitters"
+            write( *, * ) "     ", ( mpi_size - 1 ), " MPI worker processes"
+            !
+            call MPI_Abort( main_comm, ierr )
+            !
+            stop
+        endif
+        !
+    end subroutine handleDataFile
+    !
+    subroutine handleModelFile()
+        implicit none
+        !
+        ! It remains to standardize ????
+        type( ModelReader_Weerachai_t ) :: model_reader
+        !
+        type( TAirLayers )                :: air_layer
+        !
+        write( *, * ) "    -> Model File: [", model_file_name, "]"
+        !
+        ! Read Grid and ModelParameter with ModelReader_Weerachai
+        call model_reader%Read( model_file_name, main_grid, model_parameter ) 
+        !
+        ! Instantiate the ModelOperator object
+        select type( main_grid )
+          !
+          class is( Grid3D_SG_t )
+              !
+              write( *, * ) "MASTER GRID: model_method, model_n_air_layer, model_max_height", model_method, model_n_air_layer, model_max_height
+              !
+              call main_grid%SetupAirLayers( air_layer, model_method, model_n_air_layer, model_max_height )
+              !
+              call main_grid%UpdateAirLayers( air_layer%nz, air_layer%dz )
+              !
+              model_operator = ModelOperator_MF_t( main_grid )
+              !
+              call model_parameter%setMetric( model_operator%metric )
+              !
+              call model_operator%SetEquations()
+              !
+              class default
+                  stop "Unclassified main_grid"
+              !
+        end select
+        !
+    end subroutine handleModelFile
+    !
+    subroutine handleArguments()
+        implicit none
+        !
+        character(200) :: argument
+        integer         :: argument_index
+        !
+        if ( command_argument_count() == 0 ) then
+          !
+          call printHelp()
+          !
+        else
+          !
+          argument_index = 1
+          !
+          do while(argument_index <= command_argument_count()) 
+                !
+                call get_command_argument( argument_index, argument )
+                !
+                select case ( argument )
+                    !
+                    case ( "-c", "--control" )
+                      !
+                      call get_command_argument( argument_index + 1, argument )
+                      control_file_name = trim( argument )
+                      !
+                      if ( len( control_file_name ) > 0 ) has_control_file = .true.
+                      !
+                      argument_index = argument_index + 2
+                      !
+                    case ( "-d", "--data" )
+                      !
+                      call get_command_argument( argument_index + 1, argument )
+                      data_file_name = trim( argument )
+                      !
+                      if ( len( data_file_name ) > 0 ) has_data_file = .true.
+                      !
+                      argument_index = argument_index + 2
+                      !
+                    case ( "-f", "--forward" )
+                      !
+                      modem_job = "forward"
+                      !
+                      argument_index = argument_index + 1
+                      !
+                    case ( "-m", "--model" )
+                      !
+                      call get_command_argument( argument_index + 1, argument )
+                      model_file_name = trim(argument)
+                      !
+                      if ( len( model_file_name ) > 0 ) has_model_file = .true.
+                      !
+                      argument_index = argument_index + 2
+                      !
+                    case ( "-v", "--version" )
+                      !
+                      write( *, * ) "    + ModEM-OO version 1.0.0"
+                      stop
+                      !
+                    case ( "-h", "--help" )
+                      !
+                      call printHelp()
+                      !
+                    case default
+                      !
+                      write( *, * ) "    - Unknow Argument: [", trim( argument ), "]"
+                      call printHelp()
+                      !
+                end select
+                !
+          end do
+          !
+        end if
+        !
+    end subroutine handleArguments
+    !
+    subroutine setupDefaultParameters()
+        implicit none
+        !
+        model_method      = MM_METHOD_FIXED_H
+        model_n_air_layer = 10
+        model_max_height  = 200.0
+        !
+        source_type = SRC_MT_1D
+        !
+        forward_solver_type = FWD_IT_DC
+        !
+    end subroutine setupDefaultParameters
+    !
+    subroutine writeEsolutionHeader( nMode )
+        implicit none
+        !
+        integer, intent( in ) :: nMode
+        !
+        integer            :: ios
+        character (len=20) :: version
+        !
+        !
+        open( ioESolution, file = "e_solution", action="write", form ="unformatted", iostat=ios )
+        !
+        if( ios == 0 ) then
+            !
+            version = ""
+            ! write the header (contains the basic information for the forward
+            ! modeling). the header is 4 lines
+            write( ioESolution ) version, size( transmitters ), nMode, &
+            main_grid%nx, main_grid%ny, main_grid%nz, main_grid%nzAir, &
+            main_grid%ox, main_grid%oy, main_grid%oz, main_grid%rotdeg
+            !
+            write( ioESolution ) main_grid%dx
+            write( ioESolution ) main_grid%dy
+            write( ioESolution ) main_grid%dz
+            !
+        else
+            write( *, * ) "writeEsolutionHeader: e_solution"
+            stop
+        endif
+        !
+    end subroutine writeEsolutionHeader
+    !
+    subroutine writePredictedDataHeader( Tx, create_file )
+        implicit none
+        !
+        class( Transmitter_t ), pointer, intent( in ) :: Tx
+        logical, intent( in )                         :: create_file
+        !
+        integer :: ios
+        !
+        if( create_file ) then
+            !
+            open( ioPredData, file = "predicted_data.dat", action="write", form = "formatted", iostat = ios )
+            !
+        else
+            !
+            open( ioPredData, file = "predicted_data.dat", action= "write", form = "formatted", position = "append", iostat = ios )
+            !
+        endif
+        !
+        if( ios == 0 ) then
+            !
+            write( ioPredData, "(4A, 100A)" ) "#    ", DATA_FILE_TITLE
+            write( ioPredData, "(4A, 100A)" ) "#    ", Tx%DATA_TITLE
+            write( ioPredData, "(4A, 100A)" ) ">    ", trim( Tx%type_name )
+            write( ioPredData, "(4A, 100A)" ) ">    ", "exp(-i\omega t)"
+            write( ioPredData, "(4A, 100A)" ) ">    ", "[V/m]/[T]"
+            write( ioPredData, "(7A, 100A)" ) ">        ", "0.00"
+            write( ioPredData, "(7A, 100A)" ) ">        ", "0.000    0.000"
+            write( ioPredData, "(A3, i8, i8)" ) ">        ", size( transmitters ), size( receivers )
+            !
+            close( ioPredData )
+            !
+        else
+            stop "Error opening predicted_data.dat in writePredictedDataHeader"
+        endif
+        !
+    end subroutine writePredictedDataHeader
+    !
+    subroutine printHelp()
+        implicit none
+        !
+        write( *, * ) "ModEM-OO Usage:"
+        write( *, * ) ""
+        write( *, * ) "    Flags to define a job:"
+        write( *, * ) "        [-f], [--forward] : Forward modelling."
+        write( *, * ) "        [-i], [--inverse] : Inversion modelling."
+        write( *, * )
+        write( *, * ) "    Other arguments:"
+        write( *, * ) "        [-d], [--data]     : Flags for data file path."
+        write( *, * ) "        [-m], [--model]    : Flags for model file path."
+        write( *, * ) "        [-c], [--control] : Flags for user control file path."
+        write( *, * ) "        [-v], [--version] : Print version."
+        write( *, * ) "        [-h], [--help]     : Print usage information."
+        !
+        write( *, * ) ""
+        write( *, * ) "Version 1.0.0"
+        !
+        stop
+        !
+    end subroutine printHelp
 
 end program ModEM

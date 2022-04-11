@@ -17,7 +17,7 @@ module ModelParameter1D
      ! NzAir = 0 -- more generally this might be a
      ! completely different grid.
      real(kind=prec), allocatable, dimension(:) :: cellCond
-     integer             :: mKey
+     integer             :: mKey(8)
      character(len = 80) :: paramType   = ''
      real(kind = prec)   :: airCond     = 1E-10
      !   model grid
@@ -117,7 +117,7 @@ contains
     character(len=80),intent(in) :: paramType
     real(kind=prec),intent(in), dimension(:) :: CellCond
     real(kind=prec), intent(in) :: AirCond
-    integer, intent(in)   :: mKey
+    integer, intent(in)   :: mKey(8)
     !  local variables
     integer :: nz
     

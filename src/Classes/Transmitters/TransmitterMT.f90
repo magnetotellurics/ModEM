@@ -21,7 +21,6 @@ module TransmitterMT
          !
          procedure, public :: solveFWD  => solveFWDTransmitterMT
          !
-         !procedure, public :: sizeOf => sizeOfTransmitterMT
          procedure, public :: isEqual => isEqualTransmitterMT
          procedure, public :: write   => writeTransmitterMT
          !
@@ -34,30 +33,28 @@ module TransmitterMT
    contains
    !
    ! TransmitterMT constructor
-   function TransmitterMT_ctor( id, period, type ) result ( self )
+   function TransmitterMT_ctor( period, type_name ) result ( self )
       implicit none
       !
       type( TransmitterMT_t ) :: self
       !
-      integer, intent( in )           :: id
       real( kind=prec ), intent( in ) :: period
-      character(:), allocatable, optional, intent( in ) :: type
+      character(:), allocatable, optional, intent( in ) :: type_name
       !
       !write(*,*) "Constructor TransmitterMT_t"
       !
       call self%init()
       !
-      self%id = id
       self%n_pol = 2
       !
       allocate( cVector3D_SG_t :: self%e_all( self%n_pol ) )
       !
       self%period = period
       !
-      if( present( type ) ) then
-         self%type = type
+      if( present( type_name ) ) then
+         self%type_name = type_name
       else
-         self%type = "TransmitterMT_t"
+         self%type_name = "TransmitterMT_t"
       endif
       !
       self%DATA_TITLE = "Period(s) Code GG_Lat GG_Lon X(m) Y(m) Z(m) Component Real Imag Error"
@@ -100,7 +97,7 @@ module TransmitterMT
       ! Loop over all polarizations (MT n_pol = 2)
       do i_pol = 1, self%n_pol
          !
-         write(*,*) "MT Tx Solve for Polarization", i_pol
+         write(*,*) "MT Tx ", self%id, " Solve for Polarization", i_pol
          !
          ! Set Source E
          !   DO NOT WANT TO MODIFY SOURCE INSIDE FWDsolve (for inversion!)
@@ -111,7 +108,6 @@ module TransmitterMT
          allocate( e_solution, source = self%source%model_operator%createVector() )
          !
          call self%forward_solver%getESolution( self%source, e_solution )
-         !
          !
          if( i_pol == 1 ) then
             ModeName = "Ey"
@@ -161,39 +157,20 @@ module TransmitterMT
       !
       class( TransmitterMT_t ), intent( in ) :: self
       !
-      integer :: iRx, nRx
-      !
-      nRx = self%getNRx()
+      integer :: iRx
       !
       write(*,*) "Write TransmitterMT_t: ", self%id,   &
       " Period: ",   self%period,   &
       "fwd_key: ",   self%fwd_key(1), self%fwd_key(2), self%fwd_key(3), self%fwd_key(4),   &
                   self%fwd_key(5), self%fwd_key(6), self%fwd_key(7), self%fwd_key(8),   &
-      " N Receivers: ", nRx
+      " N Receivers: ", size( self%receiver_indexes )
       !
-      do iRx = 1, nRx
-         write(*,*) "   ", self%get( iRx )
-      enddo
+      !do iRx = 1, size( self%receiver_indexes )
+         !
+         !write(*,*) self%receiver_indexes( iRx )
+         !
+      !enddo
       !
    end subroutine writeTransmitterMT
-   !
-   !function sizeOfTransmitterMT( self ) result( size )
-      !
-      !class( TransmitterMT_t ), intent( in ) :: self
-      !integer                                :: size
-	  !
-	  !size = sizeof( self%id ) + &
-	         !sizeof( self%n_pol ) + &
-			 !sizeof( self%fwd_key ) + &
-			 !sizeof( self%type ) + &
-	         !sizeof( self%period ) + &
-			 !sizeof( self%forward_solver ) + &
-			 !sizeof( self%e_all ) + &
-			 !sizeof( self%receiver_indexes ) + &
-			 !sizeof( self%DATA_TITLE )
-	  !
-	  !write( *, * ) "Size: ", size
-	  !
-   !end function sizeOfTransmitterMT
    !
 end module TransmitterMT
