@@ -22,16 +22,14 @@
 # MODULE = -fmod=$(OBJDIR)
 # LIBS = -lblas -llapack
 #  Uncomment these lines to make program with Intel compiler
-#include Makefile.local
-#OBJDIR = ../objs/3D_MT/ifortReleaseMPI
-#F90 = mpiifort #-f90=ifort #ifort
-#FFLAGS =  -parallel -debug all -check bounds #-openmp #-heap-arrays
-##FFLAGS = -debug all -check bounds -traceback -heap-arrays
-#MPIFLAGS = -cpp -DMPI # for serial code
-#MODULE = -module $(OBJDIR)
-##LIBS = -lblas -llapack
-#LIBS_PATH = -L/usr/lib64  -L/usr/lib/x86_64-linux-gnu -L/mnt/disks/code/ModEM_working_New_1DCSEM/quadpack
-#LIBS = -llapack -lblas -lfftw3l -lfftw3f -lfftw3 #-lquadpack_dbl
+# include Makefile.local
+# OBJDIR = ./objs/3D_MT/IFortDebug
+# F90 = ifort
+# FFLAGS = -O3 -parallel -openmp #-heap-arrays
+# FFLAGS = -debug all -check bounds -traceback -heap-arrays
+# MPIFLAGS = -cpp # for serial code
+# MODULE = -module $(OBJDIR)
+# LIBS = -lblas -llapack
 #  Uncomment these lines to make program with PGI compiler
 # include Makefile.local
 # OBJDIR = ./objs/3D_MT/PGIDebug
@@ -46,9 +44,10 @@
 
 # ------------------Macro-Defs---------------------
 include Makefile.local
-OBJDIR = ./objs/3D_MT/GFortReleaseMPI
-F90 = mpifort 
-FFLAGS = -O3 -g -ffree-line-length-none -Wno-all -static 
+OBJDIR = ../../objs/3D_MT/GFortReleaseMPI
+#F90 = mpif90
+F90 = tau_f90.sh -optRevert -optDetectMemoryLeaks -optVerbose -optPdtF90Parser=/mnt/c/Users/protew/Desktop/ON/TAU/pdtoolkit-3.25.1/x86_64/bin/f90parse -tau_makefile=/mnt/c/Users/protew/Desktop/ON/TAU/tau-2.31/x86_64/lib/Makefile.tau-mpi-pdt
+FFLAGS = -O3 -g -ffree-line-length-none -Wno-all -static
 MPIFLAGS = -x f95-cpp-input -DMPI -I/usr/include/
 MODULE = -J $(OBJDIR)
 LIBS_PATH = -L/usr/lib64  -L/usr/lib/x86_64-linux-gnu #-L/mnt/disks/code/ModEM_working_New_1DCSEM/quadpack
@@ -231,14 +230,14 @@ $(OBJDIR)/UserCtrl.o:./UserCtrl.f90 $(OBJDIR)/utilities.o
 $(OBJDIR)/Sub_MPI.o:3D_MT/Sub_MPI.f90 $(OBJDIR)/math_constants.o $(OBJDIR)/utilities.o $(OBJDIR)/SolnSpace.o $(OBJDIR)/UserCtrl.o $(OBJDIR)/ForwardSolver.o $(OBJDIR)/Declaration_MPI.o 
 	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) 3D_MT/Sub_MPI.f90 -o $(OBJDIR)/Sub_MPI.o
 
-$(OBJDIR)/ioAscii.o:3D_MT/ioMod/ioAscii.f90 $(OBJDIR)/GridDef.o $(OBJDIR)/math_constants.o $(OBJDIR)/EMsolve3D.o $(OBJDIR)/DataSpace.o $(OBJDIR)/DataFunc.o $(OBJDIR)/ForwardSolver.o $(OBJDIR)/transmitters.o $(OBJDIR)/receivers.o $(OBJDIR)/dataTypes.o 
-	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) 3D_MT/ioMod/ioAscii.f90 -o $(OBJDIR)/ioAscii.o
-	 
 $(OBJDIR)/Main_MPI.o:MPI/Main_MPI.f90 $(OBJDIR)/math_constants.o $(OBJDIR)/file_units.o $(OBJDIR)/utilities.o $(OBJDIR)/DataSens.o $(OBJDIR)/SolverSens.o $(OBJDIR)/ForwardSolver.o $(OBJDIR)/SensComp.o $(OBJDIR)/Declaration_MPI.o $(OBJDIR)/Sub_MPI.o 
 	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) MPI/Main_MPI.f90 -o $(OBJDIR)/Main_MPI.o
 
 $(OBJDIR)/SymmetryTest.o:SENS/SymmetryTest.f90 $(OBJDIR)/SensComp.o $(OBJDIR)/Main_MPI.o 
 	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) SENS/SymmetryTest.f90 -o $(OBJDIR)/SymmetryTest.o
+
+$(OBJDIR)/ioAscii.o:3D_MT/ioMod/ioAscii.f90 $(OBJDIR)/GridDef.o $(OBJDIR)/math_constants.o $(OBJDIR)/EMsolve3D.o $(OBJDIR)/DataSpace.o $(OBJDIR)/DataFunc.o $(OBJDIR)/ForwardSolver.o $(OBJDIR)/transmitters.o $(OBJDIR)/receivers.o $(OBJDIR)/dataTypes.o 
+	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) 3D_MT/ioMod/ioAscii.f90 -o $(OBJDIR)/ioAscii.o
 
 $(OBJDIR)/DataIO.o:3D_MT/DataIO.f90 $(OBJDIR)/math_constants.o $(OBJDIR)/file_units.o $(OBJDIR)/utilities.o $(OBJDIR)/DataSpace.o $(OBJDIR)/GridCalc.o $(OBJDIR)/transmitters.o $(OBJDIR)/receivers.o $(OBJDIR)/dataTypes.o 
 	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) 3D_MT/DataIO.f90 -o $(OBJDIR)/DataIO.o

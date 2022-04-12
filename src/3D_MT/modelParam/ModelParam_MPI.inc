@@ -8,7 +8,7 @@ subroutine create_model_param_place_holder(sigma_mpi)
 
      type (modelParam_t), intent(in)   	        :: sigma_mpi
      integer                                    ::v_size,Nbytes1,Nbytes2,sumbytes                  
-         v_size=size(sigma_mpi%cellCond%v)
+         v_size=size(sigma_mpi%cellCond_h%v)
 		 
 		 Nbytes=0
 		 CALL MPI_PACK_SIZE(3, MPI_INTEGER, MPI_COMM_WORLD, Nbytes1,  ierr)
@@ -45,13 +45,13 @@ subroutine Pack_model_para_values(sigma_mpi)
     type (modelParam_t), intent(in)   	        :: sigma_mpi
     integer                                     :: index,v_size
 
-       v_size=size(sigma_mpi%cellCond%v)
+       v_size=size(sigma_mpi%cellCond_h%v)
        index=1
 	   call MPI_Pack(sigma_mpi%nx,1, MPI_INTEGER, sigma_para_vec, Nbytes, index, MPI_COMM_WORLD, ierr)
 	   call MPI_Pack(sigma_mpi%ny,1, MPI_INTEGER, sigma_para_vec, Nbytes, index, MPI_COMM_WORLD, ierr)
 	   call MPI_Pack(sigma_mpi%NzEarth,1, MPI_INTEGER, sigma_para_vec, Nbytes, index, MPI_COMM_WORLD, ierr)
 	   
-       call MPI_Pack(sigma_mpi%cellCond%v(1,1,1),v_size, MPI_DOUBLE_PRECISION, sigma_para_vec, Nbytes, index, MPI_COMM_WORLD, ierr)
+       call MPI_Pack(sigma_mpi%cellCond_h%v(1,1,1),v_size, MPI_DOUBLE_PRECISION, sigma_para_vec, Nbytes, index, MPI_COMM_WORLD, ierr)
 	   call MPI_Pack(sigma_mpi%AirCond,1, MPI_DOUBLE_PRECISION, sigma_para_vec, Nbytes, index, MPI_COMM_WORLD, ierr)
 	   
 	   call MPI_Pack(sigma_mpi%allocated,1, MPI_LOGICAL, sigma_para_vec, Nbytes, index, MPI_COMM_WORLD, ierr)
@@ -71,13 +71,13 @@ subroutine Unpack_model_para_values(sigma_mpi)
     type (modelParam_t), intent(inout)   	    :: sigma_mpi
     integer                                     :: index,v_size
 
-       v_size=size(sigma_mpi%cellCond%v)
+       v_size=size(sigma_mpi%cellCond_h%v)
        index=1
 	   call MPI_Unpack(sigma_para_vec, Nbytes, index,sigma_mpi%nx,1, MPI_INTEGER,MPI_COMM_WORLD, ierr)
 	   call MPI_Unpack(sigma_para_vec, Nbytes, index,sigma_mpi%ny,1, MPI_INTEGER,MPI_COMM_WORLD, ierr)
 	   call MPI_Unpack(sigma_para_vec, Nbytes, index,sigma_mpi%NzEarth,1, MPI_INTEGER,MPI_COMM_WORLD, ierr)
 	   
-       call MPI_Unpack(sigma_para_vec, Nbytes, index,sigma_mpi%cellCond%v(1,1,1),v_size, MPI_DOUBLE_PRECISION,MPI_COMM_WORLD, ierr)
+       call MPI_Unpack(sigma_para_vec, Nbytes, index,sigma_mpi%cellCond_h%v(1,1,1),v_size, MPI_DOUBLE_PRECISION,MPI_COMM_WORLD, ierr)
 	   call MPI_Unpack(sigma_para_vec, Nbytes, index,sigma_mpi%AirCond,1, MPI_DOUBLE_PRECISION,MPI_COMM_WORLD, ierr)
 	   
 	   call MPI_Unpack(sigma_para_vec, Nbytes, index,sigma_mpi%allocated,1, MPI_LOGICAL,MPI_COMM_WORLD, ierr)

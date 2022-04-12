@@ -44,9 +44,9 @@
 
 # ------------------Macro-Defs---------------------
 include Makefile.local
-OBJDIR = ../../objs/3D_MT/GFortReleaseMPI
-F90 = mpif90 
-FFLAGS = -O3 -ffree-line-length-none -Wno-all
+OBJDIR = ../objs/3D_MT/GFortReleaseMPI
+F90 = mpifort 
+FFLAGS = -O3 -ffree-line-length-none -Wno-all  -static
 MPIFLAGS = -x f95-cpp-input -DMPI -I/usr/include/
 MODULE = -J $(OBJDIR)
 LIBS_PATH = -L/usr/lib64  -L/usr/lib/x86_64-linux-gnu

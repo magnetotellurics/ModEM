@@ -8,12 +8,13 @@ module Main_MPI
   use SolverSens  
   use ForwardSolver
   use SensComp
-  
+  use ioAscii
   use Declaration_MPI
   use Sub_MPI
       !use ioascii
 
   implicit none
+
 
 
   ! temporary EM fields, that are saved for efficiency - to avoid
@@ -65,10 +66,10 @@ Subroutine Master_Job_fwdPred(sigma,d1,eAll)
 
 
    Integer        :: iper
-   Integer        :: per_index,pol_index,stn_index,iTx,i,iDt,j
+   Integer        :: per_index,pol_index,stn_index,iTx,i,iDt,j,ios
    character(80)                        :: job_name
-
-
+  type(solnVectorMTX_t) eAll_temp
+   Character(len=50) :: filename 
 
 
 
@@ -107,9 +108,30 @@ Subroutine Master_Job_fwdPred(sigma,d1,eAll)
  ! A.Kelbert 2018-01-28
     Call EdgeLength(grid, l_E)
     Call FaceArea(grid, S_F)
-          
+         
+		 
  ! Compute the model Responces           
    do iTx=1,nTx
+        !Read results in a file. Naser changes: 14.06.2021.
+		if (eAll%solns(iTx)%nPol .eq. 2) then
+			WRITE (filename, '(a,I3.3,a,I1,a)') 'E_solution_Per',iTx, '_Pol',1,'.soln'
+			open (unit=ioE,file=filename,status='unknown', form ='unformatted',iostat=ios)
+			call read_cvector(ioE, eAll%solns(iTx)%pol(1), 'binary')
+			close(ioE)
+			WRITE (filename, '(a,I3.3,a,I1,a)') 'E_solution_Per',iTx, '_Pol',2,'.soln'
+			open (unit=ioE,file=filename,status='unknown', form ='unformatted',iostat=ios)
+			call read_cvector(ioE, eAll%solns(iTx)%pol(2), 'binary')
+			close(ioE)	
+		 else
+			WRITE (filename, '(a,I3.3,a,I1,a)') 'E_solution_Per',iTx, '_Pol',1,'.soln'
+			open (unit=ioE,file=filename,status='unknown', form ='unformatted',iostat=ios)
+			call read_cvector(ioE, eAll%solns(iTx)%pol(1), 'binary')
+			close(ioE)
+			 ! WRITE (filename, '(a,I3.3,a,I1,a)') 'E_solution_Per',iTx, '_Pol',1,'.soln'
+			 ! call read_solnVectorMTX(grid,eAll_temp,filename)
+			 ! eAll%solns(iTx)%pol(1)=eAll_temp%solns(1)%pol(1)	 
+		 end if
+	 
       do i = 1,d1%d(iTx)%nDt
          d1%d(iTx)%data(i)%errorBar = .false.
          iDt = d1%d(iTx)%data(i)%dataType
@@ -130,7 +152,7 @@ Subroutine Master_Job_fwdPred(sigma,d1,eAll)
                 time_used = endtime-starttime
         write(ioMPI,*)'FWD: TIME REQUIERED: ',time_used ,'s'
         call deall (e0)  
-
+        call deall (eAll_temp)
 end subroutine Master_Job_fwdPred
 
 
@@ -881,15 +903,14 @@ Subroutine Worker_job (sigma,d)
    character(20)                               :: which_proc
  
    type(modelParam_t), pointer   :: Jreal(:),Jimag(:)
-   integer                       ::nComp,nFunc,iFunc,istat
+   integer                       ::nComp,nFunc,iFunc,istat,ios
    logical                       :: isComplex  
    type(sparseVector_t), pointer	:: L(:)
    type(modelParam_t), pointer    :: Qreal(:),Qimag(:)
    logical      :: Qzero
- 
-
-      
-       
+   Character(len=50) :: filename 
+   type(solnVectorMTX_t)	:: eAll_temp
+    
 nTx=d%nTx
 recv_loop=0
 previous_message=''
@@ -928,17 +949,35 @@ if (trim(worker_job_task%what_to_do) .eq. 'FORWARD') then
 		       call fwdSolve(per_index,e0,b0)
                call reset_e_soln(e0)
 
-     
+              
+                    !Write results in a file. Naser changes: 14.06.2021.  
+					WRITE (filename, '(a,I3.3,a,I1,a)') 'E_solution_Per',per_index, '_Pol',pol_index,'.soln'
+					open (unit=ioE,file=filename,status='unknown', form ='unformatted',iostat=ios)
+					call write_cvector(ioE, e0%pol(1), 'binary')
+					close(ioE)
+					
+					! call create_solnVectorMTX(1,eAll_temp)
+					! call create_solnVector(grid,1,e0)
+					! call copy_solnVector(eAll_temp%solns(1),e0) 
+					! call write_solnVectorMTX(eAll_temp,filename)
+					! call deall (eAll_temp) 
+				  	
+					
+                    					
+        
  		      ! Create worker job package and send it to the master
 		            call create_worker_job_task_place_holder
 		            call Pack_worker_job_task
 		            call MPI_SEND(worker_job_package,Nbytes, MPI_PACKED,0,FROM_WORKER, MPI_COMM_WORLD, ierr)
-		            
+		       
+
+		   
 		      ! Create e0_temp package (one Period and one Polarization) and send it to the master
               which_pol=1
-		      call create_e_param_place_holder(e0) 
-		      call Pack_e_para_vec(e0)
-		      call MPI_SEND(e_para_vec, Nbytes, MPI_PACKED, 0,FROM_WORKER, MPI_COMM_WORLD, ierr) 
+			  !STOP Sending e solution from workers. Naser changes: 14.06.2021. The following 3 lines are deactivated
+		      !call create_e_param_place_holder(e0) 
+		      !call Pack_e_para_vec(e0)
+		      !call MPI_SEND(e_para_vec, Nbytes, MPI_PACKED, 0,FROM_WORKER, MPI_COMM_WORLD, ierr) 
 
               !deallocate(e_para_vec,worker_job_package)
               call exitSolver(e0)
@@ -1079,6 +1118,7 @@ elseif (trim(worker_job_task%what_to_do) .eq. 'JmultT') then
 		            call MPI_RECV(e_para_vec, Nbytes, MPI_PACKED, 0, FROM_MASTER,MPI_COMM_WORLD, STATUS, ierr)
                     call Unpack_e_para_vec(e0)
                   end do
+				  
                       write(6,'(a12,a18,i5,a12)') node_info, ' Finished Receiving ' , orginal_nPol, ' from Master'
 
             call LmultT(e0,sigma,d%d(per_index),comb)
@@ -1296,12 +1336,11 @@ subroutine Master_job_Distribute_Taskes(job_name,nTx,sigma,eAll_out,eAll_in)
                        which_per=worker_job_task%per_index
                        which_pol=worker_job_task%pol_index
 
-                   
-                   call create_e_param_place_holder(eAll_out%solns(which_per))
-                   call MPI_RECV(e_para_vec, Nbytes, MPI_PACKED, who, FROM_WORKER,MPI_COMM_WORLD, STATUS, ierr)
-                   !call get_nPol_MPI(eAll_out%solns(which_per)) 
-                   !if (nPol_MPI==1)  which_pol=1
-                   call Unpack_e_para_vec(eAll_out%solns(which_per))
+            !STOP Receiving e solution from workers. Naser changes: 14.06.2021. The following 3 lines are deactivated    
+            !call create_e_param_place_holder(eAll_out%solns(which_per))
+            !call MPI_RECV(e_para_vec, Nbytes, MPI_PACKED, who, FROM_WORKER,MPI_COMM_WORLD, STATUS, ierr)
+            !call Unpack_e_para_vec(eAll_out%solns(which_per))
+			
                    write(ioMPI,'(a10,a16,i5,a8,i5,a11,i5)')trim(job_name) ,': Recieve Per # ',which_per ,' and Pol # ', which_pol ,' from ', who 
                    ! Writting into the solver's diagonestic file.
 				   ! Naser and Paulo 02.10.2019

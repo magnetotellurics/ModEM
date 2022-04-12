@@ -1,0 +1,74 @@
+23 templated_functions_MULTI_TIME
+# Name Calls Subrs Excl Incl ProfileCalls # <metadata><attribute><name>Metric Name</name><value>TIME</value></attribute><attribute><name>CPU Cores</name><value>4</value></attribute><attribute><name>CPU MHz</name><value>3600.000</value></attribute><attribute><name>CPU Type</name><value>Intel(R) Core(TM) i7-7700 CPU @ 3.60GHz</value></attribute><attribute><name>CPU Vendor</name><value>GenuineIntel</value></attribute><attribute><name>CWD</name><value>/mnt/c/Users/protew/Desktop/ON/GITLAB_PROJECTS/modem-on/src</value></attribute><attribute><name>Cache Size</name><value>256 KB</value></attribute><attribute><name>Command Line</name><value>./Mod3DMT_SP2 -F ../inputs_workbench/Naser_CSEM/rFile_Model ../inputs_workbench/Naser_CSEM/rFile_Data predicted_data</value></attribute><attribute><name>Ending Timestamp</name><value>1647956647986288</value></attribute><attribute><name>Executable</name><value>/mnt/c/Users/protew/Desktop/ON/GITLAB_PROJECTS/modem-on/src/Mod3DMT_SP2</value></attribute><attribute><name>Hostname</name><value>capricorn</value></attribute><attribute><name>Local Time</name><value>2022-03-22T10:33:44-03:00</value></attribute><attribute><name>MPI Processor Name</name><value>capricorn</value></attribute><attribute><name>Memory Size</name><value>16637580 kB</value></attribute><attribute><name>Node Name</name><value>capricorn</value></attribute><attribute><name>OS Machine</name><value>x86_64</value></attribute><attribute><name>OS Name</name><value>Linux</value></attribute><attribute><name>OS Release</name><value>4.4.0-19041-Microsoft</value></attribute><attribute><name>OS Version</name><value>#1237-Microsoft Sat Sep 11 14:32:00 PST 2021</value></attribute><attribute><name>Starting Timestamp</name><value>1647956024784951</value></attribute><attribute><name>TAU Architecture</name><value>default</value></attribute><attribute><name>TAU Config</name><value> -bfd=download -mpi -pdt=/mnt/c/Users/protew/Desktop/ON/TAU/pdtoolkit-3.25.1</value></attribute><attribute><name>TAU Makefile</name><value>/mnt/c/Users/protew/Desktop/ON/TAU/tau-2.31/x86_64/lib/Makefile.tau-mpi-pdt</value></attribute><attribute><name>TAU Version</name><value>2.30.2-git</value></attribute><attribute><name>TAU_BFD_LOOKUP</name><value>on</value></attribute><attribute><name>TAU_CALLPATH</name><value>on</value></attribute><attribute><name>TAU_CALLPATH_DEPTH</name><value>100</value></attribute><attribute><name>TAU_CALLSITE_DEPTH</name><value>1</value></attribute><attribute><name>TAU_COMM_MATRIX</name><value>on</value></attribute><attribute><name>TAU_COMPENSATE</name><value>off</value></attribute><attribute><name>TAU_CUDA_BINARY_EXE</name><value></value></attribute><attribute><name>TAU_CUPTI_API</name><value>runtime</value></attribute><attribute><name>TAU_CURRENT_TIMER_EXIT_PARAMS</name><value>on</value></attribute><attribute><name>TAU_EBS_KEEP_UNRESOLVED_ADDR</name><value>off</value></attribute><attribute><name>TAU_ENABLE_THREAD_CONTEXT</name><value>off</value></attribute><attribute><name>TAU_IBM_BG_HWP_COUNTERS</name><value>off</value></attribute><attribute><name>TAU_MAX_THREADS</name><value>1</value></attribute><attribute><name>TAU_MEASURE_TAU</name><value>off</value></attribute><attribute><name>TAU_MEMDBG_PROTECT_ABOVE</name><value>off</value></attribute><attribute><name>TAU_MEMDBG_PROTECT_BELOW</name><value>off</value></attribute><attribute><name>TAU_MEMDBG_PROTECT_FREE</name><value>off</value></attribute><attribute><name>TAU_OPENMP_RUNTIME</name><value>on</value></attribute><attribute><name>TAU_OPENMP_RUNTIME_EVENTS</name><value>on</value></attribute><attribute><name>TAU_OPENMP_RUNTIME_STATES</name><value>off</value></attribute><attribute><name>TAU_OUTPUT_CUDA_CSV</name><value>off</value></attribute><attribute><name>TAU_PAPI_MULTIPLEXING</name><value>off</value></attribute><attribute><name>TAU_PROFILE</name><value>on</value></attribute><attribute><name>TAU_PROFILE_FORMAT</name><value>profile</value></attribute><attribute><name>TAU_RECYCLE_THREADS</name><value>off</value></attribute><attribute><name>TAU_REGION_ADDRESSES</name><value>off</value></attribute><attribute><name>TAU_SAMPLING</name><value>off</value></attribute><attribute><name>TAU_SHOW_MEMORY_FUNCTIONS</name><value>off</value></attribute><attribute><name>TAU_SIGNALS_GDB</name><value>off</value></attribute><attribute><name>TAU_THROTTLE</name><value>on</value></attribute><attribute><name>TAU_THROTTLE_NUMCALLS</name><value>100000</value></attribute><attribute><name>TAU_THROTTLE_PERCALL</name><value>10</value></attribute><attribute><name>TAU_TRACE</name><value>off</value></attribute><attribute><name>TAU_TRACE_FORMAT</name><value>tau</value></attribute><attribute><name>TAU_TRACK_CUDA_CDP</name><value>off</value></attribute><attribute><name>TAU_TRACK_CUDA_ENV</name><value>off</value></attribute><attribute><name>TAU_TRACK_CUDA_INSTRUCTIONS</name><value></value></attribute><attribute><name>TAU_TRACK_CUDA_SASS</name><value>off</value></attribute><attribute><name>TAU_TRACK_HEADROOM</name><value>off</value></attribute><attribute><name>TAU_TRACK_HEAP</name><value>on</value></attribute><attribute><name>TAU_TRACK_IO_PARAMS</name><value>off</value></attribute><attribute><name>TAU_TRACK_MEMORY_FOOTPRINT</name><value>off</value></attribute><attribute><name>TAU_TRACK_MEMORY_LEAKS</name><value>on</value></attribute><attribute><name>TAU_TRACK_MESSAGE</name><value>on</value></attribute><attribute><name>TAU_TRACK_SIGNALS</name><value>off</value></attribute><attribute><name>TAU_TRACK_UNIFIED_MEMORY</name><value>off</value></attribute><attribute><name>TAU_VERBOSE_RANK</name><value>-1</value></attribute><attribute><name>Timestamp</name><value>1647956024804663</value></attribute><attribute><name>UTC Time</name><value>2022-03-22T13:33:44Z</value></attribute><attribute><name>pid</name><value>13317</value></attribute><attribute><name>tid</name><value>13317</value></attribute><attribute><name>username</name><value>protew</value></attribute></metadata>
+".TAU application" 1 2554 1993504 623564217 0 GROUP="TAU_DEFAULT" 
+"MPI_Init()  " 1 0 1003230 1003230 0 GROUP="MPI" 
+".TAU application => MPI_Init()  " 1 0 1003230 1003230 0 GROUP="TAU_CALLPATH|MPI" 
+"MPI_Comm_rank()  " 1 0 62 62 0 GROUP="MPI" 
+".TAU application => MPI_Comm_rank()  " 1 0 62 62 0 GROUP="TAU_CALLPATH|MPI" 
+"MPI_Comm_size()  " 1 0 97 97 0 GROUP="MPI" 
+".TAU application => MPI_Comm_size()  " 1 0 97 97 0 GROUP="TAU_CALLPATH|MPI" 
+"MPI_Pack_size()  " 776 0 2998 2998 0 GROUP="MPI" 
+".TAU application => MPI_Pack_size()  " 776 0 2998 2998 0 GROUP="TAU_CALLPATH|MPI" 
+"MPI_Pack()  " 755 0 6123 6123 0 GROUP="MPI" 
+".TAU application => MPI_Pack()  " 755 0 6123 6123 0 GROUP="TAU_CALLPATH|MPI" 
+"MPI_Send()  " 57 0 2774304 2774304 0 GROUP="MPI" 
+".TAU application => MPI_Send()  " 57 0 2774304 2774304 0 GROUP="TAU_CALLPATH|MPI" 
+"MPI_Bcast()  " 1 0 5610 5610 0 GROUP="MPI" 
+".TAU application => MPI_Bcast()  " 1 0 5610 5610 0 GROUP="TAU_CALLPATH|MPI" 
+"MPI_Recv()  " 94 0 617142498 617142498 0 GROUP="MPI" 
+".TAU application => MPI_Recv()  " 94 0 617142498 617142498 0 GROUP="TAU_CALLPATH|MPI" 
+"MPI_Unpack()  " 866 0 275304 275304 0 GROUP="MPI" 
+".TAU application => MPI_Unpack()  " 866 0 275304 275304 0 GROUP="TAU_CALLPATH|MPI" 
+"MPI_Barrier()  " 1 0 101 101 0 GROUP="MPI" 
+".TAU application => MPI_Barrier()  " 1 0 101 101 0 GROUP="TAU_CALLPATH|MPI" 
+"MPI_Finalize()  " 1 0 360386 360386 0 GROUP="MPI" 
+".TAU application => MPI_Finalize()  " 1 0 360386 360386 0 GROUP="TAU_CALLPATH|MPI" 
+0 aggregates
+46 userevents
+# eventname numevents max min mean sumsqr
+"Heap Memory Used (KB) at Entry" 2555 2741.5126953125 148.234375 2739.485716196796 19188118180.47604
+"Heap Memory Used (KB) at Entry : .TAU application" 1 148.234375 148.234375 148.234375 21973.42993164062
+"Heap Memory Used (KB) at Entry : MPI_Init()  " 1 155.859375 155.859375 155.859375 24292.14477539062
+"Heap Allocate" 19084 1051832 1 202.2527247956403 1432706279979
+"Heap Allocate : MPI_Init()  " 19084 1051832 1 202.2527247956403 1432706279979
+"Heap Memory Used (KB)" 30835 2742.2578125 0.0390625 1007.878434389949 55426972889.19486
+"Heap Free" 10395 65544 1 103.5734487734488 13911037098
+"Heap Free : MPI_Init()  " 10395 65544 1 103.5734487734488 13911037098
+"Heap Memory Used (KB) at Exit" 2555 2741.5126953125 2741.5126953125 2741.5126953125 19203103698.61845
+"Heap Memory Used (KB) at Exit : MPI_Init()  " 1 2741.5126953125 2741.5126953125 2741.5126953125 7515891.858559608
+"Increase in Heap Memory (KB)" 2 2593.2783203125 2585.6533203125 2589.4658203125 13410695.53944588
+"Increase in Heap Memory (KB) : MPI_Init()  " 1 2585.6533203125 2585.6533203125 2585.6533203125 6685603.092843056
+"Heap Memory Used (KB) at Entry : MPI_Comm_rank()  " 1 2741.5126953125 2741.5126953125 2741.5126953125 7515891.858559608
+"Heap Memory Used (KB) at Exit : MPI_Comm_rank()  " 1 2741.5126953125 2741.5126953125 2741.5126953125 7515891.858559608
+"Heap Memory Used (KB) at Entry : MPI_Comm_size()  " 1 2741.5126953125 2741.5126953125 2741.5126953125 7515891.858559608
+"Heap Memory Used (KB) at Exit : MPI_Comm_size()  " 1 2741.5126953125 2741.5126953125 2741.5126953125 7515891.858559608
+"Heap Memory Used (KB) at Entry : MPI_Pack_size()  " 776 2741.5126953125 2741.5126953125 2741.5126953125 5832332082.242256
+"Heap Memory Used (KB) at Exit : MPI_Pack_size()  " 776 2741.5126953125 2741.5126953125 2741.5126953125 5832332082.242256
+"Heap Memory Used (KB) at Entry : MPI_Pack()  " 755 2741.5126953125 2741.5126953125 2741.5126953125 5674498353.212504
+"Heap Memory Used (KB) at Exit : MPI_Pack()  " 755 2741.5126953125 2741.5126953125 2741.5126953125 5674498353.212504
+"Heap Memory Used (KB) at Entry : MPI_Send()  " 57 2741.5126953125 2741.5126953125 2741.5126953125 428405835.9378977
+"Message size sent to all nodes" 57 9739 1789 9181.105263157895 5039752497
+"Message size sent to node 1" 15 9739 1789 9209 1331074215
+"Message size sent to node 1 : MPI_Send()  " 15 9739 1789 9209 1331074215
+"Heap Memory Used (KB) at Exit : MPI_Send()  " 57 2741.5126953125 2741.5126953125 2741.5126953125 428405835.9378977
+"Message size sent to node 2" 13 9739 1789 9127.461538461539 1141377973
+"Message size sent to node 2 : MPI_Send()  " 13 9739 1789 9127.461538461539 1141377973
+"Message size sent to node 3" 14 9739 1789 9171.142857142857 1236226094
+"Message size sent to node 3 : MPI_Send()  " 14 9739 1789 9171.142857142857 1236226094
+"Message size sent to node 4" 15 9739 1789 9209 1331074215
+"Message size sent to node 4 : MPI_Send()  " 15 9739 1789 9209 1331074215
+"Heap Memory Used (KB) at Entry : MPI_Bcast()  " 1 2741.5126953125 2741.5126953125 2741.5126953125 7515891.858559608
+"Message size for broadcast" 1 2176117 2176117 2176117 4735485197689
+"Heap Memory Used (KB) at Exit : MPI_Bcast()  " 1 2741.5126953125 2741.5126953125 2741.5126953125 7515891.858559608
+"Heap Memory Used (KB) at Entry : MPI_Recv()  " 94 2741.5126953125 2741.5126953125 2741.5126953125 706493834.7046032
+"Message size received from all nodes" 94 16128773 9739 7726297.829787234 1.170618397940671E+16
+"Heap Memory Used (KB) at Exit : MPI_Recv()  " 94 2741.5126953125 2741.5126953125 2741.5126953125 706493834.7046032
+"Heap Memory Used (KB) at Entry : MPI_Unpack()  " 866 2741.5126953125 2741.5126953125 2741.5126953125 6508762349.512621
+"Heap Memory Used (KB) at Exit : MPI_Unpack()  " 866 2741.5126953125 2741.5126953125 2741.5126953125 6508762349.512621
+"Heap Memory Used (KB) at Entry : MPI_Barrier()  " 1 2741.5126953125 2741.5126953125 2741.5126953125 7515891.858559608
+"Heap Memory Used (KB) at Exit : MPI_Barrier()  " 1 2741.5126953125 2741.5126953125 2741.5126953125 7515891.858559608
+"Heap Memory Used (KB) at Entry : MPI_Finalize()  " 1 2741.5126953125 2741.5126953125 2741.5126953125 7515891.858559608
+"Heap Memory Used (KB) at Exit : MPI_Finalize()  " 1 2741.5126953125 2741.5126953125 2741.5126953125 7515891.858559608
+"Heap Memory Used (KB) at Exit : .TAU application" 1 2741.5126953125 2741.5126953125 2741.5126953125 7515891.858559608
+"Increase in Heap Memory (KB) : .TAU application" 1 2593.2783203125 2593.2783203125 2593.2783203125 6725092.446602821
+"MEMORY LEAK! Heap Allocate : MPI_Init()  " 9031 1051832 1 308.0289004539918 1418791675773

@@ -76,16 +76,20 @@ Contains
 
   !  local variables
   integer			:: iMode, i,j,xyz,ij, iComp,ncomp,iFunc,nFunc
-  real(kind=prec)	:: omega,x(3),x_ref(3),detX
+  real(kind=prec)	:: omega,x(3),x_ref(3),detX,Tx_azi,Rx_Azi
   complex(kind=prec)    :: tempZ(4)
   complex(kind=prec)	:: BB(3,2),EE(2,2),RR(2,2)
-  complex(kind=prec)	:: det,i_omega,ctemp
-  type(sparsevecC)		:: Lex,Ley,Lbx,Lby,Lbz,Lrx,Lry
+  complex(kind=prec)	:: det,i_omega,ctemp,Ex_res,Ey_res
+  type(sparsevecC)		:: Lex,Ley,Lez,Lbx,Lby,Lbz,Lrx,Lry
   logical			:: ComputeHz,ComputeE
+  COMPLEX    VALUE, X1, Y1
+  INTEGER    NOUT
 
   !  probably should dependence on omega into BinterpSetup, as in 2D!
   omega = txDict(ef%tx)%omega
+  Tx_azi=txDict(ef%tx)%azimuthTx
 
+    
   ncomp = typeDict(iDT)%ncomp
   if(typeDict(iDT)%isComplex) then
      !  data are complex; one sensitivity calculation can be
@@ -101,6 +105,36 @@ Contains
   !allocate(Z(nFunc))
 
  selectcase (iDT)
+       case (Exy_Ampli_Phase)
+            Rx_Azi=rxDict(iRX)%Rx_Azi
+     	    x = rxDict(iRX)%x     	
+	        xyz = 1
+	        call EinterpSetUp(ef%grid,x,xyz,Lex)		
+	        xyz = 2
+	        call EinterpSetUp(ef%grid,x,xyz,Ley)			
+		    Ex_res=dotProd_noConj_scvector_f(Lex,ef%pol(1))
+		    Ey_res=dotProd_noConj_scvector_f(Ley,ef%pol(1))
+		    !write(*,*)"Rx_Azi: ",rxDict(iRX)%ID, Rx_Azi 
+     	    tempZ(1) = (((cos(D2R*Rx_Azi))*Ex_res)+((sin(D2R*Rx_Azi))*Ey_res))
+			
+			Z(1)  = log10(abs(tempZ(1)))
+		    Z(2)  = atan2(ISIGN*dimag(tempZ(1)),real(tempZ(1)))*R2D			
+			!write(*,*)"Rx_Azi: ",iRX, Z(1),  Z(2)
+
+ 
+       case (Exy_Field)
+            Rx_Azi=rxDict(iRX)%Rx_Azi
+     	    x = rxDict(iRX)%x     	
+	        xyz = 1
+	        call EinterpSetUp(ef%grid,x,xyz,Lex)		
+	        xyz = 2
+	        call EinterpSetUp(ef%grid,x,xyz,Ley)	
+			
+		    Ex_res=dotProd_noConj_scvector_f(Lex,ef%pol(1))
+		    Ey_res=dotProd_noConj_scvector_f(Ley,ef%pol(1))
+		    !write(*,*)"Rx_Azi: ",rxDict(iRX)%ID, Rx_Azi 
+     	    Z(1) = ((cos(D2R*(Rx_Azi)))*Ex_res)+((sin(D2R*(Rx_Azi)))*Ey_res)	
+           		
        case (Ex_Field)
      	   x = rxDict(iRX)%x     	
 	       xyz = 1
@@ -110,7 +144,12 @@ Contains
      	   x = rxDict(iRX)%x     	
 	       xyz = 2
 	       call EinterpSetUp(ef%grid,x,xyz,Ley)		
-           Z(1) = dotProd_noConj_scvector_f(Ley,ef%pol(1))
+           Z(1) = dotProd_noConj_scvector_f(Ley,ef%pol(1))		   
+      case (Ez_Field)
+     	   x = rxDict(iRX)%x     	
+	       xyz = 3
+	       call EinterpSetUp(ef%grid,x,xyz,Lez)		
+           Z(1) = dotProd_noConj_scvector_f(Lez,ef%pol(1))		   
 	  case (Bx_Field)
 		   x = rxDict(iRX)%x
 		   xyz = 1
@@ -369,6 +408,7 @@ Contains
   ! clean up
   call deall_sparsevecc(Lex)
   call deall_sparsevecc(Ley)
+  call deall_sparsevecc(Lez)
   call deall_sparsevecc(Lbx)
   call deall_sparsevecc(Lby)
   call deall_sparsevecc(Lbz)
@@ -399,16 +439,21 @@ Contains
   !  local variables
   complex(kind=prec)	:: Binv(2,2)
   complex (kind=prec)	:: i_omega,c1,c2
-  real(kind=prec)	:: Resp(12),x(3),x_ref(3),omega,detX,PT(2,2)
-  type(sparsevecc)		:: L1,L2,L3,Lp11,Lp12,Lp21,Lp22
+  real(kind=prec)	:: Resp(12),x(3),x_ref(3),omega,detX,PT(2,2),Tx_azi,Rx_Azi
+  type(sparsevecc)		:: L1,L2,L3,Lp11,Lp12,Lp21,Lp22,LI
   integer			:: i,j,k,nComp,IJ(3,6),xyz,n, iComp,predictedComp
-  type(sparsevecC)		:: Lex,Ley,Lbx,Lby,Lbz,Lrx,Lry
+  type(sparsevecC)		:: Lex,Ley,Lez,Lbx,Lby,Lbz,Lrx,Lry
   logical			:: ComputeHz
+  real(kind=prec)  :: HxAngle,ExAngle,HxAngle_ref,HyAngle,EyAngle,HyAngle_ref
+  type(sparsevecC) :: Lex_rot,Ley_rot,Lbx_rot,Lby_rot,Lrx_rot,Lry_rot,Lex_rot_ampli,Lex_rot_phase
 
 
   omega = txDict(e0%tx)%omega
+  Tx_azi=txDict(e0%tx)%azimuthTx
+     
   	 x     = rxDict(iRX)%x
      x_ref = rxDict(iRX)%r          !Reference site position (x,y,z)
+	
 
   !  set up which components are needed,  ... and ! evaluate
   !   impedance, Binv for background solution
@@ -423,6 +468,92 @@ Contains
   !                     Ex = 1; Ey =2; Bz = 3; (Bx = 4; By = 5,  at referance site)
   !						(can add more cases)
   !
+
+if (txDict(e0%tx)%tx_type =='CSEM' .or. txDict(e0%tx)%tx_type =='DC') then
+  select case(iDT)  
+    case (Exy_Ampli_Phase)
+	       Rx_Azi= rxDict(iRX)%Rx_Azi
+		   x = rxDict(iRX)%x
+		   xyz = 1
+		   call EinterpSetUp(e0%grid,x,xyz,Lex)
+		   xyz = 2
+		   call EinterpSetUp(e0%grid,x,xyz,Ley)	
+		   c1 = (cos(D2R*Rx_Azi))
+		   c2 = (sin(D2R*Rx_Azi))
+		   call linComb_sparsevecc(Lex,c1,Ley,c2,Lex_rot)
+		   
+		   
+		   Call dataResp(e0,Sigma0,Exy_Field,iRX,Resp) !--> Z(1) is Exy field
+		   
+		   !  Log10 (|e|)'=|e|' * 1/(|e|*log(10))=(e/|e|)* 1/(|e|*log(10))=  e/(|e|^2*log(10))
+           !write(*,*)"Rx_Azi: Lrows",iRX, conjg(Z(1))	
+		   c1= conjg(Z(1))/((abs(Z(1))**TWO)*dlog(10.0d0))
+		   call scMult_sparsevecc (c1,Lex_rot,Lex_rot_ampli)
+		   
+		   !(180/pi) * i * conjg(E)/|E|^2 * Le
+		   c1= dcmplx(0.0d0,1.0d0)*conjg(Z(1)) / (abs(Z(1))**TWO) *R2D
+		   call scMult_sparsevecc (c1,Lex_rot,Lex_rot_phase)
+		   
+		   L(1)%L(1) = Lex_rot_ampli 
+		   L(2)%L(1) = Lex_rot_phase
+		   
+    case (Exy_Field) 
+	       Rx_Azi= rxDict(iRX)%Rx_Azi
+		   x = rxDict(iRX)%x
+		   xyz = 1
+		   call EinterpSetUp(e0%grid,x,xyz,Lex)
+		   xyz = 2
+		   call EinterpSetUp(e0%grid,x,xyz,Ley)	
+		   c1 = (cos(D2R*Rx_Azi))
+		   c2 = (sin(D2R*Rx_Azi))
+		   call linComb_sparsevecc(Lex,c1,Ley,c2,Lex_rot)
+		   L(1)%L(1) = Lex_rot 
+    case (Ex_Field)
+     	x = rxDict(iRX)%x
+	    xyz = 1
+	    call EinterpSetUp(e0%grid,x,xyz,Lex)		
+	    L(1)%L(1) = Lex
+	case (Ey_Field)
+		x = rxDict(iRX)%x
+		xyz = 2
+		call EinterpSetUp(e0%grid,x,xyz,Ley)		
+	    L(1)%L(1) = Ley
+	case (Ez_Field)
+		x = rxDict(iRX)%x
+		xyz = 3
+		call EinterpSetUp(e0%grid,x,xyz,Lez)		
+	    L(1)%L(1) = Lez
+    case (Bx_Field)
+  	    omega = txDict(e0%tx)%omega
+     	x = rxDict(iRX)%x
+	    xyz = 1
+        call BfromESetUp(e0%grid,omega,x,xyz,Lbx)
+	    L(1)%L(1) = Lbx
+    case (By_Field)
+  	    omega = txDict(e0%tx)%omega
+     	x = rxDict(iRX)%x
+	    xyz = 2
+        call BfromESetUp(e0%grid,omega,x,xyz,Lby)
+	    L(1)%L(1) = Lby
+    case (Bz_Field)
+  	    omega = txDict(e0%tx)%omega
+        x = rxDict(iRX)%x
+        xyz = 3
+        call BfromESetUp(e0%grid,omega,x,xyz,Lbz)
+	   L(1)%L(1) = Lbz		
+  endselect		
+  call deall_sparsevecc(LI) 
+  call deall_sparsevecc(Lex)
+  call deall_sparsevecc(Ley)
+  call deall_sparsevecc(Lbx)
+  call deall_sparsevecc(Lby)
+  call deall_sparsevecc(Lbz)
+  call deall_sparsevecc(Lex_rot)
+  call deall_sparsevecc(Lex_rot_ampli)
+  call deall_sparsevecc(Lex_rot_phase)
+  
+ return
+end if
 
 
   select case(iDT)

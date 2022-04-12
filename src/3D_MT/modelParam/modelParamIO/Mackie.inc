@@ -46,14 +46,14 @@
       type(modelParam_t), intent(in)	:: m
       integer              :: ios
       ! local
-      type(rscalar)                     :: ccond
+      type(rscalar)                     :: ccond, ccond_v
       type(grid_t)                      :: grid
       character(80)                     :: type = ''
 
  	  ! Read input files and set up basic grid geometry, conductivities,
 	  ! and frequencies (stored in the transmitter dictionary, txDictMT)
 
-	  call getValue_modelParam(m,type,ccond)
+	  call getValue_modelParam(m,type,ccond, v_v=ccond_v)
 
 	  grid = ccond%grid
 

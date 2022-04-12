@@ -1,12 +1,12 @@
 # Makefile suited for building the Mod3DMT program
 # Generated using: ./fmkmf.pl [OPTIONS] Mod3DMT.f90 > Makefile
 # with command line options
-# -p .:MPI:INV:LAPACK:SENS:UTILS:FIELDS/FiniteDiff3D:3D_MT:3D_MT/DICT:3D_MT/modelParam:3D_MT/CSEM_module:3D_MT/CSEM_module/Dipole1D:3D_MT/CSEM_module/EM1D/src:3D_MT/CSEM_module/EM1D:3D_MT/FWD:3D_MT/FWD/Mod2d:3D_MT/ioMod
+# -p .:MPI:INV:LAPACK:SENS:UTILS:FIELDS/FiniteDiff3D:3D_MT:3D_MT/DICT:3D_MT/modelParam:3D_MT/CSEM_module:3D_MT/CSEM_module/Dipole1D:3D_MT/FWD:3D_MT/FWD/Mod2d:3D_MT/ioMod
 # -f90 mpif90 (compiler)
 # -opt -O3 -ffree-line-length-none -Wno-all (compiler optimisation)
-# -lp /usr/lib64  -L/usr/lib/x86_64-linux-gnu (linking options: path to libraries)
-# -l -llapack -lblas -lfftw3l -lfftw3f -lfftw3 (linking options)
-# -o ./objs/3D_MT/GFortReleaseMPI (output directory for object files)
+# -lp /usr/lib64 (linking options: path to libraries)
+# -l -llapack -lblas (linking options)
+# -o ../../objs/3D_MT/GFortReleaseMPI (output directory for object files)
 
 #  Uncomment these lines to make program for Solaris OS (legacy)
 # F90 = f90
@@ -47,13 +47,13 @@ include Makefile.local
 OBJDIR = ../../objs/3D_MT/GFortReleaseMPI
 F90 = mpif90 
 FFLAGS = -O3 -ffree-line-length-none -Wno-all
-MPIFLAGS = -x f95-cpp-input -DMPI -I/usr/include/
+MPIFLAGS = -x f95-cpp-input -DMPI
 MODULE = -J $(OBJDIR)
-LIBS_PATH = -L/usr/lib64  -L/usr/lib/x86_64-linux-gnu
-LIBS = -llapack -lblas -lfftw3l -lfftw3f -lfftw3
+LIBS_PATH = -L/usr/lib64
+LIBS = -llapack -lblas
 
 # -------------------End-macro-Defs---------------------------
-OBJ = $(OBJDIR)/math_constants.o $(OBJDIR)/utilities.o $(OBJDIR)/file_units.o $(OBJDIR)/DataSpace.o $(OBJDIR)/GridDef.o $(OBJDIR)/sg_vector.o $(OBJDIR)/sg_scalar.o $(OBJDIR)/sg_spherical.o $(OBJDIR)/elements.o $(OBJDIR)/GridCalc.o $(OBJDIR)/sg_sparse_vector.o $(OBJDIR)/Declaration_MPI.o $(OBJDIR)/ModelSpace.o $(OBJDIR)/SensMatrix.o $(OBJDIR)/EMfieldInterp.o $(OBJDIR)/sg_boundary.o $(OBJDIR)/transmitters.o $(OBJDIR)/SolnSpace.o $(OBJDIR)/receivers.o $(OBJDIR)/dataTypes.o $(OBJDIR)/DataFunc.o $(OBJDIR)/DataSens.o $(OBJDIR)/SolverSens.o $(OBJDIR)/sg_diff_oper.o $(OBJDIR)/WSfwd2Dpar.o $(OBJDIR)/WSutils.o $(OBJDIR)/WSfwd1Dmod.o $(OBJDIR)/WSfwd2Dmod.o $(OBJDIR)/FwdTEmod.o $(OBJDIR)/boundary_ws.o $(OBJDIR)/nestedEM.o $(OBJDIR)/modelOperator3D.o $(OBJDIR)/solver.o $(OBJDIR)/EMsolve3D.o $(OBJDIR)/FilterModules.o $(OBJDIR)/Dipole1D.o $(OBJDIR)/machine_dep_mod.o $(OBJDIR)/util_mod.o $(OBJDIR)/constants_mod.o $(OBJDIR)/spline_mod.o $(OBJDIR)/io_common_mod.o $(OBJDIR)/hankel_mod.o $(OBJDIR)/adaptive_int_mod.o $(OBJDIR)/counter_mod.o $(OBJDIR)/refl_mod_new.o $(OBJDIR)/EM1D.o $(OBJDIR)/CSEM_module.o $(OBJDIR)/ForwardSolver.o $(OBJDIR)/SensComp.o $(OBJDIR)/UserCtrl.o $(OBJDIR)/Sub_MPI.o $(OBJDIR)/Main_MPI.o $(OBJDIR)/SymmetryTest.o $(OBJDIR)/ioAscii.o $(OBJDIR)/DataIO.o $(OBJDIR)/Main.o $(OBJDIR)/INVcore.o $(OBJDIR)/NLCG.o $(OBJDIR)/DCG.o $(OBJDIR)/LBFGS.o $(OBJDIR)/CtrlFile.o $(OBJDIR)/Mod3DMT.o 
+OBJ = $(OBJDIR)/math_constants.o $(OBJDIR)/utilities.o $(OBJDIR)/file_units.o $(OBJDIR)/DataSpace.o $(OBJDIR)/GridDef.o $(OBJDIR)/sg_vector.o $(OBJDIR)/sg_scalar.o $(OBJDIR)/sg_spherical.o $(OBJDIR)/elements.o $(OBJDIR)/GridCalc.o $(OBJDIR)/sg_sparse_vector.o $(OBJDIR)/Declaration_MPI.o $(OBJDIR)/ModelSpace.o $(OBJDIR)/SensMatrix.o $(OBJDIR)/EMfieldInterp.o $(OBJDIR)/sg_boundary.o $(OBJDIR)/transmitters.o $(OBJDIR)/SolnSpace.o $(OBJDIR)/receivers.o $(OBJDIR)/dataTypes.o $(OBJDIR)/DataFunc.o $(OBJDIR)/DataSens.o $(OBJDIR)/SolverSens.o $(OBJDIR)/sg_diff_oper.o $(OBJDIR)/WSfwd2Dpar.o $(OBJDIR)/WSutils.o $(OBJDIR)/WSfwd1Dmod.o $(OBJDIR)/WSfwd2Dmod.o $(OBJDIR)/FwdTEmod.o $(OBJDIR)/boundary_ws.o $(OBJDIR)/nestedEM.o $(OBJDIR)/modelOperator3D.o $(OBJDIR)/solver.o $(OBJDIR)/EMsolve3D.o $(OBJDIR)/FilterModules.o $(OBJDIR)/Dipole1D.o $(OBJDIR)/CSEM_module.o $(OBJDIR)/ForwardSolver.o $(OBJDIR)/SensComp.o $(OBJDIR)/UserCtrl.o $(OBJDIR)/Sub_MPI.o $(OBJDIR)/Main_MPI.o $(OBJDIR)/SymmetryTest.o $(OBJDIR)/ioAscii.o $(OBJDIR)/DataIO.o $(OBJDIR)/Main.o $(OBJDIR)/INVcore.o $(OBJDIR)/NLCG.o $(OBJDIR)/DCG.o $(OBJDIR)/LBFGS.o $(OBJDIR)/CtrlFile.o $(OBJDIR)/Mod3DMT.o 
 
 
 all: Mod3DMT 
@@ -175,37 +175,7 @@ $(OBJDIR)/FilterModules.o:3D_MT/CSEM_module/Dipole1D/FilterModules.f90
 $(OBJDIR)/Dipole1D.o:3D_MT/CSEM_module/Dipole1D/Dipole1D.f90 $(OBJDIR)/FilterModules.o $(OBJDIR)/FilterModules.o $(OBJDIR)/FilterModules.o $(OBJDIR)/FilterModules.o $(OBJDIR)/FilterModules.o 
 	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) 3D_MT/CSEM_module/Dipole1D/Dipole1D.f90 -o $(OBJDIR)/Dipole1D.o
 
-$(OBJDIR)/machine_dep_mod.o:3D_MT/CSEM_module/EM1D/src/machine_dep_mod.f90  
-	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) 3D_MT/CSEM_module/EM1D/src/machine_dep_mod.f90 -o $(OBJDIR)/machine_dep_mod.o
-
-$(OBJDIR)/util_mod.o:3D_MT/CSEM_module/EM1D/src/util_mod.f90 $(OBJDIR)/machine_dep_mod.o 3D_MT/CSEM_module/EM1D/src/errors.f90 3D_MT/CSEM_module/EM1D/src/get_time.f90 3D_MT/CSEM_module/EM1D/src/tictoc.f90
-	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) 3D_MT/CSEM_module/EM1D/src/util_mod.f90 -o $(OBJDIR)/util_mod.o
-
-$(OBJDIR)/constants_mod.o:3D_MT/CSEM_module/EM1D/src/constants_mod.f90 $(OBJDIR)/machine_dep_mod.o 
-	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) 3D_MT/CSEM_module/EM1D/src/constants_mod.f90 -o $(OBJDIR)/constants_mod.o
-
-$(OBJDIR)/spline_mod.o:3D_MT/CSEM_module/EM1D/src/spline_mod.f90 $(OBJDIR)/machine_dep_mod.o $(OBJDIR)/util_mod.o 3D_MT/CSEM_module/EM1D/src/splines.f90
-	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) 3D_MT/CSEM_module/EM1D/src/spline_mod.f90 -o $(OBJDIR)/spline_mod.o
-
-$(OBJDIR)/io_common_mod.o:3D_MT/CSEM_module/EM1D/src/io_common_mod.f90 $(OBJDIR)/machine_dep_mod.o $(OBJDIR)/util_mod.o $(OBJDIR)/constants_mod.o $(OBJDIR)/spline_mod.o 3D_MT/CSEM_module/EM1D/src/AvailableUnit.f90 3D_MT/CSEM_module/EM1D/src/readsorec.f90 3D_MT/CSEM_module/EM1D/src/readsorcur.f90 3D_MT/CSEM_module/EM1D/src/readwavelet.f90 3D_MT/CSEM_module/EM1D/src/fileoperations.f90
-	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) 3D_MT/CSEM_module/EM1D/src/io_common_mod.f90 -o $(OBJDIR)/io_common_mod.o
-
-$(OBJDIR)/hankel_mod.o:3D_MT/CSEM_module/EM1D/src/hankel_mod.f90 $(OBJDIR)/machine_dep_mod.o 
-	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) 3D_MT/CSEM_module/EM1D/src/hankel_mod.f90 -o $(OBJDIR)/hankel_mod.o
-
-$(OBJDIR)/adaptive_int_mod.o:3D_MT/CSEM_module/EM1D/src/adaptive_int_mod.f90 $(OBJDIR)/machine_dep_mod.o $(OBJDIR)/constants_mod.o 
-	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) 3D_MT/CSEM_module/EM1D/src/adaptive_int_mod.f90 -o $(OBJDIR)/adaptive_int_mod.o
-
-$(OBJDIR)/counter_mod.o:3D_MT/CSEM_module/EM1D/src/counter_mod.f90 $(OBJDIR)/machine_dep_mod.o $(OBJDIR)/util_mod.o 3D_MT/CSEM_module/EM1D/src/counter.f90
-	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) 3D_MT/CSEM_module/EM1D/src/counter_mod.f90 -o $(OBJDIR)/counter_mod.o
-
-$(OBJDIR)/refl_mod_new.o:3D_MT/CSEM_module/EM1D/src/refl_mod_new.f90 $(OBJDIR)/machine_dep_mod.o $(OBJDIR)/util_mod.o $(OBJDIR)/io_common_mod.o $(OBJDIR)/hankel_mod.o $(OBJDIR)/adaptive_int_mod.o $(OBJDIR)/counter_mod.o 3D_MT/CSEM_module/EM1D/src/find_radii.f90 3D_MT/CSEM_module/EM1D/src/get_dz.f90
-	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) 3D_MT/CSEM_module/EM1D/src/refl_mod_new.f90 -o $(OBJDIR)/refl_mod_new.o
-
-$(OBJDIR)/EM1D.o:3D_MT/CSEM_module/EM1D/src/EM1D.f90 $(OBJDIR)/refl_mod_new.o $(OBJDIR)/io_common_mod.o 
-	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) 3D_MT/CSEM_module/EM1D/src/EM1D.f90 -o $(OBJDIR)/EM1D.o
-
-$(OBJDIR)/CSEM_module.o:3D_MT/CSEM_module/CSEM_module.f90 $(OBJDIR)/math_constants.o $(OBJDIR)/DataFunc.o $(OBJDIR)/DataSpace.o $(OBJDIR)/SolnSpace.o $(OBJDIR)/EMsolve3D.o $(OBJDIR)/transmitters.o $(OBJDIR)/Dipole1D.o $(OBJDIR)/EM1D.o 
+$(OBJDIR)/CSEM_module.o:3D_MT/CSEM_module/CSEM_module.f90 $(OBJDIR)/math_constants.o $(OBJDIR)/DataFunc.o $(OBJDIR)/DataSpace.o $(OBJDIR)/SolnSpace.o $(OBJDIR)/EMsolve3D.o $(OBJDIR)/transmitters.o $(OBJDIR)/Dipole1D.o 
 	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) 3D_MT/CSEM_module/CSEM_module.f90 -o $(OBJDIR)/CSEM_module.o
 
 $(OBJDIR)/ForwardSolver.o:3D_MT/ForwardSolver.f90 $(OBJDIR)/math_constants.o $(OBJDIR)/DataFunc.o $(OBJDIR)/DataSpace.o $(OBJDIR)/SolnSpace.o $(OBJDIR)/EMsolve3D.o $(OBJDIR)/transmitters.o $(OBJDIR)/CSEM_module.o 

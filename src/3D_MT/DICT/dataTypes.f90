@@ -75,7 +75,9 @@ module dataTypes
   integer, parameter   :: Bx_Field = 9
   integer, parameter   :: By_Field = 10
   integer, parameter   :: Bz_Field = 11
- 
+  integer, parameter   :: Ez_Field = 12
+  integer, parameter   :: Exy_Field = 13
+  integer, parameter   :: Exy_Ampli_Phase = 14
 
 Contains
 
@@ -86,7 +88,7 @@ Contains
 
   	 integer     :: istat
 
-     allocate(typeDict(11),STAT=istat)
+     allocate(typeDict(14),STAT=istat)
 
      typeDict(Full_Impedance)%name = 'Full_Impedance'
      typeDict(Full_Impedance)%isComplex = .true.
@@ -166,6 +168,14 @@ Contains
      typeDict(Ey_Field)%nComp     = 2
      allocate(typeDict(Ey_Field)%id(1),STAT=istat)
      typeDict(Ey_Field)%id(1)    = 'Ey_Field'
+
+     typeDict(Ez_Field)%name = 'Ez_Field'
+     typeDict(Ez_Field)%isComplex = .true.
+     typeDict(Ez_Field)%tfType    = Ez_Field	
+     typeDict(Ez_Field)%units     = '[V/m]'
+     typeDict(Ez_Field)%nComp     = 2
+     allocate(typeDict(Ez_Field)%id(1),STAT=istat)
+     typeDict(Ez_Field)%id(1)    = 'Ez_Field'
 	 
      typeDict(Bx_Field)%name = 'Bx_Field'
      typeDict(Bx_Field)%isComplex = .true.
@@ -191,6 +201,24 @@ Contains
      allocate(typeDict(Bz_Field)%id(1),STAT=istat)
      typeDict(Bz_Field)%id(1)    = 'Bz_Field'
 
+
+     typeDict(Exy_Field)%name = 'Exy_Field'
+     typeDict(Exy_Field)%isComplex = .true.
+     typeDict(Exy_Field)%tfType    = Exy_Field	
+     typeDict(Exy_Field)%units     = '[V/m]'
+     typeDict(Exy_Field)%nComp     = 2
+     allocate(typeDict(Exy_Field)%id(1),STAT=istat)
+     typeDict(Exy_Field)%id(1)    = 'Exy_Field'
+	 
+
+ 	 typeDict(Exy_Ampli_Phase)%name = 'Exy_Ampli_Phase'
+     typeDict(Exy_Ampli_Phase)%isComplex = .false.
+     typeDict(Exy_Ampli_Phase)%tfType    = Exy_Ampli_Phase
+     typeDict(Exy_Ampli_Phase)%units     = '[]'
+     typeDict(Exy_Ampli_Phase)%nComp     = 2
+     allocate(typeDict(Exy_Ampli_Phase)%id(2),STAT=istat)
+     typeDict(Exy_Ampli_Phase)%id(1) = 'Exy_Ampli'
+     typeDict(Exy_Ampli_Phase)%id(2) = 'Exy_Phase'
 	 
 	 
   end subroutine setup_typeDict
@@ -312,12 +340,18 @@ Contains
           dataType = Ex_Field
       case('Ey_Field')
           dataType = Ey_Field
+      case('Ez_Field')
+          dataType = Ez_Field		  
       case('Bx_Field')
           dataType = Bx_Field
       case('By_Field')
           dataType = By_Field
       case('Bz_Field')
-          dataType = Bz_Field			  
+          dataType = Bz_Field
+      case('Exy_Field')
+          dataType = Exy_Field
+      case('Exy_Ampli_Phase')
+          dataType = Exy_Ampli_Phase			  		  
        case default
           call errStop('Unknown data type:'//trim(typeName))
 
@@ -342,8 +376,9 @@ Contains
         ncomp = ncomp/2
     end if
     icomp = 0
-
+    
     do i = 1,ncomp
+	!write(*,*) i,typeDict(dataType)%id(i), trim(compid)
         if (index(trim(typeDict(dataType)%id(i)),trim(compid))>0) then
             icomp = i
             exit

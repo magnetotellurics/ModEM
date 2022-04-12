@@ -178,19 +178,23 @@ end subroutine copyE0fromFile
    call create_solnVector(grid,iTx,e0)
 
    if(initForSens) then
-      !  allocate for sensitivity solution, RHS - same for all TX types
-      !  assuming here that we don't use sparse storage ... we could!
+      !  allocate for sensitivity solution, RHS
       call create_solnVector(grid,iTx,e)
-      comb%nonzero_source = .true.
-      comb%sparse_source = .false.
-      comb%nonzero_bc = .false.
       call create_rhsVector(grid,iTx,comb)
-!      do k = 1,comb%nPol
-!        comb%b(k)%sparse_Source = .false.
-!        comb%b(k)%adj = ''
-!        !  using all this information, reallocate storage for each polarization
-!        call create_RHS(grid,iTx,comb%b(k))
-!      enddo
+      do k = 1,comb%nPol
+	   if (txDict(iTx)%Tx_type=='CSEM' ) then
+        comb%b(k)%nonzero_source = .true.
+        comb%b(k)%nonzero_bc = .false.
+	   elseif(txDict(iTx)%Tx_type=='MT' ) then
+        comb%b(k)%nonzero_source = .true.
+        comb%b(k)%nonzero_bc = .false.
+       end if		
+        !  assuming here that we don't use sparse storage ... we could!
+        comb%b(k)%sparse_Source = .false.
+        comb%b(k)%adj = ''
+        !  using all this information, reallocate storage for each polarization
+        call create_RHS(grid,iTx,comb%b(k))
+      enddo
    endif
 
    if(.NOT.modelDataInitialized) then
@@ -419,12 +423,12 @@ end subroutine copyE0fromFile
 		write (6,*)node_info,'FINISHED solve, nPol',e0%nPol
    	   enddo
    elseif (txDict(iTx)%Tx_type=='CSEM') then
-        write (*,'(a12,a40,i4,a2,es13.6,a15,i2)') node_info, &
-                'Solving the CSEM FWD problem for period ',iTx,': ',(2*PI)/omega,' secs & mode # ',e0%Pol_index(1)
+		write (*,'(a12,a40,i4,a2,es13.6,a15,i2)') node_info, 'Solving the CSEM FWD problem for period ',iTx,': ',(2*PI)/omega,' secs & mode # ',e0%Pol_index(1)
 		call zero(e0%pol(1))
 		!e0%pol(1)=E_P
 		call FWDsolve3D(b0%b(1),omega,e0%pol(1))
 		call add(E_p,e0%pol(1),e0%pol(1))
+		call deall(E_p)
 		write (6,*)node_info,'FINISHED solve, nPol',e0%nPol    
    else
        write(0,*) node_info,'Unknown FWD problem type',trim(txDict(iTx)%Tx_type),'; unable to run fwdSolve'

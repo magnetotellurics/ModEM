@@ -1,0 +1,484 @@
+Reading Profile files in profile.*
+
+NODE 0;CONTEXT 0;THREAD 0:
+---------------------------------------------------------------------------------------
+%Time    Exclusive    Inclusive       #Call      #Subrs  Inclusive Name
+              msec   total msec                          usec/call 
+---------------------------------------------------------------------------------------
+100.0        1,993    10:23.564           1        2554  623564217 .TAU application
+ 99.0    10:17.142    10:17.142          94           0    6565346 .TAU application => MPI_Recv() 
+ 99.0    10:17.142    10:17.142          94           0    6565346 MPI_Recv() 
+  0.4        2,774        2,774          57           0      48672 .TAU application => MPI_Send() 
+  0.4        2,774        2,774          57           0      48672 MPI_Send() 
+  0.2        1,003        1,003           1           0    1003230 .TAU application => MPI_Init() 
+  0.2        1,003        1,003           1           0    1003230 MPI_Init() 
+  0.1          360          360           1           0     360386 .TAU application => MPI_Finalize() 
+  0.1          360          360           1           0     360386 MPI_Finalize() 
+  0.0          275          275         866           0        318 .TAU application => MPI_Unpack() 
+  0.0          275          275         866           0        318 MPI_Unpack() 
+  0.0            6            6         755           0          8 .TAU application => MPI_Pack() 
+  0.0            6            6         755           0          8 MPI_Pack() 
+  0.0            5            5           1           0       5610 .TAU application => MPI_Bcast() 
+  0.0            5            5           1           0       5610 MPI_Bcast() 
+  0.0            2            2         776           0          4 .TAU application => MPI_Pack_size() 
+  0.0            2            2         776           0          4 MPI_Pack_size() 
+  0.0        0.101        0.101           1           0        101 .TAU application => MPI_Barrier() 
+  0.0        0.101        0.101           1           0        101 MPI_Barrier() 
+  0.0        0.097        0.097           1           0         97 .TAU application => MPI_Comm_size() 
+  0.0        0.097        0.097           1           0         97 MPI_Comm_size() 
+  0.0        0.062        0.062           1           0         62 .TAU application => MPI_Comm_rank() 
+  0.0        0.062        0.062           1           0         62 MPI_Comm_rank() 
+---------------------------------------------------------------------------------------
+
+USER EVENTS Profile :NODE 0, CONTEXT 0, THREAD 0
+---------------------------------------------------------------------------------------
+NumSamples   MaxValue   MinValue  MeanValue  Std. Dev.  Event Name
+---------------------------------------------------------------------------------------
+ 1.908E+04  1.052E+06          1      202.3       8662  Heap Allocate
+ 1.908E+04  1.052E+06          1      202.3       8662  Heap Allocate : MPI_Init() 
+  1.04E+04  6.554E+04          1      103.6       1152  Heap Free
+  1.04E+04  6.554E+04          1      103.6       1152  Heap Free : MPI_Init() 
+ 3.084E+04       2742    0.03906       1008      884.1  Heap Memory Used (KB)
+      2555       2742      148.2       2739      72.42  Heap Memory Used (KB) at Entry
+         1      148.2      148.2      148.2  1.907E-06  Heap Memory Used (KB) at Entry : .TAU application
+         1       2742       2742       2742          0  Heap Memory Used (KB) at Entry : MPI_Barrier() 
+         1       2742       2742       2742          0  Heap Memory Used (KB) at Entry : MPI_Bcast() 
+         1       2742       2742       2742          0  Heap Memory Used (KB) at Entry : MPI_Comm_rank() 
+         1       2742       2742       2742          0  Heap Memory Used (KB) at Entry : MPI_Comm_size() 
+         1       2742       2742       2742          0  Heap Memory Used (KB) at Entry : MPI_Finalize() 
+         1      155.9      155.9      155.9  1.907E-06  Heap Memory Used (KB) at Entry : MPI_Init() 
+       755       2742       2742       2742          0  Heap Memory Used (KB) at Entry : MPI_Pack() 
+       776       2742       2742       2742          0  Heap Memory Used (KB) at Entry : MPI_Pack_size() 
+        94       2742       2742       2742          0  Heap Memory Used (KB) at Entry : MPI_Recv() 
+        57       2742       2742       2742          0  Heap Memory Used (KB) at Entry : MPI_Send() 
+       866       2742       2742       2742          0  Heap Memory Used (KB) at Entry : MPI_Unpack() 
+      2555       2742       2742       2742  0.0007267  Heap Memory Used (KB) at Exit
+         1       2742       2742       2742          0  Heap Memory Used (KB) at Exit : .TAU application
+         1       2742       2742       2742          0  Heap Memory Used (KB) at Exit : MPI_Barrier() 
+         1       2742       2742       2742          0  Heap Memory Used (KB) at Exit : MPI_Bcast() 
+         1       2742       2742       2742          0  Heap Memory Used (KB) at Exit : MPI_Comm_rank() 
+         1       2742       2742       2742          0  Heap Memory Used (KB) at Exit : MPI_Comm_size() 
+         1       2742       2742       2742          0  Heap Memory Used (KB) at Exit : MPI_Finalize() 
+         1       2742       2742       2742          0  Heap Memory Used (KB) at Exit : MPI_Init() 
+       755       2742       2742       2742          0  Heap Memory Used (KB) at Exit : MPI_Pack() 
+       776       2742       2742       2742          0  Heap Memory Used (KB) at Exit : MPI_Pack_size() 
+        94       2742       2742       2742          0  Heap Memory Used (KB) at Exit : MPI_Recv() 
+        57       2742       2742       2742          0  Heap Memory Used (KB) at Exit : MPI_Send() 
+       866       2742       2742       2742          0  Heap Memory Used (KB) at Exit : MPI_Unpack() 
+         2       2593       2586       2589      3.813  Increase in Heap Memory (KB)
+         1       2593       2593       2593          0  Increase in Heap Memory (KB) : .TAU application
+         1       2586       2586       2586          0  Increase in Heap Memory (KB) : MPI_Init() 
+      9031  1.052E+06          1        308  1.253E+04  MEMORY LEAK! Heap Allocate : MPI_Init() 
+         1  2.176E+06  2.176E+06  2.176E+06          0  Message size for broadcast
+        94  1.613E+07       9739  7.726E+06  8.052E+06  Message size received from all nodes
+        57       9739       1789       9181       2031  Message size sent to all nodes
+        15       9739       1789       9209       1983  Message size sent to node 1
+        15       9739       1789       9209       1983  Message size sent to node 1 : MPI_Send() 
+        13       9739       1789       9127       2118  Message size sent to node 2
+        13       9739       1789       9127       2118  Message size sent to node 2 : MPI_Send() 
+        14       9739       1789       9171       2047  Message size sent to node 3
+        14       9739       1789       9171       2047  Message size sent to node 3 : MPI_Send() 
+        15       9739       1789       9209       1983  Message size sent to node 4
+        15       9739       1789       9209       1983  Message size sent to node 4 : MPI_Send() 
+---------------------------------------------------------------------------------------
+
+NODE 1;CONTEXT 0;THREAD 0:
+---------------------------------------------------------------------------------------
+%Time    Exclusive    Inclusive       #Call      #Subrs  Inclusive Name
+              msec   total msec                          usec/call 
+---------------------------------------------------------------------------------------
+100.0    10:13.445    10:23.564           1         726  623564335 .TAU application
+  1.3        8,350        8,350          15           0     556705 .TAU application => MPI_Recv() 
+  1.3        8,350        8,350          15           0     556705 MPI_Recv() 
+  0.2        1,003        1,003           1           0    1003148 .TAU application => MPI_Init() 
+  0.2        1,003        1,003           1           0    1003148 MPI_Init() 
+  0.1          360          360           1           0     360964 .TAU application => MPI_Finalize() 
+  0.1          360          360           1           0     360964 MPI_Finalize() 
+  0.0          276          276           1           0     276259 .TAU application => MPI_Barrier() 
+  0.0          276          276           1           0     276259 MPI_Barrier() 
+  0.0           61           61          25           0       2476 .TAU application => MPI_Send() 
+  0.0           61           61          25           0       2476 MPI_Send() 
+  0.0           53           53         230           0        234 .TAU application => MPI_Pack() 
+  0.0           53           53         230           0        234 MPI_Pack() 
+  0.0            9            9           1           0       9676 .TAU application => MPI_Bcast() 
+  0.0            9            9           1           0       9676 MPI_Bcast() 
+  0.0            1            1         218           0          5 .TAU application => MPI_Pack_size() 
+  0.0            1            1         218           0          5 MPI_Pack_size() 
+  0.0            1            1         232           0          4 .TAU application => MPI_Unpack() 
+  0.0            1            1         232           0          4 MPI_Unpack() 
+  0.0        0.085        0.085           1           0         85 .TAU application => MPI_Comm_size() 
+  0.0        0.085        0.085           1           0         85 MPI_Comm_size() 
+  0.0        0.063        0.063           1           0         63 .TAU application => MPI_Comm_rank() 
+  0.0        0.063        0.063           1           0         63 MPI_Comm_rank() 
+---------------------------------------------------------------------------------------
+
+USER EVENTS Profile :NODE 1, CONTEXT 0, THREAD 0
+---------------------------------------------------------------------------------------
+NumSamples   MaxValue   MinValue  MeanValue  Std. Dev.  Event Name
+---------------------------------------------------------------------------------------
+      9750  6.627E+04          1        120       1383  Heap Allocate
+      9750  6.627E+04          1        120       1383  Heap Allocate : MPI_Init() 
+      4908  6.554E+04          1      107.2       1187  Heap Free
+      4908  6.554E+04          1      107.2       1187  Heap Free : MPI_Init() 
+ 1.536E+04      637.9    0.03906      374.7      155.9  Heap Memory Used (KB)
+       727      637.9      148.2      636.5      25.45  Heap Memory Used (KB) at Entry
+         1      148.2      148.2      148.2  1.907E-06  Heap Memory Used (KB) at Entry : .TAU application
+         1      637.9      637.9      637.9          0  Heap Memory Used (KB) at Entry : MPI_Barrier() 
+         1      637.9      637.9      637.9          0  Heap Memory Used (KB) at Entry : MPI_Bcast() 
+         1      637.9      637.9      637.9          0  Heap Memory Used (KB) at Entry : MPI_Comm_rank() 
+         1      637.9      637.9      637.9          0  Heap Memory Used (KB) at Entry : MPI_Comm_size() 
+         1      637.9      637.9      637.9          0  Heap Memory Used (KB) at Entry : MPI_Finalize() 
+         1      155.9      155.9      155.9  1.907E-06  Heap Memory Used (KB) at Entry : MPI_Init() 
+       230      637.9      637.9      637.9          0  Heap Memory Used (KB) at Entry : MPI_Pack() 
+       218      637.9      637.9      637.9          0  Heap Memory Used (KB) at Entry : MPI_Pack_size() 
+        15      637.9      637.9      637.9          0  Heap Memory Used (KB) at Entry : MPI_Recv() 
+        25      637.9      637.9      637.9  7.629E-06  Heap Memory Used (KB) at Entry : MPI_Send() 
+       232      637.9      637.9      637.9          0  Heap Memory Used (KB) at Entry : MPI_Unpack() 
+       727      637.9      637.9      637.9  7.629E-06  Heap Memory Used (KB) at Exit
+         1      637.9      637.9      637.9          0  Heap Memory Used (KB) at Exit : .TAU application
+         1      637.9      637.9      637.9          0  Heap Memory Used (KB) at Exit : MPI_Barrier() 
+         1      637.9      637.9      637.9          0  Heap Memory Used (KB) at Exit : MPI_Bcast() 
+         1      637.9      637.9      637.9          0  Heap Memory Used (KB) at Exit : MPI_Comm_rank() 
+         1      637.9      637.9      637.9          0  Heap Memory Used (KB) at Exit : MPI_Comm_size() 
+         1      637.9      637.9      637.9          0  Heap Memory Used (KB) at Exit : MPI_Finalize() 
+         1      637.9      637.9      637.9          0  Heap Memory Used (KB) at Exit : MPI_Init() 
+       230      637.9      637.9      637.9          0  Heap Memory Used (KB) at Exit : MPI_Pack() 
+       218      637.9      637.9      637.9          0  Heap Memory Used (KB) at Exit : MPI_Pack_size() 
+        15      637.9      637.9      637.9          0  Heap Memory Used (KB) at Exit : MPI_Recv() 
+        25      637.9      637.9      637.9  7.629E-06  Heap Memory Used (KB) at Exit : MPI_Send() 
+       232      637.9      637.9      637.9          0  Heap Memory Used (KB) at Exit : MPI_Unpack() 
+         2      489.6        482      485.8      3.813  Increase in Heap Memory (KB)
+         1      489.6      489.6      489.6          0  Increase in Heap Memory (KB) : .TAU application
+         1        482        482        482  5.395E-06  Increase in Heap Memory (KB) : MPI_Init() 
+      4955  6.627E+04          1      129.6       1538  MEMORY LEAK! Heap Allocate : MPI_Init() 
+         1  2.176E+06  2.176E+06  2.176E+06          0  Message size for broadcast
+        15       9739       1789       9209       1983  Message size received from all nodes
+        25  1.613E+07       9739  7.747E+06  8.053E+06  Message size sent to all nodes
+        25  1.613E+07       9739  7.747E+06  8.053E+06  Message size sent to node 0
+        25  1.613E+07       9739  7.747E+06  8.053E+06  Message size sent to node 0 : MPI_Send() 
+---------------------------------------------------------------------------------------
+
+NODE 2;CONTEXT 0;THREAD 0:
+---------------------------------------------------------------------------------------
+%Time    Exclusive    Inclusive       #Call      #Subrs  Inclusive Name
+              msec   total msec                          usec/call 
+---------------------------------------------------------------------------------------
+100.0    10:16.404    10:23.564           1         624  623564266 .TAU application
+  0.9        5,422        5,422          13           0     417138 .TAU application => MPI_Recv() 
+  0.9        5,422        5,422          13           0     417138 MPI_Recv() 
+  0.2        1,003        1,003           1           0    1003163 .TAU application => MPI_Init() 
+  0.2        1,003        1,003           1           0    1003163 MPI_Init() 
+  0.1          362          362           1           0     362816 .TAU application => MPI_Finalize() 
+  0.1          362          362           1           0     362816 MPI_Finalize() 
+  0.0          274          274           1           0     274725 .TAU application => MPI_Barrier() 
+  0.0          274          274           1           0     274725 MPI_Barrier() 
+  0.0           46           46         194           0        241 .TAU application => MPI_Pack() 
+  0.0           46           46         194           0        241 MPI_Pack() 
+  0.0           37           37          21           0       1782 .TAU application => MPI_Send() 
+  0.0           37           37          21           0       1782 MPI_Send() 
+  0.0            9            9           1           0       9632 .TAU application => MPI_Bcast() 
+  0.0            9            9           1           0       9632 MPI_Bcast() 
+  0.0            1            1         204           0          6 .TAU application => MPI_Unpack() 
+  0.0            1            1         204           0          6 MPI_Unpack() 
+  0.0            1            1         186           0          7 .TAU application => MPI_Pack_size() 
+  0.0            1            1         186           0          7 MPI_Pack_size() 
+  0.0        0.177        0.177           1           0        177 .TAU application => MPI_Comm_rank() 
+  0.0        0.177        0.177           1           0        177 MPI_Comm_rank() 
+  0.0        0.136        0.136           1           0        136 .TAU application => MPI_Comm_size() 
+  0.0        0.136        0.136           1           0        136 MPI_Comm_size() 
+---------------------------------------------------------------------------------------
+
+USER EVENTS Profile :NODE 2, CONTEXT 0, THREAD 0
+---------------------------------------------------------------------------------------
+NumSamples   MaxValue   MinValue  MeanValue  Std. Dev.  Event Name
+---------------------------------------------------------------------------------------
+         1     0.4102     0.4102     0.4102          0  Decrease in Heap Memory (KB)
+         1     0.4102     0.4102     0.4102          0  Decrease in Heap Memory (KB) : MPI_Finalize() 
+ 4.825E+07  1.801E+08          1       1501  2.379E+05  Heap Allocate
+ 4.824E+07  1.801E+08          1       1501  2.379E+05  Heap Allocate : .TAU application
+         9        936          1      292.6      344.6  Heap Allocate : MPI_Barrier() 
+        12        936          1      251.4      310.4  Heap Allocate : MPI_Bcast() 
+         7        936          1      270.3        380  Heap Allocate : MPI_Comm_rank() 
+         7        936          1      229.3      333.3  Heap Allocate : MPI_Comm_size() 
+        22        936          1      206.9      270.3  Heap Allocate : MPI_Finalize() 
+      9778  6.627E+04          1      119.8       1381  Heap Allocate : MPI_Init() 
+         8        936          1      299.4      365.3  Heap Allocate : MPI_Pack() 
+         7        936          1      229.3      333.3  Heap Allocate : MPI_Pack_size() 
+        10        936          1      265.9      336.5  Heap Allocate : MPI_Recv() 
+        15        936          1      210.6      305.3  Heap Allocate : MPI_Send() 
+         8        936          1      299.9        365  Heap Allocate : MPI_Unpack() 
+ 4.825E+07  1.801E+08          1       1484  2.377E+05  Heap Free
+ 4.824E+07  1.801E+08          1       1484  2.377E+05  Heap Free : .TAU application
+         4        800         31        345      327.6  Heap Free : MPI_Barrier() 
+         4        800         31      344.5      328.1  Heap Free : MPI_Bcast() 
+         4        800         31      347.2      328.1  Heap Free : MPI_Comm_rank() 
+         4        800         31      345.5      327.1  Heap Free : MPI_Comm_size() 
+        15        800         12      261.4      234.2  Heap Free : MPI_Finalize() 
+      4916  6.554E+04          1      107.2       1186  Heap Free : MPI_Init() 
+         4        800         31      344.2      328.3  Heap Free : MPI_Pack() 
+         4        808         31      347.5      329.9  Heap Free : MPI_Pack_size() 
+         4        800         31      344.2      328.3  Heap Free : MPI_Recv() 
+         6        800         31      322.2      302.1  Heap Free : MPI_Send() 
+         4        800         31      344.8      327.9  Heap Free : MPI_Unpack() 
+  1.06E+08  1.972E+06    0.03906   1.13E+06  2.222E+05  Heap Memory Used (KB)
+       625  1.657E+06      148.2  8.309E+05  5.481E+05  Heap Memory Used (KB) at Entry
+         1      148.2      148.2      148.2  1.907E-06  Heap Memory Used (KB) at Entry : .TAU application
+         1  7.951E+05  7.951E+05  7.951E+05          0  Heap Memory Used (KB) at Entry : MPI_Barrier() 
+         1       2812       2812       2812          0  Heap Memory Used (KB) at Entry : MPI_Bcast() 
+         1      638.8      638.8      638.8          0  Heap Memory Used (KB) at Entry : MPI_Comm_rank() 
+         1        639        639        639          0  Heap Memory Used (KB) at Entry : MPI_Comm_size() 
+         1  7.951E+05  7.951E+05  7.951E+05          0  Heap Memory Used (KB) at Entry : MPI_Finalize() 
+         1      155.9      155.9      155.9  1.907E-06  Heap Memory Used (KB) at Entry : MPI_Init() 
+       194  1.657E+06  7.951E+05  1.297E+06  2.425E+05  Heap Memory Used (KB) at Entry : MPI_Pack() 
+       186  1.657E+06      639.2  8.977E+05  5.325E+05  Heap Memory Used (KB) at Entry : MPI_Pack_size() 
+        13  7.951E+05        642  3.666E+05  2.681E+05  Heap Memory Used (KB) at Entry : MPI_Recv() 
+        21  1.657E+06  7.951E+05  1.311E+06  2.308E+05  Heap Memory Used (KB) at Entry : MPI_Send() 
+       204  7.951E+05      643.2  3.272E+05  2.774E+05  Heap Memory Used (KB) at Entry : MPI_Unpack() 
+       625  1.657E+06      638.3  8.321E+05  5.471E+05  Heap Memory Used (KB) at Exit
+         1  7.951E+05  7.951E+05  7.951E+05          0  Heap Memory Used (KB) at Exit : .TAU application
+         1  7.951E+05  7.951E+05  7.951E+05          0  Heap Memory Used (KB) at Exit : MPI_Barrier() 
+         1       2812       2812       2812          0  Heap Memory Used (KB) at Exit : MPI_Bcast() 
+         1      638.8      638.8      638.8          0  Heap Memory Used (KB) at Exit : MPI_Comm_rank() 
+         1        639        639        639          0  Heap Memory Used (KB) at Exit : MPI_Comm_size() 
+         1  7.951E+05  7.951E+05  7.951E+05          0  Heap Memory Used (KB) at Exit : MPI_Finalize() 
+         1      638.3      638.3      638.3          0  Heap Memory Used (KB) at Exit : MPI_Init() 
+       194  1.657E+06  7.951E+05  1.297E+06  2.425E+05  Heap Memory Used (KB) at Exit : MPI_Pack() 
+       186  1.657E+06      639.2  8.977E+05  5.325E+05  Heap Memory Used (KB) at Exit : MPI_Pack_size() 
+        13  7.951E+05      642.2  3.666E+05  2.681E+05  Heap Memory Used (KB) at Exit : MPI_Recv() 
+        21  1.657E+06  7.951E+05  1.311E+06  2.308E+05  Heap Memory Used (KB) at Exit : MPI_Send() 
+       204  7.951E+05      643.2  3.272E+05  2.774E+05  Heap Memory Used (KB) at Exit : MPI_Unpack() 
+         6  7.949E+05     0.2031  1.326E+05  2.962E+05  Increase in Heap Memory (KB)
+         1  7.949E+05  7.949E+05  7.949E+05          0  Increase in Heap Memory (KB) : .TAU application
+         1     0.2266     0.2266     0.2266          0  Increase in Heap Memory (KB) : MPI_Barrier() 
+         1     0.6055     0.6055     0.6055          0  Increase in Heap Memory (KB) : MPI_Bcast() 
+         1      482.5      482.5      482.5          0  Increase in Heap Memory (KB) : MPI_Init() 
+         1     0.2578     0.2578     0.2578          0  Increase in Heap Memory (KB) : MPI_Recv() 
+         1     0.2031     0.2031     0.2031          0  Increase in Heap Memory (KB) : MPI_Send() 
+       393  1.613E+07          4   2.07E+06  2.944E+06  MEMORY LEAK! Heap Allocate : .TAU application
+         5        936          1      250.6        352  MEMORY LEAK! Heap Allocate : MPI_Barrier() 
+         8        936          1      204.9      290.1  MEMORY LEAK! Heap Allocate : MPI_Bcast() 
+         4        936          1      255.8      393.1  MEMORY LEAK! Heap Allocate : MPI_Comm_rank() 
+         4        936          1      255.8      393.1  MEMORY LEAK! Heap Allocate : MPI_Comm_size() 
+         5        936          1      210.8      362.9  MEMORY LEAK! Heap Allocate : MPI_Finalize() 
+      4960  6.627E+04          1      127.9       1537  MEMORY LEAK! Heap Allocate : MPI_Init() 
+         4        936          1      254.5      393.8  MEMORY LEAK! Heap Allocate : MPI_Pack() 
+         4        936          1      255.8      393.1  MEMORY LEAK! Heap Allocate : MPI_Pack_size() 
+         6        936          1      213.7      331.8  MEMORY LEAK! Heap Allocate : MPI_Recv() 
+         9        936          1      136.2      284.1  MEMORY LEAK! Heap Allocate : MPI_Send() 
+         4        936          1        255      393.5  MEMORY LEAK! Heap Allocate : MPI_Unpack() 
+         1  2.176E+06  2.176E+06  2.176E+06          0  Message size for broadcast
+        13       9739       1789       9127       2118  Message size received from all nodes
+        21  1.613E+07       9739  7.685E+06   8.05E+06  Message size sent to all nodes
+        21  1.613E+07       9739  7.685E+06   8.05E+06  Message size sent to node 0
+        21  1.613E+07       9739  7.685E+06   8.05E+06  Message size sent to node 0 : MPI_Send() 
+---------------------------------------------------------------------------------------
+
+NODE 3;CONTEXT 0;THREAD 0:
+---------------------------------------------------------------------------------------
+%Time    Exclusive    Inclusive       #Call      #Subrs  Inclusive Name
+              msec   total msec                          usec/call 
+---------------------------------------------------------------------------------------
+100.0    10:20.529    10:23.564           1         675  623564280 .TAU application
+  0.2        1,266        1,266          14           0      90466 .TAU application => MPI_Recv() 
+  0.2        1,266        1,266          14           0      90466 MPI_Recv() 
+  0.2        1,003        1,003           1           0    1003271 .TAU application => MPI_Init() 
+  0.2        1,003        1,003           1           0    1003271 MPI_Init() 
+  0.1          362          362           1           0     362374 .TAU application => MPI_Finalize() 
+  0.1          362          362           1           0     362374 MPI_Finalize() 
+  0.0          274          274           1           0     274847 .TAU application => MPI_Barrier() 
+  0.0          274          274           1           0     274847 MPI_Barrier() 
+  0.0           64           64          23           0       2817 .TAU application => MPI_Send() 
+  0.0           64           64          23           0       2817 MPI_Send() 
+  0.0           49           49         212           0        233 .TAU application => MPI_Pack() 
+  0.0           49           49         212           0        233 MPI_Pack() 
+  0.0            9            9           1           0       9924 .TAU application => MPI_Bcast() 
+  0.0            9            9           1           0       9924 MPI_Bcast() 
+  0.0            2            2         202           0         10 .TAU application => MPI_Pack_size() 
+  0.0            2            2         202           0         10 MPI_Pack_size() 
+  0.0            1            1         218           0          7 .TAU application => MPI_Unpack() 
+  0.0            1            1         218           0          7 MPI_Unpack() 
+  0.0        0.074        0.074           1           0         74 .TAU application => MPI_Comm_rank() 
+  0.0        0.074        0.074           1           0         74 MPI_Comm_rank() 
+  0.0        0.031        0.031           1           0         31 .TAU application => MPI_Comm_size() 
+  0.0        0.031        0.031           1           0         31 MPI_Comm_size() 
+---------------------------------------------------------------------------------------
+
+USER EVENTS Profile :NODE 3, CONTEXT 0, THREAD 0
+---------------------------------------------------------------------------------------
+NumSamples   MaxValue   MinValue  MeanValue  Std. Dev.  Event Name
+---------------------------------------------------------------------------------------
+      9760  6.627E+04          1      119.9       1382  Heap Allocate
+      9760  6.627E+04          1      119.9       1382  Heap Allocate : MPI_Init() 
+      4905  6.554E+04          1      107.1       1188  Heap Free
+      4905  6.554E+04          1      107.1       1188  Heap Free : MPI_Init() 
+ 1.537E+04      639.5    0.03906      375.3      156.6  Heap Memory Used (KB)
+       676      639.2      148.2      637.8      26.46  Heap Memory Used (KB) at Entry
+         1      148.2      148.2      148.2  1.907E-06  Heap Memory Used (KB) at Entry : .TAU application
+         1      639.2      639.2      639.2          0  Heap Memory Used (KB) at Entry : MPI_Barrier() 
+         1      639.2      639.2      639.2          0  Heap Memory Used (KB) at Entry : MPI_Bcast() 
+         1      639.2      639.2      639.2          0  Heap Memory Used (KB) at Entry : MPI_Comm_rank() 
+         1      639.2      639.2      639.2          0  Heap Memory Used (KB) at Entry : MPI_Comm_size() 
+         1      639.2      639.2      639.2          0  Heap Memory Used (KB) at Entry : MPI_Finalize() 
+         1      155.9      155.9      155.9  1.907E-06  Heap Memory Used (KB) at Entry : MPI_Init() 
+       212      639.2      639.2      639.2          0  Heap Memory Used (KB) at Entry : MPI_Pack() 
+       202      639.2      639.2      639.2          0  Heap Memory Used (KB) at Entry : MPI_Pack_size() 
+        14      639.2      639.2      639.2          0  Heap Memory Used (KB) at Entry : MPI_Recv() 
+        23      639.2      639.2      639.2          0  Heap Memory Used (KB) at Entry : MPI_Send() 
+       218      639.2      639.2      639.2          0  Heap Memory Used (KB) at Entry : MPI_Unpack() 
+       676      639.2      639.2      639.2  1.079E-05  Heap Memory Used (KB) at Exit
+         1      639.2      639.2      639.2          0  Heap Memory Used (KB) at Exit : .TAU application
+         1      639.2      639.2      639.2          0  Heap Memory Used (KB) at Exit : MPI_Barrier() 
+         1      639.2      639.2      639.2          0  Heap Memory Used (KB) at Exit : MPI_Bcast() 
+         1      639.2      639.2      639.2          0  Heap Memory Used (KB) at Exit : MPI_Comm_rank() 
+         1      639.2      639.2      639.2          0  Heap Memory Used (KB) at Exit : MPI_Comm_size() 
+         1      639.2      639.2      639.2          0  Heap Memory Used (KB) at Exit : MPI_Finalize() 
+         1      639.2      639.2      639.2          0  Heap Memory Used (KB) at Exit : MPI_Init() 
+       212      639.2      639.2      639.2          0  Heap Memory Used (KB) at Exit : MPI_Pack() 
+       202      639.2      639.2      639.2          0  Heap Memory Used (KB) at Exit : MPI_Pack_size() 
+        14      639.2      639.2      639.2          0  Heap Memory Used (KB) at Exit : MPI_Recv() 
+        23      639.2      639.2      639.2          0  Heap Memory Used (KB) at Exit : MPI_Send() 
+       218      639.2      639.2      639.2          0  Heap Memory Used (KB) at Exit : MPI_Unpack() 
+         2        491      483.4      487.2      3.812  Increase in Heap Memory (KB)
+         1        491        491        491  5.395E-06  Increase in Heap Memory (KB) : .TAU application
+         1      483.4      483.4      483.4          0  Increase in Heap Memory (KB) : MPI_Init() 
+      4968  6.627E+04          1      129.6       1536  MEMORY LEAK! Heap Allocate : MPI_Init() 
+         1  2.176E+06  2.176E+06  2.176E+06          0  Message size for broadcast
+        14       9739       1789       9171       2047  Message size received from all nodes
+        23  1.613E+07       9739  7.719E+06  8.052E+06  Message size sent to all nodes
+        23  1.613E+07       9739  7.719E+06  8.052E+06  Message size sent to node 0
+        23  1.613E+07       9739  7.719E+06  8.052E+06  Message size sent to node 0 : MPI_Send() 
+---------------------------------------------------------------------------------------
+
+NODE 4;CONTEXT 0;THREAD 0:
+---------------------------------------------------------------------------------------
+%Time    Exclusive    Inclusive       #Call      #Subrs  Inclusive Name
+              msec   total msec                          usec/call 
+---------------------------------------------------------------------------------------
+100.0     9:48.344    10:23.564           1         726  623564249 .TAU application
+  5.4       33,436       33,436          15           0    2229068 .TAU application => MPI_Recv() 
+  5.4       33,436       33,436          15           0    2229068 MPI_Recv() 
+  0.2        1,003        1,003           1           0    1003168 .TAU application => MPI_Init() 
+  0.2        1,003        1,003           1           0    1003168 MPI_Init() 
+  0.1          361          361           1           0     361712 .TAU application => MPI_Finalize() 
+  0.1          361          361           1           0     361712 MPI_Finalize() 
+  0.0          274          274           1           0     274662 .TAU application => MPI_Barrier() 
+  0.0          274          274           1           0     274662 MPI_Barrier() 
+  0.0           67           67         230           0        294 .TAU application => MPI_Pack() 
+  0.0           67           67         230           0        294 MPI_Pack() 
+  0.0           63           63          25           0       2545 .TAU application => MPI_Send() 
+  0.0           63           63          25           0       2545 MPI_Send() 
+  0.0            9            9           1           0       9808 .TAU application => MPI_Bcast() 
+  0.0            9            9           1           0       9808 MPI_Bcast() 
+  0.0            1            1         218           0          7 .TAU application => MPI_Pack_size() 
+  0.0            1            1         218           0          7 MPI_Pack_size() 
+  0.0            1            1         232           0          6 .TAU application => MPI_Unpack() 
+  0.0            1            1         232           0          6 MPI_Unpack() 
+  0.0        0.095        0.095           1           0         95 .TAU application => MPI_Comm_rank() 
+  0.0        0.095        0.095           1           0         95 MPI_Comm_rank() 
+  0.0        0.059        0.059           1           0         59 .TAU application => MPI_Comm_size() 
+  0.0        0.059        0.059           1           0         59 MPI_Comm_size() 
+---------------------------------------------------------------------------------------
+
+USER EVENTS Profile :NODE 4, CONTEXT 0, THREAD 0
+---------------------------------------------------------------------------------------
+NumSamples   MaxValue   MinValue  MeanValue  Std. Dev.  Event Name
+---------------------------------------------------------------------------------------
+      9785  6.627E+04          1      119.7       1380  Heap Allocate
+      9785  6.627E+04          1      119.7       1380  Heap Allocate : MPI_Init() 
+      4930  6.554E+04          1        107       1185  Heap Free
+      4930  6.554E+04          1        107       1185  Heap Free : MPI_Init() 
+ 1.542E+04      638.4    0.03906      375.7      156.3  Heap Memory Used (KB)
+       727      638.3      148.2      636.9      25.47  Heap Memory Used (KB) at Entry
+         1      148.2      148.2      148.2  1.907E-06  Heap Memory Used (KB) at Entry : .TAU application
+         1      638.3      638.3      638.3  7.629E-06  Heap Memory Used (KB) at Entry : MPI_Barrier() 
+         1      638.3      638.3      638.3  7.629E-06  Heap Memory Used (KB) at Entry : MPI_Bcast() 
+         1      638.3      638.3      638.3  7.629E-06  Heap Memory Used (KB) at Entry : MPI_Comm_rank() 
+         1      638.3      638.3      638.3  7.629E-06  Heap Memory Used (KB) at Entry : MPI_Comm_size() 
+         1      638.3      638.3      638.3  7.629E-06  Heap Memory Used (KB) at Entry : MPI_Finalize() 
+         1      155.9      155.9      155.9  1.907E-06  Heap Memory Used (KB) at Entry : MPI_Init() 
+       230      638.3      638.3      638.3          0  Heap Memory Used (KB) at Entry : MPI_Pack() 
+       218      638.3      638.3      638.3          0  Heap Memory Used (KB) at Entry : MPI_Pack_size() 
+        15      638.3      638.3      638.3          0  Heap Memory Used (KB) at Entry : MPI_Recv() 
+        25      638.3      638.3      638.3  7.629E-06  Heap Memory Used (KB) at Entry : MPI_Send() 
+       232      638.3      638.3      638.3          0  Heap Memory Used (KB) at Entry : MPI_Unpack() 
+       727      638.3      638.3      638.3  7.629E-06  Heap Memory Used (KB) at Exit
+         1      638.3      638.3      638.3  7.629E-06  Heap Memory Used (KB) at Exit : .TAU application
+         1      638.3      638.3      638.3  7.629E-06  Heap Memory Used (KB) at Exit : MPI_Barrier() 
+         1      638.3      638.3      638.3  7.629E-06  Heap Memory Used (KB) at Exit : MPI_Bcast() 
+         1      638.3      638.3      638.3  7.629E-06  Heap Memory Used (KB) at Exit : MPI_Comm_rank() 
+         1      638.3      638.3      638.3  7.629E-06  Heap Memory Used (KB) at Exit : MPI_Comm_size() 
+         1      638.3      638.3      638.3  7.629E-06  Heap Memory Used (KB) at Exit : MPI_Finalize() 
+         1      638.3      638.3      638.3  7.629E-06  Heap Memory Used (KB) at Exit : MPI_Init() 
+       230      638.3      638.3      638.3          0  Heap Memory Used (KB) at Exit : MPI_Pack() 
+       218      638.3      638.3      638.3          0  Heap Memory Used (KB) at Exit : MPI_Pack_size() 
+        15      638.3      638.3      638.3          0  Heap Memory Used (KB) at Exit : MPI_Recv() 
+        25      638.3      638.3      638.3  7.629E-06  Heap Memory Used (KB) at Exit : MPI_Send() 
+       232      638.3      638.3      638.3          0  Heap Memory Used (KB) at Exit : MPI_Unpack() 
+         2        490      482.4      486.2      3.813  Increase in Heap Memory (KB)
+         1        490        490        490  5.395E-06  Increase in Heap Memory (KB) : .TAU application
+         1      482.4      482.4      482.4  5.395E-06  Increase in Heap Memory (KB) : MPI_Init() 
+      4967  6.627E+04          1      129.4       1536  MEMORY LEAK! Heap Allocate : MPI_Init() 
+         1  2.176E+06  2.176E+06  2.176E+06          0  Message size for broadcast
+        15       9739       1789       9209       1983  Message size received from all nodes
+        25  1.613E+07       9739  7.747E+06  8.053E+06  Message size sent to all nodes
+        25  1.613E+07       9739  7.747E+06  8.053E+06  Message size sent to node 0
+        25  1.613E+07       9739  7.747E+06  8.053E+06  Message size sent to node 0 : MPI_Send() 
+---------------------------------------------------------------------------------------
+
+FUNCTION SUMMARY (total):
+---------------------------------------------------------------------------------------
+%Time    Exclusive    Inclusive       #Call      #Subrs  Inclusive Name
+              msec   total msec                          usec/call 
+---------------------------------------------------------------------------------------
+100.0    40:40.717    51:57.821           5        5305  623564269 .TAU application
+ 21.3    11:05.618    11:05.618         151           0    4408069 .TAU application => MPI_Recv() 
+ 21.3    11:05.618    11:05.618         151           0    4408069 MPI_Recv() 
+  0.2        5,015        5,015           5           0    1003196 .TAU application => MPI_Init() 
+  0.2        5,015        5,015           5           0    1003196 MPI_Init() 
+  0.1        3,002        3,002         151           0      19881 .TAU application => MPI_Send() 
+  0.1        3,002        3,002         151           0      19881 MPI_Send() 
+  0.1        1,808        1,808           5           0     361650 .TAU application => MPI_Finalize() 
+  0.1        1,808        1,808           5           0     361650 MPI_Finalize() 
+  0.0        1,100        1,100           5           0     220119 .TAU application => MPI_Barrier() 
+  0.0        1,100        1,100           5           0     220119 MPI_Barrier() 
+  0.0          280          280        1752           0        160 .TAU application => MPI_Unpack() 
+  0.0          280          280        1752           0        160 MPI_Unpack() 
+  0.0          223          223        1621           0        138 .TAU application => MPI_Pack() 
+  0.0          223          223        1621           0        138 MPI_Pack() 
+  0.0           44           44           5           0       8930 .TAU application => MPI_Bcast() 
+  0.0           44           44           5           0       8930 MPI_Bcast() 
+  0.0            8            8        1600           0          6 .TAU application => MPI_Pack_size() 
+  0.0            8            8        1600           0          6 MPI_Pack_size() 
+  0.0        0.471        0.471           5           0         94 .TAU application => MPI_Comm_rank() 
+  0.0        0.471        0.471           5           0         94 MPI_Comm_rank() 
+  0.0        0.408        0.408           5           0         82 .TAU application => MPI_Comm_size() 
+  0.0        0.408        0.408           5           0         82 MPI_Comm_size() 
+
+FUNCTION SUMMARY (mean):
+---------------------------------------------------------------------------------------
+%Time    Exclusive    Inclusive       #Call      #Subrs  Inclusive Name
+              msec   total msec                          usec/call 
+---------------------------------------------------------------------------------------
+100.0     8:08.143    10:23.564           1        1061  623564269 .TAU application
+ 21.3     2:13.123     2:13.123        30.2           0    4408069 .TAU application => MPI_Recv() 
+ 21.3     2:13.123     2:13.123        30.2           0    4408069 MPI_Recv() 
+  0.2        1,003        1,003           1           0    1003196 .TAU application => MPI_Init() 
+  0.2        1,003        1,003           1           0    1003196 MPI_Init() 
+  0.1          600          600        30.2           0      19881 .TAU application => MPI_Send() 
+  0.1          600          600        30.2           0      19881 MPI_Send() 
+  0.1          361          361           1           0     361650 .TAU application => MPI_Finalize() 
+  0.1          361          361           1           0     361650 MPI_Finalize() 
+  0.0          220          220           1           0     220119 .TAU application => MPI_Barrier() 
+  0.0          220          220           1           0     220119 MPI_Barrier() 
+  0.0           56           56       350.4           0        160 .TAU application => MPI_Unpack() 
+  0.0           56           56       350.4           0        160 MPI_Unpack() 
+  0.0           44           44       324.2           0        138 .TAU application => MPI_Pack() 
+  0.0           44           44       324.2           0        138 MPI_Pack() 
+  0.0            8            8           1           0       8930 .TAU application => MPI_Bcast() 
+  0.0            8            8           1           0       8930 MPI_Bcast() 
+  0.0            1            1         320           0          6 .TAU application => MPI_Pack_size() 
+  0.0            1            1         320           0          6 MPI_Pack_size() 
+  0.0       0.0942       0.0942           1           0         94 .TAU application => MPI_Comm_rank() 
+  0.0       0.0942       0.0942           1           0         94 MPI_Comm_rank() 
+  0.0       0.0816       0.0816           1           0         82 .TAU application => MPI_Comm_size() 
+  0.0       0.0816       0.0816           1           0         82 MPI_Comm_size() 

@@ -343,6 +343,7 @@ subroutine QMR(b,x, QMRiter)
   Call deall(S)
 
 end subroutine qmr ! qmr
+
 ! *****************************************************************************
 subroutine BICG(b,x,BICGiter)
   ! Stablized version of BiConjugate Gradient, set up for solving
@@ -497,6 +498,7 @@ subroutine BICG(b,x,BICGiter)
       call linComb(C_One,b,C_MinusOne,AX,AX)
       rnorm = CDSQRT(dotProd(AX,AX))
      
+	  
       if (rnorm.lt.btol) then
           x = xhalf
           BICGiter%failed = .false.
@@ -578,5 +580,6 @@ subroutine BICG(b,x,BICGiter)
   Call deall(T)
 
 end subroutine BICG ! BICG
+
 
 end module solver ! solver

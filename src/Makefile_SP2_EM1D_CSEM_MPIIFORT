@@ -22,16 +22,14 @@
 # MODULE = -fmod=$(OBJDIR)
 # LIBS = -lblas -llapack
 #  Uncomment these lines to make program with Intel compiler
-#include Makefile.local
-#OBJDIR = ../objs/3D_MT/ifortReleaseMPI
-#F90 = mpiifort #-f90=ifort #ifort
-#FFLAGS =  -parallel -debug all -check bounds #-openmp #-heap-arrays
-##FFLAGS = -debug all -check bounds -traceback -heap-arrays
-#MPIFLAGS = -cpp -DMPI # for serial code
-#MODULE = -module $(OBJDIR)
-##LIBS = -lblas -llapack
-#LIBS_PATH = -L/usr/lib64  -L/usr/lib/x86_64-linux-gnu -L/mnt/disks/code/ModEM_working_New_1DCSEM/quadpack
-#LIBS = -llapack -lblas -lfftw3l -lfftw3f -lfftw3 #-lquadpack_dbl
+# include Makefile.local
+# OBJDIR = ./objs/3D_MT/IFortDebug
+# F90 = ifort
+# FFLAGS = -O3 -parallel -openmp #-heap-arrays
+# FFLAGS = -debug all -check bounds -traceback -heap-arrays
+# MPIFLAGS = -cpp # for serial code
+# MODULE = -module $(OBJDIR)
+# LIBS = -lblas -llapack
 #  Uncomment these lines to make program with PGI compiler
 # include Makefile.local
 # OBJDIR = ./objs/3D_MT/PGIDebug
@@ -46,23 +44,23 @@
 
 # ------------------Macro-Defs---------------------
 include Makefile.local
-OBJDIR = ./objs/3D_MT/GFortReleaseMPI
-F90 = mpifort 
-FFLAGS = -O3 -g -ffree-line-length-none -Wno-all -static 
-MPIFLAGS = -x f95-cpp-input -DMPI -I/usr/include/
-MODULE = -J $(OBJDIR)
-LIBS_PATH = -L/usr/lib64  -L/usr/lib/x86_64-linux-gnu #-L/mnt/disks/code/ModEM_working_New_1DCSEM/quadpack
-LIBS = -llapack -lblas -lfftw3l -lfftw3f -lfftw3 #-lquadpack_dbl
+OBJDIR = ./objs/3D_MT/IFortReleaseMPI
+F90 = mpiifort -fPIC
+FFLAGS = -O3 -lifcore
+MPIFLAGS = -cpp -DMPI -lpthreads
+MODULE = -module $(OBJDIR)
+LIBS_PATH = -L/usr/lib64  -L/usr/lib/x86_64-linux-gnu
+LIBS = -llapack -lblas -lfftw3l -lfftw3f -lfftw3
 
 # -------------------End-macro-Defs---------------------------
-OBJ = $(OBJDIR)/math_constants.o $(OBJDIR)/utilities.o $(OBJDIR)/file_units.o $(OBJDIR)/DataSpace.o $(OBJDIR)/GridDef.o $(OBJDIR)/sg_vector.o $(OBJDIR)/sg_scalar.o $(OBJDIR)/sg_spherical.o $(OBJDIR)/elements.o $(OBJDIR)/GridCalc.o $(OBJDIR)/sg_sparse_vector.o $(OBJDIR)/Declaration_MPI.o $(OBJDIR)/ModelSpace.o $(OBJDIR)/SensMatrix.o $(OBJDIR)/EMfieldInterp.o $(OBJDIR)/sg_boundary.o $(OBJDIR)/transmitters.o $(OBJDIR)/SolnSpace.o $(OBJDIR)/receivers.o $(OBJDIR)/dataTypes.o $(OBJDIR)/DataFunc.o $(OBJDIR)/DataSens.o $(OBJDIR)/SolverSens.o $(OBJDIR)/vecTranslate.o $(OBJDIR)/spOpTools.o $(OBJDIR)/spOpTopology_SG.o $(OBJDIR)/MetricElements_CSG.o $(OBJDIR)/nestedEM.o $(OBJDIR)/WSfwd2Dpar.o $(OBJDIR)/WSutils.o $(OBJDIR)/WSfwd1Dmod.o $(OBJDIR)/WSfwd2Dmod.o $(OBJDIR)/FwdTEmod.o $(OBJDIR)/boundary_ws.o $(OBJDIR)/modelOperator3D.o $(OBJDIR)/solver.o $(OBJDIR)/EMsolve3D.o $(OBJDIR)/FilterModules.o $(OBJDIR)/Dipole1D.o $(OBJDIR)/machine_dep_mod.o $(OBJDIR)/util_mod.o $(OBJDIR)/constants_mod.o $(OBJDIR)/spline_mod.o $(OBJDIR)/io_common_mod.o $(OBJDIR)/hankel_mod.o $(OBJDIR)/adaptive_int_mod.o $(OBJDIR)/counter_mod.o $(OBJDIR)/refl_mod_new.o $(OBJDIR)/EM1D.o $(OBJDIR)/CSEM_module.o $(OBJDIR)/ForwardSolver.o $(OBJDIR)/SensComp.o $(OBJDIR)/UserCtrl.o $(OBJDIR)/Sub_MPI.o $(OBJDIR)/Main_MPI.o $(OBJDIR)/SymmetryTest.o $(OBJDIR)/ioAscii.o $(OBJDIR)/DataIO.o $(OBJDIR)/Main.o $(OBJDIR)/INVcore.o $(OBJDIR)/NLCG.o $(OBJDIR)/DCG.o $(OBJDIR)/LBFGS.o $(OBJDIR)/CtrlFile.o $(OBJDIR)/Mod3DMT.o 
+OBJ = $(OBJDIR)/math_constants.o $(OBJDIR)/utilities.o $(OBJDIR)/file_units.o $(OBJDIR)/DataSpace.o $(OBJDIR)/GridDef.o $(OBJDIR)/sg_vector.o $(OBJDIR)/sg_scalar.o $(OBJDIR)/sg_spherical.o $(OBJDIR)/elements.o $(OBJDIR)/GridCalc.o $(OBJDIR)/sg_sparse_vector.o $(OBJDIR)/Declaration_MPI.o $(OBJDIR)/ModelSpace.o $(OBJDIR)/SensMatrix.o $(OBJDIR)/EMfieldInterp.o $(OBJDIR)/sg_boundary.o $(OBJDIR)/transmitters.o $(OBJDIR)/SolnSpace.o $(OBJDIR)/receivers.o $(OBJDIR)/dataTypes.o $(OBJDIR)/DataFunc.o $(OBJDIR)/DataSens.o $(OBJDIR)/SolverSens.o $(OBJDIR)/vecTranslate.o $(OBJDIR)/spOpTools.o $(OBJDIR)/spOpTopology_SG.o $(OBJDIR)/MetricElements_CSG.o $(OBJDIR)/nestedEM.o $(OBJDIR)/WSfwd2Dpar.o $(OBJDIR)/WSutils.o $(OBJDIR)/WSfwd1Dmod.o $(OBJDIR)/WSfwd2Dmod.o $(OBJDIR)/FwdTEmod.o $(OBJDIR)/boundary_ws.o $(OBJDIR)/modelOperator3D.o $(OBJDIR)/solver.o $(OBJDIR)/EMsolve3D.o $(OBJDIR)/FilterModules.o $(OBJDIR)/Dipole1D.o $(OBJDIR)/machine_dep_mod.o $(OBJDIR)/util_mod.o $(OBJDIR)/constants_mod.o $(OBJDIR)/spline_mod.o $(OBJDIR)/io_common_mod.o $(OBJDIR)/quadpack_dbl.o $(OBJDIR)/hankel_mod.o $(OBJDIR)/adaptive_int_mod.o $(OBJDIR)/counter_mod.o $(OBJDIR)/refl_mod_new.o $(OBJDIR)/EM1D.o $(OBJDIR)/CSEM_module.o $(OBJDIR)/ForwardSolver.o $(OBJDIR)/SensComp.o $(OBJDIR)/UserCtrl.o $(OBJDIR)/Sub_MPI.o $(OBJDIR)/Main_MPI.o $(OBJDIR)/SymmetryTest.o $(OBJDIR)/ioAscii.o $(OBJDIR)/DataIO.o $(OBJDIR)/Main.o $(OBJDIR)/INVcore.o $(OBJDIR)/NLCG.o $(OBJDIR)/DCG.o $(OBJDIR)/LBFGS.o $(OBJDIR)/CtrlFile.o $(OBJDIR)/Mod3DMT.o 
 
 
 all: Mod3DMT 
 
 # Here is the link step 
 Mod3DMT: $(OBJDIR) $(OBJ) 
-	 $(F90) -o $(OUTDIR)/Mod3DMT $(OBJ) $(LIBS_PATH) $(LIBS)
+	 $(F90) -o $(OUTDIR)/ModEM_SP2_iFort $(OBJ) $(LIBS_PATH) $(LIBS)
 
 # Here are the compile steps 
 
@@ -210,7 +208,10 @@ $(OBJDIR)/adaptive_int_mod.o:3D_MT/CSEM_module/EM1D/src/adaptive_int_mod.f90 $(O
 $(OBJDIR)/counter_mod.o:3D_MT/CSEM_module/EM1D/src/counter_mod.f90 $(OBJDIR)/machine_dep_mod.o $(OBJDIR)/util_mod.o 3D_MT/CSEM_module/EM1D/src/counter.f90
 	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) 3D_MT/CSEM_module/EM1D/src/counter_mod.f90 -o $(OBJDIR)/counter_mod.o
 
-$(OBJDIR)/refl_mod_new.o:3D_MT/CSEM_module/EM1D/src/refl_mod_new.f90 $(OBJDIR)/machine_dep_mod.o $(OBJDIR)/util_mod.o $(OBJDIR)/io_common_mod.o $(OBJDIR)/hankel_mod.o $(OBJDIR)/adaptive_int_mod.o $(OBJDIR)/counter_mod.o 3D_MT/CSEM_module/EM1D/src/find_radii.f90 3D_MT/CSEM_module/EM1D/src/get_dz.f90
+$(OBJDIR)/quadpack_dbl.o:3D_MT/CSEM_module/EM1D/src/quadpack_dbl.f90
+	         $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) 3D_MT/CSEM_module/EM1D/src/quadpack_dbl.f90 -o $(OBJDIR)/quadpack_dbl.o
+
+$(OBJDIR)/refl_mod_new.o:3D_MT/CSEM_module/EM1D/src/refl_mod_new.f90 $(OBJDIR)/machine_dep_mod.o $(OBJDIR)/util_mod.o $(OBJDIR)/io_common_mod.o $(OBJDIR)/hankel_mod.o $(OBJDIR)/adaptive_int_mod.o $(OBJDIR)/counter_mod.o $(OBJDIR)/quadpack_dbl.o 3D_MT/CSEM_module/EM1D/src/find_radii.f90 3D_MT/CSEM_module/EM1D/src/get_dz.f90
 	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) 3D_MT/CSEM_module/EM1D/src/refl_mod_new.f90 -o $(OBJDIR)/refl_mod_new.o
 
 $(OBJDIR)/EM1D.o:3D_MT/CSEM_module/EM1D/src/EM1D.f90 $(OBJDIR)/refl_mod_new.o $(OBJDIR)/io_common_mod.o 
@@ -231,14 +232,14 @@ $(OBJDIR)/UserCtrl.o:./UserCtrl.f90 $(OBJDIR)/utilities.o
 $(OBJDIR)/Sub_MPI.o:3D_MT/Sub_MPI.f90 $(OBJDIR)/math_constants.o $(OBJDIR)/utilities.o $(OBJDIR)/SolnSpace.o $(OBJDIR)/UserCtrl.o $(OBJDIR)/ForwardSolver.o $(OBJDIR)/Declaration_MPI.o 
 	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) 3D_MT/Sub_MPI.f90 -o $(OBJDIR)/Sub_MPI.o
 
-$(OBJDIR)/ioAscii.o:3D_MT/ioMod/ioAscii.f90 $(OBJDIR)/GridDef.o $(OBJDIR)/math_constants.o $(OBJDIR)/EMsolve3D.o $(OBJDIR)/DataSpace.o $(OBJDIR)/DataFunc.o $(OBJDIR)/ForwardSolver.o $(OBJDIR)/transmitters.o $(OBJDIR)/receivers.o $(OBJDIR)/dataTypes.o 
-	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) 3D_MT/ioMod/ioAscii.f90 -o $(OBJDIR)/ioAscii.o
-	 
 $(OBJDIR)/Main_MPI.o:MPI/Main_MPI.f90 $(OBJDIR)/math_constants.o $(OBJDIR)/file_units.o $(OBJDIR)/utilities.o $(OBJDIR)/DataSens.o $(OBJDIR)/SolverSens.o $(OBJDIR)/ForwardSolver.o $(OBJDIR)/SensComp.o $(OBJDIR)/Declaration_MPI.o $(OBJDIR)/Sub_MPI.o 
 	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) MPI/Main_MPI.f90 -o $(OBJDIR)/Main_MPI.o
 
 $(OBJDIR)/SymmetryTest.o:SENS/SymmetryTest.f90 $(OBJDIR)/SensComp.o $(OBJDIR)/Main_MPI.o 
 	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) SENS/SymmetryTest.f90 -o $(OBJDIR)/SymmetryTest.o
+
+$(OBJDIR)/ioAscii.o:3D_MT/ioMod/ioAscii.f90 $(OBJDIR)/GridDef.o $(OBJDIR)/math_constants.o $(OBJDIR)/EMsolve3D.o $(OBJDIR)/DataSpace.o $(OBJDIR)/DataFunc.o $(OBJDIR)/ForwardSolver.o $(OBJDIR)/transmitters.o $(OBJDIR)/receivers.o $(OBJDIR)/dataTypes.o 
+	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) 3D_MT/ioMod/ioAscii.f90 -o $(OBJDIR)/ioAscii.o
 
 $(OBJDIR)/DataIO.o:3D_MT/DataIO.f90 $(OBJDIR)/math_constants.o $(OBJDIR)/file_units.o $(OBJDIR)/utilities.o $(OBJDIR)/DataSpace.o $(OBJDIR)/GridCalc.o $(OBJDIR)/transmitters.o $(OBJDIR)/receivers.o $(OBJDIR)/dataTypes.o 
 	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) 3D_MT/DataIO.f90 -o $(OBJDIR)/DataIO.o

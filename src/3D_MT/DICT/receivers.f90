@@ -28,6 +28,7 @@ module receivers
      ! Same as x: r(1) points North, r(2) points East, r(3) points down
      real (kind=prec)                   ::  x(3)
      real (kind=prec)                   ::  r(3)
+	 real (kind=prec)                   ::  Rx_Azi
      ! site ID used for input/output and for searching through the list
      character(50)                      ::  id=''
      character(50)                      ::  id_ref=''
@@ -80,11 +81,12 @@ Contains
 ! a small number of values, so convenience is much more of an issue here!
 ! NM: modified to include referance site info.
 
-function update_rxDict(loc,id,loc_ref,id_ref) result (iRx)
+function update_rxDict(loc,id,Rx_azi,loc_ref,id_ref) result (iRx)
 
      character(*), intent(in)            :: id
      real(kind=prec), intent(in)         :: loc(3)
      real(kind=prec):: lat,lon
+	 real(kind=prec),intent(in),optional :: Rx_azi
      real(kind=prec),intent(in),optional :: loc_ref(3)
      character(*), intent(in),optional   :: id_ref
      integer                             :: iRx
@@ -102,6 +104,11 @@ function update_rxDict(loc,id,loc_ref,id_ref) result (iRx)
      	new%r  = loc_ref
      	new%id_ref=id_ref
      end if
+
+     if (present(Rx_azi)) then
+     	new%Rx_azi  = Rx_azi
+     end if	 
+	 
 
      ! If rxDict doesn't yet exist, create it
      if(.not. associated(rxDict)) then
@@ -125,7 +132,14 @@ function update_rxDict(loc,id,loc_ref,id_ref) result (iRx)
                  iRx=i
                  new_Rx = .false.
                  return
-              end if   
+              end if
+           elseif (present(Rx_azi)) then
+		   !Check if the this site has same azimuth as what we have already in the Dic 
+               if (new%Rx_azi .eq. rxDict(i)%Rx_azi) then 
+                 iRx=i
+                 new_Rx = .false.
+                 return
+              end if              		   
            else    
      	    iRx=i
             new_Rx = .false.
@@ -161,7 +175,7 @@ function update_rxDict(loc,id,loc_ref,id_ref) result (iRx)
 
      write(*,*) 'Receiver dictionary:'
      do iRx = 1, size(rxDict)
-        write(*,'(i6,a50,3f15.6,a50)') iRx,trim(rxDict(iRx)%id),rxDict(iRx)%x,trim(rxDict(iRx)%id_ref)
+        write(*,'(i6,a50,4f15.6,a50)') iRx,trim(rxDict(iRx)%id),rxDict(iRx)%x,rxDict(iRx)%Rx_azi,trim(rxDict(iRx)%id_ref)
      enddo
 
   end subroutine print_rxDict

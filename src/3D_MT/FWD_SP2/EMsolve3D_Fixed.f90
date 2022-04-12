@@ -5,8 +5,8 @@
 
 module EMsolve3D
   use sg_boundary! work between different data types
- ! (between boundary conditions and
-! complex vectors)
+  ! (between boundary conditions and
+  ! complex vectors)
   use sg_sparse_vector, only: add_scvector
   use modelOperator3D  ! Maxwell operator module for sp
   use vectranslate     ! translate back and forth between Cvec and vec
@@ -21,9 +21,10 @@ module EMsolve3D
 
   type :: emsolve_control
     ! Values of solver control parameters, e.g., read in from file
-    !   plus other information on how the solver is to be initialized, called, etc.
-    !  idea is that this is the public access version of this info, which is
-    !   copied into private version for actual solver control
+    ! plus other information on how the solver is to be initialized, 
+    ! called, etc.
+    ! idea is that this is the public access version of this info, which is
+    ! copied into private version for actual solver control
     integer                   ::      IterPerDivCor, MaxDivCor, MaxIterDivCor
     real(kind = 8)            ::      tolEMfwd, tolEMadj, tolDivCor
     logical                   ::      E0fromFile
@@ -36,16 +37,15 @@ module EMsolve3D
     real(kind = 8)            ::      AirLayersMaxHeight, AirLayersAlpha, AirLayersMinTopDz
     real(kind = 8), pointer, dimension(:)   :: AirLayersDz
     logical                   ::      AirLayersPresent=.false.
-	character (len=10)        ::      solver_name="BICG"		
+	character (len=10)        ::      solver_name="QMR"		
 	character (len=50) , public      ::   get_1D_from="Geometric_mean"	
-    character (len=50) , public      ::   compute_1D_from="EM1D"
   end type emsolve_control
 
   type :: emsolve_diag
     ! Solver diagnostic arrays, computed during run of forward solver.
-    !  idea is that this is the public access version of this info, which is
-    !   copied from the private version in module em_solve where this info is
-    !   initially stored
+    ! idea is that this is the public access version of this info, which is
+    ! copied from the private version in module em_solve where this info is
+    ! initially stored
     logical                   :: diagOut
     character (len=80)        :: fn_diagn
     integer                   :: ioDiag
@@ -66,10 +66,10 @@ module EMsolve3D
   real(kind=prec), parameter       ::      tolEMDef = 1E-10
   ! misfit tolerance for convergence of divergence correction solver
   real(kind=prec), parameter       ::      tolDivCorDef = 1E-7
-  !Solver name, by default we use BICG
-  character (len=10)  		       ::   solver_name="BICG"
+  !Solver name, by default we use QMR
+  character (len=10)  		 ::   solver_name="QMR"
   character (len=50) , public      ::   get_1D_from="Geometric_mean"
-  character (len=50) , public      ::   compute_1D_from="EM1D"							 
+							 
 
   save
 
@@ -80,7 +80,7 @@ module EMsolve3D
   !  of em_solve; are saved between calls, private to this module
   integer,  private        ::      IterPerDivCor, MaxDivCor, MaxIterDivCor
   integer,  private        ::      MaxIterTotal ! = MaxDivCor*IterPerDivCor
-  real(kind=prec), private   ::      tolEMfwd, tolEMadj, tolDivCor
+  real(kind=prec), private ::      tolEMfwd, tolEMadj, tolDivCor
 
   ! EMsolve diagnostics: these are computed during execution of em_solve
   !   can be retrieved by call to getEmsolveDiag
@@ -99,7 +99,34 @@ Contains
 ! modified to use the sparse matrix data structure defined in
 ! sp modelOperator3D module
 ! If bRHS%adj = 'TRN' solves transposed problem  A^T x = b
-  subroutine FWDsolve3D(bRHS,omega,eSol)
+!
+! below is Anna's comment copied from the MF equivalent subroutine
+!
+! Note [AK 2018-05-10]:
+! Any physical source has already been pre-multiplied by
+!       [- ISIGN i\omega\mu_0]
+! to yield
+!       [- ISIGN i\omega\mu_0 j]
+! on input to this routine. Note that this also holds for the secondary field
+! formulation, where
+!       j = dsigma * e,
+! as well as for the tidal forcing, where
+!       j = sigma (v x B).
+! However, we still want to pre-compute the source RHS outside of this
+! routine, for "generality".
+! Specifically, Jmult supplies an interior source on the RHS that is
+! not physical and is not pre-multiplied by that factor (except in Pmult).
+! So it's cleaner to pass on the complete interior forcing in bRHS.
+! For divergence correction, we divide by [+ ISIGN i\omega\mu_0] to get
+!       i[- Div(j)].
+! The plus sign is needed because we're taking the divergence of
+!       curl(curl(E)) + ISIGN i\omega\mu_0 sigma E = f - curl(curl(b))
+! Terms 1 and 4 vanishes, leaving:
+!       Div(sigma E) - Div(f)/(+ ISIGN i\omega\mu_0) =  0.
+! For a physical source j, this is equivalent to Div(sigma E) + Div(j) = 0;
+! but the divergence correction may be applied also for non-physical sources,
+! such  as in Jmult ('FWD') and JmultT ('TRN').
+  subroutine FWDsolve3D(bRHS,omega,eSol,comm_local)
 
     ! redefine some of the interfaces (locally) for our convenience
     use sg_vector !, only: copy => copy_cvector, &
@@ -114,6 +141,8 @@ Contains
     !  INPUTS:
     type (RHS_t), intent(in)      :: bRHS
     real(kind=prec), intent(in)   :: omega
+    !dummy parameter for compatibiliy
+    integer, intent(in),optional  :: comm_local 
     !  OUTPUTS:
     !  eSol must be allocated before calling this routine
     type (cvector), intent(inout) :: eSol
@@ -125,8 +154,8 @@ Contains
     complex(kind=prec)          :: iOmegaMuInv
     ! e(lectric field) s(ource) b(rhs) phi0(div(s))
     complex(kind=prec), pointer, dimension (:) :: e,s,b
-    complex(kind=prec), allocatable, dimension (:) :: ei,phi0,phii
-    complex(kind=prec), allocatable, dimension (:) :: temp,stemp
+    complex(kind=prec), allocatable, dimension (:) :: ei,si,phi0
+    complex(kind=prec), allocatable, dimension (:) :: temp, stemp
     character(80)                                  :: cfile
     !  band-aid cvector ...
     type (cvector)              :: tvec
@@ -140,6 +169,7 @@ Contains
     DivCorRelErr = R_ZERO
     failed = .false.
     trans = (bRHS%adj .eq. TRN)
+    iOmegaMuInv = C_ONE/cmplx(0.0,1.0d0*ISIGN*omega*MU_0,kind=prec) 
     if (.not.eSol%allocated) then
        write(0,*) 'eSol in EMsolve not allocated yet'
        stop
@@ -149,6 +179,10 @@ Contains
     !   since these will be private after debugging
         Nei = size(EDGEi,1)
         Ne = size(EDGEb,1)+Nei
+        if (output_level > 3) then
+            write(*,'(a36,i8,a4,i8)') 'FWDsolve3D model grid #edges: Nei=', &
+                Nei,' Ne=',Ne
+        end if
     end if
     ! allocate/initialize local data structures
     ! cboundary is a quite complex type...
@@ -159,11 +193,22 @@ Contains
     allocate(e(Ne))
     allocate(ei(Nei))
     allocate(s(Ne))
+    allocate(si(Nei))
     allocate(b(Nei))
-    allocate(stemp(Nei))
     allocate(temp(Ne))
+    allocate(stemp(Nei))
     ! at this point e should be all zeros if there's no initial guess
     call getCVector(eSol,e)
+    if(bRHS%nonZero_Source) then ! source (TRN)
+        !   this is for *all* nodes
+        Nni = size(NODEi,1)
+        Nn  = size(NODEb,1) + Nni
+        if (output_level > 3) then
+            write(*,'(a36,i8,a4,i8)') 'FWDsolve3D source grid #nodes: Nni=',    Nni,' Nn=',Nn
+        end if
+    ! uncomment the following line to try divergence correction in CCGD
+    !    allocate(phi0(Nn)) ! make sure you *WANT* to do this, first!
+    endif
     ! Using boundary condition and sources from rHS data structure
     ! construct vector b (defined only on interior nodes) for rHS of
     ! reduced (interior nodes only) linear system of equations
@@ -179,7 +224,7 @@ Contains
              ! for now it is just a walkaround, probably not going to
              ! be used by most
               call add_scvector(C_ONE,bRHS%sSparse,tvec)
-              call getVector(tvec,s)
+              call getVector(tvec,s) !s is of size nEdge (all edges)
           else
              ! normal source
               call getVector(bRHS%s,s)
@@ -196,19 +241,22 @@ Contains
           endif ! otherwise the eSol should be all zeros
           return
        endif
-       iOmegaMuInv = ISIGN/cmplx(0.0,omega*MU_0,prec)
-       b = s(EDGEi) ! taking only the interior edges
-       b = b * iOmegaMuInv / Vedge(EDGEi)
-       call RMATxCVEC(GDii,b,stemp)
-       stemp = Vedge(EDGEi)*stemp
-       b = s(EDGEi) + stemp
-       Call Mult_Aib(e(EDGEb), .false., stemp)
-       stemp = stemp/Vedge(EDGEi)
-       b = b + stemp
+       ! NOTE that here we DO NOT divide the source by volume weights before
+       ! the Div as the divcorr operation in SP is using VDiv instead of Div
+       si = s(EDGEi) ! taking only the interior edges
+       ! note that Div is formed from inner edges to all nodes
+       ! uncomment the following line, to do divergence correction
+       ! call Div(si,phi0)
+       ! divide by iOmegaMu and Volume weight to get the source term j
+       si = si * iOmegaMuInv / Vedge(EDGEi)
+       ! calculate the modification term V_E GD_II j
+       call RMATxCVEC(GDii,si,stemp)
+       ! now i\omega\mu_0 V_E j + V_E GD_II j
+       b = s(EDGEi) + stemp * Vedge(EDGEi)
     else ! trans = .false.
-       ! In the usual forward model case BC do enter into forcing
-       !   First compute contribution of BC term to RHS of reduced interior
-       !    node system of equations : - A_IB*b
+       ! In the usual forward model case BC does enter into forcing
+       ! First compute contribution of BC term to RHS of reduced interior
+       ! node system of equations : - A_IB*b
        if (bRHS%nonzero_BC) then
           !   copy from rHS structure into zeroed complex edge vector
           !   note that bRHS%bc is a cboundary type
@@ -218,13 +266,24 @@ Contains
           !   but only the boundary parts
           e(EDGEb) = s(EDGEb)
           !   Then multiply by curl_curl operator (use Mult_Aib ...
-          !   Note that Mult_Aib already multiplies by volume weights
-          !   required to symetrize problem, so the result is V*A_IB*b)
+          !   Note that Mult_Aib is already multiplied by volume weights
+          !   required to symmetrize the problem, so the result is V*A_IB*b)
           !   essentially b = A(i,b)*e(b)
           Call Mult_Aib(e(EDGEb), trans, b)
        endif
-       ! Add internal sources if appropriate: Note that these must be multiplied
-       !  explictly by volume weights
+       ! Add internal sources if appropriate:
+       ! Note that these must be multiplied explictly by volume weights
+       !     [V_E^{-1} C_II^T V_F] C_II e + i\omega\mu_0\sigma e
+       !   = - i\omega\mu_0  j - V_E^{-1} G_IA \Lambda D_AI j 
+       !     - [V_E^{-1} C_II^T V_F] C_IB b
+       ! here we multiply by V_E throughout to obtain a symmetric system:
+       !      V_E A_II e = - i\omega\mu_0 V_E j - V_E GD_II j - V_E A_IB b
+       ! where
+       !      A_II = V_E^{-1} C_II^T V_F C_II + i\omega\mu_0 \sigma,
+       ! while
+       !      A_IB = V_E^{-1} C_II^T V_F C_IB, 
+       ! and 
+       !      GD_II = V_E{-1} G_IA \Lambda D_AI.  
        if (bRHS%nonzero_Source) then
           if (bRHS%sparse_Source) then
              ! sparse source
@@ -235,61 +294,38 @@ Contains
              ! normal source
              call getVector(bRHS%s, s)
           endif
-		 
-!		 iOmegaMuInv = ISIGN/cmplx(0.0,omega*MU_0,prec)
-!		  temp=Vedge/s*iOmegaMuInv
-          iOmegaMuInv = ISIGN/cmplx(0.0,omega*MU_0,prec)
-
-		! temp=s/iOmegaMuInv*Vedge
-
-
-       !b = s(EDGEi) ! taking only the interior edges
-       ! b = s(EDGEi)*iOmegaMuInv /Vedge(EDGEi)
-       ! call RMATxCVEC(GDii,b,stemp)          !ee
-	   ! e(EDGEb) = s(EDGEb)
-	   ! Call Mult_Aib(e(EDGEb), trans, stemp) ! obj.A(ii,ib)*e(ib)
-       ! stemp = Vedge(EDGEi)*stemp
-       ! temp = s(EDGEi) - stemp
-
-       b = s(EDGEi) ! taking only the interior edges
-       b = b * iOmegaMuInv / Vedge(EDGEi)
-       call RMATxCVEC(GDii,b,stemp)
-       stemp = Vedge(EDGEi)*stemp
-       b = s(EDGEi) + stemp
-       Call Mult_Aib(e(EDGEb), .false., stemp)
-       stemp = stemp/Vedge(EDGEi)
-       temp = b + stemp
-
-	   
-	   
-
-        !cnst =ISIGN/cmplx(0.0,omega*MU_0,prec)
-        !b=s*cnst 
-		!ee = M3earth*obj.modOp.G*M2earth*obj.modOp.Gadj*M1earth*b;
-		!rhs=Vedge(EDGEi).*(s(EDGEi)+ee(EDGEi)) - obj.A(ii,ib)*e(ib); 
-
-
-
+          ! At this point, s = - ISIGN * i\omega\mu_0 j
+          ! Now Div(s) - will later divide by i_omega_mu to get the general
+          ! divergence correction (j)
+          temp = s*Vedge
+          ! uncomment the following line to do divergence correction 
+          ! call Div(temp(EDGEi), phi0)
+          ! now temp = - ISIGN * i\omega\mu_0 V_E j
+          ! divide by iOmegaMu to get the source term (j)
+          si = s(EDGEi) * iOmegaMuInv 
+          ! calculate the modification term GD_II j
+          call RMATxCVEC(GDii,si,stemp)
+          ! i\omega\mu_0 V_E j + V_E GD_II j
+          stemp = temp(EDGEi) + stemp * Vedge(EDGEi)
+          ! now add the V_E A_IB b term
           if(bRHS%nonzero_BC) then
-             b = temp(EDGEi) - b
+             b = stemp - b
           else
-             b = temp
+             b = stemp
           endif
-       else
-       !   no source
-           b = -b
-       endif
+      else ! there is no source
+          b = -b
+      endif 
     endif
+    ! uncomment the following 3 lines to do divergence correction 
+    ! if (bRHS%nonzero_Source) then
+    !     phi0 = phi0 * iOmegaMuInv ! 1/i_omega_mu
+    ! endif
     ! Outer part of KSS loop ... alternates between Calls to KSS solver
     ! and Calls to divcor  ... this will be part of EMsolve
     !
     ! e = current best solution (only on interior edges)
     ! b = rHS
-    !
-    ! at present we don't really have the option to skip
-    ! the divergence correction.  Not sure how/if this should
-    ! be done.
-
     ! resetting
     nIterTotal = 0
     nDivCor = 0
@@ -321,10 +357,10 @@ Contains
     ei = e(EDGEi)
     !  idea to test: for non-zero source START with divergence
     !   correction
-!    if(bRHS%nonzero_Source) then
-!       nDivCor = 1
-!       Call SdivCorr(ei,phi0)
-!    endif
+    ! if(bRHS%nonzero_Source) then
+    !   nDivCor = 1
+    !   Call SdivCorr(ei,phi0)
+    ! endif
     loop: do while ((.not.converged).and.(.not.failed))
 
 	   
@@ -333,7 +369,7 @@ Contains
        Call QMR(b, ei,KSSiter)
     elseif (trim(solver_name) .eq. "BICG") then
 	write(*,*) 'I am using BICG'
-       Call BICG(b, ei,KSSiter)
+       Call BICG(b, ei, KSSiter)
     else
        Write(*,*)"Unknown Solver Method"
     end if
@@ -361,17 +397,18 @@ Contains
        nIterTotal = nIterTotal + KSSiter%niter
        nDivCor = nDivCor+1
        if( nDivCor < MaxDivCor) then
-          ! do divergence correction
-!          if(bRHS%nonzero_Source) then
-!             Call SdivCorr(ei,phi0)
-!          else
-!             Call SdivCorr(ei)
-!          endif
+          ! uncomment the following lines to try divergence correction after
+          ! solving the system matrix...
+          ! if(bRHS%nonzero_Source) then
+          !    Call SdivCorr(ei,phi0)     
+          ! else
+          !    Call SdivCorr(ei)
+          ! endif
        else
           ! max number of divergence corrections exceeded; convergence failed
           failed = .true.
        endif
-       if (output_level > 2) then
+       if (output_level > 3) then
            write (6,*) 'iter: ', nIterTotal, ' residual: ',             &
    &    EMrelErr(nIterTotal)
        end if
@@ -418,6 +455,11 @@ Contains
     deallocate(ei)
     deallocate(temp)
     deallocate(stemp)
+    deallocate(si)
+    ! uncomment the following lines for divergence correction
+    ! if(bRHS%nonzero_Source) then
+    !     deallocate(phi0)
+    ! end if
     Call deall(tvec)
     deallocate(KSSiter%rerr)
 
@@ -500,12 +542,14 @@ subroutine SdivCorr(inE,phi0)
   end if
   ! compute gradient of phiSol (Divergence correction for inE)
   phiAll(NODEi) = phiSol
+  ! all nodes -> inner edges
   call Grad(phiAll,cE)
 
   ! subtract Divergence correction from inE
   inE = inE - cE
 
   ! divergence of the corrected output electrical field
+  ! inner Edges -> inner Nodes
   Call DivC(inE,phiRHS)
 
   !  If source term is present, subtract from divergence of currents
@@ -519,7 +563,7 @@ subroutine SdivCorr(inE,phi0)
 
   ! output level defined in basic file_units module
   ! write(6,*) divJ(1,nDivCor), divJ(2,nDivCor)
-  if (output_level > 3) then
+  if (output_level > 2) then
      write(*,'(a12,a47,g15.7)') node_info, 'divergence of currents before correction: ', divJ(1, nDivCor)
      write(*,'(a12,a47,g15.7)') node_info, 'divergence of currents  after correction: ', divJ(2, nDivCor)
   end if
@@ -569,9 +613,8 @@ end subroutine SdivCorr ! SdivCorr
         tolEMfwd = tolEMDef
         tolEMadj = tolEMDef
         tolDivCor = tolDivCorDef
-        solver_name="BICG"
+        solver_name="QMR"
 		get_1D_from="Geometric_mean"
-        compute_1D_from="EM1D"
      else
         IterPerDivCor = solverControl%IterPerDivCor
         MaxDivCor = solverControl%MaxDivCor
@@ -582,7 +625,6 @@ end subroutine SdivCorr ! SdivCorr
         tolDivCor = solverControl%tolDivCor
         solver_name=solverControl%solver_name
 		get_1D_from=solverControl%get_1D_from
-        compute_1D_from=solverControl%compute_1D_from
      endif
 
      if (present(tolEM)) then
@@ -620,14 +662,14 @@ end subroutine SdivCorr ! SdivCorr
    ! * readEMsolveControl reads the EM solver configuration from file
    subroutine readEMsolveControl(solverControl,rFile,fileExists,tolEM)
 
-    	type(emsolve_control), intent(inout)	:: solverControl
-    character(*), intent(in)		        :: rFile
-	logical, intent(out), optional          :: fileExists
-	real(8), intent(in), optional           :: tolEM
-    integer									:: ios
-	logical                             	:: exists
-	character(80)							:: string
-	integer									:: istat
+    type(emsolve_control), intent(inout)    :: solverControl
+    character(*), intent(in)                :: rFile
+    logical, intent(out), optional          :: fileExists
+    real(8), intent(in), optional           :: tolEM
+    integer                                 :: ios
+	logical                             :: exists
+    character(80)                           :: string
+    integer                                 :: istat
     character (len=1000) :: line_text
  	character(len=100),dimension(10) :: args
  	character(len=100)              :: search_string
@@ -654,23 +696,20 @@ end subroutine SdivCorr ! SdivCorr
        write(*,*) node_info,'Reading EM solver configuration from file ',trim(rFile)
     end if
 
-
     !open (unit=ioFwdCtrl,file=rFile,status='old',iostat=ios)
      open (unit=ioFwdCtrl,file=rFile,form='formatted',status='old',iostat=ios)
     if(ios/=0) then
        write(0,*) node_info,'Error opening file: ', rFile
     end if
-	
 
 solverControl%IterPerDivCor = IterPerDivCorDef
 solverControl%MaxDivCor     = IterPerDivCorDef
 solverControl%MaxIterDivCor = MaxIterDivCorDef
-solverControl%tolEMfwd      = tolEMfwd
+solverControl%tolEMfwd      = tolEMDef
 solverControl%tolEMadj      = tolEMDef
 solverControl%tolDivCor     = tolDivCorDef
-solverControl%solver_name   = "BICG"
+solverControl%solver_name   = "QMR"
 solverControl%get_1D_from   = "Geometric_mean"
-solverControl%compute_1D_from= "EM1D"
 do
    read (ioFwdCtrl,"(a)",iostat=ierr) line_text ! Read line into character variable
    line_text=trim(line_text)
@@ -681,64 +720,63 @@ do
         call parse(line_text,":",args,nargs)
          READ(args(2),*)intval
          solverControl%IterPerDivCor=intval
-         if (output_level > 2) then
+    if (output_level > 2) then
            write (*,'(a12,a,i5)') node_info,"Number of QMR iters per divergence correction: ",solverControl%IterPerDivCor
-          end if
+    end if
    elseif(index(line_text, "Maximum number of divergence correction calls") .ne. 0)then
         call parse(line_text,":",args,nargs)
          READ(args(2),*)intval
          solverControl%MaxDivCor=intval
 
-        if (output_level > 2) then
+    if (output_level > 2) then
            write (*,'(a12,a,i5)') node_info,"Maximum number of divergence correction calls: ",solverControl%MaxDivCor
-        end if
+    end if
     elseif(index(line_text, "Maximum number of divergence correction iters") .ne. 0)then
         call parse(line_text,":",args,nargs)
          READ(args(2),*)intval
          solverControl%MaxIterDivCor=intval
 
-        if (output_level > 2) then
+    if (output_level > 2) then
            write (*,'(a12,a,i5)') node_info,"Maximum number of divergence correction iters: ",solverControl%MaxIterDivCor
-        end if
+    end if
     elseif(index(line_text, "Misfit tolerance for EM forward solver") .ne. 0)then
         call parse(line_text,":",args,nargs)
         READ(args(2),*)realval
          solverControl%tolEMfwd=realval
 
-        if (output_level > 2) then
+    if (output_level > 2) then
            write (*,'(a12,a,g15.7)') node_info,"Misfit tolerance for EM forward solver: ",solverControl%tolEMfwd
-        end if
+    end if
     elseif(index(line_text, "Misfit tolerance for EM adjoint solver") .ne. 0)then
         call parse(line_text,":",args,nargs)
         READ(args(2),*)realval
          solverControl%tolEMadj=realval
 
-        if (output_level > 2) then
+    if (output_level > 2) then
            write (*,'(a12,a,g15.7)') node_info,"Misfit tolerance for EM adjoint solver: ",solverControl%tolEMadj
-        end if
+    end if
     elseif(index(line_text, "Misfit tolerance for divergence correction") .ne. 0)then
         call parse(line_text,":",args,nargs)
         READ(args(2),*)realval
          solverControl%tolDivCor=realval
 
-        if (output_level > 2) then
+    if (output_level > 2) then
            write (*,'(a12,a,g15.7)') node_info,"Misfit tolerance for divergence correction: ",solverControl%tolDivCor
-        end if
+    end if
     elseif(index(line_text, "Optional EM solution file name for nested BC") .ne. 0)then
         call parse(line_text,":",args,nargs)
          solverControl%E0fileName=args(2)
-         inquire(FILE=solverControl%E0fileName,EXIST=exists)
+        inquire(FILE=solverControl%E0fileName,EXIST=exists)
             if (.not.exists) then
-                        write(*,*) node_info,'Nested E-field solution file not found and will not be used. '
-                        solverControl%read_E0_from_File=.false.
-            else
-                        if (output_level > 2) then
-                            write (*,'(a12,a,a80)') node_info,&
-                                    "Optional EM solution file name for nested BC: ",adjustl(solverControl%E0fileName)
-                        end if
-                        solverControl%read_E0_from_File=.true.
-                        solverControl%ioE0=ioE
+            write(*,*) node_info,'Nested E-field solution file not found and will not be used. '
+            solverControl%read_E0_from_File=.false.
+        else
+            if (output_level > 2) then
+                            write (*,'(a12,a,a80)') node_info,"Optional EM solution file name for nested BC: ",adjustl(solverControl%E0fileName)
             end if
+            solverControl%read_E0_from_File=.true.
+            solverControl%ioE0=ioE
+        end if
     elseif(index(line_text, "Air layers mirror|fixed height|read from file") .ne. 0)then
         solverControl%AirLayersPresent = .true.
         call parse(line_text,":",args,nargs)
@@ -762,10 +800,10 @@ do
             call warning('Unknown air layers method option in readEMsolveControl')
         end if
 
-        if (solverControl%AirLayersNz <= 0) then
-            write(*,*) node_info,'Problem reading the air layers. Resort to defaults '
-            solverControl%AirLayersPresent = .false.
-        end if
+    if (solverControl%AirLayersNz <= 0) then
+        write(*,*) node_info,'Problem reading the air layers. Resort to defaults '
+        solverControl%AirLayersPresent = .false.
+    end if
     elseif(index(line_text, "Solver QMR|BICG") .ne. 0)then
         call parse(line_text,":",args,nargs)
          solverControl%solver_name=args(2)
@@ -777,16 +815,8 @@ do
         call parse(line_text,":",args,nargs)
          solverControl%get_1D_from=args(2)
         if (output_level > 2) then
-           write (*,'(a12,a,a)') node_info,&
-                   "1D model for Ep in CSEM Geometric_mean|At_Tx_Position|Geometric_mean_around_Tx: ",&
-                   trim(solverControl%get_1D_from)
+           write (*,'(a12,a,a)') node_info,"1D model for Ep in CSEM Geometric_mean|At_Tx_Position|Geometric_mean_around_Tx: ",trim(solverControl%get_1D_from)
         end if	
-    elseif(index(line_text, "Compute 1D solution using Dipole1D|EM1D") .ne. 0)then
-         call parse(line_text,":",args,nargs)
-         solverControl%compute_1D_from=args(2)
-        if (output_level > 2) then
-           write (*,'(a12,a,a)') node_info,"Compute 1D solution using Dipole1D|EM1D: ",trim(solverControl%compute_1D_from)
-        end if     
     else
         if (output_level > 2) then
          write (*,'(a12,a,a)') node_info,"Unknown line in file: ",rFile
@@ -796,7 +826,7 @@ do
 end do
 
 
-close(ioFwdCtrl)
+    close(ioFwdCtrl)
 
     call setEMsolveControl(solverControl)
 

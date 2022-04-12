@@ -22,7 +22,7 @@
 
     dm = mhat
 
-    call RecursiveAR(mhat%cellCond%v,dm%cellCond%v,2)
+    call RecursiveAR(mhat%cellCond_h%v, dm%cellCond_h%v,2)
 
     dm%temporary = .true.
 
@@ -49,7 +49,7 @@
 
     dm = mhat
 
-    call RecursiveAR(mhat%cellCond%v, dm%cellCond%v, CmSqrt%N)
+    call RecursiveAR(mhat%cellCond_h%v, dm%cellCond_h%v, CmSqrt%N)
 
     dm%temporary = .true.
 
@@ -74,7 +74,7 @@
 
     mhat = dm
 
-    call RecursiveARInv(dm%cellCond%v, mhat%cellCond%v, CmSqrt%N)
+    call RecursiveARInv(dm%cellCond_h%v, mhat%cellCond_h%v, CmSqrt%N)
 
     mhat%temporary = .true.
 
