@@ -646,7 +646,7 @@ end subroutine SdivCorr ! SdivCorr
     character (len=1000) :: line_text
  	character(len=100),dimension(10) :: args
  	character(len=100)              :: search_string
-	integer                       :: nargs
+	integer                       :: nargs,ierr
     real(kind = 8)            :: realval
     integer					  :: intval
     ! Initialize inverse solver configuration

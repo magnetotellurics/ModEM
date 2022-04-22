@@ -17,6 +17,7 @@ use EM1D
 
 
 implicit none
+   integer, public  :: ierr
    type(cvector), save, public  :: E_p         ! Primary field ---> make it public to check when initlizing the FWD: 
                                                ! if it is already allocated DON'T RECOMPUTE for each iteration in the inversion.
    ! Local variables used within this module
