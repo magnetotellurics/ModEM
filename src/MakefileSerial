@@ -46,7 +46,7 @@
 include Makefile.local
 OBJDIR = ../../objs/MT3D_OO
 F90 = gfortran 
-FFLAGS = -g -ffree-line-length-none
+FFLAGS = -O3 -ffree-line-length-none
 MPIFLAGS =  
 MODULE = -J $(OBJDIR)
 LIBS_PATH = -L/usr/lib64
@@ -85,7 +85,7 @@ $(OBJDIR)/Grid2D.o:Classes/2D/Grid2D.f90 $(OBJDIR)/Constants.o $(OBJDIR)/Grid1D.
 $(OBJDIR)/Grid.o:Classes/Grid/Grid.f90 $(OBJDIR)/Constants.o $(OBJDIR)/Grid1D.o $(OBJDIR)/Grid2D.o 
 	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) Classes/Grid/Grid.f90 -o $(OBJDIR)/Grid.o
 
-$(OBJDIR)/rScalar.o:Classes/Fields/rScalar.f90 $(OBJDIR)/Constants.o $(OBJDIR)/Grid.o $(OBJDIR)/Constants.o $(OBJDIR)/Constants.o $(OBJDIR)/Constants.o $(OBJDIR)/Constants.o $(OBJDIR)/Constants.o $(OBJDIR)/Constants.o 
+$(OBJDIR)/rScalar.o:Classes/Fields/rScalar.f90 $(OBJDIR)/Constants.o $(OBJDIR)/Grid.o 
 	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) Classes/Fields/rScalar.f90 -o $(OBJDIR)/rScalar.o
 
 $(OBJDIR)/rVector.o:Classes/Fields/rVector.f90 $(OBJDIR)/Constants.o $(OBJDIR)/rScalar.o 
@@ -94,7 +94,7 @@ $(OBJDIR)/rVector.o:Classes/Fields/rVector.f90 $(OBJDIR)/Constants.o $(OBJDIR)/r
 $(OBJDIR)/cVector.o:Classes/Fields/cVector.f90 $(OBJDIR)/Constants.o $(OBJDIR)/rScalar.o $(OBJDIR)/rVector.o 
 	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) Classes/Fields/cVector.f90 -o $(OBJDIR)/cVector.o
 
-$(OBJDIR)/cScalar.o:Classes/Fields/cScalar.f90 $(OBJDIR)/Constants.o $(OBJDIR)/Grid.o $(OBJDIR)/rScalar.o $(OBJDIR)/Constants.o $(OBJDIR)/Constants.o $(OBJDIR)/Constants.o $(OBJDIR)/Constants.o $(OBJDIR)/Constants.o $(OBJDIR)/Constants.o 
+$(OBJDIR)/cScalar.o:Classes/Fields/cScalar.f90 $(OBJDIR)/Constants.o $(OBJDIR)/Grid.o $(OBJDIR)/rScalar.o 
 	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) Classes/Fields/cScalar.f90 -o $(OBJDIR)/cScalar.o
 
 $(OBJDIR)/MetricElements.o:Classes/ModelOperator/MetricElements.f90 $(OBJDIR)/Grid.o $(OBJDIR)/rVector.o $(OBJDIR)/rScalar.o 

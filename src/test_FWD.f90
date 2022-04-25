@@ -148,6 +148,8 @@ contains
             call Tx%solveFWD()
             !
             deallocate( fwd_source )
+            !
+            ! THIS CAUSES MEMORY CRASHES
             !deallocate( fwd_solver )
             !
             ! Loop over Receivers of each Transmitter

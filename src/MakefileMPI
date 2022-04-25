@@ -46,7 +46,7 @@
 include Makefile.local
 OBJDIR = ../../objs/MT3D_OO
 F90 = mpif90 
-FFLAGS = -g -ffree-line-length-none -Wno-all
+FFLAGS = -O3 -ffree-line-length-none -Wno-all
 MPIFLAGS = -x f95-cpp-input -DMPI
 MODULE = -J $(OBJDIR)
 LIBS_PATH = -L/usr/lib64
@@ -88,7 +88,7 @@ $(OBJDIR)/Grid3D_SG.o:Classes/Grid/Grid3D_SG.f90 $(OBJDIR)/Constants.o $(OBJDIR)
 $(OBJDIR)/MatUtils.o:Classes/Utils/MatUtils.f90 $(OBJDIR)/Constants.o 
 	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) Classes/Utils/MatUtils.f90 -o $(OBJDIR)/MatUtils.o
 
-$(OBJDIR)/rScalar.o:Classes/Fields/rScalar.f90 $(OBJDIR)/Constants.o $(OBJDIR)/Grid.o $(OBJDIR)/Constants.o $(OBJDIR)/Constants.o $(OBJDIR)/Constants.o $(OBJDIR)/Constants.o $(OBJDIR)/Constants.o $(OBJDIR)/Constants.o 
+$(OBJDIR)/rScalar.o:Classes/Fields/rScalar.f90 $(OBJDIR)/Constants.o $(OBJDIR)/Grid.o 
 	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) Classes/Fields/rScalar.f90 -o $(OBJDIR)/rScalar.o
 
 $(OBJDIR)/rScalar3D_SG.o:Classes/Fields/rScalar3D_SG.f90 $(OBJDIR)/Constants.o $(OBJDIR)/Grid.o $(OBJDIR)/Grid3D_SG.o $(OBJDIR)/rScalar.o 
@@ -106,7 +106,7 @@ $(OBJDIR)/cVector.o:Classes/Fields/cVector.f90 $(OBJDIR)/Constants.o $(OBJDIR)/r
 $(OBJDIR)/cVector3D_SG.o:Classes/Fields/cVector3D_SG.f90 $(OBJDIR)/Constants.o $(OBJDIR)/MatUtils.o $(OBJDIR)/Grid.o $(OBJDIR)/Grid3D_SG.o $(OBJDIR)/rScalar.o $(OBJDIR)/rScalar3D_SG.o $(OBJDIR)/rVector.o $(OBJDIR)/rVector3D_SG.o $(OBJDIR)/cVector.o 
 	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) Classes/Fields/cVector3D_SG.f90 -o $(OBJDIR)/cVector3D_SG.o
 
-$(OBJDIR)/cScalar.o:Classes/Fields/cScalar.f90 $(OBJDIR)/Constants.o $(OBJDIR)/Grid.o $(OBJDIR)/rScalar.o $(OBJDIR)/Constants.o $(OBJDIR)/Constants.o $(OBJDIR)/Constants.o $(OBJDIR)/Constants.o $(OBJDIR)/Constants.o $(OBJDIR)/Constants.o 
+$(OBJDIR)/cScalar.o:Classes/Fields/cScalar.f90 $(OBJDIR)/Constants.o $(OBJDIR)/Grid.o $(OBJDIR)/rScalar.o 
 	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) Classes/Fields/cScalar.f90 -o $(OBJDIR)/cScalar.o
 
 $(OBJDIR)/cScalar3D_SG.o:Classes/Fields/cScalar3D_SG.f90 $(OBJDIR)/Constants.o $(OBJDIR)/Grid.o $(OBJDIR)/Grid3D_SG.o $(OBJDIR)/cScalar.o $(OBJDIR)/rScalar3D_SG.o 
