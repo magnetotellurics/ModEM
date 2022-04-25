@@ -258,8 +258,8 @@ module ForwardSolverIT_DC
                     class is( Solver_QMR_t )
                         call solver%solve( source%rhs, e_solution )
                     class default
-                        write(*, *) "ERROR:ForwardSolverIT_DC::getESolutionForwardSolverIT_DC:"
-                        STOP        "            Unknow solver type."
+                        write( *, * ) "ERROR:ForwardSolverIT_DC::getESolutionForwardSolverIT_DC:"
+                        stop        "            Unknow solver type."
                 end select
                 !
                 self%solver%converged = self%solver%n_iter .LT. self%solver%max_iter
@@ -316,8 +316,8 @@ module ForwardSolverIT_DC
                     endif
                     !
                 class default
-                    write(*, *) "ERROR:ForwardSolverIT_DC_t::getESolutionForwardSolverIT_DC:"
-                    STOP        "    model_operator type unknow"
+                    write( *, * ) "ERROR:ForwardSolverIT_DC_t::getESolutionForwardSolverIT_DC:"
+                    stop        "    model_operator type unknow"
             end select
             !
         end subroutine getESolutionForwardSolverIT_DC

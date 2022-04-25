@@ -107,6 +107,8 @@ program ModEM
                     !
                     call MPI_Win_fence( 0, shared_window, ierr )
                     !
+					call MPI_Win_free( shared_window )
+					!
                 case ( "JOB_FORWARD" )
                     !
                     call workerForwardModelling()
@@ -178,9 +180,12 @@ contains
         !
         call MPI_Win_fence( 0, shared_window, ierr )
         !
+        call MPI_Win_free( shared_window )
+        !
         deallocate( model_operator )
         deallocate( model_parameter )
         deallocate( main_grid )
+        !
         !
         ! SEND 1 TRANSMITTER TO FIRST np WORKERS
         do while ( worker_rank <= ( mpi_size - 1 ) )
@@ -310,7 +315,8 @@ contains
     subroutine workerForwardModelling()
         implicit none
         !
-        class( ForwardSolver_t ), allocatable, save :: fwd_solver
+		! Use save ????
+        class( ForwardSolver_t ), allocatable :: fwd_solver
         !
         class( Source_t ), allocatable        :: fwd_source 
         !
@@ -395,7 +401,9 @@ contains
         call Tx%solveFWD()
         !
         deallocate( fwd_source )
-        !deallocate( fwd_solver )
+		!
+        ! THIS CAUSES MEMORY CRASHES
+        deallocate( fwd_solver )
         !
         ! Loop over Receivers of each Transmitter
         nRx = size( Tx%receiver_indexes )

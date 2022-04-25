@@ -58,7 +58,8 @@ contains
     subroutine ForwardModelling()
         implicit none
         !
-        class( ForwardSolver_t ), allocatable, save :: fwd_solver
+		! Use save ????
+        class( ForwardSolver_t ), allocatable :: fwd_solver
         !
         class( Source_t ), allocatable        :: fwd_source 
         !
@@ -150,7 +151,7 @@ contains
             deallocate( fwd_source )
             !
             ! THIS CAUSES MEMORY CRASHES
-            !deallocate( fwd_solver )
+            deallocate( fwd_solver )
             !
             ! Loop over Receivers of each Transmitter
             do iRx = 1, size( Tx%receiver_indexes )

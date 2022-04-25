@@ -57,7 +57,7 @@ contains
     subroutine SetDefaults_QMR(self)
         implicit none
         !
-		class(Solver_QMR_t), intent(inout) :: self
+		class( Solver_QMR_t ), intent( inout ) :: self
         !     sets default iteration control parameters for QMR solver
         !     local variables
         integer           :: max_iter
@@ -268,7 +268,7 @@ contains
             ! QMR book-keeping between divergence correction calls
             self%relErr( iter ) = real( rnorm / bnorm )
             !write(*,*) 'iter qmr= ',iter,'    relErr = ', self%relErr(iter)
-          !
+            !
         end do
         !
         deallocate( R )

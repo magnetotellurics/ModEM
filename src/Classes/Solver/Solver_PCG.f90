@@ -75,9 +75,9 @@ contains
     subroutine solvePCG( self, b, x )
         implicit none
         !
-        class( Solver_PCG_t ), intent(inout)           :: self
-        class( cScalar_t ), intent(in)                 :: b
-        class( cScalar_t ), allocatable, intent(inout) :: x
+        class( Solver_PCG_t ), intent( inout )           :: self
+        class( cScalar_t ), intent( in )                 :: b
+        class( cScalar_t ), allocatable, intent( inout ) :: x
         ! local variables
         !    these will have to be created in a way to match
         !     the specific type of the input cScalar_t ...
@@ -86,14 +86,14 @@ contains
         complex( kind=prec ) :: beta, alpha, delta, deltaOld
         complex( kind=prec ) :: bnorm, rnorm
         integer              :: i
-
+		!
         !  create local cScalar objects -- could we also use modOp%createCScalar?
         allocate( r, source = x )    ! cannot zero x, since it is first guess
         call r%zeros()
         allocate( s, source = r )
         allocate( p, source = r )
         allocate( q, source = r )
-        
+        !
         ! just like
         !call self%preconditioner%model_operator%Amult( x, r )
         !    if we can make AMult generic, with versions that operate on cScalar/cVector

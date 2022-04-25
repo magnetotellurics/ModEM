@@ -10,7 +10,7 @@ Module DivergenceCorrection
         !
         class( Solver_t ), allocatable :: solver
         real( kind=prec ) :: divJ(2) !    divergence of currents computed at most
-                     ! recent call to DivCor -- before and after
+                                     ! recent call to DivCor -- before and after
         contains
             !
             final :: DivergenceCorrection_dtor
@@ -173,7 +173,7 @@ contains
         call self%solver%preconditioner%model_operator%grad( phiSol, outE )
         !
         deallocate( phiSol )
-		!
+        !
         ! subtract Divergence correction from inE
         !    outE = inE - outE
         call outE%linCombS(inE,C_MinusOne,C_ONE)
