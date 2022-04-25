@@ -310,7 +310,7 @@ contains
     subroutine workerForwardModelling()
         implicit none
         !
-        class( ForwardSolver_t ), allocatable :: fwd_solver
+        class( ForwardSolver_t ), allocatable, save :: fwd_solver
         !
         class( Source_t ), allocatable        :: fwd_source 
         !
@@ -395,7 +395,7 @@ contains
         call Tx%solveFWD()
         !
         deallocate( fwd_source )
-        deallocate( fwd_solver )
+        !deallocate( fwd_solver )
         !
         ! Loop over Receivers of each Transmitter
         nRx = size( Tx%receiver_indexes )

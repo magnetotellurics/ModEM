@@ -148,7 +148,7 @@ contains
             call Tx%solveFWD()
             !
             deallocate( fwd_source )
-            deallocate( fwd_solver )
+            !deallocate( fwd_solver )
             !
             ! Loop over Receivers of each Transmitter
             do iRx = 1, size( Tx%receiver_indexes )
