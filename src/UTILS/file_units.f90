@@ -5,6 +5,8 @@ module file_units
   implicit none
 
   ! User-defined parameter that sets the level of output
+  integer, public  :: ierr
+  
   integer, save									:: output_level=0
   character(12), save                           :: node_info=''
 

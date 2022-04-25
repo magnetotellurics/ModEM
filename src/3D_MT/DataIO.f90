@@ -806,7 +806,9 @@ Contains
         write(0,*) 'Read ',countData,' data values of MT type ',trim(typeDict(iDt)%name),' from file'
         write(0,*) 'Tx_Dic Size', size(txDict)
 		write(0,*) 'Rx_Dic Size', size(rxDict)
-        ! Create a single-type data vector from the new values
+  ! Create a single-type data vector from the new values
+        nTx = size(txDict)
+        nRx = size(rxDict)
 	call create_dataVectorMTX(nTx,newData)
 	newData%allocated = .TRUE.
 	errorBar = .TRUE.

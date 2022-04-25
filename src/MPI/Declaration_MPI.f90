@@ -1,4 +1,5 @@
 Module Declaration_MPI
+  use file_units
 #ifdef MPI
      implicit none
 ! consider building mpi binding and using 'use mpi' instead
@@ -7,7 +8,7 @@ include 'mpif.h'
 ! Declaration of general MPI stuff
 !********************************************************************
 Integer        :: taskid,total_number_of_Proc,number_of_workers
-Integer        :: MASTER, FROM_MASTER, FROM_WORKER,TAG,ierr,dest
+Integer        :: MASTER, FROM_MASTER, FROM_WORKER,TAG,dest
 INTEGER        :: STATUS(5)
 parameter         (MASTER=0,FROM_MASTER=1,FROM_WORKER=2,Tag=1)
 !********************************************************************

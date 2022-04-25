@@ -21,6 +21,8 @@ program Mod3DMT
 
      implicit none
 
+     integer :: iTx, Nmodel
+
      ! Character-based information specified by the user
      type (userdef_control) :: cUserDef
 
@@ -207,6 +209,12 @@ program Mod3DMT
          !write(ioSens) header
          call writeVec_modelParam_binary(size(JT_multi_Tx_vec),JT_multi_Tx_vec,header,cUserDef%wFile_dModel)
          close(ioSens)
+         
+         ! Williams - Save norm of gradient for each Tx
+         Nmodel = countModelParam(JT_multi_Tx_vec(1))
+         do iTx = 1, size(JT_multi_Tx_vec)            
+            write(120, *) txDict(iTx)%period, txDict(iTx)%Tx_type, sqrt(dotProd(JT_multi_Tx_vec(iTx), JT_multi_Tx_vec(iTx))/Nmodel)
+         end do
 
      case (INVERSE)
 	     write(ioSolverStat,'(a20, a20, a20, a20, a20, a20)') "#INV_Iteration_number", "Job_Name", "Period", "Polarization", "Number_of_Iteration", "Residual"
