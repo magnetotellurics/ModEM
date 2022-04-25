@@ -23,50 +23,56 @@ module TransmitterFArray
     end type Tx_t
     !
     ! Global Array of Transmitters
-    type( Tx_t ), pointer, dimension(:), save, public :: transmitters => null()
+    type( Tx_t ), pointer, dimension(:), save, public :: transmitters
     !
     public :: getTransmitter, printTransmitterArray
-    public :: updateTransmitterArray
+    public :: updateTransmitterArray, deallocateTransmitterArray
     !
 contains
     !
     ! Add a new Transmitter_t and initialize it if necessary
-    subroutine updateTransmitterArray( new_tx )
+    function updateTransmitterArray( new_tx ) result( id )
         implicit none
         !
-        class( Transmitter_t ), intent( in )    :: new_tx
+        class( Transmitter_t ), intent( in ) :: new_tx
+		integer                              :: id
         !
-        integer                                 :: iTx, istat
-        type( Tx_t ), allocatable, dimension(:)    :: temp_array
-        type( Tx_t ), allocatable                  :: temp_tx
+        integer                                 :: iTx, nTx
+        type( Tx_t ), allocatable, dimension(:) :: temp_array
+        type( Tx_t ), allocatable               :: temp_tx
         !
         if( .NOT. associated( transmitters ) ) then
             allocate( transmitters( 1 ) )
             allocate( Tx_t :: temp_tx )
             temp_tx%Tx = new_tx
             temp_tx%Tx%id = 1
+			id = 1
             transmitters( 1 ) = temp_tx
         else
             !
+			nTx = size( transmitters )
+			!
             do iTx = 1, size( transmitters )
-                if ( new_tx%isEqual( transmitters( iTx )%Tx ) ) then
+                if( new_tx%isEqual( transmitters( iTx )%Tx ) ) then
+				    id = 0
                     return
                 end if
             end do
             !
-            allocate( temp_array( size( transmitters ) + 1 ), STAT=istat )
-            temp_array( 1 : size( transmitters ) ) = transmitters
+            allocate( temp_array( nTx + 1 ) )
+            temp_array( 1 : nTx ) = transmitters
             allocate( Tx_t :: temp_tx )
             temp_tx%Tx = new_tx
-            temp_tx%Tx%id = size( transmitters ) + 1
+            temp_tx%Tx%id = nTx + 1
+			id = nTx + 1
             !
-            temp_array( size( transmitters ) + 1 ) = temp_tx
+            temp_array( nTx + 1 ) = temp_tx
             !
-            allocate( transmitters, source = temp_array, STAT=istat )
+            allocate( transmitters, source = temp_array )
             !
         endif
         !
-    end subroutine updateTransmitterArray
+    end function updateTransmitterArray
     !
     function getTransmitter( iTx ) result( tx )
         !
@@ -77,6 +83,23 @@ contains
         tx => transmitters( iTx )%Tx
         !
     end function getTransmitter
+    !
+    !
+    subroutine deallocateTransmitterArray()
+        integer                    :: ntx, itx
+        class( Tx_t ), allocatable :: alloc_tx
+        !
+        !write( *, * ) "deallocateTransmitterArray:", size( transmitters )
+        !
+        ntx = size( transmitters )
+        do itx = 1, ntx
+            alloc_tx = transmitters( itx )
+            deallocate( alloc_tx )
+        end do
+        !
+        deallocate( transmitters )
+        !
+    end subroutine deallocateTransmitterArray
     !
     ! Prints the content of the transmitters on screen
     subroutine printTransmitterArray()

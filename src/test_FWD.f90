@@ -1,7 +1,11 @@
 program ModEM
     !
-    use DataManager
+	use Constants
+	use FileUnits
+	
     use ModEMControlFile
+    !
+    use Grid3D_SG
     !
     use ModelReader
     use ModelReader_Weerachai
@@ -9,7 +13,7 @@ program ModEM
     use ModelOperator_File
     use ModelParameterCell_SG
     !
-    use Grid3D_SG
+    use DataFileStandard
     !
     use ForwardSolverFromFile
     use ForwardSolverIT_DC
@@ -17,26 +21,27 @@ program ModEM
     use SourceMT_1D
     use SourceMT_2D
     !
+    use DataHandle
+    !
     ! 
     class( Grid_t ), allocatable           :: main_grid
     class( ModelParameter_t ), allocatable :: model_parameter
     class( ModelOperator_t ), allocatable  :: model_operator
     !
     character(:), allocatable :: control_file_name, model_file_name, data_file_name, modem_job
-    logical                         :: has_control_file = .false., has_model_file = .false., has_data_file = .false.
+    logical                   :: has_control_file, has_model_file, has_data_file, verbosis
     !
     !
     modem_job = "unknow"
     !
-    ! Validate arguments, set model_file_name, data_file_name
+    call setupDefaultParameters()
+    !
+    ! Validate arguments, set model_file_name, data_file_name, control_file_name, etc...
     call handleArguments()
     !
     write ( *, * )
     write ( *, * ) "Start ModEM-OO."
     write ( *, * )
-	!
-	!
-	call setupDefaultParameters()
     !
     ! Check parameters at the control file
     if( has_control_file ) call handleControlFile()
@@ -53,95 +58,82 @@ contains
     subroutine ForwardModelling()
         implicit none
         !
-        ! These objects are frequency dependent,
-        ! must be instantiated on each Worker
-        class( ForwardSolver_t ), allocatable, target, save :: fwd_solver
+        class( ForwardSolver_t ), allocatable :: fwd_solver
         !
-        class( Source_t ), allocatable, target, save        :: fwd_source 
+        class( Source_t ), allocatable        :: fwd_source 
         !
         ! Temporary alias pointers
         class( Transmitter_t ), pointer :: Tx
         class( Receiver_t ), pointer    :: Rx
         !
-        integer :: iTx, nTx, iRx, nRx, iDh
-        character(:), allocatable :: transmitter_type
+        integer :: iTx, iRx, iDh
         !
-        type( PredictedDataHandle_t ), allocatable :: all_data_handles(:)
+        type( DataHandle_t ), allocatable :: all_data_handles(:)
         !
-        ! Verbosis
+        !
         write ( *, * ) "    > Start forward modelling."
         !
-        ! Tx type for predicted_data header changes
-        transmitter_type = "Unknow"
-        !
         ! Reads Model File: instantiates Grid, ModelOperator and ModelParameter
-        if( .not. has_model_file ) then 
+        if( .NOT. has_model_file ) then 
             stop " - Missing Model file!"
         else
             call handleModelFile()
         endif
         !
         ! Reads Data File: instantiates and builds the Data relation between Txs and Txs
-        if( .not. has_data_file ) then 
+        if( .NOT. has_data_file ) then 
             stop " - Missing Data file!"
         else
             call handleDataFile()
         endif
         !
-        ! High-level object instantiation
-        ! Some types are chosen from the control file
-        !
-        ! ForwardSolver - Chosen from control file
-        select case ( forward_solver_type )
-            !
-            case( FWD_FILE )
-                fwd_solver = ForwardSolverFromFile_t( model_operator )
-                !
-            case( FWD_IT )
-                fwd_solver = ForwardSolverIT_t( model_operator, QMR )
-                !
-            case( FWD_IT_DC )
-                fwd_solver = ForwardSolverIT_DC_t( model_operator, QMR )
-                !
-            case default
-                fwd_solver = ForwardSolverIT_DC_t( model_operator, QMR )
-            !
-        end select
-        !
-        call fwd_solver%setCond( model_parameter )
-        !
-        ! Source - Chosen from control file
-        select case ( source_type )
-            !
-            case( SRC_MT_1D )
-                allocate( fwd_source, source = SourceMT_1D_t( model_operator, model_parameter ) )
-                !
-            case( SRC_MT_2D )
-                allocate( fwd_source, source = SourceMT_2D_t( model_operator, model_parameter ) )
-                !
-            case default
-                allocate( fwd_source, source = SourceMT_1D_t( model_operator, model_parameter ) )
-                !
-        end select
-        !
         ! Forward Modelling
         !
+        Tx => getTransmitter(1)
+        !
+        call writeEsolutionHeader( size( transmitters ), Tx%n_pol )
+        !
         ! Loop over all Transmitters
-        nTx = size( transmitters )
-        !
-        call writeEsolutionHeader( nTx, 2 )
-        !
-        do iTx = 1, nTx
+        do iTx = 1, size( transmitters )
+            !
+            !
+            ! ForwardSolver - Chosen from control file
+            !if( allocated( fwd_solver ) ) deallocate( fwd_solver )
+            select case ( forward_solver_type )
+                !
+                case( FWD_FILE )
+                    fwd_solver = ForwardSolverFromFile_t( model_operator )
+                    !
+                case( FWD_IT_DC )
+                    fwd_solver = ForwardSolverIT_DC_t( model_operator, QMR )
+                    !
+                case default
+                    fwd_solver = ForwardSolverIT_DC_t( model_operator, QMR )
+                !
+            end select
+            !
+            call fwd_solver%setCond( model_parameter )
+			!
+            ! Source - Chosen from control file
+            !if( allocated( fwd_source ) ) deallocate( fwd_source )
+            select case ( source_type )
+                !
+                case( SRC_MT_1D )
+                    fwd_source = SourceMT_1D_t( model_operator, model_parameter )
+                    !
+                case( SRC_MT_2D )
+                    fwd_source = SourceMT_2D_t( model_operator, model_parameter )
+                    !
+                case default
+                    fwd_source = SourceMT_1D_t( model_operator, model_parameter )
+                    !
+            end select
             !
             ! Temporary Transmitter alias
             Tx => getTransmitter( iTx )
             !
             ! Verbosis...
-            write( *, * ) "    Tx Id:", Tx%id, "Period:", int( Tx%period )
-            !
-            ! According to Tx type,
-            ! write the proper header in the "predicted_data.dat" file
-            call writePredictedDataHeader( Tx, transmitter_type )
+            write( *, "(A12, I8, A12, es20.6)") "    Tx Id:", Tx%id, "Period:", Tx%period
             !
             ! Tx points to its due Source
             call Tx%setSource( fwd_source )
@@ -155,10 +147,11 @@ contains
             ! Solve Tx Forward Modelling
             call Tx%solveFWD()
             !
-            ! Loop over Receivers of each Transmitter
-            nRx = size( Tx%receiver_indexes )
+            deallocate( fwd_source )
+            deallocate( fwd_solver )
             !
-            do iRx = 1, nRx
+            ! Loop over Receivers of each Transmitter
+            do iRx = 1, size( Tx%receiver_indexes )
                 !
                 ! Temporary Receiver alias
                 Rx => getReceiver( Tx%receiver_indexes( iRx ) )
@@ -166,12 +159,17 @@ contains
                 ! Verbosis...
                 !write( *, * ) "                        Rx Id:", Rx%id, "XYZ:", Rx%location
                 !
-                ! Calculate Rx Predicted Data
+                ! Calculate Rx predicted_data
                 call Rx%predictedData( model_operator, Tx )
                 !
-                do iDh = 1, size( Rx%data_handles )
-                    call updateDataHandleArray( all_data_handles, Rx%data_handles( iDh ) )
+                ! Save predicted_data of each Rx into all_data_handles
+                do iDh = 1, size( Rx%predicted_data )
+                    !
+                    call updateDataHandleArray( all_data_handles, Rx%predicted_data( iDh ) )
+                    !
                 end do
+                !
+                deallocate( Rx%predicted_data )
                 !
             enddo
             !
@@ -179,12 +177,16 @@ contains
             !
         enddo
         !
+        deallocate( model_operator )
+        deallocate( model_parameter )
+        deallocate( main_grid )
         !
+        ! Write all_data_handles into predicted_data.dat
         call writeDataHandleArray( all_data_handles )
         !
-        !
         deallocate( all_data_handles )
-        deallocate( data_groups )
+        !
+        call deallocateReceiverArray()
         !
     end subroutine ForwardModelling
     !
@@ -224,11 +226,33 @@ contains
         implicit none
         !
         ! Local object to dealt data, self-destructs at the end of the subroutine
-        type( DataManager_t ) :: data_manager
+        type( DataFileStandard_t ) :: data_file_standard
         !
         write( *, * ) "    -> Data File: [", data_file_name, "]"
         !
-        data_manager = DataManager_t( data_file_name )
+        data_file_standard = DataFileStandard_t( ioStartup, data_file_name )
+        !
+        if( size( receivers ) == data_file_standard%nRx ) then
+             write( *, * ) size( receivers ), " Receivers checked!"
+             !
+             !call printReceiverArray()
+        else
+             !
+             write(*,*) "Number of Rx mismatched from Header :[", size( receivers ), " and ", data_file_standard%nRx, "]"
+             STOP "DataManager.f08: DataManager_ctor()"
+             !
+        endif
+        !
+        if( size( transmitters ) == data_file_standard%nTx ) then
+             write( *, * ) size( transmitters ), " Transmitters checked!"
+             !
+             call printTransmitterArray()
+        else
+             !
+             write(*,*) "Number of Tx mismatched from Header :[", size( transmitters ), " and ", data_file_standard%nTx, "]"
+             STOP "DataManager.f08: DataManager_ctor()"
+             !
+        endif
         !
     end subroutine handleDataFile
     !
@@ -263,7 +287,7 @@ contains
                 call model_operator%SetCond( model_parameter )
                 !
             class default
-                 stop "Unclassified main_grid"
+                stop "Unclassified main_grid"
             !
         end select
         !
@@ -274,7 +298,7 @@ contains
         implicit none
         !
         character(200) :: argument
-        integer          :: argument_index
+        integer        :: argument_index
         !
         if ( command_argument_count() == 0 ) then
             !
@@ -332,6 +356,10 @@ contains
                          !
                          call printHelp()
                          !
+                      case ( "--verbosis" )
+                         !
+                         call printHelp()
+                         !
                       case default
                          !
                          write( *, * ) "    - Unknow Argument: [", trim( argument ), "]"
@@ -356,6 +384,12 @@ contains
         !
         forward_solver_type = FWD_IT_DC
         !
+        !
+        has_control_file = .FALSE.
+        has_model_file   = .FALSE.
+        has_data_file    = .FALSE.
+        verbosis         = .FALSE.
+        !
     end subroutine setupDefaultParameters
     !
     subroutine writeEsolutionHeader( nTx, nMode )
@@ -366,15 +400,14 @@ contains
         integer               :: ios
         character (len=20)    :: version
         !
-        open( ioESolution, file = "e_solution", action="write", form ="unformatted", iostat=ios)
+        open( ioESolution, file = "e_solution", action = "write", form = "unformatted", iostat = ios)
         !
         if( ios /= 0 ) then
             write( *, * ) "Error opening file in FileWriteInit: e_solution"
         else
             !
             version = ""
-            ! write the header (contains the basic information for the forward
-            ! modeling). the header is 4 lines
+            !
             write( ioESolution ) version, nTx, nMode, &
             main_grid%nx, main_grid%ny, main_grid%nz, main_grid%nzAir, &
             main_grid%ox, main_grid%oy, main_grid%oz, main_grid%rotdeg
@@ -387,41 +420,88 @@ contains
         !
     end subroutine writeEsolutionHeader
     !
-    subroutine writePredictedDataHeader( Tx, transmitter_type )
+    subroutine writeDataHandleArray( data_handle_array )
         implicit none
         !
-        class( Transmitter_t ), intent( in )       :: Tx
-        character(:), allocatable, intent( inout ) :: transmitter_type
+        type( DataHandle_t ), allocatable, intent( inout ) :: data_handle_array(:)
         !
-        integer :: nTx, nRx, ios
+        type( DataHandle_t ) :: aux_data_entry
+        character(:), allocatable :: receiver_type
+        integer :: i, j, ios
         !
-        if( ( index( transmitter_type, "Unknow" ) == 0 ) ) then
-            !
-            open( ioPredData, file = "predicted_data.dat", action = "write", form = "formatted", iostat = ios )
-            !
-        else if( transmitter_type /= trim( Tx%type_name ) ) then
-            !
-            open( ioPredData, file = "predicted_data.dat", action = "write", form = "formatted", position = "append", iostat = ios )
-            !
-        endif
+        receiver_type = "Unknow"
+        !
+        ! Order by transmitter
+        do i = 1, size( data_handle_array ) - 1
+          !
+          do j = i + 1, size( data_handle_array )
+              !
+              if( data_handle_array(i)%period > data_handle_array(j)%period ) then
+                aux_data_entry  = data_handle_array(i)
+                data_handle_array(i) = data_handle_array(j)
+                data_handle_array(j) = aux_data_entry
+              endif
+              !
+          enddo
+        enddo
+        !
+        ! Order by receiver
+        do i = 1, size( data_handle_array ) - 1
+          !
+          do j = i + 1, size( data_handle_array )
+              !
+              if( data_handle_array(i)%rx_id > data_handle_array(j)%rx_id ) then
+                aux_data_entry  = data_handle_array(i)
+                data_handle_array(i) = data_handle_array(j)
+                data_handle_array(j) = aux_data_entry
+              endif
+              !
+          enddo
+        enddo
+        !
+        open( ioPredData, file = "predicted_data.dat", action = "write", form = "formatted", iostat = ios )
         !
         if( ios == 0 ) then
             !
+            do i = 1, size( data_handle_array )
+                !
+                call writePredictedDataHeader( data_handle_array(i), receiver_type )
+                !
+                write( ioPredData, "(es12.6, A20, f15.3, f15.3, f15.3, f15.3, f15.3, A20, es16.6, es16.6, es16.6)" ) data_handle_array(i)%period, data_handle_array(i)%code, R_ZERO, R_ZERO, data_handle_array(i)%xyz(1), data_handle_array(i)%xyz(2), data_handle_array(i)%xyz(3), data_handle_array(i)%component, data_handle_array(i)%real, data_handle_array(i)%imaginary, 1.0
+                !
+            enddo
+            !
+            close( ioPredData )
+            !
+        else
+          stop "Error opening predicted_data.dat in writeDataHandleArray"
+        end if
+        !
+    end subroutine writeDataHandleArray
+    !
+    subroutine writePredictedDataHeader( data_handle, receiver_type )
+        implicit none
+        !
+        type( DataHandle_t ), intent( in ) :: data_handle
+        character(:), allocatable, intent( inout ) :: receiver_type
+        !
+        class( Receiver_t ), pointer :: receiver
+        !
+        receiver => getReceiver( data_handle%rx_id )
+        !
+        if( receiver_type /= trim( receiver%type_name ) ) then
+            !
             write( ioPredData, "(4A, 100A)" ) "#    ", DATA_FILE_TITLE
-            write( ioPredData, "(4A, 100A)" ) "#    ", Tx%DATA_TITLE
-            write( ioPredData, "(4A, 100A)" ) ">    ", trim( Tx%type_name )
+            write( ioPredData, "(4A, 100A)" ) "#    ", receiver%DATA_TITLE
+            write( ioPredData, "(4A, 100A)" ) ">    ", trim( receiver%type_name )
             write( ioPredData, "(4A, 100A)" ) ">    ", "exp(-i\omega t)"
             write( ioPredData, "(4A, 100A)" ) ">    ", "[V/m]/[T]"
             write( ioPredData, "(7A, 100A)" ) ">        ", "0.00"
             write( ioPredData, "(7A, 100A)" ) ">        ", "0.000    0.000"
             write( ioPredData, "(A3, i8, i8)" ) ">        ", size( transmitters ), size( receivers )
             !
-            close( ioPredData )
+            receiver_type = trim( receiver%type_name )
             !
-            transmitter_type = trim( Tx%type_name )
-            !
-        else
-            stop "Error opening predicted_data.dat in writePredictedDataHeader"
         endif
         !
     end subroutine writePredictedDataHeader
@@ -438,9 +518,10 @@ contains
         write( *, * ) "    Other arguments:"
         write( *, * ) "        [-d], [--data]     : Flags for data file path."
         write( *, * ) "        [-m], [--model]    : Flags for model file path."
-        write( *, * ) "        [-c], [--control] : Flags for user control file path."
-        write( *, * ) "        [-v], [--version] : Print version."
+        write( *, * ) "        [-c], [--control]  : Flags for user control file path."
+        write( *, * ) "        [-v], [--version]  : Print version."
         write( *, * ) "        [-h], [--help]     : Print usage information."
+        write( *, * ) "        [--verbosis]       : Print runtime information."
         !
         write( *, * ) ""
         write( *, * ) "Version 1.0.0"

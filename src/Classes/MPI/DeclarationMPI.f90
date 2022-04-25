@@ -2,15 +2,11 @@
 !
 ! MPI declarations
 !
-! Last modified at 03/2022 by Paulo Werdt
-!
 !*************
 !
 module DeclarationMPI
     !
     use, intrinsic :: iso_c_binding, only: c_ptr, c_sizeof, c_f_pointer
-    !
-    use mpi_f08
     !
     use Grid3D_SG
     !
@@ -35,18 +31,20 @@ module DeclarationMPI
     use ReceiverOffDiagonalImpedance
     use ReceiverSingleField
     !
-    use PredictedDataHandle
+    use DataHandle
     !
-    type( MPI_Comm ) :: main_comm, child_comm
+    include 'mpif.h'
+    !
+    integer :: main_comm, child_comm
     !
     integer :: mpi_rank, mpi_size, node_rank, node_size, &
                nodestringlen, ierr
     !
     character*( MPI_MAX_PROCESSOR_NAME ) :: node_name
     !
-    type( MPI_Win )             :: shared_window
-    integer( MPI_ADDRESS_KIND ) :: shared_window_size
-    integer                     :: shared_disp_unit = 1
+    integer                          :: shared_window
+    integer( KIND=MPI_ADDRESS_KIND ) :: shared_window_size
+    integer                          :: shared_disp_unit = 1
     !
     character, dimension(:), pointer :: shared_buffer
     character, dimension(:), pointer :: fwd_info_buffer
@@ -84,6 +82,11 @@ module DeclarationMPI
     integer, parameter :: receiver_off_diagonal_impedance = 3
     integer, parameter :: receiver_single_field = 4
     !
+    ! 
+    class( Grid_t ), allocatable, target   :: main_grid
+    class( ModelParameter_t ), allocatable :: model_parameter
+    class( ModelOperator_t ), allocatable  :: model_operator
+    !
     ! PROGRAM GLOBAL VARIABLES
     integer :: tag = 2022, master_id = 0
     !
@@ -100,8 +103,7 @@ module DeclarationMPI
         integer      :: tx_index
         integer      :: n_data
         integer      :: data_size
-        logical      :: tx_changed
-		!
+        !
     end type FWDInfo_t
     !
     type( FWDInfo_t ), save :: fwd_info
@@ -110,30 +112,26 @@ module DeclarationMPI
     contains
     !
     ! ALLOCATE shared_buffer
-    subroutine allocateSharedBuffer( grid, model_operator, model_parameter )
+    subroutine allocateSharedBuffer()
         implicit none
-        !
-        class( Grid_t ), intent( in )           :: grid
-        class( ModelOperator_t ), intent( in )  :: model_operator
-        class( ModelParameter_t ), intent( in ) :: model_parameter
         !
         integer :: i, last_size, nbytes(5)
         !
-		call MPI_PACK_SIZE( 4, MPI_INTEGER, child_comm, nbytes(1), ierr )
-		call MPI_PACK_SIZE( 1, MPI_DOUBLE_PRECISION, child_comm, nbytes(2), ierr )
-		call MPI_PACK_SIZE( 44, MPI_CHARACTER, child_comm, nbytes(3), ierr )
-		!
-        shared_buffer_size = shared_buffer_size + allocateGridBuffer( grid )
+        call MPI_PACK_SIZE( 4, MPI_INTEGER, child_comm, nbytes(1), ierr )
+        call MPI_PACK_SIZE( 1, MPI_DOUBLE_PRECISION, child_comm, nbytes(2), ierr )
+        call MPI_PACK_SIZE( 44, MPI_CHARACTER, child_comm, nbytes(3), ierr )
         !
-        write( *, "(A50, i8)" ) "MPI Allocated grid size:", shared_buffer_size
+        shared_buffer_size = shared_buffer_size + allocateGridBuffer( main_grid )
+        !
+        write( *, "(A50, i8)" ) "MPI Allocated main_grid size:", shared_buffer_size
         last_size = shared_buffer_size
         !
-        shared_buffer_size = shared_buffer_size + allocateModelOperatorBuffer( model_operator )
+        shared_buffer_size = shared_buffer_size + allocateModelOperatorBuffer()
         !
         write( *, "(A50, i8)" ) "MPI Allocated model_operator size:", shared_buffer_size - last_size
         last_size = shared_buffer_size
         !
-        shared_buffer_size = shared_buffer_size + allocateModelParameterBuffer( model_parameter )
+        shared_buffer_size = shared_buffer_size + allocateModelParameterBuffer()
         !
         write( *, "(A50, i8)" ) "MPI Allocated model_parameter size:", shared_buffer_size - last_size
         last_size = shared_buffer_size
@@ -176,18 +174,14 @@ module DeclarationMPI
     end subroutine allocateSharedBuffer
     !
     !
-    subroutine packSharedBuffer( grid, model_operator, model_parameter )
+    subroutine packSharedBuffer()
         implicit none
-        !
-        class( Grid_t ), intent( in )           :: grid
-        class( ModelOperator_t ), intent( in )  :: model_operator
-        class( ModelParameter_t ), intent( in ) :: model_parameter
         !
         integer :: i, index
         !
         index = 1
         !
-		call MPI_PACK( len( model_method ), 1, MPI_INTEGER, shared_buffer, shared_buffer_size, index, child_comm, ierr )
+        call MPI_PACK( len( model_method ), 1, MPI_INTEGER, shared_buffer, shared_buffer_size, index, child_comm, ierr )
         call MPI_PACK( len( forward_solver_type ), 1, MPI_INTEGER, shared_buffer, shared_buffer_size, index, child_comm, ierr )
         call MPI_PACK( len( source_type ), 1, MPI_INTEGER, shared_buffer, shared_buffer_size, index, child_comm, ierr )
         call MPI_PACK( model_n_air_layer, 1, MPI_INTEGER, shared_buffer, shared_buffer_size, index, child_comm, ierr )
@@ -196,11 +190,11 @@ module DeclarationMPI
         call MPI_PACK( forward_solver_type, len( forward_solver_type ), MPI_CHARACTER, shared_buffer, shared_buffer_size, index, child_comm, ierr )
         call MPI_PACK( source_type, len( source_type ), MPI_CHARACTER, shared_buffer, shared_buffer_size, index, child_comm, ierr )
         !
-        call packGridBuffer( grid, index )
+        call packGridBuffer( main_grid, index )
         !
-        call packModelOperatorBuffer( model_operator, index )
+        call packModelOperatorBuffer( index )
         !
-        call packModelParameterBuffer( model_parameter, index )
+        call packModelParameterBuffer( index )
         !
         call MPI_PACK( size( transmitters ), 1, MPI_INTEGER, shared_buffer, shared_buffer_size, index, child_comm, ierr )
         !
@@ -220,18 +214,13 @@ module DeclarationMPI
         !
     end subroutine packSharedBuffer
     !
-    subroutine unpackSharedBuffer( buffer_size, grid, model_operator, model_parameter )
+    subroutine unpackSharedBuffer( buffer_size )
         implicit none
         !
-        class( Grid_t ), allocatable, intent( inout )           :: grid
-        class( ModelOperator_t ), allocatable, intent( inout )  :: model_operator
-        class( ModelParameter_t ), allocatable, intent( inout ) :: model_parameter
+        integer, intent( in ) :: buffer_size
         !
         class( Transmitter_t ), allocatable :: transmitter
         class( Receiver_t ), allocatable    :: receiver
-        !
-        !
-        integer, intent( in ) :: buffer_size
         !
         integer :: i, aux_size, n_model_method, n_forward_solver_type, n_source_type, index
         !
@@ -239,34 +228,34 @@ module DeclarationMPI
         !
         shared_buffer_size = buffer_size
         !
-		call MPI_UNPACK( shared_buffer, shared_buffer_size, index, n_model_method, 1, MPI_INTEGER, child_comm, ierr )
+        call MPI_UNPACK( shared_buffer, shared_buffer_size, index, n_model_method, 1, MPI_INTEGER, child_comm, ierr )
         call MPI_UNPACK( shared_buffer, shared_buffer_size, index, n_forward_solver_type, 1, MPI_INTEGER, child_comm, ierr )
         call MPI_UNPACK( shared_buffer, shared_buffer_size, index, n_source_type, 1, MPI_INTEGER, child_comm, ierr )
         call MPI_UNPACK( shared_buffer, shared_buffer_size, index, model_n_air_layer, 1, MPI_INTEGER, child_comm, ierr )
         call MPI_UNPACK( shared_buffer, shared_buffer_size, index, model_max_height, 1, MPI_DOUBLE_PRECISION, child_comm, ierr )
         !
-		allocate( character( n_model_method ) :: model_method )
+        allocate( character( n_model_method ) :: model_method )
         call MPI_UNPACK( shared_buffer, shared_buffer_size, index, model_method, n_model_method, MPI_CHARACTER, child_comm, ierr )
         !
-		allocate( character( n_forward_solver_type ) :: forward_solver_type )
-		call MPI_UNPACK( shared_buffer, shared_buffer_size, index, forward_solver_type, n_forward_solver_type, MPI_CHARACTER, child_comm, ierr )
+        allocate( character( n_forward_solver_type ) :: forward_solver_type )
+        call MPI_UNPACK( shared_buffer, shared_buffer_size, index, forward_solver_type, n_forward_solver_type, MPI_CHARACTER, child_comm, ierr )
         !
-		allocate( character( n_source_type ) :: source_type )
-		call MPI_UNPACK( shared_buffer, shared_buffer_size, index, source_type, n_source_type, MPI_CHARACTER, child_comm, ierr )
+        allocate( character( n_source_type ) :: source_type )
+        call MPI_UNPACK( shared_buffer, shared_buffer_size, index, source_type, n_source_type, MPI_CHARACTER, child_comm, ierr )
         !
-        grid = unpackGridBuffer( index )
+        main_grid = unpackGridBuffer( index )
         !
-        model_operator = unpackModelOperatorBuffer( grid, index )
+        model_operator = unpackModelOperatorBuffer( index )
         !
-        model_parameter = unpackModelParameterBuffer( grid, model_operator%metric, index )
+        model_parameter = unpackModelParameterBuffer( model_operator%metric, index )
         !
         call MPI_UNPACK( shared_buffer, shared_buffer_size, index, aux_size, 1, MPI_INTEGER, child_comm, ierr )
         !
         do i = 1, aux_size
             !
-            call unpackTransmitterBuffer( grid, transmitter, index )
+            call unpackTransmitterBuffer( transmitter, index )
             !
-            call updateTransmitterArray( transmitter )
+            ierr = updateTransmitterArray( transmitter )
             !
             deallocate( transmitter )
             !
@@ -276,9 +265,9 @@ module DeclarationMPI
         !
         do i = 1, aux_size
             !
-            call unpackReceiverBuffer( grid, receiver, index )
+            call unpackReceiverBuffer( receiver, index )
             !
-            call updateReceiverArray( receiver )
+            ierr = updateReceiverArray( receiver )
             !
             deallocate( receiver )
             !
@@ -334,7 +323,7 @@ module DeclarationMPI
               !
               call MPI_PACK( real_3d_sg, 1, MPI_INTEGER, shared_buffer, shared_buffer_size, index, child_comm, ierr )
               !
-              call MPI_PACK( scalar%isAllocated, 1, MPI_LOGICAL, shared_buffer, shared_buffer_size, index, child_comm, ierr )
+              call MPI_PACK( scalar%is_allocated, 1, MPI_LOGICAL, shared_buffer, shared_buffer_size, index, child_comm, ierr )
               call MPI_PACK( scalar%gridType, 4, MPI_CHARACTER, shared_buffer, shared_buffer_size, index, child_comm, ierr )
               call MPI_PACK( scalar%nx, 1, MPI_INTEGER, shared_buffer, shared_buffer_size, index, child_comm, ierr )
               call MPI_PACK( scalar%ny, 1, MPI_INTEGER, shared_buffer, shared_buffer_size, index, child_comm, ierr )
@@ -352,10 +341,10 @@ module DeclarationMPI
         !
     end subroutine packRScalarBuffer
     !
-    function unpackRScalarBuffer( grid, index ) result( scalar )
+    function unpackRScalarBuffer( main_grid, index ) result( scalar )
         implicit none
         !
-        class( Grid_t ), target, intent( in ) :: grid
+        class( Grid_t ), target, intent( in ) :: main_grid
         integer, intent( inout )              :: index
         !
         class( rScalar_t ), allocatable :: scalar
@@ -374,18 +363,18 @@ module DeclarationMPI
                     !
                     class is ( rScalar3D_SG_t )
                         !
-                        select type( grid )
+                        select type( main_grid )
                            !
                            class is( Grid3D_SG_t )
                               !
-                              scalar%grid => grid
+                              scalar%grid => main_grid
                               !
                            class default
-                              stop "unpackRScalarBuffer: Unclassified grid"
+                              stop "unpackRScalarBuffer: Unclassified main_grid"
                            !
                         end select
                         !
-                        call MPI_UNPACK( shared_buffer, shared_buffer_size, index, scalar%isAllocated, 1, MPI_LOGICAL, child_comm, ierr )
+                        call MPI_UNPACK( shared_buffer, shared_buffer_size, index, scalar%is_allocated, 1, MPI_LOGICAL, child_comm, ierr )
                         call MPI_UNPACK( shared_buffer, shared_buffer_size, index, scalar%gridType, 4, MPI_CHARACTER, child_comm, ierr )
                         call MPI_UNPACK( shared_buffer, shared_buffer_size, index, scalar%nx, 1, MPI_INTEGER, child_comm, ierr )
                         call MPI_UNPACK( shared_buffer, shared_buffer_size, index, scalar%ny, 1, MPI_INTEGER, child_comm, ierr )
@@ -457,7 +446,7 @@ module DeclarationMPI
               !
               call MPI_PACK( complex_3d_sg, 1, MPI_INTEGER, shared_buffer, shared_buffer_size, index, child_comm, ierr )
               !
-              call MPI_PACK( scalar%isAllocated, 1, MPI_LOGICAL, shared_buffer, shared_buffer_size, index, child_comm, ierr )
+              call MPI_PACK( scalar%is_allocated, 1, MPI_LOGICAL, shared_buffer, shared_buffer_size, index, child_comm, ierr )
               call MPI_PACK( scalar%gridType, 4, MPI_CHARACTER, shared_buffer, shared_buffer_size, index, child_comm, ierr )
               call MPI_PACK( scalar%nx, 1, MPI_INTEGER, shared_buffer, shared_buffer_size, index, child_comm, ierr )
               call MPI_PACK( scalar%ny, 1, MPI_INTEGER, shared_buffer, shared_buffer_size, index, child_comm, ierr )
@@ -475,10 +464,10 @@ module DeclarationMPI
         !
     end subroutine packCScalarBuffer
     !
-    function unpackCScalarBuffer( grid, index ) result( scalar )
+    function unpackCScalarBuffer( main_grid, index ) result( scalar )
         implicit none
         !
-        class( Grid_t ), target, intent( in ) :: grid
+        class( Grid_t ), target, intent( in ) :: main_grid
         integer, intent( inout )              :: index
         !
         class( cScalar_t ), allocatable :: scalar
@@ -497,18 +486,18 @@ module DeclarationMPI
                     !
                     class is ( cScalar3D_SG_t )
                         !
-                        select type( grid )
+                        select type( main_grid )
                            !
                            class is( Grid3D_SG_t )
                               !
-                              scalar%grid => grid
+                              scalar%grid => main_grid
                               !
                            class default
-                              stop "unpackCScalarBuffer: Unclassified grid"
+                              stop "unpackCScalarBuffer: Unclassified main_grid"
                            !
                         end select
                         !
-                        call MPI_UNPACK( shared_buffer, shared_buffer_size, index, scalar%isAllocated, 1, MPI_LOGICAL, child_comm, ierr )
+                        call MPI_UNPACK( shared_buffer, shared_buffer_size, index, scalar%is_allocated, 1, MPI_LOGICAL, child_comm, ierr )
                         call MPI_UNPACK( shared_buffer, shared_buffer_size, index, scalar%gridType, 4, MPI_CHARACTER, child_comm, ierr )
                         call MPI_UNPACK( shared_buffer, shared_buffer_size, index, scalar%nx, 1, MPI_INTEGER, child_comm, ierr )
                         call MPI_UNPACK( shared_buffer, shared_buffer_size, index, scalar%ny, 1, MPI_INTEGER, child_comm, ierr )
@@ -579,7 +568,7 @@ module DeclarationMPI
               !
               call MPI_PACK( real_3d_sg, 1, MPI_INTEGER, shared_buffer, shared_buffer_size, index, child_comm, ierr )
               !
-              call MPI_PACK( vector%isAllocated, 1, MPI_LOGICAL, shared_buffer, shared_buffer_size, index, child_comm, ierr )
+              call MPI_PACK( vector%is_allocated, 1, MPI_LOGICAL, shared_buffer, shared_buffer_size, index, child_comm, ierr )
               call MPI_PACK( vector%gridType, 4, MPI_CHARACTER, shared_buffer, shared_buffer_size, index, child_comm, ierr )
               call MPI_PACK( vector%nx, 1, MPI_INTEGER, shared_buffer, shared_buffer_size, index, child_comm, ierr )
               call MPI_PACK( vector%ny, 1, MPI_INTEGER, shared_buffer, shared_buffer_size, index, child_comm, ierr )
@@ -599,10 +588,10 @@ module DeclarationMPI
         !
     end subroutine packRVectorBuffer
     !
-    function unpackRVectorBuffer( grid, index ) result( vector )
+    function unpackRVectorBuffer( main_grid, index ) result( vector )
         implicit none
         !
-        class( Grid_t ), target, intent( in ) :: grid
+        class( Grid_t ), target, intent( in ) :: main_grid
         integer, intent( inout )              :: index
         !
         class( rVector_t ), allocatable :: vector
@@ -621,18 +610,18 @@ module DeclarationMPI
                     !
                     class is ( rVector3D_SG_t )
                         !
-                        select type( grid )
+                        select type( main_grid )
                            !
                            class is( Grid3D_SG_t )
                               !
-                              vector%grid => grid
+                              vector%grid => main_grid
                               !
                            class default
-                              stop "unpackRVectorBuffer: Unclassified grid"
+                              stop "unpackRVectorBuffer: Unclassified main_grid"
                            !
                         end select
                         !
-                        call MPI_UNPACK( shared_buffer, shared_buffer_size, index, vector%isAllocated, 1, MPI_LOGICAL, child_comm, ierr )
+                        call MPI_UNPACK( shared_buffer, shared_buffer_size, index, vector%is_allocated, 1, MPI_LOGICAL, child_comm, ierr )
                         call MPI_UNPACK( shared_buffer, shared_buffer_size, index, vector%gridType, 4, MPI_CHARACTER, child_comm, ierr )
                         call MPI_UNPACK( shared_buffer, shared_buffer_size, index, vector%nx, 1, MPI_INTEGER, child_comm, ierr )
                         call MPI_UNPACK( shared_buffer, shared_buffer_size, index, vector%ny, 1, MPI_INTEGER, child_comm, ierr )
@@ -705,7 +694,7 @@ module DeclarationMPI
               !
               call MPI_PACK( complex_3d_sg, 1, MPI_INTEGER, shared_buffer, shared_buffer_size, index, child_comm, ierr )
               !
-              call MPI_PACK( vector%isAllocated, 1, MPI_LOGICAL, shared_buffer, shared_buffer_size, index, child_comm, ierr )
+              call MPI_PACK( vector%is_allocated, 1, MPI_LOGICAL, shared_buffer, shared_buffer_size, index, child_comm, ierr )
               call MPI_PACK( vector%gridType, 4, MPI_CHARACTER, shared_buffer, shared_buffer_size, index, child_comm, ierr )
               call MPI_PACK( vector%nx, 1, MPI_INTEGER, shared_buffer, shared_buffer_size, index, child_comm, ierr )
               call MPI_PACK( vector%ny, 1, MPI_INTEGER, shared_buffer, shared_buffer_size, index, child_comm, ierr )
@@ -725,10 +714,10 @@ module DeclarationMPI
         !
     end subroutine packCVectorBuffer
     !
-    function unpackCVectorBuffer( grid, index ) result( vector )
+    function unpackCVectorBuffer( main_grid, index ) result( vector )
         implicit none
         !
-        class( Grid_t ), target, intent( in ) :: grid
+        class( Grid_t ), target, intent( in ) :: main_grid
         integer, intent( inout )              :: index
         !
         class( cVector_t ), allocatable :: vector
@@ -747,18 +736,18 @@ module DeclarationMPI
                     !
                     class is ( cVector3D_SG_t )
                         !
-                        select type( grid )
+                        select type( main_grid )
                            !
                            class is( Grid3D_SG_t )
                               !
-                              vector%grid => grid
+                              vector%grid => main_grid
                               !
                            class default
-                              stop "unpackCVectorBuffer: Unclassified grid"
+                              stop "unpackCVectorBuffer: Unclassified main_grid"
                            !
                         end select
                         !
-                        call MPI_UNPACK( shared_buffer, shared_buffer_size, index, vector%isAllocated, 1, MPI_LOGICAL, child_comm, ierr )
+                        call MPI_UNPACK( shared_buffer, shared_buffer_size, index, vector%is_allocated, 1, MPI_LOGICAL, child_comm, ierr )
                         call MPI_UNPACK( shared_buffer, shared_buffer_size, index, vector%gridType, 4, MPI_CHARACTER, child_comm, ierr )
                         call MPI_UNPACK( shared_buffer, shared_buffer_size, index, vector%nx, 1, MPI_INTEGER, child_comm, ierr )
                         call MPI_UNPACK( shared_buffer, shared_buffer_size, index, vector%ny, 1, MPI_INTEGER, child_comm, ierr )
@@ -785,10 +774,10 @@ module DeclarationMPI
     end function unpackCVectorBuffer
     !
     ! ALLOCATE shared_buffer
-    function allocateGridBuffer( grid ) result( grid_size_bytes )
+    function allocateGridBuffer( main_grid ) result( grid_size_bytes )
         implicit none
         !
-        class( Grid_t ), intent( in ) :: grid
+        class( Grid_t ), intent( in ) :: main_grid
         integer :: i, nbytes(24), grid_size_bytes
         !
         grid_size_bytes = 0
@@ -799,24 +788,24 @@ module DeclarationMPI
         call MPI_PACK_SIZE( 80, MPI_CHARACTER, child_comm, nbytes(2), ierr )
         call MPI_PACK_SIZE( 4, MPI_DOUBLE_PRECISION, child_comm, nbytes(3), ierr )
         call MPI_PACK_SIZE( 5, MPI_INTEGER, child_comm, nbytes(4), ierr )
-        call MPI_PACK_SIZE( size( grid%dx ), MPI_DOUBLE_PRECISION, child_comm, nbytes(5), ierr )
-        call MPI_PACK_SIZE( size( grid%dy ), MPI_DOUBLE_PRECISION, child_comm, nbytes(6), ierr )
-        call MPI_PACK_SIZE( size( grid%dz ), MPI_DOUBLE_PRECISION, child_comm, nbytes(7), ierr )
-        call MPI_PACK_SIZE( size( grid%dxInv ), MPI_DOUBLE_PRECISION, child_comm, nbytes(8), ierr )
-        call MPI_PACK_SIZE( size( grid%dyInv ), MPI_DOUBLE_PRECISION, child_comm, nbytes(9), ierr )
-        call MPI_PACK_SIZE( size( grid%dzInv ), MPI_DOUBLE_PRECISION, child_comm, nbytes(10), ierr )
-        call MPI_PACK_SIZE( size( grid%delX ), MPI_DOUBLE_PRECISION, child_comm, nbytes(11), ierr )
-        call MPI_PACK_SIZE( size( grid%delY ), MPI_DOUBLE_PRECISION, child_comm, nbytes(12), ierr )
-        call MPI_PACK_SIZE( size( grid%delZ ), MPI_DOUBLE_PRECISION, child_comm, nbytes(13), ierr )
-        call MPI_PACK_SIZE( size( grid%delXInv ), MPI_DOUBLE_PRECISION, child_comm, nbytes(14), ierr )
-        call MPI_PACK_SIZE( size( grid%delYInv ), MPI_DOUBLE_PRECISION, child_comm, nbytes(15), ierr )
-        call MPI_PACK_SIZE( size( grid%delZInv ), MPI_DOUBLE_PRECISION, child_comm, nbytes(16), ierr )
-        call MPI_PACK_SIZE( size( grid%xEdge ), MPI_DOUBLE_PRECISION, child_comm, nbytes(17), ierr )
-        call MPI_PACK_SIZE( size( grid%yEdge ), MPI_DOUBLE_PRECISION, child_comm, nbytes(18), ierr )
-        call MPI_PACK_SIZE( size( grid%zEdge ), MPI_DOUBLE_PRECISION, child_comm, nbytes(19), ierr )
-        call MPI_PACK_SIZE( size( grid%xCenter ), MPI_DOUBLE_PRECISION, child_comm, nbytes(20), ierr )
-        call MPI_PACK_SIZE( size( grid%yCenter ), MPI_DOUBLE_PRECISION, child_comm, nbytes(21), ierr )
-        call MPI_PACK_SIZE( size( grid%zCenter ), MPI_DOUBLE_PRECISION, child_comm, nbytes(22), ierr )
+        call MPI_PACK_SIZE( size( main_grid%dx ), MPI_DOUBLE_PRECISION, child_comm, nbytes(5), ierr )
+        call MPI_PACK_SIZE( size( main_grid%dy ), MPI_DOUBLE_PRECISION, child_comm, nbytes(6), ierr )
+        call MPI_PACK_SIZE( size( main_grid%dz ), MPI_DOUBLE_PRECISION, child_comm, nbytes(7), ierr )
+        call MPI_PACK_SIZE( size( main_grid%dxInv ), MPI_DOUBLE_PRECISION, child_comm, nbytes(8), ierr )
+        call MPI_PACK_SIZE( size( main_grid%dyInv ), MPI_DOUBLE_PRECISION, child_comm, nbytes(9), ierr )
+        call MPI_PACK_SIZE( size( main_grid%dzInv ), MPI_DOUBLE_PRECISION, child_comm, nbytes(10), ierr )
+        call MPI_PACK_SIZE( size( main_grid%delX ), MPI_DOUBLE_PRECISION, child_comm, nbytes(11), ierr )
+        call MPI_PACK_SIZE( size( main_grid%delY ), MPI_DOUBLE_PRECISION, child_comm, nbytes(12), ierr )
+        call MPI_PACK_SIZE( size( main_grid%delZ ), MPI_DOUBLE_PRECISION, child_comm, nbytes(13), ierr )
+        call MPI_PACK_SIZE( size( main_grid%delXInv ), MPI_DOUBLE_PRECISION, child_comm, nbytes(14), ierr )
+        call MPI_PACK_SIZE( size( main_grid%delYInv ), MPI_DOUBLE_PRECISION, child_comm, nbytes(15), ierr )
+        call MPI_PACK_SIZE( size( main_grid%delZInv ), MPI_DOUBLE_PRECISION, child_comm, nbytes(16), ierr )
+        call MPI_PACK_SIZE( size( main_grid%xEdge ), MPI_DOUBLE_PRECISION, child_comm, nbytes(17), ierr )
+        call MPI_PACK_SIZE( size( main_grid%yEdge ), MPI_DOUBLE_PRECISION, child_comm, nbytes(18), ierr )
+        call MPI_PACK_SIZE( size( main_grid%zEdge ), MPI_DOUBLE_PRECISION, child_comm, nbytes(19), ierr )
+        call MPI_PACK_SIZE( size( main_grid%xCenter ), MPI_DOUBLE_PRECISION, child_comm, nbytes(20), ierr )
+        call MPI_PACK_SIZE( size( main_grid%yCenter ), MPI_DOUBLE_PRECISION, child_comm, nbytes(21), ierr )
+        call MPI_PACK_SIZE( size( main_grid%zCenter ), MPI_DOUBLE_PRECISION, child_comm, nbytes(22), ierr )
         call MPI_PACK_SIZE( 1, MPI_DOUBLE_PRECISION, child_comm, nbytes(23), ierr )
         call MPI_PACK_SIZE( 1, MPI_LOGICAL, child_comm, nbytes(24), ierr )
         !
@@ -827,73 +816,73 @@ module DeclarationMPI
     end function allocateGridBuffer
     !
     !
-    subroutine packGridBuffer( grid, index )
+    subroutine packGridBuffer( main_grid, index )
         implicit none
         !
-        class( Grid_t ), intent( in ) :: grid
+        class( Grid_t ), intent( in ) :: main_grid
         integer, intent( inout )      :: index
         !
-        select type( grid )
+        select type( main_grid )
            !
            class is( Grid3D_SG_t )
                 !
                 call MPI_PACK( grid_3d_sg, 1, MPI_INTEGER, shared_buffer, shared_buffer_size, index, child_comm, ierr )
                 !
                 ! SIZES FOR THE FUTURE
-                call MPI_PACK( size( grid%dx ), 1, MPI_INTEGER, shared_buffer, shared_buffer_size, index, child_comm, ierr )
-                call MPI_PACK( size( grid%dy ), 1, MPI_INTEGER, shared_buffer, shared_buffer_size, index, child_comm, ierr )
-                call MPI_PACK( size( grid%dz ), 1, MPI_INTEGER, shared_buffer, shared_buffer_size, index, child_comm, ierr )
-                call MPI_PACK( size( grid%dxInv ), 1, MPI_INTEGER, shared_buffer, shared_buffer_size, index, child_comm, ierr )
-                call MPI_PACK( size( grid%dyInv ), 1, MPI_INTEGER, shared_buffer, shared_buffer_size, index, child_comm, ierr )
-                call MPI_PACK( size( grid%dzInv ), 1, MPI_INTEGER, shared_buffer, shared_buffer_size, index, child_comm, ierr )
-                call MPI_PACK( size( grid%delX ), 1, MPI_INTEGER, shared_buffer, shared_buffer_size, index, child_comm, ierr )
-                call MPI_PACK( size( grid%delY ), 1, MPI_INTEGER, shared_buffer, shared_buffer_size, index, child_comm, ierr )
-                call MPI_PACK( size( grid%delZ ), 1, MPI_INTEGER, shared_buffer, shared_buffer_size, index, child_comm, ierr )
-                call MPI_PACK( size( grid%delXInv ), 1, MPI_INTEGER, shared_buffer, shared_buffer_size, index, child_comm, ierr )
-                call MPI_PACK( size( grid%delYInv ), 1, MPI_INTEGER, shared_buffer, shared_buffer_size, index, child_comm, ierr )
-                call MPI_PACK( size( grid%delZInv ), 1, MPI_INTEGER, shared_buffer, shared_buffer_size, index, child_comm, ierr )
-                call MPI_PACK( size( grid%xEdge ), 1, MPI_INTEGER, shared_buffer, shared_buffer_size, index, child_comm, ierr )
-                call MPI_PACK( size( grid%yEdge ), 1, MPI_INTEGER, shared_buffer, shared_buffer_size, index, child_comm, ierr )
-                call MPI_PACK( size( grid%zEdge ), 1, MPI_INTEGER, shared_buffer, shared_buffer_size, index, child_comm, ierr )
-                call MPI_PACK( size( grid%xCenter ), 1, MPI_INTEGER, shared_buffer, shared_buffer_size, index, child_comm, ierr )
-                call MPI_PACK( size( grid%yCenter ), 1, MPI_INTEGER, shared_buffer, shared_buffer_size, index, child_comm, ierr )
-                call MPI_PACK( size( grid%zCenter ), 1, MPI_INTEGER, shared_buffer, shared_buffer_size, index, child_comm, ierr )
+                call MPI_PACK( size( main_grid%dx ), 1, MPI_INTEGER, shared_buffer, shared_buffer_size, index, child_comm, ierr )
+                call MPI_PACK( size( main_grid%dy ), 1, MPI_INTEGER, shared_buffer, shared_buffer_size, index, child_comm, ierr )
+                call MPI_PACK( size( main_grid%dz ), 1, MPI_INTEGER, shared_buffer, shared_buffer_size, index, child_comm, ierr )
+                call MPI_PACK( size( main_grid%dxInv ), 1, MPI_INTEGER, shared_buffer, shared_buffer_size, index, child_comm, ierr )
+                call MPI_PACK( size( main_grid%dyInv ), 1, MPI_INTEGER, shared_buffer, shared_buffer_size, index, child_comm, ierr )
+                call MPI_PACK( size( main_grid%dzInv ), 1, MPI_INTEGER, shared_buffer, shared_buffer_size, index, child_comm, ierr )
+                call MPI_PACK( size( main_grid%delX ), 1, MPI_INTEGER, shared_buffer, shared_buffer_size, index, child_comm, ierr )
+                call MPI_PACK( size( main_grid%delY ), 1, MPI_INTEGER, shared_buffer, shared_buffer_size, index, child_comm, ierr )
+                call MPI_PACK( size( main_grid%delZ ), 1, MPI_INTEGER, shared_buffer, shared_buffer_size, index, child_comm, ierr )
+                call MPI_PACK( size( main_grid%delXInv ), 1, MPI_INTEGER, shared_buffer, shared_buffer_size, index, child_comm, ierr )
+                call MPI_PACK( size( main_grid%delYInv ), 1, MPI_INTEGER, shared_buffer, shared_buffer_size, index, child_comm, ierr )
+                call MPI_PACK( size( main_grid%delZInv ), 1, MPI_INTEGER, shared_buffer, shared_buffer_size, index, child_comm, ierr )
+                call MPI_PACK( size( main_grid%xEdge ), 1, MPI_INTEGER, shared_buffer, shared_buffer_size, index, child_comm, ierr )
+                call MPI_PACK( size( main_grid%yEdge ), 1, MPI_INTEGER, shared_buffer, shared_buffer_size, index, child_comm, ierr )
+                call MPI_PACK( size( main_grid%zEdge ), 1, MPI_INTEGER, shared_buffer, shared_buffer_size, index, child_comm, ierr )
+                call MPI_PACK( size( main_grid%xCenter ), 1, MPI_INTEGER, shared_buffer, shared_buffer_size, index, child_comm, ierr )
+                call MPI_PACK( size( main_grid%yCenter ), 1, MPI_INTEGER, shared_buffer, shared_buffer_size, index, child_comm, ierr )
+                call MPI_PACK( size( main_grid%zCenter ), 1, MPI_INTEGER, shared_buffer, shared_buffer_size, index, child_comm, ierr )
                 !
-                call MPI_PACK( grid%geometry, 80, MPI_CHARACTER, shared_buffer, shared_buffer_size, index, child_comm, ierr )
-                call MPI_PACK( grid%ox, 1, MPI_DOUBLE_PRECISION, shared_buffer, shared_buffer_size, index, child_comm, ierr )
-                call MPI_PACK( grid%oy, 1, MPI_DOUBLE_PRECISION, shared_buffer, shared_buffer_size, index, child_comm, ierr )
-                call MPI_PACK( grid%oz, 1, MPI_DOUBLE_PRECISION, shared_buffer, shared_buffer_size, index, child_comm, ierr )
-                call MPI_PACK( grid%rotDeg, 1, MPI_DOUBLE_PRECISION, shared_buffer, shared_buffer_size, index, child_comm, ierr )
-                call MPI_PACK( grid%nx, 1, MPI_INTEGER, shared_buffer, shared_buffer_size, index, child_comm, ierr )
-                call MPI_PACK( grid%ny, 1, MPI_INTEGER, shared_buffer, shared_buffer_size, index, child_comm, ierr )
-                call MPI_PACK( grid%nz, 1, MPI_INTEGER, shared_buffer, shared_buffer_size, index, child_comm, ierr )
-                call MPI_PACK( grid%nzAir, 1, MPI_INTEGER, shared_buffer, shared_buffer_size, index, child_comm, ierr )
-                call MPI_PACK( grid%nzEarth, 1, MPI_INTEGER, shared_buffer, shared_buffer_size, index, child_comm, ierr )
+                call MPI_PACK( main_grid%geometry, 80, MPI_CHARACTER, shared_buffer, shared_buffer_size, index, child_comm, ierr )
+                call MPI_PACK( main_grid%ox, 1, MPI_DOUBLE_PRECISION, shared_buffer, shared_buffer_size, index, child_comm, ierr )
+                call MPI_PACK( main_grid%oy, 1, MPI_DOUBLE_PRECISION, shared_buffer, shared_buffer_size, index, child_comm, ierr )
+                call MPI_PACK( main_grid%oz, 1, MPI_DOUBLE_PRECISION, shared_buffer, shared_buffer_size, index, child_comm, ierr )
+                call MPI_PACK( main_grid%rotDeg, 1, MPI_DOUBLE_PRECISION, shared_buffer, shared_buffer_size, index, child_comm, ierr )
+                call MPI_PACK( main_grid%nx, 1, MPI_INTEGER, shared_buffer, shared_buffer_size, index, child_comm, ierr )
+                call MPI_PACK( main_grid%ny, 1, MPI_INTEGER, shared_buffer, shared_buffer_size, index, child_comm, ierr )
+                call MPI_PACK( main_grid%nz, 1, MPI_INTEGER, shared_buffer, shared_buffer_size, index, child_comm, ierr )
+                call MPI_PACK( main_grid%nzAir, 1, MPI_INTEGER, shared_buffer, shared_buffer_size, index, child_comm, ierr )
+                call MPI_PACK( main_grid%nzEarth, 1, MPI_INTEGER, shared_buffer, shared_buffer_size, index, child_comm, ierr )
                 !
-                call MPI_PACK( grid%dx(1), size( grid%dx ), MPI_DOUBLE_PRECISION, shared_buffer, shared_buffer_size, index, child_comm, ierr )
-                call MPI_PACK( grid%dy(1), size( grid%dy ), MPI_DOUBLE_PRECISION, shared_buffer, shared_buffer_size, index, child_comm, ierr )
-                call MPI_PACK( grid%dz(1), size( grid%dz ), MPI_DOUBLE_PRECISION, shared_buffer, shared_buffer_size, index, child_comm, ierr )
-                call MPI_PACK( grid%dxInv(1), size( grid%dxInv ), MPI_DOUBLE_PRECISION, shared_buffer, shared_buffer_size, index, child_comm, ierr )
-                call MPI_PACK( grid%dyInv(1), size( grid%dyInv ), MPI_DOUBLE_PRECISION, shared_buffer, shared_buffer_size, index, child_comm, ierr )
-                call MPI_PACK( grid%dzInv(1), size( grid%dzInv ), MPI_DOUBLE_PRECISION, shared_buffer, shared_buffer_size, index, child_comm, ierr )
-                call MPI_PACK( grid%delX(1), size( grid%delX ), MPI_DOUBLE_PRECISION, shared_buffer, shared_buffer_size, index, child_comm, ierr )
-                call MPI_PACK( grid%delY(1), size( grid%delY ), MPI_DOUBLE_PRECISION, shared_buffer, shared_buffer_size, index, child_comm, ierr )
-                call MPI_PACK( grid%delZ(1), size( grid%delZ ), MPI_DOUBLE_PRECISION, shared_buffer, shared_buffer_size, index, child_comm, ierr )
-                call MPI_PACK( grid%delXInv(1), size( grid%delXInv ), MPI_DOUBLE_PRECISION, shared_buffer, shared_buffer_size, index, child_comm, ierr )
-                call MPI_PACK( grid%delYInv(1), size( grid%delYInv ), MPI_DOUBLE_PRECISION, shared_buffer, shared_buffer_size, index, child_comm, ierr )
-                call MPI_PACK( grid%delZInv(1), size( grid%delZInv ), MPI_DOUBLE_PRECISION, shared_buffer, shared_buffer_size, index, child_comm, ierr )
-                call MPI_PACK( grid%xEdge(1), size( grid%xEdge ), MPI_DOUBLE_PRECISION, shared_buffer, shared_buffer_size, index, child_comm, ierr )
-                call MPI_PACK( grid%yEdge(1), size( grid%yEdge ), MPI_DOUBLE_PRECISION, shared_buffer, shared_buffer_size, index, child_comm, ierr )
-                call MPI_PACK( grid%zEdge(1), size( grid%zEdge ), MPI_DOUBLE_PRECISION, shared_buffer, shared_buffer_size, index, child_comm, ierr )
-                call MPI_PACK( grid%xCenter(1), size( grid%xCenter ), MPI_DOUBLE_PRECISION, shared_buffer, shared_buffer_size, index, child_comm, ierr )
-                call MPI_PACK( grid%yCenter(1), size( grid%yCenter ), MPI_DOUBLE_PRECISION, shared_buffer, shared_buffer_size, index, child_comm, ierr )
-                call MPI_PACK( grid%zCenter(1), size( grid%zCenter ), MPI_DOUBLE_PRECISION, shared_buffer, shared_buffer_size, index, child_comm, ierr )
+                call MPI_PACK( main_grid%dx(1), size( main_grid%dx ), MPI_DOUBLE_PRECISION, shared_buffer, shared_buffer_size, index, child_comm, ierr )
+                call MPI_PACK( main_grid%dy(1), size( main_grid%dy ), MPI_DOUBLE_PRECISION, shared_buffer, shared_buffer_size, index, child_comm, ierr )
+                call MPI_PACK( main_grid%dz(1), size( main_grid%dz ), MPI_DOUBLE_PRECISION, shared_buffer, shared_buffer_size, index, child_comm, ierr )
+                call MPI_PACK( main_grid%dxInv(1), size( main_grid%dxInv ), MPI_DOUBLE_PRECISION, shared_buffer, shared_buffer_size, index, child_comm, ierr )
+                call MPI_PACK( main_grid%dyInv(1), size( main_grid%dyInv ), MPI_DOUBLE_PRECISION, shared_buffer, shared_buffer_size, index, child_comm, ierr )
+                call MPI_PACK( main_grid%dzInv(1), size( main_grid%dzInv ), MPI_DOUBLE_PRECISION, shared_buffer, shared_buffer_size, index, child_comm, ierr )
+                call MPI_PACK( main_grid%delX(1), size( main_grid%delX ), MPI_DOUBLE_PRECISION, shared_buffer, shared_buffer_size, index, child_comm, ierr )
+                call MPI_PACK( main_grid%delY(1), size( main_grid%delY ), MPI_DOUBLE_PRECISION, shared_buffer, shared_buffer_size, index, child_comm, ierr )
+                call MPI_PACK( main_grid%delZ(1), size( main_grid%delZ ), MPI_DOUBLE_PRECISION, shared_buffer, shared_buffer_size, index, child_comm, ierr )
+                call MPI_PACK( main_grid%delXInv(1), size( main_grid%delXInv ), MPI_DOUBLE_PRECISION, shared_buffer, shared_buffer_size, index, child_comm, ierr )
+                call MPI_PACK( main_grid%delYInv(1), size( main_grid%delYInv ), MPI_DOUBLE_PRECISION, shared_buffer, shared_buffer_size, index, child_comm, ierr )
+                call MPI_PACK( main_grid%delZInv(1), size( main_grid%delZInv ), MPI_DOUBLE_PRECISION, shared_buffer, shared_buffer_size, index, child_comm, ierr )
+                call MPI_PACK( main_grid%xEdge(1), size( main_grid%xEdge ), MPI_DOUBLE_PRECISION, shared_buffer, shared_buffer_size, index, child_comm, ierr )
+                call MPI_PACK( main_grid%yEdge(1), size( main_grid%yEdge ), MPI_DOUBLE_PRECISION, shared_buffer, shared_buffer_size, index, child_comm, ierr )
+                call MPI_PACK( main_grid%zEdge(1), size( main_grid%zEdge ), MPI_DOUBLE_PRECISION, shared_buffer, shared_buffer_size, index, child_comm, ierr )
+                call MPI_PACK( main_grid%xCenter(1), size( main_grid%xCenter ), MPI_DOUBLE_PRECISION, shared_buffer, shared_buffer_size, index, child_comm, ierr )
+                call MPI_PACK( main_grid%yCenter(1), size( main_grid%yCenter ), MPI_DOUBLE_PRECISION, shared_buffer, shared_buffer_size, index, child_comm, ierr )
+                call MPI_PACK( main_grid%zCenter(1), size( main_grid%zCenter ), MPI_DOUBLE_PRECISION, shared_buffer, shared_buffer_size, index, child_comm, ierr )
                 !
-                call MPI_PACK( grid%zAirThick, 1, MPI_DOUBLE_PRECISION, shared_buffer, shared_buffer_size, index, child_comm, ierr )
-                call MPI_PACK( grid%allocated, 1, MPI_LOGICAL, shared_buffer, shared_buffer_size, index, child_comm, ierr )
+                call MPI_PACK( main_grid%zAirThick, 1, MPI_DOUBLE_PRECISION, shared_buffer, shared_buffer_size, index, child_comm, ierr )
+                call MPI_PACK( main_grid%is_allocated, 1, MPI_LOGICAL, shared_buffer, shared_buffer_size, index, child_comm, ierr )
                 !
            class default
-              stop "packGridBuffer: Unclassified grid"
+              stop "packGridBuffer: Unclassified main_grid"
            !
         end select
         !
@@ -1009,7 +998,7 @@ module DeclarationMPI
                         call MPI_UNPACK( shared_buffer, shared_buffer_size, index, grid%zCenter(1), grid_zCenter, MPI_DOUBLE_PRECISION, child_comm, ierr )
                         !
                         call MPI_UNPACK( shared_buffer, shared_buffer_size, index, grid%zAirThick, 1, MPI_DOUBLE_PRECISION, child_comm, ierr )
-                        call MPI_UNPACK( shared_buffer, shared_buffer_size, index, grid%allocated, 1, MPI_LOGICAL, child_comm, ierr )
+                        call MPI_UNPACK( shared_buffer, shared_buffer_size, index, grid%is_allocated, 1, MPI_LOGICAL, child_comm, ierr )
                         !
                    class default
                       stop "unpackGridBuffer: Unclassified grid"
@@ -1151,10 +1140,9 @@ module DeclarationMPI
     end function unpackMetricBuffer
     !
     !
-    function allocateModelOperatorBuffer( model_operator ) result( model_operator_size_bytes )
+    function allocateModelOperatorBuffer() result( model_operator_size_bytes )
         implicit none
         !
-        class( ModelOperator_t ), intent( in ) :: model_operator
         integer :: i, nbytes(18), model_operator_size_bytes
         !
         model_operator_size_bytes = 0
@@ -1206,11 +1194,10 @@ module DeclarationMPI
     end function allocateModelOperatorBuffer
     !
     !
-    subroutine packModelOperatorBuffer( model_operator, index )
+    subroutine packModelOperatorBuffer( index )
         implicit none
         !
-        class( ModelOperator_t ), intent( in ) :: model_operator
-        integer, intent( inout )      :: index
+        integer, intent( inout ) :: index
         !
         real( kind=prec ), allocatable    :: r_array(:)
         !
@@ -1322,10 +1309,9 @@ module DeclarationMPI
     end subroutine packModelOperatorBuffer
     !
     !
-    function unpackModelOperatorBuffer( grid, index ) result ( model_operator )
+    function unpackModelOperatorBuffer( index ) result ( model_operator )
         implicit none
         !
-        class( Grid_t ), target, intent( in ) :: grid
         integer, intent( inout )     :: index
         !
         class( ModelOperator_t ), allocatable :: model_operator
@@ -1387,9 +1373,7 @@ module DeclarationMPI
                 !
                    class is( ModelOperator_MF_t )
                         !
-                        model_operator%grid => grid
-                        !
-                        model_operator%metric = unpackMetricBuffer( grid, index )
+                        model_operator%metric = unpackMetricBuffer( main_grid, index )
                         !
                         call MPI_UNPACK( shared_buffer, shared_buffer_size, index, model_operator%is_allocated, 1, MPI_LOGICAL, child_comm, ierr )
                         call MPI_UNPACK( shared_buffer, shared_buffer_size, index, model_operator%eqset, 1, MPI_LOGICAL, child_comm, ierr )
@@ -1473,13 +1457,17 @@ module DeclarationMPI
                         model_operator%zZO = arrayToBiArray( r_array, model_operator_zZO_dim1, model_operator_zZO_dim2 )
                         deallocate( r_array )
                         !
-                        model_operator%Sigma_E = unpackRVectorBuffer( grid, index )
+                        allocate( rVector3D_SG_t :: model_operator%Sigma_E )
+                        model_operator%Sigma_E = unpackRVectorBuffer( main_grid, index )
                         !
-                        model_operator%db1 = unpackRVectorBuffer( grid, index )
+                        allocate( rVector3D_SG_t :: model_operator%db1 )
+                        model_operator%db1 = unpackRVectorBuffer( main_grid, index )
                         !
-                        model_operator%db2 = unpackRVectorBuffer( grid, index )
+                        allocate( rVector3D_SG_t :: model_operator%db2 )
+                        model_operator%db2 = unpackRVectorBuffer( main_grid, index )
                         !
-                        model_operator%c = unpackRScalarBuffer( grid, index )
+                        allocate( rScalar3D_SG_t :: model_operator%c )
+                        model_operator%c = unpackRScalarBuffer( main_grid, index )
                         !
                     class default
                         stop "unpackModelOperatorBuffer: Unclassified model_operator"
@@ -1494,10 +1482,9 @@ module DeclarationMPI
     end function unpackModelOperatorBuffer
     !
     !
-    function allocateModelParameterBuffer( model_parameter ) result( model_parameter_size_bytes )
+    function allocateModelParameterBuffer() result( model_parameter_size_bytes )
         implicit none
         !
-        class( ModelParameter_t ), intent( in ) :: model_parameter
         integer :: i, nbytes(4), model_parameter_size_bytes
         !
         model_parameter_size_bytes = 0
@@ -1506,8 +1493,8 @@ module DeclarationMPI
            !
            class is( ModelParameterCell_SG_t )
                 !
-                call MPI_PACK_SIZE( 9, MPI_INTEGER, child_comm, nbytes(1), ierr )
-                call MPI_PACK_SIZE( 80, MPI_CHARACTER, child_comm, nbytes(2), ierr )
+                call MPI_PACK_SIZE( 10, MPI_INTEGER, child_comm, nbytes(1), ierr )
+                call MPI_PACK_SIZE( len( model_parameter%paramType ), MPI_CHARACTER, child_comm, nbytes(2), ierr )
                 call MPI_PACK_SIZE( 1, MPI_DOUBLE_PRECISION, child_comm, nbytes(3), ierr )
                 call MPI_PACK_SIZE( 2, MPI_LOGICAL, child_comm, nbytes(4), ierr )
                 !
@@ -1527,11 +1514,10 @@ module DeclarationMPI
     end function allocateModelParameterBuffer
     !
     !
-    subroutine packModelParameterBuffer( model_parameter, index )
+    subroutine packModelParameterBuffer( index )
         implicit none
         !
-        class( ModelParameter_t ), intent( in ) :: model_parameter
-        integer, intent( inout )                :: index
+        integer, intent( inout ) :: index
         !
         select type( model_parameter )
            !
@@ -1539,11 +1525,12 @@ module DeclarationMPI
                 !
                 call MPI_PACK( model_parameter_cell_sg, 1, MPI_INTEGER, shared_buffer, shared_buffer_size, index, child_comm, ierr )
                 !
+				call MPI_PACK( len( model_parameter%paramType ), 1, MPI_INTEGER, shared_buffer, shared_buffer_size, index, child_comm, ierr )
                 call MPI_PACK( model_parameter%mKey(1), 8, MPI_INTEGER, shared_buffer, shared_buffer_size, index, child_comm, ierr )
-                call MPI_PACK( model_parameter%paramType, 80, MPI_CHARACTER, shared_buffer, shared_buffer_size, index, child_comm, ierr )
+                call MPI_PACK( model_parameter%paramType, len( model_parameter%paramType ), MPI_CHARACTER, shared_buffer, shared_buffer_size, index, child_comm, ierr )
                 call MPI_PACK( model_parameter%airCond, 1, MPI_DOUBLE_PRECISION, shared_buffer, shared_buffer_size, index, child_comm, ierr )
                 call MPI_PACK( model_parameter%zeroValued, 1, MPI_LOGICAL, shared_buffer, shared_buffer_size, index, child_comm, ierr )
-                call MPI_PACK( model_parameter%isAllocated, 1, MPI_LOGICAL, shared_buffer, shared_buffer_size, index, child_comm, ierr )
+                call MPI_PACK( model_parameter%is_allocated, 1, MPI_LOGICAL, shared_buffer, shared_buffer_size, index, child_comm, ierr )
                 !
                 call packGridBuffer( model_parameter%paramGrid, index )
                 !
@@ -1557,14 +1544,16 @@ module DeclarationMPI
     end subroutine packModelParameterBuffer
     !
     !
-    function unpackModelParameterBuffer( grid, metric, index ) result ( model_parameter )
+    function unpackModelParameterBuffer( metric, index ) result ( model_parameter )
         implicit none
         !
-        class( Grid_t ), target, intent( in )           :: grid
         class( MetricElements_t ), target, intent( in ) :: metric
-        integer, intent( inout )                        :: index
+        integer, intent( inout ) :: index
         !
         class( ModelParameter_t ), allocatable :: model_parameter
+        !
+        class( Grid_t ), allocatable :: param_grid
+		integer :: param_type_size
         !
         call MPI_UNPACK( shared_buffer, shared_buffer_size, index, model_parameter_derived_type, 1, MPI_INTEGER, child_comm, ierr )
         !
@@ -1578,28 +1567,35 @@ module DeclarationMPI
                 !
                    class is( ModelParameterCell_SG_t )
                         !
-                        model_parameter%grid => grid
+                        model_parameter%grid => main_grid
                         !
                         model_parameter%metric => metric
                         !
+						call MPI_UNPACK( shared_buffer, shared_buffer_size, index, param_type_size, 1, MPI_INTEGER, child_comm, ierr )
                         call MPI_UNPACK( shared_buffer, shared_buffer_size, index, model_parameter%mKey(1), 8, MPI_INTEGER, child_comm, ierr )
-                        call MPI_UNPACK( shared_buffer, shared_buffer_size, index, model_parameter%paramType, 80, MPI_CHARACTER, child_comm, ierr )
-                        call MPI_UNPACK( shared_buffer, shared_buffer_size, index, model_parameter%airCond, 1, MPI_DOUBLE_PRECISION, child_comm, ierr )
+						!
+						allocate( character( param_type_size ) :: model_parameter%paramType )
+						call MPI_UNPACK( shared_buffer, shared_buffer_size, index, model_parameter%paramType, param_type_size, MPI_CHARACTER, child_comm, ierr )
+                        !
+						call MPI_UNPACK( shared_buffer, shared_buffer_size, index, model_parameter%airCond, 1, MPI_DOUBLE_PRECISION, child_comm, ierr )
                         call MPI_UNPACK( shared_buffer, shared_buffer_size, index, model_parameter%zeroValued, 1, MPI_LOGICAL, child_comm, ierr )
-                        call MPI_UNPACK( shared_buffer, shared_buffer_size, index, model_parameter%isAllocated, 1, MPI_LOGICAL, child_comm, ierr )
+                        call MPI_UNPACK( shared_buffer, shared_buffer_size, index, model_parameter%is_allocated, 1, MPI_LOGICAL, child_comm, ierr )
                         !
-                        select type( param_grid => unpackGridBuffer( index ) )
+                        param_grid = unpackGridBuffer( index )
                         !
-                           class is( Grid3D_SG_t )
+                        !select type( param_grid )
+                            !
+                            !class is( Grid3D_SG_t )
                                 !
-                                model_parameter%paramGrid = param_grid
+                                allocate( model_parameter%paramGrid, source = param_grid )
                                 !
+                                allocate( rScalar3D_SG_t :: model_parameter%cellCond )
                                 model_parameter%cellCond = unpackRScalarBuffer( param_grid, index )
                                 !
-                            class default
-                                stop "unpackModelParameterBuffer: Unclassified grid"
+                            !class default
+                                !stop "unpackModelParameterBuffer: Unclassified main_grid"
                             !
-                        end select
+                        !end select
                         !
                     class default
                         stop "unpackModelParameterBuffer: Unclassified model_parameter"
@@ -1627,37 +1623,25 @@ module DeclarationMPI
            !
            class is( TransmitterMT_t )
                 !
-                allocate( nbytes(5) )
+                allocate( nbytes(3) )
                 !
-                call MPI_PACK_SIZE( 15, MPI_INTEGER, child_comm, nbytes(1), ierr )
+                call MPI_PACK_SIZE( 13, MPI_INTEGER, child_comm, nbytes(1), ierr )
                 !
-                call MPI_PACK_SIZE( len( transmitter%type_name ), MPI_CHARACTER, child_comm, nbytes(2), ierr )
-                call MPI_PACK_SIZE( 1, MPI_DOUBLE_PRECISION, child_comm, nbytes(3), ierr )
+                call MPI_PACK_SIZE( 1, MPI_DOUBLE_PRECISION, child_comm, nbytes(2), ierr )
                 !
-                !do i = 1, size( transmitter%e_all )
-                   !transmitter_size_bytes = transmitter_size_bytes + allocateCVectorBuffer( transmitter%e_all(i) )
-                !end do
-                !
-                call MPI_PACK_SIZE( size( transmitter%receiver_indexes ), MPI_INTEGER, child_comm, nbytes(4), ierr )
-                call MPI_PACK_SIZE( len( transmitter%DATA_TITLE ), MPI_CHARACTER, child_comm, nbytes(5), ierr )
+                call MPI_PACK_SIZE( size( transmitter%receiver_indexes ), MPI_INTEGER, child_comm, nbytes(3), ierr )
                 !
             class is( TransmitterCSEM_t )
                 !
-                allocate( nbytes(7) )
+                allocate( nbytes(5) )
                 !
-                call MPI_PACK_SIZE( 15, MPI_INTEGER, child_comm, nbytes(1), ierr )
+                call MPI_PACK_SIZE( 13, MPI_INTEGER, child_comm, nbytes(1), ierr )
                 !
-                call MPI_PACK_SIZE( len( transmitter%type_name ), MPI_CHARACTER, child_comm, nbytes(2), ierr )
-                call MPI_PACK_SIZE( 1, MPI_DOUBLE_PRECISION, child_comm, nbytes(3), ierr )
+                call MPI_PACK_SIZE( 1, MPI_DOUBLE_PRECISION, child_comm, nbytes(2), ierr )
                 !
-                !do i = 1, size( transmitter%e_all )
-                   !transmitter_size_bytes = transmitter_size_bytes + allocateCVectorBuffer( transmitter%e_all(i) )
-                !end do
-                !
-                call MPI_PACK_SIZE( size( transmitter%receiver_indexes ), MPI_INTEGER, child_comm, nbytes(4), ierr )
-                call MPI_PACK_SIZE( len( transmitter%DATA_TITLE ), MPI_CHARACTER, child_comm, nbytes(5), ierr )
-                call MPI_PACK_SIZE( 3, MPI_DOUBLE_PRECISION, child_comm, nbytes(6), ierr )
-                call MPI_PACK_SIZE( 1, MPI_DOUBLE_PRECISION, child_comm, nbytes(7), ierr )
+                call MPI_PACK_SIZE( size( transmitter%receiver_indexes ), MPI_INTEGER, child_comm, nbytes(3), ierr )
+                call MPI_PACK_SIZE( 3, MPI_DOUBLE_PRECISION, child_comm, nbytes(4), ierr )
+                call MPI_PACK_SIZE( 1, MPI_DOUBLE_PRECISION, child_comm, nbytes(5), ierr )
                 !
            class default
               stop "allocateTransmitterBuffer: Unclassified transmitter"
@@ -1690,21 +1674,13 @@ module DeclarationMPI
                 call MPI_PACK( transmitter%id, 1, MPI_INTEGER, shared_buffer, shared_buffer_size, index, child_comm, ierr )
                 call MPI_PACK( transmitter%n_pol, 1, MPI_INTEGER, shared_buffer, shared_buffer_size, index, child_comm, ierr )
                 call MPI_PACK( transmitter%fwd_key(1), 8, MPI_INTEGER, shared_buffer, shared_buffer_size, index, child_comm, ierr )
-                call MPI_PACK( len( transmitter%type_name ), 1, MPI_INTEGER, shared_buffer, shared_buffer_size, index, child_comm, ierr )
                 call MPI_PACK( size( transmitter%e_all ), 1, MPI_INTEGER, shared_buffer, shared_buffer_size, index, child_comm, ierr )
                 !
                 call MPI_PACK( size( transmitter%receiver_indexes ), 1, MPI_INTEGER, shared_buffer, shared_buffer_size, index, child_comm, ierr )
-                call MPI_PACK( len( transmitter%DATA_TITLE ), 1, MPI_INTEGER, shared_buffer, shared_buffer_size, index, child_comm, ierr )
-                call MPI_PACK( transmitter%type_name, len( transmitter%type_name ), MPI_CHARACTER, shared_buffer, shared_buffer_size, index, child_comm, ierr )
                 !
                 call MPI_PACK( transmitter%period, 1, MPI_DOUBLE_PRECISION, shared_buffer, shared_buffer_size, index, child_comm, ierr )
                 !
-                !do i = 1, size( transmitter%e_all )
-                   !call packCVectorBuffer( transmitter%e_all(i), index )
-                !end do
-                !
                 call MPI_PACK( transmitter%receiver_indexes(1), size( transmitter%receiver_indexes ), MPI_INTEGER, shared_buffer, shared_buffer_size, index, child_comm, ierr )
-                call MPI_PACK( transmitter%DATA_TITLE, len( transmitter%DATA_TITLE ), MPI_CHARACTER, shared_buffer, shared_buffer_size, index, child_comm, ierr )
                 !
            class is( TransmitterCSEM_t )
                 !
@@ -1715,19 +1691,11 @@ module DeclarationMPI
                 call MPI_PACK( transmitter%id, 1, MPI_INTEGER, shared_buffer, shared_buffer_size, index, child_comm, ierr )
                 call MPI_PACK( transmitter%n_pol, 1, MPI_INTEGER, shared_buffer, shared_buffer_size, index, child_comm, ierr )
                 call MPI_PACK( transmitter%fwd_key(1), 8, MPI_INTEGER, shared_buffer, shared_buffer_size, index, child_comm, ierr )
-                call MPI_PACK( len( transmitter%type_name ), 1, MPI_INTEGER, shared_buffer, shared_buffer_size, index, child_comm, ierr )
                 call MPI_PACK( size( transmitter%e_all ), 1, MPI_INTEGER, shared_buffer, shared_buffer_size, index, child_comm, ierr )
                 call MPI_PACK( size( transmitter%receiver_indexes ), 1, MPI_INTEGER, shared_buffer, shared_buffer_size, index, child_comm, ierr )
-                call MPI_PACK( len( transmitter%DATA_TITLE ), 1, MPI_INTEGER, shared_buffer, shared_buffer_size, index, child_comm, ierr )
-                call MPI_PACK( transmitter%type_name, len( transmitter%type_name ), MPI_CHARACTER, shared_buffer, shared_buffer_size, index, child_comm, ierr )
                 call MPI_PACK( transmitter%period, 1, MPI_DOUBLE_PRECISION, shared_buffer, shared_buffer_size, index, child_comm, ierr )
                 !
-                !do i = 1, size( transmitter%e_all )
-                   !call packCVectorBuffer( transmitter%e_all(i), index )
-                !end do
-                !
                 call MPI_PACK( transmitter%receiver_indexes(1), size( transmitter%receiver_indexes ), MPI_INTEGER, shared_buffer, shared_buffer_size, index, child_comm, ierr )
-                call MPI_PACK( transmitter%DATA_TITLE, len( transmitter%DATA_TITLE ), MPI_CHARACTER, shared_buffer, shared_buffer_size, index, child_comm, ierr )
                 call MPI_PACK( transmitter%location(1), 3, MPI_DOUBLE_PRECISION, shared_buffer, shared_buffer_size, index, child_comm, ierr )
                 call MPI_PACK( transmitter%azimuth, 1, MPI_DOUBLE_PRECISION, shared_buffer, shared_buffer_size, index, child_comm, ierr )
                 !
@@ -1739,14 +1707,13 @@ module DeclarationMPI
     end subroutine packTransmitterBuffer
     !
     !
-    subroutine unpackTransmitterBuffer( grid, transmitter, index )
+    subroutine unpackTransmitterBuffer( transmitter, index )
         implicit none
         !
-        class( Grid_t ), target, intent( in )                :: grid
         class( Transmitter_t ), allocatable, intent( inout ) :: transmitter
         integer, intent( inout )                             :: index
         !
-        integer :: i, transmitter_type, transmitter_e_all, transmitter_receiver_indexes, transmitter_DATA_TITLE
+        integer :: i, transmitter_e_all, transmitter_receiver_indexes
         !
         call MPI_UNPACK( shared_buffer, shared_buffer_size, index, transmitter_derived_type, 1, MPI_INTEGER, child_comm, ierr )
         !
@@ -1760,33 +1727,22 @@ module DeclarationMPI
                    !
                    class is( TransmitterMT_t )
                         !
-                        ! SYZES
+                        !
                         call MPI_UNPACK( shared_buffer, shared_buffer_size, index, transmitter%id, 1, MPI_INTEGER, child_comm, ierr )
                         !
                         call MPI_UNPACK( shared_buffer, shared_buffer_size, index, transmitter%n_pol, 1, MPI_INTEGER, child_comm, ierr )
                         !
                         call MPI_UNPACK( shared_buffer, shared_buffer_size, index, transmitter%fwd_key(1), 8, MPI_INTEGER, child_comm, ierr )
                         !
-                        call MPI_UNPACK( shared_buffer, shared_buffer_size, index, transmitter_type, 1, MPI_INTEGER, child_comm, ierr )
                         call MPI_UNPACK( shared_buffer, shared_buffer_size, index, transmitter_e_all, 1, MPI_INTEGER, child_comm, ierr )
                         call MPI_UNPACK( shared_buffer, shared_buffer_size, index, transmitter_receiver_indexes, 1, MPI_INTEGER, child_comm, ierr )
-                        call MPI_UNPACK( shared_buffer, shared_buffer_size, index, transmitter_DATA_TITLE, 1, MPI_INTEGER, child_comm, ierr )
-                        !
-                        allocate( character( transmitter_type ) :: transmitter%type_name )
-                        call MPI_UNPACK( shared_buffer, shared_buffer_size, index, transmitter%type_name, transmitter_type, MPI_CHARACTER, child_comm, ierr )
                         !
                         call MPI_UNPACK( shared_buffer, shared_buffer_size, index, transmitter%period, 1, MPI_DOUBLE_PRECISION, child_comm, ierr )
                         !
-                        allocate( cVector3D_SG_t :: transmitter%e_all( transmitter_e_all ) )
-                        !do i = 1, transmitter_e_all
-                            !write(*,*) unpackCVectorBuffer( grid, index )
-                        !end do
+                        !allocate( cVector3D_SG_t :: transmitter%e_all( transmitter_e_all ) )
                         !
                         allocate( transmitter%receiver_indexes( transmitter_receiver_indexes ) )
                         call MPI_UNPACK( shared_buffer, shared_buffer_size, index, transmitter%receiver_indexes(1), transmitter_receiver_indexes, MPI_INTEGER, child_comm, ierr )
-                        !
-                        allocate( character( transmitter_DATA_TITLE ) :: transmitter%DATA_TITLE )
-                        call MPI_UNPACK( shared_buffer, shared_buffer_size, index, transmitter%DATA_TITLE, transmitter_DATA_TITLE, MPI_CHARACTER, child_comm, ierr )
                         !
                     class default
                         stop "unpackTransmitterBuffer: Unclassified transmitter 1!"
@@ -1801,25 +1757,21 @@ module DeclarationMPI
                    !
                    class is( TransmitterCSEM_t )
                         !
-                        ! SYZES
                         call MPI_UNPACK( shared_buffer, shared_buffer_size, index, transmitter%id, 1, MPI_INTEGER, child_comm, ierr )
-                        call MPI_UNPACK( shared_buffer, shared_buffer_size, index, transmitter%n_pol, 1, MPI_INTEGER, child_comm, ierr )
-                        call MPI_UNPACK( shared_buffer, shared_buffer_size, index, transmitter%fwd_key(1), 8, MPI_INTEGER, child_comm, ierr )
-                        call MPI_UNPACK( shared_buffer, shared_buffer_size, index, transmitter_type, 1, MPI_INTEGER, child_comm, ierr )
-                        call MPI_UNPACK( shared_buffer, shared_buffer_size, index, transmitter_e_all, 1, MPI_INTEGER, child_comm, ierr )
                         !
+                        call MPI_UNPACK( shared_buffer, shared_buffer_size, index, transmitter%n_pol, 1, MPI_INTEGER, child_comm, ierr )
+                        !
+                        call MPI_UNPACK( shared_buffer, shared_buffer_size, index, transmitter%fwd_key(1), 8, MPI_INTEGER, child_comm, ierr )
+                        !
+                        call MPI_UNPACK( shared_buffer, shared_buffer_size, index, transmitter_e_all, 1, MPI_INTEGER, child_comm, ierr )
                         call MPI_UNPACK( shared_buffer, shared_buffer_size, index, transmitter_receiver_indexes, 1, MPI_INTEGER, child_comm, ierr )
-                        call MPI_UNPACK( shared_buffer, shared_buffer_size, index, transmitter_DATA_TITLE, 1, MPI_INTEGER, child_comm, ierr )
-                        call MPI_UNPACK( shared_buffer, shared_buffer_size, index, transmitter%type_name, transmitter_type, MPI_CHARACTER, child_comm, ierr )
+                        !
                         call MPI_UNPACK( shared_buffer, shared_buffer_size, index, transmitter%period, 1, MPI_DOUBLE_PRECISION, child_comm, ierr )
                         !
-                        allocate( cVector3D_SG_t :: transmitter%e_all( transmitter_e_all ) )
-                        !do i = 1, transmitter_e_all
-                            !allocate( transmitter%e_all(i), source = unpackCVectorBuffer( grid, index ) )
-                        !end do
+                        !allocate( cVector3D_SG_t :: transmitter%e_all( transmitter_e_all ) )
                         !
+                        allocate( transmitter%receiver_indexes( transmitter_receiver_indexes ) )
                         call MPI_UNPACK( shared_buffer, shared_buffer_size, index, transmitter%receiver_indexes(1), transmitter_receiver_indexes, MPI_INTEGER, child_comm, ierr )
-                        call MPI_UNPACK( shared_buffer, shared_buffer_size, index, transmitter%DATA_TITLE, transmitter_DATA_TITLE, MPI_CHARACTER, child_comm, ierr )
                         !
                         call MPI_UNPACK( shared_buffer, shared_buffer_size, index, transmitter%location(1), 3, MPI_DOUBLE_PRECISION, child_comm, ierr )
                         call MPI_UNPACK( shared_buffer, shared_buffer_size, index, transmitter%azimuth, 1, MPI_DOUBLE_PRECISION, child_comm, ierr )
@@ -1843,13 +1795,15 @@ module DeclarationMPI
         !
         class( Receiver_t ), intent( in ) :: receiver
         integer :: i, receiver_size_bytes
-        integer :: nbytes(3)
+        integer :: nbytes(5)
         !
         receiver_size_bytes = 0
         !
-        call MPI_PACK_SIZE( 3, MPI_INTEGER, child_comm, nbytes(1), ierr )
+        call MPI_PACK_SIZE( 5, MPI_INTEGER, child_comm, nbytes(1), ierr )
         call MPI_PACK_SIZE( 3, MPI_DOUBLE_PRECISION, child_comm, nbytes(2), ierr )
         call MPI_PACK_SIZE( len( receiver%code ), MPI_CHARACTER, child_comm, nbytes(3), ierr )
+        call MPI_PACK_SIZE( len( receiver%type_name ), MPI_CHARACTER, child_comm, nbytes(4), ierr )
+        call MPI_PACK_SIZE( len( receiver%DATA_TITLE ), MPI_CHARACTER, child_comm, nbytes(5), ierr )
         !
         do i = 1, size( nbytes )
             receiver_size_bytes = receiver_size_bytes + nbytes(i)
@@ -1889,23 +1843,27 @@ module DeclarationMPI
         !
         call MPI_PACK( receiver%id, 1, MPI_INTEGER, shared_buffer, shared_buffer_size, index, child_comm, ierr )
         call MPI_PACK( len( receiver%code ), 1, MPI_INTEGER, shared_buffer, shared_buffer_size, index, child_comm, ierr )
-        call MPI_PACK( receiver%code, len( receiver%code ), MPI_CHARACTER, shared_buffer, shared_buffer_size, index, child_comm, ierr )
+        call MPI_PACK( len( receiver%type_name ), 1, MPI_INTEGER, shared_buffer, shared_buffer_size, index, child_comm, ierr )
+        call MPI_PACK( len( receiver%DATA_TITLE ), 1, MPI_INTEGER, shared_buffer, shared_buffer_size, index, child_comm, ierr )
         !
         call MPI_PACK( receiver%location(1), 3, MPI_DOUBLE_PRECISION, shared_buffer, shared_buffer_size, index, child_comm, ierr )
+        !
+        call MPI_PACK( receiver%code, len( receiver%code ), MPI_CHARACTER, shared_buffer, shared_buffer_size, index, child_comm, ierr )
+        call MPI_PACK( receiver%type_name, len( receiver%type_name ), MPI_CHARACTER, shared_buffer, shared_buffer_size, index, child_comm, ierr )
+        call MPI_PACK( receiver%DATA_TITLE, len( receiver%DATA_TITLE ), MPI_CHARACTER, shared_buffer, shared_buffer_size, index, child_comm, ierr )
         !
     end subroutine packReceiverBuffer
     !
     !
-    subroutine unpackReceiverBuffer( grid, receiver, index )
+    subroutine unpackReceiverBuffer( receiver, index )
         implicit none
         !
-        class( Grid_t ), target, intent( in )             :: grid
         class( Receiver_t ), allocatable, intent( inout ) :: receiver
         integer, intent( inout )                          :: index
         !
-        integer :: receiver_id, code_size
+        integer :: receiver_id, code_size, type_name_size, data_title_size
         !
-        character(:), allocatable :: code
+        character(:), allocatable :: code, type_name, data_title
         real( kind=prec )         :: receiver_location(3)
         !
         call MPI_UNPACK( shared_buffer, shared_buffer_size, index, receiver_derived_type, 1, MPI_INTEGER, child_comm, ierr )
@@ -1914,10 +1872,20 @@ module DeclarationMPI
         !
         call MPI_UNPACK( shared_buffer, shared_buffer_size, index, code_size, 1, MPI_INTEGER, child_comm, ierr )
         !
+        call MPI_UNPACK( shared_buffer, shared_buffer_size, index, type_name_size, 1, MPI_INTEGER, child_comm, ierr )
+        !
+        call MPI_UNPACK( shared_buffer, shared_buffer_size, index, data_title_size, 1, MPI_INTEGER, child_comm, ierr )
+        !
+        call MPI_UNPACK( shared_buffer, shared_buffer_size, index, receiver_location(1), 3, MPI_DOUBLE_PRECISION, child_comm, ierr )
+        !
         allocate( character( code_size ) :: code )
         call MPI_UNPACK( shared_buffer, shared_buffer_size, index, code, code_size, MPI_CHARACTER, child_comm, ierr )
         !
-        call MPI_UNPACK( shared_buffer, shared_buffer_size, index, receiver_location(1), 3, MPI_DOUBLE_PRECISION, child_comm, ierr )
+        allocate( character( type_name_size ) :: type_name )
+        call MPI_UNPACK( shared_buffer, shared_buffer_size, index, type_name, type_name_size, MPI_CHARACTER, child_comm, ierr )
+        !
+        allocate( character( data_title_size ) :: data_title )
+        call MPI_UNPACK( shared_buffer, shared_buffer_size, index, data_title, data_title_size, MPI_CHARACTER, child_comm, ierr )
         !
         select case( receiver_derived_type )
            !
@@ -1944,6 +1912,8 @@ module DeclarationMPI
         !
         receiver%id = receiver_id
         receiver%code = code
+        receiver%type_name = type_name
+        receiver%DATA_TITLE = data_title
         !
     end subroutine unpackReceiverBuffer
     !
@@ -1961,7 +1931,7 @@ module DeclarationMPI
     subroutine allocateDataBuffer( data_entries )
         implicit none
         !
-        type( PredictedDataHandle_t ), dimension(:), intent( in ) :: data_entries
+        type( DataHandle_t ), dimension(:), intent( in ) :: data_entries
         !
         integer i, j, nbytes(7)
         !
@@ -1993,7 +1963,7 @@ module DeclarationMPI
     subroutine packDataBuffer( data_entries )
         implicit none
         !
-        type( PredictedDataHandle_t ), dimension(:), intent( in ) :: data_entries
+        type( DataHandle_t ), dimension(:), intent( in ) :: data_entries
         !
         integer :: i, index
         !
@@ -2020,7 +1990,7 @@ module DeclarationMPI
     function unpackDataBuffer() result( data_entries )
         implicit none
         !
-        type( PredictedDataHandle_t ), allocatable, dimension(:) :: data_entries
+        type( DataHandle_t ), allocatable, dimension(:) :: data_entries
         !
         integer :: i, data_entries_code, data_entries_component, index
         !
@@ -2054,7 +2024,7 @@ module DeclarationMPI
     function receiveData() result( data_entries )
         implicit none
         !
-        type( PredictedDataHandle_t ), allocatable, dimension(:) :: data_entries
+        type( DataHandle_t ), allocatable, dimension(:) :: data_entries
         !
         call createDataBuffer
         call MPI_RECV( predicted_data_buffer, predicted_data_buffer_size, MPI_PACKED, fwd_info%worker_rank, MPI_ANY_TAG, child_comm, MPI_STATUS_IGNORE, ierr )
@@ -2066,7 +2036,7 @@ module DeclarationMPI
     ! SEND fwd_info FROM target_id
     subroutine sendData( data_entries )
         !
-        type( PredictedDataHandle_t ), allocatable, dimension(:), intent( in ) :: data_entries
+        type( DataHandle_t ), allocatable, dimension(:), intent( in ) :: data_entries
         !
         call packDataBuffer( data_entries )
         !
@@ -2081,9 +2051,8 @@ module DeclarationMPI
         !
         call MPI_PACK_SIZE( 15, MPI_CHARACTER, child_comm, nbytes1, ierr )
         call MPI_PACK_SIZE( 4, MPI_INTEGER, child_comm, nbytes2, ierr )
-        call MPI_PACK_SIZE( 1, MPI_LOGICAL, child_comm, nbytes3, ierr )
         !
-        fwd_info_buffer_size = ( nbytes1 + nbytes2 + nbytes3 ) + 1
+        fwd_info_buffer_size = ( nbytes1 + nbytes2 ) + 1
         !
         if( .NOT. associated( fwd_info_buffer ) ) then
             allocate( fwd_info_buffer( fwd_info_buffer_size ) )
@@ -2103,7 +2072,6 @@ module DeclarationMPI
         call MPI_PACK( fwd_info%tx_index, 1, MPI_INTEGER, fwd_info_buffer, fwd_info_buffer_size, index, child_comm, ierr )
         call MPI_PACK( fwd_info%n_data, 1, MPI_INTEGER, fwd_info_buffer, fwd_info_buffer_size, index, child_comm, ierr )
         call MPI_PACK( fwd_info%data_size, 1, MPI_INTEGER, fwd_info_buffer, fwd_info_buffer_size, index, child_comm, ierr )
-        call MPI_PACK( fwd_info%tx_changed, 1, MPI_LOGICAL, fwd_info_buffer, fwd_info_buffer_size, index, child_comm, ierr )
         !
     end subroutine packFWDInfoBuffer
     !
@@ -2119,7 +2087,6 @@ module DeclarationMPI
         call MPI_UNPACK( fwd_info_buffer, fwd_info_buffer_size, index, fwd_info%tx_index, 1, MPI_INTEGER, child_comm, ierr )
         call MPI_UNPACK( fwd_info_buffer, fwd_info_buffer_size, index, fwd_info%n_data, 1, MPI_INTEGER, child_comm, ierr )
         call MPI_UNPACK( fwd_info_buffer, fwd_info_buffer_size, index, fwd_info%data_size, 1, MPI_INTEGER, child_comm, ierr )
-        call MPI_UNPACK( fwd_info_buffer, fwd_info_buffer_size, index, fwd_info%tx_changed, 1, MPI_LOGICAL, child_comm, ierr )
         !
     end subroutine unpackFWDInfoBuffer
     !

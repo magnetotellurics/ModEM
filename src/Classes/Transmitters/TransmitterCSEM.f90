@@ -7,146 +7,107 @@
 ! *************
 ! 
 module TransmitterCSEM
-   ! 
-   use Transmitter 
-   !
-   type, extends( Transmitter_t ), public :: TransmitterCSEM_t
-      !
-      real( kind=prec ) :: location(3), azimuth
-      !
-      contains
-         !
-         final   :: TransmitterCSEM_dtor
-         !
-         procedure, public   :: solveFWD => solveFWDTransmitterCSEM
-         procedure, public   :: getSource => getSourceTransmitterCSEM
-         !
-         procedure, public   :: isEqual => isEqualTransmitterCSEM
-         procedure, public   :: write => writeTransmitterCSEM
-         !
-   end type TransmitterCSEM_t
-   !
-   interface TransmitterCSEM_t
-      module procedure TransmitterCSEM_ctor
-   end interface TransmitterCSEM_t
-   !
-contains
-   !
-   ! Parametrized constructor
-   function TransmitterCSEM_ctor( period, location, type_name ) result ( self )
-      !
-      type( TransmitterCSEM_t ) :: self
-      !
-      real( kind=prec ), intent( in )                   :: period
-      real( kind=prec ), intent( in )                   :: location(3)
-      character(:), allocatable, optional, intent( in ) :: type_name
-      !
-      ! write(*,*) "Constructor TransmitterCSEM_t"
-      !
-      call self%init()
-      !
-      self%n_pol = 1
-      self%period = period
-      self%location = location
-      !
-      if( present( type_name ) ) then
-         self%type_name = type_name
-      else
-         self%type_name = "TransmitterCSEM_t"
-      endif
-      !
-   end function TransmitterCSEM_ctor
-   !
-   ! Destructor
-   subroutine TransmitterCSEM_dtor( self )
-      implicit none
-      !
-      type( TransmitterCSEM_t )   :: self
-      !
-      ! write(*,*) "Destructor TransmitterCSEM_t"
-      !
-      call self%dealloc()
-      !
-   end subroutine TransmitterCSEM_dtor
-   !
-   subroutine solveFWDTransmitterCSEM( self )
-      !
-      class( TransmitterCSEM_t ), intent( inout ) :: self
-      !
-      write(*,*) "implementing solveFWD TransmitterCSEM_t: ", self%id
-      !
-   end subroutine solveFWDTransmitterCSEM
-   !
-   !
-   subroutine getSourceTransmitterCSEM( self )
-      !
-      class( TransmitterCSEM_t ), intent(in)   :: self
-      !
-      write(*,*) "getSource TransmitterCSEM_t: ", self%location
-      !
-   end subroutine getSourceTransmitterCSEM
-   !
-   !
-   function isEqualTransmitterCSEM( self, other ) result( equal )
-      class( TransmitterCSEM_t ), intent( in )   :: self
-      class( Transmitter_t ), intent( in )   :: other
-      logical                           :: equal
-      !
-      equal = .FALSE.
-      !
-      select type( other )
-         !
-         class is ( TransmitterCSEM_t )
+    ! 
+    use Transmitter 
+    !
+    type, extends( Transmitter_t ), public :: TransmitterCSEM_t
+        !
+        real( kind=prec ) :: location(3), azimuth
+        !
+        contains
             !
-            if( ABS( self%period - other%period ) < TOL6 .AND.   &
-               self%location(1) == other%location(1) .AND.   &
-               self%location(2) == other%location(2) .AND.   &
-               self%location(3) == other%location(3) ) then
-               !
-               equal = .TRUE.
-            endif
-      !
-      end select
-      !
-   end function isEqualTransmitterCSEM
-   !
-   subroutine writeTransmitterCSEM( self )
-      !
-      class( TransmitterCSEM_t ), intent(in)   :: self
-      integer                           :: iRx
-      !
-      write(*,*) "Write TransmitterCSEM_t Id: ", self%id,   &
-      ", Period: ",   self%period,   &
-      ", Location: ",   self%location,   &
-      "fwd_key: ",   self%fwd_key(1), self%fwd_key(2), self%fwd_key(3), self%fwd_key(4),   &
-                  self%fwd_key(5), self%fwd_key(6), self%fwd_key(7), self%fwd_key(8),   &
-      " N Receivers: ", size( self%receiver_indexes )
-      !
-      !do iRx = 1, nRx
-         !write(*,*) "   ", self%get( iRx )
-      !enddo
-      !
-   end subroutine writeTransmitterCSEM
-   !
-   !function sizeOfTransmitterCSEM( self ) result( size )
-      !
-      !class( TransmitterCSEM_t ), intent( in ) :: self
-      !integer                                :: size
-      !
-      !size = sizeof( self%id ) + &
-             !sizeof( self%n_pol ) + &
-             !sizeof( self%fwd_key ) + &
-             !sizeof( self%type ) + &
-             !sizeof( self%period ) + &
-             !sizeof( self%forward_solver ) + &
-             !sizeof( self%e_all ) + &
-             !sizeof( self%receiver_indexes ) + &
-             !sizeof( self%DATA_TITLE )
-             !sizeof( self%location ) + &
-             !sizeof( self%azimuth )
-             !
-      !write( *, * ) "Size: ", size
-      !
-   !end function sizeOfTransmitterCSEM
-   !
+            final    :: TransmitterCSEM_dtor
+            !
+            procedure, public    :: solveFWD => solveFWDTransmitterCSEM
+            procedure, public    :: getSource => getSourceTransmitterCSEM
+            !
+            procedure, public    :: write => writeTransmitterCSEM
+            !
+    end type TransmitterCSEM_t
+    !
+    interface TransmitterCSEM_t
+        module procedure TransmitterCSEM_ctor
+    end interface TransmitterCSEM_t
+    !
+contains
+    !
+    ! Parametrized constructor
+    function TransmitterCSEM_ctor( period, location ) result ( self )
+        !
+        type( TransmitterCSEM_t ) :: self
+        !
+        real( kind=prec ), intent( in )                         :: period
+        real( kind=prec ), intent( in )                         :: location(3)
+        !
+        ! write(*,*) "Constructor TransmitterCSEM_t"
+        !
+        call self%init()
+        !
+        self%n_pol = 1
+        self%period = period
+        self%location = location
+        !
+    end function TransmitterCSEM_ctor
+    !
+    ! Destructor
+    subroutine TransmitterCSEM_dtor( self )
+        implicit none
+        !
+        type( TransmitterCSEM_t )    :: self
+        !
+        ! write(*,*) "Destructor TransmitterCSEM_t"
+        !
+        call self%dealloc()
+        !
+    end subroutine TransmitterCSEM_dtor
+    !
+    subroutine solveFWDTransmitterCSEM( self )
+        !
+        class( TransmitterCSEM_t ), intent( inout ) :: self
+        !
+        write(*,*) "implementing solveFWD TransmitterCSEM_t: ", self%id
+        !
+    end subroutine solveFWDTransmitterCSEM
+    !
+    !
+    subroutine getSourceTransmitterCSEM( self )
+        !
+        class( TransmitterCSEM_t ), intent(in)    :: self
+        !
+        write(*,*) "getSource TransmitterCSEM_t: ", self%location
+        !
+    end subroutine getSourceTransmitterCSEM
+    !
+    subroutine writeTransmitterCSEM( self )
+        !
+        class( TransmitterCSEM_t ), intent(in)    :: self
+        integer                                    :: iRx
+        !
+        write( *, "(A20, I8, A10, es12.6, A20, I8)") "TransmitterCSEM: ", self%id,    &
+        " Period: ",    self%period,    &
+        " N Receivers: ", size( self%receiver_indexes )
+        !
+    end subroutine writeTransmitterCSEM
+    !
+    !function sizeOfTransmitterCSEM( self ) result( size )
+        !
+        !class( TransmitterCSEM_t ), intent( in ) :: self
+        !integer                                          :: size
+        !
+        !size = sizeof( self%id ) + &
+                 !sizeof( self%n_pol ) + &
+                 !sizeof( self%fwd_key ) + &
+                 !sizeof( self%type ) + &
+                 !sizeof( self%period ) + &
+                 !sizeof( self%forward_solver ) + &
+                 !sizeof( self%e_all ) + &
+                 !sizeof( self%receiver_indexes ) + &
+                 !sizeof( self%DATA_TITLE )
+                 !sizeof( self%location ) + &
+                 !sizeof( self%azimuth )
+                 !
+        !write( *, * ) "Size: ", size
+        !
+    !end function sizeOfTransmitterCSEM
+    !
 end module TransmitterCSEM
