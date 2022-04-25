@@ -1,6 +1,6 @@
 program ModEM
     !
-	use Constants
+    use Constants
     use FileUnits
     !
     use DeclarationMPI
@@ -639,8 +639,9 @@ contains
         integer, intent( in ) :: nMode
         !
         integer            :: ios
-        character (len=20) :: version
+        character(:), allocatable :: version
         !
+        version = ""
         !
         open( ioESolution, file = "e_solution", action="write", form ="unformatted", iostat=ios )
         !
@@ -656,6 +657,8 @@ contains
             write( ioESolution ) main_grid%dx
             write( ioESolution ) main_grid%dy
             write( ioESolution ) main_grid%dz
+            !
+            close( ioESolution )
             !
         else
             write( *, * ) "writeEsolutionHeader: e_solution"

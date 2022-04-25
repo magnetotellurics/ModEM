@@ -415,6 +415,9 @@ contains
             write( ioESolution ) main_grid%dx
             write( ioESolution ) main_grid%dy
             write( ioESolution ) main_grid%dz
+			!
+            close( ioESolution )
+            !
         endif
         !
         !
