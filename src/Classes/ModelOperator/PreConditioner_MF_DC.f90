@@ -56,7 +56,7 @@ contains
       !
       !write(*,*) "Destructor PreConditioner_MF_DC"
       !
-      if( allocated( self%d ) ) deallocate( self%d )
+      deallocate( self%d )
       !
     end subroutine PreConditioner_MF_DC_dtor
     !

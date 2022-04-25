@@ -35,7 +35,7 @@ contains
         real( kind=prec ), dimension(:), allocatable :: dx, dy, dz
         real( kind=prec ) :: ox, oy, oz, rotDeg
         real( kind=prec ), dimension(:, :, :), allocatable :: rho
-        type( rScalar3D_SG_t  :: ccond
+        type( rScalar3D_SG_t  ) :: ccond
         real( kind=prec ) :: ALPHA
         
         someChar = ""

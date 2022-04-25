@@ -113,9 +113,9 @@ module ForwardSolverIT_DC
             !
             call self%dealloc()
             !
-            if( allocated( self%DivCorRelErr ) ) deallocate( self%DivCorRelErr )
+            deallocate( self%DivCorRelErr )
             !
-            if( allocated( self%divJ ) ) deallocate( self%divJ )
+            deallocate( self%divJ )
             !
         end subroutine ForwardSolverIT_DC_dtor
         !
@@ -198,7 +198,7 @@ module ForwardSolverIT_DC
             self%relResFinal = R_ZERO
             !
             if( allocated( self%relResVec ) ) deallocate( self%relResVec )
-            allocate(self%relResVec(self%max_iter_total))
+            allocate( self%relResVec( self%max_iter_total ) )
             !
             if( allocated( self%divJ ) ) deallocate( self%divJ )
             allocate( self%divJ( 2, self%max_div_cor ) )
@@ -251,8 +251,6 @@ module ForwardSolverIT_DC
                 !
             endif
             !
-            allocate( temp, source = e_solution ) ! copy of solution for input to DC
-            !
             loop: do while ( ( .NOT. self%solver%converged ) .AND. ( .NOT. self%solver%failed ) )
                 !
                 select type( solver => self%solver )
@@ -278,7 +276,7 @@ module ForwardSolverIT_DC
                 !
                 if( self%nDivCor < self%max_div_cor ) then
                     !
-                    temp = e_solution
+                    allocate( temp, source = e_solution )
                     !
                     if( source%non_zero_source ) then
                         !
@@ -288,8 +286,10 @@ module ForwardSolverIT_DC
                         !
                         call self%divergence_correction%DivCorr( temp, e_solution )
                         !
-                endif
-                   !
+					endif
+					!
+					if( allocated( temp ) ) deallocate( temp )
+					!
                else
                    !
                    self%solver%failed = .TRUE.
@@ -297,6 +297,8 @@ module ForwardSolverIT_DC
                endif
             !
             enddo loop
+            !
+            if( allocated( phi0 ) ) deallocate( phi0 )
             !
             self%relResFinal = self%relResVec(self%n_iter_actual)
             !
@@ -316,10 +318,6 @@ module ForwardSolverIT_DC
                     write(*, *) "ERROR:ForwardSolverIT_DC_t::getESolutionForwardSolverIT_DC:"
                     STOP        "    model_operator type unknow"
             end select
-            !
-            !
-            if( allocated( temp ) ) deallocate( temp )
-            if( allocated( phi0 ) ) deallocate( phi0 )
             !
         end subroutine getESolutionForwardSolverIT_DC
         !

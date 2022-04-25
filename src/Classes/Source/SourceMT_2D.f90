@@ -50,8 +50,8 @@ contains
          self%model_operator => model_operator
          self%model_parameter => model_parameter
          !
-         self%non_zero_source = .false.
-         self%adjt = .false.
+         self%non_zero_source = .FALSE.
+         self%adjt = .FALSE.
          !
          if ( present( E ) ) then
              !

@@ -111,8 +111,8 @@ contains
         !
         self%code = ""
         !
-		self%type_name = ""
-		!
+        self%type_name = ""
+        !
         self%location = 0.0
         !
         self%is_complex = .FALSE.

@@ -72,7 +72,7 @@ module Grid3D_SG
 contains
     function Slice1DGrid3D_SG(self) result(g1D)
             implicit none
-            class(Grid3D_SG_t), intent(in) :: self
+            class(Grid3D_SG_t), intent( in ) :: self
             type(Grid1D_t), allocatable :: g1D
             !
             g1D = Grid1D_t( self%nzAir, self%nzEarth, self%dz )
@@ -81,7 +81,7 @@ contains
     !
     function Slice2DGrid3D_SG(self) result(g2D)
             implicit none
-            class(Grid3D_SG_t), intent(in) :: self
+            class(Grid3D_SG_t), intent( in ) :: self
             type(Grid2D_t), allocatable :: g2D
             !
             ! Should be diferent for the polarization
@@ -96,12 +96,12 @@ contains
     !*
     function Grid3D_SG_t_ctor( nx, ny, nzAir, nzEarth, dx, dy, dz ) result(self)
         ! Arguments
-        integer, intent(in) :: nx, ny, nzAir, nzEarth
-        real( kind=prec ), dimension(:), intent(in) :: dx, dy, dz
+        integer, intent( in ) :: nx, ny, nzAir, nzEarth
+        real( kind=prec ), dimension(:), intent( in ) :: dx, dy, dz
         ! Local variables
         type( Grid3D_SG_t ) :: self
         !
-        write(*,*) "Constructor Grid3D_SG_t"
+        !write(*,*) "Constructor Grid3D_SG_t"
         !
         call self%init()
         !
@@ -119,7 +119,7 @@ contains
         !
         type( Grid3D_SG_t ), intent( inout ) :: self
         !
-        write(*,*) "Destructor Grid3D_SG_t", self%nx, self%ny, self%nz
+        !write(*,*) "Destructor Grid3D_SG_t", self%nx, self%ny, self%nz
         !
         call self%dealloc()
         !
@@ -237,31 +237,30 @@ contains
     !*
     subroutine SetupGrid3D_SG(self, origin)
         implicit none
-        ! Arguments
-        class(Grid3D_SG_t), intent(inout)                :: self
-        real( kind=prec ) , intent(in), optional :: origin(3)
-        ! Local variables
-        integer :: ix, iy, iz, i, j
-        integer :: nzAir
-        integer :: aStatus
-        real( kind=prec ) :: xCum, yCum, zCum
-        real( kind=prec ) :: ox, oy, oz        
-        
-        self%dxInv = 1/self%dx
-        self%dyInv = 1/self%dy
-        self%dzInv = 1/self%dz
         !
-        call self%GetOrigin(ox, oy, oz)
+        class(Grid3D_SG_t), intent( inout ) :: self
+        real( kind=prec ) , intent( in ), optional :: origin(3)
+        !
+        integer :: ix, iy, iz, i, j, nzAir
+        real( kind=prec ) :: xCum, yCum, zCum
+        real( kind=prec ) :: ox, oy, oz
+        
+        self%dxInv = 1 / self%dx
+        self%dyInv = 1 / self%dy
+        self%dzInv = 1 / self%dz
+        !
+        call self%GetOrigin( ox, oy, oz )
         !
         if (present(origin)) then
-             
-             ox = origin(1)
-             oy = origin(2)
-             oz = origin(3)
-
-             call self%SetOrigin(ox, oy, oz)
+            !
+            ox = origin(1)
+            oy = origin(2)
+            oz = origin(3)
+            !
+            call self%SetOrigin(ox, oy, oz)
+            !
         end if
-    !
+        !
         self%xEdge(1) = ox
         self%yEdge(1) = oy
         self%zEdge(1) = oz
@@ -270,19 +269,19 @@ contains
         yCum = 0.0
         zCum = 0.0
         do ix = 1, self%nx
-             xCum = xCum + self%dx(ix)
-             self%xEdge(ix+1) = xCum + ox
+            xCum = xCum + self%dx(ix)
+            self%xEdge(ix+1) = xCum + ox
         end do
         do iy = 1, self%ny
-             yCum = yCum + self%dy(iy)
-             self%yEdge(iy + 1) = yCum + oy
+            yCum = yCum + self%dy(iy)
+            self%yEdge(iy + 1) = yCum + oy
         end do
         
         ! NOTE: adjust for origin later to get airthickness, 
         ! reference to origin at Earth"s surface correct!
         do iz = 1, self%nz
-             zCum = zCum + self%dz(iz)
-             self%zEdge(iz + 1) = zCum
+            zCum = zCum + self%dz(iz)
+            self%zEdge(iz + 1) = zCum
         end do
 
         nzAir = self%nzAir
@@ -291,21 +290,21 @@ contains
         ! Distance between center of the selfs
         self%delX(1) = self%dx(1)
         do ix = 2, self%nx
-             self%delX(ix) = self%dx(ix - 1) + self%dx(ix)
+            self%delX(ix) = self%dx(ix - 1) + self%dx(ix)
         end do
         self%delX(self%nx + 1) = self%dx(self%nx)
         self%delX = self%delX/2.0
         
         self%delY(1) = self%dy(1)
         do iy = 2, self%ny
-             self%delY(iy) = self%dy(iy - 1) + self%dy(iy)
+            self%delY(iy) = self%dy(iy - 1) + self%dy(iy)
         end do
         self%delY(self%ny + 1) = self%dy(self%ny)
         self%delY = self%delY/2.0
         
         self%delZ(1) = self%dz(1)
         do iz = 2, self%nz
-             self%delZ(iz) = self%dz(iz - 1) + self%dz(iz)
+            self%delZ(iz) = self%dz(iz - 1) + self%dz(iz)
         end do
         self%delZ(self%nz + 1) = self%dz(self%nz)
         self%delZ = self%delZ/2.0
@@ -319,31 +318,30 @@ contains
         yCum = 0.0
         zCum = 0.0
         do ix = 1, self%nx
-             xCum = xCum + self%delX(ix)
-             self%xCenter(ix) = xCum + ox
+            xCum = xCum + self%delX(ix)
+            self%xCenter(ix) = xCum + ox
         end do
         do iy = 1, self%ny
-             yCum = yCum + self%delY(iy)
-             self%yCenter(iy) = yCum + oy
+            yCum = yCum + self%delY(iy)
+            self%yCenter(iy) = yCum + oy
         end do
         do iz = 1, self%nz
-             zCum = zCum + self%delZ(iz)
-             self%zCenter(iz) = zCum
+            zCum = zCum + self%delZ(iz)
+            self%zCenter(iz) = zCum
         end do
-        
         ! Need to be careful here ... grid origin is given
         ! at Earth"s surface, not top of model domain!
         do iz = 1, self%nz
-             self%zCenter(iz) = self%zCenter(iz) - self%zAirThick + oz
-             self%zEdge(iz) = self%zEdge(iz) - self%zAirThick + oz
+            self%zCenter(iz) = self%zCenter(iz) - self%zAirThick + oz
+            self%zEdge(iz) = self%zEdge(iz) - self%zAirThick + oz
         end do
-        self%zEdge(self%nz + 1) = self%zEdge(self%nz + 1) - &
-                 self%zAirThick + oz
-        
+        !
+        self%zEdge(self%nz + 1) = self%zEdge(self%nz + 1) - self%zAirThick + oz
+        !
         write(*, *) "INFO:Grid3D_SG_t:Setup:"
         write(*, *) "    The top of the air layers is at ", &
                  self%zAirThick/1000, " km"
-        
+        !
     end subroutine SetupGrid3D_SG
 
     !**
@@ -353,21 +351,22 @@ contains
     ! For backwards compatibility, default is "mirror 10 3. 30."
     ! but the use of "fixed height 12 1000" is recommended
     !*
-    subroutine SetupAirLayersGrid3D_SG(self, airLayers, method, &
-             &                                        nzAir, maxHeight, minTopDz, &
-             &                                        alpha, dzAir)
-        ! Arguments
-        class(Grid3D_SG_t), intent(inout)                :: self
-        type(TAirLayers)    , intent(inout)                :: airlayers
-        character(*)            , intent(in), optional :: method
-        integer                     , intent(in), optional :: nzAir
-        real( kind=prec ) , intent(in), optional :: maxHeight, minTopDz, alpha
-        real( kind=prec ) , intent(in), optional, pointer :: dzAir
-        ! Local variables
+    subroutine SetupAirLayersGrid3D_SG( self, airLayers, method, &
+                                        nzAir, maxHeight, minTopDz, &
+                                        alpha, dzAir )
+        implicit none
+        !
+        class( Grid3D_SG_t ), intent( inout ) :: self
+        type( TAirLayers ), intent( inout ) :: airlayers
+        character(*), intent( in ), optional :: method
+        integer, intent( in ), optional :: nzAir
+        real( kind=prec ), intent( in ), optional :: maxHeight, minTopDz, alpha
+        real( kind=prec ), intent( in ), optional, pointer :: dzAir
+        !
         integer :: ix, iy, iz, i, j
         integer :: status
         real( kind=prec ) :: z1Log, dlogz, zLog, height1, height2
-        
+        !
         if (present(method)) then
              airlayers%method = method
         end if
@@ -455,33 +454,32 @@ contains
         write(*, "(a40,f15.3,a3)") &
                  "The top of the air layers is at ", &
                  sum(airLayers%Dz)/1000, " km"
-
+        !
     end subroutine SetupAirLayersGrid3D_SG
-
     !**
     !
     !*
     subroutine DeallocateAirLayersGrid3D_SG(self, airLayers)
-        ! Arguments
+        implicit none
+        !
         class(Grid3D_SG_t), intent(inout) :: self
         type(TAirLayers)    , intent(inout) :: airLayers
-        ! Local variables
+        !
         integer :: status
-        
-        deallocate(airLayers%dz, STAT = status)
-        
+        !
+        deallocate( airLayers%dz )
+        !
     end subroutine DeallocateAirLayersGrid3D_SG
-    
     !**
     ! Assumes that the grid is already defined, and merely
     ! includes the new air layers in the grid.
     !*
     subroutine UpdateAirLayersGrid3D_SG(self, nzAir, dzAir)
         implicit none
-        ! Arguments
+        !
         class(Grid3D_SG_t), intent(inout) :: self
-        integer                     , intent(in)        :: nzAir
-        real( kind=prec ) , intent(in)        :: dzAir(:)
+        integer                     , intent( in )        :: nzAir
+        real( kind=prec ) , intent( in )        :: dzAir(:)
         ! Local variables
         integer :: nzAir_old, nzEarth_old
         integer :: nx_old, ny_old, nz_old
@@ -507,11 +505,11 @@ contains
         dz_old = self%dz
         geometry_old = self%GetGridGeometry()
     
-    ox_old = self%ox
+        ox_old = self%ox
         oy_old = self%oy
         oz_old = self%oz
     
-    rotdeg_old = self%rotdeg
+        rotdeg_old = self%rotdeg
         
         call self%Deallocate()
         call self%Create(nx_old, ny_old, nzAir, nzEarth_old)
@@ -533,9 +531,10 @@ contains
     end subroutine UpdateAirLayersGrid3D_SG
 
     subroutine GetDimensionsGrid3D_SG(self, nx, ny, nz, nzAir)
-        ! Arguments
-        class(Grid3D_SG_t), intent(in)    :: self
-        integer                     , intent(out) :: nx, ny, nz, nzAir
+        implicit none
+        !
+        class(Grid3D_SG_t), intent( in )    :: self
+        integer                     , intent( out ) :: nx, ny, nz, nzAir
 
         nx = self%nx
         ny = self%ny
@@ -544,15 +543,14 @@ contains
     end subroutine GetDimensionsGrid3D_SG
 
     subroutine SetCellSizesGrid3D_SG(self, dx, dy, dz)
-        ! Arguments
+        implicit none
+        !
         class(Grid3D_SG_t), intent(inout) :: self
-        real( kind=prec ) , dimension(:), intent(in) :: dx, dy, dz
+        real( kind=prec ) , dimension(:), intent( in ) :: dx, dy, dz
 
         if (.NOT.self%IsAllocated()) then
              write(*, *) "ERROR:Grid3D_SG_t:SetCellSizes:"
-             write(*, *) "    Grid not allocated."
-
-             STOP
+             stop "    Grid not allocated."
         end if
 
         ! Check dimensions
@@ -560,9 +558,7 @@ contains
                  (size(dy).ne.size(self%dy)).or.&
                  (size(dz).ne.size(self%dz))) then
              write(*, *) "ERROR:Grid3D_SG_t:SetCellSizes:"
-             write(*, *) "    Incompatible sizes for cell arrays."
-
-             STOP
+             stop "    Incompatible sizes for cell arrays."
         end if
 
         self%dx = dx
@@ -572,64 +568,61 @@ contains
     end subroutine SetCellSizesGrid3D_SG
     
     subroutine GetCellSizesGrid3D_SG(self, dx, dy, dz)
-        ! Arguments
-        class(Grid3D_SG_t), intent(in) :: self
-        real( kind=prec ) , intent(out) :: dx(:), dy(:), dz(:)
-
+        implicit none
+        !
+        class( Grid3D_SG_t ), intent( in ) :: self
+        real( kind=prec ) , intent( out )  :: dx(:), dy(:), dz(:)
+        !
         if (.NOT.self%IsAllocated()) then
              write(*, *) "ERROR:Grid3D_SG_t:GetCellSizes:"
-             write(*, *) "    Grid not allocated."
-
-             STOP
+             stop "    Grid not allocated."
         end if
-
+        !
         ! Check dimensions
         if ((size(dx).ne.size(self%dx)).or.&
                  (size(dy).ne.size(self%dy)).or.&
                  (size(dz).ne.size(self%dz))) then
              write(*, *) "ERROR:Grid3D_SG_t:GetCellSizes:"
-             write(*, *) "    Incompatible sizes for cell arrays."
-             
-             STOP
+             stop "    Incompatible sizes for cell arrays."
         end if
-        
+        !
         dx = self%dx
         dy = self%dy
-        dz = self%dz        
-        
+        dz = self%dz
+        !
     end subroutine GetCellSizesGrid3D_SG
-
     !**
     ! NumberOfEdges
     !
     !*
     subroutine NumberOfEdgesGrid3D_SG(self, nXedge, nYedge, nZedge)
-        ! Arguments
-        class(Grid3D_SG_t), intent(in)    :: self
-        integer                     , intent(out) :: nXedge, nYedge, nZedge
+        implicit none
+        !
+        class(Grid3D_SG_t), intent( in ) :: self
+        integer, intent( out )           :: nXedge, nYedge, nZedge
         ! Local variables
         integer :: nx, ny, nz
         
-        call self%Limits("XEDGE", nx, ny, nz)
+        call self%Limits( "XEDGE", nx, ny, nz )
         nXedge = nx*ny*nz
         
-        call self%Limits("YEDGE", nx, ny, nz)
+        call self%Limits( "YEDGE", nx, ny, nz )
         nYedge = nx*ny*nz
 
-        call self%Limits("ZEDGE", nx, ny, nz)
+        call self%Limits( "ZEDGE", nx, ny, nz )
         nZedge = nx*ny*nz
         
     end subroutine NumberOfEdgesGrid3D_SG
-    
     !**
     ! NumberOfFaces
     !
     !*
     subroutine NumberOfFacesGrid3D_SG(self, nXface, nYface, nZface) 
-        ! Arguments
-        class(Grid3D_SG_t), intent(in)    :: self
-        integer                     , intent(out) :: nXface, nYface, nZface
-        ! Local variables
+        implicit none
+        !
+        class(Grid3D_SG_t), intent( in )    :: self
+        integer                     , intent( out ) :: nXface, nYface, nZface
+        !
         integer :: nx, ny, nz
         
         call self%Limits("XFACE", nx, ny, nz)
@@ -649,7 +642,7 @@ contains
     !*
     function NumberOfNodesGrid3D_SG(self) result(n)
         ! Arguments
-        class(Grid3D_SG_t), intent(in) :: self
+        class(Grid3D_SG_t), intent( in ) :: self
         ! Local variables
         integer :: n
         
@@ -665,14 +658,15 @@ contains
     ! e.g., among the list of y-Faces.     An offset needs to be
     ! added to get index in list of all faces (for example).
     !*
-    subroutine GridIndexGrid3D_SG(self, nodeType, indVec, i, j, k)
-        ! Arguments
-        class(Grid3D_SG_t), intent(in)    :: self
-        character(*)            , intent(in)    :: nodeType
-        integer                     , intent(in)    :: indVec(:)
-        integer                     , intent(out) :: i(:), j(:), k(:)
+    subroutine GridIndexGrid3D_SG( self, nodeType, indVec, i, j, k )
+        implicit none
+        !
+        class(Grid3D_SG_t), intent( in ) :: self
+        character(*), intent( in )       :: nodeType
+        integer, intent( in )            :: indVec(:)
+        integer, intent( out )           :: i(:), j(:), k(:)
         ! Local variables
-        integer    :: nx, ny, nz, nxy, nVec, ii
+        integer :: nx, ny, nz, nVec, ii
         real(4) :: rNxy, rNx
 
         call self%Limits(nodeType, nx, ny, nz)
@@ -697,9 +691,9 @@ contains
         rNx    = float(nx)
         
         do ii = 1, nVec
-             i(ii) = mod(indVec(ii), nx)
-             j(ii) = mod(ceiling(float(indVec(ii))/rNx), ny)
-             k(ii) = ceiling(float(indVec(ii))/rNxy)
+			i(ii) = mod(indVec(ii), nx)
+			j(ii) = mod(ceiling(float(indVec(ii))/rNx), ny)
+			k(ii) = ceiling(float(indVec(ii))/rNxy)
         end do
         
         where(i.eq.0) i = nx
@@ -716,12 +710,13 @@ contains
     ! the list for nodeType; need to add an offset for position
     ! in full list of all faces or edges (not nodes and cells).
     !*
-    subroutine VectorIndexGrid3D_SG(self, nodeType, i, j, k, indVec)
-        ! Arguments
-        class(Grid3D_SG_t), intent(in)    :: self
-        character(*)            , intent(in)    :: nodeType
-        integer                     , intent(in)    :: i(:), j(:), k(:)
-        integer                     , intent(out) :: indVec(:)
+    subroutine VectorIndexGrid3D_SG( self, nodeType, i, j, k, indVec )
+        implicit none
+        !
+        class(Grid3D_SG_t), intent( in ) :: self
+        character(*), intent( in )       :: nodeType
+        integer, intent( in )            :: i(:), j(:), k(:)
+        integer, intent( out )           :: indVec(:)
         ! Local variables
         integer :: nx, ny, nz, nxy, nVec, ii
         
@@ -750,17 +745,17 @@ contains
         end do
         
     end subroutine VectorIndexGrid3D_SG
-    
     !**
     ! Limits
     !
     !*
-    subroutine LimitsGrid3D_SG(self, nodeType, nx, ny, nz)
-        ! Arguments
-        class(Grid3D_SG_t), intent(in)    :: self
-        character(*)            , intent(in)    :: nodeType
-        integer                     , intent(out) :: nx, ny, nz
-
+    subroutine LimitsGrid3D_SG( self, nodeType, nx, ny, nz )
+        implicit none
+        !
+        class(Grid3D_SG_t), intent( in ) :: self
+        character(*), intent( in )       :: nodeType
+        integer, intent( out )           :: nx, ny, nz
+        !
         select case(nodeType)
         case(CENTER)
              nx = self%nx
@@ -807,25 +802,27 @@ contains
     end subroutine LimitsGrid3D_SG
 
     function IsAllocatedGrid3D_SG(self) result(f)
-        ! Arguments
-        class(Grid3D_SG_t), intent(in) :: self
+        !
+        class(Grid3D_SG_t), intent( in ) :: self
         ! Local variables
         logical :: f
-
+		!
         f = self%is_allocated
     end function IsAllocatedGrid3D_SG
 
     function LengthGrid3D_SG(self) result(n)
-        class(Grid3D_SG_t), intent(in) :: self
+        class(Grid3D_SG_t), intent( in ) :: self
         integer :: n
-
-        n = self%nx*self%ny*self%nz
+        !
+        n = self%nx * self%ny * self%nz
+        !
     end function LengthGrid3D_SG
 
     subroutine Copy_fromGrid3D_SG(self, g)
         implicit none
+        !
         class(Grid3D_SG_t), intent(inout) :: self
-        class(Grid_t)         , intent(in)        :: g
+        class(Grid_t)         , intent( in )        :: g
     end subroutine Copy_fromGrid3D_SG
     
 end module Grid3D_SG

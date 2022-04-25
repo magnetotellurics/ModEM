@@ -49,27 +49,27 @@ contains
     !
     ! Destructor
     subroutine DivergenceCorrection_dtor( self )
-      implicit none
-      !
-      type( DivergenceCorrection_t ), intent( inout ) :: self
-      !
-      !write(*,*) "Destructor DivergenceCorrection_t"
-      !
-      if( allocated( self%solver ) ) deallocate( self%solver )
-      !
+		implicit none
+		!
+		type( DivergenceCorrection_t ), intent( inout ) :: self
+		!
+		!write(*,*) "Destructor DivergenceCorrection_t"
+		!
+		deallocate( self%solver )
+		!
     end subroutine DivergenceCorrection_dtor
     !
     ! some extra things that need to be done for divergence correction, whenever
     !      conductivity (model parameter) changes
     subroutine setCond( self )
-      implicit none
-      class( DivergenceCorrection_t ), intent( inout ) :: self
-      !
-      !    set DivCorr arrays in model operator ... 
-      call self%solver%preconditioner%model_operator%divCorSetup
-      !    set preconditioner
-      call self%solver%preconditioner%setPreconditioner(self%solver%omega)
-      !
+		implicit none
+		class( DivergenceCorrection_t ), intent( inout ) :: self
+		!
+		!    set DivCorr arrays in model operator ... 
+		call self%solver%preconditioner%model_operator%divCorSetup
+		!    set preconditioner
+		call self%solver%preconditioner%setPreconditioner(self%solver%omega)
+		!
     end subroutine setCond
     !
     !**********
@@ -85,11 +85,10 @@ contains
         implicit none
         !
         class( DivergenceCorrection_t ), intent( inout ) :: self
-        real ( kind=prec ), intent( in ) :: omega
-        class( Source_t ), intent( in ) :: source
-        class( cScalar_t ), intent(inout)        :: phi0
+        real ( kind=prec ), intent( in )    :: omega
+        class( Source_t ), intent( in )     :: source
+        class( cScalar_t ), intent( inout ) :: phi0
         !
-        ! local variables 
         complex ( kind=prec )  :: cFactor
         !    want this to be abstract also!
         class( cVector_t ), allocatable :: sourceInterior
@@ -120,17 +119,13 @@ contains
         !  Optional argument phi0 is scaled divergence of source term
         !     computed by rhsDivCor
         !
-        class( DivergenceCorrection_t ), intent( inout )            :: self
+        class( DivergenceCorrection_t ), intent( inout ) :: self
         class( cVector_t ), intent( in )           :: inE
-        class( cVector_t ), intent(inout)          :: outE
+        class( cVector_t ), intent( inout )        :: outE
         class( cScalar_t ), intent( in ), optional :: phi0
         !
-        !  local variables
         class( cScalar_t ), allocatable :: phiSol, phiRHS
-        class( rVector_t ), allocatable :: SigE
-        complex( kind=prec) :: c2
-        integer             :: status, fid
-        logical             :: SourceTerm
+        logical :: SourceTerm
         !
         !
         SourceTerm = present( phi0 )
@@ -151,7 +146,7 @@ contains
         allocate( phiRHS, source = self%solver%preconditioner%model_operator%createScalar() )
         !
         ! compute divergence of currents for input electric field
-        call self%solver%preconditioner%model_operator%DivC(inE, phiRHS )
+        call self%solver%preconditioner%model_operator%DivC( inE, phiRHS )
         !
         !  If source term is present, subtract from divergence of currents
         !  probably OK to use function here -- but could replace with subroutine
@@ -162,17 +157,14 @@ contains
         ! compute the size of current Divergence before (using dot product)
         !    this will be part of diagnostics
         self%divJ(1) = sqrt( phiRHS .dot. phiRHS )
-        write(*,*) "divJ  before correction  ",self%divJ(1)
-
+		!
         ! point-wise multiplication with volume weights centered on corner nodes
         call phiRHS%mults( self%solver%preconditioner%model_operator%metric%Vnode )
-
+		!
         !    solve system of equations -- solver will have to know about
         !     (a) the equations to solve -- the divergence correction operator
         !     is modOp%divCgrad
         !     (b) preconditioner: object, and preconditioner matrix
-        !
-        !call solver%solve( phiRHS, phiSol )
         !
         select type( solver => self%solver )
             class is( Solver_PCG_t )
@@ -189,8 +181,9 @@ contains
         !end if
 
         ! compute gradient of phiSol (Divergence correction for inE)
-        call self%solver%preconditioner%model_operator%grad(phiSol,outE)
-
+        call self%solver%preconditioner%model_operator%grad( phiSol, outE )
+        !
+        deallocate( phiSol )
         ! subtract Divergence correction from inE
         !    outE = inE - outE
         call outE%linCombS(inE,C_MinusOne,C_ONE)
@@ -204,9 +197,8 @@ contains
         endif
         ! compute the size of current Divergence after
         self%divJ(2) = sqrt( phiRHS .dot. phiRHS )
-        write(*,*) "divJ after correction  ",self%divJ(2)
+        write(*,*) "divJ after correction  ", self%divJ(2)
         !
-        deallocate( phiSol )
         deallocate( phiRHS )
 
     end subroutine DivCorr

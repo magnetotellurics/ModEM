@@ -63,7 +63,7 @@ contains
       !
       !write(*,*) "Destructor PreConditioner_MF_CC"
       !
-      if( allocated( self%Dilu ) ) deallocate( self%Dilu )
+      deallocate( self%Dilu )
       !
     end subroutine PreConditioner_MF_CC_dtor
     !
