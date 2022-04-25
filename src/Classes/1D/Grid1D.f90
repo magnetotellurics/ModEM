@@ -117,7 +117,7 @@ contains
         allocate(self%zEdge(nz + 1))
         allocate(self%zCenter(nz))
         !
-        self%is_allocated = .true.
+        self%is_allocated = .TRUE.
         !
     end subroutine AllocateGrid1D
 
@@ -139,6 +139,8 @@ contains
         self%nzAir = 0
         self%nzEarth = 0
         self%zAirThick = R_ZERO
+        !
+        self%is_allocated = .FALSE.
         !
     end subroutine deallocateGrid1D
     !

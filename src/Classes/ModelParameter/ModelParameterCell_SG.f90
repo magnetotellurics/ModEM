@@ -29,20 +29,20 @@ module ModelParameterCell_SG
               !
               final :: ModelParameterCell_SG_dtor
               !
-              procedure, public :: Zeros
-              procedure, public :: CopyFrom
+              procedure, public :: zeros    => zerosModelParameterCell
+              procedure, public :: copyFrom => copyFromModelParameterCell
               !
               ! Model mapping methods
-              procedure, public :: PDEmapping
-              procedure, public :: dPDEmapping
-              procedure, public :: dPDEmappingT
+              procedure, public :: PDEmapping   => PDEmappingModelParameterCell
+              procedure, public :: dPDEmapping  => dPDEmappingModelParameterCell
+              procedure, public :: dPDEmappingT => dPDEmappingTModelParameterCell
               !
-              procedure, public :: Slice1D => Slice1DModelParameterCell
-              procedure, public :: Slice2D => Slice2DModelParameterCell
+              procedure, public :: slice1D => slice1DModelParameterCell
+              procedure, public :: slice2D => slice2DModelParameterCell
               !
-              procedure, public :: AvgModel1D => AvgModel1DModelParameterCell
+              procedure, public :: avgModel1D => avgModel1DModelParameterCell
               !
-              procedure, public :: SetType => setTypeModelParameterCell
+              procedure, public :: setType => setTypeModelParameterCell
               !
     end type ModelParameterCell_SG_t
     !
@@ -117,15 +117,14 @@ contains
         !
     end subroutine ModelParameterCell_SG_dtor
     !
-    function Slice1DModelParameterCell( self, ix, iy ) result( model_param_1D )
-        !    extracts slice corresponding to column j of model parameter
+    function slice1DModelParameterCell( self, ix, iy ) result( model_param_1D )
         implicit none
-        ! Arguments
-        class(ModelParameterCell_SG_t), intent(in) :: self
         !
+        class( ModelParameterCell_SG_t ), intent( in ) :: self
         integer, intent( in ) :: ix, iy
+        !
         type( ModelParameter1D_t ), allocatable ::  model_param_1D 
-        !    local variables
+        !
         real(kind=prec), allocatable, dimension(:) :: CondSlice
         !
         !    create 1D model parameter
@@ -140,13 +139,13 @@ contains
         !
         deallocate( CondSlice )
         !
-    end function Slice1DModelParameterCell
+    end function slice1DModelParameterCell
     !
-    function AvgModel1DModelParameterCell( self ) result( model_param_1D )
+    function avgModel1DModelParameterCell( self ) result( model_param_1D )
         !    extracts slice corresponding to column j of model parameter
         implicit none
         ! Arguments
-        class( ModelParameterCell_SG_t ), intent(in) :: self
+        class( ModelParameterCell_SG_t ), intent( in ) :: self
         !
         type( ModelParameter1D_t ), allocatable ::  model_param_1D 
         !
@@ -154,123 +153,118 @@ contains
         real(kind=prec) :: wt, temp_sigma_value
         integer :: i, j, k
         !
-        !    create 1D model parameter
         model_param_1D = ModelParameter1D_t( self%grid%Slice1D() )
         !
-        !        average transformed    model parameter -- then transform?
-        !         or transform first????
-        !    comnductivity slice
         allocate( CondSlice( self%grid%nzEarth ) )
         !
         do k = 1, self%grid%nzEarth
-          wt = R_ZERO
-          temp_sigma_value = R_ZERO
-          do i = 1, self%grid%Nx
+            !
+            wt = R_ZERO
+            temp_sigma_value = R_ZERO
+            do i = 1, self%grid%Nx
                 do j = 1, self%grid%Ny
                     wt = wt + self%grid%dx(i) * self%grid%dy(j)
                     temp_sigma_value = temp_sigma_value + self%CellCond%v( i, j, k ) * &
                     self%grid%dx(i) * self%grid%dy(j)
                 end do
-          end do
-          !
-          CondSlice( k ) = self%SigMap( temp_sigma_value / wt )
-          !
+            end do
+            !
+            CondSlice( k ) = self%SigMap( temp_sigma_value / wt )
+            !
         end do
         !
         call model_param_1D%SetConductivity( CondSlice, self%AirCond, self%paramType, self%mKey )
         !
         deallocate( CondSlice )
         !
-    end function AvgModel1DModelParameterCell
+    end function avgModel1DModelParameterCell
     !
-    function Slice2DModelParameterCell( self, axis, j ) result( m2D )
+    function slice2DModelParameterCell( self, axis, j ) result( m2D )
         !    extracts slice corresponding to column j of model parameter
         implicit none
         ! Arguments
         class( ModelParameterCell_SG_t ), intent( in ) :: self
-        integer, intent( in )                                    :: axis, j
+        integer, intent( in )                          :: axis, j
         !
-        type( ModelParameter2D_t ) ::  m2D 
-        !    local variables
+        type( ModelParameter2D_t ), allocatable :: m2D 
+        !
         character(:), allocatable :: paramType
-        type(Grid2D_t)    :: grid2
         real(kind=prec), allocatable, dimension(:,:) :: CondSlice
         !
         paramType = LINEAR
-        !    extract 2D grid
-        grid2 = self%grid%Slice2D()
+        !
         !    create 2D model parameter
-        m2D = ModelParameter2D_t( grid2 )
+        m2D = ModelParameter2D_t( self%grid%Slice2D() )
         !    comnductivity slice
-        allocate( CondSlice( grid2%ny, grid2%nzEarth ) )
+        allocate( CondSlice( self%grid%ny, self%grid%nzEarth ) )
         !
         if( axis == 1 ) then
-        !  extract slice; convert to linear conductivity:
-          CondSlice = self%SigMap(Self%cellCond%v(j,:,:))
+            CondSlice = self%SigMap(Self%cellCond%v(j,:,:))
         else if( axis == 2 ) then
-          CondSlice = self%SigMap(Self%cellCond%v(:,j,:))
+            CondSlice = self%SigMap(Self%cellCond%v(:,j,:))
         else if( axis == 3 ) then
-          CondSlice = self%SigMap(Self%cellCond%v(:,:,j))
+            CondSlice = self%SigMap(Self%cellCond%v(:,:,j))
         else
-          stop "ModelParameter:Slice2D: wrong axis"
+            stop "ModelParameter:Slice2D: wrong axis"
         endif
         !
-        call m2D%SetConductivity(CondSlice, self%AirCond, paramType, self%mKey )
+        call m2D%SetConductivity( CondSlice, self%AirCond, paramType, self%mKey )
         !
         deallocate( CondSlice )
         !
-    end function Slice2DModelParameterCell
+    end function slice2DModelParameterCell
     !**
     ! Zeros
     ! Zero model parameter
     !*
-    subroutine Zeros(self)
+    subroutine zerosModelParameterCell( self )
         implicit none
-        ! Arguments
-        class(ModelParameterCell_SG_t), intent(inout) :: self
-        
-        call self%cellCond%Zeros()
-    end subroutine Zeros
+        !
+        class( ModelParameterCell_SG_t ), intent(inout) :: self
+        !
+        call self%cellCond%zeros()
+        !
+    end subroutine zerosModelParameterCell
 
     !**
     ! Copy rhs to self.
     !*
-    subroutine CopyFrom( self, rhs )
+    subroutine copyFromModelParameterCell( self, rhs )
         implicit none
-        ! Arguments
+        !
         class( ModelParameterCell_SG_t ), intent( inout ) :: self
-        class( ModelParameter_t ), intent( in )         :: rhs
+        class( ModelParameter_t ), intent( in )           :: rhs
         !
         select type( rhs )
-               class is( ModelParameterCell_SG_t )
-                 self%ParamGrid = rhs%ParamGrid
-                 self%cellCond = rhs%cellCond
-                 self%airCond = rhs%airCond
-                 self%paramType = rhs%paramType
-                 self%mKey = rhs%mKey
-                 self%metric => rhs%metric     !    added these pointer assignments
-                 self%grid => rhs%grid     !    added these pointer assignments
-               class default
-                 write(*, *) "ERROR:ModelParameterCell:CopyFrom"
-                 stop "              Incompatible input. Exiting."
+            class is( ModelParameterCell_SG_t )
+                self%ParamGrid = rhs%ParamGrid
+                self%cellCond = rhs%cellCond
+                self%airCond = rhs%airCond
+                self%paramType = rhs%paramType
+                self%mKey = rhs%mKey
+                self%metric => rhs%metric
+                self%grid => rhs%grid
+            class default
+                write(*, *) "ERROR:ModelParameterCell:CopyFrom"
+                stop "              Incompatible input. Exiting."
         end select
         !
-    end subroutine CopyFrom
+    end subroutine copyFromModelParameterCell
     !
     !    NOT SURE WE WANT THESE MAPPINGS TO BE FUNCTIONS ...
-    function PDEmapping( self ) result( eVec )
+    function PDEmappingModelParameterCell( self ) result( eVec )
         implicit none
-        ! Arguments
+        !
         class( ModelParameterCell_SG_t ), intent( in ) :: self
-        class( rVector_t ), allocatable              :: eVec
-        ! Local variables
+        class( rVector_t ), allocatable                :: eVec
+        !
         type( rScalar3D_SG_t ), allocatable :: SigmaCell
         integer :: i, j, k, k0, k1, k2
         !
         type( rVector3D_SG_t ) :: length, area
         !
         select type( grid => self%grid )
-              class is( Grid3D_SG_t )
+            class is( Grid3D_SG_t )
                 !
                 allocate( eVec, source = rVector3D_SG_t( grid, EDGE ) )
                 !    should this local object be constructed in the same way???
@@ -290,8 +284,8 @@ contains
                 !
                 ! Sum onto edges
                 call eVec%SumCells( SigmaCell )
-                    !
-                    deallocate( SigmaCell )
+                !
+                deallocate( SigmaCell )
                 !
                 ! Divide by total volume -- sum of 4 cells
                 ! surrounding edge -- just 4*V_E        
@@ -300,26 +294,26 @@ contains
                 !  still need to divide by 4 ...
                 call eVec%mults( 0.25_prec )
                 !
-              class default
+            class default
                 write(*, *) "ERROR:ModelParameterCell_SG:PDEmapping:"
                 STOP "              Incompatible grid. Exiting."
-              !
+                !
         end select
         !
-    end function PDEmapping
+    end function PDEmappingModelParameterCell
     
     !**
     ! PDE mapping linearized at background model
     ! parameter m0, applied to dm result is an edge-vector eVec.
     !*
-    function dPDEmapping( self, dm ) result( eVec )
+    function dPDEmappingModelParameterCell( self, dm ) result( eVec )
         implicit none
         !
         class( ModelParameterCell_SG_t ), intent( in ) :: self
         class( ModelParameter_t ), intent( in )        :: dm
-        class( rVector_t ), allocatable              :: eVec
-        ! Local variables
-        type( rScalar3D_SG_t ) :: SigmaCell
+        class( rVector_t ), allocatable                :: eVec
+        !
+        type( rScalar3D_SG_t ), allocatable :: SigmaCell
         character( len=5 ), parameter :: JOB = "DERIV"
         integer :: k0, k1, k2
         !
@@ -328,7 +322,9 @@ contains
                     !
                     select type( grid => self%grid )
                     class is( Grid3D_SG_t )
+                          !
                           allocate( eVec, source = rVector3D_SG_t( grid, EDGE ) )
+                          !
                           SigmaCell = rScalar3D_SG_t( grid, CELL )
                         
                           ! Set Earth cells using m0, SigMap and dm
@@ -349,6 +345,9 @@ contains
                           call sigmaCell%multS( self%metric%Vcell )
                           ! Sum onto edges
                           call eVec%SumCells( SigmaCell )
+                          !
+                          deallocate( SigmaCell )
+                          !
                           ! Divide by total volume -- sum of 4 cells
                           ! surrounding edge -- just 4*V_E
                           call eVec%divs( self%metric%Vedge )
@@ -367,25 +366,24 @@ contains
                     !
         end select
         !
-    end function dPDEmapping
+    end function dPDEmappingModelParameterCell
     !**
     ! Transpose (adjoint) of dPDEmapping, applied to an edge-vector eVec
     ! result is a model parameter dm.
     !*
-    function dPDEmappingT( self, eVec ) result( dm )
+    function dPDEmappingTModelParameterCell( self, eVec ) result( dm )
         implicit none
         !
         class( ModelParameterCell_SG_t ), intent( in ) :: self
         class( rVector_t ), intent( in )               :: eVec
         class( ModelParameter_t ), allocatable         :: dm
         !
-        ! Local variables    -- don"t think local variable has to be of abstract class!
-        type( rScalar3D_SG_t ) :: sigmaCell
-        type( rVector3D_SG_t ) :: vTemp
+        type( rScalar3D_SG_t ), allocatable :: sigmaCell
+        type( rVector3D_SG_t ), allocatable :: vTemp
         character( len=5 ), parameter :: JOB = "DERIV"
         integer :: k0, k1, k2
         !
-		!
+        !
         select type( param_grid => self%paramGrid )
             class is( Grid3D_SG_t )
                 !
@@ -409,8 +407,11 @@ contains
                            call vTemp%divs(self%metric%Vedge)
                            !  still need to divide by 4 ...
                            call vTemp%mults(0.25_prec)
-                    
+
                            sigmaCell = vTemp%SumEdges()
+                           !
+                           deallocate( vTemp )
+                           !
                            call sigmaCell%multS( self%metric%Vcell )
 
                            dm%cellCond%v = self%SigMap( self%cellCond%v,JOB ) 
@@ -422,14 +423,16 @@ contains
                            !     deleted select type for SigmaCell -- can"t see how we need this, since
                            !        this is local variable declared with explicit type!
                            dm%cellCond%v = dm%cellCond%v * SigmaCell%v(:,:,k1:k2)
+                           !
+                           deallocate( SigmaCell )
+                           !
                       class default
                            write(*, *) "ERROR:ModelParameterCell_SG:dPDEmappingT:"
                            STOP "              Incompatible input [eVec]. Exiting."
                 end select
         end select
         !
-    end function dPDEmappingT
-    
+    end function dPDEmappingTModelParameterCell
     !**
     ! SetType
     !*
@@ -437,7 +440,7 @@ contains
         implicit none
         !
         class( ModelParameterCell_SG_t ), intent( inout ) :: self
-        character(:), allocatable, intent( in )        :: paramType
+        character(:), allocatable, intent( in )           :: paramType
         !
         if (.NOT.(self%is_allocated)) then
               write(*, *) "ERROR:ModelPArameterCell_t:SetType:"
@@ -481,8 +484,9 @@ contains
               write(*, *) "ERROR:ModelParameterCell_t:SetType:"
               stop "              Unknown paramType."
         end if
-        
+        !
         self%paramType = paramType 
+        !
     end subroutine setTypeModelParameterCell
     
 end Module ModelParameterCell_SG

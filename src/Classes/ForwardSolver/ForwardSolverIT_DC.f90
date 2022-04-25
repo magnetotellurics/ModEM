@@ -220,6 +220,7 @@ module ForwardSolverIT_DC
             self%relResVec = R_ZERO
             self%divJ = R_ZERO
             self%DivCorRelErr = R_ZERO
+            !
             call self%solver%zeroDiagnostics()
             !
          end subroutine zeroDiagnosticsForwardSolverIT_DC
@@ -286,10 +287,10 @@ module ForwardSolverIT_DC
                         !
                         call self%divergence_correction%DivCorr( temp, e_solution )
                         !
-					endif
-					!
-					if( allocated( temp ) ) deallocate( temp )
-					!
+                    endif
+                    !
+                    deallocate( temp )
+                    !
                else
                    !
                    self%solver%failed = .TRUE.
@@ -298,7 +299,7 @@ module ForwardSolverIT_DC
             !
             enddo loop
             !
-            if( allocated( phi0 ) ) deallocate( phi0 )
+            if( source%non_zero_source ) deallocate( phi0 )
             !
             self%relResFinal = self%relResVec(self%n_iter_actual)
             !

@@ -47,6 +47,7 @@ contains
             id = 1
             temp_rx%Rx%id = 1
             receivers( 1 ) = temp_rx
+            deallocate( temp_rx )
         else
             ! 
             nRx = size( receivers )
@@ -68,6 +69,9 @@ contains
             temp_array( nRx + 1 ) = temp_rx
             !
             allocate( receivers, source = temp_array )
+            !
+            deallocate( temp_rx )
+            deallocate( temp_array )
             !
         endif
         !

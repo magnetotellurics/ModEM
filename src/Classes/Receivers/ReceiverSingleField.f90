@@ -54,8 +54,6 @@ contains
             self%type_name = "ReceiverSingleField"
         endif
         !
-        self%DATA_TITLE = "Period(s) Code GG_Lat GG_Lon X(m) Y(m) Z(m) Component Real Imag Error"
-        !
         self%n_comp = 1
         self%is_complex = .TRUE.
         !

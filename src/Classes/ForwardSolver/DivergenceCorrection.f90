@@ -15,9 +15,9 @@ Module DivergenceCorrection
             !
             final :: DivergenceCorrection_dtor
             !
-            procedure, public :: setCond 
-            procedure, public :: rhsDivCor
-            procedure, public :: DivCorr
+            procedure, public :: setCond   => setCondDivergenceCorrection
+            procedure, public :: rhsDivCor => rhsDivCorDivergenceCorrection
+            procedure, public :: divCorr   => divCorrDivergenceCorrection
             !
     end type DivergenceCorrection_t
     !
@@ -49,39 +49,33 @@ contains
     !
     ! Destructor
     subroutine DivergenceCorrection_dtor( self )
-		implicit none
-		!
-		type( DivergenceCorrection_t ), intent( inout ) :: self
-		!
-		!write(*,*) "Destructor DivergenceCorrection_t"
-		!
-		deallocate( self%solver )
-		!
+        implicit none
+        !
+        type( DivergenceCorrection_t ), intent( inout ) :: self
+        !
+        !write(*,*) "Destructor DivergenceCorrection_t"
+        !
+        deallocate( self%solver )
+        !
     end subroutine DivergenceCorrection_dtor
     !
     ! some extra things that need to be done for divergence correction, whenever
     !      conductivity (model parameter) changes
-    subroutine setCond( self )
-		implicit none
-		class( DivergenceCorrection_t ), intent( inout ) :: self
-		!
-		!    set DivCorr arrays in model operator ... 
-		call self%solver%preconditioner%model_operator%divCorSetup
-		!    set preconditioner
-		call self%solver%preconditioner%setPreconditioner(self%solver%omega)
-		!
-    end subroutine setCond
+    subroutine setCondDivergenceCorrection( self )
+        implicit none
+        !
+        class( DivergenceCorrection_t ), intent( inout ) :: self
+        !
+        !    set DivCorr arrays in model operator ... 
+        call self%solver%preconditioner%model_operator%divCorSetup
+        !    set preconditioner
+        call self%solver%preconditioner%setPreconditioner(self%solver%omega)
+        !
+    end subroutine setCondDivergenceCorrection
     !
     !**********
     !
-    subroutine rhsDivCor( self, omega, source, phi0 )
-        !  NOTE: not used for MT fwd -- but will be used for sensitivity 
-        !    calculations, and for CSEM
-        !
-        !    this routine will calculate the RHS (phi0) for divergence
-        !     correction equations when the source term for the curl-curl
-        !     equations has non-zero source
-        !
+    subroutine rhsDivCorDivergenceCorrection( self, omega, source, phi0 )
         implicit none
         !
         class( DivergenceCorrection_t ), intent( inout ) :: self
@@ -89,30 +83,23 @@ contains
         class( Source_t ), intent( in )     :: source
         class( cScalar_t ), intent( inout ) :: phi0
         !
-        complex ( kind=prec )  :: cFactor
-        !    want this to be abstract also!
-        class( cVector_t ), allocatable :: sourceInterior
-      
+        complex( kind=prec ) :: cFactor
+
         cFactor = -ONE_I/(mu_0*ISIGN*omega)    ! 1/(isign*1i*w*mu)
-        !    I am assuming that in the case of an interior source, this is
-        !     stored in the cVector source%E
-        !     proedure "interior" zeros the boundary edges
-        allocate( sourceInterior, source = source%E%interior() )
-         
+        !
         !    take divergence of sourceInterior, and return as cScalar of
         !     appropriate explicit type
-        call self%solver%preconditioner%model_operator%Div( sourceInterior, phi0 ) 
+        call self%solver%preconditioner%model_operator%Div( source%E%interior(), phi0 ) 
+        !
         !  multiply result by cFactor (in place)
         call phi0%mults( cFactor )
         !  multiply result by VNode -- add to rhs of symetrized
         !    current conservation equation
         call phi0%mults( self%solver%preconditioner%model_operator%metric%Vnode )
         !
-        deallocate( sourceInterior )
-        !
-    end subroutine rhsDivCor
+    end subroutine rhsDivCorDivergenceCorrection
     !****************************************************************
-    subroutine DivCorr( self, inE, outE, phi0 )
+    subroutine divCorrDivergenceCorrection( self, inE, outE, phi0 )
         implicit none
         ! function to compute divergence correction for input electric
         ! field vector inE, returning result in outE 
@@ -142,7 +129,7 @@ contains
         !      make procedures in ForwardModeling generic, with no reference to
         !      specific classes
         !
-        allocate( phiSol, source = self%solver%preconditioner%model_operator%createScalar() )
+        !
         allocate( phiRHS, source = self%solver%preconditioner%model_operator%createScalar() )
         !
         ! compute divergence of currents for input electric field
@@ -157,14 +144,16 @@ contains
         ! compute the size of current Divergence before (using dot product)
         !    this will be part of diagnostics
         self%divJ(1) = sqrt( phiRHS .dot. phiRHS )
-		!
+        !
         ! point-wise multiplication with volume weights centered on corner nodes
         call phiRHS%mults( self%solver%preconditioner%model_operator%metric%Vnode )
-		!
+        !
         !    solve system of equations -- solver will have to know about
         !     (a) the equations to solve -- the divergence correction operator
         !     is modOp%divCgrad
         !     (b) preconditioner: object, and preconditioner matrix
+        !
+        allocate( phiSol, source = self%solver%preconditioner%model_operator%createScalar() )
         !
         select type( solver => self%solver )
             class is( Solver_PCG_t )
@@ -184,6 +173,7 @@ contains
         call self%solver%preconditioner%model_operator%grad( phiSol, outE )
         !
         deallocate( phiSol )
+		!
         ! subtract Divergence correction from inE
         !    outE = inE - outE
         call outE%linCombS(inE,C_MinusOne,C_ONE)
@@ -197,10 +187,10 @@ contains
         endif
         ! compute the size of current Divergence after
         self%divJ(2) = sqrt( phiRHS .dot. phiRHS )
-        write(*,*) "divJ after correction  ", self%divJ(2)
+        !write(*,*) "divJ after correction  ", self%divJ(2)
         !
         deallocate( phiRHS )
 
-    end subroutine DivCorr
+    end subroutine divCorrDivergenceCorrection
 
 end module DivergenceCorrection

@@ -178,6 +178,10 @@ contains
         !
         call MPI_Win_fence( 0, shared_window, ierr )
         !
+        deallocate( model_operator )
+        deallocate( model_parameter )
+        deallocate( main_grid )
+        !
         ! SEND 1 TRANSMITTER TO FIRST np WORKERS
         do while ( worker_rank <= ( mpi_size - 1 ) )
             !
@@ -206,6 +210,8 @@ contains
                 call updateDataHandleArray( all_data_handles, data_handles( i ) )
             end do
             !
+            deallocate( data_handles )
+            !
             tx_received = tx_received + 1
             !
             tx_index = tx_index + 1
@@ -230,6 +236,8 @@ contains
                 call updateDataHandleArray( all_data_handles, data_handles( i ) )
             end do
             !
+            deallocate( data_handles )
+            !
             tx_received = tx_received + 1
             !
             fwd_info%job_name = job_finish
@@ -238,9 +246,7 @@ contains
              
         enddo
         !
-        deallocate( model_operator )
-        deallocate( model_parameter )
-        deallocate( main_grid )
+        call deallocateTransmitterArray()
         !
         ! Write all_data_handles into predicted_data.dat
         call writeDataHandleArray( all_data_handles )
@@ -739,7 +745,7 @@ contains
         if( receiver_type /= trim( receiver%type_name ) ) then
             !
             write( ioPredData, "(4A, 100A)" ) "#    ", DATA_FILE_TITLE
-            write( ioPredData, "(4A, 100A)" ) "#    ", receiver%DATA_TITLE
+            write( ioPredData, "(100A)" )     "#    Period(s) Code GG_Lat GG_Lon X(m) Y(m) Z(m) Component Real Imag Error"
             write( ioPredData, "(4A, 100A)" ) ">    ", trim( receiver%type_name )
             write( ioPredData, "(4A, 100A)" ) ">    ", "exp(-i\omega t)"
             write( ioPredData, "(4A, 100A)" ) ">    ", "[V/m]/[T]"

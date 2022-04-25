@@ -17,7 +17,7 @@ module Receiver
         !
         integer                   :: id, n_comp
         !
-        character(:), allocatable :: type_name, code, DATA_TITLE
+        character(:), allocatable :: type_name, code
         !
         real( kind=prec )         :: location(3)
         !

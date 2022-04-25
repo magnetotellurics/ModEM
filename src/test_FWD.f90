@@ -1,8 +1,8 @@
 program ModEM
     !
-	use Constants
-	use FileUnits
-	
+    use Constants
+    use FileUnits
+    
     use ModEMControlFile
     !
     use Grid3D_SG
@@ -58,7 +58,7 @@ contains
     subroutine ForwardModelling()
         implicit none
         !
-        class( ForwardSolver_t ), allocatable :: fwd_solver
+        class( ForwardSolver_t ), allocatable, save :: fwd_solver
         !
         class( Source_t ), allocatable        :: fwd_source 
         !
@@ -113,7 +113,7 @@ contains
             end select
             !
             call fwd_solver%setCond( model_parameter )
-			!
+            !
             ! Source - Chosen from control file
             !if( allocated( fwd_source ) ) deallocate( fwd_source )
             select case ( source_type )
@@ -400,13 +400,13 @@ contains
         integer               :: ios
         character (len=20)    :: version
         !
+        version = ""
+        !
         open( ioESolution, file = "e_solution", action = "write", form = "unformatted", iostat = ios)
         !
         if( ios /= 0 ) then
             write( *, * ) "Error opening file in FileWriteInit: e_solution"
         else
-            !
-            version = ""
             !
             write( ioESolution ) version, nTx, nMode, &
             main_grid%nx, main_grid%ny, main_grid%nz, main_grid%nzAir, &
@@ -415,7 +415,7 @@ contains
             write( ioESolution ) main_grid%dx
             write( ioESolution ) main_grid%dy
             write( ioESolution ) main_grid%dz
-			!
+            !
             close( ioESolution )
             !
         endif
@@ -495,7 +495,7 @@ contains
         if( receiver_type /= trim( receiver%type_name ) ) then
             !
             write( ioPredData, "(4A, 100A)" ) "#    ", DATA_FILE_TITLE
-            write( ioPredData, "(4A, 100A)" ) "#    ", receiver%DATA_TITLE
+            write( ioPredData, "(100A)" )     "#    Period(s) Code GG_Lat GG_Lon X(m) Y(m) Z(m) Component Real Imag Error"
             write( ioPredData, "(4A, 100A)" ) ">    ", trim( receiver%type_name )
             write( ioPredData, "(4A, 100A)" ) ">    ", "exp(-i\omega t)"
             write( ioPredData, "(4A, 100A)" ) ">    ", "[V/m]/[T]"

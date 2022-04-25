@@ -15,7 +15,7 @@ module Transmitter
     !
     type, abstract :: Transmitter_t
         !
-        integer                   :: id, n_pol, fwd_key(8)
+        integer :: id, n_pol, fwd_key(8)
         !
         real( kind=prec ) :: period
         !
@@ -160,6 +160,7 @@ module Transmitter
                 self%receiver_indexes = temp_array
                 !
                 deallocate( temp_array )
+                !
             endif
             !
          end subroutine updateReceiverIndexesArray

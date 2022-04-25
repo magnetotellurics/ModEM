@@ -5,13 +5,13 @@ module Solver
     use PreConditioner
     !
     character(:), allocatable :: solver_type
-    character (len = 3), parameter    :: QMR  = "QMR"
-    character (len = 3), parameter    :: PCG  = "PCG"
-    character (len = 4), parameter    :: BiCG = "BiCG"
+    character ( len=3 ), parameter :: QMR  = "QMR"
+    character ( len=3 ), parameter :: PCG  = "PCG"
+    character ( len=4 ), parameter :: BiCG = "BiCG"
     !
     ! SOLVER DEFAULTS
-    integer  :: maxIter = 20
-    real( kind=prec) :: tolerance = 0.0000000001
+    integer :: maxIter = 20
+    real( kind=prec ) :: tolerance = 0.0000000001
     !
     type, abstract :: Solver_t
         !
@@ -38,10 +38,9 @@ module Solver
     !
     abstract interface
         !
-        !    each type of solver will have own defaults, hard code in solver extension
         subroutine interface_set_solver_defaults(self)
            import :: Solver_t
-           class( Solver_t ), intent(inout) :: self
+           class( Solver_t ), intent( inout ) :: self
         end subroutine interface_set_solver_defaults
         !
     end interface
@@ -49,30 +48,30 @@ module Solver
 contains
     !
     subroutine setParameters( self, max_iter, tolerance )
-         !    actually, this set routine will be the same for all
-         !    extensions -- should this be abstract
-         ! import :: Solver_t  is this needed here????
-         class( Solver_t ), intent( inout ) :: self
-         integer, intent( in )              :: max_iter
-         real( kind=prec ), intent( in )    :: tolerance
-         integer :: status
-
-         self%max_iter = max_iter
-         self%tolerance = tolerance
-         !    perhaps check if relErr is already allocated; if so deallocate
-         if( allocated( self%relErr ) ) deallocate( self%relErr )
-         allocate( self%relErr(max_iter), STAT = status )
-         !  if we are not going to check "status" of allocate, why 
-         !    return this?
+        implicit none
+        !
+        class( Solver_t ), intent( inout ) :: self
+        integer, intent( in )              :: max_iter
+        real( kind=prec ), intent( in )    :: tolerance
+        !
+        self%max_iter = max_iter
+        self%tolerance = tolerance
+        !
+        if( allocated( self%relErr ) ) deallocate( self%relErr )
+        allocate( self%relErr( max_iter ) )
+        !
     end subroutine setParameters
     !
     !********
     !
     subroutine zeroDiagnostics( self )
-         !    zeros diagnostics for solver object
-         class( Solver_t ), intent( inout ) :: self
-         self%n_iter = 0
-         self%relErr = R_ZERO
+        implicit none
+        !
+        class( Solver_t ), intent( inout ) :: self
+        !
+        self%n_iter = 0
+        self%relErr = R_ZERO
+        !
     end subroutine zeroDiagnostics 
     !
     !********
@@ -95,9 +94,9 @@ contains
         !
         class( Solver_t ), intent( inout ) :: self
         !
-        if( allocated( self%preconditioner ) ) deallocate( self%preconditioner )
+        deallocate( self%preconditioner )
         !
-        if( allocated( self%relErr ) ) deallocate( self%relErr )
+        deallocate( self%relErr )
         !
     end subroutine deallocateSolver
     !

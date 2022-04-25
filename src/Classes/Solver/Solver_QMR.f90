@@ -55,7 +55,9 @@ contains
     end subroutine Solver_QMR_dtor
     !
     subroutine SetDefaults_QMR(self)
-        class(Solver_QMR_t), intent(inout) :: self
+        implicit none
+        !
+		class(Solver_QMR_t), intent(inout) :: self
         !     sets default iteration control parameters for QMR solver
         !     local variables
         integer           :: max_iter
@@ -67,21 +69,9 @@ contains
         call self%SetParameters( max_iter, tolerance )
         !
     end subroutine SetDefaults_QMR
-    !**
-    ! This is the QMR solver, using operators
-    ! (including pre-conditioner solvers),
-    ! defined through pointers as object data
-    ! Also uses real variable omega to define    frequency.
     !
-    ! on input x is initial guess, b is rhs
-    ! on output x is approximate solution
-    ! diagnostic variables nIter, relErr are set
-    !    
-    ! Code is taken from subroutine QMR in solvers.f90
-    !*
+	!
     subroutine solveQMR( self, b, x )
-        ! I prefer to have rhs (b) appear before solution (x) in argument list--
-        !     this is consistent with ModEM (and matlab, etc.)
         implicit none
         !
         class( Solver_QMR_t ), intent( inout ) :: self
@@ -95,10 +85,10 @@ contains
         complex( kind=prec ) :: bnorm,rnorm
         complex( kind=prec ) :: rhoInv,psiInv
         integer              :: iter
-      !
+        !
         ! Allocate work CVector objects -- questions as in PCG
         allocate( R, source = x )
-      !
+        !
         call R%zeros() !  can't zero x -- if this is to be used as starting guess
                        !  also, never use AX -- which somehow is declared in ModEM!
         allocate( Y, source = R )
@@ -281,8 +271,6 @@ contains
           !
         end do
         !
-        self%n_iter = iter
-        !
         deallocate( R )
         deallocate( Y )
         deallocate( Z )
@@ -298,6 +286,8 @@ contains
         deallocate( D )
         deallocate( S )
         !
+        self%n_iter = iter
+        !
     end subroutine solveQMR
-    
+    !
 end module Solver_QMR
