@@ -14,7 +14,7 @@ module Solver_QMR
             final :: Solver_QMR_dtor
             !
             procedure, public :: solve => solveQMR
-            procedure, public :: SetDefaults => setDefaults_QMR
+            procedure, public :: setDefaults => setDefaults_QMR
             !
      end type Solver_QMR_t
      !
@@ -36,7 +36,7 @@ contains
         !
         self%preconditioner = PreConditioner_MF_CC_t( model_operator )
         !
-        call self%SetDefaults()
+        call self%setDefaults()
         !
         call self%zeroDiagnostics()
         !
@@ -54,8 +54,10 @@ contains
         !
     end subroutine Solver_QMR_dtor
     !
-    subroutine SetDefaults_QMR(self)
-        class(Solver_QMR_t), intent(inout) :: self
+    subroutine setDefaults_QMR( self )
+        implicit none
+        !
+        class( Solver_QMR_t ), intent( inout ) :: self
         !     sets default iteration control parameters for QMR solver
         !     local variables
         integer           :: max_iter
@@ -66,22 +68,10 @@ contains
         !
         call self%SetParameters( max_iter, tolerance )
         !
-    end subroutine SetDefaults_QMR
-    !**
-    ! This is the QMR solver, using operators
-    ! (including pre-conditioner solvers),
-    ! defined through pointers as object data
-    ! Also uses real variable omega to define    frequency.
+    end subroutine setDefaults_QMR
     !
-    ! on input x is initial guess, b is rhs
-    ! on output x is approximate solution
-    ! diagnostic variables nIter, relErr are set
-    !    
-    ! Code is taken from subroutine QMR in solvers.f90
-    !*
+    !
     subroutine solveQMR( self, b, x )
-        ! I prefer to have rhs (b) appear before solution (x) in argument list--
-        !     this is consistent with ModEM (and matlab, etc.)
         implicit none
         !
         class( Solver_QMR_t ), intent( inout ) :: self
@@ -95,10 +85,10 @@ contains
         complex( kind=prec ) :: bnorm,rnorm
         complex( kind=prec ) :: rhoInv,psiInv
         integer              :: iter
-      !
+        !
         ! Allocate work CVector objects -- questions as in PCG
         allocate( R, source = x )
-      !
+        !
         call R%zeros() !  can't zero x -- if this is to be used as starting guess
                        !  also, never use AX -- which somehow is declared in ModEM!
         allocate( Y, source = R )
@@ -164,9 +154,11 @@ contains
         do while( ( self%relErr( iter ) .gt. self%tolerance ) .AND. ( iter .lt. self%max_iter ) )
             !
             if( ( RHO .eq. C_ZERO ) .or. ( PSI .eq. C_ZERO ) ) then
+                !
                 self%failed = .TRUE.
-                write(0,*) "QMR FAILED TO CONVERGE : RHO"
+                write( *, * ) "QMR FAILED TO CONVERGE : RHO"
                 stop "QMR FAILED TO CONVERGE : PSI"
+                !
             end if
             !
             rhoInv = ( 1 / RHO )
@@ -182,8 +174,10 @@ contains
             !
             DELTA = Z%dotProd( Y )
             if( DELTA .eq. C_ZERO ) then
+                !
                 self%failed = .TRUE.
                 stop "QMR FAILS TO CONVERGE : DELTA"
+                !
             end if
             !
             ilu_adjt = .FALSE.
@@ -278,10 +272,8 @@ contains
             ! QMR book-keeping between divergence correction calls
             self%relErr( iter ) = real( rnorm / bnorm )
             !write(*,*) 'iter qmr= ',iter,'    relErr = ', self%relErr(iter)
-          !
+            !
         end do
-        !
-        self%n_iter = iter
         !
         deallocate( R )
         deallocate( Y )
@@ -298,6 +290,8 @@ contains
         deallocate( D )
         deallocate( S )
         !
+        self%n_iter = iter
+        !
     end subroutine solveQMR
-    
+    !
 end module Solver_QMR

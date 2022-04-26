@@ -5,13 +5,13 @@ module Solver
     use PreConditioner
     !
     character(:), allocatable :: solver_type
-    character (len = 3), parameter    :: QMR  = "QMR"
-    character (len = 3), parameter    :: PCG  = "PCG"
-    character (len = 4), parameter    :: BiCG = "BiCG"
+    character ( len=3 ), parameter :: QMR  = "QMR"
+    character ( len=3 ), parameter :: PCG  = "PCG"
+    character ( len=4 ), parameter :: BiCG = "BiCG"
     !
     ! SOLVER DEFAULTS
-    integer  :: maxIter = 20
-    real( kind=prec) :: tolerance = 0.0000000001
+    integer :: maxIter = 20
+    real( kind=prec ) :: tolerance = 0.0000000001
     !
     type, abstract :: Solver_t
         !
@@ -21,59 +21,58 @@ module Solver
         !
         logical :: failed, converged
         !
-        ! PreConditioner as a property of this
+        !
         class( PreConditioner_t ), allocatable :: preconditioner
         !
         contains
            !    deferred (abstract class) proedures
-           procedure( interface_set_solver_defaults), deferred, public :: SetDefaults
+           procedure( interface_set_solver_defaults), deferred, public :: setDefaults
            !
            procedure, public :: init    => initializeSolver
            procedure, public :: dealloc => deallocateSolver
            !
-           procedure, public :: setParameters
-           procedure, public :: zeroDiagnostics
+           procedure, public :: setParameters => setParametersSolver
+           procedure, public :: zeroDiagnostics => zeroDiagnosticsSolver
            !
     end type Solver_t
     !
     abstract interface
         !
-        !    each type of solver will have own defaults, hard code in solver extension
         subroutine interface_set_solver_defaults(self)
            import :: Solver_t
-           class( Solver_t ), intent(inout) :: self
+           class( Solver_t ), intent( inout ) :: self
         end subroutine interface_set_solver_defaults
         !
     end interface
     !
 contains
     !
-    subroutine setParameters( self, max_iter, tolerance )
-         !    actually, this set routine will be the same for all
-         !    extensions -- should this be abstract
-         ! import :: Solver_t  is this needed here????
-         class( Solver_t ), intent( inout ) :: self
-         integer, intent( in )              :: max_iter
-         real( kind=prec ), intent( in )    :: tolerance
-         integer :: status
-
-         self%max_iter = max_iter
-         self%tolerance = tolerance
-         !    perhaps check if relErr is already allocated; if so deallocate
-         if( allocated( self%relErr ) ) deallocate( self%relErr )
-         allocate( self%relErr(max_iter), STAT = status )
-         !  if we are not going to check "status" of allocate, why 
-         !    return this?
-    end subroutine setParameters
+    subroutine setParametersSolver( self, max_iter, tolerance )
+        implicit none
+        !
+        class( Solver_t ), intent( inout ) :: self
+        integer, intent( in )              :: max_iter
+        real( kind=prec ), intent( in )    :: tolerance
+        !
+        self%max_iter = max_iter
+        self%tolerance = tolerance
+        !
+        if( allocated( self%relErr ) ) deallocate( self%relErr )
+		allocate( self%relErr( max_iter ) )
+        !
+    end subroutine setParametersSolver
     !
     !********
     !
-    subroutine zeroDiagnostics( self )
-         !    zeros diagnostics for solver object
-         class( Solver_t ), intent( inout ) :: self
-         self%n_iter = 0
-         self%relErr = R_ZERO
-    end subroutine zeroDiagnostics 
+    subroutine zeroDiagnosticsSolver( self )
+        implicit none
+        !
+        class( Solver_t ), intent( inout ) :: self
+        !
+        self%n_iter = 0
+        self%relErr = R_ZERO
+        !
+    end subroutine zeroDiagnosticsSolver 
     !
     !********
     !
@@ -95,9 +94,9 @@ contains
         !
         class( Solver_t ), intent( inout ) :: self
         !
-        if( allocated( self%preconditioner ) ) deallocate( self%preconditioner )
+        deallocate( self%preconditioner )
         !
-        if( allocated( self%relErr ) ) deallocate( self%relErr )
+        deallocate( self%relErr )
         !
     end subroutine deallocateSolver
     !

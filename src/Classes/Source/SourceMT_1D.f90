@@ -26,7 +26,7 @@ module SourceMT_1D
             final :: SourceMT_1D_dtor
             !
             procedure, public :: setRHS => setRHSMT_1D
-            procedure, public :: setE    => setESourceMT_1D
+            procedure, public :: setE   => setESourceMT_1D
             !
     end type SourceMT_1D_T
     !
@@ -46,11 +46,11 @@ contains
         !
         type( SourceMT_1D_t ) :: self
         !
-        !write(*,*) "Constructor SourceMT_1D_t"
+        !write( *, * ) "Constructor SourceMT_1D_t"
         !
         call self%init()
         !
-        self%model_operator => model_operator
+        self%model_operator  => model_operator
         self%model_parameter => model_parameter
         !
         if ( present( E ) ) then
@@ -69,7 +69,7 @@ contains
         !
         type( SourceMT_1D_t ), intent( inout ) :: self
         !
-        !write(*,*) "Destructor SourceMT_1D_t"
+        !write( *, * ) "Destructor SourceMT_1D_t"
         !
         call self%dealloc()
         !
@@ -83,13 +83,11 @@ contains
         real( kind=prec ), intent( in )         :: omega
         integer, intent( in )                   :: polarization
         !
-        class( ModelParameter1D_t ), allocatable :: model_parameter_1D
-        class( Forward1D_t ), allocatable        :: forward_1D
+        class( ModelParameter1D_t ), allocatable        :: model_parameter_1D
+        class( Forward1D_t ), allocatable               :: forward_1D
         complex( kind=prec ), allocatable, dimension(:) :: E1D
         !
         integer :: ix, iy
-        !
-        write(*,*) "SourceMT_1D_t setE -> omega, pol:", omega, polarization
         !
         self%polarization = polarization
         !
@@ -109,7 +107,6 @@ contains
         !
         deallocate( forward_1D )
         deallocate( model_parameter_1D )
-        !
         !
         ! Allocate and construct self%E => E3D
         select type( grid => self%model_operator%metric%grid )
@@ -160,11 +157,11 @@ contains
         !
         class( SourceMT_1D_t ), intent( inout ) :: self
         !
-        if( allocated( self%rhs ) ) deallocate( self%rhs )
         !
         select type( E => self%E )
             class is( cVector3D_SG_t )
                 !
+                if( allocated( self%rhs ) ) deallocate( self%rhs )
                 allocate( self%rhs, source = cVector3D_SG_t( E%grid, EDGE ) )
                 !
                 call self%model_operator%MultAib( self%E%Boundary(), self%rhs )

@@ -1,8 +1,8 @@
 program ModEM
     !
-	use Constants
-	use FileUnits
-	
+    use Constants
+    use FileUnits
+    
     use ModEMControlFile
     !
     use Grid3D_SG
@@ -58,7 +58,8 @@ contains
     subroutine ForwardModelling()
         implicit none
         !
-        class( ForwardSolver_t ), allocatable :: fwd_solver
+        ! Use save ????
+        class( ForwardSolver_t ), allocatable, save :: fwd_solver
         !
         class( Source_t ), allocatable        :: fwd_source 
         !
@@ -96,7 +97,6 @@ contains
         ! Loop over all Transmitters
         do iTx = 1, size( transmitters )
             !
-            !
             ! ForwardSolver - Chosen from control file
             !if( allocated( fwd_solver ) ) deallocate( fwd_solver )
             select case ( forward_solver_type )
@@ -113,7 +113,7 @@ contains
             end select
             !
             call fwd_solver%setCond( model_parameter )
-			!
+            !
             ! Source - Chosen from control file
             !if( allocated( fwd_source ) ) deallocate( fwd_source )
             select case ( source_type )
@@ -132,9 +132,6 @@ contains
             ! Temporary Transmitter alias
             Tx => getTransmitter( iTx )
             !
-            ! Verbosis...
-            write( *, "(A12, I8, A12, es20.6)") "    Tx Id:", Tx%id, "Period:", Tx%period
-            !
             ! Tx points to its due Source
             call Tx%setSource( fwd_source )
             !
@@ -148,7 +145,9 @@ contains
             call Tx%solveFWD()
             !
             deallocate( fwd_source )
-            deallocate( fwd_solver )
+            !
+            ! THIS CAUSES MEMORY CRASHES
+            !deallocate( fwd_solver )
             !
             ! Loop over Receivers of each Transmitter
             do iRx = 1, size( Tx%receiver_indexes )
@@ -180,6 +179,10 @@ contains
         deallocate( model_operator )
         deallocate( model_parameter )
         deallocate( main_grid )
+        !
+        ! Verbosis...
+        write( *, * ) "    -> Writing Predicted Data to file: [", trim( predicted_data_file_name ), "]"
+        !
         !
         ! Write all_data_handles into predicted_data.dat
         call writeDataHandleArray( all_data_handles )
@@ -319,7 +322,7 @@ contains
                          call get_command_argument( argument_index + 1, argument )
                          control_file_name = trim( argument )
                          !
-                         if ( len( control_file_name ) > 0 ) has_control_file = .true.
+                         if ( len( control_file_name ) > 0 ) has_control_file = .TRUE.
                          !
                          argument_index = argument_index + 2
                          !
@@ -328,7 +331,7 @@ contains
                          call get_command_argument( argument_index + 1, argument )
                          data_file_name = trim( argument )
                          !
-                         if ( len( data_file_name ) > 0 ) has_data_file = .true.
+                         if ( len( data_file_name ) > 0 ) has_data_file = .TRUE.
                          !
                          argument_index = argument_index + 2
                          !
@@ -343,7 +346,21 @@ contains
                          call get_command_argument( argument_index + 1, argument )
                          model_file_name = trim(argument)
                          !
-                         if ( len( model_file_name ) > 0 ) has_model_file = .true.
+                         if ( len( model_file_name ) > 0 ) has_model_file = .TRUE.
+                         !
+                         argument_index = argument_index + 2
+                         !
+                      case ( "-pd", "--predicted" )
+                         !
+                         call get_command_argument( argument_index + 1, argument )
+                         predicted_data_file_name = trim(argument)
+                         !
+                         argument_index = argument_index + 2
+                         !
+                      case ( "-es", "--esolution" )
+                         !
+                         call get_command_argument( argument_index + 1, argument )
+                         e_solution_file_name = trim(argument)
                          !
                          argument_index = argument_index + 2
                          !
@@ -376,6 +393,9 @@ contains
     subroutine setupDefaultParameters()
         implicit none
         !
+        predicted_data_file_name = "predicted_data.dat"
+        e_solution_file_name     = "esolution.bin"
+        !
         model_method      = MM_METHOD_FIXED_H
         model_n_air_layer = 10
         model_max_height  = 200.0
@@ -398,15 +418,15 @@ contains
         ! implement separated routine
         integer, intent( in ) :: nTx, nMode
         integer               :: ios
-        character (len=20)    :: version
+        character(len=20)     :: version
         !
-        open( ioESolution, file = "e_solution", action = "write", form = "unformatted", iostat = ios)
+        version = "Modem-OO"
+        !
+        open( ioESolution, file = e_solution_file_name, action = "write", form = "unformatted", iostat = ios)
         !
         if( ios /= 0 ) then
             write( *, * ) "Error opening file in FileWriteInit: e_solution"
         else
-            !
-            version = ""
             !
             write( ioESolution ) version, nTx, nMode, &
             main_grid%nx, main_grid%ny, main_grid%nz, main_grid%nzAir, &
@@ -415,13 +435,80 @@ contains
             write( ioESolution ) main_grid%dx
             write( ioESolution ) main_grid%dy
             write( ioESolution ) main_grid%dz
-			!
+            !
             close( ioESolution )
             !
         endif
         !
         !
     end subroutine writeEsolutionHeader
+    !
+    !
+    recursive subroutine sortByPeriod( data_handle_array, first, last )
+        implicit none
+        !
+        type( DataHandle_t ), allocatable, intent( inout ) :: data_handle_array(:)
+        type( DataHandle_t ) :: x_data_entry, t_data_entry
+        integer first, last
+        integer i, j
+        !
+        x_data_entry = data_handle_array( (first+last) / 2 )
+        i = first
+        j = last
+        !
+        do
+            do while ( data_handle_array(i)%period < x_data_entry%period )
+                i=i+1
+            end do
+            do while ( x_data_entry%period < data_handle_array(j)%period )
+                j=j-1
+            end do
+            if (i >= j) exit
+            t_data_entry = data_handle_array(i)
+            data_handle_array(i) = data_handle_array(j)
+            data_handle_array(j) = t_data_entry
+            i=i+1
+            j=j-1
+        end do
+        !
+        if (first < i-1) call sortByPeriod( data_handle_array, first, i-1 )
+        if (j+1 < last)  call sortByPeriod( data_handle_array, j+1, last )
+        !
+    end subroutine sortByPeriod
+    !
+    !
+    recursive subroutine sortByReceiver( data_handle_array, first, last )
+        implicit none
+        !
+        type( DataHandle_t ), allocatable, intent( inout ) :: data_handle_array(:)
+        type( DataHandle_t ) :: x_data_entry, t_data_entry
+        integer first, last
+        integer i, j
+        !
+        x_data_entry = data_handle_array( (first+last) / 2 )
+        i = first
+        j = last
+        !
+        do
+            do while ( data_handle_array(i)%rx_id < x_data_entry%rx_id )
+                i=i+1
+            end do
+            do while ( x_data_entry%rx_id < data_handle_array(j)%rx_id )
+                j=j-1
+            end do
+            if (i >= j) exit
+            t_data_entry = data_handle_array(i)
+            data_handle_array(i) = data_handle_array(j)
+            data_handle_array(j) = t_data_entry
+            i=i+1
+            j=j-1
+        end do
+        !
+        if (first < i-1) call sortByPeriod( data_handle_array, first, i-1 )
+        if (j+1 < last)  call sortByPeriod( data_handle_array, j+1, last )
+        !
+    end subroutine sortByReceiver
+    !
     !
     subroutine writeDataHandleArray( data_handle_array )
         implicit none
@@ -435,34 +522,12 @@ contains
         receiver_type = "Unknow"
         !
         ! Order by transmitter
-        do i = 1, size( data_handle_array ) - 1
-          !
-          do j = i + 1, size( data_handle_array )
-              !
-              if( data_handle_array(i)%period > data_handle_array(j)%period ) then
-                aux_data_entry  = data_handle_array(i)
-                data_handle_array(i) = data_handle_array(j)
-                data_handle_array(j) = aux_data_entry
-              endif
-              !
-          enddo
-        enddo
+        call sortByPeriod( data_handle_array, 1, size( data_handle_array ) )
         !
         ! Order by receiver
-        do i = 1, size( data_handle_array ) - 1
-          !
-          do j = i + 1, size( data_handle_array )
-              !
-              if( data_handle_array(i)%rx_id > data_handle_array(j)%rx_id ) then
-                aux_data_entry  = data_handle_array(i)
-                data_handle_array(i) = data_handle_array(j)
-                data_handle_array(j) = aux_data_entry
-              endif
-              !
-          enddo
-        enddo
+        call sortByReceiver( data_handle_array, 1, size( data_handle_array ) )
         !
-        open( ioPredData, file = "predicted_data.dat", action = "write", form = "formatted", iostat = ios )
+        open( ioPredData, file = predicted_data_file_name, action = "write", form = "formatted", iostat = ios )
         !
         if( ios == 0 ) then
             !
@@ -495,7 +560,7 @@ contains
         if( receiver_type /= trim( receiver%type_name ) ) then
             !
             write( ioPredData, "(4A, 100A)" ) "#    ", DATA_FILE_TITLE
-            write( ioPredData, "(4A, 100A)" ) "#    ", receiver%DATA_TITLE
+            write( ioPredData, "(100A)" )     "#    Period(s) Code GG_Lat GG_Lon X(m) Y(m) Z(m) Component Real Imag Error"
             write( ioPredData, "(4A, 100A)" ) ">    ", trim( receiver%type_name )
             write( ioPredData, "(4A, 100A)" ) ">    ", "exp(-i\omega t)"
             write( ioPredData, "(4A, 100A)" ) ">    ", "[V/m]/[T]"
@@ -515,16 +580,18 @@ contains
         write( *, * ) "ModEM-OO Usage:"
         write( *, * ) ""
         write( *, * ) "    Flags to define a job:"
-        write( *, * ) "        [-f], [--forward] : Forward modelling."
-        write( *, * ) "        [-i], [--inverse] : Inversion modelling."
+        write( *, * ) "        [-f], [--forward]    :  Forward modelling."
+        write( *, * ) "        [-i], [--inverse]    :  Inversion modelling."
         write( *, * )
         write( *, * ) "    Other arguments:"
-        write( *, * ) "        [-d], [--data]     : Flags for data file path."
-        write( *, * ) "        [-m], [--model]    : Flags for model file path."
-        write( *, * ) "        [-c], [--control]  : Flags for user control file path."
-        write( *, * ) "        [-v], [--version]  : Print version."
-        write( *, * ) "        [-h], [--help]     : Print usage information."
-        write( *, * ) "        [--verbosis]       : Print runtime information."
+        write( *, * ) "        [-d], [--data]       :  Flags for input data file path."
+        write( *, * ) "        [-m], [--model]      :  Flags for input model file path."
+        write( *, * ) "        [-c], [--control]    :  Flags for user control file path."
+        write( *, * ) "        [-v], [--version]    :  Print version."
+        write( *, * ) "        [-h], [--help]       :  Print usage information."
+        write( *, * ) "        [-pd], [--predicted] :  Output data file path."
+        write( *, * ) "        [-es], [--esolution] :  Output binary e-solution file path."
+        write( *, * ) "        [--verbosis]         :  Print runtime information."
         !
         write( *, * ) ""
         write( *, * ) "Version 1.0.0"

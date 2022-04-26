@@ -35,7 +35,7 @@ contains
         implicit none
         !
         class( Transmitter_t ), intent( in ) :: new_tx
-		integer                              :: id
+        integer                              :: id
         !
         integer                                 :: iTx, nTx
         type( Tx_t ), allocatable, dimension(:) :: temp_array
@@ -46,15 +46,16 @@ contains
             allocate( Tx_t :: temp_tx )
             temp_tx%Tx = new_tx
             temp_tx%Tx%id = 1
-			id = 1
+            id = 1
             transmitters( 1 ) = temp_tx
+            deallocate( temp_tx )
         else
             !
-			nTx = size( transmitters )
-			!
+            nTx = size( transmitters )
+            !
             do iTx = 1, size( transmitters )
                 if( new_tx%isEqual( transmitters( iTx )%Tx ) ) then
-				    id = 0
+                    id = 0
                     return
                 end if
             end do
@@ -64,11 +65,14 @@ contains
             allocate( Tx_t :: temp_tx )
             temp_tx%Tx = new_tx
             temp_tx%Tx%id = nTx + 1
-			id = nTx + 1
+            id = nTx + 1
             !
             temp_array( nTx + 1 ) = temp_tx
             !
             allocate( transmitters, source = temp_array )
+            !
+            deallocate( temp_tx )
+            deallocate( temp_array )
             !
         endif
         !

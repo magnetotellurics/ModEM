@@ -1795,15 +1795,14 @@ module DeclarationMPI
         !
         class( Receiver_t ), intent( in ) :: receiver
         integer :: i, receiver_size_bytes
-        integer :: nbytes(5)
+        integer :: nbytes(4)
         !
         receiver_size_bytes = 0
         !
-        call MPI_PACK_SIZE( 5, MPI_INTEGER, child_comm, nbytes(1), ierr )
+        call MPI_PACK_SIZE( 4, MPI_INTEGER, child_comm, nbytes(1), ierr )
         call MPI_PACK_SIZE( 3, MPI_DOUBLE_PRECISION, child_comm, nbytes(2), ierr )
         call MPI_PACK_SIZE( len( receiver%code ), MPI_CHARACTER, child_comm, nbytes(3), ierr )
         call MPI_PACK_SIZE( len( receiver%type_name ), MPI_CHARACTER, child_comm, nbytes(4), ierr )
-        call MPI_PACK_SIZE( len( receiver%DATA_TITLE ), MPI_CHARACTER, child_comm, nbytes(5), ierr )
         !
         do i = 1, size( nbytes )
             receiver_size_bytes = receiver_size_bytes + nbytes(i)
@@ -1844,13 +1843,11 @@ module DeclarationMPI
         call MPI_PACK( receiver%id, 1, MPI_INTEGER, shared_buffer, shared_buffer_size, index, child_comm, ierr )
         call MPI_PACK( len( receiver%code ), 1, MPI_INTEGER, shared_buffer, shared_buffer_size, index, child_comm, ierr )
         call MPI_PACK( len( receiver%type_name ), 1, MPI_INTEGER, shared_buffer, shared_buffer_size, index, child_comm, ierr )
-        call MPI_PACK( len( receiver%DATA_TITLE ), 1, MPI_INTEGER, shared_buffer, shared_buffer_size, index, child_comm, ierr )
         !
         call MPI_PACK( receiver%location(1), 3, MPI_DOUBLE_PRECISION, shared_buffer, shared_buffer_size, index, child_comm, ierr )
         !
         call MPI_PACK( receiver%code, len( receiver%code ), MPI_CHARACTER, shared_buffer, shared_buffer_size, index, child_comm, ierr )
         call MPI_PACK( receiver%type_name, len( receiver%type_name ), MPI_CHARACTER, shared_buffer, shared_buffer_size, index, child_comm, ierr )
-        call MPI_PACK( receiver%DATA_TITLE, len( receiver%DATA_TITLE ), MPI_CHARACTER, shared_buffer, shared_buffer_size, index, child_comm, ierr )
         !
     end subroutine packReceiverBuffer
     !
@@ -1861,7 +1858,7 @@ module DeclarationMPI
         class( Receiver_t ), allocatable, intent( inout ) :: receiver
         integer, intent( inout )                          :: index
         !
-        integer :: receiver_id, code_size, type_name_size, data_title_size
+        integer :: receiver_id, code_size, type_name_size
         !
         character(:), allocatable :: code, type_name, data_title
         real( kind=prec )         :: receiver_location(3)
@@ -1874,8 +1871,6 @@ module DeclarationMPI
         !
         call MPI_UNPACK( shared_buffer, shared_buffer_size, index, type_name_size, 1, MPI_INTEGER, child_comm, ierr )
         !
-        call MPI_UNPACK( shared_buffer, shared_buffer_size, index, data_title_size, 1, MPI_INTEGER, child_comm, ierr )
-        !
         call MPI_UNPACK( shared_buffer, shared_buffer_size, index, receiver_location(1), 3, MPI_DOUBLE_PRECISION, child_comm, ierr )
         !
         allocate( character( code_size ) :: code )
@@ -1883,9 +1878,6 @@ module DeclarationMPI
         !
         allocate( character( type_name_size ) :: type_name )
         call MPI_UNPACK( shared_buffer, shared_buffer_size, index, type_name, type_name_size, MPI_CHARACTER, child_comm, ierr )
-        !
-        allocate( character( data_title_size ) :: data_title )
-        call MPI_UNPACK( shared_buffer, shared_buffer_size, index, data_title, data_title_size, MPI_CHARACTER, child_comm, ierr )
         !
         select case( receiver_derived_type )
            !
@@ -1913,7 +1905,6 @@ module DeclarationMPI
         receiver%id = receiver_id
         receiver%code = code
         receiver%type_name = type_name
-        receiver%DATA_TITLE = data_title
         !
     end subroutine unpackReceiverBuffer
     !

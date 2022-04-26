@@ -71,7 +71,7 @@ module TransmitterMT
         integer           :: i_pol, ios
         real( kind=prec ) :: omega
         !
-        character( len=2 ) :: ModeName
+        character( len=20 ) :: ModeName
         !
         !
         omega = 2.0 * PI / self%period
@@ -81,12 +81,17 @@ module TransmitterMT
         ! Loop over all polarizations (MT n_pol = 2)
         do i_pol = 1, self%n_pol
             !
-            !
-            write(*,*) "MT Tx ", self%id, " Solve for Polarization", i_pol
+            ! Verbosis...
+            write( *, "(A20, I8, A20, es20.6, A20, I8)" ) "SolveFWD for Tx:", self%id, " -> Period:", self%period, " - Polarization:", i_pol
             !
             call self%source%setE( omega, i_pol )
             !
-            self%e_all( i_pol ) = self%source%model_operator%createVector()
+            select type( mgrid => self%source%model_operator%metric%grid )
+                class is( Grid3D_SG_t )
+                    !
+                    self%e_all( i_pol ) = cVector3D_SG_t( mgrid, EDGE )
+                    !
+            end select
             !
             call self%forward_solver%getESolution( self%source, self%e_all( i_pol ) )
             !
@@ -96,7 +101,7 @@ module TransmitterMT
                 ModeName = "Ex"
             endif
             !
-            open( ioESolution, file = 'e_solution', action='write', position='append', form ='unformatted', iostat = ios )
+            open( ioESolution, file = e_solution_file_name, action = "write", position = "append", form = "unformatted", iostat = ios )
             !
             if( ios /= 0 ) then
                 stop "Error opening file in solveFWDTransmitterMT: e_solution"

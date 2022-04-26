@@ -19,172 +19,167 @@ module ModelParameter
     !
     !
     type, abstract :: ModelParameter_t
-         !
-         ! Pointer to the original grid
-         class( Grid_t ), pointer :: grid
-         !
-         ! Pointer to metric elements -- useful for model mappings
-         !     provides Viedge, Vcell
-         class( MetricElements_t ), pointer :: metric
-         !
-         integer                   :: mKey(8)
-         real( kind=prec )         :: airCond
-         character(:), allocatable :: paramType
-         logical                   :: zeroValued, is_allocated
-         !
-         procedure( interface_sigmap_model_parameter ), pointer, nopass :: SigMap_ptr => SigMap_Linear
-         !
-         contains
-             !
-             procedure, public :: init     => initializeModelParameter
-             !
-             procedure( interface_zeros_model_parameter ), deferred, public      :: zeros
-             procedure( interface_copy_from_model_parameter ), deferred, public :: copyFrom
-             !
-             ! Model mapping methods
-             procedure( interface_pdemapping_model_parameter ), deferred, public     :: PDEmapping
-             procedure( interface_dpdemapping_model_parameter ), deferred, public    :: dPDEmapping
-             procedure( interface_dpdemapping_t_model_parameter ), deferred, public :: dPDEmappingT
-             !
-             procedure( interface_slice_1d_model_parameter ), deferred, public :: Slice1D
-             procedure( interface_slice_2d_model_parameter ), deferred, public :: Slice2D
-             !
-             procedure( interface_avg_model_1d_model_parameter ) , deferred, public :: AvgModel1D
-             !
-             procedure( interface_set_type_model_parameter ), deferred, public :: SetType
-             !
-             procedure, public :: SigMap
-             procedure, public :: SetSigMap
-             !
-             procedure, public :: GetType
-             procedure, public :: setMetric => setMetricModelOperator
-             !
+        !
+        ! Pointer to the original grid
+        class( Grid_t ), pointer :: grid
+        !
+        ! Pointer to metric elements -- useful for model mappings
+        !     provides Viedge, Vcell
+        class( MetricElements_t ), pointer :: metric
+        !
+        integer                   :: mKey(8)
+        real( kind=prec )         :: airCond
+        character(:), allocatable :: paramType
+        logical                   :: zeroValued, is_allocated
+        !
+        procedure( interface_sigmap_model_parameter ), pointer, nopass :: SigMap_ptr => SigMap_Linear
+        !
+        contains
+            !
+            procedure, public :: init     => initializeModelParameter
+            !
+            procedure( interface_set_type_model_parameter ), deferred, public :: SetType
+            !
+            procedure, public :: SigMap => SigMapModelParameter
+            procedure, public :: SetSigMap => SetSigMapModelParameter
+            !
+            procedure, public :: setMetric => setMetricModelParameter
+            !
+            ! Interfaces
+            procedure( interface_zeros_model_parameter ), deferred, public     :: zeros
+            procedure( interface_copy_from_model_parameter ), deferred, public :: copyFrom
+            !
+            procedure( interface_pdemapping_model_parameter ), deferred, public    :: PDEmapping
+            procedure( interface_dpdemapping_model_parameter ), deferred, public   :: dPDEmapping
+            procedure( interface_dpdemapping_t_model_parameter ), deferred, public :: dPDEmappingT
+            !
+            procedure( interface_slice_1d_model_parameter ), deferred, public :: Slice1D
+            procedure( interface_slice_2d_model_parameter ), deferred, public :: Slice2D
+            !
     end type ModelParameter_t
     !
     abstract interface
-         !
-         function interface_slice_1d_model_parameter( self, ix, iy ) result( model_param_1D )
-                import :: ModelParameter_t, ModelParameter1D_t
-                class( ModelParameter_t ), intent(in)   :: self
-                integer, intent(in)                     :: ix, iy
-                type( ModelParameter1D_t ), allocatable ::  model_param_1D 
-         end function interface_slice_1d_model_parameter
-         !
-         function interface_avg_model_1d_model_parameter( self ) result( model_param_1D )
-                import :: ModelParameter_t, ModelParameter1D_t
-                class( ModelParameter_t ), intent(in)   :: self
-                type( ModelParameter1D_t ), allocatable ::  model_param_1D
-         end function interface_avg_model_1d_model_parameter
-         !
-         function interface_slice_2d_model_parameter( self, axis, j ) result( m2D )
-                import :: ModelParameter_t, ModelParameter2D_t
-                class( ModelParameter_t ), intent(in) :: self
-                integer, intent( in )                      :: axis
-                integer, intent(in)                         :: j
-                type( ModelParameter2D_t )                :: m2D 
-         end function interface_slice_2d_model_parameter
-         !
-         !
-         pure function interface_sigmap_model_parameter( x, p_job ) result( y )
-             import :: prec
-             real( kind=prec ), intent(in)        :: x
-             character(*), intent(in), optional :: p_job
-             real( kind=prec )                        :: y
-         end function interface_sigmap_model_parameter
-         !**
-         ! zeros
-         ! Set model parameter to zero.
-         !*
-         subroutine interface_zeros_model_parameter(self)
-             import :: ModelParameter_t
-             class( ModelParameter_t ), intent( inout ) :: self
-         end subroutine interface_zeros_model_parameter
-         !**
-         ! Copy model parameter.
-         !*
-         subroutine interface_copy_from_model_parameter(self, rhs)
-             import :: ModelParameter_t             
-             class( ModelParameter_t ), intent( inout ) :: self
-             class( ModelParameter_t ), intent( in )     :: rhs
-         end subroutine interface_copy_from_model_parameter
-         !**
-         ! SetType
-         !*
-         subroutine interface_set_type_model_parameter(self, paramType)
-             import :: ModelParameter_t
-             class( ModelParameter_t ), intent( inout ) :: self
-             character(:), allocatable, intent( in ) :: paramType
-         end subroutine interface_set_type_model_parameter
-         !**
-         ! These are what interfaces would be if ModelMap
-         ! is a distinct object;
-         ! If these methods were in an extension of
-         ! ModelParameter object then m (or m0) would
-         ! be omitted (self would be the model parameter already).
-         !*
-         function interface_pdemapping_model_parameter( self ) result( eVec )
-             import :: ModelParameter_t, rVector_t
-             class( ModelParameter_t ), intent( in ) :: self
-             class( rVector_t ), allocatable                :: eVec
-         end function interface_pdemapping_model_parameter
-         !**
-         !
-         !*
-         function interface_dpdemapping_model_parameter( self, dm ) result( eVec )
-             import :: ModelParameter_t, rVector_t
-             class( ModelParameter_t ), intent( in ) :: self
-             class( ModelParameter_t ), intent( in ) :: dm
-             class( rVector_t ), allocatable            :: eVec
-         end function interface_dpdemapping_model_parameter
-         !**
-         ! NOTE: For transpose (adjoint) dm is output`
-         !             and eVec is input.
-         !*
-         function interface_dpdemapping_t_model_parameter( self, eVec ) result( dm )
-             import :: ModelParameter_t, rVector_t
-             class( ModelParameter_t ), intent( in ) :: self
-             class( rVector_t ), intent( in )        :: eVec
-             class( ModelParameter_t ), allocatable  :: dm
-         end function interface_dpdemapping_t_model_parameter
-         
+        !
+        function interface_slice_1d_model_parameter( self, ix, iy ) result( model_param_1D )
+            import :: ModelParameter_t, ModelParameter1D_t
+            class( ModelParameter_t ), intent( in ) :: self
+            integer, intent( in )                 :: ix, iy
+            type( ModelParameter1D_t ), allocatable ::  model_param_1D 
+        end function interface_slice_1d_model_parameter
+        !
+        function interface_avg_model_1d_model_parameter( self ) result( model_param_1D )
+            import :: ModelParameter_t, ModelParameter1D_t
+            class( ModelParameter_t ), intent( in ) :: self
+            type( ModelParameter1D_t ), allocatable :: model_param_1D
+        end function interface_avg_model_1d_model_parameter
+        !
+        function interface_slice_2d_model_parameter( self, axis, j ) result( m2D )
+            import :: ModelParameter_t, ModelParameter2D_t
+            class( ModelParameter_t ), intent( in ) :: self
+            integer, intent( in )                   :: axis, j
+            type( ModelParameter2D_t ), allocatable :: m2D 
+        end function interface_slice_2d_model_parameter
+        !
+        !
+        pure function interface_sigmap_model_parameter( x, p_job ) result( y )
+            import :: prec
+            real( kind=prec ), intent( in )      :: x
+            character(*), intent( in ), optional :: p_job
+            real( kind=prec )                    :: y
+        end function interface_sigmap_model_parameter
+        !**
+        ! zeros
+        ! Set model parameter to zero.
+        !*
+        subroutine interface_zeros_model_parameter(self)
+            import :: ModelParameter_t
+            class( ModelParameter_t ), intent( inout ) :: self
+        end subroutine interface_zeros_model_parameter
+        !**
+        ! Copy model parameter.
+        !*
+        subroutine interface_copy_from_model_parameter( self, rhs )
+            import :: ModelParameter_t            
+            class( ModelParameter_t ), intent( inout ) :: self
+            class( ModelParameter_t ), intent( in )    :: rhs
+        end subroutine interface_copy_from_model_parameter
+        !**
+        ! SetType
+        !*
+        subroutine interface_set_type_model_parameter( self, paramType )
+            import :: ModelParameter_t
+            class( ModelParameter_t ), intent( inout ) :: self
+            character(:), allocatable, intent( in )    :: paramType
+        end subroutine interface_set_type_model_parameter
+        !**
+        ! These are what interfaces would be if ModelMap
+        ! is a distinct object;
+        ! If these methods were in an extension of
+        ! ModelParameter object then m (or m0) would
+        ! be omitted (self would be the model parameter already).
+        !*
+        function interface_pdemapping_model_parameter( self ) result( eVec )
+            import :: ModelParameter_t, rVector_t
+            class( ModelParameter_t ), intent( in ) :: self
+            class( rVector_t ), allocatable         :: eVec
+        end function interface_pdemapping_model_parameter
+        !**
+        !
+        !*
+        function interface_dpdemapping_model_parameter( self, dm ) result( eVec )
+            import :: ModelParameter_t, rVector_t
+            class( ModelParameter_t ), intent( in ) :: self, dm
+            class( rVector_t ), allocatable         :: eVec
+        end function interface_dpdemapping_model_parameter
+        !**
+        ! NOTE: For transpose (adjoint) dm is output`
+        !            and eVec is input.
+        !*
+        function interface_dpdemapping_t_model_parameter( self, eVec ) result( dm )
+            import :: ModelParameter_t, rVector_t
+            class( ModelParameter_t ), intent( in ) :: self
+            class( rVector_t ), intent( in )        :: eVec
+            class( ModelParameter_t ), allocatable  :: dm
+        end function interface_dpdemapping_t_model_parameter
+        
     end interface
     !
 contains
     !
-    elemental function SigMap( self, x, job ) result( y )
+    elemental function SigMapModelParameter( self, x, job ) result( y )
         implicit none
         !
         class( ModelParameter_t), intent( in ) :: self
-        real( kind=prec ), intent( in )          :: x
-        character(*), intent( in ), optional    :: job
+        real( kind=prec ), intent( in )        :: x
+        character(*), intent( in ), optional   :: job
         ! Local variables
         real( kind=prec ) :: y
         !
         y = self%Sigmap_ptr( x )
         !
-    end function SigMap
+    end function SigMapModelParameter
     !
-    subroutine SetSigMap( self, paramType )
+    subroutine SetSigMapModelParameter( self, paramType )
         implicit none
         !
         class( ModelParameter_t )  :: self
         character(*), intent( in ) :: paramType
         !
         select case( paramType )
-            case("LOGE")
+            case( LOGE )
                 self%SigMap_ptr => SigMap_Log
-            case("LINEAR")
+            case( LINEAR )
                 self%SigMap_ptr => SigMap_Linear
-        endselect
+        end select
         !
-    end subroutine SetSigMap
+    end subroutine SetSigMapModelParameter
     !
     pure function SigMap_Linear( x, job ) result( y )
         implicit none
         !
-        real( kind=prec ), intent( in )        :: x
+        real( kind=prec ), intent( in )      :: x
         character(*), intent( in ), optional :: job
-        real( kind=prec )                          :: y
+        real( kind=prec )                    :: y
         !
         y = x
         !
@@ -193,39 +188,30 @@ contains
     pure function SigMap_Log( x, p_job ) result( y )
         implicit none
         !
-        real( kind=prec ), intent( in )        :: x
+        real( kind=prec ), intent( in )      :: x
         character(*), intent( in ), optional :: p_job
         real( kind=prec ) :: y
-        ! Local variables
+        !
         character(30) :: job
         !
         if (.not.present( p_job ) ) then
-             job = FORWARD
+            job = FORWARD
         else
-             job = p_job
+            job = p_job
         end if
         !
         select case(job)
-            case (FORWARD)
-                y = exp(x)
-            case (DERIV)
-                y = exp(x)
-            case (INVERSE)
-                y = log(x)
+           case (FORWARD)
+               y = exp(x)
+           case (DERIV)
+               y = exp(x)
+           case (INVERSE)
+               y = log(x)
         end select
+        !
     end function SigMap_Log
     !
-    function GetType( self ) result( pType )
-        implicit none
-        !
-        class( ModelParameter_t ), intent( in ) :: self
-        character( len=80 )                            :: pType
-        !
-        pType = trim( self%paramType )
-        !
-    end function GetType
-    !
-    subroutine setMetricModelOperator( self, metric )
+    subroutine setMetricModelParameter( self, metric )
         implicit none
         !
         class( ModelParameter_t ), intent( inout )        :: self
@@ -233,7 +219,7 @@ contains
         !
         self%metric => metric
         !
-    end subroutine setMetricModelOperator
+    end subroutine setMetricModelParameter
     !
     subroutine initializeModelParameter( self )
         implicit none

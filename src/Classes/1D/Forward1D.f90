@@ -11,10 +11,8 @@ module Forward1D
     !
     type :: Forward1D_t
         !
-        class( ModelParameter1D_t ), pointer  :: model_pararameter
-        !     note that the model parameter object contains two grids --
-        !     one that defines the numerical grid (which solutions will be
-        !     computed on, and one that defines the model parameter grid
+        class( ModelParameter1D_t ), pointer  :: model_parameter
+        !
         real( kind=prec ) :: omega
         !
         contains
@@ -34,27 +32,27 @@ module Forward1D
     !**
     ! Class constructor
     !*
-    function Forward1D_ctor( model_pararameter ) result( self )
+    function Forward1D_ctor( model_parameter ) result( self )
         !
-        class( ModelParameter1D_t ), target , intent(in) :: model_pararameter
+        class( ModelParameter1D_t ), target , intent( in ) :: model_parameter
         !
         type( Forward1D_t ) :: self
         !
         !write(*,*) "Constructor ModelParameter1D"
         !
-        self%model_pararameter => model_pararameter
+        self%model_parameter => model_parameter
         !
     end function Forward1D_ctor
     !
     !**********
     !
-    subroutine setCondForward1D( self, model_pararameter )
+    subroutine setCondForward1D( self, model_parameter )
         implicit none
         !
         class( Forward1D_t ), intent( inout ) :: self
-        type( ModelParameter1D_t ), target , intent(in) :: model_pararameter
+        type( ModelParameter1D_t ), target , intent( in ) :: model_parameter
         !
-        self%model_pararameter => model_pararameter
+        self%model_parameter => model_parameter
         !
     end subroutine setCondForward1D
     !
@@ -79,24 +77,13 @@ module Forward1D
         complex( kind=prec ), intent( out ), dimension(:) :: E1D
         !
         integer ::  ku, kl, nlayer, n, nz, lda, info, i, j, nRHS
-        integer, allocatable, dimension(:)  :: ipiv
-        complex( kind=prec ), allocatable, dimension(:,:)  :: A
-        complex( kind=prec ), allocatable, dimension(:) :: beta
-        real( kind=prec ), allocatable, dimension(:) :: h
-        complex( kind=prec ), allocatable, dimension(:) :: b
-        character*1 :: TRANS
-        !integer *  !    for debugging
-        character*80  debugFile
-
-        !    temporary code for debugging
-        !* = 1
-        !debugFile = 'Test/Solver1D_Coefficient_Matrix'
-        !open(*,file = debugFile, form = 'formatted')
-        
-        !  For now I am just hard-coding for this case: analytic layered solution
-        !  This subroutine will set up equations and solve
-        !  Might break this into pieces, to better reuse code
-
+        integer, allocatable, dimension(:)                :: ipiv
+        complex( kind=prec ), allocatable, dimension(:,:) :: A
+        complex( kind=prec ), allocatable, dimension(:)   :: beta
+        real( kind=prec ), allocatable, dimension(:)      :: h
+        complex( kind=prec ), allocatable, dimension(:)   :: b
+        character( len=1 ) :: TRANS
+        !
         !  The system matrix is banded with two subdiagonals, and two superdiagonals
         TRANS = 'N'    !  character string that controls ZGBTRS:
                         !  N = solve base system Ax = b
@@ -106,8 +93,8 @@ module Forward1D
         kl = 2
         lda = 2*kl+ku+1     !    storage required for banded matrix
                     !    factorization using ZGBTRF
-        nlayer = self%model_pararameter%ParamGrid%nz 
-        nz = self%model_pararameter%grid%nz
+        nlayer = self%model_parameter%ParamGrid%nz 
+        nz = self%model_parameter%grid%nz
         n = 2*nlayer - 1 !    number of unknowns to solve for
         !    NOTE: we assume that the last layer (which will have finite thickness
         !     in the ParamGrid) actually extends to infinity -- thus this thickness
@@ -120,15 +107,15 @@ module Forward1D
         allocate(ipiv(n))
         allocate(beta(nlayer))
         allocate(h(nlayer))
-        !allocate(E1D(self%model_pararameter%grid%nz))    !  probably should be allocated before
+        !allocate(E1D(self%model_parameter%grid%nz))    !  probably should be allocated before
                                              !    calling
         !    compute complex beta coefcients, for each layer in ParamGrid
         !    I am going to assume that paramType for 1D model parameter is always
         !     LINEAR -- need to make sure that this is true when creating
         !      or could add check/transformation here ...
         do i = 1,nlayer
-            beta(i) = sqrt(ISIGN*ONE_I*MU_0*self%omega*self%model_pararameter%CellCond(i))
-            h(i) = self%model_pararameter%ParamGrid%dz(i)     !    layer thickness -- last is not used
+            beta(i) = sqrt(ISIGN*ONE_I*MU_0*self%omega*self%model_parameter%CellCond(i))
+            h(i) = self%model_parameter%ParamGrid%dz(i)     !    layer thickness -- last is not used
         enddo
            
         !    create cofficient matrix -- layer by layer -- first and last are unique
@@ -169,21 +156,16 @@ module Forward1D
         b = C_ZERO
         b(1) = C_ONE
         nRHS = ONE
-
         !    solve equations using lapack
         !     LU decomposition of complex banded matrix
         call zgbtrf( n,n,ku,kl,A,lda,ipiv,info )
         call zgbtrs( TRANS,n,kl,ku,nRHS,A,lda,ipiv,b,n,info )
-
-        !write(*,*) 'solution coefficients'
-        !write(*,*) b
-        !close(*)
-
-        !  calculate E1D on model grid
-        call self%GridedSolution( b, beta, h, E1D )
         !
         deallocate( ipiv )
         deallocate( A )
+        !  calculate E1D on model grid
+        call self%GridedSolution( b, beta, h, E1D )
+        !
         deallocate( beta )
         deallocate( h )
         deallocate( b )
@@ -196,31 +178,32 @@ module Forward1D
         !    given coefficients b, complex wavenumbers beta, layer thickness h
         !    compute electric field solution E1D evaluated at grid levels
         !    specfied in z , and normalized so that E1D(1) = 1.0
-        class(Forward1D_t), intent(in) :: self
-        complex( kind=prec ), intent(in), dimension(:) :: beta,b
-        real( kind=prec ), intent(in), dimension(:) :: h
+        class(Forward1D_t), intent( in ) :: self
+        complex( kind=prec ), intent( in ), dimension(:)  :: b, beta
+        real( kind=prec ), intent( in ), dimension(:)     :: h
         complex( kind=prec ), intent( out ), dimension(:) :: E1D
         ! local variables
         integer :: n,nlayer,nz,i,j,layerInd
-        real( kind=prec ), allocatable, dimension(:)  :: interfaceDepth, z
-        complex( kind=prec )  :: d, u,scaleFactor
-        real( kind=prec )  :: zLayer
+        real( kind=prec ), allocatable, dimension(:) :: interfaceDepth, z
+        complex( kind=prec ) :: d, u, scaleFactor
+        real( kind=prec )    :: zLayer
 
         n = size(b)
         nlayer = size(beta)
         !
-        z = self%model_pararameter%grid%zEdge
+        z = self%model_parameter%grid%zEdge
         nz = size(z)
         !
-        allocate(interfaceDepth(nlayer))
+        allocate( interfaceDepth( nlayer ) )
         interfaceDepth = R_ZERO
+        !
         do i = 2,nlayer
            interfaceDepth(i) = interfaceDepth(i-1)+h(i-1)
         enddo
         !    assign layer index for each depth z(i)
-        do i = 1,nz
+        do i = 1, nz
             layerInd = 0
-            do j = nlayer,1,-1
+            do j = nlayer, 1, -1
                 if(interfaceDepth(j).lt.z(i)) then 
                    !    this should be deepest interface above z(i)
                    layerInd = j
@@ -246,11 +229,13 @@ module Forward1D
                 E1D(i) = C_ONE + beta(1)*(b(2)-b(1))*z(i)
             endif
         enddo
-        scaleFactor = C_ONE/E1D(1)
-        E1D(:) = E1D(:)*scaleFactor
+        !
+        deallocate( z )
         !
         deallocate( interfaceDepth )
-        deallocate( z )
+        !
+        scaleFactor = C_ONE / E1D(1)
+        E1D(:) = E1D(:) * scaleFactor
         !
     end subroutine gridedSolutionForward1D
 

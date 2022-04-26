@@ -51,7 +51,7 @@ module ForwardSolver
             import :: ForwardSolver_t, prec
             !
             class( ForwardSolver_t ), intent( inout ) :: self
-            real( kind=prec ), intent( in )              :: period
+            real( kind=prec ), intent( in )           :: period
             !
         end subroutine interface_set_period_fwd
         !
@@ -65,9 +65,9 @@ module ForwardSolver
         !
         subroutine interface_set_iter_fwd( self, maxit, tolerance )
             import :: ForwardSolver_t, prec
-            class( ForwardSolver_t ), intent( inout )  :: self
-            real( kind=prec ), intent(in)              :: tolerance
-            integer, intent(in)                        ::  maxit
+            class( ForwardSolver_t ), intent( inout ) :: self
+            real( kind=prec ), intent( in )           :: tolerance
+            integer, intent( in )                     ::  maxit
             !
         end subroutine interface_set_iter_fwd
         !
@@ -117,9 +117,9 @@ module ForwardSolver
             class( ForwardSolver_t ), intent( inout ) :: self
             !
             !
-            if( allocated( self%solver ) ) deallocate( self%solver )
+            deallocate( self%solver )
             !
-            if( allocated( self%relResVec ) ) deallocate( self%relResVec )
+            deallocate( self%relResVec )
             !
         end subroutine deallocateForwardSolver
         !

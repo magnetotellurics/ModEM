@@ -9,6 +9,9 @@ module DataHandle
     use DataEntryMT_REF
     use DataEntryCSEM
     !
+	! Global file name for predicted data file
+	character(:), allocatable :: predicted_data_file_name
+	!
     type :: DataHandle_t
         !
         integer                   :: rx_id

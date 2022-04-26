@@ -13,8 +13,8 @@ module Source
     use ModelParameter
     !
     character(:), allocatable :: source_type
-    character (len = 11), parameter    :: SRC_MT_1D = "SourceMT_1D"
-    character (len = 11), parameter    :: SRC_MT_2D = "SourceMT_2D"
+    character ( len=11 ), parameter :: SRC_MT_1D = "SourceMT_1D"
+    character ( len=11 ), parameter :: SRC_MT_2D = "SourceMT_2D"
     
     type, abstract :: Source_t
         !

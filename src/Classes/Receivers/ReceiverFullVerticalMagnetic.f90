@@ -52,8 +52,6 @@ contains
             self%type_name = "ReceiverFullVerticalMagnetic"
         endif
         !
-        self%DATA_TITLE = "Period(s) Code GG_Lat GG_Lon X(m) Y(m) Z(m) Component Real Imag Error"
-        !
         self%n_comp = 2
         self%is_complex = .TRUE.
         !
