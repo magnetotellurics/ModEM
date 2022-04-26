@@ -227,13 +227,13 @@ module ForwardSolverIT_DC
             !
             if( source%non_zero_source ) then
                 !
-				select type( grid => self%solver%preconditioner%model_operator%metric%grid )
-					class is( Grid3D_SG_t )
-						!
-						allocate( phi0, source = cScalar3D_SG_t( grid, NODE ) )
-						!
-				end select
-				!
+                select type( grid => self%solver%preconditioner%model_operator%metric%grid )
+                    class is( Grid3D_SG_t )
+                        !
+                        allocate( phi0, source = cScalar3D_SG_t( grid, NODE ) )
+                        !
+                end select
+                !
                 call self%divergence_correction%rhsDivCor( self%omega, source, phi0 )
                 !
             endif

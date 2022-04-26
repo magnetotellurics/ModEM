@@ -13,6 +13,9 @@ module Transmitter
     use ForwardSolver
     use cVector
     !
+	! Global file name for e_solution file
+	character(:), allocatable :: e_solution_file_name
+	!
     type, abstract :: Transmitter_t
         !
         integer :: id, n_pol, fwd_key(8)

@@ -46,7 +46,7 @@ contains
         !
         type( SourceMT_1D_t ) :: self
         !
-        !write(*,*) "Constructor SourceMT_1D_t"
+        !write( *, * ) "Constructor SourceMT_1D_t"
         !
         call self%init()
         !
@@ -69,7 +69,7 @@ contains
         !
         type( SourceMT_1D_t ), intent( inout ) :: self
         !
-        !write(*,*) "Destructor SourceMT_1D_t"
+        !write( *, * ) "Destructor SourceMT_1D_t"
         !
         call self%dealloc()
         !
@@ -83,13 +83,11 @@ contains
         real( kind=prec ), intent( in )         :: omega
         integer, intent( in )                   :: polarization
         !
-        class( ModelParameter1D_t ), allocatable :: model_parameter_1D
-        class( Forward1D_t ), allocatable        :: forward_1D
+        class( ModelParameter1D_t ), allocatable        :: model_parameter_1D
+        class( Forward1D_t ), allocatable               :: forward_1D
         complex( kind=prec ), allocatable, dimension(:) :: E1D
         !
         integer :: ix, iy
-        !
-        write(*,*) "SourceMT_1D_t setE -> omega, pol:", omega, polarization
         !
         self%polarization = polarization
         !
@@ -109,7 +107,6 @@ contains
         !
         deallocate( forward_1D )
         deallocate( model_parameter_1D )
-        !
         !
         ! Allocate and construct self%E => E3D
         select type( grid => self%model_operator%metric%grid )
