@@ -14,7 +14,7 @@ module Solver_QMR
             final :: Solver_QMR_dtor
             !
             procedure, public :: solve => solveQMR
-            procedure, public :: SetDefaults => setDefaults_QMR
+            procedure, public :: setDefaults => setDefaults_QMR
             !
      end type Solver_QMR_t
      !
@@ -36,7 +36,7 @@ contains
         !
         self%preconditioner = PreConditioner_MF_CC_t( model_operator )
         !
-        call self%SetDefaults()
+        call self%setDefaults()
         !
         call self%zeroDiagnostics()
         !
@@ -54,10 +54,10 @@ contains
         !
     end subroutine Solver_QMR_dtor
     !
-    subroutine SetDefaults_QMR(self)
+    subroutine setDefaults_QMR( self )
         implicit none
         !
-		class( Solver_QMR_t ), intent( inout ) :: self
+        class( Solver_QMR_t ), intent( inout ) :: self
         !     sets default iteration control parameters for QMR solver
         !     local variables
         integer           :: max_iter
@@ -68,9 +68,9 @@ contains
         !
         call self%SetParameters( max_iter, tolerance )
         !
-    end subroutine SetDefaults_QMR
+    end subroutine setDefaults_QMR
     !
-	!
+    !
     subroutine solveQMR( self, b, x )
         implicit none
         !
@@ -154,9 +154,11 @@ contains
         do while( ( self%relErr( iter ) .gt. self%tolerance ) .AND. ( iter .lt. self%max_iter ) )
             !
             if( ( RHO .eq. C_ZERO ) .or. ( PSI .eq. C_ZERO ) ) then
+                !
                 self%failed = .TRUE.
-                write(0,*) "QMR FAILED TO CONVERGE : RHO"
+                write( *, * ) "QMR FAILED TO CONVERGE : RHO"
                 stop "QMR FAILED TO CONVERGE : PSI"
+                !
             end if
             !
             rhoInv = ( 1 / RHO )
@@ -172,8 +174,10 @@ contains
             !
             DELTA = Z%dotProd( Y )
             if( DELTA .eq. C_ZERO ) then
+                !
                 self%failed = .TRUE.
                 stop "QMR FAILS TO CONVERGE : DELTA"
+                !
             end if
             !
             ilu_adjt = .FALSE.

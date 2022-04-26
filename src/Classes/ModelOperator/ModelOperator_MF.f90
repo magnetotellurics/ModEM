@@ -45,7 +45,7 @@ module ModelOperator_MF
          
          ! Coefficients of diagonal of (unweighted) A operator.
          ! Here we store this as real - still need to multiply by i omega
-         ! Thus, don't really need to store Adiag -- just store Sigma_E.
+         ! Thus, don"t really need to store Adiag -- just store Sigma_E.
          type( rVector3D_SG_t ), allocatable :: Sigma_E
          
          ! Operators for divergence correction (DC) will also be included here
@@ -71,23 +71,23 @@ module ModelOperator_MF
               !
               procedure, public :: setEquations => setEquationsModelOperatorMF
               procedure, public :: setCond      => setCondModelOperatorMF
-              procedure, public :: amult          => amultModelOperatorMF
-              procedure, public :: multAib        => multAibModelOperatorMF
-              procedure, public :: multCurlT     => multCurlTModelOperatorMF
-              procedure, public :: divCorSetUp => divCorsetUpModelOperatorMF
+              procedure, public :: amult        => amultModelOperatorMF
+              procedure, public :: multAib      => multAibModelOperatorMF
+              procedure, public :: multCurlT    => multCurlTModelOperatorMF
+              procedure, public :: divCorSetUp  => divCorsetUpModelOperatorMF
               !
               procedure :: divCgrad => divCgradModelOperatorMF
-              procedure :: divC      => divCModelOperatorMF
-              procedure :: grad      => gradModelOperatorMF
-              procedure :: div        => divModelOperatorMF
+              procedure :: divC     => divCModelOperatorMF
+              procedure :: grad     => gradModelOperatorMF
+              procedure :: div      => divModelOperatorMF
               !
-              procedure, public :: createScalar => createScalarModelOperatorMF
-              procedure, public :: createVector => createVectorModelOperatorMF
+              !procedure, public :: createScalar => createScalarModelOperatorMF
+              !procedure, public :: createVector => createVectorModelOperatorMF
               !
               ! Private methods
               procedure :: create      => createModelOperatorMF 
               procedure :: allocate    => allocateModelOperatorMF
-              procedure :: deallocate => deallocateModelOperatorMF
+              procedure :: deallocate  => deallocateModelOperatorMF
               !
               procedure, public :: print => printModelOperatorMF
               !
@@ -213,7 +213,7 @@ contains
                 !
         end select
         !
-        self%is_allocated = .true.
+        self%is_allocated = .TRUE.
         !
     end subroutine allocateModelOperatorMF
     !**
@@ -254,54 +254,54 @@ contains
     !***
     !     createVector
     !***
-    function createVectorModelOperatorMF( self, gridType ) result( cVec )
-        implicit none
+    !function createVectorModelOperatorMF( self, gridType ) result( cVec )
+        !implicit none
         !
         !     this just returns a cVector of correct type
         !         for this model operator -- 
-        class( ModelOperator_MF_t ), intent( in )   :: self
-        character( len=80 ), intent( in ), optional :: gridType
-        class( cVector_t ), allocatable             :: cVec
+        !class( ModelOperator_MF_t ), intent( in )   :: self
+        !character( len=80 ), intent( in ), optional :: gridType
+        !class( cVector_t ), allocatable             :: cVec
         !
         ! do we really need select type here?????
-        select type( grid => self%metric%grid )
-            class is( Grid3D_SG_t )
+        !select type( grid => self%metric%grid )
+            !class is( Grid3D_SG_t )
             !
-                if( present( gridType ) ) then
+                !if( present( gridType ) ) then
                     !
-                    allocate( cVec, source = cVector3D_SG_t( grid, gridType ) )
-                else
+                    !allocate( cVec, source = cVector3D_SG_t( grid, gridType ) )
+                !else
                     !
                     !    EDGE gridType by default
-                    allocate( cVec, source = cVector3D_SG_t( grid, EDGE ) )
-                endif
-        end select
+                    !allocate( cVec, source = cVector3D_SG_t( grid, EDGE ) )
+                !endif
+        !end select
         !
-    end function createVectorModelOperatorMF
+    !end function createVectorModelOperatorMF
     !***
     !     createScalar
     !***
-    function createScalarModelOperatorMF( self, gridType ) result( c_scalar )
-        implicit none
+    !function createScalarModelOperatorMF( self, gridType ) result( c_scalar )
+        !implicit none
         !
         !     this just returns a cScalar of correct type
         !         for this model operator -- 
-        class( ModelOperator_MF_t ), intent( in )   :: self
-        character( len=80 ), intent( in ), optional :: gridType
-        class( cScalar_t ), allocatable             :: c_scalar
+        !class( ModelOperator_MF_t ), intent( in )   :: self
+        !character( len=80 ), intent( in ), optional :: gridType
+        !class( cScalar_t ), allocatable             :: c_scalar
         !
         !     do we really need select type here?????
-        select type( grid => self%metric%grid )
-            class is( Grid3D_SG_t )
-                if( present( gridType ) ) then
-                    allocate( c_scalar, source = cScalar3D_SG_t( grid, gridType ) )
-                else
+        !select type( grid => self%metric%grid )
+            !class is( Grid3D_SG_t )
+                !if( present( gridType ) ) then
+                    !allocate( c_scalar, source = cScalar3D_SG_t( grid, gridType ) )
+                !else
                     !    NODE gridType by default
-                    allocate( c_scalar, source = cScalar3D_SG_t( grid, NODE ) )
-                endif
-        end select
+                    !allocate( c_scalar, source = cScalar3D_SG_t( grid, NODE ) )
+                !endif
+        !end select
         !
-    end function createScalarModelOperatorMF
+    !end function createScalarModelOperatorMF
     !**
     ! setEquations
     !*
@@ -405,7 +405,7 @@ contains
             end do
         end do
         !
-        self%eqset = .true.
+        self%eqset = .TRUE.
         !
         ! Note that divergence correction coefficients depend on conductivity
         ! and need to be reset whenever conductivity changes -- so these are
@@ -529,7 +529,6 @@ contains
         class( cVector_t ), intent( inout )       :: y
         logical, intent( in ), optional           :: p_adjt
         !
-        ! Local variables
         integer :: ix, iy, iz
         complex( kind=prec ) :: c
         logical :: adjt
@@ -550,8 +549,8 @@ contains
         class is(cVector3D_SG_t)
             !
             if( .NOT. y%is_allocated ) then
-                write(*,*) 'ERROR: amult in    ModelOperator_MF'
-                stop         'output vector y not allocated'
+                write(*,*) "ERROR: amult in    ModelOperator_MF"
+                stop         "output vector y not allocated"
             endif
             !
             select type(y)
@@ -592,7 +591,7 @@ contains
                         end do
                     end do
                 end do
-            !
+                !
                 ! Apply difference equation to compute Ez (only on interior nodes)
                 do iz = 1, x%nz
                     do iy = 2, x%ny
@@ -617,13 +616,12 @@ contains
             end select
             !
             class default
-                write(*, *) 'ERROR:ModelOperator_MF::amult:'
-                stop          '            Incompatible input [x]. Exiting.'
+                write( *, * ) "ERROR:ModelOperator_MF::amult:"
+                stop        "            Incompatible input [x]. Exiting."
                 !
         end select
 
     end subroutine amultModelOperatorMF
-    
     !**
     ! multAib
     ! This multiplies boundary values by the real matrix Aib -- converts
@@ -634,17 +632,16 @@ contains
     subroutine multAibModelOperatorMF( self, bdry, outE )
         implicit none
         !
-        ! Arguments
-        class( ModelOperator_MF_t ), intent( in )    :: self
+        class( ModelOperator_MF_t ), intent( in ) :: self
         !     again do these need to be abstract -- and OK if they are?
         class( cVector_t ), intent( in )    :: bdry
         class( cVector_t ), intent( inout ) :: outE
-        ! Local variables
-        real(kind=prec) omega
         !
-        if(.NOT.outE%is_allocated) then
-            write(*,*) 'ERROR: multAib in    ModelOperator_MF'
-            stop         'output vector not allocated'
+        real( kind=prec ) :: omega
+        !
+        if(.NOT. outE%is_allocated) then
+            write(*,*) "ERROR: multAib in    ModelOperator_MF"
+            stop         "output vector not allocated"
         endif
         !
         omega = R_ZERO     ! diagonal part or A does not enter into this
@@ -665,17 +662,16 @@ contains
     subroutine multCurlTModelOperatorMF( self, inH, outE )
         implicit none
         !
-        ! Arguments
         class( ModelOperator_MF_t ), intent( in )        :: self
         class( cVector_t ), intent( inout )              :: inH
         class( cVector_t ), allocatable, intent( inout ) :: outE
-        ! Local variables
+        !
         integer :: ix, iy, iz
 
         !  NOTE: this only computes outputs for interior edges --  fine
         !    as long as observation locations are not in cell adjacent to boundary --
         !      but othewise should also use boundary edeges to compute H!
-        !      Also would need to modify to compute Lrows, since don't want to
+        !      Also would need to modify to compute Lrows, since don"t want to
         !         force on boundary!
         !
         !     modified so that there are no local cVectors allocated
@@ -695,8 +691,8 @@ contains
             ! allocate( outE, source = cVector3D_SG_t( inH%grid, EDGE ) )
             !
             if(.NOT.outE%is_allocated) then
-                 write(*,*) 'ERROR: multCurlT in    ModelOperator_MF'
-                 stop    'output vector not allocated'
+                 write(*,*) "ERROR: multCurlT in    ModelOperator_MF"
+                 stop    "output vector not allocated"
             endif
 
             select type( outE )
@@ -730,13 +726,13 @@ contains
                 end do
                 !
             class default
-                write(*, *) 'ERROR:ModelOperator_MF::multCurlT:'
-                stop          '            Incompatible input [outE]'
+                write( *, * ) "ERROR:ModelOperator_MF::multCurlT:"
+                stop          "            Incompatible input [outE]"
             end select
             ! 
         class default
-            write(*, *) 'ERROR:ModelOperator_MF::multCurlT:'
-            stop          '            Incompatible input [inH]'
+            write( *, * ) "ERROR:ModelOperator_MF::multCurlT:"
+            stop          "            Incompatible input [inH]"
             !
         end select
         !
@@ -756,7 +752,7 @@ contains
         ! Arguments
         class( ModelOperator_MF_t ), intent( in ) :: self
         ! inphi, outphi have to be abstract to use in generic solver??
-        class( cScalar_t ), intent( in )     :: inPhi
+        class( cScalar_t ), intent( in )    :: inPhi
         class( cScalar_t ), intent( inout ) :: outPhi
         !
         integer :: ix, iy, iz
@@ -765,8 +761,8 @@ contains
         class is( cScalar3D_SG_t )
             !
             if(.NOT.outPhi%is_allocated) then
-                write(*, *) 'ERROR:ModelOperator_MF::divCgrad'
-                stop          '         Output cScalar object not allocated'
+                write( *, * ) "ERROR:ModelOperator_MF::divCgrad"
+                stop          "         Output cScalar object not allocated"
             endif
             !
             select type( inPhi )
@@ -802,8 +798,8 @@ contains
             end select
             !
         class default
-            write(*, *) 'ERROR:ModelOperator_MF::amult:'
-            stop          '            Incompatible input [x]. Exiting.'
+            write( *, * ) "ERROR:ModelOperator_MF::amult:"
+            stop          "            Incompatible input [x]. Exiting."
             !
         end select
         !
@@ -818,7 +814,6 @@ contains
         !
         class( ModelOperator_MF_t ), intent( in ) :: self
         class( cVector_t ), intent( in )          :: inE
-        !     if inE has to be abstract class, probably so does outSc
         class( cScalar_t ), intent( inout )       :: outPhi
         !
         integer :: ix, iy, iz
@@ -826,9 +821,9 @@ contains
         select type(outPhi)
         class is(cScalar3D_SG_t)
             !
-            if(.NOT.outPhi%is_allocated) then
-                write(*, *) 'ERROR:ModelOperator_MF::divC'
-                stop          '         Output cScalar object not allocated'
+            if( .NOT. outPhi%is_allocated) then
+                write( *, * ) "ERROR:ModelOperator_MF::divC"
+                stop          "         Output cScalar object not allocated"
             endif
             !
             select type( inE )
@@ -882,12 +877,12 @@ contains
                 end do
                 !
             class default
-                write(*, *) "ERROR:ModelOperator_MF_t::divC:"
+                write( *, * ) "ERROR:ModelOperator_MF_t::divC:"
                 STOP                "inE type unknow"
             end select
             !
         class default
-            write(*, *) "ERROR:ModelOperator_MF_t::divC:"
+            write( *, * ) "ERROR:ModelOperator_MF_t::divC:"
             STOP                "outPhi type unknow"
             !
         end select
@@ -899,19 +894,18 @@ contains
     subroutine gradModelOperatorMF( self, inPhi, outE )
         implicit none
         !
-        ! Arguments
         class( ModelOperator_MF_t ), intent( in ) :: self
         class( cScalar_t ), intent( in )          :: inPhi
         class( cVector_t ), intent( inout )       :: outE
-        !     local variables
-        integer :: ix, iy, iz     
+        !
+        integer :: ix, iy, iz
         !
         select type( outE )
         class is(cVector3D_SG_t)
             !
             if(.NOT.outE%is_allocated) then
-                write(*, *) 'ERROR:ModelOperator_MF::grad'
-                stop          '         Output cVector object not allocated'
+                write( *, * ) "ERROR:ModelOperator_MF::grad"
+                stop          "         Output cVector object not allocated"
             endif
             !
             select type( inPhi )
@@ -947,11 +941,11 @@ contains
                 end do
                 !
             class default
-                write(*, *) "ERROR:ModelOperator_MF_t::grad:"
+                write( *, * ) "ERROR:ModelOperator_MF_t::grad:"
                 STOP                "inPhi type unknow"
             end select
         class default
-            write(*, *) "ERROR:ModelOperator_MF_t::divC:"
+            write( *, * ) "ERROR:ModelOperator_MF_t::divC:"
             STOP                "outE type unknow"
         end select
         !
@@ -973,8 +967,8 @@ contains
         class is(cScalar3D_SG_t)
             !
             if(.NOT.outPhi%is_allocated) then
-                write(*, *) 'ERROR:ModelOperator_MF::div'
-                stop          '         Output cScalar object not allocated'
+                write( *, * ) "ERROR:ModelOperator_MF::div"
+                stop          "         Output cScalar object not allocated"
             endif
             !
             select type( inE )
@@ -997,11 +991,11 @@ contains
                     end do
                 end do
                 class default
-                write(*, *) "ERROR:ModelOperator_MF_t:div:"
+                write( *, * ) "ERROR:ModelOperator_MF_t:div:"
                 STOP                "inE type unknow"
             end select
         class default
-            write(*, *) "ERROR:ModelOperator_MF_t:div:"
+            write( *, * ) "ERROR:ModelOperator_MF_t:div:"
             STOP                "outPhi type unknow"
         end select
         !

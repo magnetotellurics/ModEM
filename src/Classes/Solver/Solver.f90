@@ -21,18 +21,18 @@ module Solver
         !
         logical :: failed, converged
         !
-        ! PreConditioner as a property of this
+        !
         class( PreConditioner_t ), allocatable :: preconditioner
         !
         contains
            !    deferred (abstract class) proedures
-           procedure( interface_set_solver_defaults), deferred, public :: SetDefaults
+           procedure( interface_set_solver_defaults), deferred, public :: setDefaults
            !
            procedure, public :: init    => initializeSolver
            procedure, public :: dealloc => deallocateSolver
            !
-           procedure, public :: setParameters
-           procedure, public :: zeroDiagnostics
+           procedure, public :: setParameters => setParametersSolver
+           procedure, public :: zeroDiagnostics => zeroDiagnosticsSolver
            !
     end type Solver_t
     !
@@ -47,7 +47,7 @@ module Solver
     !
 contains
     !
-    subroutine setParameters( self, max_iter, tolerance )
+    subroutine setParametersSolver( self, max_iter, tolerance )
         implicit none
         !
         class( Solver_t ), intent( inout ) :: self
@@ -58,13 +58,13 @@ contains
         self%tolerance = tolerance
         !
         if( allocated( self%relErr ) ) deallocate( self%relErr )
-        allocate( self%relErr( max_iter ) )
+		allocate( self%relErr( max_iter ) )
         !
-    end subroutine setParameters
+    end subroutine setParametersSolver
     !
     !********
     !
-    subroutine zeroDiagnostics( self )
+    subroutine zeroDiagnosticsSolver( self )
         implicit none
         !
         class( Solver_t ), intent( inout ) :: self
@@ -72,7 +72,7 @@ contains
         self%n_iter = 0
         self%relErr = R_ZERO
         !
-    end subroutine zeroDiagnostics 
+    end subroutine zeroDiagnosticsSolver 
     !
     !********
     !

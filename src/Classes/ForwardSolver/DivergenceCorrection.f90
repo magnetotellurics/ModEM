@@ -130,7 +130,12 @@ contains
         !      specific classes
         !
         !
-        allocate( phiRHS, source = self%solver%preconditioner%model_operator%createScalar() )
+        select type( grid => self%solver%preconditioner%model_operator%metric%grid )
+            class is( Grid3D_SG_t )
+                !
+                allocate( phiRHS, source = cScalar3D_SG_t( grid, NODE ) )
+                !
+        end select
         !
         ! compute divergence of currents for input electric field
         call self%solver%preconditioner%model_operator%DivC( inE, phiRHS )
@@ -153,7 +158,12 @@ contains
         !     is modOp%divCgrad
         !     (b) preconditioner: object, and preconditioner matrix
         !
-        allocate( phiSol, source = self%solver%preconditioner%model_operator%createScalar() )
+        select type( grid => self%solver%preconditioner%model_operator%metric%grid )
+            class is( Grid3D_SG_t )
+                !
+                allocate( phiSol, source = cScalar3D_SG_t( grid, NODE ) )
+                !
+        end select
         !
         select type( solver => self%solver )
             class is( Solver_PCG_t )

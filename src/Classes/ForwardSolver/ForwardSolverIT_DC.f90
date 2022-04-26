@@ -28,10 +28,6 @@ module ForwardSolverIT_DC
         !
         real( kind=prec ) :: omega
         !
-        real( kind=prec ), allocatable, dimension(:,:) :: DivCorRelErr
-        !
-        real( kind=prec ), allocatable, dimension(:,:) :: divJ
-        !
         integer :: nDivCor, max_div_cor, max_iterDivCor
         !
         real( kind=prec ) :: tolDivCor
@@ -76,10 +72,6 @@ module ForwardSolverIT_DC
             self%max_iterDivCor = 0
             self%tolDivCor = 0.0
             !
-            !
-            self%divergence_correction = DivergenceCorrection_t( model_operator )
-            !
-            !
             select case( solver_type )
                 case( QMR )
                     self%solver = Solver_QMR_t( model_operator )
@@ -99,6 +91,10 @@ module ForwardSolverIT_DC
             !
             call self%setIterControl( maxItTotal, self%solver%tolerance )
             !
+            !
+            self%divergence_correction = DivergenceCorrection_t( model_operator )
+            !
+            !
             call self%initDiagnostics()
             !
         end function ForwardSolverIT_DC_ctor
@@ -107,15 +103,11 @@ module ForwardSolverIT_DC
         subroutine ForwardSolverIT_DC_dtor( self )
             implicit none
             !
-            type( ForwardSolverIT_DC_t ), intent( in out ) :: self
+            type( ForwardSolverIT_DC_t ), intent( inout ) :: self
             !
             !write(*,*) "Destructor ForwardSolverIT_DC_t"
             !
             call self%dealloc()
-            !
-            deallocate( self%DivCorRelErr )
-            !
-            deallocate( self%divJ )
             !
         end subroutine ForwardSolverIT_DC_dtor
         !
@@ -197,16 +189,7 @@ module ForwardSolverIT_DC
             self%n_iter_actual = 0
             self%relResFinal = R_ZERO
             !
-            if( allocated( self%relResVec ) ) deallocate( self%relResVec )
             allocate( self%relResVec( self%max_iter_total ) )
-            !
-            if( allocated( self%divJ ) ) deallocate( self%divJ )
-            allocate( self%divJ( 2, self%max_div_cor ) )
-            !
-            !    convergence of PCG solver for all divergence corrections
-            !  (probably not needed?  Do we ever really look at this?  Naser?)
-            if( allocated( self%DivCorRelErr ) ) deallocate( self%DivCorRelErr )
-            allocate( self%DivCorRelErr( self%max_IterDivCor, self%max_div_cor ) )
             !
          end subroutine initDiagnosticsForwardSolverIT_DC
          !
@@ -218,8 +201,6 @@ module ForwardSolverIT_DC
             !
             !
             self%relResVec = R_ZERO
-            self%divJ = R_ZERO
-            self%DivCorRelErr = R_ZERO
             !
             call self%solver%zeroDiagnostics()
             !
@@ -246,8 +227,13 @@ module ForwardSolverIT_DC
             !
             if( source%non_zero_source ) then
                 !
-                allocate( phi0, source = self%solver%preconditioner%model_operator%createScalar() )
-                !
+				select type( grid => self%solver%preconditioner%model_operator%metric%grid )
+					class is( Grid3D_SG_t )
+						!
+						allocate( phi0, source = cScalar3D_SG_t( grid, NODE ) )
+						!
+				end select
+				!
                 call self%divergence_correction%rhsDivCor( self%omega, source, phi0 )
                 !
             endif
@@ -291,11 +277,11 @@ module ForwardSolverIT_DC
                     !
                     deallocate( temp )
                     !
-               else
-                   !
-                   self%solver%failed = .TRUE.
-                   !
-               endif
+                else
+                    !
+                    self%solver%failed = .TRUE.
+                    !
+                endif
             !
             enddo loop
             !

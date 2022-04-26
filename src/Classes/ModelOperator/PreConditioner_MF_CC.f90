@@ -75,9 +75,12 @@ contains
         !
         class( PreConditioner_MF_CC_t ), intent( inout ) :: self
         !
-        !allocate( self%Dilu, source = self%model_operator%createVector() )
-        allocate( cVector3D_SG_t :: self%Dilu )
-        self%Dilu = self%model_operator%createVector()
+        select type( grid => self%model_operator%metric%grid )
+            class is( Grid3D_SG_t )
+				!
+                allocate( self%Dilu, source = cVector3D_SG_t( grid, EDGE ) )
+                !
+        end select
         !
     end subroutine createPreConditioner_MF_CC
     !**

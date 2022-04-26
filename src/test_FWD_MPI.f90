@@ -107,8 +107,8 @@ program ModEM
                     !
                     call MPI_Win_fence( 0, shared_window, ierr )
                     !
-					call MPI_Win_free( shared_window )
-					!
+                    call MPI_Win_free( shared_window, ierr )
+                    !
                 case ( "JOB_FORWARD" )
                     !
                     call workerForwardModelling()
@@ -177,15 +177,15 @@ contains
             !
         enddo
         !
-        !
         call MPI_Win_fence( 0, shared_window, ierr )
         !
-        call MPI_Win_free( shared_window )
+        call MPI_Win_free( shared_window, ierr )
         !
         deallocate( model_operator )
         deallocate( model_parameter )
         deallocate( main_grid )
-        !
+		!
+        call deallocateTransmitterArray()
         !
         ! SEND 1 TRANSMITTER TO FIRST np WORKERS
         do while ( worker_rank <= ( mpi_size - 1 ) )
@@ -251,8 +251,6 @@ contains
              
         enddo
         !
-        call deallocateTransmitterArray()
-        !
         ! Write all_data_handles into predicted_data.dat
         call writeDataHandleArray( all_data_handles )
         !
@@ -315,8 +313,8 @@ contains
     subroutine workerForwardModelling()
         implicit none
         !
-		! Use save ????
-        class( ForwardSolver_t ), allocatable :: fwd_solver
+        !
+        class( ForwardSolver_t ), allocatable, save :: fwd_solver
         !
         class( Source_t ), allocatable        :: fwd_source 
         !
@@ -401,9 +399,9 @@ contains
         call Tx%solveFWD()
         !
         deallocate( fwd_source )
-		!
+        !
         ! THIS CAUSES MEMORY CRASHES
-        deallocate( fwd_solver )
+        !deallocate( fwd_solver )
         !
         ! Loop over Receivers of each Transmitter
         nRx = size( Tx%receiver_indexes )
@@ -421,23 +419,22 @@ contains
             !
             ! Store Rx predicted data into tx_data_handles
             do iDe = 1, size( Rx%predicted_data )
-            !
+                !
                 call updateDataHandleArray( tx_data_handles, Rx%predicted_data(iDe) )
-            !
+                !
             end do
             !
             deallocate( Rx%predicted_data )
             !
         enddo
         !
-        write ( *, * ) "WORKER ", mpi_rank, "FINISHES FWD FOR TX ", Tx%id!, size( tx_data_handles )
+        deallocate( Tx )
+        !
+        write ( *, * ) "WORKER ", mpi_rank, "FINISHES FWD FOR TX ", fwd_info%tx_index!, size( tx_data_handles )
         !
         ! SEND JOB DONE TO MASTER
         fwd_info%job_name    = job_fwd_done
-        fwd_info%tx_index    = Tx%id
         fwd_info%worker_rank = mpi_rank
-        !
-        deallocate( Tx )
         !
         call allocateDataBuffer( tx_data_handles )
         fwd_info%n_data      = size( tx_data_handles )
@@ -675,8 +672,7 @@ contains
             close( ioESolution )
             !
         else
-            write( *, * ) "writeEsolutionHeader: e_solution"
-            stop
+            stop "writeEsolutionHeader: e_solution"
         endif
         !
     end subroutine writeEsolutionHeader
@@ -698,7 +694,7 @@ contains
           do j = i + 1, size( data_handle_array )
               !
               if( data_handle_array(i)%period > data_handle_array(j)%period ) then
-                aux_data_entry  = data_handle_array(i)
+                aux_data_entry = data_handle_array(i)
                 data_handle_array(i) = data_handle_array(j)
                 data_handle_array(j) = aux_data_entry
               endif
@@ -712,7 +708,7 @@ contains
           do j = i + 1, size( data_handle_array )
               !
               if( data_handle_array(i)%rx_id > data_handle_array(j)%rx_id ) then
-                aux_data_entry  = data_handle_array(i)
+                aux_data_entry = data_handle_array(i)
                 data_handle_array(i) = data_handle_array(j)
                 data_handle_array(j) = aux_data_entry
               endif

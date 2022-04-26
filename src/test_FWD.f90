@@ -58,8 +58,8 @@ contains
     subroutine ForwardModelling()
         implicit none
         !
-		! Use save ????
-        class( ForwardSolver_t ), allocatable :: fwd_solver
+        ! Use save ????
+        class( ForwardSolver_t ), allocatable, save :: fwd_solver
         !
         class( Source_t ), allocatable        :: fwd_source 
         !
@@ -88,6 +88,38 @@ contains
             call handleDataFile()
         endif
         !
+        ! ForwardSolver - Chosen from control file
+        !if( allocated( fwd_solver ) ) deallocate( fwd_solver )
+        select case ( forward_solver_type )
+            !
+            case( FWD_FILE )
+                fwd_solver = ForwardSolverFromFile_t( model_operator )
+                !
+            case( FWD_IT_DC )
+                fwd_solver = ForwardSolverIT_DC_t( model_operator, QMR )
+                !
+            case default
+                fwd_solver = ForwardSolverIT_DC_t( model_operator, QMR )
+            !
+        end select
+        !
+        call fwd_solver%setCond( model_parameter )
+        !
+        ! Source - Chosen from control file
+        !if( allocated( fwd_source ) ) deallocate( fwd_source )
+        select case ( source_type )
+            !
+            case( SRC_MT_1D )
+                fwd_source = SourceMT_1D_t( model_operator, model_parameter )
+                !
+            case( SRC_MT_2D )
+                fwd_source = SourceMT_2D_t( model_operator, model_parameter )
+                !
+            case default
+                fwd_source = SourceMT_1D_t( model_operator, model_parameter )
+                !
+        end select
+        !
         ! Forward Modelling
         !
         Tx => getTransmitter(1)
@@ -96,39 +128,6 @@ contains
         !
         ! Loop over all Transmitters
         do iTx = 1, size( transmitters )
-            !
-            !
-            ! ForwardSolver - Chosen from control file
-            !if( allocated( fwd_solver ) ) deallocate( fwd_solver )
-            select case ( forward_solver_type )
-                !
-                case( FWD_FILE )
-                    fwd_solver = ForwardSolverFromFile_t( model_operator )
-                    !
-                case( FWD_IT_DC )
-                    fwd_solver = ForwardSolverIT_DC_t( model_operator, QMR )
-                    !
-                case default
-                    fwd_solver = ForwardSolverIT_DC_t( model_operator, QMR )
-                !
-            end select
-            !
-            call fwd_solver%setCond( model_parameter )
-            !
-            ! Source - Chosen from control file
-            !if( allocated( fwd_source ) ) deallocate( fwd_source )
-            select case ( source_type )
-                !
-                case( SRC_MT_1D )
-                    fwd_source = SourceMT_1D_t( model_operator, model_parameter )
-                    !
-                case( SRC_MT_2D )
-                    fwd_source = SourceMT_2D_t( model_operator, model_parameter )
-                    !
-                case default
-                    fwd_source = SourceMT_1D_t( model_operator, model_parameter )
-                    !
-            end select
             !
             ! Temporary Transmitter alias
             Tx => getTransmitter( iTx )
@@ -147,11 +146,6 @@ contains
             !
             ! Solve Tx Forward Modelling
             call Tx%solveFWD()
-            !
-            deallocate( fwd_source )
-            !
-            ! THIS CAUSES MEMORY CRASHES
-            deallocate( fwd_solver )
             !
             ! Loop over Receivers of each Transmitter
             do iRx = 1, size( Tx%receiver_indexes )

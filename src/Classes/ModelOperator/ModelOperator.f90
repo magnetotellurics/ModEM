@@ -34,8 +34,8 @@ module ModelOperator
             !         for specific ModelOperator implementation
             !        I see no need for real versions -- but we can add if needed!
             !
-            procedure( interface_create_scalar_model_operator ), deferred, public :: createScalar
-            procedure( interface_create_vector_model_operator ), deferred, public :: createVector
+            !procedure( interface_create_scalar_model_operator ), deferred, public :: createScalar
+            !procedure( interface_create_vector_model_operator ), deferred, public :: createVector
             !
             procedure( interface_print_model_operator ), deferred, public :: print
             !
@@ -138,9 +138,9 @@ module ModelOperator
          function interface_create_scalar_model_operator( self, gridType ) result( cSclr )
              import :: ModelOperator_t, cScalar_t
              !
-             class( ModelOperator_t ), intent( in )        :: self
+             class( ModelOperator_t ), intent( in )      :: self
              character( len=80 ), intent( in ), optional :: gridType
-             class( cScalar_t ), allocatable                 :: cSclr
+             class( cScalar_t ), allocatable             :: cSclr
          end function interface_create_scalar_model_operator
          !
         subroutine interface_print_model_operator( self )

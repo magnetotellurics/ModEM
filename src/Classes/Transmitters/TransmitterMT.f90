@@ -86,7 +86,12 @@ module TransmitterMT
             !
             call self%source%setE( omega, i_pol )
             !
-            self%e_all( i_pol ) = self%source%model_operator%createVector()
+            select type( mgrid => self%source%model_operator%metric%grid )
+                class is( Grid3D_SG_t )
+                    !
+                    self%e_all( i_pol ) = cVector3D_SG_t( mgrid, EDGE )
+                    !
+            end select
             !
             call self%forward_solver%getESolution( self%source, self%e_all( i_pol ) )
             !

@@ -93,7 +93,7 @@ contains
         implicit none
         !
         class( Grid3D_SG_t ), target, intent( in ) :: igrid
-        character(*), intent( in )                :: gridType
+        character(*), intent( in )                 :: gridType
         !
         type( cVector3D_SG_t ) :: self
         !
@@ -178,8 +178,8 @@ contains
         self%nz = 0
         
         self%gridType = ""
-        self%is_allocated = .FALSE.               
-        
+        self%is_allocated = .FALSE.
+        !
     end subroutine cVector3D_SG_dtor
     
     !
@@ -1256,7 +1256,7 @@ contains
                 self%is_allocated = rhs%is_allocated
                 !
             class default
-                write(*, *) "ERROR:cVector3D_SG_t::copyFromCVector3D_SG:"
+                write( *, * ) "ERROR:cVector3D_SG_t::copyFromCVector3D_SG:"
                 stop "            Incompatible input type. Exiting."
         end select
         !
