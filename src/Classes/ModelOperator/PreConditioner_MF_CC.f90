@@ -42,13 +42,13 @@ contains
         class( ModelOperator_t ), target, intent( in ) :: model_operator
         type( PreConditioner_MF_CC_t ) :: self
         !
-        !write(*,*) "Constructor PreConditioner_MF_CC_t"
+        write(*,*) "Constructor PreConditioner_MF_CC_t"
         !
         self%omega = 0.0
         !
         self%model_operator => model_operator
         !
-        select type( grid => self%model_operator%metric%grid )
+        select type( grid => model_operator%metric%grid )
             class is( Grid3D_SG_t )
                 !
                 allocate( self%Dilu, source = cVector3D_SG_t( grid, EDGE ) )
@@ -63,7 +63,7 @@ contains
       !
       type( PreConditioner_MF_CC_t ), intent( inout ) :: self
       !
-      !write(*,*) "Destructor PreConditioner_MF_CC"
+      write(*,*) "Destructor PreConditioner_MF_CC"
       !
       deallocate( self%Dilu )
       !

@@ -30,7 +30,7 @@ contains
         class( ModelOperator_t ), intent( in ) :: model_operator
         type( Solver_QMR_t ) :: self
         !
-        !write(*,*) "Constructor Solver_QMR_t"
+        write(*,*) "Constructor Solver_QMR_t"
         !
         call self%init()
         !
@@ -48,7 +48,7 @@ contains
         !
         type( Solver_QMR_t ), intent( inout ) :: self
         !
-        !write(*,*) "Destructor Solver_QMR_t"
+        write(*,*) "Destructor Solver_QMR_t"
         !
         call self%dealloc()
         !
@@ -289,8 +289,6 @@ contains
         deallocate( S )
         !
         self%n_iter = iter
-        !
-        write( *, * ) "END SOLVER QMR WTIH:", self%n_iter, " ITERATIONS"
         !
     end subroutine solveQMR
     !

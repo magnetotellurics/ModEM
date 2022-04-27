@@ -59,7 +59,7 @@ contains
         implicit none
         !
         ! Use save ????
-        class( ForwardSolver_t ), allocatable, target :: forward_solver
+        class( ForwardSolver_t ), allocatable, target, save :: forward_solver
         !
         class( Source_t ), allocatable, target        :: fwd_source 
         !
@@ -183,7 +183,6 @@ contains
         !
         ! Verbosis...
         write( *, * ) "    -> Writing Predicted Data to file: [", trim( predicted_data_file_name ), "]"
-        !
         !
         ! Write all_data_handles into predicted_data.dat
         call writeDataHandleArray( all_data_handles )
@@ -449,6 +448,39 @@ contains
     end subroutine writeEsolutionHeader
     !
     !
+    recursive subroutine sortByReceiverType( data_handle_array, first, last )
+        implicit none
+        !
+        type( DataHandle_t ), allocatable, intent( inout ) :: data_handle_array(:)
+        type( DataHandle_t ) :: x_data_entry, t_data_entry
+        integer first, last
+        integer i, j
+        !
+        x_data_entry = data_handle_array( (first+last) / 2 )
+        i = first
+        j = last
+        !
+        do
+            do while ( data_handle_array(i)%rx_type < x_data_entry%rx_type )
+                i=i+1
+            end do
+            do while ( x_data_entry%rx_type < data_handle_array(j)%rx_type )
+                j=j-1
+            end do
+            if (i >= j) exit
+            t_data_entry = data_handle_array(i)
+            data_handle_array(i) = data_handle_array(j)
+            data_handle_array(j) = t_data_entry
+            i=i+1
+            j=j-1
+        end do
+        !
+        if (first < i-1) call sortByReceiverType( data_handle_array, first, i-1 )
+        if (j+1 < last)  call sortByReceiverType( data_handle_array, j+1, last )
+        !
+    end subroutine sortByReceiverType
+    !
+    !
     recursive subroutine sortByPeriod( data_handle_array, first, last )
         implicit none
         !
@@ -495,10 +527,10 @@ contains
         j = last
         !
         do
-            do while ( data_handle_array(i)%rx_id < x_data_entry%rx_id )
+            do while ( data_handle_array(i)%code < x_data_entry%code )
                 i=i+1
             end do
-            do while ( x_data_entry%rx_id < data_handle_array(j)%rx_id )
+            do while ( x_data_entry%code < data_handle_array(j)%code )
                 j=j-1
             end do
             if (i >= j) exit
@@ -509,8 +541,8 @@ contains
             j=j-1
         end do
         !
-        if (first < i-1) call sortByPeriod( data_handle_array, first, i-1 )
-        if (j+1 < last)  call sortByPeriod( data_handle_array, j+1, last )
+        if (first < i-1) call sortByReceiver( data_handle_array, first, i-1 )
+        if (j+1 < last)  call sortByReceiver( data_handle_array, j+1, last )
         !
     end subroutine sortByReceiver
     !
@@ -521,16 +553,18 @@ contains
         type( DataHandle_t ), allocatable, intent( inout ) :: data_handle_array(:)
         !
         type( DataHandle_t ) :: aux_data_entry
-        character(:), allocatable :: receiver_type
-        integer :: i, j, ios
-        !
-        receiver_type = "Unknow"
+        integer :: receiver_type, i, j, ios
         !
         ! Order by transmitter
         call sortByPeriod( data_handle_array, 1, size( data_handle_array ) )
         !
         ! Order by receiver
         call sortByReceiver( data_handle_array, 1, size( data_handle_array ) )
+        !
+        ! Order by receiver
+        call sortByReceiverType( data_handle_array, 1, size( data_handle_array ) )
+        !
+        receiver_type = 0
         !
         open( ioPredData, file = predicted_data_file_name, action = "write", form = "formatted", iostat = ios )
         !
@@ -556,24 +590,20 @@ contains
         implicit none
         !
         type( DataHandle_t ), intent( in ) :: data_handle
-        character(:), allocatable, intent( inout ) :: receiver_type
+        integer, intent( inout ) :: receiver_type
         !
-        class( Receiver_t ), pointer :: receiver
-        !
-        receiver => getReceiver( data_handle%rx_id )
-        !
-        if( receiver_type /= trim( receiver%type_name ) ) then
+        if( receiver_type /= data_handle%rx_type ) then
             !
             write( ioPredData, "(4A, 100A)" ) "#    ", DATA_FILE_TITLE
             write( ioPredData, "(100A)" )     "#    Period(s) Code GG_Lat GG_Lon X(m) Y(m) Z(m) Component Real Imag Error"
-            write( ioPredData, "(4A, 100A)" ) ">    ", trim( receiver%type_name )
+            write( ioPredData, "(4A, 100A)" ) ">    ", getStringReceiverType( data_handle%rx_type )
             write( ioPredData, "(4A, 100A)" ) ">    ", "exp(-i\omega t)"
             write( ioPredData, "(4A, 100A)" ) ">    ", "[V/m]/[T]"
             write( ioPredData, "(7A, 100A)" ) ">        ", "0.00"
             write( ioPredData, "(7A, 100A)" ) ">        ", "0.000    0.000"
             write( ioPredData, "(A3, i8, i8)" ) ">        ", size( transmitters ), size( receivers )
             !
-            receiver_type = trim( receiver%type_name )
+            receiver_type = data_handle%rx_type
             !
         endif
         !

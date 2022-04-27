@@ -39,13 +39,13 @@ contains
         class( ModelOperator_t ), target, intent( in ) :: model_operator
         type( PreConditioner_MF_DC_t ) :: self
         !
-        !write(*,*) "Constructor PreConditioner_MF_DC_t"
+        write(*,*) "Constructor PreConditioner_MF_DC_t"
         !
         self%omega = 0.0
         !
         self%model_operator => model_operator
         !
-        select type( grid => self%model_operator%metric%grid )
+        select type( grid => model_operator%metric%grid )
             class is( Grid3D_SG_t )
                 !
                 allocate( self%d, source = cScalar3D_SG_t( grid, NODE ) )
@@ -60,7 +60,7 @@ contains
       !
       type( PreConditioner_MF_DC_t ), intent( inout ) :: self
       !
-      !write(*,*) "Destructor PreConditioner_MF_DC"
+      write(*,*) "Destructor PreConditioner_MF_DC"
       !
       deallocate( self%d )
       !

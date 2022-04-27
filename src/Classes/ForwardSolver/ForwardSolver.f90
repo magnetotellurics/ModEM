@@ -118,6 +118,8 @@ module ForwardSolver
             !
             deallocate( self%solver )
             !
+			write( * ,* ) "1)relResVec:", size( self%relResVec )
+            !
             deallocate( self%relResVec )
             !
         end subroutine deallocateForwardSolver

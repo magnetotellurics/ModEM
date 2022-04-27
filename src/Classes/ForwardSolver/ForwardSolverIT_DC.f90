@@ -60,7 +60,7 @@ module ForwardSolverIT_DC
             !
             integer :: max_iter, max_iter_total
             !
-            !write(*,*) "Constructor ForwardSolverIT_DC_t"
+            write(*,*) "Constructor ForwardSolverIT_DC_t"
             !
             call self%init()
             !
@@ -102,7 +102,7 @@ module ForwardSolverIT_DC
             !
             type( ForwardSolverIT_DC_t ), intent( inout ) :: self
             !
-            !write(*,*) "Destructor ForwardSolverIT_DC_t"
+            write(*,*) "Destructor ForwardSolverIT_DC_t"
             !
             call self%dealloc()
             !
