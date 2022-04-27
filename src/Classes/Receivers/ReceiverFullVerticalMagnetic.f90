@@ -146,27 +146,28 @@ contains
 		deallocate( self%Lby )
 		deallocate( self%Lbz )
         !
-        !invert horizontal B matrix using Kramer's rule.
-        det = BB(1,1) * BB(2,2) - BB(1,2) * BB(2,1)
+        !invert horizontal B matrix using Kramer"s rule.
+        det = BB( 1, 1 ) * BB( 2, 2 ) - BB( 1, 2 ) * BB( 2, 1 )
+        !
+        !write(*,*) "det:", det
         !
         allocate( self%I_BB( 2, 2 ) )
         !
         if( det /= 0 ) then
-            self%I_BB( 1, 1 ) = BB( 2, 2 ) / det
-            self%I_BB( 2, 2 ) = BB( 1, 1 ) / det
+            self%I_BB( 1, 1 ) =  BB( 2, 2 ) / det
+            self%I_BB( 2, 2 ) =  BB( 1, 1 ) / det
             self%I_BB( 1, 2 ) = -BB( 1, 2 ) / det
             self%I_BB( 2, 1 ) = -BB( 2, 1 ) / det
         else
-            STOP "ReceiverFullVerticalMagnetic.f90: Determinant is Zero!"
+            STOP "ReceiverFullImpedance.f90: Determinant is Zero!"
         endif
         !
-		deallocate( BB )
-		!
         allocate( self%response( 2 ) )
         !
-        self%response(1) = self%I_BB(3,1) * self%I_BB(1,1) + self%I_BB(3,2) * self%I_BB(2,1)
-        self%response(2) = self%I_BB(3,1) * self%I_BB(1,2) + self%I_BB(3,2) * self%I_BB(2,2)
+        self%response(1) = BB(3,1) * self%I_BB(1,1) + BB(3,2) * self%I_BB(2,1)
+        self%response(2) = BB(3,1) * self%I_BB(1,2) + BB(3,2) * self%I_BB(2,2)
 		!
+		deallocate( BB )
 		deallocate( self%I_BB )
         !
         ! WRITE ON PredictedFile.dat
