@@ -34,7 +34,7 @@ module Receiver
         contains
             !
             ! BASE INTERFACES
-            procedure( interface_is_equal_rx ), deferred, public :: isEqualRx
+            procedure( interface_is_equal_rx ), deferred, public    :: isEqualRx
             !
             procedure( interface_predicted_data ), deferred, public :: predictedData
             !
@@ -43,7 +43,7 @@ module Receiver
             ! CLASS PROCEDURES
             procedure, public :: evaluationFunction => evaluationFunctionRx
             !
-            procedure, public :: init => initializeRx
+            procedure, public :: init    => initializeRx
             procedure, public :: dealloc => deallocateRx
             !
             procedure, public :: savePredictedData

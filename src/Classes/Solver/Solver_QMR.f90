@@ -63,9 +63,6 @@ contains
         integer           :: max_iter
         real( kind=prec ) :: tolerance
         !
-        max_iter = 800
-        tolerance = 1E-7
-        !
         call self%SetParameters( max_iter, tolerance )
         !
     end subroutine setDefaults_QMR
@@ -271,7 +268,8 @@ contains
             ! Keeping track of errors
             ! QMR book-keeping between divergence correction calls
             self%relErr( iter ) = real( rnorm / bnorm )
-            !write(*,*) 'iter qmr= ',iter,'    relErr = ', self%relErr(iter)
+            !
+			!write(*,*) 'iter qmr= ',iter,'    relErr = ', self%relErr(iter)
             !
         end do
         !
@@ -291,6 +289,8 @@ contains
         deallocate( S )
         !
         self%n_iter = iter
+        !
+        write( *, * ) "END SOLVER QMR WTIH:", self%n_iter, " ITERATIONS"
         !
     end subroutine solveQMR
     !

@@ -14,15 +14,12 @@ module PreConditioner_MF_CC
     !
     type, extends( PreConditioner_t ) :: PreConditioner_MF_CC_t
         !
-        real( kind=prec ) :: omega
-        !
         type( cVector3D_SG_t ), allocatable :: Dilu
         !
         contains
             !
             final :: PreConditioner_MF_CC_dtor
             !
-            procedure, public :: create => createPreConditioner_MF_CC
             procedure, public :: setPreConditioner => setPreConditioner_MF_CC ! This needs to be called by Solver    object
             !
             procedure, public :: LTSolve => LTSolvePreConditioner_MF_CC ! These are left (M1) and right (M2)
@@ -51,7 +48,12 @@ contains
         !
         self%model_operator => model_operator
         !
-        call self%create()
+        select type( grid => self%model_operator%metric%grid )
+            class is( Grid3D_SG_t )
+                !
+                allocate( self%Dilu, source = cVector3D_SG_t( grid, EDGE ) )
+                !
+        end select
         !
     end function PreConditioner_MF_CC_ctor
     !
@@ -66,23 +68,6 @@ contains
       deallocate( self%Dilu )
       !
     end subroutine PreConditioner_MF_CC_dtor
-    !
-    !**
-    ! createPreConditioner_MF
-    !*
-    subroutine createPreConditioner_MF_CC( self )
-        implicit none
-        !
-        class( PreConditioner_MF_CC_t ), intent( inout ) :: self
-        !
-        select type( grid => self%model_operator%metric%grid )
-            class is( Grid3D_SG_t )
-				!
-                allocate( self%Dilu, source = cVector3D_SG_t( grid, EDGE ) )
-                !
-        end select
-        !
-    end subroutine createPreConditioner_MF_CC
     !**
     ! SetPreConditioner
     !*

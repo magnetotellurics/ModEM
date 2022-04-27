@@ -23,7 +23,7 @@ module ForwardSolver
         !
         class( Solver_t ), allocatable :: solver
         !
-        real( kind=prec ) :: period, tolerance, relResFinal
+        real( kind=prec ) :: tolerance, relResFinal
         !
         integer           :: max_iter_total, n_iter_actual
         !
@@ -36,7 +36,7 @@ module ForwardSolver
             procedure, public :: init    => initializeForwardSolver
             procedure, public :: dealloc => deallocateForwardSolver
             !
-            procedure( interface_set_period_fwd ), deferred, public     :: setPeriod
+            procedure( interface_set_frequency_fwd ), deferred, public  :: setFrequency
             procedure( interface_set_cond_fwd ), deferred, public       :: setCond
             procedure( interface_set_iter_fwd ), deferred, public       :: setIterControl
             procedure( interface_init_diag_fwd ), deferred, public      :: initDiagnostics
@@ -47,13 +47,13 @@ module ForwardSolver
     !
     abstract interface
         !
-        subroutine interface_set_period_fwd( self, period )
+        subroutine interface_set_frequency_fwd( self, period )
             import :: ForwardSolver_t, prec
             !
             class( ForwardSolver_t ), intent( inout ) :: self
             real( kind=prec ), intent( in )           :: period
             !
-        end subroutine interface_set_period_fwd
+        end subroutine interface_set_frequency_fwd
         !
         subroutine interface_set_cond_fwd( self, model_parameter )
             import :: ForwardSolver_t, ModelParameter_t
@@ -101,12 +101,11 @@ module ForwardSolver
             !
             class( ForwardSolver_t ), intent( inout ) :: self
             !
-            self%period = 0.0
-            !
             self%tolerance = 0.0
             self%max_iter_total = 0
             self%n_iter_actual = 0
             self%relResFinal = 0.0
+            !
             self%failed = .FALSE.
             !
         end subroutine initializeForwardSolver

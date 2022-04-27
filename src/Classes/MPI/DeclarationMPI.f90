@@ -115,11 +115,16 @@ module DeclarationMPI
     subroutine allocateSharedBuffer()
         implicit none
         !
-        integer :: i, last_size, nbytes(5)
+        integer :: i, last_size, nbytes(8)
         !
-        call MPI_PACK_SIZE( 4, MPI_INTEGER, child_comm, nbytes(1), ierr )
-        call MPI_PACK_SIZE( 1, MPI_DOUBLE_PRECISION, child_comm, nbytes(2), ierr )
-        call MPI_PACK_SIZE( 44, MPI_CHARACTER, child_comm, nbytes(3), ierr )
+        write(*,*) "????", e_solution_file_name, model_method, forward_solver_type, source_type
+        !
+        call MPI_PACK_SIZE( 6, MPI_INTEGER, child_comm, nbytes(1), ierr )
+        call MPI_PACK_SIZE( 2, MPI_DOUBLE_PRECISION, child_comm, nbytes(2), ierr )
+        call MPI_PACK_SIZE( len( e_solution_file_name ), MPI_CHARACTER, child_comm, nbytes(3), ierr )
+        call MPI_PACK_SIZE( len( model_method ), MPI_CHARACTER, child_comm, nbytes(4), ierr )
+        call MPI_PACK_SIZE( len( forward_solver_type ), MPI_CHARACTER, child_comm, nbytes(5), ierr )
+        call MPI_PACK_SIZE( len( source_type ), MPI_CHARACTER, child_comm, nbytes(6), ierr )
         !
         shared_buffer_size = shared_buffer_size + allocateGridBuffer( main_grid )
         !
@@ -136,7 +141,7 @@ module DeclarationMPI
         write( *, "(A50, i8)" ) "MPI Allocated model_parameter size:", shared_buffer_size - last_size
         last_size = shared_buffer_size
         !
-        call MPI_PACK_SIZE( 1, MPI_INTEGER, child_comm, nbytes(4), ierr )
+        call MPI_PACK_SIZE( 1, MPI_INTEGER, child_comm, nbytes(7), ierr )
         !
         do i = 1, size( transmitters )
             shared_buffer_size = shared_buffer_size + allocateTransmitterBuffer( getTransmitter( i ) )
@@ -149,7 +154,7 @@ module DeclarationMPI
         write( *, "(A50, i8)" ) "MPI Allocated transmitters size:", shared_buffer_size - last_size
         last_size = shared_buffer_size
         !
-        call MPI_PACK_SIZE( 1, MPI_INTEGER, child_comm, nbytes(5), ierr )
+        call MPI_PACK_SIZE( 1, MPI_INTEGER, child_comm, nbytes(8), ierr )
         !
         do i = 1, size( receivers )
             shared_buffer_size = shared_buffer_size + allocateReceiverBuffer( getReceiver(i) )
@@ -181,11 +186,15 @@ module DeclarationMPI
         !
         index = 1
         !
+        call MPI_PACK( len( e_solution_file_name ), 1, MPI_INTEGER, shared_buffer, shared_buffer_size, index, child_comm, ierr )
         call MPI_PACK( len( model_method ), 1, MPI_INTEGER, shared_buffer, shared_buffer_size, index, child_comm, ierr )
         call MPI_PACK( len( forward_solver_type ), 1, MPI_INTEGER, shared_buffer, shared_buffer_size, index, child_comm, ierr )
         call MPI_PACK( len( source_type ), 1, MPI_INTEGER, shared_buffer, shared_buffer_size, index, child_comm, ierr )
         call MPI_PACK( model_n_air_layer, 1, MPI_INTEGER, shared_buffer, shared_buffer_size, index, child_comm, ierr )
+        call MPI_PACK( max_iter, 1, MPI_INTEGER, shared_buffer, shared_buffer_size, index, child_comm, ierr )
+        call MPI_PACK( tolerance, 1, MPI_DOUBLE_PRECISION, shared_buffer, shared_buffer_size, index, child_comm, ierr )
         call MPI_PACK( model_max_height, 1, MPI_DOUBLE_PRECISION, shared_buffer, shared_buffer_size, index, child_comm, ierr )
+        call MPI_PACK( e_solution_file_name, len( e_solution_file_name ), MPI_CHARACTER, shared_buffer, shared_buffer_size, index, child_comm, ierr )
         call MPI_PACK( model_method, len( model_method ), MPI_CHARACTER, shared_buffer, shared_buffer_size, index, child_comm, ierr )
         call MPI_PACK( forward_solver_type, len( forward_solver_type ), MPI_CHARACTER, shared_buffer, shared_buffer_size, index, child_comm, ierr )
         call MPI_PACK( source_type, len( source_type ), MPI_CHARACTER, shared_buffer, shared_buffer_size, index, child_comm, ierr )
@@ -222,17 +231,23 @@ module DeclarationMPI
         class( Transmitter_t ), allocatable :: transmitter
         class( Receiver_t ), allocatable    :: receiver
         !
-        integer :: i, aux_size, n_model_method, n_forward_solver_type, n_source_type, index
+        integer :: i, aux_size, n_e_solution_file_name, n_model_method, n_forward_solver_type, n_source_type, index
         !
         index = 1
         !
         shared_buffer_size = buffer_size
         !
+        call MPI_UNPACK( shared_buffer, shared_buffer_size, index, n_e_solution_file_name, 1, MPI_INTEGER, child_comm, ierr )
         call MPI_UNPACK( shared_buffer, shared_buffer_size, index, n_model_method, 1, MPI_INTEGER, child_comm, ierr )
         call MPI_UNPACK( shared_buffer, shared_buffer_size, index, n_forward_solver_type, 1, MPI_INTEGER, child_comm, ierr )
         call MPI_UNPACK( shared_buffer, shared_buffer_size, index, n_source_type, 1, MPI_INTEGER, child_comm, ierr )
         call MPI_UNPACK( shared_buffer, shared_buffer_size, index, model_n_air_layer, 1, MPI_INTEGER, child_comm, ierr )
+        call MPI_UNPACK( shared_buffer, shared_buffer_size, index, max_iter, 1, MPI_INTEGER, child_comm, ierr )
+        call MPI_UNPACK( shared_buffer, shared_buffer_size, index, tolerance, 1, MPI_DOUBLE_PRECISION, child_comm, ierr )
         call MPI_UNPACK( shared_buffer, shared_buffer_size, index, model_max_height, 1, MPI_DOUBLE_PRECISION, child_comm, ierr )
+        !
+        allocate( character( n_e_solution_file_name ) :: e_solution_file_name )
+        call MPI_UNPACK( shared_buffer, shared_buffer_size, index, e_solution_file_name, n_e_solution_file_name, MPI_CHARACTER, child_comm, ierr )
         !
         allocate( character( n_model_method ) :: model_method )
         call MPI_UNPACK( shared_buffer, shared_buffer_size, index, model_method, n_model_method, MPI_CHARACTER, child_comm, ierr )
@@ -1525,7 +1540,7 @@ module DeclarationMPI
                 !
                 call MPI_PACK( model_parameter_cell_sg, 1, MPI_INTEGER, shared_buffer, shared_buffer_size, index, child_comm, ierr )
                 !
-				call MPI_PACK( len( model_parameter%paramType ), 1, MPI_INTEGER, shared_buffer, shared_buffer_size, index, child_comm, ierr )
+                call MPI_PACK( len( model_parameter%paramType ), 1, MPI_INTEGER, shared_buffer, shared_buffer_size, index, child_comm, ierr )
                 call MPI_PACK( model_parameter%mKey(1), 8, MPI_INTEGER, shared_buffer, shared_buffer_size, index, child_comm, ierr )
                 call MPI_PACK( model_parameter%paramType, len( model_parameter%paramType ), MPI_CHARACTER, shared_buffer, shared_buffer_size, index, child_comm, ierr )
                 call MPI_PACK( model_parameter%airCond, 1, MPI_DOUBLE_PRECISION, shared_buffer, shared_buffer_size, index, child_comm, ierr )
@@ -1553,7 +1568,7 @@ module DeclarationMPI
         class( ModelParameter_t ), allocatable :: model_parameter
         !
         class( Grid_t ), allocatable :: param_grid
-		integer :: param_type_size
+        integer :: param_type_size
         !
         call MPI_UNPACK( shared_buffer, shared_buffer_size, index, model_parameter_derived_type, 1, MPI_INTEGER, child_comm, ierr )
         !
@@ -1571,13 +1586,13 @@ module DeclarationMPI
                         !
                         model_parameter%metric => metric
                         !
-						call MPI_UNPACK( shared_buffer, shared_buffer_size, index, param_type_size, 1, MPI_INTEGER, child_comm, ierr )
+                        call MPI_UNPACK( shared_buffer, shared_buffer_size, index, param_type_size, 1, MPI_INTEGER, child_comm, ierr )
                         call MPI_UNPACK( shared_buffer, shared_buffer_size, index, model_parameter%mKey(1), 8, MPI_INTEGER, child_comm, ierr )
-						!
-						allocate( character( param_type_size ) :: model_parameter%paramType )
-						call MPI_UNPACK( shared_buffer, shared_buffer_size, index, model_parameter%paramType, param_type_size, MPI_CHARACTER, child_comm, ierr )
                         !
-						call MPI_UNPACK( shared_buffer, shared_buffer_size, index, model_parameter%airCond, 1, MPI_DOUBLE_PRECISION, child_comm, ierr )
+                        allocate( character( param_type_size ) :: model_parameter%paramType )
+                        call MPI_UNPACK( shared_buffer, shared_buffer_size, index, model_parameter%paramType, param_type_size, MPI_CHARACTER, child_comm, ierr )
+                        !
+                        call MPI_UNPACK( shared_buffer, shared_buffer_size, index, model_parameter%airCond, 1, MPI_DOUBLE_PRECISION, child_comm, ierr )
                         call MPI_UNPACK( shared_buffer, shared_buffer_size, index, model_parameter%zeroValued, 1, MPI_LOGICAL, child_comm, ierr )
                         call MPI_UNPACK( shared_buffer, shared_buffer_size, index, model_parameter%is_allocated, 1, MPI_LOGICAL, child_comm, ierr )
                         !

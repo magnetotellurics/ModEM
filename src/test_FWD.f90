@@ -59,9 +59,9 @@ contains
         implicit none
         !
         ! Use save ????
-        class( ForwardSolver_t ), allocatable, save :: fwd_solver
+        class( ForwardSolver_t ), allocatable, target :: forward_solver
         !
-        class( Source_t ), allocatable        :: fwd_source 
+        class( Source_t ), allocatable, target        :: fwd_source 
         !
         ! Temporary alias pointers
         class( Transmitter_t ), pointer :: Tx
@@ -88,6 +88,47 @@ contains
             call handleDataFile()
         endif
         !
+        ! Source - Chosen from control file
+        !if( allocated( fwd_source ) ) deallocate( fwd_source )
+        select case ( source_type )
+            !
+            case( SRC_MT_1D )
+                fwd_source = SourceMT_1D_t( model_operator, model_parameter )
+                !
+            case( SRC_MT_2D )
+                fwd_source = SourceMT_2D_t( model_operator, model_parameter )
+                !
+            case default
+                fwd_source = SourceMT_1D_t( model_operator, model_parameter )
+                !
+        end select
+        !
+        ! ForwardSolver - Chosen from control file
+        !if( allocated( forward_solver ) ) deallocate( forward_solver )
+        select case ( forward_solver_type )
+            !
+            case( FWD_FILE )
+                forward_solver = ForwardSolverFromFile_t( model_operator )
+                !
+            case( FWD_IT_DC )
+                forward_solver = ForwardSolverIT_DC_t( model_operator, QMR )
+                !
+            case default
+                forward_solver = ForwardSolverIT_DC_t( model_operator, QMR )
+            !
+        end select
+        !
+        call forward_solver%setCond( model_parameter )
+        !
+        ! Set Source and ForwardSolver for each transmitter
+        do iTx = 1, size( transmitters )
+            !
+            Tx => getTransmitter(iTx)
+            Tx%source => fwd_source
+            Tx%forward_solver => forward_solver
+            !
+        enddo
+        !
         ! Forward Modelling
         !
         Tx => getTransmitter(1)
@@ -97,57 +138,14 @@ contains
         ! Loop over all Transmitters
         do iTx = 1, size( transmitters )
             !
-            ! ForwardSolver - Chosen from control file
-            !if( allocated( fwd_solver ) ) deallocate( fwd_solver )
-            select case ( forward_solver_type )
-                !
-                case( FWD_FILE )
-                    fwd_solver = ForwardSolverFromFile_t( model_operator )
-                    !
-                case( FWD_IT_DC )
-                    fwd_solver = ForwardSolverIT_DC_t( model_operator, QMR )
-                    !
-                case default
-                    fwd_solver = ForwardSolverIT_DC_t( model_operator, QMR )
-                !
-            end select
-            !
-            call fwd_solver%setCond( model_parameter )
-            !
-            ! Source - Chosen from control file
-            !if( allocated( fwd_source ) ) deallocate( fwd_source )
-            select case ( source_type )
-                !
-                case( SRC_MT_1D )
-                    fwd_source = SourceMT_1D_t( model_operator, model_parameter )
-                    !
-                case( SRC_MT_2D )
-                    fwd_source = SourceMT_2D_t( model_operator, model_parameter )
-                    !
-                case default
-                    fwd_source = SourceMT_1D_t( model_operator, model_parameter )
-                    !
-            end select
-            !
             ! Temporary Transmitter alias
             Tx => getTransmitter( iTx )
             !
-            ! Tx points to its due Source
-            call Tx%setSource( fwd_source )
-            !
-            ! Set ForwardSolver Period
-            call fwd_solver%setPeriod( Tx%period )
-            !
-            ! Tx points to its due ForwardSolver
-            call Tx%setForwardSolver( fwd_solver )
+            ! Set ForwardSolver omega
+            call Tx%forward_solver%setFrequency( Tx%period )
             !
             ! Solve Tx Forward Modelling
             call Tx%solveFWD()
-            !
-            deallocate( fwd_source )
-            !
-            ! THIS CAUSES MEMORY CRASHES
-            !deallocate( fwd_solver )
             !
             ! Loop over Receivers of each Transmitter
             do iRx = 1, size( Tx%receiver_indexes )
@@ -175,6 +173,9 @@ contains
             deallocate( Tx )
             !
         enddo
+        !
+        !deallocate( fwd_source )
+        !deallocate( forward_solver )
         !
         deallocate( model_operator )
         deallocate( model_parameter )
@@ -393,9 +394,19 @@ contains
     subroutine setupDefaultParameters()
         implicit none
         !
+        ! I|O
         predicted_data_file_name = "predicted_data.dat"
         e_solution_file_name     = "esolution.bin"
+        has_control_file         = .FALSE.
+        has_model_file           = .FALSE.
+        has_data_file            = .FALSE.
+        verbosis                 = .FALSE.
         !
+        ! Solver
+        max_iter = 100
+        tolerance = TOL8
+        !
+        ! Model
         model_method      = MM_METHOD_FIXED_H
         model_n_air_layer = 10
         model_max_height  = 200.0
@@ -403,12 +414,6 @@ contains
         source_type = SRC_MT_1D
         !
         forward_solver_type = FWD_IT_DC
-        !
-        !
-        has_control_file = .FALSE.
-        has_model_file   = .FALSE.
-        has_data_file    = .FALSE.
-        verbosis         = .FALSE.
         !
     end subroutine setupDefaultParameters
     !
@@ -599,5 +604,5 @@ contains
         stop
         !
     end subroutine printHelp
-
+    !
 end program ModEM

@@ -833,14 +833,15 @@ contains
     !**
     ! mult2CVector3D_SG
     !*
-    function mult2CVector3D_SG(c, self) result(Eout)
+    function mult2CVector3D_SG( self, c ) result( Eout )
         implicit none
         !
-        complex( kind=prec ) , intent( in )   :: c
         class( cVector3D_SG_t ), intent( in ) :: self
+        complex( kind=prec ) , intent( in )   :: c
+        !
         class( cVector_t ), allocatable       :: Eout
         !
-        allocate(Eout, source = cVector3D_SG_t(self%grid, self%gridType))
+        allocate( Eout, source = cVector3D_SG_t( self%grid, self%gridType ) )
         !
         select type(Eout)
             class is( cVector3D_SG_t )

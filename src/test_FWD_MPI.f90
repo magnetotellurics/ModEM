@@ -381,7 +381,7 @@ contains
         !
         Tx => getTransmitter( fwd_info%tx_index )
         !
-        call writeEsolutionHeader( Tx%n_pol )
+        call writeEsolutionHeader( size( transmitters ), Tx%n_pol )
         !
         ! Verbosis...
         write( *, * ) "    Tx Id:", Tx%id, "Period:", int( Tx%period )
@@ -550,77 +550,96 @@ contains
         !
     end subroutine handleModelFile
     !
+    !
     subroutine handleArguments()
         implicit none
         !
         character(200) :: argument
-        integer         :: argument_index
+        integer        :: argument_index
         !
         if ( command_argument_count() == 0 ) then
-          !
-          call printHelp()
-          !
+            !
+            call printHelp()
+            !
         else
-          !
-          argument_index = 1
-          !
-          do while(argument_index <= command_argument_count()) 
-                !
-                call get_command_argument( argument_index, argument )
-                !
-                select case ( argument )
-                    !
-                    case ( "-c", "--control" )
+            !
+            argument_index = 1
+            !
+            do while(argument_index <= command_argument_count()) 
+                 !
+                 call get_command_argument( argument_index, argument )
+                 !
+                 select case ( argument )
                       !
-                      call get_command_argument( argument_index + 1, argument )
-                      control_file_name = trim( argument )
-                      !
-                      if ( len( control_file_name ) > 0 ) has_control_file = .true.
-                      !
-                      argument_index = argument_index + 2
-                      !
-                    case ( "-d", "--data" )
-                      !
-                      call get_command_argument( argument_index + 1, argument )
-                      data_file_name = trim( argument )
-                      !
-                      if ( len( data_file_name ) > 0 ) has_data_file = .true.
-                      !
-                      argument_index = argument_index + 2
-                      !
-                    case ( "-f", "--forward" )
-                      !
-                      modem_job = "forward"
-                      !
-                      argument_index = argument_index + 1
-                      !
-                    case ( "-m", "--model" )
-                      !
-                      call get_command_argument( argument_index + 1, argument )
-                      model_file_name = trim(argument)
-                      !
-                      if ( len( model_file_name ) > 0 ) has_model_file = .true.
-                      !
-                      argument_index = argument_index + 2
-                      !
-                    case ( "-v", "--version" )
-                      !
-                      write( *, * ) "    + ModEM-OO version 1.0.0"
-                      stop
-                      !
-                    case ( "-h", "--help" )
-                      !
-                      call printHelp()
-                      !
-                    case default
-                      !
-                      write( *, * ) "    - Unknow Argument: [", trim( argument ), "]"
-                      call printHelp()
-                      !
-                end select
-                !
-          end do
-          !
+                      case ( "-c", "--control" )
+                         !
+                         call get_command_argument( argument_index + 1, argument )
+                         control_file_name = trim( argument )
+                         !
+                         if ( len( control_file_name ) > 0 ) has_control_file = .TRUE.
+                         !
+                         argument_index = argument_index + 2
+                         !
+                      case ( "-d", "--data" )
+                         !
+                         call get_command_argument( argument_index + 1, argument )
+                         data_file_name = trim( argument )
+                         !
+                         if ( len( data_file_name ) > 0 ) has_data_file = .TRUE.
+                         !
+                         argument_index = argument_index + 2
+                         !
+                      case ( "-f", "--forward" )
+                         !
+                         modem_job = "forward"
+                         !
+                         argument_index = argument_index + 1
+                         !
+                      case ( "-m", "--model" )
+                         !
+                         call get_command_argument( argument_index + 1, argument )
+                         model_file_name = trim(argument)
+                         !
+                         if ( len( model_file_name ) > 0 ) has_model_file = .TRUE.
+                         !
+                         argument_index = argument_index + 2
+                         !
+                      case ( "-pd", "--predicted" )
+                         !
+                         call get_command_argument( argument_index + 1, argument )
+                         predicted_data_file_name = trim(argument)
+                         !
+                         argument_index = argument_index + 2
+                         !
+                      case ( "-es", "--esolution" )
+                         !
+                         call get_command_argument( argument_index + 1, argument )
+                         e_solution_file_name = trim(argument)
+                         !
+                         argument_index = argument_index + 2
+                         !
+                      case ( "-v", "--version" )
+                         !
+                         write( *, * ) "    + ModEM-OO version 1.0.0"
+                         stop
+                         !
+                      case ( "-h", "--help" )
+                         !
+                         call printHelp()
+                         !
+                      case ( "--verbosis" )
+                         !
+                         call printHelp()
+                         !
+                      case default
+                         !
+                         write( *, * ) "    - Unknow Argument: [", trim( argument ), "]"
+                         call printHelp()
+                         !
+                 end select
+                 !
+            end do
+            !
         end if
         !
     end subroutine handleArguments
@@ -628,6 +647,19 @@ contains
     subroutine setupDefaultParameters()
         implicit none
         !
+		! I|O
+        predicted_data_file_name = "predicted_data.dat"
+        e_solution_file_name     = "esolution.bin"
+		has_control_file         = .FALSE.
+        has_model_file           = .FALSE.
+        has_data_file            = .FALSE.
+        verbosis                 = .FALSE.
+        !
+		! Solver
+		max_iter = 100
+		tolerance = TOL8
+		!
+		! Model
         model_method      = MM_METHOD_FIXED_H
         model_n_air_layer = 10
         model_max_height  = 200.0
@@ -636,32 +668,25 @@ contains
         !
         forward_solver_type = FWD_IT_DC
         !
-        !
-        has_control_file = .FALSE.
-        has_model_file   = .FALSE.
-        has_data_file    = .FALSE.
-        verbosis         = .FALSE.
-        !
     end subroutine setupDefaultParameters
     !
-    subroutine writeEsolutionHeader( nMode )
+    subroutine writeEsolutionHeader( nTx, nMode )
         implicit none
         !
-        integer, intent( in ) :: nMode
+        ! implement separated routine
+        integer, intent( in ) :: nTx, nMode
+        integer               :: ios
+        character(len=20)     :: version
         !
-        integer            :: ios
-        character(:), allocatable :: version
+        version = "Modem-OO"
         !
-        version = ""
+        open( ioESolution, file = e_solution_file_name, action = "write", form = "unformatted", iostat = ios)
         !
-        open( ioESolution, file = "e_solution", action="write", form ="unformatted", iostat=ios )
-        !
-        if( ios == 0 ) then
+        if( ios /= 0 ) then
+            write( *, * ) "Error opening file in FileWriteInit: e_solution"
+        else
             !
-            version = ""
-            ! write the header (contains the basic information for the forward
-            ! modeling). the header is 4 lines
-            write( ioESolution ) version, size( transmitters ), nMode, &
+            write( ioESolution ) version, nTx, nMode, &
             main_grid%nx, main_grid%ny, main_grid%nz, main_grid%nzAir, &
             main_grid%ox, main_grid%oy, main_grid%oz, main_grid%rotdeg
             !
@@ -671,9 +696,8 @@ contains
             !
             close( ioESolution )
             !
-        else
-            stop "writeEsolutionHeader: e_solution"
         endif
+        !
         !
     end subroutine writeEsolutionHeader
     !
@@ -769,15 +793,18 @@ contains
         write( *, * ) "ModEM-OO Usage:"
         write( *, * ) ""
         write( *, * ) "    Flags to define a job:"
-        write( *, * ) "        [-f], [--forward] : Forward modelling."
-        write( *, * ) "        [-i], [--inverse] : Inversion modelling."
+        write( *, * ) "        [-f], [--forward]    :  Forward modelling."
+        write( *, * ) "        [-i], [--inverse]    :  Inversion modelling."
         write( *, * )
         write( *, * ) "    Other arguments:"
-        write( *, * ) "        [-d], [--data]     : Flags for data file path."
-        write( *, * ) "        [-m], [--model]    : Flags for model file path."
-        write( *, * ) "        [-c], [--control] : Flags for user control file path."
-        write( *, * ) "        [-v], [--version] : Print version."
-        write( *, * ) "        [-h], [--help]     : Print usage information."
+        write( *, * ) "        [-d], [--data]       :  Flags for input data file path."
+        write( *, * ) "        [-m], [--model]      :  Flags for input model file path."
+        write( *, * ) "        [-c], [--control]    :  Flags for user control file path."
+        write( *, * ) "        [-v], [--version]    :  Print version."
+        write( *, * ) "        [-h], [--help]       :  Print usage information."
+        write( *, * ) "        [-pd], [--predicted] :  Output data file path."
+        write( *, * ) "        [-es], [--esolution] :  Output binary e-solution file path."
+        write( *, * ) "        [--verbosis]         :  Print runtime information."
         !
         write( *, * ) ""
         write( *, * ) "Version 1.0.0"
@@ -785,5 +812,5 @@ contains
         stop
         !
     end subroutine printHelp
-
+	!
 end program ModEM

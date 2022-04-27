@@ -12,6 +12,8 @@ module PreConditioner
     !
     type, abstract :: PreConditioner_t
         !
+        real( kind=prec ) :: omega
+        !
         class( ModelOperator_t ), pointer :: model_operator
         !
         contains

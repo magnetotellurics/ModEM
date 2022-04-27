@@ -166,7 +166,7 @@ contains
                 !
                 call self%model_operator%MultAib( self%E%Boundary(), self%rhs )
                 !
-                self%rhs = C_MinusOne * self%rhs
+                self%rhs = self%rhs * C_MinusOne
                 !
         end select
         !

@@ -34,7 +34,6 @@ module Transmitter
         procedure, public :: dealloc  => deallocateTx
         !
         procedure, public :: setSource => setSourceTx
-        procedure, public :: setForwardSolver => setForwardSolverTx
         !
         procedure, public :: updateFwdKey
         !
@@ -118,15 +117,6 @@ module Transmitter
             call date_and_time( values=self%fwd_key )
             !
         end subroutine updateFwdKey
-        !
-        subroutine setForwardSolverTx( self, forward_solver )
-            !
-            class( Transmitter_t ), intent( inout )        :: self
-            class( ForwardSolver_t ), target, intent( in ) :: forward_solver
-            !
-            self%forward_solver => forward_solver
-            !
-        end subroutine setForwardSolverTx
         !
         subroutine setSourceTx( self, source )
             !
