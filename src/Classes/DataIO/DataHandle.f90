@@ -14,7 +14,7 @@ module DataHandle
 	!
     type :: DataHandle_t
         !
-        integer                   :: rx_id
+        integer                   :: rx_type
         character(:), allocatable :: code, component
         real( kind=prec )         :: period, xyz(3)
         real( kind=prec )         :: real, imaginary
@@ -25,16 +25,16 @@ module DataHandle
     !
 contains
     !
-    function buildDataHandle( rx_id, code, component, period, xyz, real, imaginary ) result( data_handle )
+    function buildDataHandle( rx_type, code, component, period, xyz, real, imaginary ) result( data_handle )
         implicit none
         !
-        integer, intent( in )                   :: rx_id
+        integer, intent( in )                   :: rx_type
         character(:), allocatable, intent( in ) :: code, component
         real( kind=prec ), intent( in )         :: period, xyz(3), real, imaginary
         !
         type( DataHandle_t ) :: data_handle
         !
-        data_handle%rx_id       = rx_id
+        data_handle%rx_type     = rx_type
         data_handle%code        = code
         data_handle%component   = component
         data_handle%period      = period

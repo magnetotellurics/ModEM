@@ -42,9 +42,9 @@ contains
     subroutine initializeDataFile( self )
         class( DataFile_t ), intent( inout ) :: self
         !
-		self%nTx = 0
-		self%nRx = 0
-		!
+        self%nTx = 0
+        self%nRx = 0
+        !
         allocate( self%data_entries, source = DataEntryArray_t() )
         !
     end subroutine initializeDataFile
@@ -65,7 +65,7 @@ contains
         !
         class( Receiver_t ), pointer    :: receiver
         class( Transmitter_t ), pointer :: transmitter
-        integer                         :: iTx, rx_id
+        integer                         :: iTx, rx_id, rx_type
         real ( kind=prec )              :: azimuth
         !
         call self%data_entries%add( data_entry )
@@ -90,36 +90,38 @@ contains
         !
         if( updateTransmitterArray( transmitter ) == 0 ) deallocate( transmitter )
         !
+        rx_type = getIntReceiverType( data_entry%type )
+        !
         select case( data_entry%type )
             !
             case( "Ex_Field" )
                 !
                 azimuth = 1.0
-                allocate( receiver, source = ReceiverSingleField_t( data_entry%xyz, azimuth, data_entry%type ) )
+                allocate( receiver, source = ReceiverSingleField_t( data_entry%xyz, azimuth, rx_type ) )
                 !
             case( "Ey_Field" )
                 !
                 azimuth = 2.0
-                allocate( receiver, source = ReceiverSingleField_t( data_entry%xyz, azimuth, data_entry%type ) )
+                allocate( receiver, source = ReceiverSingleField_t( data_entry%xyz, azimuth, rx_type ) )
                 !
             case( "Bx_Field" )
                 !
                 azimuth = 3.0
-                allocate( receiver, source = ReceiverSingleField_t( data_entry%xyz, azimuth, data_entry%type ) )
+                allocate( receiver, source = ReceiverSingleField_t( data_entry%xyz, azimuth, rx_type ) )
                 !
             case( "By_Field" )
                 !
                 azimuth = 4.0
-                allocate( receiver, source = ReceiverSingleField_t( data_entry%xyz, azimuth, data_entry%type ) )
+                allocate( receiver, source = ReceiverSingleField_t( data_entry%xyz, azimuth, rx_type ) )
                 !
             case( "Bz_Field" )
                 !
                 azimuth = 5.0
-                allocate( receiver, source = ReceiverSingleField_t( data_entry%xyz, azimuth, data_entry%type ) )
+                allocate( receiver, source = ReceiverSingleField_t( data_entry%xyz, azimuth, rx_type ) )
                 !
             case( "Full_Impedance" )
                 !
-                allocate( receiver, source = ReceiverFullImpedance_t( data_entry%xyz, data_entry%type ) )
+                allocate( receiver, source = ReceiverFullImpedance_t( data_entry%xyz, rx_type ) )
                 !
             case( "Full_Interstation_TF" )
                 !
@@ -135,11 +137,11 @@ contains
                 !
             case( "Off_Diagonal_Impedance" )
                 !
-                allocate( receiver, source = ReceiverOffDiagonalImpedance_t( data_entry%xyz, data_entry%type ) )
+                allocate( receiver, source = ReceiverOffDiagonalImpedance_t( data_entry%xyz, rx_type ) )
                 !
             case( "Full_Vertical_Components", "Full_Vertical_Magnetic" )
                 !
-                allocate( receiver, source = ReceiverFullVerticalMagnetic_t( data_entry%xyz, data_entry%type ) )
+                allocate( receiver, source = ReceiverFullVerticalMagnetic_t( data_entry%xyz, rx_type ) )
                 !
             case default
                 write(*,*) "unknow component type :[", data_entry%type, "]"

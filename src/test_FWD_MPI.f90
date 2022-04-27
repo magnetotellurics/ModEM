@@ -184,7 +184,7 @@ contains
         deallocate( model_operator )
         deallocate( model_parameter )
         deallocate( main_grid )
-		!
+        !
         call deallocateTransmitterArray()
         !
         ! SEND 1 TRANSMITTER TO FIRST np WORKERS
@@ -251,6 +251,9 @@ contains
              
         enddo
         !
+        ! Verbosis...
+        write( *, * ) "    -> Writing Predicted Data to file: [", trim( predicted_data_file_name ), "]"
+        !
         ! Write all_data_handles into predicted_data.dat
         call writeDataHandleArray( all_data_handles )
         !
@@ -313,10 +316,10 @@ contains
     subroutine workerForwardModelling()
         implicit none
         !
+        ! Use save ????
+        class( ForwardSolver_t ), allocatable, target, save :: forward_solver
         !
-        class( ForwardSolver_t ), allocatable, save :: fwd_solver
-        !
-        class( Source_t ), allocatable        :: fwd_source 
+        class( Source_t ), allocatable, target        :: fwd_source 
         !
         ! Temporary alias pointers
         class( Receiver_t ), pointer    :: Rx
@@ -353,17 +356,17 @@ contains
         select case ( trim( forward_solver_type ) )
             !
             case( FWD_FILE )
-                fwd_solver = ForwardSolverFromFile_t( model_operator )
+                forward_solver = ForwardSolverFromFile_t( model_operator )
             !
             case( FWD_IT_DC )
-                fwd_solver = ForwardSolverIT_DC_t( model_operator, QMR )
+                forward_solver = ForwardSolverIT_DC_t( model_operator, QMR )
             !
             case default
-                fwd_solver = ForwardSolverIT_DC_t( model_operator, QMR )
+                forward_solver = ForwardSolverIT_DC_t( model_operator, QMR )
             !
         end select
         !
-        call fwd_solver%setCond( model_parameter )
+        call forward_solver%setCond( model_parameter )
         !
         ! Source - Chosen from control file
         select case ( trim( source_type ) )
@@ -381,19 +384,13 @@ contains
         !
         Tx => getTransmitter( fwd_info%tx_index )
         !
-        call writeEsolutionHeader( Tx%n_pol )
+        call writeEsolutionHeader( size( transmitters ), Tx%n_pol )
         !
-        ! Verbosis...
-        write( *, * ) "    Tx Id:", Tx%id, "Period:", int( Tx%period )
+        Tx%source => fwd_source
+        Tx%forward_solver => forward_solver
         !
-        ! Tx points to its due Source
-        call Tx%setSource( fwd_source )
-        !
-        ! Set ForwardSolver Period
-        call fwd_solver%setPeriod( Tx%period )
-        !
-        ! Tx points to its due ForwardSolver
-        call Tx%setForwardSolver( fwd_solver )
+        ! Set ForwardSolver omega
+        call Tx%forward_solver%setFrequency( Tx%period )
         !
         ! Solve Tx Forward Modelling
         call Tx%solveFWD()
@@ -401,7 +398,7 @@ contains
         deallocate( fwd_source )
         !
         ! THIS CAUSES MEMORY CRASHES
-        !deallocate( fwd_solver )
+        !deallocate( forward_solver )
         !
         ! Loop over Receivers of each Transmitter
         nRx = size( Tx%receiver_indexes )
@@ -550,77 +547,96 @@ contains
         !
     end subroutine handleModelFile
     !
+    !
     subroutine handleArguments()
         implicit none
         !
         character(200) :: argument
-        integer         :: argument_index
+        integer        :: argument_index
         !
         if ( command_argument_count() == 0 ) then
-          !
-          call printHelp()
-          !
+            !
+            call printHelp()
+            !
         else
-          !
-          argument_index = 1
-          !
-          do while(argument_index <= command_argument_count()) 
-                !
-                call get_command_argument( argument_index, argument )
-                !
-                select case ( argument )
-                    !
-                    case ( "-c", "--control" )
+            !
+            argument_index = 1
+            !
+            do while(argument_index <= command_argument_count()) 
+                 !
+                 call get_command_argument( argument_index, argument )
+                 !
+                 select case ( argument )
                       !
-                      call get_command_argument( argument_index + 1, argument )
-                      control_file_name = trim( argument )
-                      !
-                      if ( len( control_file_name ) > 0 ) has_control_file = .true.
-                      !
-                      argument_index = argument_index + 2
-                      !
-                    case ( "-d", "--data" )
-                      !
-                      call get_command_argument( argument_index + 1, argument )
-                      data_file_name = trim( argument )
-                      !
-                      if ( len( data_file_name ) > 0 ) has_data_file = .true.
-                      !
-                      argument_index = argument_index + 2
-                      !
-                    case ( "-f", "--forward" )
-                      !
-                      modem_job = "forward"
-                      !
-                      argument_index = argument_index + 1
-                      !
-                    case ( "-m", "--model" )
-                      !
-                      call get_command_argument( argument_index + 1, argument )
-                      model_file_name = trim(argument)
-                      !
-                      if ( len( model_file_name ) > 0 ) has_model_file = .true.
-                      !
-                      argument_index = argument_index + 2
-                      !
-                    case ( "-v", "--version" )
-                      !
-                      write( *, * ) "    + ModEM-OO version 1.0.0"
-                      stop
-                      !
-                    case ( "-h", "--help" )
-                      !
-                      call printHelp()
-                      !
-                    case default
-                      !
-                      write( *, * ) "    - Unknow Argument: [", trim( argument ), "]"
-                      call printHelp()
-                      !
-                end select
-                !
-          end do
-          !
+                      case ( "-c", "--control" )
+                         !
+                         call get_command_argument( argument_index + 1, argument )
+                         control_file_name = trim( argument )
+                         !
+                         if ( len( control_file_name ) > 0 ) has_control_file = .TRUE.
+                         !
+                         argument_index = argument_index + 2
+                         !
+                      case ( "-d", "--data" )
+                         !
+                         call get_command_argument( argument_index + 1, argument )
+                         data_file_name = trim( argument )
+                         !
+                         if ( len( data_file_name ) > 0 ) has_data_file = .TRUE.
+                         !
+                         argument_index = argument_index + 2
+                         !
+                      case ( "-f", "--forward" )
+                         !
+                         modem_job = "forward"
+                         !
+                         argument_index = argument_index + 1
+                         !
+                      case ( "-m", "--model" )
+                         !
+                         call get_command_argument( argument_index + 1, argument )
+                         model_file_name = trim(argument)
+                         !
+                         if ( len( model_file_name ) > 0 ) has_model_file = .TRUE.
+                         !
+                         argument_index = argument_index + 2
+                         !
+                      case ( "-pd", "--predicted" )
+                         !
+                         call get_command_argument( argument_index + 1, argument )
+                         predicted_data_file_name = trim(argument)
+                         !
+                         argument_index = argument_index + 2
+                         !
+                      case ( "-es", "--esolution" )
+                         !
+                         call get_command_argument( argument_index + 1, argument )
+                         e_solution_file_name = trim(argument)
+                         !
+                         argument_index = argument_index + 2
+                         !
+                      case ( "-v", "--version" )
+                         !
+                         write( *, * ) "    + ModEM-OO version 1.0.0"
+                         stop
+                         !
+                      case ( "-h", "--help" )
+                         !
+                         call printHelp()
+                         !
+                      case ( "--verbosis" )
+                         !
+                         call printHelp()
+                         !
+                      case default
+                         !
+                         write( *, * ) "    - Unknow Argument: [", trim( argument ), "]"
+                         call printHelp()
+                         !
+                 end select
+                 !
+            end do
+            !
         end if
         !
     end subroutine handleArguments
@@ -628,6 +644,19 @@ contains
     subroutine setupDefaultParameters()
         implicit none
         !
+        ! I|O
+        predicted_data_file_name = "predicted_data.dat"
+        e_solution_file_name     = "esolution.bin"
+        has_control_file         = .FALSE.
+        has_model_file           = .FALSE.
+        has_data_file            = .FALSE.
+        verbosis                 = .FALSE.
+        !
+        ! Solver
+        max_iter = 100
+        tolerance = TOL8
+        !
+        ! Model
         model_method      = MM_METHOD_FIXED_H
         model_n_air_layer = 10
         model_max_height  = 200.0
@@ -636,32 +665,25 @@ contains
         !
         forward_solver_type = FWD_IT_DC
         !
-        !
-        has_control_file = .FALSE.
-        has_model_file   = .FALSE.
-        has_data_file    = .FALSE.
-        verbosis         = .FALSE.
-        !
     end subroutine setupDefaultParameters
     !
-    subroutine writeEsolutionHeader( nMode )
+    subroutine writeEsolutionHeader( nTx, nMode )
         implicit none
         !
-        integer, intent( in ) :: nMode
+        ! implement separated routine
+        integer, intent( in ) :: nTx, nMode
+        integer               :: ios
+        character(len=20)     :: version
         !
-        integer            :: ios
-        character(:), allocatable :: version
+        version = "Modem-OO"
         !
-        version = ""
+        open( ioESolution, file = e_solution_file_name, action = "write", form = "unformatted", iostat = ios)
         !
-        open( ioESolution, file = "e_solution", action="write", form ="unformatted", iostat=ios )
-        !
-        if( ios == 0 ) then
+        if( ios /= 0 ) then
+            write( *, * ) "Error opening file in FileWriteInit: e_solution"
+        else
             !
-            version = ""
-            ! write the header (contains the basic information for the forward
-            ! modeling). the header is 4 lines
-            write( ioESolution ) version, size( transmitters ), nMode, &
+            write( ioESolution ) version, nTx, nMode, &
             main_grid%nx, main_grid%ny, main_grid%nz, main_grid%nzAir, &
             main_grid%ox, main_grid%oy, main_grid%oz, main_grid%rotdeg
             !
@@ -671,11 +693,110 @@ contains
             !
             close( ioESolution )
             !
-        else
-            stop "writeEsolutionHeader: e_solution"
         endif
         !
+        !
     end subroutine writeEsolutionHeader
+    !
+    !
+    recursive subroutine sortByReceiverType( data_handle_array, first, last )
+        implicit none
+        !
+        type( DataHandle_t ), allocatable, intent( inout ) :: data_handle_array(:)
+        type( DataHandle_t ) :: x_data_entry, t_data_entry
+        integer first, last
+        integer i, j
+        !
+        x_data_entry = data_handle_array( (first+last) / 2 )
+        i = first
+        j = last
+        !
+        do
+            do while ( data_handle_array(i)%rx_type < x_data_entry%rx_type )
+                i=i+1
+            end do
+            do while ( x_data_entry%rx_type < data_handle_array(j)%rx_type )
+                j=j-1
+            end do
+            if (i >= j) exit
+            t_data_entry = data_handle_array(i)
+            data_handle_array(i) = data_handle_array(j)
+            data_handle_array(j) = t_data_entry
+            i=i+1
+            j=j-1
+        end do
+        !
+        if (first < i-1) call sortByReceiverType( data_handle_array, first, i-1 )
+        if (j+1 < last)  call sortByReceiverType( data_handle_array, j+1, last )
+        !
+    end subroutine sortByReceiverType
+    !
+    !
+    recursive subroutine sortByPeriod( data_handle_array, first, last )
+        implicit none
+        !
+        type( DataHandle_t ), allocatable, intent( inout ) :: data_handle_array(:)
+        type( DataHandle_t ) :: x_data_entry, t_data_entry
+        integer first, last
+        integer i, j
+        !
+        x_data_entry = data_handle_array( (first+last) / 2 )
+        i = first
+        j = last
+        !
+        do
+            do while ( data_handle_array(i)%period < x_data_entry%period )
+                i=i+1
+            end do
+            do while ( x_data_entry%period < data_handle_array(j)%period )
+                j=j-1
+            end do
+            if (i >= j) exit
+            t_data_entry = data_handle_array(i)
+            data_handle_array(i) = data_handle_array(j)
+            data_handle_array(j) = t_data_entry
+            i=i+1
+            j=j-1
+        end do
+        !
+        if (first < i-1) call sortByPeriod( data_handle_array, first, i-1 )
+        if (j+1 < last)  call sortByPeriod( data_handle_array, j+1, last )
+        !
+    end subroutine sortByPeriod
+    !
+    !
+    recursive subroutine sortByReceiver( data_handle_array, first, last )
+        implicit none
+        !
+        type( DataHandle_t ), allocatable, intent( inout ) :: data_handle_array(:)
+        type( DataHandle_t ) :: x_data_entry, t_data_entry
+        integer first, last
+        integer i, j
+        !
+        x_data_entry = data_handle_array( (first+last) / 2 )
+        i = first
+        j = last
+        !
+        do
+            do while ( data_handle_array(i)%code < x_data_entry%code )
+                i=i+1
+            end do
+            do while ( x_data_entry%code < data_handle_array(j)%code )
+                j=j-1
+            end do
+            if (i >= j) exit
+            t_data_entry = data_handle_array(i)
+            data_handle_array(i) = data_handle_array(j)
+            data_handle_array(j) = t_data_entry
+            i=i+1
+            j=j-1
+        end do
+        !
+        if (first < i-1) call sortByReceiver( data_handle_array, first, i-1 )
+        if (j+1 < last)  call sortByReceiver( data_handle_array, j+1, last )
+        !
+    end subroutine sortByReceiver
+    !
     !
     subroutine writeDataHandleArray( data_handle_array )
         implicit none
@@ -683,49 +804,29 @@ contains
         type( DataHandle_t ), allocatable, intent( inout ) :: data_handle_array(:)
         !
         type( DataHandle_t ) :: aux_data_entry
-        character(:), allocatable :: receiver_type
-        integer :: i, j, ios
-        !
-        receiver_type = "Unknow"
+        integer :: receiver_type, i, j, ios
         !
         ! Order by transmitter
-        do i = 1, size( data_handle_array ) - 1
-          !
-          do j = i + 1, size( data_handle_array )
-              !
-              if( data_handle_array(i)%period > data_handle_array(j)%period ) then
-                aux_data_entry = data_handle_array(i)
-                data_handle_array(i) = data_handle_array(j)
-                data_handle_array(j) = aux_data_entry
-              endif
-              !
-          enddo
-        enddo
+        call sortByPeriod( data_handle_array, 1, size( data_handle_array ) )
         !
         ! Order by receiver
-        do i = 1, size( data_handle_array ) - 1
-          !
-          do j = i + 1, size( data_handle_array )
-              !
-              if( data_handle_array(i)%rx_id > data_handle_array(j)%rx_id ) then
-                aux_data_entry = data_handle_array(i)
-                data_handle_array(i) = data_handle_array(j)
-                data_handle_array(j) = aux_data_entry
-              endif
-              !
-          enddo
-        enddo
+        call sortByReceiver( data_handle_array, 1, size( data_handle_array ) )
         !
-        open( ioPredData, file = "predicted_data.dat", action = "write", form = "formatted", iostat = ios )
+        ! Order by receiver
+        call sortByReceiverType( data_handle_array, 1, size( data_handle_array ) )
+        !
+        receiver_type = 0
+        !
+        open( ioPredData, file = predicted_data_file_name, action = "write", form = "formatted", iostat = ios )
         !
         if( ios == 0 ) then
             !
             do i = 1, size( data_handle_array )
                 !
-                call writePredictedDataHeader( data_handle_array(i), receiver_type )
-                !
-                write( ioPredData, "(es12.6, A20, f15.3, f15.3, f15.3, f15.3, f15.3, A20, es16.6, es16.6, es16.6)" ) data_handle_array(i)%period, data_handle_array(i)%code, R_ZERO, R_ZERO, data_handle_array(i)%xyz(1), data_handle_array(i)%xyz(2), data_handle_array(i)%xyz(3), data_handle_array(i)%component, data_handle_array(i)%real, data_handle_array(i)%imaginary, 1.0
-                !
+				call writePredictedDataHeader( data_handle_array(i), receiver_type )
+				!
+				write( ioPredData, "(es12.6, A20, f15.3, f15.3, f15.3, f15.3, f15.3, A20, es16.6, es16.6, es16.6)" ) data_handle_array(i)%period, data_handle_array(i)%code, R_ZERO, R_ZERO, data_handle_array(i)%xyz(1), data_handle_array(i)%xyz(2), data_handle_array(i)%xyz(3), data_handle_array(i)%component, data_handle_array(i)%real, data_handle_array(i)%imaginary, 1.0
+				!
             enddo
             !
             close( ioPredData )
@@ -740,24 +841,20 @@ contains
         implicit none
         !
         type( DataHandle_t ), intent( in ) :: data_handle
-        character(:), allocatable, intent( inout ) :: receiver_type
+        integer, intent( inout ) :: receiver_type
         !
-        class( Receiver_t ), pointer :: receiver
-        !
-        receiver => getReceiver( data_handle%rx_id )
-        !
-        if( receiver_type /= trim( receiver%type_name ) ) then
+        if( receiver_type /= data_handle%rx_type ) then
             !
             write( ioPredData, "(4A, 100A)" ) "#    ", DATA_FILE_TITLE
             write( ioPredData, "(100A)" )     "#    Period(s) Code GG_Lat GG_Lon X(m) Y(m) Z(m) Component Real Imag Error"
-            write( ioPredData, "(4A, 100A)" ) ">    ", trim( receiver%type_name )
+            write( ioPredData, "(4A, 100A)" ) ">    ", getStringReceiverType( data_handle%rx_type )
             write( ioPredData, "(4A, 100A)" ) ">    ", "exp(-i\omega t)"
             write( ioPredData, "(4A, 100A)" ) ">    ", "[V/m]/[T]"
             write( ioPredData, "(7A, 100A)" ) ">        ", "0.00"
             write( ioPredData, "(7A, 100A)" ) ">        ", "0.000    0.000"
             write( ioPredData, "(A3, i8, i8)" ) ">        ", size( transmitters ), size( receivers )
             !
-            receiver_type = trim( receiver%type_name )
+            receiver_type = data_handle%rx_type
             !
         endif
         !
@@ -769,15 +866,18 @@ contains
         write( *, * ) "ModEM-OO Usage:"
         write( *, * ) ""
         write( *, * ) "    Flags to define a job:"
-        write( *, * ) "        [-f], [--forward] : Forward modelling."
-        write( *, * ) "        [-i], [--inverse] : Inversion modelling."
+        write( *, * ) "        [-f], [--forward]    :  Forward modelling."
+        write( *, * ) "        [-i], [--inverse]    :  Inversion modelling."
         write( *, * )
         write( *, * ) "    Other arguments:"
-        write( *, * ) "        [-d], [--data]     : Flags for data file path."
-        write( *, * ) "        [-m], [--model]    : Flags for model file path."
-        write( *, * ) "        [-c], [--control] : Flags for user control file path."
-        write( *, * ) "        [-v], [--version] : Print version."
-        write( *, * ) "        [-h], [--help]     : Print usage information."
+        write( *, * ) "        [-d], [--data]       :  Flags for input data file path."
+        write( *, * ) "        [-m], [--model]      :  Flags for input model file path."
+        write( *, * ) "        [-c], [--control]    :  Flags for user control file path."
+        write( *, * ) "        [-v], [--version]    :  Print version."
+        write( *, * ) "        [-h], [--help]       :  Print usage information."
+        write( *, * ) "        [-pd], [--predicted] :  Output data file path."
+        write( *, * ) "        [-es], [--esolution] :  Output binary e-solution file path."
+        write( *, * ) "        [--verbosis]         :  Print runtime information."
         !
         write( *, * ) ""
         write( *, * ) "Version 1.0.0"
@@ -785,5 +885,5 @@ contains
         stop
         !
     end subroutine printHelp
-
+    !
 end program ModEM

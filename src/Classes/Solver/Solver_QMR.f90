@@ -30,7 +30,7 @@ contains
         class( ModelOperator_t ), intent( in ) :: model_operator
         type( Solver_QMR_t ) :: self
         !
-        !write(*,*) "Constructor Solver_QMR_t"
+        write(*,*) "Constructor Solver_QMR_t"
         !
         call self%init()
         !
@@ -48,7 +48,7 @@ contains
         !
         type( Solver_QMR_t ), intent( inout ) :: self
         !
-        !write(*,*) "Destructor Solver_QMR_t"
+        write(*,*) "Destructor Solver_QMR_t"
         !
         call self%dealloc()
         !
@@ -62,9 +62,6 @@ contains
         !     local variables
         integer           :: max_iter
         real( kind=prec ) :: tolerance
-        !
-        max_iter = 800
-        tolerance = 1E-7
         !
         call self%SetParameters( max_iter, tolerance )
         !
@@ -271,7 +268,8 @@ contains
             ! Keeping track of errors
             ! QMR book-keeping between divergence correction calls
             self%relErr( iter ) = real( rnorm / bnorm )
-            !write(*,*) 'iter qmr= ',iter,'    relErr = ', self%relErr(iter)
+            !
+			!write(*,*) 'iter qmr= ',iter,'    relErr = ', self%relErr(iter)
             !
         end do
         !

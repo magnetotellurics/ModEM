@@ -15,9 +15,9 @@ module Receiver
     !
     type, abstract :: Receiver_t
         !
-        integer                   :: id, n_comp
+        integer                   :: id, rx_type, n_comp
         !
-        character(:), allocatable :: type_name, code
+        character(:), allocatable :: code
         !
         real( kind=prec )         :: location(3)
         !
@@ -34,7 +34,7 @@ module Receiver
         contains
             !
             ! BASE INTERFACES
-            procedure( interface_is_equal_rx ), deferred, public :: isEqualRx
+            procedure( interface_is_equal_rx ), deferred, public    :: isEqualRx
             !
             procedure( interface_predicted_data ), deferred, public :: predictedData
             !
@@ -43,12 +43,14 @@ module Receiver
             ! CLASS PROCEDURES
             procedure, public :: evaluationFunction => evaluationFunctionRx
             !
-            procedure, public :: init => initializeRx
+            procedure, public :: init    => initializeRx
             procedure, public :: dealloc => deallocateRx
             !
             procedure, public :: savePredictedData
             !
     end type Receiver_t
+    !
+    public :: getStringReceiverType, getIntReceiverType
     !
     abstract interface
         !
@@ -111,7 +113,7 @@ contains
         !
         self%code = ""
         !
-        self%type_name = ""
+        self%rx_type = 0
         !
         self%location = 0.0
         !
@@ -311,13 +313,14 @@ contains
         !
         character(:), allocatable :: code, component
         real( kind=prec )         :: period, real_part, imaginary, xyz(3)
-        integer                   :: i
+        integer                   :: i, rx_type
         !#Period(s) Code GG_Lat GG_Lon X(m) Y(m) response(m) Component Real Imag Error
         !
         if( allocated( self%predicted_data ) ) deallocate( self%predicted_data )
         !
         do i = 1, self%n_comp
              !
+             rx_type = int( self%rx_type )
              period = real( tx%period, kind=prec )
              code = trim( self%code )
              xyz = (/real( self%location( 1 ), kind=prec ), real( self%location( 2 ), kind=prec ), real( self%location( 3 ), kind=prec )/)
@@ -325,10 +328,90 @@ contains
              real_part = real( self%response( i ), kind=prec )
              imaginary = real( imag( self%response( i ) ), kind=prec )
              !
-             call updateDataHandleArray( self%predicted_data, buildDataHandle( self%id, code, component, period, xyz, real_part, imaginary ) )
+             call updateDataHandleArray( self%predicted_data, buildDataHandle( rx_type, code, component, period, xyz, real_part, imaginary ) )
              !
         enddo
         !
     end subroutine savePredictedData
+    !
+    function getStringReceiverType( int_receiver_type ) result( str_receiver_type )
+    !
+        integer, intent( in ) :: int_receiver_type
+        character(:), allocatable :: str_receiver_type
+        !
+        select case( int_receiver_type )
+            !
+            case( 1 )
+                str_receiver_type = "Full_Impedance"
+            case( 2 )
+                str_receiver_type = "Full_Interstation_TF"
+            case( 3 )
+                str_receiver_type = "Off_Diagonal_Rho_Phase"
+            case( 4 )
+                str_receiver_type = "Phase_Tensor"
+            case( 5 )
+                str_receiver_type = "Off_Diagonal_Impedance"
+            case( 6 )
+                str_receiver_type = "Ex_Field"
+            case( 7 )
+                str_receiver_type = "Ey_Field"
+            case( 8 )
+                str_receiver_type = "Bx_Field"
+            case( 9 )
+                str_receiver_type = "By_Field"
+            case( 10 )
+                str_receiver_type = "Bz_Field"
+            case( 11 )
+                str_receiver_type = "Full_Vertical_Components"
+            case( 12 )
+                str_receiver_type = "Full_Vertical_Magnetic"
+            case default
+                write( *, * ) "unknow receiver type :[", int_receiver_type, "]"
+                STOP "Receiver.f08: getStringReceiverType()"
+            !
+        end select
+        !
+    end function getStringReceiverType
+    !
+    function getIntReceiverType( str_receiver_type ) result( int_receiver_type )
+        !
+        character(:), allocatable, intent( in ) :: str_receiver_type
+        integer :: int_receiver_type
+        !
+        int_receiver_type = 0
+        !
+        select case( str_receiver_type )
+            !
+            case( "Full_Impedance" )
+                int_receiver_type = 1
+            case( "Full_Interstation_TF" )
+                int_receiver_type = 2
+            case( "Off_Diagonal_Rho_Phase" )
+                int_receiver_type = 3
+            case( "Phase_Tensor" )
+                int_receiver_type = 4
+            case( "Off_Diagonal_Impedance" )
+                int_receiver_type = 5
+            case( "Ex_Field" )
+                int_receiver_type = 6
+            case( "Ey_Field" )
+                int_receiver_type = 7
+            case( "Bx_Field" )
+                int_receiver_type = 8
+            case( "By_Field" )
+                int_receiver_type = 9
+            case( "Bz_Field" )
+                int_receiver_type = 10
+            case( "Full_Vertical_Components" )
+                int_receiver_type = 11
+            case( "Full_Vertical_Magnetic" )
+                int_receiver_type = 12
+            case default
+                write( *, * ) "unknow receiver type :[", str_receiver_type, "]"
+                STOP "Receiver.f08: getIntReceiverType()"
+            !
+        end select
+        !
+    end function getIntReceiverType
     !
 end module Receiver

@@ -32,13 +32,15 @@ module ReceiverOffDiagonalImpedance
     !
 contains
     !
-    function ReceiverOffDiagonalImpedance_ctor( location, type_name ) result( self )
+    function ReceiverOffDiagonalImpedance_ctor( location, rx_type ) result( self )
         implicit none
         !
-        real( kind=prec ), intent( in )                   :: location(3)
-		character(:), allocatable, optional, intent( in ) :: type_name
+        real( kind=prec ), intent( in ) :: location(3)
+        integer, optional, intent( in ) :: rx_type
         !
         type( ReceiverOffDiagonalImpedance_t ) :: self
+        !
+        character(:), allocatable :: aux_str
         !
         ! write(*,*) "Constructor ReceiverOffDiagonalImpedance_t"
         !
@@ -46,11 +48,7 @@ contains
         !
         self%location = location
         !
-        if( present( type_name ) ) then
-            self%type_name = type_name
-        else
-            self%type_name = "ReceiverOffDiagonalImpedance"
-        endif
+        self%rx_type = rx_type
         !
         self%n_comp = 4
         self%is_complex = .TRUE.

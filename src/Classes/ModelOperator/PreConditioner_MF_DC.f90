@@ -18,7 +18,6 @@ module PreConditioner_MF_DC
              !
              final :: PreConditioner_MF_DC_dtor
              !
-             procedure, public :: create => createPreConditioner_MF_DC
              procedure, public :: setPreConditioner => setPreConditioner_MF_DC
              procedure, public :: LTSolve => LTSolvePreConditioner_MF_DC
              procedure, public :: UTSolve => UTSolvePreConditioner_MF_DC
@@ -40,11 +39,18 @@ contains
         class( ModelOperator_t ), target, intent( in ) :: model_operator
         type( PreConditioner_MF_DC_t ) :: self
         !
-        !write(*,*) "Constructor PreConditioner_MF_DC_t"
+        write(*,*) "Constructor PreConditioner_MF_DC_t"
+        !
+        self%omega = 0.0
         !
         self%model_operator => model_operator
         !
-        call self%create()
+        select type( grid => model_operator%metric%grid )
+            class is( Grid3D_SG_t )
+                !
+                allocate( self%d, source = cScalar3D_SG_t( grid, NODE ) )
+                !
+        end select
         !
     end function PreConditioner_MF_DC_ctor
     !
@@ -54,28 +60,11 @@ contains
       !
       type( PreConditioner_MF_DC_t ), intent( inout ) :: self
       !
-      !write(*,*) "Destructor PreConditioner_MF_DC"
+      write(*,*) "Destructor PreConditioner_MF_DC"
       !
       deallocate( self%d )
       !
     end subroutine PreConditioner_MF_DC_dtor
-    !
-    !**
-    ! createPreConditioner_MF_DC
-    !*
-    subroutine createPreConditioner_MF_DC( self )
-        implicit none
-        !
-        class( PreConditioner_MF_DC_t ), intent( inout ) :: self
-        !
-        select type( grid => self%model_operator%metric%grid )
-            class is( Grid3D_SG_t )
-                !
-                allocate( self%d, source = cScalar3D_SG_t( grid, NODE ) )
-                !
-        end select
-        !
-    end subroutine createPreConditioner_MF_DC
     !**
     ! SetPreConditioner -- could be an abstract routine, but in the CC case
     !        we pass omega as a parameter, and that is not relevant here -- but since
@@ -88,6 +77,8 @@ contains
         real( kind=prec ), intent( in )                  :: omega
         !
         integer :: ix,iy,iz
+        !
+        self%omega = omega
         !
         ! Compute inverse diagonal elements for D-ILU (interior nodes only)
         ! set top nodes to 1.0

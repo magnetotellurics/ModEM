@@ -4,15 +4,16 @@ module Solver
     use cVector
     use PreConditioner
     !
+    ! Solver defaults
+    integer :: max_iter
+    real( kind=prec ) :: tolerance
+    !
     character(:), allocatable :: solver_type
     character ( len=3 ), parameter :: QMR  = "QMR"
     character ( len=3 ), parameter :: PCG  = "PCG"
     character ( len=4 ), parameter :: BiCG = "BiCG"
     !
-    ! SOLVER DEFAULTS
-    integer :: maxIter = 20
-    real( kind=prec ) :: tolerance = 0.0000000001
-    !
+    ! Solver Base Type
     type, abstract :: Solver_t
         !
         integer                        :: max_iter, n_iter
@@ -55,10 +56,11 @@ contains
         real( kind=prec ), intent( in )    :: tolerance
         !
         self%max_iter = max_iter
-        self%tolerance = tolerance
         !
         if( allocated( self%relErr ) ) deallocate( self%relErr )
-		allocate( self%relErr( max_iter ) )
+        allocate( self%relErr( max_iter ) )
+        !
+        self%tolerance = tolerance
         !
     end subroutine setParametersSolver
     !

@@ -31,13 +31,12 @@ contains
         class( ModelOperator_t ), intent( in ) :: model_operator
         type( Solver_PCG_t ) :: self
         !
-        !write(*,*) "Constructor Solver_PCG_t"
+        write( *, * ) "Constructor Solver_PCG_t"
         !
         call self%init()
         !
         self%preconditioner = PreConditioner_MF_DC_t( model_operator )
         !
-        !  Set defaults upon creation
         call self%SetDefaults()
         !
         call self%zeroDiagnostics()
@@ -50,24 +49,18 @@ contains
         !
         type( Solver_PCG_t ), intent( inout ) :: self
         !
-        !write(*,*) "Destructor Solver_PCG_t"
+        write( *, * ) "Destructor Solver_PCG_t"
         !
         call self%dealloc()
         !
     end subroutine Solver_PCG_dtor
     !
-    subroutine SetDefaults_PCG(self)
+    subroutine SetDefaults_PCG( self )
         implicit none
         !
         class( Solver_PCG_t ), intent(inout) :: self
         !
-        integer           :: max_iter
-        real( kind=prec ) :: tolerance
-        !
-        max_iter = 100
-        tolerance = 1E-5
-        !
-        call self%SetParameters(max_iter,tolerance)
+        call self%SetParameters( max_iter, tolerance )
         !
     end subroutine SetDefaults_PCG
     !
@@ -86,7 +79,7 @@ contains
         complex( kind=prec ) :: beta, alpha, delta, deltaOld
         complex( kind=prec ) :: bnorm, rnorm
         integer              :: i
-		!
+        !
         !  create local cScalar objects -- could we also use modOp%createCScalar?
         allocate( r, source = x )    ! cannot zero x, since it is first guess
         call r%zeros()
@@ -109,40 +102,47 @@ contains
         self%relErr(1) = rnorm/bnorm
         i = 0
         !
-        loop: do while ( (self%relErr(i+1).gt.self%tolerance ).and.(i.lt.self%max_iter))
+        loop: do while ( ( self%relErr(i+1) .GT. self%tolerance ).and.( i .LT. self%max_iter ) )
             !
-            call self%preconditioner%LUsolve( r, s ) 
+            call self%preconditioner%LUsolve( r, s )
+            !
             delta = r%dotProd(s)
-            if( i .eq. 0 ) then
-                beta = C_ZERO    
+            if( i .EQ. 0 ) then
+                beta = C_ZERO
             else
                 beta = delta / deltaOld
             endif
             !
             call p%linCombS( s, beta, C_ONE )
-            !call q%Zeros()
+			!
+            call q%zeros()
             call self%preconditioner%model_operator%divCgrad( p, q )
             !
             alpha = delta/p%dotProd(q)
-            !    this returns x = x + alpha*p
-            call p%scMultAddS(x,alpha)
-            !    this returns r = r - alpha*q
-            call q%scMultAddS(r,-alpha)
-            deltaOld = delta
-            i = i + 1
-            rnorm = sqrt(real(r%dotProd(r)))
-            self%relErr(i+1) = rnorm/bnorm
             !
-            !write(*,*) 'iter = ', i, ' relErr = ',self%relErr(i+1)
+            call p%scMultAddS( x, alpha )
+            !
+            call q%scMultAddS( r, -alpha )
+			!
+            deltaOld = delta
+			!
+            i = i + 1
+			!
+            rnorm = sqrt( real( r%dotProd(r) ) )
+            !
+			self%relErr(i+1) = rnorm/bnorm
+            !
+            !write( *, * ) 'iter = ', i, ' relErr = ',self%relErr(i+1)
+            !
         enddo loop
-        !
-        self%n_iter = i
         !
         deallocate( r )
         deallocate( s )
         deallocate( p )
         deallocate( q )
         !
+        self%n_iter = i
+		!
     end subroutine solvePCG ! PCG
     !
 end module Solver_PCG

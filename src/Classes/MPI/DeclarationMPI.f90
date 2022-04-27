@@ -115,11 +115,16 @@ module DeclarationMPI
     subroutine allocateSharedBuffer()
         implicit none
         !
-        integer :: i, last_size, nbytes(5)
+        integer :: i, last_size, nbytes(8)
         !
-        call MPI_PACK_SIZE( 4, MPI_INTEGER, child_comm, nbytes(1), ierr )
-        call MPI_PACK_SIZE( 1, MPI_DOUBLE_PRECISION, child_comm, nbytes(2), ierr )
-        call MPI_PACK_SIZE( 44, MPI_CHARACTER, child_comm, nbytes(3), ierr )
+        write(*,*) "????", e_solution_file_name, model_method, forward_solver_type, source_type
+        !
+        call MPI_PACK_SIZE( 6, MPI_INTEGER, child_comm, nbytes(1), ierr )
+        call MPI_PACK_SIZE( 2, MPI_DOUBLE_PRECISION, child_comm, nbytes(2), ierr )
+        call MPI_PACK_SIZE( len( e_solution_file_name ), MPI_CHARACTER, child_comm, nbytes(3), ierr )
+        call MPI_PACK_SIZE( len( model_method ), MPI_CHARACTER, child_comm, nbytes(4), ierr )
+        call MPI_PACK_SIZE( len( forward_solver_type ), MPI_CHARACTER, child_comm, nbytes(5), ierr )
+        call MPI_PACK_SIZE( len( source_type ), MPI_CHARACTER, child_comm, nbytes(6), ierr )
         !
         shared_buffer_size = shared_buffer_size + allocateGridBuffer( main_grid )
         !
@@ -136,7 +141,7 @@ module DeclarationMPI
         write( *, "(A50, i8)" ) "MPI Allocated model_parameter size:", shared_buffer_size - last_size
         last_size = shared_buffer_size
         !
-        call MPI_PACK_SIZE( 1, MPI_INTEGER, child_comm, nbytes(4), ierr )
+        call MPI_PACK_SIZE( 1, MPI_INTEGER, child_comm, nbytes(7), ierr )
         !
         do i = 1, size( transmitters )
             shared_buffer_size = shared_buffer_size + allocateTransmitterBuffer( getTransmitter( i ) )
@@ -149,7 +154,7 @@ module DeclarationMPI
         write( *, "(A50, i8)" ) "MPI Allocated transmitters size:", shared_buffer_size - last_size
         last_size = shared_buffer_size
         !
-        call MPI_PACK_SIZE( 1, MPI_INTEGER, child_comm, nbytes(5), ierr )
+        call MPI_PACK_SIZE( 1, MPI_INTEGER, child_comm, nbytes(8), ierr )
         !
         do i = 1, size( receivers )
             shared_buffer_size = shared_buffer_size + allocateReceiverBuffer( getReceiver(i) )
@@ -181,11 +186,15 @@ module DeclarationMPI
         !
         index = 1
         !
+        call MPI_PACK( len( e_solution_file_name ), 1, MPI_INTEGER, shared_buffer, shared_buffer_size, index, child_comm, ierr )
         call MPI_PACK( len( model_method ), 1, MPI_INTEGER, shared_buffer, shared_buffer_size, index, child_comm, ierr )
         call MPI_PACK( len( forward_solver_type ), 1, MPI_INTEGER, shared_buffer, shared_buffer_size, index, child_comm, ierr )
         call MPI_PACK( len( source_type ), 1, MPI_INTEGER, shared_buffer, shared_buffer_size, index, child_comm, ierr )
         call MPI_PACK( model_n_air_layer, 1, MPI_INTEGER, shared_buffer, shared_buffer_size, index, child_comm, ierr )
+        call MPI_PACK( max_iter, 1, MPI_INTEGER, shared_buffer, shared_buffer_size, index, child_comm, ierr )
+        call MPI_PACK( tolerance, 1, MPI_DOUBLE_PRECISION, shared_buffer, shared_buffer_size, index, child_comm, ierr )
         call MPI_PACK( model_max_height, 1, MPI_DOUBLE_PRECISION, shared_buffer, shared_buffer_size, index, child_comm, ierr )
+        call MPI_PACK( e_solution_file_name, len( e_solution_file_name ), MPI_CHARACTER, shared_buffer, shared_buffer_size, index, child_comm, ierr )
         call MPI_PACK( model_method, len( model_method ), MPI_CHARACTER, shared_buffer, shared_buffer_size, index, child_comm, ierr )
         call MPI_PACK( forward_solver_type, len( forward_solver_type ), MPI_CHARACTER, shared_buffer, shared_buffer_size, index, child_comm, ierr )
         call MPI_PACK( source_type, len( source_type ), MPI_CHARACTER, shared_buffer, shared_buffer_size, index, child_comm, ierr )
@@ -222,17 +231,23 @@ module DeclarationMPI
         class( Transmitter_t ), allocatable :: transmitter
         class( Receiver_t ), allocatable    :: receiver
         !
-        integer :: i, aux_size, n_model_method, n_forward_solver_type, n_source_type, index
+        integer :: i, aux_size, n_e_solution_file_name, n_model_method, n_forward_solver_type, n_source_type, index
         !
         index = 1
         !
         shared_buffer_size = buffer_size
         !
+        call MPI_UNPACK( shared_buffer, shared_buffer_size, index, n_e_solution_file_name, 1, MPI_INTEGER, child_comm, ierr )
         call MPI_UNPACK( shared_buffer, shared_buffer_size, index, n_model_method, 1, MPI_INTEGER, child_comm, ierr )
         call MPI_UNPACK( shared_buffer, shared_buffer_size, index, n_forward_solver_type, 1, MPI_INTEGER, child_comm, ierr )
         call MPI_UNPACK( shared_buffer, shared_buffer_size, index, n_source_type, 1, MPI_INTEGER, child_comm, ierr )
         call MPI_UNPACK( shared_buffer, shared_buffer_size, index, model_n_air_layer, 1, MPI_INTEGER, child_comm, ierr )
+        call MPI_UNPACK( shared_buffer, shared_buffer_size, index, max_iter, 1, MPI_INTEGER, child_comm, ierr )
+        call MPI_UNPACK( shared_buffer, shared_buffer_size, index, tolerance, 1, MPI_DOUBLE_PRECISION, child_comm, ierr )
         call MPI_UNPACK( shared_buffer, shared_buffer_size, index, model_max_height, 1, MPI_DOUBLE_PRECISION, child_comm, ierr )
+        !
+        allocate( character( n_e_solution_file_name ) :: e_solution_file_name )
+        call MPI_UNPACK( shared_buffer, shared_buffer_size, index, e_solution_file_name, n_e_solution_file_name, MPI_CHARACTER, child_comm, ierr )
         !
         allocate( character( n_model_method ) :: model_method )
         call MPI_UNPACK( shared_buffer, shared_buffer_size, index, model_method, n_model_method, MPI_CHARACTER, child_comm, ierr )
@@ -1525,7 +1540,7 @@ module DeclarationMPI
                 !
                 call MPI_PACK( model_parameter_cell_sg, 1, MPI_INTEGER, shared_buffer, shared_buffer_size, index, child_comm, ierr )
                 !
-				call MPI_PACK( len( model_parameter%paramType ), 1, MPI_INTEGER, shared_buffer, shared_buffer_size, index, child_comm, ierr )
+                call MPI_PACK( len( model_parameter%paramType ), 1, MPI_INTEGER, shared_buffer, shared_buffer_size, index, child_comm, ierr )
                 call MPI_PACK( model_parameter%mKey(1), 8, MPI_INTEGER, shared_buffer, shared_buffer_size, index, child_comm, ierr )
                 call MPI_PACK( model_parameter%paramType, len( model_parameter%paramType ), MPI_CHARACTER, shared_buffer, shared_buffer_size, index, child_comm, ierr )
                 call MPI_PACK( model_parameter%airCond, 1, MPI_DOUBLE_PRECISION, shared_buffer, shared_buffer_size, index, child_comm, ierr )
@@ -1553,7 +1568,7 @@ module DeclarationMPI
         class( ModelParameter_t ), allocatable :: model_parameter
         !
         class( Grid_t ), allocatable :: param_grid
-		integer :: param_type_size
+        integer :: param_type_size
         !
         call MPI_UNPACK( shared_buffer, shared_buffer_size, index, model_parameter_derived_type, 1, MPI_INTEGER, child_comm, ierr )
         !
@@ -1571,13 +1586,13 @@ module DeclarationMPI
                         !
                         model_parameter%metric => metric
                         !
-						call MPI_UNPACK( shared_buffer, shared_buffer_size, index, param_type_size, 1, MPI_INTEGER, child_comm, ierr )
+                        call MPI_UNPACK( shared_buffer, shared_buffer_size, index, param_type_size, 1, MPI_INTEGER, child_comm, ierr )
                         call MPI_UNPACK( shared_buffer, shared_buffer_size, index, model_parameter%mKey(1), 8, MPI_INTEGER, child_comm, ierr )
-						!
-						allocate( character( param_type_size ) :: model_parameter%paramType )
-						call MPI_UNPACK( shared_buffer, shared_buffer_size, index, model_parameter%paramType, param_type_size, MPI_CHARACTER, child_comm, ierr )
                         !
-						call MPI_UNPACK( shared_buffer, shared_buffer_size, index, model_parameter%airCond, 1, MPI_DOUBLE_PRECISION, child_comm, ierr )
+                        allocate( character( param_type_size ) :: model_parameter%paramType )
+                        call MPI_UNPACK( shared_buffer, shared_buffer_size, index, model_parameter%paramType, param_type_size, MPI_CHARACTER, child_comm, ierr )
+                        !
+                        call MPI_UNPACK( shared_buffer, shared_buffer_size, index, model_parameter%airCond, 1, MPI_DOUBLE_PRECISION, child_comm, ierr )
                         call MPI_UNPACK( shared_buffer, shared_buffer_size, index, model_parameter%zeroValued, 1, MPI_LOGICAL, child_comm, ierr )
                         call MPI_UNPACK( shared_buffer, shared_buffer_size, index, model_parameter%is_allocated, 1, MPI_LOGICAL, child_comm, ierr )
                         !
@@ -1795,14 +1810,13 @@ module DeclarationMPI
         !
         class( Receiver_t ), intent( in ) :: receiver
         integer :: i, receiver_size_bytes
-        integer :: nbytes(4)
+        integer :: nbytes(3)
         !
         receiver_size_bytes = 0
         !
         call MPI_PACK_SIZE( 4, MPI_INTEGER, child_comm, nbytes(1), ierr )
         call MPI_PACK_SIZE( 3, MPI_DOUBLE_PRECISION, child_comm, nbytes(2), ierr )
         call MPI_PACK_SIZE( len( receiver%code ), MPI_CHARACTER, child_comm, nbytes(3), ierr )
-        call MPI_PACK_SIZE( len( receiver%type_name ), MPI_CHARACTER, child_comm, nbytes(4), ierr )
         !
         do i = 1, size( nbytes )
             receiver_size_bytes = receiver_size_bytes + nbytes(i)
@@ -1841,13 +1855,12 @@ module DeclarationMPI
         end select
         !
         call MPI_PACK( receiver%id, 1, MPI_INTEGER, shared_buffer, shared_buffer_size, index, child_comm, ierr )
+		call MPI_PACK( receiver%rx_type, 1, MPI_INTEGER, shared_buffer, shared_buffer_size, index, child_comm, ierr )
         call MPI_PACK( len( receiver%code ), 1, MPI_INTEGER, shared_buffer, shared_buffer_size, index, child_comm, ierr )
-        call MPI_PACK( len( receiver%type_name ), 1, MPI_INTEGER, shared_buffer, shared_buffer_size, index, child_comm, ierr )
         !
         call MPI_PACK( receiver%location(1), 3, MPI_DOUBLE_PRECISION, shared_buffer, shared_buffer_size, index, child_comm, ierr )
         !
         call MPI_PACK( receiver%code, len( receiver%code ), MPI_CHARACTER, shared_buffer, shared_buffer_size, index, child_comm, ierr )
-        call MPI_PACK( receiver%type_name, len( receiver%type_name ), MPI_CHARACTER, shared_buffer, shared_buffer_size, index, child_comm, ierr )
         !
     end subroutine packReceiverBuffer
     !
@@ -1858,7 +1871,7 @@ module DeclarationMPI
         class( Receiver_t ), allocatable, intent( inout ) :: receiver
         integer, intent( inout )                          :: index
         !
-        integer :: receiver_id, code_size, type_name_size
+        integer :: receiver_id, receiver_type, code_size, type_name_size
         !
         character(:), allocatable :: code, type_name, data_title
         real( kind=prec )         :: receiver_location(3)
@@ -1867,9 +1880,9 @@ module DeclarationMPI
         !
         call MPI_UNPACK( shared_buffer, shared_buffer_size, index, receiver_id, 1, MPI_INTEGER, child_comm, ierr )
         !
+		call MPI_UNPACK( shared_buffer, shared_buffer_size, index, receiver_type, 1, MPI_INTEGER, child_comm, ierr )
+		!
         call MPI_UNPACK( shared_buffer, shared_buffer_size, index, code_size, 1, MPI_INTEGER, child_comm, ierr )
-        !
-        call MPI_UNPACK( shared_buffer, shared_buffer_size, index, type_name_size, 1, MPI_INTEGER, child_comm, ierr )
         !
         call MPI_UNPACK( shared_buffer, shared_buffer_size, index, receiver_location(1), 3, MPI_DOUBLE_PRECISION, child_comm, ierr )
         !
@@ -1883,19 +1896,19 @@ module DeclarationMPI
            !
            case( receiver_full_impedance )
                 !
-                allocate( receiver, source = ReceiverFullImpedance_t( receiver_location ) )
+                allocate( receiver, source = ReceiverFullImpedance_t( receiver_location, receiver_type ) )
                 !
            case( receiver_full_vertical_magnetic )
                 !
-                allocate( receiver, source = ReceiverFullVerticalMagnetic_t( receiver_location ) )
+                allocate( receiver, source = ReceiverFullVerticalMagnetic_t( receiver_location, receiver_type ) )
                 !
            case( receiver_off_diagonal_impedance )
                 !
-                allocate( receiver, source = ReceiverOffDiagonalImpedance_t( receiver_location ) )
+                allocate( receiver, source = ReceiverOffDiagonalImpedance_t( receiver_location, receiver_type ) )
                 !
-           case( receiver_single_field )
+           !case( receiver_single_field )
                 !
-                allocate( receiver, source = ReceiverFullImpedance_t( receiver_location ) )
+                !allocate( receiver, source = ReceiverSingleField_t( receiver_location, 0.0, receiver_type ) )
                 !
            case default
               stop "allocateReceiverBuffer: Unclassified receiver"
@@ -1904,7 +1917,6 @@ module DeclarationMPI
         !
         receiver%id = receiver_id
         receiver%code = code
-        receiver%type_name = type_name
         !
     end subroutine unpackReceiverBuffer
     !
@@ -1924,7 +1936,7 @@ module DeclarationMPI
         !
         type( DataHandle_t ), dimension(:), intent( in ) :: data_entries
         !
-        integer i, j, nbytes(7)
+        integer i, j, nbytes(4)
         !
         predicted_data_buffer_size = 1
         !
@@ -1933,10 +1945,7 @@ module DeclarationMPI
             call MPI_PACK_SIZE( 3, MPI_INTEGER, child_comm, nbytes(1), ierr )
             call MPI_PACK_SIZE( len( data_entries(i)%code ), MPI_CHARACTER, child_comm, nbytes(2), ierr )
             call MPI_PACK_SIZE( len( data_entries(i)%component ), MPI_CHARACTER, child_comm, nbytes(3), ierr )
-            call MPI_PACK_SIZE( 1, MPI_DOUBLE_PRECISION, child_comm, nbytes(4), ierr )
-            call MPI_PACK_SIZE( 3, MPI_DOUBLE_PRECISION, child_comm, nbytes(5), ierr )
-            call MPI_PACK_SIZE( 1, MPI_DOUBLE_PRECISION, child_comm, nbytes(6), ierr )
-            call MPI_PACK_SIZE( 1, MPI_DOUBLE_PRECISION, child_comm, nbytes(7), ierr )
+            call MPI_PACK_SIZE( 6, MPI_DOUBLE_PRECISION, child_comm, nbytes(4), ierr )
             !
             do j = 1, size( nbytes )
                 predicted_data_buffer_size = predicted_data_buffer_size + nbytes(j)
@@ -1962,7 +1971,7 @@ module DeclarationMPI
         !
         do i = 1, size( data_entries )
             !
-            call MPI_PACK( data_entries(i)%rx_id, 1, MPI_INTEGER, predicted_data_buffer, predicted_data_buffer_size, index, child_comm, ierr )
+            call MPI_PACK( data_entries(i)%rx_type, 1, MPI_INTEGER, predicted_data_buffer, predicted_data_buffer_size, index, child_comm, ierr )
             call MPI_PACK( len( data_entries(i)%code ), 1, MPI_INTEGER, predicted_data_buffer, predicted_data_buffer_size, index, child_comm, ierr )
             call MPI_PACK( len( data_entries(i)%component ), 1, MPI_INTEGER, predicted_data_buffer, predicted_data_buffer_size, index, child_comm, ierr )
             call MPI_PACK( data_entries(i)%code, len( data_entries(i)%code ), MPI_CHARACTER, predicted_data_buffer, predicted_data_buffer_size, index, child_comm, ierr )
@@ -1992,7 +2001,7 @@ module DeclarationMPI
         !
         do i = 1, size( data_entries )
             !
-            call MPI_UNPACK( predicted_data_buffer, predicted_data_buffer_size, index, data_entries(i)%rx_id, 1, MPI_INTEGER, child_comm, ierr )
+            call MPI_UNPACK( predicted_data_buffer, predicted_data_buffer_size, index, data_entries(i)%rx_type, 1, MPI_INTEGER, child_comm, ierr )
             call MPI_UNPACK( predicted_data_buffer, predicted_data_buffer_size, index, data_entries_code, 1, MPI_INTEGER, child_comm, ierr )
             call MPI_UNPACK( predicted_data_buffer, predicted_data_buffer_size, index, data_entries_component, 1, MPI_INTEGER, child_comm, ierr )
             !

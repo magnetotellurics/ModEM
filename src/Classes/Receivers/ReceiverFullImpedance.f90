@@ -30,25 +30,23 @@ module ReceiverFullImpedance
     !
 contains
     !
-    function ReceiverFullImpedance_ctor( location, type_name ) result( self )
+    function ReceiverFullImpedance_ctor( location, rx_type ) result( self )
         implicit none
         !
         real( kind=prec ), intent( in ) :: location(3)
-		character(:), allocatable, optional, intent( in ) :: type_name
+        integer, intent( in ) 			:: rx_type
         !
-		type( ReceiverFullImpedance_t ) :: self
-		!
+        type( ReceiverFullImpedance_t ) :: self
+        !
+        character(:), allocatable :: aux_str
+        !
         !write(*,*) "Constructor ReceiverFullImpedance_t"
         !
         call self%init()
         !
         self%location = location
         !
-        if( present( type_name ) ) then
-            self%type_name = type_name
-        else
-            self%type_name = "ReceiverFullImpedance"
-        endif
+        self%rx_type = rx_type
         !
         self%n_comp = 4
         self%is_complex = .TRUE.

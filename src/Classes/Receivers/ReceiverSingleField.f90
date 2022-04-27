@@ -32,14 +32,16 @@ module ReceiverSingleField
     !
 contains
     !
-    function ReceiverSingleField_ctor( location, azimuth, type_name ) result( self )
+    function ReceiverSingleField_ctor( location, azimuth, rx_type ) result( self )
         implicit none
         !
         real( kind=prec ), intent( in ) :: location(3)
         real( kind=prec ), intent( in ) :: azimuth
-		character(:), allocatable, optional, intent( in ) :: type_name
+        integer, intent( in ) 			:: rx_type
         !
         type( ReceiverSingleField_t )    :: self
+        !
+        character(:), allocatable :: aux_str
         !
         ! write(*,*) "Constructor ReceiverSingleField_t"
         !
@@ -48,11 +50,7 @@ contains
         self%location = location
         self%azimuth = azimuth
         !
-        if( present( type_name ) ) then
-            self%type_name = type_name
-        else
-            self%type_name = "ReceiverSingleField"
-        endif
+        self%rx_type = rx_type
         !
         self%n_comp = 1
         self%is_complex = .TRUE.
@@ -133,7 +131,7 @@ contains
         class( ReceiverSingleField_t ), intent( in ) :: self
         !
         write(*,*) "Write ReceiverSingleField_t: ", self%id
-		!
+        !
     end subroutine writeReceiverSingleField
     !
 end module ReceiverSingleField

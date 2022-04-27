@@ -32,25 +32,23 @@ module ReceiverFullVerticalMagnetic
     !
 contains
     !
-    function ReceiverFullVerticalMagnetic_ctor( location, type_name ) result( self )
+    function ReceiverFullVerticalMagnetic_ctor( location, rx_type ) result( self )
         implicit none
         !
-        real( kind=prec ), intent( in )                   :: location(3)
-        character(:), allocatable, optional, intent( in ) :: type_name
+        real( kind=prec ), intent( in ) :: location(3)
+        integer, intent( in ) 			:: rx_type
         !
-		type( ReceiverFullVerticalMagnetic_t ) :: self
-		!
+        type( ReceiverFullVerticalMagnetic_t ) :: self
+        !
+        character(:), allocatable :: aux_str
+        !
         !write(*,*) "Constructor ReceiverFullVerticalMagnetic_t"
         !
         call self%init()
         !
         self%location = location
         !
-        if( present( type_name ) ) then
-            self%type_name = type_name
-        else
-            self%type_name = "ReceiverFullVerticalMagnetic"
-        endif
+        self%rx_type = rx_type
         !
         self%n_comp = 2
         self%is_complex = .TRUE.
@@ -129,7 +127,7 @@ contains
         real( kind=prec )                 :: omega
         !
         omega = ( 2.0 * PI / transmitter%period )
-		!
+        !
         ! Set Vectors Lex, Ley, Lbx, Lby
         call self%evaluationFunction( model_operator, omega )
         !
@@ -141,10 +139,10 @@ contains
         BB(2,2) = self%Lby .dot. transmitter%e_all( 2 )
         BB(3,1) = self%Lbz .dot. transmitter%e_all( 1 )
         BB(3,2) = self%Lbz .dot. transmitter%e_all( 2 )
-		!
-		deallocate( self%Lbx )
-		deallocate( self%Lby )
-		deallocate( self%Lbz )
+        !
+        deallocate( self%Lbx )
+        deallocate( self%Lby )
+        deallocate( self%Lbz )
         !
         !invert horizontal B matrix using Kramer"s rule.
         det = BB( 1, 1 ) * BB( 2, 2 ) - BB( 1, 2 ) * BB( 2, 1 )
@@ -166,9 +164,9 @@ contains
         !
         self%response(1) = BB(3,1) * self%I_BB(1,1) + BB(3,2) * self%I_BB(2,1)
         self%response(2) = BB(3,1) * self%I_BB(1,2) + BB(3,2) * self%I_BB(2,2)
-		!
-		deallocate( BB )
-		deallocate( self%I_BB )
+        !
+        deallocate( BB )
+        deallocate( self%I_BB )
         !
         ! WRITE ON PredictedFile.dat
         call self%savePredictedData( transmitter )

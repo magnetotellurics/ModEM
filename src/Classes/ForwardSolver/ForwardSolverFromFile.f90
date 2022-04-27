@@ -15,6 +15,8 @@ module ForwardSolverFromFile
     !
     type, extends( ForwardSolver_t ), public :: ForwardSolverFromFile_t
         !
+		real( kind=prec ) :: period
+		!
         class( ModelOperator_t ), pointer  :: model_operator
         !
         contains
@@ -24,7 +26,7 @@ module ForwardSolverFromFile
             procedure, public :: setIterControl  => SetIterControlForwardSolverFromFile
             procedure, public :: initDiagnostics => initDiagnosticsForwardSolverFromFile
             procedure, public :: zeroDiagnostics => zeroDiagnosticsForwardSolverFromFile
-            procedure, public :: setPeriod       => setPeriodForwardSolverFromFile
+            procedure, public :: setFrequency    => setFrequencyForwardSolverFromFile
             procedure, public :: setCond         => setCondForwardSolverFromFile
             procedure, public :: getESolution    => getESolutionForwardSolverFromFile
             !
@@ -57,7 +59,7 @@ contains
         !
     end subroutine ForwardSolverFromFile_dtor
     !
-    subroutine setPeriodForwardSolverFromFile( self, period )
+    subroutine setFrequencyForwardSolverFromFile( self, period )
         implicit none
         !
         class( ForwardSolverFromFile_t ), intent( inout ) :: self
@@ -65,7 +67,7 @@ contains
         !
         self%period = period
     !
-    end subroutine setPeriodForwardSolverFromFile
+    end subroutine setFrequencyForwardSolverFromFile
     !
     !
     subroutine setCondForwardSolverFromFile( self, model_parameter )

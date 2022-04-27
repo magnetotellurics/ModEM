@@ -59,9 +59,9 @@ contains
         implicit none
         !
         ! Use save ????
-        class( ForwardSolver_t ), allocatable, save :: fwd_solver
+        class( ForwardSolver_t ), allocatable, target, save :: forward_solver
         !
-        class( Source_t ), allocatable        :: fwd_source 
+        class( Source_t ), allocatable, target        :: fwd_source 
         !
         ! Temporary alias pointers
         class( Transmitter_t ), pointer :: Tx
@@ -88,6 +88,47 @@ contains
             call handleDataFile()
         endif
         !
+        ! Source - Chosen from control file
+        !if( allocated( fwd_source ) ) deallocate( fwd_source )
+        select case ( source_type )
+            !
+            case( SRC_MT_1D )
+                fwd_source = SourceMT_1D_t( model_operator, model_parameter )
+                !
+            case( SRC_MT_2D )
+                fwd_source = SourceMT_2D_t( model_operator, model_parameter )
+                !
+            case default
+                fwd_source = SourceMT_1D_t( model_operator, model_parameter )
+                !
+        end select
+        !
+        ! ForwardSolver - Chosen from control file
+        !if( allocated( forward_solver ) ) deallocate( forward_solver )
+        select case ( forward_solver_type )
+            !
+            case( FWD_FILE )
+                forward_solver = ForwardSolverFromFile_t( model_operator )
+                !
+            case( FWD_IT_DC )
+                forward_solver = ForwardSolverIT_DC_t( model_operator, QMR )
+                !
+            case default
+                forward_solver = ForwardSolverIT_DC_t( model_operator, QMR )
+            !
+        end select
+        !
+        call forward_solver%setCond( model_parameter )
+        !
+        ! Set Source and ForwardSolver for each transmitter
+        do iTx = 1, size( transmitters )
+            !
+            Tx => getTransmitter(iTx)
+            Tx%source => fwd_source
+            Tx%forward_solver => forward_solver
+            !
+        enddo
+        !
         ! Forward Modelling
         !
         Tx => getTransmitter(1)
@@ -97,57 +138,14 @@ contains
         ! Loop over all Transmitters
         do iTx = 1, size( transmitters )
             !
-            ! ForwardSolver - Chosen from control file
-            !if( allocated( fwd_solver ) ) deallocate( fwd_solver )
-            select case ( forward_solver_type )
-                !
-                case( FWD_FILE )
-                    fwd_solver = ForwardSolverFromFile_t( model_operator )
-                    !
-                case( FWD_IT_DC )
-                    fwd_solver = ForwardSolverIT_DC_t( model_operator, QMR )
-                    !
-                case default
-                    fwd_solver = ForwardSolverIT_DC_t( model_operator, QMR )
-                !
-            end select
-            !
-            call fwd_solver%setCond( model_parameter )
-            !
-            ! Source - Chosen from control file
-            !if( allocated( fwd_source ) ) deallocate( fwd_source )
-            select case ( source_type )
-                !
-                case( SRC_MT_1D )
-                    fwd_source = SourceMT_1D_t( model_operator, model_parameter )
-                    !
-                case( SRC_MT_2D )
-                    fwd_source = SourceMT_2D_t( model_operator, model_parameter )
-                    !
-                case default
-                    fwd_source = SourceMT_1D_t( model_operator, model_parameter )
-                    !
-            end select
-            !
             ! Temporary Transmitter alias
             Tx => getTransmitter( iTx )
             !
-            ! Tx points to its due Source
-            call Tx%setSource( fwd_source )
-            !
-            ! Set ForwardSolver Period
-            call fwd_solver%setPeriod( Tx%period )
-            !
-            ! Tx points to its due ForwardSolver
-            call Tx%setForwardSolver( fwd_solver )
+            ! Set ForwardSolver omega
+            call Tx%forward_solver%setFrequency( Tx%period )
             !
             ! Solve Tx Forward Modelling
             call Tx%solveFWD()
-            !
-            deallocate( fwd_source )
-            !
-            ! THIS CAUSES MEMORY CRASHES
-            !deallocate( fwd_solver )
             !
             ! Loop over Receivers of each Transmitter
             do iRx = 1, size( Tx%receiver_indexes )
@@ -176,13 +174,15 @@ contains
             !
         enddo
         !
+        !deallocate( fwd_source )
+        !deallocate( forward_solver )
+        !
         deallocate( model_operator )
         deallocate( model_parameter )
         deallocate( main_grid )
         !
         ! Verbosis...
         write( *, * ) "    -> Writing Predicted Data to file: [", trim( predicted_data_file_name ), "]"
-        !
         !
         ! Write all_data_handles into predicted_data.dat
         call writeDataHandleArray( all_data_handles )
@@ -393,9 +393,19 @@ contains
     subroutine setupDefaultParameters()
         implicit none
         !
+        ! I|O
         predicted_data_file_name = "predicted_data.dat"
         e_solution_file_name     = "esolution.bin"
+        has_control_file         = .FALSE.
+        has_model_file           = .FALSE.
+        has_data_file            = .FALSE.
+        verbosis                 = .FALSE.
         !
+        ! Solver
+        max_iter = 100
+        tolerance = TOL8
+        !
+        ! Model
         model_method      = MM_METHOD_FIXED_H
         model_n_air_layer = 10
         model_max_height  = 200.0
@@ -403,12 +413,6 @@ contains
         source_type = SRC_MT_1D
         !
         forward_solver_type = FWD_IT_DC
-        !
-        !
-        has_control_file = .FALSE.
-        has_model_file   = .FALSE.
-        has_data_file    = .FALSE.
-        verbosis         = .FALSE.
         !
     end subroutine setupDefaultParameters
     !
@@ -442,6 +446,39 @@ contains
         !
         !
     end subroutine writeEsolutionHeader
+    !
+    !
+    recursive subroutine sortByReceiverType( data_handle_array, first, last )
+        implicit none
+        !
+        type( DataHandle_t ), allocatable, intent( inout ) :: data_handle_array(:)
+        type( DataHandle_t ) :: x_data_entry, t_data_entry
+        integer first, last
+        integer i, j
+        !
+        x_data_entry = data_handle_array( (first+last) / 2 )
+        i = first
+        j = last
+        !
+        do
+            do while ( data_handle_array(i)%rx_type < x_data_entry%rx_type )
+                i=i+1
+            end do
+            do while ( x_data_entry%rx_type < data_handle_array(j)%rx_type )
+                j=j-1
+            end do
+            if (i >= j) exit
+            t_data_entry = data_handle_array(i)
+            data_handle_array(i) = data_handle_array(j)
+            data_handle_array(j) = t_data_entry
+            i=i+1
+            j=j-1
+        end do
+        !
+        if (first < i-1) call sortByReceiverType( data_handle_array, first, i-1 )
+        if (j+1 < last)  call sortByReceiverType( data_handle_array, j+1, last )
+        !
+    end subroutine sortByReceiverType
     !
     !
     recursive subroutine sortByPeriod( data_handle_array, first, last )
@@ -490,10 +527,10 @@ contains
         j = last
         !
         do
-            do while ( data_handle_array(i)%rx_id < x_data_entry%rx_id )
+            do while ( data_handle_array(i)%code < x_data_entry%code )
                 i=i+1
             end do
-            do while ( x_data_entry%rx_id < data_handle_array(j)%rx_id )
+            do while ( x_data_entry%code < data_handle_array(j)%code )
                 j=j-1
             end do
             if (i >= j) exit
@@ -504,8 +541,8 @@ contains
             j=j-1
         end do
         !
-        if (first < i-1) call sortByPeriod( data_handle_array, first, i-1 )
-        if (j+1 < last)  call sortByPeriod( data_handle_array, j+1, last )
+        if (first < i-1) call sortByReceiver( data_handle_array, first, i-1 )
+        if (j+1 < last)  call sortByReceiver( data_handle_array, j+1, last )
         !
     end subroutine sortByReceiver
     !
@@ -516,16 +553,18 @@ contains
         type( DataHandle_t ), allocatable, intent( inout ) :: data_handle_array(:)
         !
         type( DataHandle_t ) :: aux_data_entry
-        character(:), allocatable :: receiver_type
-        integer :: i, j, ios
-        !
-        receiver_type = "Unknow"
+        integer :: receiver_type, i, j, ios
         !
         ! Order by transmitter
         call sortByPeriod( data_handle_array, 1, size( data_handle_array ) )
         !
         ! Order by receiver
         call sortByReceiver( data_handle_array, 1, size( data_handle_array ) )
+        !
+        ! Order by receiver
+        call sortByReceiverType( data_handle_array, 1, size( data_handle_array ) )
+        !
+        receiver_type = 0
         !
         open( ioPredData, file = predicted_data_file_name, action = "write", form = "formatted", iostat = ios )
         !
@@ -551,24 +590,20 @@ contains
         implicit none
         !
         type( DataHandle_t ), intent( in ) :: data_handle
-        character(:), allocatable, intent( inout ) :: receiver_type
+        integer, intent( inout ) :: receiver_type
         !
-        class( Receiver_t ), pointer :: receiver
-        !
-        receiver => getReceiver( data_handle%rx_id )
-        !
-        if( receiver_type /= trim( receiver%type_name ) ) then
+        if( receiver_type /= data_handle%rx_type ) then
             !
             write( ioPredData, "(4A, 100A)" ) "#    ", DATA_FILE_TITLE
             write( ioPredData, "(100A)" )     "#    Period(s) Code GG_Lat GG_Lon X(m) Y(m) Z(m) Component Real Imag Error"
-            write( ioPredData, "(4A, 100A)" ) ">    ", trim( receiver%type_name )
+            write( ioPredData, "(4A, 100A)" ) ">    ", getStringReceiverType( data_handle%rx_type )
             write( ioPredData, "(4A, 100A)" ) ">    ", "exp(-i\omega t)"
             write( ioPredData, "(4A, 100A)" ) ">    ", "[V/m]/[T]"
             write( ioPredData, "(7A, 100A)" ) ">        ", "0.00"
             write( ioPredData, "(7A, 100A)" ) ">        ", "0.000    0.000"
             write( ioPredData, "(A3, i8, i8)" ) ">        ", size( transmitters ), size( receivers )
             !
-            receiver_type = trim( receiver%type_name )
+            receiver_type = data_handle%rx_type
             !
         endif
         !
@@ -599,5 +634,5 @@ contains
         stop
         !
     end subroutine printHelp
-
+    !
 end program ModEM

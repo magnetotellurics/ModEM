@@ -44,7 +44,7 @@ module cVector
         generic :: operator(-) => sub1
         !
         procedure( interface_mult1_c_vector ), deferred, public :: mult1
-        procedure( interface_mult2_c_vector ), deferred, public, pass(self) :: mult2
+        procedure( interface_mult2_c_vector ), deferred, public :: mult2
         procedure( interface_mult3_c_vector ), deferred, public :: mult3
         generic :: mult => mult1, mult2, mult3
         generic :: operator(*) => mult1, mult2, mult3
@@ -208,11 +208,11 @@ module cVector
             class( cVector_t ), allocatable  :: Eout
         end function interface_mult1_c_vector
         !
-        function interface_mult2_c_vector(c, self) result( Eout )
+        function interface_mult2_c_vector( self, c ) result( Eout )
             import :: cVector_t, prec
+            class( cVector_t ), intent( in )   :: self
             complex( kind=prec ), intent( in ) :: c
-            class( cVector_t ), intent( in ) :: self
-            class( cVector_t ), allocatable :: Eout
+            class( cVector_t ), allocatable    :: Eout
         end function interface_mult2_c_vector
         !
         function interface_mult3_c_vector( lhs, rhs ) result( Eout )

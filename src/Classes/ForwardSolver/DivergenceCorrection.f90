@@ -9,8 +9,8 @@ Module DivergenceCorrection
     type :: DivergenceCorrection_t
         !
         class( Solver_t ), allocatable :: solver
-        real( kind=prec ) :: divJ(2) !    divergence of currents computed at most
-                                     ! recent call to DivCor -- before and after
+        real( kind=prec ) :: divJ(2) ! divergence of currents computed at most recent call to DivCor -- before and after
+		!
         contains
             !
             final :: DivergenceCorrection_dtor
@@ -34,7 +34,7 @@ contains
         class( ModelOperator_t ), intent( in ) :: model_operator
         type( DivergenceCorrection_t )         :: self
         !
-        !write(*,*) "Constructor DivergenceCorrection_t"
+        write( *, * ) "Constructor DivergenceCorrection_t"
         !
         self%divJ = 0.0
         !
@@ -53,7 +53,7 @@ contains
         !
         type( DivergenceCorrection_t ), intent( inout ) :: self
         !
-        !write(*,*) "Destructor DivergenceCorrection_t"
+        write( *, * ) "Destructor DivergenceCorrection_t"
         !
         deallocate( self%solver )
         !
@@ -176,7 +176,7 @@ contains
         !    have to decide how to manage output
         !if (output_level > 2) then
         write (*,*) "finished divergence correction:"
-        write (*,"(i5,g15.7)") self%solver%n_iter, self%solver%relErr(self%solver%n_iter)
+        write (*,"(i5, g15.7)") self%solver%n_iter, self%solver%relErr( self%solver%n_iter )
         !end if
 
         ! compute gradient of phiSol (Divergence correction for inE)
@@ -189,15 +189,16 @@ contains
         call outE%linCombS(inE,C_MinusOne,C_ONE)
 
         ! divergence of the corrected output electrical field
-        call self%solver%preconditioner%model_operator%DivC(outE,phiRHS)
+        call self%solver%preconditioner%model_operator%DivC( outE, phiRHS )
 
         !  If source term is present, subtract from divergence of currents
         if( SourceTerm ) then
-            call phi0%scMultAddS(phiRHS,C_MinusOne)
+            call phi0%scMultAddS( phiRHS, C_MinusOne )
         endif
         ! compute the size of current Divergence after
         self%divJ(2) = sqrt( phiRHS .dot. phiRHS )
-        !write(*,*) "divJ after correction  ", self%divJ(2)
+        !
+		write( *, * ) "divJ after correction  ", self%divJ(2)
         !
         deallocate( phiRHS )
 
