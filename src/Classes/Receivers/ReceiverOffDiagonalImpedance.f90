@@ -109,7 +109,6 @@ contains
         class( ModelOperator_t ), intent( in )                         :: model_operator
         class( Transmitter_t ), intent( in )                            :: transmitter
         !
-        class( cVector_t ), allocatable    :: e_tx_pol_1, e_tx_pol_2
         complex( kind=prec ), allocatable :: BB(:,:), det
         real( kind=prec )                      :: omega
         integer                                    :: i, j, ij
@@ -119,57 +118,61 @@ contains
         ! Set Vectors Lex, Ley, Lbx, Lby
         call self%evaluationFunction( model_operator, omega )
         !
-        ! get e_all from the Tx 1st polarization
-        allocate( e_tx_pol_1, source = transmitter%e_all( 1 ) )
-        !
-        ! get e_all from the Tx 2nd polarization
-        allocate( e_tx_pol_2, source = transmitter%e_all( 2 ) )
-        !
-        !
         allocate( complex( kind=prec ) :: self%EE( 2, 2 ) )
         !
-        self%EE(1,1) = self%Lex .dot. e_tx_pol_1
-        self%EE(2,1) = self%Ley .dot. e_tx_pol_1
-        self%EE(1,2) = self%Lex .dot. e_tx_pol_2
-        self%EE(2,2) = self%Ley .dot. e_tx_pol_2
-        !
-        allocate( complex( kind=prec ) :: BB( 2, 2 ) )
-        !
-        BB(1,1) = self%Lbx .dot. e_tx_pol_1
-        BB(2,1) = self%Lby .dot. e_tx_pol_1
-        BB(1,2) = self%Lbx .dot. e_tx_pol_2
-        BB(2,2) = self%Lby .dot. e_tx_pol_2
-        !
-        deallocate( e_tx_pol_1 )
-        deallocate( e_tx_pol_2 )
-        !
-        !invert horizontal B matrix using Kramer's rule.
-        det = BB(1,1) * BB(2,2) - BB(1,2) * BB(2,1)
-        !
-        allocate( complex( kind=prec ) :: self%I_BB( 2, 2 ) )
-        !
-        if( det /= 0 ) then
-            self%I_BB( 1, 1 ) = BB( 2, 2 ) / det
-            self%I_BB( 2, 2 ) = BB( 1, 1 ) / det
-            self%I_BB( 1, 2 ) = -BB( 1, 2 ) / det
-            self%I_BB( 2, 1 ) = -BB( 2, 1 ) / det
-        else
-            STOP "ReceiverOffDiagonalImpedance.f90: Determinant is Zero!"
-        endif
-        !
-        allocate( complex( kind=prec ) :: self%response( 2 ) )
-        !
-        self%response(1) = self%EE(1,1) * self%I_BB(1,2) + self%EE(1,2) * self%I_BB(2,2)
-        self%response(2) = self%EE(2,1) * self%I_BB(1,1) + self%EE(2,2) * self%I_BB(2,1)
-        !
-        ! WRITE ON PredictedFile.dat
-        call self%savePredictedData( transmitter )
-        !
-        deallocate( self%EE )
-        deallocate( BB )
-        deallocate( self%I_BB )
-        deallocate( self%response )
-        !
+        select type( tx_e_1 => transmitter%e_all( 1 ) )
+			class is( cVector3D_SG_t )
+				!
+				select type( tx_e_2 => transmitter%e_all( 2 ) )
+					class is( cVector3D_SG_t )
+						!
+						self%EE(1,1) = dotProdSparse( self%Lex, tx_e_1 )
+						self%EE(2,1) = dotProdSparse( self%Ley, tx_e_1 )
+						self%EE(1,2) = dotProdSparse( self%Lex, tx_e_2 )
+						self%EE(2,2) = dotProdSparse( self%Ley, tx_e_2 )
+						!
+						allocate( complex( kind=prec ) :: BB( 2, 2 ) )
+						!
+						BB(1,1) = dotProdSparse( self%Lbx, tx_e_1 )
+						BB(2,1) = dotProdSparse( self%Lby, tx_e_1 )
+						BB(1,2) = dotProdSparse( self%Lbx, tx_e_2 )
+						BB(2,2) = dotProdSparse( self%Lby, tx_e_2 )
+						!
+						!invert horizontal B matrix using Kramer's rule.
+						det = BB(1,1) * BB(2,2) - BB(1,2) * BB(2,1)
+						!
+						allocate( complex( kind=prec ) :: self%I_BB( 2, 2 ) )
+						!
+						if( det /= 0 ) then
+							self%I_BB( 1, 1 ) = BB( 2, 2 ) / det
+							self%I_BB( 2, 2 ) = BB( 1, 1 ) / det
+							self%I_BB( 1, 2 ) = -BB( 1, 2 ) / det
+							self%I_BB( 2, 1 ) = -BB( 2, 1 ) / det
+						else
+							STOP "ReceiverOffDiagonalImpedance.f90: Determinant is Zero!"
+						endif
+						!
+						allocate( complex( kind=prec ) :: self%response( 2 ) )
+						!
+						self%response(1) = self%EE(1,1) * self%I_BB(1,2) + self%EE(1,2) * self%I_BB(2,2)
+						self%response(2) = self%EE(2,1) * self%I_BB(1,1) + self%EE(2,2) * self%I_BB(2,1)
+						!
+						! WRITE ON PredictedFile.dat
+						call self%savePredictedData( transmitter )
+						!
+						deallocate( self%EE )
+						deallocate( BB )
+						deallocate( self%I_BB )
+						deallocate( self%response )
+						!
+					class default
+						stop "evaluationFunctionRx: Unclassified transmitter%e_all_2"
+				end select
+				!
+			class default
+				stop "evaluationFunctionRx: Unclassified transmitter%e_all_1"
+		end select
+		!
     end subroutine predictedDataOffDiagonalImpedance
     !
     subroutine writeReceiverOffDiagonalImpedance( self )

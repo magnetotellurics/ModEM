@@ -132,47 +132,56 @@ contains
         call self%evaluationFunction( model_operator, omega )
         !
         allocate( BB( 3, 2 ) )
-        !
-        BB(1,1) = self%Lbx .dot. transmitter%e_all( 1 )
-        BB(2,1) = self%Lby .dot. transmitter%e_all( 1 )
-        BB(1,2) = self%Lbx .dot. transmitter%e_all( 2 )
-        BB(2,2) = self%Lby .dot. transmitter%e_all( 2 )
-        BB(3,1) = self%Lbz .dot. transmitter%e_all( 1 )
-        BB(3,2) = self%Lbz .dot. transmitter%e_all( 2 )
-        !
-        deallocate( self%Lbx )
-        deallocate( self%Lby )
-        deallocate( self%Lbz )
-        !
-        !invert horizontal B matrix using Kramer"s rule.
-        det = BB( 1, 1 ) * BB( 2, 2 ) - BB( 1, 2 ) * BB( 2, 1 )
-        !
-        !write(*,*) "det:", det
-        !
-        allocate( self%I_BB( 2, 2 ) )
-        !
-        if( det /= 0 ) then
-            self%I_BB( 1, 1 ) =  BB( 2, 2 ) / det
-            self%I_BB( 2, 2 ) =  BB( 1, 1 ) / det
-            self%I_BB( 1, 2 ) = -BB( 1, 2 ) / det
-            self%I_BB( 2, 1 ) = -BB( 2, 1 ) / det
-        else
-            STOP "ReceiverFullImpedance.f90: Determinant is Zero!"
-        endif
-        !
-        allocate( self%response( 2 ) )
-        !
-        self%response(1) = BB(3,1) * self%I_BB(1,1) + BB(3,2) * self%I_BB(2,1)
-        self%response(2) = BB(3,1) * self%I_BB(1,2) + BB(3,2) * self%I_BB(2,2)
-        !
-        deallocate( BB )
-        deallocate( self%I_BB )
-        !
-        ! WRITE ON PredictedFile.dat
-        call self%savePredictedData( transmitter )
-        !
-        deallocate( self%response )
-        !
+        select type( tx_e_1 => transmitter%e_all( 1 ) )
+			class is( cVector3D_SG_t )
+				!
+				select type( tx_e_2 => transmitter%e_all( 2 ) )
+					class is( cVector3D_SG_t )
+						!
+						BB(1,1) = dotProdSparse( self%Lbx, tx_e_1 )
+						BB(2,1) = dotProdSparse( self%Lby, tx_e_1 )
+						BB(1,2) = dotProdSparse( self%Lbx, tx_e_2 )
+						BB(2,2) = dotProdSparse( self%Lby, tx_e_2 )
+						BB(3,1) = dotProdSparse( self%Lbz, tx_e_1 )
+						BB(3,2) = dotProdSparse( self%Lbz, tx_e_2 )
+						!
+						!invert horizontal B matrix using Kramer"s rule.
+						det = BB( 1, 1 ) * BB( 2, 2 ) - BB( 1, 2 ) * BB( 2, 1 )
+						!
+						!write(*,*) "det:", det
+						!
+						allocate( self%I_BB( 2, 2 ) )
+						!
+						if( det /= 0 ) then
+							self%I_BB( 1, 1 ) =  BB( 2, 2 ) / det
+							self%I_BB( 2, 2 ) =  BB( 1, 1 ) / det
+							self%I_BB( 1, 2 ) = -BB( 1, 2 ) / det
+							self%I_BB( 2, 1 ) = -BB( 2, 1 ) / det
+						else
+							STOP "ReceiverFullImpedance.f90: Determinant is Zero!"
+						endif
+						!
+						allocate( self%response( 2 ) )
+						!
+						self%response(1) = BB(3,1) * self%I_BB(1,1) + BB(3,2) * self%I_BB(2,1)
+						self%response(2) = BB(3,1) * self%I_BB(1,2) + BB(3,2) * self%I_BB(2,2)
+						!
+						deallocate( BB )
+						deallocate( self%I_BB )
+						!
+						! WRITE ON PredictedFile.dat
+						call self%savePredictedData( transmitter )
+						!
+						deallocate( self%response )
+						!
+					class default
+						stop "evaluationFunctionRx: Unclassified transmitter%e_all_2"
+				end select
+				!
+			class default
+				stop "evaluationFunctionRx: Unclassified transmitter%e_all_1"
+		end select
+		!
     end subroutine predictedDataFullVerticalMagnetic
     !
 end module ReceiverFullVerticalMagnetic

@@ -125,71 +125,79 @@ contains
         !
         allocate( self%EE( 2, 2 ) )
         !
-        self%EE( 1, 1 ) = self%Lex .dot. transmitter%e_all( 1 )
-        self%EE( 2, 1 ) = self%Ley .dot. transmitter%e_all( 1 )
-        self%EE( 1, 2 ) = self%Lex .dot. transmitter%e_all( 2 )
-        self%EE( 2, 2 ) = self%Ley .dot. transmitter%e_all( 2 )
-        !
-        deallocate( self%Lex )
-        deallocate( self%LeY )
-        !
-        !write(*,*) "EE:"
-        !write(*,*) self%EE( 1, 1 ), self%EE( 1, 2 )
-        !write(*,*) self%EE( 2, 1 ), self%EE( 2, 2 )
-        !
-        allocate( BB( 2, 2 ) )
-        !
-        BB( 1, 1 ) = self%Lbx .dot. transmitter%e_all( 1 )
-        BB( 2, 1 ) = self%Lby .dot. transmitter%e_all( 1 )
-        BB( 1, 2 ) = self%Lbx .dot. transmitter%e_all( 2 )
-        BB( 2, 2 ) = self%Lby .dot. transmitter%e_all( 2 )
-        !
-        deallocate( self%Lbx )
-        deallocate( self%Lby )
-        !
-        !write(*,*) "BB:"
-        !write(*,*) BB( 1, 1 ), BB( 1, 2 )
-        !write(*,*) BB( 2, 1 ), BB( 2, 2 )
-        !
-        !invert horizontal B matrix using Kramer"s rule.
-        det = BB( 1, 1 ) * BB( 2, 2 ) - BB( 1, 2 ) * BB( 2, 1 )
-        !
-        !write(*,*) "det:", det
-        !
-        allocate( self%I_BB( 2, 2 ) )
-        !
-        if( det /= 0 ) then
-            self%I_BB( 1, 1 ) =  BB( 2, 2 ) / det
-            self%I_BB( 2, 2 ) =  BB( 1, 1 ) / det
-            self%I_BB( 1, 2 ) = -BB( 1, 2 ) / det
-            self%I_BB( 2, 1 ) = -BB( 2, 1 ) / det
-        else
-            STOP "ReceiverFullImpedance.f90: Determinant is Zero!"
-        endif
-        !
-        !write(*,*) "Inverse BB:"
-        !write(*,*) self%I_BB( 1, 1 ), self%I_BB( 1, 2 )
-        !write(*,*) self%I_BB( 2, 1 ), self%I_BB( 2, 2 )
-        !
-        deallocate( BB )
-        !
-        allocate( self%response( 4 ) )
-        !
-        do j = 1, 2
-             do i = 1, 2
-                 ij = 2 * ( i-1 ) + j
-                 self%response( ij ) = self%EE( i, 1 ) * self%I_BB( 1, j ) + self%EE( i, 2 ) * self%I_BB( 2, j )
-             enddo
-        enddo
-        !
-        deallocate( self%EE )
-        deallocate( self%I_BB )
-        !
-        ! WRITE ON PredictedFile.dat
-        call self%savePredictedData( transmitter )
-        !
-        deallocate( self%response )
-        !
+		select type( tx_e_1 => transmitter%e_all( 1 ) )
+			class is( cVector3D_SG_t )
+				!
+				select type( tx_e_2 => transmitter%e_all( 2 ) )
+					class is( cVector3D_SG_t )
+						!
+						self%EE( 1, 1 ) = dotProdSparse( self%Lex, tx_e_1 )
+						self%EE( 2, 1 ) = dotProdSparse( self%Ley, tx_e_1 )
+						self%EE( 1, 2 ) = dotProdSparse( self%Lex, tx_e_2 )
+						self%EE( 2, 2 ) = dotProdSparse( self%Ley, tx_e_2 )
+						!
+						!write(*,*) "EE:"
+						!write(*,*) self%EE( 1, 1 ), self%EE( 1, 2 )
+						!write(*,*) self%EE( 2, 1 ), self%EE( 2, 2 )
+						!
+						allocate( BB( 2, 2 ) )
+						!
+						BB( 1, 1 ) = dotProdSparse( self%Lbx, tx_e_1 )
+						BB( 2, 1 ) = dotProdSparse( self%Lby, tx_e_1 )
+						BB( 1, 2 ) = dotProdSparse( self%Lbx, tx_e_2 )
+						BB( 2, 2 ) = dotProdSparse( self%Lby, tx_e_2 )
+						!
+						!write(*,*) "BB:"
+						!write(*,*) BB( 1, 1 ), BB( 1, 2 )
+						!write(*,*) BB( 2, 1 ), BB( 2, 2 )
+						!
+						!invert horizontal B matrix using Kramer"s rule.
+						det = BB( 1, 1 ) * BB( 2, 2 ) - BB( 1, 2 ) * BB( 2, 1 )
+						!
+						!write(*,*) "det:", det
+						!
+						allocate( self%I_BB( 2, 2 ) )
+						!
+						if( det /= 0 ) then
+							self%I_BB( 1, 1 ) =  BB( 2, 2 ) / det
+							self%I_BB( 2, 2 ) =  BB( 1, 1 ) / det
+							self%I_BB( 1, 2 ) = -BB( 1, 2 ) / det
+							self%I_BB( 2, 1 ) = -BB( 2, 1 ) / det
+						else
+							STOP "ReceiverFullImpedance.f90: Determinant is Zero!"
+						endif
+						!
+						!write(*,*) "Inverse BB:"
+						!write(*,*) self%I_BB( 1, 1 ), self%I_BB( 1, 2 )
+						!write(*,*) self%I_BB( 2, 1 ), self%I_BB( 2, 2 )
+						!
+						deallocate( BB )
+						!
+						allocate( self%response( 4 ) )
+						!
+						do j = 1, 2
+							 do i = 1, 2
+								 ij = 2 * ( i-1 ) + j
+								 self%response( ij ) = self%EE( i, 1 ) * self%I_BB( 1, j ) + self%EE( i, 2 ) * self%I_BB( 2, j )
+							 enddo
+						enddo
+						!
+						deallocate( self%EE )
+						deallocate( self%I_BB )
+						!
+						! WRITE ON PredictedFile.dat
+						call self%savePredictedData( transmitter )
+						!
+						deallocate( self%response )
+						!
+					class default
+						stop "evaluationFunctionRx: Unclassified temp_full_vec_ey"
+				end select
+				!
+			class default
+				stop "evaluationFunctionRx: Unclassified temp_full_vec_ey"
+		end select
+		!
     end subroutine predictedDataFullImpedance
     !
     subroutine writeReceiverFullImpedance( self )

@@ -10,7 +10,7 @@ module Receiver
     !
     use Transmitter
     use cVector3D_SG
-	use cSparseVector3D_SG
+    use cSparseVector3D_SG
     use ModelOperator
     use DataHandle
     !
@@ -28,7 +28,7 @@ module Receiver
         !
         complex( kind=prec ), allocatable :: I_BB(:,:), EE(:,:), response(:)
         !
-        class( cVector_t ), allocatable   :: Lex, Ley, Lez, Lbx, Lby, Lbz
+        type( cSparseVector3D_SG_t )   :: Lex, Ley, Lez, Lbx, Lby, Lbz
         !
         type( DataHandle_t ), allocatable :: predicted_data(:)
         !
@@ -141,7 +141,7 @@ contains
         class( Receiver_t ), intent( inout )   :: self
         class( ModelOperator_t ), intent( in ) :: model_operator
         real( kind=prec ), intent( in )        :: omega
-		type( cSparsevector3D_SG_t )           :: sparse_lex, sparse_ley
+        class( cVector_t ), allocatable        :: temp_full_vec
         !
         integer              :: k
         complex( kind=prec ) :: comega
@@ -164,15 +164,15 @@ contains
                             stop "evaluationFunctionRx: Unclassified grid for ex"
                     end select
                     !
-                    call e%interpFunc( self%location, "x", self%Lex )
+                    call e%interpFunc( self%location, "x", temp_full_vec )
                     !
-                    select type( lex => self%Lex )
+                    select type( temp_full_vec )
                         class is( cVector3D_SG_t )
                             !
-							call full2Sparse( sparse_lex, lex )
-							!
+                            call full2Sparse( self%Lex, temp_full_vec )
+                            !
                         class default
-                            stop "evaluationFunctionRx: Unclassified lex"
+                            stop "evaluationFunctionRx: Unclassified temp_full_vec_ex"
                     end select
                     !
                     deallocate( e )
@@ -186,15 +186,15 @@ contains
                             stop "evaluationFunctionRx: Unclassified grid for ey"
                     end select
                     !
-                    call e%interpFunc( self%location, "y", self%Ley )
+                    call e%interpFunc( self%location, "y", temp_full_vec )
                     !
-                    select type( ley => self%Ley )
+                    select type( temp_full_vec )
                         class is( cVector3D_SG_t )
                             !
-							call full2Sparse( sparse_ley, ley )
-							!
+                            call full2Sparse( self%ley, temp_full_vec )
+                            !
                         class default
-                            stop "evaluationFunctionRx: Unclassified lex"
+                            stop "evaluationFunctionRx: Unclassified temp_full_vec_ey"
                     end select
                     !
                     deallocate( e )
@@ -208,7 +208,16 @@ contains
                             stop "evaluationFunctionRx: Unclassified grid for ez"
                     end select
                     !
-                    call e%interpFunc( self%location, "z", self%Lez )
+                    call e%interpFunc( self%location, "z", temp_full_vec )
+                    !
+                    select type( temp_full_vec )
+                        class is( cVector3D_SG_t )
+                            !
+                            call full2Sparse( self%Lez, temp_full_vec )
+                            !
+                        class default
+                            stop "evaluationFunctionRx: Unclassified temp_full_vec_ez"
+                    end select
                     !
                     deallocate( e )
                     !
@@ -227,19 +236,28 @@ contains
                     !
                     select type( lh )
                         class is( cVector3D_SG_t )
-                            if( allocated( self%Lbx ) ) deallocate( self%Lbx )
-                            allocate( self%Lbx, source = cVector3D_SG_t( lh%grid, EDGE ) )
+                            if( allocated( temp_full_vec ) ) deallocate( temp_full_vec )
+                            allocate( temp_full_vec, source = cVector3D_SG_t( lh%grid, EDGE ) )
                             !
                         class default
                             write(*, *) "ERROR:Receiver::evaluationFunction:"
                             stop          "            Unknow lh type"
                     end select
                     !
-                    call model_operator%multCurlT( lh, self%Lbx )
+                    call model_operator%multCurlT( lh, temp_full_vec )
                     !
                     deallocate( lh )
                     !
-                    call self%Lbx%mults( isign * comega )
+                    call temp_full_vec%mults( isign * comega )
+                    !
+                    select type( temp_full_vec )
+                        class is( cVector3D_SG_t )
+                            !
+                            call full2Sparse( self%Lbx, temp_full_vec )
+                            !
+                        class default
+                            stop "evaluationFunctionRx: Unclassified temp_full_vec_bx"
+                    end select
                     !
                 case( "By" )
                     !
@@ -256,19 +274,28 @@ contains
                     !
                     select type( lh )
                         class is(cVector3D_SG_t)
-                            if( allocated( self%Lby ) ) deallocate( self%Lby )
-                            allocate( self%Lby, source = cVector3D_SG_t( lh%grid, EDGE ) )
+                            if( allocated( temp_full_vec ) ) deallocate( temp_full_vec )
+                            allocate( temp_full_vec, source = cVector3D_SG_t( lh%grid, EDGE ) )
                             !
                         class default
                             write(*, *) "ERROR:Receiver::evaluationFunction:"
                             stop          "            Unknow lh type"
                     end select
                     !
-                    call model_operator%multCurlT( lh, self%Lby )
+                    call model_operator%multCurlT( lh, temp_full_vec )
                     !
                     deallocate( lh )
                     !
-                    call self%Lby%mults( isign * comega )
+                    call temp_full_vec%mults( isign * comega )
+                    !
+                    select type( temp_full_vec )
+                        class is( cVector3D_SG_t )
+                            !
+                            call full2Sparse( self%Lby, temp_full_vec )
+                            !
+                        class default
+                            stop "evaluationFunctionRx: Unclassified temp_full_vec_by"
+                    end select
                     !
                 case( "Bz" )
                     !
@@ -285,21 +312,32 @@ contains
                     !
                     select type( lh )
                         class is(cVector3D_SG_t)
-                            if( allocated( self%Lbz ) ) deallocate( self%Lbz )
-                            allocate( self%Lbz, source = cVector3D_SG_t( lh%grid, EDGE ) )
+                            if( allocated( temp_full_vec ) ) deallocate( temp_full_vec )
+                            allocate( temp_full_vec, source = cVector3D_SG_t( lh%grid, EDGE ) )
                             !
                         class default
                             write(*, *) "ERROR:Receiver::evaluationFunction:"
                             stop          "            Unknow lh type"
                     end select
                     !
-                    call model_operator%multCurlT( lh, self%Lbz )
+                    call model_operator%multCurlT( lh, temp_full_vec )
                     !
                     deallocate( lh )
                     !
-                    call self%Lbz%mults( isign * comega )
+                    call temp_full_vec%mults( isign * comega )
+                    !
+                    select type( temp_full_vec )
+                        class is( cVector3D_SG_t )
+                            !
+                            call full2Sparse( self%Lbz, temp_full_vec )
+                            !
+                        class default
+                            stop "evaluationFunctionRx: Unclassified temp_full_vec_bz"
+                    end select
                     !
             end select
+            !
+            deallocate( temp_full_vec )
             !
         end do
         !
