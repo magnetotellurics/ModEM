@@ -10,6 +10,7 @@ module Receiver
     !
     use Transmitter
     use cVector3D_SG
+	use cSparseVector3D_SG
     use ModelOperator
     use DataHandle
     !
@@ -140,6 +141,7 @@ contains
         class( Receiver_t ), intent( inout )   :: self
         class( ModelOperator_t ), intent( in ) :: model_operator
         real( kind=prec ), intent( in )        :: omega
+		type( cSparsevector3D_SG_t )           :: sparse_lex, sparse_ley
         !
         integer              :: k
         complex( kind=prec ) :: comega
@@ -164,6 +166,15 @@ contains
                     !
                     call e%interpFunc( self%location, "x", self%Lex )
                     !
+                    select type( lex => self%Lex )
+                        class is( cVector3D_SG_t )
+                            !
+							call full2Sparse( sparse_lex, lex )
+							!
+                        class default
+                            stop "evaluationFunctionRx: Unclassified lex"
+                    end select
+                    !
                     deallocate( e )
                     !
                 case( "Ey" )
@@ -176,6 +187,15 @@ contains
                     end select
                     !
                     call e%interpFunc( self%location, "y", self%Ley )
+                    !
+                    select type( ley => self%Ley )
+                        class is( cVector3D_SG_t )
+                            !
+							call full2Sparse( sparse_ley, ley )
+							!
+                        class default
+                            stop "evaluationFunctionRx: Unclassified lex"
+                    end select
                     !
                     deallocate( e )
                     !

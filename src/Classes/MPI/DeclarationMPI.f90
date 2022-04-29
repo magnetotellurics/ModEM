@@ -1472,16 +1472,16 @@ module DeclarationMPI
                         model_operator%zZO = arrayToBiArray( r_array, model_operator_zZO_dim1, model_operator_zZO_dim2 )
                         deallocate( r_array )
                         !
-                        allocate( rVector3D_SG_t :: model_operator%Sigma_E )
+                        !allocate( rVector3D_SG_t :: model_operator%Sigma_E )
                         model_operator%Sigma_E = unpackRVectorBuffer( main_grid, index )
                         !
-                        allocate( rVector3D_SG_t :: model_operator%db1 )
+                        !allocate( rVector3D_SG_t :: model_operator%db1 )
                         model_operator%db1 = unpackRVectorBuffer( main_grid, index )
                         !
-                        allocate( rVector3D_SG_t :: model_operator%db2 )
+                        !allocate( rVector3D_SG_t :: model_operator%db2 )
                         model_operator%db2 = unpackRVectorBuffer( main_grid, index )
                         !
-                        allocate( rScalar3D_SG_t :: model_operator%c )
+                        !allocate( rScalar3D_SG_t :: model_operator%c )
                         model_operator%c = unpackRScalarBuffer( main_grid, index )
                         !
                     class default
@@ -1604,7 +1604,7 @@ module DeclarationMPI
                                 !
                                 allocate( model_parameter%paramGrid, source = param_grid )
                                 !
-                                allocate( rScalar3D_SG_t :: model_parameter%cellCond )
+                                !allocate( rScalar3D_SG_t :: model_parameter%cellCond )
                                 model_parameter%cellCond = unpackRScalarBuffer( param_grid, index )
                                 !
                             !class default
@@ -1871,9 +1871,9 @@ module DeclarationMPI
         class( Receiver_t ), allocatable, intent( inout ) :: receiver
         integer, intent( inout )                          :: index
         !
-        integer :: receiver_id, receiver_type, code_size, type_name_size
+        integer :: receiver_id, receiver_type, code_size
         !
-        character(:), allocatable :: code, type_name, data_title
+        character(:), allocatable :: code
         real( kind=prec )         :: receiver_location(3)
         !
         call MPI_UNPACK( shared_buffer, shared_buffer_size, index, receiver_derived_type, 1, MPI_INTEGER, child_comm, ierr )
@@ -1888,9 +1888,6 @@ module DeclarationMPI
         !
         allocate( character( code_size ) :: code )
         call MPI_UNPACK( shared_buffer, shared_buffer_size, index, code, code_size, MPI_CHARACTER, child_comm, ierr )
-        !
-        allocate( character( type_name_size ) :: type_name )
-        call MPI_UNPACK( shared_buffer, shared_buffer_size, index, type_name, type_name_size, MPI_CHARACTER, child_comm, ierr )
         !
         select case( receiver_derived_type )
            !

@@ -1147,7 +1147,6 @@ contains
                 zC = CumSum([0._prec, self%grid%dz])
             end select
         end select
-
         xC = xC + self%grid%ox
         yC = yC + self%grid%oy
         zC = zC - sum(self%grid%dz(1:self%grid%nzAir)) - self%grid%oz
