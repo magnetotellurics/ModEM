@@ -37,11 +37,9 @@ contains
         !
         real( kind=prec ), intent( in ) :: location(3)
         real( kind=prec ), intent( in ) :: azimuth
-        integer, intent( in ) 			:: rx_type
+        integer, intent( in )           :: rx_type
         !
         type( ReceiverSingleField_t )    :: self
-        !
-        character(:), allocatable :: aux_str
         !
         ! write(*,*) "Constructor ReceiverSingleField_t"
         !
@@ -107,12 +105,11 @@ contains
         !
     end function isEqualSingleField
     !
-    subroutine predictedDataSingleField( self, model_operator, transmitter )
+    subroutine predictedDataSingleField( self, transmitter )
         implicit none
         !
         class( ReceiverSingleField_t ), intent( inout ) :: self
-        class( ModelOperator_t ), intent( in )             :: model_operator
-        class( Transmitter_t ), intent( in )                :: transmitter
+        class( Transmitter_t ), intent( in )            :: transmitter
         !
         complex( kind=prec ) :: det, ctemp
         !

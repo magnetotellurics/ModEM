@@ -106,7 +106,7 @@ contains
         !
         type( ModelOperator_MF_t ) :: self
         !
-        write(*,*) "Constructor ModelOperator_MF"
+        !write(*,*) "Constructor ModelOperator_MF"
         !
         self%is_allocated = .FALSE.
         self%eqset = .FALSE.

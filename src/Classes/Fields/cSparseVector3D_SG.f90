@@ -102,7 +102,6 @@ contains
         Integer, allocatable,  dimension(:,:,:)  :: Ix,Jx, Kx,XYZ1
         Integer, allocatable,  dimension(:,:,:)  :: Iy,Jy, Ky,XYZ2
         Integer, allocatable,  dimension(:,:,:)  :: Iz,Jz, Kz,XYZ3
-        logical, allocatable,  dimension(:,:,:)  :: Mx,My,Mz
         !
         Integer :: i,j,k,Nx, Ny, Nz
         !
@@ -167,20 +166,15 @@ contains
         kz(:,:,k)=k
         end do    
         XYZ3=3
-                 
-
-        Mx = cvector%x  /= 0
-        My = cvector%y  /= 0
-        Mz = cvector%z  /= 0
-
+        !
         ! Get indices of Non-Zero coefficients
-        self%i=(/ pack(Ix,Mx),pack(Iy,My),pack(Iz,Mz) /)
-        self%j=(/ pack(Jx,Mx),pack(Jy,My),pack(Jz,Mz) /)
-        self%k=(/ pack(Kx,Mx),pack(Ky,My),pack(Kz,Mz) /)
+        self%i=(/ pack(Ix,cvector%x  /= 0),pack(Iy,cvector%y  /= 0),pack(Iz,cvector%z  /= 0) /)
+        self%j=(/ pack(Jx,cvector%x  /= 0),pack(Jy,cvector%y  /= 0),pack(Jz,cvector%z  /= 0) /)
+        self%k=(/ pack(Kx,cvector%x  /= 0),pack(Ky,cvector%y  /= 0),pack(Kz,cvector%z  /= 0) /)
         ! Get Values of Non-Zero coefficients        
-        self%c=(/ pack(cvector%x,Mx),pack(cvector%y,My),pack(cvector%z,Mz) /)
+        self%c=(/ pack(cvector%x,cvector%x  /= 0),pack(cvector%y,cvector%y  /= 0),pack(cvector%z,cvector%z  /= 0) /)
         ! Get Components
-        self%xyz=(/ pack(XYZ1,Mx), pack(XYZ2,My),pack(XYZ3,Mz) /)
+        self%xyz=(/ pack(XYZ1,cvector%x  /= 0), pack(XYZ2,cvector%y  /= 0),pack(XYZ3,cvector%z  /= 0) /)
         ! Get number of Non-Zero coefficients
         self%nCoeff=size(self%c)
         ! Get gridType
@@ -198,7 +192,6 @@ contains
         deallocate( Ix, Jx, Kx, XYZ1 )
         deallocate( Iy, Jy, Ky, XYZ2 )
         deallocate( Iz, Jz, Kz, XYZ3 )
-        deallocate( Mx, My, Mz )
         !
     end subroutine full2Sparse
     !

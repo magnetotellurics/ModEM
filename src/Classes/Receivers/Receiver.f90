@@ -55,12 +55,11 @@ module Receiver
     !
     abstract interface
         !
-        subroutine interface_predicted_data( self, model_operator, transmitter )
+        subroutine interface_predicted_data( self, transmitter )
             !
-            import :: Receiver_t, ModelOperator_t, Transmitter_t
+            import :: Receiver_t, Transmitter_t
             !
             class( Receiver_t ), intent( inout )  :: self
-            class( ModelOperator_t ),intent( in ) :: model_operator
             class( Transmitter_t ), intent( in )  :: transmitter
             !
         end subroutine interface_predicted_data
@@ -135,22 +134,18 @@ contains
         !
     end subroutine deallocateRx
     !
-    subroutine evaluationFunctionRx( self, model_operator, omega )
+    subroutine evaluationFunctionRx( self, model_operator )
         implicit none
         !
         class( Receiver_t ), intent( inout )   :: self
         class( ModelOperator_t ), intent( in ) :: model_operator
-        real( kind=prec ), intent( in )        :: omega
         class( cVector_t ), allocatable        :: temp_full_vec
         !
         integer              :: k
-        complex( kind=prec ) :: comega
         !
         class( cVector_t ), allocatable :: e, h, lh
         !
-        !
-        comega = cmplx( 0.0, 1./omega, kind=prec )
-        !
+		!
         do k = 1, size( self%EHxy )
             !
             select case( self%EHxy(k)%str )
@@ -240,7 +235,7 @@ contains
                             allocate( temp_full_vec, source = cVector3D_SG_t( lh%grid, EDGE ) )
                             !
                         class default
-                            write(*, *) "ERROR:Receiver::evaluationFunction:"
+                            write( *, * ) "ERROR:Receiver::evaluationFunction:"
                             stop          "            Unknow lh type"
                     end select
                     !
@@ -248,7 +243,7 @@ contains
                     !
                     deallocate( lh )
                     !
-                    call temp_full_vec%mults( isign * comega )
+                    !call temp_full_vec%mults( isign * comega )
                     !
                     select type( temp_full_vec )
                         class is( cVector3D_SG_t )
@@ -273,12 +268,12 @@ contains
                     deallocate( h )
                     !
                     select type( lh )
-                        class is(cVector3D_SG_t)
+                        class is( cVector3D_SG_t )
                             if( allocated( temp_full_vec ) ) deallocate( temp_full_vec )
                             allocate( temp_full_vec, source = cVector3D_SG_t( lh%grid, EDGE ) )
                             !
                         class default
-                            write(*, *) "ERROR:Receiver::evaluationFunction:"
+                            write( *, * ) "ERROR:Receiver::evaluationFunction:"
                             stop          "            Unknow lh type"
                     end select
                     !
@@ -286,7 +281,7 @@ contains
                     !
                     deallocate( lh )
                     !
-                    call temp_full_vec%mults( isign * comega )
+                    !call temp_full_vec%mults( isign * comega )
                     !
                     select type( temp_full_vec )
                         class is( cVector3D_SG_t )
@@ -311,12 +306,12 @@ contains
                     deallocate( h )
                     !
                     select type( lh )
-                        class is(cVector3D_SG_t)
+                        class is( cVector3D_SG_t )
                             if( allocated( temp_full_vec ) ) deallocate( temp_full_vec )
                             allocate( temp_full_vec, source = cVector3D_SG_t( lh%grid, EDGE ) )
                             !
                         class default
-                            write(*, *) "ERROR:Receiver::evaluationFunction:"
+                            write( *, * ) "ERROR:Receiver::evaluationFunction:"
                             stop          "            Unknow lh type"
                     end select
                     !
@@ -324,7 +319,7 @@ contains
                     !
                     deallocate( lh )
                     !
-                    call temp_full_vec%mults( isign * comega )
+                    !call temp_full_vec%mults( isign * comega )
                     !
                     select type( temp_full_vec )
                         class is( cVector3D_SG_t )

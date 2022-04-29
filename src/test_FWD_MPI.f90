@@ -412,7 +412,7 @@ contains
             !write( *, * ) "                        Rx Id:", Rx%id, "XYZ:", Rx%location
             !
             ! Calculate Rx Predicted Data
-            call Rx%predictedData( model_operator, Tx )
+            call Rx%predictedData( Tx )
             !
             ! Store Rx predicted data into tx_data_handles
             do iDe = 1, size( Rx%predicted_data )
@@ -481,6 +481,9 @@ contains
     subroutine handleDataFile()
         implicit none
         !
+        integer :: irx, nrx
+        class( Receiver_t ), pointer :: Rx
+        !
         ! Local object to dealt data, self-destructs at the end of the subroutine
         type( DataFileStandard_t ) :: data_file_standard
         !
@@ -488,11 +491,23 @@ contains
         !
         data_file_standard = DataFileStandard_t( ioStartup, data_file_name )
         !
-        if( size( receivers ) == data_file_standard%nRx ) then
-             write( *, * ) size( receivers ), " Receivers checked!"
+        nrx = size( receivers )
+        !
+        if( nrx == data_file_standard%nRx ) then
+            !
+            write( *, * ) nrx, " Receivers checked!"
+            !
+            write( *, * ) "    -> Creating Rx evaluation vectors"
+            !
+            do irx = 1, nrx
+                Rx => getReceiver( irx )
+                !
+                call Rx%evaluationFunction( model_operator )
+                !
+            enddo
         else
              !
-             write(*,*) "Number of Rx mismatched from Header :[", size( receivers ), " and ", data_file_standard%nRx, "]"
+             write(*,*) "Number of Rx mismatched from Header :[", nrx, " and ", data_file_standard%nRx, "]"
              STOP "DataManager.f08: DataManager_ctor()"
              !
         endif
