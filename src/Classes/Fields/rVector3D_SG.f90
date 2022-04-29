@@ -501,7 +501,7 @@ contains
         !
         integer :: nVec(3), nVecT, nBdry, nb, ni, i
         real( kind=prec ), allocatable :: temp(:)
-        type( rVector3D_SG_t ), allocatable :: E
+        type( rVector3D_SG_t ) :: E
         !
         if(self%is_allocated) then
             select type(grid => self%grid)
@@ -555,8 +555,6 @@ contains
                 call E%getArray(temp) 
                 !
         end select
-        !
-        deallocate( E )
         !
         nBdry = 0
         do i = 1, nVecT
@@ -1025,7 +1023,7 @@ contains
         integer :: y_xend, y_yend, y_zend
         integer :: z_xend, z_yend, z_zend
         !
-        type( rVector3D_SG_t ), allocatable :: E_tmp
+        type( rVector3D_SG_t ) :: E_tmp
         !
         E_tmp = self
         !
@@ -1074,7 +1072,6 @@ contains
                 end select
         end select
         !
-        deallocate( E_tmp )
         deallocate( cellObj )
         !
     end function sumEdgesRVector3D_SG

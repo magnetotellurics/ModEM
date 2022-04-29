@@ -46,7 +46,7 @@ module ModelOperator_MF
          ! Coefficients of diagonal of (unweighted) A operator.
          ! Here we store this as real - still need to multiply by i omega
          ! Thus, don"t really need to store Adiag -- just store Sigma_E.
-         type( rVector3D_SG_t ), allocatable :: Sigma_E
+         type( rVector3D_SG_t ) :: Sigma_E
          
          ! Operators for divergence correction (DC) will also be included here
          ! implementation will be trhough a separate module, managed through
@@ -57,13 +57,13 @@ module ModelOperator_MF
          ! db1%x contains coefficients of the stencil for shift -1 of ix index
          ! (%y,%z give corresponding coefficients for iy, iz)
          ! db2    contains coefficients for corresponding shift of +1
-         type( rVector3D_SG_t ), allocatable :: db1, db2
+         type( rVector3D_SG_t ) :: db1, db2
          
          ! c contains the coefficients for div sigma grad
          ! operator diagonal. Note that divergence and gradient
          ! (also needed for DC) can be implemented
          ! directly using Metric Elements.
-         type( rScalar3D_SG_t ), allocatable :: c
+         type( rScalar3D_SG_t ) :: c
          !
          contains
               !
@@ -206,10 +206,10 @@ contains
         select type( grid => self%metric%grid )
             class is( Grid3D_SG_t )
                 !
-                allocate( self%Sigma_E, source = rVector3D_SG_t( grid, EDGE ) )
-                allocate( self%db1, source = rVector3D_SG_t( grid, EDGE ) )
-                allocate( self%db2, source = rVector3D_SG_t( grid, EDGE ) )
-                allocate( self%c, source = rScalar3D_SG_t( grid, NODE ) )
+                self%Sigma_E = rVector3D_SG_t( grid, EDGE )
+                self%db1 = rVector3D_SG_t( grid, EDGE )
+                self%db2 = rVector3D_SG_t( grid, EDGE )
+                self%c = rScalar3D_SG_t( grid, NODE )
                 !
         end select
         !
@@ -242,11 +242,6 @@ contains
         deallocate( self%zX )
         deallocate( self%zY )
         deallocate( self%zZO )
-        !
-        deallocate( self%Sigma_E )
-        deallocate( self%db1 )
-        deallocate( self%db2 )
-        deallocate( self%c )
         !
         self%is_allocated = .FALSE.
         !

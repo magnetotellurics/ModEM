@@ -10,7 +10,7 @@ Module DivergenceCorrection
         !
         class( Solver_t ), allocatable :: solver
         real( kind=prec ) :: divJ(2) ! divergence of currents computed at most recent call to DivCor -- before and after
-		!
+        !
         contains
             !
             final :: DivergenceCorrection_dtor
@@ -133,6 +133,7 @@ contains
         select type( grid => self%solver%preconditioner%model_operator%metric%grid )
             class is( Grid3D_SG_t )
                 !
+                allocate( phiSol, source = cScalar3D_SG_t( grid, NODE ) )
                 allocate( phiRHS, source = cScalar3D_SG_t( grid, NODE ) )
                 !
         end select
@@ -158,25 +159,18 @@ contains
         !     is modOp%divCgrad
         !     (b) preconditioner: object, and preconditioner matrix
         !
-        select type( grid => self%solver%preconditioner%model_operator%metric%grid )
-            class is( Grid3D_SG_t )
-                !
-                allocate( phiSol, source = cScalar3D_SG_t( grid, NODE ) )
-                !
-        end select
-        !
         select type( solver => self%solver )
             class is( Solver_PCG_t )
                 call solver%solve( phiRHS, phiSol )
             class default
                 write(*, *) "ERROR:DivergenceCorrection::DivCorr:"
-                STOP          "            Unknow solver type."
+                stop          "            Unknow solver type."
         end select
         !
         !    have to decide how to manage output
         !if (output_level > 2) then
-        write (*,*) "finished divergence correction:"
-        write (*,"(i5, g15.7)") self%solver%n_iter, self%solver%relErr( self%solver%n_iter )
+        !write (*,*) "finished divergence correction:", size( self%solver%relErr ), self%solver%n_iter
+        !write (*,"(i8, es20.6)") self%solver%n_iter, self%solver%relErr( self%solver%n_iter )
         !end if
 
         ! compute gradient of phiSol (Divergence correction for inE)
@@ -198,7 +192,7 @@ contains
         ! compute the size of current Divergence after
         self%divJ(2) = sqrt( phiRHS .dot. phiRHS )
         !
-		write( *, * ) "divJ after correction  ", self%divJ(2)
+        write( *, * ) "divJ after correction  ", self%divJ(2)
         !
         deallocate( phiRHS )
 

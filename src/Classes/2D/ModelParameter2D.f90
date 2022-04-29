@@ -8,28 +8,30 @@
 !        but I wil make this independent of any base class for now
 !*
 module ModelParameter2D
-    use Constants
-	!    use ModelParameter     !     we use this to get access to "SigMap"
-	!        don't have a simple enough working version of ModelParameter abstract
-	!         class to "use"
+    !
+	use Constants
+	!
     use Grid2D
     use Esoln2DTM                !     need this for PDEmapping
     use Grid1D                    !     need 1D Grid, ModelParameter for 1D "slice" routines
     use ModelParameter1D
-
+	!
     type :: ModelParameter2D_t
-         ! This will be slightly modified from numerical grid --
-         ! NzAir = 0 -- more generally this might be a
-         ! completely different grid.
+         !
          real( kind=prec ), allocatable, dimension(:,:) :: cellCond
-         integer :: mKey(8)
-         character(:), allocatable :: paramType
-         real( kind=prec )         :: airCond
-         class(Grid2D_t), allocatable :: grid, ParamGrid
-         logical :: is_allocated, zeroValued
+         !
+		 integer :: mKey(8)
+         !
+		 character(:), allocatable :: paramType
+         !
+		 real( kind=prec )         :: airCond
+         !
+		 type(Grid2D_t) :: grid, ParamGrid
+         !
+		 logical :: is_allocated, zeroValued
          !
          contains
-            !     do not include all of the vector space operations
+            !
             procedure, public :: length => lengthModelParameter2D
             procedure, public :: zeros => zerosParameter2D
             procedure, public :: setConductivity => setConductivityModelParameter2D
@@ -41,18 +43,17 @@ module ModelParameter2D
     interface ModelParameter2D_t
          module procedure ModelParameter2D_ctor
     end interface ModelParameter2D_t
-    
+    !
 contains
-
     !**
     ! Class constructor
     !*
     function ModelParameter2D_ctor(grid) result( self )
-        !        since this will (for now) be used for boundary and initial conditions
-        !        the creator will not set the conductivity, just create arrays 
+        implicit none
+        !
         type( Grid2D_t ), intent(in) :: grid
         ! Local variables
-        integer :: ny, nz, nzAir, status
+        integer :: ny, nz, nzAir
         type( ModelParameter2D_t ) :: self
         !
         !
@@ -74,7 +75,7 @@ contains
         self%ParamGrid = Grid2D_t(ny,nzAir,nz,grid%dy, &
             grid%dz(grid%nzAir+1:grid%nz))
 
-        allocate(self%cellCond(ny,nz),STAT = status)
+        allocate(self%cellCond(ny,nz))
         self%is_allocated = .true.
         
         !        set parameter array to zeros ...

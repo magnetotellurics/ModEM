@@ -23,7 +23,7 @@ module ModelParameterCell_SG
          !
          class( Grid_t ), allocatable :: paramGrid
          !
-         type( rScalar3D_SG_t ), allocatable :: cellCond
+         type( rScalar3D_SG_t ) :: cellCond
          !
         contains
               !
@@ -59,7 +59,7 @@ contains
         implicit none
         !
         class( Grid3D_SG_t ), target, intent( in )        :: grid
-        class( rScalar3D_SG_t ), intent( in )             :: ccond
+        type( rScalar3D_SG_t ), intent( in )              :: ccond
         character(:), allocatable, optional, intent( in ) :: paramType
         !
         type( ModelParameterCell_SG_t ) :: self
@@ -89,7 +89,6 @@ contains
           grid%dx, grid%dy, &
           grid%dz( grid%nzAir+1:grid%nz ) )
         !
-        allocate( rScalar3D_SG_t :: self%cellCond )
         self%cellCond = ccond
         !
         if ( present( paramType ) ) then
@@ -113,7 +112,6 @@ contains
         !write(*,*) "Destructor ModelParameterCell_SG"
         !
         deallocate( self%ParamGrid )
-        deallocate( self%cellCond )
         !
     end subroutine ModelParameterCell_SG_dtor
     !
@@ -123,9 +121,9 @@ contains
         class( ModelParameterCell_SG_t ), intent( in ) :: self
         integer, intent( in ) :: ix, iy
         !
-        type( ModelParameter1D_t ), allocatable ::  model_param_1D 
+        type( ModelParameter1D_t ) ::  model_param_1D 
         !
-        real(kind=prec), allocatable, dimension(:) :: CondSlice
+        real( kind=prec ), allocatable, dimension(:) :: CondSlice
         !
         !    create 1D model parameter
         model_param_1D = ModelParameter1D_t( self%grid%Slice1D() )
@@ -147,10 +145,10 @@ contains
         ! Arguments
         class( ModelParameterCell_SG_t ), intent( in ) :: self
         !
-        type( ModelParameter1D_t ), allocatable ::  model_param_1D 
+        type( ModelParameter1D_t ) ::  model_param_1D 
         !
-        real(kind=prec), allocatable, dimension(:) :: CondSlice
-        real(kind=prec) :: wt, temp_sigma_value
+        real( kind=prec ), allocatable, dimension(:) :: CondSlice
+        real( kind=prec ) :: wt, temp_sigma_value
         integer :: i, j, k
         !
         model_param_1D = ModelParameter1D_t( self%grid%Slice1D() )
@@ -186,10 +184,10 @@ contains
         class( ModelParameterCell_SG_t ), intent( in ) :: self
         integer, intent( in )                          :: axis, j
         !
-        type( ModelParameter2D_t ), allocatable :: m2D 
+        type( ModelParameter2D_t ) :: m2D 
         !
         character(:), allocatable :: paramType
-        real(kind=prec), allocatable, dimension(:,:) :: CondSlice
+        real( kind=prec ), allocatable, dimension(:,:) :: CondSlice
         !
         paramType = LINEAR
         !
@@ -258,7 +256,7 @@ contains
         class( ModelParameterCell_SG_t ), intent( in ) :: self
         class( rVector_t ), allocatable                :: eVec
         !
-        type( rScalar3D_SG_t ), allocatable :: SigmaCell
+        type( rScalar3D_SG_t ) :: SigmaCell
         integer :: i, j, k, k0, k1, k2
         !
         type( rVector3D_SG_t ) :: length, area
@@ -268,7 +266,7 @@ contains
                 !
                 allocate( eVec, source = rVector3D_SG_t( grid, EDGE ) )
                 !    should this local object be constructed in the same way???
-                allocate( SigmaCell, source = rScalar3D_SG_t( grid, CELL ))
+                SigmaCell = rScalar3D_SG_t( grid, CELL )
                 !
                 k0 = self%grid%nzAir
                 k1 = k0 + 1
@@ -285,8 +283,6 @@ contains
                 ! Sum onto edges
                 call eVec%SumCells( SigmaCell )
                 !
-                deallocate( SigmaCell )
-                !
                 ! Divide by total volume -- sum of 4 cells
                 ! surrounding edge -- just 4*V_E        
                 call eVec%divs( self%metric%Vedge )
@@ -296,7 +292,7 @@ contains
                 !
             class default
                 write(*, *) "ERROR:ModelParameterCell_SG:PDEmapping:"
-                STOP "              Incompatible grid. Exiting."
+                stop "              Incompatible grid. Exiting."
                 !
         end select
         !
@@ -313,7 +309,7 @@ contains
         class( ModelParameter_t ), intent( in )        :: dm
         class( rVector_t ), allocatable                :: eVec
         !
-        type( rScalar3D_SG_t ), allocatable :: SigmaCell
+        type( rScalar3D_SG_t ) :: SigmaCell
         character( len=5 ), parameter :: JOB = "DERIV"
         integer :: k0, k1, k2
         !
@@ -346,8 +342,6 @@ contains
                           ! Sum onto edges
                           call eVec%SumCells( SigmaCell )
                           !
-                          deallocate( SigmaCell )
-                          !
                           ! Divide by total volume -- sum of 4 cells
                           ! surrounding edge -- just 4*V_E
                           call eVec%divs( self%metric%Vedge )
@@ -356,13 +350,13 @@ contains
                           !
                     class default
                         write(*, *) "ERROR:ModelParameterCell_SG:dPDEmapping:"
-                        STOP "              Incompatible grid. Exiting."
+                        stop "              Incompatible grid. Exiting."
                         !
                     end select
                     !
                class default
                     write(*, *) "ERROR:ModelParameterCell_SG:dPDEmapping:"
-                    STOP "              Incompatible input [dm]. Exiting."
+                    stop "              Incompatible input [dm]. Exiting."
                     !
         end select
         !
@@ -378,8 +372,8 @@ contains
         class( rVector_t ), intent( in )               :: eVec
         class( ModelParameter_t ), allocatable         :: dm
         !
-        type( rScalar3D_SG_t ), allocatable :: sigmaCell
-        type( rVector3D_SG_t ), allocatable :: vTemp
+        type( rScalar3D_SG_t ) :: sigmaCell
+        type( rVector3D_SG_t ) :: vTemp
         character( len=5 ), parameter :: JOB = "DERIV"
         integer :: k0, k1, k2
         !
@@ -391,7 +385,7 @@ contains
                 !
             class default
                    write(*, *) "ERROR:ModelParameterCell_SG:dPDEmappingT:"
-                   STOP "              Unknow grid"
+                   stop "              Unknow grid"
         end select
         !
         select type( eVec )
@@ -410,7 +404,7 @@ contains
 
                            sigmaCell = vTemp%SumEdges()
                            !
-                           deallocate( vTemp )
+                           !deallocate( vTemp )
                            !
                            call sigmaCell%multS( self%metric%Vcell )
 
@@ -424,11 +418,11 @@ contains
                            !        this is local variable declared with explicit type!
                            dm%cellCond%v = dm%cellCond%v * SigmaCell%v(:,:,k1:k2)
                            !
-                           deallocate( SigmaCell )
+                           !deallocate( SigmaCell )
                            !
                       class default
                            write(*, *) "ERROR:ModelParameterCell_SG:dPDEmappingT:"
-                           STOP "              Incompatible input [eVec]. Exiting."
+                           stop "              Incompatible input [eVec]. Exiting."
                 end select
         end select
         !

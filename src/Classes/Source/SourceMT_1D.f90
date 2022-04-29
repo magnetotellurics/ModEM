@@ -83,8 +83,8 @@ contains
         real( kind=prec ), intent( in )         :: omega
         integer, intent( in )                   :: polarization
         !
-        class( ModelParameter1D_t ), allocatable        :: model_parameter_1D
-        class( Forward1D_t ), allocatable               :: forward_1D
+        type( ModelParameter1D_t )                      :: model_parameter_1D
+        type( Forward1D_t )                             :: forward_1D
         complex( kind=prec ), allocatable, dimension(:) :: E1D
         !
         integer :: ix, iy
@@ -104,9 +104,6 @@ contains
         !
         ! Solve 1D and store the result in E1D structure
         call forward_1D%solve( E1D )
-        !
-        deallocate( forward_1D )
-        deallocate( model_parameter_1D )
         !
         ! Allocate and construct self%E => E3D
         select type( grid => self%model_operator%metric%grid )

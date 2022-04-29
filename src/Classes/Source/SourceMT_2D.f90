@@ -39,8 +39,8 @@ contains
          !
          implicit none
          !
-         class( ModelOperator_t ), target, intent(in)  :: model_operator
-         class( ModelParameter_t ), target, intent(in) :: model_parameter
+         class( ModelOperator_t ), target, intent( in )  :: model_operator
+         class( ModelParameter_t ), target, intent( in ) :: model_parameter
          class( cVector_t ), intent( in ), optional     :: E
          !
          type( SourceMT_2D_t ) :: self
@@ -80,19 +80,19 @@ contains
     subroutine setESourceMT_2D( self, omega, polarization )
       implicit none
       !
-      class( SourceMT_2D_t ), intent( inout )  :: self
-      real( kind=prec ), intent( in )             :: omega
-      integer, intent( in )                          :: polarization
+      class( SourceMT_2D_t ), intent( inout ) :: self
+      real( kind=prec ), intent( in )         :: omega
+      integer, intent( in )                   :: polarization
       !
       ! local variables
       ! 2D grid definitions
-      class( Grid2D_t ), allocatable              :: grid_2D
+      type( Grid2D_t )           :: grid_2D
       !
-      class( Esoln2DTM_t ), allocatable          :: E2D
+      type( Esoln2DTM_t )        :: E2D
       !
-      class( ModelParameter2D_t ), allocatable :: model_parameter_2D
+      type( ModelParameter2D_t ) :: model_parameter_2D
       !
-      class( Forward2D_t ), allocatable          :: forward_2D
+      type( Forward2D_t )        :: forward_2D
       !
       integer :: i_slice, n_slice
       !
@@ -162,11 +162,6 @@ contains
           end select
           !
       enddo
-      !
-      deallocate( grid_2D )
-      deallocate( E2D )
-      deallocate( model_parameter_2D )
-      deallocate( forward_2D )
       !
     end subroutine setESourceMT_2D
     !

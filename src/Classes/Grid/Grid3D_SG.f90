@@ -56,12 +56,12 @@ module Grid3D_SG
     !         in the driver program!)
     !*
     type :: TAirLayers
-         character( len=80) :: method = "fixed height"
+         character( len=80 ) :: method = "fixed height"
          integer            :: nz = 10
-         real(kind = 8)     :: maxHeight = 200.0
-         real(kind = 8)     :: minTopDz = 100.0
-         real(kind = 8)     :: alpha = 3.
-         real(kind = 8), pointer :: dz(:)
+         real( kind=8 )     :: maxHeight = 200.0
+         real( kind=8 )     :: minTopDz = 100.0
+         real( kind=8 )     :: alpha = 3.
+         real( kind=8 ), pointer :: dz(:)
          logical                 :: allocated = .FALSE.
     end type TAirLayers
     !
@@ -71,22 +71,24 @@ module Grid3D_SG
     !
 contains
     function Slice1DGrid3D_SG(self) result(g1D)
-            implicit none
-            class(Grid3D_SG_t), intent( in ) :: self
-            type(Grid1D_t), allocatable :: g1D
-            !
-            g1D = Grid1D_t( self%nzAir, self%nzEarth, self%dz )
-            !
+        implicit none
+        !
+        class( Grid3D_SG_t ), intent( in ) :: self
+		type( Grid1D_t ) :: g1D
+		!
+		g1D = Grid1D_t( self%nzAir, self%nzEarth, self%dz )
+		!
     end function Slice1DGrid3D_SG
     !
-    function Slice2DGrid3D_SG(self) result(g2D)
-            implicit none
-            class(Grid3D_SG_t), intent( in ) :: self
-            type(Grid2D_t), allocatable :: g2D
-            !
-            ! Should be diferent for the polarization
-            g2D = Grid2D_t( self%ny, self%nzAir, self%nzEarth, self%dy, self%dz )
-            !
+    function Slice2DGrid3D_SG(self) result( g2D )
+        implicit none
+        !
+        class( Grid3D_SG_t ), intent( in ) :: self
+		type( Grid2D_t ) :: g2D
+		!
+		! Should be diferent for the polarization
+		g2D = Grid2D_t( self%ny, self%nzAir, self%nzEarth, self%dy, self%dz )
+		!
     end function Slice2DGrid3D_SG
     !**
     ! Class constructor for simple tensor product grid
@@ -95,7 +97,8 @@ contains
     ! Nza is number of air layers to allow (included in Dz)
     !*
     function Grid3D_SG_t_ctor( nx, ny, nzAir, nzEarth, dx, dy, dz ) result(self)
-        ! Arguments
+        implicit none
+        !
         integer, intent( in ) :: nx, ny, nzAir, nzEarth
         real( kind=prec ), dimension(:), intent( in ) :: dx, dy, dz
         ! Local variables
@@ -126,7 +129,8 @@ contains
     end subroutine Grid3D_SG_dtor
     !
     subroutine CreateGrid3D_SG( self, nx, ny, nzAir, nzEarth )
-        implicit none!
+        implicit none
+		!
         class( Grid3D_SG_t ), intent( inout ) :: self
         integer, intent( in ) :: nx, ny, nzAir, nzEarth
         !
@@ -146,37 +150,38 @@ contains
     end subroutine CreateGrid3D_SG
     
     subroutine AllocateGrid3D_SG(self)
-        ! Arguments
-        class(Grid3D_SG_t), intent(inout) :: self
-        ! Local variables
+        implicit none
+		!
+        class( Grid3D_SG_t ), intent(inout) :: self
+        !
         integer :: nx, ny, nz
-        
+        !
         if ( self%is_allocated ) call self%Deallocate()
-
+		!
         nx = self%nx
         ny = self%ny
         nz = self%nz
-        
+        !
         allocate(self%dx(nx))
         allocate(self%dy(ny))
         allocate(self%dz(nz))
-        
+        !
         ! dxinv    = 1/ dx and similarly for dyinv and dzinv
         allocate(self%dxInv(nx))
         allocate(self%dyInv(ny))
         allocate(self%dzInv(nz))
-        
+        !
         ! delX, delY, and delZ are the distances between
         ! the electrical field defined on the center of the
         ! edges in x, y, and z axes, respectively.
         allocate(self%delX(nx + 1))
         allocate(self%delY(ny + 1))
         allocate(self%delZ(nz + 1))
-        
+        !
         allocate(self%delXInv(nx + 1))
         allocate(self%delYInv(ny + 1))
         allocate(self%delZInv(nz + 1))
-        
+        !
         ! xEdge is the array for cumulative distance of the edge
         ! for each grid (starting from the coordinate axes) with
         ! dimensions nx + 1.
@@ -191,15 +196,15 @@ contains
         allocate(self%xCenter(nx))
         allocate(self%yCenter(ny))
         allocate(self%zCenter(nz))
-        
+        !
         self%is_allocated = .true.
-        
+        !
     end subroutine AllocateGrid3D_SG
 
     subroutine DeAllocateGrid3D_SG(self)
-        ! Arguments
-        class(Grid3D_SG_t), intent(inout) :: self
-        
+        implicit none
+		!
+        class( Grid3D_SG_t ), intent(inout) :: self
         !
         if ( .NOT. self%is_allocated ) return
 
@@ -238,7 +243,7 @@ contains
     subroutine SetupGrid3D_SG(self, origin)
         implicit none
         !
-        class(Grid3D_SG_t), intent( inout ) :: self
+        class( Grid3D_SG_t ), intent( inout ) :: self
         real( kind=prec ) , intent( in ), optional :: origin(3)
         !
         integer :: ix, iy, iz, i, j, nzAir
@@ -462,10 +467,8 @@ contains
     subroutine DeallocateAirLayersGrid3D_SG(self, airLayers)
         implicit none
         !
-        class(Grid3D_SG_t), intent(inout) :: self
-        type(TAirLayers)    , intent(inout) :: airLayers
-        !
-        integer :: status
+        class( Grid3D_SG_t ), intent( inout ) :: self
+        type( TAirLayers ), intent( inout ) :: airLayers
         !
         deallocate( airLayers%dz )
         !
@@ -477,7 +480,7 @@ contains
     subroutine UpdateAirLayersGrid3D_SG(self, nzAir, dzAir)
         implicit none
         !
-        class(Grid3D_SG_t), intent(inout) :: self
+        class( Grid3D_SG_t ), intent(inout) :: self
         integer                     , intent( in )        :: nzAir
         real( kind=prec ) , intent( in )        :: dzAir(:)
         ! Local variables
@@ -490,9 +493,7 @@ contains
         
         if (.NOT.self%is_allocated) then
              write(*, *) "ERROR:Grid3D_SG_t:UpdateAirLayers"
-             write(*, *) "    Grid not allocated."
-             
-             STOP
+             stop "    Grid not allocated."
         end if
 
         nx_old = self%nx
@@ -533,19 +534,20 @@ contains
     subroutine GetDimensionsGrid3D_SG(self, nx, ny, nz, nzAir)
         implicit none
         !
-        class(Grid3D_SG_t), intent( in )    :: self
-        integer                     , intent( out ) :: nx, ny, nz, nzAir
-
+        class( Grid3D_SG_t ), intent( in )  :: self
+        integer, intent( out )             :: nx, ny, nz, nzAir
+		!
         nx = self%nx
         ny = self%ny
         nz = self%nz
         nzAir = self%nzAir
+		!
     end subroutine GetDimensionsGrid3D_SG
 
     subroutine SetCellSizesGrid3D_SG(self, dx, dy, dz)
         implicit none
         !
-        class(Grid3D_SG_t), intent(inout) :: self
+        class( Grid3D_SG_t ), intent(inout) :: self
         real( kind=prec ) , dimension(:), intent( in ) :: dx, dy, dz
 
         if (.NOT.self%IsAllocated()) then
@@ -598,7 +600,7 @@ contains
     subroutine NumberOfEdgesGrid3D_SG(self, nXedge, nYedge, nZedge)
         implicit none
         !
-        class(Grid3D_SG_t), intent( in ) :: self
+        class( Grid3D_SG_t ), intent( in ) :: self
         integer, intent( out )           :: nXedge, nYedge, nZedge
         ! Local variables
         integer :: nx, ny, nz
@@ -617,11 +619,11 @@ contains
     ! NumberOfFaces
     !
     !*
-    subroutine NumberOfFacesGrid3D_SG(self, nXface, nYface, nZface) 
+    subroutine NumberOfFacesGrid3D_SG( self, nXface, nYface, nZface ) 
         implicit none
         !
-        class(Grid3D_SG_t), intent( in )    :: self
-        integer                     , intent( out ) :: nXface, nYface, nZface
+        class( Grid3D_SG_t ), intent( in ) :: self
+        integer, intent( out )             :: nXface, nYface, nZface
         !
         integer :: nx, ny, nz
         
@@ -641,8 +643,9 @@ contains
     !
     !*
     function NumberOfNodesGrid3D_SG(self) result(n)
-        ! Arguments
-        class(Grid3D_SG_t), intent( in ) :: self
+        implicit none
+        !
+        class( Grid3D_SG_t ), intent( in ) :: self
         ! Local variables
         integer :: n
         
@@ -661,11 +664,11 @@ contains
     subroutine GridIndexGrid3D_SG( self, nodeType, indVec, i, j, k )
         implicit none
         !
-        class(Grid3D_SG_t), intent( in ) :: self
+        class( Grid3D_SG_t ), intent( in ) :: self
         character(*), intent( in )       :: nodeType
         integer, intent( in )            :: indVec(:)
         integer, intent( out )           :: i(:), j(:), k(:)
-        ! Local variables
+        !
         integer :: nx, ny, nz, nVec, ii
         real(4) :: rNxy, rNx
 
@@ -673,18 +676,15 @@ contains
         nVec = size(indVec)
         
         if (nVec.ne.size(i)) then
-             print *, "Size of 'ind_vec' and 'i' do not agree."
-             STOP
+             stop "Size of 'ind_vec' and 'i' do not agree."
         end if
         
         if (nVec.ne.size(j)) then
-             print *, "Size of 'ind_vec' and 'j' do not agree."
-             STOP
+             stop "Size of 'ind_vec' and 'j' do not agree."
         end if
         
         if (nVec.ne.size(k)) then
-             print *, "Size of 'ind_vec' and 'k' do not agree."
-             STOP
+             stop "Size of 'ind_vec' and 'k' do not agree."
         end if
         
         rNxy = float(nx*ny)
@@ -713,7 +713,7 @@ contains
     subroutine VectorIndexGrid3D_SG( self, nodeType, i, j, k, indVec )
         implicit none
         !
-        class(Grid3D_SG_t), intent( in ) :: self
+        class( Grid3D_SG_t ), intent( in ) :: self
         character(*), intent( in )       :: nodeType
         integer, intent( in )            :: i(:), j(:), k(:)
         integer, intent( out )           :: indVec(:)
@@ -725,18 +725,15 @@ contains
         nVec = size(indVec)
         
         if (nVec.ne.size (i)) then
-             print *, "Size of 'ind_vec' and 'i' do not agree."
-             STOP
+             stop "Size of 'ind_vec' and 'i' do not agree."
         end if
         
         if (nVec.ne.size (J)) then
-             print *, "Size of 'ind_vec' and 'j' do not agree."
-             STOP
+             stop "Size of 'ind_vec' and 'j' do not agree."
         end if
         
         if (nVec.ne.size (K)) then
-             print *, "Size of 'ind_cec' and 'k' do not agree."
-             STOP
+             stop "Size of 'ind_cec' and 'k' do not agree."
         end if
         
         nxy = nx*ny
@@ -752,7 +749,7 @@ contains
     subroutine LimitsGrid3D_SG( self, nodeType, nx, ny, nz )
         implicit none
         !
-        class(Grid3D_SG_t), intent( in ) :: self
+        class( Grid3D_SG_t ), intent( in ) :: self
         character(*), intent( in )       :: nodeType
         integer, intent( out )           :: nx, ny, nz
         !
@@ -802,16 +799,17 @@ contains
     end subroutine LimitsGrid3D_SG
 
     function IsAllocatedGrid3D_SG(self) result(f)
+        implicit none
         !
-        class(Grid3D_SG_t), intent( in ) :: self
-        ! Local variables
+        class( Grid3D_SG_t ), intent( in ) :: self
+        !
         logical :: f
 		!
         f = self%is_allocated
     end function IsAllocatedGrid3D_SG
 
     function LengthGrid3D_SG(self) result(n)
-        class(Grid3D_SG_t), intent( in ) :: self
+        class( Grid3D_SG_t ), intent( in ) :: self
         integer :: n
         !
         n = self%nx * self%ny * self%nz
@@ -821,7 +819,7 @@ contains
     subroutine Copy_fromGrid3D_SG(self, g)
         implicit none
         !
-        class(Grid3D_SG_t), intent(inout) :: self
+        class( Grid3D_SG_t ), intent(inout) :: self
         class(Grid_t)         , intent( in )        :: g
     end subroutine Copy_fromGrid3D_SG
     
