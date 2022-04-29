@@ -128,12 +128,12 @@ contains
         !
         if ( .NOT. self%is_allocated ) return
         !
-        deallocate(self%dz)
-        deallocate(self%dzInv)
-        deallocate(self%delZ)
-        deallocate(self%delZInv)
-        deallocate(self%zEdge)
-        deallocate(self%zCenter)
+        if( allocated(self%dz) ) deallocate(self%dz)
+        if( allocated(self%dzInv) ) deallocate(self%dzInv)
+        if( allocated(self%delZ) ) deallocate(self%delZ)
+        if( allocated(self%delZInv) ) deallocate(self%delZInv)
+        if( allocated(self%zEdge) ) deallocate(self%zEdge)
+        if( allocated(self%zCenter) ) deallocate(self%zCenter)
         !
         self%nz = 0
         self%nzAir = 0
@@ -212,14 +212,14 @@ contains
         real( kind=prec ) , dimension(:), intent( in ) :: dz
         !
         if ( .NOT. self%is_allocated ) then
-            write(*, *) 'ERROR:Grid1D_t:SetCellSizes:'
-            stop '    Grid not is_allocated.'
+            write(*, *) "ERROR:Grid1D_t:SetCellSizes:"
+            stop "    Grid not is_allocated."
         end if
         !
         ! Check dimensions
         if ( (size(dz).ne.size(self%dz))) then
-            write(*, *) 'ERROR:Grid1D_t:SetCellSizes:'
-            stop '    Incompatible sizes for cell arrays.'
+            write(*, *) "ERROR:Grid1D_t:SetCellSizes:"
+            stop "    Incompatible sizes for cell arrays."
         end if
         !
         self%dz = dz
@@ -233,14 +233,14 @@ contains
         real( kind=prec ) , intent(out) :: dz(:)
 
         if ( .NOT. self%is_allocated ) then
-            write(*, *) 'ERROR:Grid1D_t:SetCellSizes:'
-            stop '    Grid not is_allocated.'
+            write(*, *) "ERROR:Grid1D_t:SetCellSizes:"
+            stop "    Grid not is_allocated."
         end if
 
         ! Check dimensions
         if ( ( size( dz ) .ne. size( self%dz ) ) ) then
-            write(*, *) 'ERROR:Grid1D_t:SetCellSizes:'
-            stop '    Incompatible sizes for cell arrays.'
+            write(*, *) "ERROR:Grid1D_t:SetCellSizes:"
+            stop "    Incompatible sizes for cell arrays."
         end if
         !
         dz = self%dz

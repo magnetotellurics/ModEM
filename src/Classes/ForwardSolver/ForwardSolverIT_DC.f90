@@ -24,7 +24,7 @@ module ForwardSolverIT_DC
     !
     type, extends( ForwardSolver_t ) :: ForwardSolverIT_DC_t
         !
-        class( DivergenceCorrection_t ), allocatable :: divergence_correction 
+        type( DivergenceCorrection_t ) :: divergence_correction 
         !
         integer :: nDivCor, max_div_cor, max_iterDivCor
         !
@@ -106,8 +106,6 @@ module ForwardSolverIT_DC
             !
             call self%dealloc()
             !
-            deallocate( self%divergence_correction )
-            !
         end subroutine ForwardSolverIT_DC_dtor
         !
         !
@@ -184,8 +182,6 @@ module ForwardSolverIT_DC
             self%relResFinal = R_ZERO
             !
             allocate( self%relResVec( self%max_iter_total ) )
-            !
-			write( * ,* ) "relResVec:", size( self%relResVec )
             !
          end subroutine initDiagnosticsForwardSolverIT_DC
          !

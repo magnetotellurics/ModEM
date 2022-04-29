@@ -17,9 +17,7 @@ module ModelParameter1D
         !
         real( kind=prec ) :: airCond
         !
-        type( Grid1D_t ), allocatable :: grid
-        !
-        class( Grid1D_t ), allocatable :: paramGrid
+        type( Grid1D_t ) :: grid, paramGrid
         !
         logical :: is_allocated, zero_valued
         !
@@ -42,6 +40,7 @@ contains
     ! Class constructor
     !*
     function ModelParameter1D_ctor( grid ) result( self )
+        implicit none
         !
         type( Grid1D_t ), intent( in ) :: grid
         type( ModelParameter1D_t )     :: self
@@ -79,11 +78,7 @@ contains
         !
         !write(*,*) "Destructor ModelParameter1D_t"
         !
-        if( allocated( self%cellCond ) )deallocate( self%cellCond )
-        !
-        if( allocated( self%grid ) )deallocate( self%grid )
-        !
-        if( allocated( self%paramGrid ) )deallocate( self%paramGrid )
+        deallocate( self%cellCond )
         !
     end subroutine ModelParameter1D_dtor
     !

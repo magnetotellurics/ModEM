@@ -9,9 +9,9 @@ module DataHandle
     use DataEntryMT_REF
     use DataEntryCSEM
     !
-	! Global file name for predicted data file
-	character(:), allocatable :: predicted_data_file_name
-	!
+    ! Global file name for predicted data file
+    character(:), allocatable :: predicted_data_file_name
+    !
     type :: DataHandle_t
         !
         integer                   :: rx_type
@@ -53,18 +53,19 @@ contains
         !
         !
         type( DataHandle_t ), allocatable :: temp_array(:)
-        integer :: istat, narray
+        integer :: array_size
         !
         if( .NOT. allocated( data_handle_array ) ) then
             allocate( data_handle_array(1) )
             data_handle_array(1) = new_data
         else
             !
-            narray = size( data_handle_array )
-            allocate( temp_array( narray + 1 ), STAT = istat )
+            array_size = size( data_handle_array )
             !
-            temp_array( 1 : narray ) = data_handle_array
-            temp_array( narray + 1 ) = new_data
+            allocate( temp_array( array_size + 1 ) )
+            !
+            temp_array( 1 : array_size ) = data_handle_array
+            temp_array( array_size + 1 ) = new_data
             data_handle_array = temp_array
             !
             deallocate( temp_array )

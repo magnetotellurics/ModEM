@@ -132,26 +132,6 @@ contains
         !
         if( allocated( self%EHxy ) ) deallocate( self%EHxy )
         !
-        if( allocated( self%I_BB ) ) deallocate( self%I_BB )
-        !
-        if( allocated( self%EE ) ) deallocate( self%EE )
-        !
-        if( allocated( self%response ) ) deallocate( self%response )
-        !
-        if( allocated( self%Lex ) ) deallocate( self%Lex )
-        !
-        if( allocated( self%Ley ) ) deallocate( self%Ley )
-        !
-        if( allocated( self%Lez ) ) deallocate( self%Lez )
-        !
-        if( allocated( self%Lbx ) ) deallocate( self%Lbx )
-        !
-        if( allocated( self%Lby ) ) deallocate( self%Lby )
-        !
-        if( allocated( self%Lbz ) ) deallocate( self%Lbz )
-        !
-        if( allocated( self%predicted_data ) ) deallocate( self%predicted_data )
-        !
     end subroutine deallocateRx
     !
     subroutine evaluationFunctionRx( self, model_operator, omega )
@@ -315,8 +295,6 @@ contains
         real( kind=prec )         :: period, real_part, imaginary, xyz(3)
         integer                   :: i, rx_type
         !#Period(s) Code GG_Lat GG_Lon X(m) Y(m) response(m) Component Real Imag Error
-        !
-        if( allocated( self%predicted_data ) ) deallocate( self%predicted_data )
         !
         do i = 1, self%n_comp
              !

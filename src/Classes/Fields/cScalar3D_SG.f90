@@ -534,13 +534,13 @@ contains
         !
         integer :: nVec(3), nVecT, nBdry, nb, ni, i
         complex( kind=prec ), allocatable :: temp(:)
-        type( cScalar3D_SG_t ), allocatable :: phi
+        type( cScalar3D_SG_t ) :: phi
         !
         !
         if( self%is_allocated) then
             select type(grid => self%grid)
                 class is( Grid3D_SG_t )
-                    allocate( phi, source = cScalar3D_SG_t( grid, self%gridType ) )
+                    phi = cScalar3D_SG_t( grid, self%gridType )
             end select
         else
             write( *, * ) "ERROR:cScalar3D_SG::intBdryIndicesCScalar3D_SG:"
@@ -563,8 +563,6 @@ contains
              call phi%getArray(temp)
 
         end select
-        !
-        deallocate( phi )
         !
         nBdry = 0
         do i = 1, nVecT

@@ -477,7 +477,7 @@ contains
         !
         integer :: nVec(3), nVecT, nBdry, nb, ni, i
         complex( kind=prec ), allocatable   :: temp(:)
-        type( cVector3D_SG_t ), allocatable :: E
+        type( cVector3D_SG_t ) :: E
         
         if( self%is_allocated ) then
             select type( grid => self%grid )
@@ -532,8 +532,6 @@ contains
                 call E%getArray(temp) 
                 !
         end select
-        !
-        deallocate( E )
         !
         nBdry = 0
         do i = 1, nVecT

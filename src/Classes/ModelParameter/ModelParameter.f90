@@ -63,21 +63,21 @@ module ModelParameter
         function interface_slice_1d_model_parameter( self, ix, iy ) result( model_param_1D )
             import :: ModelParameter_t, ModelParameter1D_t
             class( ModelParameter_t ), intent( in ) :: self
-            integer, intent( in )                 :: ix, iy
-            type( ModelParameter1D_t ), allocatable ::  model_param_1D 
+            integer, intent( in )                   :: ix, iy
+            type( ModelParameter1D_t )              ::  model_param_1D 
         end function interface_slice_1d_model_parameter
         !
         function interface_avg_model_1d_model_parameter( self ) result( model_param_1D )
             import :: ModelParameter_t, ModelParameter1D_t
             class( ModelParameter_t ), intent( in ) :: self
-            type( ModelParameter1D_t ), allocatable :: model_param_1D
+            type( ModelParameter1D_t )              :: model_param_1D
         end function interface_avg_model_1d_model_parameter
         !
         function interface_slice_2d_model_parameter( self, axis, j ) result( m2D )
             import :: ModelParameter_t, ModelParameter2D_t
             class( ModelParameter_t ), intent( in ) :: self
             integer, intent( in )                   :: axis, j
-            type( ModelParameter2D_t ), allocatable :: m2D 
+            type( ModelParameter2D_t )              :: m2D 
         end function interface_slice_2d_model_parameter
         !
         !
@@ -152,7 +152,7 @@ contains
         class( ModelParameter_t), intent( in ) :: self
         real( kind=prec ), intent( in )        :: x
         character(*), intent( in ), optional   :: job
-        ! Local variables
+        !
         real( kind=prec ) :: y
         !
         y = self%Sigmap_ptr( x )

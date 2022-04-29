@@ -14,11 +14,9 @@ module PreConditioner_MF_CC
     !
     type, extends( PreConditioner_t ) :: PreConditioner_MF_CC_t
         !
-        type( cVector3D_SG_t ), allocatable :: Dilu
+        type( cVector3D_SG_t ) :: Dilu
         !
         contains
-            !
-            final :: PreConditioner_MF_CC_dtor
             !
             procedure, public :: setPreConditioner => setPreConditioner_MF_CC ! This needs to be called by Solver    object
             !
@@ -51,23 +49,11 @@ contains
         select type( grid => model_operator%metric%grid )
             class is( Grid3D_SG_t )
                 !
-                allocate( self%Dilu, source = cVector3D_SG_t( grid, EDGE ) )
+                self%Dilu = cVector3D_SG_t( grid, EDGE )
                 !
         end select
         !
     end function PreConditioner_MF_CC_ctor
-    !
-    ! Destructor
-    subroutine PreConditioner_MF_CC_dtor( self )
-      implicit none
-      !
-      type( PreConditioner_MF_CC_t ), intent( inout ) :: self
-      !
-      write(*,*) "Destructor PreConditioner_MF_CC"
-      !
-      deallocate( self%Dilu )
-      !
-    end subroutine PreConditioner_MF_CC_dtor
     !**
     ! SetPreConditioner
     !*
