@@ -121,7 +121,7 @@ contains
         numIntegPts     = 0             ! Number of points to use for Gauss quadrature integration for finite dipole
 
         call self%set1DModel( xTx1D, yTx1D )
-        write( *, * ) "FINISHES set1DModel"
+        !write( *, * ) "FINISHES set1DModel"
         ! Put the privte sig1D and zlay1D into public sig1D and zlay1D required in Dipole1D
         !nlay1D=nlay1D
         ! if(allocated(zlay1D)) then
@@ -130,35 +130,40 @@ contains
         ! allocate(zlay1D(nlay1D),sig1D(nlay1D))
         ! zlay1D=zlay1D
         ! sig1D=sig1D
-
-        !call setAnomConductivity(self%model_parameter)
-        call initilize_1d_vectors( self%model_parameter%grid )     ! Initilaize the 1D vectors where to compupte the E field
-        write( *, * ) "FINISHES initilize_1d_vectors"
+		
+		select type( model_parameter => self%model_parameter )
+                class is( ModelParameterCell_SG_t )
+                    !
+        !call setAnomConductivity(model_parameter)
+        call initilize_1d_vectors( model_parameter%grid )     ! Initilaize the 1D vectors where to compupte the E field
+        !write( *, * ) "FINISHES initilize_1d_vectors", model_parameter%cellCond%v
         call comp_dipole1D                  ! Calculate E-Field by Key"s code
-        write( *, * ) "FINISHES comp_dipole1D"
-        call self%create_Ep_from_Dipole1D( self%model_parameter%grid )
-        write( *, * ) "FINISHES create_Ep_from_Dipole1D:", allocated( self%E ), self%E%is_allocated, self%CondAnomaly_h%is_allocated
+        !write( *, * ) "FINISHES comp_dipole1D", model_parameter%cellCond%v
+        call self%create_Ep_from_Dipole1D( model_parameter%grid )
+		!
+        !write( *, * ) "FINISHES create_Ep_from_Dipole1D:", model_parameter%cellCond%v, allocated( self%E ), self%E%is_allocated, self%CondAnomaly_h%is_allocated, self%CondAnomaly_h%x, self%CondAnomaly_h%y, self%CondAnomaly_h%z
         !
         omega = 2.0 * PI / self%period
-        write( *, * ) "FINISHES omega: ", omega
+        !write( *, * ) "FINISHES omega: ", omega
         !
         i_omega_mu = cmplx( 0., real( -1.0d0*ISIGN*MU_0*omega ), kind=prec)
-        write( *, * ) "FINISHES i_omega_mu:" i_omega_mu
-        !
+        !write( *, * ) "FINISHES i_omega_mu:", i_omega_mu
         !
         if( allocated( self%rhs ) ) deallocate( self%rhs )
         !
-            select type( grid => self%model_parameter%grid )
+            select type( grid => model_parameter%grid )
                 class is( Grid3D_SG_t )
                     !
                     allocate( self%rhs, source = cVector3D_SG_t( grid, EDGE ) )
+                    select type( rhs => self%rhs )
+                class is( cVector3D_SG_t )
                     !
-                    self%rhs = self%E * self%CondAnomaly_h
-                    write( *, * ) "FINISHES self%E * self%CondAnomaly_h"
+                    rhs = self%E * self%CondAnomaly_h
+                    !write( *, * ) "FINISHES self%E * self%CondAnomaly_h", rhs%x, rhs%y, rhs%z, self%CondAnomaly_h%x, self%CondAnomaly_h%y, self%CondAnomaly_h%z
                     !
                     !call diagMult(CondAnomaly_h,self%E,source)
-                    self%rhs = self%rhs * i_omega_mu
-                    write( *, * ) "FINISHES self%rhs * i_omega_mu"
+                    rhs = rhs * i_omega_mu
+                    !write( *, * ) "FINISHES rhs * i_omega_mu", rhs%x, rhs%y, rhs%z
                     !
                     !call scMult(i_omega_mu,source,source)   
 
@@ -166,88 +171,87 @@ contains
                     !clean
                     !call deall_rvector(CondAnomaly_h)
                     write( *, * ) "FINISHES setESourceCSEM_Dipole1D"
-                    !
+					!
+					end select
                     !
             end select
             !
+		end select
         !
 
     end subroutine setESourceCSEM_Dipole1D
     !
 !#############################################
 subroutine initilize_1d_vectors(grid)
- class(Grid_t), intent(in)        :: grid 
-!Local
-integer counter,ix,iy,iz
+	class(Grid_t), intent(in)        :: grid 
+	!Local
+	integer counter,ix,iy,iz
 
 
-      n1D = (grid%Nx)*(grid%Ny+1)*(grid%Nz+1)
-      n1D = n1D + (grid%Nx+1)*(grid%Ny)*(grid%Nz+1)
-      n1D = n1D + (grid%Nx+1)*(grid%Ny+1)*(grid%Nz)
+	n1D = (grid%Nx)*(grid%Ny+1)*(grid%Nz+1)
+	n1D = n1D + (grid%Nx+1)*(grid%Ny)*(grid%Nz+1)
+	n1D = n1D + (grid%Nx+1)*(grid%Ny+1)*(grid%Nz)
 
-      if (allocated (x1D)) then  
-         Deallocate(x1D, y1D, z1D)
-         Deallocate(ex1D,ey1D,jz1D)
-         Deallocate(bx1D,by1D,bz1D)
-      end if
-      
-      allocate (x1D(n1D), y1D(n1D), z1D(n1D))
-      allocate (ex1D(n1D),ey1D(n1D),jz1D(n1D))
-      allocate (bx1D(n1D),by1D(n1D),bz1D(n1D))
-    
-     
-      
-    
-      !====================================================================
-      ! Create position vector that the primary field has to be calculated
-      !====================================================================
-      counter = 1
-      ! E-field corresponing to these nodes is Ex
-      Do iz = 1,grid%Nz+1 !Edge Z
-          Do iy = 1,grid%Ny+1 !Edge Y
-              Do ix = 1,grid%Nx !Center X
-                x1D(counter) = grid%xCenter(ix)
-                y1D(counter) = grid%yEdge(iy)
-                z1D(counter) = grid%zEdge(iz)
-                counter = counter + 1
-                End Do
-          End Do
-      End Do
-      
-      ! E-field corresponing to these nodes is Ey
-      Do iz = 1,grid%Nz+1 !Edge Z
-          Do iy = 1,grid%Ny !Center y
-              Do ix = 1,grid%Nx+1 !Edge x
-                  x1D(counter) = grid%xEdge(ix)
-                  y1D(counter) = grid%yCenter(iy)
-                  z1D(counter) = grid%zEdge(iz)
-                  counter = counter + 1
-              End Do
-          End Do
-      End Do
-      
-      ! E-field corresponing to these nodes is Ez
-      Do iz = 1,grid%Nz !Center Z
-          Do iy = 1,grid%Ny+1 !Edge y
-              Do ix = 1,grid%Nx+1 !Edge x
-                  x1D(counter) = grid%xEdge(ix)
-                  y1D(counter) = grid%yEdge(iy)
-                  z1D(counter) = grid%zCenter(iz)
-                  counter = counter + 1
-              End Do
-          End Do
-      End Do
-end subroutine     initilize_1d_vectors 
+	if (allocated (x1D)) then  
+		Deallocate(x1D, y1D, z1D)
+		Deallocate(ex1D,ey1D,jz1D)
+		Deallocate(bx1D,by1D,bz1D)
+	end if
+
+	allocate (x1D(n1D), y1D(n1D), z1D(n1D))
+	allocate (ex1D(n1D),ey1D(n1D),jz1D(n1D))
+	allocate (bx1D(n1D),by1D(n1D),bz1D(n1D))
+
+	  !====================================================================
+	  ! Create position vector that the primary field has to be calculated
+	  !====================================================================
+	  counter = 1
+	  ! E-field corresponing to these nodes is Ex
+	  Do iz = 1,grid%Nz+1 !Edge Z
+		  Do iy = 1,grid%Ny+1 !Edge Y
+			  Do ix = 1,grid%Nx !Center X
+				x1D(counter) = grid%xCenter(ix)
+				y1D(counter) = grid%yEdge(iy)
+				z1D(counter) = grid%zEdge(iz)
+				counter = counter + 1
+				End Do
+		  End Do
+	  End Do
+	  
+	  ! E-field corresponing to these nodes is Ey
+	  Do iz = 1,grid%Nz+1 !Edge Z
+		  Do iy = 1,grid%Ny !Center y
+			  Do ix = 1,grid%Nx+1 !Edge x
+				  x1D(counter) = grid%xEdge(ix)
+				  y1D(counter) = grid%yCenter(iy)
+				  z1D(counter) = grid%zEdge(iz)
+				  counter = counter + 1
+			  End Do
+		  End Do
+	  End Do
+	  
+	  ! E-field corresponing to these nodes is Ez
+	  Do iz = 1,grid%Nz !Center Z
+		  Do iy = 1,grid%Ny+1 !Edge y
+			  Do ix = 1,grid%Nx+1 !Edge x
+				  x1D(counter) = grid%xEdge(ix)
+				  y1D(counter) = grid%yEdge(iy)
+				  z1D(counter) = grid%zCenter(iz)
+				  counter = counter + 1
+			  End Do
+		  End Do
+	  End Do
+	end subroutine     initilize_1d_vectors 
 
 subroutine create_Ep_from_Dipole1D( self, grid )
 
-!
-        class( SourceCSEM_Dipole1D_t ), intent( inout ) :: self
-        !
-class(Grid_t), intent(in)        :: grid  
-!Local 
-integer ix,iy,iz,counter
-!
+	!
+	class( SourceCSEM_Dipole1D_t ), intent( inout ) :: self
+	!
+	class(Grid_t), intent(in)        :: grid  
+	!Local 
+	integer ix,iy,iz,counter
+	!
             select type( grid  )
                 class is( Grid3D_SG_t )
                     !
@@ -465,11 +469,16 @@ integer ix,iy,iz,counter
         !call setType_modelParam(amodel,paramType)
         !call setValue_modelParam(amodel,paramType,model,vAir)
         amodel%cellCond=model
+		!
         !call ModelParamToEdge(amodel,condNomaly_h)
-        condNomaly_h = amodel%PDEmapping()
+        condNomaly_h = model_parameter%dPDEmapping( amodel )
+		!
+		!write(*,*) condNomaly_h%x, condNomaly_h%y, condNomaly_h%z
+		!stop
         cond = model_parameter%PDEmapping()
+		!
         self%CondAnomaly_h=cond-condNomaly_h
-                !
+		!
         end select
         
 
