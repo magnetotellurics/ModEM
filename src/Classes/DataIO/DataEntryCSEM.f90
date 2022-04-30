@@ -13,7 +13,7 @@ module DataEntryCSEM
     type, extends( DataEntry_t ) :: DataEntryCSEM_t
         !
         character(:), allocatable :: dipole
-        real( kind=prec )            :: moment, azimuth, dip, tx_xyz(3)
+        real( kind=prec )         :: moment, azimuth, dip, tx_xyz(3)
         !
         contains
             !

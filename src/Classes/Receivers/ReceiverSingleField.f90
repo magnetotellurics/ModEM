@@ -64,6 +64,14 @@ contains
         if( azimuth == 4.0 ) self%EHxy(1)%str = "By"
         if( azimuth == 5.0 ) self%EHxy(1)%str = "Bz"
         !
+        allocate( self%comp_names( self%n_comp ) )
+        !
+        if( azimuth == 1.0 ) self%comp_names(1)%str = "Ex_Field"
+        if( azimuth == 2.0 ) self%comp_names(1)%str = "Ey_Field"
+        if( azimuth == 3.0 ) self%comp_names(1)%str = "Bx_Field"
+        if( azimuth == 4.0 ) self%comp_names(1)%str = "By_Field"
+        if( azimuth == 5.0 ) self%comp_names(1)%str = "Bz_Field"
+        !
     end function ReceiverSingleField_ctor
     !
     subroutine ReceiverSingleField_dtor( self )
@@ -109,16 +117,43 @@ contains
         implicit none
         !
         class( ReceiverSingleField_t ), intent( inout ) :: self
-        class( Transmitter_t ), intent( in )            :: transmitter
+        class( Transmitter_t ), intent( in )              :: transmitter
         !
-        complex( kind=prec ) :: det, ctemp
+        complex( kind=prec ) :: comega
         !
-        write(*,*) "Implement predictedData ReceiverSingleField_t: ", self%id
+        complex( kind=prec ), allocatable :: BB(:,:), det
+        integer                           :: i, j, ij
         !
-        allocate( complex( kind=prec ) :: self%response( 1 ) )
+        comega = cmplx( 0.0, 1./ ( 2.0 * PI / transmitter%period ), kind=prec )
         !
-        ! FIND BEST WAY TO IMPLEMENT
-        !response(1) = dotProd_noConj_scvector_f( Lex,ef%pol(1) )
+		select type( tx_e_1 => transmitter%e_all( 1 ) )
+			class is( cVector3D_SG_t )
+				!
+				allocate( self%response( 1 ) )
+				select case ( self%EHxy(1)%str )
+					case( "Ex" )
+						self%response( 1 ) = dotProdSparse( self%Lex, tx_e_1 )
+					case( "Ey" )
+						self%response( 1 ) = dotProdSparse( self%Ley, tx_e_1 )
+					case( "Bx" )
+						self%response( 1 ) = dotProdSparse( self%Lbx, tx_e_1 )
+						self%response( 1 ) = isign * self%response( 1 ) * comega
+					case( "By" )
+						self%response( 1 ) = dotProdSparse( self%Lby, tx_e_1 )
+						self%response( 1 ) = isign * self%response( 1 ) * comega
+					case( "Bz" )
+						self%response( 1 ) = dotProdSparse( self%Lbz, tx_e_1 )
+						self%response( 1 ) = isign * self%response( 1 ) * comega
+				end select
+				!
+				! WRITE ON PredictedFile.dat
+				call self%savePredictedData( transmitter )
+				!
+				deallocate( self%response )
+				!
+            class default
+                stop "evaluationFunctionRx: Unclassified temp_full_vec_ey"
+        end select
         !
     end subroutine predictedDataSingleField
     !

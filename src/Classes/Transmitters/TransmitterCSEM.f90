@@ -8,11 +8,14 @@
 ! 
 module TransmitterCSEM
     ! 
+	use FileUnits
     use Transmitter 
+	use cVector3D_SG
     !
     type, extends( Transmitter_t ), public :: TransmitterCSEM_t
         !
-        real( kind=prec ) :: location(3), azimuth
+        real( kind=prec )  :: location(3), azimuth, dip, moment
+        character( len=8 ) :: dipole
         !
         contains
             !
@@ -32,12 +35,13 @@ module TransmitterCSEM
 contains
     !
     ! Parametrized constructor
-    function TransmitterCSEM_ctor( period, location ) result ( self )
+    function TransmitterCSEM_ctor( period, location, azimuth, dip, moment, dipole ) result ( self )
         !
         type( TransmitterCSEM_t ) :: self
         !
-        real( kind=prec ), intent( in )                         :: period
-        real( kind=prec ), intent( in )                         :: location(3)
+        real( kind=prec ), intent( in )  :: period, azimuth, dip, moment
+        real( kind=prec ), intent( in )  :: location(3)
+        character( len=8 ), intent( in ) :: dipole
         !
         ! write(*,*) "Constructor TransmitterCSEM_t"
         !
@@ -46,6 +50,10 @@ contains
         self%n_pol = 1
         self%period = period
         self%location = location
+        self%azimuth = azimuth
+        self%dip = dip
+        self%moment = moment
+        self%dipole = dipole
         !
     end function TransmitterCSEM_ctor
     !
@@ -62,10 +70,52 @@ contains
     end subroutine TransmitterCSEM_dtor
     !
     subroutine solveFWDTransmitterCSEM( self )
+        implicit none
         !
         class( TransmitterCSEM_t ), intent( inout ) :: self
         !
-        write(*,*) "implementing solveFWD TransmitterCSEM_t: ", self%id
+        integer           :: ios
+        real( kind=prec ) :: omega
+        !
+        character( len=20 ) :: ModeName
+        !
+        !
+        omega = 2.0 * PI / self%period
+        !
+        allocate( cVector3D_SG_t :: self%e_all( self%n_pol ) )
+        !
+		! Verbosis...
+		write( *, "(A20, I8, A20, es20.6, A20, I8)" ) "SolveFWD for Tx:", self%id, " -> Period:", self%period, " - Polarization:", 1
+		!
+		call self%source%setE( 1 )
+		!
+		select type( mgrid => self%source%model_operator%metric%grid )
+			class is( Grid3D_SG_t )
+				!
+				self%e_all( 1 ) = cVector3D_SG_t( mgrid, EDGE )
+				!
+		end select
+		!
+		call self%forward_solver%getESolution( self%source, self%e_all( 1 ) )
+		self%e_all( 1 ) =self%e_all( 1 ) + self%source%E
+		
+		!
+		ModeName = "Ex"
+		!
+		open( ioESolution, file = e_solution_file_name, action = "write", position = "append", form = "unformatted", iostat = ios )
+		!
+		if( ios /= 0 ) then
+			stop "Error opening file in solveFWDTransmitterMT: e_solution"
+		else
+			!
+			! write the frequency header - 1 record
+			write( ioESolution ) omega, self%id, 1, ModeName
+			!
+			call self%e_all( 1 )%write( ioESolution )
+			!
+			close( ioESolution )
+			!
+		endif
         !
     end subroutine solveFWDTransmitterCSEM
     !

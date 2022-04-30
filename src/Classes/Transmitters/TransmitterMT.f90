@@ -84,7 +84,7 @@ module TransmitterMT
             ! Verbosis...
             write( *, "(A20, I8, A20, es20.6, A20, I8)" ) "SolveFWD for Tx:", self%id, " -> Period:", self%period, " - Polarization:", i_pol
             !
-            call self%source%setE( omega, i_pol )
+            call self%source%setE( i_pol )
             !
             select type( mgrid => self%source%model_operator%metric%grid )
                 class is( Grid3D_SG_t )

@@ -84,7 +84,7 @@ contains
                 !
             class is ( DataEntryCSEM_t )
                 !
-                allocate( transmitter, source = TransmitterCSEM_t( data_entry%period, data_entry%tx_xyz ) )
+                allocate( transmitter, source = TransmitterCSEM_t( data_entry%period, data_entry%tx_xyz, data_entry%azimuth, data_entry%dip, data_entry%moment, data_entry%dipole ) )
                 !
         end select
         !

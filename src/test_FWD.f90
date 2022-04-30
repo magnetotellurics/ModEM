@@ -2,7 +2,7 @@ program ModEM
     !
     use Constants
     use FileUnits
-    
+    !
     use ModEMControlFile
     !
     use Grid3D_SG
@@ -20,6 +20,7 @@ program ModEM
     !
     use SourceMT_1D
     use SourceMT_2D
+    use SourceCSEM_Dipole1D
     !
     use DataHandle
     !
@@ -90,18 +91,20 @@ contains
         !
         ! Source - Chosen from control file
         !if( allocated( fwd_source ) ) deallocate( fwd_source )
-        select case ( source_type )
+        !select case ( source_type )
             !
-            case( SRC_MT_1D )
-                fwd_source = SourceMT_1D_t( model_operator, model_parameter )
+            !case( SRC_MT_1D )
+                !fwd_source = SourceMT_1D_t( model_operator, model_parameter, omega )
                 !
-            case( SRC_MT_2D )
-                fwd_source = SourceMT_2D_t( model_operator, model_parameter )
+            !case( SRC_MT_2D )
+                !fwd_source = SourceMT_2D_t( model_operator, model_parameter, omega )
                 !
-            case default
-                fwd_source = SourceMT_1D_t( model_operator, model_parameter )
+            !case default
+                !fwd_source = SourceMT_1D_t( model_operator, model_parameter, omega )
                 !
-        end select
+        !end select
+        !
+        !fwd_source = SourceMT_1D_t( model_operator, model_parameter, omega )
         !
         ! ForwardSolver - Chosen from control file
         !if( allocated( forward_solver ) ) deallocate( forward_solver )
@@ -120,15 +123,6 @@ contains
         !
         call forward_solver%setCond( model_parameter )
         !
-        ! Set Source and ForwardSolver for each transmitter
-        do iTx = 1, size( transmitters )
-            !
-            Tx => getTransmitter(iTx)
-            Tx%source => fwd_source
-            Tx%forward_solver => forward_solver
-            !
-        enddo
-        !
         ! Forward Modelling
         !
         Tx => getTransmitter(1)
@@ -141,12 +135,28 @@ contains
             ! Temporary Transmitter alias
             Tx => getTransmitter( iTx )
             !
+            !
+            select type( Tx )
+                class is( TransmitterMT_t )
+                    !
+                    fwd_source = SourceMT_1D_t( model_operator, model_parameter, Tx%period )
+                    !
+                class is( TransmitterCSEM_t )
+                    !
+                    fwd_source = SourceCSEM_Dipole1D_t( model_operator, model_parameter, Tx%period, Tx%location, Tx%dip, Tx%azimuth, Tx%moment )
+                    !
+            end select
+            !
+            Tx%source => fwd_source
+            Tx%forward_solver => forward_solver
+            !
             ! Set ForwardSolver omega
             call Tx%forward_solver%setFrequency( Tx%period )
             !
             ! Solve Tx Forward Modelling
             call Tx%solveFWD()
             !
+            write( *, * ) "FINISHES FWD"
             ! Loop over Receivers of each Transmitter
             do iRx = 1, size( Tx%receiver_indexes )
                 !
@@ -154,7 +164,7 @@ contains
                 Rx => getReceiver( Tx%receiver_indexes( iRx ) )
                 !
                 ! Verbosis...
-                !write( *, * ) "                        Rx Id:", Rx%id, "XYZ:", Rx%location
+                write( *, * ) "                        Rx Id:", Rx%id, "XYZ:", Rx%location
                 !
                 ! Calculate Rx predicted_data
                 call Rx%predictedData( Tx )
@@ -417,6 +427,9 @@ contains
         ! Solver
         max_iter = 100
         tolerance = TOL8
+        !
+        ! Source
+        get_1D_from = "Geometric_mean"
         !
         ! Model
         model_method      = MM_METHOD_FIXED_H

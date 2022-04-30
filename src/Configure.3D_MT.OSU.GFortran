@@ -13,7 +13,7 @@ perl fmkmf.pl -f90 gfortran \
 -o 'objs/MT3D_OO_SERIAL' \
 -l '-llapack -lblas' \
 -lp '/usr/lib64' \
--p .:Classes:Classes/1D:Classes/2D:Classes/DataIO:Classes/DataSpace:Classes/Fields:Classes/ForwardSolver:Classes/Grid:Classes/ModelOperator:Classes/ModelParameter:Classes/Receivers:Classes/Solver:Classes/Source:Classes/Transmitters:Classes/Utils \
+-p .:Classes:Classes/1D:Classes/2D:Classes/CSEM:Classes/DataIO:Classes/DataSpace:Classes/Fields:Classes/ForwardSolver:Classes/Grid:Classes/ModelOperator:Classes/ModelParameter:Classes/Receivers:Classes/Solver:Classes/Source:Classes/Transmitters:Classes/Utils \
 $3 > $1
 elif [ $2 = "MPI" ]; then
 # Object Oriented version
@@ -23,7 +23,7 @@ perl fmkmf.pl -f90 mpif90 \
 -o 'objs/MT3D_OO_MPI' \
 -l '-llapack -lblas' \
 -lp '/usr/lib64' \
--p .:Classes:Classes/1D:Classes/2D:Classes/DataIO:Classes/DataSpace:Classes/Fields:Classes/ForwardSolver:Classes/Grid:Classes/ModelOperator:Classes/ModelParameter:Classes/MPI:Classes/Receivers:Classes/Solver:Classes/Source:Classes/Transmitters:Classes/Utils \
+-p .:Classes:Classes/1D:Classes/2D:Classes/CSEM:Classes/DataIO:Classes/DataSpace:Classes/Fields:Classes/ForwardSolver:Classes/Grid:Classes/ModelOperator:Classes/ModelParameter:Classes/MPI:Classes/Receivers:Classes/Solver:Classes/Source:Classes/Transmitters:Classes/Utils \
 $3 > $1
 fi
 
