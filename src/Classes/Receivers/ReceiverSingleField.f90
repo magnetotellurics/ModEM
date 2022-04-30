@@ -9,6 +9,8 @@
 module ReceiverSingleField
     !
     use Receiver
+	use DataHandleCSEM
+	use TransmitterCSEM
     !
     type, extends( Receiver_t ), public :: ReceiverSingleField_t
         !
@@ -21,6 +23,8 @@ module ReceiverSingleField
             procedure, public :: isEqualRx => isEqualSingleField
             !
             procedure, public :: predictedData => predictedDataSingleField
+            !
+			procedure, public :: savePredictedData => savePredictedDataSingleField
             !
             procedure, public :: write => writeReceiverSingleField
             !
@@ -156,6 +160,42 @@ contains
         end select
         !
     end subroutine predictedDataSingleField
+    !
+    subroutine savePredictedDataSingleField( self, tx )
+        implicit none
+        !
+        class( ReceiverSingleField_t ), intent( inout ) :: self
+        class( Transmitter_t ), intent( in ) :: tx
+        !
+		integer :: rx_type
+        character(:), allocatable :: code, component, dipole
+        real( kind=prec )         :: period, tx_location(3), azimuth, dip, moment, real_part, imaginary, rx_location(3)
+        !
+		select type( tx )
+			!
+			class is( TransmitterCSEM_t )
+				!
+				rx_type = int( self%rx_type )
+				period = real( tx%period, kind=prec )
+				azimuth = real( tx%azimuth, kind=prec )
+				dip = real( tx%dip, kind=prec )
+				moment = real( tx%moment, kind=prec )
+				code = trim( self%code )
+				tx_location = (/real( tx%location( 1 ), kind=prec ), real( tx%location( 2 ), kind=prec ), real( tx%location( 3 ), kind=prec )/)
+				rx_location = (/real( self%location( 1 ), kind=prec ), real( self%location( 2 ), kind=prec ), real( self%location( 3 ), kind=prec )/)
+				dipole = trim( tx%dipole )
+				component = trim( self%comp_names( 1 )%str )
+				real_part = real( self%response( 1 ), kind=prec )
+				imaginary = real( imag( self%response( 1 ) ), kind=prec )
+				!
+				call updateDataHandleArray( self%predicted_data, DataHandleCSEM_t( rx_type, code, component, period, tx_location, azimuth, dip, moment, dipole, rx_location, real_part, imaginary ) )
+				!
+			class default
+				stop "Wrong transmitter for ReceiverSingleField"
+			!
+		end select
+		!
+    end subroutine savePredictedDataSingleField
     !
     subroutine writeReceiverSingleField( self )
         implicit none

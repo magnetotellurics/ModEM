@@ -76,11 +76,7 @@ contains
                 line_text = adjustl( full_line_text )
                 line_text = trim( line_text )
                 !
-				write(*,*) "1[", line_text
-                !
                 call Parse( line_text, " ", args, p_nargs )
-				!
-				write(*,*) "2[", line_text
                 !
                 if( index( line_text, "#" ) == 0 .and. index( line_text, ">" ) == 0 ) then
                      !

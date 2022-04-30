@@ -15,7 +15,7 @@ module TransmitterCSEM
     type, extends( Transmitter_t ), public :: TransmitterCSEM_t
         !
         real( kind=prec )  :: location(3), azimuth, dip, moment
-        character( len=8 ) :: dipole
+        character(:), allocatable :: dipole
         !
         contains
             !
@@ -41,7 +41,7 @@ contains
         !
         real( kind=prec ), intent( in )  :: period, azimuth, dip, moment
         real( kind=prec ), intent( in )  :: location(3)
-        character( len=8 ), intent( in ) :: dipole
+        character(:), allocatable, intent( in ) :: dipole
         !
         ! write(*,*) "Constructor TransmitterCSEM_t"
         !
@@ -138,26 +138,5 @@ contains
         " N Receivers: ", size( self%receiver_indexes )
         !
     end subroutine writeTransmitterCSEM
-    !
-    !function sizeOfTransmitterCSEM( self ) result( size )
-        !
-        !class( TransmitterCSEM_t ), intent( in ) :: self
-        !integer                                          :: size
-        !
-        !size = sizeof( self%id ) + &
-                 !sizeof( self%n_pol ) + &
-                 !sizeof( self%fwd_key ) + &
-                 !sizeof( self%type ) + &
-                 !sizeof( self%period ) + &
-                 !sizeof( self%forward_solver ) + &
-                 !sizeof( self%e_all ) + &
-                 !sizeof( self%receiver_indexes ) + &
-                 !sizeof( self%DATA_TITLE )
-                 !sizeof( self%location ) + &
-                 !sizeof( self%azimuth )
-                 !
-        !write( *, * ) "Size: ", size
-        !
-    !end function sizeOfTransmitterCSEM
     !
 end module TransmitterCSEM

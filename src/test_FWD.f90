@@ -22,7 +22,9 @@ program ModEM
     use SourceMT_2D
     use SourceCSEM_Dipole1D
     !
-    use DataHandle
+    use DataHandleFArray
+    use DataHandleMT
+    use DataHandleCSEM
     !
     ! 
     class( Grid_t ), allocatable           :: main_grid
@@ -70,7 +72,7 @@ contains
         !
         integer :: iTx, iRx, iDh
         !
-        type( DataHandle_t ), allocatable :: all_data_handles(:)
+        type( Dh_t ), allocatable, dimension(:) :: all_data_handles
         !
         !
         write ( *, * ) "    > Start forward modelling."
@@ -164,7 +166,7 @@ contains
                 Rx => getReceiver( Tx%receiver_indexes( iRx ) )
                 !
                 ! Verbosis...
-                write( *, * ) "                        Rx Id:", Rx%id, "XYZ:", Rx%location
+                !write( *, * ) "                        Rx Id:", Rx%id, "XYZ:", Rx%location
                 !
                 ! Calculate Rx predicted_data
                 call Rx%predictedData( Tx )
@@ -172,7 +174,7 @@ contains
                 ! Save predicted_data of each Rx into all_data_handles
                 do iDh = 1, size( Rx%predicted_data )
                     !
-                    call updateDataHandleArray( all_data_handles, Rx%predicted_data( iDh ) )
+                    call updateDataHandleArray( all_data_handles, getDataHandle( Rx%predicted_data, iDh ) )
                     !
                 end do
                 !
@@ -197,7 +199,7 @@ contains
         ! Write all_data_handles into predicted_data.dat
         call writeDataHandleArray( all_data_handles )
         !
-        deallocate( all_data_handles )
+        call deallocateDataHandleArray( all_data_handles )
         !
         call deallocateReceiverArray()
         !
@@ -477,28 +479,38 @@ contains
     recursive subroutine sortByReceiverType( data_handle_array, first, last )
         implicit none
         !
-        type( DataHandle_t ), allocatable, intent( inout ) :: data_handle_array(:)
-        type( DataHandle_t ) :: x_data_entry, t_data_entry
+        type( Dh_t ), allocatable, dimension(:), intent( inout ) :: data_handle_array
+        type( Dh_t ), allocatable :: x_Dh, t_Dh
+        class( DataHandle_t ), allocatable :: i_data_handle, j_data_handle, x_data_handle
         integer first, last
         integer i, j
         !
-        x_data_entry = data_handle_array( (first+last) / 2 )
+        x_Dh = data_handle_array( (first+last) / 2 )
+        x_data_handle = x_Dh%Dh
         i = first
         j = last
         !
         do
-            do while ( data_handle_array(i)%rx_type < x_data_entry%rx_type )
+            !
+            i_data_handle = getDataHandle( data_handle_array, i )
+            j_data_handle = getDataHandle( data_handle_array, j )
+            !
+            do while ( i_data_handle%rx_type < x_data_handle%rx_type )
                 i=i+1
+                i_data_handle = getDataHandle( data_handle_array, i )
             end do
-            do while ( x_data_entry%rx_type < data_handle_array(j)%rx_type )
+            do while ( x_data_handle%rx_type < j_data_handle%rx_type )
                 j=j-1
+                j_data_handle = getDataHandle( data_handle_array, j )
             end do
             if (i >= j) exit
-            t_data_entry = data_handle_array(i)
+            t_Dh = data_handle_array(i)
             data_handle_array(i) = data_handle_array(j)
-            data_handle_array(j) = t_data_entry
+            data_handle_array(j) = t_Dh
             i=i+1
+            i_data_handle = getDataHandle( data_handle_array, i )
             j=j-1
+            j_data_handle = getDataHandle( data_handle_array, j )
         end do
         !
         if (first < i-1) call sortByReceiverType( data_handle_array, first, i-1 )
@@ -510,28 +522,38 @@ contains
     recursive subroutine sortByPeriod( data_handle_array, first, last )
         implicit none
         !
-        type( DataHandle_t ), allocatable, intent( inout ) :: data_handle_array(:)
-        type( DataHandle_t ) :: x_data_entry, t_data_entry
+        type( Dh_t ), allocatable, dimension(:), intent( inout ) :: data_handle_array
+        type( Dh_t ), allocatable :: x_Dh, t_Dh
+        class( DataHandle_t ), allocatable :: i_data_handle, j_data_handle, x_data_handle
         integer first, last
         integer i, j
         !
-        x_data_entry = data_handle_array( (first+last) / 2 )
+        x_Dh = data_handle_array( (first+last) / 2 )
+        x_data_handle = x_Dh%Dh
         i = first
         j = last
         !
         do
-            do while ( data_handle_array(i)%period < x_data_entry%period )
+            !
+            i_data_handle = getDataHandle( data_handle_array, i )
+            j_data_handle = getDataHandle( data_handle_array, j )
+            !
+            do while ( i_data_handle%period < x_data_handle%period )
                 i=i+1
+                i_data_handle = getDataHandle( data_handle_array, i )
             end do
-            do while ( x_data_entry%period < data_handle_array(j)%period )
+            do while ( x_data_handle%period < j_data_handle%period )
                 j=j-1
+                j_data_handle = getDataHandle( data_handle_array, j )
             end do
             if (i >= j) exit
-            t_data_entry = data_handle_array(i)
+            t_Dh = data_handle_array(i)
             data_handle_array(i) = data_handle_array(j)
-            data_handle_array(j) = t_data_entry
+            data_handle_array(j) = t_Dh
             i=i+1
+            i_data_handle = getDataHandle( data_handle_array, i )
             j=j-1
+            j_data_handle = getDataHandle( data_handle_array, j )
         end do
         !
         if (first < i-1) call sortByPeriod( data_handle_array, first, i-1 )
@@ -543,28 +565,38 @@ contains
     recursive subroutine sortByReceiver( data_handle_array, first, last )
         implicit none
         !
-        type( DataHandle_t ), allocatable, intent( inout ) :: data_handle_array(:)
-        type( DataHandle_t ) :: x_data_entry, t_data_entry
+        type( Dh_t ), allocatable, dimension(:), intent( inout ) :: data_handle_array
+        type( Dh_t ), allocatable :: x_Dh, t_Dh
+        class( DataHandle_t ), allocatable :: i_data_handle, j_data_handle, x_data_handle
         integer first, last
         integer i, j
         !
-        x_data_entry = data_handle_array( (first+last) / 2 )
+        x_Dh = data_handle_array( (first+last) / 2 )
+        x_data_handle = x_Dh%Dh
         i = first
         j = last
         !
         do
-            do while ( data_handle_array(i)%code < x_data_entry%code )
+            !
+            i_data_handle = getDataHandle( data_handle_array, i )
+            j_data_handle = getDataHandle( data_handle_array, j )
+            !
+            do while ( i_data_handle%code < x_data_handle%code )
                 i=i+1
+                i_data_handle = getDataHandle( data_handle_array, i )
             end do
-            do while ( x_data_entry%code < data_handle_array(j)%code )
+            do while ( x_data_handle%code < j_data_handle%code )
                 j=j-1
+                j_data_handle = getDataHandle( data_handle_array, j )
             end do
             if (i >= j) exit
-            t_data_entry = data_handle_array(i)
+            t_Dh = data_handle_array(i)
             data_handle_array(i) = data_handle_array(j)
-            data_handle_array(j) = t_data_entry
+            data_handle_array(j) = t_Dh
             i=i+1
+            i_data_handle = getDataHandle( data_handle_array, i )
             j=j-1
+            j_data_handle = getDataHandle( data_handle_array, j )
         end do
         !
         if (first < i-1) call sortByReceiver( data_handle_array, first, i-1 )
@@ -573,12 +605,16 @@ contains
     end subroutine sortByReceiver
     !
     !
+
+
+
     subroutine writeDataHandleArray( data_handle_array )
         implicit none
         !
-        type( DataHandle_t ), allocatable, intent( inout ) :: data_handle_array(:)
+        type( Dh_t ), allocatable, dimension(:), intent( inout ) :: data_handle_array
         !
-        type( DataHandle_t ) :: aux_data_entry
+        class( DataHandle_t ), allocatable :: Dh
+        !
         integer :: receiver_type, i, j, ios
         !
         ! Order by transmitter
@@ -598,9 +634,25 @@ contains
             !
             do i = 1, size( data_handle_array )
                 !
-                call writePredictedDataHeader( data_handle_array(i), receiver_type )
+                Dh = getDataHandle( data_handle_array, i )
                 !
-                write( ioPredData, "(es12.6, A20, f15.3, f15.3, f15.3, f15.3, f15.3, A20, es16.6, es16.6, es16.6)" ) data_handle_array(i)%period, data_handle_array(i)%code, R_ZERO, R_ZERO, data_handle_array(i)%xyz(1), data_handle_array(i)%xyz(2), data_handle_array(i)%xyz(3), data_handle_array(i)%component, data_handle_array(i)%real, data_handle_array(i)%imaginary, 1.0
+                call writePredictedDataHeader( Dh, receiver_type )
+                !
+                ! Instantiate the ModelOperator object
+                select type( Dh )
+                    !
+                    class is( DataHandleMT_t )
+                        !
+                        write( ioPredData, "(es12.6, A20, f15.3, f15.3, f15.3, f15.3, f15.3, A20, es16.6, es16.6, es16.6)" ) Dh%period, adjustl( Dh%code ), R_ZERO, R_ZERO, Dh%rx_location(1), Dh%rx_location(2), Dh%rx_location(3), adjustl( Dh%component ), Dh%real, Dh%imaginary, 1.0
+                        !
+                    class is( DataHandleCSEM_t )
+                        !
+                        write( ioPredData, "(A10, es12.6, f15.3, f15.3, f15.3, f15.3, f15.3, f15.3, A20, f15.3, f15.3, f15.3, A20, es16.6, es16.6, es16.6)" ) adjustl( Dh%dipole ), Dh%period, Dh%moment, Dh%azimuth, Dh%dip, Dh%tx_location(1), Dh%tx_location(2), Dh%tx_location(3), adjustl( Dh%code ), Dh%rx_location(1), Dh%rx_location(2), Dh%rx_location(3), adjustl( Dh%component ), Dh%real, Dh%imaginary, 1.0
+                        !
+                    class default
+                        stop "Unclassified data_handle"
+                    !
+                end select
                 !
             enddo
             !
@@ -615,13 +667,35 @@ contains
     subroutine writePredictedDataHeader( data_handle, receiver_type )
         implicit none
         !
-        type( DataHandle_t ), intent( in ) :: data_handle
+        !
+        class( DataHandle_t ), intent( in ) :: data_handle
+        !
         integer, intent( inout ) :: receiver_type
         !
         if( receiver_type /= data_handle%rx_type ) then
             !
-            write( ioPredData, "(4A, 100A)" ) "#    ", DATA_FILE_TITLE
-            write( ioPredData, "(100A)" )     "#    Period(s) Code GG_Lat GG_Lon X(m) Y(m) Z(m) Component Real Imag Error"
+            write( ioPredData, "(4A, 40A)" ) "#    ", DATA_FILE_TITLE
+            !
+            select case( data_handle%rx_type )
+                !
+                case( 1, 11, 12 )
+                    write( ioPredData, "(74A)" ) "#    Period(s) Code GG_Lat GG_Lon X(m) Y(m) Z(m) Component Real Imag Error"
+                case( 2 )
+                    write( ioPredData, "(60A)" ) "#    Missing title for Full_Interstation_TF"
+                case( 3 )
+                    write( ioPredData, "(60A)" ) "#    Missing title for Off_Diagonal_Rho_Phase"
+                case( 4 )
+                    write( ioPredData, "(60A)" ) "#    Missing title for Phase_Tensor"
+                case( 5 )
+                    write( ioPredData, "(60A)" ) "#    Missing title for Off_Diagonal_Impedance"
+                case( 6, 7, 8, 9, 10 )
+                    write( ioPredData, "(125A)" ) "#    Tx_Dipole Tx_Period(s) Tx_Moment(Am) Tx_Azi Tx_Dip Tx_X(m) Tx_Y(m) Tx_Z(m) Code X(m) Y(m) Z(m) Component Real Imag Error"
+                case default
+                    write( *, * ) "unknow receiver type :[", data_handle%rx_type, "]"
+                    STOP "test_FWD.f90: writePredictedDataHeader()"
+                !
+            end select
+            !
             write( ioPredData, "(4A, 100A)" ) ">    ", getStringReceiverType( data_handle%rx_type )
             write( ioPredData, "(4A, 100A)" ) ">    ", "exp(-i\omega t)"
             write( ioPredData, "(4A, 100A)" ) ">    ", "[V/m]/[T]"

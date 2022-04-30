@@ -38,7 +38,7 @@ contains
         real( kind=prec ), intent( in )          :: period, moment, azimuth, dip, xyz(3), tx_xyz(3)
         real( kind=prec ), intent( in )            :: real, imaginary, error
         !
-        !write(*,*) "Constructor DataEntryCSEM_t"
+        !write(*,*) "Constructor DataEntryCSEM_t", dipole
         !
         self%id = id
         self%type = type

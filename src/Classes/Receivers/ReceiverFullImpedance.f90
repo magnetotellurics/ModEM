@@ -7,6 +7,7 @@
 module ReceiverFullImpedance
     !
     use Receiver
+	use DataHandleMT
     !
     type, extends( Receiver_t ), public :: ReceiverFullImpedance_t
         !
@@ -19,6 +20,8 @@ module ReceiverFullImpedance
             procedure, public :: isEqualRx => isEqualFullImpedance
             !
             procedure, public :: predictedData => predictedDataFullImpedance
+			!
+			procedure, public :: savePredictedData => savePredictedDataFullImpedance
             !
             procedure, public :: write => writeReceiverFullImpedance
             !
@@ -198,6 +201,34 @@ contains
         end select
         !
     end subroutine predictedDataFullImpedance
+    !
+    subroutine savePredictedDataFullImpedance( self, tx )
+        implicit none
+        !
+        class( ReceiverFullImpedance_t ), intent( inout ) :: self
+        class( Transmitter_t ), intent( in )              :: tx
+        !
+        character(:), allocatable :: code, component
+        real( kind=prec )         :: period, real_part, imaginary, rx_location(3)
+        integer                   :: i, rx_type
+        !
+        !#Period(s) Code GG_Lat GG_Lon X(m) Y(m) response(m) Component Real Imag Error
+        !
+        do i = 1, self%n_comp
+			!
+			rx_type = int( self%rx_type )
+			period = real( tx%period, kind=prec )
+			code = trim( self%code )
+			rx_location = (/real( self%location( 1 ), kind=prec ), real( self%location( 2 ), kind=prec ), real( self%location( 3 ), kind=prec )/)
+			component = trim( self%comp_names( i )%str )
+			real_part = real( self%response( i ), kind=prec )
+			imaginary = real( imag( self%response( i ) ), kind=prec )
+			!
+			call updateDataHandleArray( self%predicted_data, DataHandleMT_t( rx_type, code, component, period, rx_location, real_part, imaginary ) )
+			!
+        enddo
+        !
+    end subroutine savePredictedDataFullImpedance
     !
     subroutine writeReceiverFullImpedance( self )
         implicit none
