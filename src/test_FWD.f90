@@ -158,7 +158,6 @@ contains
             ! Solve Tx Forward Modelling
             call Tx%solveFWD()
             !
-            write( *, * ) "FINISHES FWD"
             ! Loop over Receivers of each Transmitter
             do iRx = 1, size( Tx%receiver_indexes )
                 !
