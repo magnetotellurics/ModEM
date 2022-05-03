@@ -12,6 +12,9 @@ module DataFile
     use String
     !
     use DataEntryArray
+    use DataEntryMT
+    use DataEntryMT_REF
+    use DataEntryCSEM
     !
     use ReceiverFullImpedance
     use ReceiverFullVerticalMagnetic
@@ -84,7 +87,7 @@ contains
                 !
             class is ( DataEntryCSEM_t )
                 !
-                allocate( transmitter, source = TransmitterCSEM_t( data_entry%period, data_entry%tx_xyz ) )
+                allocate( transmitter, source = TransmitterCSEM_t( data_entry%period, data_entry%tx_xyz, data_entry%azimuth, data_entry%dip, data_entry%moment, data_entry%dipole ) )
                 !
         end select
         !
@@ -144,7 +147,7 @@ contains
                 allocate( receiver, source = ReceiverFullVerticalMagnetic_t( data_entry%xyz, rx_type ) )
                 !
             case default
-                write(*,*) "unknow component type :[", data_entry%type, "]"
+                write( *, * ) "unknow component type :[", data_entry%type, "]"
                 STOP "DataManager.f08: loadReceiversAndTransmitters()"
             !
         end select

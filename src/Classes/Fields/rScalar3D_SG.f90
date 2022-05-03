@@ -166,7 +166,7 @@ contains
         !
         !write(*,*) "Destructor rScalar3D_SG"
         !
-        deallocate( self%v )
+        if ( allocated( self%v ) ) deallocate( self%v )
         !
         self%nx = 0
         self%ny = 0

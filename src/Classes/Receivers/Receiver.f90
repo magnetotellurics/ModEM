@@ -12,7 +12,7 @@ module Receiver
     use cVector3D_SG
     use cSparseVector3D_SG
     use ModelOperator
-    use DataHandle
+    use DataHandleFArray
     !
     type, abstract :: Receiver_t
         !
@@ -30,7 +30,7 @@ module Receiver
         !
         type( cSparseVector3D_SG_t )   :: Lex, Ley, Lez, Lbx, Lby, Lbz
         !
-        type( DataHandle_t ), allocatable :: predicted_data(:)
+        type( Dh_t ), allocatable, dimension(:) :: predicted_data
         !
         contains
             !
@@ -39,6 +39,8 @@ module Receiver
             !
             procedure( interface_predicted_data ), deferred, public :: predictedData
             !
+            procedure( interface_save_predicted_data ), deferred, public :: savePredictedData
+            !
             procedure( interface_write_rx ), deferred, public       :: write
             !
             ! CLASS PROCEDURES
@@ -46,8 +48,6 @@ module Receiver
             !
             procedure, public :: init    => initializeRx
             procedure, public :: dealloc => deallocateRx
-            !
-            procedure, public :: savePredictedData
             !
     end type Receiver_t
     !
@@ -89,6 +89,15 @@ module Receiver
             class( Receiver_t ), intent( in ) :: self
             !
         end subroutine interface_write_predicted_data_rx
+        !
+        subroutine interface_save_predicted_data( self, tx )
+            !
+            import :: Receiver_t, Transmitter_t
+            !
+            class( Receiver_t ), intent( inout ) :: self
+            class( Transmitter_t ), intent( in ) :: tx
+            !
+        end subroutine interface_save_predicted_data
         !
         subroutine interface_write_rx( self )
             !
@@ -145,7 +154,7 @@ contains
         !
         class( cVector_t ), allocatable :: e, h, lh
         !
-		!
+        !
         do k = 1, size( self%EHxy )
             !
             select case( self%EHxy(k)%str )
@@ -337,33 +346,6 @@ contains
         end do
         !
     end subroutine evaluationFunctionRx
-    !
-    subroutine savePredictedData( self, tx )
-        implicit none
-        !
-        class( Receiver_t ), intent( inout ) :: self
-        class( Transmitter_t ), intent( in ) :: tx
-        !
-        character(:), allocatable :: code, component
-        real( kind=prec )         :: period, real_part, imaginary, xyz(3)
-        integer                   :: i, rx_type
-        !#Period(s) Code GG_Lat GG_Lon X(m) Y(m) response(m) Component Real Imag Error
-        !
-        do i = 1, self%n_comp
-             !
-             rx_type = int( self%rx_type )
-             period = real( tx%period, kind=prec )
-             code = trim( self%code )
-             xyz = (/real( self%location( 1 ), kind=prec ), real( self%location( 2 ), kind=prec ), real( self%location( 3 ), kind=prec )/)
-             component = trim( self%comp_names( i )%str )
-             real_part = real( self%response( i ), kind=prec )
-             imaginary = real( imag( self%response( i ) ), kind=prec )
-             !
-             call updateDataHandleArray( self%predicted_data, buildDataHandle( rx_type, code, component, period, xyz, real_part, imaginary ) )
-             !
-        enddo
-        !
-    end subroutine savePredictedData
     !
     function getStringReceiverType( int_receiver_type ) result( str_receiver_type )
     !

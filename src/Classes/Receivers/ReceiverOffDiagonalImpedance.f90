@@ -9,6 +9,7 @@
 module ReceiverOffDiagonalImpedance
     !
     use Receiver
+	use DataHandleMT
     !
     type, extends( Receiver_t ), public :: ReceiverOffDiagonalImpedance_t
         !
@@ -21,6 +22,8 @@ module ReceiverOffDiagonalImpedance
             procedure, public :: isEqualRx => isEqualOffDiagonalImpedance
             !
             procedure, public :: predictedData => predictedDataOffDiagonalImpedance
+            !
+            procedure, public :: savePredictedData => savePredictedDataOffDiagonalImpedance
             !
             procedure, public :: write => writeReceiverOffDiagonalImpedance
             !
@@ -174,6 +177,34 @@ contains
         end select
         !
     end subroutine predictedDataOffDiagonalImpedance
+    !
+    subroutine savePredictedDataOffDiagonalImpedance( self, tx )
+        implicit none
+        !
+        class( ReceiverOffDiagonalImpedance_t ), intent( inout ) :: self
+        class( Transmitter_t ), intent( in ) :: tx
+        !
+        character(:), allocatable :: code, component
+        real( kind=prec )         :: period, real_part, imaginary, rx_location(3)
+        integer                   :: i, rx_type
+        !
+        !#Period(s) Code GG_Lat GG_Lon X(m) Y(m) response(m) Component Real Imag Error
+        !
+        do i = 1, self%n_comp
+            !
+            rx_type = int( self%rx_type )
+            period = real( tx%period, kind=prec )
+            code = trim( self%code )
+            rx_location = (/real( self%location( 1 ), kind=prec ), real( self%location( 2 ), kind=prec ), real( self%location( 3 ), kind=prec )/)
+            component = trim( self%comp_names( i )%str )
+            real_part = real( self%response( i ), kind=prec )
+            imaginary = real( imag( self%response( i ) ), kind=prec )
+            !
+            call updateDataHandleArray( self%predicted_data, DataHandleMT_t( rx_type, code, component, period, rx_location, real_part, imaginary ) )
+            !
+        enddo
+        !
+    end subroutine savePredictedDataOffDiagonalImpedance
     !
     subroutine writeReceiverOffDiagonalImpedance( self )
         implicit none

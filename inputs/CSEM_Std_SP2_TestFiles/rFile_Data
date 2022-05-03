@@ -1,4 +1,4 @@
-# Tx: 9 positions, 5 Periods: 1.000000E-01, 1.778280E-01, 3.162280E-01, 5.623410E-01, 1.000000E+00. Rx: Consider the inline Ey components (Tx is rotated 90 Deg. from N). Rx spacing is 1000 m on a regular grid                                                                                      
+# FIXED
 # Tx_Dipole Tx_Period(s) Tx_Moment(Am) Tx_Azi Tx_Dip Tx_X(m) Tx_Y(m) Tx_Z(m) Code X(m) Y(m) Z(m) Component Real Imag Error                                                                              
 >  Ey_Field
 >  exp(+i\omega t)

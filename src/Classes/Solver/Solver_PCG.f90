@@ -31,7 +31,7 @@ contains
         class( ModelOperator_t ), intent( in ) :: model_operator
         type( Solver_PCG_t ) :: self
         !
-        write( *, * ) "Constructor Solver_PCG_t"
+        !write( *, * ) "Constructor Solver_PCG_t"
         !
         call self%init()
         !
@@ -49,7 +49,7 @@ contains
         !
         type( Solver_PCG_t ), intent( inout ) :: self
         !
-        write( *, * ) "Destructor Solver_PCG_t"
+        !write( *, * ) "Destructor Solver_PCG_t"
         !
         call self%dealloc()
         !
@@ -132,9 +132,9 @@ contains
             !
 			self%relErr(i+1) = rnorm/bnorm
             !
-            !write( *, * ) 'iter = ', i, ' relErr = ',self%relErr(i+1)
-            !
         enddo loop
+        !
+		write( *, * ) "PCG iter: ", i, " relErr = ", self%relErr( i )
         !
         deallocate( r )
         deallocate( s )

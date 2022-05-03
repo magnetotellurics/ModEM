@@ -35,12 +35,13 @@ module SourceMT_2D
 contains
     !
     ! SourceMT_2D constructor
-    function SourceMT_2D_ctor( model_operator, model_parameter, E ) result( self )
+    function SourceMT_2D_ctor( model_operator, model_parameter, period, E ) result( self )
          !
          implicit none
          !
          class( ModelOperator_t ), target, intent( in )  :: model_operator
          class( ModelParameter_t ), target, intent( in ) :: model_parameter
+		 real( kind=prec ), intent( in )      :: period
          class( cVector_t ), intent( in ), optional     :: E
          !
          type( SourceMT_2D_t ) :: self
@@ -49,6 +50,8 @@ contains
          !
          self%model_operator => model_operator
          self%model_parameter => model_parameter
+		 !
+		 self%period = period
          !
          self%non_zero_source = .FALSE.
          self%adjt = .FALSE.
@@ -77,11 +80,10 @@ contains
     end subroutine SourceMT_2D_dtor
     !
     ! Set self%E from forward modelling 2D
-    subroutine setESourceMT_2D( self, omega, polarization )
+    subroutine setESourceMT_2D( self, polarization )
       implicit none
       !
       class( SourceMT_2D_t ), intent( inout ) :: self
-      real( kind=prec ), intent( in )         :: omega
       integer, intent( in )                   :: polarization
       !
       ! local variables

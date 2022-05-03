@@ -34,7 +34,7 @@ contains
         class( ModelOperator_t ), intent( in ) :: model_operator
         type( DivergenceCorrection_t )         :: self
         !
-        write( *, * ) "Constructor DivergenceCorrection_t"
+        !write( *, * ) "Constructor DivergenceCorrection_t"
         !
         self%divJ = 0.0
         !
@@ -53,7 +53,7 @@ contains
         !
         type( DivergenceCorrection_t ), intent( inout ) :: self
         !
-        write( *, * ) "Destructor DivergenceCorrection_t"
+        !write( *, * ) "Destructor DivergenceCorrection_t"
         !
         deallocate( self%solver )
         !
