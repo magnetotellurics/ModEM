@@ -66,7 +66,7 @@ contains
         self%azimuth = azimuth
         self%moment = moment
         !
-        if ( present( E ) ) then
+        if( present( E ) ) then
            !
            allocate( self%E, source = E )
            !
@@ -120,18 +120,7 @@ contains
         !
         call self%set1DModel( xTx1D, yTx1D )
         !
-        ! Put the privte sig1D and zlay1D into public sig1D and zlay1D required in Dipole1D
-        !nlay1D=nlay1D
-        ! if(allocated(zlay1D)) then
-        ! Deallocate(zlay1D, sig1D)
-        ! end if
-        ! allocate(zlay1D(nlay1D),sig1D(nlay1D))
-        ! zlay1D=zlay1D
-        ! sig1D=sig1D
-        !
-        !call setAnomConductivity( self%model_parameter )
-        !
-        call initilize_1d_vectors( self%model_parameter%grid ) ! Initilaize the 1D vectors where to compupte the E field
+        call initilize_1d_vectors( self%model_parameter%grid ) ! Initilize the 1D vectors where to compupte the E field
         !
         call comp_dipole1D ! Calculate E-Field by Key"s code
         !
@@ -151,23 +140,17 @@ contains
                 !
                 self%rhs = self%E * self%CondAnomaly_h
                 !
-                !call diagMult(CondAnomaly_h,self%E,source)
                 self%rhs = self%rhs * i_omega_mu
-                !
-                !call scMult(i_omega_mu,source,source)   
-                !
-                !clean
-                !call deall_rvector(CondAnomaly_h)
                 !
         end select
         !
     end subroutine setESourceCSEM_Dipole1D
     !
     !
-    subroutine initilize_1d_vectors(grid)
+    subroutine initilize_1d_vectors( grid )
         implicit none
         !
-        class(Grid_t), intent(in)        :: grid 
+        class( Grid_t ), intent( in ) :: grid 
         !
         integer counter, ix, iy, iz
 
@@ -176,7 +159,7 @@ contains
         n1D = n1D + (grid%Nx+1)*(grid%Ny)*(grid%Nz+1)
         n1D = n1D + (grid%Nx+1)*(grid%Ny+1)*(grid%Nz)
         !
-        if (allocated (x1D)) then  
+        if(allocated (x1D)) then  
             deallocate(x1D, y1D, z1D)
             deallocate(ex1D,ey1D,jz1D)
             deallocate(bx1D,by1D,bz1D)
@@ -250,8 +233,8 @@ contains
                 ! E-field corresponing to these nodes is Ex
                 do iz = 1,grid%Nz+1 !Edge Z
                   do iy = 1,grid%Ny+1 !Edge Y
-                        do ix = 1,grid%Nx !Center X                  
-                          E%x(ix,iy,iz) = ex1D(counter)              
+                        do ix = 1,grid%Nx !Center X
+                          E%x(ix,iy,iz) = ex1D(counter)
                           counter = counter + 1
                         end do
                   end do
@@ -260,7 +243,7 @@ contains
                 ! E-field corresponing to these nodes is Ey
                 do iz = 1,grid%Nz+1 !Edge Z
                   do iy = 1,grid%Ny !Center y
-                        do ix = 1,grid%Nx+1 !Edge x                  
+                        do ix = 1,grid%Nx+1 !Edge x
                           E%y(ix,iy,iz) = ey1D(counter)
                           counter = counter + 1
                         end do
@@ -309,142 +292,149 @@ contains
     end subroutine setRHSMT_1D
     !
     subroutine set1DModel( self, xTx1D, yTx1D )
-        implicit none
         !
         class( SourceCSEM_Dipole1D_t ), intent( inout ) :: self
         !
-        real( kind=prec ),intent( in ) :: xTx1D, yTx1D 
+        real( kind=prec ),intent(in)                    :: xTx1D, yTx1D 
         !
-        type( rScalar3D_SG_t ) :: sigmaCell 
-        character( len=80 )    :: paramtype
-        type( rScalar3D_SG_t ) :: model
+        !
+        type( rScalar3D_SG_t )          :: sigma_cell, model
+        character( len=80 )             :: paramtype
         type( ModelParameterCell_SG_t ) :: aModel, Anomalous_model
-        type( rVector3D_SG_t ) :: cond, condNomaly_h
         !
-        integer :: nzEarth, Nz, nzAir, i, j, k, ixTx, iyTx, izTx, counter
-        real( kind=prec ) :: wt,vAir,asigma,temp_sigma_value
+        integer :: nzEarth, nzAir, i, j, k, ixTx, iyTx, counter
+        real( kind=prec ) :: wt, asigma, temp_sigma_value
+        !
+        !   first define conductivity on cells  
+        !   (extract into variable which is public)
+        !call modelParamToCell(model_parameter, sigma_cell, paramtype)
         !
         select type( model_parameter => self%model_parameter )
-        class is( ModelParameterCell_SG_t )
-        !
-        !
-        sigmaCell = model_parameter%cellCond
-        nlay1D = sigmaCell%nz
-        nzEarth = sigmaCell%grid%nzEarth
-        nzAir = sigmaCell%grid%nzAir
+            class is( ModelParameterCell_SG_t )
+                !
+                !
+                sigma_cell = model_parameter%cellCond
+                nlay1D = sigma_cell%nz+sigma_cell%grid%nzAir
+                nzEarth = sigma_cell%grid%nzEarth
+                nzAir = sigma_cell%grid%nzAir
 
-        ixTx = minNode( xTx1D, sigmaCell%grid%xEdge )  
-        iyTx = minNode( yTx1D, sigmaCell%grid%yEdge )
-        izTx = minNode( zTx1D, sigmaCell%grid%zEdge )
-        !
-        if( allocated( zlay1D ) ) then
-          deallocate(zlay1D, sig1D)
-        end if
-        !
-        allocate( zlay1D(nlay1D) )
-        allocate( sig1D(nlay1D) )
-        !
-        do k = 1,nlay1D
-          zlay1D(k) = sigmaCell%grid%zEdge(k)
-        end do
-        !
-        sig1D(1:nzAir) = sigmaCell%v(1,1,1:nzAir)
-        !
-        if (trim(get_1D_from) =="Geometric_mean") then
-          do k = nzAir+1,nlay1D
-              wt = R_ZERO
-              temp_sigma_value=R_ZERO
-              !
-              do i = 1,sigmaCell%grid%Nx
-                do j = 1,sigmaCell%grid%Ny
-                  wt = wt + sigmaCell%grid%dx(i)*sigmaCell%grid%dy(j)
-                  temp_sigma_value = temp_sigma_value + (sigmaCell%v(i,j,k))* &
-                  sigmaCell%grid%dx(i)*sigmaCell%grid%dy(j)
+                ixTx= minNode(xTx1D, sigma_cell%grid%xEdge)  
+                iyTx= minNode(yTx1D, sigma_cell%grid%yEdge)
+                !
+                if(allocated(zlay1D)) deallocate(zlay1D, sig1D)
+                !
+                allocate(zlay1D(nlay1D))
+                allocate(sig1D(nlay1D))
+                !
+                do k=1,nlay1D
+                    zlay1D(k) = sigma_cell%grid%zEdge(k)
                 end do
-              end do
-              sig1D(k) = exp(temp_sigma_value/wt)
-              !write(220,*)k,zlay1D(k),1.0/sig1D(k),sig1D(k),get_1d_from
-          end do
-          !
-        elseif (trim(get_1D_from) =="At_Tx_Position") then
-            !
-            do k = nzAir+1,nlay1D
-                sig1D(k)=sigmaCell%v(ixTx,iyTx,k)
-                !write(230,*)k,zlay1D(k),1.0/sig1D(k),sig1D(k),get_1d_from
-            end do
-            !
-        elseif (trim(get_1d_from)=="Geometric_mean_around_Tx") then
-          do k = nzAir+1,nlay1D
-              wt = R_ZERO
-              do i = ixTx-5,ixTx+5
-                do j = iyTx-5,iyTx+5
-                  if (log(sigmaCell%v(i,j,k)) .gt. -20.0) then
-                        wt = wt + sigmaCell%grid%dx(i)*sigmaCell%grid%dy(j)
-                        sig1D(k) = sig1D(k) + log(sigmaCell%v(i,j,k))* &
-                        sigmaCell%grid%dx(i)*sigmaCell%grid%dy(j)
-                  end if
-                end do
-              end do           
-              sig1D(k) = exp(sig1D(k)/wt)    
-              !write(240,*)k,zlay1D(k),1.0/sig1D(k),sig1D(k),get_1d_from
-          end do
-        elseif (trim(get_1d_from)=="Full_Geometric_mean") then
-          wt = R_ZERO
-          temp_sigma_value=R_ZERO
-          counter=0
-          do k = nzAir+1,nlay1D
-              do i = 1,sigmaCell%grid%Nx
-                do j = 1,sigmaCell%grid%Ny
-                  if (log(sigmaCell%v(i,j,k)) .gt. -20.0  ) then
-                        counter=counter+1
-                        wt = wt + sigmaCell%grid%dx(i)*sigmaCell%grid%dy(j)*sigmaCell%grid%dz(k)
-                        temp_sigma_value = temp_sigma_value + log(sigmaCell%v(i,j,k))
-                  end if
-                end do
-              end do           
-          end do
-          do k = nzAir+1,nlay1D
-            sig1D(k) = exp(temp_sigma_value/counter)    
-            !write(250,*)k,zlay1D(k),1.0/sig1D(k),sig1D(k),get_1d_from
-          end do    
-        elseif (trim(get_1d_from)=="Fixed_Value") then
-          temp_sigma_value=sigmaCell%v(ixTx,iyTx,nzAir+1) !the value exactly below the Tx
-           do k = nzAir+1,nlay1D
-            sig1D(k) = temp_sigma_value
-            !write(260,*)k,zlay1D(k),1.0/sig1D(k),sig1D(k),get_1d_from
-          end do                
-        end if
-        !
-        model = sigmaCell
-        !call getValue_modelParam(model_parameter,paramType,model,vAir)
-        !
-        ! Put the background (Primary) "condNomaly" conductivities in ModEM model format
-        model%v=R_ZERO
-        do k = 1,nzEarth
-          asigma = sig1D(k+nzAir)
-          if( trim(ParamType) == LOGE) asigma = log(asigma)
-          do i = 1,sigmaCell%grid%Nx
-              do j = 1,sigmaCell%grid%Ny        
-                model%v(i,j,k) = asigma
-              end do
-          end do
-        end do   
-        !
-        !call copy_modelParam(amodel,model_parameter)  
-        amodel = model_parameter
-        !call setType_modelParam(amodel,paramType)
-        !call setValue_modelParam(amodel,paramType,model,vAir)
-        amodel%cellCond=model
-        !
-        !call ModelParamToEdge(amodel,condNomaly_h)
-        condNomaly_h = model_parameter%dPDEmapping( amodel )
-        !
-        !write(*,*) condNomaly_h%x, condNomaly_h%y, condNomaly_h%z
-        !
-        cond = model_parameter%PDEmapping()
-        !
-        self%CondAnomaly_h=cond-condNomaly_h
-        !
+                !
+                ! For create sig1D, we divide this process into two parts (1) for air layers and 
+                !    (2) for earth layers
+                ! For air layer, sig1D equal to air layer conductivity
+                ! For earth layer, The Geometric mean is be used to create sig1D
+                !
+                sig1D(1:nzAir) = SIGMA_AIR !sigma_cell%v(1,1,1:nzAir)
+                !
+                if( trim(get_1D_from) =="Geometric_mean" ) then
+                    do k = nzAir+1,nlay1D
+                        wt = R_ZERO
+                        temp_sigma_value=R_ZERO
+                        do i = 1,sigma_cell%grid%Nx
+                            do j = 1,sigma_cell%grid%Ny
+                                wt = wt + sigma_cell%grid%dx(i)*sigma_cell%grid%dy(j)
+                                !
+                                temp_sigma_value = temp_sigma_value + (sigma_cell%v(i,j,k-nzAir))* &
+                                sigma_cell%grid%dx(i)*sigma_cell%grid%dy(j)
+                            end do
+                        end do
+                        !
+                        sig1D(k) = exp(temp_sigma_value/wt)
+                        !
+                   end do
+                else if( trim( get_1D_from ) =="At_Tx_Position" ) then
+                    !
+                    do k = nzAir+1,nlay1D
+                        sig1D(k)=sigma_cell%v(ixTx,iyTx,k-nzAir)
+                    end do
+                    !
+                else if( trim( get_1d_from ) == "Geometric_mean_around_Tx" ) then
+                    do k = nzAir+1,nlay1D
+                        wt = R_ZERO
+                        do i = ixTx-5,ixTx+5
+                            do j = iyTx-5,iyTx+5
+                                !
+                                wt = wt + sigma_cell%grid%dx(i)*sigma_cell%grid%dy(j)
+                                !
+                                sig1D(k) = sig1D(k) + sigma_cell%v(i,j,k-nzAir) * &
+                                sigma_cell%grid%dx(i)*sigma_cell%grid%dy(j)
+                                !
+                            end do
+                        end do
+                        !
+                        sig1D(k) = exp(sig1D(k)/wt)
+                        !
+                    end do
+                else if( trim( get_1d_from ) == "Full_Geometric_mean" ) then
+                    !
+                    wt = R_ZERO
+                    temp_sigma_value=R_ZERO
+                    counter=0
+                    !
+                    do k = nzAir+1,nlay1D
+                        do i = 1,sigma_cell%grid%Nx
+                            do j = 1,sigma_cell%grid%Ny
+                                !
+                                counter=counter+1
+                                !
+                                wt = wt + sigma_cell%grid%dx(i)*sigma_cell%grid%dy(j)*sigma_cell%grid%dz(k)
+                                !
+                                temp_sigma_value = temp_sigma_value + sigma_cell%v(i,j,k-nzAir)
+                                !
+                            end do
+                        end do
+                    end do
+                    !
+                    do k = nzAir+1,nlay1D
+                        !
+                        sig1D(k) = exp(temp_sigma_value/counter)
+                        !
+                    end do
+                else if( trim( get_1d_from )== "Fixed_Value" ) then
+                    !
+                    temp_sigma_value = sigma_cell%v( ixTx, iyTx, k-nzAir ) !the value exactly below the Tx
+                    !
+                    do k = nzAir+1,nlay1D
+                        !
+                        sig1D(k) = temp_sigma_value
+                        !
+                    end do
+                    !
+                end if
+                !
+                model = sigma_cell
+                !
+                ! Put the background (Primary) "condNomaly" conductivities in ModEM model format
+                model%v=R_ZERO
+                do k = nzAir+1,nlay1D
+                    asigma = sig1D(k)
+                    !
+                    if( trim( model_parameter%ParamType ) == LOGE ) asigma = log( asigma )
+                    !
+                    do i = 1,sigma_cell%grid%Nx
+                        do j = 1,sigma_cell%grid%Ny
+                            model%v( i, j, k-nzAir ) = ( asigma )
+                        end do
+                    end do
+                end do   
+                !
+                amodel = model_parameter
+                !
+                amodel%cellCond = model
+                !
+                self%CondAnomaly_h = model_parameter%PDEmapping() - model_parameter%dPDEmapping( amodel )
+                !
         end select
         !
     end subroutine set1DModel

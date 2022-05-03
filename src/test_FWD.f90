@@ -193,7 +193,7 @@ contains
         deallocate( main_grid )
         !
         ! Verbosis...
-        write( *, * ) "    -> Writing Predicted Data to file: [", trim( predicted_data_file_name ), "]"
+        write( *, * ) "    -> Writing Predicted Data to file: [", predicted_data_file_name, "]"
         !
         ! Write all_data_handles into predicted_data.dat
         call writeDataHandleArray( all_data_handles )
@@ -215,7 +215,7 @@ contains
             !
         case default
             !
-            write( *, * ) "    - Unknow job: [", trim( modem_job ), "]"
+            write( *, * ) "    - Unknow job: [", modem_job, "]"
             call printHelp()
             !
         end select
@@ -344,7 +344,7 @@ contains
                       case ( "-c", "--control" )
                          !
                          call get_command_argument( argument_index + 1, argument )
-                         control_file_name = trim( argument )
+                         control_file_name = argument
                          !
                          if ( len( control_file_name ) > 0 ) has_control_file = .TRUE.
                          !
@@ -353,7 +353,7 @@ contains
                       case ( "-d", "--data" )
                          !
                          call get_command_argument( argument_index + 1, argument )
-                         data_file_name = trim( argument )
+                         data_file_name = argument
                          !
                          if ( len( data_file_name ) > 0 ) has_data_file = .TRUE.
                          !
@@ -403,7 +403,7 @@ contains
                          !
                       case default
                          !
-                         write( *, * ) "    - Unknow Argument: [", trim( argument ), "]"
+                         write( *, * ) "    - Unknow Argument: [", argument, "]"
                          call printHelp()
                          !
                  end select
@@ -604,9 +604,6 @@ contains
     end subroutine sortByReceiver
     !
     !
-
-
-
     subroutine writeDataHandleArray( data_handle_array )
         implicit none
         !
@@ -642,11 +639,11 @@ contains
                     !
                     class is( DataHandleMT_t )
                         !
-                        write( ioPredData, "(es12.6, A20, f15.3, f15.3, f15.3, f15.3, f15.3, A20, es16.6, es16.6, es16.6)" ) Dh%period, adjustl( Dh%code ), R_ZERO, R_ZERO, Dh%rx_location(1), Dh%rx_location(2), Dh%rx_location(3), adjustl( Dh%component ), Dh%real, Dh%imaginary, 1.0
+                        write( ioPredData, "(es12.6, 1X, A, 1X, f15.3, f15.3, f15.3, f15.3, f15.3, 1X, A, 1X, es16.6, es16.6, es16.6)" ) Dh%period, Dh%code, R_ZERO, R_ZERO, Dh%rx_location(1), Dh%rx_location(2), Dh%rx_location(3), Dh%component, Dh%real, Dh%imaginary, 1.0
                         !
                     class is( DataHandleCSEM_t )
                         !
-                        write( ioPredData, "(A10, es12.6, f15.3, f15.3, f15.3, f15.3, f15.3, f15.3, A20, f15.3, f15.3, f15.3, A20, es16.6, es16.6, es16.6)" ) adjustl( Dh%dipole ), Dh%period, Dh%moment, Dh%azimuth, Dh%dip, Dh%tx_location(1), Dh%tx_location(2), Dh%tx_location(3), adjustl( Dh%code ), Dh%rx_location(1), Dh%rx_location(2), Dh%rx_location(3), adjustl( Dh%component ), Dh%real, Dh%imaginary, 1.0
+                        write( ioPredData, "(A, 1X, es12.6, f15.3, f15.3, f15.3, f15.3, f15.3, f15.3, 1X, A, 1X, f15.3, f15.3, f15.3, 1X, A, 1X, es16.6, es16.6, es16.6)" ) Dh%dipole, Dh%period, Dh%moment, Dh%azimuth, Dh%dip, Dh%tx_location(1), Dh%tx_location(2), Dh%tx_location(3), Dh%code, Dh%rx_location(1), Dh%rx_location(2), Dh%rx_location(3), Dh%component, Dh%real, Dh%imaginary, 1.0
                         !
                     class default
                         stop "Unclassified data_handle"
@@ -658,7 +655,7 @@ contains
             close( ioPredData )
             !
         else
-          stop "Error opening predicted_data.dat in writeDataHandleArray"
+           stop "Error opening predicted_data.dat in writeDataHandleArray"
         end if
         !
     end subroutine writeDataHandleArray

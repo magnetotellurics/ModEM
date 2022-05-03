@@ -30,7 +30,7 @@ contains
         class( ModelOperator_t ), intent( in ) :: model_operator
         type( Solver_QMR_t ) :: self
         !
-        !write(*,*) "Constructor Solver_QMR_t"
+        !write( *, * ) "Constructor Solver_QMR_t"
         !
         call self%init()
         !
@@ -48,7 +48,7 @@ contains
         !
         type( Solver_QMR_t ), intent( inout ) :: self
         !
-        !write(*,*) "Destructor Solver_QMR_t"
+        !write( *, * ) "Destructor Solver_QMR_t"
         !
         call self%dealloc()
         !
@@ -86,7 +86,7 @@ contains
         ! Allocate work CVector objects -- questions as in PCG
         allocate( R, source = x )
         !
-        call R%zeros() !  can't zero x -- if this is to be used as starting guess
+        call R%zeros() !  can"t zero x -- if this is to be used as starting guess
                        !  also, never use AX -- which somehow is declared in ModEM!
         allocate( Y, source = R )
         allocate( Z, source = R )
@@ -130,9 +130,9 @@ contains
         !    iter is iteration counter
         iter = 1
         self%relErr( iter ) = real( rnorm / bnorm )
-        !write(*,*) 'in QMR'
-        !write(*,*) 'rnorm, bnorm ', rnorm, bnorm
-        !write(*,*) 'max_iter, tolerance', self%max_iter,self%tolerance
+        !write( *, * ) "in QMR"
+        !write( *, * ) "rnorm, bnorm ", rnorm, bnorm
+        !write( *, * ) "max_iter, tolerance", self%max_iter,self%tolerance
         !
         VT = R 
         ilu_adjt = .FALSE.
@@ -150,6 +150,8 @@ contains
         ! and the iterations are less than maxIt
         do while( ( self%relErr( iter ) .gt. self%tolerance ) .AND. ( iter .lt. self%max_iter ) )
             !
+			write( *, * ) "self%relErr( iter ), tolerance", self%relErr( iter ), tolerance
+			!
             if( ( RHO .eq. C_ZERO ) .or. ( PSI .eq. C_ZERO ) ) then
                 !
                 self%failed = .TRUE.
@@ -269,9 +271,9 @@ contains
             ! QMR book-keeping between divergence correction calls
             self%relErr( iter ) = real( rnorm / bnorm )
             !
-			!write(*,*) 'iter qmr= ',iter,'    relErr = ', self%relErr(iter)
-            !
         end do
+		!
+		write( *, * ) "QMR iter: ", iter, " relErr = ", self%relErr( iter )
         !
         deallocate( R )
         deallocate( Y )
