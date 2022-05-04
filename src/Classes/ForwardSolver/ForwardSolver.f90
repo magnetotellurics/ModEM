@@ -1,9 +1,7 @@
 ! *************
 ! 
 ! Base class to define a ForwardSolver
-! 
-! Last modified at 16/08/2021 by Paulo Werdt
-! 
+!
 ! *************
 ! 
 module ForwardSolver
@@ -47,10 +45,11 @@ module ForwardSolver
     !
     abstract interface
         !
-        subroutine interface_set_frequency_fwd( self, period )
-            import :: ForwardSolver_t, prec
+        subroutine interface_set_frequency_fwd( self, model_parameter, period )
+            import :: ForwardSolver_t, ModelParameter_t, prec
             !
             class( ForwardSolver_t ), intent( inout ) :: self
+			class( ModelParameter_t ), intent( in )   :: model_parameter
             real( kind=prec ), intent( in )           :: period
             !
         end subroutine interface_set_frequency_fwd

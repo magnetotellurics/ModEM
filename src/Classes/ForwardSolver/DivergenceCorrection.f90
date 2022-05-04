@@ -40,8 +40,6 @@ contains
         !
         ! Specific Solver PCG
         self%solver = Solver_PCG_t( model_operator )
-        !    set default iteration control for divergence correction step
-        call self%solver%setDefaults()
         !
         call self%setCond()
         !
@@ -69,7 +67,7 @@ contains
         !    set DivCorr arrays in model operator ... 
         call self%solver%preconditioner%model_operator%divCorSetup
         !    set preconditioner
-        call self%solver%preconditioner%setPreconditioner(self%solver%omega)
+        call self%solver%preconditioner%setPreconditioner( self%solver%omega )
         !
     end subroutine setCondDivergenceCorrection
     !
@@ -180,8 +178,9 @@ contains
         !
         ! subtract Divergence correction from inE
         !    outE = inE - outE
+		!
         call outE%linCombS(inE,C_MinusOne,C_ONE)
-
+		!
         ! divergence of the corrected output electrical field
         call self%solver%preconditioner%model_operator%DivC( outE, phiRHS )
 

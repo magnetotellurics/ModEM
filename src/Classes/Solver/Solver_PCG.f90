@@ -99,7 +99,7 @@ contains
         !
         bnorm = sqrt(real( b%dotProd(b)))
         rnorm = sqrt(real( r%dotProd(r)))
-		!
+        !
         self%relErr(1) = rnorm/bnorm
         i = 0
         !
@@ -115,7 +115,7 @@ contains
             endif
             !
             call p%linCombS( s, beta, C_ONE )
-			!
+            !
             call q%zeros()
             call self%preconditioner%model_operator%divCgrad( p, q )
             !
@@ -124,18 +124,18 @@ contains
             call p%scMultAddS( x, alpha )
             !
             call q%scMultAddS( r, -alpha )
-			!
+            !
             deltaOld = delta
-			!
+            !
             i = i + 1
-			!
+            !
             rnorm = sqrt( real( r%dotProd(r) ) )
             !
-			self%relErr( i + 1 ) = rnorm/bnorm
+            self%relErr( i + 1 ) = rnorm/bnorm
             !
         enddo loop
         !
-		write( *, * ) "PCG iter: ", i, " relErr = ", self%relErr( i )
+        write( *, * ) "PCG iter: ", i, " relErr = ", self%relErr( i )
         !
         deallocate( r )
         deallocate( s )
@@ -143,7 +143,7 @@ contains
         deallocate( q )
         !
         self%n_iter = i
-		!
+        !
     end subroutine solvePCG ! PCG
     !
 end module Solver_PCG

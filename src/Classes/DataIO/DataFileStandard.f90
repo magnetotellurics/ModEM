@@ -58,10 +58,10 @@ contains
         !
         call Compact( fname )
         !
-        open( unit = funit, file = fname, iostat = io_stat, status = 'old' )
+        open( unit = funit, file = fname, iostat = io_stat, status = "old" )
         !
         if( io_stat /= 0 ) then
-            write(*,*) 'Unable to open [', fname, '], Stat: ', io_stat
+            write(*,*) "Unable to open [", fname, "], Stat: ", io_stat
         else
             self%line_counter = getLineNumber( funit )
             !
@@ -72,7 +72,7 @@ contains
             csem_counter = 0
             !
             do
-                read( funit, '(a)', END = 10 ) full_line_text
+                read( funit, "(a)", END = 10 ) full_line_text
                 line_text = adjustl( full_line_text )
                 line_text = trim( line_text )
                 !
@@ -90,17 +90,17 @@ contains
                                 !
                                 !# Period(s) Code GG_Lat GG_Lon X(m) Y(m) Z(m) Component Real Imag Error
                                 !
-                                read( args(1), '(f16.6)' )    period
+                                read( args(1), "(f16.6)" )    period
                                 code = trim( args(2) )
-                                read( args(3), '(f16.6)' )    latitude
-                                read( args(4), '(f16.6)' )    longitude
-                                read( args(5), '(f16.6)' )    xyz(1)
-                                read( args(6), '(f16.6)' )    xyz(2)
-                                read( args(7), '(f16.6)' )    xyz(3)
+                                read( args(3), "(f16.6)" )    latitude
+                                read( args(4), "(f16.6)" )    longitude
+                                read( args(5), "(f16.6)" )    xyz(1)
+                                read( args(6), "(f16.6)" )    xyz(2)
+                                read( args(7), "(f16.6)" )    xyz(3)
                                 component = trim( args(8) )
-                                read( args(9), '(f16.6)' )    real
-                                read( args(10), '(f16.6)' )  imaginary
-                                read( args(11), '(f16.6)' )  error
+                                read( args(9), "(f16.6)" )    real
+                                read( args(10), "(f16.6)" )  imaginary
+                                read( args(11), "(f16.6)" )  error
                                 !
                                 call self%loadReceiversAndTransmitters( DataEntryMT_t( iDe, actual_type, period, code, &
                                 latitude, longitude, xyz, component, real, imaginary, error ) )
@@ -112,23 +112,23 @@ contains
                                 !
                                 !# Period(s) Code GG_Lat GG_Lon X(m) Y(m) Z(m) Code_REF GG_Lat_REF GG_Lon_REF X(m)_REF Y(m)_REF Z(m)_REF Component Real Imag Error
                                 !
-                                read( args(1), '(f16.6)' )    period
+                                read( args(1), "(f16.6)" )    period
                                 code = trim( args(2) )
-                                read( args(3), '(f16.6)' )    latitude
-                                read( args(4), '(f16.6)' )    longitude
-                                read( args(5), '(f16.6)' )    xyz(1)
-                                read( args(6), '(f16.6)' )    xyz(2)
-                                read( args(7), '(f16.6)' )    xyz(3)
+                                read( args(3), "(f16.6)" )    latitude
+                                read( args(4), "(f16.6)" )    longitude
+                                read( args(5), "(f16.6)" )    xyz(1)
+                                read( args(6), "(f16.6)" )    xyz(2)
+                                read( args(7), "(f16.6)" )    xyz(3)
                                 code_ref = trim( args(8) )
-                                read( args(9), '(f16.6)' )    latitude_ref
-                                read( args(10), '(f16.6)' )    longitude_ref
-                                read( args(11), '(f16.6)' )    xyz_ref(1)
-                                read( args(12), '(f16.6)' )    xyz_ref(2)
-                                read( args(13), '(f16.6)' )    xyz_ref(3)
+                                read( args(9), "(f16.6)" )    latitude_ref
+                                read( args(10), "(f16.6)" )    longitude_ref
+                                read( args(11), "(f16.6)" )    xyz_ref(1)
+                                read( args(12), "(f16.6)" )    xyz_ref(2)
+                                read( args(13), "(f16.6)" )    xyz_ref(3)
                                 component = trim( args(14) )
-                                read( args(15), '(f16.6)' )    real
-                                read( args(16), '(f16.6)' )    imaginary
-                                read( args(17), '(f16.6)' )    error
+                                read( args(15), "(f16.6)" )    real
+                                read( args(16), "(f16.6)" )    imaginary
+                                read( args(17), "(f16.6)" )    error
                                 !
                                 call self%loadReceiversAndTransmitters( DataEntryMT_REF_t( iDe, actual_type,    &
                                 period, code, latitude, longitude, xyz, code_ref,    &
@@ -142,21 +142,21 @@ contains
                                 !# Dipole Period(s) Moment(Am) Azi Dip Tx_X(m) Tx_Y(x) Tx_Z(m) Code X(m) Y(x) Z(m) Component Real Imag, Error
                                 !
                                 dipole = args(1)
-                                read( args(2), '(f16.6)' )  period
-                                read( args(3), '(f16.6)' )  moment
-                                read( args(4), '(f16.6)' )  azimuth
-                                read( args(5), '(f16.6)' )  dip
-                                read( args(6), '(f16.6)' )  tx_xyz(1)
-                                read( args(7), '(f16.6)' )  tx_xyz(2)
-                                read( args(8), '(f16.6)' )  tx_xyz(3)
+                                read( args(2), "(f16.6)" )  period
+                                read( args(3), "(f16.6)" )  moment
+                                read( args(4), "(f16.6)" )  azimuth
+                                read( args(5), "(f16.6)" )  dip
+                                read( args(6), "(f16.6)" )  tx_xyz(1)
+                                read( args(7), "(f16.6)" )  tx_xyz(2)
+                                read( args(8), "(f16.6)" )  tx_xyz(3)
                                 code = trim( args(9) )
-                                read( args(10), '(f16.6)' )    xyz(1)
-                                read( args(11), '(f16.6)' )    xyz(2)
-                                read( args(12), '(f16.6)' )    xyz(3)
+                                read( args(10), "(f16.6)" )    xyz(1)
+                                read( args(11), "(f16.6)" )    xyz(2)
+                                read( args(12), "(f16.6)" )    xyz(3)
                                 component = trim( args(13) )
-                                read( args(14), '(f16.6)' )    real
-                                read( args(15), '(f16.6)' )    imaginary
-                                read( args(16), '(f16.6)' )    error
+                                read( args(14), "(f16.6)" )    real
+                                read( args(15), "(f16.6)" )    imaginary
+                                read( args(16), "(f16.6)" )    error
                                 !
                                 call self%loadReceiversAndTransmitters( DataEntryCSEM_t( iDe, actual_type,    &
                                 dipole, period, moment, azimuth, dip, tx_xyz,    &
@@ -207,8 +207,8 @@ contains
                          case( 7 )
                          ! nTx, nRx
                          case( 8 )
-                             read( args(2), '(I8)' ) self%nTx
-                             read( args(3), '(I8)' ) nRx
+                             read( args(2), "(I8)" ) self%nTx
+                             read( args(3), "(I8)" ) nRx
                              !
                              self%nRx = self%nRx + nRx
                              !
@@ -226,8 +226,8 @@ contains
 10         close( unit = funit )
             !
             !
-            if( mt_counter > 0 )    write(*,*) mt_counter, ' MT Entries'
-            if( csem_counter > 0 )    write(*,*) csem_counter, ' CSEM Entries'
+            if( mt_counter > 0 )    write(*,*) mt_counter, " MT Entries"
+            if( csem_counter > 0 )    write(*,*) csem_counter, " CSEM Entries"
             !
         end if
         !
@@ -250,8 +250,8 @@ contains
         !
         integer, intent( in ) :: funit
         !
-        integer                    :: line_counter
-        character(80)            :: line_text
+        integer       :: line_counter
+        character(80) :: line_text
         !
         line_counter = 0
         !
@@ -260,13 +260,13 @@ contains
         do
             read( funit, "(a)", END = 10 ) line_text
             line_text = adjustl( line_text )
-            if( index( line_text, "#" ).eq.0 ) then
+            if( index( line_text, "#" ) .eq. 0 ) then
                 !
                 line_counter = line_counter + 1
             end if
         end do
         !
-10     return
+10      return
         !
     end function getLineNumber
     !

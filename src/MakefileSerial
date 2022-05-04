@@ -46,14 +46,14 @@
 include Makefile.local
 OBJDIR = ../../objs/MT3D_OO
 F90 = gfortran 
-FFLAGS = -g -ffree-line-length-none
+FFLAGS = -O3 -ffree-line-length-none
 MPIFLAGS =  
 MODULE = -J $(OBJDIR)
 LIBS_PATH = -L/usr/lib64
 LIBS = -llapack -lblas
 
 # -------------------End-macro-Defs---------------------------
-OBJ = $(OBJDIR)/Constants.o $(OBJDIR)/FileUnits.o $(OBJDIR)/String.o $(OBJDIR)/Grid1D.o $(OBJDIR)/Grid2D.o $(OBJDIR)/Grid.o $(OBJDIR)/rScalar.o $(OBJDIR)/rVector.o $(OBJDIR)/cVector.o $(OBJDIR)/cScalar.o $(OBJDIR)/MetricElements.o $(OBJDIR)/ModelParameter1D.o $(OBJDIR)/Esoln2DTM.o $(OBJDIR)/ModelParameter2D.o $(OBJDIR)/ModelParameter.o $(OBJDIR)/ModelOperator.o $(OBJDIR)/Source.o $(OBJDIR)/PreConditioner.o $(OBJDIR)/Solver.o $(OBJDIR)/ForwardSolver.o $(OBJDIR)/ModEMControlFile.o $(OBJDIR)/Grid3D_SG.o $(OBJDIR)/ModelReader.o $(OBJDIR)/rScalar3D_SG.o $(OBJDIR)/MatUtils.o $(OBJDIR)/rVector3D_SG.o $(OBJDIR)/ModelParameterCell_SG.o $(OBJDIR)/ModelReader_Weerachai.o $(OBJDIR)/cScalar3D_SG.o $(OBJDIR)/cVector3D_SG.o $(OBJDIR)/MetricElements_CSG.o $(OBJDIR)/ModelOperator_MF.o $(OBJDIR)/ModelOperator_File.o $(OBJDIR)/DataEntry.o $(OBJDIR)/DataEntryArray.o $(OBJDIR)/DataEntryMT.o $(OBJDIR)/DataEntryMT_REF.o $(OBJDIR)/DataEntryCSEM.o $(OBJDIR)/Transmitter.o $(OBJDIR)/cSparseVector3D_SG.o $(OBJDIR)/DataHandle.o $(OBJDIR)/DataHandleMT.o $(OBJDIR)/DataHandleCSEM.o $(OBJDIR)/DataHandleFArray.o $(OBJDIR)/Receiver.o $(OBJDIR)/ReceiverFullImpedance.o $(OBJDIR)/ReceiverFullVerticalMagnetic.o $(OBJDIR)/ReceiverOffDiagonalImpedance.o $(OBJDIR)/TransmitterCSEM.o $(OBJDIR)/ReceiverSingleField.o $(OBJDIR)/ReceiverFArray.o $(OBJDIR)/TransmitterMT.o $(OBJDIR)/TransmitterFArray.o $(OBJDIR)/DataFile.o $(OBJDIR)/DataFileStandard.o $(OBJDIR)/ForwardSolverFromFile.o $(OBJDIR)/PreConditioner_MF_DC.o $(OBJDIR)/Solver_PCG.o $(OBJDIR)/DivergenceCorrection.o $(OBJDIR)/PreConditioner_MF_CC.o $(OBJDIR)/Solver_QMR.o $(OBJDIR)/ForwardSolverIT_DC.o $(OBJDIR)/Forward1D.o $(OBJDIR)/SourceMT_1D.o $(OBJDIR)/Forward2D.o $(OBJDIR)/SourceMT_2D.o $(OBJDIR)/FilterModules.o $(OBJDIR)/Dipole1D.o $(OBJDIR)/SourceCSEM_Dipole1D.o $(OBJDIR)/test_FWD.o 
+OBJ = $(OBJDIR)/Constants.o $(OBJDIR)/FileUnits.o $(OBJDIR)/String.o $(OBJDIR)/Grid1D.o $(OBJDIR)/Grid2D.o $(OBJDIR)/Grid.o $(OBJDIR)/rScalar.o $(OBJDIR)/rVector.o $(OBJDIR)/cVector.o $(OBJDIR)/cScalar.o $(OBJDIR)/MetricElements.o $(OBJDIR)/ModelParameter1D.o $(OBJDIR)/Esoln2DTM.o $(OBJDIR)/ModelParameter2D.o $(OBJDIR)/ModelParameter.o $(OBJDIR)/ModelOperator.o $(OBJDIR)/Source.o $(OBJDIR)/PreConditioner.o $(OBJDIR)/Solver.o $(OBJDIR)/ForwardSolver.o $(OBJDIR)/ModEMControlFile.o $(OBJDIR)/Grid3D_SG.o $(OBJDIR)/ModelReader.o $(OBJDIR)/rScalar3D_SG.o $(OBJDIR)/MatUtils.o $(OBJDIR)/rVector3D_SG.o $(OBJDIR)/ModelParameterCell_SG.o $(OBJDIR)/ModelReader_Weerachai.o $(OBJDIR)/cScalar3D_SG.o $(OBJDIR)/cVector3D_SG.o $(OBJDIR)/MetricElements_CSG.o $(OBJDIR)/ModelOperator_MF.o $(OBJDIR)/ModelOperator_File.o $(OBJDIR)/DataEntry.o $(OBJDIR)/DataEntryArray.o $(OBJDIR)/DataEntryMT.o $(OBJDIR)/DataEntryMT_REF.o $(OBJDIR)/DataEntryCSEM.o $(OBJDIR)/Transmitter.o $(OBJDIR)/cSparseVector3D_SG.o $(OBJDIR)/DataHandle.o $(OBJDIR)/DataHandleMT.o $(OBJDIR)/DataHandleCSEM.o $(OBJDIR)/DataHandleFArray.o $(OBJDIR)/Receiver.o $(OBJDIR)/ReceiverFullImpedance.o $(OBJDIR)/ReceiverFullVerticalMagnetic.o $(OBJDIR)/ReceiverOffDiagonalImpedance.o $(OBJDIR)/TransmitterCSEM.o $(OBJDIR)/ReceiverSingleField.o $(OBJDIR)/ReceiverFArray.o $(OBJDIR)/TransmitterMT.o $(OBJDIR)/TransmitterFArray.o $(OBJDIR)/DataFile.o $(OBJDIR)/DataFileStandard.o $(OBJDIR)/PreConditioner_MF_DC.o $(OBJDIR)/Solver_PCG.o $(OBJDIR)/DivergenceCorrection.o $(OBJDIR)/PreConditioner_MF_CC.o $(OBJDIR)/Solver_QMR.o $(OBJDIR)/ForwardSolverIT_DC.o $(OBJDIR)/Forward1D.o $(OBJDIR)/SourceMT_1D.o $(OBJDIR)/Forward2D.o $(OBJDIR)/SourceMT_2D.o $(OBJDIR)/FilterModules.o $(OBJDIR)/Dipole1D.o $(OBJDIR)/SourceCSEM_Dipole1D.o $(OBJDIR)/test_FWD.o 
 
 
 all: test_FWD 
@@ -232,9 +232,6 @@ $(OBJDIR)/DataFile.o:Classes/DataIO/DataFile.f90 $(OBJDIR)/Constants.o $(OBJDIR)
 $(OBJDIR)/DataFileStandard.o:Classes/DataIO/DataFileStandard.f90 $(OBJDIR)/DataFile.o $(OBJDIR)/DataEntryMT.o $(OBJDIR)/DataEntryMT_REF.o $(OBJDIR)/DataEntryCSEM.o 
 	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) Classes/DataIO/DataFileStandard.f90 -o $(OBJDIR)/DataFileStandard.o
 
-$(OBJDIR)/ForwardSolverFromFile.o:Classes/ForwardSolver/ForwardSolverFromFile.f90 $(OBJDIR)/ForwardSolver.o $(OBJDIR)/Grid3D_SG.o $(OBJDIR)/cVector3D_SG.o $(OBJDIR)/ModelOperator.o 
-	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) Classes/ForwardSolver/ForwardSolverFromFile.f90 -o $(OBJDIR)/ForwardSolverFromFile.o
-
 $(OBJDIR)/PreConditioner_MF_DC.o:Classes/ModelOperator/PreConditioner_MF_DC.f90 $(OBJDIR)/Constants.o $(OBJDIR)/Grid.o $(OBJDIR)/cScalar.o $(OBJDIR)/cScalar3D_SG.o $(OBJDIR)/ModelOperator_MF.o $(OBJDIR)/PreConditioner.o 
 	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) Classes/ModelOperator/PreConditioner_MF_DC.f90 -o $(OBJDIR)/PreConditioner_MF_DC.o
 
@@ -274,7 +271,7 @@ $(OBJDIR)/Dipole1D.o:Classes/CSEM/Dipole1D.f90 $(OBJDIR)/FilterModules.o $(OBJDI
 $(OBJDIR)/SourceCSEM_Dipole1D.o:Classes/Source/SourceCSEM_Dipole1D.f90 $(OBJDIR)/Dipole1D.o $(OBJDIR)/Constants.o $(OBJDIR)/cVector3D_SG.o $(OBJDIR)/rVector3D_SG.o $(OBJDIR)/Grid3D_SG.o $(OBJDIR)/Source.o $(OBJDIR)/ModelOperator.o $(OBJDIR)/ModelParameterCell_SG.o 
 	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) Classes/Source/SourceCSEM_Dipole1D.f90 -o $(OBJDIR)/SourceCSEM_Dipole1D.o
 
-$(OBJDIR)/test_FWD.o:test_FWD.f90 $(OBJDIR)/Constants.o $(OBJDIR)/FileUnits.o $(OBJDIR)/ModEMControlFile.o $(OBJDIR)/Grid3D_SG.o $(OBJDIR)/ModelReader.o $(OBJDIR)/ModelReader_Weerachai.o $(OBJDIR)/ModelOperator_MF.o $(OBJDIR)/ModelOperator_File.o $(OBJDIR)/ModelParameterCell_SG.o $(OBJDIR)/DataFileStandard.o $(OBJDIR)/ForwardSolverFromFile.o $(OBJDIR)/ForwardSolverIT_DC.o $(OBJDIR)/SourceMT_1D.o $(OBJDIR)/SourceMT_2D.o $(OBJDIR)/SourceCSEM_Dipole1D.o $(OBJDIR)/DataHandleFArray.o $(OBJDIR)/DataHandleMT.o $(OBJDIR)/DataHandleCSEM.o 
+$(OBJDIR)/test_FWD.o:test_FWD.f90 $(OBJDIR)/Constants.o $(OBJDIR)/FileUnits.o $(OBJDIR)/ModEMControlFile.o $(OBJDIR)/Grid3D_SG.o $(OBJDIR)/ModelReader.o $(OBJDIR)/ModelReader_Weerachai.o $(OBJDIR)/ModelOperator_MF.o $(OBJDIR)/ModelOperator_File.o $(OBJDIR)/ModelParameterCell_SG.o $(OBJDIR)/DataFileStandard.o $(OBJDIR)/ForwardSolverIT_DC.o $(OBJDIR)/SourceMT_1D.o $(OBJDIR)/SourceMT_2D.o $(OBJDIR)/SourceCSEM_Dipole1D.o $(OBJDIR)/DataHandleFArray.o $(OBJDIR)/DataHandleMT.o $(OBJDIR)/DataHandleCSEM.o 
 	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) test_FWD.f90 -o $(OBJDIR)/test_FWD.o
 
 # Type " make clean " to get rid of all object and module files 

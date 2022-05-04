@@ -15,7 +15,6 @@ program ModEM
     !
     use DataFileStandard
     !
-    use ForwardSolverFromFile
     use ForwardSolverIT_DC
     !
     use SourceMT_1D
@@ -64,8 +63,6 @@ contains
         ! Use save ????
         class( ForwardSolver_t ), allocatable, target, save :: forward_solver
         !
-        class( Source_t ), allocatable, target        :: fwd_source 
-        !
         ! Temporary alias pointers
         class( Transmitter_t ), pointer :: Tx
         class( Receiver_t ), pointer    :: Rx
@@ -95,9 +92,6 @@ contains
         !if( allocated( forward_solver ) ) deallocate( forward_solver )
         select case ( forward_solver_type )
             !
-            case( FWD_FILE )
-                forward_solver = ForwardSolverFromFile_t( model_operator )
-                !
             case( FWD_IT_DC )
                 forward_solver = ForwardSolverIT_DC_t( model_operator, QMR )
                 !
@@ -105,8 +99,6 @@ contains
                 forward_solver = ForwardSolverIT_DC_t( model_operator, QMR )
             !
         end select
-        !
-        call forward_solver%setCond( model_parameter )
         !
         ! Forward Modelling
         !
@@ -120,23 +112,23 @@ contains
             ! Temporary Transmitter alias
             Tx => getTransmitter( iTx )
             !
+            ! Set Transmitter´s ForwardSolver
+            Tx%forward_solver => forward_solver
             !
+            ! Set Transmitter´s ForwardSolver Omega and Cond
+            call Tx%forward_solver%setFrequency( model_parameter, Tx%period )
+            !
+            ! Create Transmitter´s Source
             select type( Tx )
                 class is( TransmitterMT_t )
                     !
-                    fwd_source = SourceMT_1D_t( model_operator, model_parameter, Tx%period )
+                    Tx%source = SourceMT_1D_t( model_operator, model_parameter, Tx%period )
                     !
                 class is( TransmitterCSEM_t )
                     !
-                    fwd_source = SourceCSEM_Dipole1D_t( model_operator, model_parameter, Tx%period, Tx%location, Tx%dip, Tx%azimuth, Tx%moment )
+                    Tx%source = SourceCSEM_Dipole1D_t( model_operator, model_parameter, Tx%period, Tx%location, Tx%dip, Tx%azimuth, Tx%moment )
                     !
             end select
-            !
-            Tx%source => fwd_source
-            Tx%forward_solver => forward_solver
-            !
-            ! Set ForwardSolver omega
-            call Tx%forward_solver%setFrequency( Tx%period )
             !
             ! Solve Tx Forward Modelling
             call Tx%solveFWD()

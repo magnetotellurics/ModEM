@@ -67,7 +67,6 @@ contains
         !
         self%max_iter = max_iter
         !
-        if( allocated( self%relErr ) ) deallocate( self%relErr )
         allocate( self%relErr( max_iter ) )
         !
         self%tolerance = tolerance

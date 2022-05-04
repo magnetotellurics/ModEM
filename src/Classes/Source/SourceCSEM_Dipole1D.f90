@@ -62,18 +62,18 @@ contains
         self%model_operator  => model_operator
         self%model_parameter => model_parameter
         !
-        self%period = period
+        self%period   = period
         self%location = location
-        self%dip = dip
-        self%azimuth = azimuth
-        self%moment = moment
+        self%dip      = dip
+        self%azimuth  = azimuth
+        self%moment   = moment
         !
         if( present( E ) ) then
-           !
-           allocate( self%E, source = E )
-           !
-           call self%setRHS()
-           !
+            !
+            allocate( self%E, source = E )
+            !
+            call self%setRHS()
+            !
         endif
         !
     end function SourceCSEM_Dipole1D_ctor
@@ -95,10 +95,7 @@ contains
         implicit none
         !
         class( SourceCSEM_Dipole1D_t ), intent( inout ) :: self
-        integer, intent( in ) :: polarization
-        !
-        complex( kind=prec ) :: i_omega_mu 
-        real( kind=prec ) :: omega 
+        integer, intent( in )                           :: polarization
         !
         ! Get the Transmitter setting:
         xTx1D = self%location(1)
@@ -130,7 +127,7 @@ contains
         call comp_dipole1D ! Calculate E-Field by Key"s code
         !
         call self%create_Ep_from_Dipole1D( self%model_parameter%grid )
-            !
+        !
         call self%setRHS
         !
     end subroutine setE_CSEM_Dipole1D
@@ -140,6 +137,11 @@ contains
         implicit none
         !
         class( SourceCSEM_Dipole1D_t ), intent( inout ) :: self
+        !
+        complex( kind=prec ) :: i_omega_mu
+        !
+        !
+        i_omega_mu = cmplx( 0., real( 1.0d0 * ISIGN * MU_0 * ( 2.0 * PI / self%period ) ), kind=prec )
         !
         if( allocated( self%rhs ) ) deallocate( self%rhs )
         !
@@ -151,11 +153,9 @@ contains
                 !
                 self%rhs = self%E * self%CondAnomaly_h
                 !
-                self%rhs = self%rhs * cmplx( 0., real( -1.0d0 * ISIGN * MU_0 * ( 2.0 * PI / self%period ) ), kind=prec)
+                call self%model_operator%MultAib( self%E%Boundary(), self%rhs )
                 !
-                !call self%model_operator%MultAib( self%E%Boundary(), self%rhs )
-                !
-                !self%rhs = self%rhs * C_MinusOne
+                self%rhs = self%rhs * i_omega_mu
                 !
         end select
         !
@@ -167,26 +167,27 @@ contains
         class( Grid_t ), intent( in ) :: grid 
         !
         integer counter, ix, iy, iz
-
         !
-        n1D = (grid%Nx)*(grid%Ny+1)*(grid%Nz+1)
-        n1D = n1D + (grid%Nx+1)*(grid%Ny)*(grid%Nz+1)
-        n1D = n1D + (grid%Nx+1)*(grid%Ny+1)*(grid%Nz)
         !
-        if(allocated (x1D)) then  
-            deallocate(x1D, y1D, z1D)
-            deallocate(ex1D,ey1D,jz1D)
-            deallocate(bx1D,by1D,bz1D)
+        n1D = ( grid%Nx ) * ( grid%Ny+1 ) * ( grid%Nz+1 )
+        n1D = n1D + ( grid%Nx+1 ) * ( grid%Ny ) * ( grid%Nz+1 )
+        n1D = n1D + ( grid%Nx+1 ) * ( grid%Ny+1 ) * ( grid%Nz )
+        !
+        if( allocated( x1D ) ) then  
+            deallocate( x1D, y1D, z1D )
+            deallocate( ex1D, ey1D, jz1D )
+            deallocate( bx1D, by1D, bz1D )
         end if
         !
-        allocate (x1D(n1D), y1D(n1D), z1D(n1D))
-        allocate (ex1D(n1D),ey1D(n1D),jz1D(n1D))
-        allocate (bx1D(n1D),by1D(n1D),bz1D(n1D))
+        allocate ( x1D(n1D), y1D(n1D), z1D(n1D) )
+        allocate ( ex1D(n1D), ey1D(n1D), jz1D(n1D) )
+        allocate ( bx1D(n1D), by1D(n1D), bz1D(n1D) )
         !
         !====================================================================
         ! Create position vector that the primary field has to be calculated
         !====================================================================
         counter = 1
+		!
         ! E-field corresponing to these nodes is Ex
         do iz = 1,grid%Nz+1 !Edge Z
             do iy = 1,grid%Ny+1 !Edge Y
@@ -222,73 +223,72 @@ contains
                 end do
             end do
         end do
+        !
     end subroutine initilize_1d_vectors 
 
     subroutine create_Ep_from_Dipole1D( self, grid )
         implicit none
         !
         class( SourceCSEM_Dipole1D_t ), intent( inout ) :: self
+        class( Grid_t ), intent(in)                     :: grid
         !
-        class(Grid_t), intent(in)        :: grid  
-        !
-        integer ix,iy,iz,counter
+        integer ix, iy, iz, counter
         !
         select type( grid  )
-          class is( Grid3D_SG_t )
-              !
-              if( allocated( self%E ) ) deallocate( self%E )
-              allocate( self%E, source = cVector3D_SG_t( grid, EDGE ) )
-              !
-              select type( E => self%E )
-                class is( cVector3D_SG_t )
+            class is( Grid3D_SG_t )
                 !
+                if( allocated( self%E ) ) deallocate( self%E )
+                allocate( self%E, source = cVector3D_SG_t( grid, EDGE ) )
                 !
-                counter = 1
-                ! E-field corresponing to these nodes is Ex
-                do iz = 1,grid%Nz+1 !Edge Z
-                  do iy = 1,grid%Ny+1 !Edge Y
-                        do ix = 1,grid%Nx !Center X
-                          E%x(ix,iy,iz) = ex1D(counter)
-                          counter = counter + 1
+                select type( E => self%E )
+                    !
+                    class is( cVector3D_SG_t )
+                        !
+                        counter = 1
+                        !
+                        ! E-field corresponing to these nodes is Ex
+                        do iz = 1,grid%Nz+1 !Edge Z
+                            do iy = 1,grid%Ny+1 !Edge Y
+                                do ix = 1,grid%Nx !Center X
+                                    E%x(ix,iy,iz) = ex1D(counter)
+                                    counter = counter + 1
+                                end do
+                            end do
                         end do
-                  end do
-                end do
-                !
-                ! E-field corresponing to these nodes is Ey
-                do iz = 1,grid%Nz+1 !Edge Z
-                  do iy = 1,grid%Ny !Center y
-                        do ix = 1,grid%Nx+1 !Edge x
-                          E%y(ix,iy,iz) = ey1D(counter)
-                          counter = counter + 1
+                        !
+                        ! E-field corresponing to these nodes is Ey
+                        do iz = 1,grid%Nz+1 !Edge Z
+                            do iy = 1,grid%Ny !Center y
+                                do ix = 1,grid%Nx+1 !Edge x
+                                    E%y(ix,iy,iz) = ey1D(counter)
+                                    counter = counter + 1
+                                end do
+                            end do
                         end do
-                  end do
-                end do
-                !
-                ! E-field corresponing to these nodes is Ez
-                do iz = 1,grid%Nz !Center Z
-                  do iy = 1,grid%Ny+1 !Edge y
-                        do ix = 1,grid%Nx+1 !Edge x
-                          E%z(ix,iy,iz) = jz1D(counter)
-                          counter = counter + 1
+                        !
+                        ! E-field corresponing to these nodes is Ez
+                        do iz = 1,grid%Nz !Center Z
+                            do iy = 1,grid%Ny+1 !Edge y
+                                do ix = 1,grid%Nx+1 !Edge x
+                                    E%z(ix,iy,iz) = jz1D(counter)
+                                    counter = counter + 1
+                                end do
+                            end do
                         end do
-                  end do
-                end do
+                        !
+                        deallocate( x1D, y1D, z1D )
+                        deallocate( ex1D, ey1D, jz1D )
+                        deallocate( bx1D, by1D, bz1D )
+                        !
+                end select
                 !
-                deallocate( x1D, y1D, z1D)
-                deallocate( ex1D, ey1D, jz1D)
-                deallocate( bx1D, by1D, bz1D)
-                
-        !
-          end select
-          !
-        end select
-        !
+            end select
+            !
     end subroutine create_Ep_from_Dipole1D
     !
     subroutine set1DModel( self, xTx1D, yTx1D )
         !
         class( SourceCSEM_Dipole1D_t ), intent( inout ) :: self
-        !
         real( kind=prec ),intent(in)                    :: xTx1D, yTx1D 
         !
         !
@@ -332,10 +332,12 @@ contains
                 sig1D(1:nzAir) = SIGMA_AIR !sigma_cell%v(1,1,1:nzAir)
                 !
                 if( trim(get_1D_from) =="Geometric_mean" ) then
-                    do k = nzAir+1,nlay1D
+                    !
+					do k = nzAir+1,nlay1D
                         wt = R_ZERO
                         temp_sigma_value=R_ZERO
-                        do i = 1,sigma_cell%grid%Nx
+                        !
+						do i = 1,sigma_cell%grid%Nx
                             do j = 1,sigma_cell%grid%Ny
                                 wt = wt + sigma_cell%grid%dx(i)*sigma_cell%grid%dy(j)
                                 !
@@ -347,6 +349,7 @@ contains
                         sig1D(k) = exp(temp_sigma_value/wt)
                         !
                    end do
+				   !
                 else if( trim( get_1D_from ) =="At_Tx_Position" ) then
                     !
                     do k = nzAir+1,nlay1D
@@ -355,8 +358,10 @@ contains
                     !
                 else if( trim( get_1d_from ) == "Geometric_mean_around_Tx" ) then
                     do k = nzAir+1,nlay1D
-                        wt = R_ZERO
-                        do i = ixTx-5,ixTx+5
+                        !
+						wt = R_ZERO
+                        !
+						do i = ixTx-5,ixTx+5
                             do j = iyTx-5,iyTx+5
                                 !
                                 wt = wt + sigma_cell%grid%dx(i)*sigma_cell%grid%dy(j)
@@ -395,6 +400,7 @@ contains
                         sig1D(k) = exp(temp_sigma_value/counter)
                         !
                     end do
+					!
                 else if( trim( get_1d_from )== "Fixed_Value" ) then
                     !
                     temp_sigma_value = sigma_cell%v( ixTx, iyTx, k-nzAir ) !the value exactly below the Tx
@@ -410,8 +416,8 @@ contains
                 model = sigma_cell
                 !
                 ! Put the background (Primary) "condNomaly" conductivities in ModEM model format
-                model%v=R_ZERO
-                do k = nzAir+1,nlay1D
+                model%v = R_ZERO
+                do k = nzAir+1, nlay1D
                     asigma = sig1D(k)
                     !
                     if( trim( model_parameter%ParamType ) == LOGE ) asigma = log( asigma )
@@ -449,17 +455,16 @@ contains
         !
         implicit none
         !
-        real( kind=prec ), intent( in )             :: x
+        real( kind=prec ), intent( in )               :: x
         real( kind=prec ), dimension(:), intent( in ) :: xNode
         !
         integer :: ix, i
         !
-        ix = size(xNode)
-        do i = 1,size(xNode)
-          if(clean(xNode(i)) .gt. clean(x)) then
-              ix = i-1
-              exit
-          endif
+        do i = 1, size( xNode )
+            if( clean( xNode(i) ) .GT. clean(x) ) then
+                ix = i-1
+                exit
+            endif
         enddo
         !
     end function minNode
@@ -481,14 +486,13 @@ contains
         !
         implicit none
         !
-        real( kind=prec ), intent( in )             :: x
+        real( kind=prec ), intent( in )               :: x
         real( kind=prec ), dimension(:), intent( in ) :: xNode
         !
         integer :: ix, i
         !
-        ix = size(xNode)
-        do i = 1,size(xNode)
-           if(clean(xNode(i)) .lt. clean(x)) then
+        do i = 1, size(xNode)
+           if( clean( xNode(i)) .LT. clean(x) ) then
                 ix = i-1
                 exit
            endif
@@ -507,7 +511,7 @@ contains
         implicit none
         !
         real( kind=prec ), intent( in ) :: x
-        real( kind=prec )             :: clean
+        real( kind=prec )               :: clean
         !
         clean = dnint(x*LARGE_REAL)/LARGE_REAL
         !
