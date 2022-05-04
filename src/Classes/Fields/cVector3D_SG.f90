@@ -951,9 +951,9 @@ contains
         if (lhs%isCompatible(rhs)) then
             select type(rhs)
                 class is( cVector3D_SG_t ) 
-                    rhs%x = rhs%x + c * lhs%x
-                    rhs%y = rhs%y + c * lhs%y
-                    rhs%z = rhs%z + c * lhs%z
+                    rhs%x = rhs%x + c*lhs%x
+                    rhs%y = rhs%y + c*lhs%y
+                    rhs%z = rhs%z + c*lhs%z
             end select
         else
             write( *, * ) "ERROR:cVector3D_SG::scMultAdd"
@@ -1269,13 +1269,8 @@ contains
         !
         status = .FALSE.
         !
-		!write( *, * ) "SELF1: ", self%nx, self%ny, self%nz, self%gridType
-		!
         select type(rhs)
             class is( cVector3D_SG_t )
-				!
-				!write( *, * ) "RHS1 : ", rhs%nx, rhs%ny, rhs%nz, rhs%gridType
-				!
                 if( self%nx == rhs%nx .AND.self%ny == rhs%ny .AND. self%nz == rhs%nz .AND.   &
                     self%gridType == rhs%gridType ) then
                     status = .TRUE.
@@ -1293,13 +1288,8 @@ contains
         !
         status = .FALSE.
         !
-		!write( *, * ) "SELF2: ", self%nx, self%ny, self%nz, self%gridType
-		!
         select type(rhs)
             class is(rVector3D_SG_t)
-				!
-				!write( *, * ) "RHS2 : ", rhs%nx, rhs%ny, rhs%nz, rhs%gridType
-				!
                 if( self%nx == rhs%nx .AND.self%ny == rhs%ny .AND. self%nz == rhs%nz .AND.   &
                     self%gridType == rhs%gridType ) then
                     status = .TRUE.

@@ -116,7 +116,7 @@ contains
             Tx%forward_solver => forward_solver
             !
             ! Set Transmitter´s ForwardSolver Omega and Cond
-            call Tx%forward_solver%setFrequency( model_parameter, Tx%period )
+            call Tx%forward_solver%setFrequency( Tx%period )
             !
             ! Create Transmitter´s Source
             select type( Tx )
@@ -159,9 +159,6 @@ contains
             deallocate( Tx )
             !
         enddo
-        !
-        !deallocate( fwd_source )
-        !deallocate( forward_solver )
         !
         deallocate( model_operator )
         deallocate( model_parameter )

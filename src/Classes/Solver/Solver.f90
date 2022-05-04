@@ -4,19 +4,9 @@ module Solver
     use cVector
     use PreConditioner
     !
-    !
-    integer, parameter :: iter_per_div_corDefQMR = 40
-    !
-    integer, parameter :: iter_per_div_corDefBCG = 80
-    !
-    integer, parameter :: max_div_corDef = 20
-    !
-    integer, parameter :: max_iterDivCorDef = 100
-    !
-    real( kind=prec ), parameter :: tolDivCorDef = 1E-5
-    !
-    real( kind=prec ), parameter :: tolCurlCurlDef = 1E-7
-    !
+    ! Solver defaults
+    integer :: max_iter
+    real( kind=prec ) :: tolerance
     !
     character(:), allocatable :: solver_type
     character ( len=3 ), parameter :: QMR  = "QMR"
@@ -67,6 +57,7 @@ contains
         !
         self%max_iter = max_iter
         !
+        if( allocated( self%relErr ) ) deallocate( self%relErr )
         allocate( self%relErr( max_iter ) )
         !
         self%tolerance = tolerance
@@ -92,10 +83,8 @@ contains
         !
         class( Solver_t ), intent( inout ) :: self
         !
-        self%max_iter  = 0
-        self%n_iter    = 0
-        self%omega     = R_ZERO
-        self%tolerance = R_ZERO
+        self%n_iter = 0
+        self%omega = 0.0
         !
         self%failed = .FALSE.
         self%converged = .FALSE.

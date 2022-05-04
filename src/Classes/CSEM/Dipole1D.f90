@@ -166,15 +166,15 @@ module dipole1d
 !
 ! Output domain (either spatial (x,y,z) or (kx,y,z) wavenumber domain for 2.5D modeling primary fields)
 !
-    character(32), public    :: outputdomain1D     ! Use "spatial" or "kx"
+    character(32), public    :: outputdomain1D     ! Use 'spatial' or 'kx'
     
 
 !
-! If using outputdomain1D="kx", then set kx1d, kxmode1D and CTmethod1D:
+! If using outputdomain1D='kx', then set kx1d, kxmode1D and CTmethod1D:
 !
 ! kxmode1D is used to define the principle axis for the Tx
 ! 
-    real(8), public          :: kx1D     ! If outputdomain1D="kx", then the fields are 
+    real(8), public          :: kx1D     ! If outputdomain1D='kx', then the fields are 
                                          ! computed at at this wavenumber.  
                               
     integer, public          :: kxmode1D ! 1,2,3 for x,y,z dipoles.  Ignored if spatial computation.
@@ -189,7 +189,7 @@ module dipole1d
     logical, public          :: lUseSpline1D 
 
 !
-! Phase Convention: "lag" (default) or "lead"
+! Phase Convention: 'lag' (default) or 'lead'
 ! Phase Lag  uses the exp(-i w t) convention and phase increases positively with Tx-Rx range. 
 ! Phase Lead uses the exp(+i w t) convention and phase becomes more negative with Tx-Rx range.
 ! 
@@ -221,7 +221,7 @@ module dipole1d
 !---------------------------------------------------------------------
 ! Private data:
 ! 
-! You can"t use anything listed below here in external routines.
+! You can't use anything listed below here in external routines.
 !---------------------------------------------------------------------  
 
 !
@@ -232,7 +232,7 @@ module dipole1d
     real(8), parameter, private    :: mu0 = 4d-7*pi
     real(8), parameter, private    :: eps = 8.8541878176d-12
     
-    integer, private, parameter    :: finite_integ_method = 2 ! 1 = "box", 2 = "gauss".  1 is mostly for testing, use 2 for accuracy
+    integer, private, parameter    :: finite_integ_method = 2 ! 1 = 'box', 2 = 'gauss'.  1 is mostly for testing, use 2 for accuracy
     
 !
 ! Local model parameters:
@@ -319,7 +319,7 @@ module dipole1d
     real(8), dimension(:), allocatable, private :: lam_interp      ! interpolation index points 
     integer, dimension(:), allocatable, private :: iRxLayerInterp  ! Mapping from layer i to interpolation array column, so that
                                                                    ! we only store interp coeffs in layers with receivers...can be
-                                                                   ! a huge savings in memory for models with 1000"s layers
+                                                                   ! a huge savings in memory for models with 1000's layers
 !
 ! Potential coefficients and second derivatives at index points for interpolation
 ! 
@@ -384,13 +384,13 @@ module dipole1d
 !
 ! Specify some defaults for parameters required by Dipole1D:
 !
-    HTmethod1D      = "kk_ht_201"    ! Use 201 point HT digital filters.
-    outputdomain1D  = "spatial"      ! Assume spatial domain comps
+    HTmethod1D      = 'kk_ht_201'    ! Use 201 point HT digital filters.
+    outputdomain1D  = 'spatial'      ! Assume spatial domain comps
     lbcomp          = .false.        ! This is changed to true if magnetics in data file
     sdm1D           = 1.0            ! (Am), dipole moment. Normalize to unit source moment
     lUseSpline1D    = .true.         ! Use spline interpolation for faster 1D computations
     linversion      = .false.        ! Compute derivatives with respect to sigma(layers)
-    phaseConvention = "lag"          ! The usual default is lag, where phase becomes larger positive values with increasing range.
+    phaseConvention = 'lag'          ! The usual default is lag, where phase becomes larger positive values with increasing range.
     lenTx1D         = 0.d0           ! (m) Dipole length 0 = point dipole
     numIntegPts     = 10             ! Number of points to use for Gauss quadrature integration for finite dipole
  
@@ -444,10 +444,10 @@ module dipole1d
 !       on a series of point dipoles spaced finiteStepSize meters apart along 
 !       the dipole length. 
 !         Note that IF the dip is 0, this could be made faster with reciprocity.
-!       But for now let"s just get it working, shall we?  Dip is usually
+!       But for now let's just get it working, shall we?  Dip is usually
 !       non-zero in real data anyway.
 !   
-! KWK Feb 10, 2010  Added Gauss quadrature option to David"s finite dipole integration loop
+! KWK Feb 10, 2010  Added Gauss quadrature option to David's finite dipole integration loop
 !
     if (lenTx1D /= 0.d0) then
            
@@ -463,7 +463,7 @@ module dipole1d
         !
         ! Compute weights and integration points:
         !
-        if (numIntegPts < 1) numIntegPts = 1  ! stupid user, don"t do that!
+        if (numIntegPts < 1) numIntegPts = 1  ! stupid user, don't do that!
         
         allocate(weights(numIntegPts), xint(numIntegPts))
         
@@ -546,7 +546,7 @@ module dipole1d
         !
         !  Pre-compute potential coefficients for later use in spline interpolation:
         !
-        if ( n1d==1 ) then ! Don"t use spline if only a single receiver 
+        if ( n1d==1 ) then ! Don't use spline if only a single receiver 
             lUseSpline1D = .false.
         endif
         if (lUseSpline1D) then     
@@ -564,10 +564,10 @@ module dipole1d
 ! Compute the fields in the spatial or kx domain:
 !
             select case (trim(outputdomain1D))
-            case ("spatial")
+            case ('spatial')
                 call comp_spatial(i)
                     
-            case  ("kx") 
+            case  ('kx') 
                 call comp_kx(i)
              
             end select !case (trim(outputdomain1D))
@@ -577,8 +577,8 @@ module dipole1d
 !
 ! Apply Phase Convention:
 !
-        if (phaseConvention(1:4) == "lead") then 
-            ! Change from Dipole1D"s lag (exp(-iwt)) to lead (exp(+iwt))
+        if (phaseConvention(1:4) == 'lead') then 
+            ! Change from Dipole1D's lag (exp(-iwt)) to lead (exp(+iwt))
             ex1D = conjg(ex1D)
             ey1D = conjg(ey1D)
             jz1D = conjg(jz1D)
@@ -765,9 +765,9 @@ subroutine legendre_compute_dr ( order, xtab, weight )
     real    ( kind = 8 ) weight(order)
     
     if ( order < 1 ) then
-    write ( *, "(a)" ) " "
-    write ( *, "(a)" ) "LEGENDRE_COMPUTE - Fatal error!"
-    write ( *, "(a,i8)" ) "  Illegal value of ORDER = ", order
+    write ( *, '(a)' ) ' '
+    write ( *, '(a)' ) 'LEGENDRE_COMPUTE - Fatal error!'
+    write ( *, '(a,i8)' ) '  Illegal value of ORDER = ', order
     stop
     end if
     
@@ -816,7 +816,7 @@ subroutine legendre_compute_dr ( order, xtab, weight )
     h = - u * ( 1.0D+00 + 0.5D+00 * u * ( v + u * ( v * v - d3pn / &
       ( 3.0D+00 * dpn ) ) ) )
     !
-    !  Refine H using one step of Newton"s method:
+    !  Refine H using one step of Newton's method:
     !
     p = pk + h * ( dpn + 0.5D+00 * h * ( d2pn + h / 3.0D+00 &
       * ( d3pn + 0.25D+00 * h * d4pn ) ) )
@@ -971,8 +971,8 @@ subroutine legendre_compute_dr ( order, xtab, weight )
     elseif (kxmode.eq.3) then 
         call comp_kx_z(kx1D,ex1D(i),ey1D(i),jz1D(i),bx1D(i),by1D(i),bz1D(i),lbcomp)
     else
-        write(*,*) "Error in Dipole1D, kxmode is unknown! kxmode: ",kxmode
-        write(*,*) "Stopping."
+        write(*,*) 'Error in Dipole1D, kxmode is unknown! kxmode: ',kxmode
+        write(*,*) 'Stopping.'
         stop
     endif
 
@@ -1601,10 +1601,10 @@ subroutine legendre_compute_dr ( order, xtab, weight )
 !
     do i = 3, nlay1D ! first layer top depth is never used
         if (zlay1D(i).le.zlay1D(i-1)) then
-           write(*,*) ""        
-           write(*,*) "Dipole1D Error: layer depths not increasing, layers: ",i,i-1
-           write(*,*) "Stopping."
-           write(*,*) ""
+           write(*,*) ''        
+           write(*,*) 'Dipole1D Error: layer depths not increasing, layers: ',i,i-1
+           write(*,*) 'Stopping.'
+           write(*,*) ''
            stop
         endif
     enddo
@@ -1683,7 +1683,7 @@ subroutine legendre_compute_dr ( order, xtab, weight )
 !
 ! Spatial domain solution requested:
 !
-    case ("spatial")
+    case ('spatial')
 !
 ! Initialize HT filter coefficients:
 !
@@ -1693,31 +1693,31 @@ subroutine legendre_compute_dr ( order, xtab, weight )
 !
         select case (trim(HTmethod1D))
 
-        case ("fk_ht_61") 
+        case ('fk_ht_61') 
             ndhtfc = 61
             base(1:61) = fk_ht_base_61
             htj0(1:61) = fk_ht_j0_61
             htj1(1:61) = fk_ht_j1_61
             
-        case ("fk_ht_241") 
+        case ('fk_ht_241') 
             ndhtfc = 241
             base(1:241) = fk_ht_base_241
             htj0(1:241) = fk_ht_j0_241
             htj1(1:241) = fk_ht_j1_241       
 
-        case ("kk_ht_101") 
+        case ('kk_ht_101') 
             ndhtfc = 101
             base(1:101) = kk_ht_base_101
             htj0(1:101) = kk_ht_j0_101
             htj1(1:101) = kk_ht_j1_101       
 
-        case ("kk_ht_201") 
+        case ('kk_ht_201') 
             ndhtfc = 201
             base(1:201) = kk_ht_base_201
             htj0(1:201) = kk_ht_j0_201
             htj1(1:201) = kk_ht_j1_201   
 
-        case ("kk_ht_401")   ! Beware
+        case ('kk_ht_401')   ! Beware
             ndhtfc = 401
             base(1:401) = kk_ht_base_401
             htj0(1:401) = kk_ht_j0_401
@@ -1725,7 +1725,7 @@ subroutine legendre_compute_dr ( order, xtab, weight )
            
                         
         case default ! Use 201 as the default
-            write(*,*) " Default value: Using kk_ht_201 point filters"
+            write(*,*) ' Default value: Using kk_ht_201 point filters'
             ndhtfc = 201
             base(1:201) = kk_ht_base_201
             htj0(1:201) = kk_ht_j0_201
@@ -1749,7 +1749,7 @@ subroutine legendre_compute_dr ( order, xtab, weight )
 !
 ! (kx,y,z) domain solution requested:
 !
-    case ("kx")
+    case ('kx')
 !
 !  Get mode to compute:
 !
@@ -1772,19 +1772,19 @@ subroutine legendre_compute_dr ( order, xtab, weight )
 !
         select case (trim(CTmethod1D))
         
-        case ("kk_ct_81") 
+        case ('kk_ct_81') 
             ncsfc    = 81
             basecsfc(1:81) = kk_ct_base_81
             cosfc(1:81)    = kk_ct_cos_81
             sinfc(1:81)    = kk_ct_sin_81
             
-        case ("kk_ct_241") 
+        case ('kk_ct_241') 
             ncsfc    = 241
             basecsfc(1:241) = kk_ct_base_241
             cosfc(1:241)    = kk_ct_cos_241
             sinfc(1:241)    = kk_ct_sin_241      
             
-        case ("kk_ct_601") 
+        case ('kk_ct_601') 
             ncsfc    = 601
             basecsfc(1:601) = kk_ct_base_601
             cosfc(1:601)    = kk_ct_cos_601
@@ -1798,7 +1798,7 @@ subroutine legendre_compute_dr ( order, xtab, weight )
         end select
                  
     case default
-        write(*,*) "Error in Dipole1D, bad outputdomain1D parameter: ", &
+        write(*,*) 'Error in Dipole1D, bad outputdomain1D parameter: ', &
          &  outputdomain1D
          stop
          
@@ -1947,7 +1947,7 @@ subroutine legendre_compute_dr ( order, xtab, weight )
     r          = sqrt( dx**2 + dy**2)  ! Horizontal range to site 
     
     if ((r).lt.1d0) then  
-        r = 1d0 ! Move r to 1 so that division by r doesn"t explode anywhere
+        r = 1d0 ! Move r to 1 so that division by r doesn't explode anywhere
         ! For now this will be a nudge to y=1,x=0 but keep in mind that this will cause small 
         ! error in r=0 fields for inversions...but then again this is where point dipole approximation
         ! is inaccurate, and source-receiver navigation uncertainty will be relatively greatest.
@@ -1994,7 +1994,7 @@ subroutine legendre_compute_dr ( order, xtab, weight )
     
     
 !       
-! Set sgn operator for source layer primary term and it"s derivative 
+! Set sgn operator for source layer primary term and it's derivative 
 !
     if (iRxlayer == iTxlayer) then
       isgnsrc = 1                   ! potential has primary source term
@@ -2012,14 +2012,14 @@ subroutine legendre_compute_dr ( order, xtab, weight )
 
     
 ! Debug print checks:
-    ! write(*,*) "kxmode: ",kxmode
-    ! write(*,*) "x,y,z,yTz,zTx,layers ",x1D(i),y1D(i),z1D(i),yTx1D,zTx1D,iTxlayer,iRxlayer
-    ! write(*,*) "dx,dy,z,r:",dx,dy,z,r
-    ! write(*,*) "theta,thetaRx,rotang: ",theta*180/pi,thetaRx*180/pi,rotang*180/pi
-    ! write(*,*) "heightTx,depthTx: ",heightTx,depthTx
-    ! write(*,*) "lved,lhed: ",lved,lhed
-    ! write(*,*) "h: ",h
-    ! write(*,*) "isgnsrc, isgndsrcdz:",isgnsrc, isgndsrcdz
+    ! write(*,*) 'kxmode: ',kxmode
+    ! write(*,*) 'x,y,z,yTz,zTx,layers ',x1D(i),y1D(i),z1D(i),yTx1D,zTx1D,iTxlayer,iRxlayer
+    ! write(*,*) 'dx,dy,z,r:',dx,dy,z,r
+    ! write(*,*) 'theta,thetaRx,rotang: ',theta*180/pi,thetaRx*180/pi,rotang*180/pi
+    ! write(*,*) 'heightTx,depthTx: ',heightTx,depthTx
+    ! write(*,*) 'lved,lhed: ',lved,lhed
+    ! write(*,*) 'h: ',h
+    ! write(*,*) 'isgnsrc, isgndsrcdz:',isgnsrc, isgndsrcdz
         
         
     end subroutine setupsite    
@@ -2896,7 +2896,7 @@ subroutine legendre_compute_dr ( order, xtab, weight )
     do i = 2,iTxlayer
       Rm(i-1) = Rm(i-1)*expmgh(i-1) ! note that I post apply expmgh(i-1)
       Sm(i-1) = Sm(i-1)*expmgh(i-1) ! this so that for the iTxlayer the exponent
-      ! is omitted and we then don"t need the positive exponent in the formula for a_itxlayer and b_itxlayer
+      ! is omitted and we then don't need the positive exponent in the formula for a_itxlayer and b_itxlayer
    
       gmogp   = (-ii*omega*mu0*(csig(i)-csig(i-1) )) / (gamma(i)+gamma(i-1))**2  
       sgmosgp =  ( gamma(i)*csig(i-1) - gamma(i-1)*csig(i) ) / ( gamma(i)*csig(i-1) + gamma(i-1)*csig(i) )
@@ -2973,7 +2973,7 @@ subroutine legendre_compute_dr ( order, xtab, weight )
        Rp(i+1) = Rp(i+1)*expmgh(i+1)  ! note that I post apply 
        Sp(i+1) = Sp(i+1)*expmgh(i+1)        
       
-      ! this so that for the iTxlayer the exponent is omitted and we then don"t need the positive exponent in the 
+      ! this so that for the iTxlayer the exponent is omitted and we then don't need the positive exponent in the 
       ! formula for a_i and b_i     
        gmogp   = (-ii*omega*mu0*(csig(i)-csig(i+1) )) / (gamma(i)+gamma(i+1))**2
        sgmosgp = ( gamma(i)*csig(i+1) - gamma(i+1)*csig(i) ) / ( gamma(i)*csig(i+1) + gamma(i+1)*csig(i) )      
@@ -3568,13 +3568,13 @@ subroutine legendre_compute_dr ( order, xtab, weight )
      ! dAzdsig:
     
         dAzdsig = dce1dsig + dde2dsig - gg/lam2 * (dae1dsig - dbe2dsig )
-        ! add on terms for derivative in iRxlayer.  Note that a,b,c,d derivatives have this already, but gg term doesn"t
+        ! add on terms for derivative in iRxlayer.  Note that a,b,c,d derivatives have this already, but gg term doesn't
         dAzdsig(iRxlayer) =  dAzdsig(iRxlayer) - dgammadsig/lam2*(ae1mbe2)  
         ! no source terms in Az
         
     ! dAzdsigdz:    
         dAzdsigdz = gg*(dce1dsig - dde2dsig) - gg2/lam2 * (dae1dsig + dbe2dsig )
-        ! add on terms for derivative in iRxlayer.  Note that a,b,c,d derivatives have this already, but gg terms don"t
+        ! add on terms for derivative in iRxlayer.  Note that a,b,c,d derivatives have this already, but gg terms don't
         dAzdsigdz(iRxlayer) = dAzdsigdz(iRxlayer) + dgammadsig*(ce1 - de2) - ae1pbe2*(-ii*omega*mu0 / lam2)   
         
     ! Okay,  here we have the final beast to finish off this arduous journey into derivative hell:
@@ -3658,7 +3658,7 @@ subroutine legendre_compute_dr ( order, xtab, weight )
     
       Sm(i-1) = Sm(i-1)*expmgh(i-1) ! note that I post apply 
       ! this so that for the iTxlayer the exponent is omitted and we then 
-      ! don"t need the positive exponent in the formula for c_i and d_i
+      ! don't need the positive exponent in the formula for c_i and d_i
       
       sgmosgp = ( gamma(i)*csig(i-1) - gamma(i-1)*csig(i) ) / ( gamma(i)*csig(i-1) + gamma(i-1)*csig(i) )
       sjexp   = Sm(i-1)*expmgh(i-1) 
@@ -3704,7 +3704,7 @@ subroutine legendre_compute_dr ( order, xtab, weight )
     
         Sp(i+1) = Sp(i+1)*expmgh(i+1)  ! note that I post apply 
         ! this so that for the iTxlayer the exponent is omitted and we then
-        ! don"t need the positive exponent in the formula for c_i and d_i       
+        ! don't need the positive exponent in the formula for c_i and d_i       
         sgmosgp =  ( gamma(i)*csig(i+1) - gamma(i+1)*csig(i) ) / ( gamma(i)*csig(i+1) + gamma(i+1)*csig(i) )   
         sjexp  = Sp(i+1)*expmgh(i+1) ! since Sp(nlay1D) is zero, no need to worry about height of bottom layer
         Sp(i)  =  (sgmosgp + sjexp) / ( 1.d0 + sgmosgp*sjexp)
@@ -4125,7 +4125,7 @@ subroutine legendre_compute_dr ( order, xtab, weight )
     
 
 !
-! Create mapping from input layer number to interp array layers, so that we only store interp coeffs for layers with Rx"s:
+! Create mapping from input layer number to interp array layers, so that we only store interp coeffs for layers with Rx's:
 !
     allocate ( iRxLayerInterp(nlay1D) )
     iRxLayerInterp = 0
@@ -4164,7 +4164,7 @@ subroutine legendre_compute_dr ( order, xtab, weight )
 !
     select case (trim(outputdomain1D))
         
-    case ("spatial")
+    case ('spatial')
         min_base = base(1)
         max_base = base(ndhtfc)     
         dloglam = ( log10(base(2)) - log10(base(1)) )  ! spacing is same as filter
@@ -4173,7 +4173,7 @@ subroutine legendre_compute_dr ( order, xtab, weight )
         max_lam = max_base/r_min 
     
        
-    case ("kx")  
+    case ('kx')  
         min_base = basecsfc(1)
         max_base = basecsfc(ncsfc)
         dloglam = ( log10(basecsfc(2)) - log10(basecsfc(1)) ) ! spacing is same as filter

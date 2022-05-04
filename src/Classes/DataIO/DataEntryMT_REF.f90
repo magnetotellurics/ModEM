@@ -16,7 +16,7 @@ module DataEntryMT_REF
         !
         character(:), allocatable :: code_ref
         !
-        real( kind=prec )            :: latitude_ref, longitude_ref, location_ref(3)
+        real( kind=prec )            :: latitude_ref, longitude_ref, xyz_ref(3)
         !
     contains
         !
@@ -33,8 +33,8 @@ contains
     !
     ! Parametrized constructor
     function DataEntryMT_REF_ctor( id, type,    &
-            period, code, latitude, longitude, location, code_ref,    &
-            latitude_ref, longitude_ref, location_ref, component, real, imaginary, error ) result ( self )
+            period, code, latitude, longitude, xyz, code_ref,    &
+            latitude_ref, longitude_ref, xyz_ref, component, real, imaginary, error ) result ( self )
         implicit none
         !
         type( DataEntryMT_REF_t ) :: self
@@ -43,7 +43,7 @@ contains
         character(:), allocatable, intent( in ) :: type, code, code_ref, component
         real( kind=prec ), intent( in )            :: period, latitude, longitude, &
                                                                 latitude_ref, longitude_ref, &
-                                                                 location(3), location_ref(3)
+                                                                 xyz(3), xyz_ref(3)
         real( kind=prec ), intent( in )            :: real, imaginary, error
         !
         !write(*,*) "Constructor DataEntryMT_REF_t"
@@ -54,11 +54,11 @@ contains
         self%code = code
         self%latitude = latitude
         self%longitude = longitude
-        self%location = location
+        self%xyz = xyz
         self%code_ref = code_ref
         self%latitude_ref = latitude_ref
         self%longitude_ref = longitude_ref
-        self%location_ref = location_ref
+        self%xyz_ref = xyz_ref
         self%component = component
         self%real = real
         self%imaginary = imaginary
@@ -73,8 +73,8 @@ contains
       class( DataEntry_t ), allocatable          :: copy
         !
         allocate( copy, source = DataEntryMT_REF_t( self%id, self%type,    &
-                     self%period, self%code, self%latitude, self%longitude, self%location, self%code_ref,    &
-                     self%latitude_ref, self%longitude_ref, self%location_ref, self%component, &
+                     self%period, self%code, self%latitude, self%longitude, self%xyz, self%code_ref,    &
+                     self%latitude_ref, self%longitude_ref, self%xyz_ref, self%component, &
                 self%real, self%imaginary, self%error ) )
         !
     end function getCopyDataEntryMT_REF
@@ -83,8 +83,8 @@ contains
         class( DataEntryMT_REF_t ), intent(in)    :: self
         !
         write(*,*) "Write DataEntryMT_REF_t: ", self%id, self%type, self%period, self%code,    &
-        self%latitude, self%longitude, self%location, self%code_ref, self%latitude_ref, self%longitude_ref,    &
-        self%location_ref, self%component, self%real, self%imaginary, self%error
+        self%latitude, self%longitude, self%xyz, self%code_ref, self%latitude_ref, self%longitude_ref,    &
+        self%xyz_ref, self%component, self%real, self%imaginary, self%error
         !
     end subroutine writeDataEntryMT_REF
     !
