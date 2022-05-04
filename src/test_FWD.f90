@@ -91,23 +91,6 @@ contains
             call handleDataFile()
         endif
         !
-        ! Source - Chosen from control file
-        !if( allocated( fwd_source ) ) deallocate( fwd_source )
-        !select case ( source_type )
-            !
-            !case( SRC_MT_1D )
-                !fwd_source = SourceMT_1D_t( model_operator, model_parameter, omega )
-                !
-            !case( SRC_MT_2D )
-                !fwd_source = SourceMT_2D_t( model_operator, model_parameter, omega )
-                !
-            !case default
-                !fwd_source = SourceMT_1D_t( model_operator, model_parameter, omega )
-                !
-        !end select
-        !
-        !fwd_source = SourceMT_1D_t( model_operator, model_parameter, omega )
-        !
         ! ForwardSolver - Chosen from control file
         !if( allocated( forward_solver ) ) deallocate( forward_solver )
         select case ( forward_solver_type )
@@ -236,6 +219,43 @@ contains
     end subroutine handleControlFile
     !
     !
+    subroutine handleModelFile()
+        implicit none
+        !
+        type( ModelReader_Weerachai_t ) :: model_reader
+        type( TAirLayers )              :: air_layer
+        !
+        !
+        write( *, * ) "    -> Model File: [", model_file_name, "]"
+        !
+        ! Read Grid and ModelParameter with ModelReader_Weerachai
+        call model_reader%Read( model_file_name, main_grid, model_parameter ) 
+        !
+        ! Instantiate the ModelOperator object
+        select type( main_grid )
+            !
+            class is( Grid3D_SG_t )
+                !
+                call main_grid%SetupAirLayers( air_layer, model_method, model_n_air_layer, model_max_height )
+                !
+                call main_grid%UpdateAirLayers( air_layer%nz, air_layer%dz )
+                !
+                model_operator = ModelOperator_MF_t( main_grid )
+                !
+                call model_parameter%setMetric( model_operator%metric )
+                !
+                call model_operator%SetEquations()
+                !
+                call model_operator%SetCond( model_parameter )
+                !
+            class default
+                stop "Unclassified main_grid"
+            !
+        end select
+        !
+    end subroutine handleModelFile
+    !
+    !
     subroutine handleDataFile()
         implicit none
         !
@@ -283,49 +303,11 @@ contains
         !
     end subroutine handleDataFile
     !
-    subroutine handleModelFile()
-        implicit none
-        !
-        ! It remains to standardize ????
-        type( ModelReader_Weerachai_t ) :: model_reader
-        !
-        type( TAirLayers )              :: air_layer
-        !
-        write( *, * ) "    -> Model File: [", model_file_name, "]"
-        !
-        ! Read Grid and ModelParameter with ModelReader_Weerachai
-        call model_reader%Read( model_file_name, main_grid, model_parameter ) 
-        !
-        ! Instantiate the ModelOperator object
-        select type( main_grid )
-            !
-            class is( Grid3D_SG_t )
-                !
-                call main_grid%SetupAirLayers( air_layer, model_method, model_n_air_layer, model_max_height )
-                !
-                call main_grid%UpdateAirLayers( air_layer%nz, air_layer%dz )
-                !
-                model_operator = ModelOperator_MF_t( main_grid )
-                !
-                call model_parameter%setMetric( model_operator%metric )
-                !
-                call model_operator%SetEquations()
-                !
-                call model_operator%SetCond( model_parameter )
-                !
-            class default
-                stop "Unclassified main_grid"
-            !
-        end select
-        !
-    end subroutine handleModelFile
-    !
-    !
     subroutine handleArguments()
         implicit none
         !
-        character(200) :: argument
-        integer        :: argument_index
+        character( len=200 ) :: argument
+        integer              :: argument_index
         !
         if ( command_argument_count() == 0 ) then
             !
@@ -344,7 +326,7 @@ contains
                       case ( "-c", "--control" )
                          !
                          call get_command_argument( argument_index + 1, argument )
-                         control_file_name = argument
+                         control_file_name = trim( argument )
                          !
                          if ( len( control_file_name ) > 0 ) has_control_file = .TRUE.
                          !
@@ -353,7 +335,7 @@ contains
                       case ( "-d", "--data" )
                          !
                          call get_command_argument( argument_index + 1, argument )
-                         data_file_name = argument
+                         data_file_name = trim( argument )
                          !
                          if ( len( data_file_name ) > 0 ) has_data_file = .TRUE.
                          !
@@ -368,7 +350,7 @@ contains
                       case ( "-m", "--model" )
                          !
                          call get_command_argument( argument_index + 1, argument )
-                         model_file_name = trim(argument)
+                         model_file_name = trim( argument )
                          !
                          if ( len( model_file_name ) > 0 ) has_model_file = .TRUE.
                          !
@@ -377,14 +359,14 @@ contains
                       case ( "-pd", "--predicted" )
                          !
                          call get_command_argument( argument_index + 1, argument )
-                         predicted_data_file_name = trim(argument)
+                         predicted_data_file_name = trim( argument )
                          !
                          argument_index = argument_index + 2
                          !
                       case ( "-es", "--esolution" )
                          !
                          call get_command_argument( argument_index + 1, argument )
-                         e_solution_file_name = trim(argument)
+                         e_solution_file_name = trim( argument )
                          !
                          argument_index = argument_index + 2
                          !
@@ -426,8 +408,8 @@ contains
         verbosis                 = .FALSE.
         !
         ! Solver
-        max_iter = 100
-        tolerance = TOL8
+        !max_iter = 100
+        !tolerance = TOL8
         !
         ! Source
         get_1D_from = "Geometric_mean"

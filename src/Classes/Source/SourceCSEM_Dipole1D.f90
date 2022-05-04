@@ -29,8 +29,8 @@ module SourceCSEM_Dipole1D
             !
             final :: SourceCSEM_Dipole1D_dtor
             !
-            procedure, public :: setRHS => setRHSMT_1D
-            procedure, public :: setE   => setESourceCSEM_Dipole1D
+            procedure, public :: setRHS => setRHS_CSEM_Dipole1D
+            procedure, public :: setE   => setE_CSEM_Dipole1D
             procedure, public :: create_Ep_from_Dipole1D
             procedure, public :: set1DModel
             !
@@ -56,6 +56,8 @@ contains
         !write( *, * ) "Constructor SourceCSEM_Dipole1D_t"
         !
         call self%init()
+        !
+        self%non_zero_source = .TRUE.
         !
         self%model_operator  => model_operator
         self%model_parameter => model_parameter
@@ -89,7 +91,7 @@ contains
     end subroutine SourceCSEM_Dipole1D_dtor
     !
     ! Set self%E from forward modelling 1D
-    subroutine setESourceCSEM_Dipole1D( self, polarization )
+    subroutine setE_CSEM_Dipole1D( self, polarization )
         implicit none
         !
         class( SourceCSEM_Dipole1D_t ), intent( inout ) :: self
@@ -118,6 +120,9 @@ contains
         lenTx1D         = 00.d0      ! (m) Dipole length 0 = point dipole
         numIntegPts     = 0          ! Number of points to use for Gauss quadrature integration for finite dipole
         !
+        ! Verbosis...
+        write( *, * ) "    -> Extracting CSEM Source from Dipole 1D"
+        !
         call self%set1DModel( xTx1D, yTx1D )
         !
         call initilize_1d_vectors( self%model_parameter%grid ) ! Initilize the 1D vectors where to compupte the E field
@@ -125,10 +130,16 @@ contains
         call comp_dipole1D ! Calculate E-Field by Key"s code
         !
         call self%create_Ep_from_Dipole1D( self%model_parameter%grid )
+            !
+        call self%setRHS
         !
-        omega = 2.0 * PI / self%period
+    end subroutine setE_CSEM_Dipole1D
+    !
+    ! Set RHS from self%E
+    subroutine setRHS_CSEM_Dipole1D( self )
+        implicit none
         !
-        i_omega_mu = cmplx( 0., real( -1.0d0 * ISIGN * MU_0 * omega ), kind=prec)
+        class( SourceCSEM_Dipole1D_t ), intent( inout ) :: self
         !
         if( allocated( self%rhs ) ) deallocate( self%rhs )
         !
@@ -140,12 +151,15 @@ contains
                 !
                 self%rhs = self%E * self%CondAnomaly_h
                 !
-                self%rhs = self%rhs * i_omega_mu
+                self%rhs = self%rhs * cmplx( 0., real( -1.0d0 * ISIGN * MU_0 * ( 2.0 * PI / self%period ) ), kind=prec)
+                !
+                !call self%model_operator%MultAib( self%E%Boundary(), self%rhs )
+                !
+                !self%rhs = self%rhs * C_MinusOne
                 !
         end select
         !
-    end subroutine setESourceCSEM_Dipole1D
-    !
+    end subroutine setRHS_CSEM_Dipole1D
     !
     subroutine initilize_1d_vectors( grid )
         implicit none
@@ -263,33 +277,13 @@ contains
                 deallocate( x1D, y1D, z1D)
                 deallocate( ex1D, ey1D, jz1D)
                 deallocate( bx1D, by1D, bz1D)
-                !
+                
+        !
           end select
           !
         end select
         !
     end subroutine create_Ep_from_Dipole1D
-    !
-    ! Set RHS from self%E
-    subroutine setRHSMT_1D( self )
-        implicit none
-        !
-        class( SourceCSEM_Dipole1D_t ), intent( inout ) :: self
-        !
-        !
-        select type( E => self%E )
-          class is( cVector3D_SG_t )
-              !
-              if( allocated( self%rhs ) ) deallocate( self%rhs )
-              allocate( self%rhs, source = cVector3D_SG_t( E%grid, EDGE ) )
-              !
-              call self%model_operator%MultAib( self%E%Boundary(), self%rhs )
-              !
-              self%rhs = self%rhs * C_MinusOne
-              !
-        end select
-        !
-    end subroutine setRHSMT_1D
     !
     subroutine set1DModel( self, xTx1D, yTx1D )
         !

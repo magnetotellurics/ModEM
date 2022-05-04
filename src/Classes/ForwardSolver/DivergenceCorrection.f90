@@ -91,11 +91,11 @@ contains
         !     appropriate explicit type
         call self%solver%preconditioner%model_operator%Div( source%E%interior(), phi0 ) 
         !
-        !  multiply result by cFactor (in place)
-        call phi0%mults( cFactor )
         !  multiply result by VNode -- add to rhs of symetrized
         !    current conservation equation
         call phi0%mults( self%solver%preconditioner%model_operator%metric%Vnode )
+        !  multiply result by cFactor (in place)
+        call phi0%mults( cFactor )
         !
     end subroutine rhsDivCorDivergenceCorrection
     !****************************************************************

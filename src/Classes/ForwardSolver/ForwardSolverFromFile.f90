@@ -102,18 +102,11 @@ contains
         !
     end subroutine initDiagnosticsForwardSolverFromFile
     !
-    subroutine setIterControlForwardSolverFromFile( self, maxit, tolerance )
+    subroutine setIterControlForwardSolverFromFile( self  )
         implicit none
         !
         class( ForwardSolverFromFile_t ), intent( inout )  :: self
-        integer, intent(in)                                :: maxit
-        real(kind=prec), intent(in)                        :: tolerance
-        !
-        self%max_iter_total = maxit
-        self%tolerance = tolerance
-        !
-        call self%solver%setParameters( maxit, tolerance )
-        !
+		!
     end subroutine setIterControlForwardSolverFromFile
     !
     !**********

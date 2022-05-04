@@ -37,9 +37,9 @@ module Transmitter
         !
         procedure, public :: updateFwdKey
         !
-        procedure, public :: isEqual => isEqualTransmitter
-        !
         procedure, public :: updateReceiverIndexesArray
+        !
+        procedure( interface_is_equal_tx ), deferred, public :: isEqual
         !
         procedure( interface_solve_fwd_tx ), deferred, public :: solveFWD
         !
@@ -57,7 +57,7 @@ module Transmitter
         function interface_is_equal_tx( self, other ) result( equal )
             import :: Transmitter_t
             class( Transmitter_t ), intent( in ) :: self, other
-            logical                                        :: equal
+            logical                              :: equal
         end function interface_is_equal_tx
         !
         subroutine interface_write_tx( self )
@@ -68,22 +68,6 @@ module Transmitter
     end interface
     !
     contains
-        !
-        ! Compare two transmitters
-        function isEqualTransmitter( self, other ) result( equal )
-            implicit none
-            !
-            class( Transmitter_t ), intent( in ) :: self
-            class( Transmitter_t ), intent( in ) :: other
-            logical                              :: equal
-            !
-            equal = .FALSE.
-            !
-            if( ABS( self%period - other%period ) < TOL6 ) then
-                equal = .TRUE.
-            endif
-            !
-        end function isEqualTransmitter
         !
         subroutine initializeTx( self )
             implicit none

@@ -8,20 +8,7 @@ module ForwardSolverIT_DC
     use ModelOperator_MF
     use Solver_QMR
     !
-    !
-    integer, parameter :: iter_per_div_corDefQMR = 40
-    !
-    integer, parameter :: iter_per_div_corDefBCG = 80
-    !
-    integer, parameter :: max_div_corDef = 20
-    !
-    integer, parameter :: max_iterDivCorDef = 100
-    !
-    real( kind=prec ), parameter :: tolDivCorDef = 1E-5
-    !
-    real( kind=prec ), parameter :: tolCurlCurlDef = 1E-7
-    !
-    !
+	!
     type, extends( ForwardSolver_t ) :: ForwardSolverIT_DC_t
         !
         type( DivergenceCorrection_t ) :: divergence_correction 
@@ -58,7 +45,7 @@ module ForwardSolverIT_DC
             character(*), intent(in)               :: solver_type
             type( ForwardSolverIT_DC_t )           :: self
             !
-            integer :: max_iter, max_iter_total
+            integer :: max_iter
             !
             !write(*,*) "Constructor ForwardSolverIT_DC_t"
             !
@@ -80,13 +67,13 @@ module ForwardSolverIT_DC
                     stop "ForwardSolverIT_DC_ctor: Unknow solver"
             end select
             !
-            call self%solver%setParameters( max_iter, tolCurlCurlDef )
-            !
+            ! Set default values for this ForwardSolver
             call self%setIterDefaultsDC()
             !
-            max_iter_total = self%max_div_cor * self%solver%max_iter
+            ! Set max number of all forward solver iterations
+            self%max_iter_total = self%max_div_cor * self%solver%max_iter
             !
-            call self%setIterControl( max_iter_total, self%solver%tolerance )
+            call self%setIterControl
             !
             !
             self%divergence_correction = DivergenceCorrection_t( model_operator )
@@ -138,25 +125,17 @@ module ForwardSolverIT_DC
         end subroutine setCondForwardSolverIT_DC
         !
         !
-        subroutine setIterControlForwardSolverIT_DC( self, maxit, tolerance )
+        subroutine setIterControlForwardSolverIT_DC( self )
             implicit none
             !
             class( ForwardSolverIT_DC_t ), intent( inout ) :: self
-            integer, intent( in )                          :: maxit
-            real( kind=prec ), intent( in )                :: tolerance
-            !
-            integer :: iter_per_dc
             !
             !
-            self%tolerance = tolerance
+            self%tolerance = self%solver%tolerance
             !
-            iter_per_dc = self%solver%max_iter
+            self%max_div_cor = self%max_iter_total / self%solver%max_iter
             !
-            self%max_div_cor = maxit / iter_per_dc
-            !
-            self%max_iter_total = iter_per_dc * self%max_div_cor
-            !
-            call self%solver%setParameters( iter_per_dc, tolerance )
+            self%max_iter_total = self%solver%max_iter * self%max_div_cor
             !
         end subroutine setIterControlForwardSolverIT_DC
         !
@@ -209,8 +188,9 @@ module ForwardSolverIT_DC
             class( cVector_t ), allocatable :: temp
             class( cScalar_t ), allocatable :: phi0
             integer :: iter
+			complex( kind=prec ) :: i_omega_mu
             !
-            !
+			!
             call self%solver%zeroDiagnostics()
             !
             self%solver%converged = .FALSE.
@@ -230,6 +210,7 @@ module ForwardSolverIT_DC
                 !
             endif
             !
+
             loop: do while ( ( .NOT. self%solver%converged ) .AND. ( .NOT. self%solver%failed ) )
                 !
                 select type( solver => self%solver )
@@ -251,7 +232,7 @@ module ForwardSolverIT_DC
                 enddo
                 !
                 self%n_iter_actual = self%n_iter_actual + self%solver%n_iter
-                self%nDivCor = self%nDivCor+1
+                self%nDivCor = self%nDivCor + 1
                 !
                 if( self%nDivCor < self%max_div_cor ) then
                     !
@@ -279,7 +260,7 @@ module ForwardSolverIT_DC
             !
             if( source%non_zero_source ) deallocate( phi0 )
             !
-            self%relResFinal = self%relResVec(self%n_iter_actual)
+            self%relResFinal = self%relResVec( self%n_iter_actual )
             !
             select type( modOp => self%solver%preconditioner%model_operator )
                 class is ( ModelOperator_MF_t )

@@ -951,9 +951,9 @@ contains
         if (lhs%isCompatible(rhs)) then
             select type(rhs)
                 class is( cVector3D_SG_t ) 
-                    rhs%x = rhs%x + c*lhs%x
-                    rhs%y = rhs%y + c*lhs%y
-                    rhs%z = rhs%z + c*lhs%z
+                    rhs%x = rhs%x + c * lhs%x
+                    rhs%y = rhs%y + c * lhs%y
+                    rhs%z = rhs%z + c * lhs%z
             end select
         else
             write( *, * ) "ERROR:cVector3D_SG::scMultAdd"

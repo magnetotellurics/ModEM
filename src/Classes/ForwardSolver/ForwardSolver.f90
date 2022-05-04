@@ -63,11 +63,9 @@ module ForwardSolver
             !
         end subroutine interface_set_cond_fwd
         !
-        subroutine interface_set_iter_fwd( self, maxit, tolerance )
-            import :: ForwardSolver_t, prec
+        subroutine interface_set_iter_fwd( self )
+            import :: ForwardSolver_t
             class( ForwardSolver_t ), intent( inout ) :: self
-            real( kind=prec ), intent( in )           :: tolerance
-            integer, intent( in )                     ::  maxit
             !
         end subroutine interface_set_iter_fwd
         !
@@ -84,7 +82,7 @@ module ForwardSolver
         end subroutine interface_zero_diag_fwd
         !
         subroutine interface_get_e_solution_fwd( self, source, e_solution )
-            import :: ForwardSolver_t, prec, cVector_t, Source_t
+            import :: ForwardSolver_t, Source_t, cVector_t
             !
             class( ForwardSolver_t ), intent( inout ) :: self
             class( Source_t ), intent( in )           :: source
