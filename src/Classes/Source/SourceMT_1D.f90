@@ -42,7 +42,7 @@ contains
         !
         class( ModelOperator_t ), target, intent( in )  :: model_operator
         class( ModelParameter_t ), target, intent( in ) :: model_parameter
-		real( kind=prec ), intent( in )      :: period
+        real( kind=prec ), intent( in )                 :: period
         class( cVector_t ), intent( in ), optional      :: E
         !
         type( SourceMT_1D_t ) :: self
@@ -54,11 +54,11 @@ contains
         self%model_operator  => model_operator
         self%model_parameter => model_parameter
         !
-		self%period = period
-		!
+        self%period = period
+        !
         if ( present( E ) ) then
              !
-             allocate( self%E, source = E )
+             self%E = E
              !
              call self%setRHS()
              !
@@ -88,10 +88,10 @@ contains
         type( ModelParameter1D_t )                      :: model_parameter_1D
         type( Forward1D_t )                             :: forward_1D
         complex( kind=prec ), allocatable, dimension(:) :: E1D
-		!
+        !
         integer :: ix, iy
         !
-		!
+        !
         self%polarization = polarization
         !
         ! Get Model1D from average conductivity 3D
@@ -101,7 +101,6 @@ contains
         !
         call forward_1D%SetFreq( 2.0 * PI / self%period )
         !
-        if( allocated( E1D ) ) deallocate( E1D )
         !     NOTE: E1D is defined at layer interfaces -- dzEdge(nz+1) 
         allocate( E1D( self%model_operator%metric%grid%nz + 1 ) )
         !

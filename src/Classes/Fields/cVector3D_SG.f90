@@ -65,11 +65,11 @@ module cVector3D_SG
         procedure, public :: mults1 => mults1CVector3D_SG
         procedure, public :: mults3 => mults3CVector3D_SG
         procedure, public :: div1 => div1CVector3D_SG
-        procedure, public :: div2 => div2CVector3D_SG        
-        procedure, public :: divs2 => divs2CVector3D_SG        
+        procedure, public :: div2 => div2CVector3D_SG
+        procedure, public :: divs2 => divs2CVector3D_SG
         procedure, public :: dotProd => dotProdCVector3D_SG
-        procedure, public :: linCombS => linCombSCVector3D_SG        
-        procedure, public :: scMultAddS => scMultAddSCVector3D_SG        
+        procedure, public :: linCombS => linCombSCVector3D_SG
+        procedure, public :: scMultAddS => scMultAddSCVector3D_SG
         !**
         ! Miscellaneous
         !*
@@ -882,7 +882,7 @@ contains
     ! mults3CVector3D_SG
     !*
     !    subroutine version of mult3CVector3D_SG -- overwrites input lhs
-    subroutine mults3CVector3D_SG(lhs, rhs)
+    subroutine mults3CVector3D_SG( lhs, rhs )
         implicit none
         !
         class( cVector3D_SG_t ), intent( inout ) :: lhs
@@ -905,7 +905,7 @@ contains
     ! mults1CVector3D_SG
     ! Subroutine version of mult2CVector3D_SG
     !*
-    subroutine mults1CVector3D_SG(self, c)
+    subroutine mults1CVector3D_SG( self, c )
         implicit none
         !
         class( cVector3D_SG_t ), intent( inout ) :: self

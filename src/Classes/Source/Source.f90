@@ -15,9 +15,9 @@ module Source
     character(:), allocatable :: source_type
     character ( len=11 ), parameter :: SRC_MT_1D = "SourceMT_1D"
     character ( len=11 ), parameter :: SRC_MT_2D = "SourceMT_2D"
-	!
+    !
     character(:), allocatable :: get_1D_from
-	!
+    !
     type, abstract :: Source_t
         !
         real( kind=prec ) :: period
@@ -25,7 +25,7 @@ module Source
         !
         class( ModelOperator_t ), pointer  :: model_operator
         class( ModelParameter_t ), pointer :: model_parameter
-		!
+        !
         class( cVector_t ), allocatable    :: rhs, E
         !
         logical                            :: non_zero_source, adjt
@@ -71,6 +71,9 @@ module Source
         !
         self%non_zero_source = .FALSE.
         self%adjt            = .FALSE.
+        !
+        self%model_operator  => null()
+        self%model_parameter => null()
         !
     end subroutine initializeSource
     !

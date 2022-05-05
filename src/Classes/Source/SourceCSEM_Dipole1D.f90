@@ -70,7 +70,7 @@ contains
         !
         if( present( E ) ) then
             !
-            allocate( self%E, source = E )
+            self%E = E
             !
             call self%setRHS()
             !
@@ -143,18 +143,17 @@ contains
         !
         i_omega_mu = cmplx( 0., real( 1.0d0 * ISIGN * MU_0 * ( 2.0 * PI / self%period ) ), kind=prec )
         !
-        if( allocated( self%rhs ) ) deallocate( self%rhs )
-        !
         select type( grid => self%model_parameter%grid )
             !
             class is( Grid3D_SG_t )
-            !
-            allocate( self%rhs, source = cVector3D_SG_t( grid, EDGE ) )
                 !
-                self%rhs = self%E * self%CondAnomaly_h
-                !
-                self%rhs = self%rhs * i_omega_mu
-                !
+                if( allocated( self%rhs ) ) deallocate( self%rhs )
+                allocate( self%rhs, source = cVector3D_SG_t( grid, EDGE ) )
+                    !
+                    self%rhs = self%E * self%CondAnomaly_h
+                    !
+                    self%rhs = self%rhs * i_omega_mu
+                    !
         end select
         !
     end subroutine setRHS_CSEM_Dipole1D
@@ -185,7 +184,7 @@ contains
         ! Create position vector that the primary field has to be calculated
         !====================================================================
         counter = 1
-		!
+        !
         ! E-field corresponing to these nodes is Ex
         do iz = 1,grid%Nz+1 !Edge Z
             do iy = 1,grid%Ny+1 !Edge Y
@@ -315,8 +314,8 @@ contains
                 !
                 if(allocated(zlay1D)) deallocate(zlay1D, sig1D)
                 !
-                allocate(zlay1D(nlay1D))
-                allocate(sig1D(nlay1D))
+                allocate( zlay1D(nlay1D) )
+                allocate( sig1D(nlay1D) )
                 !
                 do k=1,nlay1D
                     zlay1D(k) = sigma_cell%grid%zEdge(k)
@@ -331,11 +330,11 @@ contains
                 !
                 if( trim(get_1D_from) =="Geometric_mean" ) then
                     !
-					do k = nzAir+1,nlay1D
+                    do k = nzAir+1,nlay1D
                         wt = R_ZERO
                         temp_sigma_value=R_ZERO
                         !
-						do i = 1,sigma_cell%grid%Nx
+                        do i = 1,sigma_cell%grid%Nx
                             do j = 1,sigma_cell%grid%Ny
                                 wt = wt + sigma_cell%grid%dx(i)*sigma_cell%grid%dy(j)
                                 !
@@ -347,7 +346,7 @@ contains
                         sig1D(k) = exp(temp_sigma_value/wt)
                         !
                    end do
-				   !
+                   !
                 else if( trim( get_1D_from ) =="At_Tx_Position" ) then
                     !
                     do k = nzAir+1,nlay1D
@@ -357,9 +356,9 @@ contains
                 else if( trim( get_1d_from ) == "Geometric_mean_around_Tx" ) then
                     do k = nzAir+1,nlay1D
                         !
-						wt = R_ZERO
+                        wt = R_ZERO
                         !
-						do i = ixTx-5,ixTx+5
+                        do i = ixTx-5,ixTx+5
                             do j = iyTx-5,iyTx+5
                                 !
                                 wt = wt + sigma_cell%grid%dx(i)*sigma_cell%grid%dy(j)
@@ -398,7 +397,7 @@ contains
                         sig1D(k) = exp(temp_sigma_value/counter)
                         !
                     end do
-					!
+                    !
                 else if( trim( get_1d_from )== "Fixed_Value" ) then
                     !
                     temp_sigma_value = sigma_cell%v( ixTx, iyTx, k-nzAir ) !the value exactly below the Tx
