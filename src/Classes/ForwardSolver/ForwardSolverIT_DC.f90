@@ -201,14 +201,14 @@ module ForwardSolverIT_DC
                 !
                 call self%divergence_correction%rhsDivCor( self%solver%omega, source, phi0 )
                 !
-                !e_solution = e_solution%Interior()
+                e_solution = e_solution%Interior()
                 !
-                !allocate( temp_esol, source = e_solution )
+                allocate( temp_esol, source = e_solution )
                 !
-                !self%nDivCor = self%nDivCor + 1
-                !call self%divergence_correction%DivCorr( temp_esol, e_solution, phi0 )
+                self%nDivCor = self%nDivCor + 1
+                call self%divergence_correction%DivCorr( temp_esol, e_solution, phi0 )
                 !
-                !deallocate( temp_esol )
+                deallocate( temp_esol )
                 !
             endif
             !
@@ -236,31 +236,31 @@ module ForwardSolverIT_DC
                 self%n_iter_actual = self%n_iter_actual + self%solver%n_iter
                 self%nDivCor = self%nDivCor + 1
                 !
-                !if( .NOT. self%solver%converged )  then
-					!
-					if( self%nDivCor < self%max_div_cor ) then
-						!
-						allocate( temp_esol, source = e_solution )
-						!
-						if( source%non_zero_source ) then
-							!
-							call self%divergence_correction%DivCorr( temp_esol, e_solution, phi0 )
-							!
-						else
-							!
-							call self%divergence_correction%DivCorr( temp_esol, e_solution )
-							!
-						endif
-						!
-						deallocate( temp_esol )
-						!
-					else
-						!
-						self%solver%failed = .TRUE.
-						!
-					endif
-					!
-				!endif
+                if( .NOT. self%solver%converged )  then
+                    !
+                    if( self%nDivCor < self%max_div_cor ) then
+                        !
+                        allocate( temp_esol, source = e_solution )
+                        !
+                        if( source%non_zero_source ) then
+                            !
+                            call self%divergence_correction%DivCorr( temp_esol, e_solution, phi0 )
+                            !
+                        else
+                            !
+                            call self%divergence_correction%DivCorr( temp_esol, e_solution )
+                            !
+                        endif
+                        !
+                        deallocate( temp_esol )
+                        !
+                    else
+                        !
+                        self%solver%failed = .TRUE.
+                        !
+                    endif
+                    !
+                endif
             !
             enddo loop
             !
