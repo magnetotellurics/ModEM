@@ -1,9 +1,7 @@
 ! *************
 ! 
 ! Base class to define a ForwardSolver
-! 
-! Last modified at 16/08/2021 by Paulo Werdt
-! 
+!
 ! *************
 ! 
 module ForwardSolver
@@ -37,7 +35,6 @@ module ForwardSolver
             procedure, public :: dealloc => deallocateForwardSolver
             !
             procedure( interface_set_frequency_fwd ), deferred, public  :: setFrequency
-            procedure( interface_set_cond_fwd ), deferred, public       :: setCond
             procedure( interface_set_iter_fwd ), deferred, public       :: setIterControl
             procedure( interface_init_diag_fwd ), deferred, public      :: initDiagnostics
             procedure( interface_zero_diag_fwd ), deferred, public      :: zeroDiagnostics
@@ -47,27 +44,18 @@ module ForwardSolver
     !
     abstract interface
         !
-        subroutine interface_set_frequency_fwd( self, period )
-            import :: ForwardSolver_t, prec
+        subroutine interface_set_frequency_fwd( self, model_parameter, period )
+            import :: ForwardSolver_t, ModelParameter_t, prec
             !
             class( ForwardSolver_t ), intent( inout ) :: self
+			class( ModelParameter_t ), intent( in )   :: model_parameter
             real( kind=prec ), intent( in )           :: period
             !
         end subroutine interface_set_frequency_fwd
         !
-        subroutine interface_set_cond_fwd( self, model_parameter )
-            import :: ForwardSolver_t, ModelParameter_t
-            !
+        subroutine interface_set_iter_fwd( self )
+            import :: ForwardSolver_t
             class( ForwardSolver_t ), intent( inout ) :: self
-            class( ModelParameter_t ), intent( in )   :: model_parameter
-            !
-        end subroutine interface_set_cond_fwd
-        !
-        subroutine interface_set_iter_fwd( self, maxit, tolerance )
-            import :: ForwardSolver_t, prec
-            class( ForwardSolver_t ), intent( inout ) :: self
-            real( kind=prec ), intent( in )           :: tolerance
-            integer, intent( in )                     ::  maxit
             !
         end subroutine interface_set_iter_fwd
         !
@@ -84,7 +72,7 @@ module ForwardSolver
         end subroutine interface_zero_diag_fwd
         !
         subroutine interface_get_e_solution_fwd( self, source, e_solution )
-            import :: ForwardSolver_t, prec, cVector_t, Source_t
+            import :: ForwardSolver_t, Source_t, cVector_t
             !
             class( ForwardSolver_t ), intent( inout ) :: self
             class( Source_t ), intent( in )           :: source

@@ -15,7 +15,6 @@ program ModEM
     !
     use DataFileStandard
     !
-    use ForwardSolverFromFile
     use ForwardSolverIT_DC
     !
     use SourceMT_1D
@@ -64,15 +63,13 @@ contains
         ! Use save ????
         class( ForwardSolver_t ), allocatable, target, save :: forward_solver
         !
-        class( Source_t ), allocatable, target        :: fwd_source 
-        !
         ! Temporary alias pointers
         class( Transmitter_t ), pointer :: Tx
         class( Receiver_t ), pointer    :: Rx
         !
         integer :: iTx, iRx, iDh
         !
-        type( Dh_t ), allocatable, dimension(:) :: all_data_handles
+        type( Dh_t ), pointer, dimension(:) :: all_data_handles
         !
         !
         write ( *, * ) "    > Start forward modelling."
@@ -91,30 +88,9 @@ contains
             call handleDataFile()
         endif
         !
-        ! Source - Chosen from control file
-        !if( allocated( fwd_source ) ) deallocate( fwd_source )
-        !select case ( source_type )
-            !
-            !case( SRC_MT_1D )
-                !fwd_source = SourceMT_1D_t( model_operator, model_parameter, omega )
-                !
-            !case( SRC_MT_2D )
-                !fwd_source = SourceMT_2D_t( model_operator, model_parameter, omega )
-                !
-            !case default
-                !fwd_source = SourceMT_1D_t( model_operator, model_parameter, omega )
-                !
-        !end select
-        !
-        !fwd_source = SourceMT_1D_t( model_operator, model_parameter, omega )
-        !
         ! ForwardSolver - Chosen from control file
-        !if( allocated( forward_solver ) ) deallocate( forward_solver )
         select case ( forward_solver_type )
             !
-            case( FWD_FILE )
-                forward_solver = ForwardSolverFromFile_t( model_operator )
-                !
             case( FWD_IT_DC )
                 forward_solver = ForwardSolverIT_DC_t( model_operator, QMR )
                 !
@@ -123,10 +99,10 @@ contains
             !
         end select
         !
-        call forward_solver%setCond( model_parameter )
-        !
         ! Forward Modelling
         !
+		all_data_handles => null()
+		!
         Tx => getTransmitter(1)
         !
         call writeEsolutionHeader( size( transmitters ), Tx%n_pol )
@@ -137,23 +113,23 @@ contains
             ! Temporary Transmitter alias
             Tx => getTransmitter( iTx )
             !
+            ! Set Transmitter´s ForwardSolver
+            Tx%forward_solver => forward_solver
             !
+            ! Set Transmitter´s ForwardSolver Omega and Cond
+            call Tx%forward_solver%setFrequency( model_parameter, Tx%period )
+            !
+            ! Create Transmitter´s Source
             select type( Tx )
                 class is( TransmitterMT_t )
                     !
-                    fwd_source = SourceMT_1D_t( model_operator, model_parameter, Tx%period )
+                    Tx%source = SourceMT_1D_t( model_operator, model_parameter, Tx%period )
                     !
                 class is( TransmitterCSEM_t )
                     !
-                    fwd_source = SourceCSEM_Dipole1D_t( model_operator, model_parameter, Tx%period, Tx%location, Tx%dip, Tx%azimuth, Tx%moment )
+                    Tx%source = SourceCSEM_Dipole1D_t( model_operator, model_parameter, Tx%period, Tx%location, Tx%dip, Tx%azimuth, Tx%moment )
                     !
             end select
-            !
-            Tx%source => fwd_source
-            Tx%forward_solver => forward_solver
-            !
-            ! Set ForwardSolver omega
-            call Tx%forward_solver%setFrequency( Tx%period )
             !
             ! Solve Tx Forward Modelling
             call Tx%solveFWD()
@@ -177,16 +153,11 @@ contains
                     !
                 end do
                 !
-                deallocate( Rx%predicted_data )
-                !
             enddo
             !
             deallocate( Tx )
             !
         enddo
-        !
-        !deallocate( fwd_source )
-        !deallocate( forward_solver )
         !
         deallocate( model_operator )
         deallocate( model_parameter )
@@ -236,6 +207,43 @@ contains
     end subroutine handleControlFile
     !
     !
+    subroutine handleModelFile()
+        implicit none
+        !
+        type( ModelReader_Weerachai_t ) :: model_reader
+        type( TAirLayers )              :: air_layer
+        !
+        !
+        write( *, * ) "    -> Model File: [", model_file_name, "]"
+        !
+        ! Read Grid and ModelParameter with ModelReader_Weerachai
+        call model_reader%Read( model_file_name, main_grid, model_parameter ) 
+        !
+        ! Instantiate the ModelOperator object
+        select type( main_grid )
+            !
+            class is( Grid3D_SG_t )
+                !
+                call main_grid%SetupAirLayers( air_layer, model_method, model_n_air_layer, model_max_height )
+                !
+                call main_grid%UpdateAirLayers( air_layer%nz, air_layer%dz )
+                !
+                model_operator = ModelOperator_MF_t( main_grid )
+                !
+                call model_parameter%setMetric( model_operator%metric )
+                !
+                call model_operator%SetEquations()
+                !
+                call model_operator%SetCond( model_parameter )
+                !
+            class default
+                stop "Unclassified main_grid"
+            !
+        end select
+        !
+    end subroutine handleModelFile
+    !
+    !
     subroutine handleDataFile()
         implicit none
         !
@@ -283,49 +291,11 @@ contains
         !
     end subroutine handleDataFile
     !
-    subroutine handleModelFile()
-        implicit none
-        !
-        ! It remains to standardize ????
-        type( ModelReader_Weerachai_t ) :: model_reader
-        !
-        type( TAirLayers )              :: air_layer
-        !
-        write( *, * ) "    -> Model File: [", model_file_name, "]"
-        !
-        ! Read Grid and ModelParameter with ModelReader_Weerachai
-        call model_reader%Read( model_file_name, main_grid, model_parameter ) 
-        !
-        ! Instantiate the ModelOperator object
-        select type( main_grid )
-            !
-            class is( Grid3D_SG_t )
-                !
-                call main_grid%SetupAirLayers( air_layer, model_method, model_n_air_layer, model_max_height )
-                !
-                call main_grid%UpdateAirLayers( air_layer%nz, air_layer%dz )
-                !
-                model_operator = ModelOperator_MF_t( main_grid )
-                !
-                call model_parameter%setMetric( model_operator%metric )
-                !
-                call model_operator%SetEquations()
-                !
-                call model_operator%SetCond( model_parameter )
-                !
-            class default
-                stop "Unclassified main_grid"
-            !
-        end select
-        !
-    end subroutine handleModelFile
-    !
-    !
     subroutine handleArguments()
         implicit none
         !
-        character(200) :: argument
-        integer        :: argument_index
+        character( len=200 ) :: argument
+        integer              :: argument_index
         !
         if ( command_argument_count() == 0 ) then
             !
@@ -344,7 +314,7 @@ contains
                       case ( "-c", "--control" )
                          !
                          call get_command_argument( argument_index + 1, argument )
-                         control_file_name = argument
+                         control_file_name = trim( argument )
                          !
                          if ( len( control_file_name ) > 0 ) has_control_file = .TRUE.
                          !
@@ -353,7 +323,7 @@ contains
                       case ( "-d", "--data" )
                          !
                          call get_command_argument( argument_index + 1, argument )
-                         data_file_name = argument
+                         data_file_name = trim( argument )
                          !
                          if ( len( data_file_name ) > 0 ) has_data_file = .TRUE.
                          !
@@ -368,7 +338,7 @@ contains
                       case ( "-m", "--model" )
                          !
                          call get_command_argument( argument_index + 1, argument )
-                         model_file_name = trim(argument)
+                         model_file_name = trim( argument )
                          !
                          if ( len( model_file_name ) > 0 ) has_model_file = .TRUE.
                          !
@@ -377,14 +347,14 @@ contains
                       case ( "-pd", "--predicted" )
                          !
                          call get_command_argument( argument_index + 1, argument )
-                         predicted_data_file_name = trim(argument)
+                         predicted_data_file_name = trim( argument )
                          !
                          argument_index = argument_index + 2
                          !
                       case ( "-es", "--esolution" )
                          !
                          call get_command_argument( argument_index + 1, argument )
-                         e_solution_file_name = trim(argument)
+                         e_solution_file_name = trim( argument )
                          !
                          argument_index = argument_index + 2
                          !
@@ -426,8 +396,8 @@ contains
         verbosis                 = .FALSE.
         !
         ! Solver
-        max_iter = 100
-        tolerance = TOL8
+        !max_iter = 100
+        !tolerance = TOL8
         !
         ! Source
         get_1D_from = "Geometric_mean"
@@ -478,7 +448,7 @@ contains
     recursive subroutine sortByReceiverType( data_handle_array, first, last )
         implicit none
         !
-        type( Dh_t ), allocatable, dimension(:), intent( inout ) :: data_handle_array
+        type( Dh_t ), pointer, dimension(:), intent( inout ) :: data_handle_array
         type( Dh_t ), allocatable :: x_Dh, t_Dh
         class( DataHandle_t ), allocatable :: i_data_handle, j_data_handle, x_data_handle
         integer first, last
@@ -521,7 +491,7 @@ contains
     recursive subroutine sortByPeriod( data_handle_array, first, last )
         implicit none
         !
-        type( Dh_t ), allocatable, dimension(:), intent( inout ) :: data_handle_array
+        type( Dh_t ), pointer, dimension(:), intent( inout ) :: data_handle_array
         type( Dh_t ), allocatable :: x_Dh, t_Dh
         class( DataHandle_t ), allocatable :: i_data_handle, j_data_handle, x_data_handle
         integer first, last
@@ -564,7 +534,7 @@ contains
     recursive subroutine sortByReceiver( data_handle_array, first, last )
         implicit none
         !
-        type( Dh_t ), allocatable, dimension(:), intent( inout ) :: data_handle_array
+        type( Dh_t ), pointer, dimension(:), intent( inout ) :: data_handle_array
         type( Dh_t ), allocatable :: x_Dh, t_Dh
         class( DataHandle_t ), allocatable :: i_data_handle, j_data_handle, x_data_handle
         integer first, last
@@ -607,7 +577,7 @@ contains
     subroutine writeDataHandleArray( data_handle_array )
         implicit none
         !
-        type( Dh_t ), allocatable, dimension(:), intent( inout ) :: data_handle_array
+        type( Dh_t ), pointer, dimension(:), intent( inout ) :: data_handle_array
         !
         class( DataHandle_t ), allocatable :: Dh
         !
@@ -620,7 +590,7 @@ contains
         call sortByReceiver( data_handle_array, 1, size( data_handle_array ) )
         !
         ! Order by receiver
-        call sortByReceiverType( data_handle_array, 1, size( data_handle_array ) )
+        !call sortByReceiverType( data_handle_array, 1, size( data_handle_array ) )
         !
         receiver_type = 0
         !

@@ -70,6 +70,7 @@ contains
         class( Transmitter_t ), pointer :: transmitter
         integer                         :: iTx, rx_id, rx_type
         real ( kind=prec )              :: azimuth
+        logical                            :: tx_related_rx
         !
         call self%data_entries%add( data_entry )
         !
@@ -87,7 +88,7 @@ contains
                 !
             class is ( DataEntryCSEM_t )
                 !
-                allocate( transmitter, source = TransmitterCSEM_t( data_entry%period, data_entry%tx_xyz, data_entry%azimuth, data_entry%dip, data_entry%moment, data_entry%dipole ) )
+                allocate( transmitter, source = TransmitterCSEM_t( data_entry%period, data_entry%tx_location, data_entry%azimuth, data_entry%dip, data_entry%moment, data_entry%dipole ) )
                 !
         end select
         !
@@ -100,31 +101,31 @@ contains
             case( "Ex_Field" )
                 !
                 azimuth = 1.0
-                allocate( receiver, source = ReceiverSingleField_t( data_entry%xyz, azimuth, rx_type ) )
+                allocate( receiver, source = ReceiverSingleField_t( data_entry%location, azimuth, rx_type ) )
                 !
             case( "Ey_Field" )
                 !
                 azimuth = 2.0
-                allocate( receiver, source = ReceiverSingleField_t( data_entry%xyz, azimuth, rx_type ) )
+                allocate( receiver, source = ReceiverSingleField_t( data_entry%location, azimuth, rx_type ) )
                 !
             case( "Bx_Field" )
                 !
                 azimuth = 3.0
-                allocate( receiver, source = ReceiverSingleField_t( data_entry%xyz, azimuth, rx_type ) )
+                allocate( receiver, source = ReceiverSingleField_t( data_entry%location, azimuth, rx_type ) )
                 !
             case( "By_Field" )
                 !
                 azimuth = 4.0
-                allocate( receiver, source = ReceiverSingleField_t( data_entry%xyz, azimuth, rx_type ) )
+                allocate( receiver, source = ReceiverSingleField_t( data_entry%location, azimuth, rx_type ) )
                 !
             case( "Bz_Field" )
                 !
                 azimuth = 5.0
-                allocate( receiver, source = ReceiverSingleField_t( data_entry%xyz, azimuth, rx_type ) )
+                allocate( receiver, source = ReceiverSingleField_t( data_entry%location, azimuth, rx_type ) )
                 !
             case( "Full_Impedance" )
                 !
-                allocate( receiver, source = ReceiverFullImpedance_t( data_entry%xyz, rx_type ) )
+                allocate( receiver, source = ReceiverFullImpedance_t( data_entry%location, rx_type ) )
                 !
             case( "Full_Interstation_TF" )
                 !
@@ -140,11 +141,11 @@ contains
                 !
             case( "Off_Diagonal_Impedance" )
                 !
-                allocate( receiver, source = ReceiverOffDiagonalImpedance_t( data_entry%xyz, rx_type ) )
+                allocate( receiver, source = ReceiverOffDiagonalImpedance_t( data_entry%location, rx_type ) )
                 !
             case( "Full_Vertical_Components", "Full_Vertical_Magnetic" )
                 !
-                allocate( receiver, source = ReceiverFullVerticalMagnetic_t( data_entry%xyz, rx_type ) )
+                allocate( receiver, source = ReceiverFullVerticalMagnetic_t( data_entry%location, rx_type ) )
                 !
             case default
                 write( *, * ) "unknow component type :[", data_entry%type, "]"
@@ -160,12 +161,47 @@ contains
         !
         deallocate( receiver )
         !
+        tx_related_rx = .FALSE.
+        !
         ! LOOP OVER TRANSMITTERS
         do iTx = 1, size( transmitters )
             !
             transmitter => getTransmitter( iTx )
             !
-            if( ABS( transmitter%period - data_entry%period ) < TOL6 ) then
+            select type( transmitter )
+                !
+                class is( TransmitterMT_t )
+                    !
+                    select type( data_entry )
+                        !
+                        class is( DataEntryMT_t )
+                            !
+                            if( transmitter%period == data_entry%period ) tx_related_rx = .TRUE.
+                            !
+                        class default
+                            tx_related_rx = .FALSE.
+                    end select
+                    !
+                class is( TransmitterCSEM_t )
+                    !
+                    select type( data_entry )
+                        !
+                        class is( DataEntryCSEM_t )
+                            !
+                            if( transmitter%period == data_entry%period .AND.   &
+                                transmitter%location(1) == data_entry%tx_location(1) .AND.    &
+                                transmitter%location(2) == data_entry%tx_location(2) .AND.    &
+                                transmitter%location(3) == data_entry%tx_location(3) ) then
+                                tx_related_rx = .TRUE.
+                            endif
+                            !
+                        class default
+                            tx_related_rx = .FALSE.
+                    end select
+                    !
+            end select
+            !
+            if( tx_related_rx ) then
                 !
                 call transmitter%updateReceiverIndexesArray( rx_id )
                 !

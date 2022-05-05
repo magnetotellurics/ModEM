@@ -214,6 +214,8 @@ contains
         !
         !#Period(s) Code GG_Lat GG_Lon X(m) Y(m) response(m) Component Real Imag Error
         !
+		if( associated( self%predicted_data ) ) call deallocateDataHandleArray( self%predicted_data )
+		!
         do i = 1, self%n_comp
 			!
 			rx_type = int( self%rx_type )
@@ -227,7 +229,7 @@ contains
 			call updateDataHandleArray( self%predicted_data, DataHandleMT_t( rx_type, code, component, period, rx_location, real_part, imaginary ) )
 			!
         enddo
-        !
+		!
     end subroutine savePredictedDataFullImpedance
     !
     subroutine writeReceiverFullImpedance( self )
