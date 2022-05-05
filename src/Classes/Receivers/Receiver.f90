@@ -30,7 +30,7 @@ module Receiver
         !
         type( cSparseVector3D_SG_t )   :: Lex, Ley, Lez, Lbx, Lby, Lbz
         !
-        type( Dh_t ), allocatable, dimension(:) :: predicted_data
+        type( Dh_t ), pointer, dimension(:) :: predicted_data
         !
         contains
             !
@@ -129,6 +129,8 @@ contains
         self%is_complex = .FALSE.
         !
         self%interpolation_set = .FALSE.
+		!
+		self%predicted_data => null()
         !
     end subroutine initializeRx
     !

@@ -78,7 +78,7 @@ contains
         implicit none
         !
         class( DataEntryArray_t ), intent( in ) :: self
-        integer                                            :: counter
+        integer                                 :: counter
         !
         type( Element_t ), pointer  :: element
         !
@@ -114,7 +114,7 @@ contains
         implicit none
         !
         class( DataEntryArray_t ), intent( inout ) :: self
-        class( DataEntry_t ), intent( in )            :: data_entry
+        class( DataEntry_t ), intent( in )         :: data_entry
         !
         type( Element_t ), pointer :: element
         !
@@ -142,11 +142,11 @@ contains
         implicit none
         !
         class( DataEntryArray_t ), intent( in ) :: self
-        integer, intent( in )                         :: de_index
-        class( DataEntry_t ), pointer              :: data_entry
+        integer, intent( in )                   :: de_index
+        class( DataEntry_t ), pointer           :: data_entry
         !
         type( Element_t ), pointer :: element
-        integer                          :: counter
+        integer                    :: counter
         !
         element => self%first
         counter = 1

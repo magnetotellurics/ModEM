@@ -13,8 +13,6 @@ module DataHandleFArray
     use DataHandleMT
     use DataHandleCSEM
     !
-    implicit none
-    !
     ! Allocatable DataHandle element of the array, for Old Fortran polymorphism !!!
     type, public :: Dh_t
         !
@@ -30,14 +28,14 @@ contains
     subroutine updateDataHandleArray( data_handle_array, new_dh )
         implicit none
         !
-		type( Dh_t ), allocatable, dimension(:), intent( inout ) :: data_handle_array
+        type( Dh_t ), pointer, dimension(:), intent( inout ) :: data_handle_array
         class( DataHandle_t ), intent( in ) :: new_dh
         !
         integer                                 :: iDh, nDh
         type( Dh_t ), allocatable, dimension(:) :: temp_array
         type( Dh_t ), allocatable               :: temp_dh
         !
-        if( .NOT. allocated( data_handle_array ) ) then
+        if( .NOT. associated( data_handle_array ) ) then
             allocate( data_handle_array( 1 ) )
             allocate( Dh_t :: temp_dh )
             temp_dh%Dh = new_dh
@@ -54,7 +52,7 @@ contains
             !
             temp_array( nDh + 1 ) = temp_dh
             !
-            data_handle_array  = temp_array
+            allocate( data_handle_array, source = temp_array )
             !
             deallocate( temp_dh )
             deallocate( temp_array )
@@ -67,7 +65,7 @@ contains
         implicit none
         !
         !
-		type( Dh_t ), allocatable, dimension(:), intent( inout ) :: data_handle_array
+        type( Dh_t ), allocatable, dimension(:), intent( inout ) :: data_handle_array
         integer, intent( in )                                    :: iDh
         !
         class( DataHandle_t ), allocatable, intent( in )         :: Dh
@@ -79,7 +77,7 @@ contains
     function getDataHandle( data_handle_array, iDh ) result( dh )
         implicit none
         !
-        type( Dh_t ), allocatable, dimension(:) :: data_handle_array
+        type( Dh_t ), pointer, dimension(:), intent( in ) :: data_handle_array
         integer                                 :: iDh
         !
         class( DataHandle_t ), allocatable      :: dh
@@ -92,8 +90,8 @@ contains
     subroutine deallocateDataHandleArray( data_handle_array )
         implicit none
         !
-        type( Dh_t ), allocatable, dimension(:) :: data_handle_array
-		!
+        type( Dh_t ), pointer, dimension(:), intent( inout ) :: data_handle_array
+        !
         integer                    :: ndh, idh
         class( Dh_t ), allocatable :: alloc_dh
         !
@@ -105,7 +103,7 @@ contains
             deallocate( alloc_dh )
         end do
         !
-        deallocate( data_handle_array )
+        nullify( data_handle_array )
         !
     end subroutine deallocateDataHandleArray
     !

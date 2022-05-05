@@ -69,7 +69,7 @@ contains
         !
         integer :: iTx, iRx, iDh
         !
-        type( Dh_t ), allocatable, dimension(:) :: all_data_handles
+        type( Dh_t ), pointer, dimension(:) :: all_data_handles
         !
         !
         write ( *, * ) "    > Start forward modelling."
@@ -89,7 +89,6 @@ contains
         endif
         !
         ! ForwardSolver - Chosen from control file
-        !if( allocated( forward_solver ) ) deallocate( forward_solver )
         select case ( forward_solver_type )
             !
             case( FWD_IT_DC )
@@ -102,6 +101,8 @@ contains
         !
         ! Forward Modelling
         !
+		all_data_handles => null()
+		!
         Tx => getTransmitter(1)
         !
         call writeEsolutionHeader( size( transmitters ), Tx%n_pol )
@@ -116,7 +117,7 @@ contains
             Tx%forward_solver => forward_solver
             !
             ! Set Transmitter´s ForwardSolver Omega and Cond
-            call Tx%forward_solver%setFrequency( Tx%period )
+            call Tx%forward_solver%setFrequency( model_parameter, Tx%period )
             !
             ! Create Transmitter´s Source
             select type( Tx )
@@ -151,8 +152,6 @@ contains
                     call updateDataHandleArray( all_data_handles, getDataHandle( Rx%predicted_data, iDh ) )
                     !
                 end do
-                !
-                deallocate( Rx%predicted_data )
                 !
             enddo
             !
@@ -449,7 +448,7 @@ contains
     recursive subroutine sortByReceiverType( data_handle_array, first, last )
         implicit none
         !
-        type( Dh_t ), allocatable, dimension(:), intent( inout ) :: data_handle_array
+        type( Dh_t ), pointer, dimension(:), intent( inout ) :: data_handle_array
         type( Dh_t ), allocatable :: x_Dh, t_Dh
         class( DataHandle_t ), allocatable :: i_data_handle, j_data_handle, x_data_handle
         integer first, last
@@ -492,7 +491,7 @@ contains
     recursive subroutine sortByPeriod( data_handle_array, first, last )
         implicit none
         !
-        type( Dh_t ), allocatable, dimension(:), intent( inout ) :: data_handle_array
+        type( Dh_t ), pointer, dimension(:), intent( inout ) :: data_handle_array
         type( Dh_t ), allocatable :: x_Dh, t_Dh
         class( DataHandle_t ), allocatable :: i_data_handle, j_data_handle, x_data_handle
         integer first, last
@@ -535,7 +534,7 @@ contains
     recursive subroutine sortByReceiver( data_handle_array, first, last )
         implicit none
         !
-        type( Dh_t ), allocatable, dimension(:), intent( inout ) :: data_handle_array
+        type( Dh_t ), pointer, dimension(:), intent( inout ) :: data_handle_array
         type( Dh_t ), allocatable :: x_Dh, t_Dh
         class( DataHandle_t ), allocatable :: i_data_handle, j_data_handle, x_data_handle
         integer first, last
@@ -578,7 +577,7 @@ contains
     subroutine writeDataHandleArray( data_handle_array )
         implicit none
         !
-        type( Dh_t ), allocatable, dimension(:), intent( inout ) :: data_handle_array
+        type( Dh_t ), pointer, dimension(:), intent( inout ) :: data_handle_array
         !
         class( DataHandle_t ), allocatable :: Dh
         !
@@ -591,7 +590,7 @@ contains
         call sortByReceiver( data_handle_array, 1, size( data_handle_array ) )
         !
         ! Order by receiver
-        call sortByReceiverType( data_handle_array, 1, size( data_handle_array ) )
+        !call sortByReceiverType( data_handle_array, 1, size( data_handle_array ) )
         !
         receiver_type = 0
         !

@@ -22,6 +22,8 @@ module TransmitterMT
             !
             procedure, public :: solveFWD => solveFWDTransmitterMT
             !
+            procedure, public :: isEqual => isEqualTransmitterMT
+            !
             procedure, public :: write    => writeTransmitterMT
             !
     end type TransmitterMT_t
@@ -119,6 +121,31 @@ module TransmitterMT
         enddo
         !
     end subroutine solveFWDTransmitterMT
+    !
+    ! Compare two transmitters
+    function isEqualTransmitterMT( self, other ) result( equal )
+        implicit none
+        !
+        class( TransmitterMT_t ), intent( in ) :: self
+        class( Transmitter_t ), intent( in )   :: other
+        logical                                :: equal
+        !
+        equal = .FALSE.
+        !
+        select type( other )
+            !
+            class is( TransmitterMT_t )
+                !
+                if( self%period == other%period ) then
+                    equal = .TRUE.
+                endif
+                !
+            class default
+                equal = .FALSE.
+            !
+        end select
+        !
+    end function isEqualTransmitterMT
     !
     ! Print TransmitterMT info
     subroutine writeTransmitterMT( self )

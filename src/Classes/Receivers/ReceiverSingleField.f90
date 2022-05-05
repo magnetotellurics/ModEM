@@ -188,6 +188,8 @@ contains
 				real_part = real( self%response( 1 ), kind=prec )
 				imaginary = real( imag( self%response( 1 ) ), kind=prec )
 				!
+				if( associated( self%predicted_data ) ) call deallocateDataHandleArray( self%predicted_data )
+				!
 				call updateDataHandleArray( self%predicted_data, DataHandleCSEM_t( rx_type, code, component, period, tx_location, azimuth, dip, moment, dipole, rx_location, real_part, imaginary ) )
 				!
 			class default
