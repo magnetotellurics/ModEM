@@ -92,8 +92,8 @@ contains
         !  multiply result by VNode -- add to rhs of symetrized
         !    current conservation equation
         !
-		! GARYS SUGESTION FOR CSEM
-		!call phi0%mults( self%solver%preconditioner%model_operator%metric%Vnode )
+		! GARY'S SUGESTION FOR CSEM: REMOVE NEXT LINE
+		call phi0%mults( self%solver%preconditioner%model_operator%metric%Vnode )
         !  multiply result by cFactor (in place)
         call phi0%mults( cFactor )
         !
@@ -153,7 +153,7 @@ contains
         !
         ! point-wise multiplication with volume weights centered on corner nodes
         !
-		! GARYS SUGESTION FOR CSEM
+		! GARY'S SUGESTION FOR CSEM: REMOVE NEXT LINE
 		call phiRHS%mults( self%solver%preconditioner%model_operator%metric%Vnode )
         !
         !    solve system of equations -- solver will have to know about

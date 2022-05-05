@@ -201,14 +201,16 @@ module ForwardSolverIT_DC
                 !
                 call self%divergence_correction%rhsDivCor( self%solver%omega, source, phi0 )
                 !
-                e_solution = e_solution%Interior()
+                ! FWD STD MODEM-ON VERSION DOES THAT
                 !
-                allocate( temp_esol, source = e_solution )
+                !e_solution = e_solution%Interior()
                 !
-                self%nDivCor = self%nDivCor + 1
-                call self%divergence_correction%DivCorr( temp_esol, e_solution, phi0 )
+                !allocate( temp_esol, source = e_solution )
                 !
-                deallocate( temp_esol )
+                !self%nDivCor = self%nDivCor + 1
+                !call self%divergence_correction%DivCorr( temp_esol, e_solution, phi0 )
+                !
+                !deallocate( temp_esol )
                 !
             endif
             !

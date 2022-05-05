@@ -20,7 +20,7 @@ module ReceiverFArray
     end type Rx_t
     !
     ! Global Array of Receivers
-    type( Rx_t ), pointer, dimension(:), save, public :: receivers
+    type( Rx_t ), pointer, dimension(:), save, public :: receivers => null()
     !
     public :: getReceiver, printReceiverArray
     public :: updateReceiverArray, deallocateReceiverArray
@@ -100,7 +100,7 @@ contains
             deallocate( alloc_rx )
         end do
         !
-        deallocate( receivers )
+        nullify( receivers )
         !
     end subroutine deallocateReceiverArray
     !

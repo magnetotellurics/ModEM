@@ -102,11 +102,11 @@ contains
         !
         self%relErr(1) = rnorm/bnorm
         !
-        write( *, * ) "PCG iter, self%relErr( 1 )", 1, self%relErr( 1 )
+        !write( *, * ) "PCG iter, self%relErr( 1 )", 1, self%relErr( 1 )
         !
         i = 0
         !
-        loop: do while ( ( self%relErr(i+1) .GT. self%tolerance ).and.( i .LT. self%max_iter ) )
+        loop: do while ( ( self%relErr( i + 1 ) .GT. self%tolerance ).and.( i + 1 .LT. self%max_iter ) )
             !
             call self%preconditioner%LUsolve( r, s )
             !
@@ -136,11 +136,16 @@ contains
             !
             self%relErr( i + 1 ) = rnorm/bnorm
             !
-            write( *, * ) "PCG iter, self%relErr( i + 1 )", i + 1, self%relErr( i + 1 )
+            !write( *, * ) "PCG iter, self%relErr( i + 1 )", i + 1, self%relErr( i + 1 )
             !
         enddo loop
         !
-        write( *, * ) "Final PCG iter, self%relErr( i + 1 )", i + 1, self%relErr( i + 1 )
+        !
+        if( i + 1 .LT. self%max_iter ) then
+            write( *, "(A35, I8, A3, es20.6)" ) "DivCorr PCG converged within ", i + 1, " : ", self%relErr( i + 1 )
+        else
+            write( *, "(A35, I8, A3, es20.6)" ) "DivCorr PCG not converged in ", i + 1, " : ", self%relErr( i + 1 )
+        endif
         !
         deallocate( r )
         deallocate( s )

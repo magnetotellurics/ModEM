@@ -23,7 +23,7 @@ module TransmitterFArray
     end type Tx_t
     !
     ! Global Array of Transmitters
-    type( Tx_t ), pointer, dimension(:), save, public :: transmitters
+    type( Tx_t ), pointer, dimension(:), save, public :: transmitters => null()
     !
     public :: getTransmitter, printTransmitterArray
     public :: updateTransmitterArray, deallocateTransmitterArray
@@ -101,7 +101,7 @@ contains
             deallocate( alloc_tx )
         end do
         !
-        deallocate( transmitters )
+        nullify( transmitters )
         !
     end subroutine deallocateTransmitterArray
     !
