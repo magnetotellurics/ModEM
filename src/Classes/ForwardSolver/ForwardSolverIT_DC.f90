@@ -236,27 +236,31 @@ module ForwardSolverIT_DC
                 self%n_iter_actual = self%n_iter_actual + self%solver%n_iter
                 self%nDivCor = self%nDivCor + 1
                 !
-                if( self%nDivCor < self%max_div_cor ) then
-                    !
-                    allocate( temp_esol, source = e_solution )
-                    !
-                    if( source%non_zero_source ) then
-                        !
-                        call self%divergence_correction%DivCorr( temp_esol, e_solution, phi0 )
-                        !
-                    else
-                        !
-                        call self%divergence_correction%DivCorr( temp_esol, e_solution )
-                        !
-                    endif
-                    !
-                    deallocate( temp_esol )
-                    !
-                else
-                    !
-                    self%solver%failed = .TRUE.
-                    !
-                endif
+                !if( .NOT. self%solver%converged )  then
+					!
+					if( self%nDivCor < self%max_div_cor ) then
+						!
+						allocate( temp_esol, source = e_solution )
+						!
+						if( source%non_zero_source ) then
+							!
+							call self%divergence_correction%DivCorr( temp_esol, e_solution, phi0 )
+							!
+						else
+							!
+							call self%divergence_correction%DivCorr( temp_esol, e_solution )
+							!
+						endif
+						!
+						deallocate( temp_esol )
+						!
+					else
+						!
+						self%solver%failed = .TRUE.
+						!
+					endif
+					!
+				!endif
             !
             enddo loop
             !
