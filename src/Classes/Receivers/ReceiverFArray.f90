@@ -34,20 +34,22 @@ contains
         class( Receiver_t ), intent( in ) :: new_rx
         integer                           :: id
         !
-        integer                                 :: iRx, nRx
-        type( Rx_t ), allocatable, dimension(:) :: temp_array
-        type( Rx_t ), allocatable               :: temp_rx
+        integer                             :: iRx, nRx
+        type( Rx_t ), pointer, dimension(:) :: temp_array
+        type( Rx_t ) :: temp_rx
         !
         id = 0
         !
         if( .NOT. associated( receivers ) ) then
             allocate( receivers( 1 ) )
-            allocate( Rx_t :: temp_rx )
+            !
             temp_rx%Rx = new_rx
+            !
             id = 1
+            !
             temp_rx%Rx%id = 1
             receivers( 1 ) = temp_rx
-            deallocate( temp_rx )
+            !
         else
             ! 
             nRx = size( receivers )
@@ -60,18 +62,18 @@ contains
             end do
             !
             allocate( temp_array( nRx + 1 ) )
-            temp_array( 1 : nRx ) = receivers
-            allocate( Rx_t :: temp_rx )
+			!
+            temp_array( 1 : nRx ) => receivers(:)
+            !
             temp_rx%Rx = new_rx
             temp_rx%Rx%id = nRx + 1
             id = nRx + 1
             !
-            temp_array( nRx + 1 ) = temp_rx
+            allocate( temp_array( nRx + 1 ), source = temp_rx )
             !
-            allocate( receivers, source = temp_array )
+            receivers => temp_array
             !
-            deallocate( temp_rx )
-            deallocate( temp_array )
+            nullify( temp_array )
             !
         endif
         !

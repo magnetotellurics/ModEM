@@ -272,9 +272,9 @@ contains
         end do
         !
         if( iter .LT. self%max_iter ) then
-            write( *, "(A35, I8, A3, es20.6)" ) "Solver QMR IT_DC converged within ", iter, " : ", self%relErr( iter )
+            write( *, * ) "Solver QMR IT_DC converged within ", iter, " : ", self%relErr( iter )
         else
-            write( *, "(A35, I8, A3, es20.6)" )  "Solver QMR IT_DC not converged in ", iter, " : ", self%relErr( iter )
+            write( *, * )  "Solver QMR IT_DC not converged in ", iter, " : ", self%relErr( iter )
         endif
         !
         deallocate( R )

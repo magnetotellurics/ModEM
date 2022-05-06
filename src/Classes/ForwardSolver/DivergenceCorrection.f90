@@ -152,7 +152,7 @@ contains
         !    this will be part of diagnostics
         self%divJ(1) = sqrt( phiRHS .dot. phiRHS )
         !
-		write( *, "(A30, es20.6)" ) "divJ before correction  ", self%divJ(1)
+		write( *, * ) "divJ before correction  ", self%divJ(1)
         !
         ! point-wise multiplication with volume weights centered on corner nodes
         !
@@ -197,7 +197,7 @@ contains
         ! compute the size of current Divergence after
         self%divJ(2) = sqrt( phiRHS .dot. phiRHS )
         !
-		write( *, "(A30, es20.6)" ) "divJ after correction  ", self%divJ(2)
+		write( *, * ) "divJ after correction  ", self%divJ(2)
         !
         deallocate( phiRHS )
 
