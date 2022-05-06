@@ -68,9 +68,9 @@ module EMsolve3D
   ! misfit tolerance for convergence of divergence correction solver
   real(kind=prec), parameter       ::   tolDivCorDef = 1E-5
   !Solver name, by default we use BICG
-  character (len=10)               ::   solver_name="BICG"
+  character (len=10)               ::   solver_name="QMR"
   character (len=50) , public      ::   get_1D_from="Geometric_mean"
-  character (len=50) , public      ::   compute_1D_from="EM1D"	
+  character (len=50) , public      ::   compute_1D_from="Dipole1D"	
   save
 
   type(timer_t), private :: timer
@@ -558,9 +558,9 @@ end subroutine SdivCorr ! SdivCorr
         tolEMfwd = tolEMDef
         tolEMadj = tolEMDef
         tolDivCor = tolDivCorDef
-        solver_name="BICG"
+        solver_name="QMR"
 		get_1D_from="Geometric_mean"
-		compute_1D_from="EM1D"
+		compute_1D_from="Dipole1D"
      else
         IterPerDivCor = solverControl%IterPerDivCor
         MaxDivCor = solverControl%MaxDivCor
@@ -656,9 +656,9 @@ solverControl%MaxIterDivCor = MaxIterDivCorDef
 solverControl%tolEMfwd      = tolEMDef
 solverControl%tolEMadj      = tolEMDef
 solverControl%tolDivCor     = tolDivCorDef
-solverControl%solver_name   = "BICG"
+solverControl%solver_name   = "QMR"
 solverControl%get_1D_from   = "Geometric_mean"
-solverControl%compute_1D_from= "EM1D"
+solverControl%compute_1D_from= "Dipole1D"
 do
    read (ioFwdCtrl,"(a)",iostat=ierr) line_text ! Read line into character variable
    line_text=trim(line_text)

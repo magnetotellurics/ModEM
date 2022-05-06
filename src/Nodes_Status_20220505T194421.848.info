@@ -1,0 +1,7 @@
+ Total Number of nodes=            1
+   FORWARD  : Send Per. #     1 : Pol #    1 to node #     1
+   FORWARD: Recieve Per #     1 and Pol    1      from     1
+ FWD: Finished calculating for (           1 ) Transmitters 
+ FWD: TIME REQUIERED:    89.651895600007265      s
+ FWD: Sending stop message to all nodes
+ Node       :           1  status=  Job Completed
