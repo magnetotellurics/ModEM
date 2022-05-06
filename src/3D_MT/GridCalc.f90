@@ -568,7 +568,31 @@ contains
           end do
        end do
     end if
+      ! upper boundary
+    iz = 1
+    do iy = 1, grid%ny
+       do ix = 2, grid%nx
+          E%y(ix, iy, iz) = (C%v(ix-1, iy, iz) + C%v(ix, iy, iz))/2.0d0
+       end do
+    end do
+    do ix = 1, grid%nx
+       do iy = 2,grid%ny
+          E%x(ix, iy, iz) = (C%v(ix, iy-1, iz) + C%v(ix, iy, iz))/2.0d0
+       end do
+    end do
     
+    ! lower boundary
+    iz = grid%nz + 1
+    do iy = 1, grid%ny
+       do ix = 2, grid%nx
+          E%y(ix, iy, iz) = (C%v(ix-1, iy, iz-1) + C%v(ix, iy, iz-1))/2.0d0
+       end do
+    end do
+    do ix = 1, grid%nx
+       do iy = 2, grid%ny
+          E%x(ix, iy, iz) = (C%v(ix, iy-1, iz-1) + C%v(ix, iy, iz-1))/2.0d0
+       end do
+    end do  
     
   end subroutine Cell2Edge
   
