@@ -93,8 +93,9 @@ contains
         !    current conservation equation
         !
 		! GARY'S SUGESTION FOR CSEM: REMOVE NEXT LINE
-		call phi0%mults( self%solver%preconditioner%model_operator%metric%Vnode )
-        !  multiply result by cFactor (in place)
+		!call phi0%mults( self%solver%preconditioner%model_operator%metric%Vnode )
+        !
+		!  multiply result by cFactor (in place)
         call phi0%mults( cFactor )
         !
     end subroutine rhsDivCorDivergenceCorrection
@@ -151,9 +152,10 @@ contains
         !    this will be part of diagnostics
         self%divJ(1) = sqrt( phiRHS .dot. phiRHS )
         !
+		write( *, "(A30, es20.6)" ) "divJ before correction  ", self%divJ(1)
+        !
         ! point-wise multiplication with volume weights centered on corner nodes
         !
-		! GARY'S SUGESTION FOR CSEM: REMOVE NEXT LINE
 		call phiRHS%mults( self%solver%preconditioner%model_operator%metric%Vnode )
         !
         !    solve system of equations -- solver will have to know about
@@ -183,7 +185,7 @@ contains
         ! subtract Divergence correction from inE
         !    outE = inE - outE
 		!
-        call outE%linCombS(inE,C_MinusOne,C_ONE)
+        call outE%linCombS( inE, C_MinusOne, C_ONE )
 		!
         ! divergence of the corrected output electrical field
         call self%solver%preconditioner%model_operator%DivC( outE, phiRHS )
@@ -195,7 +197,7 @@ contains
         ! compute the size of current Divergence after
         self%divJ(2) = sqrt( phiRHS .dot. phiRHS )
         !
-        write( *, * ) "divJ after correction  ", self%divJ(2)
+		write( *, "(A30, es20.6)" ) "divJ after correction  ", self%divJ(2)
         !
         deallocate( phiRHS )
 

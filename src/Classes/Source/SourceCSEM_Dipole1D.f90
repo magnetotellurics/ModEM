@@ -430,7 +430,7 @@ contains
                 !
                 amodel%cellCond = model
                 !
-                self%CondAnomaly_h = model_parameter%PDEmapping() - model_parameter%dPDEmapping( amodel )
+                self%CondAnomaly_h = model_parameter%PDEmapping() - amodel%PDEmapping()
                 !
         end select
         !

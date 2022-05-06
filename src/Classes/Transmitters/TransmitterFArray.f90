@@ -2,8 +2,6 @@
 !
 ! Class to provide a dynamic and polymorphic transmitters of Transmitter_t objects
 !
-! Last modified at 04/2022 by Paulo Werdt
-!
 !*************
 !
 module TransmitterFArray
@@ -37,18 +35,18 @@ contains
         class( Transmitter_t ), intent( in ) :: new_tx
         integer                              :: id
         !
-        integer                                 :: iTx, nTx
-        type( Tx_t ), allocatable, dimension(:) :: temp_array
-        type( Tx_t ), allocatable               :: temp_tx
+        integer                             :: iTx, nTx
+        type( Tx_t ), pointer, dimension(:) :: temp_array
+        type( Tx_t ) :: temp_tx
         !
         if( .NOT. associated( transmitters ) ) then
             allocate( transmitters( 1 ) )
-            allocate( Tx_t :: temp_tx )
+            !
             temp_tx%Tx = new_tx
             temp_tx%Tx%id = 1
             id = 1
             transmitters( 1 ) = temp_tx
-            deallocate( temp_tx )
+            !
         else
             !
             nTx = size( transmitters )
@@ -62,17 +60,17 @@ contains
             !
             allocate( temp_array( nTx + 1 ) )
             temp_array( 1 : nTx ) = transmitters
-            allocate( Tx_t :: temp_tx )
+            !allocate( Tx_t :: temp_tx )
             temp_tx%Tx = new_tx
             temp_tx%Tx%id = nTx + 1
             id = nTx + 1
             !
             temp_array( nTx + 1 ) = temp_tx
             !
-            allocate( transmitters, source = temp_array )
+            transmitters => temp_array
             !
-            deallocate( temp_tx )
-            deallocate( temp_array )
+            !deallocate( temp_tx )
+            nullify( temp_array )
             !
         endif
         !
