@@ -62,7 +62,7 @@ module cVector3D_SG
         procedure, public :: mult1    => mult1CVector3D_SG
         procedure, public, pass(self) :: mult2 => mult2CVector3D_SG
         procedure, public :: mult3 => mult3CVector3D_SG
-		procedure, public :: mult4 => mult4CVector3D_SG
+        procedure, public :: mult4 => mult4CVector3D_SG
         procedure, public :: mults1 => mults1CVector3D_SG
         procedure, public :: mults3 => mults3CVector3D_SG
         procedure, public :: div1 => div1CVector3D_SG
@@ -879,8 +879,8 @@ contains
             stop "    Incompatible inputs. Exiting."
         end if
     end function mult3CVector3D_SG
-	!
-	function mult4CVector3D_SG(lhs, rhs) result(Eout)
+    !
+    function mult4CVector3D_SG(lhs, rhs) result(Eout)
         implicit none
         !
         class( cVector3D_SG_t ), intent( in )  :: lhs
@@ -957,9 +957,9 @@ contains
         if (lhs%isCompatible(rhs)) then
             select type(rhs)
                 class is( cVector3D_SG_t )
-                    lhs%x = c1*lhs%x + c2*rhs%x
-                    lhs%y = c1*lhs%y + c2*rhs%y
-                    lhs%z = c1*lhs%z + c2*rhs%z
+                    lhs%x = c1 * lhs%x + c2 * rhs%x
+                    lhs%y = c1 * lhs%y + c2 * rhs%y
+                    lhs%z = c1 * lhs%z + c2 * rhs%z
             end select
         else
             write( *, * ) "ERROR:cVector3D_SG::linCombS"
@@ -1297,8 +1297,13 @@ contains
         !
         status = .FALSE.
         !
+        !write( *, * ) "SELF1 :", self%nx, self%ny, self%nz, self%gridType
+        !
         select type(rhs)
             class is( cVector3D_SG_t )
+                !
+                !write( *, * ) "RHS1 :", rhs%nx, rhs%ny, rhs%nz, rhs%gridType
+                !
                 if( self%nx == rhs%nx .AND.self%ny == rhs%ny .AND. self%nz == rhs%nz .AND.   &
                     self%gridType == rhs%gridType ) then
                     status = .TRUE.
@@ -1316,8 +1321,13 @@ contains
         !
         status = .FALSE.
         !
+        !write( *, * ) "SELF2 :", self%nx, self%ny, self%nz, self%gridType
+        !
         select type(rhs)
             class is(rVector3D_SG_t)
+                !
+                !write( *, * ) "RHS2 :", rhs%nx, rhs%ny, rhs%nz, rhs%gridType
+                !
                 if( self%nx == rhs%nx .AND.self%ny == rhs%ny .AND. self%nz == rhs%nz .AND.   &
                     self%gridType == rhs%gridType ) then
                     status = .TRUE.

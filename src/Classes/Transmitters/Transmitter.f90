@@ -1,7 +1,9 @@
 ! *************
 ! 
 ! Base class to define a Transmitter
-!
+! 
+! Last modified at 10/11/2021 by Paulo Werdt
+! 
 ! *************
 ! 
 module Transmitter
@@ -11,21 +13,20 @@ module Transmitter
     use ForwardSolver
     use cVector
     !
-    ! Global file name for e_solution file
-    character(:), allocatable :: e_solution_file_name
-    !
+	! Global file name for e_solution file
+	character(:), allocatable :: e_solution_file_name
+	!
     type, abstract :: Transmitter_t
         !
         integer :: id, n_pol, fwd_key(8)
         !
         real( kind=prec ) :: period
         !
-        class( ForwardSolver_t ), pointer :: forward_solver
+        class( ForwardSolver_t ), pointer :: forward_solver 
+        class( Source_t ), allocatable        :: source
         !
-        class( Source_t ), allocatable    :: source
-        !
-        class( cVector_t ), allocatable, dimension(:) :: e_all
-        integer, allocatable, dimension(:)            :: receiver_indexes
+        class( cVector_t ), allocatable    :: e_all(:)
+        integer, allocatable, dimension(:) :: receiver_indexes
         !
     contains
         !
@@ -34,9 +35,9 @@ module Transmitter
         !
         procedure, public :: updateFwdKey
         !
-        procedure, public :: updateReceiverIndexesArray
+        procedure, public :: isEqual => isEqualTransmitter
         !
-        procedure( interface_is_equal_tx ), deferred, public :: isEqual
+        procedure, public :: updateReceiverIndexesArray
         !
         procedure( interface_solve_fwd_tx ), deferred, public :: solveFWD
         !
@@ -54,7 +55,7 @@ module Transmitter
         function interface_is_equal_tx( self, other ) result( equal )
             import :: Transmitter_t
             class( Transmitter_t ), intent( in ) :: self, other
-            logical                              :: equal
+            logical                                        :: equal
         end function interface_is_equal_tx
         !
         subroutine interface_write_tx( self )
@@ -65,6 +66,22 @@ module Transmitter
     end interface
     !
     contains
+        !
+        ! Compare two transmitters
+        function isEqualTransmitter( self, other ) result( equal )
+            implicit none
+            !
+            class( Transmitter_t ), intent( in ) :: self
+            class( Transmitter_t ), intent( in ) :: other
+            logical                              :: equal
+            !
+            equal = .FALSE.
+            !
+            if( ABS( self%period - other%period ) < TOL6 ) then
+                equal = .TRUE.
+            endif
+            !
+        end function isEqualTransmitter
         !
         subroutine initializeTx( self )
             implicit none
@@ -83,8 +100,6 @@ module Transmitter
             implicit none
             !
             class( Transmitter_t ), intent( inout ) :: self
-            !
-            if( allocated( self%source ) ) deallocate( self%source )
             !
             if( allocated( self%e_all ) ) deallocate( self%e_all )
             !

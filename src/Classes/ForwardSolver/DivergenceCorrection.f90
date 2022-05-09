@@ -71,28 +71,26 @@ contains
         !
     end subroutine setCondDivergenceCorrection
     !
-    !**********
-    !
+	! 
     subroutine rhsDivCorDivergenceCorrection( self, omega, source, phi0 )
         implicit none
         !
-        class( DivergenceCorrection_t ), intent( inout ) :: self
-        real ( kind=prec ), intent( in )    :: omega
-        class( Source_t ), intent( in )     :: source
-        class( cScalar_t ), intent( inout ) :: phi0
+        class( DivergenceCorrection_t ), intent( in ) :: self
+        real( kind=prec ), intent( in )               :: omega
+        class( Source_t ), intent( in )               :: source
+        class( cScalar_t ), intent( inout )           :: phi0
         !
-		
-        complex( kind=prec ) :: cFactor
-
-        cFactor = -ONE_I/(mu_0*ISIGN*omega)    ! 1/(isign*1i*w*mu)
+        complex( kind=prec ) :: c_factor
+        !
+        c_factor = -ONE_I / ( mu_0 * ISIGN * omega )    ! 1/(isign*1i*w*mu)
         !
         !    take divergence of sourceInterior, and return as cScalar of
         !     appropriate explicit type
-        call self%solver%preconditioner%model_operator%Div( source%rhs%interior(), phi0 ) 
+        call self%solver%preconditioner%model_operator%Div( source%rhs, phi0 ) 
         !
-		!  multiply result by cFactor (in place)
-        call phi0%mults( cFactor )
-        !
+		!  multiply result by c_factor (in place)
+        call phi0%mults( c_factor )
+		!
     end subroutine rhsDivCorDivergenceCorrection
     !****************************************************************
     subroutine divCorrDivergenceCorrection( self, inE, outE, phi0 )
