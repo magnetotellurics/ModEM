@@ -48,6 +48,11 @@ contains
                 !
                 self%d = cScalar3D_SG_t( grid, NODE )
                 !
+                call self%d%zeros()
+                !
+            class default
+                write( *, * ) "ERROR:PreConditioner_MF_DC_t::PreConditioner_MF_DC_ctor:"
+                stop          "    unknow grid type"
         end select
         !
     end function PreConditioner_MF_DC_ctor

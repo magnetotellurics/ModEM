@@ -82,7 +82,7 @@ module TransmitterMT
         do i_pol = 1, self%n_pol
             !
             ! Verbosis...
-            write( *, "(A20, I8, A20, es20.6, A20, I8)" ) "SolveFWD for Tx:", self%id, " -> Period:", self%period, " - Polarization:", i_pol
+            write( *, * ) "SolveFWD for MT Tx:", self%id, " -> Period:", self%period, " - Polarization:", i_pol
             !
             call self%source%setE( i_pol )
             !

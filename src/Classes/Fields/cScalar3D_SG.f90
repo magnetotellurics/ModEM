@@ -1056,7 +1056,7 @@ contains
                     rhs%v = rhs%v + c * lhs%v 
             end select
         else
-            write( *, * ) "ERROR:cVector3D_SG::scMultAdd"
+            write( *, * ) "ERROR:cScalar3D_SG::scMultAdd"
             stop "    Incompatible inputs. Exiting."
         end if
 		!

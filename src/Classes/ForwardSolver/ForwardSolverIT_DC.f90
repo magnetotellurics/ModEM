@@ -152,6 +152,7 @@ module ForwardSolverIT_DC
             class( ForwardSolverIT_DC_t ), intent( inout ) :: self
             !
             self%n_iter_actual = 0
+            !
             self%relResFinal   = R_ZERO
             !
             allocate( self%relResVec( self%max_iter_total ) )
@@ -191,7 +192,7 @@ module ForwardSolverIT_DC
             self%solver%failed    = .FALSE.
             self%nDivCor = 0
             !
-            ! COPY NEEDED FOR 
+            ! Copy of source%rhs in b, effective only in non_zero_source cases
             allocate( b, source = source%rhs )
             !
             if( source%non_zero_source ) then
@@ -200,15 +201,19 @@ module ForwardSolverIT_DC
                     class is( Grid3D_SG_t )
                         !
                         allocate( phi0, source = cScalar3D_SG_t( grid, NODE ) )
+                        !
                         call phi0%zeros()
                         !
+                    class default
+                        write( *, * ) "ERROR:ForwardSolverIT_DC_t::getESolutionForwardSolverIT_DC:"
+                        stop          "    unknow grid type"
                 end select
                 !
                 call self%divergence_correction%rhsDivCor( self%solver%omega, source, phi0 )
                 !
                 b = b * self%solver%preconditioner%model_operator%metric%Vnode
                 !
-                ! FWD STD MODEM-ON VERSION DOES THAT
+                ! To apply diergence correction before the main solver (QMR) (this is being done in ModEM-ON)
                 !
                 !e_solution = e_solution%Interior()
                 !
@@ -243,6 +248,7 @@ module ForwardSolverIT_DC
                 enddo
                 !
                 self%n_iter_actual = self%n_iter_actual + self%solver%n_iter
+                !
                 self%nDivCor = self%nDivCor + 1
                 !
                 if( .NOT. self%solver%converged )  then

@@ -1,30 +1,27 @@
 ! *************
 ! 
 ! Derived class to define a CSEM Transmitter
-! 
-! Last modified at 08/06/2021 by Paulo Werdt
-! 
+!
 ! *************
 ! 
 module TransmitterCSEM
     ! 
-	use FileUnits
+    use FileUnits
     use Transmitter 
-	use cVector3D_SG
+    use cVector3D_SG
     !
     type, extends( Transmitter_t ), public :: TransmitterCSEM_t
         !
-        real( kind=prec )  :: location(3), azimuth, dip, moment
+        real( kind=prec )         :: location(3), azimuth, dip, moment
         character(:), allocatable :: dipole
         !
         contains
             !
             final    :: TransmitterCSEM_dtor
             !
-            procedure, public    :: solveFWD => solveFWDTransmitterCSEM
-            procedure, public    :: getSource => getSourceTransmitterCSEM
+            procedure, public :: solveFWD => solveFWDTransmitterCSEM
             !
-            procedure, public    :: write => writeTransmitterCSEM
+            procedure, public :: write => writeTransmitterCSEM
             !
     end type TransmitterCSEM_t
     !
@@ -39,8 +36,7 @@ contains
         !
         type( TransmitterCSEM_t ) :: self
         !
-        real( kind=prec ), intent( in )  :: period, azimuth, dip, moment
-        real( kind=prec ), intent( in )  :: location(3)
+        real( kind=prec ), intent( in )         :: period, azimuth, dip, moment, location(3)
         character(:), allocatable, intent( in ) :: dipole
         !
         ! write(*,*) "Constructor TransmitterCSEM_t"
@@ -84,49 +80,39 @@ contains
         !
         allocate( cVector3D_SG_t :: self%e_all( self%n_pol ) )
         !
-		! Verbosis...
-		write( *, "(A20, I8, A20, es20.6, A20, I8)" ) "SolveFWD for Tx:", self%id, " -> Period:", self%period, " - Polarization:", 1
-		!
-		call self%source%setE( 1 )
-		!
-		select type( mgrid => self%source%model_operator%metric%grid )
-			class is( Grid3D_SG_t )
-				!
-				self%e_all( 1 ) = cVector3D_SG_t( mgrid, EDGE )
-				!
-		end select
-		!
-		call self%forward_solver%getESolution( self%source, self%e_all( 1 ) )
-		self%e_all( 1 ) =self%e_all( 1 ) + self%source%E
-		
-		!
-		ModeName = "Ex"
-		!
-		open( ioESolution, file = e_solution_file_name, action = "write", position = "append", form = "unformatted", iostat = ios )
-		!
-		if( ios /= 0 ) then
-			stop "Error opening file in solveFWDTransmitterMT: e_solution"
-		else
-			!
-			! write the frequency header - 1 record
-			write( ioESolution ) omega, self%id, 1, ModeName
-			!
-			call self%e_all( 1 )%write( ioESolution )
-			!
-			close( ioESolution )
-			!
-		endif
+        ! Verbosis...
+        write( *, * ) "SolveFWD for CSEM Tx:", self%id, " -> Period:", self%period
+        !
+        call self%source%setE( 1 )
+        !
+        select type( mgrid => self%source%model_operator%metric%grid )
+            class is( Grid3D_SG_t )
+                !
+                self%e_all( 1 ) = cVector3D_SG_t( mgrid, EDGE )
+                !
+        end select
+        !
+        call self%forward_solver%getESolution( self%source, self%e_all( 1 ) )
+        self%e_all( 1 ) =self%e_all( 1 ) + self%source%E
+        !
+        ModeName = "Ex"
+        !
+        open( ioESolution, file = e_solution_file_name, action = "write", position = "append", form = "unformatted", iostat = ios )
+        !
+        if( ios /= 0 ) then
+            stop "Error opening file in solveFWDTransmitterCSEM: e_solution"
+        else
+            !
+            ! write the frequency header - 1 record
+            write( ioESolution ) omega, self%id, 1, ModeName
+            !
+            call self%e_all( 1 )%write( ioESolution )
+            !
+            close( ioESolution )
+            !
+        endif
         !
     end subroutine solveFWDTransmitterCSEM
-    !
-    !
-    subroutine getSourceTransmitterCSEM( self )
-        !
-        class( TransmitterCSEM_t ), intent(in)    :: self
-        !
-        write(*,*) "getSource TransmitterCSEM_t: ", self%location
-        !
-    end subroutine getSourceTransmitterCSEM
     !
     subroutine writeTransmitterCSEM( self )
         !

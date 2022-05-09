@@ -51,6 +51,11 @@ contains
                 !
                 self%Dilu = cVector3D_SG_t( grid, EDGE )
                 !
+                call self%Dilu%zeros()
+                !
+            class default
+                write( *, * ) "ERROR:PreConditioner_MF_CC_t::PreConditioner_MF_CC_ctor:"
+                stop          "    unknow grid type"
         end select
         !
     end function PreConditioner_MF_CC_ctor
@@ -68,7 +73,7 @@ contains
         !
         ! Save omega in object, to record
         self%omega = omega
-		!
+        !
         c_factor = ISIGN * ONE_I * omega * MU_0
         !
         ! Initialize the non-interior values
@@ -240,7 +245,7 @@ contains
                                     end do
                                 end do
                             end do
-							!
+                            !
                             do iz = 1, inE%nz
                                 do ix = inE%nx, 2, -1
                                     do iy = inE%ny, 2, -1
@@ -251,7 +256,7 @@ contains
                                     end do
                                 end do
                             end do
-							!
+                            !
                             !     for adjoint to the division by volume elements last
                             call outE%divs( model_operator%Metric%Vedge )
                             !

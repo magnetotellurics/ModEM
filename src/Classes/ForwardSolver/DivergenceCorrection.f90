@@ -71,7 +71,7 @@ contains
         !
     end subroutine setCondDivergenceCorrection
     !
-	! 
+    ! 
     subroutine rhsDivCorDivergenceCorrection( self, omega, source, phi0 )
         implicit none
         !
@@ -88,11 +88,12 @@ contains
         !     appropriate explicit type
         call self%solver%preconditioner%model_operator%Div( source%rhs, phi0 ) 
         !
-		!  multiply result by c_factor (in place)
+        !  multiply result by c_factor (in place)
         call phi0%mults( c_factor )
-		!
+        !
     end subroutine rhsDivCorDivergenceCorrection
-    !****************************************************************
+    !
+    !
     subroutine divCorrDivergenceCorrection( self, inE, outE, phi0 )
         implicit none
         ! function to compute divergence correction for input electric
@@ -101,9 +102,9 @@ contains
         !     computed by rhsDivCor
         !
         class( DivergenceCorrection_t ), intent( inout ) :: self
-        class( cVector_t ), intent( in )           :: inE
-        class( cVector_t ), intent( inout )        :: outE
-        class( cScalar_t ), intent( in ), optional :: phi0
+        class( cVector_t ), intent( in )                 :: inE
+        class( cVector_t ), intent( inout )              :: outE
+        class( cScalar_t ), intent( in ), optional       :: phi0
         !
         class( cScalar_t ), allocatable :: phiSol, phiRHS
         logical :: SourceTerm
@@ -128,8 +129,16 @@ contains
             class is( Grid3D_SG_t )
                 !
                 allocate( phiSol, source = cScalar3D_SG_t( grid, NODE ) )
+                !
+                call phiSol%zeros()
+                !
                 allocate( phiRHS, source = cScalar3D_SG_t( grid, NODE ) )
                 !
+                call phiRHS%zeros()
+                !
+            class default
+                write( *, * ) "ERROR:DivergenceCorrection_t::divCorrDivergenceCorrection:"
+                stop          "    unknow grid type"
         end select
         !
         ! compute divergence of currents for input electric field
@@ -145,11 +154,12 @@ contains
         !    this will be part of diagnostics
         self%divJ(1) = sqrt( phiRHS .dot. phiRHS )
         !
-		write( *, * ) "divJ before correction  ", self%divJ(1)
+        write( *, * ) "divJ before correction: ", self%divJ(1)
         !
         ! point-wise multiplication with volume weights centered on corner nodes
         !
-		call phiRHS%mults( self%solver%preconditioner%model_operator%metric%Vnode )
+        ! ???? Interesting point: if changing phiRHS to phiSol, the QMR starts to slowly converge
+        call phiRHS%mults( self%solver%preconditioner%model_operator%metric%Vnode )
         !
         !    solve system of equations -- solver will have to know about
         !     (a) the equations to solve -- the divergence correction operator
@@ -177,9 +187,9 @@ contains
         !
         ! subtract Divergence correction from inE
         !    outE = inE - outE
-		!
+        !
         call outE%linCombS( inE, C_MinusOne, C_ONE )
-		!
+        !
         ! divergence of the corrected output electrical field
         call self%solver%preconditioner%model_operator%DivC( outE, phiRHS )
 
@@ -190,10 +200,10 @@ contains
         ! compute the size of current Divergence after
         self%divJ(2) = sqrt( phiRHS .dot. phiRHS )
         !
-		write( *, * ) "divJ after correction  ", self%divJ(2)
+        write( *, * ) "divJ after correction: ", self%divJ(2)
         !
         deallocate( phiRHS )
-		!
+        !
     end subroutine divCorrDivergenceCorrection
 
 end module DivergenceCorrection
