@@ -105,7 +105,7 @@ module ForwardSolverIT_DC
             ! Set omega for this ForwardSolver solver
             self%solver%omega = ( 2.0 * PI / period )
             !
-            ! Set conductivity for the model operator again !????
+            ! Set conductivity for the model operator (again ????)
             call self%solver%preconditioner%model_operator%setCond( model_parameter )
             !
             ! Set omega for the divergence_correction´s solver
