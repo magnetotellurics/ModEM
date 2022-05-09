@@ -162,6 +162,8 @@ contains
                 !
                 if( allocated( self%rhs ) ) deallocate( self%rhs )
                 allocate( self%rhs, source = cVector3D_SG_t( E%grid, EDGE ) )
+				!
+				call self%rhs%zeros()
                 !
                 call self%model_operator%MultAib( self%E%Boundary(), self%rhs )
                 !

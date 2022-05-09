@@ -150,6 +150,8 @@ contains
                 if( allocated( self%rhs ) ) deallocate( self%rhs )
                 allocate( self%rhs, source = cVector3D_SG_t( grid, EDGE ) )
                     !
+					call self%rhs%zeros()
+					!
                     self%rhs = self%E * self%CondAnomaly_h
                     !
                     self%rhs = self%rhs * i_omega_mu

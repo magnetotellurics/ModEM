@@ -1053,7 +1053,7 @@ contains
         if( lhs%isCompatible(rhs)) then
             select type(rhs)
                 class is( cScalar3D_SG_t ) 
-                    rhs%v = rhs%v + c*lhs%v 
+                    rhs%v = rhs%v + c * lhs%v 
             end select
         else
             write( *, * ) "ERROR:cVector3D_SG::scMultAdd"

@@ -62,6 +62,7 @@ module cVector3D_SG
         procedure, public :: mult1    => mult1CVector3D_SG
         procedure, public, pass(self) :: mult2 => mult2CVector3D_SG
         procedure, public :: mult3 => mult3CVector3D_SG
+		procedure, public :: mult4 => mult4CVector3D_SG
         procedure, public :: mults1 => mults1CVector3D_SG
         procedure, public :: mults3 => mults3CVector3D_SG
         procedure, public :: div1 => div1CVector3D_SG
@@ -878,6 +879,33 @@ contains
             stop "    Incompatible inputs. Exiting."
         end if
     end function mult3CVector3D_SG
+	!
+	function mult4CVector3D_SG(lhs, rhs) result(Eout)
+        implicit none
+        !
+        class( cVector3D_SG_t ), intent( in )  :: lhs
+        class( rScalar_t )        , intent( in ) :: rhs
+        class( cVector_t ), allocatable        :: Eout
+        !
+        !if (lhs%isCompatible(rhs)) then
+            !
+            allocate(Eout, source = cVector3D_SG_t(lhs%grid, lhs%gridType))
+            !
+            select type(Eout)
+                class is( cVector3D_SG_t )
+                    select type(rhs)
+                        class is(rScalar3D_SG_t)
+                            Eout%x = lhs%x * rhs%v
+                            Eout%y = lhs%y * rhs%v
+                            Eout%z = lhs%z * rhs%v
+                    end select
+            end select
+            !
+        !else
+            !write( *, * ) "ERROR:cVector3D_SG::mult3"
+            !stop "    Incompatible inputs. Exiting."
+        !end if
+    end function mult4CVector3D_SG
     !**
     ! mults3CVector3D_SG
     !*

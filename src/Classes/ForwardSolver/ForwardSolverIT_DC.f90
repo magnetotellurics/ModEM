@@ -108,13 +108,13 @@ module ForwardSolverIT_DC
             !
             call self%solver%preconditioner%model_operator%setCond( model_parameter )
             !
+            ! Set omega for divergence_correction´s solver
+            self%divergence_correction%solver%omega = self%solver%omega
+            !
             call self%divergence_correction%SetCond()
             !
             ! Set this preconditioner
             call self%solver%preconditioner%SetPreconditioner( self%solver%omega )
-            !
-            ! Set omega for divergence_correction´s solver
-            self%divergence_correction%solver%omega = self%solver%omega
             !
         end subroutine setFrequencyForwardSolverIT_DC
         !
@@ -178,7 +178,7 @@ module ForwardSolverIT_DC
             class( Source_t ), intent( in )                :: source
             class( cVector_t ), intent( inout )            :: e_solution
             !
-            class( cVector_t ), allocatable :: temp_esol
+            class( cVector_t ), allocatable :: temp_esol, b
             class( cScalar_t ), allocatable :: phi0
             integer :: iter
             complex( kind=prec ) :: i_omega_mu
@@ -196,21 +196,26 @@ module ForwardSolverIT_DC
                     class is( Grid3D_SG_t )
                         !
                         allocate( phi0, source = cScalar3D_SG_t( grid, NODE ) )
+						call phi0%zeros()
                         !
                 end select
                 !
                 call self%divergence_correction%rhsDivCor( self%solver%omega, source, phi0 )
                 !
+				allocate( b, source = source%rhs )
+				!
+				b = b * self%solver%preconditioner%model_operator%metric%Vnode
+				!
                 ! FWD STD MODEM-ON VERSION DOES THAT
                 !
-                !e_solution = e_solution%Interior()
+                e_solution = e_solution%Interior()
                 !
-                !allocate( temp_esol, source = e_solution )
+                allocate( temp_esol, source = e_solution )
                 !
-                !self%nDivCor = self%nDivCor + 1
-                !call self%divergence_correction%DivCorr( temp_esol, e_solution, phi0 )
+                self%nDivCor = self%nDivCor + 1
+                call self%divergence_correction%DivCorr( temp_esol, e_solution, phi0 )
                 !
-                !deallocate( temp_esol )
+                deallocate( temp_esol )
                 !
             endif
             !
@@ -219,7 +224,7 @@ module ForwardSolverIT_DC
                 !
                 select type( solver => self%solver )
                     class is( Solver_QMR_t )
-                        call solver%solve( source%rhs, e_solution )
+                        call solver%solve( b, e_solution )
                     class default
                         write( *, * ) "ERROR:ForwardSolverIT_DC::getESolutionForwardSolverIT_DC:"
                         stop        "            Unknow solver type."

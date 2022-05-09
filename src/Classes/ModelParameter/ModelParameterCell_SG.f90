@@ -290,7 +290,7 @@ contains
                 call eVec%divs( self%metric%Vedge )
                 !
                 !  still need to divide by 4 ...
-                call eVec%mults( 0.25_prec )
+                !call eVec%mults( 0.25_prec )
                 !
             class default
                 write(*, *) "ERROR:ModelParameterCell_SG:PDEmapping:"

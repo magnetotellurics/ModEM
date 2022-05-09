@@ -81,19 +81,14 @@ contains
         class( Source_t ), intent( in )     :: source
         class( cScalar_t ), intent( inout ) :: phi0
         !
+		
         complex( kind=prec ) :: cFactor
 
         cFactor = -ONE_I/(mu_0*ISIGN*omega)    ! 1/(isign*1i*w*mu)
         !
         !    take divergence of sourceInterior, and return as cScalar of
         !     appropriate explicit type
-        call self%solver%preconditioner%model_operator%Div( source%E%interior(), phi0 ) 
-        !
-        !  multiply result by VNode -- add to rhs of symetrized
-        !    current conservation equation
-        !
-		! GARY'S SUGESTION FOR CSEM: REMOVE NEXT LINE
-		!call phi0%mults( self%solver%preconditioner%model_operator%metric%Vnode )
+        call self%solver%preconditioner%model_operator%Div( source%rhs%interior(), phi0 ) 
         !
 		!  multiply result by cFactor (in place)
         call phi0%mults( cFactor )
@@ -200,7 +195,7 @@ contains
 		write( *, * ) "divJ after correction  ", self%divJ(2)
         !
         deallocate( phiRHS )
-
+		!
     end subroutine divCorrDivergenceCorrection
 
 end module DivergenceCorrection
