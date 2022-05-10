@@ -602,7 +602,54 @@ contains
   ! not sure this will be useful or not, yet.
   ! essentially this maps cell based scalar value onto Nodes.
   !*
+  !  This is original version that omits boundary nodes in mapping output (set to 0)
   subroutine Cell2Node(grid, C, N)
+    implicit none
+    ! Arguments
+    type(grid_t) , intent(in)  :: grid
+    type(rscalar), intent(in)  :: C
+    type(rscalar), intent(out) :: N
+    ! Local variables
+    integer :: ix, iy, iz
+    !
+    !***********************
+    ! Executable statements
+    !***********************
+    !
+    call create_rscalar(grid, N, CORNER) ! node-based
+    ! non-boundary nodes
+    do ix = 2, grid%nx
+       do iy = 2, grid%ny
+          do iz = 2, grid%nz
+             ! i-1,j-1,k-1
+             N%v(ix, iy, iz) = N%v(ix, iy, iz) + C%v(ix-1, iy-1,iz-1)/8.0d0
+             ! i-1,j-1,k
+             N%v(ix, iy, iz) = N%v(ix, iy, iz) + C%v(ix-1, iy-1, iz)/8.0d0
+             ! i-1,j,k-1
+             N%v(ix, iy, iz) = N%v(ix, iy, iz) + C%v(ix-1, iy, iz-1)/8.0d0
+             ! i-1,j,k
+             N%v(ix, iy, iz) = N%v(ix, iy, iz) + C%v(ix-1, iy, iz)/8.0d0
+             ! i,j-1,k-1
+             N%v(ix, iy, iz) = N%v(ix, iy, iz) + C%v(ix, iy-1, iz-1)/8.0d0
+             ! i,j-1,k
+             N%v(ix, iy, iz) = N%v(ix, iy, iz) + C%v(ix, iy-1, iz)/8.0d0
+             ! i,j,k-1
+             N%v(ix, iy, iz) = N%v(ix, iy, iz) + C%v(ix, iy, iz-1)/8.0d0
+             ! i,j,k
+             N%v(ix, iy, iz) = N%v(ix, iy, iz) + C%v(ix, iy, iz)/8.0d0
+          end do
+       end do
+    end do
+
+  end subroutine Cell2Node
+  !**
+  ! ell2Node will be used by modified system equation with "node based
+  ! scaling factor
+  ! not sure this will be useful or not, yet.
+  ! essentially this maps cell based scalar value onto Nodes.
+  !*
+  !  This is modified version that maps also to nodes on boundary -- useless I believe
+  subroutine Cell2Node_1(grid, C, N)
     implicit none
     ! Arguments
     type(grid_t) , intent(in)  :: grid
@@ -795,13 +842,91 @@ contains
     ! back, right, upper
     N%v(grid%nx + 1, grid%ny + 1, grid%nz + 1) = C%v(grid%nx, grid%ny, grid%nz)
     ! 
-  end subroutine Cell2Node
+  end subroutine Cell2Node_1
   
   !**
   ! Edge2Cell will be used by adjoint model mappings.
   !
   !*
   subroutine Edge2Cell(grid, E, C, C_v)
+    implicit none
+    !   THIS IS THE "ORIGINAL" VERSION -- transpose (adjoint) of Cell2Edge
+    !   Anna had modified Cell2Edge to map to boundary edges, and made
+    !    corresponding changes to Edge2Cell.   NOW Anna's version is called
+    !    Cell2Edge_1, and the transpose of this is Edge2Cell_1
+    !
+    ! Arguments
+    type(grid_t) , intent(in)  :: grid
+    type(rvector), intent(in)  :: E
+    type(rscalar), intent(out) :: C
+    type(rscalar), intent(out), optional :: C_v
+    ! Local variables
+    integer :: ix,iy,iz
+    !
+    !***********************
+    ! Executable statements
+    !***********************
+    !
+    call create_rscalar(grid, C, CENTER)
+    if (present(C_v)) then
+       call create_rscalar(grid, C_v, CENTER)
+    end if
+
+    ! for x-components inside the domain
+    do ix = 1, grid%nx
+       do iy = 2, grid%ny
+          do iz = 2, grid%nz
+             C%v(ix, iy-1, iz-1) = C%v(ix, iy-1, iz-1) + E%x(ix, iy, iz)/4.0d0
+             C%v(ix, iy, iz-1) = C%v(ix, iy, iz-1) + E%x(ix, iy, iz)/4.0d0
+             C%v(ix, iy-1, iz) = C%v(ix, iy-1, iz) + E%x(ix, iy, iz)/4.0d0
+             C%v(ix, iy, iz) = C%v(ix, iy, iz) + E%x(ix, iy, iz)/4.0d0
+          end do
+       end do
+    end do
+    
+    ! for y-components inside the domain
+    do ix = 2, grid%nx
+       do iy = 1, grid%ny
+          do iz = 2, grid%nz
+             C%v(ix-1, iy, iz-1) = C%v(ix-1, iy, iz-1) + E%y(ix, iy, iz)/4.0d0
+             C%v(ix, iy, iz-1) = C%v(ix, iy, iz-1) + E%y(ix, iy, iz)/4.0d0
+             C%v(ix-1, iy, iz) = C%v(ix-1, iy, iz) + E%y(ix, iy, iz)/4.0d0
+             C%v(ix, iy, iz) = C%v(ix, iy, iz) + E%y(ix, iy, iz)/4.0d0
+          end do
+       end do
+    end do
+
+    ! for z-components inside the domain
+    if (present(C_v)) then
+       do ix = 2, grid%nx
+          do iy = 2, grid%ny
+             do iz = 1, grid%nz
+                C_v%v(ix-1, iy-1, iz) = C_v%v(ix-1, iy-1, iz) + E%z(ix, iy, iz)/4.0d0
+                C_v%v(ix-1, iy, iz) = C_v%v(ix-1, iy, iz) + E%z(ix, iy, iz)/4.0d0
+                C_v%v(ix, iy-1, iz) = C_v%v(ix, iy-1, iz) + E%z(ix, iy, iz)/4.0d0
+                C_v%v(ix, iy, iz) = C_v%v(ix, iy, iz) + E%z(ix, iy, iz)/4.0d0
+             end do
+          end do
+       end do
+    else
+       do ix = 2, grid%nx
+          do iy = 2, grid%ny
+             do iz = 1, grid%nz
+                C%v(ix-1, iy-1, iz) = C%v(ix-1, iy-1, iz) + E%z(ix, iy, iz)/4.0d0
+                C%v(ix-1, iy, iz) = C%v(ix-1, iy, iz) + E%z(ix, iy, iz)/4.0d0
+                C%v(ix, iy-1, iz) = C%v(ix, iy-1, iz) + E%z(ix, iy, iz)/4.0d0
+                C%v(ix, iy, iz) = C%v(ix, iy, iz) + E%z(ix, iy, iz)/4.0d0
+             end do
+          end do
+       end do
+    end if
+  end subroutine Edge2Cell
+  !
+  !    this is adjoint of Cell2Edge_1 -- essentially deactivated now -- why do we
+  !    need to map to boundary edges?   For what purpose?   Anyway, if these are 
+  !     reactivated MANY other changes will be required!
+  !
+  subroutine Edge2Cell_1(grid, E, C, C_v)
     implicit none
     ! Arguments
     type(grid_t) , intent(in)  :: grid
@@ -994,6 +1119,6 @@ contains
        iy = grid%ny+1; iz = grid%nz+1
        C%v(ix, iy-1, iz-1) = C%v(ix, iy-1, iz-1) + E%x(ix, iy, iz)
     end do
-  end subroutine Edge2Cell
+  end subroutine Edge2Cell_1
 
 end module GridCalc

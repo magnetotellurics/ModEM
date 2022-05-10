@@ -157,7 +157,7 @@ subroutine ModelParamToEdge(m, Econd, m0)
   type(modelParam_t), optional, intent(in) :: m0
   ! Local Variables
   type(rscalar)  :: temp_h, temp_v, Ctemp_h, Ctemp_v
-  type(rvector)  :: Etemp,V_E_ghost
+  type(rvector)  :: Etemp    !  ,V_E_ghost
   integer :: ix, iy, iz, ize, nx, ny, nz, nzEarth, nzAir, ioNum, ios
   logical :: linearizedMapping
   real(kind = prec) :: airCond
@@ -252,11 +252,14 @@ subroutine ModelParamToEdge(m, Econd, m0)
   ! for spherical coords to be strictly correct, need to also average the volumes
   ! instead of using the edge volumes V_E, use the "ghost" averaged version...
   ! which also has full volumes on boundary edges as if the grid extended further
-  call Cell2Edge(m%grid, V_C, V_E_ghost)
+  !   GDE:   OK, why is   V_E_ghost not even used before beoing deallocate????
+  ! call Cell2Edge(m%grid, V_C, V_E_ghost)
   
   Ctemp_h = temp_h
   call diagMult(V_C, temp_h, Ctemp_h)
 
+  !   NOTE: use of Cell2Edge version which maps to boundary edges results in forcing
+  !    for Jmult calculation that is non-zero  on boundary edes THIS IS WRONG!
   if (m%isVTI) then
      Ctemp_v = temp_v
      call diagMult(V_C, temp_v, Ctemp_v)  
@@ -268,7 +271,8 @@ subroutine ModelParamToEdge(m, Econd, m0)
   Econd = Etemp
   call diagDiv(Etemp, V_E, Econd)
   
-  call deall_rvector(V_E_ghost)
+!  I do not see that V_E_ghost is ever used!
+!     call deall_rvector(V_E_ghost)
   call deall_rscalar(temp_h)
   call deall_rscalar(Ctemp_h)
 
@@ -302,7 +306,7 @@ subroutine ModelParamToNode(m, Ncond, m0)
   type(modelParam_t), optional, intent(in)    :: m0
   ! Local variables
   type(rscalar)  :: temp, Ctemp
-  type(rscalar)  :: Ntemp, V_N_ghost
+  type(rscalar)  :: Ntemp   !  , V_N_ghost   !   getting rid of this ghost stuff -- makes no sense
   integer :: ix, iy, iz, ize, nx, ny, nz, nzEarth, nzAir, ioNum, ios
   logical :: linearizedMapping
   real(kind = prec) :: airCond
@@ -351,23 +355,26 @@ subroutine ModelParamToNode(m, Ncond, m0)
   if (.not. V_C%allocated) then
      call CellVolume(m%grid, V_C) ! global variable
   end if
-  if (.not. V_E%allocated) then
+  if (.not. V_N%allocated) then
      call NodeVolume(m%grid, V_N) ! global variable
   end if
   
   ! for spherical coords to be strictly correct, need to also average the volumes
   ! instead of using the node volumes V_N, use the "ghost" averaged version...
   ! which also has full volumes on boundary edges as if the grid extended further
-  call Cell2Node(m%grid, V_C, V_N_ghost) 	
+  !   ghost stuff makes no sense -- never need to map model parameter to anything on boundary --
+  !    differential equations are not defined there!
+  !call Cell2Node(m%grid, V_C, V_N_ghost)
   
   Ctemp = temp
   ! conductivity times volume
   call diagMult(V_C, temp, Ctemp)
   call Cell2Node(m%grid, Ctemp, Ntemp)
   Ncond = Ntemp
-  call diagDiv_rscalar(Ntemp, V_N_ghost, Ncond)
+  !call diagDiv_rscalar(Ntemp, V_N_ghost, Ncond)
+  call diagDiv_rscalar(Ntemp, V_N, Ncond)
   
-  call deall_rscalar(V_N_ghost)
+  !  call deall_rscalar(V_N_ghost)
   call deall_rscalar(Ntemp)
   call deall_rscalar(temp)
   call deall_rscalar(Ctemp)
@@ -378,6 +385,9 @@ end subroutine ModelParamToNode
 ! Maps from a real vector (defined on edges) to modelParam;
 ! the adjoint of linear mapping implemented by ModelParamToEdge
 ! Interface to EdgeToModelParam that makes the code more readable.
+!   GDE:   I have read this statement many times now andI still have
+!     no idea at all WTF this is supposed to mean!   This just obscures
+!     what is going on in the code, even more than it was to start with!
 !*
 subroutine dEdgeToModelParam(Econd, m, m0)
   implicit none
@@ -409,7 +419,7 @@ subroutine EdgeToModelParam(Econd, m, m0)
   type(modelParam_t), optional, intent(in) :: m0
   ! Local variables
   type(rscalar)  :: temp, Ctemp
-  type(rvector)  :: Etemp, V_E_ghost
+  type(rvector)  :: Etemp   ! , V_E_ghost  hacking out V_E_ghost stuff -- 
   integer :: ix, iy, iz, ize, nx, ny, nz, nzEarth, nzAir, ioNum, ios
   !
   !***********************
@@ -449,10 +459,12 @@ subroutine EdgeToModelParam(Econd, m, m0)
   ! for spherical coords to be strictly correct, need to also average the volumes
   ! instead of using the edge volumes V_E, use the "ghost" averaged version...
   ! which also has full volumes on boundary edges as if the grid extended further
-  call Cell2Edge(m%grid, V_C, V_E_ghost) 
+  !  call Cell2Edge(m%grid, V_C, V_E_ghost)    !   hacking out V_E_ghost stuff
   
   Etemp = Econd
-  call diagDiv(Econd, V_E_ghost, Etemp)
+  !call diagDiv(Econd, V_E_ghost, Etemp)
+  call diagDiv(Econd, V_E, Etemp)
+  !   as before, Edge2Cell maps only to interior edges -- see no reason why it should be otherwise!
   call Edge2Cell(m%grid, Etemp, Ctemp)
   temp = Ctemp
   call diagMult(V_C, Ctemp, temp)
@@ -465,7 +477,7 @@ subroutine EdgeToModelParam(Econd, m, m0)
   
   m%zeroValued = .false.
   
-  call deall_rvector(V_E_ghost)
+!   call deall_rvector(V_E_ghost)
   call deall_rscalar(temp)
   call deall_rscalar(Ctemp)
   call deall_rvector(Etemp)

@@ -110,10 +110,9 @@ module GridDef
     ! but the use of 'fixed height 12 1000' is recommended
     character (len=80)        ::      method = 'fixed height'
     integer                   ::      Nz = 12
-    real(kind = 8)            ::      MaxHeight = 1000.
+    real(kind = 8)            ::      MaxHeight = 1000000.
     !character (len=80)        ::      method = 'mirror'
     !integer                   ::      Nz = 10
-    !real(kind = 8)            ::      MaxHeight = 1000000.
     real(kind = 8)            ::      MinTopDz = 30000., alpha = 3.
     real(kind = 8), pointer, dimension(:)   :: Dz
     logical                                 :: allocated = .false.
