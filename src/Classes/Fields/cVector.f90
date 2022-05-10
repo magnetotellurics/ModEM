@@ -28,7 +28,7 @@ module cVector
         !**
         ! Data access
         !*
-        procedure( interface_length_c_vector )    , deferred :: length
+        procedure( interface_length_c_vector ), deferred    :: length
         procedure( interface_get_array_c_vector ), deferred :: getArray
         procedure( interface_set_array_c_vector ), deferred :: setArray
         !**
