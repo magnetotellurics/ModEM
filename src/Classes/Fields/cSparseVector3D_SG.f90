@@ -17,7 +17,24 @@ module cSparseVector3D_SG
         !
     end type cSparsevector3D_SG_t
     !
+    ! Constructors for Scalar3d_csg_real_t
+    interface cSparsevector3D_SG_t
+        module procedure cSparsevector3D_SG_ctor
+    end interface cSparsevector3D_SG_t
+    !
 contains
+    function cSparsevector3D_SG_ctor() result ( self )
+        implicit none
+        !
+        type( cSparsevector3D_SG_t ) :: self
+        !
+        !write(*,*) "Constructor cSparsevector3D_SG"
+        !
+        self%gridType = ""
+        self%nCoeff = 0
+        self%is_allocated = .FALSE.
+        !
+    end function cSparsevector3D_SG_ctor
     !
     function dotProdSparse( self, cvector ) result( c )
         implicit none
@@ -32,13 +49,11 @@ contains
         c = C_ZERO
         !
         if( .NOT. self%is_allocated ) then
-            write( *, * ) "SELF not is_allocated yet for dotProdSparse"
-            return
+            stop "SELF not is_allocated yet for dotProdSparse"
         endif
         !
         if( .NOT. cvector%is_allocated ) then
-            write( *, * ) "RHS not is_allocated yet for dotProdSparse"
-            return
+            stop "RHS not is_allocated yet for dotProdSparse"
         endif
         !
         if ( self%gridType /= cvector%gridType ) then
@@ -90,15 +105,11 @@ contains
         type( cSparsevector3D_SG_t ), intent( inout ) :: self
         type( cVector3D_SG_t ), intent( in ) :: cvector
         !
-        Integer, allocatable,  dimension(:,:,:)  :: Ix,Jx, Kx,XYZ1
-        Integer, allocatable,  dimension(:,:,:)  :: Iy,Jy, Ky,XYZ2
-        Integer, allocatable,  dimension(:,:,:)  :: Iz,Jz, Kz,XYZ3
+        integer, allocatable,  dimension(:,:,:)  :: Ix,Jx, Kx,XYZ1
+        integer, allocatable,  dimension(:,:,:)  :: Iy,Jy, Ky,XYZ2
+        integer, allocatable,  dimension(:,:,:)  :: Iz,Jz, Kz,XYZ3
         !
-        Integer :: i, j, k, Nx, Ny, Nz
-        !
-        self%gridType = ""
-        self%nCoeff = 0
-        self%is_allocated = .FALSE.
+        integer :: i, j, k, Nx, Ny, Nz
         !
         Ix = cvector%x
         Jx = cvector%x
@@ -165,7 +176,7 @@ contains
         ! Get gridType
         self%gridType=cvector%gridType
         !
-        self%is_allocated = .true.
+        self%is_allocated = .TRUE.
         !
         deallocate( Ix, Jx, Kx, XYZ1 )
         deallocate( Iy, Jy, Ky, XYZ2 )

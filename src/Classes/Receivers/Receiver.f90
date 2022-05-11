@@ -26,7 +26,7 @@ module Receiver
         !
         type( String_t ), allocatable :: EHxy(:), comp_names(:)
         !
-        complex( kind=prec ), allocatable :: I_BB(:,:), EE(:,:), response(:)
+        complex( kind=prec ), allocatable :: response(:)
         !
         type( cSparseVector3D_SG_t )   :: Lex, Ley, Lez, Lbx, Lby, Lbz
         !
@@ -34,16 +34,16 @@ module Receiver
         !
         contains
             !
-            ! BASE INTERFACES
-            procedure( interface_is_equal_rx ), deferred, public    :: isEqualRx
+            ! Base interfaces
+            procedure( interface_is_equal_rx ), deferred, public :: isEqualRx
             !
             procedure( interface_predicted_data ), deferred, public :: predictedData
             !
             procedure( interface_save_predicted_data ), deferred, public :: savePredictedData
             !
-            procedure( interface_write_rx ), deferred, public       :: write
+            procedure( interface_write_rx ), deferred, public :: write
             !
-            ! CLASS PROCEDURES
+            ! Class procedures
             procedure, public :: evaluationFunction => evaluationFunctionRx
             !
             procedure, public :: init    => initializeRx
@@ -129,8 +129,15 @@ contains
         self%is_complex = .FALSE.
         !
         self%interpolation_set = .FALSE.
-		!
-		self%predicted_data => null()
+        !
+        self%Lex = cSparsevector3D_SG_t()
+        self%Ley = cSparsevector3D_SG_t()
+        self%Lez = cSparsevector3D_SG_t()
+        self%Lbx = cSparsevector3D_SG_t()
+        self%Lby = cSparsevector3D_SG_t()
+        self%Lbz = cSparsevector3D_SG_t()
+        !
+        self%predicted_data => null()
         !
     end subroutine initializeRx
     !

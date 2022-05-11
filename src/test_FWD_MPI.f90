@@ -182,6 +182,8 @@ contains
         deallocate( main_grid )
         !
         call deallocateTransmitterArray()
+		!
+		all_predicted_data => null()
         !
         ! SEND 1 TRANSMITTER TO FIRST np WORKERS
         do while ( worker_rank <= ( mpi_size - 1 ) )
@@ -205,7 +207,7 @@ contains
             !
             call receiveFromAny()
             !
-            worker_predicted_data = receiveData()
+            worker_predicted_data => receiveData()
             !
             do i = 1, size( worker_predicted_data )
                 call updateDataHandleArray( all_predicted_data, getDataHandle( worker_predicted_data, i ) )
@@ -231,7 +233,7 @@ contains
             !
             call receiveFromAny()
             !
-            worker_predicted_data = receiveData()
+            worker_predicted_data => receiveData()
             !
             do i = 1, size( worker_predicted_data )
                 call updateDataHandleArray( all_predicted_data, getDataHandle( worker_predicted_data, i ) )
@@ -296,10 +298,10 @@ contains
         !
         if( ierr == MPI_SUCCESS ) then
             !
-            write( *, "(A50, i8, i8, i8)" ) "MPI Allocated window size:", shared_window_size
+            write( *, * ) "MPI_Win_shared_query on worker:", mpi_rank, ierr, shared_window_size
             !
         else
-            write( *, "(A50, i8, i8)" ) "MPI Win_shared_query fails on worker, ierr:", mpi_rank, ierr
+            write( *, * ) "MPI Win_shared_query fails on worker:", mpi_rank, ierr
             stop
         endif
         !
