@@ -37,11 +37,12 @@ module SourceMT_1D
 contains
     !
     ! SourceMT_1D constructor
-    function SourceMT_1D_ctor( model_operator, model_parameter, E ) result( self )
+    function SourceMT_1D_ctor( model_operator, model_parameter, period, E ) result( self )
         implicit none
         !
         class( ModelOperator_t ), target, intent( in )  :: model_operator
         class( ModelParameter_t ), target, intent( in ) :: model_parameter
+        real( kind=prec ), intent( in )                 :: period
         class( cVector_t ), intent( in ), optional      :: E
         !
         type( SourceMT_1D_t ) :: self
@@ -53,9 +54,11 @@ contains
         self%model_operator  => model_operator
         self%model_parameter => model_parameter
         !
+        self%period = period
+        !
         if ( present( E ) ) then
              !
-             allocate( self%E, source = E )
+             self%E = E
              !
              call self%setRHS()
              !
@@ -76,11 +79,10 @@ contains
     end subroutine SourceMT_1D_dtor
     !
     ! Set self%E from forward modelling 1D
-    subroutine setESourceMT_1D( self, omega, polarization )
+    subroutine setESourceMT_1D( self, polarization )
         implicit none
         !
         class( SourceMT_1D_t ), intent( inout ) :: self
-        real( kind=prec ), intent( in )         :: omega
         integer, intent( in )                   :: polarization
         !
         type( ModelParameter1D_t )                      :: model_parameter_1D
@@ -89,6 +91,7 @@ contains
         !
         integer :: ix, iy
         !
+        !
         self%polarization = polarization
         !
         ! Get Model1D from average conductivity 3D
@@ -96,9 +99,8 @@ contains
         !
         forward_1D = Forward1D_t( model_parameter_1D )
         !
-        call forward_1D%SetFreq( omega )
+        call forward_1D%SetFreq( 2.0 * PI / self%period )
         !
-        if( allocated( E1D ) ) deallocate( E1D )
         !     NOTE: E1D is defined at layer interfaces -- dzEdge(nz+1) 
         allocate( E1D( self%model_operator%metric%grid%nz + 1 ) )
         !
@@ -160,6 +162,8 @@ contains
                 !
                 if( allocated( self%rhs ) ) deallocate( self%rhs )
                 allocate( self%rhs, source = cVector3D_SG_t( E%grid, EDGE ) )
+				!
+				call self%rhs%zeros()
                 !
                 call self%model_operator%MultAib( self%E%Boundary(), self%rhs )
                 !

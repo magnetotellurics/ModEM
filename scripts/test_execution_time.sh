@@ -31,4 +31,4 @@ mpirun -np 9 ./test_FWD_MPI -f --data ../inputs/1st_Example/rFile_Data_MT_LP.dat
 make -f Makefile_SP2_EM1D_CSEM
 mv Mod3DMT Mod3DMT_SP2
 mpirun -np 33 ./Mod3DMT_SP2 -F ../../modem-oo/inputs/1st_Example/rFile_Model ../../modem-oo/inputs/1st_Example/rFile_Data_MT_LP.dat predicted_data_working.dat wFile_Esol ../inputs/modem_on_control_file.txt
-mpirun -np 33 ./Mod3DMT_SP2 -F ../../modem-oo/inputs/1st_Example/rFile_Model_trimed_lower_Boundary_50km ../../modem-oo/inputs/1st_Example/rFile_Data_MT_LP.dat predicted_data_working_trimed.dat wFile_Esol ../inputs/modem_on_control_file.txt
+mpirun -np 17 ./Mod3DMT -F ../../modem-oo/inputs/1st_Example/rFile_Model_trimed_lower_Boundary_50km ../../modem-oo/inputs/1st_Example/rFile_Data_MT_LP.dat predicted_data_working_trimed.dat wFile_Esol ../inputs/modem_on_control_file.txt

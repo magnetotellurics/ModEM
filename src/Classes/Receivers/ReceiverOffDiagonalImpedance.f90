@@ -9,6 +9,7 @@
 module ReceiverOffDiagonalImpedance
     !
     use Receiver
+    use DataHandleMT
     !
     type, extends( Receiver_t ), public :: ReceiverOffDiagonalImpedance_t
         !
@@ -21,6 +22,8 @@ module ReceiverOffDiagonalImpedance
             procedure, public :: isEqualRx => isEqualOffDiagonalImpedance
             !
             procedure, public :: predictedData => predictedDataOffDiagonalImpedance
+            !
+            procedure, public :: savePredictedData => savePredictedDataOffDiagonalImpedance
             !
             procedure, public :: write => writeReceiverOffDiagonalImpedance
             !
@@ -55,7 +58,7 @@ contains
         !
         allocate( self%EHxy( self%n_comp ) )
         !
-        ! components required to get the full impdence tensor response [Zxx, Zxy, Zyx, Zyy]
+        ! components required to get the full impdence tensor self%response [Zxx, Zxy, Zyx, Zyy]
         self%EHxy(1)%str = "Ex"
         self%EHxy(2)%str = "Ey"
         self%EHxy(3)%str = "Bx"
@@ -102,75 +105,110 @@ contains
         !
     end function isEqualOffDiagonalImpedance
     !
-    subroutine predictedDataOffDiagonalImpedance( self, model_operator, transmitter )
+    subroutine predictedDataOffDiagonalImpedance( self, transmitter )
         implicit none
         !
         class( ReceiverOffDiagonalImpedance_t ), intent( inout ) :: self
-        class( ModelOperator_t ), intent( in )                         :: model_operator
-        class( Transmitter_t ), intent( in )                            :: transmitter
+        class( Transmitter_t ), intent( in )                     :: transmitter
         !
-        class( cVector_t ), allocatable    :: e_tx_pol_1, e_tx_pol_2
-        complex( kind=prec ), allocatable :: BB(:,:), det
-        real( kind=prec )                      :: omega
-        integer                                    :: i, j, ij
+        complex( kind=prec ) :: comega, det
         !
-        omega = ( 2.0 * PI / transmitter%period )
+        complex( kind=prec ), allocatable :: BB(:,:), I_BB(:,:), EE(:,:)
         !
-        ! Set Vectors Lex, Ley, Lbx, Lby
-        call self%evaluationFunction( model_operator, omega )
+        integer :: i, j, ij
         !
-        ! get e_all from the Tx 1st polarization
-        allocate( e_tx_pol_1, source = transmitter%e_all( 1 ) )
-        !
-        ! get e_all from the Tx 2nd polarization
-        allocate( e_tx_pol_2, source = transmitter%e_all( 2 ) )
+        comega = cmplx( 0.0, 1./ ( 2.0 * PI / transmitter%period ), kind=prec )
         !
         !
-        allocate( complex( kind=prec ) :: self%EE( 2, 2 ) )
+        allocate( EE( 2, 2 ) )
         !
-        self%EE(1,1) = self%Lex .dot. e_tx_pol_1
-        self%EE(2,1) = self%Ley .dot. e_tx_pol_1
-        self%EE(1,2) = self%Lex .dot. e_tx_pol_2
-        self%EE(2,2) = self%Ley .dot. e_tx_pol_2
-        !
-        allocate( complex( kind=prec ) :: BB( 2, 2 ) )
-        !
-        BB(1,1) = self%Lbx .dot. e_tx_pol_1
-        BB(2,1) = self%Lby .dot. e_tx_pol_1
-        BB(1,2) = self%Lbx .dot. e_tx_pol_2
-        BB(2,2) = self%Lby .dot. e_tx_pol_2
-        !
-        deallocate( e_tx_pol_1 )
-        deallocate( e_tx_pol_2 )
-        !
-        !invert horizontal B matrix using Kramer's rule.
-        det = BB(1,1) * BB(2,2) - BB(1,2) * BB(2,1)
-        !
-        allocate( complex( kind=prec ) :: self%I_BB( 2, 2 ) )
-        !
-        if( det /= 0 ) then
-            self%I_BB( 1, 1 ) = BB( 2, 2 ) / det
-            self%I_BB( 2, 2 ) = BB( 1, 1 ) / det
-            self%I_BB( 1, 2 ) = -BB( 1, 2 ) / det
-            self%I_BB( 2, 1 ) = -BB( 2, 1 ) / det
-        else
-            STOP "ReceiverOffDiagonalImpedance.f90: Determinant is Zero!"
-        endif
-        !
-        allocate( complex( kind=prec ) :: self%response( 2 ) )
-        !
-        self%response(1) = self%EE(1,1) * self%I_BB(1,2) + self%EE(1,2) * self%I_BB(2,2)
-        self%response(2) = self%EE(2,1) * self%I_BB(1,1) + self%EE(2,2) * self%I_BB(2,1)
-        !
-        ! WRITE ON PredictedFile.dat
-        call self%savePredictedData( transmitter )
-        !
-        deallocate( self%EE )
-        deallocate( BB )
-        deallocate( self%I_BB )
-        deallocate( self%response )
+        select type( tx_e_1 => transmitter%e_all( 1 ) )
+            class is( cVector3D_SG_t )
+                !
+                select type( tx_e_2 => transmitter%e_all( 2 ) )
+                    class is( cVector3D_SG_t )
+                        !
+                        EE(1,1) = dotProdSparse( self%Lex, tx_e_1 )
+                        EE(2,1) = dotProdSparse( self%Ley, tx_e_1 )
+                        EE(1,2) = dotProdSparse( self%Lex, tx_e_2 )
+                        EE(2,2) = dotProdSparse( self%Ley, tx_e_2 )
+                        !
+                        allocate( BB( 2, 2 ) )
+                        !
+                        BB(1,1) = dotProdSparse( self%Lbx, tx_e_1 )
+                        BB(2,1) = dotProdSparse( self%Lby, tx_e_1 )
+                        BB(1,2) = dotProdSparse( self%Lbx, tx_e_2 )
+                        BB(2,2) = dotProdSparse( self%Lby, tx_e_2 )
+                        BB = isign * BB * comega
+                        !
+                        !invert horizontal B matrix using Kramer's rule.
+                        det = BB(1,1) * BB(2,2) - BB(1,2) * BB(2,1)
+                        !
+                        allocate( I_BB( 2, 2 ) )
+                        !
+                        if( det /= 0 ) then
+                            I_BB( 1, 1 ) = BB( 2, 2 ) / det
+                            I_BB( 2, 2 ) = BB( 1, 1 ) / det
+                            I_BB( 1, 2 ) = -BB( 1, 2 ) / det
+                            I_BB( 2, 1 ) = -BB( 2, 1 ) / det
+                        else
+                            STOP "ReceiverOffDiagonalImpedance.f90: Determinant is Zero!"
+                        endif
+                        !
+                        deallocate( BB )
+                        !
+                        allocate( self%response( 2 ) )
+                        !
+                        self%response(1) = EE(1,1) * I_BB(1,2) + EE(1,2) * I_BB(2,2)
+                        self%response(2) = EE(2,1) * I_BB(1,1) + EE(2,2) * I_BB(2,1)
+                        !
+                        deallocate( EE )
+                        deallocate( I_BB )
+                        !
+                        ! WRITE ON PredictedFile.dat
+                        call self%savePredictedData( transmitter )
+                        !
+                        deallocate( self%response )
+                        !
+                    class default
+                        stop "evaluationFunctionRx: Unclassified transmitter%e_all_2"
+                end select
+                !
+            class default
+                stop "evaluationFunctionRx: Unclassified transmitter%e_all_1"
+        end select
         !
     end subroutine predictedDataOffDiagonalImpedance
+    !
+    subroutine savePredictedDataOffDiagonalImpedance( self, tx )
+        implicit none
+        !
+        class( ReceiverOffDiagonalImpedance_t ), intent( inout ) :: self
+        class( Transmitter_t ), intent( in ) :: tx
+        !
+        character(:), allocatable :: code, component
+        real( kind=prec )         :: period, real_part, imaginary, rx_location(3)
+        integer                   :: i, rx_type
+        !
+        !#Period(s) Code GG_Lat GG_Lon X(m) Y(m) self%response(m) Component Real Imag Error
+        !
+        if( associated( self%predicted_data ) ) call deallocateDataHandleArray( self%predicted_data )
+        !
+        do i = 1, self%n_comp
+            !
+            rx_type = int( self%rx_type )
+            period = real( tx%period, kind=prec )
+            code = trim( self%code )
+            rx_location = (/real( self%location( 1 ), kind=prec ), real( self%location( 2 ), kind=prec ), real( self%location( 3 ), kind=prec )/)
+            component = trim( self%comp_names( i )%str )
+            real_part = real( self%response( i ), kind=prec )
+            imaginary = real( imag( self%response( i ) ), kind=prec )
+            !
+            call updateDataHandleArray( self%predicted_data, DataHandleMT_t( rx_type, code, component, period, rx_location, real_part, imaginary ) )
+            !
+        enddo
+        !
+    end subroutine savePredictedDataOffDiagonalImpedance
     !
     subroutine writeReceiverOffDiagonalImpedance( self )
         implicit none

@@ -9,6 +9,7 @@
 module ReceiverFullVerticalMagnetic
     !
     use Receiver
+    use DataHandleMT
     !
     type, extends( Receiver_t ), public :: ReceiverFullVerticalMagnetic_t
         !
@@ -21,6 +22,8 @@ module ReceiverFullVerticalMagnetic
             procedure, public :: isEqualRx => isEqualFullVerticalMagnetic
             !
             procedure, public :: predictedData => predictedDataFullVerticalMagnetic
+            !
+            procedure, public :: savePredictedData => savePredictedDataFullVerticalMagnetic
             !
             procedure, public :: write => writeReceiverFullVerticalMagnetic
             !
@@ -36,7 +39,7 @@ contains
         implicit none
         !
         real( kind=prec ), intent( in ) :: location(3)
-        integer, intent( in ) 			:: rx_type
+        integer, intent( in )           :: rx_type
         !
         type( ReceiverFullVerticalMagnetic_t ) :: self
         !
@@ -55,12 +58,12 @@ contains
         !
         allocate( self%EHxy( 3 ) )
         !
-        ! components required to get the full impdence tensor response [Zxx, Zxy, Zyx, Zyy]
+        ! components required to get the full impdence tensor self%response [Zxx, Zxy, Zyx, Zyy]
         self%EHxy(1)%str = "Bx"
         self%EHxy(2)%str = "By"
         self%EHxy(3)%str = "Bz"
         !
-        ! components required to get the full impdedance tensor response [Zxx, Zxy, Zyx, Zyy]
+        ! components required to get the full impdedance tensor self%response [Zxx, Zxy, Zyx, Zyy]
         allocate( self%comp_names( 2 ) )
         !
         self%comp_names(1)%str = "TX"
@@ -116,63 +119,101 @@ contains
         !
     end subroutine writeReceiverFullVerticalMagnetic
     !
-    subroutine predictedDataFullVerticalMagnetic( self, model_operator, transmitter )
+    subroutine predictedDataFullVerticalMagnetic( self, transmitter )
         implicit none
         !
         class( ReceiverFullVerticalMagnetic_t ), intent( inout ) :: self
-        class( ModelOperator_t ), intent( in )                   :: model_operator
         class( Transmitter_t ), intent( in )                     :: transmitter
         !
-        complex( kind=prec ), allocatable :: BB(:,:), det
-        real( kind=prec )                 :: omega
+        complex( kind=prec ) :: comega, det
         !
-        omega = ( 2.0 * PI / transmitter%period )
+        complex( kind=prec ), allocatable :: BB(:,:), I_BB(:,:)
         !
-        ! Set Vectors Lex, Ley, Lbx, Lby
-        call self%evaluationFunction( model_operator, omega )
+        comega = cmplx( 0.0, 1./ ( 2.0 * PI / transmitter%period ), kind=prec )
+        !
         !
         allocate( BB( 3, 2 ) )
-        !
-        BB(1,1) = self%Lbx .dot. transmitter%e_all( 1 )
-        BB(2,1) = self%Lby .dot. transmitter%e_all( 1 )
-        BB(1,2) = self%Lbx .dot. transmitter%e_all( 2 )
-        BB(2,2) = self%Lby .dot. transmitter%e_all( 2 )
-        BB(3,1) = self%Lbz .dot. transmitter%e_all( 1 )
-        BB(3,2) = self%Lbz .dot. transmitter%e_all( 2 )
-        !
-        deallocate( self%Lbx )
-        deallocate( self%Lby )
-        deallocate( self%Lbz )
-        !
-        !invert horizontal B matrix using Kramer"s rule.
-        det = BB( 1, 1 ) * BB( 2, 2 ) - BB( 1, 2 ) * BB( 2, 1 )
-        !
-        !write(*,*) "det:", det
-        !
-        allocate( self%I_BB( 2, 2 ) )
-        !
-        if( det /= 0 ) then
-            self%I_BB( 1, 1 ) =  BB( 2, 2 ) / det
-            self%I_BB( 2, 2 ) =  BB( 1, 1 ) / det
-            self%I_BB( 1, 2 ) = -BB( 1, 2 ) / det
-            self%I_BB( 2, 1 ) = -BB( 2, 1 ) / det
-        else
-            STOP "ReceiverFullImpedance.f90: Determinant is Zero!"
-        endif
-        !
-        allocate( self%response( 2 ) )
-        !
-        self%response(1) = BB(3,1) * self%I_BB(1,1) + BB(3,2) * self%I_BB(2,1)
-        self%response(2) = BB(3,1) * self%I_BB(1,2) + BB(3,2) * self%I_BB(2,2)
-        !
-        deallocate( BB )
-        deallocate( self%I_BB )
-        !
-        ! WRITE ON PredictedFile.dat
-        call self%savePredictedData( transmitter )
-        !
-        deallocate( self%response )
+        select type( tx_e_1 => transmitter%e_all( 1 ) )
+            class is( cVector3D_SG_t )
+                !
+                select type( tx_e_2 => transmitter%e_all( 2 ) )
+                    class is( cVector3D_SG_t )
+                        !
+                        BB(1,1) = dotProdSparse( self%Lbx, tx_e_1 )
+                        BB(2,1) = dotProdSparse( self%Lby, tx_e_1 )
+                        BB(1,2) = dotProdSparse( self%Lbx, tx_e_2 )
+                        BB(2,2) = dotProdSparse( self%Lby, tx_e_2 )
+                        BB(3,1) = dotProdSparse( self%Lbz, tx_e_1 )
+                        BB(3,2) = dotProdSparse( self%Lbz, tx_e_2 )
+                        BB = isign * BB * comega
+                        !
+                        !invert horizontal B matrix using Kramer"s rule.
+                        det = BB( 1, 1 ) * BB( 2, 2 ) - BB( 1, 2 ) * BB( 2, 1 )
+                        !
+                        !write(*,*) "det:", det
+                        !
+                        allocate( I_BB( 2, 2 ) )
+                        !
+                        if( det /= 0 ) then
+                            I_BB( 1, 1 ) =  BB( 2, 2 ) / det
+                            I_BB( 2, 2 ) =  BB( 1, 1 ) / det
+                            I_BB( 1, 2 ) = -BB( 1, 2 ) / det
+                            I_BB( 2, 1 ) = -BB( 2, 1 ) / det
+                        else
+                            stop "ReceiverFullImpedance.f90: Determinant is Zero!"
+                        endif
+                        !
+                        allocate( self%response( 2 ) )
+                        !
+                        self%response(1) = BB(3,1) * I_BB(1,1) + BB(3,2) * I_BB(2,1)
+                        self%response(2) = BB(3,1) * I_BB(1,2) + BB(3,2) * I_BB(2,2)
+                        !
+                        deallocate( BB )
+                        deallocate( I_BB )
+                        !
+                        ! WRITE ON PredictedFile.dat
+                        call self%savePredictedData( transmitter )
+                        !
+                        deallocate( self%response )
+                        !
+                    class default
+                        stop "evaluationFunctionRx: Unclassified transmitter%e_all_2"
+                end select
+                !
+            class default
+                stop "evaluationFunctionRx: Unclassified transmitter%e_all_1"
+        end select
         !
     end subroutine predictedDataFullVerticalMagnetic
+    !
+    subroutine savePredictedDataFullVerticalMagnetic( self, tx )
+        implicit none
+        !
+        class( ReceiverFullVerticalMagnetic_t ), intent( inout ) :: self
+        class( Transmitter_t ), intent( in ) :: tx
+        !
+        character(:), allocatable :: code, component
+        real( kind=prec )         :: period, real_part, imaginary, rx_location(3)
+        integer                   :: i, rx_type
+        !
+        !#Period(s) Code GG_Lat GG_Lon X(m) Y(m) self%response(m) Component Real Imag Error
+        !
+        if( associated( self%predicted_data ) ) call deallocateDataHandleArray( self%predicted_data )
+        !
+        do i = 1, self%n_comp
+            !
+            rx_type = int( self%rx_type )
+            period = real( tx%period, kind=prec )
+            code = trim( self%code )
+            rx_location = (/real( self%location( 1 ), kind=prec ), real( self%location( 2 ), kind=prec ), real( self%location( 3 ), kind=prec )/)
+            component = trim( self%comp_names( i )%str )
+            real_part = real( self%response( i ), kind=prec )
+            imaginary = real( imag( self%response( i ) ), kind=prec )
+            !
+            call updateDataHandleArray( self%predicted_data, DataHandleMT_t( rx_type, code, component, period, rx_location, real_part, imaginary ) )
+            !
+        enddo
+        !
+    end subroutine savePredictedDataFullVerticalMagnetic
     !
 end module ReceiverFullVerticalMagnetic

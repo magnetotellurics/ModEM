@@ -106,7 +106,7 @@ contains
         !
         type( ModelOperator_MF_t ) :: self
         !
-        write(*,*) "Constructor ModelOperator_MF"
+        !write(*,*) "Constructor ModelOperator_MF"
         !
         self%is_allocated = .FALSE.
         self%eqset = .FALSE.
@@ -827,10 +827,10 @@ contains
                 call outPhi%Zeros()
                 !
                 ! Computation done only for internal nodes
-                do ix = 2, inE%nx
-                    do iy = 2, inE%ny
+                do ix = 2, outPhi%nx
+                    do iy = 2, outPhi%ny
                         ! FOR NODES IN THE AIR ONLY
-                        do iz = 2, inE%grid%nzAir
+                        do iz = 2, outPhi%grid%nzAir
                             outPhi%v(ix, iy, iz) = &
                             SIGMA_AIR * (inE%x(ix, iy, iz) - inE%x(ix - 1, iy, iz)) * &
                             inE%grid%delXinv(ix) + &
@@ -839,9 +839,10 @@ contains
                             SIGMA_AIR * (inE%z(ix, iy, iz) - inE%z(ix, iy, iz - 1)) * &
                             inE%grid%delZinv(iz)
                         end do
-
+                        
                         ! FOR NODES AT THE AIR-EARTH INTERFACE
                         iz = outPhi%grid%nzAir + 1
+                        !
                         outPhi%v(ix, iy, iz) = &
                         (self%Sigma_E%x(ix, iy, iz) * inE%x(ix, iy, iz) -         &
                         self%Sigma_E%x(ix - 1, iy, iz) * inE%x(ix - 1, iy, iz)) * &

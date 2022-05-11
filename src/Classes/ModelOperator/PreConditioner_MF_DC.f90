@@ -37,7 +37,7 @@ contains
         class( ModelOperator_t ), target, intent( in ) :: model_operator
         type( PreConditioner_MF_DC_t ) :: self
         !
-        write(*,*) "Constructor PreConditioner_MF_DC_t"
+        !write(*,*) "Constructor PreConditioner_MF_DC_t"
         !
         self%omega = 0.0
         !
@@ -48,6 +48,11 @@ contains
                 !
                 self%d = cScalar3D_SG_t( grid, NODE )
                 !
+                call self%d%zeros()
+                !
+            class default
+                write( *, * ) "ERROR:PreConditioner_MF_DC_t::PreConditioner_MF_DC_ctor:"
+                stop          "    unknow grid type"
         end select
         !
     end function PreConditioner_MF_DC_ctor
@@ -160,31 +165,31 @@ contains
                                 ! forward substitution (Solve lower triangular system)
                                 ! the coefficients are only for the interior nodes
                                 do iz = 2, inPhi%nz
-									do iy = 2, inPhi%ny
-										do ix = 2, inPhi%nx
-											outPhi%v(ix, iy, iz) = inPhi%v(ix, iy, iz) &
-											- outPhi%v(ix-1,iy,iz)*model_operator%db1%x(ix,iy,iz)&
-											*self%d%v(ix-1,iy,iz) &
-											- outPhi%v(ix,iy-1,iz)*model_operator%db1%y(ix,iy,iz)&
-											*self%d%v(ix,iy-1,iz) &
-											- outPhi%v(ix,iy,iz-1)*model_operator%db1%z(ix,iy,iz)&
-											*self%d%v(ix,iy,iz-1)
-										end do
-									end do
+                                    do iy = 2, inPhi%ny
+                                        do ix = 2, inPhi%nx
+                                            outPhi%v(ix, iy, iz) = inPhi%v(ix, iy, iz) &
+                                            - outPhi%v(ix-1,iy,iz)*model_operator%db1%x(ix,iy,iz)&
+                                            *self%d%v(ix-1,iy,iz) &
+                                            - outPhi%v(ix,iy-1,iz)*model_operator%db1%y(ix,iy,iz)&
+                                            *self%d%v(ix,iy-1,iz) &
+                                            - outPhi%v(ix,iy,iz-1)*model_operator%db1%z(ix,iy,iz)&
+                                            *self%d%v(ix,iy,iz-1)
+                                        end do
+                                    end do
                                 end do
 
                                 ! backward substitution (Solve upper triangular system)
                                 ! the coefficients are only for the interior nodes
                                 do iz = inPhi%nz,2,-1
-									do iy = inPhi%ny,2,-1
-										do ix = inPhi%nx,2,-1
-											outPhi%v(ix, iy, iz) = (outPhi%v(ix, iy, iz)    &
-											- outPhi%v(ix+1, iy, iz)*model_operator%db2%x(ix, iy, iz)    &
-											- outPhi%v(ix, iy+1, iz)*model_operator%db2%y(ix, iy, iz)    &
-											- outPhi%v(ix, iy, iz+1)*model_operator%db2%z(ix, iy, iz)) &
-											*self%d%v(ix, iy, iz)
-										end do
-									end do
+                                    do iy = inPhi%ny,2,-1
+                                        do ix = inPhi%nx,2,-1
+                                            outPhi%v(ix, iy, iz) = (outPhi%v(ix, iy, iz)    &
+                                            - outPhi%v(ix+1, iy, iz)*model_operator%db2%x(ix, iy, iz)    &
+                                            - outPhi%v(ix, iy+1, iz)*model_operator%db2%y(ix, iy, iz)    &
+                                            - outPhi%v(ix, iy, iz+1)*model_operator%db2%z(ix, iy, iz)) &
+                                            *self%d%v(ix, iy, iz)
+                                        end do
+                                    end do
                                 end do
                                 !
                             class default

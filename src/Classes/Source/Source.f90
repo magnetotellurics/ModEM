@@ -15,25 +15,28 @@ module Source
     character(:), allocatable :: source_type
     character ( len=11 ), parameter :: SRC_MT_1D = "SourceMT_1D"
     character ( len=11 ), parameter :: SRC_MT_2D = "SourceMT_2D"
-    
+    !
+    character(:), allocatable :: get_1D_from
+    !
     type, abstract :: Source_t
         !
-        real( kind=prec ) :: omega
+        real( kind=prec ) :: period
         integer :: polarization
         !
         class( ModelOperator_t ), pointer  :: model_operator
         class( ModelParameter_t ), pointer :: model_parameter
+        !
         class( cVector_t ), allocatable    :: rhs, E
         !
         logical                            :: non_zero_source, adjt
         !
         contains
             !
-            procedure, public :: init      => initializeSource
+            procedure, public :: init    => initializeSource
             procedure, public :: dealloc => deallocateSource
             !
             procedure( interface_set_rhs ), deferred, public :: setRHS
-            procedure( interface_set_e ), deferred, public    :: setE
+            procedure( interface_set_e ), deferred, public   :: setE
             !
     end type Source_t
     !
@@ -46,12 +49,11 @@ module Source
            !
         end subroutine interface_set_rhs
         !
-        subroutine interface_set_e( self, omega, polarization )
+        subroutine interface_set_e( self, polarization )
            !
            import :: Source_t, prec
            class( Source_t ), intent( inout ) :: self
-           real( kind=prec ), intent( in )     :: omega
-           integer, intent( in )                :: polarization
+           integer, intent( in )              :: polarization
            !
         end subroutine interface_set_e
         !
@@ -64,11 +66,14 @@ module Source
         !
         class( Source_t ), intent( inout ) :: self
         !
-        self%omega = 0.0
+        self%period = 0.0
         self%polarization = 0
         !
         self%non_zero_source = .FALSE.
         self%adjt            = .FALSE.
+        !
+        self%model_operator  => null()
+        self%model_parameter => null()
         !
     end subroutine initializeSource
     !

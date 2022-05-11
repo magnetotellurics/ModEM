@@ -12,6 +12,9 @@ module DataFile
     use String
     !
     use DataEntryArray
+    use DataEntryMT
+    use DataEntryMT_REF
+    use DataEntryCSEM
     !
     use ReceiverFullImpedance
     use ReceiverFullVerticalMagnetic
@@ -65,7 +68,7 @@ contains
         !
         class( Receiver_t ), pointer    :: receiver
         class( Transmitter_t ), pointer :: transmitter
-        integer                         :: iTx, rx_id, rx_type
+        integer                         :: iTx, nTx, rx_id, rx_type
         real ( kind=prec )              :: azimuth
         !
         call self%data_entries%add( data_entry )
@@ -84,7 +87,7 @@ contains
                 !
             class is ( DataEntryCSEM_t )
                 !
-                allocate( transmitter, source = TransmitterCSEM_t( data_entry%period, data_entry%tx_xyz ) )
+                allocate( transmitter, source = TransmitterCSEM_t( data_entry%period, data_entry%tx_location, data_entry%azimuth, data_entry%dip, data_entry%moment, data_entry%dipole ) )
                 !
         end select
         !
@@ -97,55 +100,55 @@ contains
             case( "Ex_Field" )
                 !
                 azimuth = 1.0
-                allocate( receiver, source = ReceiverSingleField_t( data_entry%xyz, azimuth, rx_type ) )
+                allocate( receiver, source = ReceiverSingleField_t( data_entry%location, azimuth, rx_type ) )
                 !
             case( "Ey_Field" )
                 !
                 azimuth = 2.0
-                allocate( receiver, source = ReceiverSingleField_t( data_entry%xyz, azimuth, rx_type ) )
+                allocate( receiver, source = ReceiverSingleField_t( data_entry%location, azimuth, rx_type ) )
                 !
             case( "Bx_Field" )
                 !
                 azimuth = 3.0
-                allocate( receiver, source = ReceiverSingleField_t( data_entry%xyz, azimuth, rx_type ) )
+                allocate( receiver, source = ReceiverSingleField_t( data_entry%location, azimuth, rx_type ) )
                 !
             case( "By_Field" )
                 !
                 azimuth = 4.0
-                allocate( receiver, source = ReceiverSingleField_t( data_entry%xyz, azimuth, rx_type ) )
+                allocate( receiver, source = ReceiverSingleField_t( data_entry%location, azimuth, rx_type ) )
                 !
             case( "Bz_Field" )
                 !
                 azimuth = 5.0
-                allocate( receiver, source = ReceiverSingleField_t( data_entry%xyz, azimuth, rx_type ) )
+                allocate( receiver, source = ReceiverSingleField_t( data_entry%location, azimuth, rx_type ) )
                 !
             case( "Full_Impedance" )
                 !
-                allocate( receiver, source = ReceiverFullImpedance_t( data_entry%xyz, rx_type ) )
+                allocate( receiver, source = ReceiverFullImpedance_t( data_entry%location, rx_type ) )
                 !
             case( "Full_Interstation_TF" )
                 !
-                STOP "DataManager.f08: loadReceiversAndTransmitters(): To implement Full_Interstation_TF !!!!"
+                stop "DataManager.f08: loadReceiversAndTransmitters(): To implement Full_Interstation_TF !!!!"
                 !
             case( "Off_Diagonal_Rho_Phase" )
                 !
-                STOP "DataManager.f08: loadReceiversAndTransmitters(): To implement Off_Diagonal_Rho_Phase !!!!"
+                stop "DataManager.f08: loadReceiversAndTransmitters(): To implement Off_Diagonal_Rho_Phase !!!!"
                 !
             case( "Phase_Tensor" )
                 !
-                STOP "DataManager.f08: loadReceiversAndTransmitters(): To implement Phase_Tensor !!!!"
+                stop "DataManager.f08: loadReceiversAndTransmitters(): To implement Phase_Tensor !!!!"
                 !
             case( "Off_Diagonal_Impedance" )
                 !
-                allocate( receiver, source = ReceiverOffDiagonalImpedance_t( data_entry%xyz, rx_type ) )
+                allocate( receiver, source = ReceiverOffDiagonalImpedance_t( data_entry%location, rx_type ) )
                 !
             case( "Full_Vertical_Components", "Full_Vertical_Magnetic" )
                 !
-                allocate( receiver, source = ReceiverFullVerticalMagnetic_t( data_entry%xyz, rx_type ) )
+                allocate( receiver, source = ReceiverFullVerticalMagnetic_t( data_entry%location, rx_type ) )
                 !
             case default
-                write(*,*) "unknow component type :[", data_entry%type, "]"
-                STOP "DataManager.f08: loadReceiversAndTransmitters()"
+                write( *, * ) "unknow component type :[", data_entry%type, "]"
+                stop "DataManager.f08: loadReceiversAndTransmitters()"
             !
         end select
         !
@@ -155,10 +158,10 @@ contains
         !
         rx_id = updateReceiverArray( receiver )
         !
-        deallocate( receiver )
+        nTx = size( transmitters )
         !
         ! LOOP OVER TRANSMITTERS
-        do iTx = 1, size( transmitters )
+        do iTx = 1, nTx
             !
             transmitter => getTransmitter( iTx )
             !

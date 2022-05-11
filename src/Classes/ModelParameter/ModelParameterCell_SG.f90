@@ -265,7 +265,9 @@ contains
             class is( Grid3D_SG_t )
                 !
                 allocate( eVec, source = rVector3D_SG_t( grid, EDGE ) )
-                !    should this local object be constructed in the same way???
+                !
+				call eVec%zeros()
+				!
                 SigmaCell = rScalar3D_SG_t( grid, CELL )
                 !
                 k0 = self%grid%nzAir
@@ -288,7 +290,7 @@ contains
                 call eVec%divs( self%metric%Vedge )
                 !
                 !  still need to divide by 4 ...
-                call eVec%mults( 0.25_prec )
+                !call eVec%mults( 0.25_prec )
                 !
             class default
                 write(*, *) "ERROR:ModelParameterCell_SG:PDEmapping:"

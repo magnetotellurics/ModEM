@@ -1,27 +1,27 @@
 ! *************
 ! 
 ! Derived class to define a CSEM Transmitter
-! 
-! Last modified at 08/06/2021 by Paulo Werdt
-! 
+!
 ! *************
 ! 
 module TransmitterCSEM
     ! 
+    use FileUnits
     use Transmitter 
+    use cVector3D_SG
     !
     type, extends( Transmitter_t ), public :: TransmitterCSEM_t
         !
-        real( kind=prec ) :: location(3), azimuth
+        real( kind=prec )         :: location(3), azimuth, dip, moment
+        character(:), allocatable :: dipole
         !
         contains
             !
             final    :: TransmitterCSEM_dtor
             !
-            procedure, public    :: solveFWD => solveFWDTransmitterCSEM
-            procedure, public    :: getSource => getSourceTransmitterCSEM
+            procedure, public :: solveFWD => solveFWDTransmitterCSEM
             !
-            procedure, public    :: write => writeTransmitterCSEM
+            procedure, public :: write => writeTransmitterCSEM
             !
     end type TransmitterCSEM_t
     !
@@ -32,12 +32,12 @@ module TransmitterCSEM
 contains
     !
     ! Parametrized constructor
-    function TransmitterCSEM_ctor( period, location ) result ( self )
+    function TransmitterCSEM_ctor( period, location, azimuth, dip, moment, dipole ) result ( self )
         !
         type( TransmitterCSEM_t ) :: self
         !
-        real( kind=prec ), intent( in )                         :: period
-        real( kind=prec ), intent( in )                         :: location(3)
+        real( kind=prec ), intent( in )         :: period, azimuth, dip, moment, location(3)
+        character(:), allocatable, intent( in ) :: dipole
         !
         ! write(*,*) "Constructor TransmitterCSEM_t"
         !
@@ -46,6 +46,10 @@ contains
         self%n_pol = 1
         self%period = period
         self%location = location
+        self%azimuth = azimuth
+        self%dip = dip
+        self%moment = moment
+        self%dipole = dipole
         !
     end function TransmitterCSEM_ctor
     !
@@ -62,21 +66,53 @@ contains
     end subroutine TransmitterCSEM_dtor
     !
     subroutine solveFWDTransmitterCSEM( self )
+        implicit none
         !
         class( TransmitterCSEM_t ), intent( inout ) :: self
         !
-        write(*,*) "implementing solveFWD TransmitterCSEM_t: ", self%id
+        integer           :: ios
+        real( kind=prec ) :: omega
+        !
+        character( len=20 ) :: ModeName
+        !
+        !
+        omega = 2.0 * PI / self%period
+        !
+        allocate( cVector3D_SG_t :: self%e_all( self%n_pol ) )
+        !
+        ! Verbosis...
+        write( *, * ) "SolveFWD for CSEM Tx:", self%id, " -> Period:", self%period
+        !
+        call self%source%setE( 1 )
+        !
+        select type( mgrid => self%source%model_operator%metric%grid )
+            class is( Grid3D_SG_t )
+                !
+                self%e_all( 1 ) = cVector3D_SG_t( mgrid, EDGE )
+                !
+        end select
+        !
+        call self%forward_solver%getESolution( self%source, self%e_all( 1 ) )
+        self%e_all( 1 ) =self%e_all( 1 ) + self%source%E
+        !
+        ModeName = "Ex"
+        !
+        open( ioESolution, file = e_solution_file_name, action = "write", position = "append", form = "unformatted", iostat = ios )
+        !
+        if( ios /= 0 ) then
+            stop "Error opening file in solveFWDTransmitterCSEM: e_solution"
+        else
+            !
+            ! write the frequency header - 1 record
+            write( ioESolution ) omega, self%id, 1, ModeName
+            !
+            call self%e_all( 1 )%write( ioESolution )
+            !
+            close( ioESolution )
+            !
+        endif
         !
     end subroutine solveFWDTransmitterCSEM
-    !
-    !
-    subroutine getSourceTransmitterCSEM( self )
-        !
-        class( TransmitterCSEM_t ), intent(in)    :: self
-        !
-        write(*,*) "getSource TransmitterCSEM_t: ", self%location
-        !
-    end subroutine getSourceTransmitterCSEM
     !
     subroutine writeTransmitterCSEM( self )
         !
@@ -88,26 +124,5 @@ contains
         " N Receivers: ", size( self%receiver_indexes )
         !
     end subroutine writeTransmitterCSEM
-    !
-    !function sizeOfTransmitterCSEM( self ) result( size )
-        !
-        !class( TransmitterCSEM_t ), intent( in ) :: self
-        !integer                                          :: size
-        !
-        !size = sizeof( self%id ) + &
-                 !sizeof( self%n_pol ) + &
-                 !sizeof( self%fwd_key ) + &
-                 !sizeof( self%type ) + &
-                 !sizeof( self%period ) + &
-                 !sizeof( self%forward_solver ) + &
-                 !sizeof( self%e_all ) + &
-                 !sizeof( self%receiver_indexes ) + &
-                 !sizeof( self%DATA_TITLE )
-                 !sizeof( self%location ) + &
-                 !sizeof( self%azimuth )
-                 !
-        !write( *, * ) "Size: ", size
-        !
-    !end function sizeOfTransmitterCSEM
     !
 end module TransmitterCSEM

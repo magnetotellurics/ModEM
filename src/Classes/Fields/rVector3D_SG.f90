@@ -1093,6 +1093,7 @@ contains
         character(10) :: type
         integer :: xend, yend, zend
         integer :: v_xend, v_yend, v_zend
+        integer :: ix, iy, iz
         !
         if(index(self%gridType, CELL) > 0) then
             write( *, * ) "ERROR:rVector3D_SG_t::SumCellsRVector3D_SG:"
@@ -1113,28 +1114,61 @@ contains
                 !
                 select case(type)
                     case(EDGE)
-                        xend = size(self%x, 1)
-                        yend = size(self%x, 2)
-                        zend = size(self%x, 3)
-                        self%x(:, 2:yend-1, 2:zend-1) = E_in%v(:, 1:v_yend-1,1:v_zend-1) + &
-                                                        E_in%v(:, 2:v_yend, 1:v_zend-1) + &
-                                                        E_in%v(:, 1:v_yend-1,2:v_zend) + &
-                                                        E_in%v(:, 2:v_yend, 2:v_zend)
-                        !
-                        xend = size(self%y, 1)
-                        yend = size(self%y, 2)
-                        zend = size(self%y, 3)
-                        self%y(2:xend-1, :, 2:zend-1) = E_in%v(1:v_xend-1, :, 1:v_zend-1) + &
-                                                        E_in%v(2:v_xend, :, 1:v_zend-1) + &
-                                                        E_in%v(1:v_xend-1, :, 2:v_zend) + &
-                                                        E_in%v(2:v_xend, :, 2:v_zend)
-                        xend = size(self%z, 1)
-                        yend = size(self%z, 2)
-                        zend = size(self%z, 3)
-                        self%z(2:xend-1, 2:yend-1, :) = E_in%v(1:v_xend-1, 1:v_yend-1, :) + &
-                                                        E_in%v(2:v_xend, 1:v_yend-1, :) + &
-                                                        E_in%v(1:v_xend-1, 2:v_yend, :) + &
-                                                        E_in%v(2:v_xend, 2:v_yend, :)
+
+                        ! for x-components inside the domain
+                        do ix = 1, self%grid%nx
+                           do iy = 2, self%grid%ny
+                              do iz = 2, self%grid%nz
+                                 self%x(ix, iy, iz) = (E_in%v(ix, iy-1, iz-1) + E_in%v(ix, iy, iz-1) + &
+                                      E_in%v(ix, iy-1, iz) + E_in%v(ix, iy, iz))/4.0d0
+                              end do
+                           end do
+                        end do
+                        
+                        ! for y-components inside the domain
+                        do ix = 2, self%grid%nx
+                           do iy = 1, self%grid%ny
+                              do iz = 2, self%grid%nz
+                                 self%y(ix, iy, iz) = (E_in%v(ix-1, iy, iz-1) + E_in%v(ix, iy, iz-1) + &
+                                      E_in%v(ix-1, iy, iz) + E_in%v(ix, iy, iz))/4.0d0
+                              end do
+                           end do
+                        end do
+                        
+                        do ix = 2, self%grid%nx
+							  do iy = 2, self%grid%ny
+								 do iz = 1, self%grid%nz
+									self%z(ix, iy, iz) = (E_in%v(ix-1, iy-1, iz) + E_in%v(ix-1, iy, iz) + &
+										 E_in%v(ix, iy-1, iz) + E_in%v(ix, iy, iz))/4.0d0
+								 end do
+							  end do
+						   end do
+                          ! upper boundary
+                        iz = 1
+                        do iy = 1, self%grid%ny
+                           do ix = 2, self%grid%nx
+                              self%y(ix, iy, iz) = (E_in%v(ix-1, iy, iz) + E_in%v(ix, iy, iz))/2.0d0
+                           end do
+                        end do
+                        do ix = 1, self%grid%nx
+                           do iy = 2,self%grid%ny
+                              self%x(ix, iy, iz) = (E_in%v(ix, iy-1, iz) + E_in%v(ix, iy, iz))/2.0d0
+                           end do
+                        end do
+                        
+                        ! lower boundary
+                        iz = self%grid%nz + 1
+                        do iy = 1, self%grid%ny
+                           do ix = 2, self%grid%nx
+                              self%y(ix, iy, iz) = (E_in%v(ix-1, iy, iz-1) + E_in%v(ix, iy, iz-1))/2.0d0
+                           end do
+                        end do
+                        do ix = 1, self%grid%nx
+                           do iy = 2, self%grid%ny
+                              self%x(ix, iy, iz) = (E_in%v(ix, iy-1, iz-1) + E_in%v(ix, iy, iz-1))/2.0d0
+                           end do
+                        end do  
+                        
                     case(FACE)
                         xend = size(self%x, 1)
                         self%x(2:xend-1,:,:) = E_in%v(1:v_xend-1,:,:) + E_in%v(2:v_xend,:,:)

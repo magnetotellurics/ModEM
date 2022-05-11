@@ -13,27 +13,27 @@ module Transmitter
     use ForwardSolver
     use cVector
     !
-	! Global file name for e_solution file
-	character(:), allocatable :: e_solution_file_name
-	!
+    ! Global file name for e_solution file
+    character(:), allocatable :: e_solution_file_name
+    !
     type, abstract :: Transmitter_t
         !
         integer :: id, n_pol, fwd_key(8)
         !
         real( kind=prec ) :: period
         !
-        class( ForwardSolver_t ), pointer :: forward_solver 
-        class( Source_t ), pointer        :: source
+        class( ForwardSolver_t ), pointer :: forward_solver
+        !
+        class( Source_t ), allocatable    :: source
         !
         class( cVector_t ), allocatable    :: e_all(:)
+        !
         integer, allocatable, dimension(:) :: receiver_indexes
         !
     contains
         !
         procedure, public :: init     => initializeTx
         procedure, public :: dealloc  => deallocateTx
-        !
-        procedure, public :: setSource => setSourceTx
         !
         procedure, public :: updateFwdKey
         !
@@ -117,15 +117,6 @@ module Transmitter
             call date_and_time( values=self%fwd_key )
             !
         end subroutine updateFwdKey
-        !
-        subroutine setSourceTx( self, source )
-            !
-            class( Transmitter_t ), intent( inout ) :: self
-            class( Source_t ), target, intent( in ) :: source
-            !
-            self%source => source
-            !
-        end subroutine setSourceTx
         !
         subroutine updateReceiverIndexesArray( self, new_int )
             implicit none

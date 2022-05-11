@@ -28,7 +28,7 @@ module cVector
         !**
         ! Data access
         !*
-        procedure( interface_length_c_vector )    , deferred :: length
+        procedure( interface_length_c_vector ), deferred    :: length
         procedure( interface_get_array_c_vector ), deferred :: getArray
         procedure( interface_set_array_c_vector ), deferred :: setArray
         !**
@@ -46,8 +46,10 @@ module cVector
         procedure( interface_mult1_c_vector ), deferred, public :: mult1
         procedure( interface_mult2_c_vector ), deferred, public :: mult2
         procedure( interface_mult3_c_vector ), deferred, public :: mult3
-        generic :: mult => mult1, mult2, mult3
-        generic :: operator(*) => mult1, mult2, mult3
+        procedure( interface_mult4_c_vector ), deferred, public :: mult4
+		!
+        generic :: mult => mult1, mult2, mult3, mult4
+        generic :: operator(*) => mult1, mult2, mult3, mult4
         !
         procedure( interface_mults1_c_vector ), deferred, public :: mults1
         procedure( interface_mults3_c_vector ), deferred, public :: mults3
@@ -218,15 +220,22 @@ module cVector
         function interface_mult3_c_vector( lhs, rhs ) result( Eout )
             import :: cVector_t, rVector_t
             class( cVector_t ), intent( in ) :: lhs
-            class(rVector_t), intent( in )   :: rhs
+            class( rVector_t ), intent( in ) :: rhs
             class( cVector_t ), allocatable  :: Eout
         end function interface_mult3_c_vector
         !
+        function interface_mult4_c_vector(lhs, rhs) result(Eout)
+            import :: cVector_t, rScalar_t
+            class( cVector_t ), intent( in ) :: lhs
+            class( rScalar_t ), intent( in ) :: rhs
+            class( cVector_t ), allocatable  :: Eout
+            !
+        end function interface_mult4_c_vector
         subroutine interface_mults3_c_vector( lhs, rhs )
             !    subroutine version that overwrites lhs with lhs*rhs
             import :: cVector_t, rVector_t
             class( cVector_t ), intent( inout ) :: lhs
-            class(rVector_t), intent( in )      :: rhs
+            class( rVector_t ), intent( in )      :: rhs
             class( cVector_t ), allocatable     :: Eout
         end subroutine interface_mults3_c_vector
         !

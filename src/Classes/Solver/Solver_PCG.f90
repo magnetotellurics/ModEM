@@ -15,7 +15,7 @@ module Solver_PCG
             final :: Solver_PCG_dtor
             !
             procedure, public :: solve => solvePCG
-            procedure, public :: SetDefaults => setDefaults_PCG
+            procedure, public :: setDefaults => setDefaults_PCG
             !
     end type Solver_PCG_t
     !
@@ -31,13 +31,13 @@ contains
         class( ModelOperator_t ), intent( in ) :: model_operator
         type( Solver_PCG_t ) :: self
         !
-        write( *, * ) "Constructor Solver_PCG_t"
+        !write( *, * ) "Constructor Solver_PCG_t"
         !
         call self%init()
         !
         self%preconditioner = PreConditioner_MF_DC_t( model_operator )
         !
-        call self%SetDefaults()
+        call self%setDefaults()
         !
         call self%zeroDiagnostics()
         !
@@ -49,20 +49,20 @@ contains
         !
         type( Solver_PCG_t ), intent( inout ) :: self
         !
-        write( *, * ) "Destructor Solver_PCG_t"
+        !write( *, * ) "Destructor Solver_PCG_t"
         !
         call self%dealloc()
         !
     end subroutine Solver_PCG_dtor
     !
-    subroutine SetDefaults_PCG( self )
+    subroutine setDefaults_PCG( self )
         implicit none
         !
         class( Solver_PCG_t ), intent(inout) :: self
         !
-        call self%SetParameters( max_iter, tolerance )
+        call self%SetParameters( max_iterDivCorDef, tolDivCorDef )
         !
-    end subroutine SetDefaults_PCG
+    end subroutine setDefaults_PCG
     !
     !************************************************    
     subroutine solvePCG( self, b, x )
@@ -99,10 +99,14 @@ contains
         !
         bnorm = sqrt(real( b%dotProd(b)))
         rnorm = sqrt(real( r%dotProd(r)))
+        !
         self%relErr(1) = rnorm/bnorm
+        !
+        !write( *, * ) "PCG iter, self%relErr( 1 )", 1, self%relErr( 1 )
+        !
         i = 0
         !
-        loop: do while ( ( self%relErr(i+1) .GT. self%tolerance ).and.( i .LT. self%max_iter ) )
+        loop: do while ( ( self%relErr( i + 1 ) .GT. self%tolerance ).and.( i + 1 .LT. self%max_iter ) )
             !
             call self%preconditioner%LUsolve( r, s )
             !
@@ -114,7 +118,7 @@ contains
             endif
             !
             call p%linCombS( s, beta, C_ONE )
-			!
+            !
             call q%zeros()
             call self%preconditioner%model_operator%divCgrad( p, q )
             !
@@ -123,18 +127,25 @@ contains
             call p%scMultAddS( x, alpha )
             !
             call q%scMultAddS( r, -alpha )
-			!
+            !
             deltaOld = delta
-			!
+            !
             i = i + 1
-			!
+            !
             rnorm = sqrt( real( r%dotProd(r) ) )
             !
-			self%relErr(i+1) = rnorm/bnorm
+            self%relErr( i + 1 ) = rnorm/bnorm
             !
-            !write( *, * ) 'iter = ', i, ' relErr = ',self%relErr(i+1)
+            !write( *, * ) "PCG iter, self%relErr( i + 1 )", i + 1, self%relErr( i + 1 )
             !
         enddo loop
+        !
+        !
+        if( i + 1 .LT. self%max_iter ) then
+            write( *, * ) "DivCorr PCG converged within ", i + 1, " : ", self%relErr( i + 1 )
+        else
+            write( *, * ) "DivCorr PCG not converged in ", i + 1, " : ", self%relErr( i + 1 )
+        endif
         !
         deallocate( r )
         deallocate( s )
@@ -142,7 +153,7 @@ contains
         deallocate( q )
         !
         self%n_iter = i
-		!
+        !
     end subroutine solvePCG ! PCG
     !
 end module Solver_PCG
