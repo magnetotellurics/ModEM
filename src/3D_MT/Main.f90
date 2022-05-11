@@ -220,6 +220,7 @@ Contains
 	   if (exists) then
 	      call deall_grid(grid)
 	   	  call read_modelParam(grid,dsigma,cUserDef%rFile_dModel)
+        call update_airlayers(grid,airLayers%Nz,airLayers%Dz)
 	   else
 	      call warning('The input model perturbation file does not exist')
 	   end if
@@ -235,7 +236,8 @@ Contains
 	   if (exists) then
 	      call deall_grid(grid)
 	   	  call read_modelParam(grid,dsigma,cUserDef%rFile_dModel)
-          call setup_airlayers(airLayers,grid)
+    !   I guess no need to call setup_airlayers again (and what is dsigma for inversion???)
+     !     call setup_airlayers(airLayers,grid)
 		  call update_airlayers(grid,airLayers%Nz,airLayers%Dz)
 	      if (output_level > 0) then
 	        write(*,*) 'Using the initial model perturbations from file ',trim(cUserDef%rFile_dModel)
@@ -268,6 +270,7 @@ Contains
        if (exists) then
            call deall_grid(grid)
            call read_modelParam(grid,sigma0,cUserDef%rFile_Prior)
+           call update_airlayers(grid,airLayers%Nz,airLayers%Dz)
        else
            call zero(sigma0)
        end if
@@ -279,6 +282,7 @@ Contains
          if (exists) then
              call deall_grid(grid)
              call read_modelParam(grid,dsigma,cUserDef%rFile_dModel)
+             call update_airlayers(grid,airLayers%Nz,airLayers%Dz)
          else
              call warning('The input model perturbation file does not exist')
          end if
@@ -290,6 +294,7 @@ Contains
                if (exists) then
                   call deall_grid(grid)
                   call read_modelParam(grid,dsigma,cUserDef%rFile_dModel)
+                  call update_airlayers(grid,airLayers%Nz,airLayers%Dz)
                else
                   call warning('The input model perturbation file does not exist')
                end if
