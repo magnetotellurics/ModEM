@@ -80,9 +80,9 @@ contains
         implicit none
         !
         type( Dh_t ), pointer, dimension(:), intent( in ) :: data_handle_array
-        integer                                 :: iDh
+        integer                                           :: iDh
         !
-        class( DataHandle_t ), allocatable      :: dh
+        class( DataHandle_t ), allocatable                :: dh
         !
         dh = data_handle_array( iDh )%Dh
         !

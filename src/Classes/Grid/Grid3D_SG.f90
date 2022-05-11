@@ -378,8 +378,6 @@ contains
         
         if (present(nzAir)) then
              airlayers%nz = nzAir
-             write(*,*) "nzAir",nzAir
-             write(*,*) "nz",airLayers%nz
         end if
         
         if (.NOT.(index(airLayers%method, "read from file") > 0)) then

@@ -9,7 +9,7 @@
 module ReceiverOffDiagonalImpedance
     !
     use Receiver
-	use DataHandleMT
+    use DataHandleMT
     !
     type, extends( Receiver_t ), public :: ReceiverOffDiagonalImpedance_t
         !
@@ -58,7 +58,7 @@ contains
         !
         allocate( self%EHxy( self%n_comp ) )
         !
-        ! components required to get the full impdence tensor response [Zxx, Zxy, Zyx, Zyy]
+        ! components required to get the full impdence tensor self%response [Zxx, Zxy, Zyx, Zyy]
         self%EHxy(1)%str = "Ex"
         self%EHxy(2)%str = "Ey"
         self%EHxy(3)%str = "Bx"
@@ -111,16 +111,16 @@ contains
         class( ReceiverOffDiagonalImpedance_t ), intent( inout ) :: self
         class( Transmitter_t ), intent( in )                     :: transmitter
         !
-        complex( kind=prec ) :: comega
+        complex( kind=prec ) :: comega, det
         !
-        complex( kind=prec ), allocatable :: BB(:,:), det
-        real( kind=prec ) :: omega
-        integer           :: i, j, ij
+        complex( kind=prec ), allocatable :: BB(:,:), I_BB(:,:), EE(:,:)
+        !
+        integer :: i, j, ij
         !
         comega = cmplx( 0.0, 1./ ( 2.0 * PI / transmitter%period ), kind=prec )
         !
         !
-        allocate( complex( kind=prec ) :: self%EE( 2, 2 ) )
+        allocate( EE( 2, 2 ) )
         !
         select type( tx_e_1 => transmitter%e_all( 1 ) )
             class is( cVector3D_SG_t )
@@ -128,12 +128,12 @@ contains
                 select type( tx_e_2 => transmitter%e_all( 2 ) )
                     class is( cVector3D_SG_t )
                         !
-                        self%EE(1,1) = dotProdSparse( self%Lex, tx_e_1 )
-                        self%EE(2,1) = dotProdSparse( self%Ley, tx_e_1 )
-                        self%EE(1,2) = dotProdSparse( self%Lex, tx_e_2 )
-                        self%EE(2,2) = dotProdSparse( self%Ley, tx_e_2 )
+                        EE(1,1) = dotProdSparse( self%Lex, tx_e_1 )
+                        EE(2,1) = dotProdSparse( self%Ley, tx_e_1 )
+                        EE(1,2) = dotProdSparse( self%Lex, tx_e_2 )
+                        EE(2,2) = dotProdSparse( self%Ley, tx_e_2 )
                         !
-                        allocate( complex( kind=prec ) :: BB( 2, 2 ) )
+                        allocate( BB( 2, 2 ) )
                         !
                         BB(1,1) = dotProdSparse( self%Lbx, tx_e_1 )
                         BB(2,1) = dotProdSparse( self%Lby, tx_e_1 )
@@ -144,28 +144,30 @@ contains
                         !invert horizontal B matrix using Kramer's rule.
                         det = BB(1,1) * BB(2,2) - BB(1,2) * BB(2,1)
                         !
-                        allocate( complex( kind=prec ) :: self%I_BB( 2, 2 ) )
+                        allocate( I_BB( 2, 2 ) )
                         !
                         if( det /= 0 ) then
-                            self%I_BB( 1, 1 ) = BB( 2, 2 ) / det
-                            self%I_BB( 2, 2 ) = BB( 1, 1 ) / det
-                            self%I_BB( 1, 2 ) = -BB( 1, 2 ) / det
-                            self%I_BB( 2, 1 ) = -BB( 2, 1 ) / det
+                            I_BB( 1, 1 ) = BB( 2, 2 ) / det
+                            I_BB( 2, 2 ) = BB( 1, 1 ) / det
+                            I_BB( 1, 2 ) = -BB( 1, 2 ) / det
+                            I_BB( 2, 1 ) = -BB( 2, 1 ) / det
                         else
                             STOP "ReceiverOffDiagonalImpedance.f90: Determinant is Zero!"
                         endif
                         !
-                        allocate( complex( kind=prec ) :: self%response( 2 ) )
+                        deallocate( BB )
                         !
-                        self%response(1) = self%EE(1,1) * self%I_BB(1,2) + self%EE(1,2) * self%I_BB(2,2)
-                        self%response(2) = self%EE(2,1) * self%I_BB(1,1) + self%EE(2,2) * self%I_BB(2,1)
+                        allocate( self%response( 2 ) )
+                        !
+                        self%response(1) = EE(1,1) * I_BB(1,2) + EE(1,2) * I_BB(2,2)
+                        self%response(2) = EE(2,1) * I_BB(1,1) + EE(2,2) * I_BB(2,1)
+                        !
+                        deallocate( EE )
+                        deallocate( I_BB )
                         !
                         ! WRITE ON PredictedFile.dat
                         call self%savePredictedData( transmitter )
                         !
-                        deallocate( self%EE )
-                        deallocate( BB )
-                        deallocate( self%I_BB )
                         deallocate( self%response )
                         !
                     class default
@@ -188,10 +190,10 @@ contains
         real( kind=prec )         :: period, real_part, imaginary, rx_location(3)
         integer                   :: i, rx_type
         !
-        !#Period(s) Code GG_Lat GG_Lon X(m) Y(m) response(m) Component Real Imag Error
+        !#Period(s) Code GG_Lat GG_Lon X(m) Y(m) self%response(m) Component Real Imag Error
         !
-		if( associated( self%predicted_data ) ) call deallocateDataHandleArray( self%predicted_data )
-		!
+        if( associated( self%predicted_data ) ) call deallocateDataHandleArray( self%predicted_data )
+        !
         do i = 1, self%n_comp
             !
             rx_type = int( self%rx_type )

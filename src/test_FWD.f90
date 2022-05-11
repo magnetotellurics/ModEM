@@ -585,7 +585,7 @@ contains
         !
         type( Dh_t ), pointer, dimension(:), intent( inout ) :: data_handle_array
         !
-        class( DataHandle_t ), allocatable :: Dh
+        class( DataHandle_t ), allocatable :: data_handle
         !
         integer :: receiver_type, i, j, ios
         !
@@ -606,20 +606,20 @@ contains
             !
             do i = 1, size( data_handle_array )
                 !
-                Dh = getDataHandle( data_handle_array, i )
+                data_handle = getDataHandle( data_handle_array, i )
                 !
-                call writePredictedDataHeader( Dh, receiver_type )
+                call writePredictedDataHeader( data_handle, receiver_type )
                 !
                 ! Instantiate the ModelOperator object
-                select type( Dh )
+                select type( data_handle )
                     !
                     class is( DataHandleMT_t )
                         !
-                        write( ioPredData, "(es12.6, 1X, A, 1X, f15.3, f15.3, f15.3, f15.3, f15.3, 1X, A, 1X, es16.6, es16.6, es16.6)" ) Dh%period, Dh%code, R_ZERO, R_ZERO, Dh%rx_location(1), Dh%rx_location(2), Dh%rx_location(3), Dh%component, Dh%real, Dh%imaginary, 1.0
+                        write( ioPredData, "(es12.6, 1X, A, 1X, f15.3, f15.3, f15.3, f15.3, f15.3, 1X, A, 1X, es16.6, es16.6, es16.6)" ) data_handle%period, data_handle%code, R_ZERO, R_ZERO, data_handle%rx_location(1), data_handle%rx_location(2), data_handle%rx_location(3), data_handle%component, data_handle%real, data_handle%imaginary, 1.0
                         !
                     class is( DataHandleCSEM_t )
                         !
-                        write( ioPredData, "(A, 1X, es12.6, f15.3, f15.3, f15.3, f15.3, f15.3, f15.3, 1X, A, 1X, f15.3, f15.3, f15.3, 1X, A, 1X, es16.6, es16.6, es16.6)" ) Dh%dipole, Dh%period, Dh%moment, Dh%azimuth, Dh%dip, Dh%tx_location(1), Dh%tx_location(2), Dh%tx_location(3), Dh%code, Dh%rx_location(1), Dh%rx_location(2), Dh%rx_location(3), Dh%component, Dh%real, Dh%imaginary, 1.0
+                        write( ioPredData, "(A, 1X, es12.6, f15.3, f15.3, f15.3, f15.3, f15.3, f15.3, 1X, A, 1X, f15.3, f15.3, f15.3, 1X, A, 1X, es16.6, es16.6, es16.6)" ) data_handle%dipole, data_handle%period, data_handle%moment, data_handle%azimuth, data_handle%dip, data_handle%tx_location(1), data_handle%tx_location(2), data_handle%tx_location(3), data_handle%code, data_handle%rx_location(1), data_handle%rx_location(2), data_handle%rx_location(3), data_handle%component, data_handle%real, data_handle%imaginary, 1.0
                         !
                     class default
                         stop "Unclassified data_handle"

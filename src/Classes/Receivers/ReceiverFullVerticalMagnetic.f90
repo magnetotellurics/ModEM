@@ -58,12 +58,12 @@ contains
         !
         allocate( self%EHxy( 3 ) )
         !
-        ! components required to get the full impdence tensor response [Zxx, Zxy, Zyx, Zyy]
+        ! components required to get the full impdence tensor self%response [Zxx, Zxy, Zyx, Zyy]
         self%EHxy(1)%str = "Bx"
         self%EHxy(2)%str = "By"
         self%EHxy(3)%str = "Bz"
         !
-        ! components required to get the full impdedance tensor response [Zxx, Zxy, Zyx, Zyy]
+        ! components required to get the full impdedance tensor self%response [Zxx, Zxy, Zyx, Zyy]
         allocate( self%comp_names( 2 ) )
         !
         self%comp_names(1)%str = "TX"
@@ -125,9 +125,9 @@ contains
         class( ReceiverFullVerticalMagnetic_t ), intent( inout ) :: self
         class( Transmitter_t ), intent( in )                     :: transmitter
         !
-        complex( kind=prec ) :: comega
+        complex( kind=prec ) :: comega, det
         !
-        complex( kind=prec ), allocatable :: BB(:,:), det
+        complex( kind=prec ), allocatable :: BB(:,:), I_BB(:,:)
         !
         comega = cmplx( 0.0, 1./ ( 2.0 * PI / transmitter%period ), kind=prec )
         !
@@ -152,24 +152,24 @@ contains
                         !
                         !write(*,*) "det:", det
                         !
-                        allocate( self%I_BB( 2, 2 ) )
+                        allocate( I_BB( 2, 2 ) )
                         !
                         if( det /= 0 ) then
-                            self%I_BB( 1, 1 ) =  BB( 2, 2 ) / det
-                            self%I_BB( 2, 2 ) =  BB( 1, 1 ) / det
-                            self%I_BB( 1, 2 ) = -BB( 1, 2 ) / det
-                            self%I_BB( 2, 1 ) = -BB( 2, 1 ) / det
+                            I_BB( 1, 1 ) =  BB( 2, 2 ) / det
+                            I_BB( 2, 2 ) =  BB( 1, 1 ) / det
+                            I_BB( 1, 2 ) = -BB( 1, 2 ) / det
+                            I_BB( 2, 1 ) = -BB( 2, 1 ) / det
                         else
-                            STOP "ReceiverFullImpedance.f90: Determinant is Zero!"
+                            stop "ReceiverFullImpedance.f90: Determinant is Zero!"
                         endif
                         !
                         allocate( self%response( 2 ) )
                         !
-                        self%response(1) = BB(3,1) * self%I_BB(1,1) + BB(3,2) * self%I_BB(2,1)
-                        self%response(2) = BB(3,1) * self%I_BB(1,2) + BB(3,2) * self%I_BB(2,2)
+                        self%response(1) = BB(3,1) * I_BB(1,1) + BB(3,2) * I_BB(2,1)
+                        self%response(2) = BB(3,1) * I_BB(1,2) + BB(3,2) * I_BB(2,2)
                         !
                         deallocate( BB )
-                        deallocate( self%I_BB )
+                        deallocate( I_BB )
                         !
                         ! WRITE ON PredictedFile.dat
                         call self%savePredictedData( transmitter )
@@ -196,10 +196,10 @@ contains
         real( kind=prec )         :: period, real_part, imaginary, rx_location(3)
         integer                   :: i, rx_type
         !
-        !#Period(s) Code GG_Lat GG_Lon X(m) Y(m) response(m) Component Real Imag Error
+        !#Period(s) Code GG_Lat GG_Lon X(m) Y(m) self%response(m) Component Real Imag Error
         !
-		if( associated( self%predicted_data ) ) call deallocateDataHandleArray( self%predicted_data )
-		!
+        if( associated( self%predicted_data ) ) call deallocateDataHandleArray( self%predicted_data )
+        !
         do i = 1, self%n_comp
             !
             rx_type = int( self%rx_type )

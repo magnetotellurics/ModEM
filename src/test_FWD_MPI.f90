@@ -7,8 +7,6 @@ program ModEM
     !
     use ModEMControlFile
     !
-    use Grid3D_SG
-    !
     use ModelReader
     use ModelReader_Weerachai
     use ModelOperator_MF
@@ -17,13 +15,11 @@ program ModEM
     !
     use DataFileStandard
     !
-    use ForwardSolverFromFile
     use ForwardSolverIT_DC
     !
     use SourceMT_1D
     use SourceMT_2D
-    !
-    use ModelParameter2D
+    use SourceCSEM_Dipole1D
     !
     character(:), allocatable :: control_file_name, model_file_name, data_file_name, modem_job
     logical                   :: has_control_file, has_model_file, has_data_file, verbosis
@@ -67,9 +63,9 @@ program ModEM
         ! Validate arguments, set model_file_name, data_file_name, control_file_name, etc...
         call handleArguments()
         !
-        write ( *, * )
-        write ( *, * ) "Start ModEM-OO."
-        write ( *, * )
+        write( *, * )
+        write( *, * ) "Start ModEM-OO."
+        write( *, * )
         !
         ! Check parameters at the control file
         if( has_control_file ) call handleControlFile()
@@ -79,9 +75,9 @@ program ModEM
         !
         call MPI_Finalize( ierr )
         !
-        write ( *, * )
-        write ( *, * ) "Finish ModEM-OO."
-        write ( *, * )
+        write( *, * )
+        write( *, * ) "Finish ModEM-OO."
+        write( *, * )
     !
     ! WORKER
     !
@@ -93,7 +89,7 @@ program ModEM
             !
             do while ( job_master .ne. job_finish )
                 !
-                write ( *, * ) "WORKER: ", mpi_rank, " WAITING MASTER"
+                write( *, * ) "WORKER: ", mpi_rank, " WAITING MASTER"
                 !
                 call receiveFrom( master_id )
                 !
@@ -142,11 +138,11 @@ contains
         ! Local variables
         integer :: i, worker_rank, tx_received, tx_index
         !
-        type( DataHandle_t ), allocatable :: data_handles(:)
-        type( DataHandle_t ), allocatable :: all_data_handles(:)
+        type( Dh_t ), pointer, dimension(:) :: worker_predicted_data
+        type( Dh_t ), pointer, dimension(:) :: all_predicted_data
         !
         ! Verbosis
-        write ( *, * ) "    > Start forward modelling."
+        write( *, * ) "    > Start forward modelling."
         !
         worker_rank = 1
         tx_received = 0
@@ -186,6 +182,8 @@ contains
         deallocate( main_grid )
         !
         call deallocateTransmitterArray()
+		!
+		all_predicted_data => null()
         !
         ! SEND 1 TRANSMITTER TO FIRST np WORKERS
         do while ( worker_rank <= ( mpi_size - 1 ) )
@@ -205,17 +203,17 @@ contains
         ! SEND 1 TRANSMITTER TO FIRST AVAILABLE WORKER
         do while( tx_index < size( transmitters ) )
             !
-            write ( *, * ) "THERES", ( size( transmitters ) - tx_index ), " TX LEFT!"
+            write( *, * ) "THERES", ( size( transmitters ) - tx_index ), " TX LEFT!"
             !
             call receiveFromAny()
             !
-            data_handles = receiveData()
+            worker_predicted_data => receiveData()
             !
-            do i = 1, size( data_handles )
-                call updateDataHandleArray( all_data_handles, data_handles( i ) )
+            do i = 1, size( worker_predicted_data )
+                call updateDataHandleArray( all_predicted_data, getDataHandle( worker_predicted_data, i ) )
             end do
             !
-            deallocate( data_handles )
+            call deallocateDataHandleArray( worker_predicted_data )
             !
             tx_received = tx_received + 1
             !
@@ -231,17 +229,17 @@ contains
         ! RECEIVES job_done FROM EACH FINISHED WORKER
         do while ( tx_received < size( transmitters ) )
             !
-            write ( *, * ) "MASTER WAITING ANY WORKER TO FINISH"
+            write( *, * ) "MASTER WAITING ANY WORKER TO FINISH"
             !
             call receiveFromAny()
             !
-            data_handles = receiveData()
+            worker_predicted_data => receiveData()
             !
-            do i = 1, size( data_handles )
-                call updateDataHandleArray( all_data_handles, data_handles( i ) )
+            do i = 1, size( worker_predicted_data )
+                call updateDataHandleArray( all_predicted_data, getDataHandle( worker_predicted_data, i ) )
             end do
             !
-            deallocate( data_handles )
+            call deallocateDataHandleArray( worker_predicted_data )
             !
             tx_received = tx_received + 1
             !
@@ -254,15 +252,15 @@ contains
         ! Verbosis...
         write( *, * ) "    -> Writing Predicted Data to file: [", trim( predicted_data_file_name ), "]"
         !
-        ! Write all_data_handles into predicted_data.dat
-        call writeDataHandleArray( all_data_handles )
+        ! Write all_predicted_data into predicted_data.dat
+        call writeDataHandleArray( all_predicted_data )
         !
-        deallocate( all_data_handles )
+        call deallocateDataHandleArray( all_predicted_data )
         !
         call deallocateReceiverArray()
         !
         ! Verbosis
-        write ( *, * ) "    > Finish forward modelling."
+        write( *, * ) "    > Finish forward modelling."
         !
     end subroutine masterForwardModelling
     !
@@ -300,10 +298,10 @@ contains
         !
         if( ierr == MPI_SUCCESS ) then
             !
-            write( *, "(A50, i8, i8, i8)" ) "MPI Allocated window size:", shared_window_size
+            write( *, * ) "MPI_Win_shared_query on worker:", mpi_rank, ierr, shared_window_size
             !
         else
-            write( *, "(A50, i8, i8)" ) "MPI Win_shared_query fails on worker, ierr:", mpi_rank, ierr
+            write( *, * ) "MPI Win_shared_query fails on worker:", mpi_rank, ierr
             stop
         endif
         !
@@ -319,17 +317,14 @@ contains
         ! Use save ????
         class( ForwardSolver_t ), allocatable, target, save :: forward_solver
         !
-        class( Source_t ), allocatable, target        :: fwd_source 
-        !
         ! Temporary alias pointers
         class( Receiver_t ), pointer    :: Rx
         class( Transmitter_t ), pointer :: Tx
         !
-        type( DataHandle_t ), allocatable :: tx_data_handles(:)
-        !
+        integer :: iRx, iDh
         type( TAirLayers ) :: air_layer
+        type( Dh_t ), pointer, dimension(:) :: tx_data_handles
         !
-        integer :: iRx, nRx, iDe
         !
         select type( main_grid )
             !
@@ -346,88 +341,75 @@ contains
         call model_operator%metric%SetMetricElements()
         !
         call model_parameter%SetSigMap( model_parameter%paramType )
-        !call model_parameter%SetType( LOGE )
         call model_parameter%setMetric( model_operator%metric )
         !
         call model_operator%SetEquations()
         call model_operator%SetCond( model_parameter )
         !
-        ! ForwardSolver - Chosen from control file
-        select case ( trim( forward_solver_type ) )
-            !
-            case( FWD_FILE )
-                forward_solver = ForwardSolverFromFile_t( model_operator )
+        ! Instantiate the ForwardSolver - Specific type can be chosen via control file
+        select case ( forward_solver_type )
             !
             case( FWD_IT_DC )
                 forward_solver = ForwardSolverIT_DC_t( model_operator, QMR )
-            !
+                !
             case default
                 forward_solver = ForwardSolverIT_DC_t( model_operator, QMR )
             !
         end select
         !
-        call forward_solver%setCond( model_parameter )
-        !
-        ! Source - Chosen from control file
-        select case ( trim( source_type ) )
-            !
-            case( SRC_MT_1D )
-                fwd_source = SourceMT_1D_t( model_operator, model_parameter )
-            !
-            case( SRC_MT_2D )
-                fwd_source = SourceMT_2D_t( model_operator, model_parameter )
-            !
-            case default
-                fwd_source = SourceMT_1D_t( model_operator, model_parameter )
-            !
-        end select
-        !
+        ! Set Transmitter's ForwardSolver
         Tx => getTransmitter( fwd_info%tx_index )
         !
-        call writeEsolutionHeader( size( transmitters ), Tx%n_pol )
-        !
-        Tx%source => fwd_source
+        ! Set Transmitter's ForwardSolver
         Tx%forward_solver => forward_solver
         !
-        ! Set ForwardSolver omega
-        call Tx%forward_solver%setFrequency( Tx%period )
+        ! Set Transmitter's ForwardSolver Omega(Period) and Conductivity
+        call Tx%forward_solver%setFrequency( model_parameter, Tx%period )
         !
-        ! Solve Tx Forward Modelling
+        ! Instantiate Transmitter's Source - According to transmitter type or chosen via control file
+        select type( Tx )
+            !
+            class is( TransmitterMT_t )
+                !
+                Tx%source = SourceMT_1D_t( model_operator, model_parameter, Tx%period )
+                !
+            class is( TransmitterCSEM_t )
+                !
+                Tx%source = SourceCSEM_Dipole1D_t( model_operator, model_parameter, Tx%period, Tx%location, Tx%dip, Tx%azimuth, Tx%moment )
+                !
+        end select
+        !
+        ! Solve Forward Modeling for this Transmitter
         call Tx%solveFWD()
         !
-        deallocate( fwd_source )
+        tx_data_handles => null()
         !
-        ! THIS CAUSES MEMORY CRASHES
-        !deallocate( forward_solver )
-        !
-        ! Loop over Receivers of each Transmitter
-        nRx = size( Tx%receiver_indexes )
-        !
-        do iRx = 1, nRx
+        ! Loop for each Receiver related to this Transmitter
+        do iRx = 1, size( Tx%receiver_indexes )
             !
-            ! Temporary Receiver alias
+            ! Points the Rx alias to the current loop Receiver
             Rx => getReceiver( Tx%receiver_indexes( iRx ) )
             !
             ! Verbosis...
             !write( *, * ) "                        Rx Id:", Rx%id, "XYZ:", Rx%location
             !
-            ! Calculate Rx Predicted Data
+            ! Calculates Rx predicted data and stores the result in the Receiver
             call Rx%predictedData( Tx )
             !
-            ! Store Rx predicted data into tx_data_handles
-            do iDe = 1, size( Rx%predicted_data )
+            ! For each predicted data stored in the Receiver
+            do iDh = 1, size( Rx%predicted_data )
                 !
-                call updateDataHandleArray( tx_data_handles, Rx%predicted_data(iDe) )
+                ! Store in the final data array
+                call updateDataHandleArray( tx_data_handles, getDataHandle( Rx%predicted_data, iDh ) )
                 !
             end do
             !
-            deallocate( Rx%predicted_data )
-            !
         enddo
         !
+        ! Clears the memory used by the current Transmitter (Mainly Esolution cVector)
         deallocate( Tx )
         !
-        write ( *, * ) "WORKER ", mpi_rank, "FINISHES FWD FOR TX ", fwd_info%tx_index!, size( tx_data_handles )
+        write( *, * ) "WORKER ", mpi_rank, "FINISHES FWD FOR TX ", fwd_info%tx_index!, size( tx_data_handles )
         !
         ! SEND JOB DONE TO MASTER
         fwd_info%job_name    = job_fwd_done
@@ -441,25 +423,24 @@ contains
         !
         call sendData( tx_data_handles )
         !
-        deallocate( tx_data_handles )
+        call deallocateDataHandleArray( tx_data_handles )
         !
     end subroutine workerForwardModelling
-    !
     !
     subroutine handleJob()
         implicit none
         !
         select case ( modem_job )
-          !
+            !
         case ( "forward" )
-          !
-          call masterForwardModelling()
-          !
+            !
+            call masterForwardModelling()
+            !
         case default
-          !
-          write( *, * ) "    - Unknow job: [", trim( modem_job ), "]"
-          call printHelp()
-          !
+            !
+            write( *, * ) "    - Unknow job: [", modem_job, "]"
+            call printHelp()
+            !
         end select
         !
     end subroutine handleJob
@@ -476,6 +457,43 @@ contains
         control_file = ModEMControlFile_t( ioStartup, control_file_name )
         !
     end subroutine handleControlFile
+    !
+    !
+    subroutine handleModelFile()
+        implicit none
+        !
+        type( ModelReader_Weerachai_t ) :: model_reader
+        type( TAirLayers )              :: air_layer
+        !
+        !
+        write( *, * ) "    -> Model File: [", model_file_name, "]"
+        !
+        ! Read Grid and ModelParameter with ModelReader_Weerachai
+        call model_reader%Read( model_file_name, main_grid, model_parameter ) 
+        !
+        ! Instantiate the ModelOperator object
+        select type( main_grid )
+            !
+            class is( Grid3D_SG_t )
+                !
+                call main_grid%SetupAirLayers( air_layer, model_method, model_n_air_layer, model_max_height )
+                !
+                call main_grid%UpdateAirLayers( air_layer%nz, air_layer%dz )
+                !
+                model_operator = ModelOperator_MF_t( main_grid )
+                !
+                call model_parameter%setMetric( model_operator%metric )
+                !
+                call model_operator%SetEquations()
+                !
+                call model_operator%SetCond( model_parameter )
+                !
+            class default
+                stop "Unclassified main_grid"
+            !
+        end select
+        !
+    end subroutine handleModelFile
     !
     !
     subroutine handleDataFile()
@@ -525,49 +543,11 @@ contains
         !
     end subroutine handleDataFile
     !
-    subroutine handleModelFile()
-        implicit none
-        !
-        ! It remains to standardize ????
-        type( ModelReader_Weerachai_t ) :: model_reader
-        !
-        type( TAirLayers )                :: air_layer
-        !
-        write( *, * ) "    -> Model File: [", model_file_name, "]"
-        !
-        ! Read Grid and ModelParameter with ModelReader_Weerachai
-        call model_reader%Read( model_file_name, main_grid, model_parameter ) 
-        !
-        ! Instantiate the ModelOperator object
-        select type( main_grid )
-          !
-          class is( Grid3D_SG_t )
-              !
-              write( *, * ) "MASTER GRID: model_method, model_n_air_layer, model_max_height", model_method, model_n_air_layer, model_max_height
-              !
-              call main_grid%SetupAirLayers( air_layer, model_method, model_n_air_layer, model_max_height )
-              !
-              call main_grid%UpdateAirLayers( air_layer%nz, air_layer%dz )
-              !
-              model_operator = ModelOperator_MF_t( main_grid )
-              !
-              call model_parameter%setMetric( model_operator%metric )
-              !
-              call model_operator%SetEquations()
-              !
-              class default
-                  stop "Unclassified main_grid"
-              !
-        end select
-        !
-    end subroutine handleModelFile
-    !
-    !
     subroutine handleArguments()
         implicit none
         !
-        character(200) :: argument
-        integer        :: argument_index
+        character( len=200 ) :: argument
+        integer              :: argument_index
         !
         if ( command_argument_count() == 0 ) then
             !
@@ -610,7 +590,7 @@ contains
                       case ( "-m", "--model" )
                          !
                          call get_command_argument( argument_index + 1, argument )
-                         model_file_name = trim(argument)
+                         model_file_name = trim( argument )
                          !
                          if ( len( model_file_name ) > 0 ) has_model_file = .TRUE.
                          !
@@ -619,14 +599,14 @@ contains
                       case ( "-pd", "--predicted" )
                          !
                          call get_command_argument( argument_index + 1, argument )
-                         predicted_data_file_name = trim(argument)
+                         predicted_data_file_name = trim( argument )
                          !
                          argument_index = argument_index + 2
                          !
                       case ( "-es", "--esolution" )
                          !
                          call get_command_argument( argument_index + 1, argument )
-                         e_solution_file_name = trim(argument)
+                         e_solution_file_name = trim( argument )
                          !
                          argument_index = argument_index + 2
                          !
@@ -645,7 +625,7 @@ contains
                          !
                       case default
                          !
-                         write( *, * ) "    - Unknow Argument: [", trim( argument ), "]"
+                         write( *, * ) "    - Unknow Argument: [", argument, "]"
                          call printHelp()
                          !
                  end select
@@ -668,8 +648,11 @@ contains
         verbosis                 = .FALSE.
         !
         ! Solver
-        max_iter = 100
-        tolerance = TOL8
+        !max_iter = 100
+        !tolerance = TOL8
+        !
+        ! Source
+        get_1D_from = "Geometric_mean"
         !
         ! Model
         model_method      = MM_METHOD_FIXED_H
@@ -717,28 +700,38 @@ contains
     recursive subroutine sortByReceiverType( data_handle_array, first, last )
         implicit none
         !
-        type( DataHandle_t ), allocatable, intent( inout ) :: data_handle_array(:)
-        type( DataHandle_t ) :: x_data_entry, t_data_entry
+        type( Dh_t ), pointer, dimension(:), intent( inout ) :: data_handle_array
+        type( Dh_t ), allocatable :: x_Dh, t_Dh
+        class( DataHandle_t ), allocatable :: i_data_handle, j_data_handle, x_data_handle
         integer first, last
         integer i, j
         !
-        x_data_entry = data_handle_array( (first+last) / 2 )
+        x_Dh = data_handle_array( (first+last) / 2 )
+        x_data_handle = x_Dh%Dh
         i = first
         j = last
         !
         do
-            do while ( data_handle_array(i)%rx_type < x_data_entry%rx_type )
+            !
+            i_data_handle = getDataHandle( data_handle_array, i )
+            j_data_handle = getDataHandle( data_handle_array, j )
+            !
+            do while ( i_data_handle%rx_type < x_data_handle%rx_type )
                 i=i+1
+                i_data_handle = getDataHandle( data_handle_array, i )
             end do
-            do while ( x_data_entry%rx_type < data_handle_array(j)%rx_type )
+            do while ( x_data_handle%rx_type < j_data_handle%rx_type )
                 j=j-1
+                j_data_handle = getDataHandle( data_handle_array, j )
             end do
             if (i >= j) exit
-            t_data_entry = data_handle_array(i)
+            t_Dh = data_handle_array(i)
             data_handle_array(i) = data_handle_array(j)
-            data_handle_array(j) = t_data_entry
+            data_handle_array(j) = t_Dh
             i=i+1
+            i_data_handle = getDataHandle( data_handle_array, i )
             j=j-1
+            j_data_handle = getDataHandle( data_handle_array, j )
         end do
         !
         if (first < i-1) call sortByReceiverType( data_handle_array, first, i-1 )
@@ -750,28 +743,38 @@ contains
     recursive subroutine sortByPeriod( data_handle_array, first, last )
         implicit none
         !
-        type( DataHandle_t ), allocatable, intent( inout ) :: data_handle_array(:)
-        type( DataHandle_t ) :: x_data_entry, t_data_entry
+        type( Dh_t ), pointer, dimension(:), intent( inout ) :: data_handle_array
+        type( Dh_t ), allocatable :: x_Dh, t_Dh
+        class( DataHandle_t ), allocatable :: i_data_handle, j_data_handle, x_data_handle
         integer first, last
         integer i, j
         !
-        x_data_entry = data_handle_array( (first+last) / 2 )
+        x_Dh = data_handle_array( (first+last) / 2 )
+        x_data_handle = x_Dh%Dh
         i = first
         j = last
         !
         do
-            do while ( data_handle_array(i)%period < x_data_entry%period )
+            !
+            i_data_handle = getDataHandle( data_handle_array, i )
+            j_data_handle = getDataHandle( data_handle_array, j )
+            !
+            do while ( i_data_handle%period < x_data_handle%period )
                 i=i+1
+                i_data_handle = getDataHandle( data_handle_array, i )
             end do
-            do while ( x_data_entry%period < data_handle_array(j)%period )
+            do while ( x_data_handle%period < j_data_handle%period )
                 j=j-1
+                j_data_handle = getDataHandle( data_handle_array, j )
             end do
             if (i >= j) exit
-            t_data_entry = data_handle_array(i)
+            t_Dh = data_handle_array(i)
             data_handle_array(i) = data_handle_array(j)
-            data_handle_array(j) = t_data_entry
+            data_handle_array(j) = t_Dh
             i=i+1
+            i_data_handle = getDataHandle( data_handle_array, i )
             j=j-1
+            j_data_handle = getDataHandle( data_handle_array, j )
         end do
         !
         if (first < i-1) call sortByPeriod( data_handle_array, first, i-1 )
@@ -783,28 +786,38 @@ contains
     recursive subroutine sortByReceiver( data_handle_array, first, last )
         implicit none
         !
-        type( DataHandle_t ), allocatable, intent( inout ) :: data_handle_array(:)
-        type( DataHandle_t ) :: x_data_entry, t_data_entry
+        type( Dh_t ), pointer, dimension(:), intent( inout ) :: data_handle_array
+        type( Dh_t ), allocatable :: x_Dh, t_Dh
+        class( DataHandle_t ), allocatable :: i_data_handle, j_data_handle, x_data_handle
         integer first, last
         integer i, j
         !
-        x_data_entry = data_handle_array( (first+last) / 2 )
+        x_Dh = data_handle_array( (first+last) / 2 )
+        x_data_handle = x_Dh%Dh
         i = first
         j = last
         !
         do
-            do while ( data_handle_array(i)%code < x_data_entry%code )
+            !
+            i_data_handle = getDataHandle( data_handle_array, i )
+            j_data_handle = getDataHandle( data_handle_array, j )
+            !
+            do while ( i_data_handle%code < x_data_handle%code )
                 i=i+1
+                i_data_handle = getDataHandle( data_handle_array, i )
             end do
-            do while ( x_data_entry%code < data_handle_array(j)%code )
+            do while ( x_data_handle%code < j_data_handle%code )
                 j=j-1
+                j_data_handle = getDataHandle( data_handle_array, j )
             end do
             if (i >= j) exit
-            t_data_entry = data_handle_array(i)
+            t_Dh = data_handle_array(i)
             data_handle_array(i) = data_handle_array(j)
-            data_handle_array(j) = t_data_entry
+            data_handle_array(j) = t_Dh
             i=i+1
+            i_data_handle = getDataHandle( data_handle_array, i )
             j=j-1
+            j_data_handle = getDataHandle( data_handle_array, j )
         end do
         !
         if (first < i-1) call sortByReceiver( data_handle_array, first, i-1 )
@@ -816,9 +829,10 @@ contains
     subroutine writeDataHandleArray( data_handle_array )
         implicit none
         !
-        type( DataHandle_t ), allocatable, intent( inout ) :: data_handle_array(:)
+        type( Dh_t ), pointer, dimension(:), intent( inout ) :: data_handle_array
         !
-        type( DataHandle_t ) :: aux_data_entry
+        class( DataHandle_t ), allocatable :: Dh
+        !
         integer :: receiver_type, i, j, ios
         !
         ! Order by transmitter
@@ -828,7 +842,7 @@ contains
         call sortByReceiver( data_handle_array, 1, size( data_handle_array ) )
         !
         ! Order by receiver
-        call sortByReceiverType( data_handle_array, 1, size( data_handle_array ) )
+        !call sortByReceiverType( data_handle_array, 1, size( data_handle_array ) )
         !
         receiver_type = 0
         !
@@ -838,16 +852,32 @@ contains
             !
             do i = 1, size( data_handle_array )
                 !
-				call writePredictedDataHeader( data_handle_array(i), receiver_type )
-				!
-				write( ioPredData, "(es12.6, A20, f15.3, f15.3, f15.3, f15.3, f15.3, A20, es16.6, es16.6, es16.6)" ) data_handle_array(i)%period, data_handle_array(i)%code, R_ZERO, R_ZERO, data_handle_array(i)%xyz(1), data_handle_array(i)%xyz(2), data_handle_array(i)%xyz(3), data_handle_array(i)%component, data_handle_array(i)%real, data_handle_array(i)%imaginary, 1.0
-				!
+                Dh = getDataHandle( data_handle_array, i )
+                !
+                call writePredictedDataHeader( Dh, receiver_type )
+                !
+                ! Instantiate the ModelOperator object
+                select type( Dh )
+                    !
+                    class is( DataHandleMT_t )
+                        !
+                        write( ioPredData, "(es12.6, 1X, A, 1X, f15.3, f15.3, f15.3, f15.3, f15.3, 1X, A, 1X, es16.6, es16.6, es16.6)" ) Dh%period, Dh%code, R_ZERO, R_ZERO, Dh%rx_location(1), Dh%rx_location(2), Dh%rx_location(3), Dh%component, Dh%real, Dh%imaginary, 1.0
+                        !
+                    class is( DataHandleCSEM_t )
+                        !
+                        write( ioPredData, "(A, 1X, es12.6, f15.3, f15.3, f15.3, f15.3, f15.3, f15.3, 1X, A, 1X, f15.3, f15.3, f15.3, 1X, A, 1X, es16.6, es16.6, es16.6)" ) Dh%dipole, Dh%period, Dh%moment, Dh%azimuth, Dh%dip, Dh%tx_location(1), Dh%tx_location(2), Dh%tx_location(3), Dh%code, Dh%rx_location(1), Dh%rx_location(2), Dh%rx_location(3), Dh%component, Dh%real, Dh%imaginary, 1.0
+                        !
+                    class default
+                        stop "Unclassified data_handle"
+                    !
+                end select
+                !
             enddo
             !
             close( ioPredData )
             !
         else
-          stop "Error opening predicted_data.dat in writeDataHandleArray"
+           stop "Error opening predicted_data.dat in writeDataHandleArray"
         end if
         !
     end subroutine writeDataHandleArray
@@ -855,13 +885,35 @@ contains
     subroutine writePredictedDataHeader( data_handle, receiver_type )
         implicit none
         !
-        type( DataHandle_t ), intent( in ) :: data_handle
+        !
+        class( DataHandle_t ), intent( in ) :: data_handle
+        !
         integer, intent( inout ) :: receiver_type
         !
         if( receiver_type /= data_handle%rx_type ) then
             !
-            write( ioPredData, "(4A, 100A)" ) "#    ", DATA_FILE_TITLE
-            write( ioPredData, "(100A)" )     "#    Period(s) Code GG_Lat GG_Lon X(m) Y(m) Z(m) Component Real Imag Error"
+            write( ioPredData, "(4A, 40A)" ) "#    ", DATA_FILE_TITLE
+            !
+            select case( data_handle%rx_type )
+                !
+                case( 1, 11, 12 )
+                    write( ioPredData, "(74A)" ) "#    Period(s) Code GG_Lat GG_Lon X(m) Y(m) Z(m) Component Real Imag Error"
+                case( 2 )
+                    write( ioPredData, "(60A)" ) "#    Missing title for Full_Interstation_TF"
+                case( 3 )
+                    write( ioPredData, "(60A)" ) "#    Missing title for Off_Diagonal_Rho_Phase"
+                case( 4 )
+                    write( ioPredData, "(60A)" ) "#    Missing title for Phase_Tensor"
+                case( 5 )
+                    write( ioPredData, "(60A)" ) "#    Missing title for Off_Diagonal_Impedance"
+                case( 6, 7, 8, 9, 10 )
+                    write( ioPredData, "(125A)" ) "#    Tx_Dipole Tx_Period(s) Tx_Moment(Am) Tx_Azi Tx_Dip Tx_X(m) Tx_Y(m) Tx_Z(m) Code X(m) Y(m) Z(m) Component Real Imag Error"
+                case default
+                    write( *, * ) "unknow receiver type :[", data_handle%rx_type, "]"
+                    STOP "test_FWD.f90: writePredictedDataHeader()"
+                !
+            end select
+            !
             write( ioPredData, "(4A, 100A)" ) ">    ", getStringReceiverType( data_handle%rx_type )
             write( ioPredData, "(4A, 100A)" ) ">    ", "exp(-i\omega t)"
             write( ioPredData, "(4A, 100A)" ) ">    ", "[V/m]/[T]"
