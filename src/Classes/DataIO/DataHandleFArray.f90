@@ -31,31 +31,33 @@ contains
         type( Dh_t ), pointer, dimension(:), intent( inout ) :: data_handle_array
         class( DataHandle_t ), intent( in ) :: new_dh
         !
-        integer                                 :: iDh, nDh
-        type( Dh_t ), allocatable, dimension(:) :: temp_array
-        type( Dh_t ), allocatable               :: temp_dh
+        integer                             :: iDh, nDh
+        type( Dh_t ), pointer, dimension(:) :: temp_array
+        type( Dh_t ) :: temp_dh
         !
         if( .NOT. associated( data_handle_array ) ) then
+            !
             allocate( data_handle_array( 1 ) )
-            allocate( Dh_t :: temp_dh )
+            !
             temp_dh%Dh = new_dh
+            !
             data_handle_array( 1 ) = temp_dh
-            deallocate( temp_dh )
+            !
         else
             !
             nDh = size( data_handle_array )
             !
             allocate( temp_array( nDh + 1 ) )
-            temp_array( 1 : nDh ) = data_handle_array
-            allocate( Dh_t :: temp_dh )
+            !
+            temp_array( 1 : nDh ) => data_handle_array(:)
+            !
             temp_dh%Dh = new_dh
             !
-            temp_array( nDh + 1 ) = temp_dh
+            allocate( temp_array( nDh + 1 ), source = temp_dh )
             !
-            allocate( data_handle_array, source = temp_array )
+            data_handle_array => temp_array
             !
-            deallocate( temp_dh )
-            deallocate( temp_array )
+            nullify( temp_array )
             !
         endif
         !
@@ -78,9 +80,9 @@ contains
         implicit none
         !
         type( Dh_t ), pointer, dimension(:), intent( in ) :: data_handle_array
-        integer                                 :: iDh
+        integer                                           :: iDh
         !
-        class( DataHandle_t ), allocatable      :: dh
+        class( DataHandle_t ), allocatable                :: dh
         !
         dh = data_handle_array( iDh )%Dh
         !

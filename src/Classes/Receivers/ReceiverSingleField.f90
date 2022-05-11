@@ -9,8 +9,8 @@
 module ReceiverSingleField
     !
     use Receiver
-	use DataHandleCSEM
-	use TransmitterCSEM
+    use DataHandleCSEM
+    use TransmitterCSEM
     !
     type, extends( Receiver_t ), public :: ReceiverSingleField_t
         !
@@ -24,7 +24,7 @@ module ReceiverSingleField
             !
             procedure, public :: predictedData => predictedDataSingleField
             !
-			procedure, public :: savePredictedData => savePredictedDataSingleField
+            procedure, public :: savePredictedData => savePredictedDataSingleField
             !
             procedure, public :: write => writeReceiverSingleField
             !
@@ -60,7 +60,7 @@ contains
         !
         allocate( self%EHxy( self%n_comp ) )
         !
-        ! components required to get the full impdence tensor response [Zxx, Zxy, Zyx, Zyy]
+        ! components required to get the full impdence tensor self%response [Zxx, Zxy, Zyx, Zyy]
         !
         if( azimuth == 1.0 ) self%EHxy(1)%str = "Ex"
         if( azimuth == 2.0 ) self%EHxy(1)%str = "Ey"
@@ -121,40 +121,40 @@ contains
         implicit none
         !
         class( ReceiverSingleField_t ), intent( inout ) :: self
-        class( Transmitter_t ), intent( in )              :: transmitter
+        class( Transmitter_t ), intent( in )            :: transmitter
         !
-        complex( kind=prec ) :: comega
+        complex( kind=prec ) :: comega,  det
         !
-        complex( kind=prec ), allocatable :: BB(:,:), det
         integer                           :: i, j, ij
         !
         comega = cmplx( 0.0, 1./ ( 2.0 * PI / transmitter%period ), kind=prec )
         !
-		select type( tx_e_1 => transmitter%e_all( 1 ) )
-			class is( cVector3D_SG_t )
-				!
-				allocate( self%response( 1 ) )
-				select case ( self%EHxy(1)%str )
-					case( "Ex" )
-						self%response( 1 ) = dotProdSparse( self%Lex, tx_e_1 )
-					case( "Ey" )
-						self%response( 1 ) = dotProdSparse( self%Ley, tx_e_1 )
-					case( "Bx" )
-						self%response( 1 ) = dotProdSparse( self%Lbx, tx_e_1 )
-						self%response( 1 ) = isign * self%response( 1 ) * comega
-					case( "By" )
-						self%response( 1 ) = dotProdSparse( self%Lby, tx_e_1 )
-						self%response( 1 ) = isign * self%response( 1 ) * comega
-					case( "Bz" )
-						self%response( 1 ) = dotProdSparse( self%Lbz, tx_e_1 )
-						self%response( 1 ) = isign * self%response( 1 ) * comega
-				end select
-				!
-				! WRITE ON PredictedFile.dat
-				call self%savePredictedData( transmitter )
-				!
-				deallocate( self%response )
-				!
+        select type( tx_e_1 => transmitter%e_all( 1 ) )
+            class is( cVector3D_SG_t )
+                !
+                allocate( self%response( 1 ) )
+                !
+                select case ( self%EHxy(1)%str )
+                    case( "Ex" )
+                        self%response( 1 ) = dotProdSparse( self%Lex, tx_e_1 )
+                    case( "Ey" )
+                        self%response( 1 ) = dotProdSparse( self%Ley, tx_e_1 )
+                    case( "Bx" )
+                        self%response( 1 ) = dotProdSparse( self%Lbx, tx_e_1 )
+                        self%response( 1 ) = isign * self%response( 1 ) * comega
+                    case( "By" )
+                        self%response( 1 ) = dotProdSparse( self%Lby, tx_e_1 )
+                        self%response( 1 ) = isign * self%response( 1 ) * comega
+                    case( "Bz" )
+                        self%response( 1 ) = dotProdSparse( self%Lbz, tx_e_1 )
+                        self%response( 1 ) = isign * self%response( 1 ) * comega
+                end select
+                !
+                ! WRITE ON PredictedFile.dat
+                call self%savePredictedData( transmitter )
+                !
+                deallocate( self%response )
+                !
             class default
                 stop "evaluationFunctionRx: Unclassified temp_full_vec_ey"
         end select
@@ -167,36 +167,36 @@ contains
         class( ReceiverSingleField_t ), intent( inout ) :: self
         class( Transmitter_t ), intent( in ) :: tx
         !
-		integer :: rx_type
+        integer :: rx_type
         character(:), allocatable :: code, component, dipole
         real( kind=prec )         :: period, tx_location(3), azimuth, dip, moment, real_part, imaginary, rx_location(3)
         !
-		select type( tx )
-			!
-			class is( TransmitterCSEM_t )
-				!
-				rx_type = int( self%rx_type )
-				period = real( tx%period, kind=prec )
-				azimuth = real( tx%azimuth, kind=prec )
-				dip = real( tx%dip, kind=prec )
-				moment = real( tx%moment, kind=prec )
-				code = trim( self%code )
-				tx_location = (/real( tx%location( 1 ), kind=prec ), real( tx%location( 2 ), kind=prec ), real( tx%location( 3 ), kind=prec )/)
-				rx_location = (/real( self%location( 1 ), kind=prec ), real( self%location( 2 ), kind=prec ), real( self%location( 3 ), kind=prec )/)
-				dipole = trim( tx%dipole )
-				component = trim( self%comp_names( 1 )%str )
-				real_part = real( self%response( 1 ), kind=prec )
-				imaginary = real( imag( self%response( 1 ) ), kind=prec )
-				!
-				if( associated( self%predicted_data ) ) call deallocateDataHandleArray( self%predicted_data )
-				!
-				call updateDataHandleArray( self%predicted_data, DataHandleCSEM_t( rx_type, code, component, period, tx_location, azimuth, dip, moment, dipole, rx_location, real_part, imaginary ) )
-				!
-			class default
-				stop "Wrong transmitter for ReceiverSingleField"
-			!
-		end select
-		!
+        select type( tx )
+            !
+            class is( TransmitterCSEM_t )
+                !
+                rx_type = int( self%rx_type )
+                period = real( tx%period, kind=prec )
+                azimuth = real( tx%azimuth, kind=prec )
+                dip = real( tx%dip, kind=prec )
+                moment = real( tx%moment, kind=prec )
+                code = trim( self%code )
+                tx_location = (/real( tx%location( 1 ), kind=prec ), real( tx%location( 2 ), kind=prec ), real( tx%location( 3 ), kind=prec )/)
+                rx_location = (/real( self%location( 1 ), kind=prec ), real( self%location( 2 ), kind=prec ), real( self%location( 3 ), kind=prec )/)
+                dipole = trim( tx%dipole )
+                component = trim( self%comp_names( 1 )%str )
+                real_part = real( self%response( 1 ), kind=prec )
+                imaginary = real( imag( self%response( 1 ) ), kind=prec )
+                !
+                if( associated( self%predicted_data ) ) call deallocateDataHandleArray( self%predicted_data )
+                !
+                call updateDataHandleArray( self%predicted_data, DataHandleCSEM_t( rx_type, code, component, period, tx_location, azimuth, dip, moment, dipole, rx_location, real_part, imaginary ) )
+                !
+            class default
+                stop "Wrong transmitter for ReceiverSingleField"
+            !
+        end select
+        !
     end subroutine savePredictedDataSingleField
     !
     subroutine writeReceiverSingleField( self )

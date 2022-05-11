@@ -62,14 +62,15 @@ module cVector3D_SG
         procedure, public :: mult1    => mult1CVector3D_SG
         procedure, public, pass(self) :: mult2 => mult2CVector3D_SG
         procedure, public :: mult3 => mult3CVector3D_SG
+        procedure, public :: mult4 => mult4CVector3D_SG
         procedure, public :: mults1 => mults1CVector3D_SG
         procedure, public :: mults3 => mults3CVector3D_SG
         procedure, public :: div1 => div1CVector3D_SG
-        procedure, public :: div2 => div2CVector3D_SG        
-        procedure, public :: divs2 => divs2CVector3D_SG        
+        procedure, public :: div2 => div2CVector3D_SG
+        procedure, public :: divs2 => divs2CVector3D_SG
         procedure, public :: dotProd => dotProdCVector3D_SG
-        procedure, public :: linCombS => linCombSCVector3D_SG        
-        procedure, public :: scMultAddS => scMultAddSCVector3D_SG        
+        procedure, public :: linCombS => linCombSCVector3D_SG
+        procedure, public :: scMultAddS => scMultAddSCVector3D_SG
         !**
         ! Miscellaneous
         !*
@@ -878,11 +879,38 @@ contains
             stop "    Incompatible inputs. Exiting."
         end if
     end function mult3CVector3D_SG
+    !
+    function mult4CVector3D_SG(lhs, rhs) result(Eout)
+        implicit none
+        !
+        class( cVector3D_SG_t ), intent( in )  :: lhs
+        class( rScalar_t )        , intent( in ) :: rhs
+        class( cVector_t ), allocatable        :: Eout
+        !
+        !if (lhs%isCompatible(rhs)) then
+            !
+            allocate(Eout, source = cVector3D_SG_t(lhs%grid, lhs%gridType))
+            !
+            select type(Eout)
+                class is( cVector3D_SG_t )
+                    select type(rhs)
+                        class is(rScalar3D_SG_t)
+                            Eout%x = lhs%x * rhs%v
+                            Eout%y = lhs%y * rhs%v
+                            Eout%z = lhs%z * rhs%v
+                    end select
+            end select
+            !
+        !else
+            !write( *, * ) "ERROR:cVector3D_SG::mult3"
+            !stop "    Incompatible inputs. Exiting."
+        !end if
+    end function mult4CVector3D_SG
     !**
     ! mults3CVector3D_SG
     !*
     !    subroutine version of mult3CVector3D_SG -- overwrites input lhs
-    subroutine mults3CVector3D_SG(lhs, rhs)
+    subroutine mults3CVector3D_SG( lhs, rhs )
         implicit none
         !
         class( cVector3D_SG_t ), intent( inout ) :: lhs
@@ -905,7 +933,7 @@ contains
     ! mults1CVector3D_SG
     ! Subroutine version of mult2CVector3D_SG
     !*
-    subroutine mults1CVector3D_SG(self, c)
+    subroutine mults1CVector3D_SG( self, c )
         implicit none
         !
         class( cVector3D_SG_t ), intent( inout ) :: self
@@ -929,9 +957,9 @@ contains
         if (lhs%isCompatible(rhs)) then
             select type(rhs)
                 class is( cVector3D_SG_t )
-                    lhs%x = c1*lhs%x + c2*rhs%x
-                    lhs%y = c1*lhs%y + c2*rhs%y
-                    lhs%z = c1*lhs%z + c2*rhs%z
+                    lhs%x = c1 * lhs%x + c2 * rhs%x
+                    lhs%y = c1 * lhs%y + c2 * rhs%y
+                    lhs%z = c1 * lhs%z + c2 * rhs%z
             end select
         else
             write( *, * ) "ERROR:cVector3D_SG::linCombS"
@@ -1269,8 +1297,13 @@ contains
         !
         status = .FALSE.
         !
+        !write( *, * ) "SELF1 :", self%nx, self%ny, self%nz, self%gridType
+        !
         select type(rhs)
             class is( cVector3D_SG_t )
+                !
+                !write( *, * ) "RHS1 :", rhs%nx, rhs%ny, rhs%nz, rhs%gridType
+                !
                 if( self%nx == rhs%nx .AND.self%ny == rhs%ny .AND. self%nz == rhs%nz .AND.   &
                     self%gridType == rhs%gridType ) then
                     status = .TRUE.
@@ -1288,8 +1321,13 @@ contains
         !
         status = .FALSE.
         !
+        !write( *, * ) "SELF2 :", self%nx, self%ny, self%nz, self%gridType
+        !
         select type(rhs)
             class is(rVector3D_SG_t)
+                !
+                !write( *, * ) "RHS2 :", rhs%nx, rhs%ny, rhs%nz, rhs%gridType
+                !
                 if( self%nx == rhs%nx .AND.self%ny == rhs%ny .AND. self%nz == rhs%nz .AND.   &
                     self%gridType == rhs%gridType ) then
                     status = .TRUE.

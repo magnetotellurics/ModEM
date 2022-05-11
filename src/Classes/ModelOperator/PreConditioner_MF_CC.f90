@@ -51,6 +51,11 @@ contains
                 !
                 self%Dilu = cVector3D_SG_t( grid, EDGE )
                 !
+                call self%Dilu%zeros()
+                !
+            class default
+                write( *, * ) "ERROR:PreConditioner_MF_CC_t::PreConditioner_MF_CC_ctor:"
+                stop          "    unknow grid type"
         end select
         !
     end function PreConditioner_MF_CC_ctor
@@ -64,11 +69,12 @@ contains
         real( kind=prec ), intent( in )                  :: omega
         !
         integer :: status, ix, iy, iz
-        complex( kind=prec ) :: cFac
+        complex( kind=prec ) :: c_factor
         !
         ! Save omega in object, to record
         self%omega = omega
-        cFac = ISIGN*ONE_I*omega*MU_0
+        !
+        c_factor = ISIGN * ONE_I * omega * MU_0
         !
         ! Initialize the non-interior values
         ! only the interior edge values are really used
@@ -89,7 +95,7 @@ contains
                     do iy = 2, model_operator%metric%grid%ny
                         do iz = 2, model_operator%metric%grid%nz
                             self%Dilu%x(ix, iy, iz) = model_operator%xXO(iy,iz) + &
-                            cFac*model_operator%Sigma_E%x(ix, iy, iz)    &
+                            c_factor*model_operator%Sigma_E%x(ix, iy, iz)    &
                             - model_operator%xXY(iy, 1)*model_operator%xXY(iy-1, 2) &
                             *self%Dilu%x(ix,iy-1,iz) &
                             - model_operator%xXZ(iz, 1)*model_operator%xXZ(iz-1, 2) &
@@ -105,7 +111,7 @@ contains
                     do iz = 2, model_operator%metric%grid%nz
                         do ix = 2, model_operator%metric%grid%nx
                             self%Dilu%y(ix, iy, iz) = model_operator%yYO(ix,iz) + &
-                            cFac*model_operator%Sigma_E%y(ix, iy, iz) &
+                            c_factor*model_operator%Sigma_E%y(ix, iy, iz) &
                             - model_operator%yYZ(iz, 1)*model_operator%yYZ(iz-1, 2) &
                             *self%Dilu%y(ix, iy, iz-1) &
                             - model_operator%yYX(ix, 1)*model_operator%yYX(ix-1, 2) &
@@ -121,7 +127,7 @@ contains
                     do ix = 2, model_operator%metric%grid%nx
                         do iy = 2, model_operator%metric%grid%ny
                             self%Dilu%z(ix, iy, iz) = model_operator%zZO(ix,iy) + &
-                            cFac*model_operator%Sigma_E%z(ix, iy, iz) &
+                            c_factor*model_operator%Sigma_E%z(ix, iy, iz) &
                             - model_operator%zZX(ix, 1)*model_operator%zZX(ix-1, 2)*    &
                             self%Dilu%z(ix-1, iy, iz) &
                             - model_operator%zZY(iy, 1)*model_operator%zZY(iy-1, 2) &
@@ -133,12 +139,11 @@ contains
                 !
                 !
             class default
-                 stop "setPreConditioner_MF_CC: Unclassified ModelOperator"
+                stop "setPreConditioner_MF_CC: Unclassified ModelOperator"
             !
         end select
         !
     end subroutine setPreConditioner_MF_CC
-    
     !**
     ! Purpose: to solve the lower triangular system (or it"s adjoint);
     ! for the d-ilu pre-condtioner.
@@ -240,7 +245,7 @@ contains
                                     end do
                                 end do
                             end do
-
+                            !
                             do iz = 1, inE%nz
                                 do ix = inE%nx, 2, -1
                                     do iy = inE%ny, 2, -1
@@ -251,9 +256,9 @@ contains
                                     end do
                                 end do
                             end do
-
+                            !
                             !     for adjoint to the division by volume elements last
-                            call outE%divs(model_operator%Metric%Vedge)
+                            call outE%divs( model_operator%Metric%Vedge )
                             !
                         end if 
                     class default

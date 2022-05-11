@@ -67,11 +67,12 @@ contains
         class( Transmitter_t ), pointer :: Tx
         class( Receiver_t ), pointer    :: Rx
         !
-        integer :: iTx, iRx, iDh
+        integer :: iTx, number_of_tx, iRx, iDh
         !
+        ! Final array that contains the predicted data of all receivers of all transmitters
         type( Dh_t ), pointer, dimension(:) :: all_data_handles
         !
-        !
+        ! Verbosis ...
         write ( *, * ) "    > Start forward modelling."
         !
         ! Reads Model File: instantiates Grid, ModelOperator and ModelParameter
@@ -88,7 +89,7 @@ contains
             call handleDataFile()
         endif
         !
-        ! ForwardSolver - Chosen from control file
+        ! Instantiate the ForwardSolver - Specific type can be chosen via control file
         select case ( forward_solver_type )
             !
             case( FWD_IT_DC )
@@ -101,26 +102,29 @@ contains
         !
         ! Forward Modelling
         !
-		all_data_handles => null()
-		!
-        Tx => getTransmitter(1)
+        all_data_handles => null()
         !
-        call writeEsolutionHeader( size( transmitters ), Tx%n_pol )
+        number_of_tx = size( transmitters )
+        !
+        ! Writes the first header of the ESolution binary file, according to the first transmitter
+        Tx => getTransmitter(1)
+        call writeEsolutionHeader( number_of_tx, Tx%n_pol )
         !
         ! Loop over all Transmitters
-        do iTx = 1, size( transmitters )
+        do iTx = 1, number_of_tx
             !
-            ! Temporary Transmitter alias
+            ! Points the Tx alias to the current loop transmitter
             Tx => getTransmitter( iTx )
             !
-            ! Set Transmitter´s ForwardSolver
+            ! Set Transmitter's ForwardSolver
             Tx%forward_solver => forward_solver
             !
-            ! Set Transmitter´s ForwardSolver Omega and Cond
+            ! Set Transmitter's ForwardSolver Omega(Period) and Conductivity
             call Tx%forward_solver%setFrequency( model_parameter, Tx%period )
             !
-            ! Create Transmitter´s Source
+            ! Instantiate Transmitter's Source - According to transmitter type or chosen via control file
             select type( Tx )
+                !
                 class is( TransmitterMT_t )
                     !
                     Tx%source = SourceMT_1D_t( model_operator, model_parameter, Tx%period )
@@ -131,30 +135,32 @@ contains
                     !
             end select
             !
-            ! Solve Tx Forward Modelling
+            ! Solve Forward Modeling for this Transmitter
             call Tx%solveFWD()
             !
-            ! Loop over Receivers of each Transmitter
+            ! Loop for each Receiver related to this Transmitter
             do iRx = 1, size( Tx%receiver_indexes )
                 !
-                ! Temporary Receiver alias
+                ! Points the Rx alias to the current loop Receiver
                 Rx => getReceiver( Tx%receiver_indexes( iRx ) )
                 !
                 ! Verbosis...
                 !write( *, * ) "                        Rx Id:", Rx%id, "XYZ:", Rx%location
                 !
-                ! Calculate Rx predicted_data
+                ! Calculates Rx predicted data and stores the result in the Receiver
                 call Rx%predictedData( Tx )
                 !
-                ! Save predicted_data of each Rx into all_data_handles
+                ! For each predicted data stored in the Receiver
                 do iDh = 1, size( Rx%predicted_data )
                     !
+                    ! Store in the final data array
                     call updateDataHandleArray( all_data_handles, getDataHandle( Rx%predicted_data, iDh ) )
                     !
                 end do
                 !
             enddo
             !
+            ! Clears the memory used by the current Transmitter (Mainly Esolution cVector)
             deallocate( Tx )
             !
         enddo
@@ -166,7 +172,7 @@ contains
         ! Verbosis...
         write( *, * ) "    -> Writing Predicted Data to file: [", predicted_data_file_name, "]"
         !
-        ! Write all_data_handles into predicted_data.dat
+        ! Writes the final data array, with the proper Rx header, to the file <predicted_data_file_name>
         call writeDataHandleArray( all_data_handles )
         !
         call deallocateDataHandleArray( all_data_handles )
@@ -579,7 +585,7 @@ contains
         !
         type( Dh_t ), pointer, dimension(:), intent( inout ) :: data_handle_array
         !
-        class( DataHandle_t ), allocatable :: Dh
+        class( DataHandle_t ), allocatable :: data_handle
         !
         integer :: receiver_type, i, j, ios
         !
@@ -600,20 +606,20 @@ contains
             !
             do i = 1, size( data_handle_array )
                 !
-                Dh = getDataHandle( data_handle_array, i )
+                data_handle = getDataHandle( data_handle_array, i )
                 !
-                call writePredictedDataHeader( Dh, receiver_type )
+                call writePredictedDataHeader( data_handle, receiver_type )
                 !
                 ! Instantiate the ModelOperator object
-                select type( Dh )
+                select type( data_handle )
                     !
                     class is( DataHandleMT_t )
                         !
-                        write( ioPredData, "(es12.6, 1X, A, 1X, f15.3, f15.3, f15.3, f15.3, f15.3, 1X, A, 1X, es16.6, es16.6, es16.6)" ) Dh%period, Dh%code, R_ZERO, R_ZERO, Dh%rx_location(1), Dh%rx_location(2), Dh%rx_location(3), Dh%component, Dh%real, Dh%imaginary, 1.0
+                        write( ioPredData, "(es12.6, 1X, A, 1X, f15.3, f15.3, f15.3, f15.3, f15.3, 1X, A, 1X, es16.6, es16.6, es16.6)" ) data_handle%period, data_handle%code, R_ZERO, R_ZERO, data_handle%rx_location(1), data_handle%rx_location(2), data_handle%rx_location(3), data_handle%component, data_handle%real, data_handle%imaginary, 1.0
                         !
                     class is( DataHandleCSEM_t )
                         !
-                        write( ioPredData, "(A, 1X, es12.6, f15.3, f15.3, f15.3, f15.3, f15.3, f15.3, 1X, A, 1X, f15.3, f15.3, f15.3, 1X, A, 1X, es16.6, es16.6, es16.6)" ) Dh%dipole, Dh%period, Dh%moment, Dh%azimuth, Dh%dip, Dh%tx_location(1), Dh%tx_location(2), Dh%tx_location(3), Dh%code, Dh%rx_location(1), Dh%rx_location(2), Dh%rx_location(3), Dh%component, Dh%real, Dh%imaginary, 1.0
+                        write( ioPredData, "(A, 1X, es12.6, f15.3, f15.3, f15.3, f15.3, f15.3, f15.3, 1X, A, 1X, f15.3, f15.3, f15.3, 1X, A, 1X, es16.6, es16.6, es16.6)" ) data_handle%dipole, data_handle%period, data_handle%moment, data_handle%azimuth, data_handle%dip, data_handle%tx_location(1), data_handle%tx_location(2), data_handle%tx_location(3), data_handle%code, data_handle%rx_location(1), data_handle%rx_location(2), data_handle%rx_location(3), data_handle%component, data_handle%real, data_handle%imaginary, 1.0
                         !
                     class default
                         stop "Unclassified data_handle"

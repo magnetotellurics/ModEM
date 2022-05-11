@@ -68,9 +68,8 @@ contains
         !
         class( Receiver_t ), pointer    :: receiver
         class( Transmitter_t ), pointer :: transmitter
-        integer                         :: iTx, rx_id, rx_type
+        integer                         :: iTx, nTx, rx_id, rx_type
         real ( kind=prec )              :: azimuth
-        logical                            :: tx_related_rx
         !
         call self%data_entries%add( data_entry )
         !
@@ -129,15 +128,15 @@ contains
                 !
             case( "Full_Interstation_TF" )
                 !
-                STOP "DataManager.f08: loadReceiversAndTransmitters(): To implement Full_Interstation_TF !!!!"
+                stop "DataManager.f08: loadReceiversAndTransmitters(): To implement Full_Interstation_TF !!!!"
                 !
             case( "Off_Diagonal_Rho_Phase" )
                 !
-                STOP "DataManager.f08: loadReceiversAndTransmitters(): To implement Off_Diagonal_Rho_Phase !!!!"
+                stop "DataManager.f08: loadReceiversAndTransmitters(): To implement Off_Diagonal_Rho_Phase !!!!"
                 !
             case( "Phase_Tensor" )
                 !
-                STOP "DataManager.f08: loadReceiversAndTransmitters(): To implement Phase_Tensor !!!!"
+                stop "DataManager.f08: loadReceiversAndTransmitters(): To implement Phase_Tensor !!!!"
                 !
             case( "Off_Diagonal_Impedance" )
                 !
@@ -149,7 +148,7 @@ contains
                 !
             case default
                 write( *, * ) "unknow component type :[", data_entry%type, "]"
-                STOP "DataManager.f08: loadReceiversAndTransmitters()"
+                stop "DataManager.f08: loadReceiversAndTransmitters()"
             !
         end select
         !
@@ -159,49 +158,14 @@ contains
         !
         rx_id = updateReceiverArray( receiver )
         !
-        deallocate( receiver )
-        !
-        tx_related_rx = .FALSE.
+        nTx = size( transmitters )
         !
         ! LOOP OVER TRANSMITTERS
-        do iTx = 1, size( transmitters )
+        do iTx = 1, nTx
             !
             transmitter => getTransmitter( iTx )
             !
-            select type( transmitter )
-                !
-                class is( TransmitterMT_t )
-                    !
-                    select type( data_entry )
-                        !
-                        class is( DataEntryMT_t )
-                            !
-                            if( transmitter%period == data_entry%period ) tx_related_rx = .TRUE.
-                            !
-                        class default
-                            tx_related_rx = .FALSE.
-                    end select
-                    !
-                class is( TransmitterCSEM_t )
-                    !
-                    select type( data_entry )
-                        !
-                        class is( DataEntryCSEM_t )
-                            !
-                            if( transmitter%period == data_entry%period .AND.   &
-                                transmitter%location(1) == data_entry%tx_location(1) .AND.    &
-                                transmitter%location(2) == data_entry%tx_location(2) .AND.    &
-                                transmitter%location(3) == data_entry%tx_location(3) ) then
-                                tx_related_rx = .TRUE.
-                            endif
-                            !
-                        class default
-                            tx_related_rx = .FALSE.
-                    end select
-                    !
-            end select
-            !
-            if( tx_related_rx ) then
+            if( ABS( transmitter%period - data_entry%period ) < TOL6 ) then
                 !
                 call transmitter%updateReceiverIndexesArray( rx_id )
                 !

@@ -75,8 +75,8 @@ contains
         logical              :: adjoint, ilu_adjt
         complex( kind=prec ) :: ETA, PDE, EPSIL, RDE, BETA, DELTA, RHO, DELTA_EPSIL
         complex( kind=prec ) :: PSI, RHO1, GAMM, GAMM1, THET, THET1, TM2
-        complex( kind=prec ) :: bnorm,rnorm
-        complex( kind=prec ) :: rhoInv,psiInv
+        complex( kind=prec ) :: bnorm, rnorm
+        complex( kind=prec ) :: rhoInv, psiInv
         integer              :: iter
         !
         ! Allocate work CVector objects -- questions as in PCG
@@ -198,7 +198,7 @@ contains
             end if
             !
             adjoint = .FALSE.
-			!
+            !
             call PT%Zeros()
             call self%preconditioner%model_operator%Amult( self%omega, P, PT, adjoint )
             EPSIL = Q%dotProd( PT )
@@ -271,7 +271,11 @@ contains
             !
         end do
         !
-        write( *, * ) "Final QMR iter: ", iter, " relErr = ", self%relErr( iter )
+        if( iter .LT. self%max_iter ) then
+            write( *, * ) "Solver QMR IT_DC converged within ", iter, " : ", self%relErr( iter )
+        else
+            write( *, * )  "Solver QMR IT_DC not converged in ", iter, " : ", self%relErr( iter )
+        endif
         !
         deallocate( R )
         deallocate( Y )

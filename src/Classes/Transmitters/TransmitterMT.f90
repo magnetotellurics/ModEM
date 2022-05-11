@@ -22,8 +22,6 @@ module TransmitterMT
             !
             procedure, public :: solveFWD => solveFWDTransmitterMT
             !
-            procedure, public :: isEqual => isEqualTransmitterMT
-            !
             procedure, public :: write    => writeTransmitterMT
             !
     end type TransmitterMT_t
@@ -84,7 +82,7 @@ module TransmitterMT
         do i_pol = 1, self%n_pol
             !
             ! Verbosis...
-            write( *, "(A20, I8, A20, es20.6, A20, I8)" ) "SolveFWD for Tx:", self%id, " -> Period:", self%period, " - Polarization:", i_pol
+            write( *, * ) "SolveFWD for MT Tx:", self%id, " -> Period:", self%period, " - Polarization:", i_pol
             !
             call self%source%setE( i_pol )
             !
@@ -121,31 +119,6 @@ module TransmitterMT
         enddo
         !
     end subroutine solveFWDTransmitterMT
-    !
-    ! Compare two transmitters
-    function isEqualTransmitterMT( self, other ) result( equal )
-        implicit none
-        !
-        class( TransmitterMT_t ), intent( in ) :: self
-        class( Transmitter_t ), intent( in )   :: other
-        logical                                :: equal
-        !
-        equal = .FALSE.
-        !
-        select type( other )
-            !
-            class is( TransmitterMT_t )
-                !
-                if( self%period == other%period ) then
-                    equal = .TRUE.
-                endif
-                !
-            class default
-                equal = .FALSE.
-            !
-        end select
-        !
-    end function isEqualTransmitterMT
     !
     ! Print TransmitterMT info
     subroutine writeTransmitterMT( self )
