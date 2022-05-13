@@ -18,18 +18,18 @@ module ModelOperator
             !
             !procedure( iface_UpdateFrequency ), deferred, public :: UpdateFrequency
             procedure( interface_set_equations_model_operator ), deferred, public :: setEquations
-            procedure( interface_set_cond_model_operator ), deferred, public        :: setCond
-            procedure( interface_amult_model_operator ), deferred, public            :: amult
-            procedure( interface_multaib_model_operator ), deferred, public         :: multAib
-            procedure( interface_multcurl_t_model_operator ), deferred, public     :: multCurlT
+            procedure( interface_set_cond_model_operator ), deferred, public      :: setCond
+            procedure( interface_amult_model_operator ), deferred, public         :: amult
+            procedure( interface_multaib_model_operator ), deferred, public       :: multAib
+            procedure( interface_multcurl_t_model_operator ), deferred, public    :: multCurlT
             !     following procedures are generally used for divergence correction
             !     and might in some cases (e.g., model operator for "SP2" case)
             !     only be implemented as dummy procedures
             procedure( interface_divcor_setup_model_operator ), deferred, public :: divCorSetup
-            procedure( interface_divc_grad_model_operator ), deferred, public :: divCgrad
-            procedure( interface_divc_model_operator ), deferred, public        :: divC
-            procedure( interface_grad_model_operator ), deferred, public        :: grad
-            procedure( interface_div_model_operator ), deferred, public         :: div
+            procedure( interface_divc_grad_model_operator ), deferred, public    :: divCgrad
+            procedure( interface_divc_model_operator ), deferred, public         :: divC
+            procedure( interface_grad_model_operator ), deferred, public         :: grad
+            procedure( interface_div_model_operator ), deferred, public          :: div
             !     these will be coded to return cScalar/cVector of type appropriate
             !         for specific ModelOperator implementation
             !        I see no need for real versions -- but we can add if needed!

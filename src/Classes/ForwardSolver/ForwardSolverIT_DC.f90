@@ -204,12 +204,12 @@ module ForwardSolverIT_DC
                         !
                         call phi0%zeros()
                         !
+                        call self%divergence_correction%rhsDivCor( self%solver%omega, source, phi0 )
+                        !
                     class default
                         write( *, * ) "ERROR:ForwardSolverIT_DC_t::getESolutionForwardSolverIT_DC:"
                         stop          "    unknow grid type"
                 end select
-                !
-                call self%divergence_correction%rhsDivCor( self%solver%omega, source, phi0 )
                 !
                 b = b * self%solver%preconditioner%model_operator%metric%Vnode
                 !
@@ -231,10 +231,12 @@ module ForwardSolverIT_DC
                 !
                 select type( solver => self%solver )
                     class is( Solver_QMR_t )
+                        !
                         call solver%solve( b, e_solution )
+                        !
                     class default
                         write( *, * ) "ERROR:ForwardSolverIT_DC::getESolutionForwardSolverIT_DC:"
-                        stop        "            Unknow solver type."
+                        stop          "            Unknow solver type."
                 end select
                 !
                 self%solver%converged = self%solver%n_iter .LT. self%solver%max_iter
@@ -279,6 +281,7 @@ module ForwardSolverIT_DC
             !
             enddo loop
             !
+            deallocate( b )
             !
             if( source%non_zero_source ) deallocate( phi0 )
             !
