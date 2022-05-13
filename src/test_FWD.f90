@@ -165,6 +165,8 @@ contains
             !
         enddo
         !
+        deallocate( forward_solver )
+        !
         deallocate( model_operator )
         deallocate( model_parameter )
         deallocate( main_grid )

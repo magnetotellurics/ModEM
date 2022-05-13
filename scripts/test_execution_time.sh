@@ -4,13 +4,16 @@ bash Configure.3D_MT.OSU.GFortran MakefileSerial SERIAL test_FWD.f90
 make -f MakefileSerial clean
 make -f MakefileSerial
 #
-# MODEM-OO SMALLEST EXAMPLE
+# MODEM-OO SMALLEST EXAMPLE SERIAL
 ./test_FWD -f --data ../inputs/esol/de.dat --model ../inputs/esol/pr.ws --control ../inputs/Others/first_control_file.txt -pd pred_data_serial_smallest.dat
 #
-# MODEM-OO MEDIUM EXAMPLE PARALLEL
+# MODEM-OO MEDIUM EXAMPLE SERIAL
 ./test_FWD -f --data ../inputs/1st_Example/rFile_Data_MT_LP.dat --model ../inputs/1st_Example/rFile_Model_trimed_lower_Boundary_50km --control ../inputs/Others/first_control_file.txt -pd pred_data_lp_trim.dat
 #
-# MODEM-OO BIGGEST EXAMPLE PARALLEL
+# MODEM-OO CSEM EXAMPLE SERIAL
+./test_FWD -f --data ../inputs/Naser_CSEM/rFile_Data_1_fix --model ../inputs/Naser_CSEM/rFile_Model_1 --control ../inputs/Others/first_control_file.txt -pd pred_data_serial_csem.dat
+#
+# MODEM-OO BIGGEST EXAMPLE SERIAL
 ./test_FWD -f --data ../inputs/1st_Example/rFile_Data_MT_TIP --model ../inputs/1st_Example/rFile_Model --control ../inputs/Others/first_control_file.txt -pd pred_data_tipper_biggest.dat
 #
 #
@@ -19,13 +22,18 @@ bash Configure.3D_MT.OSU.GFortran MakefileMPI MPI test_FWD_MPI.f90
 make -f MakefileMPI clean
 make -f MakefileMPI
 #
+# MODEM-OO SMALLEST EXAMPLE
+mpirun -np 5 ./test_FWD_MPI -f --data ../inputs/esol/de.dat --model ../inputs/esol/pr.ws --control ../inputs/Others/first_control_file.txt -pd pred_data_mpi_smallest.dat
 #
-# MODEM-OO MEDIUM EXAMPLE SERIAL
-mpirun -np 9 ./test_FWD_MPI -f --data ../inputs/1st_Example/rFile_Data_MT_LP.dat --model ../inputs/1st_Example/rFile_Model_trimed_lower_Boundary_50km --control ../inputs/Others/first_control_file.txt -pd pred_data_mpi_tipper.dat
+# MODEM-OO CSEM EXAMPLE SERIAL
+mpirun -np 2 ./test_FWD_MPI -f --data ../inputs/Naser_CSEM/rFile_Data_1_fix --model ../inputs/Naser_CSEM/rFile_Model_1 --control ../inputs/Others/first_control_file.txt -pd pred_data_serial_csem.dat
 #
 # MODEM-OO MEDIUM EXAMPLE PARALLEL
-./test_FWD -f --data ../inputs/1st_Example/rFile_Data_MT_LP.dat --model ../inputs/1st_Example/rFile_Model_trimed_lower_Boundary_50km --control ../inputs/Others/first_control_file.txt -pd pred_data_mpi_tipper.dat
-
+mpirun -np 9 ./test_FWD_MPI -f --data ../inputs/1st_Example/rFile_Data_MT_LP.dat --model ../inputs/1st_Example/rFile_Model_trimed_lower_Boundary_50km --control ../inputs/Others/first_control_file.txt -pd pred_data_mpi_lp_trim.dat
+#
+# MODEM-OO BIGGEST EXAMPLE PARALLEL
+mpirun -np 17 ./test_FWD_MPI -f --data ../inputs/1st_Example/rFile_Data_MT_TIP --model ../inputs/1st_Example/rFile_Model --control ../inputs/Others/first_control_file.txt -pd pred_data_tipper_mpi_biggest.dat
+#
 #
 # COMPILE MODEM-ON
 make -f Makefile_SP2_EM1D_CSEM
