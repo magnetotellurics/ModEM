@@ -182,8 +182,8 @@ contains
         deallocate( main_grid )
         !
         call deallocateTransmitterArray()
-		!
-		all_predicted_data => null()
+        !
+        all_predicted_data => null()
         !
         ! SEND 1 TRANSMITTER TO FIRST np WORKERS
         do while ( worker_rank <= ( mpi_size - 1 ) )
