@@ -106,12 +106,12 @@ contains
         !
         type( ModelOperator_MF_t ) :: self
         !
-        !write( *, * ) "Constructor ModelOperator_MF"
+        !write(*,*) "Constructor ModelOperator_MF"
         !
         self%is_allocated = .FALSE.
         self%eqset = .FALSE.
         !
-        call date_and_time( values = self%mKey )
+        call date_and_time( values=self%mKey )
         !
         self%nx = 0
         self%ny = 0
@@ -130,7 +130,7 @@ contains
         !
         type( ModelOperator_MF_t ), intent( inout ) :: self
         !
-        !write( *, * ) "Destructor ModelOperator_MF_t"
+        !write(*,*) "Destructor ModelOperator_MF_t"
         !
         call self%dealloc()
         !
@@ -180,7 +180,7 @@ contains
         allocate( self%yZ( self%ny, self%nz + 1 ) )
         allocate( self%yX( self%nx + 1, self%ny ) )
         allocate( self%yYO( self%nx, self%nz ) )
-		!
+
         allocate( self%zZX( self%nx + 1, 2 ) )
         allocate( self%zZY( self%ny + 1, 2) )
         allocate( self%zX( self%nx + 1, self%nz ) )
@@ -544,8 +544,8 @@ contains
         class is(cVector3D_SG_t)
             !
             if( .NOT. y%is_allocated ) then
-                write( *, * ) "ERROR: amult in    ModelOperator_MF"
-                stop          "output vector y not allocated"
+                write(*,*) "ERROR: amult in    ModelOperator_MF"
+                stop         "output vector y not allocated"
             endif
             !
             select type(y)
@@ -634,9 +634,9 @@ contains
         !
         real( kind=prec ) :: omega
         !
-        if( .NOT. outE%is_allocated ) then
-            write( *, * ) "ERROR: multAib in ModelOperator_MF"
-            stop          "output vector not allocated"
+        if(.NOT. outE%is_allocated) then
+            write(*,*) "ERROR: multAib in    ModelOperator_MF"
+            stop         "output vector not allocated"
         endif
         !
         omega = R_ZERO     ! diagonal part or A does not enter into this
@@ -676,7 +676,7 @@ contains
         class is( cVector3D_SG_t )
             !
             !     this overwrites input inH    -- need to be aware of this in using!
-            call inH%divs( self%Metric%FaceArea )
+            call inH%divs(self%Metric%FaceArea)
             !**
             ! Apply adjoint curl on unit grid
             !*
@@ -686,8 +686,8 @@ contains
             ! allocate( outE, source = cVector3D_SG_t( inH%grid, EDGE ) )
             !
             if(.NOT.outE%is_allocated) then
-                 write( *, * ) "ERROR: multCurlT in ModelOperator_MF"
-                 stop          "output vector not allocated"
+                 write(*,*) "ERROR: multCurlT in    ModelOperator_MF"
+                 stop    "output vector not allocated"
             endif
 
             select type( outE )
@@ -839,7 +839,7 @@ contains
                             SIGMA_AIR * (inE%z(ix, iy, iz) - inE%z(ix, iy, iz - 1)) * &
                             inE%grid%delZinv(iz)
                         end do
-                        !
+                        
                         ! FOR NODES AT THE AIR-EARTH INTERFACE
                         iz = outPhi%grid%nzAir + 1
                         !
@@ -853,7 +853,7 @@ contains
                         (self%Sigma_E%z(ix, iy, iz) * inE%z(ix, iy, iz) -         &
                         SIGMA_AIR * inE%z(ix, iy, iz - 1)) * &
                         inE%grid%delZinv(iz)
-						!
+
                         ! FOR NODES INSIDE THE EARTH ONLY
                         ! THE TOP MOST EARTH NODE HAS AN INTERFACE WITH
                         ! AIR, THEREFORE THAT ONE IS SKIPPED HERE
@@ -874,12 +874,12 @@ contains
                 !
             class default
                 write( *, * ) "ERROR:ModelOperator_MF_t::divC:"
-                stop          "      inE type unknow"
+                STOP                "inE type unknow"
             end select
             !
         class default
             write( *, * ) "ERROR:ModelOperator_MF_t::divC:"
-            stop          "      outPhi type unknow"
+            STOP                "outPhi type unknow"
             !
         end select
         !
@@ -897,9 +897,9 @@ contains
         integer :: ix, iy, iz
         !
         select type( outE )
-        class is( cVector3D_SG_t )
+        class is(cVector3D_SG_t)
             !
-            if( .NOT. outE%is_allocated ) then
+            if(.NOT.outE%is_allocated) then
                 write( *, * ) "ERROR:ModelOperator_MF::grad"
                 stop          "         Output cVector object not allocated"
             endif
@@ -938,11 +938,11 @@ contains
                 !
             class default
                 write( *, * ) "ERROR:ModelOperator_MF_t::grad:"
-                stop          "      inPhi type unknow"
+                STOP                "inPhi type unknow"
             end select
         class default
             write( *, * ) "ERROR:ModelOperator_MF_t::divC:"
-            stop          "      outE type unknow"
+            STOP                "outE type unknow"
         end select
         !
     end subroutine gradModelOperatorMF
@@ -962,7 +962,7 @@ contains
         select type(outPhi)
         class is(cScalar3D_SG_t)
             !
-            if( .NOT. outPhi%is_allocated ) then
+            if(.NOT.outPhi%is_allocated) then
                 write( *, * ) "ERROR:ModelOperator_MF::div"
                 stop          "         Output cScalar object not allocated"
             endif
@@ -988,11 +988,11 @@ contains
                 end do
                 class default
                 write( *, * ) "ERROR:ModelOperator_MF_t:div:"
-                stop          "      inE type unknow"
+                STOP                "inE type unknow"
             end select
         class default
             write( *, * ) "ERROR:ModelOperator_MF_t:div:"
-            stop          "      outPhi type unknow"
+            STOP                "outPhi type unknow"
         end select
         !
     end subroutine divModelOperatorMF

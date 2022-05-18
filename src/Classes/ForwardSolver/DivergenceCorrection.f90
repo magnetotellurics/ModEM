@@ -86,7 +86,7 @@ contains
         !
         !    take divergence of sourceInterior, and return as cScalar of
         !     appropriate explicit type
-        call self%solver%preconditioner%model_operator%Div( source%rhs, phi0 ) 
+        call self%solver%preconditioner%model_operator%Div( source%E%interior(), phi0 ) 
         !
         !  multiply result by c_factor (in place)
         call phi0%mults( c_factor )

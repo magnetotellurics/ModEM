@@ -180,7 +180,7 @@ module ForwardSolverIT_DC
             class( Source_t ), intent( in )                :: source
             class( cVector_t ), intent( inout )            :: e_solution
             !
-            class( cVector_t ), allocatable :: temp_esol, b
+            class( cVector_t ), allocatable :: temp_esol
             class( cScalar_t ), allocatable :: phi0
             integer :: iter
             complex( kind=prec ) :: i_omega_mu
@@ -192,9 +192,6 @@ module ForwardSolverIT_DC
             self%solver%failed    = .FALSE.
             self%nDivCor = 0
             !
-            ! Copy of source%rhs in b, effective only in non_zero_source cases
-            allocate( b, source = source%rhs )
-            !
             if( source%non_zero_source ) then
                 !
                 select type( grid => self%solver%preconditioner%model_operator%metric%grid )
@@ -204,25 +201,12 @@ module ForwardSolverIT_DC
                         !
                         call phi0%zeros()
                         !
-                        call self%divergence_correction%rhsDivCor( self%solver%omega, source, phi0 )
-                        !
                     class default
                         write( *, * ) "ERROR:ForwardSolverIT_DC_t::getESolutionForwardSolverIT_DC:"
                         stop          "    unknow grid type"
                 end select
                 !
-                b = b * self%solver%preconditioner%model_operator%metric%Vedge
-                !
-                ! To apply diergence correction before the main solver (QMR) (this is being done in ModEM-ON)
-                !
-                !e_solution = e_solution%Interior()
-                !
-                !allocate( temp_esol, source = e_solution )
-                !
-                !self%nDivCor = self%nDivCor + 1
-                !call self%divergence_correction%DivCorr( temp_esol, e_solution, phi0 )
-                !
-                !deallocate( temp_esol )
+                call self%divergence_correction%rhsDivCor( self%solver%omega, source, phi0 )
                 !
             endif
             !
@@ -231,12 +215,10 @@ module ForwardSolverIT_DC
                 !
                 select type( solver => self%solver )
                     class is( Solver_QMR_t )
-                        !
-                        call solver%solve( b, e_solution )
-                        !
+                        call solver%solve( source%rhs, e_solution )
                     class default
                         write( *, * ) "ERROR:ForwardSolverIT_DC::getESolutionForwardSolverIT_DC:"
-                        stop          "            Unknow solver type."
+                        stop        "            Unknow solver type."
                 end select
                 !
                 self%solver%converged = self%solver%n_iter .LT. self%solver%max_iter
@@ -281,7 +263,6 @@ module ForwardSolverIT_DC
             !
             enddo loop
             !
-            deallocate( b )
             !
             if( source%non_zero_source ) deallocate( phi0 )
             !

@@ -103,8 +103,6 @@ module Transmitter
             !
             class( Transmitter_t ), intent( inout ) :: self
             !
-            if( allocated( self%source ) ) deallocate ( self%source )
-            !
             if( allocated( self%e_all ) ) deallocate( self%e_all )
             !
             if( allocated( self%receiver_indexes ) ) deallocate( self%receiver_indexes )
