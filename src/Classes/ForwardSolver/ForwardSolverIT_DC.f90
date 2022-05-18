@@ -211,7 +211,7 @@ module ForwardSolverIT_DC
                         stop          "    unknow grid type"
                 end select
                 !
-                b = b * self%solver%preconditioner%model_operator%metric%Vnode
+                b = b * self%solver%preconditioner%model_operator%metric%Vedge
                 !
                 ! To apply diergence correction before the main solver (QMR) (this is being done in ModEM-ON)
                 !
