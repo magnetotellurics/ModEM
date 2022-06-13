@@ -19,6 +19,19 @@ mkdir MT_FWD
 	cd ..
 	#
 	#
+mkdir CSEM_FWD
+	#
+	cd CSEM_FWD
+		#
+		mpirun -np 46 ../Mod3DMT -F ../../inputs/Naser_Zap/Start_model_WithGrad.mod  ../../inputs/Naser_Zap/Field_CSEM_data20%err.dat predicted
+		#
+		T_END=$(date +%s%3N)
+		echo "	> CSEM_FWD: $(( ( $T_END - $T_START ) / 1000 )) seconds" | tee -a ../summary.txt
+		T_START=$(date +%s%3N)
+		#
+	cd ..
+	#
+	#
 mkdir MT_VALGRIND_FWD
 	#
 	cd MT_VALGRIND_FWD
@@ -66,9 +79,9 @@ mkdir CSEM_MASSIF_FWD
 		#
 		bash ../../scripts/memory_brief.sh
 		#
-		#T_END=$(date +%s%3N)
-		#echo "	> CSEM_MASSIF_FWD: $(( ( $T_END - $T_START ) / 1000 )) seconds" | tee -a ../summary.txt
-		#T_START=$(date +%s%3N)
+		T_END=$(date +%s%3N)
+		echo "	> CSEM_MASSIF_FWD: $(( ( $T_END - $T_START ) / 1000 )) seconds" | tee -a ../summary.txt
+		T_START=$(date +%s%3N)
 		#
 	cd ..
 	#
@@ -84,6 +97,19 @@ mkdir MT_INV
 		#
 		T_END=$(date +%s%3N)
 		echo "	> MT_INV: $(( ( $T_END - $T_START ) / 1000 )) seconds" | tee -a ../summary.txt
+		T_START=$(date +%s%3N)
+		#
+	cd ..
+	#
+	#
+mkdir CSEM_INV
+	#
+	cd CSEM_INV
+		#
+		mpirun -np 46 ../Mod3DMT -I NLCG ../../inputs/Naser_Zap/Start_model_WithGrad.mod ../../inputs/Naser_Zap/Field_CSEM_data20%err.dat ../../inputs/Naser_Zap/Inv_para.dat ../../inputs/Naser_Zap/FWD_para.dat ../../inputs/Naser_Zap/Start_model_WithGrad.cov
+		#
+		T_END=$(date +%s%3N)
+		echo "	> CSEM_INV: $(( ( $T_END - $T_START ) / 1000 )) seconds" | tee -a ../summary.txt
 		T_START=$(date +%s%3N)
 		#
 	cd ..
@@ -106,7 +132,7 @@ mkdir CSEM_VALGRIND_INV
 	#
 	cd CSEM_VALGRIND_INV
 		#
-		mpirun -np 46  valgrind --leak-check=full --show-leak-kinds=all --track-origins=yes --log-file=inv_valgrind_csem.txt ../Mod3DMT -I NLCG ../inputs/Naser_Zap/Start_model_WithGrad.mod ../inputs/Naser_Zap/Field_CSEM_data20%err.dat ../inputs/Naser_Zap/Inv_para.dat ../inputs/Naser_Zap/FWD_para.dat ../inputs/Naser_Zap/Start_model_WithGrad.cov
+		mpirun -np 46  valgrind --leak-check=full --show-leak-kinds=all --track-origins=yes --log-file=inv_valgrind_csem.txt ../Mod3DMT -I NLCG ../../inputs/Naser_Zap/Start_model_WithGrad.mod ../../inputs/Naser_Zap/Field_CSEM_data20%err.dat ../../inputs/Naser_Zap/Inv_para.dat ../../inputs/Naser_Zap/FWD_para.dat ../../inputs/Naser_Zap/Start_model_WithGrad.cov
 		#
 		T_END=$(date +%s%3N)
 		echo "	> CSEM_VALGRIND_INV: $(( ( $T_END - $T_START ) / 1000 )) seconds" | tee -a ../summary.txt
@@ -133,7 +159,7 @@ mkdir CSEM_MASSIF_INV
 	#
 	cd CSEM_MASSIF_INV
 	#
-	mpirun -np 46 valgrind --tool=massif --time-unit=ms --max-snapshots=1000 ../Mod3DMT -I NLCG ../inputs/Naser_Zap/Start_model_WithGrad.mod ../inputs/Naser_Zap/Field_CSEM_data20%err.dat ../inputs/Naser_Zap/Inv_para.dat ../inputs/Naser_Zap/FWD_para.dat ../inputs/Naser_Zap/Start_model_WithGrad.cov
+	mpirun -np 46 valgrind --tool=massif --time-unit=ms --max-snapshots=1000 ../Mod3DMT -I NLCG ../../inputs/Naser_Zap/Start_model_WithGrad.mod ../../inputs/Naser_Zap/Field_CSEM_data20%err.dat ../../inputs/Naser_Zap/Inv_para.dat ../../inputs/Naser_Zap/FWD_para.dat ../../inputs/Naser_Zap/Start_model_WithGrad.cov
 	#
 	bash ../../scripts/memory_brief.sh
 	#
