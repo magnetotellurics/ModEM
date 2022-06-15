@@ -45,7 +45,7 @@ module rVector
         procedure( interface_mult1_r_vector ), deferred, public :: mult1
         procedure( interface_mult2_r_vector ), deferred, public, pass( self ) :: mult2    
         generic :: mult => mult1, mult2
-        generic :: operator(*) => mult1, mult2
+        !generic :: operator(*) => mult1, mult2
         !
         procedure( interface_div1_r_vector ), deferred, public :: div1
         generic :: div => div1
@@ -203,18 +203,17 @@ module rVector
             class( rVector_t ), allocatable  :: Eout
         end function interface_sub1_r_vector
         !
-        function interface_mult1_r_vector( lhs, rhs ) result( Eout )
+        subroutine interface_mult1_r_vector( self, rhs )
             import :: rVector_t
-            class( rVector_t ), intent( in ) :: lhs, rhs
-            class( rVector_t ), allocatable  :: Eout
-        end function interface_mult1_r_vector
+            class( rVector_t ), intent( inout ) :: self
+            class( rVector_t ), intent( in ) :: rhs
+        end subroutine interface_mult1_r_vector
         !
-        function interface_mult2_r_vector(c, self) result( Eout )
+        subroutine interface_mult2_r_vector( self, c )
             import :: rVector_t, prec
+            class( rVector_t ), intent( inout ) :: self
             real( kind=prec ), intent( in )  :: c
-            class( rVector_t ), intent( in ) :: self
-            class( rVector_t ), allocatable  :: Eout
-        end function interface_mult2_r_vector
+        end subroutine interface_mult2_r_vector
         !
         function interface_div1_r_vector( lhs, rhs ) result( Eout )
             import :: rVector_t

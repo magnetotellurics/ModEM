@@ -35,9 +35,9 @@ module cVector
         ! Arithmetic/algebraic operations
         procedure( interface_zeros_c_vector ), deferred, public :: zeros
         !
-        procedure( interface_add1_c_vector ) , deferred, public :: add1
-        generic :: add => add1
-        generic :: operator(+) => add1
+        procedure( interface_add_c_vector ) , deferred, public :: add
+        !generic :: add => add
+        !generic :: operator(+) => add
         !
         procedure( interface_sub1_c_vector ) , deferred, public :: sub1
         generic :: sub => sub1
@@ -47,9 +47,9 @@ module cVector
         procedure( interface_mult2_c_vector ), deferred, public :: mult2
         procedure( interface_mult3_c_vector ), deferred, public :: mult3
         procedure( interface_mult4_c_vector ), deferred, public :: mult4
-		!
+        !
         generic :: mult => mult1, mult2, mult3, mult4
-        generic :: operator(*) => mult1, mult2, mult3, mult4
+        !generic :: operator(*) => mult1, mult2, mult3, mult4
         !
         procedure( interface_mults1_c_vector ), deferred, public :: mults1
         procedure( interface_mults3_c_vector ), deferred, public :: mults3
@@ -141,19 +141,19 @@ module cVector
         !**
         ! boundary
         !*
-        function interface_boundary_c_vector( self ) result( E )
+        subroutine interface_boundary_c_vector( self, bdry )
             import :: cVector_t
-            class( cVector_t ), intent( in ) :: self
-            class( cVector_t ), allocatable  :: E
-        end function interface_boundary_c_vector
+            class( cVector_t ), intent( in )     :: self
+            class( cVector_t ), allocatable, intent( inout )  :: bdry
+        end subroutine interface_boundary_c_vector
         !**
         ! interior
         !*
-        function interface_interior_c_vector( self ) result( E )
+        subroutine interface_interior_c_vector( self, intr )
             import :: cVector_t
-            class( cVector_t ), intent( in ) :: self
-            class( cVector_t ), allocatable  :: E
-        end function interface_interior_c_vector
+            class( cVector_t ), intent( in )     :: self
+            class( cVector_t ), allocatable, intent( inout )  :: intr
+        end subroutine interface_interior_c_vector
         !**
         ! Data access
         !*
@@ -192,11 +192,12 @@ module cVector
             class( cVector_t ), intent( inout ) :: self
         end subroutine interface_zeros_c_vector
         !
-        function interface_add1_c_vector( lhs, rhs ) result( Eout )
+        subroutine interface_add_c_vector( self, rhs )
             import :: cVector_t
-            class( cVector_t ), intent( in ) :: lhs, rhs
-            class( cVector_t ), allocatable  :: Eout
-        end function interface_add1_c_vector
+            class( cVector_t ), intent( inout ) :: self
+            class( cVector_t ), intent( in )    :: rhs
+            !
+        end subroutine interface_add_c_vector
         !
         function interface_sub1_c_vector( lhs, rhs ) result( Eout )
             import :: cVector_t
@@ -204,33 +205,31 @@ module cVector
             class( cVector_t ), allocatable  :: Eout
         end function interface_sub1_c_vector
         !
-        function interface_mult1_c_vector( lhs, rhs ) result( Eout )
+        subroutine interface_mult1_c_vector( self, rhs )
             import :: cVector_t
-            class( cVector_t ), intent( in ) :: lhs, rhs
-            class( cVector_t ), allocatable  :: Eout
-        end function interface_mult1_c_vector
+            class( cVector_t ), intent( inout ) :: self
+            class( cVector_t ), intent( in ) :: rhs
+        end subroutine interface_mult1_c_vector
         !
-        function interface_mult2_c_vector( self, c ) result( Eout )
+        subroutine interface_mult2_c_vector( self, c )
             import :: cVector_t, prec
-            class( cVector_t ), intent( in )   :: self
-            complex( kind=prec ), intent( in ) :: c
-            class( cVector_t ), allocatable    :: Eout
-        end function interface_mult2_c_vector
+            class( cVector_t ), intent( inout ) :: self
+            complex( kind=prec ), intent( in )  :: c
+        end subroutine interface_mult2_c_vector
         !
-        function interface_mult3_c_vector( lhs, rhs ) result( Eout )
+        subroutine interface_mult3_c_vector( self, rhs )
             import :: cVector_t, rVector_t
-            class( cVector_t ), intent( in ) :: lhs
-            class( rVector_t ), intent( in ) :: rhs
-            class( cVector_t ), allocatable  :: Eout
-        end function interface_mult3_c_vector
+            class( cVector_t ), intent( inout ) :: self
+            class( rVector_t ), intent( in )    :: rhs
+        end subroutine interface_mult3_c_vector
         !
-        function interface_mult4_c_vector(lhs, rhs) result(Eout)
+        subroutine interface_mult4_c_vector( self, rhs )
             import :: cVector_t, rScalar_t
-            class( cVector_t ), intent( in ) :: lhs
-            class( rScalar_t ), intent( in ) :: rhs
-            class( cVector_t ), allocatable  :: Eout
+            class( cVector_t ), intent( inout ) :: self
+            class( rScalar_t ), intent( in )    :: rhs
             !
-        end function interface_mult4_c_vector
+        end subroutine interface_mult4_c_vector
+        !
         subroutine interface_mults3_c_vector( lhs, rhs )
             !    subroutine version that overwrites lhs with lhs*rhs
             import :: cVector_t, rVector_t

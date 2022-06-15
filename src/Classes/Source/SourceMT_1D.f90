@@ -156,6 +156,7 @@ contains
         !
         class( SourceMT_1D_t ), intent( inout ) :: self
         !
+        class( cVector_t ), allocatable   :: source_e_boundary
         !
         select type( E => self%E )
             class is( cVector3D_SG_t )
@@ -165,9 +166,13 @@ contains
                 !
                 call self%rhs%zeros()
                 !
-                call self%model_operator%MultAib( self%E%Boundary(), self%rhs )
+                call self%E%Boundary( source_e_boundary )
                 !
-                self%rhs = self%rhs * C_MinusOne
+                call self%model_operator%MultAib( source_e_boundary, self%rhs )
+                !
+				deallocate( source_e_boundary )
+				!
+                call self%rhs%mult( C_MinusOne )
                 !
         end select
         !

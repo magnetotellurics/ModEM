@@ -58,7 +58,7 @@ contains
         self%is_complex = .TRUE.
         !
         !
-        allocate( self%EHxy( self%n_comp ) )
+        allocate( self%EHxy( 1 ) )
         !
         ! components required to get the full impdence tensor self%response [Zxx, Zxy, Zyx, Zyy]
         !
@@ -68,7 +68,7 @@ contains
         if( azimuth == 4.0 ) self%EHxy(1)%str = "By"
         if( azimuth == 5.0 ) self%EHxy(1)%str = "Bz"
         !
-        allocate( self%comp_names( self%n_comp ) )
+        allocate( self%comp_names( 1 ) )
         !
         if( azimuth == 1.0 ) self%comp_names(1)%str = "Ex_Field"
         if( azimuth == 2.0 ) self%comp_names(1)%str = "Ey_Field"
@@ -188,7 +188,7 @@ contains
                 real_part = real( self%response( 1 ), kind=prec )
                 imaginary = real( imag( self%response( 1 ) ), kind=prec )
                 !
-                if( associated( self%predicted_data ) ) call deallocateDataHandleArray( self%predicted_data )
+                if( allocated( self%predicted_data ) ) call deallocateDataHandleArray( self%predicted_data )
                 !
                 call updateDataHandleArray( self%predicted_data, DataHandleCSEM_t( rx_type, code, component, period, tx_location, azimuth, dip, moment, dipole, rx_location, real_part, imaginary ) )
                 !

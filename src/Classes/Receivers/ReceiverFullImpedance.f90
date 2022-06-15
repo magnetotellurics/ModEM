@@ -216,7 +216,7 @@ contains
         !
         !#Period(s) Code GG_Lat GG_Lon X(m) Y(m) self%response(m) Component Real Imag Error
         !
-        if( associated( self%predicted_data ) ) call deallocateDataHandleArray( self%predicted_data )
+        if( allocated( self%predicted_data ) ) call deallocateDataHandleArray( self%predicted_data )
         !
         do i = 1, self%n_comp
             !

@@ -80,7 +80,7 @@ contains
                 !
                 if( index( line_text, "#" ) == 0 .and. index( line_text, ">" ) == 0 ) then
                      !
-                     iDe = self%data_entries%size() + 1
+                     iDe = size( self%data_entries ) + 1
                      !
                      selectcase( actual_type )
                           !

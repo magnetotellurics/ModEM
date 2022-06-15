@@ -118,19 +118,19 @@ module ModelParameter
         ! ModelParameter object then m (or m0) would
         ! be omitted (self would be the model parameter already).
         !*
-        function interface_pdemapping_model_parameter( self ) result( eVec )
+        subroutine interface_pdemapping_model_parameter( self, eVec )
             import :: ModelParameter_t, rVector_t
             class( ModelParameter_t ), intent( in ) :: self
-            class( rVector_t ), allocatable         :: eVec
-        end function interface_pdemapping_model_parameter
+            class( rVector_t ), intent( inout )     :: eVec
+        end subroutine interface_pdemapping_model_parameter
         !**
         !
         !*
-        function interface_dpdemapping_model_parameter( self, dm ) result( eVec )
+        subroutine interface_dpdemapping_model_parameter( self, dm, eVec )
             import :: ModelParameter_t, rVector_t
             class( ModelParameter_t ), intent( in ) :: self, dm
-            class( rVector_t ), allocatable         :: eVec
-        end function interface_dpdemapping_model_parameter
+            class( rVector_t ), intent( inout )     :: eVec
+        end subroutine interface_dpdemapping_model_parameter
         !**
         ! NOTE: For transpose (adjoint) dm is output`
         !            and eVec is input.

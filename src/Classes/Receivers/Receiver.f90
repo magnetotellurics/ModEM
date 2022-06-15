@@ -20,17 +20,17 @@ module Receiver
         !
         character(:), allocatable :: code
         !
-        real( kind=prec )         :: location(3)
+        real( kind=prec ), dimension(3)         :: location
         !
         logical                   :: is_complex, interpolation_set
         !
-        type( String_t ), allocatable :: EHxy(:), comp_names(:)
+        type( String_t ), allocatable, dimension(:) :: EHxy, comp_names
         !
-        complex( kind=prec ), allocatable :: response(:)
+        complex( kind=prec ), allocatable, dimension(:) :: response
         !
         type( cSparseVector3D_SG_t )   :: Lex, Ley, Lez, Lbx, Lby, Lbz
         !
-        type( Dh_t ), pointer, dimension(:) :: predicted_data
+        type( Dh_t ), allocatable, dimension(:) :: predicted_data
         !
         contains
             !
@@ -137,8 +137,6 @@ contains
         self%Lby = cSparsevector3D_SG_t()
         self%Lbz = cSparsevector3D_SG_t()
         !
-        self%predicted_data => null()
-        !
     end subroutine initializeRx
     !
     subroutine deallocateRx( self )
@@ -146,9 +144,21 @@ contains
         !
         class( Receiver_t ), intent( inout ) :: self
         !
-        if( allocated( self%comp_names ) ) deallocate( self%comp_names )
+        integer :: i, asize
         !
-        if( allocated( self%EHxy ) ) deallocate( self%EHxy )
+        asize = size( self%comp_names )
+        do i = asize, 1, -(1)
+            deallocate( self%comp_names(i)%str )
+        enddo
+        deallocate( self%comp_names )
+        !
+        asize = size( self%EHxy )
+        do i = asize, 1, -(1)
+            deallocate( self%EHxy(i)%str )
+        enddo
+        deallocate( self%EHxy )
+        !
+        if( allocated( self%predicted_data ) ) call deallocateDataHandleArray( self%predicted_data )
         !
     end subroutine deallocateRx
     !

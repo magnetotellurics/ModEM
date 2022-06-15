@@ -270,26 +270,34 @@ contains
         !
         class( Grid_t ), intent( inout ) :: self
         !
-        if( allocated( self%dx ) ) deallocate( self%dx )
-        if( allocated( self%dy ) ) deallocate( self%dy )
-        if( allocated( self%dz ) ) deallocate( self%dz )
-        if( allocated( self%dxInv ) ) deallocate( self%dxInv )
-        if( allocated( self%dyInv ) ) deallocate( self%dyInv )
-        if( allocated( self%dzInv ) ) deallocate( self%dzInv )
+        self%nx = 0
+        self%ny = 0
+        self%nz = 0
         !
-        if( allocated( self%delX ) ) deallocate( self%delX )
-        if( allocated( self%delY ) ) deallocate( self%delY )
-        if( allocated( self%delZ ) ) deallocate( self%delZ )
-        if( allocated( self%delXInv ) ) deallocate( self%delXInv )
-        if( allocated( self%delYInv ) ) deallocate( self%delYInv )
-        if( allocated( self%delZInv ) ) deallocate( self%delZInv )
+        deallocate( self%dx )
+        deallocate( self%dy )
+        deallocate( self%dz )
         !
-        if( allocated( self%xEdge ) ) deallocate( self%xEdge )
-        if( allocated( self%yEdge ) ) deallocate( self%yEdge )
-        if( allocated( self%zEdge ) ) deallocate( self%zEdge )
-        if( allocated( self%xCenter ) ) deallocate( self%xCenter )
-        if( allocated( self%yCenter ) ) deallocate( self%yCenter )
-        if( allocated( self%zCenter ) ) deallocate( self%zCenter )
+        deallocate( self%dxInv )
+        deallocate( self%dyInv )
+        deallocate( self%dzInv )
+        !
+        deallocate( self%delX )
+        deallocate( self%delY )
+        deallocate( self%delZ )
+        !
+        deallocate( self%delXInv )
+        deallocate( self%delYInv )
+        deallocate( self%delZInv )
+        !
+        deallocate( self%xEdge )
+        deallocate( self%yEdge )
+        deallocate( self%zEdge )
+        deallocate( self%xCenter )
+        deallocate( self%yCenter )
+        deallocate( self%zCenter )
+        !
+        self%is_allocated = .FALSE.
         !
     end subroutine deallocateGrid
     !

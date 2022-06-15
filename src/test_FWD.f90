@@ -70,7 +70,7 @@ contains
         integer :: iTx, number_of_tx, iRx, iDh
         !
         ! Final array that contains the predicted data of all receivers of all transmitters
-        type( Dh_t ), pointer, dimension(:) :: all_data_handles
+        type( Dh_t ), allocatable, dimension(:) :: all_data_handles
         !
         ! Verbosis ...
         write ( *, * ) "    > Start forward modelling."
@@ -93,16 +93,14 @@ contains
         select case ( forward_solver_type )
             !
             case( FWD_IT_DC )
-                forward_solver = ForwardSolverIT_DC_t( model_operator, QMR )
+                allocate( forward_solver, source = ForwardSolverIT_DC_t( model_operator, QMR ) )
                 !
             case default
-                forward_solver = ForwardSolverIT_DC_t( model_operator, QMR )
+                allocate( forward_solver, source = ForwardSolverIT_DC_t( model_operator, QMR ) )
             !
         end select
         !
         ! Forward Modelling
-        !
-        all_data_handles => null()
         !
         number_of_tx = size( transmitters )
         !
@@ -236,7 +234,7 @@ contains
                 !
                 call main_grid%UpdateAirLayers( air_layer%nz, air_layer%dz )
                 !
-                model_operator = ModelOperator_MF_t( main_grid )
+                allocate( model_operator, source = ModelOperator_MF_t( main_grid ) )
                 !
                 call model_parameter%setMetric( model_operator%metric )
                 !
@@ -452,97 +450,10 @@ contains
         !
     end subroutine writeEsolutionHeader
     !
-    !
-    recursive subroutine sortByReceiverType( data_handle_array, first, last )
-        implicit none
-        !
-        type( Dh_t ), pointer, dimension(:), intent( inout ) :: data_handle_array
-        type( Dh_t ), allocatable :: x_Dh, t_Dh
-        class( DataHandle_t ), allocatable :: i_data_handle, j_data_handle, x_data_handle
-        integer first, last
-        integer i, j
-        !
-        x_Dh = data_handle_array( (first+last) / 2 )
-        x_data_handle = x_Dh%Dh
-        i = first
-        j = last
-        !
-        do
-            !
-            i_data_handle = getDataHandle( data_handle_array, i )
-            j_data_handle = getDataHandle( data_handle_array, j )
-            !
-            do while ( i_data_handle%rx_type < x_data_handle%rx_type )
-                i=i+1
-                i_data_handle = getDataHandle( data_handle_array, i )
-            end do
-            do while ( x_data_handle%rx_type < j_data_handle%rx_type )
-                j=j-1
-                j_data_handle = getDataHandle( data_handle_array, j )
-            end do
-            if (i >= j) exit
-            t_Dh = data_handle_array(i)
-            data_handle_array(i) = data_handle_array(j)
-            data_handle_array(j) = t_Dh
-            i=i+1
-            i_data_handle = getDataHandle( data_handle_array, i )
-            j=j-1
-            j_data_handle = getDataHandle( data_handle_array, j )
-        end do
-        !
-        if (first < i-1) call sortByReceiverType( data_handle_array, first, i-1 )
-        if (j+1 < last)  call sortByReceiverType( data_handle_array, j+1, last )
-        !
-    end subroutine sortByReceiverType
-    !
-    !
-    recursive subroutine sortByPeriod( data_handle_array, first, last )
-        implicit none
-        !
-        type( Dh_t ), pointer, dimension(:), intent( inout ) :: data_handle_array
-        type( Dh_t ), allocatable :: x_Dh, t_Dh
-        class( DataHandle_t ), allocatable :: i_data_handle, j_data_handle, x_data_handle
-        integer first, last
-        integer i, j
-        !
-        x_Dh = data_handle_array( (first+last) / 2 )
-        x_data_handle = x_Dh%Dh
-        i = first
-        j = last
-        !
-        do
-            !
-            i_data_handle = getDataHandle( data_handle_array, i )
-            j_data_handle = getDataHandle( data_handle_array, j )
-            !
-            do while ( i_data_handle%period < x_data_handle%period )
-                i=i+1
-                i_data_handle = getDataHandle( data_handle_array, i )
-            end do
-            do while ( x_data_handle%period < j_data_handle%period )
-                j=j-1
-                j_data_handle = getDataHandle( data_handle_array, j )
-            end do
-            if (i >= j) exit
-            t_Dh = data_handle_array(i)
-            data_handle_array(i) = data_handle_array(j)
-            data_handle_array(j) = t_Dh
-            i=i+1
-            i_data_handle = getDataHandle( data_handle_array, i )
-            j=j-1
-            j_data_handle = getDataHandle( data_handle_array, j )
-        end do
-        !
-        if (first < i-1) call sortByPeriod( data_handle_array, first, i-1 )
-        if (j+1 < last)  call sortByPeriod( data_handle_array, j+1, last )
-        !
-    end subroutine sortByPeriod
-    !
-    !
     recursive subroutine sortByReceiver( data_handle_array, first, last )
         implicit none
         !
-        type( Dh_t ), pointer, dimension(:), intent( inout ) :: data_handle_array
+        type( Dh_t ), allocatable, dimension(:), intent( inout ) :: data_handle_array
         type( Dh_t ), allocatable :: x_Dh, t_Dh
         class( DataHandle_t ), allocatable :: i_data_handle, j_data_handle, x_data_handle
         integer first, last
@@ -585,30 +496,24 @@ contains
     subroutine writeDataHandleArray( data_handle_array )
         implicit none
         !
-        type( Dh_t ), pointer, dimension(:), intent( inout ) :: data_handle_array
+        type( Dh_t ), allocatable, dimension(:), intent( inout ) :: data_handle_array
         !
         class( DataHandle_t ), allocatable :: data_handle
         !
         integer :: receiver_type, i, j, ios
         !
-        ! Order by transmitter
-        call sortByPeriod( data_handle_array, 1, size( data_handle_array ) )
-        !
         ! Order by receiver
-        call sortByReceiver( data_handle_array, 1, size( data_handle_array ) )
-        !
-        ! Order by receiver
-        !call sortByReceiverType( data_handle_array, 1, size( data_handle_array ) )
+        !call sortByReceiver( data_handle_array, 1, size( data_handle_array ) )
         !
         receiver_type = 0
         !
-        open( ioPredData, file = predicted_data_file_name, action = "write", form = "formatted", iostat = ios )
+        open( unit = ioPredData, file = predicted_data_file_name, action = "write", form = "formatted", iostat = ios )
         !
         if( ios == 0 ) then
             !
             do i = 1, size( data_handle_array )
                 !
-                data_handle = getDataHandle( data_handle_array, i )
+                allocate( data_handle, source = getDataHandle( data_handle_array, i ) )
                 !
                 call writePredictedDataHeader( data_handle, receiver_type )
                 !
@@ -628,6 +533,8 @@ contains
                     !
                 end select
                 !
+				deallocate( data_handle )
+				!
             enddo
             !
             close( ioPredData )

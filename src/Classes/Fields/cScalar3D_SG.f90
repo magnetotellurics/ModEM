@@ -140,7 +140,7 @@ contains
         ! allocate memory for x,y,z ;
         ! self%allocated will be true if all allocations succeed
         self%is_allocated = .TRUE.
-		!
+        !
         if( gridType == CORNER) then
              allocate(self%v(nx + 1, ny + 1, nz + 1), STAT = status)    
              self%NdV = (/self%nx + 1, self%ny + 1, self%nz + 1/)
@@ -157,7 +157,7 @@ contains
         else
              write( *, * ) "ERROR:cScalar3D_SG_t::ctor:"
              write( *, * ) "      Unrecognized grid type: ", gridType, ". Exiting."
-			 stop
+             stop
         end if
         !
         self%is_allocated = self%is_allocated.AND.(status .EQ. 0)
@@ -263,7 +263,7 @@ contains
                  if( (k1 < 0) .or. (k2 > Nz)) then
                         write( *, * ) "ERROR:cScalar3D_SG::readCScalar3D_SG: "
                         write( *, * ) "      While reading the ", i, "th block. Exiting."
-						stop
+                        stop
                  else if( k1 > k2) then
                         write( *, * ) "WARNING:cScalar3D_SG::readCScalar3D_SG: "
                         write( *, * ) "                Block ", i, " will be ignored."
@@ -275,7 +275,7 @@ contains
                         if( istat /= 0) then
                              write( *, * ) "ERROR:cScalar3D_SG::readCScalar3D_SG: "
                              write( *, * ) "            While reading the ", j, "th row in ", i,"th block. Exiting."
-							 stop
+                             stop
                         end if
                         
                         do k = k1, k2
@@ -308,7 +308,7 @@ contains
         integer, intent( in )                 :: fid
         character(*), intent( in ), optional  :: ftype
         !
-		integer :: Nx, Ny, Nz
+        integer :: Nx, Ny, Nz
         integer :: i, j, k, k1, k2, istat
         complex( kind=prec ), allocatable, dimension(:, :) :: temp
         logical :: ok, hasname, binary
@@ -721,23 +721,23 @@ contains
         class( cScalar3D_SG_t ), intent( in ) :: lhs
         class( cScalar_t ), intent( in )      :: rhs
         class( cScalar_t ), allocatable       :: Eout
-		!
+        !
         if( lhs%isCompatible(rhs)) then
              !
-			 allocate( Eout, source = cScalar3D_SG_t(lhs%grid, lhs%gridType) )
+             allocate( Eout, source = cScalar3D_SG_t(lhs%grid, lhs%gridType) )
              !
-			 select type( Eout )
+             select type( Eout )
              class is( cScalar3D_SG_t )
-				select type(rhs)
-				class is( cScalar3D_SG_t )
-					 Eout%v = lhs%v - rhs%v
-				end select
+                select type(rhs)
+                class is( cScalar3D_SG_t )
+                     Eout%v = lhs%v - rhs%v
+                end select
              end select
         else
              write( *, * ) "ERROR:cScalar3D_SG::sub1CScalar3D_SG"
              stop "    Incompatible inputs. Exiting."
         end if
-		!
+        !
     end function sub1CScalar3D_SG
     !**
     ! mult1CScalar3D_SG
@@ -748,23 +748,23 @@ contains
         class( cScalar3D_SG_t ), intent( in ) :: lhs
         class( cScalar_t ), intent( in )      :: rhs
         class( cScalar_t ), allocatable       :: Eout
-		!
+        !
         if( lhs%isCompatible(rhs)) then
              !
-			 allocate( Eout, source = cScalar3D_SG_t(lhs%grid, lhs%gridType) )
+             allocate( Eout, source = cScalar3D_SG_t(lhs%grid, lhs%gridType) )
              !
-			 select type( Eout )
+             select type( Eout )
              class is( cScalar3D_SG_t )
-				select type(rhs)
-				class is( cScalar3D_SG_t )
-					 Eout%v = lhs%v * rhs%v
-				end select
+                select type(rhs)
+                class is( cScalar3D_SG_t )
+                     Eout%v = lhs%v * rhs%v
+                end select
              end select
         else
              write( *, * ) "ERROR:cScalar3D_SG::mult1CScalar3D_SG"
              stop "    Incompatible inputs. Exiting."
         end if
-		!
+        !
     end function mult1CScalar3D_SG
     !**
     ! mult2CScalar3D_SG
@@ -775,16 +775,16 @@ contains
         class( cScalar3D_SG_t ), intent( in ) :: lhs
         complex( kind=prec ), intent( in )    :: rhs
         class( cScalar_t ), allocatable       :: Eout
-		 !
-		 allocate(Eout, source = cScalar3D_SG_t(lhs%grid, lhs%gridType))
-		 !
-		 select type( Eout )
-			 class is( cScalar3D_SG_t )
-				!
-				Eout%v = lhs%v * rhs
-				!
-		 end select
-		 !
+         !
+         allocate(Eout, source = cScalar3D_SG_t(lhs%grid, lhs%gridType))
+         !
+         select type( Eout )
+             class is( cScalar3D_SG_t )
+                !
+                Eout%v = lhs%v * rhs
+                !
+         end select
+         !
     end function mult2CScalar3D_SG
     !**
     ! mult3CScalar3D_SG
@@ -798,14 +798,14 @@ contains
 
         if( lhs%isCompatible(rhs)) then
              !
-			 allocate( Eout, source = cScalar3D_SG_t(lhs%grid, lhs%gridType) )
+             allocate( Eout, source = cScalar3D_SG_t(lhs%grid, lhs%gridType) )
              !
-			 select type( Eout )
+             select type( Eout )
              class is( cScalar3D_SG_t )
-				select type(rhs)
-				class is(rScalar3D_SG_t)
-					 Eout%v = lhs%v * rhs%v
-				end select
+                select type(rhs)
+                class is(rScalar3D_SG_t)
+                     Eout%v = lhs%v * rhs%v
+                end select
              end select
        else
              write( *, * ) "ERROR:rScalar3D_SG::mult3CScalar3D_SG"
@@ -824,17 +824,17 @@ contains
         !
         class( cScalar3D_SG_t ), intent( inout ) :: lhs
         class( cScalar_t ), intent( in )         :: rhs
-		!
+        !
         if( lhs%isCompatible(rhs)) then
             select type(rhs)
-				class is( cScalar3D_SG_t )
-					lhs%v = lhs%v * rhs%v
+                class is( cScalar3D_SG_t )
+                    lhs%v = lhs%v * rhs%v
             end select
         else
              write( *, * ) "ERROR:cScalar3D_SG::mults1CScalar3D_SG"
              stop "    Incompatible inputs. Exiting."
         end if
-		!
+        !
     end subroutine mults1CScalar3D_SG
     !**
     !    mults2CScalar3D_SG
@@ -844,9 +844,9 @@ contains
         !
         class( cScalar3D_SG_t ), intent( inout ) :: lhs
         complex( kind=prec ), intent( in )       :: c
-		!
-		lhs%v = lhs%v * c
-		!
+        !
+        lhs%v = lhs%v * c
+        !
     end subroutine mults2CScalar3D_SG
 
     !**
@@ -857,7 +857,7 @@ contains
         !
         class( cScalar3D_SG_t ), intent( inout )    :: lhs
         class( rScalar_t ), intent( in )    :: rhs
-		!
+        !
         if( lhs%isCompatible(rhs)) then
             select type(rhs)
               class is(rScalar3D_SG_t)
@@ -876,11 +876,11 @@ contains
         !
         class( cScalar3D_SG_t ), intent( inout )    :: lhs
         class( rScalar_t ), intent( in )    :: rhs
-		!
+        !
         if( lhs%isCompatible(rhs)) then
             select type(rhs)
               class is(rScalar3D_SG_t)
-				lhs%v = lhs%v / rhs%v
+                lhs%v = lhs%v / rhs%v
             end select
         else
              write( *, * ) "ERROR:cScalar3D_SG::mults3CScalar3D_SG"
@@ -896,12 +896,12 @@ contains
         class( cScalar3D_SG_t ), intent( in ) :: lhs
         class( cScalar_t ), intent( in )      :: rhs
         class( cScalar_t ), allocatable       :: Eout
-		!
+        !
         if( lhs%isCompatible(rhs)) then
              !
-			 allocate( Eout, source = cScalar3D_SG_t(lhs%grid, lhs%gridType) )
+             allocate( Eout, source = cScalar3D_SG_t(lhs%grid, lhs%gridType) )
              !
-			 select type( Eout )
+             select type( Eout )
              class is( cScalar3D_SG_t )
                     select type(rhs)
                     class is( cScalar3D_SG_t )
@@ -912,7 +912,7 @@ contains
              write( *, * ) "ERROR:cScalar3D_SG::div1CScalar3D_SG"
              stop "    Incompatible inputs. Exiting."
         end if
-		!
+        !
     end function div1CScalar3D_SG
     !**
     ! linCombSCScalar3D_SG
@@ -954,7 +954,7 @@ contains
               write( *, * ) "ERROR:cScalar3D_SG:scMultAddScScalar3D_SG"
               stop "    Incompatible inputs. Exiting."
          end if
-		 !
+         !
      end subroutine scMultAddSCScalar3D_SG
      !
      !*********
@@ -965,11 +965,11 @@ contains
         class( cScalar3D_SG_t ), intent( in ) :: lhs
         class( cScalar_t ), intent( in )      :: rhs
         real( kind=prec )                     :: c
-		!
+        !
         if( lhs%isCompatible(rhs)) then
              select type(rhs)
              class is( cScalar3D_SG_t )
-				c = sum(conjg(lhs%v) * rhs%v)
+                c = sum(conjg(lhs%v) * rhs%v)
              end select
         else
              write( *, * ) "ERROR:cScalar3D_SG::dotProdCScalar3D_SG"
@@ -986,9 +986,9 @@ contains
     ! setVecComponentsCScalar3D_SG
     !*
     subroutine setVecComponentsCScalar3D_SG( self, xyz, &
-											 xmin, xstep, xmax, &
-											 ymin, ystep, ymax, &
-											 zmin, zstep, zmax, c )
+                                             xmin, xstep, xmax, &
+                                             ymin, ystep, ymax, &
+                                             zmin, zstep, zmax, c )
         implicit none
         !
         class( cScalar3D_SG_t ), intent( inout ) :: self
@@ -1049,7 +1049,7 @@ contains
         class( cScalar3D_SG_t ), intent( in ) :: lhs
         class( cScalar_t ), intent( inout )   :: rhs
         complex( kind=prec ), intent( in )    :: c
-		!
+        !
         if( lhs%isCompatible(rhs)) then
             select type(rhs)
                 class is( cScalar3D_SG_t ) 
@@ -1059,7 +1059,7 @@ contains
             write( *, * ) "ERROR:cScalar3D_SG::scMultAdd"
             stop "    Incompatible inputs. Exiting."
         end if
-		!
+        !
     end subroutine SCMultAddCscalar3D_SG
     
     function isCompatible1Cscalar3D_SG( self, rhs ) result( is_compatible )
@@ -1101,9 +1101,9 @@ contains
                     end if
                 end if
         end select
-		!
+        !
     end function isCompatible2CScalar3D_SG
-	!
+    !
     subroutine copyFromCScalar3D_SG( self, rhs )
         implicit none
         !
@@ -1125,7 +1125,10 @@ contains
                 self%nz = rhs%nz
                 self%NdV = rhs%NdV
                 self%Nxyz = rhs%Nxyz
-                self%v = rhs%v
+                !
+                if( allocated( self%v ) ) deallocate( self%v )
+                allocate( self%v, source = rhs%v )
+                !
                 self%is_allocated = .TRUE.
                 !
             class default

@@ -9,7 +9,6 @@
 module ReceiverFArray
     !
     use Constants
-    !
     use Receiver
     !
     ! Allocatable Receiver element of the array, for Old Fortran polymorphism !!!
@@ -20,7 +19,7 @@ module ReceiverFArray
     end type Rx_t
     !
     ! Global Array of Receivers
-    type( Rx_t ), pointer, dimension(:), save, public :: receivers
+    type( Rx_t ), allocatable, target, dimension(:), save, public :: receivers
     !
     public :: getReceiver, printReceiverArray
     public :: updateReceiverArray, deallocateReceiverArray
@@ -40,7 +39,7 @@ contains
         !
         id = 0
         !
-        if( .NOT. associated( receivers ) ) then
+        if( .NOT. allocated( receivers ) ) then
             allocate( receivers( 1 ) )
             allocate( Rx_t :: temp_rx )
             temp_rx%Rx = new_rx
@@ -68,6 +67,7 @@ contains
             !
             temp_array( nRx + 1 ) = temp_rx
             !
+            if( allocated( receivers ) ) deallocate( receivers )
             allocate( receivers, source = temp_array )
             !
             deallocate( temp_rx )
@@ -78,10 +78,11 @@ contains
     end function updateReceiverArray
     !
     function getReceiver( iRx ) result( rx )
+        implicit none
         !
-        integer                                        :: iRx
+        integer                      :: iRx
         !
-        class( Receiver_t ), pointer            :: rx
+        class( Receiver_t ), pointer :: rx
         !
         rx => receivers( iRx )%Rx
         !
@@ -89,15 +90,15 @@ contains
     !
     !
     subroutine deallocateReceiverArray()
-        integer                    :: nrx, irx
-        class( Rx_t ), allocatable :: alloc_rx
+        integer                :: nrx, irx
+        class( Rx_t ), pointer :: alloc_rx
         !
         !write( *, * ) "deallocateReceiverArray:", size( receivers )
         !
         nrx = size( receivers )
-        do irx = 1, nrx
-            alloc_rx = receivers( irx )
-            deallocate( alloc_rx )
+        do irx = nrx, 1, -(1)
+            alloc_rx => receivers( irx )
+            if( associated( alloc_rx ) ) nullify( alloc_rx )
         end do
         !
         deallocate( receivers )
@@ -106,13 +107,15 @@ contains
     !
     ! Prints the content of the receivers on screen
     subroutine printReceiverArray()
+        implicit none
+        !
         integer                    :: irx
-        class( Rx_t ), allocatable :: alloc_rx
+        class( Rx_t ), pointer :: alloc_rx
         !
         print *, size( receivers ), " ReceiverFArray_t:"
         !
         do irx = 1, size( receivers )
-            alloc_rx = receivers( irx )
+            alloc_rx => receivers( irx )
             call alloc_rx%Rx%write()
         end do
         !

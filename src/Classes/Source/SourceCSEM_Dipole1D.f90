@@ -149,15 +149,16 @@ contains
                 !
                 if( allocated( self%rhs ) ) deallocate( self%rhs )
                 allocate( self%rhs, source = cVector3D_SG_t( grid, EDGE ) )
-				!
-				call self%rhs%zeros()
-				!
-				self%E = self%E * self%CondAnomaly_h
-				!
-				self%E = self%E * i_omega_mu
-				!
-				self%rhs = self%E * self%model_operator%metric%Vedge
-				!
+                !
+                call self%rhs%zeros()
+                !
+                call self%E%mult( self%CondAnomaly_h )
+                !
+                call self%E%mult( i_omega_mu )
+                !
+                self%rhs = self%E
+                call self%rhs%mult( self%model_operator%metric%Vedge )
+                !
         end select
         !
     end subroutine setRHS_CSEM_Dipole1D
@@ -300,6 +301,8 @@ contains
         integer :: nzEarth, nzAir, i, j, k, ixTx, iyTx, counter
         real( kind=prec ) :: wt, asigma, temp_sigma_value
         !
+        type( rVector3D_SG_t ) :: model_param_map, amodel_map
+        !
         !   first define conductivity on cells  
         !   (extract into variable which is public)
         !call modelParamToCell(model_parameter, sigma_cell, paramtype)
@@ -434,7 +437,10 @@ contains
                 !
                 amodel%cellCond = model
                 !
-                self%CondAnomaly_h = model_parameter%PDEmapping() - amodel%PDEmapping()
+                call model_parameter%PDEmapping( model_param_map )
+                call amodel%PDEmapping( amodel_map )
+                !
+                self%CondAnomaly_h = model_param_map - amodel_map
                 !
         end select
         !

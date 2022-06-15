@@ -11,6 +11,8 @@ module Grid3D_SG
     !
     type, extends( Grid_t ) :: Grid3D_SG_t
         !
+		!
+		!
         contains
             !
             final :: Grid3D_SG_dtor
@@ -28,8 +30,7 @@ module Grid3D_SG
             !**
             !
             procedure, public :: Create => CreateGrid3D_SG
-            procedure, public :: Allocate => AllocateGrid3D_SG
-            procedure, public :: DeAllocate => DeAllocateGrid3D_SG
+            procedure, public :: allocateDim => allocateDimGrid3D_SG
             procedure, public :: Setup => SetupGrid3D_SG
             procedure, public :: SetupAirLayers => SetupAirLayersGrid3D_SG
             procedure, public :: UpdateAirLayers => UpdateAirLayersGrid3D_SG
@@ -74,21 +75,21 @@ contains
         implicit none
         !
         class( Grid3D_SG_t ), intent( in ) :: self
-		type( Grid1D_t ) :: g1D
-		!
-		g1D = Grid1D_t( self%nzAir, self%nzEarth, self%dz )
-		!
+        type( Grid1D_t ) :: g1D
+        !
+        g1D = Grid1D_t( self%nzAir, self%nzEarth, self%dz )
+        !
     end function Slice1DGrid3D_SG
     !
     function Slice2DGrid3D_SG(self) result( g2D )
         implicit none
         !
         class( Grid3D_SG_t ), intent( in ) :: self
-		type( Grid2D_t ) :: g2D
-		!
-		! Should be diferent for the polarization
-		g2D = Grid2D_t( self%ny, self%nzAir, self%nzEarth, self%dy, self%dz )
-		!
+        type( Grid2D_t ) :: g2D
+        !
+        ! Should be diferent for the polarization
+        g2D = Grid2D_t( self%ny, self%nzAir, self%nzEarth, self%dy, self%dz )
+        !
     end function Slice2DGrid3D_SG
     !**
     ! Class constructor for simple tensor product grid
@@ -110,7 +111,7 @@ contains
         !
         call self%Create( nx, ny, nzAir, nzEarth )
         !
-        call self%SetCellSizes(dx, dy, dz)
+        call self%SetCellSizes( dx, dy, dz )
         !
         call self%Setup()
         !
@@ -130,7 +131,7 @@ contains
     !
     subroutine CreateGrid3D_SG( self, nx, ny, nzAir, nzEarth )
         implicit none
-		!
+        !
         class( Grid3D_SG_t ), intent( inout ) :: self
         integer, intent( in ) :: nx, ny, nzAir, nzEarth
         !
@@ -145,42 +146,42 @@ contains
         self%ny = ny
         self%nz = nz
         
-        call self%Allocate()
+        call self%allocateDim()
 
     end subroutine CreateGrid3D_SG
     
-    subroutine AllocateGrid3D_SG(self)
+    subroutine allocateDimGrid3D_SG(self)
         implicit none
-		!
+        !
         class( Grid3D_SG_t ), intent(inout) :: self
         !
         integer :: nx, ny, nz
         !
-        if ( self%is_allocated ) call self%Deallocate()
-		!
+        if ( self%is_allocated ) call self%dealloc()
+        !
         nx = self%nx
         ny = self%ny
         nz = self%nz
         !
-        allocate(self%dx(nx))
-        allocate(self%dy(ny))
-        allocate(self%dz(nz))
+        allocate( real( kind=prec ) :: self%dx(nx) )
+        allocate( real( kind=prec ) :: self%dy(ny) )
+        allocate( real( kind=prec ) :: self%dz(nz) )
         !
         ! dxinv    = 1/ dx and similarly for dyinv and dzinv
-        allocate(self%dxInv(nx))
-        allocate(self%dyInv(ny))
-        allocate(self%dzInv(nz))
+        allocate( real( kind=prec ) :: self%dxInv(nx) )
+        allocate( real( kind=prec ) :: self%dyInv(ny) )
+        allocate( real( kind=prec ) :: self%dzInv(nz) )
         !
         ! delX, delY, and delZ are the distances between
         ! the electrical field defined on the center of the
         ! edges in x, y, and z axes, respectively.
-        allocate(self%delX(nx + 1))
-        allocate(self%delY(ny + 1))
-        allocate(self%delZ(nz + 1))
+        allocate( real( kind=prec ) :: self%delX(nx + 1) )
+        allocate( real( kind=prec ) :: self%delY(ny + 1) )
+        allocate( real( kind=prec ) :: self%delZ(nz + 1) )
         !
-        allocate(self%delXInv(nx + 1))
-        allocate(self%delYInv(ny + 1))
-        allocate(self%delZInv(nz + 1))
+        allocate( real( kind=prec ) :: self%delXInv(nx + 1) )
+        allocate( real( kind=prec ) :: self%delYInv(ny + 1) )
+        allocate( real( kind=prec ) :: self%delZInv(nz + 1) )
         !
         ! xEdge is the array for cumulative distance of the edge
         ! for each grid (starting from the coordinate axes) with
@@ -190,20 +191,20 @@ contains
         ! dimension n.
         ! yEdge, yCenter, zEdge, zCenter are analagous arrays for
         ! other directions.
-        allocate(self%xEdge(nx + 1))
-        allocate(self%yEdge(ny + 1))
-        allocate(self%zEdge(nz + 1))
-        allocate(self%xCenter(nx))
-        allocate(self%yCenter(ny))
-        allocate(self%zCenter(nz))
+        allocate( real( kind=prec ) :: self%xEdge(nx + 1) )
+        allocate( real( kind=prec ) :: self%yEdge(ny + 1) )
+        allocate( real( kind=prec ) :: self%zEdge(nz + 1) )
+        allocate( real( kind=prec ) :: self%xCenter(nx) )
+        allocate( real( kind=prec ) :: self%yCenter(ny) )
+        allocate( real( kind=prec ) :: self%zCenter(nz) )
         !
-        self%is_allocated = .true.
+        self%is_allocated = .TRUE.
         !
-    end subroutine AllocateGrid3D_SG
+    end subroutine allocateDimGrid3D_SG
 
-    subroutine DeAllocateGrid3D_SG(self)
+    subroutine DeallocateDimGrid3D_SG(self)
         implicit none
-		!
+        !
         class( Grid3D_SG_t ), intent(inout) :: self
         !
         if ( .NOT. self%is_allocated ) return
@@ -233,7 +234,7 @@ contains
         
         self%is_allocated = .FALSE.
         
-    end subroutine DeAllocateGrid3D_SG
+    end subroutine DeallocateDimGrid3D_SG
     
     !**
     ! Setup does calculations for grid geometry, which cannot be done
@@ -256,7 +257,7 @@ contains
         !
         call self%GetOrigin( ox, oy, oz )
         !
-        if (present(origin)) then
+        if (present(origin) ) then
             !
             ox = origin(1)
             oy = origin(2)
@@ -372,32 +373,32 @@ contains
         integer :: status
         real( kind=prec ) :: z1Log, dlogz, zLog, height1, height2
         !
-        if (present(method)) then
+        if (present(method) ) then
              airlayers%method = method
         end if
         
-        if (present(nzAir)) then
+        if (present(nzAir) ) then
              airlayers%nz = nzAir
         end if
         
-        if (.NOT.(index(airLayers%method, "read from file") > 0)) then
+        if (.NOT.(index(airLayers%method, "read from file") > 0) ) then
              if (airLayers%allocated) then
                     deallocate(airlayers%dz, STAT = status)
              end if
              allocate(airLayers%dz(airLayers%nz), STAT = status)
-             airLayers%allocated = .true.
+             airLayers%allocated = .TRUE.
         end if
         
-        if (present(maxHeight)) then
+        if (present(maxHeight) ) then
              airLayers%maxHeight = 1000.*maxHeight
              write(*,*) airLayers%maxHeight
         end if
         
-        if (present(minTopDz)) then
+        if (present(minTopDz) ) then
              airLayers%minTopDz = 1000.*minTopDz
         end if
         
-        if (present(alpha)) then
+        if (present(alpha) ) then
              airLayers%alpha = alpha
         end if
         
@@ -410,7 +411,7 @@ contains
              !*
              do iz = airLayers%nz, 1, -1
                     j = airLayers%nz - iz + 1
-                    airLayers%dz(iz) = ((airLayers%alpha)**(j - 1))*&
+                    airLayers%dz(iz) = ((airLayers%alpha)**(j - 1) )*&
                              self%dz(self%nzAir + j)
              end do
              
@@ -421,7 +422,7 @@ contains
              
         else if (index(airLayers%method, "fixed height") > 0) then 
              write(*,*) "using fixed height method"
-             z1Log = log10(self%dz(self%nzAir + 1))
+             z1Log = log10(self%dz(self%nzAir + 1) )
              dlogz = (log10(airLayers%maxHeight) - z1Log)/(airLayers%nz-1)
              zLog = z1Log
              height1 = 10.**z1log
@@ -439,7 +440,7 @@ contains
              ! already stored in Dz, so only need to reallocate
              ! if passing a new array to it.
              !*
-             if (present(dzAir)) then
+             if (present(dzAir) ) then
                     if (airLayers%allocated) then
                          deallocate(airLayers%dz, STAT = status)
                     end if
@@ -510,7 +511,7 @@ contains
     
         rotdeg_old = self%rotdeg
         
-        call self%Deallocate()
+        call self%dealloc()
         call self%Create(nx_old, ny_old, nzAir, nzEarth_old)
         
         ! Set air layers to dzAir values and copy the rest
@@ -534,12 +535,12 @@ contains
         !
         class( Grid3D_SG_t ), intent( in )  :: self
         integer, intent( out )             :: nx, ny, nz, nzAir
-		!
+        !
         nx = self%nx
         ny = self%ny
         nz = self%nz
         nzAir = self%nzAir
-		!
+        !
     end subroutine GetDimensionsGrid3D_SG
 
     subroutine SetCellSizesGrid3D_SG(self, dx, dy, dz)
@@ -548,15 +549,15 @@ contains
         class( Grid3D_SG_t ), intent(inout) :: self
         real( kind=prec ) , dimension(:), intent( in ) :: dx, dy, dz
 
-        if (.NOT.self%IsAllocated()) then
+        if (.NOT.self%IsAllocated() ) then
              write(*, *) "ERROR:Grid3D_SG_t:SetCellSizes:"
              stop "    Grid not allocated."
         end if
 
         ! Check dimensions
-        if ((size(dx).ne.size(self%dx)).or.&
-                 (size(dy).ne.size(self%dy)).or.&
-                 (size(dz).ne.size(self%dz))) then
+        if ((size(dx).ne.size(self%dx) ).or.&
+                 (size(dy).ne.size(self%dy) ).or.&
+                 (size(dz).ne.size(self%dz) )) then
              write(*, *) "ERROR:Grid3D_SG_t:SetCellSizes:"
              stop "    Incompatible sizes for cell arrays."
         end if
@@ -573,15 +574,15 @@ contains
         class( Grid3D_SG_t ), intent( in ) :: self
         real( kind=prec ) , intent( out )  :: dx(:), dy(:), dz(:)
         !
-        if (.NOT.self%IsAllocated()) then
+        if (.NOT.self%IsAllocated() ) then
              write(*, *) "ERROR:Grid3D_SG_t:GetCellSizes:"
              stop "    Grid not allocated."
         end if
         !
         ! Check dimensions
-        if ((size(dx).ne.size(self%dx)).or.&
-                 (size(dy).ne.size(self%dy)).or.&
-                 (size(dz).ne.size(self%dz))) then
+        if ((size(dx).ne.size(self%dx) ).or.&
+                 (size(dy).ne.size(self%dy) ).or.&
+                 (size(dz).ne.size(self%dz) )) then
              write(*, *) "ERROR:Grid3D_SG_t:GetCellSizes:"
              stop "    Incompatible sizes for cell arrays."
         end if
@@ -673,15 +674,15 @@ contains
         call self%Limits(nodeType, nx, ny, nz)
         nVec = size(indVec)
         
-        if (nVec.ne.size(i)) then
+        if (nVec.ne.size(i) ) then
              stop "Size of 'ind_vec' and 'i' do not agree."
         end if
         
-        if (nVec.ne.size(j)) then
+        if (nVec.ne.size(j) ) then
              stop "Size of 'ind_vec' and 'j' do not agree."
         end if
         
-        if (nVec.ne.size(k)) then
+        if (nVec.ne.size(k) ) then
              stop "Size of 'ind_vec' and 'k' do not agree."
         end if
         
@@ -689,9 +690,9 @@ contains
         rNx    = float(nx)
         
         do ii = 1, nVec
-			i(ii) = mod(indVec(ii), nx)
-			j(ii) = mod(ceiling(float(indVec(ii))/rNx), ny)
-			k(ii) = ceiling(float(indVec(ii))/rNxy)
+            i(ii) = mod(indVec(ii), nx)
+            j(ii) = mod(ceiling(float(indVec(ii) )/rNx), ny)
+            k(ii) = ceiling(float(indVec(ii) )/rNxy)
         end do
         
         where(i.eq.0) i = nx
@@ -722,15 +723,15 @@ contains
         
         nVec = size(indVec)
         
-        if (nVec.ne.size (i)) then
+        if (nVec.ne.size (i) ) then
              stop "Size of 'ind_vec' and 'i' do not agree."
         end if
         
-        if (nVec.ne.size (J)) then
+        if (nVec.ne.size (J) ) then
              stop "Size of 'ind_vec' and 'j' do not agree."
         end if
         
-        if (nVec.ne.size (K)) then
+        if (nVec.ne.size (K) ) then
              stop "Size of 'ind_cec' and 'k' do not agree."
         end if
         
@@ -802,7 +803,7 @@ contains
         class( Grid3D_SG_t ), intent( in ) :: self
         !
         logical :: f
-		!
+        !
         f = self%is_allocated
     end function IsAllocatedGrid3D_SG
 

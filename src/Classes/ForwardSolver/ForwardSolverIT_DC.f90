@@ -58,7 +58,7 @@ module ForwardSolverIT_DC
             select case( solver_type )
                 case( QMR )
                     !
-                    self%solver = Solver_QMR_t( model_operator )
+                    allocate( self%solver, source = Solver_QMR_t( model_operator ) )
                     !
                 case( BiCG )
                     stop "ForwardSolverIT_DC_ctor: Not yet coded for Bi-Conjugate Gradients"
@@ -184,6 +184,7 @@ module ForwardSolverIT_DC
             class( cScalar_t ), allocatable :: phi0
             integer :: iter
             complex( kind=prec ) :: i_omega_mu
+            class( cVector_t ), allocatable   :: source_e_boundary
             !
             !
             call self%solver%zeroDiagnostics()
@@ -273,7 +274,7 @@ module ForwardSolverIT_DC
                 select type( model_operator => self%solver%preconditioner%model_operator )
                     class is ( ModelOperator_MF_t )
                         !
-                        e_solution = e_solution * model_operator%Metric%Vedge
+                        call e_solution%mult( model_operator%Metric%Vedge )
                         !
                     class default
                         write( *, * ) "ERROR:ForwardSolverIT_DC_t::getESolutionForwardSolverIT_DC:"
@@ -282,7 +283,11 @@ module ForwardSolverIT_DC
                 !
             else
                 !
-                e_solution = e_solution + source%E%Boundary()
+                call source%E%Boundary( source_e_boundary )
+                !
+                call e_solution%add( source_e_boundary )
+                !
+                deallocate( source_e_boundary )
                 !
             endif
             !

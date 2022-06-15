@@ -41,7 +41,7 @@ contains
          !
          class( ModelOperator_t ), target, intent( in )  :: model_operator
          class( ModelParameter_t ), target, intent( in ) :: model_parameter
-		 real( kind=prec ), intent( in )      :: period
+         real( kind=prec ), intent( in )      :: period
          class( cVector_t ), intent( in ), optional     :: E
          !
          type( SourceMT_2D_t ) :: self
@@ -50,8 +50,8 @@ contains
          !
          self%model_operator => model_operator
          self%model_parameter => model_parameter
-		 !
-		 self%period = period
+         !
+         self%period = period
          !
          self%non_zero_source = .FALSE.
          self%adjt = .FALSE.
@@ -172,10 +172,16 @@ contains
         implicit none
         !
         class( SourceMT_2D_t ), intent( inout ) :: self
-        !!
-        call self%model_operator%MultAib( self%E%Boundary(), self%rhs )
         !
-        self%rhs = self%rhs * C_MinusOne
+		class( cVector_t ), allocatable   :: source_e_boundary
+        !
+		call self%E%Boundary( source_e_boundary )
+		!
+		call self%model_operator%MultAib( source_e_boundary, self%rhs )
+		!
+		deallocate( source_e_boundary )
+		!
+        call self%rhs%mult( C_MinusOne )
         !
     end subroutine setRHSMT_2D
     !

@@ -29,7 +29,7 @@ contains
         class( Grid_t ), allocatable, intent( out )           :: grid
         class( ModelParameter_t ), allocatable, intent( out ) :: model
         !
-		character( len = 80 ) :: someChar 
+        character( len = 80 ) :: someChar 
         character(:), allocatable :: paramType 
         integer :: nx, ny, nzEarth, nzAir, someIndex, i, j, k, ioPrm, istat
         real( kind=prec ), dimension(:), allocatable :: dx, dy, dz
@@ -118,7 +118,7 @@ contains
                     ccond%v = ONE/rho
              end if
 
-             model = ModelParameterCell_SG_t( grid, ccond, paramType )
+             allocate( model, source = ModelParameterCell_SG_t( grid, ccond, paramType ) )
         end select
         
         ! ALWAYS convert modelParam to natural log for computations

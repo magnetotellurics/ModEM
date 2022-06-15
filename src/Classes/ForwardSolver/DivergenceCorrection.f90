@@ -39,7 +39,7 @@ contains
         self%divJ = 0.0
         !
         ! Specific Solver PCG
-        self%solver = Solver_PCG_t( model_operator )
+        allocate( self%solver, source = Solver_PCG_t( model_operator ) )
         !
         call self%setCond()
         !
@@ -81,12 +81,16 @@ contains
         class( cScalar_t ), intent( inout )           :: phi0
         !
         complex( kind=prec ) :: c_factor
+		class( cVector_t ), allocatable   :: e_interior
         !
         c_factor = -ONE_I / ( mu_0 * ISIGN * omega )    ! 1/(isign*1i*w*mu)
         !
         !    take divergence of sourceInterior, and return as cScalar of
         !     appropriate explicit type
-        call self%solver%preconditioner%model_operator%Div( source%E%interior(), phi0 ) 
+		call source%E%interior( e_interior )
+        call self%solver%preconditioner%model_operator%Div( e_interior, phi0 )
+		!
+		deallocate( e_interior )
         !
         !  multiply result by c_factor (in place)
         call phi0%mults( c_factor )

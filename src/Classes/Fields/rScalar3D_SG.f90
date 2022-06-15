@@ -68,7 +68,7 @@ module rScalar3D_SG
         procedure, public :: zeros => zerosRScalar3D_SG
         procedure, public :: add1 => add1RScalar3D_SG
         procedure, public :: sub1 => sub1RScalar3D_SG
-        procedure, public :: mult1 => mult1RScalar3D_SG
+        procedure, public :: mult => multRScalar3D_SG
         procedure, public :: div1 => div1RScalar3D_SG
         procedure, public :: dotProd => dotProdRScalar3D_SG
         !**
@@ -717,32 +717,27 @@ contains
         end if
     end function sub1RScalar3D_SG
     !**
-    ! mult1RScalar3D_SG
+    ! multRScalar3D_SG
     !*
-    function mult1RScalar3D_SG( lhs, rhs ) result( Eout )
+    subroutine multRScalar3D_SG( self, rhs )
         implicit none
         !
-        class( rScalar3D_SG_t ), intent( in ) :: lhs
+        class( rScalar3D_SG_t ), intent( inout ) :: self
         class( rScalar_t ), intent( in )      :: rhs
-        class( rScalar_t ), allocatable       :: Eout
 		!
-        if( lhs%isCompatible(rhs)) then
+        if( self%isCompatible(rhs)) then
             !
-			allocate(Eout, source = rScalar3D_SG_t(lhs%grid, lhs%gridType))
+			select type(rhs)
+				class is( rScalar3D_SG_t )
+					self%v = self%v * rhs%v
+			end select
             !
-			select type( Eout )
-            class is( rScalar3D_SG_t )
-                  select type(rhs)
-                  class is( rScalar3D_SG_t )
-                       Eout%v = lhs%v * rhs%v
-                  end select
-            end select
         else
-            write( *, * ) "ERROR:rScalar3D_SG::mult1RScalar3D_SG"
+            write( *, * ) "ERROR:rScalar3D_SG::multRScalar3D_SG"
             stop "    Incompatible inputs. Exiting."
         end if
 		!
-    end function mult1RScalar3D_SG
+    end subroutine multRScalar3D_SG
     !**
     ! div1RScalar3D_SG
     !*
