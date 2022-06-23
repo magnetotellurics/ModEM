@@ -195,17 +195,21 @@ contains
         !
         !write( *, * ) "Destructor rVector3D_SG"
         !
-        deallocate( self%x )
-        deallocate( self%y )
-        deallocate( self%z )
-        !
-        self%nx = 0
-        self%ny = 0
-        self%nz = 0
-        !
-        self%gridType = ""
-        self%is_allocated = .FALSE.
-        !
+		!if( self%is_allocated ) then
+			!
+			if( allocated( self%x ) ) deallocate( self%x )
+			if( allocated( self%y ) ) deallocate( self%y )
+			if( allocated( self%z ) ) deallocate( self%z )
+			!
+			self%nx = 0
+			self%ny = 0
+			self%nz = 0
+			!
+			self%gridType = ""
+			self%is_allocated = .FALSE.
+			!
+		!endif
+		!
     end subroutine rVector3D_SG_dtor
     !
     !************************************************
