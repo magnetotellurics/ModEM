@@ -265,7 +265,7 @@ module DeclarationMPI
         !
         do i = 1, aux_size
             !
-            ierr = updateTransmitterArray( unpackTransmitterBuffer( index ) )
+            call updateTransmitterArray( unpackTransmitterBuffer( index ) )
             !
         end do
         !
@@ -1692,7 +1692,7 @@ module DeclarationMPI
                                 !
                                 allocate( model_parameter%paramGrid, source = param_grid )
                                 !
-                                !allocate( rScalar3D_SG_t :: model_parameter%cellCond )
+                                allocate( rScalar3D_SG_t :: model_parameter%cellCond )
                                 model_parameter%cellCond = unpackRScalarBuffer( param_grid, index )
                                 !
                             !class default
@@ -2077,7 +2077,7 @@ module DeclarationMPI
     subroutine allocateDataBuffer( data_handles )
         implicit none
         !
-        type( Dh_t ), pointer, dimension(:), intent( in ) :: data_handles
+        type( Dh_t ), dimension(:), intent( in ) :: data_handles
         !
         class( DataHandle_t ), allocatable :: data_handle
         !
@@ -2133,7 +2133,7 @@ module DeclarationMPI
     subroutine packDataBuffer( data_handles )
         implicit none
         !
-        type( Dh_t ), pointer, dimension(:), intent( in ) :: data_handles
+        type( Dh_t ), dimension(:), intent( in ) :: data_handles
         !
         class( DataHandle_t ), allocatable :: data_handle
         !
@@ -2194,15 +2194,13 @@ module DeclarationMPI
     function unpackDataBuffer() result( data_handles )
         implicit none
         !
-        type( Dh_t ), pointer, dimension(:) :: data_handles
+        type( Dh_t ), allocatable, dimension(:) :: data_handles
         !
         class( DataHandle_t ), allocatable :: data_handle
         !
         integer :: i, data_handles_code, data_handles_component, data_handles_dipole, index
         !
         index = 1
-        !
-        data_handles => null()
         !
         do i = 1, fwd_info%n_data
             !
@@ -2285,19 +2283,19 @@ module DeclarationMPI
     function receiveData() result( data_handles )
         implicit none
         !
-        type( Dh_t ), pointer, dimension(:) :: data_handles
+        type( Dh_t ), allocatable, dimension(:) :: data_handles
         !
         call createDataBuffer
         call MPI_RECV( predicted_data_buffer, predicted_data_buffer_size, MPI_PACKED, fwd_info%worker_rank, MPI_ANY_TAG, child_comm, MPI_STATUS_IGNORE, ierr )
         !
-        data_handles => unpackDataBuffer()
+        data_handles = unpackDataBuffer()
         !
     end function receiveData
     !
     ! SEND fwd_info FROM target_id
     subroutine sendData( data_handles )
         !
-        type( Dh_t ), pointer, dimension(:), intent( in ) :: data_handles
+        type( Dh_t ), dimension(:), intent( in ) :: data_handles
         !
         call packDataBuffer( data_handles )
         !

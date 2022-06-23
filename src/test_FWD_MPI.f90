@@ -138,8 +138,8 @@ contains
         ! Local variables
         integer :: i, worker_rank, tx_received, tx_index
         !
-        type( Dh_t ), pointer, dimension(:) :: worker_predicted_data
-        type( Dh_t ), pointer, dimension(:) :: all_predicted_data
+        type( Dh_t ), allocatable, dimension(:) :: worker_predicted_data
+        type( Dh_t ), allocatable, dimension(:) :: all_predicted_data
         !
         ! Verbosis
         write( *, * ) "    > Start forward modelling."
@@ -183,8 +183,6 @@ contains
         !
         call deallocateTransmitterArray()
         !
-        all_predicted_data => null()
-        !
         ! SEND 1 TRANSMITTER TO FIRST np WORKERS
         do while ( worker_rank <= ( mpi_size - 1 ) )
             !
@@ -207,7 +205,7 @@ contains
             !
             call receiveFromAny()
             !
-            worker_predicted_data => receiveData()
+            worker_predicted_data = receiveData()
             !
             do i = 1, size( worker_predicted_data )
                 call updateDataHandleArray( all_predicted_data, getDataHandle( worker_predicted_data, i ) )
@@ -233,7 +231,7 @@ contains
             !
             call receiveFromAny()
             !
-            worker_predicted_data => receiveData()
+            worker_predicted_data = receiveData()
             !
             do i = 1, size( worker_predicted_data )
                 call updateDataHandleArray( all_predicted_data, getDataHandle( worker_predicted_data, i ) )
@@ -323,7 +321,7 @@ contains
         !
         integer :: iRx, iDh
         type( TAirLayers ) :: air_layer
-        type( Dh_t ), pointer, dimension(:) :: tx_data_handles
+        type( Dh_t ), allocatable, dimension(:) :: tx_data_handles
         !
         !
         select type( main_grid )
@@ -381,8 +379,6 @@ contains
         !
         ! Solve Forward Modeling for this Transmitter
         call Tx%solveFWD()
-        !
-        tx_data_handles => null()
         !
         ! Loop for each Receiver related to this Transmitter
         do iRx = 1, size( Tx%receiver_indexes )
@@ -700,7 +696,7 @@ contains
     recursive subroutine sortByReceiverType( data_handle_array, first, last )
         implicit none
         !
-        type( Dh_t ), pointer, dimension(:), intent( inout ) :: data_handle_array
+        type( Dh_t ), dimension(:), intent( inout ) :: data_handle_array
         type( Dh_t ), allocatable :: x_Dh, t_Dh
         class( DataHandle_t ), allocatable :: i_data_handle, j_data_handle, x_data_handle
         integer first, last
@@ -743,7 +739,7 @@ contains
     recursive subroutine sortByPeriod( data_handle_array, first, last )
         implicit none
         !
-        type( Dh_t ), pointer, dimension(:), intent( inout ) :: data_handle_array
+        type( Dh_t ), dimension(:), intent( inout ) :: data_handle_array
         type( Dh_t ), allocatable :: x_Dh, t_Dh
         class( DataHandle_t ), allocatable :: i_data_handle, j_data_handle, x_data_handle
         integer first, last
@@ -786,7 +782,7 @@ contains
     recursive subroutine sortByReceiver( data_handle_array, first, last )
         implicit none
         !
-        type( Dh_t ), pointer, dimension(:), intent( inout ) :: data_handle_array
+        type( Dh_t ), dimension(:), intent( inout ) :: data_handle_array
         type( Dh_t ), allocatable :: x_Dh, t_Dh
         class( DataHandle_t ), allocatable :: i_data_handle, j_data_handle, x_data_handle
         integer first, last
@@ -829,7 +825,7 @@ contains
     subroutine writeDataHandleArray( data_handle_array )
         implicit none
         !
-        type( Dh_t ), pointer, dimension(:), intent( inout ) :: data_handle_array
+        type( Dh_t ), dimension(:), intent( inout ) :: data_handle_array
         !
         class( DataHandle_t ), allocatable :: Dh
         !
