@@ -7,7 +7,7 @@ module Solver
     !
     integer, parameter :: iter_per_div_corDefQMR = 40
     !
-    integer, parameter :: iter_per_div_corDefBCG = 80
+    integer, parameter :: iter_per_div_corDefBCG = 100
     !
     integer, parameter :: max_div_corDef = 20
     !
