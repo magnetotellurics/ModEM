@@ -82,6 +82,8 @@ Contains
       !   copy inGrid to mGrid :  do we really need a copy?
       call copy_grid(mGrid,inGrid)
 
+      write (*,'(a34,3i4,a2)') 'ModelDataInit: mGrid of size (',mGrid%nx,mGrid%ny,mGrid%nz,' )'
+
       !   set sparse matrices for curl (T) and grad (G)
       !    operator topolgies; these sparse matrices are stored
       !    in module spOpTopology

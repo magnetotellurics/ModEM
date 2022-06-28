@@ -375,6 +375,7 @@ Contains
     enddo
     grid%zEdge(grid%nz+1) = grid%zEdge(grid%nz+1)-grid%zAirThick+grid%oz
 
+    write (*,'(a34,3i4,a11)') 'Earth grid setup of size (',grid%nx,grid%ny,grid%nz,' ) complete'
     !write(*,*) 'The top of the air layers is at ', grid%zAirThick/1000,' km'
 
 
