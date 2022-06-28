@@ -71,6 +71,7 @@ logical, save, public   :: PRIMARY_E_FROM_FILE = .false.
 !=======================================================================
 !Mar. 13, 2011============== Special Variable added for CSEM calculation 
 !=======================================================================
+   type(rvector), save, private :: edgeCond ! Full conductivity (on edge)
    type(rvector), save, private :: condAnomaly ! Anomalous conductivity (on edge)
    type(cvector), save, private :: E_p,V_p         ! Primary field
    type(rvector), save :: condNomaly ! Nomalous conductivity (on edge)
@@ -285,9 +286,15 @@ end subroutine copyE0fromFile
    
    if (txDict(iTx)%Tx_type=='SFF') then
       ! compute sigma-sigma1D for the source... NOT PHYSICAL!
-      Call linComb_modelParam(ONE,sigma,MinusONE,sigmaPrimary,sigmaTemp)
+      !Call linComb_modelParam(ONE,sigma,MinusONE,sigmaPrimary,sigmaTemp)
       ! sigmaTemp is the anomalous conductivity, map it onto edges
-      Call ModelParamToEdge(sigmaTemp,condAnomaly)
+      !Call ModelParamToEdge(sigmaTemp,condAnomaly)
+      ! sigmaTemp is the anomalous conductivity, map it onto edges
+      Call ModelParamToEdge(sigma,edgeCond)
+      Call ModelParamToEdge(sigmaPrimary,condAnomaly)
+      ! compute sigma-sigma1D for the source... NOT PHYSICAL!
+      Call linComb_rvector(ONE,edgeCond,MinusONE,condAnomaly,condAnomaly)
+
       write(0,*) 'DEBUG size condAnomaly ',condAnomaly%nx,condAnomaly%ny,condAnomaly%nz
    end if
  
@@ -721,7 +728,7 @@ end if
 		   call FWDsolve3D(b0%b(iMode),omega,e0%pol(iMode))
 		   write (6,*)node_info,'FINISHED solve, nPol',e0%nPol
          ! now add primary field to secondary field
-         call add(E_p,e0%pol(1),e0%pol(1))
+         call add(E_p,e0%pol(iMode),e0%pol(iMode))
    	enddo
 
    elseif ((txDict(iTx)%Tx_type=='MT') .or. (txDict(iTx)%Tx_type=='TIDE')) then

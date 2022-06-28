@@ -18,7 +18,7 @@ perl fmkmf.pl -f90 ifort \
 -mpi '-cpp' \
 -o './objs/3D_MT/IFortDebug_JT' \
 -l '-lmkl_lapack95_ilp64 -lmkl_intel_ilp64 -lmkl_intel_thread -lmkl_core  -lpthread -qopenmp -parallel' \
--lp '/opt/intel/oneapi/mkl/latest/lib' \
+-lp '/opt/intel/oneapi/mkl/latest/lib -L/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/lib' \
 -p .:$INV_dir:LAPACK:SENS:UTILS:FIELDS/FiniteDiff3D:$EM_path_dir:$MT_path_dir \
 Mod3DMT.f90 > $1
 
@@ -29,7 +29,7 @@ perl fmkmf.pl -f90 ifort \
 -mpi '-cpp' \
 -o './objs/3D_MT/IFortRelease_JT' \
 -l '-lmkl_lapack95_ilp64 -lmkl_intel_ilp64 -lmkl_intel_thread -lmkl_core  -lpthread -qopenmp -parallel' \
--lp '/opt/intel/oneapi/mkl/latest/lib' \
+-lp '/opt/intel/oneapi/mkl/latest/lib -L/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/lib' \
 -p .:$INV_dir:LAPACK:SENS:UTILS:FIELDS/FiniteDiff3D:$EM_path_dir:$MT_path_dir \
 Mod3DMT.f90 > $1
 
@@ -40,7 +40,7 @@ perl fmkmf.pl -f90 ifort \
 -mpi '-cpp -DMPI' \
 -o './objs/3D_MT/IFortReleaseMPI_JT' \
 -l '-lmkl_lapack95_ilp64 -lmkl_intel_ilp64 -lmkl_intel_thread -lmkl_core  -lpthread -qopenmp -parallel' \
--lp '/opt/intel/oneapi/mkl/latest/lib' \
+-lp '/opt/intel/oneapi/mkl/latest/lib -L/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/lib' \
 -p .:MPI:$INV_dir:LAPACK:SENS:UTILS:FIELDS/FiniteDiff3D:$EM_path_dir:$MT_path_dir \
 Mod3DMT.f90 > $1
 fi
