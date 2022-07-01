@@ -384,6 +384,8 @@ contains
                          !
                  end select
                  !
+                 argument = ""
+                 !
             end do
             !
         end if
@@ -533,8 +535,8 @@ contains
                     !
                 end select
                 !
-				deallocate( data_handle )
-				!
+                deallocate( data_handle )
+                !
             enddo
             !
             close( ioPredData )

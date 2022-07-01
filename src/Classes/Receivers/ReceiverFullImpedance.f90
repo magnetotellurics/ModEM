@@ -41,7 +41,7 @@ contains
         !
         type( ReceiverFullImpedance_t ) :: self
         !
-        character(:), allocatable :: aux_str
+        integer :: i, asize
         !
         !write(*,*) "Constructor ReceiverFullImpedance_t"
         !
@@ -54,6 +54,16 @@ contains
         self%n_comp = 4
         self%is_complex = .TRUE.
         !
+        ! components required to get the full impedance evaluation vectors [Ex, Ey, Bx, By]
+        if( allocated( self%EHxy ) ) then
+            !
+            asize = size( self%EHxy )
+            do i = asize, 1, -(1)
+                deallocate( self%EHxy(i)%str )
+            enddo
+            deallocate( self%EHxy )
+            !
+        endif
         allocate( self%EHxy( 4 ) )
         !
         self%EHxy(1)%str = "Ex"
@@ -61,7 +71,16 @@ contains
         self%EHxy(3)%str = "Bx"
         self%EHxy(4)%str = "By"
         !
-        ! components required to get the full impdedance tensor self%response [Zxx, Zxy, Zyx, Zyy]
+        ! components required to get the full impedance tensor self%response [Zxx, Zxy, Zyx, Zyy]
+        if( allocated( self%comp_names ) ) then
+            !
+            asize = size( self%comp_names )
+            do i = asize, 1, -(1)
+                deallocate( self%comp_names(i)%str )
+            enddo
+            deallocate( self%comp_names )
+            !
+        endif
         allocate( self%comp_names( 4 ) )
         !
         self%comp_names(1)%str = "ZXX"

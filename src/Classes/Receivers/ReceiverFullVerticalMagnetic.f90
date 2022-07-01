@@ -43,7 +43,7 @@ contains
         !
         type( ReceiverFullVerticalMagnetic_t ) :: self
         !
-        character(:), allocatable :: aux_str
+        integer :: i, asize
         !
         !write(*,*) "Constructor ReceiverFullVerticalMagnetic_t"
         !
@@ -56,14 +56,32 @@ contains
         self%n_comp = 2
         self%is_complex = .TRUE.
         !
+        ! components required to get the full impedance evaluation vectors [Bx, By, Bz]
+        if( allocated( self%EHxy ) ) then
+            !
+            asize = size( self%EHxy )
+            do i = asize, 1, -(1)
+                deallocate( self%EHxy(i)%str )
+            enddo
+            deallocate( self%EHxy )
+            !
+        endif
         allocate( self%EHxy( 3 ) )
         !
-        ! components required to get the full impdence tensor self%response [Zxx, Zxy, Zyx, Zyy]
         self%EHxy(1)%str = "Bx"
         self%EHxy(2)%str = "By"
         self%EHxy(3)%str = "Bz"
         !
-        ! components required to get the full impdedance tensor self%response [Zxx, Zxy, Zyx, Zyy]
+        ! components required to get the full impedance tensor self%response [Tx, Ty]
+        if( allocated( self%comp_names ) ) then
+            !
+            asize = size( self%comp_names )
+            do i = asize, 1, -(1)
+                deallocate( self%comp_names(i)%str )
+            enddo
+            deallocate( self%comp_names )
+            !
+        endif
         allocate( self%comp_names( 2 ) )
         !
         self%comp_names(1)%str = "TX"

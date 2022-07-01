@@ -45,6 +45,8 @@ contains
         !
         type( ReceiverSingleField_t )    :: self
         !
+        integer :: i, asize
+        !
         ! write(*,*) "Constructor ReceiverSingleField_t"
         !
         call self%init()
@@ -57,10 +59,17 @@ contains
         self%n_comp = 1
         self%is_complex = .TRUE.
         !
-        !
+        ! components required to get the full impedance evaluation vectors [Ex, Ey, Bx, By]
+        if( allocated( self%EHxy ) ) then
+            !
+            asize = size( self%EHxy )
+            do i = asize, 1, -(1)
+                deallocate( self%EHxy(i)%str )
+            enddo
+            deallocate( self%EHxy )
+            !
+        endif
         allocate( self%EHxy( 1 ) )
-        !
-        ! components required to get the full impdence tensor self%response [Zxx, Zxy, Zyx, Zyy]
         !
         if( azimuth == 1.0 ) self%EHxy(1)%str = "Ex"
         if( azimuth == 2.0 ) self%EHxy(1)%str = "Ey"
@@ -68,6 +77,16 @@ contains
         if( azimuth == 4.0 ) self%EHxy(1)%str = "By"
         if( azimuth == 5.0 ) self%EHxy(1)%str = "Bz"
         !
+        ! components required to get the full impedance tensor self%response [Zxx, Zxy, Zyx, Zyy]
+        if( allocated( self%comp_names ) ) then
+            !
+            asize = size( self%comp_names )
+            do i = asize, 1, -(1)
+                deallocate( self%comp_names(i)%str )
+            enddo
+            deallocate( self%comp_names )
+            !
+        endif
         allocate( self%comp_names( 1 ) )
         !
         if( azimuth == 1.0 ) self%comp_names(1)%str = "Ex_Field"

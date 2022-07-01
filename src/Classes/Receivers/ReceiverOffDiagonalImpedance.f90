@@ -43,7 +43,7 @@ contains
         !
         type( ReceiverOffDiagonalImpedance_t ) :: self
         !
-        character(:), allocatable :: aux_str
+        integer :: i, asize
         !
         ! write(*,*) "Constructor ReceiverOffDiagonalImpedance_t"
         !
@@ -56,9 +56,18 @@ contains
         self%n_comp = 4
         self%is_complex = .TRUE.
         !
+        ! components required to get the full impedance evaluation vectors [Ex, Ey, Bx, By]
+        if( allocated( self%EHxy ) ) then
+            !
+            asize = size( self%EHxy )
+            do i = asize, 1, -(1)
+                deallocate( self%EHxy(i)%str )
+            enddo
+            deallocate( self%EHxy )
+            !
+        endif
         allocate( self%EHxy( 4 ) )
         !
-        ! components required to get the full impdence tensor self%response [Zxx, Zxy, Zyx, Zyy]
         self%EHxy(1)%str = "Ex"
         self%EHxy(2)%str = "Ey"
         self%EHxy(3)%str = "Bx"

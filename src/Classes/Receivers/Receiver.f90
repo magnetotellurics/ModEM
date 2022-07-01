@@ -16,19 +16,19 @@ module Receiver
     !
     type, abstract :: Receiver_t
         !
-        integer                   :: id, rx_type, n_comp
+        integer :: id, rx_type, n_comp
         !
         character(:), allocatable :: code
         !
-        real( kind=prec ), dimension(3)         :: location
+        real( kind=prec ), dimension(3) :: location
         !
-        logical                   :: is_complex, interpolation_set
+        logical :: is_complex, interpolation_set
         !
         type( String_t ), allocatable, dimension(:) :: EHxy, comp_names
         !
         complex( kind=prec ), allocatable, dimension(:) :: response
         !
-        type( cSparseVector3D_SG_t )   :: Lex, Ley, Lez, Lbx, Lby, Lbz
+        type( cSparseVector3D_SG_t ) :: Lex, Ley, Lez, Lbx, Lby, Lbz
         !
         type( Dh_t ), allocatable, dimension(:) :: predicted_data
         !
