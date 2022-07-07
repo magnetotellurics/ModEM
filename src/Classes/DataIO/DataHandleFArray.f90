@@ -106,7 +106,7 @@ contains
             deallocate( alloc_dh )
         end do
         !
-        deallocate( data_handle_array )
+        if( allocated( data_handle_array ) ) deallocate( data_handle_array )
         !
     end subroutine deallocateDataHandleArray
     !

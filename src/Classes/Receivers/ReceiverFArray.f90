@@ -101,7 +101,7 @@ contains
             if( associated( alloc_rx ) ) nullify( alloc_rx )
         end do
         !
-        deallocate( receivers )
+        if( allocated( receivers ) ) deallocate( receivers )
         !
     end subroutine deallocateReceiverArray
     !

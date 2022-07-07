@@ -41,7 +41,7 @@ contains
         type( Tx_t ), allocatable               :: temp_tx
         !
         if( .NOT. allocated( transmitters ) ) then
-            allocate( transmitters( 1 ) )
+            allocate( transmitters(1) )
             allocate( Tx_t :: temp_tx )
             temp_tx%Tx = new_tx
             temp_tx%Tx%id = 1
@@ -76,6 +76,7 @@ contains
     end subroutine updateTransmitterArray
     !
     function getTransmitter( iTx ) result( tx )
+        implicit none
         !
         integer                         :: iTx
         !
@@ -87,6 +88,8 @@ contains
     !
     !
     subroutine deallocateTransmitterArray()
+      implicit none
+        !
         integer                :: ntx, itx
         class( Tx_t ), pointer :: alloc_tx
         !
@@ -98,13 +101,15 @@ contains
             if( associated( alloc_tx ) ) nullify( alloc_tx )
         end do
         !
-        deallocate( transmitters )
+        !if( allocated( transmitters ) ) deallocate( transmitters )
         !
     end subroutine deallocateTransmitterArray
     !
     ! Prints the content of the transmitters on screen
     subroutine printTransmitterArray()
-        integer                    :: itx
+      implicit none
+        !
+        integer                :: itx
         class( Tx_t ), pointer :: alloc_tx
         !
         print *, size( transmitters ), " TransmitterFArray_t:"

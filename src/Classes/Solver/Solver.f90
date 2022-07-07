@@ -15,7 +15,7 @@ module Solver
     !
     real( kind=prec ), parameter :: tolDivCorDef = 1E-5
     !
-    real( kind=prec ), parameter :: tolCurlCurlDef = 1E-7
+    real( kind=prec ), parameter :: tolCurlCurlDef = 1E-3
     !
     !
     character(:), allocatable :: solver_type

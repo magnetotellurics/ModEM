@@ -51,6 +51,9 @@ program ModEM
     ! Execute the modem_job
     call handleJob()
     !
+    ! Deallocate remaining main program memory
+    call garbageCollector()
+    !
     write ( *, * )
     write ( *, * ) "Finish ModEM-OO."
     write ( *, * )
@@ -162,6 +165,8 @@ contains
             deallocate( Tx )
             !
         enddo
+        !
+        call deallocateTransmitterArray()
         !
         deallocate( forward_solver )
         !
@@ -421,6 +426,22 @@ contains
         !
     end subroutine setupDefaultParameters
     !
+    subroutine garbageCollector()
+        implicit none
+        !
+        if( allocated( forward_solver_type ) ) deallocate( forward_solver_type )
+        if( allocated( source_type ) ) deallocate( source_type )
+        if( allocated( model_method ) ) deallocate( model_method )
+          if( allocated( get_1D_from ) ) deallocate( get_1D_from )
+        if( allocated( predicted_data_file_name ) ) deallocate( predicted_data_file_name )
+        if( allocated( e_solution_file_name ) ) deallocate( e_solution_file_name )
+        !
+        if( allocated( control_file_name ) ) deallocate( control_file_name )
+        if( allocated( model_file_name ) ) deallocate( model_file_name )
+        if( allocated( data_file_name ) ) deallocate( data_file_name )
+        if( allocated( modem_job ) ) deallocate( modem_job )
+        !
+    end subroutine garbageCollector
     subroutine writeEsolutionHeader( nTx, nMode )
         implicit none
         !
@@ -435,6 +456,7 @@ contains
         !
         if( ios /= 0 ) then
             write( *, * ) "Error opening file in FileWriteInit: e_solution"
+            stop
         else
             !
             write( ioESolution ) version, nTx, nMode, &
@@ -502,7 +524,7 @@ contains
         !
         class( DataHandle_t ), allocatable :: data_handle
         !
-        integer :: receiver_type, i, j, ios
+        integer :: receiver_type, i, array_size, ios
         !
         ! Order by receiver
         !call sortByReceiver( data_handle_array, 1, size( data_handle_array ) )
@@ -513,7 +535,9 @@ contains
         !
         if( ios == 0 ) then
             !
-            do i = 1, size( data_handle_array )
+            array_size = size( data_handle_array )
+            !
+            do i = 1, array_size
                 !
                 allocate( data_handle, source = getDataHandle( data_handle_array, i ) )
                 !
@@ -542,7 +566,8 @@ contains
             close( ioPredData )
             !
         else
-           stop "Error opening predicted_data.dat in writeDataHandleArray"
+            write( *, * ) "Error opening [", predicted_data_file_name, "] in writeDataHandleArray"
+            stop
         end if
         !
     end subroutine writeDataHandleArray

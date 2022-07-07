@@ -40,7 +40,6 @@ module rVector
         !
         procedure( interface_sub1_r_vector ), deferred, public :: sub1
         generic :: sub => sub1
-        generic :: operator(-) => sub1
         !
         procedure( interface_mult1_r_vector ), deferred, public :: mult1
         procedure( interface_mult2_r_vector ), deferred, public, pass( self ) :: mult2    
@@ -197,11 +196,11 @@ module rVector
             class( rVector_t ), allocatable  :: Eout
         end function interface_add1_r_vector
         !
-        function interface_sub1_r_vector( lhs, rhs ) result( Eout )
+        subroutine interface_sub1_r_vector( lhs, rhs )
             import :: rVector_t
-            class( rVector_t ), intent( in ) :: lhs, rhs
-            class( rVector_t ), allocatable  :: Eout
-        end function interface_sub1_r_vector
+            class( rVector_t ), intent( inout ) :: lhs
+            class( rVector_t ), intent( in )    :: rhs
+        end subroutine interface_sub1_r_vector
         !
         subroutine interface_mult1_r_vector( self, rhs )
             import :: rVector_t

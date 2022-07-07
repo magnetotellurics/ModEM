@@ -440,7 +440,8 @@ contains
                 call model_parameter%PDEmapping( model_param_map )
                 call amodel%PDEmapping( amodel_map )
                 !
-                self%CondAnomaly_h = model_param_map - amodel_map
+                self%CondAnomaly_h = model_param_map
+                call self%CondAnomaly_h%sub( amodel_map )
                 !
         end select
         !
