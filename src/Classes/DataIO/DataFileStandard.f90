@@ -15,8 +15,8 @@ module DataFileStandard
     !
     type, extends( DataFile_t ) :: DataFileStandard_t
         !
-        integer :: line_counter
-        !
+		!
+		!
     contains
         !
         final :: DataFileStandard_dtor
@@ -26,8 +26,6 @@ module DataFileStandard
     interface DataFileStandard_t
         module procedure DataFileStandard_ctor
     end interface DataFileStandard_t
-    !
-    public :: getLineNumber
     !
 contains
     !
@@ -53,7 +51,6 @@ contains
         !
         call self%init()
         !
-        self%line_counter = 0
         self%fine_name = fname
         !
         call Compact( fname )
@@ -63,9 +60,6 @@ contains
         if( io_stat /= 0 ) then
             write(*,*) 'Unable to open [', fname, '], Stat: ', io_stat
         else
-            self%line_counter = getLineNumber( funit )
-            !
-            rewind( funit )
             !
             header_counter = 0
             mt_counter = 0
@@ -243,31 +237,5 @@ contains
         call self%dealloc()
         !
     end subroutine DataFileStandard_dtor
-    !
-    ! Return the number of lines of a given file
-    function getLineNumber( funit ) result( line_counter )
-        implicit none
-        !
-        integer, intent( in ) :: funit
-        !
-        integer                    :: line_counter
-        character(80)            :: line_text
-        !
-        line_counter = 0
-        !
-        rewind( funit )
-        !
-        do
-            read( funit, "(a)", END = 10 ) line_text
-            line_text = adjustl( line_text )
-            if( index( line_text, "#" ).eq.0 ) then
-                !
-                line_counter = line_counter + 1
-            end if
-        end do
-        !
-10     return
-        !
-    end function getLineNumber
-    !
+	!
 end module DataFileStandard

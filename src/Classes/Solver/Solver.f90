@@ -13,9 +13,9 @@ module Solver
     !
     integer, parameter :: max_iterDivCorDef = 100
     !
-    real( kind=prec ), parameter :: tolDivCorDef = 1E-5
+    real( kind=prec ), parameter :: tolDivCorDef = 1E-2
     !
-    real( kind=prec ), parameter :: tolCurlCurlDef = 1E-3
+    real( kind=prec ), parameter :: tolCurlCurlDef = 1E-1
     !
     !
     character(:), allocatable :: solver_type

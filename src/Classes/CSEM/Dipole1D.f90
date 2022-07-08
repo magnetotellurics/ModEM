@@ -1807,7 +1807,6 @@ subroutine legendre_compute_dr ( order, xtab, weight )
          
     end select  ! case (trim(outputdomain1D))
     
-    
     end subroutine initialize_dipole1d  
 
 !==============================================================================!
@@ -1847,9 +1846,9 @@ subroutine legendre_compute_dr ( order, xtab, weight )
     if (iTxlayer.eq.nlay1D) then
         heightTx = 1d150 ! large value allows for zeroing source term if in bottom layer
     else
-        heightTx = zlay1D(iTxlayer+1) - zTx1D;   
+        heightTx = zlay1D(iTxlayer+1) - zTx1D;
     endif  
-    
+	
     end subroutine initialize_Tx
 
 !==============================================================================!
@@ -2023,7 +2022,6 @@ subroutine legendre_compute_dr ( order, xtab, weight )
     ! write(*,*) 'lved,lhed: ',lved,lhed
     ! write(*,*) 'h: ',h
     ! write(*,*) 'isgnsrc, isgndsrcdz:',isgnsrc, isgndsrcdz
-        
         
     end subroutine setupsite    
     
@@ -4457,7 +4455,7 @@ subroutine legendre_compute_dr ( order, xtab, weight )
 ! Deallocate:
 !
     deallocate( ilayersInterp  ) 
-     
+	
     end subroutine PreComputePotCoeffs
     
 !==============================================================================!

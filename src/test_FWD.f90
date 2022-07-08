@@ -161,9 +161,6 @@ contains
                 !
             enddo
             !
-            ! Clears the memory used by the current Transmitter (Mainly Esolution cVector)
-            deallocate( Tx )
-            !
         enddo
         !
         call deallocateTransmitterArray()

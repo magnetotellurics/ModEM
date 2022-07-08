@@ -128,6 +128,8 @@ contains
         !
         call self%create_Ep_from_Dipole1D( self%model_parameter%grid )
         !
+        deallocate( zlay1D )
+        !
         call self%setRHS
         !
     end subroutine setE_CSEM_Dipole1D
@@ -316,10 +318,10 @@ contains
                 nzEarth = sigma_cell%grid%nzEarth
                 nzAir = sigma_cell%grid%nzAir
 
-                ixTx= minNode(xTx1D, sigma_cell%grid%xEdge)  
-                iyTx= minNode(yTx1D, sigma_cell%grid%yEdge)
+                ixTx = minNode( xTx1D, sigma_cell%grid%xEdge )
+                iyTx = minNode( yTx1D, sigma_cell%grid%yEdge )
                 !
-                if(allocated(zlay1D)) deallocate(zlay1D, sig1D)
+                if( allocated( zlay1D ) ) deallocate( zlay1D, sig1D )
                 !
                 allocate( zlay1D(nlay1D) )
                 allocate( sig1D(nlay1D) )

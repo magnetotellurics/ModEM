@@ -13,6 +13,13 @@ module Grid
     character ( len=12 ), parameter :: GRID_SG = "StandardGrid"
     character ( len=19 ), parameter :: GRID_MR = "MultiresolutionGrid"
     !
+    character(:), allocatable :: model_method
+    character ( len=12 ), parameter :: MM_METHOD_FIXED_H = "fixed height"
+    character ( len=6 ), parameter  :: MM_METHOD_MIRROR  = "mirror"
+    !
+    integer :: model_n_air_layer
+    real( kind=prec ) :: model_max_height
+    !
     type, abstract :: Grid_t
         !
         character( len=80 ) :: geometry

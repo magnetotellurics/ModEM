@@ -202,12 +202,38 @@ contains
                     end select
                 !
                 class default
-                    stop "FUDEU"
+                    stop "DataFile.f90 > loadReceiversAndTransmitters > unclassified Transmitter"
                 !
             end select
             !
         enddo
         !
     end subroutine loadReceiversAndTransmitters
+    !
+    ! Return the number of lines of a given file
+    function getLineNumber( funit ) result( line_counter )
+        implicit none
+        !
+        integer, intent( in ) :: funit
+        !
+        integer :: line_counter
+        character(80) :: line_text
+        !
+        line_counter = 0
+        !
+        rewind( funit )
+        !
+        do
+            read( funit, "(a)", END = 10 ) line_text
+            line_text = adjustl( line_text )
+            if( index( line_text, "#" ).eq.0 ) then
+                !
+                line_counter = line_counter + 1
+            end if
+        end do
+        !
+10     return
+        !
+    end function getLineNumber
     !
 end module DataFile

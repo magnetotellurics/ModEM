@@ -88,7 +88,7 @@ contains
     !
     !
     subroutine deallocateTransmitterArray()
-      implicit none
+        implicit none
         !
         integer                :: ntx, itx
         class( Tx_t ), pointer :: alloc_tx
@@ -96,18 +96,22 @@ contains
         !write( *, * ) "deallocateTransmitterArray:", size( transmitters )
         !
         ntx = size( transmitters )
-        do itx = ntx, 1, -(1)
-            alloc_tx => transmitters( itx )
-            if( associated( alloc_tx ) ) nullify( alloc_tx )
-        end do
         !
-        !if( allocated( transmitters ) ) deallocate( transmitters )
+        if( ntx == 1 ) then
+            deallocate( transmitters(1)%Tx )
+        else
+            do itx = ntx, 1, -(1)
+                deallocate( transmitters( itx )%Tx )
+            end do
+        endif
+        !
+        deallocate( transmitters )
         !
     end subroutine deallocateTransmitterArray
     !
     ! Prints the content of the transmitters on screen
     subroutine printTransmitterArray()
-      implicit none
+        implicit none
         !
         integer                :: itx
         class( Tx_t ), pointer :: alloc_tx

@@ -90,18 +90,23 @@ contains
     !
     !
     subroutine deallocateReceiverArray()
-        integer                :: nrx, irx
-        class( Rx_t ), pointer :: alloc_rx
+        implicit none
+        !
+        integer :: nrx, irx
         !
         !write( *, * ) "deallocateReceiverArray:", size( receivers )
         !
         nrx = size( receivers )
-        do irx = nrx, 1, -(1)
-            alloc_rx => receivers( irx )
-            if( associated( alloc_rx ) ) nullify( alloc_rx )
-        end do
         !
-        if( allocated( receivers ) ) deallocate( receivers )
+        if( nrx == 1 ) then
+            deallocate( receivers(1)%Rx )
+        else
+            do irx = nrx, 1, -(1)
+                deallocate( receivers(irx)%Rx )
+            end do
+        endif
+        !
+        deallocate( receivers )
         !
     end subroutine deallocateReceiverArray
     !

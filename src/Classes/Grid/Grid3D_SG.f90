@@ -8,11 +8,12 @@ module Grid3D_SG
     use Grid
     use Grid1D
     use Grid2D
+    use ModEMControlFile
     !
     type, extends( Grid_t ) :: Grid3D_SG_t
         !
-		!
-		!
+        !
+        !
         contains
             !
             final :: Grid3D_SG_dtor
@@ -57,13 +58,11 @@ module Grid3D_SG
     !         in the driver program!)
     !*
     type :: TAirLayers
-         character( len=80 ) :: method = "fixed height"
-         integer            :: nz = 10
-         real( kind=8 )     :: maxHeight = 200.0
-         real( kind=8 )     :: minTopDz = 100.0
-         real( kind=8 )     :: alpha = 3.
-         real( kind=8 ), pointer :: dz(:)
-         logical                 :: allocated = .FALSE.
+         character(:), allocatable :: method
+         integer :: nz
+         real( kind=prec ) :: maxHeight, minTopDz, alpha
+         real( kind=prec ), allocatable, dimension(:) :: dz
+         logical :: is_allocated
     end type TAirLayers
     !
     interface Grid3D_SG_t
@@ -157,7 +156,7 @@ contains
         !
         integer :: nx, ny, nz
         !
-        if ( self%is_allocated ) call self%dealloc()
+        if( self%is_allocated ) call self%dealloc()
         !
         nx = self%nx
         ny = self%ny
@@ -207,7 +206,7 @@ contains
         !
         class( Grid3D_SG_t ), intent(inout) :: self
         !
-        if ( .NOT. self%is_allocated ) return
+        if( .NOT. self%is_allocated ) return
 
         deallocate(self%dx)
         deallocate(self%dy)
@@ -257,7 +256,7 @@ contains
         !
         call self%GetOrigin( ox, oy, oz )
         !
-        if (present(origin) ) then
+        if(present(origin) ) then
             !
             ox = origin(1)
             oy = origin(2)
@@ -363,8 +362,8 @@ contains
         implicit none
         !
         class( Grid3D_SG_t ), intent( inout ) :: self
-        type( TAirLayers ), intent( inout ) :: airlayers
-        character(*), intent( in ), optional :: method
+        type( TAirLayers ), intent( inout )   :: airlayers
+        character(:), allocatable, intent( in ), optional :: method
         integer, intent( in ), optional :: nzAir
         real( kind=prec ), intent( in ), optional :: maxHeight, minTopDz, alpha
         real( kind=prec ), intent( in ), optional, pointer :: dzAir
@@ -373,36 +372,47 @@ contains
         integer :: status
         real( kind=prec ) :: z1Log, dlogz, zLog, height1, height2
         !
-        if (present(method) ) then
-             airlayers%method = method
+        airLayers%is_allocated = .FALSE.
+        !
+        if( present( method ) ) then
+            airlayers%method = method
+        else
+            airlayers%method = "fixed height"
+        end if
+        !
+        if( present( nzAir ) ) then
+            airlayers%nz = nzAir
+        else
+            airlayers%nz = model_n_air_layer
+        end if
+        !
+        if( .NOT. ( index( airLayers%method, "read from file" ) > 0 ) ) then
+            if( airLayers%is_allocated ) then
+                deallocate( airlayers%dz )
+            end if
+            allocate( airLayers%dz( airLayers%nz ) )
+            airLayers%is_allocated = .TRUE.
+        end if
+        !
+        if( present( maxHeight ) ) then
+            airLayers%maxHeight = 1000. * maxHeight
+        else
+            airLayers%maxHeight = model_max_height
         end if
         
-        if (present(nzAir) ) then
-             airlayers%nz = nzAir
+        if( present( minTopDz ) ) then
+            airLayers%minTopDz = 1000. * minTopDz
+        else
+            airLayers%minTopDz = 100.0
         end if
         
-        if (.NOT.(index(airLayers%method, "read from file") > 0) ) then
-             if (airLayers%allocated) then
-                    deallocate(airlayers%dz, STAT = status)
-             end if
-             allocate(airLayers%dz(airLayers%nz), STAT = status)
-             airLayers%allocated = .TRUE.
+        if( present( alpha ) ) then
+            airLayers%alpha = alpha
+        else
+            airLayers%alpha = 3.
         end if
         
-        if (present(maxHeight) ) then
-             airLayers%maxHeight = 1000.*maxHeight
-             write(*,*) airLayers%maxHeight
-        end if
-        
-        if (present(minTopDz) ) then
-             airLayers%minTopDz = 1000.*minTopDz
-        end if
-        
-        if (present(alpha) ) then
-             airLayers%alpha = alpha
-        end if
-        
-        if (index(airLayers%method, "mirror") > 0) then
+        if(index(airLayers%method, "mirror") > 0) then
              !**
              ! Following is Kush"s approach to setting air layers:
              ! mirror imaging the dz values in the air layer with respect to
@@ -416,11 +426,11 @@ contains
              end do
              
              ! The topmost air layer has to be at least 30 km
-             if (airLayers%dz(1).lt.airLayers%minTopDz) then
+             if(airLayers%dz(1).lt.airLayers%minTopDz) then
                     airLayers%dz(1) = airLayers%minTopDz
              end if
              
-        else if (index(airLayers%method, "fixed height") > 0) then 
+        else if(index(airLayers%method, "fixed height") > 0) then 
              write(*,*) "using fixed height method"
              z1Log = log10(self%dz(self%nzAir + 1) )
              dlogz = (log10(airLayers%maxHeight) - z1Log)/(airLayers%nz-1)
@@ -434,19 +444,19 @@ contains
                     height1 = height2
              end do
              
-        else if (index(airLayers%method, "read from file") > 0) then
-             !**
-             ! Air layers have been read from file and are
-             ! already stored in Dz, so only need to reallocate
-             ! if passing a new array to it.
-             !*
-             if (present(dzAir) ) then
-                    if (airLayers%allocated) then
-                         deallocate(airLayers%dz, STAT = status)
-                    end if
-                    allocate(airLayers%dz(airLayers%nz), STAT = status)
-                    airLayers%dz = dzAir
-             end if
+        else if(index(airLayers%method, "read from file") > 0) then
+            !**
+            ! Air layers have been read from file and are
+            ! already stored in Dz, so only need to reallocate
+            ! if passing a new array to it.
+            !*
+            if( present(dzAir) ) then
+                if( airLayers%is_allocated) then
+                     deallocate( airLayers%dz )
+                end if
+                allocate( airLayers%dz(airLayers%nz) )
+                airLayers%dz = dzAir
+            end if
         end if
         
         write(*, *) "INFO:Grid3D_SG_t:SetupAirLayers: "
@@ -490,7 +500,7 @@ contains
         real( kind=prec ) :: rotDeg_old
         character(len = 80) :: geometry_old
         
-        if (.NOT.self%is_allocated) then
+        if(.NOT.self%is_allocated) then
              write(*, *) "ERROR:Grid3D_SG_t:UpdateAirLayers"
              stop "    Grid not allocated."
         end if
@@ -549,13 +559,13 @@ contains
         class( Grid3D_SG_t ), intent(inout) :: self
         real( kind=prec ) , dimension(:), intent( in ) :: dx, dy, dz
 
-        if (.NOT.self%IsAllocated() ) then
+        if(.NOT.self%IsAllocated() ) then
              write(*, *) "ERROR:Grid3D_SG_t:SetCellSizes:"
              stop "    Grid not allocated."
         end if
 
         ! Check dimensions
-        if ((size(dx).ne.size(self%dx) ).or.&
+        if((size(dx).ne.size(self%dx) ).or.&
                  (size(dy).ne.size(self%dy) ).or.&
                  (size(dz).ne.size(self%dz) )) then
              write(*, *) "ERROR:Grid3D_SG_t:SetCellSizes:"
@@ -574,13 +584,13 @@ contains
         class( Grid3D_SG_t ), intent( in ) :: self
         real( kind=prec ) , intent( out )  :: dx(:), dy(:), dz(:)
         !
-        if (.NOT.self%IsAllocated() ) then
+        if(.NOT.self%IsAllocated() ) then
              write(*, *) "ERROR:Grid3D_SG_t:GetCellSizes:"
              stop "    Grid not allocated."
         end if
         !
         ! Check dimensions
-        if ((size(dx).ne.size(self%dx) ).or.&
+        if((size(dx).ne.size(self%dx) ).or.&
                  (size(dy).ne.size(self%dy) ).or.&
                  (size(dz).ne.size(self%dz) )) then
              write(*, *) "ERROR:Grid3D_SG_t:GetCellSizes:"
@@ -674,15 +684,15 @@ contains
         call self%Limits(nodeType, nx, ny, nz)
         nVec = size(indVec)
         
-        if (nVec.ne.size(i) ) then
+        if(nVec.ne.size(i) ) then
              stop "Size of 'ind_vec' and 'i' do not agree."
         end if
         
-        if (nVec.ne.size(j) ) then
+        if(nVec.ne.size(j) ) then
              stop "Size of 'ind_vec' and 'j' do not agree."
         end if
         
-        if (nVec.ne.size(k) ) then
+        if(nVec.ne.size(k) ) then
              stop "Size of 'ind_vec' and 'k' do not agree."
         end if
         
@@ -723,15 +733,15 @@ contains
         
         nVec = size(indVec)
         
-        if (nVec.ne.size (i) ) then
+        if(nVec.ne.size (i) ) then
              stop "Size of 'ind_vec' and 'i' do not agree."
         end if
         
-        if (nVec.ne.size (J) ) then
+        if(nVec.ne.size (J) ) then
              stop "Size of 'ind_vec' and 'j' do not agree."
         end if
         
-        if (nVec.ne.size (K) ) then
+        if(nVec.ne.size (K) ) then
              stop "Size of 'ind_cec' and 'k' do not agree."
         end if
         

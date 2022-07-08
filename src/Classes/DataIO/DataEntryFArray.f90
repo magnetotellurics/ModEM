@@ -111,16 +111,19 @@ contains
         !
         type( De_t ), allocatable, dimension(:), intent( inout ) :: data_entry_array
         !
-        integer                    :: nDe, iDe
-        class( De_t ), allocatable :: alloc_De
+        integer :: nDe, iDe
         !
         !write( *, * ) "deallocateDataEntryArray:", size( data_entry_array )
         !
         nDe = size( data_entry_array )
-        do iDe = nDe, 1, -(1)
-            alloc_De = data_entry_array( iDe )
-            deallocate( alloc_De )
-        end do
+        !
+        if( nDe == 1 ) then
+            deallocate( data_entry_array(1)%De )
+        else
+            do iDe = nDe, 1, -(1)
+                deallocate( data_entry_array( iDe )%De )
+            end do
+        endif
         !
         deallocate( data_entry_array )
         !

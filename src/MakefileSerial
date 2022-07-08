@@ -127,10 +127,10 @@ $(OBJDIR)/Solver.o:Classes/Solver/Solver.f90 $(OBJDIR)/Constants.o $(OBJDIR)/cVe
 $(OBJDIR)/ForwardSolver.o:Classes/ForwardSolver/ForwardSolver.f90 $(OBJDIR)/Constants.o $(OBJDIR)/cVector.o $(OBJDIR)/Source.o $(OBJDIR)/ModelParameter.o $(OBJDIR)/Solver.o 
 	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) Classes/ForwardSolver/ForwardSolver.f90 -o $(OBJDIR)/ForwardSolver.o
 
-$(OBJDIR)/ModEMControlFile.o:./ModEMControlFile.f90 $(OBJDIR)/Constants.o $(OBJDIR)/String.o $(OBJDIR)/Grid.o $(OBJDIR)/ForwardSolver.o $(OBJDIR)/Solver.o $(OBJDIR)/Source.o $(OBJDIR)/ModelParameter.o 
+$(OBJDIR)/ModEMControlFile.o:./ModEMControlFile.f90 $(OBJDIR)/Constants.o $(OBJDIR)/String.o $(OBJDIR)/Grid.o $(OBJDIR)/ForwardSolver.o $(OBJDIR)/Solver.o $(OBJDIR)/Source.o 
 	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) ./ModEMControlFile.f90 -o $(OBJDIR)/ModEMControlFile.o
 
-$(OBJDIR)/Grid3D_SG.o:Classes/Grid/Grid3D_SG.f90 $(OBJDIR)/Constants.o $(OBJDIR)/Grid.o $(OBJDIR)/Grid1D.o $(OBJDIR)/Grid2D.o 
+$(OBJDIR)/Grid3D_SG.o:Classes/Grid/Grid3D_SG.f90 $(OBJDIR)/Constants.o $(OBJDIR)/Grid.o $(OBJDIR)/Grid1D.o $(OBJDIR)/Grid2D.o $(OBJDIR)/ModEMControlFile.o 
 	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) Classes/Grid/Grid3D_SG.f90 -o $(OBJDIR)/Grid3D_SG.o
 
 $(OBJDIR)/ModelReader.o:Classes/ModelParameter/ModelReader.f90 $(OBJDIR)/Grid.o $(OBJDIR)/ModelParameter.o 

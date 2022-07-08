@@ -28,7 +28,7 @@ module Receiver
         !
         complex( kind=prec ), allocatable, dimension(:) :: response
         !
-        type( cSparseVector3D_SG_t ) :: Lex, Ley, Lez, Lbx, Lby, Lbz
+        type( cSparseVector3D_SG_t ), allocatable :: Lex, Ley, Lez, Lbx, Lby, Lbz
         !
         type( Dh_t ), allocatable, dimension(:) :: predicted_data
         !
@@ -160,6 +160,14 @@ contains
         !
         if( allocated( self%predicted_data ) ) call deallocateDataHandleArray( self%predicted_data )
         !
+        if( allocated( self%Lex ) ) deallocate( self%Lex )
+		if( allocated( self%Ley ) ) deallocate( self%Ley )
+		if( allocated( self%Lez ) ) deallocate( self%Lez )
+		!
+		if( allocated( self%Lbx ) ) deallocate( self%Lbx )
+		if( allocated( self%Lbx ) ) deallocate( self%Lbx )
+		if( allocated( self%Lbz ) ) deallocate( self%Lbz )
+		!
     end subroutine deallocateRx
     !
     subroutine evaluationFunctionRx( self, model_operator )

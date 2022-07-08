@@ -95,18 +95,21 @@ contains
         !
         type( Dh_t ), allocatable, dimension(:), intent( inout ) :: data_handle_array
         !
-        integer                    :: ndh, idh
-        class( Dh_t ), allocatable :: alloc_dh
+        integer :: ndh, idh
         !
         !write( *, * ) "deallocateDataHandleArray:", size( data_handle_array )
         !
         ndh = size( data_handle_array )
-        do idh = ndh, 1, -(1)
-            alloc_dh = data_handle_array( idh )
-            deallocate( alloc_dh )
-        end do
         !
-        if( allocated( data_handle_array ) ) deallocate( data_handle_array )
+        if( ndh == 1 ) then
+            deallocate( data_handle_array(1)%Dh )
+        else
+            do idh = ndh, 1, -(1)
+                deallocate( data_handle_array( idh )%Dh )
+            end do
+        endif
+        !
+        deallocate( data_handle_array )
         !
     end subroutine deallocateDataHandleArray
     !
