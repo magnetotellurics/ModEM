@@ -13,7 +13,7 @@ module DataHandle
         integer                   :: rx_type
         character(:), allocatable :: code, component
         real( kind=prec )         :: period, rx_location(3)
-        real( kind=prec )         :: real, imaginary
+        real( kind=prec )         :: rvalue, imaginary
         !
     end type DataHandle_t
     !

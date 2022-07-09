@@ -69,6 +69,8 @@ contains
         !
         allocate( self%relErr( max_iter ) )
         !
+        self%relErr = 0.0
+        !
         self%tolerance = tolerance
         !
     end subroutine setParametersSolver

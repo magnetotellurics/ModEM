@@ -102,7 +102,7 @@ contains
         real( kind=prec ),intent( in ), dimension( nLayers ) :: h
         real( kind=prec ),intent( in ), dimension( nLayers ) :: sigma
         !
-        integer     :: NzAir
+        integer :: NzAir
         !
         NzAir = 0
         self%ParamGrid = Grid1D_t( NzAir, nLayers, h )

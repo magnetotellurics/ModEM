@@ -59,9 +59,9 @@ contains
         !
         !write(*,*) "Constructor Grid1D"
         !
-        self%nz = 0.0
-        self%nzAir = 0.0
-        self%nzEarth = 0.0
+        self%nz = 0
+        self%nzAir = 0
+        self%nzEarth = 0
         self%zAirThick = 0.0
         !
         self%is_allocated = .FALSE.
@@ -89,14 +89,10 @@ contains
         class( Grid1D_t ), intent( inout ) :: self
         integer, intent( in )             :: nzAir, nzEarth
         !
-        integer :: nz
-        !
-        nz = nzEarth + nzAir
-        !
         self%nzAir = nzAir
         self%nzEarth = nzEarth
         !
-        self%nz = nz
+        self%nz = nzEarth + nzAir
         !
         call self%allocate()
         !

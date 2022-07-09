@@ -70,7 +70,7 @@ module Grid3D_SG
     end interface Grid3D_SG_t
     !
 contains
-    function Slice1DGrid3D_SG(self) result(g1D)
+    function Slice1DGrid3D_SG(self) result( g1D )
         implicit none
         !
         class( Grid3D_SG_t ), intent( in ) :: self
@@ -101,7 +101,7 @@ contains
         !
         integer, intent( in ) :: nx, ny, nzAir, nzEarth
         real( kind=prec ), dimension(:), intent( in ) :: dx, dy, dz
-        ! Local variables
+        !
         type( Grid3D_SG_t ) :: self
         !
         !write(*,*) "Constructor Grid3D_SG_t"

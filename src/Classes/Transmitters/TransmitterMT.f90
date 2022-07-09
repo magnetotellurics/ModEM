@@ -21,8 +21,8 @@ module TransmitterMT
             final :: TransmitterMT_dtor
             !
             procedure, public :: solveFWD => solveFWDTransmitterMT
-			!
-			procedure, public :: isEqualTx => isEqualTransmitterMT
+            !
+            procedure, public :: isEqualTx => isEqualTransmitterMT
             !
             procedure, public :: write    => writeTransmitterMT
             !

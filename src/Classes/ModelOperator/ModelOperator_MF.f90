@@ -108,7 +108,8 @@ contains
         !
         !write(*,*) "Constructor ModelOperator_MF"
         !
-        self%is_allocated = .FALSE.
+        call self%init()
+        !
         self%eqset = .FALSE.
         !
         call date_and_time( values=self%mKey )

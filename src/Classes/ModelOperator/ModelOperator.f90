@@ -15,6 +15,7 @@ module ModelOperator
         contains 
             !
             procedure, public :: dealloc => deallocateModelOperator
+			procedure, public :: init    => initializeModelOperator
             !
             !procedure( iface_UpdateFrequency ), deferred, public :: UpdateFrequency
             procedure( interface_set_equations_model_operator ), deferred, public :: setEquations
@@ -151,6 +152,15 @@ module ModelOperator
     end interface
     !
 contains
+    !
+    subroutine initializeModelOperator( self )
+        implicit none
+        !
+        class( ModelOperator_t ), intent( inout ) :: self
+        !
+        self%is_allocated = .FALSE.
+        !
+    end subroutine initializeModelOperator
     !
     subroutine deallocateModelOperator( self )
         implicit none

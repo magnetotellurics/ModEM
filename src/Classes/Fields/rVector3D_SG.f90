@@ -54,7 +54,7 @@ module rVector3D_SG
         !**
         ! Input/Output
         !*
-        procedure, public :: read    => readRVector3D_SG
+        procedure, public :: read  => readRVector3D_SG
         procedure, public :: write => writeRVector3D_SG
         !**
         ! Boundary operations
@@ -121,7 +121,7 @@ contains
         implicit none
         !
         class( Grid3D_SG_t ), target, intent( in ) :: igrid
-        character(*), intent( in )                 :: gridType
+        character( len=4 ), intent( in )            :: gridType
         !
         integer :: status
         type( rVector3D_SG_t ) :: self

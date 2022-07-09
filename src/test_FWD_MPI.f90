@@ -138,8 +138,7 @@ contains
         ! Local variables
         integer :: i, worker_rank, tx_received, tx_index
         !
-        type( Dh_t ), allocatable, dimension(:) :: worker_predicted_data
-        type( Dh_t ), allocatable, dimension(:) :: all_predicted_data
+        type( Dh_t ), allocatable, dimension(:) :: worker_predicted_data, all_predicted_data
         !
         ! Verbosis
         write( *, * ) "    > Start forward modelling."
@@ -857,11 +856,11 @@ contains
                     !
                     class is( DataHandleMT_t )
                         !
-                        write( ioPredData, "(es12.6, 1X, A, 1X, f15.3, f15.3, f15.3, f15.3, f15.3, 1X, A, 1X, es16.6, es16.6, es16.6)" ) Dh%period, Dh%code, R_ZERO, R_ZERO, Dh%rx_location(1), Dh%rx_location(2), Dh%rx_location(3), Dh%component, Dh%real, Dh%imaginary, 1.0
+                        write( ioPredData, "(es12.6, 1X, A, 1X, f15.3, f15.3, f15.3, f15.3, f15.3, 1X, A, 1X, es16.6, es16.6, es16.6)" ) Dh%period, Dh%code, R_ZERO, R_ZERO, Dh%rx_location(1), Dh%rx_location(2), Dh%rx_location(3), Dh%component, Dh%rvalue, Dh%imaginary, 1.0
                         !
                     class is( DataHandleCSEM_t )
                         !
-                        write( ioPredData, "(A, 1X, es12.6, f15.3, f15.3, f15.3, f15.3, f15.3, f15.3, 1X, A, 1X, f15.3, f15.3, f15.3, 1X, A, 1X, es16.6, es16.6, es16.6)" ) Dh%dipole, Dh%period, Dh%moment, Dh%azimuth, Dh%dip, Dh%tx_location(1), Dh%tx_location(2), Dh%tx_location(3), Dh%code, Dh%rx_location(1), Dh%rx_location(2), Dh%rx_location(3), Dh%component, Dh%real, Dh%imaginary, 1.0
+                        write( ioPredData, "(A, 1X, es12.6, f15.3, f15.3, f15.3, f15.3, f15.3, f15.3, 1X, A, 1X, f15.3, f15.3, f15.3, 1X, A, 1X, es16.6, es16.6, es16.6)" ) Dh%dipole, Dh%period, Dh%moment, Dh%azimuth, Dh%dip, Dh%tx_location(1), Dh%tx_location(2), Dh%tx_location(3), Dh%code, Dh%rx_location(1), Dh%rx_location(2), Dh%rx_location(3), Dh%component, Dh%rvalue, Dh%imaginary, 1.0
                         !
                     class default
                         stop "Unclassified data_handle"
