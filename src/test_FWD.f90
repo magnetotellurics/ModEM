@@ -25,7 +25,7 @@ program ModEM
     use DataHandleMT
     use DataHandleCSEM
     !
-    ! 
+    !
     class( Grid_t ), allocatable           :: main_grid
     class( ModelParameter_t ), allocatable :: model_parameter
     class( ModelOperator_t ), allocatable  :: model_operator
@@ -128,11 +128,11 @@ contains
                 !
                 class is( TransmitterMT_t )
                     !
-                    Tx%source = SourceMT_1D_t( model_operator, model_parameter, Tx%period )
+                    allocate( Tx%source, source = SourceMT_1D_t( model_operator, model_parameter, Tx%period ) )
                     !
                 class is( TransmitterCSEM_t )
                     !
-                    Tx%source = SourceCSEM_Dipole1D_t( model_operator, model_parameter, Tx%period, Tx%location, Tx%dip, Tx%azimuth, Tx%moment )
+                    allocate( Tx%source, source = SourceCSEM_Dipole1D_t( model_operator, model_parameter, Tx%period, Tx%location, Tx%dip, Tx%azimuth, Tx%moment ) )
                     !
             end select
             !
@@ -429,7 +429,7 @@ contains
         if( allocated( forward_solver_type ) ) deallocate( forward_solver_type )
         if( allocated( source_type ) ) deallocate( source_type )
         if( allocated( model_method ) ) deallocate( model_method )
-          if( allocated( get_1D_from ) ) deallocate( get_1D_from )
+        if( allocated( get_1D_from ) ) deallocate( get_1D_from )
         if( allocated( predicted_data_file_name ) ) deallocate( predicted_data_file_name )
         if( allocated( e_solution_file_name ) ) deallocate( e_solution_file_name )
         !
@@ -439,6 +439,7 @@ contains
         if( allocated( modem_job ) ) deallocate( modem_job )
         !
     end subroutine garbageCollector
+    !
     subroutine writeEsolutionHeader( nTx, nMode )
         implicit none
         !
@@ -522,11 +523,6 @@ contains
         class( DataHandle_t ), allocatable :: data_handle
         !
         integer :: receiver_type, i, array_size, ios
-		!
-		real( kind=prec ) :: zero, one
-		!
-		zero = R_ZERO
-		one = 1.0
         !
         ! Order by receiver
         !call sortByReceiver( data_handle_array, 1, size( data_handle_array ) )
@@ -550,11 +546,11 @@ contains
                     !
                     class is( DataHandleMT_t )
                         !
-                        write( ioPredData, "(es12.6, 1X, A, 1X, f15.3, f15.3, f15.3, f15.3, f15.3, 1X, A, 1X, es16.6, es16.6, es16.6)" ) data_handle%period, data_handle%code, zero, zero, data_handle%rx_location(1), data_handle%rx_location(2), data_handle%rx_location(3), data_handle%component, data_handle%rvalue, data_handle%imaginary, one
+                        write( ioPredData, "(es12.6, 1X, A, 1X, f15.3, f15.3, f15.3, f15.3, f15.3, 1X, A, 1X, es16.6, es16.6, es16.6)" ) data_handle%period, data_handle%code, R_ZERO, R_ZERO, data_handle%rx_location(1), data_handle%rx_location(2), data_handle%rx_location(3), data_handle%component, data_handle%rvalue, data_handle%imaginary, 1.0
                         !
                     class is( DataHandleCSEM_t )
                         !
-                        write( ioPredData, "(A, 1X, es12.6, f15.3, f15.3, f15.3, f15.3, f15.3, f15.3, 1X, A, 1X, f15.3, f15.3, f15.3, 1X, A, 1X, es16.6, es16.6, es16.6)" ) data_handle%dipole, data_handle%period, data_handle%moment, data_handle%azimuth, data_handle%dip, data_handle%tx_location(1), data_handle%tx_location(2), data_handle%tx_location(3), data_handle%code, data_handle%rx_location(1), data_handle%rx_location(2), data_handle%rx_location(3), data_handle%component, data_handle%rvalue, data_handle%imaginary, one
+                        write( ioPredData, "(A, 1X, es12.6, f15.3, f15.3, f15.3, f15.3, f15.3, f15.3, 1X, A, 1X, f15.3, f15.3, f15.3, 1X, A, 1X, es16.6, es16.6, es16.6)" ) data_handle%dipole, data_handle%period, data_handle%moment, data_handle%azimuth, data_handle%dip, data_handle%tx_location(1), data_handle%tx_location(2), data_handle%tx_location(3), data_handle%code, data_handle%rx_location(1), data_handle%rx_location(2), data_handle%rx_location(3), data_handle%component, data_handle%rvalue, data_handle%imaginary, 1.0
                         !
                     class default
                         stop "Unclassified data_handle"

@@ -92,14 +92,14 @@ contains
         allocate( self%cellCond, source = ccond )
         !
         if ( present( paramType ) ) then
-              call self%SetSigMap( paramType )
-              ! We initially specify airCond as linear conductivity!
-        !    self%AirCond = self%SigMap( self%airCond, "inverse" )
-        !    GDE:  we should always keep AirCond as actual linear conductvity!
-        !        Never apply SigMap to air layers!!!
+            call self%SetSigMap( paramType )
+            ! We initially specify airCond as linear conductivity!
+            !    self%AirCond = self%SigMap( self%airCond, "inverse" )
+            !    GDE:  we should always keep AirCond as actual linear conductvity!
+            !        Never apply SigMap to air layers!!!
         end if
         !
-        self%is_allocated = .true.
+        self%is_allocated = .TRUE.
         !
     end function ModelParameterCell_SG_ctor
     !

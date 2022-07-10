@@ -46,7 +46,7 @@
 include Makefile.local
 OBJDIR = ../../objs/MT3D_OO
 F90 = gfortran 
-FFLAGS = -g -O1 -ffree-line-length-none
+FFLAGS = -O3 -ffree-line-length-none
 MPIFLAGS =  
 MODULE = -J $(OBJDIR)
 LIBS_PATH = -L/usr/lib64
@@ -148,7 +148,7 @@ $(OBJDIR)/rVector3D_SG.o:Classes/Fields/rVector3D_SG.f90 $(OBJDIR)/Constants.o $
 $(OBJDIR)/ModelParameterCell_SG.o:Classes/ModelParameter/ModelParameterCell_SG.f90 $(OBJDIR)/Constants.o $(OBJDIR)/Grid.o $(OBJDIR)/Grid3D_SG.o $(OBJDIR)/rScalar.o $(OBJDIR)/rVector.o $(OBJDIR)/rScalar3D_SG.o $(OBJDIR)/rVector3D_SG.o $(OBJDIR)/ModelParameter.o $(OBJDIR)/Grid1D.o $(OBJDIR)/Grid2D.o $(OBJDIR)/ModelParameter1D.o $(OBJDIR)/ModelParameter2D.o 
 	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) Classes/ModelParameter/ModelParameterCell_SG.f90 -o $(OBJDIR)/ModelParameterCell_SG.o
 
-$(OBJDIR)/ModelReader_Weerachai.o:Classes/ModelParameter/ModelReader_Weerachai.f90 $(OBJDIR)/Constants.o $(OBJDIR)/Grid.o $(OBJDIR)/Grid3D_SG.o $(OBJDIR)/rScalar3D_SG.o $(OBJDIR)/ModelParameter.o $(OBJDIR)/ModelReader.o $(OBJDIR)/ModelParameter.o $(OBJDIR)/ModelParameterCell_SG.o 
+$(OBJDIR)/ModelReader_Weerachai.o:Classes/ModelParameter/ModelReader_Weerachai.f90 $(OBJDIR)/Constants.o $(OBJDIR)/Grid.o $(OBJDIR)/Grid3D_SG.o $(OBJDIR)/rScalar3D_SG.o $(OBJDIR)/ModelParameter.o $(OBJDIR)/ModelReader.o $(OBJDIR)/ModelParameterCell_SG.o 
 	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) Classes/ModelParameter/ModelReader_Weerachai.f90 -o $(OBJDIR)/ModelReader_Weerachai.o
 
 $(OBJDIR)/cScalar3D_SG.o:Classes/Fields/cScalar3D_SG.f90 $(OBJDIR)/Constants.o $(OBJDIR)/Grid.o $(OBJDIR)/Grid3D_SG.o $(OBJDIR)/cScalar.o $(OBJDIR)/rScalar3D_SG.o 

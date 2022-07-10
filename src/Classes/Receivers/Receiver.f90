@@ -161,13 +161,13 @@ contains
         if( allocated( self%predicted_data ) ) call deallocateDataHandleArray( self%predicted_data )
         !
         if( allocated( self%Lex ) ) deallocate( self%Lex )
-		if( allocated( self%Ley ) ) deallocate( self%Ley )
-		if( allocated( self%Lez ) ) deallocate( self%Lez )
-		!
-		if( allocated( self%Lbx ) ) deallocate( self%Lbx )
-		if( allocated( self%Lbx ) ) deallocate( self%Lbx )
-		if( allocated( self%Lbz ) ) deallocate( self%Lbz )
-		!
+        if( allocated( self%Ley ) ) deallocate( self%Ley )
+        if( allocated( self%Lez ) ) deallocate( self%Lez )
+        !
+        if( allocated( self%Lbx ) ) deallocate( self%Lbx )
+        if( allocated( self%Lbx ) ) deallocate( self%Lbx )
+        if( allocated( self%Lbz ) ) deallocate( self%Lbz )
+        !
     end subroutine deallocateRx
     !
     subroutine evaluationFunctionRx( self, model_operator )
