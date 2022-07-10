@@ -231,6 +231,9 @@ contains
              
         enddo
         !
+        if( allocated( predicted_data_buffer ) ) deallocate( predicted_data_buffer )
+        if( allocated( fwd_info_buffer ) ) deallocate( fwd_info_buffer )
+        !
         ! Verbosis...
         write( *, * ) "    -> Writing Predicted Data to file: [", trim( predicted_data_file_name ), "]"
         !
@@ -316,7 +319,7 @@ contains
                 call main_grid%UpdateAirLayers( air_layer%nz, air_layer%dz )
                 !
                 allocate( model_operator, source = ModelOperator_MF_t( main_grid ) )
-				!
+                !
                 call model_parameter%setMetric( model_operator%metric )
                 !
                 call model_operator%SetEquations()

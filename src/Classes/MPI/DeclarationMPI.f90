@@ -47,9 +47,10 @@ module DeclarationMPI
     integer( KIND=MPI_ADDRESS_KIND ) :: shared_window_size
     integer                          :: shared_disp_unit = 1
     !
-    character, dimension(:), pointer :: shared_buffer
-    character, dimension(:), pointer :: fwd_info_buffer
-    character, dimension(:), pointer :: predicted_data_buffer
+    character, dimension(:), pointer     :: shared_buffer
+    !
+    character, dimension(:), allocatable :: fwd_info_buffer
+    character, dimension(:), allocatable :: predicted_data_buffer
     !
     integer :: shared_buffer_size = 1
     integer :: fwd_info_buffer_size = 1
@@ -163,9 +164,7 @@ module DeclarationMPI
         !
         write( *, "(A60, i8)" ) "MPI Allocated total size =", shared_buffer_size
         !
-        if( .NOT. associated( shared_buffer ) ) then
-            allocate( shared_buffer( shared_buffer_size ) )
-        endif
+        allocate( shared_buffer( shared_buffer_size ) )
         !
     end subroutine allocateSharedBuffer
     !
@@ -1529,7 +1528,7 @@ module DeclarationMPI
         !
         predicted_data_buffer_size = fwd_info%data_size
         !
-        if( .NOT. associated( predicted_data_buffer ) ) then
+        if( .NOT. allocated( predicted_data_buffer ) ) then
             allocate( predicted_data_buffer( predicted_data_buffer_size ) )
         endif
         !
@@ -1584,9 +1583,8 @@ module DeclarationMPI
             !
         end do
         !
-        if( .NOT. associated( predicted_data_buffer ) ) then
-            allocate( predicted_data_buffer( predicted_data_buffer_size ) )
-        endif
+        if( allocated( predicted_data_buffer ) ) deallocate( predicted_data_buffer )
+        allocate( predicted_data_buffer( predicted_data_buffer_size ) )
         !
     end subroutine allocateDataBuffer
     !
@@ -1774,9 +1772,8 @@ module DeclarationMPI
         !
         fwd_info_buffer_size = ( nbytes1 + nbytes2 ) + 1
         !
-        if( .NOT. associated( fwd_info_buffer ) ) then
-            allocate( fwd_info_buffer( fwd_info_buffer_size ) )
-        endif
+        if( allocated( fwd_info_buffer ) ) deallocate( fwd_info_buffer )
+        allocate( fwd_info_buffer( fwd_info_buffer_size ) )
         !
     end subroutine allocateFWDInfoBuffer
     !
