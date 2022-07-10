@@ -6,7 +6,6 @@ module ModelReader_Weerachai
     use rScalar3D_SG
     use ModelParameter
     use ModelReader
-    use ModelParameter
     use ModelParameterCell_SG
     !
     type, extends( ModelReader_t ), public :: ModelReader_Weerachai_t
@@ -108,22 +107,22 @@ contains
         ! Convert from resistivity to conductivity
         !*        
         select type(grid)
-        class is(Grid3D_SG_t)
-             ccond = rScalar3D_SG_t( grid, CELL_EARTH ) 
-             
-             if ((index(paramType, "LOGE") > 0).or.&
-                        (index(paramType, "LOG10") > 0)) then
+            class is(Grid3D_SG_t)
+                ccond = rScalar3D_SG_t( grid, CELL_EARTH ) 
+                !
+                if ((index(paramType, "LOGE") > 0).or.&
+                (index(paramType, "LOG10") > 0)) then
                     ccond%v = -rho
-             else if (index(paramType, "LINEAR") > 0) then
+                else if (index(paramType, "LINEAR") > 0) then
                     ccond%v = ONE/rho
-             end if
-
-             allocate( model, source = ModelParameterCell_SG_t( grid, ccond, paramType ) )
+                end if
+                !
+                allocate( model, source = ModelParameterCell_SG_t( grid, ccond, paramType ) )
         end select
-        
-        ! ALWAYS convert modelParam to natural log for computations
+        !
+        ! ALWAYS convert modelParam to natural log for computations ????
         paramType = LOGE
-        call model%SetType(paramType)
+        call model%SetType( paramType )
         !
         ! End - Reading cells conductivity values.
         

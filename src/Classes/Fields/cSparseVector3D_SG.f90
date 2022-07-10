@@ -5,7 +5,7 @@ module cSparseVector3D_SG
     !
     type :: cSparsevector3D_SG_t
         !
-        character( len=80 ) :: gridType
+        character( len=4 ) :: gridType
         !
         integer  :: nCoeff
         !

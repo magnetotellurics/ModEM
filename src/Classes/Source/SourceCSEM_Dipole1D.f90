@@ -159,6 +159,7 @@ contains
                 call self%E%mult( i_omega_mu )
                 !
                 self%rhs = self%E
+                !
                 call self%rhs%mult( self%model_operator%metric%Vedge )
                 !
         end select
