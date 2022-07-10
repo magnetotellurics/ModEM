@@ -231,8 +231,8 @@ contains
              
         enddo
         !
-        if( allocated( predicted_data_buffer ) ) deallocate( predicted_data_buffer )
-        if( allocated( fwd_info_buffer ) ) deallocate( fwd_info_buffer )
+        ! Deallocate MPI communication buffers
+        deallocate( fwd_info_buffer, predicted_data_buffer )
         !
         ! Verbosis...
         write( *, * ) "    -> Writing Predicted Data to file: [", trim( predicted_data_file_name ), "]"
@@ -506,6 +506,7 @@ contains
                 call Rx%evaluationFunction( model_operator )
                 !
             enddo
+            !
         else
              !
              write(*,*) "Number of Rx mismatched from Header :[", nrx, " and ", data_file_standard%nRx, "]"

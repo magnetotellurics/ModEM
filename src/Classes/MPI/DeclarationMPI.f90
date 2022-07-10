@@ -1501,6 +1501,9 @@ module DeclarationMPI
         receiver%id = receiver_id
         call MPI_UNPACK( shared_buffer, shared_buffer_size, index, receiver%is_complex, 1, MPI_LOGICAL, child_comm, ierr )
         call MPI_UNPACK( shared_buffer, shared_buffer_size, index, receiver%interpolation_set, 1, MPI_LOGICAL, child_comm, ierr )
+        !
+        if( allocated( receiver%code ) ) deallocate( receiver%code )
+        allocate( character( code_size ) :: receiver%code )
         call MPI_UNPACK( shared_buffer, shared_buffer_size, index, receiver%code, code_size, MPI_CHARACTER, child_comm, ierr )
         !
         if( allocated( receiver%Lex ) ) deallocate( receiver%Lex )
