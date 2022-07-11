@@ -6,6 +6,8 @@ program ModEM
     character(:), allocatable :: control_file_name, model_file_name, data_file_name, modem_job
     logical                   :: has_control_file, has_model_file, has_data_file, verbosis
     !
+    class( ModelOperator_t ), allocatable  :: model_operator
+    !
     call MPI_Init( ierr )
     !
     main_comm = MPI_COMM_WORLD
@@ -34,7 +36,7 @@ program ModEM
     write( *, * ) "MPI Rank ", mpi_rank," in COMM_WORLD (", mpi_size, ") is ", node_rank, &
                   " in SHARED_COMM (", node_size, ") on Node: ", node_name( 1 : nodestringlen )
     !
-    ! MASTER
+    ! MPI MASTER PROCESS
     !
     if ( mpi_rank == 0 ) then
         !
@@ -64,7 +66,7 @@ program ModEM
         write( *, * ) "Finish ModEM-OO."
         write( *, * )
     !
-    ! WORKER
+    ! MPI WORKER PROCESS
     !
     else
         !

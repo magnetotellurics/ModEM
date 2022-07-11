@@ -7,15 +7,15 @@ module Solver
     !
     integer, parameter :: iter_per_div_corDefQMR = 40
     !
-    integer, parameter :: iter_per_div_corDefBCG = 100
+    integer, parameter :: iter_per_div_corDefBCG = 80
     !
     integer, parameter :: max_div_corDef = 20
     !
     integer, parameter :: max_iterDivCorDef = 100
     !
-    real( kind=prec ), parameter :: tolDivCorDef = 1E-2
+    real( kind=prec ), parameter :: tolDivCorDef = 1E-5
     !
-    real( kind=prec ), parameter :: tolCurlCurlDef = 1E-1
+    real( kind=prec ), parameter :: tolCurlCurlDef = 1E-7
     !
     !
     character(:), allocatable :: solver_type

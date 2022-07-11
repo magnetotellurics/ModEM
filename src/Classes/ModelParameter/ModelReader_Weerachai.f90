@@ -9,19 +9,20 @@ module ModelReader_Weerachai
     use ModelParameterCell_SG
     !
     type, extends( ModelReader_t ), public :: ModelReader_Weerachai_t
-         !
+        !
         ! PROPERTIES HERE
         !
      contains
-         !
-         procedure, public :: Read
-         procedure, public :: Write
-         !
+        !
+        procedure, public :: Read
+        procedure, public :: Write
+        !
     end type ModelReader_Weerachai_t
-    
+    !
 contains
-
+    !
     subroutine Read( self, fileName, grid, model ) 
+        implicit none
         !
         class( ModelReader_Weerachai_t ), intent( in )        :: self
         character(*), intent( in )                            :: fileName
@@ -36,46 +37,46 @@ contains
         real( kind=prec ), dimension(:, :, :), allocatable :: rho
         type( rScalar3D_SG_t  ) :: ccond
         real( kind=prec ) :: ALPHA
-        
+        !
         someChar = ""
         paramType = ""
         someIndex = 0
         ALPHA = 3.0
         !
         open(newunit = ioPrm, file = trim(fileName),status = "old", iostat = istat)
-        
+        !
         if (istat /= 0) then
              write(0, *) "ERROR:WeerachaiSG_GridReader_t:"//&
                         &            "Could not open input file."
              !grid => null()
              return
         end if
-        
+        !
         ! First read the comment line
         read(ioPrm, "(a80)") someChar
-
+        !
         ! Now read the second line with the grid dimensions
         read(ioPrm, "(a80)") someChar
         read(someChar, *) nx, ny, nzEarth, someIndex
-
+        !
         ! Now read the second line with the grid dimensions
         nzAir = 0
-
+        !
         allocate(dx(nx))
         allocate(dy(ny))
         allocate(dz(nzAir + nzEarth))
-
+        !
         read(ioPrm, *) (dx(j), j = 1, nx)
         read(ioPrm, *) (dy(j), j = 1, ny)
         read(ioPrm, *) (dz(j), j = nzAir + 1, nzAir + nzEarth)
-
+        !
         if (someIndex /= 0) then
-             write(0, *) "ERROR:WeerachaiSG_GridReader_t:"
-             write(*, *) "    Mapping not supported."
-             !grid => null()
-             STOP
+            write(*, *) "ERROR:WeerachaiSG_GridReader_t:"
+            write(*, *) "    Mapping not supported."
+            !grid => null()
+            STOP
         end if
-        
+        !
         ! By default assume "LINEAR RHO" -
         ! Weerachai"s linear resistivity format
         if (index(someChar, "LOGE") > 0) then
@@ -85,29 +86,26 @@ contains
         else
              paramType = LINEAR
         end if
-
+        !
         ! The default method for creating air layers in the grid has been deleted
-        
         !**
         ! Create the grid object with nzAir = 0 -- no air layers so far
-
         grid = Grid3D_SG_t( nx, ny, nzAir, nzEarth, dx, dy, dz )
-
         !**
         ! Read conductivity values in a model parameter object.
         allocate(rho(nx, ny, nzEarth))
         do k = 1, nzEarth
-             do j = 1, ny
-                    read(ioPrm, *, iostat = istat) &
-                             (rho(i, j, k), i = nx, 1, -1)
-             end do
+            do j = 1, ny
+                read(ioPrm, *, iostat = istat) &
+                        (rho(i, j, k), i = nx, 1, -1)
+            end do
         end do
-        
         !**
         ! Convert from resistivity to conductivity
         !*        
         select type(grid)
             class is(Grid3D_SG_t)
+                !
                 ccond = rScalar3D_SG_t( grid, CELL_EARTH ) 
                 !
                 if ((index(paramType, "LOGE") > 0).or.&
@@ -136,30 +134,28 @@ contains
              oy = -sum(dy)/2.0
              oz = 0.0
         end if
-      !
-     
+        !
         call grid%SetOrigin(ox, oy, oz)
-      !
+        !
         read(ioPrm, *, iostat = istat) rotDeg
         if (istat /= 0) then
              rotDeg = 0.0
         end if
         call grid%SetGridRotation(rotDeg)
-        
         !**
         ! Clean up
         !*
         close(ioPrm)
         !
-        
     end subroutine Read
-
-    subroutine Write(self, fileName, grid, model)
-        ! Arguments
+    !
+    subroutine Write( self, fileName, grid, model )
+        implicit none
+        !
         class( ModelReader_Weerachai_t ), intent( in ) :: self
-        character(*), intent( in )                            :: fileName
-        class( Grid_t ), intent( in )                        :: grid
-        class( ModelParameter_t ), intent( in )          :: model
+        character(*), intent( in )                     :: fileName
+        class( Grid_t ), intent( in )                  :: grid
+        class( ModelParameter_t ), intent( in )        :: model
     end subroutine Write
     
 end module ModelReader_Weerachai

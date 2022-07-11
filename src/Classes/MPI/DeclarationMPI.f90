@@ -49,8 +49,7 @@ module DeclarationMPI
     !
     character, dimension(:), pointer     :: shared_buffer
     !
-    character, dimension(:), allocatable :: fwd_info_buffer
-    character, dimension(:), allocatable :: predicted_data_buffer
+    character, dimension(:), allocatable :: fwd_info_buffer, predicted_data_buffer
     !
     integer :: shared_buffer_size = 1
     integer :: fwd_info_buffer_size = 1
@@ -84,7 +83,6 @@ module DeclarationMPI
     !
     class( Grid_t ), allocatable, target   :: main_grid
     class( ModelParameter_t ), allocatable :: model_parameter
-    class( ModelOperator_t ), allocatable  :: model_operator
     !
     ! PROGRAM GLOBAL VARIABLES
     integer :: tag = 2022, master_id = 0
@@ -1111,7 +1109,6 @@ module DeclarationMPI
         !
         class( ModelParameter_t ), allocatable :: model_parameter
         !
-        class( Grid_t ), allocatable :: param_grid
         integer :: param_type_size
         !
         call MPI_UNPACK( shared_buffer, shared_buffer_size, index, model_parameter_derived_type, 1, MPI_INTEGER, child_comm, ierr )
@@ -1138,14 +1135,10 @@ module DeclarationMPI
                         call MPI_UNPACK( shared_buffer, shared_buffer_size, index, model_parameter%zeroValued, 1, MPI_LOGICAL, child_comm, ierr )
                         call MPI_UNPACK( shared_buffer, shared_buffer_size, index, model_parameter%is_allocated, 1, MPI_LOGICAL, child_comm, ierr )
                         !
-                        param_grid = unpackGridBuffer( index )
-                        !
-                        allocate( model_parameter%paramGrid, source = param_grid )
+                        allocate( model_parameter%paramGrid, source = unpackGridBuffer( index ) )
                         !
                         allocate( rScalar3D_SG_t :: model_parameter%cellCond )
                         model_parameter%cellCond = unpackRScalarBuffer( main_grid, index )
-                        !
-                        deallocate( param_grid )
                         !
                         call model_parameter%SetSigMap( model_parameter%paramType )
                         !
