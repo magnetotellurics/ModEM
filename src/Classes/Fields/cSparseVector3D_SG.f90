@@ -5,7 +5,7 @@ module cSparseVector3D_SG
     !
     type :: cSparsevector3D_SG_t
         !
-        character( len=80 ) :: gridType
+        character( len=4 ) :: gridType
         !
         integer  :: nCoeff
         !
@@ -15,6 +15,10 @@ module cSparseVector3D_SG
         !
         logical :: is_allocated
         !
+        contains
+            !
+            final :: cSparsevector3D_SG_dtor
+            !
     end type cSparsevector3D_SG_t
     !
     ! Constructors for Scalar3d_csg_real_t
@@ -35,6 +39,27 @@ contains
         self%is_allocated = .FALSE.
         !
     end function cSparsevector3D_SG_ctor
+    !
+    subroutine cSparsevector3D_SG_dtor( self )
+        implicit none
+        !
+        type( cSparsevector3D_SG_t ), intent( inout ) :: self
+        !
+        !write(*,*) "Destructor cSparsevector3D_SG_t:"
+        !
+        self%gridType = ""
+        self%nCoeff = 0
+        self%is_allocated = .FALSE.
+        !
+        if( allocated( self%i ) ) deallocate( self%i )
+        if( allocated( self%j ) ) deallocate( self%j )
+        if( allocated( self%k ) ) deallocate( self%k )
+        !
+        if( allocated( self%xyz ) ) deallocate( self%xyz )
+        !
+        if( allocated( self%c ) ) deallocate( self%c )
+        !
+    end subroutine cSparsevector3D_SG_dtor
     !
     function dotProdSparse( self, cvector ) result( c )
         implicit none
@@ -164,17 +189,28 @@ contains
         XYZ3=3
         !
         ! Get indices of Non-Zero coefficients
-        self%i=(/ pack(Ix,cvector%x  /= 0),pack(Iy,cvector%y  /= 0),pack(Iz,cvector%z  /= 0) /)
-        self%j=(/ pack(Jx,cvector%x  /= 0),pack(Jy,cvector%y  /= 0),pack(Jz,cvector%z  /= 0) /)
-        self%k=(/ pack(Kx,cvector%x  /= 0),pack(Ky,cvector%y  /= 0),pack(Kz,cvector%z  /= 0) /)
-        ! Get Values of Non-Zero coefficients        
-        self%c=(/ pack(cvector%x,cvector%x  /= 0),pack(cvector%y,cvector%y  /= 0),pack(cvector%z,cvector%z  /= 0) /)
+        if( allocated( self%i ) ) deallocate( self%i )
+        allocate( self%i, source = (/ pack(Ix,cvector%x /= 0),pack(Iy,cvector%y /= 0),pack(Iz,cvector%z /= 0) /) )
+        !
+        if( allocated( self%j ) ) deallocate( self%j )
+        allocate( self%j, source = (/ pack(Jx,cvector%x /= 0),pack(Jy,cvector%y /= 0),pack(Jz,cvector%z /= 0) /) )
+        !
+        if( allocated( self%k ) ) deallocate( self%k )
+        allocate( self%k, source = (/ pack(Kx,cvector%x /= 0),pack(Ky,cvector%y /= 0),pack(Kz,cvector%z /= 0) /) )
+        !
+        ! Get Values of Non-Zero coefficients
+        if( allocated( self%c ) ) deallocate( self%c )
+        allocate( self%c, source = (/ pack(cvector%x,cvector%x /= 0),pack(cvector%y,cvector%y /= 0),pack(cvector%z,cvector%z /= 0) /) )
         ! Get Components
-        self%xyz=(/ pack(XYZ1,cvector%x  /= 0), pack(XYZ2,cvector%y  /= 0),pack(XYZ3,cvector%z  /= 0) /)
+        if( allocated( self%xyz ) ) deallocate( self%xyz )
+        allocate( self%xyz, source = (/ pack(XYZ1,cvector%x /= 0), pack(XYZ2,cvector%y /= 0),pack(XYZ3,cvector%z /= 0) /) )
+        !
         ! Get number of Non-Zero coefficients
         self%nCoeff=size(self%c)
         ! Get gridType
         self%gridType=cvector%gridType
+        !
+        
         !
         self%is_allocated = .TRUE.
         !

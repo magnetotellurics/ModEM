@@ -54,7 +54,7 @@ contains
         implicit none
         !
         class( Grid3D_SG_t ), intent( in ) :: inGrid
-        type( MetricElements_CSG_t )        :: self
+        type( MetricElements_CSG_t )       :: self
         !
         !write(*,*) "Constructor MetricElements_CSG_t"
         !
@@ -354,7 +354,8 @@ contains
         !call self%SetEdgeLength()
         !call self%SetDualFaceArea()
         !
-        self%Vedge = self%EdgeLength * self%DualFaceArea
+        self%Vedge = self%EdgeLength
+        call self%Vedge%mult( self%DualFaceArea )
         !
     end subroutine setEdgeVolume
     !

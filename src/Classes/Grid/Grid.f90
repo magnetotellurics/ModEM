@@ -13,6 +13,13 @@ module Grid
     character ( len=12 ), parameter :: GRID_SG = "StandardGrid"
     character ( len=19 ), parameter :: GRID_MR = "MultiresolutionGrid"
     !
+    character(:), allocatable :: model_method
+    character ( len=12 ), parameter :: MM_METHOD_FIXED_H = "fixed height"
+    character ( len=6 ), parameter  :: MM_METHOD_MIRROR  = "mirror"
+    !
+    integer :: model_n_air_layer
+    real( kind=prec ) :: model_max_height
+    !
     type, abstract :: Grid_t
         !
         character( len=80 ) :: geometry
@@ -73,108 +80,108 @@ module Grid
             procedure, public :: GetGridGeometry
 
     end type Grid_t
-	!
+    !
     abstract interface
-		!**
-		! NumberOfEdges
-		!
-		!*
-		subroutine iface_NumberOfEdges( self, nXedge, nYedge, nZedge )
-			import :: Grid_t
-			class( Grid_t ), intent( in ) :: self
-			integer, intent( out )        :: nXedge, nYedge, nZedge
-		end subroutine iface_NumberOfEdges
-		!**
-		! NumberOfFaces
-		!
-		!*
-		subroutine iface_NumberOfFaces(self, nXface, nYface, nZface) 
-			import :: Grid_t
-			class( Grid_t ), intent( in ) :: self
-			integer, intent( out )        :: nXface, nYface, nZface
-		end subroutine iface_NumberOfFaces
-		!**
-		! NumberOfNodes
-		!
-		!*
-		function iface_NumberOfNodes(self) result(n)
-			import :: Grid_t
-			class( Grid_t ), intent( in ) :: self
-			integer :: n
-		end function iface_NumberOfNodes
-		!**
-		! GridIndex
-		!
-		! Based on matlab method of same name in class Grid_t
-		! IndVec is the index within the list of nodes of a fixed type
-		! e.g., among the list of y-Faces.     An offset needs to be
-		! added to get index in list of all faces (for example).
-		!*
-		subroutine iface_GridIndex(self, nodeType, indVec, i, j, k)
-			import :: Grid_t
-			class( Grid_t ), intent( in ) :: self
-			character(*), intent( in )    :: nodeType
-			integer, dimension (:), intent( in )  :: indVec
-			integer, dimension (:), intent( out ) :: i, j, k
-		end subroutine iface_GridIndex
-		!**
-		! VectorIndex
-		!
-		! Based on matlab method of same name in class Grid_t
-		! returned array IndVec gives numbering of nodes within
-		! the list for nodeType; need to add an offset for position
-		! in full list of all faces or edges (not nodes and cells).
-		!*
-		subroutine iface_VectorIndex(self, nodeType, i, j, k, indVec)
-			import :: Grid_t
-			class( Grid_t ), intent( in ) :: self
-			character(*), intent( in )    :: nodeType
-			integer, dimension (:), intent( in )  :: i, j, k
-			integer, dimension (:), intent( out ) :: indVec
-		end subroutine iface_VectorIndex
-		!**
-		! Limits
-		!
-		!*
-		subroutine iface_Limits(self, nodeType, nx, ny, nz)
-			import :: Grid_t
-			class( Grid_t ) , intent( in ) :: self
-			character(*) , intent( in )    :: nodeType
-			integer     , intent( out )    :: nx, ny, nz
-		end subroutine iface_Limits
-		!**
-		!
-		!*
-		function iface_IsAllocated(self) result(f)
-			import :: Grid_t
-			class( Grid_t ), intent( in ) :: self
-			logical :: f
-		end function iface_IsAllocated
+        !**
+        ! NumberOfEdges
+        !
+        !*
+        subroutine iface_NumberOfEdges( self, nXedge, nYedge, nZedge )
+            import :: Grid_t
+            class( Grid_t ), intent( in ) :: self
+            integer, intent( out )        :: nXedge, nYedge, nZedge
+        end subroutine iface_NumberOfEdges
+        !**
+        ! NumberOfFaces
+        !
+        !*
+        subroutine iface_NumberOfFaces(self, nXface, nYface, nZface) 
+            import :: Grid_t
+            class( Grid_t ), intent( in ) :: self
+            integer, intent( out )        :: nXface, nYface, nZface
+        end subroutine iface_NumberOfFaces
+        !**
+        ! NumberOfNodes
+        !
+        !*
+        function iface_NumberOfNodes(self) result(n)
+            import :: Grid_t
+            class( Grid_t ), intent( in ) :: self
+            integer :: n
+        end function iface_NumberOfNodes
+        !**
+        ! GridIndex
+        !
+        ! Based on matlab method of same name in class Grid_t
+        ! IndVec is the index within the list of nodes of a fixed type
+        ! e.g., among the list of y-Faces.     An offset needs to be
+        ! added to get index in list of all faces (for example).
+        !*
+        subroutine iface_GridIndex(self, nodeType, indVec, i, j, k)
+            import :: Grid_t
+            class( Grid_t ), intent( in ) :: self
+            character(*), intent( in )    :: nodeType
+            integer, dimension (:), intent( in )  :: indVec
+            integer, dimension (:), intent( out ) :: i, j, k
+        end subroutine iface_GridIndex
+        !**
+        ! VectorIndex
+        !
+        ! Based on matlab method of same name in class Grid_t
+        ! returned array IndVec gives numbering of nodes within
+        ! the list for nodeType; need to add an offset for position
+        ! in full list of all faces or edges (not nodes and cells).
+        !*
+        subroutine iface_VectorIndex(self, nodeType, i, j, k, indVec)
+            import :: Grid_t
+            class( Grid_t ), intent( in ) :: self
+            character(*), intent( in )    :: nodeType
+            integer, dimension (:), intent( in )  :: i, j, k
+            integer, dimension (:), intent( out ) :: indVec
+        end subroutine iface_VectorIndex
+        !**
+        ! Limits
+        !
+        !*
+        subroutine iface_Limits(self, nodeType, nx, ny, nz)
+            import :: Grid_t
+            class( Grid_t ) , intent( in ) :: self
+            character(*) , intent( in )    :: nodeType
+            integer     , intent( out )    :: nx, ny, nz
+        end subroutine iface_Limits
+        !**
+        !
+        !*
+        function iface_IsAllocated(self) result(f)
+            import :: Grid_t
+            class( Grid_t ), intent( in ) :: self
+            logical :: f
+        end function iface_IsAllocated
 
-		subroutine iface_Copy_from(self, g)
-			import :: Grid_t
-			class( Grid_t ), intent(inout) :: self
-			class( Grid_t ), intent( in )  :: g
-		end subroutine iface_Copy_from
+        subroutine iface_Copy_from(self, g)
+            import :: Grid_t
+            class( Grid_t ), intent(inout) :: self
+            class( Grid_t ), intent( in )  :: g
+        end subroutine iface_Copy_from
 
-		subroutine iface_SetCellSizes(self, dx, dy, dz)
-			import :: Grid_t, prec
-			class( Grid_t ), intent(inout) :: self
-			real( kind=prec ) , dimension(:), intent( in ) :: dx, dy, dz
-		end subroutine iface_SetCellSizes
+        subroutine iface_SetCellSizes(self, dx, dy, dz)
+            import :: Grid_t, prec
+            class( Grid_t ), intent(inout) :: self
+            real( kind=prec ) , dimension(:), intent( in ) :: dx, dy, dz
+        end subroutine iface_SetCellSizes
 
-		function interface_slice_1d_grid(self) result( g1D )
-			import :: Grid_t, Grid1D_t
-			class( Grid_t ), intent( in ) :: self
-			type(Grid1D_t) :: g1D
-		end function interface_slice_1d_grid
+        function interface_slice_1d_grid(self) result( g1D )
+            import :: Grid_t, Grid1D_t
+            class( Grid_t ), intent( in ) :: self
+            type(Grid1D_t) :: g1D
+        end function interface_slice_1d_grid
 
-		function interface_slice_2d_grid(self) result( g2D )
-			import :: Grid_t, Grid2D_t
-			class( Grid_t ), intent( in ) :: self
-			type(Grid2D_t) :: g2D
-		end function interface_slice_2d_grid
-		!
+        function interface_slice_2d_grid(self) result( g2D )
+            import :: Grid_t, Grid2D_t
+            class( Grid_t ), intent( in ) :: self
+            type(Grid2D_t) :: g2D
+        end function interface_slice_2d_grid
+        !
     end interface
     !
 contains
@@ -270,26 +277,34 @@ contains
         !
         class( Grid_t ), intent( inout ) :: self
         !
-        if( allocated( self%dx ) ) deallocate( self%dx )
-        if( allocated( self%dy ) ) deallocate( self%dy )
-        if( allocated( self%dz ) ) deallocate( self%dz )
-        if( allocated( self%dxInv ) ) deallocate( self%dxInv )
-        if( allocated( self%dyInv ) ) deallocate( self%dyInv )
-        if( allocated( self%dzInv ) ) deallocate( self%dzInv )
+        self%nx = 0
+        self%ny = 0
+        self%nz = 0
         !
-        if( allocated( self%delX ) ) deallocate( self%delX )
-        if( allocated( self%delY ) ) deallocate( self%delY )
-        if( allocated( self%delZ ) ) deallocate( self%delZ )
-        if( allocated( self%delXInv ) ) deallocate( self%delXInv )
-        if( allocated( self%delYInv ) ) deallocate( self%delYInv )
-        if( allocated( self%delZInv ) ) deallocate( self%delZInv )
+        deallocate( self%dx )
+        deallocate( self%dy )
+        deallocate( self%dz )
         !
-        if( allocated( self%xEdge ) ) deallocate( self%xEdge )
-        if( allocated( self%yEdge ) ) deallocate( self%yEdge )
-        if( allocated( self%zEdge ) ) deallocate( self%zEdge )
-        if( allocated( self%xCenter ) ) deallocate( self%xCenter )
-        if( allocated( self%yCenter ) ) deallocate( self%yCenter )
-        if( allocated( self%zCenter ) ) deallocate( self%zCenter )
+        deallocate( self%dxInv )
+        deallocate( self%dyInv )
+        deallocate( self%dzInv )
+        !
+        deallocate( self%delX )
+        deallocate( self%delY )
+        deallocate( self%delZ )
+        !
+        deallocate( self%delXInv )
+        deallocate( self%delYInv )
+        deallocate( self%delZInv )
+        !
+        deallocate( self%xEdge )
+        deallocate( self%yEdge )
+        deallocate( self%zEdge )
+        deallocate( self%xCenter )
+        deallocate( self%yCenter )
+        deallocate( self%zCenter )
+        !
+        self%is_allocated = .FALSE.
         !
     end subroutine deallocateGrid
     !

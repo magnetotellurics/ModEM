@@ -40,9 +40,9 @@ module rScalar
         generic :: sub => sub1
         generic :: operator(-) => sub1
         !
-        procedure(iface_mult1), deferred, public :: mult1
-        generic :: mult => mult1
-        generic :: operator(*) => mult1
+        procedure(iface_mult), deferred, public :: mult
+        !generic :: mult => mult
+        !generic :: operator(*) => mult
 		!
         procedure(iface_div1), deferred, public :: div1
         generic :: div => div1
@@ -224,11 +224,12 @@ module rScalar
             class( rScalar_t ), allocatable  :: Eout
         end function iface_sub1
 
-        function iface_mult1( lhs, rhs ) result( Eout )
+        subroutine iface_mult( self, rhs )
             import :: rScalar_t
-            class( rScalar_t ), intent( in ) :: lhs, rhs
-            class( rScalar_t ), allocatable  :: Eout
-        end function iface_mult1
+            class( rScalar_t ), intent( inout ) :: self
+			class( rScalar_t ), intent( in ) :: rhs
+            !
+        end subroutine iface_mult
         
         function iface_div1( lhs, rhs ) result( Eout )
             import :: rScalar_t

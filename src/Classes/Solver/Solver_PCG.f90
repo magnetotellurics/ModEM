@@ -35,7 +35,7 @@ contains
         !
         call self%init()
         !
-        self%preconditioner = PreConditioner_MF_DC_t( model_operator )
+        allocate( self%preconditioner, source = PreConditioner_MF_DC_t( model_operator ) )
         !
         call self%setDefaults()
         !

@@ -45,6 +45,8 @@ contains
         !
         type( ReceiverSingleField_t )    :: self
         !
+        integer :: i, asize
+        !
         ! write(*,*) "Constructor ReceiverSingleField_t"
         !
         call self%init()
@@ -57,18 +59,54 @@ contains
         self%n_comp = 1
         self%is_complex = .TRUE.
         !
+        ! components required to get the full impedance evaluation vectors [Ex, Ey, Bx, By]
+        if( allocated( self%EHxy ) ) then
+            !
+            asize = size( self%EHxy )
+            do i = asize, 1, -(1)
+                deallocate( self%EHxy(i)%str )
+            enddo
+            deallocate( self%EHxy )
+            !
+        endif
+        allocate( self%EHxy( 1 ) )
         !
-        allocate( self%EHxy( self%n_comp ) )
+        if( azimuth == 1.0 ) then
+            self%EHxy(1)%str = "Ex"
+            allocate( self%Lex, source = cSparsevector3D_SG_t() )
+        endif
         !
-        ! components required to get the full impdence tensor self%response [Zxx, Zxy, Zyx, Zyy]
+        if( azimuth == 2.0 ) then
+            self%EHxy(1)%str = "Ey"
+            allocate( self%Ley, source = cSparsevector3D_SG_t() )
+        endif
         !
-        if( azimuth == 1.0 ) self%EHxy(1)%str = "Ex"
-        if( azimuth == 2.0 ) self%EHxy(1)%str = "Ey"
-        if( azimuth == 3.0 ) self%EHxy(1)%str = "Bx"
-        if( azimuth == 4.0 ) self%EHxy(1)%str = "By"
-        if( azimuth == 5.0 ) self%EHxy(1)%str = "Bz"
+        if( azimuth == 3.0 ) then
+            self%EHxy(1)%str = "Bx"
+            allocate( self%Lbx, source = cSparsevector3D_SG_t() )
+        endif
         !
-        allocate( self%comp_names( self%n_comp ) )
+        if( azimuth == 4.0 ) then
+            self%EHxy(1)%str = "By"
+            allocate( self%Lby, source = cSparsevector3D_SG_t() )
+        endif
+        !
+        if( azimuth == 5.0 ) then
+            self%EHxy(1)%str = "Bz"
+            allocate( self%Lbz, source = cSparsevector3D_SG_t() )
+        endif
+        !
+        ! components required to get the full impedance tensor self%response [Zxx, Zxy, Zyx, Zyy]
+        if( allocated( self%comp_names ) ) then
+            !
+            asize = size( self%comp_names )
+            do i = asize, 1, -(1)
+                deallocate( self%comp_names(i)%str )
+            enddo
+            deallocate( self%comp_names )
+            !
+        endif
+        allocate( self%comp_names( 1 ) )
         !
         if( azimuth == 1.0 ) self%comp_names(1)%str = "Ex_Field"
         if( azimuth == 2.0 ) self%comp_names(1)%str = "Ey_Field"
@@ -188,7 +226,7 @@ contains
                 real_part = real( self%response( 1 ), kind=prec )
                 imaginary = real( imag( self%response( 1 ) ), kind=prec )
                 !
-                if( associated( self%predicted_data ) ) call deallocateDataHandleArray( self%predicted_data )
+                if( allocated( self%predicted_data ) ) call deallocateDataHandleArray( self%predicted_data )
                 !
                 call updateDataHandleArray( self%predicted_data, DataHandleCSEM_t( rx_type, code, component, period, tx_location, azimuth, dip, moment, dipole, rx_location, real_part, imaginary ) )
                 !

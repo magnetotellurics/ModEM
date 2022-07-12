@@ -26,7 +26,7 @@ module Transmitter
         !
         class( Source_t ), allocatable    :: source
         !
-        class( cVector_t ), allocatable    :: e_all(:)
+        class( cVector_t ), allocatable, dimension(:) :: e_all
         !
         integer, allocatable, dimension(:) :: receiver_indexes
         !
@@ -37,11 +37,11 @@ module Transmitter
         !
         procedure, public :: updateFwdKey
         !
-        procedure, public :: isEqual => isEqualTransmitter
-        !
         procedure, public :: updateReceiverIndexesArray
         !
         procedure( interface_solve_fwd_tx ), deferred, public :: solveFWD
+        !
+        procedure( interface_is_equal_tx ), deferred, public :: isEqualTx
         !
         procedure( interface_write_tx ), deferred, public     :: write
         !
@@ -57,7 +57,7 @@ module Transmitter
         function interface_is_equal_tx( self, other ) result( equal )
             import :: Transmitter_t
             class( Transmitter_t ), intent( in ) :: self, other
-            logical                                        :: equal
+            logical                              :: equal
         end function interface_is_equal_tx
         !
         subroutine interface_write_tx( self )
@@ -68,22 +68,6 @@ module Transmitter
     end interface
     !
     contains
-        !
-        ! Compare two transmitters
-        function isEqualTransmitter( self, other ) result( equal )
-            implicit none
-            !
-            class( Transmitter_t ), intent( in ) :: self
-            class( Transmitter_t ), intent( in ) :: other
-            logical                              :: equal
-            !
-            equal = .FALSE.
-            !
-            if( ABS( self%period - other%period ) < TOL6 ) then
-                equal = .TRUE.
-            endif
-            !
-        end function isEqualTransmitter
         !
         subroutine initializeTx( self )
             implicit none
@@ -125,22 +109,26 @@ module Transmitter
             integer, intent( in )                   :: new_int
             !
             integer, allocatable, dimension(:)      :: temp_array
-            integer                                 :: idx, istat
+            integer                                 :: nRi, idx
             !
             if( .NOT. allocated( self%receiver_indexes ) ) then
                 allocate( self%receiver_indexes(1) )
                 self%receiver_indexes(1) = new_int
             else
                 !
-                do idx = 1, size( self%receiver_indexes )
+                nRi = size( self%receiver_indexes )
+                !
+                do idx = 1, nRi
                     if ( new_int == self%receiver_indexes( idx ) ) then
                         return
                     end if
                 end do
                 !
-                allocate( temp_array( size( self%receiver_indexes ) + 1 ), STAT=istat )
-                temp_array( 1 : size( self%receiver_indexes ) ) = self%receiver_indexes
-                temp_array( size( self%receiver_indexes ) + 1 ) = new_int
+                allocate( temp_array( nRi + 1 ) )
+                temp_array( 1 : nRi ) = self%receiver_indexes(:)
+                temp_array( nRi + 1 ) = new_int
+                !
+                if( allocated( self%receiver_indexes ) ) deallocate( self%receiver_indexes )
                 self%receiver_indexes = temp_array
                 !
                 deallocate( temp_array )

@@ -21,6 +21,8 @@ module TransmitterCSEM
             !
             procedure, public :: solveFWD => solveFWDTransmitterCSEM
             !
+			procedure, public :: isEqualTx => isEqualTransmitterCSEM
+            !
             procedure, public :: write => writeTransmitterCSEM
             !
     end type TransmitterCSEM_t
@@ -65,6 +67,34 @@ contains
         !
     end subroutine TransmitterCSEM_dtor
     !
+    function isEqualTransmitterCSEM( self, other ) result( equal )
+        implicit none
+        !
+        class( TransmitterCSEM_t ), intent( in ) :: self
+        class( Transmitter_t ), intent( in ) :: other
+        !
+        logical :: equal
+        !
+        equal = .FALSE.
+        !
+        select type( other )
+            !
+            class is( TransmitterCSEM_t )
+                !
+                if( ABS( self%period - other%period ) < TOL6 .AND.    &
+                    self%location(1) == other%location(1) .AND.    &
+                    self%location(2) == other%location(2) .AND.    &
+                    self%location(3) == other%location(3) ) then
+                    equal = .TRUE.
+                endif
+                !
+            class default
+                equal = .FALSE.
+            !
+        end select
+        !
+    end function isEqualTransmitterCSEM
+    !
     subroutine solveFWDTransmitterCSEM( self )
         implicit none
         !
@@ -93,7 +123,7 @@ contains
         end select
         !
         call self%forward_solver%getESolution( self%source, self%e_all( 1 ) )
-        self%e_all( 1 ) =self%e_all( 1 ) + self%source%E
+        call self%e_all( 1 )%add( self%source%E )
         !
         ModeName = "Ex"
         !
@@ -119,8 +149,9 @@ contains
         class( TransmitterCSEM_t ), intent(in)    :: self
         integer                                    :: iRx
         !
-        write( *, "(A20, I8, A10, es12.6, A20, I8)") "TransmitterCSEM: ", self%id,    &
-        " Period: ",    self%period,    &
+        write( *, *) "TransmitterCSEM: ", self%id,    &
+		" Location: [", self%location(1), self%location(2), self%location(3),    &
+        "] Period: ",    self%period,    &
         " N Receivers: ", size( self%receiver_indexes )
         !
     end subroutine writeTransmitterCSEM

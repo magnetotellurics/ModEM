@@ -23,7 +23,7 @@ module ModelParameterCell_SG
          !
          class( Grid_t ), allocatable :: paramGrid
          !
-         type( rScalar3D_SG_t ) :: cellCond
+         type( rScalar3D_SG_t ), allocatable :: cellCond
          !
         contains
               !
@@ -89,17 +89,17 @@ contains
           grid%dx, grid%dy, &
           grid%dz( grid%nzAir+1:grid%nz ) )
         !
-        self%cellCond = ccond
+        allocate( self%cellCond, source = ccond )
         !
         if ( present( paramType ) ) then
-              call self%SetSigMap( paramType )
-              ! We initially specify airCond as linear conductivity!
-        !    self%AirCond = self%SigMap( self%airCond, "inverse" )
-        !    GDE:  we should always keep AirCond as actual linear conductvity!
-        !        Never apply SigMap to air layers!!!
+            call self%SetSigMap( paramType )
+            ! We initially specify airCond as linear conductivity!
+            !    self%AirCond = self%SigMap( self%airCond, "inverse" )
+            !    GDE:  we should always keep AirCond as actual linear conductvity!
+            !        Never apply SigMap to air layers!!!
         end if
         !
-        self%is_allocated = .true.
+        self%is_allocated = .TRUE.
         !
     end function ModelParameterCell_SG_ctor
     !
@@ -111,6 +111,7 @@ contains
         !
         !write(*,*) "Destructor ModelParameterCell_SG"
         !
+        deallocate( self%cellCond )
         deallocate( self%ParamGrid )
         !
     end subroutine ModelParameterCell_SG_dtor
@@ -250,11 +251,11 @@ contains
     end subroutine copyFromModelParameterCell
     !
     !    NOT SURE WE WANT THESE MAPPINGS TO BE FUNCTIONS ...
-    function PDEmappingModelParameterCell( self ) result( eVec )
+    subroutine PDEmappingModelParameterCell( self, eVec )
         implicit none
         !
         class( ModelParameterCell_SG_t ), intent( in ) :: self
-        class( rVector_t ), allocatable                :: eVec
+        class( rVector_t ), intent( inout )            :: eVec
         !
         type( rScalar3D_SG_t ) :: SigmaCell
         integer :: i, j, k, k0, k1, k2
@@ -264,10 +265,10 @@ contains
         select type( grid => self%grid )
             class is( Grid3D_SG_t )
                 !
-                allocate( eVec, source = rVector3D_SG_t( grid, EDGE ) )
+                eVec = rVector3D_SG_t( grid, EDGE )
                 !
-				call eVec%zeros()
-				!
+                call eVec%zeros()
+                !
                 SigmaCell = rScalar3D_SG_t( grid, CELL )
                 !
                 k0 = self%grid%nzAir
@@ -289,27 +290,24 @@ contains
                 ! surrounding edge -- just 4*V_E        
                 call eVec%divs( self%metric%Vedge )
                 !
-                !  still need to divide by 4 ...
-                !call eVec%mults( 0.25_prec )
-                !
             class default
                 write(*, *) "ERROR:ModelParameterCell_SG:PDEmapping:"
                 stop "              Incompatible grid. Exiting."
                 !
         end select
         !
-    end function PDEmappingModelParameterCell
+    end subroutine PDEmappingModelParameterCell
     
     !**
     ! PDE mapping linearized at background model
     ! parameter m0, applied to dm result is an edge-vector eVec.
     !*
-    function dPDEmappingModelParameterCell( self, dm ) result( eVec )
+    subroutine dPDEmappingModelParameterCell( self, dm, eVec )
         implicit none
         !
         class( ModelParameterCell_SG_t ), intent( in ) :: self
         class( ModelParameter_t ), intent( in )        :: dm
-        class( rVector_t ), allocatable                :: eVec
+        class( rVector_t ), intent( inout )            :: eVec
         !
         type( rScalar3D_SG_t ) :: SigmaCell
         character( len=5 ), parameter :: JOB = "DERIV"
@@ -321,7 +319,7 @@ contains
                     select type( grid => self%grid )
                     class is( Grid3D_SG_t )
                           !
-                          allocate( eVec, source = rVector3D_SG_t( grid, EDGE ) )
+                          eVec = rVector3D_SG_t( grid, EDGE )
                           !
                           SigmaCell = rScalar3D_SG_t( grid, CELL )
                         
@@ -362,7 +360,7 @@ contains
                     !
         end select
         !
-    end function dPDEmappingModelParameterCell
+    end subroutine dPDEmappingModelParameterCell
     !**
     ! Transpose (adjoint) of dPDEmapping, applied to an edge-vector eVec
     ! result is a model parameter dm.

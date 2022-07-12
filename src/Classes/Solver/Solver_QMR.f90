@@ -34,7 +34,7 @@ contains
         !
         call self%init()
         !
-        self%preconditioner = PreConditioner_MF_CC_t( model_operator )
+        allocate( self%preconditioner, source = PreConditioner_MF_CC_t( model_operator ) )
         !
         call self%setDefaults()
         !
@@ -125,11 +125,9 @@ contains
         !
         rnorm = CDSQRT( R%dotProd( R ) )
         !
+        ! Initial guess relative error
         iter = 1
         self%relErr( iter ) = real( rnorm / bnorm )
-        !
-        ! Start guess relative error
-        write( *, * ) "QMR iter, self%relErr( iter )", iter, self%relErr( iter )
         !
         VT = R 
         ilu_adjt = .FALSE.
@@ -147,6 +145,9 @@ contains
         ! and the iterations are less than maxIt
         do while( ( self%relErr( iter ) .GT. self%tolerance ) .AND. ( iter .LT. self%max_iter ) )
             !
+            ! Verbosis
+            !write( *, * ) "QMR iter, self%relErr( iter )", iter, self%relErr( iter )
+            !
             if( ( RHO .EQ. C_ZERO ) .OR. ( PSI .EQ. C_ZERO ) ) then
                 !
                 self%failed = .TRUE.
@@ -159,8 +160,11 @@ contains
             psiInv = ( 1 / PSI )
             !
             !    use functions here -- could make subroutines that don"t overwrite
-            V = VT%mult( rhoInv )
-            W = WT%mult( psiInv )
+            V = VT
+            call V%mult( rhoInv )
+            !
+            W = WT
+            call W%mult( psiInv )
             !
             !  use subroutines here to overwrite with rescalled vectors
             call Y%multS( rhoInv )
@@ -250,8 +254,11 @@ contains
             ETA = -ETA * RHO1 * GAMM * GAMM / ( BETA * GAMM1 * GAMM1 )
             !
             if( iter .EQ. 1 ) then
-                D = P%mult( ETA )  !  D = ETA*P
-                S = PT%mult( ETA ) !  S = ETA * PT
+                D = P
+                call D%mult( ETA )  !  D = ETA*P
+                !
+                S = PT
+                call S%mult( ETA ) !  S = ETA * PT
             else
                 TM2 = THET1 * THET1 * GAMM * GAMM
                 call D%linCombS( P, TM2, ETA )  !  D = TM2 * D + ETA * P 
@@ -266,8 +273,6 @@ contains
             iter = iter + 1
             !
             self%relErr( iter ) = real( rnorm / bnorm )
-            !
-            write( *, * ) "QMR iter, self%relErr( iter )", iter, self%relErr( iter )
             !
         end do
         !

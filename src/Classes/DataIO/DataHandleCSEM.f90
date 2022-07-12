@@ -18,13 +18,13 @@ module DataHandleCSEM
     !
 contains
     !
-    function DataHandleCSEM_ctor( rx_type, code, component, period, tx_location, azimuth, dip, moment, dipole, rx_location, real, imaginary ) result( self )
+    function DataHandleCSEM_ctor( rx_type, code, component, period, tx_location, azimuth, dip, moment, dipole, rx_location, rvalue, imaginary ) result( self )
         implicit none
         !
         integer, intent( in )                   :: rx_type
         character(:), allocatable, intent( in ) :: code, component
         real( kind=prec ), intent( in )         :: tx_location(3), azimuth, dip, moment
-        real( kind=prec ), intent( in )         :: period, rx_location(3), real, imaginary
+        real( kind=prec ), intent( in )         :: period, rx_location(3), rvalue, imaginary
         character(:), allocatable :: dipole
         !
         !
@@ -42,7 +42,7 @@ contains
         self%moment      = moment
         self%dipole      = dipole
         self%rx_location = rx_location
-        self%real        = real
+        self%rvalue      = rvalue
         self%imaginary   = imaginary
         !
     end function DataHandleCSEM_ctor

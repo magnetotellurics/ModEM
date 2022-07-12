@@ -43,7 +43,7 @@ contains
         !
         type( ReceiverOffDiagonalImpedance_t ) :: self
         !
-        character(:), allocatable :: aux_str
+        integer :: i, asize
         !
         ! write(*,*) "Constructor ReceiverOffDiagonalImpedance_t"
         !
@@ -56,13 +56,27 @@ contains
         self%n_comp = 4
         self%is_complex = .TRUE.
         !
-        allocate( self%EHxy( self%n_comp ) )
+        ! components required to get the full impedance evaluation vectors [Ex, Ey, Bx, By]
+        if( allocated( self%EHxy ) ) then
+            !
+            asize = size( self%EHxy )
+            do i = asize, 1, -(1)
+                deallocate( self%EHxy(i)%str )
+            enddo
+            deallocate( self%EHxy )
+            !
+        endif
+        allocate( self%EHxy( 4 ) )
         !
-        ! components required to get the full impdence tensor self%response [Zxx, Zxy, Zyx, Zyy]
         self%EHxy(1)%str = "Ex"
         self%EHxy(2)%str = "Ey"
         self%EHxy(3)%str = "Bx"
         self%EHxy(4)%str = "By"
+        !
+        allocate( self%Lex, source = cSparsevector3D_SG_t() )
+        allocate( self%Ley, source = cSparsevector3D_SG_t() )
+        allocate( self%Lbx, source = cSparsevector3D_SG_t() )
+        allocate( self%Lby, source = cSparsevector3D_SG_t() )
         !
     end function ReceiverOffDiagonalImpedance_ctor
     !
@@ -192,7 +206,7 @@ contains
         !
         !#Period(s) Code GG_Lat GG_Lon X(m) Y(m) self%response(m) Component Real Imag Error
         !
-        if( associated( self%predicted_data ) ) call deallocateDataHandleArray( self%predicted_data )
+        if( allocated( self%predicted_data ) ) call deallocateDataHandleArray( self%predicted_data )
         !
         do i = 1, self%n_comp
             !

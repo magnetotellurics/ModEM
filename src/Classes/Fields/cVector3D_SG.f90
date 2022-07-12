@@ -57,7 +57,7 @@ module cVector3D_SG
         ! Arithmetic operations
         !*
         procedure, public :: zeros    => zerosCVector3D_SG
-        procedure, public :: add1     => add1CVector3D_SG
+        procedure, public :: add      => addCVector3D_SG
         procedure, public :: sub1     => sub1CVector3D_SG
         procedure, public :: mult1    => mult1CVector3D_SG
         procedure, public, pass(self) :: mult2 => mult2CVector3D_SG
@@ -564,34 +564,34 @@ contains
     ! boundaryCVector3D_SG
     ! Returns a copy of this vector with all interiorCVector3D_SG elements ser to zero.
     !*
-    function boundaryCVector3D_SG( self ) result( E )
+    subroutine boundaryCVector3D_SG( self, bdry )
         implicit none
         !
         class( cVector3D_SG_t ), intent( in ) :: self
         !
-        class( cVector_t ), allocatable :: E
+        class( cVector_t ), allocatable, intent( inout )   :: bdry
         !
-        allocate( E, source = self )
+        allocate( bdry, source = self )
         !
-        call E%setAllInterior( C_ZERO )
+        call bdry%setAllInterior( C_ZERO )
         !
-    end function boundaryCVector3D_SG
+    end subroutine boundaryCVector3D_SG
     !**
     ! interiorCVector3D_SG
     ! Returns a copy of this vector with all boundaryCVector3D_SG elements ser to zero.
     !*
-    function interiorCVector3D_SG(self) result(E)
+    subroutine interiorCVector3D_SG( self, intr )
         implicit none
         !
         class( cVector3D_SG_t ), intent( in ) :: self
         !
-        class( cVector_t ), allocatable :: E
+        class( cVector_t ), allocatable, intent( inout )   :: intr
         !
-        allocate( E, source = self )
+        allocate( intr, source = self )
         !
-        call E%setAllboundary( C_ZERO )
+        call intr%setAllboundary( C_ZERO )
         !
-    end function interiorCVector3D_SG
+    end subroutine interiorCVector3D_SG
     !
     !************************************************
     ! Data access
@@ -741,35 +741,31 @@ contains
         
     end subroutine zerosCVector3D_SG
     !**
-    ! add1CVector3D_SG
+    ! addCVector3D_SG
     !*
-    function add1CVector3D_SG( lhs, rhs ) result( Eout )
+    subroutine addCVector3D_SG( self, rhs )
         implicit none
         !
-        class( cVector3D_SG_t ), intent( in ) :: lhs
-        class( cVector_t ), intent( in )      :: rhs
-        class( cVector_t ), allocatable       :: Eout
+        class( cVector3D_SG_t ), intent( inout ) :: self
+        class( cVector_t ), intent( in )         :: rhs
         !
-        if (lhs%isCompatible(rhs)) then
-            allocate(Eout, source = cVector3D_SG_t(lhs%grid, lhs%gridType))
-         !
-         select type(Eout)
+        if (self%isCompatible(rhs)) then
+        !
+        select type(rhs)
             class is( cVector3D_SG_t )
                 !
-               select type(rhs)
-                class is( cVector3D_SG_t )
-                 !
-                Eout%x = lhs%x + rhs%x
-                    Eout%y = lhs%y + rhs%y
-                    Eout%z = lhs%z + rhs%z
-                end select
-            end select
+                self%x = self%x + rhs%x
+                self%y = self%y + rhs%y
+                self%z = self%z + rhs%z
+                !
+        end select
+        !
         else
-            write( *, * ) "ERROR:cVector3D_SG::add1CVector3D_SG"
+            write( *, * ) "ERROR:cVector3D_SG::addCVector3D_SG"
             stop "    Incompatible inputs. Exiting."
         end if
         !
-    end function add1CVector3D_SG
+    end subroutine addCVector3D_SG
     !**
     ! sub1CVector3D_SG
     !*
@@ -802,110 +798,85 @@ contains
     !**
     ! mult1CVector3D_SG
     !*
-    function mult1CVector3D_SG(lhs, rhs) result(Eout)
+    subroutine mult1CVector3D_SG( self, rhs )
         implicit none
         !
-        class( cVector3D_SG_t ), intent( in ) :: lhs
-        class( cVector_t ), intent( in )      :: rhs
-        class( cVector_t ), allocatable       :: Eout
+        class( cVector3D_SG_t ), intent( inout ) :: self
+        class( cVector_t ), intent( in )         :: rhs
         !
-        if (lhs%isCompatible(rhs)) then
+        if (self%isCompatible(rhs)) then
             !
-            allocate(Eout, source = cVector3D_SG_t(lhs%grid, lhs%gridType))
-            !
-            select type(Eout)
+            select type(rhs)
                 class is( cVector3D_SG_t )
-                    select type(rhs)
-                        class is( cVector3D_SG_t )
-                            Eout%x = lhs%x * rhs%x
-                            Eout%y = lhs%y * rhs%y
-                            Eout%z = lhs%z * rhs%z
-                    end select
+                    self%x = self%x * rhs%x
+                    self%y = self%y * rhs%y
+                    self%z = self%z * rhs%z
             end select
             !
         else
             write( *, * ) "ERROR:cVector3D_SG::mult_1"
             stop "    Incompatible inputs. Exiting."
         end if
-    end function mult1CVector3D_SG
+    end subroutine mult1CVector3D_SG
 
     !**
     ! mult2CVector3D_SG
     !*
-    function mult2CVector3D_SG( self, c ) result( Eout )
+    subroutine mult2CVector3D_SG( self, c )
         implicit none
         !
-        class( cVector3D_SG_t ), intent( in ) :: self
-        complex( kind=prec ) , intent( in )   :: c
+        class( cVector3D_SG_t ), intent( inout ) :: self
+        complex( kind=prec ) , intent( in )      :: c
         !
-        class( cVector_t ), allocatable       :: Eout
+        self%x = c * self%x
+        self%y = c * self%y
+        self%z = c * self%z
         !
-        allocate( Eout, source = cVector3D_SG_t( self%grid, self%gridType ) )
-        !
-        select type(Eout)
-            class is( cVector3D_SG_t )
-                Eout%x = c * self%x
-                Eout%y = c * self%y
-                Eout%z = c * self%z
-        end select
-        !
-    end function mult2CVector3D_SG
+    end subroutine mult2CVector3D_SG
     !**
     ! mult3CVector3D_SG
     !*
-    function mult3CVector3D_SG(lhs, rhs) result(Eout)
+    subroutine mult3CVector3D_SG( self, rhs )
         implicit none
         !
-        class( cVector3D_SG_t ), intent( in )  :: lhs
-        class( rVector_t )        , intent( in ) :: rhs
-        class( cVector_t ), allocatable        :: Eout
+        class( cVector3D_SG_t ), intent( inout ) :: self
+        class( rVector_t ), intent( in )         :: rhs
         !
-        if (lhs%isCompatible(rhs)) then
+        if (self%isCompatible(rhs)) then
             !
-            allocate(Eout, source = cVector3D_SG_t(lhs%grid, lhs%gridType))
-            !
-            select type(Eout)
-                class is( cVector3D_SG_t )
-                    select type(rhs)
-                        class is(rVector3D_SG_t)
-                            Eout%x = lhs%x * rhs%x
-                            Eout%y = lhs%y * rhs%y
-                            Eout%z = lhs%z * rhs%z
-                    end select
+            select type(rhs)
+                class is(rVector3D_SG_t)
+                    self%x = self%x * rhs%x
+                    self%y = self%y * rhs%y
+                    self%z = self%z * rhs%z
             end select
             !
         else
             write( *, * ) "ERROR:cVector3D_SG::mult3"
             stop "    Incompatible inputs. Exiting."
         end if
-    end function mult3CVector3D_SG
+    end subroutine mult3CVector3D_SG
     !
-    function mult4CVector3D_SG(lhs, rhs) result(Eout)
+    subroutine mult4CVector3D_SG( self, rhs )
         implicit none
         !
-        class( cVector3D_SG_t ), intent( in )  :: lhs
-        class( rScalar_t )        , intent( in ) :: rhs
-        class( cVector_t ), allocatable        :: Eout
+        class( cVector3D_SG_t ), intent( inout ) :: self
+        class( rScalar_t ), intent( in )         :: rhs
         !
-        !if (lhs%isCompatible(rhs)) then
+        !if (self%isCompatible(rhs)) then
             !
-            allocate(Eout, source = cVector3D_SG_t(lhs%grid, lhs%gridType))
-            !
-            select type(Eout)
-                class is( cVector3D_SG_t )
-                    select type(rhs)
-                        class is(rScalar3D_SG_t)
-                            Eout%x = lhs%x * rhs%v
-                            Eout%y = lhs%y * rhs%v
-                            Eout%z = lhs%z * rhs%v
-                    end select
+            select type(rhs)
+                class is(rScalar3D_SG_t)
+                    self%x = self%x * rhs%v
+                    self%y = self%y * rhs%v
+                    self%z = self%z * rhs%v
             end select
             !
         !else
             !write( *, * ) "ERROR:cVector3D_SG::mult3"
             !stop "    Incompatible inputs. Exiting."
         !end if
-    end function mult4CVector3D_SG
+    end subroutine mult4CVector3D_SG
     !**
     ! mults3CVector3D_SG
     !*
@@ -1276,9 +1247,16 @@ contains
                 self%NdY = rhs%NdY
                 self%NdZ = rhs%NdZ
                 self%Nxyz = rhs%Nxyz
-                self%x = rhs%x
-                self%y = rhs%y
-                self%z = rhs%z
+                !
+                if( allocated( self%x ) ) deallocate( self%x )
+                allocate( self%x, source = rhs%x )
+                !
+                if( allocated( self%y ) ) deallocate( self%y )
+                allocate( self%y, source = rhs%y )
+                !
+                if( allocated( self%z ) ) deallocate( self%z )
+                allocate( self%z, source = rhs%z )
+                !
                 self%is_allocated = rhs%is_allocated
                 !
             class default

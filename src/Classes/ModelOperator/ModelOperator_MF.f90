@@ -108,7 +108,8 @@ contains
         !
         !write(*,*) "Constructor ModelOperator_MF"
         !
-        self%is_allocated = .FALSE.
+        call self%init()
+        !
         self%eqset = .FALSE.
         !
         call date_and_time( values=self%mKey )
@@ -118,7 +119,7 @@ contains
         self%nz = 0
         !
         ! Instantiation of the specific object MetricElements
-        self%metric = MetricElements_CSG_t( grid )
+        allocate( self%metric, source = MetricElements_CSG_t( grid ) )
         !
         call self%create( grid )
         !
@@ -416,7 +417,7 @@ contains
         class( ModelOperator_MF_t), intent( inout ) :: self
         class( ModelParameter_t), intent( in )      :: ModPar
         !
-        self%sigma_E = ModPar%PDEmapping()
+        call ModPar%PDEmapping( self%sigma_E )
         !
     end subroutine setCondModelOperatorMF
     !**
@@ -497,7 +498,7 @@ contains
             !
         end select
         !
-        self%c = self%c * self%Metric%Vnode
+        call self%c%mult( self%Metric%Vnode )
         !
         ! To be explicit set coefficients that multiply edges connected to
         ! boundary nodes to zero (this gaurantees that the BC on the potential

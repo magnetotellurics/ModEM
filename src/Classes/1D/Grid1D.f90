@@ -9,17 +9,16 @@ module Grid1D
         !**
         ! Grid Dimensions:
         integer :: nz, nzAir, nzEarth        ! Number of earth layers
-
+        !
         !    Grid variables
         real( kind=prec ), allocatable, dimension(:) :: dz
         real( kind=prec ), allocatable, dimension(:) :: dzInv
         real( kind=prec ), allocatable, dimension(:) :: delZ
         real( kind=prec ), allocatable, dimension(:) :: delZInv
-        
+        !
         ! Book-keeping on cumulative distances
         real( kind=prec ), allocatable, dimension(:) :: zEdge
         real( kind=prec ), allocatable, dimension(:) :: zCenter
-
         !**
         ! Total thickness of the air above
         !*
@@ -62,7 +61,8 @@ contains
         !
         self%nz = 0
         self%nzAir = 0
-        self%nzEarth = 0 
+        self%nzEarth = 0
+        self%zAirThick = 0.0
         !
         self%is_allocated = .FALSE.
         !
@@ -72,7 +72,7 @@ contains
         !
     end function Grid1D_ctor
     !
-    subroutine Grid1D_dtor(self)
+    subroutine Grid1D_dtor( self )
         implicit none
         !
         type( Grid1D_t ), intent( inout ) :: self
@@ -87,16 +87,12 @@ contains
         implicit none
         !
         class( Grid1D_t ), intent( inout ) :: self
-        integer, intent( in )              :: nzAir, nzEarth
-        !
-        integer :: nz
-        !
-        nz = nzEarth + nzAir
+        integer, intent( in )             :: nzAir, nzEarth
         !
         self%nzAir = nzAir
         self%nzEarth = nzEarth
         !
-        self%nz = nz
+        self%nz = nzEarth + nzAir
         !
         call self%allocate()
         !
@@ -107,15 +103,12 @@ contains
         !
         class( Grid1D_t ), intent( inout ) :: self
         !
-        integer :: nz
-        !
-        nz = self%nz
-        allocate(self%dz(nz))
-        allocate(self%dzInv(nz))
-        allocate(self%delZ(nz + 1))
-        allocate(self%delZInv(nz + 1))
-        allocate(self%zEdge(nz + 1))
-        allocate(self%zCenter(nz))
+        allocate( self%dz( self%nz ) )
+        allocate( self%dzInv( self%nz ) )
+        allocate( self%delZ( self%nz + 1) )
+        allocate( self%delZInv( self%nz + 1) )
+        allocate( self%zEdge( self%nz + 1) )
+        allocate( self%zCenter( self%nz ) )
         !
         self%is_allocated = .TRUE.
         !
@@ -126,8 +119,6 @@ contains
         !
         class( Grid1D_t ), intent( inout ) :: self
         !
-        if ( .NOT. self%is_allocated ) return
-        !
         if( allocated(self%dz) ) deallocate(self%dz)
         if( allocated(self%dzInv) ) deallocate(self%dzInv)
         if( allocated(self%delZ) ) deallocate(self%delZ)
@@ -135,12 +126,16 @@ contains
         if( allocated(self%zEdge) ) deallocate(self%zEdge)
         if( allocated(self%zCenter) ) deallocate(self%zCenter)
         !
-        self%nz = 0
-        self%nzAir = 0
-        self%nzEarth = 0
-        self%zAirThick = R_ZERO
-        !
-        self%is_allocated = .FALSE.
+        if( self%is_allocated ) then
+            !
+            self%nz = 0
+            self%nzAir = 0
+            self%nzEarth = 0
+            self%zAirThick = R_ZERO
+            !
+            self%is_allocated = .FALSE.
+            !
+        endif
         !
     end subroutine deallocateGrid1D
     !
@@ -205,11 +200,11 @@ contains
         !
     end subroutine getDimensionsGrid1D
 
-    subroutine setCellSizesGrid1D(self, dz)
+    subroutine setCellSizesGrid1D( self, dz )
         implicit none
         !
-        class( Grid1D_t ), intent( inout ) :: self
-        real( kind=prec ) , dimension(:), intent( in ) :: dz
+        class( Grid1D_t ), intent( inout )            :: self
+        real( kind=prec ), dimension(:), intent( in ) :: dz
         !
         if ( .NOT. self%is_allocated ) then
             write(*, *) "ERROR:Grid1D_t:SetCellSizes:"

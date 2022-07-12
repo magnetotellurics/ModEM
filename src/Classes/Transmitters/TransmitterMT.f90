@@ -22,6 +22,8 @@ module TransmitterMT
             !
             procedure, public :: solveFWD => solveFWDTransmitterMT
             !
+            procedure, public :: isEqualTx => isEqualTransmitterMT
+            !
             procedure, public :: write    => writeTransmitterMT
             !
     end type TransmitterMT_t
@@ -61,6 +63,31 @@ module TransmitterMT
         call self%dealloc()
         !
     end subroutine TransmitterMT_dtor
+    !
+    function isEqualTransmitterMT( self, other ) result( equal )
+        implicit none
+        !
+        class( TransmitterMT_t ), intent( in ) :: self
+        class( Transmitter_t ), intent( in ) :: other
+        !
+        logical :: equal
+        !
+        equal = .FALSE.
+        !
+        select type( other )
+            !
+            class is( TransmitterMT_t )
+                !
+                if( ABS( self%period - other%period ) < TOL6 ) then
+                    equal = .TRUE.
+                endif
+                !
+            class default
+                equal = .FALSE.
+            !
+        end select
+        !
+    end function isEqualTransmitterMT
     !
     ! Set self%e_all from forward modelling solver
     subroutine solveFWDTransmitterMT( self )

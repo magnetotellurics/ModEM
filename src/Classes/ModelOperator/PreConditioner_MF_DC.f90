@@ -12,9 +12,11 @@ module PreConditioner_MF_DC
     !
     type, extends( PreConditioner_t ) :: PreConditioner_MF_DC_t
          !
-         type( cScalar3D_SG_t ) :: d
+         type( cScalar3D_SG_t ), allocatable :: d
          !
          contains
+             !
+             final :: PreConditioner_MF_DC_dtor
              !
              procedure, public :: setPreConditioner => setPreConditioner_MF_DC
              procedure, public :: LTSolve => LTSolvePreConditioner_MF_DC
@@ -46,7 +48,7 @@ contains
         select type( grid => model_operator%metric%grid )
             class is( Grid3D_SG_t )
                 !
-                self%d = cScalar3D_SG_t( grid, NODE )
+                allocate( self%d, source = cScalar3D_SG_t( grid, NODE ) )
                 !
                 call self%d%zeros()
                 !
@@ -56,6 +58,18 @@ contains
         end select
         !
     end function PreConditioner_MF_DC_ctor
+	!
+    subroutine PreConditioner_MF_DC_dtor( self )
+        implicit none
+        !
+        type( PreConditioner_MF_DC_t ), intent( inout ) :: self
+        !
+        !write(*,*) "Destructor PreConditioner_MF_DC_t:", self%id
+        !
+        deallocate( self%d )
+        !
+    end subroutine PreConditioner_MF_DC_dtor
+    !
     !**
     ! SetPreConditioner -- could be an abstract routine, but in the CC case
     !        we pass omega as a parameter, and that is not relevant here -- but since

@@ -23,7 +23,7 @@ module TransmitterFArray
     end type Tx_t
     !
     ! Global Array of Transmitters
-    type( Tx_t ), pointer, dimension(:), save, public :: transmitters
+    type( Tx_t ), allocatable, target, dimension(:), save, public :: transmitters
     !
     public :: getTransmitter, printTransmitterArray
     public :: updateTransmitterArray, deallocateTransmitterArray
@@ -31,22 +31,20 @@ module TransmitterFArray
 contains
     !
     ! Add a new Transmitter_t and initialize it if necessary
-    function updateTransmitterArray( new_tx ) result( id )
+    subroutine updateTransmitterArray( new_tx )
         implicit none
         !
-        class( Transmitter_t ), intent( in ) :: new_tx
-        integer                              :: id
+        class( Transmitter_t ), intent( in )    :: new_tx
         !
         integer                                 :: iTx, nTx
         type( Tx_t ), allocatable, dimension(:) :: temp_array
         type( Tx_t ), allocatable               :: temp_tx
         !
-        if( .NOT. associated( transmitters ) ) then
-            allocate( transmitters( 1 ) )
+        if( .NOT. allocated( transmitters ) ) then
+            allocate( transmitters(1) )
             allocate( Tx_t :: temp_tx )
             temp_tx%Tx = new_tx
             temp_tx%Tx%id = 1
-            id = 1
             transmitters( 1 ) = temp_tx
             deallocate( temp_tx )
         else
@@ -54,8 +52,7 @@ contains
             nTx = size( transmitters )
             !
             do iTx = 1, size( transmitters )
-                if( new_tx%isEqual( transmitters( iTx )%Tx ) ) then
-                    id = 0
+                if( new_tx%isEqualTx( transmitters( iTx )%Tx ) ) then
                     return
                 end if
             end do
@@ -65,10 +62,10 @@ contains
             allocate( Tx_t :: temp_tx )
             temp_tx%Tx = new_tx
             temp_tx%Tx%id = nTx + 1
-            id = nTx + 1
             !
             temp_array( nTx + 1 ) = temp_tx
             !
+            if( allocated( transmitters ) ) deallocate( transmitters )
             allocate( transmitters, source = temp_array )
             !
             deallocate( temp_tx )
@@ -76,13 +73,14 @@ contains
             !
         endif
         !
-    end function updateTransmitterArray
+    end subroutine updateTransmitterArray
     !
     function getTransmitter( iTx ) result( tx )
+        implicit none
         !
-        integer                                        :: iTx
+        integer                         :: iTx
         !
-        class( Transmitter_t ), pointer            :: tx
+        class( Transmitter_t ), pointer :: tx
         !
         tx => transmitters( iTx )%Tx
         !
@@ -90,16 +88,22 @@ contains
     !
     !
     subroutine deallocateTransmitterArray()
-        integer                    :: ntx, itx
-        class( Tx_t ), allocatable :: alloc_tx
+        implicit none
+        !
+        integer                :: ntx, itx
+        class( Tx_t ), pointer :: alloc_tx
         !
         !write( *, * ) "deallocateTransmitterArray:", size( transmitters )
         !
         ntx = size( transmitters )
-        do itx = 1, ntx
-            alloc_tx = transmitters( itx )
-            deallocate( alloc_tx )
-        end do
+        !
+        if( ntx == 1 ) then
+            deallocate( transmitters(1)%Tx )
+        else
+            do itx = ntx, 1, -(1)
+                deallocate( transmitters( itx )%Tx )
+            end do
+        endif
         !
         deallocate( transmitters )
         !
@@ -107,13 +111,15 @@ contains
     !
     ! Prints the content of the transmitters on screen
     subroutine printTransmitterArray()
-        integer                    :: itx
-        class( Tx_t ), allocatable :: alloc_tx
+        implicit none
+        !
+        integer                :: itx
+        class( Tx_t ), pointer :: alloc_tx
         !
         print *, size( transmitters ), " TransmitterFArray_t:"
         !
         do itx = 1, size( transmitters )
-            alloc_tx = transmitters( itx )
+            alloc_tx => transmitters( itx )
             call alloc_tx%Tx%write()
         end do
         !

@@ -54,7 +54,7 @@ module rVector3D_SG
         !**
         ! Input/Output
         !*
-        procedure, public :: read    => readRVector3D_SG
+        procedure, public :: read  => readRVector3D_SG
         procedure, public :: write => writeRVector3D_SG
         !**
         ! Boundary operations
@@ -121,7 +121,7 @@ contains
         implicit none
         !
         class( Grid3D_SG_t ), target, intent( in ) :: igrid
-        character(*), intent( in )                 :: gridType
+        character( len=4 ), intent( in )            :: gridType
         !
         integer :: status
         type( rVector3D_SG_t ) :: self
@@ -195,16 +195,20 @@ contains
         !
         !write( *, * ) "Destructor rVector3D_SG"
         !
-        deallocate( self%x )
-        deallocate( self%y )
-        deallocate( self%z )
-        !
-        self%nx = 0
-        self%ny = 0
-        self%nz = 0
-        !
-        self%gridType = ""
-        self%is_allocated = .FALSE.
+        !if( self%is_allocated ) then
+            !
+            if( allocated( self%x ) ) deallocate( self%x )
+            if( allocated( self%y ) ) deallocate( self%y )
+            if( allocated( self%z ) ) deallocate( self%z )
+            !
+            self%nx = 0
+            self%ny = 0
+            self%nz = 0
+            !
+            self%gridType = ""
+            self%is_allocated = .FALSE.
+            !
+        !endif
         !
     end subroutine rVector3D_SG_dtor
     !
@@ -786,25 +790,19 @@ contains
     !**
     ! sub1RVector3D_SG
     !*
-    function sub1RVector3D_SG( lhs, rhs ) result( Eout )
+    subroutine sub1RVector3D_SG( lhs, rhs )
         implicit none
         !
-        class( rVector3D_SG_t ), intent( in ) :: lhs
-        class( rVector_t ), intent( in )      :: rhs
-        class( rVector_t ), allocatable       :: Eout
+        class( rVector3D_SG_t ), intent( inout ) :: lhs
+        class( rVector_t ), intent( in )         :: rhs
         !
-        if(lhs%isCompatible(rhs)) then
+        if( lhs%isCompatible( rhs ) ) then
             !
-            allocate(Eout, source = rVector3D_SG_t(lhs%grid, lhs%gridType))
-            !
-            select type( Eout )
+            select type( rhs )
                 class is( rVector3D_SG_t )
-                  select type(rhs)
-                      class is( rVector3D_SG_t )
-                          Eout%x = lhs%x - rhs%x
-                          Eout%y = lhs%y - rhs%y
-                          Eout%z = lhs%z - rhs%z
-                  end select
+                    lhs%x = lhs%x - rhs%x
+                    lhs%y = lhs%y - rhs%y
+                    lhs%z = lhs%z - rhs%z
             end select
             !
         else
@@ -812,29 +810,23 @@ contains
             stop "    Incompatible inputs. Exiting."
         endif
         !
-    end function sub1RVector3D_SG
+    end subroutine sub1RVector3D_SG
     !**
     ! mult1RVector3D_SG
     !*
-    function mult1RVector3D_SG( lhs, rhs ) result( Eout )
+    subroutine mult1RVector3D_SG( self, rhs )
         implicit none
         !
-        class( rVector3D_SG_t ), intent( in ) :: lhs
-        class( rVector_t ), intent( in )      :: rhs
-        class( rVector_t ), allocatable       :: Eout
+        class( rVector3D_SG_t ), intent( inout ) :: self
+        class( rVector_t ), intent( in )         :: rhs
         !
-        if(lhs%isCompatible(lhs).AND.lhs%isCompatible(rhs)) then
+        if( self%isCompatible(rhs) ) then
             !
-            allocate( Eout, source = rVector3D_SG_t(lhs%grid, lhs%gridType) )
-            !
-            select type( Eout )
+            select type(rhs)
                 class is( rVector3D_SG_t )
-                  select type(rhs)
-                      class is( rVector3D_SG_t )
-                          Eout%x = lhs%x * rhs%x
-                          Eout%y = lhs%y * rhs%y
-                          Eout%z = lhs%z * rhs%z
-                end select
+                    self%x = self%x * rhs%x
+                    self%y = self%y * rhs%y
+                    self%z = self%z * rhs%z
             end select
             !
         else
@@ -842,27 +834,21 @@ contains
             stop "    Incompatible inputs. Exiting."
         endif
         !
-    end function mult1RVector3D_SG
+    end subroutine mult1RVector3D_SG
     !**
     ! mult2RVector3D_SG
     !*
-    function mult2RVector3D_SG( c, self ) result( Eout )
+    subroutine mult2RVector3D_SG( self, c )
         implicit none
         !
-        real( kind=prec ), intent( in )       :: c
-        class( rVector3D_SG_t ), intent( in ) :: self
-        class( rVector_t ), allocatable       :: Eout
+        class( rVector3D_SG_t ), intent( inout ) :: self
+        real( kind=prec ), intent( in )          :: c
         !
-        allocate(Eout, source = rVector3D_SG_t(self%grid, self%gridType))
+        self%x = c * self%x
+        self%y = c * self%y
+        self%z = c * self%z
         !
-        select type( Eout )
-            class is( rVector3D_SG_t )
-                Eout%x = c * self%x
-                Eout%y = c * self%y
-                Eout%z = c * self%z
-        end select
-        !
-    end function mult2RVector3D_SG
+    end subroutine mult2RVector3D_SG
     !**
     ! div1RVector3D_SG
     !*
@@ -1136,13 +1122,13 @@ contains
                         end do
                         
                         do ix = 2, self%grid%nx
-							  do iy = 2, self%grid%ny
-								 do iz = 1, self%grid%nz
-									self%z(ix, iy, iz) = (E_in%v(ix-1, iy-1, iz) + E_in%v(ix-1, iy, iz) + &
-										 E_in%v(ix, iy-1, iz) + E_in%v(ix, iy, iz))/4.0d0
-								 end do
-							  end do
-						   end do
+                              do iy = 2, self%grid%ny
+                                 do iz = 1, self%grid%nz
+                                    self%z(ix, iy, iz) = (E_in%v(ix-1, iy-1, iz) + E_in%v(ix-1, iy, iz) + &
+                                         E_in%v(ix, iy-1, iz) + E_in%v(ix, iy, iz))/4.0d0
+                                 end do
+                              end do
+                           end do
                           ! upper boundary
                         iz = 1
                         do iy = 1, self%grid%ny

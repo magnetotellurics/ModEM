@@ -597,21 +597,21 @@ module dipole1d
 !
 ! Zero out low values near limits of HT filters:
 !
-!	   where (abs(ex1d) < 1d-25) ex1d = 0d0
-!	   where (abs(ey1d) < 1d-25) ey1d = 0d0
-!	   where (abs(jz1d) < 1d-25) jz1d = 0d0
-!	   where (abs(bx1d) < 1d-25) bx1d = 0d0
-!	   where (abs(by1d) < 1d-25) by1d = 0d0
-!	   where (abs(bz1d) < 1d-25) bz1d = 0d0
-!	   
-!	   if  (linversion) then
-!		   where (abs(dexdsig) < 1d-25) dexdsig = 0d0
-!		   where (abs(deydsig) < 1d-25) deydsig = 0d0
-!		   where (abs(djzdsig) < 1d-25) djzdsig = 0d0
-!		   where (abs(dbxdsig) < 1d-25) dbxdsig = 0d0
-!		   where (abs(dbydsig) < 1d-25) dbydsig = 0d0
-!		   where (abs(dbzdsig) < 1d-25) dbzdsig = 0d0  
-!	   endif
+!       where (abs(ex1d) < 1d-25) ex1d = 0d0
+!       where (abs(ey1d) < 1d-25) ey1d = 0d0
+!       where (abs(jz1d) < 1d-25) jz1d = 0d0
+!       where (abs(bx1d) < 1d-25) bx1d = 0d0
+!       where (abs(by1d) < 1d-25) by1d = 0d0
+!       where (abs(bz1d) < 1d-25) bz1d = 0d0
+!       
+!       if  (linversion) then
+!           where (abs(dexdsig) < 1d-25) dexdsig = 0d0
+!           where (abs(deydsig) < 1d-25) deydsig = 0d0
+!           where (abs(djzdsig) < 1d-25) djzdsig = 0d0
+!           where (abs(dbxdsig) < 1d-25) dbxdsig = 0d0
+!           where (abs(dbydsig) < 1d-25) dbydsig = 0d0
+!           where (abs(dbzdsig) < 1d-25) dbzdsig = 0d0  
+!       endif
 
         ! If doing a finite dipole, add weighted contribution to the sum
         if (lenTx1D /= 0.d0) then
@@ -1663,7 +1663,10 @@ subroutine legendre_compute_dr ( order, xtab, weight )
  ! 
  
     omega         = 2d0*pi*ftx1D
-    csig          = sig1D - II*omega*eps ! use complex conductivity locally         
+    csig          = sig1D - II*omega*eps ! use complex conductivity locally
+    !
+    deallocate( sig1D )
+    !
     k2(1:nlay1D)  = -ii*omega*mu0*csig(1:nlay1D) !  using exp(-iwt) time dependence
     
     lhed = .false.
@@ -1804,7 +1807,6 @@ subroutine legendre_compute_dr ( order, xtab, weight )
          
     end select  ! case (trim(outputdomain1D))
     
-    
     end subroutine initialize_dipole1d  
 
 !==============================================================================!
@@ -1844,9 +1846,9 @@ subroutine legendre_compute_dr ( order, xtab, weight )
     if (iTxlayer.eq.nlay1D) then
         heightTx = 1d150 ! large value allows for zeroing source term if in bottom layer
     else
-        heightTx = zlay1D(iTxlayer+1) - zTx1D;   
+        heightTx = zlay1D(iTxlayer+1) - zTx1D;
     endif  
-    
+	
     end subroutine initialize_Tx
 
 !==============================================================================!
@@ -2020,7 +2022,6 @@ subroutine legendre_compute_dr ( order, xtab, weight )
     ! write(*,*) 'lved,lhed: ',lved,lhed
     ! write(*,*) 'h: ',h
     ! write(*,*) 'isgnsrc, isgndsrcdz:',isgnsrc, isgndsrcdz
-        
         
     end subroutine setupsite    
     
@@ -4454,7 +4455,7 @@ subroutine legendre_compute_dr ( order, xtab, weight )
 ! Deallocate:
 !
     deallocate( ilayersInterp  ) 
-     
+	
     end subroutine PreComputePotCoeffs
     
 !==============================================================================!
