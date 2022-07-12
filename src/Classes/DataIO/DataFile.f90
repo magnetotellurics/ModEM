@@ -30,7 +30,6 @@ module DataFile
         integer                   :: nTx, nRx
         character(:), allocatable :: fine_name
         !
-        !class( DataEntryArray_t ), pointer :: data_entries
         type( De_t ), allocatable, dimension(:) :: data_entries
         !
         contains
@@ -125,15 +124,15 @@ contains
                 !
             case( "Full_Interstation_TF" )
                 !
-                stop "DataManager.f08: loadReceiversAndTransmitters(): To implement Full_Interstation_TF !!!!"
+                stop "Error: DataManager.f08: loadReceiversAndTransmitters(): To implement Full_Interstation_TF !!!!"
                 !
             case( "Off_Diagonal_Rho_Phase" )
                 !
-                stop "DataManager.f08: loadReceiversAndTransmitters(): To implement Off_Diagonal_Rho_Phase !!!!"
+                stop "Error: DataManager.f08: loadReceiversAndTransmitters(): To implement Off_Diagonal_Rho_Phase !!!!"
                 !
             case( "Phase_Tensor" )
                 !
-                stop "DataManager.f08: loadReceiversAndTransmitters(): To implement Phase_Tensor !!!!"
+                stop "Error: DataManager.f08: loadReceiversAndTransmitters(): To implement Phase_Tensor !!!!"
                 !
             case( "Off_Diagonal_Impedance" )
                 !
@@ -144,8 +143,8 @@ contains
                 receiver = ReceiverFullVerticalMagnetic_t( data_entry%location, rx_type )
                 !
             case default
-                write( *, * ) "unknow component type :[", data_entry%type, "]"
-                stop "DataManager.f08: loadReceiversAndTransmitters()"
+                write( *, * ) "Unknown component type :[", data_entry%type, "]"
+                stop "Error: DataManager.f08: loadReceiversAndTransmitters()"
             !
         end select
         !
@@ -158,8 +157,8 @@ contains
         deallocate( receiver )
         !
         nTx = size( transmitters )
-		!
-        ! LOOP OVER TRANSMITTERS
+        !
+        ! Loop over transmitters
         do iTx = 1, nTx
             !
             transmitter => getTransmitter( iTx )
@@ -188,7 +187,7 @@ contains
                         !
                         class is( DataEntryCSEM_t )
                             !
-                            if( ABS( transmitter%period - data_entry%period ) < TOL6   .AND.   &
+                            if( ABS( transmitter%period - data_entry%period ) < TOL6      .AND.   &
                                      transmitter%location(1) == data_entry%tx_location(1) .AND.   &
                                      transmitter%location(2) == data_entry%tx_location(2) .AND.   &
                                      transmitter%location(3) == data_entry%tx_location(3) ) then
@@ -202,7 +201,7 @@ contains
                     end select
                 !
                 class default
-                    stop "DataFile.f90 > loadReceiversAndTransmitters > unclassified Transmitter"
+                    stop "Error: DataFile.f90 > loadReceiversAndTransmitters > unclassified Transmitter"
                 !
             end select
             !
@@ -226,7 +225,7 @@ contains
         do
             read( funit, "(a)", END = 10 ) line_text
             line_text = adjustl( line_text )
-            if( index( line_text, "#" ).eq.0 ) then
+            if( index( line_text, "#" ) .EQ. 0 ) then
                 !
                 line_counter = line_counter + 1
             end if

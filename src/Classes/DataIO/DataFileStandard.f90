@@ -2,8 +2,6 @@
 !
 ! Class to read a data file and create an array with all data entries(lines)
 !
-! Last modified at 05/2021 by Paulo Werdt
-!
 !*************
 !
 module DataFileStandard
@@ -15,8 +13,8 @@ module DataFileStandard
     !
     type, extends( DataFile_t ) :: DataFileStandard_t
         !
-		!
-		!
+        ! No derived properties
+        !
     contains
         !
         final :: DataFileStandard_dtor
@@ -42,12 +40,13 @@ contains
         character(len=200), dimension(20) :: args
         !
         character(:), allocatable         :: line_text, actual_type, code, code_ref, component, dipole
-        integer                           :: iDe, io_stat, p_nargs, header_counter, mt_counter, csem_counter, nRx
-        real( kind=prec )                 :: period, real, imaginary, error
+        integer                           :: iDe, io_stat, p_nargs, nRx
+        integer                           :: header_counter, header_line_counter, mt_counter, csem_counter
+        real( kind=prec )                 :: period, rvalue, imaginary, error
         real( kind=prec )                 :: xyz_ref(3), latitude_ref, longitude_ref
         real( kind=prec )                 :: latitude, longitude, xyz(3), tx_xyz(3), moment, azimuth, dip
         !
-        !write(*,*) "Constructor DataFileStandard_t"
+        !write( *, * ) "Constructor DataFileStandard_t"
         !
         call self%init()
         !
@@ -55,18 +54,17 @@ contains
         !
         call Compact( fname )
         !
-        open( unit = funit, file = fname, iostat = io_stat, status = 'old' )
+        open( unit = funit, file = fname, iostat = io_stat, status = "old" )
         !
-        if( io_stat /= 0 ) then
-            write(*,*) 'Unable to open [', fname, '], Stat: ', io_stat
-        else
+        if( io_stat == 0 ) then
             !
             header_counter = 0
+            header_line_counter = 0
             mt_counter = 0
             csem_counter = 0
             !
             do
-                read( funit, '(a)', END = 10 ) full_line_text
+                read( funit, "(a)", END = 10 ) full_line_text
                 line_text = adjustl( full_line_text )
                 line_text = trim( line_text )
                 !
@@ -84,20 +82,20 @@ contains
                                 !
                                 !# Period(s) Code GG_Lat GG_Lon X(m) Y(m) Z(m) Component Real Imag Error
                                 !
-                                read( args(1), '(f16.6)' )    period
+                                read( args(1), "(f16.6)" )  period
                                 code = trim( args(2) )
-                                read( args(3), '(f16.6)' )    latitude
-                                read( args(4), '(f16.6)' )    longitude
-                                read( args(5), '(f16.6)' )    xyz(1)
-                                read( args(6), '(f16.6)' )    xyz(2)
-                                read( args(7), '(f16.6)' )    xyz(3)
+                                read( args(3), "(f16.6)" )  latitude
+                                read( args(4), "(f16.6)" )  longitude
+                                read( args(5), "(f16.6)" )  xyz(1)
+                                read( args(6), "(f16.6)" )  xyz(2)
+                                read( args(7), "(f16.6)" )  xyz(3)
                                 component = trim( args(8) )
-                                read( args(9), '(f16.6)' )    real
-                                read( args(10), '(f16.6)' )  imaginary
-                                read( args(11), '(f16.6)' )  error
+                                read( args(9), "(f16.6)" )  rvalue
+                                read( args(10), "(f16.6)" ) imaginary
+                                read( args(11), "(f16.6)" ) error
                                 !
                                 call self%loadReceiversAndTransmitters( DataEntryMT_t( iDe, actual_type, period, code, &
-                                latitude, longitude, xyz, component, real, imaginary, error ) )
+                                latitude, longitude, xyz, component, rvalue, imaginary, error ) )
                                 !
                                 mt_counter = mt_counter + 1
                                 !
@@ -106,27 +104,27 @@ contains
                                 !
                                 !# Period(s) Code GG_Lat GG_Lon X(m) Y(m) Z(m) Code_REF GG_Lat_REF GG_Lon_REF X(m)_REF Y(m)_REF Z(m)_REF Component Real Imag Error
                                 !
-                                read( args(1), '(f16.6)' )    period
+                                read( args(1), "(f16.6)" )  period
                                 code = trim( args(2) )
-                                read( args(3), '(f16.6)' )    latitude
-                                read( args(4), '(f16.6)' )    longitude
-                                read( args(5), '(f16.6)' )    xyz(1)
-                                read( args(6), '(f16.6)' )    xyz(2)
-                                read( args(7), '(f16.6)' )    xyz(3)
+                                read( args(3), "(f16.6)" )  latitude
+                                read( args(4), "(f16.6)" )  longitude
+                                read( args(5), "(f16.6)" )  xyz(1)
+                                read( args(6), "(f16.6)" )  xyz(2)
+                                read( args(7), "(f16.6)" )  xyz(3)
                                 code_ref = trim( args(8) )
-                                read( args(9), '(f16.6)' )    latitude_ref
-                                read( args(10), '(f16.6)' )    longitude_ref
-                                read( args(11), '(f16.6)' )    xyz_ref(1)
-                                read( args(12), '(f16.6)' )    xyz_ref(2)
-                                read( args(13), '(f16.6)' )    xyz_ref(3)
+                                read( args(9), "(f16.6)" )  latitude_ref
+                                read( args(10), "(f16.6)" ) longitude_ref
+                                read( args(11), "(f16.6)" ) xyz_ref(1)
+                                read( args(12), "(f16.6)" ) xyz_ref(2)
+                                read( args(13), "(f16.6)" ) xyz_ref(3)
                                 component = trim( args(14) )
-                                read( args(15), '(f16.6)' )    real
-                                read( args(16), '(f16.6)' )    imaginary
-                                read( args(17), '(f16.6)' )    error
+                                read( args(15), "(f16.6)" ) rvalue
+                                read( args(16), "(f16.6)" ) imaginary
+                                read( args(17), "(f16.6)" ) error
                                 !
                                 call self%loadReceiversAndTransmitters( DataEntryMT_REF_t( iDe, actual_type,    &
                                 period, code, latitude, longitude, xyz, code_ref,    &
-                                latitude_ref, longitude_ref, xyz_ref, component, real, imaginary, error ) )
+                                latitude_ref, longitude_ref, xyz_ref, component, rvalue, imaginary, error ) )
                                 !
                                 mt_counter = mt_counter + 1
                                 !
@@ -136,36 +134,36 @@ contains
                                 !# Dipole Period(s) Moment(Am) Azi Dip Tx_X(m) Tx_Y(x) Tx_Z(m) Code X(m) Y(x) Z(m) Component Real Imag, Error
                                 !
                                 dipole = args(1)
-                                read( args(2), '(f16.6)' )  period
-                                read( args(3), '(f16.6)' )  moment
-                                read( args(4), '(f16.6)' )  azimuth
-                                read( args(5), '(f16.6)' )  dip
-                                read( args(6), '(f16.6)' )  tx_xyz(1)
-                                read( args(7), '(f16.6)' )  tx_xyz(2)
-                                read( args(8), '(f16.6)' )  tx_xyz(3)
+                                read( args(2), "(f16.6)" ) period
+                                read( args(3), "(f16.6)" ) moment
+                                read( args(4), "(f16.6)" ) azimuth
+                                read( args(5), "(f16.6)" ) dip
+                                read( args(6), "(f16.6)" ) tx_xyz(1)
+                                read( args(7), "(f16.6)" ) tx_xyz(2)
+                                read( args(8), "(f16.6)" ) tx_xyz(3)
                                 code = trim( args(9) )
-                                read( args(10), '(f16.6)' )    xyz(1)
-                                read( args(11), '(f16.6)' )    xyz(2)
-                                read( args(12), '(f16.6)' )    xyz(3)
+                                read( args(10), "(f16.6)" ) xyz(1)
+                                read( args(11), "(f16.6)" ) xyz(2)
+                                read( args(12), "(f16.6)" ) xyz(3)
                                 component = trim( args(13) )
-                                read( args(14), '(f16.6)' )    real
-                                read( args(15), '(f16.6)' )    imaginary
-                                read( args(16), '(f16.6)' )    error
+                                read( args(14), "(f16.6)" ) rvalue
+                                read( args(15), "(f16.6)" ) imaginary
+                                read( args(16), "(f16.6)" ) error
                                 !
                                 call self%loadReceiversAndTransmitters( DataEntryCSEM_t( iDe, actual_type,    &
                                 dipole, period, moment, azimuth, dip, tx_xyz,    &
-                                code, xyz, component, real, imaginary, error ) )
+                                code, xyz, component, rvalue, imaginary, error ) )
                                 !
                                 csem_counter = csem_counter + 1
                                 !
                           case default
                                 !
-                                write(*,*) "unknow type :[", actual_type, "]"
-                                STOP "DataFileStandard.f08: DataFileStandard_ctor()"
+                                write( *, * ) "Unknown type :[", actual_type, "]"
+                                stop "DataFileStandard.f08: DataFileStandard_ctor()"
                                 !
                      end select
                      !
-                     header_counter = 0
+                     header_line_counter = 0
                      !
                 else
                      !# Synthetic 3D MT data written in Matlab
@@ -176,53 +174,48 @@ contains
                      !> 0.00
                      !> 0.000 0.000
                      !> 4 2
-                     header_counter = header_counter + 1
-                     selectcase( header_counter )
+                     header_line_counter = header_line_counter + 1
+                     selectcase( header_line_counter )
                          !
-                         ! Main Header
-                         case( 1 )
-                         !
-                         ! Data Fields
-                         case( 2 )
+                         ! Main Header, Data Fields
+                         case( 1, 2 )
                          !
                          ! Data Type
                          case( 3 )
                              actual_type = args(2)
                          !
-                         ! exp(-i\omega t) ????
-                         case( 4 )
+                         ! exp(-i\omega t) ????, [V/m]/[T] ????, 0.00 ????, 0.000 0.000 ????
+                         case( 4, 5, 6, 7 )
                          !
-                         ! [V/m]/[T] ????
-                         case( 5 )
-                         !
-                         ! 0.00 ????
-                         case( 6 )
-                         ! 0.000 0.000 ????
-                         case( 7 )
                          ! nTx, nRx
                          case( 8 )
-                             read( args(2), '(I8)' ) self%nTx
-                             read( args(3), '(I8)' ) nRx
+                             read( args(2), "(I8)" ) self%nTx
+                             read( args(3), "(I8)" ) nRx
+                             !
+                             header_counter = header_counter + 1
+                             write( *, "(A17, I8, A5, A30, A3, I8, A9, I8, A5)" ) "Header", header_counter, " -> [", trim(actual_type), "]: ", self%nTx, " Txs and ", nRx, " Rxs."
                              !
                              self%nRx = self%nRx + nRx
                              !
-                             write( *, * ) "self%nTx, self%nRx", self%nTx, self%nRx
-                             !
                          case default
                              !
-                             write(*,*) "unknow header format in line :[", header_counter, "]"
-                             STOP "DataFileStandard.f08: DataFileStandard_ctor()"
+                             write( *, * ) "Unknown header format in line :[", header_line_counter, "]"
+                             stop "DataFileStandard.f08: DataFileStandard_ctor()"
                              !
                      end select
+                     !
                 end if
+                !
             end do
             !
-10         close( unit = funit )
+10          close( unit = funit )
             !
+            if( mt_counter > 0 )   write( *, * ) "          Read ", mt_counter,   " MT Entries"
+            if( csem_counter > 0 ) write( *, * ) "          Read ", csem_counter, " CSEM Entries"
             !
-            if( mt_counter > 0 )    write(*,*) mt_counter, ' MT Entries'
-            if( csem_counter > 0 )    write(*,*) csem_counter, ' CSEM Entries'
-            !
+        else
+            write( *, * ) "Error opening [", fname, "] in DataFileStandard_ctor"
+            stop
         end if
         !
     end function DataFileStandard_ctor
@@ -232,10 +225,10 @@ contains
         !
         type( DataFileStandard_t ), intent( inout ) :: self
         !
-        !write(*,*) "Destructor DataFileStandard_t"
+        !write( *, * ) "Destructor DataFileStandard_t"
         !
         call self%dealloc()
         !
     end subroutine DataFileStandard_dtor
-	!
+    !
 end module DataFileStandard

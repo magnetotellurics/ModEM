@@ -66,7 +66,7 @@ contains
         !
         integer :: nx, ny, nz, nzAir
         !
-        write(*,*) "Constructor ModelParameterCell_SG_t"
+        !write(*,*) "Constructor ModelParameterCell_SG_t"
         !
         call self%init()
         !

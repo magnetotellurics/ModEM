@@ -2,8 +2,6 @@
 !
 ! Class to provide a dynamic and polymorphic transmitters of Transmitter_t objects
 !
-! Last modified at 04/2022 by Paulo Werdt
-!
 !*************
 !
 module TransmitterFArray
@@ -116,7 +114,7 @@ contains
         integer                :: itx
         class( Tx_t ), pointer :: alloc_tx
         !
-        print *, size( transmitters ), " TransmitterFArray_t:"
+        write( *, * ) "          Checked ", size( transmitters ), " Transmitters:"
         !
         do itx = 1, size( transmitters )
             alloc_tx => transmitters( itx )

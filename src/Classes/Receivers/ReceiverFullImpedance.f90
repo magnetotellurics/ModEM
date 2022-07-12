@@ -217,7 +217,7 @@ contains
                         !
                         call self%savePredictedData( transmitter )
                         !
-                        !deallocate( self%response )
+                        deallocate( self%response )
                         !
                     class default
                         stop "evaluationFunctionRx: Unclassified temp_full_vec_ey"

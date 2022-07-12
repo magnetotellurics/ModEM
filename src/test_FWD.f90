@@ -33,6 +33,9 @@ program ModEM
     character(:), allocatable :: control_file_name, model_file_name, data_file_name, modem_job
     logical                   :: has_control_file, has_model_file, has_data_file, verbosis
     !
+    real( kind=prec ) :: t_start, t_finish
+    !
+    call cpu_time( t_start )
     !
     modem_job = "unknow"
     !
@@ -54,8 +57,10 @@ program ModEM
     ! Deallocate remaining main program memory
     call garbageCollector()
     !
+    call cpu_time( t_finish )
+    !
     write ( *, * )
-    write ( *, * ) "Finish ModEM-OO."
+    write( *, * ) "Finish ModEM-OO ( ", t_finish - t_start, "s )"
     write ( *, * )
     !
 contains
@@ -64,7 +69,7 @@ contains
         implicit none
         !
         ! Verbosis ...
-        write ( *, * ) "    > Start inversion."
+        write( *, * ) "     - Start Inversion"
         !
         call ForwardModelling()
         !
@@ -86,19 +91,19 @@ contains
         ! Final array that contains the predicted data of all receivers of all transmitters
         type( Dh_t ), allocatable, dimension(:) :: all_data_handles
         !
-        ! Verbosis ...
-        write ( *, * ) "    > Start forward modelling."
+        ! Verbose ...
+        write( *, * ) "     - Start Forward Modeling"
         !
         ! Reads Model File: instantiates Grid, ModelOperator and ModelParameter
         if( .NOT. has_model_file ) then 
-            stop " - Missing Model file!"
+            stop "Error: Missing Model file!"
         else
             call handleModelFile()
         endif
         !
         ! Reads Data File: instantiates and builds the Data relation between Txs and Txs
         if( .NOT. has_data_file ) then 
-            stop " - Missing Data file!"
+            stop "Error: Missing Data file!"
         else
             call handleDataFile()
         endif
@@ -114,7 +119,7 @@ contains
             !
         end select
         !
-        ! Forward Modelling
+        ! Forward Modeling
         !
         number_of_tx = size( transmitters )
         !
@@ -182,9 +187,6 @@ contains
         deallocate( model_parameter )
         deallocate( main_grid )
         !
-        ! Verbosis...
-        write( *, * ) "    -> Writing Predicted Data to file: [", predicted_data_file_name, "]"
-        !
         ! Writes the final data array, with the proper Rx header, to the file <predicted_data_file_name>
         call writeDataHandleArray( all_data_handles )
         !
@@ -192,6 +194,8 @@ contains
         !
         call deallocateReceiverArray()
         !
+		write( *, * ) "     - Finish Forward Modeling"
+		!
     end subroutine ForwardModelling
     !
     subroutine handleJob()
@@ -209,7 +213,7 @@ contains
             !
         case default
             !
-            write( *, * ) "    - Unknow job: [", modem_job, "]"
+            write( *, * ) "     x Unknow job: [", modem_job, "]"
             call printHelp()
             !
         end select
@@ -221,7 +225,7 @@ contains
         !
         type( ModEMControlFile_t ) :: control_file
         !
-        write( *, * ) "    -> Control File: [", control_file_name, "]"
+        write( *, * ) "     < Control File: [", control_file_name, "]"
         !
         ! Instantiate the ControlFile object
         ! Reads control file and sets the options in the Constants module
@@ -237,7 +241,7 @@ contains
         type( TAirLayers )              :: air_layer
         !
         !
-        write( *, * ) "    -> Model File: [", model_file_name, "]"
+        write( *, * ) "     < Model File: [", model_file_name, "]"
         !
         ! Read Grid and ModelParameter with ModelReader_Weerachai
         call model_reader%Read( model_file_name, main_grid, model_parameter ) 
@@ -251,6 +255,10 @@ contains
                 !
                 call main_grid%UpdateAirLayers( air_layer%nz, air_layer%dz )
                 !
+                write( *, * ) "          Air layers setup complete according to the method: ", air_layer%method
+                !
+                write( *, * ) "          Top of the air layers is at ", sum(air_layer%Dz)/1000, " km"
+                !
                 allocate( model_operator, source = ModelOperator_MF_t( main_grid ) )
                 !
                 call model_parameter%setMetric( model_operator%metric )
@@ -260,7 +268,7 @@ contains
                 call model_operator%SetCond( model_parameter )
                 !
             class default
-                stop "Unclassified main_grid"
+                stop "Error: Unclassified main_grid"
             !
         end select
         !
@@ -276,7 +284,7 @@ contains
         ! Local object to dealt data, self-destructs at the end of the subroutine
         type( DataFileStandard_t ) :: data_file_standard
         !
-        write( *, * ) "    -> Data File: [", data_file_name, "]"
+        write( *, * ) "     < Data File: [", data_file_name, "]"
         !
         data_file_standard = DataFileStandard_t( ioStartup, data_file_name )
         !
@@ -284,33 +292,35 @@ contains
         !
         if( nrx == data_file_standard%nRx ) then
             !
-            write( *, * ) nrx, " Receivers checked!"
+            write( *, * ) "          Checked ", nrx, " Receivers"
             !
-            write( *, * ) "    -> Creating Rx evaluation vectors"
-            !
-            do irx = 1, nrx
-                Rx => getReceiver( irx )
-                !
-                call Rx%evaluationFunction( model_operator )
-                !
-            enddo
         else
-             !
-             write(*,*) "Number of Rx mismatched from Header :[", nrx, " and ", data_file_standard%nRx, "]"
-             STOP "DataManager.f08: DataManager_ctor()"
-             !
+            !
+            write( *, * ) "Number of Rx mismatched from Header :[", nrx, " and ", data_file_standard%nRx, "]"
+            stop "Error: DataManager.f08: DataManager_ctor()"
+            !
         endif
         !
         if( size( transmitters ) == data_file_standard%nTx ) then
-             write( *, * ) size( transmitters ), " Transmitters checked!"
              !
              call printTransmitterArray()
+             !
         else
              !
-             write(*,*) "Number of Tx mismatched from Header :[", size( transmitters ), " and ", data_file_standard%nTx, "]"
-             STOP "DataManager.f08: DataManager_ctor()"
+             write( *, * ) "Number of Tx mismatched from Header :[", size( transmitters ), " and ", data_file_standard%nTx, "]"
+             stop "Error: DataManager.f08: DataManager_ctor()"
              !
         endif
+        !
+        write( *, * ) "     - Create Rx evaluation vectors"
+        !
+        do irx = 1, nrx
+            !
+            Rx => getReceiver( irx )
+            !
+            call Rx%evaluationFunction( model_operator )
+            !
+        enddo
         !
     end subroutine handleDataFile
     !
@@ -402,8 +412,9 @@ contains
                          !
                       case default
                          !
-                         write( *, * ) "    - Unknow Argument: [", argument, "]"
+                         write( *, * ) "Error: Unknown Argument: [", argument, "]"
                          call printHelp()
+                         stop
                          !
                  end select
                  !
@@ -469,14 +480,14 @@ contains
         integer               :: ios
         character(len=20)     :: version
         !
+        ! Verbose...
+        write( *, * ) "     > Write ESolution to file: [", e_solution_file_name, "]"
+        !
         version = "Modem-OO"
         !
         open( ioESolution, file = e_solution_file_name, action = "write", form = "unformatted", iostat = ios)
         !
-        if( ios /= 0 ) then
-            write( *, * ) "Error opening file in FileWriteInit: e_solution"
-            stop
-        else
+        if( ios == 0 ) then
             !
             write( ioESolution ) version, nTx, nMode, &
             main_grid%nx, main_grid%ny, main_grid%nz, main_grid%nzAir, &
@@ -488,12 +499,17 @@ contains
             !
             close( ioESolution )
             !
+        else
+            !
+            write( *, * ) "Error opening file in writeEsolutionHeader [", e_solution_file_name, "]!"
+            stop
+            !
         endif
         !
         !
     end subroutine writeEsolutionHeader
     !
-    recursive subroutine sortByReceiver( data_handle_array, first, last )
+    recursive subroutine sortByPeriod( data_handle_array, first, last )
         implicit none
         !
         type( Dh_t ), allocatable, dimension(:), intent( inout ) :: data_handle_array
@@ -512,11 +528,11 @@ contains
             i_data_handle = getDataHandle( data_handle_array, i )
             j_data_handle = getDataHandle( data_handle_array, j )
             !
-            do while ( i_data_handle%code < x_data_handle%code )
+            do while ( i_data_handle%period < x_data_handle%period )
                 i=i+1
                 i_data_handle = getDataHandle( data_handle_array, i )
             end do
-            do while ( x_data_handle%code < j_data_handle%code )
+            do while ( x_data_handle%period < j_data_handle%period )
                 j=j-1
                 j_data_handle = getDataHandle( data_handle_array, j )
             end do
@@ -530,10 +546,53 @@ contains
             j_data_handle = getDataHandle( data_handle_array, j )
         end do
         !
-        if (first < i-1) call sortByReceiver( data_handle_array, first, i-1 )
-        if (j+1 < last)  call sortByReceiver( data_handle_array, j+1, last )
+        if (first < i-1) call sortByPeriod( data_handle_array, first, i-1 )
+        if (j+1 < last)  call sortByPeriod( data_handle_array, j+1, last )
         !
-    end subroutine sortByReceiver
+    end subroutine sortByPeriod
+    !
+    !
+    recursive subroutine sortByReceiverType( data_handle_array, first, last )
+        implicit none
+        !
+        type( Dh_t ), allocatable, dimension(:), intent( inout ) :: data_handle_array
+        type( Dh_t ), allocatable :: x_Dh, t_Dh
+        class( DataHandle_t ), allocatable :: i_data_handle, j_data_handle, x_data_handle
+        integer first, last
+        integer i, j
+        !
+        x_Dh = data_handle_array( (first+last) / 2 )
+        x_data_handle = x_Dh%Dh
+        i = first
+        j = last
+        !
+        do
+            !
+            i_data_handle = getDataHandle( data_handle_array, i )
+            j_data_handle = getDataHandle( data_handle_array, j )
+            !
+            do while ( i_data_handle%rx_type < x_data_handle%rx_type )
+                i=i+1
+                i_data_handle = getDataHandle( data_handle_array, i )
+            end do
+            do while ( x_data_handle%rx_type < j_data_handle%rx_type )
+                j=j-1
+                j_data_handle = getDataHandle( data_handle_array, j )
+            end do
+            if (i >= j) exit
+            t_Dh = data_handle_array(i)
+            data_handle_array(i) = data_handle_array(j)
+            data_handle_array(j) = t_Dh
+            i=i+1
+            i_data_handle = getDataHandle( data_handle_array, i )
+            j=j-1
+            j_data_handle = getDataHandle( data_handle_array, j )
+        end do
+        !
+        if (first < i-1) call sortByReceiverType( data_handle_array, first, i-1 )
+        if (j+1 < last)  call sortByReceiverType( data_handle_array, j+1, last )
+        !
+    end subroutine sortByReceiverType
     !
     !
     subroutine writeDataHandleArray( data_handle_array )
@@ -545,8 +604,14 @@ contains
         !
         integer :: receiver_type, i, array_size, ios
         !
+        ! Verbose...
+        write( *, * ) "     > Write Predicted Data to file: [", predicted_data_file_name, "]"
+        !
+        ! Order by period
+        call sortByPeriod( data_handle_array, 1, size( data_handle_array ) )
+        !
         ! Order by receiver
-        !call sortByReceiver( data_handle_array, 1, size( data_handle_array ) )
+        call sortByReceiverType( data_handle_array, 1, size( data_handle_array ) )
         !
         receiver_type = 0
         !
@@ -574,7 +639,7 @@ contains
                         write( ioPredData, "(A, 1X, es12.6, f15.3, f15.3, f15.3, f15.3, f15.3, f15.3, 1X, A, 1X, f15.3, f15.3, f15.3, 1X, A, 1X, es16.6, es16.6, es16.6)" ) data_handle%dipole, data_handle%period, data_handle%moment, data_handle%azimuth, data_handle%dip, data_handle%tx_location(1), data_handle%tx_location(2), data_handle%tx_location(3), data_handle%code, data_handle%rx_location(1), data_handle%rx_location(2), data_handle%rx_location(3), data_handle%component, data_handle%rvalue, data_handle%imaginary, 1.0
                         !
                     class default
-                        stop "Unclassified data_handle"
+                        stop "Error: Unclassified data_handle!"
                     !
                 end select
                 !
@@ -585,7 +650,7 @@ contains
             close( ioPredData )
             !
         else
-            write( *, * ) "Error opening [", predicted_data_file_name, "] in writeDataHandleArray"
+            write( *, * ) "Error opening [", predicted_data_file_name, "] in writeDataHandleArray!"
             stop
         end if
         !
@@ -618,8 +683,8 @@ contains
                 case( 6, 7, 8, 9, 10 )
                     write( ioPredData, "(125A)" ) "#    Tx_Dipole Tx_Period(s) Tx_Moment(Am) Tx_Azi Tx_Dip Tx_X(m) Tx_Y(m) Tx_Z(m) Code X(m) Y(m) Z(m) Component Real Imag Error"
                 case default
-                    write( *, * ) "unknow receiver type :[", data_handle%rx_type, "]"
-                    STOP "test_FWD.f90: writePredictedDataHeader()"
+                    write( *, * ) "Unknown receiver type :[", data_handle%rx_type, "]"
+                    stop "Error: test_FWD.f90: writePredictedDataHeader()"
                 !
             end select
             !

@@ -1682,7 +1682,7 @@ module DeclarationMPI
         call MPI_RECV( fwd_info_buffer, fwd_info_buffer_size, MPI_PACKED, MPI_ANY_SOURCE, MPI_ANY_TAG, child_comm, MPI_STATUS_IGNORE, ierr )
         call unpackFWDInfoBuffer
         !
-        write( *, * ) mpi_rank, " RECV ", fwd_info%job_name, " FROM ", fwd_info%worker_rank
+        !write( *, * ) mpi_rank, " RECV ", fwd_info%job_name, " FROM ", fwd_info%worker_rank
         !
     end subroutine receiveFromAny
     !
@@ -1695,7 +1695,7 @@ module DeclarationMPI
         call MPI_RECV( fwd_info_buffer, fwd_info_buffer_size, MPI_PACKED, target_id, MPI_ANY_TAG, child_comm, MPI_STATUS_IGNORE, ierr )
         call unpackFWDInfoBuffer
         !
-        write( *, * ) mpi_rank, " RECV ", fwd_info%job_name, " FROM ", target_id
+        !write( *, * ) mpi_rank, " RECV ", fwd_info%job_name, " FROM ", target_id
         !
     end subroutine receiveFrom
     !
@@ -1708,7 +1708,7 @@ module DeclarationMPI
         call packFWDInfoBuffer
         call MPI_SEND( fwd_info_buffer, fwd_info_buffer_size, MPI_PACKED, target_id, tag, child_comm, ierr )
         !
-        write( *, * ) mpi_rank, " SEND ", fwd_info%job_name, " TO ", target_id
+        !write( *, * ) mpi_rank, " SEND ", fwd_info%job_name, " TO ", target_id
         !
     end subroutine sendTo
     !

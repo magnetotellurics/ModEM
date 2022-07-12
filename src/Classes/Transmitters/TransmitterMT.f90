@@ -1,9 +1,7 @@
 ! *************
 ! 
 ! Derived class to define a MT Transmitter
-! 
-! Last modified at 10/11/2021 by Paulo Werdt
-! 
+!
 ! *************
 ! 
 module TransmitterMT
@@ -109,7 +107,7 @@ module TransmitterMT
         do i_pol = 1, self%n_pol
             !
             ! Verbosis...
-            write( *, * ) "SolveFWD for MT Tx:", self%id, " -> Period:", self%period, " - Polarization:", i_pol
+            write( *, * ) "               SolveFWD for MT Tx:", self%id, " -> Period:", self%period, " - Polarization:", i_pol
             !
             call self%source%setE( i_pol )
             !
@@ -155,7 +153,7 @@ module TransmitterMT
         !
         integer :: iRx
         !
-        write( *, "(A20, I8, A10, es12.6, A20, I8)") "TransmitterMT: ", self%id,    &
+        write( *, "(A30, I8, A10, es12.6, A20, I8)") "TransmitterMT: ", self%id,    &
         " Period: ",    self%period,    &
         " N Receivers: ", size( self%receiver_indexes )
         !

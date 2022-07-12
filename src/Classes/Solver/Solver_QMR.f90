@@ -120,7 +120,7 @@ contains
         !
         ! this usually means an inadequate model, in which case Maxwell"s fails
         if( isnan( abs( bnorm ) ) ) then
-            stop "Error: b in QMR contains NaNs; exiting..."
+            stop "Error: Error: b in QMR contains NaNs; exiting..."
         end if
         !
         rnorm = CDSQRT( R%dotProd( R ) )
@@ -152,7 +152,7 @@ contains
                 !
                 self%failed = .TRUE.
                 write( *, * ) "QMR FAILED TO CONVERGE : RHO"
-                stop "QMR FAILED TO CONVERGE : PSI"
+                stop "Error: QMR FAILED TO CONVERGE : PSI"
                 !
             end if
             !
@@ -174,7 +174,7 @@ contains
             if( DELTA .EQ. C_ZERO ) then
                 !
                 self%failed = .TRUE.
-                stop "QMR FAILS TO CONVERGE : DELTA"
+                stop "Error: QMR FAILS TO CONVERGE : DELTA"
                 !
             end if
             !
@@ -209,13 +209,13 @@ contains
             !
             if( EPSIL .EQ. C_ZERO ) then
                 self%failed = .TRUE.
-                stop "QMR FAILED TO CONVERGE : EPSIL"
+                stop "Error: QMR FAILED TO CONVERGE : EPSIL"
             end if
             !
             BETA = EPSIL/DELTA
             if( BETA .EQ. C_ZERO ) then
                 self%failed = .TRUE.
-                stop "QMR FAILED TO CONVERGE : BETA"
+                stop "Error: QMR FAILED TO CONVERGE : BETA"
             end if
             !
             VT = PT
@@ -248,7 +248,7 @@ contains
             !
             if( GAMM .EQ. C_ZERO ) then
                 self%failed = .TRUE.
-                stop "QMR FAILS TO CONVERGE : GAMM"
+                stop "Error: QMR FAILS TO CONVERGE : GAMM"
             end if
             !
             ETA = -ETA * RHO1 * GAMM * GAMM / ( BETA * GAMM1 * GAMM1 )
@@ -277,9 +277,9 @@ contains
         end do
         !
         if( iter .LT. self%max_iter ) then
-            write( *, * ) "Solver QMR IT_DC converged within ", iter, " : ", self%relErr( iter )
+            write( *, * ) "                    Solver QMR converged within ", iter, " : ", self%relErr( iter )
         else
-            write( *, * )  "Solver QMR IT_DC not converged in ", iter, " : ", self%relErr( iter )
+            write( *, * ) "                    Solver QMR not converged in ", iter, " : ", self%relErr( iter )
         endif
         !
         deallocate( R )

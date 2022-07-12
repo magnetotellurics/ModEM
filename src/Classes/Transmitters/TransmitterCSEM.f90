@@ -21,7 +21,7 @@ module TransmitterCSEM
             !
             procedure, public :: solveFWD => solveFWDTransmitterCSEM
             !
-			procedure, public :: isEqualTx => isEqualTransmitterCSEM
+            procedure, public :: isEqualTx => isEqualTransmitterCSEM
             !
             procedure, public :: write => writeTransmitterCSEM
             !
@@ -110,8 +110,8 @@ contains
         !
         allocate( cVector3D_SG_t :: self%e_all( self%n_pol ) )
         !
-        ! Verbosis...
-        write( *, * ) "SolveFWD for CSEM Tx:", self%id, " -> Period:", self%period
+        ! Verbose...
+        write( *, * ) "               SolveFWD for CSEM Tx:", self%id, " -> Period:", self%period
         !
         call self%source%setE( 1 )
         !
@@ -150,7 +150,7 @@ contains
         integer                                    :: iRx
         !
         write( *, *) "TransmitterCSEM: ", self%id,    &
-		" Location: [", self%location(1), self%location(2), self%location(3),    &
+        " Location: [", self%location(1), self%location(2), self%location(3),    &
         "] Period: ",    self%period,    &
         " N Receivers: ", size( self%receiver_indexes )
         !

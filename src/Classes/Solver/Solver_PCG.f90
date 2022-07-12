@@ -142,9 +142,9 @@ contains
         !
         !
         if( i + 1 .LT. self%max_iter ) then
-            write( *, * ) "DivCorr PCG converged within ", i + 1, " : ", self%relErr( i + 1 )
+            write( *, * ) "               DivCorr PCG converged within ", i + 1, " : ", self%relErr( i + 1 )
         else
-            write( *, * ) "DivCorr PCG not converged in ", i + 1, " : ", self%relErr( i + 1 )
+            write( *, * ) "               DivCorr PCG not converged in ", i + 1, " : ", self%relErr( i + 1 )
         endif
         !
         deallocate( r )

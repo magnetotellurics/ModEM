@@ -86,7 +86,7 @@ contains
         class( Grid3D_SG_t ), intent( in ) :: self
         type( Grid2D_t ) :: g2D
         !
-        ! Should be diferent for the polarization
+        ! Should be different for the polarization
         g2D = Grid2D_t( self%ny, self%nzAir, self%nzEarth, self%dy, self%dz )
         !
     end function Slice2DGrid3D_SG
@@ -135,16 +135,16 @@ contains
         integer, intent( in ) :: nx, ny, nzAir, nzEarth
         !
         integer :: nz
-        
+        !
         nz = nzEarth + nzAir
-        
+        !
         self%nzAir = nzAir
         self%nzEarth = nzEarth
-        
+        !
         self%nx = nx
         self%ny = ny
         self%nz = nz
-        
+        !
         call self%allocateDim()
 
     end subroutine CreateGrid3D_SG
@@ -234,7 +234,6 @@ contains
         self%is_allocated = .FALSE.
         
     end subroutine DeallocateDimGrid3D_SG
-    
     !**
     ! Setup does calculations for grid geometry, which cannot be done
     ! until dx, dy, dz, and the origin are set.
@@ -249,7 +248,7 @@ contains
         integer :: ix, iy, iz, i, j, nzAir
         real( kind=prec ) :: xCum, yCum, zCum
         real( kind=prec ) :: ox, oy, oz
-        
+        !
         self%dxInv = 1 / self%dx
         self%dyInv = 1 / self%dy
         self%dzInv = 1 / self%dz
@@ -343,10 +342,6 @@ contains
         !
         self%zEdge(self%nz + 1) = self%zEdge(self%nz + 1) - self%zAirThick + oz
         !
-        write(*, *) "INFO:Grid3D_SG_t:Setup:"
-        write(*, *) "    The top of the air layers is at ", &
-                 self%zAirThick/1000, " km"
-        !
     end subroutine SetupGrid3D_SG
 
     !**
@@ -413,37 +408,36 @@ contains
         end if
         
         if(index(airLayers%method, "mirror") > 0) then
-             !**
-             ! Following is Kush"s approach to setting air layers:
-             ! mirror imaging the dz values in the air layer with respect to
-             ! earth layer as far as we can using the following formulation
-             ! air layer(bottom:top) = (alpha)^(j-1) * earth layer(top:bottom)
-             !*
-             do iz = airLayers%nz, 1, -1
-                    j = airLayers%nz - iz + 1
-                    airLayers%dz(iz) = ((airLayers%alpha)**(j - 1) )*&
-                             self%dz(self%nzAir + j)
-             end do
-             
-             ! The topmost air layer has to be at least 30 km
-             if(airLayers%dz(1).lt.airLayers%minTopDz) then
-                    airLayers%dz(1) = airLayers%minTopDz
-             end if
-             
+			!**
+			! Following is Kush"s approach to setting air layers:
+			! mirror imaging the dz values in the air layer with respect to
+			! earth layer as far as we can using the following formulation
+			! air layer(bottom:top) = (alpha)^(j-1) * earth layer(top:bottom)
+			!*
+			do iz = airLayers%nz, 1, -1
+				j = airLayers%nz - iz + 1
+				airLayers%dz(iz) = ((airLayers%alpha)**(j - 1) ) * self%dz(self%nzAir + j)
+			end do
+			!
+			! The topmost air layer has to be at least 30 km
+			if(airLayers%dz(1).lt.airLayers%minTopDz) then
+				airLayers%dz(1) = airLayers%minTopDz
+			end if
+
         else if(index(airLayers%method, "fixed height") > 0) then 
-             write(*,*) "using fixed height method"
-             z1Log = log10(self%dz(self%nzAir + 1) )
-             dlogz = (log10(airLayers%maxHeight) - z1Log)/(airLayers%nz-1)
-             zLog = z1Log
-             height1 = 10.**z1log
-             airLayers%dz(airLayers%Nz) = height1
-             do iz = airLayers%Nz-1, 1, -1
-                    zLog = zLog + dlogz
-                    height2 = 10.**zLog 
-                    airLayers%dz(iz) = height2-height1
-                    height1 = height2
-             end do
-             
+			!
+			z1Log = log10(self%dz(self%nzAir + 1) )
+			dlogz = (log10(airLayers%maxHeight) - z1Log)/(airLayers%nz-1)
+			zLog = z1Log
+			height1 = 10.**z1log
+			airLayers%dz(airLayers%Nz) = height1
+			do iz = airLayers%Nz-1, 1, -1
+				zLog = zLog + dlogz
+				height2 = 10.**zLog 
+				airLayers%dz(iz) = height2-height1
+				height1 = height2
+			end do
+			!
         else if(index(airLayers%method, "read from file") > 0) then
             !**
             ! Air layers have been read from file and are
@@ -458,16 +452,6 @@ contains
                 airLayers%dz = dzAir
             end if
         end if
-        
-        write(*, *) "INFO:Grid3D_SG_t:SetupAirLayers: "
-        write(*, "(a60,a20)") &
-                 "    Air layers setup complete according to the method: ", &
-                 adjustl(airLayers%method)
-
-        write(*, *) "INFO:Grid3D_SG_t:SetupAirLayers: "
-        write(*, "(a40,f15.3,a3)") &
-                 "The top of the air layers is at ", &
-                 sum(airLayers%Dz)/1000, " km"
         !
     end subroutine SetupAirLayersGrid3D_SG
     !**
@@ -501,7 +485,7 @@ contains
         character(len = 80) :: geometry_old
         
         if(.NOT.self%is_allocated) then
-             write(*, *) "ERROR:Grid3D_SG_t:UpdateAirLayers"
+             write( *, * ) "ERROR:Grid3D_SG_t:UpdateAirLayers"
              stop "    Grid not allocated."
         end if
 
@@ -560,7 +544,7 @@ contains
         real( kind=prec ) , dimension(:), intent( in ) :: dx, dy, dz
 
         if(.NOT.self%IsAllocated() ) then
-             write(*, *) "ERROR:Grid3D_SG_t:SetCellSizes:"
+             write( *, * ) "ERROR:Grid3D_SG_t:SetCellSizes:"
              stop "    Grid not allocated."
         end if
 
@@ -568,7 +552,7 @@ contains
         if((size(dx).ne.size(self%dx) ).or.&
                  (size(dy).ne.size(self%dy) ).or.&
                  (size(dz).ne.size(self%dz) )) then
-             write(*, *) "ERROR:Grid3D_SG_t:SetCellSizes:"
+             write( *, * ) "ERROR:Grid3D_SG_t:SetCellSizes:"
              stop "    Incompatible sizes for cell arrays."
         end if
 
@@ -585,7 +569,7 @@ contains
         real( kind=prec ) , intent( out )  :: dx(:), dy(:), dz(:)
         !
         if(.NOT.self%IsAllocated() ) then
-             write(*, *) "ERROR:Grid3D_SG_t:GetCellSizes:"
+             write( *, * ) "ERROR:Grid3D_SG_t:GetCellSizes:"
              stop "    Grid not allocated."
         end if
         !
@@ -593,7 +577,7 @@ contains
         if((size(dx).ne.size(self%dx) ).or.&
                  (size(dy).ne.size(self%dy) ).or.&
                  (size(dz).ne.size(self%dz) )) then
-             write(*, *) "ERROR:Grid3D_SG_t:GetCellSizes:"
+             write( *, * ) "ERROR:Grid3D_SG_t:GetCellSizes:"
              stop "    Incompatible sizes for cell arrays."
         end if
         !
