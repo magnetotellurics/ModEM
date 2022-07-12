@@ -71,7 +71,7 @@ contains
             deallocate( self%EHxy )
             !
         endif
-        allocate( self%EHxy( 1 ) )
+        allocate( self%EHxy(1) )
         !
         if( azimuth == 1.0 ) then
             self%EHxy(1)%str = "Ex"
@@ -108,7 +108,7 @@ contains
             deallocate( self%comp_names )
             !
         endif
-        allocate( self%comp_names( 1 ) )
+        allocate( self%comp_names(1) )
         !
         if( azimuth == 1.0 ) self%comp_names(1)%str = "Ex_Field"
         if( azimuth == 2.0 ) self%comp_names(1)%str = "Ey_Field"
@@ -145,31 +145,31 @@ contains
         class( ReceiverSingleField_t ), intent( inout ) :: self
         class( Transmitter_t ), intent( in )            :: transmitter
         !
-        complex( kind=prec ) :: comega,  det
+        integer :: i, j, ij
+        complex( kind=prec ) :: comega, det
         !
-        integer                           :: i, j, ij
         !
         comega = cmplx( 0.0, 1./ ( 2.0 * PI / transmitter%period ), kind=prec )
         !
-        select type( tx_e_1 => transmitter%e_all( 1 ) )
+        select type( tx_e_1 => transmitter%e_all(1) )
             class is( cVector3D_SG_t )
                 !
-                allocate( self%response( 1 ) )
+                allocate( self%response(1) )
                 !
                 select case ( self%EHxy(1)%str )
                     case( "Ex" )
-                        self%response( 1 ) = dotProdSparse( self%Lex, tx_e_1 )
+                        self%response(1) = self%Lex%dotProd( tx_e_1 )
                     case( "Ey" )
-                        self%response( 1 ) = dotProdSparse( self%Ley, tx_e_1 )
+                        self%response(1) = self%Ley%dotProd( tx_e_1 )
                     case( "Bx" )
-                        self%response( 1 ) = dotProdSparse( self%Lbx, tx_e_1 )
-                        self%response( 1 ) = isign * self%response( 1 ) * comega
+                        self%response(1) = self%Lbx%dotProd( tx_e_1 )
+                        self%response(1) = isign * self%response(1) * comega
                     case( "By" )
-                        self%response( 1 ) = dotProdSparse( self%Lby, tx_e_1 )
-                        self%response( 1 ) = isign * self%response( 1 ) * comega
+                        self%response(1) = self%Lby%dotProd( tx_e_1 )
+                        self%response(1) = isign * self%response(1) * comega
                     case( "Bz" )
-                        self%response( 1 ) = dotProdSparse( self%Lbz, tx_e_1 )
-                        self%response( 1 ) = isign * self%response( 1 ) * comega
+                        self%response(1) = self%Lbz%dotProd( tx_e_1 )
+                        self%response(1) = isign * self%response(1) * comega
                 end select
                 !
                 ! WRITE ON PredictedFile.dat
@@ -203,12 +203,12 @@ contains
                 dip = real( tx%dip, kind=prec )
                 moment = real( tx%moment, kind=prec )
                 code = trim( self%code )
-                tx_location = (/real( tx%location( 1 ), kind=prec ), real( tx%location( 2 ), kind=prec ), real( tx%location( 3 ), kind=prec )/)
-                rx_location = (/real( self%location( 1 ), kind=prec ), real( self%location( 2 ), kind=prec ), real( self%location( 3 ), kind=prec )/)
+                tx_location = (/real( tx%location(1), kind=prec ), real( tx%location( 2 ), kind=prec ), real( tx%location( 3 ), kind=prec )/)
+                rx_location = (/real( self%location(1), kind=prec ), real( self%location( 2 ), kind=prec ), real( self%location( 3 ), kind=prec )/)
                 dipole = trim( tx%dipole )
-                component = trim( self%comp_names( 1 )%str )
-                real_part = real( self%response( 1 ), kind=prec )
-                imaginary = real( imag( self%response( 1 ) ), kind=prec )
+                component = trim( self%comp_names(1)%str )
+                real_part = real( self%response(1), kind=prec )
+                imaginary = real( imag( self%response(1) ), kind=prec )
                 !
                 if( allocated( self%predicted_data ) ) call deallocateDataHandleArray( self%predicted_data )
                 !

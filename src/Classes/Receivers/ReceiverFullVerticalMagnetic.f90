@@ -123,7 +123,6 @@ contains
         class( Transmitter_t ), intent( in )                     :: transmitter
         !
         complex( kind=prec ) :: comega, det
-        !
         complex( kind=prec ), allocatable :: BB(:,:), I_BB(:,:)
         !
         comega = cmplx( 0.0, 1./ ( 2.0 * PI / transmitter%period ), kind=prec )
@@ -136,31 +135,29 @@ contains
                 select type( tx_e_2 => transmitter%e_all( 2 ) )
                     class is( cVector3D_SG_t )
                         !
-                        BB(1,1) = dotProdSparse( self%Lbx, tx_e_1 )
-                        BB(2,1) = dotProdSparse( self%Lby, tx_e_1 )
-                        BB(1,2) = dotProdSparse( self%Lbx, tx_e_2 )
-                        BB(2,2) = dotProdSparse( self%Lby, tx_e_2 )
-                        BB(3,1) = dotProdSparse( self%Lbz, tx_e_1 )
-                        BB(3,2) = dotProdSparse( self%Lbz, tx_e_2 )
+                        BB(1,1) = self%Lbx%dotProd( tx_e_1 )
+                        BB(2,1) = self%Lby%dotProd( tx_e_1 )
+                        BB(1,2) = self%Lbx%dotProd( tx_e_2 )
+                        BB(2,2) = self%Lby%dotProd( tx_e_2 )
+                        BB(3,1) = self%Lbz%dotProd( tx_e_1 )
+                        BB(3,2) = self%Lbz%dotProd( tx_e_2 )
+                        !
                         BB = isign * BB * comega
                         !
-                        !invert horizontal B matrix using Kramer"s rule.
-                        det = BB( 1, 1 ) * BB( 2, 2 ) - BB( 1, 2 ) * BB( 2, 1 )
+                        det = BB(1,1) * BB(2,2) - BB(1,2) * BB(2,1)
                         !
-                        !write(*,*) "det:", det
-                        !
-                        allocate( I_BB( 2, 2 ) )
+                        allocate( I_BB(2,2) )
                         !
                         if( det /= 0 ) then
-                            I_BB( 1, 1 ) =  BB( 2, 2 ) / det
-                            I_BB( 2, 2 ) =  BB( 1, 1 ) / det
-                            I_BB( 1, 2 ) = -BB( 1, 2 ) / det
-                            I_BB( 2, 1 ) = -BB( 2, 1 ) / det
+                            I_BB(1,1) =  BB(2,2) / det
+                            I_BB(2,2) =  BB(1,1) / det
+                            I_BB(1,2) = -BB(1,2) / det
+                            I_BB(2,1) = -BB(2,1) / det
                         else
                             stop "ReceiverFullVerticalMagnetic.f90: Determinant is Zero!"
                         endif
                         !
-                        allocate( self%response( 2 ) )
+                        allocate( self%response(2) )
                         !
                         self%response(1) = BB(3,1) * I_BB(1,1) + BB(3,2) * I_BB(2,1)
                         self%response(2) = BB(3,1) * I_BB(1,2) + BB(3,2) * I_BB(2,2)
@@ -168,7 +165,6 @@ contains
                         deallocate( BB )
                         deallocate( I_BB )
                         !
-                        ! WRITE ON PredictedFile.dat
                         call self%savePredictedData( transmitter )
                         !
                         deallocate( self%response )

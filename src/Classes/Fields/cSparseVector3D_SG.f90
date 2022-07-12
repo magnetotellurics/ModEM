@@ -5,6 +5,8 @@ module cSparseVector3D_SG
     !
     type :: cSparsevector3D_SG_t
         !
+        class( Grid3D_SG_t ), pointer :: grid
+        !
         character( len=4 ) :: gridType
         !
         integer  :: nCoeff
@@ -18,6 +20,10 @@ module cSparseVector3D_SG
         contains
             !
             final :: cSparsevector3D_SG_dtor
+            !
+            procedure, public :: dotProd => dotProdCSparsevector3D_SG
+            procedure, public :: fromFullVector => fromFullVectorCSparsevector3D_SG
+            procedure, public :: getFullVector => getFullVectorCSparsevector3D_SG
             !
     end type cSparsevector3D_SG_t
     !
@@ -33,6 +39,8 @@ contains
         type( cSparsevector3D_SG_t ) :: self
         !
         !write(*,*) "Constructor cSparsevector3D_SG"
+        !
+        self%grid => null()
         !
         self%gridType = ""
         self%nCoeff = 0
@@ -61,11 +69,11 @@ contains
         !
     end subroutine cSparsevector3D_SG_dtor
     !
-    function dotProdSparse( self, cvector ) result( cvalue )
+    function dotProdCSparsevector3D_SG( self, cvector ) result( cvalue )
         implicit none
         !
-        type( cSparsevector3D_SG_t ), intent( in ) :: self
-        type( cVector3D_SG_t ), intent( in )       :: cvector
+        class( cSparsevector3D_SG_t ), intent( in ) :: self
+        type( cVector3D_SG_t ), intent( in )        :: cvector
         !
         complex( kind=prec )                       :: cvalue
         !
@@ -124,22 +132,42 @@ contains
             !
         enddo
         !
-    end function dotProdSparse
+    end function dotProdCSparsevector3D_SG
     !
-    subroutine getFullVector( self, cvector )
+    function getFullVectorCSparsevector3D_SG( self ) result ( cvector )
         implicit none
         !
-        type( cSparsevector3D_SG_t ), intent( in ) :: self
-        type( cVector3D_SG_t ), intent( inout )    :: cvector
+        class( cSparsevector3D_SG_t ), intent( in ) :: self
         !
-		!
-    end subroutine getFullVector
+        type( cVector3D_SG_t ), allocatable :: cvector
+        !
+        integer :: ii
+        !
+        !
+        if( allocated( cvector ) ) deallocate( cvector )
+        allocate( cvector, source = cVector3D_SG_t( self%grid, self%gridType ) )
+        !
+        call cvector%zeros()
+        !
+        do ii = 1, size( self%xyz )
+            if( self%xyz(ii) == 1 ) then
+                cvector%x( self%i(ii), self%j(ii), self%k(ii) ) = self%c(ii)
+            else if( self%xyz(ii) == 2 ) then
+                cvector%y( self%i(ii), self%j(ii), self%k(ii) ) = self%c(ii)
+            else if( self%xyz(ii) == 3 ) then
+                cvector%z( self%i(ii), self%j(ii), self%k(ii) ) = self%c(ii)
+            endif
+        enddo
+        !
+        call cvector%print()
+        !
+    end function getFullVectorCSparsevector3D_SG
     !
-    subroutine full2Sparse( self, cvector )
+    subroutine fromFullVectorCSparsevector3D_SG( self, cvector )
         implicit none
         !
-        type( cSparsevector3D_SG_t ), intent( inout ) :: self
-        type( cVector3D_SG_t ), intent( in )          :: cvector
+        class( cSparsevector3D_SG_t ), intent( inout ) :: self
+        class( cVector_t ), intent( in )               :: cvector
         !
         integer, allocatable, dimension(:,:,:)  :: Ix, Jx, Kx, XYZ1
         integer, allocatable, dimension(:,:,:)  :: Iy, Jy, Ky, XYZ2
@@ -147,96 +175,105 @@ contains
         !
         integer :: i, j, k, Nx, Ny, Nz
         !
-        Ix = cvector%x
-        Jx = cvector%x
-        Kx = cvector%x
+        select type( cvector )
+            !
+            class is( cVector3D_SG_t )
+                !
+                Ix = cvector%x
+                Jx = cvector%x
+                Kx = cvector%x
+                !
+                Iy = cvector%y
+                Jy = cvector%y
+                Ky = cvector%y
+                !
+                Iz = cvector%z
+                Jz = cvector%z
+                Kz = cvector%z
+                !
+                XYZ1 = cvector%x
+                XYZ2 = cvector%y
+                XYZ3 = cvector%z
+                !
+                ! X component of the cvector%x
+                do i = 1, size( cvector%x, 1 )
+                    Ix(i,:,:) = i
+                enddo
+                !
+                do j = 1, size( cvector%x, 2 )
+                    Jx(:,j,:) = j
+                enddo
+                !
+                do  k= 1, size( cvector%x, 3 )
+                    kx(:,:,k) = k
+                enddo
+                !
+                XYZ1 = 1
+                !
+                ! Y component of the cvector%y
+                do i = 1, size( cvector%y, 1 )
+                    Iy(i,:,:) = i
+                enddo
+                !
+                do j = 1, size( cvector%y, 2 )
+                    Jy(:,j,:) = j
+                enddo
+                !
+                do k = 1, size( cvector%y, 3 )
+                    ky(:,:,k)=k
+                enddo
+                !
+                XYZ2 = 2
+                !
+                ! Z component of the cvector%z
+                do i = 1, size( cvector%z, 1 )
+                    Iz(i,:,:) = i
+                enddo
+                !
+                do j = 1, size( cvector%z, 2 )
+                    Jz(:,j,:) = j
+                enddo
+                !
+                do k = 1, size( cvector%z, 3 )
+                    kz(:,:,k) = k
+                enddo
+                !
+                XYZ3 = 3
+                !
+                ! Get indexes of Non-Zero coefficients
+                if( allocated( self%i ) ) deallocate( self%i )
+                allocate( self%i, source = (/ pack(Ix,cvector%x /= 0), pack(Iy,cvector%y /= 0), pack(Iz,cvector%z /= 0) /) )
+                !
+                if( allocated( self%j ) ) deallocate( self%j )
+                allocate( self%j, source = (/ pack(Jx,cvector%x /= 0), pack(Jy,cvector%y /= 0), pack(Jz,cvector%z /= 0) /) )
+                !
+                if( allocated( self%k ) ) deallocate( self%k )
+                allocate( self%k, source = (/ pack(Kx,cvector%x /= 0), pack(Ky,cvector%y /= 0), pack(Kz,cvector%z /= 0) /) )
+                !
+                ! Get Values of Non-Zero coefficients
+                if( allocated( self%c ) ) deallocate( self%c )
+                allocate( self%c, source = (/ pack(cvector%x,cvector%x /= 0), pack(cvector%y,cvector%y /= 0), pack(cvector%z,cvector%z /= 0) /) )
+                ! Get Components
+                if( allocated( self%xyz ) ) deallocate( self%xyz )
+                allocate( self%xyz, source = (/ pack(XYZ1,cvector%x /= 0), pack(XYZ2,cvector%y /= 0), pack(XYZ3,cvector%z /= 0) /) )
+                !
+                ! Set number of Non-Zero coefficients
+                self%nCoeff = size( self%c )
+!
+                ! Set grid
+                self%grid => cvector%grid
+                !
+                ! Set gridType
+                self%gridType = cvector%gridType
+                !
+                self%is_allocated = .TRUE.
+                !
+                deallocate( Ix, Jx, Kx, XYZ1 )
+                deallocate( Iy, Jy, Ky, XYZ2 )
+                deallocate( Iz, Jz, Kz, XYZ3 )
+                !
+        end select
         !
-        Iy = cvector%y
-        Jy = cvector%y
-        Ky = cvector%y
-        !
-        Iz = cvector%z
-        Jz = cvector%z
-        Kz = cvector%z
-        !
-        XYZ1 = cvector%x
-        XYZ2 = cvector%y
-        XYZ3 = cvector%z
-        !
-        ! X component of the cvector%x
-        do i = 1, size( cvector%x, 1 )
-            Ix(i,:,:) = i
-        enddo
-        !
-        do j = 1, size( cvector%x, 2 )
-            Jx(:,j,:) = j
-        enddo
-        !
-        do  k= 1, size( cvector%x, 3 )
-            kx(:,:,k) = k
-        enddo
-        !
-        XYZ1 = 1
-        !
-        ! Y component of the cvector%y
-        do i = 1, size( cvector%y, 1 )
-            Iy(i,:,:) = i
-        enddo
-        !
-        do j = 1, size( cvector%y, 2 )
-            Jy(:,j,:) = j
-        enddo
-        !
-        do k = 1, size( cvector%y, 3 )
-            ky(:,:,k)=k
-        enddo
-        !
-        XYZ2 = 2
-        !
-        ! Z component of the cvector%z
-        do i = 1, size( cvector%z, 1 )
-            Iz(i,:,:) = i
-        enddo
-        !
-        do j = 1, size( cvector%z, 2 )
-            Jz(:,j,:) = j
-        enddo
-        !
-        do k = 1, size( cvector%z, 3 )
-            kz(:,:,k) = k
-        enddo
-        !
-        XYZ3 = 3
-        !
-        ! Get indexes of Non-Zero coefficients
-        if( allocated( self%i ) ) deallocate( self%i )
-        allocate( self%i, source = (/ pack(Ix,cvector%x /= 0), pack(Iy,cvector%y /= 0), pack(Iz,cvector%z /= 0) /) )
-        !
-        if( allocated( self%j ) ) deallocate( self%j )
-        allocate( self%j, source = (/ pack(Jx,cvector%x /= 0), pack(Jy,cvector%y /= 0), pack(Jz,cvector%z /= 0) /) )
-        !
-        if( allocated( self%k ) ) deallocate( self%k )
-        allocate( self%k, source = (/ pack(Kx,cvector%x /= 0), pack(Ky,cvector%y /= 0), pack(Kz,cvector%z /= 0) /) )
-        !
-        ! Get Values of Non-Zero coefficients
-        if( allocated( self%c ) ) deallocate( self%c )
-        allocate( self%c, source = (/ pack(cvector%x,cvector%x /= 0), pack(cvector%y,cvector%y /= 0), pack(cvector%z,cvector%z /= 0) /) )
-        ! Get Components
-        if( allocated( self%xyz ) ) deallocate( self%xyz )
-        allocate( self%xyz, source = (/ pack(XYZ1,cvector%x /= 0), pack(XYZ2,cvector%y /= 0), pack(XYZ3,cvector%z /= 0) /) )
-        !
-        ! Get number of Non-Zero coefficients
-        self%nCoeff = size( self%c )
-        !
-        ! Get gridType
-        self%gridType = cvector%gridType
-        !
-        self%is_allocated = .TRUE.
-        !
-        deallocate( Ix, Jx, Kx, XYZ1 )
-        deallocate( Iy, Jy, Ky, XYZ2 )
-        deallocate( Iz, Jz, Kz, XYZ3 )
-        !
-    end subroutine full2Sparse
+    end subroutine fromFullVectorCSparsevector3D_SG
     !
 end module cSparseVector3D_SG  
