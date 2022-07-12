@@ -71,11 +71,30 @@ contains
         endif
         allocate( self%EHxy( 1 ) )
         !
-        if( azimuth == 1.0 ) self%EHxy(1)%str = "Ex"
-        if( azimuth == 2.0 ) self%EHxy(1)%str = "Ey"
-        if( azimuth == 3.0 ) self%EHxy(1)%str = "Bx"
-        if( azimuth == 4.0 ) self%EHxy(1)%str = "By"
-        if( azimuth == 5.0 ) self%EHxy(1)%str = "Bz"
+        if( azimuth == 1.0 ) then
+            self%EHxy(1)%str = "Ex"
+            allocate( self%Lex, source = cSparsevector3D_SG_t() )
+        endif
+        !
+        if( azimuth == 2.0 ) then
+            self%EHxy(1)%str = "Ey"
+            allocate( self%Ley, source = cSparsevector3D_SG_t() )
+        endif
+        !
+        if( azimuth == 3.0 ) then
+            self%EHxy(1)%str = "Bx"
+            allocate( self%Lbx, source = cSparsevector3D_SG_t() )
+        endif
+        !
+        if( azimuth == 4.0 ) then
+            self%EHxy(1)%str = "By"
+            allocate( self%Lby, source = cSparsevector3D_SG_t() )
+        endif
+        !
+        if( azimuth == 5.0 ) then
+            self%EHxy(1)%str = "Bz"
+            allocate( self%Lbz, source = cSparsevector3D_SG_t() )
+        endif
         !
         ! components required to get the full impedance tensor self%response [Zxx, Zxy, Zyx, Zyy]
         if( allocated( self%comp_names ) ) then

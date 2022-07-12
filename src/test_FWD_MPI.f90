@@ -6,6 +6,8 @@ program ModEM
     character(:), allocatable :: control_file_name, model_file_name, data_file_name, modem_job
     logical                   :: has_control_file, has_model_file, has_data_file, verbosis
     !
+    class( ModelOperator_t ), allocatable  :: model_operator
+    !
     call MPI_Init( ierr )
     !
     main_comm = MPI_COMM_WORLD
@@ -34,7 +36,7 @@ program ModEM
     write( *, * ) "MPI Rank ", mpi_rank," in COMM_WORLD (", mpi_size, ") is ", node_rank, &
                   " in SHARED_COMM (", node_size, ") on Node: ", node_name( 1 : nodestringlen )
     !
-    ! MASTER
+    ! MPI MASTER PROCESS
     !
     if ( mpi_rank == 0 ) then
         !
@@ -64,7 +66,7 @@ program ModEM
         write( *, * ) "Finish ModEM-OO."
         write( *, * )
     !
-    ! WORKER
+    ! MPI WORKER PROCESS
     !
     else
         !
@@ -231,8 +233,8 @@ contains
              
         enddo
         !
-        if( allocated( predicted_data_buffer ) ) deallocate( predicted_data_buffer )
-        if( allocated( fwd_info_buffer ) ) deallocate( fwd_info_buffer )
+        ! Deallocate MPI communication buffers
+        deallocate( fwd_info_buffer, predicted_data_buffer )
         !
         ! Verbosis...
         write( *, * ) "    -> Writing Predicted Data to file: [", trim( predicted_data_file_name ), "]"
@@ -309,7 +311,6 @@ contains
         integer :: iRx, iDh
         type( TAirLayers ) :: air_layer
         type( Dh_t ), allocatable, dimension(:) :: tx_data_handles
-        !
         !
         select type( main_grid )
             !
@@ -453,7 +454,9 @@ contains
         !
         ! Read Grid and ModelParameter with ModelReader_Weerachai
         call model_reader%Read( model_file_name, main_grid, model_parameter ) 
-        !
+		!
+		write( *, * ) "PARAM TYPE MASTER", model_parameter%paramType
+		!
         ! Instantiate the ModelOperator object
         select type( main_grid )
             !
@@ -506,6 +509,7 @@ contains
                 call Rx%evaluationFunction( model_operator )
                 !
             enddo
+            !
         else
              !
              write(*,*) "Number of Rx mismatched from Header :[", nrx, " and ", data_file_standard%nRx, "]"
