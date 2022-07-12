@@ -20,11 +20,13 @@ module ReceiverSingleField
             !
             final :: ReceiverSingleField_dtor
             !
-            procedure, public :: isEqualRx => isEqualSingleField
+            procedure, public :: setLRows => setLRowsSingleField
             !
             procedure, public :: predictedData => predictedDataSingleField
             !
             procedure, public :: savePredictedData => savePredictedDataSingleField
+            !
+            procedure, public :: isEqualRx => isEqualSingleField
             !
             procedure, public :: write => writeReceiverSingleField
             !
@@ -127,33 +129,15 @@ contains
         !
     end subroutine ReceiverSingleField_dtor
     !
-    function isEqualSingleField( self, other ) result( equal )
+    subroutine setLRowsSingleField( self, transmitter )
         implicit none
         !
-        class( ReceiverSingleField_t ), intent( in ) :: self
-        class( Receiver_t ), intent( in ) :: other
+        class( ReceiverSingleField_t ), intent( inout ) :: self
+        class( Transmitter_t ), intent( in )            :: transmitter
         !
-        logical :: equal
+        write(*,*) "setLRowsSingleField to be implemented"
         !
-        equal = .FALSE.
-        !
-        select type( other )
-            !
-            class is( ReceiverSingleField_t )
-                !
-                if( self%code == other%code .AND.   &
-                    self%location(1) == other%location(1) .AND.    &
-                    self%location(2) == other%location(2) .AND.    &
-                    self%location(3) == other%location(3) ) then
-                    equal = .TRUE.
-                endif
-                !
-            class default
-                equal = .FALSE.
-            !
-        end select
-        !
-    end function isEqualSingleField
+    end subroutine setLRowsSingleField
     !
     subroutine predictedDataSingleField( self, transmitter )
         implicit none
@@ -236,6 +220,34 @@ contains
         end select
         !
     end subroutine savePredictedDataSingleField
+    !
+    function isEqualSingleField( self, other ) result( equal )
+        implicit none
+        !
+        class( ReceiverSingleField_t ), intent( in ) :: self
+        class( Receiver_t ), intent( in ) :: other
+        !
+        logical :: equal
+        !
+        equal = .FALSE.
+        !
+        select type( other )
+            !
+            class is( ReceiverSingleField_t )
+                !
+                if( self%code == other%code .AND.   &
+                    self%location(1) == other%location(1) .AND.    &
+                    self%location(2) == other%location(2) .AND.    &
+                    self%location(3) == other%location(3) ) then
+                    equal = .TRUE.
+                endif
+                !
+            class default
+                equal = .FALSE.
+            !
+        end select
+        !
+    end function isEqualSingleField
     !
     subroutine writeReceiverSingleField( self )
         implicit none

@@ -60,6 +60,17 @@ program ModEM
     !
 contains
     !
+    subroutine Inversion()
+        implicit none
+        !
+        ! Verbosis ...
+        write ( *, * ) "    > Start inversion."
+        !
+        call ForwardModelling()
+        !
+    end subroutine Inversion
+    !
+    !
     subroutine ForwardModelling()
         implicit none
         !
@@ -191,6 +202,10 @@ contains
         case ( "forward" )
             !
             call ForwardModelling()
+            !
+        case ( "inversion" )
+            !
+            call Inversion()
             !
         case default
             !
@@ -343,6 +358,12 @@ contains
                          !
                          argument_index = argument_index + 1
                          !
+                      case ( "-i", "--inversion" )
+                         !
+                         modem_job = "inversion"
+                         !
+                         argument_index = argument_index + 1
+                         !
                       case ( "-m", "--model" )
                          !
                          call get_command_argument( argument_index + 1, argument )
@@ -375,7 +396,7 @@ contains
                          !
                          call printHelp()
                          !
-                      case ( "--verbosis" )
+                      case ( "--verbose" )
                          !
                          call printHelp()
                          !
@@ -621,8 +642,8 @@ contains
         write( *, * ) "ModEM-OO Usage:"
         write( *, * ) ""
         write( *, * ) "    Flags to define a job:"
-        write( *, * ) "        [-f], [--forward]    :  Forward modelling."
-        write( *, * ) "        [-i], [--inverse]    :  Inversion modelling."
+        write( *, * ) "        [-f], [--forward]    :  Forward modeling."
+        write( *, * ) "        [-i], [--inversion]  :  Inversion."
         write( *, * )
         write( *, * ) "    Other arguments:"
         write( *, * ) "        [-d], [--data]       :  Flags for input data file path."
@@ -632,7 +653,7 @@ contains
         write( *, * ) "        [-h], [--help]       :  Print usage information."
         write( *, * ) "        [-pd], [--predicted] :  Output data file path."
         write( *, * ) "        [-es], [--esolution] :  Output binary e-solution file path."
-        write( *, * ) "        [--verbosis]         :  Print runtime information."
+        write( *, * ) "        [--verbose]          :  Print runtime information."
         !
         write( *, * ) ""
         write( *, * ) "Version 1.0.0"
@@ -642,3 +663,4 @@ contains
     end subroutine printHelp
     !
 end program ModEM
+!

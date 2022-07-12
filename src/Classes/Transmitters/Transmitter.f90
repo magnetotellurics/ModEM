@@ -30,6 +30,8 @@ module Transmitter
         !
         integer, allocatable, dimension(:) :: receiver_indexes
         !
+        procedure( interface_p_mult_tx ), pointer, nopass :: p_mult_ptr => p_mult
+        !
     contains
         !
         procedure, public :: init     => initializeTx
@@ -42,6 +44,8 @@ module Transmitter
         procedure( interface_solve_fwd_tx ), deferred, public :: solveFWD
         !
         procedure( interface_is_equal_tx ), deferred, public :: isEqualTx
+        !
+        procedure, public :: pMult => pMultTx
         !
         procedure( interface_write_tx ), deferred, public     :: write
         !
@@ -65,6 +69,12 @@ module Transmitter
             class( Transmitter_t ), intent(in) :: self
         end subroutine interface_write_tx
         !
+        pure function interface_p_mult_tx( x ) result( y )
+            import :: prec
+            real( kind=prec ), intent( in )      :: x
+            real( kind=prec )                    :: y
+        end function interface_p_mult_tx
+        !**
     end interface
     !
     contains
@@ -136,5 +146,35 @@ module Transmitter
             endif
             !
          end subroutine updateReceiverIndexesArray
-         !
+		!
+		elemental function pMultTx( self, x ) result( y )
+			implicit none
+			!
+			class( Transmitter_t), intent( in ) :: self
+			real( kind=prec ), intent( in )        :: x
+			!
+			real( kind=prec ) :: y
+			!
+			y = self%p_mult_ptr( x )
+			!
+		end function pMultTx
+		!
+		pure function p_mult( x ) result( y )
+			implicit none
+			!
+			real( kind=prec ), intent( in ) :: x
+			!
+			real( kind=prec ) :: y
+			!
+		end function p_mult
+		!
+		pure function p_mult_t( x ) result( y )
+			implicit none
+			!
+			real( kind=prec ), intent( in ) :: x
+			!
+			real( kind=prec ) :: y
+			!
+		end function p_mult_t
+		!
 end module Transmitter

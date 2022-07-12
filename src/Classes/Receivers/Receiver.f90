@@ -32,14 +32,17 @@ module Receiver
         !
         type( Dh_t ), allocatable, dimension(:) :: predicted_data
         !
+        complex( kind=prec ), allocatable, dimension(:,:) :: lrows
+        !
         contains
             !
-            ! Base interfaces
-            procedure( interface_is_equal_rx ), deferred, public :: isEqualRx
+            procedure( interface_set_lrows_data ), deferred, public :: setLRows
             !
             procedure( interface_predicted_data ), deferred, public :: predictedData
             !
             procedure( interface_save_predicted_data ), deferred, public :: savePredictedData
+            !
+            procedure( interface_is_equal_rx ), deferred, public :: isEqualRx
             !
             procedure( interface_write_rx ), deferred, public :: write
             !
@@ -54,6 +57,15 @@ module Receiver
     public :: getStringReceiverType, getIntReceiverType
     !
     abstract interface
+        !
+        subroutine interface_set_lrows_data( self, transmitter )
+            !
+            import :: Receiver_t, Transmitter_t
+            !
+            class( Receiver_t ), intent( inout )    :: self
+            class( Transmitter_t ), intent( in ) :: transmitter
+            !
+        end subroutine interface_set_lrows_data
         !
         subroutine interface_predicted_data( self, transmitter )
             !
@@ -73,23 +85,6 @@ module Receiver
             !
         end subroutine interface_save_predicted_data_rx
         !
-        function interface_is_equal_rx( self, other ) result( equal )
-            !
-            import :: Receiver_t
-            !
-            class( Receiver_t ), intent( in ) :: self, other
-            logical :: equal
-            !
-        end function interface_is_equal_rx
-        !
-        subroutine interface_write_predicted_data_rx( self )
-            !
-            import :: Receiver_t
-            !
-            class( Receiver_t ), intent( in ) :: self
-            !
-        end subroutine interface_write_predicted_data_rx
-        !
         subroutine interface_save_predicted_data( self, tx )
             !
             import :: Receiver_t, Transmitter_t
@@ -98,6 +93,15 @@ module Receiver
             class( Transmitter_t ), intent( in ) :: tx
             !
         end subroutine interface_save_predicted_data
+        !
+        function interface_is_equal_rx( self, other ) result( equal )
+            !
+            import :: Receiver_t
+            !
+            class( Receiver_t ), intent( in ) :: self, other
+            logical :: equal
+            !
+        end function interface_is_equal_rx
         !
         subroutine interface_write_rx( self )
             !

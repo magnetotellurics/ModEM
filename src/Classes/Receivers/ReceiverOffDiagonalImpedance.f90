@@ -19,11 +19,13 @@ module ReceiverOffDiagonalImpedance
             !
             final :: ReceiverOffDiagonalImpedance_dtor
             !
-            procedure, public :: isEqualRx => isEqualOffDiagonalImpedance
+            procedure, public :: setLRows => setLRowsOffDiagonalImpedance
             !
             procedure, public :: predictedData => predictedDataOffDiagonalImpedance
             !
             procedure, public :: savePredictedData => savePredictedDataOffDiagonalImpedance
+            !
+            procedure, public :: isEqualRx => isEqualOffDiagonalImpedance
             !
             procedure, public :: write => writeReceiverOffDiagonalImpedance
             !
@@ -91,33 +93,15 @@ contains
         !
     end subroutine ReceiverOffDiagonalImpedance_dtor
     !
-    function isEqualOffDiagonalImpedance( self, other ) result( equal )
+    subroutine setLRowsOffDiagonalImpedance( self, transmitter )
         implicit none
         !
-        class( ReceiverOffDiagonalImpedance_t ), intent( in ) :: self
-        class( Receiver_t ), intent( in ) :: other
+        class( ReceiverOffDiagonalImpedance_t ), intent( inout ) :: self
+        class( Transmitter_t ), intent( in )                     :: transmitter
         !
-        logical :: equal
+        write(*,*) "setLRowsOffDiagonalImpedance to be implemented"
         !
-        equal = .FALSE.
-        !
-        select type( other )
-            !
-            class is( ReceiverOffDiagonalImpedance_t )
-                !
-                if( self%code == other%code .AND.   &
-                    self%location(1) == other%location(1) .AND.    &
-                    self%location(2) == other%location(2) .AND.    &
-                    self%location(3) == other%location(3) ) then
-                    equal = .TRUE.
-                endif
-                !
-            class default
-                equal = .FALSE.
-            !
-        end select
-        !
-    end function isEqualOffDiagonalImpedance
+    end subroutine setLRowsOffDiagonalImpedance
     !
     subroutine predictedDataOffDiagonalImpedance( self, transmitter )
         implicit none
@@ -223,6 +207,34 @@ contains
         enddo
         !
     end subroutine savePredictedDataOffDiagonalImpedance
+    !
+    function isEqualOffDiagonalImpedance( self, other ) result( equal )
+        implicit none
+        !
+        class( ReceiverOffDiagonalImpedance_t ), intent( in ) :: self
+        class( Receiver_t ), intent( in ) :: other
+        !
+        logical :: equal
+        !
+        equal = .FALSE.
+        !
+        select type( other )
+            !
+            class is( ReceiverOffDiagonalImpedance_t )
+                !
+                if( self%code == other%code .AND.   &
+                    self%location(1) == other%location(1) .AND.    &
+                    self%location(2) == other%location(2) .AND.    &
+                    self%location(3) == other%location(3) ) then
+                    equal = .TRUE.
+                endif
+                !
+            class default
+                equal = .FALSE.
+            !
+        end select
+        !
+    end function isEqualOffDiagonalImpedance
     !
     subroutine writeReceiverOffDiagonalImpedance( self )
         implicit none

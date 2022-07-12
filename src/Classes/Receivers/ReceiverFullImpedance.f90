@@ -17,11 +17,13 @@ module ReceiverFullImpedance
             !
             final :: ReceiverFullImpedance_dtor
             !
-            procedure, public :: isEqualRx => isEqualFullImpedance
+            procedure, public :: setLRows => setLRowsFullImpedance
             !
             procedure, public :: predictedData => predictedDataFullImpedance
             !
             procedure, public :: savePredictedData => savePredictedDataFullImpedance
+            !
+            procedure, public :: isEqualRx => isEqualFullImpedance
             !
             procedure, public :: write => writeReceiverFullImpedance
             !
@@ -106,33 +108,36 @@ contains
         !
     end subroutine ReceiverFullImpedance_dtor
     !
-    function isEqualFullImpedance( self, other ) result( equal )
+    subroutine setLRowsFullImpedance( self, transmitter )
         implicit none
         !
-        class( ReceiverFullImpedance_t ), intent( in ) :: self
-        class( Receiver_t ), intent( in ) :: other
+        class( ReceiverFullImpedance_t ), intent( inout ) :: self
+        class( Transmitter_t ), intent( in )              :: transmitter
         !
-        logical :: equal
+        complex( kind=prec ), allocatable, dimension(:,:) :: H, Hinv  ! ????
+		type( cSparsevector3D_SG_t ) :: lE ! ????
+        integer :: i, j, k, ki
         !
-        equal = .FALSE.
+        write(*,*) "implementing setLRowsFullImpedance:"
         !
-        select type( other )
+        allocate( self%lrows( transmitter%n_pol, self%n_comp ) )
+        !
+        do k = 1, 2
+            if( k == 1 ) then
+                lE = self%Lex
+            else
+                lE = self%Ley
+            endif
             !
-            class is( ReceiverFullImpedance_t )
-                !
-                if( self%code == other%code .AND.   &
-                    self%location(1) == other%location(1) .AND.    &
-                    self%location(2) == other%location(2) .AND.    &
-                    self%location(3) == other%location(3) ) then
-                    equal = .TRUE.
-                endif
-                !
-            class default
-                equal = .FALSE.
-            !
-        end select
+            do i = 1, 2
+                ki = ki + 1
+                do j = 1, 2
+                    !lrows( j, ki ) = Hinv( j, i ) * ( lE - Z( k, 1 ) * Rx%Lex - Z( k, 2 ) * Rx%Ley )
+                enddo
+            enddo
+        enddo
         !
-    end function isEqualFullImpedance
+    end subroutine setLRowsFullImpedance
     !
     subroutine predictedDataFullImpedance( self, transmitter )
         implicit none
@@ -257,6 +262,34 @@ contains
         enddo
         !
     end subroutine savePredictedDataFullImpedance
+    !
+    function isEqualFullImpedance( self, other ) result( equal )
+        implicit none
+        !
+        class( ReceiverFullImpedance_t ), intent( in ) :: self
+        class( Receiver_t ), intent( in ) :: other
+        !
+        logical :: equal
+        !
+        equal = .FALSE.
+        !
+        select type( other )
+            !
+            class is( ReceiverFullImpedance_t )
+                !
+                if( self%code == other%code .AND.   &
+                    self%location(1) == other%location(1) .AND.    &
+                    self%location(2) == other%location(2) .AND.    &
+                    self%location(3) == other%location(3) ) then
+                    equal = .TRUE.
+                endif
+                !
+            class default
+                equal = .FALSE.
+            !
+        end select
+        !
+    end function isEqualFullImpedance
     !
     subroutine writeReceiverFullImpedance( self )
         implicit none

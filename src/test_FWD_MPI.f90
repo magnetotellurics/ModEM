@@ -2,11 +2,14 @@ program ModEM
     !
     use DeclarationMPI
     !
-    !
+    ! Program control variables
     character(:), allocatable :: control_file_name, model_file_name, data_file_name, modem_job
     logical                   :: has_control_file, has_model_file, has_data_file, verbosis
     !
     class( ModelOperator_t ), allocatable  :: model_operator
+    !
+    type( Dh_t ), allocatable, dimension(:) :: all_predicted_data
+    !
     !
     call MPI_Init( ierr )
     !
@@ -16,7 +19,7 @@ program ModEM
     call MPI_Comm_size( main_comm, mpi_size, ierr )
     !
     if( mpi_size < 2 ) then
-        write( *, * ) "A minimum of two MPI processes are required!!!"
+        write( *, * ) "Minimum of two processes required!!!"
         call MPI_Finalize( ierr )
         stop
     end if 
@@ -33,8 +36,8 @@ program ModEM
     !
     call MPI_Comm_rank( child_comm, node_rank, ierr )
     !
-    write( *, * ) "MPI Rank ", mpi_rank," in COMM_WORLD (", mpi_size, ") is ", node_rank, &
-                  " in SHARED_COMM (", node_size, ") on Node: ", node_name( 1 : nodestringlen )
+    write( *, * ) "MPI Rank ", mpi_rank," in COMM_WORLD [", mpi_size, "] is ", node_rank, &
+                  " in SHARED_COMM [", node_size, "] on Node: ", node_name( 1 : nodestringlen )
     !
     ! MPI MASTER PROCESS
     !
@@ -44,7 +47,7 @@ program ModEM
         !
         call setupDefaultParameters()
         !
-        ! Validate arguments, set model_file_name, data_file_name, control_file_name, etc...
+        ! Validate arguments and control variables
         call handleArguments()
         !
         write( *, * )
@@ -83,19 +86,23 @@ program ModEM
                 job_master = trim( fwd_info%job_name )
                 !
                 select case ( job_master )
-                !
-                case ( "SHARE_MEMORY" )
                     !
-                    call workerQuerySharedMemory()
-                    !
-                    call MPI_Win_fence( 0, shared_window, ierr )
-                    !
-                    call MPI_Win_free( shared_window, ierr )
-                    !
-                case ( "JOB_FORWARD" )
-                    !
-                    call workerForwardModelling()
-                    !
+                    case ( "SHARE_MEMORY" )
+                        !
+                        call workerQuerySharedMemory()
+                        !
+                        call MPI_Win_fence( 0, shared_window, ierr )
+                        !
+                        call MPI_Win_free( shared_window, ierr )
+                        !
+                    case ( "JOB_FORWARD" )
+                        !
+                        call workerForwardModelling()
+                        !
+                    case ( "JOB_INVERSE" )
+                        !
+                        call workerInverse()
+                        !
                 end select
                 !
             enddo
@@ -119,13 +126,24 @@ program ModEM
     !
 contains
     !
+    subroutine masterInversion()
+        implicit none
+        !
+        ! Verbosis ...
+        write ( *, * ) "    > Start inversion."
+        !
+        call masterForwardModelling()
+        !
+    end subroutine masterInversion
+    !
+    !
     subroutine masterForwardModelling()
         implicit none
         !
         ! Local variables
         integer :: i, worker_rank, tx_received, tx_index
         !
-        type( Dh_t ), allocatable, dimension(:) :: worker_predicted_data, all_predicted_data
+        type( Dh_t ), allocatable, dimension(:) :: worker_predicted_data
         !
         ! Verbosis
         write( *, * ) "    > Start forward modelling."
@@ -233,21 +251,11 @@ contains
              
         enddo
         !
-        ! Deallocate MPI communication buffers
-        deallocate( fwd_info_buffer, predicted_data_buffer )
-        !
         ! Verbosis...
         write( *, * ) "    -> Writing Predicted Data to file: [", trim( predicted_data_file_name ), "]"
         !
         ! Write all_predicted_data into predicted_data.dat
         call writeDataHandleArray( all_predicted_data )
-        !
-        call deallocateDataHandleArray( all_predicted_data )
-        !
-        call deallocateReceiverArray()
-        !
-        ! Verbosis
-        write( *, * ) "    > Finish forward modelling."
         !
     end subroutine masterForwardModelling
     !
@@ -297,6 +305,13 @@ contains
         call unpackSharedBuffer( int( shared_window_size ) )
         !
     end subroutine workerQuerySharedMemory
+    !
+    subroutine workerInverse()
+        implicit none
+        !
+        call workerForwardModelling()
+        !
+    end subroutine workerInverse
     !
     subroutine workerForwardModelling()
         implicit none
@@ -416,15 +431,29 @@ contains
         !
         select case ( modem_job )
             !
-        case ( "forward" )
-            !
-            call masterForwardModelling()
-            !
-        case default
-            !
-            write( *, * ) "    - Unknow job: [", modem_job, "]"
-            call printHelp()
-            !
+            case ( "forward" )
+                !
+                call masterForwardModelling()
+                !
+                ! Deallocate MPI communication buffers
+                deallocate( fwd_info_buffer, predicted_data_buffer )
+                !
+                call deallocateDataHandleArray( all_predicted_data )
+                !
+                call deallocateReceiverArray()
+                !
+                ! Verbosis
+                write( *, * ) "    > Finish forward modelling."
+                !
+            case ( "inversion" )
+                !
+                call masterInversion()
+                !
+            case default
+                !
+                write( *, * ) "    - Unknow job: [", modem_job, "]"
+                call printHelp()
+                !
         end select
         !
     end subroutine handleJob
@@ -454,9 +483,7 @@ contains
         !
         ! Read Grid and ModelParameter with ModelReader_Weerachai
         call model_reader%Read( model_file_name, main_grid, model_parameter ) 
-		!
-		write( *, * ) "PARAM TYPE MASTER", model_parameter%paramType
-		!
+        !
         ! Instantiate the ModelOperator object
         select type( main_grid )
             !
@@ -509,7 +536,6 @@ contains
                 call Rx%evaluationFunction( model_operator )
                 !
             enddo
-            !
         else
              !
              write(*,*) "Number of Rx mismatched from Header :[", nrx, " and ", data_file_standard%nRx, "]"
@@ -574,6 +600,12 @@ contains
                          !
                          argument_index = argument_index + 1
                          !
+                      case ( "-i", "--inversion" )
+                         !
+                         modem_job = "inversion"
+                         !
+                         argument_index = argument_index + 1
+                         !
                       case ( "-m", "--model" )
                          !
                          call get_command_argument( argument_index + 1, argument )
@@ -606,7 +638,7 @@ contains
                          !
                          call printHelp()
                          !
-                      case ( "--verbosis" )
+                      case ( "--verbose" )
                          !
                          call printHelp()
                          !
@@ -852,8 +884,8 @@ contains
         write( *, * ) "ModEM-OO Usage:"
         write( *, * ) ""
         write( *, * ) "    Flags to define a job:"
-        write( *, * ) "        [-f], [--forward]    :  Forward modelling."
-        write( *, * ) "        [-i], [--inverse]    :  Inversion modelling."
+        write( *, * ) "        [-f], [--forward]    :  Forward modeling."
+        write( *, * ) "        [-i], [--inversion]  :  Inversion."
         write( *, * )
         write( *, * ) "    Other arguments:"
         write( *, * ) "        [-d], [--data]       :  Flags for input data file path."
@@ -863,7 +895,7 @@ contains
         write( *, * ) "        [-h], [--help]       :  Print usage information."
         write( *, * ) "        [-pd], [--predicted] :  Output data file path."
         write( *, * ) "        [-es], [--esolution] :  Output binary e-solution file path."
-        write( *, * ) "        [--verbosis]         :  Print runtime information."
+        write( *, * ) "        [--verbose]          :  Print runtime information."
         !
         write( *, * ) ""
         write( *, * ) "Version 1.0.0"
@@ -873,3 +905,4 @@ contains
     end subroutine printHelp
     !
 end program ModEM
+!

@@ -19,11 +19,13 @@ module ReceiverFullVerticalMagnetic
             !
             final :: ReceiverFullVerticalMagnetic_dtor
             !
-            procedure, public :: isEqualRx => isEqualFullVerticalMagnetic
+            procedure, public :: setLRows => setLRowsFullVerticalMagnetic
             !
             procedure, public :: predictedData => predictedDataFullVerticalMagnetic
             !
             procedure, public :: savePredictedData => savePredictedDataFullVerticalMagnetic
+            !
+            procedure, public :: isEqualRx => isEqualFullVerticalMagnetic
             !
             procedure, public :: write => writeReceiverFullVerticalMagnetic
             !
@@ -104,42 +106,15 @@ contains
         !
     end subroutine ReceiverFullVerticalMagnetic_dtor
     !
-    function isEqualFullVerticalMagnetic( self, other ) result( equal )
+    subroutine setLRowsFullVerticalMagnetic( self, transmitter )
         implicit none
         !
-        class( ReceiverFullVerticalMagnetic_t ), intent( in ) :: self
-        class( Receiver_t ), intent( in ) :: other
+        class( ReceiverFullVerticalMagnetic_t ), intent( inout ) :: self
+        class( Transmitter_t ), intent( in )                     :: transmitter
         !
-        logical :: equal
+        write(*,*) "setLRowsFullVerticalMagnetic to be implemented"
         !
-        equal = .FALSE.
-        !
-        select type( other )
-            !
-            class is( ReceiverFullVerticalMagnetic_t )
-                !
-                if( self%code == other%code .AND.   &
-                    self%location(1) == other%location(1) .AND.    &
-                    self%location(2) == other%location(2) .AND.    &
-                    self%location(3) == other%location(3) ) then
-                    equal = .TRUE.
-                endif
-                !
-            class default
-                equal = .FALSE.
-            !
-        end select
-        !
-    end function isEqualFullVerticalMagnetic
-    !
-    subroutine writeReceiverFullVerticalMagnetic( self )
-        implicit none
-        !
-        class( ReceiverFullVerticalMagnetic_t ), intent( in ) :: self
-        !
-        write( *, * ) "Write ReceiverFullVerticalMagnetic_t: ", self%id
-        !
-    end subroutine writeReceiverFullVerticalMagnetic
+    end subroutine setLRowsFullVerticalMagnetic
     !
     subroutine predictedDataFullVerticalMagnetic( self, transmitter )
         implicit none
@@ -182,7 +157,7 @@ contains
                             I_BB( 1, 2 ) = -BB( 1, 2 ) / det
                             I_BB( 2, 1 ) = -BB( 2, 1 ) / det
                         else
-                            stop "ReceiverFullImpedance.f90: Determinant is Zero!"
+                            stop "ReceiverFullVerticalMagnetic.f90: Determinant is Zero!"
                         endif
                         !
                         allocate( self%response( 2 ) )
@@ -237,5 +212,42 @@ contains
         enddo
         !
     end subroutine savePredictedDataFullVerticalMagnetic
+    !
+    function isEqualFullVerticalMagnetic( self, other ) result( equal )
+        implicit none
+        !
+        class( ReceiverFullVerticalMagnetic_t ), intent( in ) :: self
+        class( Receiver_t ), intent( in ) :: other
+        !
+        logical :: equal
+        !
+        equal = .FALSE.
+        !
+        select type( other )
+            !
+            class is( ReceiverFullVerticalMagnetic_t )
+                !
+                if( self%code == other%code .AND.   &
+                    self%location(1) == other%location(1) .AND.    &
+                    self%location(2) == other%location(2) .AND.    &
+                    self%location(3) == other%location(3) ) then
+                    equal = .TRUE.
+                endif
+                !
+            class default
+                equal = .FALSE.
+            !
+        end select
+        !
+    end function isEqualFullVerticalMagnetic
+    !
+    subroutine writeReceiverFullVerticalMagnetic( self )
+        implicit none
+        !
+        class( ReceiverFullVerticalMagnetic_t ), intent( in ) :: self
+        !
+        write( *, * ) "Write ReceiverFullVerticalMagnetic_t: ", self%id
+        !
+    end subroutine writeReceiverFullVerticalMagnetic
     !
 end module ReceiverFullVerticalMagnetic
