@@ -312,7 +312,6 @@ contains
         type( TAirLayers ) :: air_layer
         type( Dh_t ), allocatable, dimension(:) :: tx_data_handles
         !
-        !
         select type( main_grid )
             !
             class is( Grid3D_SG_t )
@@ -455,7 +454,9 @@ contains
         !
         ! Read Grid and ModelParameter with ModelReader_Weerachai
         call model_reader%Read( model_file_name, main_grid, model_parameter ) 
-        !
+		!
+		write( *, * ) "PARAM TYPE MASTER", model_parameter%paramType
+		!
         ! Instantiate the ModelOperator object
         select type( main_grid )
             !

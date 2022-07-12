@@ -71,6 +71,11 @@ contains
         self%EHxy(3)%str = "Bx"
         self%EHxy(4)%str = "By"
         !
+        allocate( self%Lex, source = cSparsevector3D_SG_t() )
+        allocate( self%Ley, source = cSparsevector3D_SG_t() )
+        allocate( self%Lbx, source = cSparsevector3D_SG_t() )
+        allocate( self%Lby, source = cSparsevector3D_SG_t() )
+        !
         ! components required to get the full impedance tensor self%response [Zxx, Zxy, Zyx, Zyy]
         if( allocated( self%comp_names ) ) then
             !

@@ -130,13 +130,6 @@ contains
         !
         self%interpolation_set = .FALSE.
         !
-        self%Lex = cSparsevector3D_SG_t()
-        self%Ley = cSparsevector3D_SG_t()
-        self%Lez = cSparsevector3D_SG_t()
-        self%Lbx = cSparsevector3D_SG_t()
-        self%Lby = cSparsevector3D_SG_t()
-        self%Lbz = cSparsevector3D_SG_t()
-        !
     end subroutine initializeRx
     !
     subroutine deallocateRx( self )
