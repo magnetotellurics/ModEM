@@ -197,7 +197,7 @@ contains
                     select type( temp_full_vec )
                         class is( cVector3D_SG_t )
                             !
-                            call full2Sparse( self%Lex, temp_full_vec )
+                            call self%Lex%fromFullVector( temp_full_vec )
                             !
                         class default
                             stop "evaluationFunctionRx: Unclassified temp_full_vec_ex"
@@ -219,7 +219,7 @@ contains
                     select type( temp_full_vec )
                         class is( cVector3D_SG_t )
                             !
-                            call full2Sparse( self%ley, temp_full_vec )
+                            call self%ley%fromFullVector( temp_full_vec )
                             !
                         class default
                             stop "evaluationFunctionRx: Unclassified temp_full_vec_ey"
@@ -241,7 +241,7 @@ contains
                     select type( temp_full_vec )
                         class is( cVector3D_SG_t )
                             !
-                            call full2Sparse( self%Lez, temp_full_vec )
+                            call self%Lez%fromFullVector( temp_full_vec )
                             !
                         class default
                             stop "evaluationFunctionRx: Unclassified temp_full_vec_ez"
@@ -281,7 +281,7 @@ contains
                     select type( temp_full_vec )
                         class is( cVector3D_SG_t )
                             !
-                            call full2Sparse( self%Lbx, temp_full_vec )
+                            call self%Lbx%fromFullVector( temp_full_vec )
                             !
                         class default
                             stop "evaluationFunctionRx: Unclassified temp_full_vec_bx"
@@ -319,7 +319,7 @@ contains
                     select type( temp_full_vec )
                         class is( cVector3D_SG_t )
                             !
-                            call full2Sparse( self%Lby, temp_full_vec )
+                            call self%Lby%fromFullVector( temp_full_vec )
                             !
                         class default
                             stop "evaluationFunctionRx: Unclassified temp_full_vec_by"
@@ -357,7 +357,7 @@ contains
                     select type( temp_full_vec )
                         class is( cVector3D_SG_t )
                             !
-                            call full2Sparse( self%Lbz, temp_full_vec )
+                            call self%Lbz%fromFullVector( temp_full_vec )
                             !
                         class default
                             stop "evaluationFunctionRx: Unclassified temp_full_vec_bz"

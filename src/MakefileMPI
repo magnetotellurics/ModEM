@@ -46,7 +46,7 @@
 include Makefile.local
 OBJDIR = ../../objs/MT3D_OO
 F90 = mpif90 
-FFLAGS = -g -ffree-line-length-none -Wno-all
+FFLAGS = -O3 -ffree-line-length-none -Wno-all
 MPIFLAGS = -x f95-cpp-input -DMPI
 MODULE = -J $(OBJDIR)
 LIBS_PATH = -L/usr/lib64
@@ -220,7 +220,7 @@ $(OBJDIR)/ReceiverSingleField.o:Classes/Receivers/ReceiverSingleField.f90 $(OBJD
 $(OBJDIR)/ReceiverFArray.o:Classes/Receivers/ReceiverFArray.f90 $(OBJDIR)/Constants.o $(OBJDIR)/Receiver.o 
 	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) Classes/Receivers/ReceiverFArray.f90 -o $(OBJDIR)/ReceiverFArray.o
 
-$(OBJDIR)/TransmitterMT.o:Classes/Transmitters/TransmitterMT.f90 $(OBJDIR)/FileUnits.o $(OBJDIR)/cVector3D_SG.o $(OBJDIR)/Transmitter.o 
+$(OBJDIR)/TransmitterMT.o:Classes/Transmitters/TransmitterMT.f90 $(OBJDIR)/FileUnits.o $(OBJDIR)/cVector3D_SG.o $(OBJDIR)/cSparseVector3D_SG.o $(OBJDIR)/Transmitter.o 
 	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) Classes/Transmitters/TransmitterMT.f90 -o $(OBJDIR)/TransmitterMT.o
 
 $(OBJDIR)/TransmitterFArray.o:Classes/Transmitters/TransmitterFArray.f90 $(OBJDIR)/Constants.o $(OBJDIR)/TransmitterMT.o $(OBJDIR)/TransmitterCSEM.o 

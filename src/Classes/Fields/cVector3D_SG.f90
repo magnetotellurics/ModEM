@@ -78,7 +78,7 @@ module cVector3D_SG
         procedure, public :: isCompatible2 => isCompatible2CVector3D_SG
         generic :: isCompatible => isCompatible1, isCompatible2
         !
-        procedure, public :: copyFrom     => copyFromCVector3D_SG
+        procedure, public :: copyFrom    => copyFromCVector3D_SG
         procedure, public :: interpFunc  => interpFuncCVector3D_SG
         !
         procedure, public :: print => printCVector3D_SG
