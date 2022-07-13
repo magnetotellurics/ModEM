@@ -59,7 +59,7 @@ contains
         !
         class( Solver_QMR_t ), intent( inout ) :: self
         !
-        call self%SetParameters( iter_per_div_corDefQMR, tolCurlCurlDef )
+        call self%SetParameters( QMR_iters, tolerance_qmr )
         !
     end subroutine setDefaults_QMR
     !
@@ -277,9 +277,9 @@ contains
         end do
         !
         if( iter .LT. self%max_iter ) then
-            write( *, * ) "                    Solver QMR converged within ", iter, " : ", self%relErr( iter )
+            write( *, * ) "               Solver QMR converged within ", iter, " : ", self%relErr( iter )
         else
-            write( *, * ) "                    Solver QMR not converged in ", iter, " : ", self%relErr( iter )
+            write( *, * ) "               Solver QMR not converged in ", iter, " : ", self%relErr( iter )
         endif
         !
         deallocate( R )

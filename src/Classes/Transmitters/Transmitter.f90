@@ -43,11 +43,11 @@ module Transmitter
         !
         procedure( interface_solve_fwd_tx ), deferred, public :: solveFWD
         !
-        procedure( interface_is_equal_tx ), deferred, public :: isEqualTx
+        procedure( interface_is_equal_tx ), deferred, public :: isEqual
+        !
+        procedure( interface_print_tx ), deferred, public :: print
         !
         procedure, public :: pMult => pMultTx
-        !
-        procedure( interface_write_tx ), deferred, public     :: write
         !
     end type Transmitter_t
     !
@@ -57,24 +57,24 @@ module Transmitter
             import :: Transmitter_t
             class( Transmitter_t ), intent( inout ) :: self
         end subroutine interface_solve_fwd_tx
-        !
+        !        !
         function interface_is_equal_tx( self, other ) result( equal )
             import :: Transmitter_t
             class( Transmitter_t ), intent( in ) :: self, other
             logical                              :: equal
         end function interface_is_equal_tx
-        !
-        subroutine interface_write_tx( self )
+        !        
+        subroutine interface_print_tx( self )
             import :: Transmitter_t
             class( Transmitter_t ), intent(in) :: self
-        end subroutine interface_write_tx
+        end subroutine interface_print_tx
         !
         pure function interface_p_mult_tx( x ) result( y )
             import :: prec
-            real( kind=prec ), intent( in )      :: x
-            real( kind=prec )                    :: y
+            real( kind=prec ), intent( in ) :: x
+            real( kind=prec )               :: y
         end function interface_p_mult_tx
-        !**
+        !
     end interface
     !
     contains
@@ -146,35 +146,35 @@ module Transmitter
             endif
             !
          end subroutine updateReceiverIndexesArray
-		!
-		elemental function pMultTx( self, x ) result( y )
-			implicit none
-			!
-			class( Transmitter_t), intent( in ) :: self
-			real( kind=prec ), intent( in )        :: x
-			!
-			real( kind=prec ) :: y
-			!
-			y = self%p_mult_ptr( x )
-			!
-		end function pMultTx
-		!
-		pure function p_mult( x ) result( y )
-			implicit none
-			!
-			real( kind=prec ), intent( in ) :: x
-			!
-			real( kind=prec ) :: y
-			!
-		end function p_mult
-		!
-		pure function p_mult_t( x ) result( y )
-			implicit none
-			!
-			real( kind=prec ), intent( in ) :: x
-			!
-			real( kind=prec ) :: y
-			!
-		end function p_mult_t
-		!
+        !
+        elemental function pMultTx( self, x ) result( y )
+            implicit none
+            !
+            class( Transmitter_t), intent( in ) :: self
+            real( kind=prec ), intent( in )        :: x
+            !
+            real( kind=prec ) :: y
+            !
+            y = self%p_mult_ptr( x )
+            !
+        end function pMultTx
+        !
+        pure function p_mult( x ) result( y )
+            implicit none
+            !
+            real( kind=prec ), intent( in ) :: x
+            !
+            real( kind=prec ) :: y
+            !
+        end function p_mult
+        !
+        pure function p_mult_t( x ) result( y )
+            implicit none
+            !
+            real( kind=prec ), intent( in ) :: x
+            !
+            real( kind=prec ) :: y
+            !
+        end function p_mult_t
+        !
 end module Transmitter

@@ -90,7 +90,7 @@ contains
         !
     end subroutine SourceCSEM_Dipole1D_dtor
     !
-    ! Set self%E from forward modelling 1D
+    ! Set self%E from forward modeling 1D
     subroutine setE_CSEM_Dipole1D( self, polarization )
         implicit none
         !

@@ -114,13 +114,15 @@ contains
         class( ReceiverFullImpedance_t ), intent( inout ) :: self
         class( Transmitter_t ), intent( in )              :: transmitter
         !
-        complex( kind=prec ), allocatable, dimension(:,:) :: H, Hinv  ! ????
-        type( cVector3D_SG_t ) :: LE, LEX, LEY
+        type( cVector3D_SG_t ) :: H, Hinv, LE, LEX, LEY
         integer :: i, j, k, ki, ij
         !
         write(*,*) "implementing setLRowsFullImpedance:"
         !
         allocate( self%lrows( transmitter%n_pol, self%n_comp ) )
+        !
+        H = cVector3D_SG_t( transmitter%source%model_operator%metric%grid, "FACE" )
+        Hinv = cVector3D_SG_t( transmitter%source%model_operator%metric%grid, "FACE" )
         !
         ki = 0
         !

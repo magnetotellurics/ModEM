@@ -9,7 +9,9 @@ Module DivergenceCorrection
     type :: DivergenceCorrection_t
         !
         class( Solver_t ), allocatable :: solver
-        real( kind=prec ) :: divJ(2) ! divergence of currents computed at most recent call to DivCor -- before and after
+        !
+        ! divergence of currents computed at most recent call to DivCor -- before and after
+        real( kind=prec ) :: divJ(2)
         !
         contains
             !
@@ -81,16 +83,16 @@ contains
         class( cScalar_t ), intent( inout )           :: phi0
         !
         complex( kind=prec ) :: c_factor
-		class( cVector_t ), allocatable   :: e_interior
+        class( cVector_t ), allocatable :: e_interior
         !
-        c_factor = -ONE_I / ( mu_0 * ISIGN * omega )    ! 1/(isign*1i*w*mu)
+        c_factor = -ONE_I / ( mu_0 * ISIGN * omega ) ! 1 / ( isign * 1i * w * mu )
         !
         !    take divergence of sourceInterior, and return as cScalar of
         !     appropriate explicit type
-		call source%E%interior( e_interior )
+        call source%E%interior( e_interior )
         call self%solver%preconditioner%model_operator%Div( e_interior, phi0 )
-		!
-		deallocate( e_interior )
+        !
+        deallocate( e_interior )
         !
         !  multiply result by c_factor (in place)
         call phi0%mults( c_factor )
@@ -116,18 +118,17 @@ contains
         !
         SourceTerm = present( phi0 )
         !
-        ! alocating phiSol, phiRHS  -- these need to be cScalars of explicit
+        ! allocating phiSol, phiRHS  -- these need to be cScalars of explicit
         !    type that matches inE, outE -- phi0 may not be an actual input
-        !    so this cannot be used as a prototye
+        !    so this cannot be used as a prototype
         !    I am writing this under the assumption that there will be
         !     createScalar, createVector in ModelOperator class (should be
         !      declared as procedures in abstract class, implemented to return
         !      cVector or cScalar of appropriate type)
-
+		!
         !    I DO NOT WANT select type at this level -- 
         !      make procedures in ForwardModeling generic, with no reference to
         !      specific classes
-        !
         !
         select type( grid => self%solver%preconditioner%model_operator%metric%grid )
             class is( Grid3D_SG_t )
@@ -142,7 +143,7 @@ contains
                 !
             class default
                 write( *, * ) "ERROR:DivergenceCorrection_t::divCorrDivergenceCorrection:"
-                stop          "    unknow grid type"
+                stop          "    unknown grid type"
         end select
         !
         ! compute divergence of currents for input electric field
@@ -158,8 +159,6 @@ contains
         !    this will be part of diagnostics
         self%divJ(1) = sqrt( phiRHS .dot. phiRHS )
         !
-        write( *, * ) "divJ before correction: ", self%divJ(1)
-        !
         ! point-wise multiplication with volume weights centered on corner nodes
         !
         ! ???? Interesting point: if changing phiRHS to phiSol, the QMR starts to slowly converge
@@ -174,8 +173,8 @@ contains
             class is( Solver_PCG_t )
                 call solver%solve( phiRHS, phiSol )
             class default
-                write(*, *) "ERROR:DivergenceCorrection::DivCorr:"
-                stop          "            Unknow solver type."
+                write( *, * ) "ERROR: DivergenceCorrection::DivCorr:"
+                stop        "     Unknown solver type."
         end select
         !
         !    have to decide how to manage output
@@ -183,7 +182,7 @@ contains
         !write (*,*) "finished divergence correction:", size( self%solver%relErr ), self%solver%n_iter
         !write (*,"(i8, es20.6)") self%solver%n_iter, self%solver%relErr( self%solver%n_iter )
         !end if
-
+		!
         ! compute gradient of phiSol (Divergence correction for inE)
         call self%solver%preconditioner%model_operator%grad( phiSol, outE )
         !
@@ -201,10 +200,11 @@ contains
         if( SourceTerm ) then
             call phi0%scMultAddS( phiRHS, C_MinusOne )
         endif
+        !
         ! compute the size of current Divergence after
         self%divJ(2) = sqrt( phiRHS .dot. phiRHS )
         !
-        write( *, * ) "divJ after correction: ", self%divJ(2)
+        write( *, * ) "               DivJ: ", self%divJ(1), " => ", self%divJ(2)
         !
         deallocate( phiRHS )
         !

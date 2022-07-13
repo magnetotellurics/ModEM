@@ -50,7 +50,7 @@ contains
             nTx = size( transmitters )
             !
             do iTx = 1, size( transmitters )
-                if( new_tx%isEqualTx( transmitters( iTx )%Tx ) ) then
+                if( new_tx%isEqual( transmitters( iTx )%Tx ) ) then
                     return
                 end if
             end do
@@ -112,13 +112,13 @@ contains
         implicit none
         !
         integer                :: itx
-        class( Tx_t ), pointer :: alloc_tx
+        !class( Tx_t ), pointer :: alloc_tx
         !
         write( *, * ) "          Checked ", size( transmitters ), " Transmitters:"
         !
         do itx = 1, size( transmitters )
-            alloc_tx => transmitters( itx )
-            call alloc_tx%Tx%write()
+            !alloc_tx => transmitters( itx )
+            call transmitters( itx )%Tx%print()
         end do
         !
     end subroutine printTransmitterArray

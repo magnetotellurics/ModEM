@@ -21,9 +21,9 @@ module TransmitterCSEM
             !
             procedure, public :: solveFWD => solveFWDTransmitterCSEM
             !
-            procedure, public :: isEqualTx => isEqualTransmitterCSEM
+            procedure, public :: isEqual => isEqualTransmitterCSEM
             !
-            procedure, public :: write => writeTransmitterCSEM
+            procedure, public :: print => printTransmitterCSEM
             !
     end type TransmitterCSEM_t
     !
@@ -71,7 +71,7 @@ contains
         implicit none
         !
         class( TransmitterCSEM_t ), intent( in ) :: self
-        class( Transmitter_t ), intent( in ) :: other
+        class( Transmitter_t ), intent( in )     :: other
         !
         logical :: equal
         !
@@ -81,10 +81,10 @@ contains
             !
             class is( TransmitterCSEM_t )
                 !
-                if( ABS( self%period - other%period ) < TOL6 .AND.    &
-                    self%location(1) == other%location(1) .AND.    &
-                    self%location(2) == other%location(2) .AND.    &
-                    self%location(3) == other%location(3) ) then
+                if( ABS( self%period - other%period ) < TOL6 .AND.   &
+                         self%location(1) == other%location(1) .AND. &
+                         self%location(2) == other%location(2) .AND. &
+                         self%location(3) == other%location(3) ) then
                     equal = .TRUE.
                 endif
                 !
@@ -111,7 +111,7 @@ contains
         allocate( cVector3D_SG_t :: self%e_all( self%n_pol ) )
         !
         ! Verbose...
-        write( *, * ) "               SolveFWD for CSEM Tx:", self%id, " -> Period:", self%period
+        write( *, * ) "          SolveFWD for CSEM Tx:", self%id, " -> Period:", self%period
         !
         call self%source%setE( 1 )
         !
@@ -144,16 +144,18 @@ contains
         !
     end subroutine solveFWDTransmitterCSEM
     !
-    subroutine writeTransmitterCSEM( self )
+    subroutine printTransmitterCSEM( self )
+        implicit none
         !
-        class( TransmitterCSEM_t ), intent(in)    :: self
-        integer                                    :: iRx
+        class( TransmitterCSEM_t ), intent( in ) :: self
         !
-        write( *, *) "TransmitterCSEM: ", self%id,    &
+        integer :: iRx
+        !
+        write( *, * ) "               TransmitterCSEM: ", self%id,    &
         " Location: [", self%location(1), self%location(2), self%location(3),    &
         "] Period: ",    self%period,    &
         " N Receivers: ", size( self%receiver_indexes )
         !
-    end subroutine writeTransmitterCSEM
+    end subroutine printTransmitterCSEM
     !
 end module TransmitterCSEM

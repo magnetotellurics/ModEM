@@ -5,7 +5,7 @@ module Solver_PCG
     use ModelOperator
     use PreConditioner_MF_DC
     !
-    !    solver object for PCG -- used only for Divergence Correction
+    ! Solver used only for Divergence Correction
     type, extends( Solver_t ) :: Solver_PCG_t
         !
         ! PROPERTIES HERE
@@ -60,7 +60,7 @@ contains
         !
         class( Solver_PCG_t ), intent(inout) :: self
         !
-        call self%SetParameters( max_iterDivCorDef, tolDivCorDef )
+        call self%SetParameters( max_divcor_iters, tolerance_divcor )
         !
     end subroutine setDefaults_PCG
     !
@@ -102,8 +102,6 @@ contains
         !
         self%relErr(1) = rnorm/bnorm
         !
-        !write( *, * ) "PCG iter, self%relErr( 1 )", 1, self%relErr( 1 )
-        !
         i = 0
         !
         loop: do while ( ( self%relErr( i + 1 ) .GT. self%tolerance ).and.( i + 1 .LT. self%max_iter ) )
@@ -143,8 +141,8 @@ contains
         !
         if( i + 1 .LT. self%max_iter ) then
             write( *, * ) "               DivCorr PCG converged within ", i + 1, " : ", self%relErr( i + 1 )
-        else
-            write( *, * ) "               DivCorr PCG not converged in ", i + 1, " : ", self%relErr( i + 1 )
+        !else
+            !write( *, * ) "              DivCorr PCG not converged in ", i + 1, " : ", self%relErr( i + 1 )
         endif
         !
         deallocate( r )

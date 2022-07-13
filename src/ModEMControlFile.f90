@@ -18,6 +18,9 @@ module ModEMControlFile
         character(:), allocatable :: grid_reader_type, grid_type, forward_solver_type, source_type
         character(:), allocatable :: model_method, model_n_air_layer, model_max_height
         !
+        character(:), allocatable :: QMR_iters, BCG_iters, max_divcor, max_divcor_iters
+        character(:), allocatable :: tolerance_divcor, tolerance_qmr
+        !
         contains
             !
             final :: ModEMControlFile_dtor
@@ -89,6 +92,30 @@ module ModEMControlFile
                             self%model_max_height = trim( args(2) )
                         endif
                         !
+                        if( index( line_text, "QMR_iters" ) > 0 ) then
+                            self%QMR_iters = trim( args(2) )
+                        endif
+                        !
+                        if( index( line_text, "BCG_iters" ) > 0 ) then
+                            self%BCG_iters = trim( args(2) )
+                        endif
+                        !
+                        if( index( line_text, "max_divcor" ) > 0 ) then
+                            self%max_divcor = trim( args(2) )
+                        endif
+                        !
+                        if( index( line_text, "max_divcor_iters" ) > 0 ) then
+                            self%max_divcor_iters = trim( args(2) )
+                        endif
+                        !
+                        if( index( line_text, "tolerance_divcor" ) > 0 ) then
+                            self%tolerance_divcor = trim( args(2) )
+                        endif
+                        !
+                        if( index( line_text, "tolerance_qmr" ) > 0 ) then
+                            self%tolerance_qmr = trim( args(2) )
+                        endif
+                        !
                     endif
                     !
                 end do
@@ -110,17 +137,20 @@ module ModEMControlFile
                             stop "Error: Wrong grid_type control, use [SG|MR]"
                     end select
                     !
+                    write( *, "( A, A20)" ) "          grid = ", grid_type
+                    !
                 endif
                 !
                 ! Grid reader
                 if ( allocated( self%grid_reader_type ) ) then
-                    write( *, * ) "          grid_reader = ", self%grid_reader_type
+                    !
+                    ! TO BE IMPLEMENTED
+                    write( *, "( A, A20)" ) "          grid_reader = ", self%grid_reader_type
+                    !
                 endif
                 !
                 ! Forward solver
                 if ( allocated( self%forward_solver_type ) ) then
-                    !
-                    write( *, * ) "          fwd_solver = ", self%forward_solver_type
                     !
                     select case ( self%forward_solver_type )
                         !
@@ -136,11 +166,12 @@ module ModEMControlFile
                         !
                     end select
                     !
+                    write( *, "( A, A20)" ) "          fwd_solver = ", forward_solver_type
+                    !
                 endif
                 !
                 ! Source_type
                 if ( allocated( self%source_type ) ) then
-                    write( *, * ) "          source = ", self%source_type
                     !
                     select case ( self%source_type )
                         !
@@ -154,11 +185,12 @@ module ModEMControlFile
                         !
                     end select
                     !
+                    write( *, "( A, A20)" ) "          source = ", source_type
+                    !
                 endif
                 !
                 ! Model method
                 if ( allocated( self%model_method ) ) then
-                    write( *, * ) "          model_method = ", self%model_method
                     !
                     select case ( self%model_method )
                         !
@@ -171,27 +203,82 @@ module ModEMControlFile
                         stop "Error: Wrong model_method control, use [mirror|fixed height]"
                         !
                     end select
+                    write( *, "( A, A20)" ) "          model_method = ", model_method
                     !
                 endif
                 !
                 ! Model nzAir
                 if ( allocated( self%model_n_air_layer ) ) then
                     !
-                    write( *, * ) "          model_n_air_layer =", self%model_n_air_layer
+                    read( self%model_n_air_layer, "(I8)" ) model_n_air_layer
                     !
-                    read( self%model_n_air_layer, "(i5)" ) model_n_air_layer
+                    write( *, "( A, I20)" ) "          model_n_air_layer = ", model_n_air_layer
                     !
                 endif
                 !
                 ! Model max height
                 if ( allocated( self%model_max_height ) ) then
                     !
-                    write( *, * ) "          model_max_height =", self%model_max_height
+                    read( self%model_max_height, "(f15.6)" ) model_max_height
                     !
-                    read( self%model_max_height, "(f15.5)" ) model_max_height
+                    write( *, "( A, f20.2)" ) "          model_max_height = ", model_max_height
                     !
                 endif
+                !
+                ! Solver QMR_iters
+                if ( allocated( self%QMR_iters ) ) then
                     !
+                    read( self%QMR_iters, "(I8)" ) QMR_iters
+                    !
+                    write( *, "( A, I20)" ) "          QMR_iters = ", QMR_iters
+                    !
+                endif
+                !
+                ! Solver BCG_iters
+                if ( allocated( self%BCG_iters ) ) then
+                    !
+                    read( self%BCG_iters, "(I8)" ) BCG_iters
+                    !
+                    write( *, "( A, I20)" ) "          BCG_iters = ", BCG_iters
+                    !
+                endif
+                !
+                ! Solver max_divcor
+                if ( allocated( self%max_divcor ) ) then
+                    !
+                    read( self%max_divcor, "(I8)" ) max_divcor
+                    !
+                    write( *, "( A, I20)" ) "          max_divcor = ", max_divcor
+                    !
+                endif
+                !
+                ! Solver max_divcor_iters
+                if ( allocated( self%max_divcor_iters ) ) then
+                    !
+                    read( self%max_divcor_iters, "(I8)" ) max_divcor_iters
+                    !
+                    write( *, "( A, I20)" ) "          max_divcor_iters = ", max_divcor_iters
+                    !
+                endif
+                !
+                ! Solver tolerance_divcor
+                if ( allocated( self%tolerance_divcor ) ) then
+                    !
+                    read( self%tolerance_divcor, * ) tolerance_divcor
+                    !
+                    write( *, "( A, es20.2)" ) "          tolerance_divcor = ", tolerance_divcor
+                    !
+                endif
+                !
+                ! Solver tolerance_qmr
+                if ( allocated( self%tolerance_qmr ) ) then
+                    !
+                    read( self%tolerance_qmr, * ) tolerance_qmr
+                    !
+                    write( *, "( A, es20.2)" ) "          tolerance_qmr = ", tolerance_qmr
+                    !
+                endif
+                !
             else
                 write( *, * ) "Error opening [", fname, "] in ModEMControlFile_ctor"
                 stop
@@ -210,6 +297,15 @@ module ModEMControlFile
             if( allocated( self%grid_type ) ) deallocate( self%grid_type )
             if( allocated( self%forward_solver_type ) ) deallocate( self%forward_solver_type )
             if( allocated( self%source_type ) ) deallocate( self%source_type )
+            if( allocated( self%model_method ) ) deallocate( self%model_method )
+            if( allocated( self%model_n_air_layer ) ) deallocate( self%model_n_air_layer )
+            if( allocated( self%model_max_height ) ) deallocate( self%model_max_height )
+            if( allocated( self%QMR_iters ) ) deallocate( self%QMR_iters )
+            if( allocated( self%BCG_iters ) ) deallocate( self%BCG_iters )
+            if( allocated( self%max_divcor ) ) deallocate( self%max_divcor )
+            if( allocated( self%max_divcor_iters ) ) deallocate( self%max_divcor_iters )
+            if( allocated( self%tolerance_divcor ) ) deallocate( self%tolerance_divcor )
+            if( allocated( self%tolerance_qmr ) ) deallocate( self%tolerance_qmr )
             !
         end subroutine ModEMControlFile_dtor
         !

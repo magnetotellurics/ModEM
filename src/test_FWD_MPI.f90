@@ -12,9 +12,10 @@ program ModEM
     !
     real( kind=prec ) :: t_start, t_finish
     !
-    call MPI_Init( ierr )
     !
     call cpu_time( t_start )
+    !
+    call MPI_Init( ierr )
     !
     main_comm = MPI_COMM_WORLD
     !
@@ -22,7 +23,7 @@ program ModEM
     call MPI_Comm_size( main_comm, mpi_size, ierr )
     !
     if( mpi_size < 2 ) then
-        write( *, * ) "Minimum of two processes required!!!"
+        write( *, * ) "Error: Minimum of two processes required!"
         call MPI_Finalize( ierr )
         stop
     end if 
@@ -71,7 +72,7 @@ program ModEM
         call cpu_time( t_finish )
         !
         write( *, * )
-        write( *, * ) "Finish ModEM-OO ( ", t_finish - t_start, "s )"
+        write( *, "(A18, F6.3, A3)" ) "Finish ModEM-OO (", t_finish - t_start, "s)"
         write( *, * )
     !
     ! MPI WORKER PROCESS
@@ -106,7 +107,7 @@ program ModEM
                         !
                     case ( "JOB_INVERSE" )
                         !
-                        call workerInverse()
+                        call workerInversion()
                         !
                 end select
                 !
@@ -138,7 +139,7 @@ contains
     subroutine masterInversion()
         implicit none
         !
-        ! Verbose ...
+        ! Verbose
         write( *, * ) "     - Start Inversion"
         !
         call masterForwardModelling()
@@ -154,7 +155,7 @@ contains
         !
         type( Dh_t ), allocatable, dimension(:) :: worker_predicted_data
         !
-        ! Verbosis
+        ! Verbose
         write( *, * ) "     - Start Forward Modeling"
         !
         worker_rank = 1
@@ -168,7 +169,7 @@ contains
             call handleModelFile()
         endif
         !
-        ! Reads Data File: instantiates and builds the Data relation between Txs and Txs
+        ! Reads Data File: instantiates and builds the Data relation between Txs and Rxs
         if( .NOT. has_data_file ) then 
             stop "Error: Missing Data file!"
         else
@@ -177,14 +178,14 @@ contains
         !
         write( *, * ) "     - MPI Shared memory"
         !
-        ! SHARE MEM WITH ALL WORKERS
+        ! Share memory with all workers
         call masterExposeSharedMemory()
         !
         do i = 1, ( mpi_size - 1 )
             !
             fwd_info%job_name = job_share_memory
             !
-            call sendTo( i )
+            call sendTo(i)
             !
         enddo
         !
@@ -198,8 +199,8 @@ contains
         !
         call deallocateTransmitterArray()
         !
-        ! SEND 1 TRANSMITTER TO FIRST np WORKERS
-        do while ( worker_rank <= ( mpi_size - 1 ) )
+        ! Send 1 transmitter to first np workers
+        do while( worker_rank <= ( mpi_size - 1 ) )
             !
             tx_index = tx_index + 1
             !
@@ -213,7 +214,7 @@ contains
             !
         end do
         !
-        ! SEND 1 TRANSMITTER TO FIRST AVAILABLE WORKER
+        ! Send 1 transmitter to first available worker
         do while( tx_index < size( transmitters ) )
             !
             !write( *, * ) "THERES", ( size( transmitters ) - tx_index ), " TX LEFT!"
@@ -232,15 +233,15 @@ contains
             !
             tx_index = tx_index + 1
             !
-            fwd_info%job_name    = job_forward
-            fwd_info%tx_index    = tx_index
+            fwd_info%job_name = job_forward
+            fwd_info%tx_index = tx_index
             !
             call sendTo( fwd_info%worker_rank )
             !
         end do
         !
-        ! RECEIVES job_done FROM EACH FINISHED WORKER
-        do while ( tx_received < size( transmitters ) )
+        ! Receives job_done from each finished worker
+        do while( tx_received < size( transmitters ) )
             !
             !write( *, * ) "MASTER WAITING ANY WORKER TO FINISH"
             !
@@ -259,10 +260,10 @@ contains
             fwd_info%job_name = job_finish
             !
             call sendTo( fwd_info%worker_rank )
-             
+            !
         enddo
         !
-        ! Write all_predicted_data into predicted_data.dat
+        ! Write all_predicted_data into <predicted_data_file_name>
         call writeDataHandleArray( all_predicted_data )
         !
     end subroutine masterForwardModelling
@@ -270,27 +271,21 @@ contains
     subroutine masterExposeSharedMemory()
         implicit none
         !
-        select type( model_operator )
-          !
-          class is( ModelOperator_MF_t )
-                !
-                call allocateSharedBuffer()
-                !
-                shared_window_size = shared_buffer_size
-                shared_disp_unit = 1
-                !
-                call MPI_Win_allocate_shared( shared_window_size, shared_disp_unit, MPI_INFO_NULL, child_comm, shared_c_ptr, shared_window, ierr )
-                !
-                if( ierr /= MPI_SUCCESS ) then
-                     write( *, * ) "Error: MPI Win_allocate_shared fails on master:", ierr
-                     stop
-                endif
-                !
-                call c_f_pointer( shared_c_ptr, shared_buffer, (/shared_window_size/) )
-                !
-                call packSharedBuffer()
-                !
-        end select
+        call allocateSharedBuffer()
+        !
+        shared_window_size = shared_buffer_size
+        shared_disp_unit = 1
+        !
+        call MPI_Win_allocate_shared( shared_window_size, shared_disp_unit, MPI_INFO_NULL, child_comm, shared_c_ptr, shared_window, ierr )
+        !
+        if( ierr /= MPI_SUCCESS ) then
+             write( *, * ) "Error: MPI Win_allocate_shared fails on master:", ierr
+             stop
+        endif
+        !
+        call c_f_pointer( shared_c_ptr, shared_buffer, (/shared_window_size/) )
+        !
+        call packSharedBuffer()
         !
     end subroutine masterExposeSharedMemory
     !
@@ -302,7 +297,6 @@ contains
         if( ierr == MPI_SUCCESS ) then
             !
             write( *, * ) "          Worker", mpi_rank, " query ", shared_window_size, " bytes."
-            !
         else
             write( *, * ) "Error: MPI Win_shared_query fails on worker:", mpi_rank, ierr
             stop
@@ -314,12 +308,12 @@ contains
         !
     end subroutine workerQuerySharedMemory
     !
-    subroutine workerInverse()
+    subroutine workerInversion()
         implicit none
         !
         call workerForwardModelling()
         !
-    end subroutine workerInverse
+    end subroutine workerInversion
     !
     subroutine workerForwardModelling()
         implicit none
@@ -366,16 +360,16 @@ contains
             !
         end select
         !
-        ! Set Transmitter's ForwardSolver
+        ! Point to the current Transmitter
         Tx => getTransmitter( fwd_info%tx_index )
         !
-        ! Set Transmitter's ForwardSolver
+        ! Point Transmitter's ForwardSolver
         Tx%forward_solver => forward_solver
         !
         ! Set Transmitter's ForwardSolver Omega(Period) and Conductivity
         call Tx%forward_solver%setFrequency( model_parameter, Tx%period )
         !
-        ! Instantiate Transmitter's Source - According to transmitter type or chosen via control file
+        ! Instantiate Transmitter's Source - According to tx type or via control file
         select type( Tx )
             !
             class is( TransmitterMT_t )
@@ -388,19 +382,16 @@ contains
                 !
         end select
         !
-        ! Solve Forward Modeling for this Transmitter
+        ! Solve Forward Modeling for the Transmitter
         call Tx%solveFWD()
         !
-        ! Loop for each Receiver related to this Transmitter
+        ! Loop for each Receiver related to the Transmitter
         do iRx = 1, size( Tx%receiver_indexes )
             !
-            ! Points the Rx alias to the current loop Receiver
+            ! Point to the current Receiver
             Rx => getReceiver( Tx%receiver_indexes( iRx ) )
             !
-            ! Verbose...
-            !write( *, * ) "                        Rx Id:", Rx%id, "XYZ:", Rx%location
-            !
-            ! Calculates Rx predicted data and stores the result in the Receiver
+            ! Calculate and store predicted data in the Receiver
             call Rx%predictedData( Tx )
             !
             ! For each predicted data stored in the Receiver
@@ -413,7 +404,7 @@ contains
             !
         enddo
         !
-        ! Clears the memory used by the current Transmitter (Mainly Esolution cVector)
+        ! Clears the memory used by the current Transmitter (Mainly ESolution cVector)
         deallocate( Tx )
         !
         !write( *, * ) "WORKER ", mpi_rank, "FINISHES FWD FOR TX ", fwd_info%tx_index!, size( tx_data_handles )
@@ -423,6 +414,7 @@ contains
         fwd_info%worker_rank = mpi_rank
         !
         call allocateDataBuffer( tx_data_handles )
+        !
         fwd_info%n_data      = size( tx_data_handles )
         fwd_info%data_size   = predicted_data_buffer_size
         !
@@ -456,7 +448,7 @@ contains
                 !
             case default
                 !
-                write( *, * ) "Error: Unknow job: [", modem_job, "]"
+                write( *, * ) "Error: Unknown job: [", modem_job, "]"
                 call printHelp()
                 stop
                 !
@@ -501,7 +493,7 @@ contains
                 !
                 write( *, * ) "          Air layers setup complete according to the method: ", air_layer%method
                 !
-                write( *, * ) "          Top of the air layers is at ", sum(air_layer%Dz)/1000, " km"
+                write( *, * ) "          Top of the air layers is at ", sum(air_layer%Dz) / 1000, " km"
                 !
                 allocate( model_operator, source = ModelOperator_MF_t( main_grid ) )
                 !
@@ -681,21 +673,23 @@ contains
         has_data_file            = .FALSE.
         verbosis                 = .FALSE.
         !
-        ! Solver
-        !max_iter = 100
-        !tolerance = TOL8
+        ! Solvers
+        QMR_iters = 40
+        BCG_iters = 80
+        max_divcor = 20
+        max_divcor_iters = 100
+        tolerance_divcor = 1E-5
+        tolerance_qmr = 1E-7
+        forward_solver_type = FWD_IT_DC
         !
         ! Source
+        source_type = SRC_MT_1D
         get_1D_from = "Geometric_mean"
         !
         ! Model
         model_method      = MM_METHOD_FIXED_H
         model_n_air_layer = 10
         model_max_height  = 200.0
-        !
-        source_type = SRC_MT_1D
-        !
-        forward_solver_type = FWD_IT_DC
         !
     end subroutine setupDefaultParameters
     !

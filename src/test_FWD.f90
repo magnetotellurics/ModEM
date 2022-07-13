@@ -44,9 +44,9 @@ program ModEM
     ! Validate arguments, set model_file_name, data_file_name, control_file_name, etc...
     call handleArguments()
     !
-    write ( *, * )
-    write ( *, * ) "Start ModEM-OO."
-    write ( *, * )
+    write( *, * )
+    write( *, * ) "Start ModEM-OO."
+    write( *, * )
     !
     ! Check parameters at the control file
     if( has_control_file ) call handleControlFile()
@@ -59,9 +59,9 @@ program ModEM
     !
     call cpu_time( t_finish )
     !
-    write ( *, * )
-    write( *, * ) "Finish ModEM-OO ( ", t_finish - t_start, "s )"
-    write ( *, * )
+    write( *, * )
+    write( *, "(A18, F6.2, A3)" ) "Finish ModEM-OO (", t_finish - t_start, "s)"
+    write( *, * )
     !
 contains
     !
@@ -194,8 +194,8 @@ contains
         !
         call deallocateReceiverArray()
         !
-		write( *, * ) "     - Finish Forward Modeling"
-		!
+        write( *, * ) "     - Finish Forward Modeling"
+        !
     end subroutine ForwardModelling
     !
     subroutine handleJob()
@@ -437,21 +437,23 @@ contains
         has_data_file            = .FALSE.
         verbosis                 = .FALSE.
         !
-        ! Solver
-        !max_iter = 100
-        !tolerance = TOL8
+        ! Solvers
+        QMR_iters = 40
+        BCG_iters = 80
+        max_divcor = 20
+        max_divcor_iters = 100
+        tolerance_divcor = 1E-5
+        tolerance_qmr = 1E-7
+        forward_solver_type = FWD_IT_DC
         !
         ! Source
+        source_type = SRC_MT_1D
         get_1D_from = "Geometric_mean"
         !
         ! Model
         model_method      = MM_METHOD_FIXED_H
         model_n_air_layer = 10
         model_max_height  = 200.0
-        !
-        source_type = SRC_MT_1D
-        !
-        forward_solver_type = FWD_IT_DC
         !
     end subroutine setupDefaultParameters
     !

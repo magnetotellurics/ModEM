@@ -13,9 +13,9 @@ module ForwardSolverIT_DC
         !
         type( DivergenceCorrection_t ) :: divergence_correction 
         !
-        integer :: nDivCor, max_div_cor, max_iterDivCor
+        integer :: n_divcor, max_div_cor, max_divcor_iters
         !
-        real( kind=prec ) :: tolDivCor
+        real( kind=prec ) :: tol_div_cor
         !
         contains
             !
@@ -50,10 +50,10 @@ module ForwardSolverIT_DC
             !
             call self%init()
             !
-            self%nDivCor = 0
+            self%n_divcor = 0
             self%max_div_cor = 0
-            self%max_iterDivCor = 0
-            self%tolDivCor = 0.0
+            self%max_divcor_iters = 0
+            self%tol_div_cor = 0.0
             !
             select case( solver_type )
                 case( QMR )
@@ -139,9 +139,9 @@ module ForwardSolverIT_DC
             !
             class( ForwardSolverIT_DC_t ), intent( inout ) :: self
             !
-            self%max_div_cor    = max_div_corDef
-            self%max_IterDivCor = max_IterDivCorDef
-            self%tolDivCor      = tolDivCorDef
+            self%max_div_cor      = max_divcor
+            self%max_divcor_iters = max_divcor_iters
+            self%tol_div_cor        = tolerance_divcor
             !
         end subroutine setIterDefaultsDC
         !
@@ -191,7 +191,7 @@ module ForwardSolverIT_DC
             !
             self%solver%converged = .FALSE.
             self%solver%failed    = .FALSE.
-            self%nDivCor = 0
+            self%n_divcor = 0
             !
             if( source%non_zero_source ) then
                 !
@@ -234,11 +234,11 @@ module ForwardSolverIT_DC
                 !
                 self%n_iter_actual = self%n_iter_actual + self%solver%n_iter
                 !
-                self%nDivCor = self%nDivCor + 1
+                self%n_divcor = self%n_divcor + 1
                 !
                 if( .NOT. self%solver%converged )  then
                     !
-                    if( self%nDivCor < self%max_div_cor ) then
+                    if( self%n_divcor < self%max_div_cor ) then
                         !
                         allocate( temp_esol, source = e_solution )
                         !

@@ -83,8 +83,8 @@ module DeclarationMPI
     ! PROGRAM GLOBAL VARIABLES
     integer :: tag = 2022, master_id = 0
     !
-    character*15    :: job_master = "MASTER_JOB", job_finish = "STOP_JOBS", job_fwd_done = "FINISH_FWD_JOB"
-    character*15    :: job_share_memory = "SHARE_MEMORY", job_forward = "JOB_FORWARD"
+    character*15 :: job_master = "MASTER_JOB", job_finish = "STOP_JOBS", job_fwd_done = "FINISH_FWD_JOB"
+    character*15 :: job_share_memory = "SHARE_MEMORY", job_forward = "JOB_FORWARD"
     !
     ! STRUCT job_info
     type :: FWDInfo_t
@@ -110,8 +110,8 @@ module DeclarationMPI
         !
         integer :: i, last_size, nbytes(8)
         !
-        call MPI_PACK_SIZE( 4, MPI_INTEGER, child_comm, nbytes(1), ierr )
-        call MPI_PACK_SIZE( 2, MPI_DOUBLE_PRECISION, child_comm, nbytes(2), ierr )
+        call MPI_PACK_SIZE( 9, MPI_INTEGER, child_comm, nbytes(1), ierr )
+        call MPI_PACK_SIZE( 3, MPI_DOUBLE_PRECISION, child_comm, nbytes(2), ierr )
         call MPI_PACK_SIZE( len( e_solution_file_name ), MPI_CHARACTER, child_comm, nbytes(3), ierr )
         call MPI_PACK_SIZE( len( model_method ), MPI_CHARACTER, child_comm, nbytes(4), ierr )
         call MPI_PACK_SIZE( len( forward_solver_type ), MPI_CHARACTER, child_comm, nbytes(5), ierr )
@@ -170,12 +170,18 @@ module DeclarationMPI
         !
         index = 1
         !
+        call MPI_PACK( QMR_iters, 1, MPI_INTEGER, shared_buffer, shared_buffer_size, index, child_comm, ierr )
+        call MPI_PACK( BCG_iters, 1, MPI_INTEGER, shared_buffer, shared_buffer_size, index, child_comm, ierr )
+        call MPI_PACK( max_divcor, 1, MPI_INTEGER, shared_buffer, shared_buffer_size, index, child_comm, ierr )
+        call MPI_PACK( max_divcor_iters, 1, MPI_INTEGER, shared_buffer, shared_buffer_size, index, child_comm, ierr )
         call MPI_PACK( len( e_solution_file_name ), 1, MPI_INTEGER, shared_buffer, shared_buffer_size, index, child_comm, ierr )
         call MPI_PACK( len( model_method ), 1, MPI_INTEGER, shared_buffer, shared_buffer_size, index, child_comm, ierr )
         call MPI_PACK( len( forward_solver_type ), 1, MPI_INTEGER, shared_buffer, shared_buffer_size, index, child_comm, ierr )
         call MPI_PACK( len( source_type ), 1, MPI_INTEGER, shared_buffer, shared_buffer_size, index, child_comm, ierr )
         call MPI_PACK( model_n_air_layer, 1, MPI_INTEGER, shared_buffer, shared_buffer_size, index, child_comm, ierr )
         call MPI_PACK( model_max_height, 1, MPI_DOUBLE_PRECISION, shared_buffer, shared_buffer_size, index, child_comm, ierr )
+        call MPI_PACK( tolerance_divcor, 1, MPI_DOUBLE_PRECISION, shared_buffer, shared_buffer_size, index, child_comm, ierr )
+        call MPI_PACK( tolerance_qmr, 1, MPI_DOUBLE_PRECISION, shared_buffer, shared_buffer_size, index, child_comm, ierr )
         call MPI_PACK( e_solution_file_name, len( e_solution_file_name ), MPI_CHARACTER, shared_buffer, shared_buffer_size, index, child_comm, ierr )
         call MPI_PACK( model_method, len( model_method ), MPI_CHARACTER, shared_buffer, shared_buffer_size, index, child_comm, ierr )
         call MPI_PACK( forward_solver_type, len( forward_solver_type ), MPI_CHARACTER, shared_buffer, shared_buffer_size, index, child_comm, ierr )
@@ -214,12 +220,18 @@ module DeclarationMPI
         !
         shared_buffer_size = buffer_size
         !
+        call MPI_UNPACK( shared_buffer, shared_buffer_size, index, QMR_iters, 1, MPI_INTEGER, child_comm, ierr )
+        call MPI_UNPACK( shared_buffer, shared_buffer_size, index, BCG_iters, 1, MPI_INTEGER, child_comm, ierr )
+        call MPI_UNPACK( shared_buffer, shared_buffer_size, index, max_divcor, 1, MPI_INTEGER, child_comm, ierr )
+        call MPI_UNPACK( shared_buffer, shared_buffer_size, index, max_divcor_iters, 1, MPI_INTEGER, child_comm, ierr )
         call MPI_UNPACK( shared_buffer, shared_buffer_size, index, n_e_solution_file_name, 1, MPI_INTEGER, child_comm, ierr )
         call MPI_UNPACK( shared_buffer, shared_buffer_size, index, n_model_method, 1, MPI_INTEGER, child_comm, ierr )
         call MPI_UNPACK( shared_buffer, shared_buffer_size, index, n_forward_solver_type, 1, MPI_INTEGER, child_comm, ierr )
         call MPI_UNPACK( shared_buffer, shared_buffer_size, index, n_source_type, 1, MPI_INTEGER, child_comm, ierr )
         call MPI_UNPACK( shared_buffer, shared_buffer_size, index, model_n_air_layer, 1, MPI_INTEGER, child_comm, ierr )
         call MPI_UNPACK( shared_buffer, shared_buffer_size, index, model_max_height, 1, MPI_DOUBLE_PRECISION, child_comm, ierr )
+        call MPI_UNPACK( shared_buffer, shared_buffer_size, index, tolerance_divcor, 1, MPI_DOUBLE_PRECISION, child_comm, ierr )
+        call MPI_UNPACK( shared_buffer, shared_buffer_size, index, tolerance_qmr, 1, MPI_DOUBLE_PRECISION, child_comm, ierr )
         !
         allocate( character( n_e_solution_file_name ) :: e_solution_file_name )
         call MPI_UNPACK( shared_buffer, shared_buffer_size, index, e_solution_file_name, n_e_solution_file_name, MPI_CHARACTER, child_comm, ierr )
@@ -1216,10 +1228,10 @@ module DeclarationMPI
               stop "allocateReceiverBuffer: Unclassified receiver"
            !
         end select
-		!
-		call MPI_PACK_SIZE( 2, MPI_LOGICAL, child_comm, nbytes(3), ierr )
-		call MPI_PACK_SIZE( len( receiver%code ), MPI_CHARACTER, child_comm, nbytes(4), ierr )
-		!
+        !
+        call MPI_PACK_SIZE( 2, MPI_LOGICAL, child_comm, nbytes(3), ierr )
+        call MPI_PACK_SIZE( len( receiver%code ), MPI_CHARACTER, child_comm, nbytes(4), ierr )
+        !
         do i = 1, size( nbytes )
             receiver_size_bytes = receiver_size_bytes + nbytes(i)
         end do
