@@ -27,7 +27,7 @@ module ReceiverOffDiagonalImpedance
             !
             procedure, public :: isEqualRx => isEqualOffDiagonalImpedance
             !
-            procedure, public :: write => writeReceiverOffDiagonalImpedance
+            procedure, public :: print => printReceiverOffDiagonalImpedance
             !
     end type ReceiverOffDiagonalImpedance_t
     !
@@ -47,7 +47,7 @@ contains
         !
         integer :: i, asize
         !
-        ! write(*,*) "Constructor ReceiverOffDiagonalImpedance_t"
+        ! write( *, * ) "Constructor ReceiverOffDiagonalImpedance_t"
         !
         call self%init()
         !
@@ -87,7 +87,7 @@ contains
         !
         type( ReceiverOffDiagonalImpedance_t ), intent( inout ) :: self
         !
-        ! write(*,*) "Destructor ReceiverOffDiagonalImpedance_t"
+        ! write( *, * ) "Destructor ReceiverOffDiagonalImpedance_t"
         !
         call self%dealloc()
         !
@@ -99,7 +99,7 @@ contains
         class( ReceiverOffDiagonalImpedance_t ), intent( inout ) :: self
         class( Transmitter_t ), intent( in )                     :: transmitter
         !
-        write(*,*) "setLRowsOffDiagonalImpedance to be implemented"
+        write( *, * ) "setLRowsOffDiagonalImpedance to be implemented"
         !
     end subroutine setLRowsOffDiagonalImpedance
     !
@@ -233,13 +233,13 @@ contains
         !
     end function isEqualOffDiagonalImpedance
     !
-    subroutine writeReceiverOffDiagonalImpedance( self )
+    subroutine printReceiverOffDiagonalImpedance( self )
         implicit none
         !
         class( ReceiverOffDiagonalImpedance_t ), intent( in ) :: self
         !
-        write(*,*) "Write ReceiverOffDiagonalImpedance_t: ", self%id
+        write( *, * ) "Print ReceiverOffDiagonalImpedance_t: ", self%id
         !
-    end subroutine writeReceiverOffDiagonalImpedance
+    end subroutine printReceiverOffDiagonalImpedance
     !
 end module ReceiverOffDiagonalImpedance

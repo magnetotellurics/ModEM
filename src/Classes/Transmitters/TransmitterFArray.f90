@@ -29,10 +29,11 @@ module TransmitterFArray
 contains
     !
     ! Add a new Transmitter_t and initialize it if necessary
-    subroutine updateTransmitterArray( new_tx )
+    function updateTransmitterArray( new_tx ) result( id_tx )
         implicit none
         !
-        class( Transmitter_t ), intent( in )    :: new_tx
+        class( Transmitter_t ), intent( in ) :: new_tx
+        integer                              :: id_tx
         !
         integer                                 :: iTx, nTx
         type( Tx_t ), allocatable, dimension(:) :: temp_array
@@ -43,6 +44,7 @@ contains
             allocate( Tx_t :: temp_tx )
             temp_tx%Tx = new_tx
             temp_tx%Tx%id = 1
+            id_tx = 1
             transmitters( 1 ) = temp_tx
             deallocate( temp_tx )
         else
@@ -51,6 +53,7 @@ contains
             !
             do iTx = 1, size( transmitters )
                 if( new_tx%isEqual( transmitters( iTx )%Tx ) ) then
+                    id_tx = iTx
                     return
                 end if
             end do
@@ -60,6 +63,7 @@ contains
             allocate( Tx_t :: temp_tx )
             temp_tx%Tx = new_tx
             temp_tx%Tx%id = nTx + 1
+            id_tx = nTx + 1
             !
             temp_array( nTx + 1 ) = temp_tx
             !
@@ -71,7 +75,7 @@ contains
             !
         endif
         !
-    end subroutine updateTransmitterArray
+    end function updateTransmitterArray
     !
     function getTransmitter( iTx ) result( tx )
         implicit none
@@ -88,8 +92,7 @@ contains
     subroutine deallocateTransmitterArray()
         implicit none
         !
-        integer                :: ntx, itx
-        class( Tx_t ), pointer :: alloc_tx
+        integer :: ntx, itx
         !
         !write( *, * ) "deallocateTransmitterArray:", size( transmitters )
         !
@@ -111,13 +114,11 @@ contains
     subroutine printTransmitterArray()
         implicit none
         !
-        integer                :: itx
-        !class( Tx_t ), pointer :: alloc_tx
+        integer :: itx
         !
         write( *, * ) "          Checked ", size( transmitters ), " Transmitters:"
         !
         do itx = 1, size( transmitters )
-            !alloc_tx => transmitters( itx )
             call transmitters( itx )%Tx%print()
         end do
         !

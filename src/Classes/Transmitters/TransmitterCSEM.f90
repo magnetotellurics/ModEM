@@ -151,10 +151,11 @@ contains
         !
         integer :: iRx
         !
-        write( *, * ) "               TransmitterCSEM: ", self%id,    &
-        " Location: [", self%location(1), self%location(2), self%location(3),    &
-        "] Period: ",    self%period,    &
-        " N Receivers: ", size( self%receiver_indexes )
+        write( *, "( A30, I5, A12, f8.2, f8.2, f8.2, A10, es10.2, A7, I5)" ) &
+        "               TransmitterCSEM", self%id, &
+        ": Location[", self%location(1), self%location(2), self%location(3), &
+        "], Period: ",    self%period, &
+        ", NRx: ", size( self%receiver_indexes )
         !
     end subroutine printTransmitterCSEM
     !

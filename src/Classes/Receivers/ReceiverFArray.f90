@@ -2,8 +2,6 @@
 !
 ! Class to provide a dynamic and polymorphic receivers of Receiver_t objects
 !
-! Last modified at 04/2022 by Paulo Werdt
-!
 !*************
 !
 module ReceiverFArray
@@ -27,23 +25,21 @@ module ReceiverFArray
 contains
     !
     ! Add a new Receiver_t and initialize it if necessary
-    function updateReceiverArray( new_rx ) result( id )
+    function updateReceiverArray( new_rx ) result( id_rx )
         implicit none
         !
         class( Receiver_t ), intent( in ) :: new_rx
-        integer                           :: id
+        integer                           :: id_rx
         !
         integer                                 :: iRx, nRx
         type( Rx_t ), allocatable, dimension(:) :: temp_array
         type( Rx_t ), allocatable               :: temp_rx
         !
-        id = 0
-        !
         if( .NOT. allocated( receivers ) ) then
             allocate( receivers( 1 ) )
             allocate( Rx_t :: temp_rx )
             temp_rx%Rx = new_rx
-            id = 1
+            id_rx = 1
             temp_rx%Rx%id = 1
             receivers( 1 ) = temp_rx
             deallocate( temp_rx )
@@ -53,7 +49,7 @@ contains
             !
             do iRx = 1, nRx
                 if( new_rx%isEqualRx( receivers( iRx )%Rx ) ) then
-                    id = iRx
+                    id_rx = iRx
                     return
                 end if
             end do
@@ -63,7 +59,7 @@ contains
             allocate( Rx_t :: temp_rx )
             temp_rx%Rx = new_rx
             temp_rx%Rx%id = nRx + 1
-            id = nRx + 1
+            id_rx = nRx + 1
             !
             temp_array( nRx + 1 ) = temp_rx
             !
@@ -114,14 +110,12 @@ contains
     subroutine printReceiverArray()
         implicit none
         !
-        integer                    :: irx
-        class( Rx_t ), pointer :: alloc_rx
+        integer :: irx
         !
-        print *, size( receivers ), " ReceiverFArray_t:"
+        write( *, * ) size( receivers ), " ReceiverFArray_t:"
         !
         do irx = 1, size( receivers )
-            alloc_rx => receivers( irx )
-            call alloc_rx%Rx%write()
+            call receivers(irx)%Rx%print()
         end do
         !
     end subroutine printReceiverArray

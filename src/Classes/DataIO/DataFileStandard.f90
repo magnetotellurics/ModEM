@@ -28,29 +28,32 @@ module DataFileStandard
 contains
     !
     ! Read line by line of the data file, create Data Entry objects (MT, MT_REF or CSEM)
-    function DataFileStandard_ctor( funit, fname ) result( self )
+    function DataFileStandard_ctor( funit, fname, set_data_groups ) result( self )
         implicit none
         !
         integer, intent( in )                   :: funit
         character(:), allocatable, intent( in ) :: fname
+        logical, optional                       :: set_data_groups
         !
         type( DataFileStandard_t ) :: self
         !
         character(1000)                   :: full_line_text
         character(len=200), dimension(20) :: args
         !
-        character(:), allocatable         :: line_text, actual_type, code, code_ref, component, dipole
-        integer                           :: iDe, io_stat, p_nargs, nRx
-        integer                           :: header_counter, header_line_counter, mt_counter, csem_counter
-        real( kind=prec )                 :: period, rvalue, imaginary, error
-        real( kind=prec )                 :: xyz_ref(3), latitude_ref, longitude_ref
-        real( kind=prec )                 :: latitude, longitude, xyz(3), tx_xyz(3), moment, azimuth, dip
+        character(:), allocatable :: line_text, actual_type, code, code_ref, component, dipole
+        integer                   :: iDe, io_stat, p_nargs, nRx
+        integer                   :: header_counter, header_line_counter, mt_counter, csem_counter
+        real( kind=prec )         :: period, rvalue, imaginary, error
+        real( kind=prec )         :: xyz_ref(3), latitude_ref, longitude_ref
+        real( kind=prec )         :: latitude, longitude, xyz(3), tx_xyz(3), moment, azimuth, dip
         !
         !write( *, * ) "Constructor DataFileStandard_t"
         !
         call self%init()
         !
-        self%fine_name = fname
+        self%file_name = fname
+        !
+        if( present( set_data_groups ) ) self%set_data_groups = set_data_groups
         !
         call Compact( fname )
         !
