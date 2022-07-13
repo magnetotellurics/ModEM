@@ -4,7 +4,7 @@ program ModEM
     !
     ! Program control variables
     character(:), allocatable :: control_file_name, model_file_name, data_file_name, modem_job
-    logical                   :: has_control_file, has_model_file, has_data_file, verbosis
+    logical                   :: set_data_groups, has_control_file, has_model_file, has_data_file, verbosis
     !
     class( ModelOperator_t ), allocatable  :: model_operator
     !
@@ -141,6 +141,8 @@ contains
         !
         ! Verbose
         write( *, * ) "     - Start Inversion"
+        !
+        set_data_groups = .TRUE.
         !
         call masterForwardModelling()
         !
@@ -522,7 +524,7 @@ contains
         !
         write( *, * ) "     < Data File: [", data_file_name, "]"
         !
-        data_file_standard = DataFileStandard_t( ioStartup, data_file_name )
+        data_file_standard = DataFileStandard_t( ioStartup, data_file_name, set_data_groups )
         !
         nrx = size( receivers )
         !
@@ -547,6 +549,8 @@ contains
              stop "Error: DataManager.f08: DataManager_ctor()"
              !
         endif
+        !
+        if( set_data_groups ) write( *, * ) "          Checked ", size( data_groups ), " DataGroups."
         !
         write( *, * ) "     - Create Rx evaluation vectors"
         !
@@ -666,6 +670,8 @@ contains
         implicit none
         !
         ! I|O
+        set_data_groups = .FALSE.
+        !
         predicted_data_file_name = "predicted_data.dat"
         e_solution_file_name     = "esolution.bin"
         has_control_file         = .FALSE.

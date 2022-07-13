@@ -28,7 +28,7 @@ module ReceiverSingleField
             !
             procedure, public :: isEqualRx => isEqualSingleField
             !
-            procedure, public :: write => writeReceiverSingleField
+            procedure, public :: print => printReceiverSingleField
             !
     end type ReceiverSingleField_t
     !
@@ -49,7 +49,7 @@ contains
         !
         integer :: i, asize
         !
-        ! write(*,*) "Constructor ReceiverSingleField_t"
+        ! write( *, * ) "Constructor ReceiverSingleField_t"
         !
         call self%init()
         !
@@ -123,7 +123,7 @@ contains
         !
         type( ReceiverSingleField_t ), intent( inout ) :: self
         !
-        ! write(*,*) "Destructor ReceiverSingleField_t"
+        ! write( *, * ) "Destructor ReceiverSingleField_t"
         !
         call self%dealloc()
         !
@@ -135,7 +135,7 @@ contains
         class( ReceiverSingleField_t ), intent( inout ) :: self
         class( Transmitter_t ), intent( in )            :: transmitter
         !
-        write(*,*) "setLRowsSingleField to be implemented"
+        write( *, * ) "setLRowsSingleField to be implemented"
         !
     end subroutine setLRowsSingleField
     !
@@ -249,13 +249,13 @@ contains
         !
     end function isEqualSingleField
     !
-    subroutine writeReceiverSingleField( self )
+    subroutine printReceiverSingleField( self )
         implicit none
         !
         class( ReceiverSingleField_t ), intent( in ) :: self
         !
-        write(*,*) "Write ReceiverSingleField_t: ", self%id
+        write( *, * ) "Print ReceiverSingleField_t: ", self%id
         !
-    end subroutine writeReceiverSingleField
+    end subroutine printReceiverSingleField
     !
 end module ReceiverSingleField

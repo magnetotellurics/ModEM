@@ -214,7 +214,7 @@ module DeclarationMPI
         !
         integer, intent( in ) :: buffer_size
         !
-        integer :: i, aux_size, n_e_solution_file_name, n_model_method, n_forward_solver_type, n_source_type, index
+        integer :: i, tx_id, aux_size, n_e_solution_file_name, n_model_method, n_forward_solver_type, n_source_type, index
         !
         index = 1
         !
@@ -253,7 +253,7 @@ module DeclarationMPI
         !
         do i = 1, aux_size
             !
-            call updateTransmitterArray( unpackTransmitterBuffer( index ) )
+            tx_id = updateTransmitterArray( unpackTransmitterBuffer( index ) )
             !
         end do
         !

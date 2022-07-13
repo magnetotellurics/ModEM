@@ -152,9 +152,10 @@ module TransmitterMT
         !
         integer :: iRx
         !
-        write( *, * ) "               TransmitterMT: ", self%id,    &
-        " Period: ",    self%period,    &
-        " N Receivers: ", size( self%receiver_indexes )
+        write( *, "( A29, I5, A10, es10.2, A7, I5)" ) &
+        "               TransmitterMT:", self%id, &
+        ", Period: ",    self%period, &
+        ", NRx: ", size( self%receiver_indexes )
         !
     end subroutine printTransmitterMT
     !

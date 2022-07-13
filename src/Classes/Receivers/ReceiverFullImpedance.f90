@@ -25,7 +25,7 @@ module ReceiverFullImpedance
             !
             procedure, public :: isEqualRx => isEqualFullImpedance
             !
-            procedure, public :: write => writeReceiverFullImpedance
+            procedure, public :: print => printReceiverFullImpedance
             !
     end type ReceiverFullImpedance_t
     !
@@ -45,7 +45,7 @@ contains
         !
         integer :: i, asize
         !
-        !write(*,*) "Constructor ReceiverFullImpedance_t"
+        !write( *, * ) "Constructor ReceiverFullImpedance_t"
         !
         call self%init()
         !
@@ -102,7 +102,7 @@ contains
         !
         type( ReceiverFullImpedance_t ), intent( in out ) :: self
         !
-        !write(*,*) "Destructor ReceiverFullImpedance_t:", self%id
+        !write( *, * ) "Destructor ReceiverFullImpedance_t:", self%id
         !
         call self%dealloc()
         !
@@ -117,12 +117,12 @@ contains
         type( cVector3D_SG_t ) :: H, Hinv, LE, LEX, LEY
         integer :: i, j, k, ki, ij
         !
-        write(*,*) "implementing setLRowsFullImpedance:"
+        write( *, * ) "implementing setLRowsFullImpedance:"
         !
         allocate( self%lrows( transmitter%n_pol, self%n_comp ) )
         !
-        H = cVector3D_SG_t( transmitter%source%model_operator%metric%grid, "FACE" )
-        Hinv = cVector3D_SG_t( transmitter%source%model_operator%metric%grid, "FACE" )
+        !H = cVector3D_SG_t( transmitter%source%model_operator%metric%grid, "FACE" )
+        !Hinv = cVector3D_SG_t( transmitter%source%model_operator%metric%grid, "FACE" )
         !
         ki = 0
         !
@@ -289,13 +289,13 @@ contains
         !
     end function isEqualFullImpedance
     !
-    subroutine writeReceiverFullImpedance( self )
+    subroutine printReceiverFullImpedance( self )
         implicit none
         !
         class( ReceiverFullImpedance_t ), intent( in ) :: self
         !
-        write(*,*) "Write ReceiverFullImpedance_t: ", self%id
+        write( *, * ) "Print ReceiverFullImpedance_t: ", self%id
         !
-    end subroutine writeReceiverFullImpedance
+    end subroutine printReceiverFullImpedance
     !
 end module ReceiverFullImpedance

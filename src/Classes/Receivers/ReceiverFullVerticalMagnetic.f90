@@ -27,7 +27,7 @@ module ReceiverFullVerticalMagnetic
             !
             procedure, public :: isEqualRx => isEqualFullVerticalMagnetic
             !
-            procedure, public :: write => writeReceiverFullVerticalMagnetic
+            procedure, public :: print => printReceiverFullVerticalMagnetic
             !
     end type ReceiverFullVerticalMagnetic_t
     !
@@ -47,7 +47,7 @@ contains
         !
         integer :: i, asize
         !
-        !write(*,*) "Constructor ReceiverFullVerticalMagnetic_t"
+        !write( *, * ) "Constructor ReceiverFullVerticalMagnetic_t"
         !
         call self%init()
         !
@@ -100,7 +100,7 @@ contains
         !
         type( ReceiverFullVerticalMagnetic_t ), intent( inout ) :: self
         !
-        !write(*,*) "Destructor ReceiverFullVerticalMagnetic_t"
+        !write( *, * ) "Destructor ReceiverFullVerticalMagnetic_t"
         !
         call self%dealloc()
         !
@@ -112,7 +112,7 @@ contains
         class( ReceiverFullVerticalMagnetic_t ), intent( inout ) :: self
         class( Transmitter_t ), intent( in )                     :: transmitter
         !
-        write(*,*) "setLRowsFullVerticalMagnetic to be implemented"
+        write( *, * ) "setLRowsFullVerticalMagnetic to be implemented"
         !
     end subroutine setLRowsFullVerticalMagnetic
     !
@@ -237,13 +237,13 @@ contains
         !
     end function isEqualFullVerticalMagnetic
     !
-    subroutine writeReceiverFullVerticalMagnetic( self )
+    subroutine printReceiverFullVerticalMagnetic( self )
         implicit none
         !
         class( ReceiverFullVerticalMagnetic_t ), intent( in ) :: self
         !
-        write( *, * ) "Write ReceiverFullVerticalMagnetic_t: ", self%id
+        write( *, * ) "Print ReceiverFullVerticalMagnetic_t: ", self%id
         !
-    end subroutine writeReceiverFullVerticalMagnetic
+    end subroutine printReceiverFullVerticalMagnetic
     !
 end module ReceiverFullVerticalMagnetic

@@ -2,8 +2,6 @@
 !
 ! Base class to read a data file
 !
-! Last modified at 05/2021 by Paulo Werdt
-!
 !*************
 !
 module DataFile
@@ -25,10 +23,13 @@ module DataFile
     use TransmitterCSEM
     use TransmitterFArray
     !
+    use DataGroupFArray
+    !
     type, abstract :: DataFile_t
         !
         integer                   :: nTx, nRx
-        character(:), allocatable :: fine_name
+        character(:), allocatable :: file_name
+        logical                   :: set_data_groups
         !
         type( De_t ), allocatable, dimension(:) :: data_entries
         !
@@ -48,6 +49,8 @@ contains
         self%nTx = 0
         self%nRx = 0
         !
+        self%set_data_groups = .FALSE.
+        !
     end subroutine initializeDataFile
     !
     subroutine deallocateDataFile( self )
@@ -66,7 +69,8 @@ contains
         !
         class( Receiver_t ), allocatable :: receiver
         class( Transmitter_t ), pointer  :: transmitter
-        integer                          :: iTx, nTx, rx_id, rx_type
+        class( DataGroup_t ), pointer    :: data_group
+        integer                          :: iTx, nTx, rx_id, rx_type, iDg, dg_index
         real( kind=prec )                :: azimuth
         !
         call updateDataEntryArray( self%data_entries, data_entry )
@@ -77,15 +81,15 @@ contains
             !
             class is ( DataEntryMT_t )
                 !
-                call updateTransmitterArray( TransmitterMT_t( data_entry%period ) )
+                iTx = updateTransmitterArray( TransmitterMT_t( data_entry%period ) )
                 !
             class is ( DataEntryMT_REF_t )
                 !
-                call updateTransmitterArray( TransmitterMT_t( data_entry%period ) )
+                iTx = updateTransmitterArray( TransmitterMT_t( data_entry%period ) )
                 !
             class is ( DataEntryCSEM_t )
                 !
-                call updateTransmitterArray( TransmitterCSEM_t( data_entry%period, data_entry%tx_location, data_entry%azimuth, data_entry%dip, data_entry%moment, data_entry%dipole ) )
+                iTx = updateTransmitterArray( TransmitterCSEM_t( data_entry%period, data_entry%tx_location, data_entry%azimuth, data_entry%dip, data_entry%moment, data_entry%dipole ) )
                 !
         end select
         !
@@ -153,6 +157,44 @@ contains
         receiver%code = data_entry%code
         !
         rx_id = updateReceiverArray( receiver )
+        !
+        if( self%set_data_groups ) then
+            !
+            data_group => null()
+            !
+            if( allocated( data_groups ) ) then
+                !
+                do iDg = 1, size( data_groups )
+                    !
+                    if( data_groups( iDg )%id_rx == rx_id .AND. data_groups( iDg )%id_tx == iTx ) then
+                        !
+                        data_group => getDataGroup( iDg )
+                        !
+                        exit
+                        !
+                    endif
+                    !
+                enddo
+                !
+            endif
+            !
+            if( associated( data_group ) ) then
+                !
+                call data_group%add( data_entry%component, data_entry%real, data_entry%imaginary, data_entry%error )
+                !
+            else
+                !
+                allocate( data_group, source = DataGroup_t( rx_id, iTx, receiver%n_comp ) )
+                !
+                call data_group%add( data_entry%component, data_entry%real, data_entry%imaginary, data_entry%error )
+                !
+                call updateDataGroupArray( data_group )
+                !
+                deallocate( data_group )
+                !
+            endif
+            !
+        endif
         !
         deallocate( receiver )
         !

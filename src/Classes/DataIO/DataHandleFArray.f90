@@ -2,8 +2,6 @@
 !
 ! Class to provide a dynamic and polymorphic data_handle_array of DataHandle_t objects
 !
-! Last modified at 04/2022 by Paulo Werdt
-!
 !*************
 !
 module DataHandleFArray
@@ -31,7 +29,7 @@ contains
         type( Dh_t ), allocatable, dimension(:), intent( inout ) :: data_handle_array
         class( DataHandle_t ), intent( in ) :: new_dh
         !
-        integer                             :: iDh, nDh
+        integer :: iDh, nDh
         type( Dh_t ), allocatable, dimension(:) :: temp_array
         type( Dh_t ) :: temp_dh
         !
@@ -67,10 +65,8 @@ contains
     subroutine setDataHandle( data_handle_array, iDh, Dh )
         implicit none
         !
-        !
         type( Dh_t ), allocatable, dimension(:), intent( inout ) :: data_handle_array
         integer, intent( in )                                    :: iDh
-        !
         class( DataHandle_t ), allocatable, intent( in )         :: Dh
         !
         data_handle_array( iDh )%Dh = Dh

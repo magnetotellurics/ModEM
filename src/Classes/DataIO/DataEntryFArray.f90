@@ -2,8 +2,6 @@
 !
 ! Class to provide a dynamic and polymorphic data_entry_array of DataEntry_t objects
 !
-! Last modified at 04/2022 by Paulo Werdt
-!
 !*************
 !
 module DataEntryFArray
@@ -28,7 +26,7 @@ contains
         type( De_t ), allocatable, dimension(:), intent( inout ) :: data_entry_array
         class( DataEntry_t ), intent( in ) :: new_De
         !
-        integer                             :: iDe, nDe
+        integer :: iDe, nDe
         type( De_t ), allocatable, dimension(:) :: temp_array
         type( De_t ) :: temp_De
         !
@@ -62,11 +60,13 @@ contains
     end subroutine updateDataEntryArray
     !
     function hasDataEntry( data_entry_array, data_entry ) result( exist )
+        implicit none
+        !
         type( De_t ), dimension(:), intent( in ) :: data_entry_array
         class( DataEntry_t ), intent( in )       :: data_entry
         !
-        logical                                :: exist
-        integer                                :: iDe, nDe
+        logical :: exist
+        integer :: iDe, nDe
         !
         exist = .FALSE.
         !
@@ -83,7 +83,6 @@ contains
     subroutine setDataEntry( data_entry_array, iDe, De )
         implicit none
         !
-        !
         type( De_t ), dimension(:), intent( inout ) :: data_entry_array
         integer, intent( in )                                    :: iDe
         !
@@ -99,7 +98,7 @@ contains
         type( De_t ), target, dimension(:), intent( in ) :: data_entry_array
         integer                                          :: iDe
         !
-        class( DataEntry_t ), pointer                   :: De
+        class( DataEntry_t ), pointer :: De
         !
         De => data_entry_array( iDe )%De
         !

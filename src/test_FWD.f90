@@ -31,13 +31,13 @@ program ModEM
     class( ModelOperator_t ), allocatable  :: model_operator
     !
     character(:), allocatable :: control_file_name, model_file_name, data_file_name, modem_job
-    logical                   :: has_control_file, has_model_file, has_data_file, verbosis
+    logical                   :: set_data_groups, has_control_file, has_model_file, has_data_file, verbosis
     !
     real( kind=prec ) :: t_start, t_finish
     !
     call cpu_time( t_start )
     !
-    modem_job = "unknow"
+    modem_job = "unknown"
     !
     call setupDefaultParameters()
     !
@@ -68,8 +68,10 @@ contains
     subroutine Inversion()
         implicit none
         !
-        ! Verbosis ...
+        ! Verbose
         write( *, * ) "     - Start Inversion"
+        !
+        set_data_groups = .TRUE.
         !
         call ForwardModelling()
         !
@@ -255,9 +257,9 @@ contains
                 !
                 call main_grid%UpdateAirLayers( air_layer%nz, air_layer%dz )
                 !
-                write( *, * ) "          Air layers setup complete according to the method: ", air_layer%method
+                write( *, * ) "          Air layers from the method: ", air_layer%method, "."
                 !
-                write( *, * ) "          Top of the air layers is at ", sum(air_layer%Dz)/1000, " km"
+                write( *, * ) "          Top of the air layers is at ", sum(air_layer%Dz)/1000, " km."
                 !
                 allocate( model_operator, source = ModelOperator_MF_t( main_grid ) )
                 !
@@ -286,13 +288,13 @@ contains
         !
         write( *, * ) "     < Data File: [", data_file_name, "]"
         !
-        data_file_standard = DataFileStandard_t( ioStartup, data_file_name )
+        data_file_standard = DataFileStandard_t( ioStartup, data_file_name, set_data_groups )
         !
         nrx = size( receivers )
         !
         if( nrx == data_file_standard%nRx ) then
             !
-            write( *, * ) "          Checked ", nrx, " Receivers"
+            write( *, * ) "          Checked ", nrx, " Receivers."
             !
         else
             !
@@ -311,6 +313,8 @@ contains
              stop "Error: DataManager.f08: DataManager_ctor()"
              !
         endif
+        !
+        if( set_data_groups ) write( *, * ) "          Checked ", size( data_groups ), " DataGroups."
         !
         write( *, * ) "     - Create Rx evaluation vectors"
         !
@@ -430,6 +434,8 @@ contains
         implicit none
         !
         ! I|O
+        set_data_groups = .FALSE.
+        !
         predicted_data_file_name = "predicted_data.dat"
         e_solution_file_name     = "esolution.bin"
         has_control_file         = .FALSE.

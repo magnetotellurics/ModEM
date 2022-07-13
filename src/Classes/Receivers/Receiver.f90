@@ -44,7 +44,7 @@ module Receiver
             !
             procedure( interface_is_equal_rx ), deferred, public :: isEqualRx
             !
-            procedure( interface_write_rx ), deferred, public :: write
+            procedure( interface_print_rx ), deferred, public :: print
             !
             ! Class procedures
             procedure, public :: evaluationFunction => evaluationFunctionRx
@@ -103,13 +103,13 @@ module Receiver
             !
         end function interface_is_equal_rx
         !
-        subroutine interface_write_rx( self )
+        subroutine interface_print_rx( self )
             !
             import :: Receiver_t
             !
             class( Receiver_t ), intent(in) :: self
             !
-        end subroutine interface_write_rx
+        end subroutine interface_print_rx
         !
     end interface
     !
@@ -444,7 +444,7 @@ contains
             case( "Full_Vertical_Magnetic" )
                 int_receiver_type = 12
             case default
-                write( *, * ) "unknow receiver type :[", str_receiver_type, "]"
+                write( *, * ) "Unknown receiver type :[", str_receiver_type, "]"
                 STOP "Receiver.f08: getIntReceiverType()"
             !
         end select
