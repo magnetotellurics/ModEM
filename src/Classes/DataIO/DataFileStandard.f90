@@ -28,12 +28,11 @@ module DataFileStandard
 contains
     !
     ! Read line by line of the data file, create Data Entry objects (MT, MT_REF or CSEM)
-    function DataFileStandard_ctor( funit, fname, set_data_groups ) result( self )
+    function DataFileStandard_ctor( funit, fname ) result( self )
         implicit none
         !
         integer, intent( in )                   :: funit
         character(:), allocatable, intent( in ) :: fname
-        logical, optional                       :: set_data_groups
         !
         type( DataFileStandard_t ) :: self
         !
@@ -52,8 +51,6 @@ contains
         call self%init()
         !
         self%file_name = fname
-        !
-        if( present( set_data_groups ) ) self%set_data_groups = set_data_groups
         !
         call Compact( fname )
         !

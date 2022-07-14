@@ -29,10 +29,7 @@ module DeclarationMPI
     use SourceMT_2D
     use SourceCSEM_Dipole1D
     !
-    use DataHandleFArray
-    use DataHandleMT
-    use DataHandleCSEM
-    !
+    use DataGroupFArray
     !
     include 'mpif.h'
     !
@@ -72,10 +69,6 @@ module DeclarationMPI
     integer, parameter :: receiver_full_vertical_magnetic = 2
     integer, parameter :: receiver_off_diagonal_impedance = 3
     integer, parameter :: receiver_single_field = 4
-    !
-    integer :: data_derived_type
-    integer, parameter :: data_mt = 1
-    integer, parameter :: data_csem = 2
     !
     class( Grid_t ), allocatable, target   :: main_grid
     class( ModelParameter_t ), allocatable :: model_parameter
@@ -1414,48 +1407,21 @@ module DeclarationMPI
         !
     end subroutine createDataBuffer
     !
-    subroutine allocateDataBuffer( data_handles )
+    subroutine allocateDataBuffer( data_groups )
         implicit none
         !
-        type( Dh_t ), dimension(:), intent( in ) :: data_handles
+        type( DataGroup_t ), dimension(:), intent( in ) :: data_groups
         !
-        class( DataHandle_t ), allocatable :: data_handle
-        !
-        !
-        integer :: i, j
-        integer, allocatable, dimension(:) :: nbytes
+        integer :: i, j, nbytes(4)
         !
         predicted_data_buffer_size = 1
         !
-        do i = 1, size( data_handles )
+        do i = 1, size( data_groups )
             !
-            data_handle = getDataHandle( data_handles, i )
-            !
-            select type( data_handle )
-                !
-                class is( DataHandleMT_t )
-                    !
-                    if( .NOT. allocated( nbytes ) ) allocate( nbytes(4) )
-                    !
-                    call MPI_PACK_SIZE( 4, MPI_INTEGER, child_comm, nbytes(1), ierr )
-                    call MPI_PACK_SIZE( len( data_handle%code ), MPI_CHARACTER, child_comm, nbytes(2), ierr )
-                    call MPI_PACK_SIZE( len( data_handle%component ), MPI_CHARACTER, child_comm, nbytes(3), ierr )
-                    call MPI_PACK_SIZE( 6, MPI_DOUBLE_PRECISION, child_comm, nbytes(4), ierr )
-                    !
-                class is( DataHandleCSEM_t )
-                    !
-                    if( .NOT. allocated( nbytes ) ) allocate( nbytes(5) )
-                    !
-                    call MPI_PACK_SIZE( 5, MPI_INTEGER, child_comm, nbytes(1), ierr )
-                    call MPI_PACK_SIZE( len( data_handle%code ), MPI_CHARACTER, child_comm, nbytes(2), ierr )
-                    call MPI_PACK_SIZE( len( data_handle%component ), MPI_CHARACTER, child_comm, nbytes(3), ierr )
-                    call MPI_PACK_SIZE( len( data_handle%dipole ), MPI_CHARACTER, child_comm, nbytes(4), ierr )
-                    call MPI_PACK_SIZE( 12, MPI_DOUBLE_PRECISION, child_comm, nbytes(5), ierr )
-                    !
-                class default
-                    stop "allocateDataBuffer: Unclassified data handle"
-                    !
-            end select
+            call MPI_PACK_SIZE( 2, MPI_INTEGER, child_comm, nbytes(1), ierr )
+            call MPI_PACK_SIZE( data_groups(i)%n_data, MPI_DOUBLE_PRECISION, child_comm, nbytes(2), ierr )
+            call MPI_PACK_SIZE( data_groups(i)%n_data, MPI_DOUBLE_PRECISION, child_comm, nbytes(3), ierr )
+            call MPI_PACK_SIZE( data_groups(i)%n_data, MPI_DOUBLE_PRECISION, child_comm, nbytes(4), ierr )
             !
             do j = 1, size( nbytes )
                 predicted_data_buffer_size = predicted_data_buffer_size + nbytes(j)
@@ -1469,174 +1435,71 @@ module DeclarationMPI
     end subroutine allocateDataBuffer
     !
     !
-    subroutine packDataBuffer( data_handles )
+    subroutine packDataBuffer( data_groups )
         implicit none
         !
-        type( Dh_t ), dimension(:), intent( in ) :: data_handles
-        !
-        class( DataHandle_t ), allocatable :: data_handle
+        type( DataGroup_t ), dimension(:), intent( in ) :: data_groups
         !
         integer :: i, index
         !
         index = 1
         !
-        do i = 1, size( data_handles )
+        do i = 1, size( data_groups )
             !
-            data_handle = getDataHandle( data_handles, i )
+			call MPI_PACK( data_groups(i)%id_rx, 1, MPI_INTEGER, predicted_data_buffer, predicted_data_buffer_size, index, child_comm, ierr )
+            call MPI_PACK( data_groups(i)%id_tx, 1, MPI_INTEGER, predicted_data_buffer, predicted_data_buffer_size, index, child_comm, ierr )
             !
-            select type( data_handle )
-                !
-                class is( DataHandleMT_t )
-                    !
-                    call MPI_PACK( data_mt, 1, MPI_INTEGER, predicted_data_buffer, predicted_data_buffer_size, index, child_comm, ierr )
-                    call MPI_PACK( data_handle%rx_type, 1, MPI_INTEGER, predicted_data_buffer, predicted_data_buffer_size, index, child_comm, ierr )
-                    call MPI_PACK( len( data_handle%code ), 1, MPI_INTEGER, predicted_data_buffer, predicted_data_buffer_size, index, child_comm, ierr )
-                    call MPI_PACK( len( data_handle%component ), 1, MPI_INTEGER, predicted_data_buffer, predicted_data_buffer_size, index, child_comm, ierr )
-                    call MPI_PACK( data_handle%code, len( data_handle%code ), MPI_CHARACTER, predicted_data_buffer, predicted_data_buffer_size, index, child_comm, ierr )
-                    call MPI_PACK( data_handle%component, len( data_handle%component ), MPI_CHARACTER, predicted_data_buffer, predicted_data_buffer_size, index, child_comm, ierr )
-                    !
-                    call MPI_PACK( data_handle%period, 1, MPI_DOUBLE_PRECISION, predicted_data_buffer, predicted_data_buffer_size, index, child_comm, ierr )
-                    call MPI_PACK( data_handle%rx_location(1), 3, MPI_DOUBLE_PRECISION, predicted_data_buffer, predicted_data_buffer_size, index, child_comm, ierr )
-                    call MPI_PACK( data_handle%rvalue, 1, MPI_DOUBLE_PRECISION, predicted_data_buffer, predicted_data_buffer_size, index, child_comm, ierr )
-                    call MPI_PACK( data_handle%imaginary, 1, MPI_DOUBLE_PRECISION, predicted_data_buffer, predicted_data_buffer_size, index, child_comm, ierr )
-                    !
-                class is( DataHandleCSEM_t )
-                    !
-                    call MPI_PACK( data_csem, 1, MPI_INTEGER, predicted_data_buffer, predicted_data_buffer_size, index, child_comm, ierr )
-                    call MPI_PACK( data_handle%rx_type, 1, MPI_INTEGER, predicted_data_buffer, predicted_data_buffer_size, index, child_comm, ierr )
-                    call MPI_PACK( len( data_handle%code ), 1, MPI_INTEGER, predicted_data_buffer, predicted_data_buffer_size, index, child_comm, ierr )
-                    call MPI_PACK( len( data_handle%component ), 1, MPI_INTEGER, predicted_data_buffer, predicted_data_buffer_size, index, child_comm, ierr )
-                    call MPI_PACK( len( data_handle%dipole ), 1, MPI_INTEGER, predicted_data_buffer, predicted_data_buffer_size, index, child_comm, ierr )
-                    call MPI_PACK( data_handle%code, len( data_handle%code ), MPI_CHARACTER, predicted_data_buffer, predicted_data_buffer_size, index, child_comm, ierr )
-                    call MPI_PACK( data_handle%component, len( data_handle%component ), MPI_CHARACTER, predicted_data_buffer, predicted_data_buffer_size, index, child_comm, ierr )
-                    call MPI_PACK( data_handle%dipole, len( data_handle%dipole ), MPI_CHARACTER, predicted_data_buffer, predicted_data_buffer_size, index, child_comm, ierr )
-                    !!
-                    call MPI_PACK( data_handle%period, 1, MPI_DOUBLE_PRECISION, predicted_data_buffer, predicted_data_buffer_size, index, child_comm, ierr )
-                    call MPI_PACK( data_handle%rx_location(1), 3, MPI_DOUBLE_PRECISION, predicted_data_buffer, predicted_data_buffer_size, index, child_comm, ierr )
-                    call MPI_PACK( data_handle%rvalue, 1, MPI_DOUBLE_PRECISION, predicted_data_buffer, predicted_data_buffer_size, index, child_comm, ierr )
-                    call MPI_PACK( data_handle%imaginary, 1, MPI_DOUBLE_PRECISION, predicted_data_buffer, predicted_data_buffer_size, index, child_comm, ierr )
-                    call MPI_PACK( data_handle%tx_location(1), 3, MPI_DOUBLE_PRECISION, predicted_data_buffer, predicted_data_buffer_size, index, child_comm, ierr )
-                    call MPI_PACK( data_handle%azimuth, 1, MPI_DOUBLE_PRECISION, predicted_data_buffer, predicted_data_buffer_size, index, child_comm, ierr )
-                    call MPI_PACK( data_handle%dip, 1, MPI_DOUBLE_PRECISION, predicted_data_buffer, predicted_data_buffer_size, index, child_comm, ierr )
-                    call MPI_PACK( data_handle%moment, 1, MPI_DOUBLE_PRECISION, predicted_data_buffer, predicted_data_buffer_size, index, child_comm, ierr )
-                    !
-                class default
-                    stop "allocateDataBuffer: Unclassified data handle"
-                    !
-            end select
+            call MPI_PACK( data_groups(i)%reals(1), data_groups(i)%n_data, MPI_DOUBLE_PRECISION, predicted_data_buffer, predicted_data_buffer_size, index, child_comm, ierr )
+            call MPI_PACK( data_groups(i)%imaginaries(1), data_groups(i)%n_data, MPI_DOUBLE_PRECISION, predicted_data_buffer, predicted_data_buffer_size, index, child_comm, ierr )
+            call MPI_PACK( data_groups(i)%errors(1), data_groups(i)%n_data, MPI_DOUBLE_PRECISION, predicted_data_buffer, predicted_data_buffer_size, index, child_comm, ierr )
             !
         end do
         !
     end subroutine packDataBuffer
     !
     ! UNPACK predicted_data_buffer TO predicted_data STRUCT
-    function unpackDataBuffer() result( data_handles )
+    subroutine unpackDataBuffer()
         implicit none
         !
-        type( Dh_t ), allocatable, dimension(:) :: data_handles
         !
-        class( DataHandle_t ), allocatable :: data_handle
+        type( DataGroup_t ), pointer :: data_group
         !
-        integer :: i, data_handles_code, data_handles_component, data_handles_dipole, index
+        integer :: i, n_data, id_rx, id_tx, index
         !
         index = 1
         !
         do i = 1, fwd_info%n_data
             !
-            call MPI_UNPACK( predicted_data_buffer, predicted_data_buffer_size, index, data_derived_type, 1, MPI_INTEGER, child_comm, ierr )
+            call MPI_UNPACK( predicted_data_buffer, predicted_data_buffer_size, index, id_rx, 1, MPI_INTEGER, child_comm, ierr )
+            call MPI_UNPACK( predicted_data_buffer, predicted_data_buffer_size, index, id_tx, 1, MPI_INTEGER, child_comm, ierr )
             !
-            if( allocated( data_handle ) ) deallocate( data_handle )
+            data_group => getDataGroupByRxTx( data_groups, id_rx, id_tx )
             !
-            select case( data_derived_type )
-               !
-               case( data_mt )
-                    !
-                    allocate( DataHandleMT_t :: data_handle )
-                    !
-                    select type( data_handle )
-                        !
-                        class is( DataHandleMT_t )
-                            !
-                            call MPI_UNPACK( predicted_data_buffer, predicted_data_buffer_size, index, data_handle%rx_type, 1, MPI_INTEGER, child_comm, ierr )
-                            call MPI_UNPACK( predicted_data_buffer, predicted_data_buffer_size, index, data_handles_code, 1, MPI_INTEGER, child_comm, ierr )
-                            call MPI_UNPACK( predicted_data_buffer, predicted_data_buffer_size, index, data_handles_component, 1, MPI_INTEGER, child_comm, ierr )
-                            !
-                            allocate( character( data_handles_code ) :: data_handle%code )
-                            call MPI_UNPACK( predicted_data_buffer, predicted_data_buffer_size, index, data_handle%code, data_handles_code, MPI_CHARACTER, child_comm, ierr )
-                            !
-                            allocate( character( data_handles_component ) :: data_handle%component )
-                            call MPI_UNPACK( predicted_data_buffer, predicted_data_buffer_size, index, data_handle%component, data_handles_component, MPI_CHARACTER, child_comm, ierr )
-                            !
-                            call MPI_UNPACK( predicted_data_buffer, predicted_data_buffer_size, index, data_handle%period, 1, MPI_DOUBLE_PRECISION, child_comm, ierr )
-                            call MPI_UNPACK( predicted_data_buffer, predicted_data_buffer_size, index, data_handle%rx_location(1), 3, MPI_DOUBLE_PRECISION, child_comm, ierr )
-                            call MPI_UNPACK( predicted_data_buffer, predicted_data_buffer_size, index, data_handle%rvalue, 1, MPI_DOUBLE_PRECISION, child_comm, ierr )
-                            call MPI_UNPACK( predicted_data_buffer, predicted_data_buffer_size, index, data_handle%imaginary, 1, MPI_DOUBLE_PRECISION, child_comm, ierr )
-                            !
-                    end select
-                    !
-               case( data_csem )
-                    !
-                    allocate( DataHandleCSEM_t :: data_handle )
-                    !
-                    select type( data_handle )
-                        !
-                        class is( DataHandleCSEM_t )
-                            !
-                            call MPI_UNPACK( predicted_data_buffer, predicted_data_buffer_size, index, data_handle%rx_type, 1, MPI_INTEGER, child_comm, ierr )
-                            call MPI_UNPACK( predicted_data_buffer, predicted_data_buffer_size, index, data_handles_code, 1, MPI_INTEGER, child_comm, ierr )
-                            call MPI_UNPACK( predicted_data_buffer, predicted_data_buffer_size, index, data_handles_component, 1, MPI_INTEGER, child_comm, ierr )
-                            call MPI_UNPACK( predicted_data_buffer, predicted_data_buffer_size, index, data_handles_dipole, 1, MPI_INTEGER, child_comm, ierr )
-                            !
-                            allocate( character( data_handles_code ) :: data_handle%code )
-                            call MPI_UNPACK( predicted_data_buffer, predicted_data_buffer_size, index, data_handle%code, data_handles_code, MPI_CHARACTER, child_comm, ierr )
-                            !
-                            allocate( character( data_handles_component ) :: data_handle%component )
-                            call MPI_UNPACK( predicted_data_buffer, predicted_data_buffer_size, index, data_handle%component, data_handles_component, MPI_CHARACTER, child_comm, ierr )
-                            !
-                            allocate( character( data_handles_dipole ) :: data_handle%dipole )
-                            call MPI_UNPACK( predicted_data_buffer, predicted_data_buffer_size, index, data_handle%dipole, data_handles_dipole, MPI_CHARACTER, child_comm, ierr )
-                            !
-                            call MPI_UNPACK( predicted_data_buffer, predicted_data_buffer_size, index, data_handle%period, 1, MPI_DOUBLE_PRECISION, child_comm, ierr )
-                            call MPI_UNPACK( predicted_data_buffer, predicted_data_buffer_size, index, data_handle%rx_location(1), 3, MPI_DOUBLE_PRECISION, child_comm, ierr )
-                            call MPI_UNPACK( predicted_data_buffer, predicted_data_buffer_size, index, data_handle%rvalue, 1, MPI_DOUBLE_PRECISION, child_comm, ierr )
-                            call MPI_UNPACK( predicted_data_buffer, predicted_data_buffer_size, index, data_handle%imaginary, 1, MPI_DOUBLE_PRECISION, child_comm, ierr )
-                            call MPI_UNPACK( predicted_data_buffer, predicted_data_buffer_size, index, data_handle%tx_location(1), 3, MPI_DOUBLE_PRECISION, child_comm, ierr )
-                            call MPI_UNPACK( predicted_data_buffer, predicted_data_buffer_size, index, data_handle%azimuth, 1, MPI_DOUBLE_PRECISION, child_comm, ierr )
-                            call MPI_UNPACK( predicted_data_buffer, predicted_data_buffer_size, index, data_handle%dip, 1, MPI_DOUBLE_PRECISION, child_comm, ierr )
-                            call MPI_UNPACK( predicted_data_buffer, predicted_data_buffer_size, index, data_handle%moment, 1, MPI_DOUBLE_PRECISION, child_comm, ierr )
-                            !
-                    end select
-                    !
-               case default
-                  stop "unpackDataBuffer: Unknow data case"
-               !
-            end select
-            !
-            call updateDataHandleArray( data_handles, data_handle )
+            call MPI_UNPACK( predicted_data_buffer, predicted_data_buffer_size, index, data_group%reals(1), data_group%n_data, MPI_DOUBLE_PRECISION, child_comm, ierr )
+            call MPI_UNPACK( predicted_data_buffer, predicted_data_buffer_size, index, data_group%imaginaries(1), data_group%n_data, MPI_DOUBLE_PRECISION, child_comm, ierr )
+            call MPI_UNPACK( predicted_data_buffer, predicted_data_buffer_size, index, data_group%errors(1), data_group%n_data, MPI_DOUBLE_PRECISION, child_comm, ierr )
             !
         end do
         !
-    end function unpackDataBuffer
+    end subroutine unpackDataBuffer
     !
     ! RECEIVE predicted_data FROM ANY TARGET
-    function receiveData() result( data_handles )
+    subroutine receiveData()
         implicit none
-        !
-        type( Dh_t ), allocatable, dimension(:) :: data_handles
         !
         call createDataBuffer
         call MPI_RECV( predicted_data_buffer, predicted_data_buffer_size, MPI_PACKED, fwd_info%worker_rank, MPI_ANY_TAG, child_comm, MPI_STATUS_IGNORE, ierr )
         !
-        data_handles = unpackDataBuffer()
+        call unpackDataBuffer()
         !
-    end function receiveData
+    end subroutine receiveData
     !
     ! SEND fwd_info FROM target_id
-    subroutine sendData( data_handles )
+    subroutine sendData( data_groups )
         !
-        type( Dh_t ), dimension(:), intent( in ) :: data_handles
+        type( DataGroup_t ), dimension(:), intent( in ) :: data_groups
         !
-        call packDataBuffer( data_handles )
+        call packDataBuffer( data_groups )
         !
         call MPI_SEND( predicted_data_buffer, predicted_data_buffer_size, MPI_PACKED, master_id, tag, child_comm, ierr )
         !

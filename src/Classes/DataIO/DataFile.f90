@@ -29,7 +29,6 @@ module DataFile
         !
         integer                   :: nTx, nRx
         character(:), allocatable :: file_name
-        logical                   :: set_data_groups
         !
         type( De_t ), allocatable, dimension(:) :: data_entries
         !
@@ -48,8 +47,6 @@ contains
         !
         self%nTx = 0
         self%nRx = 0
-        !
-        self%set_data_groups = .FALSE.
         !
     end subroutine initializeDataFile
     !
@@ -158,41 +155,38 @@ contains
         !
         rx_id = updateReceiverArray( receiver )
         !
-        if( self%set_data_groups ) then
+        ! Set data groups with input data
+        data_group => null()
+        !
+        if( allocated( data_groups ) ) then
             !
-            data_group => null()
-            !
-            if( allocated( data_groups ) ) then
+            do iDg = 1, size( data_groups )
                 !
-                do iDg = 1, size( data_groups )
+                if( data_groups( iDg )%id_rx == rx_id .AND. data_groups( iDg )%id_tx == iTx ) then
                     !
-                    if( data_groups( iDg )%id_rx == rx_id .AND. data_groups( iDg )%id_tx == iTx ) then
-                        !
-                        data_group => getDataGroup( iDg )
-                        !
-                        exit
-                        !
-                    endif
+                    data_group => getDataGroupByIndex( data_groups, iDg )
                     !
-                enddo
+                    exit
+                    !
+                endif
                 !
-            endif
+            enddo
             !
-            if( associated( data_group ) ) then
-                !
-                call data_group%add( data_entry%component, data_entry%real, data_entry%imaginary, data_entry%error )
-                !
-            else
-                !
-                allocate( data_group, source = DataGroup_t( rx_id, iTx, receiver%n_comp ) )
-                !
-                call data_group%add( data_entry%component, data_entry%real, data_entry%imaginary, data_entry%error )
-                !
-                call updateDataGroupArray( data_group )
-                !
-                deallocate( data_group )
-                !
-            endif
+        endif
+        !
+        if( associated( data_group ) ) then
+            !
+            call data_group%add( data_entry%component, data_entry%real, data_entry%imaginary, data_entry%error )
+            !
+        else
+            !
+            allocate( data_group, source = DataGroup_t( rx_id, iTx, receiver%n_comp ) )
+            !
+            call data_group%add( data_entry%component, data_entry%real, data_entry%imaginary, data_entry%error )
+            !
+            call updateDataGroupArray( data_groups, data_group )
+            !
+            deallocate( data_group )
             !
         endif
         !

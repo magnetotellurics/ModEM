@@ -9,7 +9,6 @@
 module ReceiverFullVerticalMagnetic
     !
     use Receiver
-    use DataHandleMT
     !
     type, extends( Receiver_t ), public :: ReceiverFullVerticalMagnetic_t
         !
@@ -22,8 +21,6 @@ module ReceiverFullVerticalMagnetic
             procedure, public :: setLRows => setLRowsFullVerticalMagnetic
             !
             procedure, public :: predictedData => predictedDataFullVerticalMagnetic
-            !
-            procedure, public :: savePredictedData => savePredictedDataFullVerticalMagnetic
             !
             procedure, public :: isEqualRx => isEqualFullVerticalMagnetic
             !
@@ -178,36 +175,6 @@ contains
         end select
         !
     end subroutine predictedDataFullVerticalMagnetic
-    !
-    subroutine savePredictedDataFullVerticalMagnetic( self, tx )
-        implicit none
-        !
-        class( ReceiverFullVerticalMagnetic_t ), intent( inout ) :: self
-        class( Transmitter_t ), intent( in ) :: tx
-        !
-        character(:), allocatable :: code, component
-        real( kind=prec )         :: period, real_part, imaginary, rx_location(3)
-        integer                   :: i, rx_type
-        !
-        !#Period(s) Code GG_Lat GG_Lon X(m) Y(m) self%response(m) Component Real Imag Error
-        !
-        if( allocated( self%predicted_data ) ) call deallocateDataHandleArray( self%predicted_data )
-        !
-        do i = 1, self%n_comp
-            !
-            rx_type = int( self%rx_type )
-            period = real( tx%period, kind=prec )
-            code = trim( self%code )
-            rx_location = (/real( self%location( 1 ), kind=prec ), real( self%location( 2 ), kind=prec ), real( self%location( 3 ), kind=prec )/)
-            component = trim( self%comp_names( i )%str )
-            real_part = real( self%response( i ), kind=prec )
-            imaginary = real( imag( self%response( i ) ), kind=prec )
-            !
-            call updateDataHandleArray( self%predicted_data, DataHandleMT_t( rx_type, code, component, period, rx_location, real_part, imaginary ) )
-            !
-        enddo
-        !
-    end subroutine savePredictedDataFullVerticalMagnetic
     !
     function isEqualFullVerticalMagnetic( self, other ) result( equal )
         implicit none
