@@ -1,94 +1,118 @@
 !*************
 !
-! Class to provide a dynamic and polymorphic data_groups of DataGroup_t objects
+! Class to provide a dynamic and polymorphic data_group_array of DataGroup_t objects
 !
 !*************
 !
 module DataGroupFArray
     !
-    use Constants
-    !
     use DataGroup
-    !
-    implicit none
     !
     ! Global Array of DataGroups
     type( DataGroup_t ), allocatable, target, dimension(:), save, public :: data_groups
     !
-    public :: getDataGroup, printDataGroupArray
-    public :: updateDataGroupArray
+    public :: getDataGroupByIndex, getDataGroupByRxTx, setDataGroup, updateDataGroupArray
     !
 contains
     !
     ! Add a new DataGroup_t and initialize it if necessary
-    subroutine updateDataGroupArray( new_data_group )
+    subroutine updateDataGroupArray( data_group_array, new_dg )
         implicit none
         !
-        class( DataGroup_t ), intent( in ) :: new_data_group
+        type( DataGroup_t ), allocatable, dimension(:), intent( inout ) :: data_group_array
+        type( DataGroup_t ), intent( in ) :: new_dg
         !
         integer :: iDg, nDg
-        !
         type( DataGroup_t ), allocatable, dimension(:) :: temp_array
-        class( DataGroup_t ), allocatable              :: temp_data_group
         !
-        if( .NOT. allocated( data_groups ) ) then
-            allocate( data_groups(1) )
-            allocate( DataGroup_t :: temp_data_group )
-            temp_data_group = new_data_group
-            temp_data_group%id = 1
-            data_groups(1) = temp_data_group
-            deallocate( temp_data_group )
+        if( .NOT. allocated( data_group_array ) ) then
+            !
+            allocate( data_group_array( 1 ) )
+            !
+            data_group_array( 1 ) = new_dg
+            !
         else
             !
-            nDg = size( data_groups )
-            !
-            do iDg = 1, size( data_groups )
-                if( new_data_group%isEqual( data_groups( iDg ) ) ) then
-                    return
-                end if
-            end do
+            nDg = size( data_group_array )
             !
             allocate( temp_array( nDg + 1 ) )
-            temp_array( 1 : nDg ) = data_groups
-            allocate( DataGroup_t :: temp_data_group )
-            temp_data_group = new_data_group
-            temp_data_group%id = nDg + 1
             !
-            temp_array( nDg + 1 ) = temp_data_group
+            temp_array( 1 : nDg ) = data_group_array(:)
             !
-            if( allocated( data_groups ) ) deallocate( data_groups )
-            allocate( data_groups, source = temp_array )
+            temp_array( nDg + 1 ) = new_dg
             !
-            deallocate( temp_data_group )
+            if( allocated( data_group_array ) ) deallocate( data_group_array )
+            allocate( data_group_array, source = temp_array )
+            !
             deallocate( temp_array )
             !
         endif
         !
     end subroutine updateDataGroupArray
-    !
-    function getDataGroup( iDg ) result( data_group )
+!
+    ! Add a new DataGroup_t and initialize it if necessary
+    subroutine setDataGroup( data_group_array, new_dg )
         implicit none
         !
-        integer :: iDg
+        type( DataGroup_t ), allocatable, dimension(:), intent( inout ) :: data_group_array
+        type( DataGroup_t ), intent( in ) :: new_dg
         !
-        class( DataGroup_t ), pointer :: data_group
+        integer :: idg, ndg
         !
-        data_group => data_groups( iDg )
+        ndg = size( data_group_array )
         !
-    end function getDataGroup
+        do idg = 1, ndg
+            if( data_group_array( idg )%id_rx == new_dg%id_rx .AND. &
+                data_group_array( idg )%id_tx == new_dg%id_tx ) then
+                !
+                data_group_array( idg )%reals = new_dg%reals
+                data_group_array( idg )%imaginaries = new_dg%imaginaries
+                data_group_array( idg )%errors = new_dg%errors
+                !
+                return
+                !
+            endif
+            !
+        enddo
+        !
+    end subroutine setDataGroup
     !
-    ! Prints the content of the data_groups on screen
-    subroutine printDataGroupArray()
+    function getDataGroupByIndex( data_group_array, iDg ) result( data_group )
         implicit none
         !
-        integer :: idata_group
+        type( DataGroup_t ), target, dimension(:), intent( in ) :: data_group_array
+        integer                                                 :: iDg
         !
-        write( *, * ) "          Checked ", size( data_groups ), " DataGroups:"
+        type( DataGroup_t ), pointer :: data_group
         !
-        do idata_group = 1, size( data_groups )
-            call data_groups( idata_group )%print()
-        end do
+        data_group => data_group_array( iDg )
         !
-    end subroutine printDataGroupArray
+    end function getDataGroupByIndex
+    !
+    function getDataGroupByRxTx( data_group_array, id_rx, id_tx ) result( data_group )
+        implicit none
+        !
+        type( DataGroup_t ), target, dimension(:), intent( in ) :: data_group_array
+        integer                                                 :: id_rx, id_tx
+        !
+        type( DataGroup_t ), pointer :: data_group
+        !
+        integer :: idg, ndg
+        !
+        ndg = size( data_group_array )
+        !
+        do idg = 1, ndg
+            if( data_group_array( idg )%id_rx == id_rx .AND. &
+                data_group_array( idg )%id_tx == id_tx ) then
+                !
+                data_group => data_group_array( iDg )
+                !
+                return
+                !
+            endif
+            !
+        enddo
+        !
+    end function getDataGroupByRxTx
     !
 end module DataGroupFArray

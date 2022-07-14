@@ -6,13 +6,14 @@
 ! 
 module DataGroup
     !
+    use String
+    !
     use Constants
     !
     type :: DataGroup_t
         !
         integer :: id, n_data, id_rx, id_tx
-        character(30), allocatable :: components(:)
-        logical :: is_complex
+        type( String_t ), allocatable, dimension(:) :: components
         real( kind=prec ), dimension(:), allocatable :: reals, imaginaries, errors ! All Together
         !
         integer, private :: counter
@@ -49,7 +50,7 @@ contains
         !
         self%counter = 1
         !
-        allocate( character(30) :: self%components( n_data ) )
+        allocate( self%components( n_data ) )
         !
         allocate( self%reals( n_data ) )
         allocate( self%imaginaries( n_data ) )
@@ -61,8 +62,15 @@ contains
         implicit none
         !
         type( DataGroup_t ), intent( in out ) :: self
+        integer :: i, asize
         !
         !write( *, * ) "Destructor DataGroup_t: ", self%id
+        !
+        !asize = size( self%components )
+        !do i = asize, 1, -(1)
+            !deallocate( self%components(i)%str )
+        !enddo
+        !deallocate( self%components )
         !
         deallocate( self%reals )
         deallocate( self%imaginaries )
@@ -70,16 +78,16 @@ contains
         !
     end subroutine DataGroup_dtor
     !
-    subroutine addDataDg( self, component, real, imaginary, error )
+    subroutine addDataDg( self, component, rvalue, imaginary, error )
         implicit none
         !
-        class( DataGroup_t ), intent( inout )    :: self
-        character(:), allocatable, intent( in )    :: component
-        real( kind=prec ), intent( in )            :: real, imaginary, error
+        class( DataGroup_t ), intent( inout )   :: self
+        character(:), allocatable, intent( in ) :: component
+        real( kind=prec ), intent( in )         :: rvalue, imaginary, error
         !
-        self%components( self%counter ) = component
+        self%components( self%counter )%str = component
         !
-        self%reals( self%counter ) = real
+        self%reals( self%counter ) = rvalue
         !
         self%imaginaries( self%counter ) = imaginary
         !
@@ -107,9 +115,9 @@ contains
         !
         do i_data = 1, self%n_data
             !
-            if( self%components( i_data ) /= other%components( i_data ) .OR.                    &
-                ABS( self%reals( i_data ) - other%reals( i_data ) ) >= TOL6 .OR.                &
-                ABS( self%imaginaries( i_data ) - other%imaginaries( i_data ) ) >= TOL6 .OR.    &
+            if( self%components( i_data )%str /= other%components( i_data )%str .OR. &
+                ABS( self%reals( i_data ) - other%reals( i_data ) ) >= TOL6 .OR. &
+                ABS( self%imaginaries( i_data ) - other%imaginaries( i_data ) ) >= TOL6 .OR. &
                 ABS( self%errors( i_data ) - other%errors( i_data ) ) >= TOL6 ) then
                     equal = .FALSE.
                     exit
@@ -123,7 +131,7 @@ contains
         implicit none
         !
         class( DataGroup_t ), intent( in ) :: self
-        integer                           :: i_data
+        integer                            :: i_data
         !
         write( *, * ) "    Write DataGroup_t Id: ", self%id
         write( *, * ) "             Receiver Id: ", self%id_rx
@@ -132,7 +140,7 @@ contains
         !
         do i_data = 1, self%n_data
             !
-            write( *, * ) i_data, ":", self%components( i_data ), self%reals( i_data ), self%imaginaries( i_data ), self%errors( i_data )
+            write( *, * ) i_data, ":", self%components( i_data )%str, self%reals( i_data ), self%imaginaries( i_data ), self%errors( i_data )
             !
         enddo
         !

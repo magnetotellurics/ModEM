@@ -12,7 +12,10 @@ module Receiver
     use cVector3D_SG
     use cSparseVector3D_SG
     use ModelOperator
-    use DataHandleFArray
+    use DataGroup
+    !
+    ! Global file name for predicted_data file
+    character(:), allocatable :: predicted_data_file_name
     !
     type, abstract :: Receiver_t
         !
@@ -30,7 +33,7 @@ module Receiver
         !
         type( cSparseVector3D_SG_t ), allocatable :: Lex, Ley, Lez, Lbx, Lby, Lbz
         !
-        type( Dh_t ), allocatable, dimension(:) :: predicted_data
+        type( DataGroup_t ), allocatable :: predicted_data
         !
         complex( kind=prec ), allocatable, dimension(:,:) :: lrows
         !
@@ -40,14 +43,13 @@ module Receiver
             !
             procedure( interface_predicted_data ), deferred, public :: predictedData
             !
-            procedure( interface_save_predicted_data ), deferred, public :: savePredictedData
-            !
             procedure( interface_is_equal_rx ), deferred, public :: isEqualRx
             !
             procedure( interface_print_rx ), deferred, public :: print
             !
-            ! Class procedures
             procedure, public :: evaluationFunction => evaluationFunctionRx
+            !
+            procedure, public :: savePredictedData => savePredictedDataRx
             !
             procedure, public :: init    => initializeRx
             procedure, public :: dealloc => deallocateRx
@@ -155,7 +157,7 @@ contains
         enddo
         deallocate( self%EHxy )
         !
-        if( allocated( self%predicted_data ) ) call deallocateDataHandleArray( self%predicted_data )
+        if( allocated( self%predicted_data ) ) deallocate( self%predicted_data )
         !
         if( allocated( self%Lex ) ) deallocate( self%Lex )
         if( allocated( self%Ley ) ) deallocate( self%Ley )
@@ -189,7 +191,7 @@ contains
                         class is( Grid3D_SG_t )
                             allocate( e, source = cVector3D_SG_t( grid, EDGE ) )
                         class default
-                            stop "evaluationFunctionRx: Unclassified grid for ex"
+                            stop "Error: evaluationFunctionRx: Unclassified grid for ex"
                     end select
                     !
                     call e%interpFunc( self%location, "x", temp_full_vec )
@@ -200,7 +202,7 @@ contains
                             call self%Lex%fromFullVector( temp_full_vec )
                             !
                         class default
-                            stop "evaluationFunctionRx: Unclassified temp_full_vec_ex"
+                            stop "Error: evaluationFunctionRx: Unclassified temp_full_vec_ex"
                     end select
                     !
                     deallocate( e )
@@ -211,7 +213,7 @@ contains
                         class is( Grid3D_SG_t )
                             allocate( e, source = cVector3D_SG_t( grid, EDGE ) )
                         class default
-                            stop "evaluationFunctionRx: Unclassified grid for ey"
+                            stop "Error: evaluationFunctionRx: Unclassified grid for ey"
                     end select
                     !
                     call e%interpFunc( self%location, "y", temp_full_vec )
@@ -222,7 +224,7 @@ contains
                             call self%ley%fromFullVector( temp_full_vec )
                             !
                         class default
-                            stop "evaluationFunctionRx: Unclassified temp_full_vec_ey"
+                            stop "Error: evaluationFunctionRx: Unclassified temp_full_vec_ey"
                     end select
                     !
                     deallocate( e )
@@ -233,7 +235,7 @@ contains
                         class is( Grid3D_SG_t )
                             allocate( e, source = cVector3D_SG_t( grid, EDGE ) )
                         class default
-                            stop "evaluationFunctionRx: Unclassified grid for ez"
+                            stop "Error: evaluationFunctionRx: Unclassified grid for ez"
                     end select
                     !
                     call e%interpFunc( self%location, "z", temp_full_vec )
@@ -244,7 +246,7 @@ contains
                             call self%Lez%fromFullVector( temp_full_vec )
                             !
                         class default
-                            stop "evaluationFunctionRx: Unclassified temp_full_vec_ez"
+                            stop "Error: evaluationFunctionRx: Unclassified temp_full_vec_ez"
                     end select
                     !
                     deallocate( e )
@@ -255,7 +257,7 @@ contains
                           class is( Grid3D_SG_t )
                              allocate( h, source = cVector3D_SG_t( grid, FACE ) )
                           class default
-                             stop "evaluationFunctionRx: Unclassified grid for hx"
+                             stop "Error: evaluationFunctionRx: Unclassified grid for hx"
                      end select
                     !
                     call h%interpFunc( self%location, "x", lh )
@@ -269,7 +271,7 @@ contains
                             !
                         class default
                             write( *, * ) "ERROR:Receiver::evaluationFunction:"
-                            stop          "            Unknow lh type"
+                            stop          "            Unknown lh type"
                     end select
                     !
                     call model_operator%multCurlT( lh, temp_full_vec )
@@ -284,7 +286,7 @@ contains
                             call self%Lbx%fromFullVector( temp_full_vec )
                             !
                         class default
-                            stop "evaluationFunctionRx: Unclassified temp_full_vec_bx"
+                            stop "Error: evaluationFunctionRx: Unclassified temp_full_vec_bx"
                     end select
                     !
                 case( "By" )
@@ -293,7 +295,7 @@ contains
                           class is( Grid3D_SG_t )
                              allocate( h, source = cVector3D_SG_t( grid, FACE ) )
                           class default
-                             stop "evaluationFunctionRx: Unclassified grid for hy"
+                             stop "Error: evaluationFunctionRx: Unclassified grid for hy"
                      end select
                     ! 
                     call h%interpFunc( self%location, "y", lh )
@@ -307,7 +309,7 @@ contains
                             !
                         class default
                             write( *, * ) "ERROR:Receiver::evaluationFunction:"
-                            stop          "            Unknow lh type"
+                            stop          "            Unknown lh type"
                     end select
                     !
                     call model_operator%multCurlT( lh, temp_full_vec )
@@ -322,7 +324,7 @@ contains
                             call self%Lby%fromFullVector( temp_full_vec )
                             !
                         class default
-                            stop "evaluationFunctionRx: Unclassified temp_full_vec_by"
+                            stop "Error: evaluationFunctionRx: Unclassified temp_full_vec_by"
                     end select
                     !
                 case( "Bz" )
@@ -331,7 +333,7 @@ contains
                           class is( Grid3D_SG_t )
                              allocate( h, source = cVector3D_SG_t( grid, FACE ) )
                           class default
-                             stop "evaluationFunctionRx: Unclassified grid for hz"
+                             stop "Error: evaluationFunctionRx: Unclassified grid for hz"
                      end select
                     !
                     call h%interpFunc( self%location, "z", lh )
@@ -360,7 +362,7 @@ contains
                             call self%Lbz%fromFullVector( temp_full_vec )
                             !
                         class default
-                            stop "evaluationFunctionRx: Unclassified temp_full_vec_bz"
+                            stop "Error: evaluationFunctionRx: Unclassified temp_full_vec_bz"
                     end select
                     !
             end select
@@ -370,6 +372,34 @@ contains
         end do
         !
     end subroutine evaluationFunctionRx
+    !
+    subroutine savePredictedDataRx( self, transmitter )
+        implicit none
+        !
+        class( Receiver_t ), intent( inout ) :: self
+        class( Transmitter_t ), intent( in ) :: transmitter
+        !
+        character(:), allocatable :: component
+        real( kind=prec )         :: real_part, imaginary, error
+        integer                   :: i
+        !
+        !#Period(s) Code GG_Lat GG_Lon X(m) Y(m) self%response(m) Component Real Imag Error
+        !
+        if( allocated( self%predicted_data ) ) deallocate( self%predicted_data )
+        allocate( self%predicted_data, source = DataGroup_t( self%id, transmitter%id, self%n_comp ) )
+        !
+        do i = 1, self%n_comp
+            !
+            component = trim( self%comp_names( i )%str )
+            real_part = real( self%response( i ), kind=prec )
+            imaginary = real( imag( self%response( i ) ), kind=prec )
+            error = 1.0
+            !
+            call self%predicted_data%add( component, real_part, imaginary, error )
+            !
+        enddo
+        !
+    end subroutine savePredictedDataRx
     !
     function getStringReceiverType( int_receiver_type ) result( str_receiver_type )
     !
