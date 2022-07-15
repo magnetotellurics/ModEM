@@ -15,7 +15,7 @@ module ModelParameter
         class( Grid_t ), pointer :: grid
         !
         ! Pointer to metric elements -- useful for model mappings
-        !     provides Viedge, Vcell
+        !     provides Vedge, Vcell
         class( MetricElements_t ), pointer :: metric
         !
         integer                   :: mKey(8)

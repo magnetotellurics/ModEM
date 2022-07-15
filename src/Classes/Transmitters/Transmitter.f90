@@ -11,6 +11,7 @@ module Transmitter
     use Constants
     use Source
     use ForwardSolver
+    use ModelParameter
     use cVector
     !
     ! Global file name for e_solution file
@@ -24,13 +25,15 @@ module Transmitter
         !
         class( ForwardSolver_t ), pointer :: forward_solver
         !
-        class( Source_t ), allocatable    :: source
+        class( Source_t ), allocatable :: source
         !
         class( cVector_t ), allocatable, dimension(:) :: e_all
         !
         integer, allocatable, dimension(:) :: receiver_indexes
         !
-        procedure( interface_p_mult_tx ), pointer, nopass :: p_mult_ptr => p_mult
+        procedure( interface_p_mult_tx ), pointer, nopass :: pMult_ptr => pMult_E
+        !
+        procedure( interface_p_mult_t_tx ), pointer, nopass :: pMult_t_ptr => pMult_t_E
         !
     contains
         !
@@ -48,6 +51,8 @@ module Transmitter
         procedure( interface_print_tx ), deferred, public :: print
         !
         procedure, public :: pMult => pMultTx
+        !
+        procedure, public :: pMult_t => pMult_t_Tx
         !
     end type Transmitter_t
     !
@@ -69,11 +74,18 @@ module Transmitter
             class( Transmitter_t ), intent(in) :: self
         end subroutine interface_print_tx
         !
-        pure function interface_p_mult_tx( x ) result( y )
-            import :: prec
-            real( kind=prec ), intent( in ) :: x
-            real( kind=prec )               :: y
-        end function interface_p_mult_tx
+        pure subroutine interface_p_mult_tx( m0, dm, bSrc )
+            import :: ModelParameter_t, Source_t
+            class( ModelParameter_t ), intent( in ) :: m0, dm
+            class( Source_t ), intent( inout )      :: bSrc
+        end subroutine interface_p_mult_tx
+        !
+        pure subroutine interface_p_mult_t_tx( m0, eSens, d_m )
+            import :: ModelParameter_t, cVector_t
+            class( ModelParameter_t ), intent( in )    :: m0
+            class( cVector_t ), intent( in )           :: eSens
+            class( ModelParameter_t ), intent( inout ) :: d_m
+        end subroutine interface_p_mult_t_tx
         !
     end interface
     !
@@ -145,36 +157,78 @@ module Transmitter
                 !
             endif
             !
-         end subroutine updateReceiverIndexesArray
+        end subroutine updateReceiverIndexesArray
         !
-        elemental function pMultTx( self, x ) result( y )
+        ! PMult
+        elemental subroutine pMultTx( self, m0, dm, bSrc )
             implicit none
             !
-            class( Transmitter_t), intent( in ) :: self
-            real( kind=prec ), intent( in )        :: x
+            class( Transmitter_t ), intent( in )    :: self
+            class( ModelParameter_t ), intent( in ) :: m0, dm
+            class( Source_t ), intent( inout ) :: bSrc
             !
-            real( kind=prec ) :: y
+            call self%pMult_ptr( m0, dm, bSrc )
             !
-            y = self%p_mult_ptr( x )
-            !
-        end function pMultTx
+        end subroutine pMultTx
         !
-        pure function p_mult( x ) result( y )
+        pure subroutine pMult_E( m0, dm, bSrc )
             implicit none
             !
-            real( kind=prec ), intent( in ) :: x
+            class( ModelParameter_t ), intent( in ) :: m0
+            class( ModelParameter_t ), intent( in ) :: dm
             !
-            real( kind=prec ) :: y
+            class( Source_t ), intent( inout ) :: bSrc
             !
-        end function p_mult
+            ! MatLab Implementation
+            !
+            !miwm = -1i*Tx.fwd.modOp.mu0*Tx.fwd.isign*Tx.omega;
+            !temp = m0.dPDEmapping(dm);
+            !
+            !adjt = false;
+            !
+            !bSrc(2) = TSourceInteriorForce(Tx.fwd.modOp,adjt);
+            !bSrc(2).SetSourceParams(miwm*Tx.e(nPol).*temp);
+            !for k = 1:Tx.nPol-1
+                !bSrc(k) = TSourceInteriorForce(Ts.fwd.modOp,adjt);
+                !bSrc(k).SetSourceParams(miwm.*Tx.e(k).*temp);
+            !end
+            !
+        end subroutine pMult_E
         !
-        pure function p_mult_t( x ) result( y )
+        ! PMult_t
+        elemental subroutine pMult_t_Tx( self, m0, eSens, d_m )
             implicit none
             !
-            real( kind=prec ), intent( in ) :: x
+            class( Transmitter_t ), intent( in )    :: self
+            class( ModelParameter_t ), intent( in ) :: m0
+            class( cVector_t ), intent( in )        :: eSens
             !
-            real( kind=prec ) :: y
+            class( ModelParameter_t ), intent( inout ) :: d_m
             !
-        end function p_mult_t
+            call self%pMult_t_ptr( m0, eSens, d_m )
+            !
+        end subroutine pMult_t_Tx
+        !
+        pure subroutine pMult_t_E( m0, eSens, d_m )
+            implicit none
+            !
+            class( ModelParameter_t ), intent( in )    :: m0
+            class( cVector_t ), intent( in )           :: eSens
+            !
+            class( ModelParameter_t ), intent( inout ) :: d_m
+            !
+            ! MatLab Implementation
+            !
+            !Tx = dTx.Tx;  %  transmitter for this DataVectorTx object;  As for Pmult_E
+            !
+            !miwm = -1i*Tx.fwd.modOp.mu0*Tx.fwd.isign*Tx.omega;
+            !eSens(1) = miwm.*Tx.e(1).*eSens(1);
+            !
+            !for k = 2:Tx.nPol
+                !eSens(1) = eSens(1) + miwm.*Tx.e(k).*eSens(k);
+                !end
+            !d_m = m0.dPDEmappingT(eSens(1));
+            !
+        end subroutine pMult_t_E
         !
 end module Transmitter

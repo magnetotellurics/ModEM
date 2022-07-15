@@ -111,40 +111,47 @@ contains
         class( ReceiverFullImpedance_t ), intent( inout ) :: self
         class( Transmitter_t ), intent( in )              :: transmitter
         !
-        type( cVector3D_SG_t ) :: H, Hinv, LE, LEX, LEY
-        integer :: i, j, k, ki, ij
+        type( cVector3D_SG_t ) :: Le, full_lex, full_ley, full_lbx, full_lby, aux_full_vec
+        type( cSparsevector3D_SG_t ) :: aux_sparse_vec
+        integer :: i, j, k, ki, kj
         !
         write( *, * ) "implementing setLRowsFullImpedance:"
         !
         allocate( self%lrows( transmitter%n_pol, self%n_comp ) )
         !
-        !H = cVector3D_SG_t( transmitter%source%model_operator%metric%grid, "FACE" )
-        !Hinv = cVector3D_SG_t( transmitter%source%model_operator%metric%grid, "FACE" )
-        !
         ki = 0
         !
-        LEX = self%Lex%getFullVector()
-        LEY = self%Ley%getFullVector()
+        full_lex = self%Lex%getFullVector()
+        full_ley = self%Ley%getFullVector()
+        !
+        full_lbx = self%Lbx%getFullVector()
+        full_lby = self%Lby%getFullVector()
         !
         do k = 1, 2
+            !
             if( k == 1 ) then
-                lE = self%Lex%getFullVector()
+                Le = self%Lex%getFullVector()
             else
-                lE = self%Ley%getFullVector()
+                Le = self%Ley%getFullVector()
             endif
             !
             do i = 1, 2
                 ki = ki + 1
                 do j = 1, 2
-                !
-                    ij = 2 * ( i-1 ) + j
                     !
-                    call LEX%mult( self%response(ij) )
-                    call LEY%mult( self%response(ij) )
-                    !self%lrows( j, ki ) = ( lE - LEX - LEY )
+                    kj = 2 * ( k-1 ) + j
                     !
-                    !Lrows{j,ki} = Hinv(j,i)*(lE-Z(k,1)*Rx.Lhx - Z(k,2)*Rx.Lhy);
-
+                    call full_lbx%mult( self%response( kj ) )
+                    call full_lby%mult( self%response( kj ) )
+                    !
+                    aux_full_vec = ( Le - full_lbx - full_lby )
+                    !
+                    call aux_full_vec%mult( self%I_BB( j, i ) )
+                    !
+                    aux_sparse_vec = cSparsevector3D_SG_t()
+                    call aux_sparse_vec%fromFullVector( aux_full_vec )
+                    !
+                    self%lrows( j, ki ) = aux_sparse_vec
                 enddo
             enddo
             !
@@ -160,7 +167,7 @@ contains
         !
         integer :: i, j, ij
         complex( kind=prec ) :: comega, det
-        complex( kind=prec ), allocatable :: BB(:,:), I_BB(:,:), EE(:,:)
+        complex( kind=prec ), allocatable :: BB(:,:), EE(:,:)
         !
         !
         comega = cmplx( 0.0, 1./ ( 2.0 * PI / transmitter%period ), kind=prec )
@@ -189,30 +196,31 @@ contains
                         !
                         det = BB(1,1) * BB(2,2) - BB(1,2) * BB(2,1)
                         !
-                        allocate( I_BB(2,2) )
+                        if( allocated( self%I_BB ) ) deallocate( self%I_BB )
+                        allocate( self%I_BB(2,2) )
                         !
                         if( det /= 0 ) then
-                            I_BB(1,1) =  BB(2,2) / det
-                            I_BB(2,2) =  BB(1,1) / det
-                            I_BB(1,2) = -BB(1,2) / det
-                            I_BB(2,1) = -BB(2,1) / det
+                            self%I_BB(1,1) =  BB(2,2) / det
+                            self%I_BB(2,2) =  BB(1,1) / det
+                            self%I_BB(1,2) = -BB(1,2) / det
+                            self%I_BB(2,1) = -BB(2,1) / det
                         else
                             STOP "ReceiverFullImpedance.f90: Determinant is Zero!"
                         endif
                         !
                         deallocate( BB )
                         !
+                        if( allocated( self%response ) ) deallocate( self%response )
                         allocate( self%response(4) )
                         !
                         do j = 1, 2
                              do i = 1, 2
                                  ij = 2 * ( i-1 ) + j
-                                 self%response(ij) = EE(i,1) * I_BB(1,j) + EE(i,2) * I_BB(2,j)
+                                 self%response(ij) = EE(i,1) * self%I_BB(1,j) + EE(i,2) * self%I_BB(2,j)
                              enddo
                         enddo
                         !
                         deallocate( EE )
-                        deallocate( I_BB )
                         !
                         call self%savePredictedData( transmitter )
                         !

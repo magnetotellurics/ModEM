@@ -10,7 +10,7 @@ mkdir TEST_MT_FWD
 	#
 	cd TEST_MT_FWD
 		#
-		../test_FWD --forward --model ../../../MEETING_INPUTS/rFile_Model  --data ../../../MEETING_INPUTS/rFile_Data_MT --control ../../inputs/Others/first_control_file.txt | tee -a output.txt
+		../test_FWD --forward --model ../../../MEETING_INPUTS/rFile_Model  --data ../../../MEETING_INPUTS/rFile_Data_MT --control ../../docs/oo_control_file | tee -a output.txt
 		#
 		T_END=$(date +%s%3N)
 		echo "	> TEST_MT_FWD: $(( ( $T_END - $T_START ) / 1000 )) seconds" | tee -a ../summary.txt
@@ -22,7 +22,7 @@ mkdir TEST_MT_VALGRIND_FWD
 	#
 	cd TEST_MT_VALGRIND_FWD
 		#
-		valgrind --leak-check=full --show-leak-kinds=all --track-origins=yes -v --suppressions=../../../MEETING_INPUTS/valgring_mpi_suppression.supp --log-file=mt_valgrind_fwd_mpi.txt ../test_FWD --forward --model ../../../MEETING_INPUTS/rFile_Model  --data ../../../MEETING_INPUTS/rFile_Data_MT --control ../../inputs/Others/first_control_file.txt | tee -a output.txt
+		valgrind --leak-check=full --show-leak-kinds=all --track-origins=yes -v --suppressions=../../../MEETING_INPUTS/valgring_mpi_suppression.supp --log-file=mt_valgrind_fwd_mpi.txt ../test_FWD --forward --model ../../../MEETING_INPUTS/rFile_Model  --data ../../../MEETING_INPUTS/rFile_Data_MT --control ../../docs/oo_control_file | tee -a output.txt
 		#
 		T_END=$(date +%s%3N)
 		echo "	> TEST_MT_VALGRIND_FWD: $(( ( $T_END - $T_START ) / 1000 )) seconds" | tee -a ../summary.txt
@@ -34,7 +34,7 @@ mkdir TEST_MT_MASSIF_FWD
 	#
 	cd TEST_MT_MASSIF_FWD
 		#
-		valgrind --tool=massif --time-unit=ms --max-snapshots=1000 ../test_FWD --forward --model ../../../MEETING_INPUTS/rFile_Model  --data ../../../MEETING_INPUTS/rFile_Data_MT --control ../../inputs/Others/first_control_file.txt | tee -a output.txt
+		valgrind --tool=massif --time-unit=ms --max-snapshots=1000 ../test_FWD --forward --model ../../../MEETING_INPUTS/rFile_Model  --data ../../../MEETING_INPUTS/rFile_Data_MT --control ../../docs/oo_control_file | tee -a output.txt
 		#
 		bash ../../scripts/memory_brief.sh
 		#
@@ -48,7 +48,7 @@ mkdir TEST_MT_FWD_MPI
 	#
 	cd TEST_MT_FWD_MPI
 		#
-		mpirun -np 2 valgrind --leak-check=full --show-leak-kinds=all --track-origins=yes -v --suppressions=../../../MEETING_INPUTS/valgring_mpi_suppression.supp --log-file=mt_fwd_mpi.txt ../test_FWD_MPI --forward --model ../../../MEETING_INPUTS/rFile_Model  --data ../../../MEETING_INPUTS/rFile_Data_MT --control ../../inputs/Others/first_control_file.txt | tee -a output.txt
+		mpirun --use-hwthread-cpus -np 2 valgrind --leak-check=full --show-leak-kinds=all --track-origins=yes -v --suppressions=../../../MEETING_INPUTS/valgring_mpi_suppression.supp --log-file=mt_fwd_mpi.txt ../test_FWD_MPI --forward --model ../../../MEETING_INPUTS/rFile_Model  --data ../../../MEETING_INPUTS/rFile_Data_MT --control ../../docs/oo_control_file | tee -a output.txt
 		#
 		T_END=$(date +%s%3N)
 		echo "	> TEST_MT_FWD_MPI: $(( ( $T_END - $T_START ) / 1000 )) seconds" | tee -a ../summary.txt
@@ -60,7 +60,7 @@ mkdir TEST_MT_VALGRIND_FWD_MPI
 	#
 	cd TEST_MT_VALGRIND_FWD_MPI
 		#
-		mpirun -np 2 valgrind --leak-check=full --show-leak-kinds=all --track-origins=yes -v --suppressions=../../../MEETING_INPUTS/valgring_mpi_suppression.supp --log-file=mt_valgrind_fwd_mpi.txt ../test_FWD_MPI --forward --model ../../../MEETING_INPUTS/rFile_Model  --data ../../../MEETING_INPUTS/rFile_Data_MT --control ../../inputs/Others/first_control_file.txt | tee -a output.txt
+		mpirun --use-hwthread-cpus -np 2 valgrind --leak-check=full --show-leak-kinds=all --track-origins=yes -v --suppressions=../../../MEETING_INPUTS/valgring_mpi_suppression.supp --log-file=mt_valgrind_fwd_mpi.txt ../test_FWD_MPI --forward --model ../../../MEETING_INPUTS/rFile_Model  --data ../../../MEETING_INPUTS/rFile_Data_MT --control ../../docs/oo_control_file | tee -a output.txt
 		#
 		T_END=$(date +%s%3N)
 		echo "	> TEST_MT_VALGRIND_FWD_MPI: $(( ( $T_END - $T_START ) / 1000 )) seconds" | tee -a ../summary.txt
@@ -72,7 +72,7 @@ mkdir TEST_MT_MASSIF_FWD_MPI
 	#
 	cd TEST_MT_MASSIF_FWD_MPI
 		#
-		mpirun -np 2 valgrind --tool=massif --time-unit=ms --max-snapshots=1000 ../test_FWD_MPI --forward --model ../../../MEETING_INPUTS/rFile_Model  --data ../../../MEETING_INPUTS/rFile_Data_MT --control ../../inputs/Others/first_control_file.txt | tee -a output.txt
+		mpirun --use-hwthread-cpus -np 2 valgrind --tool=massif --time-unit=ms --max-snapshots=1000 ../test_FWD_MPI --forward --model ../../../MEETING_INPUTS/rFile_Model  --data ../../../MEETING_INPUTS/rFile_Data_MT --control ../../docs/oo_control_file | tee -a output.txt
 		#
 		bash ../../scripts/memory_brief.sh
 		#
@@ -88,7 +88,7 @@ mkdir TEST_CSEM_FWD
 	#
 	cd TEST_CSEM_FWD
 		#
-		../test_FWD --forward --model ../../../MEETING_INPUTS/rFile_Model  --data ../../../MEETING_INPUTS/rFile_Data_CSEM --control ../../inputs/Others/first_control_file.txt | tee -a output.txt
+		../test_FWD --forward --model ../../../MEETING_INPUTS/rFile_Model  --data ../../../MEETING_INPUTS/rFile_Data_CSEM --control ../../docs/oo_control_file | tee -a output.txt
 		#
 		T_END=$(date +%s%3N)
 		echo "	> TEST_CSEM_FWD: $(( ( $T_END - $T_START ) / 1000 )) seconds" | tee -a ../summary.txt
@@ -100,7 +100,7 @@ mkdir TEST_CSEM_VALGRIND_FWD
 	#
 	cd TEST_CSEM_VALGRIND_FWD
 		#
-		valgrind --leak-check=full --show-leak-kinds=all --track-origins=yes -v --suppressions=../../../MEETING_INPUTS/valgring_mpi_suppression.supp --log-file=mt_valgrind_fwd_mpi.txt ../test_FWD --forward --model ../../../MEETING_INPUTS/rFile_Model  --data ../../../MEETING_INPUTS/rFile_Data_CSEM --control ../../inputs/Others/first_control_file.txt | tee -a output.txt
+		valgrind --leak-check=full --show-leak-kinds=all --track-origins=yes -v --suppressions=../../../MEETING_INPUTS/valgring_mpi_suppression.supp --log-file=mt_valgrind_fwd_mpi.txt ../test_FWD --forward --model ../../../MEETING_INPUTS/rFile_Model  --data ../../../MEETING_INPUTS/rFile_Data_CSEM --control ../../docs/oo_control_file | tee -a output.txt
 		#
 		T_END=$(date +%s%3N)
 		echo "	> TEST_CSEM_VALGRIND_FWD: $(( ( $T_END - $T_START ) / 1000 )) seconds" | tee -a ../summary.txt
@@ -112,7 +112,7 @@ mkdir TEST_CSEM_MASSIF_FWD
 	#
 	cd TEST_CSEM_MASSIF_FWD
 		#
-		valgrind --tool=massif --time-unit=ms --max-snapshots=1000 ../test_FWD --forward --model ../../../MEETING_INPUTS/rFile_Model  --data ../../../MEETING_INPUTS/rFile_Data_CSEM --control ../../inputs/Others/first_control_file.txt | tee -a output.txt
+		valgrind --tool=massif --time-unit=ms --max-snapshots=1000 ../test_FWD --forward --model ../../../MEETING_INPUTS/rFile_Model  --data ../../../MEETING_INPUTS/rFile_Data_CSEM --control ../../docs/oo_control_file | tee -a output.txt
 		#
 		bash ../../scripts/memory_brief.sh
 		#
@@ -126,7 +126,7 @@ mkdir TEST_CSEM_FWD_MPI
 	#
 	cd TEST_CSEM_FWD_MPI
 		#
-		mpirun -np 2 valgrind --leak-check=full --show-leak-kinds=all --track-origins=yes -v --suppressions=../../../MEETING_INPUTS/valgring_mpi_suppression.supp --log-file=mt_fwd_mpi.txt ../test_FWD_MPI --forward --model ../../../MEETING_INPUTS/rFile_Model  --data ../../../MEETING_INPUTS/rFile_Data_CSEM --control ../../inputs/Others/first_control_file.txt | tee -a output.txt
+		mpirun --use-hwthread-cpus -np 2 valgrind --leak-check=full --show-leak-kinds=all --track-origins=yes -v --suppressions=../../../MEETING_INPUTS/valgring_mpi_suppression.supp --log-file=mt_fwd_mpi.txt ../test_FWD_MPI --forward --model ../../../MEETING_INPUTS/rFile_Model  --data ../../../MEETING_INPUTS/rFile_Data_CSEM --control ../../docs/oo_control_file | tee -a output.txt
 		#
 		T_END=$(date +%s%3N)
 		echo "	> TEST_CSEM_FWD_MPI: $(( ( $T_END - $T_START ) / 1000 )) seconds" | tee -a ../summary.txt
@@ -138,7 +138,7 @@ mkdir TEST_CSEM_VALGRIND_FWD_MPI
 	#
 	cd TEST_CSEM_VALGRIND_FWD_MPI
 		#
-		mpirun -np 2 valgrind --leak-check=full --show-leak-kinds=all --track-origins=yes -v --suppressions=../../../MEETING_INPUTS/valgring_mpi_suppression.supp --log-file=mt_valgrind_fwd_mpi.txt ../test_FWD_MPI --forward --model ../../../MEETING_INPUTS/rFile_Model  --data ../../../MEETING_INPUTS/rFile_Data_CSEM --control ../../inputs/Others/first_control_file.txt | tee -a output.txt
+		mpirun --use-hwthread-cpus -np 2 valgrind --leak-check=full --show-leak-kinds=all --track-origins=yes -v --suppressions=../../../MEETING_INPUTS/valgring_mpi_suppression.supp --log-file=mt_valgrind_fwd_mpi.txt ../test_FWD_MPI --forward --model ../../../MEETING_INPUTS/rFile_Model  --data ../../../MEETING_INPUTS/rFile_Data_CSEM --control ../../docs/oo_control_file | tee -a output.txt
 		#
 		T_END=$(date +%s%3N)
 		echo "	> TEST_CSEM_VALGRIND_FWD_MPI: $(( ( $T_END - $T_START ) / 1000 )) seconds" | tee -a ../summary.txt
@@ -150,7 +150,7 @@ mkdir TEST_CSEM_MASSIF_FWD_MPI
 	#
 	cd TEST_CSEM_MASSIF_FWD_MPI
 		#
-		mpirun -np 2 valgrind --tool=massif --time-unit=ms --max-snapshots=1000 ../test_FWD_MPI --forward --model ../../../MEETING_INPUTS/rFile_Model  --data ../../../MEETING_INPUTS/rFile_Data_CSEM --control ../../inputs/Others/first_control_file.txt | tee -a output.txt
+		mpirun --use-hwthread-cpus -np 2 valgrind --tool=massif --time-unit=ms --max-snapshots=1000 ../test_FWD_MPI --forward --model ../../../MEETING_INPUTS/rFile_Model  --data ../../../MEETING_INPUTS/rFile_Data_CSEM --control ../../docs/oo_control_file | tee -a output.txt
 		#
 		bash ../../scripts/memory_brief.sh
 		#

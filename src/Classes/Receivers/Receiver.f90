@@ -29,13 +29,11 @@ module Receiver
         !
         type( String_t ), allocatable, dimension(:) :: EHxy, comp_names
         !
-        complex( kind=prec ), allocatable, dimension(:) :: response
+        complex( kind=prec ), allocatable :: I_BB(:,:), response(:)
         !
-        type( cSparseVector3D_SG_t ), allocatable :: Lex, Ley, Lez, Lbx, Lby, Lbz
+        type( cSparseVector3D_SG_t ), allocatable :: Lex, Ley, Lez, Lbx, Lby, Lbz, lrows(:,:)
         !
         type( DataGroup_t ), allocatable :: predicted_data
-        !
-        complex( kind=prec ), allocatable, dimension(:,:) :: lrows
         !
         contains
             !
@@ -166,6 +164,9 @@ contains
         if( allocated( self%Lbx ) ) deallocate( self%Lbx )
         if( allocated( self%Lbx ) ) deallocate( self%Lbx )
         if( allocated( self%Lbz ) ) deallocate( self%Lbz )
+        !
+		if( allocated( self%I_BB ) ) deallocate( self%I_BB )
+        if( allocated( self%response ) ) deallocate( self%response )
         !
     end subroutine deallocateRx
     !
@@ -381,18 +382,17 @@ contains
         !
         character(:), allocatable :: component
         real( kind=prec )         :: real_part, imaginary, error
-        integer                   :: i
         !
-        !#Period(s) Code GG_Lat GG_Lon X(m) Y(m) self%response(m) Component Real Imag Error
+        integer                   :: i
         !
         if( allocated( self%predicted_data ) ) deallocate( self%predicted_data )
         allocate( self%predicted_data, source = DataGroup_t( self%id, transmitter%id, self%n_comp ) )
         !
         do i = 1, self%n_comp
             !
-            component = trim( self%comp_names( i )%str )
-            real_part = real( self%response( i ), kind=prec )
-            imaginary = real( imag( self%response( i ) ), kind=prec )
+            component = trim( self%comp_names(i)%str )
+            real_part = real( self%response(i), kind=prec )
+            imaginary = real( self%response(i), kind=prec )
             error = 1.0
             !
             call self%predicted_data%add( component, real_part, imaginary, error )
