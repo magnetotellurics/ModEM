@@ -115,12 +115,14 @@ contains
         type( cSparsevector3D_SG_t ) :: aux_sparse_vec
         integer :: i, j, k, ki, kj
         !
-        write( *, * ) "implementing setLRowsFullImpedance:"
+        !
+        call self%predictedData( transmitter )
         !
         allocate( self%lrows( transmitter%n_pol, self%n_comp ) )
         !
         ki = 0
         !
+        ! Conversion to full vector to do math operations
         full_lex = self%Lex%getFullVector()
         full_ley = self%Ley%getFullVector()
         !
@@ -136,22 +138,29 @@ contains
             endif
             !
             do i = 1, 2
+                !
                 ki = ki + 1
+                !
                 do j = 1, 2
                     !
+                    ! One-dimensionalization for calcs with self%response
                     kj = 2 * ( k-1 ) + j
                     !
+                    ! full = full * complex
                     call full_lbx%mult( self%response( kj ) )
                     call full_lby%mult( self%response( kj ) )
                     !
                     aux_full_vec = ( Le - full_lbx - full_lby )
                     !
+                    ! aux_full = aux_full * complex
                     call aux_full_vec%mult( self%I_BB( j, i ) )
                     !
+                    ! Conversion of the result to Sparse Vector
                     aux_sparse_vec = cSparsevector3D_SG_t()
                     call aux_sparse_vec%fromFullVector( aux_full_vec )
                     !
                     self%lrows( j, ki ) = aux_sparse_vec
+                    !
                 enddo
             enddo
             !
@@ -168,7 +177,6 @@ contains
         integer :: i, j, ij
         complex( kind=prec ) :: comega, det
         complex( kind=prec ), allocatable :: BB(:,:), EE(:,:)
-        !
         !
         comega = cmplx( 0.0, 1./ ( 2.0 * PI / transmitter%period ), kind=prec )
         !
@@ -223,8 +231,6 @@ contains
                         deallocate( EE )
                         !
                         call self%savePredictedData( transmitter )
-                        !
-                        deallocate( self%response )
                         !
                     class default
                         stop "evaluationFunctionRx: Unclassified temp_full_vec_ey"

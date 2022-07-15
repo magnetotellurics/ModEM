@@ -158,13 +158,13 @@ contains
         ! Set data groups with input data
         data_group => null()
         !
-        if( allocated( data_groups ) ) then
+        if( allocated( original_data ) ) then
             !
-            do iDg = 1, size( data_groups )
+            do iDg = 1, size( original_data )
                 !
-                if( data_groups( iDg )%id_rx == rx_id .AND. data_groups( iDg )%id_tx == iTx ) then
+                if( original_data( iDg )%id_rx == rx_id .AND. original_data( iDg )%id_tx == iTx ) then
                     !
-                    data_group => getDataGroupByIndex( data_groups, iDg )
+                    data_group => getDataGroupByIndex( original_data, iDg )
                     !
                     exit
                     !
@@ -184,7 +184,7 @@ contains
             !
             call data_group%add( data_entry%component, data_entry%real, data_entry%imaginary, data_entry%error )
             !
-            call updateDataGroupArray( data_groups, data_group )
+            call updateDataGroupArray( original_data, data_group )
             !
             deallocate( data_group )
             !

@@ -9,7 +9,8 @@ module DataGroupFArray
     use DataGroup
     !
     ! Global Array of DataGroups
-    type( DataGroup_t ), allocatable, target, dimension(:), save, public :: data_groups
+    type( DataGroup_t ), allocatable, target, dimension(:), save, public :: original_data
+    type( DataGroup_t ), allocatable, target, dimension(:), save, public :: predicted_data
     !
     public :: getDataGroupByIndex, getDataGroupByRxTx, setDataGroup, updateDataGroupArray
     !

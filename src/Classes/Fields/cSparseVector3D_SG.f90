@@ -159,8 +159,6 @@ contains
             endif
         enddo
         !
-        call cvector%print()
-        !
     end function getFullVectorCSparsevector3D_SG
     !
     subroutine fromFullVectorCSparsevector3D_SG( self, cvector )

@@ -65,10 +65,113 @@ contains
     subroutine Inversion()
         implicit none
         !
-        ! Verbose
+        ! Use save ????
+        class( ForwardSolver_t ), allocatable, target, save :: forward_solver
+        !
+        ! Temporary alias pointers
+        class( Transmitter_t ), pointer :: Tx
+        class( Receiver_t ), pointer    :: Rx
+        !
+        integer :: iTx, number_of_tx, iRx, iDh
+        !
+        ! Verbose ...
         write( *, * ) "     - Start Inversion"
         !
-        call ForwardModelling()
+        ! Reads Model File: instantiates Grid, ModelOperator and ModelParameter
+        if( .NOT. has_model_file ) then 
+            stop "Error: Missing Model file!"
+        else
+            call handleModelFile()
+        endif
+        !
+        ! Reads Data File: instantiates and builds the Data relation between Txs and Txs
+        if( .NOT. has_data_file ) then 
+            stop "Error: Missing Data file!"
+        else
+            call handleDataFile()
+        endif
+        !
+        ! Instantiate the ForwardSolver - Specific type can be chosen via control file
+        select case ( forward_solver_type )
+            !
+            case( FWD_IT_DC )
+                allocate( forward_solver, source = ForwardSolverIT_DC_t( model_operator, QMR ) )
+                !
+            case default
+                allocate( forward_solver, source = ForwardSolverIT_DC_t( model_operator, QMR ) )
+            !
+        end select
+        !
+        ! Forward Modeling
+        !
+        number_of_tx = size( transmitters )
+        !
+        ! Writes the first header of the ESolution binary file, according to the first transmitter
+        Tx => getTransmitter(1)
+        call writeEsolutionHeader( number_of_tx, Tx%n_pol )
+        !
+        ! Loop over all Transmitters
+        do iTx = 1, number_of_tx
+            !
+            ! Points the Tx alias to the current loop transmitter
+            Tx => getTransmitter( iTx )
+            !
+            ! Set Transmitter's ForwardSolver
+            Tx%forward_solver => forward_solver
+            !
+            ! Set Transmitter's ForwardSolver Omega(Period) and Conductivity
+            call Tx%forward_solver%setFrequency( model_parameter, Tx%period )
+            !
+            ! Instantiate Transmitter's Source - According to transmitter type or chosen via control file
+            select type( Tx )
+                !
+                class is( TransmitterMT_t )
+                    !
+                    allocate( Tx%source, source = SourceMT_1D_t( model_operator, model_parameter, Tx%period ) )
+                    !
+                class is( TransmitterCSEM_t )
+                    !
+                    allocate( Tx%source, source = SourceCSEM_Dipole1D_t( model_operator, model_parameter, Tx%period, Tx%location, Tx%dip, Tx%azimuth, Tx%moment ) )
+                    !
+            end select
+            !
+            ! Solve Forward Modeling for this Transmitter
+            call Tx%solveFWD()
+            !
+            ! Loop for each Receiver related to this Transmitter
+            do iRx = 1, size( Tx%receiver_indexes )
+                !
+                ! Point to the current Receiver
+                Rx => getReceiver( Tx%receiver_indexes( iRx ) )
+                !
+                ! Calculate predicted data and stores the result in the Receiver
+                call Rx%setLRows( Tx )
+                !
+                ! Update the Receiver's predicted_data in data_groups
+                call setDataGroup( predicted_data, Rx%predicted_data )
+                !
+            enddo
+            !
+        enddo
+        !
+        deallocate( forward_solver )
+        !
+        deallocate( model_operator )
+        deallocate( model_parameter )
+        deallocate( main_grid )
+        !
+        ! Writes the final data array, with the proper Rx header, to the file <predicted_data_file_name>
+        call writeDataGroupArray( predicted_data )
+        !
+        call deallocateTransmitterArray()
+        !
+        call deallocateReceiverArray()
+        !
+        deallocate( original_data )
+        !
+        deallocate( predicted_data )
+        !
+        write( *, * ) "     - Finish Inversion"
         !
     end subroutine Inversion
     !
@@ -85,9 +188,7 @@ contains
         !
         integer :: iTx, number_of_tx, iRx, iDh
         !
-        ! Verbose ...
-        write( *, * ) "     - Start Forward Modeling"
-        !
+		!
         ! Reads Model File: instantiates Grid, ModelOperator and ModelParameter
         if( .NOT. has_model_file ) then 
             stop "Error: Missing Model file!"
@@ -158,8 +259,8 @@ contains
                 ! Calculate predicted data and stores the result in the Receiver
                 call Rx%predictedData( Tx )
                 !
-                ! Update the Receiver's predicted_data in data_groups
-                call setDataGroup( data_groups, Rx%predicted_data )
+                ! Add Receiver's predicted_data in original_data
+                call setDataGroup( original_data, Rx%predicted_data )
                 !
             enddo
             !
@@ -172,15 +273,13 @@ contains
         deallocate( main_grid )
         !
         ! Writes the final data array, with the proper Rx header, to the file <predicted_data_file_name>
-        call writeDataGroupArray( data_groups )
+        call writeDataGroupArray( original_data )
         !
         call deallocateTransmitterArray()
         !
         call deallocateReceiverArray()
         !
-        deallocate( data_groups )
-        !
-        write( *, * ) "     - Finish Forward Modeling"
+        deallocate( original_data )
         !
     end subroutine ForwardModelling
     !
@@ -299,7 +398,7 @@ contains
              !
         endif
         !
-        write( *, * ) "          Checked ", size( data_groups ), " DataGroups."
+        write( *, * ) "          Checked ", size( original_data ), " DataGroups."
         !
         write( *, * ) "     - Create Rx evaluation vectors"
         !
