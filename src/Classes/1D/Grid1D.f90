@@ -30,9 +30,8 @@ module Grid1D
             !
             final :: Grid1D_dtor
             !
-            procedure, public :: create => createGrid1D
-            procedure, public :: allocate => allocateGrid1D
-            procedure, public :: deallocate => deallocateGrid1D
+            procedure, public :: alloc => allocateGrid1D
+            procedure, public :: dealloc => deallocateGrid1D
             procedure, public :: setup => setupGrid1D
             procedure, public :: getDimensions => getDimensionsGrid1D
             procedure, public :: setCellSizes => setCellSizesGrid1D
@@ -59,14 +58,15 @@ contains
         !
         !write(*,*) "Constructor Grid1D"
         !
-        self%nz = 0
-        self%nzAir = 0
-        self%nzEarth = 0
+        self%nzAir = nzAir
+        self%nzEarth = nzEarth
+        !
         self%zAirThick = 0.0
         !
         self%is_allocated = .FALSE.
         !
-        call self%create( nzAir, nzEarth )
+        call self%alloc()
+        !
         call self%setCellSizes( dz )
         call self%setup()
         !
@@ -79,36 +79,40 @@ contains
         !
         !write(*,*) "Destructor Grid1D"
         !
-        call self%deallocate()
+        call self%dealloc()
         !
     end subroutine Grid1D_dtor
     !
-    subroutine CreateGrid1D( self, nzAir, nzEarth )
+    subroutine AllocateGrid1D( self )
         implicit none
         !
         class( Grid1D_t ), intent( inout ) :: self
-        integer, intent( in )             :: nzAir, nzEarth
         !
-        self%nzAir = nzAir
-        self%nzEarth = nzEarth
-        !
-        self%nz = nzEarth + nzAir
-        !
-        call self%allocate()
-        !
-    end subroutine CreateGrid1D
-    !
-    subroutine AllocateGrid1D(self)
-        implicit none
-        !
-        class( Grid1D_t ), intent( inout ) :: self
+        self%nz = self%nzEarth + self%nzAir
         !
         allocate( self%dz( self%nz ) )
+        !
+        self%dz = 0.0
+        !
         allocate( self%dzInv( self%nz ) )
-        allocate( self%delZ( self%nz + 1) )
-        allocate( self%delZInv( self%nz + 1) )
-        allocate( self%zEdge( self%nz + 1) )
+        !
+        self%dzInv = 0.0
+        !
+        allocate( self%delZ( self%nz + 1 ) )
+        !
+        self%delZ = 0.0
+        !
+        allocate( self%delZInv( self%nz + 1 ) )
+        !
+        self%delZInv = 0.0
+        !
+        allocate( self%zEdge( self%nz + 1 ) )
+        !
+        self%zEdge = 0.0
+        !
         allocate( self%zCenter( self%nz ) )
+        !
+        self%zCenter = 0.0
         !
         self%is_allocated = .TRUE.
         !
@@ -126,16 +130,12 @@ contains
         if( allocated(self%zEdge) ) deallocate(self%zEdge)
         if( allocated(self%zCenter) ) deallocate(self%zCenter)
         !
-        if( self%is_allocated ) then
-            !
-            self%nz = 0
-            self%nzAir = 0
-            self%nzEarth = 0
-            self%zAirThick = R_ZERO
-            !
-            self%is_allocated = .FALSE.
-            !
-        endif
+        self%nz = 0
+        self%nzAir = 0
+        self%nzEarth = 0
+        self%zAirThick = R_ZERO
+        !
+        self%is_allocated = .FALSE.
         !
     end subroutine deallocateGrid1D
     !
@@ -207,13 +207,13 @@ contains
         real( kind=prec ), dimension(:), intent( in ) :: dz
         !
         if ( .NOT. self%is_allocated ) then
-            write(*, *) "ERROR:Grid1D_t:SetCellSizes:"
+            write( *, * ) "ERROR:Grid1D_t:SetCellSizes:"
             stop "    Grid not is_allocated."
         end if
         !
         ! Check dimensions
         if ( (size(dz).ne.size(self%dz))) then
-            write(*, *) "ERROR:Grid1D_t:SetCellSizes:"
+            write( *, * ) "ERROR:Grid1D_t:SetCellSizes:"
             stop "    Incompatible sizes for cell arrays."
         end if
         !
@@ -228,13 +228,13 @@ contains
         real( kind=prec ) , intent(out) :: dz(:)
 
         if ( .NOT. self%is_allocated ) then
-            write(*, *) "ERROR:Grid1D_t:SetCellSizes:"
+            write( *, * ) "ERROR:Grid1D_t:SetCellSizes:"
             stop "    Grid not is_allocated."
         end if
 
         ! Check dimensions
         if ( ( size( dz ) .ne. size( self%dz ) ) ) then
-            write(*, *) "ERROR:Grid1D_t:SetCellSizes:"
+            write( *, * ) "ERROR:Grid1D_t:SetCellSizes:"
             stop "    Incompatible sizes for cell arrays."
         end if
         !

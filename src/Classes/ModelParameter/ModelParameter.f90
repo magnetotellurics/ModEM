@@ -224,6 +224,10 @@ contains
         self%zeroValued   = .FALSE.
         self%is_allocated = .FALSE.
         !
+        self%grid => null()
+        !
+        self%metric => null()
+        !
     end subroutine initializeModelParameter
     !
 end module ModelParameter

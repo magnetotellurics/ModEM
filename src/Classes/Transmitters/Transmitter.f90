@@ -1,9 +1,7 @@
 ! *************
 ! 
 ! Base class to define a Transmitter
-! 
-! Last modified at 10/11/2021 by Paulo Werdt
-! 
+!
 ! *************
 ! 
 module Transmitter
@@ -14,7 +12,7 @@ module Transmitter
     use ModelParameter
     use cVector
     !
-    ! Global file name for e_solution file
+    ! Global name for e_solution file
     character(:), allocatable :: e_solution_file_name
     !
     type, abstract :: Transmitter_t
@@ -30,11 +28,11 @@ module Transmitter
         class( cVector_t ), allocatable, dimension(:) :: e_all
         !
         integer, allocatable, dimension(:) :: receiver_indexes
-        !
-        procedure( interface_p_mult_tx ), pointer, nopass :: pMult_ptr => pMult_E
-        !
-        procedure( interface_p_mult_t_tx ), pointer, nopass :: pMult_t_ptr => pMult_t_E
-        !
+        ! !
+        ! procedure( interface_p_mult_tx ), pointer, nopass :: pMult_ptr
+        ! !
+        ! procedure( interface_p_mult_t_tx ), pointer, nopass :: pMult_t_ptr
+        ! !
     contains
         !
         procedure, public :: init     => initializeTx
@@ -73,20 +71,20 @@ module Transmitter
             import :: Transmitter_t
             class( Transmitter_t ), intent(in) :: self
         end subroutine interface_print_tx
-        !
-        pure subroutine interface_p_mult_tx( m0, dm, bSrc )
-            import :: ModelParameter_t, Source_t
-            class( ModelParameter_t ), intent( in ) :: m0, dm
-            class( Source_t ), intent( inout )      :: bSrc
-        end subroutine interface_p_mult_tx
-        !
-        pure subroutine interface_p_mult_t_tx( m0, eSens, d_m )
-            import :: ModelParameter_t, cVector_t
-            class( ModelParameter_t ), intent( in )    :: m0
-            class( cVector_t ), intent( in )           :: eSens
-            class( ModelParameter_t ), intent( inout ) :: d_m
-        end subroutine interface_p_mult_t_tx
-        !
+        ! !
+        ! pure subroutine interface_p_mult_tx( m0, dm, bSrc )
+            ! import :: ModelParameter_t, Source_t
+            ! class( ModelParameter_t ), intent( in ) :: m0, dm
+            ! class( Source_t ), intent( inout )      :: bSrc
+        ! end subroutine interface_p_mult_tx
+        ! !
+        ! pure subroutine interface_p_mult_t_tx( m0, eSens, d_m )
+            ! import :: ModelParameter_t, rVector_t
+            ! class( ModelParameter_t ), intent( in )    :: m0
+            ! class( rVector_t ), intent( in )           :: eSens
+            ! class( ModelParameter_t ), intent( inout ) :: d_m
+        ! end subroutine interface_p_mult_t_tx
+        ! !
     end interface
     !
     contains
@@ -102,12 +100,16 @@ module Transmitter
             !
             self%period = 0.0
             !
+            self%forward_solver => null()
+            !
         end subroutine initializeTx
         !
         subroutine deallocateTx( self )
             implicit none
             !
             class( Transmitter_t ), intent( inout ) :: self
+            !
+            if( allocated( self%source ) ) deallocate( self%source )
             !
             if( allocated( self%e_all ) ) deallocate( self%e_all )
             !
@@ -159,27 +161,39 @@ module Transmitter
             !
         end subroutine updateReceiverIndexesArray
         !
-        ! PMult
-        elemental subroutine pMultTx( self, m0, dm, bSrc )
+        subroutine pMultTx( self, m0, dm, bSrc )
             implicit none
             !
             class( Transmitter_t ), intent( in )    :: self
-            class( ModelParameter_t ), intent( in ) :: m0, dm
-            class( Source_t ), intent( inout ) :: bSrc
-            !
-            call self%pMult_ptr( m0, dm, bSrc )
-            !
-        end subroutine pMultTx
-        !
-        pure subroutine pMult_E( m0, dm, bSrc )
-            implicit none
-            !
             class( ModelParameter_t ), intent( in ) :: m0
             class( ModelParameter_t ), intent( in ) :: dm
             !
             class( Source_t ), intent( inout ) :: bSrc
             !
-            ! MatLab Implementation
+            complex( kind=prec ) :: miwm
+            class( ModelParameter_t ), allocatable :: temp
+            logical :: adjt
+            integer :: k
+            class( rVector_t ), allocatable:: eVec
+            !
+            ! WHERE THE HELL AM I GOING TO GET PERIOD ????
+            miwm = -ONE_I * MU_0 * isign * cmplx( 0.0, 1./ ( 2.0 * PI / self%period ), kind=prec )
+            !
+            allocate( temp, source = m0 )
+            !
+            ! WHAT TO DO WITH eVec????
+            call temp%dPDEmapping( dm, eVec )
+            !
+            adjt = .FALSE.
+            !
+            ! AND NPOL ????
+            do k = 1, self%n_pol
+                !
+                ! ADJOINT SOURCE ????
+                !
+            enddo
+            !
+            ! MATLAB IMPLEMENTATION
             !
             !miwm = -1i*Tx.fwd.modOp.mu0*Tx.fwd.isign*Tx.omega;
             !temp = m0.dPDEmapping(dm);
@@ -193,31 +207,27 @@ module Transmitter
                 !bSrc(k).SetSourceParams(miwm.*Tx.e(k).*temp);
             !end
             !
-        end subroutine pMult_E
+        end subroutine pMultTx
         !
-        ! PMult_t
-        elemental subroutine pMult_t_Tx( self, m0, eSens, d_m )
+        subroutine pMult_t_Tx( self, m0, eSens, d_m )
             implicit none
             !
-            class( Transmitter_t ), intent( in )    :: self
-            class( ModelParameter_t ), intent( in ) :: m0
-            class( cVector_t ), intent( in )        :: eSens
+            class( Transmitter_t ), intent( in )                    :: self
+            class( ModelParameter_t ), intent( in )                 :: m0
+            class( rVector_t ), intent( inout )                     :: eSens(:)
+            class( ModelParameter_t ), allocatable, intent( inout ) :: d_m
             !
-            class( ModelParameter_t ), intent( inout ) :: d_m
+            complex( kind=prec ) :: miwm
+            class( ModelParameter_t ), allocatable :: temp
+            logical :: adjt
+            integer :: k
             !
-            call self%pMult_t_ptr( m0, eSens, d_m )
             !
-        end subroutine pMult_t_Tx
-        !
-        pure subroutine pMult_t_E( m0, eSens, d_m )
-            implicit none
+            miwm = -ONE_I * MU_0 * isign * cmplx( 0.0, 1./ ( 2.0 * PI / self%period ), kind=prec )
             !
-            class( ModelParameter_t ), intent( in )    :: m0
-            class( cVector_t ), intent( in )           :: eSens
+            allocate( d_m, source = m0%dPDEmappingT( eSens(1) ) )
             !
-            class( ModelParameter_t ), intent( inout ) :: d_m
-            !
-            ! MatLab Implementation
+            ! MATLAB IMPLEMENTATION
             !
             !Tx = dTx.Tx;  %  transmitter for this DataVectorTx object;  As for Pmult_E
             !
@@ -229,6 +239,111 @@ module Transmitter
                 !end
             !d_m = m0.dPDEmappingT(eSens(1));
             !
-        end subroutine pMult_t_E
+        end subroutine pMult_t_Tx
         !
+        ! ! PMult
+        ! elemental subroutine pMultTx( self, m0, dm, bSrc )
+            ! implicit none
+            ! !
+            ! class( Transmitter_t ), intent( in )    :: self
+            ! class( ModelParameter_t ), intent( in ) :: m0, dm
+            ! class( Source_t ), intent( inout ) :: bSrc
+            ! !
+            ! call self%pMult_ptr( m0, dm, bSrc )
+            ! !
+        ! end subroutine pMultTx
+        ! !
+        ! pure subroutine pMult_E( m0, dm, bSrc )
+            ! implicit none
+            ! !
+            ! class( ModelParameter_t ), intent( in ) :: m0
+            ! class( ModelParameter_t ), intent( in ) :: dm
+            ! !
+            ! class( Source_t ), intent( inout ) :: bSrc
+            ! !
+            ! complex( kind=prec ) :: miwm
+            ! class( ModelParameter_t ), allocatable :: temp
+            ! logical :: adjt
+            ! integer :: k
+            ! class( rVector_t ), allocatable:: eVec
+            ! !
+            ! ! WHERE THE HELL AM I GOING TO GET PERIOD ????
+            ! !miwm = -ON_I * MU_0 * isign * cmplx( 0.0, 1./ ( 2.0 * PI / self%period ), kind=prec )
+            ! !
+            ! allocate( temp, source = m0 )
+            ! !
+            ! ! WHAT TO DO WITH eVec????
+            ! call temp%dPDEmapping( dm, eVec )
+            ! !
+            ! adjt = .FALSE.
+            ! !
+            ! ! AND NPOL ????
+            ! !do k = 1, self%npol
+                ! !
+                ! ! ADJOINT SOURCE ????
+                ! !
+            ! !enddo
+            ! !
+            ! ! MATLAB IMPLEMENTATION
+            ! !
+            ! !miwm = -1i*Tx.fwd.modOp.mu0*Tx.fwd.isign*Tx.omega;
+            ! !temp = m0.dPDEmapping(dm);
+            ! !
+            ! !adjt = false;
+            ! !
+            ! !bSrc(2) = TSourceInteriorForce(Tx.fwd.modOp,adjt);
+            ! !bSrc(2).SetSourceParams(miwm*Tx.e(nPol).*temp);
+            ! !for k = 1:Tx.nPol-1
+                ! !bSrc(k) = TSourceInteriorForce(Ts.fwd.modOp,adjt);
+                ! !bSrc(k).SetSourceParams(miwm.*Tx.e(k).*temp);
+            ! !end
+            ! !
+        ! end subroutine pMult_E
+        ! !
+        ! ! PMult_t
+        ! elemental subroutine pMult_t_Tx( self, m0, eSens, d_m )
+            ! implicit none
+            ! !
+            ! class( Transmitter_t ), intent( in )    :: self
+            ! class( ModelParameter_t ), intent( in ) :: m0
+            ! class( rVector_t ), intent( in )        :: eSens
+            ! !
+            ! class( ModelParameter_t ), intent( inout ) :: d_m
+            ! !
+            ! call self%pMult_t_ptr( m0, eSens, d_m )
+            ! !
+        ! end subroutine pMult_t_Tx
+        ! !
+        ! pure subroutine pMult_t_E( m0, eSens, d_m )
+            ! implicit none
+            ! !
+            ! class( ModelParameter_t ), intent( in )    :: m0
+            ! class( rVector_t ), intent( in )           :: eSens
+            ! !
+            ! class( ModelParameter_t ), intent( inout ) :: d_m
+            ! !
+            ! complex( kind=prec ) :: miwm
+            ! class( ModelParameter_t ), allocatable :: temp
+            ! logical :: adjt
+            ! integer :: k
+            ! !
+            ! ! WHERE THE HELL AM I GOING TO GET PERIOD ????
+            ! !miwm = -ON_I * MU_0 * isign * cmplx( 0.0, 1./ ( 2.0 * PI / self%period ), kind=prec )
+            ! !
+            ! d_m = m0%dPDEmappingT( eSens(1) )
+            ! !
+            ! ! MATLAB IMPLEMENTATION
+            ! !
+            ! !Tx = dTx.Tx;  %  transmitter for this DataVectorTx object;  As for Pmult_E
+            ! !
+            ! !miwm = -1i*Tx.fwd.modOp.mu0*Tx.fwd.isign*Tx.omega;
+            ! !eSens(1) = miwm.*Tx.e(1).*eSens(1);
+            ! !
+            ! !for k = 2:Tx.nPol
+                ! !eSens(1) = eSens(1) + miwm.*Tx.e(k).*eSens(k);
+                ! !end
+            ! !d_m = m0.dPDEmappingT(eSens(1));
+            ! !
+        ! end subroutine pMult_t_E
+        ! !
 end module Transmitter

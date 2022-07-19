@@ -44,7 +44,7 @@ module DeclarationMPI
     integer( KIND=MPI_ADDRESS_KIND ) :: shared_window_size
     integer                          :: shared_disp_unit = 1
     !
-    character, dimension(:), pointer     :: shared_buffer
+    character, dimension(:), pointer :: shared_buffer => null()
     !
     character, dimension(:), allocatable :: fwd_info_buffer, predicted_data_buffer
     !
@@ -151,7 +151,10 @@ module DeclarationMPI
         !
         write( *, "(A60, i8)" ) "MPI Allocated total size =", shared_buffer_size
         !
+        if( associated( shared_buffer ) ) deallocate( shared_buffer )
+        !
         allocate( shared_buffer( shared_buffer_size ) )
+        shared_buffer = ""
         !
     end subroutine allocateSharedBuffer
     !
@@ -968,7 +971,7 @@ module DeclarationMPI
         integer :: param_type_size
         !
         character(:), allocatable :: paramType
-        type( rScalar3D_SG_t ) :: cellCond
+        class( rScalar_t ), allocatable :: cellCond
         !
         !
         call MPI_UNPACK( shared_buffer, shared_buffer_size, index, model_parameter_derived_type, 1, MPI_INTEGER, child_comm, ierr )
@@ -982,16 +985,27 @@ module DeclarationMPI
                 allocate( character( param_type_size ) :: paramType )
                 call MPI_UNPACK( shared_buffer, shared_buffer_size, index, paramType, param_type_size, MPI_CHARACTER, child_comm, ierr )
                 !
-                cellCond = unpackRScalarBuffer( main_grid, index )
-                !
                 select type( main_grid )
                     class is( Grid3D_SG_t )
                         !
-                        allocate( model_parameter, source = ModelParameterCell_SG_t( main_grid, cellCond, paramType ) )
-                        paramType = LOGE
-                        call model_parameter%SetType( paramType )
+                        allocate( cellCond, source = unpackRScalarBuffer( main_grid, index ) )
                         !
-                        deallocate( paramType )
+                        select type( cellCond )
+                            class is( rScalar3D_SG_t )
+                                !
+                                allocate( model_parameter, source = ModelParameterCell_SG_t( main_grid, cellCond, paramType ) )
+                                paramType = LOGE
+                                call model_parameter%SetType( paramType )
+                                !
+                                deallocate( paramType )
+                                !
+                            class default
+                                stop "unpackModelParameterBuffer: Undefined cellCond"
+                                !
+                        end select
+                        !
+                    class default
+                        stop "unpackModelParameterBuffer: Undefined main_grid"
                         !
                 end select
                 !
@@ -1403,6 +1417,7 @@ module DeclarationMPI
         !
         if( .NOT. allocated( predicted_data_buffer ) ) then
             allocate( predicted_data_buffer( predicted_data_buffer_size ) )
+            predicted_data_buffer = ""
         endif
         !
     end subroutine createDataBuffer
@@ -1431,6 +1446,7 @@ module DeclarationMPI
         !
         if( allocated( predicted_data_buffer ) ) deallocate( predicted_data_buffer )
         allocate( predicted_data_buffer( predicted_data_buffer_size ) )
+        predicted_data_buffer = ""
         !
     end subroutine allocateDataBuffer
     !
@@ -1446,7 +1462,7 @@ module DeclarationMPI
         !
         do i = 1, size( data_groups )
             !
-			call MPI_PACK( data_groups(i)%id_rx, 1, MPI_INTEGER, predicted_data_buffer, predicted_data_buffer_size, index, child_comm, ierr )
+            call MPI_PACK( data_groups(i)%id_rx, 1, MPI_INTEGER, predicted_data_buffer, predicted_data_buffer_size, index, child_comm, ierr )
             call MPI_PACK( data_groups(i)%id_tx, 1, MPI_INTEGER, predicted_data_buffer, predicted_data_buffer_size, index, child_comm, ierr )
             !
             call MPI_PACK( data_groups(i)%reals(1), data_groups(i)%n_data, MPI_DOUBLE_PRECISION, predicted_data_buffer, predicted_data_buffer_size, index, child_comm, ierr )
@@ -1473,7 +1489,7 @@ module DeclarationMPI
             call MPI_UNPACK( predicted_data_buffer, predicted_data_buffer_size, index, id_rx, 1, MPI_INTEGER, child_comm, ierr )
             call MPI_UNPACK( predicted_data_buffer, predicted_data_buffer_size, index, id_tx, 1, MPI_INTEGER, child_comm, ierr )
             !
-            data_group => getDataGroupByRxTx( data_groups, id_rx, id_tx )
+            data_group => getDataGroupByRxTx( predicted_data, id_rx, id_tx )
             !
             call MPI_UNPACK( predicted_data_buffer, predicted_data_buffer_size, index, data_group%reals(1), data_group%n_data, MPI_DOUBLE_PRECISION, child_comm, ierr )
             call MPI_UNPACK( predicted_data_buffer, predicted_data_buffer_size, index, data_group%imaginaries(1), data_group%n_data, MPI_DOUBLE_PRECISION, child_comm, ierr )
@@ -1517,6 +1533,7 @@ module DeclarationMPI
         !
         if( allocated( fwd_info_buffer ) ) deallocate( fwd_info_buffer )
         allocate( fwd_info_buffer( fwd_info_buffer_size ) )
+        fwd_info_buffer = ""
         !
     end subroutine allocateFWDInfoBuffer
     !

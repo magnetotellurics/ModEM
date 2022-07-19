@@ -58,7 +58,7 @@ module cVector3D_SG
         !*
         procedure, public :: zeros    => zerosCVector3D_SG
         procedure, public :: add      => addCVector3D_SG
-        procedure, public :: sub1     => sub1CVector3D_SG
+        procedure, public :: sub     => subCVector3D_SG
         procedure, public :: mult1    => mult1CVector3D_SG
         procedure, public, pass(self) :: mult2 => mult2CVector3D_SG
         procedure, public :: mult3 => mult3CVector3D_SG
@@ -769,32 +769,26 @@ contains
     !**
     ! sub1CVector3D_SG
     !*
-    function sub1CVector3D_SG(lhs, rhs) result(Eout)
+    subroutine subCVector3D_SG( self, rhs )
         implicit none
         !
-        class( cVector3D_SG_t ), intent( in ) :: lhs
+        class( cVector3D_SG_t ), intent( inout ) :: self
         class( cVector_t ), intent( in ) :: rhs
-        class( cVector_t ), allocatable :: Eout
         !
-        if (lhs%isCompatible(rhs)) then
-            !
-            allocate( Eout, source = cVector3D_SG_t( lhs%grid, lhs%gridType ) )
-            !
-            select type(Eout)
-                class is( cVector3D_SG_t )
-                    select type(rhs)
-                        class is( cVector3D_SG_t )
-                            Eout%x = lhs%x - rhs%x
-                            Eout%y = lhs%y - rhs%y
-                            Eout%z = lhs%z - rhs%z
-                    end select
-            end select
-            !
+        if ( self%isCompatible(rhs)) then
+        !
+        select type(rhs)
+            class is( cVector3D_SG_t )
+                self%x = self%x - rhs%x
+                self%y = self%y - rhs%y
+                self%z = self%z - rhs%z
+        end select
+        !
         else
-            write( *, * ) "ERROR:cVector3D_SG::sub1CVector3D_SG"
+            write( *, * ) "ERROR:cVector3D_SG::subCVector3D_SG"
             stop "    Incompatible inputs. Exiting."
         end if
-    end function sub1CVector3D_SG
+    end subroutine subCVector3D_SG
     !**
     ! mult1CVector3D_SG
     !*

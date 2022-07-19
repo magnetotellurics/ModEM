@@ -96,7 +96,7 @@ contains
         class( ReceiverOffDiagonalImpedance_t ), intent( inout ) :: self
         class( Transmitter_t ), intent( in )                     :: transmitter
         !
-        write( *, * ) "setLRowsOffDiagonalImpedance to be implemented"
+        stop "setLRowsOffDiagonalImpedance to be implemented"
         !
     end subroutine setLRowsOffDiagonalImpedance
     !

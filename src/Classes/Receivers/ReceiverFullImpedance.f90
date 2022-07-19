@@ -111,8 +111,7 @@ contains
         class( ReceiverFullImpedance_t ), intent( inout ) :: self
         class( Transmitter_t ), intent( in )              :: transmitter
         !
-        type( cVector3D_SG_t ) :: Le, full_lex, full_ley, full_lbx, full_lby, aux_full_vec
-        type( cSparsevector3D_SG_t ) :: aux_sparse_vec
+        class( cVector_t ), allocatable :: Le, full_lex, full_ley, full_lbx, full_lby
         integer :: i, j, k, ki, kj
         !
         !
@@ -123,18 +122,18 @@ contains
         ki = 0
         !
         ! Conversion to full vector to do math operations
-        full_lex = self%Lex%getFullVector()
-        full_ley = self%Ley%getFullVector()
+        allocate( full_lex, source = self%Lex%getFullVector() )
+        allocate( full_ley, source = self%Ley%getFullVector() )
         !
-        full_lbx = self%Lbx%getFullVector()
-        full_lby = self%Lby%getFullVector()
+        allocate( full_lbx, source = self%Lbx%getFullVector() )
+        allocate( full_lby, source = self%Lby%getFullVector() )
         !
         do k = 1, 2
             !
             if( k == 1 ) then
-                Le = self%Lex%getFullVector()
+                allocate( Le, source = full_lex )
             else
-                Le = self%Ley%getFullVector()
+                allocate( Le, source = full_ley )
             endif
             !
             do i = 1, 2
@@ -150,22 +149,24 @@ contains
                     call full_lbx%mult( self%response( kj ) )
                     call full_lby%mult( self%response( kj ) )
                     !
-                    aux_full_vec = ( Le - full_lbx - full_lby )
+                    call Le%sub( full_lbx )
+                    call Le%sub( full_lby )
                     !
                     ! aux_full = aux_full * complex
-                    call aux_full_vec%mult( self%I_BB( j, i ) )
+                    call Le%mult( self%I_BB( j, i ) )
                     !
                     ! Conversion of the result to Sparse Vector
-                    aux_sparse_vec = cSparsevector3D_SG_t()
-                    call aux_sparse_vec%fromFullVector( aux_full_vec )
-                    !
-                    self%lrows( j, ki ) = aux_sparse_vec
+                    self%lrows( j, ki ) = cSparsevector3D_SG_t()
+                    call self%lrows( j, ki )%fromFullVector( Le )
                     !
                 enddo
             enddo
             !
+            deallocate( Le )
+            !
         enddo
         !
+        deallocate( full_lex, full_ley, full_lbx, full_lby )
     end subroutine setLRowsFullImpedance
     !
     subroutine predictedDataFullImpedance( self, transmitter )

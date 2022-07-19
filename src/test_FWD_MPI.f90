@@ -70,8 +70,9 @@ program ModEM
         call cpu_time( t_finish )
         !
         write( *, * )
-        write( *, "(A18, F6.3, A3)" ) "Finish ModEM-OO (", t_finish - t_start, "s)"
+        write( *, "(A18, F10.2, A3)" ) "Finish ModEM-OO (", t_finish - t_start, "s)"
         write( *, * )
+        !
     !
     ! MPI WORKER PROCESS
     !
@@ -114,8 +115,13 @@ program ModEM
             deallocate( model_operator )
             deallocate( model_parameter )
             deallocate( main_grid )
-            !
-            call deallocateReceiverArray()
+			!
+			!call deallocateTransmitterArray()
+			!
+			call deallocateReceiverArray()
+			!
+            ! Deallocate remaining worker memory
+            call garbageCollector()
             !
             call cpu_time( t_finish )
             !
@@ -137,24 +143,11 @@ contains
     subroutine masterInversion()
         implicit none
         !
-        ! Verbose
-        write( *, * ) "     - Start Inversion"
-        !
-        set_data_groups = .TRUE.
-        !
-        call masterForwardModelling()
-        !
-    end subroutine masterInversion
-    !
-    !
-    subroutine masterForwardModelling()
-        implicit none
-        !
         ! Local variables
         integer :: i, worker_rank, tx_received, tx_index
         !
         ! Verbose
-        write( *, * ) "     - Start Forward Modeling"
+        write( *, * ) "     - Start Inversion"
         !
         worker_rank = 1
         tx_received = 0
@@ -172,6 +165,11 @@ contains
             stop "Error: Missing Data file!"
         else
             call handleDataFile()
+            !
+            allocate( predicted_data, source = original_data )
+            !
+            deallocate( original_data )
+            !
         endif
         !
         write( *, * ) "     - MPI Shared memory"
@@ -248,9 +246,130 @@ contains
         enddo
         !
         ! Write data_groups into <predicted_data_file_name>
-        call writeDataGroupArray( data_groups )
+        call writeDataGroupArray( predicted_data )
+        !
+        deallocate( predicted_data )
         !
         call deallocateTransmitterArray()
+        !
+        call deallocateReceiverArray()
+        !
+    end subroutine masterInversion
+    !
+    !
+    subroutine masterForwardModelling()
+        implicit none
+        !
+        ! Local variables
+        integer :: i, worker_rank, tx_received, tx_index
+        !
+        ! Verbose
+        write( *, * ) "     - Start Forward Modeling"
+        !
+        worker_rank = 1
+        tx_received = 0
+        tx_index = 0
+        !
+        ! Reads Model File: instantiates Grid, ModelOperator and ModelParameter
+        if( .NOT. has_model_file ) then 
+            stop "Error: Missing Model file!"
+        else
+            call handleModelFile()
+        endif
+        !
+        ! Reads Data File: instantiates and builds the Data relation between Txs and Rxs
+        if( .NOT. has_data_file ) then 
+            stop "Error: Missing Data file!"
+        else
+            call handleDataFile()
+            !
+            allocate( predicted_data, source = original_data )
+            !
+            deallocate( original_data )
+            !
+        endif
+        !
+        write( *, * ) "     - MPI Shared memory"
+        !
+        ! Share memory with all workers
+        call masterExposeSharedMemory()
+        !
+        do i = 1, ( mpi_size - 1 )
+            !
+            fwd_info%job_name = job_share_memory
+            !
+            call sendTo(i)
+            !
+        enddo
+        !
+        call MPI_Win_fence( 0, shared_window, ierr )
+        !
+        call MPI_Win_free( shared_window, ierr )
+        !
+        deallocate( model_operator )
+        deallocate( model_parameter )
+        deallocate( main_grid )
+        !
+        ! Send 1 transmitter to first np workers
+        do while( worker_rank <= ( mpi_size - 1 ) )
+            !
+            tx_index = tx_index + 1
+            !
+            fwd_info%job_name    = job_forward
+            fwd_info%tx_index    = tx_index
+            fwd_info%worker_rank = worker_rank
+            !
+            call sendTo( worker_rank )
+            !
+            worker_rank = worker_rank + 1
+            !
+        end do
+        !
+        ! Send 1 transmitter to first available worker
+        do while( tx_index < size( transmitters ) )
+            !
+            !write( *, * ) "THERES", ( size( transmitters ) - tx_index ), " TX LEFT!"
+            !
+            call receiveFromAny()
+            !
+            call receiveData()
+            !
+            tx_received = tx_received + 1
+            !
+            tx_index = tx_index + 1
+            !
+            fwd_info%job_name = job_forward
+            fwd_info%tx_index = tx_index
+            !
+            call sendTo( fwd_info%worker_rank )
+            !
+        end do
+        !
+        ! Receives job_done from each finished worker
+        do while( tx_received < size( transmitters ) )
+            !
+            !write( *, * ) "MASTER WAITING ANY WORKER TO FINISH"
+            !
+            call receiveFromAny()
+            !
+            call receiveData()
+            !
+            tx_received = tx_received + 1
+            !
+            fwd_info%job_name = job_finish
+            !
+            call sendTo( fwd_info%worker_rank )
+            !
+        enddo
+        !
+        ! Write data_groups into <predicted_data_file_name>
+        call writeDataGroupArray( predicted_data )
+        !
+        deallocate( predicted_data )
+        !
+        call deallocateTransmitterArray()
+        !
+        call deallocateReceiverArray()
         !
     end subroutine masterForwardModelling
     !
@@ -297,13 +416,6 @@ contains
     subroutine workerInversion()
         implicit none
         !
-        call workerForwardModelling()
-        !
-    end subroutine workerInversion
-    !
-    subroutine workerForwardModelling()
-        implicit none
-        !
         ! Use save ????
         class( ForwardSolver_t ), allocatable, target, save :: forward_solver
         !
@@ -313,7 +425,7 @@ contains
         !
         integer :: iRx
         type( TAirLayers ) :: air_layer
-        type( DataGroup_t ), allocatable, dimension(:) :: tx_data_groups
+        type( DataGroup_t ), allocatable, dimension(:) :: tx_data
         !
         select type( main_grid )
             !
@@ -366,10 +478,127 @@ contains
                 !
                 allocate( Tx%source, source = SourceCSEM_Dipole1D_t( model_operator, model_parameter, Tx%period, Tx%location, Tx%dip, Tx%azimuth, Tx%moment ) )
                 !
+            class default
+                stop "Error: WorkerInversion: Unclassified Transmitter"
+                !
         end select
         !
         ! Solve Forward Modeling for the Transmitter
         call Tx%solveFWD()
+        !
+        ! ????
+        deallocate( forward_solver )
+        !
+        ! Loop for each Receiver related to the Transmitter
+        do iRx = 1, size( Tx%receiver_indexes )
+            !
+            ! Point to the current Receiver
+            Rx => getReceiver( Tx%receiver_indexes( iRx ) )
+            !
+            ! Calculate and store predicted data in the Receiver
+            call Rx%setLRows( Tx )
+            !
+            call updateDataGroupArray( tx_data, Rx%predicted_data )
+            !
+        enddo
+        !
+        ! Clears the memory used by the current Transmitter (Mainly ESolution cVector)
+        deallocate( Tx )
+        !
+        !write( *, * ) "WORKER ", mpi_rank, "FINISHES FWD FOR TX ", fwd_info%tx_index!, size( tx_data )
+        !
+        ! SEND JOB DONE TO MASTER
+        fwd_info%job_name    = job_fwd_done
+        fwd_info%worker_rank = mpi_rank
+        !
+        call allocateDataBuffer( tx_data )
+        !
+        fwd_info%n_data      = size( tx_data )
+        fwd_info%data_size   = predicted_data_buffer_size
+        !
+        call sendTo( master_id )
+        !
+        call sendData( tx_data )
+        !
+        deallocate( tx_data )
+        !
+    end subroutine workerInversion
+    !
+    subroutine workerForwardModelling()
+        implicit none
+        !
+        ! Use save ????
+        class( ForwardSolver_t ), allocatable, target, save :: forward_solver
+        !
+        ! Temporary alias pointers
+        class( Transmitter_t ), pointer :: Tx
+        class( Receiver_t ), pointer    :: Rx
+        !
+        integer :: iRx
+        type( TAirLayers ) :: air_layer
+        type( DataGroup_t ), allocatable, dimension(:) :: tx_data
+        !
+        select type( main_grid )
+            !
+            class is( Grid3D_SG_t )
+                !
+                call main_grid%SetupAirLayers( air_layer, model_method, model_n_air_layer, model_max_height )
+                call main_grid%UpdateAirLayers( air_layer%nz, air_layer%dz )
+                !
+                allocate( model_operator, source = ModelOperator_MF_t( main_grid ) )
+                !
+                call model_parameter%setMetric( model_operator%metric )
+                !
+                call model_operator%SetEquations()
+                !
+                call model_operator%SetCond( model_parameter )
+                !
+            class default
+                stop "Error: Unclassified main_grid"
+            !
+        end select
+        !
+        ! Instantiate the ForwardSolver - Specific type can be chosen via control file
+        select case ( forward_solver_type )
+            !
+            case( FWD_IT_DC )
+                allocate( forward_solver, source = ForwardSolverIT_DC_t( model_operator, QMR ) )
+                !
+            case default
+                allocate( forward_solver, source = ForwardSolverIT_DC_t( model_operator, QMR ) )
+            !
+        end select
+        !
+        ! Point to the current Transmitter
+        Tx => getTransmitter( fwd_info%tx_index )
+        !
+        ! Point Transmitter's ForwardSolver
+        Tx%forward_solver => forward_solver
+        !
+        ! Set Transmitter's ForwardSolver Omega(Period) and Conductivity
+        call Tx%forward_solver%setFrequency( model_parameter, Tx%period )
+        !
+        ! Instantiate Transmitter's Source - According to tx type or via control file
+        select type( Tx )
+            !
+            class is( TransmitterMT_t )
+                !
+                allocate( Tx%source, source = SourceMT_1D_t( model_operator, model_parameter, Tx%period ) )
+                !
+            class is( TransmitterCSEM_t )
+                !
+                allocate( Tx%source, source = SourceCSEM_Dipole1D_t( model_operator, model_parameter, Tx%period, Tx%location, Tx%dip, Tx%azimuth, Tx%moment ) )
+                !
+            class default
+                stop "Error: ForwardModelling: Unclassified Transmitter"
+                !
+        end select
+        !
+        ! Solve Forward Modeling for the Transmitter
+        call Tx%solveFWD()
+        !
+        ! ????
+        deallocate( forward_solver )
         !
         ! Loop for each Receiver related to the Transmitter
         do iRx = 1, size( Tx%receiver_indexes )
@@ -380,29 +609,29 @@ contains
             ! Calculate and store predicted data in the Receiver
             call Rx%predictedData( Tx )
             !
-            call updateDataGroupArray( tx_data_groups, Rx%predicted_data )
+            call updateDataGroupArray( tx_data, Rx%predicted_data )
             !
         enddo
         !
         ! Clears the memory used by the current Transmitter (Mainly ESolution cVector)
         deallocate( Tx )
         !
-        !write( *, * ) "WORKER ", mpi_rank, "FINISHES FWD FOR TX ", fwd_info%tx_index!, size( tx_data_groups )
+        !write( *, * ) "WORKER ", mpi_rank, "FINISHES FWD FOR TX ", fwd_info%tx_index!, size( tx_data )
         !
         ! SEND JOB DONE TO MASTER
         fwd_info%job_name    = job_fwd_done
         fwd_info%worker_rank = mpi_rank
         !
-        call allocateDataBuffer( tx_data_groups )
+        call allocateDataBuffer( tx_data )
         !
-        fwd_info%n_data      = size( tx_data_groups )
+        fwd_info%n_data      = size( tx_data )
         fwd_info%data_size   = predicted_data_buffer_size
         !
         call sendTo( master_id )
         !
-        call sendData( tx_data_groups )
+        call sendData( tx_data )
         !
-        deallocate( tx_data_groups )
+        deallocate( tx_data )
         !
     end subroutine workerForwardModelling
     !
@@ -418,13 +647,12 @@ contains
                 ! Deallocate MPI communication buffers
                 deallocate( fwd_info_buffer, predicted_data_buffer )
                 !
-                deallocate( data_groups )
-                !
-                call deallocateReceiverArray()
-                !
             case ( "inversion" )
                 !
                 call masterInversion()
+                !
+                ! Deallocate MPI communication buffers
+                deallocate( fwd_info_buffer, predicted_data_buffer )
                 !
             case default
                 !
@@ -539,7 +767,7 @@ contains
              !
         endif
         !
-        write( *, * ) "          Checked ", size( data_groups ), " DataGroups."
+        write( *, * ) "          Checked ", size( original_data ), " DataGroups."
         !
         write( *, * ) "     - Create Rx evaluation vectors"
         !
@@ -700,6 +928,9 @@ contains
         if( allocated( model_file_name ) ) deallocate( model_file_name )
         if( allocated( data_file_name ) ) deallocate( data_file_name )
         if( allocated( modem_job ) ) deallocate( modem_job )
+        !
+        if( allocated( predicted_data_buffer ) ) deallocate( predicted_data_buffer )
+        if( allocated( fwd_info_buffer ) ) deallocate( fwd_info_buffer )
         !
     end subroutine garbageCollector
     !

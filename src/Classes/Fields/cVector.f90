@@ -39,9 +39,9 @@ module cVector
         !generic :: add => add
         !generic :: operator(+) => add
         !
-        procedure( interface_sub1_c_vector ) , deferred, public :: sub1
-        generic :: sub => sub1
-        generic :: operator(-) => sub1
+        procedure( interface_sub_c_vector ) , deferred, public :: sub
+        !generic :: sub => sub1
+        !generic :: operator(-) => sub1
         !
         procedure( interface_mult1_c_vector ), deferred, public :: mult1
         procedure( interface_mult2_c_vector ), deferred, public :: mult2
@@ -199,11 +199,11 @@ module cVector
             !
         end subroutine interface_add_c_vector
         !
-        function interface_sub1_c_vector( lhs, rhs ) result( Eout )
+        subroutine interface_sub_c_vector( self, rhs )
             import :: cVector_t
-            class( cVector_t ), intent( in ) :: lhs, rhs
-            class( cVector_t ), allocatable  :: Eout
-        end function interface_sub1_c_vector
+            class( cVector_t ), intent( inout ) :: self
+            class( cVector_t ), intent( in ) :: rhs
+        end subroutine interface_sub_c_vector
         !
         subroutine interface_mult1_c_vector( self, rhs )
             import :: cVector_t

@@ -181,7 +181,7 @@ $(OBJDIR)/DataEntryMT_REF.o:Classes/DataIO/DataEntryMT_REF.f90 $(OBJDIR)/DataEnt
 $(OBJDIR)/DataEntryCSEM.o:Classes/DataIO/DataEntryCSEM.f90 $(OBJDIR)/DataEntry.o 
 	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) Classes/DataIO/DataEntryCSEM.f90 -o $(OBJDIR)/DataEntryCSEM.o
 
-$(OBJDIR)/Transmitter.o:Classes/Transmitters/Transmitter.f90 $(OBJDIR)/Constants.o $(OBJDIR)/Source.o $(OBJDIR)/ForwardSolver.o $(OBJDIR)/cVector.o 
+$(OBJDIR)/Transmitter.o:Classes/Transmitters/Transmitter.f90 $(OBJDIR)/Constants.o $(OBJDIR)/Source.o $(OBJDIR)/ForwardSolver.o $(OBJDIR)/ModelParameter.o $(OBJDIR)/cVector.o 
 	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) Classes/Transmitters/Transmitter.f90 -o $(OBJDIR)/Transmitter.o
 
 $(OBJDIR)/cSparseVector3D_SG.o:Classes/Fields/cSparseVector3D_SG.f90 $(OBJDIR)/Constants.o $(OBJDIR)/cVector3D_SG.o 
