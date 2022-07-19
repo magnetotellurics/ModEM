@@ -63,7 +63,7 @@ contains
             !
             temp_array( nRx + 1 ) = temp_rx
             !
-            if( allocated( receivers ) ) deallocate( receivers )
+            if( allocated( receivers ) ) call deallocateReceiverArray()
             allocate( receivers, source = temp_array )
             !
             deallocate( temp_rx )

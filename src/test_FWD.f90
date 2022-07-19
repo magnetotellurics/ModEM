@@ -57,7 +57,7 @@ program ModEM
     call cpu_time( t_finish )
     !
     write( *, * )
-    write( *, "(A18, F6.2, A3)" ) "Finish ModEM-OO (", t_finish - t_start, "s)"
+    write( *, "(A18, F10.2, A3)" ) "Finish ModEM-OO (", t_finish - t_start, "s)"
     write( *, * )
     !
 contains
@@ -89,6 +89,10 @@ contains
             stop "Error: Missing Data file!"
         else
             call handleDataFile()
+            !
+            ! Allocate predicted_data array with same format of the original_data
+            allocate( predicted_data, source = original_data )
+            !
         endif
         !
         ! Instantiate the ForwardSolver - Specific type can be chosen via control file
@@ -163,13 +167,13 @@ contains
         ! Writes the final data array, with the proper Rx header, to the file <predicted_data_file_name>
         call writeDataGroupArray( predicted_data )
         !
-        call deallocateTransmitterArray()
-        !
-        call deallocateReceiverArray()
+        deallocate( predicted_data )
         !
         deallocate( original_data )
         !
-        deallocate( predicted_data )
+        call deallocateTransmitterArray()
+        !
+        call deallocateReceiverArray()
         !
         write( *, * ) "     - Finish Inversion"
         !
@@ -188,7 +192,7 @@ contains
         !
         integer :: iTx, number_of_tx, iRx, iDh
         !
-		!
+        !
         ! Reads Model File: instantiates Grid, ModelOperator and ModelParameter
         if( .NOT. has_model_file ) then 
             stop "Error: Missing Model file!"
@@ -245,6 +249,9 @@ contains
                     !
                     allocate( Tx%source, source = SourceCSEM_Dipole1D_t( model_operator, model_parameter, Tx%period, Tx%location, Tx%dip, Tx%azimuth, Tx%moment ) )
                     !
+                class default
+                    stop "Error: ForwardModelling: Unclassified Transmitter"
+                !
             end select
             !
             ! Solve Forward Modeling for this Transmitter
@@ -259,7 +266,7 @@ contains
                 ! Calculate predicted data and stores the result in the Receiver
                 call Rx%predictedData( Tx )
                 !
-                ! Add Receiver's predicted_data in original_data
+                ! Replace Receiver's predicted_data into original_data
                 call setDataGroup( original_data, Rx%predicted_data )
                 !
             enddo
@@ -275,11 +282,11 @@ contains
         ! Writes the final data array, with the proper Rx header, to the file <predicted_data_file_name>
         call writeDataGroupArray( original_data )
         !
+        deallocate( original_data )
+        !
         call deallocateTransmitterArray()
         !
         call deallocateReceiverArray()
-        !
-        deallocate( original_data )
         !
     end subroutine ForwardModelling
     !
@@ -288,19 +295,19 @@ contains
         !
         select case ( modem_job )
             !
-        case ( "forward" )
-            !
-            call ForwardModelling()
-            !
-        case ( "inversion" )
-            !
-            call Inversion()
-            !
-        case default
-            !
-            write( *, * ) "Error: Unknown job: [", modem_job, "]"
-            call printHelp()
-            stop
+            case ( "forward" )
+                !
+                call ForwardModelling()
+                !
+            case ( "inversion" )
+                !
+                call Inversion()
+                !
+            case default
+                !
+                write( *, * ) "Error: Unknown job: [", modem_job, "]"
+                call printHelp()
+                stop
             !
         end select
         !
@@ -426,7 +433,7 @@ contains
             !
             argument_index = 1
             !
-            do while(argument_index <= command_argument_count()) 
+            do while( argument_index <= command_argument_count() ) 
                  !
                  call get_command_argument( argument_index, argument )
                  !
@@ -500,7 +507,7 @@ contains
                          !
                       case default
                          !
-                         write( *, * ) "Error: Unknown Argument: [", argument, "]"
+                         write( *, * ) "Error: Unknown Argument: [", trim( argument ), "]"
                          call printHelp()
                          stop
                          !
@@ -604,8 +611,8 @@ contains
         !
         type( DataGroup_t ), allocatable, dimension(:), intent( inout ) :: data_group_array
         !
-        class( Transmitter_t ), pointer :: transmitter
-        class( Receiver_t ), pointer :: receiver
+        class( Transmitter_t ), allocatable :: transmitter
+        class( Receiver_t ), allocatable :: receiver
         type( DataGroup_t ) :: data_group
         !
         integer :: receiver_type, i, j, array_size, ios
@@ -625,11 +632,11 @@ contains
                 !
                 data_group = getDataGroupByIndex( data_group_array, i )
                 !
-                receiver => getReceiver( data_group%id_rx )
+                receiver = getReceiver( data_group%id_rx )
                 !
                 call writePredictedDataHeader( receiver, receiver_type )
                 !
-                transmitter => getTransmitter( data_group%id_tx )
+                transmitter = getTransmitter( data_group%id_tx )
                 !
                 do j = 1, data_group%n_data
                     !
@@ -649,6 +656,8 @@ contains
                     end select
                     !
                 enddo
+                !
+                deallocate( receiver, transmitter )
                 !
             enddo
             !

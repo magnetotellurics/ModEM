@@ -408,7 +408,7 @@ contains
                            !
                            call sigmaCell%multS( self%metric%Vcell )
 
-                           dm%cellCond%v = self%SigMap( self%cellCond%v,JOB ) 
+                           dm%cellCond%v = self%SigMap( self%cellCond%v, JOB ) 
 
                            k0 = self%ParamGrid%NzAir
                            k1 = k0 + 1
@@ -418,12 +418,11 @@ contains
                            !        this is local variable declared with explicit type!
                            dm%cellCond%v = dm%cellCond%v * SigmaCell%v(:,:,k1:k2)
                            !
-                           !deallocate( SigmaCell )
-                           !
                       class default
                            write(*, *) "ERROR:ModelParameterCell_SG:dPDEmappingT:"
                            stop "              Incompatible input [eVec]. Exiting."
                 end select
+                !
         end select
         !
     end function dPDEmappingTModelParameterCell

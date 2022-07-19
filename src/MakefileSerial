@@ -46,7 +46,7 @@
 include Makefile.local
 OBJDIR = ../../objs/MT3D_OO
 F90 = gfortran 
-FFLAGS = -g -ffree-line-length-none
+FFLAGS = -O3 -ffree-line-length-none
 MPIFLAGS =  
 MODULE = -J $(OBJDIR)
 LIBS_PATH = -L/usr/lib64
@@ -214,7 +214,7 @@ $(OBJDIR)/TransmitterMT.o:Classes/Transmitters/TransmitterMT.f90 $(OBJDIR)/FileU
 $(OBJDIR)/TransmitterCSEM.o:Classes/Transmitters/TransmitterCSEM.f90 $(OBJDIR)/FileUnits.o $(OBJDIR)/Transmitter.o $(OBJDIR)/cVector3D_SG.o 
 	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) Classes/Transmitters/TransmitterCSEM.f90 -o $(OBJDIR)/TransmitterCSEM.o
 
-$(OBJDIR)/TransmitterFArray.o:Classes/Transmitters/TransmitterFArray.f90 $(OBJDIR)/Constants.o $(OBJDIR)/TransmitterMT.o $(OBJDIR)/TransmitterCSEM.o 
+$(OBJDIR)/TransmitterFArray.o:Classes/Transmitters/TransmitterFArray.f90 $(OBJDIR)/Constants.o $(OBJDIR)/Transmitter.o 
 	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) Classes/Transmitters/TransmitterFArray.f90 -o $(OBJDIR)/TransmitterFArray.o
 
 $(OBJDIR)/DataGroupFArray.o:Classes/DataSpace/DataGroupFArray.f90 $(OBJDIR)/DataGroup.o 

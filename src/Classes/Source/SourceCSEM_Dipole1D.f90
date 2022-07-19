@@ -1,9 +1,7 @@
 ! *************
 ! 
 ! Derived class to define a MT Source with boundary data computed by 1D solutions
-! 
-! Last modified at 10/11/2021 by Paulo Werdt
-! 
+!
 ! *************
 ! 
 !**
@@ -117,8 +115,8 @@ contains
         lenTx1D         = 00.d0      ! (m) Dipole length 0 = point dipole
         numIntegPts     = 0          ! Number of points to use for Gauss quadrature integration for finite dipole
         !
-        ! Verbosis...
-        write( *, * ) "    -> Extracting CSEM Source from Dipole 1D"
+        ! Verbose...
+        write( *, * ) "          - Extracting CSEM Source from Dipole 1D"
         !
         call self%set1DModel( xTx1D, yTx1D )
         !
@@ -251,7 +249,7 @@ contains
                         !
                         counter = 1
                         !
-                        ! E-field corresponing to these nodes is Ex
+                        ! E-field corresponding to these nodes is Ex
                         do iz = 1,grid%Nz+1 !Edge Z
                             do iy = 1,grid%Ny+1 !Edge Y
                                 do ix = 1,grid%Nx !Center X
@@ -261,7 +259,7 @@ contains
                             end do
                         end do
                         !
-                        ! E-field corresponing to these nodes is Ey
+                        ! E-field corresponding to these nodes is Ey
                         do iz = 1,grid%Nz+1 !Edge Z
                             do iy = 1,grid%Ny !Center y
                                 do ix = 1,grid%Nx+1 !Edge x
@@ -271,7 +269,7 @@ contains
                             end do
                         end do
                         !
-                        ! E-field corresponing to these nodes is Ez
+                        ! E-field corresponding to these nodes is Ez
                         do iz = 1,grid%Nz !Center Z
                             do iy = 1,grid%Ny+1 !Edge y
                                 do ix = 1,grid%Nx+1 !Edge x

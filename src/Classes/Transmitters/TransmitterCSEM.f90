@@ -53,6 +53,10 @@ contains
         self%moment = moment
         self%dipole = dipole
         !
+        !self%pMult_ptr => pMult_E
+        !
+        !self%pMult_t_ptr => pMult_t_E
+        !
     end function TransmitterCSEM_ctor
     !
     ! Destructor

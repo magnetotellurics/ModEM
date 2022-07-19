@@ -22,7 +22,7 @@ module TransmitterMT
             !
             procedure, public :: isEqual => isEqualTransmitterMT
             !
-            procedure, public :: print    => printTransmitterMT
+            procedure, public :: print => printTransmitterMT
             !
     end type TransmitterMT_t
     !
@@ -48,6 +48,10 @@ module TransmitterMT
         !
         self%period = period
         !
+        ! self%pMult_ptr => pMult_E
+        !
+        ! self%pMult_t_ptr => pMult_t_E
+        !
     end function TransmitterMT_ctor
     !
     ! TransmitterMT destructor
@@ -62,7 +66,7 @@ module TransmitterMT
         !
     end subroutine TransmitterMT_dtor
     !
-    ! Set self%e_all from forward modelling solver
+    ! Set self%e_all from forward modeling solver
     subroutine solveFWDTransmitterMT( self )
         implicit none
         !

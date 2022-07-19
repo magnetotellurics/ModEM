@@ -165,6 +165,8 @@ contains
         if( allocated( self%Lbx ) ) deallocate( self%Lbx )
         if( allocated( self%Lbz ) ) deallocate( self%Lbz )
         !
+        if( allocated( self%lrows ) ) deallocate( self%lrows )
+        !
         if( allocated( self%I_BB ) ) deallocate( self%I_BB )
         if( allocated( self%response ) ) deallocate( self%response )
         !

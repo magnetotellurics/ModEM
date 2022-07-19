@@ -109,7 +109,7 @@ contains
         class( ReceiverFullVerticalMagnetic_t ), intent( inout ) :: self
         class( Transmitter_t ), intent( in )                     :: transmitter
         !
-        write( *, * ) "setLRowsFullVerticalMagnetic to be implemented"
+        stop "setLRowsFullVerticalMagnetic to be implemented"
         !
     end subroutine setLRowsFullVerticalMagnetic
     !
@@ -151,7 +151,7 @@ contains
                             I_BB(1,2) = -BB(1,2) / det
                             I_BB(2,1) = -BB(2,1) / det
                         else
-                            stop "ReceiverFullVerticalMagnetic.f90: Determinant is Zero!"
+                            stop "Error: ReceiverFullVerticalMagnetic.f90: Determinant is Zero!"
                         endif
                         !
                         allocate( self%response(2) )
@@ -167,11 +167,11 @@ contains
                         deallocate( self%response )
                         !
                     class default
-                        stop "evaluationFunctionRx: Unclassified transmitter%e_all_2"
+                        stop "Error: evaluationFunctionRx: Unclassified transmitter%e_all_2"
                 end select
                 !
             class default
-                stop "evaluationFunctionRx: Unclassified transmitter%e_all_1"
+                stop "Error: evaluationFunctionRx: Unclassified transmitter%e_all_1"
         end select
         !
     end subroutine predictedDataFullVerticalMagnetic

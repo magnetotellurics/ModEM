@@ -1,9 +1,7 @@
 ! *************
 ! 
 ! Derived class to define a Single E or B Field Receiver
-! 
-! Last modified at 30/06/2021 by Paulo Werdt
-! 
+!
 ! *************
 ! 
 module ReceiverSingleField
@@ -131,7 +129,16 @@ contains
         class( ReceiverSingleField_t ), intent( inout ) :: self
         class( Transmitter_t ), intent( in )            :: transmitter
         !
-        write( *, * ) "setLRowsSingleField to be implemented"
+        !
+        call self%predictedData( transmitter )
+        !
+        allocate( self%lrows( transmitter%n_pol, self%n_comp ) )
+        !
+        if( self%azimuth == 1.0 ) self%lrows( 1, 1 ) = self%Lex
+        if( self%azimuth == 2.0 ) self%lrows( 1, 1 ) = self%Ley
+        if( self%azimuth == 3.0 ) self%lrows( 1, 1 ) = self%Lbx
+        if( self%azimuth == 4.0 ) self%lrows( 1, 1 ) = self%Lby
+        if( self%azimuth == 5.0 ) self%lrows( 1, 1 ) = self%Lbz
         !
     end subroutine setLRowsSingleField
     !

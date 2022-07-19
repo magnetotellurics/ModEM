@@ -49,7 +49,7 @@ contains
         !
         !write(*,*) "Constructor ModelParameter1D_t"
         !
-        self%paramType    = ''
+        self%paramType    = ""
         self%airCond      = 1E-10
         self%is_allocated = .FALSE.
         self%zero_valued  = .FALSE.
@@ -107,7 +107,7 @@ contains
         NzAir = 0
         self%ParamGrid = Grid1D_t( NzAir, nLayers, h )
         self%CellCond = sigma
-        self%paramTYpe = 'LINEAR'
+        self%paramTYpe = "LINEAR"
         !
     end subroutine setLayeredModelModelParameter1D
     !
@@ -119,26 +119,26 @@ contains
         class( ModelParameter1D_t ), intent( inout ) :: self
         real( kind=prec ),intent( in ), dimension(:) :: CellCond
         real( kind=prec ), intent( in )              :: AirCond
-        character( len=80 ),intent( in )             :: paramType
+        character(:), allocatable, intent( in )      :: paramType
         integer, intent( in )                        :: mKey(8)
         !
         integer :: nz
         !
         if ( .NOT. self%is_allocated) then
-            write( *, * ) 'ERROR: ModelParameter1D (SetConductivity)'
-            stop '    input object not allocated'
+            write( *, * ) "ERROR: ModelParameter1D (SetConductivity)"
+            stop "    input object not allocated"
         endif
         !
         nz = size(CellCond)
         !
         if( nz .NE. self%ParamGrid%nz ) then
-            write( *, * ) 'ERROR: ModelParameter1D (SetConductivity)'
-            stop '    input condutivity not consistent with grid'
+            write( *, * ) "ERROR: ModelParameter1D (SetConductivity)"
+            stop "    input condutivity not consistent with grid"
         endif
         !
         self%cellCond  = cellCond
         self%AirCond   = AirCond
-        self%paramType = trim( paramType )
+        self%paramType = trim(paramType)
         self%mKey      = mKey
         !
     end subroutine setConductivityModelParameter1D

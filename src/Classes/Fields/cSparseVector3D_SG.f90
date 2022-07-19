@@ -40,11 +40,11 @@ contains
         !
         !write(*,*) "Constructor cSparsevector3D_SG"
         !
-        self%grid => null()
-        !
         self%gridType = ""
         self%nCoeff = 0
         self%is_allocated = .FALSE.
+        !
+        self%grid => null()
         !
     end function cSparsevector3D_SG_ctor
     !
@@ -75,7 +75,7 @@ contains
         class( cSparsevector3D_SG_t ), intent( in ) :: self
         type( cVector3D_SG_t ), intent( in )        :: cvector
         !
-        complex( kind=prec )                       :: cvalue
+        complex( kind=prec ) :: cvalue
         !
         integer :: i, xi, yi, zi
         !
@@ -139,13 +139,11 @@ contains
         !
         class( cSparsevector3D_SG_t ), intent( in ) :: self
         !
-        type( cVector3D_SG_t ), allocatable :: cvector
+        type( cVector3D_SG_t ) :: cvector
         !
         integer :: ii
-        !
-        !
-        if( allocated( cvector ) ) deallocate( cvector )
-        allocate( cvector, source = cVector3D_SG_t( self%grid, self%gridType ) )
+        !!
+        cvector = cVector3D_SG_t( self%grid, self%gridType )
         !
         call cvector%zeros()
         !
@@ -239,21 +237,16 @@ contains
                 XYZ3 = 3
                 !
                 ! Get indexes of Non-Zero coefficients
-                if( allocated( self%i ) ) deallocate( self%i )
-                allocate( self%i, source = (/ pack(Ix,cvector%x /= 0), pack(Iy,cvector%y /= 0), pack(Iz,cvector%z /= 0) /) )
+                self%i = (/ pack(Ix,cvector%x /= 0), pack(Iy,cvector%y /= 0), pack(Iz,cvector%z /= 0) /)
                 !
-                if( allocated( self%j ) ) deallocate( self%j )
-                allocate( self%j, source = (/ pack(Jx,cvector%x /= 0), pack(Jy,cvector%y /= 0), pack(Jz,cvector%z /= 0) /) )
+                self%j = (/ pack(Jx,cvector%x /= 0), pack(Jy,cvector%y /= 0), pack(Jz,cvector%z /= 0) /)
                 !
-                if( allocated( self%k ) ) deallocate( self%k )
-                allocate( self%k, source = (/ pack(Kx,cvector%x /= 0), pack(Ky,cvector%y /= 0), pack(Kz,cvector%z /= 0) /) )
+                self%k = (/ pack(Kx,cvector%x /= 0), pack(Ky,cvector%y /= 0), pack(Kz,cvector%z /= 0) /)
                 !
                 ! Get Values of Non-Zero coefficients
-                if( allocated( self%c ) ) deallocate( self%c )
-                allocate( self%c, source = (/ pack(cvector%x,cvector%x /= 0), pack(cvector%y,cvector%y /= 0), pack(cvector%z,cvector%z /= 0) /) )
+                self%c = (/ pack(cvector%x,cvector%x /= 0), pack(cvector%y,cvector%y /= 0), pack(cvector%z,cvector%z /= 0) /)
                 ! Get Components
-                if( allocated( self%xyz ) ) deallocate( self%xyz )
-                allocate( self%xyz, source = (/ pack(XYZ1,cvector%x /= 0), pack(XYZ2,cvector%y /= 0), pack(XYZ3,cvector%z /= 0) /) )
+                self%xyz = (/ pack(XYZ1,cvector%x /= 0), pack(XYZ2,cvector%y /= 0), pack(XYZ3,cvector%z /= 0) /)
                 !
                 ! Set number of Non-Zero coefficients
                 self%nCoeff = size( self%c )
