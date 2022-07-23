@@ -183,8 +183,7 @@ contains
     subroutine ForwardModelling()
         implicit none
         !
-        ! Use save ????
-        class( ForwardSolver_t ), allocatable, target, save :: forward_solver
+        class( ForwardSolver_t ), allocatable, target :: forward_solver
         !
         ! Temporary alias pointers
         class( Transmitter_t ), pointer :: Tx

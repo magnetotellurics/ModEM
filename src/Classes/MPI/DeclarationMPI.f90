@@ -866,8 +866,9 @@ module DeclarationMPI
     subroutine unpackGridBuffer( index )
         implicit none
         !
-        integer, intent( inout )     :: index
+        integer, intent( inout ) :: index
         !
+        type( TAirLayers ) :: air_layer
         integer :: nx, ny, nzAir, nzEarth, size_dx, size_dy, size_dz
         real( kind=prec ), allocatable, dimension(:) :: dx, dy, dz
         !
@@ -896,6 +897,16 @@ module DeclarationMPI
                 call MPI_UNPACK( shared_buffer, shared_buffer_size, index, dz(1), size_dz, MPI_DOUBLE_PRECISION, child_comm, ierr )
                 !
                 allocate( main_grid, source = Grid3D_SG_t( nx, ny, nzAir, nzEarth, dx, dy, dz ) )
+                !
+                !select type( main_grid )
+                    !
+                    !class is( Grid3D_SG_t )
+                        !
+                        !call main_grid%SetupAirLayers( air_layer, model_method, model_n_air_layer, model_max_height )
+                        !
+                        !call main_grid%UpdateAirLayers( air_layer%nz, air_layer%dz )
+                        !
+                !end select
                 !
                 call MPI_UNPACK( shared_buffer, shared_buffer_size, index, main_grid%ox, 1, MPI_DOUBLE_PRECISION, child_comm, ierr )
                 call MPI_UNPACK( shared_buffer, shared_buffer_size, index, main_grid%oy, 1, MPI_DOUBLE_PRECISION, child_comm, ierr )

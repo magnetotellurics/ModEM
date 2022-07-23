@@ -128,7 +128,7 @@ contains
         ! In case the grid origin is stored next (in metres!)...
         read(ioPrm, *, iostat = istat) ox, oy, oz
         !
-        ! Defaults to the grid centre at the Earth"s surface
+        ! Defaults to the grid center at the Earth"s surface
         if (istat /= 0) then
              ox = -sum(dx)/2.0
              oy = -sum(dy)/2.0

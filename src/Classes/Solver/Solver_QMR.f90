@@ -112,7 +112,7 @@ contains
         ! R is Ax
         !
         call self%preconditioner%model_operator%Amult( self%omega, x, R, adjoint )
-        ! b - Ax, for inital guess x, that has been input to the routine
+        ! b - Ax, for initial guess x, that has been input to the routine
         call R%linCombS( b, C_MinusOne, C_ONE )
         !
         ! Norm of rhs, residual
@@ -120,7 +120,7 @@ contains
         !
         ! this usually means an inadequate model, in which case Maxwell"s fails
         if( isnan( abs( bnorm ) ) ) then
-            stop "Error: Error: b in QMR contains NaNs; exiting..."
+            stop "Error: b in QMR contains NaNs; exiting..."
         end if
         !
         rnorm = CDSQRT( R%dotProd( R ) )
