@@ -1,3 +1,9 @@
+! *************
+! 
+! PROGRAM/TEST BRIEFING ????
+!
+! *************
+! 
 program ModEM
     !
     use DeclarationMPI
@@ -140,6 +146,7 @@ program ModEM
     !
 contains
     !
+    ! PROCEDURE BRIEFING ????
     subroutine masterInversion()
         implicit none
         !
@@ -256,7 +263,7 @@ contains
         !
     end subroutine masterInversion
     !
-    !
+    ! PROCEDURE BRIEFING ????
     subroutine masterForwardModelling()
         implicit none
         !
@@ -373,6 +380,7 @@ contains
         !
     end subroutine masterForwardModelling
     !
+    ! PROCEDURE BRIEFING ????
     subroutine masterExposeSharedMemory()
         implicit none
         !
@@ -394,6 +402,7 @@ contains
         !
     end subroutine masterExposeSharedMemory
     !
+    ! PROCEDURE BRIEFING ????
     subroutine workerQuerySharedMemory()
         implicit none
         !
@@ -413,6 +422,7 @@ contains
         !
     end subroutine workerQuerySharedMemory
     !
+    ! PROCEDURE BRIEFING ????
     subroutine workerInversion()
         implicit none
         !
@@ -524,6 +534,7 @@ contains
         !
     end subroutine workerInversion
     !
+    ! PROCEDURE BRIEFING ????
     subroutine workerForwardModelling()
         implicit none
         !
@@ -631,6 +642,7 @@ contains
         !
     end subroutine workerForwardModelling
     !
+    ! PROCEDURE BRIEFING ????
     subroutine handleJob()
         implicit none
         !
@@ -660,6 +672,7 @@ contains
         !
     end subroutine handleJob
     !
+    ! PROCEDURE BRIEFING ????
     subroutine handleControlFile()
         implicit none
         !
@@ -673,7 +686,7 @@ contains
         !
     end subroutine handleControlFile
     !
-    !
+    ! PROCEDURE BRIEFING ????
     subroutine handleModelFile()
         implicit none
         !
@@ -713,7 +726,7 @@ contains
         !
     end subroutine handleModelFile
     !
-    !
+    ! PROCEDURE BRIEFING ????
     subroutine handleDataFile()
         implicit none
         !
@@ -776,6 +789,7 @@ contains
         !
     end subroutine handleDataFile
     !
+    ! PROCEDURE BRIEFING ????
     subroutine handleArguments()
         implicit none
         !
@@ -878,6 +892,7 @@ contains
         !
     end subroutine handleArguments
     !
+    ! PROCEDURE BRIEFING ????
     subroutine setupDefaultParameters()
         implicit none
         !
@@ -909,6 +924,7 @@ contains
         !
     end subroutine setupDefaultParameters
     !
+    ! PROCEDURE BRIEFING ????
     subroutine garbageCollector()
         implicit none
         !
@@ -929,6 +945,7 @@ contains
         !
     end subroutine garbageCollector
     !
+    ! PROCEDURE BRIEFING ????
     subroutine writeEsolutionHeader( nTx, nMode )
         implicit none
         !
@@ -966,6 +983,7 @@ contains
         !
     end subroutine writeEsolutionHeader
     !
+    ! PROCEDURE BRIEFING ????
     subroutine writeDataGroupArray( data_group_array )
         implicit none
         !
@@ -1028,6 +1046,7 @@ contains
         !
     end subroutine writeDataGroupArray
     !
+    ! PROCEDURE BRIEFING ????
     subroutine writePredictedDataHeader( receiver, receiver_type )
         implicit none
         !
@@ -1073,6 +1092,7 @@ contains
         !
     end subroutine writePredictedDataHeader
     !
+    ! PROCEDURE BRIEFING ????
     subroutine printHelp()
         implicit none
         !

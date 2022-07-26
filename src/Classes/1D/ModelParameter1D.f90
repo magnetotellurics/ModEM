@@ -1,7 +1,10 @@
-!**
+! *************
+! 
 ! Basic model parameter class for 1D
 ! cell conductivities defined on numerical grid
-!*
+!
+! *************
+! 
 module ModelParameter1D
     !
     use Constants
@@ -126,14 +129,14 @@ contains
         !
         if ( .NOT. self%is_allocated) then
             write( *, * ) "ERROR: ModelParameter1D (SetConductivity)"
-            stop "    input object not allocated"
+            stop "     input object not allocated"
         endif
         !
         nz = size(CellCond)
         !
         if( nz .NE. self%ParamGrid%nz ) then
             write( *, * ) "ERROR: ModelParameter1D (SetConductivity)"
-            stop "    input condutivity not consistent with grid"
+            stop "     input condutivity not consistent with grid"
         endif
         !
         self%cellCond  = cellCond
