@@ -1,3 +1,9 @@
+! *************
+! 
+! PROGRAM/TEST BRIEFING ????
+!
+! *************
+! 
 program ModEM
     !
     use DeclarationMPI
@@ -29,7 +35,7 @@ program ModEM
     ! SET mpi_rank WITH PROCESS ID FOR MPI_COMM_WORLD
     call MPI_Comm_rank( main_comm, mpi_rank, ierr )
     !
-    ! SPLIT MPI_COMM_WORLD into shared subcommunicator: child_comm
+    ! SPLIT MPI_COMM_WORLD into shared sub communicator: child_comm
     call MPI_Comm_split_type( main_comm, MPI_COMM_TYPE_SHARED, mpi_rank, MPI_INFO_NULL, child_comm, ierr )
     !
     call MPI_Get_processor_name( node_name, nodestringlen, ierr )
@@ -115,11 +121,11 @@ program ModEM
             deallocate( model_operator )
             deallocate( model_parameter )
             deallocate( main_grid )
-			!
-			!call deallocateTransmitterArray()
-			!
-			call deallocateReceiverArray()
-			!
+            !
+            !call deallocateTransmitterArray()
+            !
+            call deallocateReceiverArray()
+            !
             ! Deallocate remaining worker memory
             call garbageCollector()
             !
@@ -140,6 +146,7 @@ program ModEM
     !
 contains
     !
+    ! PROCEDURE BRIEFING ????
     subroutine masterInversion()
         implicit none
         !
@@ -256,7 +263,7 @@ contains
         !
     end subroutine masterInversion
     !
-    !
+    ! PROCEDURE BRIEFING ????
     subroutine masterForwardModelling()
         implicit none
         !
@@ -373,6 +380,7 @@ contains
         !
     end subroutine masterForwardModelling
     !
+    ! PROCEDURE BRIEFING ????
     subroutine masterExposeSharedMemory()
         implicit none
         !
@@ -394,6 +402,7 @@ contains
         !
     end subroutine masterExposeSharedMemory
     !
+    ! PROCEDURE BRIEFING ????
     subroutine workerQuerySharedMemory()
         implicit none
         !
@@ -413,6 +422,7 @@ contains
         !
     end subroutine workerQuerySharedMemory
     !
+    ! PROCEDURE BRIEFING ????
     subroutine workerInversion()
         implicit none
         !
@@ -524,26 +534,23 @@ contains
         !
     end subroutine workerInversion
     !
+    ! PROCEDURE BRIEFING ????
     subroutine workerForwardModelling()
         implicit none
         !
         ! Use save ????
-        class( ForwardSolver_t ), allocatable, target, save :: forward_solver
+        class( ForwardSolver_t ), allocatable, target :: forward_solver
         !
         ! Temporary alias pointers
         class( Transmitter_t ), pointer :: Tx
         class( Receiver_t ), pointer    :: Rx
         !
         integer :: iRx
-        type( TAirLayers ) :: air_layer
         type( DataGroup_t ), allocatable, dimension(:) :: tx_data
         !
         select type( main_grid )
             !
             class is( Grid3D_SG_t )
-                !
-                call main_grid%SetupAirLayers( air_layer, model_method, model_n_air_layer, model_max_height )
-                call main_grid%UpdateAirLayers( air_layer%nz, air_layer%dz )
                 !
                 allocate( model_operator, source = ModelOperator_MF_t( main_grid ) )
                 !
@@ -635,6 +642,7 @@ contains
         !
     end subroutine workerForwardModelling
     !
+    ! PROCEDURE BRIEFING ????
     subroutine handleJob()
         implicit none
         !
@@ -664,6 +672,7 @@ contains
         !
     end subroutine handleJob
     !
+    ! PROCEDURE BRIEFING ????
     subroutine handleControlFile()
         implicit none
         !
@@ -677,13 +686,12 @@ contains
         !
     end subroutine handleControlFile
     !
-    !
+    ! PROCEDURE BRIEFING ????
     subroutine handleModelFile()
         implicit none
         !
         type( ModelReader_Weerachai_t ) :: model_reader
         type( TAirLayers )              :: air_layer
-        !
         !
         write( *, * ) "     < Model File: [", model_file_name, "]"
         !
@@ -718,7 +726,7 @@ contains
         !
     end subroutine handleModelFile
     !
-    !
+    ! PROCEDURE BRIEFING ????
     subroutine handleDataFile()
         implicit none
         !
@@ -781,6 +789,7 @@ contains
         !
     end subroutine handleDataFile
     !
+    ! PROCEDURE BRIEFING ????
     subroutine handleArguments()
         implicit none
         !
@@ -883,6 +892,7 @@ contains
         !
     end subroutine handleArguments
     !
+    ! PROCEDURE BRIEFING ????
     subroutine setupDefaultParameters()
         implicit none
         !
@@ -914,6 +924,7 @@ contains
         !
     end subroutine setupDefaultParameters
     !
+    ! PROCEDURE BRIEFING ????
     subroutine garbageCollector()
         implicit none
         !
@@ -934,6 +945,7 @@ contains
         !
     end subroutine garbageCollector
     !
+    ! PROCEDURE BRIEFING ????
     subroutine writeEsolutionHeader( nTx, nMode )
         implicit none
         !
@@ -971,6 +983,7 @@ contains
         !
     end subroutine writeEsolutionHeader
     !
+    ! PROCEDURE BRIEFING ????
     subroutine writeDataGroupArray( data_group_array )
         implicit none
         !
@@ -1033,6 +1046,7 @@ contains
         !
     end subroutine writeDataGroupArray
     !
+    ! PROCEDURE BRIEFING ????
     subroutine writePredictedDataHeader( receiver, receiver_type )
         implicit none
         !
@@ -1078,6 +1092,7 @@ contains
         !
     end subroutine writePredictedDataHeader
     !
+    ! PROCEDURE BRIEFING ????
     subroutine printHelp()
         implicit none
         !

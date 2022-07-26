@@ -13,11 +13,11 @@ module ModelOperator_MF
     type, extends( ModelOperator_t ) :: ModelOperator_MF_t
          !
          logical :: eqset      ! set to true after equations,
-                                             ! (part independent of sigma) is set.
-         integer :: mKey(8)    ! For use with fortran DATE_AND_TIME subroutine.
+                               ! (part independent of sigma) is set.
+         integer :: mKey(8)    ! For use with FORTRAN DATE_AND_TIME subroutine.
          !
          integer :: nx, ny, nz ! Redundant with what is in grid,
-                                           ! but makes code easier to read
+                               ! but makes code easier to read
          !**
          ! These are the arrays used to represent the curl-curl
          ! operator in MF implementation aBC is for the Ea equation

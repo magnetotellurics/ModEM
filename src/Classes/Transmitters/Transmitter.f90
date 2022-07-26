@@ -38,7 +38,7 @@ module Transmitter
         procedure, public :: init     => initializeTx
         procedure, public :: dealloc  => deallocateTx
         !
-        procedure, public :: updateFwdKey
+        procedure, public :: updateFwdKey => updateFwdKeyTx
         !
         procedure, public :: updateReceiverIndexesArray
         !
@@ -117,14 +117,14 @@ module Transmitter
             !
         end subroutine deallocateTx
         !
-        subroutine updateFwdKey( self )
+        subroutine updateFwdKeyTx( self )
             implicit none
             !
             class( Transmitter_t ), intent( inout ) :: self
             !
             call date_and_time( values=self%fwd_key )
             !
-        end subroutine updateFwdKey
+        end subroutine updateFwdKeyTx
         !
         subroutine updateReceiverIndexesArray( self, new_int )
             implicit none

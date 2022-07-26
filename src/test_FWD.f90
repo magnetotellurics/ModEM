@@ -1,3 +1,9 @@
+! *************
+! 
+! PROGRAM/TEST BRIEFING ????
+!
+! *************
+! 
 program ModEM
     !
     use Constants
@@ -32,6 +38,7 @@ program ModEM
     !
     real( kind=prec ) :: t_start, t_finish
     !
+    !
     call cpu_time( t_start )
     !
     modem_job = "unknown"
@@ -62,19 +69,20 @@ program ModEM
     !
 contains
     !
+    ! PROCEDURE BRIEFING ????
     subroutine Inversion()
         implicit none
         !
-        ! Use save ????
-        class( ForwardSolver_t ), allocatable, target, save :: forward_solver
+        !
+        class( ForwardSolver_t ), allocatable, target :: forward_solver
         !
         ! Temporary alias pointers
         class( Transmitter_t ), pointer :: Tx
         class( Receiver_t ), pointer    :: Rx
         !
-        integer :: iTx, number_of_tx, iRx, iDh
+        integer :: id_tx, id_rx, number_of_tx
         !
-        ! Verbose ...
+        ! Verbose
         write( *, * ) "     - Start Inversion"
         !
         ! Reads Model File: instantiates Grid, ModelOperator and ModelParameter
@@ -84,7 +92,7 @@ contains
             call handleModelFile()
         endif
         !
-        ! Reads Data File: instantiates and builds the Data relation between Txs and Txs
+        ! Reads Data File: instantiates and builds the Data relation between transmitter and receivers
         if( .NOT. has_data_file ) then 
             stop "Error: Missing Data file!"
         else
@@ -102,12 +110,14 @@ contains
                 allocate( forward_solver, source = ForwardSolverIT_DC_t( model_operator, QMR ) )
                 !
             case default
+                !
+                write( *, * ) "Warning: Inversion > Undefined forward_solver, using IT_DC"
+                !
                 allocate( forward_solver, source = ForwardSolverIT_DC_t( model_operator, QMR ) )
-            !
+                !
         end select
         !
         ! Forward Modeling
-        !
         number_of_tx = size( transmitters )
         !
         ! Writes the first header of the ESolution binary file, according to the first transmitter
@@ -115,10 +125,10 @@ contains
         call writeEsolutionHeader( number_of_tx, Tx%n_pol )
         !
         ! Loop over all Transmitters
-        do iTx = 1, number_of_tx
+        do id_tx = 1, number_of_tx
             !
-            ! Points the Tx alias to the current loop transmitter
-            Tx => getTransmitter( iTx )
+            ! Points the transmitter alias to the current loop transmitter
+            Tx => getTransmitter( id_tx )
             !
             ! Set Transmitter's ForwardSolver
             Tx%forward_solver => forward_solver
@@ -137,16 +147,18 @@ contains
                     !
                     allocate( Tx%source, source = SourceCSEM_Dipole1D_t( model_operator, model_parameter, Tx%period, Tx%location, Tx%dip, Tx%azimuth, Tx%moment ) )
                     !
+                class default
+                    stop "Error: Inversion > Undefined transmitter"
             end select
             !
             ! Solve Forward Modeling for this Transmitter
             call Tx%solveFWD()
             !
             ! Loop for each Receiver related to this Transmitter
-            do iRx = 1, size( Tx%receiver_indexes )
+            do id_rx = 1, size( Tx%receiver_indexes )
                 !
                 ! Point to the current Receiver
-                Rx => getReceiver( Tx%receiver_indexes( iRx ) )
+                Rx => getReceiver( Tx%receiver_indexes( id_rx ) )
                 !
                 ! Calculate predicted data and stores the result in the Receiver
                 call Rx%setLRows( Tx )
@@ -158,39 +170,40 @@ contains
             !
         enddo
         !
+        ! Deallocate local forward_solver
         deallocate( forward_solver )
         !
-        deallocate( model_operator )
-        deallocate( model_parameter )
-        deallocate( main_grid )
+        ! Deallocate global model components
+        deallocate( model_operator, model_parameter, main_grid )
         !
         ! Writes the final data array, with the proper Rx header, to the file <predicted_data_file_name>
         call writeDataGroupArray( predicted_data )
         !
-        deallocate( predicted_data )
+        ! Deallocate global arrays of data
+        deallocate( predicted_data, original_data )
         !
-        deallocate( original_data )
-        !
+        ! Deallocate global array of Transmitters
         call deallocateTransmitterArray()
         !
+        ! Deallocate global array of Receivers
         call deallocateReceiverArray()
         !
+        ! Verbose
         write( *, * ) "     - Finish Inversion"
         !
     end subroutine Inversion
     !
-    !
+    ! PROCEDURE BRIEFING ????
     subroutine ForwardModelling()
         implicit none
         !
-        ! Use save ????
-        class( ForwardSolver_t ), allocatable, target, save :: forward_solver
+        class( ForwardSolver_t ), allocatable, target :: forward_solver
         !
         ! Temporary alias pointers
         class( Transmitter_t ), pointer :: Tx
         class( Receiver_t ), pointer    :: Rx
         !
-        integer :: iTx, number_of_tx, iRx, iDh
+        integer :: id_tx, number_of_tx, id_rx
         !
         !
         ! Reads Model File: instantiates Grid, ModelOperator and ModelParameter
@@ -214,12 +227,14 @@ contains
                 allocate( forward_solver, source = ForwardSolverIT_DC_t( model_operator, QMR ) )
                 !
             case default
+                !
+                write( *, * ) "Warning: Inversion > Undefined forward_solver, using IT_DC"
+                !
                 allocate( forward_solver, source = ForwardSolverIT_DC_t( model_operator, QMR ) )
-            !
+                !
         end select
         !
         ! Forward Modeling
-        !
         number_of_tx = size( transmitters )
         !
         ! Writes the first header of the ESolution binary file, according to the first transmitter
@@ -227,10 +242,10 @@ contains
         call writeEsolutionHeader( number_of_tx, Tx%n_pol )
         !
         ! Loop over all Transmitters
-        do iTx = 1, number_of_tx
+        do id_tx = 1, number_of_tx
             !
-            ! Points the Tx alias to the current loop transmitter
-            Tx => getTransmitter( iTx )
+            ! Points the alias to the current loop transmitter
+            Tx => getTransmitter( id_tx )
             !
             ! Set Transmitter's ForwardSolver
             Tx%forward_solver => forward_solver
@@ -258,10 +273,10 @@ contains
             call Tx%solveFWD()
             !
             ! Loop for each Receiver related to this Transmitter
-            do iRx = 1, size( Tx%receiver_indexes )
+            do id_rx = 1, size( Tx%receiver_indexes )
                 !
                 ! Point to the current Receiver
-                Rx => getReceiver( Tx%receiver_indexes( iRx ) )
+                Rx => getReceiver( Tx%receiver_indexes( id_rx ) )
                 !
                 ! Calculate predicted data and stores the result in the Receiver
                 call Rx%predictedData( Tx )
@@ -273,23 +288,30 @@ contains
             !
         enddo
         !
+        ! Deallocate local forward_solver
         deallocate( forward_solver )
         !
-        deallocate( model_operator )
-        deallocate( model_parameter )
-        deallocate( main_grid )
+        ! Deallocate global model components
+        deallocate( model_operator, model_parameter, main_grid )
         !
         ! Writes the final data array, with the proper Rx header, to the file <predicted_data_file_name>
         call writeDataGroupArray( original_data )
         !
+        ! Deallocate global arrays of data
         deallocate( original_data )
         !
+        ! Deallocate global array of Transmitters
         call deallocateTransmitterArray()
         !
+        ! Deallocate global array of Receivers
         call deallocateReceiverArray()
+        !
+        ! Verbose
+        write( *, * ) "     - Finish Forward Modeling"
         !
     end subroutine ForwardModelling
     !
+    ! PROCEDURE BRIEFING ????
     subroutine handleJob()
         implicit none
         !
@@ -305,7 +327,7 @@ contains
                 !
             case default
                 !
-                write( *, * ) "Error: Unknown job: [", modem_job, "]"
+                write( *, * ) "Error: unknown job: [", modem_job, "]"
                 call printHelp()
                 stop
             !
@@ -313,6 +335,7 @@ contains
         !
     end subroutine handleJob
     !
+    ! PROCEDURE BRIEFING ????
     subroutine handleControlFile()
         implicit none
         !
@@ -326,7 +349,7 @@ contains
         !
     end subroutine handleControlFile
     !
-    !
+    ! PROCEDURE BRIEFING ????
     subroutine handleModelFile()
         implicit none
         !
@@ -367,7 +390,7 @@ contains
         !
     end subroutine handleModelFile
     !
-    !
+    ! PROCEDURE BRIEFING ????
     subroutine handleDataFile()
         implicit none
         !
@@ -419,6 +442,7 @@ contains
         !
     end subroutine handleDataFile
     !
+    ! PROCEDURE BRIEFING ????
     subroutine handleArguments()
         implicit none
         !
@@ -521,6 +545,7 @@ contains
         !
     end subroutine handleArguments
     !
+    ! PROCEDURE BRIEFING ????
     subroutine setupDefaultParameters()
         implicit none
         !
@@ -552,6 +577,7 @@ contains
         !
     end subroutine setupDefaultParameters
     !
+    ! PROCEDURE BRIEFING ????
     subroutine garbageCollector()
         implicit none
         !
@@ -569,6 +595,7 @@ contains
         !
     end subroutine garbageCollector
     !
+    ! PROCEDURE BRIEFING ????
     subroutine writeEsolutionHeader( nTx, nMode )
         implicit none
         !
@@ -606,6 +633,7 @@ contains
         !
     end subroutine writeEsolutionHeader
     !
+    ! PROCEDURE BRIEFING ????
     subroutine writeDataGroupArray( data_group_array )
         implicit none
         !
@@ -670,6 +698,7 @@ contains
         !
     end subroutine writeDataGroupArray
     !
+    ! PROCEDURE BRIEFING ????
     subroutine writePredictedDataHeader( receiver, receiver_type )
         implicit none
         !
@@ -715,6 +744,7 @@ contains
         !
     end subroutine writePredictedDataHeader
     !
+    ! PROCEDURE BRIEFING ????
     subroutine printHelp()
         implicit none
         !
@@ -741,5 +771,6 @@ contains
         !
     end subroutine printHelp
     !
+    ! PROCEDURE BRIEFING ????
 end program ModEM
 !

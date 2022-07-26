@@ -39,7 +39,7 @@ contains
         real( kind=prec ), intent( in ) :: azimuth
         integer, intent( in )           :: rx_type
         !
-        type( ReceiverSingleField_t )    :: self
+        type( ReceiverSingleField_t ) :: self
         !
         integer :: i, asize
         !

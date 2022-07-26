@@ -6,6 +6,7 @@ module Solver
     !
     ! Solver parameters
     integer :: QMR_iters, BCG_iters, max_divcor, max_divcor_iters
+    !
     real( kind=prec ) :: tolerance_divcor, tolerance_qmr
     !
     character(:), allocatable :: solver_type
