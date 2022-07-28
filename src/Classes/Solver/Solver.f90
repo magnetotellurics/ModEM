@@ -1,7 +1,6 @@
 module Solver
     !
     use Constants
-    use cVector
     use PreConditioner
     !
     ! Solver parameters

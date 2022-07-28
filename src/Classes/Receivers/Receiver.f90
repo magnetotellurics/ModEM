@@ -177,11 +177,11 @@ contains
         !
         class( Receiver_t ), intent( inout )   :: self
         class( ModelOperator_t ), intent( in ) :: model_operator
-        class( cVector_t ), allocatable        :: temp_full_vec
+        class( Vector_t ), allocatable         :: temp_full_vec
         !
-        integer              :: k
+        integer :: k
         !
-        class( cVector_t ), allocatable :: e, h, lh
+        class( Vector_t ), allocatable :: e, h, lh
         !
         !
         do k = 1, size( self%EHxy )
@@ -192,7 +192,7 @@ contains
                     !
                     select type( grid => model_operator%metric%grid )
                         class is( Grid3D_SG_t )
-                            allocate( e, source = cVector3D_SG_t( grid, EDGE ) )
+                            e = cVector3D_SG_t( grid, EDGE )
                         class default
                             stop "Error: evaluationFunctionRx: Unclassified grid for ex"
                     end select

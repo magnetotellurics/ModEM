@@ -1,7 +1,6 @@
 module Solver_PCG
     !
     use Solver
-    use cScalar
     use ModelOperator
     use PreConditioner_MF_DC
     !
@@ -69,13 +68,13 @@ contains
         implicit none
         !
         class( Solver_PCG_t ), intent( inout )           :: self
-        class( cScalar_t ), intent( in )                 :: b
-        class( cScalar_t ), allocatable, intent( inout ) :: x
+        class( Scalar_t ), intent( in )                 :: b
+        class( Scalar_t ), allocatable, intent( inout ) :: x
         ! local variables
         !    these will have to be created in a way to match
-        !     the specific type of the input cScalar_t ...
+        !     the specific type of the input Scalar_t ...
         !    Can we just declare these to be of the abstract type?
-        class ( cScalar_t ), allocatable :: r, s, p, q
+        class ( Scalar_t ), allocatable :: r, s, p, q
         complex( kind=prec ) :: beta, alpha, delta, deltaOld
         complex( kind=prec ) :: bnorm, rnorm
         integer              :: i

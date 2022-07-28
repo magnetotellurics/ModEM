@@ -1,7 +1,6 @@
 module Solver_QMR
     !
     use Solver
-    use cVector
     use ModelOperator
     use PreConditioner_MF_CC
     !
@@ -68,10 +67,10 @@ contains
         implicit none
         !
         class( Solver_QMR_t ), intent( inout ) :: self
-        class( cVector_t ), intent( in )       :: b
-        class( cVector_t ), intent( inout )    :: x
+        class( Vector_t ), intent( in )        :: b
+        class( Vector_t ), intent( inout )     :: x
         !
-        class( cVector_t ), allocatable :: R, Y, Z, V, W, YT, ZT, VT, WT, P, Q, PT, D, S
+        class( Vector_t ), allocatable :: R, Y, Z, V, W, YT, ZT, VT, WT, P, Q, PT, D, S
         logical              :: adjoint, ilu_adjt
         complex( kind=prec ) :: ETA, PDE, EPSIL, RDE, BETA, DELTA, RHO, DELTA_EPSIL
         complex( kind=prec ) :: PSI, RHO1, GAMM, GAMM1, THET, THET1, TM2
@@ -167,8 +166,8 @@ contains
             call W%mult( psiInv )
             !
             !  use subroutines here to overwrite with rescalled vectors
-            call Y%multS( rhoInv )
-            call Z%multS( psiInv )
+            call Y%mult( rhoInv )
+            call Z%mult( psiInv )
             !
             DELTA = Z%dotProd( Y )
             if( DELTA .EQ. C_ZERO ) then

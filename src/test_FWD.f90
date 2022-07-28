@@ -16,7 +16,6 @@ program ModEM
     use ModelReader
     use ModelReader_Weerachai
     use ModelOperator_MF
-    use ModelOperator_File
     use ModelParameterCell_SG
     !
     use DataFileStandard

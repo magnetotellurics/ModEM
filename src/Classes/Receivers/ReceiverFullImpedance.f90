@@ -111,7 +111,7 @@ contains
         class( ReceiverFullImpedance_t ), intent( inout ) :: self
         class( Transmitter_t ), intent( in )              :: transmitter
         !
-        class( cVector_t ), allocatable :: Le, full_lex, full_ley, full_lbx, full_lby
+        class( Vector_t ), allocatable :: Le, full_lex, full_ley, full_lbx, full_lby
         integer :: i, j, k, ki, kj
         !
         !

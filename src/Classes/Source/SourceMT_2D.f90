@@ -1,9 +1,7 @@
 ! *************
 ! 
 ! Derived class to define a MT Source with boundary data computed by 2D solutions
-! 
-! Last modified at 10/11/2021 by Paulo Werdt
-! 
+!
 ! *************
 ! 
 !**
@@ -42,7 +40,7 @@ contains
          class( ModelOperator_t ), target, intent( in )  :: model_operator
          class( ModelParameter_t ), target, intent( in ) :: model_parameter
          real( kind=prec ), intent( in )      :: period
-         class( cVector_t ), intent( in ), optional     :: E
+         class( Vector_t ), intent( in ), optional     :: E
          !
          type( SourceMT_2D_t ) :: self
          !
@@ -173,7 +171,7 @@ contains
         !
         class( SourceMT_2D_t ), intent( inout ) :: self
         !
-		class( cVector_t ), allocatable   :: source_e_boundary
+		class( Vector_t ), allocatable   :: source_e_boundary
         !
 		call self%E%Boundary( source_e_boundary )
 		!

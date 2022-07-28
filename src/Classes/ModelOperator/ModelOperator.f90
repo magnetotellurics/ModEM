@@ -1,8 +1,8 @@
 module ModelOperator
     !
     use Constants
-    use cVector
-    use cScalar
+    use Vector
+    use Scalar
     use MetricElements
     use ModelParameter
     !
@@ -63,30 +63,30 @@ module ModelOperator
          ! multAib
          !*
          subroutine interface_multaib_model_operator( self, bdry, outE )
-             import :: ModelOperator_t, cVector_t
+             import :: ModelOperator_t, Vector_t
              !
              class( ModelOperator_t ), intent( in ) :: self
-             class( cVector_t ), intent( in )         :: bdry
-             class( cVector_t ), intent( inout )     :: outE
+             class( Vector_t ), intent( in )         :: bdry
+             class( Vector_t ), intent( inout )     :: outE
          end subroutine interface_multaib_model_operator
          !**
          ! multCurlT
          !*
          subroutine interface_multcurl_t_model_operator( self, inH, outE )
-             import :: ModelOperator_t, cVector_t
+             import :: ModelOperator_t, Vector_t
              !
              class( ModelOperator_t ) , intent( in )             :: self
-             class( cVector_t )             , intent( inout )     :: inH
-             class( cVector_t ), allocatable, intent( inout ) :: outE
+             class( Vector_t )             , intent( inout )     :: inH
+             class( Vector_t ), allocatable, intent( inout ) :: outE
          end subroutine interface_multcurl_t_model_operator
          !
          subroutine interface_amult_model_operator( self, omega, x, y, p_adjt )
-             import :: ModelOperator_t, cVector_t, prec
+             import :: ModelOperator_t, Vector_t, prec
              !
              class( ModelOperator_t ), intent( in )         :: self
              real( kind = prec ), intent( in ), optional  :: omega
-             class( cVector_t ), intent( in )                 :: x
-             class( cVector_t ), intent( inout )             :: y
+             class( Vector_t ), intent( in )                 :: x
+             class( Vector_t ), intent( inout )             :: y
              logical, intent( in ), optional                  :: p_adjt
          end subroutine interface_amult_model_operator
          !
@@ -97,51 +97,51 @@ module ModelOperator
          end subroutine interface_divcor_setup_model_operator
          !
          subroutine interface_divc_grad_model_operator( self, inPhi, outPhi )
-             import :: ModelOperator_t, cScalar_t
+             import :: ModelOperator_t, Scalar_t
              !
              class( ModelOperator_t ) , intent( in )         :: self
-             class( cScalar_t )             , intent( in )     :: inPhi
-             class( cScalar_t )             , intent( inout ) :: outPhi
+             class( Scalar_t )             , intent( in )     :: inPhi
+             class( Scalar_t )             , intent( inout ) :: outPhi
          end subroutine interface_divc_grad_model_operator
          !
          subroutine interface_divc_model_operator( self, inE, outPhi )
-             import :: ModelOperator_t, cVector_t, cScalar_t
+             import :: ModelOperator_t, Vector_t, Scalar_t
              !
              class( ModelOperator_t ) , intent( in ) :: self
-             class( cVector_t )             , intent( in ) :: inE
-             class( cScalar_t )             , intent( inout ) :: outPhi
+             class( Vector_t )             , intent( in ) :: inE
+             class( Scalar_t )             , intent( inout ) :: outPhi
          end subroutine interface_divc_model_operator
          !
          subroutine interface_grad_model_operator( self, inPhi, outE )
-             import :: ModelOperator_t, cVector_t, cScalar_t
+             import :: ModelOperator_t, Vector_t, Scalar_t
              !
              class( ModelOperator_t ), intent( in ) :: self
-             class( cScalar_t ), intent( in )         :: inPhi
-             class( cVector_t ), intent( inout )     :: outE
+             class( Scalar_t ), intent( in )         :: inPhi
+             class( Vector_t ), intent( inout )     :: outE
          end subroutine interface_grad_model_operator
          !
          subroutine interface_div_model_operator(self, inE, outPhi)
-             import :: ModelOperator_t, cVector_t, cScalar_t
+             import :: ModelOperator_t, Vector_t, Scalar_t
              !
              class( ModelOperator_t ), intent( in ) :: self
-             class( cVector_t ), intent( in )         :: inE
-             class( cScalar_t ), intent( inout )     :: outPhi
+             class( Vector_t ), intent( in )         :: inE
+             class( Scalar_t ), intent( inout )     :: outPhi
          end subroutine interface_div_model_operator
          !
          function interface_create_vector_model_operator( self, gridType ) result( cVec )
-             import :: ModelOperator_t, cVector_t
+             import :: ModelOperator_t, Vector_t
              !
              class( ModelOperator_t ) , intent( in )     :: self
              character( len=80 ), intent( in ), optional :: gridType
-             class( cVector_t ), allocatable             :: cVec
+             class( Vector_t ), allocatable             :: cVec
          end function interface_create_vector_model_operator
          !
          function interface_create_scalar_model_operator( self, gridType ) result( cSclr )
-             import :: ModelOperator_t, cScalar_t
+             import :: ModelOperator_t, Scalar_t
              !
              class( ModelOperator_t ), intent( in )      :: self
              character( len=80 ), intent( in ), optional :: gridType
-             class( cScalar_t ), allocatable             :: cSclr
+             class( Scalar_t ), allocatable             :: cSclr
          end function interface_create_scalar_model_operator
          !
         subroutine interface_print_model_operator( self )

@@ -18,7 +18,7 @@ module Grid3D_SG
             !
             final :: Grid3D_SG_dtor
             !**
-            ! Overriden methods
+            ! Overridden methods
             !*
             procedure, public :: NumberOfEdges => NumberOfEdgesGrid3D_SG
             procedure, public :: NumberOfFaces => NumberOfFacesGrid3D_SG
@@ -408,36 +408,36 @@ contains
         end if
         
         if(index(airLayers%method, "mirror") > 0) then
-			!**
-			! Following is Kush"s approach to setting air layers:
-			! mirror imaging the dz values in the air layer with respect to
-			! earth layer as far as we can using the following formulation
-			! air layer(bottom:top) = (alpha)^(j-1) * earth layer(top:bottom)
-			!*
-			do iz = airLayers%nz, 1, -1
-				j = airLayers%nz - iz + 1
-				airLayers%dz(iz) = ((airLayers%alpha)**(j - 1) ) * self%dz(self%nzAir + j)
-			end do
-			!
-			! The topmost air layer has to be at least 30 km
-			if(airLayers%dz(1).lt.airLayers%minTopDz) then
-				airLayers%dz(1) = airLayers%minTopDz
-			end if
+            !**
+            ! Following is Kush"s approach to setting air layers:
+            ! mirror imaging the dz values in the air layer with respect to
+            ! earth layer as far as we can using the following formulation
+            ! air layer(bottom:top) = (alpha)^(j-1) * earth layer(top:bottom)
+            !*
+            do iz = airLayers%nz, 1, -1
+                j = airLayers%nz - iz + 1
+                airLayers%dz(iz) = ((airLayers%alpha)**(j - 1) ) * self%dz(self%nzAir + j)
+            end do
+            !
+            ! The topmost air layer has to be at least 30 km
+            if(airLayers%dz(1).lt.airLayers%minTopDz) then
+                airLayers%dz(1) = airLayers%minTopDz
+            end if
 
         else if(index(airLayers%method, "fixed height") > 0) then 
-			!
-			z1Log = log10(self%dz(self%nzAir + 1) )
-			dlogz = (log10(airLayers%maxHeight) - z1Log)/(airLayers%nz-1)
-			zLog = z1Log
-			height1 = 10.**z1log
-			airLayers%dz(airLayers%Nz) = height1
-			do iz = airLayers%Nz-1, 1, -1
-				zLog = zLog + dlogz
-				height2 = 10.**zLog 
-				airLayers%dz(iz) = height2-height1
-				height1 = height2
-			end do
-			!
+            !
+            z1Log = log10(self%dz(self%nzAir + 1) )
+            dlogz = (log10(airLayers%maxHeight) - z1Log)/(airLayers%nz-1)
+            zLog = z1Log
+            height1 = 10.**z1log
+            airLayers%dz(airLayers%Nz) = height1
+            do iz = airLayers%Nz-1, 1, -1
+                zLog = zLog + dlogz
+                height2 = 10.**zLog 
+                airLayers%dz(iz) = height2-height1
+                height1 = height2
+            end do
+            !
         else if(index(airLayers%method, "read from file") > 0) then
             !**
             ! Air layers have been read from file and are

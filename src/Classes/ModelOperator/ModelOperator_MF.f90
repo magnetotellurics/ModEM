@@ -49,10 +49,10 @@ module ModelOperator_MF
          type( rVector3D_SG_t ) :: Sigma_E
          
          ! Operators for divergence correction (DC) will also be included here
-         ! implementation will be trhough a separate module, managed through
+         ! implementation will be through a separate module, managed through
          ! "solver" object.     Preconditioners will also be managed through the solver
          ! Might consider making a "base" version w/o DC, and have an extension that
-         ! includes these arrayso.
+         ! includes these arrays.
 
          ! db1%x contains coefficients of the stencil for shift -1 of ix index
          ! (%y,%z give corresponding coefficients for iy, iz)
@@ -139,9 +139,6 @@ contains
         !
     end subroutine ModelOperator_MF_dtor
     !
-    !**
-    ! Create -- since this just calls allocateModelOperatorMF.
-    !*
     subroutine createModelOperatorMF( self, inGrid )
         implicit none
         !
@@ -158,10 +155,7 @@ contains
         call self%allocate()
         !
     end subroutine createModelOperatorMF
-    
-    !**
-    ! allocateModelOperatorMF
-    !*
+    !
     subroutine allocateModelOperatorMF( self )
         implicit none
         !
@@ -188,7 +182,7 @@ contains
         allocate( self%zY( self%ny + 1, self%nz ) )
         allocate( self%zZO( self%nx, self%ny ) )
         !
-        ! Initalize all coefficients to zero (some remain zero)
+        ! Initialize all coefficients to zero (some remain zero)
         self%xXY = 0.0
         self%xXZ = 0.0
         self%xY  = 0.0
@@ -257,7 +251,7 @@ contains
         !         for this model operator -- 
         !class( ModelOperator_MF_t ), intent( in )   :: self
         !character( len=80 ), intent( in ), optional :: gridType
-        !class( cVector_t ), allocatable             :: cVec
+        !class( Vector_t ), allocatable             :: cVec
         !
         ! do we really need select type here?????
         !select type( grid => self%metric%grid )
@@ -284,7 +278,7 @@ contains
         !         for this model operator -- 
         !class( ModelOperator_MF_t ), intent( in )   :: self
         !character( len=80 ), intent( in ), optional :: gridType
-        !class( cScalar_t ), allocatable             :: c_scalar
+        !class( Scalar_t ), allocatable             :: c_scalar
         !
         !     do we really need select type here?????
         !select type( grid => self%metric%grid )
@@ -309,7 +303,7 @@ contains
         integer ::ix, iy, iz 
         !
         ! Coefficients for curlcurlE (del X del X E)
-        ! coefficents for calculating Ex ; only loop over internal edges
+        ! coefficients for calculating Ex ; only loop over internal edges
         do iy = 2, self%ny
             self%xXY(iy, 2) = -1.0 / (self%metric%grid%delY(iy) * self%metric%grid%dy(iy))
             self%xXY(iy, 1) = -1.0 / (self%metric%grid%delY(iy) * self%metric%grid%dy(iy-1))
@@ -340,7 +334,7 @@ contains
         end do
         ! End of Ex coefficients
         !
-        ! Coefficents for calculating Ey; only loop over internal edges
+        ! Coefficients for calculating Ey; only loop over internal edges
         do iz = 2, self%nz
             self%yYZ(iz, 2) = -1.0 / (self%metric%grid%delZ(iz)*self%metric%grid%dz(iz))
             self%yYZ(iz, 1) = -1.0 / (self%metric%grid%delZ(iz)*self%metric%grid%dz(iz-1))
@@ -371,7 +365,7 @@ contains
         end do
         ! End of Ey coefficients
         !
-        ! Coefficents for calculating Ez; only loop over internal edges
+        ! Coefficients for calculating Ez; only loop over internal edges
         do ix = 2, self%nx
             self%zZX(ix, 2) = -1.0 / (self%metric%grid%delX(ix)*self%metric%grid%dx(ix))
             self%zZX(ix, 1) = -1.0 / (self%metric%grid%delX(ix)*self%metric%grid%dx(ix-1))
@@ -408,9 +402,7 @@ contains
         ! not set here.
         !
     end subroutine setEquationsModelOperatorMF
-    !**
-    ! setCond
-    !*
+    !
     subroutine setCondModelOperatorMF( self, ModPar )
         implicit none
         !
@@ -420,9 +412,7 @@ contains
         call ModPar%PDEmapping( self%sigma_E )
         !
     end subroutine setCondModelOperatorMF
-    !**
-    ! divcorsetup
-    !*
+    !
     subroutine divCorsetUpModelOperatorMF( self )
         implicit none
         !
@@ -501,7 +491,7 @@ contains
         call self%c%mult( self%Metric%Vnode )
         !
         ! To be explicit set coefficients that multiply edges connected to
-        ! boundary nodes to zero (this gaurantees that the BC on the potential
+        ! boundary nodes to zero (this guarantees that the BC on the potential
         ! is phi = 0):
         self%db1%x(2, :, :) = R_ZERO
         self%db1%y(:, 2, :) = R_ZERO
@@ -521,8 +511,8 @@ contains
         !
         class( ModelOperator_MF_t ), intent( in ) :: self
         real( kind=prec ), intent( in ), optional :: omega
-        class( cVector_t ), intent( in )          :: x
-        class( cVector_t ), intent( inout )       :: y
+        class( Vector_t ), intent( in )          :: x
+        class( Vector_t ), intent( inout )       :: y
         logical, intent( in ), optional           :: p_adjt
         !
         integer :: ix, iy, iz
@@ -545,8 +535,7 @@ contains
         class is(cVector3D_SG_t)
             !
             if( .NOT. y%is_allocated ) then
-                write(*,*) "ERROR: amult in    ModelOperator_MF"
-                stop         "output vector y not allocated"
+                write(*,*) "Error: amultModelOperatorMF > output vector y not allocated"
             endif
             !
             select type(y)
@@ -607,13 +596,12 @@ contains
                 !
                 ! Modified to add diagonal part in main loop ...
                 ! Finally multiply by VEdge (in place)
-                call y%mults3( self%metric%Vedge )
+                call y%mult( self%metric%Vedge )
             !
             end select
             !
             class default
-                write( *, * ) "ERROR:ModelOperator_MF::amult:"
-                stop        "            Incompatible input [x]. Exiting."
+                stop "Error: amultModelOperatorMF > Incompatible input [x]."
                 !
         end select
 
@@ -630,14 +618,13 @@ contains
         !
         class( ModelOperator_MF_t ), intent( in ) :: self
         !     again do these need to be abstract -- and OK if they are?
-        class( cVector_t ), intent( in )    :: bdry
-        class( cVector_t ), intent( inout ) :: outE
+        class( Vector_t ), intent( in )    :: bdry
+        class( Vector_t ), intent( inout ) :: outE
         !
         real( kind=prec ) :: omega
         !
         if(.NOT. outE%is_allocated) then
-            write(*,*) "ERROR: multAib in    ModelOperator_MF"
-            stop         "output vector not allocated"
+            write(*,*) "Error: multAibModelOperatorMF > output vector not allocated"
         endif
         !
         omega = R_ZERO     ! diagonal part or A does not enter into this
@@ -659,14 +646,14 @@ contains
         implicit none
         !
         class( ModelOperator_MF_t ), intent( in )        :: self
-        class( cVector_t ), intent( inout )              :: inH
-        class( cVector_t ), allocatable, intent( inout ) :: outE
+        class( Vector_t ), intent( inout )              :: inH
+        class( Vector_t ), allocatable, intent( inout ) :: outE
         !
         integer :: ix, iy, iz
 
         !  NOTE: this only computes outputs for interior edges --  fine
         !    as long as observation locations are not in cell adjacent to boundary --
-        !      but othewise should also use boundary edeges to compute H!
+        !      but otherwise should also use boundary edges to compute H!
         !      Also would need to modify to compute Lrows, since don"t want to
         !         force on boundary!
         !
@@ -677,7 +664,7 @@ contains
         class is( cVector3D_SG_t )
             !
             !     this overwrites input inH    -- need to be aware of this in using!
-            call inH%divs(self%Metric%FaceArea)
+            call inH%div( self%Metric%FaceArea )
             !**
             ! Apply adjoint curl on unit grid
             !*
@@ -687,8 +674,7 @@ contains
             ! allocate( outE, source = cVector3D_SG_t( inH%grid, EDGE ) )
             !
             if(.NOT.outE%is_allocated) then
-                 write(*,*) "ERROR: multCurlT in    ModelOperator_MF"
-                 stop    "output vector not allocated"
+                 write(*,*) "Error:  multCurlTModelOperatorMF > output vector not allocated"
             endif
 
             select type( outE )
@@ -722,20 +708,18 @@ contains
                 end do
                 !
             class default
-                write( *, * ) "ERROR:ModelOperator_MF::multCurlT:"
-                stop          "            Incompatible input [outE]"
+                stop "Error: multCurlTModelOperatorMF > Incompatible input [outE]"
             end select
             ! 
         class default
-            write( *, * ) "ERROR:ModelOperator_MF::multCurlT:"
-            stop          "            Incompatible input [inH]"
+            stop "Error: multCurlTModelOperatorMF > Incompatible input [inH]"
             !
         end select
         !
         !**
         ! Post multiply by edge length
         !*
-        call outE%mults( self%metric%EdgeLength )
+        call outE%mult( self%metric%EdgeLength )
         !
     end subroutine multCurlTModelOperatorMF
     !**
@@ -748,8 +732,8 @@ contains
         ! Arguments
         class( ModelOperator_MF_t ), intent( in ) :: self
         ! inphi, outphi have to be abstract to use in generic solver??
-        class( cScalar_t ), intent( in )    :: inPhi
-        class( cScalar_t ), intent( inout ) :: outPhi
+        class( Scalar_t ), intent( in )    :: inPhi
+        class( Scalar_t ), intent( inout ) :: outPhi
         !
         integer :: ix, iy, iz
         !
@@ -757,8 +741,7 @@ contains
         class is( cScalar3D_SG_t )
             !
             if(.NOT.outPhi%is_allocated) then
-                write( *, * ) "ERROR:ModelOperator_MF::divCgrad"
-                stop          "         Output cScalar object not allocated"
+                stop "Error: divCgradModelOperatorMF > Output cScalar object not allocated"
             endif
             !
             select type( inPhi )
@@ -794,8 +777,7 @@ contains
             end select
             !
         class default
-            write( *, * ) "ERROR:ModelOperator_MF::amult:"
-            stop          "            Incompatible input [x]. Exiting."
+            stop "Error: divCgradModelOperatorMF > Incompatible input [x]."
             !
         end select
         !
@@ -809,8 +791,8 @@ contains
         implicit none
         !
         class( ModelOperator_MF_t ), intent( in ) :: self
-        class( cVector_t ), intent( in )          :: inE
-        class( cScalar_t ), intent( inout )       :: outPhi
+        class( Vector_t ), intent( in )          :: inE
+        class( Scalar_t ), intent( inout )       :: outPhi
         !
         integer :: ix, iy, iz
         !
@@ -818,8 +800,7 @@ contains
         class is(cScalar3D_SG_t)
             !
             if( .NOT. outPhi%is_allocated) then
-                write( *, * ) "ERROR:ModelOperator_MF::divC"
-                stop          "         Output cScalar object not allocated"
+                stop "Error: divCModelOperatorMF > Output cScalar object not allocated"
             endif
             !
             select type( inE )
@@ -874,13 +855,11 @@ contains
                 end do
                 !
             class default
-                write( *, * ) "ERROR:ModelOperator_MF_t::divC:"
-                STOP                "inE type unknow"
+                stop "Error: divCModelOperatorMF > inE type unknown"
             end select
             !
         class default
-            write( *, * ) "ERROR:ModelOperator_MF_t::divC:"
-            STOP                "outPhi type unknow"
+            stop "Error: divCModelOperatorMF > outPhi type unknown"
             !
         end select
         !
@@ -892,8 +871,8 @@ contains
         implicit none
         !
         class( ModelOperator_MF_t ), intent( in ) :: self
-        class( cScalar_t ), intent( in )          :: inPhi
-        class( cVector_t ), intent( inout )       :: outE
+        class( Scalar_t ), intent( in )          :: inPhi
+        class( Vector_t ), intent( inout )       :: outE
         !
         integer :: ix, iy, iz
         !
@@ -901,8 +880,7 @@ contains
         class is(cVector3D_SG_t)
             !
             if(.NOT.outE%is_allocated) then
-                write( *, * ) "ERROR:ModelOperator_MF::grad"
-                stop          "         Output cVector object not allocated"
+                stop "Error: gradModelOperatorMF > Output cVector object not allocated"
             endif
             !
             select type( inPhi )
@@ -938,12 +916,10 @@ contains
                 end do
                 !
             class default
-                write( *, * ) "ERROR:ModelOperator_MF_t::grad:"
-                STOP                "inPhi type unknow"
+                stop "Error: gradModelOperatorMF > inPhi type unknown"
             end select
         class default
-            write( *, * ) "ERROR:ModelOperator_MF_t::divC:"
-            STOP                "outE type unknow"
+            stop "Error: gradModelOperatorMF > outE type unknown"
         end select
         !
     end subroutine gradModelOperatorMF
@@ -955,8 +931,8 @@ contains
           !
         ! Arguments
         class( ModelOperator_MF_t ), intent( in ) :: self
-        class( cVector_t ), intent( in )          :: inE
-        class( cScalar_t ), intent( inout )       :: outPhi
+        class( Vector_t ), intent( in )          :: inE
+        class( Scalar_t ), intent( inout )       :: outPhi
         !
         integer :: ix, iy, iz
         !
@@ -964,8 +940,7 @@ contains
         class is(cScalar3D_SG_t)
             !
             if(.NOT.outPhi%is_allocated) then
-                write( *, * ) "ERROR:ModelOperator_MF::div"
-                stop          "         Output cScalar object not allocated"
+                stop "Error: divModelOperatorMF > Output cScalar object not allocated"
             endif
             !
             select type( inE )
@@ -988,12 +963,10 @@ contains
                     end do
                 end do
                 class default
-                write( *, * ) "ERROR:ModelOperator_MF_t:div:"
-                STOP                "inE type unknow"
+                stop "Error: divModelOperatorMF> inE type unknown"
             end select
         class default
-            write( *, * ) "ERROR:ModelOperator_MF_t:div:"
-            STOP                "outPhi type unknow"
+            stop "Error: divModelOperatorMF > outPhi type unknown"
         end select
         !
     end subroutine divModelOperatorMF
@@ -1003,7 +976,7 @@ contains
         !
         class( ModelOperator_MF_t ), intent(in) :: self
         !
-        stop "subroutine print not implemented for ModelOperator_MF"
+        stop "Subroutine print not implemented for ModelOperator_MF"
         !
     end subroutine printModelOperatorMF
     !

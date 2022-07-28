@@ -5,7 +5,6 @@ module PreConditioner_MF_DC
     !
     use Constants
     use Grid
-    use cScalar
     use cScalar3D_SG
     use ModelOperator_MF
     use PreConditioner
@@ -53,8 +52,7 @@ contains
                 call self%d%zeros()
                 !
             class default
-                write( *, * ) "ERROR:PreConditioner_MF_DC_t::PreConditioner_MF_DC_ctor:"
-                stop          "    unknow grid type"
+                stop "Error: PreConditioner_MF_DC_ctor > unknown grid type"
         end select
         !
     end function PreConditioner_MF_DC_ctor
@@ -125,11 +123,11 @@ contains
         implicit none
         !
         class( PreConditioner_MF_DC_t ), intent( inout ) :: self
-        class( cVector_t ), intent( in )                 :: inE
-        class( cVector_t ), intent( inout )              :: outE
+        class( Vector_t ), intent( in )                  :: inE
+        class( Vector_t ), intent( inout )               :: outE
         logical, intent( in )                            :: adjt
         
-        STOP "ERROR: LTsolve not coded for this pre-conditioner class"
+        stop "Error: LTsolve not coded for this pre-conditioner class"
         !
     end subroutine LTSolvePreConditioner_MF_DC
  !* 
@@ -137,11 +135,11 @@ contains
         implicit none
         !
         class( PreConditioner_MF_DC_t ), intent( inout ) :: self
-        class( cVector_t ), intent( in )                 :: inE
-        class( cVector_t ), intent( inout )              :: outE
+        class( Vector_t ), intent( in )                 :: inE
+        class( Vector_t ), intent( inout )              :: outE
         logical, intent( in )                            :: adjt
         
-        STOP "ERROR: UTsolve not coded for this pre-conditioner class"
+        stop "Error: UTsolve not coded for this preconditioner class"
         !
     end subroutine UTSolvePreConditioner_MF_DC
     !**
@@ -151,8 +149,8 @@ contains
         implicit none
         !
         class( PreConditioner_MF_DC_t ), intent( inout ) :: self
-        class( cScalar_t ), intent( in )                 :: inPhi
-        class( cScalar_t ), intent( inout )              :: outPhi
+        class( Scalar_t ), intent( in )                 :: inPhi
+        class( Scalar_t ), intent( inout )              :: outPhi
         !
         integer :: ix, iy, iz
         !

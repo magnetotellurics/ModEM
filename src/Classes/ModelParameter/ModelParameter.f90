@@ -1,8 +1,7 @@
 module ModelParameter
     !
     use Constants
-    use rScalar
-    use rVector
+    use Vector
     use Grid2D
     use ModelParameter1D
     use ModelParameter2D
@@ -110,26 +109,26 @@ module ModelParameter
         ! be omitted (self would be the model parameter already).
         !*
         subroutine interface_pdemapping_model_parameter( self, eVec )
-            import :: ModelParameter_t, rVector_t
+            import :: ModelParameter_t, Vector_t
             class( ModelParameter_t ), intent( in ) :: self
-            class( rVector_t ), intent( inout )     :: eVec
+            class( Vector_t ), intent( inout )      :: eVec
         end subroutine interface_pdemapping_model_parameter
         !**
         !
         !*
         subroutine interface_dpdemapping_model_parameter( self, dm, eVec )
-            import :: ModelParameter_t, rVector_t
+            import :: ModelParameter_t, Vector_t
             class( ModelParameter_t ), intent( in ) :: self, dm
-            class( rVector_t ), intent( inout )     :: eVec
+            class( Vector_t ), intent( inout )      :: eVec
         end subroutine interface_dpdemapping_model_parameter
         !**
         ! NOTE: For transpose (adjoint) dm is output`
         !            and eVec is input.
         !*
         function interface_dpdemapping_t_model_parameter( self, eVec ) result( dm )
-            import :: ModelParameter_t, rVector_t
+            import :: ModelParameter_t, Vector_t
             class( ModelParameter_t ), intent( in ) :: self
-            class( rVector_t ), intent( in )        :: eVec
+            class( Vector_t ), intent( in )         :: eVec
             class( ModelParameter_t ), allocatable  :: dm
         end function interface_dpdemapping_t_model_parameter
         

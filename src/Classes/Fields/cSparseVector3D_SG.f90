@@ -5,9 +5,9 @@ module cSparseVector3D_SG
     !
     type :: cSparsevector3D_SG_t
         !
-        class( Grid3D_SG_t ), pointer :: grid
+        class( Grid_t ), pointer :: grid
         !
-        character( len=4 ) :: gridType
+        character( len=4 ) :: grid_type
         !
         integer  :: nCoeff
         !
@@ -40,7 +40,7 @@ contains
         !
         !write(*,*) "Constructor cSparsevector3D_SG"
         !
-        self%gridType = ""
+        self%grid_type = ""
         self%nCoeff = 0
         self%is_allocated = .FALSE.
         !
@@ -55,7 +55,7 @@ contains
         !
         !write(*,*) "Destructor cSparsevector3D_SG_t:"
         !
-        self%gridType = ""
+        self%grid_type = ""
         self%nCoeff = 0
         self%is_allocated = .FALSE.
         !
@@ -89,7 +89,7 @@ contains
             stop "RHS not is_allocated yet for dotProdSparse"
         endif
         !
-        if ( self%gridType /= cvector%gridType ) then
+        if ( self%grid_type /= cvector%grid_type ) then
             stop "dotProdSparse: not compatible usage for dotProdSparse"
         endif
         !
@@ -142,8 +142,8 @@ contains
         type( cVector3D_SG_t ) :: cvector
         !
         integer :: ii
-        !!
-        cvector = cVector3D_SG_t( self%grid, self%gridType )
+        !
+        cvector = cVector3D_SG_t( self%grid, self%grid_type )
         !
         call cvector%zeros()
         !
@@ -163,7 +163,7 @@ contains
         implicit none
         !
         class( cSparsevector3D_SG_t ), intent( inout ) :: self
-        class( cVector_t ), intent( in )               :: cvector
+        class( Vector_t ), intent( in )                :: cvector
         !
         integer, allocatable, dimension(:,:,:)  :: Ix, Jx, Kx, XYZ1
         integer, allocatable, dimension(:,:,:)  :: Iy, Jy, Ky, XYZ2
@@ -254,8 +254,8 @@ contains
                 ! Set grid
                 self%grid => cvector%grid
                 !
-                ! Set gridType
-                self%gridType = cvector%gridType
+                ! Set grid_type
+                self%grid_type = cvector%grid_type
                 !
                 self%is_allocated = .TRUE.
                 !

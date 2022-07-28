@@ -6,8 +6,8 @@
 !*
 module PreConditioner
     !
-    use cVector
-    use cScalar
+    use Vector
+    use Scalar
     use ModelOperator
     !
     type, abstract :: PreConditioner_t
@@ -36,29 +36,29 @@ module PreConditioner
         end subroutine iface_set_preconditioner
         !
         subroutine iface_ltsolve_preconditioner( self, inE, outE, adjt )
-            import :: PreConditioner_t, cVector_t
+            import :: PreConditioner_t, Vector_t
             !
             class( PreConditioner_t ), intent( inout ) :: self
-            class( cVector_t ), intent( in )           :: inE
-            class( cVector_t ), intent( inout )        :: outE
+            class( Vector_t ), intent( in )           :: inE
+            class( Vector_t ), intent( inout )        :: outE
             logical, intent( in )                      :: adjt
         end subroutine iface_ltsolve_preconditioner
         !
         subroutine iface_utsolve_preconditioner( self, inE, outE, adjt )
-            import :: PreConditioner_t, cVector_t
+            import :: PreConditioner_t, Vector_t
             !
             class( PreConditioner_t ), intent( inout ) :: self
-            class( cVector_t ), intent( in )           :: inE
-            class( cVector_t ), intent( inout )        :: outE
+            class( Vector_t ), intent( in )           :: inE
+            class( Vector_t ), intent( inout )        :: outE
             logical, intent( in )                      :: adjt
         end subroutine iface_utsolve_preconditioner
         !
         subroutine iface_lusolve_preconditioner( self, inPhi, outPhi )
-            import :: PreConditioner_t, cScalar_t
+            import :: PreConditioner_t, Scalar_t
             !
             class( PreConditioner_t ), intent( inout ) :: self
-            class( cScalar_t ), intent( in )           :: inPhi
-            class( cScalar_t ), intent( inout )        :: outPhi
+            class( Scalar_t ), intent( in )           :: inPhi
+            class( Scalar_t ), intent( inout )        :: outPhi
         end subroutine iface_lusolve_preconditioner
         !
     end interface
