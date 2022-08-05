@@ -14,7 +14,7 @@ module DataEntry
       !
       integer                   :: id
       character(:), allocatable :: type, code, component
-      real( kind=prec )         :: period, xyz(3)
+      real( kind=prec )         :: period, location(3)
       real( kind=prec )         :: real, imaginary, error
       !
    contains
@@ -55,9 +55,9 @@ contains
       !
       if( self%type .Eq. other%type .AND.               &
          ABS( self%period - other%period ) < TOL6 .AND.   & 
-         ABS( self%xyz(1) - other%xyz(1) ) < TOL6 .AND.   &
-         ABS( self%xyz(2) - other%xyz(2) ) < TOL6 .AND.   &
-         ABS( self%xyz(3) - other%xyz(3) ) < TOL6 .AND.   &
+         ABS( self%location(1) - other%location(1) ) < TOL6 .AND.   &
+         ABS( self%location(2) - other%location(2) ) < TOL6 .AND.   &
+         ABS( self%location(3) - other%location(3) ) < TOL6 .AND.   &
          self%code .Eq. other%code .AND.               &
          self%component .Eq. other%component .AND.      &
          ABS( self%real - other%real ) < TOL6 .AND.      &

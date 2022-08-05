@@ -2,75 +2,76 @@
 !
 ! Base class to define a Receiver
 !
-! Last modified at 20/10/2021 by Paulo Werdt
-!
 !*************
 !
 module Receiver
     !
+    use String
+    !
     use Transmitter
     use cVector3D_SG
+    use cSparseVector3D_SG
     use ModelOperator
-    use DataGroupArray
-    use PredictedDataHandle
-    use Grid3D_SG
+    use DataGroup
+    !
+    ! Global file name for predicted_data file
+    character(:), allocatable :: predicted_data_file_name
     !
     type, abstract :: Receiver_t
         !
-        integer                               :: id, n_comp
+        integer :: id, rx_type, n_comp
         !
-        character(:), allocatable             :: code
+        character(:), allocatable :: code
         !
-        real( kind=prec )                     :: location(3)
+        real( kind=prec ), dimension(3) :: location
         !
-        logical                               :: is_complex = .FALSE., interpolation_set = .FALSE.
+        logical :: is_complex, interpolation_set
         !
-        class( Grid_t ), pointer              :: grid
+        type( String_t ), allocatable, dimension(:) :: EHxy, comp_names
         !
-        character(2), allocatable             :: EHxy(:)
+        complex( kind=prec ), allocatable :: I_BB(:,:), response(:)
         !
-        character(3), allocatable             :: comp_names(:)
+        type( cSparseVector3D_SG_t ), allocatable :: Lex, Ley, Lez, Lbx, Lby, Lbz, lrows(:,:)
         !
-        complex( kind=prec ), allocatable  :: I_BB(:,:), EE(:,:), Z(:)
+        type( DataGroup_t ), allocatable :: predicted_data
         !
-        class( cVector_t ), allocatable     :: Lex, Ley, Lez, Lbx, Lby, Lbz
-        !
-        class( DataGroupArray_t ), pointer :: data_groups
-        !
-        type( PredictedDataHandle_t ), allocatable :: data_handles(:)
-        !
-    contains
-        !
-        ! DEFERRED INTERFACES
-        procedure( interface_predicted_data ), deferred, public :: predictedData
-        !
-        procedure( interface_write_rx ), deferred, public                     :: write
-        !
-        ! CLASS PROCEDURES
-        procedure, public :: evaluationFunction => evaluationFunctionRx
-        !
-        procedure, public :: init => initializeRx
-        procedure, public :: dealloc => deallocateRx
-        !
-        procedure, public :: isEqual => isEqualRx
-        !
-        procedure, public :: has => hasDataGroupRx
-        procedure, public :: add => addDataGroupRx
-        procedure, public :: get => getDataGroupRx
-        procedure, public :: getNdg => getNumberOfDataGroupRx
-        !
-        procedure, public :: savePredictedData
-        !
+        contains
+            !
+            procedure( interface_set_lrows_data ), deferred, public :: setLRows
+            !
+            procedure( interface_predicted_data ), deferred, public :: predictedData
+            !
+            procedure( interface_is_equal_rx ), deferred, public :: isEqualRx
+            !
+            procedure( interface_print_rx ), deferred, public :: print
+            !
+            procedure, public :: evaluationFunction => evaluationFunctionRx
+            !
+            procedure, public :: savePredictedData => savePredictedDataRx
+            !
+            procedure, public :: init    => initializeRx
+            procedure, public :: dealloc => deallocateRx
+            !
     end type Receiver_t
+    !
+    public :: getStringReceiverType, getIntReceiverType
     !
     abstract interface
         !
-        subroutine interface_predicted_data( self, model_operator, transmitter )
+        subroutine interface_set_lrows_data( self, transmitter )
             !
-            import :: Receiver_t, ModelOperator_t, Transmitter_t
+            import :: Receiver_t, Transmitter_t
+            !
+            class( Receiver_t ), intent( inout )    :: self
+            class( Transmitter_t ), intent( in ) :: transmitter
+            !
+        end subroutine interface_set_lrows_data
+        !
+        subroutine interface_predicted_data( self, transmitter )
+            !
+            import :: Receiver_t, Transmitter_t
             !
             class( Receiver_t ), intent( inout )  :: self
-            class( ModelOperator_t ),intent( in ) :: model_operator
             class( Transmitter_t ), intent( in )  :: transmitter
             !
         end subroutine interface_predicted_data
@@ -79,26 +80,36 @@ module Receiver
             !
             import :: Receiver_t, Transmitter_t
             !
-            class( Receiver_t ), intent( in )     :: self
+            class( Receiver_t ), intent( in )    :: self
             class( Transmitter_t ), intent( in ) :: tx
             !
         end subroutine interface_save_predicted_data_rx
         !
-        subroutine interface_write_predicted_data_rx( self )
+        subroutine interface_save_predicted_data( self, tx )
+            !
+            import :: Receiver_t, Transmitter_t
+            !
+            class( Receiver_t ), intent( inout ) :: self
+            class( Transmitter_t ), intent( in ) :: tx
+            !
+        end subroutine interface_save_predicted_data
+        !
+        function interface_is_equal_rx( self, other ) result( equal )
             !
             import :: Receiver_t
             !
-            class( Receiver_t ), intent( in ) :: self
+            class( Receiver_t ), intent( in ) :: self, other
+            logical :: equal
             !
-        end subroutine interface_write_predicted_data_rx
+        end function interface_is_equal_rx
         !
-        subroutine interface_write_rx( self )
+        subroutine interface_print_rx( self )
             !
             import :: Receiver_t
             !
             class( Receiver_t ), intent(in) :: self
             !
-        end subroutine interface_write_rx
+        end subroutine interface_print_rx
         !
     end interface
     !
@@ -113,11 +124,15 @@ contains
         !
         self%n_comp = 0
         !
+        self%code = ""
+        !
+        self%rx_type = 0
+        !
         self%location = 0.0
         !
-        self%grid => null()
+        self%is_complex = .FALSE.
         !
-        allocate( self%data_groups, source = DataGroupArray_t() )
+        self%interpolation_set = .FALSE.
         !
     end subroutine initializeRx
     !
@@ -126,252 +141,299 @@ contains
         !
         class( Receiver_t ), intent( inout ) :: self
         !
-        if( associated( self%grid ) ) deallocate( self%grid )
+        integer :: i, asize
         !
-        if( allocated( self%EHxy ) ) deallocate( self%EHxy )
+        asize = size( self%comp_names )
+        do i = asize, 1, -(1)
+            deallocate( self%comp_names(i)%str )
+        enddo
+        deallocate( self%comp_names )
         !
-        if( allocated( self%I_BB ) ) deallocate( self%I_BB )
+        asize = size( self%EHxy )
+        do i = asize, 1, -(1)
+            deallocate( self%EHxy(i)%str )
+        enddo
+        deallocate( self%EHxy )
         !
-        if( allocated( self%EE ) ) deallocate( self%EE )
-        !
-        if( allocated( self%Z ) ) deallocate( self%Z )
+        if( allocated( self%predicted_data ) ) deallocate( self%predicted_data )
         !
         if( allocated( self%Lex ) ) deallocate( self%Lex )
-        !
         if( allocated( self%Ley ) ) deallocate( self%Ley )
-        !
         if( allocated( self%Lez ) ) deallocate( self%Lez )
         !
         if( allocated( self%Lbx ) ) deallocate( self%Lbx )
-        !
-        if( allocated( self%Lby ) ) deallocate( self%Lby )
-        !
+        if( allocated( self%Lbx ) ) deallocate( self%Lbx )
         if( allocated( self%Lbz ) ) deallocate( self%Lbz )
         !
-        !deallocate( self%data_groups )
+        if( allocated( self%lrows ) ) deallocate( self%lrows )
+        !
+        if( allocated( self%I_BB ) ) deallocate( self%I_BB )
+        if( allocated( self%response ) ) deallocate( self%response )
         !
     end subroutine deallocateRx
     !
-    subroutine evaluationFunctionRx( self, model_operator, omega )
+    subroutine evaluationFunctionRx( self, model_operator )
         implicit none
         !
-        class( Receiver_t ), intent( inout )    :: self
+        class( Receiver_t ), intent( inout )   :: self
         class( ModelOperator_t ), intent( in ) :: model_operator
-        real( kind=prec ), intent( in )          :: omega
+        class( Vector_t ), allocatable         :: temp_full_vec
         !
-        integer                  :: k
-        complex( kind=prec ) :: comega
+        integer :: k
         !
-        ! THESE SHOULD BE rVECTORS ????
-        class( cVector_t ), allocatable :: e, h
-        class( cVector_t ), allocatable :: lh
+        class( Vector_t ), allocatable :: e_h, lh
         !
-        !comega = cmplx( 1./omega, 0.0, kind=prec )
-        comega = cmplx( 0.0, 1./omega, kind=prec )
         !
-        do k = 1, self%n_comp
+        do k = 1, size( self%EHxy )
             !
-            selectcase( self%EHxy(k) )
-                !
-                case( "Ex", "Ey" )
+            select type( grid => model_operator%metric%grid )
+                class is( Grid3D_SG_t )
                     !
-                     select type( grid => model_operator%metric%grid )
-                          class is( Grid3D_SG_t )
-                                if( .not. allocated( e ) ) allocate( e, source = cVector3D_SG_t( grid, EDGE ) )
-                          class default
-                                stop "Receiver: Unclassified model_operator%metric%grid for e"
-                     end select
+                    select case( self%EHxy(k)%str )
+                        !
+                        case( "Ex", "Ey", "Ez" )
+                            allocate( e_h, source = cVector3D_SG_t( grid, EDGE ) )
+                        !
+                        case( "Bx", "By", "Bz" )
+                            allocate( e_h, source = cVector3D_SG_t( grid, FACE ) )
+                            !
+                        case default
+                            stop "Error: evaluationFunctionRx: Unknown EHxy"
+                    end select
                     !
-                case( "Bx", "By", "Bz" )
-                    !
-                     select type( grid => model_operator%metric%grid )
-                          class is( Grid3D_SG_t )
-                                if( .not. allocated(h) ) allocate( h, source = cVector3D_SG_t( grid, FACE ) )
-                          class default
-                                stop "Receiver: Unclassified model_operator%metric%grid for h"
-                     end select
-                    !
+                class default
+                    stop "Error: evaluationFunctionRx: Unclassified grid"
             end select
             !
-        end do
-        !
-        do k = 1, self%n_comp
-            !
-            if( allocated( lh ) ) deallocate( lh )
-            !
-            selectcase( self%EHxy(k) )
+            select case( self%EHxy(k)%str )
                 !
                 case( "Ex" )
-                    call e%interpFunc( self%location, "x", self%Lex )
-                !
+                    !
+                    call e_h%interpFunc( self%location, "x", temp_full_vec )
+                    !
+                    select type( temp_full_vec )
+                        class is( cVector3D_SG_t )
+                            !
+                            call self%Lex%fromFullVector( temp_full_vec )
+                            !
+                        class default
+                            stop "Error: evaluationFunctionRx: Unclassified temp_full_vec_ex"
+                    end select
+                   !
                 case( "Ey" )
-                    call e%interpFunc( self%location, "y", self%Ley )
-                !
+                    !
+                    call e_h%interpFunc( self%location, "y", temp_full_vec )
+                    !
+                    select type( temp_full_vec )
+                        class is( cVector3D_SG_t )
+                            !
+                            call self%ley%fromFullVector( temp_full_vec )
+                            !
+                        class default
+                            stop "Error: evaluationFunctionRx: Unclassified temp_full_vec_ey"
+                    end select
+                    !
                 case( "Ez" )
-                    call e%interpFunc( self%location, "z", self%Lez )
-                !
+                    !
+                    call e_h%interpFunc( self%location, "z", temp_full_vec )
+                    !
+                    select type( temp_full_vec )
+                        class is( cVector3D_SG_t )
+                            !
+                            call self%Lez%fromFullVector( temp_full_vec )
+                            !
+                        class default
+                            stop "Error: evaluationFunctionRx: Unclassified temp_full_vec_ez"
+                    end select
+                    !
                 case( "Bx" )
                     !
-                    call h%interpFunc( self%location, "x", lh )
+                    call e_h%interpFunc( self%location, "x", lh )
                     !
-                    select type( lh )
-                        class is(cVector3D_SG_t)
-                            if( allocated( self%Lbx ) ) deallocate( self%Lbx )
-                            allocate( self%Lbx, source = cVector3D_SG_t( lh%grid, EDGE ) )
+                    select type( grid => model_operator%metric%grid )
+                        class is( Grid3D_SG_t )
+                            !
+                            allocate( temp_full_vec, source = cVector3D_SG_t( grid, EDGE ) )
                             !
                         class default
-                            write(*, *) 'ERROR:Receiver::evaluationFunction:'
-                            stop          '            Unkonow lh type'
+                            stop "Error: evaluationFunctionRx > Unknown Bx lh type"
                     end select
                     !
-                    call model_operator%multCurlT( lh, self%Lbx )
-                    !call self%Lbx%mults( isign * ONE_I / comega )
-                call self%Lbx%mults( isign * comega )
+                    call model_operator%multCurlT( lh, temp_full_vec )
+                    !
+                    select type( temp_full_vec )
+                        !
+                        class is( cVector3D_SG_t )
+                            !
+                            call self%Lbx%fromFullVector( temp_full_vec )
+                            !
+                        class default
+                            stop "Error: evaluationFunctionRx: Unclassified temp_full_vec_bx"
+                    end select
                     !
                 case( "By" )
-                    ! 
-                    call h%interpFunc( self%location, "y", lh )
                     !
-                    select type( lh )
-                        class is(cVector3D_SG_t)
-                            if( allocated( self%Lby ) ) deallocate( self%Lby )
-                            allocate( self%Lby, source = cVector3D_SG_t( lh%grid, EDGE ) )
+                    call e_h%interpFunc( self%location, "y", lh )
+                    !
+                    select type( grid => model_operator%metric%grid )
+                        class is( Grid3D_SG_t )
+                            !
+                            allocate( temp_full_vec, source = cVector3D_SG_t( grid, EDGE ) )
                             !
                         class default
-                            write(*, *) 'ERROR:Receiver::evaluationFunction:'
-                            stop          '            Unkonow lh type'
+                            stop "Error: evaluationFunction > Unknown By lh type"
                     end select
                     !
-                    call model_operator%multCurlT( lh, self%Lby )
-                    !call self%Lby%mults( isign * ONE_I / comega )
-                call self%Lby%mults( isign * comega )
-                !
+                    call model_operator%multCurlT( lh, temp_full_vec )
+                    !
+                    select type( temp_full_vec )
+                        class is( cVector3D_SG_t )
+                            !
+                            call self%Lby%fromFullVector( temp_full_vec )
+                            !
+                        class default
+                            stop "Error: evaluationFunctionRx: Unclassified temp_full_vec_by"
+                    end select
+                    !
                 case( "Bz" )
                     !
-                    call h%interpFunc( self%location, "z", lh )
+                    call e_h%interpFunc( self%location, "z", lh )
                     !
-                    select type( lh )
-                        class is(cVector3D_SG_t)
-                            if( allocated( self%Lbz ) ) deallocate( self%Lbz )
-                            allocate( self%Lbz, source = cVector3D_SG_t( lh%grid, EDGE ) )
+                    select type( grid => model_operator%metric%grid )
+                        class is( Grid3D_SG_t )
+                            !
+                            allocate( temp_full_vec, source = cVector3D_SG_t( grid, EDGE ) )
                             !
                         class default
-                            write(*, *) 'ERROR:Receiver::evaluationFunction:'
-                            stop          '            Unkonow lh type'
+                            stop "Error: evaluationFunctionRx > Unknown Bz lh type"
                     end select
                     !
-                    call model_operator%multCurlT( lh, self%Lbz )
-                    !call self%Lbz%mults( isign * ONE_I / comega )
-                call self%Lbz%mults( isign * comega )
-                !
+                    call model_operator%multCurlT( lh, temp_full_vec )
+                    !
+                    select type( temp_full_vec )
+                        class is( cVector3D_SG_t )
+                            !
+                            call self%Lbz%fromFullVector( temp_full_vec )
+                            !
+                        class default
+                            stop "Error: evaluationFunctionRx: Unclassified temp_full_vec_bz"
+                    end select
+                    !
             end select
             !
+            if( allocated( e_h ) ) deallocate( e_h )
+            if( allocated( lh ) ) deallocate( lh )
+            deallocate( temp_full_vec )
+            !
         end do
-        !
-        if( allocated( e ) ) deallocate( e )
-        if( allocated( h ) ) deallocate( h )
         !
     end subroutine evaluationFunctionRx
     !
-    function isEqualRx( self, other ) result( equal )
-        implicit none
-        !
-        class( Receiver_t ), intent( in ) :: self
-        class( Receiver_t ), intent( in ) :: other
-        !
-        logical :: equal
-        !
-        equal = .FALSE.
-        !
-        if( self%location(1) == other%location(1) .AND.    &
-             self%location(2) == other%location(2) .AND.    &
-             self%location(3) == other%location(3) ) then
-            equal = .TRUE.
-        endif
-        !
-    end function isEqualRx
-    !
-    function hasDataGroupRx( self, data_group ) result( found )
-        implicit none
-        !
-        class( Receiver_t ), intent( in )  :: self
-        class( DataGroup_t ), intent( in ) :: data_group
-        !
-        logical :: found
-        integer :: iDg, nDg
-        !
-        found = .FALSE.
-        !
-        nDg = self%data_groups%size()
-        !
-        do iDg = 1, nDg
-            !
-            if( data_group%isEqual( self%data_groups%get( iDg ) ) ) then
-                found = .TRUE.
-            end if
-        end do
-        !
-    end function hasDataGroupRx
-    !
-    subroutine addDataGroupRx( self, data_group )
+    subroutine savePredictedDataRx( self, transmitter )
         implicit none
         !
         class( Receiver_t ), intent( inout ) :: self
-        class( DataGroup_t ), intent( in )    :: data_group
+        class( Transmitter_t ), intent( in ) :: transmitter
         !
-        call self%data_groups%add( data_group )
+        character(:), allocatable :: component
+        real( kind=prec )         :: real_part, imaginary, error
         !
-    end subroutine addDataGroupRx
-    !
-    function getDataGroupRx( self, index ) result( data_group )
-        implicit none
-        !
-        class( Receiver_t ), intent( in ) :: self
-        integer, intent( in )                 :: index
-        class( DataGroup_t ), allocatable :: data_group
-        !
-        data_group = self%data_groups%get( index )
-        !
-    end function getDataGroupRx
-    !
-    function getNumberOfDataGroupRx( self ) result( counter )
-        implicit none
-        !
-        class( Receiver_t ), intent( in ) :: self
-        integer                           :: counter
-        !
-        counter = self%data_groups%size()
-        !
-    end function getNumberOfDataGroupRx
-    !
-    !
-    subroutine savePredictedData( self, tx )
-        implicit none
-        !
-        class( Receiver_t ), intent( inout ) :: self
-        class( Transmitter_t ), intent( in ) :: tx
-        !
-        character(:), allocatable :: code, component
-        real( kind=prec )         :: period, real_part, imaginary
-        real( kind=prec )         :: xyz(3)
         integer                   :: i
-        !#Period(s) Code GG_Lat GG_Lon X(m) Y(m) Z(m) Component Real Imag Error
         !
-        if( allocated( self%data_handles ) ) deallocate( self%data_handles )
+        if( allocated( self%predicted_data ) ) deallocate( self%predicted_data )
+        allocate( self%predicted_data, source = DataGroup_t( self%id, transmitter%id, self%n_comp ) )
         !
         do i = 1, self%n_comp
-             !
-             period = real( tx%period, kind=prec )
-             code = trim( self%code )
-             xyz = (/real( self%location( 1 ), kind=prec ), real( self%location( 2 ), kind=prec ), real( self%location( 3 ), kind=prec )/)
-             component = trim( self%comp_names( i ) )
-             real_part = real( self%Z( i ), kind=prec )
-             imaginary = real( imag( self%Z( i ) ), kind=prec )
-             !
-             call updateDataHandleArray( self%data_handles, buildDataHandle( self%id, code, component, period, xyz, real_part, imaginary ) )
-             !
+            !
+            component = trim( self%comp_names(i)%str )
+            real_part = real( self%response(i), kind=prec )
+            imaginary = real( self%response(i), kind=prec )
+            error = 1.0
+            !
+            call self%predicted_data%add( component, real_part, imaginary, error )
+            !
         enddo
         !
-    end subroutine savePredictedData
+    end subroutine savePredictedDataRx
+    !
+    function getStringReceiverType( int_receiver_type ) result( str_receiver_type )
+    !
+        integer, intent( in ) :: int_receiver_type
+        character(:), allocatable :: str_receiver_type
+        !
+        select case( int_receiver_type )
+            !
+            case( 1 )
+                str_receiver_type = "Full_Impedance"
+            case( 2 )
+                str_receiver_type = "Full_Interstation_TF"
+            case( 3 )
+                str_receiver_type = "Off_Diagonal_Rho_Phase"
+            case( 4 )
+                str_receiver_type = "Phase_Tensor"
+            case( 5 )
+                str_receiver_type = "Off_Diagonal_Impedance"
+            case( 6 )
+                str_receiver_type = "Ex_Field"
+            case( 7 )
+                str_receiver_type = "Ey_Field"
+            case( 8 )
+                str_receiver_type = "Bx_Field"
+            case( 9 )
+                str_receiver_type = "By_Field"
+            case( 10 )
+                str_receiver_type = "Bz_Field"
+            case( 11 )
+                str_receiver_type = "Full_Vertical_Components"
+            case( 12 )
+                str_receiver_type = "Full_Vertical_Magnetic"
+            case default
+                write( *, * ) "unknow receiver type :[", int_receiver_type, "]"
+                STOP "Receiver.f08: getStringReceiverType()"
+            !
+        end select
+        !
+    end function getStringReceiverType
+    !
+    function getIntReceiverType( str_receiver_type ) result( int_receiver_type )
+        !
+        character(:), allocatable, intent( in ) :: str_receiver_type
+        integer :: int_receiver_type
+        !
+        int_receiver_type = 0
+        !
+        select case( str_receiver_type )
+            !
+            case( "Full_Impedance" )
+                int_receiver_type = 1
+            case( "Full_Interstation_TF" )
+                int_receiver_type = 2
+            case( "Off_Diagonal_Rho_Phase" )
+                int_receiver_type = 3
+            case( "Phase_Tensor" )
+                int_receiver_type = 4
+            case( "Off_Diagonal_Impedance" )
+                int_receiver_type = 5
+            case( "Ex_Field" )
+                int_receiver_type = 6
+            case( "Ey_Field" )
+                int_receiver_type = 7
+            case( "Bx_Field" )
+                int_receiver_type = 8
+            case( "By_Field" )
+                int_receiver_type = 9
+            case( "Bz_Field" )
+                int_receiver_type = 10
+            case( "Full_Vertical_Components" )
+                int_receiver_type = 11
+            case( "Full_Vertical_Magnetic" )
+                int_receiver_type = 12
+            case default
+                write( *, * ) "Unknown receiver type :[", str_receiver_type, "]"
+                STOP "Receiver.f08: getIntReceiverType()"
+            !
+        end select
+        !
+    end function getIntReceiverType
     !
 end module Receiver

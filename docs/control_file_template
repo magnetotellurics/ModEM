@@ -1,0 +1,29 @@
+#
+# ModEMControlFile template
+#
+# GRID
+#
+#grid_header [ModEM|HDF5]: ModEM
+#
+#grid [SG|MR]: SG
+#
+#
+source [1D|2D]                     : 1D
+#
+# SOLVER
+#
+QMR_iters [40]                     : 40
+BCG_iters [80]                     : 80
+max_divcor [20]                    : 20
+max_divcor_iters [100]             : 100
+tolerance_divcor [1E-5]            : 1E-5
+tolerance_qmr [1E-7]               : 1E-7
+forward_solver [FILE|IT|IT_DC]     : IT_DC
+#
+# MODEL
+#
+model_method [mirror|fixed height] : fixed height
+#
+model_n_air_layer [10]             : 10
+#
+model_max_height [200.0]           : 200.0
