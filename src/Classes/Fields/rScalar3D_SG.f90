@@ -64,11 +64,11 @@ module rScalar3D_SG
     !
 contains
     !
-    function rScalar3D_SG_ctor( igrid, grid_type ) result ( self )
+    function rScalar3D_SG_ctor( grid, grid_type ) result ( self )
         implicit none
         !
-        class( Grid3D_SG_t ), target, intent( in ) :: igrid
-        character( len=4 ), intent( in )      :: grid_type
+        class( Grid3D_SG_t ), target, intent( in ) :: grid
+        character( len=4 ), intent( in )           :: grid_type
         !
         type( rScalar3D_SG_t ) :: self
         !
@@ -80,11 +80,11 @@ contains
         !
         call self%init()
         !
-        self%grid => igrid
+        self%grid => grid
         self%grid_type = grid_type
         !
         ! Grid dimensions
-        call igrid%GetDimensions(nx, ny, nz, nzAir)
+        call grid%GetDimensions( nx, ny, nz, nzAir )
         nz_earth = nz - nzAir
         !
         self%nx = nx
@@ -110,11 +110,12 @@ contains
              
         else
             write( *, * ) "Error: rScalar3D_SG_ctor > unrecognized grid type: [", grid_type, "]"
-			stop
+            stop
         end if
         !
         self%is_allocated = self%is_allocated.AND.(status .EQ. 0)
-        if( self%is_allocated) then
+        !
+        if( self%is_allocated ) then
              self%v = R_ZERO
         else
              stop "Error: rScalar3D_SG_ctor > Unable to allocate rScalar - invalid grid supplied"
@@ -152,7 +153,7 @@ contains
         integer :: Nx, Ny, Nz
         character(4) :: grid_type
         integer :: i, j, k, k1, k2, istat
-        complex( kind=prec ), allocatable :: temp(:)
+        real( kind=prec ), allocatable :: temp(:)
         logical :: ok, hasname, binary
         character(:), allocatable :: fname, isbinary
         !
@@ -179,7 +180,7 @@ contains
                      .AND.binary) then
                  write( *, * ) "Error: rScalar3D_SG_t::readRScalar3D_SG: "
                  write( *, * ) "            Unable to read scalar from formatted file ", &
-                            trim(fname), ". Exiting."
+                            trim(fname), "."
                  stop
             end if
             !
@@ -202,7 +203,7 @@ contains
                  !
                  if( (k1 < 0) .or. (k2 > Nz)) then
                         write( *, * ) "Error: rScalar3D_SG::readRScalar3D_SG: "
-                        write( *, * ) "      While reading the ", i, "th block. Exiting."
+                        write( *, * ) "      While reading the ", i, "th block."
                         stop
                  else if( k1 > k2) then
                         write( *, * ) "Warning: rScalar3D_SG::readRScalar3D_SG: "
@@ -214,7 +215,7 @@ contains
                         
                         if( istat /= 0) then
                              write( *, * ) "Error: rScalar3D_SG::readRScalar3D_SG: "
-                             write( *, * ) "            While reading the ", j, "th row in ", i,"th block. Exiting."
+                             write( *, * ) "            While reading the ", j, "th row in ", i,"th block."
                              stop
                         end if
                         
@@ -246,7 +247,7 @@ contains
         !
         integer :: Nx, Ny, Nz
         integer :: i, j, k, k1, k2, istat
-        complex( kind=prec ), allocatable, dimension(:, :) :: temp
+        real( kind=prec ), allocatable, dimension(:, :) :: temp
         logical :: ok, hasname, binary
         character(80) :: fname, isbinary
         !
@@ -270,14 +271,14 @@ contains
                      .AND..NOT.binary) then             
                  write( *, * ) "Error: rScalar3D_SG::writeRScalar3D_SG: "
                  write( *, * ) "            Unable to write vector to unformatted file ", &
-                            trim(fname), ". Exiting."
+                            trim(fname), "."
                  !
                  stop
             else if( (index(isbinary,"no") > 0.or.index(isbinary,"NO") > 0) &
                      .AND.binary) then
                  write( *, * ) "Error: rScalar3D_SG::writeRScalar3D_SG: "
                  write( *, * ) " Unable to write vector to formatted file ", &
-                            trim(fname), ". Exiting."
+                            trim(fname), "."
                  !
                  stop
             end if
@@ -314,7 +315,7 @@ contains
                  !
                  if( istat /= 0) then
                         write( *, * ) "Error: rScalar3D_SG::writeRScalar3D_SG: "
-                        write( *, * ) "            Failed while writing to file. Exiting."
+                        write( *, * ) "            Failed while writing to file."
                         
                         stop
                  end if
@@ -349,13 +350,13 @@ contains
         complex( kind=prec ), intent( in )       :: cvalue
         !
         select case( self%grid_type )
-            case (CORNER) 
-                 self%v((/1, self%NdV(1)/), :, :) = cvalue
-                 self%v(:, (/1, self%NdV(2)/), :) = cvalue
-                 self%v(:, :, (/1, self%NdV(3)/)) = cvalue
+            case ( CORNER ) 
+                 self%v((/1, self%NdV(1)/), :, :) = real( cvalue%re, kind=prec )
+                 self%v(:, (/1, self%NdV(2)/), :) = real( cvalue%re, kind=prec )
+                 self%v(:, :, (/1, self%NdV(3)/)) = real( cvalue%re, kind=prec )
                  !
             case default
-                 stop "Error: setAllBoundaryRScalar3D_SG > Grid type not recognized. Exiting."
+                 stop "Error: setAllBoundaryRScalar3D_SG > Grid type not recognized."
         end select
         !
     end subroutine setAllBoundaryRScalar3D_SG
@@ -381,52 +382,52 @@ contains
              if( int_only_p) then
                 select case (bdry)
                 case("x1")
-                     self%v(1, 2:self%NdV(2)-1, 2:self%NdV(3)-1) = cvalue 
+                     self%v(1, 2:self%NdV(2)-1, 2:self%NdV(3)-1) = real( cvalue%re, kind=prec ) 
                 case("x2")
-                     self%v(self%NdV(1), 2:self%NdV(2)-1, 2:self%NdV(3)-1) = cvalue
+                     self%v(self%NdV(1), 2:self%NdV(2)-1, 2:self%NdV(3)-1) = real( cvalue%re, kind=prec )
                 case("y1")
-                     self%v(2:self%NdV(1)-1, 1, 2:self%NdV(3)-1) = cvalue
+                     self%v(2:self%NdV(1)-1, 1, 2:self%NdV(3)-1) = real( cvalue%re, kind=prec )
                 case("y2")
-                     self%v(2:self%NdV(1)-1, self%NdV(2), 2:self%NdV(3)-1) = cvalue
+                     self%v(2:self%NdV(1)-1, self%NdV(2), 2:self%NdV(3)-1) = real( cvalue%re, kind=prec )
                 case("z1")
-                     self%v(2:self%NdV(1)-1, 2:self%NdV(2)-1, 1) = cvalue
+                     self%v(2:self%NdV(1)-1, 2:self%NdV(2)-1, 1) = real( cvalue%re, kind=prec )
                 case("z2")
-                     self%v(2:self%NdV(1)-1, 2:self%NdV(2)-1, self%NdV(3)) = cvalue
+                     self%v(2:self%NdV(1)-1, 2:self%NdV(2)-1, self%NdV(3)) = real( cvalue%re, kind=prec )
                 end select
              else
                 select case(bdry)
                 case("x1")
-                     self%v(1, :, :) = cvalue
+                     self%v(1, :, :) = real( cvalue%re, kind=prec )
                 case("x2")
-                     self%v(self%NdV(1), :, :) = cvalue
+                     self%v(self%NdV(1), :, :) = real( cvalue%re, kind=prec )
                 case("y1")
-                     self%v(:, 1, :) = cvalue
+                     self%v(:, 1, :) = real( cvalue%re, kind=prec )
                 case("y2")
-                     self%v(:, self%NdV(2), :) = cvalue
+                     self%v(:, self%NdV(2), :) = real( cvalue%re, kind=prec )
                 case("z1")
-                     self%v(:, :, 1) = cvalue
+                     self%v(:, :, 1) = real( cvalue%re, kind=prec )
                 case("z2")
-                     self%v(:, :, self%NdV(3)) = cvalue
+                     self%v(:, :, self%NdV(3)) = real( cvalue%re, kind=prec )
                 end select
              end if
              !
         case(FACE)
              select case(bdry)
                  case("x1")
-                    self%v(1, :, :) = cvalue
+                    self%v(1, :, :) = real( cvalue%re, kind=prec )
                  case("x2")
-                    self%v(self%NdV(1), :, :) = cvalue
+                    self%v(self%NdV(1), :, :) = real( cvalue%re, kind=prec )
                  case("y1")
-                    self%v(:, 1, :) = cvalue
+                    self%v(:, 1, :) = real( cvalue%re, kind=prec )
                  case("y2")
-                    self%v(:, self%NdV(2), :) = cvalue
+                    self%v(:, self%NdV(2), :) = real( cvalue%re, kind=prec )
                  case("z1")
-                    self%v(:, :, 1) = cvalue
+                    self%v(:, :, 1) = real( cvalue%re, kind=prec )
                  case("z2")
-                    self%v(:, :, self%NdV(3)) = cvalue
+                    self%v(:, :, self%NdV(3)) = real( cvalue%re, kind=prec )
              end select
              !
-        case default             
+        case default
              stop "Error: setOneBoundaryRScalar3D_SG > Invalid grid type"
         end select
         !
@@ -437,6 +438,10 @@ contains
         !
         class( rScalar3D_SG_t ), intent( inout ) :: self
         complex( kind=prec ), intent( in )       :: cvalue
+        !
+        write( *, * ) "Error: setAllInteriorRScalar3D_SG to be implement: ", cvalue
+        stop
+        !
     end subroutine setAllInteriorRScalar3D_SG
     !
     subroutine intBdryIndicesRScalar3D_SG( self, ind_i, ind_b )
@@ -446,7 +451,7 @@ contains
         integer, allocatable, intent( out )   :: ind_i(:), ind_b(:)
         !
         integer :: nVec(3), nVecT, nBdry, nb, ni, i
-        complex( kind=prec ), allocatable :: temp(:)
+        real( kind=prec ), allocatable :: temp(:)
         type( rScalar3D_SG_t ) :: phi
         !
         !
@@ -462,25 +467,27 @@ contains
         end if
         !
         select case( self%grid_type )
-        case(CORNER)
-             nVecT = size(phi%v)
-                    
-             allocate(temp(nVecT))
-                    
-             phi%v(1,:,:) = 1
-             phi%v(phi%nx+1,:,:) = 1
-             phi%v(:,1,:) = 1
-             phi%v(:,phi%ny+1,:) = 1
-             phi%v(:,:,1) = 1
-             phi%v(:,:,phi%nz+1) = 1
-             
-             call phi%getArray(temp)
-
+            case(CORNER)
+                 nVecT = size(phi%v)
+                 !
+                 allocate(temp(nVecT))
+                 !
+                 phi%v(1,:,:) = 1
+                 phi%v(phi%nx+1,:,:) = 1
+                 phi%v(:,1,:) = 1
+                 phi%v(:,phi%ny+1,:) = 1
+                 phi%v(:,:,1) = 1
+                 phi%v(:,:,phi%nz+1) = 1
+                 !
+                 call phi%getArray(temp)
+                 !
+            case default
+                 stop "Error: intBdryIndicesRScalar3D_SG: Unknown self%grid_type"
         end select
         !
         nBdry = 0
         do i = 1, nVecT
-             nBdry = nBdry + nint(real(temp(i)))
+             nBdry = nBdry + nint(temp(i))
         end do
         !
         if( allocated(ind_i)) deallocate(ind_i)
@@ -492,7 +499,7 @@ contains
         nb = 0
         ni = 0
         do i = 1, nVecT
-             if( nint(real(temp(i))).eq.1) then
+             if( nint(temp(i)).eq.1) then
                 nb = nb+1
                 ind_b(nb) = i
              else
@@ -534,7 +541,7 @@ contains
         complex( kind=prec ), allocatable, intent( out ) :: array(:)
         !
         allocate(array(self%length()))
-        array = (/reshape(self%v, (/self%Nxyz, 1/))/)
+        array = cmplx( (/reshape(self%v, (/self%Nxyz, 1/))/), 0.0, kind=prec )
         !
     end subroutine getComplexArrayRScalar3D_SG
     !
@@ -554,14 +561,14 @@ contains
         class( rScalar3D_SG_t ), intent( inout ) :: self
         complex( kind=prec ), intent( in )       :: array(:)
         !
-        self%v = reshape(array, (/self%NdV(1), self%NdV(2), self%NdV(3)/))
+        self%v = reshape( real( array%re, kind=prec ), (/self%NdV(1), self%NdV(2), self%NdV(3)/))
         !
     end subroutine setComplexArrayRScalar3D_SG
     !
     subroutine setVecComponentsRScalar3D_SG( self, xyz, &
                                              xmin, xstep, xmax, &
                                              ymin, ystep, ymax, &
-                                             zmin, zstep, zmax, cvalue )
+                                             zmin, zstep, zmax, rvalue )
         implicit none
         !
         class( rScalar3D_SG_t ), intent( inout ) :: self
@@ -569,7 +576,7 @@ contains
         integer, intent( in )                    :: xmin, xstep, xmax
         integer, intent( in )                    :: ymin, ystep, ymax
         integer, intent( in )                    :: zmin, zstep, zmax
-        complex( kind=prec ), intent( in ) :: cvalue
+        real( kind=prec ), intent( in )          :: rvalue
         !
         integer :: x1, x2
         integer :: y1, y2
@@ -588,7 +595,7 @@ contains
         if( zmin == 0) z1 = self%NdV(3)
         if( zmax <= 0) z2 = self%NdV(3) + zmax
         !
-        self%v(x1:x2:xstep, y1:y2:ystep, z1:z2:zstep) = cvalue
+        self%v(x1:x2:xstep, y1:y2:ystep, z1:z2:zstep) = rvalue
         !
     end subroutine setVecComponentsRScalar3D_SG
     !
@@ -601,7 +608,7 @@ contains
              stop "Error: zerosRScalar3D_SG > Not allocated."
         end if
         !
-        self%v = C_ZERO
+        self%v = R_ZERO
         !
     end subroutine zerosRScalar3D_SG
     !
@@ -616,8 +623,6 @@ contains
             select type( rhs )
                 class is( rScalar3D_SG_t )
                     self%v = self%v + rhs%v
-                !class is( cScalar3D_SG_t )
-                    !self%v = self%v + rhs%v
                 class default
                     stop "Error: addRScalar3D_SG: undefined rhs"
             end select
@@ -639,8 +644,6 @@ contains
             select type( rhs )
                 class is( rScalar3D_SG_t )
                     self%v = self%v - rhs%v
-                !class is( cScalar3D_SG_t )
-                    !self%v = self%v - rhs%v
                 class default
                     stop "Error: subRScalar3D_SG: undefined rhs"
             end select
@@ -662,8 +665,6 @@ contains
             select type( rhs )
                 class is( rScalar3D_SG_t )
                     self%v = self%v * rhs%v
-                !class is( cScalar3D_SG_t )
-                    !self%v = self%v * rhs%v
                 class default
                     stop "Error: multByFieldRScalar3D_SG: undefined rhs"
             end select
@@ -677,10 +678,10 @@ contains
     subroutine multByValueRScalar3D_SG( self, cvalue )
         implicit none
         !
-        class( rScalar3D_SG_t ), intent( inout )  :: self
-        complex( kind=prec ), intent( in )  :: cvalue
+        class( rScalar3D_SG_t ), intent( inout ) :: self
+        complex( kind=prec ), intent( in )       :: cvalue
         !
-        self%v = self%v * cvalue
+        self%v = self%v * real( cvalue%re, kind=prec )
         !
     end subroutine multByValueRScalar3D_SG
     !
@@ -695,8 +696,6 @@ contains
             select type( rhs )
                 class is( rScalar3D_SG_t )
                     self%v = self%v / rhs%v
-                !class is( cScalar3D_SG_t )
-                    !self%v = self%v / rhs%v
                 class default
                     stop "Error: divByFieldRScalar3D_SG: undefined rhs"
             end select
@@ -713,7 +712,7 @@ contains
         class( rScalar3D_SG_t ), intent( inout ) :: self
         complex( kind=prec ), intent( in ) :: cvalue
         !
-        self%v = self%v / cvalue
+        self%v = self%v / real( cvalue%re, kind=prec )
         !
     end subroutine divByValueRScalar3D_SG
     !
@@ -728,11 +727,9 @@ contains
             !
             select type( rhs )
                 class is( rScalar3D_SG_t )
-                    cvalue = sum( self%v * rhs%v )
-                !class is( cScalar3D_SG_t )
-                    !cvalue = sum( self%v * rhs%v )
+                    cvalue = cmplx( sum( self%v * rhs%v ), 0.0, kind=prec )
                 class default
-                    stop "Error: dotProdRScalar3D_SG: undefined rhs"
+                    stop "Error: dotProdRScalar3D_SG > undefined rhs"
             end select
             !
         else
@@ -748,21 +745,8 @@ contains
         class( Scalar_t ), intent( in )          :: rhs
         complex( kind=prec ), intent( in )       :: c1, c2
         !
-        !  linear combination, in place: self = c1*self+c2*rhs
-        if( self%isCompatible(rhs)) then
-            !
-            select type( rhs )
-                class is( rScalar3D_SG_t )
-                    self%v = c1*self%v + c2 * rhs%v
-                !class is( cScalar3D_SG_t )
-                    !self%v = c1*self%v + c2 * rhs%v
-                class default
-                    stop "Error: linCombSRScalar3D_SG: undefined rhs"
-            !
-            end select
-        else
-            stop "Error: linCombSRScalar3D_SG > Incompatible rhs"
-        end if
+        write( *, * ) "Error: linCombSRScalar3D_SG to be implemented: ", c1, c2
+        stop
         !
     end subroutine linCombSRScalar3D_SG
     !
@@ -773,18 +757,8 @@ contains
         class( Scalar_t ), intent( inout )    :: rhs
         complex( kind=prec ), intent( in )    :: cvalue
         !
-        if( self%isCompatible(rhs)) then
-            select type( rhs )
-                class is( rScalar3D_SG_t )
-                    rhs%v = rhs%v + cvalue * self%v
-                !class is( cScalar3D_SG_t )
-                    !rhs%v = rhs%v + cvalue * self%v
-                class default
-                    stop "Error: scMultAddSRScalar3D_SG: undefined rhs"
-            end select
-        else
-            stop "Error: scMultAddSRScalar3D_SG > Incompatible rhs"
-        end if
+        write( *, * ) "Error: scMultAddSRScalar3D_SG to be implemented: ", cvalue
+        stop
         !
     end subroutine scMultAddSRScalar3D_SG
     !

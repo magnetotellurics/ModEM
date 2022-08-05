@@ -77,8 +77,6 @@ contains
         !
     end subroutine zeroDiagnosticsSolver 
     !
-    !********
-    !
     subroutine initializeSolver( self )
         implicit none
         !

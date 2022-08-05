@@ -80,21 +80,14 @@ contains
         class( DivergenceCorrection_t ), intent( in ) :: self
         real( kind=prec ), intent( in )               :: omega
         class( Source_t ), intent( in )               :: source
-        class( Scalar_t ), intent( inout )           :: phi0
+        class( Scalar_t ), intent( inout )            :: phi0
         !
         complex( kind=prec ) :: c_factor
-        class( Vector_t ), allocatable :: e_interior
         !
         c_factor = -ONE_I / ( mu_0 * ISIGN * omega ) ! 1 / ( isign * 1i * w * mu )
         !
-        !    take divergence of sourceInterior, and return as cScalar of
-        !     appropriate explicit type
-        call source%E%interior( e_interior )
-        call self%solver%preconditioner%model_operator%Div( e_interior, phi0 )
+        call self%solver%preconditioner%model_operator%Div( source%E%interior(), phi0 )
         !
-        deallocate( e_interior )
-        !
-        !  multiply result by c_factor (in place)
         call phi0%mult( c_factor )
         !
     end subroutine rhsDivCorDivergenceCorrection
@@ -102,33 +95,17 @@ contains
     !
     subroutine divCorrDivergenceCorrection( self, inE, outE, phi0 )
         implicit none
-        ! function to compute divergence correction for input electric
-        ! field vector inE, returning result in outE 
-        !  Optional argument phi0 is scaled divergence of source term
-        !     computed by rhsDivCor
         !
         class( DivergenceCorrection_t ), intent( inout ) :: self
-        class( Vector_t ), intent( in )                 :: inE
-        class( Vector_t ), intent( inout )              :: outE
-        class( Scalar_t ), intent( in ), optional       :: phi0
+        class( Vector_t ), intent( in )                  :: inE
+        class( Vector_t ), intent( inout )               :: outE
+        class( Scalar_t ), intent( in ), optional        :: phi0
         !
         class( Scalar_t ), allocatable :: phiSol, phiRHS
         logical :: SourceTerm
         !
         !
         SourceTerm = present( phi0 )
-        !
-        ! allocating phiSol, phiRHS  -- these need to be cScalars of explicit
-        !    type that matches inE, outE -- phi0 may not be an actual input
-        !    so this cannot be used as a prototype
-        !    I am writing this under the assumption that there will be
-        !     createScalar, createVector in ModelOperator class (should be
-        !      declared as procedures in abstract class, implemented to return
-        !      cVector or cScalar of appropriate type)
-        !
-        !    I DO NOT WANT select type at this level -- 
-        !      make procedures in ForwardModeling generic, with no reference to
-        !      specific classes
         !
         select type( grid => self%solver%preconditioner%model_operator%metric%grid )
             class is( Grid3D_SG_t )

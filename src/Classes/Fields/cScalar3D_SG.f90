@@ -64,10 +64,10 @@ module cScalar3D_SG
     !
 contains
     !
-    function cScalar3D_SG_ctor( igrid, grid_type ) result ( self )
+    function cScalar3D_SG_ctor( grid, grid_type ) result ( self )
         implicit none
         !
-        class( Grid3D_SG_t ), target, intent( in ) :: igrid
+        class( Grid3D_SG_t ), target, intent( in ) :: grid
         character( len=4 ), intent( in )           :: grid_type
         !
         type( cScalar3D_SG_t ) :: self
@@ -79,11 +79,11 @@ contains
         !
         call self%init()
         !
-        self%grid => igrid
+        self%grid => grid
         self%grid_type = grid_type
         !
         ! Grid dimensions
-        call igrid%GetDimensions(nx, ny, nz, nzAir)
+        call grid%GetDimensions(nx, ny, nz, nzAir)
         nz_earth = nz - nzAir
         !
         self%nx = nx
@@ -116,8 +116,7 @@ contains
         if( self%is_allocated) then
              self%v = R_ZERO
         else
-             write( *, * ) "Error: cScalar3D_SG_ctor > Unable to allocate cScalar - invalid grid supplied"
-             stop
+             stop "Error: cScalar3D_SG_ctor > Unable to allocate cScalar - invalid grid supplied"
         end if
         !
         self%Nxyz = product( self%NdV )
@@ -426,7 +425,7 @@ contains
                     self%v(:, :, self%NdV(3)) = cvalue
              end select
              !
-        case default             
+        case default
              stop "Error: setOneBoundaryCScalar3D_SG > Invalid grid type"
         end select
         !
@@ -437,6 +436,9 @@ contains
         !
         class( cScalar3D_SG_t ), intent( inout ) :: self
         complex( kind=prec ), intent( in )       :: cvalue
+        !
+        stop "Error: setAllInteriorCScalar3D_SG to be implemented!"
+        !
     end subroutine setAllInteriorCScalar3D_SG
     !
     subroutine intBdryIndicesCScalar3D_SG( self, ind_i, ind_b )
@@ -463,19 +465,21 @@ contains
         !
         select case( self%grid_type )
         case(CORNER)
-             nVecT = size(phi%v)
-                    
-             allocate(temp(nVecT))
-                    
-             phi%v(1,:,:) = 1
-             phi%v(phi%nx+1,:,:) = 1
-             phi%v(:,1,:) = 1
-             phi%v(:,phi%ny+1,:) = 1
-             phi%v(:,:,1) = 1
-             phi%v(:,:,phi%nz+1) = 1
-             
-             call phi%getArray(temp)
-
+            nVecT = size(phi%v)
+            !
+            allocate(temp(nVecT))
+            !
+            phi%v(1,:,:) = 1
+            phi%v(phi%nx+1,:,:) = 1
+            phi%v(:,1,:) = 1
+            phi%v(:,phi%ny+1,:) = 1
+            phi%v(:,:,1) = 1
+            phi%v(:,:,phi%nz+1) = 1
+            !
+            call phi%getArray(temp)
+            !
+            case default
+                stop "Error: intBdryIndicesCScalar3D_SG: Unknown self%grid_type"
         end select
         !
         nBdry = 0
@@ -523,7 +527,7 @@ contains
         real( kind=prec ), allocatable, intent( out ) :: array(:)
         !
         allocate(array(self%length()))
-        array = (/reshape(self%v, (/self%Nxyz, 1/))/)
+        array = (/reshape(real( self%v%re, kind=prec ), (/self%Nxyz, 1/))/)
         !
     end subroutine getRealArrayCScalar3D_SG
     !
@@ -544,7 +548,7 @@ contains
         class( cScalar3D_SG_t ), intent( inout ) :: self
         real( kind=prec ), intent( in )          :: array(:)
         !
-        self%v = reshape(array, (/self%NdV(1), self%NdV(2), self%NdV(3)/))
+        self%v = reshape( cmplx( array, 0.0, kind=prec ), (/self%NdV(1), self%NdV(2), self%NdV(3)/))
         !
     end subroutine setRealArrayCScalar3D_SG
     !
@@ -617,7 +621,7 @@ contains
                 class is( cScalar3D_SG_t )
                     self%v = self%v + rhs%v
                 class is( rScalar3D_SG_t )
-                    self%v = self%v + rhs%v
+                    self%v = self%v + cmplx( rhs%v, 0.0, kind=prec )
                 class default
                     stop "Error: addCScalar3D_SG: undefined rhs"
             end select
@@ -640,7 +644,7 @@ contains
                 class is( cScalar3D_SG_t )
                     self%v = self%v - rhs%v
                 class is( rScalar3D_SG_t )
-                    self%v = self%v - rhs%v
+                    self%v = self%v - cmplx( rhs%v, 0.0, kind=prec )
                 class default
                     stop "Error: subCScalar3D_SG: undefined rhs"
             end select
@@ -663,7 +667,7 @@ contains
                 class is( cScalar3D_SG_t )
                     self%v = self%v * rhs%v
                 class is( rScalar3D_SG_t )
-                    self%v = self%v * rhs%v
+                    self%v = self%v * cmplx( rhs%v, 0.0, kind=prec )
                 class default
                     stop "Error: multByFieldCScalar3D_SG: undefined rhs"
             end select
@@ -677,8 +681,8 @@ contains
     subroutine multByValueCScalar3D_SG( self, cvalue )
         implicit none
         !
-        class( cScalar3D_SG_t ), intent( inout )  :: self
-        complex( kind=prec ), intent( in )  :: cvalue
+        class( cScalar3D_SG_t ), intent( inout ) :: self
+        complex( kind=prec ), intent( in )       :: cvalue
         !
         self%v = self%v * cvalue
         !
@@ -696,7 +700,7 @@ contains
                 class is( cScalar3D_SG_t )
                     self%v = self%v / rhs%v
                 class is( rScalar3D_SG_t )
-                    self%v = self%v / rhs%v
+                    self%v = self%v / cmplx( rhs%v, 0.0, kind=prec )
                 class default
                     stop "Error: divByFieldCScalar3D_SG: undefined rhs"
             end select
@@ -711,7 +715,7 @@ contains
         implicit none
         !
         class( cScalar3D_SG_t ), intent( inout ) :: self
-        complex( kind=prec ), intent( in ) :: cvalue
+        complex( kind=prec ), intent( in )       :: cvalue
         !
         self%v = self%v / cvalue
         !
@@ -728,11 +732,9 @@ contains
             !
             select type( rhs )
                 class is( cScalar3D_SG_t )
-                    cvalue = sum( conjg( self%v ) * conjg( rhs%v ) )
-                class is( rScalar3D_SG_t )
                     cvalue = sum( conjg( self%v ) * rhs%v )
                 class default
-                    stop "Error: dotProdCScalar3D_SG: undefined rhs"
+                    stop "Error: dotProdCScalar3D_SG > undefined rhs"
             end select
             !
         else
@@ -751,11 +753,9 @@ contains
         !  linear combination, in place: self = c1*self+c2*rhs
         if( self%isCompatible(rhs)) then
             !
-            select type(rhs)
+            select type( rhs )
                 class is( cScalar3D_SG_t )
-                    self%v = c1*self%v + c2 * rhs%v
-                class is( rScalar3D_SG_t )
-                    self%v = c1*self%v + c2 * rhs%v
+                    self%v = c1 * self%v + c2 * rhs%v
                 class default
                     stop "Error: linCombSCScalar3D_SG: undefined rhs"
             !
@@ -773,15 +773,15 @@ contains
         class( Scalar_t ), intent( inout )    :: rhs
         complex( kind=prec ), intent( in )    :: cvalue
         !
-        if( self%isCompatible(rhs)) then
-            select type(rhs)
+        if( self%isCompatible( rhs ) ) then
+            !
+            select type( rhs )
                 class is( cScalar3D_SG_t )
-                    rhs%v = rhs%v + cvalue * self%v
-                class is( rScalar3D_SG_t )
                     rhs%v = rhs%v + cvalue * self%v
                 class default
                     stop "Error: scMultAddSCScalar3D_SG: undefined rhs"
             end select
+            !
         else
             stop "Error: scMultAddSCScalar3D_SG > Incompatible rhs"
         end if
@@ -806,13 +806,6 @@ contains
         !
         select type( rhs )
             class is( cScalar3D_SG_t )
-                !
-                self%NdV = rhs%NdV
-                self%Nxyz = rhs%Nxyz
-                !
-                self%v = rhs%v
-                !
-            class is( rScalar3D_SG_t )
                 !
                 self%NdV = rhs%NdV
                 self%Nxyz = rhs%Nxyz

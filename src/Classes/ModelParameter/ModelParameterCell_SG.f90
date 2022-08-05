@@ -384,7 +384,7 @@ contains
                     !
                     class is( ModelParameterCell_SG_t )
                         ! Create local temporary scalar and vector
-                        call eVec%interior( vTemp )
+                        vTemp = eVec%interior()
                         ! Divide by total volume -- sum of 4 cells
                         ! surrounding edge -- just 4*V_E
                         call vTemp%div( self%metric%Vedge )

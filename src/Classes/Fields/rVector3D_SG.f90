@@ -64,7 +64,7 @@ module rVector3D_SG
     !
 contains
     !
-    function rVector3D_SG_ctor( igrid, grid_type ) result ( self )
+    function rVector3D_SG_ctor( igrid, grid_type ) result( self )
         implicit none
         !
         class( Grid3D_SG_t ), target, intent( in ) :: igrid
@@ -264,17 +264,17 @@ contains
         !
         select case(self%grid_type)
             case(EDGE)
-                self%x(:, (/1, self%NdX(2)/), :) = cvalue
-                self%x(:, :, (/1, self%NdX(3)/)) = cvalue
-                self%y((/1, self%NdY(1)/), :, :) = cvalue
-                self%y(:, :, (/1, self%NdY(3)/)) = cvalue
-                self%z(:, (/1, self%NdZ(2)/), :) = cvalue
-                self%z((/1, self%NdZ(1)/), :, :) = cvalue
+                self%x(:, (/1, self%NdX(2)/), :) = real( cvalue%re, kind=prec )
+                self%x(:, :, (/1, self%NdX(3)/)) = real( cvalue%re, kind=prec )
+                self%y((/1, self%NdY(1)/), :, :) = real( cvalue%re, kind=prec )
+                self%y(:, :, (/1, self%NdY(3)/)) = real( cvalue%re, kind=prec )
+                self%z(:, (/1, self%NdZ(2)/), :) = real( cvalue%re, kind=prec )
+                self%z((/1, self%NdZ(1)/), :, :) = real( cvalue%re, kind=prec )
                 !
             case(FACE)
-                self%x((/1, self%NdX(1)/), :, :) = cvalue
-                self%y(:, (/1, self%NdY(2)/), :) = cvalue
-                self%z(:, :, (/1, self%NdZ(3)/)) = cvalue
+                self%x((/1, self%NdX(1)/), :, :) = real( cvalue%re, kind=prec )
+                self%y(:, (/1, self%NdY(2)/), :) = real( cvalue%re, kind=prec )
+                self%z(:, :, (/1, self%NdZ(3)/)) = real( cvalue%re, kind=prec )
                 !
             case default
                 stop "Error: setAllBoundaryRVector3D_SG > Invalid grid type."
@@ -290,16 +290,16 @@ contains
         !
         select case(self%grid_type)
             case(EDGE)
-                self%x(:, 2:self%NdX(2)-1, :) = cvalue
-                self%x(:, :, 2:self%NdX(3)-1) = cvalue
-                self%y(2:self%NdY(1)-1, :, :) = cvalue
-                self%y(:, :, 2:self%NdY(3)-1) = cvalue
-                self%z(:, 2:self%NdZ(2)-1, :) = cvalue
-                self%z(2:self%NdZ(1)-1, :, :) = cvalue
+                self%x(:, 2:self%NdX(2)-1, :) = real( cvalue%re, kind=prec )
+                self%x(:, :, 2:self%NdX(3)-1) = real( cvalue%re, kind=prec )
+                self%y(2:self%NdY(1)-1, :, :) = real( cvalue%re, kind=prec )
+                self%y(:, :, 2:self%NdY(3)-1) = real( cvalue%re, kind=prec )
+                self%z(:, 2:self%NdZ(2)-1, :) = real( cvalue%re, kind=prec )
+                self%z(2:self%NdZ(1)-1, :, :) = real( cvalue%re, kind=prec )
             case(FACE)
-                self%x(2:self%NdX(1)-1, :, :) = cvalue
-                self%y(:, 2:self%NdY(2)-1, :) = cvalue
-                self%z(:, :, 2:self%NdZ(3)-1) = cvalue
+                self%x(2:self%NdX(1)-1, :, :) = real( cvalue%re, kind=prec )
+                self%y(:, 2:self%NdY(2)-1, :) = real( cvalue%re, kind=prec )
+                self%z(:, :, 2:self%NdZ(3)-1) = real( cvalue%re, kind=prec )
             case default
                 stop "Error: setAllInteriorRVector3D_SG > Invalid grid type."
         end select
@@ -327,77 +327,77 @@ contains
                 if(int_only_p) then
                   select case (bdry)
                       case("x1")
-                          self%z(1, 2:self%NdZ(2)-1, :) = cvalue
-                          self%y(1, :, 2:self%NdY(3)-1) = cvalue
+                          self%z(1, 2:self%NdZ(2)-1, :) = real( cvalue%re, kind=prec )
+                          self%y(1, :, 2:self%NdY(3)-1) = real( cvalue%re, kind=prec )
                       case("x2")
-                          self%z(self%NdZ(1), 2:self%NdZ(2)-1, :) = cvalue
-                          self%y(self%NdY(1), :, 2:self%NdY(3)-1) = cvalue
+                          self%z(self%NdZ(1), 2:self%NdZ(2)-1, :) = real( cvalue%re, kind=prec )
+                          self%y(self%NdY(1), :, 2:self%NdY(3)-1) = real( cvalue%re, kind=prec )
                       case("y1")
-                          self%z(2:self%NdZ(1)-1, 1, :) = cvalue
-                          self%x(:, 1, 2:self%NdX(3)-1) = cvalue
+                          self%z(2:self%NdZ(1)-1, 1, :) = real( cvalue%re, kind=prec )
+                          self%x(:, 1, 2:self%NdX(3)-1) = real( cvalue%re, kind=prec )
                       case("y2")
-                          self%z(2:self%NdZ(1)-1, self%NdZ(2), :) = cvalue
-                          self%x(:, self%NdX(2), 2:self%NdX(3)-1) = cvalue
+                          self%z(2:self%NdZ(1)-1, self%NdZ(2), :) = real( cvalue%re, kind=prec )
+                          self%x(:, self%NdX(2), 2:self%NdX(3)-1) = real( cvalue%re, kind=prec )
                       case("z1")
-                          self%x(:, 2:self%NdX(2)-1, 1) = cvalue
-                          self%y(2:self%NdY(1)-1, :, 1) = cvalue
+                          self%x(:, 2:self%NdX(2)-1, 1) = real( cvalue%re, kind=prec )
+                          self%y(2:self%NdY(1)-1, :, 1) = real( cvalue%re, kind=prec )
                       case("z2")
-                          self%x(:, 2:self%NdX(2)-1, self%NdX(3)) = cvalue
-                          self%y(2:self%NdY(1)-1, :, self%NdY(3)) = cvalue
+                          self%x(:, 2:self%NdX(2)-1, self%NdX(3)) = real( cvalue%re, kind=prec )
+                          self%y(2:self%NdY(1)-1, :, self%NdY(3)) = real( cvalue%re, kind=prec )
                       case("z1_x")
-                          self%x(:, 2:self%NdX(2)-1, 1) = cvalue
+                          self%x(:, 2:self%NdX(2)-1, 1) = real( cvalue%re, kind=prec )
                       case("z2_x")
-                          self%x(:, 2:self%NdX(2)-1, self%NdX(3)) = cvalue
+                          self%x(:, 2:self%NdX(2)-1, self%NdX(3)) = real( cvalue%re, kind=prec )
                       case("z1_y")
-                          self%y(2:self%NdY(1)-1, :, 1) = cvalue
+                          self%y(2:self%NdY(1)-1, :, 1) = real( cvalue%re, kind=prec )
                       case("z2_y")
-                          self%y(2:self%NdY(1)-1, :, self%NdY(3)) = cvalue
+                          self%y(2:self%NdY(1)-1, :, self%NdY(3)) = real( cvalue%re, kind=prec )
                   end select
                 else
                   select case (bdry)
                       case("x1")
-                          self%z(1, :, :) = cvalue
-                          self%y(1, :, :) = cvalue
+                          self%z(1, :, :) = real( cvalue%re, kind=prec )
+                          self%y(1, :, :) = real( cvalue%re, kind=prec )
                       case("x2")
-                          self%z(self%NdZ(1), :, :) = cvalue
-                          self%y(self%NdY(1), :, :) = cvalue
+                          self%z(self%NdZ(1), :, :) = real( cvalue%re, kind=prec )
+                          self%y(self%NdY(1), :, :) = real( cvalue%re, kind=prec )
                       case("y1")
-                          self%z(:, 1, :) = cvalue
-                          self%x(:, 1, :) = cvalue
+                          self%z(:, 1, :) = real( cvalue%re, kind=prec )
+                          self%x(:, 1, :) = real( cvalue%re, kind=prec )
                       case("y2")
-                          self%z(:, self%NdZ(2), :) = cvalue
-                          self%x(:, self%NdX(2), :) = cvalue
+                          self%z(:, self%NdZ(2), :) = real( cvalue%re, kind=prec )
+                          self%x(:, self%NdX(2), :) = real( cvalue%re, kind=prec )
                       case("z1")
-                          self%x(:, :, 1) = cvalue
-                          self%y(:, :, 1) = cvalue
+                          self%x(:, :, 1) = real( cvalue%re, kind=prec )
+                          self%y(:, :, 1) = real( cvalue%re, kind=prec )
                       case("z2")
-                          self%x(:, :, self%NdX(3)) = cvalue
-                          self%y(:, :, self%NdY(3)) = cvalue
+                          self%x(:, :, self%NdX(3)) = real( cvalue%re, kind=prec )
+                          self%y(:, :, self%NdY(3)) = real( cvalue%re, kind=prec )
                       case("z1_x")
-                          self%x(:, :, 1) = cvalue
+                          self%x(:, :, 1) = real( cvalue%re, kind=prec )
                       case("z2_x")
-                          self%x(:, :, self%NdX(3)) = cvalue
+                          self%x(:, :, self%NdX(3)) = real( cvalue%re, kind=prec )
                       case("z1_y")
-                          self%y(:, :, 1) = cvalue
+                          self%y(:, :, 1) = real( cvalue%re, kind=prec )
                       case("z2_y")
-                          self%y(:, :, self%NdY(3)) = cvalue
+                          self%y(:, :, self%NdY(3)) = real( cvalue%re, kind=prec )
                   end select
                 endif
                 !
             case(FACE)
                 select case (bdry)
                   case("x1")
-                      self%x(1, :, :) = cvalue
+                      self%x(1, :, :) = real( cvalue%re, kind=prec )
                   case("x2")
-                      self%x(self%NdX(1), :, :) = cvalue
+                      self%x(self%NdX(1), :, :) = real( cvalue%re, kind=prec )
                   case("y1")
-                      self%y(:, 1, :) = cvalue
+                      self%y(:, 1, :) = real( cvalue%re, kind=prec )
                   case("y2")
-                      self%y(:, self%NdY(2), :) = cvalue
+                      self%y(:, self%NdY(2), :) = real( cvalue%re, kind=prec )
                   case("z1")
-                      self%z(:, :, 1) = cvalue
+                      self%z(:, :, 1) = real( cvalue%re, kind=prec )
                   case("z2")
-                      self%z(:, :, self%NdZ(3)) = cvalue
+                      self%z(:, :, self%NdZ(3)) = real( cvalue%re, kind=prec )
                 end select
             case default
                 stop "Error: setOneBoundaryRVector3D_SG > Invalid grid type."
@@ -497,7 +497,7 @@ contains
         !
     end subroutine intBdryIndicesRVector3D_SG
     !
-    subroutine boundaryRVector3D_SG( self, boundary )
+    function boundaryRVector3D_SG( self ) result( boundary )
         implicit none
         !
         class( rVector3D_SG_t ), intent( in ) :: self
@@ -508,9 +508,9 @@ contains
         !
         call boundary%setAllInterior( C_ZERO )
        !
-    end subroutine boundaryRVector3D_SG
+    end function boundaryRVector3D_SG
     !
-    subroutine interiorRVector3D_SG( self, interior )
+    function interiorRVector3D_SG( self ) result( interior )
         implicit none
         !
         class( rVector3D_SG_t ), intent( in ) :: self
@@ -521,7 +521,7 @@ contains
         !
         call interior%setAllboundary( C_ZERO )
         !
-    end subroutine interiorRVector3D_SG
+    end function interiorRVector3D_SG
     !
     function lengthRVector3D_SG( self ) result( n )
         implicit none
@@ -600,7 +600,7 @@ contains
     subroutine setVecComponentsRVector3D_SG( self, xyz, &
             &                              xmin, xstep, xmax, &
             &                              ymin, ystep, ymax, &
-            &                              zmin, zstep, zmax, c )
+            &                              zmin, zstep, zmax, rvalue )
         implicit none
         !
         class( rVector3D_SG_t ), intent( inout ) :: self
@@ -608,7 +608,7 @@ contains
         integer, intent( in )                  :: xmin, xstep, xmax
         integer, intent( in )                  :: ymin, ystep, ymax
         integer, intent( in )                  :: zmin, zstep, zmax
-        real( kind=prec ), intent ( in )       :: c
+        real( kind=prec ), intent ( in )       :: rvalue
         !
         integer :: x1, x2
         integer :: y1, y2
@@ -629,7 +629,7 @@ contains
                 if(zmin == 0) z1 = self%NdX(3)
                 if(zmax <= 0) z2 = self%NdX(3) + zmax
                 !
-                self%x(x1:x2:xstep, y1:y2:ystep, z1:z2:zstep) = c
+                self%x(x1:x2:xstep, y1:y2:ystep, z1:z2:zstep) = rvalue
                 !
             case("y")
                 if(xmin == 0) x1 = self%NdY(1)
@@ -641,7 +641,7 @@ contains
                 if(zmin == 0) z1 = self%NdY(3)
                 if(zmax <= 0) z2 = self%NdY(3) + zmax
                 !
-                self%y(x1:x2:xstep, y1:y2:ystep, z1:z2:zstep) = c
+                self%y(x1:x2:xstep, y1:y2:ystep, z1:z2:zstep) = rvalue
                 !
             case("z")
                 if(xmin == 0) x1 = self%NdZ(1)
@@ -653,7 +653,7 @@ contains
                 if(zmin == 0) z1 = self%NdZ(3)
                 if(zmax <= 0) z2 = self%NdZ(3) + zmax
                 !
-                self%z(x1:x2:xstep, y1:y2:ystep, z1:z2:zstep) = c
+                self%z(x1:x2:xstep, y1:y2:ystep, z1:z2:zstep) = rvalue
                 !
             case default
                 stop "Error: setVecComponentsRVector3D_SG > Invalid xyz argument."
@@ -743,9 +743,9 @@ contains
                     self%z = self%z * rhs%v
                 !
                 class is( cScalar3D_SG_t )
-                    self%x = self%x * rhs%v
-                    self%y = self%y * rhs%v
-                    self%z = self%z * rhs%v
+                    self%x = self%x * real( rhs%v%re, kind=prec )
+                    self%y = self%y * real( rhs%v%re, kind=prec )
+                    self%z = self%z * real( rhs%v%re, kind=prec )
                     !
                 class default
                     stop "Error: multByFieldRVector3D_SG: undefined rhs"
@@ -764,9 +764,9 @@ contains
         class( rVector3D_SG_t ), intent( inout ) :: self
         complex( kind=prec ), intent( in )       :: cvalue
         !
-        self%x = cvalue * self%x
-        self%y = cvalue * self%y
-        self%z = cvalue * self%z
+        self%x = real( cvalue%re, kind=prec ) * self%x
+        self%y = real( cvalue%re, kind=prec ) * self%y
+        self%z = real( cvalue%re, kind=prec ) * self%z
         !
     end subroutine multByValueRVector3D_SG
     !
@@ -791,9 +791,9 @@ contains
                     self%z = self%z / rhs%v
                 !
                 class is( cScalar3D_SG_t )
-                    self%x = self%x / rhs%v
-                    self%y = self%y / rhs%v
-                    self%z = self%z / rhs%v
+                    self%x = self%x / real( rhs%v%re, kind=prec )
+                    self%y = self%y / real( rhs%v%re, kind=prec )
+                    self%z = self%z / real( rhs%v%re, kind=prec )
                     !
                 class default
                     stop "Error: divByFieldRVector3D_SG: undefined rhs"
@@ -812,9 +812,9 @@ contains
         class( rVector3D_SG_t ), intent( inout ) :: self
         complex( kind=prec ), intent( in )       :: cvalue
         !
-        self%x = self%x / cvalue
-        self%y = self%y / cvalue
-        self%z = self%z / cvalue
+        self%x = self%x / real( cvalue%re, kind=prec )
+        self%y = self%y / real( cvalue%re, kind=prec )
+        self%z = self%z / real( cvalue%re, kind=prec )
         !
     end subroutine divByValueRVector3D_SG
     !
@@ -835,9 +835,9 @@ contains
             !
             select type( rhs )
                 class is( rVector3D_SG_t )
-                    cvalue = cvalue + sum( self%x * rhs%x )
-                    cvalue = cvalue + sum( self%y * rhs%y )
-                    cvalue = cvalue + sum( self%z * rhs%z )
+                    cvalue = cvalue + cmplx( sum( self%x * rhs%x ), 0.0, kind=prec )
+                    cvalue = cvalue + cmplx( sum( self%y * rhs%y ), 0.0, kind=prec )
+                    cvalue = cvalue + cmplx( sum( self%z * rhs%z ), 0.0, kind=prec )
                 class default
                     stop "Error: dotProdRVector3D_SG: undefined rhs"
             end select
@@ -848,12 +848,12 @@ contains
         !
     end function dotProdRVector3D_SG
     !
-    function diagMultRVector3D_SG( self, rhs ) result ( diag_mult )
+    function diagMultRVector3D_SG( self, rhs ) result( diag_mult )
         implicit none
         !
         class( rVector3D_SG_t ), intent( in ) :: self
-        class( Vector_t ), intent( in )      :: rhs
-        class( Vector_t ), allocatable       :: diag_mult
+        class( Vector_t ), intent( in )       :: rhs
+        class( Vector_t ), allocatable        :: diag_mult
         !
         if( self%isCompatible( rhs ) ) then
             !
@@ -917,42 +917,54 @@ contains
         end select
         !
         select type( cell_obj )
-            class is(rScalar3D_SG_t)
-                select case(E_tmp%grid_type)
-                  case(EDGE)
-                      x_xend = size(E_tmp%x, 1)
-                      x_yend = size(E_tmp%x, 2)
-                      x_zend = size(E_tmp%x, 3)
-                      !
-                      y_xend = size(E_tmp%y, 1)
-                      y_yend = size(E_tmp%y, 2)
-                      y_zend = size(E_tmp%y, 3)
-                      !
-                      z_xend = size(E_tmp%z, 1)
-                      z_yend = size(E_tmp%z, 2)
-                      z_zend = size(E_tmp%z, 3)
-                      !
-                      cell_obj%v = E_tmp%x(:,1:x_yend-1,1:x_zend-1) + &
-                      E_tmp%x(:,2:x_yend,1:x_zend-1)       + &
-                      E_tmp%x(:,1:x_yend-1,2:x_zend)       + &
-                      E_tmp%x(:,2:x_yend,2:x_zend)         + &
-                      E_tmp%y(1:y_xend-1,:,1:y_zend-1)     + &
-                      E_tmp%y(2:y_xend,:,1:y_zend-1)       + &
-                      E_tmp%y(1:y_xend-1,:,2:y_zend)       + &
-                      E_tmp%y(2:y_xend,:,2:y_zend)         + &
-                      E_tmp%z(1:z_xend-1,1:z_yend-1,:)     + &
-                      E_tmp%z(2:z_xend,1:z_yend-1,:)       + &
-                      E_tmp%z(1:z_xend-1,2:z_yend,:)       + &
-                      E_tmp%z(2:z_xend,2:z_yend,:)
-                  case(FACE)
-                      x_xend = size(E_tmp%x, 1)
-                      y_xend = size(E_tmp%y, 1)
-                      z_xend = size(E_tmp%z, 1)
-                      !
-                      cell_obj%v = E_tmp%x(1:x_xend-1,:,:) + E_tmp%x(2:x_xend,:,:) + &
-                                E_tmp%y(:,1:y_yend-1,:) + E_tmp%y(:,2:y_yend,:) + &
-                                E_tmp%z(:,:,1:z_zend-1) + E_tmp%z(:,:,2:z_zend)
-                end select
+            !
+            class is( rScalar3D_SG_t )
+                !
+                select case( E_tmp%grid_type )
+                    !
+                    case(EDGE)
+                        x_xend = size(E_tmp%x, 1)
+                        x_yend = size(E_tmp%x, 2)
+                        x_zend = size(E_tmp%x, 3)
+                        !
+                        y_xend = size(E_tmp%y, 1)
+                        y_yend = size(E_tmp%y, 2)
+                        y_zend = size(E_tmp%y, 3)
+                        !
+                        z_xend = size(E_tmp%z, 1)
+                        z_yend = size(E_tmp%z, 2)
+                        z_zend = size(E_tmp%z, 3)
+                        !
+                        cell_obj%v = E_tmp%x(:,1:x_yend-1,1:x_zend-1) + &
+                        E_tmp%x(:,2:x_yend,1:x_zend-1)       + &
+                        E_tmp%x(:,1:x_yend-1,2:x_zend)       + &
+                        E_tmp%x(:,2:x_yend,2:x_zend)         + &
+                        E_tmp%y(1:y_xend-1,:,1:y_zend-1)     + &
+                        E_tmp%y(2:y_xend,:,1:y_zend-1)       + &
+                        E_tmp%y(1:y_xend-1,:,2:y_zend)       + &
+                        E_tmp%y(2:y_xend,:,2:y_zend)         + &
+                        E_tmp%z(1:z_xend-1,1:z_yend-1,:)     + &
+                        E_tmp%z(2:z_xend,1:z_yend-1,:)       + &
+                        E_tmp%z(1:z_xend-1,2:z_yend,:)       + &
+                        E_tmp%z(2:z_xend,2:z_yend,:)
+                        !
+                    case(FACE)
+                        x_xend = size(E_tmp%x, 1)
+                        y_xend = size(E_tmp%y, 1)
+                        z_xend = size(E_tmp%z, 1)
+                        !
+                        cell_obj%v =    E_tmp%x(1:x_xend-1,:,:) + E_tmp%x(2:x_xend,:,:) + &
+                                        E_tmp%y(:,1:y_yend-1,:) + E_tmp%y(:,2:y_yend,:) + &
+                                        E_tmp%z(:,:,1:z_zend-1) + E_tmp%z(:,:,2:z_zend)
+                    !
+                    case default
+                        stop "Error: sumEdgesRVector3D_SG: undefined E_tmp%grid_type"
+                    !
+                  end select
+                  !
+            class default
+                stop "Error: sumEdgesRVector3D_SG: undefined grid"
+                !
         end select
         !
     end function sumEdgesRVector3D_SG
@@ -1071,9 +1083,9 @@ contains
             select type(rhs)
                 !
                 class is( rVector3D_SG_t )
-                    self%x = c1 * self%x + c2 * rhs%x
-                    self%y = c1 * self%y + c2 * rhs%y
-                    self%z = c1 * self%z + c2 * rhs%z
+                    self%x = real( c1%re, kind=prec ) * self%x + real( c2%re, kind=prec ) * rhs%x
+                    self%y = real( c1%re, kind=prec ) * self%y + real( c2%re, kind=prec ) * rhs%y
+                    self%z = real( c1%re, kind=prec ) * self%z + real( c2%re, kind=prec ) * rhs%z
                 class default
                     stop "Error: linCombSRVector3D_SG > rhs undefined."
             end select
@@ -1088,16 +1100,18 @@ contains
         implicit none
         !
         class( rVector3D_SG_t ), intent( in ) :: self
-        class( Vector_t ), intent( inout )   :: rhs
+        class( Vector_t ), intent( inout )    :: rhs
         complex( kind=prec ), intent( in )    :: cvalue
         !
         if ( self%isCompatible( rhs ) ) then
             !
             select type(rhs)
                 class is( rVector3D_SG_t ) 
-                    rhs%x = rhs%x + cvalue * self%x
-                    rhs%y = rhs%y + cvalue * self%y
-                    rhs%z = rhs%z + cvalue * self%z
+                    rhs%x = rhs%x + real( cvalue%re, kind=prec ) * self%x
+                    rhs%y = rhs%y + real( cvalue%re, kind=prec ) * self%y
+                    rhs%z = rhs%z + real( cvalue%re, kind=prec ) * self%z
+                class default
+                    stop "Error: scMultAddSRVector3D_SG > rhs undefined."
             end select
             !
         else
@@ -1109,10 +1123,10 @@ contains
     subroutine interpFuncRVector3D_SG( self, location, xyz, interp )
         implicit none
         !
-        class( rVector3D_SG_t ), intent( in ) :: self
-        real( kind=prec ), intent( in )       :: location(3)
-        character, intent( in )               :: xyz
-        class( Vector_t ), intent( inout )    :: interp
+        class( rVector3D_SG_t ), intent( in )           :: self
+        real( kind=prec ), intent( in )                 :: location(3)
+        character, intent( in )                         :: xyz
+        class( Vector_t ), allocatable, intent( inout ) :: interp
         !
         real( kind=prec ), allocatable, dimension(:) :: xC, yC, zC
         integer :: ix, iy, iz, i
@@ -1187,17 +1201,20 @@ contains
                                 zC = CumSum([0._prec, grid%dz])
                         end select !xyz
                         !
+                    case default
+                        stop "Error: scMultAddSRVector3D_SG > self%grid_type undefined."
+                    !
                 end select !GRID TYPE
-                !
-                xC = xC - grid%ox
-                yC = yC - grid%oy
-                zC = zC - sum(grid%dz(1:grid%nzAir)) - grid%oz
-                !
+				!
             class default
                 stop "Error: interpFuncRVector3D_SG: undefined grid"
                 !
         end select !GRID
-        !
+		!
+		xC = xC - self%grid%ox
+		yC = yC - self%grid%oy
+		zC = zC - sum(self%grid%dz(1:self%grid%nzAir)) - self%grid%oz
+		!
         tmp = location(1) > xC
         do i = size(tmp), 1, -1 
             if(tmp(i)) then
@@ -1271,6 +1288,10 @@ contains
                         interp%z(ix+1,iy+1,iz) = (1-wx)*(1-wy)*wz
                         interp%z(ix+1,iy+1,iz+1) = (1-wx)*(1-wy)*(1-wz)
                 end select
+                !
+            class default
+                stop "Error: interpFuncRVector3D_SG: undefined interp"
+                !
         end select
         !
     end subroutine interpFuncRVector3D_SG

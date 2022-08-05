@@ -10,7 +10,7 @@ module Vector
     contains
         !
         procedure( interface_boundary_vector ), deferred :: boundary
-        procedure( interface_interiovector ), deferred :: interior
+        procedure( interface_interior_vector ), deferred :: interior
         !
         procedure( interface_vector_mult_by_field ), deferred, public :: multByField
         procedure( interface_vector_mult_by_value ), deferred, public :: multByValue
@@ -37,17 +37,17 @@ module Vector
     abstract interface
         !
         ! Boundary operations
-        subroutine interface_boundary_vector( self, boundary )
+        function interface_boundary_vector( self ) result( boundary )
             import :: Vector_t
             class( Vector_t ), intent( in ) :: self
             class( Vector_t ), allocatable  :: boundary
-        end subroutine interface_boundary_vector
+        end function interface_boundary_vector
         !
-        subroutine interface_interiovector( self, interior )
+        function interface_interior_vector( self ) result( interior )
             import :: Vector_t
             class( Vector_t ), intent( in ) :: self
             class( Vector_t ), allocatable  :: interior
-        end subroutine interface_interiovector
+        end function interface_interior_vector
         !
         ! Arithmetic/algebraic operations
         subroutine interface_vector_mult_by_field( self, rhs )
@@ -103,10 +103,10 @@ module Vector
         !
         subroutine interface_interp_func_vector( self, location, xyz, interp )
             import :: Vector_t, prec
-            class( Vector_t ), intent( in )    :: self
-            real( kind=prec ), intent( in )    :: location(3)
-            character, intent( in )            :: xyz
-            class( Vector_t ), intent( inout ) :: interp
+            class( Vector_t ), intent( in )                 :: self
+            real( kind=prec ), intent( in )                 :: location(3)
+            character, intent( in )                         :: xyz
+            class( Vector_t ), allocatable, intent( inout ) :: interp
         end subroutine interface_interp_func_vector
         !
         function interface_sum_edges_vector( self, interior_only ) result( cell_obj )

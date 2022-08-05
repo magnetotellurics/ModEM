@@ -171,13 +171,7 @@ contains
         !
         class( SourceMT_2D_t ), intent( inout ) :: self
         !
-		class( Vector_t ), allocatable   :: source_e_boundary
-        !
-		call self%E%Boundary( source_e_boundary )
-		!
-		call self%model_operator%MultAib( source_e_boundary, self%rhs )
-		!
-		deallocate( source_e_boundary )
+		call self%model_operator%MultAib( self%E%Boundary(), self%rhs )
 		!
         call self%rhs%mult( C_MinusOne )
         !

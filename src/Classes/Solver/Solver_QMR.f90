@@ -77,7 +77,7 @@ contains
         complex( kind=prec ) :: bnorm, rnorm
         complex( kind=prec ) :: rhoInv, psiInv
         integer              :: iter
-        !
+		!
         ! Allocate work CVector objects -- questions as in PCG
         allocate( R, source = x )
         !
@@ -144,14 +144,13 @@ contains
         ! and the iterations are less than maxIt
         do while( ( self%relErr( iter ) .GT. self%tolerance ) .AND. ( iter .LT. self%max_iter ) )
             !
-            ! Verbosis
+            ! Verbose
             !write( *, * ) "QMR iter, self%relErr( iter )", iter, self%relErr( iter )
             !
             if( ( RHO .EQ. C_ZERO ) .OR. ( PSI .EQ. C_ZERO ) ) then
                 !
                 self%failed = .TRUE.
-                write( *, * ) "QMR FAILED TO CONVERGE : RHO"
-                stop "Error: QMR FAILED TO CONVERGE : PSI"
+                write( *, * ) "Error: solveQMR > Failed to converge"
                 !
             end if
             !
@@ -192,7 +191,7 @@ contains
                 !
                 DELTA_EPSIL = DELTA / EPSIL
                 PDE = -PSI * DELTA_EPSIL
-                RDE = -RHO * CONJG( DELTA_EPSIL )
+                RDE = -RHO * conjg( DELTA_EPSIL )
                 !
                 call P%linCombS( YT, PDE, C_ONE )
                 !

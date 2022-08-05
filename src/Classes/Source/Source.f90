@@ -23,7 +23,7 @@ module Source
         class( ModelOperator_t ), pointer  :: model_operator
         class( ModelParameter_t ), pointer :: model_parameter
         !
-        class( Vector_t ), allocatable    :: rhs, E
+        class( Vector_t ), allocatable     :: rhs, E
         !
         logical                            :: non_zero_source, adjt
         !

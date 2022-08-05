@@ -96,8 +96,8 @@ contains
         !     r = b-r
         call r%linCombS( b, C_MinusOne, C_ONE )
         !
-        bnorm = sqrt(real( b%dotProd(b)))
-        rnorm = sqrt(real( r%dotProd(r)))
+        bnorm = CDSQRT( b%dotProd(b) )
+        rnorm = CDSQRT( r%dotProd(r) )
         !
         self%relErr(1) = rnorm/bnorm
         !
@@ -119,7 +119,7 @@ contains
             call q%zeros()
             call self%preconditioner%model_operator%divCgrad( p, q )
             !
-            alpha = delta/p%dotProd(q)
+            alpha = delta / p%dotProd(q)
             !
             call p%scMultAddS( x, alpha )
             !
@@ -129,9 +129,9 @@ contains
             !
             i = i + 1
             !
-            rnorm = sqrt( real( r%dotProd(r) ) )
+            rnorm = CDSQRT( r%dotProd(r) )
             !
-            self%relErr( i + 1 ) = rnorm/bnorm
+            self%relErr( i + 1 ) = rnorm / bnorm
             !
             !write( *, * ) "PCG iter, self%relErr( i + 1 )", i + 1, self%relErr( i + 1 )
             !

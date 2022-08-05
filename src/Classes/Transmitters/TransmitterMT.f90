@@ -76,7 +76,9 @@ module TransmitterMT
         real( kind=prec ) :: omega
         !
         character( len=20 ) :: ModeName
-        !
+            !
+            character(:), allocatable :: title
+            !
         !
         omega = 2.0 * PI / self%period
         !
@@ -85,15 +87,18 @@ module TransmitterMT
         ! Loop over all polarizations (MT n_pol = 2)
         do i_pol = 1, self%n_pol
             !
-            ! Verbosis...
+            ! Verbose
             write( *, * ) "          SolveFWD for MT Tx:", self%id, " -> Period:", self%period, " - Polarization:", i_pol
             !
             call self%source%setE( i_pol )
             !
-            select type( mgrid => self%source%model_operator%metric%grid )
+            select type( grid => self%source%model_operator%metric%grid )
                 class is( Grid3D_SG_t )
                     !
-                    self%e_all( i_pol ) = cVector3D_SG_t( mgrid, EDGE )
+                    self%e_all( i_pol ) = cVector3D_SG_t( grid, EDGE )
+                    !
+                class default
+                    stop "Error: solveFWDTransmitterMT: undefined grid"
                     !
             end select
             !

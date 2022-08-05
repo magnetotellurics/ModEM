@@ -4538,7 +4538,7 @@ subroutine legendre_compute_dr ( order, xtab, weight )
         y2imag(k) = y2imag(k)*y2imag(k+1) + u(k)
     enddo
         
-    y2 = cmplx(y2real,y2imag)
+    y2 = cmplx( y2real, y2imag )
     
     deallocate (u,x2,yreal,yimag,y2real,y2imag)
 

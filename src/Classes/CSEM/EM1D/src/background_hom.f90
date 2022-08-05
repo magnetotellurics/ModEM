@@ -57,7 +57,7 @@ subroutine background_hom_unified(bgdat,src,ifreq,icur)
 
   !medium parameters: have been searched before, just re-assign them here
   eta = bgdat%sigmabghom
-  zeta = cmplx(0._real64,omega*dmu0)
+  zeta = cmplx(0._real64,omega*dmu0, kind=prec )
   gamma = sqrt(eta*zeta)
   etainv = 1._real64/(dfourpi*eta)
   zetainv = 1._real64/(dfourpi*zeta)

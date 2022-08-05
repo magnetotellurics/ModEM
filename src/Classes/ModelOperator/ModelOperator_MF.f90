@@ -511,12 +511,12 @@ contains
         !
         class( ModelOperator_MF_t ), intent( in ) :: self
         real( kind=prec ), intent( in ), optional :: omega
-        class( Vector_t ), intent( in )          :: x
-        class( Vector_t ), intent( inout )       :: y
+        class( Vector_t ), intent( in )           :: x
+        class( Vector_t ), intent( inout )        :: y
         logical, intent( in ), optional           :: p_adjt
         !
         integer :: ix, iy, iz
-        complex( kind=prec ) :: c
+        complex( kind=prec ) :: cvalue
         logical :: adjt
         !
         if ( present( p_adjt ) ) then
@@ -526,16 +526,16 @@ contains
         end if
         !
         if (adjt) then
-            c = -ONE_I * omega * ISIGN * MU_0
+            cvalue = -ONE_I * omega * ISIGN * MU_0
         else
-            c = ONE_I * omega * ISIGN * MU_0
+            cvalue = ONE_I * omega * ISIGN * MU_0
         end if
         !
         select type(x)
         class is(cVector3D_SG_t)
             !
             if( .NOT. y%is_allocated ) then
-                write(*,*) "Error: amultModelOperatorMF > output vector y not allocated"
+                stop "Error: amultModelOperatorMF > output vector y not allocated"
             endif
             !
             select type(y)
@@ -555,7 +555,7 @@ contains
                             self%xXY(iy, 1) * x%x(ix, iy - 1, iz) + &
                             self%xXZ(iz, 2) * x%x(ix, iy, iz + 1) + &
                             self%xXZ(iz, 1) * x%x(ix, iy, iz - 1) + &
-                            (self%xXO(iy, iz)+c*self%Sigma_E%x(ix,iy,iz)) * x%x(ix, iy, iz)
+                            (self%xXO(iy, iz)+cvalue*self%Sigma_E%x(ix,iy,iz)) * x%x(ix, iy, iz)
                         end do
                     end do
                 end do
@@ -572,7 +572,7 @@ contains
                             self%yYZ(iz, 1) * x%y(ix, iy, iz - 1) + &
                             self%yYX(ix, 2) * x%y(ix + 1, iy, iz) + &
                             self%yYX(ix, 1) * x%y(ix - 1, iy, iz) + &
-                            (self%yYO(ix, iz)+c*self%Sigma_E%y(ix,iy,iz)) * x%y(ix, iy, iz)
+                            (self%yYO(ix, iz)+cvalue*self%Sigma_E%y(ix,iy,iz)) * x%y(ix, iy, iz)
                         end do
                     end do
                 end do
@@ -589,7 +589,7 @@ contains
                             self%zZX(ix, 1) * x%z(ix - 1, iy, iz) + &
                             self%zZY(iy, 2) * x%z(ix, iy + 1, iz) + &
                             self%zZY(iy, 1) * x%z(ix, iy - 1, iz) + &
-                            (self%zZO(ix, iy)+c*self%Sigma_E%z(ix,iy,iz)) * x%z(ix, iy, iz)
+                            (self%zZO(ix, iy)+cvalue*self%Sigma_E%z(ix,iy,iz)) * x%z(ix, iy, iz)
                         end do
                     end do
                 end do
@@ -598,13 +598,16 @@ contains
                 ! Finally multiply by VEdge (in place)
                 call y%mult( self%metric%Vedge )
             !
-            end select
-            !
             class default
-                stop "Error: amultModelOperatorMF > Incompatible input [x]."
+                stop "Error: amultModelOperatorMF > Undefined y."
                 !
+            end select
+        !
+        class default
+            stop "Error: amultModelOperatorMF > Undefined x."
+            !
         end select
-
+        !
     end subroutine amultModelOperatorMF
     !**
     ! multAib
@@ -624,7 +627,7 @@ contains
         real( kind=prec ) :: omega
         !
         if(.NOT. outE%is_allocated) then
-            write(*,*) "Error: multAibModelOperatorMF > output vector not allocated"
+            stop "Error: multAibModelOperatorMF > output vector not allocated"
         endif
         !
         omega = R_ZERO     ! diagonal part or A does not enter into this

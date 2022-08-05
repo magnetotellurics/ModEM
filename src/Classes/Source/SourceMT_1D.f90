@@ -3,8 +3,7 @@
 ! Derived class to define a MT Source with boundary data computed by 1D solutions
 !
 ! *************
-! 
-!**
+!
 module SourceMT_1D
     !
     use Constants
@@ -155,21 +154,26 @@ contains
         class( SourceMT_1D_t ), intent( inout ) :: self
         !
         class( Vector_t ), allocatable   :: source_e_boundary
-        !
-        select type( E => self%E )
-            class is( cVector3D_SG_t )
+		!
+		character(:), allocatable :: title
+		!
+        select type( grid => self%E%grid )
+            class is( Grid3D_SG_t )
                 !
                 if( allocated( self%rhs ) ) deallocate( self%rhs )
-                allocate( self%rhs, source = cVector3D_SG_t( E%grid, EDGE ) )
+                allocate( self%rhs, source = cVector3D_SG_t( grid, EDGE ) )
                 !
                 call self%rhs%zeros()
                 !
-                call self%E%Boundary( source_e_boundary )
+                allocate( source_e_boundary, source = self%E%Boundary() )
+                !
+                title = "source_e_boundary"
+                call source_e_boundary%print( 667, title )
                 !
                 call self%model_operator%MultAib( source_e_boundary, self%rhs )
                 !
-				deallocate( source_e_boundary )
-				!
+                deallocate( source_e_boundary )
+                !
                 call self%rhs%mult( C_MinusOne )
                 !
         end select
