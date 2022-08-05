@@ -1,20 +1,20 @@
 module MetricElements
     !
     use Grid
-    use rVector
-    use rScalar
+    use Vector
+    use Scalar
     !
     type, abstract :: MetricElements_t
         !
         class( Grid_t ), pointer :: grid
         !
-        class( rVector_t ), allocatable :: EdgeLength
-        class( rVector_t ), allocatable :: FaceArea
-        class( rVector_t ), allocatable :: DualFaceArea
-        class( rVector_t ), allocatable :: DualEdgeLength
-        class( rScalar_t ), allocatable :: Vnode
-        class( rScalar_t ), allocatable :: Vcell
-        class( rVector_t ), allocatable :: Vedge
+        class( Vector_t ), allocatable :: EdgeLength
+        class( Vector_t ), allocatable :: FaceArea
+        class( Vector_t ), allocatable :: DualFaceArea
+        class( Vector_t ), allocatable :: DualEdgeLength
+        class( Scalar_t ), allocatable :: Vnode
+        class( Scalar_t ), allocatable :: Vcell
+        class( Vector_t ), allocatable :: Vedge
         !
      contains
         !

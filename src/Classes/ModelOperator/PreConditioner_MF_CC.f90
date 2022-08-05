@@ -6,7 +6,6 @@ module PreConditioner_MF_CC
     !
     use Constants
     use Grid
-    use cVector
     use cVector3D_SG
     use cScalar3D_SG
     use ModelOperator_MF
@@ -56,8 +55,7 @@ contains
                 call self%Dilu%zeros()
                 !
             class default
-                write( *, * ) "ERROR:PreConditioner_MF_CC_t::PreConditioner_MF_CC_ctor:"
-                stop          "    unknow grid type"
+                stop "Error: PreConditioner_MF_CC_ctor > Unknown grid type"
         end select
         !
     end function PreConditioner_MF_CC_ctor
@@ -73,7 +71,7 @@ contains
         !
     end subroutine PreConditioner_MF_CC_dtor
     !
-	!**
+    !**
     ! SetPreConditioner
     !*
     subroutine setPreConditioner_MF_CC( self, omega )
@@ -166,8 +164,8 @@ contains
         implicit none
         !
         class( PreConditioner_MF_CC_t ), intent( inout ) :: self
-        class( cVector_t ), intent( in )                 :: inE
-        class( cVector_t ), intent( inout )              :: outE
+        class( Vector_t ), intent( in )                  :: inE
+        class( Vector_t ), intent( inout )               :: outE
         logical, intent( in )                            :: adjt
         !
         integer :: ix, iy, iz
@@ -197,7 +195,7 @@ contains
                             !
                             outE = inE    ! assuming this works as copy?
                             !
-                            call outE%divs( model_operator%Metric%Vedge )
+                            call outE%div( model_operator%Metric%Vedge )
                             !
                             do ix = 1, inE%nx
                                 do iz = 2, inE%nz
@@ -272,7 +270,7 @@ contains
                             end do
                             !
                             !     for adjoint to the division by volume elements last
-                            call outE%divs( model_operator%Metric%Vedge )
+                            call outE%div( model_operator%Metric%Vedge )
                             !
                         end if 
                     class default
@@ -293,8 +291,8 @@ contains
         implicit none
         !
         class( PreConditioner_MF_CC_t ), intent( inout ) :: self
-        class( cVector_t ), intent( in )                 :: inE
-        class( cVector_t ), intent( inout )              :: outE
+        class( Vector_t ), intent( in )                 :: inE
+        class( Vector_t ), intent( inout )              :: outE
         logical, intent( in )                            :: adjt
         !
         integer :: ix, iy, iz
@@ -402,10 +400,10 @@ contains
         implicit none
         !
         class( PreConditioner_MF_CC_t ), intent( inout ) :: self
-        class( cScalar_t ), intent( in )                 :: inPhi
-        class( cScalar_t ), intent( inout )              :: outPhi
+        class( Scalar_t ), intent( in )                 :: inPhi
+        class( Scalar_t ), intent( inout )              :: outPhi
         !
-        STOP "ERROR: LUsolve is not coded for this pre-conditioner class"
+        STOP "Error: LUsolve is not coded for this pre-conditioner class"
         !
     end subroutine LUSolvePreConditioner_MF_CC
     !

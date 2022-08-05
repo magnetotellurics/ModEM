@@ -119,14 +119,18 @@ contains
         !
         call self%source%setE( 1 )
         !
-        select type( mgrid => self%source%model_operator%metric%grid )
+        select type( grid => self%source%model_operator%metric%grid )
             class is( Grid3D_SG_t )
                 !
-                self%e_all( 1 ) = cVector3D_SG_t( mgrid, EDGE )
+                self%e_all( 1 ) = cVector3D_SG_t( grid, EDGE )
+                !
+            class default
+                stop "Error: solveFWDTransmitterCSEM: undefined grid"
                 !
         end select
         !
         call self%forward_solver%getESolution( self%source, self%e_all( 1 ) )
+        !
         call self%e_all( 1 )%add( self%source%E )
         !
         ModeName = "Ex"

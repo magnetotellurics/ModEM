@@ -1,7 +1,6 @@
 module Solver_QMR
     !
     use Solver
-    use cVector
     use ModelOperator
     use PreConditioner_MF_CC
     !
@@ -68,17 +67,17 @@ contains
         implicit none
         !
         class( Solver_QMR_t ), intent( inout ) :: self
-        class( cVector_t ), intent( in )       :: b
-        class( cVector_t ), intent( inout )    :: x
+        class( Vector_t ), intent( in )        :: b
+        class( Vector_t ), intent( inout )     :: x
         !
-        class( cVector_t ), allocatable :: R, Y, Z, V, W, YT, ZT, VT, WT, P, Q, PT, D, S
+        class( Vector_t ), allocatable :: R, Y, Z, V, W, YT, ZT, VT, WT, P, Q, PT, D, S
         logical              :: adjoint, ilu_adjt
         complex( kind=prec ) :: ETA, PDE, EPSIL, RDE, BETA, DELTA, RHO, DELTA_EPSIL
         complex( kind=prec ) :: PSI, RHO1, GAMM, GAMM1, THET, THET1, TM2
         complex( kind=prec ) :: bnorm, rnorm
         complex( kind=prec ) :: rhoInv, psiInv
         integer              :: iter
-        !
+		!
         ! Allocate work CVector objects -- questions as in PCG
         allocate( R, source = x )
         !
@@ -145,14 +144,13 @@ contains
         ! and the iterations are less than maxIt
         do while( ( self%relErr( iter ) .GT. self%tolerance ) .AND. ( iter .LT. self%max_iter ) )
             !
-            ! Verbosis
+            ! Verbose
             !write( *, * ) "QMR iter, self%relErr( iter )", iter, self%relErr( iter )
             !
             if( ( RHO .EQ. C_ZERO ) .OR. ( PSI .EQ. C_ZERO ) ) then
                 !
                 self%failed = .TRUE.
-                write( *, * ) "QMR FAILED TO CONVERGE : RHO"
-                stop "Error: QMR FAILED TO CONVERGE : PSI"
+                write( *, * ) "Error: solveQMR > Failed to converge"
                 !
             end if
             !
@@ -167,8 +165,8 @@ contains
             call W%mult( psiInv )
             !
             !  use subroutines here to overwrite with rescalled vectors
-            call Y%multS( rhoInv )
-            call Z%multS( psiInv )
+            call Y%mult( rhoInv )
+            call Z%mult( psiInv )
             !
             DELTA = Z%dotProd( Y )
             if( DELTA .EQ. C_ZERO ) then
@@ -193,7 +191,7 @@ contains
                 !
                 DELTA_EPSIL = DELTA / EPSIL
                 PDE = -PSI * DELTA_EPSIL
-                RDE = -RHO * CONJG( DELTA_EPSIL )
+                RDE = -RHO * conjg( DELTA_EPSIL )
                 !
                 call P%linCombS( YT, PDE, C_ONE )
                 !

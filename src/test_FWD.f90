@@ -16,7 +16,6 @@ program ModEM
     use ModelReader
     use ModelReader_Weerachai
     use ModelOperator_MF
-    use ModelOperator_File
     use ModelParameterCell_SG
     !
     use DataFileStandard
@@ -374,6 +373,8 @@ contains
                 write( *, * ) "          Air layers from the method: ", air_layer%method, "."
                 !
                 write( *, * ) "          Top of the air layers is at ", sum(air_layer%Dz)/1000, " km."
+                !
+                write( *, "(A, F10.2, A2, F10.2, A2, F10.2, A4, F10.2)" ) "           o(x,y,z) * rotDeg: (", main_grid%ox, ", ", main_grid%oy, ", ", main_grid%oz, ") * ", main_grid%rotDeg
                 !
                 allocate( model_operator, source = ModelOperator_MF_t( main_grid ) )
                 !

@@ -7,10 +7,7 @@
 module ModelParameterCell_SG
     !
     use Constants
-    use Grid
     use Grid3D_SG
-    use rScalar
-    use rVector
     use rScalar3D_SG
     use rVector3D_SG 
     use ModelParameter
@@ -20,11 +17,11 @@ module ModelParameterCell_SG
     use ModelParameter2D
     !
     type, extends( ModelParameter_t ) :: ModelParameterCell_SG_t
-         !
-         class( Grid_t ), allocatable :: paramGrid
-         !
-         type( rScalar3D_SG_t ), allocatable :: cellCond
-         !
+        !
+        class( Grid_t ), allocatable :: paramGrid
+        !
+        type( rScalar3D_SG_t ), allocatable :: cellCond
+        !
         contains
               !
               final :: ModelParameterCell_SG_dtor
@@ -128,7 +125,7 @@ contains
         !
         !    create 1D model parameter
         model_param_1D = ModelParameter1D_t( self%grid%Slice1D() )
-        !    comnductivity slice
+        !    conductivity slice
         allocate( CondSlice( model_param_1D%grid%nz ) )
         !
         !  extract slice; convert to linear conductivity:
@@ -194,7 +191,7 @@ contains
         !
         !    create 2D model parameter
         m2D = ModelParameter2D_t( self%grid%Slice2D() )
-        !    comnductivity slice
+        !    conductivity slice
         allocate( CondSlice( self%grid%ny, self%grid%nzEarth ) )
         !
         if( axis == 1 ) then
@@ -244,8 +241,7 @@ contains
                 self%metric => rhs%metric
                 self%grid => rhs%grid
             class default
-                write(*, *) "ERROR:ModelParameterCell:CopyFrom"
-                stop "              Incompatible input. Exiting."
+                stop "Error: copyFromModelParameterCell > Incompatible input."
         end select
         !
     end subroutine copyFromModelParameterCell
@@ -255,7 +251,7 @@ contains
         implicit none
         !
         class( ModelParameterCell_SG_t ), intent( in ) :: self
-        class( rVector_t ), intent( inout )            :: eVec
+        class( Vector_t ), intent( inout )             :: eVec
         !
         type( rScalar3D_SG_t ) :: SigmaCell
         integer :: i, j, k, k0, k1, k2
@@ -281,18 +277,17 @@ contains
                 SigmaCell%v(:, :, k1:k2) = self%SigMap(self%cellCond%v)
                 !
                 ! Form Conductivity--cell volume product  -- now using Vcell from MetricElements
-                call sigmaCell%mults( self%metric%Vcell )
+                call sigmaCell%mult( self%metric%Vcell )
                 !
                 ! Sum onto edges
-                call eVec%SumCells( SigmaCell )
+                call eVec%sumCells( SigmaCell )
                 !
                 ! Divide by total volume -- sum of 4 cells
                 ! surrounding edge -- just 4*V_E        
-                call eVec%divs( self%metric%Vedge )
+                call eVec%div( self%metric%Vedge )
                 !
             class default
-                write(*, *) "ERROR:ModelParameterCell_SG:PDEmapping:"
-                stop "              Incompatible grid. Exiting."
+                stop "Error: PDEmappingModelParameterCell > Incompatible grid."
                 !
         end select
         !
@@ -307,7 +302,7 @@ contains
         !
         class( ModelParameterCell_SG_t ), intent( in ) :: self
         class( ModelParameter_t ), intent( in )        :: dm
-        class( rVector_t ), intent( inout )            :: eVec
+        class( Vector_t ), intent( inout )            :: eVec
         !
         type( rScalar3D_SG_t ) :: SigmaCell
         character( len=5 ), parameter :: JOB = "DERIV"
@@ -338,43 +333,38 @@ contains
                         
                           ! Average onto edges, as in PDEmapping ...
                           !
-                          call sigmaCell%multS( self%metric%Vcell )
+                          call sigmaCell%mult( self%metric%Vcell )
                           ! Sum onto edges
-                          call eVec%SumCells( SigmaCell )
+                          call eVec%sumCells( SigmaCell )
                           !
                           ! Divide by total volume -- sum of 4 cells
                           ! surrounding edge -- just 4*V_E
-                          call eVec%divs( self%metric%Vedge )
+                          call eVec%div( self%metric%Vedge )
                           !  still need to divide by 4 ...
-                          call evec%mults( 0.25_prec )
+                          call evec%mult( complex( 0.25_prec, 0.0 ) )
                           !
                     class default
-                        write(*, *) "ERROR:ModelParameterCell_SG:dPDEmapping:"
-                        stop "              Incompatible grid. Exiting."
+                        stop "Error: dPDEmappingModelParameterCell > Incompatible grid."
                         !
                     end select
                     !
                class default
-                    write(*, *) "ERROR:ModelParameterCell_SG:dPDEmapping:"
-                    stop "              Incompatible input [dm]. Exiting."
+                    stop "Error: dPDEmappingModelParameterCell > Incompatible input [dm]."
                     !
         end select
         !
     end subroutine dPDEmappingModelParameterCell
-    !**
-    ! Transpose (adjoint) of dPDEmapping, applied to an edge-vector eVec
-    ! result is a model parameter dm.
-    !*
+    !
     function dPDEmappingTModelParameterCell( self, eVec ) result( dm )
         implicit none
         !
         class( ModelParameterCell_SG_t ), intent( in ) :: self
-        class( rVector_t ), intent( in )               :: eVec
+        class( Vector_t ), intent( in )               :: eVec
         class( ModelParameter_t ), allocatable         :: dm
         !
-        type( rScalar3D_SG_t ) :: sigmaCell
-        type( rVector3D_SG_t ) :: vTemp
-        character( len=5 ), parameter :: JOB = "DERIV"
+        type( rScalar3D_SG_t )         :: sigmaCell
+        class( Vector_t ), allocatable :: vTemp
+        character( len=5 ), parameter  :: JOB = "DERIV"
         integer :: k0, k1, k2
         !
         !
@@ -384,51 +374,47 @@ contains
                 dm = ModelParameterCell_SG_t( param_grid, self%cellCond, self%paramType )
                 !
             class default
-                   write(*, *) "ERROR:ModelParameterCell_SG:dPDEmappingT:"
-                   stop "              Unknow grid"
+                   stop "Error: dPDEmappingTModelParameterCell > Unknown grid"
         end select
         !
         select type( eVec )
-              class is( rVector3D_SG_t )
+            class is( rVector3D_SG_t )
                 !
                 select type( dm )
-                      !
-                      class is( ModelParameterCell_SG_t )
-                           ! Create local temporary scalar and vector
-                           vTemp = eVec%interior()
-                           ! Divide by total volume -- sum of 4 cells
-                           ! surrounding edge -- just 4*V_E
-                           call vTemp%divs(self%metric%Vedge)
-                           !  still need to divide by 4 ...
-                           call vTemp%mults(0.25_prec)
-
-                           sigmaCell = vTemp%SumEdges()
-                           !
-                           !deallocate( vTemp )
-                           !
-                           call sigmaCell%multS( self%metric%Vcell )
-
-                           dm%cellCond%v = self%SigMap( self%cellCond%v, JOB ) 
-
-                           k0 = self%ParamGrid%NzAir
-                           k1 = k0 + 1
-                           k2 = self%ParamGrid%Nz
-                    
-                           !     deleted select type for SigmaCell -- can"t see how we need this, since
-                           !        this is local variable declared with explicit type!
-                           dm%cellCond%v = dm%cellCond%v * SigmaCell%v(:,:,k1:k2)
-                           !
-                      class default
-                           write(*, *) "ERROR:ModelParameterCell_SG:dPDEmappingT:"
-                           stop "              Incompatible input [eVec]. Exiting."
+                    !
+                    class is( ModelParameterCell_SG_t )
+                        ! Create local temporary scalar and vector
+                        vTemp = eVec%interior()
+                        ! Divide by total volume -- sum of 4 cells
+                        ! surrounding edge -- just 4*V_E
+                        call vTemp%div( self%metric%Vedge )
+                        !  still need to divide by 4 ...
+                        call vTemp%mult( complex( 0.25_prec, 0.0 ) )
+                        !
+                        sigmaCell = vTemp%SumEdges()
+                        !
+                        !deallocate( vTemp )
+                        !
+                        call sigmaCell%mult( self%metric%Vcell )
+                        !
+                        dm%cellCond%v = self%SigMap( self%cellCond%v, JOB ) 
+                        !
+                        k0 = self%ParamGrid%NzAir
+                        k1 = k0 + 1
+                        k2 = self%ParamGrid%Nz
+                        !
+                        !     deleted select type for SigmaCell -- can"t see how we need this, since
+                        !        this is local variable declared with explicit type!
+                        dm%cellCond%v = dm%cellCond%v * SigmaCell%v(:,:,k1:k2)
+                        !
+                    class default
+                        stop "Error: dPDEmappingTModelParameterCell > Incompatible input [eVec]."
                 end select
                 !
         end select
         !
     end function dPDEmappingTModelParameterCell
-    !**
-    ! SetType
-    !*
+    !
     subroutine setTypeModelParameterCell( self, paramType )
         implicit none
         !
@@ -436,8 +422,7 @@ contains
         character(:), allocatable, intent( in )           :: paramType
         !
         if (.NOT.(self%is_allocated)) then
-              write(*, *) "ERROR:ModelPArameterCell_t:SetType:"
-              stop "              Not allocated."
+              stop "Error: setTypeModelParameterCell > Not allocated."
         end if
         !  NOTE: always keep AirCond linear (actual conductivity)
         !    parameter transformation is only needed for inversion,
@@ -474,8 +459,7 @@ contains
               self%cellCond%v = self%cellCond%v * log(10.)
               !self%airCond = self%airCond * log(10.)
         else
-              write(*, *) "ERROR:ModelParameterCell_t:SetType:"
-              stop "              Unknown paramType."
+              stop "Error: setTypeModelParameterCell > Unknown paramType."
         end if
         !
         self%paramType = paramType 

@@ -1,7 +1,6 @@
 module Solver
     !
     use Constants
-    use cVector
     use PreConditioner
     !
     ! Solver parameters
@@ -77,8 +76,6 @@ contains
         self%relErr = R_ZERO
         !
     end subroutine zeroDiagnosticsSolver 
-    !
-    !********
     !
     subroutine initializeSolver( self )
         implicit none

@@ -1,134 +1,108 @@
-!**
-! SUMMARY
 !
-! Standard cartesian grid vectors.
-!*
 module cVector3D_SG
     !
-    use Constants
     use MatUtils
-    use Grid
     use Grid3D_SG
-    use rScalar
+    use Vector
     use rScalar3D_SG
-    use rVector
+    use cScalar3D_SG
     use rVector3D_SG
-    use cVector
     !
-    type, extends( cVector_t ) :: cVector3D_SG_t
-        !
-        class( Grid3D_SG_t ), pointer :: grid
-        !
-        character( len=4 ) :: gridType
-        !
-        integer :: nx, ny, nz
-        !
-        integer, dimension(3) :: NdX, NdY, NdZ, Nxyz
+    type, extends( Vector_t ) :: cVector3D_SG_t
         !
         complex( kind=prec ), allocatable, dimension(:, :, :) :: x, y, z
         !
-     contains
-        !**
-        ! Initialization and finalization
-        !*
+    contains
+        !
         final :: cVector3D_SG_dtor
-        !**
-        ! Input/Output
-        !*
+        !
         procedure, public :: read  => readCVector3D_SG
         procedure, public :: write => writeCVector3D_SG
-        !**
-        ! boundaryCVector3D_SG operations
-        !*
-        procedure, public :: setAllboundary => setAllboundaryCVector3D_SG
-        procedure, public :: setOneboundary => setOneboundaryCVector3D_SG
-        procedure, public :: setAllinterior => setAllinteriorCVector3D_SG
-        procedure, public :: intBdryIndices => intBdryIndicesCVector3D_SG
-        procedure, public :: boundary       => boundaryCVector3D_SG
-        procedure, public :: interior       => interiorCVector3D_SG
-        !**
-        ! Data access
-        !*
-        procedure, public :: length => lengthCVector3D_SG
-        procedure, public :: getArray => getArrayCVector3D_SG
-        procedure, public :: setArray => setArrayCVector3D_SG
-        procedure, public :: setVecComponentsArray => setVecComponentsArrayCVector3D_SG
-        !**
-        ! Arithmetic operations
-        !*
-        procedure, public :: zeros    => zerosCVector3D_SG
-        procedure, public :: add      => addCVector3D_SG
-        procedure, public :: sub     => subCVector3D_SG
-        procedure, public :: mult1    => mult1CVector3D_SG
-        procedure, public, pass(self) :: mult2 => mult2CVector3D_SG
-        procedure, public :: mult3 => mult3CVector3D_SG
-        procedure, public :: mult4 => mult4CVector3D_SG
-        procedure, public :: mults1 => mults1CVector3D_SG
-        procedure, public :: mults3 => mults3CVector3D_SG
-        procedure, public :: div1 => div1CVector3D_SG
-        procedure, public :: div2 => div2CVector3D_SG
-        procedure, public :: divs2 => divs2CVector3D_SG
-        procedure, public :: dotProd => dotProdCVector3D_SG
-        procedure, public :: linCombS => linCombSCVector3D_SG
-        procedure, public :: scMultAddS => scMultAddSCVector3D_SG
-        !**
-        ! Miscellaneous
-        !*
-        procedure, public :: isCompatible1 => isCompatible1CVector3D_SG
-        procedure, public :: isCompatible2 => isCompatible2CVector3D_SG
-        generic :: isCompatible => isCompatible1, isCompatible2
         !
-        procedure, public :: copyFrom    => copyFromCVector3D_SG
-        procedure, public :: interpFunc  => interpFuncCVector3D_SG
+        procedure, public :: setAllBoundary => setAllBoundaryCVector3D_SG
+        procedure, public :: setOneBoundary => setOneBoundaryCVector3D_SG
+        procedure, public :: setAllInterior => setAllInteriorCVector3D_SG
+        procedure, public :: intBdryIndices => intBdryIndicesCVector3D_SG
+        procedure, public :: boundary => boundaryCVector3D_SG
+        procedure, public :: interior => interiorCVector3D_SG
+        !
+        procedure, public :: length => lengthCVector3D_SG
+        !
+        procedure, public :: getRealArray    => getRealArrayCVector3D_SG
+        procedure, public :: getComplexArray => getComplexArrayCVector3D_SG
+        !
+        procedure, public :: setRealArray    => setRealArrayCVector3D_SG
+        procedure, public :: setComplexArray => setComplexArrayCVector3D_SG
+        !
+        procedure, public :: setVecComponents => setVecComponentsCVector3D_SG
+        !
+        procedure, public :: zeros => zerosCVector3D_SG
+        procedure, public :: add => addCVector3D_SG
+        procedure, public :: sub => subCVector3D_SG
+        procedure, public :: multByField => multByFieldCVector3D_SG
+        procedure, public :: multByValue => multByValueCVector3D_SG
+        procedure, public :: divByField => divByFieldCVector3D_SG
+        procedure, public :: divByValue => divByValueCVector3D_SG
+        procedure, public :: dotProd => dotProdCVector3D_SG
+        procedure, public :: diagMult => diagMultCVector3D_SG
+        !
+        procedure, public :: copyFrom => copyFromCVector3D_SG
+        !
+        procedure, public :: sumEdges => sumEdgesCVector3D_SG
+        procedure, public :: sumCells => sumCellsCVector3D_SG
+        !
+        procedure, public :: linCombS   => linCombSCVector3D_SG
+        procedure, public :: scMultAddS => scMultAddSCVector3D_SG
+        procedure, public :: interpFunc => interpFuncCVector3D_SG
         !
         procedure, public :: print => printCVector3D_SG
+        !
     end type cVector3D_SG_t
-    
+    !
     interface cVector3D_SG_t
         module procedure cVector3D_SG_ctor
     end interface cVector3D_SG_t
-  
+    !
 contains
     !
-    function cVector3D_SG_ctor( igrid, gridType ) result ( self )
+    function cVector3D_SG_ctor( grid, grid_type ) result ( self )
         implicit none
         !
-        class( Grid3D_SG_t ), target, intent( in ) :: igrid
-        character(*), intent( in )                 :: gridType
+        class( Grid3D_SG_t ), target, intent( in ) :: grid
+        character( len=4 ), intent( in )           :: grid_type
         !
         type( cVector3D_SG_t ) :: self
         !
         integer :: status
         !
-        !write(*,*) "Constructor cVector3D_SG"
+        !write( *, * ) "Constructor cVector3D_SG"
         !
         call self%init()
         !
-        self%grid => igrid
+        self%grid => grid
         !
-        ! Grid dimensions
-        self%nx = igrid%nx
-        self%ny = igrid%ny
-        self%nz = igrid%nz
+        self%nx = self%grid%nx
+        self%ny = self%grid%ny
+        self%nz = self%grid%nz
         !
-        self%gridType = trim(gridType)
+        self%grid_type = trim( grid_type )
         self%is_allocated = .FALSE.
         !
-        if (self%gridType == EDGE) then
+        if(self%grid_type == EDGE) then
             allocate(self%x(self%nx, self%ny + 1, self%nz + 1), STAT = status)
             self%is_allocated = status.eq.0
             !
             allocate(self%y(self%nx + 1, self%ny, self%nz + 1), STAT = status)
-            self%is_allocated = self%is_allocated .AND.(status.eq.0)
+            self%is_allocated = self%is_allocated.AND.(status.eq.0)
             !
             allocate(self%z(self%nx + 1, self%ny + 1, self%nz), STAT = status)
-            self%is_allocated = self%is_allocated .AND.(status.eq.0)
+            self%is_allocated = self%is_allocated.AND.(status.eq.0)
             !
             self%NdX = (/self%nx, self%ny + 1, self%nz + 1/)
             self%NdY = (/self%nx + 1, self%ny, self%nz + 1/)
             self%NdZ = (/self%nx + 1, self%ny + 1, self%nz/)
             !
-        else if (self%gridType == FACE) then
+        else if(self%grid_type == FACE) then
             allocate(self%x(self%nx + 1, self%ny, self%nz), STAT = status)
             self%is_allocated = status.eq.0
             !
@@ -143,333 +117,288 @@ contains
             self%NdZ = (/self%nx, self%ny, self%nz + 1/)
             !
         else
-            write( *, * ) "ERROR:cVector3D_SG_ctor:"
-            stop "           Only EDGE or FACE types allowed. Exiting."
-        end if
+            stop "Error: cVector3D_SG_ctor > Only EDGE or FACE types allowed."
+        endif
         !
-        if ( self%is_allocated ) then
-            self%x = R_ZERO
-            self%y = R_ZERO
-            self%z = R_ZERO
+        if(self%is_allocated) then
+            self%x = C_ZERO
+            self%y = C_ZERO
+            self%z = C_ZERO
         else
-            write( *, * ) "ERROR:cVector3D_SG_ctor:"
-            stop "           Unable to allocate vector. Exiting."
+            stop "Error: cVector3D_SG_ctor > Unable to allocate vector."
+        endif
         !
-        end if
-        !
-        self%Nxyz = (/product(self%NdX), &
-                product(self%NdY), &
-                product(self%NdZ)/)
+        self%Nxyz = (/product(self%NdX), product(self%NdY), product(self%NdZ)/)
         !
     end function cVector3D_SG_ctor
-    
+    !
     subroutine cVector3D_SG_dtor( self )
         implicit none
         !
-        type( cVector3D_SG_t ), intent( in out ) :: self
+        type( cVector3D_SG_t ), intent( inout ) :: self
         !
-        !write(*,*) "Destructor cVector3D_SG"
+        !write( *, * ) "Destructor cVector3D_SG"
         !
-        deallocate( self%x )
-        deallocate( self%y )
-        deallocate( self%z )
+        if( allocated( self%x ) ) deallocate( self%x )
+        if( allocated( self%y ) ) deallocate( self%y )
+        if( allocated( self%z ) ) deallocate( self%z )
         !
         self%nx = 0
         self%ny = 0
         self%nz = 0
-        
-        self%gridType = ""
+        !
+        self%grid_type = ""
         self%is_allocated = .FALSE.
         !
     end subroutine cVector3D_SG_dtor
-    
     !
-    !************************************************
-    ! Input/Output
-    !************************************************
-    !
-
-    !**
-    ! readCVector3D_SG
-    !*
-    subroutine readCVector3D_SG( self, fid )
+    subroutine readCVector3D_SG( self, funit, ftype )
         implicit none
         !
         class( cVector3D_SG_t ), intent( inout ) :: self
-        integer, intent( in ) :: fid
+        integer, intent( in )                    :: funit
+        character(:), allocatable, intent( in ), optional :: ftype
         !
         integer :: Nx, Ny, Nz
-        character(4) :: gridType
+        character(4) :: grid_type
         logical :: ok, hasname, binary
         character(80) :: fname, isbinary
         !
         binary = .TRUE.
         !
-        inquire( fid, opened = ok, named = hasname, name = fname, unformatted = isbinary )
+        inquire( funit, opened = ok, named = hasname, name = fname, unformatted = isbinary )
         !
         if( ok ) then
             !
             ! Check that the file is unformatted if binary, formatted if ascii.
-            if ( (index( isbinary, "yes" ) > 0 .OR. index( isbinary, "YES" ) > 0 ) &
-                  .AND. .NOT. binary ) then
-                write( *, * ) "ERROR:cVector3D_SG_t::readCVector3D_SG: "
-                write( *, * ) "           Unable to readCVector3D_SG vector from unformatted file. ", &
-                       trim(fname), ". Exiting."
+            if((index(isbinary, "yes") > 0 .OR.index(isbinary, "YES") > 0) &
+                  .AND.  .NOT.binary ) then
+                write( *, * ) "Error: readCVector3D_SG > Unable to readCVector3D_SG vector from unformatted file. ", &
+                        trim(fname), "."
                 stop
-            else if ((index(isbinary, "no") > 0 .OR.index(isbinary, "NO") > 0) &
+            else if((index(isbinary, "no") > 0 .OR.index(isbinary, "NO") > 0) &
                   .AND.binary) then
-                write( *, * ) "ERROR:cVector3D_SG_t::readCVector3D_SG: "
-                write( *, * ) "           Unable to readCVector3D_SG vector from formatted file ", &
-                       trim(fname), ". Exiting."
+                write( *, * ) "Error: readCVector3D_SG > Unable to readCVector3D_SG vector from formatted file ", &
+                        trim(fname), "."
                 stop
-            end if
+            endif
             !
-            read( fid ) Nx, Ny, Nz, gridType
-            write( *, * ) "Nx, Ny, Nz", Nx, Ny, Nz
-            write( *, * ) "gridType", gridType
+            read(funit) Nx, Ny, Nz, grid_type
             !
-            if ( .NOT. self%is_allocated ) then
-                write( *, * ) "ERROR:cVector3D_SG_t::readCVector3D_SG: "
-                write( *, * ) "           Vector must be allocated before readCVector3D_SGing from ", &
-                       trim(fname), ". Exiting."
+            if( .NOT.self%is_allocated) then
+                write( *, * ) "Error: readCVector3D_SG > Vector must be allocated before readCVector3D_SGing from ", &
+                        trim(fname), "."
                 stop
-            else if (self%gridType.ne.gridType) then
-                write( *, * ) "ERROR:cVector3D_SG_t::readCVector3D_SG: "
-                write( *, * ) "           Vector must be of type ", gridType, &
-                       &            "           before readCVector3D_SGing from ", trim (fname), ". Exiting."
+            else if(self%grid_type.ne.grid_type) then
+                write( *, * ) "Error: readCVector3D_SG > Vector must be of type ", grid_type, &
+                        &            "           before readCVector3D_SGing from ", trim (fname), "."
                 stop
-            else if ((self%nx.ne.Nx).OR. &
+            else if((self%nx.ne.Nx).OR. &
                   (self%ny.ne.Ny).OR.(self%nz.ne.Nz)) then
-                write( *, * ) "ERROR:cVector3D_SG_t::readCVector3D_SG: "
-                write( *, * ) "           Wrong size of vector on input from ", &
-                       trim (fname), ". Exiting."
+                write( *, * ) "Error: readCVector3D_SG > Wrong size of vector on input from ", trim (fname), "."
                 stop
-            end if
+            endif
             !
-            read( fid ) self%x
-            read( fid ) self%y
-            read( fid ) self%z
+            read(funit) self%x
+            read(funit) self%y
+            read(funit) self%z
             !
         else
-            stop "readCVector3D_SG: unable to open file"
+            stop "Error: readCVector3D_SG: unable to open file"
         endif
         !
     end subroutine readCVector3D_SG
-    
-    !**
-    ! writeCVector3D_SG
-    !*
-    subroutine writeCVector3D_SG( self, fid )
+    !
+    subroutine writeCVector3D_SG( self, funit, ftype )
         implicit none
         !
         class( cVector3D_SG_t ), intent( in ) :: self
-        integer, intent( in )                 :: fid
+        integer, intent( in )                 :: funit
+        character(:), allocatable, intent( in ), optional :: ftype
         !
-        integer :: Nx, Ny, Nz
         logical :: ok, hasname, binary
         character(80) :: fname, isbinary
         !
+        if( .NOT. self%is_allocated) then
+            stop "Error: writeCVector3D_SG > Not allocated."
+        endif
+        !
         binary = .TRUE.
         !
-        if ( .NOT. self%is_allocated ) then
-            write( *, * ) "ERROR:cVector3D_SG::writeCVector3D_SG: "
-            stop "           Vector not allocated. Exiting."
-        end if
-        !
-        inquire( fid, opened = ok, named = hasname, name = fname, unformatted = isbinary )
+        inquire( funit, opened = ok, named = hasname, name = fname, unformatted = isbinary )
         !
         if( ok ) then
             !
             ! Check that the file is unformatted if binary, formatted if ascii.
-            if ( ( index( isbinary, "yes" ) > 0 .OR. index( isbinary, "YES" ) > 0 ) &
-                  .AND. .NOT. binary) then
-                write( *, * ) "ERROR:cVector3D_SG::writeCVector3D_SG: "
-                write( *, * ) "           Unable to writeCVector3D_SG vector to unformatted file. ", &
-                       trim(fname), ". Exiting."
+            if((index(isbinary, "yes") > 0.OR.index(isbinary, "YES") > 0) &
+                  .AND.  .NOT.binary) then
+                write( *, * ) "Error: writeCVector3D_SG > Unable to writeCVector3D_SG vector to unformatted file. ", &
+                        trim(fname), "."
                 stop
-            else if ((index(isbinary,"no") > 0 .OR. index(isbinary,"NO") > 0) &
-                  .AND. binary) then
-                write( *, * ) "ERROR:cVector3D_SG::writeCVector3D_SG: "
-                write( *, * ) "           Unable to writeCVector3D_SG vector to formatted file. ", &
-                       trim(fname), ". Exiting."
+            else if((index(isbinary,"no") > 0.OR.index(isbinary,"NO") > 0) &
+                  .AND.binary) then
+                write( *, * ) "Error: writeCVector3D_SG > Unable to writeCVector3D_SG vector to formatted file. ", &
+                        trim(fname), "."
                 stop
-            end if
+            endif
             !
-            write( fid ) self%nx, self%ny, self%nz, self%gridType
-            write( fid ) self%x
-            write( fid ) self%y
-            write( fid ) self%z
+            write(funit) self%nx, self%ny, self%nz, self%grid_type
+            write(funit) self%x
+            write(funit) self%y
+            write(funit) self%z
+            !
         else
-            stop "writeCVector3D_SG: unable to open file"
+            stop "Error: writeCVector3D_SG > unable to open file"
         endif
         !
     end subroutine writeCVector3D_SG
     !
-    !************************************************
-    ! boundaryCVector3D_SG operations
-    !************************************************
-    !
-    !** 
-    ! setAllboundaryCVector3D_SG
-    !
-    !*
-    subroutine setAllboundaryCVector3D_SG( self, c_in )
+    subroutine setAllBoundaryCVector3D_SG( self, cvalue )
         implicit none
-        ! Arguments
-        class( cVector3D_SG_t ), intent( inout ) :: self
-        complex( kind=prec ), intent( in )       :: c_in
         !
-        select case( self%gridType )
+        class( cVector3D_SG_t ), intent( inout ) :: self
+        complex( kind=prec ), intent( in )       :: cvalue
+        !
+        select case(self%grid_type)
             case(EDGE)
-                self%x(:, (/1, self%NdX(2)/), :) = c_in
-                self%x(:, :, (/1, self%NdX(3)/)) = c_in
-                self%y((/1, self%NdY(1)/), :, :) = c_in
-                self%y(:, :, (/1, self%NdY(3)/)) = c_in
-                self%z(:, (/1, self%NdZ(2)/), :) = c_in
-                self%z((/1, self%NdZ(1)/), :, :) = c_in
+                self%x(:, (/1, self%NdX(2)/), :) = cvalue
+                self%x(:, :, (/1, self%NdX(3)/)) = cvalue
+                self%y((/1, self%NdY(1)/), :, :) = cvalue
+                self%y(:, :, (/1, self%NdY(3)/)) = cvalue
+                self%z(:, (/1, self%NdZ(2)/), :) = cvalue
+                self%z((/1, self%NdZ(1)/), :, :) = cvalue
                 !
             case(FACE)
-                self%x((/1, self%NdX(1)/), :, :) = c_in
-                self%y(:, (/1, self%NdY(2)/), :) = c_in
-                self%z(:, :, (/1, self%NdZ(3)/)) = c_in
+                self%x((/1, self%NdX(1)/), :, :) = cvalue
+                self%y(:, (/1, self%NdY(2)/), :) = cvalue
+                self%z(:, :, (/1, self%NdZ(3)/)) = cvalue
                 !
             case default
-                write( *, * ) "ERROR:cVector3D_SG::setAllboundaryCVector3D_SG: "
-                stop "           Invalid grid type. Exiting."
+                stop "Error: setAllBoundaryCVector3D_SG > Invalid grid type."
         end select
         !
-    end subroutine setAllboundaryCVector3D_SG
-    !** 
-    ! setAllinteriorCVector3D_SG
+    end subroutine setAllBoundaryCVector3D_SG
     !
-    !*
-    subroutine setAllinteriorCVector3D_SG( self, c_in )
+    subroutine setAllinteriorCVector3D_SG( self, cvalue )
         implicit none
         ! Arguments
         class( cVector3D_SG_t ), intent( inout ) :: self
-        complex( kind=prec ) , intent( in )      :: c_in
+        complex( kind=prec ) , intent( in )      :: cvalue
         !
-        select case(self%gridType)
+        select case(self%grid_type)
             case(EDGE)
-                self%x(:, 2:self%NdX(2)-1, 2:self%NdX(3)-1) = c_in
-                self%y(2:self%NdY(1)-1, :, 2:self%NdY(3)-1) = c_in
-                self%z(2:self%NdZ(1), 2:self%NdZ(2)-1, :) = c_in
+                self%x(:, 2:self%NdX(2)-1, 2:self%NdX(3)-1) = cvalue
+                self%y(2:self%NdY(1)-1, :, 2:self%NdY(3)-1) = cvalue
+                self%z(2:self%NdZ(1), 2:self%NdZ(2)-1, :) = cvalue
             case(FACE)
-                self%x(2:self%NdX(1)-1, :, :) = c_in
-                self%y(:, 2:self%NdY(2)-1, :) = c_in
-                self%z(:, :, 2:self%NdZ(3)-1) = c_in
-                
+                self%x(2:self%NdX(1)-1, :, :) = cvalue
+                self%y(:, 2:self%NdY(2)-1, :) = cvalue
+                self%z(:, :, 2:self%NdZ(3)-1) = cvalue
             case default
-                write( *, * ) "ERROR:cVector3D_SG::setAllinteriorCVector3D_SG: "
-                stop "           Invalid grid type. Exiting."
+                stop "Error: setAllInteriorCVector3D_SG > Invalid grid type."
         end select
         !
     end subroutine setAllinteriorCVector3D_SG
-    !**
-    ! setOneboundaryCVector3D_SG
     !
-    !*
-    subroutine setOneboundaryCVector3D_SG(self, bdry, c, int_only)
+    subroutine setOneBoundaryCVector3D_SG( self, bdry, cvalue, int_only )
         implicit none
         !
         class( cVector3D_SG_t ), intent( inout ) :: self
-        character(*), intent( in )               :: bdry
-        complex( kind=prec ) , intent( in )      :: c
-        logical, optional        , intent( in )  :: int_only
+        character(:), allocatable, intent( in )  :: bdry
+        complex( kind=prec ), intent( in )       :: cvalue
+        logical, intent( in ), optional          :: int_only
         !
         logical :: int_only_p
-        
-        if (.NOT.present(int_only)) then
+        !
+        if( .NOT. present(int_only)) then
             int_only_p = .FALSE.
         else
             int_only_p = int_only
-        end if
-        
-        select case(self%gridType)
-        case(EDGE)
-            if (int_only_p) then
+        endif
+        !
+        select case(self%grid_type)
+            case(EDGE)
+                if(int_only_p) then
+                  select case (bdry)
+                      case("x1")
+                          self%z(1, 2:self%NdZ(2)-1, :) = cvalue
+                          self%y(1, :, 2:self%NdY(3)-1) = cvalue
+                      case("x2")
+                          self%z(self%NdZ(1), 2:self%NdZ(2)-1, :) = cvalue
+                          self%y(self%NdY(1), :, 2:self%NdY(3)-1) = cvalue
+                      case("y1")
+                          self%z(2:self%NdZ(1)-1, 1, :) = cvalue
+                          self%x(:, 1, 2:self%NdX(3)-1) = cvalue
+                      case("y2")
+                          self%z(2:self%NdZ(1)-1, self%NdZ(2), :) = cvalue
+                          self%x(:, self%NdX(2), 2:self%NdX(3)-1) = cvalue
+                      case("z1")
+                          self%x(:, 2:self%NdX(2)-1, 1) = cvalue
+                          self%y(2:self%NdY(1)-1, :, 1) = cvalue
+                      case("z2")
+                          self%x(:, 2:self%NdX(2)-1, self%NdX(3)) = cvalue
+                          self%y(2:self%NdY(1)-1, :, self%NdY(3)) = cvalue
+                      case("z1_x")
+                          self%x(:, 2:self%NdX(2)-1, 1) = cvalue
+                      case("z2_x")
+                          self%x(:, 2:self%NdX(2)-1, self%NdX(3)) = cvalue
+                      case("z1_y")
+                          self%y(2:self%NdY(1)-1, :, 1) = cvalue
+                      case("z2_y")
+                          self%y(2:self%NdY(1)-1, :, self%NdY(3)) = cvalue
+                  end select
+                else
+                  select case (bdry)
+                      case("x1")
+                          self%z(1, :, :) = cvalue
+                          self%y(1, :, :) = cvalue
+                      case("x2")
+                          self%z(self%NdZ(1), :, :) = cvalue
+                          self%y(self%NdY(1), :, :) = cvalue
+                      case("y1")
+                          self%z(:, 1, :) = cvalue
+                          self%x(:, 1, :) = cvalue
+                      case("y2")
+                          self%z(:, self%NdZ(2), :) = cvalue
+                          self%x(:, self%NdX(2), :) = cvalue
+                      case("z1")
+                          self%x(:, :, 1) = cvalue
+                          self%y(:, :, 1) = cvalue
+                      case("z2")
+                          self%x(:, :, self%NdX(3)) = cvalue
+                          self%y(:, :, self%NdY(3)) = cvalue
+                      case("z1_x")
+                          self%x(:, :, 1) = cvalue
+                      case("z2_x")
+                          self%x(:, :, self%NdX(3)) = cvalue
+                      case("z1_y")
+                          self%y(:, :, 1) = cvalue
+                      case("z2_y")
+                          self%y(:, :, self%NdY(3)) = cvalue
+                  end select
+                endif
+                !
+            case(FACE)
                 select case (bdry)
                   case("x1")
-                      self%z(1, 2:self%NdZ(2)-1, :) = c
-                      self%y(1, :, 2:self%NdY(3)-1) = c
+                      self%x(1, :, :) = cvalue
                   case("x2")
-                      self%z(self%NdZ(1), 2:self%NdZ(2)-1, :) = c
-                      self%y(self%NdY(1), :, 2:self%NdY(3)-1) = c
+                      self%x(self%NdX(1), :, :) = cvalue
                   case("y1")
-                      self%z(2:self%NdZ(1)-1, 1, :) = c
-                      self%x(:, 1, 2:self%NdX(3)-1) = c
+                      self%y(:, 1, :) = cvalue
                   case("y2")
-                      self%z(2:self%NdZ(1)-1, self%NdZ(2), :) = c
-                      self%x(:, self%NdX(2), 2:self%NdX(3)-1) = c
+                      self%y(:, self%NdY(2), :) = cvalue
                   case("z1")
-                      self%x(:, 2:self%NdX(2)-1, 1) = c
-                      self%y(2:self%NdY(1)-1, :, 1) = c
+                      self%z(:, :, 1) = cvalue
                   case("z2")
-                      self%x(:, 2:self%NdX(2)-1, self%NdX(3)) = c
-                      self%y(2:self%NdY(1)-1, :, self%NdY(3)) = c
-                  case("z1_x")
-                      self%x(:, 2:self%NdX(2)-1, 1) = c
-                  case("z2_x")
-                      self%x(:, 2:self%NdX(2)-1, self%NdX(3)) = c
-                  case("z1_y")
-                      self%y(2:self%NdY(1)-1, :, 1) = c
-                  case("z2_y")
-                      self%y(2:self%NdY(1)-1, :, self%NdY(3)) = c
+                      self%z(:, :, self%NdZ(3)) = cvalue
                 end select
-            else
-                select case (bdry)
-                  case("x1")
-                      self%z(1, :, :) = c
-                      self%y(1, :, :) = c
-                  case("x2")
-                      self%z(self%NdZ(1), :, :) = c
-                      self%y(self%NdY(1), :, :) = c
-                  case("y1")
-                      self%z(:, 1, :) = c
-                      self%x(:, 1, :) = c
-                  case("y2")
-                      self%z(:, self%NdZ(2), :) = c
-                      self%x(:, self%NdX(2), :) = c
-                  case("z1")
-                      self%x(:, :, 1) = c
-                      self%y(:, :, 1) = c
-                  case("z2")
-                      self%x(:, :, self%NdX(3)) = c
-                      self%y(:, :, self%NdY(3)) = c
-                  case("z1_x")
-                      self%x(:, :, 1) = c
-                  case("z2_x")
-                      self%x(:, :, self%NdX(3)) = c
-                  case("z1_y")
-                      self%y(:, :, 1) = c
-                  case("z2_y")
-                      self%y(:, :, self%NdY(3)) = c
-                end select
-            end if
-        case(FACE)
-            select case (bdry)
-                case("x1")
-                  self%x(1, :, :) = c
-                case("x2")
-                  self%x(self%NdX(1), :, :) = c
-                case("y1")
-                  self%y(:, 1, :) = c
-                case("y2")
-                  self%y(:, self%NdY(2), :) = c
-                case("z1")
-                  self%z(:, :, 1) = c
-                case("z2")
-                  self%z(:, :, self%NdZ(3)) = c
-            end select
-        case default
-            write( *, * ) "ERROR:cVector3D_SG::setOneboundaryCVector3D_SG: "
-            stop "           Invalid grid type. Exiting."
+            case default
+                stop "Error: setOneBoundaryCVector3D_SG > Invalid grid type."
         end select
         !
-    end subroutine setOneboundaryCVector3D_SG
-    !**
-    ! intBdryIndicesCVector3D_SG
-    !*
+    end subroutine setOneBoundaryCVector3D_SG
+    !
     subroutine intBdryIndicesCVector3D_SG( self, ind_i, ind_b )
         implicit none
         !
@@ -483,14 +412,16 @@ contains
         if( self%is_allocated ) then
             select type( grid => self%grid )
                 class is(Grid3D_SG_t)
-                  E = cVector3D_SG_t( grid, self%gridType )
+                    E = cVector3D_SG_t( grid, self%grid_type )
+                class default
+                    stop "Error: intBdryIndicesCVector3D_SG > Undefined grid"
+                !
             end select
         else
-            write( *, * ) "ERROR:cVector3D_SG_t:intBdryIndicesCVector3D_SG"
-            stop "           Not allocated. Exiting."
+            stop "Error: intBdryIndicesCVector3D_SG > Not allocated. Exiting."
         end if
         
-        select case(self%gridType)
+        select case(self%grid_type)
             case( EDGE )
                 !
                 nVec(1) = size(E%x)
@@ -530,7 +461,10 @@ contains
                 E%z(:, :, 1) = 1
                 E%z(:, :, E%nz + 1) = 1
                 !
-                call E%getArray(temp) 
+                call E%getArray(temp)
+                !
+            case default
+                stop "Error: intBdryIndicesCVector3D_SG > Undefined self%grid_type"
                 !
         end select
         !
@@ -560,47 +494,33 @@ contains
         deallocate( temp )
         !
     end subroutine intBdryIndicesCVector3D_SG
-    !**
-    ! boundaryCVector3D_SG
-    ! Returns a copy of this vector with all interiorCVector3D_SG elements ser to zero.
-    !*
-    subroutine boundaryCVector3D_SG( self, bdry )
+    !
+    function boundaryCVector3D_SG( self ) result( boundary )
         implicit none
         !
         class( cVector3D_SG_t ), intent( in ) :: self
         !
-        class( cVector_t ), allocatable, intent( inout )   :: bdry
+        class( Vector_t ), allocatable :: boundary
         !
-        allocate( bdry, source = self )
+        allocate( boundary, source = self )
         !
-        call bdry%setAllInterior( C_ZERO )
-        !
-    end subroutine boundaryCVector3D_SG
-    !**
-    ! interiorCVector3D_SG
-    ! Returns a copy of this vector with all boundaryCVector3D_SG elements ser to zero.
-    !*
-    subroutine interiorCVector3D_SG( self, intr )
+        call boundary%setAllInterior( C_ZERO )
+       !
+    end function boundaryCVector3D_SG
+    !
+    function interiorCVector3D_SG( self ) result( interior )
         implicit none
         !
         class( cVector3D_SG_t ), intent( in ) :: self
         !
-        class( cVector_t ), allocatable, intent( inout )   :: intr
+        class( Vector_t ), allocatable :: interior
         !
-        allocate( intr, source = self )
+        allocate( interior, source = self )
         !
-        call intr%setAllboundary( C_ZERO )
+        call interior%setAllboundary( C_ZERO )
         !
-    end subroutine interiorCVector3D_SG
+    end function interiorCVector3D_SG
     !
-    !************************************************
-    ! Data access
-    !************************************************
-    !
-    !**
-    ! lengthCVector3D_SG
-    !
-    !*
     function lengthCVector3D_SG( self ) result( n )
         implicit none
         !
@@ -611,57 +531,74 @@ contains
         n = self%Nxyz(1) + self%Nxyz(2) + self%Nxyz(3)
         !
     end function lengthCVector3D_SG
-    !**
-    ! getArrayCVector3D_SG
     !
-    !*
-    subroutine getArrayCVector3D_SG( self, v )
+    subroutine getRealArrayCVector3D_SG( self, array )
         implicit none
         !
-        class( cVector3D_SG_t ), intent( in ) :: self
-        complex( kind=prec ), allocatable, intent( out ) :: v(:)
-        allocate ( v( self%length() ) )
-        v = (/reshape(self%x, (/self%Nxyz(1), 1/)), &
+        class( cVector3D_SG_t ), intent( in )         :: self
+        real( kind=prec ), allocatable, intent( out ) :: array(:)
+        allocate (array(self%length()))
+        array = (/reshape(real( self%x%re, kind=prec ), (/self%Nxyz(1), 1/)), &
+                reshape(real( self%y%re, kind=prec ), (/self%Nxyz(2), 1/)), &
+                reshape(real( self%z%re, kind=prec ), (/self%Nxyz(3), 1/))/)
+        !
+    end subroutine getRealArrayCVector3D_SG
+    !
+    subroutine getComplexArrayCVector3D_SG( self, array )
+        implicit none
+        !
+        class( cVector3D_SG_t ), intent( in )            :: self
+        complex( kind=prec ), allocatable, intent( out ) :: array(:)
+        !
+        allocate (array(self%length()))
+        array = (/reshape(self%x, (/self%Nxyz(1), 1/)), &
                 reshape(self%y, (/self%Nxyz(2), 1/)), &
                 reshape(self%z, (/self%Nxyz(3), 1/))/)
-        
-    end subroutine getArrayCVector3D_SG
-    !**
-    ! setArrayCVector3D_SG
+        !
+    end subroutine getComplexArrayCVector3D_SG
     !
-    !*
-    subroutine setArrayCVector3D_SG(self, v)
+    subroutine setRealArrayCVector3D_SG( self, array )
         implicit none
-        ! Arguments
+        !
         class( cVector3D_SG_t ), intent( inout ) :: self
-        complex( kind=prec ), intent( in )       :: v(:)
-        ! Local variables
+        real( kind=prec ), intent( in )          :: array(:)
+        !
         integer :: i1, i2
-        !
         ! Ex
-        i1 = 1
-        i2 = self%Nxyz(1)
-        self%x = reshape(v(i1:i2), self%NdX)
-        !
+        i1 = 1; i2 = self%Nxyz(1)
+        self%x = cmplx( reshape(array(i1:i2), self%NdX), 0.0, kind=prec )
         ! Ey
-        i1 = i2 + 1
-        i2 = i2 + self%Nxyz(2)
-        self%y = reshape(v(i1:i2), self%NdY)
-        !
+        i1 = i2 + 1; i2 = i2 + self%Nxyz(2)
+        self%y = cmplx( reshape(array(i1:i2), self%NdX), 0.0, kind=prec )
         ! Ez
-        i1 = i2 + 1
-        i2 = i2 + self%Nxyz(3)
-        self%z = reshape(v(i1:i2), self%NdZ)
+        i1 = i2 + 1; i2 = i2 + self%Nxyz(3)
+        self%z = cmplx( reshape(array(i1:i2), self%NdX), 0.0, kind=prec )
         !
-    end subroutine setArrayCVector3D_SG
-    !**
-    ! setVecComponentsArrayCVector3D_SG
+    end subroutine setRealArrayCVector3D_SG
     !
-    !*
-    subroutine setVecComponentsArrayCVector3D_SG( self, xyz, &
-            &                                 xmin, xstep, xmax, &
-            &                                 ymin, ystep, ymax, &
-            &                                 zmin, zstep, zmax, c )
+    subroutine setComplexArrayCVector3D_SG( self, array )
+        implicit none
+        !
+        class( cVector3D_SG_t ), intent( inout ) :: self
+        complex( kind=prec ), intent( in )       :: array(:)
+        !
+        integer :: i1, i2
+        ! Ex
+        i1 = 1; i2 = self%Nxyz(1)
+        self%x = reshape(array(i1:i2), self%NdX)
+        ! Ey
+        i1 = i2 + 1; i2 = i2 + self%Nxyz(2)
+        self%y = reshape(array(i1:i2), self%NdY)
+        ! Ez
+        i1 = i2 + 1; i2 = i2 + self%Nxyz(3)
+        self%z = reshape(array(i1:i2), self%NdZ)
+        !
+    end subroutine setComplexArrayCVector3D_SG
+    !
+    subroutine setVecComponentsCVector3D_SG( self, xyz, &
+            &                              xmin, xstep, xmax, &
+            &                              ymin, ystep, ymax, &
+            &                              zmin, zstep, zmax, cvalue )
         implicit none
         !
         class( cVector3D_SG_t ), intent( inout ) :: self
@@ -669,7 +606,7 @@ contains
         integer, intent( in )                  :: xmin, xstep, xmax
         integer, intent( in )                  :: ymin, ystep, ymax
         integer, intent( in )                  :: zmin, zstep, zmax
-        real( kind=prec ), intent ( in )         :: c
+        complex( kind=prec ), intent ( in )    :: cvalue
         !
         integer :: x1, x2
         integer :: y1, y2
@@ -681,495 +618,678 @@ contains
         !
         select case(xyz)
             case("x")
-                if (xmin == 0) x1 = self%NdX(1)
-                if (xmax <= 0) x2 = self%NdX(1) + xmax
+                if(xmin == 0) x1 = self%NdX(1)
+                if(xmax <= 0) x2 = self%NdX(1) + xmax
                 !
-                if (ymin == 0) y1 = self%NdX(2)
-                if (ymax <= 0) y2 = self%NdX(2) + ymax
+                if(ymin == 0) y1 = self%NdX(2)
+                if(ymax <= 0) y2 = self%NdX(2) + ymax
                 !
-                if (zmin == 0) z1 = self%NdX(3)
-                if (zmax <= 0) z2 = self%NdX(3) + zmax
+                if(zmin == 0) z1 = self%NdX(3)
+                if(zmax <= 0) z2 = self%NdX(3) + zmax
                 !
-                self%x(x1:x2:xstep, y1:y2:ystep, z1:z2:zstep) = c
+                self%x(x1:x2:xstep, y1:y2:ystep, z1:z2:zstep) = cvalue
                 !
             case("y")
-                if (xmin == 0) x1 = self%NdY(1)
-                if (xmax <= 0) x2 = self%NdY(1) + xmax
+                if(xmin == 0) x1 = self%NdY(1)
+                if(xmax <= 0) x2 = self%NdY(1) + xmax
                 !
-                if (ymin == 0) y1 = self%NdY(2)
-                if (ymax <= 0) y2 = self%NdY(2) + ymax
+                if(ymin == 0) y1 = self%NdY(2)
+                if(ymax <= 0) y2 = self%NdY(2) + ymax
                 !
-                if (zmin == 0) z1 = self%NdY(3)
-                if (zmax <= 0) z2 = self%NdY(3) + zmax
+                if(zmin == 0) z1 = self%NdY(3)
+                if(zmax <= 0) z2 = self%NdY(3) + zmax
                 !
-                self%y(x1:x2:xstep, y1:y2:ystep, z1:z2:zstep) = c
+                self%y(x1:x2:xstep, y1:y2:ystep, z1:z2:zstep) = cvalue
                 !
             case("z")
-                if (xmin == 0) x1 = self%NdZ(1)
-                if (xmax <= 0) x2 = self%NdZ(1) + xmax
-
-                if (ymin == 0) y1 = self%NdZ(2)
-                if (ymax <= 0) y2 = self%NdZ(2) + ymax
+                if(xmin == 0) x1 = self%NdZ(1)
+                if(xmax <= 0) x2 = self%NdZ(1) + xmax
                 !
-                if (zmin == 0) z1 = self%NdZ(3)
-                if (zmax <= 0) z2 = self%NdZ(3) + zmax
+                if(ymin == 0) y1 = self%NdZ(2)
+                if(ymax <= 0) y2 = self%NdZ(2) + ymax
                 !
-                self%z(x1:x2:xstep, y1:y2:ystep, z1:z2:zstep) = c
+                if(zmin == 0) z1 = self%NdZ(3)
+                if(zmax <= 0) z2 = self%NdZ(3) + zmax
+                !
+                self%z(x1:x2:xstep, y1:y2:ystep, z1:z2:zstep) = cvalue
                 !
             case default
-                write( *, * ) "ERROR:cVector3D_SG::setVecComponentsArrayCVector3D_SG: "
-                stop "           Invalid xyz argument. Exiting."
+                stop "Error: setVecComponentsCVector3D_SG > Invalid xyz argument."
         end select
-        
-    end subroutine setVecComponentsArrayCVector3D_SG
+        !
+    end subroutine setVecComponentsCVector3D_SG
     !
-    !************************************************
-    ! Arithmetic/algebraic operations
-    !************************************************
-    !
-    !**
-    ! zerosCVector3D_SG
-    !*
-    subroutine zerosCVector3D_SG(self)
+    subroutine zerosCVector3D_SG( self )
         implicit none
         !
         class( cVector3D_SG_t ), intent( inout ) :: self
         !
-        self%x = R_ZERO
-        self%y = R_ZERO
-        self%z = R_ZERO
-        
+        self%x = C_ZERO
+        self%y = C_ZERO
+        self%z = C_ZERO
+        !
     end subroutine zerosCVector3D_SG
-    !**
-    ! addCVector3D_SG
-    !*
+    !
     subroutine addCVector3D_SG( self, rhs )
         implicit none
         !
         class( cVector3D_SG_t ), intent( inout ) :: self
-        class( cVector_t ), intent( in )         :: rhs
+        class( Field_t ), intent( in )           :: rhs
         !
-        if (self%isCompatible(rhs)) then
-        !
-        select type(rhs)
-            class is( cVector3D_SG_t )
+        if( self%isCompatible( rhs ) ) then
+            !
+            select type( rhs )
                 !
-                self%x = self%x + rhs%x
-                self%y = self%y + rhs%y
-                self%z = self%z + rhs%z
+                class is( cVector3D_SG_t )
+                    self%x = self%x + rhs%x
+                    self%y = self%y + rhs%y
+                    self%z = self%z + rhs%z
                 !
-        end select
-        !
+                class is( rVector3D_SG_t )
+                    self%x = self%x + cmplx( rhs%x, 0.0, kind=prec )
+                    self%y = self%y + cmplx( rhs%y, 0.0, kind=prec )
+                    self%z = self%z + cmplx( rhs%z, 0.0, kind=prec )
+                !
+                class is( cScalar3D_SG_t )
+                    self%x = self%x + rhs%v
+                    self%y = self%y + rhs%v
+                    self%z = self%z + rhs%v
+                !
+                class is( rScalar3D_SG_t )
+                    self%x = self%x + cmplx( rhs%v, 0.0, kind=prec )
+                    self%y = self%y + cmplx( rhs%v, 0.0, kind=prec )
+                    self%z = self%z + cmplx( rhs%v, 0.0, kind=prec )
+                class default
+                    stop "Error: addCVector3D_SG > Undefined rhs"
+                !
+            end select
+            !
         else
-            write( *, * ) "ERROR:cVector3D_SG::addCVector3D_SG"
-            stop "    Incompatible inputs. Exiting."
+            stop "Error: addCVector3D_SG > Incompatible inputs."
         end if
         !
     end subroutine addCVector3D_SG
-    !**
-    ! sub1CVector3D_SG
-    !*
+    !
     subroutine subCVector3D_SG( self, rhs )
         implicit none
         !
         class( cVector3D_SG_t ), intent( inout ) :: self
-        class( cVector_t ), intent( in ) :: rhs
+        class( Field_t ), intent( in )           :: rhs
         !
-        if ( self%isCompatible(rhs)) then
-        !
-        select type(rhs)
-            class is( cVector3D_SG_t )
-                self%x = self%x - rhs%x
-                self%y = self%y - rhs%y
-                self%z = self%z - rhs%z
-        end select
-        !
+        if( self%isCompatible( rhs ) ) then
+            !
+            select type( rhs )
+                !
+                class is( cVector3D_SG_t )
+                    self%x = self%x - rhs%x
+                    self%y = self%y - rhs%y
+                    self%z = self%z - rhs%z
+                !
+                class is( rVector3D_SG_t )
+                    self%x = self%x - cmplx( rhs%x, 0.0, kind=prec )
+                    self%y = self%y - cmplx( rhs%y, 0.0, kind=prec )
+                    self%z = self%z - cmplx( rhs%z, 0.0, kind=prec )
+                !
+                class is( cScalar3D_SG_t )
+                    self%x = self%x - rhs%v
+                    self%y = self%y - rhs%v
+                    self%z = self%z - rhs%v
+                !
+                class is( rScalar3D_SG_t )
+                    self%x = self%x - cmplx( rhs%v, 0.0, kind=prec )
+                    self%y = self%y - cmplx( rhs%v, 0.0, kind=prec )
+                    self%z = self%z - cmplx( rhs%v, 0.0, kind=prec )
+                class default
+                    stop "Error: subCVector3D_SG > Undefined rhs"
+                !
+            end select
+            !
         else
-            write( *, * ) "ERROR:cVector3D_SG::subCVector3D_SG"
-            stop "    Incompatible inputs. Exiting."
-        end if
+            stop "Error: subCVector3D_SG > Incompatible inputs."
+        endif
+        !
     end subroutine subCVector3D_SG
-    !**
-    ! mult1CVector3D_SG
-    !*
-    subroutine mult1CVector3D_SG( self, rhs )
+    !
+    subroutine multByFieldCVector3D_SG( self, rhs )
         implicit none
         !
         class( cVector3D_SG_t ), intent( inout ) :: self
-        class( cVector_t ), intent( in )         :: rhs
+        class( Field_t ), intent( in )           :: rhs
         !
-        if (self%isCompatible(rhs)) then
+        if( self%isCompatible( rhs ) ) then
             !
-            select type(rhs)
+            select type( rhs )
+                !
                 class is( cVector3D_SG_t )
                     self%x = self%x * rhs%x
                     self%y = self%y * rhs%y
                     self%z = self%z * rhs%z
-            end select
-            !
-        else
-            write( *, * ) "ERROR:cVector3D_SG::mult_1"
-            stop "    Incompatible inputs. Exiting."
-        end if
-    end subroutine mult1CVector3D_SG
-
-    !**
-    ! mult2CVector3D_SG
-    !*
-    subroutine mult2CVector3D_SG( self, c )
-        implicit none
-        !
-        class( cVector3D_SG_t ), intent( inout ) :: self
-        complex( kind=prec ) , intent( in )      :: c
-        !
-        self%x = c * self%x
-        self%y = c * self%y
-        self%z = c * self%z
-        !
-    end subroutine mult2CVector3D_SG
-    !**
-    ! mult3CVector3D_SG
-    !*
-    subroutine mult3CVector3D_SG( self, rhs )
-        implicit none
-        !
-        class( cVector3D_SG_t ), intent( inout ) :: self
-        class( rVector_t ), intent( in )         :: rhs
-        !
-        if (self%isCompatible(rhs)) then
-            !
-            select type(rhs)
-                class is(rVector3D_SG_t)
-                    self%x = self%x * rhs%x
-                    self%y = self%y * rhs%y
-                    self%z = self%z * rhs%z
-            end select
-            !
-        else
-            write( *, * ) "ERROR:cVector3D_SG::mult3"
-            stop "    Incompatible inputs. Exiting."
-        end if
-    end subroutine mult3CVector3D_SG
-    !
-    subroutine mult4CVector3D_SG( self, rhs )
-        implicit none
-        !
-        class( cVector3D_SG_t ), intent( inout ) :: self
-        class( rScalar_t ), intent( in )         :: rhs
-        !
-        !if (self%isCompatible(rhs)) then
-            !
-            select type(rhs)
-                class is(rScalar3D_SG_t)
+                !
+                class is( rVector3D_SG_t )
+                    self%x = self%x * cmplx( rhs%x, 0.0, kind=prec )
+                    self%y = self%y * cmplx( rhs%y, 0.0, kind=prec )
+                    self%z = self%z * cmplx( rhs%z, 0.0, kind=prec )
+                !
+                class is( rScalar3D_SG_t )
+                    self%x = self%x * cmplx( rhs%v, 0.0, kind=prec )
+                    self%y = self%y * cmplx( rhs%v, 0.0, kind=prec )
+                    self%z = self%z * cmplx( rhs%v, 0.0, kind=prec )
+                !
+                class is( cScalar3D_SG_t )
                     self%x = self%x * rhs%v
                     self%y = self%y * rhs%v
                     self%z = self%z * rhs%v
+                    !
+                class default
+                    stop "Error: multByFieldCVector3D_SG: undefined rhs"
+                !
             end select
             !
-        !else
-            !write( *, * ) "ERROR:cVector3D_SG::mult3"
-            !stop "    Incompatible inputs. Exiting."
-        !end if
-    end subroutine mult4CVector3D_SG
-    !**
-    ! mults3CVector3D_SG
-    !*
-    !    subroutine version of mult3CVector3D_SG -- overwrites input lhs
-    subroutine mults3CVector3D_SG( lhs, rhs )
-        implicit none
-        !
-        class( cVector3D_SG_t ), intent( inout ) :: lhs
-        class( rVector_t ), intent( in )         :: rhs
-        !
-        if (lhs%isCompatible(rhs)) then
-            select type(rhs)
-                class is(rVector3D_SG_t)
-                    lhs%x = lhs%x * rhs%x
-                    lhs%y = lhs%y * rhs%y
-                    lhs%z = lhs%z * rhs%z
-            end select
         else
-            write( *, * ) "ERROR:cVector3D_SG::multS3"
-            stop "    Incompatible inputs. Exiting."
+            stop "Error: multByFieldCVector3D_SG: incompatible rhs"
         end if
         !
-    end subroutine mults3CVector3D_SG
-    !**
-    ! mults1CVector3D_SG
-    ! Subroutine version of mult2CVector3D_SG
-    !*
-    subroutine mults1CVector3D_SG( self, c )
+    end subroutine multByFieldCVector3D_SG
+    !
+    subroutine multByValueCVector3D_SG( self, cvalue )
         implicit none
         !
         class( cVector3D_SG_t ), intent( inout ) :: self
-        complex( kind=prec ) , intent( in )      :: c
+        complex( kind=prec ), intent( in )       :: cvalue
         !
-        self%x = c * self%x
-        self%y = c * self%y
-        self%z = c * self%z
+        self%x = cvalue * self%x
+        self%y = cvalue * self%y
+        self%z = cvalue * self%z
         !
-    end subroutine mults1CVector3D_SG
-    !**
-    ! linCombSCVector3D_SG
-    !*
-    subroutine linCombSCVector3D_SG(lhs, rhs, c1, c2)
+    end subroutine multByValueCVector3D_SG
+    !
+    subroutine divByFieldCVector3D_SG( self, rhs )
         implicit none
         !
-        class( cVector3D_SG_t ), intent( inout ) :: lhs
-        class( cVector_t )        , intent( in ) :: rhs
+        class( cVector3D_SG_t ), intent( inout ) :: self
+        class( Field_t ), intent( in )           :: rhs
+        !
+        if( self%isCompatible( rhs ) ) then
+            !
+            select type( rhs )
+                !
+                class is( cVector3D_SG_t )
+                    self%x = self%x / rhs%x
+                    self%y = self%y / rhs%y
+                    self%z = self%z / rhs%z
+                !
+                class is( rVector3D_SG_t )
+                    self%x = self%x / cmplx( rhs%x, 0.0, kind=prec )
+                    self%y = self%y / cmplx( rhs%y, 0.0, kind=prec )
+                    self%z = self%z / cmplx( rhs%z, 0.0, kind=prec )
+                !
+                class is( rScalar3D_SG_t )
+                    self%x = self%x / cmplx( rhs%v, 0.0, kind=prec )
+                    self%y = self%y / cmplx( rhs%v, 0.0, kind=prec )
+                    self%z = self%z / cmplx( rhs%v, 0.0, kind=prec )
+                !
+                class is( cScalar3D_SG_t )
+                    self%x = self%x / rhs%v
+                    self%y = self%y / rhs%v
+                    self%z = self%z / rhs%v
+                !
+                class default
+                    stop "Error: divByFieldCVector3D_SG: undefined rhs"
+                !
+            end select
+            !
+        else
+            stop "Error: divByFieldCVector3D_SG: incompatible rhs"
+        end if
+        !
+    end subroutine divByFieldCVector3D_SG
+    !
+    subroutine divByValueCVector3D_SG( self, cvalue )
+        implicit none
+        !
+        class( cVector3D_SG_t ), intent( inout ) :: self
+        complex( kind=prec ), intent( in )       :: cvalue
+        !
+        self%x = self%x / cvalue
+        self%y = self%y / cvalue
+        self%z = self%z / cvalue
+        !
+    end subroutine divByValueCVector3D_SG
+    !
+    function dotProdCVector3D_SG( self, rhs ) result( cvalue )
+        implicit none
+        !
+        class( cVector3D_SG_t ), intent( in ) :: self
+        class( Vector_t ), intent( in )       :: rhs
+        complex( kind=prec )                  :: cvalue
+        !
+        cvalue = C_ZERO
+        !
+        if(( .NOT. self%is_allocated) .OR. ( .NOT. rhs%is_allocated)) then
+            stop "Error: dotProdCVector3D_SG > Input vectors not allocated."
+        endif
+        !
+        if( self%isCompatible( rhs ) ) then
+            !
+            select type( rhs )
+                !
+                class is( cVector3D_SG_t )
+                    cvalue = cvalue + sum( conjg( self%x ) * rhs%x )
+                    cvalue = cvalue + sum( conjg( self%y ) * rhs%y )
+                    cvalue = cvalue + sum( conjg( self%z ) * rhs%z )
+                !
+                class default
+                    stop "Error: dotProdCVector3D_SG: undefined rhs"
+            end select
+            !
+        else
+            stop "Error: dotProdCVector3D_SG > Incompatible rhs"
+        end if
+        !
+    end function dotProdCVector3D_SG
+    !
+    function diagMultCVector3D_SG( self, rhs ) result ( diag_mult )
+        implicit none
+        !
+        class( cVector3D_SG_t ), intent( in ) :: self
+        class( Vector_t ), intent( in )       :: rhs
+        class( Vector_t ), allocatable        :: diag_mult
+        !
+        if( self%isCompatible( rhs ) ) then
+            !
+            select type( grid => self%grid )
+                class is( Grid3D_SG_t )
+                    !
+                    diag_mult = cVector3D_SG_t( grid, self%grid_type )
+                    !
+                    select type( diag_mult )
+                        class is( cVector3D_SG_t )
+                            !
+                            select type( rhs )
+                                !
+                                class is( cVector3D_SG_t )
+                                    diag_mult%x = self%x * rhs%x
+                                    diag_mult%y = self%y * rhs%y
+                                    diag_mult%z = self%z * rhs%z
+                                !
+                                class default
+                                    stop "Error: diagMultCVector3D_SG > Undefined rhs"
+                                !
+                            end select
+                            !
+                    end select
+                class default
+                    stop "Error: diagMultCVector3D_SG: undefined grid"
+                    !
+            end select
+        else
+            stop "Error: diagMultCVector3D_SG > Incompatible inputs."
+        endif
+        !
+    end function diagMultCVector3D_SG
+    !
+    function sumEdgesCVector3D_SG( self, interior_only ) result( cell_obj )
+        implicit none
+        !
+        class( cVector3D_SG_t ), intent( in ) :: self
+        logical, optional, intent( in )       :: interior_only
+        class( Scalar_t ), allocatable        :: cell_obj
+        !
+        integer :: x_xend, x_yend, x_zend
+        integer :: y_xend, y_yend, y_zend
+        integer :: z_xend, z_yend, z_zend
+        !
+        type( cVector3D_SG_t ) :: E_tmp
+        !
+        E_tmp = self
+        !
+        if( interior_only ) then
+            call E_tmp%setAllBoundary( C_ZERO )
+        endif
+        !
+        select type( grid => self%grid )
+            class is( Grid3D_SG_t )
+                !
+                cell_obj = cScalar3D_SG_t( grid, CELL )
+                !
+            class default
+                stop "Error: sumEdgesCVector3D_SG: undefined grid"
+                !
+        end select
+        !
+        select type( cell_obj )
+            !
+            class is( cScalar3D_SG_t )
+                !
+                select case(E_tmp%grid_type)
+                  case(EDGE)
+                      x_xend = size(E_tmp%x, 1)
+                      x_yend = size(E_tmp%x, 2)
+                      x_zend = size(E_tmp%x, 3)
+                      !
+                      y_xend = size(E_tmp%y, 1)
+                      y_yend = size(E_tmp%y, 2)
+                      y_zend = size(E_tmp%y, 3)
+                      !
+                      z_xend = size(E_tmp%z, 1)
+                      z_yend = size(E_tmp%z, 2)
+                      z_zend = size(E_tmp%z, 3)
+                      !
+                      cell_obj%v = E_tmp%x(:,1:x_yend-1,1:x_zend-1) + &
+                      E_tmp%x(:,2:x_yend,1:x_zend-1)       + &
+                      E_tmp%x(:,1:x_yend-1,2:x_zend)       + &
+                      E_tmp%x(:,2:x_yend,2:x_zend)         + &
+                      E_tmp%y(1:y_xend-1,:,1:y_zend-1)     + &
+                      E_tmp%y(2:y_xend,:,1:y_zend-1)       + &
+                      E_tmp%y(1:y_xend-1,:,2:y_zend)       + &
+                      E_tmp%y(2:y_xend,:,2:y_zend)         + &
+                      E_tmp%z(1:z_xend-1,1:z_yend-1,:)     + &
+                      E_tmp%z(2:z_xend,1:z_yend-1,:)       + &
+                      E_tmp%z(1:z_xend-1,2:z_yend,:)       + &
+                      E_tmp%z(2:z_xend,2:z_yend,:)
+                  case(FACE)
+                      x_xend = size(E_tmp%x, 1)
+                      y_xend = size(E_tmp%y, 1)
+                      z_xend = size(E_tmp%z, 1)
+                      !
+                      cell_obj%v = E_tmp%x(1:x_xend-1,:,:) + E_tmp%x(2:x_xend,:,:) + &
+                                E_tmp%y(:,1:y_yend-1,:) + E_tmp%y(:,2:y_yend,:) + &
+                                E_tmp%z(:,:,1:z_zend-1) + E_tmp%z(:,:,2:z_zend)
+                      !
+                  case default
+                      stop "Error: sumEdgesCVector3D_SG: undefined E_tmp%grid_type"
+                !
+                end select
+                !
+            class default
+                stop "Error: sumEdgesCVector3D_SG: undefined cell_obj"
+                !
+        end select
+        !
+    end function sumEdgesCVector3D_SG
+    !
+    subroutine sumCellsCVector3D_SG( self, E_in, ptype )
+        implicit none
+        !
+        class( cVector3D_SG_t ), intent( inout ) :: self
+        class( Scalar_t ), intent( in )          :: E_in
+        character(*), intent( in ), optional     :: ptype
+        !
+        character(10) :: type
+        integer :: xend, yend, zend
+        integer :: v_xend, v_yend, v_zend
+        integer :: ix, iy, iz
+        !
+        if(index(self%grid_type, CELL) > 0) then
+            stop "Error: sumCellsCVector3D_SG > Only CELL type supported."
+        endif
+        !
+        if( .NOT. present(ptype)) then
+            type = EDGE
+        else
+            type = ptype
+        endif
+        !
+        select type( E_in )
+            class is( cScalar3D_SG_t )
+                !
+                v_xend = size(E_in%v, 1)
+                v_yend = size(E_in%v, 2)
+                v_zend = size(E_in%v, 3)
+                !
+                select case(type)
+                    case(EDGE)
+
+                        ! for x-components inside the domain
+                        do ix = 1, self%grid%nx
+                           do iy = 2, self%grid%ny
+                              do iz = 2, self%grid%nz
+                                 self%x(ix, iy, iz) = (E_in%v(ix, iy-1, iz-1) + E_in%v(ix, iy, iz-1) + &
+                                      E_in%v(ix, iy-1, iz) + E_in%v(ix, iy, iz))/4.0d0
+                              end do
+                           end do
+                        end do
+                        
+                        ! for y-components inside the domain
+                        do ix = 2, self%grid%nx
+                           do iy = 1, self%grid%ny
+                              do iz = 2, self%grid%nz
+                                 self%y(ix, iy, iz) = (E_in%v(ix-1, iy, iz-1) + E_in%v(ix, iy, iz-1) + &
+                                      E_in%v(ix-1, iy, iz) + E_in%v(ix, iy, iz))/4.0d0
+                              end do
+                           end do
+                        end do
+                        
+                        do ix = 2, self%grid%nx
+                              do iy = 2, self%grid%ny
+                                 do iz = 1, self%grid%nz
+                                    self%z(ix, iy, iz) = (E_in%v(ix-1, iy-1, iz) + E_in%v(ix-1, iy, iz) + &
+                                         E_in%v(ix, iy-1, iz) + E_in%v(ix, iy, iz))/4.0d0
+                                 end do
+                              end do
+                           end do
+                          ! upper boundary
+                        iz = 1
+                        do iy = 1, self%grid%ny
+                           do ix = 2, self%grid%nx
+                              self%y(ix, iy, iz) = (E_in%v(ix-1, iy, iz) + E_in%v(ix, iy, iz))/2.0d0
+                           end do
+                        end do
+                        do ix = 1, self%grid%nx
+                           do iy = 2,self%grid%ny
+                              self%x(ix, iy, iz) = (E_in%v(ix, iy-1, iz) + E_in%v(ix, iy, iz))/2.0d0
+                           end do
+                        end do
+                        
+                        ! lower boundary
+                        iz = self%grid%nz + 1
+                        do iy = 1, self%grid%ny
+                           do ix = 2, self%grid%nx
+                              self%y(ix, iy, iz) = (E_in%v(ix-1, iy, iz-1) + E_in%v(ix, iy, iz-1))/2.0d0
+                           end do
+                        end do
+                        do ix = 1, self%grid%nx
+                           do iy = 2, self%grid%ny
+                              self%x(ix, iy, iz) = (E_in%v(ix, iy-1, iz-1) + E_in%v(ix, iy, iz-1))/2.0d0
+                           end do
+                        end do  
+                        
+                    case(FACE)
+                        xend = size(self%x, 1)
+                        self%x(2:xend-1,:,:) = E_in%v(1:v_xend-1,:,:) + E_in%v(2:v_xend,:,:)
+                        !
+                        yend = size(self%y, 1)
+                        self%y(:, 2:yend-1, :) = E_in%v(:, 1:v_yend-1, :) + E_in%v(:, 2:v_yend, :)
+                        !
+                        zend = size(self%z, 1) 
+                        self%z(:, :, 2:zend-1) = E_in%v(:, :, 1:v_zend-1) + E_in%v(:, :, 2:v_zend)
+                        !
+                    case default
+                        stop "Error: sumEdgesCVector3D_SG: Unknown type"
+                        !
+                end select
+            class default
+                stop "Error: sumCellsCVector3D_SG > Incompatible input Scalar_t."
+        end select
+        !
+    end subroutine sumCellsCVector3D_SG
+    !
+    subroutine linCombSCVector3D_SG( self, rhs, c1, c2 )
+        implicit none
+        !
+        class( cVector3D_SG_t ), intent( inout ) :: self
+        class( Vector_t ), intent( in )          :: rhs
         complex( kind=prec ), intent( in )       :: c1, c2
         !
-        if (lhs%isCompatible(rhs)) then
+        if( self%isCompatible( rhs ) ) then
+            !
             select type(rhs)
+                !
                 class is( cVector3D_SG_t )
-                    lhs%x = c1 * lhs%x + c2 * rhs%x
-                    lhs%y = c1 * lhs%y + c2 * rhs%y
-                    lhs%z = c1 * lhs%z + c2 * rhs%z
+                    self%x = c1 * self%x + c2 * rhs%x
+                    self%y = c1 * self%y + c2 * rhs%y
+                    self%z = c1 * self%z + c2 * rhs%z
+                class default
+                    stop "Error: linCombSCVector3D_SG > rhs undefined."
             end select
+            !
         else
-            write( *, * ) "ERROR:cVector3D_SG::linCombS"
-            stop "    Incompatible inputs. Exiting."
+            stop "Error: linCombSCVector3D_SG > Incompatible inputs."
         end if
+        !
     end subroutine linCombSCVector3D_SG
-    !*
-    ! scMultAddSCScalar3D_SG
-    !*
-    subroutine scMultAddSCVector3D_SG( lhs, rhs, c )
-        implicit none
-        !
-        class( cVector3D_SG_t ), intent( in ) :: lhs
-        class( cVector_t ), intent( inout )   :: rhs
-        complex( kind=prec ), intent( in )    :: c
-        !
-        if (lhs%isCompatible(rhs)) then
-            select type(rhs)
-                class is( cVector3D_SG_t ) 
-                    rhs%x = rhs%x + c*lhs%x
-                    rhs%y = rhs%y + c*lhs%y
-                    rhs%z = rhs%z + c*lhs%z
-            end select
-        else
-            write( *, * ) "ERROR:cVector3D_SG::scMultAdd"
-            stop "    Incompatible inputs. Exiting."
-        end if
-    end subroutine scMultAddSCVector3D_SG
-    !**
-    ! div1CVector3D_SG
-    !*
-    function div1CVector3D_SG(lhs, rhs) result(Eout)
-        implicit none
-        !
-        class( cVector3D_SG_t ), intent( in )    :: lhs
-        class( cVector_t )        , intent( in ) :: rhs
-        class( cVector_t ), allocatable          :: Eout
-        !
-        if (lhs%isCompatible(rhs)) then
-            !
-            allocate( Eout, source = cVector3D_SG_t( lhs%grid, lhs%gridType ) )
-            !
-            select type(Eout)
-            class is( cVector3D_SG_t )
-                select type(rhs)
-                class is( cVector3D_SG_t )
-                    Eout%x = lhs%x / rhs%x
-                    Eout%y = lhs%y / rhs%y
-                    Eout%z = lhs%z / rhs%z
-                end select
-            end select
-            !
-        else
-            write( *, * ) "ERROR:cVector3D_SG::div1CVector3D_SG"
-            stop "    Incompatible inputs. Exiting."
-        end if
-        !
-    end function div1CVector3D_SG
-    !**
-    ! div2CVector3D_SG
-    !*
-    function div2CVector3D_SG(lhs, rhs) result(Eout)
-        implicit none
-        !
-        class( cVector3D_SG_t ), intent( in )  :: lhs
-        class( rVector_t )        , intent( in ) :: rhs
-        class( cVector_t ), allocatable        :: Eout
-        !
-        if (lhs%isCompatible(rhs)) then
-            !
-            allocate(Eout, source = cVector3D_SG_t(lhs%grid, lhs%gridType))
-            !
-            select type(Eout)
-                class is( cVector3D_SG_t )
-                    select type(rhs)
-                        class is(rVector3D_SG_t)
-                            Eout%x = lhs%x / rhs%x
-                            Eout%y = lhs%y / rhs%y
-                            Eout%z = lhs%z / rhs%z
-                end select
-            end select
-            !
-        else
-            write( *, * ) "ERROR:cVector3D_SG::div2CVector3D_SG"
-            stop "    Incompatible inputs. Exiting."
-        end if
-    end function div2CVector3D_SG
-    !**
-    ! divs2CVector3D_SG
-    !*
-    !     Subroutine version of div2CVector3D_SG -- overwrites lhs
-    subroutine divs2CVector3D_SG(lhs, rhs)
-        implicit none
-        !
-        class( cVector3D_SG_t ), intent( inout ) :: lhs
-        class( rVector_t ), intent( in ) :: rhs
-        !
-        if (lhs%isCompatible(rhs)) then
-           select type(rhs)
-               class is(rVector3D_SG_t)
-                lhs%x = lhs%x / rhs%x
-                lhs%y = lhs%y / rhs%y
-                lhs%z = lhs%z / rhs%z
-           end select
-        else
-            write( *, * ) "ERROR:cVector3D_SG::div2CVector3D_SG"
-            stop "    Incompatible inputs. Exiting."
-        end if
-        !
-    end subroutine divs2CVector3D_SG
     !
-    function dotProdCVector3D_SG(lhs, rhs) result( c )
+    subroutine scMultAddSCVector3D_SG( self, rhs, cvalue )
         implicit none
         !
-        class( cVector3D_SG_t ), intent( in ) :: lhs
-        class( cVector_t ), intent( in )      :: rhs
+        class( cVector3D_SG_t ), intent( in ) :: self
+        class( Vector_t ), intent( inout )    :: rhs
+        complex( kind=prec ), intent( in )    :: cvalue
         !
-        complex( kind=prec ) :: c
-        !
-        c = C_ZERO
-        !
-        if ((.NOT.lhs%is_allocated).OR.(.NOT.rhs%is_allocated)) then
-            write( *, * ) "ERROR:cVector3D_SG::dotProdCVector3D_SG: "
-            stop "           Input vectors not allocated. Exiting."
-        end if
-        !
-        if (lhs%isCompatible(rhs)) then
-            select type(rhs)
-                class is( cVector3D_SG_t )
-                    c = c + sum(conjg(lhs%x) * rhs%x)
-                    c = c + sum(conjg(lhs%y) * rhs%y)
-                    c = c + sum(conjg(lhs%z) * rhs%z)
+        if ( self%isCompatible( rhs ) ) then
+            !
+            select type( rhs )
+                class is( cVector3D_SG_t ) 
+                    rhs%x = rhs%x + cvalue * self%x
+                    rhs%y = rhs%y + cvalue * self%y
+                    rhs%z = rhs%z + cvalue * self%z
+                class default
+                    stop "Error: scMultAddSCVector3D_SG > rhs undefined."
             end select
+            !
+            !
         else
-            write( *, * ) "ERROR:cVector3D_SG:dotProdCVector3D_SG:"
-            stop         "           Incompatible input. Exiting"
+            stop "Error: scMultAddSCVector3D_SG >Incompatible inputs."
         end if
-    end function dotProdCVector3D_SG
-    !**
-    ! InterpFunc
-    ! Creates a Vector object containing weights needed for
-    ! interpolation of xyz component of obj1 to location.
-    !*
-    subroutine interpFuncCVector3D_SG( self, location, xyz, E )
+        !
+    end subroutine scMultAddSCVector3D_SG
+    !
+    subroutine interpFuncCVector3D_SG( self, location, xyz, interp )
         implicit none
         !
-        class( cVector3D_SG_t ), intent( in )          :: self
-        real( kind=prec ), intent( in )                :: location(3)
-        character, intent( in )                        :: xyz
-        class( cVector_t ), intent( out ), allocatable :: E
+        class( cVector3D_SG_t ), intent( in )           :: self
+        real( kind=prec ), intent( in )                 :: location(3)
+        character, intent( in )                         :: xyz
+        class( Vector_t ), allocatable, intent( inout ) :: interp
         !
         real( kind=prec ), allocatable, dimension(:) :: xC, yC, zC
         integer :: ix, iy, iz, i
         real( kind=prec ) :: wx, wy, wz
         logical, dimension(:), allocatable :: tmp
         !
-        select case(self%gridType)
-        case(EDGE)
-            allocate(E, source = cVector3D_SG_t(self%grid, EDGE))
-            select case(xyz)
-            case("x")
-                allocate(xC(size(self%grid%delX)))
-                allocate(yC(size(self%grid%dy + 1)))
-                allocate(zC(size(self%grid%dz + 1)))
-                
-                xC = CumSum(self%grid%delX)
-                yC = CumSum([0._prec, self%grid%dy])
-                zC = CumSum([0._prec, self%grid%dz])
-            case("y")
-                allocate(xC(size(self%grid%dx + 1)))
-                allocate(yC(size(self%grid%delY)))
-                allocate(zC(size(self%grid%dz)))
-                
-                xC = CumSum([0._prec, self%grid%dx])
-                yC = CumSum([self%grid%delY])
-                zC = CumSum([0._prec, self%grid%dz])
-            case("z")
-                allocate(xC(size(self%grid%dx + 1)))
-                allocate(yC(size(self%grid%dy + 1)))
-                allocate(zC(size(self%grid%delZ)))
-                
-                xC = CumSum([0._prec, self%grid%dx])
-                yC = CumSum([0._prec, self%grid%dy])
-                zC = CumSum([self%grid%delZ])
-            end select
-                      
-        case(FACE)
-            allocate(E, source = cVector3D_SG_t(self%grid, FACE))
-            select case(xyz)
-            case("x")
-                allocate(xC(size(self%grid%dx + 1)))
-                allocate(yC(size(self%grid%delY)))
-                allocate(zC(size(self%grid%delZ)))
-                
-                xC = CumSum([0._prec, self%grid%dx])
-                yC = CumSum([self%grid%delY])
-                zC = CumSum([self%grid%delZ])
-            case("y")
-                allocate(xC(size(self%grid%delX)))
-                allocate(yC(size(self%grid%dy + 1)))
-                allocate(zC(size(self%grid%delZ)))
-                
-                xC = CumSum([self%grid%delX])
-                yC = CumSum([0._prec, self%grid%dy])
-                zC = CumSum([self%grid%delZ])
-            case("z")
-                allocate(xC(size(self%grid%delX)))
-                allocate(yC(size(self%grid%delY)))
-                allocate(zC(size(self%grid%dz + 1)))
-                
-                xC = CumSum([self%grid%delX])
-                yC = CumSum([self%grid%delY])
-                zC = CumSum([0._prec, self%grid%dz])
-            end select
-        end select
+        !
+        select type( grid => self%grid )
+            class is( Grid3D_SG_t )
+                !
+                select case( self%grid_type )
+                    !
+                    case( EDGE )
+                        !
+                        allocate( interp, source = cVector3D_SG_t( grid, EDGE ) )
+                        !
+                        select case( xyz )
+                            case("x")
+                                allocate(xC(size(grid%delX)))
+                                allocate(yC(size(grid%dy + 1)))
+                                allocate(zC(size(grid%dz + 1)))
+                                !
+                                xC = CumSum(grid%delX)
+                                yC = CumSum([0._prec, grid%dy])
+                                zC = CumSum([0._prec, grid%dz])
+                            case("y")
+                                allocate(xC(size(grid%dx + 1)))
+                                allocate(yC(size(grid%delY)))
+                                allocate(zC(size(grid%dz)))
+                                !
+                                xC = CumSum([0._prec, grid%dx])
+                                yC = CumSum([grid%delY])
+                                zC = CumSum([0._prec, grid%dz])
+                            case("z")
+                                allocate(xC(size(grid%dx + 1)))
+                                allocate(yC(size(grid%dy + 1)))
+                                allocate(zC(size(grid%delZ)))
+                                !
+                                xC = CumSum([0._prec, grid%dx])
+                                yC = CumSum([0._prec, grid%dy])
+                                zC = CumSum([grid%delZ])
+                        end select !xyz
+                        !
+                    case( FACE )
+                        !
+                        allocate( interp, source = cVector3D_SG_t( grid, FACE ) )
+                        !
+                        select case(xyz)
+                            case("x")
+                                allocate(xC(size(grid%dx + 1)))
+                                allocate(yC(size(grid%delY)))
+                                allocate(zC(size(grid%delZ)))
+                                !
+                                xC = CumSum([0._prec, grid%dx])
+                                yC = CumSum([grid%delY])
+                                zC = CumSum([grid%delZ])
+                            case("y")
+                                allocate(xC(size(grid%delX)))
+                                allocate(yC(size(grid%dy + 1)))
+                                allocate(zC(size(grid%delZ)))
+                                !
+                                xC = CumSum([grid%delX])
+                                yC = CumSum([0._prec, grid%dy])
+                                zC = CumSum([grid%delZ])
+                            case("z")
+                                allocate(xC(size(grid%delX)))
+                                allocate(yC(size(grid%delY)))
+                                allocate(zC(size(grid%dz + 1)))
+                                !
+                                xC = CumSum([grid%delX])
+                                yC = CumSum([grid%delY])
+                                zC = CumSum([0._prec, grid%dz])
+                        end select !xyz
+                        !
+                    case default
+                        stop "Error: interpFuncCVector3D_SG: Unknown self%grid_type"
+                        !
+                end select !GRID TYPE
+                !
+            class default
+                stop "Error: interpFuncCVector3D_SG: undefined grid"
+                !
+        end select !GRID
+		!
         xC = xC + self%grid%ox
         yC = yC + self%grid%oy
         zC = zC - sum(self%grid%dz(1:self%grid%nzAir)) - self%grid%oz
         !
         tmp = location(1) > xC
         do i = size(tmp), 1, -1 
-            if (tmp(i)) then
+            if(tmp(i)) then
                 ix = i
                 exit
-            end if
-        end do
+            endif
+        enddo
+        !
         tmp = location(2) > yC
         do i = size(tmp), 1, -1 
-            if (tmp(i)) then
+            if(tmp(i)) then
                 iy = i
                 exit
-            end if
-        end do
+            endif
+        enddo
         tmp = location(3) > zC
         do i = size(tmp), 1, -1 
-            if (tmp(i)) then
+            if(tmp(i)) then
                 iz = i
                 exit
-            end if
-        end do
+            endif
+        enddo
         !
         deallocate( tmp )
         !
+        ix = findloc(location(1) > xC, .TRUE., back = .TRUE., dim = 1)
+        iy = findloc(location(2) > yC, .TRUE., back = .TRUE., dim = 1)
+        iz = findloc(location(3) > zC, .TRUE., back = .TRUE., dim = 1)
         ! Find weights
-        wx = (xC(ix + 1) - location(1))/(xC(ix + 1) - xC(ix))
+        !
+        wx = ( xC(ix + 1) - location(1) ) / ( xC(ix + 1) - xC(ix) )
         !
         deallocate( xC )
         !
@@ -1181,59 +1301,64 @@ contains
         !
         deallocate( zC )
         !
-        select type(E)
-        class is( cVector3D_SG_t )
-            select case(xyz)
-            case("x")
-                E%x(ix,iy,iz) = wx*wy*wz
-                E%x(ix+1,iy,iz) = (1-wx)*wy*wz
-                E%x(ix,iy+1,iz) = wx*(1-wy)*wz
-                E%x(ix,iy,iz+1) = wx*wy*(1-wz)
-                E%x(ix,iy+1,iz+1) = wx*(1-wy)*(1-wz)
-                E%x(ix+1,iy,iz+1) = (1-wx)*wy*(1-wz)
-                E%x(ix+1,iy+1,iz) = (1-wx)*(1-wy)*wz
-                E%x(ix+1,iy+1,iz+1) = (1-wx)*(1-wy)*(1-wz)
-                
-            case("y")
-                E%y(ix,iy,iz) = wx*wy*wz
-                E%y(ix+1,iy,iz) = (1-wx)*wy*wz
-                E%y(ix,iy+1,iz) = wx*(1-wy)*wz
-                E%y(ix,iy,iz+1) = wx*wy*(1-wz)
-                E%y(ix,iy+1,iz+1) = wx*(1-wy)*(1-wz)
-                E%y(ix+1,iy,iz+1) = (1-wx)*wy*(1-wz)
-                E%y(ix+1,iy+1,iz) = (1-wx)*(1-wy)*wz
-                E%y(ix+1,iy+1,iz+1) = (1-wx)*(1-wy)*(1-wz)
-                
-            case("z")
-                E%z(ix,iy,iz) = wx*wy*wz
-                E%z(ix+1,iy,iz) = (1-wx)*wy*wz
-                E%z(ix,iy+1,iz) = wx*(1-wy)*wz
-                E%z(ix,iy,iz+1) = wx*wy*(1-wz)
-                E%z(ix,iy+1,iz+1) = wx*(1-wy)*(1-wz)
-                E%z(ix+1,iy,iz+1) = (1-wx)*wy*(1-wz)
-                E%z(ix+1,iy+1,iz) = (1-wx)*(1-wy)*wz
-                E%z(ix+1,iy+1,iz+1) = (1-wx)*(1-wy)*(1-wz)
-            end select
+        select type( interp )
+            !
+            class is( cVector3D_SG_t )
+                !
+                select case( xyz )
+                    case("x")
+                        interp%x(ix,iy,iz) = wx*wy*wz
+                        interp%x(ix+1,iy,iz) = (1-wx)*wy*wz
+                        interp%x(ix,iy+1,iz) = wx*(1-wy)*wz
+                        interp%x(ix,iy,iz+1) = wx*wy*(1-wz)
+                        interp%x(ix,iy+1,iz+1) = wx*(1-wy)*(1-wz)
+                        interp%x(ix+1,iy,iz+1) = (1-wx)*wy*(1-wz)
+                        interp%x(ix+1,iy+1,iz) = (1-wx)*(1-wy)*wz
+                        interp%x(ix+1,iy+1,iz+1) = (1-wx)*(1-wy)*(1-wz)
+                        !
+                    case("y")
+                        interp%y(ix,iy,iz) = wx*wy*wz
+                        interp%y(ix+1,iy,iz) = (1-wx)*wy*wz
+                        interp%y(ix,iy+1,iz) = wx*(1-wy)*wz
+                        interp%y(ix,iy,iz+1) = wx*wy*(1-wz)
+                        interp%y(ix,iy+1,iz+1) = wx*(1-wy)*(1-wz)
+                        interp%y(ix+1,iy,iz+1) = (1-wx)*wy*(1-wz)
+                        interp%y(ix+1,iy+1,iz) = (1-wx)*(1-wy)*wz
+                        interp%y(ix+1,iy+1,iz+1) = (1-wx)*(1-wy)*(1-wz)
+                        !
+                    case("z")
+                        interp%z(ix,iy,iz) = wx*wy*wz
+                        interp%z(ix+1,iy,iz) = (1-wx)*wy*wz
+                        interp%z(ix,iy+1,iz) = wx*(1-wy)*wz
+                        interp%z(ix,iy,iz+1) = wx*wy*(1-wz)
+                        interp%z(ix,iy+1,iz+1) = wx*(1-wy)*(1-wz)
+                        interp%z(ix+1,iy,iz+1) = (1-wx)*wy*(1-wz)
+                        interp%z(ix+1,iy+1,iz) = (1-wx)*(1-wy)*wz
+                        interp%z(ix+1,iy+1,iz+1) = (1-wx)*(1-wy)*(1-wz)
+                end select
+                !
+            class default
+                stop "Error: interpFuncCVector3D_SG: undefined interp"
+                !
         end select
         !
     end subroutine interpFuncCVector3D_SG
-
-    subroutine copyFromCVector3D_SG(self, rhs)
+    !
+    subroutine copyFromCVector3D_SG( self, rhs )
         implicit none
         !
         class( cVector3D_SG_t ), intent( inout ) :: self
-        class( cVector_t )        , intent( in ) :: rhs
-
-        if (.NOT.rhs%is_allocated) then
-            write( *, * ) "ERROR:cVector3D_SG::copyFromCVector3D_SG"
-            stop "    Inputs not allocated. Exiting."
-        end if
+        class( Field_t ), intent( in )           :: rhs
+        !
+        if( .NOT. rhs%is_allocated) then
+            stop "Error: copyFromCVector3D_SG > rhs not allocated"
+        endif
         !
         select type( rhs )
             class is( cVector3D_SG_t )
                 !
                 self%grid => rhs%grid
-                self%gridType = rhs%gridType
+                self%grid_type = rhs%grid_type
                 self%nx = rhs%nx
                 self%ny = rhs%ny
                 self%nz = rhs%nz
@@ -1241,129 +1366,68 @@ contains
                 self%NdY = rhs%NdY
                 self%NdZ = rhs%NdZ
                 self%Nxyz = rhs%Nxyz
-                !
-                if( allocated( self%x ) ) deallocate( self%x )
-                allocate( self%x, source = rhs%x )
-                !
-                if( allocated( self%y ) ) deallocate( self%y )
-                allocate( self%y, source = rhs%y )
-                !
-                if( allocated( self%z ) ) deallocate( self%z )
-                allocate( self%z, source = rhs%z )
-                !
-                self%is_allocated = rhs%is_allocated
+                self%x = rhs%x
+                self%y = rhs%y
+                self%z = rhs%z
+                self%is_allocated = .TRUE.
                 !
             class default
-                write( *, * ) "ERROR:cVector3D_SG_t::copyFromCVector3D_SG:"
-                stop "            Incompatible input type. Exiting."
+                stop "Error: copyFromCVector3D_SG > Incompatible rhs"
         end select
         !
     end subroutine copyFromCVector3D_SG
     !
-    function isCompatible1CVector3D_SG( self, rhs ) result( status )
-        implicit none
-        !
-        class( cVector3D_SG_t ), intent( in ) :: self
-        class( cVector_t ), intent( in )      :: rhs
-        logical :: status
-        !
-        status = .FALSE.
-        !
-        !write( *, * ) "SELF1 :", self%nx, self%ny, self%nz, self%gridType
-        !
-        select type(rhs)
-            class is( cVector3D_SG_t )
-                !
-                !write( *, * ) "RHS1 :", rhs%nx, rhs%ny, rhs%nz, rhs%gridType
-                !
-                if( self%nx == rhs%nx .AND.self%ny == rhs%ny .AND. self%nz == rhs%nz .AND.   &
-                    self%gridType == rhs%gridType ) then
-                    status = .TRUE.
-                end if
-        end select
-        !
-    end function isCompatible1CVector3D_SG
-    
-    function isCompatible2CVector3D_SG( self, rhs) result( status )
-        implicit none
-        !
-        class( cVector3D_SG_t ), intent( in ) :: self
-        class( rVector_t ), intent( in )      :: rhs
-        logical :: status
-        !
-        status = .FALSE.
-        !
-        !write( *, * ) "SELF2 :", self%nx, self%ny, self%nz, self%gridType
-        !
-        select type(rhs)
-            class is(rVector3D_SG_t)
-                !
-                !write( *, * ) "RHS2 :", rhs%nx, rhs%ny, rhs%nz, rhs%gridType
-                !
-                if( self%nx == rhs%nx .AND.self%ny == rhs%ny .AND. self%nz == rhs%nz .AND.   &
-                    self%gridType == rhs%gridType ) then
-                    status = .TRUE.
-                end if
-        end select
-        !
-    end function isCompatible2CVector3D_SG
-    !
     subroutine printCVector3D_SG( self, io_unit, title, append )
         implicit none
         !
-        class( cVector3D_SG_t ), intent( in ) :: self
-        integer, intent( in ), optional       :: io_unit
-        character(*), intent( in ), optional  :: title
-        logical, intent( in ), optional       :: append
+        class( cVector3D_SG_t ), intent( in )             :: self
+        integer, intent( in ), optional                   :: io_unit
+        character(:), allocatable, intent( in ), optional :: title
+        logical, intent( in ), optional                   :: append
         !
-        integer :: ix, iy, iz,fid
+        integer :: ix, iy, iz, funit
         !
         if( present( io_unit ) ) then
-           fid = io_unit
+            funit = io_unit
         else
-           fid = 0    !    usually this will work to write to standard output
+            funit = 0
         endif
         !
-        if(present(title)) then
-         write( fid, * ) title
-        end if
         !
-        !if ( present( append ) .AND. append ) open( fid, position="append", action="write" )
+        if( present( title ) ) write( funit, * ) title
         !
-        write( fid, * ) self%nx, self%ny, self%nz
-        !
-        !
-        write( fid, * ) "x-component",self%NdX
-        do iz = 1, self%NdX(3)
-            do iy = 1, self%NdX(2)
-                do ix = 1, self%NdX(1)
-                    if( self%x( ix, iy, iz ) /= 0 ) then
-                      write(fid,*) ix,iy,iz, ":[", self%x( ix, iy, iz ), "]"
-                    endif
+        write( funit, * ) self%nx, self%ny, self%nz
+        write(funit, * ) "x-component",self%NdX
+        do ix = 1, self%NdX(1)
+             do iy = 1, self%NdX(2)
+                do iz = 1, self%NdX(3)
+                     if( self%x( ix, iy, iz ) /= 0 ) then
+                        write(funit,*) ix,iy,iz, ":[", self%x( ix, iy, iz ), "]"
+                     endif
                 enddo
-            enddo
+             enddo
         enddo
         !
-        write(fid,*) "y-component",self%NdY
-        do iz = 1, self%NdY(3)
-            do iy = 1, self%NdY(2)
-                do ix = 1, self%NdY(1)
-                    if( self%y( ix, iy, iz ) /= 0 ) then
-                      write(fid,*) ix,iy,iz, ":[", self%y( ix, iy, iz ), "]"
-                    endif
+        write(funit,*) "y-component",self%NdY
+        do ix = 1, self%NdY(1)
+             do iy = 1, self%NdY(2)
+                do iz = 1, self%NdY(3)
+                     if( self%y( ix, iy, iz ) /= 0 ) then
+                        write(funit,*) ix,iy,iz, ":[", self%y( ix, iy, iz ), "]"
+                     endif
                 enddo
-            enddo
+             enddo
         enddo
         !
-        write(fid,*) "z-component",self%NdZ
-        do iz = 1, self%NdZ(3)
-            do iy = 1, self%NdZ(2)
-                do ix = 1, self%NdZ(1)
-                    if( self%z( ix, iy, iz ) /= 0 ) then
-                      write(fid,*) ix,iy,iz, ":[", self%z( ix, iy, iz ), "]"
-                    endif
+        write(funit,*) "z-component",self%NdZ
+        do ix = 1, self%NdZ(1)
+             do iy = 1, self%NdZ(2)
+                do iz = 1, self%NdZ(3)
+                     if( self%z( ix, iy, iz ) /= 0 ) then
+                        write(funit,*) ix,iy,iz, ":[", self%z( ix, iy, iz ), "]"
+                     endif
                 enddo
-            enddo
+             enddo
         enddo
         !
     end subroutine printCVector3D_SG

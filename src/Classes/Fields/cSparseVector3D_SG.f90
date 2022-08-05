@@ -5,15 +5,15 @@ module cSparseVector3D_SG
     !
     type :: cSparsevector3D_SG_t
         !
-        class( Grid3D_SG_t ), pointer :: grid
+        class( Grid_t ), pointer :: grid
         !
-        character( len=4 ) :: gridType
+        character( len=4 ) :: grid_type
         !
-        integer  :: nCoeff
+        integer :: nCoeff
         !
-        integer , allocatable, dimension(:) :: i, j, k, xyz
+        integer, allocatable, dimension(:) :: i, j, k, xyz
         !
-        complex ( kind=prec ), allocatable, dimension(:) :: c
+        complex( kind=prec ), allocatable, dimension(:) :: c
         !
         logical :: is_allocated
         !
@@ -24,6 +24,8 @@ module cSparseVector3D_SG
             procedure, public :: dotProd => dotProdCSparsevector3D_SG
             procedure, public :: fromFullVector => fromFullVectorCSparsevector3D_SG
             procedure, public :: getFullVector => getFullVectorCSparsevector3D_SG
+            !
+            procedure, public :: print => printCSparsevector3D_SG
             !
     end type cSparsevector3D_SG_t
     !
@@ -40,7 +42,7 @@ contains
         !
         !write(*,*) "Constructor cSparsevector3D_SG"
         !
-        self%gridType = ""
+        self%grid_type = ""
         self%nCoeff = 0
         self%is_allocated = .FALSE.
         !
@@ -55,7 +57,7 @@ contains
         !
         !write(*,*) "Destructor cSparsevector3D_SG_t:"
         !
-        self%gridType = ""
+        self%grid_type = ""
         self%nCoeff = 0
         self%is_allocated = .FALSE.
         !
@@ -89,7 +91,7 @@ contains
             stop "RHS not is_allocated yet for dotProdSparse"
         endif
         !
-        if ( self%gridType /= cvector%gridType ) then
+        if ( self%grid_type /= cvector%grid_type ) then
             stop "dotProdSparse: not compatible usage for dotProdSparse"
         endif
         !
@@ -142,20 +144,28 @@ contains
         type( cVector3D_SG_t ) :: cvector
         !
         integer :: ii
-        !!
-        cvector = cVector3D_SG_t( self%grid, self%gridType )
         !
-        call cvector%zeros()
-        !
-        do ii = 1, size( self%xyz )
-            if( self%xyz(ii) == 1 ) then
-                cvector%x( self%i(ii), self%j(ii), self%k(ii) ) = self%c(ii)
-            else if( self%xyz(ii) == 2 ) then
-                cvector%y( self%i(ii), self%j(ii), self%k(ii) ) = self%c(ii)
-            else if( self%xyz(ii) == 3 ) then
-                cvector%z( self%i(ii), self%j(ii), self%k(ii) ) = self%c(ii)
-            endif
-        enddo
+        select type( grid => self%grid )
+            class is( Grid3D_SG_t )
+                !
+                cvector = cVector3D_SG_t( grid, self%grid_type )
+                !
+                call cvector%zeros()
+                !
+                do ii = 1, size( self%xyz )
+                    if( self%xyz(ii) == 1 ) then
+                        cvector%x( self%i(ii), self%j(ii), self%k(ii) ) = self%c(ii)
+                    else if( self%xyz(ii) == 2 ) then
+                        cvector%y( self%i(ii), self%j(ii), self%k(ii) ) = self%c(ii)
+                    else if( self%xyz(ii) == 3 ) then
+                        cvector%z( self%i(ii), self%j(ii), self%k(ii) ) = self%c(ii)
+                    endif
+                enddo
+                !
+            class default
+                stop "Error: getFullVectorCSparsevector3D_SG > undefined grid"
+                !
+        end select
         !
     end function getFullVectorCSparsevector3D_SG
     !
@@ -163,7 +173,7 @@ contains
         implicit none
         !
         class( cSparsevector3D_SG_t ), intent( inout ) :: self
-        class( cVector_t ), intent( in )               :: cvector
+        class( Vector_t ), intent( in )                :: cvector
         !
         integer, allocatable, dimension(:,:,:)  :: Ix, Jx, Kx, XYZ1
         integer, allocatable, dimension(:,:,:)  :: Iy, Jy, Ky, XYZ2
@@ -254,8 +264,8 @@ contains
                 ! Set grid
                 self%grid => cvector%grid
                 !
-                ! Set gridType
-                self%gridType = cvector%gridType
+                ! Set grid_type
+                self%grid_type = cvector%grid_type
                 !
                 self%is_allocated = .TRUE.
                 !
@@ -266,5 +276,35 @@ contains
         end select
         !
     end subroutine fromFullVectorCSparsevector3D_SG
+    !
+    subroutine printCSparsevector3D_SG( self, io_unit, title, append )
+        implicit none
+        !
+        class( cSparsevector3D_SG_t ), intent( in )       :: self
+        integer, intent( in ), optional                   :: io_unit
+        character(:), allocatable, intent( in ), optional :: title
+        logical, intent( in ), optional                   :: append
+        !
+        integer :: ii, funit
+        !
+        if( present( io_unit ) ) then
+            funit = io_unit
+        else
+            funit = 0
+        endif
+        !
+        if( present( title ) ) write( funit, * ) title
+        !
+        do ii = 1, size( self%xyz )
+            if( self%xyz(ii) == 1 ) then
+                write( funit, * ) "x(i,j,k):[", self%i(ii), self%j(ii), self%k(ii), "]=", self%c(ii)
+            else if( self%xyz(ii) == 2 ) then
+                write( funit, * ) "y(i,j,k):[", self%i(ii), self%j(ii), self%k(ii), "]=", self%c(ii)
+            else if( self%xyz(ii) == 3 ) then
+                write( funit, * ) "z(i,j,k):[", self%i(ii), self%j(ii), self%k(ii), "]=", self%c(ii)
+            endif
+        enddo
+       !
+    end subroutine printCSparsevector3D_SG
     !
 end module cSparseVector3D_SG  

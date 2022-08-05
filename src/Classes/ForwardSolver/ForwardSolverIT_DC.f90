@@ -1,13 +1,15 @@
+! *************
+! 
+! Class to define a iterative ForwardSolver using divergence correction
 !
-! Please ad some fancy relevant description for this class
-!
+! *************
+! 
 module ForwardSolverIT_DC
     !
     use ForwardSolver
     use DivergenceCorrection
     use ModelOperator_MF
     use Solver_QMR
-    !
     !
     type, extends( ForwardSolver_t ) :: ForwardSolverIT_DC_t
         !
@@ -63,7 +65,7 @@ module ForwardSolverIT_DC
                 case( BiCG )
                     stop "ForwardSolverIT_DC_ctor: Not yet coded for Bi-Conjugate Gradients"
                 case default
-                    stop "ForwardSolverIT_DC_ctor: Unknow solver"
+                    stop "ForwardSolverIT_DC_ctor: Unknown solver"
             end select
             !
             ! Set default values for this ForwardSolver
@@ -178,14 +180,12 @@ module ForwardSolverIT_DC
             !
             class( ForwardSolverIT_DC_t ), intent( inout ) :: self
             class( Source_t ), intent( in )                :: source
-            class( cVector_t ), intent( inout )            :: e_solution
+            class( Vector_t ), intent( inout )             :: e_solution
             !
-            class( cVector_t ), allocatable :: temp_esol
-            class( cScalar_t ), allocatable :: phi0
+            class( Vector_t ), allocatable :: temp_esol
+            class( Scalar_t ), allocatable :: phi0
             integer :: iter
             complex( kind=prec ) :: i_omega_mu
-            class( cVector_t ), allocatable   :: source_e_boundary
-            !
             !
             call self%solver%zeroDiagnostics()
             !
@@ -202,24 +202,21 @@ module ForwardSolverIT_DC
                         !
                         call phi0%zeros()
                         !
+                        call self%divergence_correction%rhsDivCor( self%solver%omega, source, phi0 )
+                        !
                     class default
-                        write( *, * ) "ERROR:ForwardSolverIT_DC_t::getESolutionForwardSolverIT_DC:"
-                        stop          "    unknow grid type"
+                        stop "Error: getESolutionForwardSolverIT_DC > Unknown grid type"
                 end select
-                !
-                call self%divergence_correction%rhsDivCor( self%solver%omega, source, phi0 )
                 !
             endif
             !
             loop: do while ( ( .NOT. self%solver%converged ) .AND. ( .NOT. self%solver%failed ) )
                 !
-                !
                 select type( solver => self%solver )
                     class is( Solver_QMR_t )
                         call solver%solve( source%rhs, e_solution )
                     class default
-                        write( *, * ) "ERROR:ForwardSolverIT_DC::getESolutionForwardSolverIT_DC:"
-                        stop        "            Unknow solver type."
+                        stop "Error: getESolutionForwardSolverIT_DC > Unknown solver type."
                 end select
                 !
                 self%solver%converged = self%solver%n_iter .LT. self%solver%max_iter
@@ -277,17 +274,12 @@ module ForwardSolverIT_DC
                         call e_solution%mult( model_operator%Metric%Vedge )
                         !
                     class default
-                        write( *, * ) "ERROR:ForwardSolverIT_DC_t::getESolutionForwardSolverIT_DC:"
-                        stop          "    unknow model_operator type"
+                        stop "Error: getESolutionForwardSolverIT_DC > unknown model_operator type"
                 end select
                 !
             else
                 !
-                call source%E%Boundary( source_e_boundary )
-                !
-                call e_solution%add( source_e_boundary )
-                !
-                deallocate( source_e_boundary )
+                call e_solution%add( source%E%Boundary() )
                 !
             endif
             !

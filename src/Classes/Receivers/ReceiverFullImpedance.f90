@@ -111,7 +111,7 @@ contains
         class( ReceiverFullImpedance_t ), intent( inout ) :: self
         class( Transmitter_t ), intent( in )              :: transmitter
         !
-        class( cVector_t ), allocatable :: Le, full_lex, full_ley, full_lbx, full_lby
+        class( Vector_t ), allocatable :: Le, full_lex, full_ley, full_lbx, full_lby
         integer :: i, j, k, ki, kj
         !
         !
@@ -122,18 +122,18 @@ contains
         ki = 0
         !
         ! Conversion to full vector to do math operations
-        allocate( full_lex, source = self%Lex%getFullVector() )
-        allocate( full_ley, source = self%Ley%getFullVector() )
+        full_lex = self%Lex%getFullVector()
+        full_ley = self%Ley%getFullVector()
         !
-        allocate( full_lbx, source = self%Lbx%getFullVector() )
-        allocate( full_lby, source = self%Lby%getFullVector() )
+        full_lbx = self%Lbx%getFullVector()
+        full_lby = self%Lby%getFullVector()
         !
         do k = 1, 2
             !
             if( k == 1 ) then
-                allocate( Le, source = full_lex )
+                Le = full_lex
             else
-                allocate( Le, source = full_ley )
+                Le = full_ley
             endif
             !
             do i = 1, 2
@@ -167,6 +167,7 @@ contains
         enddo
         !
         deallocate( full_lex, full_ley, full_lbx, full_lby )
+        !
     end subroutine setLRowsFullImpedance
     !
     subroutine predictedDataFullImpedance( self, transmitter )
@@ -214,7 +215,7 @@ contains
                             self%I_BB(1,2) = -BB(1,2) / det
                             self%I_BB(2,1) = -BB(2,1) / det
                         else
-                            STOP "ReceiverFullImpedance.f90: Determinant is Zero!"
+                            stop "Error: ReceiverFullImpedance.f90: Determinant is Zero!"
                         endif
                         !
                         deallocate( BB )
@@ -234,11 +235,11 @@ contains
                         call self%savePredictedData( transmitter )
                         !
                     class default
-                        stop "evaluationFunctionRx: Unclassified temp_full_vec_ey"
+                        stop "Error: evaluationFunctionRx: Unclassified temp_full_vec_ey"
                 end select
                 !
             class default
-                stop "evaluationFunctionRx: Unclassified temp_full_vec_ey"
+                stop "Error: evaluationFunctionRx: Unclassified temp_full_vec_ey"
         end select
         !
     end subroutine predictedDataFullImpedance

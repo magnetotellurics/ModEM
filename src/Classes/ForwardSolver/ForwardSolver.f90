@@ -7,7 +7,7 @@
 module ForwardSolver
     !
     use Constants
-    use cVector
+    use Vector
     use Source
     use ModelParameter
     use Solver
@@ -72,11 +72,11 @@ module ForwardSolver
         end subroutine interface_zero_diag_fwd
         !
         subroutine interface_get_e_solution_fwd( self, source, e_solution )
-            import :: ForwardSolver_t, Source_t, cVector_t
+            import :: ForwardSolver_t, Source_t, Vector_t
             !
             class( ForwardSolver_t ), intent( inout ) :: self
             class( Source_t ), intent( in )           :: source
-            class( cVector_t ), intent( inout )       :: e_solution
+            class( Vector_t ), intent( inout )        :: e_solution
             !
         end subroutine interface_get_e_solution_fwd
         !

@@ -80,55 +80,32 @@ contains
         class( DivergenceCorrection_t ), intent( in ) :: self
         real( kind=prec ), intent( in )               :: omega
         class( Source_t ), intent( in )               :: source
-        class( cScalar_t ), intent( inout )           :: phi0
+        class( Scalar_t ), intent( inout )            :: phi0
         !
         complex( kind=prec ) :: c_factor
-        class( cVector_t ), allocatable :: e_interior
         !
         c_factor = -ONE_I / ( mu_0 * ISIGN * omega ) ! 1 / ( isign * 1i * w * mu )
         !
-        !    take divergence of sourceInterior, and return as cScalar of
-        !     appropriate explicit type
-        call source%E%interior( e_interior )
-        call self%solver%preconditioner%model_operator%Div( e_interior, phi0 )
+        call self%solver%preconditioner%model_operator%Div( source%E%interior(), phi0 )
         !
-        deallocate( e_interior )
-        !
-        !  multiply result by c_factor (in place)
-        call phi0%mults( c_factor )
+        call phi0%mult( c_factor )
         !
     end subroutine rhsDivCorDivergenceCorrection
     !
     !
     subroutine divCorrDivergenceCorrection( self, inE, outE, phi0 )
         implicit none
-        ! function to compute divergence correction for input electric
-        ! field vector inE, returning result in outE 
-        !  Optional argument phi0 is scaled divergence of source term
-        !     computed by rhsDivCor
         !
         class( DivergenceCorrection_t ), intent( inout ) :: self
-        class( cVector_t ), intent( in )                 :: inE
-        class( cVector_t ), intent( inout )              :: outE
-        class( cScalar_t ), intent( in ), optional       :: phi0
+        class( Vector_t ), intent( in )                  :: inE
+        class( Vector_t ), intent( inout )               :: outE
+        class( Scalar_t ), intent( in ), optional        :: phi0
         !
-        class( cScalar_t ), allocatable :: phiSol, phiRHS
+        class( Scalar_t ), allocatable :: phiSol, phiRHS
         logical :: SourceTerm
         !
         !
         SourceTerm = present( phi0 )
-        !
-        ! allocating phiSol, phiRHS  -- these need to be cScalars of explicit
-        !    type that matches inE, outE -- phi0 may not be an actual input
-        !    so this cannot be used as a prototype
-        !    I am writing this under the assumption that there will be
-        !     createScalar, createVector in ModelOperator class (should be
-        !      declared as procedures in abstract class, implemented to return
-        !      cVector or cScalar of appropriate type)
-		!
-        !    I DO NOT WANT select type at this level -- 
-        !      make procedures in ForwardModeling generic, with no reference to
-        !      specific classes
         !
         select type( grid => self%solver%preconditioner%model_operator%metric%grid )
             class is( Grid3D_SG_t )
@@ -142,8 +119,7 @@ contains
                 call phiRHS%zeros()
                 !
             class default
-                write( *, * ) "ERROR:DivergenceCorrection_t::divCorrDivergenceCorrection:"
-                stop          "    unknown grid type"
+                stop "Error: divCorrDivergenceCorrection > unknown grid type"
         end select
         !
         ! compute divergence of currents for input electric field
@@ -162,7 +138,7 @@ contains
         ! point-wise multiplication with volume weights centered on corner nodes
         !
         ! ???? Interesting point: if changing phiRHS to phiSol, the QMR starts to slowly converge
-        call phiRHS%mults( self%solver%preconditioner%model_operator%metric%Vnode )
+        call phiRHS%mult( self%solver%preconditioner%model_operator%metric%Vnode )
         !
         !    solve system of equations -- solver will have to know about
         !     (a) the equations to solve -- the divergence correction operator
@@ -170,11 +146,13 @@ contains
         !     (b) preconditioner: object, and preconditioner matrix
         !
         select type( solver => self%solver )
+            !
             class is( Solver_PCG_t )
                 call solver%solve( phiRHS, phiSol )
+            !
             class default
-                write( *, * ) "ERROR: DivergenceCorrection::DivCorr:"
-                stop        "     Unknown solver type."
+                stop "Error: divCorrDivergenceCorrection > Unknown solver type."
+            !
         end select
         !
         !    have to decide how to manage output
@@ -182,7 +160,7 @@ contains
         !write (*,*) "finished divergence correction:", size( self%solver%relErr ), self%solver%n_iter
         !write (*,"(i8, es20.6)") self%solver%n_iter, self%solver%relErr( self%solver%n_iter )
         !end if
-		!
+        !
         ! compute gradient of phiSol (Divergence correction for inE)
         call self%solver%preconditioner%model_operator%grad( phiSol, outE )
         !

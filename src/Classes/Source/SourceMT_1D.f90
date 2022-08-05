@@ -1,12 +1,9 @@
 ! *************
 ! 
 ! Derived class to define a MT Source with boundary data computed by 1D solutions
-! 
-! Last modified at 10/11/2021 by Paulo Werdt
-! 
+!
 ! *************
-! 
-!**
+!
 module SourceMT_1D
     !
     use Constants
@@ -43,7 +40,7 @@ contains
         class( ModelOperator_t ), target, intent( in )  :: model_operator
         class( ModelParameter_t ), target, intent( in ) :: model_parameter
         real( kind=prec ), intent( in )                 :: period
-        class( cVector_t ), intent( in ), optional      :: E
+        class( Vector_t ), intent( in ), optional      :: E
         !
         type( SourceMT_1D_t ) :: self
         !
@@ -156,22 +153,27 @@ contains
         !
         class( SourceMT_1D_t ), intent( inout ) :: self
         !
-        class( cVector_t ), allocatable   :: source_e_boundary
-        !
-        select type( E => self%E )
-            class is( cVector3D_SG_t )
+        class( Vector_t ), allocatable   :: source_e_boundary
+		!
+		character(:), allocatable :: title
+		!
+        select type( grid => self%E%grid )
+            class is( Grid3D_SG_t )
                 !
                 if( allocated( self%rhs ) ) deallocate( self%rhs )
-                allocate( self%rhs, source = cVector3D_SG_t( E%grid, EDGE ) )
+                allocate( self%rhs, source = cVector3D_SG_t( grid, EDGE ) )
                 !
                 call self%rhs%zeros()
                 !
-                call self%E%Boundary( source_e_boundary )
+                allocate( source_e_boundary, source = self%E%Boundary() )
+                !
+                title = "source_e_boundary"
+                call source_e_boundary%print( 667, title )
                 !
                 call self%model_operator%MultAib( source_e_boundary, self%rhs )
                 !
-				deallocate( source_e_boundary )
-				!
+                deallocate( source_e_boundary )
+                !
                 call self%rhs%mult( C_MinusOne )
                 !
         end select

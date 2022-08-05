@@ -47,7 +47,7 @@ contains
         class( ModelOperator_t ), target, intent( in )  :: model_operator
         class( ModelParameter_t ), target, intent( in ) :: model_parameter
         real( kind=prec ), intent( in )                 :: period, azimuth, dip, moment, location(3)
-        class( cVector_t ), intent( in ), optional      :: E
+        class( Vector_t ), intent( in ), optional      :: E
         !
         type( SourceCSEM_Dipole1D_t ) :: self
         !

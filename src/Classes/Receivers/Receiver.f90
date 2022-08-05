@@ -177,27 +177,39 @@ contains
         !
         class( Receiver_t ), intent( inout )   :: self
         class( ModelOperator_t ), intent( in ) :: model_operator
-        class( cVector_t ), allocatable        :: temp_full_vec
+        class( Vector_t ), allocatable         :: temp_full_vec
         !
-        integer              :: k
+        integer :: k
         !
-        class( cVector_t ), allocatable :: e, h, lh
+        class( Vector_t ), allocatable :: e_h, lh
         !
         !
         do k = 1, size( self%EHxy )
+            !
+            select type( grid => model_operator%metric%grid )
+                class is( Grid3D_SG_t )
+                    !
+                    select case( self%EHxy(k)%str )
+                        !
+                        case( "Ex", "Ey", "Ez" )
+                            allocate( e_h, source = cVector3D_SG_t( grid, EDGE ) )
+                        !
+                        case( "Bx", "By", "Bz" )
+                            allocate( e_h, source = cVector3D_SG_t( grid, FACE ) )
+                            !
+                        case default
+                            stop "Error: evaluationFunctionRx: Unknown EHxy"
+                    end select
+                    !
+                class default
+                    stop "Error: evaluationFunctionRx: Unclassified grid"
+            end select
             !
             select case( self%EHxy(k)%str )
                 !
                 case( "Ex" )
                     !
-                    select type( grid => model_operator%metric%grid )
-                        class is( Grid3D_SG_t )
-                            allocate( e, source = cVector3D_SG_t( grid, EDGE ) )
-                        class default
-                            stop "Error: evaluationFunctionRx: Unclassified grid for ex"
-                    end select
-                    !
-                    call e%interpFunc( self%location, "x", temp_full_vec )
+                    call e_h%interpFunc( self%location, "x", temp_full_vec )
                     !
                     select type( temp_full_vec )
                         class is( cVector3D_SG_t )
@@ -207,19 +219,10 @@ contains
                         class default
                             stop "Error: evaluationFunctionRx: Unclassified temp_full_vec_ex"
                     end select
-                    !
-                    deallocate( e )
-                    !
+                   !
                 case( "Ey" )
                     !
-                    select type( grid => model_operator%metric%grid )
-                        class is( Grid3D_SG_t )
-                            allocate( e, source = cVector3D_SG_t( grid, EDGE ) )
-                        class default
-                            stop "Error: evaluationFunctionRx: Unclassified grid for ey"
-                    end select
-                    !
-                    call e%interpFunc( self%location, "y", temp_full_vec )
+                    call e_h%interpFunc( self%location, "y", temp_full_vec )
                     !
                     select type( temp_full_vec )
                         class is( cVector3D_SG_t )
@@ -230,18 +233,9 @@ contains
                             stop "Error: evaluationFunctionRx: Unclassified temp_full_vec_ey"
                     end select
                     !
-                    deallocate( e )
-                    !
                 case( "Ez" )
                     !
-                    select type( grid => model_operator%metric%grid )
-                        class is( Grid3D_SG_t )
-                            allocate( e, source = cVector3D_SG_t( grid, EDGE ) )
-                        class default
-                            stop "Error: evaluationFunctionRx: Unclassified grid for ez"
-                    end select
-                    !
-                    call e%interpFunc( self%location, "z", temp_full_vec )
+                    call e_h%interpFunc( self%location, "z", temp_full_vec )
                     !
                     select type( temp_full_vec )
                         class is( cVector3D_SG_t )
@@ -252,38 +246,23 @@ contains
                             stop "Error: evaluationFunctionRx: Unclassified temp_full_vec_ez"
                     end select
                     !
-                    deallocate( e )
-                    !
                 case( "Bx" )
                     !
-                     select type( grid => model_operator%metric%grid )
-                          class is( Grid3D_SG_t )
-                             allocate( h, source = cVector3D_SG_t( grid, FACE ) )
-                          class default
-                             stop "Error: evaluationFunctionRx: Unclassified grid for hx"
-                     end select
+                    call e_h%interpFunc( self%location, "x", lh )
                     !
-                    call h%interpFunc( self%location, "x", lh )
-                    !
-                    deallocate( h )
-                    !
-                    select type( lh )
-                        class is( cVector3D_SG_t )
-                            if( allocated( temp_full_vec ) ) deallocate( temp_full_vec )
-                            allocate( temp_full_vec, source = cVector3D_SG_t( lh%grid, EDGE ) )
+                    select type( grid => model_operator%metric%grid )
+                        class is( Grid3D_SG_t )
+                            !
+                            allocate( temp_full_vec, source = cVector3D_SG_t( grid, EDGE ) )
                             !
                         class default
-                            write( *, * ) "ERROR:Receiver::evaluationFunction:"
-                            stop          "            Unknown lh type"
+                            stop "Error: evaluationFunctionRx > Unknown Bx lh type"
                     end select
                     !
                     call model_operator%multCurlT( lh, temp_full_vec )
                     !
-                    deallocate( lh )
-                    !
-                    !call temp_full_vec%mults( isign * comega )
-                    !
                     select type( temp_full_vec )
+                        !
                         class is( cVector3D_SG_t )
                             !
                             call self%Lbx%fromFullVector( temp_full_vec )
@@ -294,32 +273,18 @@ contains
                     !
                 case( "By" )
                     !
-                     select type( grid => model_operator%metric%grid )
-                          class is( Grid3D_SG_t )
-                             allocate( h, source = cVector3D_SG_t( grid, FACE ) )
-                          class default
-                             stop "Error: evaluationFunctionRx: Unclassified grid for hy"
-                     end select
-                    ! 
-                    call h%interpFunc( self%location, "y", lh )
+                    call e_h%interpFunc( self%location, "y", lh )
                     !
-                    deallocate( h )
-                    !
-                    select type( lh )
-                        class is( cVector3D_SG_t )
-                            if( allocated( temp_full_vec ) ) deallocate( temp_full_vec )
-                            allocate( temp_full_vec, source = cVector3D_SG_t( lh%grid, EDGE ) )
+                    select type( grid => model_operator%metric%grid )
+                        class is( Grid3D_SG_t )
+                            !
+                            allocate( temp_full_vec, source = cVector3D_SG_t( grid, EDGE ) )
                             !
                         class default
-                            write( *, * ) "ERROR:Receiver::evaluationFunction:"
-                            stop          "            Unknown lh type"
+                            stop "Error: evaluationFunction > Unknown By lh type"
                     end select
                     !
                     call model_operator%multCurlT( lh, temp_full_vec )
-                    !
-                    deallocate( lh )
-                    !
-                    !call temp_full_vec%mults( isign * comega )
                     !
                     select type( temp_full_vec )
                         class is( cVector3D_SG_t )
@@ -332,32 +297,18 @@ contains
                     !
                 case( "Bz" )
                     !
-                     select type( grid => model_operator%metric%grid )
-                          class is( Grid3D_SG_t )
-                             allocate( h, source = cVector3D_SG_t( grid, FACE ) )
-                          class default
-                             stop "Error: evaluationFunctionRx: Unclassified grid for hz"
-                     end select
+                    call e_h%interpFunc( self%location, "z", lh )
                     !
-                    call h%interpFunc( self%location, "z", lh )
-                    !
-                    deallocate( h )
-                    !
-                    select type( lh )
-                        class is( cVector3D_SG_t )
-                            if( allocated( temp_full_vec ) ) deallocate( temp_full_vec )
-                            allocate( temp_full_vec, source = cVector3D_SG_t( lh%grid, EDGE ) )
+                    select type( grid => model_operator%metric%grid )
+                        class is( Grid3D_SG_t )
+                            !
+                            allocate( temp_full_vec, source = cVector3D_SG_t( grid, EDGE ) )
                             !
                         class default
-                            write( *, * ) "ERROR:Receiver::evaluationFunction:"
-                            stop          "            Unknow lh type"
+                            stop "Error: evaluationFunctionRx > Unknown Bz lh type"
                     end select
                     !
                     call model_operator%multCurlT( lh, temp_full_vec )
-                    !
-                    deallocate( lh )
-                    !
-                    !call temp_full_vec%mults( isign * comega )
                     !
                     select type( temp_full_vec )
                         class is( cVector3D_SG_t )
@@ -370,6 +321,8 @@ contains
                     !
             end select
             !
+            if( allocated( e_h ) ) deallocate( e_h )
+            if( allocated( lh ) ) deallocate( lh )
             deallocate( temp_full_vec )
             !
         end do

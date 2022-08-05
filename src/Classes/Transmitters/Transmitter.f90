@@ -10,7 +10,6 @@ module Transmitter
     use Source
     use ForwardSolver
     use ModelParameter
-    use cVector
     !
     ! Global name for e_solution file
     character(:), allocatable :: e_solution_file_name
@@ -25,7 +24,7 @@ module Transmitter
         !
         class( Source_t ), allocatable :: source
         !
-        class( cVector_t ), allocatable, dimension(:) :: e_all
+        class( Vector_t ), allocatable, dimension(:) :: e_all
         !
         integer, allocatable, dimension(:) :: receiver_indexes
         ! !
@@ -79,9 +78,9 @@ module Transmitter
         ! end subroutine interface_p_mult_tx
         ! !
         ! pure subroutine interface_p_mult_t_tx( m0, eSens, d_m )
-            ! import :: ModelParameter_t, rVector_t
+            ! import :: ModelParameter_t, Vector_t
             ! class( ModelParameter_t ), intent( in )    :: m0
-            ! class( rVector_t ), intent( in )           :: eSens
+            ! class( Vector_t ), intent( in )           :: eSens
             ! class( ModelParameter_t ), intent( inout ) :: d_m
         ! end subroutine interface_p_mult_t_tx
         ! !
@@ -174,7 +173,7 @@ module Transmitter
             class( ModelParameter_t ), allocatable :: temp
             logical :: adjt
             integer :: k
-            class( rVector_t ), allocatable:: eVec
+            class( Vector_t ), allocatable:: eVec
             !
             ! WHERE THE HELL AM I GOING TO GET PERIOD ????
             miwm = -ONE_I * MU_0 * isign * cmplx( 0.0, 1./ ( 2.0 * PI / self%period ), kind=prec )
@@ -214,7 +213,7 @@ module Transmitter
             !
             class( Transmitter_t ), intent( in )                    :: self
             class( ModelParameter_t ), intent( in )                 :: m0
-            class( rVector_t ), intent( inout )                     :: eSens(:)
+            class( Vector_t ), intent( inout )                     :: eSens(:)
             class( ModelParameter_t ), allocatable, intent( inout ) :: d_m
             !
             complex( kind=prec ) :: miwm
@@ -265,7 +264,7 @@ module Transmitter
             ! class( ModelParameter_t ), allocatable :: temp
             ! logical :: adjt
             ! integer :: k
-            ! class( rVector_t ), allocatable:: eVec
+            ! class( Vector_t ), allocatable:: eVec
             ! !
             ! ! WHERE THE HELL AM I GOING TO GET PERIOD ????
             ! !miwm = -ON_I * MU_0 * isign * cmplx( 0.0, 1./ ( 2.0 * PI / self%period ), kind=prec )
@@ -306,7 +305,7 @@ module Transmitter
             ! !
             ! class( Transmitter_t ), intent( in )    :: self
             ! class( ModelParameter_t ), intent( in ) :: m0
-            ! class( rVector_t ), intent( in )        :: eSens
+            ! class( Vector_t ), intent( in )        :: eSens
             ! !
             ! class( ModelParameter_t ), intent( inout ) :: d_m
             ! !
@@ -318,7 +317,7 @@ module Transmitter
             ! implicit none
             ! !
             ! class( ModelParameter_t ), intent( in )    :: m0
-            ! class( rVector_t ), intent( in )           :: eSens
+            ! class( Vector_t ), intent( in )           :: eSens
             ! !
             ! class( ModelParameter_t ), intent( inout ) :: d_m
             ! !

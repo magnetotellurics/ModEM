@@ -1,14 +1,11 @@
 ! *************
 ! 
 ! Base class to define a Source
-! 
-! Last modified at 10/11/2021 by Paulo Werdt
-! 
+!
 ! *************
 ! 
 module Source
     !
-    use cVector
     use ModelOperator
     use ModelParameter
     !
@@ -26,7 +23,7 @@ module Source
         class( ModelOperator_t ), pointer  :: model_operator
         class( ModelParameter_t ), pointer :: model_parameter
         !
-        class( cVector_t ), allocatable    :: rhs, E
+        class( Vector_t ), allocatable     :: rhs, E
         !
         logical                            :: non_zero_source, adjt
         !
