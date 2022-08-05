@@ -7,39 +7,233 @@
 !*************
 !
 module DataFile
-   !
-   use Constants
-   use String
-   !
-   use DataEntryArray
-   !
-   type, abstract :: DataFile_t
-      !
-	  integer                            :: nTx, nRx
-	  !
-      class( DataEntryArray_t ), pointer :: data_entries
-      !
-   contains
-      !
-      procedure, public :: init    => initializeDataFile
-      procedure, public :: dealloc => deallocateDataFile
-      !
-   end type DataFile_t
-   !
+    !
+    use Constants
+    use String
+    !
+    use DataEntryFArray
+    use DataEntryMT
+    use DataEntryMT_REF
+    use DataEntryCSEM
+    !
+    use ReceiverFullImpedance
+    use ReceiverFullVerticalMagnetic
+    use ReceiverOffDiagonalImpedance
+    use ReceiverSingleField
+    use ReceiverFArray
+    use TransmitterMT
+    use TransmitterCSEM
+    use TransmitterFArray
+    !
+    type, abstract :: DataFile_t
+        !
+        integer                   :: nTx, nRx
+        character(:), allocatable :: fine_name
+        !
+        !class( DataEntryArray_t ), pointer :: data_entries
+        type( De_t ), allocatable, dimension(:) :: data_entries
+        !
+        contains
+            !
+            procedure, public  :: init    => initializeDataFile
+            procedure, public  :: dealloc => deallocateDataFile
+            procedure, public  :: loadReceiversAndTransmitters
+            !
+    end type DataFile_t
+    !
 contains
-   !
-   subroutine initializeDataFile( self )
-      class( DataFile_t ), intent( inout ) :: self
-      !
-      allocate( self%data_entries, source = DataEntryArray_t() )
-      !
-   end subroutine initializeDataFile
-   !
-   subroutine deallocateDataFile( self )
-      class( DataFile_t ), intent( inout ) :: self
-      !
-	  deallocate( self%data_entries )
-	  !
-   end subroutine deallocateDataFile
-   !
+    !
+    subroutine initializeDataFile( self )
+        class( DataFile_t ), intent( inout ) :: self
+        !
+        self%nTx = 0
+        self%nRx = 0
+        !
+    end subroutine initializeDataFile
+    !
+    subroutine deallocateDataFile( self )
+        class( DataFile_t ), intent( inout ) :: self
+        !
+        deallocate( self%data_entries )
+        !
+    end subroutine deallocateDataFile
+    !
+    ! Load all Receivers (Based on Location and Component type) and all Transmitters (Based on Period)
+    subroutine loadReceiversAndTransmitters( self, data_entry )
+        implicit none
+        !
+        class( DataFile_t ), intent( inout ) :: self
+        class( DataEntry_t ), intent( in )   :: data_entry
+        !
+        class( Receiver_t ), allocatable :: receiver
+        class( Transmitter_t ), pointer  :: transmitter
+        integer                          :: iTx, nTx, rx_id, rx_type
+        real( kind=prec )                :: azimuth
+        !
+        call updateDataEntryArray( self%data_entries, data_entry )
+        !
+        ! TRANSMITTERS
+        !
+        select type ( data_entry )
+            !
+            class is ( DataEntryMT_t )
+                !
+                call updateTransmitterArray( TransmitterMT_t( data_entry%period ) )
+                !
+            class is ( DataEntryMT_REF_t )
+                !
+                call updateTransmitterArray( TransmitterMT_t( data_entry%period ) )
+                !
+            class is ( DataEntryCSEM_t )
+                !
+                call updateTransmitterArray( TransmitterCSEM_t( data_entry%period, data_entry%tx_location, data_entry%azimuth, data_entry%dip, data_entry%moment, data_entry%dipole ) )
+                !
+        end select
+        !
+        rx_type = getIntReceiverType( data_entry%type )
+        !
+        select case( data_entry%type )
+            !
+            case( "Ex_Field" )
+                !
+                azimuth = 1.0
+                receiver = ReceiverSingleField_t( data_entry%location, azimuth, rx_type )
+                !
+            case( "Ey_Field" )
+                !
+                azimuth = 2.0
+                receiver = ReceiverSingleField_t( data_entry%location, azimuth, rx_type )
+                !
+            case( "Bx_Field" )
+                !
+                azimuth = 3.0
+                receiver = ReceiverSingleField_t( data_entry%location, azimuth, rx_type )
+                !
+            case( "By_Field" )
+                !
+                azimuth = 4.0
+                receiver = ReceiverSingleField_t( data_entry%location, azimuth, rx_type )
+                !
+            case( "Bz_Field" )
+                !
+                azimuth = 5.0
+                receiver = ReceiverSingleField_t( data_entry%location, azimuth, rx_type )
+                !
+            case( "Full_Impedance" )
+                !
+                receiver = ReceiverFullImpedance_t( data_entry%location, rx_type )
+                !
+            case( "Full_Interstation_TF" )
+                !
+                stop "DataManager.f08: loadReceiversAndTransmitters(): To implement Full_Interstation_TF !!!!"
+                !
+            case( "Off_Diagonal_Rho_Phase" )
+                !
+                stop "DataManager.f08: loadReceiversAndTransmitters(): To implement Off_Diagonal_Rho_Phase !!!!"
+                !
+            case( "Phase_Tensor" )
+                !
+                stop "DataManager.f08: loadReceiversAndTransmitters(): To implement Phase_Tensor !!!!"
+                !
+            case( "Off_Diagonal_Impedance" )
+                !
+                receiver = ReceiverOffDiagonalImpedance_t( data_entry%location, rx_type )
+                !
+            case( "Full_Vertical_Components", "Full_Vertical_Magnetic" )
+                !
+                receiver = ReceiverFullVerticalMagnetic_t( data_entry%location, rx_type )
+                !
+            case default
+                write( *, * ) "unknow component type :[", data_entry%type, "]"
+                stop "DataManager.f08: loadReceiversAndTransmitters()"
+            !
+        end select
+        !
+        receiver%is_complex = data_entry%isComplex()
+        !
+        receiver%code = data_entry%code
+        !
+        rx_id = updateReceiverArray( receiver )
+        !
+        deallocate( receiver )
+        !
+        nTx = size( transmitters )
+		!
+        ! LOOP OVER TRANSMITTERS
+        do iTx = 1, nTx
+            !
+            transmitter => getTransmitter( iTx )
+            !
+            select type( transmitter )
+                !
+                class is( TransmitterMT_t )
+                    !
+                    select type( data_entry )
+                        !
+                        class is( DataEntryMT_t )
+                            !
+                            if( ABS( transmitter%period - data_entry%period ) < TOL6 ) then
+                                !
+                                call transmitter%updateReceiverIndexesArray( rx_id )
+                                !
+                                exit
+                                !
+                            endif
+                            !
+                    end select
+                    !
+                class is( TransmitterCSEM_t )
+                    !
+                    select type( data_entry )
+                        !
+                        class is( DataEntryCSEM_t )
+                            !
+                            if( ABS( transmitter%period - data_entry%period ) < TOL6   .AND.   &
+                                     transmitter%location(1) == data_entry%tx_location(1) .AND.   &
+                                     transmitter%location(2) == data_entry%tx_location(2) .AND.   &
+                                     transmitter%location(3) == data_entry%tx_location(3) ) then
+                                !
+                                call transmitter%updateReceiverIndexesArray( rx_id )
+                                !
+                                exit
+                                !
+                            endif
+                            !
+                    end select
+                !
+                class default
+                    stop "DataFile.f90 > loadReceiversAndTransmitters > unclassified Transmitter"
+                !
+            end select
+            !
+        enddo
+        !
+    end subroutine loadReceiversAndTransmitters
+    !
+    ! Return the number of lines of a given file
+    function getLineNumber( funit ) result( line_counter )
+        implicit none
+        !
+        integer, intent( in ) :: funit
+        !
+        integer :: line_counter
+        character(80) :: line_text
+        !
+        line_counter = 0
+        !
+        rewind( funit )
+        !
+        do
+            read( funit, "(a)", END = 10 ) line_text
+            line_text = adjustl( line_text )
+            if( index( line_text, "#" ).eq.0 ) then
+                !
+                line_counter = line_counter + 1
+            end if
+        end do
+        !
+10     return
+        !
+    end function getLineNumber
+    !
 end module DataFile

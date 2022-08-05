@@ -1,17 +1,42 @@
 #
-#
-./Configure.3D_MT.OSU.GFortran MakefileSerial SERIAL test_FWD.f90
+# COMPILE MODEM-OO SERIAL
+bash Configure.3D_MT.OSU.GFortran MakefileSerial SERIAL test_FWD.f90
 make -f MakefileSerial clean
 make -f MakefileSerial
-./test_FWD -f --data ../inputs/esol/de.dat --model ../inputs/simple_2_blocks.cpr --control ../inputs/first_control_file.txt
+#
+# MODEM-OO SMALLEST EXAMPLE SERIAL
+./test_FWD -f --data ../inputs/esol/de.dat --model ../inputs/esol/pr.ws --control ../inputs/Others/first_control_file.txt -pd pred_data_serial_smallest.dat
+#
+# MODEM-OO MEDIUM EXAMPLE SERIAL
+./test_FWD -f --data ../inputs/1st_Example/rFile_Data_MT_LP.dat --model ../inputs/1st_Example/rFile_Model_trimed_lower_Boundary_50km --control ../inputs/Others/first_control_file.txt -pd pred_data_lp_trim.dat
+#
+# MODEM-OO CSEM EXAMPLE SERIAL
+./test_FWD -f --data ../inputs/Naser_CSEM/rFile_Data_1_fix --model ../inputs/Naser_CSEM/rFile_Model_1 --control ../inputs/Others/first_control_file.txt -pd pred_data_serial_csem.dat
+#
+# MODEM-OO BIGGEST EXAMPLE SERIAL
+./test_FWD -f --data ../inputs/1st_Example/rFile_Data_MT_TIP --model ../inputs/1st_Example/rFile_Model --control ../inputs/Others/first_control_file.txt -pd pred_data_tipper_biggest.dat
 #
 #
-./Configure.3D_MT.OSU.GFortran MakefileMPI MPI test_FWD_MPI.f90
+# COMPILE MODEM-OO MPI
+bash Configure.3D_MT.OSU.GFortran MakefileMPI MPI test_FWD_MPI.f90
 make -f MakefileMPI clean
 make -f MakefileMPI
-mpirun -np 4 ./test_FWD_MPI -f --data ../inputs/esol/de.dat --model ../inputs/simple_2_blocks.cpr --control ../inputs/first_control_file.txt
-
--F  rFile_Model rFile_Data wFile_Data
-
-
-mpirun -np 5 ./Mod3DMT_SP2 ../inputs/simple_2_blocks.cpr ../inputs/esol/de.dat predicted_data_base.dat
+#
+# MODEM-OO SMALLEST EXAMPLE
+mpirun -np 5 ./test_FWD_MPI -f --data ../inputs/esol/de.dat --model ../inputs/esol/pr.ws --control ../inputs/Others/first_control_file.txt -pd pred_data_mpi_smallest.dat
+#
+# MODEM-OO CSEM EXAMPLE SERIAL
+mpirun -np 2 ./test_FWD_MPI -f --data ../inputs/Naser_CSEM/rFile_Data_1_fix --model ../inputs/Naser_CSEM/rFile_Model_1 --control ../inputs/Others/first_control_file.txt -pd pred_data_serial_csem.dat
+#
+# MODEM-OO MEDIUM EXAMPLE PARALLEL
+mpirun -np 9 ./test_FWD_MPI -f --data ../inputs/1st_Example/rFile_Data_MT_LP.dat --model ../inputs/1st_Example/rFile_Model_trimed_lower_Boundary_50km --control ../inputs/Others/first_control_file.txt -pd pred_data_mpi_lp_trim.dat
+#
+# MODEM-OO BIGGEST EXAMPLE PARALLEL
+mpirun -np 17 ./test_FWD_MPI -f --data ../inputs/1st_Example/rFile_Data_MT_TIP --model ../inputs/1st_Example/rFile_Model --control ../inputs/Others/first_control_file.txt -pd pred_data_tipper_mpi_biggest.dat
+#
+#
+# COMPILE MODEM-ON
+make -f Makefile_SP2_EM1D_CSEM
+mv Mod3DMT Mod3DMT_SP2
+mpirun -np 33 ./Mod3DMT_SP2 -F ../../modem-oo/inputs/1st_Example/rFile_Model ../../modem-oo/inputs/1st_Example/rFile_Data_MT_LP.dat predicted_data_working.dat wFile_Esol ../inputs/modem_on_control_file.txt
+mpirun -np 17 ./Mod3DMT -F ../../modem-oo/inputs/1st_Example/rFile_Model_trimed_lower_Boundary_50km ../../modem-oo/inputs/1st_Example/rFile_Data_MT_LP.dat predicted_data_working_trimed.dat wFile_Esol ../inputs/modem_on_control_file.txt
