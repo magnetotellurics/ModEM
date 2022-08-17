@@ -1,0 +1,270 @@
+#
+# EXEC ORDER OF STAGES
+stages:
+    - build
+    - validate
+    - test
+    - analyse
+    - deploy
+    - finish
+#
+#
+# MAIN BEFORE SCRIPT
+before_script:
+        - echo "START MAIN SCRIPT"
+#
+# BUILD JOB: BUILD modem_on BINARY, STORE ON CACHE AND CREATE DOWNLOADABLE ARTIFACT
+build_modem_on:
+    stage: build    # DEFINES STAGE NATURE
+    #
+    before_script:
+        - echo "START build_modem_on SCRIPT"
+    #
+    script:
+        # CREATE BIN FOLDER (IF NOT EXISTS)
+        - mkdir -p bin
+        # CREATE MAIN OUTPUT FOLDER (IF NOT EXISTS)
+        - mkdir -p outputs/temp
+        # BUILD SCRIPT
+        - bash scripts/build_modem_on.sh | tee outputs/temp/build_modem_on.txt
+        # CREATE DOCS FOLDER (IF NOT EXISTS)
+        - mkdir -p docs/
+        # RUN DOXYGEN ON src/
+        - bash scripts/update_doxygen.sh | tee outputs/temp/update_doxygen.txt
+    #
+    cache:
+        key: build_modem_on_cache   # CACHE KEY TO ACCESS FROM OTHERS JOBS
+        paths:
+            - bin/
+            - outputs/temp/
+            - docs/
+    #
+    artifacts:
+        paths:
+            - bin/
+            - outputs/temp/
+            - docs
+        expire_in: 1 week
+    #
+    after_script:
+        - echo "FINISH build_modem_on"
+#
+# TEST READ_WRITE STD
+test_read_write_std:
+    stage: validate
+    dependencies:
+        - build_modem_on            # NEEDS bin/ModEM_STD FROM build_modem_on
+    #
+    script:
+        #
+        # CREATE OUTPUT FOLDER
+        - mkdir -p outputs/temp/test_read_write
+        #
+        # STD READ RIGHT TEST WITH 1 PROC
+        - bash scripts/test_read_write.sh bin/ModEM_STD 1
+    #
+    artifacts:
+        paths:
+            - outputs/temp/test_read_write
+        expire_in: 1 week
+#
+# TEST READ_WRITE SP2
+test_read_write_sp2:
+    stage: validate
+    dependencies:
+        - build_modem_on            # NEEDS bin/ModEM_STD FROM build_modem_on
+    #
+    script:
+        #
+        # CREATE OUTPUT FOLDER
+        - mkdir -p outputs/temp/test_read_write
+        #
+        # SP2 READ RIGHT TEST WITH 1 PROC
+        - bash scripts/test_read_write.sh bin/ModEM_SP2 1
+    #
+    artifacts:
+        paths:
+            - outputs/temp/test_read_write
+        expire_in: 1 week
+#
+# TEST MULT BY J T STD
+test_forward_std:
+    stage: test
+    dependencies:
+        - build_modem_on            # NEEDS bin/ModEM_STD FROM build_modem_on
+        #
+        - test_read_write_std       # NEEDS wFile_Model AND wFile_Data FROM test_read_write_std
+    #
+    script:
+        #
+        # CREATE OUTPUT FOLDER
+        - mkdir -p outputs/temp/test_forward
+        #
+        # STD READ RIGHT TEST WITH NPROC
+        - bash scripts/auto/test_forward.sh bin/ModEM_STD
+    #
+    artifacts:
+        paths:
+            - outputs/temp/test_forward
+        expire_in: 1 week
+#
+# TEST MULT BY J T SP2
+test_forward_sp2:
+    stage: test
+    dependencies:
+        - build_modem_on            # NEEDS bin/ModEM_SP2 FROM build_modem_on
+        #
+        - test_read_write_sp2       # NEEDS wFile_Model AND wFile_Data FROM test_read_write_sp2
+    #
+    script:
+        #
+        # CREATE OUTPUT FOLDER
+        - mkdir -p outputs/temp/test_forward
+        #
+        # SP2 READ RIGHT TEST WITH NPROC
+        - bash scripts/auto/test_forward.sh bin/ModEM_SP2
+    #
+    artifacts:
+        paths:
+            - outputs/temp/test_forward
+        expire_in: 1 week
+#
+# TEST MULT BY J T STD
+test_mult_by_j_t_std:
+    stage: test
+    dependencies:
+        - build_modem_on            # NEEDS bin/ModEM_STD FROM build_modem_on
+        #
+        - test_read_write_std       # NEEDS wFile_Model AND wFile_Data FROM test_read_write_std
+    #
+    script:
+        #
+        # CREATE OUTPUT FOLDER
+        - mkdir -p outputs/temp/test_mult_by_j_t
+        #
+        # STD READ RIGHT TEST WITH NPROC
+        - bash scripts/auto/test_mult_by_j_t.sh bin/ModEM_STD
+    #
+    artifacts:
+        paths:
+            - outputs/temp/test_mult_by_j_t
+        expire_in: 1 week
+#
+# TEST MULT BY J T SP2
+test_mult_by_j_t_sp2:
+    stage: test
+    dependencies:
+        - build_modem_on            # NEEDS bin/ModEM_SP2 FROM build_modem_on
+        #
+        - test_read_write_sp2       # NEEDS wFile_Model AND wFile_Data FROM test_read_write_sp2
+    #
+    script:
+        #
+        # CREATE OUTPUT FOLDER
+        - mkdir -p outputs/temp/test_mult_by_j_t
+        #
+        # SP2 READ RIGHT TEST WITH NPROC
+        - bash scripts/auto/test_mult_by_j_t.sh bin/ModEM_SP2
+    #
+    artifacts:
+        paths:
+            - outputs/temp/test_mult_by_j_t
+        expire_in: 1 week
+#
+# TEST ADJ J STD
+test_symmetry_std:
+    stage: analyse
+    dependencies:
+        - build_modem_on            # NEEDS bin/ModEM_STD FROM build_modem_on
+        #
+        - test_read_write_std       # NEEDS wFile_Model AND wFile_Data FROM test_read_write_std
+        #
+        - test_mult_by_j_t_std      # NEEDS outputs/wFile_dModel FROM test_mult_by_j_t_std
+    #
+    script:
+        #
+        # CREATE OUTPUT FOLDER
+        - mkdir -p outputs/temp/test_symmetry
+        #
+        # STD READ RIGHT TEST WITH NPROC
+        - bash scripts/auto/test_symmetry.sh bin/ModEM_STD
+    #
+    artifacts:
+        paths:
+            - outputs/temp/test_symmetry
+        expire_in: 1 week
+#
+# TEST ADJ J SP2
+test_symmetry_sp2:
+    stage: analyse
+    dependencies:
+        - build_modem_on            # NEEDS bin/ModEM_SP2 FROM build_modem_on
+        #
+        - test_read_write_sp2       # NEEDS wFile_Model AND wFile_Data FROM test_read_write_sp2
+        #
+        - test_mult_by_j_t_sp2      # NEEDS outputs/wFile_dModel FROM test_mult_by_j_t_sp2
+    #
+    script:
+        #
+        # CREATE OUTPUT FOLDER
+        - mkdir -p outputs/temp/test_symmetry
+        #
+        # SP2 READ RIGHT TEST WITH NPROC
+        - bash scripts/auto/test_symmetry.sh bin/ModEM_SP2
+    #
+    artifacts:
+        paths:
+            - outputs/temp/test_symmetry
+        expire_in: 1 week
+#
+# DEPLOY: UPDATE GITLAB
+update_gitlab:
+    stage: deploy
+    environment: production
+    script:
+        #
+        # REMOVE BINARIES
+        - rm -rf bin/
+        #
+        # CREATE FOLDER UNIQUE NAME
+        - output_folder=gitlab_pipeline_$(date "+%Y_%m_%d_%H_%M_%S")
+        #
+        # CHANGE TEMP NAME
+        - mv outputs/temp outputs/$output_folder
+        #
+        # BASH: UPDATES GITLAB
+        - bash scripts/update_gitlab.sh $CI_COMMIT_REF_NAME | tee outputs/$output_folder/update_gitlab.txt
+        #
+    #
+    artifacts:
+        paths:
+            - outputs/$output_folder/
+        expire_in: 1 week
+    #only:
+        #- master
+#
+# DEPLOY: UPDATE PAGES
+pages:
+    stage: deploy
+    environment: staging
+    script:
+        #
+        # BASH: PAGE UPDATES
+        - bash scripts/update_pages.sh
+        #
+    artifacts:
+        paths:
+            - public
+        expire_in: 30 days
+    #only:
+        #- master
+#
+#
+clean_cache:
+  stage: finish
+  script:
+    - echo "Cleaning up"
+    - rm -rf "%CACHE_PATH%/%CI_PIPELINE_ID%"
+  when: always
+#
+# END MAIN SCRIPT

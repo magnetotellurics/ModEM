@@ -1,0 +1,57 @@
+!-------------------------------------------------------------------!
+! 3D_MT model covariance by Weerachai Siripunvaraporn: definitions. !
+!-------------------------------------------------------------------!
+
+! 1) modelCov_t data type with private attributes
+
+  type :: modelCov_t
+
+    private
+
+    real (kind=prec) :: XLen = R_ZERO
+    real (kind=prec) :: YLen = R_ZERO
+    real (kind=prec) :: ZLen = R_ZERO
+    real (kind=prec), pointer, dimension(:,:,:,:)   ::  XDIF
+    real (kind=prec), pointer, dimension(:,:,:,:)   ::  YDIF
+    real (kind=prec), pointer, dimension(:,:,:,:)   ::  ZDIF
+    logical                  :: allocated
+    	! dimensions of the grid
+	integer                                           :: Nx, Ny, NzEarth
+
+	! the number of times the smoothing operator should be applied
+	integer                                           :: N
+
+	! general rules for smoothing in the X and Y-directions, dimension(NzEarth)
+	real (kind=prec), pointer, dimension(:)   :: Sx
+	real (kind=prec), pointer, dimension(:)   :: Sy
+
+	! general rule for vertical smoothing
+	real (kind=prec)                          :: Sz
+
+	! special rules for smoothing across a surface stored as a sparse array
+    type (sparsevecc)                                 :: S
+
+	! an integer array that defines regions for smoothing and scaling purposes
+    type (iscalar)                                    :: mask
+
+    
+
+  end type
+ ! define the mask for air and ocean here. By default, we do not switch off
+  ! the smoothing between the air & ocean and the rest of the model. However,
+  ! we do set the scaling to zero for both of these regions.
+  integer, parameter, private                         :: AIR   = 0
+  integer, parameter, private                         :: OCEAN = 9
+  integer, parameter, private                         :: FREE  = 1 ! anything 1-8
+! 2) CmSqrt (an instance of modelCov_t), saved and private to the modelParam module
+
+  type (modelCov_t), private, save      ::  CmSqrt
+
+! 3) public procedures to create, deallocate and multiply by CmSqrt
+
+  public    :: create_CmSqrt, deall_CmSqrt, multBy_CmSqrt,multBy_Cm,read_Cm
+
+! 4) any private procedures required for the model covariance
+
+  private   :: setup1DCM, setupYCM, setupZCM
+  private   :: solveDiff

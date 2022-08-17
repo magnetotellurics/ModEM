@@ -128,7 +128,7 @@ program Mod3DMT
 		! These information will be used for plotting to compare the performace of the solver(s).
 		! Naser and Paulo 02.10.2019
 		call date_and_time(date,time)
-!		open (unit=ioSolverStat,file=trim(solverParams%solver_name)//"_SolverStatFile_"//date//"_"//time//".txt",status='unknown',iostat=ios)
+		open (unit=ioSolverStat,file=trim(solverParams%solver_name)//"_SolverStatFile_"//date//"_"//time//".txt",status='unknown',iostat=ios)
 		
 		
       select case (cUserDef%job)
@@ -197,11 +197,10 @@ program Mod3DMT
      case (MULT_BY_J_T_multi_Tx)
          write(6,*) 'Multiplying by J^T...output multi-Tx model vectors'
 #ifdef MPI
-         !call Master_job_fwdPred(sigma0,allData,eAll)
+         call Master_job_fwdPred(sigma0,allData,eAll)
          call Master_job_JmultT(sigma0,allData,dsigma,eAll,JT_multi_Tx_vec)
 #else
-         !call fwdPred(sigma0,allData,eAll)
-         print*,'eAll%allocated = ',eAll%allocated
+         call fwdPred(sigma0,allData,eAll)
          call JmultT(sigma0,allData,dsigma,eAll,JT_multi_Tx_vec)
 #endif
          open(unit=ioSens, file=cUserDef%wFile_dModel, form='unformatted', iostat=ios)

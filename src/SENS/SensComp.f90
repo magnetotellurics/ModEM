@@ -513,13 +513,6 @@ Contains
 
    savedSolns = present(eAll)
    returne_m_vectors= present(JT_multi_Tx_vec)
-   !   I am going to assume that these vectors are only returned for MTX case -- and
-   !    so eAll is not really available or used for anything else!
-   if(returne_m_vectors) then
-      if(.not.eAll%allocated) then 
-        savedSolns = .false.
-     endif
-   endif
    if(savedSolns) then
       if(d%nTx .ne. eAll%nTx) then
          call errStop('dimensions of eAll and d do not agree in JmultT_MTX')
@@ -539,8 +532,6 @@ Contains
  end if
    ! loop over transmitters
    do j = 1,d%nTx
-
-     print, 'running for transmitter ', j
 
     if(savedSolns) then
    	   ! compute sigmaTemp = JT x d for a single transmitter
