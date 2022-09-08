@@ -64,6 +64,21 @@ module GridDef
 
      end subroutine create_grid
 
+  ! **************************************************************************
+  logical function valid_grid(grid)
+    ! basic sanity check for grid manipulations - can be expanded in the future [AK]
+  
+    type (grid_t), intent(inout) 	:: grid
+    
+    valid_grid = .true.
+    
+    if ((grid%Ny <= 0) .or. (grid%Nz <= 0)) then
+    	write(0,*) 'Grid information: Ny=',grid%Ny,' Nz=',grid%Nz
+    	valid_grid = .false.
+    end if
+    
+  end function valid_grid
+  
      !************************************************************************
      subroutine deall_grid(grid)
        !  deallocates finite differences grid_t structure

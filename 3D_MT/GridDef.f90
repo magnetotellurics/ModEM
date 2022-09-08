@@ -18,7 +18,7 @@ module GridDef
 
   ! Initialization routines
   public                            :: create_grid, deall_grid
-  public                            :: copy_grid, setup_grid
+  public                            :: copy_grid, setup_grid, valid_grid
 
   ! Possible grid types for EMfield, storing the intention of use for types
   ! such as cvector, cscalar, rvector, rscalar, sparsevecc.
@@ -232,6 +232,21 @@ Contains
      call setup_grid(gridOut)
 
   end subroutine copy_grid
+
+  ! **************************************************************************
+  logical function valid_grid(grid)
+    ! basic sanity check for grid manipulations - can be expanded in the future [AK]
+  
+    type (grid_t), intent(inout) 	:: grid
+    
+    valid_grid = .true.
+    
+    if ((grid%Nx <= 0) .or. (grid%Ny <= 0) .or. (grid%Nz <= 0)) then
+    	write(0,*) 'Grid information: Nx=',grid%Nx,' Ny=',grid%Ny,' Nz=',grid%Nz
+    	valid_grid = .false.
+    end if
+    
+  end function valid_grid
 
   ! **************************************************************************
   subroutine deall_grid(grid)

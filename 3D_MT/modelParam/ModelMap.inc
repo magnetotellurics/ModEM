@@ -173,7 +173,6 @@
 	call Cell2Edge(m%grid,V_C,V_E_ghost) 	
 	
 	Ctemp = temp
-   write(0,*) 'DEBUG ',size(V_C%v),size(temp%v)
 	call diagMult(V_C,temp,Ctemp)
 	call Cell2Edge(m%grid,Ctemp,Etemp)
 	Econd = Etemp
@@ -189,14 +188,14 @@
   !**********************************************************************
 
   subroutine ModelParamToNode(m, Ncond,m0)
-  !  Maps conductivity defined on grid cells (prisms) to nodes ... this
-  !   can be used for both non-linear and linearized mappings when
-  !   paramtype = LOGE.  In this case, if optional argument m0 is present
-  !   the linearized mapping is used; otherwise the non-linear mappring is used.
-  !   If paramtype = LINEAR (linear conductivity) then the same linear mapping
-  !   is done in whether m0 is present or not (and in fact, m0 is not referenced
-  !   in this case)
-  !  no, I am not sure if this will work with spherical coordinate! 
+  ! Maps conductivity defined on grid cells (prisms) to nodes ... this
+  ! can be used for both non-linear and linearized mappings when
+  ! paramtype = LOGE.  In this case, if optional argument m0 is present
+  ! the linearized mapping is used; otherwise the non-linear mappring is used.
+  ! If paramtype = LINEAR (linear conductivity) then the same linear mapping
+  ! is done in whether m0 is present or not (and in fact, m0 is not referenced
+  ! in this case)
+  ! no, I am not sure if this will work with spherical coordinate! 
 
     implicit none
     !  INPUTS:  model parameter

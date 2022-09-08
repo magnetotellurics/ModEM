@@ -3,9 +3,10 @@
 # with command line options
 # -p .:INV:LAPACK:SENS:UTILS:2D_MT:2D_MT/DICT:2D_MT/modelParam:2D_MT/FWD:2D_MT/ioMod
 # -f90 ifort (compiler)
-# -opt -O3 -parallel (compiler optimisation)
-# -l -lblas -llapack -parallel (linking options)
-# -o ./objs/2D_MT/Release (output directory for object files)
+# -opt -O3 -w  -xSSE4.2 -std03 -i8 -I/opt/intel/lib (compiler optimisation)
+# -lp /opt/intel/oneapi/mkl/latest/lib -L/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/lib (linking options: path to libraries)
+# -l -lmkl_lapack95_ilp64 -lmkl_intel_ilp64 -lmkl_intel_thread -lmkl_core  -lpthread -qopenmp -parallel (linking options)
+# -o ./objs/2D_MT/IFortRelease (output directory for object files)
 
 #  Uncomment these lines to make program for Solaris OS (legacy)
 # F90 = f90
@@ -21,14 +22,14 @@
 # MODULE = -fmod=$(OBJDIR)
 # LIBS = -lblas -llapack
 #  Uncomment these lines to make program with Intel compiler
-include Makefile.local
-OBJDIR = ./objs/3D_MT/IFortDebug
-F90 = ifort
+# include Makefile.local
+# OBJDIR = ./objs/3D_MT/IFortDebug
+# F90 = ifort
 # FFLAGS = -O3 -parallel -openmp #-heap-arrays
-FFLAGS = -debug all -check bounds -traceback -heap-arrays
-MPIFLAGS = -cpp # for serial code
-MODULE = -module $(OBJDIR)
-LIBS = -lblas -llapack
+# FFLAGS = -debug all -check bounds -traceback -heap-arrays
+# MPIFLAGS = -cpp # for serial code
+# MODULE = -module $(OBJDIR)
+# LIBS = -lblas -llapack
 #  Uncomment these lines to make program with PGI compiler
 # include Makefile.local
 # OBJDIR = ./objs/3D_MT/PGIDebug
@@ -42,23 +43,24 @@ LIBS = -lblas -llapack
 # LIBS = -L/usr/lib64 -llapack -lblas -lpgftnrtl -Mprof=lines
 
 # ------------------Macro-Defs---------------------
-#include Makefile.local
-#OBJDIR = ./objs/2D_MT/Release
-#F90 = ifort 
-#FFLAGS = -O3 -parallel
-#MPIFLAGS = -cpp
-#MODULE = -module $(OBJDIR)
-#LIBS = -lblas -llapack -parallel
+include Makefile.local
+OBJDIR = ./objs/2D_MT/IFortRelease
+F90 = ifort 
+FFLAGS = -O3 -w  -xSSE4.2 -std03 -i8 -I/opt/intel/lib
+MPIFLAGS = -cpp
+MODULE = -module $(OBJDIR)
+LIBS_PATH = -L/opt/intel/oneapi/mkl/latest/lib -L/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/lib
+LIBS = -lmkl_lapack95_ilp64 -lmkl_intel_ilp64 -lmkl_intel_thread -lmkl_core  -lpthread -qopenmp -parallel
 
 # -------------------End-macro-Defs---------------------------
-OBJ = $(OBJDIR)/math_constants.o $(OBJDIR)/utilities.o $(OBJDIR)/file_units.o $(OBJDIR)/DataSpace.o $(OBJDIR)/GridDef.o $(OBJDIR)/EMfield.o $(OBJDIR)/ModelSpace.o $(OBJDIR)/SensMatrix.o $(OBJDIR)/EMfieldInterp.o $(OBJDIR)/transmitters.o $(OBJDIR)/SolnSpace.o $(OBJDIR)/receivers.o $(OBJDIR)/dataTypes.o $(OBJDIR)/DataFunc.o $(OBJDIR)/DataSens.o $(OBJDIR)/SolverSens.o $(OBJDIR)/WSfwd2D.o $(OBJDIR)/FwdTEmod.o $(OBJDIR)/FwdTMmod.o $(OBJDIR)/ForwardSolver.o $(OBJDIR)/SensComp.o $(OBJDIR)/SymmetryTest.o $(OBJDIR)/UserCtrl.o $(OBJDIR)/ioAscii.o $(OBJDIR)/DataIO.o $(OBJDIR)/Main.o $(OBJDIR)/NLCG.o $(OBJDIR)/DCG.o $(OBJDIR)/Mod2DMT.o 
+OBJ = $(OBJDIR)/math_constants.o $(OBJDIR)/utilities.o $(OBJDIR)/file_units.o $(OBJDIR)/DataSpace.o $(OBJDIR)/GridDef.o $(OBJDIR)/EMfield.o $(OBJDIR)/ModelSpace.o $(OBJDIR)/SensMatrix.o $(OBJDIR)/EMfieldInterp.o $(OBJDIR)/transmitters.o $(OBJDIR)/SolnSpace.o $(OBJDIR)/receivers.o $(OBJDIR)/dataTypes.o $(OBJDIR)/DataFunc.o $(OBJDIR)/DataSens.o $(OBJDIR)/SolverSens.o $(OBJDIR)/WSfwd2D.o $(OBJDIR)/FwdTEmod.o $(OBJDIR)/FwdTMmod.o $(OBJDIR)/ForwardSolver.o $(OBJDIR)/SensComp.o $(OBJDIR)/SymmetryTest.o $(OBJDIR)/UserCtrl.o $(OBJDIR)/ioAscii.o $(OBJDIR)/DataIO.o $(OBJDIR)/Main.o $(OBJDIR)/INVcore.o $(OBJDIR)/NLCG.o $(OBJDIR)/DCG.o $(OBJDIR)/LBFGS.o $(OBJDIR)/Mod2DMT.o 
 
 
 all: Mod2DMT 
 
 # Here is the link step 
 Mod2DMT: $(OBJDIR) $(OBJ) 
-	 $(F90) -o $(OUTDIR)/Mod2DMT $(OBJ) $(LIBS) 
+	 $(F90) -o $(OUTDIR)/Mod2DMT $(OBJ) $(LIBS_PATH) $(LIBS)
 
 # Here are the compile steps 
 
@@ -137,19 +139,25 @@ $(OBJDIR)/UserCtrl.o:./UserCtrl.f90 $(OBJDIR)/utilities.o
 $(OBJDIR)/ioAscii.o:2D_MT/ioMod/ioAscii.f90 $(OBJDIR)/math_constants.o $(OBJDIR)/EMfield.o $(OBJDIR)/DataSpace.o $(OBJDIR)/ForwardSolver.o $(OBJDIR)/utilities.o $(OBJDIR)/transmitters.o $(OBJDIR)/receivers.o $(OBJDIR)/dataTypes.o 
 	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) 2D_MT/ioMod/ioAscii.f90 -o $(OBJDIR)/ioAscii.o
 
-$(OBJDIR)/DataIO.o:2D_MT/DataIO.f90 $(OBJDIR)/math_constants.o $(OBJDIR)/file_units.o $(OBJDIR)/DataSpace.o $(OBJDIR)/transmitters.o $(OBJDIR)/receivers.o $(OBJDIR)/dataTypes.o 
+$(OBJDIR)/DataIO.o:2D_MT/DataIO.f90 $(OBJDIR)/math_constants.o $(OBJDIR)/file_units.o $(OBJDIR)/utilities.o $(OBJDIR)/DataSpace.o $(OBJDIR)/transmitters.o $(OBJDIR)/receivers.o $(OBJDIR)/dataTypes.o 
 	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) 2D_MT/DataIO.f90 -o $(OBJDIR)/DataIO.o
 
 $(OBJDIR)/Main.o:2D_MT/Main.f90 $(OBJDIR)/ModelSpace.o $(OBJDIR)/DataSpace.o $(OBJDIR)/DataFunc.o $(OBJDIR)/ForwardSolver.o $(OBJDIR)/SensMatrix.o $(OBJDIR)/UserCtrl.o $(OBJDIR)/ioAscii.o $(OBJDIR)/DataIO.o 
 	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) 2D_MT/Main.f90 -o $(OBJDIR)/Main.o
 
-$(OBJDIR)/NLCG.o:INV/NLCG.f90 $(OBJDIR)/SensComp.o $(OBJDIR)/DataIO.o 
+$(OBJDIR)/INVcore.o:INV/INVcore.f90 $(OBJDIR)/SensComp.o $(OBJDIR)/DataIO.o 
+	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) INV/INVcore.f90 -o $(OBJDIR)/INVcore.o
+
+$(OBJDIR)/NLCG.o:INV/NLCG.f90 $(OBJDIR)/INVcore.o 
 	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) INV/NLCG.f90 -o $(OBJDIR)/NLCG.o
 
 $(OBJDIR)/DCG.o:INV/DCG.f90 $(OBJDIR)/math_constants.o $(OBJDIR)/utilities.o $(OBJDIR)/SensComp.o $(OBJDIR)/Main.o 
 	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) INV/DCG.f90 -o $(OBJDIR)/DCG.o
 
-$(OBJDIR)/Mod2DMT.o:Mod2DMT.f90 $(OBJDIR)/SensComp.o $(OBJDIR)/SymmetryTest.o $(OBJDIR)/Main.o $(OBJDIR)/NLCG.o $(OBJDIR)/DCG.o 
+$(OBJDIR)/LBFGS.o:INV/LBFGS.f90 $(OBJDIR)/INVcore.o 
+	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) INV/LBFGS.f90 -o $(OBJDIR)/LBFGS.o
+
+$(OBJDIR)/Mod2DMT.o:Mod2DMT.f90 $(OBJDIR)/SensComp.o $(OBJDIR)/SymmetryTest.o $(OBJDIR)/Main.o $(OBJDIR)/NLCG.o $(OBJDIR)/DCG.o $(OBJDIR)/LBFGS.o 
 	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) Mod2DMT.f90 -o $(OBJDIR)/Mod2DMT.o
 
 # Type " make clean " to get rid of all object and module files 
