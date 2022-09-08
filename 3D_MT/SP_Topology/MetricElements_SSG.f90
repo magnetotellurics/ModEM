@@ -9,7 +9,7 @@
 
 module MetricElements_SG
 
-   use gridcalc
+   use gridcalcs
    use vectranslate
 
    implicit none

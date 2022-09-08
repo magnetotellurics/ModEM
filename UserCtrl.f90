@@ -346,6 +346,9 @@ Contains
            write(0,*) 'Air layers mirror|fixed height|read from file : read from file'
            write(0,*) 'Number of air layers and dz top to bottom km  : 10 500. 200. 100. 50. 20. 10. 5. 2. 1. 0.5'
            write(0,*)
+           write(0,*) 'Different solvers are available; QMR and BICG in all versions of 3D MT'
+           write(0,*)
+           write(0,*) 'Forward solver method PCG|QMR|TFQMR|BICG      : QMR'
            stop
         else
 	       ctrl%rFile_Model = temp(1)
@@ -399,6 +402,9 @@ Contains
            write(0,*) 'Air layers mirror|fixed height|read from file : read from file'
            write(0,*) 'Number of air layers and dz top to bottom km  : 10 500. 200. 100. 50. 20. 10. 5. 2. 1. 0.5'
            write(0,*)
+           write(0,*) 'Different solvers are available; QMR and BICG in all versions of 3D MT'
+           write(0,*)
+           write(0,*) 'Forward solver method PCG|QMR|TFQMR|BICG      : QMR'
            stop
         else
 	       ctrl%rFile_Model = temp(1)
@@ -507,6 +513,7 @@ Contains
            write(0,*) 'Optional EM solution file name for nested BC  : nested.esoln'
            write(0,*) 'Air layers mirror|fixed height|read from file : fixed height'
            write(0,*) 'Number of air layers and max height in km     : 12 1000'
+           write(0,*) 'Forward solver method PCG|QMR|TFQMR|BICG      : QMR'
            write(0,*)
            write(0,*) 'Optionally, may also supply'
            write(0,*)

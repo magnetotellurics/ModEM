@@ -889,7 +889,6 @@ subroutine BICG(b,x,KSPiter,adjt)
           xmin = x
           imin = iter
       end if
-      R = S - OMEGA * T  !residual for the 1.0 x
   end do
  
   if (.not. converged) then 

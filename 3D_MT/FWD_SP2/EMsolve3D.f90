@@ -37,6 +37,8 @@ module EMsolve3D
     real(kind = 8)            ::      AirLayersMaxHeight, AirLayersAlpha, AirLayersMinTopDz
     real(kind = 8), pointer, dimension(:)   :: AirLayersDz
     logical                   ::      AirLayersPresent=.false.
+    character (len=10)        ::      solver_name="QMR"		
+    character (len=50) , public      ::   get_1D_from="Geometric_mean"	
   end type emsolve_control
 
   type :: emsolve_diag
@@ -64,6 +66,10 @@ module EMsolve3D
   real(kind=prec), parameter       ::      tolEMDef = 1E-10
   ! misfit tolerance for convergence of divergence correction solver
   real(kind=prec), parameter       ::      tolDivCorDef = 1E-7
+  !Solver name, by default we use QMR
+  character (len=10)  		   ::   solver_name="QMR"
+  character (len=50) , public      ::   get_1D_from="Geometric_mean"
+							 
 
   save
 
@@ -352,8 +358,25 @@ Contains
     !   Call SdivCorr(ei,phi0)
     ! endif
     loop: do while ((.not.converged).and.(.not.failed))
-       Call BICG(b, ei, KSSiter)
-       ! Call QMR(b, ei, KSSiter) 
+
+	   
+      if (trim(solver_name) .eq. 'PCG') then
+        write(*,*) 'I am using PCG with initial relative error ',KSSiter%rerr(1)
+        Call PCG(b, ei, KSSiter)
+      elseif (trim(solver_name) .eq. 'QMR') then
+        write(*,*) 'I am using QMR with initial relative error ',KSSiter%rerr(1)
+        Call QMR(b, ei, KSSiter)
+      elseif (trim(solver_name) .eq. 'TFQMR') then
+        write(*,*) 'I am using TFQMR with initial relative error ',KSSiter%rerr(1)
+        Call TFQMR(b, ei, KSSiter)
+      elseif (trim(solver_name) .eq. 'BICG') then
+        write(*,*) 'I am using BICG with initial relative error ',KSSiter%rerr(1)
+        Call BICG(b, ei, KSSiter)
+      else
+        write(*,*) 'Unknown Forward Solver Method'
+      end if
+	
+	   
        ! algorithm is converged when the relative error is less than tolerance
        ! (in which case KSSiter%niter will be less than KSSiter%maxIt)
        converged = KSSiter%niter .lt. KSSiter%maxIt
@@ -582,6 +605,8 @@ end subroutine SdivCorr ! SdivCorr
         tolEMfwd = tolEMDef
         tolEMadj = tolEMDef
         tolDivCor = tolDivCorDef
+        solver_name="QMR"
+        get_1D_from="Geometric_mean"
      else
         IterPerDivCor = solverControl%IterPerDivCor
         MaxDivCor = solverControl%MaxDivCor
@@ -590,6 +615,8 @@ end subroutine SdivCorr ! SdivCorr
         tolEMfwd = solverControl%tolEMfwd
         tolEMadj = solverControl%tolEMadj
         tolDivCor = solverControl%tolDivCor
+        solver_name=solverControl%solver_name
+        get_1D_from=solverControl%get_1D_from
      endif
 
      if (present(tolEM)) then
@@ -746,6 +773,24 @@ end subroutine SdivCorr ! SdivCorr
     if (solverControl%AirLayersNz <= 0) then
         write(*,*) node_info,'Problem reading the air layers. Resort to defaults '
         solverControl%AirLayersPresent = .false.
+    end if
+
+
+    read(ioFwdCtrl,'(a48)',advance='no',iostat=istat) string
+    read(ioFwdCtrl,'(a10)',iostat=istat) solverControl%solver_name
+    if (istat .ne. 0) then
+       solverControl%solver_name = 'QMR' ! default
+    elseif (output_level > 2) then
+       write (*,'(a12,a48,a)') node_info,string,adjustl(solverControl%solver_name)
+    end if
+
+    ! For any secondary field calculation approach...
+    read(ioFwdCtrl,'(a48)',advance='no',iostat=istat) string
+    read(ioFwdCtrl,'(a50)',iostat=istat) solverControl%get_1D_from
+    if (istat .ne. 0) then
+       solverControl%get_1D_from = 'Geometric_mean' ! default
+    elseif (output_level > 2) then
+       write (*,'(a12,a48,a)') node_info,string,adjustl(solverControl%get_1D_from)
     end if
 
     close(ioFwdCtrl)
