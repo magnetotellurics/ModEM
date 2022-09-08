@@ -1,17 +1,17 @@
 module utilities
 
-	use math_constants
-	implicit none
+      use math_constants
+      implicit none
 
   ! Variables required for storing the date and time in SECONDS. If used
   ! throughout the program, these make the routine profiling easier
-  type  :: timer_t
+      type  :: timer_t
 
-    private
-	real					:: rtime = 0.0 ! run time
-	real					:: stime, etime ! start and end times
+        private
+	real :: rtime = 0.0 ! run time
+	real :: stime, etime ! start and end times
 
-  end type timer_t
+      end type timer_t
 
   !character(80)  :: msg
 
