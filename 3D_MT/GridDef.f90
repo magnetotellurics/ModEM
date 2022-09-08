@@ -97,6 +97,8 @@ module GridDef
     ! was previously hard coded (AK; May 19, 2017)
     ! For backwards compatibility, default is 'mirror 10 3. 30.'
     ! but the use of 'fixed height 12 1000' is recommended
+    !character (len=80)        ::      method = 'fixed height'
+    !integer                   ::      Nz = 12
     character (len=80)        ::      method = 'mirror'
     integer                   ::      Nz = 10
     real(kind = 8)            ::      MaxHeight = 1000000.

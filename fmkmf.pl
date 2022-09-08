@@ -100,7 +100,8 @@ else {
 
 # By default, use the current directory for object files
 $linkdir=".";
-$petscdir=".";
+# fill a default petsc dir here
+$petscdir="/your-path-to-petsc";
 
 #------------------------------
 # Done with environment variables. Now we need to process commandline args
@@ -246,8 +247,8 @@ print "\n# ------------------Macro-Defs---------------------\n";
 
 if ($DPETSC) {
 print "PETSC_DIR = ${petscdir}\n";
-print "include ${petscdir}/lib/petsc/conf/variables\n";
-print "include ${petscdir}/lib/petsc/conf/rules\n";
+print "include \$(PETSC_DIR)/lib/petsc/conf/variables\n";
+print "include \$(PETSC_DIR)/lib/petsc/conf/rules\n";
 }
 print "include Makefile.local\n";
 print "OBJDIR = $linkdir\n";

@@ -553,6 +553,18 @@ end subroutine SdivCorr ! SdivCorr
      allocate(divJ(2,MaxDivCor))
      allocate(DivCorRelErr(MaxIterDivCor,MaxDivCor))
 
+     if (output_level > 2) then
+       write (*,*)
+       write (*,'(a60)') 'Forward solver configurations set to:'
+       write (*,'(a12,a48,i5)') node_info,'IterPerDivCor=',IterPerDivCor
+       write (*,'(a12,a48,i5)') node_info,'MaxDivCor=',MaxDivCor
+       write (*,'(a12,a48,i5)') node_info,'MaxIterTotal=',MaxIterTotal
+       write (*,'(a12,a48,i5)') node_info,'MaxIterDivCor=',MaxIterDivCor
+       write (*,'(a12,a48,g15.7)') node_info,'tolEMfwd=',tolEMfwd
+       write (*,'(a12,a48,g15.7)') node_info,'tolEMadj=',tolEMadj
+       write (*,'(a12,a48,g15.7)') node_info,'tolDivCor=',tolDivCor
+     end if
+
   end subroutine setEMsolveControl
 
    ! ***************************************************************************

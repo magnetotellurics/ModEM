@@ -78,7 +78,7 @@ program Mod3DMT
     if (PRIMARY_E_FROM_FILE) then
         if (taskid==0) then
             call read_solnVectorMTX(grid,eAllPrimary,cUserDef%rFile_EMsoln)
-            call read_modelParam(grid,sigmaPrimary,cUserDef%rFile_Model1D)
+            call read_modelParam(grid,airLayers,sigmaPrimary,cUserDef%rFile_Model1D)
        else
             ! need to logic to fetch the interior source from the master node
         end if
@@ -89,7 +89,7 @@ program Mod3DMT
     end if
     if (PRIMARY_E_FROM_FILE) then
         call read_solnVectorMTX(grid,eAllPrimary,cUserDef%rFile_EMsoln)
-        call read_modelParam(grid,sigmaPrimary,cUserDef%rFile_Model1D)
+        call read_modelParam(grid,airLayers,sigmaPrimary,cUserDef%rFile_Model1D)
     end if
 #endif
 
