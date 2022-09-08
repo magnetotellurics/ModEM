@@ -347,18 +347,18 @@ Contains
       write(ioLog,'(a23)') 'Starting line search...'
 	  select case (flavor)
 	  case ('Cubic')
-	  	call lineSearchCubic(lambda,d,m0,h,alpha,mHat,value,grad,rms,nLS,dHat,eAll)
-	  	!call deall(eAll)
+              call lineSearchCubic(lambda,d,m0,h,alpha,mHat,value,grad,rms,nLS,dHat,eAll)
+	      !call deall(eAll)
 	  case ('Quadratic')
-	  	call lineSearchQuadratic(lambda,d,m0,h,alpha,mHat,value,grad,rms,nLS,dHat,eAll)
-	  	!call deall(eAll)
+	      call lineSearchQuadratic(lambda,d,m0,h,alpha,mHat,value,grad,rms,nLS,dHat,eAll)
+	      !call deall(eAll)
 	  case ('Wolfe')
               call lineSearchWolfe(lambda,d,m0,h,alpha,mHat,value,grad,rms,nLS,dHat,eAll)
 	      !call deall(eAll)
 	  case default
         call errStop('Unknown line search requested in NLCG')
 	  end select
-	  nfunc = nfunc + nLS
+          nfunc = nfunc + nLS
 	  gPrev = g
 	  call linComb(MinusONE,grad,R_ZERO,grad,g)
 
@@ -400,42 +400,38 @@ Contains
 
 	  ! if alpha is too small, we are not making progress: update lambda
       if (abs(rmsPrev - rms) < iterControl%fdiffTol) then
-      		! update lambda, penalty functional and gradient
-      		call update_damping_parameter(lambda,mHat,value,grad)
-      		! update alpha
-      		gnorm = sqrt(dotProd(grad,grad))
-            write(*,'(a34,es12.5)') 'The norm of the last gradient is ',gnorm
-            write(ioLog,'(a34,es12.5)') 'The norm of the last gradient is ',gnorm
-            !alpha = min(iterControl%alpha_1,startdm/gnorm)
-      		alpha = min(ONE,startdm)/gnorm
-      		write(*,'(a48,es12.5)') 'The value of line search step alpha updated to ',alpha
-            write(ioLog,'(a48,es12.5)') 'The value of line search step alpha updated to ',alpha
-      		! g = - grad
-			call linComb(MinusONE,grad,R_ZERO,grad,g)
-			! check that lambda is still at a reasonable value
-			if (lambda < iterControl%lambdaTol) then
-				write(*,'(a55)') 'Unable to get out of a local minimum. Exiting...'
-                write(ioLog,'(a55)') 'Unable to get out of a local minimum. Exiting...'
-				! multiply by C^{1/2} and add m_0
-                call CmSqrtMult(mHat,m_minus_m0)
-                call linComb(ONE,m_minus_m0,ONE,m0,m)
-                d = dHat
-				return
-			end if
-	  	! restart
-			write(*,'(a55)') 'Restarting NLCG with the damping parameter updated'
-			call printf('to',lambda,alpha,value,mNorm,rms)
-			write(ioLog,'(a55)') 'Restarting NLCG with the damping parameter updated'
-			call printf('to',lambda,alpha,value,mNorm,rms,logFile)
-	  	h = g
-	  	nCG = 0
-	  	cycle
-	  end if
+          ! update lambda, penalty functional and gradient
+          call update_damping_parameter(lambda,mHat,value,grad)
+          ! check that lambda is still at a reasonable value
+          if (lambda < iterControl%lambdaTol) then
+              write(*,'(a55)') 'Unable to get out of a local minimum. Exiting...'
+              write(ioLog,'(a55)') 'Unable to get out of a local minimum. Exiting...'
+              exit
+          end if
+          ! update alpha
+          gnorm = sqrt(dotProd(grad,grad))
+          write(*,'(a34,es12.5)') 'The norm of the last gradient is ',gnorm
+          write(ioLog,'(a34,es12.5)') 'The norm of the last gradient is ',gnorm
+          !alpha = min(iterControl%alpha_1,startdm/gnorm)
+          alpha = min(ONE,startdm)/gnorm
+          write(*,'(a48,es12.5)') 'The value of line search step alpha updated to ',alpha
+          write(ioLog,'(a48,es12.5)') 'The value of line search step alpha updated to ',alpha
+          ! g = - grad
+          call linComb(MinusONE,grad,R_ZERO,grad,g)
+          ! restart
+          write(*,'(a55)') 'Restarting NLCG with the damping parameter updated'
+          call printf('to',lambda,alpha,value,mNorm,rms)
+          write(ioLog,'(a55)') 'Restarting NLCG with the damping parameter updated'
+          call printf('to',lambda,alpha,value,mNorm,rms,logFile)
+          h = g
+          nCG = 0
+          cycle  
+      end if
 
-	  g_dot_g = dotProd(g,g)
-	  g_dot_gPrev = dotProd(g,gPrev)
-	  gPrev_dot_gPrev = dotProd(gPrev,gPrev)
-	  g_dot_h = dotProd(g,h)
+      g_dot_g = dotProd(g,g)
+      g_dot_gPrev = dotProd(g,gPrev)
+      gPrev_dot_gPrev = dotProd(gPrev,gPrev)
+      g_dot_h = dotProd(g,h)
 
 	  ! Polak-Ribiere variant
 	  beta = ( g_dot_g - g_dot_gPrev )/gPrev_dot_gPrev
@@ -803,10 +799,10 @@ Contains
    	f = f_1
     ! compute the gradient and exit
     if (relaxation) then
-   		call linComb(ONE,mHat_0,gamma*alpha,h,mHat)
+   	call linComb(ONE,mHat_0,gamma*alpha,h,mHat)
     	call func(lambda,d,m0,mHat,f,mNorm,dHat,eAll,rms)
-   		call printf('RELAX',lambda,gamma*alpha,f,mNorm,rms)
-   		call printf('RELAX',lambda,gamma*alpha,f,mNorm,rms,logFile)
+   	call printf('RELAX',lambda,gamma*alpha,f,mNorm,rms)
+   	call printf('RELAX',lambda,gamma*alpha,f,mNorm,rms,logFile)
    	end if
     call gradient(lambda,d,m0,mHat,grad,dHat,eAll)
     write(*,'(a45)') 'Quadratic has no minimum, exiting line search'

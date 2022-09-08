@@ -55,7 +55,7 @@ module EMsolve3D
 
   ! Default solver control parameters
   ! number of iterations for each call to divergence correction:
-  integer, parameter    ::              IterPerDivCorDef = 150
+  integer, parameter    ::              IterPerDivCorDef = 120
   ! maximum number of divergence correction calls allowed
   integer, parameter    ::              MaxDivCorDef = 8
   ! maximum number of PCG iterations for divergence correction
@@ -120,7 +120,7 @@ Contains
 ! For a physical source j, this is equivalent to Div(sigma E) + Div(j) = 0;
 ! but the divergence correction may be applied also for non-physical sources,
 ! such  as in Jmult ('FWD') and JmultT ('TRN').
-  subroutine FWDsolve3D(bRHS,omega,eSol,comm_local)
+  subroutine FWDsolve3D(bRHS,omega,eSol,device_id,comm_local)
 
     ! redefine some of the interfaces (locally) for our convenience
     use sg_vector !, only: copy => copy_cvector, &
@@ -136,6 +136,7 @@ Contains
     type (RHS_t), intent(in)      :: bRHS
     real(kind=prec), intent(in)   :: omega
     !dummy parameter for compatibiliy
+    integer, intent(in),optional  :: device_id
     integer, intent(in),optional  :: comm_local 
     !  OUTPUTS:
     !  eSol must be allocated before calling this routine
@@ -143,7 +144,7 @@ Contains
 
     ! LOCAL VARIABLES
     logical                     :: converged,trans
-    integer                     :: iter, fid
+    integer                     :: iter, fid, ierr
     integer                     :: Ne,Nei,Nni,Nn,i
     complex(kind=prec)          :: iOmegaMuInv
     ! e(lectric field) s(ource) b(rhs) phi0(div(s))
@@ -390,8 +391,8 @@ Contains
     if (output_level > 2) then
        write (*,'(a12,a20,i8,g15.7)') node_info, 'finished solving:',     &
    &            nIterTotal, EMrelErr(nIterTotal)
-       write (*,'(a12,a22,f12.6)')    node_info, ' time taken (mins) ',   &
-   &            elapsed_time(timer)/60.0
+       write (*,'(a12,a22,f12.6)')    node_info, 'solving time (sec): ',  &
+   &            elapsed_time(timer)
     end if
     e(EDGEi) = ei
     !  After solving symetrized system, need to do different things for

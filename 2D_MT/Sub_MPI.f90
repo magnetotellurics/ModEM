@@ -26,7 +26,7 @@ subroutine set_e_soln(pol_index,e)
 
 end subroutine set_e_soln
 !*****************************************************************************************
-subroutine count_number_of_meaasges_to_RECV(eAll1)
+subroutine count_number_of_messages_to_RECV(eAll1)
 
   type(solnVectorMTX_t), intent(in)  :: eAll1
   integer                            :: itx
@@ -36,7 +36,7 @@ subroutine count_number_of_meaasges_to_RECV(eAll1)
 			end do
 			
 
-end subroutine count_number_of_meaasges_to_RECV
+end subroutine count_number_of_messages_to_RECV
 !*****************************************************************************************
 subroutine reset_e_soln(emsoln)
     type(solnVector_t), intent(inout)  :: emsoln

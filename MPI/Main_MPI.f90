@@ -1285,7 +1285,7 @@ subroutine Master_job_Distribute_Taskes(job_name,nTx,sigma,eAll_out,eAll_in)
 10         continue
 
 
-       call count_number_of_meaasges_to_RECV(eAll_out)
+       call count_number_of_messages_to_RECV(eAll_out)
       !answers_to_receive = nTx*nPol_MPI
         received_answers = 0
         do while (received_answers .lt. answers_to_receive)
