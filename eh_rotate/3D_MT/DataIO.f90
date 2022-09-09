@@ -75,14 +75,15 @@ Contains
     select case (dataType)
 
        case(Full_Impedance,Off_Diagonal_Impedance,Full_Vertical_Components)
-          header = 'Period(s) Code GG_Lat GG_Lon X(m) Y(m) Z(m) Component Real Imag Error'
+          header = 'Period(s) Code GG_Lat GG_Lon X(m) Y(m) Z(m) Component Real Imag Error HxAzi ExAzi HyAzi EyAzi'
 
        case(Full_Interstation_TF)
           header = 'Period(s) Code GG_Lat GG_Lon X(m) Y(m) Z(m) Ref_Code Ref_Lat '// &
-                   'Ref_Lon Ref_X(m) Ref_Y(m) Ref_Z(m) Component Real Imag Error'
+                   'Ref_Lon Ref_X(m) Ref_Y(m) Ref_Z(m) Component Real Imag Error '// &
+                   'HxAzi ExAzi HyAzi EyAzi'
 
        case(Off_Diagonal_Rho_Phase,Phase_Tensor)
-          header = 'Period(s) Code GG_Lat GG_Lon X(m) Y(m) Z(m) Component Value Error'
+          header = 'Period(s) Code GG_Lat GG_Lon X(m) Y(m) Z(m) Component Value Error HxAzi ExAzi HyAzi EyAzi'
 
     end select
 
@@ -165,6 +166,8 @@ Contains
 
     ! 2019.04.23, Liu Zhongyin, add local varible azimu
     real(8)                         :: Hxazimuth,Exazimuth,Hxazimuth_ref
+    ! 2022.09.07, Liu Zhongyin, add local varible azimu
+    real(8)                         :: Hyazimuth,Eyazimuth,Hyazimuth_ref
 
     iTxt = 1
 
@@ -259,6 +262,9 @@ Contains
             Hxazimuth = rxDict(iRx)%HxAzimuth
             Exazimuth = rxDict(iRx)%ExAzimuth
             Hxazimuth_ref = rxDict(iRx)%HxAzimuth_ref
+            Hyazimuth = rxDict(iRx)%HyAzimuth
+            Eyazimuth = rxDict(iRx)%EyAzimuth
+            Hyazimuth = rxDict(iRx)%HyAzimuth_ref
 
             select case (iDt)
 
@@ -278,22 +284,32 @@ Contains
                         !    write(ioDat,'(a8,3es15.6)',iostat=ios) trim(compid),value(2*icomp-1),value(2*icomp),error(2*icomp)
                         !end if
                         ! 2019.04.23, Liu Zhongyin, add azimu while writing
+                        ! if (conjugate) then
+                        !     if (abs(Hxazimuth-Exazimuth) .lt. 1.e-5) then
+                        !         write(ioDat,'(a8,4es15.6)',iostat=ios) trim(compid),value(2*icomp-1),-value(2*icomp),error(2*icomp), &
+                        !             Hxazimuth-fileInfo(iTxt,iDt)%geographic_orientation
+                        !     else
+                        !         write(ioDat,'(a8,5es15.6)',iostat=ios) trim(compid),value(2*icomp-1),-value(2*icomp),error(2*icomp), &
+                        !             Hxazimuth-fileInfo(iTxt,iDt)%geographic_orientation, Exazimuth-fileInfo(iTxt,iDt)%geographic_orientation
+                        !     endif
+                        ! else
+                        !     if (abs(Hxazimuth-Exazimuth) .lt. 1.e-5) then
+                        !         write(ioDat,'(a8,4es15.6)',iostat=ios) trim(compid),value(2*icomp-1),value(2*icomp),error(2*icomp), &
+                        !             Hxazimuth-fileInfo(iTxt,iDt)%geographic_orientation
+                        !     else
+                        !         write(ioDat,'(a8,5es15.6)',iostat=ios) trim(compid),value(2*icomp-1),value(2*icomp),error(2*icomp), &
+                        !             Hxazimuth-fileInfo(iTxt,iDt)%geographic_orientation, Exazimuth-fileInfo(iTxt,iDt)%geographic_orientation
+                        !     endif
+                        ! end if
+                        ! 2022.09.07, Liu Zhongyin, add azimu while writing
                         if (conjugate) then
-                            if (abs(Hxazimuth-Exazimuth) .lt. 1.e-5) then
-                                write(ioDat,'(a8,4es15.6)',iostat=ios) trim(compid),value(2*icomp-1),-value(2*icomp),error(2*icomp), &
-                                    Hxazimuth-fileInfo(iTxt,iDt)%geographic_orientation
-                            else
                                 write(ioDat,'(a8,5es15.6)',iostat=ios) trim(compid),value(2*icomp-1),-value(2*icomp),error(2*icomp), &
-                                    Hxazimuth-fileInfo(iTxt,iDt)%geographic_orientation, Exazimuth-fileInfo(iTxt,iDt)%geographic_orientation
-                            endif
-                        else
-                            if (abs(Hxazimuth-Exazimuth) .lt. 1.e-5) then
-                                write(ioDat,'(a8,4es15.6)',iostat=ios) trim(compid),value(2*icomp-1),value(2*icomp),error(2*icomp), &
-                                    Hxazimuth-fileInfo(iTxt,iDt)%geographic_orientation
+                                Hxazimuth-fileInfo(iTxt,iDt)%geographic_orientation, Exazimuth-fileInfo(iTxt,iDt)%geographic_orientation, &
+                                Hyazimuth-fileInfo(iTxt,iDt)%geographic_orientation, Eyazimuth-fileInfo(iTxt,iDt)%geographic_orientation
                         else
                                 write(ioDat,'(a8,5es15.6)',iostat=ios) trim(compid),value(2*icomp-1),value(2*icomp),error(2*icomp), &
-                                    Hxazimuth-fileInfo(iTxt,iDt)%geographic_orientation, Exazimuth-fileInfo(iTxt,iDt)%geographic_orientation
-                            endif
+                                Hxazimuth-fileInfo(iTxt,iDt)%geographic_orientation, Exazimuth-fileInfo(iTxt,iDt)%geographic_orientation, &
+                                Hyazimuth-fileInfo(iTxt,iDt)%geographic_orientation, Eyazimuth-fileInfo(iTxt,iDt)%geographic_orientation
                         end if
                         countData = countData + 1
                     end do
@@ -317,22 +333,32 @@ Contains
                         !    write(ioDat,'(a8,3es15.6)',iostat=ios) trim(compid),value(2*icomp-1),value(2*icomp),error(2*icomp)
                         !end if
                         ! 2019.04.23, Liu Zhongyin, add azimu while writing
+                        ! if (conjugate) then
+                        !     if (abs(Hxazimuth-Hxazimuth_ref) .lt. 1.e-5) then
+                        !         write(ioDat,'(a8,4es15.6)',iostat=ios) trim(compid),value(2*icomp-1),-value(2*icomp),error(2*icomp), &
+                        !             Hxazimuth-fileInfo(iTxt,iDt)%geographic_orientation
+                        !     else
+                        !         write(ioDat,'(a8,5es15.6)',iostat=ios) trim(compid),value(2*icomp-1),-value(2*icomp),error(2*icomp), &
+                        !             Hxazimuth-fileInfo(iTxt,iDt)%geographic_orientation, Hxazimuth_ref-fileInfo(iTxt,iDt)%geographic_orientation
+                        !     endif
+                        ! else
+                        !     if (abs(Hxazimuth-Hxazimuth_ref) .lt. 1.e-5) then
+                        !         write(ioDat,'(a8,4es15.6)',iostat=ios) trim(compid),value(2*icomp-1),value(2*icomp),error(2*icomp), &
+                        !             Hxazimuth-fileInfo(iTxt,iDt)%geographic_orientation
+                        !     else
+                        !         write(ioDat,'(a8,4es15.6)',iostat=ios) trim(compid),value(2*icomp-1),value(2*icomp),error(2*icomp), &
+                        !             Hxazimuth-fileInfo(iTxt,iDt)%geographic_orientation,Hxazimuth_ref-fileInfo(iTxt,iDt)%geographic_orientation
+                        !     endif
+                        ! end if
+                        ! 2022.09.07, Liu Zhongyin, add azimu while writing
                         if (conjugate) then
-                            if (abs(Hxazimuth-Hxazimuth_ref) .lt. 1.e-5) then
-                                write(ioDat,'(a8,4es15.6)',iostat=ios) trim(compid),value(2*icomp-1),-value(2*icomp),error(2*icomp), &
-                                    Hxazimuth-fileInfo(iTxt,iDt)%geographic_orientation
-                            else
                                 write(ioDat,'(a8,5es15.6)',iostat=ios) trim(compid),value(2*icomp-1),-value(2*icomp),error(2*icomp), &
-                                    Hxazimuth-fileInfo(iTxt,iDt)%geographic_orientation, Hxazimuth_ref-fileInfo(iTxt,iDt)%geographic_orientation
-                            endif
-                        else
-                            if (abs(Hxazimuth-Hxazimuth_ref) .lt. 1.e-5) then
-                                write(ioDat,'(a8,4es15.6)',iostat=ios) trim(compid),value(2*icomp-1),value(2*icomp),error(2*icomp), &
-                                    Hxazimuth-fileInfo(iTxt,iDt)%geographic_orientation
+                                Hxazimuth-fileInfo(iTxt,iDt)%geographic_orientation, Hxazimuth_ref-fileInfo(iTxt,iDt)%geographic_orientation, &
+                                Hyazimuth-fileInfo(iTxt,iDt)%geographic_orientation, Hyazimuth_ref-fileInfo(iTxt,iDt)%geographic_orientation
                         else
                                 write(ioDat,'(a8,4es15.6)',iostat=ios) trim(compid),value(2*icomp-1),value(2*icomp),error(2*icomp), &
-                                    Hxazimuth-fileInfo(iTxt,iDt)%geographic_orientation,Hxazimuth_ref-fileInfo(iTxt,iDt)%geographic_orientation
-                            endif
+                                Hxazimuth-fileInfo(iTxt,iDt)%geographic_orientation, Hxazimuth_ref-fileInfo(iTxt,iDt)%geographic_orientation, &
+                                Hyazimuth-fileInfo(iTxt,iDt)%geographic_orientation, Hyazimuth_ref-fileInfo(iTxt,iDt)%geographic_orientation
                         end if
                         countData = countData + 1
                     end do
@@ -370,13 +396,17 @@ Contains
                         write(ioDat,'(a40,3f15.3)',iostat=ios,advance='no') trim(siteid),x(:)
                         !write(ioDat,'(a8,3es15.6)',iostat=ios) trim(compid),value(icomp),error(icomp)
                         ! 2019.04.23, Liu Zhongyin, add azimu while writing
-                        if (abs(Hxazimuth-Exazimuth) .lt. 1.e-5) then
+                        ! if (abs(Hxazimuth-Exazimuth) .lt. 1.e-5) then
+                        !     write(ioDat,'(a8,4es15.6)',iostat=ios) trim(compid),value(icomp),error(icomp), &
+                        !         Hxazimuth-fileInfo(iTxt,iDt)%geographic_orientation
+                        ! else
+                        !     write(ioDat,'(a8,4es15.6)',iostat=ios) trim(compid),value(icomp),error(icomp), &
+                        !         Hxazimuth-fileInfo(iTxt,iDt)%geographic_orientation, Exazimuth-fileInfo(iTxt,iDt)%geographic_orientation
+                        ! endif
+                        ! 2022.09.07, Liu Zhongyin, add azimu while writing
                             write(ioDat,'(a8,4es15.6)',iostat=ios) trim(compid),value(icomp),error(icomp), &
-                                Hxazimuth-fileInfo(iTxt,iDt)%geographic_orientation
-                        else
-                            write(ioDat,'(a8,4es15.6)',iostat=ios) trim(compid),value(icomp),error(icomp), &
-                                Hxazimuth-fileInfo(iTxt,iDt)%geographic_orientation, Exazimuth-fileInfo(iTxt,iDt)%geographic_orientation
-                        endif
+                            Hxazimuth-fileInfo(iTxt,iDt)%geographic_orientation, Exazimuth-fileInfo(iTxt,iDt)%geographic_orientation, &
+                            Hyazimuth-fileInfo(iTxt,iDt)%geographic_orientation, Eyazimuth-fileInfo(iTxt,iDt)%geographic_orientation
                         countData = countData + 1
                     end do
 
@@ -429,6 +459,8 @@ Contains
 
     ! 2019.03.18, Liu Zhongyin, add azimu variable
     real(8)                         :: Hxangle,Exangle,Hxangle_ref
+    ! 2022.09.07, Liu Zhongyin, add azimu variable
+    real(8)                         :: Hyangle,Eyangle,Hyangle_ref
     integer                         :: ncount
     character(1000)                 :: tmpline
 
@@ -534,16 +566,41 @@ Contains
                     Hxangle = fileInfo(iTxt,iDt)%geographic_orientation
                     Exangle = fileInfo(iTxt,iDt)%geographic_orientation
                     Hxangle_ref = 0.0
+                    Hyangle = Hxangle + 90.0
+                    Eyangle = Exangle + 90.0
+                    Hyangle_ref = Hxangle_ref + 90.0
                 case(12)
                     read(ioDat,*,iostat=ios) Period,code,lat,lon,x(1),x(2),x(3),compid,Zreal,Zimag,Zerr,Hxangle
                     Hxangle = Hxangle + fileInfo(iTxt,iDt)%geographic_orientation
                     Exangle = Hxangle
                     Hxangle_ref = 0.0
+                    Hyangle = Hxangle + 90.0
+                    Eyangle = Exangle + 90.0
+                    Hyangle_ref = Hxangle_ref + 90.0
                 case(13)
                     read(ioDat,*,iostat=ios) Period,code,lat,lon,x(1),x(2),x(3),compid,Zreal,Zimag,Zerr,Hxangle,Exangle
                     Hxangle = Hxangle + fileInfo(iTxt,iDt)%geographic_orientation
                     Exangle = Exangle + fileInfo(iTxt,iDt)%geographic_orientation
                     Hxangle_ref = 0.0
+                    Hyangle = Hxangle + 90.0
+                    Eyangle = Exangle + 90.0
+                    Hyangle_ref = Hxangle_ref + 90.0
+                case(14)
+                    read(ioDat,*,iostat=ios) Period,code,lat,lon,x(1),x(2),x(3),compid,Zreal,Zimag,Zerr,Hxangle,Exangle,Hyangle
+                    Hxangle = Hxangle + fileInfo(iTxt,iDt)%geographic_orientation
+                    Exangle = Exangle + fileInfo(iTxt,iDt)%geographic_orientation
+                    Hxangle_ref = 0.0
+                    Hyangle = Hyangle + fileInfo(iTxt,iDt)%geographic_orientation
+                    Eyangle = Exangle + 90.0
+                    Hyangle_ref = Hxangle_ref + 90.0
+                case(15)
+                    read(ioDat,*,iostat=ios) Period,code,lat,lon,x(1),x(2),x(3),compid,Zreal,Zimag,Zerr,Hxangle,Exangle,Hyangle,Eyangle
+                    Hxangle = Hxangle + fileInfo(iTxt,iDt)%geographic_orientation
+                    Exangle = Exangle + fileInfo(iTxt,iDt)%geographic_orientation
+                    Hxangle_ref = 0.0
+                    Hyangle = Hyangle + fileInfo(iTxt,iDt)%geographic_orientation
+                    Eyangle = Eyangle + fileInfo(iTxt,iDt)%geographic_orientation
+                    Hyangle_ref = Hxangle_ref + 90.0
                 case default
                     exit
                 end select
@@ -561,6 +618,9 @@ Contains
                 rxDict(iRx)%HxAzimuth = Hxangle
                 rxDict(iRx)%ExAzimuth = Exangle
                 rxDict(iRx)%HxAzimuth_ref = Hxangle_ref
+                rxDict(iRx)%HyAzimuth = Hyangle
+                rxDict(iRx)%EyAzimuth = Eyangle
+                rxDict(iRx)%HyAzimuth_ref = Hyangle_ref
 
             case(Full_Interstation_TF)
                 read(ioDat,'(a)',iostat=ios) tmpline
@@ -580,18 +640,45 @@ Contains
                     Hxangle = fileInfo(iTxt,iDt)%geographic_orientation
                     Exangle = 0.0
                     Hxangle_ref = fileInfo(iTxt,iDt)%geographic_orientation
+                    Hyangle = Hxangle + 90.0
+                    Eyangle = Exangle + 90.0
+                    Hyangle_ref = Hxangle_ref + 90.0
                 case(18)
                     read(ioDat,*,iostat=ios) Period,code,lat,lon,x(1),x(2),x(3), &
                         ref_code,ref_lat,ref_lon,ref_x(1),ref_x(2),ref_x(3),compid,Zreal,Zimag,Zerr,Hxangle
                     Hxangle = Hxangle + fileInfo(iTxt,iDt)%geographic_orientation
                     Exangle = 0.0
                     Hxangle_ref = Hxangle
+                    Hyangle = Hxangle + 90.0
+                    Eyangle = Exangle + 90.0
+                    Hyangle_ref = Hxangle_ref + 90.0
                 case(19)
                     read(ioDat,*,iostat=ios) Period,code,lat,lon,x(1),x(2),x(3), &
                         ref_code,ref_lat,ref_lon,ref_x(1),ref_x(2),ref_x(3),compid,Zreal,Zimag,Zerr,Hxangle,Hxangle_ref
                     Hxangle = Hxangle + fileInfo(iTxt,iDt)%geographic_orientation
                     Exangle = 0.0
                     Hxangle_ref = Hxangle_ref + fileInfo(iTxt,iDt)%geographic_orientation
+                    Hyangle = Hxangle + 90.0
+                    Eyangle = Exangle + 90.0
+                    Hyangle_ref = Hxangle_ref + 90.0
+                case(20)
+                    read(ioDat,*,iostat=ios) Period,code,lat,lon,x(1),x(2),x(3), &
+                        ref_code,ref_lat,ref_lon,ref_x(1),ref_x(2),ref_x(3),compid,Zreal,Zimag,Zerr,Hxangle,Hxangle_ref,Hyangle
+                    Hxangle = Hxangle + fileInfo(iTxt,iDt)%geographic_orientation
+                    Exangle = 0.0
+                    Hxangle_ref = Hxangle_ref + fileInfo(iTxt,iDt)%geographic_orientation
+                    Hyangle = Hyangle + fileInfo(iTxt,iDt)%geographic_orientation
+                    Eyangle = Exangle + 90.0
+                    Hyangle_ref = Hxangle_ref + 90.0
+                case(21)
+                    read(ioDat,*,iostat=ios) Period,code,lat,lon,x(1),x(2),x(3), &
+                        ref_code,ref_lat,ref_lon,ref_x(1),ref_x(2),ref_x(3),compid,Zreal,Zimag,Zerr,Hxangle,Hxangle_ref,Hyangle,Hyangle_ref
+                    Hxangle = Hxangle + fileInfo(iTxt,iDt)%geographic_orientation
+                    Exangle = 0.0
+                    Hxangle_ref = Hxangle_ref + fileInfo(iTxt,iDt)%geographic_orientation
+                    Hyangle = Hyangle + fileInfo(iTxt,iDt)%geographic_orientation
+                    Eyangle = Exangle + 90.0
+                    Hyangle_ref = Hyangle_ref + fileInfo(iTxt,iDt)%geographic_orientation
                 case default
                     exit
                 end select
@@ -610,6 +697,9 @@ Contains
                 rxDict(iRx)%HxAzimuth = Hxangle
                 rxDict(iRx)%ExAzimuth = Exangle
                 rxDict(iRx)%HxAzimuth_ref = Hxangle_ref                
+                rxDict(iRx)%HyAzimuth = Hyangle
+                rxDict(iRx)%EyAzimuth = Eyangle
+                rxDict(iRx)%HyAzimuth_ref = Hyangle_ref
 
 
             case(Off_Diagonal_Rho_Phase,Phase_Tensor)
@@ -629,16 +719,41 @@ Contains
                     Hxangle = fileInfo(iTxt,iDt)%geographic_orientation
                     Exangle = fileInfo(iTxt,iDt)%geographic_orientation
                     Hxangle_ref = 0.0
+                    Hyangle = Hxangle + 90.0
+                    Eyangle = Exangle + 90.0
+                    Hyangle_ref = Hxangle_ref + 90.0
                 case(11)
                     read(ioDat,*,iostat=ios) Period,code,lat,lon,x(1),x(2),x(3),compid,Zreal,Zerr,Hxangle
                     Hxangle = Hxangle + fileInfo(iTxt,iDt)%geographic_orientation
                     Exangle = Hxangle
                     Hxangle_ref = 0.0
+                    Hyangle = Hxangle + 90.0
+                    Eyangle = Exangle + 90.0
+                    Hyangle_ref = Hxangle_ref + 90.0
                 case(12)
                     read(ioDat,*,iostat=ios) Period,code,lat,lon,x(1),x(2),x(3),compid,Zreal,Zerr,Hxangle,Exangle
                     Hxangle = Hxangle + fileInfo(iTxt,iDt)%geographic_orientation
                     Exangle = Exangle + fileInfo(iTxt,iDt)%geographic_orientation
                     Hxangle_ref = 0.0
+                    Hyangle = Hxangle + 90.0
+                    Eyangle = Exangle + 90.0
+                    Hyangle_ref = Hxangle_ref + 90.0
+                case(13)
+                    read(ioDat,*,iostat=ios) Period,code,lat,lon,x(1),x(2),x(3),compid,Zreal,Zerr,Hxangle,Exangle,Hyangle
+                    Hxangle = Hxangle + fileInfo(iTxt,iDt)%geographic_orientation
+                    Exangle = Exangle + fileInfo(iTxt,iDt)%geographic_orientation
+                    Hxangle_ref = 0.0
+                    Hyangle = Hyangle + fileInfo(iTxt,iDt)%geographic_orientation
+                    Eyangle = Exangle + 90.0
+                    Hyangle_ref = Hxangle_ref + 90.0
+                case(14)
+                    read(ioDat,*,iostat=ios) Period,code,lat,lon,x(1),x(2),x(3),compid,Zreal,Zerr,Hxangle,Exangle,Hyangle,Eyangle
+                    Hxangle = Hxangle + fileInfo(iTxt,iDt)%geographic_orientation
+                    Exangle = Exangle + fileInfo(iTxt,iDt)%geographic_orientation
+                    Hxangle_ref = 0.0
+                    Hyangle = Hyangle + fileInfo(iTxt,iDt)%geographic_orientation
+                    Eyangle = Eyangle + fileInfo(iTxt,iDt)%geographic_orientation
+                    Hyangle_ref = Hxangle_ref + 90.0
                 case default
                     exit
                 end select
@@ -673,6 +788,9 @@ Contains
                 rxDict(iRx)%HxAzimuth = Hxangle
                 rxDict(iRx)%ExAzimuth = Exangle
                 rxDict(iRx)%HxAzimuth_ref = Hxangle_ref                
+                rxDict(iRx)%HyAzimuth = Hyangle
+                rxDict(iRx)%EyAzimuth = Eyangle
+                rxDict(iRx)%HyAzimuth_ref = Hyangle_ref
 
             end select
 

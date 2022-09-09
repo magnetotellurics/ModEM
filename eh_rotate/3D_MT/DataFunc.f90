@@ -82,6 +82,8 @@ Contains
 
   ! Liu Zhongyin, 2019.08.26, local vars
   real(kind=prec) :: HxAngle,ExAngle,HxAngle_ref;
+  ! Liu Zhongyin, 2022.09.07, local vars
+  real(kind=prec) :: HyAngle,EyAngle,HyAngle_ref;
 
   !  probably should dependence on omega into BinterpSetup, as in 2D!
   omega = txDict(ef%tx)%omega
@@ -107,6 +109,9 @@ Contains
          ! Liu Zhongyin, 2019.08.26, add hxazimuth, exazimuth
          HxAngle = rxDict(iRX)%HxAzimuth
          ExAngle = rxDict(iRX)%ExAzimuth
+         ! Liu Zhongyin, 2022.09.07, add hyazimuth, eyazimuth
+         HyAngle = rxDict(iRX)%HyAzimuth
+         EyAngle = rxDict(iRX)%EyAzimuth
 
 		     ! First set up interpolation functionals for Ex, Ey
 			  xyz = 1
@@ -125,14 +130,14 @@ Contains
                EE(2,iMode) =  dotProd_noConj_scvector_f(Ley,ef%pol(iMode))
                
                ! 2019.05.25, Liu Zhongyin, add rotate for ee
-            Call rotate_Model2Data(EE(1,iMode),EE(2,iMode),ExAngle,ExAngle+90.0_prec,0.0_prec)
+            Call rotate_Model2Data(EE(1,iMode),EE(2,iMode),ExAngle,EyAngle,0.0_prec)
 
 			      ! magnetic fields
 			      BB(1,iMode) = dotProd_noConj_scvector_f(Lbx,ef%pol(iMode))
                BB(2,iMode) = dotProd_noConj_scvector_f(Lby,ef%pol(iMode))
                
                ! 2019.05.25, Liu Zhongyin, add rotate for bb
-            Call rotate_Model2Data(BB(1,iMode),BB(2,iMode),HxAngle,HxAngle+90.0_prec,0.0_prec)
+            Call rotate_Model2Data(BB(1,iMode),BB(2,iMode),HxAngle,HyAngle,0.0_prec)
 			 end do
 			 !invert horizontal B matrix using Kramer's rule.
 			  det = BB(1,1)*BB(2,2)-BB(1,2)*BB(2,1)
@@ -155,6 +160,9 @@ Contains
          ! Liu Zhongyin, 2019.08.26, add hxazimuth, exazimuth
          HxAngle = rxDict(iRX)%HxAzimuth
          ExAngle = rxDict(iRX)%ExAzimuth
+         ! Liu Zhongyin, 2022.09.07, add hyazimuth, eyazimuth
+         HyAngle = rxDict(iRX)%HyAzimuth
+         EyAngle = rxDict(iRX)%EyAzimuth
 
 		     ! First set up interpolation functionals for Ex, Ey
 			  xyz = 1
@@ -173,14 +181,14 @@ Contains
                EE(2,iMode) =  dotProd_noConj_scvector_f(Ley,ef%pol(iMode))
                
                ! 2019.05.25, Liu Zhongyin, add rotate for ee
-            Call rotate_Model2Data(EE(1,iMode),EE(2,iMode),ExAngle,ExAngle+90.0_prec,0.0_prec)
+            Call rotate_Model2Data(EE(1,iMode),EE(2,iMode),ExAngle,EyAngle,0.0_prec)
 
 			      ! magnetic fields
 			      BB(1,iMode) = dotProd_noConj_scvector_f(Lbx,ef%pol(iMode))
                BB(2,iMode) = dotProd_noConj_scvector_f(Lby,ef%pol(iMode))
                
                ! 2019.05.25, Liu Zhongyin, add rotate for bb
-            Call rotate_Model2Data(BB(1,iMode),BB(2,iMode),HxAngle,HxAngle+90.0_prec,0.0_prec)
+            Call rotate_Model2Data(BB(1,iMode),BB(2,iMode),HxAngle,HyAngle,0.0_prec)
 			 end do
 			 !invert horizontal B matrix using Kramer's rule.
 			  det = BB(1,1)*BB(2,2)-BB(1,2)*BB(2,1)
@@ -198,6 +206,8 @@ Contains
 
          ! Liu Zhongyin, 2019.08.26, add hxazimuth
          HxAngle = rxDict(iRX)%HxAzimuth
+         ! Liu Zhongyin, 2022.09.07, add hyazimuth
+         HyAngle = rxDict(iRX)%HyAzimuth
 
               !  Vertical field TF
 			 ! First set up interpolation functionals for Bx, By, Bz
@@ -215,7 +225,7 @@ Contains
                BB(3,iMode) = dotProd_noConj_scvector_f(Lbz,ef%pol(iMode))
                
                ! 2019.05.25, Liu Zhongyin, add rotate for bb
-            Call rotate_Model2Data(BB(1,iMode),BB(2,iMode),HxAngle,HxAngle+90.0_prec,0.0_prec)
+            Call rotate_Model2Data(BB(1,iMode),BB(2,iMode),HxAngle,HyAngle,0.0_prec)
 			 end do
 			 !invert horizontal B matrix using Kramer's rule.
 			  det = BB(1,1)*BB(2,2)-BB(1,2)*BB(2,1)
@@ -236,6 +246,9 @@ Contains
          ! Liu Zhongyin, 2019.08.26, add hxazimuth, hxazimuth_ref
          HxAngle = rxDict(iRX)%HxAzimuth
          HxAngle_ref = rxDict(iRX)%HxAzimuth_ref
+         ! Liu Zhongyin, 2022.09.07, add hyazimuth, hyazimuth_ref
+         HyAngle = rxDict(iRX)%HyAzimuth
+         HyAngle_ref = rxDict(iRX)%HyAzimuth_ref
 
   			 ! First set up interpolation functionals for Bx, By at local site
 			  xyz = 1
@@ -253,14 +266,14 @@ Contains
                BB(2,iMode) = dotProd_noConj_scvector_f(Lby,ef%pol(iMode))
                
                ! 2019.05.25, Liu Zhongyin, add rotate for bb
-            Call rotate_Model2Data(BB(1,iMode),BB(2,iMode),HxAngle,HxAngle+90.0_prec,0.0_prec)
+            Call rotate_Model2Data(BB(1,iMode),BB(2,iMode),HxAngle,HyAngle,0.0_prec)
 
 			      ! magnetic fields, at the REFERANCE station
 			      RR(1,iMode) = dotProd_noConj_scvector_f(Lrx,ef%pol(iMode))
                RR(2,iMode) = dotProd_noConj_scvector_f(Lry,ef%pol(iMode))
                
                ! 2019.05.025, Liu Zhongyin, add rotate for rr
-            Call rotate_Model2Data(RR(1,iMode),RR(2,iMode),HxAngle_ref,HxAngle_ref+90.0_prec,0.0_prec)
+            Call rotate_Model2Data(RR(1,iMode),RR(2,iMode),HxAngle_ref,HyAngle_ref,0.0_prec)
 			    end do
 			  ! Compute the inverse of RR using Kramer's rule
 			  det = RR(1,1)*RR(2,2)-RR(1,2)*RR(2,1)
@@ -285,6 +298,9 @@ Contains
          ! Liu Zhongyin, 2019.08.26, add hxazimuth, exazimuth
          HxAngle = rxDict(iRX)%HxAzimuth
          ExAngle = rxDict(iRX)%ExAzimuth
+         ! Liu Zhongyin, 2022.09.07, add hyazimuth, eyazimuth
+         HyAngle = rxDict(iRX)%HyAzimuth
+         EyAngle = rxDict(iRX)%EyAzimuth
          
 		     ! First set up interpolation functionals for Ex, Ey
 			  xyz = 1
@@ -303,14 +319,14 @@ Contains
                EE(2,iMode) =  dotProd_noConj_scvector_f(Ley,ef%pol(iMode))
                
                ! 2019.05.25, Liu Zhongyin, add rotate for ee
-            Call rotate_Model2Data(EE(1,iMode),EE(2,iMode),ExAngle,ExAngle+90.0_prec,0.0_prec)
+            Call rotate_Model2Data(EE(1,iMode),EE(2,iMode),ExAngle,EyAngle,0.0_prec)
 
 			      ! magnetic fields
 			      BB(1,iMode) = dotProd_noConj_scvector_f(Lbx,ef%pol(iMode))
                BB(2,iMode) = dotProd_noConj_scvector_f(Lby,ef%pol(iMode))
                
                ! 2019.05.25, Liu Zhongyin, add rotate for bb
-            Call rotate_Model2Data(BB(1,iMode),BB(2,iMode),HxAngle,HxAngle+90.0_prec,0.0_prec)
+            Call rotate_Model2Data(BB(1,iMode),BB(2,iMode),HxAngle,HyAngle,0.0_prec)
 			 end do
 			 !invert horizontal B matrix using Kramer's rule.
 			  det = BB(1,1)*BB(2,2)-BB(1,2)*BB(2,1)
@@ -336,6 +352,9 @@ Contains
          ! Liu Zhongyin, 2019.08.26, add hxazimuth, exazimuth
          HxAngle = rxDict(iRX)%HxAzimuth
          ExAngle = rxDict(iRX)%ExAzimuth
+         ! Liu Zhongyin, 2022.09.07, add hyazimuth, eyazimuth
+         HyAngle = rxDict(iRX)%HyAzimuth
+         EyAngle = rxDict(iRX)%EyAzimuth
             
 		     ! First set up interpolation functionals for Ex, Ey
 			  xyz = 1
@@ -354,14 +373,14 @@ Contains
                EE(2,iMode) =  dotProd_noConj_scvector_f(Ley,ef%pol(iMode))
                
                ! 2019.05.25, Liu Zhongyin, add rotate for ee
-            Call rotate_Model2Data(EE(1,iMode),EE(2,iMode),ExAngle,ExAngle+90.0_prec,0.0_prec)
+            Call rotate_Model2Data(EE(1,iMode),EE(2,iMode),ExAngle,EyAngle,0.0_prec)
 
 			      ! magnetic fields
 			      BB(1,iMode) = dotProd_noConj_scvector_f(Lbx,ef%pol(iMode))
                BB(2,iMode) = dotProd_noConj_scvector_f(Lby,ef%pol(iMode))
                
                ! 2019.05.25, Liu Zhongyin, add rotate for bb
-            Call rotate_Model2Data(BB(1,iMode),BB(2,iMode),HxAngle,HxAngle+90.0_prec,0.0_prec)
+            Call rotate_Model2Data(BB(1,iMode),BB(2,iMode),HxAngle,HyAngle,0.0_prec)
 			 end do
 			 !invert horizontal B matrix using Kramer's rule.
 			  det = BB(1,1)*BB(2,2)-BB(1,2)*BB(2,1)
@@ -462,6 +481,10 @@ Contains
      HxAngle = rxDict(iRX)%HxAzimuth
      ExAngle = rxDict(iRX)%ExAzimuth
      HxAngle_ref = rxDict(iRX)%HxAzimuth_ref
+     ! Liu Zhongyin, 2022.09.07, add hyazimuth, eyazimuth, hyazimuth_ref
+     HyAngle = rxDict(iRX)%HyAzimuth
+     EyAngle = rxDict(iRX)%EyAzimuth
+     HyAngle_ref = rxDict(iRX)%HyAzimuth_ref
 
   !  set up which components are needed,  ... and ! evaluate
   !   impedance, Binv for background solution
@@ -568,11 +591,11 @@ Contains
   endif
 
   ! Liu Zhongyin, 2019.09.06, Add another modification according to Anna Kelbert
-  EyAngle = (ExAngle + 90.0d0)*D2R
+  EyAngle = EyAngle*D2R
   ExAngle = ExAngle*D2R
-  HyAngle = (HxAngle + 90.0d0)*D2R
+  HyAngle = HyAngle*D2R
   HxAngle = HxAngle*D2R
-  HyAngle_ref = (HxAngle_ref + 90.0d0)*D2R
+  HyAngle_ref = HyAngle_ref*D2R
   HxAngle_ref = HxAngle_ref*D2R
   c1 = sin(EyAngle) / sin(EyAngle-ExAngle)
   c2 = - cos(EyAngle) / sin(EyAngle-ExAngle)

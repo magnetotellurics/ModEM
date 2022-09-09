@@ -35,6 +35,9 @@ module receivers
      ! Liu Zhongyin, 2019.08.26, Add HxAzimuth, ExAzimuth
      real(kind=prec)                    ::  HxAzimuth=0.0, ExAzimuth=0.0
      real(kind=prec)                    ::  HxAzimuth_ref=0.0
+     ! Liu Zhongyin, 2022.09.07, Add HyAzimuth, EyAzimuth, HyAzimuth_ref
+     real(kind=prec)                    ::  HyAzimuth=0.0, EyAzimuth=0.0
+     real(kind=prec)                    ::  HyAzimuth_ref=0.0
   end type MTrx
 
   ! receiver dictionary for 3D MT data will be an array of
