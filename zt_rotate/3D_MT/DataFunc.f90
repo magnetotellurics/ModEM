@@ -459,8 +459,8 @@ Contains
   logical			:: ComputeHz
 
   ! 2019.05.15, Liu Zhongyin, Add Eout,Bout
-  complex(kind=prec) :: Eout(2,2),Bout(3,2),c3,c4
-  real(kind=prec) :: cos2a,sin2a,cosa,sina,det
+  complex(kind=prec) :: Eout(2,2),Bout(3,2),c3,c4,det
+  real(kind=prec) :: cos2a,sin2a,cosa,sina
 
 
   omega = txDict(e0%tx)%omega
@@ -484,52 +484,52 @@ Contains
 
   select case(iDT)
      case(Full_Impedance)
-        nComp = 4
+      !   nComp = 4
         ComputeHz = .false.
-        do j = 1,2
-           do i = 1,2
-              IJ(1,2*(i-1)+j) = i
-              IJ(2,2*(i-1)+j) = j
-              IJ(3,2*(i-1)+j) = i
-           enddo
-        enddo
+      !   do j = 1,2
+      !      do i = 1,2
+      !         IJ(1,2*(i-1)+j) = i
+      !         IJ(2,2*(i-1)+j) = j
+      !         IJ(3,2*(i-1)+j) = i
+      !      enddo
+      !   enddo
         ! Call dataResp(e0,Sigma0,Full_Impedance,iRX,Resp,Binv)
         ! 2019.05.08, Liu Zhongyin, add Angle
         Call dataResp(e0,Sigma0,Full_Impedance,iRX,Resp,Angle,Binv,Eout,Bout)
      case(Off_Diagonal_Impedance)
-        nComp = 2
+      !   nComp = 2
         ComputeHz = .false.
-        IJ(1,1) = 1
-        IJ(2,1) = 2
-        IJ(1,2) = 2
-        IJ(2,2) = 1
-        IJ(3,1) = 1
-        IJ(3,2) = 2
+      !   IJ(1,1) = 1
+      !   IJ(2,1) = 2
+      !   IJ(1,2) = 2
+      !   IJ(2,2) = 1
+      !   IJ(3,1) = 1
+      !   IJ(3,2) = 2
         ! Call dataResp(e0,Sigma0,Full_Impedance,iRX,Resp,Binv)
         ! 2019.05.08, Liu Zhongyin, add Angle
         Call dataResp(e0,Sigma0,Full_Impedance,iRX,Resp,Angle,Binv,Eout,Bout)
       case(Full_Vertical_Components)
-        nComp = 2
+      !   nComp = 2
         ComputeHz = .true.
-        IJ(1,1) = 1
-        IJ(1,2) = 1
-        IJ(2,1) = 1
-        IJ(2,2) = 2
-        IJ(3,1) = 3
-        IJ(3,2) = 3
+      !   IJ(1,1) = 1
+      !   IJ(1,2) = 1
+      !   IJ(2,1) = 1
+      !   IJ(2,2) = 2
+      !   IJ(3,1) = 3
+      !   IJ(3,2) = 3
         ! Call dataResp(e0,Sigma0,Full_Vertical_Components,iRX,Resp,Binv)
         ! 2019.05.08, Liu Zhongyin, add Angle
         Call dataResp(e0,Sigma0,Full_Vertical_Components,iRX,Resp,Angle,Binv,Eout,Bout)
      case(Full_Interstation_TF)
-        nComp = 4
+      !   nComp = 4
         ComputeHz = .false.
-        do j = 1,2
-           do i = 1,2
-              IJ(1,2*(i-1)+j) = i
-              IJ(2,2*(i-1)+j) = j
-              IJ(3,2*(i-1)+j) = i+3
-           enddo
-        enddo
+      !   do j = 1,2
+      !      do i = 1,2
+      !         IJ(1,2*(i-1)+j) = i
+      !         IJ(2,2*(i-1)+j) = j
+      !         IJ(3,2*(i-1)+j) = i+3
+      !      enddo
+      !   enddo
         ! Call dataResp(e0,Sigma0,Full_Interstation_TF,iRX,Resp,Binv)
         ! 2019.05.08, Liu Zhongyin, add Angle
         Call dataResp(e0,Sigma0,Full_Interstation_TF,iRX,Resp,Angle,Binv,Eout,Bout)
@@ -537,28 +537,28 @@ Contains
         ! First calculate Off_Diagonal_Impedance Ls
         ! Rho_Phase actually has 4 (real) components, but nComp here refers to the
         ! two complex off-diagonal impedance tensor components
-        nComp = 2
+      !   nComp = 2
         ComputeHz = .false.
-        IJ(1,1) = 1
-        IJ(2,1) = 2
-        IJ(1,2) = 2
-        IJ(2,2) = 1
-        IJ(3,1) = 1
-        IJ(3,2) = 2
+      !   IJ(1,1) = 1
+      !   IJ(2,1) = 2
+      !   IJ(1,2) = 2
+      !   IJ(2,2) = 1
+      !   IJ(3,1) = 1
+      !   IJ(3,2) = 2
         ! Call dataResp(e0,Sigma0,Full_Impedance,iRX,Resp,Binv)
         ! 2019.05.08, Liu Zhongyin, add Angle
         Call dataResp(e0,Sigma0,Full_Impedance,iRX,Resp,Angle,Binv,Eout,Bout)
      case(Phase_Tensor)
 	  ! First calculate Full_Impedances Ls
-        nComp = 4
+      !   nComp = 4
         ComputeHz = .false.
-        do j = 1,2
-           do i = 1,2
-              IJ(1,2*(i-1)+j) = i
-              IJ(2,2*(i-1)+j) = j
-              IJ(3,2*(i-1)+j) = i
-           enddo
-        enddo
+      !   do j = 1,2
+      !      do i = 1,2
+      !         IJ(1,2*(i-1)+j) = i
+      !         IJ(2,2*(i-1)+j) = j
+      !         IJ(3,2*(i-1)+j) = i
+      !      enddo
+      !   enddo
         ! Call dataResp(e0,Sigma0,Full_Impedance,iRX,Resp,Binv)
         ! 2019.05.08, Liu Zhongyin, add Angle
         Call dataResp(e0,Sigma0,Full_Impedance,iRX,Resp,Angle,Binv,Eout,Bout)
@@ -583,8 +583,8 @@ Contains
      call BfromESetUp(e0%grid,omega,x,xyz,Lbz)
   endif
 
-  cos2a = cos(2.0d0*Angle(1)*D2R)
-  sin2a = sin(2.0d0*Angle(1)*D2R)
+  cos2a = cos(2.0_prec*Angle(1)*D2R)
+  sin2a = sin(2.0_prec*Angle(1)*D2R)
   cosa  = cos(Angle(1)*D2R)
   sina  = sin(Angle(1)*D2R)
   det   = Bout(1,1)*Bout(2,2) - Bout(1,2)*Bout(2,1)
@@ -594,36 +594,36 @@ case(Full_Impedance,Phase_Tensor)
    ! zxx
    ! mode1
    ! Zxx/Ex1
-   c1 =  Binv(1,1)*(1.0d0+cos2a) + Binv(1,2)*sin2a
-   c1 =  c1/2.0d0
+   c1 =  Binv(1,1)*(1.0_prec+cos2a) + Binv(1,2)*sin2a
+   c1 =  c1/2.0_prec
    ! Zxx/Ey1
-   c2 =  Binv(1,2)*(1.0d0-cos2a) + Binv(1,1)*sin2a
-   c2 =  c2/2.0d0
+   c2 =  Binv(1,2)*(1.0_prec-cos2a) + Binv(1,1)*sin2a
+   c2 =  c2/2.0_prec
    ! Zxx/Hx1
-   c3 =  Eout(2,2)*(1.0d0-cos2a)/2.0d0/det
-   c3 =  c3 + Eout(1,2)*sin2a/2.0d0/det
+   c3 =  Eout(2,2)*(1.0_prec-cos2a)/2.0_prec/det
+   c3 =  c3 + Eout(1,2)*sin2a/2.0_prec/det
    c3 =  c3 - Binv(1,1)*Z(1)
    ! Zxx/Hy1
-   c4 = -Eout(1,2)*(1.0d0+cos2a)/2.0d0/det
-   c4 =  c4 - Eout(2,2)*sin2a/2.0d0/det
+   c4 = -Eout(1,2)*(1.0_prec+cos2a)/2.0_prec/det
+   c4 =  c4 - Eout(2,2)*sin2a/2.0_prec/det
    c4 =  c4 - Binv(1,2)*Z(1) 
    Call linComb_sparsevecc(Lex,c1,Ley,c2,L1)
    Call linComb_sparsevecc(Lbx,c3,Lby,c4,L2)
    Call linComb_sparsevecc(L1,C_ONE,L2,C_ONE,L(1)%L(1))
    ! mode2
    ! Zxx/Ex2
-   c1 =  Binv(2,1)*(1.0d0+cos2a) + Binv(2,2)*sin2a
-   c1 =  c1/2.0d0
+   c1 =  Binv(2,1)*(1.0_prec+cos2a) + Binv(2,2)*sin2a
+   c1 =  c1/2.0_prec
    ! Zxx/Ey2
-   c2 =  Binv(2,2)*(1.0d0-cos2a) + Binv(2,1)*sin2a
-   c2 =  c2/2.0d0
+   c2 =  Binv(2,2)*(1.0_prec-cos2a) + Binv(2,1)*sin2a
+   c2 =  c2/2.0_prec
    ! Zxx/Hx2
-   c3 = -Eout(2,1)*(1.0d0-cos2a)/2.0d0/det
-   c3 =  c3 - Eout(1,1)*sin2a/2.0d0/det
+   c3 = -Eout(2,1)*(1.0_prec-cos2a)/2.0_prec/det
+   c3 =  c3 - Eout(1,1)*sin2a/2.0_prec/det
    c3 =  c3 - Binv(2,1)*Z(1)
    ! Zxx/Hy2
-   c4 =  Eout(1,1)*(1.0d0+cos2a)/2.0d0/det
-   c4 =  c4 + Eout(2,1)*sin2a/2.0d0/det
+   c4 =  Eout(1,1)*(1.0_prec+cos2a)/2.0_prec/det
+   c4 =  c4 + Eout(2,1)*sin2a/2.0_prec/det
    c4 =  c4 - Binv(2,2)*Z(1)
    Call linComb_sparsevecc(Lex,c1,Ley,c2,L1)
    Call linComb_sparsevecc(Lbx,c3,Lby,c4,L2)
@@ -632,36 +632,36 @@ case(Full_Impedance,Phase_Tensor)
    ! zxy
    ! mode1
    ! Zxy/Ex1
-   c1 =  Binv(1,2)*(1.0d0+cos2a) - Binv(1,1)*sin2a
-   c1 =  c1/2.0d0
+   c1 =  Binv(1,2)*(1.0_prec+cos2a) - Binv(1,1)*sin2a
+   c1 =  c1/2.0_prec
    ! Zxy/Ey1
-   c2 =  Binv(1,1)*(cos2a-1.0d0) + Binv(1,2)*sin2a
-   c2 =  c2/2.0d0
+   c2 =  Binv(1,1)*(cos2a-1.0_prec) + Binv(1,2)*sin2a
+   c2 =  c2/2.0_prec
    ! Zxy/Hx1
-   c3 =  Eout(1,2)*(1.0d0+cos2a)/2.0d0/det
-   c3 =  c3 + Eout(2,2)*sin2a/2.0d0/det
+   c3 =  Eout(1,2)*(1.0_prec+cos2a)/2.0_prec/det
+   c3 =  c3 + Eout(2,2)*sin2a/2.0_prec/det
    c3 =  c3 - Binv(1,1)*Z(2)
    ! Zxy/Hy1
-   c4 = -Eout(2,2)*(cos2a-1.0d0)/2.0d0/det
-   c4 =  c4 + Eout(1,2)*sin2a/2.0d0/det
+   c4 = -Eout(2,2)*(cos2a-1.0_prec)/2.0_prec/det
+   c4 =  c4 + Eout(1,2)*sin2a/2.0_prec/det
    c4 =  c4 - Binv(1,2)*Z(2)
    Call linComb_sparsevecc(Lex,c1,Ley,c2,L1)
    Call linComb_sparsevecc(Lbx,c3,Lby,c4,L2)
    Call linComb_sparsevecc(L1,C_ONE,L2,C_ONE,L(2)%L(1))
    ! mode2
    ! Zxy/Ex2
-   c1 =  Binv(2,2)*(1.0d0+cos2a) - Binv(2,1)*sin2a
-   c1 =  c1/2.0d0
+   c1 =  Binv(2,2)*(1.0_prec+cos2a) - Binv(2,1)*sin2a
+   c1 =  c1/2.0_prec
    ! Zxy/Ey2
-   c2 =  Binv(2,1)*(cos2a-1.0d0) + Binv(2,2)*sin2a
-   c2 =  c2/2.0d0
+   c2 =  Binv(2,1)*(cos2a-1.0_prec) + Binv(2,2)*sin2a
+   c2 =  c2/2.0_prec
    ! Zxy/Hx2
-   c3 = -Eout(1,1)*(1.0d0+cos2a)/2.0d0/det
-   c3 =  c3 - Eout(2,1)*sin2a/2.0d0/det
+   c3 = -Eout(1,1)*(1.0_prec+cos2a)/2.0_prec/det
+   c3 =  c3 - Eout(2,1)*sin2a/2.0_prec/det
    c3 =  c3 - Binv(2,1)*Z(2)
    ! Zxy/Hy2
-   c4 =  Eout(2,1)*(cos2a-1.0d0)/2.0d0/det
-   c4 =  c4 - Eout(1,1)*sin2a/2.0d0/det
+   c4 =  Eout(2,1)*(cos2a-1.0_prec)/2.0_prec/det
+   c4 =  c4 - Eout(1,1)*sin2a/2.0_prec/det
    c4 =  c4 - Binv(2,2)*Z(2)
    Call linComb_sparsevecc(Lex,c1,Ley,c2,L1)
    Call linComb_sparsevecc(Lbx,c3,Lby,c4,L2)
@@ -670,36 +670,36 @@ case(Full_Impedance,Phase_Tensor)
    ! zyx
    ! mode1
    ! Zyx/Ex1
-   c1 =  Binv(1,2)*(cos2a-1.0d0) - Binv(1,1)*sin2a
-   c1 =  c1/2.0d0
+   c1 =  Binv(1,2)*(cos2a-1.0_prec) - Binv(1,1)*sin2a
+   c1 =  c1/2.0_prec
    ! Zyx/Ey1
-   c2 =  Binv(1,1)*(1.0d0+cos2a) + Binv(1,2)*sin2a
-   c2 =  c2/2.0d0
+   c2 =  Binv(1,1)*(1.0_prec+cos2a) + Binv(1,2)*sin2a
+   c2 =  c2/2.0_prec
    ! Zyx/Hx1
-   c3 =  Eout(1,2)*(cos2a-1.0d0)/2.0d0/det
-   c3 =  c3 + Eout(2,2)*sin2a/2.0d0/det
+   c3 =  Eout(1,2)*(cos2a-1.0_prec)/2.0_prec/det
+   c3 =  c3 + Eout(2,2)*sin2a/2.0_prec/det
    c3 =  c3 - Binv(1,1)*Z(3)
    ! Zyx/Hy1
-   c4 = -Eout(2,2)*(1.0d0+cos2a)/2.0d0/det
-   c4 =  c4 + Eout(1,2)*sin2a/2.0d0/det
+   c4 = -Eout(2,2)*(1.0_prec+cos2a)/2.0_prec/det
+   c4 =  c4 + Eout(1,2)*sin2a/2.0_prec/det
    c4 =  c4 - Binv(1,2)*Z(3)
    Call linComb_sparsevecc(Lex,c1,Ley,c2,L1)
    Call linComb_sparsevecc(Lbx,c3,Lby,c4,L2)
    Call linComb_sparsevecc(L1,C_ONE,L2,C_ONE,L(3)%L(1))
    ! mode2
    ! Zyx/Ex2
-   c1 =  Binv(2,2)*(cos2a-1.0d0) - Binv(2,1)*sin2a
-   c1 =  c1/2.0d0
+   c1 =  Binv(2,2)*(cos2a-1.0_prec) - Binv(2,1)*sin2a
+   c1 =  c1/2.0_prec
    ! Zyx/Ey2
-   c2 =  Binv(2,1)*(1.0d0+cos2a) + Binv(2,2)*sin2a
-   c2 =  c2/2.0d0
+   c2 =  Binv(2,1)*(1.0_prec+cos2a) + Binv(2,2)*sin2a
+   c2 =  c2/2.0_prec
    ! Zyx/Hx2
-   c3 = -Eout(1,1)*(cos2a-1.0d0)/2.0d0/det
-   c3 =  c3 - Eout(2,1)*sin2a/2.0d0/det
+   c3 = -Eout(1,1)*(cos2a-1.0_prec)/2.0_prec/det
+   c3 =  c3 - Eout(2,1)*sin2a/2.0_prec/det
    c3 =  c3 - Binv(2,1)*Z(3)
    ! Zyx/Hy2
-   c4 =  Eout(2,1)*(1.0d0+cos2a)/2.0d0/det
-   c4 =  c4 - Eout(1,1)*sin2a/2.0d0/det
+   c4 =  Eout(2,1)*(1.0_prec+cos2a)/2.0_prec/det
+   c4 =  c4 - Eout(1,1)*sin2a/2.0_prec/det
    c4 =  c4 - Binv(2,2)*Z(3)
    Call linComb_sparsevecc(Lex,c1,Ley,c2,L1)
    Call linComb_sparsevecc(Lbx,c3,Lby,c4,L2)
@@ -708,36 +708,36 @@ case(Full_Impedance,Phase_Tensor)
    ! zyy
    ! mode1
    ! Zyy/Ex1
-   c1 =  Binv(1,1)*(1.0d0-cos2a) - Binv(1,2)*sin2a
-   c1 =  c1/2.0d0
+   c1 =  Binv(1,1)*(1.0_prec-cos2a) - Binv(1,2)*sin2a
+   c1 =  c1/2.0_prec
    ! Zyy/Ey1
-   c2 =  Binv(1,2)*(1.0d0+cos2a) - Binv(1,1)*sin2a
-   c2 =  c2/2.0d0
+   c2 =  Binv(1,2)*(1.0_prec+cos2a) - Binv(1,1)*sin2a
+   c2 =  c2/2.0_prec
    ! Zyy/Hx1
-   c3 =  Eout(2,2)*(1.0d0+cos2a)/2.0d0/det
-   c3 =  c3 - Eout(1,2)*sin2a/2.0d0/det
+   c3 =  Eout(2,2)*(1.0_prec+cos2a)/2.0_prec/det
+   c3 =  c3 - Eout(1,2)*sin2a/2.0_prec/det
    c3 =  c3 - Binv(1,1)*Z(4)
    ! Zyy/Hy1
-   c4 = -Eout(1,2)*(1.0d0-cos2a)/2.0d0/det
-   c4 =  c4 + Eout(2,2)*sin2a/2.0d0/det
+   c4 = -Eout(1,2)*(1.0_prec-cos2a)/2.0_prec/det
+   c4 =  c4 + Eout(2,2)*sin2a/2.0_prec/det
    c4 =  c4 - Binv(1,2)*Z(4) 
    Call linComb_sparsevecc(Lex,c1,Ley,c2,L1)
    Call linComb_sparsevecc(Lbx,c3,Lby,c4,L2)
    Call linComb_sparsevecc(L1,C_ONE,L2,C_ONE,L(4)%L(1))
    ! mode2
    ! Zyy/Ex2
-   c1 =  Binv(2,1)*(1.0d0-cos2a) - Binv(2,2)*sin2a
-   c1 =  c1/2.0d0
+   c1 =  Binv(2,1)*(1.0_prec-cos2a) - Binv(2,2)*sin2a
+   c1 =  c1/2.0_prec
    ! Zyy/Ey2
-   c2 =  Binv(2,2)*(1.0d0+cos2a) - Binv(2,1)*sin2a
-   c2 =  c2/2.0d0
+   c2 =  Binv(2,2)*(1.0_prec+cos2a) - Binv(2,1)*sin2a
+   c2 =  c2/2.0_prec
    ! Zyy/Hx2
-   c3 = -Eout(2,1)*(1.0d0+cos2a)/2.0d0/det
-   c3 =  c3 + Eout(1,1)*sin2a/2.0d0/det
+   c3 = -Eout(2,1)*(1.0_prec+cos2a)/2.0_prec/det
+   c3 =  c3 + Eout(1,1)*sin2a/2.0_prec/det
    c3 =  c3 - Binv(2,1)*Z(4)
    ! Zyy/Hy2
-   c4 =  Eout(1,1)*(1.0d0-cos2a)/2.0d0/det
-   c4 =  c4 - Eout(2,1)*sin2a/2.0d0/det
+   c4 =  Eout(1,1)*(1.0_prec-cos2a)/2.0_prec/det
+   c4 =  c4 - Eout(2,1)*sin2a/2.0_prec/det
    c4 =  c4 - Binv(2,2)*Z(4)
    Call linComb_sparsevecc(Lex,c1,Ley,c2,L1)
    Call linComb_sparsevecc(Lbx,c3,Lby,c4,L2)
@@ -747,36 +747,36 @@ case(Off_Diagonal_Impedance,Off_Diagonal_Rho_Phase)
    ! zxy
    ! mode1
    ! Zxy/Ex1
-   c1 =  Binv(1,2)*(1.0d0+cos2a) - Binv(1,1)*sin2a
-   c1 =  c1/2.0d0
+   c1 =  Binv(1,2)*(1.0_prec+cos2a) - Binv(1,1)*sin2a
+   c1 =  c1/2.0_prec
    ! Zxy/Ey1
-   c2 =  Binv(1,1)*(cos2a-1.0d0) + Binv(1,2)*sin2a
-   c2 =  c2/2.0d0
+   c2 =  Binv(1,1)*(cos2a-1.0_prec) + Binv(1,2)*sin2a
+   c2 =  c2/2.0_prec
    ! Zxy/Hx1
-   c3 =  Eout(1,2)*(1.0d0+cos2a)/2.0d0/det
-   c3 =  c3 + Eout(2,2)*sin2a/2.0d0/det
+   c3 =  Eout(1,2)*(1.0_prec+cos2a)/2.0_prec/det
+   c3 =  c3 + Eout(2,2)*sin2a/2.0_prec/det
    c3 =  c3 - Binv(1,1)*Z(2)
    ! Zxy/Hy1
-   c4 = -Eout(2,2)*(cos2a-1.0d0)/2.0d0/det
-   c4 =  c4 + Eout(1,2)*sin2a/2.0d0/det
+   c4 = -Eout(2,2)*(cos2a-1.0_prec)/2.0_prec/det
+   c4 =  c4 + Eout(1,2)*sin2a/2.0_prec/det
    c4 =  c4 - Binv(1,2)*Z(2)
    Call linComb_sparsevecc(Lex,c1,Ley,c2,L1)
    Call linComb_sparsevecc(Lbx,c3,Lby,c4,L2)
    Call linComb_sparsevecc(L1,C_ONE,L2,C_ONE,L(1)%L(1))
    ! mode2
    ! Zxy/Ex2
-   c1 =  Binv(2,2)*(1.0d0+cos2a) - Binv(2,1)*sin2a
-   c1 =  c1/2.0d0
+   c1 =  Binv(2,2)*(1.0_prec+cos2a) - Binv(2,1)*sin2a
+   c1 =  c1/2.0_prec
    ! Zxy/Ey2
-   c2 =  Binv(2,1)*(cos2a-1.0d0) + Binv(2,2)*sin2a
-   c2 =  c2/2.0d0
+   c2 =  Binv(2,1)*(cos2a-1.0_prec) + Binv(2,2)*sin2a
+   c2 =  c2/2.0_prec
    ! Zxy/Hx2
-   c3 = -Eout(1,1)*(1.0d0+cos2a)/2.0d0/det
-   c3 =  c3 - Eout(2,1)*sin2a/2.0d0/det
+   c3 = -Eout(1,1)*(1.0_prec+cos2a)/2.0_prec/det
+   c3 =  c3 - Eout(2,1)*sin2a/2.0_prec/det
    c3 =  c3 - Binv(2,1)*Z(2)
    ! Zxy/Hy2
-   c4 =  Eout(2,1)*(cos2a-1.0d0)/2.0d0/det
-   c4 =  c4 - Eout(1,1)*sin2a/2.0d0/det
+   c4 =  Eout(2,1)*(cos2a-1.0_prec)/2.0_prec/det
+   c4 =  c4 - Eout(1,1)*sin2a/2.0_prec/det
    c4 =  c4 - Binv(2,2)*Z(2)
    Call linComb_sparsevecc(Lex,c1,Ley,c2,L1)
    Call linComb_sparsevecc(Lbx,c3,Lby,c4,L2)
@@ -785,36 +785,36 @@ case(Off_Diagonal_Impedance,Off_Diagonal_Rho_Phase)
    ! zyx
    ! mode1
    ! Zyx/Ex1
-   c1 =  Binv(1,2)*(cos2a-1.0d0) - Binv(1,1)*sin2a
-   c1 =  c1/2.0d0
+   c1 =  Binv(1,2)*(cos2a-1.0_prec) - Binv(1,1)*sin2a
+   c1 =  c1/2.0_prec
    ! Zyx/Ey1
-   c2 =  Binv(1,1)*(1.0d0+cos2a) + Binv(1,2)*sin2a
-   c2 =  c2/2.0d0
+   c2 =  Binv(1,1)*(1.0_prec+cos2a) + Binv(1,2)*sin2a
+   c2 =  c2/2.0_prec
    ! Zyx/Hx1
-   c3 =  Eout(1,2)*(cos2a-1.0d0)/2.0d0/det
-   c3 =  c3 + Eout(2,2)*sin2a/2.0d0/det
+   c3 =  Eout(1,2)*(cos2a-1.0_prec)/2.0_prec/det
+   c3 =  c3 + Eout(2,2)*sin2a/2.0_prec/det
    c3 =  c3 - Binv(1,1)*Z(3)
    ! Zyx/Hy1
-   c4 = -Eout(2,2)*(1.0d0+cos2a)/2.0d0/det
-   c4 =  c4 + Eout(1,2)*sin2a/2.0d0/det
+   c4 = -Eout(2,2)*(1.0_prec+cos2a)/2.0_prec/det
+   c4 =  c4 + Eout(1,2)*sin2a/2.0_prec/det
    c4 =  c4 - Binv(1,2)*Z(3)
    Call linComb_sparsevecc(Lex,c1,Ley,c2,L1)
    Call linComb_sparsevecc(Lbx,c3,Lby,c4,L2)
    Call linComb_sparsevecc(L1,C_ONE,L2,C_ONE,L(2)%L(1))
    ! mode2
    ! Zyx/Ex2
-   c1 =  Binv(2,2)*(cos2a-1.0d0) - Binv(2,1)*sin2a
-   c1 =  c1/2.0d0
+   c1 =  Binv(2,2)*(cos2a-1.0_prec) - Binv(2,1)*sin2a
+   c1 =  c1/2.0_prec
    ! Zyx/Ey2
-   c2 =  Binv(2,1)*(1.0d0+cos2a) + Binv(2,2)*sin2a
-   c2 =  c2/2.0d0
+   c2 =  Binv(2,1)*(1.0_prec+cos2a) + Binv(2,2)*sin2a
+   c2 =  c2/2.0_prec
    ! Zyx/Hx2
-   c3 = -Eout(1,1)*(cos2a-1.0d0)/2.0d0/det
-   c3 =  c3 - Eout(2,1)*sin2a/2.0d0/det
+   c3 = -Eout(1,1)*(cos2a-1.0_prec)/2.0_prec/det
+   c3 =  c3 - Eout(2,1)*sin2a/2.0_prec/det
    c3 =  c3 - Binv(2,1)*Z(3)
    ! Zyx/Hy2
-   c4 =  Eout(2,1)*(1.0d0+cos2a)/2.0d0/det
-   c4 =  c4 - Eout(1,1)*sin2a/2.0d0/det
+   c4 =  Eout(2,1)*(1.0_prec+cos2a)/2.0_prec/det
+   c4 =  c4 - Eout(1,1)*sin2a/2.0_prec/det
    c4 =  c4 - Binv(2,2)*Z(3)
    Call linComb_sparsevecc(Lex,c1,Ley,c2,L1)
    Call linComb_sparsevecc(Lbx,c3,Lby,c4,L2)
@@ -823,51 +823,51 @@ case(Off_Diagonal_Impedance,Off_Diagonal_Rho_Phase)
 case(Full_Vertical_Components)
    ! tzx
    ! mode1
-   ! Tzx/Hz1
    c1 =  Binv(1,1)*cosa + Binv(1,2)*sina
    ! Tzx/Hx1
-   c2 =  Bout(3,2)*sina/det
-   c2 =  c2 - Binv(1,1)*Z(1)
+   c2 = -cosa*Binv(1,1)*Z(1)
+   c2 =  c2 - sina*Binv(1,2)*Z(1)
    ! Tzx/Hy1
-   c3 = -Bout(3,2)*cosa/det
-   c3 =  c3 - Binv(1,2)*Z(1)
-   Call linComb_sparsevecc(Lbz,c1,Lbx,c2,L1)
-   Call linComb_sparsevecc(L1,C_ONE,Lby,c3,L(1)%L(1))
+   c3 = -cosa*Binv(1,1)*Z(2)
+   c3 =  c3 - sina*Binv(1,2)*Z(2)
+   ! Tzx/Hz1  
+   Call lincomb_sparsevecc(Lbx,c2,Lby,c3,L1)
+   Call linComb_sparsevecc(L1,C_ONE,Lbz,c1,L(1)%L(1))
    ! mode2
    ! Tzx/Hz2
    c1 =  Binv(2,1)*cosa + Binv(2,2)*sina
    ! Tzx/Hx2
-   c2 = -Bout(3,1)*sina/det
-   c2 =  c2 - Binv(2,1)*Z(1)
+   c2 = -cosa*Binv(2,1)*Z(1)
+   c2 =  c2 - sina*Binv(2,2)*Z(1)
    ! Tzx/Hy2
-   c3 =  Bout(3,1)*cosa/det
-   c3 =  c3 - Binv(2,2)*Z(1)
-   Call linComb_sparsevecc(Lbz,c1,Lbx,c2,L1)
-   Call linComb_sparsevecc(L1,C_ONE,Lby,c3,L(1)%L(2))
+   c3 = -cosa*Binv(2,1)*Z(2)
+   c3 =  c3 - sina*Binv(2,2)*Z(2)
+   Call lincomb_sparsevecc(Lbx,c2,Lby,c3,L1)
+   Call linComb_sparsevecc(L1,C_ONE,Lbz,c1,L(1)%L(2))
 
    ! tzy
    ! mode1
    ! Tzy/Hz1
    c1 =  Binv(1,2)*cosa - Binv(1,1)*sina
    ! Tzy/Hx1
-   c2 =  Bout(3,2)*cosa/det
-   c2 =  c2 - Binv(1,1)*Z(2)
+   c2 =  sina*Binv(1,1)*Z(1)
+   c2 =  c2 - cosa*Binv(1,2)*Z(1)
    ! Tzy/Hy1
-   c3 =  Bout(3,2)*sina/det
-   c3 = -c3 - Binv(1,2)*Z(2)
-   Call linComb_sparsevecc(Lbz,c1,Lbx,c2,L1)
-   Call linComb_sparsevecc(L1,C_ONE,Lby,c3,L(2)%L(1))
+   c3 =  sina*Binv(1,1)*Z(2)
+   c3 =  c3 - cosa*Binv(1,2)*Z(2)
+   Call linComb_sparsevecc(Lbx,c2,Lby,c3,L1)
+   Call linComb_sparsevecc(L1,C_ONE,Lbz,c1,L(2)%L(1))
    ! mode2
    ! Tzy/Hz2
    c1 =  Binv(2,2)*cosa - Binv(2,1)*sina
    ! Tzy/Hx2
-   c2 = -Bout(3,1)*cosa/det
-   c2 =  c2 - Binv(2,1)*Z(2)
+   c2 =  sina*Binv(2,1)*Z(1)
+   c2 =  c2 - cosa*Binv(2,2)*Z(1)
    ! Tzy/Hy2
-   c3 = -Bout(3,1)*sina/det
-   c3 =  c3 - Binv(2,2)*Z(2)
-   Call linComb_sparsevecc(Lbz,c1,Lbx,c2,L1)
-   Call linComb_sparsevecc(L1,C_ONE,Lby,c3,L(2)%L(2))
+   c3 =  sina*Binv(2,1)*Z(2)
+   c3 =  c3 - cosa*Binv(2,2)*Z(2)
+   Call linComb_sparsevecc(Lbx,c2,Lby,c3,L1)
+   Call linComb_sparsevecc(L1,C_ONE,Lbz,c1,L(2)%L(2))
   
 
 case(Full_Interstation_TF)
@@ -914,21 +914,21 @@ endselect
 if (typeDict(iDT)%tfType .eq. Off_Diagonal_Rho_Phase) then
        do k=1,2 ! 2 modes
         ! PHSYX
-        c1 =dcmplx(0.0d0,1.0d0)*conjg(Z(3)) / (abs(Z(3))**TWO)
+        c1 =dcmplx(0.0_prec,1.0_prec)*conjg(Z(3)) / (abs(Z(3))**TWO)
 	     Call linComb_sparsevecc(L(2)%L(k),c1,L(2)%L(k),C_ZERO,L(4)%L(k))
 
 		 !log RHOYX
-	    ! c1 =  TWO*conjg(Z(3))/(abs(Z(3))**TWO)*dlog(10.0d0)
+	    ! c1 =  TWO*conjg(Z(3))/(abs(Z(3))**TWO)*dlog(10.0_prec)
 		 ! devided by Ln10, Liuzhongyin 2017.06.04
 	     c1 =  TWO*conjg(Z(3))/(abs(Z(3))**TWO)/Ln10
         Call linComb_sparsevecc(L(2)%L(k),c1,L(2)%L(k),C_ZERO,L(3)%L(k))
 
         ! PHSXY
-        c1 =dcmplx(0.0d0,1.0d0)*conjg(Z(2))/(abs(Z(2))**TWO)
+        c1 =dcmplx(0.0_prec,1.0_prec)*conjg(Z(2))/(abs(Z(2))**TWO)
 		Call linComb_sparsevecc(L(1)%L(k),c1,L(1)%L(k),C_ZERO,L(2)%L(k))
 
           !log(RHOXY)
-          ! c1 =  TWO*conjg(Z(2))  /(abs(Z(2))**TWO)*dlog(10.0d0)
+          ! c1 =  TWO*conjg(Z(2))  /(abs(Z(2))**TWO)*dlog(10.0_prec)
           ! devided by Ln10, Liuzhongyin 2017.06.04
           c1 =  TWO*conjg(Z(2))  /(abs(Z(2))**TWO)/Ln10
 	     Call linComb_sparsevecc(L(1)%L(k),c1,L(1)%L(k),C_ZERO,L1)
@@ -1131,52 +1131,32 @@ if (typeDict(iDT)%tfType .eq. Off_Diagonal_Rho_Phase) then
 
   selectcase (iDT)
       case(Full_Impedance, Phase_Tensor)
-         cos2a = cos(2.0d0*angle*D2R)
-         sin2a = sin(2.0d0*angle*D2R)
+         cos2a = cos(2.0_prec*angle*D2R)
+         sin2a = sin(2.0_prec*angle*D2R)
 
-         d1 = (d(1)+d(4))/2.0d0
-         d2 = (d(1)-d(4))/2.0d0
-         d3 = (d(2)+d(3))/2.0d0
-         d4 = (d(2)-d(3))/2.0d0
+         d1 = (d(1)+d(4))/2.0_prec
+         d2 = (d(1)-d(4))/2.0_prec
+         d3 = (d(2)+d(3))/2.0_prec
+         d4 = (d(2)-d(3))/2.0_prec
 
          d(1) =  d1+d2*cos2a+d3*sin2a
          d(2) =  d4+d3*cos2a-d2*sin2a
          d(3) = -d4+d3*cos2a-d2*sin2a
          d(4) =  d1-d2*cos2a-d3*sin2a
 
-         ! d1 = 1/2.*((1.+cos2a)*d(1)+sin2a*d(2)+sin2a*d(3)+(1.-cos2a)*d(4))
-         ! d2 = 1/2.*(-sin2a*d(1)+(1.+cos2a)*d(2)-(1.-cos2a)*d(3)+sin2a*d(4))
-         ! d3 = 1/2.*(-sin2a*d(1)-(1.-cos2a)*d(2)+(1.+cos2a)*d(3)+sin2a*d(4))
-         ! d4 = 1/2.*((1.-cos2a)*d(1)-sin2a*d(2)-sin2a*d(3)+(1.+cos2a)*d(4))
-
-         ! d(1) = d1
-         ! d(2) = d2
-         ! d(3) = d3
-         ! d(4) = d4
-
       case(Off_Diagonal_Impedance, Off_Diagonal_Rho_Phase)
-         cos2a = cos(2.0d0*angle*D2R)
-         sin2a = sin(2.0d0*angle*D2R)
+         cos2a = cos(2.0_prec*angle*D2R)
+         sin2a = sin(2.0_prec*angle*D2R)
 
-         d1 = (d(1)+d(4))/2.0d0
-         d2 = (d(1)-d(4))/2.0d0
-         d3 = (d(2)+d(3))/2.0d0
-         d4 = (d(2)-d(3))/2.0d0
+         d1 = (d(1)+d(4))/2.0_prec
+         d2 = (d(1)-d(4))/2.0_prec
+         d3 = (d(2)+d(3))/2.0_prec
+         d4 = (d(2)-d(3))/2.0_prec
 
          d(1) =  d4+d3*cos2a-d2*sin2a
          d(2) = -d4+d3*cos2a-d2*sin2a
-         d(3) =  cmplx(0.0d0,0.0d0)
-         d(4) =  cmplx(0.0d0,0.0d0)         
-
-         ! d1 = 1/2.*((1.+cos2a)*d(1)+sin2a*d(2)+sin2a*d(3)+(1.-cos2a)*d(4))
-         ! d2 = 1/2.*(-sin2a*d(1)+(1.+cos2a)*d(2)-(1.-cos2a)*d(3)+sin2a*d(4))
-         ! d3 = 1/2.*(-sin2a*d(1)-(1.-cos2a)*d(2)+(1.+cos2a)*d(3)+sin2a*d(4))
-         ! d4 = 1/2.*((1.-cos2a)*d(1)-sin2a*d(2)-sin2a*d(3)+(1.+cos2a)*d(4))
-
-         ! d(1) = d2
-         ! d(2) = d3
-         ! d(3) = cmplx(0.,0.)
-         ! d(4) = cmplx(0.,0.)
+         d(3) =  cmplx(0.0_prec,0.0_prec)
+         d(4) =  cmplx(0.0_prec,0.0_prec)         
 
       case(Full_Vertical_Components)
          sina = sin(angle*D2R)
@@ -1187,6 +1167,8 @@ if (typeDict(iDT)%tfType .eq. Off_Diagonal_Rho_Phase) then
 
          d(1) = d1
          d(2) = d2
+         d(3) =  cmplx(0.0_prec,0.0_prec)
+         d(4) =  cmplx(0.0_prec,0.0_prec)       
 
       case(Full_Interstation_TF)
 
