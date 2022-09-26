@@ -201,7 +201,7 @@ program Mod3DMT
          call Master_job_JmultT(sigma0,allData,dsigma,s_hat=JT_multi_Tx_vec)
 #else
          !call fwdPred(sigma0,allData,eAll)
-         call JmultT(sigma0,allData,dsigma,s_hat=JT_multi_Tx_vec)
+         call JmultT(sigma0,allData,dsigma,JT_multi_Tx_vec=JT_multi_Tx_vec)
 #endif
          open(unit=ioSens, file=cUserDef%wFile_dModel, form='unformatted', iostat=ios)
          write(0,*) 'Output JT_multi_Tx_vec...'
