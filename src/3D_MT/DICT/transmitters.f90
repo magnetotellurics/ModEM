@@ -185,6 +185,93 @@ end if
      enddo
 
   end subroutine print_txDict
+!**********************************************************************
+! Writes the transmitter dictionary to a file -- needed to associate a sensitivity
+!   (i.e., in full sensitivity matrix J, or for Jmult_MTX computation) with correct
+!   data vector elements.   This assumes that iounit is opened for formated io 
+!     -- file connection and  closing are done by calling routine
+
+  subroutine write_txDict_asc(iounit)
+
+
+     ! local variables
+     integer                     :: iounit,iTx,nMT,nCSEM
+
+     if (.not. associated(txDict)) then
+        return
+     end if
+
+     nMT = 0
+     nCSEM = 0
+     !   this is only coded for MT + CSEM -- could be generalized
+     do iTx = 1, size(txDict)
+        if (txDict(iTx)%tx_type .eq. 'MT') then
+           nMT = nMT + 1
+        else
+           nCSEM = nCSEM + 1
+        endif
+     enddo
+     write(iounit,'(i6,a20)') nMT,'     MT Transmitters'
+     do iTx = 1, size(txDict)
+        if (txDict(iTx)%tx_type .eq. 'MT') then
+           write(iounit,'(i6,es12.6,i2)') iTx,txDict(iTx)%period,txDict(iTx)%nPol
+        endif
+     enddo
+     write(iounit,'(i6,a15)') nCSEM,'CSEM Transmitters'
+     do iTx = 1, size(txDict)
+        if (txDict(iTx)%tx_type .eq. 'CSEM') then
+           write(iounit,'(i6,2x,es12.6,2x,i2,2x,a8,3f11.2,3f8.2)') iTx,txDict(iTx)%period, &
+             txDict(iTx)%nPol,txDict(iTx)%Dipole, txDict(iTx)%xyzTx, & 
+             txDict(iTx)%azimuthTx, txDict(iTx)%dipTx,txDict(iTx)%moment
+        endif
+     enddo
+
+  end subroutine write_txDict_asc
+!**********************************************************************
+! Writes the transmitter dictionary to a file -- needed to associate a sensitivity
+!   (i.e., in full sensitivity matrix J, or for Jmult_MTX computation) with correct
+!   data vector elements.   This version assumes that iounit is opened for sequential unformated io 
+!     -- file connection and  closing are done by calling routine
+
+  subroutine write_txDict_bin(iounit)
+
+
+     ! local variables
+     integer                     :: iounit,iTx,nMT,nCSEM,nTx
+     character(len=80) header
+
+     if (.not. associated(txDict)) then
+        return
+     end if
+
+     nMT = 0
+     nCSEM = 0
+     nTx = size(txDict)
+     !   this is only coded for MT + CSEM -- could be generalized
+     do iTx = 1, nTx 
+        if (txDict(iTx)%tx_type .eq. 'MT') then
+           nMT = nMT + 1
+        else
+           nCSEM = nCSEM + 1
+        endif
+     enddo
+     write(iounit) nTx,nMT,nCSEM 
+     header = 'Transmitter Dictionary: MT' 
+     write(iounit) header
+     do iTx = 1, nTx
+        if (txDict(iTx)%tx_type .eq. 'MT') then
+           write(iounit) iTx,txDict(iTx)%period,txDict(iTx)%nPol
+        endif
+     enddo
+     header = 'Transmitter Dictionary: CSEM' 
+     write(iounit) header
+     do iTx = 1, nTx
+        if (txDict(iTx)%tx_type .eq. 'CSEM') then
+           write(iounit) iTx,txDict(iTx)%period,txDict(iTx)%nPol,txDict(iTx)%Dipole, &
+             txDict(iTx)%xyzTx,txDict(iTx)%azimuthTx,txDict(iTx)%dipTx,txDict(iTx)%moment
+        endif
+     enddo
+  end subroutine write_txDict_bin
 
 ! **************************************************************************
 ! Cleans up and deletes transmitter dictionary at end of program execution

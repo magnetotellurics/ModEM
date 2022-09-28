@@ -28,7 +28,7 @@ module receivers
      ! Same as x: r(1) points North, r(2) points East, r(3) points down
      real (kind=prec)                   ::  x(3)
      real (kind=prec)                   ::  r(3)
-	 real (kind=prec)                   ::  Rx_Azi
+  	 real (kind=prec)                   ::  Rx_Azi
      ! site ID used for input/output and for searching through the list
      character(50)                      ::  id=''
      character(50)                      ::  id_ref=''
@@ -179,6 +179,57 @@ function update_rxDict(loc,id,Rx_azi,loc_ref,id_ref) result (iRx)
      enddo
 
   end subroutine print_rxDict
+
+!**********************************************************************
+! Writes the receiver dictionary to a file -- needed to associate rows in sensitivity
+!  sensitivity matrix J with correct data vector elements.   This assumes that iounit
+!  is opened for formated io-- file connection and  closing are done by calling routine
+
+  subroutine write_rxDict_asc(iounit)
+
+     ! local variables
+     integer                     :: iounit, iRx, nRx
+
+     if (.not. associated(rxDict)) then
+        return
+     end if
+
+     nRx = size(rxDict)
+     write(iounit,*) nRx, '   Receivers'
+     do iRx = 1, size(rxDict)
+        write(iounit,'(i6,2x,a20,4f12.3,a20)') iRx,trim(rxDict(iRx)%id),rxDict(iRx)%x,&
+          rxDict(iRx)%Rx_azi,trim(rxDict(iRx)%id_ref)
+     enddo
+
+  end subroutine write_rxDict_asc
+
+!**********************************************************************
+! Writes the receiver dictionary to a file -- needed to associate rows in sensitivity
+!  sensitivity matrix J with correct data vector elements.   This assumes that iounit
+!  is opened for formated io-- file connection and  closing are done by calling routine
+
+  subroutine write_rxDict_bin(iounit)
+
+     ! local variables
+     integer                     :: iounit, iRx, nRx
+     character(len=80)          :: header
+
+     if (.not. associated(rxDict)) then
+        return
+     end if
+
+     nRx = size(rxDict)
+     header = 'Receiver Dictionary'
+     write(iounit) header
+     write(iounit) nRx
+     do iRx = 1, size(rxDict)
+        write(iounit) iRx,rxDict(iRx)%x,rxDict(iRx)%Rx_azi
+        !   hard to read variable length records from a binary file,
+        !   unless written as individual sequential records; hence this
+        write(iounit) trim(rxDict(iRx)%id)
+     enddo
+
+  end subroutine write_rxDict_bin
 
   ! **************************************************************************
   ! Cleans up and deletes receiver dictionary at end of program execution

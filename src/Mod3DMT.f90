@@ -21,7 +21,10 @@ program Mod3DMT
 
      implicit none
 
-     integer :: iTx, Nmodel
+     integer :: iTx, Nmodel, j
+     !   I am adding this to main, for now -- need to list the transmitter indices for the
+     !     data vector,in order for MTX (-M option)
+     integer, allocatable     :: tx_index(:)
 
      ! Character-based information specified by the user
      type (userdef_control) :: cUserDef
@@ -131,6 +134,7 @@ program Mod3DMT
 		open (unit=ioSolverStat,file=trim(solverParams%solver_name)//"_SolverStatFile_"//date//"_"//time//".txt",status='unknown',iostat=ios)
 		
 		
+            call print_rxDict()
       select case (cUserDef%job)
       case (READ_WRITE)
         if (output_level > 3) then
@@ -201,12 +205,25 @@ program Mod3DMT
          call Master_job_JmultT(sigma0,allData,dsigma,s_hat=JT_multi_Tx_vec)
 #else
          !call fwdPred(sigma0,allData,eAll)
-         call JmultT(sigma0,allData,dsigma,s_hat=JT_multi_Tx_vec)
+         call JmultT(sigma0,allData,dsigma,JT_multi_Tx_vec=JT_multi_Tx_vec)
 #endif
          open(unit=ioSens, file=cUserDef%wFile_dModel, form='unformatted', iostat=ios)
          write(0,*) 'Output JT_multi_Tx_vec...'
          write(header,*) 'JT multi_Tx vectors'
          !write(ioSens) header
+         !    first write out txDict
+         call write_txDict_bin(ioSens)
+         allocate(tx_index(allData%nTx))
+         !   then find and output ordered list of txDict indices
+         !    better ways to do all of this, but perhaps also clean up MTX sensitivity output
+         do j = 1,allData%nTx
+           tx_index(j) = allData%d(j)%tx
+         enddo
+         write(header,*) 'tx_index'
+         write(ioSens) header
+         write(ioSens) allData%nTx
+         write(ioSens) tx_index
+         deallocate(tx_index)
          call writeVec_modelParam_binary(size(JT_multi_Tx_vec),JT_multi_Tx_vec,header,cUserDef%wFile_dModel)
          close(ioSens)
          

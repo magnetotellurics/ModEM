@@ -5,6 +5,10 @@ module sensMatrix
   use utilities
   use DataSpace
   use ModelSpace
+  !    need to use dictionaries, so that the dictionary can  be written out with the sensitiviy matrix;
+  !    without this metadata, sensitivity matrix is USELESS!
+  use transmitters
+  use receivers
 
   implicit none
 
@@ -263,6 +267,13 @@ Contains
 	write(ioSens) header
 	write(ioSens) nAll
 
+!   write Tx and Rx dictionaries to sensitivity matrix file
+!     I am not writing out "type_dict" since this is hard-coded in ModEM,
+!      and could also be hard-coded in any program using the sensitivity matrix
+    call write_txDict_bin(ioSens)
+    call write_rxDict_bin(ioSens)
+  
+!   now write out actual sensitivities, grouped by Tx
     nTx = size(sens)
     write(ioSens) nTx
 
