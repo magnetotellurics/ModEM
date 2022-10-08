@@ -164,10 +164,8 @@ Contains
     real(8)                         :: lat,lon,ref_lat,ref_lon
     logical                         :: conjugate, isComplex
 
-    ! 2019.04.23, Liu Zhongyin, add local varible azimu
-    real(8)                         :: Hxazimuth,Exazimuth,Hxazimuth_ref
-    ! 2022.09.07, Liu Zhongyin, add local varible azimu
-    real(8)                         :: Hyazimuth,Eyazimuth,Hyazimuth_ref
+    ! 2022.09.28, Liu Zhongyin, add local varible azimu
+    type(Azimuth_t)                 :: azimu
 
     iTxt = 1
 
@@ -259,12 +257,8 @@ Contains
             siteid = rxDict(iRx)%id
             x = rxDict(iRx)%x
 
-            Hxazimuth = rxDict(iRx)%HxAzimuth
-            Exazimuth = rxDict(iRx)%ExAzimuth
-            Hxazimuth_ref = rxDict(iRx)%HxAzimuth_ref
-            Hyazimuth = rxDict(iRx)%HyAzimuth
-            Eyazimuth = rxDict(iRx)%EyAzimuth
-            Hyazimuth = rxDict(iRx)%HyAzimuth_ref
+            ! 2022.10.04, Liu Zhongyin, assign azimuth to azimu
+            azimu = allData%d(j)%data(i)%Azimuth(k)
 
             select case (iDt)
 
@@ -278,38 +272,19 @@ Contains
                         write(ioDat,'(es12.6)',    iostat=ios,advance='no') Period
                         write(ioDat, '(a1)', iostat=ios,advance='no') ' '
                         write(ioDat,'(a40,3f15.3)',iostat=ios,advance='no') trim(siteid),x(:)
-                        !if (conjugate) then
-                        !    write(ioDat,'(a8,3es15.6)',iostat=ios) trim(compid),value(2*icomp-1),-value(2*icomp),error(2*icomp)
-                        !else
-                        !    write(ioDat,'(a8,3es15.6)',iostat=ios) trim(compid),value(2*icomp-1),value(2*icomp),error(2*icomp)
-                        !end if
-                        ! 2019.04.23, Liu Zhongyin, add azimu while writing
-                        ! if (conjugate) then
-                        !     if (abs(Hxazimuth-Exazimuth) .lt. 1.e-5) then
-                        !         write(ioDat,'(a8,4es15.6)',iostat=ios) trim(compid),value(2*icomp-1),-value(2*icomp),error(2*icomp), &
-                        !             Hxazimuth-fileInfo(iTxt,iDt)%geographic_orientation
-                        !     else
-                        !         write(ioDat,'(a8,5es15.6)',iostat=ios) trim(compid),value(2*icomp-1),-value(2*icomp),error(2*icomp), &
-                        !             Hxazimuth-fileInfo(iTxt,iDt)%geographic_orientation, Exazimuth-fileInfo(iTxt,iDt)%geographic_orientation
-                        !     endif
-                        ! else
-                        !     if (abs(Hxazimuth-Exazimuth) .lt. 1.e-5) then
-                        !         write(ioDat,'(a8,4es15.6)',iostat=ios) trim(compid),value(2*icomp-1),value(2*icomp),error(2*icomp), &
-                        !             Hxazimuth-fileInfo(iTxt,iDt)%geographic_orientation
-                        !     else
-                        !         write(ioDat,'(a8,5es15.6)',iostat=ios) trim(compid),value(2*icomp-1),value(2*icomp),error(2*icomp), &
-                        !             Hxazimuth-fileInfo(iTxt,iDt)%geographic_orientation, Exazimuth-fileInfo(iTxt,iDt)%geographic_orientation
-                        !     endif
-                        ! end if
-                        ! 2022.09.07, Liu Zhongyin, add azimu while writing
+                        ! 2022.09.28, Liu Zhongyin, add azimu while writing
                         if (conjugate) then
                                 write(ioDat,'(a8,5es15.6)',iostat=ios) trim(compid),value(2*icomp-1),-value(2*icomp),error(2*icomp), &
-                                Hxazimuth-fileInfo(iTxt,iDt)%geographic_orientation, Exazimuth-fileInfo(iTxt,iDt)%geographic_orientation, &
-                                Hyazimuth-fileInfo(iTxt,iDt)%geographic_orientation, Eyazimuth-fileInfo(iTxt,iDt)%geographic_orientation
+                                azimu%HxAzimuth-fileInfo(iTxt,iDt)%geographic_orientation, &
+                                azimu%ExAzimuth-fileInfo(iTxt,iDt)%geographic_orientation, &
+                                azimu%HyAzimuth-fileInfo(iTxt,iDt)%geographic_orientation, &
+                                azimu%EyAzimuth-fileInfo(iTxt,iDt)%geographic_orientation
                         else
                                 write(ioDat,'(a8,5es15.6)',iostat=ios) trim(compid),value(2*icomp-1),value(2*icomp),error(2*icomp), &
-                                Hxazimuth-fileInfo(iTxt,iDt)%geographic_orientation, Exazimuth-fileInfo(iTxt,iDt)%geographic_orientation, &
-                                Hyazimuth-fileInfo(iTxt,iDt)%geographic_orientation, Eyazimuth-fileInfo(iTxt,iDt)%geographic_orientation
+                                azimu%HxAzimuth-fileInfo(iTxt,iDt)%geographic_orientation, &
+                                azimu%ExAzimuth-fileInfo(iTxt,iDt)%geographic_orientation, &
+                                azimu%HyAzimuth-fileInfo(iTxt,iDt)%geographic_orientation, &
+                                azimu%EyAzimuth-fileInfo(iTxt,iDt)%geographic_orientation
                         end if
                         countData = countData + 1
                     end do
@@ -327,38 +302,19 @@ Contains
                         write(ioDat, '(a1)', iostat=ios,advance='no') ' '
                         write(ioDat,'(a40,3f15.3)',iostat=ios,advance='no') trim(siteid),x(:)
                         write(ioDat,'(a40,3f15.3)',iostat=ios,advance='no') trim(ref_siteid),ref_x(:)
-                        !if (conjugate) then
-                        !    write(ioDat,'(a8,3es15.6)',iostat=ios) trim(compid),value(2*icomp-1),-value(2*icomp),error(2*icomp)
-                        !else
-                        !    write(ioDat,'(a8,3es15.6)',iostat=ios) trim(compid),value(2*icomp-1),value(2*icomp),error(2*icomp)
-                        !end if
-                        ! 2019.04.23, Liu Zhongyin, add azimu while writing
-                        ! if (conjugate) then
-                        !     if (abs(Hxazimuth-Hxazimuth_ref) .lt. 1.e-5) then
-                        !         write(ioDat,'(a8,4es15.6)',iostat=ios) trim(compid),value(2*icomp-1),-value(2*icomp),error(2*icomp), &
-                        !             Hxazimuth-fileInfo(iTxt,iDt)%geographic_orientation
-                        !     else
-                        !         write(ioDat,'(a8,5es15.6)',iostat=ios) trim(compid),value(2*icomp-1),-value(2*icomp),error(2*icomp), &
-                        !             Hxazimuth-fileInfo(iTxt,iDt)%geographic_orientation, Hxazimuth_ref-fileInfo(iTxt,iDt)%geographic_orientation
-                        !     endif
-                        ! else
-                        !     if (abs(Hxazimuth-Hxazimuth_ref) .lt. 1.e-5) then
-                        !         write(ioDat,'(a8,4es15.6)',iostat=ios) trim(compid),value(2*icomp-1),value(2*icomp),error(2*icomp), &
-                        !             Hxazimuth-fileInfo(iTxt,iDt)%geographic_orientation
-                        !     else
-                        !         write(ioDat,'(a8,4es15.6)',iostat=ios) trim(compid),value(2*icomp-1),value(2*icomp),error(2*icomp), &
-                        !             Hxazimuth-fileInfo(iTxt,iDt)%geographic_orientation,Hxazimuth_ref-fileInfo(iTxt,iDt)%geographic_orientation
-                        !     endif
-                        ! end if
-                        ! 2022.09.07, Liu Zhongyin, add azimu while writing
+                        ! 2022.09.28, Liu Zhongyin, add azimu while writing
                         if (conjugate) then
                                 write(ioDat,'(a8,5es15.6)',iostat=ios) trim(compid),value(2*icomp-1),-value(2*icomp),error(2*icomp), &
-                                Hxazimuth-fileInfo(iTxt,iDt)%geographic_orientation, Hxazimuth_ref-fileInfo(iTxt,iDt)%geographic_orientation, &
-                                Hyazimuth-fileInfo(iTxt,iDt)%geographic_orientation, Hyazimuth_ref-fileInfo(iTxt,iDt)%geographic_orientation
+                                azimu%HxAzimuth-fileInfo(iTxt,iDt)%geographic_orientation, &
+                                azimu%HxAzimuth_ref-fileInfo(iTxt,iDt)%geographic_orientation, &
+                                azimu%HyAzimuth-fileInfo(iTxt,iDt)%geographic_orientation, &
+                                azimu%HyAzimuth_ref-fileInfo(iTxt,iDt)%geographic_orientation
                         else
                                 write(ioDat,'(a8,4es15.6)',iostat=ios) trim(compid),value(2*icomp-1),value(2*icomp),error(2*icomp), &
-                                Hxazimuth-fileInfo(iTxt,iDt)%geographic_orientation, Hxazimuth_ref-fileInfo(iTxt,iDt)%geographic_orientation, &
-                                Hyazimuth-fileInfo(iTxt,iDt)%geographic_orientation, Hyazimuth_ref-fileInfo(iTxt,iDt)%geographic_orientation
+                                azimu%HxAzimuth-fileInfo(iTxt,iDt)%geographic_orientation, &
+                                azimu%HxAzimuth_ref-fileInfo(iTxt,iDt)%geographic_orientation, &
+                                azimu%HyAzimuth-fileInfo(iTxt,iDt)%geographic_orientation, &
+                                azimu%HyAzimuth_ref-fileInfo(iTxt,iDt)%geographic_orientation
                         end if
                         countData = countData + 1
                     end do
@@ -394,19 +350,12 @@ Contains
                         write(ioDat,'(es12.6)',    iostat=ios,advance='no') Period
                         write(ioDat, '(a1)', iostat=ios,advance='no') ' '
                         write(ioDat,'(a40,3f15.3)',iostat=ios,advance='no') trim(siteid),x(:)
-                        !write(ioDat,'(a8,3es15.6)',iostat=ios) trim(compid),value(icomp),error(icomp)
-                        ! 2019.04.23, Liu Zhongyin, add azimu while writing
-                        ! if (abs(Hxazimuth-Exazimuth) .lt. 1.e-5) then
-                        !     write(ioDat,'(a8,4es15.6)',iostat=ios) trim(compid),value(icomp),error(icomp), &
-                        !         Hxazimuth-fileInfo(iTxt,iDt)%geographic_orientation
-                        ! else
-                        !     write(ioDat,'(a8,4es15.6)',iostat=ios) trim(compid),value(icomp),error(icomp), &
-                        !         Hxazimuth-fileInfo(iTxt,iDt)%geographic_orientation, Exazimuth-fileInfo(iTxt,iDt)%geographic_orientation
-                        ! endif
                         ! 2022.09.07, Liu Zhongyin, add azimu while writing
                             write(ioDat,'(a8,4es15.6)',iostat=ios) trim(compid),value(icomp),error(icomp), &
-                            Hxazimuth-fileInfo(iTxt,iDt)%geographic_orientation, Exazimuth-fileInfo(iTxt,iDt)%geographic_orientation, &
-                            Hyazimuth-fileInfo(iTxt,iDt)%geographic_orientation, Eyazimuth-fileInfo(iTxt,iDt)%geographic_orientation
+                            azimu%HxAzimuth-fileInfo(iTxt,iDt)%geographic_orientation, &
+                            azimu%ExAzimuth-fileInfo(iTxt,iDt)%geographic_orientation, &
+                            azimu%HyAzimuth-fileInfo(iTxt,iDt)%geographic_orientation, &
+                            azimu%EyAzimuth-fileInfo(iTxt,iDt)%geographic_orientation
                         countData = countData + 1
                     end do
 
@@ -457,10 +406,11 @@ Contains
     real(8)                         :: Zreal, Zimag, Zerr
     logical                         :: conjugate, errorBar, isComplex
 
-    ! 2019.03.18, Liu Zhongyin, add azimu variable
-    real(8)                         :: Hxangle,Exangle,Hxangle_ref
-    ! 2022.09.07, Liu Zhongyin, add azimu variable
-    real(8)                         :: Hyangle,Eyangle,Hyangle_ref
+    ! 2022.09.28, Liu Zhongyin, add azimu variable
+    real(kind=prec), allocatable    :: HxAzimuth(:,:), ExAzimuth(:,:), HxAzimuth_ref(:,:) !(nTx,nRx)
+    real(kind=prec), allocatable    :: HyAzimuth(:,:), EyAzimuth(:,:), HyAzimuth_ref(:,:) !(nTx,nRx)
+    real(kind=prec)                 :: Hxangle, Exangle, Hxangle_ref, Hyangle, Eyangle, Hyangle_ref
+
     integer                         :: ncount
     character(1000)                 :: tmpline
 
@@ -536,6 +486,14 @@ Contains
         allocate(new_TxType(nTx),new_Tx(nTx),new_Rx(nRx),STAT=istat)
         allocate(value(nTx,nRx,ncomp),error(nTx,nRx,ncomp),exist(nTx,nRx,ncomp),STAT=istat)
 
+        ! 2022.09.28, Liu Zhongyin, add azimu allocation
+        allocate(HxAzimuth(nTx,nRx),stat=istat)
+        allocate(HyAzimuth(nTx,nRx),stat=istat)
+        allocate(ExAzimuth(nTx,nRx),stat=istat)
+        allocate(EyAzimuth(nTx,nRx),stat=istat)
+        allocate(HxAzimuth_ref(nTx,nRx),stat=istat)
+        allocate(HyAzimuth_ref(nTx,nRx),stat=istat)
+
         new_TxType(:) = 0
         new_Tx(:) = 0
         new_Rx(:) = 0
@@ -544,6 +502,13 @@ Contains
         exist(:,:,:) = .FALSE.
         countData = 0
 
+        ! 2022.09.28, Liu Zhongyin, add azimu initial
+        HxAzimuth(:,:) = R_ZERO
+        HyAzimuth(:,:) = R_ZERO
+        ExAzimuth(:,:) = R_ZERO
+        EyAzimuth(:,:) = R_ZERO
+        HxAzimuth_ref(:,:) = R_ZERO
+        HyAzimuth_ref(:,:) = R_ZERO
 
         READ_DATA_LINE: Do
 
@@ -615,12 +580,6 @@ Contains
                 ! For now, make lat & lon part of site ID; could use directly in the future
                 write(siteid,'(a20,2f9.3)') code,lat,lon
                 iRx = update_rxDict(x,siteid)
-                rxDict(iRx)%HxAzimuth = Hxangle
-                rxDict(iRx)%ExAzimuth = Exangle
-                rxDict(iRx)%HxAzimuth_ref = Hxangle_ref
-                rxDict(iRx)%HyAzimuth = Hyangle
-                rxDict(iRx)%EyAzimuth = Eyangle
-                rxDict(iRx)%HyAzimuth_ref = Hyangle_ref
 
             case(Full_Interstation_TF)
                 read(ioDat,'(a)',iostat=ios) tmpline
@@ -694,13 +653,6 @@ Contains
                 write(siteid,'(a22,2f9.3)') code,lat,lon
                 write(ref_siteid,'(a22,2f9.3)') ref_code,ref_lat,ref_lon
                 iRx = update_rxDict(x,siteid,ref_x,ref_siteid)
-                rxDict(iRx)%HxAzimuth = Hxangle
-                rxDict(iRx)%ExAzimuth = Exangle
-                rxDict(iRx)%HxAzimuth_ref = Hxangle_ref                
-                rxDict(iRx)%HyAzimuth = Hyangle
-                rxDict(iRx)%EyAzimuth = Eyangle
-                rxDict(iRx)%HyAzimuth_ref = Hyangle_ref
-
 
             case(Off_Diagonal_Rho_Phase,Phase_Tensor)
                 read(ioDat,'(a)',iostat=ios) tmpline
@@ -785,12 +737,6 @@ Contains
                 ! For now, make lat & lon part of site ID; could use directly in the future
                 write(siteid,'(a22,2f9.3)') code,lat,lon
                 iRx = update_rxDict(x,siteid)
-                rxDict(iRx)%HxAzimuth = Hxangle
-                rxDict(iRx)%ExAzimuth = Exangle
-                rxDict(iRx)%HxAzimuth_ref = Hxangle_ref                
-                rxDict(iRx)%HyAzimuth = Hyangle
-                rxDict(iRx)%EyAzimuth = Eyangle
-                rxDict(iRx)%HyAzimuth_ref = Hyangle_ref
 
             end select
 
@@ -823,6 +769,14 @@ Contains
             end if
             error(i,j,icomp) = SI_factor * Zerr
             exist(i,j,icomp) = .TRUE.
+
+            ! 2022.09.28, Liu Zhongyin, assign angle to azimu
+            HxAzimuth(i,j) = Hxangle
+            HyAzimuth(i,j) = Hyangle
+            ExAzimuth(i,j) = Exangle
+            EyAzimuth(i,j) = Eyangle
+            HxAzimuth_ref(i,j) = Hxangle_ref
+            HyAzimuth_ref(i,j) = Hyangle_ref
 
             countData = countData + 1
 
@@ -865,10 +819,26 @@ Contains
 	               newData%d(i)%data(1)%error(2*icomp  ,k) = error(i,j,icomp)
 	               newData%d(i)%data(1)%exist(2*icomp-1,k) = exist(i,j,icomp)
 	               newData%d(i)%data(1)%exist(2*icomp  ,k) = exist(i,j,icomp)
+
+                   ! 2022.09.28, Liu Zhongyin, add azimuth
+                   newData%d(i)%data(1)%Azimuth(k)%HxAzimuth = HxAzimuth(i,j)
+                   newData%d(i)%data(1)%Azimuth(k)%HyAzimuth = HyAzimuth(i,j)
+                   newData%d(i)%data(1)%Azimuth(k)%ExAzimuth = ExAzimuth(i,j)
+                   newData%d(i)%data(1)%Azimuth(k)%EyAzimuth = EyAzimuth(i,j)
+                   newData%d(i)%data(1)%Azimuth(k)%HxAzimuth_ref = HxAzimuth_ref(i,j)
+                   newData%d(i)%data(1)%Azimuth(k)%HyAzimuth_ref = HyAzimuth_ref(i,j)
 	            else
 	               newData%d(i)%data(1)%value(icomp,k) = real(value(i,j,icomp))
 	               newData%d(i)%data(1)%error(icomp,k) = error(i,j,icomp)
 	               newData%d(i)%data(1)%exist(icomp,k) = exist(i,j,icomp)
+
+                   ! 2022.09.28, Liu Zhongyin, add azimuth
+                   newData%d(i)%data(1)%Azimuth(k)%HxAzimuth = HxAzimuth(i,j)
+                   newData%d(i)%data(1)%Azimuth(k)%HyAzimuth = HyAzimuth(i,j)
+                   newData%d(i)%data(1)%Azimuth(k)%ExAzimuth = ExAzimuth(i,j)
+                   newData%d(i)%data(1)%Azimuth(k)%EyAzimuth = EyAzimuth(i,j)
+                   newData%d(i)%data(1)%Azimuth(k)%HxAzimuth_ref = HxAzimuth_ref(i,j)
+                   newData%d(i)%data(1)%Azimuth(k)%HyAzimuth_ref = HyAzimuth_ref(i,j)
 	            end if
 	           end do
 	           newData%d(i)%data(1)%rx(k) = new_Rx(j)
@@ -884,6 +854,14 @@ Contains
 	! Merge the new data into the main data vector
 	call merge_dataVectorMTX(allData,newData,allData)
     
+    ! 2022.09.28, Liu Zhongyin, deallocate azimu
+    deallocate(HxAzimuth,stat=istat)
+    deallocate(HyAzimuth,stat=istat)
+    deallocate(ExAzimuth,stat=istat)
+    deallocate(EyAzimuth,stat=istat)
+    deallocate(HxAzimuth_ref,stat=istat)
+    deallocate(HyAzimuth_ref,stat=istat)
+
 	deallocate(value,error,exist,STAT=istat)
 	deallocate(new_TxType,new_Tx,new_Rx,STAT=istat)
 	call deall_dataVectorMTX(newData)
