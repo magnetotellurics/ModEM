@@ -131,7 +131,7 @@ program Mod3DMT
 		! These information will be used for plotting to compare the performace of the solver(s).
 		! Naser and Paulo 02.10.2019
 		call date_and_time(date,time)
-		open (unit=ioSolverStat,file=trim(solverParams%solver_name)//"_SolverStatFile_"//date//"_"//time//".txt",status='unknown',iostat=ios)
+!		open (unit=ioSolverStat,file=trim(solverParams%solver_name)//"_SolverStatFile_"//date//"_"//time//".txt",status='unknown',iostat=ios)
 		
 		
             call print_rxDict()
@@ -343,9 +343,9 @@ program Mod3DMT
 #endif
 
         call multBy_sensMatrixMTX(sens,dsigma,predData)
+        write(6,*) 'wFile_Data  ', cUserDef%wFile_Data
+        call write_dataVectorMTX(predData,cUserDef%wFile_Data)
         allData = predData
-
-        call write_dataVectorMTX(allData,cUserDef%wFile_Data)
 
         ! now, compute d = J m using Jmult
         write(6,*) 'Multiplying by J...'
@@ -356,10 +356,10 @@ program Mod3DMT
         call Jmult(dsigma,sigma0,predData)
 #endif
 
+        call scMultAdd(MinusOne,predData,allData)
         write(0,'(a82)') 'Comparison between d = J m using full Jacobian, row by row (calcJ) and using Jmult'
-        write(0,'(a20,g15.7)') '|d| using calcJ: ',dotProd(allData,allData)
-        write(0,'(a20,g15.7)') '|d| using Jmult: ',dotProd(predData,predData)
-
+        write(0,'(a30,g15.7)') '|d1-d2|/|d2| d1 using calcJ: ',dotProd(allData,allData)/dotProd(predData,predData)
+        write(0,'(a20,g15.7)') '|d2| using Jmult: ',dotProd(predData,predData)
 	 
      case (TEST_ADJ)
 	   call setGrid(grid)

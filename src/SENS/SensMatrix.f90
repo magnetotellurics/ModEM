@@ -51,6 +51,9 @@ module sensMatrix
       ! dt is index into data type dictionary
       integer		:: dataType = 0
 
+      ! txt is index into transmitter type dictionary
+      integer		:: txType = 0
+
       logical       :: isComplex = .false.
       logical		:: allocated = .false.
 
@@ -125,6 +128,7 @@ Contains
        sens%v(i)%rx = d%data(i)%rx
 
        sens%v(i)%dataType = d%data(i)%dataType
+       sens%v(i)%txType = d%data(i)%txType
        sens%v(i)%isComplex = d%data(i)%isComplex
 
        sens%v(i)%allocated = .true.
@@ -154,6 +158,7 @@ Contains
           deallocate(sens%v(i)%rx, STAT=istat)
 
           sens%v(i)%dataType = 0
+          sens%v(i)%txType = 0
           sens%v(i)%isComplex = .false.
 
           do j = 1,nComp
@@ -351,6 +356,8 @@ Contains
         end do ! rx
 
         d%d(i)%data(j)%dataType = sens(i)%v(j)%dataType
+        !   at present sensitivity matrix does now carry txType info
+        d%d(i)%data(j)%txType = sens(i)%v(j)%txType
         d%d(i)%data(j)%rx = sens(i)%v(j)%rx
         d%d(i)%data(j)%tx = sens(i)%v(j)%tx
         d%d(i)%data(j)%allocated = .true.
