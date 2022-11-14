@@ -70,6 +70,8 @@ module sensMatrix
       ! the number of dataVecs (generally the number of data types) associated
       ! with this transmitter (note: not the total number of data types)
       integer       :: ndt = 0
+      !   NEED to know ISIGN to use sensitivity matrix
+      integer       :: ISIGN = ISIGN
 
       ! array of sensVector's, usually one for each data type (dimension ndt)
       type (sensVector_t), pointer, dimension(:)   :: v
@@ -271,6 +273,9 @@ Contains
 	nAll = count_sensMatrixMTX(sens)
 	write(ioSens) header
 	write(ioSens) nAll
+  !   assume that all sensitivity calculations use native ISIGN -- nothing is modified
+  !      before output.
+	write(ioSens) ISIGN
 
 !   write Tx and Rx dictionaries to sensitivity matrix file
 !     I am not writing out "type_dict" since this is hard-coded in ModEM,
@@ -324,6 +329,7 @@ Contains
     ! local
     integer  nTx,nDt,nSite,iComp,nComp,i,j,k,istat
     logical  isComplex,errorBar
+    real(kind=prec) d_dot_m
 
     if(.not. associated(sens)) then
         call errStop('sensitivity matrix not allocated in multBy_sensMatrixMTX')
@@ -350,7 +356,6 @@ Contains
             do iComp = 1,nComp
                 ! computes the dot products of the model parameters
                 d%d(i)%data(j)%value(iComp,k) = dotProd_modelParam(sens(i)%v(j)%dm(iComp,k),m)
-
             end do ! components
 
         end do ! rx

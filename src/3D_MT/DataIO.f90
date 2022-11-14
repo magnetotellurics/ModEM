@@ -187,10 +187,14 @@ Contains
 
     open(unit=ioDat,file=cfile,form='formatted',status='unknown')
 
+    write(6,*) 'entered write_Z_list'
+
+    write(6,*) 'number of data types', size(typeDict)
     ! For each data type in dictionary, if data of this type exists, write it out.
     WRITE_DATA_TYPE: do iDt = 1,size(typeDict)
 
       nBlocks = countDataBlock(allData,iDt,iTxt)
+      write(6,*) 'nBlocks',nBlocks
       if (nBlocks == 0) then
 	! no data for this data type; skip it - this shouldn't happen anymore
 	! since the "defined" logical deals with this on input

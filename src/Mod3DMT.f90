@@ -341,9 +341,10 @@ program Mod3DMT
 #else
         call calcJ(allData,sigma0,sens)
 #endif
+        !call write_sensMatrixMTX(sens,'J.sns')
 
         call multBy_sensMatrixMTX(sens,dsigma,predData)
-        write(6,*) 'wFile_Data  ', cUserDef%wFile_Data
+
         call write_dataVectorMTX(predData,cUserDef%wFile_Data)
         allData = predData
 
