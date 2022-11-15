@@ -88,6 +88,11 @@ Contains
      integer                            :: nTx, istat,i
      logical							:: new_Tx
 
+     if (.not. associated(txDict)) then
+        nTx = 0
+     else
+        nTx = size(txDict)
+     end if
 
      ! Create a transmitter for this period
      new%period = Period
@@ -109,7 +114,6 @@ Contains
      end if
 
 
-     nTx = size(txDict)
        ! If this period isn't new, do nothing
      do i = 1,nTx
      	if ((abs(Period - txDict(i)%period) .lt. TOL6) .and. (new%nPol == txDict(i)%nPol)) then

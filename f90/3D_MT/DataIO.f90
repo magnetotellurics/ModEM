@@ -156,6 +156,7 @@ Contains
     real(8), allocatable            :: error(:) ! (ncomp)
     logical, allocatable            :: exist(:) ! (ncomp)
     character(2)                    :: temp = '> '
+    character(8)                    :: today
     character(40)                   :: siteid,ref_siteid,compid
     character(1000)                 :: strtemp
     integer                         :: iTxt,iTx,iRx,iDt,icomp,i,j,k,istat,ios,nBlocks
@@ -165,7 +166,7 @@ Contains
 
     iTxt = 1
 
-    open(unit=ioDat,file=cfile,form='formatted',status='unknown')
+    open(unit=ioDat,recl=4096,file=cfile,form='formatted',status='unknown')
 
     ! For each data type in dictionary, if data of this type exists, write it out.
     WRITE_DATA_TYPE: do iDt = 1,size(typeDict)
@@ -195,13 +196,13 @@ Contains
       end if
 
       ! write the data type header
+      call date_and_time(today)
       call compact(fileInfo(iTxt,iDt)%info_in_file)
-      write(strtemp,*) adjustl(trim(fileInfo(iTxt,iDt)%info_in_file))
-      write(ioDat,'(a32)',advance='no') '# ModEM impedance responses for '
-      write(ioDat,*,iostat=ios) strtemp(1:100)
-      write(strtemp,*) adjustl(trim(DataBlockHeader(iTxt,iDt)))
+      write(strtemp,*) adjustl(trim(fileInfo(iTxt,iDt)%info_in_file)),' [',trim(today(1:4)),'-',trim(today(5:6)),'-',trim(today(7:8)),']'
       write(ioDat,'(a2)',advance='no') '# '
-      write(ioDat,*,iostat=ios) strtemp(1:100)
+      write(ioDat,*,iostat=ios) adjustl(trim(strtemp))
+      write(ioDat,'(a2)',advance='no') '# '
+      write(ioDat,*,iostat=ios) adjustl(trim(DataBlockHeader(iTxt,iDt)))
       !if (.not. (tx_type_name(iTxt) .eq. 'MT')) then
       !    write(ioDat,'(a2)',advance='no') '+ '
       !    write(ioDat,*,iostat=ios) trim(tx_type_name(iTxt))
@@ -360,7 +361,7 @@ Contains
     character(40)                   :: siteid,ref_siteid,compid
     integer                         :: nTxt,iTxt,iDt,i,j,k,istat,ios
     character(40)                   :: code,ref_code
-    real(8)                         :: x(3),ref_x(3), Period,SI_factor,large
+    real(8)                         :: x(3),ref_x(3), Period,SI_factor
     real(8)                         :: lat,lon,ref_lat,ref_lon
     real(8)                         :: Zreal, Zimag, Zerr
     logical                         :: conjugate, errorBar, isComplex
@@ -400,6 +401,7 @@ Contains
         	ncomp = ncomp/2
     	end if
 
+        call compact(typeInfo)
     	fileInfo(iTxt,iDt)%defined = .true.
     	fileInfo(iTxt,iDt)%info_in_file = typeInfo
     	
@@ -441,7 +443,7 @@ Contains
         new_Tx(:) = 0
         new_Rx(:) = 0
         value(:,:,:) = dcmplx(0.0d0,0.0d0)
-        error(:,:,:) = large
+        error(:,:,:) = LARGE_REAL
         exist(:,:,:) = .FALSE.
         countData = 0
 
