@@ -157,6 +157,7 @@ Contains
     real(8), allocatable            :: error(:) ! (ncomp)
     logical, allocatable            :: exist(:) ! (ncomp)
     character(2)                    :: temp = '> '
+    character(8)                    :: today
     character(40)                   :: siteid,ref_siteid,compid
     character(1000)                 :: strtemp
     integer                         :: iTxt,iTx,iRx,iDt,icomp,i,j,k,istat,ios,nBlocks
@@ -169,7 +170,7 @@ Contains
 
     iTxt = 1
 
-    open(unit=ioDat,file=cfile,form='formatted',status='unknown')
+    open(unit=ioDat,recl=4096,file=cfile,form='formatted',status='unknown')
 
     ! For each data type in dictionary, if data of this type exists, write it out.
     WRITE_DATA_TYPE: do iDt = 1,size(typeDict)
@@ -199,13 +200,13 @@ Contains
       end if
 
       ! write the data type header
+      call date_and_time(today)
       call compact(fileInfo(iTxt,iDt)%info_in_file)
-      write(strtemp,*) adjustl(trim(fileInfo(iTxt,iDt)%info_in_file))
-      write(ioDat,'(a32)',advance='no') '# ModEM impedance responses for '
-      write(ioDat,*,iostat=ios) strtemp(1:100)
-      write(strtemp,*) adjustl(trim(DataBlockHeader(iTxt,iDt)))
+      write(strtemp,*) adjustl(trim(fileInfo(iTxt,iDt)%info_in_file)),' [',trim(today(1:4)),'-',trim(today(5:6)),'-',trim(today(7:8)),']'
       write(ioDat,'(a2)',advance='no') '# '
-      write(ioDat,*,iostat=ios) strtemp(1:100)
+      write(ioDat,*,iostat=ios) adjustl(trim(strtemp))
+      write(ioDat,'(a2)',advance='no') '# '
+      write(ioDat,*,iostat=ios) adjustl(trim(DataBlockHeader(iTxt,iDt)))
       !if (.not. (tx_type_name(iTxt) .eq. 'MT')) then
       !    write(ioDat,'(a2)',advance='no') '+ '
       !    write(ioDat,*,iostat=ios) trim(tx_type_name(iTxt))
@@ -232,7 +233,6 @@ Contains
 
       ncomp = typeDict(iDt)%nComp
       allocate(value(ncomp),error(ncomp),exist(ncomp),STAT=istat)
-
       isComplex = typeDict(iDt)%isComplex
       countData = 0
 
@@ -274,13 +274,13 @@ Contains
                         write(ioDat,'(a40,3f15.3)',iostat=ios,advance='no') trim(siteid),x(:)
                         ! 2022.09.28, Liu Zhongyin, add azimu while writing
                         if (conjugate) then
-                                write(ioDat,'(a8,5es15.6)',iostat=ios) trim(compid),value(2*icomp-1),-value(2*icomp),error(2*icomp), &
+                                write(ioDat,'(a8,3es15.6,4f9.3)',iostat=ios) trim(compid),value(2*icomp-1),-value(2*icomp),error(2*icomp), &
                                 azimu%HxAzimuth-fileInfo(iTxt,iDt)%geographic_orientation, &
                                 azimu%ExAzimuth-fileInfo(iTxt,iDt)%geographic_orientation, &
                                 azimu%HyAzimuth-fileInfo(iTxt,iDt)%geographic_orientation, &
                                 azimu%EyAzimuth-fileInfo(iTxt,iDt)%geographic_orientation
                         else
-                                write(ioDat,'(a8,5es15.6)',iostat=ios) trim(compid),value(2*icomp-1),value(2*icomp),error(2*icomp), &
+                                write(ioDat,'(a8,3es15.6,4f9.3)',iostat=ios) trim(compid),value(2*icomp-1),value(2*icomp),error(2*icomp), &
                                 azimu%HxAzimuth-fileInfo(iTxt,iDt)%geographic_orientation, &
                                 azimu%ExAzimuth-fileInfo(iTxt,iDt)%geographic_orientation, &
                                 azimu%HyAzimuth-fileInfo(iTxt,iDt)%geographic_orientation, &
@@ -304,13 +304,13 @@ Contains
                         write(ioDat,'(a40,3f15.3)',iostat=ios,advance='no') trim(ref_siteid),ref_x(:)
                         ! 2022.09.28, Liu Zhongyin, add azimu while writing
                         if (conjugate) then
-                                write(ioDat,'(a8,5es15.6)',iostat=ios) trim(compid),value(2*icomp-1),-value(2*icomp),error(2*icomp), &
+                                write(ioDat,'(a8,3es15.6,4f9.3)',iostat=ios) trim(compid),value(2*icomp-1),-value(2*icomp),error(2*icomp), &
                                 azimu%HxAzimuth-fileInfo(iTxt,iDt)%geographic_orientation, &
                                 azimu%HxAzimuth_ref-fileInfo(iTxt,iDt)%geographic_orientation, &
                                 azimu%HyAzimuth-fileInfo(iTxt,iDt)%geographic_orientation, &
                                 azimu%HyAzimuth_ref-fileInfo(iTxt,iDt)%geographic_orientation
                         else
-                                write(ioDat,'(a8,4es15.6)',iostat=ios) trim(compid),value(2*icomp-1),value(2*icomp),error(2*icomp), &
+                                write(ioDat,'(a8,3es15.6,4f9.3)',iostat=ios) trim(compid),value(2*icomp-1),value(2*icomp),error(2*icomp), &
                                 azimu%HxAzimuth-fileInfo(iTxt,iDt)%geographic_orientation, &
                                 azimu%HxAzimuth_ref-fileInfo(iTxt,iDt)%geographic_orientation, &
                                 azimu%HyAzimuth-fileInfo(iTxt,iDt)%geographic_orientation, &
@@ -351,7 +351,7 @@ Contains
                         write(ioDat, '(a1)', iostat=ios,advance='no') ' '
                         write(ioDat,'(a40,3f15.3)',iostat=ios,advance='no') trim(siteid),x(:)
                         ! 2022.09.07, Liu Zhongyin, add azimu while writing
-                            write(ioDat,'(a8,4es15.6)',iostat=ios) trim(compid),value(icomp),error(icomp), &
+                            write(ioDat,'(a8,3es15.6,4f9.3)',iostat=ios) trim(compid),value(icomp),error(icomp), &
                             azimu%HxAzimuth-fileInfo(iTxt,iDt)%geographic_orientation, &
                             azimu%ExAzimuth-fileInfo(iTxt,iDt)%geographic_orientation, &
                             azimu%HyAzimuth-fileInfo(iTxt,iDt)%geographic_orientation, &
@@ -401,7 +401,7 @@ Contains
     character(40)                   :: siteid,ref_siteid,compid
     integer                         :: nTxt,iTxt,iDt,i,j,k,istat,ios
     character(40)                   :: code,ref_code
-    real(8)                         :: x(3),ref_x(3), Period,SI_factor,large
+    real(8)                         :: x(3),ref_x(3), Period,SI_factor
     real(8)                         :: lat,lon,ref_lat,ref_lon
     real(8)                         :: Zreal, Zimag, Zerr
     logical                         :: conjugate, errorBar, isComplex
@@ -449,6 +449,7 @@ Contains
         	ncomp = ncomp/2
     	end if
 
+        call compact(typeInfo)
     	fileInfo(iTxt,iDt)%defined = .true.
     	fileInfo(iTxt,iDt)%info_in_file = typeInfo
     	
@@ -498,7 +499,7 @@ Contains
         new_Tx(:) = 0
         new_Rx(:) = 0
         value(:,:,:) = dcmplx(0.0d0,0.0d0)
-        error(:,:,:) = large
+        error(:,:,:) = LARGE_REAL
         exist(:,:,:) = .FALSE.
         countData = 0
 

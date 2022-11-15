@@ -31,7 +31,6 @@ module receivers
      ! site ID used for input/output and for searching through the list
      character(50)                      ::  id=''
      character(50)                      ::  id_ref=''
-
   end type MTrx
 
   ! receiver dictionary for 3D MT data will be an array of
