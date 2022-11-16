@@ -28,6 +28,9 @@ module receivers
      ! Same as x: r(1) points North, r(2) points East, r(3) points down
      real (kind=prec)                   ::  x(3)
      real (kind=prec)                   ::  r(3)
+     ! Rx_azi is only well-defined for CSEM; for MT, it is not used since we're supporting
+     ! the possibility that each field component has its own orientation (stored in DataSpace).
+     real (kind=prec)                   ::  Rx_Azi
      ! site ID used for input/output and for searching through the list
      character(50)                      ::  id=''
      character(50)                      ::  id_ref=''
@@ -80,11 +83,11 @@ Contains
 ! a small number of values, so convenience is much more of an issue here!
 ! NM: modified to include referance site info.
 
-function update_rxDict(loc,id,loc_ref,id_ref) result (iRx)
+function update_rxDict(loc,id,Rx_azi,loc_ref,id_ref) result (iRx)
 
      character(*), intent(in)            :: id
      real(kind=prec), intent(in)         :: loc(3)
-     real(kind=prec):: lat,lon
+     real(kind=prec),intent(in),optional :: Rx_azi
      real(kind=prec),intent(in),optional :: loc_ref(3)
      character(*), intent(in),optional   :: id_ref
      integer                             :: iRx
@@ -102,6 +105,11 @@ function update_rxDict(loc,id,loc_ref,id_ref) result (iRx)
      	new%r  = loc_ref
      	new%id_ref=id_ref
      end if
+
+     if (present(Rx_azi)) then
+     	new%Rx_azi  = Rx_azi
+     end if	 
+	 
 
      ! If rxDict doesn't yet exist, create it
      if(.not. associated(rxDict)) then
@@ -126,6 +134,15 @@ function update_rxDict(loc,id,loc_ref,id_ref) result (iRx)
                  new_Rx = .false.
                  return
               end if   
+           elseif (present(Rx_azi)) then
+              ! Check if the this site has same azimuth as what we have already in the Dic -
+	      ! this is only well-defined for CSEM; for MT, Rx_azi is not used since we're supporting
+	      ! the possibility that each field component has its own orientation (stored in DataSpace).
+              if (new%Rx_azi .eq. rxDict(i)%Rx_azi) then 
+                 iRx=i
+                 new_Rx = .false.
+                 return
+              end if              		   
            else    
      	    iRx=i
             new_Rx = .false.
@@ -161,10 +178,61 @@ function update_rxDict(loc,id,loc_ref,id_ref) result (iRx)
 
      write(*,*) 'Receiver dictionary:'
      do iRx = 1, size(rxDict)
-        write(*,'(i6,a50,3f15.6,a50)') iRx,trim(rxDict(iRx)%id),rxDict(iRx)%x,trim(rxDict(iRx)%id_ref)
+        write(*,'(i6,a50,4f15.6,a50)') iRx,trim(rxDict(iRx)%id),rxDict(iRx)%x,rxDict(iRx)%Rx_azi,trim(rxDict(iRx)%id_ref)
      enddo
 
   end subroutine print_rxDict
+
+!**********************************************************************
+! Writes the receiver dictionary to a file -- needed to associate rows in sensitivity
+!  sensitivity matrix J with correct data vector elements.   This assumes that iounit
+!  is opened for formated io-- file connection and  closing are done by calling routine
+
+  subroutine write_rxDict_asc(iounit)
+
+     ! local variables
+     integer                     :: iounit, iRx, nRx
+
+     if (.not. associated(rxDict)) then
+        return
+     end if
+
+     nRx = size(rxDict)
+     write(iounit,*) nRx, '   Receivers'
+     do iRx = 1, size(rxDict)
+        write(iounit,'(i6,2x,a20,4f12.3,a20)') iRx,trim(rxDict(iRx)%id),rxDict(iRx)%x,&
+          rxDict(iRx)%Rx_azi,trim(rxDict(iRx)%id_ref)
+     enddo
+
+  end subroutine write_rxDict_asc
+
+!**********************************************************************
+! Writes the receiver dictionary to a file -- needed to associate rows in sensitivity
+!  sensitivity matrix J with correct data vector elements.   This assumes that iounit
+!  is opened for formated io-- file connection and  closing are done by calling routine
+
+  subroutine write_rxDict_bin(iounit)
+
+     ! local variables
+     integer                     :: iounit, iRx, nRx
+     character(len=80)          :: header
+
+     if (.not. associated(rxDict)) then
+        return
+     end if
+
+     nRx = size(rxDict)
+     header = 'Receiver Dictionary'
+     write(iounit) header
+     write(iounit) nRx
+     do iRx = 1, size(rxDict)
+        write(iounit) iRx,rxDict(iRx)%x,rxDict(iRx)%Rx_azi
+        !   hard to read variable length records from a binary file,
+        !   unless written as individual sequential records; hence this
+        write(iounit) trim(rxDict(iRx)%id)
+     enddo
+
+  end subroutine write_rxDict_bin
 
   ! **************************************************************************
   ! Cleans up and deletes receiver dictionary at end of program execution
