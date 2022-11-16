@@ -164,10 +164,8 @@ Contains
     real(8)                         :: x(3),ref_x(3), Period,SI_factor,large
     real(8)                         :: lat,lon,ref_lat,ref_lon
     logical                         :: conjugate, isComplex
-
-    ! 2022.09.28, Liu Zhongyin, add local varible azimu
-    type(orient_t)                 :: azimu
-
+    type(orient_t)                  :: azimu ! 2022.09.28, Liu Zhongyin, add azimuth for MT
+    
     iTxt = 1
 
     open(unit=ioDat,recl=4096,file=cfile,form='formatted',status='unknown')
@@ -338,15 +336,15 @@ Contains
                             endif
                         end if
 
-                        ! For Phase only, Rad Used, Writen by LiuZhongyin
-                        ! 2017.05.27
+                        ! For Phase only, now using radians but output degrees [LiuZhongyin 2017.05.27]
                         if (index(compid,'PHS')>0) then
                             if (conjugate) then
-                             value(icomp) = value(icomp)*R2D
+                                value(icomp) = value(icomp)*R2D
                             else
                                 value(icomp) = -value(icomp)*R2D
                             endif
                         end if
+			
                         write(ioDat,'(es12.6)',    iostat=ios,advance='no') Period
                         write(ioDat, '(a1)', iostat=ios,advance='no') ' '
                         write(ioDat,'(a40,3f15.3)',iostat=ios,advance='no') trim(siteid),x(:)
@@ -570,7 +568,7 @@ Contains
                 case default
                     exit
                 end select
-
+		
                 ! Find component id for this value
                 icomp = ImpComp(compid,iDt)
 
@@ -716,19 +714,18 @@ Contains
 
                 ! For apparent resistivities only, use log10 of the values
                 if (index(compid,'RHO')>0) then
-                    Zerr  = Zerr/Zreal/dlog(10.0d0)
+                    Zerr  = Zerr/Zreal/dlog(10.0d0) ! Propagation of error
                     Zreal = log10(Zreal)
-                    ! Zerr  = log10(Zerr)
                 end if
 
-            ! For Phase only, use rad, Writen by LiuZhongyin 2017.05.27
-            if (index(compid,'PHS')>0) then
+            	! For Phase only, using radians but reading degrees [LiuZhongyin 2017.05.27]
+            	if (index(compid,'PHS')>0) then
                     if (conjugate) then
-                Zreal = Zreal*D2R
+                	Zreal = Zreal*D2R
                     else
                         Zreal = -Zreal*D2R
                     endif
-                Zerr  = Zerr*D2R
+                    Zerr  = Zerr*D2R
                 end if
 
                 ! Update the transmitter dictionary and the index (sets up if necessary)
@@ -821,25 +818,25 @@ Contains
 	               newData%d(i)%data(1)%exist(2*icomp-1,k) = exist(i,j,icomp)
 	               newData%d(i)%data(1)%exist(2*icomp  ,k) = exist(i,j,icomp)
 
-                   ! 2022.09.28, Liu Zhongyin, add azimuth
-                   newData%d(i)%data(1)%orient(k)%azimuth%Hx = HxAzimuth(i,j)
-                   newData%d(i)%data(1)%orient(k)%azimuth%Hy = HyAzimuth(i,j)
-                   newData%d(i)%data(1)%orient(k)%azimuth%Ex = ExAzimuth(i,j)
-                   newData%d(i)%data(1)%orient(k)%azimuth%Ey = EyAzimuth(i,j)
-                   newData%d(i)%data(1)%orient(k)%azimuth%Hx_ref = HxAzimuth_ref(i,j)
-                   newData%d(i)%data(1)%orient(k)%azimuth%Hy_ref = HyAzimuth_ref(i,j)
+	               ! 2022.09.28, Liu Zhongyin, add azimuth
+	               newData%d(i)%data(1)%orient(k)%azimuth%Hx = HxAzimuth(i,j)
+	               newData%d(i)%data(1)%orient(k)%azimuth%Hy = HyAzimuth(i,j)
+	               newData%d(i)%data(1)%orient(k)%azimuth%Ex = ExAzimuth(i,j)
+	               newData%d(i)%data(1)%orient(k)%azimuth%Ey = EyAzimuth(i,j)
+	               newData%d(i)%data(1)%orient(k)%azimuth%Hx_ref = HxAzimuth_ref(i,j)
+	               newData%d(i)%data(1)%orient(k)%azimuth%Hy_ref = HyAzimuth_ref(i,j)
 	            else
 	               newData%d(i)%data(1)%value(icomp,k) = real(value(i,j,icomp))
 	               newData%d(i)%data(1)%error(icomp,k) = error(i,j,icomp)
 	               newData%d(i)%data(1)%exist(icomp,k) = exist(i,j,icomp)
 
-                   ! 2022.09.28, Liu Zhongyin, add azimuth
-                   newData%d(i)%data(1)%orient(k)%azimuth%Hx = HxAzimuth(i,j)
-                   newData%d(i)%data(1)%orient(k)%azimuth%Hy = HyAzimuth(i,j)
-                   newData%d(i)%data(1)%orient(k)%azimuth%Ex = ExAzimuth(i,j)
-                   newData%d(i)%data(1)%orient(k)%azimuth%Ey = EyAzimuth(i,j)
-                   newData%d(i)%data(1)%orient(k)%azimuth%Hx_ref = HxAzimuth_ref(i,j)
-                   newData%d(i)%data(1)%orient(k)%azimuth%Hy_ref = HyAzimuth_ref(i,j)
+	               ! 2022.09.28, Liu Zhongyin, add azimuth
+	               newData%d(i)%data(1)%orient(k)%azimuth%Hx = HxAzimuth(i,j)
+	               newData%d(i)%data(1)%orient(k)%azimuth%Hy = HyAzimuth(i,j)
+	               newData%d(i)%data(1)%orient(k)%azimuth%Ex = ExAzimuth(i,j)
+	               newData%d(i)%data(1)%orient(k)%azimuth%Ey = EyAzimuth(i,j)
+	               newData%d(i)%data(1)%orient(k)%azimuth%Hx_ref = HxAzimuth_ref(i,j)
+	               newData%d(i)%data(1)%orient(k)%azimuth%Hy_ref = HyAzimuth_ref(i,j)
 	            end if
 	           end do
 	           newData%d(i)%data(1)%rx(k) = new_Rx(j)
@@ -855,13 +852,13 @@ Contains
 	! Merge the new data into the main data vector
 	call merge_dataVectorMTX(allData,newData,allData)
     
-    ! 2022.09.28, Liu Zhongyin, deallocate azimu
-    deallocate(HxAzimuth,stat=istat)
-    deallocate(HyAzimuth,stat=istat)
-    deallocate(ExAzimuth,stat=istat)
-    deallocate(EyAzimuth,stat=istat)
-    deallocate(HxAzimuth_ref,stat=istat)
-    deallocate(HyAzimuth_ref,stat=istat)
+	! 2022.09.28, Liu Zhongyin, deallocate azimu
+	deallocate(HxAzimuth,stat=istat)
+	deallocate(HyAzimuth,stat=istat)
+	deallocate(ExAzimuth,stat=istat)
+	deallocate(EyAzimuth,stat=istat)
+	deallocate(HxAzimuth_ref,stat=istat)
+	deallocate(HyAzimuth_ref,stat=istat)
 
 	deallocate(value,error,exist,STAT=istat)
 	deallocate(new_TxType,new_Tx,new_Rx,STAT=istat)

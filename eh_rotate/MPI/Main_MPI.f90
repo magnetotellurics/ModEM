@@ -1013,7 +1013,7 @@ elseif (trim(worker_job_task%what_to_do) .eq. 'COMPUTE_J') then
           dt=worker_job_task%data_type
           worker_job_task%taskid=taskid
           
-          ! 2022.10.06, Liu Zhongyin, assign isite (AK: possible same as stn_index - check)
+          ! 2022.10.06, Liu Zhongyin, assign isite (AK: possibly same as stn_index - check)
           isite=worker_job_task%iSite
           
 nComp = d%d(per_index)%data(dt_index)%nComp           

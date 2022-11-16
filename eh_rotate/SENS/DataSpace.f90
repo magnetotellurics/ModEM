@@ -129,6 +129,7 @@ module DataSpace
 
       ! needed to avoid memory leaks for temporary function outputs
       logical		:: temporary = .false.
+
   end type dataBlock_t
 
 
