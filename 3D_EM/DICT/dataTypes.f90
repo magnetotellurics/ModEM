@@ -264,10 +264,10 @@ Contains
 		   factor1 = ONE
 		elseif (index(oldUnits,'[T]')>0) then
 		   factor1 = ONE
-        elseif (index(oldUnits,'[nT]')>0) then
-           factor1 = ONE * 1.0e-9
-        elseif (index(oldUnits,'[A/m]')>0) then
-           factor1 = ONE * (4*PI*1.0e-7)
+        	elseif (index(oldUnits,'[nT]')>0) then
+        	   factor1 = ONE * 1.0e-9
+        	elseif (index(oldUnits,'[A/m]')>0) then
+           	   factor1 = ONE * (4*PI*1.0e-7)
 		else
 		   call errStop('Unknown input units in ImpUnits: '//trim(oldUnits))
 		end if
@@ -286,10 +286,10 @@ Contains
 		   factor2 = ONE
 		elseif (index(newUnits,'[T]')>0) then
 		   factor2 = ONE
-        elseif (index(newUnits,'[nT]')>0) then
-           factor2 = ONE * 1.0e9
-        elseif (index(newUnits,'[A/m]')>0) then
-           factor2 = ONE / (4*PI*1.0e-7)
+        	elseif (index(newUnits,'[nT]')>0) then
+           	   factor2 = ONE * 1.0e9
+        	elseif (index(newUnits,'[A/m]')>0) then
+           	   factor2 = ONE / (4*PI*1.0e-7)
 		else	
 		   call errStop('Unknown output units in ImpUnits: '//trim(newUnits))
 		end if

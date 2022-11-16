@@ -25,11 +25,11 @@ module txTypes
   type (transmitterType_t), pointer, save, public, dimension(:) :: txTypeDict
 
   integer, parameter, public   :: MT = 1
-  integer, parameter, public   :: DC = 2
-  integer, parameter, public   :: CSEM = 3
+  integer, parameter, public   :: CSEM = 2
+  integer, parameter, public   :: SFF = 4
   integer, parameter, public   :: TIDE = 4
-  integer, parameter, public   :: SFF = 5
-  integer, parameter, public   :: GLOBAL = 6
+  integer, parameter, public   :: GLOBAL = 5
+  integer, parameter, public   :: DC = 6
 
 !**************************************************************************
 ! Initializes and sets up transmitter type dictionary
@@ -55,8 +55,13 @@ module txTypes
      txTypeDict(MT)%dataTypes(5) = Off_Diagonal_Rho_Phase
      txTypeDict(MT)%dataTypes(6) = Phase_Tensor
 
-     allocate(txTypeDict(DC)%dataTypes(1),STAT=istat)
-     txTypeDict(DC)%dataTypes(1) = Pole_Pole_DC_Rho
+     allocate(txTypeDict(SFF)%dataTypes(6),STAT=istat)
+     txTypeDict(SFF)%dataTypes(1) = Ex_Field
+     txTypeDict(SFF)%dataTypes(2) = Ey_Field
+     txTypeDict(SFF)%dataTypes(3) = Bx_Field
+     txTypeDict(SFF)%dataTypes(4) = By_Field
+     txTypeDict(SFF)%dataTypes(5) = Bz_Field
+     txTypeDict(SFF)%dataTypes(6) = Full_Impedance
 
      allocate(txTypeDict(CSEM)%dataTypes(5),STAT=istat)
      txTypeDict(CSEM)%dataTypes(1) = Ex_Field
@@ -72,14 +77,6 @@ module txTypes
      txTypeDict(TIDE)%dataTypes(4) = By_Field
      txTypeDict(TIDE)%dataTypes(5) = Bz_Field
 
-     allocate(txTypeDict(SFF)%dataTypes(6),STAT=istat)
-     txTypeDict(SFF)%dataTypes(1) = Ex_Field
-     txTypeDict(SFF)%dataTypes(2) = Ey_Field
-     txTypeDict(SFF)%dataTypes(3) = Bx_Field
-     txTypeDict(SFF)%dataTypes(4) = By_Field
-     txTypeDict(SFF)%dataTypes(5) = Bz_Field
-     txTypeDict(SFF)%dataTypes(6) = Full_Impedance
-
      allocate(txTypeDict(GLOBAL)%dataTypes(6),STAT=istat)
      txTypeDict(GLOBAL)%dataTypes(1) = Bx_Field
      txTypeDict(GLOBAL)%dataTypes(2) = By_Field
@@ -87,6 +84,9 @@ module txTypes
      txTypeDict(GLOBAL)%dataTypes(4) = C_Response
      txTypeDict(GLOBAL)%dataTypes(5) = D_Response
      txTypeDict(GLOBAL)%dataTypes(6) = Q_Response
+
+     allocate(txTypeDict(DC)%dataTypes(1),STAT=istat)
+     txTypeDict(DC)%dataTypes(1) = Pole_Pole_DC_Rho
 
   end subroutine setup_txTypeDict
 
@@ -123,8 +123,8 @@ module txTypes
        case('MT')
           txType = MT
 
-       case('DC')
-          txType = DC
+       case('SFF')
+          txType = SFF
 
        case('CSEM')
           txType = CSEM
@@ -132,12 +132,12 @@ module txTypes
        case('TIDE')
           txType = TIDE
 
-       case('SFF')
-          txType = SFF
-
        case('GLOBAL')
           txType = GLOBAL
 
+       case('DC')
+          txType = DC
+	  
        case default
           call errStop('Unknown transmitter type:'//trim(typeName))
 

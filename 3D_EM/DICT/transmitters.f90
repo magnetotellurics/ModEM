@@ -1,6 +1,22 @@
 ! *****************************************************************************
 module transmitters
-  ! This module contains the transmitter dictionary (txDict) for 3D MT and CSEM
+  ! This module contains the general EM transmitter dictionary (txDict)
+  !
+  ! Currently defined are the following problems:
+  !	MT      2D and 3D magnetotelluric modeling with plane-wave sources
+  !	CSEM    3D controlled source EM
+  !     SFF     Secondary field formulation used with any EM primary fields
+  !	TIDE    3D EM modeling with tidal sources
+  !     GLOBAL  3D EM global with spherical coordinate source representation 
+  !     DC      Direct current - old code that is not maintained
+  !
+  ! Not all of these problems are fully implemented or included in this specific
+  ! version of the code. Also, not all of these problems are currently working
+  ! in the inversion mode or included in joint inversion.
+  ! However, we shall maintain the complete transmitter dictionaries here
+  ! to streamline code maintenance.
+  !
+  ! A. Kelbert, Nov 16, 2022
 
   use math_constants
 
@@ -10,15 +26,28 @@ module transmitters
 
   type :: transmitter_t
 
-    ! defines the kind of transmitter: MT, DC, CSEM, TIDE, SFF
-    character(10)		        :: tx_type=''
-    ! attributes common for all transmitter types:
-	integer					    :: nPol !while setting up the Tx, nPol=2 for MT and 1 for CSEM
-	! angular frequency (radians/sec), and for convenience period (s)
-	real(kind=prec)             :: omega = R_ZERO
-	real(kind=prec)             :: period = R_ZERO
-	! index number to frequency/ period in solution file
-	integer                     :: iPer
+     ! defines the kind of transmitter: MT, CSEM, SFF, TIDE, GLOBAL, DC
+     character(10)		        :: tx_type=''
+     ! attributes common for all transmitter types:
+     integer				:: nPol !while setting up the Tx, nPol=2 for MT and 1 for CSEM
+     ! angular frequency (radians/sec), and for convenience period (s)
+     real(kind=prec)            :: omega = R_ZERO
+     real(kind=prec)            :: period = R_ZERO
+     ! index number to frequency/ period in solution file
+     integer                    :: iPer
+
+!######################################################	 		  
+! CSEM details
+     ! Specific Dipole Type (Electric or Magnetic)
+     character(8)		:: Dipole
+     !   location of transmitter, relative to grid 
+     real(kind=prec)            :: xyzTx(3)
+	 ! Source azimuth from x axis (positive clockwise)
+     real(kind=prec)            :: azimuthTx ! (degrees) 
+     ! Vertical dip angle of source along azimuthTx, positive down 
+     real(kind=prec)            :: dipTx ! (degrees) 
+     ! Source dipole moment
+     real(kind=prec)            :: moment ! (A.m) for electric, (A.m^2) for magnetic
 
 !######################################################
 ! Tidal details
@@ -32,20 +61,7 @@ module transmitters
     !type(sparsevecc)          :: jInt
     ! for now, hard code the name in the ForwardSolver and read it there.
     !   this is very crude but may just do for our purposes.
-    !character(120)            :: fn_intsource = ''
-		  
-!######################################################	 		  
-! CSEM details
-     ! Specific Dipole Type (Electric or Magnetic)
-     character(8)		:: Dipole
-     !   location of transmitter, relative to grid 
-     real(kind=prec)            :: xyzTx(3)
-	 ! Source azimuth from x axis (positive clockwise)
-     real(kind=prec)            :: azimuthTx ! (degrees) 
-     ! Vertical dip angle of source along azimuthTx, positive down 
-     real(kind=prec)            :: dipTx ! (degrees) 
-     ! Source dipole moment
-     real(kind=prec)            :: moment ! (A.m) for electric, (A.m^2) for magnetic
+    !character(120)            :: fn_intsource = ''		  
 
   end type transmitter_t
 
@@ -67,11 +83,11 @@ module transmitters
   ! transmitter types; correspond to index iTxt in the data vectors
   !  these will be heavily used in inversion routines
   integer, parameter   :: MT = 1
-  integer, parameter   :: DC = 2
-  integer, parameter   :: CSEM = 3
+  integer, parameter   :: CSEM = 2
+  integer, parameter   :: SFF = 3
   integer, parameter   :: TIDE = 4
-  integer, parameter   :: SFF = 5
-  integer, parameter   :: GLOBAL = 6
+  integer, parameter   :: GLOBAL = 5
+  integer, parameter   :: DC = 6
 
 Contains
 
@@ -216,7 +232,7 @@ Contains
       if(ABS(Txa%period - Txb%period) < TOL6  .and. Txa%nPol == Txb%nPol) then
         YESNO = .true.
       end if
-    elseif (trim(Txa%Tx_type) .eq. 'TIDE') then
+    elseif ((trim(Txa%Tx_type) .eq. 'TIDE') .or. (trim(Txa%Tx_type) .eq. 'GLOBAL')) then
       if (trim(Txa%id) .eq. trim(Txb%id)) then
         YESNO = .true.
       end if
@@ -237,16 +253,16 @@ Contains
     select case (iTxt)
        case(MT)
           tx_type = 'MT'
-       case(DC)
-          tx_type = 'DC'
        case(CSEM)
           tx_type = 'CSEM'
-       case(TIDE)
-          tx_type = 'TIDE'
        case(SFF)
           tx_type = 'SFF'
+       case(TIDE)
+          tx_type = 'TIDE'
        case(GLOBAL)
           tx_type = 'GLOBAL'
+       case(DC)
+          tx_type = 'DC'
        case default
           write(0,*) 'Unknown transmitter type #',iTxt
     end select
@@ -268,16 +284,16 @@ Contains
     select case (trim(adjustl(tx_type)))
        case('MT')
           iTxt = MT
-       case('DC')
-          iTxt = DC
        case('CSEM')
           iTxt = CSEM
-       case('TIDE')
-          iTxt = TIDE
        case('SFF')
           iTxt = SFF
+       case('TIDE')
+          iTxt = TIDE
        case('GLOBAL')
           iTxt = GLOBAL
+       case('DC')
+          iTxt = DC
        case default
           write(0,*) 'Unknown transmitter type: ',trim(tx_type)
     end select
