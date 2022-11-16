@@ -83,14 +83,15 @@ Contains
     select case (dataType)
 
        case(Full_Impedance,Off_Diagonal_Impedance,Full_Vertical_Components)
-          header = 'Period(s) Code GG_Lat GG_Lon X(m) Y(m) Z(m) Component Real Imag Error'
+          header = 'Period(s) Code GG_Lat GG_Lon X(m) Y(m) Z(m) Component Real Imag Error HxAzi HyAzi ExAzi EyAzi'
 
        case(Full_Interstation_TF)
           header = 'Period(s) Code GG_Lat GG_Lon X(m) Y(m) Z(m) Ref_Code Ref_Lat '// &
-                   'Ref_Lon Ref_X(m) Ref_Y(m) Ref_Z(m) Component Real Imag Error'
+                   'Ref_Lon Ref_X(m) Ref_Y(m) Ref_Z(m) Component Real Imag Error '// &
+                   'HxAzi HyAzi HxRefAzi HyRefAzi'
 
        case(Off_Diagonal_Rho_Phase,Phase_Tensor)
-          header = 'Period(s) Code GG_Lat GG_Lon X(m) Y(m) Z(m) Component Value Error'
+          header = 'Period(s) Code GG_Lat GG_Lon X(m) Y(m) Z(m) Component Value Error HxAzi HyAzi ExAzi EyAzi'
 
        case(Ex_Field, Ey_Field, Bx_Field, By_Field, Bz_Field)
               if (txType == CSEM) then
@@ -187,7 +188,8 @@ Contains
     real(8)                         :: x(3),ref_x(3), Period,SI_factor,large
     real(8)                         :: lat,lon,ref_lat,ref_lon,rx_azimuth
     logical                         :: conjugate, isComplex
-
+    type(orient_t)                  :: azimu ! 2022.09.28, Liu Zhongyin, add azimuth for MT
+    
     !===========================================================================
     !======================================================== New Local Variable
     !===========================================================================
@@ -318,6 +320,9 @@ Contains
             siteid = rxDict(iRx)%id
             x = rxDict(iRx)%x
 
+            ! 2022.10.04, Liu Zhongyin, assign azimuth to azimu
+            azimu = allData%d(j)%data(i)%orient(k)
+
             select case (iDt)
 
                 case(Full_Impedance,Off_Diagonal_Impedance,Full_Vertical_Components)
@@ -330,10 +335,19 @@ Contains
                         write(ioDat,'(es12.6)',    iostat=ios,advance='no') Period
                         write(ioDat, '(a1)', iostat=ios,advance='no') ' '
                         write(ioDat,'(a40,3f15.3)',iostat=ios,advance='no') trim(siteid),x(:)
+                        ! 2022.09.28, Liu Zhongyin, add azimu while writing
                         if (conjugate) then
-                            write(ioDat,'(a8,3es15.6)',iostat=ios) trim(compid),value(2*icomp-1),-value(2*icomp),error(2*icomp)
+                                write(ioDat,'(a8,3es15.6,4f9.3)',iostat=ios) trim(compid),value(2*icomp-1),-value(2*icomp),error(2*icomp), &
+                                azimu%azimuth%Hx-fileInfo(iTxt,iDt)%geographic_orientation, &
+                                azimu%azimuth%Hy-fileInfo(iTxt,iDt)%geographic_orientation, &
+                                azimu%azimuth%Ex-fileInfo(iTxt,iDt)%geographic_orientation, &
+                                azimu%azimuth%Ey-fileInfo(iTxt,iDt)%geographic_orientation
                         else
-                            write(ioDat,'(a8,3es15.6)',iostat=ios) trim(compid),value(2*icomp-1),value(2*icomp),error(2*icomp)
+                                write(ioDat,'(a8,3es15.6,4f9.3)',iostat=ios) trim(compid),value(2*icomp-1),value(2*icomp),error(2*icomp), &
+                                azimu%azimuth%Hx-fileInfo(iTxt,iDt)%geographic_orientation, &
+                                azimu%azimuth%Hy-fileInfo(iTxt,iDt)%geographic_orientation, &
+                                azimu%azimuth%Ex-fileInfo(iTxt,iDt)%geographic_orientation, &
+                                azimu%azimuth%Ey-fileInfo(iTxt,iDt)%geographic_orientation
                         end if
                         countData = countData + 1
                     end do
@@ -351,10 +365,19 @@ Contains
                         write(ioDat, '(a1)', iostat=ios,advance='no') ' '
                         write(ioDat,'(a40,3f15.3)',iostat=ios,advance='no') trim(siteid),x(:)
                         write(ioDat,'(a40,3f15.3)',iostat=ios,advance='no') trim(ref_siteid),ref_x(:)
+                        ! 2022.09.28, Liu Zhongyin, add azimu while writing
                         if (conjugate) then
-                            write(ioDat,'(a8,3es15.6)',iostat=ios) trim(compid),value(2*icomp-1),-value(2*icomp),error(2*icomp)
+                                write(ioDat,'(a8,3es15.6,4f9.3)',iostat=ios) trim(compid),value(2*icomp-1),-value(2*icomp),error(2*icomp), &
+                                azimu%azimuth%Hx-fileInfo(iTxt,iDt)%geographic_orientation, &
+                                azimu%azimuth%Hy-fileInfo(iTxt,iDt)%geographic_orientation, &
+                                azimu%azimuth%Hx_ref-fileInfo(iTxt,iDt)%geographic_orientation, &
+                                azimu%azimuth%Hy_ref-fileInfo(iTxt,iDt)%geographic_orientation
                         else
-                            write(ioDat,'(a8,3es15.6)',iostat=ios) trim(compid),value(2*icomp-1),value(2*icomp),error(2*icomp)
+                                write(ioDat,'(a8,3es15.6,4f9.3)',iostat=ios) trim(compid),value(2*icomp-1),value(2*icomp),error(2*icomp), &
+                                azimu%azimuth%Hx-fileInfo(iTxt,iDt)%geographic_orientation, &
+                                azimu%azimuth%Hy-fileInfo(iTxt,iDt)%geographic_orientation, &
+                                azimu%azimuth%Hx_ref-fileInfo(iTxt,iDt)%geographic_orientation, &
+                                azimu%azimuth%Hy_ref-fileInfo(iTxt,iDt)%geographic_orientation
                         end if
                         countData = countData + 1
                     end do
@@ -390,7 +413,12 @@ Contains
                         write(ioDat,'(es12.6)',    iostat=ios,advance='no') Period
                         write(ioDat, '(a1)', iostat=ios,advance='no') ' '
                         write(ioDat,'(a40,3f15.3)',iostat=ios,advance='no') trim(siteid),x(:)
-                        write(ioDat,'(a8,3es15.6)',iostat=ios) trim(compid),value(icomp),error(icomp)
+                        ! 2022.09.07, Liu Zhongyin, add azimu while writing
+                            write(ioDat,'(a8,3es15.6,4f9.3)',iostat=ios) trim(compid),value(icomp),error(icomp), &
+                            azimu%azimuth%Hx-fileInfo(iTxt,iDt)%geographic_orientation, &
+                            azimu%azimuth%Ex-fileInfo(iTxt,iDt)%geographic_orientation, &
+                            azimu%azimuth%Hy-fileInfo(iTxt,iDt)%geographic_orientation, &
+                            azimu%azimuth%Ey-fileInfo(iTxt,iDt)%geographic_orientation
                         countData = countData + 1
                     end do
 
@@ -533,6 +561,15 @@ Contains
     real(8)                         :: lat,lon,ref_lat,ref_lon,rx_azimuth
     real(8)                         :: Zreal, Zimag, Zerr
     logical                         :: conjugate, errorBar, isComplex
+
+    ! 2022.09.28, Liu Zhongyin, add azimu variable
+    real(kind=prec), allocatable    :: HxAzimuth(:,:), ExAzimuth(:,:), HxAzimuth_ref(:,:) !(nTx,nRx)
+    real(kind=prec), allocatable    :: HyAzimuth(:,:), EyAzimuth(:,:), HyAzimuth_ref(:,:) !(nTx,nRx)
+    real(kind=prec)                 :: Hxangle, Exangle, Hxangle_ref, Hyangle, Eyangle, Hyangle_ref
+
+    integer                         :: ncount
+    character(1000)                 :: tmpline
+
     !===========================================================================
     !======================================================== New Local Variable
     !===========================================================================
@@ -618,6 +655,14 @@ Contains
         allocate(new_TxType(nTx),new_Tx(nTx),new_Rx(nRx),STAT=istat)
         allocate(value(nTx,nRx,ncomp),error(nTx,nRx,ncomp),exist(nTx,nRx,ncomp),STAT=istat)
 
+        ! 2022.09.28, Liu Zhongyin, add azimu allocation
+        allocate(HxAzimuth(nTx,nRx),stat=istat)
+        allocate(HyAzimuth(nTx,nRx),stat=istat)
+        allocate(ExAzimuth(nTx,nRx),stat=istat)
+        allocate(EyAzimuth(nTx,nRx),stat=istat)
+        allocate(HxAzimuth_ref(nTx,nRx),stat=istat)
+        allocate(HyAzimuth_ref(nTx,nRx),stat=istat)
+
         new_TxType(:) = 0
         new_Tx(:) = 0
         new_Rx(:) = 0
@@ -626,6 +671,13 @@ Contains
         exist(:,:,:) = .FALSE.
         countData = 0
 
+        ! 2022.09.28, Liu Zhongyin, add azimu initial
+        HxAzimuth(:,:) = R_ZERO
+        HyAzimuth(:,:) = R_ZERO
+        ExAzimuth(:,:) = R_ZERO
+        EyAzimuth(:,:) = R_ZERO
+        HxAzimuth_ref(:,:) = R_ZERO
+        HyAzimuth_ref(:,:) = R_ZERO
 
         READ_DATA_LINE: Do
 
@@ -749,13 +801,61 @@ Contains
                 iRx = update_rxDict(x,siteid,rx_azimuth)
 		
             case(Full_Impedance,Off_Diagonal_Impedance,Full_Vertical_Components)
-                read(ioDat,*,iostat=ios) Period,code,lat,lon,x(1),x(2),x(3),compid,Zreal,Zimag,Zerr
+                read(ioDat,'(a)',iostat=ios) tmpline
 
                 if (ios /= 0) then
                     backspace(ioDat)
                     exit
                 end if
 
+                ! Liu Zhongyin, 2019.08.27, add new codes for reading data
+                backspace(ioDat)
+                call strcount(tmpline, ' ', ncount)
+                select case (ncount)
+                case(11)
+                    read(ioDat,*,iostat=ios) Period,code,lat,lon,x(1),x(2),x(3),compid,Zreal,Zimag,Zerr
+                    Hxangle = fileInfo(iTxt,iDt)%geographic_orientation
+                    Exangle = fileInfo(iTxt,iDt)%geographic_orientation
+                    Hxangle_ref = 0.0
+                    Hyangle = Hxangle + 90.0
+                    Eyangle = Exangle + 90.0
+                    Hyangle_ref = Hxangle_ref + 90.0
+                case(12)
+                    read(ioDat,*,iostat=ios) Period,code,lat,lon,x(1),x(2),x(3),compid,Zreal,Zimag,Zerr,Hxangle
+                    Hxangle = Hxangle + fileInfo(iTxt,iDt)%geographic_orientation
+                    Exangle = Hxangle
+                    Hxangle_ref = 0.0
+                    Hyangle = Hxangle + 90.0
+                    Eyangle = Exangle + 90.0
+                    Hyangle_ref = Hxangle_ref + 90.0
+                case(13)
+                    read(ioDat,*,iostat=ios) Period,code,lat,lon,x(1),x(2),x(3),compid,Zreal,Zimag,Zerr,Hxangle,Hyangle
+                    Hxangle = Hxangle + fileInfo(iTxt,iDt)%geographic_orientation
+                    Exangle = Hxangle
+                    Hxangle_ref = 0.0
+                    Hyangle = Hyangle + fileInfo(iTxt,iDt)%geographic_orientation
+                    Eyangle = Exangle + 90.0
+                    Hyangle_ref = Hxangle_ref + 90.0
+                case(14)
+                    read(ioDat,*,iostat=ios) Period,code,lat,lon,x(1),x(2),x(3),compid,Zreal,Zimag,Zerr,Hxangle,Hyangle,Exangle
+                    Hxangle = Hxangle + fileInfo(iTxt,iDt)%geographic_orientation
+                    Exangle = Exangle + fileInfo(iTxt,iDt)%geographic_orientation
+                    Hxangle_ref = 0.0
+                    Hyangle = Hyangle + fileInfo(iTxt,iDt)%geographic_orientation
+                    Eyangle = Exangle + 90.0
+                    Hyangle_ref = Hxangle_ref + 90.0
+                case(15)
+                    read(ioDat,*,iostat=ios) Period,code,lat,lon,x(1),x(2),x(3),compid,Zreal,Zimag,Zerr,Hxangle,Hyangle,Exangle,Eyangle
+                    Hxangle = Hxangle + fileInfo(iTxt,iDt)%geographic_orientation
+                    Exangle = Exangle + fileInfo(iTxt,iDt)%geographic_orientation
+                    Hxangle_ref = 0.0
+                    Hyangle = Hyangle + fileInfo(iTxt,iDt)%geographic_orientation
+                    Eyangle = Eyangle + fileInfo(iTxt,iDt)%geographic_orientation
+                    Hyangle_ref = Hxangle_ref + 90.0
+                case default
+                    exit
+                end select
+		
                 ! Find component id for this value
                 icomp = ImpComp(compid,iDt)
 
@@ -774,14 +874,66 @@ Contains
                 iRx = update_rxDict(x,siteid)
 
             case(Full_Interstation_TF)
-                read(ioDat,*,iostat=ios) Period,code,lat,lon,x(1),x(2),x(3), &
-                    ref_code,ref_lat,ref_lon,ref_x(1),ref_x(2),ref_x(3),compid,Zreal,Zimag,Zerr
+                read(ioDat,'(a)',iostat=ios) tmpline
 
                 if (ios /= 0) then
                     backspace(ioDat)
                     exit
                 end if
 
+                ! Liu Zhongyin, 2019.08.27, add new codes for reading data
+                backspace(ioDat)
+                call strcount(tmpline, ' ', ncount)
+                select case (ncount)
+                case(17)
+                    read(ioDat,*,iostat=ios) Period,code,lat,lon,x(1),x(2),x(3), &
+                        ref_code,ref_lat,ref_lon,ref_x(1),ref_x(2),ref_x(3),compid,Zreal,Zimag,Zerr
+                    Hxangle = fileInfo(iTxt,iDt)%geographic_orientation
+                    Exangle = 0.0
+                    Hxangle_ref = fileInfo(iTxt,iDt)%geographic_orientation
+                    Hyangle = Hxangle + 90.0
+                    Eyangle = Exangle + 90.0
+                    Hyangle_ref = Hxangle_ref + 90.0
+                case(18)
+                    read(ioDat,*,iostat=ios) Period,code,lat,lon,x(1),x(2),x(3), &
+                        ref_code,ref_lat,ref_lon,ref_x(1),ref_x(2),ref_x(3),compid,Zreal,Zimag,Zerr,Hxangle
+                    Hxangle = Hxangle + fileInfo(iTxt,iDt)%geographic_orientation
+                    Exangle = 0.0
+                    Hxangle_ref = Hxangle
+                    Hyangle = Hxangle + 90.0
+                    Eyangle = Exangle + 90.0
+                    Hyangle_ref = Hxangle_ref + 90.0
+                case(19)
+                    read(ioDat,*,iostat=ios) Period,code,lat,lon,x(1),x(2),x(3), &
+                        ref_code,ref_lat,ref_lon,ref_x(1),ref_x(2),ref_x(3),compid,Zreal,Zimag,Zerr,Hxangle,Hxangle_ref
+                    Hxangle = Hxangle + fileInfo(iTxt,iDt)%geographic_orientation
+                    Exangle = 0.0
+                    Hxangle_ref = Hxangle_ref + fileInfo(iTxt,iDt)%geographic_orientation
+                    Hyangle = Hxangle + 90.0
+                    Eyangle = Exangle + 90.0
+                    Hyangle_ref = Hxangle_ref + 90.0
+                case(20)
+                    read(ioDat,*,iostat=ios) Period,code,lat,lon,x(1),x(2),x(3), &
+                        ref_code,ref_lat,ref_lon,ref_x(1),ref_x(2),ref_x(3),compid,Zreal,Zimag,Zerr,Hxangle,Hyangle,Hxangle_ref
+                    Hxangle = Hxangle + fileInfo(iTxt,iDt)%geographic_orientation
+                    Exangle = 0.0
+                    Hxangle_ref = Hxangle_ref + fileInfo(iTxt,iDt)%geographic_orientation
+                    Hyangle = Hyangle + fileInfo(iTxt,iDt)%geographic_orientation
+                    Eyangle = Exangle + 90.0
+                    Hyangle_ref = Hxangle_ref + 90.0
+                case(21)
+                    read(ioDat,*,iostat=ios) Period,code,lat,lon,x(1),x(2),x(3), &
+                        ref_code,ref_lat,ref_lon,ref_x(1),ref_x(2),ref_x(3),compid,Zreal,Zimag,Zerr,Hxangle,Hyangle,Hxangle_ref,Hyangle_ref
+                    Hxangle = Hxangle + fileInfo(iTxt,iDt)%geographic_orientation
+                    Exangle = 0.0
+                    Hxangle_ref = Hxangle_ref + fileInfo(iTxt,iDt)%geographic_orientation
+                    Hyangle = Hyangle + fileInfo(iTxt,iDt)%geographic_orientation
+                    Eyangle = Exangle + 90.0
+                    Hyangle_ref = Hyangle_ref + fileInfo(iTxt,iDt)%geographic_orientation
+                case default
+                    exit
+                end select
+		
                 ! Find component id for this value
                 icomp = ImpComp(compid,iDt)
 
@@ -803,12 +955,60 @@ Contains
 
 
             case(Off_Diagonal_Rho_Phase,Phase_Tensor)
-                read(ioDat,*,iostat=ios) Period,code,lat,lon,x(1),x(2),x(3),compid,Zreal,Zerr
+                read(ioDat,'(a)',iostat=ios) tmpline
 
                 if (ios /= 0) then
                     backspace(ioDat)
                     exit
                 end if
+
+                ! Liu Zhongyin, 2019.08.27, add new codes for reading data
+                backspace(ioDat)
+                call strcount(tmpline, ' ', ncount)
+                select case (ncount)
+                case(10)
+                    read(ioDat,*,iostat=ios) Period,code,lat,lon,x(1),x(2),x(3),compid,Zreal,Zerr
+                    Hxangle = fileInfo(iTxt,iDt)%geographic_orientation
+                    Exangle = fileInfo(iTxt,iDt)%geographic_orientation
+                    Hxangle_ref = 0.0
+                    Hyangle = Hxangle + 90.0
+                    Eyangle = Exangle + 90.0
+                    Hyangle_ref = Hxangle_ref + 90.0
+                case(11)
+                    read(ioDat,*,iostat=ios) Period,code,lat,lon,x(1),x(2),x(3),compid,Zreal,Zerr,Hxangle
+                    Hxangle = Hxangle + fileInfo(iTxt,iDt)%geographic_orientation
+                    Exangle = Hxangle
+                    Hxangle_ref = 0.0
+                    Hyangle = Hxangle + 90.0
+                    Eyangle = Exangle + 90.0
+                    Hyangle_ref = Hxangle_ref + 90.0
+                case(12)
+                    read(ioDat,*,iostat=ios) Period,code,lat,lon,x(1),x(2),x(3),compid,Zreal,Zerr,Hxangle,Hyangle
+                    Hxangle = Hxangle + fileInfo(iTxt,iDt)%geographic_orientation
+                    Exangle = Hxangle
+                    Hxangle_ref = 0.0
+                    Hyangle = Hyangle + fileInfo(iTxt,iDt)%geographic_orientation
+                    Eyangle = Exangle + 90.0
+                    Hyangle_ref = Hxangle_ref + 90.0
+                case(13)
+                    read(ioDat,*,iostat=ios) Period,code,lat,lon,x(1),x(2),x(3),compid,Zreal,Zerr,Hxangle,Hyangle,Exangle
+                    Hxangle = Hxangle + fileInfo(iTxt,iDt)%geographic_orientation
+                    Exangle = Exangle + fileInfo(iTxt,iDt)%geographic_orientation
+                    Hxangle_ref = 0.0
+                    Hyangle = Hyangle + fileInfo(iTxt,iDt)%geographic_orientation
+                    Eyangle = Exangle + 90.0
+                    Hyangle_ref = Hxangle_ref + 90.0
+                case(14)
+                    read(ioDat,*,iostat=ios) Period,code,lat,lon,x(1),x(2),x(3),compid,Zreal,Zerr,Hxangle,Hyangle,Exangle,Eyangle
+                    Hxangle = Hxangle + fileInfo(iTxt,iDt)%geographic_orientation
+                    Exangle = Exangle + fileInfo(iTxt,iDt)%geographic_orientation
+                    Hxangle_ref = 0.0
+                    Hyangle = Hyangle + fileInfo(iTxt,iDt)%geographic_orientation
+                    Eyangle = Eyangle + fileInfo(iTxt,iDt)%geographic_orientation
+                    Hyangle_ref = Hxangle_ref + 90.0
+                case default
+                    exit
+                end select
 
                 ! Find component id for this value
                 icomp = ImpComp(compid,iDt)
@@ -873,6 +1073,14 @@ Contains
             error(i,j,icomp) = SI_factor * Zerr
             exist(i,j,icomp) = .TRUE.
 
+            ! 2022.09.28, Liu Zhongyin, assign angle to azimu
+            HxAzimuth(i,j) = Hxangle
+            HyAzimuth(i,j) = Hyangle
+            ExAzimuth(i,j) = Exangle
+            EyAzimuth(i,j) = Eyangle
+            HxAzimuth_ref(i,j) = Hxangle_ref
+            HyAzimuth_ref(i,j) = Hyangle_ref
+
             countData = countData + 1
 
         end do READ_DATA_LINE
@@ -912,10 +1120,26 @@ Contains
 	               newData%d(i)%data(1)%error(2*icomp  ,k) = error(i,j,icomp)
 	               newData%d(i)%data(1)%exist(2*icomp-1,k) = exist(i,j,icomp)
 	               newData%d(i)%data(1)%exist(2*icomp  ,k) = exist(i,j,icomp)
+
+	               ! 2022.09.28, Liu Zhongyin, add azimuth
+	               newData%d(i)%data(1)%orient(k)%azimuth%Hx = HxAzimuth(i,j)
+	               newData%d(i)%data(1)%orient(k)%azimuth%Hy = HyAzimuth(i,j)
+	               newData%d(i)%data(1)%orient(k)%azimuth%Ex = ExAzimuth(i,j)
+	               newData%d(i)%data(1)%orient(k)%azimuth%Ey = EyAzimuth(i,j)
+	               newData%d(i)%data(1)%orient(k)%azimuth%Hx_ref = HxAzimuth_ref(i,j)
+	               newData%d(i)%data(1)%orient(k)%azimuth%Hy_ref = HyAzimuth_ref(i,j)
 	            else
 	               newData%d(i)%data(1)%value(icomp,k) = real(value(i,j,icomp))
 	               newData%d(i)%data(1)%error(icomp,k) = error(i,j,icomp)
 	               newData%d(i)%data(1)%exist(icomp,k) = exist(i,j,icomp)
+
+	               ! 2022.09.28, Liu Zhongyin, add azimuth
+	               newData%d(i)%data(1)%orient(k)%azimuth%Hx = HxAzimuth(i,j)
+	               newData%d(i)%data(1)%orient(k)%azimuth%Hy = HyAzimuth(i,j)
+	               newData%d(i)%data(1)%orient(k)%azimuth%Ex = ExAzimuth(i,j)
+	               newData%d(i)%data(1)%orient(k)%azimuth%Ey = EyAzimuth(i,j)
+	               newData%d(i)%data(1)%orient(k)%azimuth%Hx_ref = HxAzimuth_ref(i,j)
+	               newData%d(i)%data(1)%orient(k)%azimuth%Hy_ref = HyAzimuth_ref(i,j)
 	            end if
 	           end do
 	           newData%d(i)%data(1)%rx(k) = new_Rx(j)
@@ -930,6 +1154,14 @@ Contains
 
 	! Merge the new data into the main data vector
 	call merge_dataVectorMTX(allData,newData,allData)
+    
+	! 2022.09.28, Liu Zhongyin, deallocate azimu
+	deallocate(HxAzimuth,stat=istat)
+	deallocate(HyAzimuth,stat=istat)
+	deallocate(ExAzimuth,stat=istat)
+	deallocate(EyAzimuth,stat=istat)
+	deallocate(HxAzimuth_ref,stat=istat)
+	deallocate(HyAzimuth_ref,stat=istat)
 
 	deallocate(value,error,exist,STAT=istat)
 	deallocate(new_TxType,new_Tx,new_Rx,STAT=istat)
