@@ -1,7 +1,7 @@
 ! *****************************************************************************
 module DataIO
   ! This module contains io routines for reading and writing the data vectors
-  ! Version: 3D MT
+  ! Version: 3D MT-CSEM-SFF-TIDE-GLOBAL
 
   use math_constants
   use file_units
@@ -92,6 +92,22 @@ Contains
        case(Off_Diagonal_Rho_Phase,Phase_Tensor)
           header = 'Period(s) Code GG_Lat GG_Lon X(m) Y(m) Z(m) Component Value Error'
 
+       case(Ex_Field, Ey_Field, Bx_Field, By_Field, Bz_Field)
+              if (txType == CSEM) then
+                header = 'Tx_Dipole Tx_Period(s) Tx_Moment(Am) Tx_Azi Tx_Dip Tx_X(m) Tx_Y(m) Tx_Z(m) '// &
+                         'Code X(m) Y(m) Z(m) Component Real Imag Error'
+              else if (txType == TIDE) then
+                header = 'Tx_Name Tx_Period(s) Tx_Amplitude Code GG_Lat GG_Lon X(m) Y(m) Z(m) Component Real Imag Error'
+              else
+                header = 'Period(s) Code GG_Lat GG_Lon X(m) Y(m) Z(m) Component Real Imag Error'
+              end if
+	      
+       case(Exy_Ampli_Phase)
+          header = 'Tx_Dipole Tx_Period(s) Tx_Moment(Am) Tx_Azi Tx_Dip Tx_X(m) Tx_Y(m) Tx_Z(m) Code X(m) Y(x) Z(m) Component Real Error Rx_Azi'
+	  
+       case(Exy_Field)
+          header = 'Tx_Dipole Tx_Period(s) Tx_Moment(Am) Tx_Azi Tx_Dip Tx_X(m) Tx_Y(m) Tx_Z(m) Code X(m) Y(x) Z(m) Component Real Imag Error Rx_Azi'
+
     end select
 
   end function DataBlockHeader
@@ -169,16 +185,35 @@ Contains
     character(1000)                 :: strtemp
     integer                         :: iTxt,iTx,iRx,iDt,icomp,i,j,k,istat,ios,nBlocks
     real(8)                         :: x(3),ref_x(3), Period,SI_factor,large
-    real(8)                         :: lat,lon,ref_lat,ref_lon
+    real(8)                         :: lat,lon,ref_lat,ref_lon,rx_azimuth
     logical                         :: conjugate, isComplex
 
-    iTxt = 1
+    !===========================================================================
+    !======================================================== New Local Variable
+    !===========================================================================
+    character(8)                    :: Dipole
+    character(40)              	    :: Txid=''
+    real(8) 			    :: Moment, Azi, Dip, LatTx, LongTx, Tx(3)
+    real(8)                         :: Omega, Amplitude
 
     open(unit=ioDat,recl=4096,file=cfile,form='formatted',status='unknown')
 
     ! For each data type in dictionary, if data of this type exists, write it out.
-    WRITE_DATA_TYPE: do iDt = 1,size(typeDict)
+    WRITE_TX_TYPE: do iTxt = 1,5
 
+      ! subset to extract the data of one transmitter type only & work with that;
+      ! call subset_dataVectorMTX(allData,txType_allData,iTxt)
+
+      ! ideally we only want to loop over relevant data types but this hasn't been
+      ! set up: would need a separate dictionary of data types per transmitter type...
+      WRITE_DATA_TYPE: do iDt = 1,size(typeDict)
+
+        ! skip those data types that don't belong to our transmitter type at all
+        ! or even those that have not been defined on input
+        if (.not. fileInfo(iTxt,iDt)%defined) then
+            cycle WRITE_DATA_TYPE
+        end if
+    
       nBlocks = countDataBlock(allData,iDt,iTxt)
       if (nBlocks == 0) then
 	! no data for this data type; skip it - this shouldn't happen anymore
@@ -263,6 +298,22 @@ Contains
                 error = LARGE_REAL
             end if
             exist = allData%d(j)%data(i)%exist(:,k)
+
+            if (iTxt == CSEM) then
+                Dipole = txDict(iTx)%Dipole
+                Moment = txDict(iTx)%moment
+                Azi = txDict(iTx)%AzimuthTx
+                Dip = txDict(iTx)%dipTx
+                Tx = txDict(iTx)%xyzTx
+                !Txid = txDict(iTx)%id
+            end if
+
+            if (iTxt == TIDE) then
+                Omega = txDict(iTx)%omega
+                Amplitude = txDict(iTx)%amplitude
+                Txid = txDict(iTx)%id
+            end if
+
             Period = txDict(iTx)%period
             siteid = rxDict(iRx)%id
             x = rxDict(iRx)%x
@@ -330,11 +381,12 @@ Contains
                         ! For Phase only, now using radians but output degrees [LiuZhongyin 2017.05.27]
                         if (index(compid,'PHS')>0) then
                             if (conjugate) then
-                             value(icomp) = value(icomp)*R2D
+                                value(icomp) = value(icomp)*R2D
                             else
                                 value(icomp) = -value(icomp)*R2D
                             endif
                         end if
+			
                         write(ioDat,'(es12.6)',    iostat=ios,advance='no') Period
                         write(ioDat, '(a1)', iostat=ios,advance='no') ' '
                         write(ioDat,'(a40,3f15.3)',iostat=ios,advance='no') trim(siteid),x(:)
@@ -342,17 +394,110 @@ Contains
                         countData = countData + 1
                     end do
 
+                case(Ex_Field,Ey_Field,Bx_Field,By_Field,Bz_Field)
+					
+                    do icomp = 1,ncomp/2
+                        if (.not. exist(2*icomp-1)) then
+                            cycle
+                        end if
+                        compid = typeDict(iDt)%id(icomp)
+                        if (iTxt == CSEM) then
+                            call compact(Dipole)
+                            write(ioDat,'(a8)',iostat=ios,advance='no') trim(Dipole)
+                            write(ioDat, '(a1)', iostat=ios,advance='no') ' '
+                            write(ioDat,'(2es12.6)', iostat=ios, advance='no') Period
+                            write(ioDat, '(a1)', iostat=ios,advance='no') ' '
+                            write(ioDat,'(2es12.6)', iostat=ios, advance='no') Moment
+                            write(ioDat,'(2f9.3, 3f12.3)',iostat=ios,advance='no') Azi, Dip, Tx
+                        else if (iTxt == TIDE) then
+                            call compact(Txid)
+                            write(ioDat,'(a15)',  iostat=ios,advance='no') trim(Txid)
+                            write(ioDat, '(a1)', iostat=ios,advance='no') ' '
+                            write(ioDat,'(es13.6)',  iostat=ios,advance='no') Period
+                            write(ioDat, '(a1)', iostat=ios,advance='no') ' '
+                            write(ioDat,'(es13.6)',  iostat=ios,advance='no') Amplitude
+                            write(ioDat, '(a1)', iostat=ios,advance='no') ' '
+                        else
+                            write(ioDat,'(es13.6)',  iostat=ios,advance='no') Period
+                        end if
+                        write(ioDat,'(a40,3f15.3)',iostat=ios,advance='no') trim(siteid),x(:)
+                        write(ioDat, '(a1)', iostat=ios,advance='no') ' '
+!                        write(ioDat,'(a8,3es15.6)',iostat=ios) trim(compid),value(2*icomp-1),value(2*icomp), error(2*icomp)
+!                        error(2*icomp) = sqrt(value(2*icomp-1)*value(2*icomp-1) + value(2*icomp)*value(2*icomp))/100.0;
+                        if (conjugate) then
+                            write(ioDat,'(a8,3es15.6)',iostat=ios) trim(compid),value(2*icomp-1),-value(2*icomp),error(2*icomp)
+                        else
+                            write(ioDat,'(a8,3es15.6)',iostat=ios) trim(compid),value(2*icomp-1),value(2*icomp),error(2*icomp)
+                        end if
+                        countData = countData + 1
+                    end do
+
+                case(Exy_Ampli_Phase)
+		
+                    rx_azimuth = rxDict(iRx)%Rx_Azi
+                    do icomp = 1,ncomp
+                        if (.not. exist(icomp)) then
+                            cycle
+                        end if
+                        compid = typeDict(iDt)%id(icomp)
+                        write(ioDat,'(a8)',iostat=ios,advance='no') trim(Dipole)
+                        write(ioDat, '(a1)', iostat=ios,advance='no') ' '
+                        write(ioDat,'(2es12.6)', iostat=ios, advance='no') Period
+                        write(ioDat, '(a1)', iostat=ios,advance='no') ' '
+                        write(ioDat,'(2es12.6)', iostat=ios, advance='no') Moment
+                        write(ioDat,'(2f9.3, 3f12.3)',iostat=ios,advance='no') Azi, Dip, Tx
+                        write(ioDat, '(a1)', iostat=ios,advance='no') ' '
+                        write(ioDat,'(a15,3f12.3)',iostat=ios,advance='no') trim(siteid),x(:)
+                        write(ioDat, '(a1)', iostat=ios,advance='no') ' '
+                        if (icomp .eq. 1) then
+                            write(ioDat,'(a10,3es15.6)',iostat=ios) trim(compid),value(icomp),0.1,rx_azimuth
+                        else
+                            write(ioDat,'(a10,3es15.6)',iostat=ios) trim(compid),value(icomp),5.0,rx_azimuth
+                        end if
+							
+                        countData = countData + 1
+                    end do	
+						
+                case(Exy_Field)
+		
+                    rx_azimuth = rxDict(iRx)%Rx_Azi
+                    do icomp = 1,ncomp/2
+                        if (.not. exist(2*icomp-1)) then
+                            cycle
+                        end if
+                        compid = typeDict(iDt)%id(icomp)
+                        write(ioDat,'(a8)',iostat=ios,advance='no') trim(Dipole)
+                        write(ioDat, '(a1)', iostat=ios,advance='no') ' '
+                        write(ioDat,'(2es12.6)', iostat=ios, advance='no') Period
+                        write(ioDat, '(a1)', iostat=ios,advance='no') ' '
+                        write(ioDat,'(2es12.6)', iostat=ios, advance='no') Moment
+                        write(ioDat,'(2f9.3, 3f12.3)',iostat=ios,advance='no') Azi, Dip, Tx
+                        write(ioDat, '(a1)', iostat=ios,advance='no') ' '
+                        write(ioDat,'(a15,3f12.3)',iostat=ios,advance='no') trim(siteid),x(:)
+                        write(ioDat, '(a1)', iostat=ios,advance='no') ' '
+!                        write(ioDat,'(a8,3es15.6)',iostat=ios) trim(compid),value(2*icomp-1),value(2*icomp), error(2*icomp)
+!                        error(2*icomp) = sqrt(value(2*icomp-1)*value(2*icomp-1) + value(2*icomp)*value(2*icomp))/100.0;
+                        if (conjugate) then
+                            write(ioDat,'(a10,4es15.6)',iostat=ios) trim(compid),value(2*icomp-1),-value(2*icomp),error(2*icomp),rx_azimuth
+                        else
+                            write(ioDat,'(a10,4es15.6)',iostat=ios) trim(compid),value(2*icomp-1),value(2*icomp),error(2*icomp),rx_azimuth
+                        end if
+                        countData = countData + 1
+                    end do	
+			
             end select
 
         end do  ! transmitters
       end do  ! receivers
 
       if (output_level > 4) then
-        write(0,*) 'Written ',countData,' data values of type MT: ',trim(typeDict(iDt)%name),' to file'
+	write(0,*) 'Written ',countData,' data values of type ',tx_type_name(iTxt),': ',trim(typeDict(iDt)%name),' to file'
       end if
       deallocate(value, error, exist, STAT=istat)
 
-    end do WRITE_DATA_TYPE ! data types
+     end do WRITE_DATA_TYPE ! data types
+
+    end do WRITE_TX_TYPE
 
     close(ioDat)
 
@@ -388,14 +533,22 @@ Contains
     real(8)                         :: lat,lon,ref_lat,ref_lon,rx_azimuth
     real(8)                         :: Zreal, Zimag, Zerr
     logical                         :: conjugate, errorBar, isComplex
+    !===========================================================================
+    !======================================================== New Local Variable
+    !===========================================================================
+    character(8)                    :: Dipole
+    character(40)              	    :: Txid=''
+    real(8) 			    :: Moment, Azi, Dip, LatTx, LongTx, Tx(3)
+    real(8)                         :: Omega, Amplitude
     type(transmitter_t)             :: aTx
 
     ! First, set up the data type dictionary, if it's not in existence yet
     call setup_typeDict()
 
     ! Save the user preferences
+    nTxt = 5
     nDt = size(typeDict)
-    call init_fileInfo(1,nDt)
+    call init_fileInfo(nTxt,nDt)
 
     ! Now, read the data file
     open(unit=ioDat,file=cfile,form='formatted',status='old')
@@ -415,7 +568,7 @@ Contains
         else
             txTypeName = 'MT'
         end if
-    	iTxt = 1
+        iTxt = tx_type_index(txTypeName)
     	if (ios /= 0) exit
     
     	! Read new data type
@@ -449,6 +602,7 @@ Contains
         read(ioDat,*,iostat=ios) temp,fileInfo(iTxt,iDt)%geographic_orientation
         read(ioDat,*,iostat=ios) temp,fileInfo(iTxt,iDt)%origin_in_file(1),fileInfo(iTxt,iDt)%origin_in_file(2)
         read(ioDat,*,iostat=ios) temp,nTx,nRx
+        !write(0,'(a6,i5,a18,i8,a24)') 'Found ',nTx,' transmitters and ',nRx,' receivers in data block'
 
 
         if (output_level > 3) then
@@ -476,7 +630,124 @@ Contains
         READ_DATA_LINE: Do
 
             select case (iDt)
+            case(Ex_Field,Ey_Field,Bx_Field,By_Field,Bz_Field)
+                if (iTxt == CSEM) then
+                    read(ioDat,*,iostat=ios) Dipole, Period, Moment, Azi, Dip, Tx(1), Tx(2), Tx(3), code, x(1), x(2), x(3), compid, Zreal, Zimag, Zerr
+                    if (ios /= 0 ) then
+                        backspace(ioDat)
+                        exit
+                    end if
+                    ! Find component id for this value
+                    icomp = ImpComp(compid,iDt)
+                    aTx%Tx_type='CSEM'
+                    aTx%nPol=1
+                    aTx%Dipole = Dipole
+                    aTx%period = Period
+                    aTx%omega = 2.0d0*PI/Period
+                    aTx%xyzTx = Tx
+                    aTx%azimuthTx = Azi
+                    aTx%dipTx = Dip
+                    atx%moment = Moment
+                    !aTx%id = Txid
 
+                else if (iTxt == TIDE) then
+                    read(ioDat,*,iostat=ios) Txid, Period, Amplitude, code, lat, lon, x(1), x(2), x(3), compid, Zreal, Zimag, Zerr
+                    if (ios /= 0 ) then
+                        backspace(ioDat)
+                        exit
+                    end if
+                    ! Find component id for this value
+                    icomp = ImpComp(compid,iDt)
+                    aTx%Tx_type='TIDE'
+                    aTx%nPol=1
+                    aTx%omega = 2.0d0*PI/Period
+                    aTx%period = Period
+                    aTx%amplitude = Amplitude
+                    aTx%id = Txid
+                    call compact(aTx%id)
+
+                else
+                    read(ioDat,*,iostat=ios) Period, code, lat, lon, x(1), x(2), x(3), compid, Zreal, Zimag, Zerr
+                    if (ios /= 0) then
+                        backspace(ioDat)
+                        exit
+                    end if
+                    ! Find component id for this value
+                    icomp = ImpComp(compid,iDt)
+                    aTx%Tx_type='MT'
+                    aTx%nPol=2
+                    aTx%Dipole =''
+                    aTx%period = Period
+                    aTx%omega = 2.0d0*PI/Period
+
+                end if
+
+                ! Now overwrite aTx%Tx_type with txTypeName... allows for general SFF computation
+                aTx%Tx_type = tx_type_name(iTxt)
+
+                iTx = update_txDict(aTx)
+
+                ! Update the receiver dictionary and index (sets up if necessary)
+                ! For now, make lat & lon part of site ID; could use directly in the future
+                write(siteid,'(a22,2f9.3)') code
+                iRx = update_rxDict(x,siteid)
+
+            case(Exy_Ampli_Phase)
+                read(ioDat,*,iostat=ios) Dipole, Period, Moment, Azi, Dip, Tx(1), Tx(2), Tx(3), code, x(1), x(2), x(3), compid, Zreal, Zerr, rx_azimuth
+                if (ios /= 0) then
+                    backspace(ioDat)
+                    exit
+                end if
+            			
+                aTx%Tx_type='CSEM'
+                aTx%nPol=1
+                aTx%Dipole = Dipole
+                aTx%period = Period
+                aTx%omega = 2.0d0*PI/Period            		
+                aTx%xyzTx = Tx
+                aTx%azimuthTx = Azi
+                aTx%dipTx = Dip
+                atx%moment = Moment
+						
+                ! Find component id for this value
+                icomp = ImpComp(compid,iDt)
+
+                ! Update the transmitter dictionary and the index (sets up if necessary)
+                iTx = update_txDict(aTx)
+
+                ! Update the receiver dictionary and index (sets up if necessary)
+                ! For now, make lat & lon part of site ID; could use directly in the future
+                write(siteid,'(a20,2f9.3)') code,lat,lon
+                iRx = update_rxDict(x,siteid,rx_azimuth)
+		
+            case(Exy_Field)
+                read(ioDat,*,iostat=ios) Dipole, Period, Moment, Azi, Dip, Tx(1), Tx(2), Tx(3), code, x(1), x(2), x(3), compid, Zreal, Zimag, Zerr, rx_azimuth
+                if (ios /= 0) then
+                    backspace(ioDat)
+                    exit
+                end if
+            			
+                aTx%Tx_type='CSEM'
+                aTx%nPol=1
+                aTx%Dipole = Dipole
+                aTx%period = Period
+                aTx%omega = 2.0d0*PI/Period            		
+                aTx%xyzTx = Tx
+                aTx%azimuthTx = Azi
+                aTx%dipTx = Dip
+                atx%moment = Moment
+						
+                ! Find component id for this value
+                icomp = ImpComp(compid,iDt)
+
+                ! Update the transmitter dictionary and the index (sets up if necessary)
+                iTx = update_txDict(aTx)
+
+                ! Update the receiver dictionary and index (sets up if necessary)
+                ! For now, make lat & lon part of site ID; could use directly in the future
+                write(siteid,'(a20,2f9.3)') code,lat,lon
+                iRx = update_rxDict(x,siteid,rx_azimuth)
+		
             case(Full_Impedance,Off_Diagonal_Impedance,Full_Vertical_Components)
                 read(ioDat,*,iostat=ios) Period,code,lat,lon,x(1),x(2),x(3),compid,Zreal,Zimag,Zerr
 
@@ -493,6 +764,8 @@ Contains
                 aTx%nPol=2
                 aTx%period = Period
                 aTx%omega = 2.0d0*PI/Period
+                ! Now overwrite aTx%Tx_type with txTypeName... allows for general SFF computation
+                aTx%Tx_type = tx_type_name(iTxt)
                 iTx = update_txDict(aTx)
 
                 ! Update the receiver dictionary and index (sets up if necessary)
@@ -604,9 +877,7 @@ Contains
 
         end do READ_DATA_LINE
 
-        write(0,*) 'Read ',countData,' data values of MT type ',trim(typeDict(iDt)%name),' from file'
-
-        ! Create a single-type data vector from the new values
+	write(0,*) 'Read ',countData,' data values of ',trim(tx_type_name(iTxt)),' type ',trim(typeDict(iDt)%name),' from file'
 	call create_dataVectorMTX(nTx,newData)
 	newData%allocated = .TRUE.
 	errorBar = .TRUE.
@@ -672,7 +943,7 @@ Contains
     write(0,*)
 
     ! Finally, set up the index vectors in the data type dictionary - used for output
-    nTxt = 1
+    nTxt = 5
     nTx = size(txDict)
     nRx = size(rxDict)
     do iTxt = 1,nTxt
