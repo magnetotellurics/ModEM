@@ -18,6 +18,7 @@ module DataSens
 
 !*****************************************************************************
   use math_constants
+  use fields_orientation
   use utilities
   use DataSpace
   use DataFunc
@@ -49,6 +50,7 @@ Contains
   integer               	:: iSite, ncomp, iTx, &
 					nFunc, iDt, iRx, iComp, iFunc, j
 	logical                 :: isComplex, exists
+  type(orient_t)            :: orient
   complex(kind=prec)	    :: Z
   type(sparseVector_t), pointer	:: Lz(:)
 
@@ -93,9 +95,9 @@ Contains
 	     ! at one site, for one data type.
 	     !   Lrows returns one Lz for each of nFunc functionals
 	     iRx = d%data(j)%rx(iSite)
-		!   call Lrows(e0,Sigma0,iDt,iRx,Lz)
+	     orient = d%data(j)%orient(iSite)
 		  ! 2022.10.05, Liu Zhongyin, Add Azimuth
-		  call Lrows(e0,Sigma0,iDt,iRx,Lz,d%data(j)%Azimuth(iSite))
+		  call Lrows(e0,Sigma0,iDt,iRx,orient,Lz)
 	     iComp = 1
 	     do iFunc  = 1, nFunc
 	        exists = d%data(j)%exist(iComp,iSite)
@@ -154,6 +156,7 @@ Contains
   integer               		:: iSite, iTx, iDt, iRx, nComp, &
 					 nFunc, iComp, iFunc, j
   logical                   :: isComplex, exists
+  type(orient_t)            :: orient
   complex(kind=prec)		    :: Z
   type(sparseVector_t), pointer    	:: Lz(:)
 
@@ -191,9 +194,9 @@ Contains
 	     ! at one site, for one data type.
 	     !   Lrows returns one Lz for each of nFunc functionals
 	     iRx = d%data(j)%rx(iSite)
-		!   call Lrows(e0,Sigma0,iDt,iRx,Lz)
+         orient = d%data(j)%orient(iSite)
 		  ! 2022.10.05, Liu Zhongyin, Add azimuth
-		  call Lrows(e0,Sigma0,iDt,iRx,Lz,d%data(j)%Azimuth(iSite))
+		  call Lrows(e0,Sigma0,iDt,iRx,orient,Lz)
 	     iComp = 1
 	     do iFunc  = 1, nFunc
 	        exists = d%data(j)%exist(iComp,iSite)

@@ -118,7 +118,7 @@ Subroutine Master_Job_fwdPred(sigma,d1,eAll)
          iDt = d1%d(iTx)%data(i)%dataType
 		     do j = 1,d1%d(iTx)%data(i)%nSite
               call dataResp(eAll%solns(iTx),sigma,iDt,d1%d(iTx)%data(i)%rx(j),d1%d(iTx)%data(i)%value(:,j), &
-                           d1%d(iTx)%data(i)%Azimuth(j))
+                           d1%d(iTx)%data(i)%orient(j))
 		     end do
       end do
    end do   
@@ -946,6 +946,7 @@ Subroutine Worker_job (sigma,d)
    type(sparseVector_t), pointer	:: L(:)
    type(modelParam_t), pointer    :: Qreal(:),Qimag(:)
    logical      :: Qzero
+   type(orient_t)               :: orient
  
    ! 2019.05.08, Liu Zhongyin, add isite for rx in dataBlock_t
    integer                       :: isite
@@ -1013,11 +1014,12 @@ elseif (trim(worker_job_task%what_to_do) .eq. 'COMPUTE_J') then
           dt=worker_job_task%data_type
           worker_job_task%taskid=taskid
           
-          ! 2022.10.06, Liu Zhongyin, assign isite 
+          ! 2022.10.06, Liu Zhongyin, assign isite (AK: possible same as stn_index - check)
           isite=worker_job_task%iSite
           
 nComp = d%d(per_index)%data(dt_index)%nComp           
 isComplex = d%d(per_index)%data(dt_index)%isComplex
+orient = d%d(per_index)%data(dt_index)%orient(isite)
 
 		    if(isComplex) then
 		       !  data are complex; one sensitivity calculation can be
@@ -1065,7 +1067,7 @@ isComplex = d%d(per_index)%data(dt_index)%isComplex
    ! compute linearized data functional(s) : L
    ! call Lrows(e0,sigma,dt,stn_index,L)
    ! 2022.10.06, Liu Zhongyin, Add Azimuth
-   call Lrows(e0,sigma,dt,stn_index,L,d%d(per_index)%data(dt_index)%Azimuth(isite))
+   call Lrows(e0,sigma,dt,stn_index,orient,L)
    ! compute linearized data functional(s) : Q
    call Qrows(e0,sigma,dt,stn_index,Qzero,Qreal,Qimag)	  		              
    ! loop over functionals  (e.g., for 2D TE/TM impedances nFunc = 1)

@@ -1,31 +1,33 @@
 #!/usr/bin/perl -w
 # Copyright (c) The University of Edinburgh
-# This is a utility to generate make files 
+# This is a utility to generate make files
 # for Fortran 90. It was originally in shell script and was re-written
 # in perl for greater speed and (hopefully) portability.
 # Initial tests suggest speed is 10x better than the sh version.
 #
 # Format modified by Anna Kelbert, 2005-2009.
 #
+# Slightly modified to be working with PETSc lib (Hao Dong, 2017, 1)
+#
 # A basic makefile entry for bork.f90 would be
 # bork.o:bork.f90
 # <-tab->$(F90) -c bork.f90
 #
-# however if bork.f90 contains the line "use gunge" then 
+# however if bork.f90 contains the line "use gunge" then
 # (A)
-# the entry has to be 
-# bork.o:bork.f90 garple.o <-- Forces bork to be recompiled if a module it 
+# the entry has to be
+# bork.o:bork.f90 garple.o <-- Forces bork to be recompiled if a module it
 # <-tab->$(F90) -c bork.f90                               uses is changed
 # where garple.f90 is the program containing the line "module gunge
-# (B)  
+# (B)
 # The same type of entry has to be done for garple.f90
 #
 # We also need to generate an entry for the link step. If the main program
-# was in baz.f90 then this should be 
+# was in baz.f90 then this should be
 # baz:baz.o bork.o.........
 # <-tab->$(F90) -o baz baz.o bork.o .....
-# The list of object files to be linked should have foo.o in it once 
-# and only once for each foo.f90 that was compiled 
+# The list of object files to be linked should have foo.o in it once
+# and only once for each foo.f90 that was compiled
 
 use File::Basename;
 
@@ -35,7 +37,7 @@ use File::Basename;
 if ( $ENV{FMKMF_F90} ) {
   #print "\# FMKMF_F90 set to $ENV{FMKMF_F90}\n";
   $f90=$ENV{FMKMF_F90};
-} 
+}
 else {
   #print "\# FMKMF_F90 not set: using f90\n";
   $f90="f90";
@@ -45,7 +47,7 @@ else {
 if ( $ENV{FMKMF_SFTAG} ) {
   #print "\# FMKMF_SFTAG set to $ENV{FMKMF_SFTAG}\n";
   $sftag=$ENV{FMKMF_SFTAG};
-} 
+}
 else {
   #print "\# FMKMF_SFTAG not set: using f90\n";
   $sftag="f90";
@@ -54,7 +56,7 @@ else {
 if ( $ENV{FMKMF_SPATH} ) {
   #print "\# FMKMF_SPATH set to $ENV{FMKMF_SPATH}\n";
   $spath=$ENV{FMKMF_SPATH};
-} 
+}
 else {
   #print "\# FMKMF_SPATH not set: using . \n";
   $spath=".";
@@ -63,7 +65,7 @@ else {
 if ( $ENV{FMKMF_OPTIM} ) {
   #print "\# FMKMF_OPTIM set to $ENV{FMKMF_OPTIM}\n";
   $optim=$ENV{FMKMF_OPTIM};
-} 
+}
 else {
   #print "\# FMKMF_OPTIM not set: using default optimization \n";
   $optim="-O2";
@@ -72,7 +74,7 @@ else {
 if ( $ENV{FMKMF_MPIFLAGS} ) {
   #print "\# FMKMF_MPIFLAGS set to $ENV{FMKMF_MPIFLAGS}\n";
   $mpiflags=$ENV{FMKMF_MPIFLAGS};
-} 
+}
 else {
   #print "\# FMKMF_MPIFLAGS not set: using no link options \n";
   $mpiflags=" ";
@@ -90,7 +92,7 @@ else {
 if ( $ENV{FMKMF_LINKOPTS} ) {
   #print "\# FMKMF_LINKOPTS set to $ENV{FMKMF_LINKOPTS}\n";
   $linkopts=$ENV{FMKMF_LINKOPTS};
-} 
+}
 else {
   #print "\# FMKMF_LINKOPTS not set: using no link options \n";
   $linkopts=" ";
@@ -98,6 +100,8 @@ else {
 
 # By default, use the current directory for object files
 $linkdir=".";
+# fill a default petsc dir here
+$petscdir="/your-path-to-petsc";
 
 #------------------------------
 # Done with environment variables. Now we need to process commandline args
@@ -106,6 +110,7 @@ $linkdir=".";
 
 my ($optiond)=0;
 my  $DMPI = 0;
+my  $DPETSC = 0;
 
 while (@ARGV){
 
@@ -135,7 +140,14 @@ while (@ARGV){
     if ($mpiflags =~ /MPI/) {
     	$DMPI = 1; # MPI is defined
     }
+    if ($mpiflags =~ /PETSC/) {
+    	$DPETSC = 1; # PETSC is defined
+    }
     print STDERR "# Using compiler MPI flags $mpiflags from cmd line\n";
+  }
+  if ($arg =~ /^-pdir$/){
+    $petscdir=shift;
+    print STDERR "# Using PETSC path $petscdir from cmd line\n";
   }
   if ($arg =~ /^-lp$/){
     $libpath=shift;
@@ -227,12 +239,17 @@ if($optiond){
   print STDERR "# Main program is $mainprogfile \n" ;
 }
 # this subroutine (def below) does most of the work.
-process_fsource($mainprogfile); 
+process_fsource($mainprogfile);
 
-# set some makefile . 
+# set some makefile .
 
 print "\n# ------------------Macro-Defs---------------------\n";
 
+if ($DPETSC) {
+print "PETSC_DIR = ${petscdir}\n";
+print "include \$(PETSC_DIR)/lib/petsc/conf/variables\n";
+print "include \$(PETSC_DIR)/lib/petsc/conf/rules\n";
+}
 print "include Makefile.local\n";
 print "OBJDIR = $linkdir\n";
 print "F90 = $f90 \n";
@@ -242,15 +259,17 @@ if ($WIN) {
 	print "MODULE = \n";
 } elsif ($f90 =~ /^g95$/){
 	print "MODULE = -fmod=\$(OBJDIR)\n";
-} elsif ($f90 =~ /^gfortran$/){
-	print "MODULE = --sysroot=\$(OBJDIR)\n";	
+} elsif (($f90 =~ /^gfortran$/) or ($f90 =~ /^mpifort$/)){
+	print "MODULE = --sysroot=\$(OBJDIR)\n";
+} elsif ($f90 =~ /^mpif90$/){
+	print "MODULE = -J \$(OBJDIR)\n";
 } else {
 	print "MODULE = -module \$(OBJDIR)\n";
 }
 if ($libpath !~ /^(\s*)$/){
 	print "LIBS_PATH = -L$libpath\n";
 } else {
-	print "LIBS_PATH = \n";	
+	print "LIBS_PATH = \n";
 }
 print "LIBS = $linkopts\n";
 
@@ -297,31 +316,31 @@ print "src: clean \n";
 print "\ttar cvfz \$(ARCHIVE).tgz * \n";
 print "\n  \n";
 
-# End of main program 
+# End of main program
 
 ##############################################
 # Here is the subroutine that generates the compile entries in the makefile
-# These end up in the global array @global_outlines. The magic part is 
+# These end up in the global array @global_outlines. The magic part is
 # that this subroutine calls itself recursively.
 ##############################################
 sub process_fsource {
-  
+
   my $mainprogfile=$_[0];
   if($optiond){
     print STDERR "# process_fsource called with arg $mainprogfile \n";
   }
-  open( MAINPROG, $mainprogfile) or 
+  open( MAINPROG, $mainprogfile) or
     die "Can't find main program file $mainprogfile: $! \n";
-  
+
   # Read through Fortran source looking for USE statements
-  # There should be nothing but whitespace before the USE. Sloppily, 
+  # There should be nothing but whitespace before the USE. Sloppily,
   # we allow tabs, although the standard (IIRC) does not
   # An important exception, helpful for our purposes:
   # if the used module has MPI in the name, omit it unless MPI is defined.
   # In the code, this is accomplished with #ifdef MPI statements.
   my @modulelist=();
   my @includelist=();
-  while ($line=<MAINPROG>) { 
+  while ($line=<MAINPROG>) {
     if ($line =~ /^[ \t]*use (\w+)/i ) { # line matches regexp between / /
       my $modulefile = $1;
       if($optiond){
@@ -339,11 +358,11 @@ sub process_fsource {
       if ($includefile =~ /MPI/) { # if MPI is found in module name, skip unless MPI is defined
       	next unless ($DMPI);
       }
-      my $mainprogpath = dirname($mainprogfile); 
-      @includelist=(@includelist,"$mainprogpath/$includefile");    	
+      my $mainprogpath = dirname($mainprogfile);
+      @includelist=(@includelist,"$mainprogpath/$includefile");
     }
   }
-  
+
   close(MAINPROG);
 
   if($optiond){
@@ -353,20 +372,20 @@ sub process_fsource {
     }
   }
   # Find which file each module is in.
-  
-  
-  
+
+
+
  my @modfiles=();
  MODLOOP:foreach $module (@modulelist){
     foreach $directory (@spath){
       # print "# Looking in directory $directory\n";
-      opendir( DIRHANDLE, $directory) or die 
+      opendir( DIRHANDLE, $directory) or die
 	"Can't open directory $directory : $! \n";
       @sourcefiles=grep /\.${sftag}\Z/, sort(readdir(DIRHANDLE));
     foreach $sourcefile (@sourcefiles){
       $pathsourcefile="$directory/$sourcefile";
       #print "\# Checking $pathsourcefile\n";
-      open( SOURCEFILE, "$pathsourcefile") or 
+      open( SOURCEFILE, "$pathsourcefile") or
 	die "Can't find source file $pathsourcefile: $! \n";
       while ($line=<SOURCEFILE>){
 	if ($line =~ /^ *module (\w+)/i ){
@@ -375,7 +394,7 @@ sub process_fsource {
 	      print STDERR "# Uses $module which is in $pathsourcefile\n";
 	    }
 	    @modfiles=(@modfiles,$pathsourcefile);
-	    
+
 	    if (grep (/$pathsourcefile/,@global_modfiles )){
 	      if($optiond){
 		print STDERR "# $pathsourcefile already in list\n";
@@ -388,7 +407,7 @@ sub process_fsource {
 	    }
 	    # We found this module -- go on to the next one
 	    close (SOURCEFILE);
-	    next MODLOOP;	    
+	    next MODLOOP;
 	  }
 	}
       }
@@ -421,7 +440,7 @@ $objfile="\$(OBJDIR)/$objfile";
 @global_objlist=(@global_objlist,$objfile);
 # list of dependencies
 @objlist=();
-foreach  $mf (@modfiles) { 
+foreach  $mf (@modfiles) {
   $obj=$mf;
   # replace source file name with .o
   if ($WIN) {

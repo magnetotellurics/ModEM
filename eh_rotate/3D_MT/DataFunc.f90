@@ -24,7 +24,7 @@ module dataFunc
   use receivers
   use transmitters
   use dataTypes
-  use DataSpace
+  use fields_orientation
 
   implicit none
 
@@ -40,12 +40,13 @@ module dataFunc
 Contains
 
 !******************************************************************************
-  subroutine dataResp(ef,Sigma,iDT,iRX,Resp,Azimuth,Binv)
+  subroutine dataResp(ef,Sigma,iDT,iRX,Resp,Orient,Binv)
   ! given electric field solutions (both modes--and note
   !    that the solution knows about the transmitter used),
   ! and indices into data types and receiver dictionaries for one
   ! data vector compute the complex impedance tensor.
-  ! Binv is optional output argument, used needed for linearized
+  ! Orient is optional input argument that defines output data orientation.
+  ! Binv is optional output argument, needed for linearized
   ! impedance calculation in this module (not used by higher levels)
 
   implicit none
@@ -56,7 +57,7 @@ Contains
   real(kind=prec), intent(inout)	:: Resp(:)
 
   ! 2022.10.05, Liu Zhongyin, Add Azimuth
-  type(Azimuth_t), intent(in) :: Azimuth
+  type(orient_t), intent(in), optional :: Orient
 
   ! Definition of the impedance elements:
   !   iDT=Full_Impedance
@@ -82,6 +83,7 @@ Contains
   complex(kind=prec)	:: BB(3,2),EE(2,2),RR(2,2)
   complex(kind=prec)	:: det,i_omega,ctemp
   type(sparsevecC)		:: Lex,Ley,Lbx,Lby,Lbz,Lrx,Lry
+  type(orient_t)        :: Rot
   logical			:: ComputeHz,ComputeE
 
   ! Liu Zhongyin, 2019.08.26, local vars
@@ -106,16 +108,22 @@ Contains
   endif
   !allocate(Z(nFunc))
 
+  if(present(Orient)) then
+     Rot = Orient
+  else
+     call setup_default_orientation(Rot)
+  endif
+
  selectcase (iDT)
      case(Full_Impedance)
                x     = rxDict(iRX)%x         !Local site position (x,y,z)
          
          ! Liu Zhongyin, 2019.08.26, add hxazimuth, exazimuth
-         HxAngle = Azimuth%HxAzimuth
-         ExAngle = Azimuth%ExAzimuth
+         HxAngle = Rot%azimuth%Hx
+         ExAngle = Rot%azimuth%Ex
          ! Liu Zhongyin, 2022.09.07, add hyazimuth, eyazimuth
-         HyAngle = Azimuth%HyAzimuth
-         EyAngle = Azimuth%EyAzimuth
+         HyAngle = Rot%azimuth%Hy
+         EyAngle = Rot%azimuth%Ey
 
 		     ! First set up interpolation functionals for Ex, Ey
 			  xyz = 1
@@ -162,11 +170,11 @@ Contains
               x     = rxDict(iRX)%x          !Local site position (x,y,z)
 
          ! Liu Zhongyin, 2019.08.26, add hxazimuth, exazimuth
-         HxAngle = Azimuth%HxAzimuth
-         ExAngle = Azimuth%ExAzimuth
+         HxAngle = Rot%azimuth%Hx
+         ExAngle = Rot%azimuth%Ex
          ! Liu Zhongyin, 2022.09.07, add hyazimuth, eyazimuth
-         HyAngle = Azimuth%HyAzimuth
-         EyAngle = Azimuth%EyAzimuth
+         HyAngle = Rot%azimuth%Hy
+         EyAngle = Rot%azimuth%Ey
 
 		     ! First set up interpolation functionals for Ex, Ey
 			  xyz = 1
@@ -209,9 +217,9 @@ Contains
                x     = rxDict(iRX)%x          !Local site position (x,y,z)
 
          ! Liu Zhongyin, 2019.08.26, add hxazimuth
-         HxAngle = Azimuth%HxAzimuth
+         HxAngle = Rot%azimuth%Hx
          ! Liu Zhongyin, 2022.09.07, add hyazimuth
-         HyAngle = Azimuth%HyAzimuth
+         HyAngle = Rot%azimuth%Hy
 
               !  Vertical field TF
 			 ! First set up interpolation functionals for Bx, By, Bz
@@ -248,11 +256,11 @@ Contains
               x_ref = rxDict(iRX)%r          !Reference site position (x,y,z)
 
          ! Liu Zhongyin, 2019.08.26, add hxazimuth, hxazimuth_ref
-         HxAngle = Azimuth%HxAzimuth
-         HxAngle_ref = Azimuth%HxAzimuth_ref
+         HxAngle = Rot%azimuth%Hx
+         HxAngle_ref = Rot%azimuth%Hx_ref
          ! Liu Zhongyin, 2022.09.07, add hyazimuth, hyazimuth_ref
-         HyAngle = Azimuth%HyAzimuth
-         HyAngle_ref = Azimuth%HyAzimuth_ref
+         HyAngle = Rot%azimuth%Hy
+         HyAngle_ref = Rot%azimuth%Hy_ref
 
   			 ! First set up interpolation functionals for Bx, By at local site
 			  xyz = 1
@@ -300,11 +308,11 @@ Contains
                 x     = rxDict(iRX)%x          !Local site position (x,y,z)
 
          ! Liu Zhongyin, 2019.08.26, add hxazimuth, exazimuth
-         HxAngle = Azimuth%HxAzimuth
-         ExAngle = Azimuth%ExAzimuth
+         HxAngle = Rot%azimuth%Hx
+         ExAngle = Rot%azimuth%Ex
          ! Liu Zhongyin, 2022.09.07, add hyazimuth, eyazimuth
-         HyAngle = Azimuth%HyAzimuth
-         EyAngle = Azimuth%EyAzimuth
+         HyAngle = Rot%azimuth%Hy
+         EyAngle = Rot%azimuth%Ey
          
 		     ! First set up interpolation functionals for Ex, Ey
 			  xyz = 1
@@ -354,11 +362,11 @@ Contains
                x     = rxDict(iRX)%x         !Local site position (x,y,z)
 
          ! Liu Zhongyin, 2019.08.26, add hxazimuth, exazimuth
-         HxAngle = Azimuth%HxAzimuth
-         ExAngle = Azimuth%ExAzimuth
+         HxAngle = Rot%azimuth%Hx
+         ExAngle = Rot%azimuth%Ex
          ! Liu Zhongyin, 2022.09.07, add hyazimuth, eyazimuth
-         HyAngle = Azimuth%HyAzimuth
-         EyAngle = Azimuth%EyAzimuth
+         HyAngle = Rot%azimuth%Hy
+         EyAngle = Rot%azimuth%Ey
             
 		     ! First set up interpolation functionals for Ex, Ey
 			  xyz = 1
@@ -445,7 +453,7 @@ Contains
   end subroutine dataResp
 
 !****************************************************************************
-  subroutine Lrows(e0,Sigma0,iDT,iRX,L,Azimuth)
+  subroutine Lrows(e0,Sigma0,iDT,iRX,Orient,L)
   !  given input background electric field solution (both modes; e0),
   !  indices into data type/receiver dictionaries
   !  compute array of sparse complex vectors giving coefficients
@@ -463,7 +471,7 @@ Contains
   type(sparseVector_t), intent(inout)		:: L(:)
 
   ! 2022.10.05, Liu Zhongyin, add Azimuth
-  type(Azimuth_t), intent(in)        :: Azimuth
+  type(orient_t), intent(in)        :: Orient
 
   !  local variables
   complex(kind=prec)	:: Binv(2,2)
@@ -479,19 +487,18 @@ Contains
   real(kind=prec)  :: HxAngle,ExAngle,HxAngle_ref,HyAngle,EyAngle,HyAngle_ref
   type(sparsevecC) :: Lex_rot,Ley_rot,Lbx_rot,Lby_rot,Lrx_rot,Lry_rot
 
-
   omega = txDict(e0%tx)%omega
   	 x     = rxDict(iRX)%x
      x_ref = rxDict(iRX)%r          !Reference site position (x,y,z)
 
      ! Liu Zhongyin, 2019.08.26, Add hxazimuth, exazimuth, hxazimuth_ref
-     HxAngle = Azimuth%HxAzimuth
-     ExAngle = Azimuth%ExAzimuth
-     HxAngle_ref = Azimuth%HxAzimuth_ref
+     HxAngle = Orient%azimuth%Hx
+     ExAngle = Orient%azimuth%Ex
+     HxAngle_ref = Orient%azimuth%Hx_ref
      ! Liu Zhongyin, 2022.09.07, add hyazimuth, eyazimuth, hyazimuth_ref
-     HyAngle = Azimuth%HyAzimuth
-     EyAngle = Azimuth%EyAzimuth
-     HyAngle_ref = Azimuth%HyAzimuth_ref
+     HyAngle = Orient%azimuth%Hy
+     EyAngle = Orient%azimuth%Ey
+     HyAngle_ref = Orient%azimuth%Hy_ref
 
   !  set up which components are needed,  ... and ! evaluate
   !   impedance, Binv for background solution
@@ -519,7 +526,7 @@ Contains
               IJ(3,2*(i-1)+j) = i
            enddo
         enddo
-        Call dataResp(e0,Sigma0,Full_Impedance,iRX,Resp,Azimuth,Binv)
+        Call dataResp(e0,Sigma0,Full_Impedance,iRX,Resp,Orient,Binv)
      case(Off_Diagonal_Impedance)
         nComp = 2
         ComputeHz = .false.
@@ -529,7 +536,7 @@ Contains
         IJ(2,2) = 1
         IJ(3,1) = 1
         IJ(3,2) = 2
-        Call dataResp(e0,Sigma0,Full_Impedance,iRX,Resp,Azimuth,Binv)
+        Call dataResp(e0,Sigma0,Full_Impedance,iRX,Resp,Orient,Binv)
       case(Full_Vertical_Components)
         nComp = 2
         ComputeHz = .true.
@@ -539,7 +546,7 @@ Contains
         IJ(2,2) = 2
         IJ(3,1) = 3
         IJ(3,2) = 3
-        Call dataResp(e0,Sigma0,Full_Vertical_Components,iRX,Resp,Azimuth,Binv)
+        Call dataResp(e0,Sigma0,Full_Vertical_Components,iRX,Resp,Orient,Binv)
      case(Full_Interstation_TF)
         nComp = 4
         ComputeHz = .false.
@@ -550,7 +557,7 @@ Contains
               IJ(3,2*(i-1)+j) = i+3
            enddo
         enddo
-        Call dataResp(e0,Sigma0,Full_Interstation_TF,iRX,Resp,Azimuth,Binv)
+        Call dataResp(e0,Sigma0,Full_Interstation_TF,iRX,Resp,Orient,Binv)
      case(Off_Diagonal_Rho_Phase)
         ! First calculate Off_Diagonal_Impedance Ls
         ! Rho_Phase actually has 4 (real) components, but nComp here refers to the
@@ -563,7 +570,7 @@ Contains
         IJ(2,2) = 1
         IJ(3,1) = 1
         IJ(3,2) = 2
-        Call dataResp(e0,Sigma0,Full_Impedance,iRX,Resp,Azimuth,Binv)
+        Call dataResp(e0,Sigma0,Full_Impedance,iRX,Resp,Orient,Binv)
      case(Phase_Tensor)
 	  ! First calculate Full_Impedances Ls
         nComp = 4
@@ -575,7 +582,7 @@ Contains
               IJ(3,2*(i-1)+j) = i
            enddo
         enddo
-        Call dataResp(e0,Sigma0,Full_Impedance,iRX,Resp,Azimuth,Binv)
+        Call dataResp(e0,Sigma0,Full_Impedance,iRX,Resp,Orient,Binv)
 
      endselect
 

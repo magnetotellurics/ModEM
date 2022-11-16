@@ -6,6 +6,7 @@ module DataSpace
 
   use utilities
   use math_constants
+  use fields_orientation
   implicit none
 
   interface assignment (=)
@@ -83,14 +84,6 @@ module DataSpace
      MODULE PROCEDURE countBlock_dataVectorMTX_f
   end interface
 
-  ! 2022.09.30, Liu Zhongyin, Add type Azimuth_t
-  type :: Azimuth_t
-
-      real (kind=prec)  :: HxAzimuth, ExAzimuth, HxAzimuth_ref
-      real (kind=prec)  :: HyAzimuth, EyAzimuth, HyAzimuth_ref
-
-  end type Azimuth_t
-
 
   ! basic data block containing data for a single transmitter & data type
   type :: dataBlock_t
@@ -106,10 +99,9 @@ module DataSpace
       ! actual data; dimensions (nComp,nSite)
       real (kind=prec), pointer, dimension(:,:) :: value, error
 
-      ! Liu Zhongyin, 2022.09.30, Add Azimuth_t (nSite)
-      type (Azimuth_t), pointer, dimension(:)   :: Azimuth
-      ! real (kind=prec), pointer, dimension(:,:) :: HxAzimuth, ExAzimuth, HxAzimuth_ref
-      ! real (kind=prec), pointer, dimension(:,:) :: HyAzimuth, EyAzimuth, HyAzimuth_ref
+      ! Liu Zhongyin, 2022.09.30, edited by Anna Kelbert (nSite)
+      ! keeping it here instead of rxDict for maximum flexibility
+      type (orient_t), pointer, dimension(:)   :: orient
 
       ! if data value doesn't exist, it is zero and we don't count it
       logical, pointer, dimension(:,:) :: exist
@@ -285,14 +277,10 @@ Contains
     d%allocated = .true.
 
     ! 2022.09.28, Liu Zhongyin, add azimuth allocation
-    allocate(d%Azimuth(nSite))
+    allocate(d%orient(nSite), STAT=istat)
+    call setup_default_orientation(orient0)
     do i=1,nSite
-      d%Azimuth(i)%HxAzimuth = R_ZERO
-      d%Azimuth(i)%HyAzimuth = R_ZERO
-      d%Azimuth(i)%ExAzimuth = R_ZERO
-      d%Azimuth(i)%EyAzimuth = R_ZERO
-      d%Azimuth(i)%HxAzimuth_ref = R_ZERO
-      d%Azimuth(i)%HyAzimuth_ref = R_ZERO
+      d%orient(i) = orient0
     enddo
 
   end subroutine create_dataBlock
@@ -315,7 +303,7 @@ Contains
        if (associated(d%error)) deallocate(d%error, STAT=istat)
 
        ! 2022.09.28, Liu Zhongyin, add azimuth deallocation
-       deallocate(d%Azimuth, stat=istat)
+       deallocate(d%orient, stat=istat)
     endif
 
     d%tx = 0
@@ -349,13 +337,9 @@ Contains
        d%errorBar = .false.
 
        ! 2022.09.28, Liu Zhongyin, add azimuth zero
-       do i=1,size(d%Azimuth)
-         d%Azimuth(i)%HxAzimuth = R_ZERO
-         d%Azimuth(i)%HyAzimuth = R_ZERO
-         d%Azimuth(i)%ExAzimuth = R_ZERO
-         d%Azimuth(i)%EyAzimuth = R_ZERO
-         d%Azimuth(i)%HxAzimuth_ref = R_ZERO
-         d%Azimuth(i)%HyAzimuth_ref = R_ZERO
+       call setup_default_orientation(orient0)
+       do i=1,size(d%orient)
+           d%orient(i) = orient0
        enddo
        
     endif
@@ -430,8 +414,8 @@ Contains
     d2%scalingFactor = d1%scalingFactor
 
     ! 2022.09.28, Liu Zhongyin, add azimuth copy
-    do i=1,size(d1%Azimuth)
-      d2%Azimuth(i) = d1%Azimuth(i)
+    do i=1,size(d1%orient)
+      d2%orient(i) = d1%orient(i)
     enddo
 
     ! if input is a temporary function output, deallocate
@@ -492,21 +476,16 @@ Contains
 
     ! check to see if inputs and output are compatible
     if ((d1%nComp .ne. dOut%nComp) .or. (d1%nSite .ne. dOut%nSite) .or. &
-    	(d1%isComplex .neqv. dOut%isComplex)) then
-       call errStop('input and output dataVecs not consistent in linComb_dataBlock')
+        (d1%isComplex .neqv. dOut%isComplex)) then
+        call errStop('input and output dataVecs not consistent in linComb_dataBlock')
     endif
 
-   ! 2022.09.28, Liu Zhongyin, check to see if d1 and d2 have the same azimuth
-   do i=1,d1%nSite
-      if ((d1%Azimuth(i)%HxAzimuth .ne. d2%Azimuth(i)%HxAzimuth) .or. &
-         (d1%Azimuth(i)%HyAzimuth .ne. d2%Azimuth(i)%HyAzimuth) .or. &
-         (d1%Azimuth(i)%ExAzimuth .ne. d2%Azimuth(i)%ExAzimuth) .or. &
-         (d1%Azimuth(i)%EyAzimuth .ne. d2%Azimuth(i)%EyAzimuth) .or. &
-         (d1%Azimuth(i)%HxAzimuth_ref .ne. d2%Azimuth(i)%HxAzimuth_ref) .or. &
-         (d1%Azimuth(i)%HyAzimuth_ref .ne. d2%Azimuth(i)%HyAzimuth_ref)) then
-            call errStop('input Azimuthes do not match')
-      endif
-   enddo
+    ! 2022.09.28, Liu Zhongyin, check to see if d1 and d2 have the same azimuths and tilts
+    do i=1,d1%nSite
+        if (.not. compare_orientation(d1%orient(i),d2%orient(i))) then
+            call errStop('input azimuths or tilts do not match')
+        endif
+    enddo
 
 	! set the receiver indices to those of d1
 	dOut%tx = d1%tx
@@ -521,12 +500,12 @@ Contains
     ! the result exists if both values exist
     dOut%exist = d1%exist .and. d2%exist
 
-	! set errBar=.true. if at least one of the inputs has error bars
-	errBar = (d1%errorBar .or. d2%errorBar)
-	dOut%errorBar = errBar
+    ! set errBar=.true. if at least one of the inputs has error bars
+    errBar = (d1%errorBar .or. d2%errorBar)
+    dOut%errorBar = errBar
 
-   ! 2022.09.28, Liu Zhongyin, set Azimuth
-   dOut%Azimuth = d1%Azimuth
+    ! 2022.09.28, Liu Zhongyin, set orientation
+    dOut%orient = d1%orient
 
 	! allocate error bars, if needed
     if (errBar .and. .not. associated(dOut%error)) then
@@ -692,7 +671,7 @@ Contains
     integer                 :: i,j,iRx,nComp,nSite,nSiteMax,istat
 
    ! 2022.09.28, Liu Zhongyin, add local variable azimu
-   type(Azimuth_t), pointer, dimension(:) :: Azimu
+   type(orient_t), pointer, dimension(:) :: Azimu
 
     if(.not. d1%allocated .and. .not. d2%allocated) then
         call errStop('both input data blocks not allocated in merge_dataBlock')
@@ -749,7 +728,7 @@ Contains
             exists(:,nSite) = d1%exist(:,i)
 
             ! 2022.09.28, Liu Zhongyin, add azimu assignment
-            Azimu(nSite) = d1%Azimuth(i)
+            Azimu(nSite) = d1%orient(i)
         endif
     enddo
 
@@ -772,7 +751,7 @@ Contains
             exists(:,nSite) = d2%exist(:,i)
 
             ! 2022.09.28, Liu Zhongyin, add azimu assignment
-            Azimu(nSite) = d2%Azimuth(i)
+            Azimu(nSite) = d2%orient(i)
         endif
     enddo
 
@@ -791,7 +770,7 @@ Contains
     d%allocated = .true.
 
    ! 2022.09.28, Liu Zhongyin, add azimuth assignment
-   d%Azimuth = Azimu(1:nSite)
+   d%orient = Azimu(1:nSite)
 
     deallocate(rxList,STAT=istat)
     deallocate(values,STAT=istat)
