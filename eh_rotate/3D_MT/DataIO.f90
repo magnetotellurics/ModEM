@@ -75,15 +75,15 @@ Contains
     select case (dataType)
 
        case(Full_Impedance,Off_Diagonal_Impedance,Full_Vertical_Components)
-          header = 'Period(s) Code GG_Lat GG_Lon X(m) Y(m) Z(m) Component Real Imag Error HxAzi ExAzi HyAzi EyAzi'
+          header = 'Period(s) Code GG_Lat GG_Lon X(m) Y(m) Z(m) Component Real Imag Error HxAzi HyAzi ExAzi EyAzi'
 
        case(Full_Interstation_TF)
           header = 'Period(s) Code GG_Lat GG_Lon X(m) Y(m) Z(m) Ref_Code Ref_Lat '// &
                    'Ref_Lon Ref_X(m) Ref_Y(m) Ref_Z(m) Component Real Imag Error '// &
-                   'HxAzi ExAzi HyAzi EyAzi'
+                   'HxAzi HyAzi HxRefAzi HyRefAzi'
 
        case(Off_Diagonal_Rho_Phase,Phase_Tensor)
-          header = 'Period(s) Code GG_Lat GG_Lon X(m) Y(m) Z(m) Component Value Error HxAzi ExAzi HyAzi EyAzi'
+          header = 'Period(s) Code GG_Lat GG_Lon X(m) Y(m) Z(m) Component Value Error HxAzi HyAzi ExAzi EyAzi'
 
     end select
 
@@ -276,14 +276,14 @@ Contains
                         if (conjugate) then
                                 write(ioDat,'(a8,3es15.6,4f9.3)',iostat=ios) trim(compid),value(2*icomp-1),-value(2*icomp),error(2*icomp), &
                                 azimu%azimuth%Hx-fileInfo(iTxt,iDt)%geographic_orientation, &
-                                azimu%azimuth%Ex-fileInfo(iTxt,iDt)%geographic_orientation, &
                                 azimu%azimuth%Hy-fileInfo(iTxt,iDt)%geographic_orientation, &
+                                azimu%azimuth%Ex-fileInfo(iTxt,iDt)%geographic_orientation, &
                                 azimu%azimuth%Ey-fileInfo(iTxt,iDt)%geographic_orientation
                         else
                                 write(ioDat,'(a8,3es15.6,4f9.3)',iostat=ios) trim(compid),value(2*icomp-1),value(2*icomp),error(2*icomp), &
                                 azimu%azimuth%Hx-fileInfo(iTxt,iDt)%geographic_orientation, &
-                                azimu%azimuth%Ex-fileInfo(iTxt,iDt)%geographic_orientation, &
                                 azimu%azimuth%Hy-fileInfo(iTxt,iDt)%geographic_orientation, &
+                                azimu%azimuth%Ex-fileInfo(iTxt,iDt)%geographic_orientation, &
                                 azimu%azimuth%Ey-fileInfo(iTxt,iDt)%geographic_orientation
                         end if
                         countData = countData + 1
@@ -306,14 +306,14 @@ Contains
                         if (conjugate) then
                                 write(ioDat,'(a8,3es15.6,4f9.3)',iostat=ios) trim(compid),value(2*icomp-1),-value(2*icomp),error(2*icomp), &
                                 azimu%azimuth%Hx-fileInfo(iTxt,iDt)%geographic_orientation, &
-                                azimu%azimuth%Hx_ref-fileInfo(iTxt,iDt)%geographic_orientation, &
                                 azimu%azimuth%Hy-fileInfo(iTxt,iDt)%geographic_orientation, &
+                                azimu%azimuth%Hx_ref-fileInfo(iTxt,iDt)%geographic_orientation, &
                                 azimu%azimuth%Hy_ref-fileInfo(iTxt,iDt)%geographic_orientation
                         else
                                 write(ioDat,'(a8,3es15.6,4f9.3)',iostat=ios) trim(compid),value(2*icomp-1),value(2*icomp),error(2*icomp), &
                                 azimu%azimuth%Hx-fileInfo(iTxt,iDt)%geographic_orientation, &
-                                azimu%azimuth%Hx_ref-fileInfo(iTxt,iDt)%geographic_orientation, &
                                 azimu%azimuth%Hy-fileInfo(iTxt,iDt)%geographic_orientation, &
+                                azimu%azimuth%Hx_ref-fileInfo(iTxt,iDt)%geographic_orientation, &
                                 azimu%azimuth%Hy_ref-fileInfo(iTxt,iDt)%geographic_orientation
                         end if
                         countData = countData + 1
@@ -544,15 +544,15 @@ Contains
                     Eyangle = Exangle + 90.0
                     Hyangle_ref = Hxangle_ref + 90.0
                 case(13)
-                    read(ioDat,*,iostat=ios) Period,code,lat,lon,x(1),x(2),x(3),compid,Zreal,Zimag,Zerr,Hxangle,Exangle
+                    read(ioDat,*,iostat=ios) Period,code,lat,lon,x(1),x(2),x(3),compid,Zreal,Zimag,Zerr,Hxangle,Hyangle
                     Hxangle = Hxangle + fileInfo(iTxt,iDt)%geographic_orientation
-                    Exangle = Exangle + fileInfo(iTxt,iDt)%geographic_orientation
+                    Exangle = Hxangle
                     Hxangle_ref = 0.0
-                    Hyangle = Hxangle + 90.0
+                    Hyangle = Hyangle + fileInfo(iTxt,iDt)%geographic_orientation
                     Eyangle = Exangle + 90.0
                     Hyangle_ref = Hxangle_ref + 90.0
                 case(14)
-                    read(ioDat,*,iostat=ios) Period,code,lat,lon,x(1),x(2),x(3),compid,Zreal,Zimag,Zerr,Hxangle,Exangle,Hyangle
+                    read(ioDat,*,iostat=ios) Period,code,lat,lon,x(1),x(2),x(3),compid,Zreal,Zimag,Zerr,Hxangle,Hyangle,Exangle
                     Hxangle = Hxangle + fileInfo(iTxt,iDt)%geographic_orientation
                     Exangle = Exangle + fileInfo(iTxt,iDt)%geographic_orientation
                     Hxangle_ref = 0.0
@@ -560,7 +560,7 @@ Contains
                     Eyangle = Exangle + 90.0
                     Hyangle_ref = Hxangle_ref + 90.0
                 case(15)
-                    read(ioDat,*,iostat=ios) Period,code,lat,lon,x(1),x(2),x(3),compid,Zreal,Zimag,Zerr,Hxangle,Exangle,Hyangle,Eyangle
+                    read(ioDat,*,iostat=ios) Period,code,lat,lon,x(1),x(2),x(3),compid,Zreal,Zimag,Zerr,Hxangle,Hyangle,Exangle,Eyangle
                     Hxangle = Hxangle + fileInfo(iTxt,iDt)%geographic_orientation
                     Exangle = Exangle + fileInfo(iTxt,iDt)%geographic_orientation
                     Hxangle_ref = 0.0
@@ -623,7 +623,7 @@ Contains
                     Hyangle_ref = Hxangle_ref + 90.0
                 case(20)
                     read(ioDat,*,iostat=ios) Period,code,lat,lon,x(1),x(2),x(3), &
-                        ref_code,ref_lat,ref_lon,ref_x(1),ref_x(2),ref_x(3),compid,Zreal,Zimag,Zerr,Hxangle,Hxangle_ref,Hyangle
+                        ref_code,ref_lat,ref_lon,ref_x(1),ref_x(2),ref_x(3),compid,Zreal,Zimag,Zerr,Hxangle,Hyangle,Hxangle_ref
                     Hxangle = Hxangle + fileInfo(iTxt,iDt)%geographic_orientation
                     Exangle = 0.0
                     Hxangle_ref = Hxangle_ref + fileInfo(iTxt,iDt)%geographic_orientation
@@ -632,7 +632,7 @@ Contains
                     Hyangle_ref = Hxangle_ref + 90.0
                 case(21)
                     read(ioDat,*,iostat=ios) Period,code,lat,lon,x(1),x(2),x(3), &
-                        ref_code,ref_lat,ref_lon,ref_x(1),ref_x(2),ref_x(3),compid,Zreal,Zimag,Zerr,Hxangle,Hxangle_ref,Hyangle,Hyangle_ref
+                        ref_code,ref_lat,ref_lon,ref_x(1),ref_x(2),ref_x(3),compid,Zreal,Zimag,Zerr,Hxangle,Hyangle,Hxangle_ref,Hyangle_ref
                     Hxangle = Hxangle + fileInfo(iTxt,iDt)%geographic_orientation
                     Exangle = 0.0
                     Hxangle_ref = Hxangle_ref + fileInfo(iTxt,iDt)%geographic_orientation
@@ -684,15 +684,15 @@ Contains
                     Eyangle = Exangle + 90.0
                     Hyangle_ref = Hxangle_ref + 90.0
                 case(12)
-                    read(ioDat,*,iostat=ios) Period,code,lat,lon,x(1),x(2),x(3),compid,Zreal,Zerr,Hxangle,Exangle
+                    read(ioDat,*,iostat=ios) Period,code,lat,lon,x(1),x(2),x(3),compid,Zreal,Zerr,Hxangle,Hyangle
                     Hxangle = Hxangle + fileInfo(iTxt,iDt)%geographic_orientation
-                    Exangle = Exangle + fileInfo(iTxt,iDt)%geographic_orientation
+                    Exangle = Hxangle
                     Hxangle_ref = 0.0
-                    Hyangle = Hxangle + 90.0
+                    Hyangle = Hyangle + fileInfo(iTxt,iDt)%geographic_orientation
                     Eyangle = Exangle + 90.0
                     Hyangle_ref = Hxangle_ref + 90.0
                 case(13)
-                    read(ioDat,*,iostat=ios) Period,code,lat,lon,x(1),x(2),x(3),compid,Zreal,Zerr,Hxangle,Exangle,Hyangle
+                    read(ioDat,*,iostat=ios) Period,code,lat,lon,x(1),x(2),x(3),compid,Zreal,Zerr,Hxangle,Hyangle,Exangle
                     Hxangle = Hxangle + fileInfo(iTxt,iDt)%geographic_orientation
                     Exangle = Exangle + fileInfo(iTxt,iDt)%geographic_orientation
                     Hxangle_ref = 0.0
@@ -700,7 +700,7 @@ Contains
                     Eyangle = Exangle + 90.0
                     Hyangle_ref = Hxangle_ref + 90.0
                 case(14)
-                    read(ioDat,*,iostat=ios) Period,code,lat,lon,x(1),x(2),x(3),compid,Zreal,Zerr,Hxangle,Exangle,Hyangle,Eyangle
+                    read(ioDat,*,iostat=ios) Period,code,lat,lon,x(1),x(2),x(3),compid,Zreal,Zerr,Hxangle,Hyangle,Exangle,Eyangle
                     Hxangle = Hxangle + fileInfo(iTxt,iDt)%geographic_orientation
                     Exangle = Exangle + fileInfo(iTxt,iDt)%geographic_orientation
                     Hxangle_ref = 0.0
