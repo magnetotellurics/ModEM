@@ -24,8 +24,11 @@ module DataIO
 	MODULE PROCEDURE write_Z_list
   end interface
 
+  interface deall_dataFileInfo
+    MODULE PROCEDURE deall_fileInfo
+  end interface
 
-  public     :: read_dataVectorMTX, write_dataVectorMTX
+  public     :: read_dataVectorMTX, write_dataVectorMTX, deall_dataFileInfo
 
   type :: data_file_block
 
@@ -60,6 +63,11 @@ module DataIO
   ! and defines the number of conceptually different types of sources
   type (data_file_block), pointer, save, private, dimension(:,:) :: fileInfo
 
+  ! we are converting from an "old format" to a "new format"
+  ! the only difference being that in the new format, there is
+  ! an additional line in the head that indicates transmitter type.
+  ! on output, use the same format as on input. AK 25 May 2018
+  logical, save, private  :: old_data_file_format = .true.
 
 Contains
 
@@ -203,10 +211,16 @@ Contains
       write(ioDat,*,iostat=ios) adjustl(trim(strtemp))
       write(ioDat,'(a2)',advance='no') '# '
       write(ioDat,*,iostat=ios) adjustl(trim(DataBlockHeader(iTxt,iDt)))
-      !if (.not. (tx_type_name(iTxt) .eq. 'MT')) then
-      !    write(ioDat,'(a2)',advance='no') '+ '
-      !    write(ioDat,*,iostat=ios) trim(tx_type_name(iTxt))
-      !end if
+
+      ! the new format is critical for JOINT modeling and inversion; otherwise, can stick
+      ! to the old format for backwards compatibility. Will always write in the same format
+      ! as the input data file
+      if (.not. old_data_file_format) then
+            write(ioDat,'(a2)',advance='no') '+ '
+            write(ioDat,*,iostat=ios) trim(tx_type_name(iTxt))
+      end if
+
+      ! write the remainder of data type header
       call compact(typeDict(iDt)%name)
       write(ioDat,'(a2)',advance='no') temp
       write(ioDat,*,iostat=ios) trim(typeDict(iDt)%name)
@@ -232,7 +246,7 @@ Contains
       isComplex = typeDict(iDt)%isComplex
       countData = 0
 
-      ! write data
+      ! write data in order that is consistent with all previous versions of ModEM
       do iRx = 1,size(rxDict)
         do iTx = 1,size(txDict)
 
@@ -371,9 +385,10 @@ Contains
     integer                         :: nTxt,iTxt,iDt,i,j,k,istat,ios
     character(40)                   :: code,ref_code
     real(8)                         :: x(3),ref_x(3), Period,SI_factor
-    real(8)                         :: lat,lon,ref_lat,ref_lon
+    real(8)                         :: lat,lon,ref_lat,ref_lon,rx_azimuth
     real(8)                         :: Zreal, Zimag, Zerr
     logical                         :: conjugate, errorBar, isComplex
+    type(transmitter_t)             :: aTx
 
     ! First, set up the data type dictionary, if it's not in existence yet
     call setup_typeDict()
@@ -396,6 +411,7 @@ Contains
         if (temp(1:1) == '+') then
             txTypeName = typeName
             read(ioDat,'(a2,a100)',iostat=ios) temp,typeName
+            old_data_file_format = .false.
         else
             txTypeName = 'MT'
         end if
@@ -415,7 +431,7 @@ Contains
     	fileInfo(iTxt,iDt)%info_in_file = typeInfo
     	
     	! Sort out the sign convention
-		read(ioDat,'(a2,a20)',iostat=ios) temp,fileInfo(iTxt,iDt)%sign_info_in_file
+    	read(ioDat,'(a2,a20)',iostat=ios) temp,fileInfo(iTxt,iDt)%sign_info_in_file
     	if(index(fileInfo(iTxt,iDt)%sign_info_in_file,'-')>0) then
       		fileInfo(iTxt,iDt)%sign_in_file = - 1
     	else
@@ -473,7 +489,11 @@ Contains
                 icomp = ImpComp(compid,iDt)
 
                 ! Update the transmitter dictionary and the index (sets up if necessary)
-                iTx = update_txDict(Period,2)
+                aTx%Tx_type='MT'
+                aTx%nPol=2
+                aTx%period = Period
+                aTx%omega = 2.0d0*PI/Period
+                iTx = update_txDict(aTx)
 
                 ! Update the receiver dictionary and index (sets up if necessary)
                 ! For now, make lat & lon part of site ID; could use directly in the future
@@ -493,13 +513,20 @@ Contains
                 icomp = ImpComp(compid,iDt)
 
                 ! Update the transmitter dictionary and the index (sets up if necessary)
-                iTx = update_txDict(Period,2)
+                aTx%Tx_type='MT'
+                aTx%nPol=2
+                aTx%period = Period
+                aTx%omega = 2.0d0*PI/Period
+                iTx = update_txDict(aTx)
 
                 ! Update the receiver dictionary and index (sets up if necessary)
                 ! For now, make lat & lon part of site ID; could use directly in the future
+		! Note that rx_azimuth is NOT used for MT: instead, we're supporting the
+		! possibility that all fields components have different azimuths (stored in allData)
                 write(siteid,'(a22,2f9.3)') code,lat,lon
                 write(ref_siteid,'(a22,2f9.3)') ref_code,ref_lat,ref_lon
-                iRx = update_rxDict(x,siteid,ref_x,ref_siteid)
+		rx_azimuth = R_ZERO
+                iRx = update_rxDict(x,siteid,rx_azimuth,ref_x,ref_siteid)
 
 
             case(Off_Diagonal_Rho_Phase,Phase_Tensor)
@@ -530,7 +557,11 @@ Contains
                 end if
 
                 ! Update the transmitter dictionary and the index (sets up if necessary)
-                iTx = update_txDict(Period,2)
+                aTx%Tx_type='MT'
+                aTx%nPol=2
+                aTx%period = Period
+                aTx%omega = 2.0d0*PI/Period
+                iTx = update_txDict(aTx)
 
                 ! Update the receiver dictionary and index (sets up if necessary)
                 ! For now, make lat & lon part of site ID; could use directly in the future
