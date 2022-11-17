@@ -7,6 +7,7 @@ module DataIO
   use file_units
   use utilities
   use dataspace
+  use gridcalc
   use transmitters
   use receivers
   use datatypes

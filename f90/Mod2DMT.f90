@@ -10,6 +10,7 @@ program Mod2DMT
      use Main
      use NLCG
      use DCG
+     use LBFGS
      !use mtinvsetup
 
 #ifdef MPI
@@ -178,6 +179,15 @@ program Mod2DMT
 #ifdef MPI
         	call Master_job_STOP_MESSAGE
 #endif
+         elseif (trim(cUserDef%search) == 'LBFGS') then
+            ! sigma1 contains mHat on input (zero = starting from the prior)
+             write(*,*) 'Starting the LBFGS search...'
+             sigma1 = dsigma
+             call LBFGSsolver(allData,cUserDef%lambda,sigma0,sigma1, &
+     &           cUserDef%rFile_invCtrl)
+#ifdef MPI
+            call Master_job_STOP_MESSAGE
+#endif
 
        else
         	write(*,*) 'Inverse search ',trim(cUserDef%search),' not yet implemented. Exiting...'
@@ -210,6 +220,11 @@ program Mod2DMT
         end select
         call write_modelParam(sigma1,cUserDef%wFile_Model)
 #endif
+
+     case (EXTRACT_BC)
+        ! no need to run the forward solution to extract the boundary
+        ! conditions from the initial electric field
+        call dryRun(sigma0,allData,bAll,eAll)
 
      case (TEST_GRAD)
         ! note that on input, dsigma is the non-smoothed model parameter

@@ -18,11 +18,11 @@ module Main_MPI
 
   ! temporary EM fields, that are saved for efficiency - to avoid
   !  memory allocation & deallocation for each transmitter
-  type(solnVector_t), save, private		    :: e,e0
-  type(rhsVector_t) , save, private		    :: comb 
-  type (grid_t), target, save, private     :: grid
-  
-  
+  type(solnVector_t), save, private    :: e,e0
+  type(rhsVector_t) , save, private    :: b0,comb
+  type (grid_t), target, save, private :: grid
+
+
 Contains
 
 
@@ -923,11 +923,11 @@ if (trim(worker_job_task%what_to_do) .eq. 'FORWARD') then
           pol_index=worker_job_task%pol_index
           worker_job_task%taskid=taskid
 
-		       call initSolver(per_index,sigma,grid,e0)
-		       call set_e_soln(pol_index,e0)
-		       
+                 call initSolver(per_index,sigma,grid,e0)
+                 call set_e_soln(pol_index,e0)
+                 call fwdSetup(per_index,e0,b0)
 
-		       call fwdSolve(per_index,e0)  
+                     call fwdSolve(per_index,e0,b0) 
                call reset_e_soln(e0)
 
      
@@ -1280,7 +1280,7 @@ subroutine Master_job_Distribute_Taskes(job_name,nTx,sigma,eAll_out,eAll_in)
 10         continue
 
 
-       call count_number_of_meaasges_to_RECV(eAll_out)
+       call count_number_of_messages_to_RECV(eAll_out)
       !answers_to_receive = nTx*nPol_MPI
         received_answers = 0
         do while (received_answers .lt. answers_to_receive)

@@ -667,4 +667,80 @@ subroutine strcount(str,delims,nargs)
     str=strsav
   
   end subroutine strcount
+
+!**********************************************************************
+recursive subroutine QSort(a, ia, i0, i1)
+! a simple recursive quick sort routine using a middle pivot
+! the average time complexity is O(nlog(n)), with the worst case of 
+! O(n.^2)
+  implicit none
+  real(kind=prec),intent(inout),dimension(:) :: a
+  real(kind=prec)                            :: pivot, t, random
+  integer,intent(inout),dimension(:)         :: ia
+  integer,intent(in),optional                :: i0, i1
+  integer                                    :: first,last,i, j, it, nA
+  if (size(a).ne.size(ia)) then
+      write(6,*) 'error, array and array index is not of same size in QSort!'
+      stop
+  endif
+  if (.not.present(i0)) then
+      first = 1
+      last = size(a)
+  elseif (.not.present(i1)) then
+      first = i0
+      last = size(a)
+  else 
+      first = i0
+      last = i1
+  endif
+  if(first.gt.last) then 
+     write(6,*) 'error, first index is larger than the last in QSort!'
+     stop
+  elseif(first.eq.last) then !only one element, no need to sort now
+!     write(6,*) 'no need to sort, only one element left'
+     return
+  endif
+  !Na = j-i+1
+  !call random_number(random)
+  !write(6,*) Na,int(random*real(Na-1))
+  !pivot = a(int(random*real(Na-1))+1)! using a random pivot
+  pivot = a((first+last)/2) ! using midpoint
+!  write(6,*)  'taking a pivot value of ',int(pivot)
+  i = first
+  j = last
+  do
+     do while (a(i).lt.pivot) !left half
+        i=i+1
+     end do
+     do while (pivot.lt.a(j)) !right half
+        j=j-1
+     end do
+     if (i.lt.j) then 
+     ! swap array and index
+        t = a(i)
+        a(i) = a(j)
+        a(j) = t
+        it = ia(i)
+        ia(i) = ia(j)
+        ia(j) = it
+        i=i+1
+        j=j-1
+!        write(6,*) 'swapping ai and aj: '
+!        write(6,*) int(a)
+     else
+        exit
+     endif
+  end do
+  if (first.lt.i-1) then 
+!      write(6,*)  'taking care of the left part'
+      call QSort(a, ia, first, i-1)
+  endif
+  if (j+1.lt.last) then 
+!      write(6,*)  'taking care of the right part'
+      call QSort(a, ia, j+1, last)
+  endif
+  return
+end subroutine QSort
+
+!**********************************************************************
 end module utilities

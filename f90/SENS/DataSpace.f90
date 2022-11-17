@@ -645,6 +645,7 @@ Contains
             cycle
         elseif (abs(d%error(i,j)) <= 1E-20 * abs(d%value(i,j))) then
 !        elseif (abs(d%error(i,j)) <= 1E-20) then
+           write(*,*) j,i, d%error(i,j),d%value(i,j),d%dataType,d%txType
            call errStop('data error bars too small in normalize_dataBlock')
         endif
         d%value(i,j) = d%value(i,j)/(d%error(i,j)**nn)

@@ -143,6 +143,7 @@ use wsutils
       COMPLEX(kind=prec) a1d(4,NZ0MX)
       character*1 cN
      
+      info = 0 
       cN = 'N'
 !     make matrix in LAPACK's format
       CALL ConstantMatrixC16(a1d,4,NZ0MX,4,nz0,R_ZERO)
@@ -156,7 +157,6 @@ use wsutils
       DO jj = 1,nz0-1
         a1d(4,jj) = ad1d(jj)
       ENDDO
-
       CALL ZGBTRF(nz0,nz0,1,1,a1d,4,iPiv,info)
       CALL ZGBTRS(cN,nz0,1,1,1,a1d,4,iPiv,xb,nz0,info)
 

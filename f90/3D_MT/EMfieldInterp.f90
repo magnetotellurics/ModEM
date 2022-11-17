@@ -7,6 +7,7 @@ module EMfieldInterp
   use utilities
   use sg_sparse_vector
   use ModelSpace, sigC => ModelParamToOneEdge
+  use gridcalc
 
   implicit none
 
@@ -217,7 +218,7 @@ Contains
        endif
     elseif(i0.le.0) then
        w(1,2) = 1
-       UseCOnd = .false.
+       UseCond = .false.
     else
        w(1,2) = 0
        UseCond = .false.

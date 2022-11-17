@@ -1,7 +1,7 @@
 ! I/O routines for 3D_MT modelParam - extended Weerachai Siripunvaraporn's format
 
 	!******************************************************************
-	subroutine read_modelParam_ws(grid,m,cfile)
+	subroutine read_modelParam_ws(grid,airLayers,m,cfile)
 
       ! opens cfile on unit ioPrm, writes out object of
       ! type modelParam in Weerachai Siripunvaraporn's format, closes file
@@ -9,6 +9,7 @@
       ! for setting the pointer to the grid in the modelParam
 
       type(grid_t), target, intent(inout)  :: grid
+	  type(airLayers_t), intent(inout)	   :: airLayers
       type(modelParam_t), intent(out)	   :: m
       character(*), intent(in)             :: cfile
       integer		                       :: istat
@@ -45,10 +46,11 @@
          paramType = 'LINEAR'
       end if
 
-	  ! No information about the air layers in file. Hardcoded here.
-	  ! For backwards compatibility, keeping this logic for now...
-	  ! but it may be overwritten by forward solver configuration file.
-	  nzAir = 10
+	  ! No information about the air layers in file. Used to be hardcoded here.
+	  ! Now we get these from the forward solver configuration file. But the
+	  ! layer thicknesses may depend on the grid, for backwards compatibility.
+	  ! First, define the rest of the grid... [AK]
+	  nzAir = airLayers%Nz
 
 	  ! Initialize and read in the grid
       call create_grid(Nx,Ny,NzAir,NzEarth,grid)
@@ -57,22 +59,11 @@
       read(ioPrm,*) (grid%dy(j),j=1,grid%ny)
       read(ioPrm,*) (grid%dz(j),j=grid%nzAir+1,grid%nzAir+grid%nzEarth)
 
-      !   Following is Kush's approach to setting air layers:
-      ! mirror imaging the dz values in the air layer with respect to
-      ! earth layer as far as we can using the following formulation
-      ! air layer(bottom:top) = (alpha)^(j-1) * earth layer(top:bottom)
-      i = grid%nzAir+1
-      j = 0
-      do k = grid%nzAir, 1, -1
-          j = j + 1
-          grid%dz(k) = ((alpha)**(j-1))*grid%dz(i)
-          i = i + 1
-      end do
+      ! Now, finish set up of the air layers structure using the grid... [AK]
+      call setup_airlayers(airLayers,grid)
 
-      ! the topmost air layer has to be at least 30 km
-      if (grid%dz(1).lt.30000) then
-          grid%dz(1) = 30000
-      end if
+      ! Finally, insert correct air layers in the grid and run setup_grid
+      call update_airlayers(grid,airLayers%Nz,airLayers%Dz)
 
 	  ! Create and read in the resistivity values
       call create_rscalar(grid,rho,CELL_EARTH)
