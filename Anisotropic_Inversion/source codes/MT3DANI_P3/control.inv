@@ -1,0 +1,12 @@
+Model and data output file name    : Test
+Initial damping factor lambda      : 10.000000
+To update lambda divide by         : 3.162278
+Initial search step in model units : 20.000000
+Restart when rms diff is less than : 2.000000e-03
+Exit search when rms is less than  : 1.000000
+Exit when lambda is less than      : 1.000000e-08
+Maximum number of iterations       : 300
+Initial damping factor lambdaANI_xy: 10.000000
+Initial damping factor lambdaANI_yz: 10.000000
+Initial damping factor lambdaANI_xz: 10.000000
+To update lambdaANI divide by      : 1.000000

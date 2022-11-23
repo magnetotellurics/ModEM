@@ -1,0 +1,36 @@
+Author: Wenxin Kong, wkong90@foxmail.com
+Supervisors: Handong Tan, Changhong Lin
+China University of Geosciences (Beijing)
+
+1. Content
+Included in this folder are two different kinds of MT codes handling anisotropy: 
+
+(1) MT3DANI_P3 can only do axially anisotropic forward modelling and inversion, where 'P6' stands for 6 parameters. It takes topography into consideration similar to the original isotropic ModEM. It also considers the anisotropy penalty in its objective function. It uses the matrix-free approach and therefore has low memory requirements. It runs faster than the below MT3DANI_P6. Its forward solver is still QMR as the original ModEM, so you can use the same forward modelling controlling parameters. 
+ 
+(2) MT3DANI_P6 is used to do the arbitrary anisotropic forward modelling and inversion, where 'P6' stands for 6 parameters. According to my personal experience, several MT datasets I tried didn't recover significant rotation angle values. Perhaps the axially anisotropic inversion program MT3DANI_P3 is useful enough to interprete field MT data.
+
+Both MT3DANI_P3 and MT3DANI_P6 use the same format of data, covariance, inversion controlling parameter files as the original ModEM. However, the format of their model files is a little different because of the expansion of the parameter vector. Please see Model.m in the folder ../example for details. 
+
+
+2. How to compile the code?
+I assume that you have the experience of compiling the original ModEM. In each folder, there is a Makefile for compiling the MPI implementation of the codes. You can change the corresponding compiling commands like the follows in the Makefile files to accommodate your platform similar to what you did for the original ModEM:
+
+OBJDIR = ./objs/3D_MT/IFortReleaseMPI
+F90 = mpiifort #mpif90
+FFLAGS = -O3 -w  -xSSE4.2 -std03
+MPIFLAGS = -cpp -DMPI
+MODULE = -module $(OBJDIR)
+LIBS_PATH = -L/opt/intel/Compiler/11.1/075/mkl/lib/em64t
+LIBS = -L./ -llapack -L./ -lblas -lmkl_intel_lp64 -lmkl_intel_thread -lmkl_core  -lpthread -qopenmp -parallel
+
+3. How to run the executable?
+Just the same as running the original ModEM.
+
+4. Reference
+Kong Wenxin, Tan Handong, Lin Changhong, Martyn Unsworth, Benjamin Lee, Peng Miao, 
+Wang Mao, Tong Tuo, Three-dimensional inversion of magnetotelluric data for a resistivity 
+model with arbitrary anisotropy, Journal of Geophysical Research: Solid Earth, 2020, accepted.
+
+
+-------------------------------------------------------
+The authors of the original ModEM have the authority to redistribute these codes, but the other users should obey their COPYRIGHT statements which are listed in the file named COPYRIGHT_ModEM in the same folder. 
