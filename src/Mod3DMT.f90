@@ -209,7 +209,7 @@ program Mod3DMT
 #endif
          open(unit=ioSens, file=cUserDef%wFile_dModel, form='unformatted', iostat=ios)
          write(0,*) 'Output JT_multi_Tx_vec...'
-         write(header,*) 'JT multi_Tx vectors'
+         
          !write(ioSens) header
          !    first write out txDict
          call write_txDict_bin(ioSens)
@@ -224,7 +224,10 @@ program Mod3DMT
          write(ioSens) allData%nTx
          write(ioSens) tx_index
          deallocate(tx_index)
-         call writeVec_modelParam_binary(size(JT_multi_Tx_vec),JT_multi_Tx_vec,header,cUserDef%wFile_dModel)
+         write(header,*) 'JT multi_Tx vectors'
+         
+         call writeVec_modelParam_binary(size(JT_multi_Tx_vec),  &
+            JT_multi_Tx_vec,header,cUserDef%wFile_dModel)
          close(ioSens)
          
          ! Williams - Save norm of gradient for each Tx
