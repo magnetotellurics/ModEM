@@ -1,18 +1,13 @@
-! *************
-! 
-! Derived class to define a Full_Impedance Receiver
-! 
-! Last modified at 08/06/2021 by Paulo Werdt
-! 
-! *************
-! 
+!
+!> Derived class to define a Full_Impedance Receiver
+!
 module ReceiverOffDiagonalImpedance
     !
     use Receiver
     !
     type, extends( Receiver_t ), public :: ReceiverOffDiagonalImpedance_t
         !
-        ! PROPERTIES HERE
+        !> No derived properties
         !
         contains
             !
@@ -34,6 +29,7 @@ module ReceiverOffDiagonalImpedance
     !
 contains
     !
+    !> No function briefing
     function ReceiverOffDiagonalImpedance_ctor( location, rx_type ) result( self )
         implicit none
         !
@@ -44,7 +40,7 @@ contains
         !
         integer :: i, asize
         !
-        ! write( *, * ) "Constructor ReceiverOffDiagonalImpedance_t"
+        !> write( *, * ) "Constructor ReceiverOffDiagonalImpedance_t"
         !
         call self%init()
         !
@@ -55,7 +51,7 @@ contains
         self%n_comp = 4
         self%is_complex = .TRUE.
         !
-        ! components required to get the full impedance evaluation vectors [Ex, Ey, Bx, By]
+        !> components required to get the full impedance evaluation vectors [Ex, Ey, Bx, By]
         if( allocated( self%EHxy ) ) then
             !
             asize = size( self%EHxy )
@@ -72,44 +68,41 @@ contains
         self%EHxy(3)%str = "Bx"
         self%EHxy(4)%str = "By"
         !
-        allocate( self%Lex, source = cSparsevector3D_SG_t() )
-        allocate( self%Ley, source = cSparsevector3D_SG_t() )
-        allocate( self%Lbx, source = cSparsevector3D_SG_t() )
-        allocate( self%Lby, source = cSparsevector3D_SG_t() )
-        !
     end function ReceiverOffDiagonalImpedance_ctor
     !
+    !> No subroutine briefing
     subroutine ReceiverOffDiagonalImpedance_dtor( self )
         implicit none
         !
         type( ReceiverOffDiagonalImpedance_t ), intent( inout ) :: self
         !
-        ! write( *, * ) "Destructor ReceiverOffDiagonalImpedance_t"
+        !> write( *, * ) "Destructor ReceiverOffDiagonalImpedance_t"
         !
         call self%dealloc()
         !
     end subroutine ReceiverOffDiagonalImpedance_dtor
     !
+    !> No subroutine briefing
     subroutine setLRowsOffDiagonalImpedance( self, transmitter )
         implicit none
         !
         class( ReceiverOffDiagonalImpedance_t ), intent( inout ) :: self
-        class( Transmitter_t ), intent( in )                     :: transmitter
+        class( Transmitter_t ), intent( in ) :: transmitter
         !
         stop "setLRowsOffDiagonalImpedance to be implemented"
         !
     end subroutine setLRowsOffDiagonalImpedance
     !
+    !> No subroutine briefing
     subroutine predictedDataOffDiagonalImpedance( self, transmitter )
         implicit none
         !
         class( ReceiverOffDiagonalImpedance_t ), intent( inout ) :: self
-        class( Transmitter_t ), intent( in )                     :: transmitter
+        class( Transmitter_t ), intent( in ) :: transmitter
         !
         integer :: i, j, ij
         complex( kind=prec ) :: comega, det
         complex( kind=prec ), allocatable :: BB(:,:), I_BB(:,:), EE(:,:)
-        !
         !
         comega = cmplx( 0.0, 1./ ( 2.0 * PI / transmitter%period ), kind=prec )
         !
@@ -172,6 +165,7 @@ contains
         !
     end subroutine predictedDataOffDiagonalImpedance
     !
+    !> No function briefing
     function isEqualOffDiagonalImpedance( self, other ) result( equal )
         implicit none
         !
@@ -200,6 +194,7 @@ contains
         !
     end function isEqualOffDiagonalImpedance
     !
+    !> No subroutine briefing
     subroutine printReceiverOffDiagonalImpedance( self )
         implicit none
         !

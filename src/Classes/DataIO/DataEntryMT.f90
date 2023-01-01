@@ -1,10 +1,5 @@
-!*************
 !
-! Derived class to hold all the MT information from a valid data file line
-!
-! Last modified at 05/2021 by Paulo Werdt
-!
-!*************
+!> Derived class to hold all the MT information from a valid data file line
 !
 module DataEntryMT
     !
@@ -13,7 +8,7 @@ module DataEntryMT
     type, extends( DataEntry_t ) :: DataEntryMT_t
         !
         real( kind=prec ) :: latitude, longitude
-
+        !
     contains
         !
         procedure, public :: write => writeDataEntryMT
@@ -27,18 +22,18 @@ module DataEntryMT
     !
 contains
     !
-    ! Parametrized constructor
+    !> Parametrized constructor
     function DataEntryMT_ctor( id, type, period, code, latitude, longitude, location, component, real, imaginary, error ) result ( self )
         implicit none
         !
         type( DataEntryMT_t ) :: self
         !
-        integer, intent( in )                   :: id
+        integer, intent( in ) :: id
         character(:), allocatable, intent( in ) :: type, code, component
-        real( kind=prec ), intent( in )         :: period, latitude, longitude, location(3)
-        real( kind=prec ), intent( in )         :: real, imaginary, error
+        real( kind=prec ), intent( in ) :: period, latitude, longitude, location(3)
+        real( kind=prec ), intent( in ) :: real, imaginary, error
         !
-        !write(*,*) "Constructor DataEntryMT_t"
+        !write( *, * ) "Constructor DataEntryMT_t"
         !
         self%id = id
         self%type = type
@@ -54,11 +49,12 @@ contains
         !
     end function DataEntryMT_ctor
     !
+    !> No function briefing
     function getCopyDataEntryMT( self ) result ( copy )
         implicit none
         !
         class( DataEntryMT_t ), intent( in ) :: self
-        class( DataEntry_t ), allocatable     :: copy
+        class( DataEntry_t ), allocatable :: copy
         !
         allocate( copy, source = DataEntryMT_t( self%id, self%type, self%period, self%code, &
                   self%latitude, self%longitude, self%location, &
@@ -66,10 +62,11 @@ contains
         !
     end function getCopyDataEntryMT
     !
+    !> No subroutine briefing
     subroutine writeDataEntryMT( self )
-        class( DataEntryMT_t ), intent( in )    :: self
+        class( DataEntryMT_t ), intent( in ) :: self
         !
-        write(*,*) "Write DataEntryMT_t: ", self%id, self%type, self%period, self%code,    &
+        write( *, * ) "Write DataEntryMT_t: ", self%id, self%type, self%period, self%code,    &
         self%latitude, self%longitude, self%location, self%component, self%real, self%imaginary, self%error
         !
     end subroutine writeDataEntryMT

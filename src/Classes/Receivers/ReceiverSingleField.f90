@@ -1,9 +1,6 @@
-! *************
-! 
-! Derived class to define a Single E or B Field Receiver
 !
-! *************
-! 
+!> Derived class to define a Single E or B Field Receiver
+!
 module ReceiverSingleField
     !
     use Receiver
@@ -32,18 +29,19 @@ module ReceiverSingleField
     !
 contains
     !
+    !> No function briefing
     function ReceiverSingleField_ctor( location, azimuth, rx_type ) result( self )
         implicit none
         !
         real( kind=prec ), intent( in ) :: location(3)
         real( kind=prec ), intent( in ) :: azimuth
-        integer, intent( in )           :: rx_type
+        integer, intent( in ) :: rx_type
         !
         type( ReceiverSingleField_t ) :: self
         !
         integer :: i, asize
         !
-        ! write( *, * ) "Constructor ReceiverSingleField_t"
+        !> write( *, * ) "Constructor ReceiverSingleField_t"
         !
         call self%init()
         !
@@ -53,9 +51,10 @@ contains
         self%rx_type = rx_type
         !
         self%n_comp = 1
+        !
         self%is_complex = .TRUE.
         !
-        ! components required to get the full impedance evaluation vectors [Ex, Ey, Bx, By]
+        !> components required to get the full impedance evaluation vectors [Ex, Ey, Bx, By]
         if( allocated( self%EHxy ) ) then
             !
             asize = size( self%EHxy )
@@ -65,34 +64,30 @@ contains
             deallocate( self%EHxy )
             !
         endif
+        !
         allocate( self%EHxy(1) )
         !
         if( azimuth == 1.0 ) then
             self%EHxy(1)%str = "Ex"
-            allocate( self%Lex, source = cSparsevector3D_SG_t() )
         endif
         !
         if( azimuth == 2.0 ) then
             self%EHxy(1)%str = "Ey"
-            allocate( self%Ley, source = cSparsevector3D_SG_t() )
         endif
         !
         if( azimuth == 3.0 ) then
             self%EHxy(1)%str = "Bx"
-            allocate( self%Lbx, source = cSparsevector3D_SG_t() )
         endif
         !
         if( azimuth == 4.0 ) then
             self%EHxy(1)%str = "By"
-            allocate( self%Lby, source = cSparsevector3D_SG_t() )
         endif
         !
         if( azimuth == 5.0 ) then
             self%EHxy(1)%str = "Bz"
-            allocate( self%Lbz, source = cSparsevector3D_SG_t() )
         endif
         !
-        ! components required to get the full impedance tensor self%response [Zxx, Zxy, Zyx, Zyy]
+        !> components required to get the full impedance tensor self%response [Zxx, Zxy, Zyx, Zyy]
         if( allocated( self%comp_names ) ) then
             !
             asize = size( self%comp_names )
@@ -112,45 +107,60 @@ contains
         !
     end function ReceiverSingleField_ctor
     !
+    !> No subroutine briefing
     subroutine ReceiverSingleField_dtor( self )
         implicit none
         !
         type( ReceiverSingleField_t ), intent( inout ) :: self
         !
-        ! write( *, * ) "Destructor ReceiverSingleField_t"
+        !> write( *, * ) "Destructor ReceiverSingleField_t"
         !
         call self%dealloc()
         !
     end subroutine ReceiverSingleField_dtor
     !
+    !> No subroutine briefing
     subroutine setLRowsSingleField( self, transmitter )
         implicit none
         !
         class( ReceiverSingleField_t ), intent( inout ) :: self
-        class( Transmitter_t ), intent( in )            :: transmitter
+        class( Transmitter_t ), intent( in ) :: transmitter
         !
+        complex( kind=prec ) :: comega
         !
+        comega = cmplx( 0.0, 1./ ( 2.0 * PI / transmitter%period ), kind=prec )
+        !
+        !> It's not needed for the LRows calculation itself
+        !> but it's called here to maintain the general encapsulation of the program
+        !> And also to debug the predicted data
         call self%predictedData( transmitter )
         !
-        allocate( self%lrows( transmitter%n_pol, self%n_comp ) )
+        !> Allocate LRows matrix [ npol = 1, n_comp = 1 ]
+        if( allocated( self%lrows ) ) deallocate( self%lrows )
+        allocate( cVector3D_SG_t :: self%lrows( transmitter%n_pol, self%n_comp ) )
         !
-        if( self%azimuth == 1.0 ) self%lrows( 1, 1 ) = self%Lex
-        if( self%azimuth == 2.0 ) self%lrows( 1, 1 ) = self%Ley
-        if( self%azimuth == 3.0 ) self%lrows( 1, 1 ) = self%Lbx
-        if( self%azimuth == 4.0 ) self%lrows( 1, 1 ) = self%Lby
-        if( self%azimuth == 5.0 ) self%lrows( 1, 1 ) = self%Lbz
+        if( self%azimuth == 1.0 ) self%lrows( 1, 1 ) = self%Lex%getFullVector()
+        if( self%azimuth == 2.0 ) self%lrows( 1, 1 ) = self%Ley%getFullVector()
+        !
+        if( self%azimuth == 3.0 ) self%lrows( 1, 1 ) = self%Lbx%getFullVector()
+        if( self%azimuth == 4.0 ) self%lrows( 1, 1 ) = self%Lby%getFullVector()
+        if( self%azimuth == 5.0 ) self%lrows( 1, 1 ) = self%Lbz%getFullVector()
+        !
+        if( self%azimuth == 3.0 .OR. self%azimuth == 4.0 .OR. self%azimuth == 5.0 ) then
+            call self%lrows( 1, 1 )%mult( isign * comega )
+        endif
         !
     end subroutine setLRowsSingleField
     !
+    !> No subroutine briefing
     subroutine predictedDataSingleField( self, transmitter )
         implicit none
         !
         class( ReceiverSingleField_t ), intent( inout ) :: self
-        class( Transmitter_t ), intent( in )            :: transmitter
+        class( Transmitter_t ), intent( in ) :: transmitter
         !
         integer :: i, j, ij
         complex( kind=prec ) :: comega, det
-        !
         !
         comega = cmplx( 0.0, 1./ ( 2.0 * PI / transmitter%period ), kind=prec )
         !
@@ -175,7 +185,7 @@ contains
                         self%response(1) = isign * self%response(1) * comega
                 end select
                 !
-                ! WRITE ON PredictedFile.dat
+                !> WRITE ON PredictedFile.dat
                 call self%savePredictedData( transmitter )
                 !
                 deallocate( self%response )
@@ -186,6 +196,7 @@ contains
         !
     end subroutine predictedDataSingleField
     !
+    !> No function briefing
     function isEqualSingleField( self, other ) result( equal )
         implicit none
         !
@@ -214,6 +225,7 @@ contains
         !
     end function isEqualSingleField
     !
+    !> No subroutine briefing
     subroutine printReceiverSingleField( self )
         implicit none
         !

@@ -1,16 +1,13 @@
-! *************
-! 
-! Derived class to define a Full_Impedance Receiver
-! 
-! *************
-! 
+!
+!> Derived class to define a Full_Impedance Receiver
+!
 module ReceiverFullImpedance
     !
     use Receiver
     !
     type, extends( Receiver_t ), public :: ReceiverFullImpedance_t
         !
-        ! Specific properties here
+        !> No derived properties
         !
         contains
             !
@@ -32,15 +29,14 @@ module ReceiverFullImpedance
     !
 contains
     !
+    !> No function briefing
     function ReceiverFullImpedance_ctor( location, rx_type ) result( self )
         implicit none
         !
         real( kind=prec ), intent( in ) :: location(3)
-        integer, intent( in )           :: rx_type
+        integer, intent( in ) :: rx_type
         !
         type( ReceiverFullImpedance_t ) :: self
-        !
-        integer :: i, asize
         !
         !write( *, * ) "Constructor ReceiverFullImpedance_t"
         !
@@ -51,18 +47,10 @@ contains
         self%rx_type = rx_type
         !
         self%n_comp = 4
+        !
         self%is_complex = .TRUE.
         !
-        ! components required to get the full impedance evaluation vectors [Ex, Ey, Bx, By]
-        if( allocated( self%EHxy ) ) then
-            !
-            asize = size( self%EHxy )
-            do i = asize, 1, -(1)
-                deallocate( self%EHxy(i)%str )
-            enddo
-            deallocate( self%EHxy )
-            !
-        endif
+        !> components required to get the full impedance evaluation vectors [Ex, Ey, Bx, By]
         allocate( self%EHxy( 4 ) )
         !
         self%EHxy(1)%str = "Ex"
@@ -70,21 +58,6 @@ contains
         self%EHxy(3)%str = "Bx"
         self%EHxy(4)%str = "By"
         !
-        allocate( self%Lex, source = cSparsevector3D_SG_t() )
-        allocate( self%Ley, source = cSparsevector3D_SG_t() )
-        allocate( self%Lbx, source = cSparsevector3D_SG_t() )
-        allocate( self%Lby, source = cSparsevector3D_SG_t() )
-        !
-        ! components required to get the full impedance tensor self%response [Zxx, Zxy, Zyx, Zyy]
-        if( allocated( self%comp_names ) ) then
-            !
-            asize = size( self%comp_names )
-            do i = asize, 1, -(1)
-                deallocate( self%comp_names(i)%str )
-            enddo
-            deallocate( self%comp_names )
-            !
-        endif
         allocate( self%comp_names( 4 ) )
         !
         self%comp_names(1)%str = "ZXX"
@@ -94,10 +67,11 @@ contains
         !
     end function ReceiverFullImpedance_ctor
     !
+    !> No subroutine briefing
     subroutine ReceiverFullImpedance_dtor( self )
         implicit none
         !
-        type( ReceiverFullImpedance_t ), intent( in out ) :: self
+        type( ReceiverFullImpedance_t ), intent( inout ) :: self
         !
         !write( *, * ) "Destructor ReceiverFullImpedance_t:", self%id
         !
@@ -105,76 +79,79 @@ contains
         !
     end subroutine ReceiverFullImpedance_dtor
     !
+    !> No subroutine briefing
     subroutine setLRowsFullImpedance( self, transmitter )
         implicit none
         !
         class( ReceiverFullImpedance_t ), intent( inout ) :: self
-        class( Transmitter_t ), intent( in )              :: transmitter
+        class( Transmitter_t ), intent( in ) :: transmitter
         !
-        class( Vector_t ), allocatable :: Le, full_lex, full_ley, full_lbx, full_lby
-        integer :: i, j, k, ki, kj
+        type( cVector3D_SG_t ) :: Le, full_lex, full_ley, full_lbx, full_lby
+        integer :: Ei, row, pol, comp
+        complex( kind=prec ) :: comega
         !
+        comega = cmplx( 0.0, 1./ ( 2.0 * PI / transmitter%period ), kind=prec )
         !
+        !> Call the predicted data routine to calculate responses
         call self%predictedData( transmitter )
         !
-        allocate( self%lrows( transmitter%n_pol, self%n_comp ) )
+        !> Allocate LRows matrix [ n_pol = 2, n_comp = 4 ]
+        if( allocated( self%lrows ) ) deallocate( self%lrows )
+        allocate( cVector3D_SG_t :: self%lrows( transmitter%n_pol, self%n_comp ) )
         !
-        ki = 0
-        !
-        ! Conversion to full vector to do math operations
+        !> Convert Le and Lb to Full Vectors (In the future they will be Sparse)
         full_lex = self%Lex%getFullVector()
         full_ley = self%Ley%getFullVector()
         !
         full_lbx = self%Lbx%getFullVector()
         full_lby = self%Lby%getFullVector()
         !
-        do k = 1, 2
+        !> 
+        !> Lrows{j,ki} = Hinv(j,i) * ( lE - Z(k,1) * 1/omega * Rx.Lhx - Z(k,2) * 1/omega * Rx.Lhy )
+        !
+        !> Loop over Ex and Ey
+        do Ei = 1, 2
             !
-            if( k == 1 ) then
+            if( Ei == 1 ) then
                 Le = full_lex
             else
                 Le = full_ley
             endif
             !
-            do i = 1, 2
+            !> Specific indexes for Full Impedance:
+            call full_lbx%multAddByValue( Le, isign * comega * self%response( 2 * (Ei-1) + 1 ) )    ! 1 & 3
+            !
+            call full_lby%multAddByValue( Le, isign * comega * self%response( 2 * Ei ) )            ! 2 & 4
+            !
+            !> Loop over two impedance rows
+            do row = 1, 2
                 !
-                ki = ki + 1
+                !> comp = 1, 3, 2, 4
+                comp = 2 * (Ei-1) + row
                 !
-                do j = 1, 2
+                !> Loop over two polarizations
+                do pol = 1, 2
                     !
-                    ! One-dimensionalization for calcs with self%response
-                    kj = 2 * ( k-1 ) + j
+                    self%lrows( pol, comp ) = Le
                     !
-                    ! full = full * complex
-                    call full_lbx%mult( self%response( kj ) )
-                    call full_lby%mult( self%response( kj ) )
-                    !
-                    call Le%sub( full_lbx )
-                    call Le%sub( full_lby )
-                    !
-                    ! aux_full = aux_full * complex
-                    call Le%mult( self%I_BB( j, i ) )
-                    !
-                    ! Conversion of the result to Sparse Vector
-                    self%lrows( j, ki ) = cSparsevector3D_SG_t()
-                    call self%lrows( j, ki )%fromFullVector( Le )
+                    call self%lrows( pol, comp )%mult( isign * self%I_BB( pol, row ) )
                     !
                 enddo
+                !
             enddo
-            !
-            deallocate( Le )
             !
         enddo
         !
-        deallocate( full_lex, full_ley, full_lbx, full_lby )
+        deallocate( self%I_BB, self%response )
         !
     end subroutine setLRowsFullImpedance
     !
+    !> No subroutine briefing
     subroutine predictedDataFullImpedance( self, transmitter )
         implicit none
         !
         class( ReceiverFullImpedance_t ), intent( inout ) :: self
-        class( Transmitter_t ), intent( in )              :: transmitter
+        class( Transmitter_t ), intent( in ) :: transmitter
         !
         integer :: i, j, ij
         complex( kind=prec ) :: comega, det
@@ -215,7 +192,7 @@ contains
                             self%I_BB(1,2) = -BB(1,2) / det
                             self%I_BB(2,1) = -BB(2,1) / det
                         else
-                            stop "Error: ReceiverFullImpedance.f90: Determinant is Zero!"
+                            stop "Error: predictedDataFullImpedance > Determinant is Zero!"
                         endif
                         !
                         deallocate( BB )
@@ -235,15 +212,16 @@ contains
                         call self%savePredictedData( transmitter )
                         !
                     class default
-                        stop "Error: evaluationFunctionRx: Unclassified temp_full_vec_ey"
+                        stop "Error: predictedDataFullImpedance: Unclassified tx_e_2"
                 end select
                 !
             class default
-                stop "Error: evaluationFunctionRx: Unclassified temp_full_vec_ey"
+                stop "Error: predictedDataFullImpedance: Unclassified tx_e_1"
         end select
         !
     end subroutine predictedDataFullImpedance
     !
+    !> No function briefing
     function isEqualFullImpedance( self, other ) result( equal )
         implicit none
         !
@@ -272,12 +250,13 @@ contains
         !
     end function isEqualFullImpedance
     !
+    !> No subroutine briefing
     subroutine printReceiverFullImpedance( self )
         implicit none
         !
         class( ReceiverFullImpedance_t ), intent( in ) :: self
         !
-        write( *, * ) "Print ReceiverFullImpedance_t: ", self%id
+        write( *, * ) "ReceiverFullImpedance_t: ", self%id, self%rx_type, self%n_comp
         !
     end subroutine printReceiverFullImpedance
     !

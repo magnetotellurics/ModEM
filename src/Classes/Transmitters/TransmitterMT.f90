@@ -1,24 +1,21 @@
-! *************
-! 
-! Derived class to define a MT Transmitter
 !
-! *************
-! 
+!> Derived class to define a MT Transmitter
+!
 module TransmitterMT
-    ! 
+    !
     use FileUnits
     use cVector3D_SG
     use Transmitter
     !
     type, extends( Transmitter_t ), public :: TransmitterMT_t
         !
-        ! PROPERTIES HERE
+        !> No derived properties
         !
         contains
             !
             final :: TransmitterMT_dtor
             !
-            procedure, public :: solveFWD => solveFWDTransmitterMT
+            procedure, public :: solve => solveTransmitterMT
             !
             procedure, public :: isEqual => isEqualTransmitterMT
             !
@@ -32,7 +29,7 @@ module TransmitterMT
     !
     contains
     !
-    ! TransmitterMT constructor
+    !> TransmitterMT constructor
     function TransmitterMT_ctor( period ) result ( self )
         implicit none
         !
@@ -40,7 +37,7 @@ module TransmitterMT
         !
         real( kind=prec ), intent( in ) :: period
         !
-        !write(*,*) "Constructor TransmitterMT_t"
+        !write( *, * ) "Constructor TransmitterMT_t"
         !
         call self%init()
         !
@@ -48,87 +45,101 @@ module TransmitterMT
         !
         self%period = period
         !
-        ! self%pMult_ptr => pMult_E
+        !> self%pMult_ptr => pMult_E
         !
-        ! self%pMult_t_ptr => pMult_t_E
+        !> self%pMult_t_ptr => pMult_t_E
         !
     end function TransmitterMT_ctor
     !
-    ! TransmitterMT destructor
+    !> Deconstructor routine:
+    !>     Calls the base routine dealloc().
     subroutine TransmitterMT_dtor( self )
         implicit none
         !
         type( TransmitterMT_t ), intent( inout ) :: self
         !
-        !write(*,*) "Destructor TransmitterMT_t:", self%id
+        !write( *, * ) "Destructor TransmitterMT_t:", self%id
         !
         call self%dealloc()
         !
     end subroutine TransmitterMT_dtor
     !
-    ! Set self%e_all from forward modeling solver
-    subroutine solveFWDTransmitterMT( self )
+    !> Calculate e_all or e_sens from with ForwardSolver
+    !> Depending of the Source%adjoint
+    subroutine solveTransmitterMT( self )
         implicit none
         !
         class( TransmitterMT_t ), intent( inout ) :: self
         !
-        integer           :: i_pol, ios
+        integer :: i_pol, ios
+        !
         real( kind=prec ) :: omega
         !
         character( len=20 ) :: ModeName
+        !
+        if( .NOT. allocated( self%source ) ) then
+            stop "Error: solveTransmitterMT > source not allocated!"
+        endif
+        !
+        !> Verbose
+        if( self%source%adjoint ) then
             !
-            character(:), allocatable :: title
+            if( allocated( self%e_sens ) ) deallocate( self%e_sens )
+            allocate( cVector3D_SG_t :: self%e_sens(2) )
             !
+        else
+            !
+            if( allocated( self%e_all ) ) deallocate( self%e_all )
+            allocate( cVector3D_SG_t :: self%e_all(2) )
+            !
+        endif
         !
-        omega = 2.0 * PI / self%period
-        !
-        allocate( cVector3D_SG_t :: self%e_all( self%n_pol ) )
-        !
-        ! Loop over all polarizations (MT n_pol = 2)
+        !> Loop over all polarizations (MT n_pol = 2)
         do i_pol = 1, self%n_pol
             !
-            ! Verbose
-            write( *, * ) "          SolveFWD for MT Tx:", self%id, " -> Period:", self%period, " - Polarization:", i_pol
-            !
-            call self%source%setE( i_pol )
-            !
-            select type( grid => self%source%model_operator%metric%grid )
-                class is( Grid3D_SG_t )
-                    !
-                    self%e_all( i_pol ) = cVector3D_SG_t( grid, EDGE )
-                    !
-                class default
-                    stop "Error: solveFWDTransmitterMT: undefined grid"
-                    !
-            end select
-            !
-            call self%forward_solver%getESolution( self%source, self%e_all( i_pol ) )
-            !
-            if( i_pol == 1 ) then
-                ModeName = "Ey"
+            !> Verbose
+            if( self%source%adjoint ) then
+                write( *, * ) "               SolveADJ MT Tx:", self%id, " -> Period:", self%period, " - Polarization:", i_pol
+                !
+                !> Calculate e_sens through ForwardSolver
+                call self%forward_solver%createESolution( i_pol, self%source, self%e_sens( i_pol ) )
+                !
             else
-                ModeName = "Ex"
+                write( *, * ) "               SolveFWD MT Tx:", self%id, " -> Period:", self%period, " - Polarization:", i_pol
+                !
+                !> Calculate e_all through ForwardSolver
+                call self%forward_solver%createESolution( i_pol, self%source, self%e_all( i_pol ) )
+                !
+                if( i_pol == 1 ) then
+                    ModeName = "Ey"
+                else
+                    ModeName = "Ex"
+                endif
+                !
+                open( ioESolution, file = e_solution_file_name, action = "write", position = "append", form = "unformatted", iostat = ios )
+                !
+                if( ios /= 0 ) then
+                    stop "Error opening file in solveTransmitterMT: e_solution"
+                else
+                    !
+                    omega = 2.0 * PI / self%period
+                    !
+                    !> write the frequency header - 1 record
+                    write( ioESolution ) omega, self%id, i_pol, ModeName
+                    !
+                    call self%e_all( i_pol )%write( ioESolution )
+                    !
+                    close( ioESolution )
+                    !
+                endif
+                !
             endif
             !
-            open( ioESolution, file = e_solution_file_name, action = "write", position = "append", form = "unformatted", iostat = ios )
-            !
-            if( ios /= 0 ) then
-                stop "Error opening file in solveFWDTransmitterMT: e_solution"
-            else
-                !
-                ! write the frequency header - 1 record
-                write( ioESolution ) omega, self%id, i_pol, ModeName
-                !
-                call self%e_all( i_pol )%write( ioESolution )
-                !
-                close( ioESolution )
-                !
-            endif
-        !
         enddo
         !
-    end subroutine solveFWDTransmitterMT
+    end subroutine solveTransmitterMT
     !
+    !> No function briefing
     function isEqualTransmitterMT( self, other ) result( equal )
         implicit none
         !
@@ -154,6 +165,7 @@ module TransmitterMT
         !
     end function isEqualTransmitterMT
     !
+    !> No subroutine briefing
     subroutine printTransmitterMT( self )
         implicit none
         !

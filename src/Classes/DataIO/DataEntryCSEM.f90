@@ -1,10 +1,5 @@
-!*************
 !
-! Derived class to hold all the CSEM information from a valid data file line
-!
-! Last modified at 03/2021 by Paulo Werdt
-!
-!*************
+!> Derived class to hold all the CSEM information from a valid data file line
 !
 module DataEntryCSEM
     !
@@ -13,11 +8,11 @@ module DataEntryCSEM
     type, extends( DataEntry_t ) :: DataEntryCSEM_t
         !
         character(:), allocatable :: dipole
-        real( kind=prec )         :: moment, azimuth, dip, tx_location(3)
+        real( kind=prec ) :: moment, azimuth, dip, tx_location(3)
         !
         contains
             !
-            procedure, public    :: write => writeDataEntryCSEM
+            procedure, public :: write => writeDataEntryCSEM
             procedure, public :: getCopy => getCopyDataEntryCSEM
             !
     end type DataEntryCSEM_t
@@ -28,17 +23,17 @@ module DataEntryCSEM
     !
 contains
     !
-    ! Parametrized constructor
+    !> Parametrized constructor
     function DataEntryCSEM_ctor( id, type, dipole, period, moment, azimuth, &
         dip, tx_location, code, location, component, real, imaginary, error ) result( self )
         implicit none
         type( DataEntryCSEM_t ) :: self
-        integer, intent( in )                    :: id
-        character(:), allocatable, intent( in )    :: type, dipole, code, component
-        real( kind=prec ), intent( in )          :: period, moment, azimuth, dip, location(3), tx_location(3)
-        real( kind=prec ), intent( in )            :: real, imaginary, error
+        integer, intent( in ) :: id
+        character(:), allocatable, intent( in ) :: type, dipole, code, component
+        real( kind=prec ), intent( in ) :: period, moment, azimuth, dip, location(3), tx_location(3)
+        real( kind=prec ), intent( in ) :: real, imaginary, error
         !
-        !write(*,*) "Constructor DataEntryCSEM_t", dipole
+        !write( *, * ) "Constructor DataEntryCSEM_t", dipole
         !
         self%id = id
         self%type = type
@@ -57,11 +52,12 @@ contains
         !
     end function DataEntryCSEM_ctor
     !
+    !> No function briefing
     function getCopyDataEntryCSEM( self ) result ( copy )
         implicit none
         !
         class( DataEntryCSEM_t ), intent( in ) :: self
-      class( DataEntry_t ), allocatable        :: copy
+      class( DataEntry_t ), allocatable :: copy
         !
         allocate( copy, source = DataEntryCSEM_t( self%id, self%type,    &
                      self%dipole, self%period, self%moment, self%azimuth, self%dip, self%tx_location,    &
@@ -69,10 +65,11 @@ contains
         !
     end function getCopyDataEntryCSEM
     !
+    !> No subroutine briefing
     subroutine writeDataEntryCSEM( self )
         class( DataEntryCSEM_t ), intent( in ) :: self
         !
-        write(*,*) "Write DataEntryCSEM_t: ", self%id, self%type, self%dipole, self%period,        &
+        write( *, * ) "Write DataEntryCSEM_t: ", self%id, self%type, self%dipole, self%period,        &
         self%moment, self%azimuth, self%dip, self%tx_location, self%code, self%location, self%component,    &
         self%real, self%imaginary, self%error
         !

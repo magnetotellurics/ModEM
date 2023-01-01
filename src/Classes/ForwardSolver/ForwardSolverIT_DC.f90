@@ -1,35 +1,33 @@
-! *************
-! 
-! Class to define a iterative ForwardSolver using divergence correction
 !
-! *************
-! 
+!> Derived class to define a iterative ForwardSolver using divergence correction
+!
 module ForwardSolverIT_DC
     !
     use ForwardSolver
     use DivergenceCorrection
-    use ModelOperator_MF
     use Solver_QMR
     !
     type, extends( ForwardSolver_t ) :: ForwardSolverIT_DC_t
-        !
-        type( DivergenceCorrection_t ) :: divergence_correction 
         !
         integer :: n_divcor, max_div_cor, max_divcor_iters
         !
         real( kind=prec ) :: tol_div_cor
         !
+        type( DivergenceCorrection_t ) :: divergence_correction 
+        !
         contains
             !
-            final :: ForwardSolverIT_DC_dtor
+            procedure, public :: setFrequency => setFrequencyForwardSolverIT_DC
             !
-            procedure, public :: setFrequency    => setFrequencyForwardSolverIT_DC
-            procedure, public :: setIterControl  => setIterControlForwardSolverIT_DC
+            procedure, public :: setIterControl => setIterControlForwardSolverIT_DC
+            !
             procedure, public :: initDiagnostics => initDiagnosticsForwardSolverIT_DC
-            procedure, public :: zeroDiagnostics => zeroDiagnosticsForwardSolverIT_DC
-            procedure, public :: getESolution    => getESolutionForwardSolverIT_DC
             !
-            procedure, public :: setIterDefaultsDC
+            procedure, public :: zeroDiagnostics => zeroDiagnosticsForwardSolverIT_DC
+            !
+            procedure, public :: createESolution => createESolutionForwardSolverIT_DC
+            !
+            procedure, public :: setIterDefaults => setIterDefaultsForwardSolverIT_DC
             !
     end type ForwardSolverIT_DC_t
     !
@@ -37,252 +35,249 @@ module ForwardSolverIT_DC
         module procedure ForwardSolverIT_DC_ctor
     end interface ForwardSolverIT_DC_t
     !
-    contains
+contains
+    !
+    !> No function briefing
+    function ForwardSolverIT_DC_ctor( model_operator, solver_type ) result( self )
+        implicit none
         !
-        function ForwardSolverIT_DC_ctor( model_operator, solver_type ) result( self )
-            implicit none
+        class( ModelOperator_t ), intent( in ) :: model_operator
+        character(*), intent( in ) :: solver_type
+        type( ForwardSolverIT_DC_t ) :: self
+        !
+        integer :: max_iter
+        !
+        !write( *, * ) "Constructor ForwardSolverIT_DC_t"
+        !
+        call self%init()
+        !
+        select case( solver_type )
             !
-            class( ModelOperator_t ), intent( in ) :: model_operator
-            character(*), intent(in)               :: solver_type
-            type( ForwardSolverIT_DC_t )           :: self
+            case( QMR )
+                !
+                if( allocated( self%solver )  ) deallocate( self%solver )
+                allocate( self%solver, source = Solver_QMR_t( model_operator ) )
+                !
+            case( BiCG )
+                stop "ForwardSolverIT_DC_ctor > Not yet coded for Bi-Conjugate Gradients"
+            case default
+                stop "ForwardSolverIT_DC_ctor > Unknown solver"
             !
-            integer :: max_iter
+        end select
+        !
+        self%n_divcor = 0
+        !
+        self%max_div_cor = 0
+        !
+        self%max_divcor_iters = 0
+        !
+        self%tol_div_cor = R_ZERO
+        !
+        !> Set default values for this ForwardSolver
+        call self%setIterDefaults()
+        !
+        !> Set max number of all forward solver iterations
+        self%max_iter_total = self%max_div_cor * self%solver%max_iter
+        !
+        call self%setIterControl
+        !
+        call self%initDiagnostics()
+        !
+        self%divergence_correction = DivergenceCorrection_t( model_operator )
+        !
+    end function ForwardSolverIT_DC_ctor
+    !
+    !> Procedure setFrequencyForwardSolverIT_DC
+    !> Set omega for this ForwardSolver (Called on the main transmitter loop at main program)
+    subroutine setFrequencyForwardSolverIT_DC( self, sigma, period )
+        implicit none
+        !
+        class( ForwardSolverIT_DC_t ), intent( inout ) :: self
+        class( ModelParameter_t ), intent( in ) :: sigma
+        real( kind=prec ), intent( in ) :: period
+        !
+        !> Set omega for this ForwardSolver solver
+        self%solver%omega = ( 2.0 * PI / period )
+        !
+        !> Set conductivity for the model operator (again ????)
+        call self%solver%preconditioner%model_operator%setCond( sigma )
+        !
+        !> Set omega for the divergence_correction´s solver
+        self%divergence_correction%solver%omega = self%solver%omega
+        !
+        !> Set conductivity for the divergence_correction
+        call self%divergence_correction%SetCond()
+        !
+        !> Set preconditioner for this solver´s preconditioner
+        call self%solver%preconditioner%SetPreconditioner( self%solver%omega )
+        !
+        call self%initDiagnostics()
+        !
+    end subroutine setFrequencyForwardSolverIT_DC
+    !
+    !> No subroutine briefing
+    subroutine setIterControlForwardSolverIT_DC( self )
+        implicit none
+        !
+        class( ForwardSolverIT_DC_t ), intent( inout ) :: self
+        !
+        self%tolerance = self%solver%tolerance
+        !
+        self%max_div_cor = self%max_iter_total / self%solver%max_iter
+        !
+        self%max_iter_total = self%solver%max_iter * self%max_div_cor
+        !
+    end subroutine setIterControlForwardSolverIT_DC
+    !
+    !> No subroutine briefing
+    subroutine setIterDefaultsForwardSolverIT_DC( self )
+        implicit none
+        !
+        class( ForwardSolverIT_DC_t ), intent( inout ) :: self
+        !
+        self%max_div_cor      = max_divcor
+        self%max_divcor_iters = max_divcor_iters
+        self%tol_div_cor      = tolerance_divcor
+        !
+    end subroutine setIterDefaultsForwardSolverIT_DC
+    !
+    !> No subroutine briefing
+    subroutine initDiagnosticsForwardSolverIT_DC( self )
+        implicit none
+        !
+        class( ForwardSolverIT_DC_t ), intent( inout ) :: self
+        !
+        self%n_iter_actual = 0
+        !
+        self%relResFinal = R_ZERO
+        !
+        if( .NOT. allocated( self%relResVec ) ) then
+            allocate( self%relResVec( self%max_iter_total ) )
+        endif
+        !
+    end subroutine initDiagnosticsForwardSolverIT_DC
+    !
+    !> No subroutine briefing
+    subroutine zeroDiagnosticsForwardSolverIT_DC(self)
+        implicit none
+        !
+        class( ForwardSolverIT_DC_t ), intent( inout ) :: self
+        !
+        self%relResVec = R_ZERO
+        !
+        call self%solver%zeroDiagnostics()
+        !
+    end subroutine zeroDiagnosticsForwardSolverIT_DC
+    !
+    !> No function briefing
+    subroutine createESolutionForwardSolverIT_DC( self, pol, source, e_solution )
+        implicit none
+        !
+        class( ForwardSolverIT_DC_t ), intent( inout ) :: self
+        integer, intent( in ) :: pol
+        class( Source_t ), intent( in ) :: source
+        class( Vector_t ), intent( inout ) :: e_solution
+        !
+        class( Vector_t ), allocatable :: temp_aux_vec
+        !
+        class( Scalar_t ), allocatable :: phi0
+        !
+        integer :: iter
+        !
+        call self%solver%zeroDiagnostics()
+        !
+        self%solver%converged = .FALSE.
+        self%solver%failed    = .FALSE.
+        self%n_divcor = 0
+        self%n_iter_actual = 0
+        !
+        if( source%non_zero_source ) then
             !
-            !write(*,*) "Constructor ForwardSolverIT_DC_t"
+            allocate( phi0, source = cScalar3D_SG_t( self%solver%preconditioner%model_operator%metric%grid, NODE ) )
             !
-            call self%init()
+            call self%divergence_correction%rhsDivCor( self%solver%omega, source%E( pol ), phi0 )
             !
-            self%n_divcor = 0
-            self%max_div_cor = 0
-            self%max_divcor_iters = 0
-            self%tol_div_cor = 0.0
+        endif
+        !
+        e_solution = cVector3D_SG_t( self%solver%preconditioner%model_operator%metric%grid, EDGE )
+        !
+        call e_solution%zeros()
+        !
+        loop: do while ( ( .NOT. self%solver%converged ) .AND. ( .NOT. self%solver%failed ) )
             !
-            select case( solver_type )
-                case( QMR )
-                    !
-                    allocate( self%solver, source = Solver_QMR_t( model_operator ) )
-                    !
-                case( BiCG )
-                    stop "ForwardSolverIT_DC_ctor: Not yet coded for Bi-Conjugate Gradients"
-                case default
-                    stop "ForwardSolverIT_DC_ctor: Unknown solver"
+            select type( solver => self%solver )
+                !
+                class is( Solver_QMR_t )
+                    call solver%solve( source%rhs( pol ), e_solution )
+                class default
+                    stop "Error: getESolutionForwardSolverIT_DC > Unknown solver type."
+                !
             end select
             !
-            ! Set default values for this ForwardSolver
-            call self%setIterDefaultsDC()
+            self%solver%converged = self%solver%n_iter .LT. self%solver%max_iter
             !
-            ! Set max number of all forward solver iterations
-            self%max_iter_total = self%max_div_cor * self%solver%max_iter
+            self%solver%failed = self%solver%failed .OR. self%failed
             !
-            call self%setIterControl
+            !write( *, * ) "n_iter_actual+iter,     iter,     solver%relErr(iter)"
             !
-            !
-            self%divergence_correction = DivergenceCorrection_t( model_operator )
-            !
-            !
-            call self%initDiagnostics()
-            !
-        end function ForwardSolverIT_DC_ctor
-        !
-        !
-        subroutine ForwardSolverIT_DC_dtor( self )
-            implicit none
-            !
-            type( ForwardSolverIT_DC_t ), intent( inout ) :: self
-            !
-            !write(*,*) "Destructor ForwardSolverIT_DC_t"
-            !
-            call self%dealloc()
-            !
-        end subroutine ForwardSolverIT_DC_dtor
-        !
-        ! Set omega for this ForwardSolver (Called on the main transmitter loop at main program)
-        subroutine setFrequencyForwardSolverIT_DC( self, model_parameter, period )
-            implicit none
-            !
-            class( ForwardSolverIT_DC_t ), intent( inout ) :: self
-            class( ModelParameter_t ), intent( in )        :: model_parameter
-            real( kind=prec ), intent( in )                :: period
-            !
-            ! Set omega for this ForwardSolver solver
-            self%solver%omega = ( 2.0 * PI / period )
-            !
-            ! Set conductivity for the model operator (again ????)
-            call self%solver%preconditioner%model_operator%setCond( model_parameter )
-            !
-            ! Set omega for the divergence_correction´s solver
-            self%divergence_correction%solver%omega = self%solver%omega
-            !
-            ! Set conductivity for the divergence_correction
-            call self%divergence_correction%SetCond()
-            !
-            ! Set preconditioner for this solver´s preconditioner
-            call self%solver%preconditioner%SetPreconditioner( self%solver%omega )
-            !
-        end subroutine setFrequencyForwardSolverIT_DC
-        !
-        subroutine setIterControlForwardSolverIT_DC( self )
-            implicit none
-            !
-            class( ForwardSolverIT_DC_t ), intent( inout ) :: self
-            !
-            !
-            self%tolerance = self%solver%tolerance
-            !
-            self%max_div_cor = self%max_iter_total / self%solver%max_iter
-            !
-            self%max_iter_total = self%solver%max_iter * self%max_div_cor
-            !
-        end subroutine setIterControlForwardSolverIT_DC
-        !
-        !
-        subroutine setIterDefaultsDC( self )
-            implicit none
-            !
-            class( ForwardSolverIT_DC_t ), intent( inout ) :: self
-            !
-            self%max_div_cor      = max_divcor
-            self%max_divcor_iters = max_divcor_iters
-            self%tol_div_cor        = tolerance_divcor
-            !
-        end subroutine setIterDefaultsDC
-        !
-        !
-        subroutine initDiagnosticsForwardSolverIT_DC( self )
-            implicit none
-            !
-            class( ForwardSolverIT_DC_t ), intent( inout ) :: self
-            !
-            self%n_iter_actual = 0
-            !
-            self%relResFinal   = R_ZERO
-            !
-            allocate( self%relResVec( self%max_iter_total ) )
-            !
-         end subroutine initDiagnosticsForwardSolverIT_DC
-         !
-         !
-         subroutine zeroDiagnosticsForwardSolverIT_DC(self)
-            implicit none
-            !
-            class( ForwardSolverIT_DC_t ), intent( inout ) :: self
-            !
-            !
-            self%relResVec = R_ZERO
-            !
-            call self%solver%zeroDiagnostics()
-            !
-         end subroutine zeroDiagnosticsForwardSolverIT_DC
-         !
-         !
-         subroutine getESolutionForwardSolverIT_DC( self, source, e_solution )
-            implicit none
-            !
-            class( ForwardSolverIT_DC_t ), intent( inout ) :: self
-            class( Source_t ), intent( in )                :: source
-            class( Vector_t ), intent( inout )             :: e_solution
-            !
-            class( Vector_t ), allocatable :: temp_esol
-            class( Scalar_t ), allocatable :: phi0
-            integer :: iter
-            complex( kind=prec ) :: i_omega_mu
-            !
-            call self%solver%zeroDiagnostics()
-            !
-            self%solver%converged = .FALSE.
-            self%solver%failed    = .FALSE.
-            self%n_divcor = 0
-            !
-            if( source%non_zero_source ) then
+            do iter = 1, self%solver%n_iter
                 !
-                select type( grid => self%solver%preconditioner%model_operator%metric%grid )
-                    class is( Grid3D_SG_t )
-                        !
-                        allocate( phi0, source = cScalar3D_SG_t( grid, NODE ) )
-                        !
-                        call phi0%zeros()
-                        !
-                        call self%divergence_correction%rhsDivCor( self%solver%omega, source, phi0 )
-                        !
-                    class default
-                        stop "Error: getESolutionForwardSolverIT_DC > Unknown grid type"
-                end select
+                self%relResVec( self%n_iter_actual + iter ) = self%solver%relErr( iter )
                 !
-            endif
+                !write( *, * ) self%n_iter_actual + iter, iter, self%solver%relErr( iter )
+                !
+            enddo
             !
-            loop: do while ( ( .NOT. self%solver%converged ) .AND. ( .NOT. self%solver%failed ) )
+            self%n_iter_actual = self%n_iter_actual + self%solver%n_iter
+            !
+            self%n_divcor = self%n_divcor + 1
+            !
+            if( .NOT. self%solver%converged )  then
                 !
-                select type( solver => self%solver )
-                    class is( Solver_QMR_t )
-                        call solver%solve( source%rhs, e_solution )
-                    class default
-                        stop "Error: getESolutionForwardSolverIT_DC > Unknown solver type."
-                end select
-                !
-                self%solver%converged = self%solver%n_iter .LT. self%solver%max_iter
-                !
-                self%solver%failed = self%solver%failed .OR. self%failed
-                !
-                do iter = 1, self%solver%n_iter
+                if( self%n_divcor < self%max_div_cor ) then
                     !
-                    self%relResVec( self%n_iter_actual + iter ) = self%solver%relErr( iter )
+                    allocate( temp_aux_vec, source = e_solution )
                     !
-                enddo
-                !
-                self%n_iter_actual = self%n_iter_actual + self%solver%n_iter
-                !
-                self%n_divcor = self%n_divcor + 1
-                !
-                if( .NOT. self%solver%converged )  then
-                    !
-                    if( self%n_divcor < self%max_div_cor ) then
+                    if( source%non_zero_source ) then
                         !
-                        allocate( temp_esol, source = e_solution )
-                        !
-                        if( source%non_zero_source ) then
-                            !
-                            call self%divergence_correction%DivCorr( temp_esol, e_solution, phi0 )
-                            !
-                        else
-                            !
-                            call self%divergence_correction%DivCorr( temp_esol, e_solution )
-                            !
-                        endif
-                        !
-                        deallocate( temp_esol )
+                        call self%divergence_correction%DivCorr( temp_aux_vec, e_solution, phi0 )
                         !
                     else
                         !
-                        self%solver%failed = .TRUE.
+                        call self%divergence_correction%DivCorr( temp_aux_vec, e_solution )
                         !
                     endif
                     !
+                    deallocate( temp_aux_vec )
+                    !
+                else
+                    !
+                    self%solver%failed = .TRUE.
+                    !
                 endif
-            !
-            enddo loop
-            !
-            !
-            if( source%non_zero_source ) deallocate( phi0 )
-            !
-            self%relResFinal = self%relResVec( self%n_iter_actual )
-            !
-            if( source%adjt ) then
-                !
-                select type( model_operator => self%solver%preconditioner%model_operator )
-                    class is ( ModelOperator_MF_t )
-                        !
-                        call e_solution%mult( model_operator%Metric%Vedge )
-                        !
-                    class default
-                        stop "Error: getESolutionForwardSolverIT_DC > unknown model_operator type"
-                end select
-                !
-            else
-                !
-                call e_solution%add( source%E%Boundary() )
                 !
             endif
-            !
-        end subroutine getESolutionForwardSolverIT_DC
         !
+        enddo loop
+        !
+        if( source%non_zero_source ) deallocate( phi0 )
+        !
+        self%relResFinal = self%relResVec( self%n_iter_actual )
+        !
+        !if( source%adjoint ) then
+            !
+            !call e_solution%mult( self%solver%preconditioner%model_operator%metric%Vedge )
+            !
+        !else
+            !
+            !call source%E( pol )%Boundary( temp_aux_vec )
+            !
+            !call e_solution%add( temp_aux_vec )
+            !
+            !deallocate( temp_aux_vec )
+            !
+        !endif
+        !
+    end subroutine createESolutionForwardSolverIT_DC
+    !
 end Module ForwardSolverIT_DC

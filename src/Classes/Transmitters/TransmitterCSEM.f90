@@ -1,25 +1,22 @@
-! *************
-! 
-! Derived class to define a CSEM Transmitter
 !
-! *************
-! 
+!> Derived class to define a CSEM Transmitter
+!
 module TransmitterCSEM
-    ! 
+    !> 
     use FileUnits
     use Transmitter 
     use cVector3D_SG
     !
     type, extends( Transmitter_t ), public :: TransmitterCSEM_t
         !
-        real( kind=prec )         :: location(3), azimuth, dip, moment
+        real( kind=prec ) :: location(3), azimuth, dip, moment
         character(:), allocatable :: dipole
         !
         contains
             !
-            final    :: TransmitterCSEM_dtor
+            final :: TransmitterCSEM_dtor
             !
-            procedure, public :: solveFWD => solveFWDTransmitterCSEM
+            procedure, public :: solve => solveTransmitterCSEM
             !
             procedure, public :: isEqual => isEqualTransmitterCSEM
             !
@@ -33,15 +30,15 @@ module TransmitterCSEM
     !
 contains
     !
-    ! Parametrized constructor
+    !> Parametrized constructor
     function TransmitterCSEM_ctor( period, location, azimuth, dip, moment, dipole ) result ( self )
         !
         type( TransmitterCSEM_t ) :: self
         !
-        real( kind=prec ), intent( in )         :: period, azimuth, dip, moment, location(3)
+        real( kind=prec ), intent( in ) :: period, azimuth, dip, moment, location(3)
         character(:), allocatable, intent( in ) :: dipole
         !
-        ! write(*,*) "Constructor TransmitterCSEM_t"
+        !> write( *, * ) "Constructor TransmitterCSEM_t"
         !
         call self%init()
         !
@@ -59,23 +56,27 @@ contains
         !
     end function TransmitterCSEM_ctor
     !
-    ! Destructor
+    !> Deconstructor routine:
+    !>     Calls the base routine dealloc().
     subroutine TransmitterCSEM_dtor( self )
         implicit none
         !
-        type( TransmitterCSEM_t )    :: self
+        type( TransmitterCSEM_t ) :: self
         !
-        ! write(*,*) "Destructor TransmitterCSEM_t"
+        !> write( *, * ) "Destructor TransmitterCSEM_t"
         !
         call self%dealloc()
         !
+        deallocate( self%dipole )
+        !
     end subroutine TransmitterCSEM_dtor
     !
+    !> No function briefing
     function isEqualTransmitterCSEM( self, other ) result( equal )
         implicit none
         !
         class( TransmitterCSEM_t ), intent( in ) :: self
-        class( Transmitter_t ), intent( in )     :: other
+        class( Transmitter_t ), intent( in ) :: other
         !
         logical :: equal
         !
@@ -99,59 +100,81 @@ contains
         !
     end function isEqualTransmitterCSEM
     !
-    subroutine solveFWDTransmitterCSEM( self )
+    !> No subroutine briefing
+    subroutine solveTransmitterCSEM( self )
         implicit none
         !
         class( TransmitterCSEM_t ), intent( inout ) :: self
         !
-        integer           :: ios
+        integer :: ios
         real( kind=prec ) :: omega
         !
         character( len=20 ) :: ModeName
         !
+        if( .NOT. allocated( self%source ) ) then
+            stop "Error: solveTransmitterCSEM > source not allocated!"
+        endif
         !
-        omega = 2.0 * PI / self%period
-        !
-        allocate( cVector3D_SG_t :: self%e_all( self%n_pol ) )
-        !
-        ! Verbose...
-        write( *, * ) "          SolveFWD for CSEM Tx:", self%id, " -> Period:", self%period
-        !
-        call self%source%setE( 1 )
-        !
-        select type( grid => self%source%model_operator%metric%grid )
-            class is( Grid3D_SG_t )
-                !
-                self%e_all( 1 ) = cVector3D_SG_t( grid, EDGE )
-                !
-            class default
-                stop "Error: solveFWDTransmitterCSEM: undefined grid"
-                !
-        end select
-        !
-        call self%forward_solver%getESolution( self%source, self%e_all( 1 ) )
-        !
-        call self%e_all( 1 )%add( self%source%E )
-        !
-        ModeName = "Ex"
-        !
-        open( ioESolution, file = e_solution_file_name, action = "write", position = "append", form = "unformatted", iostat = ios )
-        !
-        if( ios /= 0 ) then
-            stop "Error opening file in solveFWDTransmitterCSEM: e_solution"
+        !> Verbose
+        if( self%source%adjoint ) then
+            !
+            write( *, * ) "               SolveADJ CSEM Tx:", self%id, " -> Period:", self%period
+            !
+            if( allocated( self%e_sens ) ) deallocate( self%e_sens )
+            allocate( cVector3D_SG_t :: self%e_sens(1) )
+            !
         else
             !
-            ! write the frequency header - 1 record
-            write( ioESolution ) omega, self%id, 1, ModeName
+            write( *, * ) "               SolveFWD CSEM Tx:", self%id, " -> Period:", self%period
             !
-            call self%e_all( 1 )%write( ioESolution )
-            !
-            close( ioESolution )
+            if( allocated( self%e_all ) ) deallocate( self%e_all )
+            allocate( cVector3D_SG_t :: self%e_all(1) )
             !
         endif
         !
-    end subroutine solveFWDTransmitterCSEM
+        !> Defines e_all or e_sens depending on Forward or Adjoint case
+        if( self%source%adjoint ) then
+            !
+            !> Calculate e_solution through ForwardSolver
+            call self%forward_solver%createESolution( 1, self%source, self%e_sens(1) )
+            !
+            !> Add the source's rhs content to the e_solution vector
+            call self%e_sens(1)%add( self%source%E(1) )
+            !
+        else
+            !
+            !> Calculate e_solution through ForwardSolver
+            call self%forward_solver%createESolution( 1, self%source, self%e_all(1) )
+            !
+            !> Add the source's rhs content to the e_solution vector
+            call self%e_all(1)%add( self%source%E(1) )
+            !
+            ModeName = "Ex"
+            !
+            open( ioESolution, file = e_solution_file_name, action = "write", position = "append", form = "unformatted", iostat = ios )
+            !
+            if( ios /= 0 ) then
+                stop "Error opening file in solveTransmitterCSEM: e_solution"
+            else
+                !
+                omega = 2.0 * PI / self%period
+                !
+                !> write the frequency header - 1 record
+                write( ioESolution ) omega, self%id, 1, ModeName
+                !
+                call self%e_all(1)%write( ioESolution )
+                !
+                close( ioESolution )
+                !
+            endif
+            !
+        endif
+        !
+        ModeName = "Ex"
+        !
+    end subroutine solveTransmitterCSEM
     !
+    !> No subroutine briefing
     subroutine printTransmitterCSEM( self )
         implicit none
         !

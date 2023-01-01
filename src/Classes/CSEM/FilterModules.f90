@@ -2,56 +2,56 @@
 !=========================================================== FilterModules.f90 !
 !==============================================================================!
 !
-!    Copyright 2007,2008
-!    Kerry Key
-!    Scripps Institution of Oceanography
-!    kkey@ucsd.edu
+!>    Copyright 2007,2008
+!>    Kerry Key
+!>    Scripps Institution of Oceanography
+!>    kkey@ucsd.edu
 !
-!    This file is part of Dipole1D.
+!>    This file is part of Dipole1D.
 !
-!    Dipole1D is free software: you can redistribute it and/or modify
-!    it under the terms of the GNU General Public License as published by
-!    the Free Software Foundation, either version 3 of the License, or
-!    (at your option) any later version.
+!>    Dipole1D is free software: you can redistribute it and/or modify
+!>    it under the terms of the GNU General Public License as published by
+!>    the Free Software Foundation, either version 3 of the License, or
+!>    (at your option) any later version.
 !
-!    Dipole1D is distributed in the hope that it will be useful,
-!    but WITHOUT ANY WARRANTY; without even the implied warranty of
-!    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-!    GNU General Public License for more details.
+!>    Dipole1D is distributed in the hope that it will be useful,
+!>    but WITHOUT ANY WARRANTY; without even the implied warranty of
+!>    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+!>    GNU General Public License for more details.
 !
-!    You should have received a copy of the GNU General Public License
-!    along with Dipole1D.  If not, see <http://www.gnu.org/licenses/>.
+!>    You should have received a copy of the GNU General Public License
+!>    along with Dipole1D.  If not, see <http://www.gnu.org/licenses/>.
 !
 !==============================================================================!
 !=============================================================== HankelFilters !
 !==============================================================================!
    
 !
-! Kerry Key
-! Scripps Institution of Oceanography
-! kkey@ucsd.edu
+!> Kerry Key
+!> Scripps Institution of Oceanography
+!> kkey@ucsd.edu
 !
     module HankelFilters
     
     implicit none
-!   
-!  Digital filter coefficients from F.N. Kong's 2007 GP paper  
+!>   
+!>  Digital filter coefficients from F.N. Kong's 2007 GP paper  
 !
-    real(8), dimension(61)  :: fk_ht_base_61,fk_ht_j0_61,fk_ht_j1_61
+    real(8), dimension(61) :: fk_ht_base_61,fk_ht_j0_61,fk_ht_j1_61
     real(8), dimension(241) :: fk_ht_base_241,fk_ht_j0_241,fk_ht_j1_241
 !
-! Some Digital filter coefficients I made in Matlab using a method similar to Guptasarma and Singh (1997):
+!> Some Digital filter coefficients I made in Matlab using a method similar to Guptasarma and Singh (1997):
 !
-    real(8), dimension(101)  :: kk_ht_base_101,  kk_ht_j0_101,  kk_ht_j1_101
-    real(8), dimension(201)  :: kk_ht_base_201,  kk_ht_j0_201,  kk_ht_j1_201 
-    real(8), dimension(401)  :: kk_ht_base_401,  kk_ht_j0_401,  kk_ht_j1_401 ! The 401 pt filters are not good, beware!
+    real(8), dimension(101) :: kk_ht_base_101,  kk_ht_j0_101,  kk_ht_j1_101
+    real(8), dimension(201) :: kk_ht_base_201,  kk_ht_j0_201,  kk_ht_j1_201 
+    real(8), dimension(401) :: kk_ht_base_401,  kk_ht_j0_401,  kk_ht_j1_401 !> The 401 pt filters are not good, beware!
 
     
     contains
    
 !
-! Subroutine to initialize Hankel Transform filters
-! 
+!> Subroutine to initialize Hankel Transform filters
+!> 
    
     subroutine init_HankelFilters
    
@@ -62,7 +62,7 @@
     
    subroutine init_Kong
  !
- ! Kong's newer 61 point filters (spring 2007): 
+ !> Kong's newer 61 point filters (spring 2007): 
  !
     fk_ht_base_61(1:3)   = (/ 2.3517745856009100D-02,  2.6649097336355482D-02,  3.0197383422318501D-02 /)
     fk_ht_base_61(4:6)   = (/ 3.4218118311666032D-02,  3.8774207831722009D-02,  4.3936933623407420D-02 /)
@@ -382,7 +382,7 @@
     
     subroutine init_Key
 !
-! Digital Filters I made in winter 2008:
+!> Digital Filters I made in winter 2008:
 !
 
 
@@ -1106,25 +1106,25 @@
             
 !==============================================================================!
 !================================================================ SinCosFilters!
-!==============================================================================!        
+!==============================================================================!>        
     module SinCosFilters
 !
-! These are sine and cosine transform digital filters I made in Matlab using a 
-! method similar to Guptasarma and Singh (1997) and Kong (2007).
+!> These are sine and cosine transform digital filters I made in Matlab using a 
+!> method similar to Guptasarma and Singh (1997) and Kong (2007).
 !
-! Kerry Key
-! Scripps Institution of Oceanography
-! kkey@ucsd.edu
+!> Kerry Key
+!> Scripps Institution of Oceanography
+!> kkey@ucsd.edu
 !
     implicit none
     save
-    real(8), dimension(81)  :: kk_ct_base_81,  kk_ct_cos_81,  kk_ct_sin_81
+    real(8), dimension(81) :: kk_ct_base_81,  kk_ct_cos_81,  kk_ct_sin_81
     real(8), dimension(241) :: kk_ct_base_241, kk_ct_cos_241, kk_ct_sin_241
     real(8), dimension(601) :: kk_ct_base_601, kk_ct_cos_601, kk_ct_sin_601   
     
     contains 
 !
-! Subroutine to initialize the sine and cosine transform filters
+!> Subroutine to initialize the sine and cosine transform filters
 !
     subroutine init_SinCosFilters
     

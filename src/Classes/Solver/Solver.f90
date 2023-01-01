@@ -1,44 +1,47 @@
+!
+!> Abstract Base class to define a Solver
+!
 module Solver
     !
     use Constants
     use PreConditioner
     !
-    ! Solver parameters
+    !> Solver parameters
     integer :: QMR_iters, BCG_iters, max_divcor, max_divcor_iters
     !
     real( kind=prec ) :: tolerance_divcor, tolerance_qmr
     !
     character(:), allocatable :: solver_type
-    character ( len=3 ), parameter :: QMR  = "QMR"
-    character ( len=3 ), parameter :: PCG  = "PCG"
-    character ( len=4 ), parameter :: BiCG = "BiCG"
+    character( len=3 ), parameter :: QMR  = "QMR"
+    character( len=3 ), parameter :: PCG  = "PCG"
+    character( len=4 ), parameter :: BiCG = "BiCG"
     !
-    ! Solver Base Type
+    !> Solver Base Type
     type, abstract :: Solver_t
         !
-        integer                        :: max_iter, n_iter
-        real( kind=prec )              :: omega, tolerance
-        real( kind=prec ), allocatable :: relErr(:) ! relative error at each iteration
+        integer :: max_iter, n_iter
+        real( kind=prec ) :: omega, tolerance
+        real( kind=prec ), allocatable :: relErr(:) !> relative error at each iteration
         !
         logical :: failed, converged
-        !
         !
         class( PreConditioner_t ), allocatable :: preconditioner
         !
         contains
-           !
-           procedure( interface_set_solver_defaults), deferred, public :: setDefaults
-           !
-           procedure, public :: init    => initializeSolver
-           procedure, public :: dealloc => deallocateSolver
-           !
-           procedure, public :: setParameters => setParametersSolver
-           procedure, public :: zeroDiagnostics => zeroDiagnosticsSolver
-           !
+            !
+            procedure( interface_set_solver_defaults ), deferred, public :: setDefaults
+            !
+            procedure, public :: init    => initializeSolver
+            procedure, public :: dealloc => deallocateSolver
+            !
+            procedure, public :: setParameters => setParametersSolver
+            procedure, public :: zeroDiagnostics => zeroDiagnosticsSolver
+            !
     end type Solver_t
     !
     abstract interface
         !
+        !> No interface subroutine briefing
         subroutine interface_set_solver_defaults(self)
            import :: Solver_t
            class( Solver_t ), intent( inout ) :: self
@@ -48,25 +51,25 @@ module Solver
     !
 contains
     !
+    !> No subroutine briefing
     subroutine setParametersSolver( self, max_iter, tolerance )
         implicit none
         !
         class( Solver_t ), intent( inout ) :: self
-        integer, intent( in )              :: max_iter
-        real( kind=prec ), intent( in )    :: tolerance
+        integer, intent( in ) :: max_iter
+        real( kind=prec ), intent( in ) :: tolerance
         !
         self%max_iter = max_iter
         !
         allocate( self%relErr( max_iter ) )
         !
-        self%relErr = 0.0
+        self%relErr = R_ZERO
         !
         self%tolerance = tolerance
         !
     end subroutine setParametersSolver
     !
-    !********
-    !
+    !> No subroutine briefing
     subroutine zeroDiagnosticsSolver( self )
         implicit none
         !
@@ -77,6 +80,7 @@ contains
         !
     end subroutine zeroDiagnosticsSolver 
     !
+    !> No subroutine briefing
     subroutine initializeSolver( self )
         implicit none
         !
@@ -92,14 +96,15 @@ contains
         !
     end subroutine initializeSolver
     !
+    !> No subroutine briefing
     subroutine deallocateSolver( self )
         implicit none
         !
         class( Solver_t ), intent( inout ) :: self
         !
-        deallocate( self%preconditioner )
+        if( allocated( self%preconditioner ) ) deallocate( self%preconditioner )
         !
-        deallocate( self%relErr )
+        if( allocated( self%relErr ) ) deallocate( self%relErr )
         !
     end subroutine deallocateSolver
     !

@@ -1,10 +1,10 @@
 !------------------------------------------------------------------
-! FD EM subroutine checkfileexist
+!> FD EM subroutine checkfileexist
 !
-! Purpose:    check file exstence and call crash routine if file does not exist
-!             display a warning if an optional file does not exist
+!> Purpose:    check file exstence and call crash routine if file does not exist
+!>             display a warning if an optional file does not exist
 !
-! Rita Streich 2009
+!> Rita Streich 2009
 !------------------------------------------------------------------
 subroutine checkfileexist(filename,required,lexist)
 
@@ -12,22 +12,22 @@ subroutine checkfileexist(filename,required,lexist)
 
   !external variable
   character(len=namlen),intent(inout) :: filename
-  logical,intent(in)                  :: required  !is file definitely needed (true) or optional (false)?
-  logical,intent(out)                 :: lexist    !return info if file exists
+  logical,intent( in ) :: required  !is file definitely needed (true) or optional (false)?
+  logical,intent( out ) :: lexist    !return info if file exists
 
-  lexist = .false.
+  lexist = .FALSE.
 
-  if (required) then
+  if(required) then
     !hard check, crash if file is not present
     inquire(file=trim(adjustl(filename)), exist=lexist)
-    if (.not. lexist) call exist_error(pid,trim(adjustl(filename)))
+    if(.NOT. lexist) call exist_error(pid,trim(adjustl(filename)))
   else
     !soft check, only if filename was not set to 'none'
-    if (trim(adjustl(filename)).ne.'none') then
+    if(trim(adjustl(filename)).NE.'none') then
       inquire(file=trim(adjustl(filename)), exist=lexist)
       !set filename to none if file is not present
-      if (.not.lexist) then
-        if (pid .eq. 0) then
+      if(.NOT.lexist) then
+        if(pid .EQ. 0) then
           write(*,fmt='(a26,a)') 'WARNING: cannot find file ',trim(adjustl(filename))
           write(*,fmt='(a)')     'File will not be used.'
         endif
@@ -39,21 +39,21 @@ subroutine checkfileexist(filename,required,lexist)
 endsubroutine checkfileexist
 
 !------------------------------------------------------------------
-! INV3D subroutine deletefile
+!> INV3D subroutine deletefile
 !
-! Purpose: deletes a file
+!> Purpose: deletes a file
 !
-! Alexander Grayver 2011
+!> Alexander Grayver 2011
 !------------------------------------------------------------------
 subroutine deletefile(fname)
 
   implicit none
 
   !external variables
-  character(len=*)      :: fname  !file name
+  character(len=*) :: fname  !file name
 
   !internal variables
-  integer(kind=int32)   :: ierr   !error index
+  integer(kind=int32) :: ierr   !error index
   
 #ifdef USE_MPI
   call MPI_FILE_DELETE(fname, MPI_INFO_NULL,ierr)
@@ -63,22 +63,22 @@ subroutine deletefile(fname)
 endsubroutine deletefile
 
 !**********************************************************************
-!  EM subroutine getfilesize
+!>  EM subroutine getfilesize
 !
-!  Purpose:  get size of a file
+!>  Purpose:  get size of a file
 !
-!  Rita Streich 2009
-!  Alexander Grayver 2011
+!>  Rita Streich 2009
+!>  Alexander Grayver 2011
 !**********************************************************************
 integer(kind=int64) function getfilesize(fname)
 
   implicit none
 
   !external variable
-  character(len=*),intent(in)  :: fname  !file name
+  character(len=*),intent( in ) :: fname  !file name
   
   !internal variables
-  integer(kind=int64)          :: fsize
+  integer(kind=int64) :: fsize
 
   fsize = 0
   inquire(FILE=adjustl(fname),SIZE=fsize)

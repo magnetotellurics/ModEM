@@ -1,27 +1,26 @@
-!**
-! This is for preconditioning the divergence correction equations
-!*
+!
+!> Derived class to define a PreConditioner_MF_DC
+!>
+!> This is for preconditioning the divergence correction equations
+!
 module PreConditioner_MF_DC
     !
     use Constants
-    use Grid
     use cScalar3D_SG
     use ModelOperator_MF
     use PreConditioner
     !
     type, extends( PreConditioner_t ) :: PreConditioner_MF_DC_t
-         !
-         type( cScalar3D_SG_t ), allocatable :: d
-         !
-         contains
-             !
-             final :: PreConditioner_MF_DC_dtor
-             !
-             procedure, public :: setPreConditioner => setPreConditioner_MF_DC
-             procedure, public :: LTSolve => LTSolvePreConditioner_MF_DC
-             procedure, public :: UTSolve => UTSolvePreConditioner_MF_DC
-             procedure, public :: LUSolve => LUSolvePreConditioner_MF_DC
-             
+        !
+        type( cScalar3D_SG_t ) :: d
+        !
+        contains
+            !
+            procedure, public :: setPreConditioner => setPreConditioner_MF_DC
+            procedure, public :: LTSolve => LTSolvePreConditioner_MF_DC
+            procedure, public :: UTSolve => UTSolvePreConditioner_MF_DC
+            procedure, public :: LUSolve => LUSolvePreConditioner_MF_DC
+            !
     end type PreConditioner_MF_DC_t
     !
     interface PreConditioner_MF_DC_t
@@ -29,74 +28,53 @@ module PreConditioner_MF_DC
     end interface PreConditioner_MF_DC_t
     !
 contains
-    !**
-    ! Class constructor
-    !*
+    !
+    !> No function briefing
     function PreConditioner_MF_DC_ctor( model_operator ) result( self ) 
         implicit none
         !
         class( ModelOperator_t ), target, intent( in ) :: model_operator
         type( PreConditioner_MF_DC_t ) :: self
         !
-        !write(*,*) "Constructor PreConditioner_MF_DC_t"
+        !write( *, * ) "Constructor PreConditioner_MF_DC_t"
         !
-        self%omega = 0.0
+        self%omega = R_ZERO
         !
         self%model_operator => model_operator
         !
-        select type( grid => model_operator%metric%grid )
-            class is( Grid3D_SG_t )
-                !
-                allocate( self%d, source = cScalar3D_SG_t( grid, NODE ) )
-                !
-                call self%d%zeros()
-                !
-            class default
-                stop "Error: PreConditioner_MF_DC_ctor > unknown grid type"
-        end select
+        self%d = cScalar3D_SG_t( self%model_operator%metric%grid, NODE )
+        !
+        call self%d%zeros()
         !
     end function PreConditioner_MF_DC_ctor
-	!
-    subroutine PreConditioner_MF_DC_dtor( self )
-        implicit none
-        !
-        type( PreConditioner_MF_DC_t ), intent( inout ) :: self
-        !
-        !write(*,*) "Destructor PreConditioner_MF_DC_t:", self%id
-        !
-        deallocate( self%d )
-        !
-    end subroutine PreConditioner_MF_DC_dtor
     !
-    !**
-    ! SetPreConditioner -- could be an abstract routine, but in the CC case
-    !        we pass omega as a parameter, and that is not relevant here -- but since
-    !     omega is a property of that class could set, and not pass into this procedure explicitly
-    !*
+    !> SetPreConditioner -- could be an abstract routine, but in the CC case
+    !>        we pass omega as a parameter, and that is not relevant here -- but since
+    !>     omega is a property of that class could set, and not pass into this procedure explicitly
     subroutine setPreConditioner_MF_DC( self, omega )
         implicit none
         !
         class( PreConditioner_MF_DC_t ), intent( inout ) :: self
-        real( kind=prec ), intent( in )                  :: omega
+        real( kind=prec ), intent( in ) :: omega
         !
         integer :: ix,iy,iz
         !
         self%omega = omega
         !
-        ! Compute inverse diagonal elements for D-ILU (interior nodes only)
-        ! set top nodes to 1.0
+        !> Compute inverse diagonal elements for D-ILU (interior nodes only)
+        !> set top nodes to 1.0
         self%d%v(1,:,:) = 1.0
         self%d%v(:,1,:) = 1.0
         self%d%v(:,:,1) = 1.0
         !
-        ! Instantiate the ModelOperator object
+        !> Instantiate the ModelOperator object
         select type( model_operator => self%model_operator )
             !
             class is( ModelOperator_MF_t )
                 !
-                do iz = 2, model_operator%nz
-                    do iy = 2, model_operator%ny
-                        do ix = 2, model_operator%nx
+                do iz = 2, model_operator%metric%grid%nz
+                    do iy = 2, model_operator%metric%grid%ny
+                        do ix = 2, model_operator%metric%grid%nx
                             self%d%v(ix, iy, iz) = model_operator%c%v(ix, iy, iz) - &
                             model_operator%db1%x(ix,iy,iz)*model_operator%db2%x(ix-1,iy,iz) * &
                             self%d%v(ix-1,iy,iz)- &
@@ -105,9 +83,9 @@ contains
                             model_operator%db1%z(ix,iy,iz)*model_operator%db2%z(ix,iy,iz-1) * &
                             self%d%v(ix,iy,iz-1)
                             self%d%v(ix, iy, iz) = 1.0/ self%d%v(ix, iy, iz)
-                        end do
-                    end do
-                end do
+                        enddo
+                    enddo
+                enddo
                 !
             class default
                 stop "setPreConditioner_MF_DC: Unclassified ModelOperator"
@@ -115,67 +93,68 @@ contains
         end select
         !
     end subroutine setPreConditioner_MF_DC
-    !**
-    ! LTsolve and UTsolve are in abstract class and must be defined -- but not used for DC which
-    !        this object will be used -- so just dummies here
-    !*
-    subroutine LTSolvePreConditioner_MF_DC(self, inE, outE, adjt)
+    !
+    !> LTsolve and UTsolve are in abstract class and must be defined -- but not used for DC which
+    !>        this object will be used -- so just dummies here
+    subroutine LTSolvePreConditioner_MF_DC(self, inE, outE, adjoint)
         implicit none
         !
         class( PreConditioner_MF_DC_t ), intent( inout ) :: self
-        class( Vector_t ), intent( in )                  :: inE
-        class( Vector_t ), intent( inout )               :: outE
-        logical, intent( in )                            :: adjt
+        class( Vector_t ), intent( in ) :: inE
+        class( Vector_t ), intent( inout ) :: outE
+        logical, intent( in ) :: adjoint
         
         stop "Error: LTsolve not coded for this pre-conditioner class"
         !
     end subroutine LTSolvePreConditioner_MF_DC
- !* 
-    subroutine UTSolvePreConditioner_MF_DC( self, inE, outE, adjt )
+    !
+    !> No subroutine briefing
+    subroutine UTSolvePreConditioner_MF_DC( self, inE, outE, adjoint )
         implicit none
         !
         class( PreConditioner_MF_DC_t ), intent( inout ) :: self
-        class( Vector_t ), intent( in )                 :: inE
-        class( Vector_t ), intent( inout )              :: outE
-        logical, intent( in )                            :: adjt
+        class( Vector_t ), intent( in ) :: inE
+        class( Vector_t ), intent( inout ) :: outE
+        logical, intent( in ) :: adjoint
         
         stop "Error: UTsolve not coded for this preconditioner class"
         !
     end subroutine UTSolvePreConditioner_MF_DC
-    !**
-    ! apply pre-conditioner, LU solve
-    !*
+    !
+    !> Procedure LUSolvePreConditioner_MF_DC
+    !> apply pre-conditioner, LU solve
+    !
+    !> No subroutine briefing
     subroutine LUSolvePreConditioner_MF_DC( self, inPhi, outphi )
         implicit none
         !
         class( PreConditioner_MF_DC_t ), intent( inout ) :: self
-        class( Scalar_t ), intent( in )                 :: inPhi
-        class( Scalar_t ), intent( inout )              :: outPhi
+        class( Scalar_t ), intent( in ) :: inPhi
+        class( Scalar_t ), intent( inout ) :: outPhi
         !
         integer :: ix, iy, iz
         !
-        !
         select type( inPhi )
             !
-            class is(cScalar3D_SG_t)
+            class is( cScalar3D_SG_t )
                 !
                 select type(outPhi)
                     !
-                    class is(cScalar3D_SG_t)
+                    class is( cScalar3D_SG_t )
                         !
-                        if ( .NOT. outPhi%is_allocated ) then
+                        if( .NOT. outPhi%is_allocated ) then
                             stop "outPhi in LUsolve not allocated yet"
-                        end if
+                        endif
                         !
                         call outPhi%zeros()
                         !
-                        ! Instantiate the ModelOperator object
+                        !> Instantiate the ModelOperator object
                         select type( model_operator => self%model_operator )
                             !
                             class is( ModelOperator_MF_t )
                                 !
-                                ! forward substitution (Solve lower triangular system)
-                                ! the coefficients are only for the interior nodes
+                                !> forward substitution (Solve lower triangular system)
+                                !> the coefficients are only for the interior nodes
                                 do iz = 2, inPhi%nz
                                     do iy = 2, inPhi%ny
                                         do ix = 2, inPhi%nx
@@ -186,12 +165,12 @@ contains
                                             *self%d%v(ix,iy-1,iz) &
                                             - outPhi%v(ix,iy,iz-1)*model_operator%db1%z(ix,iy,iz)&
                                             *self%d%v(ix,iy,iz-1)
-                                        end do
-                                    end do
-                                end do
-
-                                ! backward substitution (Solve upper triangular system)
-                                ! the coefficients are only for the interior nodes
+                                        enddo
+                                    enddo
+                                enddo
+                                !
+                                !> backward substitution (Solve upper triangular system)
+                                !> the coefficients are only for the interior nodes
                                 do iz = inPhi%nz,2,-1
                                     do iy = inPhi%ny,2,-1
                                         do ix = inPhi%nx,2,-1
@@ -200,9 +179,9 @@ contains
                                             - outPhi%v(ix, iy+1, iz)*model_operator%db2%y(ix, iy, iz)    &
                                             - outPhi%v(ix, iy, iz+1)*model_operator%db2%z(ix, iy, iz)) &
                                             *self%d%v(ix, iy, iz)
-                                        end do
-                                    end do
-                                end do
+                                        enddo
+                                    enddo
+                                enddo
                                 !
                             class default
                                 stop "LUSolvePreConditioner_MF_DC: Unclassified ModelOperator"
@@ -221,4 +200,3 @@ contains
     end subroutine LUSolvePreConditioner_MF_DC
     !
 end module PreConditioner_MF_DC
-

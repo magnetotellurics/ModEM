@@ -1,9 +1,11 @@
-!**
-! Properties declared in abstract class will be: ModOp, omega (in all
-! cases I can now think of, preconditioner depends on the full operator,
-! which depends on omega);    setPreconditioner(self,omega) should be a procedure
-! in the abstract class, since we will assume that this is always defined.
-!*
+!
+!> Abstract Base class to define a PreConditioner
+!>
+!> Properties declared in abstract class will be: ModOp, omega (in all
+!> cases I can now think of, preconditioner depends on the full operator,
+!> which depends on omega);    setPreconditioner(self,omega) should be a procedure
+!> in the abstract class, since we will assume that this is always defined.
+!
 module PreConditioner
     !
     use Vector
@@ -18,48 +20,52 @@ module PreConditioner
         !
         contains
             !
-            procedure( iface_set_preconditioner ), deferred, public :: setPreconditioner
+            procedure( interface_set_preconditioner ), deferred, public :: setPreconditioner
             !
-            procedure( iface_ltsolve_preconditioner ), deferred, public :: LTsolve
-            procedure( iface_utsolve_preconditioner ), deferred, public :: UTsolve
-            procedure( iface_lusolve_preconditioner ), deferred, public :: LUsolve
+            procedure( interface_ltsolve_preconditioner ), deferred, public :: LTsolve
+            procedure( interface_utsolve_preconditioner ), deferred, public :: UTsolve
+            procedure( interface_lusolve_preconditioner ), deferred, public :: LUsolve
             !
     end type PreConditioner_t
     !
     abstract interface
         !
-        subroutine iface_set_preconditioner( self, omega )
+        !> No interface subroutine briefing
+        subroutine interface_set_preconditioner( self, omega )
             import :: PreConditioner_t, prec
             !
             class( PreConditioner_t ), intent( inout ) :: self
-            real( kind=prec ), intent( in )            :: omega
-        end subroutine iface_set_preconditioner
+            real( kind=prec ), intent( in ) :: omega
+        end subroutine interface_set_preconditioner
         !
-        subroutine iface_ltsolve_preconditioner( self, inE, outE, adjt )
+        !> No interface subroutine briefing
+        subroutine interface_ltsolve_preconditioner( self, inE, outE, adjoint )
             import :: PreConditioner_t, Vector_t
             !
             class( PreConditioner_t ), intent( inout ) :: self
-            class( Vector_t ), intent( in )           :: inE
-            class( Vector_t ), intent( inout )        :: outE
-            logical, intent( in )                      :: adjt
-        end subroutine iface_ltsolve_preconditioner
+            class( Vector_t ), intent( in ) :: inE
+            class( Vector_t ), intent( inout ) :: outE
+            logical, intent( in ) :: adjoint
+        end subroutine interface_ltsolve_preconditioner
         !
-        subroutine iface_utsolve_preconditioner( self, inE, outE, adjt )
+        !> No interface subroutine briefing
+        subroutine interface_utsolve_preconditioner( self, inE, outE, adjoint )
             import :: PreConditioner_t, Vector_t
             !
             class( PreConditioner_t ), intent( inout ) :: self
-            class( Vector_t ), intent( in )           :: inE
-            class( Vector_t ), intent( inout )        :: outE
-            logical, intent( in )                      :: adjt
-        end subroutine iface_utsolve_preconditioner
+            class( Vector_t ), intent( in ) :: inE
+            class( Vector_t ), intent( inout ) :: outE
+            logical, intent( in ) :: adjoint
+        end subroutine interface_utsolve_preconditioner
         !
-        subroutine iface_lusolve_preconditioner( self, inPhi, outPhi )
+        !> No interface subroutine briefing
+        subroutine interface_lusolve_preconditioner( self, inPhi, outPhi )
             import :: PreConditioner_t, Scalar_t
             !
             class( PreConditioner_t ), intent( inout ) :: self
-            class( Scalar_t ), intent( in )           :: inPhi
-            class( Scalar_t ), intent( inout )        :: outPhi
-        end subroutine iface_lusolve_preconditioner
+            class( Scalar_t ), intent( in ) :: inPhi
+            class( Scalar_t ), intent( inout ) :: outPhi
+        end subroutine interface_lusolve_preconditioner
         !
     end interface
     !

@@ -1,10 +1,7 @@
-! *************
-! 
-! Basic model parameter class for 1D
-! cell conductivities defined on numerical grid
 !
-! *************
-! 
+!> Basic model parameter class for 1D
+!> cell conductivities defined on numerical grid
+!
 module ModelParameter1D
     !
     use Constants
@@ -39,18 +36,17 @@ module ModelParameter1D
     end interface ModelParameter1D_t
     !
 contains
-    !**
-    ! Class constructor
-    !*
+    !
+    !> No function briefing
     function ModelParameter1D_ctor( grid ) result( self )
         implicit none
         !
         type( Grid1D_t ), intent( in ) :: grid
-        type( ModelParameter1D_t )     :: self
+        type( ModelParameter1D_t ) :: self
         !
         integer :: nz, nzAir
         !
-        !write(*,*) "Constructor ModelParameter1D_t"
+        !write( *, * ) "Constructor ModelParameter1D_t"
         !
         self%paramType    = ""
         self%airCond      = 1E-10
@@ -73,18 +69,21 @@ contains
         !
     end function ModelParameter1D_ctor
     !
-    ! ModelParameter1D_t destructor
+    !> Deconstructor routine:
+    !>     Calls the base routine dealloc().
+    !>     Deallocates inherent properties of this class.
     subroutine ModelParameter1D_dtor( self )
         implicit none
         !
         type( ModelParameter1D_t ), intent( inout ) :: self
         !
-        !write(*,*) "Destructor ModelParameter1D_t"
+        !write( *, * ) "Destructor ModelParameter1D_t"
         !
         deallocate( self%cellCond )
         !
     end subroutine ModelParameter1D_dtor
     !
+    !> No subroutine briefing
     subroutine zerosModelParameter1D(self)
         implicit none
         !
@@ -95,13 +94,12 @@ contains
         !
     end subroutine zerosModelParameter1D
     !
-    !**************
-    !
+    !> No subroutine briefing
     subroutine setLayeredModelModelParameter1D( self, nLayers, h, sigma )
         implicit none
         !
-        class( ModelParameter1D_t ), intent( inout )         :: self
-        integer, intent( in )                                :: nLayers
+        class( ModelParameter1D_t ), intent( inout ) :: self
+        integer, intent( in ) :: nLayers
         real( kind=prec ),intent( in ), dimension( nLayers ) :: h
         real( kind=prec ),intent( in ), dimension( nLayers ) :: sigma
         !
@@ -114,20 +112,19 @@ contains
         !
     end subroutine setLayeredModelModelParameter1D
     !
-    !*********
-    !
+    !> No subroutine briefing
     subroutine setConductivityModelParameter1D( self, CellCond, AirCond, paramType, mKey )
         implicit none
         !
         class( ModelParameter1D_t ), intent( inout ) :: self
         real( kind=prec ),intent( in ), dimension(:) :: CellCond
-        real( kind=prec ), intent( in )              :: AirCond
-        character(:), allocatable, intent( in )      :: paramType
-        integer, intent( in )                        :: mKey(8)
+        real( kind=prec ), intent( in ) :: AirCond
+        character(:), allocatable, intent( in ) :: paramType
+        integer, intent( in ) :: mKey(8)
         !
         integer :: nz
         !
-        if ( .NOT. self%is_allocated) then
+        if( .NOT. self%is_allocated) then
             write( *, * ) "ERROR: ModelParameter1D (SetConductivity)"
             stop "     input object not allocated"
         endif

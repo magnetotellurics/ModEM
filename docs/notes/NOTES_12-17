@@ -23,3 +23,15 @@ NOT TESTED (but it finally compiles!)
 Made new test program test_Amult   -- but cannot get it to compile.
 I try to create cVector3D_SG_t objects x and y, but get very strange error messages,
 that I cannot understand.
+
+GARY ANSWER QUESTION
+Solver_PCG: AMult and LUsolve routines
+
+    What is the intention of the interfaces for LUSolve and AMult in the Solver_PCG object?
+
+    Who is expected to access these routines?
+
+Looks like this is something that Williams might have removed/omitted, and that you copied this from my FWD_OO Solver_PCG.
+Here is what I was looking for, but as the comments indicate, I am not sure how/if this works!
+PCG_Solve is supposed to be a relatively generic Pre-conditioned conjugate gradients (PCG) solver, which will solve the system Ax = b with PCG, using LUSolve as a preconditioner.   In my implementation, which Williams did not follow (and changed in his version of Solver_PCG) MultA is to refer to the implementation of Ax, as a function, with interface as given.   This could be implemented anywhere, but we need to point to the specific implementation when the Solver_PCG instance is created.   In the current usage this function is implemented in the ModOp object -- in our case it is procedure divCgrad.   Note that it is NOT procedure Amult!    Note also that Solver_PCG only needs AMult=>ModOp%divCgrad , and nothing else in ModOp (so no pointer to the model operator!).  BUT see my "big question" in the comment -- Amult DOES need the ModelOperator object to do the computation Ax!   But we don't have to directly refer to any ModelOperator components (other than divcgrad) inside of solver_PCG.  LUsolve is exactly the same but now LUsolve => precond%Minv, where precondition is the Preconditioner object.   In my sketch of what I wanted, the interface for AMult and LUsolve use abstract ModelOperator and Preconditioner objects, which would be ideal, if possible.
+Note that exactly the same situation occurs in Solver_QMR -- I wanted to make QMR also point to three functions, which might be defined anywhere, and use AMult => modOp%MultA, LTsolve=>precond%LTsolve, UTsolve=>precondition%UTsolve; Williams made this more explicit (which works along as things don't get much more general, but seems less elegant to me).  If necessary you can adopt the same sort of easy fix to Solver_PCG.

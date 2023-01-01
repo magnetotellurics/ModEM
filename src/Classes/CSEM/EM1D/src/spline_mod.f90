@@ -1,9 +1,9 @@
 !****************************************************************
 !
-!  Module containing routines for cubic spline interpolation:
-!    f90 versions of numerical recipes routines
+!>  Module containing routines for cubic spline interpolation:
+!>    f90 versions of numerical recipes routines
 !
-!  Rita Streich 2009
+!>  Rita Streich 2009
 !
 !**************************************************************
 module spline_mod
@@ -15,7 +15,7 @@ module spline_mod
 
   private
 
-  ! Public subroutines
+  !> Public subroutines
   public :: spline, &
             splint
 

@@ -1,27 +1,26 @@
-!**
-! Stripped down grid for 1D -- most of what was in the base 3D grid is not needed
+!
+!> Stripped down grid for 1D -- most of what was in the base 3D grid is not needed
 !
 module Grid1D
     !
     use Constants
     !
     type :: Grid1D_t
-        !**
-        ! Grid Dimensions:
-        integer :: nz, nzAir, nzEarth        ! Number of earth layers
         !
-        !    Grid variables
+        !> Grid Dimensions:
+        integer :: nz, nzAir, nzEarth        !> Number of earth layers
+        !
+        !>    Grid variables
         real( kind=prec ), allocatable, dimension(:) :: dz
         real( kind=prec ), allocatable, dimension(:) :: dzInv
         real( kind=prec ), allocatable, dimension(:) :: delZ
         real( kind=prec ), allocatable, dimension(:) :: delZInv
         !
-        ! Book-keeping on cumulative distances
+        !> Book-keeping on cumulative distances
         real( kind=prec ), allocatable, dimension(:) :: zEdge
         real( kind=prec ), allocatable, dimension(:) :: zCenter
-        !**
-        ! Total thickness of the air above
-        !*
+        !
+        !> Total thickness of the air above
         real( kind=prec ) :: zAirThick
         !
         logical :: is_allocated
@@ -44,11 +43,10 @@ module Grid1D
     end interface Grid1D_t
     
 contains
-    !**
-    ! Class constructor for simple 1D FD grid
-    ! Dz is cell dimensions for z direction
-    ! Nza is number of air layers to allow (included in Dz)
-    !*
+    !
+    !> Class constructor for simple 1D FD grid
+    !> Dz is cell dimensions for z direction
+    !> Nza is number of air layers to allow (included in Dz)
     function Grid1D_ctor( nzAir, nzEarth, dz ) result( self )
         !
         integer, intent( in ) :: nzAir, nzEarth
@@ -56,12 +54,12 @@ contains
         !
         type( Grid1D_t ) :: self
         !
-        !write(*,*) "Constructor Grid1D"
+        !write( *, * ) "Constructor Grid1D"
         !
         self%nzAir = nzAir
         self%nzEarth = nzEarth
         !
-        self%zAirThick = 0.0
+        self%zAirThick = R_ZERO
         !
         self%is_allocated = .FALSE.
         !
@@ -72,17 +70,20 @@ contains
         !
     end function Grid1D_ctor
     !
+    !> Deconstructor routine:
+    !>     Calls the base routine dealloc().
     subroutine Grid1D_dtor( self )
         implicit none
         !
         type( Grid1D_t ), intent( inout ) :: self
         !
-        !write(*,*) "Destructor Grid1D"
+        !write( *, * ) "Destructor Grid1D"
         !
         call self%dealloc()
         !
     end subroutine Grid1D_dtor
     !
+    !> No subroutine briefing
     subroutine AllocateGrid1D( self )
         implicit none
         !
@@ -92,32 +93,33 @@ contains
         !
         allocate( self%dz( self%nz ) )
         !
-        self%dz = 0.0
+        self%dz = R_ZERO
         !
         allocate( self%dzInv( self%nz ) )
         !
-        self%dzInv = 0.0
+        self%dzInv = R_ZERO
         !
         allocate( self%delZ( self%nz + 1 ) )
         !
-        self%delZ = 0.0
+        self%delZ = R_ZERO
         !
         allocate( self%delZInv( self%nz + 1 ) )
         !
-        self%delZInv = 0.0
+        self%delZInv = R_ZERO
         !
         allocate( self%zEdge( self%nz + 1 ) )
         !
-        self%zEdge = 0.0
+        self%zEdge = R_ZERO
         !
         allocate( self%zCenter( self%nz ) )
         !
-        self%zCenter = 0.0
+        self%zCenter = R_ZERO
         !
         self%is_allocated = .TRUE.
         !
     end subroutine AllocateGrid1D
-
+    !
+    !> No subroutine briefing
     subroutine deallocateGrid1D( self )
         implicit none
         !
@@ -139,11 +141,9 @@ contains
         !
     end subroutine deallocateGrid1D
     !
-    !**
-    ! Setup does calculations for grid geometry, which cannot be done
-    ! until dz is set
-    !
-    !*
+    !> Procedure setupGrid1D
+    !> Setup does calculations for grid geometry, which cannot be done
+    !> until dz is set
     subroutine setupGrid1D( self )
         implicit none
         !
@@ -154,41 +154,42 @@ contains
         !
         self%dzInv = 1/self%dz
         !
-        zCum = 0.0
+        zCum = R_ZERO
         do iz = 1, self%nz
             zCum = zCum + self%dz(iz)
             self%zEdge(iz + 1) = zCum
-        end do
+        enddo
         !
         nzAir = self%nzAir
         self%zAirThick = self%zEdge(nzAir + 1)
         !
-        ! Distance between center of the selfs
+        !> Distance between center of the selfs
         self%delZ(1) = self%dz(1)
         do iz = 2, self%nz
             self%delZ(iz) = self%dz(iz - 1) + self%dz(iz)
-        end do
+        enddo
         self%delZ(self%nz + 1) = self%dz(self%nz)
         self%delZ = self%delZ/2.0
         !
         self%delZInv = 1/self%delZ
         !
-        ! Cumulative distance between the centers, adjusted to model origin
-        zCum = 0.0
+        !> Cumulative distance between the centers, adjusted to model origin
+        zCum = R_ZERO
         do iz = 1, self%nz
             zCum = zCum + self%delZ(iz)
             self%zCenter(iz) = zCum
-        end do
+        enddo
         !
         do iz = 1, self%nz
             self%zCenter(iz) = self%zCenter(iz) - self%zAirThick
             self%zEdge(iz) = self%zEdge(iz) - self%zAirThick
-        end do
+        enddo
         !
         self%zEdge(self%nz + 1) = self%zEdge(self%nz + 1) - self%zAirThick
         !
     end subroutine setupGrid1D
-
+    !
+    !> No subroutine briefing
     subroutine getDimensionsGrid1D( self, nz, nzAir )
         implicit none
         !
@@ -199,44 +200,46 @@ contains
         nzAir = self%nzAir
         !
     end subroutine getDimensionsGrid1D
-
+    !
+    !> No subroutine briefing
     subroutine setCellSizesGrid1D( self, dz )
         implicit none
         !
-        class( Grid1D_t ), intent( inout )            :: self
+        class( Grid1D_t ), intent( inout ) :: self
         real( kind=prec ), dimension(:), intent( in ) :: dz
         !
-        if ( .NOT. self%is_allocated ) then
+        if( .NOT. self%is_allocated ) then
             write( *, * ) "ERROR:Grid1D_t:SetCellSizes:"
             stop "    Grid not is_allocated."
-        end if
+        endif
         !
-        ! Check dimensions
-        if ( (size(dz).ne.size(self%dz))) then
+        !> Check dimensions
+        if( (size(dz).NE.size(self%dz))) then
             write( *, * ) "ERROR:Grid1D_t:SetCellSizes:"
             stop "    Incompatible sizes for cell arrays."
-        end if
+        endif
         !
         self%dz = dz
         !
     end subroutine setCellSizesGrid1D
-    
+    !
+    !> No subroutine briefing
     subroutine getCellSizesGrid1D( self, dz )
         implicit none
         !
         class( Grid1D_t ), intent( in ) :: self
-        real( kind=prec ) , intent(out) :: dz(:)
+        real( kind=prec ) , intent( out ) :: dz(:)
 
-        if ( .NOT. self%is_allocated ) then
+        if( .NOT. self%is_allocated ) then
             write( *, * ) "ERROR:Grid1D_t:SetCellSizes:"
             stop "    Grid not is_allocated."
-        end if
+        endif
 
-        ! Check dimensions
-        if ( ( size( dz ) .ne. size( self%dz ) ) ) then
+        !> Check dimensions
+        if( ( size( dz ) .NE. size( self%dz ) ) ) then
             write( *, * ) "ERROR:Grid1D_t:SetCellSizes:"
             stop "    Incompatible sizes for cell arrays."
-        end if
+        endif
         !
         dz = self%dz
         !

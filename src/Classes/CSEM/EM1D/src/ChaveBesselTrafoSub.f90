@@ -1,79 +1,79 @@
 !----------------------------------------------------------------------
-!  Performs automatic calculation of Bessel transform to specified
-!  relative and absolute error
+!>  Performs automatic calculation of Bessel transform to specified
+!>  relative and absolute error
 !
-!  Argument list:
+!>  Argument list:
 !
-!  BESR,BESI - real and imaginary parts returned by BESAUT
-!  ORDER - order of the BEssel function
-!  NL - lower limit for Gauss order to start computation
-!  NU - upper limit for Gauss order
-!     NU,NL01,...7 selects 3,7,15,31,63,127, and 255 point Gauss
-!     quadrature between the zero crossings of the Bessel function
-!  R - argument of the Bessel function
-!  FUNCT - external FUNCTION to evaluate kernel function at
-!          a given wavenumber
-!          The call is of the form
-!              Y = FUNCT(X)
-!              YR = real(Y); YI = aimag(Y)
-!          where X is supplied by BESQUD and YR and YI are the returned
-!          real and imaginary parts. All other arguments to FUNCT must be 
-!          passed in common blocks.
-!  RERR,AERR - relative and absolute error for termination
-!       BESAUT terminates when increasing the Gauss order does not
-!       change the result by more than RERR or when the absolute error
-!       is less than AERR or when a Gauss order of NU is reached.
-!  NPCS - number of pieces into which each partial integraiton is divided.
-!       Ordinarily set to one. For very small values of R where
-!       the kernel function is appreciable only over the first few
-!       loops of the Bessel function, NPCS may be increased to achieve
-!       reasonable accuracy.
-!  NEW - if NEW=1, the integrations are computed and saved at each Gauss
-!       order. If NEW=2, previously computed integrands are used. Note
-!       that ORDER, R, and NPCS must not be changed when setting NEW=2.
-!  IERR - error parameter
-!       IERR=0 -- normal return
-!       IERR=1 -- result not accurate to RERR due to too low a Gauss
-!       order or convergence not achoeved in BESTRN
+!>  BESR,BESI - real and imaginary parts returned by BESAUT
+!>  ORDER - order of the BEssel function
+!>  NL - lower limit for Gauss order to start computation
+!>  NU - upper limit for Gauss order
+!>     NU,NL01,...7 selects 3,7,15,31,63,127, and 255 point Gauss
+!>     quadrature between the zero crossings of the Bessel function
+!>  R - argument of the Bessel function
+!>  FUNCT - external FUNCTION to evaluate kernel function at
+!>          a given wavenumber
+!>          The call is of the form
+!>              Y = FUNCT(X)
+!>              YR = real(Y); YI = aimag(Y)
+!>          where X is supplied by BESQUD and YR and YI are the returned
+!>          real and imaginary parts. All other arguments to FUNCT must be 
+!>          passed in common blocks.
+!>  RERR,AERR - relative and absolute error for termination
+!>       BESAUT terminates when increasing the Gauss order does not
+!>       change the result by more than RERR or when the absolute error
+!>       is less than AERR or when a Gauss order of NU is reached.
+!>  NPCS - number of pieces into which each partial integraiton is divided.
+!>       Ordinarily set to one. For very small values of R where
+!>       the kernel function is appreciable only over the first few
+!>       loops of the Bessel function, NPCS may be increased to achieve
+!>       reasonable accuracy.
+!>  NEW - if NEW=1, the integrations are computed and saved at each Gauss
+!>       order. If NEW=2, previously computed integrands are used. Note
+!>       that ORDER, R, and NPCS must not be changed when setting NEW=2.
+!>  IERR - error parameter
+!>       IERR=0 -- normal return
+!>       IERR=1 -- result not accurate to RERR due to too low a Gauss
+!>       order or convergence not achoeved in BESTRN
 !
-!  Subroutines reqiured:
-!      BESTRN,BESQUD,JBESS,PADECF,CF,ZEROJ,DOT
+!>  Subroutines reqiured:
+!>      BESTRN,BESQUD,JBESS,PADECF,CF,ZEROJ,DOT
 !
-!  A. Chave IGRR/UCSD
+!>  A. Chave IGRR/UCSD
 !
-!  converted to F90: RIta Streich 2008
+!>  converted to F90: RIta Streich 2008
 !
 !-------------------------------------------------------------------------
 SUBROUTINE BESAUT(BESR,BESI,ORDER,NL,NU,R,FUNCT,RERR,AERR,NPCS,NEW,NSUM,XSUM,IERR)
 
   implicit none
 
-!  COMMOM /TEST/ contains run statistics
-!  NG=highest Gauss order used
-!  NF=total function evaluations for all calls to BESTRN
-!  NI=total number of partial integrands on last call
-!  to BESTRN only
+!>  COMMOM /TEST/ contains run statistics
+!>  NG=highest Gauss order used
+!>  NF=total function evaluations for all calls to BESTRN
+!>  NI=total number of partial integrands on last call
+!>  to BESTRN only
   COMMON /TEST/NG,NF,NI
-  integer(kind=int32)    :: NG,NF,NI
+  integer(kind=int32) :: NG,NF,NI
 
   !external variables
-  real(kind=real64)      :: BESR,BESI
-  real(kind=real64)      :: ORDER
-  integer(kind=int32)    :: NL,NU
-  real(kind=real64)      :: R
-  real(kind=real64)      :: RERR,AERR
-  integer(kind=int32)    :: NPCS
-  integer(kind=int32)    :: NEW
-  integer(kind=int32)    :: NSUM
+  real(kind=real64) :: BESR,BESI
+  real(kind=real64) :: ORDER
+  integer(kind=int32) :: NL,NU
+  real(kind=real64) :: R
+  real(kind=real64) :: RERR,AERR
+  integer(kind=int32) :: NPCS
+  integer(kind=int32) :: NEW
+  integer(kind=int32) :: NSUM
   real(kind=real64),dimension(NSUM) :: XSUM
-  integer(kind=int32)    :: IERR
+  integer(kind=int32) :: IERR
 
-  complex(kind=real64),external    :: FUNCT
+  complex(kind=real64),external :: FUNCT
 
   !internal variables
-  integer(kind=int32)              :: NW
-  real(kind=real64)                :: OLDR,OLDI
-  integer(kind=int32)              :: N
+  integer(kind=int32) :: NW
+  real(kind=real64) :: OLDR,OLDI
+  integer(kind=int32) :: N
 
 
      NF=0
@@ -117,117 +117,117 @@ endsubroutine BESAUT
 
 !----------------------------------------------------------------------
 !
-!  Computes Bessel transform of specified order defined as
-!  Integral(FUNCT(X)*J-SUB-ORDER(X*R)*DX) from X=0 to infinity
-!  Computation is achieved by integration between the asymptotic
-!  zero crossings of the Bessel function using Gauss quadrature.
-!  The resulting series of partial integrands is summed by calculating
-!  the Pade approximants to speed up convergence.
+!>  Computes Bessel transform of specified order defined as
+!>  Integral(FUNCT(X)*J-SUB-ORDER(X*R)*DX) from X=0 to infinity
+!>  Computation is achieved by integration between the asymptotic
+!>  zero crossings of the Bessel function using Gauss quadrature.
+!>  The resulting series of partial integrands is summed by calculating
+!>  the Pade approximants to speed up convergence.
 !
-!  Argument list:
+!>  Argument list:
 !
-!  BESR,BESI - real and imaginary parts returned by BESTRN
-!  ORDER - order of the Bessel function
-!  NG - number of Gauss points to use in the quadrature routine.
-!       NG=1 through 7 selects 3,7,15,31,63,127,and 255 terms.
-!  R - argument of the Bessel function
-!  FUNCT - external routine to evaluate kernel function at argument
-!      X. The call is of the form
-!         Y = FUNCT(X)
-!         YR = real(Y); YI = aimag(Y)
-!      where YR and YI are the returned real and imaginary parts
-!  RERR,AERR - specified relative and absolute error for the
-!      calculation. The integration
-!      terminates when an additional term does not change the
-!      result by more than RERR*RESULT+AERR
-!  NPCS - number of pieces into which each partial integrand is divided,
-!      ordinarily set to one. For very small values of range where
-!      the kernel function is appreciable only over the first few
-!      loops of the Bessel function, NPCS may be increased to achieve
-!      reasonable accuracy. Note that NPCS affects only the Pade
-!      sum portion of the integration, over X(NSUM) to infinity.
-!  XSUM - vector of values of the kernel argument of FUNCT for which
-!      explicit calculation of the integral is desired, so that the
-!      integral over 0 to XSUM(NSUM) is added to the integral over
-!      XSUM(NSUM) to Infinity with the Pade method invoked only for
-!      the latter. This allows the Pade summation method to be
-!      overridden and some types of singularities to be handled.
-!  NSUM - number of values in XSUM, may be zero.
-!  NEW - determines method of kernal calculation
-!      NEW=0 means calculate but do not save integrands
-!      NEW=1 means calculate kernel by calling FUNCT and save kernel
-!            times Bessel function
-!      NEW=2 means use saved kernels times Bessel functions in
-!            COMMON /BESINT/. Note tjat ORDER,R,NPCS,XSUM, and
-!            NSUM may not be changed when setting NEW=2.
-!  IERR - error parameter
-!      0 normal return, integral convergent
-!      1 means no convergence after NSTOP terms in the Pade sum
+!>  BESR,BESI - real and imaginary parts returned by BESTRN
+!>  ORDER - order of the Bessel function
+!>  NG - number of Gauss points to use in the quadrature routine.
+!>       NG=1 through 7 selects 3,7,15,31,63,127,and 255 terms.
+!>  R - argument of the Bessel function
+!>  FUNCT - external routine to evaluate kernel function at argument
+!>      X. The call is of the form
+!>         Y = FUNCT(X)
+!>         YR = real(Y); YI = aimag(Y)
+!>      where YR and YI are the returned real and imaginary parts
+!>  RERR,AERR - specified relative and absolute error for the
+!>      calculation. The integration
+!>      terminates when an additional term does not change the
+!>      result by more than RERR*RESULT+AERR
+!>  NPCS - number of pieces into which each partial integrand is divided,
+!>      ordinarily set to one. For very small values of range where
+!>      the kernel function is appreciable only over the first few
+!>      loops of the Bessel function, NPCS may be increased to achieve
+!>      reasonable accuracy. Note that NPCS affects only the Pade
+!>      sum portion of the integration, over X(NSUM) to infinity.
+!>  XSUM - vector of values of the kernel argument of FUNCT for which
+!>      explicit calculation of the integral is desired, so that the
+!>      integral over 0 to XSUM(NSUM) is added to the integral over
+!>      XSUM(NSUM) to Infinity with the Pade method invoked only for
+!>      the latter. This allows the Pade summation method to be
+!>      overridden and some types of singularities to be handled.
+!>  NSUM - number of values in XSUM, may be zero.
+!>  NEW - determines method of kernal calculation
+!>      NEW=0 means calculate but do not save integrands
+!>      NEW=1 means calculate kernel by calling FUNCT and save kernel
+!>            times Bessel function
+!>      NEW=2 means use saved kernels times Bessel functions in
+!>            COMMON /BESINT/. Note tjat ORDER,R,NPCS,XSUM, and
+!>            NSUM may not be changed when setting NEW=2.
+!>  IERR - error parameter
+!>      0 normal return, integral convergent
+!>      1 means no convergence after NSTOP terms in the Pade sum
 !
-!  Subroutines required:
-!    BESQUD,PADECF,CF,ZEROJ,DOT.JBESS
+!>  Subroutines required:
+!>    BESQUD,PADECF,CF,ZEROJ,DOT.JBESS
 !
-!  A. CHAVE IGPP/UCSD
+!>  A. CHAVE IGPP/UCSD
 !
-!  NTERM is maximum number of Bessel function loops stored if NEW.NE.0
-!  NSTOP is maximum number of Pade terms
+!>  NTERM is maximum number of Bessel function loops stored if NEW.NE.0
+!>  NSTOP is maximum number of Pade terms
 !
-!  Converted to F90: Rita Streich 2008
+!>  Converted to F90: Rita Streich 2008
 !
 !---------------------------------------------------------------------------
 SUBROUTINE BESTRN(BESR,BESI,ORDER,NG,R,FUNCT,RERR,AERR,NPCS,XSUM,NSUM,NEW,IERR)
 
   implicit none
 
-!  COMMON /TEST/ contains run statistics
-!  NGAUSS=highest Gauss order used
-!  NF=total function evaluations for all calls to BESTRN
-!  NI=total number of partial integrands used in PADECF on last call
-!     to BESTRN
+!>  COMMON /TEST/ contains run statistics
+!>  NGAUSS=highest Gauss order used
+!>  NF=total function evaluations for all calls to BESTRN
+!>  NI=total number of partial integrands used in PADECF on last call
+!>     to BESTRN
   COMMON /TEST/NGAUSS,NF,NI
-  integer(kind=int32)      :: NGAUSS,NF,NI
+  integer(kind=int32) :: NGAUSS,NF,NI
 
-!  IF NEW.gt.0, COMMON /BESINT/ contains the kernel function arguments
-!    and values KARG(I,N) and KERN(I,N) for N=1 to NPS and I=1 to
-!    2**NK(N)+1)-1.
-!  KERN(I,N),KERN(I+1,N) contain the real and imaginary parts of the
-!    kernel function for the corresponding argument value (I,N).
-!  Each value of N corresponds to one entry in XSUM or to one interval
-!    between zero crossings of the Bessel function divided by NPCS.
-!  Note that up to NTERM values are stored. THe integration proceeds
-!    for N.GT.NTERM as if NEW=0. NP is an index passed internally by
-!    BESTRN.
+!>  IF NEW.gt.0, COMMON /BESINT/ contains the kernel function arguments
+!>    and values KARG(I,N) and KERN(I,N) for N=1 to NPS and I=1 to
+!>    2**NK(N)+1)-1.
+!>  KERN(I,N),KERN(I+1,N) contain the real and imaginary parts of the
+!>    kernel function for the corresponding argument value (I,N).
+!>  Each value of N corresponds to one entry in XSUM or to one interval
+!>    between zero crossings of the Bessel function divided by NPCS.
+!>  Note that up to NTERM values are stored. THe integration proceeds
+!>    for N.GT.NTERM as if NEW=0. NP is an index passed internally by
+!>    BESTRN.
   COMMON /BESINT/NK,NP,NPS,KARG,KERN
 
   !external variables
-  real(kind=real64)        :: BESR,BESI
-  real(kind=real64)        :: ORDER
-  integer(kind=int32)      :: NG
-  real(kind=real64)        :: R
-  real(kind=real64)        :: RERR,AERR
-  integer(kind=int32)      :: NPCS
-  integer(kind=int32)      :: NSUM
-  real(kind=real64),dimension(NSUM)  :: XSUM
-  integer(kind=int32)      :: NEW
-  integer(kind=int32)      :: IERR
+  real(kind=real64) :: BESR,BESI
+  real(kind=real64) :: ORDER
+  integer(kind=int32) :: NG
+  real(kind=real64) :: R
+  real(kind=real64) :: RERR,AERR
+  integer(kind=int32) :: NPCS
+  integer(kind=int32) :: NSUM
+  real(kind=real64),dimension(NSUM) :: XSUM
+  integer(kind=int32) :: NEW
+  integer(kind=int32) :: IERR
 
-  complex(kind=real64),external      :: funct
+  complex(kind=real64),external :: funct
 
   !internal variables
-  integer(kind=int32),parameter      :: NTERM=nmaxsave, NSTOP=nmaxsum
-  integer(kind=int32),dimension(NTERM)    :: NK
-  integer(kind=int32)                     :: NP,NPS !NPS: Number of values Saved
-  real(kind=real64),dimension(255,NTERM)  :: KARG
-  real(kind=real64),dimension(510,NTERM)  :: KERN
-  real(kind=real64)                  :: LASTR,LASTI
+  integer(kind=int32),parameter :: NTERM=nmaxsave, NSTOP=nmaxsum
+  integer(kind=int32),dimension(NTERM) :: NK
+  integer(kind=int32) :: NP,NPS !NPS: Number of values Saved
+  real(kind=real64),dimension(255,NTERM) :: KARG
+  real(kind=real64),dimension(510,NTERM) :: KERN
+  real(kind=real64) :: LASTR,LASTI
   real(kind=real64),dimension(NSTOP) :: SR,SI
-  integer(kind=int32)                :: NPO  !Old Number of saved values
-  integer(kind=int32)                :: I,N
-  integer(kind=int32)                :: NW,NPB,L
-  real(kind=real64)                  :: A,B  !temp integration limits
-  real(kind=real64)                  :: XINC,AA,BB
-  real(kind=real64)                  :: SUMR,SUMI,XSUMR,XSUMI
-  real(kind=real64)                  :: TERMR,TERMI,TR,TI,LR,LI
+  integer(kind=int32) :: NPO  !Old Number of saved values
+  integer(kind=int32) :: I,N
+  integer(kind=int32) :: NW,NPB,L
+  real(kind=real64) :: A,B  !temp integration limits
+  real(kind=real64) :: XINC,AA,BB
+  real(kind=real64) :: SUMR,SUMI,XSUMR,XSUMI
+  real(kind=real64) :: TERMR,TERMI,TR,TI,LR,LI
 
 
      IF (NEW.EQ.2) THEN
@@ -239,7 +239,7 @@ SUBROUTINE BESTRN(BESR,BESI,ORDER,NG,R,FUNCT,RERR,AERR,NPCS,XSUM,NSUM,NEW,IERR)
        NPS=0
        NPO=NTERM
      ENDIF
-!  Check for trivial case
+!>  Check for trivial case
      IF ((ORDER.NE.0.0).AND.(R.EQ.0.)) THEN
        BESR=0.
        BESI=0.
@@ -258,7 +258,7 @@ SUBROUTINE BESTRN(BESR,BESI,ORDER,NG,R,FUNCT,RERR,AERR,NPCS,XSUM,NSUM,NEW,IERR)
      XSUMI=0.0
 
      IF (NSUM.GT.0) THEN
-!  compute Bessel transform explicitly on (0,XSUM(NSUM))
+!>  compute Bessel transform explicitly on (0,XSUM(NSUM))
        LASTR=0.0
        LASTI=0.0
        DO 10 N=1,NSUM
@@ -284,22 +284,22 @@ SUBROUTINE BESTRN(BESR,BESI,ORDER,NG,R,FUNCT,RERR,AERR,NPCS,XSUM,NSUM,NEW,IERR)
          ENDIF
 10       CONTINUE
 
-!  Find first zero crossing of Bessel function beyond XSUM(NSUM)
+!>  Find first zero crossing of Bessel function beyond XSUM(NSUM)
 15     CONTINUE
        IF (ZEROJ(NPB,ORDER).GT.XSUM(NSUM)*R) GOTO 20
        NPB=NPB+1
        GOTO 15
      ENDIF
 
-!  Entry point for Pade summation of partial integrants
+!>  Entry point for Pade summation of partial integrants
 20   CONTINUE
      LASTR=0.0
      LASTI=0.0
      A=B
      B=ZEROJ(NPB,ORDER)/R
 
-!  Calculate terms and sum with PADECF, quitting when convergence is
-!  obtained
+!>  Calculate terms and sum with PADECF, quitting when convergence is
+!>  obtained
      DO 30 N=1,NSTOP
        IF (NPCS.EQ.1) THEN
          IF ((NW.EQ.2).AND.(NP.GT.NPO)) NW=1
@@ -368,89 +368,89 @@ endsubroutine BESTRN
 
 
 !------------------------------------------------------------------
-!  This subroutine calculates the integral of F(X)*J-SUB-N(X*R)
-!  over the interval A to B at a specified Gauss order.
-!  The result is obtained using a sequence of 1,3,7,15,31,63,
-!  127, and 255 point interlacing Gauss formulae so that no integrand
-!  evaluations are wasted. The kernel functions may be saved so that
-!  Bessel transforms of similar kernels are computed without new
-!  evaluation of the kernel.
-!  Details on the formulae are given in "The optimum addition of points
-!  to quadrature formulae" by T.N.L Patterson, Maths. Comp.
-!  22, 847-856 (1968). Gauss weights are taken from
-!  Comm. A.C.M. 16,694-699 (1973).
+!>  This subroutine calculates the integral of F(X)*J-SUB-N(X*R)
+!>  over the interval A to B at a specified Gauss order.
+!>  The result is obtained using a sequence of 1,3,7,15,31,63,
+!>  127, and 255 point interlacing Gauss formulae so that no integrand
+!>  evaluations are wasted. The kernel functions may be saved so that
+!>  Bessel transforms of similar kernels are computed without new
+!>  evaluation of the kernel.
+!>  Details on the formulae are given in "The optimum addition of points
+!>  to quadrature formulae" by T.N.L Patterson, Maths. Comp.
+!>  22, 847-856 (1968). Gauss weights are taken from
+!>  Comm. A.C.M. 16,694-699 (1973).
 !
-!  Argument list:
+!>  Argument list:
 !
-!  A - lower limit of integration
-!  B - upper limit of integration
-!  BESR,BESI - returned integral value real and imaginary parts
-!  NG - number of points in the Gauss formula. NG=1,...7
-!       selects 3,7,15,31,63,127, and 255 point quadrature.
-!  NEW - selects method of kernel evaluation
-!      NEW=0 calculates kernels by calling F - nothing saved
-!      NEW=1 calculates kernels by calling F and saves kernel times
-!            Bessel function in COMMON /BESINT/
-!      NEW=2 uses saved kernel times Bessel functions in
-!            COMMON /BESINT/
-!  ORDER - order of the Bessel function
-!  R - argument of the Bessel function
-!  F - F(X) is the external integrand subroutine
+!>  A - lower limit of integration
+!>  B - upper limit of integration
+!>  BESR,BESI - returned integral value real and imaginary parts
+!>  NG - number of points in the Gauss formula. NG=1,...7
+!>       selects 3,7,15,31,63,127, and 255 point quadrature.
+!>  NEW - selects method of kernel evaluation
+!>      NEW=0 calculates kernels by calling F - nothing saved
+!>      NEW=1 calculates kernels by calling F and saves kernel times
+!>            Bessel function in COMMON /BESINT/
+!>      NEW=2 uses saved kernel times Bessel functions in
+!>            COMMON /BESINT/
+!>  ORDER - order of the Bessel function
+!>  R - argument of the Bessel function
+!>  F - F(X) is the external integrand subroutine
 !
-!  A. Chave IGPP/UCSD
+!>  A. Chave IGPP/UCSD
 !
-!  Converted to F90: Rita Streich 2008
+!>  Converted to F90: Rita Streich 2008
 !------------------------------------------------------------------
 SUBROUTINE BESQUD(A,B,BESR,BESI,NG,NEW,ORDER,R,F)
 
   implicit none
 
-!  COMMON /TEST/ contains run statistics
-!  NGAUSS=highest Gauss order used
-!  NF=total function evaluations for all calls to BESTRN
-!  NI=total number of partial integrands on last call
-!     to BESTRN only
+!>  COMMON /TEST/ contains run statistics
+!>  NGAUSS=highest Gauss order used
+!>  NF=total function evaluations for all calls to BESTRN
+!>  NI=total number of partial integrands on last call
+!>     to BESTRN only
   COMMON /TEST/NGAUSS,NF,NI
   COMMON /BESINT/NK,NP,NPS,KARG,KERN
 
   !external variables
-  real(kind=real64)         :: A,B
-  real(kind=real64)         :: BESR,BESI
-  integer(kind=int32)       :: NG
-  integer(kind=int32)       :: NEW
-  real(kind=real64)         :: ORDER
-  real(kind=real64)         :: R
+  real(kind=real64) :: A,B
+  real(kind=real64) :: BESR,BESI
+  integer(kind=int32) :: NG
+  integer(kind=int32) :: NEW
+  real(kind=real64) :: ORDER
+  real(kind=real64) :: R
 
   complex(kind=real64),external :: F
 
   !internal variables
-   ! maximum number of Bessel function loops that can be saved
-  integer(kind=int32)              :: NGAUSS,NF,NI
-  integer(kind=int32),parameter    :: NTERM=nmaxsave
-  integer(kind=int32),dimension(NTERM)     :: NK
-  integer(kind=int32)                      :: NP,NPS
-  real(kind=real64),dimension(255,NTERM)   :: KARG
-  real(kind=real64),dimension(510,NTERM)   :: KERN
-  real(kind=real64),dimension(254)  :: WT
-  real(kind=real64),dimension(127)  :: WA
-  integer(kind=int32),dimension(7)  :: NWT,NWA
-  real(kind=real64),dimension(254)  :: FUNCT
-  real(kind=real64),dimension(64)   :: FR1,FI1,FR2,FI2,BES1,BES2
+   !> maximum number of Bessel function loops that can be saved
+  integer(kind=int32) :: NGAUSS,NF,NI
+  integer(kind=int32),parameter :: NTERM=nmaxsave
+  integer(kind=int32),dimension(NTERM) :: NK
+  integer(kind=int32) :: NP,NPS
+  real(kind=real64),dimension(255,NTERM) :: KARG
+  real(kind=real64),dimension(510,NTERM) :: KERN
+  real(kind=real64),dimension(254) :: WT
+  real(kind=real64),dimension(127) :: WA
+  integer(kind=int32),dimension(7) :: NWT,NWA
+  real(kind=real64),dimension(254) :: FUNCT
+  real(kind=real64),dimension(64) :: FR1,FI1,FR2,FI2,BES1,BES2
 
-  real(kind=real64)                 :: SUM,DIFF,SUMP,SUMM
-  real(kind=real64)                 :: FZEROR,FZEROI
-  complex(kind=real64)              :: FVAL
-  real(kind=real64)                 :: BESF
-  integer(kind=int32)               :: LA,LK
-  integer(kind=int32)               :: N,KN,K,NA,J,I,NW
-  real(kind=real64)                 :: X
-  real(kind=real64)                 :: ACUMR,ACUMI
+  real(kind=real64) :: SUM,DIFF,SUMP,SUMM
+  real(kind=real64) :: FZEROR,FZEROI
+  complex(kind=real64) :: FVAL
+  real(kind=real64) :: BESF
+  integer(kind=int32) :: LA,LK
+  integer(kind=int32) :: N,KN,K,NA,J,I,NW
+  real(kind=real64) :: X
+  real(kind=real64) :: ACUMR,ACUMI
 
 
-!  starting adresses in arrays WT and WA at face order
+!>  starting adresses in arrays WT and WA at face order
      DATA NWT/1,3,7,15,31,63,127/, NWA/1,2,4,8,16,32,64/
-!  Array WT contains Gauss quadrature weights stored as needed at
-!  each order. Array WA contains the corresponding argument weights.
+!>  Array WT contains Gauss quadrature weights stored as needed at
+!>  each order. Array WA contains the corresponding argument weights.
      DATA (WT(I),I=1,20)/ &
      0.55555555555555555556E+00_real64,0.88888888888888888889E+00_real64, &
      0.26848808986833344073E+00_real64,0.10465622602646726519E+00_real64, &
@@ -664,17 +664,17 @@ SUBROUTINE BESQUD(A,B,BESR,BESI,NG,NEW,ORDER,R,F)
      0.70406976042855179063E-01_real64,0.42269164765363603212E-01_real64, &
      0.14093886410782462614E-01_real64/
 
-!  check for trivial case
+!>  check for trivial case
      IF (A.GE.B) THEN
        BESR=0.
        BESI=0.
        RETURN
      ENDIF
      IF (NEW.EQ.2) GOTO 200
-!  scale factors
+!>  scale factors
      SUM=(B+A)/2.
      DIFF=(B-A)/2.
-!  one point Gauss
+!>  one point Gauss
      FVAL = F(SUM)
      FZEROR = real(FVAL)
      FZEROI = aimag(FVAL)
@@ -692,9 +692,9 @@ SUBROUTINE BESQUD(A,B,BESR,BESI,NG,NEW,ORDER,R,F)
      N=1
      KN=1
 5    CONTINUE
-!  step through Gauss orders
+!>  step through Gauss orders
      DO 40 K=KN,NG
-!  compute new function values
+!>  compute new function values
        NA=NWA(K)
        DO 10 J=1,NWA(K)
          X=WA(NA)*DIFF
@@ -717,7 +717,7 @@ SUBROUTINE BESQUD(A,B,BESR,BESI,NG,NEW,ORDER,R,F)
          ENDIF
 10     CONTINUE
 
-!  compute products of kernels and Bessel functions
+!>  compute products of kernels and Bessel functions
        DO 20 J=1,NWA(K)
          FR1(J)=BES1(J)*FR1(J)
          FI1(J)=BES1(J)*FI1(J)
@@ -738,10 +738,10 @@ SUBROUTINE BESQUD(A,B,BESR,BESI,NG,NEW,ORDER,R,F)
        ENDIF
 40   CONTINUE
 
-!  compute dot product of weights with integrand values
+!>  compute dot product of weights with integrand values
      NW=NWT(NG)
-!  dot should be replaced with SDOT from SCILIB on CRAY-1 if D.P. is
-!    not used
+!>  dot should be replaced with SDOT from SCILIB on CRAY-1 if D.P. is
+!>    not used
      ACUMR=DOT(NW,WT(NW:2*NW-1),1,FUNCT(1:253),2)
      ACUMI=DOT(NW,WT(NW:2*NW-1),1,FUNCT(2:254),2)
      BESR=(ACUMR+WT(2*NW)*FZEROR)*DIFF
@@ -749,7 +749,7 @@ SUBROUTINE BESQUD(A,B,BESR,BESI,NG,NEW,ORDER,R,F)
      IF (NP.LE.NTERM) NK(NP)=NG
      RETURN
 200  CONTINUE
-!  construct funct from saved kernels
+!>  construct funct from saved kernels
      DIFF=(B-A)/2.
      FZEROR=KERN(1,NP)
      FZEROI=KERN(2,NP)
@@ -762,15 +762,15 @@ SUBROUTINE BESQUD(A,B,BESR,BESI,NG,NEW,ORDER,R,F)
        LK=LK+4
 210     CONTINUE
      IF (NK(NP).GE.NG) THEN
-!  no additional orders required - compute dot product of weitghs with
-!    integrand values and return
+!>  no additional orders required - compute dot product of weitghs with
+!>    integrand values and return
        ACUMR=DOT(NW,WT(NW:2*NW-1),1,FUNCT(1:253),2)
        ACUMI=DOT(NW,WT(NW:2*NW-1),1,FUNCT(2:254),2)
        BESR=(ACUMR+WT(2*NW)*FZEROR)*DIFF
        BESI=(ACUMI+WT(2*NW)*FZEROI)*DIFF
        RETURN
      ELSE
-!  compute additional orders before tkaing dot product
+!>  compute additional orders before tkaing dot product
        SUM=(B+A)/2.
        KN=K+1
        LA=LK/2+1
@@ -782,19 +782,19 @@ endsubroutine BESQUD
 
 
 !----------------------------------------------------------------------
-!  Computes SUM(S(I)),I=1,...N by computation of Pade approximant
-!  using continued fraction expansion. Function is designed to be
-!  called sequentially as N is incremented from 1 to its final value.
-!  The Nth continued fraction coefficient is calculated and
-!  stored and the Nth convergent returned. It is up to the user to
-!  stop the calculation when the desired accuracy is achieved.
-!  Algorithm from Hänggi et al., Z. Naturforsch. 33A, 402-417 (1977).
-!  In their notation, vectors CFCOR,CFCOI are lower case D,vectors DR,
-!  DI are upper case D, vectors XR,XI are X, and vectors SR,SI are S.
+!>  Computes SUM(S(I)),I=1,...N by computation of Pade approximant
+!>  using continued fraction expansion. Function is designed to be
+!>  called sequentially as N is incremented from 1 to its final value.
+!>  The Nth continued fraction coefficient is calculated and
+!>  stored and the Nth convergent returned. It is up to the user to
+!>  stop the calculation when the desired accuracy is achieved.
+!>  Algorithm from Hänggi et al., Z. Naturforsch. 33A, 402-417 (1977).
+!>  In their notation, vectors CFCOR,CFCOI are lower case D,vectors DR,
+!>  DI are upper case D, vectors XR,XI are X, and vectors SR,SI are S.
 !
-!  A. Chave IGPP/UCSD
+!>  A. Chave IGPP/UCSD
 !
-!  Converted to F90: Rita Streich 2008
+!>  Converted to F90: Rita Streich 2008
 !
 !----------------------------------------------------------------------
 SUBROUTINE PADECF(SUMR,SUMI,SR,SI,N)
@@ -802,25 +802,25 @@ SUBROUTINE PADECF(SUMR,SUMI,SR,SI,N)
   implicit none
 
   !external variables
-  real(kind=real64)                 :: SUMR,SUMI
-  real(kind=real64),dimension(1:)   :: SR,SI
-  integer(kind=int32)               :: N
+  real(kind=real64) :: SUMR,SUMI
+  real(kind=real64),dimension(1:) :: SR,SI
+  integer(kind=int32) :: N
 
   !internal variables
-  integer(kind=int32),parameter     :: NC=nmaxsum
-  real(kind=real64),dimension(NC)   :: XR,XI
+  integer(kind=int32),parameter :: NC=nmaxsum
+  real(kind=real64),dimension(NC) :: XR,XI
   real(kind=real64),dimension(0:NC) :: DR,DI
-  real(kind=real64),dimension(NC)   :: CFCOR,CFCOI
-  integer(kind=int32)               :: I,K
-  integer(kind=int32)               :: L
-  real(kind=real64)                 :: DENOM
-  real(kind=real64)                 :: T1,T2
+  real(kind=real64),dimension(NC) :: CFCOR,CFCOI
+  integer(kind=int32) :: I,K
+  integer(kind=int32) :: L
+  real(kind=real64) :: DENOM
+  real(kind=real64) :: T1,T2
 
   DATA DR(0)/-1./,DI(0)/0./
   SAVE XR,XI,DR,DI,CFCOR,CFCOI
 
      IF (N.LT.3) THEN
-!  initialize for recursive calculations
+!>  initialize for recursive calculations
        IF (N.EQ.1) THEN
          DO 10 I=1,NC
            XR(I)=0.
@@ -836,14 +836,14 @@ SUBROUTINE PADECF(SUMR,SUMI,SR,SI,N)
        RETURN
      ELSE
        L=2*INT((N-1)/2)
-!  update X vectors for recursive calculation of coefficients
+!>  update X vectors for recursive calculation of coefficients
        DO 20 K=L,4,-2
          XR(K)=XR(K-1)+CFCOR(N-1)*XR(K-2)-CFCOI(N-1)*XI(K-2)
          XI(K)=XI(K-1)+CFCOR(N-1)*XI(K-2)+CFCOI(N-1)*XR(K-2)
 20     CONTINUE
        XR(2)=XR(1)+CFCOR(N-1)
        XI(2)=XI(1)+CFCOI(N-1)
-!  interchange odd and even parts
+!>  interchange odd and even parts
        DO 30 K=1,MAX(1,L-1),2
          T1=XR(K)
          T2=XI(K)
@@ -852,18 +852,18 @@ SUBROUTINE PADECF(SUMR,SUMI,SR,SI,N)
          XR(K+1)=T1
          XI(K+1)=T2
 30     CONTINUE
-!  compute first coefficients
+!>  compute first coefficients
        DR(N)=SR(N)
        DI(N)=SI(N)
        DO 40 K=1,MAX(1,L/2)
          DR(N)=DR(N)+SR(N-K)*XR(2*K-1)-SI(N-K)*XI(2*K-1)
          DI(N)=DI(N)+SI(N-K)*XR(2*K-1)+SR(N-K)*XI(2*K-1)
 40     CONTINUE
-!  compute new CF coefficient
+!>  compute new CF coefficient
        DENOM=DR(N-1)**2+DI(N-1)**2
        CFCOR(N)=-(DR(N)*DR(N-1)+DI(N)*DI(N-1))/DENOM
        CFCOI(N)=-(DR(N-1)*DI(N)-DR(N)*DI(N-1))/DENOM
-!  evaluate continued fraction
+!>  evaluate continued fraction
        CALL CF(SUMR,SUMI,CFCOR,CFCOI,N)
        RETURN
      ENDIF
@@ -873,27 +873,27 @@ endsubroutine PADECF
 
 
 !----------------------------------------------------------------------
-!  Evaluates a complex continued fraction by recursive division
-!  starting at the bottom, as used by PADECF
-!  RESR,RESI are real and imaginary parts returned
-!  CFCOR,CFCOI are real and imaginary vectors of continued fraction
-!  coefficients
+!>  Evaluates a complex continued fraction by recursive division
+!>  starting at the bottom, as used by PADECF
+!>  RESR,RESI are real and imaginary parts returned
+!>  CFCOR,CFCOI are real and imaginary vectors of continued fraction
+!>  coefficients
 !----------------------------------------------------------------------
 SUBROUTINE CF(RESR,RESI,CFCOR,CFCOI,N)
 
   implicit none
 
   !external variables
-  real(kind=real64)                :: RESR,RESI
-  real(kind=real64),dimension(1:)  :: CFCOR,CFCOI
-  integer(kind=int32)              :: N
+  real(kind=real64) :: RESR,RESI
+  real(kind=real64),dimension(1:) :: CFCOR,CFCOI
+  integer(kind=int32) :: N
 
   !internal variables
-  integer(kind=int32),parameter   :: NC=nmaxsum, NCM=NC-1
+  integer(kind=int32),parameter :: NC=nmaxsum, NCM=NC-1
   real(kind=real64),dimension(NC) :: ONE
-  integer(kind=int32)             :: K
-  real(kind=real64)               :: DENOM
-  real(kind=real64)               :: RESRO
+  integer(kind=int32) :: K
+  real(kind=real64) :: DENOM
+  real(kind=real64) :: RESRO
 
   DATA ONE/0.,NCM*1./
 
@@ -912,20 +912,20 @@ endsubroutine CF
 
 
 !----------------------------------------------------------------------
-!  Compute dot product of two double precision vectors with nonunit
-!  increment allowed. Replacement for BLAS subroutine SDOT.
+!>  Compute dot product of two double precision vectors with nonunit
+!>  increment allowed. Replacement for BLAS subroutine SDOT.
 !----------------------------------------------------------------------
 real(kind=real64) FUNCTION DOT(N,X1,INC1,X2,INC2)
 
   implicit none
 
   !external variables
-  integer(kind=int32)             :: N
+  integer(kind=int32) :: N
   real(kind=real64),dimension(1:) :: X1,X2
-  integer(kind=int32)             :: INC1,INC2
+  integer(kind=int32) :: INC1,INC2
 
   !internal variables
-  integer(kind=int32)             :: I,K
+  integer(kind=int32) :: I,K
 
 
      IF (INC2.GT.0) THEN

@@ -1,9 +1,9 @@
 !----------------------------------------------------------------
-! FD EM function AvailableUnit
+!> FD EM function AvailableUnit
 !
-! Find an unused unit number, for secured Fortran IO-handling.
+!> Find an unused unit number, for secured Fortran IO-handling.
 !
-! Rita Streich 2009
+!> Rita Streich 2009
 !----------------------------------------------------------------
 
 integer(kind=int32) function AvailableUnit()
@@ -11,18 +11,18 @@ integer(kind=int32) function AvailableUnit()
   implicit none
 
   integer(kind=int32) :: i
-  logical             :: isOpen
+  logical :: isOpen
 #ifdef USE_MPI
   integer(kind=int32) :: ierr
 #endif
 
   do i=20,98765
      inquire(Unit=i,Opened=isOpen)
-     if (.not.isOpen) then
+     if(.NOT.isOpen) then
         AvailableUnit = i
         return
-     end if
-  end do
+     endif
+  enddo
 
   !we get here if no unit number was found
   write(*,'(a)')'ERROR in AvailableUnit: No unused unit number available'
