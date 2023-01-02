@@ -9,13 +9,7 @@ module Sensitivity
     !
     use cVector3D_SG
     !
-    use Grid3D_SG
-    !
-    use ModelParameterCell_SG
-    !
-    use ModelOperator_MF
-    !
-    use ForwardSolverIT_DC
+    use GlobalVariables
     !
     use SourceMT_1D
     use SourceMT_2D
@@ -35,23 +29,8 @@ module Sensitivity
     use DataGroupArray
     use DataGroupTxArray
     !
-    use ModelCovarianceRec
-    !
-    !> Global Variables
-    class( Grid_t ), allocatable, target :: main_grid
-    class( ModelParameter_t ), allocatable :: sigma0, pmodel
-    class( ModelOperator_t ), allocatable :: model_operator
-    !
-    class( ForwardSolver_t ), allocatable, target :: forward_solver
-    !
-    class( ModelCovarianceRec_t ), allocatable :: model_cov
-    !
-    !> Program control variables
-    character(:), allocatable :: control_file_name, model_file_name, pmodel_file_name, data_file_name, modem_job
-    logical :: set_data_groups, has_control_file, has_model_file, has_pmodel_file, has_data_file, verbosis
-    !
     !> Global Sensitivity Routines
-    public :: JMult, JMult_Tx, JMult_T, JMult_T_Tx, setResidualData
+    public :: JMult, JMult_Tx, JMult_T, JMult_T_Tx, getResidualRMS
     !
 contains
     !
@@ -272,6 +251,30 @@ contains
         call Tx%pMult_t( sigma, dsigma )
         !
     end subroutine JMult_T_Tx
+    !
+    !> Get DSigma for a single transmitter:
+    !>     Create a Rhs from LRows * residual data for all receivers related to the transmitter.
+    !>     Solve ESens on the transmitter with SourceInteriorForce and the new Rhs.
+    !>     Call Tx%PMult to get a new ModelParameter DSigma for the transmitter.
+    function getResidualRMS() result( rmsd )
+        implicit none
+        !
+        real( kind=prec ) :: rmsd
+        !
+        type( DataGroupTx_t ), allocatable, dimension(:) :: n_residual
+        !
+        ! initialize res
+        all_residual_data = all_measured_data
+        !
+        call linCombDataGroupTxArray( ONE, all_measured_data, MinusONE, all_predicted_data, all_residual_data )
+        !
+        n_residual = all_residual_data
+        !
+        call normalizeDataGroupTxArray( n_residual, 2 )
+        !
+        rmsd = sqrt( dotProdDataGroupTxArray( all_residual_data, n_residual ) / countDataGroupTxArray( all_residual_data ) )
+        !
+    end function getResidualRMS
     !
 end module Sensitivity
 !

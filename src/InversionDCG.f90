@@ -3,6 +3,7 @@
 !
 module InversionDCG
     !
+    use ForwardModeling
     use Sensitivity
     !
     type  :: IterControl_t
@@ -14,7 +15,7 @@ module InversionDCG
         ! actual number of iterations before return
         integer :: niter
         ! relative error for each iteration
-        real( kind=prec ) , pointer, dimension(:) :: rerr
+        real( kind=prec ), pointer, dimension(:) :: rerr
         ! logical variable indicating if algorithm "failed"
         logical :: failed = .FALSE.
         !
@@ -34,6 +35,207 @@ contains
         allocate( CGiter%rerr( 0 : CGiter%maxit ) )
         !
     end subroutine setIterControl
+    !
+    !>
+    subroutine DCGsolver( d, m0, m, lambda )
+        implicit none
+        !
+        type( DataGroupTx_t ), allocatable, dimension(:), intent( inout ) :: d
+        class( ModelParameter_t ), allocatable, intent( in ) :: m0
+        class( ModelParameter_t ), allocatable, intent( inout ) :: m
+        real( kind=prec ), intent( inout ) :: lambda
+        !
+        type( DataGroupTx_t ), allocatable, dimension(:) :: b, dx, res, JmHat
+        class( ModelParameter_t ), allocatable :: mHat, Cm_mHat
+        real( kind=prec ) :: rmsd
+        type( IterControl_t ) :: CGiter
+        integer :: DCG_iter
+        !
+        lambda = 10.0
+        !
+        call setIterControl( CGiter )
+        !
+        allocate( mHat, source = m )
+        !
+        allocate( Cm_mHat, source = m )
+        !
+        m = model_cov%multBy_Cm( mHat ) 
+        !
+        !call linComb(ONE,m,ONE,m0,m)
+        call m%linComb( ONE, ONE, m0 )
+        !
+        JmHat = d
+        dx = d
+        b = d
+        res = d
+        !
+        call zerosDataGroupTxArray( JmHat )
+        !
+        call zerosDataGroupTxArray( b )
+        !
+        call Calc_FWD( lambda, d, m, res, rmsd )
+        !
+        DCG_iter = 1
+        !
+        do
+            !
+            call JMult( m, mHat, JmHat )
+            !
+            b = d
+            !
+            !call linComb(ONE,res,ONE,JmHat,b)
+            call linCombDataGroupTxArray( ONE, res, ONE, JmHat, b )
+            !
+            call normalizeDataGroupTxArray( b, 1 )
+            !
+            call CG_DS_standard( b, dx, m, d, lambda, CGiter )
+            !
+            call normalizeWithDataGroupTxArray( 1, d, dx )
+            !
+            call JMult_T( m, dx, mHat )
+            !
+            Cm_mHat = model_cov%multBy_Cm( mHat )
+            !
+            mHat = Cm_mHat
+            !
+            m = m0
+            !
+            call m%linComb( ONE, ONE, mHat )
+            !
+            call Calc_FWD( lambda, d, m, res, rmsd )
+            !
+            if( rmsd .LT. 1.05 .OR. DCG_iter .GE. 3 ) then
+                exit
+            end if
+            !
+            DCG_iter = DCG_iter + 1
+            !
+        end do
+		!
+        call deallocateDataGroupTxArray( JmHat )
+        call deallocateDataGroupTxArray( b )
+        call deallocateDataGroupTxArray( res )
+		!
+        deallocate( mHat, Cm_mHat )
+		!
+    end subroutine DCGsolver
+    !
+    !>
+    subroutine DCGsolverLanczos( d, m0, m, lambda )
+        implicit none
+        !
+        type( DataGroupTx_t ), allocatable, dimension(:), intent( inout ) :: d
+        class( ModelParameter_t ), allocatable, intent( in ) :: m0
+        class( ModelParameter_t ), allocatable, intent( inout ) :: m
+        real( kind=prec ), intent( inout ) :: lambda
+        !
+        type( DataGroupTx_t ), allocatable, dimension(:) :: JmHat, b, dx, res
+        class( ModelParameter_t ), allocatable :: mHat, Cm_mHat
+        real( kind=prec ) :: rmsd
+        integer :: DS_iter
+        type( IterControl_t ) :: CGiter
+        !
+        allocate( mHat, source = m )
+        allocate( Cm_mHat, source = m )
+        !
+        m = model_cov%multBy_Cm( mHat )
+        !
+        call m%linComb( ONE, ONE, m0 )
+        !
+        JmHat = d
+        dx = d
+        b = d
+        res = d
+        !
+        call zerosDataGroupTxArray( JmHat )
+        !
+        call zerosDataGroupTxArray( b )
+        !
+        call setIterControl( CGiter )
+        !
+        call Calc_FWD( lambda, d, m, res, rmsd )
+        !
+        write( *, * ) "lambda, rmsd: ", lambda, rmsd
+        !
+        do DS_iter = 1, 5
+            !
+            ! Compute the right hand side vector (b) for the CG solver.
+            ! b= (d-dPred)+ J(m-m0)
+            !
+            if ( DS_iter .GT. 1 ) then
+                call Jmult( m, mHat, JmHat )
+            end if
+            !
+            b = d
+            write( *, * ) "Norm JmHat: ", dotProdDataGroupTxArray( JmHat, JmHat )
+            !
+            call linCombDataGroupTxArray( ONE, res, ONE, JmHat, b )
+            !
+            call normalizeDataGroupTxArray( b, 1 )
+            !
+            !  call CG_DS(b,dx,m,m0,d,lambda,CGiter,d_Pred_m0,rms,mhat)
+            !call Lanczos_DS (b,m,m0,d,d_Pred_m0,lambda,mhat,res,CGiter,DS_iter,rms,Jm0)
+            !  call Multi_Trans_DS (b,dx,m,m0,d,lambda,mhat,res,CGiter,DS_iter,rms)
+            ! call Lanczos_CG_DS(b,dx,m,m0,d,lambda,CGiter,DS_iter,rms)
+            call CG_DS_standard( b, dx, m, d, lambda, CGiter )
+            !
+            call normalizeWithDataGroupTxArray( 1, d, dx )
+            !
+            call JMult_T( m, dx, mHat )
+            !
+            Cm_mHat = model_cov%multBy_Cm( mHat )
+            !
+            mHat = Cm_mHat
+            !
+            !call linComb_modelParam( ONE, m0, ONE, mHat, m )
+            m = m0
+            call m%linComb( ONE, ONE, mHat )
+            !
+            call Calc_FWD( lambda, d, m, res, rmsd )
+            !
+            write( *, * ) "DS_iter, lambda, rmsd, CGiter%niter: ", DS_iter, lambda, rmsd, CGiter%niter
+            !
+        end do
+        !
+        deallocate( mHat )
+        deallocate( Cm_mHat )
+        !
+    end subroutine DCGsolverLanczos
+    !
+    !>
+    subroutine Calc_FWD( lambda, d, m, res, rmsd )
+        implicit none
+        !
+        real( kind=prec ), intent( in ) :: lambda
+        type( DataGroupTx_t ), allocatable, dimension(:), intent( inout ) :: d
+        class( ModelParameter_t ), allocatable, intent( in ) :: m
+        type( DataGroupTx_t ), allocatable, dimension(:), intent( out ) :: res
+        real( kind=prec ), intent( inout ) :: rmsd
+        !
+        type( DataGroupTx_t ), allocatable, dimension(:) :: Nres
+        real( kind=prec ) :: SS
+        integer :: Ndata
+        !
+        call runForwardModeling( m )
+        !
+        ! initialize res
+        res = d
+        !
+        ! compute residual: res = d-d_Pred
+        call linCombDataGroupTxArray( ONE, d, MinusONE, all_predicted_data, res )
+        !
+        ! normalize residuals, compute sum of squares
+        Nres = res
+        call normalizeDataGroupTxArray( Nres, 2 )
+        SS = dotProdDataGroupTxArray( res, Nres )
+        Ndata = countDataGroupTxArray( res )
+        !
+        ! if required, compute the Root Mean Squared misfit
+        rmsd = sqrt( SS / Ndata )
+        !
+        call deallocateDataGroupTxArray( Nres )
+        !
+    end subroutine Calc_FWD
     !
     !>
     subroutine CG_DS_standard( b, x, m, d, lambda, CGiter )

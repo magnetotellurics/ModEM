@@ -317,7 +317,7 @@ contains
                 !
                 if( self%cell_cond%isCompatible( rhs%cell_cond ) ) then
                     !
-                    self%cell_cond%v = a1 * self%cell_cond%v + a2  * rhs%cell_cond%v
+                    self%cell_cond%v = a1 * self%cell_cond%v + a2 * rhs%cell_cond%v
                     !
                 else
                     stop "Error: linCombModelParameterCell_SG > Incompatible rhs"

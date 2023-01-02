@@ -23,12 +23,6 @@ module DataGroupTx
             !
             procedure, public :: set => setDataGroupTx
             !
-            procedure, public :: rmsdDataGroupTx1
-            procedure, public :: rmsdDataGroupTx2
-            generic :: rmsd => rmsdDataGroupTx1, rmsdDataGroupTx2
-            !
-            procedure, public :: multAdd => multAddDataGroupTx
-            !
             procedure, public :: linComb => linCombDataGroupTx
             !
             procedure, public :: dotProd => dotProdDataGroupTx
@@ -177,44 +171,6 @@ contains
         !
     end subroutine setDataGroupTx
     !
-    !> Root Mean Square Deviation between two DataGroupTxs
-    subroutine multAddDataGroupTx( self, data_tx, rvalue )
-        implicit none
-        !
-        class( DataGroupTx_t ), intent( inout ) :: self
-        !
-        class( DataGroupTx_t ), intent( in ) :: data_tx
-        !
-        real( kind=prec ), intent( in ) :: rvalue
-        !
-        integer :: i_data, i_comp
-        !
-        complex( kind=prec ) :: self_comp, data_tx_comp
-        !
-        if( size( self%data ) /= size( data_tx%data ) ) then
-            !
-            stop "Error: multAddDataGroupTx > different data sizes"
-            !
-        else
-            !
-            do i_data = 1, size( self%data )
-                !
-                do i_comp = 1, self%data( i_data )%n_comp
-                    !
-                    self_comp = cmplx( self%data( i_data )%reals( i_comp ), self%data( i_data )%imaginaries( i_comp ), kind=prec )
-                    !
-                    data_tx_comp = cmplx( data_tx%data( i_data )%reals( i_comp ), data_tx%data( i_data )%imaginaries( i_comp ), kind=prec )
-                    !
-                    call self%data( i_data )%set( i_comp, conjg( self_comp ) + rvalue * data_tx_comp )
-                    !
-                enddo
-                !
-            enddo
-            !
-        endif
-        !
-    end subroutine multAddDataGroupTx
-    !
     !> dotProd between two DataGroupTxs
     function dotProdDataGroupTx( self, data_tx ) result( rvalue )
         implicit none
@@ -231,7 +187,7 @@ contains
             !
         else
             !
-            rvalue = 0.0
+            rvalue = R_ZERO
             !
             do i = 1, size( self%data )
                 !
@@ -268,72 +224,6 @@ contains
         endif
         !
     end subroutine linCombDataGroupTx
-    !
-    !> Root Mean Square Deviation for a single DataGroupTx
-    function rmsdDataGroupTx1( self ) result( rmsd )
-        implicit none
-        !
-        class( DataGroupTx_t ), intent( in ) :: self
-        !
-        complex( kind=prec ) :: rmsd
-        !
-        integer :: i_data, i_comp
-        !
-        complex( kind=prec ) :: self_comp
-        !
-        rmsd = C_ZERO
-        !
-        do i_data = 1, size( self%data )
-            !
-            do i_comp = 1, self%data( i_data )%n_comp
-                !
-                self_comp = cmplx( self%data( i_data )%reals( i_comp ), self%data( i_data )%imaginaries( i_comp ), kind=prec )
-                !
-                rmsd = rmsd + self_comp ** 2
-                !
-            enddo
-            !
-        enddo
-        !
-    end function rmsdDataGroupTx1
-    !
-    !> Root Mean Square Deviation between two DataGroupTxs
-    function rmsdDataGroupTx2( self, data_tx ) result( rmsd )
-        implicit none
-        !
-        class( DataGroupTx_t ), intent( in ) :: self, data_tx
-        !
-        complex( kind=prec ) :: rmsd
-        !
-        integer :: i_data, i_comp
-        !
-        complex( kind=prec ) :: self_comp, data_tx_comp
-        !
-        if( size( self%data ) /= size( data_tx%data ) ) then
-            !
-            stop "Error: DataGroupTx_t : rmsdDataGroupTx2 > different data sizes"
-            !
-        else
-            !
-            rmsd = C_ZERO
-            !
-            do i_data = 1, size( self%data )
-                !
-                do i_comp = 1, self%data( i_data )%n_comp
-                    !
-                    self_comp = cmplx( self%data( i_data )%reals( i_comp ), self%data( i_data )%imaginaries( i_comp ), kind=prec )
-                    !
-                    data_tx_comp = cmplx( data_tx%data( i_data )%reals( i_comp ), data_tx%data( i_data )%imaginaries( i_comp ), kind=prec )
-                    !
-                    rmsd = rmsd + ( ( self_comp - data_tx_comp ) ** 2 )
-                    !
-                enddo
-                !
-            enddo
-            !
-        endif
-        !
-    end function rmsdDataGroupTx2
     !
     !> Call the print routine of each DataGroup in the data array
     subroutine printDataGroupTx( self )

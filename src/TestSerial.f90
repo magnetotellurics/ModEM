@@ -49,86 +49,6 @@ program TestSerial
     !
 contains
     !
-    !> Run ForwardModelling: Calculate ESolution for all transmitters and...
-    !>     Receive a flag indicating whether it will be used for Adjoint:
-    !>         - False or None: Calculate only the predicted data for each transmitter-receiver pair.
-    !>         - True: Calculate LRows in the receivers after calculating predicted data.
-    !> Obs.: Require the previous definition of the global ForwardSolver (createForwardSolver())
-    !
-    subroutine ForwardModeling( sigma )
-        implicit none
-        !
-        class( ModelParameter_t ), intent( in ) :: sigma
-        !
-        class( Transmitter_t ), pointer :: Tx
-        class( Receiver_t ), pointer :: Rx
-        integer :: i_tx, n_tx, i_rx
-        !
-        ! Verbose
-        write( *, * ) "          - Start Forward Modeling"
-        !
-        !>
-        n_tx = size( transmitters )
-        !
-        ! Verbose
-        write( *, * ) "          > Write ESolution to file: [", e_solution_file_name, "]"
-        !
-        !> Write the first header of the ESolution binary file, according to the first transmitter
-        call writeEsolutionHeader( n_tx, transmitters(1)%Tx%n_pol )
-        !
-        !> Loop over all Transmitters
-        do i_tx = 1, n_tx
-            !
-            !> Pointer to the Transmitter
-            Tx => getTransmitter( i_tx )
-            !
-            !> Set Transmitter's ForwardSolver Period) and Conductivity
-            call Tx%forward_solver%setFrequency( sigma, Tx%period )
-            !
-            !> Instantiate Transmitter's Source - According to transmitter type or chosen via control file
-            select type( Tx )
-                !
-                class is( TransmitterMT_t )
-                    !
-                    call Tx%setSource( SourceMT_1D_t( model_operator, sigma, Tx%period ) )
-                    !
-                class is( TransmitterCSEM_t )
-                    !
-                    call Tx%setSource( SourceCSEM_Dipole1D_t( model_operator, sigma, Tx%period, Tx%location, Tx%dip, Tx%azimuth, Tx%moment ) )
-                    !
-                class default
-                    stop "Error: ForwardModeling > Unclassified Transmitter"
-                !
-            end select
-            !
-            !> Build Source E according to source type
-            call Tx%source%createE()
-            !
-            !> Solve e_all for this Transmitter
-            call Tx%solve()
-            !
-            ! Verbose
-            write( *, * ) "                   - Receivers calculation"
-            !
-            !> Loop for each Receiver related to this Transmitter
-            do i_rx = 1, size( Tx%receiver_indexes )
-                !
-                !> Pointer to the Tx Receiver
-                Rx => getReceiver( Tx%receiver_indexes( i_rx ) )
-                !
-                call Rx%predictedData( Tx )
-                !
-                call all_predicted_data( i_tx )%set( Rx%data_group )
-                !
-            enddo
-            !
-        enddo
-        !
-        ! Verbose
-        write( *, * ) "          - Finish Forward Modeling"
-        !
-    end subroutine ForwardModeling
-    !
     !> Routine to run a full ForwardModeling job and deliver the result (PredictedData) in a text file
     subroutine jobForwardModeling()
         implicit none
@@ -158,7 +78,7 @@ contains
         call createForwardSolver()
         !
         !> Run ForwardModelling to calculate predicted data
-        call ForwardModeling( sigma0 )
+        call runForwardModeling( sigma0 )
         !
         !> Write Predicted Data, with its proper Rx headers, into to the file <predicted_data_file_name>
         call writeDataGroupArray( all_predicted_data, predicted_data_file_name )
@@ -210,7 +130,7 @@ contains
         call createForwardSolver()
         !
         !> Run ForwardModelling to calculate predicted data
-        call ForwardModeling( sigma0 )
+        call runForwardModeling( sigma0 )
         !
         !> Initialize JmHat data array in the same format as the predicted data array
         JmHat = all_predicted_data
@@ -262,7 +182,7 @@ contains
         call createForwardSolver()
         !
         !> Run ForwardModelling to calculate predicted data
-        call ForwardModeling( sigma0 )
+        call runForwardModeling( sigma0 )
         !
         !> Calculate DSigma model from JMult_T routine
         call JMult_T( sigma0, all_measured_data, dsigma )
@@ -287,17 +207,89 @@ contains
     subroutine jobInversionDCG()
         implicit none
         !
-        class( ModelParameter_t ), allocatable :: sigma, dsigma, JTP_model
+        class( ModelParameter_t ), allocatable :: sigma
         !
-        type( DataGroupTx_t ), allocatable, dimension(:) :: dx, JmHat, resJmHat, res, all_measured_data
+        real( kind=prec ) :: lambda
+        !
+        ! Verbose
+        write( *, * ) "     - Start jobInversionDCG"
+        !
+        !> Read Model File and instantiate global variables: main_grid, model_operator and Sigma0
+        if( has_model_file ) then 
+            !
+            call handleModelFile()
+            !
+            !> Initialize sigma as the input model
+            allocate( sigma, source = sigma0 )
+            !
+            !> Instantiate ModelCovariance
+            allocate( model_cov, source = ModelCovarianceRec_t( sigma ) )
+            !
+            !> Initialize pmodel with Zeros
+            pmodel = sigma0
+            !
+            call pmodel%zeros()
+            !
+        else
+            stop "Error: jobInversionDCG > Missing Model file!"
+        endif
+        !
+        !> Read Perturbation Model File: instantiate pmodel (NOT USING RIGHT NOW ????)
+        if( has_pmodel_file ) then 
+            !
+            call handlePModelFile()
+            !
+            call pmodel%setMetric( model_operator%metric )
+            !
+            pmodel = model_cov%multBy_Cm( pmodel )
+            !
+            call sigma%add( pmodel )
+            !
+        endif
+        !
+        !> Read Data File: instantiates and builds the Data relation between Txs and Rxs
+        if( has_data_file ) then 
+            !
+            call handleDataFile()
+            !
+            !> Initialize array with measure data
+            all_measured_data = all_predicted_data
+            !
+        else
+            stop "Error: jobInversionDCG > Missing Data file!"
+        endif
+        !
+        !> Instantiate ForwardSolver - Specific type via control file
+        call createForwardSolver()
+        !
+        lambda = 10.
+        !
+        call DCGsolver( all_measured_data, sigma, pmodel, lambda )
+		!call DCGsolverLanczos( all_measured_data, sigma, pmodel, lambda )
+        !
+        ! Verbose
+        write( *, * ) "     - Finish jobInversionDCG"
+        !
+    end subroutine jobInversionDCG
+    !
+    !> Routine to run a full Inversion Job - Minimize Residual
+    !> Where:
+    !>    SIGMA (M) = Production model (for predicted data and final inversion model)
+    !>    PMODEL = Perturbation model  (if exist -dm readed input model)
+    !>    SIGMA0 = Readed input model  (-m)
+    !>    DSIGMA = From JMult_T        (????)
+    subroutine jobInversionDCG_FULL()
+        implicit none
+        !
+        class( ModelParameter_t ), allocatable :: sigma, dsigma
+        !
+        type( DataGroupTx_t ), allocatable, dimension(:) :: dx, JmHat, resJmHat
         !
         type( IterControl_t ) :: CGiter
         !
-        integer :: iter_dcg, iter_cg, Ndata
+        integer :: iter_dcg
         !
-        real( kind=prec ) :: alpha, beta, error_cg, residual_rmsd
-        !
-        real( kind=prec ) :: b_norm, r_norm, r_norm_pre, lambda, SS
+        real( kind=prec ) :: alpha, beta, lambda, residual_rmsd
         !
         ! Verbose
         write( *, * ) "     - Start jobInversionDCG"
@@ -331,7 +323,7 @@ contains
             !
             dsigma = model_cov%multBy_Cm( pmodel )
             !
-            call sigma%add( dsigma )
+            call sigma%linComb( ONE, ONE, dsigma )
             !
         endif
         !
@@ -351,25 +343,10 @@ contains
         call createForwardSolver()
         !
         !> Run ForwardModelling for calculate Predicted Data
-        call ForwardModeling( sigma )
+        call runForwardModeling( sigma )
         !
-        !> Write all_predicted_data, with its proper Rx headers, to the file <predicted_data_file_name>
-        call writeDataGroupArray( all_predicted_data, predicted_data_file_name )
-		!
-		! initialize res
-		all_residual_data = all_measured_data
-		!
-		call linCombDataGroupTxArray( ONE, all_measured_data, MinusONE, all_predicted_data, all_residual_data )
-		!
-		! normalize residuals, compute sum of squares
-		res = all_residual_data
-		call normalizeDataGroupTxArray( res, 2 )
-		SS = dotProdDataGroupTxArray( all_residual_data, res )
-		Ndata = countDataGroupTxArray( all_residual_data )
-		!
-		! if required, compute the Root Mean Squared misfit
-		residual_rmsd = sqrt( SS / Ndata )
-		!
+        residual_rmsd = getResidualRMS()
+        !
         !> Initialize the JmHat data array in the same format as the predicted data array
         JmHat = all_predicted_data
         !
@@ -392,7 +369,7 @@ contains
             !> resJmHat (b) = res + JmHat
             resJmHat = all_residual_data
             !
-			!call linComb(ONE,res,ONE,JmHat,b)
+            !call linComb(ONE,res,ONE,JmHat,b)
             call linCombDataGroupTxArray( ONE, all_residual_data, ONE, JmHat, resJmHat )
             !
             !> NEED THIS?
@@ -406,39 +383,20 @@ contains
             call JMult_T( sigma0, dx, dsigma )
             !
             !> Save dsigma in pmodel, to use in the next DCG step
-            pmodel = dsigma
+            !pmodel = dsigma
             !
             !> Smooth dsigma and add it to sigma
-            dsigma = model_cov%multBy_Cm( dsigma )
+            pmodel = model_cov%multBy_Cm( dsigma )
             !
-            call sigma%add( dsigma )
+            sigma = sigma0
+            !
+            call sigma%linComb( ONE, ONE, pmodel )
             !
             !> Run ForwardModelling for calculate Predicted Data with new sigma
-            call ForwardModeling( sigma )
-			!
-			!> Create the array with residual data (all_residual_data)
-			!call setResidualData()
-			!
-			!call printDataGroupTxArray( all_residual_data )
-			!
-			!> Calculate RMSD
-			!residual_rmsd = rmsdDataGroupTxArray( all_residual_data )
-				!
-				! initialize res
-				all_residual_data = all_measured_data
-				!
-				call linCombDataGroupTxArray( ONE, all_measured_data, MinusONE, all_predicted_data, all_residual_data )
-
-				! normalize residuals, compute sum of squares
-				res = all_residual_data
-				call normalizeDataGroupTxArray( res, 2 )
-				SS = dotProdDataGroupTxArray( all_residual_data, res )
-				Ndata = countDataGroupTxArray( all_residual_data )
-				!
-				! if required, compute the Root Mean Squared misfit
-				residual_rmsd = sqrt( SS / Ndata )
-				!
-			!
+            call runForwardModeling( sigma )
+            !
+            residual_rmsd = getResidualRMS()
+            !
             ! Verbose
             write( *, * ) "          - #ITER_DCG: ", iter_dcg, residual_rmsd
             !
@@ -456,7 +414,7 @@ contains
         ! Verbose
         write( *, * ) "     - Finish jobInversionDCG"
         !
-    end subroutine jobInversionDCG
+    end subroutine jobInversionDCG_FULL
     !
     !> No subroutine briefing
     subroutine createForwardSolver()
@@ -1043,40 +1001,6 @@ contains
         endif
         !
     end subroutine writePredictedDataHeader
-    !
-    !> No subroutine briefing
-    subroutine writeEsolutionHeader( n_tx, nMode )
-        implicit none
-        !
-        integer, intent( in ) :: n_tx, nMode
-        integer :: ios
-        character(len=20) :: version
-        !
-        version = "Modem-OO"
-        !
-        open( ioESolution, file = e_solution_file_name, action = "write", form = "unformatted", iostat = ios)
-        !
-        if( ios == 0 ) then
-            !
-            write( ioESolution ) version, n_tx, nMode, &
-            main_grid%nx, main_grid%ny, main_grid%nz, main_grid%nzAir, &
-            main_grid%ox, main_grid%oy, main_grid%oz, main_grid%rotdeg
-            !
-            write( ioESolution ) main_grid%dx
-            write( ioESolution ) main_grid%dy
-            write( ioESolution ) main_grid%dz
-            !
-            close( ioESolution )
-            !
-        else
-            !
-            write( *, * ) "Error opening file in writeEsolutionHeader [", e_solution_file_name, "]!"
-            stop
-            !
-        endif
-        !
-        !
-    end subroutine writeEsolutionHeader
     !
     !> No subroutine briefing
     subroutine printUsage()

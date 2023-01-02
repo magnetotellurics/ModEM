@@ -24,6 +24,6 @@ forward_solver [FILE|IT|IT_DC]     : IT_DC
 #
 model_method [mirror|fixed height] : fixed height
 #
-model_n_air_layer [10]             : 10
+model_n_air_layer [10]             : 12
 #
-model_max_height [200.0]           : 200.0
+model_max_height [200.0]           : 1000.0

@@ -5,20 +5,14 @@ module DataGroupTxArray
     !
     use DataGroupTx
     !
-    !> Global arrays of Predicted and Residual data for all transmitters
-    type( DataGroupTx_t ), allocatable, dimension(:) :: all_predicted_data, all_residual_data
+    !> Global arrays of Measured, Predicted and Residual data for all transmitters
+    type( DataGroupTx_t ), allocatable, dimension(:) :: all_measured_data, all_predicted_data, all_residual_data
     !
-    public :: multAddDataGroupTxArray
     public :: dotProdDataGroupTxArray
     public :: linCombDataGroupTxArray
     public :: scMultAddDataGroupTxArray
     public :: normalizeDataGroupTxArray
     public :: normalizeWithDataGroupTxArray
-    !
-    interface rmsdDataGroupTxArray
-        module procedure rmsdDataGroupTxArray1
-        module procedure rmsdDataGroupTxArray2
-    end interface rmsdDataGroupTxArray
     !
     public :: countDataGroupTxArray
     public :: getDataGroupTxArray
@@ -34,24 +28,15 @@ contains
         implicit none
         !
         type( DataGroupTx_t ), dimension(:), intent( inout ) :: data_tx_array
-        integer, intent(in) :: norm
+        integer, intent( in ) :: norm
         !
-        complex( kind=prec ) :: c_value
-        integer :: i, j, k
+        integer :: i, j
         !
         do i = 1, size( data_tx_array )
             !
             do j = 1, size( data_tx_array(i)%data )
                 !
-                do k = 1, data_tx_array(i)%data(j)%n_comp
-                    !
-                    c_value = cmplx( data_tx_array(i)%data(j)%reals(k), data_tx_array(i)%data(j)%imaginaries(k), kind=prec )
-                    !
-                    c_value = c_value / data_tx_array(i)%data(j)%errors(k) ** norm
-                    !
-                    call data_tx_array(i)%data(j)%set( k, c_value )
-                    !
-                enddo
+                data_tx_array(i)%data(j)%reals = data_tx_array(i)%data(j)%reals / data_tx_array(i)%data(j)%errors ** norm
                 !
             enddo
             !
@@ -67,8 +52,7 @@ contains
         type( DataGroupTx_t ), dimension(:), intent( in ) :: data_tx_array_in
         type( DataGroupTx_t ), dimension(:), intent( inout ) :: data_tx_array_out
         !
-        complex( kind=prec ) :: c_value
-        integer :: i, j, k
+        integer :: i, j
         !
         do i = 1, size( data_tx_array_in )
             !
@@ -76,15 +60,7 @@ contains
                 !
                 data_tx_array_out(i)%data(j)%error_bar = .TRUE.
                 !
-                do k = 1, data_tx_array_in(i)%data(j)%n_comp
-                    !
-                    c_value = cmplx( data_tx_array_out(i)%data(j)%reals(k), data_tx_array_out(i)%data(j)%imaginaries(k), kind=prec )
-                    !
-                    c_value = c_value / data_tx_array_in(i)%data(j)%errors(k) ** norm
-                    !
-                    call data_tx_array_out(i)%data(j)%set( k, c_value )
-                    !
-                enddo
+                data_tx_array_out(i)%data(j)%reals = data_tx_array_out(i)%data(j)%reals / data_tx_array_in(i)%data(j)%errors ** norm
                 !
             enddo
             !
@@ -116,32 +92,6 @@ contains
     end function countDataGroupTxArray
     !
     !> Root Mean Square Deviation between two DataGroupTxArrays
-    subroutine multAddDataGroupTxArray( data_tx_array_1, data_tx_array_2, rvalue )
-        implicit none
-        !
-        type( DataGroupTx_t ), dimension(:), intent( inout ) :: data_tx_array_1
-        type( DataGroupTx_t ), dimension(:), intent( in ) :: data_tx_array_2
-        real( kind=prec ), intent( in ) :: rvalue
-        !
-        integer :: i
-        !
-        if( size( data_tx_array_1 ) /= size( data_tx_array_2 ) ) then
-            !
-            stop "Error: DataGroupTxArray : multAddDataGroupTxArray > different array sizes"
-            !
-        else
-            !
-            do i = 1, size( data_tx_array_1 )
-                !
-                call data_tx_array_1(i)%multAdd( data_tx_array_2(i), rvalue )
-                !
-            enddo
-            !
-        endif
-        !
-    end subroutine multAddDataGroupTxArray
-    !
-    !> Root Mean Square Deviation between two DataGroupTxArrays
     function dotProdDataGroupTxArray( data_tx_array_1, data_tx_array_2 ) result( rvalue )
         implicit none
         !
@@ -157,7 +107,7 @@ contains
             !
         else
             !
-            rvalue = 0.0
+            rvalue = R_ZERO
             !
             do i = 1, size( data_tx_array_1 )
                 !
@@ -206,58 +156,6 @@ contains
         call linCombDataGroupTxArray( rvalue, data_tx_array_in, ONE, data_tx_array_out, data_tx_array_out )
         !
     end subroutine scMultAddDataGroupTxArray
-    !
-    !> Root Mean Square Deviation for a single DataGroupTxArray
-    function rmsdDataGroupTxArray1( data_tx_array ) result( rmsd )
-        implicit none
-        !
-        type( DataGroupTx_t ), dimension(:), intent( in ) :: data_tx_array
-        !
-        complex( kind=prec ) :: rmsd
-        !
-        integer :: i
-        !
-        rmsd = C_ZERO
-        !
-        do i = 1, size( data_tx_array )
-            !
-            rmsd = rmsd + data_tx_array(i)%rmsd()
-            !
-        enddo
-        !
-        rmsd = CDSQRT( rmsd / countDataGroupTxArray( data_tx_array ) )
-        !
-    end function rmsdDataGroupTxArray1
-    !
-    !> Root Mean Square Deviation between two DataGroupTxArrays
-    function rmsdDataGroupTxArray2( data_tx_array_1, data_tx_array_2 ) result( rmsd )
-        implicit none
-        !
-        type( DataGroupTx_t ), dimension(:), intent( in ) :: data_tx_array_1, data_tx_array_2
-        !
-        complex( kind=prec ) :: rmsd
-        !
-        integer :: i
-        !
-        if( size( data_tx_array_1 ) /= size( data_tx_array_2 ) ) then
-            !
-            stop "Error: DataGroupTxArray : rmsdDataGroupTxArray2 > different array sizes"
-            !
-        else
-            !
-            rmsd = C_ZERO
-            !
-            do i = 1, size( data_tx_array_1 )
-                !
-                rmsd = rmsd + data_tx_array_1(i)%rmsd( data_tx_array_2(i) )
-                !
-            enddo
-            !
-            rmsd = CDSQRT( rmsd / countDataGroupTxArray( data_tx_array_1 ) )
-            !
-        endif
-        !
-    end function rmsdDataGroupTxArray2
     !
     !> Return a pointer, allowing directly modifications to a DataGroupTx at a given index
     function getDataGroupTxArray( data_tx_array, dtx_id ) result( data_tx )

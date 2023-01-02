@@ -181,30 +181,26 @@ contains
         d_group_out%i_rx = self%i_rx
         d_group_out%i_tx = self%i_tx
         !
-        do i = 1, self%n_comp
-            !
-            d_group_out%reals(i) = a * self%reals(i) + b * d_group%reals(i)
-            !
-            if( self%error_bar .AND. d_group%error_bar ) then
-                if( abs(a) > R_ZERO .AND. abs(b) > R_ZERO ) then
-                    stop "Error: linCombDataGroup: unable to add two data vectors with error bars"
-                else if( abs(a) > R_ZERO ) then
-                    d_group_out%errors(i) = a * self%errors(i)
-                    !dOut%normalized = d1%normalized
-                else if( abs(b) > R_ZERO ) then
-                    d_group_out%errors(i) = b * d_group%errors(i)
-                    !dOut%normalized = d2%normalized
-                end if
-            else if( self%error_bar ) then
-                d_group_out%errors(i) = a * self%errors(i)
-                !dOut%normalized = d1%normalized
-            else if( d_group%error_bar ) then
-                d_group_out%errors(i) = b * d_group%errors(i)
-                !dOut%normalized = d2%normalized
-            end if
-            !
-        enddo
-        !
+		d_group_out%reals = a * self%reals + b * d_group%reals
+		!
+		if( self%error_bar .AND. d_group%error_bar ) then
+			if( abs(a) > R_ZERO .AND. abs(b) > R_ZERO ) then
+				stop "Error: linCombDataGroup: unable to add two data vectors with error bars"
+			else if( abs(a) > R_ZERO ) then
+				d_group_out%errors = a * self%errors
+				!dOut%normalized = d1%normalized
+			else if( abs(b) > R_ZERO ) then
+				d_group_out%errors = b * d_group%errors
+				!dOut%normalized = d2%normalized
+			end if
+		else if( self%error_bar ) then
+			d_group_out%errors = a * self%errors
+			!dOut%normalized = d1%normalized
+		else if( d_group%error_bar ) then
+			d_group_out%errors = b * d_group%errors
+			!dOut%normalized = d2%normalized
+		end if
+		!
     end subroutine linCombDataGroup
     !
     !> ????
@@ -217,7 +213,7 @@ contains
         !
         integer :: i
         !
-        rvalue = 0.0
+        rvalue = R_ZERO
         !
         do i = 1, self%n_comp
             !
