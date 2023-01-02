@@ -269,8 +269,9 @@ contains
         !
         lambda = 10.
         !
-        call DCGsolver( all_measured_data, sigma, pmodel, lambda )
+        !call DCGsolver( all_measured_data, sigma, pmodel, lambda )
         !call DCGsolverLanczos( all_measured_data, sigma, pmodel, lambda )
+		call NLCGsolver( all_measured_data, lambda, sigma, pmodel )
         !
         ! Verbose
         write( *, * ) "     - Finish jobInversionDCG"

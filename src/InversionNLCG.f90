@@ -164,7 +164,7 @@ contains
 		call m%linComb( ONE, ONE, m0 )
         !
         !> compute gradient of the full penalty functional
-        call gradient( lambda, d, m0, mHat, grad, dHat )
+        call gradient( lambda, d, m0, mHat, grad, dHat, eAll )
         !
         gnorm = sqrt( grad%dotProd( grad ) )
         !
@@ -372,17 +372,9 @@ contains
         real( kind=prec ) :: Ndata, Nmodel, angle1, angle2, diff, diff1
         type( DataGroupTx_t ), allocatable, dimension(:) :: res
         class( ModelParameter_t ), allocatable :: m, JTd, CmJTd
-        class( ModelParameter_t ), pointer, dimension(:) :: s_hat
         integer :: nTx, iTx, j, i, icomp, isite
         !
         nTx = size( d )
-        !
-        allocate( s_hat( nTx ) )
-        !
-        do iTx = 1, nTx
-            s_hat(iTx) = m0
-            call s_hat(iTx)%zeros()
-        end do
         !
         ! compute the smoothed model parameter vector
         m = model_cov%multBy_Cm( mHat )
@@ -404,9 +396,6 @@ contains
         !
         CmJTd = model_cov%multBy_Cm( JTd )
         !
-        ! initialize grad
-        allocate( grad, source = m )
-        !
         ! compute the number of data and model parameters for scaling
         Nmodel = mHat%countModel()
         !
@@ -414,7 +403,7 @@ contains
         ! and add the gradient of the model norm
         grad = CmJTd
         !
-        call grad%linComb( MinusTWO/Ndata, TWO*lambda/Nmodel, mHat )
+        call grad%linComb( MinusTWO / Ndata, TWO * lambda / Nmodel, mHat )
         !
         call deallocateDataGroupTxArray( res )
         deallocate( m, JTd, CmJTd )
@@ -478,7 +467,7 @@ contains
         !
         call deallocateDataGroupTxArray( res )
         call deallocateDataGroupTxArray( Nres )
-        deallocate( m, JTd )
+        deallocate( m )
         !
     end subroutine func
     !
@@ -704,11 +693,11 @@ contains
             !
             write( *, * ) "Quadratic has no minimum, exiting line search"
             !
-            call deall_dataVectorMTX(dHat_1)
+            call deallocateDataGroupTxArray( dHat_1 )
             !
             deallocate( mHat_0, mHat_1 )
             !
-            call deall_solnVectorMTX( eAll_1 )
+            !call deall_solnVectorMTX( eAll_1 )
             !
             return
             !
@@ -767,7 +756,7 @@ contains
             !
             deallocate( mHat_0, mHat_1 )
             !
-            call deall_solnVectorMTX(eAll_1)
+            !call deall_solnVectorMTX(eAll_1)
             !
             return
             !
@@ -891,7 +880,7 @@ contains
         !
         deallocate( mHat_0, mHat_1 )
         !
-        call deall_solnVectorMTX(eAll_1)
+        !call deall_solnVectorMTX(eAll_1)
         !
     end subroutine lineSearchCubic
     !
