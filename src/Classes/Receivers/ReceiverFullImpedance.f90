@@ -161,10 +161,10 @@ contains
         !
         allocate( EE(2,2) )
         !
-        select type( tx_e_1 => transmitter%e_all(1) )
+        select type( tx_e_1 => transmitter%e_sol(1) )
             class is( cVector3D_SG_t )
                 !
-                select type( tx_e_2 => transmitter%e_all(2) )
+                select type( tx_e_2 => transmitter%e_sol(2) )
                     class is( cVector3D_SG_t )
                         !
                         EE(1,1) = self%Lex%dotProd( tx_e_1 )

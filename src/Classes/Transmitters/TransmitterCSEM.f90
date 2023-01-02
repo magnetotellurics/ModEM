@@ -127,12 +127,12 @@ contains
             !
             write( *, * ) "               SolveFWD CSEM Tx:", self%id, " -> Period:", self%period
             !
-            if( allocated( self%e_all ) ) deallocate( self%e_all )
-            allocate( cVector3D_SG_t :: self%e_all(1) )
+            if( allocated( self%e_sol ) ) deallocate( self%e_sol )
+            allocate( cVector3D_SG_t :: self%e_sol(1) )
             !
         endif
         !
-        !> Defines e_all or e_sens depending on Forward or Adjoint case
+        !> Defines e_sol or e_sens depending on Forward or Adjoint case
         if( self%source%adjoint ) then
             !
             !> Calculate e_solution through ForwardSolver
@@ -144,10 +144,10 @@ contains
         else
             !
             !> Calculate e_solution through ForwardSolver
-            call self%forward_solver%createESolution( 1, self%source, self%e_all(1) )
+            call self%forward_solver%createESolution( 1, self%source, self%e_sol(1) )
             !
             !> Add the source's rhs content to the e_solution vector
-            call self%e_all(1)%add( self%source%E(1) )
+            call self%e_sol(1)%add( self%source%E(1) )
             !
             ModeName = "Ex"
             !
@@ -162,7 +162,7 @@ contains
                 !> write the frequency header - 1 record
                 write( ioESolution ) omega, self%id, 1, ModeName
                 !
-                call self%e_all(1)%write( ioESolution )
+                call self%e_sol(1)%write( ioESolution )
                 !
                 close( ioESolution )
                 !

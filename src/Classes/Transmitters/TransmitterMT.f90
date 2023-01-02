@@ -64,7 +64,7 @@ module TransmitterMT
         !
     end subroutine TransmitterMT_dtor
     !
-    !> Calculate e_all or e_sens from with ForwardSolver
+    !> Calculate e_sol or e_sens from with ForwardSolver
     !> Depending of the Source%adjoint
     subroutine solveTransmitterMT( self )
         implicit none
@@ -89,8 +89,8 @@ module TransmitterMT
             !
         else
             !
-            if( allocated( self%e_all ) ) deallocate( self%e_all )
-            allocate( cVector3D_SG_t :: self%e_all(2) )
+            if( allocated( self%e_sol ) ) deallocate( self%e_sol )
+            allocate( cVector3D_SG_t :: self%e_sol(2) )
             !
         endif
         !
@@ -107,8 +107,8 @@ module TransmitterMT
             else
                 write( *, * ) "               SolveFWD MT Tx:", self%id, " -> Period:", self%period, " - Polarization:", i_pol
                 !
-                !> Calculate e_all through ForwardSolver
-                call self%forward_solver%createESolution( i_pol, self%source, self%e_all( i_pol ) )
+                !> Calculate e_sol through ForwardSolver
+                call self%forward_solver%createESolution( i_pol, self%source, self%e_sol( i_pol ) )
                 !
                 if( i_pol == 1 ) then
                     ModeName = "Ey"
@@ -127,7 +127,7 @@ module TransmitterMT
                     !> write the frequency header - 1 record
                     write( ioESolution ) omega, self%id, i_pol, ModeName
                     !
-                    call self%e_all( i_pol )%write( ioESolution )
+                    call self%e_sol( i_pol )%write( ioESolution )
                     !
                     close( ioESolution )
                     !

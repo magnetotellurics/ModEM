@@ -5,8 +5,8 @@ module DataGroupTxArray
     !
     use DataGroupTx
     !
-    !> Global arrays of Measured, Predicted and Residual data for all transmitters
-    type( DataGroupTx_t ), allocatable, dimension(:) :: all_measured_data, all_predicted_data, all_residual_data
+    !> Global array with the Measured data for all transmitters
+    type( DataGroupTx_t ), allocatable, dimension(:) :: all_measured_data
     !
     public :: dotProdDataGroupTxArray
     public :: linCombDataGroupTxArray

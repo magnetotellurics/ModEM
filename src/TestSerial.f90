@@ -14,6 +14,7 @@ program TestSerial
     use DataFileStandard
     !
     use InversionDCG
+    use InversionNLCG
     !
     real( kind=prec ) :: t_start, t_finish
     !
@@ -53,6 +54,8 @@ contains
     subroutine jobForwardModeling()
         implicit none
         !
+        type( DataGroupTx_t ), allocatable, dimension(:) :: d_pred
+        !
         ! Verbose
         write( *, * ) "     - Start jobForwardModeling"
         !
@@ -77,11 +80,13 @@ contains
         !> Instantiate the global ForwardSolver - Specific type can be chosen via control file
         call createForwardSolver()
         !
-        !> Run ForwardModelling to calculate predicted data
-        call runForwardModeling( sigma0 )
+        !> Run ForwardModelling to calculate d_pred
+        d_pred = all_measured_data
+        !
+        call runForwardModeling( sigma0, d_pred )
         !
         !> Write Predicted Data, with its proper Rx headers, into to the file <predicted_data_file_name>
-        call writeDataGroupArray( all_predicted_data, predicted_data_file_name )
+        call writeDataGroupArray( d_pred, predicted_data_file_name )
         !
         ! Verbose
         write( *, * ) "     - Finish jobForwardModeling"
@@ -92,7 +97,7 @@ contains
     subroutine jobJMult()
         implicit none
         !
-        type( DataGroupTx_t ), allocatable, dimension(:) :: JmHat
+        type( DataGroupTx_t ), allocatable, dimension(:) :: d_pred, JmHat
         !
         ! Verbose
         write( *, * ) "     - Start jobJMult"
@@ -129,11 +134,13 @@ contains
         !> Instantiate the ForwardSolver - Specific type can be chosen via control file
         call createForwardSolver()
         !
-        !> Run ForwardModelling to calculate predicted data
-        call runForwardModeling( sigma0 )
+        !> Run ForwardModelling to calculate d_pred
+        d_pred = all_measured_data
+        !
+        call runForwardModeling( sigma0, d_pred )
         !
         !> Initialize JmHat data array in the same format as the predicted data array
-        JmHat = all_predicted_data
+        JmHat = all_measured_data
         !
         !> Calculate JmHat Data array from JMult routine
         call JMult( sigma0, pmodel, JmHat )
@@ -152,7 +159,7 @@ contains
         !
         class( ModelParameter_t ), allocatable :: dsigma
         !
-        type( DataGroupTx_t ), allocatable, dimension(:) :: all_measured_data
+        type( DataGroupTx_t ), allocatable, dimension(:) :: d_pred
         !
         ! Verbose
         write( *, * ) "     - Start jobJMult_T"
@@ -172,8 +179,6 @@ contains
             !
             call handleDataFile()
             !
-            all_measured_data = all_predicted_data
-            !
         else
             stop "Error: jobJMult_T > Missing Data file!"
         endif
@@ -181,8 +186,11 @@ contains
         !> Instantiate the ForwardSolver - Specific type can be chosen via control file
         call createForwardSolver()
         !
+        !> Run ForwardModelling to calculate d_pred
+        d_pred = all_measured_data
+        !
         !> Run ForwardModelling to calculate predicted data
-        call runForwardModeling( sigma0 )
+        call runForwardModeling( sigma0, d_pred )
         !
         !> Calculate DSigma model from JMult_T routine
         call JMult_T( sigma0, all_measured_data, dsigma )
@@ -247,13 +255,10 @@ contains
             !
         endif
         !
-        !> Read Data File: instantiates and builds the Data relation between Txs and Rxs
+        !> Read Data File: instantiate and build the Data relation between Txs and Rxs
         if( has_data_file ) then 
             !
             call handleDataFile()
-            !
-            !> Initialize array with measure data
-            all_measured_data = all_predicted_data
             !
         else
             stop "Error: jobInversionDCG > Missing Data file!"
@@ -265,7 +270,7 @@ contains
         lambda = 10.
         !
         call DCGsolver( all_measured_data, sigma, pmodel, lambda )
-		!call DCGsolverLanczos( all_measured_data, sigma, pmodel, lambda )
+        !call DCGsolverLanczos( all_measured_data, sigma, pmodel, lambda )
         !
         ! Verbose
         write( *, * ) "     - Finish jobInversionDCG"
@@ -283,7 +288,7 @@ contains
         !
         class( ModelParameter_t ), allocatable :: sigma, dsigma
         !
-        type( DataGroupTx_t ), allocatable, dimension(:) :: dx, JmHat, resJmHat
+        type( DataGroupTx_t ), allocatable, dimension(:) :: dx, JmHat, d_pred, res, resJmHat
         !
         type( IterControl_t ) :: CGiter
         !
@@ -332,9 +337,6 @@ contains
             !
             call handleDataFile()
             !
-            !> Initialize array with measure data
-            all_measured_data = all_predicted_data
-            !
         else
             stop "Error: jobInversionDCG > Missing Data file!"
         endif
@@ -343,12 +345,12 @@ contains
         call createForwardSolver()
         !
         !> Run ForwardModelling for calculate Predicted Data
-        call runForwardModeling( sigma )
+        call runForwardModeling( sigma, d_pred )
         !
-        residual_rmsd = getResidualRMS()
+        residual_rmsd = getResidualRMS( d_pred, res )
         !
         !> Initialize the JmHat data array in the same format as the predicted data array
-        JmHat = all_predicted_data
+        JmHat = all_measured_data
         !
         dx = all_measured_data
         !
@@ -367,10 +369,10 @@ contains
             call JMult( sigma0, pmodel, JmHat )
             !
             !> resJmHat (b) = res + JmHat
-            resJmHat = all_residual_data
+            resJmHat = res
             !
             !call linComb(ONE,res,ONE,JmHat,b)
-            call linCombDataGroupTxArray( ONE, all_residual_data, ONE, JmHat, resJmHat )
+            call linCombDataGroupTxArray( ONE, res, ONE, JmHat, resJmHat )
             !
             !> NEED THIS?
             call normalizeDataGroupTxArray( resJmHat, 1 )
@@ -393,9 +395,9 @@ contains
             call sigma%linComb( ONE, ONE, pmodel )
             !
             !> Run ForwardModelling for calculate Predicted Data with new sigma
-            call runForwardModeling( sigma )
+            call runForwardModeling( sigma, d_pred )
             !
-            residual_rmsd = getResidualRMS()
+            residual_rmsd = getResidualRMS( d_pred, res )
             !
             ! Verbose
             write( *, * ) "          - #ITER_DCG: ", iter_dcg, residual_rmsd
@@ -460,12 +462,12 @@ contains
         !
         !> If is the first time, create the predicted data array, 
         !> according to the arrangement of the Transmitter-Receiver pairs of the input
-        if( .NOT. allocated( all_predicted_data ) ) then
+        if( .NOT. allocated( all_measured_data ) ) then
             !
             write( *, * ) "     - Create predicted data array"
             !
             !> Create an array of DataGroupTx to store the predicted data in the same format as the measured data
-            !> Enabling the use of grouped predicted data in future jobs (all_predicted_data)
+            !> Enabling the use of grouped predicted data in future jobs (all_measured_data)
             do i_tx = 1, size( transmitters )
                 !
                 tx_data = DataGroupTx_t( i_tx )
@@ -479,7 +481,7 @@ contains
                     endif
                 enddo
                 !
-                call updateDataGroupTxArray( all_predicted_data, tx_data )
+                call updateDataGroupTxArray( all_measured_data, tx_data )
                 !
             enddo
             !
@@ -841,7 +843,9 @@ contains
         implicit none
         !
         !> Flush memory used for global data arrays
-        deallocate( measured_data, all_predicted_data )
+        deallocate( measured_data )
+        !
+        if( allocated( all_measured_data ) ) call deallocateDataGroupTxArray( all_measured_data )
         !
         !> Deallocate global array of Receivers
         call deallocateReceiverArray()

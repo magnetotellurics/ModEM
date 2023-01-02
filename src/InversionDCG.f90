@@ -6,7 +6,7 @@ module InversionDCG
     use ForwardModeling
     use Sensitivity
     !
-    type  :: IterControl_t
+    type :: IterControl_t
         !
         ! maximum number of iterations in one call to iterative solver
         integer :: maxIt
@@ -45,7 +45,7 @@ contains
         class( ModelParameter_t ), allocatable, intent( inout ) :: m
         real( kind=prec ), intent( inout ) :: lambda
         !
-        type( DataGroupTx_t ), allocatable, dimension(:) :: b, dx, res, JmHat
+        type( DataGroupTx_t ), allocatable, dimension(:) :: b, dx, d_pred, res, JmHat
         class( ModelParameter_t ), allocatable :: mHat, Cm_mHat
         real( kind=prec ) :: rmsd
         type( IterControl_t ) :: CGiter
@@ -73,7 +73,9 @@ contains
         !
         call zerosDataGroupTxArray( b )
         !
-        call Calc_FWD( lambda, d, m, res, rmsd )
+		d_pred = d
+		!
+        call Calc_FWD( lambda, d, m, d_pred, res, rmsd )
         !
         DCG_iter = 1
         !
@@ -102,11 +104,11 @@ contains
             !
             call m%linComb( ONE, ONE, mHat )
             !
-            call Calc_FWD( lambda, d, m, res, rmsd )
+            call Calc_FWD( lambda, d, m, d_pred, res, rmsd )
             !
             if( rmsd .LT. 1.05 .OR. DCG_iter .GE. 3 ) then
                 exit
-            end if
+            endif
             !
             DCG_iter = DCG_iter + 1
             !
@@ -129,7 +131,7 @@ contains
         class( ModelParameter_t ), allocatable, intent( inout ) :: m
         real( kind=prec ), intent( inout ) :: lambda
         !
-        type( DataGroupTx_t ), allocatable, dimension(:) :: JmHat, b, dx, res
+        type( DataGroupTx_t ), allocatable, dimension(:) :: JmHat, b, dx, d_pred, res
         class( ModelParameter_t ), allocatable :: mHat, Cm_mHat
         real( kind=prec ) :: rmsd
         integer :: DS_iter
@@ -153,7 +155,9 @@ contains
         !
         call setIterControl( CGiter )
         !
-        call Calc_FWD( lambda, d, m, res, rmsd )
+		d_pred = d
+		!
+        call Calc_FWD( lambda, d, m, d_pred, res, rmsd )
         !
         write( *, * ) "lambda, rmsd: ", lambda, rmsd
         !
@@ -164,7 +168,7 @@ contains
             !
             if ( DS_iter .GT. 1 ) then
                 call Jmult( m, mHat, JmHat )
-            end if
+            endif
             !
             b = d
             write( *, * ) "Norm JmHat: ", dotProdDataGroupTxArray( JmHat, JmHat )
@@ -191,7 +195,7 @@ contains
             m = m0
             call m%linComb( ONE, ONE, mHat )
             !
-            call Calc_FWD( lambda, d, m, res, rmsd )
+            call Calc_FWD( lambda, d, m, d_pred, res, rmsd )
             !
             write( *, * ) "DS_iter, lambda, rmsd, CGiter%niter: ", DS_iter, lambda, rmsd, CGiter%niter
             !
@@ -203,12 +207,13 @@ contains
     end subroutine DCGsolverLanczos
     !
     !>
-    subroutine Calc_FWD( lambda, d, m, res, rmsd )
+    subroutine Calc_FWD( lambda, d, m, d_pred, res, rmsd )
         implicit none
         !
         real( kind=prec ), intent( in ) :: lambda
-        type( DataGroupTx_t ), allocatable, dimension(:), intent( inout ) :: d
+        type( DataGroupTx_t ), allocatable, dimension(:), intent( in ) :: d
         class( ModelParameter_t ), allocatable, intent( in ) :: m
+        type( DataGroupTx_t ), allocatable, dimension(:), intent( inout ) :: d_pred
         type( DataGroupTx_t ), allocatable, dimension(:), intent( out ) :: res
         real( kind=prec ), intent( inout ) :: rmsd
         !
@@ -216,13 +221,15 @@ contains
         real( kind=prec ) :: SS
         integer :: Ndata
         !
-        call runForwardModeling( m )
+		d_pred = d
+		!
+        call runForwardModeling( m, d_pred )
         !
         ! initialize res
         res = d
         !
         ! compute residual: res = d-d_Pred
-        call linCombDataGroupTxArray( ONE, d, MinusONE, all_predicted_data, res )
+        call linCombDataGroupTxArray( ONE, d, MinusONE, d_pred, res )
         !
         ! normalize residuals, compute sum of squares
         Nres = res

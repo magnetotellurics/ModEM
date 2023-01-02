@@ -293,7 +293,7 @@ contains
         !
         if ( .NOT. self%cell_cond%is_allocated ) then
             stop "Error: countModelParameterCell_SG > cell_cond not allocated!"
-        end if
+        endif
         !
         !
         !> Grid dimensions

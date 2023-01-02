@@ -40,10 +40,11 @@ contains
     !>         - True: Calculate LRows in the receivers after calculating predicted data.
     !> Obs.: Require the previous definition of the global ForwardSolver (createForwardSolver())
     !
-    subroutine runForwardModeling( sigma )
+    subroutine runForwardModeling( sigma, predicted_data )
         implicit none
         !
         class( ModelParameter_t ), intent( in ) :: sigma
+        type( DataGroupTx_t ), allocatable, dimension(:), intent( inout ) :: predicted_data
         !
         class( Transmitter_t ), pointer :: Tx
         class( Receiver_t ), pointer :: Rx
@@ -89,7 +90,7 @@ contains
             !> Build Source E according to source type
             call Tx%source%createE()
             !
-            !> Solve e_all for this Transmitter
+            !> Solve e_sol for this Transmitter
             call Tx%solve()
             !
             ! Verbose
@@ -103,7 +104,7 @@ contains
                 !
                 call Rx%predictedData( Tx )
                 !
-                call all_predicted_data( i_tx )%set( Rx%data_group )
+                call predicted_data( i_tx )%set( Rx%data_group )
                 !
             enddo
             !

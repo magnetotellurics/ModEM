@@ -256,23 +256,26 @@ contains
     !>     Create a Rhs from LRows * residual data for all receivers related to the transmitter.
     !>     Solve ESens on the transmitter with SourceInteriorForce and the new Rhs.
     !>     Call Tx%PMult to get a new ModelParameter DSigma for the transmitter.
-    function getResidualRMS() result( rmsd )
+    function getResidualRMS( predicted, residual ) result( rmsd )
         implicit none
+        !
+        type( DataGroupTx_t ), allocatable, dimension(:), intent( in ) :: predicted
+        type( DataGroupTx_t ), allocatable, dimension(:), intent( inout ) :: residual
         !
         real( kind=prec ) :: rmsd
         !
         type( DataGroupTx_t ), allocatable, dimension(:) :: n_residual
         !
         ! initialize res
-        all_residual_data = all_measured_data
+        residual = all_measured_data
         !
-        call linCombDataGroupTxArray( ONE, all_measured_data, MinusONE, all_predicted_data, all_residual_data )
+        call linCombDataGroupTxArray( ONE, all_measured_data, MinusONE, predicted, residual )
         !
-        n_residual = all_residual_data
+        n_residual = residual
         !
         call normalizeDataGroupTxArray( n_residual, 2 )
         !
-        rmsd = sqrt( dotProdDataGroupTxArray( all_residual_data, n_residual ) / countDataGroupTxArray( all_residual_data ) )
+        rmsd = sqrt( dotProdDataGroupTxArray( residual, n_residual ) / countDataGroupTxArray( residual ) )
         !
     end function getResidualRMS
     !

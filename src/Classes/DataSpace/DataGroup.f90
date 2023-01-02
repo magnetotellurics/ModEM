@@ -192,14 +192,14 @@ contains
 			else if( abs(b) > R_ZERO ) then
 				d_group_out%errors = b * d_group%errors
 				!dOut%normalized = d2%normalized
-			end if
+			endif
 		else if( self%error_bar ) then
 			d_group_out%errors = a * self%errors
 			!dOut%normalized = d1%normalized
 		else if( d_group%error_bar ) then
 			d_group_out%errors = b * d_group%errors
 			!dOut%normalized = d2%normalized
-		end if
+		endif
 		!
     end subroutine linCombDataGroup
     !

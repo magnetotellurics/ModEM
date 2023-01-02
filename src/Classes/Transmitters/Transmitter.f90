@@ -23,7 +23,7 @@ module Transmitter
         !
         real( kind=prec ) :: period
         !
-        class( Vector_t ), allocatable, dimension(:) :: e_all, e_sens
+        class( Vector_t ), allocatable, dimension(:) :: e_sol, e_sens
         !
         integer, allocatable, dimension(:) :: receiver_indexes
         !
@@ -101,7 +101,7 @@ module Transmitter
             !
             if( allocated( self%source ) ) deallocate( self%source )
             !
-            if( allocated( self%e_all ) ) deallocate( self%e_all )
+            if( allocated( self%e_sol ) ) deallocate( self%e_sol )
             !
             if( allocated( self%e_sens ) ) deallocate( self%e_sens )
             !
@@ -203,7 +203,7 @@ module Transmitter
             !
             do pol = 1, self%n_pol
                 !
-                bSrc( pol ) = self%e_all( pol )
+                bSrc( pol ) = self%e_sol( pol )
                 !
                 call bSrc( pol )%mult( map_e_vector )
                 !

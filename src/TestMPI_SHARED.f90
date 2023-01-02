@@ -19,7 +19,7 @@ program TestMPI
         write( *, * ) "Error: Minimum of two processes required!"
         call MPI_Finalize( ierr )
         stop
-    end if 
+    endif 
     !
     !> Set mpi_rank with process id for mpi_comm_world
     call MPI_Comm_rank( MPI_COMM_WORLD, mpi_rank, ierr )

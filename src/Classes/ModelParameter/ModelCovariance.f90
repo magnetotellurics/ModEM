@@ -94,7 +94,7 @@ contains
                 write( *, * ) "Error: Unable to find the input covariance file [", trim( cfile ), "]!"
                 stop
                 !
-            end if
+            endif
             !
             if( ( self%Nx /= m%metric%grid%Nx ) .OR. ( self%Ny /= m%metric%grid%Ny ) .OR. ( self%NzEarth /= m%metric%grid%NzEarth ) ) then
                 !
