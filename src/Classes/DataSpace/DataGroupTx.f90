@@ -15,7 +15,7 @@ module DataGroupTx
             !
             final :: DataGroupTx_dtor
             !
-            procedure, public :: reset => resetDataGroupTx
+            procedure, public :: zeros => zerosDataGroupTx
             !
             procedure, public :: getRxData => getRxDataDataGroupTx
             !
@@ -23,21 +23,13 @@ module DataGroupTx
             !
             procedure, public :: set => setDataGroupTx
             !
-            procedure, public :: add => addDataGroupTx
-            !
-            procedure, public :: sub => subDataGroupTx
-            !
-            procedure, public :: multValueDataGroupTx
-            procedure, public :: multDataDataGroupTx
-            generic :: mult => multValueDataGroupTx, multDataDataGroupTx
-            !
-            procedure, public :: getResidual => getResidualDataGroupTx
-            !
             procedure, public :: rmsdDataGroupTx1
             procedure, public :: rmsdDataGroupTx2
             generic :: rmsd => rmsdDataGroupTx1, rmsdDataGroupTx2
             !
             procedure, public :: multAdd => multAddDataGroupTx
+            !
+            procedure, public :: linComb => linCombDataGroupTx
             !
             procedure, public :: dotProd => dotProdDataGroupTx
             !
@@ -81,7 +73,7 @@ contains
     end subroutine DataGroupTx_dtor
     !
     !> Call reset for each DataGroup in data
-    subroutine resetDataGroupTx( self )
+    subroutine zerosDataGroupTx( self )
         implicit none
         !
         class( DataGroupTx_t ), intent( inout ) :: self
@@ -90,11 +82,11 @@ contains
         !
         do i_data = 1, size( self%data )
             !
-            call self%data( i_data )%reset()
+            call self%data( i_data )%zeros()
             !
         enddo
         !
-    end subroutine resetDataGroupTx
+    end subroutine zerosDataGroupTx
     !
     !> Returns a pointer, allowing modifications directly to a DataGroup at a given transmitter-receiver pair indexes
     function getRxDataDataGroupTx( self, i_rx ) result( data_group )
@@ -159,35 +151,8 @@ contains
         !
     end subroutine putDataGroupTx
     !
-    !> Call the normalize routine of each DataGroup in the data array
-    !> Operating with the corresponding data from anrhs DataGroupTx
-    subroutine getResidualDataGroupTx( self, rhs )
-        implicit none
-        !
-        class( DataGroupTx_t ), intent( inout ) :: self
-        !
-        type( DataGroupTx_t ), intent( in ) :: rhs
-        !
-        integer :: i_data
-        !
-        if( self%i_tx /= rhs%i_tx ) then
-            stop "Error: getResidualDataGroupTx > lhs and rhs from different transmitters"
-        endif
-        !
-        if( size( self%data ) /= size( rhs%data ) ) then
-            stop "Error: getResidualDataGroupTx > lhs and rhs with incompatible data size"
-        endif
-        !
-        do i_data = 1, size( self%data )
-            !
-            call self%data( i_data )%normalize( rhs%data( i_data ) )
-            !
-        enddo
-        !
-    end subroutine getResidualDataGroupTx
-    !
     !> Replace a specific DataGroup of the array 
-    !> by anrhs DataGroup with the same transmitter-receiver pair
+    !> by other DataGroup with the same transmitter-receiver pair
     subroutine setDataGroupTx( self, data_group )
         implicit none
         !
@@ -211,98 +176,6 @@ contains
         enddo
         !
     end subroutine setDataGroupTx
-    !
-    !> add
-    subroutine addDataGroupTx( self, rhs )
-        implicit none
-        !
-        class( DataGroupTx_t ), intent( inout ) :: self
-        class( DataGroupTx_t ), intent( in ) :: rhs
-        !
-        integer :: i_data
-        !
-        if( size( self%data ) /= size( rhs%data ) ) then
-            !
-            stop "Error: addDataGroupTx > different data sizes"
-            !
-        else
-            !
-            do i_data = 1, size( self%data )
-                !
-                call self%data( i_data )%add( rhs%data( i_data ) )
-                !
-            enddo
-            !
-        endif
-        !
-    end subroutine addDataGroupTx
-    !
-    !> sub
-    subroutine subDataGroupTx( self, rhs )
-        implicit none
-        !
-        class( DataGroupTx_t ), intent( inout ) :: self
-        class( DataGroupTx_t ), intent( in ) :: rhs
-        !
-        integer :: i_data
-        !
-        if( size( self%data ) /= size( rhs%data ) ) then
-            !
-            stop "Error: subDataGroupTx > different data sizes"
-            !
-        else
-            !
-            do i_data = 1, size( self%data )
-                !
-                call self%data( i_data )%sub( rhs%data( i_data ) )
-                !
-            enddo
-            !
-        endif
-        !
-    end subroutine subDataGroupTx
-    !
-    !> Mult By Value
-    subroutine multValueDataGroupTx( self, rvalue )
-        implicit none
-        !
-        class( DataGroupTx_t ), intent( inout ) :: self
-        real( kind=prec ), intent( in ) :: rvalue
-        !
-        integer :: i_data
-        !
-        do i_data = 1, size( self%data )
-            !
-            call self%data( i_data )%mult( rvalue )
-            !
-        enddo
-        !
-    end subroutine multValueDataGroupTx
-    !
-    !> Mult By Another DataGroupTx
-    subroutine multDataDataGroupTx( self, rhs )
-        implicit none
-        !
-        class( DataGroupTx_t ), intent( inout ) :: self
-        class( DataGroupTx_t ), intent( in ) :: rhs
-        !
-        integer :: i_data
-        !
-        if( size( self%data ) /= size( rhs%data ) ) then
-            !
-            stop "Error: multDataDataGroupTx > different data sizes"
-            !
-        else
-            !
-            do i_data = 1, size( self%data )
-                !
-                call self%data( i_data )%mult( rhs%data( i_data ) )
-                !
-            enddo
-            !
-        endif
-        !
-    end subroutine multDataDataGroupTx
     !
     !> Root Mean Square Deviation between two DataGroupTxs
     subroutine multAddDataGroupTx( self, data_tx, rvalue )
@@ -343,16 +216,14 @@ contains
     end subroutine multAddDataGroupTx
     !
     !> dotProd between two DataGroupTxs
-    function dotProdDataGroupTx( self, data_tx ) result( cvalue )
+    function dotProdDataGroupTx( self, data_tx ) result( rvalue )
         implicit none
         !
         class( DataGroupTx_t ), intent( in ) :: self, data_tx
         !
-        complex( kind=prec ) :: cvalue
+        real( kind=prec ) :: rvalue
         !
-        integer :: i_data, i_comp
-        !
-        complex( kind=prec ) :: self_comp, data_tx_comp
+        integer :: i
         !
         if( size( self%data ) /= size( data_tx%data ) ) then
             !
@@ -360,19 +231,11 @@ contains
             !
         else
             !
-            cvalue = C_ZERO
+            rvalue = 0.0
             !
-            do i_data = 1, size( self%data )
+            do i = 1, size( self%data )
                 !
-                do i_comp = 1, self%data( i_data )%n_comp
-                    !
-                    self_comp = cmplx( self%data( i_data )%reals( i_comp ), self%data( i_data )%imaginaries( i_comp ), kind=prec )
-                    !
-                    data_tx_comp = cmplx( data_tx%data( i_data )%reals( i_comp ), data_tx%data( i_data )%imaginaries( i_comp ), kind=prec )
-                    !
-                    cvalue = cvalue + conjg( self_comp ) * data_tx_comp
-                    !
-                enddo
+                rvalue = rvalue + self%data(i)%dotProd( data_tx%data(i) )
                 !
             enddo
             !
@@ -380,37 +243,57 @@ contains
         !
     end function dotProdDataGroupTx
     !
+    !> linComb between two DataGroupTxs
+    subroutine linCombDataGroupTx( self, a, b, data_tx, data_tx_out )
+        implicit none
+        !
+        class( DataGroupTx_t ), intent( in ) :: self, data_tx
+        real( kind=prec ), intent( in ) :: a, b
+        class( DataGroupTx_t ), intent( inout ) :: data_tx_out
+        !
+        integer :: i
+        !
+        if( size( self%data ) /= size( data_tx%data ) ) then
+            !
+            stop "Error: DataGroupTx_t : linCombDataGroupTx > different data sizes"
+            !
+        else
+            !
+            do i = 1, size( self%data )
+                !
+                call self%data(i)%linComb( a, b, data_tx%data(i), data_tx_out%data(i) )
+                !
+            enddo
+            !
+        endif
+        !
+    end subroutine linCombDataGroupTx
+    !
     !> Root Mean Square Deviation for a single DataGroupTx
-    function rmsdDataGroupTx1( self ) result( rmsd_data )
+    function rmsdDataGroupTx1( self ) result( rmsd )
         implicit none
         !
         class( DataGroupTx_t ), intent( in ) :: self
         !
-        real( kind=prec ) :: rmsd_data, rmsd_comp
+        complex( kind=prec ) :: rmsd
         !
         integer :: i_data, i_comp
         !
         complex( kind=prec ) :: self_comp
         !
-        rmsd_data = R_ZERO
+        rmsd = C_ZERO
         !
         do i_data = 1, size( self%data )
-            !
-            rmsd_comp = R_ZERO
             !
             do i_comp = 1, self%data( i_data )%n_comp
                 !
                 self_comp = cmplx( self%data( i_data )%reals( i_comp ), self%data( i_data )%imaginaries( i_comp ), kind=prec )
                 !
-                rmsd_comp = rmsd_comp + real( self_comp, kind=prec )
+                rmsd = rmsd + self_comp ** 2
                 !
             enddo
             !
-            rmsd_data = rmsd_data + rmsd_comp / self%data( i_data )%n_comp
-            !
         enddo
-        !
-        rmsd_data = rmsd_data / size( self%data )
         !
     end function rmsdDataGroupTx1
     !
@@ -420,9 +303,11 @@ contains
         !
         class( DataGroupTx_t ), intent( in ) :: self, data_tx
         !
+        complex( kind=prec ) :: rmsd
+        !
         integer :: i_data, i_comp
         !
-        complex( kind=prec ) :: rmsd, self_comp, data_tx_comp
+        complex( kind=prec ) :: self_comp, data_tx_comp
         !
         if( size( self%data ) /= size( data_tx%data ) ) then
             !
@@ -437,17 +322,14 @@ contains
                 do i_comp = 1, self%data( i_data )%n_comp
                     !
                     self_comp = cmplx( self%data( i_data )%reals( i_comp ), self%data( i_data )%imaginaries( i_comp ), kind=prec )
+                    !
                     data_tx_comp = cmplx( data_tx%data( i_data )%reals( i_comp ), data_tx%data( i_data )%imaginaries( i_comp ), kind=prec )
                     !
-                    rmsd = rmsd + ( self_comp - data_tx_comp )**2
+                    rmsd = rmsd + ( ( self_comp - data_tx_comp ) ** 2 )
                     !
                 enddo
                 !
-                rmsd = rmsd + CDSQRT( rmsd / self%data( i_data )%n_comp )
-                !
             enddo
-            !
-            rmsd = rmsd + ( rmsd / size( self%data ) )
             !
         endif
         !

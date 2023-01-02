@@ -972,24 +972,24 @@ contains
         nrx = size( receivers )
         !
         ! Verbose
-        if( nrx == data_file_standard%nRx ) then
+        if( nrx == data_file_standard%n_rx ) then
             !
             write( *, * ) "          Checked ", nrx, " Receivers."
             !
         else
             !
-            write( *, * ) "Error: Number of Rx mismatched from Header :[", nrx, " and ", data_file_standard%nRx, "]"
+            write( *, * ) "Error: Number of Rx mismatched from Header :[", nrx, " and ", data_file_standard%n_rx, "]"
             stop
             !
         endif
         !
-        if( size( transmitters ) == data_file_standard%nTx ) then
+        if( size( transmitters ) == data_file_standard%n_tx ) then
              !
              call printTransmitterArray()
              !
         else
              !
-             write( *, * ) "Number of Tx mismatched from Header :[", size( transmitters ), " and ", data_file_standard%nTx, "]"
+             write( *, * ) "Number of Tx mismatched from Header :[", size( transmitters ), " and ", data_file_standard%n_tx, "]"
              stop
              !
         endif
@@ -1335,10 +1335,10 @@ contains
     end subroutine writePredictedDataHeader
     !
     !> No subroutine briefing
-    subroutine writeEsolutionHeader( nTx, nMode )
+    subroutine writeEsolutionHeader( n_tx, nMode )
         implicit none
         !
-        integer, intent( in ) :: nTx, nMode
+        integer, intent( in ) :: n_tx, nMode
         integer :: ios
         character(len=20) :: version
         !
@@ -1348,7 +1348,7 @@ contains
         !
         if( ios == 0 ) then
             !
-            write( ioESolution ) version, nTx, nMode, &
+            write( ioESolution ) version, n_tx, nMode, &
             main_grid%nx, main_grid%ny, main_grid%nz, main_grid%nzAir, &
             main_grid%ox, main_grid%oy, main_grid%oz, main_grid%rotdeg
             !

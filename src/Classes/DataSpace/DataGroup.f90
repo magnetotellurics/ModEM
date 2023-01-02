@@ -18,7 +18,7 @@ module DataGroup
         !
         real( kind=prec ), allocatable, dimension(:) :: reals, imaginaries, errors
         !
-        logical :: is_allocated
+        logical :: is_allocated, error_bar
         !
         integer, private :: counter
         !
@@ -26,21 +26,15 @@ module DataGroup
             !
             procedure, public :: put => putValuesDataGroup
             !
-            procedure, public :: add => addValuesDataGroup
-            !
-            procedure, public :: sub => subValuesDataGroup
-            !
-            procedure, public :: multValuesDataGroup
-            procedure, public :: multDataDataGroup
-            generic :: mult => multValuesDataGroup, multDataDataGroup
-            !
             procedure, public :: setRealValuesDataGroup
             procedure, public :: setComplexValuesDataGroup
             generic :: set => setRealValuesDataGroup, setComplexValuesDataGroup
             !
-            procedure, public :: normalize => normalizeDataGroup
+            procedure, public :: linComb => linCombDataGroup
             !
-            procedure, public :: reset => resetDataGroup
+            procedure, public :: dotProd => dotProdDataGroup
+            !
+            procedure, public :: zeros => zerosDataGroup
             !
             procedure, public :: isEqual => isEqualDg
             !
@@ -97,9 +91,11 @@ contains
         if( allocated( self%errors ) ) deallocate( self%errors )
         allocate( self%errors( n_comp ) )
         !
-        self%errors = R_ONE
+        self%errors = R_ZERO
         !
         self%is_allocated = .TRUE.
+        !
+        self%error_bar = .FALSE.
         !
     end function DataGroup_ctor
     !
@@ -123,114 +119,6 @@ contains
         !
     end subroutine putValuesDataGroup
     !
-    !> Error normalized subtraction with another DataGroup.
-    subroutine addValuesDataGroup( self, rhs )
-        implicit none
-        !
-        class( DataGroup_t ), intent( inout ) :: self
-        class( DataGroup_t ), intent( in ) :: rhs
-        !
-        integer :: i
-        complex( kind=prec ) :: sum_value, self_value, rhs_value
-        !
-        do i = 1, self%n_comp
-            !
-            self%errors(i) = ( self%errors(i) + rhs%errors(i) ) / 2.0
-            !
-            self_value = cmplx( self%reals(i), self%imaginaries(i), kind=prec )
-            !
-            rhs_value = cmplx( rhs%reals(i), rhs%imaginaries(i), kind=prec )
-            !
-            sum_value = cmplx( self_value + rhs_value, kind=prec )
-            !
-            self%reals(i) = real( sum_value, kind=prec )
-            !
-            self%imaginaries(i) = real( aimag( sum_value ), kind=prec )
-            !
-        enddo
-        !
-    end subroutine addValuesDataGroup
-    !
-    !> Error normalized subtraction with another DataGroup.
-    subroutine subValuesDataGroup( self, rhs )
-        implicit none
-        !
-        class( DataGroup_t ), intent( inout ) :: self
-        class( DataGroup_t ), intent( in ) :: rhs
-        !
-        integer :: i
-        complex( kind=prec ) :: sum_value, self_value, rhs_value
-        !
-        do i = 1, self%n_comp
-            !
-            self%errors(i) = ( self%errors(i) + rhs%errors(i) ) / 2.0
-            !
-            self_value = cmplx( self%reals(i), self%imaginaries(i), kind=prec )
-            !
-            rhs_value = cmplx( rhs%reals(i), rhs%imaginaries(i), kind=prec )
-            !
-            sum_value = cmplx( self_value - rhs_value, kind=prec )
-            !
-            self%reals(i) = real( sum_value, kind=prec )
-            !
-            self%imaginaries(i) = real( aimag( sum_value ), kind=prec )
-            !
-        enddo
-        !
-    end subroutine subValuesDataGroup
-    !
-    !> Multiplication by another DataGroup.
-    subroutine multValuesDataGroup( self, rvalue )
-        implicit none
-        !
-        class( DataGroup_t ), intent( inout ) :: self
-        real( kind=prec ), intent( in ) :: rvalue
-        !
-        integer :: i
-        complex( kind=prec ) :: mult_value, self_value
-        !
-        do i = 1, self%n_comp
-            !
-            self_value = cmplx( self%reals(i), self%imaginaries(i), kind=prec )
-            !
-            mult_value = cmplx( self_value * rvalue, kind=prec )
-            !
-            self%reals(i) = real( mult_value, kind=prec )
-            !
-            self%imaginaries(i) = real( aimag( mult_value ), kind=prec )
-            !
-        enddo
-        !
-    end subroutine multValuesDataGroup
-    !
-    !> Multiplication by another DataGroup.
-    subroutine multDataDataGroup( self, rhs )
-        implicit none
-        !
-        class( DataGroup_t ), intent( inout ) :: self
-        class( DataGroup_t ), intent( in ) :: rhs
-        !
-        integer :: i
-        complex( kind=prec ) :: mult_value, self_value, rhs_value
-        !
-        do i = 1, self%n_comp
-            !
-            self%errors(i) = ( self%errors(i) + rhs%errors(i) ) / 2.0
-            !
-            self_value = cmplx( self%reals(i), self%imaginaries(i), kind=prec )
-            !
-            rhs_value = cmplx( rhs%reals(i), rhs%imaginaries(i), kind=prec )
-            !
-            mult_value = cmplx( self_value * rhs_value, kind=prec )
-            !
-            self%reals(i) = real( mult_value, kind=prec )
-            !
-            self%imaginaries(i) = real( aimag( mult_value ), kind=prec )
-            !
-        enddo
-        !
-    end subroutine multDataDataGroup
-    !
     !> Set the value (real and imaginary only) at a given index of these arrays.
     subroutine setRealValuesDataGroup( self, data_id, rvalue, imaginary )
         implicit none
@@ -242,6 +130,10 @@ contains
         self%reals( data_id ) = rvalue
         !
         self%imaginaries( data_id ) = imaginary
+        !
+        self%errors( data_id ) = R_ZERO
+        !
+        self%error_bar = .FALSE.
         !
     end subroutine setRealValuesDataGroup
     !
@@ -257,75 +149,86 @@ contains
         !
         self%imaginaries( data_id ) = real( aimag( cvalue ), kind=prec )
         !
+        self%errors( data_id ) = R_ZERO
+        !
+        self%error_bar = .FALSE.
+        !
     end subroutine setComplexValuesDataGroup
     !
-    !> Error normalized subtraction with another DataGroup.
-    subroutine normalizeDataGroup( self, rhs )
+    !> ????
+    subroutine linCombDataGroup( self, a, b, d_group, d_group_out )
         implicit none
         !
-        class( DataGroup_t ), intent( inout ) :: self
-        class( DataGroup_t ), intent( in ) :: rhs
+        class( DataGroup_t ), intent( in ) :: self, d_group
+        real( kind=prec ), intent( in ) :: a, b
+        class( DataGroup_t ), intent( inout ) :: d_group_out
         !
         integer :: i
-        real( kind=prec ) :: self_square_error
-        complex( kind=prec ) :: self_value, rhs_value, normalized_value
+        !
+        if( .NOT. self%is_allocated ) then
+            stop "Error: linCombDataGroup > self not allocated"
+        endif
+        !
+        if( .NOT. d_group%is_allocated ) then
+            stop "Error: linCombDataGroup > d_group not allocated"
+        endif
+        !
+        if( .NOT. d_group_out%is_allocated ) then
+            stop "Error: linCombDataGroup > d_group_out not allocated"
+        endif
+        !
+        d_group_out%error_bar = self%error_bar .OR. d_group%error_bar
+        d_group_out%i_rx = self%i_rx
+        d_group_out%i_tx = self%i_tx
         !
         do i = 1, self%n_comp
             !
-            if( self%errors(i) == R_ZERO ) then
-                stop "Error: normalizeDataGroup > Zero Error"
-            else
-                !
-                self_square_error = self%errors(i) * self%errors(i)
-                !
-                !write( *, * ) "self_square_error: ", self_square_error
-                !
-                self_value = cmplx( self%reals(i), self%imaginaries(i), kind=prec )
-                !
-                rhs_value = cmplx( rhs%reals(i), rhs%imaginaries(i), kind=prec )
-                !
-                !> ( Measured - Predicted ) / Measured_Error**2 
-                normalized_value = ( self_value - rhs_value ) / self_square_error
-                !
-                !> JUST FOR CHECK LATER IN DCG ????
-                !normalized_value = self_value + rhs_value / ( ( self_value - rhs_value ) * ( self_value - rhs_value ) )
-                !
-                self%reals(i) = real( normalized_value, kind=prec )
-                !
-                self%imaginaries(i) = real( aimag( normalized_value ), kind=prec )
-                !
-            endif
+            d_group_out%reals(i) = a * self%reals(i) + b * d_group%reals(i)
+            !
+            if( self%error_bar .AND. d_group%error_bar ) then
+                if( abs(a) > R_ZERO .AND. abs(b) > R_ZERO ) then
+                    stop "Error: linCombDataGroup: unable to add two data vectors with error bars"
+                else if( abs(a) > R_ZERO ) then
+                    d_group_out%errors(i) = a * self%errors(i)
+                    !dOut%normalized = d1%normalized
+                else if( abs(b) > R_ZERO ) then
+                    d_group_out%errors(i) = b * d_group%errors(i)
+                    !dOut%normalized = d2%normalized
+                end if
+            else if( self%error_bar ) then
+                d_group_out%errors(i) = a * self%errors(i)
+                !dOut%normalized = d1%normalized
+            else if( d_group%error_bar ) then
+                d_group_out%errors(i) = b * d_group%errors(i)
+                !dOut%normalized = d2%normalized
+            end if
+            !
         enddo
         !
-    end subroutine normalizeDataGroup
+    end subroutine linCombDataGroup
     !
-    !> No function briefing
-    function dotProdDataGroup( self, rhs ) result( cvalue )
+    !> ????
+    function dotProdDataGroup( self, d_group ) result( rvalue )
         implicit none
         !
-        class( DataGroup_t ), intent( in ) :: self, rhs
+        class( DataGroup_t ), intent( in ) :: self, d_group
         !
-        complex( kind=prec ) :: cvalue
+        real( kind=prec ) :: rvalue
         !
         integer :: i
-        complex( kind=prec ) :: self_value, rhs_value
         !
-        cvalue = C_ZERO
+        rvalue = 0.0
         !
         do i = 1, self%n_comp
             !
-            self_value = conjg( cmplx( self%reals(i), self%imaginaries(i), kind=prec ) )
-            !
-            rhs_value = cmplx( rhs%reals(i), rhs%imaginaries(i), kind=prec )
-            !
-            cvalue = cvalue + ( self_value * rhs_value )
+            rvalue = rvalue + self%reals(i) * d_group%reals(i)
             !
         enddo
         !
     end function dotProdDataGroup
     !
     !> ????
-    subroutine resetDataGroup( self )
+    subroutine zerosDataGroup( self )
         implicit none
         !
         class( DataGroup_t ), intent( inout ) :: self
@@ -334,9 +237,11 @@ contains
         !
         self%imaginaries = R_ZERO
         !
-        self%errors = R_ONE
+        self%errors = R_ZERO
         !
-    end subroutine resetDataGroup
+        self%error_bar = .FALSE.
+        !
+    end subroutine zerosDataGroup
     !
     !> Return if it is similar to another DataGroup.
     function isEqualDg( self, other ) result ( equal )
@@ -386,6 +291,7 @@ contains
         self%i_rx = rhs%i_rx
         self%i_tx = rhs%i_tx
         self%counter = rhs%counter
+        self%error_bar = rhs%error_bar
         !
         if( allocated( self%components ) ) then
             asize = size( self%components )
@@ -406,7 +312,7 @@ contains
         if( allocated( self%errors ) ) deallocate( self%errors )
         allocate( self%errors, source = rhs%errors )
         !
-        self%is_allocated = .TRUE.
+        self%is_allocated = rhs%is_allocated
         !
     end subroutine copyFromDataGroup
     !

@@ -185,13 +185,12 @@ module Transmitter
             !
             type( SourceInteriorForce_t ) :: source_int_force
             !
+            class( Vector_t ), allocatable, dimension(:) :: bSrc
+            type( rVector3D_SG_t ) :: map_e_vector
             complex( kind=prec ) :: minus_i_omega_mu
             integer :: pol
-            type( rVector3D_SG_t ) :: map_e_vector
-            class( Vector_t ), allocatable, dimension(:) :: bSrc
-            !
             ! Verbose
-            write( *, * ) "               - Start pMult"
+            !write( *, * ) "               - Start pMult"
             !
             !> Get map_e_vector from dPDEmapping
             call sigma%dPDEmapping( dsigma, map_e_vector )
@@ -221,7 +220,7 @@ module Transmitter
             deallocate( bSrc )
             !
             ! Verbose
-            write( *, * ) "               - Finish pMult"
+            !write( *, * ) "               - Finish pMult"
             !
         end function pMult_Tx
         !
@@ -234,13 +233,11 @@ module Transmitter
             class( ModelParameter_t ), allocatable, intent( inout ) :: dsigma
             !
             class( Vector_t ), allocatable, dimension(:) :: eSens
-            !
             complex( kind=prec ) :: minus_i_omega_mu
-            !
             integer :: pol
             !
             ! Verbose
-            write( *, * ) "               - Start pMult_t"
+            !write( *, * ) "               - Start pMult_t"
             !
             if( .NOT. allocated( self%e_sens ) ) then
                 stop "Error: pMult_t_Tx > eSens not allocated on the Tx"
@@ -270,7 +267,7 @@ module Transmitter
             deallocate( eSens )
             !
             ! Verbose
-            write( *, * ) "               - Finish pMult_t"
+            !write( *, * ) "               - Finish pMult_t"
             !
         end subroutine pMult_t_Tx
         !

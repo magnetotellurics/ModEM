@@ -35,6 +35,8 @@ module Sensitivity
     use DataGroupArray
     use DataGroupTxArray
     !
+    use ModelCovarianceRec
+    !
     !> Global Variables
     class( Grid_t ), allocatable, target :: main_grid
     class( ModelParameter_t ), allocatable :: sigma0, pmodel
@@ -42,11 +44,13 @@ module Sensitivity
     !
     class( ForwardSolver_t ), allocatable, target :: forward_solver
     !
+    class( ModelCovarianceRec_t ), allocatable :: model_cov
+    !
     !> Program control variables
     character(:), allocatable :: control_file_name, model_file_name, pmodel_file_name, data_file_name, modem_job
     logical :: set_data_groups, has_control_file, has_model_file, has_pmodel_file, has_data_file, verbosis
     !
-    !> Global Routines
+    !> Global Sensitivity Routines
     public :: JMult, JMult_Tx, JMult_T, JMult_T_Tx, setResidualData
     !
 contains
@@ -65,7 +69,7 @@ contains
         class( Transmitter_t ), pointer :: Tx
         !
         ! Verbose
-        write( *, * ) "          - Start JMult"
+        !write( *, * ) "          - Start JMult"
         !
         !> Loop over All DataGroupTxs
         do i_dtx = 1, size( JmHat )
@@ -88,7 +92,7 @@ contains
         enddo
         !
         ! Verbose
-        write( *, * ) "          - Finish JMult"
+        !write( *, * ) "          - Finish JMult"
         !
     end subroutine JMult
     !
@@ -151,7 +155,7 @@ contains
         integer :: i_tx
         !
         ! Verbose
-        write( *, * ) "          - Start JMult_T"
+        !write( *, * ) "          - Start JMult_T"
         !
         !> Initialize dsigma with Zeros
         if( sigma%is_allocated ) then
@@ -177,7 +181,7 @@ contains
         deallocate( dsigma_tx )
         !
         ! Verbose
-        write( *, * ) "          - Finish JMult_T"
+        !write( *, * ) "          - Finish JMult_T"
         !
     end subroutine JMult_T
     !
@@ -268,44 +272,6 @@ contains
         call Tx%pMult_t( sigma, dsigma )
         !
     end subroutine JMult_T_Tx
-    !
-    !> Populate the DataGroupTx array of residual data
-    subroutine setResidualData()
-        implicit none
-        !
-        type( DataGroupTx_t ) :: tx_data
-        integer :: i_tx, i_data
-        !
-        !> Verbose
-        write( *, * ) "          - Calculate Residual Data"
-        !
-        !> Reset the entire DataGroupTx array of residual data
-        if( allocated( all_residual_data ) ) call deallocateDataGroupTxArray( all_residual_data )
-        !
-        !> Loop over all transmitters
-        do i_tx = 1, size( transmitters )
-            !
-            !> Build the DataGroupTx to store residual data from a single transmitter.
-            tx_data = DataGroupTx_t( i_tx )
-            !
-            !> Fill tx_data with the measured data
-            do i_data = 1, size( measured_data )
-                !
-                if( measured_data( i_data )%i_tx == i_tx ) then
-                    !
-                    call tx_data%put( measured_data( i_data ) )
-                    !
-                endif
-            enddo
-            !
-            !> Subtracts and normalize from the respective predicted data
-            call tx_data%getResidual( all_predicted_data( i_tx ) )
-            !
-            call updateDataGroupTxArray( all_residual_data, tx_data )
-            !
-        enddo
-        !
-    end subroutine setResidualData
     !
 end module Sensitivity
 !
