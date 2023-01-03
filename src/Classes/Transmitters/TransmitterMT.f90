@@ -99,13 +99,13 @@ module TransmitterMT
             !
             !> Verbose
             if( self%source%adjoint ) then
-                write( *, * ) "               SolveADJ MT Tx:", self%id, " -> Period:", self%period, " - Polarization:", i_pol
+                !write( *, * ) "               SolveADJ MT Tx:", self%id, " -> Period:", self%period, " - Polarization:", i_pol
                 !
                 !> Calculate e_sens through ForwardSolver
                 call self%forward_solver%createESolution( i_pol, self%source, self%e_sens( i_pol ) )
                 !
             else
-                write( *, * ) "               SolveFWD MT Tx:", self%id, " -> Period:", self%period, " - Polarization:", i_pol
+                !write( *, * ) "               SolveFWD MT Tx:", self%id, " -> Period:", self%period, " - Polarization:", i_pol
                 !
                 !> Calculate e_sol through ForwardSolver
                 call self%forward_solver%createESolution( i_pol, self%source, self%e_sol( i_pol ) )

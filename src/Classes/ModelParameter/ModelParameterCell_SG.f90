@@ -339,12 +339,14 @@ contains
         class( ModelParameter_t ), intent( in ) :: rhs
         real( kind=prec ) :: rvalue
         !
+		rvalue = R_ZERO
+		!
         select type( rhs )
             class is( ModelParameterCell_SG_t )
                 !
                 if( self%cell_cond%isCompatible( rhs%cell_cond ) ) then
                     !
-                    rvalue = sum( self%cell_cond%v * rhs%cell_cond%v )
+                    rvalue = rvalue + sum( self%cell_cond%v * rhs%cell_cond%v )
                     !
                 else
                     stop "Error: dotProdModelParameterCell_SG > Incompatible rhs"

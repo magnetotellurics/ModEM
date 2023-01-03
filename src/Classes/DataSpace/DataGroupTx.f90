@@ -23,9 +23,13 @@ module DataGroupTx
             !
             procedure, public :: set => setDataGroupTx
             !
+            procedure, public :: sub => subDataGroupTx
+			!
             procedure, public :: linComb => linCombDataGroupTx
             !
             procedure, public :: dotProd => dotProdDataGroupTx
+			!
+			procedure, public :: normalize => normalizeDataGroupTx
             !
             procedure, public :: print => printDataGroupTx
             !
@@ -65,6 +69,55 @@ contains
         if( allocated( self%data ) ) deallocate( self%data )
         !
     end subroutine DataGroupTx_dtor
+    !
+    !> sub
+    subroutine subDataGroupTx( self, rhs )
+        implicit none
+        !
+        class( DataGroupTx_t ), intent( inout ) :: self
+        class( DataGroupTx_t ), intent( in ) :: rhs
+        !
+        integer :: i_data
+        !
+        if( size( self%data ) /= size( rhs%data ) ) then
+            !
+            stop "Error: subDataGroupTx > different data sizes"
+            !
+        else
+            !
+            do i_data = 1, size( self%data )
+                !
+                call self%data( i_data )%sub( rhs%data( i_data ) )
+                !
+            enddo
+            !
+        endif
+        !
+    end subroutine subDataGroupTx
+    !
+    !> ????
+    subroutine normalizeDataGroupTx( self, norm )
+        implicit none
+        !
+        class( DataGroupTx_t ), intent( inout ) :: self
+        !
+        integer, intent( in ), optional :: norm
+        !
+        integer :: i, nn
+    	!
+		if( present( norm ) ) then
+			nn = norm
+		else
+			nn = 1
+		endif
+		!
+        do i = 1, size( self%data )
+			!
+			call self%data(i)%normalize( nn )
+			!
+        enddo
+        !
+    end subroutine normalizeDataGroupTx
     !
     !> Call reset for each DataGroup in data
     subroutine zerosDataGroupTx( self )
@@ -208,21 +261,29 @@ contains
         class( DataGroupTx_t ), intent( inout ) :: data_tx_out
         !
         integer :: i
-        !
+		!
+        if( self%i_tx /= data_tx%i_tx ) then
+            stop "Error: DataGroupTx_t : linCombDataGroupTx > different data txs: d1 and d2"
+		endif
+		!
         if( size( self%data ) /= size( data_tx%data ) ) then
-            !
-            stop "Error: DataGroupTx_t : linCombDataGroupTx > different data sizes"
-            !
-        else
-            !
-            do i = 1, size( self%data )
-                !
-                call self%data(i)%linComb( a, b, data_tx%data(i), data_tx_out%data(i) )
-                !
-            enddo
-            !
-        endif
-        !
+            stop "Error: DataGroupTx_t : linCombDataGroupTx > different data sizes: d1 and d2"
+		endif
+		!
+        if( self%i_tx /= data_tx_out%i_tx ) then
+            stop "Error: DataGroupTx_t : linCombDataGroupTx > different data txs: d1 and d_out"
+		endif
+		!
+        if( size( self%data ) /= size( data_tx_out%data ) ) then
+            stop "Error: DataGroupTx_t : linCombDataGroupTx > different data sizes: d1 and d_out"
+		endif
+		!
+		do i = 1, size( self%data )
+			!
+			call self%data(i)%linComb( a, b, data_tx%data(i), data_tx_out%data(i) )
+			!
+		enddo
+		!
     end subroutine linCombDataGroupTx
     !
     !> Call the print routine of each DataGroup in the data array

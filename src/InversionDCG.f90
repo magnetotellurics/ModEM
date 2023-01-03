@@ -73,11 +73,13 @@ contains
         !
         call zerosDataGroupTxArray( b )
         !
-		d_pred = d
-		!
+        d_pred = d
+        !
         call Calc_FWD( lambda, d, m, d_pred, res, rmsd )
         !
         DCG_iter = 1
+        !
+        write( *, * ) "#START DCG LOOP > rmsd: ", rmsd
         !
         do
             !
@@ -85,7 +87,6 @@ contains
             !
             b = d
             !
-            !call linComb(ONE,res,ONE,JmHat,b)
             call linCombDataGroupTxArray( ONE, res, ONE, JmHat, b )
             !
             call normalizeDataGroupTxArray( b, 1 )
@@ -106,6 +107,8 @@ contains
             !
             call Calc_FWD( lambda, d, m, d_pred, res, rmsd )
             !
+            write( *, * ) "#DCG_iter > rmsd: ", DCG_iter, rmsd
+            !
             if( rmsd .LT. 1.05 .OR. DCG_iter .GE. 3 ) then
                 exit
             endif
@@ -113,13 +116,13 @@ contains
             DCG_iter = DCG_iter + 1
             !
         end do
-		!
+        !
         call deallocateDataGroupTxArray( JmHat )
         call deallocateDataGroupTxArray( b )
         call deallocateDataGroupTxArray( res )
-		!
+        !
         deallocate( mHat, Cm_mHat )
-		!
+        !
     end subroutine DCGsolver
     !
     !>
@@ -155,8 +158,8 @@ contains
         !
         call setIterControl( CGiter )
         !
-		d_pred = d
-		!
+        d_pred = d
+        !
         call Calc_FWD( lambda, d, m, d_pred, res, rmsd )
         !
         write( *, * ) "lambda, rmsd: ", lambda, rmsd
@@ -221,23 +224,22 @@ contains
         real( kind=prec ) :: SS
         integer :: Ndata
         !
-		d_pred = d
-		!
+        d_pred = d
+        !
         call runForwardModeling( m, d_pred )
         !
-        ! initialize res
         res = d
         !
-        ! compute residual: res = d-d_Pred
         call linCombDataGroupTxArray( ONE, d, MinusONE, d_pred, res )
         !
-        ! normalize residuals, compute sum of squares
         Nres = res
+        !
         call normalizeDataGroupTxArray( Nres, 2 )
+        !
         SS = dotProdDataGroupTxArray( res, Nres )
+        !
         Ndata = countDataGroupTxArray( res )
         !
-        ! if required, compute the Root Mean Squared misfit
         rmsd = sqrt( SS / Ndata )
         !
         call deallocateDataGroupTxArray( Nres )
@@ -256,8 +258,8 @@ contains
         type( IterControl_t ), intent( inout ) :: CGiter
         !
         type( DataGroupTx_t ), allocatable, dimension(:) :: r, p, Ap
-        real(kind=prec) :: alpha, beta, r_norm_pre, r_norm, b_norm, error
-        integer :: i, j, k, ii, iDt
+        real( kind=prec ) :: alpha, beta, r_norm_pre, r_norm, b_norm
+        integer :: cg_iter
         !
         r = b
         !
@@ -271,22 +273,21 @@ contains
         !
         r_norm = dotProdDataGroupTxArray( r, r )
         !
-        ii = 1
-        CGiter%rerr(ii) = r_norm / b_norm
+        cg_iter = 1
         !
-        loop: do while ( CGiter%rerr(ii) .GT. CGiter%tol .AND. ii .LT.CGiter%maxIt )
+        CGiter%rerr(cg_iter) = r_norm / b_norm
+        !
+        loop: do while ( CGiter%rerr(cg_iter) .GT. CGiter%tol .AND. cg_iter .LT.CGiter%maxIt )
+            !
+            write( *, * ) "#CG-Iter, Error, Lambda: ", cg_iter, CGiter%rerr(cg_iter), lambda
             !
             ! Compute matrix-vector product A*p and save the result in Ap  
             call MultA_DS( p, m, d, lambda, Ap )
             !
-            do i = 1, size( x )
-                do iDt = 1, size( x(i)%data )
-                    r(i)%data(iDt)%error_bar= .FALSE.
-                    p(i)%data(iDt)%error_bar= .FALSE.
-                    x(i)%data(iDt)%error_bar= .FALSE.
-                    Ap(i)%data(iDt)%error_bar= .FALSE.
-                enddo
-            enddo
+            call setErrorBarDataGroupTxArray( r, .FALSE. )
+            call setErrorBarDataGroupTxArray( p, .FALSE. )
+            call setErrorBarDataGroupTxArray( x, .FALSE. )
+            call setErrorBarDataGroupTxArray( Ap, .FALSE. )
             !
             ! Compute alpha: alpha= (r^T r) / (p^T Ap)    
             alpha = r_norm / dotProdDataGroupTxArray( p, Ap )
@@ -306,15 +307,13 @@ contains
             ! Compute new p: p = r + beta*p    
             call linCombDataGroupTxArray( ONE, r, beta, p, p )
             !
-            ii = ii + 1
+            cg_iter = cg_iter + 1
             !
-            CGiter%rerr(ii) = r_norm / b_norm 
-            !
-            write( *, * ) "CG-Iter, error, Lambda: ", ii, CGiter%rerr(ii), lambda
+            CGiter%rerr(cg_iter) = r_norm / b_norm 
             !
         enddo loop
         !
-        CGiter%niter = ii
+        CGiter%niter = cg_iter
         !
     end subroutine CG_DS_standard
     !
@@ -340,36 +339,29 @@ contains
         !
         lambdaP = p
         !
-        !call normalize_with_dataVecMTX( p_temp, d, 1)
         call normalizeWithDataGroupTxArray( 1, d, p_temp )
-        ! Compute   J^T  Cd^(-1/2) p
         !
         call JMult_T( m, p_temp, JTp )
         !
-        ! Compute  Cm  J^T  Cd^(-1/2) p 
         CmJTp_temp = model_cov%multBy_Cm( JTp )
         !
         deallocate( JTp )
         !
-        ! Compute J Cm  J^T  Cd^(-1/2) p = Ap 
         Ap = d
         !
         call JMult( m, CmJTp_temp, Ap )
         !
         deallocate( CmJTp_temp )
         !
-        !> Normalize: Cd^(-1/2)*Ap
-        !call normalize_with_dataVecMTX(Ap,d,1)
         call normalizeWithDataGroupTxArray( 1, d, Ap )
         !
-        call scMultAddDataGroupTxArray( lambda, p, lambdaP )
+        p_temp = p
         !
-        !> Add Cd^(-1/2)*Ap*Cd^(-1/2) to lambda*p
-        do i = 1, size( lambdaP )
-            do iDt = 1, size( lambdaP(i)%data )
-                lambdaP(i)%data(iDt)%error_bar= .FALSE.
-            enddo
-        enddo
+        call setErrorBarDataGroupTxArray( p_temp, .FALSE. )
+        !
+        call scMultAddDataGroupTxArray( lambda, p_temp, lambdaP )
+        !
+        call setErrorBarDataGroupTxArray( lambdaP, .FALSE. )
         !
         call linCombDataGroupTxArray( ONE, Ap, ONE, lambdaP, Ap )
         !

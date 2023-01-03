@@ -276,14 +276,14 @@ contains
         !
         integer :: i
         !
-        self%data_group = DataGroup_t( self%id, transmitter%id, self%n_comp )
+        self%data_group = DataGroup_t( self%id, transmitter%id, self%n_comp, .FALSE. )
         !
         do i = 1, self%n_comp
             !
             component = trim( self%comp_names(i)%str )
             real_part = real( self%response(i), kind=prec )
             imaginary = real( aimag( self%response(i) ), kind=prec )
-            error = 1.0
+            error = R_ZERO
             !
             call self%data_group%put( component, real_part, imaginary, error )
             !

@@ -12,13 +12,13 @@ module DataGroup
     !
     type :: DataGroup_t
         !
-        integer :: n_comp, i_rx, i_tx
+        integer :: n_comp, i_rx, i_tx, normalized
         !
         type( String_t ), allocatable, dimension(:) :: components
         !
         real( kind=prec ), allocatable, dimension(:) :: reals, imaginaries, errors
         !
-        logical :: is_allocated, error_bar
+        logical :: is_allocated, error_bar = .FALSE.
         !
         integer, private :: counter
         !
@@ -26,13 +26,15 @@ module DataGroup
             !
             procedure, public :: put => putValuesDataGroup
             !
-            procedure, public :: setRealValuesDataGroup
-            procedure, public :: setComplexValuesDataGroup
-            generic :: set => setRealValuesDataGroup, setComplexValuesDataGroup
+            procedure, public :: set => setValuesDataGroup
+            !
+            procedure, public :: sub => subDataGroup
             !
             procedure, public :: linComb => linCombDataGroup
             !
             procedure, public :: dotProd => dotProdDataGroup
+            !
+            procedure, public :: normalize => normalizeDataGroup
             !
             procedure, public :: zeros => zerosDataGroup
             !
@@ -53,12 +55,13 @@ contains
     !
     !> Parametrized constructor:
     !> Set all variables and deallocate/allocate and initialize all arrays with the same n_comp size.
-    function DataGroup_ctor( i_rx, i_tx, n_comp ) result( self )
+    function DataGroup_ctor( i_rx, i_tx, n_comp, error_bar ) result( self )
         implicit none
         !
-        type( DataGroup_t ) :: self
-        !
         integer, intent( in ) :: i_rx, i_tx, n_comp
+        logical, optional, intent( in ) :: error_bar
+        !
+        type( DataGroup_t ) :: self
         !
         integer :: i, asize
         !
@@ -95,7 +98,17 @@ contains
         !
         self%is_allocated = .TRUE.
         !
-        self%error_bar = .FALSE.
+        if( present( error_bar ) ) then
+            !
+            self%error_bar = error_bar
+            !
+        else
+            !
+            self%error_bar = .FALSE.
+            !
+        endif
+        !
+        self%normalized = 0
         !
     end function DataGroup_ctor
     !
@@ -119,41 +132,30 @@ contains
         !
     end subroutine putValuesDataGroup
     !
-    !> Set the value (real and imaginary only) at a given index of these arrays.
-    subroutine setRealValuesDataGroup( self, data_id, rvalue, imaginary )
+    !> Set the values at a given index of these arrays.
+    subroutine setValuesDataGroup( self, comp_id, rvalue, imaginary, error )
         implicit none
         !
         class( DataGroup_t ), intent( inout ) :: self
-        integer, intent( in ) :: data_id
+        integer, intent( in ) :: comp_id
         real( kind=prec ), intent( in ) :: rvalue, imaginary
+        real( kind=prec ), optional, intent( in ) :: error
         !
-        self%reals( data_id ) = rvalue
+        self%reals( comp_id ) = rvalue
         !
-        self%imaginaries( data_id ) = imaginary
+        self%imaginaries( comp_id ) = imaginary
         !
-        self%errors( data_id ) = R_ZERO
+        if( present( error ) ) then
+            !
+            self%errors( comp_id ) = error
+            !
+        else
+            !
+            self%errors( comp_id ) = R_ZERO
+            !
+        endif
         !
-        self%error_bar = .FALSE.
-        !
-    end subroutine setRealValuesDataGroup
-    !
-    !> Set the value (real and imaginary only) at a given index of these arrays.
-    subroutine setComplexValuesDataGroup( self, data_id, cvalue )
-        implicit none
-        !
-        class( DataGroup_t ), intent( inout ) :: self
-        integer, intent( in ) :: data_id
-        complex( kind=prec ), intent( in ) :: cvalue
-        !
-        self%reals( data_id ) = real( cvalue, kind=prec )
-        !
-        self%imaginaries( data_id ) = real( aimag( cvalue ), kind=prec )
-        !
-        self%errors( data_id ) = R_ZERO
-        !
-        self%error_bar = .FALSE.
-        !
-    end subroutine setComplexValuesDataGroup
+    end subroutine setValuesDataGroup
     !
     !> ????
     subroutine linCombDataGroup( self, a, b, d_group, d_group_out )
@@ -177,30 +179,57 @@ contains
             stop "Error: linCombDataGroup > d_group_out not allocated"
         endif
         !
+        if( self%i_tx /= d_group%i_tx  ) then
+            stop "Error: linCombDataGroup > different data txs: d1 and d2"
+        endif
+        !
+        if( self%i_rx /= d_group%i_rx  ) then
+            stop "Error: linCombDataGroup > different data rxs: d1 and d2"
+        endif
+        !
+        if( self%n_comp /= d_group%n_comp  ) then
+            stop "Error: linCombDataGroup > different data n_comp: d1 and d2"
+        endif
+        !
+        if( self%i_tx /= d_group_out%i_tx  ) then
+            stop "Error: linCombDataGroup > different data txs: d1 and d_out"
+        endif
+        !
+        if( self%i_rx /= d_group_out%i_rx  ) then
+            stop "Error: linCombDataGroup > different data rxs: d1 and d_out"
+        endif
+        !
+        if( self%n_comp /= d_group_out%n_comp  ) then
+            stop "Error: linCombDataGroup > different data n_comp: d1 and d_out"
+        endif
+        !
         d_group_out%error_bar = self%error_bar .OR. d_group%error_bar
+        d_group_out%normalized = 0
+        !
         d_group_out%i_rx = self%i_rx
         d_group_out%i_tx = self%i_tx
+        d_group_out%n_comp = self%n_comp
         !
-		d_group_out%reals = a * self%reals + b * d_group%reals
-		!
-		if( self%error_bar .AND. d_group%error_bar ) then
-			if( abs(a) > R_ZERO .AND. abs(b) > R_ZERO ) then
-				stop "Error: linCombDataGroup: unable to add two data vectors with error bars"
-			else if( abs(a) > R_ZERO ) then
-				d_group_out%errors = a * self%errors
-				!dOut%normalized = d1%normalized
-			else if( abs(b) > R_ZERO ) then
-				d_group_out%errors = b * d_group%errors
-				!dOut%normalized = d2%normalized
-			endif
-		else if( self%error_bar ) then
-			d_group_out%errors = a * self%errors
-			!dOut%normalized = d1%normalized
-		else if( d_group%error_bar ) then
-			d_group_out%errors = b * d_group%errors
-			!dOut%normalized = d2%normalized
-		endif
-		!
+        d_group_out%reals = a * self%reals + b * d_group%reals
+        !
+        if( self%error_bar .AND. d_group%error_bar ) then
+            if( abs(a) > R_ZERO .AND. abs(b) > R_ZERO ) then
+                stop "Error: linCombDataGroup: unable to add two data vectors with error bars"
+            else if( abs(a) > R_ZERO ) then
+                d_group_out%errors = a * self%errors
+                d_group_out%normalized = self%normalized
+            else if( abs(b) > R_ZERO ) then
+                d_group_out%errors = b * d_group%errors
+                d_group_out%normalized = d_group%normalized
+            endif
+        else if( self%error_bar ) then
+            d_group_out%errors = a * self%errors
+            d_group_out%normalized = self%normalized
+        else if( d_group%error_bar ) then
+            d_group_out%errors = b * d_group%errors
+            d_group_out%normalized = d_group%normalized
+        endif
+        !
     end subroutine linCombDataGroup
     !
     !> ????
@@ -238,6 +267,44 @@ contains
         self%error_bar = .FALSE.
         !
     end subroutine zerosDataGroup
+    !
+    !>
+    subroutine normalizeDataGroup( self, norm )
+        implicit none
+        !
+        class( DataGroup_t ), intent( inout ) :: self
+        integer, intent( in ), optional :: norm
+        !
+        integer :: nn, i
+        !
+        if( .NOT. self%error_bar ) then
+            stop "Error: normalizeDataGroup: no error bars to normalize"
+        endif
+        !
+        if( present( norm ) ) then
+            nn = norm
+        else
+            nn = 1
+        endif
+        !
+        self%reals = self%reals / ( self%errors ** nn )
+        !
+        self%normalized = self%normalized + nn
+        !
+    end subroutine normalizeDataGroup
+    !
+    !> Subtraction
+    subroutine subDataGroup( self, rhs )
+        implicit none
+        !
+        class( DataGroup_t ), intent( inout ) :: self
+        class( DataGroup_t ), intent( in ) :: rhs
+        !
+        integer :: i
+        !
+        self%reals = self%reals - rhs%reals
+        !
+    end subroutine subDataGroup
     !
     !> Return if it is similar to another DataGroup.
     function isEqualDg( self, other ) result ( equal )
@@ -306,9 +373,20 @@ contains
         allocate( self%imaginaries, source = rhs%imaginaries )
         !
         if( allocated( self%errors ) ) deallocate( self%errors )
-        allocate( self%errors, source = rhs%errors )
+        !
+        if( rhs%error_bar ) then
+            allocate( self%errors, source = rhs%errors )
+        else
+            !
+            allocate( self%errors( size( rhs%errors ) ) )
+            !
+            self%errors = R_ZERO
+            !
+        endif
         !
         self%is_allocated = rhs%is_allocated
+        !
+        self%normalized = rhs%normalized
         !
     end subroutine copyFromDataGroup
     !

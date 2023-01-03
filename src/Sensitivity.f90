@@ -114,6 +114,8 @@ contains
                 !> Set the sum into the current data component
                 call JmHat_tx%data( i_data )%set( i_comp, real( lrows_esens, kind=prec ), real( aimag( lrows_esens ), kind=prec ) )
                 !
+                JmHat_tx%data( i_data )%error_bar = .FALSE.
+                !
             enddo
             !
         enddo

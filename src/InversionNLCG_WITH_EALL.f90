@@ -147,7 +147,6 @@ contains
         !
         ! initialize the line search
         alpha = iterControl%alpha_1
-        !
         startdm = iterControl%startdm
         !
         write( *, * ) "lambda, startdm: ", lambda, startdm
@@ -159,6 +158,8 @@ contains
         eAll%SolnIndex=0
         !
         call func( lambda, d, m0, mHat, value, mNorm, dHat, eAll, rmsd )
+        !
+        write( *, * ) "lambda, alpha, value, mNorm, rmsd: ", lambda, alpha, value, mNorm, rmsd
         !
         nfunc = 1
         !
@@ -173,10 +174,9 @@ contains
         call gradient( lambda, d, m0, mHat, grad, dHat, eAll )
         !
         gnorm = sqrt( grad%dotProd( grad ) )
-            !
-            write( *, * ) "gnorm: ", gnorm
-            stop
-            !
+        !
+        write( *, * ) "gnorm: ", gnorm
+        !
         if ( gnorm < TOL6 ) then
             stop "Error: NLCGsolver: Problem with your gradient computations: first gradient is zero"
         else
@@ -184,7 +184,6 @@ contains
             alpha = startdm / gnorm
             !
             write( *, * ) "alpha: ", alpha
-            stop
             !
         endif
         !
@@ -207,14 +206,9 @@ contains
             !
             ! save the values of the functional and the directional derivative
             rmsPrev = rmsd
-            !
             valuePrev = value
-            !
             grad_dot_h = grad%dotProd( h )
-
-            write( *, * ) "grad_dot_h: ", grad_dot_h
-            stop
-
+            !
             ! at the end of line search, set mHat to the new value
             ! mHat = mHat + alpha*h  and evaluate gradient at new mHat
             ! data and solnVector only needed for output
@@ -223,7 +217,7 @@ contains
             select case ( flavor )
                 !
                 case ( 'Cubic' )
-                    call lineSearchCubic( lambda, d, m0, h, alpha, mHat, value, grad, rmsd, nLS, dHat, eAll )
+                    call lineSearchCubic(lambda,d,m0,h,alpha,mHat,value,grad,rmsd,nLS,dHat,eAll)
                     !call deall(eAll)
                 case ('Quadratic')
                     !call lineSearchQuadratic(lambda,d,m0,h,alpha,mHat,value,grad,rmsd,nLS,dHat,eAll)
@@ -240,7 +234,7 @@ contains
             !
             g = grad
             !
-            call g%linComb( MinusONE, R_ZERO, grad )
+            call g%linComb( MinusONE, R_ZERO,grad )
             !
             ! compute the starting step for the next line search
             alpha = 2 * ( value - valuePrev ) / grad_dot_h
@@ -385,7 +379,9 @@ contains
         real( kind=prec ) :: Ndata, Nmodel, angle1, angle2, diff, diff1
         type( DataGroupTx_t ), allocatable, dimension(:) :: res
         class( ModelParameter_t ), allocatable :: m, JTd, CmJTd
-        integer :: j, i, icomp, isite
+        integer :: nTx, iTx, j, i, icomp, isite
+        !
+        nTx = size( d )
         !
         ! compute the smoothed model parameter vector
         m = model_cov%multBy_Cm( mHat )
@@ -397,13 +393,9 @@ contains
         res = d
         !
         ! compute residual: res = (d-dHat)/Ndata
-        !call linCombDataGroupTxArray( ONE, d, MinusONE, dHat, res )
-        call subDataGroupTxArray( res, dHat )
+        call linCombDataGroupTxArray( ONE, d, MinusONE, dHat, res ) 
         !
         Ndata = countDataGroupTxArray( dHat )
-        !
-        !write( *, * ) "Ndata: ", Ndata
-        !stop
         !
         call CdInvMult( res )
         !
@@ -440,7 +432,7 @@ contains
         type( ESolMTx ), optional, intent( inout ) :: eAll
         real( kind=prec ), optional, intent( out ) :: rmsd
         !
-        type( DataGroupTx_t ), allocatable, dimension(:) :: res, Nres
+        type( DataGroupTx_t ), allocatable, dimension(:) :: res, Nres, res1
         class( ModelParameter_t ), allocatable :: m, JTd
         real( kind=prec ) :: SS, angle2, angle1, diff, diff1
         integer :: Ndata, Nmodel, j, i, isite
@@ -456,25 +448,22 @@ contains
         !
         call runForwardModeling( m, dHat )
         !
-        !> SET eAll
-        if( allocated( eAll%e_sols ) ) deallocate( eAll%e_sols )
+		!> SET eAll
         allocate( eAll%e_sols( size( transmitters ) ) )
         !
         do i = 1, size( transmitters )
             !
-            eAll%e_sols(i)%pol = transmitters(i)%Tx%e_sol
+            allocate( eAll%e_sols(i)%pol, source = transmitters(i)%Tx%e_sol )
             !
         enddo
         !
         !> initialize res
         res = d
         !
-        !call linCombDataGroupTxArray( ONE, d, MinusONE, dHat, res )
-        call subDataGroupTxArray( res, dHat )
+        call linCombDataGroupTxArray( ONE, d, MinusONE, dHat, res )
         !
         !> normalize residuals, compute sum of squares
         call CdInvMult( res, Nres )
-        !
         SS = dotProdDataGroupTxArray( res, Nres )
         Ndata = countDataGroupTxArray( res )
         !
@@ -492,14 +481,9 @@ contains
         if( present( rmsd ) ) then
             rmsd = sqrt( SS / Ndata )
         endif
-   
-   write( 6666, * ) "RMS, SS, Ndata, Nmodel, F, mNorm: ", rmsd, SS, Ndata, Nmodel, F, mNorm
-   !stop
-
+        !
         call deallocateDataGroupTxArray( res )
-        !
         call deallocateDataGroupTxArray( Nres )
-        !
         deallocate( m )
         !
     end subroutine func

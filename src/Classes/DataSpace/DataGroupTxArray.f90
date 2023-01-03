@@ -8,11 +8,13 @@ module DataGroupTxArray
     !> Global array with the Measured data for all transmitters
     type( DataGroupTx_t ), allocatable, dimension(:) :: all_measured_data
     !
+    public :: subDataGroupTxArray
     public :: dotProdDataGroupTxArray
     public :: linCombDataGroupTxArray
     public :: scMultAddDataGroupTxArray
     public :: normalizeDataGroupTxArray
     public :: normalizeWithDataGroupTxArray
+    public :: setErrorBarDataGroupTxArray
     !
     public :: countDataGroupTxArray
     public :: getDataGroupTxArray
@@ -24,11 +26,63 @@ module DataGroupTxArray
 contains
     !
     !> ????
+    subroutine subDataGroupTxArray( data_tx_array_1, data_tx_array_2 )
+        implicit none
+        !
+        type( DataGroupTx_t ), dimension(:), intent( inout ) :: data_tx_array_1
+        type( DataGroupTx_t ), dimension(:), intent( in ) :: data_tx_array_2
+        !
+        integer :: i
+        !
+        if( size( data_tx_array_1 ) /= size( data_tx_array_2 ) ) then
+            !
+            stop "Error: DataGroupTxArray : subDataGroupTxArray > different array sizes"
+            !
+        else
+            !
+            do i = 1, size( data_tx_array_1 )
+                !
+                call data_tx_array_1(i)%sub( data_tx_array_2(i) )
+                !
+            enddo
+            !
+        endif
+        !
+    end subroutine subDataGroupTxArray
+    !
+    !> ????
     subroutine normalizeDataGroupTxArray( data_tx_array, norm )
         implicit none
         !
         type( DataGroupTx_t ), dimension(:), intent( inout ) :: data_tx_array
-        integer, intent( in ) :: norm
+        integer, intent( in ), optional :: norm
+        !
+        integer :: i, j, nn
+        !
+        if( present( norm ) ) then
+            nn = norm
+        else
+            nn = 1
+        endif
+        !
+        do i = 1, size( data_tx_array )
+            !
+            do j = 1, size( data_tx_array(i)%data )
+                !
+                call data_tx_array(i)%data(j)%normalize( nn )
+                !
+            enddo
+            !
+        enddo
+        !
+    end subroutine normalizeDataGroupTxArray
+    !
+    !> ????
+    subroutine setErrorBarDataGroupTxArray( data_tx_array, error_bar )
+        implicit none
+        !
+        type( DataGroupTx_t ), dimension(:), intent( inout ) :: data_tx_array
+        logical, intent( in ) :: error_bar
         !
         integer :: i, j
         !
@@ -36,13 +90,13 @@ contains
             !
             do j = 1, size( data_tx_array(i)%data )
                 !
-                data_tx_array(i)%data(j)%reals = data_tx_array(i)%data(j)%reals / data_tx_array(i)%data(j)%errors ** norm
+                data_tx_array(i)%data(j)%error_bar = error_bar
                 !
             enddo
             !
         enddo
         !
-    end subroutine normalizeDataGroupTxArray
+    end subroutine setErrorBarDataGroupTxArray
     !
     !> ????
     subroutine normalizeWithDataGroupTxArray( norm, data_tx_array_in, data_tx_array_out )
@@ -58,9 +112,9 @@ contains
             !
             do j = 1, size( data_tx_array_in(i)%data )
                 !
-                data_tx_array_out(i)%data(j)%error_bar = .TRUE.
+                data_tx_array_out(i)%data(j)%reals = ( data_tx_array_out(i)%data(j)%reals / data_tx_array_in(i)%data(j)%errors ** norm )
                 !
-                data_tx_array_out(i)%data(j)%reals = data_tx_array_out(i)%data(j)%reals / data_tx_array_in(i)%data(j)%errors ** norm
+                data_tx_array_out(i)%data(j)%error_bar = .TRUE.
                 !
             enddo
             !
@@ -83,7 +137,7 @@ contains
             !
             do j = 1, size( data_tx_array(i)%data )
                 !
-                counter = counter + data_tx_array(i)%data(j)%n_comp
+                counter = counter + data_tx_array(i)%data(j)%n_comp! * 2 FOR MT POLARIZATIONS?
                 !
             enddo
             !
@@ -130,18 +184,18 @@ contains
         integer :: i
         !
         if( size( d1 ) /= size( d2 ) ) then
-            !
-            stop "Error: DataGroupTxArray : linCombDataGroupTxArray > different array sizes"
-            !
-        else
-            !
-            do i = 1, size( d1 )
-                !
-                call d1(i)%linComb( a, b, d2(i), dOut(i) )
-                !
-            enddo
-            !
+            stop "Error: DataGroupTxArray : linCombDataGroupTxArray > different array sizes: d1, d2"
         endif
+        !
+        if( size( d1 ) /= size( dOut ) ) then
+            stop "Error: DataGroupTxArray : linCombDataGroupTxArray > different array sizes: d1, dOut"
+        endif
+        !
+        do i = 1, size( d1 )
+            !
+            call d1(i)%linComb( a, b, d2(i), dOut(i) )
+            !
+        enddo
         !
     end subroutine linCombDataGroupTxArray
     !

@@ -179,7 +179,7 @@ contains
             !
         else
             !
-            allocate( data_group, source = DataGroup_t( rx_id, iTx, receiver%n_comp ) )
+            allocate( data_group, source = DataGroup_t( rx_id, iTx, receiver%n_comp, .TRUE. ) )
             !
             call data_group%put( data_entry%component, data_entry%real, data_entry%imaginary, data_entry%error )
             !
