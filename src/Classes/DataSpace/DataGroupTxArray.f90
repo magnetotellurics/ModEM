@@ -11,6 +11,7 @@ module DataGroupTxArray
     public :: subDataGroupTxArray
     public :: dotProdDataGroupTxArray
     public :: linCombDataGroupTxArray
+	public :: scMultDataGroupTxArray
     public :: scMultAddDataGroupTxArray
     public :: normalizeDataGroupTxArray
     public :: normalizeWithDataGroupTxArray
@@ -137,7 +138,7 @@ contains
             !
             do j = 1, size( data_tx_array(i)%data )
                 !
-                counter = counter + data_tx_array(i)%data(j)%n_comp! * 2 FOR MT POLARIZATIONS?
+                counter = counter + data_tx_array(i)%data(j)%n_comp! * 2 FOR MT POLARIZATIONS ????
                 !
             enddo
             !
@@ -198,6 +199,18 @@ contains
         enddo
         !
     end subroutine linCombDataGroupTxArray
+    !
+    !> ????
+    subroutine scMultDataGroupTxArray( rvalue, data_tx_array_in, data_tx_array_out )
+        implicit none
+        !
+        real( kind=prec ), intent( in ) :: rvalue
+        type( DataGroupTx_t ), dimension(:), intent( in ) :: data_tx_array_in
+        type( DataGroupTx_t ), dimension(:), intent( inout ) :: data_tx_array_out
+        !
+        call linCombDataGroupTxArray( R_ZERO, data_tx_array_in, rvalue, data_tx_array_in, data_tx_array_out )
+        !
+    end subroutine scMultDataGroupTxArray
     !
     !> ????
     subroutine scMultAddDataGroupTxArray( rvalue, data_tx_array_in, data_tx_array_out )

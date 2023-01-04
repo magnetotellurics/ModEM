@@ -28,7 +28,7 @@ module InversionNLCG
         real( kind=prec ) :: rmsTol
         ! the condition to identify when the inversion stalls
         real( kind=prec ) :: fdiffTol
-        ! initial value of lambda (will not override the NLCG input argument)
+        ! initial r_value of lambda (will not override the NLCG input argument)
         real( kind=prec ) :: lambda
         ! exit if lambda < lambdaTol approx. 1e-4
         real( kind=prec ) :: lambdaTol
@@ -73,7 +73,7 @@ contains
         iterControl%rmsTol  = 1.05
         ! inversion stalls when abs(rmsd - rmsPrev) < fdiffTol (2e-3 works well)
         iterControl%fdiffTol = 2.0e-3
-        ! initial value of lambda (will not override the NLCG input argument)
+        ! initial r_value of lambda (will not override the NLCG input argument)
         iterControl%lambda = 1.
         ! exit if lambda < lambdaTol approx. 1e-4
         iterControl%lambdaTol = 1.0e-8
@@ -95,7 +95,7 @@ contains
     end subroutine set_NLCGiterControl
     !
     !>  computes inverse solution minimizing penalty functional
-    !>  for fixed value of regularization parameter, using
+    !>  for fixed r_value of regularization parameter, using
     !>  a variant of non-linear conjugate gradient search.
     !>  Various flavours of the algorithm and of the line search
     !>  can be called from this routine
@@ -127,20 +127,15 @@ contains
         character(80) :: flavor = 'Cubic'
         !
         type( DataGroupTx_t ), allocatable, dimension(:) :: dHat, res
-        class( ModelParameter_t ), allocatable :: mHat, m_minus_m0
-        class( ModelParameter_t ), allocatable :: grad, g, h, gPrev
-        real( kind=prec ) :: value, valuePrev, rmsd
+        class( ModelParameter_t ), allocatable :: mHat, grad, g, h, gPrev
+        real( kind=prec ) :: r_value, valuePrev, rmsd
         real( kind=prec ) :: rmsPrev, alpha, beta
         real( kind=prec ) :: gnorm, mNorm, Nmodel
         real( kind=prec ) :: grad_dot_h, g_dot_g
         real( kind=prec ) :: g_dot_gPrev,g_dot_h
         real( kind=prec ) :: gPrev_dot_gPrev 
         real( kind=prec ) :: h_dot_g, h_dot_gPrev
-        integer :: iter, nCG, nLS, nfunc, ios
-        logical :: ok
-        character(3) :: iterChar
-        character(100) :: mFile, mHatFile, gradFile
-        character(100) :: dataFile, resFile, logFile
+        integer :: iter, nCG, nLS, nfunc
         type( ESolMTx ) :: eAll
         !
         call set_NLCGiterControl( iterControl )
@@ -156,16 +151,14 @@ contains
         allocate( mHat, source = m )
         !
         !  compute the penalty functional and predicted data
-        eAll%SolnIndex=0
+        eAll%SolnIndex = 0
         !
-        call func( lambda, d, m0, mHat, value, mNorm, dHat, eAll, rmsd )
+        call func( lambda, d, m0, mHat, r_value, mNorm, dHat, eAll, rmsd )
         !
         nfunc = 1
         !
         ! output (smoothed) initial model and responses for later reference
-        m_minus_m0 = model_cov%multBy_Cm( mHat )
-        !
-        m = m_minus_m0
+        m = model_cov%multBy_CmSqrt( mHat )
         !
         call m%linComb( ONE, ONE, m0 )
         !
@@ -173,29 +166,31 @@ contains
         call gradient( lambda, d, m0, mHat, grad, dHat, eAll )
         !
         gnorm = sqrt( grad%dotProd( grad ) )
-            !
-            write( *, * ) "gnorm: ", gnorm
-            stop
-            !
+        !
+        !write( *, * ) "gnorm: ", gnorm
+        !stop
+        !
         if ( gnorm < TOL6 ) then
             stop "Error: NLCGsolver: Problem with your gradient computations: first gradient is zero"
         else
             !
             alpha = startdm / gnorm
             !
-            write( *, * ) "alpha: ", alpha
-            stop
+            !write( *, * ) "alpha: ", alpha
+            !stop
             !
         endif
         !
         !> initialize CG: g = - grad; h = g
         nCG = 0
+        !
         iter = 0
-        g = grad
+        !
+        allocate( g, source = grad )
         !
         call g%linComb( MinusONE, R_ZERO, grad )
         !
-        h = g
+        allocate( h, source = g )
         !
         do
             !  test for convergence ...
@@ -208,14 +203,14 @@ contains
             ! save the values of the functional and the directional derivative
             rmsPrev = rmsd
             !
-            valuePrev = value
+            valuePrev = r_value
             !
             grad_dot_h = grad%dotProd( h )
 
-            write( *, * ) "grad_dot_h: ", grad_dot_h
-            stop
+            !write( *, * ) "grad_dot_h: ", grad_dot_h
+            !stop
 
-            ! at the end of line search, set mHat to the new value
+            ! at the end of line search, set mHat to the new r_value
             ! mHat = mHat + alpha*h  and evaluate gradient at new mHat
             ! data and solnVector only needed for output
             write( *, * ) "Starting line search..."
@@ -223,27 +218,33 @@ contains
             select case ( flavor )
                 !
                 case ( 'Cubic' )
-                    call lineSearchCubic( lambda, d, m0, h, alpha, mHat, value, grad, rmsd, nLS, dHat, eAll )
+                    call lineSearchCubic( lambda, d, m0, h, alpha, mHat, r_value, grad, rmsd, nLS, dHat, eAll )
                     !call deall(eAll)
                 case ('Quadratic')
-                    !call lineSearchQuadratic(lambda,d,m0,h,alpha,mHat,value,grad,rmsd,nLS,dHat,eAll)
+                    !call lineSearchQuadratic(lambda,d,m0,h,alpha,mHat,r_value,grad,rmsd,nLS,dHat,eAll)
                     !call deall(eAll)
                 case ('Wolfe')
-                    !call lineSearchWolfe(lambda,d,m0,h,alpha,mHat,value,grad,rmsd,nLS,dHat,eAll)
+                    !call lineSearchWolfe(lambda,d,m0,h,alpha,mHat,r_value,grad,rmsd,nLS,dHat,eAll)
                     !call deall(eAll)
                 case default
                     stop "Error: NLCGsolver: Unknown line search requested in NLCG"
+                !
             end select
             !
             nfunc = nfunc + nLS
-            gPrev = g
+            !
+            if( allocated( gPrev ) ) then
+                gPrev = g
+            else
+                allocate( gPrev, source = g )
+            endif
             !
             g = grad
             !
             call g%linComb( MinusONE, R_ZERO, grad )
             !
             ! compute the starting step for the next line search
-            alpha = 2 * ( value - valuePrev ) / grad_dot_h
+            alpha = 2 * ( r_value - valuePrev ) / grad_dot_h
             !
             ! adjust the starting step to ensure super linear convergence properties
             alpha = ( ONE + 0.01 ) * alpha
@@ -254,12 +255,10 @@ contains
             !
             mNorm = mHat%dotProd( mHat ) / Nmodel
             !
-            write( *, * ) "     lambda, alpha, value, mNorm, rmsd: ", lambda, alpha, value, mNorm, rmsd
+            write( *, * ) "     lambda, alpha, r_value, mNorm, rmsd: ", lambda, alpha, r_value, mNorm, rmsd
             !
             ! write out the intermediate model solution and responses
-            m_minus_m0 = model_cov%multBy_Cm( mHat )
-            !
-            m = m_minus_m0
+            m = model_cov%multBy_CmSqrt( mHat )
             !
             call m%linComb( ONE, ONE, m0 )
             !
@@ -271,9 +270,9 @@ contains
             if( abs( rmsPrev - rmsd ) < iterControl%fdiffTol ) then
                 !
                 ! update lambda, penalty functional and gradient
-                call update_damping_parameter( lambda, mHat, value, grad )
+                call update_damping_parameter( lambda, mHat, r_value, grad )
                 !
-                ! check that lambda is still at a reasonable value
+                ! check that lambda is still at a reasonable r_value
                 if( lambda < iterControl%lambdaTol ) then
                     stop "Error: NLCGsolver: Unable to get out of a local minimum."
                     exit
@@ -291,13 +290,15 @@ contains
                 !
                 !> g = - grad
                 g = grad
+                !
                 call g%linComb( MinusONE, R_ZERO, grad )
                 !
                 !> restart
                 write( *, * ) "Restarting NLCG with the damping parameter updated"
-                write( *, * ) "lambda, alpha, value, mNorm, rmsd: ", lambda, alpha, value, mNorm, rmsd
+                write( *, * ) "lambda, alpha, r_value, mNorm, rmsd: ", lambda, alpha, r_value, mNorm, rmsd
                 !
                 h = g
+                !
                 nCG = 0
                 !
                 cycle !????
@@ -344,11 +345,9 @@ contains
         end do
         !
         !> multiply by C^{1/2} and add m_0
-        m_minus_m0 = model_cov%multBy_Cm( mHat )
+        m = model_cov%multBy_CmSqrt( mHat )
         !
-        m = m_minus_m0
-        !
-        call m%linComb( ONE,ONE, m0 )
+        call m%linComb( ONE, ONE, m0 )
         !
         d = dHat
         !
@@ -358,7 +357,7 @@ contains
         call deallocateDataGroupTxArray( dHat )
         call deallocateDataGroupTxArray( res )
         !
-        deallocate( mHat, m_minus_m0, grad, g, h, gPrev )
+        deallocate( mHat, grad, g, h, gPrev )
         !
     end subroutine NLCGsolver
     !
@@ -388,7 +387,7 @@ contains
         integer :: j, i, icomp, isite
         !
         ! compute the smoothed model parameter vector
-        m = model_cov%multBy_Cm( mHat )
+        allocate( m, source = model_cov%multBy_CmSqrt( mHat ) )
         !
         ! overwriting the input with output
         call m%linComb( ONE, ONE, m0 )
@@ -409,14 +408,19 @@ contains
         !
         call JMult_T( m, res, JTd )
         !
-        CmJTd = model_cov%multBy_Cm( JTd )
+        allocate( CmJTd, source = model_cov%multBy_CmSqrt( JTd ) )
         !
         ! compute the number of data and model parameters for scaling
         Nmodel = mHat%countModel()
         !
         ! multiply by 2 (to be consistent with the formula)
         ! and add the gradient of the model norm
-        grad = CmJTd
+        !
+        if( allocated( grad ) ) then
+            grad = CmJTd
+        else
+            allocate( grad, source = CmJTd )
+        endif
         !
         call grad%linComb( MinusTWO / Ndata, TWO * lambda / Nmodel, mHat )
         !
@@ -446,7 +450,7 @@ contains
         integer :: Ndata, Nmodel, j, i, isite
         !
         ! compute the smoothed model parameter vector
-        m = model_cov%multBy_Cm( mHat )
+        allocate( m, source = model_cov%multBy_CmSqrt( mHat ) )
         !
         ! overwriting input with output
         call m%linComb( ONE, ONE, m0 )
@@ -565,6 +569,7 @@ contains
         !
         ! add the model norm derivative to the gradient of the penalty functional
         grad = dSS
+        !
         call grad%linComb( ONE, TWO * lambda / Nmodel, mHat )
         !
         deallocate( dSS )
@@ -635,12 +640,9 @@ contains
         class( ModelParameter_t ), allocatable :: mHat_0, mHat_1
         type( DataGroupTx_t ), allocatable, dimension(:) :: dHat_1
         type( ESolMTx ) :: eAll_1
-        character(100) :: logFile
         !
         ! parameters
         c = iterControl%c
-        !
-        logFile = trim(iterControl%fname)//'_NLCG.log'
         !
         ! initialize the line search
         niter = 0
@@ -670,7 +672,7 @@ contains
         !
         call mHat_1%linComb( ONE, alpha_1, h )
         !
-        eAll_1%SolnIndex=1
+        eAll_1%SolnIndex = 1
         !
         call func( lambda, d, m0, mHat_1, f_1, mNorm_1, dHat_1, eAll_1, rms_1 )
         !
@@ -679,7 +681,7 @@ contains
         niter = niter + 1
         !
         if ( f_1 - f_0 >= LARGE_REAL ) then
-            write( *, * ) "Error: Try a smaller starting value of alpha."
+            write( *, * ) "Error: Try a smaller starting r_value of alpha."
             write( *, * ) "Exiting..."
             stop
         endif
@@ -691,6 +693,7 @@ contains
         !
         ! if the curvature is -ve, there is no minimum; take the initial guess
         if( a < 0 ) then
+            !
             starting_guess = .TRUE.
             !
             alpha = alpha_1
@@ -699,7 +702,7 @@ contains
             !
             eAll = eAll_1
             !
-            eAll%SolnIndex=1
+            eAll%SolnIndex = 1
             !
             mHat = mHat_1
             !
@@ -714,11 +717,11 @@ contains
                 !
                 call mHat%linComb( ONE, gamma * alpha, h )
                 !
-                eAll%SolnIndex=0
+                eAll%SolnIndex = 0
                 !
                 call func( lambda, d, m0, mHat, f, mNorm, dHat, eAll, rmsd )
                 !
-                write( *, * ) "lambda, gamma*alpha, f, mNorm, rmsd:", lambda, gamma*alpha, f, mNorm, rmsd
+                write( *, * ) "lambda, gamma*alpha, f, mNorm, rmsd:", lambda, gamma * alpha, f, mNorm, rmsd
                 !
             endif
             !
@@ -743,7 +746,7 @@ contains
         !
         call mHat%linComb( ONE, alpha, h )
         !
-        eAll%SolnIndex=0
+        eAll%SolnIndex = 0
         !
         call func( lambda, d, m0, mHat, f, mNorm, dHat, eAll, rmsd )
         !
@@ -760,7 +763,7 @@ contains
                 alpha = alpha_1
                 dHat = dHat_1
                 eAll = eAll_1
-                eAll%SolnIndex=1
+                eAll%SolnIndex = 1
                 mHat = mHat_1
                 rmsd = rms_1
                 f = f_1
@@ -773,7 +776,7 @@ contains
                 !
                 call mHat%linComb( ONE, gamma * alpha, h )
                 !
-                eAll%SolnIndex=0
+                eAll%SolnIndex = 0
                 !
                 call func( lambda, d, m0, mHat, f, mNorm, dHat, eAll, rmsd )
                 !
@@ -799,7 +802,7 @@ contains
         ! a function increase at this point (e.g. in the current global code).
         ! Most likely, this is due to an inaccuracy in the gradient computations.
         ! In this case, we avoid an infinite loop by exiting line search.
-        ! It is also possible that both f_1 and f are worse than the starting value!
+        ! It is also possible that both f_1 and f are worse than the starting r_value!
         ! Then, take whichever is smaller. Ideally, want to decrease the tolerance
         ! for gradient computations if this happens.
         if( f > f_0 ) then
@@ -834,7 +837,7 @@ contains
                 !
                 call mHat%linComb( ONE, alpha, h )
                 !
-                eAll%SolnIndex=0
+                eAll%SolnIndex = 0
                 !
                 call func( lambda, d, m0, mHat, f, mNorm, dHat, eAll, rmsd )
                 !
@@ -881,7 +884,7 @@ contains
             !
             eAll = eAll_1
             !
-            eAll%SolnIndex=1
+            eAll%SolnIndex = 1
             !
             mHat = mHat_1
             !
@@ -897,7 +900,7 @@ contains
             !
             call mHat%linComb( ONE, gamma*alpha, h )
             !
-            eAll%SolnIndex=0
+            eAll%SolnIndex = 0
             !
             call func( lambda, d, m0, mHat, f,mNorm,dHat,eAll,rmsd)
             !

@@ -26,11 +26,13 @@ module ModelParameterCell_SG
             final :: ModelParameterCell_SG_dtor
             !
             procedure, public :: zeros    => zerosModelParameterCell_SG
+            !
             procedure, public :: copyFrom => copyFromModelParameterCell_SG
             !
             procedure, public :: countModel => countModelParameterCell_SG
             !
             procedure, public :: dotProd => dotProdModelParameterCell_SG
+            !
             procedure, public :: linComb => linCombModelParameterCell_SG
             !
             procedure, public :: PDEmapping   => PDEmappingModelParameterCell_SG
@@ -40,15 +42,12 @@ module ModelParameterCell_SG
             procedure, public :: slice1D => slice1DModelParameterCell_SG
             procedure, public :: slice2D => slice2DModelParameterCell_SG
             !
-            procedure, public :: add => addModelParameterCell_SG
-            !
-            procedure, public :: rmsd => rmsdModelParameterCell_SG
-            !
             procedure, public :: avgModel1D => avgModel1DModelParameterCell_SG
             !
             procedure, public :: setType => setTypeModelParameterCell_SG
             !
             procedure, public :: write => writeParameterCell_SG
+            !
             procedure, public :: print => printParameterCell_SG
             !
     end type ModelParameterCell_SG_t
@@ -208,48 +207,6 @@ contains
         !
     end function slice2DModelParameterCell_SG
     !
-    !> No interface function briefing
-    subroutine addModelParameterCell_SG( self, other )
-        implicit none
-        !
-        class( ModelParameterCell_SG_t ), intent( inout ) :: self
-        class( ModelParameter_t ), intent( in ) :: other
-        !
-        select type( other )
-            !
-            class is( ModelParameterCell_SG_t )
-                !
-                call self%cell_cond%add( other%cell_cond )
-                !
-            class default
-                stop "Error: addModelParameterCell_SG > Unclassified other model"
-            !
-        end select
-        !
-    end subroutine addModelParameterCell_SG
-    !
-    !> No interface function briefing
-    function rmsdModelParameterCell_SG( self, other ) result( rmsd )
-        implicit none
-        !
-        class( ModelParameterCell_SG_t ), intent( in ) :: self
-        class( ModelParameter_t ), intent( in ) :: other
-        !
-        complex( kind=prec ) :: rmsd
-        !
-        select type( other )
-            !
-            class is( ModelParameterCell_SG_t )
-                !
-                !call other
-                !
-            class default
-                stop "Error: rmsdModelParameterCell_SG > Unclassified other"
-            !
-        end select
-        !
-    end function rmsdModelParameterCell_SG
-    !
     !> No subroutine briefing
     subroutine zerosModelParameterCell_SG( self )
         implicit none
@@ -270,12 +227,18 @@ contains
         select type( rhs )
             !
             class is( ModelParameterCell_SG_t )
-               self%param_grid = rhs%param_grid
-               self%cell_cond = rhs%cell_cond
-               self%air_cond = rhs%air_cond
-               self%param_type = rhs%param_type
-               self%mKey = rhs%mKey
-               self%metric => rhs%metric
+                !
+                self%metric => rhs%metric
+                self%mKey = rhs%mKey
+                self%air_cond = rhs%air_cond
+                self%param_type = rhs%param_type
+                self%zero_valued = rhs%zero_valued
+                self%is_allocated = rhs%is_allocated
+                self%is_vti = rhs%is_vti
+                !
+                self%param_grid = rhs%param_grid
+                self%cell_cond = rhs%cell_cond
+                !
             class default
                stop "Error: copyFromModelParameterCell_SG > Incompatible input."
             !
@@ -309,7 +272,7 @@ contains
         implicit none
         !
         class( ModelParameterCell_SG_t ), intent( inout ) :: self
-        real( kind=prec ), intent( in ) :: a1,a2
+        real( kind=prec ), intent( in ) :: a1, a2
         class( ModelParameter_t ), intent( in ) :: rhs
         !
         select type( rhs )
@@ -327,7 +290,7 @@ contains
                 stop "Error: linCombModelParameterCell_SG > undefined rhs"
         end select
         !
-        self%air_cond = rhs%air_cond
+        !self%air_cond = rhs%air_cond
         !
     end subroutine linCombModelParameterCell_SG
     !
@@ -339,9 +302,10 @@ contains
         class( ModelParameter_t ), intent( in ) :: rhs
         real( kind=prec ) :: rvalue
         !
-		rvalue = R_ZERO
-		!
+        rvalue = R_ZERO
+        !
         select type( rhs )
+            !
             class is( ModelParameterCell_SG_t )
                 !
                 if( self%cell_cond%isCompatible( rhs%cell_cond ) ) then
@@ -354,6 +318,7 @@ contains
                 !
             class default
                 stop "Error: dotProdModelParameterCell_SG > undefined rhs"
+            !
         end select
         !
     end function dotProdModelParameterCell_SG

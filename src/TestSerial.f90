@@ -212,7 +212,7 @@ contains
     !>    PMODEL = Perturbation model  (if exist -dm readed input model)
     !>    SIGMA0 = Readed input model  (-m)
     !>    DSIGMA = From JMult_T        (????)
-    subroutine jobInversionDCG()
+    subroutine jobInversion()
         implicit none
         !
         class( ModelParameter_t ), allocatable :: sigma
@@ -220,7 +220,7 @@ contains
         real( kind=prec ) :: lambda
         !
         ! Verbose
-        write( *, * ) "     - Start jobInversionDCG"
+        write( *, * ) "     - Start jobInversion"
         !
         !> Read Model File and instantiate global variables: main_grid, model_operator and Sigma0
         if( has_model_file ) then 
@@ -234,12 +234,12 @@ contains
             allocate( model_cov, source = ModelCovarianceRec_t( sigma ) )
             !
             !> Initialize pmodel with Zeros
-            pmodel = sigma0
+            allocate( pmodel, source = sigma0 )
             !
             call pmodel%zeros()
             !
         else
-            stop "Error: jobInversionDCG > Missing Model file!"
+            stop "Error: jobInversion > Missing Model file!"
         endif
         !
         !> Read Perturbation Model File: instantiate pmodel (NOT USING RIGHT NOW ????)
@@ -251,7 +251,7 @@ contains
             !
             pmodel = model_cov%multBy_Cm( pmodel )
             !
-            call sigma%add( pmodel )
+            call sigma%linComb( ONE, ONE, pmodel )
             !
         endif
         !
@@ -261,7 +261,7 @@ contains
             call handleDataFile()
             !
         else
-            stop "Error: jobInversionDCG > Missing Data file!"
+            stop "Error: jobInversion > Missing Data file!"
         endif
         !
         !> Instantiate ForwardSolver - Specific type via control file
@@ -269,155 +269,13 @@ contains
         !
         lambda = 10.
         !
-        call DCGsolver( all_measured_data, sigma, pmodel, lambda )
-        !call DCGsolverLanczos( all_measured_data, sigma, pmodel, lambda )
-		!call NLCGsolver( all_measured_data, lambda, sigma, pmodel )
+        !call DCGsolver( all_measured_data, sigma, pmodel, lambda )
+		call NLCGsolver( all_measured_data, lambda, sigma, pmodel )
         !
         ! Verbose
-        write( *, * ) "     - Finish jobInversionDCG"
+        write( *, * ) "     - Finish jobInversion"
         !
-    end subroutine jobInversionDCG
-    !
-    !> Routine to run a full Inversion Job - Minimize Residual
-    !> Where:
-    !>    SIGMA (M) = Production model (for predicted data and final inversion model)
-    !>    PMODEL = Perturbation model  (if exist -dm readed input model)
-    !>    SIGMA0 = Readed input model  (-m)
-    !>    DSIGMA = From JMult_T        (????)
-    subroutine jobInversionDCG_FULL()
-        implicit none
-        !
-        class( ModelParameter_t ), allocatable :: sigma, dsigma
-        !
-        type( DataGroupTx_t ), allocatable, dimension(:) :: dx, JmHat, d_pred, res, resJmHat
-        !
-        type( IterControl_t ) :: CGiter
-        !
-        integer :: iter_dcg
-        !
-        real( kind=prec ) :: alpha, beta, lambda, residual_rmsd
-        !
-        ! Verbose
-        write( *, * ) "     - Start jobInversionDCG"
-        !
-        !> Read Model File and instantiate global variables: main_grid, model_operator and Sigma0
-        if( has_model_file ) then 
-            !
-            call handleModelFile()
-            !
-            !> Initialize sigma as the input model
-            allocate( sigma, source = sigma0 )
-            !
-            !> Instantiate ModelCovariance
-            allocate( model_cov, source = ModelCovarianceRec_t( sigma ) )
-            !
-            !> Initialize pmodel with Zeros
-            pmodel = sigma0
-            !
-            call pmodel%zeros()
-            !
-        else
-            stop "Error: jobInversionDCG > Missing Model file!"
-        endif
-        !
-        !> Read Perturbation Model File: instantiate pmodel (NOT USING RIGHT NOW ????)
-        if( has_pmodel_file ) then 
-            !
-            call handlePModelFile()
-            !
-            call pmodel%setMetric( model_operator%metric )
-            !
-            dsigma = model_cov%multBy_Cm( pmodel )
-            !
-            call sigma%linComb( ONE, ONE, dsigma )
-            !
-        endif
-        !
-        !> Read Data File: instantiates and builds the Data relation between Txs and Rxs
-        if( has_data_file ) then 
-            !
-            call handleDataFile()
-            !
-        else
-            stop "Error: jobInversionDCG > Missing Data file!"
-        endif
-        !
-        !> Instantiate ForwardSolver - Specific type via control file
-        call createForwardSolver()
-        !
-        !> Run ForwardModelling for calculate Predicted Data
-        call runForwardModeling( sigma, d_pred )
-        !
-        residual_rmsd = getResidualRMS( d_pred, res )
-        !
-        !> Initialize the JmHat data array in the same format as the predicted data array
-        JmHat = all_measured_data
-        !
-        dx = all_measured_data
-        !
-        iter_dcg = 1
-        lambda = 10.
-        !
-        call setIterControl( CGiter )
-        !
-        ! Verbose
-        write( *, * ) "### START DCG LOOP, RMSD: ", residual_rmsd
-        !
-        !> #### LOOP DCG: Iterations for Inversion Convergence
-        do while( residual_rmsd .GT. 1.05 .AND. iter_dcg .LT. 4 )
-            !
-            !> Calculate JmHat
-            call JMult( sigma0, pmodel, JmHat )
-            !
-            !> resJmHat (b) = res + JmHat
-            resJmHat = res
-            !
-            !call linComb(ONE,res,ONE,JmHat,b)
-            call linCombDataGroupTxArray( ONE, res, ONE, JmHat, resJmHat )
-            !
-            !> NEED THIS?
-            call normalizeDataGroupTxArray( resJmHat, 1 )
-            !
-            call CG_DS_standard( resJmHat, dx, sigma0, all_measured_data, lambda, CGiter )
-            !
-            call normalizeWithDataGroupTxArray( 1, all_measured_data, dx )
-            !
-            !> Calculate dsigma from JMult_T
-            call JMult_T( sigma0, dx, dsigma )
-            !
-            !> Save dsigma in pmodel, to use in the next DCG step
-            !pmodel = dsigma
-            !
-            !> Smooth dsigma and add it to sigma
-            pmodel = model_cov%multBy_Cm( dsigma )
-            !
-            sigma = sigma0
-            !
-            call sigma%linComb( ONE, ONE, pmodel )
-            !
-            !> Run ForwardModelling for calculate Predicted Data with new sigma
-            call runForwardModeling( sigma, d_pred )
-            !
-            residual_rmsd = getResidualRMS( d_pred, res )
-            !
-            ! Verbose
-            write( *, * ) "          - #ITER_DCG: ", iter_dcg, residual_rmsd
-            !
-            iter_dcg = iter_dcg + 1
-            !
-            !> WRITE DSIGMA FOREACH STEP ????
-        enddo
-        !
-        !> Write dsigma to <dsigma_file_name> file path
-        call sigma%write()
-        !
-        !> Flush due local variables
-        deallocate( sigma, JmHat )
-        !
-        ! Verbose
-        write( *, * ) "     - Finish jobInversionDCG"
-        !
-    end subroutine jobInversionDCG_FULL
+    end subroutine jobInversion
     !
     !> No subroutine briefing
     subroutine createForwardSolver()
@@ -512,7 +370,7 @@ contains
                 !
             case ( "Inversion" )
                 !
-                call jobInversionDCG()
+                call jobInversion()
                 !
             case default
                 !

@@ -136,7 +136,7 @@ contains
         class( ModelParameter_t ), allocatable, intent( in ) :: mhat
         class( ModelParameter_t ), allocatable :: dm
         !
-        dm = mhat
+        allocate( dm, source = mhat )
         !
         select type( mhat )
             !
@@ -174,7 +174,7 @@ contains
         class( ModelParameter_t ), allocatable, intent( in ) :: mhat
         class( ModelParameter_t ), allocatable :: dm
         !
-        dm = mhat
+        allocate( dm, source = mhat )
         !
         select type( mhat )
             !

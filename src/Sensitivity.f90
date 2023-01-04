@@ -30,7 +30,7 @@ module Sensitivity
     use DataGroupTxArray
     !
     !> Global Sensitivity Routines
-    public :: JMult, JMult_Tx, JMult_T, JMult_T_Tx, getResidualRMS
+    public :: JMult, JMult_Tx, JMult_T, JMult_T_Tx
     !
 contains
     !
@@ -141,7 +141,8 @@ contains
         !> Initialize dsigma with Zeros
         if( sigma%is_allocated ) then
             !
-            dsigma = sigma
+            if( allocated( dsigma ) ) deallocate( dsigma )
+            allocate( dsigma, source = sigma )
             !
             call dsigma%zeros()
             !
@@ -155,7 +156,7 @@ contains
             !> Set current tx_dsigma from JMult_T_Tx
             call JMult_T_Tx( sigma, all_data_tx( i_tx ), dsigma_tx )
             !
-            call dsigma%add( dsigma_tx )
+            call dsigma%linComb( ONE, ONE, dsigma_tx )
             !
         enddo
         !
@@ -185,7 +186,7 @@ contains
         integer :: i_data, i_comp, i_pol
         !
         !> Initialize dsigma with zeros
-        dsigma = sigma
+        allocate( dsigma, source = sigma )
         !
         call dsigma%zeros()
         !
@@ -253,33 +254,6 @@ contains
         call Tx%pMult_t( sigma, dsigma )
         !
     end subroutine JMult_T_Tx
-    !
-    !> Get DSigma for a single transmitter:
-    !>     Create a Rhs from LRows * residual data for all receivers related to the transmitter.
-    !>     Solve ESens on the transmitter with SourceInteriorForce and the new Rhs.
-    !>     Call Tx%PMult to get a new ModelParameter DSigma for the transmitter.
-    function getResidualRMS( predicted, residual ) result( rmsd )
-        implicit none
-        !
-        type( DataGroupTx_t ), allocatable, dimension(:), intent( in ) :: predicted
-        type( DataGroupTx_t ), allocatable, dimension(:), intent( inout ) :: residual
-        !
-        real( kind=prec ) :: rmsd
-        !
-        type( DataGroupTx_t ), allocatable, dimension(:) :: n_residual
-        !
-        ! initialize res
-        residual = all_measured_data
-        !
-        call linCombDataGroupTxArray( ONE, all_measured_data, MinusONE, predicted, residual )
-        !
-        n_residual = residual
-        !
-        call normalizeDataGroupTxArray( n_residual, 2 )
-        !
-        rmsd = sqrt( dotProdDataGroupTxArray( residual, n_residual ) / countDataGroupTxArray( residual ) )
-        !
-    end function getResidualRMS
-    !
+	!
 end module Sensitivity
 !

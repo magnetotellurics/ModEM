@@ -8,15 +8,12 @@ module InversionDCG
     !
     type :: IterControl_t
         !
-        ! maximum number of iterations in one call to iterative solver
-        integer :: maxIt
-        ! convergence criteria: return from solver if relative error < tol
+        integer :: max_it, n_iter
+        !
         real( kind=prec ) :: tol
-        ! actual number of iterations before return
-        integer :: niter
-        ! relative error for each iteration
-        real( kind=prec ), pointer, dimension(:) :: rerr
-        ! logical variable indicating if algorithm "failed"
+        !
+        real( kind=prec ), pointer, dimension(:) :: r_err
+        !
         logical :: failed = .FALSE.
         !
     end type IterControl_t
@@ -24,15 +21,18 @@ module InversionDCG
 contains
     !
     !>
-    subroutine setIterControl( CGiter )
+    subroutine setIterControl( cg_iter )
         implicit none
         !
-        type( IterControl_t), intent( inout ) :: CGiter
+        type( IterControl_t), intent( inout ) :: cg_iter
         !
-        CGiter%maxit = 20
-        CGiter%tol = 10E-4
-        CGiter%niter = 0
-        allocate( CGiter%rerr( 0 : CGiter%maxit ) )
+        cg_iter%max_it = 20
+        !
+        cg_iter%tol = 10E-8
+        !
+        cg_iter%n_iter = 0
+        !
+        allocate( cg_iter%r_err( 0 : cg_iter%max_it ) )
         !
     end subroutine setIterControl
     !
@@ -79,9 +79,10 @@ contains
         !
         DCG_iter = 1
         !
-        write( *, * ) "#START DCG LOOP > rmsd: ", rmsd
+        write( *, * ) "#START DCG LOOP > residual rmsd: ", rmsd
         !
-        do
+        !> ARBITRARY VALUES FOR NOW ????
+        do while( rmsd .GT. 1.05 .AND. DCG_iter .LE. 3 )
             !
             call JMult( m, mHat, JmHat )
             !
@@ -107,11 +108,7 @@ contains
             !
             call Calc_FWD( lambda, d, m, d_pred, res, rmsd )
             !
-            write( *, * ) "#DCG_iter > rmsd: ", DCG_iter, rmsd
-            !
-            if( rmsd .LT. 1.05 .OR. DCG_iter .GE. 3 ) then
-                exit
-            endif
+            write( *, * ) "#DCG_iter > residual rmsd: ", DCG_iter, rmsd
             !
             DCG_iter = DCG_iter + 1
             !
@@ -124,90 +121,6 @@ contains
         deallocate( mHat, Cm_mHat )
         !
     end subroutine DCGsolver
-    !
-    !>
-    subroutine DCGsolverLanczos( d, m0, m, lambda )
-        implicit none
-        !
-        type( DataGroupTx_t ), allocatable, dimension(:), intent( inout ) :: d
-        class( ModelParameter_t ), allocatable, intent( in ) :: m0
-        class( ModelParameter_t ), allocatable, intent( inout ) :: m
-        real( kind=prec ), intent( inout ) :: lambda
-        !
-        type( DataGroupTx_t ), allocatable, dimension(:) :: JmHat, b, dx, d_pred, res
-        class( ModelParameter_t ), allocatable :: mHat, Cm_mHat
-        real( kind=prec ) :: rmsd
-        integer :: DS_iter
-        type( IterControl_t ) :: CGiter
-        !
-        allocate( mHat, source = m )
-        allocate( Cm_mHat, source = m )
-        !
-        m = model_cov%multBy_Cm( mHat )
-        !
-        call m%linComb( ONE, ONE, m0 )
-        !
-        JmHat = d
-        dx = d
-        b = d
-        res = d
-        !
-        call zerosDataGroupTxArray( JmHat )
-        !
-        call zerosDataGroupTxArray( b )
-        !
-        call setIterControl( CGiter )
-        !
-        d_pred = d
-        !
-        call Calc_FWD( lambda, d, m, d_pred, res, rmsd )
-        !
-        write( *, * ) "lambda, rmsd: ", lambda, rmsd
-        !
-        do DS_iter = 1, 5
-            !
-            ! Compute the right hand side vector (b) for the CG solver.
-            ! b= (d-dPred)+ J(m-m0)
-            !
-            if ( DS_iter .GT. 1 ) then
-                call Jmult( m, mHat, JmHat )
-            endif
-            !
-            b = d
-            write( *, * ) "Norm JmHat: ", dotProdDataGroupTxArray( JmHat, JmHat )
-            !
-            call linCombDataGroupTxArray( ONE, res, ONE, JmHat, b )
-            !
-            call normalizeDataGroupTxArray( b, 1 )
-            !
-            !  call CG_DS(b,dx,m,m0,d,lambda,CGiter,d_Pred_m0,rms,mhat)
-            !call Lanczos_DS (b,m,m0,d,d_Pred_m0,lambda,mhat,res,CGiter,DS_iter,rms,Jm0)
-            !  call Multi_Trans_DS (b,dx,m,m0,d,lambda,mhat,res,CGiter,DS_iter,rms)
-            ! call Lanczos_CG_DS(b,dx,m,m0,d,lambda,CGiter,DS_iter,rms)
-            call CG_DS_standard( b, dx, m, d, lambda, CGiter )
-            !
-            call normalizeWithDataGroupTxArray( 1, d, dx )
-            !
-            call JMult_T( m, dx, mHat )
-            !
-            Cm_mHat = model_cov%multBy_Cm( mHat )
-            !
-            mHat = Cm_mHat
-            !
-            !call linComb_modelParam( ONE, m0, ONE, mHat, m )
-            m = m0
-            call m%linComb( ONE, ONE, mHat )
-            !
-            call Calc_FWD( lambda, d, m, d_pred, res, rmsd )
-            !
-            write( *, * ) "DS_iter, lambda, rmsd, CGiter%niter: ", DS_iter, lambda, rmsd, CGiter%niter
-            !
-        end do
-        !
-        deallocate( mHat )
-        deallocate( Cm_mHat )
-        !
-    end subroutine DCGsolverLanczos
     !
     !>
     subroutine Calc_FWD( lambda, d, m, d_pred, res, rmsd )
@@ -242,6 +155,8 @@ contains
         !
         rmsd = sqrt( SS / Ndata )
         !
+        write( *, * ) "     #Calc_FWD > SS, Ndata, rmsd: ", SS, Ndata, rmsd
+        !
         call deallocateDataGroupTxArray( Nres )
         !
     end subroutine Calc_FWD
@@ -275,11 +190,9 @@ contains
         !
         cg_iter = 1
         !
-        CGiter%rerr(cg_iter) = r_norm / b_norm
+        CGiter%r_err(cg_iter) = r_norm / b_norm
         !
-        loop: do while ( CGiter%rerr(cg_iter) .GT. CGiter%tol .AND. cg_iter .LT.CGiter%maxIt )
-            !
-            write( *, * ) "#CG-Iter, Error, Lambda: ", cg_iter, CGiter%rerr(cg_iter), lambda
+        loop: do while ( CGiter%r_err(cg_iter) .GT. CGiter%tol .AND. cg_iter .LT.CGiter%max_it )
             !
             ! Compute matrix-vector product A*p and save the result in Ap  
             call MultA_DS( p, m, d, lambda, Ap )
@@ -299,21 +212,23 @@ contains
             call scMultAddDataGroupTxArray( -alpha, Ap, r ) 
             !
             r_norm_pre = r_norm
+			!
             r_norm = dotProdDataGroupTxArray( r, r )
             !
-            ! Compute beta: beta= r_norm /r_norm_previous
             beta = r_norm / r_norm_pre
-            
+            !
             ! Compute new p: p = r + beta*p    
             call linCombDataGroupTxArray( ONE, r, beta, p, p )
             !
+            write( *, * ) "#CG-Iter, Error, Lambda: ", cg_iter, CGiter%r_err(cg_iter), lambda
+            !
             cg_iter = cg_iter + 1
             !
-            CGiter%rerr(cg_iter) = r_norm / b_norm 
+            CGiter%r_err(cg_iter) = r_norm / b_norm 
             !
         enddo loop
         !
-        CGiter%niter = cg_iter
+        CGiter%n_iter = cg_iter
         !
     end subroutine CG_DS_standard
     !
@@ -329,7 +244,6 @@ contains
         !
         class( ModelParameter_t ), allocatable :: JTp, CmJTp_temp
         type( DataGroupTx_t ), allocatable, dimension(:) :: lambdaP, p_temp
-        integer :: i, j, k, iDt
         !
         allocate( JTp, source = m )
         !
@@ -355,11 +269,7 @@ contains
         !
         call normalizeWithDataGroupTxArray( 1, d, Ap )
         !
-        p_temp = p
-        !
-        call setErrorBarDataGroupTxArray( p_temp, .FALSE. )
-        !
-        call scMultAddDataGroupTxArray( lambda, p_temp, lambdaP )
+        call scMultDataGroupTxArray( lambda, p, lambdaP )
         !
         call setErrorBarDataGroupTxArray( lambdaP, .FALSE. )
         !

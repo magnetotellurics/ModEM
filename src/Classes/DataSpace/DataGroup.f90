@@ -18,7 +18,7 @@ module DataGroup
         !
         real( kind=prec ), allocatable, dimension(:) :: reals, imaginaries, errors
         !
-        logical :: is_allocated, error_bar = .FALSE.
+        logical :: is_allocated, error_bar
         !
         integer, private :: counter
         !
@@ -229,7 +229,7 @@ contains
             d_group_out%errors = b * d_group%errors
             d_group_out%normalized = d_group%normalized
         endif
-        !
+		!
     end subroutine linCombDataGroup
     !
     !> ????
@@ -246,7 +246,7 @@ contains
         !
         do i = 1, self%n_comp
             !
-            rvalue = rvalue + self%reals(i) * d_group%reals(i)
+            rvalue = rvalue + d_group%reals(i) * self%reals(i)
             !
         enddo
         !
