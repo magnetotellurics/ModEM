@@ -881,6 +881,7 @@ contains
                 !
                 class default
                     stop "Error: dotProdCVector3D_SG: undefined rhs"
+				!
             end select
             !
         else

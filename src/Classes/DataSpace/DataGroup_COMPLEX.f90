@@ -162,66 +162,14 @@ contains
     end subroutine setValuesDataGroup
     !
     !> ????
-    subroutine zerosDataGroup( self )
-        implicit none
-        !
-        class( DataGroup_t ), intent( inout ) :: self
-        !
-        self%reals = R_ZERO
-        !
-        self%imaginaries = R_ZERO
-        !
-        self%errors = R_ZERO
-        !
-        self%error_bar = .FALSE.
-        !
-    end subroutine zerosDataGroup
-    !
-    !>
-    subroutine normalizeDataGroup( self, norm )
-        implicit none
-        !
-        class( DataGroup_t ), intent( inout ) :: self
-        integer, intent( in ), optional :: norm
-        !
-        integer :: nn
-        !
-        if( .NOT. self%error_bar ) then
-            stop "Error: normalizeDataGroup: no error bars to normalize"
-        endif
-        !
-        if( present( norm ) ) then
-            nn = norm
-        else
-            nn = 1
-        endif
-        !
-        self%reals = self%reals / ( self%errors ** nn )
-        self%imaginaries = self%imaginaries / ( self%errors ** nn )
-        !
-        self%normalized = self%normalized + nn
-        !
-    end subroutine normalizeDataGroup
-    !
-    !> Subtraction
-    subroutine subDataGroup( self, d_in )
-        implicit none
-        !
-        class( DataGroup_t ), intent( inout ) :: self
-        class( DataGroup_t ), intent( in ) :: d_in
-        !
-        self%reals = self%reals - d_in%reals
-        self%imaginaries = self%imaginaries - d_in%imaginaries
-        !
-    end subroutine subDataGroup
-    !
-    !> ????
     subroutine linCombDataGroup( self, a, b, d_in, d_out )
         implicit none
         !
         class( DataGroup_t ), intent( in ) :: self, d_in
         real( kind=prec ), intent( in ) :: a, b
         class( DataGroup_t ), intent( inout ) :: d_out
+        !
+        complex( kind=prec ), allocatable, dimension(:) :: c_self, c_d_in, c_d_out
         !
         if( .NOT. self%is_allocated ) then
             stop "Error: linCombDataGroup > self not allocated"
@@ -266,8 +214,19 @@ contains
         d_out%i_tx = self%i_tx
         d_out%n_comp = self%n_comp
         !
-        d_out%reals = a * self%reals + b * d_in%reals
-        d_out%imaginaries = a * self%imaginaries + b * d_in%imaginaries
+        if( d_out%is_complex ) then
+            !
+            c_self = cmplx( self%reals, self%imaginaries, kind=prec )
+            c_d_in = cmplx( d_in%reals, d_in%imaginaries, kind=prec )
+            !
+            c_d_out = a * c_self + b * c_d_in
+            !
+            d_out%reals = real( c_d_out, kind=prec )
+            d_out%imaginaries = real( aimag( c_d_out ), kind=prec )
+            !
+        else
+            d_out%reals = a * self%reals + b * d_in%reals
+        endif
         !
         if( self%error_bar .AND. d_in%error_bar ) then
             !
@@ -303,9 +262,102 @@ contains
         !
         real( kind=prec ) :: rvalue
         !
-        rvalue = sum( self%reals * d_in%reals ) + sum( self%imaginaries * d_in%imaginaries )
+        complex( kind=prec ) :: c_value
+        complex( kind=prec ), allocatable, dimension(:) :: c_self, c_d_in
+        !
+        if( self%is_complex ) then
+            !
+            c_self = cmplx( self%reals, self%imaginaries, kind=prec )
+            c_d_in = cmplx( d_in%reals, d_in%imaginaries, kind=prec )
+            !
+            c_value = sum( conjg( c_self ) * c_d_in )
+            !
+            rvalue = real( c_value, kind=prec )
+            !
+        else
+            rvalue = sum( self%reals * d_in%reals )
+        endif
         !
     end function dotProdDataGroup
+    !
+    !> ????
+    subroutine zerosDataGroup( self )
+        implicit none
+        !
+        class( DataGroup_t ), intent( inout ) :: self
+        !
+        self%reals = R_ZERO
+        !
+        self%imaginaries = R_ZERO
+        !
+        self%errors = R_ZERO
+        !
+        self%error_bar = .FALSE.
+        !
+    end subroutine zerosDataGroup
+    !
+    !>
+    subroutine normalizeDataGroup( self, norm )
+        implicit none
+        !
+        class( DataGroup_t ), intent( inout ) :: self
+        integer, intent( in ), optional :: norm
+        !
+        complex( kind=prec ), allocatable, dimension(:) :: c_self
+        !
+        integer :: nn
+        !
+        if( .NOT. self%error_bar ) then
+            stop "Error: normalizeDataGroup: no error bars to normalize"
+        endif
+        !
+        if( present( norm ) ) then
+            nn = norm
+        else
+            nn = 1
+        endif
+        !
+        if( self%is_complex ) then
+            !
+            c_self = cmplx( self%reals, self%imaginaries, kind=prec )
+            !
+            c_self = c_self / ( self%errors ** nn )
+            !
+            self%reals = real( c_self, kind=prec )
+            self%imaginaries = real( aimag( c_self ), kind=prec )
+            !
+        else
+            self%reals = self%reals / ( self%errors ** nn )
+        endif
+        !
+        self%normalized = self%normalized + nn
+        !
+    end subroutine normalizeDataGroup
+    !
+    !> Subtraction
+    subroutine subDataGroup( self, d_in )
+        implicit none
+        !
+        class( DataGroup_t ), intent( inout ) :: self
+        class( DataGroup_t ), intent( in ) :: d_in
+        !
+        complex( kind=prec ), allocatable, dimension(:) :: c_self, c_d_in
+        !
+        if( self%is_complex ) then
+            !
+            c_self = cmplx( self%reals, self%imaginaries, kind=prec )
+            c_d_in = cmplx( d_in%reals, d_in%imaginaries, kind=prec )
+            !
+            c_self = c_self - c_d_in
+            !
+            self%reals = real( c_self, kind=prec )
+            self%imaginaries = real( aimag( c_self ), kind=prec )
+            !
+        else
+            self%reals = self%reals - d_in%reals
+        endif
+        !
+    end subroutine subDataGroup
     !
     !> Return if it is similar to another DataGroup.
     function isEqualDg( self, other ) result ( equal )

@@ -267,10 +267,8 @@ contains
         !> Instantiate ForwardSolver - Specific type via control file
         call createForwardSolver()
         !
-        lambda = 10.
-        !
-        !call DCGsolver( all_measured_data, sigma, pmodel, lambda )
-		call NLCGsolver( all_measured_data, lambda, sigma, pmodel )
+        call DCGsolver( all_measured_data, sigma, pmodel )
+        !call NLCGsolver( all_measured_data, lambda, sigma, pmodel )
         !
         ! Verbose
         write( *, * ) "     - Finish jobInversion"

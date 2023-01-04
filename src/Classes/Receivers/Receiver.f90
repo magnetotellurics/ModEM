@@ -276,7 +276,7 @@ contains
         !
         integer :: i
         !
-        self%data_group = DataGroup_t( self%id, transmitter%id, self%n_comp, .FALSE. )
+        self%data_group = DataGroup_t( self%id, transmitter%id, self%n_comp, self%is_complex, .FALSE. )
         !
         do i = 1, self%n_comp
             !

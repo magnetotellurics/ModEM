@@ -36,7 +36,7 @@ module rScalar3D_SG
         !> Arithmetic/algebraic operations
         procedure, public :: zeros => zerosRScalar3D_SG
         procedure, public :: add   => addRScalar3D_SG
-		!
+        !
         procedure, public :: subValue   => subValueRScalar3D_SG
         procedure, public :: subField   => subFieldRScalar3D_SG
         !
@@ -48,11 +48,11 @@ module rScalar3D_SG
         !
         procedure, public :: dotProd => dotProdRScalar3D_SG
         !
-        !> Miscellaneous
         procedure, public :: linComb   => linCombRScalar3D_SG
         !
         procedure, public :: multAddByValue => multAddByValueRScalar3D_SG
         !
+        !> Miscellaneous
         procedure, public :: copyFrom => copyFromRScalar3D_SG
         !
         procedure, public :: print => printRScalar3D_SG
@@ -632,7 +632,7 @@ contains
         class( rScalar3D_SG_t ), intent( inout ) :: self
         complex( kind=prec ), intent( in ) :: cvalue
         !
-		self%v = self%v - cvalue
+        self%v = self%v - cvalue
         !
     end subroutine subValueRScalar3D_SG
     !

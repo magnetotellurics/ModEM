@@ -111,12 +111,18 @@ contains
                     !
                 enddo
                 !
-                !> Set the sum into the current data component
-                call JmHat_tx%data( i_data )%set( i_comp, real( lrows_esens, kind=prec ), real( aimag( lrows_esens ), kind=prec ) )
-                !
-                JmHat_tx%data( i_data )%error_bar = .FALSE.
+                !> Set the sum into the current data component, according to type
+                if( Rx%is_complex ) then
+                    call JmHat_tx%data( i_data )%set( i_comp, real( lrows_esens, kind=prec ), real( aimag( lrows_esens ), kind=prec ) )
+                else
+                    call JmHat_tx%data( i_data )%set( i_comp, real( lrows_esens, kind=prec ), R_ZERO )
+                endif
                 !
             enddo
+            !
+            JmHat_tx%data( i_data )%is_complex = Rx%is_complex 
+            !
+            JmHat_tx%data( i_data )%error_bar = .FALSE.
             !
         enddo
         !
@@ -254,6 +260,6 @@ contains
         call Tx%pMult_t( sigma, dsigma )
         !
     end subroutine JMult_T_Tx
-	!
+    !
 end module Sensitivity
 !
