@@ -763,14 +763,14 @@ contains
                     self%z = self%z * rhs%z
                 !
                 class is( rVector3D_SG_t )
-                    self%x = self%x * cmplx( rhs%x, 0.0, kind=prec )
-                    self%y = self%y * cmplx( rhs%y, 0.0, kind=prec )
-                    self%z = self%z * cmplx( rhs%z, 0.0, kind=prec )
+                    self%x = self%x * rhs%x
+                    self%y = self%y * rhs%y
+                    self%z = self%z * rhs%z
                 !
                 class is( rScalar3D_SG_t )
-                    self%x = self%x * cmplx( rhs%v, 0.0, kind=prec )
-                    self%y = self%y * cmplx( rhs%v, 0.0, kind=prec )
-                    self%z = self%z * cmplx( rhs%v, 0.0, kind=prec )
+                    self%x = self%x * rhs%v
+                    self%y = self%y * rhs%v
+                    self%z = self%z * rhs%v
                 !
                 class is( cScalar3D_SG_t )
                     self%x = self%x * rhs%v
@@ -916,9 +916,9 @@ contains
                         !
                         class is( rVector3D_SG_t )
                             !
-                            diag_mult%x = self%x * cmplx( rhs%x, 0.0, kind=prec )
-                            diag_mult%y = self%y * cmplx( rhs%y, 0.0, kind=prec )
-                            diag_mult%z = self%z * cmplx( rhs%z, 0.0, kind=prec )
+                            diag_mult%x = self%x * rhs%x
+                            diag_mult%y = self%y * rhs%y
+                            diag_mult%z = self%z * rhs%z
                             !
                         class default
                             stop "Error: diagMultCVector3D_SG > Undefined rhs"

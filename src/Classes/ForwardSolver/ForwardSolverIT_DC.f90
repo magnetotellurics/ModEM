@@ -274,7 +274,7 @@ contains
         !
         if( source%trans ) then
             !
-            call e_solution%mult( self%solver%preconditioner%model_operator%metric%VEdge )
+            !call e_solution%mult( self%solver%preconditioner%model_operator%metric%VEdge )
             !
             !allocate( temp_aux_vec, source = e_solution )
             !

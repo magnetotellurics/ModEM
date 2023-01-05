@@ -848,9 +848,10 @@ contains
                 !
                 select type( BC )
                     class is( cVector3D_SG_t )
-					!
-					call BC%zeros()
-					!
+                        !
+                        call BC%setAllBoundary( C_ZERO )
+						!call BC%setAllInterior( C_ZERO )
+                        !
                         do ix = 1, nx
                             do iz = 2, nz
                                 !
