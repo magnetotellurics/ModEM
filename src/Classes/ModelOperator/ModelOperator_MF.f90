@@ -41,6 +41,8 @@ module ModelOperator_MF
               procedure, public :: multCurlT    => multCurlTModelOperatorMF
               procedure, public :: divCorSetUp  => divCorsetUpModelOperatorMF
               !
+              procedure, public :: AdjtBC  => AdjtBCModelOperatorMF
+              !
               procedure :: divCgrad => divCgradModelOperatorMF
               procedure :: divC     => divCModelOperatorMF
               procedure :: grad     => gradModelOperatorMF
@@ -628,8 +630,8 @@ contains
         !
         integer :: ix, iy, iz
         !
-        select type(outPhi)
-            class is(cScalar3D_SG_t)
+        select type( outPhi )
+            class is( cScalar3D_SG_t )
                 !
                 if( .NOT. outPhi%is_allocated) then
                     stop "Error: divCModelOperatorMF > Output cScalar object not allocated"
@@ -797,6 +799,147 @@ contains
         end select
         !
     end subroutine divModelOperatorMF
+    !
+    !  subroutine AdjtBC uses (adjoint) interior node solution to compute
+    !  boundary node values for adjoint (or transpose) solution
+    !   (NOTE: because off-diagonal part of EM operator is real this works
+    !  Assuming boundary conditions for forward problem are
+    !  specified tangential E fields, adjoint BC are  homogeneous (to solve for
+    !   interior nodes), and solution on boundary nodes is determined from
+    !   interior solution via:    E_B - adjt(A_IB)*E_I = 0
+    !    where E_B is boundary part of adjoint system rhs, and E_I
+    !    is the interior node solution of the adjoint system (solved with
+    !    homogeneous tangential BC). This operator computes adjt(A_IB)*E_I.
+    !   Output is required for calculating sensitivities
+    !     of data to errors in specified BC (and potentially for other sorts
+    !     of sensitivities which require the boundary nodes of the adjoint or
+    !     transpose solution).
+    !    NOTE: this routine can be used for both complex conjugate
+    !         transpose and transpose cases.
+
+    !   Uses curl_curl coefficients, available to all routines in this module
+    !   NOTE: Must call CurlCurlSetup before use of this routine
+    !
+    subroutine AdjtBCModelOperatorMF( self, eIn, BC )
+        implicit none
+        !
+        class( ModelOperator_MF_t ), intent( in ) :: self
+        class( Vector_t ), intent( in ) :: eIn
+        ! OUTPUT: boundary condition structure: should be allocated
+        !   and initialized before call to this routine
+        class( Vector_t ), intent( inout) :: BC
+        !
+        integer                   :: ix,iy,iz,nx,ny,nz
+        !
+        !  Multiply FD electric field vector defined on interior nodes (eIn) by
+        !  adjoint of A_IB, the interior/boundary sub-block of the differential
+        !  operator.
+        !
+        nx = eIn%nx
+        ny = eIn%ny
+        nz = eIn%nz
+        !
+        select type( eIn )
+            class is( cVector3D_SG_t )
+                !
+                if( .NOT. eIn%is_allocated ) then
+                    stop "Error: AdjtBCModelOperatorMF > eIn not allocated"
+                endif
+                !
+                select type( BC )
+                    class is( cVector3D_SG_t )
+					!
+					call BC%zeros()
+					!
+                        do ix = 1, nx
+                            do iz = 2, nz
+                                !
+								BC%y(ix,:,iz) = (- self%yX(ix,1)*Ein%y(ix,1,iz)       &
+                                + self%yX(ix+1,1)*Ein%y(ix+1,1,iz)   &
+                                + self%xXY(2,1)*Ein%x(ix,2,iz)) * C_MinusOne
+                                BC%y(ix,:,iz) = (+ self%yX(ix,ny)*Ein%y(ix,ny,iz)     &
+                                - self%yX(ix+1,ny)*Ein%y(ix+1,ny,iz) &
+                                + self%xXY(ny,2)*Ein%x(ix,ny,iz)) * C_MinusOne
+								!
+                            enddo
+                        enddo
+                        !
+                        do iz = 1, nz
+                            do ix = 2, nx
+                                !
+								BC%y(ix,:,iz) = (- self%yZ(1,iz)*Ein%y(ix,1,iz)        &
+                                + self%yZ(1,iz+1)*Ein%y(ix,1,iz+1)    &
+                                + self%zZY(2,1)*Ein%z(ix,2,iz)) * C_MinusOne
+                                BC%y(ix, :, iz) = (+ self%yZ(ny,iz)*Ein%y(ix,ny,iz)      &
+                                - self%yZ(ny,iz+1)*Ein%y(ix,ny,iz+1)  &
+                                + self%zZY(ny,2)*Ein%z(ix,ny,iz)) * C_MinusOne
+								!
+                            enddo
+                        enddo
+                        !
+                        do iy = 1, ny
+                            do iz = 2, nz
+                                !
+								BC%x(:,iy,iz) = (- self%xY(1,iy)*Ein%x(1,iy,iz)        &
+                                + self%xY(1,iy+1)*Ein%x(1,iy+1,iz)    &
+                                + self%yYX(2,1)*Ein%y(2,iy,iz)) * C_MinusOne
+                                BC%x(:,iy,iz) = (+ self%xY(nx,iy)*Ein%x(nx,iy,iz)      &
+                                - self%xY(nx,iy+1)*Ein%x(nx,iy+1,iz)  &
+                                + self%yYX(nx,2)*Ein%y(nx,iy,iz)) * C_MinusOne
+								!
+                            enddo
+                        enddo
+                        !
+                        do iz = 1, nz
+                            do iy = 2, ny
+                                !
+								BC%x(:,iy,iz) = (- self%xZ(1,iz)*Ein%x(1,iy,iz)       &
+                                + self%xZ(1,iz+1)*Ein%x(1,iy,iz+1)   &
+                                + self%zZX(2,1)*Ein%z(2,iy,iz)) * C_MinusOne
+                                BC%x(:,iy,iz) = (+ self%xZ(nx,iz)*Ein%x(nx,iy,iz)     &
+                                - self%xZ(nx,iz+1)*Ein%x(nx,iy,iz+1) &
+                                + self%zZX(nx,2)*Ein%z(nx,iy,iz)) * C_MinusOne
+								!
+                            enddo
+                        enddo
+                        !
+                        do ix = 1, nx
+                            do iy = 2, ny
+                                !
+								BC%z(ix,iy,:) = (- self%zX(ix,1)*Ein%z(ix,iy,1)       &
+                                + self%zX(ix+1,1)*Ein%z(ix+1,iy,1)   &
+                                + self%xXZ(2,1)*Ein%x(ix,iy,2)) * C_MinusOne
+                                BC%z(ix,iy,:) = (+ self%zX(ix,nz)*Ein%z(ix,iy,nz)     &
+                                - self%zX(ix+1,nz)*Ein%z(ix+1,iy,nz) &
+                                + self%xXZ(nz,2)*Ein%x(ix,iy,nz)) * C_MinusOne
+								!
+                            enddo
+                        enddo
+                        !
+                        do iy = 1, ny
+                            do ix = 2, nx
+                                !
+								BC%z(ix,iy,:) = (- self%zY(iy,1)*Ein%z(ix,iy,1)        &
+                                + self%zY(iy+1,1)*Ein%z(ix,iy+1,1)    &
+                                + self%yYZ(2,1)*Ein%y(ix,iy,2)) * C_MinusOne
+                                BC%z(ix,iy,:) = (+ self%zY(iy,nz)*Ein%z(ix,iy,nz)      &
+                                - self%zY(iy+1,nz)*Ein%z(ix,iy+1,nz)  &
+                                + self%yYZ(nz,2)*Ein%y(ix,iy,nz) ) * C_MinusOne
+								!
+                            enddo
+                        enddo
+						!
+                        class default
+                        stop "Error: AdjtBCModelOperatorMF> Ein type unknown"
+                        !
+                end select
+                !
+            class default
+                stop "Error: AdjtBCModelOperatorMF > BC type unknown"
+                !
+        end select
+        !
+    end subroutine AdjtBCModelOperatorMF
     !
     !> No subroutine briefing
     subroutine printModelOperatorMF( self )

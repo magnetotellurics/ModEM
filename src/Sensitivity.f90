@@ -64,7 +64,13 @@ contains
             !
             !> Solve e_sens from with the new Source
             call Tx%solve()
-            !
+			!
+			call Tx%e_sol(1)%print( 3001, "JMult ESol(1)" )
+			call Tx%e_sol(2)%print( 3002, "JMult ESol(2)" )
+			!
+			call Tx%e_sens(1)%print( 4001, "JMult ESens(1)" )
+			call Tx%e_sens(2)%print( 4002, "JMult ESens(2)" )
+			!
             !> Fill tx_data with JMult routine
             call JMult_Tx( JmHat( i_dtx ) )
             !
@@ -112,11 +118,11 @@ contains
                 enddo
                 !
                 !> Set the sum into the current data component, according to type
-                if( Rx%is_complex ) then
+                !if( Rx%is_complex ) then
                     call JmHat_tx%data( i_data )%set( i_comp, real( lrows_esens, kind=prec ), real( aimag( lrows_esens ), kind=prec ) )
-                else
-                    call JmHat_tx%data( i_data )%set( i_comp, real( lrows_esens, kind=prec ), R_ZERO )
-                endif
+                !else
+                    !call JmHat_tx%data( i_data )%set( i_comp, real( lrows_esens, kind=prec ), R_ZERO )
+                !endif
                 !
             enddo
             !
@@ -131,11 +137,11 @@ contains
     !> Call JMult_T_Tx for for all transmitters:
     !>     Calculate residual data with predicted data for each transmitter.
     !>     Add the result obtained for each transmitter into a resulting ModelOperator DSigma.
-    subroutine JMult_T( sigma, all_data_tx, dsigma )
+    subroutine JMult_T( sigma, all_data, dsigma )
         implicit none
         !
         class( ModelParameter_t ), intent( in ) :: sigma
-        type( DataGroupTx_t ), dimension(:), intent( in ) :: all_data_tx
+        type( DataGroupTx_t ), dimension(:), intent( in ) :: all_data
         class( ModelParameter_t ), allocatable, intent( inout ) :: dsigma
         !
         class( ModelParameter_t ), allocatable :: dsigma_tx
@@ -160,13 +166,14 @@ contains
         do i_tx = 1, size( transmitters )
             !
             !> Set current tx_dsigma from JMult_T_Tx
-            call JMult_T_Tx( sigma, all_data_tx( i_tx ), dsigma_tx )
+            call JMult_T_Tx( sigma, all_data( i_tx ), dsigma_tx )
             !
+			!> Add dsigma_tx to dsigma
             call dsigma%linComb( ONE, ONE, dsigma_tx )
             !
+            deallocate( dsigma_tx )
+            !
         enddo
-        !
-        deallocate( dsigma_tx )
         !
         ! Verbose
         !write( *, * ) "          - Finish JMult_T"
@@ -190,6 +197,7 @@ contains
         type( DataGroup_t ) :: data_group
         complex( kind=prec ) :: tx_data_cvalue
         integer :: i_data, i_comp, i_pol
+        complex( kind=prec ) :: comega
         !
         !> Initialize dsigma with zeros
         allocate( dsigma, source = sigma )
@@ -198,6 +206,8 @@ contains
         !
         !> Pointer to the Data Transmitter
         Tx => getTransmitter( tx_data%i_tx )
+        !
+        comega = cmplx( 0.0, 1./ ( 2.0 * PI / Tx%period ), kind=prec )
         !
         !> Initialize bSrc( n_pol ) with zeros
         allocate( cVector3D_SG_t :: bSrc( Tx%n_pol ) )
@@ -224,11 +234,14 @@ contains
             do i_comp = 1, data_group%n_comp
                 !
                 if( Rx%is_complex ) then
-                    tx_data_cvalue = cmplx( data_group%reals( i_comp ), data_group%imaginaries( i_comp ), kind=prec )
+                    tx_data_cvalue = cmplx( data_group%reals( i_comp ), -data_group%imaginaries( i_comp ), kind=prec )
                 else
                     tx_data_cvalue = cmplx( data_group%reals( i_comp ), R_ZERO, kind=prec )
                 endif
-                !
+				!
+				!
+				write( *, * ) tx_data_cvalue
+				!
                 !> Loop over polarizations
                 do i_pol = 1, Tx%n_pol
                     !
@@ -241,12 +254,17 @@ contains
             enddo
             !
         enddo
+		!
+		call bSrc( 1 )%print( 2001, "bSrc( 1 )" )
+		call bSrc( 2 )%print( 2002, "bSrc( 2 )" )
+		!
+		!stop
         !
         !> Set Transmitter's ForwardSolver Omega(Period) and Conductivity
         call Tx%forward_solver%setFrequency( sigma, Tx%period )
         !
         !> Switch Transmitter's source to SourceInteriorForce
-        call Tx%setSource( SourceInteriorForce_t( model_operator, sigma, Tx%period ) )
+        call Tx%setSource( SourceInteriorForce_t( model_operator, sigma, Tx%period, .TRUE. ) )
         !
         !> Set E of the transmitter source and create Rhs from it
         call Tx%source%setE( bSrc )
@@ -255,6 +273,12 @@ contains
         !
         !> Solve Transmitter's e_sens with the new SourceInteriorForce
         call Tx%solve()
+		!
+		call Tx%e_sol(1)%print( 3001, "JMult_T ESol(1)" )
+		call Tx%e_sol(2)%print( 3002, "JMult_T ESol(2)" )
+        !
+		call Tx%e_sens(1)%print( 4001, "JMult_T ESens(1)" )
+		call Tx%e_sens(2)%print( 4002, "JMult_T ESens(2)" )
         !
         !> Get dsigma from pMult_t
         call Tx%pMult_t( sigma, dsigma )

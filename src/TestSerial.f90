@@ -615,7 +615,7 @@ contains
                          !
                          argument_index = argument_index + 2
                          !
-                      case ( "-gd", "--gradient" )
+                      case ( "-jm", "--jmhat" )
                          !
                          call get_command_argument( argument_index + 1, argument )
                          JmHat_data_file_name = trim( argument )

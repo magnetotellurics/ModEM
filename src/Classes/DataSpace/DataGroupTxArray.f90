@@ -140,7 +140,7 @@ contains
             !
             do j = 1, size( data_tx_array(i)%data )
                 !
-                counter = counter + data_tx_array(i)%data(j)%n_comp
+                counter = counter + data_tx_array(i)%data(j)%n_comp * 2
                 !
             enddo
             !
@@ -316,19 +316,26 @@ contains
     end subroutine zerosDataGroupTxArray
     !
     !> Call the print routine of each DataGroupTx in the array
-    subroutine printDataGroupTxArray( data_tx_array )
+    subroutine printDataGroupTxArray( data_tx_array, title )
         implicit none
         !
         type( DataGroupTx_t ), dimension(:), intent( in ) :: data_tx_array
+        character(*), intent( in ) :: title
         !
         integer :: i
         !
+		write( *, * ) "##############################"
+		write( *, * ) title
+		write( *, * ) "##############################"
+		!
         do i = 1, size( data_tx_array )
             !
             call data_tx_array(i)%print()
             !
         enddo
         !
+		stop
+		!
     end subroutine printDataGroupTxArray
     !
 end module DataGroupTxArray

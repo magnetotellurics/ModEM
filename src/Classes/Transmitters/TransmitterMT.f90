@@ -82,7 +82,7 @@ module TransmitterMT
         endif
         !
         !> Verbose
-        if( self%source%adjoint ) then
+        if( self%source%sens ) then
             !
             if( allocated( self%e_sens ) ) deallocate( self%e_sens )
             allocate( cVector3D_SG_t :: self%e_sens(2) )
@@ -98,7 +98,7 @@ module TransmitterMT
         do i_pol = 1, self%n_pol
             !
             !> Verbose
-            if( self%source%adjoint ) then
+            if( self%source%sens ) then
                 !write( *, * ) "               SolveADJ MT Tx:", self%id, " -> Period:", self%period, " - Polarization:", i_pol
                 !
                 !> Calculate e_sens through ForwardSolver

@@ -23,7 +23,7 @@ module Source
         !
         class( Vector_t ), allocatable, dimension(:) :: rhs, E
         !
-        logical :: non_zero_source, adjoint
+        logical :: non_zero_source, sens, trans
         !
         contains
             !
@@ -103,7 +103,9 @@ module Source
         !
         self%non_zero_source = .FALSE.
         !
-        self%adjoint         = .FALSE.
+        self%trans = .FALSE.
+        !
+        self%sens = .FALSE.
         !
         self%model_operator  => null()
         !

@@ -116,7 +116,7 @@ contains
         endif
         !
         !> Verbose
-        if( self%source%adjoint ) then
+        if( self%source%sens ) then
             !
             write( *, * ) "               SolveADJ CSEM Tx:", self%id, " -> Period:", self%period
             !
@@ -132,8 +132,8 @@ contains
             !
         endif
         !
-        !> Defines e_sol or e_sens depending on Forward or Adjoint case
-        if( self%source%adjoint ) then
+        !> Defines e_sol or e_sens depending on Forward or sens case
+        if( self%source%sens ) then
             !
             !> Calculate e_solution through ForwardSolver
             call self%forward_solver%createESolution( 1, self%source, self%e_sens(1) )

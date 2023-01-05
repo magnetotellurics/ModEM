@@ -138,26 +138,16 @@ contains
     end subroutine putValuesDataGroup
     !
     !> Set the values at a given index of these arrays.
-    subroutine setValuesDataGroup( self, comp_id, rvalue, imaginary, error )
+    subroutine setValuesDataGroup( self, comp_id, rvalue, imaginary )
         implicit none
         !
         class( DataGroup_t ), intent( inout ) :: self
         integer, intent( in ) :: comp_id
         real( kind=prec ), intent( in ) :: rvalue, imaginary
-        real( kind=prec ), optional, intent( in ) :: error
         !
         self%reals( comp_id ) = rvalue
         !
         self%imaginaries( comp_id ) = imaginary
-        !
-        self%error_bar = present( error )
-        !
-        if( self%error_bar ) then
-            !
-            self%errors( comp_id ) = error
-        else
-            self%errors( comp_id ) = R_ZERO
-        endif
         !
     end subroutine setValuesDataGroup
     !
@@ -375,15 +365,15 @@ contains
         !
         if( allocated( self%errors ) ) deallocate( self%errors )
         !
-        if( d_in%error_bar ) then
+        !if( d_in%error_bar ) then
             !
             allocate( self%errors, source = d_in%errors )
-        else
+        !else
             !
-            allocate( self%errors( size( d_in%errors ) ) )
+            !allocate( self%errors( size( d_in%errors ) ) )
             !
-            self%errors = R_ZERO
-        endif
+            !self%errors = R_ZERO
+        !endif
         !
         self%is_allocated = d_in%is_allocated
         !

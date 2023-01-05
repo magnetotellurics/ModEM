@@ -245,7 +245,10 @@ contains
             !
             ! Compute alpha: alpha= (r^T r) / (p^T Ap)    
             alpha = r_norm / dotProdDataGroupTxArray( p, Ap )
-            !
+        !
+        write( *, * ) "cg_iter, alpha: ", cg_iter, alpha
+		stop
+        !
             ! Compute new x: x = x + alpha*p
             call scMultAddDataGroupTxArray( alpha, p, x )
             !
@@ -297,19 +300,22 @@ contains
         lambdaP = p
         !
         call normalizeWithDataGroupTxArray( 1, d, p_temp )
-        !
-        call linCombDataGroupTxArray( R_ZERO, d, ONE, p_temp, p_temp ) 
-        !
+		!
         call JMult_T( m, p_temp, JTp )
+		!
+		        call JTp%write()
+        !
         !
         CmJTp_temp = model_cov%multBy_Cm( JTp )
         !
-        deallocate( JTp )
+        !deallocate( JTp )
         !
         Ap = d
         !
         call JMult( m, CmJTp_temp, Ap )
         !
+		call printDataGroupTxArray( Ap, "Ap Data Vector" )
+		!
         deallocate( CmJTp_temp )
         !
         call normalizeWithDataGroupTxArray( 1, d, Ap )

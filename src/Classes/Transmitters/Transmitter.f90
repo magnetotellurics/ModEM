@@ -259,6 +259,8 @@ module Transmitter
                 call eSens( 1 )%add( eSens( pol ) )
                 !
             enddo
+			!
+			call eSens( 1 )%print( 3333 )
             !
             !> Get dsigma from dPDEmappingT, using first position of eSens
             call sigma%dPDEmappingT( eSens(1), dsigma )

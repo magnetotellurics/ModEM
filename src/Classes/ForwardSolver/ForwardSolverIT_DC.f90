@@ -178,7 +178,7 @@ contains
         class( Source_t ), intent( in ) :: source
         class( Vector_t ), intent( inout ) :: e_solution
         !
-        class( Vector_t ), allocatable :: temp_aux_vec
+        class( Vector_t ), allocatable :: temp_aux_vec, bound
         !
         class( Scalar_t ), allocatable :: phi0
         !
@@ -191,17 +191,25 @@ contains
         self%n_divcor = 0
         self%n_iter_actual = 0
         !
+        e_solution = cVector3D_SG_t( self%solver%preconditioner%model_operator%metric%grid, EDGE )
+        !
         if( source%non_zero_source ) then
             !
             allocate( phi0, source = cScalar3D_SG_t( self%solver%preconditioner%model_operator%metric%grid, NODE ) )
             !
-            call self%divergence_correction%rhsDivCor( self%solver%omega, source%E( pol ), phi0 )
+            allocate( temp_aux_vec, source = source%E( pol ) )
+            !
+            if( source%trans ) then
+                !
+                call temp_aux_vec%div( self%solver%preconditioner%model_operator%metric%Vedge )
+                !
+            endif
+            !
+            call self%divergence_correction%rhsDivCor( self%solver%omega, temp_aux_vec, phi0 )
+            !
+            deallocate( temp_aux_vec )
             !
         endif
-        !
-        e_solution = cVector3D_SG_t( self%solver%preconditioner%model_operator%metric%grid, EDGE )
-        !
-        call e_solution%zeros()
         !
         loop: do while ( ( .NOT. self%solver%converged ) .AND. ( .NOT. self%solver%failed ) )
             !
@@ -264,19 +272,33 @@ contains
         !
         self%relResFinal = self%relResVec( self%n_iter_actual )
         !
-        !if( source%adjoint ) then
+        if( source%trans ) then
             !
-            !call e_solution%mult( self%solver%preconditioner%model_operator%metric%Vedge )
+            call e_solution%mult( self%solver%preconditioner%model_operator%metric%VEdge )
             !
-        !else
+            !allocate( temp_aux_vec, source = e_solution )
             !
-            !call source%E( pol )%Boundary( temp_aux_vec )
+            !call self%solver%preconditioner%model_operator%AdjtBC( e_solution, temp_aux_vec )
             !
-            !call e_solution%add( temp_aux_vec )
+            !call temp_aux_vec%boundary( bound )
             !
-            !deallocate( temp_aux_vec )
+            !call e_solution%add( bound )
             !
-        !endif
+			!e_solution = temp_aux_vec
+			!
+            !deallocate( temp_aux_vec, bound )
+            !
+        endif 
+        !
+        if( .NOT. source%non_zero_source ) then
+            !
+            call source%E( pol )%Boundary( temp_aux_vec )
+            !
+            call e_solution%add( temp_aux_vec )
+            !
+            deallocate( temp_aux_vec )
+            !
+        endif
         !
     end subroutine createESolutionForwardSolverIT_DC
     !
