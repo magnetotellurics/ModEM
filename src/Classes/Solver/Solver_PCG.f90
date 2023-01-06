@@ -112,9 +112,9 @@ contains
             !
             alpha = delta / p%dotProd(q)
             !
-            call p%multAddByValue( x, alpha )
+            call x%multAdd( alpha, p )
             !
-            call q%multAddByValue( r, -alpha )
+            call r%multAdd( -alpha, q )
             !
             deltaOld = delta
             !

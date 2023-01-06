@@ -35,22 +35,22 @@ module ModelOperator_MF
               final :: ModelOperator_MF_dtor
               !
               procedure, public :: setEquations => setEquationsModelOperatorMF
-              procedure, public :: setCond      => setCondModelOperatorMF
-              procedure, public :: amult        => amultModelOperatorMF
-              procedure, public :: multAib      => multAibModelOperatorMF
-              procedure, public :: multCurlT    => multCurlTModelOperatorMF
-              procedure, public :: divCorSetUp  => divCorsetUpModelOperatorMF
+              procedure, public :: setCond => setCondModelOperatorMF
+              procedure, public :: amult => amultModelOperatorMF
+              procedure, public :: multAib => multAibModelOperatorMF
+              procedure, public :: multCurlT => multCurlTModelOperatorMF
+              procedure, public :: divCorSetUp => divCorsetUpModelOperatorMF
               !
-              procedure, public :: AdjtBC  => AdjtBCModelOperatorMF
+              procedure, public :: AdjtBC => AdjtBCModelOperatorMF
               !
               procedure :: divCgrad => divCgradModelOperatorMF
-              procedure :: divC     => divCModelOperatorMF
-              procedure :: grad     => gradModelOperatorMF
-              procedure :: div      => divModelOperatorMF
+              procedure :: divC => divCModelOperatorMF
+              procedure :: grad => gradModelOperatorMF
+              procedure :: div => divModelOperatorMF
               !
-              procedure :: create      => createModelOperatorMF 
-              procedure :: allocate    => allocateModelOperatorMF
-              procedure :: deallocate  => deallocateModelOperatorMF
+              procedure :: create => createModelOperatorMF 
+              procedure :: allocate => allocateModelOperatorMF
+              procedure :: deallocate => deallocateModelOperatorMF
               !
               procedure, public :: print => printModelOperatorMF
               !

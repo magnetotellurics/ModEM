@@ -52,7 +52,7 @@ module Grid
         !
         contains
             !
-            procedure, public :: init    => initializeGrid
+            procedure, public :: init => initializeGrid
             procedure, public :: dealloc => deallocateGrid
             !
             procedure(interface_NumberOfEdges) , deferred, public :: NumberOfEdges

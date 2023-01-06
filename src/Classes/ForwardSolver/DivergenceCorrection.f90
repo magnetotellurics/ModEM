@@ -14,11 +14,11 @@ Module DivergenceCorrection
         !
         contains
             !
-            procedure, public :: setCond   => setCondDivergenceCorrection
+            procedure, public :: setCond => setCondDivergenceCorrection
             !
             procedure, public :: rhsDivCor => rhsDivCorDivergenceCorrection
             !
-            procedure, public :: divCorr   => divCorrDivergenceCorrection
+            procedure, public :: divCorr => divCorrDivergenceCorrection
             !
     end type DivergenceCorrection_t
     !
@@ -104,7 +104,7 @@ contains
         !>  If source term is present, subtract from divergence of currents
         !>  probably OK to use function here -- but could replace with subroutine
         if( SourceTerm ) then
-            call phi0%multAddByValue( phiRHS, C_MinusOne )
+            call phiRHS%multAdd( C_MinusOne, phi0 )
         endif
         !
         !> compute the size of current Divergence before (using dot product)
@@ -143,7 +143,7 @@ contains
         !
         !>  If source term is present, subtract from divergence of currents
         if( SourceTerm ) then
-            call phi0%multAddByValue( phiRHS, C_MinusOne )
+            call phiRHS%multAdd( C_MinusOne, phi0 )
         endif
         !
         !> compute the size of current Divergence after

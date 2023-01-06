@@ -48,7 +48,7 @@ module Receiver
             !
             procedure, public :: savePredictedData => savePredictedDataRx
             !
-            procedure, public :: init    => initializeRx
+            procedure, public :: init => initializeRx
             !
             procedure, public :: dealloc => deallocateRx
             !

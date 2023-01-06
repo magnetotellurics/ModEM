@@ -25,7 +25,7 @@ module ModelParameterCell_SG
             !
             final :: ModelParameterCell_SG_dtor
             !
-            procedure, public :: zeros    => zerosModelParameterCell_SG
+            procedure, public :: zeros => zerosModelParameterCell_SG
             !
             procedure, public :: copyFrom => copyFromModelParameterCell_SG
             !
@@ -35,8 +35,8 @@ module ModelParameterCell_SG
             !
             procedure, public :: linComb => linCombModelParameterCell_SG
             !
-            procedure, public :: PDEmapping   => PDEmappingModelParameterCell_SG
-            procedure, public :: dPDEmapping  => dPDEmappingModelParameterCell_SG
+            procedure, public :: PDEmapping => PDEmappingModelParameterCell_SG
+            procedure, public :: dPDEmapping => dPDEmappingModelParameterCell_SG
             procedure, public :: dPDEmappingT => dPDEmappingTModelParameterCell_SG
             !
             procedure, public :: slice1D => slice1DModelParameterCell_SG

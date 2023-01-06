@@ -16,7 +16,7 @@ module ModelOperator
         contains 
             !
             procedure, public :: dealloc => deallocateModelOperator
-            procedure, public :: init    => initializeModelOperator
+            procedure, public :: init => initializeModelOperator
             !
             procedure( interface_set_equations_model_operator ), deferred, public :: setEquations
             procedure( interface_set_cond_model_operator ), deferred, public :: setCond

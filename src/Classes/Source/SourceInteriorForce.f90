@@ -16,7 +16,7 @@ module SourceInteriorForce
         !
         contains
             !
-            procedure, public :: createE   => createESourceInteriorForce
+            procedure, public :: createE => createESourceInteriorForce
             procedure, public :: createRHS => createRHSSourceInteriorForce
             !
     end type SourceInteriorForce_t

@@ -20,7 +20,7 @@ module SourceMT_1D
             !
             final :: SourceMT_1D_dtor
             !
-            procedure, public :: createE   => createESourceMT_1D
+            procedure, public :: createE => createESourceMT_1D
             procedure, public :: createRHS => createRHSSourceMT_1D
             !
     end type SourceMT_1D_T
@@ -45,7 +45,7 @@ contains
         !
         call self%init()
         !
-        self%model_operator  => model_operator
+        self%model_operator => model_operator
         !
         self%sigma => sigma
         !

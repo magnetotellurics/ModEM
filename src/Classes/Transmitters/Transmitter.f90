@@ -29,9 +29,9 @@ module Transmitter
         !
     contains
         !
-        procedure, public :: init     => initializeTx
+        procedure, public :: init => initializeTx
         !
-        procedure, public :: dealloc  => deallocateTx
+        procedure, public :: dealloc => deallocateTx
         !
         procedure, public :: updateFwdKey => updateFwdKeyTx
         !

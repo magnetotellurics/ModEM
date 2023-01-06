@@ -31,7 +31,7 @@ module DataFile
         !
         contains
             !
-            procedure, public :: init    => initializeDataFile
+            procedure, public :: init => initializeDataFile
             procedure, public :: dealloc => deallocateDataFile
             procedure, public :: loadReceiversAndTransmitters
             !

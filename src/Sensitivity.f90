@@ -91,7 +91,7 @@ contains
         !
         type( DataGroupTx_t ), intent( inout ) :: JmHat_tx
         !
-        complex( kind=prec ) :: lrows_esens
+        complex( kind=prec ) :: lrows_x_esens
         integer :: i_data, i_comp, i_pol
         class( Transmitter_t ), pointer :: Tx
         class( Receiver_t ), pointer :: Rx
@@ -110,28 +110,29 @@ contains
             !> Loop over components
             do i_comp = 1, JmHat_tx%data( i_data )%n_comp
                 !
-                lrows_esens = C_ZERO
+                lrows_x_esens = C_ZERO
                 !
                 !> Loop over polarizations
                 do i_pol = 1, Tx%n_pol
                     !
                     !> LRows .dot. ESens
-                    lrows_esens = lrows_esens + Rx%lrows( i_pol, i_comp )%dotProd( Tx%e_sens( i_pol ) )
+                    lrows_x_esens = lrows_x_esens + Rx%lrows( i_pol, i_comp )%dotProd( Tx%e_sens( i_pol ) )
                     !
                 enddo
                 !
+                write( *, * ) "JMult Z: ", lrows_x_esens
+                !
                 !> Set the sum into the current data component, according to type
-                !if( Rx%is_complex ) then
-                    call JmHat_tx%data( i_data )%set( i_comp, real( lrows_esens, kind=prec ), real( aimag( lrows_esens ), kind=prec ) )
-                !else
-                    !call JmHat_tx%data( i_data )%set( i_comp, real( lrows_esens, kind=prec ), R_ZERO )
-                !endif
+                !
+                if( JmHat_tx%data( i_data )%is_complex ) then
+                    call JmHat_tx%data( i_data )%set( i_comp, real( lrows_x_esens, kind=prec ), real( aimag( lrows_x_esens ), kind=prec ) )
+                else
+                    call JmHat_tx%data( i_data )%set( i_comp, real( lrows_x_esens, kind=prec ), R_ZERO )
+                endif
                 !
             enddo
             !
-            JmHat_tx%data( i_data )%is_complex = Rx%is_complex 
-            !
-            JmHat_tx%data( i_data )%error_bar = .FALSE.
+            JmHat_tx%data( i_data )%is_complex = .FALSE.
             !
         enddo
         !
@@ -236,12 +237,12 @@ contains
                 if( Rx%is_complex ) then
                     !
                     !> IF NOT USES CONJUGATED MUST CHANGE THE SIGN OF BB IN LROWS ????
-                    tx_data_cvalue = cmplx( data_group%reals( i_comp ), -data_group%imaginaries( i_comp ), kind=prec )
+                    tx_data_cvalue = cmplx( data_group%reals( i_comp ), data_group%imaginaries( i_comp ), kind=prec )
                 else
                     tx_data_cvalue = cmplx( data_group%reals( i_comp ), R_ZERO, kind=prec )
                 endif
                 !
-                !write( *, * ) "Z: ", tx_data_cvalue
+                !write( *, * ) "JMult_T Z: ", tx_data_cvalue
                 !
                 !> Loop over polarizations
                 do i_pol = 1, Tx%n_pol

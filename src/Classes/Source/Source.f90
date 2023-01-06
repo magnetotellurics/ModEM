@@ -27,7 +27,7 @@ module Source
         !
         contains
             !
-            procedure, public :: init    => initializeSource
+            procedure, public :: init => initializeSource
             procedure, public :: dealloc => deallocateSource
             !
             procedure, public :: setE => setESource
@@ -107,7 +107,7 @@ module Source
         !
         self%sens = .FALSE.
         !
-        self%model_operator  => null()
+        self%model_operator => null()
         !
         self%sigma => null()
         !

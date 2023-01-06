@@ -17,7 +17,7 @@ module SourceMT_2D
              !
              final :: SourceMT_2D_dtor
              !
-             procedure, public :: createE   => createESourceMT_2D
+             procedure, public :: createE => createESourceMT_2D
              procedure, public :: createRHS => createRHSSourceMT_2D
              !
     end type SourceMT_2D_T
@@ -42,7 +42,7 @@ contains
         !
         call self%init()
         !
-        self%model_operator  => model_operator
+        self%model_operator => model_operator
         self%sigma => sigma
         !
         self%period = period

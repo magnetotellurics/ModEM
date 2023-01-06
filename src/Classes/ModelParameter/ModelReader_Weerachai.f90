@@ -16,7 +16,7 @@ module ModelReader_Weerachai
         !
      contains
         !
-        procedure, public :: read  => readModelReaderWeerachai
+        procedure, public :: read => readModelReaderWeerachai
         !
     end type ModelReader_Weerachai_t
     !

@@ -32,7 +32,7 @@ module ModelParameter
             procedure( interface_set_type_model_parameter ), deferred, public :: SetType
             !
             procedure, public :: setMetric => setMetricModelParameter
-            procedure, public :: SigMap    => SigMapModelParameter
+            procedure, public :: SigMap => SigMapModelParameter
             procedure, public :: SetSigMap => SetSigMapModelParameter
             !
             !> Interfaces
