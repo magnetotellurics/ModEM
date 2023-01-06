@@ -123,9 +123,8 @@ contains
                 write( *, * ) "JMult Z: ", lrows_x_esens
                 !
                 !> Set the sum into the current data component, according to type
-                !
                 if( JmHat_tx%data( i_data )%is_complex ) then
-                    call JmHat_tx%data( i_data )%set( i_comp, real( lrows_x_esens, kind=prec ), real( aimag( lrows_x_esens ), kind=prec ) )
+                    call JmHat_tx%data( i_data )%set( i_comp, real( lrows_x_esens, kind=prec ), real( aimag( lrows_x_esens, kind=prec ) ) )
                 else
                     call JmHat_tx%data( i_data )%set( i_comp, real( lrows_x_esens, kind=prec ), R_ZERO )
                 endif
@@ -242,7 +241,7 @@ contains
                     tx_data_cvalue = cmplx( data_group%reals( i_comp ), R_ZERO, kind=prec )
                 endif
                 !
-                !write( *, * ) "JMult_T Z: ", tx_data_cvalue
+                write( *, * ) "JMult_T Z: ", tx_data_cvalue
                 !
                 !> Loop over polarizations
                 do i_pol = 1, Tx%n_pol
@@ -268,8 +267,8 @@ contains
         !
         deallocate( bSrc )
         !
-        call Tx%source%E(1)%print( 2001, "JMult_T Tx%E(1)" )
-        call Tx%source%E(2)%print( 2002, "JMult_T Tx%E(2)" )
+        call Tx%source%rhs(1)%print( 2001, "JMult_T Tx%RHS(1)" )
+        call Tx%source%rhs(2)%print( 2002, "JMult_T Tx%RHS(2)" )
         !
         !> Solve Transmitter's e_sens with the new SourceInteriorForce
         call Tx%solve()

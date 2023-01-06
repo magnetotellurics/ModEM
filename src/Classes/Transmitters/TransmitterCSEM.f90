@@ -43,11 +43,19 @@ contains
         call self%init()
         !
         self%n_pol = 1
+		!
         self%period = period
+        !
+		self%omega = ( 2.0 * PI / self%period )
+        !
         self%location = location
+		!
         self%azimuth = azimuth
+		!
         self%dip = dip
+		!
         self%moment = moment
+		!
         self%dipole = dipole
         !
         !self%pMult_ptr => pMult_E
@@ -107,7 +115,6 @@ contains
         class( TransmitterCSEM_t ), intent( inout ) :: self
         !
         integer :: ios
-        real( kind=prec ) :: omega
         !
         character( len=20 ) :: ModeName
         !
@@ -157,10 +164,8 @@ contains
                 stop "Error opening file in solveTransmitterCSEM: e_solution"
             else
                 !
-                omega = 2.0 * PI / self%period
-                !
                 !> write the frequency header - 1 record
-                write( ioESolution ) omega, self%id, 1, ModeName
+                write( ioESolution ) self%omega, self%id, 1, ModeName
                 !
                 call self%e_sol(1)%write( ioESolution )
                 !

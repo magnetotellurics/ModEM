@@ -21,7 +21,7 @@ module Transmitter
         !
         integer :: id, n_pol, fwd_key(8)
         !
-        real( kind=prec ) :: period
+        real( kind=prec ) :: period, omega
         !
         class( Vector_t ), allocatable, dimension(:) :: e_sol, e_sens
         !
@@ -87,6 +87,8 @@ module Transmitter
             call self%updateFwdKey()
             !
             self%period = R_ZERO
+            !
+            self%omega = R_ZERO
             !
             self%forward_solver => null()
             !
@@ -196,7 +198,7 @@ module Transmitter
             call sigma%dPDEmapping( dsigma, map_e_vector )
             !
             !> ON WORKING
-            minus_i_omega_mu = -isign * MU_0 * cmplx( 0., ( 2.0 * PI / self%period ), kind=prec )
+            minus_i_omega_mu = -isign * MU_0 * cmplx( 0., self%omega, kind=prec )
             !
             !> Initialize and fill bSrc
             allocate( cVector3D_SG_t :: bSrc( self%n_pol ) )
@@ -246,7 +248,7 @@ module Transmitter
             !> Copy e_sens to a local variable to keep its original value.
             allocate( eSens, source = self%e_sens )
             !
-            minus_i_omega_mu = -isign * MU_0 * cmplx( 0., 2.0 * PI / self%period, kind=prec )
+            minus_i_omega_mu = -isign * MU_0 * cmplx( 0., self%omega, kind=prec )
             !
             !> Modify only the first position of eSens to use it in dPDEmappingT
             call eSens( 1 )%mult( minus_i_omega_mu )
@@ -259,8 +261,6 @@ module Transmitter
                 call eSens( 1 )%add( eSens( pol ) )
                 !
             enddo
-			!
-			call eSens( 1 )%print( 3333 )
             !
             !> Get dsigma from dPDEmappingT, using first position of eSens
             call sigma%dPDEmappingT( eSens(1), dsigma )

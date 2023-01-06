@@ -44,6 +44,8 @@ module TransmitterMT
         self%n_pol = 2
         !
         self%period = period
+		!
+		self%omega = ( 2.0 * PI / self%period )
         !
         !> self%pMult_ptr => pMult_E
         !
@@ -72,8 +74,6 @@ module TransmitterMT
         class( TransmitterMT_t ), intent( inout ) :: self
         !
         integer :: i_pol, ios
-        !
-        real( kind=prec ) :: omega
         !
         character( len=20 ) :: ModeName
         !
@@ -122,10 +122,8 @@ module TransmitterMT
                     stop "Error opening file in solveTransmitterMT: e_solution"
                 else
                     !
-                    omega = 2.0 * PI / self%period
-                    !
                     !> write the frequency header - 1 record
-                    write( ioESolution ) omega, self%id, i_pol, ModeName
+                    write( ioESolution ) self%omega, self%id, i_pol, ModeName
                     !
                     call self%e_sol( i_pol )%write( ioESolution )
                     !

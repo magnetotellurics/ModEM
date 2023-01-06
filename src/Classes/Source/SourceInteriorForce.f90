@@ -84,18 +84,20 @@ contains
         if( allocated( self%rhs ) ) deallocate( self%rhs )
         allocate( self%rhs, source = self%E )
         !
-        if( self%trans ) then
+        do pol = 1, size( self%rhs )
             !
-        else
-            !
-            !> RHS = E * V_E
-            do pol = 1, size( self%rhs )
+            if( self%trans ) then
                 !
+				!> E = E / DIV
+                call self%E( pol )%div( self%model_operator%metric%VEdge )
+                !
+            else
+                !> RHS = E * V_E
                 call self%rhs( pol )%mult( self%model_operator%metric%VEdge )
                 !
-            enddo
+            endif
             !
-        endif
+        enddo
         !
     end subroutine createRHSSourceInteriorForce
     !

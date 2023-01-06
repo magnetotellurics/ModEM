@@ -178,14 +178,9 @@ contains
         class( Source_t ), intent( in ) :: source
         class( Vector_t ), intent( inout ) :: e_solution
         !
-        class( Vector_t ), allocatable :: temp_aux_vec, interior, boundary
-        !
+        class( Vector_t ), allocatable :: temp_vec
         class( Scalar_t ), allocatable :: phi0
-        !
         integer :: iter
-        complex( kind=prec ) :: comega
-        !
-        comega = cmplx( 0.0, 1./ self%solver%omega, kind=prec )
         !
         call self%solver%zeroDiagnostics()
         !
@@ -202,21 +197,16 @@ contains
             !
             allocate( phi0, source = cScalar3D_SG_t( self%solver%preconditioner%model_operator%metric%grid, NODE ) )
             !
-            allocate( temp_aux_vec, source = source%E( pol ) )
+            call self%divergence_correction%rhsDivCor( self%solver%omega, source%E( pol ), phi0 )
             !
-            if( source%trans ) then
-                !
-                call temp_aux_vec%div( self%solver%preconditioner%model_operator%metric%Vedge )
-                !
-            endif
+            !> USING THIS TEMPORARY VARIABLE IMPROVES THE EXECUTION TIME CONSIDERABLY...
+            allocate( temp_vec, source = e_solution )
             !
-            call self%divergence_correction%rhsDivCor( self%solver%omega, temp_aux_vec, phi0 )
+            call self%divergence_correction%divCorr( temp_vec, e_solution, phi0 )
             !
-            call self%divergence_correction%DivCorr( temp_aux_vec, e_solution, phi0 )
+            deallocate( temp_vec )
             !
             self%n_divcor = 1
-            !
-            deallocate( temp_aux_vec )
             !
         endif
         !
@@ -253,19 +243,20 @@ contains
                 !
                 if( self%n_divcor < self%max_div_cor ) then
                     !
-                    allocate( temp_aux_vec, source = e_solution )
+                    !> USING THIS TEMPORARY VARIABLE IMPROVES THE EXECUTION TIME CONSIDERABLY...
+                    allocate( temp_vec, source = e_solution )
                     !
                     if( source%non_zero_source ) then
                         !
-                        call self%divergence_correction%DivCorr( temp_aux_vec, e_solution, phi0 )
+                        call self%divergence_correction%divCorr( temp_vec, e_solution, phi0 )
                         !
                     else
                         !
-                        call self%divergence_correction%DivCorr( temp_aux_vec, e_solution )
+                        call self%divergence_correction%divCorr( temp_vec, e_solution )
                         !
                     endif
                     !
-                    deallocate( temp_aux_vec )
+                    deallocate( temp_vec )
                     !
                 else
                     !
@@ -286,19 +277,15 @@ contains
             !
             call e_solution%mult( self%solver%preconditioner%model_operator%metric%VEdge )
             !
-        endif 
-        !
-        !> THIS ADD BOUNDARIES, BUT NOT CHANGE RESULTS!
-        !
-        !if( .NOT. source%non_zero_source ) then
+        else
             !
-            !call source%E( pol )%Boundary( temp_aux_vec )
+            call source%E( pol )%Boundary( temp_vec )
             !
-            !call e_solution%add( temp_aux_vec )
+            call e_solution%add( temp_vec )
             !
-            !deallocate( temp_aux_vec )
+            deallocate( temp_vec )
             !
-        !endif
+        endif
         !
     end subroutine createESolutionForwardSolverIT_DC
     !

@@ -104,7 +104,7 @@ contains
         complex( kind=prec ) :: comega, det
         complex( kind=prec ), allocatable :: BB(:,:), I_BB(:,:), EE(:,:)
         !
-        comega = cmplx( 0.0, 1./ ( 2.0 * PI / transmitter%period ), kind=prec )
+        comega = cmplx( 0.0, 1./ transmitter%omega, kind=prec )
         !
         allocate( EE(2,2) )
         !
