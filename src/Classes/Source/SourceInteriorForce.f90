@@ -84,9 +84,11 @@ contains
         if( allocated( self%rhs ) ) deallocate( self%rhs )
         allocate( self%rhs, source = self%E )
         !
-        !> RHS = E * V_E
-        if( .NOT. self%trans ) then
+        if( self%trans ) then
             !
+        else
+            !
+            !> RHS = E * V_E
             do pol = 1, size( self%rhs )
                 !
                 call self%rhs( pol )%mult( self%model_operator%metric%VEdge )

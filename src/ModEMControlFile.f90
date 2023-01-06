@@ -18,7 +18,7 @@ module ModEMControlFile
         character(:), allocatable :: grid_reader_type, grid_type, forward_solver_type, source_type
         character(:), allocatable :: model_method, model_n_air_layer, model_max_height
         !
-        character(:), allocatable :: QMR_iters, BCG_iters, max_divcor, max_divcor_iters
+        character(:), allocatable :: QMR_iters, BCG_iters, max_divcor_calls, max_divcor_iters
         character(:), allocatable :: tolerance_divcor, tolerance_qmr
         !
         contains
@@ -101,8 +101,8 @@ contains
                         self%BCG_iters = trim( args(2) )
                     endif
                     !
-                    if( index( line_text, "max_divcor" ) > 0 ) then
-                        self%max_divcor = trim( args(2) )
+                    if( index( line_text, "max_divcor_calls" ) > 0 ) then
+                        self%max_divcor_calls = trim( args(2) )
                     endif
                     !
                     if( index( line_text, "max_divcor_iters" ) > 0 ) then
@@ -244,12 +244,12 @@ contains
                 !
             endif
             !
-            ! Solver max_divcor
-            if ( allocated( self%max_divcor ) ) then
+            ! Solver max_divcor_calls
+            if ( allocated( self%max_divcor_calls ) ) then
                 !
-                read( self%max_divcor, "(I8)" ) max_divcor
+                read( self%max_divcor_calls, "(I8)" ) max_divcor_calls
                 !
-                write( *, "( A30, I20)" ) "          max_divcor = ", max_divcor
+                write( *, "( A30, I20)" ) "          max_divcor_calls = ", max_divcor_calls
                 !
             endif
             !
@@ -305,7 +305,7 @@ contains
         if( allocated( self%model_max_height ) ) deallocate( self%model_max_height )
         if( allocated( self%QMR_iters ) ) deallocate( self%QMR_iters )
         if( allocated( self%BCG_iters ) ) deallocate( self%BCG_iters )
-        if( allocated( self%max_divcor ) ) deallocate( self%max_divcor )
+        if( allocated( self%max_divcor_calls ) ) deallocate( self%max_divcor_calls )
         if( allocated( self%max_divcor_iters ) ) deallocate( self%max_divcor_iters )
         if( allocated( self%tolerance_divcor ) ) deallocate( self%tolerance_divcor )
         if( allocated( self%tolerance_qmr ) ) deallocate( self%tolerance_qmr )

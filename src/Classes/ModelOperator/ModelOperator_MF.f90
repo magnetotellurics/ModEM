@@ -848,84 +848,111 @@ contains
                 !
                 select type( BC )
                     class is( cVector3D_SG_t )
-                        !
-                        call BC%setAllBoundary( C_ZERO )
-						!call BC%setAllInterior( C_ZERO )
-                        !
+						!
+						BC%y(:,1,1) = C_ZERO
+						BC%y(:,ny,1) = C_ZERO
+						BC%y(:,1,nz+1) = C_ZERO
+						BC%y(:,ny,nz+1) = C_ZERO
+						!
                         do ix = 1, nx
                             do iz = 2, nz
                                 !
 								BC%y(ix,:,iz) = (- self%yX(ix,1)*Ein%y(ix,1,iz)       &
                                 + self%yX(ix+1,1)*Ein%y(ix+1,1,iz)   &
-                                + self%xXY(2,1)*Ein%x(ix,2,iz)) * C_MinusOne
+                                + self%xXY(2,1)*Ein%x(ix,2,iz))
                                 BC%y(ix,:,iz) = (+ self%yX(ix,ny)*Ein%y(ix,ny,iz)     &
                                 - self%yX(ix+1,ny)*Ein%y(ix+1,ny,iz) &
-                                + self%xXY(ny,2)*Ein%x(ix,ny,iz)) * C_MinusOne
+                                + self%xXY(ny,2)*Ein%x(ix,ny,iz))
 								!
                             enddo
                         enddo
-                        !
+						!
+						BC%y(1,1,:) = C_ZERO
+						BC%y(1,ny,:) = C_ZERO
+						BC%y(nx+1,1,:) = C_ZERO
+						BC%y(nx+1,ny,:) = C_ZERO
+						!
                         do iz = 1, nz
                             do ix = 2, nx
                                 !
 								BC%y(ix,:,iz) = (- self%yZ(1,iz)*Ein%y(ix,1,iz)        &
                                 + self%yZ(1,iz+1)*Ein%y(ix,1,iz+1)    &
-                                + self%zZY(2,1)*Ein%z(ix,2,iz)) * C_MinusOne
+                                + self%zZY(2,1)*Ein%z(ix,2,iz))
                                 BC%y(ix, :, iz) = (+ self%yZ(ny,iz)*Ein%y(ix,ny,iz)      &
                                 - self%yZ(ny,iz+1)*Ein%y(ix,ny,iz+1)  &
-                                + self%zZY(ny,2)*Ein%z(ix,ny,iz)) * C_MinusOne
+                                + self%zZY(ny,2)*Ein%z(ix,ny,iz))
 								!
                             enddo
                         enddo
-                        !
+						!
+						BC%x(1,:,1) = C_ZERO
+						BC%x(nx,:,1) = C_ZERO
+						BC%x(1,:,nz+1) = C_ZERO
+						BC%x(nx,:,nz+1) = C_ZERO
+						!
                         do iy = 1, ny
                             do iz = 2, nz
                                 !
 								BC%x(:,iy,iz) = (- self%xY(1,iy)*Ein%x(1,iy,iz)        &
                                 + self%xY(1,iy+1)*Ein%x(1,iy+1,iz)    &
-                                + self%yYX(2,1)*Ein%y(2,iy,iz)) * C_MinusOne
+                                + self%yYX(2,1)*Ein%y(2,iy,iz))
                                 BC%x(:,iy,iz) = (+ self%xY(nx,iy)*Ein%x(nx,iy,iz)      &
                                 - self%xY(nx,iy+1)*Ein%x(nx,iy+1,iz)  &
-                                + self%yYX(nx,2)*Ein%y(nx,iy,iz)) * C_MinusOne
+                                + self%yYX(nx,2)*Ein%y(nx,iy,iz))
 								!
                             enddo
                         enddo
-                        !
+						!
+						BC%x(1,1,:) = C_ZERO
+						BC%x(nx,1,:) = C_ZERO
+						BC%x(1,ny+1,:) = C_ZERO
+						BC%x(nx,ny+1,:) = C_ZERO
+						!
                         do iz = 1, nz
                             do iy = 2, ny
                                 !
 								BC%x(:,iy,iz) = (- self%xZ(1,iz)*Ein%x(1,iy,iz)       &
                                 + self%xZ(1,iz+1)*Ein%x(1,iy,iz+1)   &
-                                + self%zZX(2,1)*Ein%z(2,iy,iz)) * C_MinusOne
+                                + self%zZX(2,1)*Ein%z(2,iy,iz))
                                 BC%x(:,iy,iz) = (+ self%xZ(nx,iz)*Ein%x(nx,iy,iz)     &
                                 - self%xZ(nx,iz+1)*Ein%x(nx,iy,iz+1) &
-                                + self%zZX(nx,2)*Ein%z(nx,iy,iz)) * C_MinusOne
+                                + self%zZX(nx,2)*Ein%z(nx,iy,iz))
 								!
                             enddo
                         enddo
-                        !
+						!
+						BC%z(:,1,1) = C_ZERO
+						BC%z(:,1,nz) = C_ZERO
+						BC%z(:,ny+1,1) = C_ZERO
+						BC%z(:,ny+1,nz) = C_ZERO
+						!
                         do ix = 1, nx
                             do iy = 2, ny
                                 !
 								BC%z(ix,iy,:) = (- self%zX(ix,1)*Ein%z(ix,iy,1)       &
                                 + self%zX(ix+1,1)*Ein%z(ix+1,iy,1)   &
-                                + self%xXZ(2,1)*Ein%x(ix,iy,2)) * C_MinusOne
+                                + self%xXZ(2,1)*Ein%x(ix,iy,2))
                                 BC%z(ix,iy,:) = (+ self%zX(ix,nz)*Ein%z(ix,iy,nz)     &
                                 - self%zX(ix+1,nz)*Ein%z(ix+1,iy,nz) &
-                                + self%xXZ(nz,2)*Ein%x(ix,iy,nz)) * C_MinusOne
+                                + self%xXZ(nz,2)*Ein%x(ix,iy,nz))
 								!
                             enddo
                         enddo
-                        !
+						!
+						BC%z(1,:,1) = C_ZERO
+						BC%z(1,:,nz) = C_ZERO
+						BC%z(nx+1,:,1) = C_ZERO
+						BC%z(nx+1,:,nz) = C_ZERO
+						!
                         do iy = 1, ny
                             do ix = 2, nx
                                 !
 								BC%z(ix,iy,:) = (- self%zY(iy,1)*Ein%z(ix,iy,1)        &
                                 + self%zY(iy+1,1)*Ein%z(ix,iy+1,1)    &
-                                + self%yYZ(2,1)*Ein%y(ix,iy,2)) * C_MinusOne
+                                + self%yYZ(2,1)*Ein%y(ix,iy,2))
                                 BC%z(ix,iy,:) = (+ self%zY(iy,nz)*Ein%z(ix,iy,nz)      &
                                 - self%zY(iy+1,nz)*Ein%z(ix,iy+1,nz)  &
-                                + self%yYZ(nz,2)*Ein%y(ix,iy,nz) ) * C_MinusOne
+                                + self%yYZ(nz,2)*Ein%y(ix,iy,nz) )
 								!
                             enddo
                         enddo

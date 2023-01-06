@@ -247,7 +247,7 @@ contains
             alpha = r_norm / dotProdDataGroupTxArray( p, Ap )
         !
         write( *, * ) "cg_iter, alpha: ", cg_iter, alpha
-		stop
+		!stop
         !
             ! Compute new x: x = x + alpha*p
             call scMultAddDataGroupTxArray( alpha, p, x )
@@ -303,9 +303,8 @@ contains
 		!
         call JMult_T( m, p_temp, JTp )
 		!
-		        call JTp%write()
-        !
-        !
+		!call JTp%write()
+		!
         CmJTp_temp = model_cov%multBy_Cm( JTp )
         !
         !deallocate( JTp )
@@ -314,7 +313,7 @@ contains
         !
         call JMult( m, CmJTp_temp, Ap )
         !
-		call printDataGroupTxArray( Ap, "Ap Data Vector" )
+		!call printDataGroupTxArray( Ap, "Ap Data Vector" )
 		!
         deallocate( CmJTp_temp )
         !

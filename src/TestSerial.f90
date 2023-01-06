@@ -678,7 +678,7 @@ contains
         ! Solvers
         QMR_iters = 40
         BCG_iters = 80
-        max_divcor = 20
+        max_divcor_calls = 20
         max_divcor_iters = 100
         tolerance_divcor = 1E-5
         tolerance_qmr = 1E-7

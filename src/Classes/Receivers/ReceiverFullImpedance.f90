@@ -90,7 +90,7 @@ contains
         integer :: Ei, row, pol, comp
         complex( kind=prec ) :: comega
         !
-        comega = cmplx( 0.0, 1./ ( 2.0 * PI / transmitter%period ), kind=prec )
+        comega = isign * cmplx( 0.0, 1./ ( 2.0 * PI / transmitter%period ), kind=prec )
         !
         !> Call the predicted data routine to calculate responses
         call self%predictedData( transmitter )
@@ -119,9 +119,9 @@ contains
             endif
             !
             !> Specific indexes for Full Impedance:
-            call full_lbx%multAddByValue( Le, isign * comega * self%response( 2 * (Ei-1) + 1 ) )    ! 1 & 3
+            call full_lbx%multAddByValue( Le, comega * self%response( 2 * (Ei-1) + 1 ) )    ! 1 & 3
             !
-            call full_lby%multAddByValue( Le, isign * comega * self%response( 2 * Ei ) )            ! 2 & 4
+            call full_lby%multAddByValue( Le, comega * self%response( 2 * Ei ) )            ! 2 & 4
             !
             !> Loop over two impedance rows
             do row = 1, 2
@@ -134,7 +134,7 @@ contains
                     !
                     self%lrows( pol, comp ) = Le
                     !
-                    call self%lrows( pol, comp )%mult( isign * self%I_BB( pol, row ) )
+                    call self%lrows( pol, comp )%mult( self%I_BB( pol, row ) )
                     !
                 enddo
                 !

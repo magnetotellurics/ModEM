@@ -135,7 +135,7 @@ contains
         !
         class( ForwardSolverIT_DC_t ), intent( inout ) :: self
         !
-        self%max_div_cor      = max_divcor
+        self%max_div_cor      = max_divcor_calls
         self%max_divcor_iters = max_divcor_iters
         self%tol_div_cor      = tolerance_divcor
         !
@@ -178,11 +178,14 @@ contains
         class( Source_t ), intent( in ) :: source
         class( Vector_t ), intent( inout ) :: e_solution
         !
-        class( Vector_t ), allocatable :: temp_aux_vec, bound
+        class( Vector_t ), allocatable :: temp_aux_vec, interior, boundary
         !
         class( Scalar_t ), allocatable :: phi0
         !
         integer :: iter
+        complex( kind=prec ) :: comega
+        !
+        comega = cmplx( 0.0, 1./ self%solver%omega, kind=prec )
         !
         call self%solver%zeroDiagnostics()
         !
@@ -192,6 +195,8 @@ contains
         self%n_iter_actual = 0
         !
         e_solution = cVector3D_SG_t( self%solver%preconditioner%model_operator%metric%grid, EDGE )
+        !
+        call e_solution%zeros()
         !
         if( source%non_zero_source ) then
             !
@@ -206,6 +211,10 @@ contains
             endif
             !
             call self%divergence_correction%rhsDivCor( self%solver%omega, temp_aux_vec, phi0 )
+            !
+            call self%divergence_correction%DivCorr( temp_aux_vec, e_solution, phi0 )
+            !
+            self%n_divcor = 1
             !
             deallocate( temp_aux_vec )
             !
@@ -272,33 +281,24 @@ contains
         !
         self%relResFinal = self%relResVec( self%n_iter_actual )
         !
+        !> Just for JMult_T SourceInteriorForce case
         if( source%trans ) then
             !
-            !call e_solution%mult( self%solver%preconditioner%model_operator%metric%VEdge )
-            !
-            !allocate( temp_aux_vec, source = e_solution )
-            !
-            !call self%solver%preconditioner%model_operator%AdjtBC( e_solution, temp_aux_vec )
-            !
-            !call temp_aux_vec%boundary( bound )
-            !
-            !call e_solution%add( bound )
-            !
-			!e_solution = temp_aux_vec
-			!
-            !deallocate( temp_aux_vec, bound )
+            call e_solution%mult( self%solver%preconditioner%model_operator%metric%VEdge )
             !
         endif 
         !
-        if( .NOT. source%non_zero_source ) then
+        !> THIS ADD BOUNDARIES, BUT NOT CHANGE RESULTS!
+        !
+        !if( .NOT. source%non_zero_source ) then
             !
-            call source%E( pol )%Boundary( temp_aux_vec )
+            !call source%E( pol )%Boundary( temp_aux_vec )
             !
-            call e_solution%add( temp_aux_vec )
+            !call e_solution%add( temp_aux_vec )
             !
-            deallocate( temp_aux_vec )
+            !deallocate( temp_aux_vec )
             !
-        endif
+        !endif
         !
     end subroutine createESolutionForwardSolverIT_DC
     !

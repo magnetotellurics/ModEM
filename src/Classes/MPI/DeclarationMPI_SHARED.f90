@@ -169,7 +169,7 @@ contains
         !
         call MPI_PACK( QMR_iters, 1, MPI_INTEGER, shared_buffer, shared_buffer_size, index, node_comm, ierr )
         call MPI_PACK( BCG_iters, 1, MPI_INTEGER, shared_buffer, shared_buffer_size, index, node_comm, ierr )
-        call MPI_PACK( max_divcor, 1, MPI_INTEGER, shared_buffer, shared_buffer_size, index, node_comm, ierr )
+        call MPI_PACK( max_divcor_calls, 1, MPI_INTEGER, shared_buffer, shared_buffer_size, index, node_comm, ierr )
         call MPI_PACK( max_divcor_iters, 1, MPI_INTEGER, shared_buffer, shared_buffer_size, index, node_comm, ierr )
         call MPI_PACK( len( e_solution_file_name ), 1, MPI_INTEGER, shared_buffer, shared_buffer_size, index, node_comm, ierr )
         call MPI_PACK( len( model_method ), 1, MPI_INTEGER, shared_buffer, shared_buffer_size, index, node_comm, ierr )
@@ -229,7 +229,7 @@ contains
         !
         call MPI_UNPACK( shared_buffer, shared_buffer_size, index, QMR_iters, 1, MPI_INTEGER, node_comm, ierr )
         call MPI_UNPACK( shared_buffer, shared_buffer_size, index, BCG_iters, 1, MPI_INTEGER, node_comm, ierr )
-        call MPI_UNPACK( shared_buffer, shared_buffer_size, index, max_divcor, 1, MPI_INTEGER, node_comm, ierr )
+        call MPI_UNPACK( shared_buffer, shared_buffer_size, index, max_divcor_calls, 1, MPI_INTEGER, node_comm, ierr )
         call MPI_UNPACK( shared_buffer, shared_buffer_size, index, max_divcor_iters, 1, MPI_INTEGER, node_comm, ierr )
         call MPI_UNPACK( shared_buffer, shared_buffer_size, index, n_e_solution_file_name, 1, MPI_INTEGER, node_comm, ierr )
         call MPI_UNPACK( shared_buffer, shared_buffer_size, index, n_model_method, 1, MPI_INTEGER, node_comm, ierr )

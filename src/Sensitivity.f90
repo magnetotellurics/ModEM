@@ -62,15 +62,18 @@ contains
             !> Switch Transmitter's source to SourceInteriorForce
             call Tx%setSource( Tx%pMult( sigma, dsigma, model_operator ) )
             !
+            call Tx%source%E(1)%print( 2001, "JMult Tx%E(1)" )
+            call Tx%source%E(2)%print( 2002, "JMult Tx%E(2)" )
+            !
             !> Solve e_sens from with the new Source
             call Tx%solve()
-			!
-			call Tx%e_sol(1)%print( 3001, "JMult ESol(1)" )
-			call Tx%e_sol(2)%print( 3002, "JMult ESol(2)" )
-			!
-			call Tx%e_sens(1)%print( 4001, "JMult ESens(1)" )
-			call Tx%e_sens(2)%print( 4002, "JMult ESens(2)" )
-			!
+            !
+            call Tx%e_sol(1)%print( 3001, "JMult ESol(1)" )
+            call Tx%e_sol(2)%print( 3002, "JMult ESol(2)" )
+            !
+            call Tx%e_sens(1)%print( 4001, "JMult ESens(1)" )
+            call Tx%e_sens(2)%print( 4002, "JMult ESens(2)" )
+            !
             !> Fill tx_data with JMult routine
             call JMult_Tx( JmHat( i_dtx ) )
             !
@@ -168,7 +171,7 @@ contains
             !> Set current tx_dsigma from JMult_T_Tx
             call JMult_T_Tx( sigma, all_data( i_tx ), dsigma_tx )
             !
-			!> Add dsigma_tx to dsigma
+            !> Add dsigma_tx to dsigma
             call dsigma%linComb( ONE, ONE, dsigma_tx )
             !
             deallocate( dsigma_tx )
@@ -197,7 +200,6 @@ contains
         type( DataGroup_t ) :: data_group
         complex( kind=prec ) :: tx_data_cvalue
         integer :: i_data, i_comp, i_pol
-        complex( kind=prec ) :: comega
         !
         !> Initialize dsigma with zeros
         allocate( dsigma, source = sigma )
@@ -206,8 +208,6 @@ contains
         !
         !> Pointer to the Data Transmitter
         Tx => getTransmitter( tx_data%i_tx )
-        !
-        comega = cmplx( 0.0, 1./ ( 2.0 * PI / Tx%period ), kind=prec )
         !
         !> Initialize bSrc( n_pol ) with zeros
         allocate( cVector3D_SG_t :: bSrc( Tx%n_pol ) )
@@ -234,14 +234,15 @@ contains
             do i_comp = 1, data_group%n_comp
                 !
                 if( Rx%is_complex ) then
+                    !
+                    !> IF NOT USES CONJUGATED MUST CHANGE THE SIGN OF BB IN LROWS ????
                     tx_data_cvalue = cmplx( data_group%reals( i_comp ), -data_group%imaginaries( i_comp ), kind=prec )
                 else
                     tx_data_cvalue = cmplx( data_group%reals( i_comp ), R_ZERO, kind=prec )
                 endif
-				!
-				!
-				write( *, * ) tx_data_cvalue
-				!
+                !
+                !write( *, * ) "Z: ", tx_data_cvalue
+                !
                 !> Loop over polarizations
                 do i_pol = 1, Tx%n_pol
                     !
@@ -254,16 +255,11 @@ contains
             enddo
             !
         enddo
-		!
-		call bSrc( 1 )%print( 2001, "bSrc( 1 )" )
-		call bSrc( 2 )%print( 2002, "bSrc( 2 )" )
-		!
-		!stop
         !
         !> Set Transmitter's ForwardSolver Omega(Period) and Conductivity
         call Tx%forward_solver%setFrequency( sigma, Tx%period )
         !
-        !> Switch Transmitter's source to SourceInteriorForce
+        !> Switch Transmitter's source to SourceInteriorForce, with trans = .TRUE.
         call Tx%setSource( SourceInteriorForce_t( model_operator, sigma, Tx%period, .TRUE. ) )
         !
         !> Set E of the transmitter source and create Rhs from it
@@ -271,14 +267,17 @@ contains
         !
         deallocate( bSrc )
         !
+        call Tx%source%E(1)%print( 2001, "JMult_T Tx%E(1)" )
+        call Tx%source%E(2)%print( 2002, "JMult_T Tx%E(2)" )
+        !
         !> Solve Transmitter's e_sens with the new SourceInteriorForce
         call Tx%solve()
-		!
-		call Tx%e_sol(1)%print( 3001, "JMult_T ESol(1)" )
-		call Tx%e_sol(2)%print( 3002, "JMult_T ESol(2)" )
         !
-		call Tx%e_sens(1)%print( 4001, "JMult_T ESens(1)" )
-		call Tx%e_sens(2)%print( 4002, "JMult_T ESens(2)" )
+        call Tx%e_sol(1)%print( 3001, "JMult_T ESol(1)" )
+        call Tx%e_sol(2)%print( 3002, "JMult_T ESol(2)" )
+        !
+        call Tx%e_sens(1)%print( 4001, "JMult_T ESens(1)" )
+        call Tx%e_sens(2)%print( 4002, "JMult_T ESens(2)" )
         !
         !> Get dsigma from pMult_t
         call Tx%pMult_t( sigma, dsigma )
