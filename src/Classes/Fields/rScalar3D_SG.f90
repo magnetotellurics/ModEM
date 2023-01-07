@@ -48,6 +48,8 @@ module rScalar3D_SG
         !
         procedure, public :: dotProd => dotProdRScalar3D_SG
         !
+		procedure, public :: conjugate => conjugateRScalar3D_SG
+		!
         procedure, public :: linComb => linCombRScalar3D_SG
         !
         procedure, public :: multAdd => multAddRScalar3D_SG
@@ -746,6 +748,16 @@ contains
         endif
         !
     end function dotProdRScalar3D_SG
+    !
+    !> No subroutine briefing
+    subroutine conjugateRScalar3D_SG( self )
+        implicit none
+        !
+        class( rScalar3D_SG_t ), intent( inout ) :: self
+        !
+        stop "Error: conjugateRScalar3D_SG: Do not try to conjugate a real scalar!"
+        !
+    end subroutine conjugateRScalar3D_SG
     !
     !> No subroutine briefing
     subroutine linCombRScalar3D_SG( self, rhs, c1, c2 )

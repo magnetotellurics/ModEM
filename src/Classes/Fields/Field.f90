@@ -47,6 +47,8 @@ module Field
         procedure( interface_field_div_by_value ), deferred, public :: divByValue
         generic :: div => divByField, divByValue
         !
+        procedure( interface_conjugate_field ), deferred, public :: conjugate
+        !
         procedure( interface_lin_comb_field ), deferred, public :: linComb
         !
         procedure( interface_mult_add_field ), deferred, public :: multAdd
@@ -196,6 +198,12 @@ module Field
             class( Field_t ), intent( inout ) :: self
             complex( kind=prec ), intent( in ) :: cvalue
         end subroutine interface_field_div_by_value
+        !
+        !> No interface subroutine briefing
+        subroutine interface_conjugate_field( self )
+            import :: Field_t
+            class( Field_t ), intent( inout ) :: self
+        end subroutine interface_conjugate_field
         !
         !> No interface subroutine briefing
         subroutine interface_lin_comb_field( self, rhs, c1, c2 )

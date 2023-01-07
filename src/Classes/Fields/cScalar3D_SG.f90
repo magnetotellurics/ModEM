@@ -48,6 +48,9 @@ module cScalar3D_SG
         procedure, public :: dotProd => dotProdCScalar3D_SG
         !
         !> Miscellaneous
+        !
+		procedure, public :: conjugate => conjugateCScalar3D_SG
+		!
         procedure, public :: linComb => linCombCScalar3D_SG
         !
         procedure, public :: multAdd => multAddCScalar3D_SG
@@ -752,6 +755,16 @@ contains
         endif
         !
     end function dotProdCScalar3D_SG
+    !
+    !> No subroutine briefing
+    subroutine conjugateCScalar3D_SG( self )
+        implicit none
+        !
+        class( cScalar3D_SG_t ), intent( inout ) :: self
+        !
+        self%v = conjg( self%v )
+        !
+    end subroutine conjugateCScalar3D_SG
     !
     !> No subroutine briefing
     subroutine linCombCScalar3D_SG( self, rhs, c1, c2 )

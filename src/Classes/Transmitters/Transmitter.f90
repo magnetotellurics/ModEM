@@ -235,6 +235,7 @@ module Transmitter
             class( ModelParameter_t ), allocatable, intent( inout ) :: dsigma
             !
             class( Vector_t ), allocatable, dimension(:) :: eSens
+            type( rVector3D_SG_t ) :: real_sens
             complex( kind=prec ) :: minus_i_omega_mu
             integer :: pol
             !
@@ -248,28 +249,46 @@ module Transmitter
             !> Copy e_sens to a local variable to keep its original value.
             allocate( eSens, source = self%e_sens )
             !
-            minus_i_omega_mu = -isign * MU_0 * cmplx( 0., self%omega, kind=prec )
-            !
-            !> Modify only the first position of eSens to use it in dPDEmappingT
-            call eSens( 1 )%mult( minus_i_omega_mu )
+            call eSens(1)%mult( self%e_sol(1) )
             !
             !> Loop over all other polarizations, adding them to the first position
             do pol = 2, self%n_pol
                 !
-                call eSens( pol )%mult( minus_i_omega_mu )
+                call eSens( pol )%mult( self%e_sol( pol ) )
                 !
-                call eSens( 1 )%add( eSens( pol ) )
+                call eSens(1)%add( eSens( pol ) )
                 !
             enddo
             !
-            !> Get dsigma from dPDEmappingT, using first position of eSens
-            call sigma%dPDEmappingT( eSens(1), dsigma )
+            minus_i_omega_mu = -isign * MU_0 * cmplx( 0., self%omega, kind=prec )
             !
-            !> Free up local memory
-            deallocate( eSens )
+            call eSens(1)%mult( minus_i_omega_mu )
             !
-            ! Verbose
-            !write( *, * ) "               - Finish pMult_t"
+            real_sens = rVector3D_SG_t( eSens(1)%grid, eSens(1)%grid_type )
+            !
+            !> Instantiate the ForwardSolver - Specific type can be chosen via control file
+            select type ( e_sens => eSens(1) )
+                !
+                class is( cVector3D_SG_t )
+                    !
+                    real_sens%x = real( e_sens%x, kind=prec )
+                    real_sens%y = real( e_sens%y, kind=prec )
+                    real_sens%z = real( e_sens%z, kind=prec )
+                    !
+                    !> Get dsigma from dPDEmappingT, using first position of eSens
+                    call sigma%dPDEmappingT( real_sens, dsigma )
+                    !
+                    !> Free up local memory
+                    !deallocate( eSens )
+                    !
+                    ! Verbose
+                    !write( *, * ) "               - Finish pMult_t"
+                    !
+                class default
+                    !
+                    stop "Error: pMult_t_Tx > Undefined eSens(1)"
+                    !
+            end select
             !
         end subroutine pMult_t_Tx
         !

@@ -49,6 +49,8 @@ module rVector3D_SG
         procedure, public :: sumEdges => sumEdgesRVector3D_SG
         procedure, public :: avgCells => avgCellsRVector3D_SG
         !
+		procedure, public :: conjugate => conjugateRVector3D_SG
+		!
         procedure, public :: linComb => linCombRVector3D_SG
         procedure, public :: multAdd => multAddRVector3D_SG
         procedure, public :: interpFunc => interpFuncRVector3D_SG
@@ -1075,6 +1077,16 @@ contains
         end select
         !
     end subroutine avgCellsRVector3D_SG
+    !
+    !> No subroutine briefing
+    subroutine conjugateRVector3D_SG( self )
+        implicit none
+        !
+        class( rVector3D_SG_t ), intent( inout ) :: self
+        !
+        stop "Error: conjugateRVector3D_SG: Do not try to conjugate a real vector!"
+        !
+    end subroutine conjugateRVector3D_SG
     !
     !> No subroutine briefing
     subroutine linCombRVector3D_SG( self, rhs, c1, c2 )

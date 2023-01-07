@@ -90,7 +90,7 @@ contains
         integer :: Ei, row, pol, comp
         complex( kind=prec ) :: comega
         !
-        comega = cmplx( 0.0, 1. / transmitter%omega, kind=prec )
+        comega = isign * cmplx( 0.0, 1. / transmitter%omega, kind=prec )
         !
         !> Call the predicted data routine to calculate responses
         call self%predictedData( transmitter )
@@ -120,9 +120,9 @@ contains
             endif
             !
             !> ????
-            call Le%multAdd( C_MinusOne * self%response( 2 * (Ei-1) + 1 ) * comega, full_lbx )    ! 1 & 3
+            call Le%multAdd( -self%response( 2 * (Ei-1) + 1 ) * comega, full_lbx )    ! 1 & 3
             !
-            call Le%multAdd( C_MinusOne * self%response( 2 * Ei ) * comega, full_lby )            ! 2 & 4
+            call Le%multAdd( -self%response( 2 * Ei ) * comega, full_lby )            ! 2 & 4
             !
             !> Loop over two impedance rows
             do row = 1, 2

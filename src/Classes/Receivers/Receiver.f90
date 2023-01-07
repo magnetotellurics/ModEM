@@ -299,7 +299,7 @@ contains
         !
         select case( int_receiver_type )
             !
-            case( 1 )
+            case(1)
                 str_receiver_type = "Full_Impedance"
             case( 2 )
                 str_receiver_type = "Full_Interstation_TF"

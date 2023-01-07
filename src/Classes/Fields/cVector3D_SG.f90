@@ -48,6 +48,8 @@ module cVector3D_SG
         procedure, public :: sumEdges => sumEdgesCVector3D_SG
         procedure, public :: avgCells => avgCellsCVector3D_SG
         !
+		procedure, public :: conjugate => conjugateCVector3D_SG
+		!
         procedure, public :: linComb => linCombCVector3D_SG
         procedure, public :: multAdd => multAddCVector3D_SG
         procedure, public :: interpFunc => interpFuncCVector3D_SG
@@ -1126,6 +1128,18 @@ contains
         end select
         !
     end subroutine avgCellsCVector3D_SG
+    !
+    !> No subroutine briefing
+    subroutine conjugateCVector3D_SG( self )
+        implicit none
+        !
+        class( cVector3D_SG_t ), intent( inout ) :: self
+        !
+        self%x = conjg( self%x )
+        self%y = conjg( self%y )
+        self%z = conjg( self%z )
+        !
+    end subroutine conjugateCVector3D_SG
     !
     !> No subroutine briefing
     subroutine linCombCVector3D_SG( self, rhs, c1, c2 )

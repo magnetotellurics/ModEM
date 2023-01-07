@@ -124,7 +124,7 @@ contains
                 !
                 !> Set the sum into the current data component, according to type
                 if( JmHat_tx%data( i_data )%is_complex ) then
-                    call JmHat_tx%data( i_data )%set( i_comp, real( lrows_x_esens, kind=prec ), real( aimag( lrows_x_esens, kind=prec ) ) )
+                    call JmHat_tx%data( i_data )%set( i_comp, real( lrows_x_esens, kind=prec ), real( aimag( lrows_x_esens ), kind=prec ) )
                 else
                     call JmHat_tx%data( i_data )%set( i_comp, real( lrows_x_esens, kind=prec ), R_ZERO )
                 endif
@@ -236,7 +236,7 @@ contains
                 if( Rx%is_complex ) then
                     !
                     !> IF NOT USES CONJUGATED MUST CHANGE THE SIGN OF BB IN LROWS ????
-                    tx_data_cvalue = cmplx( data_group%reals( i_comp ), data_group%imaginaries( i_comp ), kind=prec )
+                    tx_data_cvalue = cmplx( data_group%reals( i_comp ), -data_group%imaginaries( i_comp ), kind=prec )
                 else
                     tx_data_cvalue = cmplx( data_group%reals( i_comp ), R_ZERO, kind=prec )
                 endif
@@ -253,6 +253,13 @@ contains
                 enddo
                 !
             enddo
+            !
+        enddo
+        !
+        !> Loop over polarizations
+        do i_pol = 1, Tx%n_pol
+            !
+            call bSrc( i_pol )%mult( C_MinusOne )
             !
         enddo
         !
