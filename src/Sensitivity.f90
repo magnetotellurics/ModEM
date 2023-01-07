@@ -114,23 +114,25 @@ contains
                 !
                 !> Loop over polarizations
                 do i_pol = 1, Tx%n_pol
+					!
+					call Rx%lrows( i_pol, i_comp )%conjugate()
                     !
                     !> LRows .dot. ESens
-                    lrows_x_esens = lrows_x_esens + Rx%lrows( i_pol, i_comp )%dotProd( Tx%e_sens( i_pol ) )
+                    lrows_x_esens = lrows_x_esens + Tx%e_sens( i_pol )%dotProd( Rx%lrows( i_pol, i_comp ) )
                     !
                 enddo
                 !
-                write( *, * ) "JMult Z: ", lrows_x_esens
-                !
                 !> Set the sum into the current data component, according to type
                 if( JmHat_tx%data( i_data )%is_complex ) then
-                    call JmHat_tx%data( i_data )%set( i_comp, real( lrows_x_esens, kind=prec ), real( aimag( lrows_x_esens ), kind=prec ) )
+                    call JmHat_tx%data( i_data )%set( i_comp, -real( lrows_x_esens, kind=prec ), real( aimag( lrows_x_esens ), kind=prec ) )
                 else
-                    call JmHat_tx%data( i_data )%set( i_comp, real( lrows_x_esens, kind=prec ), R_ZERO )
+                    call JmHat_tx%data( i_data )%set( i_comp, -real( lrows_x_esens, kind=prec ), R_ZERO )
                 endif
                 !
             enddo
-            !
+			!
+			call JmHat_tx%data( i_data )%print()
+			!
             JmHat_tx%data( i_data )%is_complex = .FALSE.
             !
         enddo
