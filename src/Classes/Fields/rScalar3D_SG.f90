@@ -16,7 +16,7 @@ module rScalar3D_SG
         final :: rScalar3D_SG_dtor
         !
         !> I/O operation
-        procedure, public :: read  => readRScalar3D_SG
+        procedure, public :: read => readRScalar3D_SG
         procedure, public :: write => writeRScalar3D_SG
         !
         !> Boundary operations
@@ -28,17 +28,17 @@ module rScalar3D_SG
         !> Dimensioning operations
         procedure, public :: length => lengthRScalar3D_SG
         !
-        procedure, public :: getArray    => getArrayRScalar3D_SG
-        procedure, public :: setArray    => setArrayRScalar3D_SG
+        procedure, public :: getArray => getArrayRScalar3D_SG
+        procedure, public :: setArray => setArrayRScalar3D_SG
         !
         procedure, public :: setVecComponents => setVecComponentsRScalar3D_SG
         !
         !> Arithmetic/algebraic operations
         procedure, public :: zeros => zerosRScalar3D_SG
-        procedure, public :: add   => addRScalar3D_SG
-		!
-        procedure, public :: subValue   => subValueRScalar3D_SG
-        procedure, public :: subField   => subFieldRScalar3D_SG
+        procedure, public :: add => addRScalar3D_SG
+        !
+        procedure, public :: subValue => subValueRScalar3D_SG
+        procedure, public :: subField => subFieldRScalar3D_SG
         !
         procedure, public :: multByField => multByFieldRScalar3D_SG
         procedure, public :: multByValue => multByValueRScalar3D_SG
@@ -48,11 +48,13 @@ module rScalar3D_SG
         !
         procedure, public :: dotProd => dotProdRScalar3D_SG
         !
+		procedure, public :: conjugate => conjugateRScalar3D_SG
+		!
+        procedure, public :: linComb => linCombRScalar3D_SG
+        !
+        procedure, public :: multAdd => multAddRScalar3D_SG
+        !
         !> Miscellaneous
-        procedure, public :: linComb   => linCombRScalar3D_SG
-        !
-        procedure, public :: multAddByValue => multAddByValueRScalar3D_SG
-        !
         procedure, public :: copyFrom => copyFromRScalar3D_SG
         !
         procedure, public :: print => printRScalar3D_SG
@@ -632,7 +634,7 @@ contains
         class( rScalar3D_SG_t ), intent( inout ) :: self
         complex( kind=prec ), intent( in ) :: cvalue
         !
-		self%v = self%v - cvalue
+        self%v = self%v - cvalue
         !
     end subroutine subValueRScalar3D_SG
     !
@@ -748,6 +750,16 @@ contains
     end function dotProdRScalar3D_SG
     !
     !> No subroutine briefing
+    subroutine conjugateRScalar3D_SG( self )
+        implicit none
+        !
+        class( rScalar3D_SG_t ), intent( inout ) :: self
+        !
+        stop "Error: conjugateRScalar3D_SG: Do not try to conjugate a real scalar!"
+        !
+    end subroutine conjugateRScalar3D_SG
+    !
+    !> No subroutine briefing
     subroutine linCombRScalar3D_SG( self, rhs, c1, c2 )
         implicit none
         !
@@ -761,17 +773,28 @@ contains
     end subroutine linCombRScalar3D_SG
     !
     !> No subroutine briefing
-    subroutine multAddByValueRScalar3D_SG( self, rhs, cvalue )
+    subroutine multAddRScalar3D_SG( self, cvalue, rhs )
         implicit none
         !
-        class( rScalar3D_SG_t ), intent( in ) :: self
-        class( Field_t ), intent( inout ) :: rhs
+        class( rScalar3D_SG_t ), intent( inout ) :: self
         complex( kind=prec ), intent( in ) :: cvalue
+        class( Field_t ), intent( in ) :: rhs
         !
-        write( *, * ) "Error: multAddByValueRScalar3D_SG to be implemented: ", cvalue
-        stop
+        if( self%isCompatible( rhs ) ) then
+            !
+            select type( rhs )
+                class is( rScalar3D_SG_t ) 
+                    self%v = self%v + real( cvalue, kind=prec ) * rhs%v
+                class default
+                    stop "Error: multAddRScalar3D_SG > rhs undefined."
+            end select
+            !
+            !
+        else
+            stop "Error: multAddRScalar3D_SG >Incompatible inputs."
+        endif
         !
-    end subroutine multAddByValueRScalar3D_SG
+    end subroutine multAddRScalar3D_SG
     !
     !> No subroutine briefing
     subroutine copyFromRScalar3D_SG( self, rhs )

@@ -13,9 +13,8 @@ program TestSerial
     !
     use DataFileStandard
     !
-    use Sensitivity
-    !
-    use ModelCovarianceRec
+    use InversionDCG
+    use InversionNLCG
     !
     real( kind=prec ) :: t_start, t_finish
     !
@@ -51,236 +50,161 @@ program TestSerial
     !
 contains
     !
-    !> Run ForwardModelling: Calculate ESolution for all transmitters and...
-    !>     Receive a flag indicating whether it will be used for Adjoint:
-    !>         - False or None: Calculate only the predicted data for each transmitter-receiver pair.
-    !>         - True: Calculate LRows in the receivers after calculating predicted data.
-    !> Obs.: Require the previous definition of the global ForwardSolver (createForwardSolver())
-    !
-    subroutine ForwardModeling( sigma )
-        implicit none
-        !
-        class( ModelParameter_t ), intent( in ) :: sigma
-        !
-        class( Transmitter_t ), pointer :: Tx
-        class( Receiver_t ), pointer :: Rx
-        integer :: i_tx, n_tx, i_rx
-        !
-        ! Verbose
-        write( *, * ) "          - Start Forward Modeling"
-        !
-        !>
-        n_tx = size( transmitters )
-        !
-        ! Verbose
-        write( *, * ) "          > Write ESolution to file: [", e_solution_file_name, "]"
-        !
-        !> Write the first header of the ESolution binary file, according to the first transmitter
-        call writeEsolutionHeader( n_tx, transmitters(1)%Tx%n_pol )
-        !
-        !> Loop over all Transmitters
-        do i_tx = 1, n_tx
-            !
-            !> Pointer to the Transmitter
-            Tx => getTransmitter( i_tx )
-            !
-            !> Set Transmitter's ForwardSolver Period) and Conductivity
-            call Tx%forward_solver%setFrequency( sigma, Tx%period )
-            !
-            !> Instantiate Transmitter's Source - According to transmitter type or chosen via control file
-            select type( Tx )
-                !
-                class is( TransmitterMT_t )
-                    !
-                    call Tx%setSource( SourceMT_1D_t( model_operator, sigma, Tx%period ) )
-                    !
-                class is( TransmitterCSEM_t )
-                    !
-                    call Tx%setSource( SourceCSEM_Dipole1D_t( model_operator, sigma, Tx%period, Tx%location, Tx%dip, Tx%azimuth, Tx%moment ) )
-                    !
-                class default
-                    stop "Error: ForwardModeling > Unclassified Transmitter"
-                !
-            end select
-            !
-            !> Build Source E according to source type
-            call Tx%source%createE()
-            !
-            !> Solve ESolution for this Transmitter
-            call Tx%solve()
-            !
-            ! Verbose
-            write( *, * ) "                   - Receivers calculation"
-            !
-            !> Loop for each Receiver related to this Transmitter
-            do i_rx = 1, size( Tx%receiver_indexes )
-                !
-                !> Pointer to the Tx Receiver
-                Rx => getReceiver( Tx%receiver_indexes( i_rx ) )
-                !
-                call Rx%predictedData( Tx )
-                !
-                call all_predicted_data( i_tx )%set( Rx%data_group )
-                !
-            enddo
-            !
-        enddo
-        !
-        ! Verbose
-        write( *, * ) "          - Finish Forward Modeling"
-        !
-    end subroutine ForwardModeling
-    !
     !> Routine to run a full ForwardModeling job and deliver the result (PredictedData) in a text file
     subroutine jobForwardModeling()
         implicit none
         !
+        type( DataGroupTx_t ), allocatable, dimension(:) :: d_pred
+        !
         ! Verbose
         write( *, * ) "     - Start jobForwardModeling"
         !
-        !> Reads Model File: instantiates Grid, ModelOperator and ModelParameter
-        if( .NOT. has_model_file ) then 
-            stop "Error: jobForwardModeling > Missing Model file!"
-        else
+        !> Read Model File and instantiate global variables: main_grid, model_operator and Sigma0
+        if( has_model_file ) then
+            !
             call handleModelFile()
             !
-        endif
-        !
-        !> Reads Data File: instantiates and builds the Data relation between Txs and Rxs
-        if( .NOT. has_data_file ) then 
-            stop "Error: jobForwardModeling > Missing Data file!"
         else
-            call handleDataFile()
+            stop "Error: jobForwardModeling > Missing Model file!"
         endif
         !
-        !> Instantiate the ForwardSolver - Specific type can be chosen via control file
+        !> Read Data File: instantiate Txs and Rxs and build the Data relation between them
+        if( has_data_file ) then
+            !
+            call handleDataFile()
+            !
+        else
+            stop "Error: jobForwardModeling > Missing Data file!"
+        endif
+        !
+        !> Instantiate the global ForwardSolver - Specific type can be chosen via control file
         call createForwardSolver()
         !
-        !> Run ForwardModelling only to calculate predicted data
-        call ForwardModeling( sigma0 )
+        !> Run ForwardModelling to calculate d_pred
+        d_pred = all_measured_data
         !
-        !> Write all_predicted_data, with its proper Rx headers, to the file <predicted_data_file_name>
-        call writeDataGroupArray( all_predicted_data, predicted_data_file_name )
+        call runForwardModeling( sigma0, d_pred )
+        !
+        !> Write Predicted Data, with its proper Rx headers, into to the file <predicted_data_file_name>
+        call writeDataGroupArray( d_pred, predicted_data_file_name )
         !
         ! Verbose
         write( *, * ) "     - Finish jobForwardModeling"
         !
     end subroutine jobForwardModeling
     !
-    !> Routine to run a full JMult job and deliver the result (JmHat_data Data) in a text file
-    subroutine JobJMult()
+    !> Routine to run a full JMult job and deliver the result (JmHat Data) in a text file
+    subroutine jobJMult()
         implicit none
         !
-        !> ????
-        type( DataGroupTx_t ), allocatable, dimension(:) :: JmHat_data
+        type( DataGroupTx_t ), allocatable, dimension(:) :: d_pred, JmHat
         !
         ! Verbose
-        write( *, * ) "     - Start JobJMult"
+        write( *, * ) "     - Start jobJMult"
         !
-        !> Read Prior Model File: instantiates PModelParameter
-        if( .NOT. has_pmodel_file ) then 
-            stop "Error: JobJMult > Missing Prior Model file!"
-        else
+        !> Read Prior Model File: instantiate pmodel
+        if( has_pmodel_file ) then
             !
             call handlePModelFile()
             !
-            !> Read Model File: instantiates Grid, ModelOperator and ModelParameter
-            if( .NOT. has_model_file ) then 
-                stop "Error: JobJMult > Missing Model file!"
-            else
+            !> Read Model File and instantiate global variables: main_grid, model_operator and Sigma0
+            if( has_model_file ) then
+                !
                 call handleModelFile()
                 !
                 call pmodel%setMetric( model_operator%metric )
                 !
+            else
+                stop "Error: jobJMult > Missing Model file!"
             endif
             !
+        else
+            stop "Error: jobJMult > Missing Prior Model file!"
         endif
         !
-        !> Reads Data File: instantiates and builds the Data relation between Txs and Rxs
-        if( .NOT. has_data_file ) then 
-            stop "Error: JobJMult > Missing Data file!"
-        else
+        !> Read Data File: instantiate Txs and Rxs and build the Data relation between them
+        if( has_data_file ) then
+            !
             call handleDataFile()
+            !
+        else
+            stop "Error: jobJMult > Missing Data file!"
         endif
         !
         !> Instantiate the ForwardSolver - Specific type can be chosen via control file
         call createForwardSolver()
         !
-        !> Run ForwardModelling for calculate Predicted Data and LRows
-        call ForwardModeling( sigma0 )
+        !> Run ForwardModelling to calculate d_pred
+        d_pred = all_measured_data
         !
-        !> Write all_predicted_data, with its proper Rx headers, to the file <predicted_data_file_name>
-        call writeDataGroupArray( all_predicted_data, predicted_data_file_name )
+        call runForwardModeling( sigma0, d_pred )
         !
-        !> Initialize JmHat_data data array in the same format as the predicted data array
-        allocate( JmHat_data, source = all_predicted_data )
+        !> Initialize JmHat data array in the same format as the predicted data array
+        JmHat = all_measured_data
         !
-        !> Fill JmHat_data array from JMult routine
-        call JMult( sigma0, pmodel, JmHat_data )
+        !> Calculate JmHat Data array from JMult routine
+        call JMult( sigma0, pmodel, JmHat )
         !
-        !> Write JmHat_data, with its proper Rx headers, to the file <JmHat_data_file_name>
-        call writeDataGroupArray( JmHat_data, JmHat_data_file_name )
-        !
-        !> Deallocates specific variables from the adjoint job
-        deallocate( JmHat_data )
+        !> Write JmHat to the file <JmHat_data_file_name>
+        call writeDataGroupArray( JmHat, JmHat_data_file_name )
         !
         ! Verbose
-        write( *, * ) "     - Finish JobJMult"
+        write( *, * ) "     - Finish jobJMult"
         !
-    end subroutine JobJMult
+    end subroutine jobJMult
     !
-    !> Routine to run a full JMult_T job and deliver the result (DSigma) in a text file
-    subroutine JobJMult_T()
+    !> Routine to run a full JMult_T job and deliver the result (DSigma model) in a text file
+    subroutine jobJMult_T()
         implicit none
         !
         class( ModelParameter_t ), allocatable :: dsigma
         !
-        !> ????
-        type( DataGroupTx_t ), allocatable, dimension(:) :: all_measured_data
+        type( DataGroupTx_t ), allocatable, dimension(:) :: d_pred
         !
         ! Verbose
-        write( *, * ) "     - Start JobJMult_T"
+        write( *, * ) "     - Start jobJMult_T"
         !
-        !> Read Model File: instantiates Grid, ModelOperator and ModelParameter
+        !> Read Model File and instantiate global variables: main_grid, model_operator and Sigma0
         if( has_model_file ) then 
             !
             call handleModelFile()
             !
         else
-            stop "Error: JobJMult_T > Missing Model file!"
+            stop "Error: jobJMult_T > Missing Model file!"
         endif
         !
-        !> Read Data File: instantiates and builds the Data relation between Txs and Txs
-        !> Create DataGroupTxArray for measured data
+        !> Read Data File: instantiate Txs and Rxs and build the Data relation between them
+        !> Initialize a DataGroupTxArray to hold the measured data
         if( has_data_file ) then 
             !
             call handleDataFile()
             !
-            all_measured_data = all_predicted_data
-            !
         else
-            stop "Error: JobJMult_T > Missing Data file!"
+            stop "Error: jobJMult_T > Missing Data file!"
         endif
         !
         !> Instantiate the ForwardSolver - Specific type can be chosen via control file
         call createForwardSolver()
         !
-        !> Run ForwardModelling for calculate Predicted Data and LRows
-        call ForwardModeling( sigma0 )
+        !> Run ForwardModelling to calculate d_pred
+        d_pred = all_measured_data
         !
-        !> Get sum of all Tx's dsigma from sensitivity JMult_T
+        !> Run ForwardModelling to calculate predicted data
+        call runForwardModeling( sigma0, d_pred )
+        !
+        !> Calculate DSigma model from JMult_T routine
         call JMult_T( sigma0, all_measured_data, dsigma )
         !
         !> Write dsigma to <dsigma_file_name> file path
         call dsigma%write()
         !
-        !> Flush local memory
+        !> Flush local variable
         deallocate( dsigma )
         !
         ! Verbose
-        write( *, * ) "     - Finish JobJMult_T"
+        write( *, * ) "     - Finish jobJMult_T"
         !
-    end subroutine JobJMult_T
+    end subroutine jobJMult_T
     !
     !> Routine to run a full Inversion Job - Minimize Residual
     !> Where:
@@ -288,24 +212,15 @@ contains
     !>    PMODEL = Perturbation model  (if exist -dm readed input model)
     !>    SIGMA0 = Readed input model  (-m)
     !>    DSIGMA = From JMult_T        (????)
-    subroutine jobInversionDCG()
+    subroutine jobInversion()
         implicit none
         !
-        class( ModelParameter_t ), allocatable :: sigma, dsigma, JTP_model
+        class( ModelParameter_t ), allocatable :: sigma
         !
-        class( ModelCovarianceRec_t ), allocatable :: model_cov
-        !
-        type( DataGroupTx_t ), allocatable, dimension(:) :: res, all_measured_data, JmHat_data, resJmHat_data, JJTp_data
-        type( DataGroupTx_t ), allocatable, dimension(:) :: p_data, r_data, x_data, aux_data, lambdaP
-        !
-        integer :: iter_dcg, iter_cg, Ndata
-        !
-        real( kind=prec ) :: alpha, beta, error_cg, residual_rmsd
-        !
-        real( kind=prec ) :: b_norm, r_norm, r_norm_pre, lambda, SS
+        real( kind=prec ) :: lambda
         !
         ! Verbose
-        write( *, * ) "     - Start jobInversionDCG"
+        write( *, * ) "     - Start jobInversion"
         !
         !> Read Model File and instantiate global variables: main_grid, model_operator and Sigma0
         if( has_model_file ) then 
@@ -319,12 +234,12 @@ contains
             allocate( model_cov, source = ModelCovarianceRec_t( sigma ) )
             !
             !> Initialize pmodel with Zeros
-            pmodel = sigma0
+            allocate( pmodel, source = sigma0 )
             !
             call pmodel%zeros()
             !
         else
-            stop "Error: jobInversionDCG > Missing Model file!"
+            stop "Error: jobInversion > Missing Model file!"
         endif
         !
         !> Read Perturbation Model File: instantiate pmodel (NOT USING RIGHT NOW ????)
@@ -334,209 +249,35 @@ contains
             !
             call pmodel%setMetric( model_operator%metric )
             !
-            dsigma = model_cov%multBy_Cm( pmodel )
+            pmodel = model_cov%multBy_Cm( pmodel )
             !
-            call sigma%add( dsigma )
+            call sigma%linComb( ONE, ONE, pmodel )
             !
         endif
         !
-        !> Reads Data File: instantiates and builds the Data relation between Txs and Rxs
+        !> Read Data File: instantiate and build the Data relation between Txs and Rxs
         if( has_data_file ) then 
             !
             call handleDataFile()
             !
-            !> Initialize array with measure data
-            all_measured_data = all_predicted_data
-            !
         else
-            stop "Error: jobInversionDCG > Missing Data file!"
+            stop "Error: jobInversion > Missing Data file!"
         endif
         !
         !> Instantiate ForwardSolver - Specific type via control file
         call createForwardSolver()
         !
-        !> Run ForwardModelling for calculate Predicted Data
-        call ForwardModeling( sigma )
+        !call DCGsolver( all_measured_data, sigma, pmodel )
         !
-        !> Write all_predicted_data, with its proper Rx headers, to the file <predicted_data_file_name>
-        call writeDataGroupArray( all_predicted_data, predicted_data_file_name )
+        call NLCGsolver( all_measured_data, lambda, sigma, pmodel )
         !
-        !> Create the array with residual data (all_residual_data)
-        !call setResidualData()
-        !
-        !> Calculate the first rmsd from the residual data
-        !residual_rmsd = rmsdDataGroupTxArray( all_residual_data )
-        !
-            ! initialize res
-            res = all_measured_data
-            
-            call subDataGroupTxArray( res, all_predicted_data )
-
-            ! normalize residuals, compute sum of squares
-            all_residual_data=res
-            call normalizeDataGroupTxArray( all_residual_data, 2 )
-            SS = dotProdDataGroupTxArray( res, all_residual_data )
-            Ndata = countDataGroupTxArray( res )
-
-            ! if required, compute the Root Mean Squared misfit
-            residual_rmsd = sqrt( SS / Ndata )
-        !
-        !
-        !> Initialize the JmHat data array in the same format as the predicted data array
-        JmHat_data = all_predicted_data
-        !
-        iter_dcg = 1
-        !
-        lambda = 10.
+        !> Write pmodel to <dsigma_file_name> file path
+        call pmodel%write()
         !
         ! Verbose
-        write( *, * ) "### START DCG LOOP RMSD, LAMBDA: ", residual_rmsd, lambda
-        !stop
+        write( *, * ) "     - Finish jobInversion"
         !
-        !> #### LOOP DCG: Iterations for Inversion Convergence
-        do while( iter_dcg < 4 )
-            !
-            !> Calculate JmHat_data
-            call JMult( sigma0, pmodel, JmHat_data )
-            !
-            !> resJmHat_data (b) = res + JmHat_data
-            resJmHat_data = all_residual_data
-            !
-            call addDataGroupTxArray( resJmHat_data, JmHat_data )
-            !
-            ! Verbose
-            write( *, * ) "### START CG LOOP"
-            !
-            iter_cg = 1
-            error_cg = 1.0
-            !
-            p_data = resJmHat_data
-            r_data = all_residual_data
-            x_data = all_measured_data
-            !
-            !>
-            call resetDataGroupTxArray( x_data )
-            !
-            !> Calculate b_norm
-            b_norm = dotProdDataGroupTxArray( resJmHat_data, resJmHat_data )
-            !
-            !> Calculate r_norm
-            r_norm = dotProdDataGroupTxArray( r_data, r_data )
-            !
-            !> #### LOOP CG_DS_standard ( ARBITRARY VALUES FOR NOW ???? )
-            do while( error_cg .GT. 10E-4 .AND. iter_cg .LT. 20 )
-                !
-                !> Initialize JTP_model, and calculate it from JMult_T
-                JTP_model = sigma
-                !
-                !> Calculate JTP_model
-                call JMult_T( sigma0, resJmHat_data, JTP_model )
-                !
-                !> Smooth JTP_model
-                JTP_model = model_cov%multBy_Cm( JTP_model )
-                !
-                !> Initialize JJTp_data, and calculate it from JMult
-                JJTp_data = resJmHat_data
-                !
-                call JMult( sigma0, JTP_model, JJTp_data )
-                !
-                !> THIS OPERATIONS DO NOTHING IF ERRORS ARE 1.0
-                call normalizeDataGroupTxArray( JJTp_data, 1 )
-                !
-                !call scMult_dataVectorMTX( lambda, p, lambdaP ) ????
-                lambdaP = p_data
-                call multDataGroupTxArray( lambdaP, lambda )
-                !
-                !call linComb_dataVectorMTX( ONE, Ap, ONE, lambdaP, Ap ) ????
-                call addDataGroupTxArray( JJTp_data, lambdaP )
-                !
-                !> Compute alpha: alpha= (r^T r) / (p^T Ap)    
-                alpha = r_norm / dotProdDataGroupTxArray( p_data, JJTp_data )
-                !
-                !> Compute new x: x = x + alpha * p
-                call multAddDataGroupTxArray( x_data, p_data, alpha )
-                !
-                !> Compute new r: r = r - alpha * all_residual_data
-                call multAddDataGroupTxArray( r_data, JJTp_data, -alpha )
-                !
-                !> Calculate r_norm and beta
-                r_norm_pre = r_norm
-                !
-                r_norm = dotProdDataGroupTxArray( r_data, r_data )
-                !
-                !> Compute beta: beta= r_norm /r_norm_previous
-                beta = r_norm / r_norm_pre
-                !
-                ! Compute new p: p = r + beta * p
-                allocate( aux_data, source = r_data ) !Check this
-                call multAddDataGroupTxArray( aux_data, p_data, beta )
-                p_data = aux_data
-                deallocate( aux_data )
-                !
-                error_cg = r_norm / b_norm 
-                !
-                ! Verbose
-                write( *, * ) "ITER_CG, r_norm, b_norm, error_cg: ", iter_cg, r_norm, b_norm, error_cg
-                !
-                iter_cg = iter_cg + 1
-                !
-            enddo
-            !
-            !> Calculate dsigma from JMult_T
-            call JMult_T( sigma0, x_data, dsigma )
-            !
-            !> Save dsigma in pmodel, to use in the next DCG step
-            pmodel = dsigma
-            !
-            !> Smooth dsigma and add it to sigma
-            dsigma = model_cov%multBy_Cm( dsigma )
-            !
-            call sigma%add( dsigma )
-            !
-            !> Run ForwardModelling for calculate Predicted Data with new sigma
-            call ForwardModeling( sigma )
-            !
-            !> Create the array with residual data (all_residual_data)
-            !call setResidualData()
-            !
-            !> Residual RMSD 
-            !residual_rmsd = rmsdDataGroupTxArray( all_residual_data )
-        !
-            ! initialize res
-            res = all_measured_data
-            
-            call subDataGroupTxArray( res, all_predicted_data )
-
-            ! normalize residuals, compute sum of squares
-            all_residual_data=res
-            call normalizeDataGroupTxArray( all_residual_data, 2 )
-            SS = dotProdDataGroupTxArray( res, all_residual_data )
-            Ndata = countDataGroupTxArray( res )
-
-            ! if required, compute the Root Mean Squared misfit
-            residual_rmsd = sqrt( SS / Ndata )
-        !
-            ! Verbose
-            write( *, * ) "          - iter_dcg: ", iter_dcg, residual_rmsd
-            !
-            iter_dcg = iter_dcg + 1
-            !
-            !> WRITE DSIGMA FOREACH STEP ????
-        enddo
-        !
-        !> Write dsigma to <dsigma_file_name> file path
-        call sigma%write()
-        !
-        !> Write the data gradient, with its proper Rx headers, to the file <JmHat_data_file_name>
-        call writeDataGroupArray( JmHat_data, JmHat_data_file_name )
-        !
-        !> Flush local memory
-        deallocate( sigma, JmHat_data )
-        !
-        ! Verbose
-        write( *, * ) "     - Finish jobInversionDCG"
-        !
-    end subroutine jobInversionDCG
+    end subroutine jobInversion
     !
     !> No subroutine briefing
     subroutine createForwardSolver()
@@ -544,7 +285,6 @@ contains
         !
         integer :: i_tx
         !
-        !>
         if( allocated( forward_solver ) ) deallocate( forward_solver )
         !
         !> Instantiate the ForwardSolver - Specific type can be chosen via control file
@@ -561,7 +301,7 @@ contains
                 !
         end select
         !
-        !> Loop over all Transmitters
+        !> Make all transmitters point to this ForwardSolver
         do i_tx = 1, size( transmitters )
             !
             transmitters( i_tx )%Tx%forward_solver => forward_solver
@@ -583,12 +323,12 @@ contains
         !
         !> If is the first time, create the predicted data array, 
         !> according to the arrangement of the Transmitter-Receiver pairs of the input
-        if( .NOT. allocated( all_predicted_data ) ) then
+        if( .NOT. allocated( all_measured_data ) ) then
             !
             write( *, * ) "     - Create predicted data array"
             !
             !> Create an array of DataGroupTx to store the predicted data in the same format as the measured data
-            !> Enabling the use of grouped predicted data in future jobs (all_predicted_data)
+            !> Enabling the use of grouped predicted data in future jobs (all_measured_data)
             do i_tx = 1, size( transmitters )
                 !
                 tx_data = DataGroupTx_t( i_tx )
@@ -602,7 +342,7 @@ contains
                     endif
                 enddo
                 !
-                call updateDataGroupTxArray( all_predicted_data, tx_data )
+                call updateDataGroupTxArray( all_measured_data, tx_data )
                 !
             enddo
             !
@@ -618,21 +358,21 @@ contains
         !
         select case ( modem_job )
             !
-            case ( "forward" )
+            case ( "Forward" )
                 !
                 call jobForwardModeling()
                 !
             case ( "JMult" )
                 !
-                call JobJMult()
+                call jobJMult()
                 !
             case ( "JMult_T" )
                 !
-                call JobJMult_T()
+                call jobJMult_T()
                 !
-            case ( "inversion" )
+            case ( "Inversion" )
                 !
-                call jobInversionDCG()
+                call jobInversion()
                 !
             case default
                 !
@@ -653,7 +393,7 @@ contains
         write( *, * ) "     < Control File: [", control_file_name, "]"
         !
         !> Instantiate the ControlFile object
-        !> Reads control file and sets the options in the Constants module
+        !> Read control file and sets the options in the Constants module
         control_file = ModEMControlFile_t( ioStartup, control_file_name )
         !
     end subroutine handleControlFile
@@ -670,10 +410,10 @@ contains
         ! Verbose
         write( *, * ) "     < Model File: [", model_file_name, "]"
         !
-        !> Read Grid and ModelParameter with ModelReader_Weerachai
+        !> Initialize main_grid and sigma0 with ModelReader (Only ModelReader_Weerachai by now????)
         call model_reader%Read( model_file_name, main_grid, sigma0 ) 
         !
-        !> Instantiate the ModelOperator object
+        !> Instantiate the ModelOperator object according to the main_grid type
         select type( main_grid )
             !
             class is( Grid3D_SG_t )
@@ -682,6 +422,7 @@ contains
                 !
                 call main_grid%UpdateAirLayers( air_layer%nz, air_layer%dz )
                 !
+                ! Verbose
                 write( *, * ) "          Air Layers [i, dz(i)]:"
                 !
                 do i = air_layer%nz, 1, -(1)
@@ -731,8 +472,7 @@ contains
     subroutine handleDataFile()
         implicit none
         !
-        integer :: irx, nrx
-        class( Receiver_t ), pointer :: Rx
+        integer :: i_rx, n_rx
         !
         !> Local object to dealt data, self-destructs at the end of the subroutine
         type( DataFileStandard_t ) :: data_file_standard
@@ -741,27 +481,27 @@ contains
         !
         data_file_standard = DataFileStandard_t( ioStartup, data_file_name )
         !
-        nrx = size( receivers )
+        n_rx = size( receivers )
         !
         ! Verbose
-        if( nrx == data_file_standard%nRx ) then
+        if( n_rx == data_file_standard%n_rx ) then
             !
-            write( *, * ) "          Checked ", nrx, " Receivers."
+            write( *, * ) "          Checked ", n_rx, " Receivers."
             !
         else
             !
-            write( *, * ) "Error: Number of Rx mismatched from Header :[", nrx, " and ", data_file_standard%nRx, "]"
+            write( *, * ) "Error: Number of Rx mismatched from Header :[", n_rx, " and ", data_file_standard%n_rx, "]"
             stop
             !
         endif
         !
-        if( size( transmitters ) == data_file_standard%nTx ) then
+        if( size( transmitters ) == data_file_standard%n_tx ) then
              !
              call printTransmitterArray()
              !
         else
              !
-             write( *, * ) "Number of Tx mismatched from Header :[", size( transmitters ), " and ", data_file_standard%nTx, "]"
+             write( *, * ) "Number of Tx mismatched from Header :[", size( transmitters ), " and ", data_file_standard%n_tx, "]"
              stop
              !
         endif
@@ -771,14 +511,12 @@ contains
         !> Initialize the predicted data array
         call initPredictedDataArray()
         !
-        write( *, * ) "     - Create Rx evaluation vectors"
+        write( *, * ) "     - Creating Rx evaluation vectors"
         !
-        !> Calculate evaluation vectors for the Receivers
-        do irx = 1, nrx
+        !> Calculate and store evaluation vectors on all Receivers
+        do i_rx = 1, n_rx
             !
-            Rx => getReceiver( irx )
-            !
-            call Rx%evaluationFunction( model_operator )
+            call receivers( i_rx )%Rx%evaluationFunction( model_operator )
             !
         enddo
         !
@@ -827,13 +565,13 @@ contains
                          !
                       case ( "-f", "--forward" )
                          !
-                         modem_job = "forward"
+                         modem_job = "Forward"
                          !
                          argument_index = argument_index + 1
                          !
                       case ( "-i", "--inversion" )
                          !
-                         modem_job = "inversion"
+                         modem_job = "Inversion"
                          !
                          argument_index = argument_index + 1
                          !
@@ -881,7 +619,7 @@ contains
                          !
                          argument_index = argument_index + 2
                          !
-                      case ( "-gd", "--gradient" )
+                      case ( "-jm", "--jmhat" )
                          !
                          call get_command_argument( argument_index + 1, argument )
                          JmHat_data_file_name = trim( argument )
@@ -944,7 +682,7 @@ contains
         ! Solvers
         QMR_iters = 40
         BCG_iters = 80
-        max_divcor = 20
+        max_divcor_calls = 20
         max_divcor_iters = 100
         tolerance_divcor = 1E-5
         tolerance_qmr = 1E-7
@@ -965,11 +703,10 @@ contains
     subroutine garbageCollector()
         implicit none
         !
-        !> Flush memory used by job data arrays
+        !> Flush memory used for global data arrays
         deallocate( measured_data )
         !
-        !> Flush memory used by job data arrays
-        deallocate( all_predicted_data )
+        if( allocated( all_measured_data ) ) call deallocateDataGroupTxArray( all_measured_data )
         !
         !> Deallocate global array of Receivers
         call deallocateReceiverArray()
@@ -982,6 +719,9 @@ contains
         !
         !> Deallocate global pmodel, if its the case
         if( allocated( pmodel ) ) deallocate( pmodel )
+        !
+        !> Deallocate global model_cov, if its the case
+        if( allocated( model_cov ) ) deallocate( model_cov )
         !
         !> Flush memory used by main program control variables and flags
         if( allocated( forward_solver_type ) ) deallocate( forward_solver_type )
@@ -1057,7 +797,7 @@ contains
                             write( ioPredData, "(A, 1X, es12.6, f15.3, f15.3, f15.3, f15.3, f15.3, f15.3, 1X, A, 1X, f15.3, f15.3, f15.3, 1X, A, 1X, es16.6, es16.6, es16.6)" ) trim(transmitter%dipole), transmitter%period, transmitter%moment, transmitter%azimuth, transmitter%dip, transmitter%location(1), transmitter%location(2), transmitter%location(3), trim(receiver%code), receiver%location(1), receiver%location(2), receiver%location(3), trim(data_group%components(j)%str), data_group%reals(j), data_group%imaginaries(j), data_group%errors(j)
                             !
                         class default
-                            stop "Error: Unclassified data_group!"
+                            stop "Error: writeDataGroupArray: Unclassified data_group!"
                         !
                     end select
                     !
@@ -1126,40 +866,6 @@ contains
         endif
         !
     end subroutine writePredictedDataHeader
-    !
-    !> No subroutine briefing
-    subroutine writeEsolutionHeader( nTx, nMode )
-        implicit none
-        !
-        integer, intent( in ) :: nTx, nMode
-        integer :: ios
-        character(len=20) :: version
-        !
-        version = "Modem-OO"
-        !
-        open( ioESolution, file = e_solution_file_name, action = "write", form = "unformatted", iostat = ios)
-        !
-        if( ios == 0 ) then
-            !
-            write( ioESolution ) version, nTx, nMode, &
-            main_grid%nx, main_grid%ny, main_grid%nz, main_grid%nzAir, &
-            main_grid%ox, main_grid%oy, main_grid%oz, main_grid%rotdeg
-            !
-            write( ioESolution ) main_grid%dx
-            write( ioESolution ) main_grid%dy
-            write( ioESolution ) main_grid%dz
-            !
-            close( ioESolution )
-            !
-        else
-            !
-            write( *, * ) "Error opening file in writeEsolutionHeader [", e_solution_file_name, "]!"
-            stop
-            !
-        endif
-        !
-        !
-    end subroutine writeEsolutionHeader
     !
     !> No subroutine briefing
     subroutine printUsage()

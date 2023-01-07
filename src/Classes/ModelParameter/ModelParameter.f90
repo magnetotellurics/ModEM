@@ -32,12 +32,13 @@ module ModelParameter
             procedure( interface_set_type_model_parameter ), deferred, public :: SetType
             !
             procedure, public :: setMetric => setMetricModelParameter
-            procedure, public :: SigMap    => SigMapModelParameter
+            procedure, public :: SigMap => SigMapModelParameter
             procedure, public :: SetSigMap => SetSigMapModelParameter
             !
             !> Interfaces
             procedure( interface_zeros_model_parameter ), deferred, public :: zeros
             procedure( interface_copy_from_model_parameter ), deferred, public :: copyFrom
+            generic :: assignment(=) => copyFrom
             !
             procedure( interface_count_model_parameter ), deferred, public :: countModel
             !
@@ -52,10 +53,6 @@ module ModelParameter
             !
             procedure( interface_slice_1d_model_parameter ), deferred, public :: Slice1D
             procedure( interface_slice_2d_model_parameter ), deferred, public :: Slice2D
-            !
-            procedure( interface_add_model_parameter ), deferred, public :: add
-            !
-            procedure( interface_cond_rmsd_model_parameter ), deferred, public :: rmsd
             !
             procedure( interface_write_model_parameter ), deferred, public :: write
             procedure( interface_print_model_parameter ), deferred, public :: print
@@ -86,20 +83,6 @@ module ModelParameter
             integer, intent( in ) :: axis, j
             type( ModelParameter2D_t ) :: m2D 
         end function interface_slice_2d_model_parameter
-        !
-        !> No interface function briefing
-        subroutine interface_add_model_parameter( self, other )
-            import :: ModelParameter_t
-            class( ModelParameter_t ), intent( inout ) :: self
-            class( ModelParameter_t ), intent( in ) :: other
-        end subroutine interface_add_model_parameter
-        !
-        !> No interface function briefing
-        function interface_cond_rmsd_model_parameter( self, other ) result( rmsd )
-            import :: ModelParameter_t, prec
-            class( ModelParameter_t ), intent( in ) :: self, other
-            complex( kind=prec ) :: rmsd
-        end function interface_cond_rmsd_model_parameter
         !
         !> No interface briefing
         pure function interface_sigmap_model_parameter( x, p_job ) result( y )

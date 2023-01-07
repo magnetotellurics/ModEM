@@ -44,6 +44,8 @@ module TransmitterMT
         self%n_pol = 2
         !
         self%period = period
+		!
+		self%omega = ( 2.0 * PI / self%period )
         !
         !> self%pMult_ptr => pMult_E
         !
@@ -64,7 +66,7 @@ module TransmitterMT
         !
     end subroutine TransmitterMT_dtor
     !
-    !> Calculate e_all or e_sens from with ForwardSolver
+    !> Calculate e_sol or e_sens from with ForwardSolver
     !> Depending of the Source%adjoint
     subroutine solveTransmitterMT( self )
         implicit none
@@ -73,8 +75,6 @@ module TransmitterMT
         !
         integer :: i_pol, ios
         !
-        real( kind=prec ) :: omega
-        !
         character( len=20 ) :: ModeName
         !
         if( .NOT. allocated( self%source ) ) then
@@ -82,15 +82,15 @@ module TransmitterMT
         endif
         !
         !> Verbose
-        if( self%source%adjoint ) then
+        if( self%source%sens ) then
             !
             if( allocated( self%e_sens ) ) deallocate( self%e_sens )
             allocate( cVector3D_SG_t :: self%e_sens(2) )
             !
         else
             !
-            if( allocated( self%e_all ) ) deallocate( self%e_all )
-            allocate( cVector3D_SG_t :: self%e_all(2) )
+            if( allocated( self%e_sol ) ) deallocate( self%e_sol )
+            allocate( cVector3D_SG_t :: self%e_sol(2) )
             !
         endif
         !
@@ -98,17 +98,17 @@ module TransmitterMT
         do i_pol = 1, self%n_pol
             !
             !> Verbose
-            if( self%source%adjoint ) then
-                write( *, * ) "               SolveADJ MT Tx:", self%id, " -> Period:", self%period, " - Polarization:", i_pol
+            if( self%source%sens ) then
+                !write( *, * ) "               SolveADJ MT Tx:", self%id, " -> Period:", self%period, " - Polarization:", i_pol
                 !
                 !> Calculate e_sens through ForwardSolver
                 call self%forward_solver%createESolution( i_pol, self%source, self%e_sens( i_pol ) )
                 !
             else
-                write( *, * ) "               SolveFWD MT Tx:", self%id, " -> Period:", self%period, " - Polarization:", i_pol
+                !write( *, * ) "               SolveFWD MT Tx:", self%id, " -> Period:", self%period, " - Polarization:", i_pol
                 !
-                !> Calculate e_all through ForwardSolver
-                call self%forward_solver%createESolution( i_pol, self%source, self%e_all( i_pol ) )
+                !> Calculate e_sol through ForwardSolver
+                call self%forward_solver%createESolution( i_pol, self%source, self%e_sol( i_pol ) )
                 !
                 if( i_pol == 1 ) then
                     ModeName = "Ey"
@@ -122,12 +122,10 @@ module TransmitterMT
                     stop "Error opening file in solveTransmitterMT: e_solution"
                 else
                     !
-                    omega = 2.0 * PI / self%period
-                    !
                     !> write the frequency header - 1 record
-                    write( ioESolution ) omega, self%id, i_pol, ModeName
+                    write( ioESolution ) self%omega, self%id, i_pol, ModeName
                     !
-                    call self%e_all( i_pol )%write( ioESolution )
+                    call self%e_sol( i_pol )%write( ioESolution )
                     !
                     close( ioESolution )
                     !

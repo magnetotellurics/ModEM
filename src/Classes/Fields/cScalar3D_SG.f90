@@ -15,7 +15,7 @@ module cScalar3D_SG
         final :: cScalar3D_SG_dtor
         !
         !> I/O operation
-        procedure, public :: read  => readCScalar3D_SG
+        procedure, public :: read => readCScalar3D_SG
         procedure, public :: write => writeCScalar3D_SG
         !
         !> Boundary operations
@@ -34,10 +34,10 @@ module cScalar3D_SG
         !
         !> Arithmetic/algebraic operations
         procedure, public :: zeros => zerosCScalar3D_SG
-        procedure, public :: add   => addCScalar3D_SG
+        procedure, public :: add => addCScalar3D_SG
 		!
-        procedure, public :: subValue   => subValueCScalar3D_SG
-        procedure, public :: subField   => subFieldCScalar3D_SG
+        procedure, public :: subValue => subValueCScalar3D_SG
+        procedure, public :: subField => subFieldCScalar3D_SG
         !
         procedure, public :: multByField => multByFieldCScalar3D_SG
         procedure, public :: multByValue => multByValueCScalar3D_SG
@@ -48,9 +48,12 @@ module cScalar3D_SG
         procedure, public :: dotProd => dotProdCScalar3D_SG
         !
         !> Miscellaneous
+        !
+		procedure, public :: conjugate => conjugateCScalar3D_SG
+		!
         procedure, public :: linComb => linCombCScalar3D_SG
         !
-        procedure, public :: multAddByValue => multAddByValueCScalar3D_SG
+        procedure, public :: multAdd => multAddCScalar3D_SG
         !
         procedure, public :: copyFrom => copyFromCScalar3D_SG
         !
@@ -740,7 +743,9 @@ contains
             !
             select type( rhs )
                 class is( cScalar3D_SG_t )
-                    cvalue = sum( conjg( self%v ) * rhs%v )
+                    !
+					cvalue = sum( conjg( self%v ) * rhs%v )
+					!
                 class default
                     stop "Error: dotProdCScalar3D_SG > undefined rhs"
             end select
@@ -750,6 +755,16 @@ contains
         endif
         !
     end function dotProdCScalar3D_SG
+    !
+    !> No subroutine briefing
+    subroutine conjugateCScalar3D_SG( self )
+        implicit none
+        !
+        class( cScalar3D_SG_t ), intent( inout ) :: self
+        !
+        self%v = conjg( self%v )
+        !
+    end subroutine conjugateCScalar3D_SG
     !
     !> No subroutine briefing
     subroutine linCombCScalar3D_SG( self, rhs, c1, c2 )
@@ -776,27 +791,27 @@ contains
     end subroutine linCombCScalar3D_SG
     !
     !> No subroutine briefing
-    subroutine multAddByValueCScalar3D_SG( self, rhs, cvalue )
+    subroutine multAddCScalar3D_SG( self, cvalue, rhs )
         implicit none
         !
-        class( cScalar3D_SG_t ), intent( in ) :: self
-        class( Field_t ), intent( inout ) :: rhs
+        class( cScalar3D_SG_t ), intent( inout ) :: self
         complex( kind=prec ), intent( in ) :: cvalue
+        class( Field_t ), intent( in ) :: rhs
         !
         if( self%isCompatible( rhs ) ) then
             !
             select type( rhs )
                 class is( cScalar3D_SG_t )
-                    rhs%v = rhs%v + cvalue * self%v
+                    self%v = self%v + cvalue * rhs%v
                 class default
-                    stop "Error: multAddByValueCScalar3D_SG: undefined rhs"
+                    stop "Error: multAddCScalar3D_SG: undefined rhs"
             end select
             !
         else
-            stop "Error: multAddByValueCScalar3D_SG > Incompatible rhs"
+            stop "Error: multAddCScalar3D_SG > Incompatible rhs"
         endif
         !
-    end subroutine multAddByValueCScalar3D_SG
+    end subroutine multAddCScalar3D_SG
     !
     !> No subroutine briefing
     subroutine copyFromCScalar3D_SG( self, rhs )

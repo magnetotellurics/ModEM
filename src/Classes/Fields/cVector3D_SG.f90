@@ -14,7 +14,7 @@ module cVector3D_SG
         !
         final :: cVector3D_SG_dtor
         !
-        procedure, public :: read  => readCVector3D_SG
+        procedure, public :: read => readCVector3D_SG
         procedure, public :: write => writeCVector3D_SG
         !
         procedure, public :: setAllBoundary => setAllBoundaryCVector3D_SG
@@ -48,8 +48,10 @@ module cVector3D_SG
         procedure, public :: sumEdges => sumEdgesCVector3D_SG
         procedure, public :: avgCells => avgCellsCVector3D_SG
         !
-        procedure, public :: linComb   => linCombCVector3D_SG
-        procedure, public :: multAddByValue => multAddByValueCVector3D_SG
+		procedure, public :: conjugate => conjugateCVector3D_SG
+		!
+        procedure, public :: linComb => linCombCVector3D_SG
+        procedure, public :: multAdd => multAddCVector3D_SG
         procedure, public :: interpFunc => interpFuncCVector3D_SG
         !
         procedure, public :: print => printCVector3D_SG
@@ -763,14 +765,14 @@ contains
                     self%z = self%z * rhs%z
                 !
                 class is( rVector3D_SG_t )
-                    self%x = self%x * cmplx( rhs%x, 0.0, kind=prec )
-                    self%y = self%y * cmplx( rhs%y, 0.0, kind=prec )
-                    self%z = self%z * cmplx( rhs%z, 0.0, kind=prec )
+                    self%x = self%x * rhs%x
+                    self%y = self%y * rhs%y
+                    self%z = self%z * rhs%z
                 !
                 class is( rScalar3D_SG_t )
-                    self%x = self%x * cmplx( rhs%v, 0.0, kind=prec )
-                    self%y = self%y * cmplx( rhs%v, 0.0, kind=prec )
-                    self%z = self%z * cmplx( rhs%v, 0.0, kind=prec )
+                    self%x = self%x * rhs%v
+                    self%y = self%y * rhs%v
+                    self%z = self%z * rhs%v
                 !
                 class is( cScalar3D_SG_t )
                     self%x = self%x * rhs%v
@@ -881,6 +883,7 @@ contains
                 !
                 class default
                     stop "Error: dotProdCVector3D_SG: undefined rhs"
+                !
             end select
             !
         else
@@ -915,9 +918,9 @@ contains
                         !
                         class is( rVector3D_SG_t )
                             !
-                            diag_mult%x = self%x * cmplx( rhs%x, 0.0, kind=prec )
-                            diag_mult%y = self%y * cmplx( rhs%y, 0.0, kind=prec )
-                            diag_mult%z = self%z * cmplx( rhs%z, 0.0, kind=prec )
+                            diag_mult%x = self%x * rhs%x
+                            diag_mult%y = self%y * rhs%y
+                            diag_mult%z = self%z * rhs%z
                             !
                         class default
                             stop "Error: diagMultCVector3D_SG > Undefined rhs"
@@ -1127,6 +1130,18 @@ contains
     end subroutine avgCellsCVector3D_SG
     !
     !> No subroutine briefing
+    subroutine conjugateCVector3D_SG( self )
+        implicit none
+        !
+        class( cVector3D_SG_t ), intent( inout ) :: self
+        !
+        self%x = conjg( self%x )
+        self%y = conjg( self%y )
+        self%z = conjg( self%z )
+        !
+    end subroutine conjugateCVector3D_SG
+    !
+    !> No subroutine briefing
     subroutine linCombCVector3D_SG( self, rhs, c1, c2 )
         implicit none
         !
@@ -1153,30 +1168,30 @@ contains
     end subroutine linCombCVector3D_SG
     !
     !> No subroutine briefing
-    subroutine multAddByValueCVector3D_SG( self, rhs, cvalue )
+    subroutine multAddCVector3D_SG( self, cvalue, rhs )
         implicit none
         !
-        class( cVector3D_SG_t ), intent( in ) :: self
-        class( Field_t ), intent( inout ) :: rhs
+        class( cVector3D_SG_t ), intent( inout ) :: self
         complex( kind=prec ), intent( in ) :: cvalue
+        class( Field_t ), intent( in ) :: rhs
         !
         if( self%isCompatible( rhs ) ) then
             !
             select type( rhs )
                 class is( cVector3D_SG_t ) 
-                    rhs%x = rhs%x + cvalue * self%x
-                    rhs%y = rhs%y + cvalue * self%y
-                    rhs%z = rhs%z + cvalue * self%z
+                    self%x = self%x + cvalue * rhs%x
+                    self%y = self%y + cvalue * rhs%y
+                    self%z = self%z + cvalue * rhs%z
                 class default
-                    stop "Error: multAddByValueCVector3D_SG > rhs undefined."
+                    stop "Error: multAddCVector3D_SG > rhs undefined."
             end select
             !
             !
         else
-            stop "Error: multAddByValueCVector3D_SG >Incompatible inputs."
+            stop "Error: multAddCVector3D_SG >Incompatible inputs."
         endif
         !
-    end subroutine multAddByValueCVector3D_SG
+    end subroutine multAddCVector3D_SG
     !
     !> No subroutine briefing
     subroutine interpFuncCVector3D_SG( self, location, xyz, interp )

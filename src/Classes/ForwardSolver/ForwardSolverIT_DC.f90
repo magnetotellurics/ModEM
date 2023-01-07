@@ -135,7 +135,7 @@ contains
         !
         class( ForwardSolverIT_DC_t ), intent( inout ) :: self
         !
-        self%max_div_cor      = max_divcor
+        self%max_div_cor      = max_divcor_calls
         self%max_divcor_iters = max_divcor_iters
         self%tol_div_cor      = tolerance_divcor
         !
@@ -178,10 +178,8 @@ contains
         class( Source_t ), intent( in ) :: source
         class( Vector_t ), intent( inout ) :: e_solution
         !
-        class( Vector_t ), allocatable :: temp_aux_vec
-        !
+        class( Vector_t ), allocatable :: temp_vec
         class( Scalar_t ), allocatable :: phi0
-        !
         integer :: iter
         !
         call self%solver%zeroDiagnostics()
@@ -191,17 +189,26 @@ contains
         self%n_divcor = 0
         self%n_iter_actual = 0
         !
+        e_solution = cVector3D_SG_t( self%solver%preconditioner%model_operator%metric%grid, EDGE )
+        !
+        call e_solution%zeros()
+        !
         if( source%non_zero_source ) then
             !
             allocate( phi0, source = cScalar3D_SG_t( self%solver%preconditioner%model_operator%metric%grid, NODE ) )
             !
             call self%divergence_correction%rhsDivCor( self%solver%omega, source%E( pol ), phi0 )
             !
+            !> USING THIS TEMPORARY VARIABLE IMPROVES THE EXECUTION TIME CONSIDERABLY...
+            allocate( temp_vec, source = e_solution )
+            !
+            call self%divergence_correction%divCorr( temp_vec, e_solution, phi0 )
+            !
+            deallocate( temp_vec )
+            !
+            self%n_divcor = 1
+            !
         endif
-        !
-        e_solution = cVector3D_SG_t( self%solver%preconditioner%model_operator%metric%grid, EDGE )
-        !
-        call e_solution%zeros()
         !
         loop: do while ( ( .NOT. self%solver%converged ) .AND. ( .NOT. self%solver%failed ) )
             !
@@ -236,19 +243,20 @@ contains
                 !
                 if( self%n_divcor < self%max_div_cor ) then
                     !
-                    allocate( temp_aux_vec, source = e_solution )
+                    !> USING THIS TEMPORARY VARIABLE IMPROVES THE EXECUTION TIME CONSIDERABLY...
+                    allocate( temp_vec, source = e_solution )
                     !
                     if( source%non_zero_source ) then
                         !
-                        call self%divergence_correction%DivCorr( temp_aux_vec, e_solution, phi0 )
+                        call self%divergence_correction%divCorr( temp_vec, e_solution, phi0 )
                         !
                     else
                         !
-                        call self%divergence_correction%DivCorr( temp_aux_vec, e_solution )
+                        call self%divergence_correction%divCorr( temp_vec, e_solution )
                         !
                     endif
                     !
-                    deallocate( temp_aux_vec )
+                    deallocate( temp_vec )
                     !
                 else
                     !
@@ -264,19 +272,20 @@ contains
         !
         self%relResFinal = self%relResVec( self%n_iter_actual )
         !
-        !if( source%adjoint ) then
+        !> Just for JMult_T SourceInteriorForce case
+        if( source%trans ) then
             !
-            !call e_solution%mult( self%solver%preconditioner%model_operator%metric%Vedge )
+            call e_solution%mult( self%solver%preconditioner%model_operator%metric%VEdge )
+			!
+        else
             !
-        !else
+            call source%E( pol )%Boundary( temp_vec )
             !
-            !call source%E( pol )%Boundary( temp_aux_vec )
+            call e_solution%add( temp_vec )
             !
-            !call e_solution%add( temp_aux_vec )
+            deallocate( temp_vec )
             !
-            !deallocate( temp_aux_vec )
-            !
-        !endif
+        endif
         !
     end subroutine createESolutionForwardSolverIT_DC
     !

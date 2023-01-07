@@ -48,7 +48,7 @@ module Receiver
             !
             procedure, public :: savePredictedData => savePredictedDataRx
             !
-            procedure, public :: init    => initializeRx
+            procedure, public :: init => initializeRx
             !
             procedure, public :: dealloc => deallocateRx
             !
@@ -276,14 +276,14 @@ contains
         !
         integer :: i
         !
-        self%data_group = DataGroup_t( self%id, transmitter%id, self%n_comp )
+        self%data_group = DataGroup_t( self%id, transmitter%id, self%n_comp, self%is_complex, .FALSE. )
         !
         do i = 1, self%n_comp
             !
             component = trim( self%comp_names(i)%str )
             real_part = real( self%response(i), kind=prec )
             imaginary = real( aimag( self%response(i) ), kind=prec )
-            error = 1.0
+            error = R_ZERO
             !
             call self%data_group%put( component, real_part, imaginary, error )
             !
@@ -299,7 +299,7 @@ contains
         !
         select case( int_receiver_type )
             !
-            case( 1 )
+            case(1)
                 str_receiver_type = "Full_Impedance"
             case( 2 )
                 str_receiver_type = "Full_Interstation_TF"

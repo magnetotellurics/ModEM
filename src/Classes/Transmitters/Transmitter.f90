@@ -21,17 +21,17 @@ module Transmitter
         !
         integer :: id, n_pol, fwd_key(8)
         !
-        real( kind=prec ) :: period
+        real( kind=prec ) :: period, omega
         !
-        class( Vector_t ), allocatable, dimension(:) :: e_all, e_sens
+        class( Vector_t ), allocatable, dimension(:) :: e_sol, e_sens
         !
         integer, allocatable, dimension(:) :: receiver_indexes
         !
     contains
         !
-        procedure, public :: init     => initializeTx
+        procedure, public :: init => initializeTx
         !
-        procedure, public :: dealloc  => deallocateTx
+        procedure, public :: dealloc => deallocateTx
         !
         procedure, public :: updateFwdKey => updateFwdKeyTx
         !
@@ -88,6 +88,8 @@ module Transmitter
             !
             self%period = R_ZERO
             !
+            self%omega = R_ZERO
+            !
             self%forward_solver => null()
             !
         end subroutine initializeTx
@@ -101,7 +103,7 @@ module Transmitter
             !
             if( allocated( self%source ) ) deallocate( self%source )
             !
-            if( allocated( self%e_all ) ) deallocate( self%e_all )
+            if( allocated( self%e_sol ) ) deallocate( self%e_sol )
             !
             if( allocated( self%e_sens ) ) deallocate( self%e_sens )
             !
@@ -185,26 +187,25 @@ module Transmitter
             !
             type( SourceInteriorForce_t ) :: source_int_force
             !
+            class( Vector_t ), allocatable, dimension(:) :: bSrc
+            type( rVector3D_SG_t ) :: map_e_vector
             complex( kind=prec ) :: minus_i_omega_mu
             integer :: pol
-            type( rVector3D_SG_t ) :: map_e_vector
-            class( Vector_t ), allocatable, dimension(:) :: bSrc
-            !
             ! Verbose
-            write( *, * ) "               - Start pMult"
+            !write( *, * ) "               - Start pMult"
             !
             !> Get map_e_vector from dPDEmapping
             call sigma%dPDEmapping( dsigma, map_e_vector )
             !
             !> ON WORKING
-            minus_i_omega_mu = -isign * MU_0 * cmplx( 0., ( 2.0 * PI / self%period ), kind=prec )
+            minus_i_omega_mu = -isign * MU_0 * cmplx( 0., self%omega, kind=prec )
             !
             !> Initialize and fill bSrc
             allocate( cVector3D_SG_t :: bSrc( self%n_pol ) )
             !
             do pol = 1, self%n_pol
                 !
-                bSrc( pol ) = self%e_all( pol )
+                bSrc( pol ) = self%e_sol( pol )
                 !
                 call bSrc( pol )%mult( map_e_vector )
                 !
@@ -221,7 +222,7 @@ module Transmitter
             deallocate( bSrc )
             !
             ! Verbose
-            write( *, * ) "               - Finish pMult"
+            !write( *, * ) "               - Finish pMult"
             !
         end function pMult_Tx
         !
@@ -234,13 +235,12 @@ module Transmitter
             class( ModelParameter_t ), allocatable, intent( inout ) :: dsigma
             !
             class( Vector_t ), allocatable, dimension(:) :: eSens
-            !
+            type( rVector3D_SG_t ) :: real_sens
             complex( kind=prec ) :: minus_i_omega_mu
-            !
             integer :: pol
             !
             ! Verbose
-            write( *, * ) "               - Start pMult_t"
+            !write( *, * ) "               - Start pMult_t"
             !
             if( .NOT. allocated( self%e_sens ) ) then
                 stop "Error: pMult_t_Tx > eSens not allocated on the Tx"
@@ -249,28 +249,46 @@ module Transmitter
             !> Copy e_sens to a local variable to keep its original value.
             allocate( eSens, source = self%e_sens )
             !
-            minus_i_omega_mu = -isign * MU_0 * cmplx( 0., 2.0 * PI / self%period, kind=prec )
-            !
-            !> Modify only the first position of eSens to use it in dPDEmappingT
-            call eSens( 1 )%mult( minus_i_omega_mu )
+            call eSens(1)%mult( self%e_sol(1) )
             !
             !> Loop over all other polarizations, adding them to the first position
             do pol = 2, self%n_pol
                 !
-                call eSens( pol )%mult( minus_i_omega_mu )
+                call eSens( pol )%mult( self%e_sol( pol ) )
                 !
-                call eSens( 1 )%add( eSens( pol ) )
+                call eSens(1)%add( eSens( pol ) )
                 !
             enddo
             !
-            !> Get dsigma from dPDEmappingT, using first position of eSens
-            call sigma%dPDEmappingT( eSens(1), dsigma )
+            minus_i_omega_mu = -isign * MU_0 * cmplx( 0., self%omega, kind=prec )
             !
-            !> Free up local memory
-            deallocate( eSens )
+            call eSens(1)%mult( minus_i_omega_mu )
             !
-            ! Verbose
-            write( *, * ) "               - Finish pMult_t"
+            real_sens = rVector3D_SG_t( eSens(1)%grid, eSens(1)%grid_type )
+            !
+            !> Instantiate the ForwardSolver - Specific type can be chosen via control file
+            select type ( e_sens => eSens(1) )
+                !
+                class is( cVector3D_SG_t )
+                    !
+                    real_sens%x = real( e_sens%x, kind=prec )
+                    real_sens%y = real( e_sens%y, kind=prec )
+                    real_sens%z = real( e_sens%z, kind=prec )
+                    !
+                    !> Get dsigma from dPDEmappingT, using first position of eSens
+                    call sigma%dPDEmappingT( real_sens, dsigma )
+                    !
+                    !> Free up local memory
+                    !deallocate( eSens )
+                    !
+                    ! Verbose
+                    !write( *, * ) "               - Finish pMult_t"
+                    !
+                class default
+                    !
+                    stop "Error: pMult_t_Tx > Undefined eSens(1)"
+                    !
+            end select
             !
         end subroutine pMult_t_Tx
         !

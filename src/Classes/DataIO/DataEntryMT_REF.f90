@@ -15,7 +15,7 @@ module DataEntryMT_REF
         !
     contains
         !
-        procedure, public :: write   => writeDataEntryMT_REF
+        procedure, public :: write => writeDataEntryMT_REF
         procedure, public :: getCopy => getCopyDataEntryMT_REF
         !
     end type DataEntryMT_REF_t

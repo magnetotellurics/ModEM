@@ -15,7 +15,7 @@ module rVector3D_SG
         !
         final :: rVector3D_SG_dtor
         !
-        procedure, public :: read  => readRVector3D_SG
+        procedure, public :: read => readRVector3D_SG
         procedure, public :: write => writeRVector3D_SG
         !
         procedure, public :: setAllBoundary => setAllBoundaryRVector3D_SG
@@ -49,8 +49,10 @@ module rVector3D_SG
         procedure, public :: sumEdges => sumEdgesRVector3D_SG
         procedure, public :: avgCells => avgCellsRVector3D_SG
         !
-        procedure, public :: linComb   => linCombRVector3D_SG
-        procedure, public :: multAddByValue => multAddByValueRVector3D_SG
+		procedure, public :: conjugate => conjugateRVector3D_SG
+		!
+        procedure, public :: linComb => linCombRVector3D_SG
+        procedure, public :: multAdd => multAddRVector3D_SG
         procedure, public :: interpFunc => interpFuncRVector3D_SG
         !
         procedure, public :: print => printRVector3D_SG
@@ -1077,6 +1079,16 @@ contains
     end subroutine avgCellsRVector3D_SG
     !
     !> No subroutine briefing
+    subroutine conjugateRVector3D_SG( self )
+        implicit none
+        !
+        class( rVector3D_SG_t ), intent( inout ) :: self
+        !
+        stop "Error: conjugateRVector3D_SG: Do not try to conjugate a real vector!"
+        !
+    end subroutine conjugateRVector3D_SG
+    !
+    !> No subroutine briefing
     subroutine linCombRVector3D_SG( self, rhs, c1, c2 )
         implicit none
         !
@@ -1103,29 +1115,29 @@ contains
     end subroutine linCombRVector3D_SG
     !
     !> No subroutine briefing
-    subroutine multAddByValueRVector3D_SG( self, rhs, cvalue )
+    subroutine multAddRVector3D_SG( self, cvalue, rhs )
         implicit none
         !
-        class( rVector3D_SG_t ), intent( in ) :: self
-        class( Field_t ), intent( inout ) :: rhs
+        class( rVector3D_SG_t ), intent( inout ) :: self
         complex( kind=prec ), intent( in ) :: cvalue
+        class( Field_t ), intent( in ) :: rhs
         !
         if( self%isCompatible( rhs ) ) then
             !
             select type(rhs)
                 class is( rVector3D_SG_t ) 
-                    rhs%x = rhs%x + real( cvalue, kind=prec ) * self%x
-                    rhs%y = rhs%y + real( cvalue, kind=prec ) * self%y
-                    rhs%z = rhs%z + real( cvalue, kind=prec ) * self%z
+                    self%x = self%x + real( cvalue, kind=prec ) * rhs%x
+                    self%y = self%y + real( cvalue, kind=prec ) * rhs%y
+                    self%z = self%z + real( cvalue, kind=prec ) * rhs%z
                 class default
-                    stop "Error: multAddByValueRVector3D_SG > rhs undefined."
+                    stop "Error: multAddRVector3D_SG > rhs undefined."
             end select
             !
         else
-            stop "Error: multAddByValueRVector3D_SG >Incompatible inputs."
+            stop "Error: multAddRVector3D_SG >Incompatible inputs."
         endif
         !
-    end subroutine multAddByValueRVector3D_SG
+    end subroutine multAddRVector3D_SG
     !
     !> No subroutine briefing
     subroutine interpFuncRVector3D_SG( self, location, xyz, interp )
@@ -1209,7 +1221,7 @@ contains
                         end select !xyz
                         !
                     case default
-                        stop "Error: multAddByValueRVector3D_SG > self%grid_type undefined."
+                        stop "Error: multAddRVector3D_SG > self%grid_type undefined."
                     !
                 end select !GRID TYPE
                 !

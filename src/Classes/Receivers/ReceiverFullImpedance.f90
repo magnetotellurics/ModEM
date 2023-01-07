@@ -90,7 +90,7 @@ contains
         integer :: Ei, row, pol, comp
         complex( kind=prec ) :: comega
         !
-        comega = cmplx( 0.0, 1./ ( 2.0 * PI / transmitter%period ), kind=prec )
+        comega = isign * cmplx( 0.0, 1. / transmitter%omega, kind=prec )
         !
         !> Call the predicted data routine to calculate responses
         call self%predictedData( transmitter )
@@ -108,6 +108,7 @@ contains
         !
         !> 
         !> Lrows{j,ki} = Hinv(j,i) * ( lE - Z(k,1) * 1/omega * Rx.Lhx - Z(k,2) * 1/omega * Rx.Lhy )
+        !>
         !
         !> Loop over Ex and Ey
         do Ei = 1, 2
@@ -118,10 +119,10 @@ contains
                 Le = full_ley
             endif
             !
-            !> Specific indexes for Full Impedance:
-            call full_lbx%multAddByValue( Le, isign * comega * self%response( 2 * (Ei-1) + 1 ) )    ! 1 & 3
+            !> ????
+            call Le%multAdd( -self%response( 2 * (Ei-1) + 1 ) * comega, full_lbx )    ! 1 & 3
             !
-            call full_lby%multAddByValue( Le, isign * comega * self%response( 2 * Ei ) )            ! 2 & 4
+            call Le%multAdd( -self%response( 2 * Ei ) * comega, full_lby )            ! 2 & 4
             !
             !> Loop over two impedance rows
             do row = 1, 2
@@ -134,7 +135,10 @@ contains
                     !
                     self%lrows( pol, comp ) = Le
                     !
-                    call self%lrows( pol, comp )%mult( isign * self%I_BB( pol, row ) )
+                    !> ????
+                    call self%lrows( pol, comp )%mult( -self%I_BB( pol, row ) )
+                    !
+                    !call self%lrows( pol, comp )%print( 1000, "OO LRows" )
                     !
                 enddo
                 !
@@ -157,14 +161,14 @@ contains
         complex( kind=prec ) :: comega, det
         complex( kind=prec ), allocatable :: BB(:,:), EE(:,:)
         !
-        comega = cmplx( 0.0, 1./ ( 2.0 * PI / transmitter%period ), kind=prec )
+        comega = cmplx( 0.0, 1./ transmitter%omega, kind=prec )
         !
         allocate( EE(2,2) )
         !
-        select type( tx_e_1 => transmitter%e_all(1) )
+        select type( tx_e_1 => transmitter%e_sol(1) )
             class is( cVector3D_SG_t )
                 !
-                select type( tx_e_2 => transmitter%e_all(2) )
+                select type( tx_e_2 => transmitter%e_sol(2) )
                     class is( cVector3D_SG_t )
                         !
                         EE(1,1) = self%Lex%dotProd( tx_e_1 )

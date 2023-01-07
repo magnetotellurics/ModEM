@@ -24,14 +24,14 @@ module DataFile
     !
     type, abstract :: DataFile_t
         !
-        integer :: nTx, nRx
+        integer :: n_tx, n_rx
         character(:), allocatable :: file_name
         !
         type( De_t ), allocatable, dimension(:) :: data_entries
         !
         contains
             !
-            procedure, public :: init    => initializeDataFile
+            procedure, public :: init => initializeDataFile
             procedure, public :: dealloc => deallocateDataFile
             procedure, public :: loadReceiversAndTransmitters
             !
@@ -43,8 +43,8 @@ contains
     subroutine initializeDataFile( self )
         class( DataFile_t ), intent( inout ) :: self
         !
-        self%nTx = 0
-        self%nRx = 0
+        self%n_tx = 0
+        self%n_rx = 0
         !
     end subroutine initializeDataFile
     !
@@ -67,7 +67,7 @@ contains
         class( Receiver_t ), allocatable :: receiver
         class( Transmitter_t ), pointer :: transmitter
         class( DataGroup_t ), pointer :: data_group
-        integer :: iTx, nTx, rx_id, rx_type, iDg, dg_index
+        integer :: iTx, n_tx, rx_id, rx_type, iDg, dg_index
         real( kind=prec ) :: azimuth
         !
         call updateDataEntryArray( self%data_entries, data_entry )
@@ -179,7 +179,7 @@ contains
             !
         else
             !
-            allocate( data_group, source = DataGroup_t( rx_id, iTx, receiver%n_comp ) )
+            allocate( data_group, source = DataGroup_t( rx_id, iTx, receiver%n_comp, receiver%is_complex, .TRUE. ) )
             !
             call data_group%put( data_entry%component, data_entry%real, data_entry%imaginary, data_entry%error )
             !
@@ -191,10 +191,10 @@ contains
         !
         deallocate( receiver )
         !
-        nTx = size( transmitters )
+        n_tx = size( transmitters )
         !
         !> Loop over transmitters
-        do iTx = 1, nTx
+        do iTx = 1, n_tx
             !
             transmitter => getTransmitter( iTx )
             !

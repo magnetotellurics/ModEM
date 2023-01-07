@@ -23,7 +23,7 @@ module SourceCSEM_Dipole1D
             !
             final :: SourceCSEM_Dipole1D_dtor
             !
-            procedure, public :: createE   => createE_SourceCSEM_Dipole1D
+            procedure, public :: createE => createE_SourceCSEM_Dipole1D
             procedure, public :: createRHS => createRHS_SourceCSEM_Dipole1D
             procedure, public :: create_Ep_from_Dipole1D
             procedure, public :: set1DModel
@@ -50,7 +50,7 @@ contains
         !
         call self%init()
         !
-        self%model_operator  => model_operator
+        self%model_operator => model_operator
         self%sigma => sigma
         !
         self%period   = period

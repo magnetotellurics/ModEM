@@ -43,11 +43,19 @@ contains
         call self%init()
         !
         self%n_pol = 1
+		!
         self%period = period
+        !
+		self%omega = ( 2.0 * PI / self%period )
+        !
         self%location = location
+		!
         self%azimuth = azimuth
+		!
         self%dip = dip
+		!
         self%moment = moment
+		!
         self%dipole = dipole
         !
         !self%pMult_ptr => pMult_E
@@ -107,7 +115,6 @@ contains
         class( TransmitterCSEM_t ), intent( inout ) :: self
         !
         integer :: ios
-        real( kind=prec ) :: omega
         !
         character( len=20 ) :: ModeName
         !
@@ -116,7 +123,7 @@ contains
         endif
         !
         !> Verbose
-        if( self%source%adjoint ) then
+        if( self%source%sens ) then
             !
             write( *, * ) "               SolveADJ CSEM Tx:", self%id, " -> Period:", self%period
             !
@@ -127,13 +134,13 @@ contains
             !
             write( *, * ) "               SolveFWD CSEM Tx:", self%id, " -> Period:", self%period
             !
-            if( allocated( self%e_all ) ) deallocate( self%e_all )
-            allocate( cVector3D_SG_t :: self%e_all(1) )
+            if( allocated( self%e_sol ) ) deallocate( self%e_sol )
+            allocate( cVector3D_SG_t :: self%e_sol(1) )
             !
         endif
         !
-        !> Defines e_all or e_sens depending on Forward or Adjoint case
-        if( self%source%adjoint ) then
+        !> Defines e_sol or e_sens depending on Forward or sens case
+        if( self%source%sens ) then
             !
             !> Calculate e_solution through ForwardSolver
             call self%forward_solver%createESolution( 1, self%source, self%e_sens(1) )
@@ -144,10 +151,10 @@ contains
         else
             !
             !> Calculate e_solution through ForwardSolver
-            call self%forward_solver%createESolution( 1, self%source, self%e_all(1) )
+            call self%forward_solver%createESolution( 1, self%source, self%e_sol(1) )
             !
             !> Add the source's rhs content to the e_solution vector
-            call self%e_all(1)%add( self%source%E(1) )
+            call self%e_sol(1)%add( self%source%E(1) )
             !
             ModeName = "Ex"
             !
@@ -157,12 +164,10 @@ contains
                 stop "Error opening file in solveTransmitterCSEM: e_solution"
             else
                 !
-                omega = 2.0 * PI / self%period
-                !
                 !> write the frequency header - 1 record
-                write( ioESolution ) omega, self%id, 1, ModeName
+                write( ioESolution ) self%omega, self%id, 1, ModeName
                 !
-                call self%e_all(1)%write( ioESolution )
+                call self%e_sol(1)%write( ioESolution )
                 !
                 close( ioESolution )
                 !

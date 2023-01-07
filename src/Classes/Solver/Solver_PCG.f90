@@ -112,9 +112,9 @@ contains
             !
             alpha = delta / p%dotProd(q)
             !
-            call p%multAddByValue( x, alpha )
+            call x%multAdd( alpha, p )
             !
-            call q%multAddByValue( r, -alpha )
+            call r%multAdd( -alpha, q )
             !
             deltaOld = delta
             !
@@ -129,9 +129,9 @@ contains
         enddo loop
         ! !
         ! if( i + 1 .LT. self%max_iter ) then
-            ! write( *, * ) "                    DivCorr PCG converged within ", i + 1, " : ", self%relErr( i + 1 )
+            ! write( *, * ) "                    divCorr PCG converged within ", i + 1, " : ", self%relErr( i + 1 )
         ! else
-            ! write( *, * ) "                    DivCorr PCG not converged in ", i + 1, " : ", self%relErr( i + 1 )
+            ! write( *, * ) "                    divCorr PCG not converged in ", i + 1, " : ", self%relErr( i + 1 )
         ! endif
         ! !
         deallocate( r )

@@ -23,11 +23,11 @@ module Source
         !
         class( Vector_t ), allocatable, dimension(:) :: rhs, E
         !
-        logical :: non_zero_source, adjoint
+        logical :: non_zero_source, sens, trans
         !
         contains
             !
-            procedure, public :: init    => initializeSource
+            procedure, public :: init => initializeSource
             procedure, public :: dealloc => deallocateSource
             !
             procedure, public :: setE => setESource
@@ -103,9 +103,11 @@ module Source
         !
         self%non_zero_source = .FALSE.
         !
-        self%adjoint         = .FALSE.
+        self%trans = .FALSE.
         !
-        self%model_operator  => null()
+        self%sens = .FALSE.
+        !
+        self%model_operator => null()
         !
         self%sigma => null()
         !

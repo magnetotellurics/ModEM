@@ -16,7 +16,7 @@ module SourceInteriorForce
         !
         contains
             !
-            procedure, public :: createE   => createESourceInteriorForce
+            procedure, public :: createE => createESourceInteriorForce
             procedure, public :: createRHS => createRHSSourceInteriorForce
             !
     end type SourceInteriorForce_t
@@ -28,12 +28,13 @@ module SourceInteriorForce
 contains
     !
     !> SourceInteriorForce constructor
-    function SourceInteriorForce_ctor( model_operator, sigma, period ) result( self )
+    function SourceInteriorForce_ctor( model_operator, sigma, period, trans ) result( self )
         implicit none
         !
         class( ModelOperator_t ), target, intent( in ) :: model_operator
         class( ModelParameter_t ), target, intent( in ) :: sigma
         real( kind=prec ), intent( in ) :: period
+        logical, optional, intent( in ) :: trans
         !
         type( SourceInteriorForce_t ) :: self
         !
@@ -47,7 +48,15 @@ contains
         !
         self%period = period
         !
-        self%adjoint = .TRUE.
+        if( present( trans ) ) then
+            !
+            self%trans = trans
+        else
+            self%trans = .FALSE.
+            !
+        endif
+        !
+        self%sens = .TRUE.
         !
         self%non_zero_source = .TRUE.
         !
@@ -69,17 +78,24 @@ contains
         !
         class( SourceInteriorForce_t ), intent( inout ) :: self
         !
-        class( Vector_t ), allocatable :: e_interior
         integer :: pol
         !
         !> RHS = E
         if( allocated( self%rhs ) ) deallocate( self%rhs )
         allocate( self%rhs, source = self%E )
         !
-        !> RHS = E * V_E
         do pol = 1, size( self%rhs )
             !
-            call self%rhs( pol )%mult( self%model_operator%metric%VEdge )
+            if( self%trans ) then
+				!
+				!> E = E / DIV
+                call self%E( pol )%div( self%model_operator%metric%VEdge )
+				!
+            else
+                !> RHS = E * V_E
+                call self%rhs( pol )%mult( self%model_operator%metric%VEdge )
+                !
+            endif
             !
         enddo
         !

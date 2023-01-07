@@ -17,7 +17,7 @@ module DataEntry
         procedure( interface_write ), deferred, public :: write
         procedure( interface_get_copy_data_entry ), deferred, public :: getCopy
         !
-        procedure, public :: isEqual    => isEqualDe
+        procedure, public :: isEqual => isEqualDe
         procedure, public :: isComplex => isComplexDe
         !
     end type DataEntry_t

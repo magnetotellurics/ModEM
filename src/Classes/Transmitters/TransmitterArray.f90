@@ -28,7 +28,7 @@ contains
         class( Transmitter_t ), intent( in ) :: new_tx
         integer :: i_tx
         !
-        integer :: iTx, nTx
+        integer :: iTx, n_tx
         type( Tx_t ), allocatable, dimension(:) :: temp_array
         type( Tx_t ), allocatable :: temp_tx
         !
@@ -45,23 +45,23 @@ contains
             !
         else
             !
-            nTx = size( transmitters )
+            n_tx = size( transmitters )
             !
-            do iTx = 1, nTx
+            do iTx = 1, n_tx
                 if( new_tx%isEqual( transmitters( iTx )%Tx ) ) then
                     i_tx = iTx
                     return
                 endif
             enddo
             !
-            allocate( temp_array( nTx + 1 ) )
-            temp_array( 1 : nTx ) = transmitters
+            allocate( temp_array( n_tx + 1 ) )
+            temp_array( 1 : n_tx ) = transmitters
             allocate( Tx_t :: temp_tx )
             temp_tx%Tx = new_tx
-            temp_tx%Tx%id = nTx + 1
-            i_tx = nTx + 1
+            temp_tx%Tx%id = n_tx + 1
+            i_tx = n_tx + 1
             !
-            temp_array( nTx + 1 ) = temp_tx
+            temp_array( n_tx + 1 ) = temp_tx
             !
             call deallocateTransmitterArray()
             !

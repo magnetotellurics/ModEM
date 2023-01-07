@@ -47,9 +47,11 @@ module Field
         procedure( interface_field_div_by_value ), deferred, public :: divByValue
         generic :: div => divByField, divByValue
         !
+        procedure( interface_conjugate_field ), deferred, public :: conjugate
+        !
         procedure( interface_lin_comb_field ), deferred, public :: linComb
         !
-        procedure( interface_mult_add_by_value_field ), deferred, public :: multAddByValue
+        procedure( interface_mult_add_field ), deferred, public :: multAdd
         !
         procedure( interface_dot_product_field ), deferred, public :: dotProd
         generic :: operator(.dot.) => dotProd
@@ -198,6 +200,12 @@ module Field
         end subroutine interface_field_div_by_value
         !
         !> No interface subroutine briefing
+        subroutine interface_conjugate_field( self )
+            import :: Field_t
+            class( Field_t ), intent( inout ) :: self
+        end subroutine interface_conjugate_field
+        !
+        !> No interface subroutine briefing
         subroutine interface_lin_comb_field( self, rhs, c1, c2 )
             import :: Field_t, prec
             class( Field_t ), intent( inout ) :: self
@@ -206,12 +214,12 @@ module Field
         end subroutine interface_lin_comb_field
         !
         !> No interface subroutine briefing
-        subroutine interface_mult_add_by_value_field( self, rhs, cvalue )
+        subroutine interface_mult_add_field( self, cvalue, rhs )
             import :: Field_t, prec
-            class( Field_t ), intent( in ) :: self
-            class( Field_t ), intent( inout ) :: rhs
+            class( Field_t ), intent( inout ) :: self
             complex( kind=prec ), intent( in ) :: cvalue
-        end subroutine interface_mult_add_by_value_field
+            class( Field_t ), intent( in ) :: rhs
+        end subroutine interface_mult_add_field
         !
         ! Miscellaneous
         !

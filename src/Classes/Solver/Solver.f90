@@ -7,7 +7,7 @@ module Solver
     use PreConditioner
     !
     !> Solver parameters
-    integer :: QMR_iters, BCG_iters, max_divcor, max_divcor_iters
+    integer :: QMR_iters, BCG_iters, max_divcor_calls, max_divcor_iters
     !
     real( kind=prec ) :: tolerance_divcor, tolerance_qmr
     !
@@ -31,7 +31,7 @@ module Solver
             !
             procedure( interface_set_solver_defaults ), deferred, public :: setDefaults
             !
-            procedure, public :: init    => initializeSolver
+            procedure, public :: init => initializeSolver
             procedure, public :: dealloc => deallocateSolver
             !
             procedure, public :: setParameters => setParametersSolver

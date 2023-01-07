@@ -38,7 +38,7 @@ contains
         character(len=200), dimension(20) :: args
         !
         character(:), allocatable :: line_text, actual_type, code, code_ref, component, dipole
-        integer :: iDe, io_stat, p_nargs, nRx
+        integer :: iDe, io_stat, p_nargs, n_rx
         integer :: header_counter, header_line_counter, mt_counter, csem_counter
         real( kind=prec ) :: period, rvalue, imaginary, error
         real( kind=prec ) :: xyz_ref(3), latitude_ref, longitude_ref
@@ -185,15 +185,15 @@ contains
                          !> exp(-i\omega t) ????, [V/m]/[T] ????, 0.00 ????, 0.000 0.000 ????
                          case( 4, 5, 6, 7 )
                          !
-                         !> nTx, nRx
+                         !> n_tx, n_rx
                          case( 8 )
-                             read( args(2), * ) self%nTx
-                             read( args(3), * ) nRx
+                             read( args(2), * ) self%n_tx
+                             read( args(3), * ) n_rx
                              !
                              header_counter = header_counter + 1
-                             write( *, "(A17, I8, A5, A30, A3, I8, A9, I8, A5)" ) "Header", header_counter, " -> [", trim(actual_type), "]: ", self%nTx, " Txs and ", nRx, " Rxs."
+                             write( *, "(A17, I8, A5, A30, A3, I8, A9, I8, A5)" ) "Header", header_counter, " -> [", trim(actual_type), "]: ", self%n_tx, " Txs and ", n_rx, " Rxs."
                              !
-                             self%nRx = self%nRx + nRx
+                             self%n_rx = self%n_rx + n_rx
                              !
                          case default
                              !

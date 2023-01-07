@@ -16,7 +16,7 @@ module ModelOperator
         contains 
             !
             procedure, public :: dealloc => deallocateModelOperator
-            procedure, public :: init    => initializeModelOperator
+            procedure, public :: init => initializeModelOperator
             !
             procedure( interface_set_equations_model_operator ), deferred, public :: setEquations
             procedure( interface_set_cond_model_operator ), deferred, public :: setCond
@@ -29,6 +29,9 @@ module ModelOperator
             procedure( interface_divc_model_operator ), deferred, public :: divC
             procedure( interface_grad_model_operator ), deferred, public :: grad
             procedure( interface_div_model_operator ), deferred, public :: div
+			!
+            procedure( interface_adj_bc_model_operator ), deferred, public :: AdjtBC
+            
             !
             procedure( interface_print_model_operator ), deferred, public :: print
             !
@@ -121,6 +124,16 @@ module ModelOperator
             class( Vector_t ), intent( in ) :: inE
             class( Scalar_t ), intent( inout ) :: outPhi
         end subroutine interface_div_model_operator
+        !
+        !> No interface subroutine briefing
+        subroutine interface_adj_bc_model_operator( self, eIn, BC )
+            import :: ModelOperator_t, Vector_t
+            !
+            class( ModelOperator_t ), intent( in ) :: self
+            class( Vector_t ), intent( in ) :: eIn
+            class( Vector_t ), intent( inout ) :: BC
+        end subroutine interface_adj_bc_model_operator
+        !
         !
         !> No interface subroutine briefing
         subroutine interface_print_model_operator( self )

@@ -211,7 +211,7 @@ contains
             !
             VT = PT
             !
-            call V%multAddByValue( VT, -BETA ) !>  VT = VT - BETA * V
+            call VT%multAdd( -BETA, V ) !>  VT = VT - BETA * V
             !
             RHO1 = RHO
             ilu_adjoint = .FALSE.
@@ -223,7 +223,7 @@ contains
             call WT%Zeros()
             call self%preconditioner%model_operator%Amult( self%omega, Q, WT, adjoint )
             !
-            call W%multAddByValue( WT, -conjg( BETA ) ) !>  WT = WT - conjg(BETA) * W
+            call WT%multAdd( -conjg( BETA ), W ) !>  WT = WT - conjg(BETA) * W
             !
             ilu_adjoint = .TRUE.
             call self%preconditioner%UTsolve( WT, Z, ilu_adjoint )
@@ -256,8 +256,8 @@ contains
                 call S%linComb( PT, TM2, ETA ) !>  S = TM2 * S + ETA * PT 
             endif
             !
-            call D%multAddByValue( x, C_ONE )      !>  x = x + C_ONE * D
-            call S%multAddByValue( R, C_MinusONE ) !>  R = R + C_MinusONE * S
+            call x%multAdd( C_ONE, D )      !>  x = x + C_ONE * D
+            call R%multAdd( C_MinusONE, S ) !>  R = R + C_MinusONE * S
             !
             rnorm = SQRT( R%dotProd( R ) )
             !
