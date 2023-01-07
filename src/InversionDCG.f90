@@ -40,7 +40,7 @@ contains
         !
         DCGiterControl%rmsTol = 1.05
         !
-        DCGiterControl%lambda = 10.
+        DCGiterControl%lambda = 50.
         !
     end subroutine set_DCGiterControl
     !
@@ -50,7 +50,7 @@ contains
         !
         type( IterControl_t), intent( inout ) :: cg_iter
         !
-        cg_iter%max_it = 3
+        cg_iter%max_it = 20
         !
         cg_iter%tol = 10E-4
         !

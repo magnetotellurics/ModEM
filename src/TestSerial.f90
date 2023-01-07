@@ -267,8 +267,12 @@ contains
         !> Instantiate ForwardSolver - Specific type via control file
         call createForwardSolver()
         !
-        call DCGsolver( all_measured_data, sigma, pmodel )
-        !call NLCGsolver( all_measured_data, lambda, sigma, pmodel )
+        !call DCGsolver( all_measured_data, sigma, pmodel )
+        !
+        call NLCGsolver( all_measured_data, lambda, sigma, pmodel )
+        !
+        !> Write pmodel to <dsigma_file_name> file path
+        call pmodel%write()
         !
         ! Verbose
         write( *, * ) "     - Finish jobInversion"

@@ -38,6 +38,7 @@ contains
     !>     Call the setFrequency routine to the forward_solver pointer of the transmitter
     !>     Set the transmitter source by calling pMult
     !>     Call JMult_TX for the transmitter
+    !
     subroutine JMult( sigma, dsigma, JmHat )
         implicit none
         !
@@ -86,6 +87,7 @@ contains
     !
     !> Calculate JmHat for a single transmitter and store it in a DataGroupTx:
     !>     By the sum of all LRows * ESens
+    !
     subroutine JMult_Tx( JmHat_tx )
         implicit none
         !
@@ -114,8 +116,8 @@ contains
                 !
                 !> Loop over polarizations
                 do i_pol = 1, Tx%n_pol
-					!
-					call Rx%lrows( i_pol, i_comp )%conjugate()
+                    !
+                    call Rx%lrows( i_pol, i_comp )%conjugate()
                     !
                     !> LRows .dot. ESens
                     lrows_x_esens = lrows_x_esens + Tx%e_sens( i_pol )%dotProd( Rx%lrows( i_pol, i_comp ) )
@@ -130,10 +132,8 @@ contains
                 endif
                 !
             enddo
-			!
-			call JmHat_tx%data( i_data )%print()
-			!
-            JmHat_tx%data( i_data )%is_complex = .FALSE.
+            !
+            JmHat_tx%data( i_data )%error_bar = .FALSE.
             !
         enddo
         !
@@ -142,6 +142,7 @@ contains
     !> Call JMult_T_Tx for for all transmitters:
     !>     Calculate residual data with predicted data for each transmitter.
     !>     Add the result obtained for each transmitter into a resulting ModelOperator DSigma.
+    !
     subroutine JMult_T( sigma, all_data, dsigma )
         implicit none
         !
@@ -189,6 +190,7 @@ contains
     !>     Create a Rhs from LRows * residual data for all receivers related to the transmitter.
     !>     Solve ESens on the transmitter with SourceInteriorForce and the new Rhs.
     !>     Call Tx%PMult to get a new ModelParameter DSigma for the transmitter.
+    !
     subroutine JMult_T_Tx( sigma, tx_data, dsigma )
         implicit none
         !
@@ -243,7 +245,7 @@ contains
                     tx_data_cvalue = cmplx( data_group%reals( i_comp ), R_ZERO, kind=prec )
                 endif
                 !
-                write( *, * ) "JMult_T Z: ", tx_data_cvalue
+                !write( *, * ) "JMult_T Z: ", tx_data_cvalue
                 !
                 !> Loop over polarizations
                 do i_pol = 1, Tx%n_pol
