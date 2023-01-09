@@ -46,18 +46,23 @@ contains
         !
         type( SourceCSEM_Dipole1D_t ) :: self
         !
-        !write( *, * ) "Constructor SourceCSEM_Dipole1D_t"
+        write( *, * ) "Constructor SourceCSEM_Dipole1D_t"
         !
         call self%init()
         !
         self%model_operator => model_operator
+        !
         self%sigma => sigma
         !
-        self%period   = period
+        self%period = period
+        !
         self%location = location
-        self%dip      = dip
-        self%azimuth  = azimuth
-        self%moment   = moment
+        !
+        self%dip = dip
+        !
+        self%azimuth = azimuth
+        !
+        self%moment = moment
         !
         self%non_zero_source = .TRUE.
         !
@@ -91,18 +96,18 @@ contains
         ftx1D = 1.0d0/self%period
         sdm1D = self%moment          !> (Am), dipole moment. Normalize to unit source moment
         azimuthTx1D = self%azimuth   !> (degrees) 
-        dipTx1D     = self%dip
+        dipTx1D = self%dip
         !
-        HTmethod1D     = "kk_ht_201" !> Use 201 point HT digital filters.
+        HTmethod1D = "kk_ht_201" !> Use 201 point HT digital filters.
         outputdomain1D = "spatial"   !> Assume spatial domain comps
-        lbcomp         = .FALSE.     !> This is changed to true if magnetics in data file
-        lUseSpline1D   = .TRUE.      !> Use spline interpolation for faster 1D computations
-        linversion     = .FALSE.     !> Compute derivatives with respect to self%sigma(layers)
+        lbcomp = .FALSE.     !> This is changed to true if magnetics in data file
+        lUseSpline1D = .TRUE.      !> Use spline interpolation for faster 1D computations
+        linversion = .FALSE.     !> Compute derivatives with respect to self%sigma(layers)
         !
         phaseConvention = "lag"      !> The usual default is lag, where phase becomes larger 
         !> positive values with increasing range.
-        lenTx1D         = 00.d0      !> (m) Dipole length 0 = point dipole
-        numIntegPts     = 0          !> Number of points to use for Gauss quadrature integration for finite dipole
+        lenTx1D = 00.d0      !> (m) Dipole length 0 = point dipole
+        numIntegPts = 0          !> Number of points to use for Gauss quadrature integration for finite dipole
         !
         !> Verbose...
         write( *, * ) "          - Extract CSEM Source from Dipole 1D"
@@ -381,7 +386,7 @@ contains
                     !
                 else
                     !
-                    stop "Error: set1DModel > Unknow get_1d_from"
+                    stop "Error: set1DModel > Unknown get_1d_from"
                     !
                 endif
                 !
@@ -406,9 +411,11 @@ contains
                 amodel%cell_cond = model
                 !
                 call sigma%PDEmapping( model_param_map )
+                !
                 call amodel%PDEmapping( amodel_map )
                 !
                 self%cond_anomaly_h = model_param_map
+                !
                 call self%cond_anomaly_h%sub( amodel_map )
                 !
         end select

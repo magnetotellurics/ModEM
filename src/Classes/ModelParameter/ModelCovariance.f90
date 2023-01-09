@@ -129,36 +129,39 @@ contains
     !> the modelParam module. Before this routine can be called,
     !> it has to be initialized by calling create_CmSqrt(m).
     !
-    function multBy_Cm( self, mhat ) result( dm )
+    subroutine multBy_Cm( self, target_model )
         implicit none
         !
         class( ModelCovarianceRec_t ), intent( in ) :: self
-        class( ModelParameter_t ), allocatable, intent( in ) :: mhat
-        class( ModelParameter_t ), allocatable :: dm
+        class( ModelParameter_t ), allocatable, intent( inout ) :: target_model
         !
-        allocate( dm, source = mhat )
+        class( ModelParameter_t ), allocatable :: temp_model
         !
-        select type( mhat )
+        allocate( temp_model, source = target_model )
+        !
+        select type( temp_model )
             !
             class is( ModelParameterCell_SG_t )
                 !
-                select type( dm )
+                select type( target_model )
                     !
                     class is( ModelParameterCell_SG_t )
                         !
-                        call self%RecursiveAR( mhat%cell_cond%v, dm%cell_cond%v, 2 )
+                        call self%RecursiveAR( temp_model%cell_cond%v, target_model%cell_cond%v, 2 )
                         !
                     class default
-                        stop "Error: multBy_Cm > Unclassified dm"
+                        stop "Error: multBy_Cm > Unclassified target_model"
                     !
                 end select
                 !
             class default
-                stop "Error: multBy_Cm > Unclassified mhat"
+                stop "Error: multBy_Cm > Unclassified temp_model"
             !
         end select
         !
-    end function multBy_Cm
+        deallocate( temp_model )
+        !
+    end subroutine multBy_Cm
     !
     !> Multiplies by the square root of the model covariance,
     !> which is viewed as a smoothing operator. Intended
@@ -391,8 +394,8 @@ contains
         integer, intent( in ) :: n
         integer :: Nx, Ny, NzEarth, i, j, k, iSmooth
         !
-        Nx      = size( w, 1 )
-        Ny      = size( w, 2 )
+        Nx = size( w, 1 )
+        Ny = size( w, 2 )
         NzEarth = size( w, 3 )
         !
         if( maxval( abs(shape(w) - shape(v) ) ) > 0 ) then
@@ -498,8 +501,8 @@ contains
         integer :: Nx, Ny, NzEarth, i, j, k, iSmooth, istat
         real( kind=prec ), allocatable :: u(:,:,:)
         !
-        Nx      = size( w, 1 )
-        Ny      = size( w, 2 )
+        Nx = size( w, 1 )
+        Ny = size( w, 2 )
         NzEarth = size( w, 3 )
         !
         if( maxval( abs( shape(w) - shape(v) ) ) >0 ) then
@@ -733,7 +736,7 @@ contains
         endif
         !
         alpha = self%SmoothX( i, j, k )
-        beta  = self%SmoothY( i, j, k )
+        beta = self%SmoothY( i, j, k )
         gamma = self%SmoothZ( i, j, k )
         !
         !if( self%mask%v( i, j, k ) == AIR ) then

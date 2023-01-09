@@ -13,7 +13,7 @@ module ReceiverArray
         !
     end type Rx_t
     !
-    !> Global Array of Receivers
+    !> Global generic array of Receivers
     type( Rx_t ), allocatable, target, dimension(:) :: receivers
     !
     public :: getReceiver, printReceiverArray
@@ -38,7 +38,7 @@ contains
             allocate( Rx_t :: temp_rx )
             temp_rx%Rx = new_rx
             i_rx = 1
-            temp_rx%Rx%id = 1
+            temp_rx%Rx%i_rx = 1
             receivers(1) = temp_rx
             !
             deallocate( temp_rx )
@@ -58,7 +58,7 @@ contains
             temp_array( 1 : n_rx ) = receivers
             allocate( Rx_t :: temp_rx )
             temp_rx%Rx = new_rx
-            temp_rx%Rx%id = n_rx + 1
+            temp_rx%Rx%i_rx = n_rx + 1
             i_rx = n_rx + 1
             !
             temp_array( n_rx + 1 ) = temp_rx

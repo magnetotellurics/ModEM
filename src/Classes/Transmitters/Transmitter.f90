@@ -3,6 +3,7 @@
 !
 module Transmitter
     !
+    use FileUnits
     use Constants
     use SourceInteriorForce
     use ForwardSolver
@@ -10,16 +11,13 @@ module Transmitter
     use DataGroup
     use VectorArray
     !
-    !> Global name for e_solution file
-    character(:), allocatable :: e_solution_file_name
-    !
     type, abstract :: Transmitter_t
         !
         class( ForwardSolver_t ), pointer :: forward_solver
         !
         class( Source_t ), allocatable :: source
         !
-        integer :: id, n_pol, fwd_key(8)
+        integer :: i_tx, n_pol, fwd_key(8)
         !
         real( kind=prec ) :: period, omega
         !
@@ -45,9 +43,11 @@ module Transmitter
         !
         procedure, public :: setSource => setSourceTx
         !
-        procedure, public :: pMult => pMult_Tx
+        procedure, public :: PMult => PMult_Tx
         !
-        procedure, public :: pMult_t => pMult_t_Tx
+        procedure, public :: PMult_t => PMult_t_Tx
+        !
+        procedure, public :: writeESolution
         !
     end type Transmitter_t
     !
@@ -82,7 +82,7 @@ module Transmitter
             !
             class( Transmitter_t ), intent( inout ) :: self
             !
-            self%id = 0
+            self%i_tx = 0
             self%n_pol = 0
             call self%updateFwdKey()
             !
@@ -178,7 +178,7 @@ module Transmitter
         end subroutine setSourceTx
         !
         !> Returns a SourceInteriorForce from two distinct models, with the same ModelOperator.
-        function pMult_Tx( self, sigma, dsigma, model_operator ) result( source_int_force )
+        function PMult_Tx( self, sigma, dsigma, model_operator ) result( source_int_force )
             implicit none
             !
             class( Transmitter_t ), intent( inout ) :: self
@@ -192,7 +192,7 @@ module Transmitter
             complex( kind=prec ) :: minus_i_omega_mu
             integer :: pol
             ! Verbose
-            !write( *, * ) "               - Start pMult"
+            !write( *, * ) "               - Start PMult"
             !
             !> Get map_e_vector from dPDEmapping
             call sigma%dPDEmapping( dsigma, map_e_vector )
@@ -222,12 +222,12 @@ module Transmitter
             deallocate( bSrc )
             !
             ! Verbose
-            !write( *, * ) "               - Finish pMult"
+            !write( *, * ) "               - Finish PMult"
             !
-        end function pMult_Tx
+        end function PMult_Tx
         !
         !> Defines a new model (dsigma) from a previous model and e_sens for this transmitter.
-        subroutine pMult_t_Tx( self, sigma, dsigma )
+        subroutine PMult_t_Tx( self, sigma, dsigma )
             implicit none
             !
             class( Transmitter_t ), intent( in ) :: self
@@ -235,15 +235,15 @@ module Transmitter
             class( ModelParameter_t ), allocatable, intent( inout ) :: dsigma
             !
             class( Vector_t ), allocatable, dimension(:) :: eSens
-            type( rVector3D_SG_t ) :: real_sens
+            class( Field_t ), allocatable :: real_sens
             complex( kind=prec ) :: minus_i_omega_mu
             integer :: pol
             !
             ! Verbose
-            !write( *, * ) "               - Start pMult_t"
+            !write( *, * ) "               - Start PMult_t"
             !
             if( .NOT. allocated( self%e_sens ) ) then
-                stop "Error: pMult_t_Tx > eSens not allocated on the Tx"
+                stop "Error: PMult_t_Tx > eSens not allocated on the Tx"
             endif
             !
             !> Copy e_sens to a local variable to keep its original value.
@@ -264,32 +264,52 @@ module Transmitter
             !
             call eSens(1)%mult( minus_i_omega_mu )
             !
-            real_sens = rVector3D_SG_t( eSens(1)%grid, eSens(1)%grid_type )
+            call eSens(1)%getReal( real_sens )
             !
-            !> Instantiate the ForwardSolver - Specific type can be chosen via control file
-            select type ( e_sens => eSens(1) )
+            !> Free up local memory
+            deallocate( eSens )
+            !
+            !> Get dsigma from dPDEmappingT, using first position of eSens
+            call sigma%dPDEmappingT( real_sens, dsigma )
+            !
+            deallocate( real_sens )
+            !
+        end subroutine PMult_t_Tx
+        !
+        !> No subroutine briefing
+        subroutine writeESolution( self )
+            implicit none
+            !
+            class( Transmitter_t ), intent( in ) :: self
+            !
+            integer :: i_pol, ios
+            !
+            character( len=20 ) :: ModeName
+            character :: char_i_pol
+            !
+            !> Loop over all polarizations (MT n_pol = 2)
+            do i_pol = 1, self%n_pol
                 !
-                class is( cVector3D_SG_t )
+                write( char_i_pol, "(i1)") i_pol
+                ModeName = "E"//char_i_pol
+                !
+                open( ioESolution, action = "write", position = "append", form = "unformatted", iostat = ios )
+                !
+                if( ios /= 0 ) then
+                    stop "Error opening file in solveTransmitterMT: e_solution"
+                else
                     !
-                    real_sens%x = real( e_sens%x, kind=prec )
-                    real_sens%y = real( e_sens%y, kind=prec )
-                    real_sens%z = real( e_sens%z, kind=prec )
+                    !> write the frequency header - 1 record
+                    write( ioESolution ) self%omega, self%i_tx, i_pol, ModeName
                     !
-                    !> Get dsigma from dPDEmappingT, using first position of eSens
-                    call sigma%dPDEmappingT( real_sens, dsigma )
+                    call self%e_sol( i_pol )%write( ioESolution )
                     !
-                    !> Free up local memory
-                    !deallocate( eSens )
+                    close( ioESolution )
                     !
-                    ! Verbose
-                    !write( *, * ) "               - Finish pMult_t"
-                    !
-                class default
-                    !
-                    stop "Error: pMult_t_Tx > Undefined eSens(1)"
-                    !
-            end select
+                endif
+                !
+            enddo
             !
-        end subroutine pMult_t_Tx
+        end subroutine writeESolution
         !
 end module Transmitter

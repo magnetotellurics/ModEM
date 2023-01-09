@@ -135,9 +135,9 @@ contains
         !
         class( ForwardSolverIT_DC_t ), intent( inout ) :: self
         !
-        self%max_div_cor      = max_divcor_calls
+        self%max_div_cor = max_divcor_calls
         self%max_divcor_iters = max_divcor_iters
-        self%tol_div_cor      = tolerance_divcor
+        self%tol_div_cor = tolerance_divcor
         !
     end subroutine setIterDefaultsForwardSolverIT_DC
     !
@@ -178,14 +178,14 @@ contains
         class( Source_t ), intent( in ) :: source
         class( Vector_t ), intent( inout ) :: e_solution
         !
-        class( Vector_t ), allocatable :: temp_vec
+        class( Field_t ), allocatable :: temp_vec
         class( Scalar_t ), allocatable :: phi0
         integer :: iter
         !
         call self%solver%zeroDiagnostics()
         !
         self%solver%converged = .FALSE.
-        self%solver%failed    = .FALSE.
+        self%solver%failed = .FALSE.
         self%n_divcor = 0
         self%n_iter_actual = 0
         !

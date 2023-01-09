@@ -751,7 +751,7 @@ contains
         !
         class( Grid_t ), allocatable :: grid
         !
-        integer :: grid_dx , grid_dy, grid_dz, grid_dxInv, grid_dyInv, grid_dzInv, &
+        integer :: grid_dx, grid_dy, grid_dz, grid_dxInv, grid_dyInv, grid_dzInv, &
                    grid_delX, grid_delY, grid_delZ, grid_delXInv, grid_delYInv, grid_delZInv, &
                    grid_xEdge, grid_yEdge, grid_zEdge, grid_xCenter, grid_yCenter, grid_zCenter
         !

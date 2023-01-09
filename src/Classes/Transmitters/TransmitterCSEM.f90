@@ -43,24 +43,24 @@ contains
         call self%init()
         !
         self%n_pol = 1
-		!
+        !
         self%period = period
         !
-		self%omega = ( 2.0 * PI / self%period )
+        self%omega = ( 2.0 * PI / self%period )
         !
         self%location = location
-		!
+        !
         self%azimuth = azimuth
-		!
+        !
         self%dip = dip
-		!
+        !
         self%moment = moment
-		!
+        !
         self%dipole = dipole
         !
-        !self%pMult_ptr => pMult_E
+        !self%PMult_ptr => PMult_E
         !
-        !self%pMult_t_ptr => pMult_t_E
+        !self%PMult_t_ptr => PMult_t_E
         !
     end function TransmitterCSEM_ctor
     !
@@ -125,14 +125,14 @@ contains
         !> Verbose
         if( self%source%sens ) then
             !
-            write( *, * ) "               SolveADJ CSEM Tx:", self%id, " -> Period:", self%period
+            write( *, * ) "               SolveADJ CSEM Tx:", self%i_tx, " -> Period:", self%period
             !
             if( allocated( self%e_sens ) ) deallocate( self%e_sens )
             allocate( cVector3D_SG_t :: self%e_sens(1) )
             !
         else
             !
-            write( *, * ) "               SolveFWD CSEM Tx:", self%id, " -> Period:", self%period
+            write( *, * ) "               SolveFWD CSEM Tx:", self%i_tx, " -> Period:", self%period
             !
             if( allocated( self%e_sol ) ) deallocate( self%e_sol )
             allocate( cVector3D_SG_t :: self%e_sol(1) )
@@ -156,26 +156,7 @@ contains
             !> Add the source's rhs content to the e_solution vector
             call self%e_sol(1)%add( self%source%E(1) )
             !
-            ModeName = "Ex"
-            !
-            open( ioESolution, file = e_solution_file_name, action = "write", position = "append", form = "unformatted", iostat = ios )
-            !
-            if( ios /= 0 ) then
-                stop "Error opening file in solveTransmitterCSEM: e_solution"
-            else
-                !
-                !> write the frequency header - 1 record
-                write( ioESolution ) self%omega, self%id, 1, ModeName
-                !
-                call self%e_sol(1)%write( ioESolution )
-                !
-                close( ioESolution )
-                !
-            endif
-            !
         endif
-        !
-        ModeName = "Ex"
         !
     end subroutine solveTransmitterCSEM
     !
@@ -188,7 +169,7 @@ contains
         integer :: iRx
         !
         write( *, "( A30, I5, A12, f8.2, f8.2, f8.2, A10, es10.2, A7, I5)" ) &
-        "               TransmitterCSEM", self%id, &
+        "               TransmitterCSEM", self%i_tx, &
         ": Location[", self%location(1), self%location(2), self%location(3), &
         "], Period: ",    self%period, &
         ", NRx: ", size( self%receiver_indexes )

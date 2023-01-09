@@ -24,7 +24,7 @@ module InversionNLCG
         !
         ! maximum number of iterations in one call to iterative solver
         integer :: maxIter
-        ! convergence criteria: return from solver if rmsd < rmsTol
+        ! convergence criteria: return from solver if rms < rmsTol
         real( kind=prec ) :: rmsTol
         ! the condition to identify when the inversion stalls
         real( kind=prec ) :: fdiffTol
@@ -69,9 +69,9 @@ contains
         !
         ! maximum number of iterations in one call to iterative solver
         iterControl%maxIter = 600
-        ! convergence criteria: return from solver if rmsd < rmsTol
-        iterControl%rmsTol  = 1.05
-        ! inversion stalls when abs(rmsd - rmsPrev) < fdiffTol (2e-3 works well)
+        ! convergence criteria: return from solver if rms < rmsTol
+        iterControl%rmsTol = 1.05
+        ! inversion stalls when abs(rms - rmsPrev) < fdiffTol (2e-3 works well)
         iterControl%fdiffTol = 2.0e-3
         ! initial value of lambda (will not override the NLCG input argument)
         iterControl%lambda = 1.
@@ -129,7 +129,7 @@ contains
         type( DataGroupTx_t ), allocatable, dimension(:) :: dHat, res
         class( ModelParameter_t ), allocatable :: mHat, m_minus_m0
         class( ModelParameter_t ), allocatable :: grad, g, h, gPrev
-        real( kind=prec ) :: value, valuePrev, rmsd
+        real( kind=prec ) :: value, valuePrev, rms
         real( kind=prec ) :: rmsPrev, alpha, beta
         real( kind=prec ) :: gnorm, mNorm, Nmodel
         real( kind=prec ) :: grad_dot_h, g_dot_g
@@ -141,7 +141,7 @@ contains
         character(3) :: iterChar
         character(100) :: mFile, mHatFile, gradFile
         character(100) :: dataFile, resFile, logFile
-        type( ESolMTx ) :: eAll
+        type( ESolMTx ) :: e_all
         !
         call set_NLCGiterControl( iterControl )
         !
@@ -155,11 +155,11 @@ contains
         allocate( mHat, source = m )
         !
         !  compute the penalty functional and predicted data
-        eAll%SolnIndex=0
+        e_all%SolnIndex=0
         !
-        call func( lambda, d, m0, mHat, value, mNorm, dHat, eAll, rmsd )
+        call func( lambda, d, m0, mHat, value, mNorm, dHat, e_all, rms )
         !
-        write( *, * ) "lambda, alpha, value, mNorm, rmsd: ", lambda, alpha, value, mNorm, rmsd
+        write( *, * ) "lambda, alpha, value, mNorm, rms: ", lambda, alpha, value, mNorm, rms
         !
         nfunc = 1
         !
@@ -171,7 +171,7 @@ contains
         call m%linComb( ONE, ONE, m0 )
         !
         !> compute gradient of the full penalty functional
-        call gradient( lambda, d, m0, mHat, grad, dHat, eAll )
+        call gradient( lambda, d, m0, mHat, grad, dHat, e_all )
         !
         gnorm = sqrt( grad%dotProd( grad ) )
         !
@@ -198,14 +198,14 @@ contains
         !
         do
             !  test for convergence ...
-            if( rmsd .LT. iterControl%rmsTol .OR. iter .GE. iterControl%maxIter ) then
+            if( rms .LT. iterControl%rmsTol .OR. iter .GE. iterControl%maxIter ) then
                 exit
             endif
             !
             iter = iter + 1
             !
             ! save the values of the functional and the directional derivative
-            rmsPrev = rmsd
+            rmsPrev = rms
             valuePrev = value
             grad_dot_h = grad%dotProd( h )
             !
@@ -217,14 +217,14 @@ contains
             select case ( flavor )
                 !
                 case ( 'Cubic' )
-                    call lineSearchCubic(lambda,d,m0,h,alpha,mHat,value,grad,rmsd,nLS,dHat,eAll)
-                    !call deall(eAll)
+                    call lineSearchCubic(lambda,d,m0,h,alpha,mHat,value,grad,rms,nLS,dHat,e_all)
+                    !call deall(e_all)
                 case ('Quadratic')
-                    !call lineSearchQuadratic(lambda,d,m0,h,alpha,mHat,value,grad,rmsd,nLS,dHat,eAll)
-                    !call deall(eAll)
+                    !call lineSearchQuadratic(lambda,d,m0,h,alpha,mHat,value,grad,rms,nLS,dHat,e_all)
+                    !call deall(e_all)
                 case ('Wolfe')
-                    !call lineSearchWolfe(lambda,d,m0,h,alpha,mHat,value,grad,rmsd,nLS,dHat,eAll)
-                    !call deall(eAll)
+                    !call lineSearchWolfe(lambda,d,m0,h,alpha,mHat,value,grad,rms,nLS,dHat,e_all)
+                    !call deall(e_all)
                 case default
                     stop "Error: NLCGsolver: Unknown line search requested in NLCG"
             end select
@@ -248,7 +248,7 @@ contains
             !
             mNorm = mHat%dotProd( mHat ) / Nmodel
             !
-            write( *, * ) "     lambda, alpha, value, mNorm, rmsd: ", lambda, alpha, value, mNorm, rmsd
+            write( *, * ) "     lambda, alpha, value, mNorm, rms: ", lambda, alpha, value, mNorm, rms
             !
             ! write out the intermediate model solution and responses
             m_minus_m0 = model_cov%multBy_Cm( mHat )
@@ -262,7 +262,7 @@ contains
             call linCombDataGroupTxArray( ONE, d, MinusONE, dHat, res )
             !
             !> if alpha is too small, we are not making progress: update lambda
-            if( abs( rmsPrev - rmsd ) < iterControl%fdiffTol ) then
+            if( abs( rmsPrev - rms ) < iterControl%fdiffTol ) then
                 !
                 ! update lambda, penalty functional and gradient
                 call update_damping_parameter( lambda, mHat, value, grad )
@@ -289,7 +289,7 @@ contains
                 !
                 !> restart
                 write( *, * ) "Restarting NLCG with the damping parameter updated"
-                write( *, * ) "lambda, alpha, value, mNorm, rmsd: ", lambda, alpha, value, mNorm, rmsd
+                write( *, * ) "lambda, alpha, value, mNorm, rms: ", lambda, alpha, value, mNorm, rms
                 !
                 h = g
                 nCG = 0
@@ -357,16 +357,16 @@ contains
     end subroutine NLCGsolver
     !
     !> Computes the gradient of the penalty functional,
-    !> using EM solution (eAll) and the predicted data (dHat)
+    !> using EM solution (e_all) and the predicted data (dHat)
     !> Here, mHat denotes the non-regularized model parameter that
     !> is normally referred to as \tilde{m} = C_m^{-1/2}(m - m_0),
     !> and the gradient is computed with respect to \tilde{m}.
     !> Before calling this routine, the forward solver must be run:
     !> call CmSqrtMult(mHat,m)
     !> call linComb(ONE,m,ONE,m0,m)
-    !> call fwdPred(m,dHat,eAll)
+    !> call fwdPred(m,dHat,e_all)
     !
-    subroutine gradient( lambda, d, m0, mHat, grad, dHat, eAll )
+    subroutine gradient( lambda, d, m0, mHat, grad, dHat, e_all )
         implicit none
         !
         real( kind=prec ), intent( in ) :: lambda
@@ -374,7 +374,7 @@ contains
         class( ModelParameter_t ), allocatable, intent( in ) :: m0, mHat
         class( ModelParameter_t ), allocatable, intent( inout ) :: grad
         type( DataGroupTx_t ), allocatable, dimension(:), intent( inout ) :: dHat
-        type( ESolMTx ), intent( inout ) :: eAll
+        type( ESolMTx ), intent( inout ) :: e_all
         !
         real( kind=prec ) :: Ndata, Nmodel, angle1, angle2, diff, diff1
         type( DataGroupTx_t ), allocatable, dimension(:) :: res
@@ -421,7 +421,7 @@ contains
     !> Compute the full penalty functional F
     !> Also output the predicted data and the EM solution
     !> that can be used for evaluating the gradient
-    subroutine func( lambda, d, m0, mHat, F, mNorm, dHat, eAll, rmsd )
+    subroutine func( lambda, d, m0, mHat, F, mNorm, dHat, e_all, rms )
         implicit none
         !
         real( kind=prec ), intent( in ) :: lambda
@@ -429,8 +429,8 @@ contains
         class( ModelParameter_t ), allocatable, intent( in ) :: m0, mHat
         real( kind=prec ), intent( out ) :: F, mNorm
         type( DataGroupTx_t ), allocatable, dimension(:), intent( inout ) :: dHat
-        type( ESolMTx ), optional, intent( inout ) :: eAll
-        real( kind=prec ), optional, intent( out ) :: rmsd
+        type( ESolMTx ), optional, intent( inout ) :: e_all
+        real( kind=prec ), optional, intent( out ) :: rms
         !
         type( DataGroupTx_t ), allocatable, dimension(:) :: res, Nres, res1
         class( ModelParameter_t ), allocatable :: m, JTd
@@ -448,12 +448,12 @@ contains
         !
         call runForwardModeling( m, dHat )
         !
-		!> SET eAll
-        allocate( eAll%e_sols( size( transmitters ) ) )
+		!> SET e_all
+        allocate( e_all%e_sols( size( transmitters ) ) )
         !
         do i = 1, size( transmitters )
             !
-            allocate( eAll%e_sols(i)%pol, source = transmitters(i)%Tx%e_sol )
+            allocate( e_all%e_sols(i)%pol, source = transmitters(i)%Tx%e_sol )
             !
         enddo
         !
@@ -478,8 +478,8 @@ contains
         mNorm = mNorm / Nmodel
         !
         ! if required, compute the Root Mean Squared misfit
-        if( present( rmsd ) ) then
-            rmsd = sqrt( SS / Ndata )
+        if( present( rms ) ) then
+            rms = sqrt( SS / Ndata )
         endif
         !
         call deallocateDataGroupTxArray( res )
@@ -594,7 +594,7 @@ contains
     !> systems in optimisation research (Pronzato et al [2000, 2001]).
     !> To the best of my knowledge, it is not useful for NLCG.
     subroutine lineSearchCubic( lambda, d, m0, h, alpha, mHat, f, grad, &
-    rmsd, niter, dHat, eAll, gamma )
+    rms, niter, dHat, e_all, gamma )
         implicit none
         !
         real( kind=prec ), intent( in ) :: lambda
@@ -604,10 +604,10 @@ contains
         class( ModelParameter_t ), allocatable, intent( inout ) :: mHat
         real( kind=prec ), intent(inout) :: f
         class( ModelParameter_t ), allocatable, intent( inout ) :: grad
-        real( kind=prec ), intent( out ) :: rmsd
+        real( kind=prec ), intent( out ) :: rms
         integer, intent( out ) :: niter
         type( DataGroupTx_t ), allocatable, dimension(:), intent( out ) :: dHat
-        type( ESolMTx ), intent( inout ) :: eAll
+        type( ESolMTx ), intent( inout ) :: e_all
         !
         ! optionally add relaxation (e.g. for Renormalized Steepest Descent)
         real( kind=prec ), intent( in ), optional :: gamma
@@ -649,7 +649,7 @@ contains
             relaxation = .FALSE.
         endif
         !
-        ! compute the trial mHat, f, dHat, eAll, rmsd
+        ! compute the trial mHat, f, dHat, e_all, rms
         allocate( mHat_1, source = mHat_0 )
         !
         call mHat_1%linComb( ONE, alpha_1, h )
@@ -681,13 +681,13 @@ contains
             !
             dHat = dHat_1
             !
-            eAll = eAll_1
+            e_all = eAll_1
             !
-            eAll%SolnIndex=1
+            e_all%SolnIndex=1
             !
             mHat = mHat_1
             !
-            rmsd = rms_1
+            rms = rms_1
             !
             f = f_1
             !
@@ -698,15 +698,15 @@ contains
                 !
                 call mHat%linComb( ONE, gamma * alpha, h )
                 !
-                eAll%SolnIndex=0
+                e_all%SolnIndex=0
                 !
-                call func( lambda, d, m0, mHat, f, mNorm, dHat, eAll, rmsd )
+                call func( lambda, d, m0, mHat, f, mNorm, dHat, e_all, rms )
                 !
-                write( *, * ) "lambda, gamma*alpha, f, mNorm, rmsd:", lambda, gamma*alpha, f, mNorm, rmsd
+                write( *, * ) "lambda, gamma*alpha, f, mNorm, rms:", lambda, gamma*alpha, f, mNorm, rms
                 !
             endif
             !
-            call gradient( lambda, d, m0, mHat, grad, dHat, eAll )
+            call gradient( lambda, d, m0, mHat, grad, dHat, e_all )
             !
             write( *, * ) "Quadratic has no minimum, exiting line search"
             !
@@ -727,11 +727,11 @@ contains
         !
         call mHat%linComb( ONE, alpha, h )
         !
-        eAll%SolnIndex=0
+        e_all%SolnIndex=0
         !
-        call func( lambda, d, m0, mHat, f, mNorm, dHat, eAll, rmsd )
+        call func( lambda, d, m0, mHat, f, mNorm, dHat, e_all, rms )
         !
-        write( *, * ) "QUADLS: lambda, alpha, f, mNorm, rmsd:", lambda, alpha, f, mNorm, rmsd
+        write( *, * ) "QUADLS: lambda, alpha, f, mNorm, rms:", lambda, alpha, f, mNorm, rms
         !
         niter = niter + 1
         !
@@ -743,10 +743,10 @@ contains
                 starting_guess = .TRUE.
                 alpha = alpha_1
                 dHat = dHat_1
-                eAll = eAll_1
-                eAll%SolnIndex=1
+                e_all = eAll_1
+                e_all%SolnIndex=1
                 mHat = mHat_1
-                rmsd = rms_1
+                rms = rms_1
                 f = f_1
             endif
             !
@@ -757,15 +757,15 @@ contains
                 !
                 call mHat%linComb( ONE, gamma * alpha, h )
                 !
-                eAll%SolnIndex=0
+                e_all%SolnIndex=0
                 !
-                call func( lambda, d, m0, mHat, f, mNorm, dHat, eAll, rmsd )
+                call func( lambda, d, m0, mHat, f, mNorm, dHat, e_all, rms )
                 !
-                write( *, * ) "QUADLS: lambda, gamma*alpha, f, mNorm, rmsd:", lambda, gamma*alpha, f, mNorm, rmsd
+                write( *, * ) "QUADLS: lambda, gamma*alpha, f, mNorm, rms:", lambda, gamma*alpha, f, mNorm, rms
                 !
             endif
             !
-            call gradient( lambda, d, m0, mHat, grad, dHat, eAll )
+            call gradient( lambda, d, m0, mHat, grad, dHat, e_all )
             !
             write( *, * ) "Sufficient decrease condition satisfied, exiting line search"
             !
@@ -818,11 +818,11 @@ contains
                 !
                 call mHat%linComb( ONE, alpha, h )
                 !
-                eAll%SolnIndex=0
+                e_all%SolnIndex=0
                 !
-                call func( lambda, d, m0, mHat, f, mNorm, dHat, eAll, rmsd )
+                call func( lambda, d, m0, mHat, f, mNorm, dHat, e_all, rms )
                 !
-                write( *, * ) "CUBICLS: lambda, alpha, f, mNorm, rmsd:", lambda, alpha, f, mNorm, rmsd
+                write( *, * ) "CUBICLS: lambda, alpha, f, mNorm, rms:", lambda, alpha, f, mNorm, rms
                 !
                 niter = niter + 1
                 !
@@ -863,13 +863,13 @@ contains
             !
             dHat = dHat_1
             !
-            eAll = eAll_1
+            e_all = eAll_1
             !
-            eAll%SolnIndex=1
+            e_all%SolnIndex=1
             !
             mHat = mHat_1
             !
-            rmsd = rms_1
+            rms = rms_1
             !
             f = f_1
         endif
@@ -881,15 +881,15 @@ contains
             !
             call mHat%linComb( ONE, gamma*alpha, h )
             !
-            eAll%SolnIndex=0
+            e_all%SolnIndex=0
             !
-            call func( lambda, d, m0, mHat, f,mNorm,dHat,eAll,rmsd)
+            call func( lambda, d, m0, mHat, f,mNorm,dHat,e_all,rms)
             !
-            write( *, * ) "RELAX: lambda, gamma*alpha, f, mNorm, rmsd:", lambda, gamma*alpha, f, mNorm, rmsd
+            write( *, * ) "RELAX: lambda, gamma*alpha, f, mNorm, rms:", lambda, gamma*alpha, f, mNorm, rms
             !
         endif
         !
-        call gradient( lambda, d, m0, mHat, grad, dHat, eAll )
+        call gradient( lambda, d, m0, mHat, grad, dHat, e_all )
         !
         write( *, * ) "Gradient computed, line search finished"
         !

@@ -287,16 +287,16 @@ contains
         !> Initialize MPI control variables
         worker_rank = 1
         tx_received = 0
-        i_tx       = 0
+        i_tx = 0
         !
         !> Send 1 transmitter to first np workers
         do while( worker_rank <= ( mpi_size - 1 ) )
             !
             i_tx = i_tx + 1
             !
-            job_info%job_name    = job_forward
-            job_info%adjoint     = is_adjoint
-            job_info%i_tx       = i_tx
+            job_info%job_name = job_forward
+            job_info%adjoint = is_adjoint
+            job_info%i_tx = i_tx
             job_info%worker_rank = worker_rank
             !
             call sendTo( worker_rank )
@@ -313,11 +313,11 @@ contains
             call receiveData( all_predicted_data( job_info%i_tx ), job_info%worker_rank )
             !
             tx_received = tx_received + 1
-            i_tx       = i_tx + 1
+            i_tx = i_tx + 1
             !
             job_info%job_name = job_forward
-            job_info%adjoint  = is_adjoint
-            job_info%i_tx    = i_tx
+            job_info%adjoint = is_adjoint
+            job_info%i_tx = i_tx
             !
             call sendTo( job_info%worker_rank )
             !
@@ -343,7 +343,7 @@ contains
         enddo
         !
         !> Write all_predicted_data, with its proper Rx headers, to the file <predicted_data_file_name>
-        call writeDataGroupArray( all_predicted_data, predicted_data_file_name )
+        call writeDataGroupTxArray( all_predicted_data, predicted_data_file_name )
         !
         !> Verbose
         write( *, * ) "     - Finish Forward Modeling"
@@ -442,16 +442,16 @@ contains
         !> Initialize MPI control variables
         worker_rank = 1
         tx_received = 0
-        i_tx       = 0
+        i_tx = 0
         !
         !> Send 1 transmitter to first np workers
         do while( worker_rank <= ( mpi_size - 1 ) )
             !
             i_tx = i_tx + 1
             !
-            job_info%job_name    = job_adjoint
+            job_info%job_name = job_adjoint
             job_info%worker_rank = worker_rank
-            job_info%i_tx       = i_tx
+            job_info%i_tx = i_tx
             !
             call sendTo( worker_rank )
             !
@@ -467,7 +467,7 @@ contains
             call receiveData( JmHat( job_info%i_tx ), job_info%worker_rank )
             !
             tx_received = tx_received + 1
-            i_tx       = i_tx + 1
+            i_tx = i_tx + 1
             !
             job_info%job_name = job_adjoint
             !
@@ -490,8 +490,8 @@ contains
             !
         enddo
         !
-        !> Write all_predicted_data, with its proper Rx headers, to the file <JmHat_data_file_name>
-        call writeDataGroupArray( JmHat, JmHat_data_file_name )
+        !> Write all_predicted_data, with its proper Rx headers, to the file <jmhat_data_file_name>
+        call writeDataGroupTxArray( JmHat, jmhat_data_file_name )
         !
         !>
         call deallocateGlobalArrays()
@@ -578,16 +578,16 @@ contains
         !> Initialize MPI control variables
         worker_rank = 1
         tx_received = 0
-        i_tx       = 0
+        i_tx = 0
         !
         !> Send 1 transmitter to first np workers
         do while( worker_rank <= ( mpi_size - 1 ) )
             !
             i_tx = i_tx + 1
             !
-            job_info%job_name    = job_adjoint_t
+            job_info%job_name = job_adjoint_t
             job_info%worker_rank = worker_rank
-            job_info%i_tx       = i_tx
+            job_info%i_tx = i_tx
             !
             call sendTo( worker_rank )
             !
@@ -615,10 +615,10 @@ contains
             deallocate( tx_model_cond )
             !
             tx_received = tx_received + 1
-            i_tx       = i_tx + 1
+            i_tx = i_tx + 1
             !
             job_info%job_name = job_adjoint_t
-            job_info%i_tx    = i_tx
+            job_info%i_tx = i_tx
             !
             call sendTo( job_info%worker_rank )
             !
@@ -758,9 +758,9 @@ contains
         enddo
         !
         !> SEND JOB DONE TO MASTER
-        job_info%job_name    = job_done
+        job_info%job_name = job_done
         job_info%worker_rank = node_rank
-        job_info%i_tx       = tx_data%i_tx
+        job_info%i_tx = tx_data%i_tx
         !
         call sendTo( master_id )
         !
@@ -781,8 +781,8 @@ contains
         !> Get the same transmitter previously used at forward modeling (tx_pred_data)
         Tx => getTransmitter( tx_data%i_tx )
         !
-        !> Switch Transmitter's source to SourceInteriorForce from pMult
-        call Tx%setSource( Tx%pMult( sigma0, pmodel, model_operator ) )
+        !> Switch Transmitter's source to SourceInteriorForce from PMult
+        call Tx%setSource( Tx%PMult( sigma0, pmodel, model_operator ) )
         !
         !> Solve e_sens with the new Source
         call Tx%solve()
@@ -794,9 +794,9 @@ contains
         call JMult_Tx( tx_data )
         !
         !> MPI: SEND JOB DONE TO MASTER
-        job_info%job_name    = job_done
+        job_info%job_name = job_done
         job_info%worker_rank = node_rank
-        job_info%i_tx       = tx_data%i_tx
+        job_info%i_tx = tx_data%i_tx
         !
         call sendTo( master_id )
         !
@@ -827,7 +827,7 @@ contains
         call JMult_T_Tx( sigma0, tx_data, tx_dsigma )
         !
         !> MPI: SEND JOB DONE TO MASTER
-        job_info%job_name    = job_done
+        job_info%job_name = job_done
         job_info%worker_rank = node_rank
         !
         call sendTo( master_id )
@@ -1109,7 +1109,7 @@ contains
                       case ( "-gd", "--gradient" )
                          !
                          call get_command_argument( argument_index + 1, argument )
-                         JmHat_data_file_name = trim( argument )
+                         jmhat_data_file_name = trim( argument )
                          !
                          argument_index = argument_index + 2
                          !
@@ -1157,14 +1157,14 @@ contains
         !
         ! I|O
         predicted_data_file_name = "predicted_data.dat"
-        JmHat_data_file_name  = "JmHat.dat"
-        e_solution_file_name     = "esolution.bin"
-        dsigma_file_name         = "dsigma.mod"
-        has_control_file         = .FALSE.
-        has_model_file           = .FALSE.
-        has_pmodel_file          = .FALSE.
-        has_data_file            = .FALSE.
-        verbosis                 = .FALSE.
+        jmhat_data_file_name = "JmHat.dat"
+        e_solution_file_name = "esolution.bin"
+        dsigma_file_name = "dsigma.mod"
+        has_control_file = .FALSE.
+        has_model_file = .FALSE.
+        has_pmodel_file = .FALSE.
+        has_data_file = .FALSE.
+        verbosis = .FALSE.
         !
         ! Solvers
         QMR_iters = 40
@@ -1180,9 +1180,9 @@ contains
         get_1D_from = "Geometric_mean"
         !
         ! Model
-        model_method      = MM_METHOD_FIXED_H
+        model_method = MM_METHOD_FIXED_H
         model_n_air_layer = 10
-        model_max_height  = 200.0
+        model_max_height = 200.0
         !
     end subroutine setupDefaultParameters
     !
@@ -1196,7 +1196,7 @@ contains
         if( allocated( model_method ) ) deallocate( model_method )
         if( allocated( get_1D_from ) ) deallocate( get_1D_from )
         if( allocated( predicted_data_file_name ) ) deallocate( predicted_data_file_name )
-        if( allocated( JmHat_data_file_name ) ) deallocate( JmHat_data_file_name )
+        if( allocated( jmhat_data_file_name ) ) deallocate( jmhat_data_file_name )
         if( allocated( e_solution_file_name ) ) deallocate( e_solution_file_name )
         !
         if( allocated( control_file_name ) ) deallocate( control_file_name )
@@ -1209,7 +1209,7 @@ contains
     end subroutine garbageCollector
     !
     !> No subroutine briefing
-    subroutine writeDataGroupArray( target_tx_data_array, file_name )
+    subroutine writeDataGroupTxArray( target_tx_data_array, file_name )
         implicit none
         !
         type( DataGroupTx_t ), allocatable, dimension(:) :: target_tx_data_array
@@ -1247,7 +1247,7 @@ contains
                 !
                 receiver => getReceiver( data_group%i_rx )
                 !
-                call writePredictedDataHeader( receiver, receiver_type )
+                call writeHeaderDataGroupTxArray( receiver, receiver_type )
                 !
                 transmitter => getTransmitter( data_group%i_tx )
                 !
@@ -1277,14 +1277,14 @@ contains
             close( ioPredData )
             !
         else
-            write( *, * ) "Error opening [", file_name, "] in writeDataGroupArray!"
+            write( *, * ) "Error opening [", file_name, "] in writeDataGroupTxArray!"
             stop
         endif
         !
-    end subroutine writeDataGroupArray
+    end subroutine writeDataGroupTxArray
     !
     !> No subroutine briefing
-    subroutine writePredictedDataHeader( receiver, receiver_type )
+    subroutine writeHeaderDataGroupTxArray( receiver, receiver_type )
         implicit none
         !
         class( Receiver_t ), intent( in ) :: receiver
@@ -1317,7 +1317,7 @@ contains
                     !
                 case default
                     write( *, * ) "Unknown receiver type :[", receiver%rx_type, "]"
-                    stop "Error: test_FWD.f90: writePredictedDataHeader()"
+                    stop "Error: test_FWD.f90: writeHeaderDataGroupTxArray()"
                 !
             end select
             !
@@ -1332,10 +1332,10 @@ contains
             !
         endif
         !
-    end subroutine writePredictedDataHeader
+    end subroutine writeHeaderDataGroupTxArray
     !
     !> No subroutine briefing
-    subroutine writeEsolutionHeader( n_tx, nMode )
+    subroutine writeAllESolutionHeader( n_tx, nMode )
         implicit none
         !
         integer, intent( in ) :: n_tx, nMode
@@ -1360,13 +1360,13 @@ contains
             !
         else
             !
-            write( *, * ) "Error opening file in writeEsolutionHeader [", e_solution_file_name, "]!"
+            write( *, * ) "Error opening file in writeAllESolutionHeader [", e_solution_file_name, "]!"
             stop
             !
         endif
         !
         !
-    end subroutine writeEsolutionHeader
+    end subroutine writeAllESolutionHeader
     !
     !> No subroutine briefing
     subroutine printUsage()

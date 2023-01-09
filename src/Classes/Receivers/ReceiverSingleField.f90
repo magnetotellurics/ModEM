@@ -231,7 +231,7 @@ contains
         !
         class( ReceiverSingleField_t ), intent( in ) :: self
         !
-        write( *, * ) "Print ReceiverSingleField_t: ", self%id
+        write( *, * ) "Print ReceiverSingleField_t: ", self%i_rx
         !
     end subroutine printReceiverSingleField
     !

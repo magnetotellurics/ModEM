@@ -23,7 +23,7 @@ contains
     function Read(self, fileName) result(newGrid)
         !
         class(HDF5_3D_SG_GridReader_t), intent( in ) :: self
-        character(*)                                    , intent( in ) :: fileName
+        character(*), intent( in ) :: fileName
         !
         class(Grid3D_SG_t), pointer :: newGrid
         !> ** HDF5 specific auxiliary variables

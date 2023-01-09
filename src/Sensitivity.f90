@@ -26,9 +26,6 @@ module Sensitivity
     use TransmitterCSEM
     use TransmitterArray
     !
-    use DataGroupArray
-    use DataGroupTxArray
-    !
     !> Global Sensitivity Routines
     public :: JMult, JMult_Tx, JMult_T, JMult_T_Tx
     !
@@ -36,7 +33,7 @@ contains
     !
     !> Get the JmHat for all transmitters represented in an array of DataGroupTx:
     !>     Call the setFrequency routine to the forward_solver pointer of the transmitter
-    !>     Set the transmitter source by calling pMult
+    !>     Set the transmitter source by calling PMult
     !>     Call JMult_TX for the transmitter
     !
     subroutine JMult( sigma, dsigma, JmHat )
@@ -61,19 +58,10 @@ contains
             call Tx%forward_solver%setFrequency( sigma, Tx%period )
             !
             !> Switch Transmitter's source to SourceInteriorForce
-            call Tx%setSource( Tx%pMult( sigma, dsigma, model_operator ) )
-            !
-            call Tx%source%E(1)%print( 2001, "JMult Tx%E(1)" )
-            call Tx%source%E(2)%print( 2002, "JMult Tx%E(2)" )
+            call Tx%setSource( Tx%PMult( sigma, dsigma, model_operator ) )
             !
             !> Solve e_sens from with the new Source
             call Tx%solve()
-            !
-            call Tx%e_sol(1)%print( 3001, "JMult ESol(1)" )
-            call Tx%e_sol(2)%print( 3002, "JMult ESol(2)" )
-            !
-            call Tx%e_sens(1)%print( 4001, "JMult ESens(1)" )
-            call Tx%e_sens(2)%print( 4002, "JMult ESens(2)" )
             !
             !> Fill tx_data with JMult routine
             call JMult_Tx( JmHat( i_dtx ) )
@@ -278,20 +266,11 @@ contains
         !
         deallocate( bSrc )
         !
-        call Tx%source%rhs(1)%print( 2001, "JMult_T Tx%RHS(1)" )
-        call Tx%source%rhs(2)%print( 2002, "JMult_T Tx%RHS(2)" )
-        !
         !> Solve Transmitter's e_sens with the new SourceInteriorForce
         call Tx%solve()
         !
-        call Tx%e_sol(1)%print( 3001, "JMult_T ESol(1)" )
-        call Tx%e_sol(2)%print( 3002, "JMult_T ESol(2)" )
-        !
-        call Tx%e_sens(1)%print( 4001, "JMult_T ESens(1)" )
-        call Tx%e_sens(2)%print( 4002, "JMult_T ESens(2)" )
-        !
-        !> Get dsigma from pMult_t
-        call Tx%pMult_t( sigma, dsigma )
+        !> Get dsigma from PMult_t
+        call Tx%PMult_t( sigma, dsigma )
         !
     end subroutine JMult_T_Tx
     !

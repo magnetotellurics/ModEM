@@ -228,7 +228,7 @@ contains
         implicit none
         !
         class( Grid1D_t ), intent( in ) :: self
-        real( kind=prec ) , intent( out ) :: dz(:)
+        real( kind=prec ), intent( out ) :: dz(:)
 
         if( .NOT. self%is_allocated ) then
             write( *, * ) "ERROR:Grid1D_t:SetCellSizes:"

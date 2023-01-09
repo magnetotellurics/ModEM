@@ -7,12 +7,12 @@
 module Constants
     implicit none
     !
-    character( len=4 ), parameter :: NODE       = "NODE"
-    character( len=4 ), parameter :: FACE       = "FACE"
-    character( len=4 ), parameter :: EDGE       = "EDGE"
-    character( len=4 ), parameter :: CENTER     = "CELL"
-    character( len=4 ), parameter :: CORNER     = "NODE"
-    character( len=4 ), parameter :: CELL       = "CELL"    
+    character( len=4 ), parameter :: NODE = "NODE"
+    character( len=4 ), parameter :: FACE = "FACE"
+    character( len=4 ), parameter :: EDGE = "EDGE"
+    character( len=4 ), parameter :: CENTER = "CELL"
+    character( len=4 ), parameter :: CORNER = "NODE"
+    character( len=4 ), parameter :: CELL = "CELL"    
     character( len=10 ), parameter :: CELL_EARTH = "CELL EARTH"
     !
     !> Possible node types:
@@ -28,7 +28,7 @@ module Constants
     integer, parameter :: DP = selected_real_kind( 15, 307 )
     integer, parameter :: prec = DP
     !
-    real( kind=prec ), parameter :: PI   = 3.14159265357898_prec
+    real( kind=prec ), parameter :: PI = 3.14159265357898_prec
     complex( kind=prec ), parameter :: MU_0 = PI * .0000004_prec
     !
     !> Important: sign convention used throughout the program
@@ -91,17 +91,17 @@ module Constants
     !
     !> No briefring
     character( len=10 ), parameter :: is_complex = "IS_COMPLEX"
-    character( len=10 ), parameter :: is_real    = "IS____REAL"
+    character( len=10 ), parameter :: is_real = "IS____REAL"
     !
     character( len=7 ), parameter :: FORWARD = "FORWARD"
     character( len=7 ), parameter :: INVERSE = "INVERSE"
-    character( len=5 ), parameter :: DERIV   = "DERIV"
+    character( len=5 ), parameter :: DERIV = "DERIV"
     !
     character( len=40 ), parameter :: DATA_FILE_TITLE_MT = "Synthetic 3D MT data written by ModEM-OO"
     !
     character( len=42 ), parameter :: DATA_FILE_TITLE_CSEM = "Synthetic 3D CSEM data written by ModEM-OO"
     !
-    character( len=4 ), parameter :: LOGE   = "LOGE"
+    character( len=4 ), parameter :: LOGE = "LOGE"
     character( len=6 ), parameter :: LINEAR = "LINEAR"
     character( len=6 ), parameter :: LOG_10 = "LOG_10"
     !

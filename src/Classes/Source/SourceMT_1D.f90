@@ -140,7 +140,7 @@ contains
         !
         class( SourceMT_1D_t ), intent( inout ) :: self
         !
-        class( Vector_t ), allocatable :: e_boundary
+        class( Field_t ), allocatable :: e_boundary
         !
         integer :: pol
         !

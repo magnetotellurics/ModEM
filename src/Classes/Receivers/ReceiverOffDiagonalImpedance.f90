@@ -200,7 +200,7 @@ contains
         !
         class( ReceiverOffDiagonalImpedance_t ), intent( in ) :: self
         !
-        write( *, * ) "Print ReceiverOffDiagonalImpedance_t: ", self%id
+        write( *, * ) "Print ReceiverOffDiagonalImpedance_t: ", self%i_rx
         !
     end subroutine printReceiverOffDiagonalImpedance
     !

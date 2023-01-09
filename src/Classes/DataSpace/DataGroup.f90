@@ -8,11 +8,11 @@ module DataGroup
     use Constants
     !
     !> Global file path name for data files
-    character(:), allocatable :: predicted_data_file_name, JmHat_data_file_name
+    character(:), allocatable :: predicted_data_file_name, jmhat_data_file_name
     !
     type :: DataGroup_t
         !
-        integer :: n_comp, i_rx, i_tx, normalized
+        integer :: i_rx, i_tx, n_comp, normalized
         !
         type( String_t ), allocatable, dimension(:) :: components
         !

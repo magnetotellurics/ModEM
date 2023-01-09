@@ -92,7 +92,7 @@ contains
     function Grid2D_t_ctor(ny, nzAir, nzEarth, dy, dz) result(grid)
         !
         integer, intent( in ) :: ny, nzAir, nzEarth
-        real( kind=prec ) , dimension(:), intent( in ) :: dy, dz
+        real( kind=prec ), dimension(:), intent( in ) :: dy, dz
         !
         type(Grid2D_t) :: grid
         call grid%create(ny, nzAir, nzEarth)
@@ -105,7 +105,7 @@ contains
     subroutine createGrid2D(self, ny, nzAir, nzEarth)
         !
         class(Grid2D_t), intent(inout) :: self
-        integer                     , intent( in ) :: ny, nzAir, nzEarth
+        integer, intent( in ) :: ny, nzAir, nzEarth
         !
         integer :: nz
         
@@ -257,7 +257,7 @@ contains
     subroutine GetDimensions(self, ny, nz, nzAir)
         !
         class(Grid2D_t), intent( in ) :: self
-        integer                     , intent( out ) :: ny, nz, nzAir
+        integer, intent( out ) :: ny, nz, nzAir
 
         ny = self%ny
         nz = self%nz
@@ -268,7 +268,7 @@ contains
     subroutine SetCellSizes(self, dy, dz)
         !
         class(Grid2D_t), intent(inout) :: self
-        real( kind=prec ) , dimension(:), intent( in ) :: dy, dz
+        real( kind=prec ), dimension(:), intent( in ) :: dy, dz
 
         if(.NOT.self%is_allocated) then
              write(*, *) 'ERROR:Grid2D_t:SetCellSizes:'
@@ -295,7 +295,7 @@ contains
     subroutine GetCellSizes(self, dy, dz)
         !
         class(Grid2D_t), intent( in ) :: self
-        real( kind=prec ) , intent( out ) :: dy(:), dz(:)
+        real( kind=prec ), intent( out ) :: dy(:), dz(:)
 
         if(.NOT.self%is_allocated) then
              write(*, *) 'ERROR:Grid2D_t:SetCellSizes:'
@@ -322,7 +322,7 @@ contains
     subroutine NumberOfEdges(self, nYedge, nZedge)
         !
         class(Grid2D_t), intent( in ) :: self
-        integer                     , intent( out ) :: nYedge, nZedge
+        integer, intent( out ) :: nYedge, nZedge
         !
         integer :: ny, nz
         
@@ -354,9 +354,9 @@ contains
     subroutine GridIndex(self, nodeType, indVec, j, k)
         !
         class(Grid2D_t), intent( in ) :: self
-        character(*)            , intent( in ) :: nodeType
-        integer                     , intent( in ) :: indVec(:)
-        integer                     , intent( out ) :: j(:), k(:)
+        character(*), intent( in ) :: nodeType
+        integer, intent( in ) :: indVec(:)
+        integer, intent( out ) :: j(:), k(:)
         !
         integer :: ny, nz, nVec, ii
         real(4) :: rNy
@@ -374,7 +374,7 @@ contains
              STOP
         endif
         
-        rNy    = float(ny)
+        rNy = float(ny)
         
         do ii = 1, nVec
              j(ii) = mod(indVec(ii), ny)
@@ -395,9 +395,9 @@ contains
     subroutine VectorIndex(self, nodeType, j, k, indVec)
         !
         class(Grid2D_t), intent( in ) :: self
-        character(*)            , intent( in ) :: nodeType
-        integer                     , intent( in ) :: j(:), k(:)
-        integer                     , intent( out ) :: indVec(:)
+        character(*), intent( in ) :: nodeType
+        integer, intent( in ) :: j(:), k(:)
+        integer, intent( out ) :: indVec(:)
         !
         integer :: ny, nz, nVec, ii
         
@@ -425,8 +425,8 @@ contains
     subroutine Limits(self, nodeType, ny, nz)
         !
         class(Grid2D_t), intent( in ) :: self
-        character(*)            , intent( in ) :: nodeType
-        integer                     , intent( out ) :: ny, nz
+        character(*), intent( in ) :: nodeType
+        integer, intent( out ) :: ny, nz
 
         !>     need to either make node types explicit, or include the parameter definitions
         !>         from abstract grid class

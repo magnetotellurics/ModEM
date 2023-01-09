@@ -85,8 +85,10 @@ contains
         !
         call runForwardModeling( sigma0, d_pred )
         !
+        if( has_e_solution_file ) call writeAllESolution( e_solution_file_name )
+        !
         !> Write Predicted Data, with its proper Rx headers, into to the file <predicted_data_file_name>
-        call writeDataGroupArray( d_pred, predicted_data_file_name )
+        call writeDataGroupTxArray( d_pred, predicted_data_file_name )
         !
         ! Verbose
         write( *, * ) "     - Finish jobForwardModeling"
@@ -97,7 +99,8 @@ contains
     subroutine jobJMult()
         implicit none
         !
-        type( DataGroupTx_t ), allocatable, dimension(:) :: d_pred, JmHat
+        !> Using the same local Data Array for FWD and JMult
+        type( DataGroupTx_t ), allocatable, dimension(:) :: tx_data_array
         !
         ! Verbose
         write( *, * ) "     - Start jobJMult"
@@ -134,19 +137,16 @@ contains
         !> Instantiate the ForwardSolver - Specific type can be chosen via control file
         call createForwardSolver()
         !
-        !> Run ForwardModelling to calculate d_pred
-        d_pred = all_measured_data
+        call runEMSolve( sigma0 )
         !
-        call runForwardModeling( sigma0, d_pred )
+        !> Run ForwardModelling to solve Tx ESolutions (Could be better: Just Tx Solve ????)
+        tx_data_array = all_measured_data
         !
-        !> Initialize JmHat data array in the same format as the predicted data array
-        JmHat = all_measured_data
+        !> Calculate Data Array from JMult routine
+        call JMult( sigma0, pmodel, tx_data_array )
         !
-        !> Calculate JmHat Data array from JMult routine
-        call JMult( sigma0, pmodel, JmHat )
-        !
-        !> Write JmHat to the file <JmHat_data_file_name>
-        call writeDataGroupArray( JmHat, JmHat_data_file_name )
+        !> Write Data Array to the file <jmhat_data_file_name>
+        call writeDataGroupTxArray( tx_data_array, jmhat_data_file_name )
         !
         ! Verbose
         write( *, * ) "     - Finish jobJMult"
@@ -158,8 +158,6 @@ contains
         implicit none
         !
         class( ModelParameter_t ), allocatable :: dsigma
-        !
-        type( DataGroupTx_t ), allocatable, dimension(:) :: d_pred
         !
         ! Verbose
         write( *, * ) "     - Start jobJMult_T"
@@ -186,17 +184,14 @@ contains
         !> Instantiate the ForwardSolver - Specific type can be chosen via control file
         call createForwardSolver()
         !
-        !> Run ForwardModelling to calculate d_pred
-        d_pred = all_measured_data
-        !
         !> Run ForwardModelling to calculate predicted data
-        call runForwardModeling( sigma0, d_pred )
+        call runEMSolve( sigma0 )
         !
         !> Calculate DSigma model from JMult_T routine
         call JMult_T( sigma0, all_measured_data, dsigma )
         !
         !> Write dsigma to <dsigma_file_name> file path
-        call dsigma%write()
+        call dsigma%write( dsigma_file_name )
         !
         !> Flush local variable
         deallocate( dsigma )
@@ -216,8 +211,6 @@ contains
         implicit none
         !
         class( ModelParameter_t ), allocatable :: sigma
-        !
-        real( kind=prec ) :: lambda
         !
         ! Verbose
         write( *, * ) "     - Start jobInversion"
@@ -245,11 +238,13 @@ contains
         !> Read Perturbation Model File: instantiate pmodel (NOT USING RIGHT NOW ????)
         if( has_pmodel_file ) then 
             !
+            deallocate( pmodel )
+            !
             call handlePModelFile()
             !
             call pmodel%setMetric( model_operator%metric )
             !
-            pmodel = model_cov%multBy_Cm( pmodel )
+            call model_cov%multBy_Cm( pmodel )
             !
             call sigma%linComb( ONE, ONE, pmodel )
             !
@@ -267,12 +262,12 @@ contains
         !> Instantiate ForwardSolver - Specific type via control file
         call createForwardSolver()
         !
-        !call DCGsolver( all_measured_data, sigma, pmodel )
+        call DCGsolver( all_measured_data, sigma, pmodel )
         !
-        call NLCGsolver( all_measured_data, lambda, sigma, pmodel )
+        !call NLCGsolver( all_measured_data, lambda, sigma, pmodel )
         !
-        !> Write pmodel to <dsigma_file_name> file path
-        call pmodel%write()
+        !> Flush local variable
+        deallocate( sigma )
         !
         ! Verbose
         write( *, * ) "     - Finish jobInversion"
@@ -325,7 +320,7 @@ contains
         !> according to the arrangement of the Transmitter-Receiver pairs of the input
         if( .NOT. allocated( all_measured_data ) ) then
             !
-            write( *, * ) "     - Create predicted data array"
+            write( *, * ) "     - Create Predicted Data array"
             !
             !> Create an array of DataGroupTx to store the predicted data in the same format as the measured data
             !> Enabling the use of grouped predicted data in future jobs (all_measured_data)
@@ -426,14 +421,14 @@ contains
                 write( *, * ) "          Air Layers [i, dz(i)]:"
                 !
                 do i = air_layer%nz, 1, -(1)
-                    write( *, * ) "               ", i, air_layer%dz(i)
+                    write( *, "( a15, i5, f12.3 )" ) "     ", i, air_layer%dz(i)
                 enddo
                 !
-                write( *, * ) "          Air layers from the method: ", air_layer%method, "."
+                write( *, * ) "          Air layers from the method [", trim( air_layer%method ), "]"
                 !
-                write( *, * ) "          Top of the air layers is at ", sum( air_layer%Dz ) / 1000, " km."
+                write( *, "( a39, f12.3, a4 )" ) "          Top of the air layers is at ", sum( air_layer%Dz ) / 1000, " km."
                 !
-                write( *, "(A, F10.2, A2, F10.2, A2, F10.2, A4, F10.2)" ) "           o(x_data,y,z) * rotDeg: (", main_grid%ox, ", ", main_grid%oy, ", ", main_grid%oz, ") * ", main_grid%rotDeg
+                write( *, "( a31, f8.3, a2, f8.3, a2, f8.3, a4, f8.3 )" ) "          o(x,y,z) * rotDeg: (", main_grid%ox, ", ", main_grid%oy, ", ", main_grid%oz, ") * ", main_grid%rotDeg
                 !
                 allocate( model_operator, source = ModelOperator_MF_t( main_grid ) )
                 !
@@ -501,7 +496,7 @@ contains
              !
         else
              !
-             write( *, * ) "Number of Tx mismatched from Header :[", size( transmitters ), " and ", data_file_standard%n_tx, "]"
+             write( *, * ) "Error: Number of Tx mismatched from Header :[", size( transmitters ), " and ", data_file_standard%n_tx, "]"
              stop
              !
         endif
@@ -596,6 +591,15 @@ contains
                          !
                          argument_index = argument_index + 2
                          !
+                      case ( "-o", "--outdir" )
+                         !
+                         call get_command_argument( argument_index + 1, argument )
+                         outdir_name = trim( argument )
+                         !
+                         if( len( outdir_name ) > 0 ) has_outdir_name = .TRUE.
+                         !
+                         argument_index = argument_index + 2
+                         !
                       case ( "-pm", "--pmodel" )
                          !
                          call get_command_argument( argument_index + 1, argument )
@@ -622,7 +626,7 @@ contains
                       case ( "-jm", "--jmhat" )
                          !
                          call get_command_argument( argument_index + 1, argument )
-                         JmHat_data_file_name = trim( argument )
+                         jmhat_data_file_name = trim( argument )
                          !
                          argument_index = argument_index + 2
                          !
@@ -630,6 +634,8 @@ contains
                          !
                          call get_command_argument( argument_index + 1, argument )
                          e_solution_file_name = trim( argument )
+                         !
+                         if( len( e_solution_file_name ) > 0 ) has_e_solution_file = .TRUE.
                          !
                          argument_index = argument_index + 2
                          !
@@ -670,32 +676,38 @@ contains
         !
         ! I|O
         predicted_data_file_name = "predicted_data.dat"
-        JmHat_data_file_name     = "JmHat.dat"
-        e_solution_file_name     = "esolution.bin"
-        dsigma_file_name         = "dsigma.mod"
-        has_control_file         = .FALSE.
-        has_model_file           = .FALSE.
-        has_pmodel_file          = .FALSE.
-        has_data_file            = .FALSE.
-        verbosis                 = .FALSE.
+        jmhat_data_file_name = "jmhat.dat"
+        e_solution_file_name = "esolution.bin"
+        dsigma_file_name = "dsigma.rho"
         !
-        ! Solvers
+        ! Control flags
+        has_outdir_name = .FALSE.
+        !
+        has_control_file = .FALSE.
+        has_model_file = .FALSE.
+        has_pmodel_file = .FALSE.
+        has_data_file = .FALSE.
+        has_e_solution_file = .FALSE.
+        verbosis = .FALSE.
+        !
+        ! Solver parameters
         QMR_iters = 40
         BCG_iters = 80
         max_divcor_calls = 20
         max_divcor_iters = 100
         tolerance_divcor = 1E-5
         tolerance_qmr = 1E-7
+        !
         forward_solver_type = FWD_IT_DC
         !
-        ! Source
+        ! Source parameters
         source_type = SRC_MT_1D
         get_1D_from = "Geometric_mean"
         !
-        ! Model
-        model_method      = MM_METHOD_FIXED_H
+        ! Model parameters
+        model_method = MM_METHOD_FIXED_H
         model_n_air_layer = 10
-        model_max_height  = 200.0
+        model_max_height = 200.0
         !
     end subroutine setupDefaultParameters
     !
@@ -729,7 +741,7 @@ contains
         if( allocated( model_method ) ) deallocate( model_method )
         if( allocated( get_1D_from ) ) deallocate( get_1D_from )
         if( allocated( predicted_data_file_name ) ) deallocate( predicted_data_file_name )
-        if( allocated( JmHat_data_file_name ) ) deallocate( JmHat_data_file_name )
+        if( allocated( jmhat_data_file_name ) ) deallocate( jmhat_data_file_name )
         if( allocated( e_solution_file_name ) ) deallocate( e_solution_file_name )
         !
         if( allocated( control_file_name ) ) deallocate( control_file_name )
@@ -742,132 +754,6 @@ contains
     end subroutine garbageCollector
     !
     !> No subroutine briefing
-    subroutine writeDataGroupArray( target_tx_data_array, file_name )
-        implicit none
-        !
-        type( DataGroupTx_t ), allocatable, dimension(:) :: target_tx_data_array
-        character(*), intent( in ) :: file_name
-        !
-        type( DataGroup_t ), allocatable, dimension(:) :: to_write_data
-        !
-        class( Transmitter_t ), pointer :: transmitter
-        class( Receiver_t ), pointer :: receiver
-        type( DataGroup_t ), pointer :: data_group
-        !
-        integer :: receiver_type, i, j, ios
-        !
-        ! Verbose
-        write( *, * ) "     > Write Data to file: [", file_name, "]"
-        !
-        !> Put the data in the same input format
-        allocate( to_write_data, source = measured_data )
-        !
-        do i = 1, size( target_tx_data_array )
-            do j = 1, size( target_tx_data_array(i)%data )
-                call setDataGroup( to_write_data, target_tx_data_array(i)%data(j) )
-            enddo
-        enddo
-        !
-        receiver_type = 0
-        !
-        open( unit = ioPredData, file = file_name, action = "write", form = "formatted", iostat = ios )
-        !
-        if( ios == 0 ) then
-            !
-            do i = 1, size( to_write_data )
-                !
-                data_group => getDataGroupByIndex( to_write_data, i )
-                !
-                receiver => getReceiver( data_group%i_rx )
-                !
-                call writePredictedDataHeader( receiver, receiver_type )
-                !
-                transmitter => getTransmitter( data_group%i_tx )
-                !
-                do j = 1, data_group%n_comp
-                    !
-                    select type( transmitter )
-                        !
-                        class is( TransmitterMT_t )
-                            !
-                            write( ioPredData, "(es12.6, 1X, A, 1X, f15.3, f15.3, f15.3, f15.3, f15.3, 1X, A, 1X, es16.6, es16.6, es16.6)" ) transmitter%period, trim(receiver%code), R_ZERO, R_ZERO, receiver%location(1), receiver%location(2), receiver%location(3), trim(data_group%components(j)%str), data_group%reals(j), data_group%imaginaries(j), data_group%errors(j)
-                            !
-                        class is( TransmitterCSEM_t )
-                            !
-                            write( ioPredData, "(A, 1X, es12.6, f15.3, f15.3, f15.3, f15.3, f15.3, f15.3, 1X, A, 1X, f15.3, f15.3, f15.3, 1X, A, 1X, es16.6, es16.6, es16.6)" ) trim(transmitter%dipole), transmitter%period, transmitter%moment, transmitter%azimuth, transmitter%dip, transmitter%location(1), transmitter%location(2), transmitter%location(3), trim(receiver%code), receiver%location(1), receiver%location(2), receiver%location(3), trim(data_group%components(j)%str), data_group%reals(j), data_group%imaginaries(j), data_group%errors(j)
-                            !
-                        class default
-                            stop "Error: writeDataGroupArray: Unclassified data_group!"
-                        !
-                    end select
-                    !
-                enddo
-                !
-            enddo
-            !
-            deallocate( to_write_data )
-            !
-            close( ioPredData )
-            !
-        else
-            write( *, * ) "Error opening [", file_name, "] in writeDataGroupArray!"
-            stop
-        endif
-        !
-    end subroutine writeDataGroupArray
-    !
-    !> No subroutine briefing
-    subroutine writePredictedDataHeader( receiver, receiver_type )
-        implicit none
-        !
-        class( Receiver_t ), intent( in ) :: receiver
-        !
-        integer, intent( inout ) :: receiver_type
-        !
-        if( receiver_type /= receiver%rx_type ) then
-            !
-            select case( receiver%rx_type )
-                !
-                case( 1, 11, 12 )
-                    !
-                    write( ioPredData, "(4A, 40A)" ) "#    ", DATA_FILE_TITLE_MT
-                    !
-                    write( ioPredData, "(74A)" ) "#    Period(s) Code GG_Lat GG_Lon X(m) Y(m) Z(m) Component Real Imag Error"
-                    !
-                case( 2 )
-                    write( ioPredData, "(60A)" ) "#    Missing title for Full_Interstation_TF"
-                case( 3 )
-                    write( ioPredData, "(60A)" ) "#    Missing title for Off_Diagonal_Rho_Phase"
-                case( 4 )
-                    write( ioPredData, "(60A)" ) "#    Missing title for Phase_Tensor"
-                case( 5 )
-                    write( ioPredData, "(60A)" ) "#    Missing title for Off_Diagonal_Impedance"
-                case( 6, 7, 8, 9, 10 )
-                    !
-                    write( ioPredData, "(4A, 40A)" ) "#    ", DATA_FILE_TITLE_CSEM
-                    !
-                    write( ioPredData, "(125A)" ) "#    Tx_Dipole Tx_Period(s) Tx_Moment(Am) Tx_Azi Tx_Dip Tx_X(m) Tx_Y(m) Tx_Z(m) Code X(m) Y(m) Z(m) Component Real Imag Error"
-                    !
-                case default
-                    write( *, * ) "Unknown receiver type :[", receiver%rx_type, "]"
-                    stop "Error: test_FWD.f90: writePredictedDataHeader()"
-                !
-            end select
-            !
-            write( ioPredData, "(4A, 100A)" ) ">    ", getStringReceiverType( receiver%rx_type )
-            write( ioPredData, "(4A, 100A)" ) ">    ", "exp(-i\omega t)"
-            write( ioPredData, "(4A, 100A)" ) ">    ", "[V/m]/[T]"
-            write( ioPredData, "(7A, 100A)" ) ">        ", "0.00"
-            write( ioPredData, "(7A, 100A)" ) ">        ", "0.000    0.000"
-            write( ioPredData, "(A3, i8, i8)" ) ">        ", size( transmitters ), size( receivers )
-            !
-            receiver_type = receiver%rx_type
-            !
-        endif
-        !
-    end subroutine writePredictedDataHeader
-    !
-    !> No subroutine briefing
     subroutine printUsage()
         implicit none
         !
@@ -875,28 +761,23 @@ contains
         write( *, * ) ""
         write( *, * ) "    Forward Modeling:"
         write( *, * ) "        <ModEM> -f -m <rFile_Model> -d <rFile_Data>"
-        write( *, * ) "    Outputs:"
-        write( *, * ) "        - predicted_data.dat or the path specified by [-pd]"
-        write( *, * ) "        - esolution.bin or the path specified by      [-es]"
+        write( *, * ) "    Output:"
+        write( *, * ) "        - predicted_data.dat or the path specified by         [-pd]"
         write( *, * ) ""
         write( *, * ) "    JMult:"
         write( *, * ) "        <ModEM> -j -m <rFile_Model> -pm <rFile_pModel> -d <rFile_Data>"
         write( *, * ) "    Outputs:"
-        write( *, * ) "        - JmHat.dat or the path specified by          [-jm]"
-        write( *, * ) "        - predicted_data.dat or the path specified by [-pd]"
-        write( *, * ) "        - esolution.bin or the path specified by      [-es]"
+        write( *, * ) "        - jmhat.dat or the path specified by                  [-jm]"
         write( *, * ) ""
         write( *, * ) "    JMult_T:"
         write( *, * ) "        <ModEM> -jt -m <rFile_Model> -d <rFile_Data>"
         write( *, * ) "    Output:"
-        write( *, * ) "        - dsigma.mod or the path specified by         [-dm]"
-        write( *, * ) "        - predicted_data.dat or the path specified by [-pd]"
-        write( *, * ) "        - esolution.bin or the path specified by      [-es]"
+        write( *, * ) "        - dsigma.rho or the path specified by                 [-dm]"
         write( *, * ) ""
         write( *, * ) "    Inversion:"
         write( *, * ) "        <ModEM> -i -m <rFile_Model> -d <rFile_Data>"
         write( *, * ) "    Output:"
-        write( *, * ) "        - dsigma.mod or the path specified by         [-dm]"
+        write( *, * ) "        - directory named Output_<date>_<time> or specified by [-o]"
         !
     end subroutine printUsage
     !
@@ -913,14 +794,15 @@ contains
         write( *, * ) "        [-i],  [--inversion] :  Inversion."
         write( *, * )
         write( *, * ) "    Other arguments:"
-        write( *, * ) "        [-d],  [--data]      :  Flag for the input data file path."
-        write( *, * ) "        [-m],  [--model]     :  Flag for the input model file path."
-        write( *, * ) "        [-pm], [--pmodel]    :  Flag for the input perturbation model file path."
-        write( *, * ) "        [-c],  [--control]   :  Flag for the user control file path."
-        write( *, * ) "        [-dm], [--dmodel]    :  Flag for the output dsigma model file path."
-        write( *, * ) "        [-pd], [--predicted] :  Flag for the output predicted data file path."
-        write( *, * ) "        [-jm], [--jmhat]     :  Flag for the output JmHat data file path."
-        write( *, * ) "        [-es], [--esolution] :  Flag for the binary output e-solution file path."
+        write( *, * ) "        [-d],  [--data]      :  Flag to precede data file path."
+        write( *, * ) "        [-m],  [--model]     :  Flag to precede model file path."
+        write( *, * ) "        [-pm], [--pmodel]    :  Flag to precede perturbation model file path."
+        write( *, * ) "        [-c],  [--control]   :  Flag to precede user control file path."
+        write( *, * ) "        [-o],  [--outdir]    :  Flag to precede output directory path."
+        write( *, * ) "        [-dm], [--dmodel]    :  Flag to precede output dsigma model file path."
+        write( *, * ) "        [-pd], [--predicted] :  Flag to precede output predicted data file path."
+        write( *, * ) "        [-jm], [--jmhat]     :  Flag to precede output JmHat data file path."
+        write( *, * ) "        [-es], [--esolution] :  Flag to precede binary output e-solution file path."
         write( *, * ) "        [-v],  [--version]   :  Print version."
         write( *, * ) "        [-vb], [--verbose]   :  Print runtime information."
         write( *, * ) "        [-h],  [--help]      :  Print usage information."

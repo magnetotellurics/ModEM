@@ -384,15 +384,15 @@ module dipole1d
 !
 !> Specify some defaults for parameters required by Dipole1D:
 !
-    HTmethod1D      = 'kk_ht_201'    !> Use 201 point HT digital filters.
-    outputdomain1D  = 'spatial'      !> Assume spatial domain comps
-    lbcomp          = .FALSE.        !> This is changed to true if magnetics in data file
-    sdm1D           = 1.0            !> (Am), dipole moment. Normalize to unit source moment
-    lUseSpline1D    = .TRUE.         !> Use spline interpolation for faster 1D computations
-    linversion      = .FALSE.        !> Compute derivatives with respect to sigma0(layers)
+    HTmethod1D = 'kk_ht_201'    !> Use 201 point HT digital filters.
+    outputdomain1D = 'spatial'      !> Assume spatial domain comps
+    lbcomp = .FALSE.        !> This is changed to true if magnetics in data file
+    sdm1D = 1.0            !> (Am), dipole moment. Normalize to unit source moment
+    lUseSpline1D = .TRUE.         !> Use spline interpolation for faster 1D computations
+    linversion = .FALSE.        !> Compute derivatives with respect to sigma0(layers)
     phaseConvention = 'lag'          !> The usual default is lag, where phase becomes larger positive values with increasing range.
-    lenTx1D         = 0.d0           !> (m) Dipole length 0 = point dipole
-    numIntegPts     = 10             !> Number of points to use for Gauss quadrature integration for finite dipole
+    lenTx1D = 0.d0           !> (m) Dipole length 0 = point dipole
+    numIntegPts = 10             !> Number of points to use for Gauss quadrature integration for finite dipole
  
     end subroutine init_defaults_Dipole1D 
     
@@ -456,9 +456,9 @@ module dipole1d
         azm = azimuthTx1D * pi / 180.d0
         
         !> Save center position of the dipole
-        ctr_xTx1D   = xTx1D
-        ctr_yTx1D   = yTx1D
-        ctr_zTx1D   = zTx1D
+        ctr_xTx1D = xTx1D
+        ctr_yTx1D = yTx1D
+        ctr_zTx1D = zTx1D
         
         !
         !> Compute weights and integration points:
@@ -496,32 +496,32 @@ module dipole1d
         !>       size than to always remember to code ex1D(1:n1D) = w_ex1D(1:n1D)
         nActual1D = size(ex1D,1)
         if(linversion) then
-            nActualnlay1D  = size(dexdsig,2)
+            nActualnlay1D = size(dexdsig,2)
         endif
         
         !> Allocate the working variables into which everything will be summed.
         allocate (w_ex1D(nActual1D), w_ey1D(nActual1D), w_jz1D(nActual1D))
         allocate (w_bx1D(nActual1D), w_by1D(nActual1D), w_bz1D(nActual1D))
-        w_ex1D  = (0.d0,0.d0)
-        w_ey1D  = (0.d0,0.d0)
-        w_jz1D  = (0.d0,0.d0)
-        w_bx1D  = (0.d0,0.d0)
-        w_by1D  = (0.d0,0.d0)
-        w_bz1D  = (0.d0,0.d0)
+        w_ex1D = (0.d0,0.d0)
+        w_ey1D = (0.d0,0.d0)
+        w_jz1D = (0.d0,0.d0)
+        w_bx1D = (0.d0,0.d0)
+        w_by1D = (0.d0,0.d0)
+        w_bz1D = (0.d0,0.d0)
         if(linversion) then
             allocate (w_dexdsig(nActual1D,nActualnlay1D), w_dbxdsig(nActual1D,nActualnlay1D))
             allocate (w_deydsig(nActual1D,nActualnlay1D), w_dbydsig(nActual1D,nActualnlay1D))
             allocate (w_djzdsig(nActual1D,nActualnlay1D), w_dbzdsig(nActual1D,nActualnlay1D))
-            w_dexdsig   = (0.d0,0.d0)
-            w_deydsig   = (0.d0,0.d0)
-            w_djzdsig   = (0.d0,0.d0)
-            w_dbxdsig   = (0.d0,0.d0)
-            w_dbydsig   = (0.d0,0.d0)
-            w_dbzdsig   = (0.d0,0.d0)
+            w_dexdsig = (0.d0,0.d0)
+            w_deydsig = (0.d0,0.d0)
+            w_djzdsig = (0.d0,0.d0)
+            w_dbxdsig = (0.d0,0.d0)
+            w_dbydsig = (0.d0,0.d0)
+            w_dbzdsig = (0.d0,0.d0)
         endif
     else
         allocate(xint(1),weights(1))
-        xint   = 0.d0
+        xint = 0.d0
         weights = 1.d0
     endif
     
@@ -535,9 +535,9 @@ module dipole1d
         !> Azimuth is degrees clockwise from north of the HEAD
         !> Dip is degrees DOWN from horizontal of the HEAD
         if(lenTx1D /= 0.d0) then
-            xTx1D   = ctr_xTx1D + (xint(j) * cos(dip) * cos(azm))
-            yTx1D   = ctr_yTx1D + (xint(j) * cos(dip) * sin(azm))
-            zTx1D   = ctr_zTx1D + (xint(j) * sin(dip))
+            xTx1D = ctr_xTx1D + (xint(j) * cos(dip) * cos(azm))
+            yTx1D = ctr_yTx1D + (xint(j) * cos(dip) * sin(azm))
+            zTx1D = ctr_zTx1D + (xint(j) * sin(dip))
         endif    
        
         !> Init Tx position related variables
@@ -644,9 +644,9 @@ module dipole1d
     if(lenTx1D /= 0.d0) then
         !> Return Tx position to its center value so future calls (for other
         !> frequencies) have the correct center.
-        xTx1D   = ctr_xTx1D
-        yTx1D   = ctr_yTx1D
-        zTx1D   = ctr_zTx1D
+        xTx1D = ctr_xTx1D
+        yTx1D = ctr_yTx1D
+        zTx1D = ctr_zTx1D
         
         !> Scale integral by lenTx1D, then move values to return variables & deallocate the summing variables
         ex1D = w_ex1D / lenTx1D
@@ -1575,10 +1575,10 @@ subroutine legendre_compute_dr ( order, xtab, weight )
 !
     cc = dcos(rotang)
     ss = dsin(rotang)
-    tmpx  =  ex*cc + ey*ss
-    tmpy  = -ex*ss + ey*cc
-    ex    =  tmpx
-    ey    =  tmpy
+    tmpx =  ex*cc + ey*ss
+    tmpy = -ex*ss + ey*cc
+    ex =  tmpx
+    ey =  tmpy
     
     end subroutine rotate_fields
 
@@ -1618,7 +1618,7 @@ subroutine legendre_compute_dr ( order, xtab, weight )
 !>  Allocate storage if derivatives also being computed   
 !
     if(linversion) then
-        allocate ( dRmdsig(nlay1D,nlay1D), dRpdsig(nlay1D,nlay1D) , dSmdsig(nlay1D,nlay1D), dSpdsig(nlay1D,nlay1D) )
+        allocate ( dRmdsig(nlay1D,nlay1D), dRpdsig(nlay1D,nlay1D), dSmdsig(nlay1D,nlay1D), dSpdsig(nlay1D,nlay1D) )
         allocate ( dadsig(nlay1D,nlay1D), dbdsig(nlay1D,nlay1D), dcdsig(nlay1D,nlay1D), dddsig(nlay1D,nlay1D) )
         allocate ( dAydsig(nlay1D), dAzdsig(nlay1D)  )
         allocate ( dAydsigdz(nlay1D), dAzdsigdz(nlay1D),dAzdsigdz2(nlay1D)   )   
@@ -1662,12 +1662,12 @@ subroutine legendre_compute_dr ( order, xtab, weight )
  !> Initialize a few parameters for the potential computations
  !> 
  
-    omega         = 2d0*pi*ftx1D
-    csig          = sig1D - II*omega*eps !> use complex conductivity locally
+    omega = 2d0*pi*ftx1D
+    csig = sig1D - II*omega*eps !> use complex conductivity locally
     !
     deallocate( sig1D )
     !
-    k2(1:nlay1D)  = -ii*omega*mu0*csig(1:nlay1D) !>  using exp(-iwt) time dependence
+    k2(1:nlay1D) = -ii*omega*mu0*csig(1:nlay1D) !>  using exp(-iwt) time dependence
     
     lhed = .FALSE.
     lved = .FALSE.
@@ -1759,9 +1759,9 @@ subroutine legendre_compute_dr ( order, xtab, weight )
         kxmode = kxmode1D  !> assign to local array
 
 !
-!> kxmode  = 1   HED pointing along x
-!>         = 2   HED pointing along y
-!>         = 3   VED pointing along z
+!> kxmode = 1   HED pointing along x
+!> = 2   HED pointing along y
+!> = 3   VED pointing along z
 !
         if(kxmode /= 3) lhed = .TRUE.
         if(kxmode == 3) lved = .TRUE.
@@ -1776,28 +1776,28 @@ subroutine legendre_compute_dr ( order, xtab, weight )
         select case (trim(CTmethod1D))
         
         case ('kk_ct_81') 
-            ncsfc    = 81
+            ncsfc = 81
             basecsfc(1:81) = kk_ct_base_81
-            cosfc(1:81)    = kk_ct_cos_81
-            sinfc(1:81)    = kk_ct_sin_81
+            cosfc(1:81) = kk_ct_cos_81
+            sinfc(1:81) = kk_ct_sin_81
             
         case ('kk_ct_241') 
-            ncsfc    = 241
+            ncsfc = 241
             basecsfc(1:241) = kk_ct_base_241
-            cosfc(1:241)    = kk_ct_cos_241
-            sinfc(1:241)    = kk_ct_sin_241      
+            cosfc(1:241) = kk_ct_cos_241
+            sinfc(1:241) = kk_ct_sin_241      
             
         case ('kk_ct_601') 
-            ncsfc    = 601
+            ncsfc = 601
             basecsfc(1:601) = kk_ct_base_601
-            cosfc(1:601)    = kk_ct_cos_601
-            sinfc(1:601)    = kk_ct_sin_601    
+            cosfc(1:601) = kk_ct_cos_601
+            sinfc(1:601) = kk_ct_sin_601    
          
          case default
-            ncsfc    = 601
+            ncsfc = 601
             basecsfc(1:601) = kk_ct_base_601
-            cosfc(1:601)    = kk_ct_cos_601
-            sinfc(1:601)    = kk_ct_sin_601             
+            cosfc(1:601) = kk_ct_cos_601
+            sinfc(1:601) = kk_ct_sin_601             
         end select
                  
     case default
@@ -1943,31 +1943,31 @@ subroutine legendre_compute_dr ( order, xtab, weight )
 !
 !> Get r and theta to the site in the rotated coordinate system
 !
-    dx         = x1D(i) - xTx1D
-    dy         = y1D(i) - yTx1D
-    z          = z1D(i)                !> internal potential routines use r and z
-    r          = sqrt( dx**2 + dy**2)  !> Horizontal range to site 
+    dx = x1D(i) - xTx1D
+    dy = y1D(i) - yTx1D
+    z = z1D(i)                !> internal potential routines use r and z
+    r = sqrt( dx**2 + dy**2)  !> Horizontal range to site 
     
     if((r).lt.1d0) then  
         r = 1d0 !> Move r to 1 so that division by r doesn't explode anywhere
         !> For now this will be a nudge to y=1,x=0 but keep in mind that this will cause small 
         !> error in r=0 fields for inversions...but then again this is where point dipole approximation
         !> is inaccurate, and source-receiver navigation uncertainty will be relatively greatest.
-        thetaRx    = 90.d0 !> Angle from x to site fixed to 90 degrees
+        thetaRx = 90.d0 !> Angle from x to site fixed to 90 degrees
     else  
-        thetaRx    = 180d0/pi*atan2(dy,dx) !> Angle from x to site
+        thetaRx = 180d0/pi*atan2(dy,dx) !> Angle from x to site
     endif
-    rotang     = azimuthTx1D - 90.d0     !> Angle from x to rotated x axis
-    theta      = thetaRx - rotang        !> Angle from rotated x axis to site
-    rotang     = rotang*pi/180.d0        !> convert to radians
-    theta      = theta*pi/180.d0         !> convert to radians
-    thetaRx    = thetaRx*pi/180.d0
+    rotang = azimuthTx1D - 90.d0     !> Angle from x to rotated x axis
+    theta = thetaRx - rotang        !> Angle from rotated x axis to site
+    rotang = rotang*pi/180.d0        !> convert to radians
+    theta = theta*pi/180.d0         !> convert to radians
+    thetaRx = thetaRx*pi/180.d0
 
 
-    sintheta   = sin(theta)
-    sin2theta  = sin(2.d0*theta)
-    costheta   = cos(theta)  
-    cos2theta  = cos(2.d0*theta)
+    sintheta = sin(theta)
+    sin2theta = sin(2.d0*theta)
+    costheta = cos(theta)  
+    cos2theta = cos(2.d0*theta)
     !
 !> Get layer current site resides in
 !
@@ -2870,10 +2870,10 @@ subroutine legendre_compute_dr ( order, xtab, weight )
     Sm = 0d0
     Rp = 0d0
     Sp = 0d0
-    a  = 0d0
-    b  = 0d0
-    c  = 0d0
-    d  = 0d0
+    a = 0d0
+    b = 0d0
+    c = 0d0
+    d = 0d0
     
     if(linversion) then
     
@@ -2899,21 +2899,21 @@ subroutine legendre_compute_dr ( order, xtab, weight )
       Sm(i-1) = Sm(i-1)*expmgh(i-1) !> this so that for the iTxlayer the exponent
       !> is omitted and we then don't need the positive exponent in the formula for a_itxlayer and b_itxlayer
    
-      gmogp   = (-ii*omega*mu0*(csig(i)-csig(i-1) )) / (gamma(i)+gamma(i-1))**2  
+      gmogp = (-ii*omega*mu0*(csig(i)-csig(i-1) )) / (gamma(i)+gamma(i-1))**2  
       sgmosgp =  ( gamma(i)*csig(i-1) - gamma(i-1)*csig(i) ) / ( gamma(i)*csig(i-1) + gamma(i-1)*csig(i) )
       
-      rjexp  = Rm(i-1)*expmgh(i-1)   !> then we apply attenuation to bottom of layer
-      sjexp  = Sm(i-1)*expmgh(i-1)         
+      rjexp = Rm(i-1)*expmgh(i-1)   !> then we apply attenuation to bottom of layer
+      sjexp = Sm(i-1)*expmgh(i-1)         
     
-      Rm(i)  =  (gmogp + rjexp)   / ( 1.d0 + gmogp*rjexp)   !> and compute the recursion coeff for the current layer,
+      Rm(i) =  (gmogp + rjexp)   / ( 1.d0 + gmogp*rjexp)   !> and compute the recursion coeff for the current layer,
                                                             !> sans expmgh(i) term
-      Sm(i)  =  (sgmosgp + sjexp) / ( 1.d0 + sgmosgp*sjexp)     
+      Sm(i) =  (sgmosgp + sjexp) / ( 1.d0 + sgmosgp*sjexp)     
         
     
         if(linversion) then
              
-            dgammadsig   = -ii*omega*mu0 / (2.d0 *gamma(i))
-            drdsig       = 2.d0*gamma(i-1) / ((gamma(i) + gamma(i-1) )**2) *dgammadsig
+            dgammadsig = -ii*omega*mu0 / (2.d0 *gamma(i))
+            drdsig = 2.d0*gamma(i-1) / ((gamma(i) + gamma(i-1) )**2) *dgammadsig
             
             !> Post-apply expmgh(i-1) to  all recursion coefficients (done to avoid exp(+) term in final formula):
             dRmdsig(1:i-1,i-1) = dRmdsig(1:i-1,i-1)*expmgh(i-1)
@@ -2923,35 +2923,35 @@ subroutine legendre_compute_dr ( order, xtab, weight )
             !> the (int) term deals with Tx in bottom layer
           
             !> Next step is to compute dRm(:)/dsig(i-1) for previous layers
-            dgammadsig   = -ii*omega*mu0 / (2.d0 *gamma(i-1))
-            drdsig       = -2.d0*gamma(i) / ((gamma(i) + gamma(i-1) )**2) *dgammadsig !> actually dr(i)dsig(i-1)
+            dgammadsig = -ii*omega*mu0 / (2.d0 *gamma(i-1))
+            drdsig = -2.d0*gamma(i) / ((gamma(i) + gamma(i-1) )**2) *dgammadsig !> actually dr(i)dsig(i-1)
             
-            db           = dRmdsig(i-1,i-1)*expmgh(i-1) - rjexp*h(i-1)*dgammadsig
+            db = dRmdsig(i-1,i-1)*expmgh(i-1) - rjexp*h(i-1)*dgammadsig
 
-            dRmdsig(i-1,i)  =   ( drdsig*(1.d0 - Rm(i)*rjexp)  + db*(1.d0 - Rm(i)*gmogp) ) / (1.d0 + gmogp*rjexp)
+            dRmdsig(i-1,i) =   ( drdsig*(1.d0 - Rm(i)*rjexp)  + db*(1.d0 - Rm(i)*gmogp) ) / (1.d0 + gmogp*rjexp)
             
             !> Lastly, apply chain rule for layers 1:i-2 to propagate deriv for layers already initialized on previous iterations:
-            dRmdsig(1:i-2,i)    = dRmdsig(1:i-2,i-1) * ( expmgh(i-1)*(1.d0 - Rm(i)*gmogp) )/(1.d0 + gmogp*rjexp) 
+            dRmdsig(1:i-2,i) = dRmdsig(1:i-2,i-1) * ( expmgh(i-1)*(1.d0 - Rm(i)*gmogp) )/(1.d0 + gmogp*rjexp) 
     
             !> Now do the same thing for Sm terms:
-            dgammadsig      = -ii*omega*mu0 / (2.d0 *gamma(i))
-            dsdsig          = (dgammadsig*csig(i-1)*(1.d0 - sgmosgp)  - gamma(i-1)*(1.d0+ sgmosgp) ) /  & 
+            dgammadsig = -ii*omega*mu0 / (2.d0 *gamma(i))
+            dsdsig = (dgammadsig*csig(i-1)*(1.d0 - sgmosgp)  - gamma(i-1)*(1.d0+ sgmosgp) ) /  & 
                             & ( gamma(i)*csig(i-1) + gamma(i-1)*csig(i) )
             
             !> Post-apply expmgh(i-1) to  all recursion coefficients (done to avoid exp(+) term in final formula):
             dSmdsig(1:i-1,i-1) = dSmdsig(1:i-1,i-1)*expmgh(i-1)
             
             !> Initialize dSm(i)/dsig(i):        
-            dSmdsig(i,i)    = dsdsig*(1.d0 - Sm(i)*sjexp) / (1.d0 + sgmosgp*sjexp) - (1- int(i/nlay1d) )*Sm(i)*h(i) *dgammadsig 
+            dSmdsig(i,i) = dsdsig*(1.d0 - Sm(i)*sjexp) / (1.d0 + sgmosgp*sjexp) - (1- int(i/nlay1d) )*Sm(i)*h(i) *dgammadsig 
             !> the (int) term deals with Tx in bottom layer
             
             !> Next step is to compute dSm(:)/dsig(i-1) for previous layers
-            dgammadsig  = -ii*omega*mu0 / (2.d0 *gamma(i-1))
+            dgammadsig = -ii*omega*mu0 / (2.d0 *gamma(i-1))
             
-            dsdsig      = (  gamma(i)*(1.d0 - sgmosgp) - dgammadsig*csig(i)*(1.d0 + sgmosgp) ) /  &
+            dsdsig = (  gamma(i)*(1.d0 - sgmosgp) - dgammadsig*csig(i)*(1.d0 + sgmosgp) ) /  &
                         & ( gamma(i)*csig(i-1) + gamma(i-1)*csig(i) )   !> actually ds(i)dsig(i-1)
             
-            db          = dSmdsig(i-1,i-1)* expmgh(i-1) - sjexp*h(i-1)*dgammadsig
+            db = dSmdsig(i-1,i-1)* expmgh(i-1) - sjexp*h(i-1)*dgammadsig
             
             dSmdsig(i-1,i) =    ( dsdsig*(1.d0  - Sm(i)*sjexp)  + db*(1.d0  - Sm(i)*sgmosgp) ) / (1.d0 + sgmosgp*sjexp) 
             
@@ -2976,19 +2976,19 @@ subroutine legendre_compute_dr ( order, xtab, weight )
       
       !> this so that for the iTxlayer the exponent is omitted and we then don't need the positive exponent in the 
       !> formula for a_i and b_i     
-       gmogp   = (-ii*omega*mu0*(csig(i)-csig(i+1) )) / (gamma(i)+gamma(i+1))**2
+       gmogp = (-ii*omega*mu0*(csig(i)-csig(i+1) )) / (gamma(i)+gamma(i+1))**2
        sgmosgp = ( gamma(i)*csig(i+1) - gamma(i+1)*csig(i) ) / ( gamma(i)*csig(i+1) + gamma(i+1)*csig(i) )      
           
-       rjexp   = Rp(i+1)*expmgh(i+1)  !> since Rp(nlay1D) is zero, no need to worry about height of bottom layer
-       sjexp   = Sp(i+1)*expmgh(i+1)
+       rjexp = Rp(i+1)*expmgh(i+1)  !> since Rp(nlay1D) is zero, no need to worry about height of bottom layer
+       sjexp = Sp(i+1)*expmgh(i+1)
        
-       Rp(i)   =  (gmogp + rjexp)   / ( 1.d0 + gmogp*rjexp)
-       Sp(i)   =  (sgmosgp + sjexp) / ( 1.d0 + sgmosgp*sjexp)    
+       Rp(i) =  (gmogp + rjexp)   / ( 1.d0 + gmogp*rjexp)
+       Sp(i) =  (sgmosgp + sjexp) / ( 1.d0 + sgmosgp*sjexp)    
    
         if(linversion) then
 
             dgammadsig = -ii*omega*mu0 / (2.d0 *gamma(i))
-            drdsig     = 2.d0*gamma(i+1) / ((gamma(i) + gamma(i+1) )**2) *dgammadsig
+            drdsig = 2.d0*gamma(i+1) / ((gamma(i) + gamma(i+1) )**2) *dgammadsig
             
             !> Post-apply expmgh(i+1) to  all recursion coefficients (done to avoid exp(+) term in final formula):       
             dRpdsig(i+1:nlay1d,i+1) = dRpdsig(i+1:nlay1d,i+1)*expmgh(i+1)       
@@ -2998,10 +2998,10 @@ subroutine legendre_compute_dr ( order, xtab, weight )
                           & ( 1- int( (nlay1d-i+1)/nlay1d) )*Rp(i)*h(i)*dgammadsig  !> the (int) term deals with Tx in top layer
          
             !> Next step is to compute dRm(:)/dsig(i+1) for previous layers
-            dgammadsig  = -ii*omega*mu0 / (2.d0 *gamma(i+1))
-            drdsig      = -2.d0*gamma(i) / ((gamma(i) + gamma(i+1) )**2) *dgammadsig !> actually dr(i)dsig(i+1)
+            dgammadsig = -ii*omega*mu0 / (2.d0 *gamma(i+1))
+            drdsig = -2.d0*gamma(i) / ((gamma(i) + gamma(i+1) )**2) *dgammadsig !> actually dr(i)dsig(i+1)
             
-            db          = dRpdsig(i+1,i+1)*expmgh(i+1) - rjexp*h(i+1)*dgammadsig
+            db = dRpdsig(i+1,i+1)*expmgh(i+1) - rjexp*h(i+1)*dgammadsig
 
             dRpdsig(i+1,i) =    ( drdsig*( 1.d0 - Rp(i)*rjexp)  + db*( 1.d0 - Rp(i)*gmogp) ) / (1.d0 + gmogp*rjexp)
             
@@ -3011,22 +3011,22 @@ subroutine legendre_compute_dr ( order, xtab, weight )
             
             !> Now do the same thing for Sm terms:
             dgammadsig = -ii*omega*mu0 / (2.d0 *gamma(i))
-            dsdsig     = (dgammadsig*csig(i+1)*(1.d0 - sgmosgp) - (gamma(i+1)*(1.d0+ sgmosgp)) ) /  &
+            dsdsig = (dgammadsig*csig(i+1)*(1.d0 - sgmosgp) - (gamma(i+1)*(1.d0+ sgmosgp)) ) /  &
                        & ( gamma(i)*csig(i+1) + gamma(i+1)*csig(i) )
 
             !> Post-apply expmgh(i+1) to  all recursion coefficients (done to avoid exp(+) term in final formula):       
-            dSpdsig(i+1:nlay1d,i+1)     = dSpdsig(i+1:nlay1d,i+1)*expmgh(i+1)   
+            dSpdsig(i+1:nlay1d,i+1) = dSpdsig(i+1:nlay1d,i+1)*expmgh(i+1)   
             
             !> Initialize dSm(i)/dsig(i):        
             dSpdsig(i,i) = dsdsig* (1.d0 - Sp(i)*sjexp) / (1.d0 + sgmosgp*sjexp) - & 
                          &  ( 1- int( (nlay1d-i+1)/nlay1d) )*Sp(i)*h(i) *dgammadsig !> the (int) term deals with Tx in top layer
             
         !> Next step is to compute dSm(:)/dsig(i+1) for previous layers
-            dgammadsig  = -ii*omega*mu0 / (2.d0 *gamma(i+1))
-            dsdsig      = ( gamma(i)*(1.d0 - sgmosgp) - dgammadsig*csig(i)*(1.d0 + sgmosgp)  ) / &
+            dgammadsig = -ii*omega*mu0 / (2.d0 *gamma(i+1))
+            dsdsig = ( gamma(i)*(1.d0 - sgmosgp) - dgammadsig*csig(i)*(1.d0 + sgmosgp)  ) / &
                         & ( gamma(i)*csig(i+1) + gamma(i+1)*csig(i) )   !> actually ds(i)dsig(i+1)
                         
-            db          = dSpdsig(i+1,i+1)* expmgh(i+1) - sjexp*h(i+1)*dgammadsig
+            db = dSpdsig(i+1,i+1)* expmgh(i+1) - sjexp*h(i+1)*dgammadsig
                 
             dSpdsig(i+1,i) =    ( dsdsig*( 1.d0 - Sp(i)*sjexp)  + db*( 1.d0 - Sp(i)*sgmosgp) ) / (1.d0 + sgmosgp*sjexp)         
             
@@ -3044,11 +3044,11 @@ subroutine legendre_compute_dr ( order, xtab, weight )
 !
 !> Compute Ay potential coefficients in the source layer:
 !>   
-    rmrp     = Rm(iTxlayer)*Rp(iTxlayer)
+    rmrp = Rm(iTxlayer)*Rp(iTxlayer)
     onemrmrp = 1.d0 - rmrp*expmgh(iTxlayer)*expmgh(iTxlayer)  !> added exp term since I omitted it earlier
-    rhs      = mu0*sdm1D/ (2.d0*gamma(iTxlayer))
-    srcp     = exp(-gamma(iTxlayer)*heightTx)*rhs   
-    srcm     = exp(-gamma(iTxlayer)*depthTx )*rhs 
+    rhs = mu0*sdm1D/ (2.d0*gamma(iTxlayer))
+    srcp = exp(-gamma(iTxlayer)*heightTx)*rhs   
+    srcm = exp(-gamma(iTxlayer)*depthTx )*rhs 
 
     a(iTxlayer) = ( rmrp*srcm*expmgh(iTxlayer)  + Rp(iTxlayer)*srcp  ) / onemrmrp  
     b(iTxlayer) = ( rmrp*srcp*expmgh(iTxlayer)  + Rm(iTxlayer)*srcm  ) / onemrmrp  
@@ -3081,7 +3081,7 @@ subroutine legendre_compute_dr ( order, xtab, weight )
         dgammadsig = -ii*omega*mu0 / (2.d0 *gamma(iTxlayer)) 
         
       !> da/dsig: 
-        p  = exp(-gamma(iTxlayer)*heightTx)
+        p = exp(-gamma(iTxlayer)*heightTx)
         rr = exp(-gamma(iTxlayer)*depthTx )
         dp = -p*heightTx*dgammadsig     
         dr = -rr*depthTx*dgammadsig 
@@ -3106,14 +3106,14 @@ subroutine legendre_compute_dr ( order, xtab, weight )
         
          
        !> db/dsig:
-        p  = exp(-gamma(iTxlayer)*depthTx )
+        p = exp(-gamma(iTxlayer)*depthTx )
         dp = -p*depthTx*dgammadsig
         rr = exp(-gamma(iTxlayer)*heightTx)
         dr = -rr*heightTx*dgammadsig
         
-        q  = Rp(iTxlayer)*expmgh(iTxlayer)  
+        q = Rp(iTxlayer)*expmgh(iTxlayer)  
  
-        s  = Rm(iTxlayer)*expmgh(iTxlayer)   
+        s = Rm(iTxlayer)*expmgh(iTxlayer)   
         
         t = Rm(iTxlayer)
         
@@ -3130,8 +3130,8 @@ subroutine legendre_compute_dr ( order, xtab, weight )
         !> Compute the source terms for the first step of the upward/downward continuations:
         !>   
         
-        srcpInv     = -srcp/gamma(iTxlayer)*(gamma(iTxlayer)*heightTx + 1.d0) * dgammadsig
-        srcmInv     = -srcm/gamma(iTxlayer)*(gamma(iTxlayer)*depthTx  + 1.d0) * dgammadsig
+        srcpInv = -srcp/gamma(iTxlayer)*(gamma(iTxlayer)*heightTx + 1.d0) * dgammadsig
+        srcmInv = -srcm/gamma(iTxlayer)*(gamma(iTxlayer)*depthTx  + 1.d0) * dgammadsig
         
     endif
     
@@ -3141,9 +3141,9 @@ subroutine legendre_compute_dr ( order, xtab, weight )
     do i = iTxlayer-1,1,-1
        
         aytop =  (a(i+1)*expmgh(i+1) + b(i+1) + srcm ) 
-        a(i)  = aytop / ( 1.d0 + Rm(i)*expmgh(i) )  
-        b(i)  = a(i)*Rm(i)
-        srcm  = 0d0 !> primary source term only for first layer above source layer
+        a(i) = aytop / ( 1.d0 + Rm(i)*expmgh(i) )  
+        b(i) = a(i)*Rm(i)
+        srcm = 0d0 !> primary source term only for first layer above source layer
     
     enddo
     
@@ -3158,7 +3158,7 @@ subroutine legendre_compute_dr ( order, xtab, weight )
             dadsig(i+1,i) = dadsig(i+1,i) - a(i+1)*h(i+1)*expmgh(i+1)*(-ii*omega*mu0 / (2.d0 *gamma(i+1))) 
                 
             !> add modified terms for dsig in layer i-1 if i-1 is source layer:
-            dadsig(i+1,i)  = dadsig(i+1,i) + srcmInv
+            dadsig(i+1,i) = dadsig(i+1,i) + srcmInv
             
             !> add terms for dsig in layer i
             dadsig(i,i) = dadsig(i,i) + b(i)*h(i)*expmgh(i)*(-ii*omega*mu0 / (2.d0 *gamma(i)))  
@@ -3183,9 +3183,9 @@ subroutine legendre_compute_dr ( order, xtab, weight )
     do i = iTxlayer+1,nlay1D
         
         aytop = (a(i-1) + b(i-1)*expmgh(i-1) + srcp )
-        b(i)  = aytop/ (1.d0 + Rp(i)*expmgh(i) )
-        a(i)  = b(i)*Rp(i)
-        srcp  = 0d0 !> primary source term only for first layer below source layer
+        b(i) = aytop/ (1.d0 + Rp(i)*expmgh(i) )
+        a(i) = b(i)*Rp(i)
+        srcp = 0d0 !> primary source term only for first layer below source layer
     
     enddo
     
@@ -3200,7 +3200,7 @@ subroutine legendre_compute_dr ( order, xtab, weight )
             dbdsig(i-1,i) = dbdsig(i-1,i) - b(i-1)*h(i-1)*expmgh(i-1)*(-ii*omega*mu0 / (2.d0 *gamma(i-1))) 
         
             !> add modified terms for dsig in layer i-1 if i-1 is source layer:          
-            dbdsig(i-1,i)  = dbdsig(i-1,i) + srcpInv 
+            dbdsig(i-1,i) = dbdsig(i-1,i) + srcpInv 
             
             !> add terms for dsig in layer i
             dbdsig(i,i) = dbdsig(i,i) + a(i)*h(i)*expmgh(i)*(-ii*omega*mu0 / (2.d0 *gamma(i)))  
@@ -3223,11 +3223,11 @@ subroutine legendre_compute_dr ( order, xtab, weight )
 !
 !> Compute \Lambda_z potential coefficients c and d in the source layer:
 !
-    smsp     = Sm(iTxlayer)*Sp(iTxlayer)
+    smsp = Sm(iTxlayer)*Sp(iTxlayer)
     onemrmrp = 1.d0 - smsp*expmgh(iTxlayer)*expmgh(iTxlayer)  !> added exp term since I omitted it earlier
-    rhs      = mu0*sdm1D/ (2.d0*lam**2)
-    srcp     = -exp(-gamma(iTxlayer)*heightTx)*rhs   
-    srcm     =  exp(-gamma(iTxlayer)*depthTx )*rhs 
+    rhs = mu0*sdm1D/ (2.d0*lam**2)
+    srcp = -exp(-gamma(iTxlayer)*heightTx)*rhs   
+    srcm =  exp(-gamma(iTxlayer)*depthTx )*rhs 
 
     c(iTxlayer) = ( smsp*srcm*expmgh(iTxlayer)  + Sp(iTxlayer)*srcp  ) / onemrmrp  
     d(iTxlayer) = ( smsp*srcp*expmgh(iTxlayer)  + Sm(iTxlayer)*srcm  ) / onemrmrp   
@@ -3241,17 +3241,17 @@ subroutine legendre_compute_dr ( order, xtab, weight )
         dgammadsig = -ii*omega*mu0 / (2.d0 *gamma(iTxlayer)) 
     
        !> dc/dsig:
-        p  = -exp(-gamma(iTxlayer)*heightTx)
+        p = -exp(-gamma(iTxlayer)*heightTx)
         rr = exp(-gamma(iTxlayer)*depthTx )
         dp = -p*heightTx*dgammadsig 
         dr = -rr*depthTx*dgammadsig 
         
-        q  = Sm(iTxlayer)*expmgh(iTxlayer)
+        q = Sm(iTxlayer)*expmgh(iTxlayer)
         
-        s  = Sp(iTxlayer)*expmgh(iTxlayer)
+        s = Sp(iTxlayer)*expmgh(iTxlayer)
         
         t = Sp(iTxlayer)
-        u  = rhs    
+        u = rhs    
         du = 0d0
         
         ff = c(iTxlayer)
@@ -3264,15 +3264,15 @@ subroutine legendre_compute_dr ( order, xtab, weight )
                                   & isgnRp*(p+q*rr)*u*t*h(iTxlayer)*dgammadsig )/ onemrmrp
          
        !> dd/dsig:
-        p  = exp(-gamma(iTxlayer)*depthTx )
+        p = exp(-gamma(iTxlayer)*depthTx )
         rr = -exp(-gamma(iTxlayer)*heightTx)
         dp = -p*depthTx*dgammadsig 
         dr = -rr*heightTx*dgammadsig 
  
         
-        q  = Sp(iTxlayer)*expmgh(iTxlayer)
+        q = Sp(iTxlayer)*expmgh(iTxlayer)
         
-        s  = Sm(iTxlayer)*expmgh(iTxlayer)       
+        s = Sm(iTxlayer)*expmgh(iTxlayer)       
         
         t = Sm(iTxlayer)
     
@@ -3288,8 +3288,8 @@ subroutine legendre_compute_dr ( order, xtab, weight )
         !
         !> Compute the source terms for the first step of the upward/downward continuations:
         !>       
-        srcpInv     = -srcp*heightTx*dgammadsig
-        srcmInv     = -srcm*depthTx*dgammadsig
+        srcpInv = -srcp*heightTx*dgammadsig
+        srcmInv = -srcm*depthTx*dgammadsig
          
     endif
     
@@ -3298,8 +3298,8 @@ subroutine legendre_compute_dr ( order, xtab, weight )
 !
     do i = iTxlayer-1,1,-1
         aytop =   c(i+1)*expmgh(i+1) + d(i+1)   + srcm  !>   
-        c(i)  = aytop / ( 1.d0 + Sm(i)*expmgh(i) )  
-        d(i)  = c(i)*Sm(i)
+        c(i) = aytop / ( 1.d0 + Sm(i)*expmgh(i) )  
+        d(i) = c(i)*Sm(i)
         srcm = 0d0
     enddo
         
@@ -3313,7 +3313,7 @@ subroutine legendre_compute_dr ( order, xtab, weight )
             dcdsig(i+1,i) = dcdsig(i+1,i) - c(i+1)*h(i+1)*expmgh(i+1)*(-ii*omega*mu0 / (2.d0 *gamma(i+1)))                  
      
             !> add modified terms for dsig in layer i-1 if i-1 is source layer:
-            dcdsig(i+1,i)  = dcdsig(i+1,i) + srcmInv
+            dcdsig(i+1,i) = dcdsig(i+1,i) + srcmInv
             
             !> add terms for dsig in layer i  
             dcdsig(i,i) = dcdsig(i,i) + d(i)*h(i)*expmgh(i)*(-ii*omega*mu0 / (2.d0 *gamma(i)))  
@@ -3336,8 +3336,8 @@ subroutine legendre_compute_dr ( order, xtab, weight )
 !>   
     do i = iTxlayer+1,nlay1D
         aytop =  c(i-1) + d(i-1)*expmgh(i-1) + srcp   
-        d(i)  = aytop / (1.d0 + Sp(i)*expmgh(i) )
-        c(i)  = d(i)*Sp(i)
+        d(i) = aytop / (1.d0 + Sp(i)*expmgh(i) )
+        c(i) = d(i)*Sp(i)
         srcp = 0d0
      enddo    
      
@@ -3351,7 +3351,7 @@ subroutine legendre_compute_dr ( order, xtab, weight )
             dddsig(i-1,i) = dddsig(i-1,i) - d(i-1)*h(i-1)*expmgh(i-1)*(-ii*omega*mu0 / (2.d0 *gamma(i-1))) 
             
             !> add modified terms for dsig in layer i-1 if i-1 is source layer:
-            dddsig(i-1,i)  = dddsig(i-1,i) + srcpInv
+            dddsig(i-1,i) = dddsig(i-1,i) + srcpInv
             
             !> add terms for dsig in layer i  
             dddsig(i,i) = dddsig(i,i) + c(i)*h(i)*expmgh(i)*(-ii*omega*mu0 / (2.d0 *gamma(i))) 
@@ -3462,7 +3462,7 @@ subroutine legendre_compute_dr ( order, xtab, weight )
 !
 !> Source term if same layer as transmitter
 !
-    expsrc1  = exp(-gamma(iTxlayer)*dabs(z-zTx1D))
+    expsrc1 = exp(-gamma(iTxlayer)*dabs(z-zTx1D))
     
 
 !
@@ -3474,7 +3474,7 @@ subroutine legendre_compute_dr ( order, xtab, weight )
 !>    if( abs(dd).lt.1d-150) dd = 0d0  
 !>    if( abs(expcoef1).lt.1d-150) expcoef1 = 0d0
 !>    if( abs(expcoef2).lt.1d-150) expcoef2 = 0d0
-!>    if( abs(expsrc1).lt.1d-150)  expsrc1  = 0d0
+!>    if( abs(expsrc1).lt.1d-150)  expsrc1 = 0d0
 
     ae1 = aa*expcoef1
     be2 = bb*expcoef2
@@ -3486,27 +3486,27 @@ subroutine legendre_compute_dr ( order, xtab, weight )
     de2 = dd*expcoef2
     
     lam2 = lam*lam
-    gg2  = gg*gg
+    gg2 = gg*gg
     
-    srcterm  = isgnsrc*mu0*sdm1D/2d0/gamma(iTxlayer)*expsrc1  !isgnsrc is 0|1 
+    srcterm = isgnsrc*mu0*sdm1D/2d0/gamma(iTxlayer)*expsrc1  !isgnsrc is 0|1 
     
-    ay       = ae1pbe2 + srcterm 
+    ay = ae1pbe2 + srcterm 
   
-    dzsrcterm  = isgndsrcdz*mu0*sdm1D/2d0*expsrc1        !> isgndsrcdz is -1|0|1 for derivative term
+    dzsrcterm = isgndsrcdz*mu0*sdm1D/2d0*expsrc1        !> isgndsrcdz is -1|0|1 for derivative term
      
-    daydz    = gg*(ae1mbe2)  + dzsrcterm
+    daydz = gg*(ae1mbe2)  + dzsrcterm
        
-    az       = ce1 + de2 - gg*( ae1mbe2)/lam2
+    az = ce1 + de2 - gg*( ae1mbe2)/lam2
     
-    dazdz    = gg*(ce1 - de2) - ae1pbe2*gg2/lam2  
+    dazdz = gg*(ce1 - de2) - ae1pbe2*gg2/lam2  
     
-    dazdz2   = gg2*az
+    dazdz2 = gg2*az
     
     aypdazdz = gg*(ce1 - de2) - ae1pbe2*k2(iRxlayer)/lam2 + srcterm 
     
     daydzpdazdz2 = gg2*(ce1 + de2) - gg*k2(iRxlayer)*ae1mbe2/lam2   + dzsrcterm
     
-    csigsite  = csig(iRxlayer)
+    csigsite = csig(iRxlayer)
 
     if(linversion) then
     
@@ -3531,10 +3531,10 @@ subroutine legendre_compute_dr ( order, xtab, weight )
 
      !> dAydsig:
         
-        dAydsig   = dae1dsig + dbe2dsig
+        dAydsig = dae1dsig + dbe2dsig
         
         !> if iRxlayer = iTxlayer, we need to add source term derivatives:
-        srcterm  = -isgnsrc*mu0*sdm1D/2d0*expsrc1*(1.d0/gg2 + dabs(z-zTx1D)/gg)*dgammadsig  !isgnsrc is 0|1 
+        srcterm = -isgnsrc*mu0*sdm1D/2d0*expsrc1*(1.d0/gg2 + dabs(z-zTx1D)/gg)*dgammadsig  !isgnsrc is 0|1 
         dAydsig(iRxlayer) = dAydsig(iRxlayer) + srcterm
         
             
@@ -3547,7 +3547,7 @@ subroutine legendre_compute_dr ( order, xtab, weight )
         
         !> if iRxlayer = iTxlayer, we need to add source term derivatives (this is harsh):
         !> note that we need source term for both sides of gg*(dae1dsig - dbe2dsig) 
-        srcterm  = -isgndsrcdz*mu0*sdm1D/2d0*expsrc1 *dgammadsig * dabs(z-zTx1D)    
+        srcterm = -isgndsrcdz*mu0*sdm1D/2d0*expsrc1 *dgammadsig * dabs(z-zTx1D)    
         
         !> isgndsrcdz is -1|0|1 for derivative term
         dAydsigdz(iRxlayer) = dAydsigdz(iRxlayer) + srcterm
@@ -3638,8 +3638,8 @@ subroutine legendre_compute_dr ( order, xtab, weight )
 !
     Sm = 0d0
     Sp = 0d0
-    c  = 0d0
-    d  = 0d0   
+    c = 0d0
+    d = 0d0   
     
     if(linversion) then
     
@@ -3662,13 +3662,13 @@ subroutine legendre_compute_dr ( order, xtab, weight )
       !> don't need the positive exponent in the formula for c_i and d_i
       
       sgmosgp = ( gamma(i)*csig(i-1) - gamma(i-1)*csig(i) ) / ( gamma(i)*csig(i-1) + gamma(i-1)*csig(i) )
-      sjexp   = Sm(i-1)*expmgh(i-1) 
-      Sm(i)   =  (sgmosgp + sjexp)  / ( 1.d0 + sgmosgp*sjexp)
+      sjexp = Sm(i-1)*expmgh(i-1) 
+      Sm(i) =  (sgmosgp + sjexp)  / ( 1.d0 + sgmosgp*sjexp)
       
       if(linversion) then
       
-            dgammadsig      = -ii*omega*mu0 / (2.d0 *gamma(i))
-            dsdsig          = (dgammadsig*csig(i-1)*(1.d0 - sgmosgp)  - &
+            dgammadsig = -ii*omega*mu0 / (2.d0 *gamma(i))
+            dsdsig = (dgammadsig*csig(i-1)*(1.d0 - sgmosgp)  - &
                             & gamma(i-1)*(1.d0+ sgmosgp) )/( gamma(i)*csig(i-1) + gamma(i-1)*csig(i) )
             
             !> Post-apply expmgh(i-1) to  all recursion coefficients (done to avoid exp(+) term in final formula):
@@ -3676,16 +3676,16 @@ subroutine legendre_compute_dr ( order, xtab, weight )
                                                                 !> columns are now the rx location
             
             !> Initialize dSm(i)/dsig(i):        
-            dSmdsig(i,i)    = dsdsig*(1.d0 - Sm(i)*sjexp) / (1.d0 + sgmosgp*sjexp) - (1- int(i/nlay1d) )*Sm(i)*h(i) *dgammadsig
+            dSmdsig(i,i) = dsdsig*(1.d0 - Sm(i)*sjexp) / (1.d0 + sgmosgp*sjexp) - (1- int(i/nlay1d) )*Sm(i)*h(i) *dgammadsig
             !> the (int) term deals with Tx in bottom layer
             
             !> Next step is to compute dSm(:)/dsig(i-1) for previous layers
-            dgammadsig  = -ii*omega*mu0 / (2.d0 *gamma(i-1))
+            dgammadsig = -ii*omega*mu0 / (2.d0 *gamma(i-1))
             
-            dsdsig      = (  gamma(i)*(1.d0 - sgmosgp) - dgammadsig*csig(i)*(1.d0 + sgmosgp) ) / &
+            dsdsig = (  gamma(i)*(1.d0 - sgmosgp) - dgammadsig*csig(i)*(1.d0 + sgmosgp) ) / &
                         &  ( gamma(i)*csig(i-1) + gamma(i-1)*csig(i) )   !> actually ds(i)dsig(i-1)
             
-            db          = dSmdsig(i-1,i-1)* expmgh(i-1) - sjexp*h(i-1)*dgammadsig
+            db = dSmdsig(i-1,i-1)* expmgh(i-1) - sjexp*h(i-1)*dgammadsig
             
             dSmdsig(i-1,i) = ( dsdsig*(1.d0  - Sm(i)*sjexp)  + db*(1.d0  - Sm(i)*sgmosgp) ) / (1.d0 + sgmosgp*sjexp)    
 
@@ -3707,28 +3707,28 @@ subroutine legendre_compute_dr ( order, xtab, weight )
         !> this so that for the iTxlayer the exponent is omitted and we then
         !> don't need the positive exponent in the formula for c_i and d_i       
         sgmosgp =  ( gamma(i)*csig(i+1) - gamma(i+1)*csig(i) ) / ( gamma(i)*csig(i+1) + gamma(i+1)*csig(i) )   
-        sjexp  = Sp(i+1)*expmgh(i+1) !> since Sp(nlay1D) is zero, no need to worry about height of bottom layer
-        Sp(i)  =  (sgmosgp + sjexp) / ( 1.d0 + sgmosgp*sjexp)
+        sjexp = Sp(i+1)*expmgh(i+1) !> since Sp(nlay1D) is zero, no need to worry about height of bottom layer
+        Sp(i) =  (sgmosgp + sjexp) / ( 1.d0 + sgmosgp*sjexp)
         
         if(linversion) then
 
             dgammadsig = -ii*omega*mu0 / (2.d0 *gamma(i))
-            dsdsig     = (dgammadsig*csig(i+1)*(1.d0 - sgmosgp) - (gamma(i+1)*(1.d0+ sgmosgp)) ) / &
+            dsdsig = (dgammadsig*csig(i+1)*(1.d0 - sgmosgp) - (gamma(i+1)*(1.d0+ sgmosgp)) ) / &
                        &  ( gamma(i)*csig(i+1) + gamma(i+1)*csig(i) )
 
             !> Post-apply expmgh(i+1) to  all recursion coefficients (done to avoid exp(+) term in final formula):       
-            dSpdsig(i+1:nlay1d,i+1)     = dSpdsig(i+1:nlay1d,i+1)*expmgh(i+1)   
+            dSpdsig(i+1:nlay1d,i+1) = dSpdsig(i+1:nlay1d,i+1)*expmgh(i+1)   
             
             !> Initialize dSm(i)/dsig(i):        
             dSpdsig(i,i) = dsdsig* (1.d0 - Sp(i)*sjexp) / (1.d0 + sgmosgp*sjexp) - & 
                          &  ( 1- int( (nlay1d-i+1)/nlay1d) )*Sp(i)*h(i) *dgammadsig !> the (int) term deals with Tx in top layer
             
             !> Next step is to compute dSm(:)/dsig(i+1) for previous layers
-            dgammadsig  = -ii*omega*mu0 / (2.d0 *gamma(i+1))
-            dsdsig      = ( gamma(i)*(1.d0 - sgmosgp) - dgammadsig*csig(i)*(1.d0 + sgmosgp)  ) / &
+            dgammadsig = -ii*omega*mu0 / (2.d0 *gamma(i+1))
+            dsdsig = ( gamma(i)*(1.d0 - sgmosgp) - dgammadsig*csig(i)*(1.d0 + sgmosgp)  ) / &
                         & ( gamma(i)*csig(i+1) + gamma(i+1)*csig(i) )   !> actually ds(i)dsig(i+1)
                         
-            db          = dSpdsig(i+1,i+1)* expmgh(i+1) - sjexp*h(i+1)*dgammadsig
+            db = dSpdsig(i+1,i+1)* expmgh(i+1) - sjexp*h(i+1)*dgammadsig
 
             dSpdsig(i+1,i) = ( dsdsig*( 1.d0 - Sp(i)*sjexp)  + db*( 1.d0 - Sp(i)*sgmosgp) ) / (1.d0 + sgmosgp*sjexp)    
              
@@ -3744,11 +3744,11 @@ subroutine legendre_compute_dr ( order, xtab, weight )
 !
 !> Compute Az potential coefficients in the source layer:
 !>   
-    rmrp     = Sm(iTxlayer)*Sp(iTxlayer)
+    rmrp = Sm(iTxlayer)*Sp(iTxlayer)
     onemrmrp = 1.d0 - rmrp*expmgh(iTxlayer)*expmgh(iTxlayer) !> added exp term since I omitted it earlier
-    rhs      = mu0*sdm1D/ (2.d0*gamma(iTxlayer))
-    srcp     = exp(-gamma(iTxlayer)*heightTx)*rhs  
-    srcm     = exp(-gamma(iTxlayer)*depthTx )*rhs  
+    rhs = mu0*sdm1D/ (2.d0*gamma(iTxlayer))
+    srcp = exp(-gamma(iTxlayer)*heightTx)*rhs  
+    srcm = exp(-gamma(iTxlayer)*depthTx )*rhs  
 
     c(iTxlayer) = ( rmrp*srcm*expmgh(iTxlayer)  + Sp(iTxlayer)*srcp  ) / onemrmrp    
     d(iTxlayer) = ( rmrp*srcp*expmgh(iTxlayer)  + Sm(iTxlayer)*srcm  ) / onemrmrp    
@@ -3776,18 +3776,18 @@ subroutine legendre_compute_dr ( order, xtab, weight )
         dgammadsig = -ii*omega*mu0 / (2.d0 *gamma(iTxlayer)) 
     
        !> dc/dsig:
-        p  = exp(-gamma(iTxlayer)*heightTx)
+        p = exp(-gamma(iTxlayer)*heightTx)
         rr = exp(-gamma(iTxlayer)*depthTx )
         dp = -p*heightTx*dgammadsig 
         dr = -rr*depthTx*dgammadsig 
         
-        q  = Sm(iTxlayer)*expmgh(iTxlayer)
+        q = Sm(iTxlayer)*expmgh(iTxlayer)
         
-        s  = Sp(iTxlayer)*expmgh(iTxlayer)
+        s = Sp(iTxlayer)*expmgh(iTxlayer)
         
         t = Sp(iTxlayer)
 
-        u  = rhs    
+        u = rhs    
         du = -dgammadsig*rhs/gamma(iTxlayer)  !> term only for iTxlayer deriv
         
         ff = c(iTxlayer)
@@ -3800,14 +3800,14 @@ subroutine legendre_compute_dr ( order, xtab, weight )
                                   & isgnRp*(p+q*rr)*u*t*h(iTxlayer)*dgammadsig )/ onemrmrp
          
        !> dd/dsig:
-        p  = exp(-gamma(iTxlayer)*depthTx )
+        p = exp(-gamma(iTxlayer)*depthTx )
         rr = exp(-gamma(iTxlayer)*heightTx)
         dp = -p*depthTx*dgammadsig 
         dr = -rr*heightTx*dgammadsig 
         
-        q  = Sp(iTxlayer)*expmgh(iTxlayer)
+        q = Sp(iTxlayer)*expmgh(iTxlayer)
         
-        s  = Sm(iTxlayer)*expmgh(iTxlayer)       
+        s = Sm(iTxlayer)*expmgh(iTxlayer)       
         
         t = Sm(iTxlayer)
         
@@ -3823,8 +3823,8 @@ subroutine legendre_compute_dr ( order, xtab, weight )
         !
         !> Compute the source terms for the first step of the upward/downward continuations:
         !>       
-        srcpInv     = -srcp/gamma(iTxlayer)*(gamma(iTxlayer)*heightTx + 1.d0) * dgammadsig
-        srcmInv     = -srcm/gamma(iTxlayer)*(gamma(iTxlayer)*depthTx  + 1.d0) * dgammadsig
+        srcpInv = -srcp/gamma(iTxlayer)*(gamma(iTxlayer)*heightTx + 1.d0) * dgammadsig
+        srcmInv = -srcm/gamma(iTxlayer)*(gamma(iTxlayer)*depthTx  + 1.d0) * dgammadsig
             
     endif
     
@@ -3848,7 +3848,7 @@ subroutine legendre_compute_dr ( order, xtab, weight )
             dcdsig(i+1,i) = dcdsig(i+1,i) - c(i+1)*h(i+1)*expmgh(i+1)*(-ii*omega*mu0 / (2.d0 *gamma(i+1)))                  
      
             !> add modified terms for dsig in layer i-1 if i-1 is source layer:
-            dcdsig(i+1,i)  = dcdsig(i+1,i) + srcmInv
+            dcdsig(i+1,i) = dcdsig(i+1,i) + srcmInv
             
             !> add terms for dsig in layer i  
             dcdsig(i,i) = dcdsig(i,i) + d(i)*h(i)*expmgh(i)*(-ii*omega*mu0 / (2.d0 *gamma(i)))  
@@ -3888,7 +3888,7 @@ subroutine legendre_compute_dr ( order, xtab, weight )
             dddsig(i-1,i) = dddsig(i-1,i) - d(i-1)*h(i-1)*expmgh(i-1)*(-ii*omega*mu0 / (2.d0 *gamma(i-1))) 
             
             !> add modified terms for dsig in layer i-1 if i-1 is source layer:
-            dddsig(i-1,i)  = dddsig(i-1,i) + srcpInv
+            dddsig(i-1,i) = dddsig(i-1,i) + srcpInv
             
             !> add terms for dsig in layer i  
             dddsig(i,i) = dddsig(i,i) + c(i)*h(i)*expmgh(i)*(-ii*omega*mu0 / (2.d0 *gamma(i))) 
@@ -3992,7 +3992,7 @@ subroutine legendre_compute_dr ( order, xtab, weight )
 !
 !> Source term if same layer as transmitter
 !>   
-    expsrc1  = exp(-gamma(iTxlayer)*dabs(z-zTx1D))
+    expsrc1 = exp(-gamma(iTxlayer)*dabs(z-zTx1D))
     
 !>    if( abs(cc).lt.1d-150) cc=0d0
 !>    if( abs(dd).lt.1d-150) dd=0d0    
@@ -4000,21 +4000,21 @@ subroutine legendre_compute_dr ( order, xtab, weight )
 !>    if( abs(expcoef2).lt.1d-150) expcoef2=0d0
 !>    if( abs(expsrc1).lt.1d-150) expsrc1=0d0
     
-    srcterm  = isgnsrc*mu0*sdm1D/2d0/gamma(iTxlayer)*expsrc1  !isgnsrc is 0|1 
+    srcterm = isgnsrc*mu0*sdm1D/2d0/gamma(iTxlayer)*expsrc1  !isgnsrc is 0|1 
     
     ce1 = cc*expcoef1
     
     de2 = dd*expcoef2
     
-    az       = ce1 + de2 + srcterm 
+    az = ce1 + de2 + srcterm 
     
-    srcterm  = isgndsrcdz*mu0*sdm1D/2d0*expsrc1        !> isgndsrcdz is -1|0|1 for derivative term   
+    srcterm = isgndsrcdz*mu0*sdm1D/2d0*expsrc1        !> isgndsrcdz is -1|0|1 for derivative term   
     
-    dazdz    = gg*(ce1 - de2)  + srcterm
+    dazdz = gg*(ce1 - de2)  + srcterm
     
-    srcterm  = isgnsrc*mu0*sdm1D/2d0*expsrc1*(gamma(iTxlayer)*abs(isgndsrcdz)) !> second derivative of source term
+    srcterm = isgnsrc*mu0*sdm1D/2d0*expsrc1*(gamma(iTxlayer)*abs(isgndsrcdz)) !> second derivative of source term
     
-    dazdz2   = gg*gg*(ce1 + de2 ) + srcterm
+    dazdz2 = gg*gg*(ce1 + de2 ) + srcterm
   
     csigsite = csig(iRxlayer)
     
@@ -4040,7 +4040,7 @@ subroutine legendre_compute_dr ( order, xtab, weight )
     
         dAzdsig = dce1dsig + dde2dsig 
         !> if iRxlayer = iTxlayer, we need to add source term derivatives:
-        srcterm  = -isgnsrc*mu0*sdm1D/2d0*expsrc1*(1.d0/(gg*gg) + dabs(z-zTx1D)/gg)*dgammadsig  !isgnsrc is 0|1 
+        srcterm = -isgnsrc*mu0*sdm1D/2d0*expsrc1*(1.d0/(gg*gg) + dabs(z-zTx1D)/gg)*dgammadsig  !isgnsrc is 0|1 
         dAzdsig(iRxlayer) = dAzdsig(iRxlayer) + srcterm
         
      !> dAzdsigdz:
@@ -4115,9 +4115,9 @@ subroutine legendre_compute_dr ( order, xtab, weight )
     
     do i = 1,n1D           
     
-        dx         = x1D(i) - xTx1D
-        dy         = y1D(i) - yTx1D
-        r          = sqrt( dx**2 + dy**2)  !> Horizontal range to site
+        dx = x1D(i) - xTx1D
+        dy = y1D(i) - yTx1D
+        r = sqrt( dx**2 + dy**2)  !> Horizontal range to site
         if(r<1d0) r = 1d0
         if(r>r_max) r_max = r
         if(r<r_min) r_min = r
@@ -4494,8 +4494,8 @@ subroutine legendre_compute_dr ( order, xtab, weight )
 !> Compute real parts:
 !
     y2real = 0d0
-    u      = 0d0
-    yreal  = dble(y)
+    u = 0d0
+    yreal = dble(y)
        
     do i=2,n-1
         sig = ( x2(i) - x2(i-1) ) / ( x2(i+1) - x2(i-1) )
@@ -4518,8 +4518,8 @@ subroutine legendre_compute_dr ( order, xtab, weight )
 !> Compute imaginary parts:
 !
     y2imag = 0d0
-    u      = 0d0
-    yimag  = aimag(y)
+    u = 0d0
+    yimag = aimag(y)
        
     do  i=2,n-1
         sig = ( x2(i) - x2(i-1) ) / ( x2(i+1) - x2(i-1) )
@@ -4596,8 +4596,8 @@ subroutine legendre_compute_dr ( order, xtab, weight )
         !> Compute weights:
         !
             h2 = log10(lam_interp(khi)) - log10(lam_interp(klo))        
-            ai  = (log10(lam_interp(khi)) - log10(x))/h2
-            bi  = (log10(x) - log10(lam_interp(klo)))/h2
+            ai = (log10(lam_interp(khi)) - log10(x))/h2
+            bi = (log10(x) - log10(lam_interp(klo)))/h2
             a3ma = (ai**3-ai)*(h2**2)/6.d0
             b3mb = (bi**3-bi)*(h2**2)/6.d0
         !
@@ -4694,8 +4694,8 @@ subroutine legendre_compute_dr ( order, xtab, weight )
         !> Compute weights:
         !
             h2 = log10(lam_interp(khi)) - log10(lam_interp(klo))        
-            ai  = (log10(lam_interp(khi)) - log10(x))/h2
-            bi  = (log10(x) - log10(lam_interp(klo)))/h2
+            ai = (log10(lam_interp(khi)) - log10(x))/h2
+            bi = (log10(x) - log10(lam_interp(klo)))/h2
             a3ma = (ai**3-ai)*(h2**2)/6.d0
             b3mb = (bi**3-bi)*(h2**2)/6.d0
         !

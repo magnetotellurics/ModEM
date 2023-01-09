@@ -25,7 +25,7 @@ module machine_dep_mod
 !> Compiler dependent unit numbers for stderr, stdout and stdin.
   integer, parameter, public :: stderr = 0
   integer, parameter, public :: stdout = 6
-  integer, parameter, public :: stdin  = 5
+  integer, parameter, public :: stdin = 5
   integer, parameter, public :: stdmes = 99
 
 
@@ -42,7 +42,7 @@ module machine_dep_mod
 
 !> Select default character kind of processor
   integer, parameter, public :: real_kind = kind(1.0)
-  integer, parameter, public :: int_kind  = kind(1)    
+  integer, parameter, public :: int_kind = kind(1)    
   integer, parameter, public :: char_kind = kind('a')
 
 #ifndef USE_MPI

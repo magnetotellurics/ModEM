@@ -8,7 +8,7 @@ module DataGroup
     use Constants
     !
     !> Global file path name for data files
-    character(:), allocatable :: predicted_data_file_name, JmHat_data_file_name
+    character(:), allocatable :: predicted_data_file_name, jmhat_data_file_name
     !
     type :: DataGroup_t
         !

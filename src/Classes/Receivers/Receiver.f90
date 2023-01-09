@@ -14,7 +14,7 @@ module Receiver
     !
     type, abstract :: Receiver_t
         !
-        integer :: id, rx_type, n_comp
+        integer :: i_rx, rx_type, n_comp
         !
         character(:), allocatable :: code
         !
@@ -126,7 +126,7 @@ contains
         !
         class( Receiver_t ), intent( inout ) :: self
         !
-        self%id = 0
+        self%i_rx = 0
         !
         self%n_comp = 0
         !
@@ -276,7 +276,7 @@ contains
         !
         integer :: i
         !
-        self%data_group = DataGroup_t( self%id, transmitter%id, self%n_comp, self%is_complex, .FALSE. )
+        self%data_group = DataGroup_t( self%i_rx, transmitter%i_tx, self%n_comp, self%is_complex, .FALSE. )
         !
         do i = 1, self%n_comp
             !

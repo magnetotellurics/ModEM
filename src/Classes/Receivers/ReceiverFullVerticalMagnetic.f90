@@ -205,7 +205,7 @@ contains
         !
         class( ReceiverFullVerticalMagnetic_t ), intent( in ) :: self
         !
-        write( *, * ) "Print ReceiverFullVerticalMagnetic_t: ", self%id
+        write( *, * ) "Print ReceiverFullVerticalMagnetic_t: ", self%i_rx
         !
     end subroutine printReceiverFullVerticalMagnetic
     !

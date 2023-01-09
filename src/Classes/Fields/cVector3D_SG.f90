@@ -43,13 +43,15 @@ module cVector3D_SG
         procedure, public :: dotProd => dotProdCVector3D_SG
         procedure, public :: diagMult => diagMultCVector3D_SG
         !
+        procedure, public :: getReal => getRealCVector3D_SG
+        !
         procedure, public :: copyFrom => copyFromCVector3D_SG
         !
         procedure, public :: sumEdges => sumEdgesCVector3D_SG
         procedure, public :: avgCells => avgCellsCVector3D_SG
         !
-		procedure, public :: conjugate => conjugateCVector3D_SG
-		!
+        procedure, public :: conjugate => conjugateCVector3D_SG
+        !
         procedure, public :: linComb => linCombCVector3D_SG
         procedure, public :: multAdd => multAddCVector3D_SG
         procedure, public :: interpFunc => interpFuncCVector3D_SG
@@ -292,7 +294,7 @@ contains
         implicit none
         !
         class( cVector3D_SG_t ), intent( inout ) :: self
-        complex( kind=prec ) , intent( in ) :: cvalue
+        complex( kind=prec ), intent( in ) :: cvalue
         !
         select case(self%grid_type)
             case(EDGE)
@@ -942,7 +944,7 @@ contains
         implicit none
         !
         class( cVector3D_SG_t ), intent( in ) :: self
-        class( Scalar_t ), allocatable, intent( inout ) :: cell_obj
+        class( Field_t ), allocatable, intent( inout ) :: cell_obj
         logical, optional, intent( in ) :: interior_only
         !
         integer :: x_xend, x_yend, x_zend
@@ -1382,6 +1384,31 @@ contains
         end select !GRID
         !
     end subroutine interpFuncCVector3D_SG
+    !
+    !> No function briefing
+    subroutine getRealCVector3D_SG( self, r_field )
+        implicit none
+        !
+        class( cVector3D_SG_t ), intent( in ) :: self
+        class( Field_t ), allocatable, intent( out ) :: r_field
+        !
+        allocate( r_field, source = rVector3D_SG_t( self%grid, self%grid_type ) )
+        !
+        select type ( r_field )
+            !
+            class is( rVector3D_SG_t )
+                !
+                r_field%x = real( self%x, kind=prec )
+                r_field%y = real( self%y, kind=prec )
+                r_field%z = real( self%z, kind=prec )
+                !
+            class default
+                !
+                stop "Error: getRealCVector3D_SG > Undefined r_field"
+                !
+        end select
+        !
+    end subroutine getRealCVector3D_SG
     !
     !> No subroutine briefing
     subroutine copyFromCVector3D_SG( self, rhs )

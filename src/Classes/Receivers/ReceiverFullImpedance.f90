@@ -260,7 +260,7 @@ contains
         !
         class( ReceiverFullImpedance_t ), intent( in ) :: self
         !
-        write( *, * ) "ReceiverFullImpedance_t: ", self%id, self%rx_type, self%n_comp
+        write( *, * ) "ReceiverFullImpedance_t: ", self%i_rx, self%rx_type, self%n_comp
         !
     end subroutine printReceiverFullImpedance
     !

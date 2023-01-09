@@ -35,7 +35,7 @@ module Forward1D
     !> No function briefing
     function Forward1D_ctor( sigma ) result( self )
         !
-        class( ModelParameter1D_t ), target , intent( in ) :: sigma
+        class( ModelParameter1D_t ), target, intent( in ) :: sigma
         !
         type( Forward1D_t ) :: self
         !
@@ -50,7 +50,7 @@ module Forward1D
         implicit none
         !
         class( Forward1D_t ), intent( inout ) :: self
-        type( ModelParameter1D_t ), target , intent( in ) :: sigma
+        type( ModelParameter1D_t ), target, intent( in ) :: sigma
         !
         self%sigma => sigma
         !
@@ -174,7 +174,7 @@ module Forward1D
     subroutine gridedSolutionForward1D( self, b, beta, h, E1D )
         !>    given coefficients b, complex wavenumbers beta, layer thickness h
         !>    compute electric field solution E1D evaluated at grid levels
-        !>    specfied in z , and normalized so that E1D(1) = 1.0
+        !>    specfied in z, and normalized so that E1D(1) = 1.0
         class(Forward1D_t), intent( in ) :: self
         complex( kind=prec ), intent( in ), dimension(:) :: b, beta
         real( kind=prec ), intent( in ), dimension(:) :: h

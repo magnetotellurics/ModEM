@@ -12,8 +12,8 @@ module Solver
     real( kind=prec ) :: tolerance_divcor, tolerance_qmr
     !
     character(:), allocatable :: solver_type
-    character( len=3 ), parameter :: QMR  = "QMR"
-    character( len=3 ), parameter :: PCG  = "PCG"
+    character( len=3 ), parameter :: QMR = "QMR"
+    character( len=3 ), parameter :: PCG = "PCG"
     character( len=4 ), parameter :: BiCG = "BiCG"
     !
     !> Solver Base Type
@@ -86,9 +86,9 @@ contains
         !
         class( Solver_t ), intent( inout ) :: self
         !
-        self%max_iter  = 0
-        self%n_iter    = 0
-        self%omega     = R_ZERO
+        self%max_iter = 0
+        self%n_iter = 0
+        self%omega = R_ZERO
         self%tolerance = R_ZERO
         !
         self%failed = .FALSE.

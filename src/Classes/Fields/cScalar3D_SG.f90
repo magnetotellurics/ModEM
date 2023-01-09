@@ -35,7 +35,7 @@ module cScalar3D_SG
         !> Arithmetic/algebraic operations
         procedure, public :: zeros => zerosCScalar3D_SG
         procedure, public :: add => addCScalar3D_SG
-		!
+        !
         procedure, public :: subValue => subValueCScalar3D_SG
         procedure, public :: subField => subFieldCScalar3D_SG
         !
@@ -46,14 +46,17 @@ module cScalar3D_SG
         procedure, public :: divByValue => divByValueCScalar3D_SG
         !
         procedure, public :: dotProd => dotProdCScalar3D_SG
+		!
+		procedure, public :: sumEdges => sumEdgesCScalar3D_SG
         !
         !> Miscellaneous
+        procedure, public :: conjugate => conjugateCScalar3D_SG
         !
-		procedure, public :: conjugate => conjugateCScalar3D_SG
-		!
         procedure, public :: linComb => linCombCScalar3D_SG
         !
         procedure, public :: multAdd => multAddCScalar3D_SG
+        !
+        procedure, public :: getReal => getRealCScalar3D_SG
         !
         procedure, public :: copyFrom => copyFromCScalar3D_SG
         !
@@ -633,7 +636,7 @@ contains
         class( cScalar3D_SG_t ), intent( inout ) :: self
         complex( kind=prec ), intent( in ) :: cvalue
         !
-		self%v = self%v - cvalue
+        self%v = self%v - cvalue
         !
     end subroutine subValueCScalar3D_SG
     !
@@ -744,8 +747,8 @@ contains
             select type( rhs )
                 class is( cScalar3D_SG_t )
                     !
-					cvalue = sum( conjg( self%v ) * rhs%v )
-					!
+                    cvalue = sum( conjg( self%v ) * rhs%v )
+                    !
                 class default
                     stop "Error: dotProdCScalar3D_SG > undefined rhs"
             end select
@@ -755,6 +758,18 @@ contains
         endif
         !
     end function dotProdCScalar3D_SG
+    !
+    !> No subroutine briefing
+    subroutine sumEdgesCScalar3D_SG( self, cell_obj, interior_only )
+        implicit none
+        !
+        class( cScalar3D_SG_t ), intent( in ) :: self
+        class( Field_t ), allocatable, intent( inout ) :: cell_obj
+        logical, optional, intent( in ) :: interior_only
+        !
+        stop "Error: sumEdgesCScalar3D_SG not implemented yet"
+        !
+    end subroutine sumEdgesCScalar3D_SG
     !
     !> No subroutine briefing
     subroutine conjugateCScalar3D_SG( self )
@@ -813,6 +828,29 @@ contains
         !
     end subroutine multAddCScalar3D_SG
     !
+    !> No function briefing
+    subroutine getRealCScalar3D_SG( self, r_field )
+        implicit none
+        !
+        class( cScalar3D_SG_t ), intent( in ) :: self
+        class( Field_t ), allocatable, intent( out ) :: r_field
+        !
+        allocate( r_field, source = rScalar3D_SG_t( self%grid, self%grid_type ) )
+        !
+        select type ( r_field )
+            !
+            class is( rScalar3D_SG_t )
+                !
+                r_field%v = real( self%v, kind=prec )
+                !
+            class default
+                !
+                stop "Error: getRealCScalar3D_SG > Undefined r_field"
+                !
+        end select
+        !
+    end subroutine getRealCScalar3D_SG
+    !
     !> No subroutine briefing
     subroutine copyFromCScalar3D_SG( self, rhs )
         implicit none
@@ -837,16 +875,14 @@ contains
                 self%NdV = rhs%NdV
                 self%Nxyz = rhs%Nxyz
                 !
-                if( allocated( self%v ) ) deallocate( self%v )
-                allocate( self%v, source = rhs%v )
+                self%v = rhs%v
                 !
             class is( rScalar3D_SG_t )
                 !
                 self%NdV = rhs%NdV
                 self%Nxyz = rhs%Nxyz
                 !
-                if( allocated( self%v ) ) deallocate( self%v )
-                allocate( self%v, source = cmplx( rhs%v, 0.0, kind=prec ) )
+                self%v = cmplx( rhs%v, 0.0, kind=prec )
                 !
             class default
                 stop "Error: copyFromCScalar3D_SG > Unclassified RHS"

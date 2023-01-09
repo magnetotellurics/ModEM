@@ -5,9 +5,6 @@ module DataGroupTxArray
     !
     use DataGroupTx
     !
-    !> Global array with the Measured data for all transmitters
-    type( DataGroupTx_t ), allocatable, dimension(:) :: all_measured_data
-    !
     public :: subDataGroupTxArray
     public :: dotProdDataGroupTxArray
     public :: linCombDataGroupTxArray

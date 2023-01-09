@@ -11,9 +11,6 @@ module ModelParameter
     use Grid
     use MetricElements
     !
-    !> Global name for e_solution file
-    character(:), allocatable :: dsigma_file_name
-    !
     type, abstract :: ModelParameter_t
         !
         class( MetricElements_t ), pointer :: metric
@@ -150,16 +147,17 @@ module ModelParameter
         !
         !> No interface function briefing
         subroutine interface_dpdemapping_t_model_parameter( self, eVec, dsigma )
-            import :: ModelParameter_t, Vector_t
+            import :: ModelParameter_t, Field_t
             class( ModelParameter_t ), intent( in ) :: self
-            class( Vector_t ), intent( in ) :: eVec
+            class( Field_t ), intent( in ) :: eVec
             class( ModelParameter_t ), allocatable, intent( out ) :: dsigma
         end subroutine interface_dpdemapping_t_model_parameter
         !
         !> No interface subroutine briefing
-        subroutine interface_write_model_parameter( self, comment )
+        subroutine interface_write_model_parameter( self, file_name, comment )
             import :: ModelParameter_t, Vector_t
             class( ModelParameter_t ), intent( in ) :: self
+            character(*), intent( in ) :: file_name
             character(*), intent( in ), optional :: comment
         end subroutine interface_write_model_parameter
         !
@@ -259,17 +257,19 @@ contains
         !
         class( ModelParameter_t ), intent( inout ) :: self
         !
-        call date_and_time( values=self%mKey )
-        !
         self%metric => null()
         !
-        self%SigMap_ptr => null()
+        call date_and_time( values=self%mKey )
         !
-        self%param_type   = ""
-        self%air_cond     = SIGMA_AIR
-        self%zero_valued  = .FALSE.
+        self%air_cond = SIGMA_AIR
+        !
+        self%param_type = ""
+        !
+        self%zero_valued = .FALSE.
         self%is_allocated = .FALSE.
-        self%is_vti       = .FALSE.
+        self%is_vti = .FALSE.
+        !
+        self%SigMap_ptr => null()
         !
     end subroutine initializeModelParameter
     !

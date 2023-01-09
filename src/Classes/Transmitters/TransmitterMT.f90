@@ -44,12 +44,12 @@ module TransmitterMT
         self%n_pol = 2
         !
         self%period = period
-		!
-		self%omega = ( 2.0 * PI / self%period )
         !
-        !> self%pMult_ptr => pMult_E
+        self%omega = ( 2.0 * PI / self%period )
         !
-        !> self%pMult_t_ptr => pMult_t_E
+        !> self%PMult_ptr => PMult_E
+        !
+        !> self%PMult_t_ptr => PMult_t_E
         !
     end function TransmitterMT_ctor
     !
@@ -73,9 +73,7 @@ module TransmitterMT
         !
         class( TransmitterMT_t ), intent( inout ) :: self
         !
-        integer :: i_pol, ios
-        !
-        character( len=20 ) :: ModeName
+        integer :: i_pol
         !
         if( .NOT. allocated( self%source ) ) then
             stop "Error: solveTransmitterMT > source not allocated!"
@@ -109,27 +107,6 @@ module TransmitterMT
                 !
                 !> Calculate e_sol through ForwardSolver
                 call self%forward_solver%createESolution( i_pol, self%source, self%e_sol( i_pol ) )
-                !
-                if( i_pol == 1 ) then
-                    ModeName = "Ey"
-                else
-                    ModeName = "Ex"
-                endif
-                !
-                open( ioESolution, file = e_solution_file_name, action = "write", position = "append", form = "unformatted", iostat = ios )
-                !
-                if( ios /= 0 ) then
-                    stop "Error opening file in solveTransmitterMT: e_solution"
-                else
-                    !
-                    !> write the frequency header - 1 record
-                    write( ioESolution ) self%omega, self%id, i_pol, ModeName
-                    !
-                    call self%e_sol( i_pol )%write( ioESolution )
-                    !
-                    close( ioESolution )
-                    !
-                endif
                 !
             endif
             !
@@ -172,7 +149,7 @@ module TransmitterMT
         integer :: iRx
         !
         write( *, "( A29, I5, A10, es10.2, A7, I5)" ) &
-        "               TransmitterMT:", self%id, &
+        "               TransmitterMT:", self%i_tx, &
         ", Period: ",    self%period, &
         ", NRx: ", size( self%receiver_indexes )
         !

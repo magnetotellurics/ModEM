@@ -15,7 +15,7 @@ module Grid
     !
     character(:), allocatable :: model_method
     character( len=12 ), parameter :: MM_METHOD_FIXED_H = "fixed height"
-    character( len=6 ), parameter :: MM_METHOD_MIRROR  = "mirror"
+    character( len=6 ), parameter :: MM_METHOD_MIRROR = "mirror"
     !
     integer :: model_n_air_layer
     real( kind=prec ) :: model_max_height
@@ -55,10 +55,10 @@ module Grid
             procedure, public :: init => initializeGrid
             procedure, public :: dealloc => deallocateGrid
             !
-            procedure(interface_NumberOfEdges) , deferred, public :: NumberOfEdges
-            procedure(interface_NumberOfFaces) , deferred, public :: NumberOfFaces
-            procedure(interface_NumberOfNodes) , deferred, public :: NumberOfNodes
-            procedure(interface_GridIndex)    , deferred, public :: GridIndex
+            procedure(interface_NumberOfEdges), deferred, public :: NumberOfEdges
+            procedure(interface_NumberOfFaces), deferred, public :: NumberOfFaces
+            procedure(interface_NumberOfNodes), deferred, public :: NumberOfNodes
+            procedure(interface_GridIndex), deferred, public :: GridIndex
             procedure(interface_VectorIndex), deferred, public :: VectorIndex
             procedure(interface_Limits), deferred, public :: Limits
             procedure(interface_IsAllocated), deferred, public :: IsAllocated
@@ -137,9 +137,9 @@ module Grid
         !> No interface subroutine briefing
         subroutine interface_Limits(self, nodeType, nx, ny, nz)
             import :: Grid_t
-            class( Grid_t ) , intent( in ) :: self
-            character(*) , intent( in ) :: nodeType
-            integer     , intent( out ) :: nx, ny, nz
+            class( Grid_t ), intent( in ) :: self
+            character(*), intent( in ) :: nodeType
+            integer, intent( out ) :: nx, ny, nz
         end subroutine interface_Limits
         !
         !> No interface function briefing
@@ -160,7 +160,7 @@ module Grid
         subroutine interface_SetCellSizes(self, dx, dy, dz)
             import :: Grid_t, prec
             class( Grid_t ), intent(inout) :: self
-            real( kind=prec ) , dimension(:), intent( in ) :: dx, dy, dz
+            real( kind=prec ), dimension(:), intent( in ) :: dx, dy, dz
         end subroutine interface_SetCellSizes
         !
         !> No interface function briefing
@@ -245,7 +245,7 @@ contains
         implicit none
         !
         class( Grid_t ), intent(inout) :: self
-        character(*) , intent( in ) :: s
+        character(*), intent( in ) :: s
         !
         self%geometry = s
         !

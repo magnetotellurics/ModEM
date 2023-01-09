@@ -140,17 +140,17 @@ contains
         !
         self%xXY = R_ZERO
         self%xXZ = R_ZERO
-        self%xY  = R_ZERO
-        self%xZ  = R_ZERO
+        self%xY = R_ZERO
+        self%xZ = R_ZERO
         self%xXO = R_ZERO
         self%yYX = R_ZERO
         self%yYZ = R_ZERO
-        self%yX  = R_ZERO
-        self%yZ  = R_ZERO
+        self%yX = R_ZERO
+        self%yZ = R_ZERO
         self%zZX = R_ZERO
         self%zZY = R_ZERO
-        self%zX  = R_ZERO
-        self%zY  = R_ZERO
+        self%zX = R_ZERO
+        self%zY = R_ZERO
         self%zZO = R_ZERO
         !
         self%Sigma_E = rVector3D_SG_t( self%metric%grid, EDGE )
@@ -390,7 +390,7 @@ contains
         !
         class( ModelOperator_MF_t ), intent( in ) :: self
         real( kind=prec ), intent( in ), optional :: omega
-        class( Vector_t ), intent( in ) :: inE
+        class( Field_t ), intent( in ) :: inE
         class( Vector_t ), intent( inout ) :: outE
         logical, intent( in ), optional :: p_adjoint
         !
@@ -492,7 +492,7 @@ contains
         implicit none
         !
         class( ModelOperator_MF_t ), intent( in ) :: self
-        class( Vector_t ), intent( in ) :: bdry
+        class( Field_t ), intent( in ) :: bdry
         class( Vector_t ), intent( inout ) :: outE
         !
         real( kind=prec ) :: omega
@@ -625,7 +625,7 @@ contains
         implicit none
         !
         class( ModelOperator_MF_t ), intent( in ) :: self
-        class( Vector_t ), intent( in ) :: inE
+        class( Field_t ), intent( in ) :: inE
         class( Scalar_t ), intent( inout ) :: outPhi
         !
         integer :: ix, iy, iz

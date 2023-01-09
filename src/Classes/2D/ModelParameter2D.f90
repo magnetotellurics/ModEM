@@ -58,7 +58,7 @@ contains
         call date_and_time( values=self%mKey )
         !
         self%paramType = ""
-        self%airCond         = 1E-10
+        self%airCond = 1E-10
         self%is_allocated = .FALSE.
         self%zeroValued = .FALSE.
         !
@@ -134,10 +134,10 @@ contains
              STOP
         endif
 
-        self%cellCond    = cellCond
+        self%cellCond = cellCond
         self%AirCond = AirCond
         self%paramType = trim(paramType)
-        self%mKey            = mKey
+        self%mKey = mKey
 
     end subroutine setConductivityModelParameter2D
     !

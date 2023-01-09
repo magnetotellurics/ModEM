@@ -129,9 +129,9 @@ contains
         WT = R 
         ilu_adjoint = .TRUE.
         call self%preconditioner%UTsolve( WT, Z, ilu_adjoint )
-        PSI  = SQRT( Z%dotProd( Z ) )
+        PSI = SQRT( Z%dotProd( Z ) )
         GAMM = C_ONE
-        ETA  = C_MinusONE
+        ETA = C_MinusONE
         !
         !> the do loop goes on while the relative error is greater than the tolerance
         !> and the iterations are less than maxIt

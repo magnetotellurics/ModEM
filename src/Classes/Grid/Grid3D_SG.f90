@@ -167,7 +167,7 @@ contains
         allocate( self%dy(ny) )
         allocate( self%dz(nz) )
         !
-        !> dxinv    = 1/ dx and similarly for dyinv and dzinv
+        !> dxinv = 1/ dx and similarly for dyinv and dzinv
         allocate( self%dxInv(nx) )
         allocate( self%dyInv(ny) )
         allocate( self%dzInv(nz) )
@@ -208,7 +208,7 @@ contains
         implicit none
         !
         class( Grid3D_SG_t ), intent( inout ) :: self
-        real( kind=prec ) , intent( in ), optional :: origin(3)
+        real( kind=prec ), intent( in ), optional :: origin(3)
         !
         integer :: ix, iy, iz, i, j, nzAir
         real( kind=prec ) :: xCum, yCum, zCum
@@ -449,8 +449,8 @@ contains
         implicit none
         !
         class( Grid3D_SG_t ), intent(inout) :: self
-        integer                     , intent( in ) :: nzAir
-        real( kind=prec ) , intent( in ) :: dzAir(:)
+        integer, intent( in ) :: nzAir
+        real( kind=prec ), intent( in ) :: dzAir(:)
         !
         integer :: nzAir_old, nzEarth_old
         integer :: nx_old, ny_old, nz_old
@@ -502,7 +502,7 @@ contains
         implicit none
         !
         class( Grid3D_SG_t ), intent(inout) :: self
-        real( kind=prec ) , dimension(:), intent( in ) :: dx, dy, dz
+        real( kind=prec ), dimension(:), intent( in ) :: dx, dy, dz
         !
         if(.NOT.self%IsAllocated() ) then
              stop "Error: SetCellSizesGrid3D_SG > Grid not allocated."
@@ -527,7 +527,7 @@ contains
         implicit none
         !
         class( Grid3D_SG_t ), intent( in ) :: self
-        real( kind=prec ) , intent( out ) :: dx(:), dy(:), dz(:)
+        real( kind=prec ), intent( out ) :: dx(:), dy(:), dz(:)
         !
         if(.NOT.self%IsAllocated() ) then
              write( *, * ) "Error:Grid3D_SG_t:GetCellSizes:"
@@ -632,7 +632,7 @@ contains
         endif
         
         rNxy = float(nx*ny)
-        rNx    = float(nx)
+        rNx = float(nx)
         
         do ii = 1, nVec
             i(ii) = mod(indVec(ii), nx)
@@ -755,7 +755,7 @@ contains
         implicit none
         !
         class( Grid3D_SG_t ), intent(inout) :: self
-        class(Grid_t)         , intent( in ) :: g
+        class(Grid_t), intent( in ) :: g
     end subroutine Copy_fromGrid3D_SG
     
 end module Grid3D_SG

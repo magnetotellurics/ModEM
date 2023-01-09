@@ -306,8 +306,8 @@ subroutine read_wiresource(src,lu,comm)
     !put coordinates in src structure 
     src%wire(iwire)%endpos(:,1) = postmp(1:3,iwire)
     src%wire(iwire)%endpos(:,2) = postmp(4:6,iwire)
-    src%wire(iwire)%dlw         = postmp(7,iwire)
-    src%wire(iwire)%nelem       = src%nelem(iwire)
+    src%wire(iwire)%dlw = postmp(7,iwire)
+    src%wire(iwire)%nelem = src%nelem(iwire)
     nelem = src%wire(iwire)%nelem
 
     !array for positions of wire elements
@@ -479,8 +479,8 @@ subroutine read_starsource(src,lu,comm)
   do iwire = 1,nwire
     !put coordinates in src structure 
     src%wire(iwire)%endpos(:,1) = postmp(1:3,iwire)
-    src%wire(iwire)%dlw         = postmp(4,iwire)
-    src%wire(iwire)%nelem       = src%nelem(iwire)
+    src%wire(iwire)%dlw = postmp(4,iwire)
+    src%wire(iwire)%nelem = src%nelem(iwire)
     nelem = src%wire(iwire)%nelem
 
     !array for positions of wire elements

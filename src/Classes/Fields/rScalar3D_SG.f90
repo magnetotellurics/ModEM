@@ -47,14 +47,19 @@ module rScalar3D_SG
         procedure, public :: divByValue => divByValueRScalar3D_SG
         !
         procedure, public :: dotProd => dotProdRScalar3D_SG
-        !
-		procedure, public :: conjugate => conjugateRScalar3D_SG
 		!
+		procedure, public :: sumEdges => sumEdgesRScalar3D_SG
+        !
+        procedure, public :: conjugate => conjugateRScalar3D_SG
+        !
         procedure, public :: linComb => linCombRScalar3D_SG
         !
         procedure, public :: multAdd => multAddRScalar3D_SG
         !
         !> Miscellaneous
+        !
+        procedure, public :: getReal => getRealRScalar3D_SG
+        !
         procedure, public :: copyFrom => copyFromRScalar3D_SG
         !
         procedure, public :: print => printRScalar3D_SG
@@ -598,7 +603,7 @@ contains
         class( rScalar3D_SG_t ), intent( inout ) :: self
         !
         if( .NOT. self%is_allocated) then
-             stop "Error: zerosRScalar3D_SG > Not allocated."
+             stop "Error: zerosRScalar3D_SG > self not allocated."
         endif
         !
         self%v = R_ZERO
@@ -797,6 +802,31 @@ contains
     end subroutine multAddRScalar3D_SG
     !
     !> No subroutine briefing
+    subroutine sumEdgesRScalar3D_SG( self, cell_obj, interior_only )
+        implicit none
+        !
+        class( rScalar3D_SG_t ), intent( in ) :: self
+        class( Field_t ), allocatable, intent( inout ) :: cell_obj
+        logical, optional, intent( in ) :: interior_only
+        !
+        stop "Error: sumEdgesRScalar3D_SG not implemented yet"
+        !
+    end subroutine sumEdgesRScalar3D_SG
+    !
+    !> No function briefing
+    subroutine getRealRScalar3D_SG( self, r_field )
+        implicit none
+        !
+        class( rScalar3D_SG_t ), intent( in ) :: self
+        class( Field_t ), allocatable, intent( out ) :: r_field
+        !
+        allocate( r_field, source = rScalar3D_SG_t( self%grid, self%grid_type ) )
+        !
+        call r_field%copyFrom( self )
+        !
+    end subroutine getRealRScalar3D_SG
+    !
+    !> No subroutine briefing
     subroutine copyFromRScalar3D_SG( self, rhs )
         implicit none
         !
@@ -819,8 +849,7 @@ contains
                 self%NdV = rhs%NdV
                 self%Nxyz = rhs%Nxyz
                 !
-                if( allocated( self%v ) ) deallocate( self%v )
-                allocate( self%v, source = rhs%v )
+                self%v = rhs%v
                 !
             class default
                 stop "Error: copyFromRScalar3D_SG > Unclassified rhs"
