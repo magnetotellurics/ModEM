@@ -79,7 +79,7 @@ module TransmitterMT
             stop "Error: solveTransmitterMT > source not allocated!"
         endif
         !
-        !> Verbose
+        !> First allocate e_sol or e_sens, according to the Source case
         if( self%source%sens ) then
             !
             if( allocated( self%e_sens ) ) deallocate( self%e_sens )
@@ -92,20 +92,17 @@ module TransmitterMT
             !
         endif
         !
-        !> Loop over all polarizations (MT n_pol = 2)
+        !> Calculate e_sol or e_sens through ForwardSolver
+        !> For all polarizations (MT n_pol = 2)
         do i_pol = 1, self%n_pol
             !
             !> Verbose
             if( self%source%sens ) then
-                !write( *, * ) "               SolveADJ MT Tx:", self%id, " -> Period:", self%period, " - Polarization:", i_pol
                 !
-                !> Calculate e_sens through ForwardSolver
                 call self%forward_solver%createESolution( i_pol, self%source, self%e_sens( i_pol ) )
                 !
             else
-                !write( *, * ) "               SolveFWD MT Tx:", self%id, " -> Period:", self%period, " - Polarization:", i_pol
                 !
-                !> Calculate e_sol through ForwardSolver
                 call self%forward_solver%createESolution( i_pol, self%source, self%e_sol( i_pol ) )
                 !
             endif
@@ -148,10 +145,10 @@ module TransmitterMT
         !
         integer :: iRx
         !
-        write( *, "( A29, I5, A10, es10.2, A7, I5)" ) &
-        "               TransmitterMT:", self%i_tx, &
-        ", Period: ",    self%period, &
-        ", NRx: ", size( self%receiver_indexes )
+        write( *, "( A30, I8, A9, es16.5, A6, I8)" ) &
+        "TransmitterMT", self%i_tx, &
+        ", Period=",    self%period, &
+        ", NRx=", size( self%receiver_indexes )
         !
     end subroutine printTransmitterMT
     !

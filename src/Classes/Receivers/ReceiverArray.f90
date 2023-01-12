@@ -28,7 +28,7 @@ contains
         class( Receiver_t ), intent( in ) :: new_rx
         integer :: i_rx
         !
-        integer :: iRx, n_rx
+        integer :: i, n_rx
         type( Rx_t ), allocatable, dimension(:) :: temp_array
         type( Rx_t ), allocatable :: temp_rx
         !
@@ -47,9 +47,9 @@ contains
             !
             n_rx = size( receivers )
             !
-            do iRx = 1, n_rx
-                if( new_rx%isEqualRx( receivers( iRx )%Rx ) ) then
-                    i_rx = iRx
+            do i = 1, n_rx
+                if( new_rx%isEqualRx( receivers( i )%Rx ) ) then
+                    i_rx = i
                     return
                 endif
             enddo
@@ -64,6 +64,7 @@ contains
             temp_array( n_rx + 1 ) = temp_rx
             !
             call deallocateReceiverArray()
+            !
             allocate( receivers, source = temp_array )
             !
             deallocate( temp_rx, temp_array )

@@ -122,38 +122,31 @@ contains
             stop "Error: solveTransmitterCSEM > source not allocated!"
         endif
         !
-        !> Verbose
+        !> First allocate e_sol or e_sens, according to the Source case
         if( self%source%sens ) then
-            !
-            write( *, * ) "               SolveADJ CSEM Tx:", self%i_tx, " -> Period:", self%period
             !
             if( allocated( self%e_sens ) ) deallocate( self%e_sens )
             allocate( cVector3D_SG_t :: self%e_sens(1) )
             !
         else
             !
-            write( *, * ) "               SolveFWD CSEM Tx:", self%i_tx, " -> Period:", self%period
-            !
             if( allocated( self%e_sol ) ) deallocate( self%e_sol )
             allocate( cVector3D_SG_t :: self%e_sol(1) )
             !
         endif
         !
-        !> Defines e_sol or e_sens depending on Forward or sens case
+        !> Calculate e_sol or e_sens through ForwardSolver
+        !> For one polarization (CSEM n_pol = 1)
         if( self%source%sens ) then
             !
-            !> Calculate e_solution through ForwardSolver
             call self%forward_solver%createESolution( 1, self%source, self%e_sens(1) )
             !
-            !> Add the source's rhs content to the e_solution vector
             call self%e_sens(1)%add( self%source%E(1) )
             !
         else
             !
-            !> Calculate e_solution through ForwardSolver
             call self%forward_solver%createESolution( 1, self%source, self%e_sol(1) )
             !
-            !> Add the source's rhs content to the e_solution vector
             call self%e_sol(1)%add( self%source%E(1) )
             !
         endif
@@ -168,11 +161,11 @@ contains
         !
         integer :: iRx
         !
-        write( *, "( A30, I5, A12, f8.2, f8.2, f8.2, A10, es10.2, A7, I5)" ) &
-        "               TransmitterCSEM", self%i_tx, &
-        ": Location[", self%location(1), self%location(2), self%location(3), &
-        "], Period: ",    self%period, &
-        ", NRx: ", size( self%receiver_indexes )
+        write( *, "( A30, I8, A13, f16.3, f16.3, f16.3, A10, es16.5, A6, I8)" ) &
+        "TransmitterCSEM", self%i_tx, &
+        ", Location= [", self%location(1), self%location(2), self%location(3), &
+        "], Period=",    self%period, &
+        ", NRx=", size( self%receiver_indexes )
         !
     end subroutine printTransmitterCSEM
     !

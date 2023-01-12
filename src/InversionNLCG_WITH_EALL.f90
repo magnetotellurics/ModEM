@@ -395,7 +395,7 @@ contains
         ! compute residual: res = (d-dHat)/Ndata
         call linCombDataGroupTxArray( ONE, d, MinusONE, dHat, res ) 
         !
-        Ndata = countDataGroupTxArray( dHat )
+        Ndata = countValuesGroupTxArray( dHat )
         !
         call CdInvMult( res )
         !
@@ -465,7 +465,7 @@ contains
         !> normalize residuals, compute sum of squares
         call CdInvMult( res, Nres )
         SS = dotProdDataGroupTxArray( res, Nres )
-        Ndata = countDataGroupTxArray( res )
+        Ndata = countValuesGroupTxArray( res )
         !
         !> compute the model norm
         mNorm = mHat%dotProd( mHat )

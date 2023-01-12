@@ -36,7 +36,7 @@ contains
         !
         type( DCGiterControl_t ), intent( inout ) :: DCGiterControl
         !
-        DCGiterControl%maxIter = 1
+        DCGiterControl%maxIter = 3
         !
         DCGiterControl%rmsTol = 1.05
         !
@@ -50,7 +50,7 @@ contains
         !
         type( IterControl_t), intent( inout ) :: cg_iter
         !
-        cg_iter%max_it = 2
+        cg_iter%max_it = 20
         !
         cg_iter%tol = 10E-4
         !
@@ -207,7 +207,7 @@ contains
         !
         SS = dotProdDataGroupTxArray( res, Nres )
         !
-        Ndata = countDataGroupTxArray( res )
+        Ndata = countValuesGroupTxArray( res )
         !
         mNorm = mHat%dotProd( mHat )
         !

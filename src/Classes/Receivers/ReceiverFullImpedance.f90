@@ -80,11 +80,12 @@ contains
     end subroutine ReceiverFullImpedance_dtor
     !
     !> No subroutine briefing
-    subroutine setLRowsFullImpedance( self, transmitter )
+    subroutine setLRowsFullImpedance( self, transmitter, lrows )
         implicit none
         !
         class( ReceiverFullImpedance_t ), intent( inout ) :: self
         class( Transmitter_t ), intent( in ) :: transmitter
+        class( Vector_t ), allocatable, dimension(:,:), intent( out ) :: lrows
         !
         type( cVector3D_SG_t ) :: Le, full_lex, full_ley, full_lbx, full_lby
         integer :: Ei, row, pol, comp
@@ -96,8 +97,7 @@ contains
         call self%predictedData( transmitter )
         !
         !> Allocate LRows matrix [ n_pol = 2, n_comp = 4 ]
-        if( allocated( self%lrows ) ) deallocate( self%lrows )
-        allocate( cVector3D_SG_t :: self%lrows( transmitter%n_pol, self%n_comp ) )
+        allocate( cVector3D_SG_t :: lrows( transmitter%n_pol, self%n_comp ) )
         !
         !> Convert Le and Lb to Full Vectors (In the future they will be Sparse)
         full_lex = self%Lex%getFullVector()
@@ -133,12 +133,12 @@ contains
                 !> Loop over two polarizations
                 do pol = 1, 2
                     !
-                    self%lrows( pol, comp ) = Le
+                    lrows( pol, comp ) = Le
                     !
                     !> ????
-                    call self%lrows( pol, comp )%mult( -self%I_BB( pol, row ) )
+                    call lrows( pol, comp )%mult( -self%I_BB( pol, row ) )
                     !
-                    !call self%lrows( pol, comp )%print( 1000, "OO LRows" )
+                    !call lrows( pol, comp )%print( 1000, "OO LRows" )
                     !
                 enddo
                 !
@@ -151,11 +151,12 @@ contains
     end subroutine setLRowsFullImpedance
     !
     !> No subroutine briefing
-    subroutine predictedDataFullImpedance( self, transmitter )
+    subroutine predictedDataFullImpedance( self, transmitter, data_group )
         implicit none
         !
         class( ReceiverFullImpedance_t ), intent( inout ) :: self
         class( Transmitter_t ), intent( in ) :: transmitter
+        type( DataGroup_t ), intent( out ), optional :: data_group
         !
         integer :: i, j, ij
         complex( kind=prec ) :: comega, det
@@ -213,7 +214,11 @@ contains
                         !
                         deallocate( EE )
                         !
-                        call self%savePredictedData( transmitter )
+                        if( present( data_group ) ) then
+                            !
+                            call self%savePredictedData( transmitter, data_group )
+                            !
+                        endif
                         !
                     class default
                         stop "Error: predictedDataFullImpedance: Unclassified tx_e_2"

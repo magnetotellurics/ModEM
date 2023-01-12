@@ -46,7 +46,7 @@ contains
         !
         type( SourceCSEM_Dipole1D_t ) :: self
         !
-        write( *, * ) "Constructor SourceCSEM_Dipole1D_t"
+        !write( *, * ) "Constructor SourceCSEM_Dipole1D_t"
         !
         call self%init()
         !

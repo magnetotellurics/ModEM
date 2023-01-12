@@ -99,8 +99,8 @@ contains
     subroutine jobJMult()
         implicit none
         !
-        !> Using the same local Data Array for FWD and JMult
-        type( DataGroupTx_t ), allocatable, dimension(:) :: tx_data_array
+        !> Local Data Array to store JMult output
+        type( DataGroupTx_t ), allocatable, dimension(:) :: JmHat
         !
         ! Verbose
         write( *, * ) "     - Start jobJMult"
@@ -137,16 +137,20 @@ contains
         !> Instantiate the ForwardSolver - Specific type can be chosen via control file
         call createForwardSolver()
         !
+        !>
         call runEMSolve( sigma0 )
         !
-        !> Run ForwardModelling to solve Tx ESolutions (Could be better: Just Tx Solve ????)
-        tx_data_array = all_measured_data
+        !>
+        JmHat = all_measured_data
         !
         !> Calculate Data Array from JMult routine
-        call JMult( sigma0, pmodel, tx_data_array )
+        call JMult( sigma0, pmodel, JmHat )
         !
-        !> Write Data Array to the file <jmhat_data_file_name>
-        call writeDataGroupTxArray( tx_data_array, jmhat_data_file_name )
+        !> Write JmHat to the file <jmhat_data_file_name>
+        call writeDataGroupTxArray( JmHat, jmhat_data_file_name )
+        !
+        !> Flush local variable
+        call deallocateDataGroupTxArray( JmHat )
         !
         ! Verbose
         write( *, * ) "     - Finish jobJMult"
@@ -305,48 +309,6 @@ contains
         !
     end subroutine createForwardSolver
     !
-    !> Allocate and Initialize the predicted data array, 
-    !> according to the arrangement of the Transmitter-Receiver pairs of the input
-    subroutine initPredictedDataArray()
-        implicit none
-        !
-        !> Auxiliary variable to group data under a single transmitter index
-        type( DataGroupTx_t ) :: tx_data
-        !
-        !> Local indexes
-        integer :: i_tx, i_data
-        !
-        !> If is the first time, create the predicted data array, 
-        !> according to the arrangement of the Transmitter-Receiver pairs of the input
-        if( .NOT. allocated( all_measured_data ) ) then
-            !
-            write( *, * ) "     - Create Predicted Data array"
-            !
-            !> Create an array of DataGroupTx to store the predicted data in the same format as the measured data
-            !> Enabling the use of grouped predicted data in future jobs (all_measured_data)
-            do i_tx = 1, size( transmitters )
-                !
-                tx_data = DataGroupTx_t( i_tx )
-                !
-                do i_data = 1, size( measured_data )
-                    !
-                    if( measured_data( i_data )%i_tx == i_tx ) then
-                        !
-                        call tx_data%put( measured_data( i_data ) )
-                        !
-                    endif
-                enddo
-                !
-                call updateDataGroupTxArray( all_measured_data, tx_data )
-                !
-            enddo
-            !
-        else
-            stop "Error: initPredictedDataArray > Unnecessary recreation of predicted data array"
-        endif
-        !
-    end subroutine initPredictedDataArray
-    !
     !> No subroutine briefing
     subroutine handleJob()
         implicit none
@@ -421,14 +383,14 @@ contains
                 write( *, * ) "          Air Layers [i, dz(i)]:"
                 !
                 do i = air_layer%nz, 1, -(1)
-                    write( *, "( a15, i5, f12.3 )" ) "     ", i, air_layer%dz(i)
+                    write( *, "( i20, f20.5 )" ) i, air_layer%dz(i)
                 enddo
                 !
                 write( *, * ) "          Air layers from the method [", trim( air_layer%method ), "]"
                 !
-                write( *, "( a39, f12.3, a4 )" ) "          Top of the air layers is at ", sum( air_layer%Dz ) / 1000, " km."
+                write( *, "( a39, f12.5, a4 )" ) "          Top of the air layers is at ", sum( air_layer%Dz ) / 1000, " km."
                 !
-                write( *, "( a31, f8.3, a2, f8.3, a2, f8.3, a4, f8.3 )" ) "          o(x,y,z) * rotDeg: (", main_grid%ox, ", ", main_grid%oy, ", ", main_grid%oz, ") * ", main_grid%rotDeg
+                write( *, "( a31, f16.5, a2, f16.5, a2, f16.5, a4, f16.5 )" ) "          o(x,y,z) * rotDeg: (", main_grid%ox, ", ", main_grid%oy, ", ", main_grid%oz, ") * ", main_grid%rotDeg
                 !
                 allocate( model_operator, source = ModelOperator_MF_t( main_grid ) )
                 !
@@ -467,7 +429,7 @@ contains
     subroutine handleDataFile()
         implicit none
         !
-        integer :: i_rx, n_rx
+        integer :: i_tx, i_rx, n_rx, n_tx
         !
         !> Local object to dealt data, self-destructs at the end of the subroutine
         type( DataFileStandard_t ) :: data_file_standard
@@ -477,6 +439,8 @@ contains
         data_file_standard = DataFileStandard_t( ioStartup, data_file_name )
         !
         n_rx = size( receivers )
+        !
+        n_tx = size( transmitters )
         !
         ! Verbose
         if( n_rx == data_file_standard%n_rx ) then
@@ -490,21 +454,22 @@ contains
             !
         endif
         !
-        if( size( transmitters ) == data_file_standard%n_tx ) then
-             !
-             call printTransmitterArray()
-             !
+        if( n_tx == data_file_standard%n_tx ) then
+            !
+            write( *, * ) "          Checked ", n_tx, " Transmitters."
+            !
+            do i_tx = 1, n_tx
+                call transmitters( i_tx )%Tx%print()
+            enddo
+            !
         else
              !
-             write( *, * ) "Error: Number of Tx mismatched from Header :[", size( transmitters ), " and ", data_file_standard%n_tx, "]"
+             write( *, * ) "Error: Number of Tx mismatched from Header :[", n_tx, " and ", data_file_standard%n_tx, "]"
              stop
              !
         endif
         !
-        write( *, * ) "          Checked ", size( measured_data ), " DataGroups."
-        !
-        !> Initialize the predicted data array
-        call initPredictedDataArray()
+        write( *, * ) "          Checked ", countDataGroupTxArray( all_measured_data ), " DataGroups."
         !
         write( *, * ) "     - Creating Rx evaluation vectors"
         !
@@ -715,9 +680,7 @@ contains
     subroutine garbageCollector()
         implicit none
         !
-        !> Flush memory used for global data arrays
-        deallocate( measured_data )
-        !
+        !> Deallocate global array of measured data
         if( allocated( all_measured_data ) ) call deallocateDataGroupTxArray( all_measured_data )
         !
         !> Deallocate global array of Receivers

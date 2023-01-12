@@ -5,6 +5,9 @@ module DataGroupTxArray
     !
     use DataGroupTx
     !
+    !> Array with the Data Measured for all transmitters (from file)
+    type( DataGroupTx_t ), allocatable, dimension(:), save :: all_measured_data
+    !
     public :: subDataGroupTxArray
     public :: dotProdDataGroupTxArray
     public :: linCombDataGroupTxArray
@@ -15,7 +18,9 @@ module DataGroupTxArray
     public :: setErrorBarDataGroupTxArray
     !
     public :: countDataGroupTxArray
+    public :: countValuesGroupTxArray
     public :: getDataGroupTxArray
+    public :: getDataGroupByIndex
     public :: updateDataGroupTxArray
     public :: deallocateDataGroupTxArray
     public :: zerosDataGroupTxArray
@@ -129,6 +134,25 @@ contains
         type( DataGroupTx_t ), dimension(:), intent( in ) :: data_tx_array
         integer :: counter
         !
+        integer :: i
+        !
+        counter = 0
+        !
+        do i = 1, size( data_tx_array )
+            !
+            counter = counter + size( data_tx_array(i)%data )
+            !
+        enddo
+        !
+    end function countDataGroupTxArray
+    !
+    !> ????
+    function countValuesGroupTxArray( data_tx_array ) result( counter )
+        implicit none
+        !
+        type( DataGroupTx_t ), dimension(:), intent( in ) :: data_tx_array
+        integer :: counter
+        !
         integer :: i, j
         !
         counter = 0
@@ -143,7 +167,7 @@ contains
             !
         enddo
         !
-    end function countDataGroupTxArray
+    end function countValuesGroupTxArray
     !
     !> Root Mean Square Deviation between two DataGroupTxArrays
     function dotProdDataGroupTxArray( data_tx_array_1, data_tx_array_2 ) result( rvalue )
@@ -222,6 +246,35 @@ contains
         call linCombDataGroupTxArray( rvalue, data_tx_array_in, ONE, data_tx_array_out, data_tx_array_out )
         !
     end subroutine scMultAddDataGroupTxArray
+    !
+    !> Return a pointer, allowing directly modifications to a DataGroupTx at a given index
+    function getDataGroupByIndex( data_tx_array, i_dg ) result( data_group )
+        implicit none
+        !
+        type( DataGroupTx_t ), dimension(:), target, intent( in ) :: data_tx_array
+        integer, intent( in ) :: i_dg
+        !
+        type( DataGroup_t ), pointer :: data_group
+        !
+        integer :: i, j
+        !
+        do i = 1, size( data_tx_array )
+            !
+            do j = 1, size( data_tx_array(i)%data )
+                !
+                if( data_tx_array(i)%data(j)%i_dg == i_dg ) then
+                    !
+                    data_group => data_tx_array(i)%data(j)
+                    !
+                    return
+                    !
+                endif
+                !
+            enddo
+            !
+        enddo
+        !
+    end function getDataGroupByIndex
     !
     !> Return a pointer, allowing directly modifications to a DataGroupTx at a given index
     function getDataGroupTxArray( data_tx_array, dtx_id ) result( data_tx )
@@ -321,18 +374,16 @@ contains
         !
         integer :: i
         !
-		write( *, * ) "##############################"
-		write( *, * ) title
-		write( *, * ) "##############################"
-		!
+        write( *, * ) "##############################"
+        write( *, * ) title
+        write( *, * ) "##############################"
+        !
         do i = 1, size( data_tx_array )
             !
             call data_tx_array(i)%print()
             !
         enddo
         !
-		stop
-		!
     end subroutine printDataGroupTxArray
     !
 end module DataGroupTxArray

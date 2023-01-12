@@ -28,10 +28,6 @@ module Receiver
         !
         type( cSparseVector3D_SG_t ) :: Lex, Ley, Lez, Lbx, Lby, Lbz
         !
-        type( DataGroup_t ) :: data_group
-        !
-        class( Vector_t ), allocatable, dimension(:,:) :: lrows
-        !
         type( String_t ), allocatable, dimension(:) :: EHxy, comp_names
         !
         contains
@@ -59,21 +55,22 @@ module Receiver
     abstract interface
         !
         !> No interface subroutine briefing
-        subroutine interface_set_lrows_receiver( self, transmitter )
-            !
+        subroutine interface_set_lrows_receiver( self, transmitter, lrows )
             import :: Receiver_t, Transmitter_t, Vector_t
             !
             class( Receiver_t ), intent( inout ) :: self
             class( Transmitter_t ), intent( in ) :: transmitter
+            class( Vector_t ), allocatable, dimension(:,:), intent( out ) :: lrows
         end subroutine interface_set_lrows_receiver
         !
         !> No interface subroutine briefing
-        subroutine interface_predicted_data_receiver( self, transmitter )
+        subroutine interface_predicted_data_receiver( self, transmitter, data_group )
             !
-            import :: Receiver_t, Transmitter_t
+            import :: Receiver_t, Transmitter_t, DataGroup_t
             !
             class( Receiver_t ), intent( inout ) :: self
             class( Transmitter_t ), intent( in ) :: transmitter
+            type( DataGroup_t ), intent( out ), optional :: data_group
             !
         end subroutine interface_predicted_data_receiver
         !
@@ -170,8 +167,6 @@ contains
         !
         if( allocated( self%response ) ) deallocate( self%response )
         !
-        if( allocated( self%lrows ) ) deallocate( self%lrows )
-        !
     end subroutine deallocateRx
     !
     !> No subroutine briefing
@@ -265,18 +260,19 @@ contains
     end subroutine evaluationFunctionRx
     !
     !> No subroutine briefing
-    subroutine savePredictedDataRx( self, transmitter )
+    subroutine savePredictedDataRx( self, transmitter, data_group )
         implicit none
         !
-        class( Receiver_t ), intent( inout ) :: self
+        class( Receiver_t ), intent( in ) :: self
         class( Transmitter_t ), intent( in ) :: transmitter
+        type( DataGroup_t ), intent( out ) :: data_group
         !
         character(:), allocatable :: component
         real( kind=prec ) :: real_part, imaginary, error
         !
         integer :: i
         !
-        self%data_group = DataGroup_t( self%i_rx, transmitter%i_tx, self%n_comp, self%is_complex, .FALSE. )
+        data_group = DataGroup_t( self%i_rx, transmitter%i_tx, self%n_comp, .FALSE. )
         !
         do i = 1, self%n_comp
             !
@@ -285,7 +281,7 @@ contains
             imaginary = real( aimag( self%response(i) ), kind=prec )
             error = R_ZERO
             !
-            call self%data_group%put( component, real_part, imaginary, error )
+            call data_group%put( component, real_part, imaginary, error )
             !
         enddo
         !

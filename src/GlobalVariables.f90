@@ -27,10 +27,7 @@ module GlobalVariables
     class( ForwardSolver_t ), allocatable, target :: forward_solver
     !
     class( ModelCovarianceRec_t ), allocatable :: model_cov
-    !
-    !> Array with the Data Measured for all transmitters (from file)
-    type( DataGroupTx_t ), allocatable, dimension(:) :: all_measured_data
-    !
+	!
     !> Program control variables
     character(50) :: outdir_name
     !
