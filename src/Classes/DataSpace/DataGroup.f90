@@ -4,7 +4,6 @@
 module DataGroup
     !
     use String
-    !
     use Constants
     !
     !> Global file path name for data files
@@ -12,13 +11,13 @@ module DataGroup
     !
     type :: DataGroup_t
         !
-        integer :: i_rx, i_tx, n_comp, normalized
+        integer :: i_dg, i_rx, i_tx, n_comp!, normalized
         !
         type( String_t ), allocatable, dimension(:) :: components
         !
         real( kind=prec ), allocatable, dimension(:) :: reals, imaginaries, errors
         !
-        logical :: is_allocated, is_complex, error_bar
+        logical :: is_allocated, error_bar
         !
         integer, private :: counter
         !
@@ -55,18 +54,22 @@ contains
     !
     !> Parametrized constructor:
     !> Set all variables and deallocate/allocate and initialize all arrays with the same n_comp size.
-    function DataGroup_ctor( i_rx, i_tx, n_comp, is_complex, error_bar ) result( self )
+    function DataGroup_ctor( i_rx, i_tx, n_comp, error_bar ) result( self )
         implicit none
         !
         integer, intent( in ) :: i_rx, i_tx, n_comp
-        logical, optional, intent( in ) :: is_complex, error_bar
+        logical, optional, intent( in ) :: error_bar
         !
         type( DataGroup_t ) :: self
         !
         integer :: i, asize
         !
+        self%i_dg = 0
+        !
         self%i_rx = i_rx
+        !
         self%i_tx = i_tx
+        !
         self%n_comp = n_comp
         !
         self%counter = 1
@@ -104,16 +107,8 @@ contains
         else
             self%error_bar = .FALSE.
         endif
-        !
-        if( present( is_complex ) ) then
-            !
-            self%is_complex = is_complex
-        else
-            self%is_complex = .FALSE.
-            !
-        endif
-        !
-        self%normalized = 0
+       !
+        !self%normalized = 0
         !
     end function DataGroup_ctor
     !
@@ -187,9 +182,10 @@ contains
         endif
         !
         self%reals = self%reals / ( self%errors ** nn )
+        !
         self%imaginaries = self%imaginaries / ( self%errors ** nn )
         !
-        self%normalized = self%normalized + nn
+        !self%normalized = self%normalized + nn
         !
     end subroutine normalizeDataGroup
     !
@@ -201,6 +197,7 @@ contains
         class( DataGroup_t ), intent( in ) :: d_in
         !
         self%reals = self%reals - d_in%reals
+        !
         self%imaginaries = self%imaginaries - d_in%imaginaries
         !
     end subroutine subDataGroup
@@ -250,8 +247,9 @@ contains
         endif
         !
         d_out%error_bar = self%error_bar .OR. d_in%error_bar
-        d_out%normalized = 0
+        !d_out%normalized = 0
         !
+        d_out%i_dg = self%i_dg
         d_out%i_rx = self%i_rx
         d_out%i_tx = self%i_tx
         d_out%n_comp = self%n_comp
@@ -265,21 +263,21 @@ contains
                 stop "Error: linCombDataGroup: unable to add two data vectors with error bars"
             else if( abs(a) > R_ZERO ) then
                 d_out%errors = a * self%errors
-                d_out%normalized = self%normalized
+                !d_out%normalized = self%normalized
             else if( abs(b) > R_ZERO ) then
                 d_out%errors = b * d_in%errors
-                d_out%normalized = d_in%normalized
+                !d_out%normalized = d_in%normalized
             endif
             !
         else if( self%error_bar ) then
             !
             d_out%errors = a * self%errors
-            d_out%normalized = self%normalized
+            !d_out%normalized = self%normalized
             !
         else if( d_in%error_bar ) then
             !
             d_out%errors = b * d_in%errors
-            d_out%normalized = d_in%normalized
+            !d_out%normalized = d_in%normalized
             !
         endif
         !
@@ -341,10 +339,16 @@ contains
             stop "Error: copyFromDataGroup > d_in not allocated"
         endif
         !
-        self%n_comp = d_in%n_comp
+        self%i_dg = d_in%i_dg
+        !
         self%i_rx = d_in%i_rx
+        !
         self%i_tx = d_in%i_tx
+        !
+        self%n_comp = d_in%n_comp
+        !
         self%counter = d_in%counter
+        !
         self%error_bar = d_in%error_bar
         !
         if( allocated( self%components ) ) then
@@ -364,22 +368,11 @@ contains
         allocate( self%imaginaries, source = d_in%imaginaries )
         !
         if( allocated( self%errors ) ) deallocate( self%errors )
-        !
-        !if( d_in%error_bar ) then
-            !
-            allocate( self%errors, source = d_in%errors )
-        !else
-            !
-            !allocate( self%errors( size( d_in%errors ) ) )
-            !
-            !self%errors = R_ZERO
-        !endif
+        allocate( self%errors, source = d_in%errors )
         !
         self%is_allocated = d_in%is_allocated
         !
-        self%is_complex = d_in%is_complex
-        !
-        self%normalized = d_in%normalized
+        !self%normalized = d_in%normalized
         !
     end subroutine copyFromDataGroup
     !
@@ -391,7 +384,7 @@ contains
         !
         integer :: i_comp
         !
-        write( *, * ) "    Write DataGroup_t Id"
+        write( *, * ) "    Write DataGroup_t Id: ", self%i_dg
         write( *, * ) "             Receiver Id: ", self%i_rx
         write( *, * ) "          Transmitter Id: ", self%i_tx
         write( *, * ) self%n_comp, " data_rows:"

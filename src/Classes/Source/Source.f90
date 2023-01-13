@@ -5,7 +5,6 @@ module Source
     !
     use ModelOperator
     use ModelParameter
-    use VectorArray
     !
     character(:), allocatable :: source_type
     character( len=11 ), parameter :: SRC_MT_1D = "SourceMT_1D"

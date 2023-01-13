@@ -3,7 +3,6 @@
 !
 module TransmitterArray
     !
-    use Constants
     use Transmitter
     !
     !> Allocatable Transmitter element of the array, for Old Fortran polymorphism !!!

@@ -8,8 +8,6 @@
 !
 module PreConditioner
     !
-    use Vector
-    use Scalar
     use ModelOperator
     !
     type, abstract :: PreConditioner_t

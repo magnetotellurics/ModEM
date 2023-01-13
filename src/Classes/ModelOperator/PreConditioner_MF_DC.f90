@@ -5,10 +5,9 @@
 !
 module PreConditioner_MF_DC
     !
-    use Constants
+    use PreConditioner
     use cScalar3D_SG
     use ModelOperator_MF
-    use PreConditioner
     !
     type, extends( PreConditioner_t ) :: PreConditioner_MF_DC_t
         !

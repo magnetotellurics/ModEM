@@ -3,7 +3,7 @@
 !
 module DataGroupTx
     !
-    use DataGroupArray
+    use DataGroup
     !
     type :: DataGroupTx_t
         !
@@ -23,13 +23,15 @@ module DataGroupTx
             !
             procedure, public :: set => setDataGroupTx
             !
+            procedure, public :: setValues => setValuesDataGroupTx
+            !
             procedure, public :: sub => subDataGroupTx
-			!
+            !
             procedure, public :: linComb => linCombDataGroupTx
             !
             procedure, public :: dotProd => dotProdDataGroupTx
-			!
-			procedure, public :: normalize => normalizeDataGroupTx
+            !
+            procedure, public :: normalize => normalizeDataGroupTx
             !
             procedure, public :: print => printDataGroupTx
             !
@@ -104,17 +106,17 @@ contains
         integer, intent( in ), optional :: norm
         !
         integer :: i, nn
-    	!
-		if( present( norm ) ) then
-			nn = norm
-		else
-			nn = 1
-		endif
-		!
+        !
+        if( present( norm ) ) then
+            nn = norm
+        else
+            nn = 1
+        endif
+        !
         do i = 1, size( self%data )
-			!
-			call self%data(i)%normalize( nn )
-			!
+            !
+            call self%data(i)%normalize( nn )
+            !
         enddo
         !
     end subroutine normalizeDataGroupTx
@@ -198,6 +200,36 @@ contains
         !
     end subroutine putDataGroupTx
     !
+    !> Replace the values of a specific DataGroup of the array 
+    !> by other DataGroup with the same transmitter-receiver pair
+    subroutine setValuesDataGroupTx( self, data_group )
+        implicit none
+        !
+        class( DataGroupTx_t ), intent( inout ) :: self
+        !
+        type( DataGroup_t ), intent( in ) :: data_group
+        !
+        integer :: i_data
+        !
+        do i_data = 1, size( self%data )
+            !
+            if( self%data( i_data )%i_rx == data_group%i_rx .AND. &
+                self%data( i_data )%i_tx == data_group%i_tx ) then
+                !
+                self%data( i_data )%reals = data_group%reals
+                self%data( i_data )%imaginaries = data_group%imaginaries
+                self%data( i_data )%errors = data_group%errors
+                !
+                self%data( i_data )%error_bar = data_group%error_bar
+                !
+                return
+                !
+            endif
+            !
+        enddo
+        !
+    end subroutine setValuesDataGroupTx
+    !
     !> Replace a specific DataGroup of the array 
     !> by other DataGroup with the same transmitter-receiver pair
     subroutine setDataGroupTx( self, data_group )
@@ -261,29 +293,29 @@ contains
         class( DataGroupTx_t ), intent( inout ) :: data_tx_out
         !
         integer :: i
-		!
+        !
         if( self%i_tx /= data_tx%i_tx ) then
             stop "Error: DataGroupTx_t : linCombDataGroupTx > different data txs: d1 and d2"
-		endif
-		!
+        endif
+        !
         if( size( self%data ) /= size( data_tx%data ) ) then
             stop "Error: DataGroupTx_t : linCombDataGroupTx > different data sizes: d1 and d2"
-		endif
-		!
+        endif
+        !
         if( self%i_tx /= data_tx_out%i_tx ) then
             stop "Error: DataGroupTx_t : linCombDataGroupTx > different data txs: d1 and d_out"
-		endif
-		!
+        endif
+        !
         if( size( self%data ) /= size( data_tx_out%data ) ) then
             stop "Error: DataGroupTx_t : linCombDataGroupTx > different data sizes: d1 and d_out"
-		endif
-		!
-		do i = 1, size( self%data )
-			!
-			call self%data(i)%linComb( a, b, data_tx%data(i), data_tx_out%data(i) )
-			!
-		enddo
-		!
+        endif
+        !
+        do i = 1, size( self%data )
+            !
+            call self%data(i)%linComb( a, b, data_tx%data(i), data_tx_out%data(i) )
+            !
+        enddo
+        !
     end subroutine linCombDataGroupTx
     !
     !> Call the print routine of each DataGroup in the data array

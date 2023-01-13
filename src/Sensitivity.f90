@@ -3,28 +3,7 @@
 !
 module Sensitivity
     !
-    use Constants
-    !
-    use FileUnits
-    !
-    use cVector3D_SG
-    !
     use GlobalVariables
-    !
-    use SourceMT_1D
-    use SourceMT_2D
-    use SourceCSEM_Dipole1D
-    use SourceInteriorForce
-    !
-    use ReceiverFullImpedance
-    use ReceiverFullVerticalMagnetic
-    use ReceiverOffDiagonalImpedance
-    use ReceiverSingleField
-    use ReceiverArray
-    !
-    use TransmitterMT
-    use TransmitterCSEM
-    use TransmitterArray
     !
     !> Global Sensitivity Routines
     public :: JMult, JMult_Tx, JMult_T, JMult_T_Tx
@@ -81,6 +60,7 @@ contains
         !
         type( DataGroupTx_t ), intent( inout ) :: JmHat_tx
         !
+        class( Vector_t ), allocatable, dimension(:,:) :: lrows
         complex( kind=prec ) :: lrows_x_esens
         integer :: i_data, i_comp, i_pol
         class( Transmitter_t ), pointer :: Tx
@@ -95,7 +75,7 @@ contains
             !> Pointer to the Data Receiver
             Rx => getReceiver( JmHat_tx%data( i_data )%i_rx )
             !
-            call Rx%setLRows( Tx )
+            call Rx%setLRows( Tx, lrows )
             !
             !> Loop over components
             do i_comp = 1, JmHat_tx%data( i_data )%n_comp
@@ -105,21 +85,20 @@ contains
                 !> Loop over polarizations
                 do i_pol = 1, Tx%n_pol
                     !
-                    call Rx%lrows( i_pol, i_comp )%conjugate()
+                    !> NECESSARY FOR FULL VECTOR LROWS ????
+                    call lrows( i_pol, i_comp )%conjugate()
                     !
-                    !> LRows .dot. ESens
-                    lrows_x_esens = lrows_x_esens + Tx%e_sens( i_pol )%dotProd( Rx%lrows( i_pol, i_comp ) )
+                    lrows_x_esens = lrows_x_esens + Tx%e_sens( i_pol )%dotProd( lrows( i_pol, i_comp ) )
                     !
                 enddo
                 !
-                !> Set the sum into the current data component, according to type
-                if( JmHat_tx%data( i_data )%is_complex ) then
-                    call JmHat_tx%data( i_data )%set( i_comp, -real( lrows_x_esens, kind=prec ), real( aimag( lrows_x_esens ), kind=prec ) )
-                else
-                    call JmHat_tx%data( i_data )%set( i_comp, -real( lrows_x_esens, kind=prec ), R_ZERO )
-                endif
+                call JmHat_tx%data( i_data )%set( i_comp, -real( lrows_x_esens, kind=prec ), real( aimag( lrows_x_esens ), kind=prec ) )
+                !
+                !write( *, * ) "JMult Z: ", JmHat_tx%data( i_data )%reals( i_comp ), JmHat_tx%data( i_data )%imaginaries( i_comp )
                 !
             enddo
+            !
+            deallocate( lrows )
             !
             JmHat_tx%data( i_data )%error_bar = .FALSE.
             !
@@ -186,6 +165,7 @@ contains
         type( DataGroupTx_t ), intent( in ) :: tx_data
         class( ModelParameter_t ), allocatable, intent( inout ) :: dsigma
         !
+        class( Vector_t ), allocatable, dimension(:,:) :: lrows
         class( Vector_t ), allocatable, dimension(:) :: bSrc
         class( Transmitter_t ), pointer :: Tx
         class( Receiver_t ), pointer :: Rx
@@ -220,14 +200,13 @@ contains
             Rx => getReceiver( tx_data%data( i_data )%i_rx )
             !
             !> Calculate lrows for this Receiver
-            call Rx%setLRows( Tx )
+            call Rx%setLRows( Tx, lrows )
             !
             !> Loop over the Data components
             do i_comp = 1, data_group%n_comp
                 !
                 if( Rx%is_complex ) then
                     !
-                    !> IF NOT USES CONJUGATED MUST CHANGE THE SIGN OF BB IN LROWS ????
                     tx_data_cvalue = cmplx( data_group%reals( i_comp ), -data_group%imaginaries( i_comp ), kind=prec )
                 else
                     tx_data_cvalue = cmplx( data_group%reals( i_comp ), R_ZERO, kind=prec )
@@ -238,17 +217,19 @@ contains
                 !> Loop over polarizations
                 do i_pol = 1, Tx%n_pol
                     !
-                    call Rx%lrows( i_pol, i_comp )%mult( tx_data_cvalue )
+                    call lrows( i_pol, i_comp )%mult( tx_data_cvalue )
                     !
-                    call bSrc( i_pol )%add( Rx%lrows( i_pol, i_comp ) )
+                    call bSrc( i_pol )%add( lrows( i_pol, i_comp ) )
                     !
                 enddo
                 !
             enddo
             !
+            deallocate( lrows )
+            !
         enddo
         !
-        !> Loop over polarizations
+        !> NECESSARY FOR FULL VECTOR LROWS ????
         do i_pol = 1, Tx%n_pol
             !
             call bSrc( i_pol )%mult( C_MinusOne )

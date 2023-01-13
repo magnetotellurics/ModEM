@@ -666,7 +666,7 @@ contains
         ! implicit none
         ! !
         ! class( rVector3D_SG_t ), intent( inout ) :: self
-        ! type( cSparseVector3D_SG_t ), intent( in ) :: svec
+        ! type( cVectorSparse3D_SG_t ), intent( in ) :: svec
         ! !
         ! integer :: ii
         ! !
@@ -827,6 +827,7 @@ contains
         !
         class( rVector3D_SG_t ), intent( in ) :: self
         class( Field_t ), intent( in ) :: rhs
+        !
         complex( kind=prec ) :: cvalue
         !
         cvalue = C_ZERO

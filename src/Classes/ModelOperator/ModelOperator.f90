@@ -3,7 +3,6 @@
 !
 module ModelOperator
     !
-    use Constants
     use MetricElements
     use ModelParameter
     !

@@ -3,6 +3,10 @@
 !
 module GlobalVariables
     !
+    use Constants
+    !
+    use FileUnits
+    !
     use Grid3D_SG
     !
     use ModelParameterCell_SG
@@ -13,9 +17,20 @@ module GlobalVariables
     !
     use ModelCovarianceRec
     !
-    use TransmitterArray
+    use SourceMT_1D
+    use SourceMT_2D
+    use SourceCSEM_Dipole1D
+    use SourceInteriorForce
     !
+    use ReceiverFullImpedance
+    use ReceiverFullVerticalMagnetic
+    use ReceiverOffDiagonalImpedance
+    use ReceiverSingleField
     use ReceiverArray
+    !
+    use TransmitterMT
+    use TransmitterCSEM
+    use TransmitterArray
     !
     use DataGroupTxArray
     !
@@ -27,9 +42,6 @@ module GlobalVariables
     class( ForwardSolver_t ), allocatable, target :: forward_solver
     !
     class( ModelCovarianceRec_t ), allocatable :: model_cov
-    !
-    !> Array with the Data Measured for all transmitters (from file)
-    type( DataGroupTx_t ), allocatable, dimension(:) :: all_measured_data
     !
     !> Program control variables
     character(50) :: outdir_name

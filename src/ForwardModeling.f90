@@ -3,28 +3,7 @@
 !
 module ForwardModeling
     !
-    use Constants
-    !
-    use FileUnits
-    !
-    use cVector3D_SG
-    !
     use GlobalVariables
-    !
-    use SourceMT_1D
-    use SourceMT_2D
-    use SourceCSEM_Dipole1D
-    use SourceInteriorForce
-    !
-    use ReceiverFullImpedance
-    use ReceiverFullVerticalMagnetic
-    use ReceiverOffDiagonalImpedance
-    use ReceiverSingleField
-    use ReceiverArray
-    !
-    use TransmitterMT
-    use TransmitterCSEM
-    use TransmitterArray
     !
     !> Global FWD Routines
     public :: runEMSolve, runForwardModeling, writeAllESolutionHeader
@@ -76,9 +55,13 @@ contains
                 !
                 class is( TransmitterMT_t )
                     !
+                    write( *, "( a25, i5, A9, es12.5)" ) "- Solving MT Tx", i_tx, ", Period=", Tx%period
+                    !
                     call Tx%setSource( SourceMT_1D_t( model_operator, sigma, Tx%period ) )
                     !
                 class is( TransmitterCSEM_t )
+                    !
+                    write( *, "( a25, i5, A9, es12.5)" ) "- Solving CSEM Tx", i_tx, ", Period=", Tx%period
                     !
                     call Tx%setSource( SourceCSEM_Dipole1D_t( model_operator, sigma, Tx%period, Tx%location, Tx%dip, Tx%azimuth, Tx%moment ) )
                     !
@@ -121,6 +104,7 @@ contains
         !
         class( Transmitter_t ), pointer :: Tx
         class( Receiver_t ), pointer :: Rx
+        type( DataGroup_t ) :: data_group
         integer :: i_tx, n_tx, i_rx
         !
         ! Verbose
@@ -152,9 +136,13 @@ contains
                 !
                 class is( TransmitterMT_t )
                     !
+                    write( *, "( a25, i5, A9, es12.5)" ) "- Solving MT Tx", i_tx, ", Period=", Tx%period
+                    !
                     call Tx%setSource( SourceMT_1D_t( model_operator, sigma, Tx%period ) )
                     !
                 class is( TransmitterCSEM_t )
+                    !
+                    write( *, "( a25, i5, A9, es12.5)" ) "- Solving CSEM Tx", i_tx, ", Period=", Tx%period
                     !
                     call Tx%setSource( SourceCSEM_Dipole1D_t( model_operator, sigma, Tx%period, Tx%location, Tx%dip, Tx%azimuth, Tx%moment ) )
                     !
@@ -185,9 +173,9 @@ contains
                 !> Pointer to the Tx Receiver
                 Rx => getReceiver( Tx%receiver_indexes( i_rx ) )
                 !
-                call Rx%predictedData( Tx )
+                call Rx%predictedData( Tx, data_group )
                 !
-                call predicted_data( i_tx )%set( Rx%data_group )
+                call predicted_data( i_tx )%setValues( data_group )
                 !
             enddo
             !
@@ -197,7 +185,7 @@ contains
         write( *, * ) "          - Finish Forward Modeling"
         !
     end subroutine runForwardModeling
-	!
+    !
     !> No subroutine briefing
     subroutine writeAllESolution( file_name )
         implicit none
@@ -268,31 +256,22 @@ contains
     end subroutine writeAllESolutionHeader
     !
     !> No subroutine briefing
-    subroutine writeDataGroupTxArray( tx_data_array_in, file_name )
+    subroutine writeDataGroupTxArray( data_tx_array, file_name )
         implicit none
         !
-        type( DataGroupTx_t ), allocatable, dimension(:) :: tx_data_array_in
+        type( DataGroupTx_t ), allocatable, dimension(:) :: data_tx_array
         character(*), intent( in ) :: file_name
-        !
-        type( DataGroup_t ), allocatable, dimension(:) :: to_write_data
         !
         class( Transmitter_t ), pointer :: transmitter
         class( Receiver_t ), pointer :: receiver
         type( DataGroup_t ), pointer :: data_group
         !
-        integer :: receiver_type, i, j, ios
+        integer :: receiver_type, i, j, ios, n_data
         !
         ! Verbose
         !write( *, * ) "     > Write Data to file: [", file_name, "]"
         !
-        !> Put the data in the same input format
-        allocate( to_write_data, source = measured_data )
-        !
-        do i = 1, size( tx_data_array_in )
-            do j = 1, size( tx_data_array_in(i)%data )
-                call setDataGroup( to_write_data, tx_data_array_in(i)%data(j) )
-            enddo
-        enddo
+        n_data = countDataGroupTxArray( data_tx_array )
         !
         receiver_type = 0
         !
@@ -300,9 +279,9 @@ contains
         !
         if( ios == 0 ) then
             !
-            do i = 1, size( to_write_data )
+            do i = 1, n_data
                 !
-                data_group => getDataGroupByIndex( to_write_data, i )
+                data_group => getDataGroupByIndex( data_tx_array, i )
                 !
                 receiver => getReceiver( data_group%i_rx )
                 !
@@ -330,8 +309,6 @@ contains
                 enddo
                 !
             enddo
-            !
-            deallocate( to_write_data )
             !
             close( ioPredData )
             !

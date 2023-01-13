@@ -4,12 +4,11 @@
 module Transmitter
     !
     use FileUnits
-    use Constants
-    use SourceInteriorForce
     use ForwardSolver
     use ModelParameter
-    use DataGroup
-    use VectorArray
+    use ModelOperator
+    use SourceInteriorForce
+    use rVector3D_SG
     !
     type, abstract :: Transmitter_t
         !

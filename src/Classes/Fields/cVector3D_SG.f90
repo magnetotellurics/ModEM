@@ -680,7 +680,7 @@ contains
         ! implicit none
         ! !
         ! class( cVector3D_SG_t ), intent( inout ) :: self
-        ! type( cSparseVector3D_SG_t ), intent( in ) :: svec
+        ! type( cVectorSparse3D_SG_t ), intent( in ) :: svec
         ! !
         ! integer :: ii
         ! !

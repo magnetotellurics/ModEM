@@ -385,7 +385,7 @@ contains
         !call linCombDataGroupTxArray( ONE, d, MinusONE, dHat, res )
         call subDataGroupTxArray( res, dHat )
         !
-        Ndata = countDataGroupTxArray( dHat )
+        Ndata = countValuesGroupTxArray( dHat )
         !
         !write( *, * ) "Ndata: ", Ndata
         !stop
@@ -456,7 +456,7 @@ contains
         call CdInvMult( res, Nres )
         !
         SS = dotProdDataGroupTxArray( res, Nres )
-        Ndata = countDataGroupTxArray( res )
+        Ndata = countValuesGroupTxArray( res )
         !
         !> compute the model norm
         mNorm = mHat%dotProd( mHat )
