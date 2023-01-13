@@ -167,14 +167,14 @@ module Grid
         function interface_slice_1d_grid(self) result( g1D )
             import :: Grid_t, Grid1D_t
             class( Grid_t ), intent( in ) :: self
-            type(Grid1D_t) :: g1D
+            type( Grid1D_t ) :: g1D
         end function interface_slice_1d_grid
         !
         !> No interface function briefing
         function interface_slice_2d_grid(self) result( g2D )
             import :: Grid_t, Grid2D_t
             class( Grid_t ), intent( in ) :: self
-            type(Grid2D_t) :: g2D
+            type( Grid2D_t ) :: g2D
         end function interface_slice_2d_grid
         !
     end interface

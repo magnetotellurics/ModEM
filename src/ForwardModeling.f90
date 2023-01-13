@@ -3,30 +3,7 @@
 !
 module ForwardModeling
     !
-    use Constants
-    !
-    use FileUnits
-    !
-    use cVector3D_SG
-    !
     use GlobalVariables
-    !
-    use SourceMT_1D
-    use SourceMT_2D
-    use SourceCSEM_Dipole1D
-    use SourceInteriorForce
-    !
-    use ReceiverFullImpedance
-    use ReceiverFullVerticalMagnetic
-    use ReceiverOffDiagonalImpedance
-    use ReceiverSingleField
-    use ReceiverArray
-    !
-    use TransmitterMT
-    use TransmitterCSEM
-    use TransmitterArray
-    !
-    use DataGroupTxArray
     !
     !> Global FWD Routines
     public :: runEMSolve, runForwardModeling, writeAllESolutionHeader

@@ -3,10 +3,8 @@
 !
 module ModelOperator_MF
     !
-    use Constants
-    use MetricElements_CSG
-    use ModelParameter
     use ModelOperator
+    use MetricElements_CSG
     !
     type, extends( ModelOperator_t ) :: ModelOperator_MF_t
          !
@@ -298,7 +296,6 @@ contains
         !
         call sigma%PDEmapping( self%sigma_E )
         !
-
     end subroutine setCondModelOperatorMF
     !
     !> No subroutine briefing

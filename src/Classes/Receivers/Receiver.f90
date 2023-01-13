@@ -5,12 +5,9 @@
 module Receiver
     !
     use String
-    !
-    use Transmitter
-    use cVector3D_SG
-    use cSparseVector3D_SG
-    use ModelOperator
     use DataGroup
+    use Transmitter
+    use cVectorSparse3D_SG
     !
     type, abstract :: Receiver_t
         !
@@ -26,7 +23,7 @@ module Receiver
         !
         complex( kind=prec ), allocatable, dimension(:,:) :: I_BB
         !
-        type( cSparseVector3D_SG_t ) :: Lex, Ley, Lez, Lbx, Lby, Lbz
+        type( cVectorSparse3D_SG_t ) :: Lex, Ley, Lez, Lbx, Lby, Lbz
         !
         type( String_t ), allocatable, dimension(:) :: EHxy, comp_names
         !

@@ -3,11 +3,7 @@
 !
 module Grid3D_SG
     !
-    use Constants
     use Grid
-    use Grid1D
-    use Grid2D
-    use ModEMControlFile
     !
     type, extends( Grid_t ) :: Grid3D_SG_t
         !

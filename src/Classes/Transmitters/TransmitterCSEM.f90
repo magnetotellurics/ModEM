@@ -2,10 +2,8 @@
 !> Derived class to define a CSEM Transmitter
 !
 module TransmitterCSEM
-    !> 
-    use FileUnits
+    !
     use Transmitter 
-    use cVector3D_SG
     !
     type, extends( Transmitter_t ), public :: TransmitterCSEM_t
         !

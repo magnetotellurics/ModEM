@@ -43,9 +43,9 @@ module Vector
         ! !
         ! !> No interface subroutine briefing
         ! subroutine interface_add_sparse_vector_vector( self, svec )
-            ! import :: Vector_t, cSparseVector3D_SG_t
+            ! import :: Vector_t, cVectorSparse3D_SG_t
             ! class( Vector_t ), intent( inout ) :: self
-            ! type( cSparseVector3D_SG_t ), intent( in ) :: svec
+            ! type( cVectorSparse3D_SG_t ), intent( in ) :: svec
             ! !
         ! end subroutine interface_add_sparse_vector_vector
         ! !

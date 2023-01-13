@@ -4,7 +4,6 @@
 module DataGroup
     !
     use String
-    !
     use Constants
     !
     !> Global file path name for data files

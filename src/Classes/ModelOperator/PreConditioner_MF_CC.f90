@@ -6,10 +6,8 @@
 !
 module PreConditioner_MF_CC
     !
-    use Constants
-    use cVector3D_SG
-    use ModelOperator_MF
     use PreConditioner
+    use ModelOperator_MF
     !
     type, extends( PreConditioner_t ) :: PreConditioner_MF_CC_t
         !

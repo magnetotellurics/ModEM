@@ -258,7 +258,7 @@ contains
         !
         write( *, "( a22, i5, a8, es12.5 )" ) "               CG_iter", cg_iter, ": Error=", CGiter%r_err(cg_iter)
         !
-        cg_loop : do while ( CGiter%r_err(cg_iter) .GT. CGiter%tol .AND. cg_iter .LT. CGiter%max_it )
+        cg_loop : do while ( CGiter%r_err(cg_iter) .GT. CGiter%tol .AND. cg_iter .LE. CGiter%max_it )
             ! 
             call MultA_DS( p, m, d, lambda, Ap )
             !

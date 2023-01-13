@@ -19,7 +19,6 @@ module DataGroupTxArray
     !
     public :: countDataGroupTxArray
     public :: countValuesGroupTxArray
-    public :: getDataGroupTxArray
     public :: getDataGroupByIndex
     public :: updateDataGroupTxArray
     public :: deallocateDataGroupTxArray
@@ -275,19 +274,6 @@ contains
         enddo
         !
     end function getDataGroupByIndex
-    !
-    !> Return a pointer, allowing directly modifications to a DataGroupTx at a given index
-    function getDataGroupTxArray( data_tx_array, dtx_id ) result( data_tx )
-        implicit none
-        !
-        type( DataGroupTx_t ), target, dimension(:), intent( in ) :: data_tx_array
-        integer, intent( in ) :: dtx_id
-        !
-        type( DataGroupTx_t ), pointer :: data_tx
-        !
-        data_tx => data_tx_array( dtx_id )
-        !
-    end function getDataGroupTxArray
     !
     !> Dynamically add a new DataGroupTx to the array, always via reallocation.
     subroutine updateDataGroupTxArray( data_tx_array, data_tx )

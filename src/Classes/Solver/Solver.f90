@@ -3,7 +3,6 @@
 !
 module Solver
     !
-    use Constants
     use PreConditioner
     !
     !> Solver parameters

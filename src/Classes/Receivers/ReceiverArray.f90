@@ -3,7 +3,6 @@
 !
 module ReceiverArray
     !
-    use Constants
     use Receiver
     !
     !> Allocatable Receiver element of the array, for Old Fortran polymorphism !!!

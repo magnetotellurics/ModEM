@@ -3,8 +3,6 @@
 !
 module TransmitterMT
     !
-    use FileUnits
-    use cVector3D_SG
     use Transmitter
     !
     type, extends( Transmitter_t ), public :: TransmitterMT_t
