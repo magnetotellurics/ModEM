@@ -94,11 +94,11 @@ program TestMPI
                         !
                     case ( "JOB_FORWARD" )
                         !
-                        call workerJobForwardModelling()
+                        call workerForwardModelling()
                         !
                     case ( "JOB_JMULT" )
                         !
-                        call workerJobJMult()
+                        call workerJMult()
                         !
                     case ( "JOB_JMULT_T" )
                         !
@@ -608,7 +608,7 @@ contains
             !
             allocate( tx_model_cond, source = dsigma%cell_cond )
             !
-            call receiveModel( tx_model_cond, job_info%worker_rank )
+            call receiveModelConductivity( tx_model_cond, job_info%worker_rank )
             !
             call dsigma%cell_cond%add( tx_model_cond )
             !
@@ -637,7 +637,7 @@ contains
             !
             allocate( tx_model_cond, source = dsigma%cell_cond )
             !
-            call receiveModel( tx_model_cond, job_info%worker_rank )
+            call receiveModelConductivity( tx_model_cond, job_info%worker_rank )
             !
             call dsigma%cell_cond%add( tx_model_cond )
             !
@@ -685,7 +685,7 @@ contains
     end subroutine deallocateGlobalArrays
     !
     !> No procedure briefing
-    subroutine workerJobForwardModelling()
+    subroutine workerForwardModelling()
         implicit none
         !
         !> Temporary alias pointers
@@ -730,7 +730,7 @@ contains
                 allocate( Tx%source, source = SourceCSEM_Dipole1D_t( model_operator, sigma0, Tx%period, Tx%location, Tx%dip, Tx%azimuth, Tx%moment ) )
                 !
             class default
-                stop "Error: workerJobForwardModelling: Unclassified Transmitter"
+                stop "Error: workerForwardModelling: Unclassified Transmitter"
                 !
         end select
         !
@@ -769,10 +769,10 @@ contains
         !> Clear the memory used by the current tx_data
         if( .NOT. job_info%adjoint ) deallocate( tx_data )
         !
-    end subroutine workerJobForwardModelling
+    end subroutine workerForwardModelling
     !
     !> No procedure briefing
-    subroutine workerJobJMult()
+    subroutine workerJMult()
         implicit none
         !
         !> Temporary alias pointers
@@ -802,7 +802,7 @@ contains
         !
         call sendData( tx_data, master_id )
         !
-    end subroutine workerJobJMult
+    end subroutine workerJMult
     !
     !> No procedure briefing
     subroutine workerJobAdjoint_T()

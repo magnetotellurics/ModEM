@@ -25,6 +25,10 @@ module ModelParameterCell_SG
             !
             final :: ModelParameterCell_SG_dtor
             !
+            procedure, public :: getCond => getCondModelParameterCell_SG
+            !
+            procedure, public :: addCond => addCondModelParameterCell_SG
+            !
             procedure, public :: zeros => zerosModelParameterCell_SG
             !
             procedure, public :: copyFrom => copyFromModelParameterCell_SG
@@ -204,6 +208,28 @@ contains
         deallocate( cond_slice )
         !
     end function slice2DModelParameterCell_SG
+    !
+    !> No interface subroutine briefing
+    subroutine getCondModelParameterCell_SG( self, ccond )
+        implicit none
+        !
+        class( ModelParameterCell_SG_t ), intent( in ) :: self
+        class( Scalar_t ), allocatable, intent( inout ) :: ccond
+        !
+        allocate( ccond, source = self%cell_cond )
+        !
+    end subroutine getCondModelParameterCell_SG
+    !
+    !> No interface subroutine briefing
+    subroutine addCondModelParameterCell_SG( self, ccond )
+        implicit none
+        !
+        class( ModelParameterCell_SG_t ), intent( inout ) :: self
+        class( Scalar_t ), allocatable, intent( in ) :: ccond
+        !
+        call self%cell_cond%add( ccond )
+        !
+    end subroutine addCondModelParameterCell_SG
     !
     !> No subroutine briefing
     subroutine zerosModelParameterCell_SG( self )

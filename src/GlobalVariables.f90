@@ -300,6 +300,8 @@ contains
         if( allocated( model_cov ) ) deallocate( model_cov )
         !
         !> Flush memory used by main program control variables and flags
+        if( allocated( inversion_algorithm ) ) deallocate( inversion_algorithm )
+        !
         if( allocated( forward_solver_type ) ) deallocate( forward_solver_type )
         if( allocated( source_type ) ) deallocate( source_type )
         if( allocated( model_method ) ) deallocate( model_method )

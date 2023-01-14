@@ -183,7 +183,11 @@ contains
                 !
             case ( "JMult_T" )
                 !
+#ifdef MPI
+                call masterJobJMult_T()
+#else
                 call jobJMult_T()
+#endif
                 !
             case ( "Inversion" )
                 !

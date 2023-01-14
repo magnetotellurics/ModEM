@@ -1586,7 +1586,7 @@ contains
     end subroutine unpackModelBuffer
     !
     !> RECEIVE predicted_data FROM ANY TARGET
-    subroutine receiveModel( ccond, target_id )
+    subroutine receiveModelConductivity( ccond, target_id )
         implicit none
         !
         class( Scalar_t ), allocatable, intent( inout ) :: ccond
@@ -1601,7 +1601,7 @@ contains
         !
         deallocate( model_buffer )
         !
-    end subroutine receiveModel
+    end subroutine receiveModelConductivity
     !
     !> SEND job_info FROM target_id
     subroutine sendModel( ccond, target_id )

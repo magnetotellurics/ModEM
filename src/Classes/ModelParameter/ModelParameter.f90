@@ -32,6 +32,10 @@ module ModelParameter
             !
             procedure( interface_set_type_model_parameter ), deferred, public :: SetType
             !
+            procedure( interface_get_cond_model_parameter ), deferred, public :: getCond
+            !
+            procedure( interface_add_cond_model_parameter ), deferred, public :: addCond
+            !
             procedure, public :: setMetric => setMetricModelParameter
             procedure, public :: SigMap => SigMapModelParameter
             procedure, public :: SetSigMap => SetSigMapModelParameter
@@ -94,7 +98,21 @@ module ModelParameter
         end function interface_sigmap_model_parameter
         !
         !> No interface subroutine briefing
-        subroutine interface_zeros_model_parameter(self)
+        subroutine interface_get_cond_model_parameter( self, ccond )
+            import :: ModelParameter_t, Scalar_t
+            class( ModelParameter_t ), intent( in ) :: self
+            class( Scalar_t ), allocatable, intent( inout ) :: ccond
+        end subroutine interface_get_cond_model_parameter
+        !
+        !> No interface subroutine briefing
+        subroutine interface_add_cond_model_parameter( self, ccond )
+            import :: ModelParameter_t, Scalar_t
+            class( ModelParameter_t ), intent( inout ) :: self
+            class( Scalar_t ), allocatable, intent( in ) :: ccond
+        end subroutine interface_add_cond_model_parameter
+        !
+        !> No interface subroutine briefing
+        subroutine interface_zeros_model_parameter( self )
             import :: ModelParameter_t
             class( ModelParameter_t ), intent( inout ) :: self
         end subroutine interface_zeros_model_parameter

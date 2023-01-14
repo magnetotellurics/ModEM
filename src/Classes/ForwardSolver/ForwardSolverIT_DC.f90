@@ -158,7 +158,7 @@ contains
     end subroutine initDiagnosticsForwardSolverIT_DC
     !
     !> No subroutine briefing
-    subroutine zeroDiagnosticsForwardSolverIT_DC(self)
+    subroutine zeroDiagnosticsForwardSolverIT_DC( self )
         implicit none
         !
         class( ForwardSolverIT_DC_t ), intent( inout ) :: self

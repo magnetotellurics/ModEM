@@ -7,11 +7,14 @@ module MasterMPI
     !
     public :: masterJobForwardModelling
     public :: masterForwardModelling
+    public :: masterJobJMult, masterJMult
+    public :: masterJobJMult_T, masterJMult_T
     public :: broadcastFwdBuffer
     !
 contains
     !
-    !> Routine to run a full ForwardModeling job and deliver the result (PredictedData) in a text file
+    !> Routine to run a full Forward Modeling job in parallel 
+    !> and deliver the result (all_predicted_data) in a text file
     subroutine masterJobForwardModelling()
         implicit none
         !
@@ -127,14 +130,12 @@ contains
         !
     end subroutine masterForwardModelling
     !
-    !> Routine to run a full ForwardModeling job and deliver the result (PredictedData) in a text file
+    !> Routine to run a full JMult job in parallel and deliver the result (JmHat) in a text file
     subroutine masterJobJMult()
         implicit none
         !
         !> Data gradient for all transmitters, grouped into an array of DataGroupTx
         type( DataGroupTx_t ), allocatable, dimension(:) :: JmHat
-        !
-        integer :: worker_rank, i_tx, tx_received
         !
         ! Verbose
         write( *, * ) "     - Start jobJMult"
@@ -169,11 +170,31 @@ contains
         !> Send Fwd components to all workers
         call broadcastFwdBuffer()
         !
-        !> Deallocate Forward Modeling global components
-        deallocate( sigma0, pmodel, model_operator, main_grid )
-        !
         !>
         JmHat = all_measured_data
+        !
+        !>
+        call masterJMult( sigma0, pmodel, JmHat )
+        !
+        !> Write JmHat, with its proper Rx headers, to the file <jmhat_data_file_name>
+        call writeDataGroupTxArray( JmHat, jmhat_data_file_name )
+        !
+        !> Deallocate local data array
+        call deallocateDataGroupTxArray( JmHat )
+        !
+        !> Verbose
+        write( *, * ) "     - Finish jobJMult"
+        !
+    end subroutine masterJobJMult
+    !
+    !> Routine to run a full JMult job in parallel and deliver the result (JmHat) in a text file
+    subroutine masterJMult( sigma, dsigma, JmHat )
+        implicit none
+        !
+        class( ModelParameter_t ), intent( in ) :: sigma, dsigma
+        type( DataGroupTx_t ), dimension(:), intent( inout ) :: JmHat
+        !
+        integer :: worker_rank, i_tx, tx_received
         !
         !> Initialize MPI control variables
         worker_rank = 1
@@ -227,18 +248,146 @@ contains
             !
         enddo
         !
-        !> Write JmHat, with its proper Rx headers, to the file <jmhat_data_file_name>
-        call writeDataGroupTxArray( JmHat, jmhat_data_file_name )
+    end subroutine masterJMult
+    !
+    !> Routine to run a full JMult_T job in parallel and deliver the result (DSigma) in a text file
+    subroutine masterJobJMult_T()
+        implicit none
         !
-        !> Deallocate local data array
-        call deallocateDataGroupTxArray( JmHat )
+        class( ModelParameter_t ), allocatable :: dsigma
+        !
+        ! Verbose
+        write( *, * ) "     - Start jobJMult_T"
+        !
+        !> Read Model File: instantiates Grid, ModelOperator and ModelParameter
+        if( .NOT. has_model_file ) then 
+            stop "Error: masterJobJMult_T > Missing Model file!"
+        else
+            !
+            call handleModelFile()
+            !
+        endif
+        !
+        !> Reads Data File: instantiates and builds the Data relation between Txs and Rxs
+        if( .NOT. has_data_file ) then 
+            stop "Error: masterJobJMult_T > Missing Data file!"
+        else
+            !
+            call handleDataFile()
+            !
+        endif
+        !
+        !> Send Fwd components to all workers
+        call broadcastFwdBuffer()
+        !
+        call masterJMult_T( sigma0, all_measured_data, dsigma )
+        !
+        !> Write dsigma to <dsigma_file_name> file path
+        call dsigma%write( dsigma_file_name )
+        !
+        !> Flush local variable
+        deallocate( dsigma )
         !
         !> Verbose
-        write( *, * ) "     - Finish jobJMult"
+        write( *, * ) "     - Finish jobJMult_T"
         !
-    end subroutine masterJobJMult
+    end subroutine masterJobJMult_T
     !
-    !> Send Fwd components to all workers
+    !> Routine to run JMult_T in parallel
+    subroutine masterJMult_T( sigma, all_data, dsigma )
+        implicit none
+        !
+        class( ModelParameter_t ), intent( in ) :: sigma
+        type( DataGroupTx_t ), dimension(:), intent( in ) :: all_data
+        class( ModelParameter_t ), allocatable, intent( inout ) :: dsigma
+        !
+        class( Scalar_t ), allocatable :: tx_model_cond
+        !
+        integer :: worker_rank, i_tx, tx_received
+        !
+        !> Initialize dsigma with Zeros
+        if( sigma%is_allocated ) then
+            !
+            if( allocated( dsigma ) ) deallocate( dsigma )
+            allocate( dsigma, source = sigma )
+            !
+            call dsigma%zeros()
+            !
+        else
+            stop "Error: masterJMult_T > sigma not allocated"
+        endif
+        !
+        !> Initialize MPI control variables
+        worker_rank = 1
+        tx_received = 0
+        i_tx = 0
+        !
+        !> Send 1 transmitter to first np workers
+        do while( worker_rank <= ( mpi_size - 1 ) )
+            !
+            i_tx = i_tx + 1
+            !
+            job_info%job_name = job_jmult_t
+            job_info%i_tx = i_tx
+            job_info%worker_rank = worker_rank
+            !
+            call sendTo( worker_rank )
+            !
+            call sendData( all_data( i_tx ), job_info%worker_rank )
+            !
+            worker_rank = worker_rank + 1
+            !
+        enddo
+        !
+        !> Send 1 transmitter to first available worker
+        do while( i_tx < size( transmitters ) )
+            !
+            call receiveFromAny()
+            !
+            call dsigma%getCond( tx_model_cond )
+            !
+            call receiveModelConductivity( tx_model_cond, job_info%worker_rank )
+            !
+            call dsigma%addCond( tx_model_cond )
+            !
+            deallocate( tx_model_cond )
+            !
+            tx_received = tx_received + 1
+            i_tx = i_tx + 1
+            !
+            job_info%job_name = job_jmult_t
+            job_info%i_tx = i_tx
+            !
+            call sendTo( job_info%worker_rank )
+            !
+            call sendData( all_data( i_tx ), job_info%worker_rank )
+            !
+        enddo
+        !
+        !> Receive job_done from each worker
+        do while( tx_received < size( transmitters ) )
+            !
+            call receiveFromAny()
+            !
+            call dsigma%getCond( tx_model_cond )
+            !
+            call receiveModelConductivity( tx_model_cond, job_info%worker_rank )
+            !
+            call dsigma%addCond( tx_model_cond )
+            !
+            deallocate( tx_model_cond )
+            !
+            tx_received = tx_received + 1
+            !
+            job_info%job_name = job_finish
+            !
+            call sendTo( job_info%worker_rank )
+            !
+        enddo
+        !
+    end subroutine masterJMult_T
+    !
+    !> Send Forward Modeling components to all workers
     subroutine broadcastFwdBuffer()
         implicit none
         !

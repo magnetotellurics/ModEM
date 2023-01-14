@@ -6,6 +6,10 @@ module WorkerMPI
     use DeclarationMPI
     !
     public :: workerMainLoop
+    public :: solveTx
+    public :: workerForwardModelling
+    public :: workerJMult
+    public :: workerJMult_T
     public :: handleFwdBuffer
     !
 contains
@@ -29,15 +33,15 @@ contains
                     !
                 case ( "JOB_FORWARD" )
                     !
-                    call workerJobForwardModelling()
+                    call workerForwardModelling()
                     !
                 case ( "JOB_JMULT" )
                     !
-                    call workerJobJMult()
+                    call workerJMult()
                     !
                 case ( "JOB_JMULT_T" )
                     !
-                    !call workerJobAdjoint_T()
+                    call workerJMult_T()
                     !
                 case ( "JOB_INVERSION" )
                     !
@@ -90,7 +94,7 @@ contains
                 call Tx%setSource( SourceCSEM_Dipole1D_t( model_operator, sigma, Tx%period, Tx%location, Tx%dip, Tx%azimuth, Tx%moment ) )
                 !
             class default
-                stop "Error: workerJobForwardModelling > Unclassified Transmitter"
+                stop "Error: workerForwardModelling > Unclassified Transmitter"
             !
         end select
         !
@@ -103,7 +107,7 @@ contains
     end subroutine solveTx
     !
     !> No procedure briefing
-    subroutine workerJobForwardModelling()
+    subroutine workerForwardModelling()
         implicit none
         !
         !class( ModelParameter_t ), allocatable, intent( in ) :: sigma
@@ -122,11 +126,8 @@ contains
         !> Loop for each Receiver related to the Transmitter
         do i_rx = 1, size( Tx%receiver_indexes )
             !
-            !> Point to the current Receiver
             Rx => getReceiver( Tx%receiver_indexes( i_rx ) )
             !
-            !> Calculate and store Predicted Data and/or LRows in the Receiver
-            !> Depending on the type of work
             call Rx%predictedData( Tx, data_group )
             !
             call tx_data%put( data_group )
@@ -142,10 +143,10 @@ contains
         !
         call sendData( tx_data, master_id )
         !
-    end subroutine workerJobForwardModelling
+    end subroutine workerForwardModelling
     !
     !> No procedure briefing
-    subroutine workerJobJMult()
+    subroutine workerJMult()
         implicit none
         !
         class( Transmitter_t ), pointer :: Tx
@@ -161,8 +162,6 @@ contains
         !
         !> Solve e_sens with the new Source
         call Tx%solve()
-        !
-        write( *, * ) "mpi_rank, TX ID: ", mpi_rank, Tx%i_tx
         !
         !> Build the DataGroupTx to store data from a single transmitter.
         tx_data = DataGroupTx_t( Tx%i_tx )
@@ -187,7 +186,56 @@ contains
         !
         call sendData( tx_data, master_id )
         !
-    end subroutine workerJobJMult
+    end subroutine workerJMult
+    !
+    !> No procedure briefing
+    subroutine workerJMult_T()
+        implicit none
+        !
+        class( ModelParameter_t ), allocatable :: tx_dsigma
+        class( Transmitter_t ), pointer :: Tx
+        class( Receiver_t ), pointer :: Rx
+        type( DataGroupTx_t ) :: tx_data
+        integer :: i
+        !
+        call solveTx( sigma0, Tx )
+        !
+        !> Build the DataGroupTx to store data from a single transmitter.
+        tx_data = DataGroupTx_t( Tx%i_tx )
+        !
+        do i = 1, size( Tx%receiver_indexes )
+            !
+            Rx => getReceiver( Tx%receiver_indexes(i) )
+            !
+            call tx_data%put( DataGroup_t( Tx%receiver_indexes(i), Tx%i_tx, Rx%n_comp ) )
+            !
+        enddo
+        !
+        !> Receive measure data for a single Tx
+        call receiveData( tx_data, master_id )
+        !
+        !> Set current tx_dsigma from JMult_T_Tx
+        call JMult_T_Tx( sigma0, tx_data, tx_dsigma )
+        !
+        !> MPI: SEND JOB DONE TO MASTER
+        job_info%job_name = job_done
+        job_info%worker_rank = mpi_rank
+        !
+        call sendTo( master_id )
+        !
+        !> Send result model to the Master
+        select type( tx_dsigma )
+            !
+            class is( ModelParameterCell_SG_t )
+                !
+                call sendModel( tx_dsigma%cell_cond, master_id )
+                !
+            class default
+                stop "Error: workerJMult_T > Unclassified tx_dsigma"
+            !
+        end select
+        !
+    end subroutine workerJMult_T
     !
     !> No procedure briefing
     subroutine handleFwdBuffer()

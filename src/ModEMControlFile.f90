@@ -192,7 +192,7 @@ contains
                     !
                 end select
                 !
-                write( *, "( A30, A20)" ) "          fwd_solver = ", forward_solver_type
+                write( *, "( A30, A20)" ) "          inversion = ", inversion_algorithm
                 !
             endif
             !
@@ -321,6 +321,7 @@ contains
         !
         !write( *,* ) "Destructor ModEMControlFile_t"
         !
+        if( allocated( self%inversion_algorithm ) ) deallocate( self%inversion_algorithm )
         if( allocated( self%grid_reader_type ) ) deallocate( self%grid_reader_type )
         if( allocated( self%grid_type ) ) deallocate( self%grid_type )
         if( allocated( self%forward_solver_type ) ) deallocate( self%forward_solver_type )

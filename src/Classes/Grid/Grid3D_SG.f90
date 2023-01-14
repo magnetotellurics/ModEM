@@ -63,7 +63,7 @@ module Grid3D_SG
 contains
     !
     !> No function briefing
-    function Slice1DGrid3D_SG(self) result( g1D )
+    function Slice1DGrid3D_SG( self ) result( g1D )
         implicit none
         !
         class( Grid3D_SG_t ), intent( in ) :: self
@@ -74,7 +74,7 @@ contains
     end function Slice1DGrid3D_SG
     !
     !> No function briefing
-    function Slice2DGrid3D_SG(self) result( g2D )
+    function Slice2DGrid3D_SG( self ) result( g2D )
         implicit none
         !
         class( Grid3D_SG_t ), intent( in ) :: self
@@ -146,7 +146,7 @@ contains
     end subroutine CreateGrid3D_SG
     !
     !> No subroutine briefing
-    subroutine allocateDimGrid3D_SG(self)
+    subroutine allocateDimGrid3D_SG( self )
         implicit none
         !
         class( Grid3D_SG_t ), intent(inout) :: self
@@ -584,7 +584,7 @@ contains
     end subroutine NumberOfFacesGrid3D_SG
     !
     !> No function briefing
-    function NumberOfNodesGrid3D_SG(self) result(n)
+    function NumberOfNodesGrid3D_SG( self ) result(n)
         implicit none
         !
         class( Grid3D_SG_t ), intent( in ) :: self
@@ -727,7 +727,7 @@ contains
     end subroutine LimitsGrid3D_SG
     !
     !> No function briefing
-    function IsAllocatedGrid3D_SG(self) result(f)
+    function IsAllocatedGrid3D_SG( self ) result(f)
         implicit none
         !
         class( Grid3D_SG_t ), intent( in ) :: self
@@ -738,7 +738,7 @@ contains
     end function IsAllocatedGrid3D_SG
     !
     !> No function briefing
-    function LengthGrid3D_SG(self) result(n)
+    function LengthGrid3D_SG( self ) result(n)
         class( Grid3D_SG_t ), intent( in ) :: self
         integer :: n
         !
