@@ -385,19 +385,19 @@ contains
             endif
 
         else if(index(airLayers%method, "fixed height") > 0) then 
-			!
-			!> ON IMPLEMENTATION
-			z1_log = log10( self%Dz( self%NzAir + 1 ) )
-			dlogz = ( log10( airlayers%maxHeight ) - z1_log ) / ( airlayers%Nz )
+            !
+            !> ON IMPLEMENTATION
+            z1_log = log10( self%Dz( self%NzAir + 1 ) )
+            dlogz = ( log10( airlayers%maxHeight ) - z1_log ) / ( airlayers%Nz )
 
-			z_log = z1_log
-			do iz = airlayers%Nz, 1, -1
-				airlayers%Dz(iz) = 10.**(z_log+dlogz) - 10.**(z_log)
-				z_log = z_log + dlogz
-			enddo
-			!
-			!> OTHER IMPLEMENTATION
-			!
+            z_log = z1_log
+            do iz = airlayers%Nz, 1, -1
+                airlayers%Dz(iz) = 10.**(z_log+dlogz) - 10.**(z_log)
+                z_log = z_log + dlogz
+            enddo
+            !
+            !> OTHER IMPLEMENTATION
+            !
             ! z1_log = log10(self%dz(self%nzAir + 1) )
             ! dlogz = (log10(airLayers%maxHeight) - z1_log)/(airLayers%nz-1)
             ! z_log = z1_log
@@ -409,7 +409,7 @@ contains
                 ! airLayers%dz(iz) = height2-height1
                 ! height1 = height2
             ! enddo
-			!
+            !
         else if(index(airLayers%method, "read from file") > 0) then
             !
             !> Air layers have been read from file and are

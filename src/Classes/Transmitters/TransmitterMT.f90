@@ -43,8 +43,6 @@ module TransmitterMT
         !
         self%period = period
         !
-        self%omega = ( 2.0 * PI / self%period )
-        !
         !> self%PMult_ptr => PMult_E
         !
         !> self%PMult_t_ptr => PMult_t_E

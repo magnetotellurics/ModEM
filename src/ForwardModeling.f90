@@ -6,12 +6,61 @@ module ForwardModeling
     use GlobalVariables
     !
     !> Global FWD Routines
-    public :: runEMSolve, runForwardModeling, writeAllESolutionHeader
-    public :: writeDataGroupTxArray
+    public :: jobForwardModeling
+    public :: runEMSolve, runForwardModeling
+    public :: writeDataGroupTxArray, writeAllESolutionHeader
     !
     private :: writeHeaderDataGroupTxArray
     !
 contains
+    !
+    !> Routine to run a full ForwardModeling job and deliver the result (PredictedData) in a text file
+    subroutine jobForwardModeling()
+        implicit none
+        !
+        type( DataGroupTx_t ), allocatable, dimension(:) :: all_predicted_data
+        !
+        ! Verbose
+        write( *, * ) "     - Start jobForwardModeling"
+        !
+        !> Read Model File and instantiate global variables: main_grid, model_operator and Sigma0
+        if( has_model_file ) then
+            !
+            call handleModelFile()
+            !
+        else
+            stop "Error: jobForwardModeling > Missing Model file!"
+        endif
+        !
+        !> Read Data File: instantiate Txs and Rxs and build the Data relation between them
+        if( has_data_file ) then
+            !
+            call handleDataFile()
+            !
+        else
+            stop "Error: jobForwardModeling > Missing Data file!"
+        endif
+        !
+        !> Instantiate the global ForwardSolver - Specific type can be chosen via control file
+        call createForwardSolver()
+        !
+        !> Run ForwardModelling to calculate all_predicted_data
+        all_predicted_data = all_measured_data
+        !
+        call runForwardModeling( sigma0, all_predicted_data )
+        !
+        if( has_e_solution_file ) call writeAllESolution( e_solution_file_name )
+        !
+        !> Write Predicted Data, with its proper Rx headers, into to the file <predicted_data_file_name>
+        call writeDataGroupTxArray( all_predicted_data, predicted_data_file_name )
+        !
+        !>
+        call deallocateDataGroupTxArray( all_predicted_data )
+        !
+        ! Verbose
+        write( *, * ) "     - Finish jobForwardModeling"
+        !
+    end subroutine jobForwardModeling
     !
     !> runEMSolve: Calculate ESolution for all transmitters.
     !

@@ -119,7 +119,7 @@ contains
         complex( kind=prec ) :: comega, det
         complex( kind=prec ), allocatable :: BB(:,:), I_BB(:,:)
         !
-        comega = cmplx( 0.0, 1./ transmitter%omega, kind=prec )
+        comega = cmplx( 0.0, 1./ ( 2.0 * PI / transmitter%period ), kind=prec )
         !
         allocate( BB( 3, 2 ) )
         select type( tx_e_1 => transmitter%e_sol(1) )

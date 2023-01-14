@@ -44,8 +44,6 @@ contains
         !
         self%period = period
         !
-        self%omega = ( 2.0 * PI / self%period )
-        !
         self%location = location
         !
         self%azimuth = azimuth

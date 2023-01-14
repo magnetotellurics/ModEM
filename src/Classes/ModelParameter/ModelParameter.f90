@@ -11,6 +11,10 @@ module ModelParameter
     use Grid
     use MetricElements
     !
+    character(:), allocatable :: inversion_algorithm
+    character( len=12 ), parameter :: DCG = "DCG"
+    character( len=14 ), parameter :: NLCG = "NLCG"
+    !
     type, abstract :: ModelParameter_t
         !
         class( MetricElements_t ), pointer :: metric

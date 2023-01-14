@@ -15,6 +15,8 @@ module ModEMControlFile
     !
     type :: ModEMControlFile_t
         !
+        character(:), allocatable :: inversion_algorithm
+        !
         character(:), allocatable :: grid_reader_type, grid_type, forward_solver_type, source_type
         character(:), allocatable :: model_method, model_n_air_layer, model_max_height
         !
@@ -75,6 +77,10 @@ contains
                     !
                     if( index( line_text, "forward_solver" ) > 0 ) then
                         self%forward_solver_type = trim( args(2) )
+                    endif
+                    !
+                    if( index( line_text, "inversion_type" ) > 0 ) then
+                        self%inversion_algorithm = trim( args(2) )
                     endif
                     !
                     if( index( line_text, "source" ) > 0 ) then
@@ -164,6 +170,25 @@ contains
                     case default
                         forward_solver_type = ""
                         stop "Error: Wrong forward_solver control, use [FILE|IT|IT_DC]"
+                    !
+                end select
+                !
+                write( *, "( A30, A20)" ) "          fwd_solver = ", forward_solver_type
+                !
+            endif
+            !
+            ! Forward solver
+            if ( allocated( self%inversion_algorithm ) ) then
+                !
+                select case ( self%inversion_algorithm )
+                    !
+                    case( "DCG" )
+                        inversion_algorithm = DCG
+                    case( "NLCG" )
+                        inversion_algorithm = NLCG
+                    case default
+                        inversion_algorithm = ""
+                        stop "Error: Wrong inversion_algorithm control, use [DCG|NLCG]"
                     !
                 end select
                 !

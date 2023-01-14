@@ -91,7 +91,7 @@ contains
         integer :: Ei, row, pol, comp
         complex( kind=prec ) :: comega
         !
-        comega = isign * cmplx( 0.0, 1. / transmitter%omega, kind=prec )
+        comega = isign * cmplx( 0.0, 1. / ( 2.0 * PI / transmitter%period ), kind=prec )
         !
         !> Call the predicted data routine to calculate responses
         call self%predictedData( transmitter )
@@ -162,7 +162,7 @@ contains
         complex( kind=prec ) :: comega, det
         complex( kind=prec ), allocatable :: BB(:,:), EE(:,:)
         !
-        comega = cmplx( 0.0, 1./ transmitter%omega, kind=prec )
+        comega = cmplx( 0.0, 1. / ( 2.0 * PI / transmitter%period ), kind=prec )
         !
         allocate( EE(2,2) )
         !
@@ -185,6 +185,9 @@ contains
                         BB(2,2) = self%Lby%dotProd( tx_e_2 )
                         !
                         BB = isign * BB * comega
+                        !
+                        write( *, * ) comega
+                        write( *, * ) BB(2,1), BB(2,2)
                         !
                         det = BB(1,1) * BB(2,2) - BB(1,2) * BB(2,1)
                         !

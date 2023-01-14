@@ -69,7 +69,7 @@ contains
         class( ModelParameter_t ), allocatable, intent( inout ) :: m
         !
         real( kind=prec ) :: F, mNorm
-        type( DataGroupTx_t ), allocatable, dimension(:) :: b, dx, d_pred, res, JmHat
+        type( DataGroupTx_t ), allocatable, dimension(:) :: b, dx, all_predicted_data, res, JmHat
         class( ModelParameter_t ), allocatable :: mHat
         real( kind=prec ) :: rms
         type( IterControl_t ) :: CGiter
@@ -77,6 +77,9 @@ contains
         !
         !>
         call createOutputDirectory()
+        !
+        ! Verbose
+        write( *, * ) "     - Start Inversion DCG, output files in [", trim( outdir_name ), "]"
         !
         !>
         call setDCGiterControl( DCGiterControl )
@@ -108,7 +111,7 @@ contains
             !> Write in DCG.log
             write( ioInvLog, "( a41, es12.5 )" ) "The initial damping parameter lambda is ", DCGiterControl%lambda
             !
-            call Calc_FWD( DCGiterControl%lambda, d, m, mHat, d_pred, res, F, mNorm, rms )
+            call Calc_FWD( DCGiterControl%lambda, d, m, mHat, all_predicted_data, res, F, mNorm, rms )
             !
             !> Write in DCG.log
             write( ioInvLog, "( a10, a3, es12.5, a4, es12.5, a5, f12.5, a8, es12.5 )" ) "START:", " f=", f, " m2=", mNorm, " rms=", rms, " lambda=", DCGiterControl%lambda
@@ -143,9 +146,9 @@ contains
                 !
                 call m%linComb( ONE, ONE, mHat )
                 !
-                call Calc_FWD( DCGiterControl%lambda, d, m, mHat, d_pred, res, F, mNorm, rms )
+                call Calc_FWD( DCGiterControl%lambda, d, m, mHat, all_predicted_data, res, F, mNorm, rms )
                 !
-                call outputFiles_DCG( DCG_iter, d_pred, res, m, mHat )
+                call outputFiles_DCG( DCG_iter, all_predicted_data, res, m, mHat )
                 !
                 !> Write / Print DCG.log
                 write( *, "( a20, i5, a16, f12.5)" ) "            DCG_iter", DCG_iter, ": Residual rms=", rms
@@ -168,6 +171,9 @@ contains
             !
             deallocate( mHat )
             !
+            ! Verbose
+            write( *, * ) "     - Finish Inversion DCG, output files in [", trim( outdir_name ), "]"
+            !
         else
             !
             write( *, * ) "Error opening [", trim( outdir_name )//"/DCG.log", "] in writeDataGroupTxArray!"
@@ -178,13 +184,13 @@ contains
     end subroutine DCGsolver
     !
     !>
-    subroutine Calc_FWD( lambda, d, m, mHat, d_pred, res, F, mNorm, rms )
+    subroutine Calc_FWD( lambda, d, m, mHat, all_predicted_data, res, F, mNorm, rms )
         implicit none
         !
         real( kind=prec ), intent( in ) :: lambda
         type( DataGroupTx_t ), allocatable, dimension(:), intent( in ) :: d
         class( ModelParameter_t ), allocatable, intent( in ) :: m, mHat
-        type( DataGroupTx_t ), allocatable, dimension(:), intent( out ) :: d_pred
+        type( DataGroupTx_t ), allocatable, dimension(:), intent( out ) :: all_predicted_data
         type( DataGroupTx_t ), allocatable, dimension(:), intent( out ) :: res
         real( kind=prec ), intent( out ) :: F, mNorm
         real( kind=prec ), intent( inout ) :: rms
@@ -193,13 +199,13 @@ contains
         real( kind=prec ) :: SS
         integer :: Ndata, Nmodel
         !
-        d_pred = d
+        all_predicted_data = d
         !
-        call runForwardModeling( m, d_pred )
+        call runForwardModeling( m, all_predicted_data )
         !
         res = d
         !
-        call linCombDataGroupTxArray( ONE, d, MinusONE, d_pred, res )
+        call linCombDataGroupTxArray( ONE, d, MinusONE, all_predicted_data, res )
         !
         Nres = res
         !
@@ -340,11 +346,11 @@ contains
     end subroutine MultA_DS
     !
     !> ????
-    subroutine outputFiles_DCG( DCG_iter, d_pred, res, m, mHat )
+    subroutine outputFiles_DCG( DCG_iter, all_predicted_data, res, m, mHat )
         implicit none
         !
         integer, intent( in ) :: DCG_iter
-        type( DataGroupTx_t ), allocatable, dimension(:), intent( in ) :: d_pred, res
+        type( DataGroupTx_t ), allocatable, dimension(:), intent( in ) :: all_predicted_data, res
         class( ModelParameter_t ), intent( in ) :: m, mHat
         !
         character(100) :: out_file_name
@@ -357,7 +363,7 @@ contains
         !> Write predicted data for this DCG iteration
         out_file_name = trim( outdir_name )//"/PredictedData_DCG_"//char3//".dat"
         !
-        call writeDataGroupTxArray( d_pred, trim( out_file_name ) )
+        call writeDataGroupTxArray( all_predicted_data, trim( out_file_name ) )
         !
         !> Write residual data for this DCG iteration
         out_file_name = trim( outdir_name )//"/ResidualData_DCG_"//char3//".dat"
@@ -375,29 +381,6 @@ contains
         call mHat%write( trim( out_file_name ) )
         !
     end subroutine outputFiles_DCG
-    !
-    !> ????
-    subroutine createOutputDirectory()
-        implicit none
-        !
-        character(8) str_date
-        character(6) str_time
-        !
-        !>
-        if( .NOT. has_outdir_name ) then
-            !
-            !>
-            call date_and_time( str_date, str_time )
-            !
-            write( outdir_name, "(a11, a8, a1, a6)" ) "DCG_Output_", str_date, "_", str_time
-            !
-            !write( *, * ) "outdir_name: [", trim( outdir_name ), "]"
-            !
-        endif
-        !
-        call system( "mkdir -p "//outdir_name )
-        !
-    end subroutine createOutputDirectory
     !
 end module InversionDCG
 !

@@ -5,11 +5,8 @@ module DeclarationMPI
     !
     use ModEMControlFile
     !
-    use ModelReader_Weerachai
-    !
-    use DataFileStandard
-    !
-    use Sensitivity
+    use InversionDCG
+    use InversionNLCG
     !
     include 'mpif.h'
     !
@@ -66,13 +63,33 @@ module DeclarationMPI
     !
     type( JobInfo_t ) :: job_info
     !
-    !> Global DataGroup used by each MPI process
-    type( DataGroupTx_t ), allocatable :: tx_data
-    !
     !> Time counters
     real( kind=prec ) :: t_start, t_finish
     !
 contains
+    !
+    !> Allocates initial memory buffer for ForwardModelling
+    !> With a preset size (for workers)
+    subroutine constructorMPI()
+        implicit none
+        !
+        main_comm = MPI_COMM_WORLD
+        !
+        call MPI_Init( ierr )
+        !
+        !> Set mpi_size with np from mpirun for mpi_comm_world
+        call MPI_Comm_size( main_comm, mpi_size, ierr )
+        !
+        if( mpi_size < 2 ) then
+        write( *, * ) "Error: Minimum of two processes required!"
+        call MPI_Finalize( ierr )
+        stop
+        endif 
+        !
+        !> Set mpi_rank with process id for mpi_comm_world
+        call MPI_Comm_rank( main_comm, mpi_rank, ierr )
+        !
+    end subroutine constructorMPI
     !
     !> Allocates initial memory buffer for ForwardModelling
     !> With a preset size (for workers)
@@ -527,11 +544,11 @@ contains
         !
     end subroutine unpackVectorBuffer
     !
-    !> Allocate the buffer for a single cSparsevector3D_SG
+    !> Allocate the buffer for a single cVectorSparse3D_SG
     function allocateCSparseVectorBuffer( vector ) result( vector_size_bytes )
         implicit none
         !
-        type( cSparsevector3D_SG_t ), intent( in ):: vector
+        type( cVectorSparse3D_SG_t ), intent( in ):: vector
         !
         integer :: i, nbytes(7), vector_size_bytes
         !
@@ -560,7 +577,7 @@ contains
         implicit none
         !
         !
-        type( cSparsevector3D_SG_t ), intent( in ) :: vector
+        type( cVectorSparse3D_SG_t ), intent( in ) :: vector
         !
         integer, intent( inout ) :: index
         !
@@ -590,7 +607,7 @@ contains
         implicit none
         !
         integer, intent( inout ) :: index
-        type( cSparsevector3D_SG_t ) :: vector
+        type( cVectorSparse3D_SG_t ) :: vector
         !
         !
         integer :: vector_n_i, vector_n_j, vector_n_k, vector_n_xyz, vector_n_c
@@ -1041,7 +1058,7 @@ contains
                 !> TYPE
                 call MPI_PACK( transmitter_mt, 1, MPI_INTEGER, fwd_buffer, fwd_buffer_size, index, main_comm, ierr )
                 !
-                call MPI_PACK( transmitter%id, 1, MPI_INTEGER, fwd_buffer, fwd_buffer_size, index, main_comm, ierr )
+                call MPI_PACK( transmitter%i_tx, 1, MPI_INTEGER, fwd_buffer, fwd_buffer_size, index, main_comm, ierr )
                 call MPI_PACK( transmitter%n_pol, 1, MPI_INTEGER, fwd_buffer, fwd_buffer_size, index, main_comm, ierr )
                 call MPI_PACK( transmitter%fwd_key(1), 8, MPI_INTEGER, fwd_buffer, fwd_buffer_size, index, main_comm, ierr )
                 call MPI_PACK( size( transmitter%receiver_indexes ), 1, MPI_INTEGER, fwd_buffer, fwd_buffer_size, index, main_comm, ierr )
@@ -1053,7 +1070,7 @@ contains
                 !> TYPE
                 call MPI_PACK( transmitter_csem, 1, MPI_INTEGER, fwd_buffer, fwd_buffer_size, index, main_comm, ierr )
                 !
-                call MPI_PACK( transmitter%id, 1, MPI_INTEGER, fwd_buffer, fwd_buffer_size, index, main_comm, ierr )
+                call MPI_PACK( transmitter%i_tx, 1, MPI_INTEGER, fwd_buffer, fwd_buffer_size, index, main_comm, ierr )
                 call MPI_PACK( transmitter%n_pol, 1, MPI_INTEGER, fwd_buffer, fwd_buffer_size, index, main_comm, ierr )
                 call MPI_PACK( transmitter%fwd_key(1), 8, MPI_INTEGER, fwd_buffer, fwd_buffer_size, index, main_comm, ierr )
                 call MPI_PACK( size( transmitter%receiver_indexes ), 1, MPI_INTEGER, fwd_buffer, fwd_buffer_size, index, main_comm, ierr )
@@ -1105,7 +1122,7 @@ contains
             !
             class is( TransmitterMT_t )
                 !
-                call MPI_UNPACK( fwd_buffer, fwd_buffer_size, index, transmitter%id, 1, MPI_INTEGER, main_comm, ierr )
+                call MPI_UNPACK( fwd_buffer, fwd_buffer_size, index, transmitter%i_tx, 1, MPI_INTEGER, main_comm, ierr )
                 call MPI_UNPACK( fwd_buffer, fwd_buffer_size, index, transmitter%n_pol, 1, MPI_INTEGER, main_comm, ierr )
                 call MPI_UNPACK( fwd_buffer, fwd_buffer_size, index, transmitter%fwd_key(1), 8, MPI_INTEGER, main_comm, ierr )
                 call MPI_UNPACK( fwd_buffer, fwd_buffer_size, index, transmitter_receiver_indexes, 1, MPI_INTEGER, main_comm, ierr )
@@ -1116,7 +1133,7 @@ contains
             !
             class is( TransmitterCSEM_t )
                 !
-                call MPI_UNPACK( fwd_buffer, fwd_buffer_size, index, transmitter%id, 1, MPI_INTEGER, main_comm, ierr )
+                call MPI_UNPACK( fwd_buffer, fwd_buffer_size, index, transmitter%i_tx, 1, MPI_INTEGER, main_comm, ierr )
                 call MPI_UNPACK( fwd_buffer, fwd_buffer_size, index, transmitter%n_pol, 1, MPI_INTEGER, main_comm, ierr )
                 call MPI_UNPACK( fwd_buffer, fwd_buffer_size, index, transmitter%fwd_key(1), 8, MPI_INTEGER, main_comm, ierr )
                 call MPI_UNPACK( fwd_buffer, fwd_buffer_size, index, transmitter_receiver_indexes, 1, MPI_INTEGER, main_comm, ierr )
@@ -1219,7 +1236,7 @@ contains
                 !
                 call MPI_PACK( receiver_full_impedance, 1, MPI_INTEGER, fwd_buffer, fwd_buffer_size, index, main_comm, ierr )
                 !
-                call MPI_PACK( receiver%id, 1, MPI_INTEGER, fwd_buffer, fwd_buffer_size, index, main_comm, ierr )
+                call MPI_PACK( receiver%i_rx, 1, MPI_INTEGER, fwd_buffer, fwd_buffer_size, index, main_comm, ierr )
                 call MPI_PACK( receiver%rx_type, 1, MPI_INTEGER, fwd_buffer, fwd_buffer_size, index, main_comm, ierr )
                 call MPI_PACK( len( receiver%code ), 1, MPI_INTEGER, fwd_buffer, fwd_buffer_size, index, main_comm, ierr )
                 call MPI_PACK( receiver%location(1), 3, MPI_DOUBLE_PRECISION, fwd_buffer, fwd_buffer_size, index, main_comm, ierr )
@@ -1233,7 +1250,7 @@ contains
                 !
                 call MPI_PACK( receiver_full_vertical_magnetic, 1, MPI_INTEGER, fwd_buffer, fwd_buffer_size, index, main_comm, ierr )
                 !
-                call MPI_PACK( receiver%id, 1, MPI_INTEGER, fwd_buffer, fwd_buffer_size, index, main_comm, ierr )
+                call MPI_PACK( receiver%i_rx, 1, MPI_INTEGER, fwd_buffer, fwd_buffer_size, index, main_comm, ierr )
                 call MPI_PACK( receiver%rx_type, 1, MPI_INTEGER, fwd_buffer, fwd_buffer_size, index, main_comm, ierr )
                 call MPI_PACK( len( receiver%code ), 1, MPI_INTEGER, fwd_buffer, fwd_buffer_size, index, main_comm, ierr )
                 call MPI_PACK( receiver%location(1), 3, MPI_DOUBLE_PRECISION, fwd_buffer, fwd_buffer_size, index, main_comm, ierr )
@@ -1246,7 +1263,7 @@ contains
                 !
                 call MPI_PACK( receiver_off_diagonal_impedance, 1, MPI_INTEGER, fwd_buffer, fwd_buffer_size, index, main_comm, ierr )
                 !
-                call MPI_PACK( receiver%id, 1, MPI_INTEGER, fwd_buffer, fwd_buffer_size, index, main_comm, ierr )
+                call MPI_PACK( receiver%i_rx, 1, MPI_INTEGER, fwd_buffer, fwd_buffer_size, index, main_comm, ierr )
                 call MPI_PACK( receiver%rx_type, 1, MPI_INTEGER, fwd_buffer, fwd_buffer_size, index, main_comm, ierr )
                 call MPI_PACK( len( receiver%code ), 1, MPI_INTEGER, fwd_buffer, fwd_buffer_size, index, main_comm, ierr )
                 call MPI_PACK( receiver%location(1), 3, MPI_DOUBLE_PRECISION, fwd_buffer, fwd_buffer_size, index, main_comm, ierr )
@@ -1260,7 +1277,7 @@ contains
                 !
                 call MPI_PACK( receiver_single_field, 1, MPI_INTEGER, fwd_buffer, fwd_buffer_size, index, main_comm, ierr )
                 !
-                call MPI_PACK( receiver%id, 1, MPI_INTEGER, fwd_buffer, fwd_buffer_size, index, main_comm, ierr )
+                call MPI_PACK( receiver%i_rx, 1, MPI_INTEGER, fwd_buffer, fwd_buffer_size, index, main_comm, ierr )
                 call MPI_PACK( receiver%rx_type, 1, MPI_INTEGER, fwd_buffer, fwd_buffer_size, index, main_comm, ierr )
                 call MPI_PACK( len( receiver%code ), 1, MPI_INTEGER, fwd_buffer, fwd_buffer_size, index, main_comm, ierr )
                 call MPI_PACK( receiver%location(1), 3, MPI_DOUBLE_PRECISION, fwd_buffer, fwd_buffer_size, index, main_comm, ierr )
@@ -1347,7 +1364,7 @@ contains
             !
         end select
         !
-        receiver%id = receiver_id
+        receiver%i_rx = receiver_id
         call MPI_UNPACK( fwd_buffer, fwd_buffer_size, index, receiver%is_complex, 1, MPI_LOGICAL, main_comm, ierr )
         call MPI_UNPACK( fwd_buffer, fwd_buffer_size, index, receiver%interpolation_set, 1, MPI_LOGICAL, main_comm, ierr )
         !

@@ -157,7 +157,7 @@ contains
         !
         call MPI_BARRIER( main_comm, ierr )
         !
-        write( *, "(A7, i3, A11, i8, A11)" ) "Worker", mpi_rank, " Received: ", fwd_buffer_size, " bytes."
+        write( *, "( A7, i3, A11, i8, A11 )" ) "Worker", mpi_rank, " Received: ", fwd_buffer_size, " bytes."
         !
         select type( main_grid )
             !
@@ -833,7 +833,6 @@ contains
         implicit none
         !
         type( ModelReader_Weerachai_t ) :: model_reader
-        type( TAirLayers ) :: air_layer
         !
         ! Verbose
         write( *, * ) "     < Model File: [", model_file_name, "]"
@@ -845,10 +844,6 @@ contains
         select type( main_grid )
             !
             class is( Grid3D_SG_t )
-                !
-                call main_grid%SetupAirLayers( air_layer, model_method, model_n_air_layer, model_max_height )
-                !
-                call main_grid%UpdateAirLayers( air_layer%nz, air_layer%dz )
                 !
                 write( *, * ) "          Air layers from the method: ", air_layer%method, "."
                 !
