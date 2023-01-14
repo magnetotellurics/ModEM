@@ -175,7 +175,11 @@ contains
                 !
             case ( "JMult" )
                 !
+#ifdef MPI
+                call masterJobJMult()
+#else
                 call jobJMult()
+#endif
                 !
             case ( "JMult_T" )
                 !

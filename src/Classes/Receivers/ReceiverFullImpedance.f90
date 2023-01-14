@@ -186,9 +186,6 @@ contains
                         !
                         BB = isign * BB * comega
                         !
-                        write( *, * ) comega
-                        write( *, * ) BB(2,1), BB(2,2)
-                        !
                         det = BB(1,1) * BB(2,2) - BB(1,2) * BB(2,1)
                         !
                         if( allocated( self%I_BB ) ) deallocate( self%I_BB )

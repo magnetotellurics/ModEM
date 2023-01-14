@@ -96,11 +96,11 @@ program TestMPI
                         !
                         call workerJobForwardModelling()
                         !
-                    case ( "JOB_ADJOINT" )
+                    case ( "JOB_JMULT" )
                         !
-                        call workerJobAdjoint()
+                        call workerJobJMult()
                         !
-                    case ( "JOB_ADJOINT_T" )
+                    case ( "JOB_JMULT_T" )
                         !
                         call workerJobAdjoint_T()
                         !
@@ -389,7 +389,7 @@ contains
     end subroutine masterJobForwardModelling
     !
     !> Routine to run a full ForwardModeling job and deliver the result (PredictedData) in a text file
-    subroutine masterJobAdjoint()
+    subroutine masterJobJMult()
         implicit none
         !
         !> Data gradient for all transmitters, grouped into an array of DataGroupTx
@@ -398,7 +398,7 @@ contains
         integer :: worker_rank, i_tx, tx_received
         !
         ! Verbose
-        write( *, * ) "     - Start masterJobAdjoint"
+        write( *, * ) "     - Start masterJobJMult"
         !
         !> Read Model File: instantiates Grid, ModelOperator and ModelParameter
         if( .NOT. has_model_file ) then 
@@ -420,7 +420,7 @@ contains
         !
         !> Reads Data File: instantiates and builds the Data relation between Txs and Rxs
         if( .NOT. has_data_file ) then 
-            stop "Error: masterJobAdjoint > Missing Data file!"
+            stop "Error: masterJobJMult > Missing Data file!"
         else
             !
             call handleDataFile()
@@ -449,7 +449,7 @@ contains
             !
             i_tx = i_tx + 1
             !
-            job_info%job_name = job_adjoint
+            job_info%job_name = job_jmult
             job_info%worker_rank = worker_rank
             job_info%i_tx = i_tx
             !
@@ -469,7 +469,7 @@ contains
             tx_received = tx_received + 1
             i_tx = i_tx + 1
             !
-            job_info%job_name = job_adjoint
+            job_info%job_name = job_jmult
             !
             call sendTo( job_info%worker_rank )
             !
@@ -497,9 +497,9 @@ contains
         call deallocateGlobalArrays()
         !
         !> Verbose
-        write( *, * ) "     - Finish masterJobAdjoint"
+        write( *, * ) "     - Finish masterJobJMult"
         !
-    end subroutine masterJobAdjoint
+    end subroutine masterJobJMult
     !
     !
     subroutine sendTxMeasureData( i_tx )
@@ -550,7 +550,7 @@ contains
         !
         !> Reads Data File: instantiates and builds the Data relation between Txs and Rxs
         if( .NOT. has_data_file ) then 
-            stop "Error: masterJobAdjoint > Missing Data file!"
+            stop "Error: masterJobJMult > Missing Data file!"
         else
             call handleDataFile()
         endif
@@ -585,7 +585,7 @@ contains
             !
             i_tx = i_tx + 1
             !
-            job_info%job_name = job_adjoint_t
+            job_info%job_name = job_jmult_t
             job_info%worker_rank = worker_rank
             job_info%i_tx = i_tx
             !
@@ -617,7 +617,7 @@ contains
             tx_received = tx_received + 1
             i_tx = i_tx + 1
             !
-            job_info%job_name = job_adjoint_t
+            job_info%job_name = job_jmult_t
             job_info%i_tx = i_tx
             !
             call sendTo( job_info%worker_rank )
@@ -772,7 +772,7 @@ contains
     end subroutine workerJobForwardModelling
     !
     !> No procedure briefing
-    subroutine workerJobAdjoint()
+    subroutine workerJobJMult()
         implicit none
         !
         !> Temporary alias pointers
@@ -802,7 +802,7 @@ contains
         !
         call sendData( tx_data, master_id )
         !
-    end subroutine workerJobAdjoint
+    end subroutine workerJobJMult
     !
     !> No procedure briefing
     subroutine workerJobAdjoint_T()
@@ -858,7 +858,7 @@ contains
                 !
             case ( "adjoint" )
                 !
-                call masterJobAdjoint()
+                call masterJobJMult()
                 !
             case ( "JMult_t" )
                 !

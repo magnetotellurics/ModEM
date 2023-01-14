@@ -65,7 +65,7 @@ module DeclarationMPI
     !
     character( len=15 ) :: job_master = "MASTER_JOB", job_done = "FINISH_JOB", job_finish = "STOP_JOBS"
     character( len=15 ) :: job_share_memory = "SHARE_MEMORY", job_forward = "JOB_FORWARD"
-    character( len=15 ) :: job_adjoint = "JOB_ADJOINT", job_adjoint_t = "JOB_ADJOINT_T", job_inversion = "JOB_INVERSION"
+    character( len=15 ) :: job_jmult = "JOB_JMULT", job_jmult_t = "JOB_JMULT_T", job_inversion = "JOB_INVERSION"
     !
     !> Struct JobInfo_t:
     !> Gather MPI information necessary for the execution of the different ModEM jobs.

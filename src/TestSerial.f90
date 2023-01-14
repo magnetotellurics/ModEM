@@ -369,46 +369,6 @@ contains
     end subroutine setupDefaultParameters
     !
     !> No subroutine briefing
-    subroutine garbageCollector()
-        implicit none
-        !
-        !> Deallocate global array of measured data
-        if( allocated( all_measured_data ) ) call deallocateDataGroupTxArray( all_measured_data )
-        !
-        !> Deallocate global array of Receivers
-        call deallocateReceiverArray()
-        !
-        !> Deallocate global array of Transmitters
-        call deallocateTransmitterArray()
-        !
-        !> Deallocate global components
-        deallocate( forward_solver, model_operator, sigma0, main_grid )
-        !
-        !> Deallocate global pmodel, if its the case
-        if( allocated( pmodel ) ) deallocate( pmodel )
-        !
-        !> Deallocate global model_cov, if its the case
-        if( allocated( model_cov ) ) deallocate( model_cov )
-        !
-        !> Flush memory used by main program control variables and flags
-        if( allocated( forward_solver_type ) ) deallocate( forward_solver_type )
-        if( allocated( source_type ) ) deallocate( source_type )
-        if( allocated( model_method ) ) deallocate( model_method )
-        if( allocated( get_1D_from ) ) deallocate( get_1D_from )
-        if( allocated( predicted_data_file_name ) ) deallocate( predicted_data_file_name )
-        if( allocated( jmhat_data_file_name ) ) deallocate( jmhat_data_file_name )
-        if( allocated( e_solution_file_name ) ) deallocate( e_solution_file_name )
-        !
-        if( allocated( control_file_name ) ) deallocate( control_file_name )
-        if( allocated( model_file_name ) ) deallocate( model_file_name )
-        if( allocated( pmodel_file_name ) ) deallocate( pmodel_file_name )
-        if( allocated( data_file_name ) ) deallocate( data_file_name )
-        if( allocated( dsigma_file_name ) ) deallocate( dsigma_file_name )
-        if( allocated( modem_job ) ) deallocate( modem_job )
-        !
-    end subroutine garbageCollector
-    !
-    !> No subroutine briefing
     subroutine printUsage()
         implicit none
         !

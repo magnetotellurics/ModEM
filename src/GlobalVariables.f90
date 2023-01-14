@@ -119,9 +119,9 @@ contains
                 !
                 call model_operator%SetEquations()
                 !
-                !call sigma0%setMetric( model_operator%metric )
+                call sigma0%setMetric( model_operator%metric )
                 !
-                !call model_operator%SetCond( sigma0 )
+                call model_operator%SetCond( sigma0 )
                 !
             class default
                 stop "Error: handleModelFile > Unclassified main_grid"

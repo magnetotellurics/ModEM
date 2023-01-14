@@ -31,11 +31,11 @@ contains
                     !
                     call workerJobForwardModelling()
                     !
-                case ( "JOB_ADJOINT" )
+                case ( "JOB_JMULT" )
                     !
-                    !call workerJobAdjoint()
+                    call workerJobJMult()
                     !
-                case ( "JOB_ADJOINT_T" )
+                case ( "JOB_JMULT_T" )
                     !
                     !call workerJobAdjoint_T()
                     !
@@ -59,15 +59,11 @@ contains
     end subroutine workerMainLoop
     !
     !> No procedure briefing
-    subroutine workerJobForwardModelling()
+    subroutine solveTx( sigma, Tx )
         implicit none
         !
-        class( ModelParameter_t ), allocatable :: sigma
-        class( Transmitter_t ), pointer :: Tx
-        class( Receiver_t ), pointer :: Rx
-        type( DataGroupTx_t ) :: tx_data
-        type( DataGroup_t ) :: data_group
-        integer :: iRx
+        class( ModelParameter_t ), allocatable, intent( in ) :: sigma
+        class( Transmitter_t ), pointer, intent( inout ) :: Tx
         !
         !> Instantiate the global ForwardSolver - Specific type can be chosen via control file
         call createForwardSolver()
@@ -76,7 +72,7 @@ contains
         Tx => getTransmitter( job_info%i_tx )
         !
         !> Set Transmitter's ForwardSolver Omega(Period) and Conductivity
-        call Tx%forward_solver%setFrequency( sigma0, Tx%period )
+        call Tx%forward_solver%setFrequency( sigma, Tx%period )
         !
         !> Instantiate Transmitter's Source - According to transmitter type or chosen via control file
         select type( Tx )
@@ -85,13 +81,13 @@ contains
                 !
                 write( *, "( a25, i5, A14, i5, A9, es12.5 )" ) "- Worker", mpi_rank, " Solving MT Tx", Tx%i_tx, ", Period=", Tx%period
                 !
-                call Tx%setSource( SourceMT_1D_t( model_operator, sigma0, Tx%period ) )
+                call Tx%setSource( SourceMT_1D_t( model_operator, sigma, Tx%period ) )
                 !
             class is( TransmitterCSEM_t )
                 !
                 write( *, "( a25, i5, A14, i5, A9, es12.5 )" ) "- Worker", mpi_rank, " Solving CSEM Tx", Tx%i_tx, ", Period=", Tx%period
                 !
-                call Tx%setSource( SourceCSEM_Dipole1D_t( model_operator, sigma0, Tx%period, Tx%location, Tx%dip, Tx%azimuth, Tx%moment ) )
+                call Tx%setSource( SourceCSEM_Dipole1D_t( model_operator, sigma, Tx%period, Tx%location, Tx%dip, Tx%azimuth, Tx%moment ) )
                 !
             class default
                 stop "Error: workerJobForwardModelling > Unclassified Transmitter"
@@ -104,14 +100,30 @@ contains
         !> Solve e_sol for this Transmitter
         call Tx%solve()
         !
+    end subroutine solveTx
+    !
+    !> No procedure briefing
+    subroutine workerJobForwardModelling()
+        implicit none
+        !
+        !class( ModelParameter_t ), allocatable, intent( in ) :: sigma
+        !
+        class( Transmitter_t ), pointer :: Tx
+        class( Receiver_t ), pointer :: Rx
+        type( DataGroupTx_t ) :: tx_data
+        type( DataGroup_t ) :: data_group
+        integer :: i_rx
+        !
+        call solveTx( sigma0, Tx )
+        !
         !> Build the DataGroupTx to store data from a single transmitter.
         tx_data = DataGroupTx_t( Tx%i_tx )
         !
         !> Loop for each Receiver related to the Transmitter
-        do iRx = 1, size( Tx%receiver_indexes )
+        do i_rx = 1, size( Tx%receiver_indexes )
             !
             !> Point to the current Receiver
-            Rx => getReceiver( Tx%receiver_indexes( iRx ) )
+            Rx => getReceiver( Tx%receiver_indexes( i_rx ) )
             !
             !> Calculate and store Predicted Data and/or LRows in the Receiver
             !> Depending on the type of work
@@ -131,6 +143,51 @@ contains
         call sendData( tx_data, master_id )
         !
     end subroutine workerJobForwardModelling
+    !
+    !> No procedure briefing
+    subroutine workerJobJMult()
+        implicit none
+        !
+        class( Transmitter_t ), pointer :: Tx
+        class( Receiver_t ), pointer :: Rx
+        type( DataGroupTx_t ) :: tx_data
+        integer :: i
+        !
+        !>
+        call solveTx( sigma0, Tx )
+        !
+        !> Switch Transmitter's source to SourceInteriorForce from PMult
+        call Tx%setSource( Tx%PMult( sigma0, pmodel, model_operator ) )
+        !
+        !> Solve e_sens with the new Source
+        call Tx%solve()
+        !
+        write( *, * ) "mpi_rank, TX ID: ", mpi_rank, Tx%i_tx
+        !
+        !> Build the DataGroupTx to store data from a single transmitter.
+        tx_data = DataGroupTx_t( Tx%i_tx )
+        !
+        do i = 1, size( Tx%receiver_indexes )
+            !
+            Rx => getReceiver( Tx%receiver_indexes(i) )
+            !
+            call tx_data%put( DataGroup_t( Tx%receiver_indexes(i), Tx%i_tx, Rx%n_comp ) )
+            !
+        enddo
+        !
+        !> JMult for the same Tx
+        call JMult_Tx( tx_data )
+        !
+        !> MPI: SEND JOB DONE TO MASTER
+        job_info%job_name = job_done
+        job_info%worker_rank = mpi_rank
+        job_info%i_tx = tx_data%i_tx
+        !
+        call sendTo( master_id )
+        !
+        call sendData( tx_data, master_id )
+        !
+    end subroutine workerJobJMult
     !
     !> No procedure briefing
     subroutine handleFwdBuffer()

@@ -46,8 +46,8 @@ module DeclarationMPI
     !
     !> Labels for ModEM jobs
     character( len=15 ) :: job_master = "MASTER_JOB", job_done = "FINISH_JOB", job_finish = "STOP_JOBS"
-    character( len=15 ) :: job_share_memory = "SHARE_MEMORY", job_forward = "JOB_FORWARD"
-    character( len=15 ) :: job_adjoint = "JOB_ADJOINT", job_adjoint_t = "JOB_ADJOINT_T", job_inversion = "JOB_INVERSION"
+    character( len=15 ) :: job_share_memory = "SHARE_MEMORY", job_em_solve = "JOB_EM_SOLVE", job_forward = "JOB_FORWARD"
+    character( len=15 ) :: job_jmult = "JOB_JMULT", job_jmult_t = "JOB_JMULT_T", job_inversion = "JOB_INVERSION"
     !
     !> Struct JobInfo_t:
     !> Gather MPI information necessary for the execution of the different ModEM jobs.
@@ -57,7 +57,6 @@ module DeclarationMPI
         !
         character( len=15 ) :: job_name
         integer :: worker_rank, i_tx, buffer_size
-        logical :: adjoint
         !
     end type JobInfo_t
     !
@@ -1688,7 +1687,6 @@ contains
         call MPI_PACK( job_info%worker_rank, 1, MPI_INTEGER, job_info_buffer, job_info_buffer_size, index, main_comm, ierr )
         call MPI_PACK( job_info%i_tx, 1, MPI_INTEGER, job_info_buffer, job_info_buffer_size, index, main_comm, ierr )
         call MPI_PACK( job_info%buffer_size, 1, MPI_INTEGER, job_info_buffer, job_info_buffer_size, index, main_comm, ierr )
-        call MPI_PACK( job_info%adjoint, 1, MPI_LOGICAL, job_info_buffer, job_info_buffer_size, index, main_comm, ierr )
         !
     end subroutine packFWDInfoBuffer
     !
@@ -1703,7 +1701,6 @@ contains
         call MPI_UNPACK( job_info_buffer, job_info_buffer_size, index, job_info%worker_rank, 1, MPI_INTEGER, main_comm, ierr )
         call MPI_UNPACK( job_info_buffer, job_info_buffer_size, index, job_info%i_tx, 1, MPI_INTEGER, main_comm, ierr )
         call MPI_UNPACK( job_info_buffer, job_info_buffer_size, index, job_info%buffer_size, 1, MPI_INTEGER, main_comm, ierr )
-        call MPI_UNPACK( job_info_buffer, job_info_buffer_size, index, job_info%adjoint, 1, MPI_LOGICAL, main_comm, ierr )
         !
     end subroutine unpackFWDInfoBuffer
     !
