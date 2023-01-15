@@ -100,7 +100,7 @@ module Grid
         end subroutine interface_NumberOfFaces
         !
         !> No interface function briefing
-        function interface_NumberOfNodes(self) result(n)
+        function interface_NumberOfNodes( self ) result(n)
             import :: Grid_t
             class( Grid_t ), intent( in ) :: self
             integer :: n
@@ -143,7 +143,7 @@ module Grid
         end subroutine interface_Limits
         !
         !> No interface function briefing
-        function interface_IsAllocated(self) result(f)
+        function interface_IsAllocated( self ) result(f)
             import :: Grid_t
             class( Grid_t ), intent( in ) :: self
             logical :: f
@@ -164,14 +164,14 @@ module Grid
         end subroutine interface_SetCellSizes
         !
         !> No interface function briefing
-        function interface_slice_1d_grid(self) result( g1D )
+        function interface_slice_1d_grid( self ) result( g1D )
             import :: Grid_t, Grid1D_t
             class( Grid_t ), intent( in ) :: self
             type( Grid1D_t ) :: g1D
         end function interface_slice_1d_grid
         !
         !> No interface function briefing
-        function interface_slice_2d_grid(self) result( g2D )
+        function interface_slice_2d_grid( self ) result( g2D )
             import :: Grid_t, Grid2D_t
             class( Grid_t ), intent( in ) :: self
             type( Grid2D_t ) :: g2D
@@ -230,7 +230,7 @@ contains
     end subroutine SetGridRotation
     !
     !> No function briefing
-    function GetGridRotation(self) result(rotDeg)
+    function GetGridRotation( self ) result(rotDeg)
         implicit none
         !
         class( Grid_t ), intent( in ) :: self
@@ -252,7 +252,7 @@ contains
     end subroutine SetGridGeometry
     !
     !> No function briefing
-    function GetGridGeometry(self) result(s)
+    function GetGridGeometry( self ) result(s)
         implicit none
         !
         class( Grid_t ), intent( in ) :: self

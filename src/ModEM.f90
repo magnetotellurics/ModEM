@@ -1,50 +1,83 @@
 !
-!> Prototype serial version for testing the ModEM-OO program
+!> Prototype of a full ModEM program
 !
-!> with three main jobs implemented: ForwardModelling, Adjoint and JMult_T
-!
-!> Obs.: To merge with the MPI version in the future
-!
-program TestSerial
+program ModEM
+    !
+#ifdef MPI
+    !
+    use MasterMPI
+    use WorkerMPI
+    !
+    call constructorMPI()
+    !
+    !> MPI MASTER PROCESS
+    if( mpi_rank == 0 ) then
+        !
+        write( *, * ) "PARALLEL PROGRAM"
+        !
+        call startProgram()
+        !
+        call MPI_Finalize( ierr )
+        !
+    !> MPI WORKER PROCESS
+    else
+        !
+        call workerMainLoop()
+        !
+    endif
+    !
+#else
     !
     use ModEMControlFile
+    !
+    write( *, * ) "SERIAL PROGRAM"
     !
     use InversionDCG
     use InversionNLCG
     !
-    real( kind=prec ) :: t_start, t_finish
+    call startProgram()
     !
-    !> Start the program and runtime count
-    call cpu_time( t_start )
-    !
-    modem_job = "unknown"
-    !
-    call setupDefaultParameters()
-    !
-    !> Validate arguments, set model_file_name, data_file_name, control_file_name, etc...
-    call handleArguments()
-    !
-    write( *, * )
-    write( *, * ) "Start ModEM-OO."
-    write( *, * )
-    !
-    !> Check parameters at the control file
-    if( has_control_file ) call handleControlFile()
-    !
-    !> Execute the job specified in the arguments
-    call handleJob()
-    !
-    !> Deallocate remaining main program memory
-    call garbageCollector()
-    !
-    !> End runtime countdown
-    call cpu_time( t_finish )
-    !
-    write( *, * )
-    write( *, "(A18, F10.2, A3)" ) "Finish ModEM-OO (", t_finish - t_start, "s)"
-    write( *, * )
+#endif
     !
 contains
+    !
+    !>
+    subroutine startProgram()
+        implicit none
+        !
+        real( kind=prec ) :: t_start, t_finish
+        !
+        !> Start the program and runtime count
+        call cpu_time( t_start )
+        !
+        modem_job = "unknown"
+        !
+        call setupDefaultParameters()
+        !
+        !> Validate arguments, set model_file_name, data_file_name, control_file_name, etc...
+        call handleArguments()
+        !
+        write( *, * )
+        write( *, * ) "Start ModEM-OO."
+        write( *, * )
+        !
+        !> Check parameters at the control file
+        if( has_control_file ) call handleControlFile()
+        !
+        !> Execute the job specified in the arguments
+        call handleJob()
+        !
+        !> Deallocate remaining main program memory
+        call garbageCollector()
+        !
+        !> End runtime countdown
+        call cpu_time( t_finish )
+        !
+        write( *, * )
+        write( *, "( a16, f8.3, a1 )" ) "Finish ModEM-OO:", ( t_finish - t_start ), "s"
+        write( *, * )
+        !
+    end subroutine startProgram
     !
     !> Routine to run a full Inversion Job - Minimize Residual
     !> Where:
@@ -134,15 +167,27 @@ contains
             !
             case ( "Forward" )
                 !
+#ifdef MPI
+                call masterJobForwardModelling()
+#else
                 call jobForwardModeling()
+#endif
                 !
             case ( "JMult" )
                 !
+#ifdef MPI
+                call masterJobJMult()
+#else
                 call jobJMult()
+#endif
                 !
             case ( "JMult_T" )
                 !
+#ifdef MPI
+                call masterJobJMult_T()
+#else
                 call jobJMult_T()
+#endif
                 !
             case ( "Inversion" )
                 !
@@ -376,22 +421,22 @@ contains
         write( *, * ) ""
         write( *, * ) "    Forward Modeling:"
         write( *, * ) "        <ModEM> -f -m <rFile_Model> -d <rFile_Data>"
-        write( *, * ) "    Output:"
+        write( *, * ) "        Output:"
         write( *, * ) "        - predicted_data.dat or the path specified by         [-pd]"
         write( *, * ) ""
         write( *, * ) "    JMult:"
         write( *, * ) "        <ModEM> -j -m <rFile_Model> -pm <rFile_pModel> -d <rFile_Data>"
-        write( *, * ) "    Outputs:"
+        write( *, * ) "        Output:"
         write( *, * ) "        - jmhat.dat or the path specified by                  [-jm]"
         write( *, * ) ""
         write( *, * ) "    JMult_T:"
         write( *, * ) "        <ModEM> -jt -m <rFile_Model> -d <rFile_Data>"
-        write( *, * ) "    Output:"
+        write( *, * ) "        Output:"
         write( *, * ) "        - dsigma.rho or the path specified by                 [-dm]"
         write( *, * ) ""
         write( *, * ) "    Inversion:"
         write( *, * ) "        <ModEM> -i -m <rFile_Model> -d <rFile_Data>"
-        write( *, * ) "    Output:"
+        write( *, * ) "        Output:"
         write( *, * ) "        - directory named Output_<date>_<time> or specified by [-o]"
         !
     end subroutine printUsage
@@ -427,5 +472,5 @@ contains
         !
     end subroutine printHelp
     !
-end program TestSerial
+end program ModEM
 !

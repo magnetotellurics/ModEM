@@ -3,12 +3,75 @@
 !
 module Sensitivity
     !
-    use GlobalVariables
+    use ForwardModeling
     !
     !> Global Sensitivity Routines
-    public :: JMult, JMult_Tx, JMult_T, JMult_T_Tx
+    public :: jobJMult, JMult, JMult_Tx
+    public :: jobJMult_T, JMult_T, JMult_T_Tx
     !
 contains
+    !
+    !> Routine to run a full JMult job and deliver the result (JmHat Data) in a text file
+    subroutine jobJMult()
+        implicit none
+        !
+        !> Local Data Array to store JMult output
+        type( DataGroupTx_t ), allocatable, dimension(:) :: JmHat
+        !
+        ! Verbose
+        write( *, * ) "     - Start jobJMult"
+        !
+        !> Read Prior Model File: instantiate pmodel
+        if( has_pmodel_file ) then
+            !
+            call handlePModelFile()
+            !
+            !> Read Model File and instantiate global variables: main_grid, model_operator and Sigma0
+            if( has_model_file ) then
+                !
+                call handleModelFile()
+                !
+                call pmodel%setMetric( model_operator%metric )
+                !
+            else
+                stop "Error: jobJMult > Missing Model file!"
+            endif
+            !
+        else
+            stop "Error: jobJMult > Missing Prior Model file!"
+        endif
+        !
+        !> Read Data File: instantiate Txs and Rxs and build the Data relation between them
+        if( has_data_file ) then
+            !
+            call handleDataFile()
+            !
+        else
+            stop "Error: jobJMult > Missing Data file!"
+        endif
+        !
+        !> Instantiate the ForwardSolver - Specific type can be chosen via control file
+        call createForwardSolver()
+        !
+        !>
+        call runEMSolve( sigma0 )
+        !
+        !>
+        JmHat = all_measured_data
+        !
+        !> Calculate Data Array from JMult routine
+        call JMult( sigma0, pmodel, JmHat )
+        !
+        !> Write JmHat to the file <jmhat_data_file_name>
+        call writeDataGroupTxArray( JmHat, jmhat_data_file_name )
+        !
+        !> Flush local variable
+        call deallocateDataGroupTxArray( JmHat )
+        !
+        ! Verbose
+        write( *, * ) "     - Finish jobJMult"
+        !
+    end subroutine jobJMult
     !
     !> Get the JmHat for all transmitters represented in an array of DataGroupTx:
     !>     Call the setFrequency routine to the forward_solver pointer of the transmitter
@@ -105,6 +168,54 @@ contains
         enddo
         !
     end subroutine JMult_Tx
+    !
+    !> Routine to run a full JMult_T job and deliver the result (DSigma model) in a text file
+    subroutine jobJMult_T()
+        implicit none
+        !
+        class( ModelParameter_t ), allocatable :: dsigma
+        !
+        ! Verbose
+        write( *, * ) "     - Start jobJMult_T"
+        !
+        !> Read Model File and instantiate global variables: main_grid, model_operator and Sigma0
+        if( has_model_file ) then 
+            !
+            call handleModelFile()
+            !
+        else
+            stop "Error: jobJMult_T > Missing Model file!"
+        endif
+        !
+        !> Read Data File: instantiate Txs and Rxs and build the Data relation between them
+        !> Initialize a DataGroupTxArray to hold the measured data
+        if( has_data_file ) then 
+            !
+            call handleDataFile()
+            !
+        else
+            stop "Error: jobJMult_T > Missing Data file!"
+        endif
+        !
+        !> Instantiate the ForwardSolver - Specific type can be chosen via control file
+        call createForwardSolver()
+        !
+        !> Run ForwardModelling to calculate predicted data
+        call runEMSolve( sigma0 )
+        !
+        !> Calculate DSigma model from JMult_T routine
+        call JMult_T( sigma0, all_measured_data, dsigma )
+        !
+        !> Write dsigma to <dsigma_file_name> file path
+        call dsigma%write( dsigma_file_name )
+        !
+        !> Flush local variable
+        deallocate( dsigma )
+        !
+        ! Verbose
+        write( *, * ) "     - Finish jobJMult_T"
+        !
+    end subroutine jobJMult_T
     !
     !> Call JMult_T_Tx for for all transmitters:
     !>     Calculate residual data with predicted data for each transmitter.

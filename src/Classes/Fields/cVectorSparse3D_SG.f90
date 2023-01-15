@@ -646,7 +646,34 @@ contains
         class( cVectorSparse3D_SG_t ), intent( inout ) :: self
         class( Field_t ), intent( in ) :: rhs
         !
-        stop "Error: copyFromCVectorSparse3D_SG not implemented yet!"
+        if( .NOT. rhs%is_allocated) then
+            stop "Error: copyFromCVectorSparse3D_SG > rhs not allocated"
+        endif
+        !
+        self%grid => rhs%grid
+        self%grid_type = rhs%grid_type
+        self%nx = rhs%nx
+        self%ny = rhs%ny
+        self%nz = rhs%nz
+        self%is_allocated = .TRUE.
+        !
+        select type( rhs )
+            !
+            class is( cVectorSparse3D_SG_t )
+                !
+                self%nCoeff = rhs%nCoeff
+                !
+                self%i = rhs%i
+                self%j = rhs%j
+                self%k = rhs%k
+                self%xyz = rhs%xyz
+                !
+                self%c = rhs%c
+                !
+            class default
+                stop "Error: copyFromCVectorSparse3D_SG > Incompatible rhs"
+            !
+        end select
         !
     end subroutine copyFromCVectorSparse3D_SG
     !

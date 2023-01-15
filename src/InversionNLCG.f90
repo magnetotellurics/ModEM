@@ -1,5 +1,5 @@
 !
-!> Module with the InversionDCG routines JMult, JMult_Tx, JMult_T, JMult_T_Tx 
+!> Module with the InversionNLCG routines JMult, JMult_Tx, JMult_T, JMult_T_Tx 
 !
 module InversionNLCG
     !
@@ -43,40 +43,40 @@ module InversionNLCG
         !
     end type NLCGiterControl_t
     !
-    type( NLCGiterControl_t ), private, save :: iterControl
+    type( NLCGiterControl_t ), private, save :: NLCGiterControl
     !
 contains
     !
     !>
-    subroutine set_NLCGiterControl( iterControl )
+    subroutine set_NLCGiterControl( NLCGiterControl )
         implicit none
         !
-        type( NLCGiterControl_t ), intent( inout ) :: iterControl
+        type( NLCGiterControl_t ), intent( inout ) :: NLCGiterControl
         !
         ! maximum number of iterations in one call to iterative solver
-        iterControl%maxIter = 600
+        NLCGiterControl%maxIter = 600
         ! convergence criteria: return from solver if rms < rmsTol
-        iterControl%rmsTol = 1.05
+        NLCGiterControl%rmsTol = 1.05
         ! inversion stalls when abs(rms - rmsPrev) < fdiffTol (2e-3 works well)
-        iterControl%fdiffTol = 2.0e-3
+        NLCGiterControl%fdiffTol = 2.0e-3
         ! initial r_value of lambda (will not override the NLCG input argument)
-        iterControl%lambda = 1.
+        NLCGiterControl%lambda = 1.
         ! exit if lambda < lambdaTol approx. 1e-4
-        iterControl%lambdaTol = 1.0e-8
+        NLCGiterControl%lambdaTol = 1.0e-8
         ! set lambda_i = lambda_{i-1}/k when the inversion stalls
-        iterControl%k = 10.
+        NLCGiterControl%k = 10.
         ! the factor that ensures sufficient decrease in the line search >=1e-4
-        iterControl%c = 1.0e-4
+        NLCGiterControl%c = 1.0e-4
         ! restart CG every nCGmax iterations to ensure conjugacy
-        iterControl%nCGmax = 8
+        NLCGiterControl%nCGmax = 8
         ! the starting step for the line search
-        iterControl%alpha_1 = 20.
+        NLCGiterControl%alpha_1 = 20.
         ! maximum initial delta mHat (overrides alpha_1)
-        iterControl%startdm = 20.
+        NLCGiterControl%startdm = 20.
         ! optional relaxation parameter (Renormalized Steepest Descent algorithm)
-        iterControl%gamma = 0.99
+        NLCGiterControl%gamma = 0.99
         ! model and data output file name
-        iterControl%fname = 'Modular'
+        NLCGiterControl%fname = 'Modular'
         !
     end subroutine set_NLCGiterControl
     !
@@ -95,13 +95,12 @@ contains
     !> with \tilde{m} = 0. However, in general we could also
     !> start with the result of a previous search.
     !
-    subroutine NLCGsolver( d, lambda, m0, m )
+    subroutine NLCGsolver( d, m0, m )
         implicit none
         !
         !> d is data; on output it contains the responses for the inverse model
         type( DataGroupTx_t ), allocatable, dimension(:), intent( inout ) :: d
-        !> lambda is regularization parameter
-        real( kind=prec ), intent( inout ) :: lambda
+        !
         !> m0 is prior model parameter
         class( ModelParameter_t ), allocatable, intent( in ) :: m0
         !> m is solution parameter ... on input m contains starting guess
@@ -124,14 +123,20 @@ contains
         integer :: iter, nCG, nLS, nfunc
         type( ESolMTx ) :: e_all
         !
-        call set_NLCGiterControl( iterControl )
+        !>
+        call createOutputDirectory()
+        !
+        ! Verbose
+        write( *, * ) "     - Start Inversion NLCG, output files in [", trim( outdir_name ), "]"
+        !
+        call set_NLCGiterControl( NLCGiterControl )
         !
         ! initialize the line search
-        alpha = iterControl%alpha_1
+        alpha = NLCGiterControl%alpha_1
         !
-        startdm = iterControl%startdm
+        startdm = NLCGiterControl%startdm
         !
-        write( *, * ) "lambda, startdm: ", lambda, startdm
+        write( *, * ) "lambda, startdm: ", NLCGiterControl%lambda, startdm
         !
         ! starting model contains the rough deviations from the prior
         allocate( mHat, source = m )
@@ -139,7 +144,7 @@ contains
         !  compute the penalty functional and predicted data
         e_all%SolnIndex = 0
         !
-        call func( lambda, d, m0, mHat, r_value, mNorm, dHat, e_all, rms )
+        call func( NLCGiterControl%lambda, d, m0, mHat, r_value, mNorm, dHat, e_all, rms )
         !
         nfunc = 1
         !
@@ -149,7 +154,7 @@ contains
         call m%linComb( ONE, ONE, m0 )
         !
         !> compute gradient of the full penalty functional
-        call gradient( lambda, d, m0, mHat, grad, dHat, e_all )
+        call gradient( NLCGiterControl%lambda, d, m0, mHat, grad, dHat, e_all )
         !
         gnorm = sqrt( grad%dotProd( grad ) )
         !
@@ -180,7 +185,7 @@ contains
         !
         do
             !  test for convergence ...
-            if( rms .LT. iterControl%rmsTol .OR. iter .GE. iterControl%maxIter ) then
+            if( rms .LT. NLCGiterControl%rmsTol .OR. iter .GE. NLCGiterControl%maxIter ) then
                 exit
             endif
             !
@@ -204,13 +209,13 @@ contains
             select case ( flavor )
                 !
                 case ( 'Cubic' )
-                    call lineSearchCubic( lambda, d, m0, h, alpha, mHat, r_value, grad, rms, nLS, dHat, e_all )
+                    call lineSearchCubic( NLCGiterControl%lambda, d, m0, h, alpha, mHat, r_value, grad, rms, nLS, dHat, e_all )
                     !call deall(e_all)
                 case ('Quadratic')
-                    !call lineSearchQuadratic(lambda,d,m0,h,alpha,mHat,r_value,grad,rms,nLS,dHat,e_all)
+                    !call lineSearchQuadratic(NLCGiterControl%lambda,d,m0,h,alpha,mHat,r_value,grad,rms,nLS,dHat,e_all)
                     !call deall(e_all)
                 case ('Wolfe')
-                    !call lineSearchWolfe(lambda,d,m0,h,alpha,mHat,r_value,grad,rms,nLS,dHat,e_all)
+                    !call lineSearchWolfe(NLCGiterControl%lambda,d,m0,h,alpha,mHat,r_value,grad,rms,nLS,dHat,e_all)
                     !call deall(e_all)
                 case default
                     stop "Error: NLCGsolver: Unknown line search requested in NLCG"
@@ -241,7 +246,7 @@ contains
             !
             mNorm = mHat%dotProd( mHat ) / Nmodel
             !
-            write( *, * ) "     lambda, alpha, r_value, mNorm, rms: ", lambda, alpha, r_value, mNorm, rms
+            write( *, * ) "     lambda, alpha, r_value, mNorm, rms: ", NLCGiterControl%lambda, alpha, r_value, mNorm, rms
             !
             ! write out the intermediate model solution and responses
             m = model_cov%multBy_CmSqrt( mHat )
@@ -253,13 +258,13 @@ contains
             call linCombDataGroupTxArray( ONE, d, MinusONE, dHat, res )
             !
             !> if alpha is too small, we are not making progress: update lambda
-            if( abs( rmsPrev - rms ) < iterControl%fdiffTol ) then
+            if( abs( rmsPrev - rms ) < NLCGiterControl%fdiffTol ) then
                 !
                 ! update lambda, penalty functional and gradient
-                call update_damping_parameter( lambda, mHat, r_value, grad )
+                call update_damping_parameter( NLCGiterControl%lambda, mHat, r_value, grad )
                 !
                 ! check that lambda is still at a reasonable r_value
-                if( lambda < iterControl%lambdaTol ) then
+                if( NLCGiterControl%lambda < NLCGiterControl%lambdaTol ) then
                     stop "Error: NLCGsolver: Unable to get out of a local minimum."
                     exit
                 endif
@@ -269,7 +274,7 @@ contains
                 !
                 write( *, * ) "gnorm: ", gnorm
                 !
-                !> alpha = min(iterControl%alpha_1,startdm/gnorm)
+                !> alpha = min(NLCGiterControl%alpha_1,startdm/gnorm)
                 alpha = min( ONE, startdm ) / gnorm
                 !
                 write( *, * ) "alpha: ", alpha
@@ -281,7 +286,7 @@ contains
                 !
                 !> restart
                 write( *, * ) "Restarting NLCG with the damping parameter updated"
-                write( *, * ) "lambda, alpha, r_value, mNorm, rms: ", lambda, alpha, r_value, mNorm, rms
+                write( *, * ) "lambda, alpha, r_value, mNorm, rms: ", NLCGiterControl%lambda, alpha, r_value, mNorm, rms
                 !
                 h = g
                 !
@@ -308,8 +313,8 @@ contains
             !> g_{i+1}.dot.(g_{i+1}+beta*h_i) > 0 must hold. Alternatively, books
             !> say we can take beta > 0 (didn't work as well)
             !> if ((beta.lt.R_ZERO).or.(g_dot_g + beta*g_dot_h .le. R_ZERO)&
-            !>    .and.(nCG .ge. iterControl%nCGmax)) then  !PR+
-            if( g_dot_g + beta * g_dot_h .LE. R_ZERO .AND. nCG .GE. iterControl%nCGmax ) then  !PR
+            !>    .and.(nCG .ge. NLCGiterControl%nCGmax)) then  !PR+
+            if( g_dot_g + beta * g_dot_h .LE. R_ZERO .AND. nCG .GE. NLCGiterControl%nCGmax ) then  !PR
                 !
                 ! restart
                 write( *, * ) "Restarting NLCG to restore orthogonality"
@@ -337,11 +342,12 @@ contains
         !
         d = dHat
         !
-        write( *, * ) "NLCG iterations: ", iter, ", function evaluations: ", nfunc
-        !
         ! cleaning up
         call deallocateDataGroupTxArray( dHat )
         call deallocateDataGroupTxArray( res )
+        !
+        ! Verbose
+        write( *, * ) "     - Finish Inversion NLCG, output files in [", trim( outdir_name ), "]"
         !
         deallocate( mHat, grad, g, h, gPrev )
         !
@@ -538,7 +544,7 @@ contains
         call dSS%linComb( ONE, MinusTWO * lambda / Nmodel, mHat )
         !
         ! update the damping parameter lambda
-        lambda = lambda / iterControl%k
+        lambda = lambda / NLCGiterControl%k
         !
         ! penalty functional = (scaled) sum of squares + scaled model norm
         F = SS + ( lambda * mNorm / Nmodel )
@@ -618,7 +624,7 @@ contains
         type( ESolMTx ) :: eAll_1
         !
         ! parameters
-        c = iterControl%c
+        c = NLCGiterControl%c
         !
         ! initialize the line search
         niter = 0
@@ -895,6 +901,43 @@ contains
         !call deall_solnVectorMTX(eAll_1)
         !
     end subroutine lineSearchCubic
+    !
+    !> ????
+    subroutine outputFiles_NLCG( NLCG_iter, all_predicted_data, res, m, mHat )
+        implicit none
+        !
+        integer, intent( in ) :: NLCG_iter
+        type( DataGroupTx_t ), allocatable, dimension(:), intent( in ) :: all_predicted_data, res
+        class( ModelParameter_t ), intent( in ) :: m, mHat
+        !
+        character(100) :: out_file_name
+        character(8) str_date
+        character(6) str_time
+        character(3) :: char3
+        !
+        write( char3, "(i3.3)" ) NLCG_iter
+        !
+        !> Write predicted data for this NLCG iteration
+        out_file_name = trim( outdir_name )//"/PredictedData_NLCG_"//char3//".dat"
+        !
+        call writeDataGroupTxArray( all_predicted_data, trim( out_file_name ) )
+        !
+        !> Write residual data for this NLCG iteration
+        out_file_name = trim( outdir_name )//"/ResidualData_NLCG_"//char3//".dat"
+        !
+        call writeDataGroupTxArray( res, trim( out_file_name ) )
+        !
+        !> Write model for this NLCG iteration
+        out_file_name = trim( outdir_name )//"/SigmaModel_NLCG_"//char3//".rho"
+        !
+        call m%write( trim( out_file_name ) )
+        !
+        !> Write perturbation model for this NLCG iteration
+        out_file_name = trim( outdir_name )//"/PerturbationModel_NLCG_"//char3//".rho"
+        !
+        call mHat%write( trim( out_file_name ) )
+        !
+    end subroutine outputFiles_NLCG
     !
 end module InversionNLCG
 !

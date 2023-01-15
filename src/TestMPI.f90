@@ -76,13 +76,13 @@ program TestMPI
                     !
                 case ( "JOB_FORWARD" )
                     !
-                    call workerJobForwardModelling()
+                    call workerForwardModelling()
                     !
-                case ( "JOB_ADJOINT" )
+                case ( "JOB_JMULT" )
                     !
-                    call workerJobAdjoint()
+                    call workerJMult()
                     !
-                case ( "JOB_ADJOINT_T" )
+                case ( "JOB_JMULT_T" )
                     !
                     call workerJobAdjoint_T()
                     !
@@ -157,7 +157,7 @@ contains
         !
         call MPI_BARRIER( main_comm, ierr )
         !
-        write( *, "(A7, i3, A11, i8, A11)" ) "Worker", mpi_rank, " Received: ", fwd_buffer_size, " bytes."
+        write( *, "( A7, i3, A11, i8, A11 )" ) "Worker", mpi_rank, " Received: ", fwd_buffer_size, " bytes."
         !
         select type( main_grid )
             !
@@ -324,7 +324,7 @@ contains
     end subroutine masterJobForwardModelling
     !
     !> Routine to run a full ForwardModeling job and deliver the result (PredictedData) in a text file
-    subroutine masterJobAdjoint()
+    subroutine masterJobJMult()
         implicit none
         !
         !> Data gradient for all transmitters, grouped into an array of DataGroupTx
@@ -333,7 +333,7 @@ contains
         integer :: worker_rank, i_tx, tx_received
         !
         ! Verbose
-        write( *, * ) "     - Start masterJobAdjoint"
+        write( *, * ) "     - Start masterJobJMult"
         !
         !> Read Model File: instantiates Grid, ModelOperator and ModelParameter
         if( .NOT. has_model_file ) then 
@@ -355,7 +355,7 @@ contains
         !
         !> Reads Data File: instantiates and builds the Data relation between Txs and Rxs
         if( .NOT. has_data_file ) then 
-            stop "Error: masterJobAdjoint > Missing Data file!"
+            stop "Error: masterJobJMult > Missing Data file!"
         else
             !
             call handleDataFile()
@@ -384,7 +384,7 @@ contains
             !
             i_tx = i_tx + 1
             !
-            job_info%job_name = job_adjoint
+            job_info%job_name = job_jmult
             job_info%worker_rank = worker_rank
             job_info%i_tx = i_tx
             !
@@ -404,7 +404,7 @@ contains
             tx_received = tx_received + 1
             i_tx = i_tx + 1
             !
-            job_info%job_name = job_adjoint
+            job_info%job_name = job_jmult
             !
             call sendTo( job_info%worker_rank )
             !
@@ -432,9 +432,9 @@ contains
         call deallocateGlobalArrays()
         !
         !> Verbose
-        write( *, * ) "     - Finish masterJobAdjoint"
+        write( *, * ) "     - Finish masterJobJMult"
         !
-    end subroutine masterJobAdjoint
+    end subroutine masterJobJMult
     !
     !
     subroutine sendTxMeasureData( i_tx )
@@ -485,7 +485,7 @@ contains
         !
         !> Reads Data File: instantiates and builds the Data relation between Txs and Rxs
         if( .NOT. has_data_file ) then 
-            stop "Error: masterJobAdjoint > Missing Data file!"
+            stop "Error: masterJobJMult > Missing Data file!"
         else
             call handleDataFile()
         endif
@@ -520,7 +520,7 @@ contains
             !
             i_tx = i_tx + 1
             !
-            job_info%job_name = job_adjoint_t
+            job_info%job_name = job_jmult_t
             job_info%worker_rank = worker_rank
             job_info%i_tx = i_tx
             !
@@ -543,7 +543,7 @@ contains
             !
             allocate( tx_model_cond, source = dsigma%cell_cond )
             !
-            call receiveModel( tx_model_cond, job_info%worker_rank )
+            call receiveModelConductivity( tx_model_cond, job_info%worker_rank )
             !
             call dsigma%cell_cond%add( tx_model_cond )
             !
@@ -552,7 +552,7 @@ contains
             tx_received = tx_received + 1
             i_tx = i_tx + 1
             !
-            job_info%job_name = job_adjoint_t
+            job_info%job_name = job_jmult_t
             job_info%i_tx = i_tx
             !
             call sendTo( job_info%worker_rank )
@@ -572,7 +572,7 @@ contains
             !
             allocate( tx_model_cond, source = dsigma%cell_cond )
             !
-            call receiveModel( tx_model_cond, job_info%worker_rank )
+            call receiveModelConductivity( tx_model_cond, job_info%worker_rank )
             !
             call dsigma%cell_cond%add( tx_model_cond )
             !
@@ -620,7 +620,7 @@ contains
     end subroutine deallocateGlobalArrays
     !
     !> No procedure briefing
-    subroutine workerJobForwardModelling()
+    subroutine workerForwardModelling()
         implicit none
         !
         !> Temporary alias pointers
@@ -665,7 +665,7 @@ contains
                 allocate( Tx%source, source = SourceCSEM_Dipole1D_t( model_operator, sigma0, Tx%period, Tx%location, Tx%dip, Tx%azimuth, Tx%moment ) )
                 !
             class default
-                stop "Error: workerJobForwardModelling: Unclassified Transmitter"
+                stop "Error: workerForwardModelling: Unclassified Transmitter"
                 !
         end select
         !
@@ -705,10 +705,10 @@ contains
         !> Clear the memory used by the current tx_data
         if( .NOT. job_info%adjoint ) deallocate( tx_data )
         !
-    end subroutine workerJobForwardModelling
+    end subroutine workerForwardModelling
     !
     !> No procedure briefing
-    subroutine workerJobAdjoint()
+    subroutine workerJMult()
         implicit none
         !
         !> Temporary alias pointers
@@ -738,7 +738,7 @@ contains
         !
         call sendData( tx_data, master_id )
         !
-    end subroutine workerJobAdjoint
+    end subroutine workerJMult
     !
     !> No procedure briefing
     subroutine workerJobAdjoint_T()
@@ -794,7 +794,7 @@ contains
                 !
             case ( "adjoint" )
                 !
-                call masterJobAdjoint()
+                call masterJobJMult()
                 !
             case ( "JMult_t" )
                 !
@@ -833,7 +833,6 @@ contains
         implicit none
         !
         type( ModelReader_Weerachai_t ) :: model_reader
-        type( TAirLayers ) :: air_layer
         !
         ! Verbose
         write( *, * ) "     < Model File: [", model_file_name, "]"
@@ -845,10 +844,6 @@ contains
         select type( main_grid )
             !
             class is( Grid3D_SG_t )
-                !
-                call main_grid%SetupAirLayers( air_layer, model_method, model_n_air_layer, model_max_height )
-                !
-                call main_grid%UpdateAirLayers( air_layer%nz, air_layer%dz )
                 !
                 write( *, * ) "          Air layers from the method: ", air_layer%method, "."
                 !

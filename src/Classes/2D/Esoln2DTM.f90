@@ -58,7 +58,7 @@ Module Esoln2DTM
     end function Esoln2DTM_ctor
     !
     !> No subroutine briefing
-    subroutine Esoln2DTM_dtor(self)
+    subroutine Esoln2DTM_dtor( self )
         type(Esoln2DTM_T) ::    self
 
         if(self%is_allocated) then
@@ -69,7 +69,7 @@ Module Esoln2DTM
     end subroutine Esoln2DTM_dtor
     !
     !> No function briefing
-    function nEdgesEsoln2DTM(self) result(n)
+    function nEdgesEsoln2DTM( self ) result(n)
         class(Esoln2DTM_t), intent( in ) :: self
         integer :: n
         !>    local variables
@@ -81,7 +81,7 @@ Module Esoln2DTM
     end function nEdgesEsoln2DTM
     !
     !> No function briefing
-    function GetArrayEsoln2DTM(self) result(x)
+    function GetArrayEsoln2DTM( self ) result(x)
         !> puts Ey and Ez into a column vector, with interleaved
         !>    vertical grid columns
         implicit none
@@ -160,7 +160,7 @@ Module Esoln2DTM
     end subroutine setArrayEsoln2DTM
     !
     !> No function briefing
-    function getBoundaryEsoln2DTM(self) result(x)
+    function getBoundaryEsoln2DTM( self ) result(x)
         !>    comparable to GetArray, but only boundary values are inserted into
         !>    the output vector
         implicit none

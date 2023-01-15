@@ -13,7 +13,7 @@ module Field
         !
         character( len=4 ) :: grid_type
         !
-        integer :: nx, ny, nz, store_state
+        integer :: nx, ny, nz
         !
         logical :: is_allocated
         !
@@ -292,8 +292,6 @@ contains
         self%nx = 0
         self%ny = 0
         self%nz = 0
-        !
-        self%store_state = 0
         !
         self%is_allocated = .FALSE.
         !

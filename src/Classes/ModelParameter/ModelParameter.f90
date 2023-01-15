@@ -11,6 +11,10 @@ module ModelParameter
     use Grid
     use MetricElements
     !
+    character(:), allocatable :: inversion_algorithm
+    character( len=12 ), parameter :: DCG = "DCG"
+    character( len=14 ), parameter :: NLCG = "NLCG"
+    !
     type, abstract :: ModelParameter_t
         !
         class( MetricElements_t ), pointer :: metric
@@ -27,6 +31,10 @@ module ModelParameter
             procedure, public :: init => initializeModelParameter
             !
             procedure( interface_set_type_model_parameter ), deferred, public :: SetType
+            !
+            procedure( interface_get_cond_model_parameter ), deferred, public :: getCond
+            !
+            procedure( interface_add_cond_model_parameter ), deferred, public :: addCond
             !
             procedure, public :: setMetric => setMetricModelParameter
             procedure, public :: SigMap => SigMapModelParameter
@@ -90,7 +98,21 @@ module ModelParameter
         end function interface_sigmap_model_parameter
         !
         !> No interface subroutine briefing
-        subroutine interface_zeros_model_parameter(self)
+        subroutine interface_get_cond_model_parameter( self, ccond )
+            import :: ModelParameter_t, Scalar_t
+            class( ModelParameter_t ), intent( in ) :: self
+            class( Scalar_t ), allocatable, intent( inout ) :: ccond
+        end subroutine interface_get_cond_model_parameter
+        !
+        !> No interface subroutine briefing
+        subroutine interface_add_cond_model_parameter( self, ccond )
+            import :: ModelParameter_t, Scalar_t
+            class( ModelParameter_t ), intent( inout ) :: self
+            class( Scalar_t ), allocatable, intent( in ) :: ccond
+        end subroutine interface_add_cond_model_parameter
+        !
+        !> No interface subroutine briefing
+        subroutine interface_zeros_model_parameter( self )
             import :: ModelParameter_t
             class( ModelParameter_t ), intent( inout ) :: self
         end subroutine interface_zeros_model_parameter

@@ -81,7 +81,7 @@ contains
     end function ModelParameter2D_ctor
     !
     !> No function briefing
-    function lengthModelParameter2D(self) result(nParam)
+    function lengthModelParameter2D( self ) result(nParam)
         implicit none
         class(ModelParameter2D_t), intent( in ) :: self
         integer :: nParam
@@ -91,7 +91,7 @@ contains
     end function lengthModelParameter2D
     !
     !> No subroutine briefing
-    subroutine zerosParameter2D(self)
+    subroutine zerosParameter2D( self )
         implicit none
         !
         class(ModelParameter2D_t), intent(inout) :: self
@@ -142,7 +142,7 @@ contains
     end subroutine setConductivityModelParameter2D
     !
     !> No function briefing
-    function PDEmappingParameter2D(self) result(sigmaEdge)
+    function PDEmappingParameter2D( self ) result(sigmaEdge)
         !>    Output E is a real 1D array -- but easiest to do this using
         !> preliminary    mapping onto an Esoln2DTM object -- which has complex fields
         implicit none

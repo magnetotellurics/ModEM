@@ -41,7 +41,7 @@ module Solver
     abstract interface
         !
         !> No interface subroutine briefing
-        subroutine interface_set_solver_defaults(self)
+        subroutine interface_set_solver_defaults( self )
            import :: Solver_t
            class( Solver_t ), intent( inout ) :: self
         end subroutine interface_set_solver_defaults

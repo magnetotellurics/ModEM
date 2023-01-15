@@ -122,7 +122,7 @@ contains
     end subroutine createGrid2D
     !
     !> No subroutine briefing
-    subroutine allocateGrid2D(self)
+    subroutine allocateGrid2D( self )
         !
         class(Grid2D_t), intent(inout) :: self
         !
@@ -156,7 +156,7 @@ contains
     end subroutine allocateGrid2D
     !
     !> No subroutine briefing
-    subroutine deallocateGrid2D(self)
+    subroutine deallocateGrid2D( self )
         !
         class(Grid2D_t), intent(inout) :: self
         
@@ -186,7 +186,7 @@ contains
     !> Procedure setupGrid2D
     !> setupGrid2D does calculations for grid geometry, which cannot be done
     !> until dy, dz, are set -- for 2D I am omitting origin -- can't see the use!
-    subroutine setupGrid2D(self)
+    subroutine setupGrid2D( self )
         implicit none
         !
         class(Grid2D_t), intent(inout) :: self
@@ -335,7 +335,7 @@ contains
     end subroutine NumberOfEdges
     !
     !> No function briefing
-    function NumberOfNodes(self) result(n)
+    function NumberOfNodes( self ) result(n)
         !
         class(Grid2D_t), intent( in ) :: self
         !
@@ -455,7 +455,7 @@ contains
     end subroutine Limits
     !
     !> No function briefing
-    function IsallocateGrid2Dd(self) result(f)
+    function IsallocateGrid2Dd( self ) result(f)
         !
         class(Grid2D_t), intent( in ) :: self
         !
@@ -465,7 +465,7 @@ contains
     end function IsallocateGrid2Dd
     !
     !> No function briefing
-    function Length(self) result(n)
+    function Length( self ) result(n)
         class(Grid2D_t), intent( in ) :: self
         integer :: n
 
@@ -473,7 +473,7 @@ contains
     end function Length
     !
     !> No function briefing
-    function Slice1D(self) result(g1D)
+    function Slice1D( self ) result(g1D)
         implicit none
         class(Grid2D_t), intent( in ) :: self
         type(Grid1D_t) :: g1d
