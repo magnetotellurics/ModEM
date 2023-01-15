@@ -70,9 +70,9 @@ program TestMPI
             !
             select case ( job_master )
                 !
-                case ( "SHARE_MEMORY" )
+                case ( "BASIC_COMP" )
                     !
-                    call handleFwdBuffer()
+                    call handleBasicComponents()
                     !
                 case ( "JOB_FORWARD" )
                     !
@@ -123,7 +123,7 @@ program TestMPI
 contains
     !
     !> Send Fwd components to all workers
-    subroutine broadcastFwdBuffer()
+    subroutine broadcastBasicComponents()
         implicit none
         !
         integer :: worker_id
@@ -134,8 +134,8 @@ contains
         !
         do worker_id = 1, ( mpi_size - 1 )
             !
-            job_info%job_name = job_share_memory
-            job_info%buffer_size = fwd_buffer_size
+            job_info%job_name = job_basic_components
+            job_info%grid_size = fwd_buffer_size
             !
             call sendTo( worker_id )
             !
@@ -147,10 +147,10 @@ contains
         !
         deallocate( fwd_buffer )
         !
-    end subroutine broadcastFwdBuffer
+    end subroutine broadcastBasicComponents
     !
     !> No procedure briefing
-    subroutine handleFwdBuffer()
+    subroutine handleBasicComponents()
         implicit none
         !
         call receiveFwdBuffer( master_id )
@@ -172,11 +172,11 @@ contains
                 call model_operator%SetCond( sigma0 )
                 !
             class default
-                stop "Error: handleFwdBuffer > Unclassified main_grid"
+                stop "Error: handleBasicComponents > Unclassified main_grid"
             !
         end select
         !
-    end subroutine handleFwdBuffer
+    end subroutine handleBasicComponents
     !
     !> No procedure briefing
     subroutine masterForwardModelling( adjoint )
@@ -307,7 +307,7 @@ contains
         endif
         !
         !> Send Fwd components to all workers
-        call broadcastFwdBuffer()
+        call broadcastBasicComponents()
         !
         !> Deallocate Forward Modeling global components (Not used by the Master process)
         deallocate( model_operator, sigma0, main_grid )
@@ -363,7 +363,7 @@ contains
         endif
         !
         !> Send Fwd components to all workers
-        call broadcastFwdBuffer()
+        call broadcastBasicComponents()
         !
         !> Deallocate Forward Modeling global components
         deallocate( sigma0, pmodel, model_operator, main_grid )
@@ -491,7 +491,7 @@ contains
         endif
         !
         !> Send Fwd components to all workers
-        call broadcastFwdBuffer()
+        call broadcastBasicComponents()
         !
         !> Run masterForwardModelling to calculate predicted data and LRows
         call masterForwardModelling( .TRUE. )
@@ -543,7 +543,7 @@ contains
             !
             allocate( tx_model_cond, source = dsigma%cell_cond )
             !
-            call receiveModelConductivity( tx_model_cond, job_info%worker_rank )
+            call receiveConductivity( tx_model_cond, job_info%worker_rank )
             !
             call dsigma%cell_cond%add( tx_model_cond )
             !
@@ -572,7 +572,7 @@ contains
             !
             allocate( tx_model_cond, source = dsigma%cell_cond )
             !
-            call receiveModelConductivity( tx_model_cond, job_info%worker_rank )
+            call receiveConductivity( tx_model_cond, job_info%worker_rank )
             !
             call dsigma%cell_cond%add( tx_model_cond )
             !
@@ -773,7 +773,7 @@ contains
             !
             class is( ModelParameterCell_SG_t )
                 !
-                call sendModel( tx_dsigma%cell_cond, master_id )
+                call sendConductivity( tx_dsigma%cell_cond, master_id )
                 !
             class default
                 stop "Error: masterJobAdjoint_T > Unclassified tx_dsigma"

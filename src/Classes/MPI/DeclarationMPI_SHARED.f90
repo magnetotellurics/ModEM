@@ -28,12 +28,12 @@ module DeclarationMPI
     !
     character, dimension(:), pointer :: shared_buffer => null()
     !
-    character, dimension(:), allocatable :: job_info_buffer, data_buffer, model_buffer
+    character, dimension(:), allocatable :: job_info_buffer, data_buffer, conductivity_buffer
     !
     integer :: shared_buffer_size = 1
     integer :: job_info_buffer_size = 1
     integer :: data_buffer_size = 1
-    integer :: model_buffer_size = 1
+    integer :: conductivity_buffer_size = 1
     !
     type( c_ptr ) :: shared_c_ptr
     !
@@ -64,7 +64,7 @@ module DeclarationMPI
     integer :: tag = 2022, master_id = 0
     !
     character( len=15 ) :: job_master = "MASTER_JOB", job_done = "FINISH_JOB", job_finish = "STOP_JOBS"
-    character( len=15 ) :: job_share_memory = "SHARE_MEMORY", job_forward = "JOB_FORWARD"
+    character( len=15 ) :: job_basic_components = "BASIC_COMP", job_forward = "JOB_FORWARD"
     character( len=15 ) :: job_jmult = "JOB_JMULT", job_jmult_t = "JOB_JMULT_T", job_inversion = "JOB_INVERSION"
     !
     !> Struct JobInfo_t:
@@ -106,14 +106,14 @@ contains
         write( *, "(A30, i8)" ) "MPI Allocated main_grid size:", shared_buffer_size
         last_size = shared_buffer_size
         !
-        shared_buffer_size = shared_buffer_size + allocateModelParameterBuffer( sigma0 )
+        shared_buffer_size = shared_buffer_size + allocateModelBuffer( sigma0 )
         !
         write( *, "(A30, i8)" ) "MPI Allocated sigma0 size:", shared_buffer_size - last_size
         last_size = shared_buffer_size
         !
         if( has_pmodel_file ) then
             !
-            shared_buffer_size = shared_buffer_size + allocateModelParameterBuffer( pmodel )
+            shared_buffer_size = shared_buffer_size + allocateModelBuffer( pmodel )
             !
             write( *, "(A30, i8)" ) "MPI Allocated pmodel size:", shared_buffer_size - last_size
             last_size = shared_buffer_size
@@ -189,11 +189,11 @@ contains
         !
         call packGridBuffer( main_grid, index )
         !
-        call packModelParameterBuffer( sigma0, index )
+        call packModelBuffer( sigma0, index )
         !
         if( has_pmodel_file ) then
             !
-            call packModelParameterBuffer( pmodel, index )
+            call packModelBuffer( pmodel, index )
             !
         endif
         !
@@ -216,16 +216,16 @@ contains
     end subroutine packSharedBuffer
     !
     !> No subroutine briefing
-    subroutine unpackSharedBuffer( buffer_size )
+    subroutine unpackSharedBuffer( grid_size )
         implicit none
         !
-        integer, intent( in ) :: buffer_size
+        integer, intent( in ) :: grid_size
         !
         integer :: i, tx_id, aux_size, n_e_solution_file_name, n_model_method, n_forward_solver_type, n_source_type, n_get_1d_from, index
         !
         index = 1
         !
-        shared_buffer_size = buffer_size
+        shared_buffer_size = grid_size
         !
         call MPI_UNPACK( shared_buffer, shared_buffer_size, index, QMR_iters, 1, MPI_INTEGER, node_comm, ierr )
         call MPI_UNPACK( shared_buffer, shared_buffer_size, index, BCG_iters, 1, MPI_INTEGER, node_comm, ierr )
@@ -260,11 +260,11 @@ contains
         !
         allocate( main_grid, source = unpackGridBuffer( index ) )
         !
-        allocate( sigma0, source = unpackModelParameterBuffer( index ) )
+        allocate( sigma0, source = unpackModelBuffer( index ) )
         !
         if( has_pmodel_file ) then
             !
-            allocate( pmodel, source = unpackModelParameterBuffer( index ) )
+            allocate( pmodel, source = unpackModelBuffer( index ) )
             !
         endif
         !
@@ -866,7 +866,7 @@ contains
     end function unpackGridBuffer
     !
     !
-    function allocateModelParameterBuffer( target_model_param ) result( model_parameter_size_bytes )
+    function allocateModelBuffer( target_model_param ) result( model_parameter_size_bytes )
         implicit none
         !
         class( ModelParameter_t ), intent( in ) :: target_model_param
@@ -893,14 +893,14 @@ contains
                 enddo
                 !
             class default
-               stop "allocateModelParameterBuffer: Unclassified target_model_param"
+               stop "allocateModelBuffer: Unclassified target_model_param"
             !
         end select
         !
-    end function allocateModelParameterBuffer
+    end function allocateModelBuffer
     !
     !
-    subroutine packModelParameterBuffer( target_model_param, index )
+    subroutine packModelBuffer( target_model_param, index )
         implicit none
         !
         class( ModelParameter_t ), intent( in ) :: target_model_param
@@ -925,14 +925,14 @@ contains
                 call packScalarBuffer( target_model_param%cell_cond, index )
                 !
             class default
-               stop "allocateModelParameterBuffer: Unclassified target_model_param"
+               stop "allocateModelBuffer: Unclassified target_model_param"
             !
         end select
         !
-    end subroutine packModelParameterBuffer
+    end subroutine packModelBuffer
     !
     !
-    function unpackModelParameterBuffer( index ) result( target_model_param )
+    function unpackModelBuffer( index ) result( target_model_param )
         implicit none
         !
         integer, intent( inout ) :: index
@@ -972,16 +972,16 @@ contains
                         call target_model_param%SetSigMap( target_model_param%param_type )
                         !
                     class default
-                        stop "unpackModelParameterBuffer: Unclassified target_model_param"
+                        stop "unpackModelBuffer: Unclassified target_model_param"
                     !
                 end select
                 !
             case default
-               stop "unpackModelParameterBuffer: Unclassified target_model_param"
+               stop "unpackModelBuffer: Unclassified target_model_param"
             !
         end select
         !
-    end function unpackModelParameterBuffer
+    end function unpackModelBuffer
     !
     !> No function briefing
     function allocateTransmitterBuffer( transmitter ) result( transmitter_size_bytes )
@@ -1476,14 +1476,14 @@ contains
         !
     end subroutine sendData
     !
-    subroutine allocateModelBuffer( ccond )
+    subroutine allocateConductivityBuffer( ccond )
         implicit none
         !
         class( Scalar_t ), intent( in ) :: ccond
         !
         integer :: i, nbytes(4)
         !
-        model_buffer_size = 1
+        conductivity_buffer_size = 1
         !
         call MPI_PACK_SIZE( 4, MPI_CHARACTER, node_comm, nbytes(1), ierr )
         call MPI_PACK_SIZE( 1, MPI_LOGICAL, node_comm, nbytes(2), ierr )
@@ -1496,22 +1496,22 @@ contains
                call MPI_PACK_SIZE( ccond%Nxyz, MPI_DOUBLE_COMPLEX, node_comm, nbytes(4), ierr )
                !
             class default
-               stop "allocateModelBuffer: Unclassified ccond"
+               stop "allocateConductivityBuffer: Unclassified ccond"
             !
         end select
         !
         do i = 1, size( nbytes )
-            model_buffer_size = model_buffer_size + nbytes(i)
+            conductivity_buffer_size = conductivity_buffer_size + nbytes(i)
         enddo
         !
-        if( allocated( model_buffer ) ) deallocate( model_buffer )
-        allocate( model_buffer( model_buffer_size ) )
-        model_buffer = ""
+        if( allocated( conductivity_buffer ) ) deallocate( conductivity_buffer )
+        allocate( conductivity_buffer( conductivity_buffer_size ) )
+        conductivity_buffer = ""
         !
-    end subroutine allocateModelBuffer
+    end subroutine allocateConductivityBuffer
     !
     !> No subroutine briefing
-    subroutine packModelBuffer( ccond )
+    subroutine packConductivityBuffer( ccond )
         implicit none
         !
         class( Scalar_t ), intent( in ) :: ccond
@@ -1526,28 +1526,28 @@ contains
             !
             class is( rScalar3D_SG_t )
                 !
-                call MPI_PACK( ccond%grid_type, 4, MPI_CHARACTER, model_buffer, model_buffer_size, index, node_comm, ierr )
-                call MPI_PACK( ccond%is_allocated, 1, MPI_LOGICAL, model_buffer, model_buffer_size, index, node_comm, ierr )
-                call MPI_PACK( ccond%nx, 1, MPI_INTEGER, model_buffer, model_buffer_size, index, node_comm, ierr )
-                call MPI_PACK( ccond%ny, 1, MPI_INTEGER, model_buffer, model_buffer_size, index, node_comm, ierr )
-                call MPI_PACK( ccond%nz, 1, MPI_INTEGER, model_buffer, model_buffer_size, index, node_comm, ierr )
-                call MPI_PACK( ccond%NdV(1), 3, MPI_INTEGER, model_buffer, model_buffer_size, index, node_comm, ierr )
-                call MPI_PACK( ccond%Nxyz, 1, MPI_INTEGER, model_buffer, model_buffer_size, index, node_comm, ierr )
+                call MPI_PACK( ccond%grid_type, 4, MPI_CHARACTER, conductivity_buffer, conductivity_buffer_size, index, node_comm, ierr )
+                call MPI_PACK( ccond%is_allocated, 1, MPI_LOGICAL, conductivity_buffer, conductivity_buffer_size, index, node_comm, ierr )
+                call MPI_PACK( ccond%nx, 1, MPI_INTEGER, conductivity_buffer, conductivity_buffer_size, index, node_comm, ierr )
+                call MPI_PACK( ccond%ny, 1, MPI_INTEGER, conductivity_buffer, conductivity_buffer_size, index, node_comm, ierr )
+                call MPI_PACK( ccond%nz, 1, MPI_INTEGER, conductivity_buffer, conductivity_buffer_size, index, node_comm, ierr )
+                call MPI_PACK( ccond%NdV(1), 3, MPI_INTEGER, conductivity_buffer, conductivity_buffer_size, index, node_comm, ierr )
+                call MPI_PACK( ccond%Nxyz, 1, MPI_INTEGER, conductivity_buffer, conductivity_buffer_size, index, node_comm, ierr )
                 !
                 call ccond%getArray( aux_array )
-                call MPI_PACK( aux_array(1), ccond%Nxyz, MPI_DOUBLE_COMPLEX, model_buffer, model_buffer_size, index, node_comm, ierr )
+                call MPI_PACK( aux_array(1), ccond%Nxyz, MPI_DOUBLE_COMPLEX, conductivity_buffer, conductivity_buffer_size, index, node_comm, ierr )
                 !
                 deallocate( aux_array )
                 !
             class default
-               stop "packModelBuffer: Unclassified ccond"
+               stop "packConductivityBuffer: Unclassified ccond"
             !
         end select
         !
-    end subroutine packModelBuffer
+    end subroutine packConductivityBuffer
     !
-    !> UNPACK model_buffer TO predicted_data STRUCT
-    subroutine unpackModelBuffer( ccond )
+    !> UNPACK conductivity_buffer TO predicted_data STRUCT
+    subroutine unpackConductivityBuffer( ccond )
         implicit none
         !
         class( Scalar_t ), allocatable, intent( inout ) :: ccond
@@ -1564,65 +1564,65 @@ contains
             !
             class is ( rScalar3D_SG_t )
                 !
-                call MPI_UNPACK( model_buffer, model_buffer_size, index, grid_type, 4, MPI_CHARACTER, node_comm, ierr )
-                call MPI_UNPACK( model_buffer, model_buffer_size, index, ccond%is_allocated, 1, MPI_LOGICAL, node_comm, ierr )
-                call MPI_UNPACK( model_buffer, model_buffer_size, index, ccond%nx, 1, MPI_INTEGER, node_comm, ierr )
-                call MPI_UNPACK( model_buffer, model_buffer_size, index, ccond%ny, 1, MPI_INTEGER, node_comm, ierr )
-                call MPI_UNPACK( model_buffer, model_buffer_size, index, ccond%nz, 1, MPI_INTEGER, node_comm, ierr )
-                call MPI_UNPACK( model_buffer, model_buffer_size, index, ccond%NdV(1), 3, MPI_INTEGER, node_comm, ierr )
-                call MPI_UNPACK( model_buffer, model_buffer_size, index, ccond%Nxyz, 1, MPI_INTEGER, node_comm, ierr )
+                call MPI_UNPACK( conductivity_buffer, conductivity_buffer_size, index, grid_type, 4, MPI_CHARACTER, node_comm, ierr )
+                call MPI_UNPACK( conductivity_buffer, conductivity_buffer_size, index, ccond%is_allocated, 1, MPI_LOGICAL, node_comm, ierr )
+                call MPI_UNPACK( conductivity_buffer, conductivity_buffer_size, index, ccond%nx, 1, MPI_INTEGER, node_comm, ierr )
+                call MPI_UNPACK( conductivity_buffer, conductivity_buffer_size, index, ccond%ny, 1, MPI_INTEGER, node_comm, ierr )
+                call MPI_UNPACK( conductivity_buffer, conductivity_buffer_size, index, ccond%nz, 1, MPI_INTEGER, node_comm, ierr )
+                call MPI_UNPACK( conductivity_buffer, conductivity_buffer_size, index, ccond%NdV(1), 3, MPI_INTEGER, node_comm, ierr )
+                call MPI_UNPACK( conductivity_buffer, conductivity_buffer_size, index, ccond%Nxyz, 1, MPI_INTEGER, node_comm, ierr )
                 !
                 allocate( aux_array( ccond%Nxyz ) )
-                call MPI_UNPACK( model_buffer, model_buffer_size, index, aux_array(1), ccond%Nxyz, MPI_DOUBLE_COMPLEX, node_comm, ierr )
+                call MPI_UNPACK( conductivity_buffer, conductivity_buffer_size, index, aux_array(1), ccond%Nxyz, MPI_DOUBLE_COMPLEX, node_comm, ierr )
                 call ccond%setArray( aux_array )
                 !
                 deallocate( aux_array )
                 !
             class default
-                stop "unpackModelBuffer: Unclassified ccond"
+                stop "unpackConductivityBuffer: Unclassified ccond"
             !
         end select
         !
-    end subroutine unpackModelBuffer
+    end subroutine unpackConductivityBuffer
     !
     !> RECEIVE predicted_data FROM ANY TARGET
-    subroutine receiveModelConductivity( ccond, target_id )
+    subroutine receiveConductivity( ccond, target_id )
         implicit none
         !
         class( Scalar_t ), allocatable, intent( inout ) :: ccond
         !
         integer, intent( in ) :: target_id
         !
-        call allocateModelBuffer( ccond )
+        call allocateConductivityBuffer( ccond )
         !
-        call MPI_RECV( model_buffer, model_buffer_size, MPI_PACKED, target_id, MPI_ANY_TAG, node_comm, MPI_STATUS_IGNORE, ierr )
+        call MPI_RECV( conductivity_buffer, conductivity_buffer_size, MPI_PACKED, target_id, MPI_ANY_TAG, node_comm, MPI_STATUS_IGNORE, ierr )
         !
-        call unpackModelBuffer( ccond )
+        call unpackConductivityBuffer( ccond )
         !
-        deallocate( model_buffer )
+        deallocate( conductivity_buffer )
         !
-    end subroutine receiveModelConductivity
+    end subroutine receiveConductivity
     !
     !> SEND job_info FROM target_id
-    subroutine sendModel( ccond, target_id )
+    subroutine sendConductivity( ccond, target_id )
         implicit none
         !
         class( Scalar_t ), intent( in ) :: ccond
         !
         integer, intent( in ) :: target_id
         !
-        call allocateModelBuffer( ccond )
+        call allocateConductivityBuffer( ccond )
         !
-        call packModelBuffer( ccond )
+        call packConductivityBuffer( ccond )
         !
-        call MPI_SEND( model_buffer, model_buffer_size, MPI_PACKED, target_id, tag, node_comm, ierr )
+        call MPI_SEND( conductivity_buffer, conductivity_buffer_size, MPI_PACKED, target_id, tag, node_comm, ierr )
         !
-        deallocate( model_buffer )
+        deallocate( conductivity_buffer )
         !
-    end subroutine sendModel
+    end subroutine sendConductivity
     !
     !> ALLOCATE job_info_buffer
-    subroutine allocateFWDInfoBuffer
+    subroutine allocateJobInfoBuffer
         !
         integer nbytes1, nbytes2, nbytes3
         !
@@ -1636,10 +1636,10 @@ contains
         allocate( job_info_buffer( job_info_buffer_size ) )
         job_info_buffer = ""
         !
-    end subroutine allocateFWDInfoBuffer
+    end subroutine allocateJobInfoBuffer
     !
     !> PACK job_info STRUCT TO job_info_buffer
-    subroutine packFWDInfoBuffer
+    subroutine packJobInfoBuffer
         !
         integer :: index
         !
@@ -1650,10 +1650,10 @@ contains
         call MPI_PACK( job_info%i_tx, 1, MPI_INTEGER, job_info_buffer, job_info_buffer_size, index, node_comm, ierr )
         call MPI_PACK( job_info%adjoint, 1, MPI_LOGICAL, job_info_buffer, job_info_buffer_size, index, node_comm, ierr )
         !
-    end subroutine packFWDInfoBuffer
+    end subroutine packJobInfoBuffer
     !
     !> UNPACK job_info_buffer TO job_info STRUCT
-    subroutine unpackFWDInfoBuffer
+    subroutine unpackJobInfoBuffer
         !
         integer :: index
         !
@@ -1664,14 +1664,14 @@ contains
         call MPI_UNPACK( job_info_buffer, job_info_buffer_size, index, job_info%i_tx, 1, MPI_INTEGER, node_comm, ierr )
         call MPI_UNPACK( job_info_buffer, job_info_buffer_size, index, job_info%adjoint, 1, MPI_LOGICAL, node_comm, ierr )
         !
-    end subroutine unpackFWDInfoBuffer
+    end subroutine unpackJobInfoBuffer
     !
     !> RECEIVE job_info FROM ANY TARGET
     subroutine receiveFromAny()
         !
-        call allocateFWDInfoBuffer
+        call allocateJobInfoBuffer
         call MPI_RECV( job_info_buffer, job_info_buffer_size, MPI_PACKED, MPI_ANY_SOURCE, MPI_ANY_TAG, node_comm, MPI_STATUS_IGNORE, ierr )
-        call unpackFWDInfoBuffer
+        call unpackJobInfoBuffer
         !
         !write( *, * ) mpi_rank, " RECV ", job_info%job_name, " FROM ", job_info%worker_rank
         !
@@ -1684,9 +1684,9 @@ contains
         !
         integer, intent( in ) :: target_id
         !
-        call allocateFWDInfoBuffer
+        call allocateJobInfoBuffer
         call MPI_RECV( job_info_buffer, job_info_buffer_size, MPI_PACKED, target_id, MPI_ANY_TAG, node_comm, MPI_STATUS_IGNORE, ierr )
-        call unpackFWDInfoBuffer
+        call unpackJobInfoBuffer
         !
         !write( *, * ) mpi_rank, " RECV ", job_info%job_name, " FROM ", target_id
         !
@@ -1699,8 +1699,8 @@ contains
         !
         integer, intent( in ) :: target_id
         !
-        call allocateFWDInfoBuffer
-        call packFWDInfoBuffer
+        call allocateJobInfoBuffer
+        call packJobInfoBuffer
         call MPI_SEND( job_info_buffer, job_info_buffer_size, MPI_PACKED, target_id, tag, node_comm, ierr )
         !
         !write( *, * ) mpi_rank, " SEND ", job_info%job_name, " TO ", target_id

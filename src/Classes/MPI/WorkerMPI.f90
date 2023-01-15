@@ -10,7 +10,7 @@ module WorkerMPI
     public :: workerForwardModelling
     public :: workerJMult
     public :: workerJMult_T
-    public :: handleFwdBuffer
+    public :: handleBasicComponents
     !
 contains
     !
@@ -27,9 +27,9 @@ contains
             !
             select case ( job_master )
                 !
-                case ( "SHARE_MEMORY" )
+                case ( "BASIC_COMP" )
                     !
-                    call handleFwdBuffer()
+                    call handleBasicComponents()
                     !
                 case ( "JOB_FORWARD" )
                     !
@@ -228,7 +228,7 @@ contains
             !
             class is( ModelParameterCell_SG_t )
                 !
-                call sendModel( tx_dsigma%cell_cond, master_id )
+                call sendConductivity( tx_dsigma%cell_cond, master_id )
                 !
             class default
                 stop "Error: workerJMult_T > Unclassified tx_dsigma"
@@ -238,14 +238,14 @@ contains
     end subroutine workerJMult_T
     !
     !> No procedure briefing
-    subroutine handleFwdBuffer()
+    subroutine handleBasicComponents()
         implicit none
         !
-        call receiveFwdBuffer( master_id )
+        call receiveBasicComponents( master_id )
         !
         call MPI_BARRIER( main_comm, ierr )
         !
-        write( *, "( a25, i5, a11, i10, a11 )" ) "Worker", mpi_rank, " Received: ", fwd_buffer_size, " bytes."
+        write( *, "( a30, i5, a11, i10, a11 )" ) "Worker", mpi_rank, " Received: ", job_info%basic_comp_size, " bytes."
         !
         select type( main_grid )
             !
@@ -260,11 +260,11 @@ contains
                 call model_operator%SetCond( sigma0 )
                 !
             class default
-                stop "Error: handleFwdBuffer > Unclassified main_grid"
+                stop "Error: handleBasicComponents > Unclassified main_grid"
             !
         end select
         !
-    end subroutine handleFwdBuffer
+    end subroutine handleBasicComponents
     !
 end module WorkerMPI
 !

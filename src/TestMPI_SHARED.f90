@@ -88,7 +88,7 @@ program TestMPI
                 !
                 select case ( job_master )
                     !
-                    case ( "SHARE_MEMORY" )
+                    case ( "BASIC_COMP" )
                         !
                         call workerQuerySharedMemory()
                         !
@@ -156,7 +156,7 @@ contains
         !
         do worker_id = 1, ( mpi_size - 1 )
             !
-            job_info%job_name = job_share_memory
+            job_info%job_name = job_basic_components
             !
             call sendTo( worker_id )
             !
@@ -608,7 +608,7 @@ contains
             !
             allocate( tx_model_cond, source = dsigma%cell_cond )
             !
-            call receiveModelConductivity( tx_model_cond, job_info%worker_rank )
+            call receiveConductivity( tx_model_cond, job_info%worker_rank )
             !
             call dsigma%cell_cond%add( tx_model_cond )
             !
@@ -637,7 +637,7 @@ contains
             !
             allocate( tx_model_cond, source = dsigma%cell_cond )
             !
-            call receiveModelConductivity( tx_model_cond, job_info%worker_rank )
+            call receiveConductivity( tx_model_cond, job_info%worker_rank )
             !
             call dsigma%cell_cond%add( tx_model_cond )
             !
@@ -837,7 +837,7 @@ contains
             !
             class is( ModelParameterCell_SG_t )
                 !
-                call sendModel( tx_dsigma%cell_cond, master_id )
+                call sendConductivity( tx_dsigma%cell_cond, master_id )
                 !
             class default
                 stop "Error: masterJobAdjoint_T > Unclassified tx_dsigma"

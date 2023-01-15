@@ -9,7 +9,7 @@ module MasterMPI
     public :: masterForwardModelling
     public :: masterJobJMult, masterJMult
     public :: masterJobJMult_T, masterJMult_T
-    public :: broadcastFwdBuffer
+    public :: broadcastBasicComponents
     !
 contains
     !
@@ -42,7 +42,7 @@ contains
         endif
         !
         !> Send Fwd components to all workers
-        call broadcastFwdBuffer()
+        call broadcastBasicComponents()
         !
         !> Deallocate Forward Modeling global components (Not used by the Master process)
         deallocate( model_operator, sigma0, main_grid )
@@ -168,7 +168,7 @@ contains
         endif
         !
         !> Send Fwd components to all workers
-        call broadcastFwdBuffer()
+        call broadcastBasicComponents()
         !
         !>
         JmHat = all_measured_data
@@ -278,7 +278,7 @@ contains
         endif
         !
         !> Send Fwd components to all workers
-        call broadcastFwdBuffer()
+        call broadcastBasicComponents()
         !
         call masterJMult_T( sigma0, all_measured_data, dsigma )
         !
@@ -346,7 +346,7 @@ contains
             !
             call dsigma%getCond( tx_model_cond )
             !
-            call receiveModelConductivity( tx_model_cond, job_info%worker_rank )
+            call receiveConductivity( tx_model_cond, job_info%worker_rank )
             !
             call dsigma%addCond( tx_model_cond )
             !
@@ -371,7 +371,7 @@ contains
             !
             call dsigma%getCond( tx_model_cond )
             !
-            call receiveModelConductivity( tx_model_cond, job_info%worker_rank )
+            call receiveConductivity( tx_model_cond, job_info%worker_rank )
             !
             call dsigma%addCond( tx_model_cond )
             !
@@ -387,32 +387,29 @@ contains
         !
     end subroutine masterJMult_T
     !
-    !> Send Forward Modeling components to all workers
-    subroutine broadcastFwdBuffer()
+    !> Send Grid components to all workers
+    subroutine broadcastBasicComponents()
         implicit none
         !
         integer :: worker_id
         !
-        call allocateFwdBuffer()
+        job_info%job_name = job_basic_components
         !
-        call packFwdBuffer()
+        job_info%basic_comp_size = allocateBasicComponentsBuffer()
         !
         do worker_id = 1, ( mpi_size - 1 )
             !
-            job_info%job_name = job_share_memory
-            job_info%buffer_size = fwd_buffer_size
-            !
             call sendTo( worker_id )
             !
-            call sendFwdBuffer( worker_id )
+            call sendBasicComponents( worker_id )
             !
         enddo
         !
         call MPI_BARRIER( main_comm, ierr )
         !
-        deallocate( fwd_buffer )
+        deallocate( basic_comp_buffer )
         !
-    end subroutine broadcastFwdBuffer
+    end subroutine broadcastBasicComponents
     !
 end module MasterMPI
 !
