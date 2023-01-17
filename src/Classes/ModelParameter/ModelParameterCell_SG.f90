@@ -1,46 +1,59 @@
-!**
-! Basic model parameter class --
-! cell conductivities defined on numerical grid
-! in Earth cells only -- as coded this is specific
-! to usual CSG.
-!*
+!
+!> Basic model parameter class --
+!> cell conductivities defined on numerical grid
+!> in Earth cells only -- as coded this is specific
+!> to usual CSG.
+!
 module ModelParameterCell_SG
     !
     use Constants
-    use Grid3D_SG
+    use FileUnits
     use rScalar3D_SG
     use rVector3D_SG 
     use ModelParameter
-    use Grid1D
-    use Grid2D
+    use Grid3D_SG
     use ModelParameter1D
     use ModelParameter2D
     !
     type, extends( ModelParameter_t ) :: ModelParameterCell_SG_t
         !
-        class( Grid_t ), allocatable :: paramGrid
+        class( Grid_t ), allocatable :: param_grid
         !
-        type( rScalar3D_SG_t ), allocatable :: cellCond
+        type( rScalar3D_SG_t ) :: cell_cond
         !
         contains
-              !
-              final :: ModelParameterCell_SG_dtor
-              !
-              procedure, public :: zeros    => zerosModelParameterCell
-              procedure, public :: copyFrom => copyFromModelParameterCell
-              !
-              ! Model mapping methods
-              procedure, public :: PDEmapping   => PDEmappingModelParameterCell
-              procedure, public :: dPDEmapping  => dPDEmappingModelParameterCell
-              procedure, public :: dPDEmappingT => dPDEmappingTModelParameterCell
-              !
-              procedure, public :: slice1D => slice1DModelParameterCell
-              procedure, public :: slice2D => slice2DModelParameterCell
-              !
-              procedure, public :: avgModel1D => avgModel1DModelParameterCell
-              !
-              procedure, public :: setType => setTypeModelParameterCell
-              !
+            !
+            final :: ModelParameterCell_SG_dtor
+            !
+            procedure, public :: getCond => getCondModelParameterCell_SG
+            !
+            procedure, public :: addCond => addCondModelParameterCell_SG
+            !
+            procedure, public :: zeros => zerosModelParameterCell_SG
+            !
+            procedure, public :: copyFrom => copyFromModelParameterCell_SG
+            !
+            procedure, public :: countModel => countModelParameterCell_SG
+            !
+            procedure, public :: dotProd => dotProdModelParameterCell_SG
+            !
+            procedure, public :: linComb => linCombModelParameterCell_SG
+            !
+            procedure, public :: PDEmapping => PDEmappingModelParameterCell_SG
+            procedure, public :: dPDEmapping => dPDEmappingModelParameterCell_SG
+            procedure, public :: dPDEmappingT => dPDEmappingTModelParameterCell_SG
+            !
+            procedure, public :: slice1D => slice1DModelParameterCell_SG
+            procedure, public :: slice2D => slice2DModelParameterCell_SG
+            !
+            procedure, public :: avgModel1D => avgModel1DModelParameterCell_SG
+            !
+            procedure, public :: setType => setTypeModelParameterCell_SG
+            !
+            procedure, public :: write => writeParameterCell_SG
+            !
+            procedure, public :: print => printParameterCell_SG
+            !
     end type ModelParameterCell_SG_t
     !
     interface ModelParameterCell_SG_t
@@ -48,72 +61,61 @@ module ModelParameterCell_SG
     end interface ModelParameterCell_SG_t
     !
 contains
-    
-    !**
     !
-    !*
-    function ModelParameterCell_SG_ctor( grid, ccond, paramType ) result( self )
+    !> No function briefing
+    function ModelParameterCell_SG_ctor( grid, cell_cond, param_type ) result( self )
         implicit none
         !
-        class( Grid3D_SG_t ), target, intent( in )        :: grid
-        type( rScalar3D_SG_t ), intent( in )              :: ccond
-        character(:), allocatable, optional, intent( in ) :: paramType
+        class( Grid_t ), intent( in ) :: grid
+        class( Scalar_t ), intent( in ) :: cell_cond
+        character(:), allocatable, optional, intent( in ) :: param_type
         !
         type( ModelParameterCell_SG_t ) :: self
         !
-        integer :: nx, ny, nz, nzAir
+        integer :: nzAir
         !
-        !write(*,*) "Constructor ModelParameterCell_SG_t"
+        !write( *, * ) "Constructor ModelParameterCell_SG_t"
         !
         call self%init()
         !
-        if ( .NOT. present( paramType ) ) then
-              self%paramType = LOGE
+        if( .NOT. present( param_type ) ) then
+            self%param_type = LOGE
         else
-              self%paramType = trim( paramType )
-        end if
-        !
-        ! Point to the original grid
-        self%grid => grid
-        !
-        nx = grid%nx
-        ny = grid%ny
-        nz = grid%nz - grid%nzAir
+            self%param_type = trim( param_type )
+        endif
         !
         nzAir = 0
         !
-        self%ParamGrid = Grid3D_SG_t( nx, ny, nzAir, nz, &
-          grid%dx, grid%dy, &
-          grid%dz( grid%nzAir+1:grid%nz ) )
+        allocate( self%param_grid, source = Grid3D_SG_t( grid%nx, grid%ny, nzAir, &
+                    ( grid%nz - grid%nzAir ), grid%dx, grid%dy, &
+                    grid%dz( grid%nzAir+1:grid%nz ) ) )
         !
-        allocate( self%cellCond, source = ccond )
+        self%cell_cond = cell_cond
         !
-        if ( present( paramType ) ) then
-            call self%SetSigMap( paramType )
-            ! We initially specify airCond as linear conductivity!
-            !    self%AirCond = self%SigMap( self%airCond, "inverse" )
-            !    GDE:  we should always keep AirCond as actual linear conductvity!
-            !        Never apply SigMap to air layers!!!
-        end if
+        if( present( param_type ) ) then
+            !
+            call self%SetSigMap( param_type )
+            !
+        endif
         !
         self%is_allocated = .TRUE.
         !
     end function ModelParameterCell_SG_ctor
     !
-    ! ModelOperator_MF destructor
+    !> No subroutine briefing
     subroutine ModelParameterCell_SG_dtor( self )
         implicit none
         !
         type( ModelParameterCell_SG_t ), intent( inout ) :: self
         !
-        !write(*,*) "Destructor ModelParameterCell_SG"
+        !write( *, * ) "Destructor ModelParameterCell_SG"
         !
-        deallocate( self%cellCond )
-        deallocate( self%ParamGrid )
+        deallocate( self%param_grid )
         !
     end subroutine ModelParameterCell_SG_dtor
     !
-    function slice1DModelParameterCell( self, ix, iy ) result( model_param_1D )
+    !> No function briefing
+    function slice1DModelParameterCell_SG( self, ix, iy ) result( model_param_1D )
         implicit none
         !
         class( ModelParameterCell_SG_t ), intent( in ) :: self
@@ -121,349 +123,572 @@ contains
         !
         type( ModelParameter1D_t ) ::  model_param_1D 
         !
-        real( kind=prec ), allocatable, dimension(:) :: CondSlice
+        real( kind=prec ), allocatable, dimension(:) :: cond_slice
         !
-        !    create 1D model parameter
-        model_param_1D = ModelParameter1D_t( self%grid%Slice1D() )
-        !    conductivity slice
-        allocate( CondSlice( model_param_1D%grid%nz ) )
+        model_param_1D = ModelParameter1D_t( self%metric%grid%Slice1D() )
         !
-        !  extract slice; convert to linear conductivity:
-        CondSlice = self%SigMap( self%cellCond%v( ix, iy, : ) )
+        allocate( cond_slice( model_param_1D%grid%nz ) )
         !
-        call model_param_1D%SetConductivity( CondSlice, self%AirCond, self%paramType, self%mKey )
+        cond_slice = self%SigMap( self%cell_cond%v( ix, iy, : ) )
         !
-        deallocate( CondSlice )
+        call model_param_1D%SetConductivity( cond_slice, self%air_cond, self%param_type, self%mKey )
         !
-    end function slice1DModelParameterCell
+        deallocate( cond_slice )
+        !
+    end function slice1DModelParameterCell_SG
     !
-    function avgModel1DModelParameterCell( self ) result( model_param_1D )
-        !    extracts slice corresponding to column j of model parameter
+    !> No function briefing
+    function avgModel1DModelParameterCell_SG( self ) result( model_param_1D )
         implicit none
-        ! Arguments
+        !
         class( ModelParameterCell_SG_t ), intent( in ) :: self
         !
         type( ModelParameter1D_t ) ::  model_param_1D 
         !
-        real( kind=prec ), allocatable, dimension(:) :: CondSlice
+        real( kind=prec ), allocatable, dimension(:) :: cond_slice
         real( kind=prec ) :: wt, temp_sigma_value
         integer :: i, j, k
         !
-        model_param_1D = ModelParameter1D_t( self%grid%Slice1D() )
+        model_param_1D = ModelParameter1D_t( self%metric%grid%Slice1D() )
         !
-        allocate( CondSlice( self%grid%nzEarth ) )
+        allocate( cond_slice( self%metric%grid%nzEarth ) )
         !
-        do k = 1, self%grid%nzEarth
+        do k = 1, self%metric%grid%nzEarth
             !
             wt = R_ZERO
             temp_sigma_value = R_ZERO
-            do i = 1, self%grid%Nx
-                do j = 1, self%grid%Ny
-                    wt = wt + self%grid%dx(i) * self%grid%dy(j)
-                    temp_sigma_value = temp_sigma_value + self%CellCond%v( i, j, k ) * &
-                    self%grid%dx(i) * self%grid%dy(j)
-                end do
-            end do
+            do i = 1, self%metric%grid%Nx
+                do j = 1, self%metric%grid%Ny
+                    wt = wt + self%metric%grid%dx(i) * self%metric%grid%dy(j)
+                    temp_sigma_value = temp_sigma_value + self%cell_cond%v( i, j, k ) * &
+                    self%metric%grid%dx(i) * self%metric%grid%dy(j)
+                enddo
+            enddo
             !
-            CondSlice( k ) = self%SigMap( temp_sigma_value / wt )
+            cond_slice(k) = self%SigMap( temp_sigma_value / wt )
             !
-        end do
+        enddo
         !
-        call model_param_1D%SetConductivity( CondSlice, self%AirCond, self%paramType, self%mKey )
+        call model_param_1D%SetConductivity( cond_slice, self%air_cond, self%param_type, self%mKey )
         !
-        deallocate( CondSlice )
+        deallocate( cond_slice )
         !
-    end function avgModel1DModelParameterCell
+    end function avgModel1DModelParameterCell_SG
     !
-    function slice2DModelParameterCell( self, axis, j ) result( m2D )
-        !    extracts slice corresponding to column j of model parameter
+    !> No function briefing
+    function slice2DModelParameterCell_SG( self, axis, j ) result( m2D )
         implicit none
-        ! Arguments
+        !
         class( ModelParameterCell_SG_t ), intent( in ) :: self
-        integer, intent( in )                          :: axis, j
+        integer, intent( in ) :: axis, j
         !
         type( ModelParameter2D_t ) :: m2D 
         !
-        character(:), allocatable :: paramType
-        real( kind=prec ), allocatable, dimension(:,:) :: CondSlice
+        character(:), allocatable :: param_type
+        real( kind=prec ), allocatable, dimension(:,:) :: cond_slice
         !
-        paramType = LINEAR
+        param_type = LINEAR
         !
-        !    create 2D model parameter
-        m2D = ModelParameter2D_t( self%grid%Slice2D() )
-        !    conductivity slice
-        allocate( CondSlice( self%grid%ny, self%grid%nzEarth ) )
+        m2D = ModelParameter2D_t( self%metric%grid%Slice2D() )
+        !
+        allocate( cond_slice( self%metric%grid%ny, self%metric%grid%nzEarth ) )
         !
         if( axis == 1 ) then
-            CondSlice = self%SigMap(Self%cellCond%v(j,:,:))
+            cond_slice = self%SigMap( self%cell_cond%v(j,:,:) )
         else if( axis == 2 ) then
-            CondSlice = self%SigMap(Self%cellCond%v(:,j,:))
+            cond_slice = self%SigMap( self%cell_cond%v(:,j,:) )
         else if( axis == 3 ) then
-            CondSlice = self%SigMap(Self%cellCond%v(:,:,j))
+            cond_slice = self%SigMap( self%cell_cond%v(:,:,j) )
         else
             stop "ModelParameter:Slice2D: wrong axis"
         endif
         !
-        call m2D%SetConductivity( CondSlice, self%AirCond, paramType, self%mKey )
+        call m2D%SetConductivity( cond_slice, self%air_cond, param_type, self%mKey )
         !
-        deallocate( CondSlice )
+        deallocate( cond_slice )
         !
-    end function slice2DModelParameterCell
-    !**
-    ! Zeros
-    ! Zero model parameter
-    !*
-    subroutine zerosModelParameterCell( self )
+    end function slice2DModelParameterCell_SG
+    !
+    !> No interface subroutine briefing
+    subroutine getCondModelParameterCell_SG( self, ccond )
         implicit none
         !
-        class( ModelParameterCell_SG_t ), intent(inout) :: self
+        class( ModelParameterCell_SG_t ), intent( in ) :: self
+        class( Scalar_t ), allocatable, intent( inout ) :: ccond
         !
-        call self%cellCond%zeros()
+        allocate( ccond, source = self%cell_cond )
         !
-    end subroutine zerosModelParameterCell
-
-    !**
-    ! Copy rhs to self.
-    !*
-    subroutine copyFromModelParameterCell( self, rhs )
+    end subroutine getCondModelParameterCell_SG
+    !
+    !> No interface subroutine briefing
+    subroutine addCondModelParameterCell_SG( self, ccond )
         implicit none
         !
         class( ModelParameterCell_SG_t ), intent( inout ) :: self
-        class( ModelParameter_t ), intent( in )           :: rhs
+        class( Scalar_t ), allocatable, intent( in ) :: ccond
+        !
+        call self%cell_cond%add( ccond )
+        !
+    end subroutine addCondModelParameterCell_SG
+    !
+    !> No subroutine briefing
+    subroutine zerosModelParameterCell_SG( self )
+        implicit none
+        !
+        class( ModelParameterCell_SG_t ), intent( inout ) :: self
+        !
+        call self%cell_cond%zeros()
+        !
+    end subroutine zerosModelParameterCell_SG
+    !
+    !> No subroutine briefing
+    subroutine copyFromModelParameterCell_SG( self, rhs )
+        implicit none
+        !
+        class( ModelParameterCell_SG_t ), intent( inout ) :: self
+        class( ModelParameter_t ), intent( in ) :: rhs
+        !
+        select type( rhs )
+            !
+            class is( ModelParameterCell_SG_t )
+                !
+                self%metric => rhs%metric
+                !
+                self%mKey = rhs%mKey
+                !
+                self%air_cond = rhs%air_cond
+                !
+                self%param_type = rhs%param_type
+                !
+                self%zero_valued = rhs%zero_valued
+                !
+                self%is_allocated = rhs%is_allocated
+                !
+                self%is_vti = rhs%is_vti
+                !
+                if( allocated( self%param_grid ) ) deallocate( self%param_grid )
+                allocate( self%param_grid, source = rhs%param_grid )
+                !
+                self%cell_cond = rhs%cell_cond
+                !
+                self%SigMap_ptr => rhs%SigMap_ptr
+                !
+            class default
+               stop "Error: copyFromModelParameterCell_SG > Incompatible input."
+            !
+        end select
+        !
+    end subroutine copyFromModelParameterCell_SG
+    !
+    !> ????
+    function countModelParameterCell_SG( self ) result( counter )
+        implicit none
+        !
+        class( ModelParameterCell_SG_t ), intent( in ) :: self
+        !
+        integer :: counter, nx, ny, nz, nzAir, nz_earth
+        !
+        if ( .NOT. self%cell_cond%is_allocated ) then
+            stop "Error: countModelParameterCell_SG > cell_cond not allocated!"
+        endif
+        !
+        !
+        !> Grid dimensions
+        call self%cell_cond%grid%GetDimensions( nx, ny, nz, nzAir )
+        nz_earth = nz - nzAir
+        !
+        counter = self%cell_cond%Nx * self%cell_cond%Ny * nz_earth
+        !
+    end function countModelParameterCell_SG
+    !
+    !>
+    subroutine linCombModelParameterCell_SG( self, a1, a2, rhs )
+        implicit none
+        !
+        class( ModelParameterCell_SG_t ), intent( inout ) :: self
+        real( kind=prec ), intent( in ) :: a1, a2
+        class( ModelParameter_t ), intent( in ) :: rhs
         !
         select type( rhs )
             class is( ModelParameterCell_SG_t )
-                self%ParamGrid = rhs%ParamGrid
-                self%cellCond = rhs%cellCond
-                self%airCond = rhs%airCond
-                self%paramType = rhs%paramType
-                self%mKey = rhs%mKey
-                self%metric => rhs%metric
-                self%grid => rhs%grid
+                !
+                if( self%cell_cond%isCompatible( rhs%cell_cond ) ) then
+                    !
+                    self%cell_cond%v = a1 * self%cell_cond%v + a2 * rhs%cell_cond%v
+                    !
+                else
+                    stop "Error: linCombModelParameterCell_SG > Incompatible rhs"
+                endif
+                !
             class default
-                stop "Error: copyFromModelParameterCell > Incompatible input."
+                stop "Error: linCombModelParameterCell_SG > undefined rhs"
         end select
         !
-    end subroutine copyFromModelParameterCell
+        !self%air_cond = rhs%air_cond
+        !
+    end subroutine linCombModelParameterCell_SG
     !
-    !    NOT SURE WE WANT THESE MAPPINGS TO BE FUNCTIONS ...
-    subroutine PDEmappingModelParameterCell( self, eVec )
+    !> No function briefing
+    function dotProdModelParameterCell_SG( self, rhs ) result( rvalue )
         implicit none
         !
         class( ModelParameterCell_SG_t ), intent( in ) :: self
-        class( Vector_t ), intent( inout )             :: eVec
+        class( ModelParameter_t ), intent( in ) :: rhs
+        real( kind=prec ) :: rvalue
         !
-        type( rScalar3D_SG_t ) :: SigmaCell
-        integer :: i, j, k, k0, k1, k2
+        rvalue = R_ZERO
         !
-        type( rVector3D_SG_t ) :: length, area
-        !
-        select type( grid => self%grid )
-            class is( Grid3D_SG_t )
+        select type( rhs )
+            !
+            class is( ModelParameterCell_SG_t )
                 !
-                eVec = rVector3D_SG_t( grid, EDGE )
-                !
-                call eVec%zeros()
-                !
-                SigmaCell = rScalar3D_SG_t( grid, CELL )
-                !
-                k0 = self%grid%nzAir
-                k1 = k0 + 1
-                k2 = self%grid%Nz
-                SigmaCell%v(:, :, 1:k0) = self%airCond
-                !
-                ! Note: AirCond should always be in linear domain, but conductivity
-                ! in cells is generally transformed -- SigMap converts to linear
-                SigmaCell%v(:, :, k1:k2) = self%SigMap(self%cellCond%v)
-                !
-                ! Form Conductivity--cell volume product  -- now using Vcell from MetricElements
-                call sigmaCell%mult( self%metric%Vcell )
-                !
-                ! Sum onto edges
-                call eVec%sumCells( SigmaCell )
-                !
-                ! Divide by total volume -- sum of 4 cells
-                ! surrounding edge -- just 4*V_E        
-                call eVec%div( self%metric%Vedge )
+                if( self%cell_cond%isCompatible( rhs%cell_cond ) ) then
+                    !
+                    rvalue = rvalue + sum( self%cell_cond%v * rhs%cell_cond%v )
+                    !
+                else
+                    stop "Error: dotProdModelParameterCell_SG > Incompatible rhs"
+                endif
                 !
             class default
-                stop "Error: PDEmappingModelParameterCell > Incompatible grid."
-                !
+                stop "Error: dotProdModelParameterCell_SG > undefined rhs"
+            !
         end select
         !
-    end subroutine PDEmappingModelParameterCell
-    
-    !**
-    ! PDE mapping linearized at background model
-    ! parameter m0, applied to dm result is an edge-vector eVec.
-    !*
-    subroutine dPDEmappingModelParameterCell( self, dm, eVec )
+    end function dotProdModelParameterCell_SG
+    !
+    !> Map the entire model cells into a single edge Vector_t (eVec).
+    subroutine PDEmappingModelParameterCell_SG( self, eVec )
         implicit none
         !
         class( ModelParameterCell_SG_t ), intent( in ) :: self
-        class( ModelParameter_t ), intent( in )        :: dm
-        class( Vector_t ), intent( inout )            :: eVec
+        class( Vector_t ), allocatable, intent( inout ) :: eVec
         !
-        type( rScalar3D_SG_t ) :: SigmaCell
+        type( rScalar3D_SG_t ) :: sigma_cell
+        integer :: k0, k1, k2
+        !
+        if( .NOT. allocated( eVec ) ) then
+            allocate( eVec, source = rVector3D_SG_t( self%metric%grid, EDGE ) )
+        else
+            eVec = rVector3D_SG_t( self%metric%grid, EDGE )
+        endif
+        !
+        sigma_cell = rScalar3D_SG_t( self%metric%grid, CELL )
+        !
+        k0 = self%metric%grid%nzAir
+        k1 = k0 + 1
+        k2 = self%metric%grid%Nz
+        !
+        sigma_cell%v( :, :, 1:k0 ) = self%air_cond
+        !
+        sigma_cell%v( :, :, k1:k2 ) = self%SigMap( self%cell_cond%v )
+        !
+        call sigma_cell%mult( self%metric%VCell )
+        !
+        call eVec%avgCells( sigma_cell )
+        !
+        call eVec%div( self%metric%VEdge )
+        !
+    end subroutine PDEmappingModelParameterCell_SG
+    !
+    !> Map the perturbation between two models onto a single Vector_t (eVec).
+    subroutine dPDEmappingModelParameterCell_SG( self, dsigma, eVec )
+        implicit none
+        !
+        class( ModelParameterCell_SG_t ), intent( in ) :: self
+        class( ModelParameter_t ), intent( in ) :: dsigma
+        class( Vector_t ), allocatable, intent( inout ) :: eVec
+        !
+        type( rScalar3D_SG_t ) :: sigma_cell
         character( len=5 ), parameter :: JOB = "DERIV"
         integer :: k0, k1, k2
         !
-        select type( dm )
-               class is( modelParameterCell_SG_t )
-                    !
-                    select type( grid => self%grid )
-                    class is( Grid3D_SG_t )
-                          !
-                          eVec = rVector3D_SG_t( grid, EDGE )
-                          !
-                          SigmaCell = rScalar3D_SG_t( grid, CELL )
-                        
-                          ! Set Earth cells using m0, SigMap and dm
-                          ! I am doing this explicitly -- could make SigmaCell on ParamGrid
-                          ! then move Earth part to a Vector on ModelGrid (this is how we
-                          ! would do this more generally, when model space was really different
-                          ! from modeling grid.
-                          k0 = self%ParamGrid%NzAir
-                          k1 = k0 + 1
-                          k2 = self%ParamGrid%Nz
-                        
-                          call SigmaCell%zeros()     !    need to zero to make sure values in air are zero
-                          SigmaCell%v(:,:,k1:k2) = self%SigMap(self%cellCond%v, JOB)
-                          SigmaCell%v(:,:,k1:k2) = SigmaCell%v(:,:,k1:k2)*dm%cellCond%v
-                        
-                          ! Average onto edges, as in PDEmapping ...
-                          !
-                          call sigmaCell%mult( self%metric%Vcell )
-                          ! Sum onto edges
-                          call eVec%sumCells( SigmaCell )
-                          !
-                          ! Divide by total volume -- sum of 4 cells
-                          ! surrounding edge -- just 4*V_E
-                          call eVec%div( self%metric%Vedge )
-                          !  still need to divide by 4 ...
-                          call evec%mult( complex( 0.25_prec, 0.0 ) )
-                          !
-                    class default
-                        stop "Error: dPDEmappingModelParameterCell > Incompatible grid."
-                        !
-                    end select
-                    !
-               class default
-                    stop "Error: dPDEmappingModelParameterCell > Incompatible input [dm]."
-                    !
+        if( .NOT. allocated( eVec ) ) then
+            allocate( eVec, source = rVector3D_SG_t( self%metric%grid, EDGE ) )
+        else
+            eVec = rVector3D_SG_t( self%metric%grid, EDGE )
+        endif
+        !
+        call eVec%zeros()
+        !
+        sigma_cell = rScalar3D_SG_t( self%metric%grid, CELL )
+        !
+        k0 = self%metric%grid%NzAir
+        k1 = k0 + 1
+        k2 = self%metric%grid%Nz
+        !
+        !> Ensure values in air are zero.
+        call sigma_cell%zeros()
+        !
+        sigma_cell%v( :, :, k1:k2 ) = self%SigMap( self%cell_cond%v, JOB )
+        !
+        !> Required to access the cell_cond attribute of ModelParameterCell_SG
+        select type( dsigma )
+            !
+            class is( ModelParameterCell_SG_t )
+                !
+                sigma_cell%v(:,:,k1:k2) = sigma_cell%v(:,:,k1:k2) * dsigma%cell_cond%v
+                !
+            class default
+                stop "Error: dPDEmappingModelParameterCell_SG > Unclassified dsigma"
+            !
         end select
         !
-    end subroutine dPDEmappingModelParameterCell
+        call sigma_cell%mult( self%metric%Vcell )
+        !
+        call eVec%avgCells( sigma_cell )
+        !
+        call eVec%div( self%metric%Vedge )
+        !
+    end subroutine dPDEmappingModelParameterCell_SG
     !
-    function dPDEmappingTModelParameterCell( self, eVec ) result( dm )
+    !> Transpose the perturbation represented in a Vector_t (eVec), to a new dsigma model.
+    subroutine dPDEmappingTModelParameterCell_SG( self, eVec, dsigma )
         implicit none
         !
         class( ModelParameterCell_SG_t ), intent( in ) :: self
-        class( Vector_t ), intent( in )               :: eVec
-        class( ModelParameter_t ), allocatable         :: dm
+        class( Field_t ), intent( in ) :: eVec
+        class( ModelParameter_t ), allocatable, intent( out ) :: dsigma
         !
-        type( rScalar3D_SG_t )         :: sigmaCell
-        class( Vector_t ), allocatable :: vTemp
-        character( len=5 ), parameter  :: JOB = "DERIV"
+        class( Field_t ), allocatable :: sigma_cell, temp_interior
+        character( len=5 ), parameter :: JOB = "DERIV"
         integer :: k0, k1, k2
         !
+        allocate( dsigma, source = ModelParameterCell_SG_t( self%param_grid, self%cell_cond, self%param_type ) )
         !
-        select type( param_grid => self%paramGrid )
-            class is( Grid3D_SG_t )
+        select type( dsigma )
+            !
+            class is( ModelParameterCell_SG_t )
                 !
-                dm = ModelParameterCell_SG_t( param_grid, self%cellCond, self%paramType )
+                call eVec%interior( temp_interior )
                 !
-            class default
-                   stop "Error: dPDEmappingTModelParameterCell > Unknown grid"
-        end select
-        !
-        select type( eVec )
-            class is( rVector3D_SG_t )
+                call temp_interior%div( self%metric%Vedge )
                 !
-                select type( dm )
+                call temp_interior%mult( cmplx( 0.25_prec, 0.0, kind=prec ) )
+                !
+                call temp_interior%sumEdges( sigma_cell, .TRUE. )
+                !
+                deallocate( temp_interior )
+                !
+                select type( sigma_cell )
                     !
-                    class is( ModelParameterCell_SG_t )
-                        ! Create local temporary scalar and vector
-                        vTemp = eVec%interior()
-                        ! Divide by total volume -- sum of 4 cells
-                        ! surrounding edge -- just 4*V_E
-                        call vTemp%div( self%metric%Vedge )
-                        !  still need to divide by 4 ...
-                        call vTemp%mult( complex( 0.25_prec, 0.0 ) )
+                    class is( rScalar3D_SG_t )
                         !
-                        sigmaCell = vTemp%SumEdges()
+                        call sigma_cell%mult( self%metric%Vcell )
                         !
-                        !deallocate( vTemp )
+                        dsigma%cell_cond%v = self%SigMap( self%cell_cond%v, JOB ) 
                         !
-                        call sigmaCell%mult( self%metric%Vcell )
-                        !
-                        dm%cellCond%v = self%SigMap( self%cellCond%v, JOB ) 
-                        !
-                        k0 = self%ParamGrid%NzAir
+                        k0 = self%metric%grid%NzAir
                         k1 = k0 + 1
-                        k2 = self%ParamGrid%Nz
+                        k2 = self%metric%grid%Nz
                         !
-                        !     deleted select type for SigmaCell -- can"t see how we need this, since
-                        !        this is local variable declared with explicit type!
-                        dm%cellCond%v = dm%cellCond%v * SigmaCell%v(:,:,k1:k2)
+                        dsigma%cell_cond%v = dsigma%cell_cond%v * sigma_cell%v(:,:,k1:k2) !* by self or dsigma ????
                         !
                     class default
-                        stop "Error: dPDEmappingTModelParameterCell > Incompatible input [eVec]."
+                        stop "Error: dPDEmappingTModelParameterCell_SG > Unclassified sigma_cell."
                 end select
-                !
+                        !
+            class default
+                stop "Error: dPDEmappingTModelParameterCell_SG > Incompatible input [eVec]."
         end select
         !
-    end function dPDEmappingTModelParameterCell
+        deallocate( sigma_cell )
+        !
+    end subroutine dPDEmappingTModelParameterCell_SG
     !
-    subroutine setTypeModelParameterCell( self, paramType )
+    !> No subroutine briefing
+    subroutine setTypeModelParameterCell_SG( self, param_type )
         implicit none
         !
         class( ModelParameterCell_SG_t ), intent( inout ) :: self
-        character(:), allocatable, intent( in )           :: paramType
+        character(:), allocatable, intent( in ) :: param_type
         !
-        if (.NOT.(self%is_allocated)) then
-              stop "Error: setTypeModelParameterCell > Not allocated."
-        end if
-        !  NOTE: always keep AirCond linear (actual conductivity)
-        !    parameter transformation is only needed for inversion,
-        !    and we do not invert for AirCond!
-        
-        if (trim(paramType) .eq. trim(self%paramType)) then
-              ! We are done
-        else if (self%paramType == "") then
-              self%paramType = trim(paramType)
-        else if (self%paramType == LINEAR) then
-              ! Convert to log
-              if (paramType == LOGE) then
-                self%cellCond%v = log(self%cellCond%v)
-                !self%airCond = log(self%AirCond)
-              else if (paramType == LOG_10) then
-                self%cellCond%v = log10(self%cellCond%v)
-                !self%airCond = log10(self%airCond)
-              end if
-        else if (paramType == LINEAR) then
-              ! Convert from log to linear
-              if (self%paramType == LOGE) then
-                self%cellCond%v = exp(self%cellCond%v)
-                !self%airCond = exp(self%airCond)
-              else if(self%paramType == LOG_10) then
-                self%cellCond%v = exp(self%cellCond%v * log(10.))
-                !self%airCond = exp(self%AirCond * log(10.))
-              end if
-        else if ((self%paramType == LOGE) .and. (paramType == LOG_10)) then
-              ! Convert from natural log to log10
-              self%cellCond%v = self%cellCond%v / log(10.)
-              !self%airCond = self%airCond / log(10.)
-        else if ((self%paramType == LOG_10) .and. (paramType == LOGE)) then
-              ! Convert from log10 to natural log
-              self%cellCond%v = self%cellCond%v * log(10.)
-              !self%airCond = self%airCond * log(10.)
+        if( .NOT. self%is_allocated ) then
+            stop "Error: setTypeModelParameterCell_SG > Not allocated."
+        endif
+        !
+        if( trim( param_type ) .EQ. trim( self%param_type ) ) then
+            ! Nothing to be done
+        else if(self%param_type == "" ) then
+            self%param_type = trim(param_type)
+        else if(self%param_type == LINEAR) then
+            if(param_type == LOGE) then
+                self%cell_cond%v = log(self%cell_cond%v)
+            else if(param_type == LOG_10) then
+                self%cell_cond%v = log10(self%cell_cond%v)
+            endif
+        else if(param_type == LINEAR) then
+            if(self%param_type == LOGE) then
+                self%cell_cond%v = exp(self%cell_cond%v)
+            else if(self%param_type == LOG_10) then
+                self%cell_cond%v = exp(self%cell_cond%v * log(10.))
+            endif
+        else if((self%param_type == LOGE) .AND. (param_type == LOG_10)) then
+            self%cell_cond%v = self%cell_cond%v / log(10.)
+        else if((self%param_type == LOG_10) .AND. (param_type == LOGE)) then
+            self%cell_cond%v = self%cell_cond%v * log(10.)
         else
-              stop "Error: setTypeModelParameterCell > Unknown paramType."
-        end if
+            stop "Error: setTypeModelParameterCell_SG > Unknown param_type."
+        endif
         !
-        self%paramType = paramType 
+        self%param_type = param_type 
         !
-    end subroutine setTypeModelParameterCell
-    
+    end subroutine setTypeModelParameterCell_SG
+    !
+    !> No subroutine briefing
+    subroutine printParameterCell_SG( self )
+        implicit none
+        !
+        class( ModelParameterCell_SG_t ), intent( in ) :: self
+        !
+        write( *, * ) "ModelParameterCell_SG_t:", self%mKey, self%air_cond, self%param_type, &
+        self%zero_valued, self%is_allocated, self%param_grid%nx, self%param_grid%ny, self%param_grid%nz, self%param_grid%nzAir
+        !
+        call self%cell_cond%print()
+        !
+    end subroutine printParameterCell_SG
+    !
+    !> opens cfile on unit ioModelParam, writes out object of
+    !> type modelParam in Weerachai Siripunvaraporn"s format,
+    !> closes file.
+    !
+    subroutine writeParameterCell_SG( self, file_name, comment )
+        implicit none
+        !
+        class( ModelParameterCell_SG_t ), intent( in ) :: self
+        character(*), intent( in ) :: file_name
+        character(*), intent( in ), optional :: comment
+        !
+        type( rScalar3D_SG_t ) :: rho_v, rho_h, ccond_v
+        integer :: Nx, Ny, NzEarth, i, j, k, ios
+        !
+        ! Verbose
+        !write( *, * ) "     > Write Model to file: [", file_name, "]"
+        !
+        !> Convert modelParam to natural log or log10 for output
+        !paramType = userParamType
+        !
+        !if ( self%%is_vti ) then
+        !    call getValue_modelParam(m, paramType, self%cell_cond, v_v=ccond_v)
+        !else
+        !    call getValue_modelParam(m, paramType, self%cell_cond)
+        !endif
+        !
+        open( ioModelParam, file = file_name, action = "write", form = "formatted", iostat = ios )
+        !
+        if( ios == 0 ) then
+            !
+            if( present( comment ) ) then
+                write( ioModelParam, * ) "# ", trim( comment )
+            else
+                write( ioModelParam, * ) "# 3D MT model written by ModEM-OO in WS format"
+            endif
+            !
+            !> Write grid geometry definitions
+            Nx = self%metric%grid%nx
+            Ny = self%metric%grid%ny
+            NzEarth = self%metric%grid%nz - self%metric%grid%nzAir
+            !
+            write( ioModelParam, "(4i5)", advance = "no" ) Nx, Ny, NzEarth, 0
+            !
+            if( self%is_vti ) then
+                write( ioModelParam, "(a10)", advance = "no" ) trim( self%param_type )
+                write( ioModelParam, * ) " VTI"
+            else
+                write( ioModelParam, "(a10)", advance = "yes" ) trim( self%param_type )
+            endif
+            !
+            !> Write self%metric%grid spacings
+            do j = 1, self%metric%grid%nx
+                write( ioModelParam, "(f12.3)", advance = "no" ) self%metric%grid%dx(j)
+            enddo
+            !
+            write( ioModelParam, * )
+            !
+            do j = 1, self%metric%grid%ny
+                write( ioModelParam, "(f12.3)", advance = "no" ) self%metric%grid%dy(j)
+            enddo
+            !
+            write( ioModelParam, * )
+            !
+            do j = self%metric%grid%nzAir + 1, self%metric%grid%nz
+                write( ioModelParam, "(f12.3)", advance = "no" ) self%metric%grid%dz(j)
+            enddo
+            !
+            write( ioModelParam, * )
+            !
+            !> Convert (horizontal) conductivity to resistivity
+            rho_h = self%cell_cond
+            if((index(self%param_type,"LOGE" ) > 0) .OR. (index(self%param_type,"LOG10" ) > 0)) then
+                rho_h%v = -self%cell_cond%v
+            else if(index(self%param_type,"LINEAR" ) > 0) then
+                rho_h%v = ONE/self%cell_cond%v
+            endif
+            !
+            !> Write the (horizontal) resistivity
+            !
+            write( ioModelParam, * )
+            !
+            do k = 1, nzEarth
+                do j = 1, Ny
+                    do i = Nx, 1, -1
+                        write( ioModelParam, "(es13.5)", iostat = ios, advance = "no" ) rho_h%v(i,j,k)
+                    enddo
+                    !
+                    write( ioModelParam, * )
+                    !
+                enddo
+                !
+                write( ioModelParam, * )
+                !
+            enddo
+            !
+            if(self%is_vti) then
+                !> Convert (vertical) conductivity to resistivity
+                rho_v = ccond_v
+                !
+                if((index(self%param_type,"LOGE" ) > 0) .OR. (index(self%param_type,"LOG10" ) > 0)) then
+                    rho_v%v = -ccond_v%v
+                else if(index(self%param_type,"LINEAR" ) > 0) then
+                    rho_v%v = ONE/ccond_v%v
+                endif
+                !
+                !> Write the (vertical) resistivity
+                !
+                write( ioModelParam, * )
+                !
+                do k = 1, nzEarth
+                    do j = 1, Ny
+                        do i = Nx, 1, -1
+                            write( ioModelParam, "(es13.5)", iostat = ios, advance = "no" ) rho_v%v(i,j,k)
+                            enddo
+                            !
+                        write( ioModelParam, * )
+                        !
+                    enddo
+                    !
+                    write( ioModelParam, * )
+                    !
+                enddo
+            endif
+            !
+            !> Note that our standard subroutine doesn"t work with Weerachai"s
+            !> real value format. It is still better than either Mackie"s or WS"s...
+            !> call write_rscalar(ioModelParam,rho)
+            !> Also write the self%metric%grid origin (in metres!) and rotation (in degrees)...
+            !
+            write( ioModelParam, "(3f16.3)", iostat = ios) self%metric%grid%ox, self%metric%grid%oy, self%metric%grid%oz
+            write( ioModelParam, "(f9.3)", iostat = ios)  self%metric%grid%rotdeg
+            !
+            close( ioModelParam )
+            !
+        else
+            !
+            write( *, * ) "Error opening file in writeParameterCell_SG [", file_name, "]!"
+            stop
+            !
+        endif
+        !
+    end subroutine writeParameterCell_SG
+
 end Module ModelParameterCell_SG

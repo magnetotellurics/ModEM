@@ -1,18 +1,13 @@
-! *************
-! 
-! Derived class to define a Full_Impedance Receiver
-! 
-! Last modified at 08/06/2021 by Paulo Werdt
-! 
-! *************
-! 
+!
+!> Derived class to define a Full_Impedance Receiver
+!
 module ReceiverFullVerticalMagnetic
     !
     use Receiver
     !
     type, extends( Receiver_t ), public :: ReceiverFullVerticalMagnetic_t
         !
-        ! PROPERTIES HERE
+        !> No derived properties
         !
         contains
             !
@@ -34,11 +29,12 @@ module ReceiverFullVerticalMagnetic
     !
 contains
     !
+    !> No function briefing
     function ReceiverFullVerticalMagnetic_ctor( location, rx_type ) result( self )
         implicit none
         !
         real( kind=prec ), intent( in ) :: location(3)
-        integer, intent( in )           :: rx_type
+        integer, intent( in ) :: rx_type
         !
         type( ReceiverFullVerticalMagnetic_t ) :: self
         !
@@ -55,7 +51,7 @@ contains
         self%n_comp = 2
         self%is_complex = .TRUE.
         !
-        ! components required to get the full impedance evaluation vectors [Bx, By, Bz]
+        !> components required to get the full impedance evaluation vectors [Bx, By, Bz]
         if( allocated( self%EHxy ) ) then
             !
             asize = size( self%EHxy )
@@ -71,11 +67,7 @@ contains
         self%EHxy(2)%str = "By"
         self%EHxy(3)%str = "Bz"
         !
-        allocate( self%Lbx, source = cSparsevector3D_SG_t() )
-        allocate( self%Lby, source = cSparsevector3D_SG_t() )
-        allocate( self%Lbz, source = cSparsevector3D_SG_t() )
-        !
-        ! components required to get the full impedance tensor self%response [Tx, Ty]
+        !> components required to get the full impedance tensor self%response [Tx, Ty]
         if( allocated( self%comp_names ) ) then
             !
             asize = size( self%comp_names )
@@ -92,6 +84,7 @@ contains
         !
     end function ReceiverFullVerticalMagnetic_ctor
     !
+    !> No subroutine briefing
     subroutine ReceiverFullVerticalMagnetic_dtor( self )
         implicit none
         !
@@ -103,33 +96,36 @@ contains
         !
     end subroutine ReceiverFullVerticalMagnetic_dtor
     !
-    subroutine setLRowsFullVerticalMagnetic( self, transmitter )
+    !> No subroutine briefing
+    subroutine setLRowsFullVerticalMagnetic( self, transmitter, lrows )
         implicit none
         !
         class( ReceiverFullVerticalMagnetic_t ), intent( inout ) :: self
-        class( Transmitter_t ), intent( in )                     :: transmitter
+        class( Transmitter_t ), intent( in ) :: transmitter
+        class( Vector_t ), allocatable, dimension(:,:), intent( out ) :: lrows
         !
         stop "setLRowsFullVerticalMagnetic to be implemented"
         !
     end subroutine setLRowsFullVerticalMagnetic
     !
-    subroutine predictedDataFullVerticalMagnetic( self, transmitter )
+    !> No subroutine briefing
+    subroutine predictedDataFullVerticalMagnetic( self, transmitter, data_group )
         implicit none
         !
         class( ReceiverFullVerticalMagnetic_t ), intent( inout ) :: self
-        class( Transmitter_t ), intent( in )                     :: transmitter
+        class( Transmitter_t ), intent( in ) :: transmitter
+        type( DataGroup_t ), intent( out ), optional :: data_group
         !
         complex( kind=prec ) :: comega, det
         complex( kind=prec ), allocatable :: BB(:,:), I_BB(:,:)
         !
         comega = cmplx( 0.0, 1./ ( 2.0 * PI / transmitter%period ), kind=prec )
         !
-        !
         allocate( BB( 3, 2 ) )
-        select type( tx_e_1 => transmitter%e_all( 1 ) )
+        select type( tx_e_1 => transmitter%e_sol(1) )
             class is( cVector3D_SG_t )
                 !
-                select type( tx_e_2 => transmitter%e_all( 2 ) )
+                select type( tx_e_2 => transmitter%e_sol(2) )
                     class is( cVector3D_SG_t )
                         !
                         BB(1,1) = self%Lbx%dotProd( tx_e_1 )
@@ -162,10 +158,12 @@ contains
                         deallocate( BB )
                         deallocate( I_BB )
                         !
-                        call self%savePredictedData( transmitter )
-                        !
-                        deallocate( self%response )
-                        !
+                        if( present( data_group ) ) then
+                            !
+                            call self%savePredictedData( transmitter, data_group )
+                            !
+                        endif
+						!
                     class default
                         stop "Error: evaluationFunctionRx: Unclassified transmitter%e_all_2"
                 end select
@@ -176,6 +174,7 @@ contains
         !
     end subroutine predictedDataFullVerticalMagnetic
     !
+    !> No function briefing
     function isEqualFullVerticalMagnetic( self, other ) result( equal )
         implicit none
         !
@@ -204,12 +203,13 @@ contains
         !
     end function isEqualFullVerticalMagnetic
     !
+    !> No subroutine briefing
     subroutine printReceiverFullVerticalMagnetic( self )
         implicit none
         !
         class( ReceiverFullVerticalMagnetic_t ), intent( in ) :: self
         !
-        write( *, * ) "Print ReceiverFullVerticalMagnetic_t: ", self%id
+        write( *, * ) "Print ReceiverFullVerticalMagnetic_t: ", self%i_rx
         !
     end subroutine printReceiverFullVerticalMagnetic
     !

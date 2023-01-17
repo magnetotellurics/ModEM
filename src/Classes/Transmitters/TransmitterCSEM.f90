@@ -1,25 +1,20 @@
-! *************
-! 
-! Derived class to define a CSEM Transmitter
 !
-! *************
-! 
+!> Derived class to define a CSEM Transmitter
+!
 module TransmitterCSEM
-    ! 
-    use FileUnits
+    !
     use Transmitter 
-    use cVector3D_SG
     !
     type, extends( Transmitter_t ), public :: TransmitterCSEM_t
         !
-        real( kind=prec )         :: location(3), azimuth, dip, moment
+        real( kind=prec ) :: location(3), azimuth, dip, moment
         character(:), allocatable :: dipole
         !
         contains
             !
-            final    :: TransmitterCSEM_dtor
+            final :: TransmitterCSEM_dtor
             !
-            procedure, public :: solveFWD => solveFWDTransmitterCSEM
+            procedure, public :: solve => solveTransmitterCSEM
             !
             procedure, public :: isEqual => isEqualTransmitterCSEM
             !
@@ -33,49 +28,59 @@ module TransmitterCSEM
     !
 contains
     !
-    ! Parametrized constructor
+    !> Parametrized constructor
     function TransmitterCSEM_ctor( period, location, azimuth, dip, moment, dipole ) result ( self )
         !
         type( TransmitterCSEM_t ) :: self
         !
-        real( kind=prec ), intent( in )         :: period, azimuth, dip, moment, location(3)
+        real( kind=prec ), intent( in ) :: period, azimuth, dip, moment, location(3)
         character(:), allocatable, intent( in ) :: dipole
         !
-        ! write(*,*) "Constructor TransmitterCSEM_t"
+        !> write( *, * ) "Constructor TransmitterCSEM_t"
         !
         call self%init()
         !
         self%n_pol = 1
+        !
         self%period = period
+        !
         self%location = location
+        !
         self%azimuth = azimuth
+        !
         self%dip = dip
+        !
         self%moment = moment
+        !
         self%dipole = dipole
         !
-        !self%pMult_ptr => pMult_E
+        !self%PMult_ptr => PMult_E
         !
-        !self%pMult_t_ptr => pMult_t_E
+        !self%PMult_t_ptr => PMult_t_E
         !
     end function TransmitterCSEM_ctor
     !
-    ! Destructor
+    !> Deconstructor routine:
+    !>     Calls the base routine dealloc().
     subroutine TransmitterCSEM_dtor( self )
         implicit none
         !
-        type( TransmitterCSEM_t )    :: self
+        type( TransmitterCSEM_t ) :: self
         !
-        ! write(*,*) "Destructor TransmitterCSEM_t"
+        !> write( *, * ) "Destructor TransmitterCSEM_t"
         !
         call self%dealloc()
         !
+        deallocate( self%dipole )
+        !
     end subroutine TransmitterCSEM_dtor
     !
+    !> No function briefing
     function isEqualTransmitterCSEM( self, other ) result( equal )
         implicit none
         !
         class( TransmitterCSEM_t ), intent( in ) :: self
-        class( Transmitter_t ), intent( in )     :: other
+        class( Transmitter_t ), intent( in ) :: other
         !
         logical :: equal
         !
@@ -99,59 +104,56 @@ contains
         !
     end function isEqualTransmitterCSEM
     !
-    subroutine solveFWDTransmitterCSEM( self )
+    !> No subroutine briefing
+    subroutine solveTransmitterCSEM( self )
         implicit none
         !
         class( TransmitterCSEM_t ), intent( inout ) :: self
         !
-        integer           :: ios
-        real( kind=prec ) :: omega
+        integer :: ios
         !
         character( len=20 ) :: ModeName
         !
+        if( .NOT. allocated( self%source ) ) then
+            stop "Error: solveTransmitterCSEM > source not allocated!"
+        endif
         !
-        omega = 2.0 * PI / self%period
-        !
-        allocate( cVector3D_SG_t :: self%e_all( self%n_pol ) )
-        !
-        ! Verbose...
-        write( *, * ) "          SolveFWD for CSEM Tx:", self%id, " -> Period:", self%period
-        !
-        call self%source%setE( 1 )
-        !
-        select type( grid => self%source%model_operator%metric%grid )
-            class is( Grid3D_SG_t )
-                !
-                self%e_all( 1 ) = cVector3D_SG_t( grid, EDGE )
-                !
-            class default
-                stop "Error: solveFWDTransmitterCSEM: undefined grid"
-                !
-        end select
-        !
-        call self%forward_solver%getESolution( self%source, self%e_all( 1 ) )
-        !
-        call self%e_all( 1 )%add( self%source%E )
-        !
-        ModeName = "Ex"
-        !
-        open( ioESolution, file = e_solution_file_name, action = "write", position = "append", form = "unformatted", iostat = ios )
-        !
-        if( ios /= 0 ) then
-            stop "Error opening file in solveFWDTransmitterCSEM: e_solution"
+        !> First allocate e_sol or e_sens, according to the Source case
+        if( self%source%sens ) then
+            !
+            if( allocated( self%e_sens ) ) deallocate( self%e_sens )
+            allocate( cVector3D_SG_t :: self%e_sens(1) )
+            !
         else
             !
-            ! write the frequency header - 1 record
-            write( ioESolution ) omega, self%id, 1, ModeName
-            !
-            call self%e_all( 1 )%write( ioESolution )
-            !
-            close( ioESolution )
+            if( allocated( self%e_sol ) ) deallocate( self%e_sol )
+            allocate( cVector3D_SG_t :: self%e_sol(1) )
             !
         endif
         !
-    end subroutine solveFWDTransmitterCSEM
+        !> Calculate e_sol or e_sens through ForwardSolver
+        !> For one polarization (CSEM n_pol = 1)
+        if( self%source%sens ) then
+            !
+            !write( *, "( a25, i5, a9, es12.5)" ) "- Solving Sens CSEM Tx", self%i_tx, ", Period=", self%period
+            !
+            call self%forward_solver%createESolution( 1, self%source, self%e_sens(1) )
+            !
+            call self%e_sens(1)%add( self%source%E(1) )
+            !
+        else
+            !
+            !write( *, "( a25, i5, a9, es12.5)" ) "- Solving FWD CSEM Tx", self%i_tx, ", Period=", self%period
+            !
+            call self%forward_solver%createESolution( 1, self%source, self%e_sol(1) )
+            !
+            call self%e_sol(1)%add( self%source%E(1) )
+            !
+        endif
+        !
+    end subroutine solveTransmitterCSEM
     !
+    !> No subroutine briefing
     subroutine printTransmitterCSEM( self )
         implicit none
         !
@@ -159,11 +161,11 @@ contains
         !
         integer :: iRx
         !
-        write( *, "( A30, I5, A12, f8.2, f8.2, f8.2, A10, es10.2, A7, I5)" ) &
-        "               TransmitterCSEM", self%id, &
-        ": Location[", self%location(1), self%location(2), self%location(3), &
-        "], Period: ",    self%period, &
-        ", NRx: ", size( self%receiver_indexes )
+        write( *, "( A30, I8, A13, f16.3, f16.3, f16.3, A10, es16.5, A6, I8)" ) &
+        "TransmitterCSEM", self%i_tx, &
+        ", Location= [", self%location(1), self%location(2), self%location(3), &
+        "], Period=",    self%period, &
+        ", NRx=", size( self%receiver_indexes )
         !
     end subroutine printTransmitterCSEM
     !

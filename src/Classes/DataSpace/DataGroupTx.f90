@@ -1,149 +1,338 @@
-! *************
-! 
-! Base class to define a Data Group
 !
-! *************
-! 
-module DataGroup
+!> Type that encapsulates a DataGroup array under the same index as a transmitter.
+!
+module DataGroupTx
     !
-    use String
+    use DataGroup
     !
-    use Constants
-    !
-    type :: DataGroup_t
+    type :: DataGroupTx_t
         !
-        integer :: id, n_data, id_rx, id_tx
-        type( String_t ), allocatable, dimension(:) :: components
-        real( kind=prec ), dimension(:), allocatable :: reals, imaginaries, errors ! All Together
+        integer :: i_tx
         !
-        integer, private :: counter
+        type( DataGroup_t ), allocatable, dimension(:) :: data
         !
     contains
-        !
-        final :: DataGroup_dtor
-        !
-        procedure, public :: add => addDataDg
-        !
-        procedure, public :: isEqual => isEqualDg
-        !
-        procedure, public :: print => printDataGroup
-        !
-    end type DataGroup_t
+            !
+            final :: DataGroupTx_dtor
+            !
+            procedure, public :: zeros => zerosDataGroupTx
+            !
+            procedure, public :: getRxData => getRxDataDataGroupTx
+            !
+            procedure, public :: put => putDataGroupTx
+            !
+            procedure, public :: set => setDataGroupTx
+            !
+            procedure, public :: setValues => setValuesDataGroupTx
+            !
+            procedure, public :: sub => subDataGroupTx
+            !
+            procedure, public :: linComb => linCombDataGroupTx
+            !
+            procedure, public :: dotProd => dotProdDataGroupTx
+            !
+            procedure, public :: normalize => normalizeDataGroupTx
+            !
+            procedure, public :: print => printDataGroupTx
+            !
+    end type DataGroupTx_t
     !
-    interface DataGroup_t
-        module procedure DataGroup_ctor
-    end interface DataGroup_t
+    interface DataGroupTx_t
+         module procedure DataGroupTx_ctor
+    end interface DataGroupTx_t
     !
 contains
     !
-    ! Parametrized constructor
-    function DataGroup_ctor( id_rx, id_tx, n_data ) result( self )
+    !> Parametrized constructor:
+    !> Set the transmitter index and deallocate the data array if it was previously allocated
+    function DataGroupTx_ctor( i_tx ) result( self )
         implicit none
         !
-        type( DataGroup_t ) :: self
+        integer, intent( in ) :: i_tx
         !
-        integer, intent( in ) :: id_rx, id_tx, n_data
+        type( DataGroupTx_t ) :: self
         !
-        self%id_rx = id_rx
-        self%id_tx = id_tx
-        self%n_data = n_data
+        !write( *, * ) "Constructor DataGroupTx_t: ", i_tx
         !
-        self%counter = 1
+        self%i_tx = i_tx
         !
-        allocate( self%components( n_data ) )
+        if( allocated( self%data ) ) deallocate( self%data )
         !
-        allocate( self%reals( n_data ) )
-        allocate( self%imaginaries( n_data ) )
-        allocate( self%errors( n_data ) )
-        !
-    end function DataGroup_ctor
+    end function DataGroupTx_ctor
     !
-    subroutine DataGroup_dtor( self )
+    !> No subroutine briefing
+    subroutine DataGroupTx_dtor( self )
         implicit none
         !
-        type( DataGroup_t ), intent( in out ) :: self
-        integer :: i, asize
+        type( DataGroupTx_t ), intent( inout ) :: self
         !
-        !write( *, * ) "Destructor DataGroup_t: ", self%id
+        !write( *, * ) "Destructor DataGroupTx"
         !
-        !asize = size( self%components )
-        !do i = asize, 1, -(1)
-            !deallocate( self%components(i)%str )
-        !enddo
-        !deallocate( self%components )
+        if( allocated( self%data ) ) deallocate( self%data )
         !
-        deallocate( self%reals )
-        deallocate( self%imaginaries )
-        deallocate( self%errors )
-        !
-    end subroutine DataGroup_dtor
+    end subroutine DataGroupTx_dtor
     !
-    subroutine addDataDg( self, component, rvalue, imaginary, error )
+    !> sub
+    subroutine subDataGroupTx( self, rhs )
         implicit none
         !
-        class( DataGroup_t ), intent( inout )   :: self
-        character(:), allocatable, intent( in ) :: component
-        real( kind=prec ), intent( in )         :: rvalue, imaginary, error
-        !
-        self%components( self%counter )%str = component
-        !
-        self%reals( self%counter ) = rvalue
-        !
-        self%imaginaries( self%counter ) = imaginary
-        !
-        self%errors( self%counter ) = error
-        !
-        self%counter = self%counter + 1
-        !
-    end subroutine addDataDg
-    !
-    function isEqualDg( self, other ) result ( equal )
-        implicit none
-        !
-        class( DataGroup_t ), intent( in ) :: self
-        class( DataGroup_t ), intent( in ) :: other
-        logical :: equal
+        class( DataGroupTx_t ), intent( inout ) :: self
+        class( DataGroupTx_t ), intent( in ) :: rhs
         !
         integer :: i_data
         !
-        equal = .TRUE.
-        !
-        if( self%id_tx /= other%id_tx .OR. self%id_rx /= other%id_rx ) then
-            equal = .FALSE.
-            return
-        end if
-        !
-        do i_data = 1, self%n_data
+        if( size( self%data ) /= size( rhs%data ) ) then
             !
-            if( self%components( i_data )%str /= other%components( i_data )%str .OR. &
-                ABS( self%reals( i_data ) - other%reals( i_data ) ) >= TOL6 .OR. &
-                ABS( self%imaginaries( i_data ) - other%imaginaries( i_data ) ) >= TOL6 .OR. &
-                ABS( self%errors( i_data ) - other%errors( i_data ) ) >= TOL6 ) then
-                    equal = .FALSE.
-                    exit
-            end if
+            stop "Error: subDataGroupTx > different data sizes"
             !
-        enddo
+        else
+            !
+            do i_data = 1, size( self%data )
+                !
+                call self%data( i_data )%sub( rhs%data( i_data ) )
+                !
+            enddo
+            !
+        endif
         !
-    end function isEqualDg
+    end subroutine subDataGroupTx
     !
-    subroutine printDataGroup( self )
+    !> ????
+    subroutine normalizeDataGroupTx( self, norm )
         implicit none
         !
-        class( DataGroup_t ), intent( in ) :: self
-        integer                            :: i_data
+        class( DataGroupTx_t ), intent( inout ) :: self
         !
-        write( *, * ) "    Write DataGroup_t Id: ", self%id
-        write( *, * ) "             Receiver Id: ", self%id_rx
-        write( *, * ) "          Transmitter Id: ", self%id_tx
-        write( *, * ) self%n_data, " data_rows:"
+        integer, intent( in ), optional :: norm
         !
-        do i_data = 1, self%n_data
+        integer :: i, nn
+        !
+        if( present( norm ) ) then
+            nn = norm
+        else
+            nn = 1
+        endif
+        !
+        do i = 1, size( self%data )
             !
-            write( *, * ) i_data, ":", self%components( i_data )%str, self%reals( i_data ), self%imaginaries( i_data ), self%errors( i_data )
+            call self%data(i)%normalize( nn )
             !
         enddo
         !
-    end subroutine printDataGroup
+    end subroutine normalizeDataGroupTx
     !
-end module DataGroup
+    !> Call reset for each DataGroup in data
+    subroutine zerosDataGroupTx( self )
+        implicit none
+        !
+        class( DataGroupTx_t ), intent( inout ) :: self
+        !
+        integer :: i_data
+        !
+        do i_data = 1, size( self%data )
+            !
+            call self%data( i_data )%zeros()
+            !
+        enddo
+        !
+    end subroutine zerosDataGroupTx
+    !
+    !> Returns a pointer, allowing modifications directly to a DataGroup at a given transmitter-receiver pair indexes
+    function getRxDataDataGroupTx( self, i_rx ) result( data_group )
+        implicit none
+        !
+        class( DataGroupTx_t ), intent( in ) :: self
+        integer, intent( in ) :: i_rx
+        !
+        type( DataGroup_t ) :: data_group
+        !
+        integer :: i_data, n_data
+        !
+        n_data = size( self%data )
+        !
+        do i_data = 1, n_data
+            !
+            if( self%data( i_data )%i_rx == i_rx ) then
+                !
+                data_group = self%data( i_data )
+                !
+                return
+                !
+            endif
+            !
+        enddo
+        !
+    end function getRxDataDataGroupTx
+    !
+    !> Dynamically add a new DataGroup to the array, always via reallocation.
+    subroutine putDataGroupTx( self, data_group )
+        implicit none
+        !
+        class( DataGroupTx_t ), intent( inout ) :: self
+        type( DataGroup_t ), intent( in ) :: data_group
+        !
+        integer :: i_data, n_data
+        type( DataGroup_t ), allocatable, dimension(:) :: temp_array
+        !
+        if( .NOT. allocated( self%data ) ) then
+            !
+            allocate( self%data(1) )
+            !
+            self%data(1) = data_group
+            !
+        else
+            !
+            n_data = size( self%data )
+            !
+            allocate( temp_array( n_data + 1 ) )
+            !
+            temp_array( 1 : n_data ) = self%data
+            !
+            temp_array( n_data + 1 ) = data_group
+            !
+            deallocate( self%data )
+            !
+            allocate( self%data, source = temp_array )
+            !
+            deallocate( temp_array )
+            !
+        endif
+        !
+    end subroutine putDataGroupTx
+    !
+    !> Replace the values of a specific DataGroup of the array 
+    !> by other DataGroup with the same transmitter-receiver pair
+    subroutine setValuesDataGroupTx( self, data_group )
+        implicit none
+        !
+        class( DataGroupTx_t ), intent( inout ) :: self
+        !
+        type( DataGroup_t ), intent( in ) :: data_group
+        !
+        integer :: i_data
+        !
+        do i_data = 1, size( self%data )
+            !
+            if( self%data( i_data )%i_rx == data_group%i_rx .AND. &
+                self%data( i_data )%i_tx == data_group%i_tx ) then
+                !
+                self%data( i_data )%reals = data_group%reals
+                self%data( i_data )%imaginaries = data_group%imaginaries
+                self%data( i_data )%errors = data_group%errors
+                !
+                self%data( i_data )%error_bar = data_group%error_bar
+                !
+                return
+                !
+            endif
+            !
+        enddo
+        !
+    end subroutine setValuesDataGroupTx
+    !
+    !> Replace a specific DataGroup of the array 
+    !> by other DataGroup with the same transmitter-receiver pair
+    subroutine setDataGroupTx( self, data_group )
+        implicit none
+        !
+        class( DataGroupTx_t ), intent( inout ) :: self
+        !
+        type( DataGroup_t ), intent( in ) :: data_group
+        !
+        integer :: i_data
+        !
+        do i_data = 1, size( self%data )
+            !
+            if( self%data( i_data )%i_rx == data_group%i_rx .AND. &
+                self%data( i_data )%i_tx == data_group%i_tx ) then
+                !
+                self%data( i_data ) = data_group
+                !
+                return
+                !
+            endif
+            !
+        enddo
+        !
+    end subroutine setDataGroupTx
+    !
+    !> dotProd between two DataGroupTxs
+    function dotProdDataGroupTx( self, data_tx ) result( rvalue )
+        implicit none
+        !
+        class( DataGroupTx_t ), intent( in ) :: self, data_tx
+        !
+        real( kind=prec ) :: rvalue
+        !
+        integer :: i
+        !
+        if( size( self%data ) /= size( data_tx%data ) ) then
+            !
+            stop "Error: DataGroupTx_t : dotProdDataGroupTx > different data sizes"
+            !
+        else
+            !
+            rvalue = R_ZERO
+            !
+            do i = 1, size( self%data )
+                !
+                rvalue = rvalue + self%data(i)%dotProd( data_tx%data(i) )
+                !
+            enddo
+            !
+        endif
+        !
+    end function dotProdDataGroupTx
+    !
+    !> linComb between two DataGroupTxs
+    subroutine linCombDataGroupTx( self, a, b, data_tx, data_tx_out )
+        implicit none
+        !
+        class( DataGroupTx_t ), intent( in ) :: self, data_tx
+        real( kind=prec ), intent( in ) :: a, b
+        class( DataGroupTx_t ), intent( inout ) :: data_tx_out
+        !
+        integer :: i
+        !
+        if( self%i_tx /= data_tx%i_tx ) then
+            stop "Error: DataGroupTx_t : linCombDataGroupTx > different data txs: d1 and d2"
+        endif
+        !
+        if( size( self%data ) /= size( data_tx%data ) ) then
+            stop "Error: DataGroupTx_t : linCombDataGroupTx > different data sizes: d1 and d2"
+        endif
+        !
+        if( self%i_tx /= data_tx_out%i_tx ) then
+            stop "Error: DataGroupTx_t : linCombDataGroupTx > different data txs: d1 and d_out"
+        endif
+        !
+        if( size( self%data ) /= size( data_tx_out%data ) ) then
+            stop "Error: DataGroupTx_t : linCombDataGroupTx > different data sizes: d1 and d_out"
+        endif
+        !
+        do i = 1, size( self%data )
+            !
+            call self%data(i)%linComb( a, b, data_tx%data(i), data_tx_out%data(i) )
+            !
+        enddo
+        !
+    end subroutine linCombDataGroupTx
+    !
+    !> Call the print routine of each DataGroup in the data array
+    subroutine printDataGroupTx( self )
+        implicit none
+        !
+        class( DataGroupTx_t ), intent( in ) :: self
+        !
+        integer :: i_data
+        !
+        write( *, * ) "    Write DataGroupTx_t for Tx: ", self%i_tx
+        !
+        do i_data = 1, size( self%data )
+            call self%data( i_data )%print()
+        enddo
+        !
+    end subroutine printDataGroupTx
+    !
+end module DataGroupTx
+!

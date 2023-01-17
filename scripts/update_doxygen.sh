@@ -1,47 +1,51 @@
 #!/bin/bash
 #
-# NO ARGUMENTS: 
+# 
+is_local=$1
 #
-echo "#### START UPDATE DOXYGEN DOCUMENTATION FOR ModEM-OO AT $(date "+%Y/%m/%d - %H:%M:%S")" | tee -a outputs/temp/summary.txt
-echo "   #" | tee -a outputs/temp/summary.txt
+echo "#### Start Doxygen documentation at $(date "+%Y/%m/%d - %H:%M:%S")" | tee -a outputs/temp/summary.txt
+echo "    #" | tee -a outputs/temp/summary.txt
 #
-cd src/
+T_START=$(date +%s%3N)
 #
+cd src
+    #
+    # CLEAN
+    doxygen ../docs/doxygen_modem_oo_config
+    #
+    # CATCH RESULT
+    RESULT=$?
+    #
+    T_END=$(date +%s%3N)
+    #
+    # TEST RESULT
+    if [ "$RESULT" -ne "0" ]; then
+        #
+        echo "    > Doxygen documentation fail: $RESULT" | tee -a ../outputs/temp/summary.txt
+        echo "    > Time Spent: $(( ( $T_END - $T_START ) / 1000 )) seconds" | tee -a ../outputs/temp/summary.txt
+        echo "    #" | tee -a ../outputs/temp/summary.txt
+        #
+        cd ..
+        #
+        exit $RESULT
+        #
+    fi
+    #
+    echo "    > Doxygen documentation successful" | tee -a ../outputs/temp/summary.txt
+    echo "    > Time Spent: $(( ( $T_END - $T_START ) / 1000 )) seconds" | tee -a ../outputs/temp/summary.txt
+    echo "    #" | tee -a ../outputs/temp/summary.txt
+    #
+    cd ..
 #
-doxygen ../docs/doxygen_modem_oo_config
+echo "#### Finish build ModEM-OO at $(date "+%Y/%m/%d - %H:%M:%S")" | tee -a outputs/temp/summary.txt
 #
-# CATCH RESULT
-result=$?
-#
-# TEST RESULT
-if [ "$result" -ne "0" ]; then
+if $is_local ; then
+	echo 'is local'
+	# RENAME outputs/temp
+	mv outputs/temp outputs/$(hostname)_$(date "+%Y%m%d_%H%M%S")
 	#
-	#
-	echo "update_oxygen FAIL: $result"
-	#
-	#
-	cd ..
-	#
-	#
-	exit $result
 fi
 #
-#
-echo "#### FINISH UPDATE DOXYGEN ####"
-#
-# REMOVE OLD html/ AT docs/
-rm -rf ../docs/html
-#
-# SEND NEW html/ TO docs/
-mv html/ ../docs/
-#
-# REMOVE NEW latex/ CREATED
-rm -rf latex/
-#
-#
-cd ..
-#
-# 
 exit 0
 #
 # END OF SCRIPT

@@ -1,33 +1,33 @@
-! From the book "Computation of Special Functions"
-!      by Shanjie Zhang and Jianming Jin
-!   Copyright 1996 by John Wiley & Sons, Inc.
-! The authors state:
-!   "However, we give permission to the reader who purchases this book
-!    to incorporate any of these programs into his or her programs
-!    provided that the copyright is acknowledged."
+!> From the book "Computation of Special Functions"
+!>      by Shanjie Zhang and Jianming Jin
+!>   Copyright 1996 by John Wiley & Sons, Inc.
+!> The authors state:
+!>   "However, we give permission to the reader who purchases this book
+!>    to incorporate any of these programs into his or her programs
+!>    provided that the copyright is acknowledged."
 
 
 real(kind=real64) function bessj0(x) result (bj0)
 
-!    =======================================================
-!    Purpose: Compute Bessel functions J0(x)
-!    Input :  x   --- Argument of J0(x)
-!    Output:  BJ0 --- J0(x)
-!    =======================================================
+!> =======================================================
+!>    Purpose: Compute Bessel functions J0(x)
+!>    Input :  x   --- Argument of J0(x)
+!>    Output:  BJ0 --- J0(x)
+!> =======================================================
 
-  REAL(kind=real64), INTENT(IN)   :: x
+  REAL(kind=real64), INTENT(IN) :: x
 
-  REAL(kind=real64)    :: r, t1, x2
-  INTEGER(kind=int32)  :: k
+  REAL(kind=real64) :: r, t1, x2
+  INTEGER(kind=int32) :: k
 
   !internal variables
-  real(kind=real64)   :: y,z
+  real(kind=real64) :: y,z
   !polynomial coeff. for numerator and denominator for P0(x)
-  real(kind=real64)   :: pn0,pn1,pn2,pn3,pn4,pn5,pn6,pn7,pn8,pd0,pd1,pd2,pd3,pd4,pd5,pd6,pd7,pd8
+  real(kind=real64) :: pn0,pn1,pn2,pn3,pn4,pn5,pn6,pn7,pn8,pd0,pd1,pd2,pd3,pd4,pd5,pd6,pd7,pd8
   !polynomial coeff. for numerator and denominator for Q0(x)
-  real(kind=real64)   :: qn0,qn1,qn2,qn3,qn4,qn5,qn6,qn7,qn8,qd0,qd1,qd2,qd3,qd4,qd5,qd6,qd7,qd8,qd9
+  real(kind=real64) :: qn0,qn1,qn2,qn3,qn4,qn5,qn6,qn7,qn8,qd0,qd1,qd2,qd3,qd4,qd5,qd6,qd7,qd8,qd9
 
-  real(kind=real64)   :: p0num,p0denom,q0num,q0denom
+  real(kind=real64) :: p0num,p0denom,q0num,q0denom
 
 
   data pn0,pn1,pn2,pn3,pn4,pn5,pn6,pn7,pn8 &
@@ -59,7 +59,7 @@ real(kind=real64) function bessj0(x) result (bj0)
 
 
   x2 = x * x
-  IF (x == 0.0_real64) THEN
+  IF (x == R_ZERO_real64) THEN
     bj0 = 1.0_real64
     RETURN
   END IF
@@ -70,7 +70,7 @@ real(kind=real64) function bessj0(x) result (bj0)
       r = -0.25_real64 * r * x2 / (k*k)
       bj0 = bj0 + r
       IF (ABS(r) < ABS(bj0)*relerrbes) EXIT
-    END DO
+    enddo
   ELSE
 
     z=8./x  
@@ -93,26 +93,26 @@ endfunction bessj0
 
 real(kind=real64) function bessj1(x) result(bj1)
 
-!    =======================================================
-!    Purpose: Compute Bessel function J1(x)
-!    Input :  x   --- Argument of J1(x)
-!    Output:  BJ1 --- J1(x)
-!    =======================================================
+!> =======================================================
+!>    Purpose: Compute Bessel function J1(x)
+!>    Input :  x   --- Argument of J1(x)
+!>    Output:  BJ1 --- J1(x)
+!> =======================================================
 
-  REAL(kind=real64), INTENT(IN)   :: x
+  REAL(kind=real64), INTENT(IN) :: x
 
-  REAL(kind=real64)    :: r, t2, x2
-  INTEGER(kind=int32)  :: k
+  REAL(kind=real64) :: r, t2, x2
+  INTEGER(kind=int32) :: k
 
 
   !internal variables
-  real(kind=real64)   :: y,z
+  real(kind=real64) :: y,z
   !polynomial coeff. for numerator and denominator for P0(x)
-  real(kind=real64)   :: pn0,pn1,pn2,pn3,pn4,pn5,pn6,pn7,pn8,pd0,pd1,pd2,pd3,pd4,pd5,pd6,pd7,pd8
+  real(kind=real64) :: pn0,pn1,pn2,pn3,pn4,pn5,pn6,pn7,pn8,pd0,pd1,pd2,pd3,pd4,pd5,pd6,pd7,pd8
   !polynomial coeff. for numerator and denominator for Q0(x)
-  real(kind=real64)   :: qn0,qn1,qn2,qn3,qn4,qn5,qn6,qn7,qn8,qd0,qd1,qd2,qd3,qd4,qd5,qd6,qd7,qd8,qd9
+  real(kind=real64) :: qn0,qn1,qn2,qn3,qn4,qn5,qn6,qn7,qn8,qd0,qd1,qd2,qd3,qd4,qd5,qd6,qd7,qd8,qd9
 
-  real(kind=real64)   :: p0num,p0denom,q0num,q0denom
+  real(kind=real64) :: p0num,p0denom,q0num,q0denom
 
   data pn0,pn1,pn2,pn3,pn4,pn5,pn6,pn7,pn8 &
        /0.1000000000000000000000000489e+1_real64, 0.5581663300347182292169450071e+1_real64, &
@@ -143,8 +143,8 @@ real(kind=real64) function bessj1(x) result(bj1)
 
 
   x2 = x * x
-  IF (x == 0.0_real64) THEN
-    bj1 = 0.0_real64
+  IF (x == R_ZERO_real64) THEN
+    bj1 = R_ZERO_real64
     RETURN
   END IF
   IF (x <= 9.0_real64) THEN
@@ -154,7 +154,7 @@ real(kind=real64) function bessj1(x) result(bj1)
       r = -0.25_real64 * r * x2 / (k*(k+1))
       bj1 = bj1 + r
       IF (ABS(r) < ABS(bj1)*relerrbes) EXIT
-    END DO
+    enddo
     bj1 = 0.5_real64 * x * bj1
   ELSE
 
@@ -178,25 +178,25 @@ endfunction bessj1
 
 
 !----------------------------------------------------------------------
-!  Computes zero of Bessel function of the first kind from
-!  McMahon's asymptotic expansion
-!  NZERO - number of the zero
-!  ORDER - order of the Bessel function (0 or 1)
+!>  Computes zero of Bessel function of the first kind from
+!>  McMahon's asymptotic expansion
+!>  NZERO - number of the zero
+!>  ORDER - order of the Bessel function (0 or 1)
 !----------------------------------------------------------------------
 real(kind=real64) FUNCTION ZEROJ(NZERO,ORDER)
 
   implicit none
 
   !external variables
-  integer(kind=int32)      :: NZERO
-  real(kind=real64)        :: ORDER
+  integer(kind=int32) :: NZERO
+  real(kind=real64) :: ORDER
 
   !internal variables
-  real(kind=real64),parameter  :: ZT1=-1.D0/8.D0, ZT2=124.D0/1536.D0,ZT3=-120928.D0/491520.D0, &
+  real(kind=real64),parameter :: ZT1=-1.D0/8.D0, ZT2=124.D0/1536.D0,ZT3=-120928.D0/491520.D0, &
                        ZT4=401743168.D0/220200960.D0
-  real(kind=real64),parameter  :: OT1=3.D0/8.D0,OT2=-36.D0/1536.D0,OT3=113184.D0/491520.D0, &
+  real(kind=real64),parameter :: OT1=3.D0/8.D0,OT2=-36.D0/1536.D0,OT3=113184.D0/491520.D0, &
                        OT4=-1951209.D0/220200960.D0
-  real(kind=real64)            :: BETA
+  real(kind=real64) :: BETA
 
      IF (ORDER.EQ.0.0) THEN
        BETA=(real(NZERO,kind=real64)-.25_real64) * dpi
@@ -210,17 +210,17 @@ endfunction ZEROJ
 
 
 !----------------------------------------------------------------------
-!  Computes Bessel function of order ORDER and argument X by calling
-!  SLATEC routines DBESJ0 and DBESJ1
-!  May be replaced with IMSL routines MMBSJ0,MMBSJ1
-!  RS: here replaced by Numerical Recipes routines bessj0 and bessj1
+!>  Computes Bessel function of order ORDER and argument X by calling
+!>  SLATEC routines DBESJ0 and DBESJ1
+!>  May be replaced with IMSL routines MMBSJ0,MMBSJ1
+!>  RS: here replaced by Numerical Recipes routines bessj0 and bessj1
 !----------------------------------------------------------------------
 real(kind=real64) FUNCTION JBESS(X,ORDER)
 
   implicit none
 
   !external variables
-  real(kind=real64)    :: X,ORDER
+  real(kind=real64) :: X,ORDER
 
   !internal variables
 

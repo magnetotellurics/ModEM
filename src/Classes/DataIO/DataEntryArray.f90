@@ -1,14 +1,11 @@
-!*************
 !
-! Class to provide a dynamic and polymorphic data_entry_array of DataEntry_t objects
+!> Class to provide a dynamic and polymorphic data_entry_array of DataEntry_t objects
 !
-!*************
-!
-module DataEntryFArray
+module DataEntryArray
     !
     use DataEntry
     !
-    ! Allocatable DataEntry element of the array, for Old Fortran polymorphism !!!
+    !> Allocatable DataEntry element of the array, for Old Fortran polymorphism !!!
     type, public :: De_t
         !
         class( DataEntry_t ), allocatable :: De
@@ -19,7 +16,7 @@ module DataEntryFArray
     !
 contains
     !
-    ! Add a new DataEntry_t and initialize it if necessary
+    !> Add a new DataEntry_t and initialize it if necessary
     subroutine updateDataEntryArray( data_entry_array, new_De )
         implicit none
         !
@@ -32,11 +29,11 @@ contains
         !
         if( .NOT. allocated( data_entry_array ) ) then
             !
-            allocate( data_entry_array( 1 ) )
+            allocate( data_entry_array(1) )
             !
             temp_De%De = new_De
             !
-            data_entry_array( 1 ) = temp_De
+            data_entry_array(1) = temp_De
             !
         else
             !
@@ -59,11 +56,12 @@ contains
         !
     end subroutine updateDataEntryArray
     !
+    !> No function briefing
     function hasDataEntry( data_entry_array, data_entry ) result( exist )
         implicit none
         !
         type( De_t ), dimension(:), intent( in ) :: data_entry_array
-        class( DataEntry_t ), intent( in )       :: data_entry
+        class( DataEntry_t ), intent( in ) :: data_entry
         !
         logical :: exist
         integer :: iDe, nDe
@@ -75,28 +73,30 @@ contains
             if( data_entry%isEqual( data_entry_array( iDe )%De ) ) then
                 exist = .TRUE.
                 exit
-            end if
-        end do
+            endif
+        enddo
         !
     end function hasDataEntry
     !
+    !> No subroutine briefing
     subroutine setDataEntry( data_entry_array, iDe, De )
         implicit none
         !
         type( De_t ), dimension(:), intent( inout ) :: data_entry_array
-        integer, intent( in )                                    :: iDe
+        integer, intent( in ) :: iDe
         !
-        class( DataEntry_t ), allocatable, intent( in )         :: De
+        class( DataEntry_t ), allocatable, intent( in ) :: De
         !
         data_entry_array( iDe )%De = De
         !
     end subroutine setDataEntry
     !
+    !> No function briefing
     function getDataEntry( data_entry_array, iDe ) result( De )
         implicit none
         !
         type( De_t ), target, dimension(:), intent( in ) :: data_entry_array
-        integer                                          :: iDe
+        integer :: iDe
         !
         class( DataEntry_t ), pointer :: De
         !
@@ -104,7 +104,7 @@ contains
         !
     end function getDataEntry
     !
-    !
+    !> No subroutine briefing
     subroutine deallocateDataEntryArray( data_entry_array )
         implicit none
         !
@@ -121,11 +121,11 @@ contains
         else
             do iDe = nDe, 1, -(1)
                 deallocate( data_entry_array( iDe )%De )
-            end do
+            enddo
         endif
         !
         deallocate( data_entry_array )
         !
     end subroutine deallocateDataEntryArray
     !
-end module DataEntryFArray
+end module DataEntryArray

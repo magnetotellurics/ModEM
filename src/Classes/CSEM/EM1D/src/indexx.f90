@@ -1,35 +1,35 @@
 !***********************************************************
-! 
-! Code converted using TO_F90 by Alan Miller
-! Date: 2007-06-28  Time: 15:21:53
+!> 
+!> Code converted using TO_F90 by Alan Miller
+!> Date: 2007-06-28  Time: 15:21:53
 !
-! numerical recipes routine indexx
-! from Numerical recipes in Fortran, 2nd ed. Press et. al
+!> numerical recipes routine indexx
+!> from Numerical recipes in Fortran, 2nd ed. Press et. al
 !
-! indexes an array arr(1:n) i.e. outputs an array indx(1:n) such that
-! arr(indx(j)) is in ascending order for j=1,2,...N
-! input quantities n and arr are not changed
+!> indexes an array arr(1:n) i.e. outputs an array indx(1:n) such that
+!> arr(indx(j)) is in ascending order for j=1,2,...N
+!> input quantities n and arr are not changed
 !
 !***********************************************************
 SUBROUTINE indexx(n,arr,indx)
 
 IMPLICIT NONE
 
-INTEGER(kind=int32), INTENT(IN)                :: n
-REAL(kind=real64),dimension(n),INTENT(IN)      :: arr
-INTEGER(kind=int32),dimension(n),INTENT(OUT)   :: indx
+INTEGER(kind=int32), INTENT(IN) :: n
+REAL(kind=real64),dimension(n),INTENT(IN) :: arr
+INTEGER(kind=int32),dimension(n),INTENT(OUT) :: indx
 
 
 INTEGER(kind=int32), PARAMETER :: m=7
 INTEGER(kind=int32), PARAMETER :: nstack=50
 INTEGER(kind=int32) :: i,indxt,ir,itemp
 INTEGER(kind=int32) :: j,jstack,k,l,istack(nstack)
-REAL(kind=real64)   :: a
+REAL(kind=real64) :: a
 
 
 DO  j=1,n
   indx(j) = j
-END DO
+enddo
 
 jstack = 0
 l = 1
@@ -42,10 +42,10 @@ ir = n
     DO  i=j-1,1,-1
       IF(arr(indx(i)) <= a) GO TO 2
       indx(i+1) = indx(i)
-    END DO
+    enddo
     i=0
     2         indx(i+1) = indxt
-  END DO
+  enddo
   IF (jstack == 0) RETURN
   ir = istack(jstack)
   l = istack(jstack-1)
@@ -89,7 +89,7 @@ ELSE
   indx(j) = indxt
   jstack = jstack + 2
   IF (jstack > nstack) then
-    write(*,*) 'Error in indexx: nstack too small'
+    write( *, * ) 'Error in indexx: nstack too small'
     stop
   endif
   IF (ir-i+1 >= j-l) THEN

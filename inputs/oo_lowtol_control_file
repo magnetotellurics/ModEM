@@ -12,10 +12,10 @@ source [1D|2D]                     : 1D
 #
 # SOLVER
 #
-QMR_iters [40]                     : 40
-BCG_iters [80]                     : 80
-max_divcor [20]                    : 20
-max_divcor_iters [100]             : 100
+QMR_iters [40]                     : 10
+BCG_iters [80]                     : 20
+max_divcor [20]                    : 5
+max_divcor_iters [100]             : 25
 tolerance_divcor [1E-5]            : 1E-2
 tolerance_qmr [1E-7]               : 1E-2
 forward_solver [FILE|IT|IT_DC]     : IT_DC

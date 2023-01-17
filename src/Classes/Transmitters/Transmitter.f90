@@ -1,108 +1,98 @@
-! *************
-! 
-! Base class to define a Transmitter
 !
-! *************
-! 
+!> Abstract base class to define a Transmitter
+!
 module Transmitter
-    ! 
-    use Constants
-    use Source
+    !
+    use FileUnits
     use ForwardSolver
     use ModelParameter
-    !
-    ! Global name for e_solution file
-    character(:), allocatable :: e_solution_file_name
+    use ModelOperator
+    use SourceInteriorForce
+    use rVector3D_SG
     !
     type, abstract :: Transmitter_t
-        !
-        integer :: id, n_pol, fwd_key(8)
-        !
-        real( kind=prec ) :: period
         !
         class( ForwardSolver_t ), pointer :: forward_solver
         !
         class( Source_t ), allocatable :: source
         !
-        class( Vector_t ), allocatable, dimension(:) :: e_all
+        integer :: i_tx, n_pol, fwd_key(8)
+        !
+        real( kind=prec ) :: period
+        !
+        class( Vector_t ), allocatable, dimension(:) :: e_sol, e_sens
         !
         integer, allocatable, dimension(:) :: receiver_indexes
-        ! !
-        ! procedure( interface_p_mult_tx ), pointer, nopass :: pMult_ptr
-        ! !
-        ! procedure( interface_p_mult_t_tx ), pointer, nopass :: pMult_t_ptr
-        ! !
+        !
     contains
         !
-        procedure, public :: init     => initializeTx
-        procedure, public :: dealloc  => deallocateTx
+        procedure, public :: init => initializeTx
+        !
+        procedure, public :: dealloc => deallocateTx
         !
         procedure, public :: updateFwdKey => updateFwdKeyTx
         !
         procedure, public :: updateReceiverIndexesArray
         !
-        procedure( interface_solve_fwd_tx ), deferred, public :: solveFWD
+        procedure( interface_solve_tx ), deferred, public :: solve
         !
         procedure( interface_is_equal_tx ), deferred, public :: isEqual
         !
         procedure( interface_print_tx ), deferred, public :: print
         !
-        procedure, public :: pMult => pMultTx
+        procedure, public :: setSource => setSourceTx
         !
-        procedure, public :: pMult_t => pMult_t_Tx
+        procedure, public :: PMult => PMult_Tx
+        !
+        procedure, public :: PMult_t => PMult_t_Tx
+        !
+        procedure, public :: writeESolution
         !
     end type Transmitter_t
     !
     abstract interface
         !
-        subroutine interface_solve_fwd_tx( self )
+        !> No interface subroutine briefing
+        subroutine interface_solve_tx( self )
             import :: Transmitter_t
             class( Transmitter_t ), intent( inout ) :: self
-        end subroutine interface_solve_fwd_tx
-        !        !
+        end subroutine interface_solve_tx
+        !
+        !> No interface function briefing
         function interface_is_equal_tx( self, other ) result( equal )
             import :: Transmitter_t
             class( Transmitter_t ), intent( in ) :: self, other
-            logical                              :: equal
+            logical :: equal
         end function interface_is_equal_tx
-        !        
+        !
+        !> No interface subroutine briefing
         subroutine interface_print_tx( self )
             import :: Transmitter_t
-            class( Transmitter_t ), intent(in) :: self
+            class( Transmitter_t ), intent( in ) :: self
         end subroutine interface_print_tx
-        ! !
-        ! pure subroutine interface_p_mult_tx( m0, dm, bSrc )
-            ! import :: ModelParameter_t, Source_t
-            ! class( ModelParameter_t ), intent( in ) :: m0, dm
-            ! class( Source_t ), intent( inout )      :: bSrc
-        ! end subroutine interface_p_mult_tx
-        ! !
-        ! pure subroutine interface_p_mult_t_tx( m0, eSens, d_m )
-            ! import :: ModelParameter_t, Vector_t
-            ! class( ModelParameter_t ), intent( in )    :: m0
-            ! class( Vector_t ), intent( in )           :: eSens
-            ! class( ModelParameter_t ), intent( inout ) :: d_m
-        ! end subroutine interface_p_mult_t_tx
-        ! !
+        !
     end interface
     !
     contains
         !
+        !> Initialize transmitter base variables (Avoid initialization on declaration).
         subroutine initializeTx( self )
             implicit none
             !
             class( Transmitter_t ), intent( inout ) :: self
             !
-            self%id = 0
+            self%i_tx = 0
             self%n_pol = 0
             call self%updateFwdKey()
             !
-            self%period = 0.0
+            self%period = R_ZERO
             !
             self%forward_solver => null()
             !
         end subroutine initializeTx
         !
+        !> Free the memory used by all allocatable variables belonging to this transmitter.
+        !> Called before anything in the destructor of derived classes.
         subroutine deallocateTx( self )
             implicit none
             !
@@ -110,12 +100,15 @@ module Transmitter
             !
             if( allocated( self%source ) ) deallocate( self%source )
             !
-            if( allocated( self%e_all ) ) deallocate( self%e_all )
+            if( allocated( self%e_sol ) ) deallocate( self%e_sol )
+            !
+            if( allocated( self%e_sens ) ) deallocate( self%e_sens )
             !
             if( allocated( self%receiver_indexes ) ) deallocate( self%receiver_indexes )
             !
         end subroutine deallocateTx
         !
+        !> No procedure briefing
         subroutine updateFwdKeyTx( self )
             implicit none
             !
@@ -125,34 +118,42 @@ module Transmitter
             !
         end subroutine updateFwdKeyTx
         !
+        !> Add a receiver index to the integer array (receiver_indexes).
+        !> Increasing the size of the array, if the index does not already exist.
         subroutine updateReceiverIndexesArray( self, new_int )
             implicit none
             !
             class( Transmitter_t ), intent( inout ) :: self
-            integer, intent( in )                   :: new_int
             !
-            integer, allocatable, dimension(:)      :: temp_array
-            integer                                 :: nRi, idx
+            integer, intent( in ) :: new_int
+            !
+            integer :: idx, ni
+            integer, allocatable, dimension(:) :: temp_array
             !
             if( .NOT. allocated( self%receiver_indexes ) ) then
+                !
                 allocate( self%receiver_indexes(1) )
+                !
                 self%receiver_indexes(1) = new_int
             else
                 !
-                nRi = size( self%receiver_indexes )
+                ni = size( self%receiver_indexes )
                 !
-                do idx = 1, nRi
-                    if ( new_int == self%receiver_indexes( idx ) ) then
+                do idx = 1, ni
+                    if( new_int == self%receiver_indexes( idx ) ) then
                         return
-                    end if
-                end do
+                    endif
+                enddo
                 !
-                allocate( temp_array( nRi + 1 ) )
-                temp_array( 1 : nRi ) = self%receiver_indexes(:)
-                temp_array( nRi + 1 ) = new_int
+                allocate( temp_array( ni + 1 ) )
                 !
-                if( allocated( self%receiver_indexes ) ) deallocate( self%receiver_indexes )
-                self%receiver_indexes = temp_array
+                temp_array( 1 : ni ) = self%receiver_indexes
+                !
+                temp_array( ni + 1 ) = new_int
+                !
+                deallocate( self%receiver_indexes )
+                !
+                allocate( self%receiver_indexes, source = temp_array )
                 !
                 deallocate( temp_array )
                 !
@@ -160,189 +161,155 @@ module Transmitter
             !
         end subroutine updateReceiverIndexesArray
         !
-        subroutine pMultTx( self, m0, dm, bSrc )
+        !> Allocate the source of this transmitter if it is allocated.
+        !> And define a new source for this transmitter, sent as an argument.
+        subroutine setSourceTx( self, source )
             implicit none
             !
-            class( Transmitter_t ), intent( in )    :: self
-            class( ModelParameter_t ), intent( in ) :: m0
-            class( ModelParameter_t ), intent( in ) :: dm
+            class( Transmitter_t ), intent( inout ) :: self
+            class( Source_t ), intent( in ) :: source
             !
-            class( Source_t ), intent( inout ) :: bSrc
+            if( allocated( self%source ) ) deallocate( self%source )
+            allocate( self%source, source = source )
             !
-            complex( kind=prec ) :: miwm
-            class( ModelParameter_t ), allocatable :: temp
-            logical :: adjt
-            integer :: k
-            class( Vector_t ), allocatable:: eVec
+        end subroutine setSourceTx
+        !
+        !> Returns a SourceInteriorForce from two distinct models, with the same ModelOperator.
+        function PMult_Tx( self, sigma, dsigma, model_operator ) result( source_int_force )
+            implicit none
             !
-            ! WHERE THE HELL AM I GOING TO GET PERIOD ????
-            miwm = -ONE_I * MU_0 * isign * cmplx( 0.0, 1./ ( 2.0 * PI / self%period ), kind=prec )
+            class( Transmitter_t ), intent( inout ) :: self
+            class( ModelParameter_t ), intent( in ) :: sigma, dsigma
+            class( ModelOperator_t ), intent( in ) :: model_operator
             !
-            allocate( temp, source = m0 )
+            type( SourceInteriorForce_t ) :: source_int_force
             !
-            ! WHAT TO DO WITH eVec????
-            call temp%dPDEmapping( dm, eVec )
+            class( Vector_t ), allocatable, dimension(:) :: bSrc
+            type( rVector3D_SG_t ) :: map_e_vector
+            complex( kind=prec ) :: minus_i_omega_mu
+            integer :: pol
+            ! Verbose
+            !write( *, * ) "               - Start PMult"
             !
-            adjt = .FALSE.
+            !> Get map_e_vector from dPDEmapping
+            call sigma%dPDEmapping( dsigma, map_e_vector )
             !
-            ! AND NPOL ????
-            do k = 1, self%n_pol
+            !> ON WORKING
+            minus_i_omega_mu = -isign * MU_0 * cmplx( 0., ( 2.0 * PI / self%period ), kind=prec )
+            !
+            !> Initialize and fill bSrc
+            allocate( cVector3D_SG_t :: bSrc( self%n_pol ) )
+            !
+            do pol = 1, self%n_pol
                 !
-                ! ADJOINT SOURCE ????
+                bSrc( pol ) = self%e_sol( pol )
+                !
+                call bSrc( pol )%mult( map_e_vector )
+                !
+                call bSrc( pol )%mult( minus_i_omega_mu )
                 !
             enddo
             !
-            ! MATLAB IMPLEMENTATION
+            !> Instantiates the source and sets its E, creating Rhs from it.
+            source_int_force = SourceInteriorForce_t( model_operator, sigma, self%period )
             !
-            !miwm = -1i*Tx.fwd.modOp.mu0*Tx.fwd.isign*Tx.omega;
-            !temp = m0.dPDEmapping(dm);
+            call source_int_force%setE( bSrc )
             !
-            !adjt = false;
+            !> Free up local memory
+            deallocate( bSrc )
             !
-            !bSrc(2) = TSourceInteriorForce(Tx.fwd.modOp,adjt);
-            !bSrc(2).SetSourceParams(miwm*Tx.e(nPol).*temp);
-            !for k = 1:Tx.nPol-1
-                !bSrc(k) = TSourceInteriorForce(Ts.fwd.modOp,adjt);
-                !bSrc(k).SetSourceParams(miwm.*Tx.e(k).*temp);
-            !end
+            ! Verbose
+            !write( *, * ) "               - Finish PMult"
             !
-        end subroutine pMultTx
+        end function PMult_Tx
         !
-        subroutine pMult_t_Tx( self, m0, eSens, d_m )
+        !> Defines a new model (dsigma) from a previous model and e_sens for this transmitter.
+        subroutine PMult_t_Tx( self, sigma, dsigma )
             implicit none
             !
-            class( Transmitter_t ), intent( in )                    :: self
-            class( ModelParameter_t ), intent( in )                 :: m0
-            class( Vector_t ), intent( inout )                     :: eSens(:)
-            class( ModelParameter_t ), allocatable, intent( inout ) :: d_m
+            class( Transmitter_t ), intent( in ) :: self
+            class( ModelParameter_t ), intent( in ) :: sigma
+            class( ModelParameter_t ), allocatable, intent( inout ) :: dsigma
             !
-            complex( kind=prec ) :: miwm
-            class( ModelParameter_t ), allocatable :: temp
-            logical :: adjt
-            integer :: k
+            class( Vector_t ), allocatable, dimension(:) :: eSens
+            class( Field_t ), allocatable :: real_sens
+            complex( kind=prec ) :: minus_i_omega_mu
+            integer :: pol
             !
+            ! Verbose
+            !write( *, * ) "               - Start PMult_t"
             !
-            miwm = -ONE_I * MU_0 * isign * cmplx( 0.0, 1./ ( 2.0 * PI / self%period ), kind=prec )
+            if( .NOT. allocated( self%e_sens ) ) then
+                stop "Error: PMult_t_Tx > eSens not allocated on the Tx"
+            endif
             !
-            allocate( d_m, source = m0%dPDEmappingT( eSens(1) ) )
+            !> Copy e_sens to a local variable to keep its original value.
+            allocate( eSens, source = self%e_sens )
             !
-            ! MATLAB IMPLEMENTATION
+            call eSens(1)%mult( self%e_sol(1) )
             !
-            !Tx = dTx.Tx;  %  transmitter for this DataVectorTx object;  As for Pmult_E
+            !> Loop over all other polarizations, adding them to the first position
+            do pol = 2, self%n_pol
+                !
+                call eSens( pol )%mult( self%e_sol( pol ) )
+                !
+                call eSens(1)%add( eSens( pol ) )
+                !
+            enddo
             !
-            !miwm = -1i*Tx.fwd.modOp.mu0*Tx.fwd.isign*Tx.omega;
-            !eSens(1) = miwm.*Tx.e(1).*eSens(1);
+            minus_i_omega_mu = -isign * MU_0 * cmplx( 0., ( 2.0 * PI / self%period ), kind=prec )
             !
-            !for k = 2:Tx.nPol
-                !eSens(1) = eSens(1) + miwm.*Tx.e(k).*eSens(k);
-                !end
-            !d_m = m0.dPDEmappingT(eSens(1));
+            call eSens(1)%mult( minus_i_omega_mu )
             !
-        end subroutine pMult_t_Tx
+            call eSens(1)%getReal( real_sens )
+            !
+            !> Free up local memory
+            deallocate( eSens )
+            !
+            !> Get dsigma from dPDEmappingT, using first position of eSens
+            call sigma%dPDEmappingT( real_sens, dsigma )
+            !
+            deallocate( real_sens )
+            !
+        end subroutine PMult_t_Tx
         !
-        ! ! PMult
-        ! elemental subroutine pMultTx( self, m0, dm, bSrc )
-            ! implicit none
-            ! !
-            ! class( Transmitter_t ), intent( in )    :: self
-            ! class( ModelParameter_t ), intent( in ) :: m0, dm
-            ! class( Source_t ), intent( inout ) :: bSrc
-            ! !
-            ! call self%pMult_ptr( m0, dm, bSrc )
-            ! !
-        ! end subroutine pMultTx
-        ! !
-        ! pure subroutine pMult_E( m0, dm, bSrc )
-            ! implicit none
-            ! !
-            ! class( ModelParameter_t ), intent( in ) :: m0
-            ! class( ModelParameter_t ), intent( in ) :: dm
-            ! !
-            ! class( Source_t ), intent( inout ) :: bSrc
-            ! !
-            ! complex( kind=prec ) :: miwm
-            ! class( ModelParameter_t ), allocatable :: temp
-            ! logical :: adjt
-            ! integer :: k
-            ! class( Vector_t ), allocatable:: eVec
-            ! !
-            ! ! WHERE THE HELL AM I GOING TO GET PERIOD ????
-            ! !miwm = -ON_I * MU_0 * isign * cmplx( 0.0, 1./ ( 2.0 * PI / self%period ), kind=prec )
-            ! !
-            ! allocate( temp, source = m0 )
-            ! !
-            ! ! WHAT TO DO WITH eVec????
-            ! call temp%dPDEmapping( dm, eVec )
-            ! !
-            ! adjt = .FALSE.
-            ! !
-            ! ! AND NPOL ????
-            ! !do k = 1, self%npol
-                ! !
-                ! ! ADJOINT SOURCE ????
-                ! !
-            ! !enddo
-            ! !
-            ! ! MATLAB IMPLEMENTATION
-            ! !
-            ! !miwm = -1i*Tx.fwd.modOp.mu0*Tx.fwd.isign*Tx.omega;
-            ! !temp = m0.dPDEmapping(dm);
-            ! !
-            ! !adjt = false;
-            ! !
-            ! !bSrc(2) = TSourceInteriorForce(Tx.fwd.modOp,adjt);
-            ! !bSrc(2).SetSourceParams(miwm*Tx.e(nPol).*temp);
-            ! !for k = 1:Tx.nPol-1
-                ! !bSrc(k) = TSourceInteriorForce(Ts.fwd.modOp,adjt);
-                ! !bSrc(k).SetSourceParams(miwm.*Tx.e(k).*temp);
-            ! !end
-            ! !
-        ! end subroutine pMult_E
-        ! !
-        ! ! PMult_t
-        ! elemental subroutine pMult_t_Tx( self, m0, eSens, d_m )
-            ! implicit none
-            ! !
-            ! class( Transmitter_t ), intent( in )    :: self
-            ! class( ModelParameter_t ), intent( in ) :: m0
-            ! class( Vector_t ), intent( in )        :: eSens
-            ! !
-            ! class( ModelParameter_t ), intent( inout ) :: d_m
-            ! !
-            ! call self%pMult_t_ptr( m0, eSens, d_m )
-            ! !
-        ! end subroutine pMult_t_Tx
-        ! !
-        ! pure subroutine pMult_t_E( m0, eSens, d_m )
-            ! implicit none
-            ! !
-            ! class( ModelParameter_t ), intent( in )    :: m0
-            ! class( Vector_t ), intent( in )           :: eSens
-            ! !
-            ! class( ModelParameter_t ), intent( inout ) :: d_m
-            ! !
-            ! complex( kind=prec ) :: miwm
-            ! class( ModelParameter_t ), allocatable :: temp
-            ! logical :: adjt
-            ! integer :: k
-            ! !
-            ! ! WHERE THE HELL AM I GOING TO GET PERIOD ????
-            ! !miwm = -ON_I * MU_0 * isign * cmplx( 0.0, 1./ ( 2.0 * PI / self%period ), kind=prec )
-            ! !
-            ! d_m = m0%dPDEmappingT( eSens(1) )
-            ! !
-            ! ! MATLAB IMPLEMENTATION
-            ! !
-            ! !Tx = dTx.Tx;  %  transmitter for this DataVectorTx object;  As for Pmult_E
-            ! !
-            ! !miwm = -1i*Tx.fwd.modOp.mu0*Tx.fwd.isign*Tx.omega;
-            ! !eSens(1) = miwm.*Tx.e(1).*eSens(1);
-            ! !
-            ! !for k = 2:Tx.nPol
-                ! !eSens(1) = eSens(1) + miwm.*Tx.e(k).*eSens(k);
-                ! !end
-            ! !d_m = m0.dPDEmappingT(eSens(1));
-            ! !
-        ! end subroutine pMult_t_E
-        ! !
+        !> No subroutine briefing
+        subroutine writeESolution( self )
+            implicit none
+            !
+            class( Transmitter_t ), intent( in ) :: self
+            !
+            integer :: i_pol, ios
+            !
+            character( len=20 ) :: ModeName
+            character :: char_i_pol
+            real( kind=prec ) :: omega
+            !
+            omega = ( 2.0 * PI / self%period )
+            !
+            !> Loop over all polarizations (MT n_pol = 2)
+            do i_pol = 1, self%n_pol
+                !
+                write( char_i_pol, "(i1)") i_pol
+                ModeName = "E"//char_i_pol
+                !
+                open( ioESolution, action = "write", position = "append", form = "unformatted", iostat = ios )
+                !
+                if( ios /= 0 ) then
+                    stop "Error opening file in solveTransmitterMT: e_solution"
+                else
+                    !
+                    !> write the frequency header - 1 record
+                    write( ioESolution ) omega, self%i_tx, i_pol, ModeName
+                    !
+                    call self%e_sol( i_pol )%write( ioESolution )
+                    !
+                    close( ioESolution )
+                    !
+                endif
+                !
+            enddo
+            !
+        end subroutine writeESolution
+        !
 end module Transmitter

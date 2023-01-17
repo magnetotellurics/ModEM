@@ -1,24 +1,19 @@
-! *************
-! 
-! Derived class to define a MT Transmitter
 !
-! *************
-! 
+!> Derived class to define a MT Transmitter
+!
 module TransmitterMT
-    ! 
-    use FileUnits
-    use cVector3D_SG
+    !
     use Transmitter
     !
     type, extends( Transmitter_t ), public :: TransmitterMT_t
         !
-        ! PROPERTIES HERE
+        !> No derived properties
         !
         contains
             !
             final :: TransmitterMT_dtor
             !
-            procedure, public :: solveFWD => solveFWDTransmitterMT
+            procedure, public :: solve => solveTransmitterMT
             !
             procedure, public :: isEqual => isEqualTransmitterMT
             !
@@ -32,7 +27,7 @@ module TransmitterMT
     !
     contains
     !
-    ! TransmitterMT constructor
+    !> TransmitterMT constructor
     function TransmitterMT_ctor( period ) result ( self )
         implicit none
         !
@@ -40,7 +35,7 @@ module TransmitterMT
         !
         real( kind=prec ), intent( in ) :: period
         !
-        !write(*,*) "Constructor TransmitterMT_t"
+        !write( *, * ) "Constructor TransmitterMT_t"
         !
         call self%init()
         !
@@ -48,87 +43,75 @@ module TransmitterMT
         !
         self%period = period
         !
-        ! self%pMult_ptr => pMult_E
+        !> self%PMult_ptr => PMult_E
         !
-        ! self%pMult_t_ptr => pMult_t_E
+        !> self%PMult_t_ptr => PMult_t_E
         !
     end function TransmitterMT_ctor
     !
-    ! TransmitterMT destructor
+    !> Deconstructor routine:
+    !>     Calls the base routine dealloc().
     subroutine TransmitterMT_dtor( self )
         implicit none
         !
         type( TransmitterMT_t ), intent( inout ) :: self
         !
-        !write(*,*) "Destructor TransmitterMT_t:", self%id
+        !write( *, * ) "Destructor TransmitterMT_t:", self%id
         !
         call self%dealloc()
         !
     end subroutine TransmitterMT_dtor
     !
-    ! Set self%e_all from forward modeling solver
-    subroutine solveFWDTransmitterMT( self )
+    !> Calculate e_sol or e_sens from with ForwardSolver
+    !> Depending of the Source%adjoint
+    subroutine solveTransmitterMT( self )
         implicit none
         !
         class( TransmitterMT_t ), intent( inout ) :: self
         !
-        integer           :: i_pol, ios
-        real( kind=prec ) :: omega
+        integer :: i_pol
         !
-        character( len=20 ) :: ModeName
+        if( .NOT. allocated( self%source ) ) then
+            stop "Error: solveTransmitterMT > source not allocated!"
+        endif
+        !
+        !> First allocate e_sol or e_sens, according to the Source case
+        if( self%source%sens ) then
             !
-            character(:), allocatable :: title
+            if( allocated( self%e_sens ) ) deallocate( self%e_sens )
+            allocate( cVector3D_SG_t :: self%e_sens(2) )
             !
+        else
+            !
+            if( allocated( self%e_sol ) ) deallocate( self%e_sol )
+            allocate( cVector3D_SG_t :: self%e_sol(2) )
+            !
+        endif
         !
-        omega = 2.0 * PI / self%period
-        !
-        allocate( cVector3D_SG_t :: self%e_all( self%n_pol ) )
-        !
-        ! Loop over all polarizations (MT n_pol = 2)
+        !> Calculate e_sol or e_sens through ForwardSolver
+        !> For all polarizations (MT n_pol = 2)
         do i_pol = 1, self%n_pol
             !
-            ! Verbose
-            write( *, * ) "          SolveFWD for MT Tx:", self%id, " -> Period:", self%period, " - Polarization:", i_pol
-            !
-            call self%source%setE( i_pol )
-            !
-            select type( grid => self%source%model_operator%metric%grid )
-                class is( Grid3D_SG_t )
-                    !
-                    self%e_all( i_pol ) = cVector3D_SG_t( grid, EDGE )
-                    !
-                class default
-                    stop "Error: solveFWDTransmitterMT: undefined grid"
-                    !
-            end select
-            !
-            call self%forward_solver%getESolution( self%source, self%e_all( i_pol ) )
-            !
-            if( i_pol == 1 ) then
-                ModeName = "Ey"
-            else
-                ModeName = "Ex"
-            endif
-            !
-            open( ioESolution, file = e_solution_file_name, action = "write", position = "append", form = "unformatted", iostat = ios )
-            !
-            if( ios /= 0 ) then
-                stop "Error opening file in solveFWDTransmitterMT: e_solution"
+            !> Verbose
+            if( self%source%sens ) then
+                !
+                !write( *, "( a25, i5, a9, es12.5, a6, i5 )" ) "- Solving Sens MT Tx", self%i_tx, ", Period=", self%period, ", Pol=", i_pol
+                !
+                call self%forward_solver%createESolution( i_pol, self%source, self%e_sens( i_pol ) )
+                !
             else
                 !
-                ! write the frequency header - 1 record
-                write( ioESolution ) omega, self%id, i_pol, ModeName
+                !write( *, "( a25, i5, a9, es12.5, a6, i5 )" ) "- Solving FWD MT Tx", self%i_tx, ", Period=", self%period, ", Pol=", i_pol
                 !
-                call self%e_all( i_pol )%write( ioESolution )
-                !
-                close( ioESolution )
+                call self%forward_solver%createESolution( i_pol, self%source, self%e_sol( i_pol ) )
                 !
             endif
-        !
+            !
         enddo
         !
-    end subroutine solveFWDTransmitterMT
+    end subroutine solveTransmitterMT
     !
+    !> No function briefing
     function isEqualTransmitterMT( self, other ) result( equal )
         implicit none
         !
@@ -154,6 +137,7 @@ module TransmitterMT
         !
     end function isEqualTransmitterMT
     !
+    !> No subroutine briefing
     subroutine printTransmitterMT( self )
         implicit none
         !
@@ -161,10 +145,10 @@ module TransmitterMT
         !
         integer :: iRx
         !
-        write( *, "( A29, I5, A10, es10.2, A7, I5)" ) &
-        "               TransmitterMT:", self%id, &
-        ", Period: ",    self%period, &
-        ", NRx: ", size( self%receiver_indexes )
+        write( *, "( A30, I8, A9, es16.5, A6, I8)" ) &
+        "TransmitterMT", self%i_tx, &
+        ", Period=",    self%period, &
+        ", NRx=", size( self%receiver_indexes )
         !
     end subroutine printTransmitterMT
     !

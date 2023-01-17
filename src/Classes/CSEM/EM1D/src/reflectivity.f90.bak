@@ -1,24 +1,24 @@
 !------------------------------------------------------------
-!  FD EM subroutine reflectivity
+!>  FD EM subroutine reflectivity
 !
-!  computes 3D EM wavefields at given positions for 1D models using the reflectivity method
-!  can be used for fields at grid points (staggered and non-staggered), receivers and individual points
-!    by defining coordinate vectors accordingly
-!  different coordinates can be used for different field components
+!>  computes 3D EM wavefields at given positions for 1D models using the reflectivity method
+!>  can be used for fields at grid points (staggered and non-staggered), receivers and individual points
+!>    by defining coordinate vectors accordingly
+!>  different coordinates can be used for different field components
 !
-!  equations based on Loeseth and Ursin 2007
-!  sign conventions as in Loeseth and Ursin 2007
+!>  equations based on Loeseth and Ursin 2007
+!>  sign conventions as in Loeseth and Ursin 2007
 !
-!  CAUTION:
-!      With increasing distance from the source, integrands of Bessel function integrals
-!      become larger than the integration results by many orders of magnitude. As a 
-!      general rule, the code will fail if the true integrated values are more than 15
-!      orders of magnitude smaller than the maximum of the integrand functions. To compute
-!      such integrals, an extended (quadruple) precision version could be used, but 
-!      quadruple precision is SLOW, and then the accuracy will be limited by the 20-digit
-!      precision of the integration weights in BESQUD.
+!>  CAUTION:
+!>      With increasing distance from the source, integrands of Bessel function integrals
+!>      become larger than the integration results by many orders of magnitude. As a 
+!>      general rule, the code will fail if the true integrated values are more than 15
+!>      orders of magnitude smaller than the maximum of the integrand functions. To compute
+!>      such integrals, an extended (quadruple) precision version could be used, but 
+!>      quadruple precision is SLOW, and then the accuracy will be limited by the 20-digit
+!>      precision of the integration weights in BESQUD.
 !
-!  Rita Streich 2009-2011
+!>  Rita Streich 2009-2011
 !
 !------------------------------------------------------------
 subroutine reflectivity_unified(src,bgdat,refl_var,ifreq,icur,comm)
@@ -26,24 +26,24 @@ subroutine reflectivity_unified(src,bgdat,refl_var,ifreq,icur,comm)
   implicit none
 
   !external variables
-  type(sorec)          :: src        !a single source
+  type(sorec) :: src        !a single source
   type(backgrounddata) :: bgdat      !coordinate vectors and output EM fields
-  type(refl_struct)    :: refl_var   !all variables that have to be remembered while computing 1D fields
-  integer(kind=int32)  :: ifreq      !index of frequency component
-  integer(kind=int32)  :: icur       !source current counter
-  integer(kind=int32),intent(in) :: comm     !MPI communicator
+  type(refl_struct) :: refl_var   !all variables that have to be remembered while computing 1D fields
+  integer(kind=int32) :: ifreq      !index of frequency component
+  integer(kind=int32) :: icur       !source current counter
+  integer(kind=int32),intent( in ) :: comm     !MPI communicator
 
   !internal variables
-  real(kind=real64),dimension(:),pointer        :: zbound  !depths of layer boundaries
-  integer(kind=int32)          :: dowhat      !what to compute: fields or sensitivities or both
-  integer(kind=int32)          :: ierr        !error index
-  real(kind=real64)            :: ommu,ommusq !omega times mu0 (strictly: in receiver layer, but mu0 is constant everywhere)
-  integer(kind=int32)          :: izsrc,izrec      !counter for source and receiver depths
-  real(kind=real64)            :: sz          !source depth
-  real(kind=real64)            :: zr          !receiver depth
-  complex(kind=real64)         :: omeps_srcv  !omega times epsilon in source layer
-  complex(kind=real64)         :: omeps_recv  !omeps in "receiver layer"
-  integer(kind=int32)          :: ilay        !layer counter for derivatives
+  real(kind=real64),dimension(:),pointer :: zbound  !depths of layer boundaries
+  integer(kind=int32) :: dowhat      !what to compute: fields or sensitivities or both
+  integer(kind=int32) :: ierr        !error index
+  real(kind=real64) :: ommu,ommusq !omega times mu0 (strictly: in receiver layer, but mu0 is constant everywhere)
+  integer(kind=int32) :: izsrc,izrec      !counter for source and receiver depths
+  real(kind=real64) :: sz          !source depth
+  real(kind=real64) :: zr          !receiver depth
+  complex(kind=real64) :: omeps_srcv  !omega times epsilon in source layer
+  complex(kind=real64) :: omeps_recv  !omeps in "receiver layer"
+  integer(kind=int32) :: ilay        !layer counter for derivatives
 
 
 
@@ -55,53 +55,53 @@ subroutine reflectivity_unified(src,bgdat,refl_var,ifreq,icur,comm)
   rsplmin = bgdat%rsplmin
 
   !initialize fields to zero for the entire source
-  if ((dowhat.eq.fwdmodel) .or. (dowhat.eq.fwd_deriv)) then
+  if((dowhat.EQ.fwdmodel) .OR. (dowhat.EQ.fwd_deriv)) then
     bgdat%Ex = 0._real64
     bgdat%Ey = 0._real64
     bgdat%Ez = 0._real64
-	if (bgdat%nHx .gt.0 ) then
+    if(bgdat%nHx .gt.0 ) then
     bgdat%Hx = 0._real64
     bgdat%Hy = 0._real64
     bgdat%Hz = 0._real64
-	end if
+    endif
   endif
-  if (dowhat.ge.deriv) then
+  if(dowhat.ge.deriv) then
     bgdat%dExdm = 0._real64
     bgdat%dEydm = 0._real64
     bgdat%dEzdm = 0._real64
-	if (bgdat%nHx .gt.0 ) then
+    if(bgdat%nHx .gt.0 ) then
     bgdat%dHxdm = 0._real64
     bgdat%dHydm = 0._real64
     bgdat%dHzdm = 0._real64
-	end if
-    if (aniso .eq. vti) then
+    endif
+    if(aniso .EQ. vti) then
       bgdat%dExdmv = 0._real64
       bgdat%dEydmv = 0._real64
       bgdat%dEzdmv = 0._real64
-	  if (bgdat%nHx .gt.0 ) then
+      if(bgdat%nHx .gt.0 ) then
       bgdat%dHxdmv = 0._real64
       bgdat%dHydmv = 0._real64
       bgdat%dHzdmv = 0._real64
-	  end if
+      endif
     endif
   endif
 
 
 !-----------------------------------------------------------------
-! prepare vectors for medium properties
+!> prepare vectors for medium properties
 !-----------------------------------------------------------------
 
   !complex medium parameters
   allocate(epsv(nlay),epsh(nlay),epsmuv(nlay),epsmuh(nlay),epsmuratio(nlay),omsq_epsmuv(nlay),omsq_epsmuh(nlay), stat=ierr)
-  if (ierr.ne.0) call alloc_error(pid,'reflectivity','eps, epsmu',ierr)
+  if(ierr.NE.0) call alloc_error(pid,'reflectivity','eps, epsmu',ierr)
 
   !vertical wavenumbers -> allocation not needed because they point to another array
 !!$  allocate(pvert(nlay),stat=ierr)
-!!$  if (ierr.ne.0) call alloc_error(pid,'reflectivity','pvert',ierr)
+!!$  if(ierr.NE.0) call alloc_error(pid,'reflectivity','pvert',ierr)
 
   !branch points
   allocate(branchpt(2*nlay), stat=ierr)
-  if (ierr.ne.0) call alloc_error(pid,'reflectivity','branchpoint vector',ierr)
+  if(ierr.NE.0) call alloc_error(pid,'reflectivity','branchpoint vector',ierr)
 
 
   !medium property vectors
@@ -144,44 +144,44 @@ subroutine reflectivity_unified(src,bgdat,refl_var,ifreq,icur,comm)
 
 
   !-----------------------------------------------------------------
-  ! distinguish between source types
+  !> distinguish between source types
   !-----------------------------------------------------------------
   sourcetype: select case (src%type)
   !-----------------------------------------------------------------
-  ! dipole sources
+  !> dipole sources
   !-----------------------------------------------------------------
   case (dipole)
 
     !***********************************************************************
-    !  HED components
+    !>  HED components
     !***********************************************************************
 
     !get unique source element depths into refl_var structure
     call find_srcdepths(src,refl_var,hed)
 
     !if there are any HED components, compute fields for them
-    if (refl_var%nzsrc .gt. 0) then
+    if(refl_var%nzsrc .gt. 0) then
       !loop over source depths
-      ! have this outside because layer thicknesses for receiver are relative to source depth...
+      !> have this outside because layer thicknesses for receiver are relative to source depth...
       srczloophed: do izsrc = 1,refl_var%nzsrc
 
         call prepare_srcdepth(sz,omeps_srcv,refl_var,src,izsrc,zbound,omega)
 
         !if all field components are to be computed at the same coordinates, use routines that combine evaluation of all components
         !this is more efficient than separate evaluation: e.g. radii/angles have to be computed only once, related integrals can be used
-        samecoord_hed: if (bgdat%allcomp_samecoord) then
+        samecoord_hed: if(bgdat%allcomp_samecoord) then
 
           !loop over receiver depths
           recdepthshed_all: do izrec = 1,refl_var%nzrecExy
             call prepare_recdepth(zr,omeps_recv,refl_var, refl_var%zrecExy,refl_var%nrecperzExy,izrec,sz,zbound,aniso,omega,hed)
 
-              hedfwd: if ((dowhat.eq.fwdmodel) .or. (dowhat.eq.fwd_deriv)) then
+              hedfwd: if((dowhat.EQ.fwdmodel) .OR. (dowhat.EQ.fwd_deriv)) then
 
                 !precompute integral values and spline derivatives
                 call precomp_intvals_hed(refl_var,sz,zr)
 
                 !get integral values at field points
-                if (sz.ge.zr) then
+                if(sz.ge.zr) then
                   call interp_intvals_hed_allcomp(refl_var,src,ifreq,sz,zr,bgdat,bgdat%Ex,bgdat%Ey,bgdat%Ez, &
                     bgdat%Hx,bgdat%Hy,bgdat%Hz, omeps_recv,ommu, &
                     iabvA0TE,iabvA0TM,iabvA1TE,iabvA1TM,iabvDz1TM,iabvD0TE,iabvD0TM,iabvD1TE,iabvD1TM,iabvAz1TE,0) !zero for ilay
@@ -191,14 +191,14 @@ subroutine reflectivity_unified(src,bgdat,refl_var,ifreq,icur,comm)
                     iblwA0TE,iblwA0TM,iblwA1TE,iblwA1TM,iblwDz1TM,iblwD0TE,iblwD0TM,iblwD1TE,iblwD1TM,iblwAz1TE,0)
                 endif
               endif hedfwd
-              hedderiv: if (dowhat .ge. deriv) then
+              hedderiv: if(dowhat .ge. deriv) then
 
                 do ilay=1,nlay
                   !recompute refl. and transm. coeff. if they have been changed during interpolation
                   call prepare_refcoef(refl_var,refl_var%rmax,hed,aniso)
 
-                  if (sz.ge.zr) then
-                    if (aniso.eq.iso) then
+                  if(sz.ge.zr) then
+                    if(aniso.EQ.iso) then
                       !precompute integral values and spline derivatives
                       call precomp_intvals_deriv_hed(refl_var,sz,zr,ilay,iabvA0TEderiv,iabvA0TMderiv,iabvA1TEderiv, &
                         iabvA1TMderiv,iabvDz1TMderiv,iabvD0TEderiv,iabvD0TMderiv,iabvD1TEderiv,iabvD1TMderiv, &
@@ -223,7 +223,7 @@ subroutine reflectivity_unified(src,bgdat,refl_var,ifreq,icur,comm)
                         bgdat%dHydmv(:,ilay),bgdat%dHzdmv(:,ilay))
                     endif
                   else
-                    if (aniso.eq.iso) then
+                    if(aniso.EQ.iso) then
                       call precomp_intvals_deriv_hed(refl_var,sz,zr,ilay,iblwA0TEderiv,iblwA0TMderiv,iblwA1TEderiv, &
                         iblwA1TMderiv,iblwDz1TMderiv,iblwD0TEderiv,iblwD0TMderiv,iblwD1TEderiv,iblwD1TMderiv, &
                         iblwAz1TEderiv,iblwDz1TM)
@@ -259,12 +259,12 @@ subroutine reflectivity_unified(src,bgdat,refl_var,ifreq,icur,comm)
           recdepthshedExy: do izrec = 1,refl_var%nzrecExy
             call prepare_recdepth(zr,omeps_recv,refl_var, refl_var%zrecExy,refl_var%nrecperzExy,izrec,sz,zbound,aniso,omega,hed)
 
-              hedfwdExy: if ((dowhat.eq.fwdmodel) .or. (dowhat.eq.fwd_deriv)) then
+              hedfwdExy: if((dowhat.EQ.fwdmodel) .OR. (dowhat.EQ.fwd_deriv)) then
                 !precompute integral values and spline derivatives
                 call precomp_intvals_Exy_hed(refl_var,sz,zr)
 
                 !get integral values at field points
-                if (sz.ge.zr) then
+                if(sz.ge.zr) then
                   call interp_intvals_hed_Exy(refl_var,src,ifreq,sz,zr,bgdat,bgdat%Ex,bgdat%Ey,  &
                     iabvA0TE,iabvA0TM,iabvA1TE,iabvA1TM, 0) !zero for ilay
                 else
@@ -272,14 +272,14 @@ subroutine reflectivity_unified(src,bgdat,refl_var,ifreq,icur,comm)
                     iblwA0TE,iblwA0TM,iblwA1TE,iblwA1TM, 0)
                 endif
               endif hedfwdExy
-              hedderivExy: if (dowhat .ge. deriv) then
+              hedderivExy: if(dowhat .ge. deriv) then
 
                 do ilay=1,nlay
                   !recompute refl. and transm. coeff. if they have been changed during interpolation
                   call prepare_refcoef(refl_var,refl_var%rmax,hed,aniso)
 
-                  if (sz.ge.zr) then
-                    if (aniso.eq.iso) then
+                  if(sz.ge.zr) then
+                    if(aniso.EQ.iso) then
                       !precompute integral values and spline derivatives
                       call precomp_intvals_deriv_hed_Exy(refl_var,sz,zr,ilay,iabvA0TEderiv,iabvA0TMderiv,iabvA1TEderiv, &
                         iabvA1TMderiv)
@@ -297,7 +297,7 @@ subroutine reflectivity_unified(src,bgdat,refl_var,ifreq,icur,comm)
                         bgdat%dExdmv(:,ilay),bgdat%dEydmv(:,ilay))
                     endif
                   else
-                    if (aniso.eq.iso) then
+                    if(aniso.EQ.iso) then
                       call precomp_intvals_deriv_hed_Exy(refl_var,sz,zr,ilay,iblwA0TEderiv,iblwA0TMderiv,iblwA1TEderiv, &
                         iblwA1TMderiv)
                       call interp_intvals_hed_Exy(refl_var,src,ifreq,sz,zr,bgdat,bgdat%dExdm(:,ilay),bgdat%dEydm(:,ilay), &
@@ -324,13 +324,13 @@ subroutine reflectivity_unified(src,bgdat,refl_var,ifreq,icur,comm)
           recdepthshedEz: do izrec = 1,refl_var%nzrecEz
             call prepare_recdepth(zr,omeps_recv,refl_var, refl_var%zrecEz,refl_var%nrecperzEz,izrec,sz,zbound,aniso,omega,hed)
 
-              hedfwdEz: if ((dowhat.eq.fwdmodel) .or. (dowhat.eq.fwd_deriv)) then
+              hedfwdEz: if((dowhat.EQ.fwdmodel) .OR. (dowhat.EQ.fwd_deriv)) then
 
                 !precompute integral values and spline derivatives
                 call precomp_intvals_Ez_hed(refl_var,sz,zr)
 
                 !get integral values at field points
-                if (sz.ge.zr) then
+                if(sz.ge.zr) then
                   call interp_intvals_hed_Ez(refl_var,src,ifreq,sz,zr,bgdat,bgdat%Ez, &
                      omeps_recv, iabvDz1TM, 0) !zero for ilay
                 else
@@ -338,14 +338,14 @@ subroutine reflectivity_unified(src,bgdat,refl_var,ifreq,icur,comm)
                      omeps_recv, iblwDz1TM, 0)
                 endif
               endif hedfwdEz
-              hedderivEz: if (dowhat .ge. deriv) then
+              hedderivEz: if(dowhat .ge. deriv) then
 
                 do ilay=1,nlay
                   !recompute refl. and transm. coeff. if they have been changed during interpolation
                   call prepare_refcoef(refl_var,refl_var%rmax,hed,aniso)
 
-                  if (sz.ge.zr) then
-                    if (aniso.eq.iso) then
+                  if(sz.ge.zr) then
+                    if(aniso.EQ.iso) then
                       !precompute integral values and spline derivatives
                       call precomp_intvals_deriv_hed_Ez(refl_var,sz,zr,ilay,iabvDz1TMderiv,iabvDz1TM)
                       !get derivatives of field values at receiver points
@@ -360,7 +360,7 @@ subroutine reflectivity_unified(src,bgdat,refl_var,ifreq,icur,comm)
                         iabvDz1TMderivv, bgdat%dEzdmv(:,ilay))
                     endif
                   else
-                    if (aniso.eq.iso) then
+                    if(aniso.EQ.iso) then
                       call precomp_intvals_deriv_hed_Ez(refl_var,sz,zr,ilay,iblwDz1TMderiv,iblwDz1TM)
                       call interp_intvals_hed_Ez(refl_var,src,ifreq,sz,zr,bgdat, &
                         bgdat%dEzdm(:,ilay), omeps_recv, iblwDz1TMderiv,ilay,iblwDz1TM)
@@ -384,13 +384,13 @@ subroutine reflectivity_unified(src,bgdat,refl_var,ifreq,icur,comm)
           recdepthshed_Hxy: do izrec = 1,refl_var%nzrecHxy
             call prepare_recdepth(zr,omeps_recv,refl_var, refl_var%zrecHxy,refl_var%nrecperzHxy,izrec,sz,zbound,aniso,omega,hed)
 
-              hedfwdHxy: if ((dowhat.eq.fwdmodel) .or. (dowhat.eq.fwd_deriv)) then
+              hedfwdHxy: if((dowhat.EQ.fwdmodel) .OR. (dowhat.EQ.fwd_deriv)) then
 
                 !precompute integral values and spline derivatives
                 call precomp_intvals_Hxy_hed(refl_var,sz,zr)
 
                 !get integral values at field points
-                if (sz.ge.zr) then
+                if(sz.ge.zr) then
                   call interp_intvals_hed_Hxy(refl_var,src,ifreq,sz,zr,bgdat, &
                     bgdat%Hx,bgdat%Hy, iabvD0TE,iabvD0TM,iabvD1TE,iabvD1TM,0) !zero for ilay
                 else
@@ -398,14 +398,14 @@ subroutine reflectivity_unified(src,bgdat,refl_var,ifreq,icur,comm)
                     bgdat%Hx,bgdat%Hy, iblwD0TE,iblwD0TM,iblwD1TE,iblwD1TM,0)
                 endif
               endif hedfwdHxy
-              hedderivHxy: if (dowhat .ge. deriv) then
+              hedderivHxy: if(dowhat .ge. deriv) then
 
                 do ilay=1,nlay
                   !recompute refl. and transm. coeff. if they have been changed during interpolation
                   call prepare_refcoef(refl_var,refl_var%rmax,hed,aniso)
 
-                  if (sz.ge.zr) then
-                    if (aniso.eq.iso) then
+                  if(sz.ge.zr) then
+                    if(aniso.EQ.iso) then
                       !precompute integral values and spline derivatives
                       call precomp_intvals_deriv_hed_Hxy(refl_var,sz,zr,ilay,iabvD0TEderiv,iabvD0TMderiv,iabvD1TEderiv, &
                         iabvD1TMderiv)
@@ -421,7 +421,7 @@ subroutine reflectivity_unified(src,bgdat,refl_var,ifreq,icur,comm)
                         iabvD0TMderivv,iabvD1TMderivv, bgdat%dHxdmv(:,ilay),bgdat%dHydmv(:,ilay))
                     endif
                   else
-                    if (aniso.eq.iso) then
+                    if(aniso.EQ.iso) then
                       call precomp_intvals_deriv_hed_Hxy(refl_var,sz,zr,ilay,iblwD0TEderiv,iblwD0TMderiv,iblwD1TEderiv, &
                         iblwD1TMderiv)
                       call interp_intvals_hed_Hxy(refl_var,src,ifreq,sz,zr,bgdat,bgdat%dHxdm(:,ilay),bgdat%dHydm(:,ilay), &
@@ -446,26 +446,26 @@ subroutine reflectivity_unified(src,bgdat,refl_var,ifreq,icur,comm)
           recdepthshed_Hz: do izrec = 1,refl_var%nzrecHz
             call prepare_recdepth(zr,omeps_recv,refl_var, refl_var%zrecHz,refl_var%nrecperzHz,izrec,sz,zbound,aniso,omega,hed)
 
-              hedfwdHz: if ((dowhat.eq.fwdmodel) .or. (dowhat.eq.fwd_deriv)) then
+              hedfwdHz: if((dowhat.EQ.fwdmodel) .OR. (dowhat.EQ.fwd_deriv)) then
 
                 !precompute integral values and spline derivatives
                 call precomp_intvals_Hz_hed(refl_var,sz,zr)
 
                 !get integral values at field points
-                if (sz.ge.zr) then
+                if(sz.ge.zr) then
                   call interp_intvals_hed_Hz(refl_var,src,ifreq,sz,zr,bgdat,bgdat%Hz, ommu, iabvAz1TE,0) !zero for ilay
                 else
                   call interp_intvals_hed_Hz(refl_var,src,ifreq,sz,zr,bgdat,bgdat%Hz, ommu, iblwAz1TE,0)
                 endif
               endif hedfwdHz
-              hedderivHz: if (dowhat .ge. deriv) then
+              hedderivHz: if(dowhat .ge. deriv) then
 
                 do ilay=1,nlay
                   !recompute refl. and transm. coeff. if they have been changed during interpolation
                   call prepare_refcoef(refl_var,refl_var%rmax,hed,aniso)
 
-                  if (sz.ge.zr) then
-                    if (aniso.eq.iso) then
+                  if(sz.ge.zr) then
+                    if(aniso.EQ.iso) then
                       !precompute integral values and spline derivatives
                       call precomp_intvals_deriv_hed_Hz(refl_var,sz,zr,ilay, iabvAz1TEderiv)
                       !get derivatives of field values at receiver points
@@ -476,7 +476,7 @@ subroutine reflectivity_unified(src,bgdat,refl_var,ifreq,icur,comm)
                       call interp_intvals_hed_Hz(refl_var,src,ifreq,sz,zr,bgdat,bgdat%dHzdm(:,ilay), ommu, iabvAz1TEderiv,ilay)
                     endif
                   else
-                    if (aniso.eq.iso) then
+                    if(aniso.EQ.iso) then
                       call precomp_intvals_deriv_hed_Hz(refl_var,sz,zr,ilay,iblwAz1TEderiv)
                       call interp_intvals_hed_Hz(refl_var,src,ifreq,sz,zr,bgdat,bgdat%dHzdm(:,ilay), ommu, iblwAz1TEderiv,ilay)
                     else
@@ -504,32 +504,32 @@ subroutine reflectivity_unified(src,bgdat,refl_var,ifreq,icur,comm)
 
 
     !***********************************************************************
-    !  VED components
+    !>  VED components
     !***********************************************************************
 
     !get unique source element depths into refl_var structure
     call find_srcdepths(src,refl_var,ved)
 
     !if there are any VED components, compute fields for them
-    if (refl_var%nzsrc .gt. 0) then
+    if(refl_var%nzsrc .gt. 0) then
       !loop over source depths
       srczloopved: do izsrc = 1,refl_var%nzsrc
 
         call prepare_srcdepth(sz,omeps_srcv,refl_var,src,izsrc,zbound,omega)
 
         !same coordinates for all field components?
-        samecoord_ved: if (bgdat%allcomp_samecoord) then
+        samecoord_ved: if(bgdat%allcomp_samecoord) then
 
           !loop over receiver depths
           recdepthsved_all: do izrec = 1,refl_var%nzrecExy
           call prepare_recdepth(zr,omeps_recv,refl_var, refl_var%zrecExy,refl_var%nrecperzExy,izrec,sz,zbound,aniso,omega,ved)
 
-              vedfwd: if ((dowhat.eq.fwdmodel) .or. (dowhat.eq.fwd_deriv)) then
+              vedfwd: if((dowhat.EQ.fwdmodel) .OR. (dowhat.EQ.fwd_deriv)) then
                 !precompute integral values and spline derivatives
                 call precomp_intvals_ved(refl_var,sz,zr)
 
                 !get integral values at field points
-                if (sz.ge.zr) then
+                if(sz.ge.zr) then
                   call interp_intvals_ved_allcomp(refl_var,src,ifreq,sz,zr,bgdat,bgdat%Ex,bgdat%Ey,bgdat%Ez, &
                     bgdat%Hx,bgdat%Hy,bgdat%Hz,omeps_srcv,omeps_recv, iabvB1TMved,iabvC0TMved,iabvC1TMved,0)
                 else
@@ -537,14 +537,14 @@ subroutine reflectivity_unified(src,bgdat,refl_var,ifreq,icur,comm)
                     bgdat%Hx,bgdat%Hy,bgdat%Hz,omeps_srcv,omeps_recv, iblwB1TMved,iblwC0TMved,iblwC1TMved,0)
                 endif
               endif vedfwd
-              vedderiv: if (dowhat .ge. deriv) then
+              vedderiv: if(dowhat .ge. deriv) then
                 do ilay=1,nlay
                   !recompute refl. and transm. coeff. if they have been changed during interpolation
                   call prepare_refcoef(refl_var,refl_var%rmax,ved,aniso)
 
                   !get derivatives of field values at receiver points
-                  if (sz.ge.zr) then
-                    if (aniso.eq.iso) then
+                  if(sz.ge.zr) then
+                    if(aniso.EQ.iso) then
                       !precompute integral values and spline derivatives
                       call precomp_intvals_deriv_ved(refl_var,sz,zr,ilay, &
                         iabvB1TMvedderiv,iabvC0TMvedderiv,iabvCz1TMderiv,iabvB1TMved,iabvC0TMved,iabvC1TMved)
@@ -564,7 +564,7 @@ subroutine reflectivity_unified(src,bgdat,refl_var,ifreq,icur,comm)
                         bgdat%dEzdmv(:,ilay),bgdat%dHxdmv(:,ilay),bgdat%dHydmv(:,ilay),bgdat%dHzdmv(:,ilay))
                     endif
                   else
-                    if (aniso.eq.iso) then
+                    if(aniso.EQ.iso) then
                       !precompute integral values and spline derivatives
                       call precomp_intvals_deriv_ved(refl_var,sz,zr,ilay, &
                         iblwB1TMvedderiv,iblwC0TMvedderiv,iblwCz1TMderiv,iblwB1TMved,iblwC0TMved,iblwC1TMved)
@@ -592,30 +592,30 @@ subroutine reflectivity_unified(src,bgdat,refl_var,ifreq,icur,comm)
 
         else
 
-          ! ---- Ex and / or Ey ----------------
+          !> ---- Ex and / or Ey ----------------
           !loop over receiver depths
           recdepthsvedExy: do izrec = 1,refl_var%nzrecExy
           call prepare_recdepth(zr,omeps_recv,refl_var, refl_var%zrecExy,refl_var%nrecperzExy,izrec,sz,zbound,aniso,omega,ved)
 
-              vedfwdExy: if ((dowhat.eq.fwdmodel) .or. (dowhat.eq.fwd_deriv)) then
+              vedfwdExy: if((dowhat.EQ.fwdmodel) .OR. (dowhat.EQ.fwd_deriv)) then
                 !precompute integral values and spline derivatives
                 call precomp_intvals_Exy_ved(refl_var,sz,zr)
 
                 !get integral values at field points
-                if (sz.ge.zr) then
+                if(sz.ge.zr) then
                   call interp_intvals_ved_Exy(refl_var,src,ifreq,sz,zr,bgdat,bgdat%Ex,bgdat%Ey,omeps_srcv, iabvB1TMved,0)
                 else
                   call interp_intvals_ved_Exy(refl_var,src,ifreq,sz,zr,bgdat,bgdat%Ex,bgdat%Ey,omeps_srcv, iblwB1TMved,0)
                 endif
               endif vedfwdExy
-              vedderivExy: if (dowhat .ge. deriv) then
+              vedderivExy: if(dowhat .ge. deriv) then
                 do ilay=1,nlay
                   !recompute refl. and transm. coeff. if they have been changed during interpolation
                   call prepare_refcoef(refl_var,refl_var%rmax,ved,aniso)
 
                   !get derivatives of field values at receiver points
-                  if (sz.ge.zr) then
-                    if (aniso.eq.iso) then
+                  if(sz.ge.zr) then
+                    if(aniso.EQ.iso) then
                       !precompute integral values and spline derivatives
                       call precomp_intvals_deriv_ved_Exy(refl_var,sz,zr,ilay, iabvB1TMvedderiv,iabvB1TMved)
 
@@ -629,7 +629,7 @@ subroutine reflectivity_unified(src,bgdat,refl_var,ifreq,icur,comm)
                         bgdat%dExdmv(:,ilay),bgdat%dEydmv(:,ilay))
                     endif
                   else
-                    if (aniso.eq.iso) then
+                    if(aniso.EQ.iso) then
                       !precompute integral values and spline derivatives
                       call precomp_intvals_deriv_ved_Exy(refl_var,sz,zr,ilay, iblwB1TMvedderiv,iblwB1TMved)
 
@@ -649,30 +649,30 @@ subroutine reflectivity_unified(src,bgdat,refl_var,ifreq,icur,comm)
             deallocate(trans_above_rec,trans_below_rec,dz_above_rec,dz_below_rec, stat=ierr)
           enddo recdepthsvedExy !loop over receiver depths
 
-          ! ---- Ez ----------------
+          !> ---- Ez ----------------
           !loop over receiver depths
           recdepthsvedEz: do izrec = 1,refl_var%nzrecEz
             call prepare_recdepth(zr,omeps_recv,refl_var, refl_var%zrecEz,refl_var%nrecperzEz,izrec,sz,zbound,aniso,omega,ved)
 
-              vedfwdEz: if ((dowhat.eq.fwdmodel) .or. (dowhat.eq.fwd_deriv)) then
+              vedfwdEz: if((dowhat.EQ.fwdmodel) .OR. (dowhat.EQ.fwd_deriv)) then
                 !precompute integral values and spline derivatives
                 call precomp_intvals_Ez_ved(refl_var,sz,zr)
 
                 !get integral values at field points
-                if (sz.ge.zr) then
+                if(sz.ge.zr) then
                   call interp_intvals_ved_Ez(refl_var,src,ifreq,sz,zr,bgdat,bgdat%Ez, omeps_srcv,omeps_recv, iabvC0TMved,0)
                 else
                   call interp_intvals_ved_Ez(refl_var,src,ifreq,sz,zr,bgdat,bgdat%Ez, omeps_srcv,omeps_recv, iblwC0TMved,0)
                 endif
               endif vedfwdEz
-              vedderivEz: if (dowhat .ge. deriv) then
+              vedderivEz: if(dowhat .ge. deriv) then
                 do ilay=1,nlay
                   !recompute refl. and transm. coeff. if they have been changed during interpolation
                   call prepare_refcoef(refl_var,refl_var%rmax,ved,aniso)
 
                   !get derivatives of field values at receiver points
-                  if (sz.ge.zr) then
-                    if (aniso.eq.iso) then
+                  if(sz.ge.zr) then
+                    if(aniso.EQ.iso) then
                       !precompute integral values and spline derivatives
                       call precomp_intvals_deriv_ved_Ez(refl_var,sz,zr,ilay, iabvC0TMvedderiv,iabvC0TMved)
 
@@ -685,7 +685,7 @@ subroutine reflectivity_unified(src,bgdat,refl_var,ifreq,icur,comm)
                         iabvC0TMvedderivh,ilay,iabvC0TMved, iabvC0TMvedderivv, bgdat%dEzdmv(:,ilay))
                     endif
                   else
-                    if (aniso.eq.iso) then
+                    if(aniso.EQ.iso) then
                       !precompute integral values and spline derivatives
                       call precomp_intvals_deriv_ved_Ez(refl_var,sz,zr,ilay, iblwC0TMvedderiv,iblwC0TMved)
 
@@ -704,30 +704,30 @@ subroutine reflectivity_unified(src,bgdat,refl_var,ifreq,icur,comm)
             deallocate(trans_above_rec,trans_below_rec,dz_above_rec,dz_below_rec, stat=ierr)
           enddo recdepthsvedEz
 
-          ! ---- Hx and / or Hy ----------------
+          !> ---- Hx and / or Hy ----------------
           !loop over receiver depths
           recdepthsvedHxy: do izrec = 1,refl_var%nzrecHxy
             call prepare_recdepth(zr,omeps_recv,refl_var, refl_var%zrecHxy,refl_var%nrecperzHxy,izrec,sz,zbound,aniso,omega,ved)
 
-              vedfwdHxy: if ((dowhat.eq.fwdmodel) .or. (dowhat.eq.fwd_deriv)) then
+              vedfwdHxy: if((dowhat.EQ.fwdmodel) .OR. (dowhat.EQ.fwd_deriv)) then
                 !precompute integral values and spline derivatives
                 call precomp_intvals_Hxy_ved(refl_var,sz,zr)
 
                 !get integral values at field points
-                if (sz.ge.zr) then
+                if(sz.ge.zr) then
                   call interp_intvals_ved_Hxy(refl_var,src,ifreq,sz,zr,bgdat, bgdat%Hx,bgdat%Hy,omeps_srcv, iabvC1TMved,0)
                 else
                   call interp_intvals_ved_Hxy(refl_var,src,ifreq,sz,zr,bgdat, bgdat%Hx,bgdat%Hy,omeps_srcv, iblwC1TMved,0)
                 endif
               endif vedfwdHxy
-              vedderivHxy: if (dowhat .ge. deriv) then
+              vedderivHxy: if(dowhat .ge. deriv) then
                 do ilay=1,nlay
                   !recompute refl. and transm. coeff. if they have been changed during interpolation
                   call prepare_refcoef(refl_var,refl_var%rmax,ved,aniso)
 
                   !get derivatives of field values at receiver points
-                  if (sz.ge.zr) then
-                    if (aniso.eq.iso) then
+                  if(sz.ge.zr) then
+                    if(aniso.EQ.iso) then
                       !precompute integral values and spline derivatives
                       call precomp_intvals_deriv_ved_Hxy(refl_var,sz,zr,ilay, iabvCz1TMderiv,iabvC1TMved)
 
@@ -741,7 +741,7 @@ subroutine reflectivity_unified(src,bgdat,refl_var,ifreq,icur,comm)
                         iabvCz1TMderivv,bgdat%dHxdmv(:,ilay),bgdat%dHydmv(:,ilay))
                     endif
                   else
-                    if (aniso.eq.iso) then
+                    if(aniso.EQ.iso) then
                       !precompute integral values and spline derivatives
                       call precomp_intvals_deriv_ved_Hxy(refl_var,sz,zr,ilay, iblwCz1TMderiv,iblwC1TMved)
 
@@ -775,14 +775,14 @@ subroutine reflectivity_unified(src,bgdat,refl_var,ifreq,icur,comm)
 
 
     !***********************************************************************
-    !  HMD components
+    !>  HMD components
     !***********************************************************************
 
     !get unique source element depths into refl_var structure
     call find_srcdepths(src,refl_var,hmd)
 
     !if there are any HMD components, compute fields for them
-    if (refl_var%nzsrc .gt. 0) then
+    if(refl_var%nzsrc .gt. 0) then
 
       !loop over source depths
       srczloophmd: do izsrc = 1,refl_var%nzsrc
@@ -790,18 +790,18 @@ subroutine reflectivity_unified(src,bgdat,refl_var,ifreq,icur,comm)
         call prepare_srcdepth(sz,omeps_srcv,refl_var,src,izsrc,zbound,omega)
 
         !same coordinates for all field components?
-        samecoord_hmd: if (bgdat%allcomp_samecoord) then
+        samecoord_hmd: if(bgdat%allcomp_samecoord) then
 
           !loop over receiver depths
           recdepthshmd_all: do izrec = 1,refl_var%nzrecExy
             call prepare_recdepth(zr,omeps_recv,refl_var, refl_var%zrecExy,refl_var%nrecperzExy,izrec,sz,zbound,aniso,omega,hmd)
 
-              hmdfwd: if ((dowhat.eq.fwdmodel) .or. (dowhat.eq.fwd_deriv)) then
+              hmdfwd: if((dowhat.EQ.fwdmodel) .OR. (dowhat.EQ.fwd_deriv)) then
                 !precompute integral values and spline derivatives
                 call precomp_intvals_hmd(refl_var,sz,zr)
 
                 !get integral values at field points
-                if (sz.ge.zr) then
+                if(sz.ge.zr) then
                   call interp_intvals_hmd_allcomp(refl_var,src,ifreq,sz,zr,bgdat,bgdat%Ex,bgdat%Ey, &
                     bgdat%Ez,bgdat%Hx,bgdat%Hy,bgdat%Hz,omeps_recv,j_om_mu, &
                     iabvB0TE,iabvB0TM,iabvB1TE,iabvB1TM,iabvCz1TM,iabvC0TE,iabvC0TM,iabvC1TE,iabvC1TM,iabvBz1TE,0)
@@ -812,13 +812,13 @@ subroutine reflectivity_unified(src,bgdat,refl_var,ifreq,icur,comm)
                 endif
               endif hmdfwd
 
-              hmdderiv: if (dowhat .ge. deriv) then
+              hmdderiv: if(dowhat .ge. deriv) then
                 do ilay=1,nlay
                   !recompute refl. and transm. coeff. if they have been changed during interpolation
                   call prepare_refcoef(refl_var,refl_var%rmax,hmd,aniso)
 
-                  if (sz.ge.zr) then
-                    if (aniso.eq.iso) then
+                  if(sz.ge.zr) then
+                    if(aniso.EQ.iso) then
                       !precompute integral values and spline derivatives
                       call precomp_intvals_deriv_hmd(refl_var,sz,zr,ilay,iabvB0TEderiv,iabvB0TMderiv,iabvB1TEderiv, &
                         iabvB1TMderiv,iabvCz1TMderiv,iabvC0TEderiv,iabvC0TMderiv,iabvC1TEderiv,iabvC1TMderiv, &
@@ -843,7 +843,7 @@ subroutine reflectivity_unified(src,bgdat,refl_var,ifreq,icur,comm)
                         bgdat%dEydmv(:,ilay),bgdat%dEzdmv(:,ilay),bgdat%dHxdmv(:,ilay),bgdat%dHydmv(:,ilay),bgdat%dHzdmv(:,ilay))
                     endif
                   else
-                    if (aniso.eq.iso) then
+                    if(aniso.EQ.iso) then
                       !precompute integral values and spline derivatives
                       call precomp_intvals_deriv_hmd(refl_var,sz,zr,ilay,iblwB0TEderiv,iblwB0TMderiv,iblwB1TEderiv, &
                         iblwB1TMderiv,iblwCz1TMderiv,iblwC0TEderiv,iblwC0TMderiv,iblwC1TEderiv,iblwC1TMderiv, &
@@ -877,17 +877,17 @@ subroutine reflectivity_unified(src,bgdat,refl_var,ifreq,icur,comm)
 
         else
 
-          ! --- Ex and / or Ey -----------------------
+          !> --- Ex and / or Ey -----------------------
           !loop over receiver depths
           recdepthshmdExy: do izrec = 1,refl_var%nzrecExy
             call prepare_recdepth(zr,omeps_recv,refl_var, refl_var%zrecExy,refl_var%nrecperzExy,izrec,sz,zbound,aniso,omega,hmd)
 
-              hmdfwdExy: if ((dowhat.eq.fwdmodel) .or. (dowhat.eq.fwd_deriv)) then
+              hmdfwdExy: if((dowhat.EQ.fwdmodel) .OR. (dowhat.EQ.fwd_deriv)) then
                 !precompute integral values and spline derivatives
                 call precomp_intvals_Exy_hmd(refl_var,sz,zr)
 
                 !get integral values at field points
-                if (sz.ge.zr) then
+                if(sz.ge.zr) then
                   call interp_intvals_hmd_Exy(refl_var,src,ifreq,sz,zr,bgdat,bgdat%Ex,bgdat%Ey, j_om_mu, &
                     iabvB0TE,iabvB0TM,iabvB1TE,iabvB1TM,0)
                 else
@@ -896,13 +896,13 @@ subroutine reflectivity_unified(src,bgdat,refl_var,ifreq,icur,comm)
                 endif
               endif hmdfwdExy
 
-              hmdderivExy: if (dowhat .ge. deriv) then
+              hmdderivExy: if(dowhat .ge. deriv) then
                 do ilay=1,nlay
                   !recompute refl. and transm. coeff. if they have been changed during interpolation
                   call prepare_refcoef(refl_var,refl_var%rmax,hmd,aniso)
 
-                  if (sz.ge.zr) then
-                    if (aniso.eq.iso) then
+                  if(sz.ge.zr) then
+                    if(aniso.EQ.iso) then
                       !precompute integral values and spline derivatives
                       call precomp_intvals_deriv_hmd_Exy(refl_var,sz,zr,ilay,iabvB0TEderiv,iabvB0TMderiv,iabvB1TEderiv, &
                         iabvB1TMderiv)
@@ -919,7 +919,7 @@ subroutine reflectivity_unified(src,bgdat,refl_var,ifreq,icur,comm)
                         iabvB0TMderivv,iabvB1TMderivv, bgdat%dExdmv(:,ilay),bgdat%dEydmv(:,ilay))
                     endif
                   else
-                    if (aniso.eq.iso) then
+                    if(aniso.EQ.iso) then
                       !precompute integral values and spline derivatives
                       call precomp_intvals_deriv_hmd_Exy(refl_var,sz,zr,ilay,iblwB0TEderiv,iblwB0TMderiv,iblwB1TEderiv, &
                         iblwB1TMderiv)
@@ -942,30 +942,30 @@ subroutine reflectivity_unified(src,bgdat,refl_var,ifreq,icur,comm)
             deallocate(trans_above_rec,trans_below_rec,dz_above_rec,dz_below_rec, stat=ierr)
           enddo recdepthshmdExy !loop over receiver depths
 
-          ! --- Ez -----------------------
+          !> --- Ez -----------------------
           !loop over receiver depths
           recdepthshmdEz: do izrec = 1,refl_var%nzrecEz
             call prepare_recdepth(zr,omeps_recv,refl_var, refl_var%zrecEz,refl_var%nrecperzEz,izrec,sz,zbound,aniso,omega,hmd)
 
-              hmdfwdEz: if ((dowhat.eq.fwdmodel) .or. (dowhat.eq.fwd_deriv)) then
+              hmdfwdEz: if((dowhat.EQ.fwdmodel) .OR. (dowhat.EQ.fwd_deriv)) then
                 !precompute integral values and spline derivatives
                 call precomp_intvals_Ez_hmd(refl_var,sz,zr)
 
                 !get integral values at field points
-                if (sz.ge.zr) then
+                if(sz.ge.zr) then
                   call interp_intvals_hmd_Ez(refl_var,src,ifreq,sz,zr,bgdat, bgdat%Ez,omeps_recv,j_om_mu, iabvCz1TM,0)
                 else
                   call interp_intvals_hmd_Ez(refl_var,src,ifreq,sz,zr,bgdat, bgdat%Ez,omeps_recv,j_om_mu, iblwCz1TM,0)
                 endif
               endif hmdfwdEz
 
-              hmdderivEz: if (dowhat .ge. deriv) then
+              hmdderivEz: if(dowhat .ge. deriv) then
                 do ilay=1,nlay
                   !recompute refl. and transm. coeff. if they have been changed during interpolation
                   call prepare_refcoef(refl_var,refl_var%rmax,hmd,aniso)
 
-                  if (sz.ge.zr) then
-                    if (aniso.eq.iso) then
+                  if(sz.ge.zr) then
+                    if(aniso.EQ.iso) then
                       !precompute integral values and spline derivatives
                       call precomp_intvals_deriv_hmd_Ez(refl_var,sz,zr,ilay,iabvCz1TMderiv,iabvCz1TM)
                       !get derivatives of field values at receiver points
@@ -979,7 +979,7 @@ subroutine reflectivity_unified(src,bgdat,refl_var,ifreq,icur,comm)
                         iabvCz1TMderivh,ilay,iabvCz1TM, iabvCz1TMderivv, bgdat%dEzdmv(:,ilay))
                     endif
                   else
-                    if (aniso.eq.iso) then
+                    if(aniso.EQ.iso) then
                       !precompute integral values and spline derivatives
                       call precomp_intvals_deriv_hmd_Ez(refl_var,sz,zr,ilay,iblwCz1TMderiv,iblwCz1TM)
                       !get derivatives of field values at receiver points
@@ -1001,17 +1001,17 @@ subroutine reflectivity_unified(src,bgdat,refl_var,ifreq,icur,comm)
             deallocate(trans_above_rec,trans_below_rec,dz_above_rec,dz_below_rec, stat=ierr)
           enddo recdepthshmdEz !loop over receiver depths
 
-          ! --- Hx and / or Hy -----------------------
+          !> --- Hx and / or Hy -----------------------
           !loop over receiver depths
           recdepthshmdHxy: do izrec = 1,refl_var%nzrecHxy
             call prepare_recdepth(zr,omeps_recv,refl_var, refl_var%zrecHxy,refl_var%nrecperzHxy,izrec,sz,zbound,aniso,omega,hmd)
 
-              hmdfwdHxy: if ((dowhat.eq.fwdmodel) .or. (dowhat.eq.fwd_deriv)) then
+              hmdfwdHxy: if((dowhat.EQ.fwdmodel) .OR. (dowhat.EQ.fwd_deriv)) then
                 !precompute integral values and spline derivatives
                 call precomp_intvals_Hxy_hmd(refl_var,sz,zr)
 
                 !get integral values at field points
-                if (sz.ge.zr) then
+                if(sz.ge.zr) then
                   call interp_intvals_hmd_Hxy(refl_var,src,ifreq,sz,zr,bgdat,bgdat%Hx,bgdat%Hy,j_om_mu, &
                     iabvC0TE,iabvC0TM,iabvC1TE,iabvC1TM,0)
                 else
@@ -1020,13 +1020,13 @@ subroutine reflectivity_unified(src,bgdat,refl_var,ifreq,icur,comm)
                 endif
               endif hmdfwdHxy
 
-              hmdderivHxy: if (dowhat .ge. deriv) then
+              hmdderivHxy: if(dowhat .ge. deriv) then
                 do ilay=1,nlay
                   !recompute refl. and transm. coeff. if they have been changed during interpolation
                   call prepare_refcoef(refl_var,refl_var%rmax,hmd,aniso)
 
-                  if (sz.ge.zr) then
-                    if (aniso.eq.iso) then
+                  if(sz.ge.zr) then
+                    if(aniso.EQ.iso) then
                       !precompute integral values and spline derivatives
                       call precomp_intvals_deriv_hmd_Hxy(refl_var,sz,zr,ilay,iabvC0TEderiv,iabvC0TMderiv,iabvC1TEderiv, &
                         iabvC1TMderiv)
@@ -1043,7 +1043,7 @@ subroutine reflectivity_unified(src,bgdat,refl_var,ifreq,icur,comm)
                         iabvC0TMderivv,iabvC1TMderivv, bgdat%dHxdmv(:,ilay),bgdat%dHydmv(:,ilay))
                     endif
                   else
-                    if (aniso.eq.iso) then
+                    if(aniso.EQ.iso) then
                       !precompute integral values and spline derivatives
                       call precomp_intvals_deriv_hmd_Hxy(refl_var,sz,zr,ilay,iblwC0TEderiv,iblwC0TMderiv,iblwC1TEderiv, &
                         iblwC1TMderiv)
@@ -1066,30 +1066,30 @@ subroutine reflectivity_unified(src,bgdat,refl_var,ifreq,icur,comm)
             deallocate(trans_above_rec,trans_below_rec,dz_above_rec,dz_below_rec, stat=ierr)
           enddo recdepthshmdHxy !loop over receiver depths
 
-          ! --- Hz -----------------------
+          !> --- Hz -----------------------
           !loop over receiver depths
           recdepthshmdHz: do izrec = 1,refl_var%nzrecHz
             call prepare_recdepth(zr,omeps_recv,refl_var, refl_var%zrecHz,refl_var%nrecperzHz,izrec,sz,zbound,aniso,omega,hmd)
 
-              hmdfwdHz: if ((dowhat.eq.fwdmodel) .or. (dowhat.eq.fwd_deriv)) then
+              hmdfwdHz: if((dowhat.EQ.fwdmodel) .OR. (dowhat.EQ.fwd_deriv)) then
                 !precompute integral values and spline derivatives
                 call precomp_intvals_Hz_hmd(refl_var,sz,zr)
 
                 !get integral values at field points
-                if (sz.ge.zr) then
+                if(sz.ge.zr) then
                   call interp_intvals_hmd_Hz(refl_var,src,ifreq,sz,zr,bgdat,bgdat%Hz,j_om_mu, iabvBz1TE,0)
                 else
                   call interp_intvals_hmd_Hz(refl_var,src,ifreq,sz,zr,bgdat,bgdat%Hz,j_om_mu, iblwBz1TE,0)
                 endif
               endif hmdfwdHz
 
-              hmdderivHz: if (dowhat .ge. deriv) then
+              hmdderivHz: if(dowhat .ge. deriv) then
                 do ilay=1,nlay
                   !recompute refl. and transm. coeff. if they have been changed during interpolation
                   call prepare_refcoef(refl_var,refl_var%rmax,hmd,aniso)
 
-                  if (sz.ge.zr) then
-                    if (aniso.eq.iso) then
+                  if(sz.ge.zr) then
+                    if(aniso.EQ.iso) then
                       !precompute integral values and spline derivatives
                       call precomp_intvals_deriv_hmd_Hz(refl_var,sz,zr,ilay, iabvBz1TEderiv)
                       !get derivatives of field values at receiver points
@@ -1100,7 +1100,7 @@ subroutine reflectivity_unified(src,bgdat,refl_var,ifreq,icur,comm)
                       call interp_intvals_hmd_Hz(refl_var,src,ifreq,sz,zr,bgdat,bgdat%dHzdm(:,ilay),j_om_mu, iabvBz1TEderiv,ilay)
                     endif
                   else
-                    if (aniso.eq.iso) then
+                    if(aniso.EQ.iso) then
                       !precompute integral values and spline derivatives
                       call precomp_intvals_deriv_hmd_Hz(refl_var,sz,zr,ilay, iblwBz1TEderiv)
                       !get derivatives of field values at receiver points
@@ -1130,31 +1130,31 @@ subroutine reflectivity_unified(src,bgdat,refl_var,ifreq,icur,comm)
 
 
     !***********************************************************************
-    !  VMD components
+    !>  VMD components
     !***********************************************************************
 
     !get unique source element depths into refl_var structure
     call find_srcdepths(src,refl_var,vmd)
 
     !if there are any VMD components, compute fields for them
-    if (refl_var%nzsrc .gt. 0) then
+    if(refl_var%nzsrc .gt. 0) then
       !loop over source depths
       srczloopvmd: do izsrc = 1,refl_var%nzsrc
 
         call prepare_srcdepth(sz,omeps_srcv,refl_var,src,izsrc,zbound,omega)
 
         !same coordinates for all field components?
-        samecoord_vmd: if (bgdat%allcomp_samecoord) then
+        samecoord_vmd: if(bgdat%allcomp_samecoord) then
 
           !loop over receiver depths
           recdepthsvmd_all: do izrec = 1,refl_var%nzrecExy
             call prepare_recdepth(zr,omeps_recv,refl_var, refl_var%zrecExy,refl_var%nrecperzExy,izrec,sz,zbound,aniso,omega,vmd)
 
-              vmdfwd: if ((dowhat.eq.fwdmodel) .or. (dowhat.eq.fwd_deriv)) then
+              vmdfwd: if((dowhat.EQ.fwdmodel) .OR. (dowhat.EQ.fwd_deriv)) then
                 call precomp_intvals_vmd(refl_var,sz,zr)
 
                 !get field values at receiver points
-                if (sz.ge.zr) then
+                if(sz.ge.zr) then
                   call interp_intvals_vmd_allcomp(refl_var,src,ifreq,sz,zr,bgdat,bgdat%Ex,bgdat%Ey,bgdat%Ez, &
                     bgdat%Hx,bgdat%Hy,bgdat%Hz,j_om_mu,ommusq, iabvA1TEvmd,iabvD1TEvmd,iabvA0TEvmd,0)
                 else
@@ -1163,13 +1163,13 @@ subroutine reflectivity_unified(src,bgdat,refl_var,ifreq,icur,comm)
                 endif
               endif vmdfwd
 
-              vmdderiv: if (dowhat .ge. deriv) then
+              vmdderiv: if(dowhat .ge. deriv) then
                 do ilay=1,nlay
                   !recompute refl. and transm. coeff. if they have been changed during interpolation
                   call prepare_refcoef(refl_var,refl_var%rmax,vmd,aniso)
 
                   !iso and VTI formulas are the same, epsv not contained in these integrals, no special terms in front of int.
-                  if (sz.ge.zr) then
+                  if(sz.ge.zr) then
                     !precompute integral values and spline derivatives
                     call precomp_intvals_deriv_vmd(refl_var,sz,zr,ilay,iabvAz1TEderiv,iabvD1TEvmdderiv,iabvA0TEvmdderiv)
                     !get derivatives of field values at receiver points
@@ -1190,29 +1190,29 @@ subroutine reflectivity_unified(src,bgdat,refl_var,ifreq,icur,comm)
 
         else
 
-          ! --- Ex and / or Ey -----------------------
+          !> --- Ex and / or Ey -----------------------
           !loop over receiver depths
           recdepthsvmdExy: do izrec = 1,refl_var%nzrecExy
             call prepare_recdepth(zr,omeps_recv,refl_var, refl_var%zrecExy,refl_var%nrecperzExy,izrec,sz,zbound,aniso,omega,vmd)
 
-              vmdfwdExy: if ((dowhat.eq.fwdmodel) .or. (dowhat.eq.fwd_deriv)) then
+              vmdfwdExy: if((dowhat.EQ.fwdmodel) .OR. (dowhat.EQ.fwd_deriv)) then
                 call precomp_intvals_Exy_vmd(refl_var,sz,zr)
 
                 !get field values at receiver points
-                if (sz.ge.zr) then
+                if(sz.ge.zr) then
                   call interp_intvals_vmd_Exy(refl_var,src,ifreq,sz,zr,bgdat,bgdat%Ex,bgdat%Ey,j_om_mu, iabvA1TEvmd,0)
                 else
                   call interp_intvals_vmd_Exy(refl_var,src,ifreq,sz,zr,bgdat,bgdat%Ex,bgdat%Ey,j_om_mu, iblwA1TEvmd,0)
                 endif
               endif vmdfwdExy
 
-              vmdderivExy: if (dowhat .ge. deriv) then
+              vmdderivExy: if(dowhat .ge. deriv) then
                 do ilay=1,nlay
                   !recompute refl. and transm. coeff. if they have been changed during interpolation
                   call prepare_refcoef(refl_var,refl_var%rmax,vmd,aniso)
 
                   !iso and VTI formulas are the same, epsv not contained in these integrals, no special terms in front of int.
-                  if (sz.ge.zr) then
+                  if(sz.ge.zr) then
                     !precompute integral values and spline derivatives
                     call precomp_intvals_deriv_vmd_Exy(refl_var,sz,zr,ilay,iabvAz1TEderiv)
                     !get derivatives of field values at receiver points
@@ -1231,29 +1231,29 @@ subroutine reflectivity_unified(src,bgdat,refl_var,ifreq,icur,comm)
 
           !--- no Ez for VMD source ------
 
-          ! --- Hx and / or Hy -----------------------
+          !> --- Hx and / or Hy -----------------------
           !loop over receiver depths
           recdepthsvmdHxy: do izrec = 1,refl_var%nzrecHxy
             call prepare_recdepth(zr,omeps_recv,refl_var, refl_var%zrecHxy,refl_var%nrecperzHxy,izrec,sz,zbound,aniso,omega,vmd)
 
-              vmdfwdHxy: if ((dowhat.eq.fwdmodel) .or. (dowhat.eq.fwd_deriv)) then
+              vmdfwdHxy: if((dowhat.EQ.fwdmodel) .OR. (dowhat.EQ.fwd_deriv)) then
                 call precomp_intvals_Hxy_vmd(refl_var,sz,zr)
 
                 !get field values at receiver points
-                if (sz.ge.zr) then
+                if(sz.ge.zr) then
                   call interp_intvals_vmd_Hxy(refl_var,src,ifreq,sz,zr,bgdat,bgdat%Hx,bgdat%Hy,j_om_mu, iabvD1TEvmd,0)
                 else
                   call interp_intvals_vmd_Hxy(refl_var,src,ifreq,sz,zr,bgdat,bgdat%Hx,bgdat%Hy,j_om_mu, iblwD1TEvmd,0)
                 endif
               endif vmdfwdHxy
 
-              vmdderivHxy: if (dowhat .ge. deriv) then
+              vmdderivHxy: if(dowhat .ge. deriv) then
                 do ilay=1,nlay
                   !recompute refl. and transm. coeff. if they have been changed during interpolation
                   call prepare_refcoef(refl_var,refl_var%rmax,vmd,aniso)
 
                   !iso and VTI formulas are the same, epsv not contained in these integrals, no special terms in front of int.
-                  if (sz.ge.zr) then
+                  if(sz.ge.zr) then
                     !precompute integral values and spline derivatives
                     call precomp_intvals_deriv_vmd_Hxy(refl_var,sz,zr,ilay,iabvD1TEvmdderiv)
                     !get derivatives of field values at receiver points
@@ -1270,29 +1270,29 @@ subroutine reflectivity_unified(src,bgdat,refl_var,ifreq,icur,comm)
             deallocate(trans_above_rec,trans_below_rec,dz_above_rec,dz_below_rec, stat=ierr)
           enddo recdepthsvmdHxy !loop over receiver depths
 
-          ! --- Hz -----------------------
+          !> --- Hz -----------------------
           !loop over receiver depths
           recdepthsvmdHz: do izrec = 1,refl_var%nzrecHz
             call prepare_recdepth(zr,omeps_recv,refl_var, refl_var%zrecHz,refl_var%nrecperzHz,izrec,sz,zbound,aniso,omega,vmd)
 
-              vmdfwdHz: if ((dowhat.eq.fwdmodel) .or. (dowhat.eq.fwd_deriv)) then
+              vmdfwdHz: if((dowhat.EQ.fwdmodel) .OR. (dowhat.EQ.fwd_deriv)) then
                 call precomp_intvals_Hz_vmd(refl_var,sz,zr)
 
                 !get field values at receiver points
-                if (sz.ge.zr) then
+                if(sz.ge.zr) then
                   call interp_intvals_vmd_Hz(refl_var,src,ifreq,sz,zr,bgdat,bgdat%Hz,j_om_mu,ommusq, iabvA0TEvmd,0)
                 else
                   call interp_intvals_vmd_Hz(refl_var,src,ifreq,sz,zr,bgdat,bgdat%Hz,j_om_mu,ommusq, iblwA0TEvmd,0)
                 endif
               endif vmdfwdHz
 
-              vmdderivHz: if (dowhat .ge. deriv) then
+              vmdderivHz: if(dowhat .ge. deriv) then
                 do ilay=1,nlay
                   !recompute refl. and transm. coeff. if they have been changed during interpolation
                   call prepare_refcoef(refl_var,refl_var%rmax,vmd,aniso)
 
                   !iso and VTI formulas are the same, epsv not contained in these integrals, no special terms in front of int.
-                  if (sz.ge.zr) then
+                  if(sz.ge.zr) then
                     !precompute integral values and spline derivatives
                     call precomp_intvals_deriv_vmd_Hz(refl_var,sz,zr,ilay,iabvA0TEvmdderiv)
                     !get derivatives of field values at receiver points
@@ -1328,13 +1328,13 @@ subroutine reflectivity_unified(src,bgdat,refl_var,ifreq,icur,comm)
 
 
   !-----------------------------------------------------------------
-  ! horizontal wire sources
+  !> horizontal wire sources
   !-----------------------------------------------------------------
   case (wire)
 
     !for first current: compute fields, store fields for separate wires
     !for subsequent currents: just multiply precomputed fields with current and add up
-    firstcur: if (icur.eq.1) then
+    firstcur: if(icur.EQ.1) then
 
       !initialize arrays for separate contributions from each wire
       call init_wirefields(src,refl_var,bgdat)
@@ -1347,17 +1347,17 @@ subroutine reflectivity_unified(src,bgdat,refl_var,ifreq,icur,comm)
         call prepare_srcdepth(sz,omeps_srcv,refl_var,src,izsrc,zbound,omega)
 
         !same coordinates for all field components?
-        samecoord_wire: if (bgdat%allcomp_samecoord) then
+        samecoord_wire: if(bgdat%allcomp_samecoord) then
 
           !loop over receiver depths
           recdepthswire_all: do izrec = 1,refl_var%nzrecExy
             call prepare_recdepth(zr,omeps_recv,refl_var,  refl_var%zrecExy,refl_var%nrecperzExy,izrec,sz,zbound,aniso,omega,0)
 
-            wirefwd: if ((dowhat.eq.fwdmodel) .or. (dowhat.eq.fwd_deriv)) then
+            wirefwd: if((dowhat.EQ.fwdmodel) .OR. (dowhat.EQ.fwd_deriv)) then
               call precomp_intvals_wire(refl_var,sz,zr)
 
               !get integral values at grid points
-              if (sz.ge.zr) then
+              if(sz.ge.zr) then
                 call interp_intvals_wire_allcomp(refl_var,bgdat,refl_var%EHwire,src,sz,zr,omeps_recv,ommu, &
                   i1abvExwire,iabvD0TE,iabvAz1TE,i2abvExwire,iabvD0TM,idabvHxwire,0)
               else
@@ -1366,13 +1366,13 @@ subroutine reflectivity_unified(src,bgdat,refl_var,ifreq,icur,comm)
               endif
             endif wirefwd
 
-            wirederiv: if (dowhat .ge. deriv) then
+            wirederiv: if(dowhat .ge. deriv) then
               do ilay=1,nlay
                 !recompute refl. and transm. coeff. if they have been changed during interpolation
                 call prepare_refcoef(refl_var,refl_var%rmax,0,aniso)
 
-                if (sz.ge.zr) then
-                  if (aniso.eq.iso) then
+                if(sz.ge.zr) then
+                  if(aniso.EQ.iso) then
                     !precompute integral values and spline derivatives
                     call precomp_intvals_deriv_wire(refl_var,sz,zr,ilay,i1abvExwirederiv,iabvD0TEderiv,iabvAz1TEderiv, &
                       i2abvExwirederiv,iabvD0TMderiv,idabvHxwirederiv,iabvD0TM)
@@ -1391,7 +1391,7 @@ subroutine reflectivity_unified(src,bgdat,refl_var,ifreq,icur,comm)
                       iabvD0TM, i2abvExwirederivv,iabvD0TMderivv,idabvHxwirederivv, refl_var%EHwirederivv(:,ilay))
                   endif
                 else
-                  if (aniso.eq.iso) then
+                  if(aniso.EQ.iso) then
                     !precompute integral values and spline derivatives
                     call precomp_intvals_deriv_wire(refl_var,sz,zr,ilay,i1blwExwirederiv,iblwD0TEderiv,iblwAz1TEderiv, &
                       i2blwExwirederiv,iblwD0TMderiv,idblwHxwirederiv,iblwD0TM)
@@ -1423,24 +1423,24 @@ subroutine reflectivity_unified(src,bgdat,refl_var,ifreq,icur,comm)
           recdepthswireExy: do izrec = 1,refl_var%nzrecExy
             call prepare_recdepth(zr,omeps_recv,refl_var,  refl_var%zrecExy,refl_var%nrecperzExy,izrec,sz,zbound,aniso,omega,0)
 
-            wirefwdExy: if ((dowhat.eq.fwdmodel) .or. (dowhat.eq.fwd_deriv)) then
+            wirefwdExy: if((dowhat.EQ.fwdmodel) .OR. (dowhat.EQ.fwd_deriv)) then
               call precomp_intvals_Exy_wire(refl_var,sz,zr)
 
               !get integral values at grid points
-              if (sz.ge.zr) then
+              if(sz.ge.zr) then
                 call interp_intvals_wire_Exy(refl_var,bgdat,refl_var%EHwire,src,sz,zr, i1abvExwire,i2abvExwire,0)
               else
                 call interp_intvals_wire_Exy(refl_var,bgdat,refl_var%EHwire,src,sz,zr, i1blwExwire,i2blwExwire,0)
               endif
             endif wirefwdExy
 
-            wirederivExy: if (dowhat .ge. deriv) then
+            wirederivExy: if(dowhat .ge. deriv) then
               do ilay=1,nlay
                 !recompute refl. and transm. coeff. if they have been changed during interpolation
                 call prepare_refcoef(refl_var,refl_var%rmax,0,aniso)
 
-                if (sz.ge.zr) then
-                  if (aniso.eq.iso) then
+                if(sz.ge.zr) then
+                  if(aniso.EQ.iso) then
                     !precompute integral values and spline derivatives
                     call precomp_intvals_deriv_wire_Exy(refl_var,sz,zr,ilay,i1abvExwirederiv, i2abvExwirederiv)
                     !get derivatives of field values at receiver points
@@ -1454,7 +1454,7 @@ subroutine reflectivity_unified(src,bgdat,refl_var,ifreq,icur,comm)
                       i1abvExwirederiv,i2abvExwirederivh,ilay, i2abvExwirederivv, refl_var%EHwirederivv(:,ilay))
                   endif
                 else
-                  if (aniso.eq.iso) then
+                  if(aniso.EQ.iso) then
                     !precompute integral values and spline derivatives
                     call precomp_intvals_deriv_wire_Exy(refl_var,sz,zr,ilay,i1blwExwirederiv, i2blwExwirederiv)
                     !get derivatives of field values at receiver points
@@ -1479,24 +1479,24 @@ subroutine reflectivity_unified(src,bgdat,refl_var,ifreq,icur,comm)
           recdepthswireEz: do izrec = 1,refl_var%nzrecEz
             call prepare_recdepth(zr,omeps_recv,refl_var,  refl_var%zrecEz,refl_var%nrecperzEz,izrec,sz,zbound,aniso,omega,0)
 
-            wirefwdEz: if ((dowhat.eq.fwdmodel) .or. (dowhat.eq.fwd_deriv)) then
+            wirefwdEz: if((dowhat.EQ.fwdmodel) .OR. (dowhat.EQ.fwd_deriv)) then
               call precomp_intvals_Ez_wire(refl_var,sz,zr)
 
               !get integral values at grid points
-              if (sz.ge.zr) then
+              if(sz.ge.zr) then
                 call interp_intvals_wire_Ez(refl_var,bgdat,refl_var%EHwire,src,sz,zr,omeps_recv, iabvD0TM,0)
               else
                 call interp_intvals_wire_Ez(refl_var,bgdat,refl_var%EHwire,src,sz,zr,omeps_recv, iblwD0TM,0)
               endif
             endif wirefwdEz
 
-            wirederivEz: if (dowhat .ge. deriv) then
+            wirederivEz: if(dowhat .ge. deriv) then
               do ilay=1,nlay
                 !recompute refl. and transm. coeff. if they have been changed during interpolation
                 call prepare_refcoef(refl_var,refl_var%rmax,0,aniso)
 
-                if (sz.ge.zr) then
-                  if (aniso.eq.iso) then
+                if(sz.ge.zr) then
+                  if(aniso.EQ.iso) then
                     !precompute integral values and spline derivatives
                     call precomp_intvals_deriv_wire_Ez(refl_var,sz,zr,ilay,iabvD0TMderiv,iabvD0TM)
                     !get derivatives of field values at receiver points
@@ -1510,7 +1510,7 @@ subroutine reflectivity_unified(src,bgdat,refl_var,ifreq,icur,comm)
                       iabvD0TMderivh,ilay, iabvD0TM, iabvD0TMderivv, refl_var%EHwirederivv(:,ilay))
                   endif
                 else
-                  if (aniso.eq.iso) then
+                  if(aniso.EQ.iso) then
                     !precompute integral values and spline derivatives
                     call precomp_intvals_deriv_wire_Ez(refl_var,sz,zr,ilay,iblwD0TMderiv,iblwD0TM)
                     !get derivatives of field values at receiver points
@@ -1535,24 +1535,24 @@ subroutine reflectivity_unified(src,bgdat,refl_var,ifreq,icur,comm)
           recdepthswireHxy: do izrec = 1,refl_var%nzrecHxy
             call prepare_recdepth(zr,omeps_recv,refl_var,  refl_var%zrecHxy,refl_var%nrecperzHxy,izrec,sz,zbound,aniso,omega,0)
 
-            wirefwdHxy: if ((dowhat.eq.fwdmodel) .or. (dowhat.eq.fwd_deriv)) then
+            wirefwdHxy: if((dowhat.EQ.fwdmodel) .OR. (dowhat.EQ.fwd_deriv)) then
               call precomp_intvals_Hxy_wire(refl_var,sz,zr)
 
               !get integral values at grid points
-              if (sz.ge.zr) then
+              if(sz.ge.zr) then
                 call interp_intvals_wire_Hxy(refl_var,bgdat,refl_var%EHwire,src,sz,zr, iabvD0TE,idabvHxwire,0)
               else
                 call interp_intvals_wire_Hxy(refl_var,bgdat,refl_var%EHwire,src,sz,zr, iblwD0TE,idblwHxwire,0)
               endif
             endif wirefwdHxy
 
-            wirederivHxy: if (dowhat .ge. deriv) then
+            wirederivHxy: if(dowhat .ge. deriv) then
               do ilay=1,nlay
                 !recompute refl. and transm. coeff. if they have been changed during interpolation
                 call prepare_refcoef(refl_var,refl_var%rmax,0,aniso)
 
-                if (sz.ge.zr) then
-                  if (aniso.eq.iso) then
+                if(sz.ge.zr) then
+                  if(aniso.EQ.iso) then
                     !precompute integral values and spline derivatives
                     call precomp_intvals_deriv_wire_Hxy(refl_var,sz,zr,ilay,iabvD0TEderiv,idabvHxwirederiv)
                     !get derivatives of field values at receiver points
@@ -1566,7 +1566,7 @@ subroutine reflectivity_unified(src,bgdat,refl_var,ifreq,icur,comm)
                       iabvD0TEderiv,idabvHxwirederivh,ilay, idabvHxwirederivv, refl_var%EHwirederivv(:,ilay))
                   endif
                 else
-                  if (aniso.eq.iso) then
+                  if(aniso.EQ.iso) then
                     !precompute integral values and spline derivatives
                     call precomp_intvals_deriv_wire_Hxy(refl_var,sz,zr,ilay,iblwD0TEderiv,idblwHxwirederiv)
                     !get derivatives of field values at receiver points
@@ -1591,23 +1591,23 @@ subroutine reflectivity_unified(src,bgdat,refl_var,ifreq,icur,comm)
           recdepthswireHz: do izrec = 1,refl_var%nzrecHz
             call prepare_recdepth(zr,omeps_recv,refl_var,  refl_var%zrecHz,refl_var%nrecperzHz,izrec,sz,zbound,aniso,omega,0)
 
-            wirefwdHz: if ((dowhat.eq.fwdmodel) .or. (dowhat.eq.fwd_deriv)) then
+            wirefwdHz: if((dowhat.EQ.fwdmodel) .OR. (dowhat.EQ.fwd_deriv)) then
               call precomp_intvals_Hz_wire(refl_var,sz,zr)
 
               !get integral values at grid points
-              if (sz.ge.zr) then
+              if(sz.ge.zr) then
                 call interp_intvals_wire_Hz(refl_var,bgdat,refl_var%EHwire,src,sz,zr,ommu, iabvAz1TE,0)
               else
                 call interp_intvals_wire_Hz(refl_var,bgdat,refl_var%EHwire,src,sz,zr,ommu, iblwAz1TE,0)
               endif
             endif wirefwdHz
 
-            wirederivHz: if (dowhat .ge. deriv) then
+            wirederivHz: if(dowhat .ge. deriv) then
               do ilay=1,nlay
                 !recompute refl. and transm. coeff. if they have been changed during interpolation
                 call prepare_refcoef(refl_var,refl_var%rmax,0,aniso)
 
-                if (sz.ge.zr) then
+                if(sz.ge.zr) then
                   !there are no vertical derivatives, isotropic and VTI cases require exactly the same functions
                     !precompute integral values and spline derivatives
                     call precomp_intvals_deriv_wire_Hz(refl_var,sz,zr,ilay,iabvAz1TEderiv)
@@ -1637,13 +1637,13 @@ subroutine reflectivity_unified(src,bgdat,refl_var,ifreq,icur,comm)
     endif firstcur
 
     !take complex conjugate to match FFT convention of 3D and 2.5D codes (opposite of Loeseth!)
-    !for derivatives: also apply factor to get derivatives with respect to ln(sigma)
+    !for derivatives: also apply factor to get derivatives with respect to ln(sigma0)
     call conjugate_fields(bgdat,refl_var,src)
 
     call addwirefields(bgdat,refl_var,src,icur,ifreq)
 
     !last current: clean up
-    if (icur.eq.src%ncur) call clean_wirefields(src,refl_var,bgdat)
+    if(icur.EQ.src%ncur) call clean_wirefields(src,refl_var,bgdat)
 
   end select sourcetype
 
