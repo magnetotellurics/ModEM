@@ -186,7 +186,7 @@ contains
             !
             allocate( temp_array( n_data + 1 ) )
             !
-            temp_array( 1 : n_data ) = self%data(:)
+            temp_array( 1 : n_data ) = self%data
             !
             temp_array( n_data + 1 ) = data_group
             !

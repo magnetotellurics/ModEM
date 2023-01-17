@@ -3,7 +3,6 @@
 !
 module InversionNLCG
     !
-    use ForwardModeling
     use Sensitivity
     !
     type :: NLCGiterControl_t
@@ -479,9 +478,6 @@ contains
             rms = sqrt( SS / Ndata )
         endif
    
-   write( 6666, * ) "RMS, SS, Ndata, Nmodel, F, mNorm: ", rms, SS, Ndata, Nmodel, F, mNorm
-   !stop
-
         call deallocateDataGroupTxArray( res )
         !
         call deallocateDataGroupTxArray( Nres )

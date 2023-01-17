@@ -13,9 +13,9 @@ module GlobalVariables
     !
     use ModelOperator_MF
     !
-    use ForwardSolverIT_DC
-    !
     use ModelCovarianceRec
+    !
+    use ForwardSolverIT_DC
     !
     use SourceMT_1D
     use SourceMT_2D
@@ -40,7 +40,6 @@ module GlobalVariables
     !
     !> Global Variables
     class( Grid_t ), allocatable, target :: main_grid
-    class( ModelParameter_t ), allocatable :: sigma0, pmodel
     class( ModelOperator_t ), allocatable :: model_operator
     !
     class( ForwardSolver_t ), allocatable, target :: forward_solver
@@ -72,15 +71,16 @@ module GlobalVariables
     public :: handleDataFile
     public :: handleModelFile
     public :: handlePModelFile
-    public :: createForwardSolver
     public :: createOutputDirectory
     public :: garbageCollector
     !
 contains
     !
     !> No subroutine briefing
-    subroutine handleModelFile()
+    subroutine handleModelFile( sigma0 )
         implicit none
+        !
+        class( ModelParameter_t ), allocatable, intent( out ) :: sigma0
         !
         type( ModelReader_Weerachai_t ) :: model_reader
         type( TAirLayers ) :: air_layer
@@ -117,11 +117,11 @@ contains
                 !
                 allocate( model_operator, source = ModelOperator_MF_t( main_grid ) )
                 !
-                call model_operator%SetEquations()
+                call model_operator%setEquations()
                 !
                 call sigma0%setMetric( model_operator%metric )
                 !
-                call model_operator%SetCond( sigma0 )
+                call model_operator%setCond( sigma0 )
                 !
             class default
                 stop "Error: handleModelFile > Unclassified main_grid"
@@ -131,8 +131,10 @@ contains
     end subroutine handleModelFile
     !
     !> No subroutine briefing
-    subroutine handlePModelFile()
+    subroutine handlePModelFile( pmodel )
         implicit none
+        !
+        class( ModelParameter_t ), allocatable, intent( out ) :: pmodel
         !
         type( ModelReader_Weerachai_t ) :: model_reader
         !
@@ -205,37 +207,6 @@ contains
         !
     end subroutine handleDataFile
     !
-    !> No subroutine briefing
-    subroutine createForwardSolver()
-        implicit none
-        !
-        integer :: i_tx
-        !
-        if( allocated( forward_solver ) ) deallocate( forward_solver )
-        !
-        !> Instantiate the ForwardSolver - Specific type can be chosen via control file
-        select case ( forward_solver_type )
-            !
-            case( FWD_IT_DC )
-                allocate( forward_solver, source = ForwardSolverIT_DC_t( model_operator, QMR ) )
-                !
-            case default
-                !
-                write( *, * ) "Warning: createForwardSolver > Undefined forward_solver, using IT_DC"
-                !
-                allocate( forward_solver, source = ForwardSolverIT_DC_t( model_operator, QMR ) )
-                !
-        end select
-        !
-        !> Make all transmitters point to this ForwardSolver
-        do i_tx = 1, size( transmitters )
-            !
-            transmitters( i_tx )%Tx%forward_solver => forward_solver
-            !
-        enddo
-        !
-    end subroutine createForwardSolver
-    !
     !> ????
     subroutine createOutputDirectory()
         implicit none
@@ -290,11 +261,7 @@ contains
         !> Deallocate global components
         if( allocated( forward_solver ) ) deallocate( forward_solver )
         if( allocated( model_operator ) ) deallocate( model_operator )
-        if( allocated( sigma0 ) ) deallocate( sigma0 )
         if( allocated( main_grid ) ) deallocate( main_grid )
-        !
-        !> Deallocate global pmodel, if its the case
-        if( allocated( pmodel ) ) deallocate( pmodel )
         !
         !> Deallocate global model_cov, if its the case
         if( allocated( model_cov ) ) deallocate( model_cov )

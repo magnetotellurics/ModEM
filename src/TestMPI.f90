@@ -70,7 +70,7 @@ program TestMPI
             !
             select case ( job_master )
                 !
-                case ( "BASIC_COMP" )
+                case ( "HANDLE_FWD_COMP" )
                     !
                     call handleBasicComponents()
                     !
@@ -165,11 +165,11 @@ contains
                 !
                 allocate( model_operator, source = ModelOperator_MF_t( main_grid ) )
                 !
-                call model_operator%SetEquations()
+                call model_operator%setEquations()
                 !
                 call sigma0%setMetric( model_operator%metric )
                 !
-                call model_operator%SetCond( sigma0 )
+                call model_operator%setCond( sigma0 )
                 !
             class default
                 stop "Error: handleBasicComponents > Unclassified main_grid"
@@ -853,11 +853,11 @@ contains
                 !
                 allocate( model_operator, source = ModelOperator_MF_t( main_grid ) )
                 !
-                call model_operator%SetEquations()
+                call model_operator%setEquations()
                 !
                 call sigma0%setMetric( model_operator%metric )
                 !
-                call model_operator%SetCond( sigma0 )
+                call model_operator%setCond( sigma0 )
                 !
             class default
                 stop "Error: handleModelFile > Unclassified main_grid"
@@ -1087,7 +1087,7 @@ contains
         implicit none
         !
         ! I|O
-        predicted_data_file_name = "predicted_data.dat"
+        predicted_data_file_name = "all_predicted_data.dat"
         jmhat_data_file_name = "JmHat.dat"
         e_solution_file_name = "esolution.bin"
         dsigma_file_name = "dsigma.mod"
@@ -1308,21 +1308,21 @@ contains
         write( *, * ) "    Forward Modeling:"
         write( *, * ) "        <ModEM> -f -m <rFile_Model> -d <rFile_Data>"
         write( *, * ) "    Output:"
-        write( *, * ) "        - predicted_data.dat or the path specified by [-pd]"
+        write( *, * ) "        - all_predicted_data.dat or the path specified by [-pd]"
         write( *, * ) "        - esolution.bin or the path specified by      [-es]"
         write( *, * ) ""
         write( *, * ) "    Adjoint:"
         write( *, * ) "        <ModEM> -j -m <rFile_Model> -pm <rFile_pModel> -d <rFile_Data>"
         write( *, * ) "    Output:"
         write( *, * ) "        - JmHat.dat or the path specified by  [-gd]"
-        write( *, * ) "        - predicted_data.dat or the path specified by [-pd]"
+        write( *, * ) "        - all_predicted_data.dat or the path specified by [-pd]"
         write( *, * ) "        - esolution.bin or the path specified by      [-es]"
         write( *, * ) ""
         write( *, * ) "    JMult_t:"
         write( *, * ) "        <ModEM> -jt -m <rFile_Model> -d <rFile_Data>"
         write( *, * ) "    Output:"
         write( *, * ) "        - sigma0.mod or the path specified by          [-dm]"
-        write( *, * ) "        - predicted_data.dat or the path specified by [-pd]"
+        write( *, * ) "        - all_predicted_data.dat or the path specified by [-pd]"
         write( *, * ) "        - esolution.bin or the path specified by      [-es]"
         !
     end subroutine printUsage

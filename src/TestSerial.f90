@@ -102,7 +102,7 @@ contains
         endif
         !
         !> Instantiate ForwardSolver - Specific type via control file
-        call createForwardSolver()
+        call createDistributeForwardSolver()
         !
         !> Instantiate the ForwardSolver - Specific type can be chosen via control file
         select case ( inversion_algorithm )
@@ -330,7 +330,7 @@ contains
         implicit none
         !
         ! I|O
-        predicted_data_file_name = "predicted_data.dat"
+        predicted_data_file_name = "all_predicted_data.dat"
         jmhat_data_file_name = "jmhat.dat"
         e_solution_file_name = "esolution.bin"
         dsigma_file_name = "dsigma.rho"
@@ -377,7 +377,7 @@ contains
         write( *, * ) "    Forward Modeling:"
         write( *, * ) "        <ModEM> -f -m <rFile_Model> -d <rFile_Data>"
         write( *, * ) "    Output:"
-        write( *, * ) "        - predicted_data.dat or the path specified by         [-pd]"
+        write( *, * ) "        - all_predicted_data.dat or the path specified by         [-pd]"
         write( *, * ) ""
         write( *, * ) "    JMult:"
         write( *, * ) "        <ModEM> -j -m <rFile_Model> -pm <rFile_pModel> -d <rFile_Data>"

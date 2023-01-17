@@ -225,13 +225,13 @@ contains
         !
         if( associated( data_group ) ) then
             !
-            call data_group%put( data_entry%component, real( c_value, kind=prec ), real( aimag( c_value ), kind=prec ), data_entry%error )
+            call data_group%put( real( c_value, kind=prec ), real( aimag( c_value ), kind=prec ), data_entry%error )
             !
         else
             !
             allocate( data_group, source = DataGroup_t( i_rx, i_tx, receiver%n_comp, .TRUE. ) )
             !
-            call data_group%put( data_entry%component, real( c_value, kind=prec ), real( aimag( c_value ), kind=prec ), data_entry%error )
+            call data_group%put( real( c_value, kind=prec ), real( aimag( c_value ), kind=prec ), data_entry%error )
             !
             call updateDataGroupArray( self%measured_data, data_group )
             !

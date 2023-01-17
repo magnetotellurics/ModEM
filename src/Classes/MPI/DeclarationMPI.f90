@@ -3,10 +3,7 @@
 !
 module DeclarationMPI
     !
-    use ModEMControlFile
-    !
-    use InversionDCG
-    use InversionNLCG
+    use GlobalVariables
     !
     include 'mpif.h'
     !
@@ -41,9 +38,12 @@ module DeclarationMPI
     integer, parameter :: receiver_single_field = 4
     !
     !> Labels for ModEM jobs
-    character( len=15 ) :: job_master = "MASTER_JOB", job_done = "FINISH_JOB", job_finish = "STOP_JOBS"
-    character( len=15 ) :: job_basic_components = "BASIC_COMP", job_em_solve = "JOB_EM_SOLVE", job_forward = "JOB_FORWARD"
-    character( len=15 ) :: job_jmult = "JOB_JMULT", job_jmult_t = "JOB_JMULT_T", job_inversion = "JOB_INVERSION"
+    character( len=15 ) :: job_master = "MASTER_JOB", job_done = "FINISH_JOB"
+	character( len=15 ) :: job_finish = "STOP_JOBS", job_inversion = "JOB_INVERSION"
+    character( len=15 ) :: job_em_solve = "JOB_EM_SOLVE", job_forward = "JOB_FORWARD"
+    character( len=15 ) :: job_jmult = "JOB_JMULT", job_jmult_t = "JOB_JMULT_T"
+    character( len=15 ) :: job_basic_components = "HANDLE_FWD_COMP"
+	character( len=15 ) :: job_sigma_model = "HANDLE_SIGMA", job_dsigma_model = "HANDLE_DSIGMA"
     !
     !> Struct JobInfo_t:
     !> Gather MPI information necessary for the execution of the different ModEM jobs.
@@ -53,6 +53,7 @@ module DeclarationMPI
         !
         character( len=15 ) :: job_name
         integer :: worker_rank, i_tx
+        integer :: data_size
         integer :: model_size
         integer :: basic_comp_size
         !
@@ -63,6 +64,9 @@ module DeclarationMPI
     !> Time counters
     real( kind=prec ) :: t_start, t_finish
     !
+    !>
+    class( ModelParameter_t ), allocatable :: sigma, dsigma
+    !
     !> MPI communication buffers and sizes
     character, dimension(:), allocatable :: job_info_buffer
     character, dimension(:), allocatable :: basic_comp_buffer
@@ -70,7 +74,7 @@ module DeclarationMPI
     character, dimension(:), allocatable :: conductivity_buffer
     character, dimension(:), allocatable :: data_buffer
     character, dimension(:), allocatable :: model_buffer
-    integer :: job_info_buffer_size, data_buffer_size, conductivity_buffer_size
+    integer :: job_info_buffer_size, conductivity_buffer_size
     !
 contains
     !
@@ -136,20 +140,6 @@ contains
         !
         write( *, "(A45, i8)" ) "Main Grid = ", basic_comp_size
         last_size = basic_comp_size
-        !
-        basic_comp_size = basic_comp_size + allocateModelBuffer( sigma0, .TRUE. )
-        !
-        write( *, "(A45, i8)" ) "Sigma0 = ", basic_comp_size - last_size
-        last_size = basic_comp_size
-        !
-        if( has_pmodel_file ) then
-            !
-            basic_comp_size = basic_comp_size + allocateModelBuffer( pmodel, .TRUE. )
-            !
-            write( *, "(A45, i8)" ) "PModel = ", basic_comp_size - last_size
-            last_size = basic_comp_size
-            !
-        endif
         !
         call MPI_PACK_SIZE( 1, MPI_INTEGER, main_comm, nbytes(9), ierr )
         !
@@ -217,14 +207,6 @@ contains
         !
         call packGridBuffer( main_grid, basic_comp_buffer, job_info%basic_comp_size, index )
         !
-        call packModelBuffer( sigma0, basic_comp_buffer, job_info%basic_comp_size, index )
-        !
-        if( has_pmodel_file ) then
-            !
-            call packModelBuffer( pmodel, basic_comp_buffer, job_info%basic_comp_size, index )
-            !
-        endif
-        !
         call MPI_PACK( size( transmitters ), 1, MPI_INTEGER, basic_comp_buffer, job_info%basic_comp_size, index, main_comm, ierr )
         !
         do i = 1, size( transmitters )
@@ -284,14 +266,6 @@ contains
         call MPI_UNPACK( basic_comp_buffer, job_info%basic_comp_size, index, has_pmodel_file, 1, MPI_LOGICAL, main_comm, ierr )
         !
         call unpackGridBuffer( main_grid, basic_comp_buffer, job_info%basic_comp_size, index )
-        !
-        call unpackModelBuffer( sigma0, basic_comp_buffer, job_info%basic_comp_size, index )
-        !
-        if( has_pmodel_file ) then
-            !
-            call unpackModelBuffer( pmodel, basic_comp_buffer, job_info%basic_comp_size, index )
-            !
-        endif
         !
         call MPI_UNPACK( basic_comp_buffer, job_info%basic_comp_size, index, aux_size, 1, MPI_INTEGER, main_comm, ierr )
         !
@@ -716,6 +690,8 @@ contains
         !
         param_type_size = 0
         !
+        if( allocated( model ) ) deallocate( model )
+        !
         call MPI_UNPACK( parent_buffer, parent_buffer_size, index, model_derived_type, 1, MPI_INTEGER, main_comm, ierr )
         !
         select case( model_derived_type )
@@ -775,15 +751,13 @@ contains
         !
         deallocate( model_buffer )
         !
-        write( *, "( a30, i8, a16, i8, a7 )" ) "#Worker", mpi_rank, " received model: ", job_info%model_size, " bytes."
-        !
     end subroutine receiveModel
     !
     !> Send model to target_id
     subroutine sendModel( model, target_id )
         implicit none
         !
-        class( ModelParameter_t ), allocatable, intent( in ) :: model
+        class( ModelParameter_t ), intent( in ) :: model
         integer, intent( in ) :: target_id
         !
         integer :: index
@@ -793,10 +767,6 @@ contains
         call packModelBuffer( model, model_buffer, job_info%model_size, index )
         !
         call MPI_SEND( model_buffer, job_info%model_size, MPI_PACKED, target_id, tag, main_comm, ierr )
-        !
-        write( *, "( a30, i8, a7 )" ) "#Master send model: ", job_info%model_size, " bytes."
-        !
-        deallocate( model_buffer )
         !
     end subroutine sendModel
     !
@@ -1190,24 +1160,39 @@ contains
         !
     end function unpackReceiverBuffer
     !
+    !> ????
+    subroutine createDataBuffer()
+        implicit none
+        !
+        if( allocated( data_buffer ) ) deallocate( data_buffer )
+        !
+        allocate( data_buffer( job_info%data_size ) )
+        !
+        data_buffer = ""
+        !
+    end subroutine createDataBuffer
+    !
     !>
-    subroutine allocateDataBuffer( tx_data )
+    function allocateDataBuffer( tx_data ) result( data_buffer_size )
         implicit none
         !
         type( DataGroupTx_t ), intent( in ) :: tx_data
         !
-        integer :: i, j, int_byte, nbytes(4)
+        integer :: data_buffer_size
         !
-        call MPI_PACK_SIZE( 1, MPI_INTEGER, main_comm, int_byte, ierr )
+        integer :: i, j, int_byte, nbytes(5)
+        !
+        call MPI_PACK_SIZE( 2, MPI_INTEGER, main_comm, int_byte, ierr )
         !
         data_buffer_size = int_byte + 1
         !
         do i = 1, size( tx_data%data )
              !
-             call MPI_PACK_SIZE( 2, MPI_INTEGER, main_comm, nbytes(1), ierr )
-             call MPI_PACK_SIZE( tx_data%data(i)%n_comp, MPI_DOUBLE_PRECISION, main_comm, nbytes(2), ierr )
+             call MPI_PACK_SIZE( 4, MPI_INTEGER, main_comm, nbytes(1), ierr )
+             call MPI_PACK_SIZE( 2, MPI_LOGICAL, main_comm, nbytes(2), ierr )
              call MPI_PACK_SIZE( tx_data%data(i)%n_comp, MPI_DOUBLE_PRECISION, main_comm, nbytes(3), ierr )
              call MPI_PACK_SIZE( tx_data%data(i)%n_comp, MPI_DOUBLE_PRECISION, main_comm, nbytes(4), ierr )
+             call MPI_PACK_SIZE( tx_data%data(i)%n_comp, MPI_DOUBLE_PRECISION, main_comm, nbytes(5), ierr )
              !
              do j = 1, size( nbytes )
                 data_buffer_size = data_buffer_size + nbytes(j)
@@ -1219,7 +1204,7 @@ contains
         allocate( data_buffer( data_buffer_size ) )
         data_buffer = ""
         !
-    end subroutine allocateDataBuffer
+    end function allocateDataBuffer
     !
     !> No subroutine briefing
     subroutine packDataBuffer( tx_data )
@@ -1231,46 +1216,79 @@ contains
         !
         index = 1
         !
-        call MPI_PACK( tx_data%i_tx, 1, MPI_INTEGER, data_buffer, data_buffer_size, index, main_comm, ierr )
+        call MPI_PACK( tx_data%i_tx, 1, MPI_INTEGER, data_buffer, job_info%data_size, index, main_comm, ierr )
+        call MPI_PACK( size( tx_data%data ), 1, MPI_INTEGER, data_buffer, job_info%data_size, index, main_comm, ierr )
         !
         do i = 1, size( tx_data%data )
-             !
-             call MPI_PACK( tx_data%data(i)%i_rx, 1, MPI_INTEGER, data_buffer, data_buffer_size, index, main_comm, ierr )
-             call MPI_PACK( tx_data%data(i)%i_tx, 1, MPI_INTEGER, data_buffer, data_buffer_size, index, main_comm, ierr )
-             !
-             call MPI_PACK( tx_data%data(i)%reals(1), tx_data%data(i)%n_comp, MPI_DOUBLE_PRECISION, data_buffer, data_buffer_size, index, main_comm, ierr )
-             call MPI_PACK( tx_data%data(i)%imaginaries(1), tx_data%data(i)%n_comp, MPI_DOUBLE_PRECISION, data_buffer, data_buffer_size, index, main_comm, ierr )
-             call MPI_PACK( tx_data%data(i)%errors(1), tx_data%data(i)%n_comp, MPI_DOUBLE_PRECISION, data_buffer, data_buffer_size, index, main_comm, ierr )
-             !
+            !
+            call MPI_PACK( tx_data%data(i)%n_comp, 1, MPI_INTEGER, data_buffer, job_info%data_size, index, main_comm, ierr )
+            call MPI_PACK( tx_data%data(i)%i_dg, 1, MPI_INTEGER, data_buffer, job_info%data_size, index, main_comm, ierr )
+            call MPI_PACK( tx_data%data(i)%i_rx, 1, MPI_INTEGER, data_buffer, job_info%data_size, index, main_comm, ierr )
+            call MPI_PACK( tx_data%data(i)%i_tx, 1, MPI_INTEGER, data_buffer, job_info%data_size, index, main_comm, ierr )
+            call MPI_PACK( tx_data%data(i)%error_bar, 1, MPI_LOGICAL, data_buffer, job_info%data_size, index, main_comm, ierr )
+            call MPI_PACK( tx_data%data(i)%is_allocated, 1, MPI_LOGICAL, data_buffer, job_info%data_size, index, main_comm, ierr )
+            !
+            call MPI_PACK( tx_data%data(i)%reals(1), tx_data%data(i)%n_comp, MPI_DOUBLE_PRECISION, data_buffer, job_info%data_size, index, main_comm, ierr )
+            call MPI_PACK( tx_data%data(i)%imaginaries(1), tx_data%data(i)%n_comp, MPI_DOUBLE_PRECISION, data_buffer, job_info%data_size, index, main_comm, ierr )
+            call MPI_PACK( tx_data%data(i)%errors(1), tx_data%data(i)%n_comp, MPI_DOUBLE_PRECISION, data_buffer, job_info%data_size, index, main_comm, ierr )
+            !
         enddo
         !
     end subroutine packDataBuffer
     !
-    !> UNPACK data_buffer TO predicted_data STRUCT
+    !> UNPACK data_buffer TO all_predicted_data STRUCT
     subroutine unpackDataBuffer( tx_data )
         implicit none
         !
         type( DataGroupTx_t ), intent( inout ) :: tx_data
         !
-        integer :: i, index
+        type( DataGroup_t ) :: data_group
+        !
+        integer :: i, i_tx, n_data, n_comp, index
         !
         index = 1
         !
-        call MPI_UNPACK( data_buffer, data_buffer_size, index, tx_data%i_tx, 1, MPI_INTEGER, main_comm, ierr )
+        call MPI_UNPACK( data_buffer, job_info%data_size, index, i_tx, 1, MPI_INTEGER, main_comm, ierr )
         !
-        do i = 1, size( tx_data%data )
-             !
-             call MPI_UNPACK( data_buffer, data_buffer_size, index, tx_data%data(i)%i_rx, 1, MPI_INTEGER, main_comm, ierr )
-             call MPI_UNPACK( data_buffer, data_buffer_size, index, tx_data%data(i)%i_tx, 1, MPI_INTEGER, main_comm, ierr )
-             call MPI_UNPACK( data_buffer, data_buffer_size, index, tx_data%data(i)%reals(1), tx_data%data(i)%n_comp, MPI_DOUBLE_PRECISION, main_comm, ierr )
-             call MPI_UNPACK( data_buffer, data_buffer_size, index, tx_data%data(i)%imaginaries(1), tx_data%data(i)%n_comp, MPI_DOUBLE_PRECISION, main_comm, ierr )
-             call MPI_UNPACK( data_buffer, data_buffer_size, index, tx_data%data(i)%errors(1), tx_data%data(i)%n_comp, MPI_DOUBLE_PRECISION, main_comm, ierr )
-             !
+        tx_data = DataGroupTx_t( i_tx )
+        !
+        call MPI_UNPACK( data_buffer, job_info%data_size, index, n_data, 1, MPI_INTEGER, main_comm, ierr )
+        !
+        do i = 1, n_data
+            !
+            call MPI_UNPACK( data_buffer, job_info%data_size, index, n_comp, 1, MPI_INTEGER, main_comm, ierr )
+            !
+            call MPI_UNPACK( data_buffer, job_info%data_size, index, data_group%i_dg, 1, MPI_INTEGER, main_comm, ierr )
+            call MPI_UNPACK( data_buffer, job_info%data_size, index, data_group%i_rx, 1, MPI_INTEGER, main_comm, ierr )
+            call MPI_UNPACK( data_buffer, job_info%data_size, index, data_group%i_tx, 1, MPI_INTEGER, main_comm, ierr )
+            !
+            call MPI_UNPACK( data_buffer, job_info%data_size, index, data_group%error_bar, 1, MPI_LOGICAL, main_comm, ierr )
+            call MPI_UNPACK( data_buffer, job_info%data_size, index, data_group%is_allocated, 1, MPI_LOGICAL, main_comm, ierr )
+            !
+            data_group%n_comp = n_comp
+            !
+            if( allocated( data_group%reals ) ) deallocate( data_group%reals )
+            allocate( data_group%reals( n_comp ) )
+            !
+            call MPI_UNPACK( data_buffer, job_info%data_size, index, data_group%reals(1), n_comp, MPI_DOUBLE_PRECISION, main_comm, ierr )
+            !
+            if( allocated( data_group%imaginaries ) ) deallocate( data_group%imaginaries )
+            allocate( data_group%imaginaries( n_comp ) )
+            !
+            call MPI_UNPACK( data_buffer, job_info%data_size, index, data_group%imaginaries(1), n_comp, MPI_DOUBLE_PRECISION, main_comm, ierr )
+            !
+            if( allocated( data_group%errors ) ) deallocate( data_group%errors )
+            allocate( data_group%errors( n_comp ) )
+            !
+            call MPI_UNPACK( data_buffer, job_info%data_size, index, data_group%errors(1), n_comp, MPI_DOUBLE_PRECISION, main_comm, ierr )
+            !
+            call tx_data%put( data_group )
+            !
         enddo
         !
     end subroutine unpackDataBuffer
     !
-    !> RECEIVE predicted_data FROM ANY TARGET
+    !> Receive a DataGroupTx from any target
     subroutine receiveData( tx_data, target_id )
         implicit none
         !
@@ -1278,9 +1296,9 @@ contains
         !
         integer, intent( in ) :: target_id
         !
-        call allocateDataBuffer( tx_data )
+        call createDataBuffer
         !
-        call MPI_RECV( data_buffer, data_buffer_size, MPI_PACKED, target_id, MPI_ANY_TAG, main_comm, MPI_STATUS_IGNORE, ierr )
+        call MPI_RECV( data_buffer, job_info%data_size, MPI_PACKED, target_id, MPI_ANY_TAG, main_comm, MPI_STATUS_IGNORE, ierr )
         !
         call unpackDataBuffer( tx_data )
         !
@@ -1288,18 +1306,16 @@ contains
         !
     end subroutine receiveData
     !
-    !> SEND job_info FROM target_id
+    !> Send a DataGroupTx to any target
     subroutine sendData( tx_data, target_id )
         !
         type( DataGroupTx_t ), intent( in ) :: tx_data
         !
         integer, intent( in ) :: target_id
         !
-        call allocateDataBuffer( tx_data )
-        !
         call packDataBuffer( tx_data )
         !
-        call MPI_SEND( data_buffer, data_buffer_size, MPI_PACKED, target_id, tag, main_comm, ierr )
+        call MPI_SEND( data_buffer, job_info%data_size, MPI_PACKED, target_id, tag, main_comm, ierr )
         !
         deallocate( data_buffer )
         !
@@ -1376,7 +1392,7 @@ contains
         !
     end subroutine packConductivityBuffer
     !
-    !> UNPACK conductivity_buffer TO predicted_data STRUCT
+    !> UNPACK conductivity_buffer TO all_predicted_data STRUCT
     subroutine unpackConductivityBuffer( ccond )
         implicit none
         !
@@ -1478,8 +1494,9 @@ contains
         call MPI_PACK( job_info%job_name, 15, MPI_CHARACTER, job_info_buffer, job_info_buffer_size, index, main_comm, ierr )
         call MPI_PACK( job_info%worker_rank, 1, MPI_INTEGER, job_info_buffer, job_info_buffer_size, index, main_comm, ierr )
         call MPI_PACK( job_info%i_tx, 1, MPI_INTEGER, job_info_buffer, job_info_buffer_size, index, main_comm, ierr )
-        call MPI_PACK( job_info%basic_comp_size, 1, MPI_INTEGER, job_info_buffer, job_info_buffer_size, index, main_comm, ierr )
+        call MPI_PACK( job_info%data_size, 1, MPI_INTEGER, job_info_buffer, job_info_buffer_size, index, main_comm, ierr )
         call MPI_PACK( job_info%model_size, 1, MPI_INTEGER, job_info_buffer, job_info_buffer_size, index, main_comm, ierr )
+        call MPI_PACK( job_info%basic_comp_size, 1, MPI_INTEGER, job_info_buffer, job_info_buffer_size, index, main_comm, ierr )
         !
     end subroutine packJobInfoBuffer
     !
@@ -1493,8 +1510,9 @@ contains
         call MPI_UNPACK( job_info_buffer, job_info_buffer_size, index, job_info%job_name, 15, MPI_CHARACTER, main_comm, ierr )
         call MPI_UNPACK( job_info_buffer, job_info_buffer_size, index, job_info%worker_rank, 1, MPI_INTEGER, main_comm, ierr )
         call MPI_UNPACK( job_info_buffer, job_info_buffer_size, index, job_info%i_tx, 1, MPI_INTEGER, main_comm, ierr )
-        call MPI_UNPACK( job_info_buffer, job_info_buffer_size, index, job_info%basic_comp_size, 1, MPI_INTEGER, main_comm, ierr )
+        call MPI_UNPACK( job_info_buffer, job_info_buffer_size, index, job_info%data_size, 1, MPI_INTEGER, main_comm, ierr )
         call MPI_UNPACK( job_info_buffer, job_info_buffer_size, index, job_info%model_size, 1, MPI_INTEGER, main_comm, ierr )
+        call MPI_UNPACK( job_info_buffer, job_info_buffer_size, index, job_info%basic_comp_size, 1, MPI_INTEGER, main_comm, ierr )
         !
     end subroutine unpackJobInfoBuffer
     !

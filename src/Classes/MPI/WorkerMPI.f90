@@ -5,12 +5,16 @@ module WorkerMPI
     !
     use DeclarationMPI
     !
+    use InversionDCG
+    use InversionNLCG
+    !
     public :: workerMainLoop
     public :: solveTx
     public :: workerForwardModelling
     public :: workerJMult
     public :: workerJMult_T
     public :: handleBasicComponents
+    public :: handleSigmaModel
     !
 contains
     !
@@ -27,9 +31,21 @@ contains
             !
             select case ( job_master )
                 !
-                case ( "BASIC_COMP" )
+                case ( "HANDLE_FWD_COMP" )
                     !
                     call handleBasicComponents()
+                !
+                case ( "HANDLE_SIGMA" )
+                    !
+                    call handleSigmaModel()
+                !
+                case ( "HANDLE_DSIGMA" )
+                    !
+                    call handleDSigmaModel()
+                    !
+                case ( "JOB_EM_SOLVE" )
+                    !
+                    call workerSolve()
                     !
                 case ( "JOB_FORWARD" )
                     !
@@ -42,10 +58,6 @@ contains
                 case ( "JOB_JMULT_T" )
                     !
                     call workerJMult_T()
-                    !
-                case ( "JOB_INVERSION" )
-                    !
-                    !call workerJobInversion()
                     !
             end select
             !
@@ -63,54 +75,28 @@ contains
     end subroutine workerMainLoop
     !
     !> No procedure briefing
-    subroutine solveTx( sigma, Tx )
+    subroutine workerSolve()
         implicit none
         !
-        class( ModelParameter_t ), allocatable, intent( in ) :: sigma
-        class( Transmitter_t ), pointer, intent( inout ) :: Tx
+        class( Transmitter_t ), pointer :: Tx
         !
-        !> Instantiate the global ForwardSolver - Specific type can be chosen via control file
-        call createForwardSolver()
-        !
-        !> Point to the current Transmitter
         Tx => getTransmitter( job_info%i_tx )
         !
-        !> Set Transmitter's ForwardSolver Omega(Period) and Conductivity
-        call Tx%forward_solver%setFrequency( sigma, Tx%period )
+        call txForwardSolver( Tx )
         !
-        !> Instantiate Transmitter's Source - According to transmitter type or chosen via control file
-        select type( Tx )
-            !
-            class is( TransmitterMT_t )
-                !
-                write( *, "( a25, i5, A14, i5, A9, es12.5 )" ) "- Worker", mpi_rank, " Solving MT Tx", Tx%i_tx, ", Period=", Tx%period
-                !
-                call Tx%setSource( SourceMT_1D_t( model_operator, sigma, Tx%period ) )
-                !
-            class is( TransmitterCSEM_t )
-                !
-                write( *, "( a25, i5, A14, i5, A9, es12.5 )" ) "- Worker", mpi_rank, " Solving CSEM Tx", Tx%i_tx, ", Period=", Tx%period
-                !
-                call Tx%setSource( SourceCSEM_Dipole1D_t( model_operator, sigma, Tx%period, Tx%location, Tx%dip, Tx%azimuth, Tx%moment ) )
-                !
-            class default
-                stop "Error: workerForwardModelling > Unclassified Transmitter"
-            !
-        end select
+        call solveTx( sigma, Tx )
         !
-        !> Build Source E according to source type
-        call Tx%source%createE()
+        !> SEND JOB DONE TO MASTER
+        job_info%job_name = job_done
+        job_info%worker_rank = mpi_rank
         !
-        !> Solve e_sol for this Transmitter
-        call Tx%solve()
+        call sendTo( master_id )
         !
-    end subroutine solveTx
+    end subroutine workerSolve
     !
     !> No procedure briefing
     subroutine workerForwardModelling()
         implicit none
-        !
-        !class( ModelParameter_t ), allocatable, intent( in ) :: sigma
         !
         class( Transmitter_t ), pointer :: Tx
         class( Receiver_t ), pointer :: Rx
@@ -118,10 +104,13 @@ contains
         type( DataGroup_t ) :: data_group
         integer :: i_rx
         !
-        call solveTx( sigma0, Tx )
+        call receiveData( tx_data, master_id )
         !
-        !> Build the DataGroupTx to store data from a single transmitter.
-        tx_data = DataGroupTx_t( Tx%i_tx )
+        Tx => getTransmitter( tx_data%i_tx )
+        !
+        call txForwardSolver( Tx )
+        !
+        call solveTx( sigma, Tx )
         !
         !> Loop for each Receiver related to the Transmitter
         do i_rx = 1, size( Tx%receiver_indexes )
@@ -130,7 +119,7 @@ contains
             !
             call Rx%predictedData( Tx, data_group )
             !
-            call tx_data%put( data_group )
+            call tx_data%setValues( data_group )
             !
         enddo
         !
@@ -138,6 +127,7 @@ contains
         job_info%job_name = job_done
         job_info%worker_rank = mpi_rank
         job_info%i_tx = tx_data%i_tx
+        job_info%data_size = allocateDataBuffer( tx_data )
         !
         call sendTo( master_id )
         !
@@ -154,25 +144,19 @@ contains
         type( DataGroupTx_t ) :: tx_data
         integer :: i
         !
-        !>
-        call solveTx( sigma0, Tx )
+        call receiveData( tx_data, master_id )
+        !
+        Tx => getTransmitter( job_info%i_tx )
+        !
+        call txForwardSolver( Tx )
+        !
+        call solveTx( sigma, Tx )
         !
         !> Switch Transmitter's source to SourceInteriorForce from PMult
-        call Tx%setSource( Tx%PMult( sigma0, pmodel, model_operator ) )
+        call Tx%setSource( Tx%PMult( sigma, dsigma, model_operator ) )
         !
         !> Solve e_sens with the new Source
         call Tx%solve()
-        !
-        !> Build the DataGroupTx to store data from a single transmitter.
-        tx_data = DataGroupTx_t( Tx%i_tx )
-        !
-        do i = 1, size( Tx%receiver_indexes )
-            !
-            Rx => getReceiver( Tx%receiver_indexes(i) )
-            !
-            call tx_data%put( DataGroup_t( Tx%receiver_indexes(i), Tx%i_tx, Rx%n_comp ) )
-            !
-        enddo
         !
         !> JMult for the same Tx
         call JMult_Tx( tx_data )
@@ -180,7 +164,8 @@ contains
         !> MPI: SEND JOB DONE TO MASTER
         job_info%job_name = job_done
         job_info%worker_rank = mpi_rank
-        job_info%i_tx = tx_data%i_tx
+        job_info%i_tx = Tx%i_tx
+        job_info%data_size = allocateDataBuffer( tx_data )
         !
         call sendTo( master_id )
         !
@@ -198,24 +183,16 @@ contains
         type( DataGroupTx_t ) :: tx_data
         integer :: i
         !
-        call solveTx( sigma0, Tx )
-        !
-        !> Build the DataGroupTx to store data from a single transmitter.
-        tx_data = DataGroupTx_t( Tx%i_tx )
-        !
-        do i = 1, size( Tx%receiver_indexes )
-            !
-            Rx => getReceiver( Tx%receiver_indexes(i) )
-            !
-            call tx_data%put( DataGroup_t( Tx%receiver_indexes(i), Tx%i_tx, Rx%n_comp ) )
-            !
-        enddo
-        !
-        !> Receive measure data for a single Tx
         call receiveData( tx_data, master_id )
         !
+        Tx => getTransmitter( job_info%i_tx )
+        !
+        call txForwardSolver( Tx )
+        !
+        call solveTx( sigma, Tx )
+        !
         !> Set current tx_dsigma from JMult_T_Tx
-        call JMult_T_Tx( sigma0, tx_data, tx_dsigma )
+        call JMult_T_Tx( sigma, tx_data, tx_dsigma )
         !
         !> MPI: SEND JOB DONE TO MASTER
         job_info%job_name = job_done
@@ -245,7 +222,7 @@ contains
         !
         call MPI_BARRIER( main_comm, ierr )
         !
-        write( *, "( a30, i5, a11, i10, a11 )" ) "Worker", mpi_rank, " Received: ", job_info%basic_comp_size, " bytes."
+        !write( *, "( a30, i5, a11, i10, a11 )" ) "Worker", mpi_rank, " Received: ", job_info%basic_comp_size, " bytes."
         !
         select type( main_grid )
             !
@@ -253,11 +230,7 @@ contains
                 !
                 allocate( model_operator, source = ModelOperator_MF_t( main_grid ) )
                 !
-                call model_operator%SetEquations()
-                !
-                call sigma0%setMetric( model_operator%metric )
-                !
-                call model_operator%SetCond( sigma0 )
+                call model_operator%setEquations()
                 !
             class default
                 stop "Error: handleBasicComponents > Unclassified main_grid"
@@ -265,6 +238,64 @@ contains
         end select
         !
     end subroutine handleBasicComponents
+    !
+    !> No procedure briefing
+    subroutine handleSigmaModel()
+        implicit none
+        !
+        call receiveModel( sigma, master_id )
+        !
+        call MPI_BARRIER( main_comm, ierr )
+        !
+        !write( *, "( a30, i5, a11, i10, a11 )" ) "Worker", mpi_rank, " Received: ", job_info%model_size, " bytes."
+        !
+        call sigma%setMetric( model_operator%metric )
+        !
+        call model_operator%setCond( sigma )
+        !
+    end subroutine handleSigmaModel
+    !
+    !> No procedure briefing
+    subroutine handleDSigmaModel()
+        implicit none
+        !
+        call receiveModel( dsigma, master_id )
+        !
+        call MPI_BARRIER( main_comm, ierr )
+        !
+        !write( *, "( a30, i5, a11, i10, a11 )" ) "Worker", mpi_rank, " Received: ", job_info%model_size, " bytes."
+        !
+        call dsigma%setMetric( model_operator%metric )
+        !
+    end subroutine handleDSigmaModel
+    !
+    !> No subroutine briefing
+    subroutine txForwardSolver( Tx )
+        implicit none
+        !
+        class( Transmitter_t ), pointer, intent( inout ) :: Tx
+        !
+        if( .NOT. allocated( forward_solver ) ) then
+            !
+            !> Instantiate the ForwardSolver - Specific type can be chosen via control file
+            select case ( forward_solver_type )
+                !
+                case( FWD_IT_DC )
+                    allocate( forward_solver, source = ForwardSolverIT_DC_t( model_operator, QMR ) )
+                    !
+                case default
+                    !
+                    write( *, * ) "Warning: txForwardSolver > Undefined forward_solver, using IT_DC"
+                    !
+                    allocate( forward_solver, source = ForwardSolverIT_DC_t( model_operator, QMR ) )
+                    !
+            end select
+            !
+        endif
+        !
+        Tx%forward_solver => forward_solver
+        !
+    end subroutine txForwardSolver
     !
 end module WorkerMPI
 !

@@ -64,7 +64,7 @@ module DeclarationMPI
     integer :: tag = 2022, master_id = 0
     !
     character( len=15 ) :: job_master = "MASTER_JOB", job_done = "FINISH_JOB", job_finish = "STOP_JOBS"
-    character( len=15 ) :: job_basic_components = "BASIC_COMP", job_forward = "JOB_FORWARD"
+    character( len=15 ) :: job_basic_components = "HANDLE_FWD_COMP", job_forward = "JOB_FORWARD"
     character( len=15 ) :: job_jmult = "JOB_JMULT", job_jmult_t = "JOB_JMULT_T", job_inversion = "JOB_INVERSION"
     !
     !> Struct JobInfo_t:
@@ -1417,7 +1417,7 @@ contains
         !
     end subroutine packDataBuffer
     !
-    !> UNPACK data_buffer TO predicted_data STRUCT
+    !> UNPACK data_buffer TO all_predicted_data STRUCT
     subroutine unpackDataBuffer( tx_data )
         implicit none
         !
@@ -1441,7 +1441,7 @@ contains
         !
     end subroutine unpackDataBuffer
     !
-    !> RECEIVE predicted_data FROM ANY TARGET
+    !> RECEIVE all_predicted_data FROM ANY TARGET
     subroutine receiveData( tx_data, target_id )
         implicit none
         !
@@ -1546,7 +1546,7 @@ contains
         !
     end subroutine packConductivityBuffer
     !
-    !> UNPACK conductivity_buffer TO predicted_data STRUCT
+    !> UNPACK conductivity_buffer TO all_predicted_data STRUCT
     subroutine unpackConductivityBuffer( ccond )
         implicit none
         !
@@ -1585,7 +1585,7 @@ contains
         !
     end subroutine unpackConductivityBuffer
     !
-    !> RECEIVE predicted_data FROM ANY TARGET
+    !> RECEIVE all_predicted_data FROM ANY TARGET
     subroutine receiveConductivity( ccond, target_id )
         implicit none
         !

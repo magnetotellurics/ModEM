@@ -3,7 +3,6 @@
 !
 module InversionDCG
     !
-    use ForwardModeling
     use Sensitivity
     !
     !>
@@ -126,7 +125,11 @@ contains
                 !
                 JmHat = all_data
                 !
+#ifdef MPI
+                call masterJMult( dsigma, mHat, JmHat )
+#else
                 call JMult( dsigma, mHat, JmHat )
+#endif
                 !
                 b = all_data
                 !
@@ -138,7 +141,11 @@ contains
                 !
                 call normalizeWithDataGroupTxArray( 1, all_data, dx )
                 !
+#ifdef MPI
+                call masterJMult_T( dsigma, dx, mHat )
+#else
                 call JMult_T( dsigma, dx, mHat )
+#endif
                 !
                 call model_cov%multBy_Cm( mHat )
                 !
@@ -174,6 +181,10 @@ contains
             ! Verbose
             write( *, * ) "     - Finish Inversion DCG, output files in [", trim( outdir_name ), "]"
             !
+#ifdef MPI
+            call broadcastFinish
+#endif
+            !
         else
             !
             write( *, * ) "Error opening [", trim( outdir_name )//"/DCG.log", "] in writeDataGroupTxArray!"
@@ -190,7 +201,7 @@ contains
         real( kind=prec ), intent( in ) :: lambda
         type( DataGroupTx_t ), allocatable, dimension(:), intent( in ) :: all_data
         class( ModelParameter_t ), allocatable, intent( in ) :: dsigma, mHat
-        type( DataGroupTx_t ), allocatable, dimension(:), intent( out ) :: all_predicted_data
+        type( DataGroupTx_t ), allocatable, dimension(:), intent( inout ) :: all_predicted_data
         type( DataGroupTx_t ), allocatable, dimension(:), intent( out ) :: res
         real( kind=prec ), intent( out ) :: F, mNorm
         real( kind=prec ), intent( inout ) :: rms
@@ -201,7 +212,15 @@ contains
         !
         all_predicted_data = all_data
         !
+#ifdef MPI
+        !
+        call masterForwardModelling( dsigma, all_predicted_data )
+        !
+#else
+        !
         call runForwardModeling( dsigma, all_predicted_data )
+        !
+#endif
         !
         res = all_data
         !
@@ -325,13 +344,21 @@ contains
         !
         call normalizeWithDataGroupTxArray( 1, all_data, p_temp )
         !
+#ifdef MPI
+        call masterJMult_T( dsigma, p_temp, JTp )
+#else
         call JMult_T( dsigma, p_temp, JTp )
+#endif
         !
         call model_cov%multBy_Cm( JTp )
         !
         Ap = all_data
         !
+#ifdef MPI
+        call masterJMult( dsigma, JTp, Ap )
+#else
         call JMult( dsigma, JTp, Ap )
+#endif
         !
         deallocate( JTp )
         !

@@ -138,8 +138,6 @@ contains
                     !> ????
                     call lrows( pol, comp )%mult( -self%I_BB( pol, row ) )
                     !
-                    !call lrows( pol, comp )%print( 1000, "OO LRows" )
-                    !
                 enddo
                 !
             enddo

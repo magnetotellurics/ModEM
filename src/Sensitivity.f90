@@ -18,20 +18,22 @@ contains
         !> Local Data Array to store JMult output
         type( DataGroupTx_t ), allocatable, dimension(:) :: JmHat
         !
+        class( ModelParameter_t ), allocatable :: sigma, dsigma
+        !
         ! Verbose
         write( *, * ) "     - Start jobJMult"
         !
-        !> Read Prior Model File: instantiate pmodel
+        !> Read Prior Model File: instantiate dsigma
         if( has_pmodel_file ) then
             !
-            call handlePModelFile()
+            call handlePModelFile( dsigma )
             !
             !> Read Model File and instantiate global variables: main_grid, model_operator and Sigma0
             if( has_model_file ) then
                 !
-                call handleModelFile()
+                call handleModelFile( sigma )
                 !
-                call pmodel%setMetric( model_operator%metric )
+                call dsigma%setMetric( model_operator%metric )
                 !
             else
                 stop "Error: jobJMult > Missing Model file!"
@@ -50,23 +52,31 @@ contains
             stop "Error: jobJMult > Missing Data file!"
         endif
         !
-        !> Instantiate the ForwardSolver - Specific type can be chosen via control file
-        call createForwardSolver()
-        !
-        !>
-        call runEMSolve( sigma0 )
-        !
-        !>
         JmHat = all_measured_data
         !
-        !> Calculate Data Array from JMult routine
-        call JMult( sigma0, pmodel, JmHat )
+#ifdef MPI
+        !
+        call broadcastBasicComponents()
+        !
+        call masterJMult( sigma, dsigma, JmHat )
+        !
+        call broadcastFinish
+        !
+#else
+        !
+        call createDistributeForwardSolver()
+        !
+        call JMult( sigma, dsigma, JmHat )
+        !
+#endif
         !
         !> Write JmHat to the file <jmhat_data_file_name>
         call writeDataGroupTxArray( JmHat, jmhat_data_file_name )
         !
-        !> Flush local variable
+        !> Flush local variables
         call deallocateDataGroupTxArray( JmHat )
+        !
+        deallocate( sigma, dsigma )
         !
         ! Verbose
         write( *, * ) "     - Finish jobJMult"
@@ -77,27 +87,25 @@ contains
     !>     Call the setFrequency routine to the forward_solver pointer of the transmitter
     !>     Set the transmitter source by calling PMult
     !>     Call JMult_TX for the transmitter
-    !
     subroutine JMult( sigma, dsigma, JmHat )
         implicit none
         !
         class( ModelParameter_t ), intent( in ) :: sigma, dsigma
         type( DataGroupTx_t ), dimension(:), intent( inout ) :: JmHat
         !
-        integer :: i_dtx
+        integer :: i_data_tx
         class( Transmitter_t ), pointer :: Tx
         !
         ! Verbose
         !write( *, * ) "          - Start JMult"
         !
         !> Loop over All DataGroupTxs
-        do i_dtx = 1, size( JmHat )
+        do i_data_tx = 1, size( JmHat )
             !
             !> Pointer to the transmitter leading the current data
-            Tx => getTransmitter( i_dtx )
+            Tx => getTransmitter( i_data_tx )
             !
-            !> Set Transmitter's ForwardSolver Omega(Period) and Conductivity
-            call Tx%forward_solver%setFrequency( sigma, Tx%period )
+            call solveTx( sigma, Tx )
             !
             !> Switch Transmitter's source to SourceInteriorForce
             call Tx%setSource( Tx%PMult( sigma, dsigma, model_operator ) )
@@ -106,7 +114,7 @@ contains
             call Tx%solve()
             !
             !> Fill tx_data with JMult routine
-            call JMult_Tx( JmHat( i_dtx ) )
+            call JMult_Tx( JmHat( i_data_tx ) )
             !
         enddo
         !
@@ -173,7 +181,7 @@ contains
     subroutine jobJMult_T()
         implicit none
         !
-        class( ModelParameter_t ), allocatable :: dsigma
+        class( ModelParameter_t ), allocatable :: sigma, dsigma
         !
         ! Verbose
         write( *, * ) "     - Start jobJMult_T"
@@ -181,7 +189,7 @@ contains
         !> Read Model File and instantiate global variables: main_grid, model_operator and Sigma0
         if( has_model_file ) then 
             !
-            call handleModelFile()
+            call handleModelFile( sigma )
             !
         else
             stop "Error: jobJMult_T > Missing Model file!"
@@ -197,20 +205,27 @@ contains
             stop "Error: jobJMult_T > Missing Data file!"
         endif
         !
-        !> Instantiate the ForwardSolver - Specific type can be chosen via control file
-        call createForwardSolver()
+#ifdef MPI
         !
-        !> Run ForwardModelling to calculate predicted data
-        call runEMSolve( sigma0 )
+        call broadcastBasicComponents()
         !
-        !> Calculate DSigma model from JMult_T routine
-        call JMult_T( sigma0, all_measured_data, dsigma )
+        call masterJMult_T( sigma, all_measured_data, dsigma )
+        !
+        call broadcastFinish
+        !
+#else
+        !
+        call createDistributeForwardSolver()
+        !
+        call JMult_T( sigma, all_measured_data, dsigma )
+        !
+#endif
         !
         !> Write dsigma to <dsigma_file_name> file path
         call dsigma%write( dsigma_file_name )
         !
-        !> Flush local variable
-        deallocate( dsigma )
+        !> Flush local variables
+        deallocate( sigma, dsigma )
         !
         ! Verbose
         write( *, * ) "     - Finish jobJMult_T"
@@ -226,8 +241,9 @@ contains
         !
         class( ModelParameter_t ), intent( in ) :: sigma
         type( DataGroupTx_t ), dimension(:), intent( in ) :: all_data
-        class( ModelParameter_t ), allocatable, intent( inout ) :: dsigma
+        class( ModelParameter_t ), allocatable, intent( out ) :: dsigma
         !
+        class( Transmitter_t ), pointer :: Tx
         class( ModelParameter_t ), allocatable :: dsigma_tx
         integer :: i_tx
         !
@@ -248,6 +264,11 @@ contains
         !
         !> Loop over all transmitters
         do i_tx = 1, size( transmitters )
+            !
+            !> Pointer to the transmitter leading the current data
+            Tx => getTransmitter( i_tx )
+            !
+            call solveTx( sigma, Tx )
             !
             !> Set current tx_dsigma from JMult_T_Tx
             call JMult_T_Tx( sigma, all_data( i_tx ), dsigma_tx )

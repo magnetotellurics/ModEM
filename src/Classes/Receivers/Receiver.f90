@@ -264,7 +264,6 @@ contains
         class( Transmitter_t ), intent( in ) :: transmitter
         type( DataGroup_t ), intent( out ) :: data_group
         !
-        character(:), allocatable :: component
         real( kind=prec ) :: real_part, imaginary, error
         !
         integer :: i
@@ -273,12 +272,11 @@ contains
         !
         do i = 1, self%n_comp
             !
-            component = trim( self%comp_names(i)%str )
             real_part = real( self%response(i), kind=prec )
             imaginary = real( aimag( self%response(i) ), kind=prec )
             error = R_ZERO
             !
-            call data_group%put( component, real_part, imaginary, error )
+            call data_group%put( real_part, imaginary, error )
             !
         enddo
         !
