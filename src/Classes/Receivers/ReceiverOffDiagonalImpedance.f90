@@ -83,28 +83,30 @@ contains
     end subroutine ReceiverOffDiagonalImpedance_dtor
     !
     !> No subroutine briefing
-    subroutine setLRowsOffDiagonalImpedance( self, transmitter )
+    subroutine setLRowsOffDiagonalImpedance( self, transmitter, lrows )
         implicit none
         !
         class( ReceiverOffDiagonalImpedance_t ), intent( inout ) :: self
         class( Transmitter_t ), intent( in ) :: transmitter
+        class( Vector_t ), allocatable, dimension(:,:), intent( out ) :: lrows
         !
         stop "setLRowsOffDiagonalImpedance to be implemented"
         !
     end subroutine setLRowsOffDiagonalImpedance
     !
     !> No subroutine briefing
-    subroutine predictedDataOffDiagonalImpedance( self, transmitter )
+    subroutine predictedDataOffDiagonalImpedance( self, transmitter, data_group )
         implicit none
         !
         class( ReceiverOffDiagonalImpedance_t ), intent( inout ) :: self
         class( Transmitter_t ), intent( in ) :: transmitter
+        type( DataGroup_t ), intent( out ), optional :: data_group
         !
         integer :: i, j, ij
         complex( kind=prec ) :: comega, det
         complex( kind=prec ), allocatable :: BB(:,:), I_BB(:,:), EE(:,:)
         !
-        comega = cmplx( 0.0, 1./ transmitter%omega, kind=prec )
+        comega = cmplx( 0.0, 1./ ( 2.0 * PI / transmitter%period ), kind=prec )
         !
         allocate( EE(2,2) )
         !
@@ -151,9 +153,11 @@ contains
                         deallocate( EE )
                         deallocate( I_BB )
                         !
-                        call self%savePredictedData( transmitter )
-                        !
-                        deallocate( self%response )
+                        if( present( data_group ) ) then
+                            !
+                            call self%savePredictedData( transmitter, data_group )
+                            !
+                        endif
                         !
                     class default
                         stop "evaluationFunctionRx: Unclassified transmitter%e_all_2"
@@ -200,7 +204,7 @@ contains
         !
         class( ReceiverOffDiagonalImpedance_t ), intent( in ) :: self
         !
-        write( *, * ) "Print ReceiverOffDiagonalImpedance_t: ", self%id
+        write( *, * ) "Print ReceiverOffDiagonalImpedance_t: ", self%i_rx
         !
     end subroutine printReceiverOffDiagonalImpedance
     !

@@ -305,7 +305,7 @@ contains
     !> Creates volume elements centered around the edges of
     !> the grid, and stores them as real vectors with
     !> gridType = EDGE.
-    subroutine SetEdgeVolume(self)
+    subroutine SetEdgeVolume( self )
         implicit none
         !
         class( MetricElements_CSG_t ), intent( inout ) :: self

@@ -4,8 +4,24 @@
 module Vector
     !
     use Scalar
-    !use cSparseVector3D_SG
     !
+    !>
+    type :: ESolTx
+        !
+        class( Vector_t ), allocatable, dimension(:) :: pol
+        !
+    end type ESolTx
+    !
+    !>
+    type :: ESolMTx
+        !
+        type( ESolTx ), allocatable, dimension(:) :: e_sol
+        !
+        integer :: SolnIndex = 0
+        !
+    end type ESolMTx
+    !
+    !>
     type, abstract, extends( Field_t ) :: Vector_t
         !
         integer, dimension(3) :: NdX, NdY, NdZ, Nxyz
@@ -19,12 +35,7 @@ module Vector
         !
         procedure( interface_interp_func_vector ), deferred, public :: interpFunc
         !
-        procedure( interface_sum_edges_vector ), deferred, public :: sumEdges
         procedure( interface_sum_cells_vector ), deferred, public :: avgCells
-        !
-        !> Vector procedures
-        procedure, public :: boundary => boundaryVector
-        procedure, public :: interior => interiorVector
         !
     end type Vector_t
     !
@@ -32,9 +43,9 @@ module Vector
         ! !
         ! !> No interface subroutine briefing
         ! subroutine interface_add_sparse_vector_vector( self, svec )
-            ! import :: Vector_t, cSparseVector3D_SG_t
+            ! import :: Vector_t, cVectorSparse3D_SG_t
             ! class( Vector_t ), intent( inout ) :: self
-            ! type( cSparseVector3D_SG_t ), intent( in ) :: svec
+            ! type( cVectorSparse3D_SG_t ), intent( in ) :: svec
             ! !
         ! end subroutine interface_add_sparse_vector_vector
         ! !
@@ -55,14 +66,6 @@ module Vector
         end subroutine interface_interp_func_vector
         !
         !> No interface subroutine briefing
-        subroutine interface_sum_edges_vector( self, cell_obj, interior_only )
-            import :: Vector_t, Scalar_t
-            class( Vector_t ), intent( in ) :: self
-            class( Scalar_t ), allocatable, intent( inout ) :: cell_obj
-            logical, optional, intent( in ) :: interior_only
-        end subroutine interface_sum_edges_vector
-        !
-        !> No interface subroutine briefing
         subroutine interface_sum_cells_vector( self, E_in, ptype )
             import :: Vector_t, Scalar_t
             class( Vector_t ), intent( inout ) :: self
@@ -71,33 +74,5 @@ module Vector
         end subroutine interface_sum_cells_vector
         !
     end interface
-    !
-contains
-    !
-    !> No subroutine briefing
-    subroutine boundaryVector( self, boundary )
-        implicit none
-        !
-        class( Vector_t ), intent( in ) :: self
-        class( Vector_t ), allocatable, intent( inout ) :: boundary
-        !
-        allocate( boundary, source = self )
-        !
-        call boundary%setAllInterior( C_ZERO )
-       !
-    end subroutine boundaryVector
-    !
-    !> No subroutine briefing
-    subroutine interiorVector( self, interior )
-        implicit none
-        !
-        class( Vector_t ), intent( in ) :: self
-        class( Vector_t ), allocatable, intent( inout ) :: interior
-        !
-        allocate( interior, source = self )
-        !
-        call interior%setAllboundary( C_ZERO )
-        !
-    end subroutine interiorVector
     !
 end module Vector

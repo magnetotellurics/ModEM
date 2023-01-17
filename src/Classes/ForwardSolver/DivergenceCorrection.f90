@@ -85,7 +85,7 @@ contains
         implicit none
         !
         class( DivergenceCorrection_t ), intent( inout ) :: self
-        class( Vector_t ), intent( in ) :: inE
+        class( Field_t ), intent( in ) :: inE
         class( Vector_t ), intent( inout ) :: outE
         class( Scalar_t ), intent( in ), optional :: phi0
         !

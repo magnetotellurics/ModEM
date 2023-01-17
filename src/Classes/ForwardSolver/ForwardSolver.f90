@@ -10,8 +10,8 @@ module ForwardSolver
     use Solver
     !
     character(:), allocatable :: forward_solver_type
-    character( len=21 ), parameter :: FWD_FILE  = "ForwardSolverFromFile"
-    character( len=15 ), parameter :: FWD_IT    = "ForwardSolverIT"
+    character( len=21 ), parameter :: FWD_FILE = "ForwardSolverFromFile"
+    character( len=15 ), parameter :: FWD_IT = "ForwardSolverIT"
     character( len=18 ), parameter :: FWD_IT_DC = "ForwardSolverIT_DC"
     !
     type, abstract :: ForwardSolver_t
@@ -40,6 +40,9 @@ module ForwardSolver
             procedure( interface_zero_diag_foward_solver ), deferred, public :: zeroDiagnostics
             !
             procedure( interface_create_e_solution_foward_solver ), deferred, public :: createESolution
+			!
+            procedure( interface_copy_from_foward_solver ), deferred, public :: copyFrom
+            generic :: assignment(=) => copyFrom
             !
     end type ForwardSolver_t
     !
@@ -90,6 +93,13 @@ module ForwardSolver
             class( Vector_t ), intent( inout ) :: e_solution
             !
         end subroutine interface_create_e_solution_foward_solver
+        !
+        !> No interface subroutine briefing
+        subroutine interface_copy_from_foward_solver( self, rhs )
+            import :: ForwardSolver_t            
+            class( ForwardSolver_t ), intent( inout ) :: self
+            class( ForwardSolver_t ), intent( in ) :: rhs
+        end subroutine interface_copy_from_foward_solver
         !
     end interface
     !

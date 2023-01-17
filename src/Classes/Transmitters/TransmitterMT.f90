@@ -3,8 +3,6 @@
 !
 module TransmitterMT
     !
-    use FileUnits
-    use cVector3D_SG
     use Transmitter
     !
     type, extends( Transmitter_t ), public :: TransmitterMT_t
@@ -44,12 +42,10 @@ module TransmitterMT
         self%n_pol = 2
         !
         self%period = period
-		!
-		self%omega = ( 2.0 * PI / self%period )
         !
-        !> self%pMult_ptr => pMult_E
+        !> self%PMult_ptr => PMult_E
         !
-        !> self%pMult_t_ptr => pMult_t_E
+        !> self%PMult_t_ptr => PMult_t_E
         !
     end function TransmitterMT_ctor
     !
@@ -73,15 +69,13 @@ module TransmitterMT
         !
         class( TransmitterMT_t ), intent( inout ) :: self
         !
-        integer :: i_pol, ios
-        !
-        character( len=20 ) :: ModeName
+        integer :: i_pol
         !
         if( .NOT. allocated( self%source ) ) then
             stop "Error: solveTransmitterMT > source not allocated!"
         endif
         !
-        !> Verbose
+        !> First allocate e_sol or e_sens, according to the Source case
         if( self%source%sens ) then
             !
             if( allocated( self%e_sens ) ) deallocate( self%e_sens )
@@ -94,42 +88,22 @@ module TransmitterMT
             !
         endif
         !
-        !> Loop over all polarizations (MT n_pol = 2)
+        !> Calculate e_sol or e_sens through ForwardSolver
+        !> For all polarizations (MT n_pol = 2)
         do i_pol = 1, self%n_pol
             !
             !> Verbose
             if( self%source%sens ) then
-                !write( *, * ) "               SolveADJ MT Tx:", self%id, " -> Period:", self%period, " - Polarization:", i_pol
                 !
-                !> Calculate e_sens through ForwardSolver
+                !write( *, "( a25, i5, a9, es12.5, a6, i5 )" ) "- Solving Sens MT Tx", self%i_tx, ", Period=", self%period, ", Pol=", i_pol
+                !
                 call self%forward_solver%createESolution( i_pol, self%source, self%e_sens( i_pol ) )
                 !
             else
-                !write( *, * ) "               SolveFWD MT Tx:", self%id, " -> Period:", self%period, " - Polarization:", i_pol
                 !
-                !> Calculate e_sol through ForwardSolver
+                !write( *, "( a25, i5, a9, es12.5, a6, i5 )" ) "- Solving FWD MT Tx", self%i_tx, ", Period=", self%period, ", Pol=", i_pol
+                !
                 call self%forward_solver%createESolution( i_pol, self%source, self%e_sol( i_pol ) )
-                !
-                if( i_pol == 1 ) then
-                    ModeName = "Ey"
-                else
-                    ModeName = "Ex"
-                endif
-                !
-                open( ioESolution, file = e_solution_file_name, action = "write", position = "append", form = "unformatted", iostat = ios )
-                !
-                if( ios /= 0 ) then
-                    stop "Error opening file in solveTransmitterMT: e_solution"
-                else
-                    !
-                    !> write the frequency header - 1 record
-                    write( ioESolution ) self%omega, self%id, i_pol, ModeName
-                    !
-                    call self%e_sol( i_pol )%write( ioESolution )
-                    !
-                    close( ioESolution )
-                    !
-                endif
                 !
             endif
             !
@@ -171,10 +145,10 @@ module TransmitterMT
         !
         integer :: iRx
         !
-        write( *, "( A29, I5, A10, es10.2, A7, I5)" ) &
-        "               TransmitterMT:", self%id, &
-        ", Period: ",    self%period, &
-        ", NRx: ", size( self%receiver_indexes )
+        write( *, "( A30, I8, A9, es16.5, A6, I8)" ) &
+        "TransmitterMT", self%i_tx, &
+        ", Period=",    self%period, &
+        ", NRx=", size( self%receiver_indexes )
         !
     end subroutine printTransmitterMT
     !

@@ -8,6 +8,9 @@
 #grid [SG|MR]: SG
 #
 #
+inversion_type [DCG|NLCG]          : DCG
+#
+#
 source [1D|2D]                     : 1D
 #
 # SOLVER

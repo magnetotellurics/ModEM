@@ -43,7 +43,7 @@ module Forward2D
     !> No function briefing
     function Forward2D_ctor(m) result( self )
         !>     pass the model parameter, create and return object
-        class(ModelParameter2D_t), target , intent( in ) :: m
+        class(ModelParameter2D_t), target, intent( in ) :: m
         !
         type(Forward2D_t) :: self
 
@@ -72,7 +72,7 @@ module Forward2D
         allocate(delZ(Nz+1))
         dY = self%m%grid%dY
         delY = self%m%grid%delY
-        dZ  = self%m%grid%dZ
+        dZ = self%m%grid%dZ
         delZ = self%m%grid%delZ
 
         call self%m%grid%NumberOfEdges( nYedge, nZedge )
@@ -136,7 +136,7 @@ module Forward2D
     subroutine setCondForward2D(self,m)
         !>    set pointer to possibly different model parameter object
         class(Forward2D_t), intent(inout) :: self
-        type(ModelParameter2D_t), target , intent( in ) :: m
+        type(ModelParameter2D_t), target, intent( in ) :: m
 
         self%m => m
     end subroutine setCondForward2D

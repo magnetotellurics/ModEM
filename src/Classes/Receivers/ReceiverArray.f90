@@ -3,7 +3,6 @@
 !
 module ReceiverArray
     !
-    use Constants
     use Receiver
     !
     !> Allocatable Receiver element of the array, for Old Fortran polymorphism !!!
@@ -13,7 +12,7 @@ module ReceiverArray
         !
     end type Rx_t
     !
-    !> Global Array of Receivers
+    !> Global generic array of Receivers
     type( Rx_t ), allocatable, target, dimension(:) :: receivers
     !
     public :: getReceiver, printReceiverArray
@@ -28,7 +27,7 @@ contains
         class( Receiver_t ), intent( in ) :: new_rx
         integer :: i_rx
         !
-        integer :: iRx, n_rx
+        integer :: i, n_rx
         type( Rx_t ), allocatable, dimension(:) :: temp_array
         type( Rx_t ), allocatable :: temp_rx
         !
@@ -38,7 +37,7 @@ contains
             allocate( Rx_t :: temp_rx )
             temp_rx%Rx = new_rx
             i_rx = 1
-            temp_rx%Rx%id = 1
+            temp_rx%Rx%i_rx = 1
             receivers(1) = temp_rx
             !
             deallocate( temp_rx )
@@ -47,9 +46,9 @@ contains
             !
             n_rx = size( receivers )
             !
-            do iRx = 1, n_rx
-                if( new_rx%isEqualRx( receivers( iRx )%Rx ) ) then
-                    i_rx = iRx
+            do i = 1, n_rx
+                if( new_rx%isEqualRx( receivers( i )%Rx ) ) then
+                    i_rx = i
                     return
                 endif
             enddo
@@ -58,12 +57,13 @@ contains
             temp_array( 1 : n_rx ) = receivers
             allocate( Rx_t :: temp_rx )
             temp_rx%Rx = new_rx
-            temp_rx%Rx%id = n_rx + 1
+            temp_rx%Rx%i_rx = n_rx + 1
             i_rx = n_rx + 1
             !
             temp_array( n_rx + 1 ) = temp_rx
             !
             call deallocateReceiverArray()
+            !
             allocate( receivers, source = temp_array )
             !
             deallocate( temp_rx, temp_array )

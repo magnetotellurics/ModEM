@@ -44,13 +44,15 @@ module rVector3D_SG
         procedure, public :: dotProd => dotProdRVector3D_SG
         procedure, public :: diagMult => diagMultRVector3D_SG
         !
+        procedure, public :: getReal => getRealRVector3D_SG
+        !
         procedure, public :: copyFrom => copyFromRVector3D_SG
         !
         procedure, public :: sumEdges => sumEdgesRVector3D_SG
         procedure, public :: avgCells => avgCellsRVector3D_SG
         !
-		procedure, public :: conjugate => conjugateRVector3D_SG
-		!
+        procedure, public :: conjugate => conjugateRVector3D_SG
+        !
         procedure, public :: linComb => linCombRVector3D_SG
         procedure, public :: multAdd => multAddRVector3D_SG
         procedure, public :: interpFunc => interpFuncRVector3D_SG
@@ -523,7 +525,7 @@ contains
         implicit none
         !
         class( rVector3D_SG_t ), intent( in ) :: self
-        complex( kind=prec ), allocatable, intent( out ) :: array(:)
+        complex( kind=prec ), allocatable, dimension(:), intent( out ) :: array
         !
         allocate( array( self%length() ) )
         array = (/reshape( cmplx( self%x, 0.0, kind=prec ), (/self%Nxyz(1), 1/) ), &
@@ -537,22 +539,32 @@ contains
         implicit none
         !
         class( rVector3D_SG_t ), intent( inout ) :: self
-        complex( kind=prec ), intent( in ) :: array(:)
+        complex( kind=prec ), allocatable, dimension(:), intent( inout ) :: array
         !
         integer :: i1, i2
-        !> Ex
-        i1 = 1; i2 = self%Nxyz(1)
         !
-        self%x = reshape( real( array(i1:i2), kind=prec ), self%NdX )
-        !> Ey
-        i1 = i2 + 1; i2 = i2 + self%Nxyz(2)
-        !
-        self%y = reshape( real( array(i1:i2), kind=prec ), self%NdY )
-        !
-        !> Ez
-        i1 = i2 + 1; i2 = i2 + self%Nxyz(3)
-        !
-        self%z = reshape( real( array(i1:i2), kind=prec ), self%NdZ )
+        if( allocated( array ) ) then
+            !
+            !> Ex
+            i1 = 1; i2 = self%Nxyz(1)
+            !
+            self%x = reshape( real( array(i1:i2), kind=prec ), self%NdX )
+            !
+            !> Ey
+            i1 = i2 + 1; i2 = i2 + self%Nxyz(2)
+            !
+            self%y = reshape( real( array(i1:i2), kind=prec ), self%NdY )
+            !
+            !> Ez
+            i1 = i2 + 1; i2 = i2 + self%Nxyz(3)
+            !
+            self%z = reshape( real( array(i1:i2), kind=prec ), self%NdZ )
+            !
+            deallocate( array )
+            !
+        else
+            stop "Error: setArrayRVector3D_SG > Input array not allocated."
+        endif
         !
     end subroutine setArrayRVector3D_SG
     !
@@ -664,7 +676,7 @@ contains
         ! implicit none
         ! !
         ! class( rVector3D_SG_t ), intent( inout ) :: self
-        ! type( cSparseVector3D_SG_t ), intent( in ) :: svec
+        ! type( cVectorSparse3D_SG_t ), intent( in ) :: svec
         ! !
         ! integer :: ii
         ! !
@@ -825,6 +837,7 @@ contains
         !
         class( rVector3D_SG_t ), intent( in ) :: self
         class( Field_t ), intent( in ) :: rhs
+        !
         complex( kind=prec ) :: cvalue
         !
         cvalue = C_ZERO
@@ -894,7 +907,7 @@ contains
         implicit none
         !
         class( rVector3D_SG_t ), intent( in ) :: self
-        class( Scalar_t ), allocatable, intent( inout ) :: cell_obj
+        class( Field_t ), allocatable, intent( inout ) :: cell_obj
         logical, optional, intent( in ) :: interior_only
         !
         integer :: x_xend, x_yend, x_zend
@@ -1315,6 +1328,19 @@ contains
         !
     end subroutine interpFuncRVector3D_SG
     !
+    !> No function briefing
+    subroutine getRealRVector3D_SG( self, r_field )
+        implicit none
+        !
+        class( rVector3D_SG_t ), intent( in ) :: self
+        class( Field_t ), allocatable, intent( out ) :: r_field
+        !
+        allocate( r_field, source = rVector3D_SG_t( self%grid, self%grid_type ) )
+        !
+        call r_field%copyFrom( self )
+        !
+    end subroutine getRealRVector3D_SG
+    !
     !> No subroutine briefing
     subroutine copyFromRVector3D_SG( self, rhs )
         implicit none
@@ -1341,14 +1367,9 @@ contains
                 self%NdZ = rhs%NdZ
                 self%Nxyz = rhs%Nxyz
                 !
-                if( allocated( self%x ) ) deallocate( self%x )
-                allocate( self%x, source = rhs%x )
-                !
-                if( allocated( self%y ) ) deallocate( self%y )
-                allocate( self%y, source = rhs%y )
-                !
-                if( allocated( self%z ) ) deallocate( self%z )
-                allocate( self%z, source = rhs%z )
+                self%x = rhs%x
+                self%y = rhs%y
+                self%z = rhs%z
                 !
             class default
                 stop "Error: copyFromRVector3D_SG > Undefined rhs"

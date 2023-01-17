@@ -4,9 +4,6 @@
 module DataFileStandard
     !
     use DataFile
-    use DataEntryMT
-    use DataEntryMT_REF
-    use DataEntryCSEM
     !
     type, extends( DataFile_t ) :: DataFileStandard_t
         !
@@ -180,13 +177,26 @@ contains
                          !
                          !> Data Type
                          case( 3 )
+                             !
                              actual_type = args(2)
                          !
-                         !> exp(-i\omega t) ????, [V/m]/[T] ????, 0.00 ????, 0.000 0.000 ????
-                         case( 4, 5, 6, 7 )
+                         !> exp(-i\omega t)
+                         case( 4 )
+                            !
+                            self%conjugate = ( index( args(2), "+" ) > 0 )
+                            !
+                         !
+                         !> 0.00 ????, 0.000 0.000 ????
+                         case( 5 )
+                            !
+                            self%units_in_file = trim( args(2) )
+                            !
+                         !> [V/m]/[T] ????, 0.00 ????, 0.000 0.000 ????
+                         case( 6, 7 )
                          !
                          !> n_tx, n_rx
                          case( 8 )
+                             !
                              read( args(2), * ) self%n_tx
                              read( args(3), * ) n_rx
                              !
@@ -208,8 +218,13 @@ contains
             !
 10          close( unit = funit )
             !
+            ! Verbose
+            write( *, * ) "          ", trim( self%units ), " to ", trim( self%units_in_file ), " => ", self%SI_factor
+            !
             if( mt_counter > 0 )   write( *, * ) "          Read ", mt_counter,   " MT Entries"
             if( csem_counter > 0 ) write( *, * ) "          Read ", csem_counter, " CSEM Entries"
+            !
+            call self%contructMeasuredDataGroupTxArray()
             !
         else
             write( *, * ) "Error opening [", fname, "] in DataFileStandard_ctor"
@@ -229,5 +244,5 @@ contains
         call self%dealloc()
         !
     end subroutine DataFileStandard_dtor
-    !
+	!
 end module DataFileStandard

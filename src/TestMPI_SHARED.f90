@@ -88,19 +88,19 @@ program TestMPI
                 !
                 select case ( job_master )
                     !
-                    case ( "SHARE_MEMORY" )
+                    case ( "HANDLE_FWD_COMP" )
                         !
                         call workerQuerySharedMemory()
                         !
                     case ( "JOB_FORWARD" )
                         !
-                        call workerJobForwardModelling()
+                        call workerForwardModelling()
                         !
-                    case ( "JOB_ADJOINT" )
+                    case ( "JOB_JMULT" )
                         !
-                        call workerJobAdjoint()
+                        call workerJMult()
                         !
-                    case ( "JOB_ADJOINT_T" )
+                    case ( "JOB_JMULT_T" )
                         !
                         call workerJobAdjoint_T()
                         !
@@ -156,7 +156,7 @@ contains
         !
         do worker_id = 1, ( mpi_size - 1 )
             !
-            job_info%job_name = job_share_memory
+            job_info%job_name = job_basic_components
             !
             call sendTo( worker_id )
             !
@@ -225,11 +225,11 @@ contains
                     !
                     allocate( model_operator, source = ModelOperator_MF_t( main_grid ) )
                     !
-                    call model_operator%SetEquations()
+                    call model_operator%setEquations()
                     !
                     call sigma0%setMetric( model_operator%metric )
                     !
-                    call model_operator%SetCond( sigma0 )
+                    call model_operator%setCond( sigma0 )
                     !
                 class default
                     stop "Error: workerQuerySharedMemory > Unclassified main_grid"
@@ -287,16 +287,16 @@ contains
         !> Initialize MPI control variables
         worker_rank = 1
         tx_received = 0
-        i_tx       = 0
+        i_tx = 0
         !
         !> Send 1 transmitter to first np workers
         do while( worker_rank <= ( mpi_size - 1 ) )
             !
             i_tx = i_tx + 1
             !
-            job_info%job_name    = job_forward
-            job_info%adjoint     = is_adjoint
-            job_info%i_tx       = i_tx
+            job_info%job_name = job_forward
+            job_info%adjoint = is_adjoint
+            job_info%i_tx = i_tx
             job_info%worker_rank = worker_rank
             !
             call sendTo( worker_rank )
@@ -313,11 +313,11 @@ contains
             call receiveData( all_predicted_data( job_info%i_tx ), job_info%worker_rank )
             !
             tx_received = tx_received + 1
-            i_tx       = i_tx + 1
+            i_tx = i_tx + 1
             !
             job_info%job_name = job_forward
-            job_info%adjoint  = is_adjoint
-            job_info%i_tx    = i_tx
+            job_info%adjoint = is_adjoint
+            job_info%i_tx = i_tx
             !
             call sendTo( job_info%worker_rank )
             !
@@ -343,7 +343,7 @@ contains
         enddo
         !
         !> Write all_predicted_data, with its proper Rx headers, to the file <predicted_data_file_name>
-        call writeDataGroupArray( all_predicted_data, predicted_data_file_name )
+        call writeDataGroupTxArray( all_predicted_data, predicted_data_file_name )
         !
         !> Verbose
         write( *, * ) "     - Finish Forward Modeling"
@@ -389,7 +389,7 @@ contains
     end subroutine masterJobForwardModelling
     !
     !> Routine to run a full ForwardModeling job and deliver the result (PredictedData) in a text file
-    subroutine masterJobAdjoint()
+    subroutine masterJobJMult()
         implicit none
         !
         !> Data gradient for all transmitters, grouped into an array of DataGroupTx
@@ -398,7 +398,7 @@ contains
         integer :: worker_rank, i_tx, tx_received
         !
         ! Verbose
-        write( *, * ) "     - Start masterJobAdjoint"
+        write( *, * ) "     - Start masterJobJMult"
         !
         !> Read Model File: instantiates Grid, ModelOperator and ModelParameter
         if( .NOT. has_model_file ) then 
@@ -420,7 +420,7 @@ contains
         !
         !> Reads Data File: instantiates and builds the Data relation between Txs and Rxs
         if( .NOT. has_data_file ) then 
-            stop "Error: masterJobAdjoint > Missing Data file!"
+            stop "Error: masterJobJMult > Missing Data file!"
         else
             !
             call handleDataFile()
@@ -442,16 +442,16 @@ contains
         !> Initialize MPI control variables
         worker_rank = 1
         tx_received = 0
-        i_tx       = 0
+        i_tx = 0
         !
         !> Send 1 transmitter to first np workers
         do while( worker_rank <= ( mpi_size - 1 ) )
             !
             i_tx = i_tx + 1
             !
-            job_info%job_name    = job_adjoint
+            job_info%job_name = job_jmult
             job_info%worker_rank = worker_rank
-            job_info%i_tx       = i_tx
+            job_info%i_tx = i_tx
             !
             call sendTo( worker_rank )
             !
@@ -467,9 +467,9 @@ contains
             call receiveData( JmHat( job_info%i_tx ), job_info%worker_rank )
             !
             tx_received = tx_received + 1
-            i_tx       = i_tx + 1
+            i_tx = i_tx + 1
             !
-            job_info%job_name = job_adjoint
+            job_info%job_name = job_jmult
             !
             call sendTo( job_info%worker_rank )
             !
@@ -490,16 +490,16 @@ contains
             !
         enddo
         !
-        !> Write all_predicted_data, with its proper Rx headers, to the file <JmHat_data_file_name>
-        call writeDataGroupArray( JmHat, JmHat_data_file_name )
+        !> Write all_predicted_data, with its proper Rx headers, to the file <jmhat_data_file_name>
+        call writeDataGroupTxArray( JmHat, jmhat_data_file_name )
         !
         !>
         call deallocateGlobalArrays()
         !
         !> Verbose
-        write( *, * ) "     - Finish masterJobAdjoint"
+        write( *, * ) "     - Finish masterJobJMult"
         !
-    end subroutine masterJobAdjoint
+    end subroutine masterJobJMult
     !
     !
     subroutine sendTxMeasureData( i_tx )
@@ -550,7 +550,7 @@ contains
         !
         !> Reads Data File: instantiates and builds the Data relation between Txs and Rxs
         if( .NOT. has_data_file ) then 
-            stop "Error: masterJobAdjoint > Missing Data file!"
+            stop "Error: masterJobJMult > Missing Data file!"
         else
             call handleDataFile()
         endif
@@ -578,16 +578,16 @@ contains
         !> Initialize MPI control variables
         worker_rank = 1
         tx_received = 0
-        i_tx       = 0
+        i_tx = 0
         !
         !> Send 1 transmitter to first np workers
         do while( worker_rank <= ( mpi_size - 1 ) )
             !
             i_tx = i_tx + 1
             !
-            job_info%job_name    = job_adjoint_t
+            job_info%job_name = job_jmult_t
             job_info%worker_rank = worker_rank
-            job_info%i_tx       = i_tx
+            job_info%i_tx = i_tx
             !
             call sendTo( worker_rank )
             !
@@ -608,17 +608,17 @@ contains
             !
             allocate( tx_model_cond, source = dsigma%cell_cond )
             !
-            call receiveModel( tx_model_cond, job_info%worker_rank )
+            call receiveConductivity( tx_model_cond, job_info%worker_rank )
             !
             call dsigma%cell_cond%add( tx_model_cond )
             !
             deallocate( tx_model_cond )
             !
             tx_received = tx_received + 1
-            i_tx       = i_tx + 1
+            i_tx = i_tx + 1
             !
-            job_info%job_name = job_adjoint_t
-            job_info%i_tx    = i_tx
+            job_info%job_name = job_jmult_t
+            job_info%i_tx = i_tx
             !
             call sendTo( job_info%worker_rank )
             !
@@ -637,7 +637,7 @@ contains
             !
             allocate( tx_model_cond, source = dsigma%cell_cond )
             !
-            call receiveModel( tx_model_cond, job_info%worker_rank )
+            call receiveConductivity( tx_model_cond, job_info%worker_rank )
             !
             call dsigma%cell_cond%add( tx_model_cond )
             !
@@ -685,7 +685,7 @@ contains
     end subroutine deallocateGlobalArrays
     !
     !> No procedure briefing
-    subroutine workerJobForwardModelling()
+    subroutine workerForwardModelling()
         implicit none
         !
         !> Temporary alias pointers
@@ -730,7 +730,7 @@ contains
                 allocate( Tx%source, source = SourceCSEM_Dipole1D_t( model_operator, sigma0, Tx%period, Tx%location, Tx%dip, Tx%azimuth, Tx%moment ) )
                 !
             class default
-                stop "Error: workerJobForwardModelling: Unclassified Transmitter"
+                stop "Error: workerForwardModelling: Unclassified Transmitter"
                 !
         end select
         !
@@ -758,9 +758,9 @@ contains
         enddo
         !
         !> SEND JOB DONE TO MASTER
-        job_info%job_name    = job_done
+        job_info%job_name = job_done
         job_info%worker_rank = node_rank
-        job_info%i_tx       = tx_data%i_tx
+        job_info%i_tx = tx_data%i_tx
         !
         call sendTo( master_id )
         !
@@ -769,10 +769,10 @@ contains
         !> Clear the memory used by the current tx_data
         if( .NOT. job_info%adjoint ) deallocate( tx_data )
         !
-    end subroutine workerJobForwardModelling
+    end subroutine workerForwardModelling
     !
     !> No procedure briefing
-    subroutine workerJobAdjoint()
+    subroutine workerJMult()
         implicit none
         !
         !> Temporary alias pointers
@@ -781,8 +781,8 @@ contains
         !> Get the same transmitter previously used at forward modeling (tx_pred_data)
         Tx => getTransmitter( tx_data%i_tx )
         !
-        !> Switch Transmitter's source to SourceInteriorForce from pMult
-        call Tx%setSource( Tx%pMult( sigma0, pmodel, model_operator ) )
+        !> Switch Transmitter's source to SourceInteriorForce from PMult
+        call Tx%setSource( Tx%PMult( sigma0, pmodel, model_operator ) )
         !
         !> Solve e_sens with the new Source
         call Tx%solve()
@@ -794,15 +794,15 @@ contains
         call JMult_Tx( tx_data )
         !
         !> MPI: SEND JOB DONE TO MASTER
-        job_info%job_name    = job_done
+        job_info%job_name = job_done
         job_info%worker_rank = node_rank
-        job_info%i_tx       = tx_data%i_tx
+        job_info%i_tx = tx_data%i_tx
         !
         call sendTo( master_id )
         !
         call sendData( tx_data, master_id )
         !
-    end subroutine workerJobAdjoint
+    end subroutine workerJMult
     !
     !> No procedure briefing
     subroutine workerJobAdjoint_T()
@@ -827,7 +827,7 @@ contains
         call JMult_T_Tx( sigma0, tx_data, tx_dsigma )
         !
         !> MPI: SEND JOB DONE TO MASTER
-        job_info%job_name    = job_done
+        job_info%job_name = job_done
         job_info%worker_rank = node_rank
         !
         call sendTo( master_id )
@@ -837,7 +837,7 @@ contains
             !
             class is( ModelParameterCell_SG_t )
                 !
-                call sendModel( tx_dsigma%cell_cond, master_id )
+                call sendConductivity( tx_dsigma%cell_cond, master_id )
                 !
             class default
                 stop "Error: masterJobAdjoint_T > Unclassified tx_dsigma"
@@ -858,7 +858,7 @@ contains
                 !
             case ( "adjoint" )
                 !
-                call masterJobAdjoint()
+                call masterJobJMult()
                 !
             case ( "JMult_t" )
                 !
@@ -922,11 +922,11 @@ contains
                 !
                 allocate( model_operator, source = ModelOperator_MF_t( main_grid ) )
                 !
-                call model_operator%SetEquations()
+                call model_operator%setEquations()
                 !
                 call sigma0%setMetric( model_operator%metric )
                 !
-                call model_operator%SetCond( sigma0 )
+                call model_operator%setCond( sigma0 )
                 !
             class default
                 stop "Error: handleModelFile > Unclassified main_grid"
@@ -1109,7 +1109,7 @@ contains
                       case ( "-gd", "--gradient" )
                          !
                          call get_command_argument( argument_index + 1, argument )
-                         JmHat_data_file_name = trim( argument )
+                         jmhat_data_file_name = trim( argument )
                          !
                          argument_index = argument_index + 2
                          !
@@ -1156,15 +1156,15 @@ contains
         implicit none
         !
         ! I|O
-        predicted_data_file_name = "predicted_data.dat"
-        JmHat_data_file_name  = "JmHat.dat"
-        e_solution_file_name     = "esolution.bin"
-        dsigma_file_name         = "dsigma.mod"
-        has_control_file         = .FALSE.
-        has_model_file           = .FALSE.
-        has_pmodel_file          = .FALSE.
-        has_data_file            = .FALSE.
-        verbosis                 = .FALSE.
+        predicted_data_file_name = "all_predicted_data.dat"
+        jmhat_data_file_name = "JmHat.dat"
+        e_solution_file_name = "esolution.bin"
+        dsigma_file_name = "dsigma.mod"
+        has_control_file = .FALSE.
+        has_model_file = .FALSE.
+        has_pmodel_file = .FALSE.
+        has_data_file = .FALSE.
+        verbosis = .FALSE.
         !
         ! Solvers
         QMR_iters = 40
@@ -1180,9 +1180,9 @@ contains
         get_1D_from = "Geometric_mean"
         !
         ! Model
-        model_method      = MM_METHOD_FIXED_H
+        model_method = MM_METHOD_FIXED_H
         model_n_air_layer = 10
-        model_max_height  = 200.0
+        model_max_height = 200.0
         !
     end subroutine setupDefaultParameters
     !
@@ -1196,7 +1196,7 @@ contains
         if( allocated( model_method ) ) deallocate( model_method )
         if( allocated( get_1D_from ) ) deallocate( get_1D_from )
         if( allocated( predicted_data_file_name ) ) deallocate( predicted_data_file_name )
-        if( allocated( JmHat_data_file_name ) ) deallocate( JmHat_data_file_name )
+        if( allocated( jmhat_data_file_name ) ) deallocate( jmhat_data_file_name )
         if( allocated( e_solution_file_name ) ) deallocate( e_solution_file_name )
         !
         if( allocated( control_file_name ) ) deallocate( control_file_name )
@@ -1209,7 +1209,7 @@ contains
     end subroutine garbageCollector
     !
     !> No subroutine briefing
-    subroutine writeDataGroupArray( target_tx_data_array, file_name )
+    subroutine writeDataGroupTxArray( target_tx_data_array, file_name )
         implicit none
         !
         type( DataGroupTx_t ), allocatable, dimension(:) :: target_tx_data_array
@@ -1247,7 +1247,7 @@ contains
                 !
                 receiver => getReceiver( data_group%i_rx )
                 !
-                call writePredictedDataHeader( receiver, receiver_type )
+                call writeHeaderDataGroupTxArray( receiver, receiver_type )
                 !
                 transmitter => getTransmitter( data_group%i_tx )
                 !
@@ -1277,14 +1277,14 @@ contains
             close( ioPredData )
             !
         else
-            write( *, * ) "Error opening [", file_name, "] in writeDataGroupArray!"
+            write( *, * ) "Error opening [", file_name, "] in writeDataGroupTxArray!"
             stop
         endif
         !
-    end subroutine writeDataGroupArray
+    end subroutine writeDataGroupTxArray
     !
     !> No subroutine briefing
-    subroutine writePredictedDataHeader( receiver, receiver_type )
+    subroutine writeHeaderDataGroupTxArray( receiver, receiver_type )
         implicit none
         !
         class( Receiver_t ), intent( in ) :: receiver
@@ -1317,7 +1317,7 @@ contains
                     !
                 case default
                     write( *, * ) "Unknown receiver type :[", receiver%rx_type, "]"
-                    stop "Error: test_FWD.f90: writePredictedDataHeader()"
+                    stop "Error: test_FWD.f90: writeHeaderDataGroupTxArray()"
                 !
             end select
             !
@@ -1332,10 +1332,10 @@ contains
             !
         endif
         !
-    end subroutine writePredictedDataHeader
+    end subroutine writeHeaderDataGroupTxArray
     !
     !> No subroutine briefing
-    subroutine writeEsolutionHeader( n_tx, nMode )
+    subroutine writeAllESolutionHeader( n_tx, nMode )
         implicit none
         !
         integer, intent( in ) :: n_tx, nMode
@@ -1360,13 +1360,13 @@ contains
             !
         else
             !
-            write( *, * ) "Error opening file in writeEsolutionHeader [", e_solution_file_name, "]!"
+            write( *, * ) "Error opening file in writeAllESolutionHeader [", e_solution_file_name, "]!"
             stop
             !
         endif
         !
         !
-    end subroutine writeEsolutionHeader
+    end subroutine writeAllESolutionHeader
     !
     !> No subroutine briefing
     subroutine printUsage()
@@ -1377,21 +1377,21 @@ contains
         write( *, * ) "    Forward Modeling:"
         write( *, * ) "        <ModEM> -f -m <rFile_Model> -d <rFile_Data>"
         write( *, * ) "    Outputs:"
-        write( *, * ) "        - predicted_data.dat or the path specified by [-pd]"
+        write( *, * ) "        - all_predicted_data.dat or the path specified by [-pd]"
         write( *, * ) "        - esolution.bin or the path specified by      [-es]"
         write( *, * ) ""
         write( *, * ) "    Adjoint:"
         write( *, * ) "        <ModEM> -j -m <rFile_Model> -pm <rFile_pModel> -d <rFile_Data>"
         write( *, * ) "    Outputs:"
         write( *, * ) "        - JmHat.dat or the path specified by  [-gd]"
-        write( *, * ) "        - predicted_data.dat or the path specified by [-pd]"
+        write( *, * ) "        - all_predicted_data.dat or the path specified by [-pd]"
         write( *, * ) "        - esolution.bin or the path specified by      [-es]"
         write( *, * ) ""
         write( *, * ) "    JMult_t:"
         write( *, * ) "        <ModEM> -jt -m <rFile_Model> -d <rFile_Data>"
         write( *, * ) "    Output:"
         write( *, * ) "        - sigma0.mod or the path specified by          [-dm]"
-        write( *, * ) "        - predicted_data.dat or the path specified by [-pd]"
+        write( *, * ) "        - all_predicted_data.dat or the path specified by [-pd]"
         write( *, * ) "        - esolution.bin or the path specified by      [-es]"
         !
     end subroutine printUsage

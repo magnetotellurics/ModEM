@@ -2,10 +2,8 @@
 !> Derived class to define a CSEM Transmitter
 !
 module TransmitterCSEM
-    !> 
-    use FileUnits
+    !
     use Transmitter 
-    use cVector3D_SG
     !
     type, extends( Transmitter_t ), public :: TransmitterCSEM_t
         !
@@ -43,24 +41,22 @@ contains
         call self%init()
         !
         self%n_pol = 1
-		!
+        !
         self%period = period
         !
-		self%omega = ( 2.0 * PI / self%period )
-        !
         self%location = location
-		!
+        !
         self%azimuth = azimuth
-		!
+        !
         self%dip = dip
-		!
+        !
         self%moment = moment
-		!
+        !
         self%dipole = dipole
         !
-        !self%pMult_ptr => pMult_E
+        !self%PMult_ptr => PMult_E
         !
-        !self%pMult_t_ptr => pMult_t_E
+        !self%PMult_t_ptr => PMult_t_E
         !
     end function TransmitterCSEM_ctor
     !
@@ -122,60 +118,38 @@ contains
             stop "Error: solveTransmitterCSEM > source not allocated!"
         endif
         !
-        !> Verbose
+        !> First allocate e_sol or e_sens, according to the Source case
         if( self%source%sens ) then
-            !
-            write( *, * ) "               SolveADJ CSEM Tx:", self%id, " -> Period:", self%period
             !
             if( allocated( self%e_sens ) ) deallocate( self%e_sens )
             allocate( cVector3D_SG_t :: self%e_sens(1) )
             !
         else
             !
-            write( *, * ) "               SolveFWD CSEM Tx:", self%id, " -> Period:", self%period
-            !
             if( allocated( self%e_sol ) ) deallocate( self%e_sol )
             allocate( cVector3D_SG_t :: self%e_sol(1) )
             !
         endif
         !
-        !> Defines e_sol or e_sens depending on Forward or sens case
+        !> Calculate e_sol or e_sens through ForwardSolver
+        !> For one polarization (CSEM n_pol = 1)
         if( self%source%sens ) then
             !
-            !> Calculate e_solution through ForwardSolver
+            !write( *, "( a25, i5, a9, es12.5)" ) "- Solving Sens CSEM Tx", self%i_tx, ", Period=", self%period
+            !
             call self%forward_solver%createESolution( 1, self%source, self%e_sens(1) )
             !
-            !> Add the source's rhs content to the e_solution vector
             call self%e_sens(1)%add( self%source%E(1) )
             !
         else
             !
-            !> Calculate e_solution through ForwardSolver
+            !write( *, "( a25, i5, a9, es12.5)" ) "- Solving FWD CSEM Tx", self%i_tx, ", Period=", self%period
+            !
             call self%forward_solver%createESolution( 1, self%source, self%e_sol(1) )
             !
-            !> Add the source's rhs content to the e_solution vector
             call self%e_sol(1)%add( self%source%E(1) )
             !
-            ModeName = "Ex"
-            !
-            open( ioESolution, file = e_solution_file_name, action = "write", position = "append", form = "unformatted", iostat = ios )
-            !
-            if( ios /= 0 ) then
-                stop "Error opening file in solveTransmitterCSEM: e_solution"
-            else
-                !
-                !> write the frequency header - 1 record
-                write( ioESolution ) self%omega, self%id, 1, ModeName
-                !
-                call self%e_sol(1)%write( ioESolution )
-                !
-                close( ioESolution )
-                !
-            endif
-            !
         endif
-        !
-        ModeName = "Ex"
         !
     end subroutine solveTransmitterCSEM
     !
@@ -187,11 +161,11 @@ contains
         !
         integer :: iRx
         !
-        write( *, "( A30, I5, A12, f8.2, f8.2, f8.2, A10, es10.2, A7, I5)" ) &
-        "               TransmitterCSEM", self%id, &
-        ": Location[", self%location(1), self%location(2), self%location(3), &
-        "], Period: ",    self%period, &
-        ", NRx: ", size( self%receiver_indexes )
+        write( *, "( A30, I8, A13, f16.3, f16.3, f16.3, A10, es16.5, A6, I8)" ) &
+        "TransmitterCSEM", self%i_tx, &
+        ", Location= [", self%location(1), self%location(2), self%location(3), &
+        "], Period=",    self%period, &
+        ", NRx=", size( self%receiver_indexes )
         !
     end subroutine printTransmitterCSEM
     !

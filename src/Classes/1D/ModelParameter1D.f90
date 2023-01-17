@@ -48,10 +48,10 @@ contains
         !
         !write( *, * ) "Constructor ModelParameter1D_t"
         !
-        self%paramType    = ""
-        self%airCond      = 1E-10
+        self%paramType = ""
+        self%airCond = 1E-10
         self%is_allocated = .FALSE.
-        self%zero_valued  = .FALSE.
+        self%zero_valued = .FALSE.
         !
         self%grid = grid
         !
@@ -84,7 +84,7 @@ contains
     end subroutine ModelParameter1D_dtor
     !
     !> No subroutine briefing
-    subroutine zerosModelParameter1D(self)
+    subroutine zerosModelParameter1D( self )
         implicit none
         !
         class( ModelParameter1D_t ), intent( inout ) :: self
@@ -136,10 +136,10 @@ contains
             stop "     input condutivity not consistent with grid"
         endif
         !
-        self%cellCond  = cellCond
-        self%AirCond   = AirCond
+        self%cellCond = cellCond
+        self%AirCond = AirCond
         self%paramType = trim(paramType)
-        self%mKey      = mKey
+        self%mKey = mKey
         !
     end subroutine setConductivityModelParameter1D
     !

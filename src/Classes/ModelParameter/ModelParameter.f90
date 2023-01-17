@@ -11,8 +11,9 @@ module ModelParameter
     use Grid
     use MetricElements
     !
-    !> Global name for e_solution file
-    character(:), allocatable :: dsigma_file_name
+    character(:), allocatable :: inversion_algorithm
+    character( len=12 ), parameter :: DCG = "DCG"
+    character( len=14 ), parameter :: NLCG = "NLCG"
     !
     type, abstract :: ModelParameter_t
         !
@@ -31,12 +32,17 @@ module ModelParameter
             !
             procedure( interface_set_type_model_parameter ), deferred, public :: SetType
             !
+            procedure( interface_get_cond_model_parameter ), deferred, public :: getCond
+            !
+            procedure( interface_add_cond_model_parameter ), deferred, public :: addCond
+            !
             procedure, public :: setMetric => setMetricModelParameter
             procedure, public :: SigMap => SigMapModelParameter
             procedure, public :: SetSigMap => SetSigMapModelParameter
             !
             !> Interfaces
             procedure( interface_zeros_model_parameter ), deferred, public :: zeros
+			!
             procedure( interface_copy_from_model_parameter ), deferred, public :: copyFrom
             generic :: assignment(=) => copyFrom
             !
@@ -93,7 +99,21 @@ module ModelParameter
         end function interface_sigmap_model_parameter
         !
         !> No interface subroutine briefing
-        subroutine interface_zeros_model_parameter(self)
+        subroutine interface_get_cond_model_parameter( self, ccond )
+            import :: ModelParameter_t, Scalar_t
+            class( ModelParameter_t ), intent( in ) :: self
+            class( Scalar_t ), allocatable, intent( inout ) :: ccond
+        end subroutine interface_get_cond_model_parameter
+        !
+        !> No interface subroutine briefing
+        subroutine interface_add_cond_model_parameter( self, ccond )
+            import :: ModelParameter_t, Scalar_t
+            class( ModelParameter_t ), intent( inout ) :: self
+            class( Scalar_t ), allocatable, intent( in ) :: ccond
+        end subroutine interface_add_cond_model_parameter
+        !
+        !> No interface subroutine briefing
+        subroutine interface_zeros_model_parameter( self )
             import :: ModelParameter_t
             class( ModelParameter_t ), intent( inout ) :: self
         end subroutine interface_zeros_model_parameter
@@ -150,16 +170,17 @@ module ModelParameter
         !
         !> No interface function briefing
         subroutine interface_dpdemapping_t_model_parameter( self, eVec, dsigma )
-            import :: ModelParameter_t, Vector_t
+            import :: ModelParameter_t, Field_t
             class( ModelParameter_t ), intent( in ) :: self
-            class( Vector_t ), intent( in ) :: eVec
+            class( Field_t ), intent( in ) :: eVec
             class( ModelParameter_t ), allocatable, intent( out ) :: dsigma
         end subroutine interface_dpdemapping_t_model_parameter
         !
         !> No interface subroutine briefing
-        subroutine interface_write_model_parameter( self, comment )
+        subroutine interface_write_model_parameter( self, file_name, comment )
             import :: ModelParameter_t, Vector_t
             class( ModelParameter_t ), intent( in ) :: self
+            character(*), intent( in ) :: file_name
             character(*), intent( in ), optional :: comment
         end subroutine interface_write_model_parameter
         !
@@ -259,17 +280,19 @@ contains
         !
         class( ModelParameter_t ), intent( inout ) :: self
         !
-        call date_and_time( values=self%mKey )
-        !
         self%metric => null()
         !
-        self%SigMap_ptr => null()
+        call date_and_time( values=self%mKey )
         !
-        self%param_type   = ""
-        self%air_cond     = SIGMA_AIR
-        self%zero_valued  = .FALSE.
+        self%air_cond = SIGMA_AIR
+        !
+        self%param_type = ""
+        !
+        self%zero_valued = .FALSE.
         self%is_allocated = .FALSE.
-        self%is_vti       = .FALSE.
+        self%is_vti = .FALSE.
+        !
+        self%SigMap_ptr => null()
         !
     end subroutine initializeModelParameter
     !

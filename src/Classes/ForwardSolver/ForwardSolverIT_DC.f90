@@ -29,6 +29,8 @@ module ForwardSolverIT_DC
             !
             procedure, public :: setIterDefaults => setIterDefaultsForwardSolverIT_DC
             !
+            procedure, public :: copyFrom => copyFromForwardSolverIT_DC
+            !
     end type ForwardSolverIT_DC_t
     !
     interface ForwardSolverIT_DC_t
@@ -106,7 +108,7 @@ contains
         self%divergence_correction%solver%omega = self%solver%omega
         !
         !> Set conductivity for the divergence_correction
-        call self%divergence_correction%SetCond()
+        call self%divergence_correction%setCond()
         !
         !> Set preconditioner for this solver´s preconditioner
         call self%solver%preconditioner%SetPreconditioner( self%solver%omega )
@@ -135,9 +137,9 @@ contains
         !
         class( ForwardSolverIT_DC_t ), intent( inout ) :: self
         !
-        self%max_div_cor      = max_divcor_calls
+        self%max_div_cor = max_divcor_calls
         self%max_divcor_iters = max_divcor_iters
-        self%tol_div_cor      = tolerance_divcor
+        self%tol_div_cor = tolerance_divcor
         !
     end subroutine setIterDefaultsForwardSolverIT_DC
     !
@@ -158,7 +160,7 @@ contains
     end subroutine initDiagnosticsForwardSolverIT_DC
     !
     !> No subroutine briefing
-    subroutine zeroDiagnosticsForwardSolverIT_DC(self)
+    subroutine zeroDiagnosticsForwardSolverIT_DC( self )
         implicit none
         !
         class( ForwardSolverIT_DC_t ), intent( inout ) :: self
@@ -178,14 +180,14 @@ contains
         class( Source_t ), intent( in ) :: source
         class( Vector_t ), intent( inout ) :: e_solution
         !
-        class( Vector_t ), allocatable :: temp_vec
+        class( Field_t ), allocatable :: temp_vec
         class( Scalar_t ), allocatable :: phi0
         integer :: iter
         !
         call self%solver%zeroDiagnostics()
         !
         self%solver%converged = .FALSE.
-        self%solver%failed    = .FALSE.
+        self%solver%failed = .FALSE.
         self%n_divcor = 0
         self%n_iter_actual = 0
         !
@@ -276,7 +278,7 @@ contains
         if( source%trans ) then
             !
             call e_solution%mult( self%solver%preconditioner%model_operator%metric%VEdge )
-			!
+            !
         else
             !
             call source%E( pol )%Boundary( temp_vec )
@@ -288,5 +290,47 @@ contains
         endif
         !
     end subroutine createESolutionForwardSolverIT_DC
+    !
+    !> No subroutine briefing
+    subroutine copyFromForwardSolverIT_DC( self, rhs )
+        implicit none
+        !
+        class( ForwardSolverIT_DC_t ), intent( inout ) :: self
+        class( ForwardSolver_t ), intent( in ) :: rhs
+        !
+        self%solver = rhs%solver
+        !
+        self%max_iter_total = rhs%max_iter_total
+        !
+        self%n_iter_actual = rhs%n_iter_actual
+        !
+        self%tolerance = rhs%tolerance
+        !
+        self%relResFinal = rhs%relResFinal
+        !
+        self%relResVec = rhs%relResVec
+        !
+        self%failed = rhs%failed
+        !
+        select type( rhs )
+            !
+            class is( ForwardSolverIT_DC_t )
+                !
+                self%n_divcor = rhs%n_divcor
+                !
+                self%max_div_cor = rhs%max_div_cor
+                !
+                self%max_divcor_iters = rhs%max_divcor_iters
+                !
+                self%tol_div_cor = rhs%tol_div_cor
+                !
+                self%divergence_correction = rhs%divergence_correction
+                !
+            class default
+               stop "Error: copyFromForwardSolverIT_DC > Incompatible input."
+            !
+        end select
+        !
+    end subroutine copyFromForwardSolverIT_DC
     !
 end Module ForwardSolverIT_DC

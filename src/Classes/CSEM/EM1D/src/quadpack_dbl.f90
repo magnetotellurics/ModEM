@@ -1748,24 +1748,24 @@ subroutine qagp ( f, a, b, npts2, points, epsabs, epsrel, result, abserr, &
 !>                             special-purpose integrator must be used,
 !>                             which is designed for handling the type
 !>                             of difficulty involved.
-!>                         = 2 the occurrence of roundoff error is
+!> = 2 the occurrence of roundoff error is
 !>                             detected, which prevents the requested
 !>                             tolerance from being achieved.
 !>                             the error may be under-estimated.
-!>                         = 3 extremely bad integrand behavior occurs
+!> = 3 extremely bad integrand behavior occurs
 !>                             at some points of the integration
 !>                             interval.
-!>                         = 4 the algorithm does not converge. roundoff
+!> = 4 the algorithm does not converge. roundoff
 !>                             error is detected in the extrapolation
 !>                             table. it is presumed that the requested
 !>                             tolerance cannot be achieved, and that
 !>                             the returned result is the best which
 !>                             can be obtained.
-!>                         = 5 the integral is probably divergent, or
+!> = 5 the integral is probably divergent, or
 !>                             slowly convergent. it must be noted that
 !>                             divergence can occur with any other value
 !>                             of ier > 0.
-!>                         = 6 the input is invalid because
+!> = 6 the input is invalid because
 !>                             npts2 < 2 or
 !>                             break points are specified outside
 !>                             the integration range or
@@ -1942,7 +1942,7 @@ subroutine qagp ( f, a, b, npts2, points, epsabs, epsrel, result, abserr, &
     do i = 1, nint
       do j = i+1, nint+1
         if( pts(j) < pts(i) ) then
-          temp   = pts(i)
+          temp = pts(i)
           pts(i) = pts(j)
           pts(j) = temp
         endif
@@ -2388,7 +2388,7 @@ subroutine qags ( f, a, b, epsabs, epsrel, result, abserr, neval, ier )
 !>                             the estimates for integral and error are
 !>                             less reliable. it is assumed that the
 !>                             requested accuracy has not been achieved.
-!>                         = 1 maximum number of subdivisions allowed
+!> = 1 maximum number of subdivisions allowed
 !>                             has been achieved. one can allow more sub-
 !>                             divisions by increasing the data value of
 !>                             limit in qags (and taking the according
@@ -2406,24 +2406,24 @@ subroutine qags ( f, a, b, epsabs, epsrel, result, abserr, neval, ier )
 !>                             special-purpose integrator should be used,
 !>                             which is designed for handling the type
 !>                             of difficulty involved.
-!>                         = 2 the occurrence of roundoff error is detec-
+!> = 2 the occurrence of roundoff error is detec-
 !>                             ted, which prevents the requested
 !>                             tolerance from being achieved.
 !>                             the error may be under-estimated.
-!>                         = 3 extremely bad integrand behavior occurs
+!> = 3 extremely bad integrand behavior occurs
 !>                             at some  points of the integration
 !>                             interval.
-!>                         = 4 the algorithm does not converge. roundoff
+!> = 4 the algorithm does not converge. roundoff
 !>                             error is detected in the extrapolation
 !>                             table. it is presumed that the requested
 !>                             tolerance cannot be achieved, and that the
 !>                             returned result is the best which can be
 !>                             obtained.
-!>                         = 5 the integral is probably divergent, or
+!> = 5 the integral is probably divergent, or
 !>                             slowly convergent. it must be noted that
 !>                             divergence can occur with any other value
 !>                             of ier.
-!>                         = 6 the input is invalid, because
+!> = 6 the input is invalid, because
 !>                             epsabs < 0 and epsrel < 0,
 !>                             result, abserr and neval are set to zero.
 !
@@ -2936,13 +2936,13 @@ subroutine qawc ( f, a, b, c, epsabs, epsrel, result, abserr, neval, ier )
 !>                             splitting up the interval at this point
 !>                             and calling appropriate integrators on the
 !>                             subranges.
-!>                         = 2 the occurrence of roundoff error is detec-
+!> = 2 the occurrence of roundoff error is detec-
 !>                             ted, which prevents the requested
 !>                             tolerance from being achieved.
-!>                         = 3 extremely bad integrand behavior occurs
+!> = 3 extremely bad integrand behavior occurs
 !>                             at some points of the integration
 !>                             interval.
-!>                         = 6 the input is invalid, because
+!> = 6 the input is invalid, because
 !>                             c = a or c = b or
 !>                             epsabs < 0 and epsrel < 0,
 !>                             result, abserr, neval are set to zero.
@@ -3052,13 +3052,13 @@ subroutine qawce ( f, a, b, c, epsabs, epsrel, limit, result, abserr, neval, &
 !>                             from splitting up the interval at this
 !>                             point and calling appropriate integrators
 !>                             on the subranges.
-!>                         = 2 the occurrence of roundoff error is detec-
+!> = 2 the occurrence of roundoff error is detec-
 !>                             ted, which prevents the requested
 !>                             tolerance from being achieved.
-!>                         = 3 extremely bad integrand behavior occurs
+!> = 3 extremely bad integrand behavior occurs
 !>                             at some interior points of the integration
 !>                             interval.
-!>                         = 6 the input is invalid, because
+!> = 6 the input is invalid, because
 !>                             c = a or c = b or
 !>                             epsabs < 0 and epsrel < 0,
 !>                             or limit < 1.
@@ -3381,8 +3381,8 @@ subroutine qawf ( f, a, omega, integr, epsabs, result, abserr, neval, ier )
 !>    Input, real*8 OMEGA, the parameter in the weight function.
 !
 !>    Input, integer INTEGR, indicates which weight functions is used
-!>    = 1, w(x) = cos(omega*x)
-!>    = 2, w(x) = sin(omega*x)
+!> = 1, w(x) = cos(omega*x)
+!> = 2, w(x) = sin(omega*x)
 !
 !>    Input, real*8 EPSABS, the absolute accuracy requested.
 !
@@ -3406,14 +3406,14 @@ subroutine qawf ( f, a, omega, integr, epsabs, result, abserr, neval, ier )
 !>                              epsabs <= 0
 !>                              result, abserr, neval, lst are set to
 !>                              zero.
-!>                         = 7 abnormal termination of the computation
+!> = 7 abnormal termination of the computation
 !>                             of one or more subintegrals
-!>                         = 8 maximum number of cycles allowed
+!> = 8 maximum number of cycles allowed
 !>                             has been achieved, i.e. of subintervals
 !>                             (a+(k-1)c,a+kc) where
 !>                             c = (2*int(abs(omega))+1)*pi/abs(omega),
 !>                             for k = 1, 2, ...
-!>                         = 9 the extrapolation table constructed for
+!> = 9 the extrapolation table constructed for
 !>                             convergence acceleration of the series
 !>                             formed by the integral contributions
 !>                             over the cycles, does not converge to
@@ -3511,8 +3511,8 @@ subroutine qawfe ( f, a, omega, integr, epsabs, limlst, limit, maxp1, &
 !>    Input, real*8 OMEGA, the parameter in the weight function.
 !
 !>    Input, integer INTEGR, indicates which weight function is used
-!>    = 1      w(x) = cos(omega*x)
-!>    = 2      w(x) = sin(omega*x)
+!> = 1      w(x) = cos(omega*x)
+!> = 2      w(x) = sin(omega*x)
 !
 !>    Input, real*8 EPSABS, the absolute accuracy requested.
 !
@@ -3549,7 +3549,7 @@ subroutine qawfe ( f, a, omega, integr, epsabs, limlst, limit, maxp1, &
 !>                              epsabs <= 0 or limlst < 3.
 !>                              result, abserr, neval, lst are set
 !>                              to zero.
-!>                         = 7 bad integrand behavior occurs within
+!> = 7 bad integrand behavior occurs within
 !>                             one or more of the cycles. location
 !>                             and type of the difficulty involved
 !>                             can be determined from the vector ierlst.
@@ -3559,15 +3559,15 @@ subroutine qawfe ( f, a, omega, integr, epsabs, limlst, limit, maxp1, &
 !>                                           subdivisions (= limit)
 !>                                           has been achieved on the
 !>                                           k th cycle.
-!>                                       = 2 occurence of roundoff
+!> = 2 occurence of roundoff
 !>                                           error is detected and
 !>                                           prevents the tolerance
 !>                                           imposed on the k th cycle
 !>                                           from being acheived.
-!>                                       = 3 extremely bad integrand
+!> = 3 extremely bad integrand
 !>                                           behavior occurs at some
 !>                                           points of the k th cycle.
-!>                                       = 4 the integration procedure
+!> = 4 the integration procedure
 !>                                           over the k th cycle does
 !>                                           not converge (to within the
 !>                                           required accuracy) due to
@@ -3577,14 +3577,14 @@ subroutine qawfe ( f, a, omega, integr, epsabs, limlst, limit, maxp1, &
 !>                                           is assumed that the result
 !>                                           on this interval is the
 !>                                           best which can be obtained.
-!>                                       = 5 the integral over the k th
+!> = 5 the integral over the k th
 !>                                           cycle is probably divergent
 !>                                           or slowly convergent. it
 !>                                           must be noted that
 !>                                           divergence can occur with
 !>                                           any other value of
 !>                                           ierlst(k).
-!>                         = 8 maximum number of  cycles  allowed
+!> = 8 maximum number of  cycles  allowed
 !>                             has been achieved, i.e. of subintervals
 !>                             (a+(k-1)c,a+kc) where
 !>                             c = (2*int(abs(omega))+1)*pi/abs(omega),
@@ -3604,7 +3604,7 @@ subroutine qawfe ( f, a, omega, integr, epsabs, limlst, limit, maxp1, &
 !>                             up the interval at this point and
 !>                             calling appopriate integrators on the
 !>                             subranges.
-!>                         = 9 the extrapolation table constructed for
+!> = 9 the extrapolation table constructed for
 !>                             convergence acceleration of the series
 !>                             formed by the integral contributions
 !>                             over the cycles, does not converge to
@@ -4001,25 +4001,25 @@ subroutine qawo ( f, a, b, omega, integr, epsabs, epsrel, result, abserr, &
 !>                             special-purpose integrator should
 !>                             be used which is designed for handling
 !>                             the type of difficulty involved.
-!>                         = 2 the occurrence of roundoff error is
+!> = 2 the occurrence of roundoff error is
 !>                             detected, which prevents the requested
 !>                             tolerance from being achieved.
 !>                             the error may be under-estimated.
-!>                         = 3 extremely bad integrand behavior occurs
+!> = 3 extremely bad integrand behavior occurs
 !>                             at some interior points of the integration
 !>                             interval.
-!>                         = 4 the algorithm does not converge. roundoff
+!> = 4 the algorithm does not converge. roundoff
 !>                             error is detected in the extrapolation
 !>                             table. it is presumed that the requested
 !>                             tolerance cannot be achieved due to
 !>                             roundoff in the extrapolation table,
 !>                             and that the returned result is the best
 !>                             which can be obtained.
-!>                         = 5 the integral is probably divergent, or
+!> = 5 the integral is probably divergent, or
 !>                             slowly convergent. it must be noted that
 !>                             divergence can occur with any other value
 !>                             of ier.
-!>                         = 6 the input is invalid, because
+!> = 6 the input is invalid, because
 !>                             epsabs < 0 and epsrel < 0,
 !>                             result, abserr, neval are set to zero.
 !
@@ -4030,7 +4030,7 @@ subroutine qawo ( f, a, b, omega, integr, epsabs, epsrel, result, abserr, &
 !
 !>    maxp1 gives an upper bound on the number of Chebyshev moments
 !>    which can be stored, i.e. for the intervals of lengths
-!>    abs(b-a)*2**(-l), l = 0, 1, ... , maxp1-2. take care that
+!>    abs(b-a)*2**(-l), l = 0, 1, ..., maxp1-2. take care that
 !>    maxp1 >= 1.
 
   implicit none
@@ -4106,10 +4106,10 @@ subroutine qaws ( f, a, b, alfa, beta, integr, epsabs, epsrel, result, &
 !>    ALFA and BETA should be greater than -1.
 !
 !>    Input, integer INTEGR, indicates which weight function is to be used
-!>    = 1  (x-a)**alfa*(b-x)**beta
-!>    = 2  (x-a)**alfa*(b-x)**beta*log(x-a)
-!>    = 3  (x-a)**alfa*(b-x)**beta*log(b-x)
-!>    = 4  (x-a)**alfa*(b-x)**beta*log(x-a)*log(b-x)
+!> = 1  (x-a)**alfa*(b-x)**beta
+!> = 2  (x-a)**alfa*(b-x)**beta*log(x-a)
+!> = 3  (x-a)**alfa*(b-x)**beta*log(b-x)
+!> = 4  (x-a)**alfa*(b-x)**beta*log(x-a)*log(b-x)
 !
 !>    Input, real*8 EPSABS, EPSREL, the absolute and relative accuracy requested.
 !
@@ -4144,13 +4144,13 @@ subroutine qaws ( f, a, b, alfa, beta, integr, epsabs, epsrel, result, &
 !>                             splitting up the interval at these points
 !>                             and calling the integrator on the
 !>                             subranges.
-!>                         = 2 the occurrence of roundoff error is
+!> = 2 the occurrence of roundoff error is
 !>                             detected, which prevents the requested
 !>                             tolerance from being achieved.
-!>                         = 3 extremely bad integrand behavior occurs
+!> = 3 extremely bad integrand behavior occurs
 !>                             at some points of the integration
 !>                             interval.
-!>                         = 6 the input is invalid, because
+!> = 6 the input is invalid, because
 !>                             b <= a or alfa <= (-1) or beta <= (-1) or
 !>                             integr < 1 or integr > 4 or
 !>                             epsabs < 0 and epsrel < 0,
@@ -4230,10 +4230,10 @@ subroutine qawse ( f, a, b, alfa, beta, integr, epsabs, epsrel, limit, &
 !>    ALFA and BETA should be greater than -1.
 !
 !>    Input, integer INTEGR, indicates which weight function is used:
-!>    = 1  (x-a)**alfa*(b-x)**beta
-!>    = 2  (x-a)**alfa*(b-x)**beta*log(x-a)
-!>    = 3  (x-a)**alfa*(b-x)**beta*log(b-x)
-!>    = 4  (x-a)**alfa*(b-x)**beta*log(x-a)*log(b-x)
+!> = 1  (x-a)**alfa*(b-x)**beta
+!> = 2  (x-a)**alfa*(b-x)**beta*log(x-a)
+!> = 3  (x-a)**alfa*(b-x)**beta*log(b-x)
+!> = 4  (x-a)**alfa*(b-x)**beta*log(x-a)*log(b-x)
 !
 !>    Input, real*8 EPSABS, EPSREL, the absolute and relative accuracy requested.
 !
@@ -4255,7 +4255,7 @@ subroutine qawse ( f, a, b, alfa, beta, integr, epsabs, epsrel, limit, &
 !>                             the estimates for the integral and error
 !>                             are less reliable. it is assumed that the
 !>                             requested accuracy has not been achieved.
-!>                         = 1 maximum number of subdivisions allowed
+!> = 1 maximum number of subdivisions allowed
 !>                             has been achieved. one can allow more
 !>                             subdivisions by increasing the value of
 !>                             limit. however, if this yields no
@@ -4270,13 +4270,13 @@ subroutine qawse ( f, a, b, alfa, beta, integr, epsabs, epsrel, limit, &
 !>                             should proceed by splitting up the
 !>                             interval at these points and calling the
 !>                             integrator on the subranges.
-!>                         = 2 the occurrence of roundoff error is
+!> = 2 the occurrence of roundoff error is
 !>                             detected, which prevents the requested
 !>                             tolerance from being achieved.
-!>                         = 3 extremely bad integrand behavior occurs
+!> = 3 extremely bad integrand behavior occurs
 !>                             at some points of the integration
 !>                             interval.
-!>                         = 6 the input is invalid, because
+!> = 6 the input is invalid, because
 !>                             b <= a or alfa <= (-1) or beta <= (-1) or
 !>                             integr < 1 or integr > 4, or
 !>                             epsabs < 0 and epsrel < 0,
@@ -4813,8 +4813,8 @@ subroutine qc25o ( f, a, b, omega, integr, nrmom, maxp1, ksave, result, &
 !>    Input, real*8 OMEGA, the parameter in the weight function.
 !
 !>    Input, integer INTEGR, indicates which weight function is to be used
-!>    = 1, w(x) = cos(omega*x)
-!>    = 2, w(x) = sin(omega*x)
+!> = 1, w(x) = cos(omega*x)
+!> = 2, w(x) = sin(omega*x)
 !
 !>    ?, integer NRMOM, the length of interval (a,b) is equal to the length
 !>    of the original integration interval divided by
@@ -6038,8 +6038,8 @@ subroutine qfour ( f, a, b, omega, integr, epsabs, epsrel, limit, icall, &
 !>    Input, real*8 OMEGA, the multiplier of X in the weight function.
 !
 !>    Input, integer INTEGR, indicates the weight functions to be used.
-!>    = 1, w(x) = cos(omega*x)
-!>    = 2, w(x) = sin(omega*x)
+!> = 1, w(x) = cos(omega*x)
+!> = 2, w(x) = sin(omega*x)
 !
 !>    Input, real*8 EPSABS, EPSREL, the absolute and relative accuracy requested.
 !
@@ -6100,25 +6100,25 @@ subroutine qfour ( f, a, b, omega, integr, epsabs, epsrel, limit, icall, &
 !>                             an appropriate special-purpose integrator
 !>                             should be used which is designed for
 !>                             handling the type of difficulty involved.
-!>                         = 2 the occurrence of roundoff error is
+!> = 2 the occurrence of roundoff error is
 !>                             detected, which prevents the requested
 !>                             tolerance from being achieved.
 !>                             the error may be under-estimated.
-!>                         = 3 extremely bad integrand behavior occurs
+!> = 3 extremely bad integrand behavior occurs
 !>                             at some points of the integration
 !>                             interval.
-!>                         = 4 the algorithm does not converge. roundoff
+!> = 4 the algorithm does not converge. roundoff
 !>                             error is detected in the extrapolation
 !>                             table. it is presumed that the requested
 !>                             tolerance cannot be achieved due to
 !>                             roundoff in the extrapolation table, and
 !>                             that the returned result is the best which
 !>                             can be obtained.
-!>                         = 5 the integral is probably divergent, or
+!> = 5 the integral is probably divergent, or
 !>                             slowly convergent. it must be noted that
 !>                             divergence can occur with any other value
 !>                             of ier > 0.
-!>                         = 6 the input is invalid, because
+!> = 6 the input is invalid, because
 !>                             epsabs < 0 and epsrel < 0,
 !>                             or (integr /= 1 and integr /= 2) or
 !>                             ICALL < 1 or maxp1 < 1.
@@ -8410,9 +8410,9 @@ subroutine qmomo ( alfa, beta, ri, rj, rg, rh, integr )
 !>                    input parameter indicating the modified moments
 !>                    to be computed
 !>                    integr = 1 compute ri, rj
-!>                           = 2 compute ri, rj, rg
-!>                           = 3 compute ri, rj, rh
-!>                           = 4 compute ri, rj, rg, rh
+!> = 2 compute ri, rj, rg
+!> = 3 compute ri, rj, rh
+!> = 4 compute ri, rj, rg, rh
 !
   implicit none
 
@@ -8572,7 +8572,7 @@ subroutine qng ( f, a, b, epsabs, epsrel, result, abserr, neval, ier )
 !>                    ier = 1 the maximum number of steps has been
 !>                            executed. the integral is probably too
 !>                            difficult to be calculated by qng.
-!>                        = 6 the input is invalid, because
+!> = 6 the input is invalid, because
 !>                            epsabs < 0 and epsrel < 0,
 !>                            result, abserr and neval are set to zero.
 !

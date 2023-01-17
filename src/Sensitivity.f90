@@ -3,80 +3,121 @@
 !
 module Sensitivity
     !
-    use Constants
-    !
-    use FileUnits
-    !
-    use cVector3D_SG
-    !
-    use GlobalVariables
-    !
-    use SourceMT_1D
-    use SourceMT_2D
-    use SourceCSEM_Dipole1D
-    use SourceInteriorForce
-    !
-    use ReceiverFullImpedance
-    use ReceiverFullVerticalMagnetic
-    use ReceiverOffDiagonalImpedance
-    use ReceiverSingleField
-    use ReceiverArray
-    !
-    use TransmitterMT
-    use TransmitterCSEM
-    use TransmitterArray
-    !
-    use DataGroupArray
-    use DataGroupTxArray
+    use ForwardModeling
     !
     !> Global Sensitivity Routines
-    public :: JMult, JMult_Tx, JMult_T, JMult_T_Tx
+    public :: jobJMult, JMult, JMult_Tx
+    public :: jobJMult_T, JMult_T, JMult_T_Tx
     !
 contains
     !
+    !> Routine to run a full JMult job and deliver the result (JmHat Data) in a text file
+    subroutine jobJMult()
+        implicit none
+        !
+        !> Local Data Array to store JMult output
+        type( DataGroupTx_t ), allocatable, dimension(:) :: JmHat
+        !
+        class( ModelParameter_t ), allocatable :: sigma, dsigma
+        !
+        ! Verbose
+        write( *, * ) "     - Start jobJMult"
+        !
+        !> Read Prior Model File: instantiate dsigma
+        if( has_pmodel_file ) then
+            !
+            call handlePModelFile( dsigma )
+            !
+            !> Read Model File and instantiate global variables: main_grid, model_operator and Sigma0
+            if( has_model_file ) then
+                !
+                call handleModelFile( sigma )
+                !
+                call dsigma%setMetric( model_operator%metric )
+                !
+            else
+                stop "Error: jobJMult > Missing Model file!"
+            endif
+            !
+        else
+            stop "Error: jobJMult > Missing Prior Model file!"
+        endif
+        !
+        !> Read Data File: instantiate Txs and Rxs and build the Data relation between them
+        if( has_data_file ) then
+            !
+            call handleDataFile()
+            !
+        else
+            stop "Error: jobJMult > Missing Data file!"
+        endif
+        !
+        JmHat = all_measured_data
+        !
+#ifdef MPI
+        !
+        call broadcastBasicComponents()
+        !
+        !>
+        call masterSolveAll( sigma )
+        !
+        call masterJMult( sigma, dsigma, JmHat )
+        !
+        call broadcastFinish
+        !
+#else
+        !
+        call createDistributeForwardSolver()
+        !
+        call JMult( sigma, dsigma, JmHat )
+        !
+#endif
+        !
+        !> Write JmHat to the file <jmhat_data_file_name>
+        call writeDataGroupTxArray( JmHat, jmhat_data_file_name )
+        !
+        !> Flush local variables
+        !call deallocateDataGroupTxArray( JmHat )
+        !
+        deallocate( sigma, dsigma )
+        !
+        ! Verbose
+        write( *, * ) "     - Finish jobJMult"
+        !
+    end subroutine jobJMult
+    !
     !> Get the JmHat for all transmitters represented in an array of DataGroupTx:
     !>     Call the setFrequency routine to the forward_solver pointer of the transmitter
-    !>     Set the transmitter source by calling pMult
+    !>     Set the transmitter source by calling PMult
     !>     Call JMult_TX for the transmitter
-    !
     subroutine JMult( sigma, dsigma, JmHat )
         implicit none
         !
         class( ModelParameter_t ), intent( in ) :: sigma, dsigma
         type( DataGroupTx_t ), dimension(:), intent( inout ) :: JmHat
         !
-        integer :: i_dtx
+        integer :: i_data_tx
         class( Transmitter_t ), pointer :: Tx
         !
         ! Verbose
         !write( *, * ) "          - Start JMult"
         !
         !> Loop over All DataGroupTxs
-        do i_dtx = 1, size( JmHat )
+        do i_data_tx = 1, size( JmHat )
             !
             !> Pointer to the transmitter leading the current data
-            Tx => getTransmitter( i_dtx )
+            Tx => getTransmitter( i_data_tx )
             !
-            !> Set Transmitter's ForwardSolver Omega(Period) and Conductivity
-            call Tx%forward_solver%setFrequency( sigma, Tx%period )
+            call solveTx( sigma, Tx )
             !
             !> Switch Transmitter's source to SourceInteriorForce
-            call Tx%setSource( Tx%pMult( sigma, dsigma, model_operator ) )
-            !
-            call Tx%source%E(1)%print( 2001, "JMult Tx%E(1)" )
-            call Tx%source%E(2)%print( 2002, "JMult Tx%E(2)" )
+            call Tx%setSource( Tx%PMult( sigma, dsigma, model_operator ) )
             !
             !> Solve e_sens from with the new Source
             call Tx%solve()
             !
-            call Tx%e_sol(1)%print( 3001, "JMult ESol(1)" )
-            call Tx%e_sol(2)%print( 3002, "JMult ESol(2)" )
-            !
-            call Tx%e_sens(1)%print( 4001, "JMult ESens(1)" )
-            call Tx%e_sens(2)%print( 4002, "JMult ESens(2)" )
-            !
             !> Fill tx_data with JMult routine
-            call JMult_Tx( JmHat( i_dtx ) )
+            call JMult_Tx( JmHat( i_data_tx ) )
             !
         enddo
         !
@@ -93,6 +134,7 @@ contains
         !
         type( DataGroupTx_t ), intent( inout ) :: JmHat_tx
         !
+        class( Vector_t ), allocatable, dimension(:,:) :: lrows
         complex( kind=prec ) :: lrows_x_esens
         integer :: i_data, i_comp, i_pol
         class( Transmitter_t ), pointer :: Tx
@@ -107,7 +149,7 @@ contains
             !> Pointer to the Data Receiver
             Rx => getReceiver( JmHat_tx%data( i_data )%i_rx )
             !
-            call Rx%setLRows( Tx )
+            call Rx%setLRows( Tx, lrows )
             !
             !> Loop over components
             do i_comp = 1, JmHat_tx%data( i_data )%n_comp
@@ -117,27 +159,83 @@ contains
                 !> Loop over polarizations
                 do i_pol = 1, Tx%n_pol
                     !
-                    call Rx%lrows( i_pol, i_comp )%conjugate()
+                    !> NECESSARY FOR FULL VECTOR LROWS ????
+                    call lrows( i_pol, i_comp )%conjugate()
                     !
-                    !> LRows .dot. ESens
-                    lrows_x_esens = lrows_x_esens + Tx%e_sens( i_pol )%dotProd( Rx%lrows( i_pol, i_comp ) )
+                    lrows_x_esens = lrows_x_esens + Tx%e_sens( i_pol )%dotProd( lrows( i_pol, i_comp ) )
                     !
                 enddo
                 !
-                !> Set the sum into the current data component, according to type
-                if( JmHat_tx%data( i_data )%is_complex ) then
-                    call JmHat_tx%data( i_data )%set( i_comp, -real( lrows_x_esens, kind=prec ), real( aimag( lrows_x_esens ), kind=prec ) )
-                else
-                    call JmHat_tx%data( i_data )%set( i_comp, -real( lrows_x_esens, kind=prec ), R_ZERO )
-                endif
+                call JmHat_tx%data( i_data )%set( i_comp, -real( lrows_x_esens, kind=prec ), real( aimag( lrows_x_esens ), kind=prec ) )
+                !
+                !write( *, * ) "JMult Z: ", JmHat_tx%data( i_data )%reals( i_comp ), JmHat_tx%data( i_data )%imaginaries( i_comp )
                 !
             enddo
+            !
+            deallocate( lrows )
             !
             JmHat_tx%data( i_data )%error_bar = .FALSE.
             !
         enddo
         !
     end subroutine JMult_Tx
+    !
+    !> Routine to run a full JMult_T job and deliver the result (DSigma model) in a text file
+    subroutine jobJMult_T()
+        implicit none
+        !
+        class( ModelParameter_t ), allocatable :: sigma, dsigma
+        !
+        ! Verbose
+        write( *, * ) "     - Start jobJMult_T"
+        !
+        !> Read Model File and instantiate global variables: main_grid, model_operator and Sigma0
+        if( has_model_file ) then 
+            !
+            call handleModelFile( sigma )
+            !
+        else
+            stop "Error: jobJMult_T > Missing Model file!"
+        endif
+        !
+        !> Read Data File: instantiate Txs and Rxs and build the Data relation between them
+        !> Initialize a DataGroupTxArray to hold the measured data
+        if( has_data_file ) then 
+            !
+            call handleDataFile()
+            !
+        else
+            stop "Error: jobJMult_T > Missing Data file!"
+        endif
+        !
+#ifdef MPI
+        !
+        call broadcastBasicComponents()
+        !
+        call masterSolveAll( sigma )
+        !
+        call masterJMult_T( sigma, all_measured_data, dsigma )
+        !
+        call broadcastFinish
+        !
+#else
+        !
+        call createDistributeForwardSolver()
+        !
+        call JMult_T( sigma, all_measured_data, dsigma )
+        !
+#endif
+        !
+        !> Write dsigma to <dsigma_file_name> file path
+        call dsigma%write( dsigma_file_name )
+        !
+        !> Flush local variables
+        deallocate( sigma, dsigma )
+        !
+        ! Verbose
+        write( *, * ) "     - Finish jobJMult_T"
+        !
+    end subroutine jobJMult_T
     !
     !> Call JMult_T_Tx for for all transmitters:
     !>     Calculate residual data with predicted data for each transmitter.
@@ -148,8 +246,9 @@ contains
         !
         class( ModelParameter_t ), intent( in ) :: sigma
         type( DataGroupTx_t ), dimension(:), intent( in ) :: all_data
-        class( ModelParameter_t ), allocatable, intent( inout ) :: dsigma
+        class( ModelParameter_t ), allocatable, intent( out ) :: dsigma
         !
+        class( Transmitter_t ), pointer :: Tx
         class( ModelParameter_t ), allocatable :: dsigma_tx
         integer :: i_tx
         !
@@ -170,6 +269,11 @@ contains
         !
         !> Loop over all transmitters
         do i_tx = 1, size( transmitters )
+            !
+            !> Pointer to the transmitter leading the current data
+            Tx => getTransmitter( i_tx )
+            !
+            call solveTx( sigma, Tx )
             !
             !> Set current tx_dsigma from JMult_T_Tx
             call JMult_T_Tx( sigma, all_data( i_tx ), dsigma_tx )
@@ -198,6 +302,7 @@ contains
         type( DataGroupTx_t ), intent( in ) :: tx_data
         class( ModelParameter_t ), allocatable, intent( inout ) :: dsigma
         !
+        class( Vector_t ), allocatable, dimension(:,:) :: lrows
         class( Vector_t ), allocatable, dimension(:) :: bSrc
         class( Transmitter_t ), pointer :: Tx
         class( Receiver_t ), pointer :: Rx
@@ -232,14 +337,13 @@ contains
             Rx => getReceiver( tx_data%data( i_data )%i_rx )
             !
             !> Calculate lrows for this Receiver
-            call Rx%setLRows( Tx )
+            call Rx%setLRows( Tx, lrows )
             !
             !> Loop over the Data components
             do i_comp = 1, data_group%n_comp
                 !
                 if( Rx%is_complex ) then
                     !
-                    !> IF NOT USES CONJUGATED MUST CHANGE THE SIGN OF BB IN LROWS ????
                     tx_data_cvalue = cmplx( data_group%reals( i_comp ), -data_group%imaginaries( i_comp ), kind=prec )
                 else
                     tx_data_cvalue = cmplx( data_group%reals( i_comp ), R_ZERO, kind=prec )
@@ -250,17 +354,19 @@ contains
                 !> Loop over polarizations
                 do i_pol = 1, Tx%n_pol
                     !
-                    call Rx%lrows( i_pol, i_comp )%mult( tx_data_cvalue )
+                    call lrows( i_pol, i_comp )%mult( tx_data_cvalue )
                     !
-                    call bSrc( i_pol )%add( Rx%lrows( i_pol, i_comp ) )
+                    call bSrc( i_pol )%add( lrows( i_pol, i_comp ) )
                     !
                 enddo
                 !
             enddo
             !
+            deallocate( lrows )
+            !
         enddo
         !
-        !> Loop over polarizations
+        !> NECESSARY FOR FULL VECTOR LROWS ????
         do i_pol = 1, Tx%n_pol
             !
             call bSrc( i_pol )%mult( C_MinusOne )
@@ -278,20 +384,11 @@ contains
         !
         deallocate( bSrc )
         !
-        call Tx%source%rhs(1)%print( 2001, "JMult_T Tx%RHS(1)" )
-        call Tx%source%rhs(2)%print( 2002, "JMult_T Tx%RHS(2)" )
-        !
         !> Solve Transmitter's e_sens with the new SourceInteriorForce
         call Tx%solve()
         !
-        call Tx%e_sol(1)%print( 3001, "JMult_T ESol(1)" )
-        call Tx%e_sol(2)%print( 3002, "JMult_T ESol(2)" )
-        !
-        call Tx%e_sens(1)%print( 4001, "JMult_T ESens(1)" )
-        call Tx%e_sens(2)%print( 4002, "JMult_T ESens(2)" )
-        !
-        !> Get dsigma from pMult_t
-        call Tx%pMult_t( sigma, dsigma )
+        !> Get dsigma from PMult_t
+        call Tx%PMult_t( sigma, dsigma )
         !
     end subroutine JMult_T_Tx
     !

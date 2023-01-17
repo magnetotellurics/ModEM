@@ -43,13 +43,15 @@ module cVector3D_SG
         procedure, public :: dotProd => dotProdCVector3D_SG
         procedure, public :: diagMult => diagMultCVector3D_SG
         !
+        procedure, public :: getReal => getRealCVector3D_SG
+        !
         procedure, public :: copyFrom => copyFromCVector3D_SG
         !
         procedure, public :: sumEdges => sumEdgesCVector3D_SG
         procedure, public :: avgCells => avgCellsCVector3D_SG
         !
-		procedure, public :: conjugate => conjugateCVector3D_SG
-		!
+        procedure, public :: conjugate => conjugateCVector3D_SG
+        !
         procedure, public :: linComb => linCombCVector3D_SG
         procedure, public :: multAdd => multAddCVector3D_SG
         procedure, public :: interpFunc => interpFuncCVector3D_SG
@@ -292,7 +294,7 @@ contains
         implicit none
         !
         class( cVector3D_SG_t ), intent( inout ) :: self
-        complex( kind=prec ) , intent( in ) :: cvalue
+        complex( kind=prec ), intent( in ) :: cvalue
         !
         select case(self%grid_type)
             case(EDGE)
@@ -519,7 +521,7 @@ contains
         implicit none
         !
         class( cVector3D_SG_t ), intent( in ) :: self
-        complex( kind=prec ), allocatable, intent( out ) :: array(:)
+        complex( kind=prec ), allocatable, dimension(:), intent( out ) :: array
         !
         allocate( array( self%length() ) )
         array = (/reshape(self%x, (/self%Nxyz(1), 1/)), &
@@ -533,21 +535,30 @@ contains
         implicit none
         !
         class( cVector3D_SG_t ), intent( inout ) :: self
-        complex( kind=prec ), intent( in ) :: array(:)
+        complex( kind=prec ), allocatable, dimension(:), intent( inout ) :: array
         !
         integer :: i1, i2
-        !> Ex
-        i1 = 1; i2 = self%Nxyz(1)
         !
-        self%x = reshape( array(i1:i2), self%NdX )
-        !> Ey
-        i1 = i2 + 1; i2 = i2 + self%Nxyz(2)
-        !
-        self%y = reshape( array(i1:i2), self%NdY )
-        !> Ez
-        i1 = i2 + 1; i2 = i2 + self%Nxyz(3)
-        !
-        self%z = reshape(array(i1:i2), self%NdZ)
+        if( allocated( array ) ) then
+            !
+            !> Ex
+            i1 = 1; i2 = self%Nxyz(1)
+            !
+            self%x = reshape( array(i1:i2), self%NdX )
+            !> Ey
+            i1 = i2 + 1; i2 = i2 + self%Nxyz(2)
+            !
+            self%y = reshape( array(i1:i2), self%NdY )
+            !> Ez
+            i1 = i2 + 1; i2 = i2 + self%Nxyz(3)
+            !
+            self%z = reshape(array(i1:i2), self%NdZ)
+            !
+            deallocate( array )
+            !
+        else
+            stop "Error: setArrayCVector3D_SG > Input array not allocated."
+        endif
         !
     end subroutine setArrayCVector3D_SG
     !
@@ -678,7 +689,7 @@ contains
         ! implicit none
         ! !
         ! class( cVector3D_SG_t ), intent( inout ) :: self
-        ! type( cSparseVector3D_SG_t ), intent( in ) :: svec
+        ! type( cVectorSparse3D_SG_t ), intent( in ) :: svec
         ! !
         ! integer :: ii
         ! !
@@ -942,7 +953,7 @@ contains
         implicit none
         !
         class( cVector3D_SG_t ), intent( in ) :: self
-        class( Scalar_t ), allocatable, intent( inout ) :: cell_obj
+        class( Field_t ), allocatable, intent( inout ) :: cell_obj
         logical, optional, intent( in ) :: interior_only
         !
         integer :: x_xend, x_yend, x_zend
@@ -1382,6 +1393,31 @@ contains
         end select !GRID
         !
     end subroutine interpFuncCVector3D_SG
+    !
+    !> No function briefing
+    subroutine getRealCVector3D_SG( self, r_field )
+        implicit none
+        !
+        class( cVector3D_SG_t ), intent( in ) :: self
+        class( Field_t ), allocatable, intent( out ) :: r_field
+        !
+        allocate( r_field, source = rVector3D_SG_t( self%grid, self%grid_type ) )
+        !
+        select type ( r_field )
+            !
+            class is( rVector3D_SG_t )
+                !
+                r_field%x = real( self%x, kind=prec )
+                r_field%y = real( self%y, kind=prec )
+                r_field%z = real( self%z, kind=prec )
+                !
+            class default
+                !
+                stop "Error: getRealCVector3D_SG > Undefined r_field"
+                !
+        end select
+        !
+    end subroutine getRealCVector3D_SG
     !
     !> No subroutine briefing
     subroutine copyFromCVector3D_SG( self, rhs )

@@ -97,27 +97,29 @@ contains
     end subroutine ReceiverFullVerticalMagnetic_dtor
     !
     !> No subroutine briefing
-    subroutine setLRowsFullVerticalMagnetic( self, transmitter )
+    subroutine setLRowsFullVerticalMagnetic( self, transmitter, lrows )
         implicit none
         !
         class( ReceiverFullVerticalMagnetic_t ), intent( inout ) :: self
         class( Transmitter_t ), intent( in ) :: transmitter
+        class( Vector_t ), allocatable, dimension(:,:), intent( out ) :: lrows
         !
         stop "setLRowsFullVerticalMagnetic to be implemented"
         !
     end subroutine setLRowsFullVerticalMagnetic
     !
     !> No subroutine briefing
-    subroutine predictedDataFullVerticalMagnetic( self, transmitter )
+    subroutine predictedDataFullVerticalMagnetic( self, transmitter, data_group )
         implicit none
         !
         class( ReceiverFullVerticalMagnetic_t ), intent( inout ) :: self
         class( Transmitter_t ), intent( in ) :: transmitter
+        type( DataGroup_t ), intent( out ), optional :: data_group
         !
         complex( kind=prec ) :: comega, det
         complex( kind=prec ), allocatable :: BB(:,:), I_BB(:,:)
         !
-        comega = cmplx( 0.0, 1./ transmitter%omega, kind=prec )
+        comega = cmplx( 0.0, 1./ ( 2.0 * PI / transmitter%period ), kind=prec )
         !
         allocate( BB( 3, 2 ) )
         select type( tx_e_1 => transmitter%e_sol(1) )
@@ -156,10 +158,12 @@ contains
                         deallocate( BB )
                         deallocate( I_BB )
                         !
-                        call self%savePredictedData( transmitter )
-                        !
-                        deallocate( self%response )
-                        !
+                        if( present( data_group ) ) then
+                            !
+                            call self%savePredictedData( transmitter, data_group )
+                            !
+                        endif
+						!
                     class default
                         stop "Error: evaluationFunctionRx: Unclassified transmitter%e_all_2"
                 end select
@@ -205,7 +209,7 @@ contains
         !
         class( ReceiverFullVerticalMagnetic_t ), intent( in ) :: self
         !
-        write( *, * ) "Print ReceiverFullVerticalMagnetic_t: ", self%id
+        write( *, * ) "Print ReceiverFullVerticalMagnetic_t: ", self%i_rx
         !
     end subroutine printReceiverFullVerticalMagnetic
     !

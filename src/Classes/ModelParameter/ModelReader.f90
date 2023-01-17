@@ -12,7 +12,7 @@ module ModelReader
         !
         contains
             !
-            procedure( interface_read_model_reader ) , deferred :: read
+            procedure( interface_read_model_reader ), deferred :: read
             !
     end type ModelReader_t
     !

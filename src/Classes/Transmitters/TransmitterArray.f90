@@ -3,7 +3,6 @@
 !
 module TransmitterArray
     !
-    use Constants
     use Transmitter
     !
     !> Allocatable Transmitter element of the array, for Old Fortran polymorphism !!!
@@ -13,7 +12,7 @@ module TransmitterArray
         !
     end type Tx_t
     !
-    !> Global Array of Transmitters
+    !> Global generic array of Transmitters
     type( Tx_t ), allocatable, dimension(:), target :: transmitters
     !
     public :: getTransmitter, printTransmitterArray
@@ -38,7 +37,7 @@ contains
             allocate( Tx_t :: temp_tx )
             temp_tx%Tx = new_tx
             i_tx = 1
-            temp_tx%Tx%id = 1
+            temp_tx%Tx%i_tx = 1
             transmitters(1) = temp_tx
             !
             deallocate( temp_tx )
@@ -58,7 +57,7 @@ contains
             temp_array( 1 : n_tx ) = transmitters
             allocate( Tx_t :: temp_tx )
             temp_tx%Tx = new_tx
-            temp_tx%Tx%id = n_tx + 1
+            temp_tx%Tx%i_tx = n_tx + 1
             i_tx = n_tx + 1
             !
             temp_array( n_tx + 1 ) = temp_tx

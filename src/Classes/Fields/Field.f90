@@ -13,7 +13,7 @@ module Field
         !
         character( len=4 ) :: grid_type
         !
-        integer :: nx, ny, nz, store_state
+        integer :: nx, ny, nz
         !
         logical :: is_allocated
         !
@@ -56,14 +56,23 @@ module Field
         procedure( interface_dot_product_field ), deferred, public :: dotProd
         generic :: operator(.dot.) => dotProd
         !
+        procedure( interface_sum_edges_field ), deferred, public :: sumEdges
+        !
+        procedure( interface_get_real_field ), deferred, public :: getReal
+        !
         procedure( interface_copy_from_field ), deferred, public :: copyFrom
         generic :: assignment(=) => copyFrom
         !
         procedure( interface_print_field ), deferred, public :: print
         !
+        !> Field procedures
         procedure, public :: init => initializeField
         !
         procedure, public :: isCompatible => isCompatibleField
+        !
+        procedure, public :: boundary => boundaryField
+        !
+        procedure, public :: interior => interiorField
         !
     end type Field_t
     !
@@ -132,14 +141,14 @@ module Field
         subroutine interface_get_array_field( self, array )
             import :: Field_t, prec
             class( Field_t ), intent( in ) :: self
-            complex( kind=prec ), allocatable, intent( out ) :: array(:)
+            complex( kind=prec ), allocatable, dimension(:), intent( out ) :: array
         end subroutine interface_get_array_field
         !
         !> No interface subroutine briefing
         subroutine interface_set_array_field( self, array )
             import :: Field_t, prec
             class( Field_t ), intent( inout ) :: self
-            complex( kind=prec ), intent( in ) :: array(:)
+            complex( kind=prec ), allocatable, dimension(:), intent( inout ) :: array
         end subroutine interface_set_array_field
         !
         ! Arithmetic/algebraic operations
@@ -221,7 +230,13 @@ module Field
             class( Field_t ), intent( in ) :: rhs
         end subroutine interface_mult_add_field
         !
-        ! Miscellaneous
+        !> No interface subroutine briefing
+        subroutine interface_sum_edges_field( self, cell_obj, interior_only )
+            import :: Field_t
+            class( Field_t ), intent( in ) :: self
+            class( Field_t ), allocatable, intent( inout ) :: cell_obj
+            logical, optional, intent( in ) :: interior_only
+        end subroutine interface_sum_edges_field
         !
         !> No interface function briefing
         function interface_dot_product_field( self, rhs ) result( cvalue )
@@ -229,6 +244,13 @@ module Field
             class( Field_t ), intent( in ) :: self, rhs
             complex( kind=prec ) :: cvalue
         end function interface_dot_product_field
+        !
+        !> No interface subroutine briefing
+        subroutine interface_get_real_field( self, r_field )
+            import :: Field_t
+            class( Field_t ), intent( in ) :: self
+            class( Field_t ), allocatable, intent( out ) :: r_field
+        end subroutine interface_get_real_field
         !
         !> No interface subroutine briefing
         subroutine interface_copy_from_field( self, rhs )
@@ -271,8 +293,6 @@ contains
         self%ny = 0
         self%nz = 0
         !
-        self%store_state = 0
-        !
         self%is_allocated = .FALSE.
         !
     end subroutine initializeField
@@ -296,5 +316,31 @@ contains
         endif
         !
     end function isCompatibleField
+    !
+    !> No subroutine briefing
+    subroutine boundaryField( self, boundary )
+        implicit none
+        !
+        class( Field_t ), intent( in ) :: self
+        class( Field_t ), allocatable, intent( inout ) :: boundary
+        !
+        allocate( boundary, source = self )
+        !
+        call boundary%setAllInterior( C_ZERO )
+       !
+    end subroutine boundaryField
+    !
+    !> No subroutine briefing
+    subroutine interiorField( self, interior )
+        implicit none
+        !
+        class( Field_t ), intent( in ) :: self
+        class( Field_t ), allocatable, intent( inout ) :: interior
+        !
+        allocate( interior, source = self )
+        !
+        call interior%setAllboundary( C_ZERO )
+        !
+    end subroutine interiorField
     !
 end module Field

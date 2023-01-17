@@ -25,6 +25,10 @@ module ModelParameterCell_SG
             !
             final :: ModelParameterCell_SG_dtor
             !
+            procedure, public :: getCond => getCondModelParameterCell_SG
+            !
+            procedure, public :: addCond => addCondModelParameterCell_SG
+            !
             procedure, public :: zeros => zerosModelParameterCell_SG
             !
             procedure, public :: copyFrom => copyFromModelParameterCell_SG
@@ -107,8 +111,6 @@ contains
         !write( *, * ) "Destructor ModelParameterCell_SG"
         !
         deallocate( self%param_grid )
-        !
-        !deallocate( self%cell_cond )
         !
     end subroutine ModelParameterCell_SG_dtor
     !
@@ -207,11 +209,33 @@ contains
         !
     end function slice2DModelParameterCell_SG
     !
+    !> No interface subroutine briefing
+    subroutine getCondModelParameterCell_SG( self, ccond )
+        implicit none
+        !
+        class( ModelParameterCell_SG_t ), intent( in ) :: self
+        class( Scalar_t ), allocatable, intent( inout ) :: ccond
+        !
+        allocate( ccond, source = self%cell_cond )
+        !
+    end subroutine getCondModelParameterCell_SG
+    !
+    !> No interface subroutine briefing
+    subroutine addCondModelParameterCell_SG( self, ccond )
+        implicit none
+        !
+        class( ModelParameterCell_SG_t ), intent( inout ) :: self
+        class( Scalar_t ), allocatable, intent( in ) :: ccond
+        !
+        call self%cell_cond%add( ccond )
+        !
+    end subroutine addCondModelParameterCell_SG
+    !
     !> No subroutine briefing
     subroutine zerosModelParameterCell_SG( self )
         implicit none
         !
-        class( ModelParameterCell_SG_t ), intent(inout) :: self
+        class( ModelParameterCell_SG_t ), intent( inout ) :: self
         !
         call self%cell_cond%zeros()
         !
@@ -229,15 +253,25 @@ contains
             class is( ModelParameterCell_SG_t )
                 !
                 self%metric => rhs%metric
+                !
                 self%mKey = rhs%mKey
+                !
                 self%air_cond = rhs%air_cond
+                !
                 self%param_type = rhs%param_type
+                !
                 self%zero_valued = rhs%zero_valued
+                !
                 self%is_allocated = rhs%is_allocated
+                !
                 self%is_vti = rhs%is_vti
                 !
-                self%param_grid = rhs%param_grid
+                if( allocated( self%param_grid ) ) deallocate( self%param_grid )
+                allocate( self%param_grid, source = rhs%param_grid )
+                !
                 self%cell_cond = rhs%cell_cond
+                !
+                self%SigMap_ptr => rhs%SigMap_ptr
                 !
             class default
                stop "Error: copyFromModelParameterCell_SG > Incompatible input."
@@ -356,7 +390,7 @@ contains
         call eVec%div( self%metric%VEdge )
         !
     end subroutine PDEmappingModelParameterCell_SG
-   !
+    !
     !> Map the perturbation between two models onto a single Vector_t (eVec).
     subroutine dPDEmappingModelParameterCell_SG( self, dsigma, eVec )
         implicit none
@@ -413,11 +447,10 @@ contains
         implicit none
         !
         class( ModelParameterCell_SG_t ), intent( in ) :: self
-        class( Vector_t ), intent( in ) :: eVec
+        class( Field_t ), intent( in ) :: eVec
         class( ModelParameter_t ), allocatable, intent( out ) :: dsigma
         !
-        class( Scalar_t ), allocatable :: sigma_cell
-        class( Vector_t ), allocatable :: temp_vec_interior
+        class( Field_t ), allocatable :: sigma_cell, temp_interior
         character( len=5 ), parameter :: JOB = "DERIV"
         integer :: k0, k1, k2
         !
@@ -427,15 +460,15 @@ contains
             !
             class is( ModelParameterCell_SG_t )
                 !
-                call eVec%interior( temp_vec_interior )
+                call eVec%interior( temp_interior )
                 !
-                call temp_vec_interior%div( self%metric%Vedge )
+                call temp_interior%div( self%metric%Vedge )
                 !
-                call temp_vec_interior%mult( cmplx( 0.25_prec, 0.0, kind=prec ) )
+                call temp_interior%mult( cmplx( 0.25_prec, 0.0, kind=prec ) )
                 !
-                call temp_vec_interior%sumEdges( sigma_cell, .TRUE. )
+                call temp_interior%sumEdges( sigma_cell, .TRUE. )
                 !
-                deallocate( temp_vec_interior )
+                deallocate( temp_interior )
                 !
                 select type( sigma_cell )
                     !
@@ -470,7 +503,7 @@ contains
         class( ModelParameterCell_SG_t ), intent( inout ) :: self
         character(:), allocatable, intent( in ) :: param_type
         !
-        if( .NOT. (self%is_allocated)) then
+        if( .NOT. self%is_allocated ) then
             stop "Error: setTypeModelParameterCell_SG > Not allocated."
         endif
         !
@@ -518,14 +551,19 @@ contains
     !> opens cfile on unit ioModelParam, writes out object of
     !> type modelParam in Weerachai Siripunvaraporn"s format,
     !> closes file.
-    subroutine writeParameterCell_SG( self, comment )
+    !
+    subroutine writeParameterCell_SG( self, file_name, comment )
         implicit none
         !
         class( ModelParameterCell_SG_t ), intent( in ) :: self
+        character(*), intent( in ) :: file_name
         character(*), intent( in ), optional :: comment
         !
         type( rScalar3D_SG_t ) :: rho_v, rho_h, ccond_v
         integer :: Nx, Ny, NzEarth, i, j, k, ios
+        !
+        ! Verbose
+        !write( *, * ) "     > Write Model to file: [", file_name, "]"
         !
         !> Convert modelParam to natural log or log10 for output
         !paramType = userParamType
@@ -536,7 +574,7 @@ contains
         !    call getValue_modelParam(m, paramType, self%cell_cond)
         !endif
         !
-        open( ioModelParam, file = dsigma_file_name, action = "write", form = "formatted", iostat = ios )
+        open( ioModelParam, file = file_name, action = "write", form = "formatted", iostat = ios )
         !
         if( ios == 0 ) then
             !
@@ -640,13 +678,13 @@ contains
             !> Also write the self%metric%grid origin (in metres!) and rotation (in degrees)...
             !
             write( ioModelParam, "(3f16.3)", iostat = ios) self%metric%grid%ox, self%metric%grid%oy, self%metric%grid%oz
-            write( ioModelParam, "(f9.3)"  , iostat = ios)  self%metric%grid%rotdeg
+            write( ioModelParam, "(f9.3)", iostat = ios)  self%metric%grid%rotdeg
             !
             close( ioModelParam )
             !
         else
             !
-            write( *, * ) "Error opening file in writeParameterCell_SG [", dsigma_file_name, "]!"
+            write( *, * ) "Error opening file in writeParameterCell_SG [", file_name, "]!"
             stop
             !
         endif

@@ -15,7 +15,7 @@ module Grid
     !
     character(:), allocatable :: model_method
     character( len=12 ), parameter :: MM_METHOD_FIXED_H = "fixed height"
-    character( len=6 ), parameter :: MM_METHOD_MIRROR  = "mirror"
+    character( len=6 ), parameter :: MM_METHOD_MIRROR = "mirror"
     !
     integer :: model_n_air_layer
     real( kind=prec ) :: model_max_height
@@ -55,10 +55,10 @@ module Grid
             procedure, public :: init => initializeGrid
             procedure, public :: dealloc => deallocateGrid
             !
-            procedure(interface_NumberOfEdges) , deferred, public :: NumberOfEdges
-            procedure(interface_NumberOfFaces) , deferred, public :: NumberOfFaces
-            procedure(interface_NumberOfNodes) , deferred, public :: NumberOfNodes
-            procedure(interface_GridIndex)    , deferred, public :: GridIndex
+            procedure(interface_NumberOfEdges), deferred, public :: NumberOfEdges
+            procedure(interface_NumberOfFaces), deferred, public :: NumberOfFaces
+            procedure(interface_NumberOfNodes), deferred, public :: NumberOfNodes
+            procedure(interface_GridIndex), deferred, public :: GridIndex
             procedure(interface_VectorIndex), deferred, public :: VectorIndex
             procedure(interface_Limits), deferred, public :: Limits
             procedure(interface_IsAllocated), deferred, public :: IsAllocated
@@ -100,7 +100,7 @@ module Grid
         end subroutine interface_NumberOfFaces
         !
         !> No interface function briefing
-        function interface_NumberOfNodes(self) result(n)
+        function interface_NumberOfNodes( self ) result(n)
             import :: Grid_t
             class( Grid_t ), intent( in ) :: self
             integer :: n
@@ -137,13 +137,13 @@ module Grid
         !> No interface subroutine briefing
         subroutine interface_Limits(self, nodeType, nx, ny, nz)
             import :: Grid_t
-            class( Grid_t ) , intent( in ) :: self
-            character(*) , intent( in ) :: nodeType
-            integer     , intent( out ) :: nx, ny, nz
+            class( Grid_t ), intent( in ) :: self
+            character(*), intent( in ) :: nodeType
+            integer, intent( out ) :: nx, ny, nz
         end subroutine interface_Limits
         !
         !> No interface function briefing
-        function interface_IsAllocated(self) result(f)
+        function interface_IsAllocated( self ) result(f)
             import :: Grid_t
             class( Grid_t ), intent( in ) :: self
             logical :: f
@@ -160,21 +160,21 @@ module Grid
         subroutine interface_SetCellSizes(self, dx, dy, dz)
             import :: Grid_t, prec
             class( Grid_t ), intent(inout) :: self
-            real( kind=prec ) , dimension(:), intent( in ) :: dx, dy, dz
+            real( kind=prec ), dimension(:), intent( in ) :: dx, dy, dz
         end subroutine interface_SetCellSizes
         !
         !> No interface function briefing
-        function interface_slice_1d_grid(self) result( g1D )
+        function interface_slice_1d_grid( self ) result( g1D )
             import :: Grid_t, Grid1D_t
             class( Grid_t ), intent( in ) :: self
-            type(Grid1D_t) :: g1D
+            type( Grid1D_t ) :: g1D
         end function interface_slice_1d_grid
         !
         !> No interface function briefing
-        function interface_slice_2d_grid(self) result( g2D )
+        function interface_slice_2d_grid( self ) result( g2D )
             import :: Grid_t, Grid2D_t
             class( Grid_t ), intent( in ) :: self
-            type(Grid2D_t) :: g2D
+            type( Grid2D_t ) :: g2D
         end function interface_slice_2d_grid
         !
     end interface
@@ -230,7 +230,7 @@ contains
     end subroutine SetGridRotation
     !
     !> No function briefing
-    function GetGridRotation(self) result(rotDeg)
+    function GetGridRotation( self ) result(rotDeg)
         implicit none
         !
         class( Grid_t ), intent( in ) :: self
@@ -245,14 +245,14 @@ contains
         implicit none
         !
         class( Grid_t ), intent(inout) :: self
-        character(*) , intent( in ) :: s
+        character(*), intent( in ) :: s
         !
         self%geometry = s
         !
     end subroutine SetGridGeometry
     !
     !> No function briefing
-    function GetGridGeometry(self) result(s)
+    function GetGridGeometry( self ) result(s)
         implicit none
         !
         class( Grid_t ), intent( in ) :: self

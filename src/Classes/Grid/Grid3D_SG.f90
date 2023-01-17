@@ -3,11 +3,7 @@
 !
 module Grid3D_SG
     !
-    use Constants
     use Grid
-    use Grid1D
-    use Grid2D
-    use ModEMControlFile
     !
     type, extends( Grid_t ) :: Grid3D_SG_t
         !
@@ -67,7 +63,7 @@ module Grid3D_SG
 contains
     !
     !> No function briefing
-    function Slice1DGrid3D_SG(self) result( g1D )
+    function Slice1DGrid3D_SG( self ) result( g1D )
         implicit none
         !
         class( Grid3D_SG_t ), intent( in ) :: self
@@ -78,7 +74,7 @@ contains
     end function Slice1DGrid3D_SG
     !
     !> No function briefing
-    function Slice2DGrid3D_SG(self) result( g2D )
+    function Slice2DGrid3D_SG( self ) result( g2D )
         implicit none
         !
         class( Grid3D_SG_t ), intent( in ) :: self
@@ -150,7 +146,7 @@ contains
     end subroutine CreateGrid3D_SG
     !
     !> No subroutine briefing
-    subroutine allocateDimGrid3D_SG(self)
+    subroutine allocateDimGrid3D_SG( self )
         implicit none
         !
         class( Grid3D_SG_t ), intent(inout) :: self
@@ -167,7 +163,7 @@ contains
         allocate( self%dy(ny) )
         allocate( self%dz(nz) )
         !
-        !> dxinv    = 1/ dx and similarly for dyinv and dzinv
+        !> dxinv = 1/ dx and similarly for dyinv and dzinv
         allocate( self%dxInv(nx) )
         allocate( self%dyInv(ny) )
         allocate( self%dzInv(nz) )
@@ -208,7 +204,7 @@ contains
         implicit none
         !
         class( Grid3D_SG_t ), intent( inout ) :: self
-        real( kind=prec ) , intent( in ), optional :: origin(3)
+        real( kind=prec ), intent( in ), optional :: origin(3)
         !
         integer :: ix, iy, iz, i, j, nzAir
         real( kind=prec ) :: xCum, yCum, zCum
@@ -389,19 +385,19 @@ contains
             endif
 
         else if(index(airLayers%method, "fixed height") > 0) then 
-			!
-			!> ON IMPLEMENTATION
-			z1_log = log10( self%Dz( self%NzAir + 1 ) )
-			dlogz = ( log10( airlayers%maxHeight ) - z1_log ) / ( airlayers%Nz )
+            !
+            !> ON IMPLEMENTATION
+            z1_log = log10( self%Dz( self%NzAir + 1 ) )
+            dlogz = ( log10( airlayers%maxHeight ) - z1_log ) / ( airlayers%Nz )
 
-			z_log = z1_log
-			do iz = airlayers%Nz, 1, -1
-				airlayers%Dz(iz) = 10.**(z_log+dlogz) - 10.**(z_log)
-				z_log = z_log + dlogz
-			enddo
-			!
-			!> OTHER IMPLEMENTATION
-			!
+            z_log = z1_log
+            do iz = airlayers%Nz, 1, -1
+                airlayers%Dz(iz) = 10.**(z_log+dlogz) - 10.**(z_log)
+                z_log = z_log + dlogz
+            enddo
+            !
+            !> OTHER IMPLEMENTATION
+            !
             ! z1_log = log10(self%dz(self%nzAir + 1) )
             ! dlogz = (log10(airLayers%maxHeight) - z1_log)/(airLayers%nz-1)
             ! z_log = z1_log
@@ -413,7 +409,7 @@ contains
                 ! airLayers%dz(iz) = height2-height1
                 ! height1 = height2
             ! enddo
-			!
+            !
         else if(index(airLayers%method, "read from file") > 0) then
             !
             !> Air layers have been read from file and are
@@ -449,8 +445,8 @@ contains
         implicit none
         !
         class( Grid3D_SG_t ), intent(inout) :: self
-        integer                     , intent( in ) :: nzAir
-        real( kind=prec ) , intent( in ) :: dzAir(:)
+        integer, intent( in ) :: nzAir
+        real( kind=prec ), intent( in ) :: dzAir(:)
         !
         integer :: nzAir_old, nzEarth_old
         integer :: nx_old, ny_old, nz_old
@@ -502,7 +498,7 @@ contains
         implicit none
         !
         class( Grid3D_SG_t ), intent(inout) :: self
-        real( kind=prec ) , dimension(:), intent( in ) :: dx, dy, dz
+        real( kind=prec ), dimension(:), intent( in ) :: dx, dy, dz
         !
         if(.NOT.self%IsAllocated() ) then
              stop "Error: SetCellSizesGrid3D_SG > Grid not allocated."
@@ -527,7 +523,7 @@ contains
         implicit none
         !
         class( Grid3D_SG_t ), intent( in ) :: self
-        real( kind=prec ) , intent( out ) :: dx(:), dy(:), dz(:)
+        real( kind=prec ), intent( out ) :: dx(:), dy(:), dz(:)
         !
         if(.NOT.self%IsAllocated() ) then
              write( *, * ) "Error:Grid3D_SG_t:GetCellSizes:"
@@ -588,7 +584,7 @@ contains
     end subroutine NumberOfFacesGrid3D_SG
     !
     !> No function briefing
-    function NumberOfNodesGrid3D_SG(self) result(n)
+    function NumberOfNodesGrid3D_SG( self ) result(n)
         implicit none
         !
         class( Grid3D_SG_t ), intent( in ) :: self
@@ -632,7 +628,7 @@ contains
         endif
         
         rNxy = float(nx*ny)
-        rNx    = float(nx)
+        rNx = float(nx)
         
         do ii = 1, nVec
             i(ii) = mod(indVec(ii), nx)
@@ -731,7 +727,7 @@ contains
     end subroutine LimitsGrid3D_SG
     !
     !> No function briefing
-    function IsAllocatedGrid3D_SG(self) result(f)
+    function IsAllocatedGrid3D_SG( self ) result(f)
         implicit none
         !
         class( Grid3D_SG_t ), intent( in ) :: self
@@ -742,7 +738,7 @@ contains
     end function IsAllocatedGrid3D_SG
     !
     !> No function briefing
-    function LengthGrid3D_SG(self) result(n)
+    function LengthGrid3D_SG( self ) result(n)
         class( Grid3D_SG_t ), intent( in ) :: self
         integer :: n
         !
@@ -755,7 +751,7 @@ contains
         implicit none
         !
         class( Grid3D_SG_t ), intent(inout) :: self
-        class(Grid_t)         , intent( in ) :: g
+        class(Grid_t), intent( in ) :: g
     end subroutine Copy_fromGrid3D_SG
     
 end module Grid3D_SG

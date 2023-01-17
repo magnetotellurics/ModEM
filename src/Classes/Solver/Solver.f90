@@ -3,7 +3,6 @@
 !
 module Solver
     !
-    use Constants
     use PreConditioner
     !
     !> Solver parameters
@@ -12,8 +11,8 @@ module Solver
     real( kind=prec ) :: tolerance_divcor, tolerance_qmr
     !
     character(:), allocatable :: solver_type
-    character( len=3 ), parameter :: QMR  = "QMR"
-    character( len=3 ), parameter :: PCG  = "PCG"
+    character( len=3 ), parameter :: QMR = "QMR"
+    character( len=3 ), parameter :: PCG = "PCG"
     character( len=4 ), parameter :: BiCG = "BiCG"
     !
     !> Solver Base Type
@@ -42,7 +41,7 @@ module Solver
     abstract interface
         !
         !> No interface subroutine briefing
-        subroutine interface_set_solver_defaults(self)
+        subroutine interface_set_solver_defaults( self )
            import :: Solver_t
            class( Solver_t ), intent( inout ) :: self
         end subroutine interface_set_solver_defaults
@@ -86,9 +85,9 @@ contains
         !
         class( Solver_t ), intent( inout ) :: self
         !
-        self%max_iter  = 0
-        self%n_iter    = 0
-        self%omega     = R_ZERO
+        self%max_iter = 0
+        self%n_iter = 0
+        self%omega = R_ZERO
         self%tolerance = R_ZERO
         !
         self%failed = .FALSE.
