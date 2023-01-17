@@ -13,8 +13,6 @@ module DataGroup
         !
         integer :: i_dg, i_rx, i_tx, n_comp!, normalized
         !
-        type( String_t ), allocatable, dimension(:) :: components
-        !
         real( kind=prec ), allocatable, dimension(:) :: reals, imaginaries, errors
         !
         logical :: is_allocated, error_bar
@@ -74,16 +72,6 @@ contains
         !
         self%counter = 1
         !
-        if( allocated( self%components ) ) then
-            asize = size( self%components )
-            do i = asize, 1, -(1)
-                if( allocated( self%components(i)%str ) ) deallocate( self%components(i)%str )
-            enddo
-            deallocate( self%components )
-        endif
-        !
-        allocate( String_t :: self%components( n_comp ) )
-        !
         if( allocated( self%reals ) ) deallocate( self%reals )
         allocate( self%reals( n_comp ) )
         !
@@ -113,14 +101,11 @@ contains
     end function DataGroup_ctor
     !
     !> Add values to arrays in position and increments the internal counter.
-    subroutine putValuesDataGroup( self, component, rvalue, imaginary, error )
+    subroutine putValuesDataGroup( self, rvalue, imaginary, error )
         implicit none
         !
         class( DataGroup_t ), intent( inout ) :: self
-        character(:), allocatable, intent( in ) :: component
         real( kind=prec ), intent( in ) :: rvalue, imaginary, error
-        !
-        self%components( self%counter )%str = component
         !
         self%reals( self%counter ) = rvalue
         !
@@ -314,8 +299,7 @@ contains
         !
         do i_comp = 1, self%n_comp
             !
-            if( self%components( i_comp )%str /= other%components( i_comp )%str .OR. &
-                ABS( self%reals( i_comp ) - other%reals( i_comp ) ) >= TOL6 .OR. &
+            if( ABS( self%reals( i_comp ) - other%reals( i_comp ) ) >= TOL6 .OR. &
                 ABS( self%imaginaries( i_comp ) - other%imaginaries( i_comp ) ) >= TOL6 .OR. &
                 ABS( self%errors( i_comp ) - other%errors( i_comp ) ) >= TOL6 ) then
                     equal = .FALSE.
@@ -333,8 +317,6 @@ contains
         class( DataGroup_t ), intent( inout ) :: self
         type( DataGroup_t ), intent( in ) :: d_in
         !
-        integer :: i, asize
-        !
         if( .NOT. d_in%is_allocated ) then
             stop "Error: copyFromDataGroup > d_in not allocated"
         endif
@@ -350,16 +332,6 @@ contains
         self%counter = d_in%counter
         !
         self%error_bar = d_in%error_bar
-        !
-        if( allocated( self%components ) ) then
-            asize = size( self%components )
-            do i = asize, 1, -(1)
-                if( allocated( self%components(i)%str ) ) deallocate( self%components(i)%str )
-            enddo
-            deallocate( self%components )
-        endif
-        !
-        allocate( self%components, source = d_in%components )
         !
         if( allocated( self%reals ) ) deallocate( self%reals )
         allocate( self%reals, source = d_in%reals )
@@ -391,7 +363,7 @@ contains
         !
         do i_comp = 1, self%n_comp
             !
-            write( *, * ) i_comp, ":", self%components( i_comp )%str, self%reals( i_comp ), self%imaginaries( i_comp ), self%errors( i_comp )
+            write( *, * ) i_comp, ":", self%reals( i_comp ), self%imaginaries( i_comp ), self%errors( i_comp )
             !
         enddo
         !

@@ -2,71 +2,61 @@
 !> Module with the sensitivity routines JMult, JMult_Tx, JMult_T, JMult_T_Tx 
 !
 module ForwardModeling
-    !
+!
+#ifdef MPI
+    use MasterMPI
+#else
     use GlobalVariables
+#endif
     !
     !> Global FWD Routines
-    public :: jobForwardModeling
-    public :: runEMSolve, runForwardModeling
+    public :: jobForwardModeling, runForwardModeling
+    public :: solveTx, solveAll
+    public :: createDistributeForwardSolver
     public :: writeDataGroupTxArray, writeAllESolutionHeader
     !
     private :: writeHeaderDataGroupTxArray
     !
 contains
     !
-    !> Routine to run a full ForwardModeling job and deliver the result (PredictedData) in a text file
-    subroutine jobForwardModeling()
+    !> Calculate E_Solution (e_sol) for a single Transmitter
+    !> ForwardSolver must be allocated
+    subroutine solveTx( sigma, Tx )
         implicit none
         !
-        type( DataGroupTx_t ), allocatable, dimension(:) :: all_predicted_data
+        class( ModelParameter_t ), intent( in ) :: sigma
+        class( Transmitter_t ), pointer, intent( inout ) :: Tx
         !
-        ! Verbose
-        write( *, * ) "     - Start jobForwardModeling"
+        !> Set Transmitter's ForwardSolver Omega(Period) and Conductivity
+        call Tx%forward_solver%setFrequency( sigma, Tx%period )
         !
-        !> Read Model File and instantiate global variables: main_grid, model_operator and Sigma0
-        if( has_model_file ) then
+        !> Instantiate Transmitter's Source - According to transmitter type or chosen via control file
+        select type( Tx )
             !
-            call handleModelFile()
+            class is( TransmitterMT_t )
+                !
+                call Tx%setSource( SourceMT_1D_t( model_operator, sigma, Tx%period ) )
+                !
+            class is( TransmitterCSEM_t )
+                !
+                call Tx%setSource( SourceCSEM_Dipole1D_t( model_operator, sigma, Tx%period, Tx%location, Tx%dip, Tx%azimuth, Tx%moment ) )
+                !
+            class default
+                stop "Error: solveTx > Unclassified Transmitter"
             !
-        else
-            stop "Error: jobForwardModeling > Missing Model file!"
-        endif
+        end select
         !
-        !> Read Data File: instantiate Txs and Rxs and build the Data relation between them
-        if( has_data_file ) then
-            !
-            call handleDataFile()
-            !
-        else
-            stop "Error: jobForwardModeling > Missing Data file!"
-        endif
+        !> Build Source E according to source type
+        call Tx%source%createE()
         !
-        !> Instantiate the global ForwardSolver - Specific type can be chosen via control file
-        call createForwardSolver()
+        !> Solve e_sol for this Transmitter
+        call Tx%solve()
         !
-        !> Run ForwardModelling to calculate all_predicted_data
-        all_predicted_data = all_measured_data
-        !
-        call runForwardModeling( sigma0, all_predicted_data )
-        !
-        if( has_e_solution_file ) call writeAllESolution( e_solution_file_name )
-        !
-        !> Write Predicted Data, with its proper Rx headers, into to the file <predicted_data_file_name>
-        call writeDataGroupTxArray( all_predicted_data, predicted_data_file_name )
-        !
-        !>
-        call deallocateDataGroupTxArray( all_predicted_data )
-        !
-        ! Verbose
-        write( *, * ) "     - Finish jobForwardModeling"
-        !
-    end subroutine jobForwardModeling
+    end subroutine solveTx
     !
-    !> runEMSolve: Calculate ESolution for all transmitters.
-    !
-    !> Obs.: Require the previous definition of the global ForwardSolver (createForwardSolver())
-    !
-    subroutine runEMSolve( sigma, e_all )
+    !> Calculate ESolution for all transmitters.
+    !> ForwardSolver must be allocated
+    subroutine solveAll( sigma, e_all )
         implicit none
         !
         class( ModelParameter_t ), intent( in ) :: sigma
@@ -81,10 +71,9 @@ contains
         !>
         n_tx = size( transmitters )
         !
-        !> Set e_all if present
+        !> Allocate e_all if present
         if( present( e_all ) ) then
             !
-            !> SET e_all
             if( allocated( e_all%e_sol ) ) deallocate( e_all%e_sol )
             allocate( e_all%e_sol( n_tx ) )
             !
@@ -93,37 +82,11 @@ contains
         !> Loop over all Transmitters
         do i_tx = 1, n_tx
             !
-            !> Pointer to the Transmitter
+            !> Point to the current Transmitter
             Tx => getTransmitter( i_tx )
             !
-            !> Set Transmitter's ForwardSolver Period) and Conductivity
-            call Tx%forward_solver%setFrequency( sigma, Tx%period )
-            !
-            !> Instantiate Transmitter's Source - According to transmitter type or chosen via control file
-            select type( Tx )
-                !
-                class is( TransmitterMT_t )
-                    !
-                    write( *, "( a25, i5, A9, es12.5)" ) "- Solving MT Tx", i_tx, ", Period=", Tx%period
-                    !
-                    call Tx%setSource( SourceMT_1D_t( model_operator, sigma, Tx%period ) )
-                    !
-                class is( TransmitterCSEM_t )
-                    !
-                    write( *, "( a25, i5, A9, es12.5)" ) "- Solving CSEM Tx", i_tx, ", Period=", Tx%period
-                    !
-                    call Tx%setSource( SourceCSEM_Dipole1D_t( model_operator, sigma, Tx%period, Tx%location, Tx%dip, Tx%azimuth, Tx%moment ) )
-                    !
-                class default
-                    stop "Error: runEMSolve > Unclassified Transmitter"
-                !
-            end select
-            !
-            !> Build Source E according to source type
-            call Tx%source%createE()
-            !
-            !> Solve e_sol for this Transmitter
-            call Tx%solve()
+            !> Solve i_tx transmitter
+            call solveTx( sigma, Tx )
             !
             !> Save e_sol in e_all
             if( present( e_all ) ) then
@@ -137,18 +100,84 @@ contains
         ! Verbose
         write( *, * ) "          - Finish EM Solve"
         !
-    end subroutine runEMSolve
+    end subroutine solveAll
+    !
+    !> Routine to run a full ForwardModeling job and deliver the result (PredictedData) in a text file
+    subroutine jobForwardModeling()
+        implicit none
+        !
+        type( DataGroupTx_t ), allocatable, dimension(:) :: all_predicted_data
+        !
+        class( ModelParameter_t ), allocatable :: sigma
+        !
+        ! Verbose
+        write( *, * ) "     - Start jobForwardModeling"
+        !
+        !> Read Model File and instantiate global variables: main_grid, model_operator and Sigma0
+        if( has_model_file ) then
+            !
+            call handleModelFile( sigma )
+            !
+        else
+            stop "Error: jobForwardModeling > Missing Model file!"
+        endif
+        !
+        !> Read Data File: instantiate Txs and Rxs and build the Data relation between them
+        if( has_data_file ) then
+            !
+            call handleDataFile()
+            !
+        else
+            stop "Error: jobForwardModeling > Missing Data file!"
+        endif
+        !
+        all_predicted_data = all_measured_data
+        !
+#ifdef MPI
+        !
+        !> Send FWD basic components to all workers
+        call broadcastBasicComponents()
+        !
+        !> Deallocate global FWD components (Not used by the Master process)
+        deallocate( model_operator, main_grid )
+        !
+        !> Run masterForwardModelling to calculate predicted data
+        call masterForwardModelling( sigma, all_predicted_data )
+        !
+        call broadcastFinish
+        !
+#else
+        !
+        call createDistributeForwardSolver()
+        !
+        call runForwardModeling( sigma, all_predicted_data )
+        !
+        if( has_e_solution_file ) call writeAllESolution( e_solution_file_name )
+        !
+#endif
+        !
+        !> Write Predicted Data, with its proper Rx headers, into to the file <predicted_data_file_name>
+        call writeDataGroupTxArray( all_predicted_data, predicted_data_file_name )
+        !
+        !> Deallocate local variables
+        !call deallocateDataGroupTxArray( all_predicted_data )
+        !
+        deallocate( sigma )
+        !
+        ! Verbose
+        write( *, * ) "     - Finish jobForwardModeling"
+        !
+    end subroutine jobForwardModeling
     !
     !> runForwardModeling:
     !>     Calculate ESolution for all transmitters and...
     !>     Calculate the predicted data for each transmitter-receiver pair.
-    !> Obs.: Require the previous definition of the global ForwardSolver (createForwardSolver())
-    !
-    subroutine runForwardModeling( sigma, predicted_data, e_all )
+    !>     ForwardSolver must be allocated
+    subroutine runForwardModeling( sigma, all_predicted_data, e_all )
         implicit none
         !
         class( ModelParameter_t ), intent( in ) :: sigma
-        type( DataGroupTx_t ), allocatable, dimension(:), intent( inout ) :: predicted_data
+        type( DataGroupTx_t ), allocatable, dimension(:), intent( inout ) :: all_predicted_data
         type( ESolMTx ), optional, intent( inout ) :: e_all
         !
         class( Transmitter_t ), pointer :: Tx
@@ -177,34 +206,7 @@ contains
             !> Pointer to the Transmitter
             Tx => getTransmitter( i_tx )
             !
-            !> Set Transmitter's ForwardSolver Period) and Conductivity
-            call Tx%forward_solver%setFrequency( sigma, Tx%period )
-            !
-            !> Instantiate Transmitter's Source - According to transmitter type or chosen via control file
-            select type( Tx )
-                !
-                class is( TransmitterMT_t )
-                    !
-                    write( *, "( a25, i5, A9, es12.5)" ) "- Solving MT Tx", i_tx, ", Period=", Tx%period
-                    !
-                    call Tx%setSource( SourceMT_1D_t( model_operator, sigma, Tx%period ) )
-                    !
-                class is( TransmitterCSEM_t )
-                    !
-                    write( *, "( a25, i5, A9, es12.5)" ) "- Solving CSEM Tx", i_tx, ", Period=", Tx%period
-                    !
-                    call Tx%setSource( SourceCSEM_Dipole1D_t( model_operator, sigma, Tx%period, Tx%location, Tx%dip, Tx%azimuth, Tx%moment ) )
-                    !
-                class default
-                    stop "Error: ForwardModeling > Unclassified Transmitter"
-                !
-            end select
-            !
-            !> Build Source E according to source type
-            call Tx%source%createE()
-            !
-            !> Solve e_sol for this Transmitter
-            call Tx%solve()
+            call solveTx( sigma, Tx )
             !
             !> Save e_sol in e_all
             if( present( e_all ) ) then
@@ -224,7 +226,7 @@ contains
                 !
                 call Rx%predictedData( Tx, data_group )
                 !
-                call predicted_data( i_tx )%setValues( data_group )
+                call all_predicted_data( i_tx )%setValues( data_group )
                 !
             enddo
             !
@@ -234,6 +236,37 @@ contains
         write( *, * ) "          - Finish Forward Modeling"
         !
     end subroutine runForwardModeling
+    !
+    !> No subroutine briefing
+    subroutine createDistributeForwardSolver()
+        implicit none
+        !
+        integer :: i_tx
+        !
+        if( allocated( forward_solver ) ) deallocate( forward_solver )
+        !
+        !> Instantiate the ForwardSolver - Specific type can be chosen via control file
+        select case ( forward_solver_type )
+            !
+            case( FWD_IT_DC )
+                allocate( forward_solver, source = ForwardSolverIT_DC_t( model_operator, QMR ) )
+                !
+            case default
+                !
+                write( *, * ) "Warning: createDistributeForwardSolver > Undefined forward_solver, using IT_DC"
+                !
+                allocate( forward_solver, source = ForwardSolverIT_DC_t( model_operator, QMR ) )
+                !
+        end select
+        !
+        !> Make all transmitters point to this ForwardSolver
+        do i_tx = 1, size( transmitters )
+            !
+            transmitters( i_tx )%Tx%forward_solver => forward_solver
+            !
+        enddo
+        !
+    end subroutine createDistributeForwardSolver
     !
     !> No subroutine briefing
     subroutine writeAllESolution( file_name )
@@ -344,11 +377,11 @@ contains
                         !
                         class is( TransmitterMT_t )
                             !
-                            write( ioPredData, "(es12.6, 1X, A, 1X, f15.3, f15.3, f15.3, f15.3, f15.3, 1X, A, 1X, es16.6, es16.6, es16.6)" ) transmitter%period, trim(receiver%code), R_ZERO, R_ZERO, receiver%location(1), receiver%location(2), receiver%location(3), trim(data_group%components(j)%str), data_group%reals(j), data_group%imaginaries(j), data_group%errors(j)
+                            write( ioPredData, "(es12.6, 1X, A, 1X, f15.3, f15.3, f15.3, f15.3, f15.3, 1X, A, 1X, es16.6, es16.6, es16.6)" ) transmitter%period, trim(receiver%code), R_ZERO, R_ZERO, receiver%location(1), receiver%location(2), receiver%location(3), trim( receiver%comp_names(j)%str ), data_group%reals(j), data_group%imaginaries(j), data_group%errors(j)
                             !
                         class is( TransmitterCSEM_t )
                             !
-                            write( ioPredData, "(A, 1X, es12.6, f15.3, f15.3, f15.3, f15.3, f15.3, f15.3, 1X, A, 1X, f15.3, f15.3, f15.3, 1X, A, 1X, es16.6, es16.6, es16.6)" ) trim(transmitter%dipole), transmitter%period, transmitter%moment, transmitter%azimuth, transmitter%dip, transmitter%location(1), transmitter%location(2), transmitter%location(3), trim(receiver%code), receiver%location(1), receiver%location(2), receiver%location(3), trim(data_group%components(j)%str), data_group%reals(j), data_group%imaginaries(j), data_group%errors(j)
+                            write( ioPredData, "(A, 1X, es12.6, f15.3, f15.3, f15.3, f15.3, f15.3, f15.3, 1X, A, 1X, f15.3, f15.3, f15.3, 1X, A, 1X, es16.6, es16.6, es16.6)" ) trim(transmitter%dipole), transmitter%period, transmitter%moment, transmitter%azimuth, transmitter%dip, transmitter%location(1), transmitter%location(2), transmitter%location(3), trim(receiver%code), receiver%location(1), receiver%location(2), receiver%location(3), trim( receiver%comp_names(j)%str ), data_group%reals(j), data_group%imaginaries(j), data_group%errors(j)
                             !
                         class default
                             stop "Error: writeDataGroupTxArray: Unclassified data_group!"

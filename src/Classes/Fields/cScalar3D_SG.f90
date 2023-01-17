@@ -46,8 +46,8 @@ module cScalar3D_SG
         procedure, public :: divByValue => divByValueCScalar3D_SG
         !
         procedure, public :: dotProd => dotProdCScalar3D_SG
-		!
-		procedure, public :: sumEdges => sumEdgesCScalar3D_SG
+        !
+        procedure, public :: sumEdges => sumEdgesCScalar3D_SG
         !
         !> Miscellaneous
         procedure, public :: conjugate => conjugateCScalar3D_SG
@@ -538,7 +538,7 @@ contains
         implicit none
         !
         class( cScalar3D_SG_t ), intent( in ) :: self
-        complex( kind=prec ), allocatable, intent( out ) :: array(:)
+        complex( kind=prec ), allocatable, dimension(:), intent( out ) :: array
         !
         allocate( array( self%length() ) )
         array = (/reshape(self%v, (/self%Nxyz, 1/))/)
@@ -550,9 +550,17 @@ contains
         implicit none
         !
         class( cScalar3D_SG_t ), intent( inout ) :: self
-        complex( kind=prec ), intent( in ) :: array(:)
+        complex( kind=prec ), allocatable, dimension(:), intent( inout ) :: array
         !
-        self%v = reshape( array, (/self%NdV(1), self%NdV(2), self%NdV(3)/) )
+        if( allocated( array ) ) then
+            !
+            self%v = reshape( real( array, kind=prec ), (/self%NdV(1), self%NdV(2), self%NdV(3)/) )
+            !
+            deallocate( array )
+            !
+        else
+            stop "Error: setArrayCScalar3D_SG > Input array not allocated."
+        endif
         !
     end subroutine setArrayCScalar3D_SG
     !

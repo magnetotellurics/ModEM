@@ -1,9 +1,8 @@
 !
-!> Module with the InversionNLCG routines JMult, JMult_Tx, JMult_T, JMult_T_Tx 
+!> ????
 !
 module InversionNLCG
     !
-    use ForwardModeling
     use Sensitivity
     !
     type :: NLCGiterControl_t
@@ -343,8 +342,8 @@ contains
         d = dHat
         !
         ! cleaning up
-        call deallocateDataGroupTxArray( dHat )
-        call deallocateDataGroupTxArray( res )
+        !call deallocateDataGroupTxArray( dHat )
+        !call deallocateDataGroupTxArray( res )
         !
         ! Verbose
         write( *, * ) "     - Finish Inversion NLCG, output files in [", trim( outdir_name ), "]"
@@ -398,7 +397,11 @@ contains
         !
         call CdInvMult( res )
         !
+#ifdef MPI
+        call masterJMult_T( m, res, JTd )
+#else
         call JMult_T( m, res, JTd )
+#endif
         !
         allocate( CmJTd, source = model_cov%multBy_CmSqrt( JTd ) )
         !
@@ -416,7 +419,7 @@ contains
         !
         call grad%linComb( MinusTWO / Ndata, TWO * lambda / Nmodel, mHat )
         !
-        call deallocateDataGroupTxArray( res )
+        !call deallocateDataGroupTxArray( res )
         !
         deallocate( m, JTd, CmJTd )
         !
@@ -450,7 +453,15 @@ contains
         ! initialize dHat
         dHat = d
         !
+#ifdef MPI
+        !
+        call masterForwardModelling( m, dHat )
+        !
+#else
+        !
         call runForwardModeling( m, dHat, e_all )
+        !
+#endif
         !
         !> initialize res
         res = d
@@ -462,10 +473,12 @@ contains
         call CdInvMult( res, Nres )
         !
         SS = dotProdDataGroupTxArray( res, Nres )
+        !
         Ndata = countValuesGroupTxArray( res )
         !
         !> compute the model norm
         mNorm = mHat%dotProd( mHat )
+        !
         Nmodel = mHat%countModel()
         !
         !> penalty functional = sum of squares + scaled model norm
@@ -478,13 +491,10 @@ contains
         if( present( rms ) ) then
             rms = sqrt( SS / Ndata )
         endif
-   
-   write( 6666, * ) "RMS, SS, Ndata, Nmodel, F, mNorm: ", rms, SS, Ndata, Nmodel, F, mNorm
-   !stop
-
-        call deallocateDataGroupTxArray( res )
         !
-        call deallocateDataGroupTxArray( Nres )
+        !call deallocateDataGroupTxArray( res )
+        !
+        !call deallocateDataGroupTxArray( Nres )
         !
         deallocate( m )
         !
@@ -511,7 +521,7 @@ contains
             d_in = d
         endif
         !
-        call deallocateDataGroupTxArray( d )
+        !call deallocateDataGroupTxArray( d )
         !
     end subroutine CdInvMult
     !
@@ -711,7 +721,7 @@ contains
             !
             write( *, * ) "Quadratic has no minimum, exiting line search"
             !
-            call deallocateDataGroupTxArray( dHat_1 )
+            !call deallocateDataGroupTxArray( dHat_1 )
             !
             deallocate( mHat_0, mHat_1 )
             !
@@ -770,7 +780,7 @@ contains
             !
             write( *, * ) "Sufficient decrease condition satisfied, exiting line search"
             !
-            call deallocateDataGroupTxArray( dHat_1 )
+            !call deallocateDataGroupTxArray( dHat_1 )
             !
             deallocate( mHat_0, mHat_1 )
             !
@@ -894,7 +904,7 @@ contains
         !
         write( *, * ) "Gradient computed, line search finished"
         !
-        call deallocateDataGroupTxArray(dHat_1)
+        !call deallocateDataGroupTxArray(dHat_1)
         !
         deallocate( mHat_0, mHat_1 )
         !

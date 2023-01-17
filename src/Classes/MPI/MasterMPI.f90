@@ -5,76 +5,98 @@ module MasterMPI
     !
     use DeclarationMPI
     !
-    public :: masterJobForwardModelling
     public :: masterForwardModelling
-    public :: masterJobJMult, masterJMult
-    public :: masterJobJMult_T, masterJMult_T
-    public :: broadcastFwdBuffer
+    public :: masterJMult
+    public :: masterJMult_T
+    public :: broadcastBasicComponents
+    public :: broadcastSigma
+    public :: broadcastFinish
     !
 contains
     !
-    !> Routine to run a full Forward Modeling job in parallel 
-    !> and deliver the result (all_predicted_data) in a text file
-    subroutine masterJobForwardModelling()
+    !> No procedure briefing
+    subroutine masterSolveAll( sigma )
         implicit none
         !
-        type( DataGroupTx_t ), allocatable, dimension(:) :: all_predicted_data
+        class( ModelParameter_t ), intent( in ) :: sigma
         !
-        ! Verbose
-        write( *, * ) "     - Start jobForwardModeling"
+        integer :: worker_rank, tx_received, i_tx, i_data
         !
-        !> Read Model File and instantiate global variables: main_grid, model_operator and Sigma0
-        if( has_model_file ) then
-            !
-            call handleModelFile()
-            !
-        else
-            stop "Error: masterJobForwardModelling > Missing Model file!"
-        endif
+        !> Verbose
+        !write( *, * ) "     - Start masterSolveAll"
         !
-        !> Read Data File: instantiate Txs and Rxs and build the Data relation between them
-        if( has_data_file ) then
+        !> Send Sigma to all workers
+        if( sigma%is_allocated ) then
             !
-            call handleDataFile()
+            call broadcastSigma( sigma )
             !
         else
-            stop "Error: masterJobForwardModelling > Missing Data file!"
+            stop "Error: masterSolveAll > sigma not allocated"
         endif
         !
-        !> Send Fwd components to all workers
-        call broadcastFwdBuffer()
+        !> Initialize MPI control variables
+        worker_rank = 1
+        tx_received = 0
+        i_tx = 0
         !
-        !> Deallocate Forward Modeling global components (Not used by the Master process)
-        deallocate( model_operator, sigma0, main_grid )
+        !> Send 1 transmitter to first np workers
+        do while( worker_rank <= ( mpi_size - 1 ) )
+            !
+            i_tx = i_tx + 1
+            !
+            job_info%job_name = job_em_solve
+            job_info%i_tx = i_tx
+            job_info%worker_rank = worker_rank
+            !
+            call sendTo( worker_rank )
+            !
+            worker_rank = worker_rank + 1
+            !
+        enddo
         !
-        !> Run masterForwardModelling to calculate predicted data
-        call masterForwardModelling( all_predicted_data )
+        !> Send 1 transmitter to first available worker
+        do while( i_tx < size( transmitters ) )
+            !
+            call receiveFromAny()
+            !
+            tx_received = tx_received + 1
+            i_tx = i_tx + 1
+            !
+            job_info%job_name = job_em_solve
+            job_info%i_tx = i_tx
+            !
+            call sendTo( job_info%worker_rank )
+            !
+        enddo
         !
-        !> Write all_predicted_data, with its proper Rx headers, to the file <predicted_data_file_name>
-        call writeDataGroupTxArray( all_predicted_data, predicted_data_file_name )
+        !> Receive job_done from each worker
+        do while( tx_received < size( transmitters ) )
+            !
+            call receiveFromAny()
+            !
+            tx_received = tx_received + 1
+            !
+        enddo
         !
-        !> Deallocate local data array
-        call deallocateDataGroupTxArray( all_predicted_data )
+        !> Verbose
+        !write( *, * ) "     - Finish masterSolveAll"
         !
-        ! Verbose
-        write( *, * ) "     - Finish jobForwardModeling"
-        !
-    end subroutine masterJobForwardModelling
+    end subroutine masterSolveAll
     !
     !> No procedure briefing
-    subroutine masterForwardModelling( all_predicted_data )
+    subroutine masterForwardModelling( sigma, all_predicted_data )
         implicit none
         !
+        class( ModelParameter_t ), intent( in ) :: sigma
         type( DataGroupTx_t ), allocatable, dimension(:), intent( inout ) :: all_predicted_data
         !
         integer :: worker_rank, tx_received, i_tx, i_data
         !
         !> Verbose
-        write( *, * ) "     - Start Forward Modeling"
+        !write( *, * ) "     - Start masterForwardModelling"
         !
-        all_predicted_data = all_measured_data
-        !
-        call zerosDataGroupTxArray( all_predicted_data )
+        !>
+        call masterSolveAll( sigma )
         !
         !> Initialize MPI control variables
         worker_rank = 1
@@ -89,8 +111,11 @@ contains
             job_info%job_name = job_forward
             job_info%i_tx = i_tx
             job_info%worker_rank = worker_rank
+            job_info%data_size = allocateDataBuffer( all_predicted_data( i_tx ) )
             !
             call sendTo( worker_rank )
+            !
+            call sendData( all_predicted_data( i_tx ), worker_rank )
             !
             worker_rank = worker_rank + 1
             !
@@ -108,8 +133,11 @@ contains
             !
             job_info%job_name = job_forward
             job_info%i_tx = i_tx
+            job_info%data_size = allocateDataBuffer( all_predicted_data( i_tx ) )
             !
-            call sendTo( job_info%worker_rank )
+            call sendTo( worker_rank )
+            !
+            call sendData( all_predicted_data( i_tx ), worker_rank )
             !
         enddo
         !
@@ -122,70 +150,12 @@ contains
             !
             tx_received = tx_received + 1
             !
-            job_info%job_name = job_finish
-            !
-            call sendTo( job_info%worker_rank )
-            !
         enddo
         !
-    end subroutine masterForwardModelling
-    !
-    !> Routine to run a full JMult job in parallel and deliver the result (JmHat) in a text file
-    subroutine masterJobJMult()
-        implicit none
-        !
-        !> Data gradient for all transmitters, grouped into an array of DataGroupTx
-        type( DataGroupTx_t ), allocatable, dimension(:) :: JmHat
-        !
-        ! Verbose
-        write( *, * ) "     - Start jobJMult"
-        !
-        !> Read Model File: instantiates Grid, ModelOperator and ModelParameter
-        if( .NOT. has_model_file ) then 
-            stop "Error: masterJobJMult > Missing Model file!"
-        else
-            !
-            call handleModelFile()
-            !
-        endif
-        !
-        !> Read Prior Model File: instantiates PModelParameter
-        if( .NOT. has_pmodel_file ) then 
-            stop "Error: masterJobJMult > Missing Prior Model file!"
-        else
-            !
-            call handlePModelFile()
-            !
-        endif
-        !
-        !> Reads Data File: instantiates and builds the Data relation between Txs and Rxs
-        if( .NOT. has_data_file ) then 
-            stop "Error: masterJobJMult > Missing Data file!"
-        else
-            !
-            call handleDataFile()
-            !
-        endif
-        !
-        !> Send Fwd components to all workers
-        call broadcastFwdBuffer()
-        !
-        !>
-        JmHat = all_measured_data
-        !
-        !>
-        call masterJMult( sigma0, pmodel, JmHat )
-        !
-        !> Write JmHat, with its proper Rx headers, to the file <jmhat_data_file_name>
-        call writeDataGroupTxArray( JmHat, jmhat_data_file_name )
-        !
-        !> Deallocate local data array
-        call deallocateDataGroupTxArray( JmHat )
-        !
         !> Verbose
-        write( *, * ) "     - Finish jobJMult"
+        !write( *, * ) "     - Finish masterForwardModelling"
         !
-    end subroutine masterJobJMult
+    end subroutine masterForwardModelling
     !
     !> Routine to run a full JMult job in parallel and deliver the result (JmHat) in a text file
     subroutine masterJMult( sigma, dsigma, JmHat )
@@ -196,6 +166,18 @@ contains
         !
         integer :: worker_rank, i_tx, tx_received
         !
+        !> Verbose
+        !write( *, * ) "     - Start masterJMult"
+        !
+        !> Send Sigma to all workers
+        if( dsigma%is_allocated ) then
+            !
+            call broadcastDSigma( dsigma )
+            !
+        else
+            stop "Error: masterSolveAll > sigma not allocated"
+        endif
+        !
         !> Initialize MPI control variables
         worker_rank = 1
         tx_received = 0
@@ -209,8 +191,11 @@ contains
             job_info%job_name = job_jmult
             job_info%i_tx = i_tx
             job_info%worker_rank = worker_rank
+            job_info%data_size = allocateDataBuffer( JmHat( i_tx ) )
             !
             call sendTo( worker_rank )
+            !
+            call sendData( JmHat( i_tx ), worker_rank )
             !
             worker_rank = worker_rank + 1
             !
@@ -228,8 +213,11 @@ contains
             !
             job_info%job_name = job_jmult
             job_info%i_tx = i_tx
+            job_info%data_size = allocateDataBuffer( JmHat( i_tx ) )
             !
             call sendTo( job_info%worker_rank )
+            !
+            call sendData( JmHat( i_tx ), worker_rank )
             !
         enddo
         !
@@ -242,56 +230,12 @@ contains
             !
             tx_received = tx_received + 1
             !
-            job_info%job_name = job_finish
-            !
-            call sendTo( job_info%worker_rank )
-            !
         enddo
         !
-    end subroutine masterJMult
-    !
-    !> Routine to run a full JMult_T job in parallel and deliver the result (DSigma) in a text file
-    subroutine masterJobJMult_T()
-        implicit none
-        !
-        class( ModelParameter_t ), allocatable :: dsigma
-        !
-        ! Verbose
-        write( *, * ) "     - Start jobJMult_T"
-        !
-        !> Read Model File: instantiates Grid, ModelOperator and ModelParameter
-        if( .NOT. has_model_file ) then 
-            stop "Error: masterJobJMult_T > Missing Model file!"
-        else
-            !
-            call handleModelFile()
-            !
-        endif
-        !
-        !> Reads Data File: instantiates and builds the Data relation between Txs and Rxs
-        if( .NOT. has_data_file ) then 
-            stop "Error: masterJobJMult_T > Missing Data file!"
-        else
-            !
-            call handleDataFile()
-            !
-        endif
-        !
-        !> Send Fwd components to all workers
-        call broadcastFwdBuffer()
-        !
-        call masterJMult_T( sigma0, all_measured_data, dsigma )
-        !
-        !> Write dsigma to <dsigma_file_name> file path
-        call dsigma%write( dsigma_file_name )
-        !
-        !> Flush local variable
-        deallocate( dsigma )
-        !
         !> Verbose
-        write( *, * ) "     - Finish jobJMult_T"
+        !write( *, * ) "     - Finish masterJMult"
         !
-    end subroutine masterJobJMult_T
+    end subroutine masterJMult
     !
     !> Routine to run JMult_T in parallel
     subroutine masterJMult_T( sigma, all_data, dsigma )
@@ -299,13 +243,16 @@ contains
         !
         class( ModelParameter_t ), intent( in ) :: sigma
         type( DataGroupTx_t ), dimension(:), intent( in ) :: all_data
-        class( ModelParameter_t ), allocatable, intent( inout ) :: dsigma
+        class( ModelParameter_t ), allocatable, intent( out ) :: dsigma
         !
         class( Scalar_t ), allocatable :: tx_model_cond
         !
         integer :: worker_rank, i_tx, tx_received
         !
-        !> Initialize dsigma with Zeros
+        !> Verbose
+        write( *, * ) "     - Start masterJMult_T"
+        !
+        !> And initialize dsigma with Zeros
         if( sigma%is_allocated ) then
             !
             if( allocated( dsigma ) ) deallocate( dsigma )
@@ -330,6 +277,7 @@ contains
             job_info%job_name = job_jmult_t
             job_info%i_tx = i_tx
             job_info%worker_rank = worker_rank
+            job_info%data_size = allocateDataBuffer( all_data( i_tx ) )
             !
             call sendTo( worker_rank )
             !
@@ -346,7 +294,7 @@ contains
             !
             call dsigma%getCond( tx_model_cond )
             !
-            call receiveModelConductivity( tx_model_cond, job_info%worker_rank )
+            call receiveConductivity( tx_model_cond, job_info%worker_rank )
             !
             call dsigma%addCond( tx_model_cond )
             !
@@ -357,6 +305,7 @@ contains
             !
             job_info%job_name = job_jmult_t
             job_info%i_tx = i_tx
+            job_info%data_size = allocateDataBuffer( all_data( i_tx ) )
             !
             call sendTo( job_info%worker_rank )
             !
@@ -371,7 +320,7 @@ contains
             !
             call dsigma%getCond( tx_model_cond )
             !
-            call receiveModelConductivity( tx_model_cond, job_info%worker_rank )
+            call receiveConductivity( tx_model_cond, job_info%worker_rank )
             !
             call dsigma%addCond( tx_model_cond )
             !
@@ -379,40 +328,108 @@ contains
             !
             tx_received = tx_received + 1
             !
-            job_info%job_name = job_finish
-            !
-            call sendTo( job_info%worker_rank )
-            !
         enddo
+        !
+        !> Verbose
+        !write( *, * ) "     - Finish masterJMult_T"
         !
     end subroutine masterJMult_T
     !
-    !> Send Forward Modeling components to all workers
-    subroutine broadcastFwdBuffer()
+    !> Send FWD components to all workers
+    subroutine broadcastBasicComponents()
         implicit none
         !
         integer :: worker_id
         !
-        call allocateFwdBuffer()
+        job_info%job_name = job_basic_components
         !
-        call packFwdBuffer()
+        job_info%basic_comp_size = allocateBasicComponentsBuffer()
         !
         do worker_id = 1, ( mpi_size - 1 )
             !
-            job_info%job_name = job_share_memory
-            job_info%buffer_size = fwd_buffer_size
-            !
             call sendTo( worker_id )
             !
-            call sendFwdBuffer( worker_id )
+            call sendBasicComponents( worker_id )
             !
         enddo
         !
         call MPI_BARRIER( main_comm, ierr )
         !
-        deallocate( fwd_buffer )
+        deallocate( basic_comp_buffer )
         !
-    end subroutine broadcastFwdBuffer
+    end subroutine broadcastBasicComponents
+    !
+    !> Send sigma to all workers
+    subroutine broadcastSigma( sigma )
+        implicit none
+        !
+        class( ModelParameter_t ), intent( in ) :: sigma
+        !
+        integer :: worker_id
+        !
+        job_info%job_name = job_sigma_model
+        !
+        job_info%model_size = allocateModelBuffer( sigma, .FALSE. )
+        !
+        !write( *, "(A45, i8)" ) "Sigma = ", job_info%model_size
+        !
+        do worker_id = 1, ( mpi_size - 1 )
+            !
+            call sendTo( worker_id )
+            !
+            call sendModel( sigma, worker_id )
+            !
+        enddo
+        !
+        call MPI_BARRIER( main_comm, ierr )
+        !
+        deallocate( model_buffer )
+        !
+    end subroutine broadcastSigma
+    !
+    !> Send dsigma to all workers
+    subroutine broadcastDSigma( dsigma )
+        implicit none
+        !
+        class( ModelParameter_t ), intent( in ) :: dsigma
+        !
+        integer :: worker_id
+        !
+        job_info%job_name = job_dsigma_model
+        !
+        job_info%model_size = allocateModelBuffer( dsigma, .FALSE. )
+        !
+        !write( *, "(A45, i8)" ) "DSigma = ", job_info%model_size
+        !
+        do worker_id = 1, ( mpi_size - 1 )
+            !
+            call sendTo( worker_id )
+            !
+            call sendModel( dsigma, worker_id )
+            !
+        enddo
+        !
+        call MPI_BARRIER( main_comm, ierr )
+        !
+        deallocate( model_buffer )
+        !
+    end subroutine broadcastDSigma
+    !
+    !> Send sigma model to all workers
+    subroutine broadcastFinish
+        implicit none
+        !
+        integer :: worker_id
+        !
+        job_info%job_name = job_finish
+        !
+        do worker_id = 1, ( mpi_size - 1 )
+            !
+            call sendTo( worker_id )
+            !
+        enddo
+        !
+    end subroutine broadcastFinish
     !
 end module MasterMPI
 !

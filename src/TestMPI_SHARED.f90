@@ -88,7 +88,7 @@ program TestMPI
                 !
                 select case ( job_master )
                     !
-                    case ( "SHARE_MEMORY" )
+                    case ( "HANDLE_FWD_COMP" )
                         !
                         call workerQuerySharedMemory()
                         !
@@ -156,7 +156,7 @@ contains
         !
         do worker_id = 1, ( mpi_size - 1 )
             !
-            job_info%job_name = job_share_memory
+            job_info%job_name = job_basic_components
             !
             call sendTo( worker_id )
             !
@@ -225,11 +225,11 @@ contains
                     !
                     allocate( model_operator, source = ModelOperator_MF_t( main_grid ) )
                     !
-                    call model_operator%SetEquations()
+                    call model_operator%setEquations()
                     !
                     call sigma0%setMetric( model_operator%metric )
                     !
-                    call model_operator%SetCond( sigma0 )
+                    call model_operator%setCond( sigma0 )
                     !
                 class default
                     stop "Error: workerQuerySharedMemory > Unclassified main_grid"
@@ -608,7 +608,7 @@ contains
             !
             allocate( tx_model_cond, source = dsigma%cell_cond )
             !
-            call receiveModelConductivity( tx_model_cond, job_info%worker_rank )
+            call receiveConductivity( tx_model_cond, job_info%worker_rank )
             !
             call dsigma%cell_cond%add( tx_model_cond )
             !
@@ -637,7 +637,7 @@ contains
             !
             allocate( tx_model_cond, source = dsigma%cell_cond )
             !
-            call receiveModelConductivity( tx_model_cond, job_info%worker_rank )
+            call receiveConductivity( tx_model_cond, job_info%worker_rank )
             !
             call dsigma%cell_cond%add( tx_model_cond )
             !
@@ -837,7 +837,7 @@ contains
             !
             class is( ModelParameterCell_SG_t )
                 !
-                call sendModel( tx_dsigma%cell_cond, master_id )
+                call sendConductivity( tx_dsigma%cell_cond, master_id )
                 !
             class default
                 stop "Error: masterJobAdjoint_T > Unclassified tx_dsigma"
@@ -922,11 +922,11 @@ contains
                 !
                 allocate( model_operator, source = ModelOperator_MF_t( main_grid ) )
                 !
-                call model_operator%SetEquations()
+                call model_operator%setEquations()
                 !
                 call sigma0%setMetric( model_operator%metric )
                 !
-                call model_operator%SetCond( sigma0 )
+                call model_operator%setCond( sigma0 )
                 !
             class default
                 stop "Error: handleModelFile > Unclassified main_grid"
@@ -1156,7 +1156,7 @@ contains
         implicit none
         !
         ! I|O
-        predicted_data_file_name = "predicted_data.dat"
+        predicted_data_file_name = "all_predicted_data.dat"
         jmhat_data_file_name = "JmHat.dat"
         e_solution_file_name = "esolution.bin"
         dsigma_file_name = "dsigma.mod"
@@ -1377,21 +1377,21 @@ contains
         write( *, * ) "    Forward Modeling:"
         write( *, * ) "        <ModEM> -f -m <rFile_Model> -d <rFile_Data>"
         write( *, * ) "    Outputs:"
-        write( *, * ) "        - predicted_data.dat or the path specified by [-pd]"
+        write( *, * ) "        - all_predicted_data.dat or the path specified by [-pd]"
         write( *, * ) "        - esolution.bin or the path specified by      [-es]"
         write( *, * ) ""
         write( *, * ) "    Adjoint:"
         write( *, * ) "        <ModEM> -j -m <rFile_Model> -pm <rFile_pModel> -d <rFile_Data>"
         write( *, * ) "    Outputs:"
         write( *, * ) "        - JmHat.dat or the path specified by  [-gd]"
-        write( *, * ) "        - predicted_data.dat or the path specified by [-pd]"
+        write( *, * ) "        - all_predicted_data.dat or the path specified by [-pd]"
         write( *, * ) "        - esolution.bin or the path specified by      [-es]"
         write( *, * ) ""
         write( *, * ) "    JMult_t:"
         write( *, * ) "        <ModEM> -jt -m <rFile_Model> -d <rFile_Data>"
         write( *, * ) "    Output:"
         write( *, * ) "        - sigma0.mod or the path specified by          [-dm]"
-        write( *, * ) "        - predicted_data.dat or the path specified by [-pd]"
+        write( *, * ) "        - all_predicted_data.dat or the path specified by [-pd]"
         write( *, * ) "        - esolution.bin or the path specified by      [-es]"
         !
     end subroutine printUsage

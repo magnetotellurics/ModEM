@@ -135,11 +135,15 @@ contains
         !> For one polarization (CSEM n_pol = 1)
         if( self%source%sens ) then
             !
+            !write( *, "( a25, i5, a9, es12.5)" ) "- Solving Sens CSEM Tx", self%i_tx, ", Period=", self%period
+            !
             call self%forward_solver%createESolution( 1, self%source, self%e_sens(1) )
             !
             call self%e_sens(1)%add( self%source%E(1) )
             !
         else
+            !
+            !write( *, "( a25, i5, a9, es12.5)" ) "- Solving FWD CSEM Tx", self%i_tx, ", Period=", self%period
             !
             call self%forward_solver%createESolution( 1, self%source, self%e_sol(1) )
             !

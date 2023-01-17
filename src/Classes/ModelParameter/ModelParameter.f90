@@ -42,6 +42,7 @@ module ModelParameter
             !
             !> Interfaces
             procedure( interface_zeros_model_parameter ), deferred, public :: zeros
+			!
             procedure( interface_copy_from_model_parameter ), deferred, public :: copyFrom
             generic :: assignment(=) => copyFrom
             !

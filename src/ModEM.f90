@@ -1,7 +1,9 @@
 !
-!> Prototype of a full ModEM program
+!> Prototype of a full ModEM parallel program
 !
 program ModEM
+    !
+    use ModEMControlFile
     !
 #ifdef MPI
     !
@@ -12,8 +14,6 @@ program ModEM
     !
     !> MPI MASTER PROCESS
     if( mpi_rank == 0 ) then
-        !
-        write( *, * ) "PARALLEL PROGRAM"
         !
         call startProgram()
         !
@@ -27,10 +27,6 @@ program ModEM
     endif
     !
 #else
-    !
-    use ModEMControlFile
-    !
-    write( *, * ) "SERIAL PROGRAM"
     !
     use InversionDCG
     use InversionNLCG
@@ -88,23 +84,20 @@ contains
     subroutine jobInversion()
         implicit none
         !
-        class( ModelParameter_t ), allocatable :: sigma
+        class( ModelParameter_t ), allocatable :: sigma, dsigma
         !
         !> Read Model File and instantiate global variables: main_grid, model_operator and Sigma0
         if( has_model_file ) then 
             !
-            call handleModelFile()
-            !
-            !> Initialize sigma as the input model
-            allocate( sigma, source = sigma0 )
+            call handleModelFile( sigma )
             !
             !> Instantiate ModelCovariance
             allocate( model_cov, source = ModelCovarianceRec_t( sigma ) )
             !
             !> Initialize pmodel with Zeros
-            allocate( pmodel, source = sigma0 )
+            allocate( dsigma, source = sigma )
             !
-            call pmodel%zeros()
+            call dsigma%zeros()
             !
         else
             stop "Error: jobInversion > Missing Model file!"
@@ -113,15 +106,15 @@ contains
         !> Read Perturbation Model File: instantiate pmodel (NOT USING RIGHT NOW ????)
         if( has_pmodel_file ) then 
             !
-            deallocate( pmodel )
+            deallocate( dsigma )
             !
-            call handlePModelFile()
+            call handlePModelFile( dsigma )
             !
-            call pmodel%setMetric( model_operator%metric )
+            call dsigma%setMetric( model_operator%metric )
             !
-            call model_cov%multBy_Cm( pmodel )
+            call model_cov%multBy_Cm( dsigma )
             !
-            call sigma%linComb( ONE, ONE, pmodel )
+            call sigma%linComb( ONE, ONE, dsigma )
             !
         endif
         !
@@ -134,19 +127,26 @@ contains
             stop "Error: jobInversion > Missing Data file!"
         endif
         !
-        !> Instantiate ForwardSolver - Specific type via control file
-        call createForwardSolver()
+#ifdef MPI
+        !
+        call broadcastBasicComponents()
+        !
+#else
+        !
+        call createDistributeForwardSolver()
+        !
+#endif
         !
         !> Instantiate the ForwardSolver - Specific type can be chosen via control file
         select case ( inversion_algorithm )
             !
             case( DCG )
                 !
-                call DCGsolver( all_measured_data, sigma, pmodel )
+                call DCGsolver( all_measured_data, sigma, dsigma )
                 !
             case( NLCG )
                 !
-                call NLCGsolver( all_measured_data, sigma, pmodel )
+                call NLCGsolver( all_measured_data, sigma, dsigma )
                 !
             case default
                 !
@@ -154,8 +154,7 @@ contains
                 !
         end select
         !
-        !> Flush local variable
-        deallocate( sigma )
+        deallocate( sigma, dsigma )
         !
     end subroutine jobInversion
     !
@@ -167,36 +166,24 @@ contains
             !
             case ( "Forward" )
                 !
-#ifdef MPI
-                call masterJobForwardModelling()
-#else
-                call jobForwardModeling()
-#endif
+                call jobForwardModeling
                 !
             case ( "JMult" )
                 !
-#ifdef MPI
-                call masterJobJMult()
-#else
-                call jobJMult()
-#endif
+                call jobJMult
                 !
             case ( "JMult_T" )
                 !
-#ifdef MPI
-                call masterJobJMult_T()
-#else
-                call jobJMult_T()
-#endif
+                call jobJMult_T
                 !
             case ( "Inversion" )
                 !
-                call jobInversion()
+                call jobInversion
                 !
             case default
                 !
                 write( *, * ) "Error: unknown job: [", modem_job, "]"
-                call printHelp()
+                call printHelp
                 stop
             !
         end select
@@ -375,7 +362,7 @@ contains
         implicit none
         !
         ! I|O
-        predicted_data_file_name = "predicted_data.dat"
+        predicted_data_file_name = "all_predicted_data.dat"
         jmhat_data_file_name = "jmhat.dat"
         e_solution_file_name = "esolution.bin"
         dsigma_file_name = "dsigma.rho"
@@ -422,7 +409,7 @@ contains
         write( *, * ) "    Forward Modeling:"
         write( *, * ) "        <ModEM> -f -m <rFile_Model> -d <rFile_Data>"
         write( *, * ) "        Output:"
-        write( *, * ) "        - predicted_data.dat or the path specified by         [-pd]"
+        write( *, * ) "        - all_predicted_data.dat or the path specified by         [-pd]"
         write( *, * ) ""
         write( *, * ) "    JMult:"
         write( *, * ) "        <ModEM> -j -m <rFile_Model> -pm <rFile_pModel> -d <rFile_Data>"
