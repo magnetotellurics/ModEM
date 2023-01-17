@@ -39,11 +39,11 @@ module DeclarationMPI
     !
     !> Labels for ModEM jobs
     character( len=15 ) :: job_master = "MASTER_JOB", job_done = "FINISH_JOB"
-	character( len=15 ) :: job_finish = "STOP_JOBS", job_inversion = "JOB_INVERSION"
+    character( len=15 ) :: job_finish = "STOP_JOBS", job_inversion = "JOB_INVERSION"
     character( len=15 ) :: job_em_solve = "JOB_EM_SOLVE", job_forward = "JOB_FORWARD"
     character( len=15 ) :: job_jmult = "JOB_JMULT", job_jmult_t = "JOB_JMULT_T"
     character( len=15 ) :: job_basic_components = "HANDLE_FWD_COMP"
-	character( len=15 ) :: job_sigma_model = "HANDLE_SIGMA", job_dsigma_model = "HANDLE_DSIGMA"
+    character( len=15 ) :: job_sigma_model = "HANDLE_SIGMA", job_dsigma_model = "HANDLE_DSIGMA"
     !
     !> Struct JobInfo_t:
     !> Gather MPI information necessary for the execution of the different ModEM jobs.
@@ -471,6 +471,7 @@ contains
             !
             case( grid_3d_sg )
                 !
+                if( allocated( grid ) ) deallocate( grid )
                 allocate( Grid3D_SG_t :: grid )
                 !
                 select type( grid )
@@ -698,6 +699,7 @@ contains
             !
             case ( model_cell_sg )
                 !
+                if( allocated( model ) ) deallocate( model )
                 allocate( ModelParameterCell_SG_t :: model )
                 !
                 select type( model )
@@ -1635,7 +1637,7 @@ contains
         integer, intent( in ) :: parent_buffer_size
         integer, intent( inout ) :: index
         !
-        complex( kind=prec ), allocatable :: aux_array(:)
+        complex( kind=prec ), allocatable, dimension(:) :: aux_array
         !
         character( len=4 ) :: grid_type
         !
@@ -1675,10 +1677,9 @@ contains
         call MPI_UNPACK( parent_buffer, parent_buffer_size, index, scalar%Nxyz, 1, MPI_INTEGER, main_comm, ierr )
         !
         allocate( aux_array( scalar%Nxyz ) )
+        !
         call MPI_UNPACK( parent_buffer, parent_buffer_size, index, aux_array(1), scalar%Nxyz, MPI_DOUBLE_COMPLEX, main_comm, ierr )
         call scalar%setArray( aux_array )
-        !
-        deallocate( aux_array )
         !
     end subroutine unpackScalarBuffer
     !

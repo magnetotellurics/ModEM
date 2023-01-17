@@ -141,7 +141,7 @@ contains
         class( Grid_t ), allocatable :: prior_grid
         !
         ! Verbose
-        write( *, * ) "     < Prior Model File: [", pmodel_file_name, "]"
+        write( *, * ) "     < PModel File: [", pmodel_file_name, "]"
         !
         !> Read prior_grid and pmodel with ModelReader_Weerachai
         call model_reader%Read( pmodel_file_name, prior_grid, pmodel ) 

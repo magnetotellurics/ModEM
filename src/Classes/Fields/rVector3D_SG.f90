@@ -525,7 +525,7 @@ contains
         implicit none
         !
         class( rVector3D_SG_t ), intent( in ) :: self
-        complex( kind=prec ), allocatable, intent( out ) :: array(:)
+        complex( kind=prec ), allocatable, dimension(:), intent( out ) :: array
         !
         allocate( array( self%length() ) )
         array = (/reshape( cmplx( self%x, 0.0, kind=prec ), (/self%Nxyz(1), 1/) ), &
@@ -539,22 +539,32 @@ contains
         implicit none
         !
         class( rVector3D_SG_t ), intent( inout ) :: self
-        complex( kind=prec ), intent( in ) :: array(:)
+        complex( kind=prec ), allocatable, dimension(:), intent( inout ) :: array
         !
         integer :: i1, i2
-        !> Ex
-        i1 = 1; i2 = self%Nxyz(1)
         !
-        self%x = reshape( real( array(i1:i2), kind=prec ), self%NdX )
-        !> Ey
-        i1 = i2 + 1; i2 = i2 + self%Nxyz(2)
-        !
-        self%y = reshape( real( array(i1:i2), kind=prec ), self%NdY )
-        !
-        !> Ez
-        i1 = i2 + 1; i2 = i2 + self%Nxyz(3)
-        !
-        self%z = reshape( real( array(i1:i2), kind=prec ), self%NdZ )
+        if( allocated( array ) ) then
+            !
+            !> Ex
+            i1 = 1; i2 = self%Nxyz(1)
+            !
+            self%x = reshape( real( array(i1:i2), kind=prec ), self%NdX )
+            !
+            !> Ey
+            i1 = i2 + 1; i2 = i2 + self%Nxyz(2)
+            !
+            self%y = reshape( real( array(i1:i2), kind=prec ), self%NdY )
+            !
+            !> Ez
+            i1 = i2 + 1; i2 = i2 + self%Nxyz(3)
+            !
+            self%z = reshape( real( array(i1:i2), kind=prec ), self%NdZ )
+            !
+            deallocate( array )
+            !
+        else
+            stop "Error: setArrayRVector3D_SG > Input array not allocated."
+        endif
         !
     end subroutine setArrayRVector3D_SG
     !

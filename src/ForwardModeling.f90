@@ -160,7 +160,7 @@ contains
         call writeDataGroupTxArray( all_predicted_data, predicted_data_file_name )
         !
         !> Deallocate local variables
-        call deallocateDataGroupTxArray( all_predicted_data )
+        !call deallocateDataGroupTxArray( all_predicted_data )
         !
         deallocate( sigma )
         !

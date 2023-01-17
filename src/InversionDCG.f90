@@ -172,9 +172,9 @@ contains
                 !
             end do dcg_loop
             !
-            call deallocateDataGroupTxArray( JmHat )
-            call deallocateDataGroupTxArray( b )
-            call deallocateDataGroupTxArray( res )
+            !call deallocateDataGroupTxArray( JmHat )
+            !call deallocateDataGroupTxArray( b )
+            !call deallocateDataGroupTxArray( res )
             !
             deallocate( mHat )
             !
@@ -242,7 +242,7 @@ contains
         !
         rms = sqrt( SS / Ndata )
         !
-        call deallocateDataGroupTxArray( Nres )
+        !call deallocateDataGroupTxArray( Nres )
         !
     end subroutine Calc_FWD
     !

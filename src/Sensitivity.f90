@@ -58,6 +58,9 @@ contains
         !
         call broadcastBasicComponents()
         !
+        !>
+        call masterSolveAll( sigma )
+        !
         call masterJMult( sigma, dsigma, JmHat )
         !
         call broadcastFinish
@@ -74,7 +77,7 @@ contains
         call writeDataGroupTxArray( JmHat, jmhat_data_file_name )
         !
         !> Flush local variables
-        call deallocateDataGroupTxArray( JmHat )
+        !call deallocateDataGroupTxArray( JmHat )
         !
         deallocate( sigma, dsigma )
         !
@@ -208,6 +211,8 @@ contains
 #ifdef MPI
         !
         call broadcastBasicComponents()
+        !
+        call masterSolveAll( sigma )
         !
         call masterJMult_T( sigma, all_measured_data, dsigma )
         !

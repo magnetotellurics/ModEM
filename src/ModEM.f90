@@ -154,6 +154,8 @@ contains
                 !
         end select
         !
+        deallocate( sigma, dsigma )
+        !
     end subroutine jobInversion
     !
     !> No subroutine briefing

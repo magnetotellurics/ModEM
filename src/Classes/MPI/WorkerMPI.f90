@@ -63,6 +63,11 @@ contains
             !
         enddo
         !
+        !>
+        if( allocated( sigma ) ) deallocate( sigma )
+        !
+        if( allocated( dsigma ) ) deallocate( dsigma )
+        !
         !> Deallocate remaining worker memory
         call garbageCollector()
         !
@@ -108,10 +113,6 @@ contains
         !
         Tx => getTransmitter( tx_data%i_tx )
         !
-        call txForwardSolver( Tx )
-        !
-        call solveTx( sigma, Tx )
-        !
         !> Loop for each Receiver related to the Transmitter
         do i_rx = 1, size( Tx%receiver_indexes )
             !
@@ -148,10 +149,6 @@ contains
         !
         Tx => getTransmitter( job_info%i_tx )
         !
-        call txForwardSolver( Tx )
-        !
-        call solveTx( sigma, Tx )
-        !
         !> Switch Transmitter's source to SourceInteriorForce from PMult
         call Tx%setSource( Tx%PMult( sigma, dsigma, model_operator ) )
         !
@@ -178,18 +175,10 @@ contains
         implicit none
         !
         class( ModelParameter_t ), allocatable :: tx_dsigma
-        class( Transmitter_t ), pointer :: Tx
-        class( Receiver_t ), pointer :: Rx
         type( DataGroupTx_t ) :: tx_data
         integer :: i
         !
         call receiveData( tx_data, master_id )
-        !
-        Tx => getTransmitter( job_info%i_tx )
-        !
-        call txForwardSolver( Tx )
-        !
-        call solveTx( sigma, Tx )
         !
         !> Set current tx_dsigma from JMult_T_Tx
         call JMult_T_Tx( sigma, tx_data, tx_dsigma )

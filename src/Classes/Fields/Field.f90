@@ -141,14 +141,14 @@ module Field
         subroutine interface_get_array_field( self, array )
             import :: Field_t, prec
             class( Field_t ), intent( in ) :: self
-            complex( kind=prec ), allocatable, intent( out ) :: array(:)
+            complex( kind=prec ), allocatable, dimension(:), intent( out ) :: array
         end subroutine interface_get_array_field
         !
         !> No interface subroutine briefing
         subroutine interface_set_array_field( self, array )
             import :: Field_t, prec
             class( Field_t ), intent( inout ) :: self
-            complex( kind=prec ), intent( in ) :: array(:)
+            complex( kind=prec ), allocatable, dimension(:), intent( inout ) :: array
         end subroutine interface_set_array_field
         !
         ! Arithmetic/algebraic operations

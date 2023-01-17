@@ -23,7 +23,7 @@ contains
         integer :: worker_rank, tx_received, i_tx, i_data
         !
         !> Verbose
-        write( *, * ) "     - Start masterSolveAll"
+        !write( *, * ) "     - Start masterSolveAll"
         !
         !> Send Sigma to all workers
         if( sigma%is_allocated ) then
@@ -79,7 +79,7 @@ contains
         enddo
         !
         !> Verbose
-        write( *, * ) "     - Finish masterSolveAll"
+        !write( *, * ) "     - Finish masterSolveAll"
         !
     end subroutine masterSolveAll
     !
@@ -93,16 +93,10 @@ contains
         integer :: worker_rank, tx_received, i_tx, i_data
         !
         !> Verbose
-        write( *, * ) "     - Start masterForwardModelling"
+        !write( *, * ) "     - Start masterForwardModelling"
         !
-        !> Send Sigma to all workers
-        if( sigma%is_allocated ) then
-            !
-            call broadcastSigma( sigma )
-            !
-        else
-            stop "Error: masterForwardModelling > sigma not allocated"
-        endif
+        !>
+        call masterSolveAll( sigma )
         !
         !> Initialize MPI control variables
         worker_rank = 1
@@ -159,7 +153,7 @@ contains
         enddo
         !
         !> Verbose
-        write( *, * ) "     - Finish masterForwardModelling"
+        !write( *, * ) "     - Finish masterForwardModelling"
         !
     end subroutine masterForwardModelling
     !
@@ -173,24 +167,15 @@ contains
         integer :: worker_rank, i_tx, tx_received
         !
         !> Verbose
-        write( *, * ) "     - Start masterJMult"
+        !write( *, * ) "     - Start masterJMult"
         !
         !> Send Sigma to all workers
-        if( sigma%is_allocated ) then
-            !
-            call broadcastSigma( sigma )
-            !
-        else
-            stop "Error: masterJMult_T > sigma not allocated"
-        endif
-        !
-        !> Send DSigma to all workers
         if( dsigma%is_allocated ) then
             !
             call broadcastDSigma( dsigma )
             !
         else
-            stop "Error: masterJMult_T > dsigma not allocated"
+            stop "Error: masterSolveAll > sigma not allocated"
         endif
         !
         !> Initialize MPI control variables
@@ -248,7 +233,7 @@ contains
         enddo
         !
         !> Verbose
-        write( *, * ) "     - Finish masterJMult"
+        !write( *, * ) "     - Finish masterJMult"
         !
     end subroutine masterJMult
     !
@@ -267,11 +252,8 @@ contains
         !> Verbose
         write( *, * ) "     - Start masterJMult_T"
         !
-        !> Send Sigma to all workers
         !> And initialize dsigma with Zeros
         if( sigma%is_allocated ) then
-            !
-            call broadcastSigma( sigma )
             !
             if( allocated( dsigma ) ) deallocate( dsigma )
             allocate( dsigma, source = sigma )
@@ -349,7 +331,7 @@ contains
         enddo
         !
         !> Verbose
-        write( *, * ) "     - Finish masterJMult_T"
+        !write( *, * ) "     - Finish masterJMult_T"
         !
     end subroutine masterJMult_T
     !
@@ -389,7 +371,7 @@ contains
         !
         job_info%model_size = allocateModelBuffer( sigma, .FALSE. )
         !
-        write( *, "(A45, i8)" ) "Sigma = ", job_info%model_size
+        !write( *, "(A45, i8)" ) "Sigma = ", job_info%model_size
         !
         do worker_id = 1, ( mpi_size - 1 )
             !
@@ -417,7 +399,7 @@ contains
         !
         job_info%model_size = allocateModelBuffer( dsigma, .FALSE. )
         !
-        write( *, "(A45, i8)" ) "DSigma = ", job_info%model_size
+        !write( *, "(A45, i8)" ) "DSigma = ", job_info%model_size
         !
         do worker_id = 1, ( mpi_size - 1 )
             !

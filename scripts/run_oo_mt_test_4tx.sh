@@ -32,3 +32,7 @@ mpirun -np 5 ./ModEM_MPI -jt -m ../inputs/JMult_test/pr.ws -d ../inputs/JMult_te
 #
 mpirun -np 5 ./ModEM_MPI -j -m ../inputs/JMult_test/pr.ws -pm ../inputs/JMult_test/dm.ws -d ../inputs/JMult_test/de.txt -c ../docs/control_file_template -jm OO_JMHAT_MT4_NP5.dat
 #
+# DCG: 1195.125s 1255.109s
+#
+mpirun -np 5 ./ModEM_MPI -i -m ../inputs/JMult_test/pr.ws -d ../inputs/JMult_test/de.txt -c ../docs/control_file_template -o DCG_MPI_MT4
+#
