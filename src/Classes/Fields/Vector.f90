@@ -5,23 +5,6 @@ module Vector
     !
     use Scalar
     !
-    !>
-    type :: ESolTx
-        !
-        class( Vector_t ), allocatable, dimension(:) :: pol
-        !
-    end type ESolTx
-    !
-    !>
-    type :: ESolMTx
-        !
-        type( ESolTx ), allocatable, dimension(:) :: e_sol
-        !
-        integer :: SolnIndex = 0
-        !
-    end type ESolMTx
-    !
-    !>
     type, abstract, extends( Field_t ) :: Vector_t
         !
         integer, dimension(3) :: NdX, NdY, NdZ, Nxyz
@@ -39,6 +22,23 @@ module Vector
         !
     end type Vector_t
     !
+    !>
+    type :: ESolTx
+        !
+        class( Vector_t ), allocatable, dimension(:) :: pol
+        !
+    end type ESolTx
+    !
+    !>
+    type :: ESolMTx
+        !
+        type( ESolTx ), allocatable, dimension(:) :: e_sol
+        !
+        integer :: SolnIndex = 0
+        !
+    end type ESolMTx
+    !
+    !>
     abstract interface
         ! !
         ! !> No interface subroutine briefing
