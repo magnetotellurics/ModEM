@@ -83,14 +83,16 @@ contains
     end subroutine ReceiverOffDiagonalImpedance_dtor
     !
     !> No subroutine briefing
-    subroutine setLRowsOffDiagonalImpedance( self, transmitter, lrows )
+    subroutine setLRowsOffDiagonalImpedance( self, transmitter )
         implicit none
         !
         class( ReceiverOffDiagonalImpedance_t ), intent( inout ) :: self
         class( Transmitter_t ), intent( in ) :: transmitter
-        class( Vector_t ), allocatable, dimension(:,:), intent( out ) :: lrows
         !
         stop "setLRowsOffDiagonalImpedance to be implemented"
+        !
+        if( allocated( self%lrows ) ) deallocate( self%lrows )
+        allocate( cVector3D_SG_t :: self%lrows( transmitter%n_pol, self%n_comp ) )
         !
     end subroutine setLRowsOffDiagonalImpedance
     !

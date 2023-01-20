@@ -120,12 +120,11 @@ contains
     end subroutine ReceiverSingleField_dtor
     !
     !> No subroutine briefing
-    subroutine setLRowsSingleField( self, transmitter, lrows )
+    subroutine setLRowsSingleField( self, transmitter )
         implicit none
         !
         class( ReceiverSingleField_t ), intent( inout ) :: self
         class( Transmitter_t ), intent( in ) :: transmitter
-        class( Vector_t ), allocatable, dimension(:,:), intent( out ) :: lrows
         !
         complex( kind=prec ) :: comega
         !
@@ -137,17 +136,18 @@ contains
         call self%predictedData( transmitter )
         !
         !> Allocate LRows matrix [ npol = 1, n_comp = 1 ]
-        allocate( cVector3D_SG_t :: lrows( transmitter%n_pol, self%n_comp ) )
+		if( allocated( self%lrows ) ) deallocate( self%lrows )
+        allocate( cVector3D_SG_t :: self%lrows( transmitter%n_pol, self%n_comp ) )
         !
-        if( self%azimuth == 1.0 ) lrows( 1, 1 ) = self%Lex%getFullVector()
-        if( self%azimuth == 2.0 ) lrows( 1, 1 ) = self%Ley%getFullVector()
+        if( self%azimuth == 1.0 ) self%lrows( 1, 1 ) = self%Lex%getFullVector()
+        if( self%azimuth == 2.0 ) self%lrows( 1, 1 ) = self%Ley%getFullVector()
         !
-        if( self%azimuth == 3.0 ) lrows( 1, 1 ) = self%Lbx%getFullVector()
-        if( self%azimuth == 4.0 ) lrows( 1, 1 ) = self%Lby%getFullVector()
-        if( self%azimuth == 5.0 ) lrows( 1, 1 ) = self%Lbz%getFullVector()
+        if( self%azimuth == 3.0 ) self%lrows( 1, 1 ) = self%Lbx%getFullVector()
+        if( self%azimuth == 4.0 ) self%lrows( 1, 1 ) = self%Lby%getFullVector()
+        if( self%azimuth == 5.0 ) self%lrows( 1, 1 ) = self%Lbz%getFullVector()
         !
         if( self%azimuth == 3.0 .OR. self%azimuth == 4.0 .OR. self%azimuth == 5.0 ) then
-            call lrows( 1, 1 )%mult( isign * comega )
+            call self%lrows( 1, 1 )%mult( isign * comega )
         endif
         !
     end subroutine setLRowsSingleField

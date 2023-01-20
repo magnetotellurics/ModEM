@@ -561,8 +561,6 @@ contains
             !
             self%v = reshape( real( array, kind=prec ), (/self%NdV(1), self%NdV(2), self%NdV(3)/) )
             !
-            deallocate( array )
-            !
         else
             stop "Error: setArrayRScalar3D_SG > Input array not allocated."
         endif

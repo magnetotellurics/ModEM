@@ -1,10 +1,12 @@
 !
-!> No module briefing
+!> Module with the ForwardModeling and Sensitivity parallel routines
+!> And routines to broadcast components
 !
 module MasterMPI
     !
     use DeclarationMPI
     !
+    public :: masterSolveAll
     public :: masterForwardModelling
     public :: masterJMult
     public :: masterJMult_T
@@ -14,7 +16,8 @@ module MasterMPI
     !
 contains
     !
-    !> No procedure briefing
+    !> Calculate ESolution in parallel for all transmitters.
+    !
     subroutine masterSolveAll( sigma )
         implicit none
         !
@@ -23,9 +26,8 @@ contains
         integer :: worker_rank, tx_received, i_tx, i_data
         !
         !> Verbose
-        !write( *, * ) "     - Start masterSolveAll"
+        !!write( *, * ) "     - Start masterSolveAll"
         !
-        !> Send Sigma to all workers
         if( sigma%is_allocated ) then
             !
             call broadcastSigma( sigma )
@@ -79,24 +81,35 @@ contains
         enddo
         !
         !> Verbose
-        !write( *, * ) "     - Finish masterSolveAll"
+        !!write( *, * ) "     - Finish masterSolveAll"
         !
     end subroutine masterSolveAll
     !
-    !> No procedure briefing
+    !> Calculate in parallel ESolution for all transmitters
+    !> Calculate in parallel the predicted data for each transmitter-receiver pair.
+    !
     subroutine masterForwardModelling( sigma, all_predicted_data )
         implicit none
         !
         class( ModelParameter_t ), intent( in ) :: sigma
-        type( DataGroupTx_t ), allocatable, dimension(:), intent( inout ) :: all_predicted_data
+        type( DataGroupTx_t ), allocatable, dimension(:), intent( out ) :: all_predicted_data
         !
         integer :: worker_rank, tx_received, i_tx, i_data
         !
         !> Verbose
         !write( *, * ) "     - Start masterForwardModelling"
         !
-        !>
-        call masterSolveAll( sigma )
+        if( sigma%is_allocated ) then
+            !
+            call broadcastSigma( sigma )
+            !
+        else
+            stop "Error: masterForwardModelling > sigma not allocated"
+        endif
+        !
+        if( allocated( all_predicted_data ) ) deallocate( all_predicted_data )
+        !
+        all_predicted_data = all_measured_data
         !
         !> Initialize MPI control variables
         worker_rank = 1
@@ -157,17 +170,15 @@ contains
         !
     end subroutine masterForwardModelling
     !
-    !> Routine to run a full JMult job in parallel and deliver the result (JmHat) in a text file
+    !> Calculate JmHat in parallel for all transmitters
+    !
     subroutine masterJMult( sigma, dsigma, JmHat )
         implicit none
         !
         class( ModelParameter_t ), intent( in ) :: sigma, dsigma
-        type( DataGroupTx_t ), dimension(:), intent( inout ) :: JmHat
+        type( DataGroupTx_t ), allocatable, dimension(:), intent( out ) :: JmHat
         !
         integer :: worker_rank, i_tx, tx_received
-        !
-        !> Verbose
-        !write( *, * ) "     - Start masterJMult"
         !
         !> Send Sigma to all workers
         if( dsigma%is_allocated ) then
@@ -177,6 +188,10 @@ contains
         else
             stop "Error: masterSolveAll > sigma not allocated"
         endif
+        !
+        if( allocated( JmHat ) ) deallocate( JmHat )
+        !
+        JmHat = all_measured_data
         !
         !> Initialize MPI control variables
         worker_rank = 1
@@ -232,12 +247,15 @@ contains
             !
         enddo
         !
+        job_info%new_sigma = .FALSE.
+        !
         !> Verbose
         !write( *, * ) "     - Finish masterJMult"
         !
     end subroutine masterJMult
     !
-    !> Routine to run JMult_T in parallel
+    !> Calculate dsigma in parallel for all transmitters
+    !
     subroutine masterJMult_T( sigma, all_data, dsigma )
         implicit none
         !
@@ -250,7 +268,7 @@ contains
         integer :: worker_rank, i_tx, tx_received
         !
         !> Verbose
-        write( *, * ) "     - Start masterJMult_T"
+        !write( *, * ) "     - Start masterJMult_T"
         !
         !> And initialize dsigma with Zeros
         if( sigma%is_allocated ) then
@@ -330,12 +348,14 @@ contains
             !
         enddo
         !
+        job_info%new_sigma = .FALSE.
+        !
         !> Verbose
         !write( *, * ) "     - Finish masterJMult_T"
         !
     end subroutine masterJMult_T
     !
-    !> Send FWD components to all workers
+    !> Send FWD basic components to all workers
     subroutine broadcastBasicComponents()
         implicit none
         !
@@ -371,6 +391,8 @@ contains
         !
         job_info%model_size = allocateModelBuffer( sigma, .FALSE. )
         !
+        job_info%new_sigma = .TRUE.
+        !
         !write( *, "(A45, i8)" ) "Sigma = ", job_info%model_size
         !
         do worker_id = 1, ( mpi_size - 1 )
@@ -399,7 +421,7 @@ contains
         !
         job_info%model_size = allocateModelBuffer( dsigma, .FALSE. )
         !
-        !write( *, "(A45, i8)" ) "DSigma = ", job_info%model_size
+        !write( *, "(A45, i8)" ) "dsigma = ", job_info%model_size
         !
         do worker_id = 1, ( mpi_size - 1 )
             !

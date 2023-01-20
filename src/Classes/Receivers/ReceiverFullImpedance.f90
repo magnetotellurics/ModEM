@@ -80,12 +80,11 @@ contains
     end subroutine ReceiverFullImpedance_dtor
     !
     !> No subroutine briefing
-    subroutine setLRowsFullImpedance( self, transmitter, lrows )
+    subroutine setLRowsFullImpedance( self, transmitter )
         implicit none
         !
         class( ReceiverFullImpedance_t ), intent( inout ) :: self
         class( Transmitter_t ), intent( in ) :: transmitter
-        class( Vector_t ), allocatable, dimension(:,:), intent( out ) :: lrows
         !
         type( cVector3D_SG_t ) :: Le, full_lex, full_ley, full_lbx, full_lby
         integer :: Ei, row, pol, comp
@@ -97,7 +96,8 @@ contains
         call self%predictedData( transmitter )
         !
         !> Allocate LRows matrix [ n_pol = 2, n_comp = 4 ]
-        allocate( cVector3D_SG_t :: lrows( transmitter%n_pol, self%n_comp ) )
+        if( allocated( self%lrows ) ) deallocate( self%lrows )
+        allocate( cVector3D_SG_t :: self%lrows( transmitter%n_pol, self%n_comp ) )
         !
         !> Convert Le and Lb to Full Vectors (In the future they will be Sparse)
         full_lex = self%Lex%getFullVector()
@@ -133,10 +133,10 @@ contains
                 !> Loop over two polarizations
                 do pol = 1, 2
                     !
-                    lrows( pol, comp ) = Le
+                    self%lrows( pol, comp ) = Le
                     !
                     !> ????
-                    call lrows( pol, comp )%mult( -self%I_BB( pol, row ) )
+                    call self%lrows( pol, comp )%mult( -self%I_BB( pol, row ) )
                     !
                 enddo
                 !
@@ -144,7 +144,7 @@ contains
             !
         enddo
         !
-        deallocate( self%I_BB, self%response )
+        !deallocate( self%I_BB, self%response )
         !
     end subroutine setLRowsFullImpedance
     !

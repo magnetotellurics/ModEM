@@ -25,6 +25,8 @@ module Receiver
         !
         type( cVectorSparse3D_SG_t ) :: Lex, Ley, Lez, Lbx, Lby, Lbz
         !
+        class( Vector_t ), allocatable, dimension(:,:) :: lrows
+        !
         type( String_t ), allocatable, dimension(:) :: EHxy, comp_names
         !
         contains
@@ -52,12 +54,11 @@ module Receiver
     abstract interface
         !
         !> No interface subroutine briefing
-        subroutine interface_set_lrows_receiver( self, transmitter, lrows )
-            import :: Receiver_t, Transmitter_t, Vector_t
+        subroutine interface_set_lrows_receiver( self, transmitter )
+            import :: Receiver_t, Transmitter_t
             !
             class( Receiver_t ), intent( inout ) :: self
             class( Transmitter_t ), intent( in ) :: transmitter
-            class( Vector_t ), allocatable, dimension(:,:), intent( out ) :: lrows
         end subroutine interface_set_lrows_receiver
         !
         !> No interface subroutine briefing
@@ -163,6 +164,8 @@ contains
         if( allocated( self%I_BB ) ) deallocate( self%I_BB )
         !
         if( allocated( self%response ) ) deallocate( self%response )
+        !
+        if( allocated( self%lrows ) ) deallocate( self%lrows )
         !
     end subroutine deallocateRx
     !

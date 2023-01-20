@@ -5,6 +5,14 @@ module DataGroupTxArray
     !
     use DataGroupTx
     !
+    use FileUnits
+    !
+    use ReceiverArray
+    !
+    use TransmitterMT
+    use TransmitterCSEM
+    use TransmitterArray
+    !
     !> Array with the Data Measured for all transmitters (from file)
     type( DataGroupTx_t ), allocatable, dimension(:), save :: all_measured_data
     !
@@ -23,7 +31,10 @@ module DataGroupTxArray
     public :: updateDataGroupTxArray
     public :: deallocateDataGroupTxArray
     public :: zerosDataGroupTxArray
+    public :: writeDataGroupTxArray
     public :: printDataGroupTxArray
+    !
+    private :: writeHeaderDataGroupTxArray
     !
 contains
     !
@@ -350,6 +361,124 @@ contains
         enddo
         !
     end subroutine zerosDataGroupTxArray
+    !
+    !> Write one DataGroupTxArray, with its proper Rx headers, 
+    !> into to the file <file_name>
+    !
+    subroutine writeDataGroupTxArray( data_tx_array, file_name )
+        implicit none
+        !
+        type( DataGroupTx_t ), allocatable, dimension(:) :: data_tx_array
+        character(*), intent( in ) :: file_name
+        !
+        class( Transmitter_t ), pointer :: transmitter
+        class( Receiver_t ), pointer :: receiver
+        type( DataGroup_t ), pointer :: data_group
+        !
+        integer :: receiver_type, i, j, ios, n_data
+        !
+        ! Verbose
+        !write( *, * ) "     > Write Data to file: [", file_name, "]"
+        !
+        n_data = countDataGroupTxArray( data_tx_array )
+        !
+        receiver_type = 0
+        !
+        open( unit = ioPredData, file = file_name, action = "write", form = "formatted", iostat = ios )
+        !
+        if( ios == 0 ) then
+            !
+            do i = 1, n_data
+                !
+                data_group => getDataGroupByIndex( data_tx_array, i )
+                !
+                receiver => getReceiver( data_group%i_rx )
+                !
+                call writeHeaderDataGroupTxArray( receiver, receiver_type )
+                !
+                transmitter => getTransmitter( data_group%i_tx )
+                !
+                do j = 1, data_group%n_comp
+                    !
+                    select type( transmitter )
+                        !
+                        class is( TransmitterMT_t )
+                            !
+                            write( ioPredData, "(es12.6, 1X, A, 1X, f15.3, f15.3, f15.3, f15.3, f15.3, 1X, A, 1X, es16.6, es16.6, es16.6)" ) transmitter%period, trim(receiver%code), R_ZERO, R_ZERO, receiver%location(1), receiver%location(2), receiver%location(3), trim( receiver%comp_names(j)%str ), data_group%reals(j), data_group%imaginaries(j), data_group%errors(j)
+                            !
+                        class is( TransmitterCSEM_t )
+                            !
+                            write( ioPredData, "(A, 1X, es12.6, f15.3, f15.3, f15.3, f15.3, f15.3, f15.3, 1X, A, 1X, f15.3, f15.3, f15.3, 1X, A, 1X, es16.6, es16.6, es16.6)" ) trim(transmitter%dipole), transmitter%period, transmitter%moment, transmitter%azimuth, transmitter%dip, transmitter%location(1), transmitter%location(2), transmitter%location(3), trim(receiver%code), receiver%location(1), receiver%location(2), receiver%location(3), trim( receiver%comp_names(j)%str ), data_group%reals(j), data_group%imaginaries(j), data_group%errors(j)
+                            !
+                        class default
+                            stop "Error: writeDataGroupTxArray: Unclassified data_group!"
+                        !
+                    end select
+                    !
+                enddo
+                !
+            enddo
+            !
+            close( ioPredData )
+            !
+        else
+            write( *, * ) "Error opening [", file_name, "] in writeDataGroupTxArray!"
+            stop
+        endif
+        !
+    end subroutine writeDataGroupTxArray
+    !
+    !> Write a header into the DataGroupTxArray text file
+    !
+    subroutine writeHeaderDataGroupTxArray( receiver, receiver_type )
+        implicit none
+        !
+        class( Receiver_t ), intent( in ) :: receiver
+        !
+        integer, intent( inout ) :: receiver_type
+        !
+        if( receiver_type /= receiver%rx_type ) then
+            !
+            select case( receiver%rx_type )
+                !
+                case( 1, 11, 12 )
+                    !
+                    write( ioPredData, "(4A, 40A)" ) "#    ", DATA_FILE_TITLE_MT
+                    !
+                    write( ioPredData, "(74A)" ) "#    Period(s) Code GG_Lat GG_Lon X(m) Y(m) Z(m) Component Real Imag Error"
+                    !
+                case( 2 )
+                    write( ioPredData, "(60A)" ) "#    Missing title for Full_Interstation_TF"
+                case( 3 )
+                    write( ioPredData, "(60A)" ) "#    Missing title for Off_Diagonal_Rho_Phase"
+                case( 4 )
+                    write( ioPredData, "(60A)" ) "#    Missing title for Phase_Tensor"
+                case( 5 )
+                    write( ioPredData, "(60A)" ) "#    Missing title for Off_Diagonal_Impedance"
+                case( 6, 7, 8, 9, 10 )
+                    !
+                    write( ioPredData, "(4A, 40A)" ) "#    ", DATA_FILE_TITLE_CSEM
+                    !
+                    write( ioPredData, "(125A)" ) "#    Tx_Dipole Tx_Period(s) Tx_Moment(Am) Tx_Azi Tx_Dip Tx_X(m) Tx_Y(m) Tx_Z(m) Code X(m) Y(m) Z(m) Component Real Imag Error"
+                    !
+                case default
+                    write( *, * ) "Unknown receiver type :[", receiver%rx_type, "]"
+                    stop "Error: test_FWD.f90: writeHeaderDataGroupTxArray()"
+                !
+            end select
+            !
+            write( ioPredData, "(4A, 100A)" ) ">    ", getStringReceiverType( receiver%rx_type )
+            write( ioPredData, "(4A, 100A)" ) ">    ", "exp(-i\omega t)"
+            write( ioPredData, "(4A, 100A)" ) ">    ", "[V/m]/[T]"
+            write( ioPredData, "(7A, 100A)" ) ">        ", "0.00"
+            write( ioPredData, "(7A, 100A)" ) ">        ", "0.000    0.000"
+            write( ioPredData, "(A3, i8, i8)" ) ">        ", size( transmitters ), size( receivers )
+            !
+            receiver_type = receiver%rx_type
+            !
+        endif
+        !
+    end subroutine writeHeaderDataGroupTxArray
     !
     !> Call the print routine of each DataGroupTx in the array
     subroutine printDataGroupTxArray( data_tx_array, title )

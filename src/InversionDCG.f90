@@ -5,18 +5,20 @@ module InversionDCG
     !
     use Sensitivity
     !
-    !>
+    !> Structure that gathers the control variables of the DCG loop
     type  :: DCGiterControl_t
         !
-        integer :: maxIter
+        integer :: max_iter
         !
-        real( kind=prec ) :: rmsTol, lambda
+        real( kind=prec ) :: rms_tol, lambda
+        !
+        logical :: new_sigma
         !
     end type DCGiterControl_t
     !
     type( DCGiterControl_t ), private, save :: DCGiterControl
     !
-    !>
+    !> Structure that gathers the control variables of the CG loop
     type :: IterControl_t
         !
         integer :: max_it, n_iter
@@ -35,9 +37,9 @@ contains
         !
         type( DCGiterControl_t ), intent( inout ) :: DCGiterControl
         !
-        DCGiterControl%maxIter = 3
+        DCGiterControl%max_iter = 3
         !
-        DCGiterControl%rmsTol = 1.05
+        DCGiterControl%rms_tol = 1.05
         !
         DCGiterControl%lambda = 10.
         !
@@ -128,7 +130,7 @@ contains
 #ifdef MPI
                 call masterJMult( dsigma, mHat, JmHat )
 #else
-                call JMult( dsigma, mHat, JmHat )
+                call JMult( dsigma, mHat, JmHat, DCGiterControl%new_sigma )
 #endif
                 !
                 b = all_data
@@ -144,7 +146,7 @@ contains
 #ifdef MPI
                 call masterJMult_T( dsigma, dx, mHat )
 #else
-                call JMult_T( dsigma, dx, mHat )
+                call JMult_T( dsigma, dx, mHat, DCGiterControl%new_sigma )
 #endif
                 !
                 call model_cov%multBy_Cm( mHat )
@@ -164,7 +166,7 @@ contains
                 write( ioInvLog, "( a10, a3, es12.5, a4, es12.5, a5, f12.5, a8, es12.5 )" ) "with:", " f=", f, " m2=", mNorm, " rms=", rms, " lambda=", DCGiterControl%lambda
                 !
                 !>
-                if( rms .LT. DCGiterControl%rmsTol .OR. DCG_iter .GE. DCGiterControl%maxIter ) then
+                if( rms .LT. DCGiterControl%rms_tol .OR. DCG_iter .GE. DCGiterControl%max_iter ) then
                     exit
                 end if
                 !
@@ -218,7 +220,7 @@ contains
         !
 #else
         !
-        call runForwardModeling( dsigma, all_predicted_data )
+        call serialForwardModeling( dsigma, all_predicted_data )
         !
 #endif
         !
@@ -347,7 +349,7 @@ contains
 #ifdef MPI
         call masterJMult_T( dsigma, p_temp, JTp )
 #else
-        call JMult_T( dsigma, p_temp, JTp )
+        call JMult_T( dsigma, p_temp, JTp, DCGiterControl%new_sigma )
 #endif
         !
         call model_cov%multBy_Cm( JTp )
@@ -357,7 +359,7 @@ contains
 #ifdef MPI
         call masterJMult( dsigma, JTp, Ap )
 #else
-        call JMult( dsigma, JTp, Ap )
+        call JMult( dsigma, JTp, Ap, DCGiterControl%new_sigma )
 #endif
         !
         deallocate( JTp )

@@ -1,5 +1,6 @@
 !
-!> No module briefing
+!> Module routines to perform Forward Modeling and Sensitivity operations
+!> Always relying on a single transmitter specified by the master process 
 !
 module WorkerMPI
     !
@@ -9,20 +10,28 @@ module WorkerMPI
     use InversionNLCG
     !
     public :: workerMainLoop
-    public :: solveTx
     public :: workerForwardModelling
     public :: workerJMult
     public :: workerJMult_T
     public :: handleBasicComponents
     public :: handleSigmaModel
+    public :: handleDSigmaModel
+    public :: txForwardSolver
     !
 contains
     !
-    !> ?????
+    !> Message waiting loop.
+    !> To perform a task specified by the master process.
+    !
     subroutine workerMainLoop()
         implicit none
         !
-        !> Receive while master does not send finish message
+        !> Time counters
+        real( kind=prec ) :: t_start, t_finish
+        !
+        call cpu_time( t_start )
+        !
+        !> Receive until master process send finish message
         do while ( job_master .NE. job_finish )
             !
             call receiveFrom( master_id )
@@ -63,35 +72,37 @@ contains
             !
         enddo
         !
-        !>
         if( allocated( sigma ) ) deallocate( sigma )
         !
         if( allocated( dsigma ) ) deallocate( dsigma )
         !
-        !> Deallocate remaining worker memory
         call garbageCollector()
         !
         call cpu_time( t_finish )
         !
-        write( *, "( a25, i5, a10, f8.3, a1 )" )  "Worker", mpi_rank, " finished:", t_finish - t_start, "s"
+        write( *, "( a25, i5, a10, f16.3, a1 )" )  "Worker", mpi_rank, " finished:", t_finish - t_start, "s"
         !
         call MPI_Finalize( ierr )
         !
     end subroutine workerMainLoop
     !
-    !> No procedure briefing
+    !> Calculate E_Solution (e_sol) for the process single Transmitter
+    !
     subroutine workerSolve()
         implicit none
         !
         class( Transmitter_t ), pointer :: Tx
         !
+        !write( *, * ) "Solve", mpi_rank, job_info%i_tx, job_info%new_sigma
+        !
+        !> Point to the transmitter specified by the master process 
         Tx => getTransmitter( job_info%i_tx )
         !
         call txForwardSolver( Tx )
         !
         call solveTx( sigma, Tx )
         !
-        !> SEND JOB DONE TO MASTER
+        !> Send job done to master
         job_info%job_name = job_done
         job_info%worker_rank = mpi_rank
         !
@@ -99,7 +110,11 @@ contains
         !
     end subroutine workerSolve
     !
-    !> No procedure briefing
+    !> Receive data_tx from master process.
+    !>     Calculate the predicted data between the data_tx's transmitter and its receivers
+    !> Send data_tx to master process
+    !> Require previous call of workerSolve or masterSolveAll
+    !
     subroutine workerForwardModelling()
         implicit none
         !
@@ -111,7 +126,18 @@ contains
         !
         call receiveData( tx_data, master_id )
         !
-        Tx => getTransmitter( tx_data%i_tx )
+        !> Point to the transmitter specified by the master process 
+        Tx => getTransmitter( job_info%i_tx )
+        !
+        if( job_info%new_sigma ) then
+            !
+            call txForwardSolver( Tx )
+            !
+            call solveTx( sigma, Tx )
+            !
+        endif
+        !
+        !write( *, * ) "FWD", mpi_rank, job_info%i_tx, tx_data%i_tx, job_info%new_sigma
         !
         !> Loop for each Receiver related to the Transmitter
         do i_rx = 1, size( Tx%receiver_indexes )
@@ -124,10 +150,9 @@ contains
             !
         enddo
         !
-        !> SEND JOB DONE TO MASTER
+        !> Send job done and tx_data to master process
         job_info%job_name = job_done
         job_info%worker_rank = mpi_rank
-        job_info%i_tx = tx_data%i_tx
         job_info%data_size = allocateDataBuffer( tx_data )
         !
         call sendTo( master_id )
@@ -136,7 +161,13 @@ contains
         !
     end subroutine workerForwardModelling
     !
-    !> No procedure briefing
+    !> Receive data_tx from master process.
+    !> Calculate JmHat for the data_tx's transmitter:
+    !>     Set the transmitter's source by calling PMult.
+    !>     Solve e_sens for the transmitter.
+    !> Send dsigma%cell_cond to master process
+    !> Require previous call of workerSolve or masterSolveAll
+    !
     subroutine workerJMult()
         implicit none
         !
@@ -145,9 +176,20 @@ contains
         type( DataGroupTx_t ) :: tx_data
         integer :: i
         !
+        !write( *, * ) "JMult", mpi_rank, job_info%i_tx, job_info%new_sigma
+        !
         call receiveData( tx_data, master_id )
         !
+        !> Point to the transmitter specified by the master process 
         Tx => getTransmitter( job_info%i_tx )
+        !
+        if( job_info%new_sigma ) then
+            !
+            call txForwardSolver( Tx )
+            !
+            call solveTx( sigma, Tx )
+            !
+        endif
         !
         !> Switch Transmitter's source to SourceInteriorForce from PMult
         call Tx%setSource( Tx%PMult( sigma, dsigma, model_operator ) )
@@ -156,9 +198,9 @@ contains
         call Tx%solve()
         !
         !> JMult for the same Tx
-        call JMult_Tx( tx_data )
+        call JMult_Tx( tx_data, job_info%new_sigma )
         !
-        !> MPI: SEND JOB DONE TO MASTER
+        !> Send job done and tx_data to master process
         job_info%job_name = job_done
         job_info%worker_rank = mpi_rank
         job_info%i_tx = Tx%i_tx
@@ -170,26 +212,45 @@ contains
         !
     end subroutine workerJMult
     !
-    !> No procedure briefing
+    !> Receive data_tx from master process
+    !> Calculate tx_dsigma for the data_tx's transmitter with JMult_T_Tx
+    !>     Create a rhs from LRows * residual data for all receivers related to the transmitter.
+    !>     Solve ESens on the transmitter using a trans SourceInteriorForce, with the new rhs.
+    !>     Call Tx%PMult to get a new ModelParameter dsigma.
+    !> Send dsigma%cell_cond to master process
+    !> Require previous call of workerSolve or masterSolveAll
+    !
     subroutine workerJMult_T()
         implicit none
         !
         class( ModelParameter_t ), allocatable :: tx_dsigma
         type( DataGroupTx_t ) :: tx_data
+        class( Transmitter_t ), pointer :: Tx
         integer :: i
+        !
+        !write( *, * ) "JMult_T", mpi_rank, job_info%i_tx, job_info%new_sigma
         !
         call receiveData( tx_data, master_id )
         !
-        !> Set current tx_dsigma from JMult_T_Tx
-        call JMult_T_Tx( sigma, tx_data, tx_dsigma )
+        !> Point to the transmitter specified by the master process 
+        Tx => getTransmitter( job_info%i_tx )
         !
-        !> MPI: SEND JOB DONE TO MASTER
+        if( job_info%new_sigma ) then
+            !
+            call txForwardSolver( Tx )
+            !
+            call solveTx( sigma, Tx )
+            !
+        endif
+        !
+        call JMult_T_Tx( sigma, tx_data, tx_dsigma, job_info%new_sigma )
+        !
+        !> Send job done and tx_dsigma's conductivity to master process
         job_info%job_name = job_done
         job_info%worker_rank = mpi_rank
         !
         call sendTo( master_id )
         !
-        !> Send result model to the Master
         select type( tx_dsigma )
             !
             class is( ModelParameterCell_SG_t )
@@ -203,7 +264,11 @@ contains
         !
     end subroutine workerJMult_T
     !
-    !> No procedure briefing
+    !> Receive from master process and deals with 
+    !> the basic components for all Forward Modeling and Sensitivity operations:
+    !>     Control variables, main_grid, transmitters and receivers
+    !> Instantiate model_operator and set its equations
+    !
     subroutine handleBasicComponents()
         implicit none
         !
@@ -228,7 +293,9 @@ contains
         !
     end subroutine handleBasicComponents
     !
-    !> No procedure briefing
+    !> Receive from master process and deals with sigma model
+    !> Set its metric and model_operator's conductivity 
+    !
     subroutine handleSigmaModel()
         implicit none
         !
@@ -244,7 +311,8 @@ contains
         !
     end subroutine handleSigmaModel
     !
-    !> No procedure briefing
+    !> Receive dsigma model from master process and set its metric
+    !
     subroutine handleDSigmaModel()
         implicit none
         !
@@ -258,7 +326,8 @@ contains
         !
     end subroutine handleDSigmaModel
     !
-    !> No subroutine briefing
+    !> Create the global ForwardSolver a single transmitter to it.
+    !
     subroutine txForwardSolver( Tx )
         implicit none
         !

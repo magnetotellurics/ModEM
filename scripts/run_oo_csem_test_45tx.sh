@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# PARALLEL MT: 45 TX, 65 RX
+# PARALLEL CSEM: 45 TX, 65 RX
 #
 # FWD: 
 #

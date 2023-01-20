@@ -554,8 +554,6 @@ contains
             !
             self%z = reshape(array(i1:i2), self%NdZ)
             !
-            deallocate( array )
-            !
         else
             stop "Error: setArrayCVector3D_SG > Input array not allocated."
         endif

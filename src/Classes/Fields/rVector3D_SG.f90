@@ -560,8 +560,6 @@ contains
             !
             self%z = reshape( real( array(i1:i2), kind=prec ), self%NdZ )
             !
-            deallocate( array )
-            !
         else
             stop "Error: setArrayRVector3D_SG > Input array not allocated."
         endif

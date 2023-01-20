@@ -5,8 +5,6 @@ module GlobalVariables
     !
     use Constants
     !
-    use FileUnits
-    !
     use Grid3D_SG
     !
     use ModelParameterCell_SG
@@ -26,11 +24,6 @@ module GlobalVariables
     use ReceiverFullVerticalMagnetic
     use ReceiverOffDiagonalImpedance
     use ReceiverSingleField
-    use ReceiverArray
-    !
-    use TransmitterMT
-    use TransmitterCSEM
-    use TransmitterArray
     !
     use DataGroupTxArray
     !
@@ -40,6 +33,7 @@ module GlobalVariables
     !
     !> Global Variables
     class( Grid_t ), allocatable, target :: main_grid
+    !
     class( ModelOperator_t ), allocatable :: model_operator
     !
     class( ForwardSolver_t ), allocatable, target :: forward_solver
@@ -67,16 +61,16 @@ module GlobalVariables
     logical :: has_e_solution_file
     logical :: verbosis
     !
-    !> 
-    public :: handleDataFile
+    !> Public module routines
     public :: handleModelFile
     public :: handlePModelFile
+    public :: handleDataFile
     public :: createOutputDirectory
     public :: garbageCollector
     !
 contains
     !
-    !> No subroutine briefing
+    !> Read Model File and instantiate global variables: main_grid, model_operator and sigma0
     subroutine handleModelFile( sigma0 )
         implicit none
         !
@@ -130,7 +124,7 @@ contains
         !
     end subroutine handleModelFile
     !
-    !> No subroutine briefing
+    !> Read Perturbation Model File: instantiate pmodel
     subroutine handlePModelFile( pmodel )
         implicit none
         !
@@ -150,7 +144,7 @@ contains
         !
     end subroutine handlePModelFile
     !
-    !> No subroutine briefing
+    !> Read Data File: instantiate Txs and Rxs and build the Data relation between them
     subroutine handleDataFile()
         implicit none
         !
@@ -207,20 +201,20 @@ contains
         !
     end subroutine handleDataFile
     !
-    !> ????
+    !> Create a directory to store output files
+    !> With a name standardized by date and runtime or specified by the input argument [-o]
+    !
     subroutine createOutputDirectory()
         implicit none
         !
         character(8) str_date
         character(6) str_time
         !
-        !>
         if( .NOT. has_outdir_name ) then
             !
             !>
             call date_and_time( str_date, str_time )
             !
-            !> Instantiate the ForwardSolver - Specific type can be chosen via control file
             select case ( inversion_algorithm )
                 !
                 case( DCG )
@@ -245,7 +239,8 @@ contains
         !
     end subroutine createOutputDirectory
     !
-    !> No subroutine briefing
+    !> Deallocate remaining unallocated global memory
+    !
     subroutine garbageCollector()
         implicit none
         !

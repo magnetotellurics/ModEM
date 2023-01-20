@@ -1,5 +1,5 @@
 !
-!> No module briefing
+!> Module with MPI send, receive, pack, unpack routines
 !
 module DeclarationMPI
     !
@@ -45,26 +45,24 @@ module DeclarationMPI
     character( len=15 ) :: job_basic_components = "HANDLE_FWD_COMP"
     character( len=15 ) :: job_sigma_model = "HANDLE_SIGMA", job_dsigma_model = "HANDLE_DSIGMA"
     !
-    !> Struct JobInfo_t:
-    !> Gather MPI information necessary for the execution of the different ModEM jobs.
+    !> Structure to gather necessary MPI information for the execution of the different ModEM jobs.
     type :: JobInfo_t
         !
         SEQUENCE
         !
         character( len=15 ) :: job_name
         integer :: worker_rank, i_tx
-        integer :: data_size
-        integer :: model_size
-        integer :: basic_comp_size
+        integer :: data_size, model_size, basic_comp_size
+        integer :: inv_iter
+        real( kind=prec ) :: rms_tol, lambda
+        logical :: new_sigma
+    
         !
     end type JobInfo_t
     !
     type( JobInfo_t ) :: job_info
     !
-    !> Time counters
-    real( kind=prec ) :: t_start, t_finish
-    !
-    !>
+    !> Global models
     class( ModelParameter_t ), allocatable :: sigma, dsigma
     !
     !> MPI communication buffers and sizes
@@ -74,12 +72,17 @@ module DeclarationMPI
     character, dimension(:), allocatable :: conductivity_buffer
     character, dimension(:), allocatable :: data_buffer
     character, dimension(:), allocatable :: model_buffer
+    !
     integer :: job_info_buffer_size, conductivity_buffer_size
     !
 contains
     !
-    !> Allocates initial memory buffer for ForwardModelling
-    !> With a preset size (for workers)
+    !> Initialize the Message Passing Interface (MPI).
+    !> Define the variables:
+    !> main_comm: Main communicator.
+    !> mpi_size: Number of processes used (passed by mpirun -np)
+    !> mpi_rank: Process identifier index.
+    !
     subroutine constructorMPI()
         implicit none
         !
@@ -91,9 +94,13 @@ contains
         call MPI_Comm_size( main_comm, mpi_size, ierr )
         !
         if( mpi_size < 2 ) then
-        write( *, * ) "Error: Minimum of two processes required!"
-        call MPI_Finalize( ierr )
-        stop
+            !
+            write( *, * ) "Error: Minimum of two processes required!"
+            write( *, * ) "       1 Master and 1 Worker."
+            !
+            call MPI_Finalize( ierr )
+            !
+            stop
         endif 
         !
         !> Set mpi_rank with process id for mpi_comm_world
@@ -1472,12 +1479,14 @@ contains
     !> ALLOCATE job_info_buffer
     subroutine allocateJobInfoBuffer
         !
-        integer nbytes1, nbytes2
+        integer nbytes1, nbytes2, nbytes3
         !
         call MPI_PACK_SIZE( 15, MPI_CHARACTER, main_comm, nbytes1, ierr )
-        call MPI_PACK_SIZE( 5, MPI_INTEGER, main_comm, nbytes2, ierr )
+        call MPI_PACK_SIZE( 6, MPI_INTEGER, main_comm, nbytes2, ierr )
+        call MPI_PACK_SIZE( 2, MPI_DOUBLE_PRECISION, main_comm, nbytes3, ierr )
+        call MPI_PACK_SIZE( 1, MPI_LOGICAL, main_comm, nbytes4, ierr )
         !
-        job_info_buffer_size = ( nbytes1 + nbytes2 ) + 1
+        job_info_buffer_size = ( nbytes1 + nbytes2 + nbytes3 + nbytes3 ) + 1
         !
         if( allocated( job_info_buffer ) ) deallocate( job_info_buffer )
         allocate( job_info_buffer( job_info_buffer_size ) )
@@ -1499,6 +1508,10 @@ contains
         call MPI_PACK( job_info%data_size, 1, MPI_INTEGER, job_info_buffer, job_info_buffer_size, index, main_comm, ierr )
         call MPI_PACK( job_info%model_size, 1, MPI_INTEGER, job_info_buffer, job_info_buffer_size, index, main_comm, ierr )
         call MPI_PACK( job_info%basic_comp_size, 1, MPI_INTEGER, job_info_buffer, job_info_buffer_size, index, main_comm, ierr )
+        call MPI_PACK( job_info%inv_iter, 1, MPI_INTEGER, job_info_buffer, job_info_buffer_size, index, main_comm, ierr )
+        call MPI_PACK( job_info%rms_tol, 1, MPI_DOUBLE_PRECISION, job_info_buffer, job_info_buffer_size, index, main_comm, ierr )
+        call MPI_PACK( job_info%lambda, 1, MPI_DOUBLE_PRECISION, job_info_buffer, job_info_buffer_size, index, main_comm, ierr )
+        call MPI_PACK( job_info%new_sigma, 1, MPI_LOGICAL, job_info_buffer, job_info_buffer_size, index, main_comm, ierr )
         !
     end subroutine packJobInfoBuffer
     !
@@ -1515,6 +1528,10 @@ contains
         call MPI_UNPACK( job_info_buffer, job_info_buffer_size, index, job_info%data_size, 1, MPI_INTEGER, main_comm, ierr )
         call MPI_UNPACK( job_info_buffer, job_info_buffer_size, index, job_info%model_size, 1, MPI_INTEGER, main_comm, ierr )
         call MPI_UNPACK( job_info_buffer, job_info_buffer_size, index, job_info%basic_comp_size, 1, MPI_INTEGER, main_comm, ierr )
+        call MPI_UNPACK( job_info_buffer, job_info_buffer_size, index, job_info%inv_iter, 1, MPI_INTEGER, main_comm, ierr )
+        call MPI_UNPACK( job_info_buffer, job_info_buffer_size, index, job_info%rms_tol, 1, MPI_DOUBLE_PRECISION, main_comm, ierr )
+        call MPI_UNPACK( job_info_buffer, job_info_buffer_size, index, job_info%lambda, 1, MPI_DOUBLE_PRECISION, main_comm, ierr )
+        call MPI_UNPACK( job_info_buffer, job_info_buffer_size, index, job_info%new_sigma, 1, MPI_LOGICAL, main_comm, ierr )
         !
     end subroutine unpackJobInfoBuffer
     !
@@ -1680,6 +1697,8 @@ contains
         !
         call MPI_UNPACK( parent_buffer, parent_buffer_size, index, aux_array(1), scalar%Nxyz, MPI_DOUBLE_COMPLEX, main_comm, ierr )
         call scalar%setArray( aux_array )
+        !
+        deallocate( aux_array )
         !
     end subroutine unpackScalarBuffer
     !

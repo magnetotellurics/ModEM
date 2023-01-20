@@ -97,14 +97,16 @@ contains
     end subroutine ReceiverFullVerticalMagnetic_dtor
     !
     !> No subroutine briefing
-    subroutine setLRowsFullVerticalMagnetic( self, transmitter, lrows )
+    subroutine setLRowsFullVerticalMagnetic( self, transmitter )
         implicit none
         !
         class( ReceiverFullVerticalMagnetic_t ), intent( inout ) :: self
         class( Transmitter_t ), intent( in ) :: transmitter
-        class( Vector_t ), allocatable, dimension(:,:), intent( out ) :: lrows
         !
         stop "setLRowsFullVerticalMagnetic to be implemented"
+        !
+        if( allocated( self%lrows ) ) deallocate( self%lrows )
+        allocate( cVector3D_SG_t :: self%lrows( transmitter%n_pol, self%n_comp ) )
         !
     end subroutine setLRowsFullVerticalMagnetic
     !
@@ -163,7 +165,7 @@ contains
                             call self%savePredictedData( transmitter, data_group )
                             !
                         endif
-						!
+                        !
                     class default
                         stop "Error: evaluationFunctionRx: Unclassified transmitter%e_all_2"
                 end select

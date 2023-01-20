@@ -23,20 +23,20 @@ module Vector
     end type Vector_t
     !
     !>
-    type :: ESolTx
+    type :: EAllTx_t
         !
         class( Vector_t ), allocatable, dimension(:) :: pol
         !
-    end type ESolTx
+    end type EAllTx_t
     !
     !>
-    type :: ESolMTx
+    type :: EAllMTx_t
         !
-        type( ESolTx ), allocatable, dimension(:) :: e_sol
+        type( EAllTx_t ), allocatable, dimension(:) :: e
         !
         integer :: SolnIndex = 0
         !
-    end type ESolMTx
+    end type EAllMTx_t
     !
     !>
     abstract interface

@@ -8,9 +8,9 @@ module InversionNLCG
     type :: NLCGiterControl_t
         !
         ! maximum number of iterations in one call to iterative solver
-        integer :: maxIter
-        ! convergence criteria: return from solver if rms < rmsTol
-        real( kind=prec ) :: rmsTol
+        integer :: max_iter
+        ! convergence criteria: return from solver if rms < rms_tol
+        real( kind=prec ) :: rms_tol
         ! the condition to identify when the inversion stalls
         real( kind=prec ) :: fdiffTol
         ! initial r_value of lambda (will not override the NLCG input argument)
@@ -40,6 +40,8 @@ module InversionNLCG
         ! model and data output file name
         character(80) :: fname
         !
+        logical :: new_sigma
+        !
     end type NLCGiterControl_t
     !
     type( NLCGiterControl_t ), private, save :: NLCGiterControl
@@ -53,9 +55,9 @@ contains
         type( NLCGiterControl_t ), intent( inout ) :: NLCGiterControl
         !
         ! maximum number of iterations in one call to iterative solver
-        NLCGiterControl%maxIter = 600
-        ! convergence criteria: return from solver if rms < rmsTol
-        NLCGiterControl%rmsTol = 1.05
+        NLCGiterControl%max_iter = 600
+        ! convergence criteria: return from solver if rms < rms_tol
+        NLCGiterControl%rms_tol = 1.05
         ! inversion stalls when abs(rms - rmsPrev) < fdiffTol (2e-3 works well)
         NLCGiterControl%fdiffTol = 2.0e-3
         ! initial r_value of lambda (will not override the NLCG input argument)
@@ -120,7 +122,7 @@ contains
         real( kind=prec ) :: gPrev_dot_gPrev 
         real( kind=prec ) :: h_dot_g, h_dot_gPrev
         integer :: iter, nCG, nLS, nfunc
-        type( ESolMTx ) :: e_all
+        type( EAllMTx_t ) :: e_all
         !
         !>
         call createOutputDirectory()
@@ -184,7 +186,7 @@ contains
         !
         do
             !  test for convergence ...
-            if( rms .LT. NLCGiterControl%rmsTol .OR. iter .GE. NLCGiterControl%maxIter ) then
+            if( rms .LT. NLCGiterControl%rms_tol .OR. iter .GE. NLCGiterControl%max_iter ) then
                 exit
             endif
             !
@@ -370,7 +372,7 @@ contains
         class( ModelParameter_t ), allocatable, intent( in ) :: m0, mHat
         class( ModelParameter_t ), allocatable, intent( inout ) :: grad
         type( DataGroupTx_t ), allocatable, dimension(:), intent( inout ) :: dHat
-        type( ESolMTx ), intent( inout ) :: e_all
+        type( EAllMTx_t ), intent( inout ) :: e_all
         !
         real( kind=prec ) :: Ndata, Nmodel, angle1, angle2, diff, diff1
         type( DataGroupTx_t ), allocatable, dimension(:) :: res
@@ -400,7 +402,7 @@ contains
 #ifdef MPI
         call masterJMult_T( m, res, JTd )
 #else
-        call JMult_T( m, res, JTd )
+        call JMult_T( m, res, JTd, NLCGiterControl%new_sigma )
 #endif
         !
         allocate( CmJTd, source = model_cov%multBy_CmSqrt( JTd ) )
@@ -436,7 +438,7 @@ contains
         class( ModelParameter_t ), allocatable, intent( in ) :: m0, mHat
         real( kind=prec ), intent( out ) :: F, mNorm
         type( DataGroupTx_t ), allocatable, dimension(:), intent( inout ) :: dHat
-        type( ESolMTx ), optional, intent( inout ) :: e_all
+        type( EAllMTx_t ), optional, intent( inout ) :: e_all
         real( kind=prec ), optional, intent( out ) :: rms
         !
         type( DataGroupTx_t ), allocatable, dimension(:) :: res, Nres
@@ -459,7 +461,9 @@ contains
         !
 #else
         !
-        call runForwardModeling( m, dHat, e_all )
+        call serialForwardModeling( m, dHat, e_all )
+        !
+        NLCGiterControl%new_sigma = .TRUE.
         !
 #endif
         !
@@ -620,7 +624,7 @@ contains
         real( kind=prec ), intent( out ) :: rms
         integer, intent( out ) :: niter
         type( DataGroupTx_t ), allocatable, dimension(:), intent( out ) :: dHat
-        type( ESolMTx ), intent( inout ) :: e_all
+        type( EAllMTx_t ), intent( inout ) :: e_all
         !
         ! optionally add relaxation (e.g. for Renormalized Steepest Descent)
         real( kind=prec ), intent( in ), optional :: gamma
@@ -631,7 +635,7 @@ contains
         real( kind=prec ) :: g_0, f_0, f_1, f_i, f_j, rms_1, mNorm_1
         class( ModelParameter_t ), allocatable :: mHat_0, mHat_1
         type( DataGroupTx_t ), allocatable, dimension(:) :: dHat_1
-        type( ESolMTx ) :: eAll_1
+        type( EAllMTx_t ) :: eAll_1
         !
         ! parameters
         c = NLCGiterControl%c
