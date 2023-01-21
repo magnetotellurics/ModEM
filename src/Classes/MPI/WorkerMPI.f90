@@ -93,8 +93,6 @@ contains
         !
         class( Transmitter_t ), pointer :: Tx
         !
-        !write( *, * ) "Solve", mpi_rank, job_info%i_tx, job_info%new_sigma
-        !
         !> Point to the transmitter specified by the master process 
         Tx => getTransmitter( job_info%i_tx )
         !
@@ -137,8 +135,6 @@ contains
             !
         endif
         !
-        !write( *, * ) "FWD", mpi_rank, job_info%i_tx, tx_data%i_tx, job_info%new_sigma
-        !
         !> Loop for each Receiver related to the Transmitter
         do i_rx = 1, size( Tx%receiver_indexes )
             !
@@ -175,8 +171,6 @@ contains
         class( Receiver_t ), pointer :: Rx
         type( DataGroupTx_t ) :: tx_data
         integer :: i
-        !
-        !write( *, * ) "JMult", mpi_rank, job_info%i_tx, job_info%new_sigma
         !
         call receiveData( tx_data, master_id )
         !
@@ -215,7 +209,7 @@ contains
     !> Receive data_tx from master process
     !> Calculate tx_dsigma for the data_tx's transmitter with JMult_T_Tx
     !>     Create a rhs from LRows * residual data for all receivers related to the transmitter.
-    !>     Solve ESens on the transmitter using a trans SourceInteriorForce, with the new rhs.
+    !>     Solve ESens on the transmitter using a transpose SourceInteriorForce, with the new rhs.
     !>     Call Tx%PMult to get a new ModelParameter dsigma.
     !> Send dsigma%cell_cond to master process
     !> Require previous call of workerSolve or masterSolveAll
@@ -227,8 +221,6 @@ contains
         type( DataGroupTx_t ) :: tx_data
         class( Transmitter_t ), pointer :: Tx
         integer :: i
-        !
-        !write( *, * ) "JMult_T", mpi_rank, job_info%i_tx, job_info%new_sigma
         !
         call receiveData( tx_data, master_id )
         !

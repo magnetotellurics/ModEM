@@ -38,7 +38,9 @@ module rVector3D_SG
         procedure, public :: subField => subFieldRVector3D_SG
         !
         procedure, public :: multByField => multByFieldRVector3D_SG
-        procedure, public :: multByValue => multByValueRVector3D_SG
+        procedure, public :: multByComplex => multByComplexRVector3D_SG
+        procedure, public :: multByReal => multByRealRVector3D_SG
+		!
         procedure, public :: divByField => divByFieldRVector3D_SG
         procedure, public :: divByValue => divByValueRVector3D_SG
         procedure, public :: dotProd => dotProdRVector3D_SG
@@ -767,17 +769,30 @@ contains
     end subroutine multByFieldRVector3D_SG
     !
     !> No subroutine briefing
-    subroutine multByValueRVector3D_SG( self, cvalue )
+    subroutine multByComplexRVector3D_SG( self, cvalue )
         implicit none
         !
         class( rVector3D_SG_t ), intent( inout ) :: self
         complex( kind=prec ), intent( in ) :: cvalue
         !
-        self%x = real( cvalue, kind=prec ) * self%x
-        self%y = real( cvalue, kind=prec ) * self%y
-        self%z = real( cvalue, kind=prec ) * self%z
+        self%x = self%x * cvalue
+        self%y = self%y * cvalue
+        self%z = self%z * cvalue
         !
-    end subroutine multByValueRVector3D_SG
+    end subroutine multByComplexRVector3D_SG
+    !
+    !> No subroutine briefing
+    subroutine multByRealRVector3D_SG( self, rvalue )
+        implicit none
+        !
+        class( rVector3D_SG_t ), intent( inout ) :: self
+        real( kind=prec ), intent( in ) :: rvalue
+        !
+        self%x = self%x * rvalue
+        self%y = self%y * rvalue
+        self%z = self%z * rvalue
+        !
+    end subroutine multByRealRVector3D_SG
     !
     !> No subroutine briefing
     subroutine divByFieldRVector3D_SG( self, rhs )

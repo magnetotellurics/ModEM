@@ -19,8 +19,8 @@ module cVectorSparse3D_SG
             final :: CVectorSparse3D_SG_dtor
             !
             procedure, public :: multByField => multByFieldCVectorSparse3D_SG
-            !
-            procedure, public :: multByValue => multByValueVectorCVectorSparse3D_SG
+            procedure, public :: multByComplex => multByComplexVectorCVectorSparse3D_SG
+            procedure, public :: multByReal => multByRealVectorCVectorSparse3D_SG
             !
             procedure, public :: dotProd => dotProdCVectorSparse3D_SG
             !
@@ -194,7 +194,7 @@ contains
     end function dotProdCVectorSparse3D_SG
     !
     !> No function briefing
-    subroutine multByValueVectorCVectorSparse3D_SG( self, cvalue )
+    subroutine multByComplexVectorCVectorSparse3D_SG( self, cvalue )
         implicit none
         !
         class( cVectorSparse3D_SG_t ), intent( inout ) :: self
@@ -209,7 +209,25 @@ contains
         !
         self%is_allocated = .TRUE.
         !
-    end subroutine multByValueVectorCVectorSparse3D_SG
+    end subroutine multByComplexVectorCVectorSparse3D_SG
+    !
+    !> No function briefing
+    subroutine multByRealVectorCVectorSparse3D_SG( self, rvalue )
+        implicit none
+        !
+        class( cVectorSparse3D_SG_t ), intent( inout ) :: self
+        !
+        real( kind=prec ), intent( in ) :: rvalue
+        !
+        integer :: ii
+        !
+        do ii = 1, size( self%xyz )
+            self%c(ii) = self%c(ii) * rvalue
+        enddo
+        !
+        self%is_allocated = .TRUE.
+        !
+    end subroutine multByRealVectorCVectorSparse3D_SG
     !
     !> No function briefing
     function getFullVectorCVectorSparse3D_SG( self ) result( cvector )

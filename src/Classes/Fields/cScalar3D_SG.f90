@@ -40,7 +40,8 @@ module cScalar3D_SG
         procedure, public :: subField => subFieldCScalar3D_SG
         !
         procedure, public :: multByField => multByFieldCScalar3D_SG
-        procedure, public :: multByValue => multByValueCScalar3D_SG
+        procedure, public :: multByComplex => multByComplexCScalar3D_SG
+        procedure, public :: multByReal => multByRealCScalar3D_SG
         !
         procedure, public :: divByField => divByFieldCScalar3D_SG
         procedure, public :: divByValue => divByValueCScalar3D_SG
@@ -695,7 +696,7 @@ contains
     end subroutine multByFieldCScalar3D_SG
     !
     !> No subroutine briefing
-    subroutine multByValueCScalar3D_SG( self, cvalue )
+    subroutine multByComplexCScalar3D_SG( self, cvalue )
         implicit none
         !
         class( cScalar3D_SG_t ), intent( inout ) :: self
@@ -703,7 +704,18 @@ contains
         !
         self%v = self%v * cvalue
         !
-    end subroutine multByValueCScalar3D_SG
+    end subroutine multByComplexCScalar3D_SG
+    !
+    !> No subroutine briefing
+    subroutine multByRealCScalar3D_SG( self, rvalue )
+        implicit none
+        !
+        class( cScalar3D_SG_t ), intent( inout ) :: self
+        real( kind=prec ), intent( in ) :: rvalue
+        !
+        self%v = self%v * rvalue
+        !
+    end subroutine multByRealCScalar3D_SG
     !
     !> No subroutine briefing
     subroutine divByFieldCScalar3D_SG( self, rhs )

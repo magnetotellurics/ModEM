@@ -51,6 +51,8 @@ contains
         !
         self%period = period
         !
+        self%non_zero_bc = .TRUE.
+        !
     end function SourceMT_1D_ctor
     !
     !> Deconstructor routine:

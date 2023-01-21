@@ -28,13 +28,13 @@ module SourceInteriorForce
 contains
     !
     !> SourceInteriorForce constructor
-    function SourceInteriorForce_ctor( model_operator, sigma, period, trans ) result( self )
+    function SourceInteriorForce_ctor( model_operator, sigma, period, for_transpose ) result( self )
         implicit none
         !
         class( ModelOperator_t ), target, intent( in ) :: model_operator
         class( ModelParameter_t ), target, intent( in ) :: sigma
         real( kind=prec ), intent( in ) :: period
-        logical, optional, intent( in ) :: trans
+        logical, optional, intent( in ) :: for_transpose
         !
         type( SourceInteriorForce_t ) :: self
         !
@@ -48,17 +48,19 @@ contains
         !
         self%period = period
         !
-        if( present( trans ) ) then
+        self%calc_sens = .TRUE.
+        !
+        if( present( for_transpose ) ) then
             !
-            self%trans = trans
+            self%for_transpose = for_transpose
         else
-            self%trans = .FALSE.
+            self%for_transpose = .FALSE.
             !
         endif
         !
-        self%sens = .TRUE.
-        !
         self%non_zero_source = .TRUE.
+        !
+        self%non_zero_bc = .TRUE.
         !
     end function SourceInteriorForce_ctor
     !
@@ -86,11 +88,11 @@ contains
         !
         do pol = 1, size( self%rhs )
             !
-            if( self%trans ) then
-				!
-				!> E = E / DIV
+            if( self%for_transpose ) then
+                !
+                !> E = E / DIV
                 call self%E( pol )%div( self%model_operator%metric%VEdge )
-				!
+                !
             else
                 !> RHS = E * V_E
                 call self%rhs( pol )%mult( self%model_operator%metric%VEdge )

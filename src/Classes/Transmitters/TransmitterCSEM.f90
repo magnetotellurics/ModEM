@@ -110,16 +110,12 @@ contains
         !
         class( TransmitterCSEM_t ), intent( inout ) :: self
         !
-        integer :: ios
-        !
-        character( len=20 ) :: ModeName
-        !
         if( .NOT. allocated( self%source ) ) then
             stop "Error: solveTransmitterCSEM > source not allocated!"
         endif
         !
         !> First allocate e_sol or e_sens, according to the Source case
-        if( self%source%sens ) then
+        if( self%source%calc_sens ) then
             !
             if( allocated( self%e_sens ) ) deallocate( self%e_sens )
             allocate( cVector3D_SG_t :: self%e_sens(1) )
@@ -133,21 +129,22 @@ contains
         !
         !> Calculate e_sol or e_sens through ForwardSolver
         !> For one polarization (CSEM n_pol = 1)
-        if( self%source%sens ) then
+        if( self%source%calc_sens ) then
             !
-            !write( *, "( a25, i5, a9, es12.5)" ) "- Solving Sens CSEM Tx", self%i_tx, ", Period=", self%period
+            write( *, "( a25, i5, a9, es12.5)" ) "- Solving Sens CSEM Tx", self%i_tx, ", Period=", self%period
             !
             call self%forward_solver%createESolution( 1, self%source, self%e_sens(1) )
             !
-            call self%e_sens(1)%add( self%source%E(1) )
+            !> TALK WITH GARY AND NASER
+            call self%e_sens(1)%mult( C_MinusONE )
             !
         else
             !
-            !write( *, "( a25, i5, a9, es12.5)" ) "- Solving FWD CSEM Tx", self%i_tx, ", Period=", self%period
+            write( *, "( a24, i5, a9, es12.5)" ) "- Solving FWD CSEM Tx", self%i_tx, ", Period=", self%period
             !
             call self%forward_solver%createESolution( 1, self%source, self%e_sol(1) )
             !
-            call self%e_sol(1)%add( self%source%E(1) )
+            call self%e_sol(1)%add( E_p )
             !
         endif
         !

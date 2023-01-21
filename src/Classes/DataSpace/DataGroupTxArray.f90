@@ -13,10 +13,17 @@ module DataGroupTxArray
     use TransmitterCSEM
     use TransmitterArray
     !
-    !> Array with the Data Measured for all transmitters (from file)
+    !> Global array with the Data Measured for all transmitters (from input files)
     type( DataGroupTx_t ), allocatable, dimension(:), save :: all_measured_data
     !
+    !> Module variables
+    logical :: conjugated_data
+    !
+    character(20) :: units_in_file
+    !
+    !> Module routines
     public :: subDataGroupTxArray
+    public :: zerosDataGroupTxArray
     public :: dotProdDataGroupTxArray
     public :: linCombDataGroupTxArray
     public :: scMultDataGroupTxArray
@@ -30,7 +37,6 @@ module DataGroupTxArray
     public :: getDataGroupByIndex
     public :: updateDataGroupTxArray
     public :: deallocateDataGroupTxArray
-    public :: zerosDataGroupTxArray
     public :: writeDataGroupTxArray
     public :: printDataGroupTxArray
     !
@@ -375,6 +381,8 @@ contains
         class( Receiver_t ), pointer :: receiver
         type( DataGroup_t ), pointer :: data_group
         !
+        real( kind=prec ) :: SI_factor, r_error
+        complex( kind=prec ) :: c_value
         integer :: receiver_type, i, j, ios, n_data
         !
         ! Verbose
@@ -400,15 +408,51 @@ contains
                 !
                 do j = 1, data_group%n_comp
                     !
+                    SI_factor = ImpUnits( receiver%units, units_in_file )
+                    !
+                    if( conjugated_data ) then
+                        !
+                        c_value = cmplx( data_group%reals(j), -data_group%imaginaries(j), kind=prec )
+                        !
+                        if( data_group%error_bar ) then
+                            r_error = -data_group%errors(j) * SI_factor
+                        else
+                            r_error = LARGE_REAL
+                        endif
+                        !
+                    else
+                        !
+                        c_value = cmplx( data_group%reals(j), data_group%imaginaries(j), kind=prec )
+                        !
+                        if( data_group%error_bar ) then
+                            r_error = data_group%errors(j) * SI_factor
+                        else
+                            r_error = LARGE_REAL
+                        endif
+                        !
+                    endif
+                    !
+                    c_value = c_value * SI_factor
+                    !
                     select type( transmitter )
                         !
                         class is( TransmitterMT_t )
                             !
-                            write( ioPredData, "(es12.6, 1X, A, 1X, f15.3, f15.3, f15.3, f15.3, f15.3, 1X, A, 1X, es16.6, es16.6, es16.6)" ) transmitter%period, trim(receiver%code), R_ZERO, R_ZERO, receiver%location(1), receiver%location(2), receiver%location(3), trim( receiver%comp_names(j)%str ), data_group%reals(j), data_group%imaginaries(j), data_group%errors(j)
+                            write( ioPredData, "(es12.6, 1X, A, 1X, f15.3, f15.3, f15.3, f15.3, f15.3, 1X, A, 1X, es16.6, es16.6, es16.6)" ) transmitter%period, trim(receiver%code), R_ZERO, R_ZERO, receiver%location(1), receiver%location(2), receiver%location(3), trim( receiver%comp_names(j)%str ), real( c_value, kind=prec ), real( aimag( c_value ), kind=prec ), r_error
                             !
                         class is( TransmitterCSEM_t )
                             !
-                            write( ioPredData, "(A, 1X, es12.6, f15.3, f15.3, f15.3, f15.3, f15.3, f15.3, 1X, A, 1X, f15.3, f15.3, f15.3, 1X, A, 1X, es16.6, es16.6, es16.6)" ) trim(transmitter%dipole), transmitter%period, transmitter%moment, transmitter%azimuth, transmitter%dip, transmitter%location(1), transmitter%location(2), transmitter%location(3), trim(receiver%code), receiver%location(1), receiver%location(2), receiver%location(3), trim( receiver%comp_names(j)%str ), data_group%reals(j), data_group%imaginaries(j), data_group%errors(j)
+                            write( ioPredData, "( a8 )", advance = "no" ) trim( transmitter%dipole )
+                            write( ioPredData, "( a1 )", advance = "no" ) " "
+                            write( ioPredData, "( 2es12.6 )", advance = "no" ) transmitter%period
+                            write( ioPredData, "( a1 )", advance = "no" ) " "
+                            write( ioPredData, "( 2es12.6 )", advance = "no" ) transmitter%moment
+                            !
+                            write( ioPredData, "( 2f9.3, 3f12.3 )", advance = "no" ) transmitter%azimuth, transmitter%dip, transmitter%location
+                            write( ioPredData, "( a1 )",  advance = "no" ) " "
+                            write( ioPredData, "( a20, 3f12.3 )", advance = "no" ) adjustl( trim( receiver%code ) ), receiver%location
+                            write( ioPredData, "( a1 )", advance = "no" ) " "
+                            write( ioPredData, "( a8, 3es15.6 )" ) trim( receiver%comp_names(j)%str ), real( c_value, kind=prec ), real( aimag( c_value ), kind=prec ), r_error
                             !
                         class default
                             stop "Error: writeDataGroupTxArray: Unclassified data_group!"
@@ -443,36 +487,42 @@ contains
                 !
                 case( 1, 11, 12 )
                     !
-                    write( ioPredData, "(4A, 40A)" ) "#    ", DATA_FILE_TITLE_MT
+                    write( ioPredData, * ) "# "//DATA_FILE_TITLE_MT
                     !
-                    write( ioPredData, "(74A)" ) "#    Period(s) Code GG_Lat GG_Lon X(m) Y(m) Z(m) Component Real Imag Error"
+                    write( ioPredData, * ) "#   Period(s) Code GG_Lat GG_Lon X(m) Y(m) Z(m) Component Real Imag Error"
                     !
                 case( 2 )
-                    write( ioPredData, "(60A)" ) "#    Missing title for Full_Interstation_TF"
+                    write( ioPredData, * ) "#   Missing title for Full_Interstation_TF"
                 case( 3 )
-                    write( ioPredData, "(60A)" ) "#    Missing title for Off_Diagonal_Rho_Phase"
+                    write( ioPredData, * ) "#   Missing title for Off_Diagonal_Rho_Phase"
                 case( 4 )
-                    write( ioPredData, "(60A)" ) "#    Missing title for Phase_Tensor"
+                    write( ioPredData, * ) "#   Missing title for Phase_Tensor"
                 case( 5 )
-                    write( ioPredData, "(60A)" ) "#    Missing title for Off_Diagonal_Impedance"
+                    write( ioPredData, * ) "#   Missing title for Off_Diagonal_Impedance"
                 case( 6, 7, 8, 9, 10 )
                     !
-                    write( ioPredData, "(4A, 40A)" ) "#    ", DATA_FILE_TITLE_CSEM
+                    write( ioPredData, * ) "# "//DATA_FILE_TITLE_CSEM
                     !
-                    write( ioPredData, "(125A)" ) "#    Tx_Dipole Tx_Period(s) Tx_Moment(Am) Tx_Azi Tx_Dip Tx_X(m) Tx_Y(m) Tx_Z(m) Code X(m) Y(m) Z(m) Component Real Imag Error"
+                    write( ioPredData, * ) "#   Tx_Dipole Tx_Period(s) Tx_Moment(Am) Tx_Azi Tx_Dip Tx_X(m) Tx_Y(m) Tx_Z(m) Code X(m) Y(m) Z(m) Component Real Imag Error"
                     !
                 case default
                     write( *, * ) "Unknown receiver type :[", receiver%rx_type, "]"
-                    stop "Error: test_FWD.f90: writeHeaderDataGroupTxArray()"
+                    stop "Error: DataGroupTxArray > writeHeaderDataGroupTxArray()"
                 !
             end select
             !
-            write( ioPredData, "(4A, 100A)" ) ">    ", getStringReceiverType( receiver%rx_type )
-            write( ioPredData, "(4A, 100A)" ) ">    ", "exp(-i\omega t)"
-            write( ioPredData, "(4A, 100A)" ) ">    ", "[V/m]/[T]"
-            write( ioPredData, "(7A, 100A)" ) ">        ", "0.00"
-            write( ioPredData, "(7A, 100A)" ) ">        ", "0.000    0.000"
-            write( ioPredData, "(A3, i8, i8)" ) ">        ", size( transmitters ), size( receivers )
+            write( ioPredData, * ) ">  "//getStringReceiverType( receiver%rx_type )
+            !
+            if( conjugated_data ) then
+                write( ioPredData, "( 18a )" ) ">  exp(+i\omega t)"
+            else
+                write( ioPredData, "( 18a )" ) ">  exp(-i\omega t)"
+            endif
+            !
+            write( ioPredData, "( 50a )" ) ">  "//trim( units_in_file )
+            write( ioPredData, "( 10a )" ) ">     0.00"
+            write( ioPredData, "( 20a )" ) ">     0.000    0.000"
+            write( ioPredData, "( 1a, i8, i8 )" ) ">", size( transmitters ), size( receivers )
             !
             receiver_type = receiver%rx_type
             !

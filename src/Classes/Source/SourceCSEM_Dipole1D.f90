@@ -1,5 +1,5 @@
 !
-!> Derived class to define a MT Source with boundary data computed by 1D solutions
+!> Derived class to define a CSEM Source with E_p computed using Dipole1D
 !
 module SourceCSEM_Dipole1D
     !
@@ -66,6 +66,8 @@ contains
         !
         self%non_zero_source = .TRUE.
         !
+        self%non_zero_bc = .FALSE.
+        !
     end function SourceCSEM_Dipole1D_ctor
     !
     !> Deconstructor routine:
@@ -122,9 +124,11 @@ contains
         !
         deallocate( zlay1D )
         !
+        allocate( self%E(1), source = E_p )
+        !
         call self%E(1)%mult( self%cond_anomaly_h )
         !
-        i_omega_mu = cmplx( 0., real( 1.0d0 * isign * MU_0 * ( 2.0 * PI / self%period ), kind=prec ), kind=prec )
+        i_omega_mu = cmplx( 0., real( -1.0d0 * isign * MU_0 * ( 2.0 * PI / self%period ), kind=prec ), kind=prec )
         !
         call self%E(1)%mult( i_omega_mu )
         !
@@ -171,7 +175,7 @@ contains
             enddo
         enddo
         !
-        !> e_field-field corresponing to these nodes is Ey
+        !> e_field-field corresponding to these nodes is Ey
         do iz = 1,grid%Nz+1 !Edge Z
             do iy = 1,grid%Ny !Center y
                 do ix = 1,grid%Nx+1 !Edge x
@@ -183,7 +187,7 @@ contains
             enddo
         enddo
         !
-        !> e_field-field corresponing to these nodes is Ez
+        !> e_field-field corresponding to these nodes is Ez
         do iz = 1,grid%Nz !Center Z
             do iy = 1,grid%Ny+1 !Edge y
                 do ix = 1,grid%Nx+1 !Edge x
@@ -206,11 +210,11 @@ contains
         !
         integer ix, iy, iz, counter
         !
-        allocate( cVector3D_SG_t :: self%E(1) )
+        allocate( cVector3D_SG_t :: E_p )
         !
-        self%E(1) = cVector3D_SG_t( grid, EDGE )
+        E_p = cVector3D_SG_t( grid, EDGE )
         !
-        select type( E => self%E(1) )
+        select type( E_p )
             !
             class is( cVector3D_SG_t )
                 !
@@ -220,7 +224,7 @@ contains
                 do iz = 1,grid%Nz+1 !Edge Z
                     do iy = 1,grid%Ny+1 !Edge Y
                         do ix = 1,grid%Nx !Center X
-                            E%x(ix,iy,iz) = ex1D(counter)
+                            E_p%x(ix,iy,iz) = ex1D(counter)
                             counter = counter + 1
                         enddo
                     enddo
@@ -230,7 +234,7 @@ contains
                 do iz = 1,grid%Nz+1 !Edge Z
                     do iy = 1,grid%Ny !Center y
                         do ix = 1,grid%Nx+1 !Edge x
-                            E%y(ix,iy,iz) = ey1D(counter)
+                            E_p%y(ix,iy,iz) = ey1D(counter)
                             counter = counter + 1
                         enddo
                     enddo
@@ -240,7 +244,7 @@ contains
                 do iz = 1,grid%Nz !Center Z
                     do iy = 1,grid%Ny+1 !Edge y
                         do ix = 1,grid%Nx+1 !Edge x
-                            E%z(ix,iy,iz) = jz1D(counter)
+                            E_p%z(ix,iy,iz) = jz1D(counter)
                             counter = counter + 1
                         enddo
                     enddo
@@ -274,6 +278,7 @@ contains
         !call modelParamToCell(sigma, sigma_cell, param_type)
         !
         select type( sigma => self%sigma )
+            !
             class is( ModelParameterCell_SG_t )
                 !
                 sigma_cell = sigma%cell_cond
@@ -449,6 +454,7 @@ contains
     !>    If evaluation over the complete model domain is to be allowed
     !>    a more general interpolation rule will be required.
     !>    A.K.: modified to allow input of any size, nx = size(xNode).
+    !
     function minNode( x, xNode ) result( ix )
         implicit none
         !
@@ -478,6 +484,7 @@ contains
     !>    If evaluation over the complete model domain is to be allowed
     !>    a more general interpolation rule will be required.
     !>    A.K.: modified to allow input of any size, nx = size(xNode).
+    !
     function maxNode(x, xNode) result(ix)
         implicit none
         !
@@ -502,6 +509,7 @@ contains
     !> instead of x in an inequality!!!
     !> LARGE_REAL is defined in the module math_constants
     !> A.K.
+    !
     function clean(x)
         implicit none
         !

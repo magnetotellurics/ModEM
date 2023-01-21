@@ -2,7 +2,7 @@
 !> EM1D subroutine init_intval
 !
 !> allocate vectors for Hankel integral values
-!>   the number of integrals required depends on the computation job (fwd model / sens.)
+!>   the number of integrals required depends on the computation job (fwd model / calc_sens.)
 !>   and the anisotropy
 !
 !> Rita Streich 2011

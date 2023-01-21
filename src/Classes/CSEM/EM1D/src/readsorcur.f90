@@ -154,7 +154,7 @@ subroutine readsorcur(filename,freqdat,sources,comm)
     endif
 
 #ifdef USE_MPI
-    !if file is ok, read it (transpose while sorting into curtmp)
+    !if file is ok, read it (     while sorting into curtmp)
     call MPI_Type_vector(nfreq,1,nrecmax,MPI_COMPLEX,curtype,ierr)
     if(ierr .NE. MPI_SUCCESS) call error_mpi(pid,'readsorcur','MPI_Type_vector',ierr)
     call MPI_Type_commit(curtype,ierr)

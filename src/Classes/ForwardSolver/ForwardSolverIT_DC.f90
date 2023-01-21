@@ -201,15 +201,6 @@ contains
             !
             call self%divergence_correction%rhsDivCor( self%solver%omega, source%E( pol ), phi0 )
             !
-            !> USING THIS TEMPORARY VARIABLE IMPROVES THE EXECUTION TIME CONSIDERABLY...
-            allocate( temp_vec, source = e_solution )
-            !
-            call self%divergence_correction%divCorr( temp_vec, e_solution, phi0 )
-            !
-            deallocate( temp_vec )
-            !
-            self%n_divcor = 1
-            !
         endif
         !
         loop: do while ( ( .NOT. self%solver%converged ) .AND. ( .NOT. self%solver%failed ) )
@@ -274,20 +265,26 @@ contains
         !
         self%relResFinal = self%relResVec( self%n_iter_actual )
         !
-        !> Just for JMult_T SourceInteriorForce case
-        if( source%trans ) then
+        !> Just for the JMult_T SourceInteriorForce case
+        if( source%for_transpose ) then
             !
             call e_solution%mult( self%solver%preconditioner%model_operator%metric%VEdge )
+            !
+        endif
+        !
+        if( source%non_zero_bc ) then
+            !
+            call source%rhs( pol )%Boundary( temp_vec )
             !
         else
             !
             call source%E( pol )%Boundary( temp_vec )
             !
-            call e_solution%add( temp_vec )
-            !
-            deallocate( temp_vec )
-            !
         endif
+        !
+        call e_solution%add( temp_vec )
+        !
+        deallocate( temp_vec )
         !
     end subroutine createESolutionForwardSolverIT_DC
     !

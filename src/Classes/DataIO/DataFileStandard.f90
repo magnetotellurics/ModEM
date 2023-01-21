@@ -183,13 +183,13 @@ contains
                          !> exp(-i\omega t)
                          case( 4 )
                             !
-                            self%conjugate = ( index( args(2), "+" ) > 0 )
+                            conjugated_data = ( index( args(2), "+" ) > 0 )
                             !
                          !
                          !> 0.00 ????, 0.000 0.000 ????
                          case( 5 )
                             !
-                            self%units_in_file = trim( args(2) )
+                            units_in_file = trim( args(2) )
                             !
                          !> [V/m]/[T] ????, 0.00 ????, 0.000 0.000 ????
                          case( 6, 7 )
@@ -219,7 +219,7 @@ contains
 10          close( unit = funit )
             !
             ! Verbose
-            write( *, * ) "          ", trim( self%units ), " to ", trim( self%units_in_file ), " => ", self%SI_factor
+            !write( *, * ) "          ", trim( self%units ), " to ", trim( units_in_file ), " => ", self%SI_factor
             !
             if( mt_counter > 0 )   write( *, * ) "          Read ", mt_counter,   " MT Entries"
             if( csem_counter > 0 ) write( *, * ) "          Read ", csem_counter, " CSEM Entries"
@@ -244,5 +244,5 @@ contains
         call self%dealloc()
         !
     end subroutine DataFileStandard_dtor
-	!
+    !
 end module DataFileStandard

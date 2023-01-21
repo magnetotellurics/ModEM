@@ -86,7 +86,7 @@ module Forward1D
         TRANS = 'N'    !>  character string that controls ZGBTRS:
                         !>  N = solve base system Ax = b
                         !>  T = solve transposed system A'x = b
-                        !>  C = solve Hermitian transpose A^* = b    
+                        !>  C = solve Hermitian      A^* = b    
         ku = 2
         kl = 2
         lda = 2*kl+ku+1     !>    storage required for banded matrix

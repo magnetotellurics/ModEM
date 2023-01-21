@@ -798,7 +798,7 @@ contains
     end subroutine divModelOperatorMF
     !
     !  subroutine AdjtBC uses (adjoint) interior node solution to compute
-    !  boundary node values for adjoint (or transpose) solution
+    !  boundary node values for adjoint (or     ) solution
     !   (NOTE: because off-diagonal part of EM operator is real this works
     !  Assuming boundary conditions for forward problem are
     !  specified tangential E fields, adjoint BC are  homogeneous (to solve for
@@ -810,9 +810,9 @@ contains
     !   Output is required for calculating sensitivities
     !     of data to errors in specified BC (and potentially for other sorts
     !     of sensitivities which require the boundary nodes of the adjoint or
-    !     transpose solution).
+    !          solution).
     !    NOTE: this routine can be used for both complex conjugate
-    !         transpose and transpose cases.
+    !              and      cases.
 
     !   Uses curl_curl coefficients, available to all routines in this module
     !   NOTE: Must call CurlCurlSetup before use of this routine

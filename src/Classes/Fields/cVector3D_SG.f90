@@ -37,7 +37,9 @@ module cVector3D_SG
         procedure, public :: subValue => subValueCVector3D_SG
         !
         procedure, public :: multByField => multByFieldCVector3D_SG
-        procedure, public :: multByValue => multByValueCVector3D_SG
+        procedure, public :: multByComplex => multByComplexCVector3D_SG
+        procedure, public :: multByReal => multByRealCVector3D_SG
+		!
         procedure, public :: divByField => divByFieldCVector3D_SG
         procedure, public :: divByValue => divByValueCVector3D_SG
         procedure, public :: dotProd => dotProdCVector3D_SG
@@ -658,9 +660,9 @@ contains
                     self%z = self%z + rhs%z
                 !
                 class is( rVector3D_SG_t )
-                    self%x = self%x + cmplx( rhs%x, 0.0, kind=prec )
-                    self%y = self%y + cmplx( rhs%y, 0.0, kind=prec )
-                    self%z = self%z + cmplx( rhs%z, 0.0, kind=prec )
+                    self%x = self%x + rhs%x
+                    self%y = self%y + rhs%y
+                    self%z = self%z + rhs%z
                 !
                 class is( cScalar3D_SG_t )
                     self%x = self%x + rhs%v
@@ -668,9 +670,9 @@ contains
                     self%z = self%z + rhs%v
                 !
                 class is( rScalar3D_SG_t )
-                    self%x = self%x + cmplx( rhs%v, 0.0, kind=prec )
-                    self%y = self%y + cmplx( rhs%v, 0.0, kind=prec )
-                    self%z = self%z + cmplx( rhs%v, 0.0, kind=prec )
+                    self%x = self%x + rhs%v
+                    self%y = self%y + rhs%v
+                    self%z = self%z + rhs%v
                 class default
                     stop "Error: addCVector3D_SG > Undefined rhs"
                 !
@@ -800,17 +802,30 @@ contains
     end subroutine multByFieldCVector3D_SG
     !
     !> No subroutine briefing
-    subroutine multByValueCVector3D_SG( self, cvalue )
+    subroutine multByComplexCVector3D_SG( self, cvalue )
         implicit none
         !
         class( cVector3D_SG_t ), intent( inout ) :: self
         complex( kind=prec ), intent( in ) :: cvalue
         !
-        self%x = cvalue * self%x
-        self%y = cvalue * self%y
-        self%z = cvalue * self%z
+        self%x = self%x * cvalue
+        self%y = self%y * cvalue
+        self%z = self%z * cvalue
         !
-    end subroutine multByValueCVector3D_SG
+    end subroutine multByComplexCVector3D_SG
+    !
+    !> No subroutine briefing
+    subroutine multByRealCVector3D_SG( self, rvalue )
+        implicit none
+        !
+        class( cVector3D_SG_t ), intent( inout ) :: self
+        real( kind=prec ), intent( in ) :: rvalue
+        !
+        self%x = self%x * rvalue
+        self%y = self%y * rvalue
+        self%z = self%z * rvalue
+        !
+    end subroutine multByRealCVector3D_SG
     !
     !> No subroutine briefing
     subroutine divByFieldCVector3D_SG( self, rhs )

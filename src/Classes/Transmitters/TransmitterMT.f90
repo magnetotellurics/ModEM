@@ -76,7 +76,7 @@ module TransmitterMT
         endif
         !
         !> First allocate e_sol or e_sens, according to the Source case
-        if( self%source%sens ) then
+        if( self%source%calc_sens ) then
             !
             if( allocated( self%e_sens ) ) deallocate( self%e_sens )
             allocate( cVector3D_SG_t :: self%e_sens(2) )
@@ -93,7 +93,7 @@ module TransmitterMT
         do i_pol = 1, self%n_pol
             !
             !> Verbose
-            if( self%source%sens ) then
+            if( self%source%calc_sens ) then
                 !
                 !write( *, "( a25, i5, a9, es12.5, a6, i5 )" ) "- Solving Sens MT Tx", self%i_tx, ", Period=", self%period, ", Pol=", i_pol
                 !

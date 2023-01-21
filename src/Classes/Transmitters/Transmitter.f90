@@ -100,6 +100,8 @@ module Transmitter
             !
             if( allocated( self%source ) ) deallocate( self%source )
             !
+            if( allocated( E_p ) ) deallocate( E_p )
+            !
             if( allocated( self%e_sol ) ) deallocate( self%e_sol )
             !
             if( allocated( self%e_sens ) ) deallocate( self%e_sens )

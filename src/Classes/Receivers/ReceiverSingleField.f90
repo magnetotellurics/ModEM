@@ -136,7 +136,7 @@ contains
         call self%predictedData( transmitter )
         !
         !> Allocate LRows matrix [ npol = 1, n_comp = 1 ]
-		if( allocated( self%lrows ) ) deallocate( self%lrows )
+        if( allocated( self%lrows ) ) deallocate( self%lrows )
         allocate( cVector3D_SG_t :: self%lrows( transmitter%n_pol, self%n_comp ) )
         !
         if( self%azimuth == 1.0 ) self%lrows( 1, 1 ) = self%Lex%getFullVector()

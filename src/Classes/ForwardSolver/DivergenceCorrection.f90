@@ -70,11 +70,14 @@ contains
         class( Vector_t ), intent( in ) :: source_e
         class( Scalar_t ), intent( inout ) :: phi0
         !
+        complex( kind=prec ) :: i_omega_mu
         complex( kind=prec ) :: c_factor
         !
-        c_factor = 1 / ( -ONE_I * mu_0 * omega )
-        !
         call self%solver%preconditioner%model_operator%Div( source_e, phi0 )
+        !
+        i_omega_mu = cmplx( 0., real( 1.0d0 * isign * MU_0 * omega, kind=prec ), kind=prec )
+        !
+        c_factor = C_ONE / i_omega_mu
         !
         call phi0%mult( c_factor )
         !

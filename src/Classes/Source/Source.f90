@@ -12,6 +12,8 @@ module Source
     !
     character(:), allocatable :: get_1D_from
     !
+    class( Vector_t ), allocatable :: E_p
+    !
     type, abstract :: Source_t
         !
         class( ModelOperator_t ), pointer :: model_operator
@@ -22,7 +24,7 @@ module Source
         !
         class( Vector_t ), allocatable, dimension(:) :: rhs, E
         !
-        logical :: non_zero_source, sens, trans
+        logical :: non_zero_source, non_zero_bc, calc_sens, for_transpose
         !
         contains
             !
@@ -102,9 +104,11 @@ module Source
         !
         self%non_zero_source = .FALSE.
         !
-        self%trans = .FALSE.
+        self%non_zero_bc = .FALSE.
         !
-        self%sens = .FALSE.
+        self%for_transpose = .FALSE.
+        !
+        self%calc_sens = .FALSE.
         !
         self%model_operator => null()
         !

@@ -40,8 +40,9 @@ module Field
         generic :: sub => subValue, subField
         !
         procedure( interface_field_mult_by_field ), deferred, public :: multByField
-        procedure( interface_field_mult_by_value ), deferred, public :: multByValue
-        generic :: mult => multByField, multByValue
+        procedure( interface_field_mult_by_complex ), deferred, public :: multByComplex
+        procedure( interface_field_mult_by_real ), deferred, public :: multByReal
+        generic :: mult => multByField, multByComplex, multByReal
         !
         procedure( interface_field_div_by_field ), deferred, public :: divByField
         procedure( interface_field_div_by_value ), deferred, public :: divByValue
@@ -188,11 +189,18 @@ module Field
         end subroutine interface_field_mult_by_field
         !
         !> No interface subroutine briefing
-        subroutine interface_field_mult_by_value( self, cvalue )
+        subroutine interface_field_mult_by_complex( self, cvalue )
             import :: Field_t, prec
             class( Field_t ), intent( inout ) :: self
             complex( kind=prec ), intent( in ) :: cvalue
-        end subroutine interface_field_mult_by_value
+        end subroutine interface_field_mult_by_complex
+        !
+        !> No interface subroutine briefing
+        subroutine interface_field_mult_by_real( self, rvalue )
+            import :: Field_t, prec
+            class( Field_t ), intent( inout ) :: self
+            real( kind=prec ), intent( in ) :: rvalue
+        end subroutine interface_field_mult_by_real
         !
         !> No interface subroutine briefing
         subroutine interface_field_div_by_field( self, rhs )

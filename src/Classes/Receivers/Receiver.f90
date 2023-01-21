@@ -13,7 +13,7 @@ module Receiver
         !
         integer :: i_rx, rx_type, n_comp
         !
-        character(:), allocatable :: code
+        character(:), allocatable :: code, units
         !
         real( kind=prec ), dimension(3) :: location
         !
@@ -31,6 +31,7 @@ module Receiver
         !
         contains
             !
+            !> Base interfaces
             procedure( interface_set_lrows_receiver ), deferred, public :: setLRows
             !
             procedure( interface_predicted_data_receiver ), deferred, public :: predictedData
@@ -39,6 +40,7 @@ module Receiver
             !
             procedure( interface_print_receiver ), deferred, public :: print
             !
+            !> Base routines
             procedure, public :: evaluationFunction => evaluationFunctionRx
             !
             procedure, public :: savePredictedData => savePredictedDataRx
@@ -49,7 +51,9 @@ module Receiver
             !
     end type Receiver_t
     !
+    !> Module routines
     public :: getStringReceiverType, getIntReceiverType
+    public :: ImpUnits
     !
     abstract interface
         !
@@ -366,5 +370,65 @@ contains
         end select
         !
     end function getIntReceiverType
+    !
+    !> ????
+    function ImpUnits( oldUnits, newUnits ) result( SI_factor )
+        implicit none
+        !
+        character(*), intent( in ) :: oldUnits, newUnits
+        !
+        real( kind=prec ) :: SI_factor
+        !
+        real( kind=prec ) :: factor1, factor2
+        !
+        ! if the quantity is dimensionless, do nothing
+        if( index( oldUnits, "[]"  ) > 0 .OR. index( newUnits, "[]" ) > 0 ) then
+            SI_factor = ONE
+            return
+        end if
+        !
+        ! first convert the old units to [V/m]/[T]
+        if( index( oldUnits, "[V/m]/[T]" ) > 0 ) then
+            ! SI units for E/B
+            factor1 = ONE
+        else if( index( oldUnits, "[mV/km]/[nT]" ) > 0 ) then
+            ! practical units for E/B
+            factor1 = ONE * 1000.0
+        else if( index( oldUnits, "[V/m]/[A/m]" ) > 0 .OR. index( oldUnits, "Ohm" ) > 0 ) then
+            ! SI units for E/H
+            factor1 = ONE * 1000.0 * 10000.0 / ( 4 * PI ) ! approx. 796000.0
+        else if( index( oldUnits, "[V/m]" ) > 0 ) then
+            ! SI units for E
+            factor1 = ONE
+        else if( index( oldUnits, "[T]" ) > 0 ) then
+            ! SI units for B
+            factor1 = ONE
+        else
+            stop "Error: Unknown input units in ImpUnits: "//trim( oldUnits )
+        end if
+        !
+        ! now convert [V/m]/[T] to the new units
+        if( index( newUnits, "[V/m]/[T]" ) > 0 ) then
+            ! SI units for E/B
+            factor2 = ONE
+        else if( index( newUnits, "[mV/km]/[nT]" ) > 0 ) then
+            ! practical units for E/B
+            factor2 = ONE / 1000.0
+        else if( index( newUnits, "[V/m]/[A/m]") > 0 .OR. index( newUnits, "Ohm" ) > 0 ) then
+            ! SI units for E/H
+            factor2 = ONE / ( 1000.0 * 10000.0 / ( 4 * PI ) )
+        else if(index( newUnits, "[V/m]") > 0 ) then
+            ! SI units for E
+            factor2 = ONE
+        else if( index( newUnits, "[T]") > 0 ) then
+            ! SI units for B
+            factor2 = ONE
+        else
+            stop "Error: Unknown output units in ImpUnits: "//trim( newUnits )
+        end if
+        !
+        SI_factor = factor1 * factor2
+        !
+    end function ImpUnits
     !
 end module Receiver
