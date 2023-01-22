@@ -55,8 +55,6 @@ contains
             stop "Error: jobJMult > Missing Data file!"
         endif
         !
-        JmHat = all_measured_data
-        !
 #ifdef MPI
         !
         call broadcastBasicComponents()
@@ -93,20 +91,26 @@ contains
         implicit none
         !
         class( ModelParameter_t ), intent( in ) :: sigma, dsigma
-        type( DataGroupTx_t ), dimension(:), intent( inout ) :: JmHat
+        type( DataGroupTx_t ), allocatable, dimension(:), intent( out ) :: JmHat
         logical, intent( inout ) :: new_sigma
         !
         integer :: i_data_tx
         class( Transmitter_t ), pointer :: Tx
         !
+        call printDataGroupTxArray( all_measured_data, "all_measured_data" )
+        !
+        JmHat = all_measured_data
+        !
+        call printDataGroupTxArray( JmHat, "JMHAT" )
+        !
         !> Loop over All DataGroupTxs
         do i_data_tx = 1, size( JmHat )
             !
+            !> Pointer to the transmitter leading the current data
+            Tx => getTransmitter( i_data_tx )
+            !
             !>
             if( new_sigma ) then
-                !
-                !> Pointer to the transmitter leading the current data
-                Tx => getTransmitter( i_data_tx )
                 !
                 call solveTx( sigma, Tx )
                 !
