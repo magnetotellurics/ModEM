@@ -210,6 +210,7 @@ contains
         !
         integer ix, iy, iz, counter
         !
+        if( allocated( E_p ) ) deallocate( E_p )
         allocate( cVector3D_SG_t :: E_p )
         !
         E_p = cVector3D_SG_t( grid, EDGE )
