@@ -1,5 +1,6 @@
 !
-!> Module with routines to handle a DataGroupTx array
+!> Module to handle a DataGroupTx array
+!> Store a global vector containing the measured data, read from data input file.
 !
 module DataGroupTxArray
     !
@@ -13,7 +14,6 @@ module DataGroupTxArray
     use TransmitterCSEM
     use TransmitterArray
     !
-    !> Global array with the Data Measured for all transmitters (from input files)
     type( DataGroupTx_t ), allocatable, dimension(:), save :: all_measured_data
     !
     !> Module variables

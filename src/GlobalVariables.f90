@@ -32,6 +32,8 @@ module GlobalVariables
     use DataFileStandard
     !
     !> Global Variables
+	class( Source_t ), allocatable :: fwd_source
+	!
     class( Grid_t ), allocatable, target :: main_grid
     !
     class( ModelOperator_t ), allocatable :: model_operator
