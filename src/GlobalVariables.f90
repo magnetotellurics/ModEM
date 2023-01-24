@@ -1,5 +1,5 @@
 !
-!> Module with the sensitivity routines JMult, JMult_Tx, JMult_T, JMult_T_Tx 
+!> Module with the sensitivity routines serialJMult, JMult_Tx, serialJMult_T, JMult_T_Tx 
 !
 module GlobalVariables
     !

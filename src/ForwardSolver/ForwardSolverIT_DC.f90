@@ -265,7 +265,7 @@ contains
         !
         self%relResFinal = self%relResVec( self%n_iter_actual )
         !
-        !> Just for the JMult_T SourceInteriorForce case
+        !> Just for the serialJMult_T SourceInteriorForce case
         if( source%for_transpose ) then
             !
             call e_solution%mult( self%solver%preconditioner%model_operator%metric%VEdge )

@@ -90,6 +90,8 @@ contains
         !
         class( ModelParameter_t ), allocatable :: sigma
         !
+        logical :: new_sigma
+        !
         ! Verbose
         write( *, * ) "     - Start jobForwardModeling"
         !
@@ -126,7 +128,9 @@ contains
         !
         call createDistributeForwardSolver()
         !
-        call serialForwardModeling( sigma, all_predicted_data )
+        new_sigma = .TRUE.
+        !
+        call serialForwardModeling( sigma, all_predicted_data, new_sigma )
         !
         if( has_e_solution_file ) call writeAllESolution( e_solution_file_name )
         !
@@ -146,11 +150,12 @@ contains
     !>     Calculate the predicted data for each transmitter-receiver pair.
     !>     ForwardSolver must be allocated
     !
-    subroutine serialForwardModeling( sigma, all_predicted_data, e_all )
+    subroutine serialForwardModeling( sigma, all_predicted_data, new_sigma, e_all )
         implicit none
         !
         class( ModelParameter_t ), intent( in ) :: sigma
         type( DataGroupTx_t ), allocatable, dimension(:), intent( inout ) :: all_predicted_data
+        logical, intent( inout ) :: new_sigma
         type( EAllMTx_t ), optional, intent( inout ) :: e_all
         !
         class( Transmitter_t ), pointer :: Tx
@@ -179,11 +184,15 @@ contains
             !> Pointer to the Transmitter
             Tx => getTransmitter( i_tx )
             !
-            call solveTx( sigma, Tx )
-            !
-            if( present( e_all ) ) then
+            if( new_sigma ) then
                 !
-                e_all%e( i_tx )%pol = Tx%e_sol
+                call solveTx( sigma, Tx )
+                !
+                if( present( e_all ) ) then
+                    !
+                    e_all%e( i_tx )%pol = Tx%e_sol
+                    !
+                endif
                 !
             endif
             !

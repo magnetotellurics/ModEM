@@ -7,7 +7,6 @@ program ModEM
     !
 #ifdef MPI
     !
-    use MasterMPI
     use WorkerMPI
     !
     call constructorMPI()
@@ -28,8 +27,7 @@ program ModEM
     !
 #else
     !
-    use InversionDCG
-    use InversionNLCG
+    use Inversion
     !
     call startProgram()
     !
@@ -70,93 +68,10 @@ contains
         call cpu_time( t_finish )
         !
         write( *, * )
-        write( *, "( a16, f8.3, a1 )" ) "Finish ModEM-OO:", ( t_finish - t_start ), "s"
+        write( *, "( a16, f16.3, a1 )" ) "Finish ModEM-OO:", ( t_finish - t_start ), "s"
         write( *, * )
         !
     end subroutine startProgram
-    !
-    !> Routine to run a full Inversion Job - Minimize Residual
-    !> Where:
-    !>    SIGMA (M) = Production model (for predicted data and final inversion model)
-    !>    PMODEL = Perturbation model  (if exist -dm readed input model)
-    !>    SIGMA0 = Readed input model  (-m)
-    !>    DSIGMA = From JMult_T        (????)
-    subroutine jobInversion()
-        implicit none
-        !
-        class( ModelParameter_t ), allocatable :: sigma, dsigma
-        !
-        !> Read Model File and instantiate global variables: main_grid, model_operator and Sigma0
-        if( has_model_file ) then 
-            !
-            call handleModelFile( sigma )
-            !
-            !> Instantiate ModelCovariance
-            allocate( model_cov, source = ModelCovarianceRec_t( sigma ) )
-            !
-            !> Initialize pmodel with Zeros
-            allocate( dsigma, source = sigma )
-            !
-            call dsigma%zeros()
-            !
-        else
-            stop "Error: jobInversion > Missing Model file!"
-        endif
-        !
-        !> Read Perturbation Model File: instantiate pmodel (NOT USING RIGHT NOW ????)
-        if( has_pmodel_file ) then 
-            !
-            deallocate( dsigma )
-            !
-            call handlePModelFile( dsigma )
-            !
-            call dsigma%setMetric( model_operator%metric )
-            !
-            call model_cov%multBy_Cm( dsigma )
-            !
-            call sigma%linComb( ONE, ONE, dsigma )
-            !
-        endif
-        !
-        !> Read Data File: instantiate and build the Data relation between Txs and Rxs
-        if( has_data_file ) then 
-            !
-            call handleDataFile()
-            !
-        else
-            stop "Error: jobInversion > Missing Data file!"
-        endif
-        !
-#ifdef MPI
-        !
-        call broadcastBasicComponents()
-        !
-#else
-        !
-        call createDistributeForwardSolver()
-        !
-#endif
-        !
-        !> Instantiate the ForwardSolver - Specific type can be chosen via control file
-        select case ( inversion_algorithm )
-            !
-            case( DCG )
-                !
-                call DCGsolver( all_measured_data, sigma, dsigma )
-                !
-            case( NLCG )
-                !
-                call NLCGsolver( all_measured_data, sigma, dsigma )
-                !
-            case default
-                !
-                stop "Error: jobInversion > Undefined inversion_algorithm"
-                !
-        end select
-        !
-        deallocate( sigma, dsigma )
-        !
-    end subroutine jobInversion
     !
     !> No subroutine briefing
     subroutine handleJob()
@@ -168,11 +83,11 @@ contains
                 !
                 call jobForwardModeling
                 !
-            case ( "JMult" )
+            case ( "serialJMult" )
                 !
                 call jobJMult
                 !
-            case ( "JMult_T" )
+            case ( "serialJMult_T" )
                 !
                 call jobJMult_T
                 !
@@ -259,13 +174,13 @@ contains
                          !
                       case ( "-j", "--jmult" )
                          !
-                         modem_job = "JMult"
+                         modem_job = "serialJMult"
                          !
                          argument_index = argument_index + 1
                          !
                       case ( "-jt", "--jmult_t" )
                          !
-                         modem_job = "JMult_T"
+                         modem_job = "serialJMult_T"
                          !
                          argument_index = argument_index + 1
                          !
@@ -411,12 +326,12 @@ contains
         write( *, * ) "        Output:"
         write( *, * ) "        - all_predicted_data.dat or the path specified by         [-pd]"
         write( *, * ) ""
-        write( *, * ) "    JMult:"
+        write( *, * ) "    serialJMult:"
         write( *, * ) "        <ModEM> -j -m <rFile_Model> -pm <rFile_pModel> -d <rFile_Data>"
         write( *, * ) "        Output:"
         write( *, * ) "        - jmhat.dat or the path specified by                  [-jm]"
         write( *, * ) ""
-        write( *, * ) "    JMult_T:"
+        write( *, * ) "    serialJMult_T:"
         write( *, * ) "        <ModEM> -jt -m <rFile_Model> -d <rFile_Data>"
         write( *, * ) "        Output:"
         write( *, * ) "        - dsigma.rho or the path specified by                 [-dm]"
@@ -436,8 +351,8 @@ contains
         write( *, * ) ""
         write( *, * ) "    Flags to define a job:"
         write( *, * ) "        [-f],  [--forward]   :  Forward Modeling."
-        write( *, * ) "        [-j],  [--jmult]     :  JMult."
-        write( *, * ) "        [-jt], [--jmult_t]   :  Transposed JMult."
+        write( *, * ) "        [-j],  [--jmult]     :  serialJMult."
+        write( *, * ) "        [-jt], [--jmult_t]   :  Transposed serialJMult."
         write( *, * ) "        [-i],  [--inversion] :  Inversion."
         write( *, * )
         write( *, * ) "    Other arguments:"

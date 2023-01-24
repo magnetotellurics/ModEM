@@ -6,8 +6,7 @@ module WorkerMPI
     !
     use DeclarationMPI
     !
-    use InversionDCG
-    use InversionNLCG
+    use Inversion
     !
     public :: workerMainLoop
     public :: workerForwardModelling
@@ -191,7 +190,7 @@ contains
         !> Solve e_sens with the new Source
         call Tx%solve()
         !
-        !> JMult for the same Tx
+        !> serialJMult for the same Tx
         call JMult_Tx( tx_data, job_info%new_sigma )
         !
         !> Send job done and tx_data to master process

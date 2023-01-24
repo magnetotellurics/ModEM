@@ -6,12 +6,12 @@ module Sensitivity
     use ForwardModeling
     !
     !> Public module routines
-    public :: jobJMult, JMult, JMult_Tx
-    public :: jobJMult_T, JMult_T, JMult_T_Tx
+    public :: jobJMult, serialJMult, JMult_Tx
+    public :: jobJMult_T, serialJMult_T, JMult_T_Tx
     !
 contains
     !
-    !> Routine to run a full JMult job 
+    !> Routine to run a full serialJMult job 
     !> and deliver the result (JmHat) in a text file <jmhat.dat>
     !
     subroutine jobJMult()
@@ -26,8 +26,6 @@ contains
         ! Verbose
         !
         write( *, * ) "     - Start jobJMult"
-        !
-        new_sigma = .TRUE.
         !
         if( has_pmodel_file ) then
             !
@@ -69,7 +67,9 @@ contains
         !
         call createDistributeForwardSolver()
         !
-        call JMult( sigma, dsigma, JmHat, new_sigma )
+        new_sigma = .TRUE.
+        !
+        call serialJMult( sigma, dsigma, JmHat, new_sigma )
         !
 #endif
         !
@@ -87,7 +87,7 @@ contains
     !>     Set the transmitter source by calling PMult
     !>     Call JMult_TX for the transmitter
     !
-    subroutine JMult( sigma, dsigma, JmHat, new_sigma )
+    subroutine serialJMult( sigma, dsigma, JmHat, new_sigma )
         implicit none
         !
         class( ModelParameter_t ), intent( in ) :: sigma, dsigma
@@ -97,11 +97,7 @@ contains
         integer :: i_data_tx
         class( Transmitter_t ), pointer :: Tx
         !
-        call printDataGroupTxArray( all_measured_data, "all_measured_data" )
-        !
         JmHat = all_measured_data
-        !
-        call printDataGroupTxArray( JmHat, "JMHAT" )
         !
         !> Loop over All DataGroupTxs
         do i_data_tx = 1, size( JmHat )
@@ -128,9 +124,9 @@ contains
         new_sigma = .FALSE.
         !
         ! Verbose
-        !write( *, * ) "          - Finish JMult"
+        !write( *, * ) "          - Finish serialJMult"
         !
-    end subroutine JMult
+    end subroutine serialJMult
     !
     !> Calculate JmHat for a single transmitter and store it in a DataGroupTx:
     !>     By the sum of all LRows * ESens
@@ -179,7 +175,7 @@ contains
                 !
                 call JmHat_tx%data( i_data )%set( i_comp, -real( lrows_x_esens, kind=prec ), real( aimag( lrows_x_esens ), kind=prec ) )
                 !
-                !write( *, * ) "JMult Z: ", JmHat_tx%data( i_data )%reals( i_comp ), JmHat_tx%data( i_data )%imaginaries( i_comp )
+                !write( *, * ) "serialJMult Z: ", JmHat_tx%data( i_data )%reals( i_comp ), JmHat_tx%data( i_data )%imaginaries( i_comp )
                 !
             enddo
             !
@@ -189,7 +185,7 @@ contains
         !
     end subroutine JMult_Tx
     !
-    !> Routine to run a full JMult_T job 
+    !> Routine to run a full serialJMult_T job 
     !> and deliver the result (dsigma) in a text file <dsigma.rho>
     !
     subroutine jobJMult_T()
@@ -201,8 +197,6 @@ contains
         !
         ! Verbose
         write( *, * ) "     - Start jobJMult_T"
-        !
-        new_sigma = .TRUE.
         !
         if( has_model_file ) then 
             !
@@ -234,7 +228,9 @@ contains
         !
         call createDistributeForwardSolver()
         !
-        call JMult_T( sigma, all_measured_data, dsigma, new_sigma )
+        new_sigma = .TRUE.
+        !
+        call serialJMult_T( sigma, all_measured_data, dsigma, new_sigma )
         !
 #endif
         !
@@ -253,7 +249,7 @@ contains
     !> Call JMult_T_Tx with measured data for for all transmitters
     !> Add the result obtained for each transmitter into dsigma
     !
-    subroutine JMult_T( sigma, all_data, dsigma, new_sigma )
+    subroutine serialJMult_T( sigma, all_data, dsigma, new_sigma )
         implicit none
         !
         class( ModelParameter_t ), intent( in ) :: sigma
@@ -266,7 +262,7 @@ contains
         integer :: i_tx
         !
         ! Verbose
-        !write( *, * ) "          - Start JMult_T"
+        !write( *, * ) "          - Start serialJMult_T"
         !
         !> Initialize dsigma with zeros
         if( sigma%is_allocated ) then
@@ -277,7 +273,7 @@ contains
             call dsigma%zeros()
             !
         else
-            stop "Error: JMult_T > sigma not allocated"
+            stop "Error: serialJMult_T > sigma not allocated"
         endif
         !
         !> Loop over all transmitters
@@ -302,12 +298,12 @@ contains
             !
         enddo
         !
-        new_sigma = .FALSE.
+        new_sigma = .TRUE.
         !
         ! Verbose
-        !write( *, * ) "          - Finish JMult_T"
+        !write( *, * ) "          - Finish serialJMult_T"
         !
-    end subroutine JMult_T
+    end subroutine serialJMult_T
     !
     !> Calculate dsigma for the data_tx's transmitter:
     !>     Create a rhs from LRows * residual data for all receivers related to the transmitter.
@@ -368,7 +364,7 @@ contains
                     tx_data_cvalue = cmplx( data_group%reals( i_comp ), R_ZERO, kind=prec )
                 endif
                 !
-                !write( *, * ) "JMult_T Z: ", tx_data_cvalue
+                !write( *, * ) "serialJMult_T Z: ", tx_data_cvalue
                 !
                 !> Loop over polarizations
                 do i_pol = 1, Tx%n_pol

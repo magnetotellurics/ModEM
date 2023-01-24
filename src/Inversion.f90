@@ -1,9 +1,22 @@
 !
-!> ????
+!> Module Inversion 
 !
-module InversionNLCG
+module Inversion
     !
     use Sensitivity
+    !
+    !> Structure that gathers the control variables of the DCG loop
+    type  :: DCGiterControl_t
+        !
+        integer :: max_iter
+        !
+        real( kind=prec ) :: rms_tol, lambda
+        !
+        logical :: new_sigma
+        !
+    end type DCGiterControl_t
+    !
+    type( DCGiterControl_t ), private, save :: DCGiterControl
     !
     type :: NLCGiterControl_t
         !
@@ -46,7 +59,495 @@ module InversionNLCG
     !
     type( NLCGiterControl_t ), private, save :: NLCGiterControl
     !
+    !> Structure that gathers the control variables of the CG loop
+    type :: IterControl_t
+        !
+        integer :: max_it, n_iter
+        !
+        real( kind=prec ) :: tol
+        !
+        real( kind=prec ), allocatable, dimension(:) :: r_err
+        !
+    end type IterControl_t
+    !
+    !> Public module routines
+    public :: jobInversion
+    !
+    !> Public DCG module routines
+    public :: setDCGiterControl, setIterControl
+    public :: DCGsolver
+    public :: Calc_FWD, CG_DS_standard, MultA_DS
+    public :: outputFiles_DCG
+    !
+    !> Public NLCG module routines
+    public :: set_NLCGiterControl
+    public :: NLCGsolver
+    public :: gradient, func
+    public :: CdInvMult
+    public :: update_damping_parameter
+    public :: lineSearchCubic
+    public :: outputFiles_NLCG
+    !
 contains
+    !
+    !> Routine to run a full Inversion Job - Minimize Residual
+    !> Where:
+    !>    SIGMA (M) = Production model (for predicted data and final inversion model)
+    !>    PMODEL = Perturbation model  (if exist -dm readed input model)
+    !>    SIGMA0 = Readed input model  (-m)
+    !>    DSIGMA = From serialJMult_T        (????)
+	!
+    subroutine jobInversion()
+        implicit none
+        !
+        class( ModelParameter_t ), allocatable :: sigma, dsigma
+        !
+        !> Read Model File and instantiate global variables: main_grid, model_operator and Sigma0
+        if( has_model_file ) then 
+            !
+            call handleModelFile( sigma )
+            !
+            !> Instantiate ModelCovariance
+            allocate( model_cov, source = ModelCovarianceRec_t( sigma ) )
+            !
+            !> Initialize pmodel with Zeros
+            allocate( dsigma, source = sigma )
+            !
+            call dsigma%zeros()
+            !
+        else
+            stop "Error: jobInversion > Missing Model file!"
+        endif
+        !
+        !> Read Perturbation Model File: instantiate pmodel (NOT USING RIGHT NOW ????)
+        if( has_pmodel_file ) then 
+            !
+            deallocate( dsigma )
+            !
+            call handlePModelFile( dsigma )
+            !
+            call dsigma%setMetric( model_operator%metric )
+            !
+            call model_cov%multBy_Cm( dsigma )
+            !
+            call sigma%linComb( ONE, ONE, dsigma )
+            !
+        endif
+        !
+        !> Read Data File: instantiate and build the Data relation between Txs and Rxs
+        if( has_data_file ) then 
+            !
+            call handleDataFile()
+            !
+        else
+            stop "Error: jobInversion > Missing Data file!"
+        endif
+        !
+#ifdef MPI
+        !
+        call broadcastBasicComponents()
+        !
+#else
+        !
+        call createDistributeForwardSolver()
+        !
+#endif
+        !
+        !> Instantiate the ForwardSolver - Specific type can be chosen via control file
+        select case ( inversion_algorithm )
+            !
+            case( DCG )
+                !
+                call DCGsolver( all_measured_data, sigma, dsigma )
+                !
+            case( NLCG )
+                !
+                call NLCGsolver( all_measured_data, sigma, dsigma )
+                !
+            case default
+                !
+                stop "Error: jobInversion > Undefined inversion_algorithm"
+                !
+        end select
+        !
+#ifdef MPI
+        call broadcastFinish
+#endif
+        !
+        deallocate( sigma, dsigma )
+        !
+    end subroutine jobInversion
+    !
+    !>
+    subroutine setDCGiterControl( DCGiterControl )
+        implicit none
+        !
+        type( DCGiterControl_t ), intent( inout ) :: DCGiterControl
+        !
+        DCGiterControl%max_iter = 3
+        !
+        DCGiterControl%rms_tol = 1.05
+        !
+        DCGiterControl%lambda = 10.
+        !
+        DCGiterControl%new_sigma = .TRUE.
+        !
+    end subroutine setDCGiterControl
+    !
+    !>
+    subroutine setIterControl( cg_iter )
+        implicit none
+        !
+        type( IterControl_t), intent( inout ) :: cg_iter
+        !
+        cg_iter%max_it = 20
+        !
+        cg_iter%tol = 10E-4
+        !
+        cg_iter%n_iter = 0
+        !
+        allocate( cg_iter%r_err( cg_iter%max_it ) )
+        !
+    end subroutine setIterControl
+    !
+    !>
+    subroutine DCGsolver( all_data, sigma, dsigma )
+        implicit none
+        !
+        type( DataGroupTx_t ), allocatable, dimension(:), intent( inout ) :: all_data
+        class( ModelParameter_t ), allocatable, intent( in ) :: sigma
+        class( ModelParameter_t ), allocatable, intent( inout ) :: dsigma
+        !
+        real( kind=prec ) :: F, mNorm
+        type( DataGroupTx_t ), allocatable, dimension(:) :: b, dx, all_predicted_data, res, JmHat
+        class( ModelParameter_t ), allocatable :: mHat
+        real( kind=prec ) :: rms
+        type( IterControl_t ) :: CGiter
+        integer :: DCG_iter, ios
+        !
+        !>
+        call createOutputDirectory()
+        !
+        ! Verbose
+        write( *, * ) "     - Start Inversion DCG, output files in [", trim( outdir_name ), "]"
+        !
+        !>
+        call setDCGiterControl( DCGiterControl )
+        !
+        !>
+        call setIterControl( CGiter )
+        !
+        open( unit = ioInvLog, file = trim( outdir_name )//"/DCG.log", status="unknown", position="append", iostat=ios )
+        !
+        if( ios == 0 ) then
+            !
+            allocate( mHat, source = dsigma )
+            !
+            call model_cov%multBy_Cm( dsigma ) 
+            !
+            call dsigma%linComb( ONE, ONE, sigma )
+            !
+            dx = all_data
+            !
+            b = all_data
+            !
+            call zerosDataGroupTxArray( b )
+            !
+            !> Write in DCG.log
+            write( ioInvLog, "( a41, es12.5 )" ) "The initial damping parameter lambda is ", DCGiterControl%lambda
+            !
+            call Calc_FWD( DCGiterControl%lambda, all_data, dsigma, mHat, all_predicted_data, res, F, mNorm, rms )
+            !
+            !> Write in DCG.log
+            write( ioInvLog, "( a10, a3, es12.5, a4, es12.5, a5, f18.5, a8, es12.5 )" ) "START:", " f=", f, " m2=", mNorm, " rms=", rms, " lambda=", DCGiterControl%lambda
+            !
+            DCG_iter = 1
+            !
+            !> Print
+            write( *, "( a38, f18.5)" ) "            Start_DCG : Residual rms=", rms
+            !
+            !>
+            dcg_loop : do
+                !
+#ifdef MPI
+                call masterJMult( dsigma, mHat, JmHat )
+#else
+                call serialJMult( dsigma, mHat, JmHat, DCGiterControl%new_sigma )
+#endif
+                !
+                b = all_data
+                !
+                call linCombDataGroupTxArray( ONE, res, ONE, JmHat, b )
+                !
+                call normalizeDataGroupTxArray( b, 1 )
+                !
+                call CG_DS_standard( b, dx, dsigma, all_data, DCGiterControl%lambda, CGiter )
+                !
+                call normalizeWithDataGroupTxArray( 1, all_data, dx )
+                !
+#ifdef MPI
+                call masterJMult_T( dsigma, dx, mHat )
+#else
+                call serialJMult_T( dsigma, dx, mHat, DCGiterControl%new_sigma )
+#endif
+                !
+                call model_cov%multBy_Cm( mHat )
+                !
+                dsigma = sigma
+                !
+                call dsigma%linComb( ONE, ONE, mHat )
+                !
+                call Calc_FWD( DCGiterControl%lambda, all_data, dsigma, mHat, all_predicted_data, res, F, mNorm, rms )
+                !
+                call outputFiles_DCG( DCG_iter, all_predicted_data, res, dsigma, mHat )
+                !
+                !> Write / Print DCG.log
+                write( *, "( a20, i5, a16, f18.5)" ) "            DCG_iter", DCG_iter, ": Residual rms=", rms
+                !
+                write( ioInvLog, "( a25, i5 )" ) "Completed DCG iteration ", DCG_iter
+                write( ioInvLog, "( a10, a3, es12.5, a4, es12.5, a5, f18.5, a8, es12.5 )" ) "with:", " f=", f, " m2=", mNorm, " rms=", rms, " lambda=", DCGiterControl%lambda
+                !
+                !>
+                if( rms .LT. DCGiterControl%rms_tol .OR. DCG_iter .GE. DCGiterControl%max_iter ) then
+                    exit
+                end if
+                !
+                DCG_iter = DCG_iter + 1
+                !
+            end do dcg_loop
+            !
+            !call deallocateDataGroupTxArray( JmHat )
+            !call deallocateDataGroupTxArray( b )
+            !call deallocateDataGroupTxArray( res )
+            !
+            deallocate( mHat )
+            !
+            ! Verbose
+            write( *, * ) "     - Finish Inversion DCG, output files in [", trim( outdir_name ), "]"
+            !
+        else
+            !
+            write( *, * ) "Error opening [", trim( outdir_name )//"/DCG.log", "] in writeDataGroupTxArray!"
+            stop
+            !
+        endif
+        !
+    end subroutine DCGsolver
+    !
+    !>
+    subroutine Calc_FWD( lambda, all_data, dsigma, mHat, all_predicted_data, res, F, mNorm, rms )
+        implicit none
+        !
+        real( kind=prec ), intent( in ) :: lambda
+        type( DataGroupTx_t ), allocatable, dimension(:), intent( in ) :: all_data
+        class( ModelParameter_t ), allocatable, intent( in ) :: dsigma, mHat
+        type( DataGroupTx_t ), allocatable, dimension(:), intent( inout ) :: all_predicted_data
+        type( DataGroupTx_t ), allocatable, dimension(:), intent( out ) :: res
+        real( kind=prec ), intent( out ) :: F, mNorm
+        real( kind=prec ), intent( inout ) :: rms
+        !
+        type( DataGroupTx_t ), allocatable, dimension(:) :: Nres
+        real( kind=prec ) :: SS
+        integer :: Ndata, Nmodel
+        !
+        all_predicted_data = all_data
+        !
+#ifdef MPI
+        !
+        call masterForwardModelling( dsigma, all_predicted_data )
+        !
+#else
+        !
+        call serialForwardModeling( dsigma, all_predicted_data, DCGiterControl%new_sigma )
+        !
+#endif
+        !
+        res = all_data
+        !
+        call linCombDataGroupTxArray( ONE, all_data, MinusONE, all_predicted_data, res )
+        !
+        Nres = res
+        !
+        call normalizeDataGroupTxArray( Nres, 2 )
+        !
+        SS = dotProdDataGroupTxArray( res, Nres )
+        !
+        Ndata = countValuesGroupTxArray( res )
+        !
+        mNorm = mHat%dotProd( mHat )
+        !
+        Nmodel = mHat%countModel()
+        !
+        F = SS / Ndata + ( lambda * mNorm / Nmodel )
+        !
+        rms = sqrt( SS / Ndata )
+        !
+        !call deallocateDataGroupTxArray( Nres )
+        !
+    end subroutine Calc_FWD
+    !
+    !>
+    subroutine CG_DS_standard( b, x, dsigma, all_data, lambda, CGiter )
+        implicit none
+        !
+        type( DataGroupTx_t ), allocatable, dimension(:), intent( in ) :: b
+        type( DataGroupTx_t ), allocatable, dimension(:), intent( inout ) :: x
+        class( ModelParameter_t ), allocatable, intent( in ) :: dsigma
+        type( DataGroupTx_t ), allocatable, dimension(:), intent( inout ) :: all_data
+        real( kind=prec ), intent( in ) :: lambda
+        type( IterControl_t ), intent( inout ) :: CGiter
+        !
+        type( DataGroupTx_t ), allocatable, dimension(:) :: r, p, Ap
+        real( kind=prec ) :: alpha, beta, r_norm_pre, r_norm, b_norm
+        integer :: cg_iter
+        !
+        r = b
+        !
+        p = r
+        !
+        Ap = all_data
+        !
+        b_norm = dotProdDataGroupTxArray( b, b )
+        !
+        call zerosDataGroupTxArray( x )
+        !
+        r_norm = dotProdDataGroupTxArray( r, r )
+        !
+        cg_iter = 1
+        !
+        CGiter%r_err(cg_iter) = r_norm / b_norm
+        !
+        !> Write / Print DCG.log
+        write( ioInvLog, "(a18)" ) "Relative CG-error:"
+        write( ioInvLog, "( a9, i5, a10, es12.5, a10, es12.5 )" ) "CG-Iter= ", cg_iter, ", error = ", CGiter%r_err(cg_iter), " Lambda= ", lambda
+        !
+        write( *, "( a22, i5, a8, es12.5 )" ) "               CG_iter", cg_iter, ": Error=", CGiter%r_err(cg_iter)
+        !
+        cg_loop : do while ( CGiter%r_err(cg_iter) .GT. CGiter%tol .AND. cg_iter .LE. CGiter%max_it )
+            ! 
+            call MultA_DS( p, dsigma, all_data, lambda, Ap )
+            !
+            call setErrorBarDataGroupTxArray( r, .FALSE. )
+            call setErrorBarDataGroupTxArray( p, .FALSE. )
+            call setErrorBarDataGroupTxArray( x, .FALSE. )
+            call setErrorBarDataGroupTxArray( Ap, .FALSE. )
+            !
+            ! Compute alpha: alpha= (r^T r) / (p^T Ap)    
+            alpha = r_norm / dotProdDataGroupTxArray( p, Ap )
+            !
+            ! Compute new x: x = x + alpha*p
+            call scMultAddDataGroupTxArray( alpha, p, x )
+            !
+            ! Compute new r: r = r - alpha*Ap
+            call scMultAddDataGroupTxArray( -alpha, Ap, r ) 
+            !
+            r_norm_pre = r_norm
+            !
+            r_norm = dotProdDataGroupTxArray( r, r )
+            !
+            beta = r_norm / r_norm_pre
+            !
+            ! Compute new p: p = r + beta*p    
+            call linCombDataGroupTxArray( ONE, r, beta, p, p )
+            !
+            cg_iter = cg_iter + 1
+            !
+            CGiter%r_err(cg_iter) = r_norm / b_norm 
+            !
+            !> Write / Print DCG.log
+            write( ioInvLog, "( a9, i5, a10, es12.5, a10, es12.5 )" ) "CG-Iter= ", cg_iter, ", error = ", CGiter%r_err(cg_iter), " Lambda= ", lambda
+            !
+            write( *, "( a22, i5, a8, es12.5, a7, es12.5, a8, es12.5 )" ) "               CG_iter", cg_iter, ": Alpha=", alpha, ", Beta=", beta, ", Error=", CGiter%r_err( cg_iter )
+            !
+        enddo cg_loop
+        !
+        CGiter%n_iter = cg_iter
+        !
+    end subroutine CG_DS_standard
+    !
+    !> ????
+    subroutine MultA_DS( p, dsigma, all_data, lambda, Ap )
+        implicit none
+        !
+        type( DataGroupTx_t ), allocatable, dimension(:), intent( in ) :: p
+        class( ModelParameter_t ), allocatable, intent( in ) :: dsigma
+        type( DataGroupTx_t ), allocatable, dimension(:), intent( in ) :: all_data
+        real( kind=prec ), intent( in ) :: lambda
+        type( DataGroupTx_t ), allocatable, dimension(:), intent( inout ) :: Ap
+        !
+        class( ModelParameter_t ), allocatable :: JTp
+        type( DataGroupTx_t ), allocatable, dimension(:) :: lambdaP, p_temp
+        !
+        p_temp = p
+        !
+        lambdaP = p
+        !
+        call normalizeWithDataGroupTxArray( 1, all_data, p_temp )
+        !
+#ifdef MPI
+        call masterJMult_T( dsigma, p_temp, JTp )
+#else
+        call serialJMult_T( dsigma, p_temp, JTp, DCGiterControl%new_sigma )
+#endif
+        !
+        call model_cov%multBy_Cm( JTp )
+        !
+        Ap = all_data
+        !
+#ifdef MPI
+        call masterJMult( dsigma, JTp, Ap )
+#else
+        call serialJMult( dsigma, JTp, Ap, DCGiterControl%new_sigma )
+#endif
+        !
+        deallocate( JTp )
+        !
+        call normalizeWithDataGroupTxArray( 1, all_data, Ap )
+        !
+        call scMultDataGroupTxArray( lambda, p, lambdaP )
+        !
+        call setErrorBarDataGroupTxArray( lambdaP, .FALSE. )
+        !
+        call linCombDataGroupTxArray( ONE, Ap, ONE, lambdaP, Ap )
+        !
+    end subroutine MultA_DS
+    !
+    !> ????
+    subroutine outputFiles_DCG( DCG_iter, all_predicted_data, res, dsigma, mHat )
+        implicit none
+        !
+        integer, intent( in ) :: DCG_iter
+        type( DataGroupTx_t ), allocatable, dimension(:), intent( in ) :: all_predicted_data, res
+        class( ModelParameter_t ), intent( in ) :: dsigma, mHat
+        !
+        character(100) :: out_file_name
+        character(8) str_date
+        character(6) str_time
+        character(3) :: char3
+        !
+        write( char3, "(i3.3)" ) DCG_iter
+        !
+        !> Write predicted data for this DCG iteration
+        out_file_name = trim( outdir_name )//"/PredictedData_DCG_"//char3//".dat"
+        !
+        call writeDataGroupTxArray( all_predicted_data, trim( out_file_name ) )
+        !
+        !> Write residual data for this DCG iteration
+        out_file_name = trim( outdir_name )//"/ResidualData_DCG_"//char3//".dat"
+        !
+        call writeDataGroupTxArray( res, trim( out_file_name ) )
+        !
+        !> Write model for this DCG iteration
+        out_file_name = trim( outdir_name )//"/SigmaModel_DCG_"//char3//".rho"
+        !
+        call dsigma%write( trim( out_file_name ) )
+        !
+        !> Write perturbation model for this DCG iteration
+        out_file_name = trim( outdir_name )//"/PerturbationModel_DCG_"//char3//".rho"
+        !
+        call mHat%write( trim( out_file_name ) )
+        !
+    end subroutine outputFiles_DCG
     !
     !>
     subroutine set_NLCGiterControl( NLCGiterControl )
@@ -78,6 +579,8 @@ contains
         NLCGiterControl%gamma = 0.99
         ! model and data output file name
         NLCGiterControl%fname = 'Modular'
+        !
+        NLCGiterControl%new_sigma = .TRUE.
         !
     end subroutine set_NLCGiterControl
     !
@@ -121,7 +624,7 @@ contains
         real( kind=prec ) :: g_dot_gPrev,g_dot_h
         real( kind=prec ) :: gPrev_dot_gPrev 
         real( kind=prec ) :: h_dot_g, h_dot_gPrev
-        integer :: iter, nCG, nLS, nfunc
+        integer :: iter, nCG, nLS, nfunc, ios
         type( EAllMTx_t ) :: e_all
         !
         !>
@@ -137,220 +640,232 @@ contains
         !
         startdm = NLCGiterControl%startdm
         !
-        write( *, * ) "lambda, startdm: ", NLCGiterControl%lambda, startdm
+        !>
+        open( unit = ioInvLog, file = trim( outdir_name )//"/DCG.log", status="unknown", position="append", iostat=ios )
         !
-        ! starting model contains the rough deviations from the prior
-        allocate( mHat, source = m )
-        !
-        !  compute the penalty functional and predicted data
-        e_all%SolnIndex = 0
-        !
-        call func( NLCGiterControl%lambda, d, m0, mHat, r_value, mNorm, dHat, e_all, rms )
-        !
-        nfunc = 1
-        !
-        ! output (smoothed) initial model and responses for later reference
-        m = model_cov%multBy_CmSqrt( mHat )
-        !
-        call m%linComb( ONE, ONE, m0 )
-        !
-        !> compute gradient of the full penalty functional
-        call gradient( NLCGiterControl%lambda, d, m0, mHat, grad, dHat, e_all )
-        !
-        gnorm = sqrt( grad%dotProd( grad ) )
-        !
-        !write( *, * ) "gnorm: ", gnorm
-        !stop
-        !
-        if ( gnorm < TOL6 ) then
-            stop "Error: NLCGsolver: Problem with your gradient computations: first gradient is zero"
-        else
+        if( ios == 0 ) then
             !
-            alpha = startdm / gnorm
+            write( *, * ) "lambda, startdm: ", NLCGiterControl%lambda, startdm
             !
-            !write( *, * ) "alpha: ", alpha
-            !stop
+            ! starting model contains the rough deviations from the prior
+            allocate( mHat, source = m )
             !
-        endif
-        !
-        !> initialize CG: g = - grad; h = g
-        nCG = 0
-        !
-        iter = 0
-        !
-        allocate( g, source = grad )
-        !
-        call g%linComb( MinusONE, R_ZERO, grad )
-        !
-        allocate( h, source = g )
-        !
-        do
-            !  test for convergence ...
-            if( rms .LT. NLCGiterControl%rms_tol .OR. iter .GE. NLCGiterControl%max_iter ) then
-                exit
-            endif
+            !  compute the penalty functional and predicted data
+            e_all%SolnIndex = 0
             !
-            iter = iter + 1
+            call func( NLCGiterControl%lambda, d, m0, mHat, r_value, mNorm, dHat, e_all, rms )
             !
-            ! save the values of the functional and the directional derivative
-            rmsPrev = rms
+            nfunc = 1
             !
-            valuePrev = r_value
-            !
-            grad_dot_h = grad%dotProd( h )
-
-            !write( *, * ) "grad_dot_h: ", grad_dot_h
-            !stop
-
-            ! at the end of line search, set mHat to the new r_value
-            ! mHat = mHat + alpha*h  and evaluate gradient at new mHat
-            ! data and solnVector only needed for output
-            write( *, * ) "Starting line search..."
-            !
-            select case ( flavor )
-                !
-                case ( 'Cubic' )
-                    call lineSearchCubic( NLCGiterControl%lambda, d, m0, h, alpha, mHat, r_value, grad, rms, nLS, dHat, e_all )
-                    !call deall(e_all)
-                case ('Quadratic')
-                    !call lineSearchQuadratic(NLCGiterControl%lambda,d,m0,h,alpha,mHat,r_value,grad,rms,nLS,dHat,e_all)
-                    !call deall(e_all)
-                case ('Wolfe')
-                    !call lineSearchWolfe(NLCGiterControl%lambda,d,m0,h,alpha,mHat,r_value,grad,rms,nLS,dHat,e_all)
-                    !call deall(e_all)
-                case default
-                    stop "Error: NLCGsolver: Unknown line search requested in NLCG"
-                !
-            end select
-            !
-            nfunc = nfunc + nLS
-            !
-            if( allocated( gPrev ) ) then
-                gPrev = g
-            else
-                allocate( gPrev, source = g )
-            endif
-            !
-            g = grad
-            !
-            call g%linComb( MinusONE, R_ZERO, grad )
-            !
-            ! compute the starting step for the next line search
-            alpha = 2 * ( r_value - valuePrev ) / grad_dot_h
-            !
-            ! adjust the starting step to ensure super linear convergence properties
-            alpha = ( ONE + 0.01 ) * alpha
-            !
-            write( *, * ) "Completed NLCG iteration ", iter
-            !
-            Nmodel = mHat%countModel()
-            !
-            mNorm = mHat%dotProd( mHat ) / Nmodel
-            !
-            write( *, * ) "     lambda, alpha, r_value, mNorm, rms: ", NLCGiterControl%lambda, alpha, r_value, mNorm, rms
-            !
-            ! write out the intermediate model solution and responses
+            ! output (smoothed) initial model and responses for later reference
             m = model_cov%multBy_CmSqrt( mHat )
             !
             call m%linComb( ONE, ONE, m0 )
             !
-            res = d
+            !> compute gradient of the full penalty functional
+            call gradient( NLCGiterControl%lambda, d, m0, mHat, grad, dHat, e_all )
             !
-            call linCombDataGroupTxArray( ONE, d, MinusONE, dHat, res )
+            gnorm = sqrt( grad%dotProd( grad ) )
             !
-            !> if alpha is too small, we are not making progress: update lambda
-            if( abs( rmsPrev - rms ) < NLCGiterControl%fdiffTol ) then
+            !write( *, * ) "gnorm: ", gnorm
+            !stop
+            !
+            if ( gnorm < TOL6 ) then
+                stop "Error: NLCGsolver: Problem with your gradient computations: first gradient is zero"
+            else
                 !
-                ! update lambda, penalty functional and gradient
-                call update_damping_parameter( NLCGiterControl%lambda, mHat, r_value, grad )
+                alpha = startdm / gnorm
                 !
-                ! check that lambda is still at a reasonable r_value
-                if( NLCGiterControl%lambda < NLCGiterControl%lambdaTol ) then
-                    stop "Error: NLCGsolver: Unable to get out of a local minimum."
+                !write( *, * ) "alpha: ", alpha
+                !stop
+                !
+            endif
+            !
+            !> initialize CG: g = - grad; h = g
+            nCG = 0
+            !
+            iter = 0
+            !
+            allocate( g, source = grad )
+            !
+            call g%linComb( MinusONE, R_ZERO, grad )
+            !
+            allocate( h, source = g )
+            !
+            do
+                !  test for convergence ...
+                if( rms .LT. NLCGiterControl%rms_tol .OR. iter .GE. NLCGiterControl%max_iter ) then
                     exit
                 endif
                 !
-                !> update alpha
-                gnorm = sqrt( grad%dotProd( grad ) )
+                iter = iter + 1
                 !
-                write( *, * ) "gnorm: ", gnorm
+                ! save the values of the functional and the directional derivative
+                rmsPrev = rms
                 !
-                !> alpha = min(NLCGiterControl%alpha_1,startdm/gnorm)
-                alpha = min( ONE, startdm ) / gnorm
+                valuePrev = r_value
                 !
-                write( *, * ) "alpha: ", alpha
+                grad_dot_h = grad%dotProd( h )
+
+                !write( *, * ) "grad_dot_h: ", grad_dot_h
+                !stop
+
+                ! at the end of line search, set mHat to the new r_value
+                ! mHat = mHat + alpha*h  and evaluate gradient at new mHat
+                ! data and solnVector only needed for output
+                write( *, * ) "Starting line search..."
                 !
-                !> g = - grad
+                select case ( flavor )
+                    !
+                    case ( 'Cubic' )
+                        call lineSearchCubic( NLCGiterControl%lambda, d, m0, h, alpha, mHat, r_value, grad, rms, nLS, dHat, e_all )
+                        !call deall(e_all)
+                    case ('Quadratic')
+                        !call lineSearchQuadratic(NLCGiterControl%lambda,d,m0,h,alpha,mHat,r_value,grad,rms,nLS,dHat,e_all)
+                        !call deall(e_all)
+                    case ('Wolfe')
+                        !call lineSearchWolfe(NLCGiterControl%lambda,d,m0,h,alpha,mHat,r_value,grad,rms,nLS,dHat,e_all)
+                        !call deall(e_all)
+                    case default
+                        stop "Error: NLCGsolver: Unknown line search requested in NLCG"
+                    !
+                end select
+                !
+                nfunc = nfunc + nLS
+                !
+                if( allocated( gPrev ) ) then
+                    gPrev = g
+                else
+                    allocate( gPrev, source = g )
+                endif
+                !
                 g = grad
                 !
                 call g%linComb( MinusONE, R_ZERO, grad )
                 !
-                !> restart
-                write( *, * ) "Restarting NLCG with the damping parameter updated"
-                write( *, * ) "lambda, alpha, r_value, mNorm, rms: ", NLCGiterControl%lambda, alpha, r_value, mNorm, rms
+                ! compute the starting step for the next line search
+                alpha = 2 * ( r_value - valuePrev ) / grad_dot_h
+                !
+                ! adjust the starting step to ensure super linear convergence properties
+                alpha = ( ONE + 0.01 ) * alpha
+                !
+                write( *, * ) "Completed NLCG iteration ", iter
+                !
+                Nmodel = mHat%countModel()
+                !
+                mNorm = mHat%dotProd( mHat ) / Nmodel
+                !
+                write( *, * ) "     lambda, alpha, r_value, mNorm, rms: ", NLCGiterControl%lambda, alpha, r_value, mNorm, rms
+                !
+                ! write out the intermediate model solution and responses
+                m = model_cov%multBy_CmSqrt( mHat )
+                !
+                call m%linComb( ONE, ONE, m0 )
+                !
+                res = d
+                !
+                call linCombDataGroupTxArray( ONE, d, MinusONE, dHat, res )
+                !
+                !> if alpha is too small, we are not making progress: update lambda
+                if( abs( rmsPrev - rms ) < NLCGiterControl%fdiffTol ) then
+                    !
+                    ! update lambda, penalty functional and gradient
+                    call update_damping_parameter( NLCGiterControl%lambda, mHat, r_value, grad )
+                    !
+                    ! check that lambda is still at a reasonable r_value
+                    if( NLCGiterControl%lambda < NLCGiterControl%lambdaTol ) then
+                        stop "Error: NLCGsolver: Unable to get out of a local minimum."
+                        exit
+                    endif
+                    !
+                    !> update alpha
+                    gnorm = sqrt( grad%dotProd( grad ) )
+                    !
+                    write( *, * ) "gnorm: ", gnorm
+                    !
+                    !> alpha = min(NLCGiterControl%alpha_1,startdm/gnorm)
+                    alpha = min( ONE, startdm ) / gnorm
+                    !
+                    write( *, * ) "alpha: ", alpha
+                    !
+                    !> g = - grad
+                    g = grad
+                    !
+                    call g%linComb( MinusONE, R_ZERO, grad )
+                    !
+                    !> restart
+                    write( *, * ) "Restarting NLCG with the damping parameter updated"
+                    write( *, * ) "lambda, alpha, r_value, mNorm, rms: ", NLCGiterControl%lambda, alpha, r_value, mNorm, rms
+                    !
+                    h = g
+                    !
+                    nCG = 0
+                    !
+                    cycle !????
+                    !
+                endif
+                !
+                g_dot_g = g%dotProd( g )
+                !
+                g_dot_gPrev = g%dotProd( gPrev )
+                !
+                gPrev_dot_gPrev = gPrev%dotProd( gPrev )
+                !
+                g_dot_h = g%dotProd( h )
+                !
+                !> Polak-Ribiere variant
+                beta = ( g_dot_g - g_dot_gPrev ) / gPrev_dot_gPrev
+                !
+                !> restart CG if the orthogonality conditions fail. Using the fact that
+                !> h_{i+1} = g_{i+1} + beta * h_i. In order for the next directional
+                !> derivative = -g_{i+1}.dot.h_{i+1} to be negative, the condition
+                !> g_{i+1}.dot.(g_{i+1}+beta*h_i) > 0 must hold. Alternatively, books
+                !> say we can take beta > 0 (didn't work as well)
+                !> if ((beta.lt.R_ZERO).or.(g_dot_g + beta*g_dot_h .le. R_ZERO)&
+                !>    .and.(nCG .ge. NLCGiterControl%nCGmax)) then  !PR+
+                if( g_dot_g + beta * g_dot_h .LE. R_ZERO .AND. nCG .GE. NLCGiterControl%nCGmax ) then  !PR
+                    !
+                    ! restart
+                    write( *, * ) "Restarting NLCG to restore orthogonality"
+                    !
+                    nCG = 0
+                    !
+                    beta = R_ZERO
+                    !
+                else
+                    !
+                    nCG = nCG + 1
+                    !
+                endif
                 !
                 h = g
                 !
-                nCG = 0
+                call h%linComb( ONE, beta, h )
                 !
-                cycle !????
-                !
-            endif
+            end do
             !
-            g_dot_g = g%dotProd( g )
+            !> multiply by C^{1/2} and add m_0
+            m = model_cov%multBy_CmSqrt( mHat )
             !
-            g_dot_gPrev = g%dotProd( gPrev )
+            call m%linComb( ONE, ONE, m0 )
             !
-            gPrev_dot_gPrev = gPrev%dotProd( gPrev )
+            d = dHat
             !
-            g_dot_h = g%dotProd( h )
+            ! cleaning up
+            !call deallocateDataGroupTxArray( dHat )
+            !call deallocateDataGroupTxArray( res )
             !
-            !> Polak-Ribiere variant
-            beta = ( g_dot_g - g_dot_gPrev ) / gPrev_dot_gPrev
+            ! Verbose
+            write( *, * ) "     - Finish Inversion NLCG, output files in [", trim( outdir_name ), "]"
             !
-            !> restart CG if the orthogonality conditions fail. Using the fact that
-            !> h_{i+1} = g_{i+1} + beta * h_i. In order for the next directional
-            !> derivative = -g_{i+1}.dot.h_{i+1} to be negative, the condition
-            !> g_{i+1}.dot.(g_{i+1}+beta*h_i) > 0 must hold. Alternatively, books
-            !> say we can take beta > 0 (didn't work as well)
-            !> if ((beta.lt.R_ZERO).or.(g_dot_g + beta*g_dot_h .le. R_ZERO)&
-            !>    .and.(nCG .ge. NLCGiterControl%nCGmax)) then  !PR+
-            if( g_dot_g + beta * g_dot_h .LE. R_ZERO .AND. nCG .GE. NLCGiterControl%nCGmax ) then  !PR
-                !
-                ! restart
-                write( *, * ) "Restarting NLCG to restore orthogonality"
-                !
-                nCG = 0
-                !
-                beta = R_ZERO
-                !
-            else
-                !
-                nCG = nCG + 1
-                !
-            endif
+            deallocate( mHat, grad, g, h, gPrev )
             !
-            h = g
+        else
             !
-            call h%linComb( ONE, beta, h )
+            write( *, * ) "Error opening [", trim( outdir_name )//"/DCG.log", "] in writeDataGroupTxArray!"
+            stop
             !
-        end do
-        !
-        !> multiply by C^{1/2} and add m_0
-        m = model_cov%multBy_CmSqrt( mHat )
-        !
-        call m%linComb( ONE, ONE, m0 )
-        !
-        d = dHat
-        !
-        ! cleaning up
-        !call deallocateDataGroupTxArray( dHat )
-        !call deallocateDataGroupTxArray( res )
-        !
-        ! Verbose
-        write( *, * ) "     - Finish Inversion NLCG, output files in [", trim( outdir_name ), "]"
-        !
-        deallocate( mHat, grad, g, h, gPrev )
+        endif
         !
     end subroutine NLCGsolver
     !
@@ -402,7 +917,7 @@ contains
 #ifdef MPI
         call masterJMult_T( m, res, JTd )
 #else
-        call JMult_T( m, res, JTd, NLCGiterControl%new_sigma )
+        call serialJMult_T( m, res, JTd, NLCGiterControl%new_sigma )
 #endif
         !
         allocate( CmJTd, source = model_cov%multBy_CmSqrt( JTd ) )
@@ -430,6 +945,7 @@ contains
     !> Compute the full penalty functional F
     !> Also output the predicted data and the EM solution
     !> that can be used for evaluating the gradient
+    !
     subroutine func( lambda, d, m0, mHat, F, mNorm, dHat, e_all, rms )
         implicit none
         !
@@ -461,9 +977,7 @@ contains
         !
 #else
         !
-        call serialForwardModeling( m, dHat, e_all )
-        !
-        NLCGiterControl%new_sigma = .TRUE.
+        call serialForwardModeling( m, dHat, NLCGiterControl%new_sigma, e_all )
         !
 #endif
         !
@@ -507,6 +1021,7 @@ contains
     !> Divides by the data covariance C_d, which is a diagonal
     !> operator. Divides by the variances (squared error bars)
     !> and scales by the number of data (degrees of freedom).
+    !
     subroutine CdInvMult( d_in, d_out )
         implicit none
         !
@@ -610,6 +1125,7 @@ contains
     !> like the Renormalised Steepest Descent (RSD). See the dynamical
     !> systems in optimisation research (Pronzato et al [2000, 2001]).
     !> To the best of my knowledge, it is not useful for NLCG.
+    !
     subroutine lineSearchCubic( lambda, d, m0, h, alpha, mHat, f, grad, &
     rms, niter, dHat, e_all, gamma )
         implicit none
@@ -917,6 +1433,7 @@ contains
     end subroutine lineSearchCubic
     !
     !> ????
+    !
     subroutine outputFiles_NLCG( NLCG_iter, all_predicted_data, res, m, mHat )
         implicit none
         !
@@ -953,5 +1470,5 @@ contains
         !
     end subroutine outputFiles_NLCG
     !
-end module InversionNLCG
+end module Inversion
 !
