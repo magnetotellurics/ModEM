@@ -25,8 +25,6 @@ module Inversion
             !
             procedure( interface_solve_inversion ), deferred, public :: solve
             !
-            procedure( interface_output_files_inversion ), deferred, public :: outputFiles
-            !
     end type Inversion_t
     !
     abstract interface
@@ -36,7 +34,7 @@ module Inversion
             import :: Inversion_t, DataGroupTx_t, ModelParameter_t
             !
             class( Inversion_t ), intent( inout ) :: self
-            type( DataGroupTx_t ), allocatable, dimension(:), intent( in ) :: all_data
+            type( DataGroupTx_t ), allocatable, dimension(:), intent( inout ) :: all_data
             class( ModelParameter_t ), allocatable, intent( in ) :: sigma
             class( ModelParameter_t ), allocatable, intent( inout ) :: dsigma
             !
@@ -46,7 +44,7 @@ module Inversion
         subroutine interface_output_files_inversion( self, iter, all_predicted_data, res, dsigma, mHat )
             import :: Inversion_t, DataGroupTx_t, ModelParameter_t
             !
-            class( Inversion_t ), intent( inout ) :: self
+            class( Inversion_t ), intent( in ) :: self
             integer, intent( in ) :: iter
             type( DataGroupTx_t ), allocatable, dimension(:), intent( in ) :: all_predicted_data, res
             class( ModelParameter_t ), intent( in ) :: dsigma, mHat

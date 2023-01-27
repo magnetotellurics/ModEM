@@ -176,19 +176,19 @@ contains
         do i = 1, size( data_tx_array )
             !
             do j = 1, size( data_tx_array(i)%data )
-				!
-				do k = 1, data_tx_array(i)%data(j)%n_comp
-					!
-					if( data_tx_array(i)%data(j)%imaginaries(k) /= R_ZERO ) then
-						!
-						counter = counter + 1
-						!
-					endif
-					!
-					counter = counter + 1
-					!
-				enddo
-				!
+                !
+                do k = 1, data_tx_array(i)%data(j)%n_comp
+                    !
+                    if( data_tx_array(i)%data(j)%imaginaries(k) /= R_ZERO ) then
+                        !
+                        counter = counter + 1
+                        !
+                    endif
+                    !
+                    counter = counter + 1
+                    !
+                enddo
+                !
             enddo
             !
         enddo

@@ -15,8 +15,6 @@ module InversionDCG
             !
             procedure, public :: solve => solveInversionDCG
             !
-            procedure, public :: outputFiles => outputFilesInversionDCG
-            !
             procedure, private :: Calc_FWD, CG_DS_standard, MultA_DS
             !
     end type InversionDCG_t
@@ -25,6 +23,8 @@ module InversionDCG
         module procedure InversionDCG_ctor
     end interface InversionDCG_t
     !
+	private :: outputFilesInversionDCG
+	!
 contains
     !
     !> No function briefing
@@ -65,7 +65,7 @@ contains
         implicit none
         !
         class( InversionDCG_t ), intent( inout ) :: self
-        type( DataGroupTx_t ), allocatable, dimension(:), intent( in ) :: all_data
+        type( DataGroupTx_t ), allocatable, dimension(:), intent( inout ) :: all_data
         class( ModelParameter_t ), allocatable, intent( in ) :: sigma
         class( ModelParameter_t ), allocatable, intent( inout ) :: dsigma
         !
@@ -143,7 +143,7 @@ contains
                 !
                 call self%Calc_FWD( all_data, dsigma, mHat, all_predicted_data, res, F, mNorm, rms )
                 !
-                call self%outputFiles( DCG_iter, all_predicted_data, res, dsigma, mHat )
+                call outputFilesInversionDCG( DCG_iter, all_predicted_data, res, dsigma, mHat )
                 !
                 !> Write / Print DCG.log
                 write( *, "( a20, i5, a16, f18.5)" ) "            DCG_iter", DCG_iter, ": Residual rms=", rms
@@ -356,10 +356,9 @@ contains
     end subroutine MultA_DS
     !
     !> ????
-    subroutine outputFilesInversionDCG( self, iter, all_predicted_data, res, dsigma, mHat )
+    subroutine outputFilesInversionDCG( iter, all_predicted_data, res, dsigma, mHat )
         implicit none
         !
-        class( InversionDCG_t ), intent( inout ) :: self
         integer, intent( in ) :: iter
         type( DataGroupTx_t ), allocatable, dimension(:), intent( in ) :: all_predicted_data, res
         class( ModelParameter_t ), intent( in ) :: dsigma, mHat

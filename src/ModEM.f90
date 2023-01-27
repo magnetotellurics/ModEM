@@ -28,7 +28,7 @@ program ModEM
 #else
     !
     use InversionDCG
-    !use InversionNLCG
+    use InversionNLCG
     !
     call startProgram()
     !
@@ -148,8 +148,7 @@ contains
                 !
             case( NLCG )
                 !
-                !call NLCGsolver( all_measured_data, sigma, dsigma )
-                stop "Implementing NLCG Inversion"
+                allocate( inversion, source = InversionNLCG_t() )
                 !
             case default
                 !
