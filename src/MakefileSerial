@@ -1,7 +1,7 @@
 # Makefile suited for building the ModEM program
 # Generated using: ./fmkmf.pl [OPTIONS] ModEM.f90 > Makefile
 # with command line options
-# -p .:1D:2D:CSEM:DataIO:DataSpace:Fields:ForwardSolver:Grid:ModelOperator:ModelParameter:Receivers:Solver:Source:Transmitters:Utils
+# -p .:1D:2D:CSEM:DataIO:DataSpace:Inversion:Fields:ForwardSolver:Grid:ModelOperator:ModelParameter:Receivers:Solver:Source:Transmitters:Utils
 # -f90 gfortran (compiler)
 # -opt -g -ffree-line-length-none -Wno-all (compiler optimisation)
 # -lp /usr/lib64 (linking options: path to libraries)
@@ -53,7 +53,7 @@ LIBS_PATH = -L/usr/lib64
 LIBS = -llapack -lblas
 
 # -------------------End-macro-Defs---------------------------
-OBJ = $(OBJDIR)/Constants.o $(OBJDIR)/String.o $(OBJDIR)/Grid1D.o $(OBJDIR)/Grid2D.o $(OBJDIR)/Grid.o $(OBJDIR)/Field.o $(OBJDIR)/Scalar.o $(OBJDIR)/Vector.o $(OBJDIR)/MetricElements.o $(OBJDIR)/ModelParameter1D.o $(OBJDIR)/Esoln2DTM.o $(OBJDIR)/ModelParameter2D.o $(OBJDIR)/ModelParameter.o $(OBJDIR)/ModelOperator.o $(OBJDIR)/Source.o $(OBJDIR)/PreConditioner.o $(OBJDIR)/Solver.o $(OBJDIR)/ForwardSolver.o $(OBJDIR)/ModEMControlFile.o $(OBJDIR)/Grid3D_SG.o $(OBJDIR)/FileUnits.o $(OBJDIR)/rScalar3D_SG.o $(OBJDIR)/MatUtils.o $(OBJDIR)/cScalar3D_SG.o $(OBJDIR)/rVector3D_SG.o $(OBJDIR)/ModelParameterCell_SG.o $(OBJDIR)/cVector3D_SG.o $(OBJDIR)/MetricElements_CSG.o $(OBJDIR)/ModelOperator_MF.o $(OBJDIR)/ModelCovariance.o $(OBJDIR)/PreConditioner_MF_DC.o $(OBJDIR)/Solver_PCG.o $(OBJDIR)/DivergenceCorrection.o $(OBJDIR)/PreConditioner_MF_CC.o $(OBJDIR)/Solver_QMR.o $(OBJDIR)/ForwardSolverIT_DC.o $(OBJDIR)/Forward1D.o $(OBJDIR)/SourceMT_1D.o $(OBJDIR)/Forward2D.o $(OBJDIR)/SourceMT_2D.o $(OBJDIR)/FilterModules.o $(OBJDIR)/Dipole1D.o $(OBJDIR)/SourceCSEM_Dipole1D.o $(OBJDIR)/SourceInteriorForce.o $(OBJDIR)/DataGroup.o $(OBJDIR)/Transmitter.o $(OBJDIR)/cVectorSparse3D_SG.o $(OBJDIR)/Receiver.o $(OBJDIR)/ReceiverFullImpedance.o $(OBJDIR)/ReceiverFullVerticalMagnetic.o $(OBJDIR)/ReceiverOffDiagonalImpedance.o $(OBJDIR)/ReceiverSingleField.o $(OBJDIR)/DataGroupTx.o $(OBJDIR)/ReceiverArray.o $(OBJDIR)/TransmitterMT.o $(OBJDIR)/TransmitterCSEM.o $(OBJDIR)/TransmitterArray.o $(OBJDIR)/DataGroupTxArray.o $(OBJDIR)/ModelReader.o $(OBJDIR)/ModelReader_Weerachai.o $(OBJDIR)/DataEntry.o $(OBJDIR)/DataEntryArray.o $(OBJDIR)/DataEntryMT.o $(OBJDIR)/DataEntryMT_REF.o $(OBJDIR)/DataEntryCSEM.o $(OBJDIR)/DataFile.o $(OBJDIR)/DataFileStandard.o $(OBJDIR)/GlobalVariables.o $(OBJDIR)/ForwardModeling.o $(OBJDIR)/Sensitivity.o $(OBJDIR)/Inversion.o $(OBJDIR)/ModEM.o 
+OBJ = $(OBJDIR)/Constants.o $(OBJDIR)/String.o $(OBJDIR)/Grid1D.o $(OBJDIR)/Grid2D.o $(OBJDIR)/Grid.o $(OBJDIR)/Field.o $(OBJDIR)/Scalar.o $(OBJDIR)/Vector.o $(OBJDIR)/MetricElements.o $(OBJDIR)/ModelParameter1D.o $(OBJDIR)/Esoln2DTM.o $(OBJDIR)/ModelParameter2D.o $(OBJDIR)/ModelParameter.o $(OBJDIR)/ModelOperator.o $(OBJDIR)/Source.o $(OBJDIR)/PreConditioner.o $(OBJDIR)/Solver.o $(OBJDIR)/ForwardSolver.o $(OBJDIR)/ModEMControlFile.o $(OBJDIR)/DataGroup.o $(OBJDIR)/DataGroupTx.o $(OBJDIR)/FileUnits.o $(OBJDIR)/MatUtils.o $(OBJDIR)/Grid3D_SG.o $(OBJDIR)/rScalar3D_SG.o $(OBJDIR)/cScalar3D_SG.o $(OBJDIR)/rVector3D_SG.o $(OBJDIR)/cVector3D_SG.o $(OBJDIR)/Forward1D.o $(OBJDIR)/SourceInteriorForce.o $(OBJDIR)/Transmitter.o $(OBJDIR)/cVectorSparse3D_SG.o $(OBJDIR)/Receiver.o $(OBJDIR)/ReceiverArray.o $(OBJDIR)/TransmitterMT.o $(OBJDIR)/TransmitterCSEM.o $(OBJDIR)/TransmitterArray.o $(OBJDIR)/DataGroupTxArray.o $(OBJDIR)/ModelParameterCell_SG.o $(OBJDIR)/MetricElements_CSG.o $(OBJDIR)/ModelOperator_MF.o $(OBJDIR)/ModelCovariance.o $(OBJDIR)/PreConditioner_MF_DC.o $(OBJDIR)/Solver_PCG.o $(OBJDIR)/DivergenceCorrection.o $(OBJDIR)/PreConditioner_MF_CC.o $(OBJDIR)/Solver_QMR.o $(OBJDIR)/ForwardSolverIT_DC.o $(OBJDIR)/SourceMT_1D.o $(OBJDIR)/Forward2D.o $(OBJDIR)/SourceMT_2D.o $(OBJDIR)/FilterModules.o $(OBJDIR)/Dipole1D.o $(OBJDIR)/SourceCSEM_Dipole1D.o $(OBJDIR)/ReceiverFullImpedance.o $(OBJDIR)/ReceiverFullVerticalMagnetic.o $(OBJDIR)/ReceiverOffDiagonalImpedance.o $(OBJDIR)/ReceiverSingleField.o $(OBJDIR)/ModelReader.o $(OBJDIR)/ModelReader_Weerachai.o $(OBJDIR)/DataEntry.o $(OBJDIR)/DataEntryArray.o $(OBJDIR)/DataEntryMT.o $(OBJDIR)/DataEntryMT_REF.o $(OBJDIR)/DataEntryCSEM.o $(OBJDIR)/DataFile.o $(OBJDIR)/DataFileStandard.o $(OBJDIR)/GlobalVariables.o $(OBJDIR)/ForwardModeling.o $(OBJDIR)/Sensitivity.o $(OBJDIR)/Inversion.o $(OBJDIR)/InversionDCG.o $(OBJDIR)/ModEM.o 
 
 
 all: ModEM 
@@ -124,17 +124,23 @@ $(OBJDIR)/ForwardSolver.o:ForwardSolver/ForwardSolver.f90 $(OBJDIR)/Constants.o 
 $(OBJDIR)/ModEMControlFile.o:./ModEMControlFile.f90 $(OBJDIR)/Constants.o $(OBJDIR)/String.o $(OBJDIR)/Grid.o $(OBJDIR)/ForwardSolver.o $(OBJDIR)/Solver.o $(OBJDIR)/Source.o 
 	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) ./ModEMControlFile.f90 -o $(OBJDIR)/ModEMControlFile.o
 
-$(OBJDIR)/Grid3D_SG.o:Grid/Grid3D_SG.f90 $(OBJDIR)/Grid.o 
-	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) Grid/Grid3D_SG.f90 -o $(OBJDIR)/Grid3D_SG.o
+$(OBJDIR)/DataGroup.o:DataSpace/DataGroup.f90 $(OBJDIR)/String.o $(OBJDIR)/Constants.o 
+	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) DataSpace/DataGroup.f90 -o $(OBJDIR)/DataGroup.o
+
+$(OBJDIR)/DataGroupTx.o:DataSpace/DataGroupTx.f90 $(OBJDIR)/DataGroup.o 
+	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) DataSpace/DataGroupTx.f90 -o $(OBJDIR)/DataGroupTx.o
 
 $(OBJDIR)/FileUnits.o:Utils/FileUnits.f90  
 	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) Utils/FileUnits.f90 -o $(OBJDIR)/FileUnits.o
 
-$(OBJDIR)/rScalar3D_SG.o:Fields/rScalar3D_SG.f90 $(OBJDIR)/Scalar.o $(OBJDIR)/Grid3D_SG.o 
-	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) Fields/rScalar3D_SG.f90 -o $(OBJDIR)/rScalar3D_SG.o
-
 $(OBJDIR)/MatUtils.o:Utils/MatUtils.f90 $(OBJDIR)/Constants.o 
 	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) Utils/MatUtils.f90 -o $(OBJDIR)/MatUtils.o
+
+$(OBJDIR)/Grid3D_SG.o:Grid/Grid3D_SG.f90 $(OBJDIR)/Grid.o 
+	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) Grid/Grid3D_SG.f90 -o $(OBJDIR)/Grid3D_SG.o
+
+$(OBJDIR)/rScalar3D_SG.o:Fields/rScalar3D_SG.f90 $(OBJDIR)/Scalar.o $(OBJDIR)/Grid3D_SG.o 
+	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) Fields/rScalar3D_SG.f90 -o $(OBJDIR)/rScalar3D_SG.o
 
 $(OBJDIR)/cScalar3D_SG.o:Fields/cScalar3D_SG.f90 $(OBJDIR)/rScalar3D_SG.o 
 	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) Fields/cScalar3D_SG.f90 -o $(OBJDIR)/cScalar3D_SG.o
@@ -142,11 +148,41 @@ $(OBJDIR)/cScalar3D_SG.o:Fields/cScalar3D_SG.f90 $(OBJDIR)/rScalar3D_SG.o
 $(OBJDIR)/rVector3D_SG.o:Fields/rVector3D_SG.f90 $(OBJDIR)/MatUtils.o $(OBJDIR)/Vector.o $(OBJDIR)/cScalar3D_SG.o 
 	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) Fields/rVector3D_SG.f90 -o $(OBJDIR)/rVector3D_SG.o
 
-$(OBJDIR)/ModelParameterCell_SG.o:ModelParameter/ModelParameterCell_SG.f90 $(OBJDIR)/Constants.o $(OBJDIR)/FileUnits.o $(OBJDIR)/rScalar3D_SG.o $(OBJDIR)/rVector3D_SG.o $(OBJDIR)/ModelParameter.o $(OBJDIR)/Grid3D_SG.o $(OBJDIR)/ModelParameter1D.o $(OBJDIR)/ModelParameter2D.o 
-	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) ModelParameter/ModelParameterCell_SG.f90 -o $(OBJDIR)/ModelParameterCell_SG.o
-
 $(OBJDIR)/cVector3D_SG.o:Fields/cVector3D_SG.f90 $(OBJDIR)/Vector.o $(OBJDIR)/rVector3D_SG.o 
 	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) Fields/cVector3D_SG.f90 -o $(OBJDIR)/cVector3D_SG.o
+
+$(OBJDIR)/Forward1D.o:1D/Forward1D.f90 $(OBJDIR)/Constants.o $(OBJDIR)/Grid1D.o $(OBJDIR)/ModelParameter1D.o 
+	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) 1D/Forward1D.f90 -o $(OBJDIR)/Forward1D.o
+
+$(OBJDIR)/SourceInteriorForce.o:Source/SourceInteriorForce.f90 $(OBJDIR)/Constants.o $(OBJDIR)/cVector3D_SG.o $(OBJDIR)/Source.o $(OBJDIR)/ModelOperator.o $(OBJDIR)/ModelParameter1D.o $(OBJDIR)/Forward1D.o 
+	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) Source/SourceInteriorForce.f90 -o $(OBJDIR)/SourceInteriorForce.o
+
+$(OBJDIR)/Transmitter.o:Transmitters/Transmitter.f90 $(OBJDIR)/FileUnits.o $(OBJDIR)/ForwardSolver.o $(OBJDIR)/ModelParameter.o $(OBJDIR)/ModelOperator.o $(OBJDIR)/SourceInteriorForce.o $(OBJDIR)/rVector3D_SG.o 
+	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) Transmitters/Transmitter.f90 -o $(OBJDIR)/Transmitter.o
+
+$(OBJDIR)/cVectorSparse3D_SG.o:Fields/cVectorSparse3D_SG.f90 $(OBJDIR)/Field.o $(OBJDIR)/cVector3D_SG.o 
+	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) Fields/cVectorSparse3D_SG.f90 -o $(OBJDIR)/cVectorSparse3D_SG.o
+
+$(OBJDIR)/Receiver.o:Receivers/Receiver.f90 $(OBJDIR)/String.o $(OBJDIR)/DataGroup.o $(OBJDIR)/Transmitter.o $(OBJDIR)/cVectorSparse3D_SG.o 
+	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) Receivers/Receiver.f90 -o $(OBJDIR)/Receiver.o
+
+$(OBJDIR)/ReceiverArray.o:Receivers/ReceiverArray.f90 $(OBJDIR)/Receiver.o 
+	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) Receivers/ReceiverArray.f90 -o $(OBJDIR)/ReceiverArray.o
+
+$(OBJDIR)/TransmitterMT.o:Transmitters/TransmitterMT.f90 $(OBJDIR)/Transmitter.o 
+	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) Transmitters/TransmitterMT.f90 -o $(OBJDIR)/TransmitterMT.o
+
+$(OBJDIR)/TransmitterCSEM.o:Transmitters/TransmitterCSEM.f90 $(OBJDIR)/Transmitter.o 
+	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) Transmitters/TransmitterCSEM.f90 -o $(OBJDIR)/TransmitterCSEM.o
+
+$(OBJDIR)/TransmitterArray.o:Transmitters/TransmitterArray.f90 $(OBJDIR)/Transmitter.o 
+	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) Transmitters/TransmitterArray.f90 -o $(OBJDIR)/TransmitterArray.o
+
+$(OBJDIR)/DataGroupTxArray.o:DataSpace/DataGroupTxArray.f90 $(OBJDIR)/DataGroupTx.o $(OBJDIR)/FileUnits.o $(OBJDIR)/ReceiverArray.o $(OBJDIR)/TransmitterMT.o $(OBJDIR)/TransmitterCSEM.o $(OBJDIR)/TransmitterArray.o 
+	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) DataSpace/DataGroupTxArray.f90 -o $(OBJDIR)/DataGroupTxArray.o
+
+$(OBJDIR)/ModelParameterCell_SG.o:ModelParameter/ModelParameterCell_SG.f90 $(OBJDIR)/Constants.o $(OBJDIR)/FileUnits.o $(OBJDIR)/rScalar3D_SG.o $(OBJDIR)/rVector3D_SG.o $(OBJDIR)/ModelParameter.o $(OBJDIR)/Grid3D_SG.o $(OBJDIR)/ModelParameter1D.o $(OBJDIR)/ModelParameter2D.o 
+	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) ModelParameter/ModelParameterCell_SG.f90 -o $(OBJDIR)/ModelParameterCell_SG.o
 
 $(OBJDIR)/MetricElements_CSG.o:ModelOperator/MetricElements_CSG.f90 $(OBJDIR)/MetricElements.o $(OBJDIR)/cVector3D_SG.o 
 	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) ModelOperator/MetricElements_CSG.f90 -o $(OBJDIR)/MetricElements_CSG.o
@@ -175,9 +211,6 @@ $(OBJDIR)/Solver_QMR.o:Solver/Solver_QMR.f90 $(OBJDIR)/Solver.o $(OBJDIR)/PreCon
 $(OBJDIR)/ForwardSolverIT_DC.o:ForwardSolver/ForwardSolverIT_DC.f90 $(OBJDIR)/ForwardSolver.o $(OBJDIR)/DivergenceCorrection.o $(OBJDIR)/Solver_QMR.o 
 	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) ForwardSolver/ForwardSolverIT_DC.f90 -o $(OBJDIR)/ForwardSolverIT_DC.o
 
-$(OBJDIR)/Forward1D.o:1D/Forward1D.f90 $(OBJDIR)/Constants.o $(OBJDIR)/Grid1D.o $(OBJDIR)/ModelParameter1D.o 
-	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) 1D/Forward1D.f90 -o $(OBJDIR)/Forward1D.o
-
 $(OBJDIR)/SourceMT_1D.o:Source/SourceMT_1D.f90 $(OBJDIR)/Constants.o $(OBJDIR)/cVector3D_SG.o $(OBJDIR)/Source.o $(OBJDIR)/ModelOperator.o $(OBJDIR)/ModelParameter1D.o $(OBJDIR)/Forward1D.o 
 	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) Source/SourceMT_1D.f90 -o $(OBJDIR)/SourceMT_1D.o
 
@@ -196,21 +229,6 @@ $(OBJDIR)/Dipole1D.o:CSEM/Dipole1D.f90 $(OBJDIR)/FilterModules.o $(OBJDIR)/Filte
 $(OBJDIR)/SourceCSEM_Dipole1D.o:Source/SourceCSEM_Dipole1D.f90 $(OBJDIR)/Dipole1D.o $(OBJDIR)/Constants.o $(OBJDIR)/cVector3D_SG.o $(OBJDIR)/rVector3D_SG.o $(OBJDIR)/Grid3D_SG.o $(OBJDIR)/Source.o $(OBJDIR)/ModelOperator.o $(OBJDIR)/ModelParameterCell_SG.o 
 	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) Source/SourceCSEM_Dipole1D.f90 -o $(OBJDIR)/SourceCSEM_Dipole1D.o
 
-$(OBJDIR)/SourceInteriorForce.o:Source/SourceInteriorForce.f90 $(OBJDIR)/Constants.o $(OBJDIR)/cVector3D_SG.o $(OBJDIR)/Source.o $(OBJDIR)/ModelOperator.o $(OBJDIR)/ModelParameter1D.o $(OBJDIR)/Forward1D.o 
-	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) Source/SourceInteriorForce.f90 -o $(OBJDIR)/SourceInteriorForce.o
-
-$(OBJDIR)/DataGroup.o:DataSpace/DataGroup.f90 $(OBJDIR)/String.o $(OBJDIR)/Constants.o 
-	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) DataSpace/DataGroup.f90 -o $(OBJDIR)/DataGroup.o
-
-$(OBJDIR)/Transmitter.o:Transmitters/Transmitter.f90 $(OBJDIR)/FileUnits.o $(OBJDIR)/ForwardSolver.o $(OBJDIR)/ModelParameter.o $(OBJDIR)/ModelOperator.o $(OBJDIR)/SourceInteriorForce.o $(OBJDIR)/rVector3D_SG.o 
-	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) Transmitters/Transmitter.f90 -o $(OBJDIR)/Transmitter.o
-
-$(OBJDIR)/cVectorSparse3D_SG.o:Fields/cVectorSparse3D_SG.f90 $(OBJDIR)/Field.o $(OBJDIR)/cVector3D_SG.o 
-	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) Fields/cVectorSparse3D_SG.f90 -o $(OBJDIR)/cVectorSparse3D_SG.o
-
-$(OBJDIR)/Receiver.o:Receivers/Receiver.f90 $(OBJDIR)/String.o $(OBJDIR)/DataGroup.o $(OBJDIR)/Transmitter.o $(OBJDIR)/cVectorSparse3D_SG.o 
-	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) Receivers/Receiver.f90 -o $(OBJDIR)/Receiver.o
-
 $(OBJDIR)/ReceiverFullImpedance.o:Receivers/ReceiverFullImpedance.f90 $(OBJDIR)/Receiver.o 
 	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) Receivers/ReceiverFullImpedance.f90 -o $(OBJDIR)/ReceiverFullImpedance.o
 
@@ -222,24 +240,6 @@ $(OBJDIR)/ReceiverOffDiagonalImpedance.o:Receivers/ReceiverOffDiagonalImpedance.
 
 $(OBJDIR)/ReceiverSingleField.o:Receivers/ReceiverSingleField.f90 $(OBJDIR)/Receiver.o 
 	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) Receivers/ReceiverSingleField.f90 -o $(OBJDIR)/ReceiverSingleField.o
-
-$(OBJDIR)/DataGroupTx.o:DataSpace/DataGroupTx.f90 $(OBJDIR)/DataGroup.o 
-	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) DataSpace/DataGroupTx.f90 -o $(OBJDIR)/DataGroupTx.o
-
-$(OBJDIR)/ReceiverArray.o:Receivers/ReceiverArray.f90 $(OBJDIR)/Receiver.o 
-	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) Receivers/ReceiverArray.f90 -o $(OBJDIR)/ReceiverArray.o
-
-$(OBJDIR)/TransmitterMT.o:Transmitters/TransmitterMT.f90 $(OBJDIR)/Transmitter.o 
-	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) Transmitters/TransmitterMT.f90 -o $(OBJDIR)/TransmitterMT.o
-
-$(OBJDIR)/TransmitterCSEM.o:Transmitters/TransmitterCSEM.f90 $(OBJDIR)/Transmitter.o 
-	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) Transmitters/TransmitterCSEM.f90 -o $(OBJDIR)/TransmitterCSEM.o
-
-$(OBJDIR)/TransmitterArray.o:Transmitters/TransmitterArray.f90 $(OBJDIR)/Transmitter.o 
-	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) Transmitters/TransmitterArray.f90 -o $(OBJDIR)/TransmitterArray.o
-
-$(OBJDIR)/DataGroupTxArray.o:DataSpace/DataGroupTxArray.f90 $(OBJDIR)/DataGroupTx.o $(OBJDIR)/FileUnits.o $(OBJDIR)/ReceiverArray.o $(OBJDIR)/TransmitterMT.o $(OBJDIR)/TransmitterCSEM.o $(OBJDIR)/TransmitterArray.o 
-	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) DataSpace/DataGroupTxArray.f90 -o $(OBJDIR)/DataGroupTxArray.o
 
 $(OBJDIR)/ModelReader.o:ModelParameter/ModelReader.f90 $(OBJDIR)/Grid.o $(OBJDIR)/ModelParameter.o 
 	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) ModelParameter/ModelReader.f90 -o $(OBJDIR)/ModelReader.o
@@ -277,10 +277,13 @@ $(OBJDIR)/ForwardModeling.o:./ForwardModeling.f90 $(OBJDIR)/GlobalVariables.o
 $(OBJDIR)/Sensitivity.o:./Sensitivity.f90 $(OBJDIR)/ForwardModeling.o 
 	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) ./Sensitivity.f90 -o $(OBJDIR)/Sensitivity.o
 
-$(OBJDIR)/Inversion.o:./Inversion.f90 $(OBJDIR)/Sensitivity.o 
-	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) ./Inversion.f90 -o $(OBJDIR)/Inversion.o
+$(OBJDIR)/Inversion.o:Inversion/Inversion.f90 $(OBJDIR)/ModelParameter.o $(OBJDIR)/DataGroupTxArray.o $(OBJDIR)/Sensitivity.o 
+	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) Inversion/Inversion.f90 -o $(OBJDIR)/Inversion.o
 
-$(OBJDIR)/ModEM.o:ModEM.f90 $(OBJDIR)/ModEMControlFile.o $(OBJDIR)/Inversion.o 
+$(OBJDIR)/InversionDCG.o:Inversion/InversionDCG.f90 $(OBJDIR)/Inversion.o 
+	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) Inversion/InversionDCG.f90 -o $(OBJDIR)/InversionDCG.o
+
+$(OBJDIR)/ModEM.o:ModEM.f90 $(OBJDIR)/ModEMControlFile.o $(OBJDIR)/InversionDCG.o 
 	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) ModEM.f90 -o $(OBJDIR)/ModEM.o
 
 # Type " make clean " to get rid of all object and module files 

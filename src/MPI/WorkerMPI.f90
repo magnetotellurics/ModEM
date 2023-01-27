@@ -6,7 +6,8 @@ module WorkerMPI
     !
     use DeclarationMPI
     !
-    use Inversion
+    use InversionDCG
+    !use InversionNLCG
     !
     public :: workerMainLoop
     public :: workerForwardModelling

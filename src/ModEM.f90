@@ -27,7 +27,8 @@ program ModEM
     !
 #else
     !
-    use Inversion
+    use InversionDCG
+    !use InversionNLCG
     !
     call startProgram()
     !
@@ -72,6 +73,99 @@ contains
         write( *, * )
         !
     end subroutine startProgram
+    !
+    !> Routine to run a full Inversion Job - Minimize Residual
+    !> Where:
+    !>    SIGMA (M) = Production model (for predicted data and final inversion model)
+    !>    PMODEL = Perturbation model  (if exist -dm readed input model)
+    !>    SIGMA0 = Readed input model  (-m)
+    !>    DSIGMA = From serialJMult_T        (????)
+    !
+    subroutine jobInversion()
+        implicit none
+        !
+        class( ModelParameter_t ), allocatable :: sigma, dsigma
+        !
+        class( Inversion_t ), allocatable :: inversion
+        !
+        !> Read Model File and instantiate global variables: main_grid, model_operator and Sigma0
+        if( has_model_file ) then 
+            !
+            call handleModelFile( sigma )
+            !
+            !> Instantiate ModelCovariance
+            allocate( model_cov, source = ModelCovarianceRec_t( sigma ) )
+            !
+            !> Initialize pmodel with Zeros
+            allocate( dsigma, source = sigma )
+            !
+            call dsigma%zeros()
+            !
+        else
+            stop "Error: jobInversion > Missing Model file!"
+        endif
+        !
+        !> Read Perturbation Model File: instantiate pmodel (NOT USING RIGHT NOW ????)
+        if( has_pmodel_file ) then 
+            !
+            deallocate( dsigma )
+            !
+            call handlePModelFile( dsigma )
+            !
+            call dsigma%setMetric( model_operator%metric )
+            !
+            call model_cov%multBy_Cm( dsigma )
+            !
+            call sigma%linComb( ONE, ONE, dsigma )
+            !
+        endif
+        !
+        !> Read Data File: instantiate and build the Data relation between Txs and Rxs
+        if( has_data_file ) then 
+            !
+            call handleDataFile()
+            !
+        else
+            stop "Error: jobInversion > Missing Data file!"
+        endif
+        !
+#ifdef MPI
+        !
+        call broadcastBasicComponents()
+        !
+#else
+        !
+        call createDistributeForwardSolver()
+        !
+#endif
+        !
+        !> Instantiate the ForwardSolver - Specific type can be chosen via control file
+        select case ( inversion_algorithm )
+            !
+            case( DCG )
+                !
+                allocate( inversion, source = InversionDCG_t() )
+                !
+            case( NLCG )
+                !
+                !call NLCGsolver( all_measured_data, sigma, dsigma )
+                stop "Implementing NLCG Inversion"
+                !
+            case default
+                !
+                stop "Error: jobInversion > Undefined inversion_algorithm"
+                !
+        end select
+        !
+        call inversion%solve( all_measured_data, sigma, dsigma )
+        !
+#ifdef MPI
+        call broadcastFinish
+#endif
+        !
+        deallocate( sigma, dsigma, inversion )
+        !
+    end subroutine jobInversion
     !
     !> No subroutine briefing
     subroutine handleJob()

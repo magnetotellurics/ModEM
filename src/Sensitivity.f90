@@ -185,7 +185,7 @@ contains
         !
     end subroutine JMult_Tx
     !
-    !> Routine to run a full serialJMult_T job 
+    !> Routine to run a full JMult_T job 
     !> and deliver the result (dsigma) in a text file <dsigma.rho>
     !
     subroutine jobJMult_T()
