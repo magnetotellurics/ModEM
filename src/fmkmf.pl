@@ -133,7 +133,7 @@ while (@ARGV){
   if ($arg =~ /^-mpi$/){
     $mpiflags=shift;
     if ($mpiflags =~ /MPI/) {
-    	$DMPI = 1; # MPI is defined
+        $DMPI = 1; # MPI is defined
     }
     print STDERR "# Using compiler MPI flags $mpiflags from cmd line\n";
   }
@@ -150,8 +150,8 @@ while (@ARGV){
     print STDERR "# Using debug option (full output on) from cmd line\n";
   }
   if ($arg =~ /^-o$/){
-  	$linkdir=shift;
-  	print STDERR "# Using $linkdir for object file output directory\n";
+      $linkdir=shift;
+      print STDERR "# Using $linkdir for object file output directory\n";
   }
 
 }
@@ -235,22 +235,22 @@ print "\n# ------------------Macro-Defs---------------------\n";
 
 print "include Makefile.local\n";
 print "OBJDIR = ../../objs/MT3D_OO\n";
-print "F90 = $f90 \n";
+print "F90 = $f90\n";
 print "FFLAGS = $optim\n";
 print "MPIFLAGS = $mpiflags\n";
 if ($WIN) {
-	print "MODULE = \n";
+    print "MODULE = \n";
 } elsif ($f90 =~ /^g95$/){
-	print "MODULE = -fmod=\$(OBJDIR)\n";
+    print "MODULE = -fmod=\$(OBJDIR)\n";
 } elsif ($f90 =~ /^gfortran$/){
-	print "MODULE = -J \$(OBJDIR)\n";
+    print "MODULE = -J \$(OBJDIR)\n";
 } else {
-	print "MODULE = -J \$(OBJDIR)\n";
+    print "MODULE = -J \$(OBJDIR)\n";
 }
 if ($libpath !~ /^(\s*)$/){
-	print "LIBS_PATH = -L$libpath\n";
+    print "LIBS_PATH = -L$libpath\n";
 } else {
-	print "LIBS_PATH = \n";	
+    print "LIBS_PATH = \n";    
 }
 print "LIBS = $linkopts\n";
 
@@ -266,11 +266,11 @@ print "\nall: $execfile \n";
 print "\n# Here is the link step \n";
 
 if ($WIN) {
-	print "$execfile: \$(OBJDIR) \$(OBJ) \n";
-	print "\t \$(F90) /link \$(OUTDIR)/$execfile \$(OBJ) \$(LIBS_PATH) \$(LIBS)\n";
+    print "$execfile: \$(OBJDIR) \$(OBJ) \n";
+    print "\t \$(F90) /link \$(OUTDIR)/$execfile \$(OBJ) \$(LIBS_PATH) \$(LIBS)\n";
 } else {
-	print "$execfile: \$(OBJDIR) \$(OBJ) \n";
-	print "\t \$(F90) -o \$(OUTDIR)/$execfile \$(OBJ) \$(LIBS_PATH) \$(LIBS)\n";
+    print "$execfile: \$(OBJDIR) \$(OBJ) \n";
+    print "\t \$(F90) -o \$(OUTDIR)/$execfile \$(OBJ) \$(LIBS_PATH) \$(LIBS)\n";
 }
 # print "\trm -f *.mod \n";
 
@@ -311,7 +311,7 @@ sub process_fsource {
     print STDERR "# process_fsource called with arg $mainprogfile \n";
   }
   open( MAINPROG, $mainprogfile) or 
-    die "Can't find main program file $mainprogfile: $! \n";
+    die "Can't find main program file $mainprogfile: $!> \n";
   
   # Read through Fortran source looking for USE statements
   # There should be nothing but whitespace before the USE. Sloppily, 
@@ -325,22 +325,22 @@ sub process_fsource {
     if ($line =~ /^[ \t]*use (\w+)/i ) { # line matches regexp between / /
       my $modulefile = $1;
       if($optiond){
-		print STDERR "# $mainprogfile Uses Module $modulefile\n";
+        print STDERR "# $mainprogfile Uses Module $modulefile\n";
       }
       if ($modulefile =~ /MPI/) { # if MPI is found in module name, skip unless MPI is defined
-      	next unless ($DMPI);
+          next unless ($DMPI);
       }
       @modulelist=(@modulelist,$modulefile);
     } elsif  ($line =~ /^[ \t]*\#?include "(\S+)"/i ){
       my $includefile = $1;
       if($optiond){
-		print STDERR "# $mainprogfile Includes $includefile\n";
+        print STDERR "# $mainprogfile Includes $includefile\n";
       }
       if ($includefile =~ /MPI/) { # if MPI is found in module name, skip unless MPI is defined
-      	next unless ($DMPI);
+          next unless ($DMPI);
       }
       my $mainprogpath = dirname($mainprogfile); 
-      @includelist=(@includelist,"$mainprogpath/$includefile");    	
+      @includelist=(@includelist,"$mainprogpath/$includefile");        
     }
   }
   
@@ -349,7 +349,7 @@ sub process_fsource {
   if($optiond){
     print STDERR "# Full list of modules in $mainprogfile: @modulelist \n";
     if (@includelist > 0) {
-    	print STDERR "# Full list of includes in $mainprogfile: @includelist \n";
+        print STDERR "# Full list of includes in $mainprogfile: @includelist \n";
     }
   }
   # Find which file each module is in.
@@ -361,36 +361,36 @@ sub process_fsource {
     foreach $directory (@spath){
       # print "# Looking in directory $directory\n";
       opendir( DIRHANDLE, $directory) or die 
-	"Can't open directory $directory : $! \n";
+    "Can't open directory $directory : $!> \n";
       @sourcefiles=grep /\.${sftag}\Z/, sort(readdir(DIRHANDLE));
     foreach $sourcefile (@sourcefiles){
       $pathsourcefile="$directory/$sourcefile";
       #print "\# Checking $pathsourcefile\n";
       open( SOURCEFILE, "$pathsourcefile") or 
-	die "Can't find source file $pathsourcefile: $! \n";
+    die "Can't find source file $pathsourcefile: $!> \n";
       while ($line=<SOURCEFILE>){
-	if ($line =~ /^ *module (\w+)/i ){
-	  if($1 =~ /^$module$/i){
-	    if($optiond){
-	      print STDERR "# Uses $module which is in $pathsourcefile\n";
-	    }
-	    @modfiles=(@modfiles,$pathsourcefile);
-	    
-	    if (grep (/$pathsourcefile/,@global_modfiles )){
-	      if($optiond){
-		print STDERR "# $pathsourcefile already in list\n";
-	      }
-	    }
-	    else {
-	      @global_modfiles=(@global_modfiles,$pathsourcefile);
-	      process_fsource($pathsourcefile);
+    if ($line =~ /^ *module (\w+)/i ){
+      if($1 =~ /^$module$/i){
+        if($optiond){
+          print STDERR "# Uses $module which is in $pathsourcefile\n";
+        }
+        @modfiles=(@modfiles,$pathsourcefile);
+        
+        if (grep (/$pathsourcefile/,@global_modfiles )){
+          if($optiond){
+        print STDERR "# $pathsourcefile already in list\n";
+          }
+        }
+        else {
+          @global_modfiles=(@global_modfiles,$pathsourcefile);
+          process_fsource($pathsourcefile);
 
-	    }
-	    # We found this module -- go on to the next one
-	    close (SOURCEFILE);
-	    next MODLOOP;	    
-	  }
-	}
+        }
+        # We found this module -- go on to the next one
+        close (SOURCEFILE);
+        next MODLOOP;        
+      }
+    }
       }
       close( SOURCEFILE );
     }
@@ -400,20 +400,20 @@ sub process_fsource {
 }
 
 if ($WIN) {
-	$mainprogfile=~s/\//\\/g;
-	# name of file we want to make
-	$objfile=$mainprogfile;
-	# replace source file name with .o
-	$objfile=~s/\.${sftag}/\.obj/;
-	# strip path so object files go in current dir
-	$objfile=~s|.*\\||;
+    $mainprogfile=~s/\//\\/g;
+    # name of file we want to make
+    $objfile=$mainprogfile;
+    # replace source file name with .o
+    $objfile=~s/\.${sftag}/\.obj/;
+    # strip path so object files go in current dir
+    $objfile=~s|.*\\||;
 } else {
-	# name of file we want to make
-	$objfile=$mainprogfile;
-	# replace source file name with .o
-	$objfile=~s/\.${sftag}/\.o/;
-	# strip path so object files go in current dir
-	$objfile=~s|.*/||;
+    # name of file we want to make
+    $objfile=$mainprogfile;
+    # replace source file name with .o
+    $objfile=~s/\.${sftag}/\.o/;
+    # strip path so object files go in current dir
+    $objfile=~s|.*/||;
 }
 
 # now add the user-defined path to the object files
@@ -425,9 +425,9 @@ foreach  $mf (@modfiles) {
   $obj=$mf;
   # replace source file name with .o
   if ($WIN) {
-  	$obj=~s/\.${sftag}/\.obj/;
+      $obj=~s/\.${sftag}/\.obj/;
   } else {
-  	$obj=~s/\.${sftag}/\.o/;
+      $obj=~s/\.${sftag}/\.o/;
   }
   # strip path so object files go in current dir
   $obj=~s|.*/||;
@@ -438,12 +438,12 @@ foreach  $mf (@modfiles) {
 
 @global_outlines=(@global_outlines,"\n$objfile:$mainprogfile @objlist @includelist\n");
 if ($WIN){
-	@global_outlines=(@global_outlines,"\t \$(F90) -c \$(MODULE) \$(FFLAGS) \$(MPIFLAGS) \"$mainprogfile\" /link $objfile\n");
+    @global_outlines=(@global_outlines,"\t \$(F90) -c \$(MODULE) \$(FFLAGS) \$(MPIFLAGS) \"$mainprogfile\" /link $objfile\n");
 } else {
-	@global_outlines=(@global_outlines,"\t \$(F90) -c \$(MODULE) \$(FFLAGS) \$(MPIFLAGS) $mainprogfile -o $objfile\n");
+    @global_outlines=(@global_outlines,"\t \$(F90) -c \$(MODULE) \$(FFLAGS) \$(MPIFLAGS) $mainprogfile -o $objfile\n");
 }
 #if (@includelist > 0) {
-#	@global_outlines=(@global_outlines,"\n$mainprogfile: @includelist \n");
+#    @global_outlines=(@global_outlines,"\n$mainprogfile: @includelist \n");
 #}
 
 }

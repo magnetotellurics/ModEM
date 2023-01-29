@@ -1,0 +1,38 @@
+#############################################
+# ModEM-ON Control File template - 01/19/2023
+#############################################
+#
+# GRID
+#
+#grid_header [ModEM|HDF5]: ModEM
+#grid [SG|MR]: SG
+#
+# MODEL
+#
+model_method [mirror|fixed height] : fixed height
+model_n_air_layer [10]             : 10
+model_max_height [200.0]           : 200.0
+#
+# SOURCE
+#
+source [1D|2D]                     : 1D
+#
+# SOLVER
+#
+QMR_iters [40]                     : 80
+BCG_iters [80]                     : 80
+max_divcor_calls [20]              : 20
+max_divcor_iters [100]             : 100
+tolerance_qmr [1E-7]               : 1E-7
+tolerance_divcor [1E-5]            : 1E-5
+forward_solver [IT|IT_DC]          : IT_DC
+#
+# INVERSION
+#
+inversion_type [DCG|NLCG]          : DCG
+max_inv_iters [5]                  : 3
+max_grad_iters [20]                : 20
+tolerance_error [1E-3]             : 1E-3
+tolerance_rms [1.05]               : 1.05
+lambda [10.]                       : 10.
+#
