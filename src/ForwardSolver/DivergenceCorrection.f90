@@ -28,7 +28,8 @@ Module DivergenceCorrection
     !
 contains
     !
-    !> No function briefing
+    !> No subroutine briefing
+	!
     function DivergenceCorrection_ctor( model_operator ) result( self )
         implicit none
         !

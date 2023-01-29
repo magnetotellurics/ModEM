@@ -29,7 +29,8 @@ module ReceiverOffDiagonalImpedance
     !
 contains
     !
-    !> No function briefing
+    !> No subroutine briefing
+	!
     function ReceiverOffDiagonalImpedance_ctor( location, rx_type ) result( self )
         implicit none
         !
@@ -171,7 +172,8 @@ contains
         !
     end subroutine predictedDataOffDiagonalImpedance
     !
-    !> No function briefing
+    !> No subroutine briefing
+	!
     function isEqualOffDiagonalImpedance( self, other ) result( equal )
         implicit none
         !

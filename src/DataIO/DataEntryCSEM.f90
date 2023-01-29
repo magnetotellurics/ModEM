@@ -52,7 +52,8 @@ contains
         !
     end function DataEntryCSEM_ctor
     !
-    !> No function briefing
+    !> No subroutine briefing
+	!
     function getCopyDataEntryCSEM( self ) result ( copy )
         implicit none
         !

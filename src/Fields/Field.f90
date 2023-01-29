@@ -13,7 +13,7 @@ module Field
         !
         character( len=4 ) :: grid_type
         !
-        integer :: nx, ny, nz
+        integer :: nx, ny, nz, store_state
         !
         logical :: is_allocated
         !
@@ -60,6 +60,8 @@ module Field
         procedure( interface_sum_edges_field ), deferred, public :: sumEdges
         !
         procedure( interface_get_real_field ), deferred, public :: getReal
+        !
+        procedure( interface_switch_store_state_field ), deferred, public :: switchStoreState
         !
         procedure( interface_copy_from_field ), deferred, public :: copyFrom
         generic :: assignment(=) => copyFrom
@@ -261,6 +263,12 @@ module Field
         end subroutine interface_get_real_field
         !
         !> No interface subroutine briefing
+        subroutine interface_switch_store_state_field( self )
+            import :: Field_t
+            class( Field_t ), intent( inout ) :: self
+        end subroutine interface_switch_store_state_field
+        !
+        !> No interface subroutine briefing
         subroutine interface_copy_from_field( self, rhs )
             import :: Field_t
             class( Field_t ), intent( inout ) :: self
@@ -301,11 +309,14 @@ contains
         self%ny = 0
         self%nz = 0
         !
+        self%store_state = full_vector
+        !
         self%is_allocated = .FALSE.
         !
     end subroutine initializeField
     !
-    !> No function briefing
+    !> No subroutine briefing
+    !
     function isCompatibleField( self, rhs ) result( is_compatible )
         implicit none
         !

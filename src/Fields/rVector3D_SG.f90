@@ -11,6 +11,8 @@ module rVector3D_SG
         !
         real( kind=prec ), allocatable, dimension(:, :, :) :: x, y, z
         !
+        real( kind=prec ), allocatable, dimension(:) :: column_vector
+        !
     contains
         !
         final :: rVector3D_SG_dtor
@@ -23,16 +25,13 @@ module rVector3D_SG
         procedure, public :: setAllInterior => setAllInteriorRVector3D_SG
         procedure, public :: intBdryIndices => intBdryIndicesRVector3D_SG
         !
-        procedure, public :: length => lengthRVector3D_SG
-        !
-        procedure, public :: getArray => getArrayRVector3D_SG
-        procedure, public :: setArray => setArrayRVector3D_SG
-        !
         procedure, public :: setVecComponents => setVecComponentsRVector3D_SG
         !
+        procedure, public :: length => lengthRVector3D_SG
+        !
         procedure, public :: zeros => zerosRVector3D_SG
+        !
         procedure, public :: add => addRVector3D_SG
-        !procedure, public :: addSparseVector => addSparseVectorRVector3D_SG
         !
         procedure, public :: subValue => subValueRVector3D_SG
         procedure, public :: subField => subFieldRVector3D_SG
@@ -40,24 +39,34 @@ module rVector3D_SG
         procedure, public :: multByField => multByFieldRVector3D_SG
         procedure, public :: multByComplex => multByComplexRVector3D_SG
         procedure, public :: multByReal => multByRealRVector3D_SG
-		!
+        !
         procedure, public :: divByField => divByFieldRVector3D_SG
         procedure, public :: divByValue => divByValueRVector3D_SG
+        !
         procedure, public :: dotProd => dotProdRVector3D_SG
+        !
         procedure, public :: diagMult => diagMultRVector3D_SG
         !
-        procedure, public :: getReal => getRealRVector3D_SG
-        !
-        procedure, public :: copyFrom => copyFromRVector3D_SG
-        !
         procedure, public :: sumEdges => sumEdgesRVector3D_SG
+        !
         procedure, public :: avgCells => avgCellsRVector3D_SG
         !
         procedure, public :: conjugate => conjugateRVector3D_SG
         !
         procedure, public :: linComb => linCombRVector3D_SG
+        !
         procedure, public :: multAdd => multAddRVector3D_SG
+        !
         procedure, public :: interpFunc => interpFuncRVector3D_SG
+        !
+        procedure, public :: getReal => getRealRVector3D_SG
+        !
+        procedure, public :: setArray => setArrayRVector3D_SG
+        procedure, public :: getArray => getArrayRVector3D_SG
+        !
+        procedure, public :: switchStoreState => switchStoreStateRVector3D_SG
+        !
+        procedure, public :: copyFrom => copyFromRVector3D_SG
         !
         procedure, public :: print => printRVector3D_SG
         !
@@ -69,7 +78,8 @@ module rVector3D_SG
     !
 contains
     !
-    !> No function briefing
+    !> No subroutine briefing
+    !
     function rVector3D_SG_ctor( igrid, grid_type ) result( self )
         implicit none
         !
@@ -87,7 +97,7 @@ contains
         self%grid => igrid
         !
         !> Grid dimensions
-        call igrid%GetDimensions(nx, ny, nz, nzAir)
+        call igrid%getDimensions(nx, ny, nz, nzAir)
         nz_earth = nz - nzAir
         !
         self%nx = nx
@@ -142,6 +152,7 @@ contains
     end function rVector3D_SG_ctor
     !
     !> No subroutine briefing
+    !
     subroutine rVector3D_SG_dtor( self )
         implicit none
         !
@@ -163,6 +174,7 @@ contains
     end subroutine rVector3D_SG_dtor
     !
     !> No subroutine briefing
+    !
     subroutine readRVector3D_SG( self, funit, ftype )
         implicit none
         !
@@ -221,6 +233,7 @@ contains
     end subroutine readRVector3D_SG
     !
     !> No subroutine briefing
+    !
     subroutine writeRVector3D_SG( self, funit, ftype )
         implicit none
         !
@@ -266,6 +279,7 @@ contains
     end subroutine writeRVector3D_SG
     !
     !> No subroutine briefing
+    !
     subroutine setAllBoundaryRVector3D_SG( self, cvalue )
         implicit none
         !
@@ -293,6 +307,7 @@ contains
     end subroutine setAllBoundaryRVector3D_SG
     !
     !> No subroutine briefing
+    !
     subroutine setAllInteriorRVector3D_SG( self, cvalue )
         implicit none
         !
@@ -318,6 +333,7 @@ contains
     end subroutine setAllInteriorRVector3D_SG
     !
     !> No subroutine briefing
+    !
     subroutine setOneBoundaryRVector3D_SG( self, bdry, cvalue, int_only )
         implicit none
         !
@@ -418,6 +434,7 @@ contains
     end subroutine setOneBoundaryRVector3D_SG
     !
     !> No subroutine briefing
+    !
     subroutine intBdryIndicesRVector3D_SG( self, ind_i, ind_b )
         implicit none
         !
@@ -510,7 +527,8 @@ contains
         !
     end subroutine intBdryIndicesRVector3D_SG
     !
-    !> No function briefing
+    !> No subroutine briefing
+    !
     function lengthRVector3D_SG( self ) result( n )
         implicit none
         !
@@ -523,6 +541,7 @@ contains
     end function lengthRVector3D_SG
     !
     !> No subroutine briefing
+    !
     subroutine getArrayRVector3D_SG( self, array )
         implicit none
         !
@@ -537,6 +556,7 @@ contains
     end subroutine getArrayRVector3D_SG
     !
     !> No subroutine briefing
+    !
     subroutine setArrayRVector3D_SG( self, array )
         implicit none
         !
@@ -569,6 +589,7 @@ contains
     end subroutine setArrayRVector3D_SG
     !
     !> No subroutine briefing
+    !
     subroutine setVecComponentsRVector3D_SG( self, xyz, &
             &                              xmin, xstep, xmax, &
             &                              ymin, ystep, ymax, &
@@ -634,6 +655,7 @@ contains
     end subroutine setVecComponentsRVector3D_SG
     !
     !> No subroutine briefing
+    !
     subroutine zerosRVector3D_SG( self )
         implicit none
         !
@@ -646,6 +668,7 @@ contains
     end subroutine zerosRVector3D_SG
     !
     !> No subroutine briefing
+    !
     subroutine addRVector3D_SG( self, rhs )
         implicit none
         !
@@ -706,6 +729,7 @@ contains
     end subroutine subValueRVector3D_SG
     !
     !> No subroutine briefing
+    !
     subroutine subFieldRVector3D_SG( self, rhs )
         implicit none
         !
@@ -732,6 +756,7 @@ contains
     end subroutine subFieldRVector3D_SG
     !
     !> No subroutine briefing
+    !
     subroutine multByFieldRVector3D_SG( self, rhs )
         implicit none
         !
@@ -769,6 +794,7 @@ contains
     end subroutine multByFieldRVector3D_SG
     !
     !> No subroutine briefing
+    !
     subroutine multByComplexRVector3D_SG( self, cvalue )
         implicit none
         !
@@ -782,6 +808,7 @@ contains
     end subroutine multByComplexRVector3D_SG
     !
     !> No subroutine briefing
+    !
     subroutine multByRealRVector3D_SG( self, rvalue )
         implicit none
         !
@@ -795,6 +822,7 @@ contains
     end subroutine multByRealRVector3D_SG
     !
     !> No subroutine briefing
+    !
     subroutine divByFieldRVector3D_SG( self, rhs )
         implicit none
         !
@@ -832,6 +860,7 @@ contains
     end subroutine divByFieldRVector3D_SG
     !
     !> No subroutine briefing
+    !
     subroutine divByValueRVector3D_SG( self, cvalue )
         implicit none
         !
@@ -844,7 +873,8 @@ contains
         !
     end subroutine divByValueRVector3D_SG
     !
-    !> No function briefing
+    !> No subroutine briefing
+    !
     function dotProdRVector3D_SG( self, rhs ) result( cvalue )
         implicit none
         !
@@ -877,6 +907,7 @@ contains
     end function dotProdRVector3D_SG
     !
     !> No subroutine briefing
+    !
     function diagMultRVector3D_SG( self, rhs ) result( diag_mult )
         implicit none
         !
@@ -916,6 +947,7 @@ contains
     end function diagMultRVector3D_SG
     !
     !> No subroutine briefing
+    !
     subroutine sumEdgesRVector3D_SG( self, cell_obj, interior_only )
         implicit none
         !
@@ -999,6 +1031,7 @@ contains
     end subroutine sumEdgesRVector3D_SG
     !
     !> No subroutine briefing
+    !
     subroutine avgCellsRVector3D_SG( self, E_in, ptype )
         implicit none
         !
@@ -1105,6 +1138,7 @@ contains
     end subroutine avgCellsRVector3D_SG
     !
     !> No subroutine briefing
+    !
     subroutine conjugateRVector3D_SG( self )
         implicit none
         !
@@ -1115,6 +1149,7 @@ contains
     end subroutine conjugateRVector3D_SG
     !
     !> No subroutine briefing
+    !
     subroutine linCombRVector3D_SG( self, rhs, c1, c2 )
         implicit none
         !
@@ -1141,6 +1176,7 @@ contains
     end subroutine linCombRVector3D_SG
     !
     !> No subroutine briefing
+    !
     subroutine multAddRVector3D_SG( self, cvalue, rhs )
         implicit none
         !
@@ -1166,6 +1202,7 @@ contains
     end subroutine multAddRVector3D_SG
     !
     !> No subroutine briefing
+    !
     subroutine interpFuncRVector3D_SG( self, location, xyz, interp )
         implicit none
         !
@@ -1341,7 +1378,8 @@ contains
         !
     end subroutine interpFuncRVector3D_SG
     !
-    !> No function briefing
+    !> No subroutine briefing
+    !
     subroutine getRealRVector3D_SG( self, r_field )
         implicit none
         !
@@ -1355,6 +1393,75 @@ contains
     end subroutine getRealRVector3D_SG
     !
     !> No subroutine briefing
+    !
+    subroutine switchStoreStateRVector3D_SG( self )
+        implicit none
+        !
+        class( rVector3D_SG_t ), intent( inout ) :: self
+        !
+        integer i1, i2
+        !
+        select case( self%store_state )
+            !
+            case( full_vector )
+                !
+                allocate( self%column_vector( self%length() ) )
+                !
+                self%column_vector = &
+                (/reshape( self%x, (/self%Nxyz(1), 1/) ), &
+                  reshape( self%y, (/self%Nxyz(2), 1/) ), &
+                  reshape( self%z, (/self%Nxyz(3), 1/) )/)
+                !
+                deallocate( self%x )
+                deallocate( self%y )
+                deallocate( self%z )
+                !
+                self%store_state = column_vector
+                !
+            case( column_vector )
+                !
+                if( self%grid_type == EDGE ) then
+                    !
+                    allocate( self%x( self%nx, self%ny + 1, self%nz + 1 ) )
+                    allocate( self%y( self%nx + 1, self%ny, self%nz + 1 ) )
+                    allocate( self%z( self%nx + 1, self%ny + 1, self%nz ) )
+                    !
+                else if( self%grid_type == FACE ) then
+                    !
+                    allocate( self%x( self%nx + 1, self%ny, self%nz ) )
+                    allocate( self%y( self%nx, self%ny + 1, self%nz ) )
+                    allocate( self%z( self%nx, self%ny, self%nz + 1 ) )
+                    !
+                else
+                    stop "Error: switchStoreStateRVector3D_SG > Only EDGE or FACE types allowed."
+                endif
+                !
+                ! Ex
+                i1 = 1; i2 = self%Nxyz(1)
+                self%x = reshape( self%column_vector( i1 : i2 ), self%NdX )
+                !
+                ! Ey
+                i1 = i2 + 1; i2 = i2 + self%Nxyz(2)
+                self%y = reshape( self%column_vector( i1 : i2 ), self%NdY )
+                !
+                ! Ez
+                i1 = i2 + 1; i2 = i2 + self%Nxyz(3)
+                self%z = reshape( self%column_vector( i1 : i2 ), self%NdZ )
+                !
+                deallocate( self%column_vector )
+                !
+                self%store_state = full_vector
+                !
+            case default
+                write( *, * ) "Error: switchStoreStateRScalar3D_SG > Unknown store_state :[", self%store_state, "]"
+                stop
+            !
+        end select
+        !
+    end subroutine switchStoreStateRVector3D_SG
+    !
+    !> No subroutine briefing
+    !
     subroutine copyFromRVector3D_SG( self, rhs )
         implicit none
         !
@@ -1370,7 +1477,7 @@ contains
         self%nx = rhs%nx
         self%ny = rhs%ny
         self%nz = rhs%nz
-        self%is_allocated = .TRUE.
+        self%store_state = rhs%store_state
         !
         select type( rhs )
             class is( rVector3D_SG_t )
@@ -1388,9 +1495,12 @@ contains
                 stop "Error: copyFromRVector3D_SG > Undefined rhs"
         end select
         !
+        self%is_allocated = .TRUE.
+        !
     end subroutine copyFromRVector3D_SG
     !
     !> No subroutine briefing
+    !
     subroutine printRVector3D_SG( self, io_unit, title, append )
         implicit none
         !

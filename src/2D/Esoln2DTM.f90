@@ -29,7 +29,8 @@ Module Esoln2DTM
     !
     contains
     !
-    !> No function briefing
+    !> No subroutine briefing
+	!
     function Esoln2DTM_ctor( grid ) result( self )
         !>    pass the model grid, create and return object
         class( Grid2D_t ), target, intent( in ) :: grid
@@ -68,7 +69,8 @@ Module Esoln2DTM
         self%grid => null()
     end subroutine Esoln2DTM_dtor
     !
-    !> No function briefing
+    !> No subroutine briefing
+	!
     function nEdgesEsoln2DTM( self ) result(n)
         class(Esoln2DTM_t), intent( in ) :: self
         integer :: n
@@ -80,7 +82,8 @@ Module Esoln2DTM
         n = nYedge+nZedge
     end function nEdgesEsoln2DTM
     !
-    !> No function briefing
+    !> No subroutine briefing
+	!
     function GetArrayEsoln2DTM( self ) result(x)
         !> puts Ey and Ez into a column vector, with interleaved
         !>    vertical grid columns
@@ -159,7 +162,8 @@ Module Esoln2DTM
         !
     end subroutine setArrayEsoln2DTM
     !
-    !> No function briefing
+    !> No subroutine briefing
+	!
     function getBoundaryEsoln2DTM( self ) result(x)
         !>    comparable to GetArray, but only boundary values are inserted into
         !>    the output vector

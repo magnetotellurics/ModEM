@@ -71,7 +71,7 @@ module Grid2D
          procedure, public :: setup =>  setupGrid2D
         
          !> 
-         procedure, public :: GetDimensions
+         procedure, public :: getDimensions
          procedure, public :: SetCellSizes
          procedure, public :: GetCellSizes
 
@@ -88,7 +88,8 @@ contains
     !> Dy, Dz are cell dimensions for y, z direction
     !> Nza is number of air layers to allow (included in Dz)
     !
-    !> No function briefing
+    !> No subroutine briefing
+	!
     function Grid2D_t_ctor(ny, nzAir, nzEarth, dy, dz) result(grid)
         !
         integer, intent( in ) :: ny, nzAir, nzEarth
@@ -254,7 +255,7 @@ contains
     end subroutine setupGrid2D
     !
     !> No subroutine briefing
-    subroutine GetDimensions(self, ny, nz, nzAir)
+    subroutine getDimensions(self, ny, nz, nzAir)
         !
         class(Grid2D_t), intent( in ) :: self
         integer, intent( out ) :: ny, nz, nzAir
@@ -262,7 +263,7 @@ contains
         ny = self%ny
         nz = self%nz
         nzAir = self%nzAir
-    end subroutine GetDimensions
+    end subroutine getDimensions
     !
     !> No subroutine briefing
     subroutine SetCellSizes(self, dy, dz)
@@ -334,7 +335,8 @@ contains
         
     end subroutine NumberOfEdges
     !
-    !> No function briefing
+    !> No subroutine briefing
+	!
     function NumberOfNodes( self ) result(n)
         !
         class(Grid2D_t), intent( in ) :: self
@@ -454,7 +456,8 @@ contains
         
     end subroutine Limits
     !
-    !> No function briefing
+    !> No subroutine briefing
+	!
     function IsallocateGrid2Dd( self ) result(f)
         !
         class(Grid2D_t), intent( in ) :: self
@@ -464,7 +467,8 @@ contains
         f = self%is_allocated
     end function IsallocateGrid2Dd
     !
-    !> No function briefing
+    !> No subroutine briefing
+	!
     function Length( self ) result(n)
         class(Grid2D_t), intent( in ) :: self
         integer :: n
@@ -472,7 +476,8 @@ contains
         n = self%ny*self%nz
     end function Length
     !
-    !> No function briefing
+    !> No subroutine briefing
+	!
     function Slice1D( self ) result(g1D)
         implicit none
         class(Grid2D_t), intent( in ) :: self

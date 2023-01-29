@@ -28,7 +28,8 @@ module PreConditioner_MF_DC
     !
 contains
     !
-    !> No function briefing
+    !> No subroutine briefing
+	!
     function PreConditioner_MF_DC_ctor( model_operator ) result( self ) 
         implicit none
         !

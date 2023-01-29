@@ -45,7 +45,8 @@ module MetricElements_CSG
     !
 contains
     !
-    !> No function briefing
+    !> No subroutine briefing
+	!
     function MetricElements_CSG_ctor( grid ) result( self )
         implicit none
         !

@@ -40,7 +40,8 @@ module Forward2D
 
  contains
     !
-    !> No function briefing
+    !> No subroutine briefing
+	!
     function Forward2D_ctor(m) result( self )
         !>     pass the model parameter, create and return object
         class(ModelParameter2D_t), target, intent( in ) :: m

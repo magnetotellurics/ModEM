@@ -49,7 +49,8 @@ contains
         !
     end function DataEntryMT_ctor
     !
-    !> No function briefing
+    !> No subroutine briefing
+	!
     function getCopyDataEntryMT( self ) result ( copy )
         implicit none
         !

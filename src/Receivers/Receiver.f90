@@ -289,7 +289,8 @@ contains
         !
     end subroutine savePredictedDataRx
     !
-    !> No function briefing
+    !> No subroutine briefing
+	!
     function getStringReceiverType( int_receiver_type ) result( str_receiver_type )
     !
         integer, intent( in ) :: int_receiver_type
@@ -329,7 +330,8 @@ contains
         !
     end function getStringReceiverType
     !
-    !> No function briefing
+    !> No subroutine briefing
+	!
     function getIntReceiverType( str_receiver_type ) result( int_receiver_type )
         !
         character(:), allocatable, intent( in ) :: str_receiver_type

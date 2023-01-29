@@ -72,7 +72,8 @@ contains
         !
     end function updateTransmitterArray
     !
-    !> No function briefing
+    !> No subroutine briefing
+	!
     function getTransmitter( iTx ) result( tx )
         implicit none
         !

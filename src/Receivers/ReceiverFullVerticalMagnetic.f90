@@ -29,7 +29,8 @@ module ReceiverFullVerticalMagnetic
     !
 contains
     !
-    !> No function briefing
+    !> No subroutine briefing
+	!
     function ReceiverFullVerticalMagnetic_ctor( location, rx_type ) result( self )
         implicit none
         !
@@ -176,7 +177,8 @@ contains
         !
     end subroutine predictedDataFullVerticalMagnetic
     !
-    !> No function briefing
+    !> No subroutine briefing
+	!
     function isEqualFullVerticalMagnetic( self, other ) result( equal )
         implicit none
         !

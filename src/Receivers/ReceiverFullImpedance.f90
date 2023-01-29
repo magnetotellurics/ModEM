@@ -29,7 +29,8 @@ module ReceiverFullImpedance
     !
 contains
     !
-    !> No function briefing
+    !> No subroutine briefing
+	!
     function ReceiverFullImpedance_ctor( location, rx_type ) result( self )
         implicit none
         !
@@ -228,7 +229,8 @@ contains
         !
     end subroutine predictedDataFullImpedance
     !
-    !> No function briefing
+    !> No subroutine briefing
+	!
     function isEqualFullImpedance( self, other ) result( equal )
         implicit none
         !

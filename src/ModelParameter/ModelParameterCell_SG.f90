@@ -62,7 +62,8 @@ module ModelParameterCell_SG
     !
 contains
     !
-    !> No function briefing
+    !> No subroutine briefing
+	!
     function ModelParameterCell_SG_ctor( grid, cell_cond, param_type ) result( self )
         implicit none
         !
@@ -114,7 +115,8 @@ contains
         !
     end subroutine ModelParameterCell_SG_dtor
     !
-    !> No function briefing
+    !> No subroutine briefing
+	!
     function slice1DModelParameterCell_SG( self, ix, iy ) result( model_param_1D )
         implicit none
         !
@@ -137,7 +139,8 @@ contains
         !
     end function slice1DModelParameterCell_SG
     !
-    !> No function briefing
+    !> No subroutine briefing
+	!
     function avgModel1DModelParameterCell_SG( self ) result( model_param_1D )
         implicit none
         !
@@ -175,7 +178,8 @@ contains
         !
     end function avgModel1DModelParameterCell_SG
     !
-    !> No function briefing
+    !> No subroutine briefing
+	!
     function slice2DModelParameterCell_SG( self, axis, j ) result( m2D )
         implicit none
         !
@@ -294,7 +298,7 @@ contains
         !
         !
         !> Grid dimensions
-        call self%cell_cond%grid%GetDimensions( nx, ny, nz, nzAir )
+        call self%cell_cond%grid%getDimensions( nx, ny, nz, nzAir )
         nz_earth = nz - nzAir
         !
         counter = self%cell_cond%Nx * self%cell_cond%Ny * nz_earth
@@ -328,7 +332,8 @@ contains
         !
     end subroutine linCombModelParameterCell_SG
     !
-    !> No function briefing
+    !> No subroutine briefing
+	!
     function dotProdModelParameterCell_SG( self, rhs ) result( rvalue )
         implicit none
         !

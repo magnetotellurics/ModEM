@@ -39,7 +39,8 @@ module ForwardSolverIT_DC
     !
 contains
     !
-    !> No function briefing
+    !> No subroutine briefing
+	!
     function ForwardSolverIT_DC_ctor( model_operator, solver_type ) result( self )
         implicit none
         !
@@ -171,7 +172,8 @@ contains
         !
     end subroutine zeroDiagnosticsForwardSolverIT_DC
     !
-    !> No function briefing
+    !> No subroutine briefing
+	!
     subroutine createESolutionForwardSolverIT_DC( self, pol, source, e_solution )
         implicit none
         !

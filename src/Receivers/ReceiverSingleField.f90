@@ -29,7 +29,8 @@ module ReceiverSingleField
     !
 contains
     !
-    !> No function briefing
+    !> No subroutine briefing
+	!
     function ReceiverSingleField_ctor( location, azimuth, rx_type ) result( self )
         implicit none
         !
@@ -197,7 +198,8 @@ contains
         !
     end subroutine predictedDataSingleField
     !
-    !> No function briefing
+    !> No subroutine briefing
+	!
     function isEqualSingleField( self, other ) result( equal )
         implicit none
         !

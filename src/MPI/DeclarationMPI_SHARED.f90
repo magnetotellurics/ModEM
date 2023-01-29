@@ -286,7 +286,8 @@ contains
         !
     end subroutine unpackSharedBuffer
     !
-    !> No function briefing
+    !> No subroutine briefing
+	!
     function allocateScalarBuffer( scalar ) result( scalar_size_bytes )
         implicit none
         !
@@ -403,7 +404,8 @@ contains
         !
     end subroutine unpackScalarBuffer
     !
-    !> No function briefing
+    !> No subroutine briefing
+	!
     function allocateVectorBuffer( vector ) result( vector_size_bytes )
         implicit none
         !
@@ -525,7 +527,8 @@ contains
         !
     end subroutine unpackVectorBuffer
     !
-    !> No function briefing
+    !> No subroutine briefing
+	!
     function allocateCSparseVectorBuffer( vector ) result( vector_size_bytes )
         implicit none
         !
@@ -583,7 +586,8 @@ contains
         !
     end subroutine packCSparseVectorBuffer
     !
-    !> No function briefing
+    !> No subroutine briefing
+	!
     function unpackCSparseVectorBuffer( index ) result( vector )
         implicit none
         !
@@ -626,7 +630,8 @@ contains
         !
     end function unpackCSparseVectorBuffer
     !
-    !> No function briefing
+    !> No subroutine briefing
+	!
     function allocateGridBuffer( grid ) result( grid_size_bytes )
         implicit none
         !
@@ -741,7 +746,8 @@ contains
         !
     end subroutine packGridBuffer
     !
-    !> No function briefing
+    !> No subroutine briefing
+	!
     function unpackGridBuffer( index ) result( grid )
         implicit none
         !
@@ -983,7 +989,8 @@ contains
         !
     end function unpackModelBuffer
     !
-    !> No function briefing
+    !> No subroutine briefing
+	!
     function allocateTransmitterBuffer( transmitter ) result( transmitter_size_bytes )
         implicit none
         !
@@ -1071,7 +1078,8 @@ contains
         !
     end subroutine packTransmitterBuffer
     !
-    !> No function briefing
+    !> No subroutine briefing
+	!
     function unpackTransmitterBuffer( index ) result ( transmitter )
         implicit none
         !
@@ -1145,7 +1153,8 @@ contains
         !
     end function unpackTransmitterBuffer
     !
-    !> No function briefing
+    !> No subroutine briefing
+	!
     function allocateReceiverBuffer( receiver ) result( receiver_size_bytes )
         implicit none
         !
@@ -1287,7 +1296,8 @@ contains
         !
     end subroutine packReceiverBuffer
     !
-    !> No function briefing
+    !> No subroutine briefing
+	!
     function unpackReceiverBuffer( index ) result ( receiver )
         implicit none
         !
@@ -1709,7 +1719,8 @@ contains
         !
     end subroutine sendTo
     !
-    !> No function briefing
+    !> No subroutine briefing
+	!
     function BiArrayToArray( d2_array ) result ( d1_array )
         !
         real( kind=prec ), intent( in ) :: d2_array(:,:)
@@ -1725,7 +1736,8 @@ contains
         !
     end function BiArrayToArray
     !
-    !> No function briefing
+    !> No subroutine briefing
+	!
     function arrayToBiArray( d1_array, x, y ) result ( d2_array )
         !
         real( kind=prec ), intent( in ) :: d1_array(:)

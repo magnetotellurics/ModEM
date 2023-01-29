@@ -24,7 +24,8 @@ module Solver_PCG
     !
 contains
     !
-    !> No function briefing
+    !> No subroutine briefing
+	!
     function Solver_PCG_ctor( model_operator ) result( self )
         implicit none
         !

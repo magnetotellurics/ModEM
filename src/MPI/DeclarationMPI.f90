@@ -320,7 +320,8 @@ contains
         !
     end subroutine sendBasicComponents
     !
-    !> No function briefing
+    !> No subroutine briefing
+	!
     function allocateGridBuffer( grid, is_embedded ) result( grid_buffer_size )
         implicit none
         !
@@ -459,7 +460,8 @@ contains
         !
     end subroutine packGridBuffer
     !
-    !> No function briefing
+    !> No subroutine briefing
+	!
     subroutine unpackGridBuffer( grid, parent_buffer, parent_buffer_size, index )
         implicit none
         !
@@ -779,7 +781,8 @@ contains
         !
     end subroutine sendModel
     !
-    !> No function briefing
+    !> No subroutine briefing
+	!
     function allocateTransmitterBuffer( transmitter ) result( transmitter_size_bytes )
         implicit none
         !
@@ -869,7 +872,8 @@ contains
         !
     end subroutine packTransmitterBuffer
     !
-    !> No function briefing
+    !> No subroutine briefing
+	!
     function unpackTransmitterBuffer( parent_buffer, parent_buffer_size, index ) result( transmitter )
         implicit none
         !
@@ -939,7 +943,8 @@ contains
         !
     end function unpackTransmitterBuffer
     !
-    !> No function briefing
+    !> No subroutine briefing
+	!
     function allocateReceiverBuffer( receiver ) result( receiver_size_bytes )
         implicit none
         !
@@ -1088,7 +1093,8 @@ contains
         !
     end subroutine packReceiverBuffer
     !
-    !> No function briefing
+    !> No subroutine briefing
+	!
     function unpackReceiverBuffer( parent_buffer, parent_buffer_size, index ) result( receiver )
         implicit none
         !
@@ -1593,7 +1599,7 @@ contains
         call MPI_PACK_SIZE( 1, MPI_INTEGER, main_comm, nbytes(1), ierr )
         call MPI_PACK_SIZE( 4, MPI_CHARACTER, main_comm, nbytes(2), ierr )
         call MPI_PACK_SIZE( 1, MPI_LOGICAL, main_comm, nbytes(3), ierr )
-        call MPI_PACK_SIZE( 7, MPI_INTEGER, main_comm, nbytes(4), ierr )
+        call MPI_PACK_SIZE( 8, MPI_INTEGER, main_comm, nbytes(4), ierr )
         call MPI_PACK_SIZE( scalar%Nxyz, MPI_DOUBLE_COMPLEX, main_comm, nbytes(5), ierr )
         !
         do i = 1, size( nbytes )
@@ -1635,6 +1641,7 @@ contains
         call MPI_PACK( scalar%nz, 1, MPI_INTEGER, parent_buffer, parent_buffer_size, index, main_comm, ierr )
         call MPI_PACK( scalar%NdV(1), 3, MPI_INTEGER, parent_buffer, parent_buffer_size, index, main_comm, ierr )
         call MPI_PACK( scalar%Nxyz, 1, MPI_INTEGER, parent_buffer, parent_buffer_size, index, main_comm, ierr )
+        call MPI_PACK( scalar%store_state, 1, MPI_INTEGER, parent_buffer, parent_buffer_size, index, main_comm, ierr )
         !
         call scalar%getArray( aux_array )
         !
@@ -1692,6 +1699,7 @@ contains
         call MPI_UNPACK( parent_buffer, parent_buffer_size, index, scalar%nz, 1, MPI_INTEGER, main_comm, ierr )
         call MPI_UNPACK( parent_buffer, parent_buffer_size, index, scalar%NdV(1), 3, MPI_INTEGER, main_comm, ierr )
         call MPI_UNPACK( parent_buffer, parent_buffer_size, index, scalar%Nxyz, 1, MPI_INTEGER, main_comm, ierr )
+        call MPI_UNPACK( parent_buffer, parent_buffer_size, index, scalar%store_state, 1, MPI_INTEGER, main_comm, ierr )
         !
         allocate( aux_array( scalar%Nxyz ) )
         !
@@ -1715,7 +1723,7 @@ contains
         call MPI_PACK_SIZE( 1, MPI_INTEGER, main_comm, nbytes(1), ierr )
         call MPI_PACK_SIZE( 4, MPI_CHARACTER, main_comm, nbytes(2), ierr )
         call MPI_PACK_SIZE( 1, MPI_LOGICAL, main_comm, nbytes(3), ierr )
-        call MPI_PACK_SIZE( 15, MPI_INTEGER, main_comm, nbytes(4), ierr )
+        call MPI_PACK_SIZE( 16, MPI_INTEGER, main_comm, nbytes(4), ierr )
         !
         call MPI_PACK_SIZE( vector%Nxyz(1) + vector%Nxyz(2) + vector%Nxyz(3), MPI_DOUBLE_COMPLEX, main_comm, nbytes(5), ierr )
         !
@@ -1760,6 +1768,7 @@ contains
         call MPI_PACK( vector%NdY(1), 3, MPI_INTEGER, parent_buffer, parent_buffer_size, index, main_comm, ierr )
         call MPI_PACK( vector%NdZ(1), 3, MPI_INTEGER, parent_buffer, parent_buffer_size, index, main_comm, ierr )
         call MPI_PACK( vector%Nxyz(1), 3, MPI_INTEGER, parent_buffer, parent_buffer_size, index, main_comm, ierr )
+        call MPI_PACK( vector%store_state, 1, MPI_INTEGER, parent_buffer, parent_buffer_size, index, main_comm, ierr )
         !
         call vector%getArray( aux_array )
         call MPI_PACK( aux_array(1), vector%Nxyz(1) + vector%Nxyz(2) + vector%Nxyz(3), MPI_DOUBLE_COMPLEX, parent_buffer, parent_buffer_size, index, main_comm, ierr )
@@ -1818,6 +1827,7 @@ contains
         call MPI_UNPACK( parent_buffer, parent_buffer_size, index, vector%NdY(1), 3, MPI_INTEGER, main_comm, ierr )
         call MPI_UNPACK( parent_buffer, parent_buffer_size, index, vector%NdZ(1), 3, MPI_INTEGER, main_comm, ierr )
         call MPI_UNPACK( parent_buffer, parent_buffer_size, index, vector%Nxyz(1), 3, MPI_INTEGER, main_comm, ierr )
+        call MPI_UNPACK( parent_buffer, parent_buffer_size, index, vector%store_state, 1, MPI_INTEGER, main_comm, ierr )
         !
         allocate( aux_array( vector%Nxyz(1) + vector%Nxyz(2) + vector%Nxyz(3) ) )
         call MPI_UNPACK( parent_buffer, parent_buffer_size, index, aux_array(1), vector%Nxyz(1) + vector%Nxyz(2) + vector%Nxyz(3), MPI_DOUBLE_COMPLEX, main_comm, ierr )
@@ -1885,7 +1895,8 @@ contains
         !
     end subroutine packCSparseVectorBuffer
     !
-    !> No function briefing
+    !> No subroutine briefing
+	!
     subroutine unpackCSparseVectorBuffer( sp_vector, grid, parent_buffer, parent_buffer_size, index )
         implicit none
         !

@@ -37,7 +37,8 @@ module ModelParameter1D
     !
 contains
     !
-    !> No function briefing
+    !> No subroutine briefing
+	!
     function ModelParameter1D_ctor( grid ) result( self )
         implicit none
         !

@@ -72,7 +72,8 @@ contains
         !
     end function updateReceiverArray
     !
-    !> No function briefing
+    !> No subroutine briefing
+	!
     function getReceiver( iRx ) result( rx )
         implicit none
         !

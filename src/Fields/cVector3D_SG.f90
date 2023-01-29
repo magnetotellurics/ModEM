@@ -10,6 +10,8 @@ module cVector3D_SG
         !
         complex( kind=prec ), allocatable, dimension(:, :, :) :: x, y, z
         !
+        complex( kind=prec ), allocatable, dimension(:) :: column_vector
+        !
     contains
         !
         final :: cVector3D_SG_dtor
@@ -22,14 +24,12 @@ module cVector3D_SG
         procedure, public :: setAllInterior => setAllInteriorCVector3D_SG
         procedure, public :: intBdryIndices => intBdryIndicesCVector3D_SG
         !
-        procedure, public :: length => lengthCVector3D_SG
-        !
-        procedure, public :: getArray => getArrayCVector3D_SG
-        procedure, public :: setArray => setArrayCVector3D_SG
-        !
         procedure, public :: setVecComponents => setVecComponentsCVector3D_SG
         !
+        procedure, public :: length => lengthCVector3D_SG
+        !
         procedure, public :: zeros => zerosCVector3D_SG
+        !
         procedure, public :: add => addCVector3D_SG
         !procedure, public :: addSparseVector => addSparseVectorCVector3D_SG
         !
@@ -39,15 +39,13 @@ module cVector3D_SG
         procedure, public :: multByField => multByFieldCVector3D_SG
         procedure, public :: multByComplex => multByComplexCVector3D_SG
         procedure, public :: multByReal => multByRealCVector3D_SG
-		!
+        !
         procedure, public :: divByField => divByFieldCVector3D_SG
         procedure, public :: divByValue => divByValueCVector3D_SG
+        !
         procedure, public :: dotProd => dotProdCVector3D_SG
+        !
         procedure, public :: diagMult => diagMultCVector3D_SG
-        !
-        procedure, public :: getReal => getRealCVector3D_SG
-        !
-        procedure, public :: copyFrom => copyFromCVector3D_SG
         !
         procedure, public :: sumEdges => sumEdgesCVector3D_SG
         procedure, public :: avgCells => avgCellsCVector3D_SG
@@ -55,8 +53,19 @@ module cVector3D_SG
         procedure, public :: conjugate => conjugateCVector3D_SG
         !
         procedure, public :: linComb => linCombCVector3D_SG
+        !
         procedure, public :: multAdd => multAddCVector3D_SG
+        !
         procedure, public :: interpFunc => interpFuncCVector3D_SG
+        !
+        procedure, public :: getReal => getRealCVector3D_SG
+        !
+        procedure, public :: getArray => getArrayCVector3D_SG
+        procedure, public :: setArray => setArrayCVector3D_SG
+        !
+        procedure, public :: switchStoreState => switchStoreStateCVector3D_SG
+        !
+        procedure, public :: copyFrom => copyFromCVector3D_SG
         !
         procedure, public :: print => printCVector3D_SG
         !
@@ -68,7 +77,8 @@ module cVector3D_SG
     !
 contains
     !
-    !> No function briefing
+    !> No subroutine briefing
+    !
     function cVector3D_SG_ctor( grid, grid_type ) result ( self )
         implicit none
         !
@@ -139,6 +149,7 @@ contains
     end function cVector3D_SG_ctor
     !
     !> No subroutine briefing
+    !
     subroutine cVector3D_SG_dtor( self )
         implicit none
         !
@@ -162,6 +173,7 @@ contains
     end subroutine cVector3D_SG_dtor
     !
     !> No subroutine briefing
+    !
     subroutine readCVector3D_SG( self, funit, ftype )
         implicit none
         !
@@ -220,6 +232,7 @@ contains
     end subroutine readCVector3D_SG
     !
     !> No subroutine briefing
+    !
     subroutine writeCVector3D_SG( self, funit, ftype )
         implicit none
         !
@@ -265,6 +278,7 @@ contains
     end subroutine writeCVector3D_SG
     !
     !> No subroutine briefing
+    !
     subroutine setAllBoundaryCVector3D_SG( self, cvalue )
         implicit none
         !
@@ -292,6 +306,7 @@ contains
     end subroutine setAllBoundaryCVector3D_SG
     !
     !> No subroutine briefing
+    !
     subroutine setAllinteriorCVector3D_SG( self, cvalue )
         implicit none
         !
@@ -314,6 +329,7 @@ contains
     end subroutine setAllinteriorCVector3D_SG
     !
     !> No subroutine briefing
+    !
     subroutine setOneBoundaryCVector3D_SG( self, bdry, cvalue, int_only )
         implicit none
         !
@@ -414,6 +430,7 @@ contains
     end subroutine setOneBoundaryCVector3D_SG
     !
     !> No subroutine briefing
+    !
     subroutine intBdryIndicesCVector3D_SG( self, ind_i, ind_b )
         implicit none
         !
@@ -506,7 +523,8 @@ contains
         !
     end subroutine intBdryIndicesCVector3D_SG
     !
-    !> No function briefing
+    !> No subroutine briefing
+    !
     function lengthCVector3D_SG( self ) result( n )
         implicit none
         !
@@ -519,6 +537,7 @@ contains
     end function lengthCVector3D_SG
     !
     !> No subroutine briefing
+    !
     subroutine getArrayCVector3D_SG( self, array )
         implicit none
         !
@@ -533,6 +552,7 @@ contains
     end subroutine getArrayCVector3D_SG
     !
     !> No subroutine briefing
+    !
     subroutine setArrayCVector3D_SG( self, array )
         implicit none
         !
@@ -563,6 +583,7 @@ contains
     end subroutine setArrayCVector3D_SG
     !
     !> No subroutine briefing
+    !
     subroutine setVecComponentsCVector3D_SG( self, xyz, &
             &                              xmin, xstep, xmax, &
             &                              ymin, ystep, ymax, &
@@ -628,6 +649,7 @@ contains
     end subroutine setVecComponentsCVector3D_SG
     !
     !> No subroutine briefing
+    !
     subroutine zerosCVector3D_SG( self )
         implicit none
         !
@@ -640,6 +662,7 @@ contains
     end subroutine zerosCVector3D_SG
     !
     !> No subroutine briefing
+    !
     subroutine addCVector3D_SG( self, rhs )
         implicit none
         !
@@ -719,6 +742,7 @@ contains
     end subroutine subValueCVector3D_SG
     !
     !> No subroutine briefing
+    !
     subroutine subFieldCVector3D_SG( self, rhs )
         implicit none
         !
@@ -760,6 +784,7 @@ contains
     end subroutine subFieldCVector3D_SG
     !
     !> No subroutine briefing
+    !
     subroutine multByFieldCVector3D_SG( self, rhs )
         implicit none
         !
@@ -802,6 +827,7 @@ contains
     end subroutine multByFieldCVector3D_SG
     !
     !> No subroutine briefing
+    !
     subroutine multByComplexCVector3D_SG( self, cvalue )
         implicit none
         !
@@ -815,6 +841,7 @@ contains
     end subroutine multByComplexCVector3D_SG
     !
     !> No subroutine briefing
+    !
     subroutine multByRealCVector3D_SG( self, rvalue )
         implicit none
         !
@@ -828,6 +855,7 @@ contains
     end subroutine multByRealCVector3D_SG
     !
     !> No subroutine briefing
+    !
     subroutine divByFieldCVector3D_SG( self, rhs )
         implicit none
         !
@@ -870,6 +898,7 @@ contains
     end subroutine divByFieldCVector3D_SG
     !
     !> No subroutine briefing
+    !
     subroutine divByValueCVector3D_SG( self, cvalue )
         implicit none
         !
@@ -882,7 +911,8 @@ contains
         !
     end subroutine divByValueCVector3D_SG
     !
-    !> No function briefing
+    !> No subroutine briefing
+    !
     function dotProdCVector3D_SG( self, rhs ) result( cvalue )
         implicit none
         !
@@ -917,6 +947,7 @@ contains
     end function dotProdCVector3D_SG
     !
     !> No subroutine briefing
+    !
     function diagMultCVector3D_SG( self, rhs ) result( diag_mult )
         implicit none
         !
@@ -962,6 +993,7 @@ contains
     end function diagMultCVector3D_SG
     !
     !> No subroutine briefing
+    !
     subroutine sumEdgesCVector3D_SG( self, cell_obj, interior_only )
         implicit none
         !
@@ -1044,6 +1076,7 @@ contains
     end subroutine sumEdgesCVector3D_SG
     !
     !> No subroutine briefing
+    !
     subroutine avgCellsCVector3D_SG( self, E_in, ptype )
         implicit none
         !
@@ -1154,6 +1187,7 @@ contains
     end subroutine avgCellsCVector3D_SG
     !
     !> No subroutine briefing
+    !
     subroutine conjugateCVector3D_SG( self )
         implicit none
         !
@@ -1166,6 +1200,7 @@ contains
     end subroutine conjugateCVector3D_SG
     !
     !> No subroutine briefing
+    !
     subroutine linCombCVector3D_SG( self, rhs, c1, c2 )
         implicit none
         !
@@ -1192,6 +1227,7 @@ contains
     end subroutine linCombCVector3D_SG
     !
     !> No subroutine briefing
+    !
     subroutine multAddCVector3D_SG( self, cvalue, rhs )
         implicit none
         !
@@ -1218,6 +1254,7 @@ contains
     end subroutine multAddCVector3D_SG
     !
     !> No subroutine briefing
+    !
     subroutine interpFuncCVector3D_SG( self, location, xyz, interp )
         implicit none
         !
@@ -1407,7 +1444,8 @@ contains
         !
     end subroutine interpFuncCVector3D_SG
     !
-    !> No function briefing
+    !> No subroutine briefing
+    !
     subroutine getRealCVector3D_SG( self, r_field )
         implicit none
         !
@@ -1433,6 +1471,75 @@ contains
     end subroutine getRealCVector3D_SG
     !
     !> No subroutine briefing
+    !
+    subroutine switchStoreStateCVector3D_SG( self )
+        implicit none
+        !
+        class( cVector3D_SG_t ), intent( inout ) :: self
+        !
+        integer i1, i2
+        !
+        select case( self%store_state )
+            !
+            case( full_vector )
+                !
+                allocate( self%column_vector( self%length() ) )
+                !
+                self%column_vector = &
+                (/reshape( self%x, (/self%Nxyz(1), 1/) ), &
+                  reshape( self%y, (/self%Nxyz(2), 1/) ), &
+                  reshape( self%z, (/self%Nxyz(3), 1/) )/)
+                !
+                deallocate( self%x )
+                deallocate( self%y )
+                deallocate( self%z )
+                !
+                self%store_state = column_vector
+                !
+            case( column_vector )
+                !
+                if( self%grid_type == EDGE ) then
+                    !
+                    allocate( self%x( self%nx, self%ny + 1, self%nz + 1 ) )
+                    allocate( self%y( self%nx + 1, self%ny, self%nz + 1 ) )
+                    allocate( self%z( self%nx + 1, self%ny + 1, self%nz ) )
+                    !
+                else if( self%grid_type == FACE ) then
+                    !
+                    allocate( self%x( self%nx + 1, self%ny, self%nz ) )
+                    allocate( self%y( self%nx, self%ny + 1, self%nz ) )
+                    allocate( self%z( self%nx, self%ny, self%nz + 1 ) )
+                    !
+                else
+                    stop "Error: switchStoreStateCVector3D_SG > Only EDGE or FACE types allowed."
+                endif
+                !
+                ! Ex
+                i1 = 1; i2 = self%Nxyz(1)
+                self%x = reshape( self%column_vector( i1 : i2 ), self%NdX )
+                !
+                ! Ey
+                i1 = i2 + 1; i2 = i2 + self%Nxyz(2)
+                self%y = reshape( self%column_vector( i1 : i2 ), self%NdY )
+                !
+                ! Ez
+                i1 = i2 + 1; i2 = i2 + self%Nxyz(3)
+                self%z = reshape( self%column_vector( i1 : i2 ), self%NdZ )
+                !
+                deallocate( self%column_vector )
+                !
+                self%store_state = full_vector
+                !
+            case default
+                write( *, * ) "Error: switchStoreStateCVector3D_SG > Unknown store_state :[", self%store_state, "]"
+                stop
+            !
+        end select
+        !
+    end subroutine switchStoreStateCVector3D_SG
+    !
+    !> No subroutine briefing
+    !
     subroutine copyFromCVector3D_SG( self, rhs )
         implicit none
         !
@@ -1448,7 +1555,7 @@ contains
         self%nx = rhs%nx
         self%ny = rhs%ny
         self%nz = rhs%nz
-        self%is_allocated = .TRUE.
+        self%store_state = rhs%store_state
         !
         select type( rhs )
             class is( cVector3D_SG_t )
@@ -1477,9 +1584,12 @@ contains
                 stop "Error: copyFromCVector3D_SG > Incompatible rhs"
         end select
         !
+        self%is_allocated = .TRUE.
+        !
     end subroutine copyFromCVector3D_SG
     !
     !> No subroutine briefing
+    !
     subroutine printCVector3D_SG( self, io_unit, title, append )
         implicit none
         !

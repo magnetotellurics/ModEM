@@ -46,7 +46,8 @@ module ModelParameter2D
     !
 contains
     !
-    !> No function briefing
+    !> No subroutine briefing
+	!
     function ModelParameter2D_ctor(grid) result( self )
         implicit none
         !
@@ -80,7 +81,8 @@ contains
 
     end function ModelParameter2D_ctor
     !
-    !> No function briefing
+    !> No subroutine briefing
+	!
     function lengthModelParameter2D( self ) result(nParam)
         implicit none
         class(ModelParameter2D_t), intent( in ) :: self
@@ -141,7 +143,8 @@ contains
 
     end subroutine setConductivityModelParameter2D
     !
-    !> No function briefing
+    !> No subroutine briefing
+	!
     function PDEmappingParameter2D( self ) result(sigmaEdge)
         !>    Output E is a real 1D array -- but easiest to do this using
         !> preliminary    mapping onto an Esoln2DTM object -- which has complex fields
@@ -194,7 +197,8 @@ contains
 
     end function PDEmappingParameter2D
     !
-    !> No function briefing
+    !> No subroutine briefing
+	!
     function slice1DModelParameter2D(self,j) result(m1D)
         !>     extracts slice corresponding to column j of model parameter
         implicit none

@@ -61,7 +61,8 @@ contains
         !
     end function DataEntryMT_REF_ctor
     !
-    !> No function briefing
+    !> No subroutine briefing
+	!
     function getCopyDataEntryMT_REF( self ) result ( copy )
         implicit none
         !

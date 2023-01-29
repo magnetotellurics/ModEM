@@ -70,7 +70,7 @@ module Grid
             procedure(interface_slice_1d_grid), deferred, public :: Slice1D
             procedure(interface_slice_2d_grid), deferred, public :: Slice2D
             
-            procedure, public :: GetDimensions => GetDimensionsGrid
+            procedure, public :: getDimensions => GetDimensionsGrid
             
             procedure, public :: SetOrigin
             procedure, public :: GetOrigin
@@ -229,7 +229,8 @@ contains
         self%rotDeg = rotDeg
     end subroutine SetGridRotation
     !
-    !> No function briefing
+    !> No subroutine briefing
+	!
     function GetGridRotation( self ) result(rotDeg)
         implicit none
         !
@@ -251,7 +252,8 @@ contains
         !
     end subroutine SetGridGeometry
     !
-    !> No function briefing
+    !> No subroutine briefing
+	!
     function GetGridGeometry( self ) result(s)
         implicit none
         !

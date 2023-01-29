@@ -60,7 +60,8 @@ module ModelOperator_MF
     !
 contains
     !
-    !> No function briefing
+    !> No subroutine briefing
+	!
     function ModelOperator_MF_ctor( grid ) result( self )
         implicit none
         !

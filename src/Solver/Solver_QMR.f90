@@ -24,7 +24,8 @@ module Solver_QMR
      !
 contains
     !
-    !> No function briefing
+    !> No subroutine briefing
+	!
     function Solver_QMR_ctor( model_operator ) result( self )
         implicit none
         !

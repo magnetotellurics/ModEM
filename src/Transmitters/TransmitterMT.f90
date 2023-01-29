@@ -111,7 +111,8 @@ module TransmitterMT
         !
     end subroutine solveTransmitterMT
     !
-    !> No function briefing
+    !> No subroutine briefing
+	!
     function isEqualTransmitterMT( self, other ) result( equal )
         implicit none
         !

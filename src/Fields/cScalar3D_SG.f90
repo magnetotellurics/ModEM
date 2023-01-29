@@ -9,6 +9,8 @@ module cScalar3D_SG
         !
         complex( kind=prec ), allocatable :: v(:, :, :)
         !
+        complex( kind=prec ), allocatable, dimension(:) :: column_vector
+        !
     contains
         !
         !> Destructor
@@ -28,6 +30,7 @@ module cScalar3D_SG
         procedure, public :: length => lengthCScalar3D_SG
         !
         procedure, public :: getArray => getArrayCScalar3D_SG
+        !
         procedure, public :: setArray => setArrayCScalar3D_SG
         !
         procedure, public :: setVecComponents => setVecComponentsCScalar3D_SG
@@ -59,6 +62,8 @@ module cScalar3D_SG
         !
         procedure, public :: getReal => getRealCScalar3D_SG
         !
+        procedure, public :: switchStoreState => switchStoreStateCScalar3D_SG
+        !
         procedure, public :: copyFrom => copyFromCScalar3D_SG
         !
         procedure, public :: print => printCScalar3D_SG
@@ -71,7 +76,8 @@ module cScalar3D_SG
     !
 contains
     !
-    !> No function briefing
+    !> No subroutine briefing
+    !
     function cScalar3D_SG_ctor( grid, grid_type ) result ( self )
         implicit none
         !
@@ -90,7 +96,7 @@ contains
         self%grid_type = grid_type
         !
         !> Grid dimensions
-        call grid%GetDimensions( nx, ny, nz, nzAir )
+        call grid%getDimensions( nx, ny, nz, nzAir )
         nz_earth = nz - nzAir
         !
         self%nx = nx
@@ -131,6 +137,7 @@ contains
     end function cScalar3D_SG_ctor
     !
     !> No subroutine briefing
+    !
     subroutine cScalar3D_SG_dtor( self )
         implicit none
         !
@@ -150,6 +157,7 @@ contains
     end subroutine cScalar3D_SG_dtor
     !
     !> No subroutine briefing
+    !
     subroutine readCScalar3D_SG( self, funit, ftype )
         implicit none
         !
@@ -246,6 +254,7 @@ contains
     end subroutine readCScalar3D_SG
     !
     !> No subroutine briefing
+    !
     subroutine writeCScalar3D_SG( self, funit, ftype )
         implicit none
         !
@@ -352,6 +361,7 @@ contains
     end subroutine writeCScalar3D_SG
     !
     !> No subroutine briefing
+    !
     subroutine setAllBoundaryCScalar3D_SG( self, cvalue )
         implicit none
         !
@@ -371,6 +381,7 @@ contains
     end subroutine setAllBoundaryCScalar3D_SG
     !
     !> No subroutine briefing
+    !
     subroutine setOneBoundaryCScalar3D_SG( self, bdry, cvalue, int_only )
         implicit none
         !
@@ -444,6 +455,7 @@ contains
     end subroutine setOneBoundaryCScalar3D_SG
     !
     !> No subroutine briefing
+    !
     subroutine setAllInteriorCScalar3D_SG( self, cvalue )
         implicit none
         !
@@ -455,6 +467,7 @@ contains
     end subroutine setAllInteriorCScalar3D_SG
     !
     !> No subroutine briefing
+    !
     subroutine intBdryIndicesCScalar3D_SG( self, ind_i, ind_b )
         implicit none
         !
@@ -522,7 +535,8 @@ contains
         !
     end subroutine intBdryIndicesCScalar3D_SG
     !
-    !> No function briefing
+    !> No subroutine briefing
+    !
     function lengthCScalar3D_SG( self ) result( field_length )
         implicit none
         !
@@ -535,6 +549,7 @@ contains
     end function lengthCScalar3D_SG
     !
     !> No subroutine briefing
+    !
     subroutine getArrayCScalar3D_SG( self, array )
         implicit none
         !
@@ -547,6 +562,7 @@ contains
     end subroutine getArrayCScalar3D_SG
     !
     !> No subroutine briefing
+    !
     subroutine setArrayCScalar3D_SG( self, array )
         implicit none
         !
@@ -564,6 +580,7 @@ contains
     end subroutine setArrayCScalar3D_SG
     !
     !> No subroutine briefing
+    !
     subroutine setVecComponentsCScalar3D_SG( self, xyz, &
                                              xmin, xstep, xmax, &
                                              ymin, ystep, ymax, &
@@ -599,6 +616,7 @@ contains
     end subroutine setVecComponentsCScalar3D_SG
     !
     !> No subroutine briefing
+    !
     subroutine zerosCScalar3D_SG( self )
         implicit none
         !
@@ -613,6 +631,7 @@ contains
     end subroutine zerosCScalar3D_SG
     !
     !> No subroutine briefing
+    !
     subroutine addCScalar3D_SG( self, rhs )
         implicit none
         !
@@ -637,6 +656,7 @@ contains
     end subroutine addCScalar3D_SG
     !
     !> No subroutine briefing
+    !
     subroutine subValueCScalar3D_SG( self, cvalue )
         implicit none
         !
@@ -648,6 +668,7 @@ contains
     end subroutine subValueCScalar3D_SG
     !
     !> No subroutine briefing
+    !
     subroutine subFieldCScalar3D_SG( self, rhs )
         implicit none
         !
@@ -672,6 +693,7 @@ contains
     end subroutine subFieldCScalar3D_SG
     !
     !> No subroutine briefing
+    !
     subroutine multByFieldCScalar3D_SG( self, rhs )
         implicit none
         !
@@ -696,6 +718,7 @@ contains
     end subroutine multByFieldCScalar3D_SG
     !
     !> No subroutine briefing
+    !
     subroutine multByComplexCScalar3D_SG( self, cvalue )
         implicit none
         !
@@ -707,6 +730,7 @@ contains
     end subroutine multByComplexCScalar3D_SG
     !
     !> No subroutine briefing
+    !
     subroutine multByRealCScalar3D_SG( self, rvalue )
         implicit none
         !
@@ -718,6 +742,7 @@ contains
     end subroutine multByRealCScalar3D_SG
     !
     !> No subroutine briefing
+    !
     subroutine divByFieldCScalar3D_SG( self, rhs )
         implicit none
         !
@@ -742,6 +767,7 @@ contains
     end subroutine divByFieldCScalar3D_SG
     !
     !> No subroutine briefing
+    !
     subroutine divByValueCScalar3D_SG( self, cvalue )
         implicit none
         !
@@ -752,7 +778,8 @@ contains
         !
     end subroutine divByValueCScalar3D_SG
     !
-    !> No function briefing
+    !> No subroutine briefing
+    !
     function dotProdCScalar3D_SG( self, rhs ) result( cvalue )
         implicit none
         !
@@ -778,6 +805,7 @@ contains
     end function dotProdCScalar3D_SG
     !
     !> No subroutine briefing
+    !
     subroutine sumEdgesCScalar3D_SG( self, cell_obj, interior_only )
         implicit none
         !
@@ -790,6 +818,7 @@ contains
     end subroutine sumEdgesCScalar3D_SG
     !
     !> No subroutine briefing
+    !
     subroutine conjugateCScalar3D_SG( self )
         implicit none
         !
@@ -800,6 +829,7 @@ contains
     end subroutine conjugateCScalar3D_SG
     !
     !> No subroutine briefing
+    !
     subroutine linCombCScalar3D_SG( self, rhs, c1, c2 )
         implicit none
         !
@@ -824,6 +854,7 @@ contains
     end subroutine linCombCScalar3D_SG
     !
     !> No subroutine briefing
+    !
     subroutine multAddCScalar3D_SG( self, cvalue, rhs )
         implicit none
         !
@@ -846,7 +877,8 @@ contains
         !
     end subroutine multAddCScalar3D_SG
     !
-    !> No function briefing
+    !> No subroutine briefing
+    !
     subroutine getRealCScalar3D_SG( self, r_field )
         implicit none
         !
@@ -870,6 +902,63 @@ contains
     end subroutine getRealCScalar3D_SG
     !
     !> No subroutine briefing
+    !
+    subroutine switchStoreStateCScalar3D_SG( self )
+        implicit none
+        !
+        class( cScalar3D_SG_t ), intent( inout ) :: self
+        !
+        integer :: nzAir
+        !
+        select case( self%store_state )
+            !
+            case( full_vector )
+                !
+                allocate( self%column_vector( self%length() ) )
+                !
+                self%column_vector = (/reshape( self%v, (/self%Nxyz, 1/))/)
+                !
+                deallocate( self%v )
+                !
+                self%store_state = column_vector
+                !
+            case( column_vector )
+                !
+                if( self%grid_type == CORNER ) then
+                    !
+                    allocate( self%v( self%nx + 1, self%ny + 1, self%nz + 1 ) )
+                    !
+                else if( self%grid_type == CENTER ) then
+                    !
+                    allocate( self%v( self%nx, self%ny, self%nz ) )
+                    !
+                else if( self%grid_type == CELL_EARTH ) then
+                    !
+                    call self%grid%getDimensions( self%nx, self%ny, self%nz, nzAir )
+                    !
+                    allocate( self%v( self%nx, self%ny, self%nz - nzAir ) )
+                    !
+                else
+                     write( *, * ) "Error: switchStoreStateCScalar3D_SG > unrecognized grid type: [", self%grid_type, "]"
+                     stop
+                endif
+                !
+                self%v = reshape( self%column_vector, (/self%NdV(1), self%NdV(2), self%NdV(3)/) )
+                !
+                deallocate( self%column_vector )
+                !
+                self%store_state = full_vector
+                !
+            case default
+                write( *, * ) "Error: switchStoreStateCScalar3D_SG > Unknown store_state :[", self%store_state, "]"
+                stop
+            !
+        end select
+        !
+    end subroutine switchStoreStateCScalar3D_SG
+    !
+    !> No subroutine briefing
+    !
     subroutine copyFromCScalar3D_SG( self, rhs )
         implicit none
         !
@@ -885,6 +974,7 @@ contains
         self%nx = rhs%nx
         self%ny = rhs%ny
         self%nz = rhs%nz
+        self%store_state = rhs%store_state
         !
         select type( rhs )
             !
@@ -912,6 +1002,7 @@ contains
     end subroutine copyFromCScalar3D_SG
     !
     !> No subroutine briefing
+    !
     subroutine printCScalar3D_SG( self, io_unit, title, append )
         implicit none
         !

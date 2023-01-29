@@ -32,7 +32,8 @@ module Forward1D
     !
  contains
     !
-    !> No function briefing
+    !> No subroutine briefing
+	!
     function Forward1D_ctor( sigma ) result( self )
         !
         class( ModelParameter1D_t ), target, intent( in ) :: sigma

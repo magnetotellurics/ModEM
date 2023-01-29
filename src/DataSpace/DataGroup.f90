@@ -95,7 +95,7 @@ contains
         else
             self%error_bar = .FALSE.
         endif
-       !
+        !
         !self%normalized = 0
         !
     end function DataGroup_ctor

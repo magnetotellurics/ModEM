@@ -57,6 +57,8 @@ module cVectorSparse3D_SG
             !
             procedure, public :: getReal => getRealCVectorSparse3D_SG
             !
+            procedure, public :: switchStoreState => switchStoreStateCVectorSparse3D_SG
+            !
             procedure, public :: copyFrom => copyFromCVectorSparse3D_SG
             !
             procedure, public :: sumEdges => sumEdgesCVectorSparse3D_SG
@@ -78,7 +80,8 @@ module cVectorSparse3D_SG
     !
 contains
     !
-    !> No function briefing
+    !> No subroutine briefing
+    !
     function CVectorSparse3D_SG_ctor() result ( self )
         implicit none
         !
@@ -96,6 +99,7 @@ contains
     end function CVectorSparse3D_SG_ctor
     !
     !> No subroutine briefing
+    !
     subroutine CVectorSparse3D_SG_dtor( self )
         implicit none
         !
@@ -117,7 +121,8 @@ contains
         !
     end subroutine CVectorSparse3D_SG_dtor
     !
-    !> No function briefing
+    !> No subroutine briefing
+    !
     function dotProdCVectorSparse3D_SG( self, rhs ) result( cvalue )
         implicit none
         !
@@ -193,7 +198,8 @@ contains
         !
     end function dotProdCVectorSparse3D_SG
     !
-    !> No function briefing
+    !> No subroutine briefing
+    !
     subroutine multByComplexVectorCVectorSparse3D_SG( self, cvalue )
         implicit none
         !
@@ -211,7 +217,8 @@ contains
         !
     end subroutine multByComplexVectorCVectorSparse3D_SG
     !
-    !> No function briefing
+    !> No subroutine briefing
+    !
     subroutine multByRealVectorCVectorSparse3D_SG( self, rvalue )
         implicit none
         !
@@ -229,7 +236,8 @@ contains
         !
     end subroutine multByRealVectorCVectorSparse3D_SG
     !
-    !> No function briefing
+    !> No subroutine briefing
+    !
     function getFullVectorCVectorSparse3D_SG( self ) result( cvector )
         implicit none
         !
@@ -256,6 +264,7 @@ contains
     end function getFullVectorCVectorSparse3D_SG
     !
     !> No subroutine briefing
+    !
     subroutine fromFullVectorCVectorSparse3D_SG( self, cvector )
         implicit none
         !
@@ -365,6 +374,7 @@ contains
     end subroutine fromFullVectorCVectorSparse3D_SG
     !
     !> No subroutine briefing
+    !
     subroutine readCVectorSparse3D_SG( self, funit, ftype )
         implicit none
         !
@@ -377,6 +387,7 @@ contains
     end subroutine readCVectorSparse3D_SG
     !
     !> No subroutine briefing
+    !
     subroutine writeCVectorSparse3D_SG( self, funit, ftype )
         implicit none
         !
@@ -389,6 +400,7 @@ contains
     end subroutine writeCVectorSparse3D_SG
     !
     !> No subroutine briefing
+    !
     subroutine setAllBoundaryCVectorSparse3D_SG( self, cvalue )
         implicit none
         !
@@ -400,6 +412,7 @@ contains
     end subroutine setAllBoundaryCVectorSparse3D_SG
     !
     !> No subroutine briefing
+    !
     subroutine setAllInteriorCVectorSparse3D_SG( self, cvalue )
         implicit none
         !
@@ -411,6 +424,7 @@ contains
     end subroutine setAllInteriorCVectorSparse3D_SG
     !
     !> No subroutine briefing
+    !
     subroutine setOneBoundaryCVectorSparse3D_SG( self, bdry, cvalue, int_only )
         implicit none
         !
@@ -424,6 +438,7 @@ contains
     end subroutine setOneBoundaryCVectorSparse3D_SG
     !
     !> No subroutine briefing
+    !
     subroutine intBdryIndicesCVectorSparse3D_SG( self, ind_i, ind_b )
         implicit none
         !
@@ -434,7 +449,8 @@ contains
         !
     end subroutine intBdryIndicesCVectorSparse3D_SG
     !
-    !> No function briefing
+    !> No subroutine briefing
+    !
     function lengthCVectorSparse3D_SG( self ) result( n )
         implicit none
         !
@@ -447,6 +463,7 @@ contains
     end function lengthCVectorSparse3D_SG
     !
     !> No subroutine briefing
+    !
     subroutine getArrayCVectorSparse3D_SG( self, array )
         implicit none
         !
@@ -458,6 +475,7 @@ contains
     end subroutine getArrayCVectorSparse3D_SG
     !
     !> No subroutine briefing
+    !
     subroutine setArrayCVectorSparse3D_SG( self, array )
         implicit none
         !
@@ -469,6 +487,7 @@ contains
     end subroutine setArrayCVectorSparse3D_SG
     !
     !> No subroutine briefing
+    !
     subroutine setVecComponentsCVectorSparse3D_SG( self, xyz, &
             &                              xmin, xstep, xmax, &
             &                              ymin, ystep, ymax, &
@@ -487,6 +506,7 @@ contains
     end subroutine setVecComponentsCVectorSparse3D_SG
     !
     !> No subroutine briefing
+    !
     subroutine zerosCVectorSparse3D_SG( self )
         implicit none
         !
@@ -497,6 +517,7 @@ contains
     end subroutine zerosCVectorSparse3D_SG
     !
     !> No subroutine briefing
+    !
     subroutine addCVectorSparse3D_SG( self, rhs )
         implicit none
         !
@@ -508,6 +529,7 @@ contains
     end subroutine addCVectorSparse3D_SG
     !
     !> No subroutine briefing
+    !
     subroutine subValueCVectorSparse3D_SG( self, cvalue )
         implicit none
         !
@@ -519,6 +541,7 @@ contains
     end subroutine subValueCVectorSparse3D_SG
     !
     !> No subroutine briefing
+    !
     subroutine subFieldCVectorSparse3D_SG( self, rhs )
         implicit none
         !
@@ -530,6 +553,7 @@ contains
     end subroutine subFieldCVectorSparse3D_SG
     !
     !> No subroutine briefing
+    !
     subroutine multByFieldCVectorSparse3D_SG( self, rhs )
         implicit none
         !
@@ -541,6 +565,7 @@ contains
     end subroutine multByFieldCVectorSparse3D_SG
     !
     !> No subroutine briefing
+    !
     subroutine divByFieldCVectorSparse3D_SG( self, rhs )
         implicit none
         !
@@ -552,6 +577,7 @@ contains
     end subroutine divByFieldCVectorSparse3D_SG
     !
     !> No subroutine briefing
+    !
     subroutine divByValueCVectorSparse3D_SG( self, cvalue )
         implicit none
         !
@@ -563,6 +589,7 @@ contains
     end subroutine divByValueCVectorSparse3D_SG
     !
     !> No subroutine briefing
+    !
     function diagMultCVectorSparse3D_SG( self, rhs ) result( diag_mult )
         implicit none
         !
@@ -576,6 +603,7 @@ contains
     end function diagMultCVectorSparse3D_SG
     !
     !> No subroutine briefing
+    !
     subroutine sumEdgesCVectorSparse3D_SG( self, cell_obj, interior_only )
         implicit none
         !
@@ -588,6 +616,7 @@ contains
     end subroutine sumEdgesCVectorSparse3D_SG
     !
     !> No subroutine briefing
+    !
     subroutine avgCellsCVectorSparse3D_SG( self, E_in, ptype )
         implicit none
         !
@@ -600,6 +629,7 @@ contains
     end subroutine avgCellsCVectorSparse3D_SG
     !
     !> No subroutine briefing
+    !
     subroutine conjugateCVectorSparse3D_SG( self )
         implicit none
         !
@@ -610,6 +640,7 @@ contains
     end subroutine conjugateCVectorSparse3D_SG
     !
     !> No subroutine briefing
+    !
     subroutine linCombCVectorSparse3D_SG( self, rhs, c1, c2 )
         implicit none
         !
@@ -622,6 +653,7 @@ contains
     end subroutine linCombCVectorSparse3D_SG
     !
     !> No subroutine briefing
+    !
     subroutine multAddCVectorSparse3D_SG( self, cvalue, rhs )
         implicit none
         !
@@ -634,6 +666,7 @@ contains
     end subroutine multAddCVectorSparse3D_SG
     !
     !> No subroutine briefing
+    !
     subroutine interpFuncCVectorSparse3D_SG( self, location, xyz, interp )
         implicit none
         !
@@ -646,7 +679,8 @@ contains
         !
     end subroutine interpFuncCVectorSparse3D_SG
     !
-    !> No function briefing
+    !> No subroutine briefing
+    !
     subroutine getRealCVectorSparse3D_SG( self, r_field )
         implicit none
         !
@@ -657,7 +691,17 @@ contains
         !
     end subroutine getRealCVectorSparse3D_SG
     !
+    subroutine switchStoreStateCVectorSparse3D_SG( self )
+        implicit none
+        !
+        class( cVectorSparse3D_SG_t ), intent( inout ) :: self
+        !
+        stop "Error: switchStoreStateCVectorSparse3D_SG not implemented yet!"
+        !
+    end subroutine switchStoreStateCVectorSparse3D_SG
+    !
     !> No subroutine briefing
+    !
     subroutine copyFromCVectorSparse3D_SG( self, rhs )
         implicit none
         !
@@ -696,6 +740,7 @@ contains
     end subroutine copyFromCVectorSparse3D_SG
     !
     !> No subroutine briefing
+    !
     subroutine printCVectorSparse3D_SG( self, io_unit, title, append )
         implicit none
         !

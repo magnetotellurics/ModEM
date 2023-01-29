@@ -75,7 +75,8 @@ contains
         !
     end subroutine TransmitterCSEM_dtor
     !
-    !> No function briefing
+    !> No subroutine briefing
+	!
     function isEqualTransmitterCSEM( self, other ) result( equal )
         implicit none
         !

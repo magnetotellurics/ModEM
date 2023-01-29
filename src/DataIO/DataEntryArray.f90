@@ -56,7 +56,8 @@ contains
         !
     end subroutine updateDataEntryArray
     !
-    !> No function briefing
+    !> No subroutine briefing
+	!
     function hasDataEntry( data_entry_array, data_entry ) result( exist )
         implicit none
         !
@@ -91,7 +92,8 @@ contains
         !
     end subroutine setDataEntry
     !
-    !> No function briefing
+    !> No subroutine briefing
+	!
     function getDataEntry( data_entry_array, iDe ) result( De )
         implicit none
         !

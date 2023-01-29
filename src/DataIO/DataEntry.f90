@@ -42,7 +42,8 @@ module DataEntry
     !
 contains
     !
-    !> No function briefing
+    !> No subroutine briefing
+	!
     function isEqualDe( self, other ) result ( equal )
         class( DataEntry_t ), intent( in ) :: self, other
         logical :: equal
@@ -64,7 +65,8 @@ contains
         !
     end function isEqualDe
     !
-    !> No function briefing
+    !> No subroutine briefing
+	!
     function isComplexDe( self ) result ( complex )
         class( DataEntry_t ), intent( in ) :: self
         logical :: complex

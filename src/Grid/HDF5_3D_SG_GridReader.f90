@@ -19,7 +19,8 @@ module HDF5_3D_SG_GridReader
     !
 contains
     !
-    !> No function briefing
+    !> No subroutine briefing
+	!
     function Read(self, fileName) result(newGrid)
         !
         class(HDF5_3D_SG_GridReader_t), intent( in ) :: self
