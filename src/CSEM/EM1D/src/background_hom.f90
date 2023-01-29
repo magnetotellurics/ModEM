@@ -75,12 +75,12 @@ subroutine background_hom_unified(bgdat,src,ifreq,icur)
   do igrp=1,ngrp
     nelem = src%nelem(igrp)
 
-    select case (src%type)
-    case (dipole)
+    select case(src%type)
+    case(dipole)
       elsrc = src%elsrc
       magsrc = src%magsrc
 
-    case (wire)
+    case(wire)
 
       !x, y wire lengths
       lx = src%wire(igrp)%endpos(1,2) - src%wire(igrp)%endpos(1,1)
@@ -107,8 +107,8 @@ subroutine background_hom_unified(bgdat,src,ifreq,icur)
 
     do ielem=1,nelem
 
-      select case (src%type)
-      case (dipole)
+      select case(src%type)
+      case(dipole)
 
         !source coordinates
         sx = src%pos(1,ielem)
@@ -132,7 +132,7 @@ subroutine background_hom_unified(bgdat,src,ifreq,icur)
           src_k(3) = - j_om_mu * src%akz(ielem) * cur
         endif
 
-      case (wire)
+      case(wire)
 
         !source x,y coordinates only
         sx = src%wire(igrp)%elempos(ielem,1)

@@ -128,8 +128,8 @@ if(refl_var%refcoef_changed) then
   fl = filtlen
 
   !source type VED: TM mode only
-  select case (dipoletype)
-  case (ved)
+  select case(dipoletype)
+  case(ved)
 
     do ilay = 1,nlay-1
       rupallTM(ilay,1:fl) = (1._real64 - (epsh(ilay)*pvertall2(ilay+1,1:fl)) / (epsh(ilay+1)*pvertall2(ilay,1:fl))) / &
@@ -150,7 +150,7 @@ if(refl_var%refcoef_changed) then
 
 
   !source type VMD: TE mode only
-  case (vmd)
+  case(vmd)
 
     do ilay = 1,nlay-1
       rupallTE(ilay,1:fl) = (1._real64 - pvertall1(ilay,1:fl)/pvertall1(ilay+1,1:fl)) / (1 + pvertall1(ilay,1:fl)/pvertall1(ilay+1,1:fl))

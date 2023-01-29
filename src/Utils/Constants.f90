@@ -12,7 +12,7 @@ module Constants
     character( len=4 ), parameter :: EDGE = "EDGE"
     character( len=4 ), parameter :: CENTER = "CELL"
     character( len=4 ), parameter :: CORNER = "NODE"
-    character( len=4 ), parameter :: CELL = "CELL"    
+    character( len=4 ), parameter :: CELL = "CELL"
     character( len=10 ), parameter :: CELL_EARTH = "CELL EARTH"
     !
     !> Possible node types:
@@ -61,7 +61,7 @@ module Constants
     real( kind=prec ), parameter :: EPS_GRID = 1.0e-4
     !
     !> Real and complex precision constants / tolerance
-    real( kind=prec ), parameter :: LARGE_REAL = 1.0e13
+    real( kind=prec ), parameter :: R_LARGE = 1.0e13
     real( kind=prec ), parameter :: TOL4 = 0.0001_dp
     real( kind=prec ), parameter :: TOL6 = 0.000001_dp
     real( kind=prec ), parameter :: TOL8 = 0.00000001_dp
@@ -89,10 +89,6 @@ module Constants
     character( len=6 ), parameter :: is_scalar = "SCALAR"
     character( len=6 ), parameter :: is_vector = "VECTOR"
     !
-    !> No briefring
-    character( len=10 ), parameter :: is_complex = "IS_COMPLEX"
-    character( len=10 ), parameter :: is_real = "IS____REAL"
-    !
     character( len=7 ), parameter :: FORWARD = "FORWARD"
     character( len=7 ), parameter :: INVERSE = "INVERSE"
     character( len=5 ), parameter :: DERIV = "DERIV"
@@ -104,5 +100,8 @@ module Constants
     character( len=4 ), parameter :: LOGE = "LOGE"
     character( len=6 ), parameter :: LINEAR = "LINEAR"
     character( len=6 ), parameter :: LOG_10 = "LOG_10"
+    !
+    character( len=3 ), parameter :: DCG = "DCG"
+    character( len=4 ), parameter :: NLCG = "NLCG"
     !
 end module Constants

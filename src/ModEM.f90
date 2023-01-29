@@ -3,8 +3,6 @@
 !
 program ModEM
     !
-    use ModEMControlFile
-    !
 #ifdef MPI
     !
     use WorkerMPI
@@ -88,6 +86,9 @@ contains
         !
         class( Inversion_t ), allocatable :: inversion
         !
+        ! Verbose
+        write( *, * ) "     - Start jobInversion"
+        !
         !> Read Model File and instantiate global variables: main_grid, model_operator and Sigma0
         if( has_model_file ) then 
             !
@@ -140,7 +141,7 @@ contains
 #endif
         !
         !> Instantiate the ForwardSolver - Specific type can be chosen via control file
-        select case ( inversion_algorithm )
+        select case( inversion_type )
             !
             case( DCG )
                 !
@@ -152,7 +153,7 @@ contains
                 !
             case default
                 !
-                stop "Error: jobInversion > Undefined inversion_algorithm"
+                stop "Error: jobInversion > Undefined inversion_type"
                 !
         end select
         !
@@ -164,27 +165,36 @@ contains
         !
         deallocate( sigma, dsigma, inversion )
         !
+        ! Verbose
+        write( *, * ) "     - Finish jobInversion"
+        !
     end subroutine jobInversion
     !
     !> No subroutine briefing
     subroutine handleJob()
         implicit none
         !
-        select case ( modem_job )
+        !> Free the memory used by the global control file, which is no longer useful
+        !> Except for the case of Inversion
+        if( index( modem_job, "Inversion" ) .LE. 0 .AND. allocated( control_file ) ) then
+            deallocate( control_file )
+        endif
+        !
+        select case( modem_job )
             !
-            case ( "Forward" )
+            case( "Forward" )
                 !
                 call jobForwardModeling
                 !
-            case ( "serialJMult" )
+            case( "serialJMult" )
                 !
                 call jobJMult
                 !
-            case ( "serialJMult_T" )
+            case( "serialJMult_T" )
                 !
                 call jobJMult_T
                 !
-            case ( "Inversion" )
+            case( "Inversion" )
                 !
                 call jobInversion
                 !
@@ -202,13 +212,11 @@ contains
     subroutine handleControlFile()
         implicit none
         !
-        type( ModEMControlFile_t ) :: control_file
-        !
         write( *, * ) "     < Control File: [", control_file_name, "]"
         !
         !> Instantiate the ControlFile object
         !> Read control file and sets the options in the Constants module
-        control_file = ModEMControlFile_t( ioStartup, control_file_name )
+        allocate( control_file, source = ModEMControlFile_t( ioStartup, control_file_name ) )
         !
     end subroutine handleControlFile
     !
@@ -233,9 +241,9 @@ contains
                  !
                  call get_command_argument( argument_index, argument )
                  !
-                 select case ( argument )
+                 select case( argument )
                       !
-                      case ( "-c", "--control" )
+                      case( "-c", "--control" )
                          !
                          call get_command_argument( argument_index + 1, argument )
                          control_file_name = trim( argument )
@@ -244,7 +252,7 @@ contains
                          !
                          argument_index = argument_index + 2
                          !
-                      case ( "-d", "--data" )
+                      case( "-d", "--data" )
                          !
                          call get_command_argument( argument_index + 1, argument )
                          data_file_name = trim( argument )
@@ -253,31 +261,31 @@ contains
                          !
                          argument_index = argument_index + 2
                          !
-                      case ( "-f", "--forward" )
+                      case( "-f", "--forward" )
                          !
                          modem_job = "Forward"
                          !
                          argument_index = argument_index + 1
                          !
-                      case ( "-i", "--inversion" )
+                      case( "-i", "--inversion" )
                          !
                          modem_job = "Inversion"
                          !
                          argument_index = argument_index + 1
                          !
-                      case ( "-j", "--jmult" )
+                      case( "-j", "--jmult" )
                          !
                          modem_job = "serialJMult"
                          !
                          argument_index = argument_index + 1
                          !
-                      case ( "-jt", "--jmult_t" )
+                      case( "-jt", "--jmult_t" )
                          !
                          modem_job = "serialJMult_T"
                          !
                          argument_index = argument_index + 1
                          !
-                      case ( "-m", "--model" )
+                      case( "-m", "--model" )
                          !
                          call get_command_argument( argument_index + 1, argument )
                          model_file_name = trim( argument )
@@ -286,7 +294,7 @@ contains
                          !
                          argument_index = argument_index + 2
                          !
-                      case ( "-o", "--outdir" )
+                      case( "-o", "--outdir" )
                          !
                          call get_command_argument( argument_index + 1, argument )
                          outdir_name = trim( argument )
@@ -295,7 +303,7 @@ contains
                          !
                          argument_index = argument_index + 2
                          !
-                      case ( "-pm", "--pmodel" )
+                      case( "-pm", "--pmodel" )
                          !
                          call get_command_argument( argument_index + 1, argument )
                          pmodel_file_name = trim( argument )
@@ -304,28 +312,28 @@ contains
                          !
                          argument_index = argument_index + 2
                          !
-                      case ( "-dm", "--dsigma" )
+                      case( "-dm", "--dsigma" )
                          !
                          call get_command_argument( argument_index + 1, argument )
                          dsigma_file_name = trim( argument )
                          !
                          argument_index = argument_index + 2
                          !
-                      case ( "-pd", "--predicted" )
+                      case( "-pd", "--predicted" )
                          !
                          call get_command_argument( argument_index + 1, argument )
                          predicted_data_file_name = trim( argument )
                          !
                          argument_index = argument_index + 2
                          !
-                      case ( "-jm", "--jmhat" )
+                      case( "-jm", "--jmhat" )
                          !
                          call get_command_argument( argument_index + 1, argument )
                          jmhat_data_file_name = trim( argument )
                          !
                          argument_index = argument_index + 2
                          !
-                      case ( "-es", "--esolution" )
+                      case( "-es", "--esolution" )
                          !
                          call get_command_argument( argument_index + 1, argument )
                          e_solution_file_name = trim( argument )
@@ -334,18 +342,18 @@ contains
                          !
                          argument_index = argument_index + 2
                          !
-                      case ( "-v", "--version" )
+                      case( "-v", "--version" )
                          !
                          write( *, * ) "    + ModEM-OO version 1.0.0"
                          stop
                          !
-                      case ( "-h", "--help" )
+                      case( "-h", "--help" )
                          !
                          call printHelp()
                          call printUsage()
                          stop
                          !
-                      case ( "-vb", "--verbose" )
+                      case( "-vb", "--verbose" )
                          !
                          stop "Error: handleArguments > Verbose level not implemented yet!"
                          !
@@ -375,7 +383,7 @@ contains
         e_solution_file_name = "esolution.bin"
         dsigma_file_name = "dsigma.rho"
         !
-        inversion_algorithm = "DCG"
+        inversion_type = "DCG"
         !
         ! Control flags
         has_outdir_name = .FALSE.

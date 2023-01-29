@@ -467,9 +467,9 @@ module dipole1d
         
         allocate(weights(numIntegPts), xint(numIntegPts))
         
-        select case (finite_integ_method)
+        select case(finite_integ_method)
         
-        case (1)  !> brute force mate!
+        case(1)  !> brute force mate!
         
             finiteStepSize = lenTx1D / numIntegPts 
             weights = finiteStepSize
@@ -477,7 +477,7 @@ module dipole1d
                 xint(i) =  -1.d0 * lenTx1D / 2.d0  + finiteStepSize/2.d0 + (i-1)*finiteStepSize
             enddo
             
-        case (2)  !> Gauss quadrature
+        case(2)  !> Gauss quadrature
         
             call legendre_compute_dr (numIntegPts,xint,weights)  !> returns weights on -1,1 interval
             xint = xint*lenTx1D / 2.d0                           !> move from -1,1 to  -1/2 lenTx1D to +1/2 lenTx1D
@@ -563,14 +563,14 @@ module dipole1d
 !
 !> Compute the fields in the spatial or kx domain:
 !
-            select case (trim(outputdomain1D))
+            select case(trim(outputdomain1D))
             case ('spatial')
                 call comp_spatial(i)
                     
             case  ('kx') 
                 call comp_kx(i)
              
-            end select !case (trim(outputdomain1D))
+            end select !case(trim(outputdomain1D))
     
         enddo !> loop over sites
     
@@ -1682,7 +1682,7 @@ subroutine legendre_compute_dr ( order, xtab, weight )
 !
 !> Setup some parameters depending on which output domain requested
 !
-    select case (trim(outputdomain1D))
+    select case(trim(outputdomain1D))
 !
 !> Spatial domain solution requested:
 !
@@ -1694,7 +1694,7 @@ subroutine legendre_compute_dr ( order, xtab, weight )
 !
 !> Set which Hankel Transform filters to use:
 !
-        select case (trim(HTmethod1D))
+        select case(trim(HTmethod1D))
 
         case ('fk_ht_61') 
             ndhtfc = 61
@@ -1734,7 +1734,7 @@ subroutine legendre_compute_dr ( order, xtab, weight )
             htj0(1:201) = kk_ht_j0_201
             htj1(1:201) = kk_ht_j1_201   
           
-        end select !> case (trim(HTmethod1D))
+        end select !> case(trim(HTmethod1D))
         
 !
 !> Set logical flags for computing spatial domain ved and hed
@@ -1773,7 +1773,7 @@ subroutine legendre_compute_dr ( order, xtab, weight )
 !
 !> Set the (co)sine transform method:
 !
-        select case (trim(CTmethod1D))
+        select case(trim(CTmethod1D))
         
         case ('kk_ct_81') 
             ncsfc = 81
@@ -1805,7 +1805,7 @@ subroutine legendre_compute_dr ( order, xtab, weight )
          &  outputdomain1D
          stop
          
-    end select  !> case (trim(outputdomain1D))
+    end select  !> case(trim(outputdomain1D))
     
     end subroutine initialize_dipole1d  
 
@@ -4163,7 +4163,7 @@ subroutine legendre_compute_dr ( order, xtab, weight )
 !
 !> Filters already defined from call to initialize_dipole1d
 !
-    select case (trim(outputdomain1D))
+    select case(trim(outputdomain1D))
         
     case ('spatial')
         min_base = base(1)

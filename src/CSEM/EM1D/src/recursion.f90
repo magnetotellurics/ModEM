@@ -1372,8 +1372,8 @@ subroutine set_fresnelcoef_TE(kappa,pvert)
   integer(kind=int32) :: ilay    !layer counter
 
 
-  select case (ikap)
-  case (1:filtlen)
+  select case(ikap)
+  case(1:filtlen)
 
     pvert => pvertall1(:,ikap)
     rup => rupallTE(:,ikap)
@@ -1430,8 +1430,8 @@ subroutine set_fresnelcoef_TM(kappa,pvert)
   real(kind=real64) :: phsq    !horizontal slowness squared
   integer(kind=int32) :: ilay    !layer counter
 
-  select case (ikap)
-  case (1:filtlen)
+  select case(ikap)
+  case(1:filtlen)
 
     pvert => pvertall2(:,ikap)
     rup => rupallTM(:,ikap)

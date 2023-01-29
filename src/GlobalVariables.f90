@@ -5,11 +5,13 @@ module GlobalVariables
     !
     use Constants
     !
+    use ModEMControlFile
+    !
     use Grid3D_SG
     !
-    use ModelParameterCell_SG
-    !
     use ModelOperator_MF
+    !
+    use ModelParameterCell_SG
     !
     use ModelCovarianceRec
     !
@@ -32,8 +34,8 @@ module GlobalVariables
     use DataFileStandard
     !
     !> Global Variables
-	class( Source_t ), allocatable :: fwd_source
-	!
+    type( ModEMControlFile_t ), allocatable :: control_file
+    !
     class( Grid_t ), allocatable, target :: main_grid
     !
     class( ModelOperator_t ), allocatable :: model_operator
@@ -190,7 +192,7 @@ contains
              !
         endif
         !
-        write( *, * ) "          Checked ", countDataGroupTxArray( all_measured_data ), " DataGroups."
+        write( *, * ) "          Checked ", countData( all_measured_data ), " DataGroups."
         !
         write( *, * ) "     - Creating Rx evaluation vectors"
         !
@@ -217,7 +219,7 @@ contains
             !>
             call date_and_time( str_date, str_time )
             !
-            select case ( inversion_algorithm )
+            select case( inversion_type )
                 !
                 case( DCG )
                     !
@@ -229,7 +231,7 @@ contains
                     !
                 case default
                     !
-                    stop "Error: jobInversion > Undefined inversion_algorithm"
+                    stop "Error: jobInversion > Undefined inversion_type"
                     !
             end select
             !
@@ -247,7 +249,7 @@ contains
         implicit none
         !
         !> Deallocate global array of measured data
-        if( allocated( all_measured_data ) ) call deallocateDataGroupTxArray( all_measured_data )
+        !if( allocated( all_measured_data ) ) call deallocateDataGroupTxArray( all_measured_data )
         !
         !> Deallocate global array of Receivers
         if( allocated( receivers ) ) call deallocateReceiverArray()
@@ -264,7 +266,7 @@ contains
         if( allocated( model_cov ) ) deallocate( model_cov )
         !
         !> Flush memory used by main program control variables and flags
-        if( allocated( inversion_algorithm ) ) deallocate( inversion_algorithm )
+        if( allocated( inversion_type ) ) deallocate( inversion_type )
         !
         if( allocated( forward_solver_type ) ) deallocate( forward_solver_type )
         if( allocated( source_type ) ) deallocate( source_type )

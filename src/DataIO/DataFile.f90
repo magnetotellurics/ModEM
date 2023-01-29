@@ -415,7 +415,7 @@ contains
                     endif
                 enddo
                 !
-                call updateDataGroupTxArray( all_measured_data, tx_data )
+                call updateData( all_measured_data, tx_data )
                 !
             enddo
             !

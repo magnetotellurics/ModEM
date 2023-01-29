@@ -138,8 +138,8 @@ subroutine update_maxminrad(src,pos,nrecperz,recidx,izrmax,rmax,rmin)
   !have to go through all source elements:
   !--> for dipole source: all dipole elements, independent of source type
   !--> for wires: all wire elements and wire end points
-  select case (src%type)
-  case (dipole)
+  select case(src%type)
+  case(dipole)
 
     dipole_elems: do ielem = 1,src%nelem(1)
       recdepths: do izr = 1,izrmax
@@ -163,7 +163,7 @@ subroutine update_maxminrad(src,pos,nrecperz,recidx,izrmax,rmax,rmin)
       enddo recdepths
     enddo dipole_elems
 
-  case (wire)
+  case(wire)
 
     wires: do iw=1,src%nwire
       wire_elems: do ielem = 1,src%wire(iw)%nelem
@@ -253,8 +253,8 @@ subroutine extract_srccoord_general(refl_var,src,izsrc)
   refl_var%isrcend = isrcend
 
 
-  select case (src%type)
-  case (dipole)
+  select case(src%type)
+  case(dipole)
 
     allocate(refl_var%xs(isrcstart:isrcend),refl_var%ys(isrcstart:isrcend), stat=ierr)
     if(ierr.NE.0) call alloc_error(pid,'extract_srccoord_general','xs,ys for dipole',ierr)
@@ -265,7 +265,7 @@ subroutine extract_srccoord_general(refl_var,src,izsrc)
       refl_var%ys(isrc) = src%pos(2,refl_var%isrcperz(isrc))
     enddo
 
-  case (wire)
+  case(wire)
 
     !wire sources: compute positions of wire elements
 

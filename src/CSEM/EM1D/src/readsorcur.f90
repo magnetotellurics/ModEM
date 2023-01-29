@@ -87,13 +87,13 @@ subroutine readsorcur(filename,freqdat,sources,comm)
     src => sources(isrc)
 
     select case(src%type)
-    case (dipole)
+    case(dipole)
       nrecmax = nrecmax + src%nelem(1)
       ncurgroup = ncurgroup + src%nelem(1)
-    case (wire)
+    case(wire)
       nrecmax = nrecmax + src%nwire
       ncurgroup = ncurgroup + src%nwire
-    case (star)
+    case(star)
       !nothing in sor_cur file for this source, source current is read from separate wavelet file(s)
       !nrecmax = nrecmax + 0
       !there will be different currents for each input current and each wire
@@ -214,7 +214,7 @@ subroutine readsorcur(filename,freqdat,sources,comm)
 
     select case(src%type)
     !dipole sources
-    case (dipole)
+    case(dipole)
 
       !allocate matrix for source currents
       allocate(src%cur(src%nelem(1),nfreq),stat=ierr)
@@ -229,7 +229,7 @@ subroutine readsorcur(filename,freqdat,sources,comm)
       enddo        
 
     !wire sources
-    case (wire)
+    case(wire)
 
       !allocate matrix for source currents
       allocate(src%cur(src%nwire,nfreq),stat=ierr)
@@ -245,7 +245,7 @@ subroutine readsorcur(filename,freqdat,sources,comm)
 
 
     !special wire sources
-    case (star)
+    case(star)
       
       !allocate matrix for source currents
       allocate(src%cur(src%ncur*src%nwire,nfreq),stat=ierr)

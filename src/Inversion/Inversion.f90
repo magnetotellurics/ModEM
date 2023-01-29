@@ -9,9 +9,9 @@ module Inversion
     !
     type, abstract :: Inversion_t
         !
-        integer :: max_cg_iter, max_iter, n_iter
+        integer :: max_grad_iters, max_inv_iters, n_inv_iter
         !
-        real( kind=prec ) :: tol, rms_tol, lambda
+        real( kind=prec ) :: tolerance_error, tolerance_rms, lambda
         !
         real( kind=prec ), allocatable, dimension(:) :: r_err
         !
@@ -61,15 +61,29 @@ contains
         !
         class( Inversion_t ), intent( inout ) :: self
         !
-        self%max_iter = 0
+        write( *, "( A45 )" ) "Using inversion parameters:"
         !
-        self%max_cg_iter = 20
+        if ( allocated( control_file%max_grad_iters ) ) then
+            read( control_file%max_grad_iters, * ) self%max_grad_iters
+        else
+            self%max_grad_iters = 20
+        endif
         !
-        self%n_iter = 0
+        write( *, "( A45, I20 )" ) "max_grad_iters = ", self%max_grad_iters
         !
-        self%tol = 10E-4
+        if ( allocated( control_file%tolerance_error ) ) then
+            read( control_file%tolerance_error, * ) self%tolerance_error
+        else
+            self%tolerance_error = 10E-4
+        endif
         !
-        self%rms_tol = R_ZERO
+        write( *, "( A45, es20.2 )" ) "tolerance_error = ", self%tolerance_error
+        !
+        self%max_inv_iters = 0
+        !
+        self%n_inv_iter = 0
+        !
+        self%tolerance_rms = R_ZERO
         !
         self%lambda = R_ZERO
         !

@@ -508,7 +508,7 @@ contains
     !> as the input, but without the extra digits at the end that are often
     !> a cause of wrong comparisons in the if statements. ALWAYS use clean(x)
     !> instead of x in an inequality!!!
-    !> LARGE_REAL is defined in the module math_constants
+    !> R_LARGE is defined in the module math_constants
     !> A.K.
     !
     function clean(x)
@@ -517,7 +517,7 @@ contains
         real( kind=prec ), intent( in ) :: x
         real( kind=prec ) :: clean
         !
-        clean = dnint(x*LARGE_REAL)/LARGE_REAL
+        clean = dnint(x*R_LARGE)/R_LARGE
         !
     end function clean
     !

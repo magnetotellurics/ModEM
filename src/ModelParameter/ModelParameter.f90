@@ -11,10 +11,6 @@ module ModelParameter
     use Grid
     use MetricElements
     !
-    character(:), allocatable :: inversion_algorithm
-    character( len=12 ), parameter :: DCG = "DCG"
-    character( len=14 ), parameter :: NLCG = "NLCG"
-    !
     type, abstract :: ModelParameter_t
         !
         class( MetricElements_t ), pointer :: metric
@@ -264,11 +260,11 @@ contains
         endif
         !
         select case( job )
-           case ( FORWARD )
+           case( FORWARD )
                y = exp( x )
-           case ( DERIV )
+           case( DERIV )
                y = exp( x )
-           case ( INVERSE )
+           case( INVERSE )
                y = log( x )
         end select
         !

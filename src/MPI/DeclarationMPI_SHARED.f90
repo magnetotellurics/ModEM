@@ -947,7 +947,7 @@ contains
         !
         select case( model_parameter_derived_type )
             !
-            case ( model_parameter_cell_sg )
+            case( model_parameter_cell_sg )
                 !
                 allocate( ModelParameterCell_SG_t :: target_model_param )
                 !
@@ -1085,7 +1085,7 @@ contains
         !
         select case( transmitter_derived_type )
             !
-            case ( transmitter_mt )
+            case( transmitter_mt )
                 !
                 allocate( TransmitterMT_t :: transmitter )
                 !
@@ -1107,7 +1107,7 @@ contains
                     !
                 end select
                 !
-             case ( transmitter_csem )
+             case( transmitter_csem )
                 !
                 allocate( TransmitterCSEM_t :: transmitter )
                 !

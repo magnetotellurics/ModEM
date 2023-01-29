@@ -38,33 +38,33 @@ contains
             !
             job_master = trim( job_info%job_name )
             !
-            select case ( job_master )
+            select case( job_master )
                 !
-                case ( "HANDLE_FWD_COMP" )
+                case( "HANDLE_FWD_COMP" )
                     !
                     call handleBasicComponents()
                 !
-                case ( "HANDLE_SIGMA" )
+                case( "HANDLE_SIGMA" )
                     !
                     call handleSigmaModel()
                 !
-                case ( "HANDLE_DSIGMA" )
+                case( "HANDLE_DSIGMA" )
                     !
                     call handleDSigmaModel()
                     !
-                case ( "JOB_EM_SOLVE" )
+                case( "JOB_EM_SOLVE" )
                     !
                     call workerSolve()
                     !
-                case ( "JOB_FORWARD" )
+                case( "JOB_FORWARD" )
                     !
                     call workerForwardModelling()
                     !
-                case ( "JOB_JMULT" )
+                case( "JOB_JMULT" )
                     !
                     call workerJMult()
                     !
-                case ( "JOB_JMULT_T" )
+                case( "JOB_JMULT_T" )
                     !
                     call workerJMult_T()
                     !
@@ -328,7 +328,7 @@ contains
         if( .NOT. allocated( forward_solver ) ) then
             !
             !> Instantiate the ForwardSolver - Specific type can be chosen via control file
-            select case ( forward_solver_type )
+            select case( forward_solver_type )
                 !
                 case( FWD_IT_DC )
                     allocate( forward_solver, source = ForwardSolverIT_DC_t( model_operator, QMR ) )

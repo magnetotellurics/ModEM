@@ -127,8 +127,8 @@ contains
         !
         !>    have to decide how to manage output
         !if(output_level > 2) then
-        !write (*,*) "finished divergence correction:", size( self%solver%relErr ), self%solver%n_iter
-        !write (*,"(i8, es20.6)") self%solver%n_iter, self%solver%relErr( self%solver%n_iter )
+        !write (*,*) "finished divergence correction:", size( self%solver%relErr ), self%solver%n_inv_iter
+        !write (*,"(i8, es20.6)") self%solver%n_inv_iter, self%solver%relErr( self%solver%n_inv_iter )
         !endif
         !
         !> compute gradient of phiSol (Divergence correction for inE)

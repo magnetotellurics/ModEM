@@ -23,44 +23,68 @@ module InversionDCG
         module procedure InversionDCG_ctor
     end interface InversionDCG_t
     !
-	private :: outputFilesInversionDCG
-	!
+    private :: outputFilesInversionDCG
+    !
 contains
     !
     !> No function briefing
+    !
     function InversionDCG_ctor() result( self )
         implicit none
         !
         type( InversionDCG_t ) :: self
         !
-        write( *, * ) "Constructor InversionDCG_t"
+        !write( *, * ) "Constructor InversionDCG_t"
         !
         call self%init()
         !
-        self%max_iter = 3
+        if ( allocated( control_file%max_inv_iters ) ) then
+            read( control_file%max_inv_iters, * ) self%max_inv_iters
+        else
+            self%max_inv_iters = 5
+        endif
         !
-        self%rms_tol = 1.05
+        write( *, "( A45, I20 )" ) "max_inv_iters = ", self%max_inv_iters
         !
-        self%lambda = 10.
+        if ( allocated( control_file%tolerance_rms ) ) then
+            read( control_file%tolerance_rms, * ) self%tolerance_rms
+        else
+            self%tolerance_rms = 1.05
+        endif
         !
-        allocate( self%r_err( self%max_cg_iter ) )
+        write( *, "( A45, es20.2 )" ) "tolerance_rms = ", self%tolerance_rms
+        !
+        if ( allocated( control_file%lambda ) ) then
+            read( control_file%lambda, * ) self%lambda
+        else
+            self%lambda = 10.
+        endif
+        !
+        write( *, "( A45, es20.2 )" ) "lambda = ", self%lambda
+        !
+        !> Free the memory used by the global control file, which is no longer useful
+        if ( allocated( control_file ) )deallocate( control_file )
+        !
+        allocate( self%r_err( self%max_grad_iters ) )
         !
     end function InversionDCG_ctor
     !
     !> Deconstructor routine:
     !>     Calls the base routine dealloc().
+    !
     subroutine InversionDCG_dtor( self )
         implicit none
         !
         type( InversionDCG_t ), intent( inout ) :: self
         !
-        write( *, * ) "Destructor InversionDCG_t"
+        !write( *, * ) "Destructor InversionDCG_t"
         !
         call self%dealloc()
         !
     end subroutine InversionDCG_dtor
     !
-    !>
+    !> No subroutine briefing
+    !
     subroutine solveInversionDCG( self, all_data, sigma, dsigma )
         implicit none
         !
@@ -79,7 +103,7 @@ contains
         call createOutputDirectory()
         !
         ! Verbose
-        write( *, * ) "     - Start Inversion DCG, output files in [", trim( outdir_name ), "]"
+        write( *, * ) "           > DCG output files in [", trim( outdir_name ), "]"
         !
         open( unit = ioInvLog, file = trim( outdir_name )//"/DCG.log", status="unknown", position="append", iostat=ios )
         !
@@ -95,7 +119,7 @@ contains
             !
             b = all_data
             !
-            call zerosDataGroupTxArray( b )
+            call zerosData( b )
             !
             !> Write in DCG.log
             write( ioInvLog, "( a41, es12.5 )" ) "The initial damping parameter lambda is ", self%lambda
@@ -121,13 +145,13 @@ contains
                 !
                 b = all_data
                 !
-                call linCombDataGroupTxArray( ONE, res, ONE, JmHat, b )
+                call linCombData( ONE, res, ONE, JmHat, b )
                 !
-                call normalizeDataGroupTxArray( b, 1 )
+                call normalizeData( b, 1 )
                 !
                 call CG_DS_standard( self, b, dx, dsigma, all_data )
                 !
-                call normalizeWithDataGroupTxArray( 1, all_data, dx )
+                call normalizeDataWith( 1, all_data, dx )
                 !
 #ifdef MPI
                 call masterJMult_T( dsigma, dx, mHat )
@@ -152,7 +176,7 @@ contains
                 write( ioInvLog, "( a10, a3, es12.5, a4, es12.5, a5, f18.5, a8, es12.5 )" ) "with:", " f=", f, " m2=", mNorm, " rms=", rms, " lambda=", self%lambda
                 !
                 !>
-                if( rms .LT. self%rms_tol .OR. DCG_iter .GE. self%max_iter ) then
+                if( rms .LT. self%tolerance_rms .OR. DCG_iter .GE. self%max_inv_iters ) then
                     exit
                 end if
                 !
@@ -171,14 +195,15 @@ contains
             !
         else
             !
-            write( *, * ) "Error opening [", trim( outdir_name )//"/DCG.log", "] in writeDataGroupTxArray!"
+            write( *, * ) "Error opening [", trim( outdir_name )//"/DCG.log", "] in writeData!"
             stop
             !
         endif
         !
     end subroutine solveInversionDCG
     !
-    !>
+    !> No subroutine briefing
+    !
     subroutine Calc_FWD( self, all_data, dsigma, mHat, all_predicted_data, res, F, mNorm, rms )
         implicit none
         !
@@ -208,16 +233,18 @@ contains
         !
         res = all_data
         !
-        call linCombDataGroupTxArray( ONE, all_data, MinusONE, all_predicted_data, res )
+        call linCombData( ONE, all_data, MinusONE, all_predicted_data, res )
         !
         Nres = res
         !
-        call normalizeDataGroupTxArray( Nres, 2 )
+        call normalizeData( Nres, 2 )
         !
-        SS = dotProdDataGroupTxArray( res, Nres )
+        SS = dotProdData( res, Nres )
         !
-        Ndata = countValuesGroupTxArray( res )
-        !
+        Ndata = countValues( res )
+
+        write( 2023, * ) "Ndata: ", Ndata
+        
         mNorm = mHat%dotProd( mHat )
         !
         Nmodel = mHat%countModel()
@@ -226,11 +253,10 @@ contains
         !
         rms = sqrt( SS / Ndata )
         !
-        !call deallocateDataGroupTxArray( Nres )
-        !
     end subroutine Calc_FWD
     !
-    !>
+    !> No subroutine briefing
+    !
     subroutine CG_DS_standard( self, b, x, dsigma, all_data )
         implicit none
         !
@@ -250,11 +276,11 @@ contains
         !
         Ap = all_data
         !
-        b_norm = dotProdDataGroupTxArray( b, b )
+        b_norm = dotProdData( b, b )
         !
-        call zerosDataGroupTxArray( x )
+        call zerosData( x )
         !
-        r_norm = dotProdDataGroupTxArray( r, r )
+        r_norm = dotProdData( r, r )
         !
         iter = 1
         !
@@ -264,34 +290,34 @@ contains
         write( ioInvLog, "(a18)" ) "Relative CG-error:"
         write( ioInvLog, "( a9, i5, a10, es12.5, a10, es12.5 )" ) "CG-Iter= ", iter, ", error = ", self%r_err(iter), " Lambda= ", self%lambda
         !
-        write( *, "( a22, i5, a8, es12.5 )" ) "               CG_iter", iter, ": Error=", self%r_err(iter)
+        write( 2023, "( a22, i5, a8, es12.5 )" ) "               CG_iter", iter, ": Error=", self%r_err(iter)
         !
-        cg_loop : do while ( self%r_err(iter) .GT. self%tol .AND. iter .LT. self%max_cg_iter )
+        cg_loop : do while ( self%r_err(iter) .GT. self%tolerance_error .AND. iter .LT. self%max_grad_iters )
             ! 
             call self%MultA_DS( p, dsigma, all_data, Ap )
             !
-            call setErrorBarDataGroupTxArray( r, .FALSE. )
-            call setErrorBarDataGroupTxArray( p, .FALSE. )
-            call setErrorBarDataGroupTxArray( x, .FALSE. )
-            call setErrorBarDataGroupTxArray( Ap, .FALSE. )
+            call setErrorBar( r, .FALSE. )
+            call setErrorBar( p, .FALSE. )
+            call setErrorBar( x, .FALSE. )
+            call setErrorBar( Ap, .FALSE. )
             !
-            ! Compute alpha: alpha= (r^T r) / (p^T Ap)    
-            alpha = r_norm / dotProdDataGroupTxArray( p, Ap )
+            ! Compute alpha: alpha= (r^T r) / (p^T Ap)
+            alpha = r_norm / dotProdData( p, Ap )
             !
             ! Compute new x: x = x + alpha*p
-            call scMultAddDataGroupTxArray( alpha, p, x )
+            call scMultAddData( alpha, p, x )
             !
             ! Compute new r: r = r - alpha*Ap
-            call scMultAddDataGroupTxArray( -alpha, Ap, r ) 
+            call scMultAddData( -alpha, Ap, r ) 
             !
             r_norm_pre = r_norm
             !
-            r_norm = dotProdDataGroupTxArray( r, r )
+            r_norm = dotProdData( r, r )
             !
             beta = r_norm / r_norm_pre
             !
             ! Compute new p: p = r + beta*p    
-            call linCombDataGroupTxArray( ONE, r, beta, p, p )
+            call linCombData( ONE, r, beta, p, p )
             !
             iter = iter + 1
             !
@@ -300,15 +326,16 @@ contains
             !> Write / Print DCG.log
             write( ioInvLog, "( a9, i5, a10, es12.5, a10, es12.5 )" ) "CG-Iter= ", iter, ", error = ", self%r_err(iter), " Lambda= ", self%lambda
             !
-            write( *, "( a22, i5, a8, es12.5, a7, es12.5, a8, es12.5 )" ) "               CG_iter", iter, ": Alpha=", alpha, ", Beta=", beta, ", Error=", self%r_err( iter )
+            write( 2023, "( a22, i5, a8, es12.5, a7, es12.5, a8, es12.5 )" ) "               CG_iter", iter, ": Alpha=", alpha, ", Beta=", beta, ", Error=", self%r_err( iter )
             !
         enddo cg_loop
         !
-        self%n_iter = iter
+        self%n_inv_iter = iter
         !
     end subroutine CG_DS_standard
     !
-    !> ????
+    !> No subroutine briefing
+    !
     subroutine MultA_DS( self, p, dsigma, all_data, Ap )
         implicit none
         !
@@ -325,7 +352,7 @@ contains
         !
         lambdaP = p
         !
-        call normalizeWithDataGroupTxArray( 1, all_data, p_temp )
+        call normalizeDataWith( 1, all_data, p_temp )
         !
 #ifdef MPI
         call masterJMult_T( dsigma, p_temp, JTp )
@@ -345,17 +372,18 @@ contains
         !
         deallocate( JTp )
         !
-        call normalizeWithDataGroupTxArray( 1, all_data, Ap )
+        call normalizeDataWith( 1, all_data, Ap )
         !
-        call scMultDataGroupTxArray( self%lambda, p, lambdaP )
+        call scMultData( self%lambda, p, lambdaP )
         !
-        call setErrorBarDataGroupTxArray( lambdaP, .FALSE. )
+        call setErrorBar( lambdaP, .FALSE. )
         !
-        call linCombDataGroupTxArray( ONE, Ap, ONE, lambdaP, Ap )
+        call linCombData( ONE, Ap, ONE, lambdaP, Ap )
         !
     end subroutine MultA_DS
     !
-    !> ????
+    !> No subroutine briefing
+    !
     subroutine outputFilesInversionDCG( iter, all_predicted_data, res, dsigma, mHat )
         implicit none
         !
@@ -373,12 +401,12 @@ contains
         !> Write predicted data for this DCG iteration
         out_file_name = trim( outdir_name )//"/PredictedData_DCG_"//char3//".dat"
         !
-        call writeDataGroupTxArray( all_predicted_data, trim( out_file_name ) )
+        call writeData( all_predicted_data, trim( out_file_name ) )
         !
         !> Write residual data for this DCG iteration
         out_file_name = trim( outdir_name )//"/ResidualData_DCG_"//char3//".dat"
         !
-        call writeDataGroupTxArray( res, trim( out_file_name ) )
+        call writeData( res, trim( out_file_name ) )
         !
         !> Write model for this DCG iteration
         out_file_name = trim( outdir_name )//"/SigmaModel_DCG_"//char3//".rho"

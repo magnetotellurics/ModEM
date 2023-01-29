@@ -67,24 +67,24 @@ subroutine readsorec(filename,src,comm)
 #endif
 
     !read the source (or receiver) group
-    select case (src(ishot)%type)
+    select case(src(ishot)%type)
 
     !dipole sources
-    case (dipole)
+    case(dipole)
       call read_dipolesource(src(ishot),lu,comm)
 
     !(general) wire sources
-    case (wire)
+    case(wire)
       call read_wiresource(src(ishot),lu,comm)
 
     !"multipod" wire sources with several (most typically 3) wires laid out from one center point,
     !>  currents at center point adding up to zero --> fixed phase shifts between currents on each wire
-    case (star)
+    case(star)
       call read_starsource(src(ishot),lu,comm)
 
 
     !receivers
-    case (receiver)
+    case(receiver)
       call read_receivers(src(ishot),lu,comm)
 
     !invalid source type: write error message & exit

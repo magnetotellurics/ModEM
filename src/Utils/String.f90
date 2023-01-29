@@ -54,14 +54,14 @@ contains
             ich = iachar (ch)
             !
             select case(ich)
-            case (9,32)      ! space or tab character
+            case(9,32)      ! space or tab character
                 if(isp == 0) then
                     k = k + 1
                     outstr(k:k) = ' '
                 endif
                 isp = 1
                 !
-            case (33:)        ! not a space, quote, or control character
+            case(33:)        ! not a space, quote, or control character
                 k = k + 1
                 outstr(k:k) = ch
                 isp = 0
@@ -251,7 +251,7 @@ contains
         !
         logical :: res
         !
-        select case (ch)
+        select case(ch)
         case ('0':'9')
             res = .TRUE.
         case default

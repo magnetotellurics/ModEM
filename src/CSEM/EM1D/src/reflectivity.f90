@@ -146,11 +146,11 @@ subroutine reflectivity_unified(src,bgdat,refl_var,ifreq,icur,comm)
   !-----------------------------------------------------------------
   !> distinguish between source types
   !-----------------------------------------------------------------
-  sourcetype: select case (src%type)
+  sourcetype: select case(src%type)
   !-----------------------------------------------------------------
   !> dipole sources
   !-----------------------------------------------------------------
-  case (dipole)
+  case(dipole)
 
     !***********************************************************************
     !>  HED components
@@ -1330,7 +1330,7 @@ subroutine reflectivity_unified(src,bgdat,refl_var,ifreq,icur,comm)
   !-----------------------------------------------------------------
   !> horizontal wire sources
   !-----------------------------------------------------------------
-  case (wire)
+  case(wire)
 
     !for first current: compute fields, store fields for separate wires
     !for subsequent currents: just multiply precomputed fields with current and add up

@@ -136,7 +136,7 @@ contains
         !
 #endif
         !
-        call writeDataGroupTxArray( all_predicted_data, predicted_data_file_name )
+        call writeData( all_predicted_data, predicted_data_file_name )
         !
         deallocate( sigma )
         !
@@ -228,7 +228,7 @@ contains
         if( allocated( forward_solver ) ) deallocate( forward_solver )
         !
         !> Instantiate the ForwardSolver - Specific type can be chosen via control file
-        select case ( forward_solver_type )
+        select case( forward_solver_type )
             !
             case( FWD_IT_DC )
                 allocate( forward_solver, source = ForwardSolverIT_DC_t( model_operator, QMR ) )

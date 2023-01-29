@@ -54,7 +54,7 @@ module DeclarationMPI
         integer :: worker_rank, i_tx
         integer :: data_size, model_size, basic_comp_size
         integer :: inv_iter
-        real( kind=prec ) :: rms_tol, lambda
+        real( kind=prec ) :: tolerance_rms, lambda
         logical :: new_sigma
     
         !
@@ -704,7 +704,7 @@ contains
         !
         select case( model_derived_type )
             !
-            case ( model_cell_sg )
+            case( model_cell_sg )
                 !
                 if( allocated( model ) ) deallocate( model )
                 allocate( ModelParameterCell_SG_t :: model )
@@ -885,11 +885,11 @@ contains
         !
         select case( transmitter_derived_type )
             !
-            case ( transmitter_mt )
+            case( transmitter_mt )
                 !
                 allocate( TransmitterMT_t :: transmitter )
                 !
-            case ( transmitter_csem )
+            case( transmitter_csem )
                 !
                 allocate( TransmitterCSEM_t :: transmitter )
                 !
@@ -1509,7 +1509,7 @@ contains
         call MPI_PACK( job_info%model_size, 1, MPI_INTEGER, job_info_buffer, job_info_buffer_size, index, main_comm, ierr )
         call MPI_PACK( job_info%basic_comp_size, 1, MPI_INTEGER, job_info_buffer, job_info_buffer_size, index, main_comm, ierr )
         call MPI_PACK( job_info%inv_iter, 1, MPI_INTEGER, job_info_buffer, job_info_buffer_size, index, main_comm, ierr )
-        call MPI_PACK( job_info%rms_tol, 1, MPI_DOUBLE_PRECISION, job_info_buffer, job_info_buffer_size, index, main_comm, ierr )
+        call MPI_PACK( job_info%tolerance_rms, 1, MPI_DOUBLE_PRECISION, job_info_buffer, job_info_buffer_size, index, main_comm, ierr )
         call MPI_PACK( job_info%lambda, 1, MPI_DOUBLE_PRECISION, job_info_buffer, job_info_buffer_size, index, main_comm, ierr )
         call MPI_PACK( job_info%new_sigma, 1, MPI_LOGICAL, job_info_buffer, job_info_buffer_size, index, main_comm, ierr )
         !
@@ -1529,7 +1529,7 @@ contains
         call MPI_UNPACK( job_info_buffer, job_info_buffer_size, index, job_info%model_size, 1, MPI_INTEGER, main_comm, ierr )
         call MPI_UNPACK( job_info_buffer, job_info_buffer_size, index, job_info%basic_comp_size, 1, MPI_INTEGER, main_comm, ierr )
         call MPI_UNPACK( job_info_buffer, job_info_buffer_size, index, job_info%inv_iter, 1, MPI_INTEGER, main_comm, ierr )
-        call MPI_UNPACK( job_info_buffer, job_info_buffer_size, index, job_info%rms_tol, 1, MPI_DOUBLE_PRECISION, main_comm, ierr )
+        call MPI_UNPACK( job_info_buffer, job_info_buffer_size, index, job_info%tolerance_rms, 1, MPI_DOUBLE_PRECISION, main_comm, ierr )
         call MPI_UNPACK( job_info_buffer, job_info_buffer_size, index, job_info%lambda, 1, MPI_DOUBLE_PRECISION, main_comm, ierr )
         call MPI_UNPACK( job_info_buffer, job_info_buffer_size, index, job_info%new_sigma, 1, MPI_LOGICAL, main_comm, ierr )
         !

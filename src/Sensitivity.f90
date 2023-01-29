@@ -73,7 +73,7 @@ contains
         !
 #endif
         !
-        call writeDataGroupTxArray( JmHat, jmhat_data_file_name )
+        call writeData( JmHat, jmhat_data_file_name )
         !
         deallocate( sigma, dsigma )
         !

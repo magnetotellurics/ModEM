@@ -363,7 +363,7 @@ contains
         complex( kind=prec ), intent( in ) :: cvalue
         !
         select case( self%grid_type )
-            case ( CORNER ) 
+            case( CORNER ) 
                  self%v((/1, self%NdV(1)/), :, :) = real( cvalue, kind=prec )
                  self%v(:, (/1, self%NdV(2)/), :) = real( cvalue, kind=prec )
                  self%v(:, :, (/1, self%NdV(3)/)) = real( cvalue, kind=prec )
@@ -392,9 +392,9 @@ contains
         endif
         !
         select case( self%grid_type )
-        case (CORNER)
+        case(CORNER)
              if( int_only_p) then
-                select case (bdry)
+                select case(bdry)
                 case("x1")
                      self%v(1, 2:self%NdV(2)-1, 2:self%NdV(3)-1) = real( cvalue, kind=prec ) 
                 case("x2")

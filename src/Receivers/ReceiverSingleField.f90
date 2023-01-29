@@ -171,7 +171,7 @@ contains
                 if( allocated( self%response ) ) deallocate( self%response )
                 allocate( self%response(1) )
                 !
-                select case ( self%EHxy(1)%str )
+                select case( self%EHxy(1)%str )
                     case( "Ex" )
                         self%response(1) = self%Lex%dotProd( tx_e_1 )
                     case( "Ey" )

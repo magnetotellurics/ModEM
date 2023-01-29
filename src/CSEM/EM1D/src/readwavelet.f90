@@ -49,9 +49,9 @@ subroutine readwavelet(filename,wav)
 #endif
 
   !different wavelet formats for time and frequency domains
-  select case (dom)
+  select case(dom)
   !time domain wavelet: read wavelet to temp vector, then transform to frequency domain
-  case (timedom)
+  case(timedom)
 
     if(pid .EQ. 0) then
       !read number of samples and time step
@@ -141,7 +141,7 @@ subroutine readwavelet(filename,wav)
 #endif
   
   !frequency domain wavelet: directly read wavelet into wavelet vector
-  case (freqdom)
+  case(freqdom)
 
     if(pid .EQ. 0)   then
       !read number of frequency samples, start frequency and frequency step

@@ -47,7 +47,7 @@ contains
         character(*), intent( in ) :: solver_type
         type( ForwardSolverIT_DC_t ) :: self
         !
-        integer :: max_iter
+        integer :: max_inv_iters
         !
         !write( *, * ) "Constructor ForwardSolverIT_DC_t"
         !
@@ -79,7 +79,7 @@ contains
         call self%setIterDefaults()
         !
         !> Set max number of all forward solver iterations
-        self%max_iter_total = self%max_div_cor * self%solver%max_iter
+        self%max_iter_total = self%max_div_cor * self%solver%max_inv_iters
         !
         call self%setIterControl
         !
@@ -125,9 +125,9 @@ contains
         !
         self%tolerance = self%solver%tolerance
         !
-        self%max_div_cor = self%max_iter_total / self%solver%max_iter
+        self%max_div_cor = self%max_iter_total / self%solver%max_inv_iters
         !
-        self%max_iter_total = self%solver%max_iter * self%max_div_cor
+        self%max_iter_total = self%solver%max_inv_iters * self%max_div_cor
         !
     end subroutine setIterControlForwardSolverIT_DC
     !
@@ -214,13 +214,13 @@ contains
                 !
             end select
             !
-            self%solver%converged = self%solver%n_iter .LT. self%solver%max_iter
+            self%solver%converged = self%solver%n_inv_iter .LT. self%solver%max_inv_iters
             !
             self%solver%failed = self%solver%failed .OR. self%failed
             !
             !write( *, * ) "n_iter_actual+iter,     iter,     solver%relErr(iter)"
             !
-            do iter = 1, self%solver%n_iter
+            do iter = 1, self%solver%n_inv_iter
                 !
                 self%relResVec( self%n_iter_actual + iter ) = self%solver%relErr( iter )
                 !
@@ -228,7 +228,7 @@ contains
                 !
             enddo
             !
-            self%n_iter_actual = self%n_iter_actual + self%solver%n_iter
+            self%n_iter_actual = self%n_iter_actual + self%solver%n_inv_iter
             !
             self%n_divcor = self%n_divcor + 1
             !

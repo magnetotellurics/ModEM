@@ -64,9 +64,9 @@ contains
         call self%init()
         !
         ! maximum number of iterations in one call to iterative solver
-        self%max_iter = 600
-        ! convergence criteria: return from solver if rms < rms_tol
-        self%rms_tol = 1.05
+        self%max_inv_iters = 600
+        ! convergence criteria: return from solver if rms < tolerance_rms
+        self%tolerance_rms = 1.05
         ! inversion stalls when abs(rms - rmsPrev) < fdiffTol (2e-3 works well)
         self%fdiffTol = 2.0e-3
         ! initial r_value of lambda (will not override the NLCG input argument)
@@ -88,7 +88,7 @@ contains
         ! model and data output file name
         self%fname = 'Modular'
         !
-        allocate( self%r_err( self%max_cg_iter ) )
+        allocate( self%r_err( self%max_grad_iters ) )
         !
     end function InversionNLCG_ctor
     !
@@ -200,7 +200,7 @@ contains
             !
             do
                 !  test for convergence ...
-                if( rms .LT. self%rms_tol .OR. iter .GE. self%max_iter ) then
+                if( rms .LT. self%tolerance_rms .OR. iter .GE. self%max_inv_iters ) then
                     exit
                 endif
                 !
@@ -221,9 +221,9 @@ contains
                 ! data and solnVector only needed for output
                 write( *, * ) "Starting line search..."
                 !
-                select case ( flavor )
+                select case( flavor )
                     !
-                    case ( 'Cubic' )
+                    case( 'Cubic' )
                         call self%lineSearchCubic( all_data, sigma, h, alpha, mHat, r_value, grad, rms, nLS, dHat, e_all )
                         !call deall(e_all)
                     case ('Quadratic')
@@ -270,7 +270,7 @@ contains
                 !
                 res = all_data
                 !
-                call linCombDataGroupTxArray( ONE, all_data, MinusONE, dHat, res )
+                call linCombData( ONE, all_data, MinusONE, dHat, res )
                 !
                 !> if alpha is too small, we are not making progress: update lambda
                 if( abs( rmsPrev - rms ) < self%fdiffTol ) then
@@ -368,7 +368,7 @@ contains
             !
         else
             !
-            write( *, * ) "Error opening [", trim( outdir_name )//"/DCG.log", "] in writeDataGroupTxArray!"
+            write( *, * ) "Error opening [", trim( outdir_name )//"/DCG.log", "] in writeData!"
             stop
             !
         endif
@@ -410,10 +410,10 @@ contains
         res = all_data
         !
         ! compute residual: res = (all_data-dHat)/Ndata
-        !call linCombDataGroupTxArray( ONE, all_data, MinusONE, dHat, res )
-        call subDataGroupTxArray( res, dHat )
+        !call linCombData( ONE, all_data, MinusONE, dHat, res )
+        call subData( res, dHat )
         !
-        Ndata = countValuesGroupTxArray( dHat )
+        Ndata = countData( dHat )
         !
         !write( *, * ) "Ndata: ", Ndata
         !stop
@@ -490,15 +490,15 @@ contains
         !> initialize res
         res = all_data
         !
-        !call linCombDataGroupTxArray( ONE, all_data, MinusONE, dHat, res )
-        call subDataGroupTxArray( res, dHat )
+        !call linCombData( ONE, all_data, MinusONE, dHat, res )
+        call subData( res, dHat )
         !
         !> normalize residuals, compute sum of squares
         call CdInvMult( res, Nres )
         !
-        SS = dotProdDataGroupTxArray( res, Nres )
+        SS = dotProdData( res, Nres )
         !
-        Ndata = countValuesGroupTxArray( res )
+        Ndata = countData( res )
         !
         !> compute the model norm
         mNorm = mHat%dotProd( mHat )
@@ -538,7 +538,7 @@ contains
         !
         all_data = d_in
         !
-        call normalizeDataGroupTxArray( all_data, 2 )
+        call normalizeData( all_data, 2 )
         !
         if( present( d_out ) ) then
             d_out = all_data
@@ -698,7 +698,7 @@ contains
         !
         niter = niter + 1
         !
-        if ( f_1 - f_0 >= LARGE_REAL ) then
+        if ( f_1 - f_0 >= R_LARGE ) then
             write( *, * ) "Error: Try a smaller starting r_value of alpha."
             write( *, * ) "Exiting..."
             stop
@@ -957,12 +957,12 @@ contains
         !> Write predicted data for this NLCG iteration
         out_file_name = trim( outdir_name )//"/PredictedData_NLCG_"//char3//".dat"
         !
-        call writeDataGroupTxArray( all_predicted_data, trim( out_file_name ) )
+        call writeData( all_predicted_data, trim( out_file_name ) )
         !
         !> Write residual data for this NLCG iteration
         out_file_name = trim( outdir_name )//"/ResidualData_NLCG_"//char3//".dat"
         !
-        call writeDataGroupTxArray( res, trim( out_file_name ) )
+        call writeData( res, trim( out_file_name ) )
         !
         !> Write model for this NLCG iteration
         out_file_name = trim( outdir_name )//"/SigmaModel_NLCG_"//char3//".rho"

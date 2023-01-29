@@ -94,7 +94,7 @@ contains
         !
         i = 0
         !
-        loop: do while ( ( self%relErr( i + 1 ) .GT. self%tolerance ).AND.( i + 1 .LT. self%max_iter ) )
+        loop: do while ( ( self%relErr( i + 1 ) .GT. self%tolerance ).AND.( i + 1 .LT. self%max_inv_iters ) )
             !
             call self%preconditioner%LUsolve( r, s )
             !
@@ -128,7 +128,7 @@ contains
             !
         enddo loop
         ! !
-        ! if( i + 1 .LT. self%max_iter ) then
+        ! if( i + 1 .LT. self%max_inv_iters ) then
             ! write( *, * ) "                    divCorr PCG converged within ", i + 1, " : ", self%relErr( i + 1 )
         ! else
             ! write( *, * ) "                    divCorr PCG not converged in ", i + 1, " : ", self%relErr( i + 1 )
@@ -139,7 +139,7 @@ contains
         deallocate( p )
         deallocate( q )
         !
-        self%n_iter = i
+        self%n_inv_iter = i
         !
     end subroutine solvePCG !> PCG
     !

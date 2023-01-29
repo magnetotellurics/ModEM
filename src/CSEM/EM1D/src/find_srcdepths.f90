@@ -31,8 +31,8 @@ subroutine find_srcdepths(src,refl_var,dipoletype)
   !extract elements for one particular source type
   !------------------------------------------------------
 
-  select case (src%type)
-  case (dipole)
+  select case(src%type)
+  case(dipole)
 
     !check input
     if((dipoletype.lt.hed) .OR. (dipoletype.gt.vmd)) &
@@ -46,8 +46,8 @@ subroutine find_srcdepths(src,refl_var,dipoletype)
     nelem = 0
 
     !composite dipole sources may contain different dipole types
-    select case (dipoletype)
-    case (hed) !horizontal electric dipole
+    select case(dipoletype)
+    case(hed) !horizontal electric dipole
 
       do ielem=1,nelemtot
         if((src%ljx(ielem).NE.0._real64) .OR. (src%ljy(ielem).NE.0._real64)) then
@@ -62,7 +62,7 @@ subroutine find_srcdepths(src,refl_var,dipoletype)
         if(ierr.NE.0) call alloc_error(pid,'find_srcdepths','betasrc',ierr)
       endif
 
-    case (ved) !vertical electric dipole
+    case(ved) !vertical electric dipole
       do ielem=1,nelemtot
         if(src%ljz(ielem).NE.0._real64) then
           nelem = nelem + 1
@@ -71,7 +71,7 @@ subroutine find_srcdepths(src,refl_var,dipoletype)
         endif
       enddo
 
-    case (hmd) !horizontal magnetic dipole
+    case(hmd) !horizontal magnetic dipole
       do ielem=1,nelemtot
         if((src%akx(ielem).NE.0._real64) .OR. (src%aky(ielem).NE.0._real64)) then
           nelem = nelem + 1
@@ -85,7 +85,7 @@ subroutine find_srcdepths(src,refl_var,dipoletype)
         if(ierr.NE.0) call alloc_error(pid,'find_srcdepths','betasrc',ierr)
       endif
 
-    case (vmd) !vertical magnetic dipole
+    case(vmd) !vertical magnetic dipole
       do ielem=1,nelemtot
         if(src%akz(ielem).NE.0.d0) then
           nelem = nelem + 1
@@ -99,7 +99,7 @@ subroutine find_srcdepths(src,refl_var,dipoletype)
 
   !horizontal wire sources (so far!) contain horizontal electrical source elements only
   !no need to scan through wires (for now!) - should add option for vertical wire components!
-  case (wire)
+  case(wire)
 
     nelem = src%nwire
 
@@ -136,8 +136,8 @@ subroutine find_srcdepths(src,refl_var,dipoletype)
     call indexx(nelem,zstmpall,refl_var%isrcperz)
 
 
-    select case (src%type)
-    case (dipole)
+    select case(src%type)
+    case(dipole)
 
       !replace indices with those from original source vector
       !this will only have an effect if there are multiple dipole element types within the source
@@ -181,7 +181,7 @@ subroutine find_srcdepths(src,refl_var,dipoletype)
 
 
     !wire sources
-    case (wire)
+    case(wire)
       zstmp = 0._real64
       zstmp(1) = src%wire(refl_var%isrcperz(1))%endpos(3,1)
       nsrcperz(1) = 1

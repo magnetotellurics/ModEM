@@ -333,7 +333,7 @@ contains
         select case(self%grid_type)
             case(EDGE)
                 if(int_only_p) then
-                  select case (bdry)
+                  select case(bdry)
                       case("x1")
                           self%z(1, 2:self%NdZ(2)-1, :) = cvalue
                           self%y(1, :, 2:self%NdY(3)-1) = cvalue
@@ -362,7 +362,7 @@ contains
                           self%y(2:self%NdY(1)-1, :, self%NdY(3)) = cvalue
                   end select
                 else
-                  select case (bdry)
+                  select case(bdry)
                       case("x1")
                           self%z(1, :, :) = cvalue
                           self%y(1, :, :) = cvalue
@@ -393,7 +393,7 @@ contains
                 endif
                 !
             case(FACE)
-                select case (bdry)
+                select case(bdry)
                   case("x1")
                       self%x(1, :, :) = cvalue
                   case("x2")

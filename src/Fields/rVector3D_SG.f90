@@ -337,7 +337,7 @@ contains
         select case(self%grid_type)
             case(EDGE)
                 if(int_only_p) then
-                  select case (bdry)
+                  select case(bdry)
                       case("x1")
                           self%z(1, 2:self%NdZ(2)-1, :) = real( cvalue, kind=prec )
                           self%y(1, :, 2:self%NdY(3)-1) = real( cvalue, kind=prec )
@@ -366,7 +366,7 @@ contains
                           self%y(2:self%NdY(1)-1, :, self%NdY(3)) = real( cvalue, kind=prec )
                   end select
                 else
-                  select case (bdry)
+                  select case(bdry)
                       case("x1")
                           self%z(1, :, :) = real( cvalue, kind=prec )
                           self%y(1, :, :) = real( cvalue, kind=prec )
@@ -397,7 +397,7 @@ contains
                 endif
                 !
             case(FACE)
-                select case (bdry)
+                select case(bdry)
                   case("x1")
                       self%x(1, :, :) = real( cvalue, kind=prec )
                   case("x2")

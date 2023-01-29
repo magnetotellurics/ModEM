@@ -135,7 +135,7 @@ contains
         !
         !> the do loop goes on while the relative error is greater than the tolerance
         !> and the iterations are less than maxIt
-        do while( ( self%relErr( iter ) .GT. self%tolerance ) .AND. ( iter .LT. self%max_iter ) )
+        do while( ( self%relErr( iter ) .GT. self%tolerance ) .AND. ( iter .LT. self%max_inv_iters ) )
             !
             !> Verbose
             !write( *, * ) "QMR iter, self%relErr( iter )", iter, self%relErr( iter )
@@ -267,7 +267,7 @@ contains
             !
         enddo
         ! !
-        ! if( iter .LT. self%max_iter ) then
+        ! if( iter .LT. self%max_inv_iters ) then
             ! write( *, * ) "                    Solver QMR converged within ", iter, " : ", self%relErr( iter )
         ! else
             ! write( *, * ) "                    Solver QMR not converged in ", iter, " : ", self%relErr( iter )
@@ -288,7 +288,7 @@ contains
         deallocate( D )
         deallocate( S )
         !
-        self%n_iter = iter
+        self%n_inv_iter = iter
         !
     end subroutine solveQMR
     !

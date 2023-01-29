@@ -359,7 +359,7 @@ contains
         complex( kind=prec ), intent( in ) :: cvalue
         !
         select case( self%grid_type )
-            case (CORNER) 
+            case(CORNER) 
                  self%v((/1, self%NdV(1)/), :, :) = cvalue
                  self%v(:, (/1, self%NdV(2)/), :) = cvalue
                  self%v(:, :, (/1, self%NdV(3)/)) = cvalue
@@ -388,9 +388,9 @@ contains
         endif
         !
         select case( self%grid_type )
-        case (CORNER)
+        case(CORNER)
              if( int_only_p) then
-                select case (bdry)
+                select case(bdry)
                 case("x1")
                      self%v(1, 2:self%NdV(2)-1, 2:self%NdV(3)-1) = cvalue 
                 case("x2")
