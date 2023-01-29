@@ -14,5 +14,5 @@ mpirun -np 5 ./Mod3DMT_STD -M ../../modem-oo/inputs/JMult_test/pr.ws ../../modem
 #
 # INVERSION DCG MT4 : 5.93385410 min OR 355 sec
 #
-mpirun -np 5 ./Mod3DMT_STD -I DCG ../../modem-oo/inputs/JMult_test/pr.ws ../../modem-oo/inputs/JMult_test/de.txt ../../modem-oo/inputs/Others/modem_on_inv_control_file.txt FWD_para.dat
+#mpirun -np 5 ./Mod3DMT_STD -I DCG ../../modem-oo/inputs/JMult_test/pr.ws ../../modem-oo/inputs/JMult_test/de.txt ../../modem-oo/inputs/Others/modem_on_inv_control_file.txt FWD_para.dat
 #

@@ -1,17 +1,17 @@
 !
-!> Module with the sensitivity routines JMult, JMult_Tx, JMult_T, JMult_T_Tx 
+!> Module with the sensitivity routines serialJMult, JMult_Tx, serialJMult_T, JMult_T_Tx 
 !
 module GlobalVariables
     !
     use Constants
     !
-    use FileUnits
+    use ModEMControlFile
     !
     use Grid3D_SG
     !
-    use ModelParameterCell_SG
-    !
     use ModelOperator_MF
+    !
+    use ModelParameterCell_SG
     !
     use ModelCovarianceRec
     !
@@ -26,11 +26,6 @@ module GlobalVariables
     use ReceiverFullVerticalMagnetic
     use ReceiverOffDiagonalImpedance
     use ReceiverSingleField
-    use ReceiverArray
-    !
-    use TransmitterMT
-    use TransmitterCSEM
-    use TransmitterArray
     !
     use DataGroupTxArray
     !
@@ -39,7 +34,10 @@ module GlobalVariables
     use DataFileStandard
     !
     !> Global Variables
+    type( ModEMControlFile_t ), allocatable :: control_file
+    !
     class( Grid_t ), allocatable, target :: main_grid
+    !
     class( ModelOperator_t ), allocatable :: model_operator
     !
     class( ForwardSolver_t ), allocatable, target :: forward_solver
@@ -67,16 +65,16 @@ module GlobalVariables
     logical :: has_e_solution_file
     logical :: verbosis
     !
-    !> 
-    public :: handleDataFile
+    !> Public module routines
     public :: handleModelFile
     public :: handlePModelFile
+    public :: handleDataFile
     public :: createOutputDirectory
     public :: garbageCollector
     !
 contains
     !
-    !> No subroutine briefing
+    !> Read Model File and instantiate global variables: main_grid, model_operator and sigma0
     subroutine handleModelFile( sigma0 )
         implicit none
         !
@@ -130,7 +128,7 @@ contains
         !
     end subroutine handleModelFile
     !
-    !> No subroutine briefing
+    !> Read Perturbation Model File: instantiate pmodel
     subroutine handlePModelFile( pmodel )
         implicit none
         !
@@ -150,7 +148,7 @@ contains
         !
     end subroutine handlePModelFile
     !
-    !> No subroutine briefing
+    !> Read Data File: instantiate Txs and Rxs and build the Data relation between them
     subroutine handleDataFile()
         implicit none
         !
@@ -194,7 +192,7 @@ contains
              !
         endif
         !
-        write( *, * ) "          Checked ", countDataGroupTxArray( all_measured_data ), " DataGroups."
+        write( *, * ) "          Checked ", countData( all_measured_data ), " DataGroups."
         !
         write( *, * ) "     - Creating Rx evaluation vectors"
         !
@@ -207,21 +205,21 @@ contains
         !
     end subroutine handleDataFile
     !
-    !> ????
+    !> Create a directory to store output files
+    !> With a name standardized by date and runtime or specified by the input argument [-o]
+    !
     subroutine createOutputDirectory()
         implicit none
         !
         character(8) str_date
         character(6) str_time
         !
-        !>
         if( .NOT. has_outdir_name ) then
             !
             !>
             call date_and_time( str_date, str_time )
             !
-            !> Instantiate the ForwardSolver - Specific type can be chosen via control file
-            select case ( inversion_algorithm )
+            select case( inversion_type )
                 !
                 case( DCG )
                     !
@@ -233,7 +231,7 @@ contains
                     !
                 case default
                     !
-                    stop "Error: jobInversion > Undefined inversion_algorithm"
+                    stop "Error: jobInversion > Undefined inversion_type"
                     !
             end select
             !
@@ -245,12 +243,13 @@ contains
         !
     end subroutine createOutputDirectory
     !
-    !> No subroutine briefing
+    !> Deallocate remaining unallocated global memory
+    !
     subroutine garbageCollector()
         implicit none
         !
         !> Deallocate global array of measured data
-        if( allocated( all_measured_data ) ) call deallocateDataGroupTxArray( all_measured_data )
+        !if( allocated( all_measured_data ) ) call deallocateDataGroupTxArray( all_measured_data )
         !
         !> Deallocate global array of Receivers
         if( allocated( receivers ) ) call deallocateReceiverArray()
@@ -267,7 +266,7 @@ contains
         if( allocated( model_cov ) ) deallocate( model_cov )
         !
         !> Flush memory used by main program control variables and flags
-        if( allocated( inversion_algorithm ) ) deallocate( inversion_algorithm )
+        if( allocated( inversion_type ) ) deallocate( inversion_type )
         !
         if( allocated( forward_solver_type ) ) deallocate( forward_solver_type )
         if( allocated( source_type ) ) deallocate( source_type )

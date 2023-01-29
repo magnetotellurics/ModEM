@@ -16,7 +16,7 @@ valgrind --leak-check=full --show-leak-kinds=all --track-origins=yes -v --log-fi
 #
 # DCG: 
 #
-#./ModEM_SERIAL -i -m ../inputs/JMult_test/pr.ws -d ../inputs/JMult_test/de.txt -c ../docs/control_file_template -o OO_DCG_SERIAL
+valgrind --leak-check=full --show-leak-kinds=all --track-origins=yes -v --log-file=mt4_valgrind_dcg_serial.txt ./ModEM_SERIAL -i -m ../inputs/JMult_test/pr.ws -d ../inputs/JMult_test/de.txt -c ../docs/control_file_template -o OO_DCG_SERIAL
 #
 # PARALLEL MT4
 #
@@ -35,6 +35,4 @@ mpirun -np 5 valgrind --leak-check=full --show-leak-kinds=all --track-origins=ye
 # DCG: 
 #
 mpirun -np 5 valgrind --leak-check=full --show-leak-kinds=all --track-origins=yes -v --log-file=mt4_valgrind_dcg_mpi5.txt ./ModEM_MPI -i -m ../inputs/JMult_test/pr.ws -d ../inputs/JMult_test/de.txt -c ../docs/control_file_template -o DCG_MPI_MT4
-#
-valgrind --leak-check=full --show-leak-kinds=all --track-origins=yes -v --log-file=mt4_valgrind_dcg_serial.txt ./ModEM_SERIAL -i -m ../inputs/JMult_test/pr.ws -d ../inputs/JMult_test/de.txt -c ../docs/control_file_template -o OO_DCG_SERIAL
 #

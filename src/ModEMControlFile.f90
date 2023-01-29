@@ -13,15 +13,23 @@ module ModEMControlFile
     use Solver
     use Source
     !
+    character(:), allocatable :: inversion_type
+    !
     type :: ModEMControlFile_t
         !
-        character(:), allocatable :: inversion_algorithm
-        !
+        !> FWD Components parameters
         character(:), allocatable :: grid_reader_type, grid_type, forward_solver_type, source_type
         character(:), allocatable :: model_method, model_n_air_layer, model_max_height
         !
+        !> Solver parameters
         character(:), allocatable :: QMR_iters, BCG_iters, max_divcor_calls, max_divcor_iters
         character(:), allocatable :: tolerance_divcor, tolerance_qmr
+        !
+        !> Inversion parameters
+        character(:), allocatable :: inversion_type
+        character(:), allocatable :: max_inv_iters, max_grad_iters
+        character(:), allocatable :: tolerance_error, tolerance_rms
+        character(:), allocatable :: lambda
         !
         contains
             !
@@ -68,19 +76,15 @@ contains
                 if( index( line_text, "#" ) == 0 .AND. index( line_text, ">" ) == 0 ) then
                     !
                     if( index( line_text, "grid_reader" ) > 0 ) then
-                        self%grid_type = trim( args(2) )
+                        self%grid_reader_type = trim( args(2) )
                     endif
                     !
                     if( index( line_text, "grid" ) > 0 ) then
-                        self%grid_reader_type = trim( args(2) )
+                        self%grid_type = trim( args(2) )
                     endif
                     !
                     if( index( line_text, "forward_solver" ) > 0 ) then
                         self%forward_solver_type = trim( args(2) )
-                    endif
-                    !
-                    if( index( line_text, "inversion_type" ) > 0 ) then
-                        self%inversion_algorithm = trim( args(2) )
                     endif
                     !
                     if( index( line_text, "source" ) > 0 ) then
@@ -123,18 +127,42 @@ contains
                         self%tolerance_qmr = trim( args(2) )
                     endif
                     !
+                    if( index( line_text, "inversion_type" ) > 0 ) then
+                        self%inversion_type = trim( args(2) )
+                    endif
+                    !
+                    if( index( line_text, "max_inv_iters" ) > 0 ) then
+                        self%max_inv_iters = trim( args(2) )
+                    endif
+                    !
+                    if( index( line_text, "max_grad_iters" ) > 0 ) then
+                        self%max_grad_iters = trim( args(2) )
+                    endif
+                    !
+                    if( index( line_text, "tolerance_error" ) > 0 ) then
+                        self%tolerance_error = trim( args(2) )
+                    endif
+                    !
+                    if( index( line_text, "tolerance_rms" ) > 0 ) then
+                        self%tolerance_rms = trim( args(2) )
+                    endif
+                    !
+                    if( index( line_text, "lambda" ) > 0 ) then
+                        self%lambda = trim( args(2) )
+                    endif
+                    !
                 endif
                 !
             enddo
             !
-10              close( unit = funit )
+10          close( unit = funit )
             !
             ! Grid type
             if ( allocated( self%grid_type ) ) then
                 !
                 write( *, * ) "          grid = ", self%grid_type
                 !
-                select case ( self%grid_type )
+                select case( self%grid_type )
                     case( "SG" )
                         grid_type = GRID_SG
                     case( "MR" )
@@ -159,7 +187,7 @@ contains
             ! Forward solver
             if ( allocated( self%forward_solver_type ) ) then
                 !
-                select case ( self%forward_solver_type )
+                select case( self%forward_solver_type )
                     !
                     case( "FILE" )
                         forward_solver_type = FWD_FILE
@@ -177,29 +205,10 @@ contains
                 !
             endif
             !
-            ! Forward solver
-            if ( allocated( self%inversion_algorithm ) ) then
-                !
-                select case ( self%inversion_algorithm )
-                    !
-                    case( "DCG" )
-                        inversion_algorithm = DCG
-                    case( "NLCG" )
-                        inversion_algorithm = NLCG
-                    case default
-                        inversion_algorithm = ""
-                        stop "Error: Wrong inversion_algorithm control, use [DCG|NLCG]"
-                    !
-                end select
-                !
-                write( *, "( A30, A20)" ) "          inversion = ", inversion_algorithm
-                !
-            endif
-            !
             ! Source_type
             if ( allocated( self%source_type ) ) then
                 !
-                select case ( self%source_type )
+                select case( self%source_type )
                     !
                     case( "1D" )
                         source_type = SRC_MT_1D
@@ -218,7 +227,7 @@ contains
             ! Model method
             if ( allocated( self%model_method ) ) then
                 !
-                select case ( self%model_method )
+                select case( self%model_method )
                     !
                     case( "fixed height" )
                         model_method = MM_METHOD_FIXED_H
@@ -305,6 +314,23 @@ contains
                 !
             endif
             !
+            ! Inversion type
+            if ( allocated( self%inversion_type ) ) then
+                !
+                select case( self%inversion_type )
+                    !
+                    case( "DCG" )
+                        inversion_type = DCG
+                    case( "NLCG" )
+                        inversion_type = NLCG
+                    case default
+                        inversion_type = ""
+                    stop "Error: Wrong inversion_type control, use [DCG|NLCG]"
+                    !
+                end select
+                !
+            endif
+            !
         else
             write( *, * ) "Error opening [", fname, "] in ModEMControlFile_ctor"
             stop
@@ -321,7 +347,6 @@ contains
         !
         !write( *,* ) "Destructor ModEMControlFile_t"
         !
-        if( allocated( self%inversion_algorithm ) ) deallocate( self%inversion_algorithm )
         if( allocated( self%grid_reader_type ) ) deallocate( self%grid_reader_type )
         if( allocated( self%grid_type ) ) deallocate( self%grid_type )
         if( allocated( self%forward_solver_type ) ) deallocate( self%forward_solver_type )
@@ -330,11 +355,19 @@ contains
         if( allocated( self%model_n_air_layer ) ) deallocate( self%model_n_air_layer )
         if( allocated( self%model_max_height ) ) deallocate( self%model_max_height )
         if( allocated( self%QMR_iters ) ) deallocate( self%QMR_iters )
+        !
         if( allocated( self%BCG_iters ) ) deallocate( self%BCG_iters )
         if( allocated( self%max_divcor_calls ) ) deallocate( self%max_divcor_calls )
         if( allocated( self%max_divcor_iters ) ) deallocate( self%max_divcor_iters )
         if( allocated( self%tolerance_divcor ) ) deallocate( self%tolerance_divcor )
         if( allocated( self%tolerance_qmr ) ) deallocate( self%tolerance_qmr )
+        !
+        if( allocated( self%inversion_type ) ) deallocate( self%inversion_type )
+        if( allocated( self%max_inv_iters ) ) deallocate( self%max_inv_iters )
+        if( allocated( self%max_grad_iters ) ) deallocate( self%max_grad_iters )
+        if( allocated( self%tolerance_error ) ) deallocate( self%tolerance_error )
+        if( allocated( self%tolerance_rms ) ) deallocate( self%tolerance_rms )
+        if( allocated( self%lambda ) ) deallocate( self%lambda )
         !
     end subroutine ModEMControlFile_dtor
     !
