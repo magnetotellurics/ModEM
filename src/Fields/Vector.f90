@@ -1,5 +1,5 @@
 !
-!> Abstract class to define a Vector field
+!> Abstract class to define an abstract Vector field
 !
 module Vector
     !
@@ -11,25 +11,23 @@ module Vector
         !
     contains
         !
-        !> Vector interfaces
-        !procedure( interface_add_sparse_vector_vector ), deferred, public :: addSparseVector
-        !
-        procedure( interface_diag_mult_vector ), deferred, public :: diagMult
-        !
-        procedure( interface_interp_func_vector ), deferred, public :: interpFunc
-        !
+        !> Vector Interfaces
         procedure( interface_sum_cells_vector ), deferred, public :: avgCells
+        procedure( interface_diag_mult_vector ), deferred, public :: diagMult
+        procedure( interface_interp_func_vector ), deferred, public :: interpFunc
         !
     end type Vector_t
     !
-    !>
+    !> Global structures to store E from Transmitters
+    !
+    !> For a single Tx
     type :: EAllTx_t
         !
         class( Vector_t ), allocatable, dimension(:) :: pol
         !
     end type EAllTx_t
     !
-    !>
+    !> For multiple Txs
     type :: EAllMTx_t
         !
         type( EAllTx_t ), allocatable, dimension(:) :: e
@@ -38,25 +36,19 @@ module Vector
         !
     end type EAllMTx_t
     !
-    !>
     abstract interface
-        ! !
-        ! !> No interface subroutine briefing
-        ! subroutine interface_add_sparse_vector_vector( self, svec )
-            ! import :: Vector_t, cVectorSparse3D_SG_t
-            ! class( Vector_t ), intent( inout ) :: self
-            ! type( cVectorSparse3D_SG_t ), intent( in ) :: svec
-            ! !
-        ! end subroutine interface_add_sparse_vector_vector
-        ! !
-        !> Miscellaneous
+        !
+        !> No interface function briefing
+        !
         function interface_diag_mult_vector( self, rhs ) result( diag_mult )
             import :: Vector_t
-            class( Vector_t ), intent( in ) :: self, rhs
+            class( Vector_t ), intent( inout ) :: self
+            class( Vector_t ), intent( in ) :: rhs
             class( Vector_t ), allocatable :: diag_mult
         end function interface_diag_mult_vector
         !
         !> No interface subroutine briefing
+        !
         subroutine interface_interp_func_vector( self, location, xyz, interp )
             import :: Vector_t, prec
             class( Vector_t ), intent( in ) :: self
@@ -66,6 +58,7 @@ module Vector
         end subroutine interface_interp_func_vector
         !
         !> No interface subroutine briefing
+        !
         subroutine interface_sum_cells_vector( self, E_in, ptype )
             import :: Vector_t, Scalar_t
             class( Vector_t ), intent( inout ) :: self

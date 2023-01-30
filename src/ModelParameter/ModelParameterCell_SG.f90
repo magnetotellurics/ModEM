@@ -549,7 +549,7 @@ contains
         write( *, * ) "ModelParameterCell_SG_t:", self%mKey, self%air_cond, self%param_type, &
         self%zero_valued, self%is_allocated, self%param_grid%nx, self%param_grid%ny, self%param_grid%nz, self%param_grid%nzAir
         !
-        call self%cell_cond%print()
+        !call self%cell_cond%print()
         !
     end subroutine printParameterCell_SG
     !

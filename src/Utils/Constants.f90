@@ -104,8 +104,8 @@ module Constants
     character( len=3 ), parameter :: DCG = "DCG"
     character( len=4 ), parameter :: NLCG = "NLCG"
     !
-    !> 
-    integer, parameter :: full_vector = 1
-    integer, parameter :: column_vector = 2
+    !> Field Store States
+    integer, parameter :: compound = 1
+    integer, parameter :: singleton = 2
     !
 end module Constants
