@@ -44,7 +44,7 @@ module ModEMControlFile
 contains
     !
     !> Procedure ModEMControlFile_ctor
-    !> Read line by line of the data file, create Data Entry objects (MT, MT_REF or CSEM)
+    !> Read line by line of the data file, create Data Entry objects(MT, MT_REF or CSEM)
     function ModEMControlFile_ctor( funit, fname ) result( self )
         implicit none
         !
@@ -158,7 +158,7 @@ contains
 10          close( unit = funit )
             !
             ! Grid type
-            if ( allocated( self%grid_type ) ) then
+            if( allocated( self%grid_type ) ) then
                 !
                 write( *, * ) "          grid = ", self%grid_type
                 !
@@ -177,7 +177,7 @@ contains
             endif
             !
             ! Grid reader
-            if ( allocated( self%grid_reader_type ) ) then
+            if( allocated( self%grid_reader_type ) ) then
                 !
                 ! TO BE IMPLEMENTED
                 write( *, "( A30, A20)" ) "          grid_reader = ", self%grid_reader_type
@@ -185,7 +185,7 @@ contains
             endif
             !
             ! Forward solver
-            if ( allocated( self%forward_solver_type ) ) then
+            if( allocated( self%forward_solver_type ) ) then
                 !
                 select case( self%forward_solver_type )
                     !
@@ -206,7 +206,7 @@ contains
             endif
             !
             ! Source_type
-            if ( allocated( self%source_type ) ) then
+            if( allocated( self%source_type ) ) then
                 !
                 select case( self%source_type )
                     !
@@ -225,7 +225,7 @@ contains
             endif
             !
             ! Model method
-            if ( allocated( self%model_method ) ) then
+            if( allocated( self%model_method ) ) then
                 !
                 select case( self%model_method )
                     !
@@ -243,7 +243,7 @@ contains
             endif
             !
             ! Model nzAir
-            if ( allocated( self%model_n_air_layer ) ) then
+            if( allocated( self%model_n_air_layer ) ) then
                 !
                 read( self%model_n_air_layer, "(I8)" ) model_n_air_layer
                 !
@@ -252,7 +252,7 @@ contains
             endif
             !
             ! Model max height
-            if ( allocated( self%model_max_height ) ) then
+            if( allocated( self%model_max_height ) ) then
                 !
                 read( self%model_max_height, "(f15.6)" ) model_max_height
                 !
@@ -261,7 +261,7 @@ contains
             endif
             !
             ! Solver QMR_iters
-            if ( allocated( self%QMR_iters ) ) then
+            if( allocated( self%QMR_iters ) ) then
                 !
                 read( self%QMR_iters, "(I8)" ) QMR_iters
                 !
@@ -270,7 +270,7 @@ contains
             endif
             !
             ! Solver BCG_iters
-            if ( allocated( self%BCG_iters ) ) then
+            if( allocated( self%BCG_iters ) ) then
                 !
                 read( self%BCG_iters, "(I8)" ) BCG_iters
                 !
@@ -279,7 +279,7 @@ contains
             endif
             !
             ! Solver max_divcor_calls
-            if ( allocated( self%max_divcor_calls ) ) then
+            if( allocated( self%max_divcor_calls ) ) then
                 !
                 read( self%max_divcor_calls, "(I8)" ) max_divcor_calls
                 !
@@ -288,7 +288,7 @@ contains
             endif
             !
             ! Solver max_divcor_iters
-            if ( allocated( self%max_divcor_iters ) ) then
+            if( allocated( self%max_divcor_iters ) ) then
                 !
                 read( self%max_divcor_iters, "(I8)" ) max_divcor_iters
                 !
@@ -297,7 +297,7 @@ contains
             endif
             !
             ! Solver tolerance_divcor
-            if ( allocated( self%tolerance_divcor ) ) then
+            if( allocated( self%tolerance_divcor ) ) then
                 !
                 read( self%tolerance_divcor, * ) tolerance_divcor
                 !
@@ -306,7 +306,7 @@ contains
             endif
             !
             ! Solver tolerance_qmr
-            if ( allocated( self%tolerance_qmr ) ) then
+            if( allocated( self%tolerance_qmr ) ) then
                 !
                 read( self%tolerance_qmr, * ) tolerance_qmr
                 !
@@ -315,7 +315,7 @@ contains
             endif
             !
             ! Inversion type
-            if ( allocated( self%inversion_type ) ) then
+            if( allocated( self%inversion_type ) ) then
                 !
                 select case( self%inversion_type )
                     !

@@ -63,7 +63,7 @@ module ModelParameterCell_SG
 contains
     !
     !> No subroutine briefing
-	!
+    !
     function ModelParameterCell_SG_ctor( grid, cell_cond, param_type ) result( self )
         implicit none
         !
@@ -92,6 +92,7 @@ contains
                     grid%dz( grid%nzAir+1:grid%nz ) ) )
         !
         self%cell_cond = cell_cond
+        self%cell_cond%store_state = compound
         !
         if( present( param_type ) ) then
             !
@@ -116,7 +117,7 @@ contains
     end subroutine ModelParameterCell_SG_dtor
     !
     !> No subroutine briefing
-	!
+    !
     function slice1DModelParameterCell_SG( self, ix, iy ) result( model_param_1D )
         implicit none
         !
@@ -140,7 +141,7 @@ contains
     end function slice1DModelParameterCell_SG
     !
     !> No subroutine briefing
-	!
+    !
     function avgModel1DModelParameterCell_SG( self ) result( model_param_1D )
         implicit none
         !
@@ -179,7 +180,7 @@ contains
     end function avgModel1DModelParameterCell_SG
     !
     !> No subroutine briefing
-	!
+    !
     function slice2DModelParameterCell_SG( self, axis, j ) result( m2D )
         implicit none
         !
@@ -333,7 +334,7 @@ contains
     end subroutine linCombModelParameterCell_SG
     !
     !> No subroutine briefing
-	!
+    !
     function dotProdModelParameterCell_SG( self, rhs ) result( rvalue )
         implicit none
         !

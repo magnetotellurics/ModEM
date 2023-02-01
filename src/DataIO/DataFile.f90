@@ -341,6 +341,7 @@ contains
     end function getDataByIndex
     !
     !> Dynamically add a new DataGroup to the array, always via reallocation.
+    !
     subroutine updateDataGroupArray( data_array, data_group )
         implicit none
         !
@@ -383,13 +384,14 @@ contains
     !
     !> Allocate and Initialize the predicted data array, 
     !> according to the arrangement of the Transmitter-Receiver pairs of the input
+    !
     subroutine contructMeasuredDataGroupTxArray( self )
         implicit none
         !
         class( DataFile_t ), intent( inout ) :: self
         !
         !> Auxiliary variable to group data under a single transmitter index
-        type( DataGroupTx_t ) :: tx_data
+        class( DataGroupTx_t ), allocatable :: tx_data
         !
         !> Local indexes
         integer :: i_tx, i_data
@@ -404,7 +406,7 @@ contains
             !> Enabling the use of grouped predicted data in future jobs (all_measured_data)
             do i_tx = 1, size( transmitters )
                 !
-                tx_data = DataGroupTx_t( i_tx )
+                allocate( tx_data, source = DataGroupTx_t( i_tx ) )
                 !
                 do i_data = 1, size( self%measured_data )
                     !
@@ -413,9 +415,12 @@ contains
                         call tx_data%put( self%measured_data( i_data ) )
                         !
                     endif
+                    !
                 enddo
                 !
                 call updateData( all_measured_data, tx_data )
+                !
+                deallocate( tx_data )
                 !
             enddo
             !

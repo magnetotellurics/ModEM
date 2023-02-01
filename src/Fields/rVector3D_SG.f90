@@ -158,23 +158,10 @@ contains
         !
         !write( *, * ) "Destructor rVector3D_SG"
         !
-        if( .NOT. self%is_allocated) then
-             stop "Error: rVector3D_SG_dtor > self not allocated."
-        endif
-        !
-        if( self%store_state .EQ. compound ) then
-            !
-            deallocate( self%x )
-            deallocate( self%y )
-            deallocate( self%z )
-            !
-        else if( self%store_state .EQ. singleton ) then
-            !
-            deallocate( self%sv )
-            !
-        else
-            stop "Error: rVector3D_SG_dtor > Unknown store_state!"
-        endif
+        if( allocated( self%x ) ) deallocate( self%x )
+        if( allocated( self%y ) ) deallocate( self%y )
+        if( allocated( self%z ) ) deallocate( self%z )
+        if( allocated( self%sv ) ) deallocate( self%sv )
         !
         self%nx = 0
         self%ny = 0

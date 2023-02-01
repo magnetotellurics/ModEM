@@ -7,11 +7,12 @@ module DataGroup
     use Constants
     !
     !> Global file path name for data files
+    !
     character(:), allocatable :: predicted_data_file_name, jmhat_data_file_name
     !
     type :: DataGroup_t
         !
-        integer :: i_dg, i_rx, i_tx, n_comp!, normalized
+        integer :: i_dg, i_rx, i_tx, n_comp
         !
         real( kind=prec ), allocatable, dimension(:) :: reals, imaginaries, errors
         !
@@ -20,6 +21,8 @@ module DataGroup
         integer, private :: counter
         !
         contains
+            !
+            final :: DataGroup_dtor
             !
             procedure, public :: put => putValuesDataGroup
             !
@@ -52,6 +55,7 @@ contains
     !
     !> Parametrized constructor:
     !> Set all variables and deallocate/allocate and initialize all arrays with the same n_comp size.
+    !
     function DataGroup_ctor( i_rx, i_tx, n_comp, error_bar ) result( self )
         implicit none
         !
@@ -96,9 +100,24 @@ contains
             self%error_bar = .FALSE.
         endif
         !
-        !self%normalized = 0
-        !
     end function DataGroup_ctor
+    !
+    !> No subroutine briefing
+    !
+    subroutine DataGroup_dtor( self )
+        implicit none
+        !
+        type( DataGroup_t ), intent( inout ) :: self
+        !
+        !write( *, * ) "Destructor DataGroup"
+        !
+        if( allocated( self%reals ) ) deallocate( self%reals )
+        if( allocated( self%imaginaries ) ) deallocate( self%imaginaries )
+        if( allocated( self%errors ) ) deallocate( self%errors )
+        !
+        self%is_allocated = .FALSE.
+        !
+    end subroutine DataGroup_dtor
     !
     !> Add values to arrays in position and increments the internal counter.
     subroutine putValuesDataGroup( self, rvalue, imaginary, error )

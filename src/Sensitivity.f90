@@ -12,7 +12,7 @@ module Sensitivity
 contains
     !
     !> Routine to run a full serialJMult job 
-    !> and deliver the result (JmHat) in a text file <jmhat.dat>
+    !> and deliver the result(JmHat) in a text file <jmhat.dat>
     !
     subroutine jobJMult()
         implicit none
@@ -186,7 +186,7 @@ contains
     end subroutine JMult_Tx
     !
     !> Routine to run a full JMult_T job 
-    !> and deliver the result (dsigma) in a text file <dsigma.rho>
+    !> and deliver the result(dsigma) in a text file <dsigma.rho>
     !
     subroutine jobJMult_T()
         implicit none
