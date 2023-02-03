@@ -37,7 +37,7 @@ module TransmitterMT
         !
         !write( *, * ) "Constructor TransmitterMT_t"
         !
-        call self%init()
+        call self%init
         !
         self%n_pol = 2
         !
@@ -58,7 +58,7 @@ module TransmitterMT
         !
         !write( *, * ) "Destructor TransmitterMT_t:", self%id
         !
-        call self%dealloc()
+        call self%dealloc
         !
     end subroutine TransmitterMT_dtor
     !

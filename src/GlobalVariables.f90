@@ -116,7 +116,7 @@ contains
                 !
                 allocate( model_operator, source = ModelOperator_MF_t( main_grid ) )
                 !
-                call model_operator%setEquations()
+                call model_operator%setEquations
                 !
                 call sigma0%setMetric( model_operator%metric )
                 !
@@ -183,7 +183,7 @@ contains
             write( *, * ) "          Checked ", n_tx, " Transmitters."
             !
             do i_tx = 1, n_tx
-                call transmitters( i_tx )%Tx%print()
+                call transmitters( i_tx )%Tx%print
             enddo
             !
         else

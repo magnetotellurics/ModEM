@@ -1347,7 +1347,7 @@ contains
         !
         call MPI_PACK_SIZE( 4, MPI_CHARACTER, main_comm, nbytes(1), ierr )
         call MPI_PACK_SIZE( 1, MPI_LOGICAL, main_comm, nbytes(2), ierr )
-        call MPI_PACK_SIZE( 7, MPI_INTEGER, main_comm, nbytes(3), ierr )
+        call MPI_PACK_SIZE( 8, MPI_INTEGER, main_comm, nbytes(3), ierr )
         !
         select type( ccond )
             !
@@ -1394,8 +1394,10 @@ contains
                 call MPI_PACK( ccond%nz, 1, MPI_INTEGER, conductivity_buffer, conductivity_buffer_size, index, main_comm, ierr )
                 call MPI_PACK( ccond%NdV(1), 3, MPI_INTEGER, conductivity_buffer, conductivity_buffer_size, index, main_comm, ierr )
                 call MPI_PACK( ccond%Nxyz, 1, MPI_INTEGER, conductivity_buffer, conductivity_buffer_size, index, main_comm, ierr )
+                call MPI_PACK( ccond%store_state, 1, MPI_INTEGER, conductivity_buffer, conductivity_buffer_size, index, main_comm, ierr )
                 !
-                call ccond%getArray( aux_array )
+                aux_array = ccond%getArray()
+                !
                 call MPI_PACK( aux_array(1), ccond%Nxyz, MPI_DOUBLE_COMPLEX, conductivity_buffer, conductivity_buffer_size, index, main_comm, ierr )
                 !
                 deallocate( aux_array )
@@ -1432,9 +1434,12 @@ contains
                 call MPI_UNPACK( conductivity_buffer, conductivity_buffer_size, index, ccond%nz, 1, MPI_INTEGER, main_comm, ierr )
                 call MPI_UNPACK( conductivity_buffer, conductivity_buffer_size, index, ccond%NdV(1), 3, MPI_INTEGER, main_comm, ierr )
                 call MPI_UNPACK( conductivity_buffer, conductivity_buffer_size, index, ccond%Nxyz, 1, MPI_INTEGER, main_comm, ierr )
+                call MPI_UNPACK( conductivity_buffer, conductivity_buffer_size, index, ccond%store_state, 1, MPI_INTEGER, main_comm, ierr )
                 !
                 allocate( aux_array( ccond%Nxyz ) )
+                !
                 call MPI_UNPACK( conductivity_buffer, conductivity_buffer_size, index, aux_array(1), ccond%Nxyz, MPI_DOUBLE_COMPLEX, main_comm, ierr )
+                !
                 call ccond%setArray( aux_array )
                 !
                 deallocate( aux_array )
@@ -1643,7 +1648,7 @@ contains
         call MPI_PACK( scalar%Nxyz, 1, MPI_INTEGER, parent_buffer, parent_buffer_size, index, main_comm, ierr )
         call MPI_PACK( scalar%store_state, 1, MPI_INTEGER, parent_buffer, parent_buffer_size, index, main_comm, ierr )
         !
-        call scalar%getArray( aux_array )
+        aux_array = scalar%getArray()
         !
         call MPI_PACK( aux_array(1), scalar%Nxyz, MPI_DOUBLE_COMPLEX, parent_buffer, parent_buffer_size, index, main_comm, ierr )
         !
@@ -1742,7 +1747,7 @@ contains
         integer, intent( in ) :: parent_buffer_size
         integer, intent( inout ) :: index
         !
-        complex( kind=prec ), allocatable :: aux_array(:)
+        complex( kind=prec ), allocatable, dimension(:) :: aux_array
         !
         select type( vector )
             !
@@ -1770,7 +1775,8 @@ contains
         call MPI_PACK( vector%Nxyz(1), 3, MPI_INTEGER, parent_buffer, parent_buffer_size, index, main_comm, ierr )
         call MPI_PACK( vector%store_state, 1, MPI_INTEGER, parent_buffer, parent_buffer_size, index, main_comm, ierr )
         !
-        call vector%getArray( aux_array )
+        aux_array = vector%getArray()
+        !
         call MPI_PACK( aux_array(1), vector%Nxyz(1) + vector%Nxyz(2) + vector%Nxyz(3), MPI_DOUBLE_COMPLEX, parent_buffer, parent_buffer_size, index, main_comm, ierr )
         !
         deallocate( aux_array )
@@ -1787,7 +1793,7 @@ contains
         integer, intent( in ) :: parent_buffer_size
         integer, intent( inout ) :: index
         !
-        complex( kind=prec ), allocatable :: aux_array(:)
+        complex( kind=prec ), allocatable, dimension(:) :: aux_array
         !
         character( len=4 ) :: grid_type
         !

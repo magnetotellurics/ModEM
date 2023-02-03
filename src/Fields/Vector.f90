@@ -12,7 +12,6 @@ module Vector
     contains
         !
         !> Vector Interfaces
-        procedure( interface_sum_cells_vector ), deferred, public :: avgCells
         procedure( interface_diag_mult_vector ), deferred, public :: diagMult
         procedure( interface_interp_func_vector ), deferred, public :: interpFunc
         !
@@ -56,15 +55,6 @@ module Vector
             character, intent( in ) :: xyz
             class( Vector_t ), allocatable, intent( inout ) :: interp
         end subroutine interface_interp_func_vector
-        !
-        !> No interface subroutine briefing
-        !
-        subroutine interface_sum_cells_vector( self, E_in, ptype )
-            import :: Vector_t, Scalar_t
-            class( Vector_t ), intent( inout ) :: self
-            class( Scalar_t ), intent( in ) :: E_in
-            character(*), intent( in ), optional :: ptype
-        end subroutine interface_sum_cells_vector
         !
     end interface
     !

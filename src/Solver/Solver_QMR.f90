@@ -35,7 +35,7 @@ contains
         !
         !write( *, * ) "Constructor Solver_QMR_t"
         !
-        call self%init()
+        call self%init
         !
         allocate( self%preconditioner, source = PreConditioner_MF_CC_t( model_operator ) )
         !
@@ -74,7 +74,7 @@ contains
         !> Allocate work Vector objects -- questions as in PCG
         allocate( R, source = x )
         !
-        call R%zeros() !>  can"t zero x -- if this is to be used as starting guess
+        call R%zeros !>  can"t zero x -- if this is to be used as starting guess
                        !>  also, never use AX -- which somehow is declared in ModEM!
         !
         allocate( Y, source = R )
@@ -195,7 +195,7 @@ contains
             !
             adjoint = .FALSE.
             !
-            call PT%Zeros()
+            call PT%zeros
             call self%preconditioner%model_operator%Amult( self%omega, P, PT, adjoint )
             EPSIL = Q%dotProd( PT )
             !
@@ -221,7 +221,7 @@ contains
             !
             adjoint = .TRUE.
             !
-            call WT%Zeros()
+            call WT%zeros
             call self%preconditioner%model_operator%Amult( self%omega, Q, WT, adjoint )
             !
             call WT%multAdd( -conjg( BETA ), W ) !>  WT = WT - conjg(BETA) * W

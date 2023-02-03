@@ -102,7 +102,7 @@ contains
         !
         !write( *, * ) "Constructor Grid3D_SG_t"
         !
-        call self%init()
+        call self%init
         !
         call self%Create( nx, ny, nzAir, nzEarth )
         !
@@ -121,7 +121,7 @@ contains
         !
         !write( *, * ) "Destructor Grid3D_SG_t", self%nx, self%ny, self%nz
         !
-        call self%dealloc()
+        call self%dealloc
         !
     end subroutine Grid3D_SG_dtor
     !
@@ -155,7 +155,7 @@ contains
         !
         integer :: nx, ny, nz
         !
-        if( self%is_allocated ) call self%dealloc()
+        if( self%is_allocated ) call self%dealloc
         !
         nx = self%nx
         ny = self%ny
@@ -477,7 +477,7 @@ contains
         !
         rotdeg_old = self%rotdeg
         !
-        call self%dealloc()
+        call self%dealloc
         call self%Create(nx_old, ny_old, nzAir, nzEarth_old)
         !
         !> Set air layers to dzAir values and copy the rest

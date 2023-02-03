@@ -63,10 +63,11 @@ contains
         !
         self%is_allocated = .FALSE.
         !
-        call self%alloc()
+        call self%alloc
         !
         call self%setCellSizes( dz )
-        call self%setup()
+        !
+        call self%setup
         !
     end function Grid1D_ctor
     !
@@ -79,7 +80,7 @@ contains
         !
         !write( *, * ) "Destructor Grid1D"
         !
-        call self%dealloc()
+        call self%dealloc
         !
     end subroutine Grid1D_dtor
     !

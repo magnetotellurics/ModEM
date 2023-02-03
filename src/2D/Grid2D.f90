@@ -89,16 +89,17 @@ contains
     !> Nza is number of air layers to allow (included in Dz)
     !
     !> No subroutine briefing
-	!
+    !
     function Grid2D_t_ctor(ny, nzAir, nzEarth, dy, dz) result(grid)
         !
         integer, intent( in ) :: ny, nzAir, nzEarth
         real( kind=prec ), dimension(:), intent( in ) :: dy, dz
         !
-        type(Grid2D_t) :: grid
-        call grid%create(ny, nzAir, nzEarth)
-        call grid%SetCellSizes(dy, dz)
-        call grid%setup()
+        type( Grid2D_t ) :: grid
+        call grid%create( ny, nzAir, nzEarth )
+        call grid%SetCellSizes( dy, dz )
+        !
+        call grid%setup
         
     end function Grid2D_t_ctor
     !
@@ -118,7 +119,7 @@ contains
         self%ny = ny        
         self%nz = nz
         
-        call self%allocate()
+        call self%allocate
 
     end subroutine createGrid2D
     !
@@ -336,7 +337,7 @@ contains
     end subroutine NumberOfEdges
     !
     !> No subroutine briefing
-	!
+    !
     function NumberOfNodes( self ) result(n)
         !
         class(Grid2D_t), intent( in ) :: self
@@ -457,7 +458,7 @@ contains
     end subroutine Limits
     !
     !> No subroutine briefing
-	!
+    !
     function IsallocateGrid2Dd( self ) result(f)
         !
         class(Grid2D_t), intent( in ) :: self
@@ -468,7 +469,7 @@ contains
     end function IsallocateGrid2Dd
     !
     !> No subroutine briefing
-	!
+    !
     function Length( self ) result(n)
         class(Grid2D_t), intent( in ) :: self
         integer :: n
@@ -477,7 +478,7 @@ contains
     end function Length
     !
     !> No subroutine briefing
-	!
+    !
     function Slice1D( self ) result(g1D)
         implicit none
         class(Grid2D_t), intent( in ) :: self

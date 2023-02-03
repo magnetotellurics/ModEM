@@ -29,7 +29,7 @@ Module DivergenceCorrection
 contains
     !
     !> No subroutine briefing
-	!
+    !
     function DivergenceCorrection_ctor( model_operator ) result( self )
         implicit none
         !
@@ -56,7 +56,7 @@ contains
         class( DivergenceCorrection_t ), intent( inout ) :: self
         !
         !>    set DivCorr arrays in model operator ... 
-        call self%solver%preconditioner%model_operator%divCorSetup
+        call self%solver%preconditioner%model_operator%divCorSetUp
         !>    set preconditioner
         call self%solver%preconditioner%setPreconditioner( self%solver%omega )
         !
@@ -76,7 +76,7 @@ contains
         !
         call self%solver%preconditioner%model_operator%Div( source_e, phi0 )
         !
-        i_omega_mu = cmplx( 0., real( 1.0d0 * isign * MU_0 * omega, kind=prec ), kind=prec )
+        i_omega_mu = cmplx( 0., real( 1.0d0 * isign * mu_0 * omega, kind=prec ), kind=prec )
         !
         c_factor = C_ONE / i_omega_mu
         !

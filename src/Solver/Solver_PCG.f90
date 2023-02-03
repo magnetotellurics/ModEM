@@ -35,7 +35,7 @@ contains
         !
         !write( *, * ) "Constructor Solver_PCG_t"
         !
-        call self%init()
+        call self%init
         !
         allocate( self%preconditioner, source = PreConditioner_MF_DC_t( model_operator ) )
         !
@@ -73,7 +73,7 @@ contains
         !
         !>  create local cScalar objects -- could we also use modOp%createCScalar?
         allocate( r, source = x )    !> cannot zero x, since it is first guess
-        call r%zeros()
+        call r%zeros
         allocate( s, source = r )
         allocate( p, source = r )
         allocate( q, source = r )
@@ -108,7 +108,7 @@ contains
             !
             call p%linComb( s, beta, C_ONE )
             !
-            call q%zeros()
+            call q%zeros
             call self%preconditioner%model_operator%divCgrad( p, q )
             !
             alpha = delta / p%dotProd(q)

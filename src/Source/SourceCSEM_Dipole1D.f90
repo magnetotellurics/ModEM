@@ -48,7 +48,7 @@ contains
         !
         !write( *, * ) "Constructor SourceCSEM_Dipole1D_t"
         !
-        call self%init()
+        call self%init
         !
         self%model_operator => model_operator
         !
@@ -79,7 +79,7 @@ contains
         !
         !write( *, * ) "Destructor SourceCSEM_Dipole1D_t"
         !
-        call self%dealloc()
+        call self%dealloc
         !
     end subroutine SourceCSEM_Dipole1D_dtor
     !
@@ -128,7 +128,7 @@ contains
         !
         call self%E(1)%mult( self%cond_anomaly_h )
         !
-        i_omega_mu = cmplx( 0., real( -1.0d0 * isign * MU_0 * ( 2.0 * PI / self%period ), kind=prec ), kind=prec )
+        i_omega_mu = cmplx( 0., real( -1.0d0 * isign * mu_0 * ( 2.0 * PI / self%period ), kind=prec ), kind=prec )
         !
         call self%E(1)%mult( i_omega_mu )
         !

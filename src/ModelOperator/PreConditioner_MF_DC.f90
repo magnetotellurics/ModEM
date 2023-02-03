@@ -44,7 +44,7 @@ contains
         !
         self%d = cScalar3D_SG_t( self%model_operator%metric%grid, NODE )
         !
-        call self%d%zeros()
+        call self%d%zeros
         !
     end function PreConditioner_MF_DC_ctor
     !
@@ -146,7 +146,7 @@ contains
                             stop "outPhi in LUsolve not allocated yet"
                         endif
                         !
-                        call outPhi%zeros()
+                        call outPhi%zeros
                         !
                         !> Instantiate the ModelOperator object
                         select type( model_operator => self%model_operator )

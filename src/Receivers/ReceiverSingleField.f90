@@ -44,7 +44,7 @@ contains
         !
         !> write( *, * ) "Constructor ReceiverSingleField_t"
         !
-        call self%init()
+        call self%init
         !
         self%location = location
         self%azimuth = azimuth
@@ -116,7 +116,7 @@ contains
         !
         !> write( *, * ) "Destructor ReceiverSingleField_t"
         !
-        call self%dealloc()
+        call self%dealloc
         !
     end subroutine ReceiverSingleField_dtor
     !

@@ -53,7 +53,7 @@ LIBS_PATH = -L/usr/lib64
 LIBS = -llapack -lblas
 
 # -------------------End-macro-Defs---------------------------
-OBJ = $(OBJDIR)/Constants.o $(OBJDIR)/String.o $(OBJDIR)/Grid1D.o $(OBJDIR)/Grid2D.o $(OBJDIR)/Grid.o $(OBJDIR)/Field.o $(OBJDIR)/Scalar.o $(OBJDIR)/Vector.o $(OBJDIR)/MetricElements.o $(OBJDIR)/ModelParameter1D.o $(OBJDIR)/Esoln2DTM.o $(OBJDIR)/ModelParameter2D.o $(OBJDIR)/ModelParameter.o $(OBJDIR)/ModelOperator.o $(OBJDIR)/Source.o $(OBJDIR)/PreConditioner.o $(OBJDIR)/Solver.o $(OBJDIR)/ForwardSolver.o $(OBJDIR)/ModEMControlFile.o $(OBJDIR)/Grid3D_SG.o $(OBJDIR)/MatUtils.o $(OBJDIR)/rScalar3D_SG.o $(OBJDIR)/cScalar3D_SG.o $(OBJDIR)/rVector3D_SG.o $(OBJDIR)/cVector3D_SG.o $(OBJDIR)/MetricElements_CSG.o $(OBJDIR)/ModelOperator_MF.o $(OBJDIR)/Utilities.o $(OBJDIR)/spOpTools.o $(OBJDIR)/spOpTopology_SG.o $(OBJDIR)/ModelOperator_SP.o $(OBJDIR)/FileUnits.o $(OBJDIR)/ModelParameterCell_SG.o $(OBJDIR)/ModelCovariance.o $(OBJDIR)/PreConditioner_MF_DC.o $(OBJDIR)/Solver_PCG.o $(OBJDIR)/DivergenceCorrection.o $(OBJDIR)/PreConditioner_MF_CC.o $(OBJDIR)/Solver_QMR.o $(OBJDIR)/ForwardSolverIT_DC.o $(OBJDIR)/Forward1D.o $(OBJDIR)/SourceMT_1D.o $(OBJDIR)/Forward2D.o $(OBJDIR)/SourceMT_2D.o $(OBJDIR)/FilterModules.o $(OBJDIR)/Dipole1D.o $(OBJDIR)/SourceCSEM_Dipole1D.o $(OBJDIR)/SourceInteriorForce.o $(OBJDIR)/DataGroup.o $(OBJDIR)/Transmitter.o $(OBJDIR)/cVectorSparse3D_SG.o $(OBJDIR)/Receiver.o $(OBJDIR)/ReceiverFullImpedance.o $(OBJDIR)/ReceiverFullVerticalMagnetic.o $(OBJDIR)/ReceiverOffDiagonalImpedance.o $(OBJDIR)/ReceiverSingleField.o $(OBJDIR)/DataGroupTx.o $(OBJDIR)/ReceiverArray.o $(OBJDIR)/TransmitterMT.o $(OBJDIR)/TransmitterCSEM.o $(OBJDIR)/TransmitterArray.o $(OBJDIR)/DataGroupTxArray.o $(OBJDIR)/ModelReader.o $(OBJDIR)/ModelReader_Weerachai.o $(OBJDIR)/DataEntry.o $(OBJDIR)/DataEntryArray.o $(OBJDIR)/DataEntryMT.o $(OBJDIR)/DataEntryMT_REF.o $(OBJDIR)/DataEntryCSEM.o $(OBJDIR)/DataFile.o $(OBJDIR)/DataFileStandard.o $(OBJDIR)/GlobalVariables.o $(OBJDIR)/DeclarationMPI.o $(OBJDIR)/MasterMPI.o $(OBJDIR)/ForwardModeling.o $(OBJDIR)/Sensitivity.o $(OBJDIR)/Inversion.o $(OBJDIR)/InversionDCG.o $(OBJDIR)/InversionNLCG.o $(OBJDIR)/WorkerMPI.o $(OBJDIR)/ModEM.o 
+OBJ = $(OBJDIR)/Constants.o $(OBJDIR)/String.o $(OBJDIR)/Grid1D.o $(OBJDIR)/Grid2D.o $(OBJDIR)/Grid.o $(OBJDIR)/Field.o $(OBJDIR)/Scalar.o $(OBJDIR)/Vector.o $(OBJDIR)/MetricElements.o $(OBJDIR)/ModelParameter1D.o $(OBJDIR)/Esoln2DTM.o $(OBJDIR)/ModelParameter2D.o $(OBJDIR)/ModelParameter.o $(OBJDIR)/ModelOperator.o $(OBJDIR)/Source.o $(OBJDIR)/PreConditioner.o $(OBJDIR)/Solver.o $(OBJDIR)/ForwardSolver.o $(OBJDIR)/ModEMControlFile.o $(OBJDIR)/Grid3D_SG.o $(OBJDIR)/MatUtils.o $(OBJDIR)/rScalar3D_SG.o $(OBJDIR)/cScalar3D_SG.o $(OBJDIR)/rVector3D_SG.o $(OBJDIR)/cVector3D_SG.o $(OBJDIR)/MetricElements_CSG.o $(OBJDIR)/ModelOperator_MF.o $(OBJDIR)/Utilities.o $(OBJDIR)/spOpTools.o $(OBJDIR)/spOpTopology_SG.o $(OBJDIR)/FileUnits.o $(OBJDIR)/ModelParameterCell_SG.o $(OBJDIR)/ModelOperator_SP.o $(OBJDIR)/ModelCovariance.o $(OBJDIR)/PreConditioner_MF_DC.o $(OBJDIR)/Solver_PCG.o $(OBJDIR)/DivergenceCorrection.o $(OBJDIR)/PreConditioner_MF_CC.o $(OBJDIR)/Solver_QMR.o $(OBJDIR)/ForwardSolverIT_DC.o $(OBJDIR)/Forward1D.o $(OBJDIR)/SourceMT_1D.o $(OBJDIR)/Forward2D.o $(OBJDIR)/SourceMT_2D.o $(OBJDIR)/FilterModules.o $(OBJDIR)/Dipole1D.o $(OBJDIR)/SourceCSEM_Dipole1D.o $(OBJDIR)/SourceInteriorForce.o $(OBJDIR)/DataGroup.o $(OBJDIR)/Transmitter.o $(OBJDIR)/cVectorSparse3D_SG.o $(OBJDIR)/Receiver.o $(OBJDIR)/ReceiverFullImpedance.o $(OBJDIR)/ReceiverFullVerticalMagnetic.o $(OBJDIR)/ReceiverOffDiagonalImpedance.o $(OBJDIR)/ReceiverSingleField.o $(OBJDIR)/DataGroupTx.o $(OBJDIR)/ReceiverArray.o $(OBJDIR)/TransmitterMT.o $(OBJDIR)/TransmitterCSEM.o $(OBJDIR)/TransmitterArray.o $(OBJDIR)/DataGroupTxArray.o $(OBJDIR)/ModelReader.o $(OBJDIR)/ModelReader_Weerachai.o $(OBJDIR)/DataEntry.o $(OBJDIR)/DataEntryArray.o $(OBJDIR)/DataEntryMT.o $(OBJDIR)/DataEntryMT_REF.o $(OBJDIR)/DataEntryCSEM.o $(OBJDIR)/DataFile.o $(OBJDIR)/DataFileStandard.o $(OBJDIR)/GlobalVariables.o $(OBJDIR)/DeclarationMPI.o $(OBJDIR)/MasterMPI.o $(OBJDIR)/ForwardModeling.o $(OBJDIR)/Sensitivity.o $(OBJDIR)/Inversion.o $(OBJDIR)/InversionDCG.o $(OBJDIR)/InversionNLCG.o $(OBJDIR)/WorkerMPI.o $(OBJDIR)/ModEM.o 
 
 
 all: ModEM 
@@ -151,20 +151,20 @@ $(OBJDIR)/ModelOperator_MF.o:ModelOperator/ModelOperator_MF.f90 $(OBJDIR)/ModelO
 $(OBJDIR)/Utilities.o:Utils/Utilities.f90 $(OBJDIR)/Constants.o 
 	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) Utils/Utilities.f90 -o $(OBJDIR)/Utilities.o
 
-$(OBJDIR)/spOpTools.o:SP_Topology/spOpTools.f90 $(OBJDIR)/Utilities.o $(OBJDIR)/Grid.o 
+$(OBJDIR)/spOpTools.o:SP_Topology/spOpTools.f90 $(OBJDIR)/Utilities.o $(OBJDIR)/Grid.o $(OBJDIR)/rScalar3D_SG.o $(OBJDIR)/rVector3D_SG.o 
 	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) SP_Topology/spOpTools.f90 -o $(OBJDIR)/spOpTools.o
 
 $(OBJDIR)/spOpTopology_SG.o:SP_Topology/spOpTopology_SG.f90 $(OBJDIR)/spOpTools.o 
 	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) SP_Topology/spOpTopology_SG.f90 -o $(OBJDIR)/spOpTopology_SG.o
-
-$(OBJDIR)/ModelOperator_SP.o:ModelOperator/ModelOperator_SP.f90 $(OBJDIR)/ModelOperator.o $(OBJDIR)/spOpTopology_SG.o $(OBJDIR)/MetricElements_CSG.o 
-	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) ModelOperator/ModelOperator_SP.f90 -o $(OBJDIR)/ModelOperator_SP.o
 
 $(OBJDIR)/FileUnits.o:Utils/FileUnits.f90  
 	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) Utils/FileUnits.f90 -o $(OBJDIR)/FileUnits.o
 
 $(OBJDIR)/ModelParameterCell_SG.o:ModelParameter/ModelParameterCell_SG.f90 $(OBJDIR)/Constants.o $(OBJDIR)/FileUnits.o $(OBJDIR)/rScalar3D_SG.o $(OBJDIR)/rVector3D_SG.o $(OBJDIR)/ModelParameter.o $(OBJDIR)/Grid3D_SG.o $(OBJDIR)/ModelParameter1D.o $(OBJDIR)/ModelParameter2D.o 
 	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) ModelParameter/ModelParameterCell_SG.f90 -o $(OBJDIR)/ModelParameterCell_SG.o
+
+$(OBJDIR)/ModelOperator_SP.o:ModelOperator/ModelOperator_SP.f90 $(OBJDIR)/ModelOperator.o $(OBJDIR)/spOpTopology_SG.o $(OBJDIR)/MetricElements_CSG.o $(OBJDIR)/ModelParameterCell_SG.o 
+	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) ModelOperator/ModelOperator_SP.f90 -o $(OBJDIR)/ModelOperator_SP.o
 
 $(OBJDIR)/ModelCovariance.o:ModelParameter/ModelCovariance.f90 $(OBJDIR)/Constants.o $(OBJDIR)/ModelParameterCell_SG.o 
 	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) ModelParameter/ModelCovariance.f90 -o $(OBJDIR)/ModelCovariance.o

@@ -276,7 +276,7 @@ contains
                 !
                 allocate( model_operator, source = ModelOperator_MF_t( main_grid ) )
                 !
-                call model_operator%setEquations()
+                call model_operator%setEquations
                 !
             class default
                 stop "Error: handleBasicComponents > Unclassified main_grid"

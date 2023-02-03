@@ -6,53 +6,52 @@ module ModelOperator_SP
     use ModelOperator
     use spOpTopology_SG
     use MetricElements_CSG
+    use ModelParameterCell_SG
     !
     type, extends( ModelOperator_t ) :: ModelOperator_SP_t
-         !
-         logical :: eqset 
-         !
-         integer :: mKey(8)
-         !
-         real( kind=prec ), allocatable, dimension(:,:) :: xXY, xXZ
-         real( kind=prec ), allocatable, dimension(:,:) :: xY, xZ
-         real( kind=prec ), allocatable, dimension(:,:) :: xXO
-         real( kind=prec ), allocatable, dimension(:,:) :: yYX, yYZ
-         real( kind=prec ), allocatable, dimension(:,:) :: yX, yZ
-         real( kind=prec ), allocatable, dimension(:,:) :: yYO
-         real( kind=prec ), allocatable, dimension(:,:) :: zZX, zZY
-         real( kind=prec ), allocatable, dimension(:,:) :: zX, zY
-         real( kind=prec ), allocatable, dimension(:,:) :: zZO
-         !
-         type( rVector3D_SG_t ) :: Sigma_E
-         !
-         type( rVector3D_SG_t ) :: db1, db2
-         !
-         type( rScalar3D_SG_t ) :: c
-         !
-         contains
-              !
-              final :: ModelOperator_SP_dtor
-              !
-              procedure, public :: setEquations => setEquationsModelOperatorSP
-              procedure, public :: setCond => setCondModelOperatorSP
-              procedure, public :: amult => amultModelOperatorSP
-              procedure, public :: multAib => multAibModelOperatorSP
-              procedure, public :: multCurlT => multCurlTModelOperatorSP
-              procedure, public :: divCorSetUp => divCorsetUpModelOperatorSP
-              !
-              procedure, public :: AdjtBC => AdjtBCModelOperatorSP
-              !
-              procedure :: divCgrad => divCgradModelOperatorSP
-              procedure :: divC => divCModelOperatorSP
-              procedure :: grad => gradModelOperatorSP
-              procedure :: div => divModelOperatorSP
-              !
-              procedure :: create => createModelOperatorSP 
-              procedure :: allocate => allocateModelOperatorSP
-              procedure :: deallocate => deallocateModelOperatorSP
-              !
-              procedure, public :: print => printModelOperatorSP
-              !
+        !
+        class( Scalar_t ), allocatable :: sigma_C
+        integer, allocatable, dimension(:) :: EDGEi, EDGEb
+        integer, allocatable, dimension(:) :: NODEi, NODEb
+        !
+        type( spMatCSR_Real ) :: CCii, CCib
+        !
+        real( kind=prec ) :: omega
+        !
+        real( kind=prec ), allocatable, dimension(:) :: VomegaMuSig
+        !
+        type( spMatCSR_Cmplx ) :: L, U       ! upper and lower triangular
+        type( spMatCSR_Cmplx ) :: LH, UH     ! matrices for preconditioner
+        !
+        type( spMatCSR_Real ) :: VDiv        ! div : edges->nodes (interior only)
+        type( spMatCSR_Real ) :: VDsG        ! operator for div correction
+        type( spMatCSR_Real ) :: VDs         ! divergence of current operator
+        type( spMatCSR_Real ) :: VDsG_L      ! preconditioner for div cor
+        type( spMatCSR_Real ) :: VDsG_U      ! preconditioner for div cor
+        !
+        complex( kind=prec ), allocatable, dimension(:)   :: tempPhi
+        !
+        contains
+            !
+            final :: ModelOperator_SP_dtor
+            !
+            procedure, public :: setEquations => setEquationsModelOperatorSP
+            procedure, public :: setCond => setCondModelOperatorSP
+            procedure, public :: amult => amultModelOperatorSP
+            procedure, public :: multAib => multAibModelOperatorSP
+            procedure, public :: multCurlT => multCurlTModelOperatorSP
+            procedure, public :: divCorSetUp => divCorSetUpModelOperatorSP
+            !
+            procedure :: divCgrad => divCgradModelOperatorSP
+            procedure :: divC => divCModelOperatorSP
+            procedure :: grad => gradModelOperatorSP
+            procedure :: div => divModelOperatorSP
+            !
+            procedure :: create => createModelOperatorSP 
+            procedure :: deallocate => deallocateModelOperatorSP
+            !
+            procedure, public :: print => printModelOperatorSP
+            !
     end type ModelOperator_SP_t
     !
     interface ModelOperator_SP_t
@@ -72,18 +71,52 @@ contains
         !
         !write( *, * ) "Constructor ModelOperator_SP"
         !
-        call self%init()
-        !
-        self%eqset = .FALSE.
-        !
-        call date_and_time( values=self%mKey )
-        !
-        !> Instantiation of the specific object MetricElements
-        allocate( self%metric, source = MetricElements_CSG_t( grid ) )
+        call self%init
         !
         call self%create( grid )
         !
     end function ModelOperator_SP_ctor
+    !
+    !> No subroutine briefing
+    subroutine createModelOperatorSP( self, grid )
+        implicit none
+        !
+        class( ModelOperator_SP_t ), intent( inout ) :: self
+        class( Grid_t ), target, intent( in ) :: grid
+        !
+        integer :: nz, nInterior
+        !
+        self%is_allocated = .FALSE.
+        !
+        self%metric%grid => grid
+        !
+        !> Set sparse matrices for curl (T) and grad (G)
+        !> operator topologies; these sparse matrices are stored
+        !> in module spOpTopology
+        call setCurlTopology( grid )
+        !
+        call setGradTopology( grid )
+        !
+        call boundaryIndexSP( EDGE, grid, self%EDGEb, self%EDGEi )
+        !
+        nInterior = size( self%EDGEi )
+        !
+        !> Find indexes (in vector of all) of boundary and interior edges
+        !> allocate for diagonal part of curl-curl operator
+        !> (maybe this should just be for interior edges)
+        !> here for all edges
+        allocate( self%VomegaMuSig( nInterior ) )
+        !
+        allocate( self%metric, source = MetricElements_CSG_t( grid ) )
+        !
+        !> set a default omega
+        self%omega = 0.0
+        !
+        call self%setEquations
+        !
+        self%is_allocated = .TRUE.
+        !
+    end subroutine createModelOperatorSP
     !
     !> ModelOperator_SP destructor
     subroutine ModelOperator_SP_dtor( self )
@@ -93,297 +126,190 @@ contains
         !
         !write( *, * ) "Destructor ModelOperator_SP_t"
         !
-        call self%dealloc()
+        call self%dealloc
         !
         call self%deallocate()
         !
     end subroutine ModelOperator_SP_dtor
     !
     !> No subroutine briefing
-    subroutine createModelOperatorSP( self, grid )
-        implicit none
-        !
-        class( ModelOperator_SP_t ), intent( inout ) :: self
-        class( Grid_t ), target, intent( in ) :: grid
-        !
-        self%is_allocated = .FALSE.
-        !
-        self%metric%grid => grid
-        !
-        call self%allocate()
-        !
-    end subroutine createModelOperatorSP
     !
-    !> No subroutine briefing
-    subroutine allocateModelOperatorSP( self )
-        implicit none
-        !
-        class( ModelOperator_SP_t ), intent( inout ) :: self
-        !
-        allocate( self%xXY( self%metric%grid%ny + 1, 2 ) )
-        allocate( self%xXZ( self%metric%grid%nz + 1, 2 ) )
-        allocate( self%xY( self%metric%grid%nx, self%metric%grid%ny + 1 ) )
-        allocate( self%xZ( self%metric%grid%nx, self%metric%grid%nz + 1 ) )
-        allocate( self%xXO( self%metric%grid%ny, self%metric%grid%nz) )
-        !
-        allocate( self%yYZ( self%metric%grid%nz + 1, 2) )
-        allocate( self%yYX( self%metric%grid%nx + 1, 2) )
-        allocate( self%yZ( self%metric%grid%ny, self%metric%grid%nz + 1 ) )
-        allocate( self%yX( self%metric%grid%nx + 1, self%metric%grid%ny ) )
-        allocate( self%yYO( self%metric%grid%nx, self%metric%grid%nz ) )
-        !
-        allocate( self%zZX( self%metric%grid%nx + 1, 2 ) )
-        allocate( self%zZY( self%metric%grid%ny + 1, 2) )
-        allocate( self%zX( self%metric%grid%nx + 1, self%metric%grid%nz ) )
-        allocate( self%zY( self%metric%grid%ny + 1, self%metric%grid%nz ) )
-        allocate( self%zZO( self%metric%grid%nx, self%metric%grid%ny ) )
-        !
-        self%xXY = R_ZERO
-        self%xXZ = R_ZERO
-        self%xY = R_ZERO
-        self%xZ = R_ZERO
-        self%xXO = R_ZERO
-        self%yYX = R_ZERO
-        self%yYZ = R_ZERO
-        self%yX = R_ZERO
-        self%yZ = R_ZERO
-        self%zZX = R_ZERO
-        self%zZY = R_ZERO
-        self%zX = R_ZERO
-        self%zY = R_ZERO
-        self%zZO = R_ZERO
-        !
-        self%Sigma_E = rVector3D_SG_t( self%metric%grid, EDGE )
-        self%db1 = rVector3D_SG_t( self%metric%grid, EDGE )
-        self%db2 = rVector3D_SG_t( self%metric%grid, EDGE )
-        self%c = rScalar3D_SG_t( self%metric%grid, NODE )
-        !
-        self%is_allocated = .TRUE.
-        !
-    end subroutine allocateModelOperatorSP
-    !
-    !> No subroutine briefing
     subroutine deallocateModelOperatorSP( self )
         implicit none
         !
         class( ModelOperator_SP_t ), intent( inout ) :: self
         !
-        deallocate( self%xXY )
-        deallocate( self%xXZ )
-        deallocate( self%xY )
-        deallocate( self%xZ )
-        deallocate( self%xXO )
+        call self%dealloc
         !
-        deallocate( self%yYZ )
-        deallocate( self%yYX )
-        deallocate( self%yZ )
-        deallocate( self%yX )
-        deallocate( self%yYO )
+        !> and the curl and grad topology matrices
+        call deall_spMatCSR(T)
+        call deall_spMatCSR(G)
         !
-        deallocate( self%zZX )
-        deallocate( self%zZY )
-        deallocate( self%zX )
-        deallocate( self%zY )
-        deallocate( self%zZO )
+        call deall_spMatCSR( self%L )
+        call deall_spMatCSR( self%U )
+        call deall_spMatCSR( self%LH )
+        call deall_spMatCSR( self%UH )
+        !
+        call deall_spMatCSR( self%VDiv )
+        call deall_spMatCSR( self%VDs )
+        call deall_spMatCSR( self%VDsG )
+        call deall_spMatCSR( self%VDsG_L )
+        call deall_spMatCSR( self%VDsG_U )
+        !
+        deallocate( self%tempPhi )
+        !
+        !> interior and edge indicies
+        deallocate( self%EDGEi )
+        deallocate( self%EDGEb )
+        deallocate( self%NODEi )
+        deallocate( self%NODEb )
+        !
+        !> and the edge conductivities
+        if( allocated( self%VomegaMuSig ) ) then
+            deallocate( self%VomegaMuSig )
+        endif
+        !
+        !> and the cell conductivities
+        !> note that sigma_C is only needed to set up boundary conditions
+        deallocate( self%sigma_C )
         !
         self%is_allocated = .FALSE.
         !
     end subroutine deallocateModelOperatorSP
     !
     !> No subroutine briefing
+    !> using existing curl operator, create sparse matrix CC
+    !> Note: this is the symmetric form, multiplied by edge volume elements
+    !
     subroutine setEquationsModelOperatorSP( self )
         implicit none
         !
         class( ModelOperator_SP_t ), intent( inout ) :: self
+        type( spMatCSR_Real )       :: Temp, CC, Ttrans
+        integer :: m, n, nz
+        real( kind=prec ), allocatable, dimension(:) :: Dtemp
+        integer :: fid
         !
-        integer :: ix, iy, iz 
-        !
-        do iy = 2, self%metric%grid%ny
-            self%xXY(iy, 2) = -1.0 /(self%metric%grid%delY(iy) * self%metric%grid%dy(iy))
-            self%xXY(iy, 1) = -1.0 /(self%metric%grid%delY(iy) * self%metric%grid%dy(iy-1))
-        enddo
-        !
-        do iz = 2, self%metric%grid%nz
-            self%xXZ(iz, 2) = -1.0 /(self%metric%grid%delZ(iz) * self%metric%grid%dz(iz))
-            self%xXZ(iz, 1) = -1.0 /(self%metric%grid%delZ(iz) * self%metric%grid%dz(iz-1))
-        enddo
-        !
-        do iy = 2, self%metric%grid%ny
-            do iz = 2, self%metric%grid%nz
-                self%xXO(iy, iz) = -(self%xXY(iy,1) + self%xXY(iy,2) + &
-                self%xXZ(iz,1) + self%xXZ(iz,2))
-            enddo
-        enddo
-        !
-        do ix = 1, self%metric%grid%nx
-            do iy = 2, self%metric%grid%ny
-                self%xY(ix, iy) = 1.0 /(self%metric%grid%delY(iy)*self%metric%grid%dx(ix))
-            enddo
-        enddo
-        !
-        do ix = 1, self%metric%grid%nx
-            do iz = 2, self%metric%grid%nz
-                self%xZ(ix, iz) = 1.0 /(self%metric%grid%delZ(iz)*self%metric%grid%dx(ix))
-            enddo
-        enddo
-        !
-        do iz = 2, self%metric%grid%nz
-            self%yYZ(iz, 2) = -1.0 /(self%metric%grid%delZ(iz)*self%metric%grid%dz(iz))
-            self%yYZ(iz, 1) = -1.0 /(self%metric%grid%delZ(iz)*self%metric%grid%dz(iz-1))
-        enddo
-        !
-        do ix = 2, self%metric%grid%nx
-            self%yYX(ix, 2) = -1.0 /(self%metric%grid%delX(ix)*self%metric%grid%dx(ix))
-            self%yYX(ix, 1) = -1.0 /(self%metric%grid%delX(ix)*self%metric%grid%dx(ix-1))
-        enddo
-        !
-        do ix = 2, self%metric%grid%nx
-            do iz = 2, self%metric%grid%nz
-                self%yYO(ix, iz) = -(self%yYX(ix,1) + self%yYX(ix,2) + &
-                self%yYZ(iz,1) + self%yYZ(iz,2))
-            enddo
-        enddo
-        !
-        do iy = 1, self%metric%grid%ny
-            do iz = 2, self%metric%grid%nz
-                self%yZ(iy, iz) = 1.0 /(self%metric%grid%delZ(iz)*self%metric%grid%dy(iy))
-            enddo
-        enddo
-        !
-        do ix = 2, self%metric%grid%nx
-            do iy = 1, self%metric%grid%ny
-                self%yX(ix, iy) = 1.0 /(self%metric%grid%delX(ix)*self%metric%grid%dy(iy))
-            enddo
-        enddo
-        !
-        do ix = 2, self%metric%grid%nx
-            self%zZX(ix, 2) = -1.0 /(self%metric%grid%delX(ix)*self%metric%grid%dx(ix))
-            self%zZX(ix, 1) = -1.0 /(self%metric%grid%delX(ix)*self%metric%grid%dx(ix-1))
-        enddo
-        !
-        do iy = 2, self%metric%grid%ny
-            self%zZY(iy, 2) = -1.0 /(self%metric%grid%delY(iy)*self%metric%grid%dy(iy))
-            self%zZY(iy, 1) = -1.0 /(self%metric%grid%delY(iy)*self%metric%grid%dy(iy-1))
-        enddo
-        !
-        do ix = 2, self%metric%grid%nx
-            do iy = 2, self%metric%grid%ny
-                self%zZO(ix, iy) = -(self%zZX(ix,1) + self%zZX(ix,2) + &
-                self%zZY(iy,1) + self%zZY(iy,2))
-            enddo
-        enddo
-        !
-        do ix = 2, self%metric%grid%nx
-             do iz = 1, self%metric%grid%nz
-                    self%zX(ix, iz) = 1.0 /(self%metric%grid%delX(ix)*self%metric%grid%dz(iz))
-             enddo
-        enddo
-        !
-        do iy = 2, self%metric%grid%ny
-            do iz = 1, self%metric%grid%nz
-                self%zY(iy, iz) = 1.0 /(self%metric%grid%delY(iy)*self%metric%grid%dz(iz))
-            enddo
-        enddo
+        m = T%nRow
+        n = T%nCol
+        nz = T%row( T%nRow + 1 ) - 1
+        allocate( Dtemp( m ) )
+        call create_spMatCSR( m, n, nz, Temp )
+        call create_spMatCSR( n, m, nz, Ttrans )
+        call create_spMatCSR( m, n, nz, CC )
+        call RMATxDIAG( T, real( self%metric%EdgeLength%getArray(), kind=prec ), Temp )
+        Dtemp = self%metric%DualEdgeLength%getArray() / self%metric%FaceArea%getArray()
+        call DIAGxRMAT( Dtemp, Temp, CC )
+        call RMATtrans( T, Ttrans )
+        call RMATxRMAT( Ttrans, CC, Temp )
+        call DIAGxRMAT( real( self%metric%EdgeLength%getArray(), kind=prec ), Temp, CC )
+        call subMatrix_Real( CC, self%EDGEi, self%EDGEi, self%CCii )
+        call subMatrix_Real( CC, self%EDGEi, self%EDGEb, self%CCib )
+        call deall_spMatCSR( Temp )
+        call deall_spMatCSR( Ttrans )
+        call deall_spMatCSR( CC )
+        deallocate( Dtemp )
         !
         self%eqset = .TRUE.
+        !
+        call self%divCorSetUp
         !
     end subroutine setEquationsModelOperatorSP
     !
     !> No subroutine briefing
+    !
     subroutine setCondModelOperatorSP( self, sigma )
         implicit none
         !
         class( ModelOperator_SP_t ), intent( inout ) :: self
         class( ModelParameter_t ), intent( in ) :: sigma
         !
-        call sigma%PDEmapping( self%sigma_E )
+        integer :: i
+        type( rvector3D_SG_t ) :: temp_vec, sig_temp_vec
+        type( rScalar3D_SG_t ) :: cell_cond
+        !
+        sig_temp_vec = rvector3D_SG_t( self%metric%grid, EDGE )
+        !
+        !> ON -> call ModelParamToEdge( sigma, sig_temp_vec )
+        call sigma%PDEmapping( sig_temp_vec )
+        !
+        call sig_temp_vec%switchStoreState()
+        !
+        self%omega = 1.0
+        !
+        temp_vec = self%metric%VEdge
+        !
+        call temp_vec%switchStoreState()
+        !
+        self%VomegaMuSig = temp_vec%sv( self%EDGEi ) * sig_temp_vec%sv( self%EDGEi ) * mu_0 * self%omega
+        !
+        !> TEMPORARY; REQUIRED FOR BOUNDARY CONDITIONS
+        !> set static array for cell conductivities
+        !> this stores conductivity values in a module structure
+        !> that is readily accesible to boundary condition routines
+        !> rvector sigma_C is created if it is not yet allocated
+        !
+        !> ON -> call ModelParamToCell( sigma, sigma_C )
+        cell_cond = rScalar3D_SG_t( self%metric%grid, EDGE )
+        caLL cell_cond%setArray( cmplx( self%VomegaMuSig, 0.0, kind=prec ) )
+        call sigma%dPDEmapping( ModelParameterCell_SG_ctor( self%metric%grid, cell_cond ), self%sigma_C )
         !
     end subroutine setCondModelOperatorSP
     !
-    !> No subroutine briefing
-    subroutine divCorsetUpModelOperatorSP( self )
+    !> To complete setup conductivity is required
+    !> DivCorInit has to be called before this routine
+    !
+    subroutine divCorSetUpModelOperatorSP( self )
         implicit none
         !
         class( ModelOperator_SP_t ), intent( inout ) :: self
         !
-        integer :: ix, iy, iz
+        type( spMatCSR_Real ) :: temp_matrix
+        type( rvector3D_SG_t ) :: temp_vec
+        real( kind=prec ), allocatable, dimension(:) :: d
+        integer, allocatable, dimension(:) ::  allNodes
+        integer :: n, i
         !
-        do iz = 2, self%metric%grid%nz
-            do iy = 2, self%metric%grid%ny
-                do ix = 2, self%metric%grid%nx
-                    self%db1%x(ix, iy, iz) = self%Sigma_E%x(ix - 1, iy, iz)/ &
-                   (self%metric%grid%dx(ix - 1)*self%metric%grid%delX(ix))
-                    !
-                    self%db2%x(ix, iy, iz) = self%Sigma_E%x(ix, iy, iz)/ &
-                   (self%metric%grid%dx(ix)*self%metric%grid%delX(ix))
-                    !
-                    self%db1%y(ix, iy, iz) = self%Sigma_E%y(ix, iy - 1, iz)/ &
-                   (self%metric%grid%dy(iy - 1)*self%metric%grid%delY(iy))
-                    !
-                    self%db2%y(ix, iy, iz) = self%Sigma_E%y(ix, iy, iz)/ &
-                   (self%metric%grid%dy(iy)*self%metric%grid%delY(iy))
-                    !
-                    self%db1%z(ix, iy, iz) = self%Sigma_E%z(ix, iy, iz - 1)/ &
-                   (self%metric%grid%dz(iz - 1)*self%metric%grid%delZ(iz))
-                    !
-                    self%db2%z(ix, iy, iz) = self%Sigma_E%z(ix, iy, iz)/ &
-                   (self%metric%grid%dz(iz)*self%metric%grid%delZ(iz))
-                    !
-                    self%c%v(ix, iy, iz) = -(self%db1%x(ix, iy, iz) + &
-                    self%db2%x(ix, iy, iz) + &
-                    self%db1%y(ix, iy, iz) + &
-                    self%db2%y(ix, iy, iz) + &
-                    self%db1%z(ix, iy, iz) + &
-                    self%db2%z(ix, iy, iz))
-                enddo
-            enddo
+        !> Construct VDs .. multiply VDiv by Conductivity on edges; can use VomegaMuSig
+        n = self%VDiv%nCol
+        !
+        allocate( d( n ) )
+        !
+        d = self%VomegaMuSig / ( mu_0 * self%omega )
+        !
+        temp_vec = self%metric%VEdge
+        !
+        call temp_vec%switchStoreState
+        !
+        d = d / temp_vec%sv( self%EDGEi )
+        !
+        call RMATxDIAG( self%VDiv, d, self%VDs )
+        !
+        !>Construct VDsG: symmetric operator for divergence correction solver
+        allocate( allNodes( G%nRow ) )
+        do i = 1, G%nRow
+            allNodes( i ) = i
         enddo
         !
-        select type( vnode => self%Metric%Vnode )
-            class is( rScalar3D_SG_t )
-                !
-                do iz = 2, self%metric%grid%nz
-                    do iy = 2, self%metric%grid%ny
-                        do ix = 2, self%metric%grid%nx
-                            self%db1%x(ix, iy, iz) = self%db1%x(ix, iy, iz) * &
-                            vnode%v(ix,iy,iz)
-                            !
-                            self%db1%y(ix, iy, iz) = self%db1%y(ix, iy, iz) * &
-                            vnode%v(ix,iy,iz)
-                            !
-                            self%db1%z(ix, iy, iz) = self%db1%z(ix, iy, iz) * &
-                            vnode%v(ix,iy,iz)
-                            !
-                            self%db2%x(ix, iy, iz) = self%db2%x(ix, iy, iz) * &
-                            vnode%v(ix,iy,iz)
-                            !
-                            self%db2%y(ix, iy, iz) = self%db2%y(ix, iy, iz) * &
-                            vnode%v(ix,iy,iz)
-                            !
-                            self%db2%z(ix, iy, iz) = self%db2%z(ix, iy, iz) * &
-                            vnode%v(ix,iy,iz)
-                        enddo
-                    enddo
-                enddo
-                    !
-            class default
-                stop "Error: getFullVectorCSparsevector3D_SG > undefined grid"
-                !
-        end select
+        call subMatrix_Real( G, allNodes, self%NODEi, temp_matrix )
         !
-        call self%c%mult( self%Metric%Vnode )
+        call RMATxRMAT( self%VDs, temp_matrix, self%VDsG )
+        ! Setup preconditioner
+        call Dilu_Real( self%VDsG, self%VDsG_L, self%VDsG_U )
         !
-        self%db1%x(2, :, :) = R_ZERO
-        self%db1%y(:, 2, :) = R_ZERO
-        self%db1%z(:, :, 2) = R_ZERO
+        !call CholInc_real(VDsG,VDsG_L)
+        !call RMATtrans(VDsG_L,VDsG_U)
         !
-        self%db2%x(self%metric%grid%nx, :, :) = R_ZERO
-        self%db2%y(:, self%metric%grid%ny, :) = R_ZERO
-        self%db2%z(:, :, self%metric%grid%nz) = R_ZERO
+        call deall_spMatCSR( temp_matrix )
         !
-    end subroutine divCorsetupModelOperatorSP
+        deallocate( d, allNodes )
+        !
+    end subroutine divCorSetUpModelOperatorSP
     !
-    !> No subroutine briefing
+    !> Implement the sparse matrix multiply for curl-curl operator
+    !> for interior elements
+    !> assume output y is already allocated
+    !
     subroutine amultModelOperatorSP( self, omega, inE, outE, p_adjoint )
         implicit none
         !
@@ -393,9 +319,16 @@ contains
         class( Vector_t ), intent( inout ) :: outE
         logical, intent( in ), optional :: p_adjoint
         !
-        integer :: ix, iy, iz
-        complex( kind=prec ) :: cvalue
+        complex( kind=prec ), allocatable, dimension(:) :: temp_array_inE, temp_array_outE
         logical :: adjoint
+        !
+        if( .NOT. inE%is_allocated ) then
+            stop "Error: amultModelOperatorSP > inE not allocated"
+        endif
+        !
+        temp_array_inE = inE%getArray()
+        !
+        call RMATxCVEC( self%CCii, temp_array_inE, temp_array_outE )
         !
         if( present( p_adjoint ) ) then
             adjoint = p_adjoint
@@ -404,89 +337,25 @@ contains
         endif
         !
         if( adjoint ) then
-            cvalue = -ONE_I * omega * isign * MU_0
+            temp_array_outE = temp_array_outE - ONE_I * ISIGN * self%VomegaMuSig * temp_array_inE
         else
-            cvalue = ONE_I * omega * isign * MU_0
+            temp_array_outE = temp_array_outE + ONE_I * ISIGN * self%VomegaMuSig * temp_array_inE
         endif
         !
-        select type( inE )
-            !
-            class is( cVector3D_SG_t )
-                !
-                if( .NOT. outE%is_allocated ) then
-                    stop "Error: amultModelOperatorSP > output vector outE not allocated"
-                endif
-                !
-                select type( outE )
-                    !
-                    class is( cVector3D_SG_t )
-                        !
-                        call outE%Zeros()
-                        !
-                        do iz = 2, inE%nz
-                            do iy = 2, inE%ny
-                                do ix = 1, inE%nx
-                                    outE%x(ix, iy, iz) = self%xY(ix, iy)*(inE%y(ix + 1, iy, iz) - &
-                                    inE%y(ix, iy, iz) - inE%y(ix + 1, iy - 1, iz) + &
-                                    inE%y(ix, iy - 1, iz)) + &
-                                    self%xZ(ix, iz) *(inE%z(ix + 1, iy, iz) - inE%z(ix, iy, iz) - &
-                                    inE%z(ix + 1, iy, iz - 1) + inE%z(ix, iy, iz - 1)) + &
-                                    self%xXY(iy, 2) * inE%x(ix, iy + 1, iz) + &
-                                    self%xXY(iy, 1) * inE%x(ix, iy - 1, iz) + &
-                                    self%xXZ(iz, 2) * inE%x(ix, iy, iz + 1) + &
-                                    self%xXZ(iz, 1) * inE%x(ix, iy, iz - 1) + &
-                                   (self%xXO(iy, iz)+cvalue*self%Sigma_E%x(ix,iy,iz)) * inE%x(ix, iy, iz)
-                                enddo
-                            enddo
-                        enddo
-                        !
-                        do iz = 2, inE%nz
-                            do iy = 1, inE%ny
-                                do ix = 2, inE%nx
-                                    outE%y(ix, iy, iz) = self%yZ(iy, iz) *(inE%z(ix, iy + 1, iz) - &
-                                    inE%z(ix, iy, iz) - inE%z(ix, iy + 1, iz - 1) + inE%z(ix, iy, iz - 1)) + &
-                                    self%yX(ix, iy) *(inE%x(ix, iy + 1, iz) - inE%x(ix, iy, iz) - &
-                                    inE%x(ix - 1, iy + 1, iz) + inE%x(ix - 1, iy, iz)) + &
-                                    self%yYZ(iz, 2) * inE%y(ix, iy, iz + 1) + &
-                                    self%yYZ(iz, 1) * inE%y(ix, iy, iz - 1) + &
-                                    self%yYX(ix, 2) * inE%y(ix + 1, iy, iz) + &
-                                    self%yYX(ix, 1) * inE%y(ix - 1, iy, iz) + &
-                                   (self%yYO(ix, iz)+cvalue*self%Sigma_E%y(ix,iy,iz)) * inE%y(ix, iy, iz)
-                                enddo
-                            enddo
-                        enddo
-                        !
-                        do iz = 1, inE%nz
-                            do iy = 2, inE%ny
-                                do ix = 2, inE%nx
-                                    outE%z(ix, iy, iz) = self%zX(ix, iz) *(inE%x(ix, iy, iz + 1) - &
-                                    inE%x(ix, iy, iz) - inE%x(ix - 1, iy, iz + 1) + inE%x(ix - 1, iy, iz)) + &
-                                    self%zY(iy,iz) *(inE%y(ix, iy, iz + 1) - inE%y(ix, iy, iz) - &
-                                    inE%y(ix, iy - 1, iz + 1) + inE%y(ix, iy - 1, iz)) + &
-                                    self%zZX(ix, 2) * inE%z(ix + 1, iy, iz) + &
-                                    self%zZX(ix, 1) * inE%z(ix - 1, iy, iz) + &
-                                    self%zZY(iy, 2) * inE%z(ix, iy + 1, iz) + &
-                                    self%zZY(iy, 1) * inE%z(ix, iy - 1, iz) + &
-                                   (self%zZO(ix, iy)+cvalue*self%Sigma_E%z(ix,iy,iz)) * inE%z(ix, iy, iz)
-                                enddo
-                            enddo
-                        enddo
-                        !
-                        call outE%mult( self%metric%Vedge )
-                        !
-                    class default
-                        stop "Error: amultModelOperatorSP > Undefined outE."
-                        !
-                end select
-                !
-            class default
-                stop "Error: amultModelOperatorSP > Undefined inE."
-                !
-        end select
+        deallocate( temp_array_inE )
+        !
+        outE = cVector3D_SG_t( self%metric%grid, EDGE )
+        !
+        call outE%setArray( temp_array_outE )
+        !
+        deallocate( temp_array_outE )
         !
     end subroutine amultModelOperatorSP
     !
-    !> No subroutine briefing
+    !> Implement the sparse matrix multiply for curl-curl operator
+    !> for interior/boundary elements
+    !> assume output y is already allocated
+    !
     subroutine multAibModelOperatorSP( self, bdry, outE )
         implicit none
         !
@@ -494,16 +363,53 @@ contains
         class( Field_t ), intent( in ) :: bdry
         class( Vector_t ), intent( inout ) :: outE
         !
-        real( kind=prec ) :: omega
-        !
-        if(.NOT. outE%is_allocated) then
-            stop "Error: multAibModelOperatorSP > output vector not allocated"
-        endif
-        !
-        omega = R_ZERO
-        !
-        call self%amult( omega, bdry, outE ) 
-        !
+        stop "Error: multAibModelOperatorSP not implemented > Code ready but commented out!"
+        ! !
+        ! logical :: adjoint
+        ! type( spMatCSR_Real ) :: CCibt
+        ! complex( kind=prec ), allocatable, dimension(:) :: temp_array, temp_array_inE, temp_array_outE
+        ! !
+        ! if( .NOT. bdry%is_allocated ) then
+            ! stop "Error: amultModelOperatorSP > bdry not allocated"
+        ! endif
+        ! !
+        ! temp_array_inE = bdry%getArray()
+        ! !
+        ! call RMATxCVEC( self%CCii, temp_array_inE, temp_array_outE )
+        ! !
+        ! if( present( p_adjoint ) ) then
+            ! adjoint = p_adjoint
+        ! else
+            ! adjoint = .FALSE.
+        ! endif
+        ! !
+        ! !> ON ORIGINAL OMPLEMENTATION
+        ! if( adjoint ) then
+            ! !
+            ! call RMATtrans( self%CCib, CCibt )
+            ! !
+            ! allocate( temp_array( size( self%EDGEb ) ) )
+            ! !
+            ! call RMATxCVEC( CCibt, temp_array_inE, temp_array )
+            ! !
+            ! temp_array_outE( self%EDGEb ) = temp_array;
+            ! !
+            ! call deall_spMATcsr( CCibt )
+            ! !
+            ! deallocate( temp_array )
+            ! !
+        ! else
+            ! call RMATxCVEC( self%CCib, temp_array_inE, temp_array_outE )
+        ! endif
+        ! !
+        ! deallocate( temp_array_inE )
+        ! !
+        ! outE = rVector3D_SG_t( self%metric%grid, EDGE )
+        ! !
+        ! call outE%setArray( temp_array_outE )
+        ! !
+        ! deallocate( temp_array_outE )
+        ! !
     end subroutine multAibModelOperatorSP
     !
     !> No subroutine briefing
@@ -549,7 +455,7 @@ contains
                         !> Ez
                         do ix = 2, inH%Nx
                             do iy = 2, inH%Ny
-                                outE%z(ix,iy,:) =(inH%y(ix, iy, :) - &
+                                outE%z(ix, iy,:) =(inH%y(ix, iy, :) - &
                                 inH%y(ix - 1, iy, :)) - &
                                (inH%x(ix, iy, :) - inH%x(ix, iy - 1, :))
                             enddo
@@ -576,46 +482,19 @@ contains
         class( Scalar_t ), intent( in ) :: inPhi
         class( Scalar_t ), intent( inout ) :: outPhi
         !
-        integer :: ix, iy, iz
+        complex( kind=prec ), allocatable, dimension(:) :: temp_array_inPhi, temp_array_outPhi
         !
-        select type( outphi )
-            class is( cScalar3D_SG_t )
-                !
-                if(.NOT.outPhi%is_allocated) then
-                    stop "Error: divCgradModelOperatorSP > Output cScalar object not allocated"
-                endif
-                !
-                select type( inPhi )
-                class is( cScalar3D_SG_t )
-                    !
-                    !> zero output(already allocated) to start
-                    call outPhi%Zeros()
-                    !
-                    !> The coefficients are only for interior nodes
-                    do iz = 2, inPhi%nz
-                        do iy = 2, inPhi%ny
-                            do ix = 2, inPhi%nx
-                                outPhi%v(ix, iy, iz) = &
-                                inPhi%v(ix + 1, iy, iz) * self%db2%x(ix,iy,iz) + &
-                                inPhi%v(ix - 1, iy, iz) * self%db1%x(ix, iy, iz) + &
-                                inPhi%v(ix, iy + 1, iz) * self%db2%y(ix, iy, iz) + &
-                                inPhi%v(ix, iy - 1, iz) * self%db1%y(ix, iy, iz) + &
-                                inPhi%v(ix, iy, iz + 1) * self%db2%z(ix, iy, iz) + &
-                                inPhi%v(ix, iy, iz - 1) * self%db1%z(ix, iy, iz) + &
-                                inPhi%v(ix, iy, iz) * self%c%v(ix, iy, iz)
-                            enddo
-                        enddo
-                    enddo
-                    !
-                class default
-                    stop "Error: divCgradModelOperatorSP > Incompatible input [inPhi]."
-                    !
-            end select
-                    !
-            class default
-                stop "Error: divCgradModelOperatorSP > Incompatible input [x]."
-                !
-        end select
+        temp_array_inPhi = inPhi%getArray()
+        !
+        call RMATxCVEC( self%VDsG, inPhi%getArray(), temp_array_outPhi )
+        !
+        deallocate( temp_array_inPhi )
+        !
+        outPhi = rScalar3D_SG_t( self%metric%grid, EDGE )
+        !
+        call outPhi%setArray( temp_array_outPhi )
+        !
+        deallocate( temp_array_outPhi )
         !
     end subroutine divCgradModelOperatorSP
     !
@@ -627,73 +506,19 @@ contains
         class( Field_t ), intent( in ) :: inE
         class( Scalar_t ), intent( inout ) :: outPhi
         !
-        integer :: ix, iy, iz
+        complex( kind=prec ), allocatable, dimension(:) :: temp_array_inE, temp_array_outPhi
         !
-        select type( outPhi )
-            class is( cScalar3D_SG_t )
-                !
-                if( .NOT. outPhi%is_allocated) then
-                    stop "Error: divCModelOperatorSP > Output cScalar object not allocated"
-                endif
-                !
-                select type( inE )
-                    class is( cVector3D_SG_t )
-                        !
-                        call outPhi%Zeros()
-                        !
-                        do ix = 2, outPhi%nx
-                            do iy = 2, outPhi%ny
-                                !
-                                do iz = 2, outPhi%grid%nzAir
-                                    outPhi%v(ix, iy, iz) = &
-                                    SIGMA_AIR *(inE%x(ix, iy, iz) - inE%x(ix - 1, iy, iz)) * &
-                                    inE%grid%delXinv(ix) + &
-                                    SIGMA_AIR *(inE%y(ix, iy, iz) - inE%y(ix, iy - 1, iz)) * &
-                                    inE%grid%delYinv(iy) + &
-                                    SIGMA_AIR *(inE%z(ix, iy, iz) - inE%z(ix, iy, iz - 1)) * &
-                                    inE%grid%delZinv(iz)
-                                enddo
-                                
-                                !> FOR NODES AT THE AIR-EARTH interface
-                                iz = outPhi%grid%nzAir + 1
-                                !
-                                outPhi%v(ix, iy, iz) = &
-                               (self%Sigma_E%x(ix, iy, iz) * inE%x(ix, iy, iz) -         &
-                                self%Sigma_E%x(ix - 1, iy, iz) * inE%x(ix - 1, iy, iz)) * &
-                                inE%grid%delXinv(ix) + &
-                               (self%Sigma_E%y(ix, iy, iz) * inE%y(ix, iy, iz) -         &
-                                self%Sigma_E%y(ix, iy - 1, iz) * inE%y(ix, iy - 1, iz)) * &
-                                inE%grid%delYinv(iy) + &
-                               (self%Sigma_E%z(ix, iy, iz) * inE%z(ix, iy, iz) -         &
-                                SIGMA_AIR * inE%z(ix, iy, iz - 1)) * &
-                                inE%grid%delZinv(iz)
-
-                                !> FOR NODES INSIDE THE EARTH ONLY
-                                !> THE TOP MOST EARTH NODE HAS AN interface WITH
-                                !> AIR, THEREFORE THAT ONE IS SKIPPED HERE
-                                do iz = outPhi%grid%nzAir + 2, outPhi%nz
-                                    outPhi%v(ix, iy, iz) = &
-                                   (self%Sigma_E%x(ix,iy,iz)*inE%x(ix, iy, iz) -                 &
-                                    self%Sigma_E%x(ix - 1,iy,iz)*inE%x(ix - 1, iy, iz)) * &
-                                    inE%grid%delXinv(ix)            &
-                                    +   (self%Sigma_E%y(ix,iy,iz)*inE%y(ix, iy, iz) -            &
-                                    self%Sigma_E%y(ix,iy - 1,iz)*inE%y(ix, iy - 1, iz)) * &
-                                    inE%grid%delYinv(iy)            &
-                                    +   (self%Sigma_E%z(ix,iy,iz)*inE%z(ix, iy, iz) -            &
-                                    self%Sigma_E%z(ix,iy,iz - 1)*inE%z(ix, iy, iz - 1)) * &
-                                    inE%grid%delZinv(iz)
-                                enddo
-                            enddo
-                        enddo
-                        !
-                    class default
-                        stop "Error: divCModelOperatorSP > inE type unknown"
-                end select
-                !
-            class default
-                stop "Error: divCModelOperatorSP > outPhi type unknown"
-                !
-        end select
+        temp_array_inE = inE%getArray()
+        !
+        call RMATxCVEC( self%VDs, temp_array_inE, temp_array_outPhi )
+        !
+        deallocate( temp_array_inE )
+        !
+        outPhi = rVector3D_SG_t( inE%grid, inE%grid_type )
+        !
+        call outPhi%setArray( temp_array_outPhi )
+        !
+        deallocate( temp_array_outPhi )
         !
     end subroutine divCModelOperatorSP
     !
@@ -705,53 +530,19 @@ contains
         class( Scalar_t ), intent( in ) :: inPhi
         class( Vector_t ), intent( inout ) :: outE
         !
-        integer :: ix, iy, iz
+        complex( kind=prec ), allocatable, dimension(:) :: temp_array_inPhi, temp_array_outE
         !
-        select type( outE )
-            class is( cVector3D_SG_t )
-                !
-                if(.NOT.outE%is_allocated) then
-                    stop "Error: gradModelOperatorSP > Output cVector object not allocated"
-                endif
-                !
-                select type( inPhi )
-                    class is( cScalar3D_SG_t )
-                        !
-                        call outE%Zeros
-                        !
-                        do ix = 1, self%metric%grid%nx 
-                            do iy = 2, self%metric%grid%ny
-                                do iz = 2, self%metric%grid%nz
-                                    outE%x(ix, iy, iz) =(inPhi%v(ix + 1, iy, iz) - &
-                                    inPhi%v(ix, iy, iz)) / self%metric%grid%dx(ix)
-                                enddo
-                            enddo
-                        enddo
-                        !
-                        do ix = 2, self%metric%grid%nx 
-                            do iy = 1, self%metric%grid%ny
-                                do iz = 2, self%metric%grid%nz
-                                    outE%y(ix, iy, iz) =(inPhi%v(ix, iy + 1, iz) - &
-                                    inPhi%v(ix, iy, iz)) / self%metric%grid%dy(iy)
-                                enddo
-                            enddo
-                        enddo
-                        !
-                        do ix = 2, self%metric%grid%nx 
-                            do iy = 2, self%metric%grid%ny
-                                do iz = 1, self%metric%grid%nz    
-                                    outE%z(ix, iy, iz) =(inPhi%v(ix, iy, iz + 1) - &
-                                    inPhi%v(ix, iy, iz)) / self%metric%grid%dz(iz)
-                                enddo
-                            enddo
-                        enddo
-                        !
-                    class default
-                        stop "Error: gradModelOperatorSP > inPhi type unknown"
-                end select
-            class default
-                stop "Error: gradModelOperatorSP > outE type unknown"
-        end select
+        temp_array_inPhi = inPhi%getArray()
+        !
+        call RMATxCVEC( G, temp_array_inPhi, temp_array_outE )
+        !
+        deallocate( temp_array_inPhi )
+        !
+        outE = rVector3D_SG_t( inPhi%grid, inPhi%grid_type )
+        !
+        call outE%setArray( temp_array_outE )
+        !
+        deallocate( temp_array_outE )
         !
     end subroutine gradModelOperatorSP
     !
@@ -763,210 +554,27 @@ contains
         class( Vector_t ), intent( in ) :: inE
         class( Scalar_t ), intent( inout ) :: outPhi
         !
-        integer :: ix, iy, iz
+        type( spMatCSR_Real ) :: D
         !
-        select type(outPhi)
-            class is(cScalar3D_SG_t)
-                !
-                if(.NOT.outPhi%is_allocated) then
-                    stop "Error: divModelOperatorSP > Output cScalar object not allocated"
-                endif
-                !
-                select type( inE )
-                    class is(cVector3D_SG_t)
-                        !
-                        call outPhi%Zeros()
-                        !
-                        do ix = 2, outPhi%nx
-                            do iy = 2, outPhi%ny
-                                do iz = 2, outPhi%grid%nz
-                                    outPhi%v(ix, iy, iz) = &
-                                   (inE%x(ix, iy, iz) - inE%x(ix - 1, iy, iz)) * &
-                                    inE%grid%delXinv(ix) + &
-                                   (inE%y(ix, iy, iz) - inE%y(ix, iy - 1, iz)) * &
-                                    inE%grid%delYinv(iy) + &
-                                   (inE%z(ix, iy, iz) - inE%z(ix, iy, iz - 1)) * &
-                                    inE%grid%delZinv(iz)
-                                enddo
-                            enddo
-                        enddo
-                        class default
-                        stop "Error: divModelOperatorSP> inE type unknown"
-                end select
-            class default
-                stop "Error: divModelOperatorSP > outPhi type unknown"
-        end select
+        complex( kind=prec ), allocatable, dimension(:) :: temp_array_inE, temp_array_outPhi
+        !
+        call RMATtrans( G, D )
+        !
+        temp_array_inE = inE%getArray()
+        !
+        call RMATxCVEC( D, temp_array_inE, temp_array_outPhi )
+        !
+        call deall_spMatCSR( D )
+        !
+        deallocate( temp_array_inE )
+        !
+        outPhi = rScalar3D_SG_t( inE%grid, inE%grid_type )
+        !
+        call outPhi%setArray( temp_array_outPhi )
+        !
+        deallocate( temp_array_outPhi )
         !
     end subroutine divModelOperatorSP
-    !
-    !  subroutine AdjtBC uses(adjoint) interior node solution to compute
-    !  boundary node values for adjoint(or     ) solution
-    !  (NOTE: because off-diagonal part of EM operator is real this works
-    !  Assuming boundary conditions for forward problem are
-    !  specified tangential E fields, adjoint BC are  homogeneous(to solve for
-    !   interior nodes), and solution on boundary nodes is determined from
-    !   interior solution via:    E_B - adjt(A_IB)*E_I = 0
-    !    where E_B is boundary part of adjoint system rhs, and E_I
-    !    is the interior node solution of the adjoint system(solved with
-    !    homogeneous tangential BC). This operator computes adjt(A_IB)*E_I.
-    !   Output is required for calculating sensitivities
-    !     of data to errors in specified BC(and potentially for other sorts
-    !     of sensitivities which require the boundary nodes of the adjoint or
-    !          solution).
-    !    NOTE: this routine can be used for both complex conjugate
-    !              and      cases.
-
-    !   Uses curl_curl coefficients, available to all routines in this module
-    !   NOTE: Must call CurlCurlSetup before use of this routine
-    !
-    subroutine AdjtBCModelOperatorSP( self, eIn, BC )
-        implicit none
-        !
-        class( ModelOperator_SP_t ), intent( in ) :: self
-        class( Vector_t ), intent( in ) :: eIn
-        ! OUTPUT: boundary condition structure: should be allocated
-        !   and initialized before call to this routine
-        class( Vector_t ), intent( inout) :: BC
-        !
-        integer :: ix,iy,iz,nx,ny,nz
-        !
-        !  Multiply FD electric field vector defined on interior nodes(eIn) by
-        !  adjoint of A_IB, the interior/boundary sub-block of the differential
-        !  operator.
-        !
-        nx = eIn%nx
-        ny = eIn%ny
-        nz = eIn%nz
-        !
-        select type( eIn )
-            class is( cVector3D_SG_t )
-                !
-                if( .NOT. eIn%is_allocated ) then
-                    stop "Error: AdjtBCModelOperatorSP > eIn not allocated"
-                endif
-                !
-                select type( BC )
-                    class is( cVector3D_SG_t )
-                        !
-                        BC%y(:,1,1) = C_ZERO
-                        BC%y(:,ny,1) = C_ZERO
-                        BC%y(:,1,nz+1) = C_ZERO
-                        BC%y(:,ny,nz+1) = C_ZERO
-                        !
-                        do ix = 1, nx
-                            do iz = 2, nz
-                                !
-                                BC%y(ix,:,iz) =(- self%yX(ix,1)*Ein%y(ix,1,iz)       &
-                                + self%yX(ix+1,1)*Ein%y(ix+1,1,iz)   &
-                                + self%xXY(2,1)*Ein%x(ix,2,iz))
-                                BC%y(ix,:,iz) =(+ self%yX(ix,ny)*Ein%y(ix,ny,iz)     &
-                                - self%yX(ix+1,ny)*Ein%y(ix+1,ny,iz) &
-                                + self%xXY(ny,2)*Ein%x(ix,ny,iz))
-                                !
-                            enddo
-                        enddo
-                        !
-                        BC%y(1,1,:) = C_ZERO
-                        BC%y(1,ny,:) = C_ZERO
-                        BC%y(nx+1,1,:) = C_ZERO
-                        BC%y(nx+1,ny,:) = C_ZERO
-                        !
-                        do iz = 1, nz
-                            do ix = 2, nx
-                                !
-                                BC%y(ix,:,iz) =(- self%yZ(1,iz)*Ein%y(ix,1,iz)        &
-                                + self%yZ(1,iz+1)*Ein%y(ix,1,iz+1)    &
-                                + self%zZY(2,1)*Ein%z(ix,2,iz))
-                                BC%y(ix, :, iz) =(+ self%yZ(ny,iz)*Ein%y(ix,ny,iz)      &
-                                - self%yZ(ny,iz+1)*Ein%y(ix,ny,iz+1)  &
-                                + self%zZY(ny,2)*Ein%z(ix,ny,iz))
-                                !
-                            enddo
-                        enddo
-                        !
-                        BC%x(1,:,1) = C_ZERO
-                        BC%x(nx,:,1) = C_ZERO
-                        BC%x(1,:,nz+1) = C_ZERO
-                        BC%x(nx,:,nz+1) = C_ZERO
-                        !
-                        do iy = 1, ny
-                            do iz = 2, nz
-                                !
-                                BC%x(:,iy,iz) =(- self%xY(1,iy)*Ein%x(1,iy,iz)        &
-                                + self%xY(1,iy+1)*Ein%x(1,iy+1,iz)    &
-                                + self%yYX(2,1)*Ein%y(2,iy,iz))
-                                BC%x(:,iy,iz) =(+ self%xY(nx,iy)*Ein%x(nx,iy,iz)      &
-                                - self%xY(nx,iy+1)*Ein%x(nx,iy+1,iz)  &
-                                + self%yYX(nx,2)*Ein%y(nx,iy,iz))
-                                !
-                            enddo
-                        enddo
-                        !
-                        BC%x(1,1,:) = C_ZERO
-                        BC%x(nx,1,:) = C_ZERO
-                        BC%x(1,ny+1,:) = C_ZERO
-                        BC%x(nx,ny+1,:) = C_ZERO
-                        !
-                        do iz = 1, nz
-                            do iy = 2, ny
-                                !
-                                BC%x(:,iy,iz) =(- self%xZ(1,iz)*Ein%x(1,iy,iz)       &
-                                + self%xZ(1,iz+1)*Ein%x(1,iy,iz+1)   &
-                                + self%zZX(2,1)*Ein%z(2,iy,iz))
-                                BC%x(:,iy,iz) =(+ self%xZ(nx,iz)*Ein%x(nx,iy,iz)     &
-                                - self%xZ(nx,iz+1)*Ein%x(nx,iy,iz+1) &
-                                + self%zZX(nx,2)*Ein%z(nx,iy,iz))
-                                !
-                            enddo
-                        enddo
-                        !
-                        BC%z(:,1,1) = C_ZERO
-                        BC%z(:,1,nz) = C_ZERO
-                        BC%z(:,ny+1,1) = C_ZERO
-                        BC%z(:,ny+1,nz) = C_ZERO
-                        !
-                        do ix = 1, nx
-                            do iy = 2, ny
-                                !
-                                BC%z(ix,iy,:) =(- self%zX(ix,1)*Ein%z(ix,iy,1)       &
-                                + self%zX(ix+1,1)*Ein%z(ix+1,iy,1)   &
-                                + self%xXZ(2,1)*Ein%x(ix,iy,2))
-                                BC%z(ix,iy,:) =(+ self%zX(ix,nz)*Ein%z(ix,iy,nz)     &
-                                - self%zX(ix+1,nz)*Ein%z(ix+1,iy,nz) &
-                                + self%xXZ(nz,2)*Ein%x(ix,iy,nz))
-                                !
-                            enddo
-                        enddo
-                        !
-                        BC%z(1,:,1) = C_ZERO
-                        BC%z(1,:,nz) = C_ZERO
-                        BC%z(nx+1,:,1) = C_ZERO
-                        BC%z(nx+1,:,nz) = C_ZERO
-                        !
-                        do iy = 1, ny
-                            do ix = 2, nx
-                                !
-                                BC%z(ix,iy,:) =(- self%zY(iy,1)*Ein%z(ix,iy,1)        &
-                                + self%zY(iy+1,1)*Ein%z(ix,iy+1,1)    &
-                                + self%yYZ(2,1)*Ein%y(ix,iy,2))
-                                BC%z(ix,iy,:) =(+ self%zY(iy,nz)*Ein%z(ix,iy,nz)      &
-                                - self%zY(iy+1,nz)*Ein%z(ix,iy+1,nz)  &
-                                + self%yYZ(nz,2)*Ein%y(ix,iy,nz) )
-                                !
-                            enddo
-                        enddo
-                        !
-                        class default
-                        stop "Error: AdjtBCModelOperatorSP> Ein type unknown"
-                        !
-                end select
-                !
-            class default
-                stop "Error: AdjtBCModelOperatorSP > BC type unknown"
-                !
-        end select
-        !
-    end subroutine AdjtBCModelOperatorSP
     !
     !> No subroutine briefing
     subroutine printModelOperatorSP( self )

@@ -41,7 +41,7 @@ module Forward2D
  contains
     !
     !> No subroutine briefing
-	!
+    !
     function Forward2D_ctor(m) result( self )
         !>     pass the model parameter, create and return object
         class(ModelParameter2D_t), target, intent( in ) :: m
@@ -51,7 +51,7 @@ module Forward2D
         self%nDiag = 9
         self%m => m     !> Set poinbter to model parameter
 
-        call self%createCC()    !>  create curl-curl operator
+        call self%createCC    !>  create curl-curl operator
         !
         call self%setCond( m )
         !
@@ -227,7 +227,7 @@ module Forward2D
         !>    add 1i*omega*mu*sigma0
         sigmaEdge = self%m%PDEmapping()    !>  make this routine return zero on boundary edges
         iRow = kl+ku+1     !>    row for diagonal in band matrix storage
-        cFac = isign*ONE_I*mu_0*self%omega
+        cFac = isign * ONE_I * mu_0 * self%omega
         A(iRow,:) = A(iRow,:) + cFac*sigmaEdge(:)
         !>    set up RHS -- lets use a procedure in E2D
         b = E2D%GetBoundary()     !>    this just extracts what is on the boundary

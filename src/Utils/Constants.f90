@@ -29,7 +29,7 @@ module Constants
     integer, parameter :: prec = DP
     !
     real( kind=prec ), parameter :: PI = 3.14159265357898_prec
-    complex( kind=prec ), parameter :: MU_0 = PI * .0000004_prec
+    complex( kind=prec ), parameter :: mu_0 = PI * .0000004_prec
     !
     !> Important: sign convention used throughout the program
     integer, parameter :: isign = -1

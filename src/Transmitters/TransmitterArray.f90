@@ -122,7 +122,7 @@ contains
         write( *, * ) size( transmitters ), " TransmitterArray_t:"
         !
         do itx = 1, size( transmitters )
-            call transmitters(itx)%Tx%print()
+            call transmitters(itx)%Tx%print
         enddo
         !
     end subroutine printTransmitterArray

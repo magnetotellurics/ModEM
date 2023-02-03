@@ -52,7 +52,7 @@ contains
         !
         !write( *, * ) "Constructor ForwardSolverIT_DC_t"
         !
-        call self%init()
+        call self%init
         !
         select case( solver_type )
             !
@@ -195,7 +195,7 @@ contains
         !
         e_solution = cVector3D_SG_t( self%solver%preconditioner%model_operator%metric%grid, EDGE )
         !
-        call e_solution%zeros()
+        call e_solution%zeros
         !
         if( source%non_zero_source ) then
             !

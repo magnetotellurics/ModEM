@@ -300,7 +300,7 @@ contains
         !
         cvector = cVector3D_SG_t( self%grid, self%grid_type )
         !
-        call cvector%zeros()
+        call cvector%zeros
         !
         do ii = 1, size( self%xyz )
             if( self%xyz(ii) == 1 ) then
@@ -439,15 +439,16 @@ contains
     !
     !> No subroutine briefing
     !
-    subroutine getArrayCVectorSparse3D_SG( self, array )
+    function getArrayCVectorSparse3D_SG( self ) result( array )
         implicit none
         !
         class( cVectorSparse3D_SG_t ), intent( in ) :: self
-        complex( kind=prec ), allocatable, dimension(:), intent( out ) :: array
+        !
+        complex( kind=prec ), allocatable, dimension(:) :: array
         !
         stop "Error: getArrayCVectorSparse3D_SG not implemented yet!"
         !
-    end subroutine getArrayCVectorSparse3D_SG
+    end function getArrayCVectorSparse3D_SG
     !
     !> No subroutine briefing
     !
@@ -455,7 +456,7 @@ contains
         implicit none
         !
         class( cVectorSparse3D_SG_t ), intent( inout ) :: self
-        complex( kind=prec ), allocatable, dimension(:), intent( inout ) :: array
+        complex( kind=prec ), dimension(:), intent( in ) :: array
         !
         stop "Error: setArrayCVectorSparse3D_SG not implemented yet!"
         !
@@ -596,7 +597,7 @@ contains
         implicit none
         !
         class( cVectorSparse3D_SG_t ), intent( inout ) :: self
-        class( Scalar_t ), intent( in ) :: E_in
+        class( Field_t ), intent( in ) :: E_in
         character(*), intent( in ), optional :: ptype
         !
         stop "Error: avgCellsCVectorSparse3D_SG not implemented yet!"

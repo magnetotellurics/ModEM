@@ -89,7 +89,7 @@ contains
         !
         !write( *, * ) "Constructor cVector3D_SG"
         !
-        call self%init()
+        call self%init
         !
         self%grid => grid
         !
@@ -341,7 +341,7 @@ contains
         class( cVector3D_SG_t ), intent( inout ) :: self
         integer, allocatable, intent( out ) :: ind_i(:), ind_b(:)
         !
-        integer :: nVec(3), nVecT, nBdry, nb, ni, i
+        integer :: nVecT, nBdry, nb, ni, i
         complex( kind=prec ), allocatable :: temp(:)
         type( cVector3D_SG_t ) :: E
         !
@@ -360,13 +360,6 @@ contains
         select case(self%grid_type)
             case( EDGE )
                 !
-                nVec(1) = size(E%x)
-                nVec(2) = size(E%y)
-                nVec(3) = size(E%z)
-                nVecT = nVec(1) + nVec(2) + nVec(3)
-                !
-                allocate( temp( nVecT ) )
-                !
                 E%x(:, 1, :) = 1
                 E%x(:, E%ny + 1, :) = 1
                 E%x(:, :, 1) = 1
@@ -380,15 +373,7 @@ contains
                 E%z(:, 1, :) = 1
                 E%z(:, E%ny + 1, :) = 1
                 !
-                call E%getArray(temp)
-                !
             case( FACE )
-                nVec(1) = size(E%x)
-                nVec(2) = size(E%y)
-                nVec(3) = size(E%z)
-                nVecT = nVec(1) + nVec(2) + nVec(3)
-                !
-                allocate( temp( nVecT ) )
                 !
                 E%x(1, :, :) = 1
                 E%x(E%nx + 1, :, :) = 1
@@ -397,13 +382,13 @@ contains
                 E%z(:, :, 1) = 1
                 E%z(:, :, E%nz + 1) = 1
                 !
-                call E%getArray(temp)
-                !
             case default
                 stop "Error: intBdryIndicesCVector3D_SG > Undefined self%grid_type"
                 !
         end select
         !
+        temp = E%getArray()
+        nVecT = size( E%x ) + size( E%y ) + size( E%z )
         nBdry = 0
         do i = 1, nVecT
             nBdry = nBdry + nint(real(temp(i)))
@@ -633,7 +618,7 @@ contains
         implicit none
         !
         class( cVector3D_SG_t ), intent( inout ) :: self
-        class( Scalar_t ), intent( in ) :: E_in
+        class( Field_t ), intent( in ) :: E_in
         character(*), intent( in ), optional :: ptype
         !
         character(10) :: type
@@ -1624,20 +1609,32 @@ contains
         !
     end subroutine getRealCVector3D_SG
     !
-    !> No subroutine briefing
+    !> No function briefing
     !
-    subroutine getArrayCVector3D_SG( self, array )
+    function getArrayCVector3D_SG( self ) result( array )
         implicit none
         !
         class( cVector3D_SG_t ), intent( in ) :: self
-        complex( kind=prec ), allocatable, dimension(:), intent( out ) :: array
         !
-        allocate( array( self%length() ) )
-        array = (/reshape(self%x, (/self%Nxyz(1), 1/)), &
-                reshape(self%y, (/self%Nxyz(2), 1/)), &
-                reshape(self%z, (/self%Nxyz(3), 1/))/)
+        complex( kind=prec ), allocatable, dimension(:) :: array
         !
-    end subroutine getArrayCVector3D_SG
+        if( self%store_state .EQ. compound ) then
+            !
+            allocate( array( self%length() ) )
+            !
+            array = (/reshape(self%x, (/self%Nxyz(1), 1/)), &
+                      reshape(self%y, (/self%Nxyz(2), 1/)), &
+                      reshape(self%z, (/self%Nxyz(3), 1/))/)
+            !
+        else if( self%store_state .EQ. singleton ) then
+            !
+            array = self%sv
+            !
+        else
+            stop "Error: getArrayCVector3D_SG > Unknown store_state!"
+        endif
+        !
+    end function getArrayCVector3D_SG
     !
     !> No subroutine briefing
     !
@@ -1645,11 +1642,11 @@ contains
         implicit none
         !
         class( cVector3D_SG_t ), intent( inout ) :: self
-        complex( kind=prec ), allocatable, dimension(:), intent( inout ) :: array
+        complex( kind=prec ), dimension(:), intent( in ) :: array
         !
         integer :: i1, i2
         !
-        if( allocated( array ) ) then
+        if( self%store_state .EQ. compound ) then
             !
             !> Ex
             i1 = 1; i2 = self%Nxyz(1)
@@ -1664,8 +1661,12 @@ contains
             !
             self%z = reshape(array(i1:i2), self%NdZ)
             !
+        else if( self%store_state .EQ. singleton ) then
+            !
+            self%sv = array
+            !
         else
-            stop "Error: setArrayCVector3D_SG > Input array not allocated."
+            stop "Error: getArrayCVector3D_SG > Unknown store_state!"
         endif
         !
     end subroutine setArrayCVector3D_SG

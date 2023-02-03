@@ -10,7 +10,9 @@ module ModelOperator
         !
         class( MetricElements_t ), allocatable :: metric
         !
-        logical :: is_allocated
+        integer :: mKey(8)
+        !
+        logical :: eqset, is_allocated
         !
         contains 
             !
@@ -23,14 +25,11 @@ module ModelOperator
             procedure( interface_multaib_model_operator ), deferred, public :: multAib
             procedure( interface_multcurl_t_model_operator ), deferred, public :: multCurlT
             !
-            procedure( interface_divcor_setup_model_operator ), deferred, public :: divCorSetup
+            procedure( interface_divcor_setup_model_operator ), deferred, public :: divCorSetUp
             procedure( interface_divc_grad_model_operator ), deferred, public :: divCgrad
             procedure( interface_divc_model_operator ), deferred, public :: divC
             procedure( interface_grad_model_operator ), deferred, public :: grad
             procedure( interface_div_model_operator ), deferred, public :: div
-			!
-            procedure( interface_adj_bc_model_operator ), deferred, public :: AdjtBC
-            
             !
             procedure( interface_print_model_operator ), deferred, public :: print
             !
@@ -125,16 +124,6 @@ module ModelOperator
         end subroutine interface_div_model_operator
         !
         !> No interface subroutine briefing
-        subroutine interface_adj_bc_model_operator( self, eIn, BC )
-            import :: ModelOperator_t, Vector_t
-            !
-            class( ModelOperator_t ), intent( in ) :: self
-            class( Vector_t ), intent( in ) :: eIn
-            class( Vector_t ), intent( inout ) :: BC
-        end subroutine interface_adj_bc_model_operator
-        !
-        !
-        !> No interface subroutine briefing
         subroutine interface_print_model_operator( self )
             import :: ModelOperator_t
             !
@@ -150,7 +139,11 @@ contains
         !
         class( ModelOperator_t ), intent( inout ) :: self
         !
+        self%eqset = .FALSE.
+        !
         self%is_allocated = .FALSE.
+        !
+        call date_and_time( values=self%mKey )
         !
     end subroutine initializeModelOperator
     !

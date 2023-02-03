@@ -38,7 +38,7 @@ module ModelParameter1D
 contains
     !
     !> No subroutine briefing
-	!
+    !
     function ModelParameter1D_ctor( grid ) result( self )
         implicit none
         !
@@ -66,7 +66,7 @@ contains
         !
         self%is_allocated = .TRUE.
         !
-        call self%zeros()
+        call self%zeros
         !
     end function ModelParameter1D_ctor
     !

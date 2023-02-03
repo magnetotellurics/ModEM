@@ -30,6 +30,7 @@ module rScalar3D_SG
             !> Arithmetic/algebraic unary operations
             procedure, public :: zeros => zerosRScalar3D_SG
             procedure, public :: sumEdges => sumEdgesRScalar3D_SG
+            procedure, public :: avgCells => avgCellsRScalar3D_SG
             procedure, public :: conjugate => conjugateRScalar3D_SG
             !
             !> Arithmetic/algebraic binary operations
@@ -86,7 +87,7 @@ contains
         !
         !write( *, * ) "Constructor rScalar3D_SG"
         !
-        call self%init()
+        call self%init
         !
         self%grid => grid
         self%grid_type = grid_type
@@ -281,7 +282,7 @@ contains
         class( rScalar3D_SG_t ), intent( inout ) :: self
         integer, allocatable, intent( out ) :: ind_i(:), ind_b(:)
         !
-        integer :: nVec(3), nVecT, nBdry, nb, ni, i
+        integer :: nVecT, nBdry, nb, ni, i
         complex( kind=prec ), allocatable :: temp(:)
         type( rScalar3D_SG_t ) :: phi
         !
@@ -298,10 +299,8 @@ contains
         endif
         !
         select case( self%grid_type )
+            !
             case(CORNER)
-                 nVecT = size(phi%v)
-                 !
-                 allocate(temp(nVecT))
                  !
                  phi%v(1,:,:) = 1
                  phi%v(phi%nx+1,:,:) = 1
@@ -310,12 +309,14 @@ contains
                  phi%v(:,:,1) = 1
                  phi%v(:,:,phi%nz+1) = 1
                  !
-                 call phi%getArray(temp)
+                 temp = phi%getArray()
                  !
             case default
                  stop "Error: intBdryIndicesRScalar3D_SG: Unknown self%grid_type"
+                 !
         end select
         !
+        nVecT = size( phi%v )
         nBdry = 0
         do i = 1, nVecT
              nBdry = nBdry + nint( real( temp(i), kind=prec ) )
@@ -433,6 +434,19 @@ contains
         stop "Error: sumEdgesRScalar3D_SG not implemented yet"
         !
     end subroutine sumEdgesRScalar3D_SG
+    !
+    !> No subroutine briefing
+    !
+    subroutine avgCellsRScalar3D_SG( self, E_in, ptype )
+        implicit none
+        !
+        class( rScalar3D_SG_t ), intent( inout ) :: self
+        class( Field_t ), intent( in ) :: E_in
+        character(*), intent( in ), optional :: ptype
+        !
+        stop "Error: avgCellsRScalar3D_SG not implemented yet"
+        !
+    end subroutine avgCellsRScalar3D_SG
     !
     !> No subroutine briefing
     !
@@ -834,16 +848,26 @@ contains
     !
     !> No subroutine briefing
     !
-    subroutine getArrayRScalar3D_SG( self, array )
+    function getArrayRScalar3D_SG( self ) result( array )
         implicit none
         !
         class( rScalar3D_SG_t ), intent( in ) :: self
-        complex( kind=prec ), allocatable, dimension(:), intent( out ) :: array
+        complex( kind=prec ), allocatable, dimension(:) :: array
         !
-        allocate( array( self%length() ) )
-        array = (/reshape( cmplx( self%v, 0.0, kind=prec ), (/self%Nxyz, 1/))/)
+        if( self%store_state .EQ. compound ) then
+            !
+            allocate( array( self%length() ) )
+            array = (/reshape( cmplx( self%v, 0.0, kind=prec ), (/self%Nxyz, 1/))/)
+            !
+        else if( self%store_state .EQ. singleton ) then
+            !
+            array = self%sv
+            !
+        else
+            stop "Error: getArrayRScalar3D_SG > Unknown store_state!"
+        endif
         !
-    end subroutine getArrayRScalar3D_SG
+    end function getArrayRScalar3D_SG
     !
     !> No subroutine briefing
     !
@@ -851,14 +875,18 @@ contains
         implicit none
         !
         class( rScalar3D_SG_t ), intent( inout ) :: self
-        complex( kind=prec ), allocatable, dimension(:), intent( inout ) :: array
+        complex( kind=prec ), dimension(:), intent( in ) :: array
         !
-        if( allocated( array ) ) then
+        if( self%store_state .EQ. compound ) then
             !
             self%v = reshape( real( array, kind=prec ), (/self%NdV(1), self%NdV(2), self%NdV(3)/) )
             !
+        else if( self%store_state .EQ. singleton ) then
+            !
+            self%sv = array
+            !
         else
-            stop "Error: setArrayRScalar3D_SG > Input array not allocated."
+            stop "Error: setArrayRScalar3D_SG > Unknown store_state!"
         endif
         !
     end subroutine setArrayRScalar3D_SG

@@ -276,7 +276,7 @@ contains
             if( allocated( dsigma ) ) deallocate( dsigma )
             allocate( dsigma, source = sigma )
             !
-            call dsigma%zeros()
+            call dsigma%zeros
             !
         else
             stop "Error: masterJMult_T > sigma not allocated"

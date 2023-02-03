@@ -1,12 +1,12 @@
 !
 !> Abstract Base class to define a ModEM Field
+!> store_state: 1 - compound, 2 - singleton
 !
 module Field
     !
     use Constants
     use Grid
     !
-    !> STORAGE STATES: 0 - Full, 1 - Column
     type, abstract :: Field_t
         !
         class( Grid_t ), pointer :: grid
@@ -33,6 +33,7 @@ module Field
             !> Arithmetic/algebraic unary operations
             procedure( interface_zeros_field ), deferred, public :: zeros
             procedure( interface_sum_edges_field ), deferred, public :: sumEdges
+            procedure( interface_avg_cells_field ), deferred, public :: avgCells
             procedure( interface_conjugate_field ), deferred, public :: conjugate
             !
             !> Arithmetic/algebraic binary operations
@@ -140,18 +141,18 @@ module Field
             integer :: field_length
         end function interface_length_field
         !
-        !> No interface subroutine briefing
-        subroutine interface_get_array_field( self, array )
+        !> No interface function briefing
+        function interface_get_array_field( self ) result( array )
             import :: Field_t, prec
             class( Field_t ), intent( in ) :: self
-            complex( kind=prec ), allocatable, dimension(:), intent( out ) :: array
-        end subroutine interface_get_array_field
+            complex( kind=prec ), allocatable, dimension(:) :: array
+        end function interface_get_array_field
         !
         !> No interface subroutine briefing
         subroutine interface_set_array_field( self, array )
             import :: Field_t, prec
             class( Field_t ), intent( inout ) :: self
-            complex( kind=prec ), allocatable, dimension(:), intent( inout ) :: array
+            complex( kind=prec ), dimension(:), intent( in ) :: array
         end subroutine interface_set_array_field
         !
         ! Arithmetic/algebraic operations
@@ -169,6 +170,15 @@ module Field
             class( Field_t ), allocatable, intent( inout ) :: cell_obj
             logical, optional, intent( in ) :: interior_only
         end subroutine interface_sum_edges_field
+        !
+        !> No interface subroutine briefing
+        !
+        subroutine interface_avg_cells_field( self, E_in, ptype )
+            import :: Field_t
+            class( Field_t ), intent( inout ) :: self
+            class( Field_t ), intent( in ) :: E_in
+            character(*), intent( in ), optional :: ptype
+        end subroutine interface_avg_cells_field
         !
         !> No interface subroutine briefing
         subroutine interface_add_field( self, rhs )

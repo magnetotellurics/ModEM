@@ -77,7 +77,7 @@ contains
         !
         !write( *, * ) "Constructor ModelParameterCell_SG_t"
         !
-        call self%init()
+        call self%init
         !
         if( .NOT. present( param_type ) ) then
             self%param_type = LOGE
@@ -242,7 +242,7 @@ contains
         !
         class( ModelParameterCell_SG_t ), intent( inout ) :: self
         !
-        call self%cell_cond%zeros()
+        call self%cell_cond%zeros
         !
     end subroutine zerosModelParameterCell_SG
     !
@@ -398,12 +398,13 @@ contains
     end subroutine PDEmappingModelParameterCell_SG
     !
     !> Map the perturbation between two models onto a single Vector_t (eVec).
+    !
     subroutine dPDEmappingModelParameterCell_SG( self, dsigma, eVec )
         implicit none
         !
         class( ModelParameterCell_SG_t ), intent( in ) :: self
         class( ModelParameter_t ), intent( in ) :: dsigma
-        class( Vector_t ), allocatable, intent( inout ) :: eVec
+        class( Field_t ), allocatable, intent( inout ) :: eVec
         !
         type( rScalar3D_SG_t ) :: sigma_cell
         character( len=5 ), parameter :: JOB = "DERIV"
@@ -415,7 +416,7 @@ contains
             eVec = rVector3D_SG_t( self%metric%grid, EDGE )
         endif
         !
-        call eVec%zeros()
+        call eVec%zeros
         !
         sigma_cell = rScalar3D_SG_t( self%metric%grid, CELL )
         !
@@ -424,7 +425,7 @@ contains
         k2 = self%metric%grid%Nz
         !
         !> Ensure values in air are zero.
-        call sigma_cell%zeros()
+        call sigma_cell%zeros
         !
         sigma_cell%v( :, :, k1:k2 ) = self%SigMap( self%cell_cond%v, JOB )
         !
@@ -550,7 +551,7 @@ contains
         write( *, * ) "ModelParameterCell_SG_t:", self%mKey, self%air_cond, self%param_type, &
         self%zero_valued, self%is_allocated, self%param_grid%nx, self%param_grid%ny, self%param_grid%nz, self%param_grid%nzAir
         !
-        !call self%cell_cond%print()
+        !call self%cell_cond%print
         !
     end subroutine printParameterCell_SG
     !

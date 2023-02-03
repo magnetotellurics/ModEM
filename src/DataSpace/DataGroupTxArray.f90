@@ -129,7 +129,7 @@ contains
         !
         do i = 1, size( data_tx_array )
             !
-            call data_tx_array(i)%zeros()
+            call data_tx_array(i)%zeros
             !
         enddo
         !
@@ -561,7 +561,7 @@ contains
         !
         do i = 1, size( data_tx_array )
             !
-            call data_tx_array(i)%print()
+            call data_tx_array(i)%print
             !
         enddo
         !

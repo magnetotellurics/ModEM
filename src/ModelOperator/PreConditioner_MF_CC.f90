@@ -45,7 +45,7 @@ contains
         !
         self%Dilu = cVector3D_SG_t( self%model_operator%metric%grid, EDGE )
         !
-        call self%Dilu%zeros()
+        call self%Dilu%zeros
         !
     end function PreConditioner_MF_CC_ctor
     !
@@ -62,7 +62,7 @@ contains
         !> Save omega in object, to record
         self%omega = omega
         !
-        c_factor = ONE_I * omega * isign * MU_0
+        c_factor = ONE_I * omega * isign * mu_0
         !
         !> Initialize the non-interior values
         !> only the interior edge values are really used
@@ -209,7 +209,7 @@ contains
                             !> adjoint = .TRUE. -- reverse mapping in to out
                             !>     need to make sure that outE is zero on boundaries initially -- this is not
                             !>        done explicitly in ModEM stable!
-                            call outE%zeros()     !>    let"s do explicitly -- but consider if necessary
+                            call outE%zeros     !>    let"s do explicitly -- but consider if necessary
                             !
                             do ix = 1, inE%nx
                                 do iy = inE%ny, 2, -1
@@ -279,7 +279,7 @@ contains
             class is( cVector3D_SG_t )
                 !
                 !>    to be safe, zero out outR
-                call outE%zeros()
+                call outE%zeros
                 !
                 !> Instantiate the ModelOperator object
                 select type( model_operator => self%model_operator )
