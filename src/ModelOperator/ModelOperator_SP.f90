@@ -20,16 +20,11 @@ module ModelOperator_SP
         !
         real( kind=prec ), allocatable, dimension(:) :: VomegaMuSig
         !
-        type( spMatCSR_Cmplx ) :: L, U       ! upper and lower triangular
-        type( spMatCSR_Cmplx ) :: LH, UH     ! matrices for preconditioner
-        !
         type( spMatCSR_Real ) :: VDiv        ! div : edges->nodes (interior only)
         type( spMatCSR_Real ) :: VDsG        ! operator for div correction
         type( spMatCSR_Real ) :: VDs         ! divergence of current operator
-        type( spMatCSR_Real ) :: VDsG_L      ! preconditioner for div cor
-        type( spMatCSR_Real ) :: VDsG_U      ! preconditioner for div cor
         !
-        complex( kind=prec ), allocatable, dimension(:)   :: tempPhi
+        type( spMatCSR_Real ) :: VDsG_L, VDsG_U
         !
         contains
             !
@@ -145,18 +140,11 @@ contains
         call deall_spMatCSR(T)
         call deall_spMatCSR(G)
         !
-        call deall_spMatCSR( self%L )
-        call deall_spMatCSR( self%U )
-        call deall_spMatCSR( self%LH )
-        call deall_spMatCSR( self%UH )
-        !
         call deall_spMatCSR( self%VDiv )
         call deall_spMatCSR( self%VDs )
         call deall_spMatCSR( self%VDsG )
         call deall_spMatCSR( self%VDsG_L )
         call deall_spMatCSR( self%VDsG_U )
-        !
-        deallocate( self%tempPhi )
         !
         !> interior and edge indicies
         deallocate( self%EDGEi )

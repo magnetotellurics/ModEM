@@ -1,9 +1,9 @@
 !
-!> Derived class to define a PreConditioner_MF_DC
+!> Derived class to define a PreConditioner_DC_MF
 !>
 !> This is for preconditioning the divergence correction equations
 !
-module PreConditioner_MF_DC
+module PreConditioner_DC_MF
     !
     use PreConditioner
     use cScalar3D_SG
@@ -199,4 +199,4 @@ contains
         !
     end subroutine LUSolvePreConditioner_MF_DC
     !
-end module PreConditioner_MF_DC
+end module PreConditioner_DC_MF

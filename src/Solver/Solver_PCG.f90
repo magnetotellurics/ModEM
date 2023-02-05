@@ -4,7 +4,7 @@
 module Solver_PCG
     !
     use Solver
-    use PreConditioner_MF_DC
+    use PreConditioner_DC_MF
     !
     !> Solver used only for Divergence Correction
     type, extends( Solver_t ) :: Solver_PCG_t
@@ -37,7 +37,21 @@ contains
         !
         call self%init
         !
-        allocate( self%preconditioner, source = PreConditioner_MF_DC_t( model_operator ) )
+        !> Instantiate the PreConditioner object according to the ModelOperator type
+        select type( model_operator )
+            !
+            class is( ModelOperator_MF_t )
+                !
+                allocate( self%preconditioner, source = PreConditioner_DC_MF_t( model_operator ) )
+            !
+            class is( ModelOperator_SP_t )
+                !
+                allocate( self%preconditioner, source = PreConditioner_DC_SP_t( model_operator ) )
+                !
+            class default
+                stop "Solver_QMR_ctor: Unclassified ModelOperator"
+            !
+        end select
         !
         call self%setDefaults()
         !

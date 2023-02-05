@@ -1,43 +1,43 @@
 !
-!> Derived class to define a PreConditioner_MF_CC
+!> Derived class to define a PreConditioner_CC_MF
 !>
 !> This specific version will only be used with matrix-free,
 !> which is only implemented for CSG.
 !
-module PreConditioner_MF_CC
+module PreConditioner_CC_MF
     !
     use PreConditioner
     use ModelOperator_MF
     !
-    type, extends( PreConditioner_t ) :: PreConditioner_MF_CC_t
+    type, extends( PreConditioner_t ) :: PreConditioner_CC_MF_t
         !
         type( cVector3D_SG_t ) :: Dilu
         !
         contains
             !
-            procedure, public :: setPreConditioner => setPreConditioner_MF_CC !> This needs to be called by Solver    object
+            procedure, public :: setPreConditioner => setPreConditioner_CC_MF !> This needs to be called by Solver    object
             !
-            procedure, public :: LTSolve => LTSolvePreConditioner_MF_CC !> These are left (M1) and right (M2)
-            procedure, public :: UTSolve => UTSolvePreConditioner_MF_CC !> preconditioning matrices for curl-curl equation.
-            procedure, public :: LUSolve => LUSolvePreConditioner_MF_CC !> preconditoner for symmetric divCgrad operator
+            procedure, public :: LTSolve => LTSolvePreConditioner_CC_MF !> These are left (M1) and right (M2)
+            procedure, public :: UTSolve => UTSolvePreConditioner_CC_MF !> preconditioning matrices for curl-curl equation.
+            procedure, public :: LUSolve => LUSolvePreConditioner_CC_MF !> preconditoner for symmetric divCgrad operator
             !
-    end type PreConditioner_MF_CC_t
+    end type PreConditioner_CC_MF_t
     !
-    interface PreConditioner_MF_CC_t
-        module procedure PreConditioner_MF_CC_ctor
-    end interface PreConditioner_MF_CC_t
+    interface PreConditioner_CC_MF_t
+        module procedure PreConditioner_CC_MF_ctor
+    end interface PreConditioner_CC_MF_t
     !
 contains
     !
     !> No subroutine briefing
-	!
-    function PreConditioner_MF_CC_ctor( model_operator ) result( self ) 
+    !
+    function PreConditioner_CC_MF_ctor( model_operator ) result( self ) 
         implicit none
         !
         class( ModelOperator_t ), target, intent( in ) :: model_operator
-        type( PreConditioner_MF_CC_t ) :: self
+        type( PreConditioner_CC_MF_t ) :: self
         !
-        !write( *, * ) "Constructor PreConditioner_MF_CC_t"
+        !write( *, * ) "Constructor PreConditioner_CC_MF_t"
         !
         self%omega = R_ZERO
         !
@@ -47,13 +47,14 @@ contains
         !
         call self%Dilu%zeros
         !
-    end function PreConditioner_MF_CC_ctor
+    end function PreConditioner_CC_MF_ctor
     !
     !> SetPreConditioner
-    subroutine setPreConditioner_MF_CC( self, omega )
+    !
+    subroutine setPreConditioner_CC_MF( self, omega )
         implicit none
         !
-        class( PreConditioner_MF_CC_t ), intent( inout ) :: self
+        class( PreConditioner_CC_MF_t ), intent( inout ) :: self
         real( kind=prec ), intent( in ) :: omega
         !
         integer :: status, ix, iy, iz
@@ -125,21 +126,21 @@ contains
                     enddo
                 enddo
                 !
-                !
             class default
-                stop "setPreConditioner_MF_CC: Unclassified ModelOperator"
+                stop "setPreConditioner_CC_MF: Unclassified ModelOperator"
             !
         end select
         !
-    end subroutine setPreConditioner_MF_CC
+    end subroutine setPreConditioner_CC_MF
     !
-    !> Procedure LTSolvePreConditioner_MF_CC
+    !> Procedure LTSolvePreConditioner_CC_MF
     !> Purpose: to solve the lower triangular system (or it"s adjoint);
-    !> for the d-ilu pre-condtioner.
-    subroutine LTSolvePreConditioner_MF_CC( self, inE, outE, adjoint )
+    !> for the d-ilu pre-conditioner.
+    !
+    subroutine LTSolvePreConditioner_CC_MF( self, inE, outE, adjoint )
         implicit none
         !
-        class( PreConditioner_MF_CC_t ), intent( inout ) :: self
+        class( PreConditioner_CC_MF_t ), intent( inout ) :: self
         class( Vector_t ), intent( in ) :: inE
         class( Vector_t ), intent( inout ) :: outE
         logical, intent( in ) :: adjoint
@@ -250,22 +251,22 @@ contains
                             !
                         endif 
                     class default
-                         stop "LTSolvePreConditioner_MF_CC: Unclassified ModelOperator"
+                         stop "LTSolvePreConditioner_CC_MF: Unclassified ModelOperator"
                     !
                     end select
                     !
             end select
         end select
         !
-    end subroutine LTSolvePreConditioner_MF_CC
+    end subroutine LTSolvePreConditioner_CC_MF
     !
-    !> Procedure UTSolvePreConditioner_MF_CC
+    !> Procedure UTSolvePreConditioner_CC_MF
     !> Purpose: to solve the upper triangular system (or it"s adjoint);
     !> for the d-ilu pre-condtioner
-    subroutine UTSolvePreConditioner_MF_CC( self, inE, outE, adjoint )
+    subroutine UTSolvePreConditioner_CC_MF( self, inE, outE, adjoint )
         implicit none
         !
-        class( PreConditioner_MF_CC_t ), intent( inout ) :: self
+        class( PreConditioner_CC_MF_t ), intent( inout ) :: self
         class( Vector_t ), intent( in ) :: inE
         class( Vector_t ), intent( inout ) :: outE
         logical, intent( in ) :: adjoint
@@ -367,20 +368,20 @@ contains
             end select
         end select
         !
-    end subroutine UTSolvePreConditioner_MF_CC
+    end subroutine UTSolvePreConditioner_CC_MF
     !
-    !> Procedure LUSolvePreConditioner_MF_CC
+    !> Procedure LUSolvePreConditioner_CC_MF
     !> this is dummy routine required by abstract preconditioner class
-    subroutine LUSolvePreConditioner_MF_CC( self, inPhi, outPhi )
+    subroutine LUSolvePreConditioner_CC_MF( self, inPhi, outPhi )
         implicit none
         !
-        class( PreConditioner_MF_CC_t ), intent( inout ) :: self
+        class( PreConditioner_CC_MF_t ), intent( inout ) :: self
         class( Scalar_t ), intent( in ) :: inPhi
         class( Scalar_t ), intent( inout ) :: outPhi
         !
         STOP "Error: LUsolve is not coded for this pre-conditioner class"
         !
-    end subroutine LUSolvePreConditioner_MF_CC
+    end subroutine LUSolvePreConditioner_CC_MF
     !
-end module PreConditioner_MF_CC
+end module PreConditioner_CC_MF
 
