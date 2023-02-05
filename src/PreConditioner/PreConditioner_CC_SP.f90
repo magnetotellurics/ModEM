@@ -186,7 +186,7 @@ contains
                 deallocate( Lblk, Ublk )
                 !
             class default
-                stop "LTSolvePreConditioner_CC_SP: Unclassified ModelOperator"
+                stop "Error: LTSolvePreConditioner_CC_SP: Unclassified ModelOperator"
             !
         end select
         !
@@ -267,7 +267,7 @@ contains
         class( Scalar_t ), intent( in ) :: inPhi
         class( Scalar_t ), intent( inout ) :: outPhi
         !
-        STOP "Error: LUsolve is not coded for this pre-conditioner class"
+        stop "Error: LUSolvePreConditioner_CC_SP not implemented"
         !
     end subroutine LUSolvePreConditioner_CC_SP
     !

@@ -121,7 +121,7 @@ contains
         if(.NOT. self%is_allocated) then
              write(*, *) 'ERROR: ModelParameter2D (SetConductivity)'
              write(*, *) '    input object not allocated'
-             STOP
+             stop
         endif
 
         nyz = shape( CellCond )
@@ -133,7 +133,7 @@ contains
          write(*, *) 'self%ParamGrid%n', self%ParamGrid%ny, self%ParamGrid%nz
              write(*, *) 'ERROR: ModelParameter2D (SetConductivity)'
              write(*, *) '    input condutivity not consistent with grid'
-             STOP
+             stop
         endif
 
         self%cellCond = cellCond

@@ -143,7 +143,7 @@ contains
                             I_BB(1,2) = -BB(1,2) / det
                             I_BB(2,1) = -BB(2,1) / det
                         else
-                            STOP "ReceiverOffDiagonalImpedance.f90: Determinant is Zero!"
+                            stop "ReceiverOffDiagonalImpedance.f90: Determinant is Zero!"
                         endif
                         !
                         deallocate( BB )

@@ -88,7 +88,7 @@ contains
                 enddo
                 !
             class default
-                stop "setPreConditioner_DC_MF: Unclassified ModelOperator"
+                stop "Error: setPreConditioner_DC_MF > Unclassified ModelOperator"
             !
         end select
         !
@@ -103,8 +103,8 @@ contains
         class( Vector_t ), intent( in ) :: inE
         class( Vector_t ), intent( inout ) :: outE
         logical, intent( in ) :: adjoint
-        
-        stop "Error: LTsolve not coded for this pre-conditioner class"
+        !
+        stop "Error: LTSolvePreConditioner_DC_MF not implemented yet"
         !
     end subroutine LTSolvePreConditioner_DC_MF
     !
@@ -116,8 +116,8 @@ contains
         class( Vector_t ), intent( in ) :: inE
         class( Vector_t ), intent( inout ) :: outE
         logical, intent( in ) :: adjoint
-        
-        stop "Error: UTsolve not coded for this preconditioner class"
+        !
+        stop "Error: UTSolvePreConditioner_DC_MF not implemented yet"
         !
     end subroutine UTSolvePreConditioner_DC_MF
     !
@@ -143,7 +143,7 @@ contains
                     class is( cScalar3D_SG_t )
                         !
                         if( .NOT. outPhi%is_allocated ) then
-                            stop "outPhi in LUsolve not allocated yet"
+                            stop "Error: LUSolvePreConditioner_DC_MF > outPhi not allocated yet"
                         endif
                         !
                         call outPhi%zeros
@@ -184,16 +184,16 @@ contains
                                 enddo
                                 !
                             class default
-                                stop "LUSolvePreConditioner_DC_MF: Unclassified ModelOperator"
+                                stop "Error: LUSolvePreConditioner_DC_MF > Unclassified ModelOperator"
                         end select
                         !
                     class default
-                        stop "LUSolvePreConditioner_DC_MF: Unclassified outPhi"
+                        stop "Error: LUSolvePreConditioner_DC_MF > Unclassified outPhi"
                     !
                 end select
                 !
             class default
-                stop "LUSolvePreConditioner_DC_MF: Unclassified inPhi"
+                stop "Error: LUSolvePreConditioner_DC_MF > Unclassified inPhi"
                 !
         end select
         !

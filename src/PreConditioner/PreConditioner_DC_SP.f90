@@ -80,7 +80,7 @@ contains
                 write( *, * ) "model_operator%VDsG_L and model_operator%VDsG_U should be allocated before at divCorSetUpModelOperatorSP"
                 !
             class default
-                stop "setPreConditioner_DC_SP: Unclassified ModelOperator"
+                stop "Error: setPreConditioner_DC_SP > Unclassified ModelOperator"
             !
         end select
         !
@@ -96,7 +96,7 @@ contains
         class( Vector_t ), intent( inout ) :: outE
         logical, intent( in ) :: adjoint
         !
-        stop "Error: LTsolve not coded for this pre-conditioner class"
+        stop "Error: LTSolvePreConditioner_DC_SP not implemented"
         !
     end subroutine LTSolvePreConditioner_DC_SP
     !
@@ -109,7 +109,7 @@ contains
         class( Vector_t ), intent( inout ) :: outE
         logical, intent( in ) :: adjoint
         !
-        stop "Error: UTsolve not coded for this preconditioner class"
+        stop "Error: UTSolvePreConditioner_DC_SP not implemented"
         !
     end subroutine UTSolvePreConditioner_DC_SP
     !
@@ -143,7 +143,7 @@ contains
                 deallocate( temp_array_outPhi )
                 !
             class default
-                stop "LUSolvePreConditioner_DC_SP: Unclassified ModelOperator"
+                stop "Error: LUSolvePreConditioner_DC_SP > Unclassified ModelOperator"
             !
         end select
         !

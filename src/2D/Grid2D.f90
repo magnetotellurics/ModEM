@@ -276,7 +276,7 @@ contains
              write(*, *) 'ERROR:Grid2D_t:SetCellSizes:'
              write(*, *) '    Grid not allocated.'
 
-             STOP
+             stop
         endif
 
         !> Check dimensions
@@ -285,7 +285,7 @@ contains
              write(*, *) 'ERROR:Grid2D_t:SetCellSizes:'
              write(*, *) '    Incompatible sizes for cell arrays.'
 
-             STOP
+             stop
         endif
 
         self%dy = dy
@@ -303,7 +303,7 @@ contains
              write(*, *) 'ERROR:Grid2D_t:SetCellSizes:'
              write(*, *) '    Grid not allocated.'
 
-             STOP
+             stop
         endif
 
         !> Check dimensions
@@ -312,7 +312,7 @@ contains
              write(*, *) 'ERROR:Grid2D_t:SetCellSizes:'
              write(*, *) '    Incompatible sizes for cell arrays.'
              
-             STOP
+             stop
         endif
         
         dy = self%dy
@@ -369,12 +369,12 @@ contains
         
         if(nVec.NE.size(j)) then
              print *, 'Size of "ind_vec" and "j" do not agree.'
-             STOP
+             stop
         endif
         
         if(nVec.NE.size(k)) then
              print *, 'Size of "ind_vec" and "k" do not agree.'
-             STOP
+             stop
         endif
         
         rNy = float(ny)
@@ -410,12 +410,12 @@ contains
         
         if(nVec.NE.size (J)) then
              print *, 'Size of "ind_vec" and "j" do not agree.'
-             STOP
+             stop
         endif
         
         if(nVec.NE.size (K)) then
              print *, 'Size of "ind_vec" and "k" do not agree.'
-             STOP
+             stop
         endif
         
         do ii = 1, nVec
@@ -452,7 +452,7 @@ contains
              
              case DEFAULT
                     print*,'requested nodeType not defined for 2D grids'
-                    STOP
+                    stop
         end select
         
     end subroutine Limits
