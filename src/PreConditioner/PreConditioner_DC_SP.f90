@@ -72,20 +72,28 @@ contains
         !
         self%omega = omega
         !
-        write( *, * ) "DEVELPMENT HOT SPOT:"
-        write( *, * ) "self%model_operator%VDsG_L and self%model_operator%VDsG_U should be allocated before at divCorSetUpModelOperatorSP"
-        write( *, * ) allocated( self%model_operator%VDsG_L ), allocated( self%model_operator%VDsG_U )
+        select type( model_operator => self%model_operator )
+            !
+            class is( ModelOperator_SP_t )
+                !
+                write( *, * ) "DEVELPMENT HOT SPOT > setPreConditioner_DC_SP:"
+                write( *, * ) "model_operator%VDsG_L and model_operator%VDsG_U should be allocated before at divCorSetUpModelOperatorSP"
+                !
+            class default
+                stop "setPreConditioner_DC_SP: Unclassified ModelOperator"
+            !
+        end select
         !
     end subroutine setPreConditioner_DC_SP
     !
     !> LTsolve and UTsolve are in abstract class and must be definPhid -- but not used for DC which
     !>        this object will be used -- so just dummies here
-    subroutine LTSolvePreConditioner_DC_SP( self, inPhi, outPhi, adjoint )
+    subroutine LTSolvePreConditioner_DC_SP( self, inE, outE, adjoint )
         implicit none
         !
         class( PreConditioner_DC_SP_t ), intent( inout ) :: self
-        class( Vector_t ), intent( in ) :: inPhi
-        class( Vector_t ), intent( inout ) :: outPhi
+        class( Vector_t ), intent( in ) :: inE
+        class( Vector_t ), intent( inout ) :: outE
         logical, intent( in ) :: adjoint
         !
         stop "Error: LTsolve not coded for this pre-conditioner class"
@@ -93,14 +101,14 @@ contains
     end subroutine LTSolvePreConditioner_DC_SP
     !
     !> No subroutine briefing
-    subroutine UTSolvePreConditioner_DC_SP( self, inPhi, outPhi, adjoint )
+    subroutine UTSolvePreConditioner_DC_SP( self, inE, outE, adjoint )
         implicit none
         !
         class( PreConditioner_DC_SP_t ), intent( inout ) :: self
-        class( Vector_t ), intent( in ) :: inPhi
-        class( Vector_t ), intent( inout ) :: outPhi
+        class( Vector_t ), intent( in ) :: inE
+        class( Vector_t ), intent( inout ) :: outE
         logical, intent( in ) :: adjoint
-        
+        !
         stop "Error: UTsolve not coded for this preconditioner class"
         !
     end subroutine UTSolvePreConditioner_DC_SP
@@ -120,15 +128,24 @@ contains
         !
         temp_array_inPhi = inPhi%getArray()
         !
-        call LTsolve_Real( self%model_operator%VDsG_L, temp_array_inPhi, self%phi )
-        !
-        call UTsolve_Real( self%model_operator%VDsG_U, self%phi, temp_array_outPhi )
-        !
-        deallocate( temp_array_inPhi )
-        !
-        call outPhi%setArray( temp_array_outPhi )
-        !
-        deallocate( temp_array_outPhi )
+        select type( model_operator => self%model_operator )
+            !
+            class is( ModelOperator_SP_t )
+                !
+                call LTsolve_Real( model_operator%VDsG_L, temp_array_inPhi, self%phi )
+                !
+                call UTsolve_Real( model_operator%VDsG_U, self%phi, temp_array_outPhi )
+                !
+                deallocate( temp_array_inPhi )
+                !
+                call outPhi%setArray( temp_array_outPhi )
+                !
+                deallocate( temp_array_outPhi )
+                !
+            class default
+                stop "LUSolvePreConditioner_DC_SP: Unclassified ModelOperator"
+            !
+        end select
         !
     end subroutine LUSolvePreConditioner_DC_SP
     !

@@ -5,6 +5,7 @@ module Solver_PCG
     !
     use Solver
     use PreConditioner_DC_MF
+    use PreConditioner_DC_SP
     !
     !> Solver used only for Divergence Correction
     type, extends( Solver_t ) :: Solver_PCG_t
