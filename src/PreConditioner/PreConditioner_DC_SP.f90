@@ -73,9 +73,9 @@ contains
         self%omega = omega
         !
         write( *, * ) "DEVELPMENT HOT SPOT:"
-		write( *, * ) "self%model_operator%VDsG_L and self%model_operator%VDsG_U should be allocated before at divCorSetUpModelOperatorSP"
-		write( *, * ) allocated( self%model_operator%VDsG_L ), allocated( self%model_operator%VDsG_U )
-		!
+        write( *, * ) "self%model_operator%VDsG_L and self%model_operator%VDsG_U should be allocated before at divCorSetUpModelOperatorSP"
+        write( *, * ) allocated( self%model_operator%VDsG_L ), allocated( self%model_operator%VDsG_U )
+        !
     end subroutine setPreConditioner_DC_SP
     !
     !> LTsolve and UTsolve are in abstract class and must be definPhid -- but not used for DC which
