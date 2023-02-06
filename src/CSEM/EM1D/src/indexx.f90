@@ -46,7 +46,7 @@ ir = n
     i=0
     2         indx(i+1) = indxt
   enddo
-  IF (jstack == 0) RETURN
+  if(jstack == 0) RETURN
   ir = istack(jstack)
   l = istack(jstack-1)
   jstack = jstack - 2
@@ -55,17 +55,17 @@ ELSE
   itemp = indx(k)
   indx(k) = indx(l+1)
   indx(l+1) = itemp
-  IF (arr(indx(l+1)) > arr(indx(ir))) THEN
+  if(arr(indx(l+1)) > arr(indx(ir))) THEN
     itemp = indx(l+1)
     indx(l+1) = indx(ir)
     indx(ir) = itemp
   END IF
-  IF (arr(indx(l)) > arr(indx(ir))) THEN
+  if(arr(indx(l)) > arr(indx(ir))) THEN
     itemp = indx(l)
     indx(l) = indx(ir)
     indx(ir) = itemp
   END IF
-  IF (arr(indx(l+1)) > arr(indx(l))) THEN
+  if(arr(indx(l+1)) > arr(indx(l))) THEN
     itemp = indx(l+1)
     indx(l+1) = indx(l)
     indx(l) = itemp
@@ -76,11 +76,11 @@ ELSE
   a = arr(indxt)
   3       CONTINUE
   i = i + 1
-  IF (arr(indx(i)) < a) GO TO 3
+  if(arr(indx(i)) < a) GO TO 3
   4       CONTINUE
   j = j - 1
-  IF (arr(indx(j)) > a) GO TO 4
-  IF (j < i) GO TO 5
+  if(arr(indx(j)) > a) GO TO 4
+  if(j < i) GO TO 5
   itemp = indx(i)
   indx(i) = indx(j)
   indx(j) = itemp
@@ -88,11 +88,11 @@ ELSE
   5       indx(l) = indx(j)
   indx(j) = indxt
   jstack = jstack + 2
-  IF (jstack > nstack) then
+  if(jstack > nstack) then
     write( *, * ) 'Error in indexx: nstack too small'
     stop
   endif
-  IF (ir-i+1 >= j-l) THEN
+  if(ir-i+1 >= j-l) THEN
     istack(jstack) = ir
     istack(jstack-1) = i
     ir = j-1

@@ -5,7 +5,8 @@ module GlobalVariables
     !
     use Constants
     !
-    use ModEMControlFile
+    use ForwardControlFile
+    use InversionControlFile
     !
     use Grid3D_SG
     !
@@ -35,7 +36,8 @@ module GlobalVariables
     use DataFileStandard
     !
     !> Global Variables
-    type( ModEMControlFile_t ), allocatable :: control_file
+    type( ForwardControlFile_t ), allocatable :: fwd_control_file
+    type( InversionControlFile_t ), allocatable :: inv_control_file
     !
     class( Grid_t ), allocatable, target :: main_grid
     !
@@ -48,7 +50,8 @@ module GlobalVariables
     !> Program control variables
     character(50) :: outdir_name
     !
-    character(:), allocatable :: control_file_name
+    character(:), allocatable :: fwd_control_file_name
+    character(:), allocatable :: inv_control_file_name
     character(:), allocatable :: model_file_name
     character(:), allocatable :: pmodel_file_name
     character(:), allocatable :: data_file_name
@@ -59,7 +62,8 @@ module GlobalVariables
     !> Program control flags
     logical :: has_outdir_name
     !
-    logical :: has_control_file
+    logical :: has_fwd_control_file
+    logical :: has_inv_control_file
     logical :: has_model_file
     logical :: has_pmodel_file
     logical :: has_data_file
@@ -277,7 +281,8 @@ contains
         if( allocated( jmhat_data_file_name ) ) deallocate( jmhat_data_file_name )
         if( allocated( e_solution_file_name ) ) deallocate( e_solution_file_name )
         !
-        if( allocated( control_file_name ) ) deallocate( control_file_name )
+        if( allocated( fwd_control_file ) ) deallocate( fwd_control_file )
+        if( allocated( inv_control_file ) ) deallocate( inv_control_file )
         if( allocated( model_file_name ) ) deallocate( model_file_name )
         if( allocated( pmodel_file_name ) ) deallocate( pmodel_file_name )
         if( allocated( data_file_name ) ) deallocate( data_file_name )

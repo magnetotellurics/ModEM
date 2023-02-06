@@ -1,10 +1,11 @@
 !>*************
 !>
-!> Class to read a data file and create an array with all data entries(lines)
+!> Class to read a control file
+!> And set Forward Modeling parameters
 !>
 !>*************
 !>
-module ModEMControlFile
+module ForwardControlFile
     !
     use Constants
     use String
@@ -13,9 +14,7 @@ module ModEMControlFile
     use Solver
     use Source
     !
-    character(:), allocatable :: inversion_type
-    !
-    type :: ModEMControlFile_t
+    type :: ForwardControlFile_t
         !
         !> FWD Components parameters
         character(:), allocatable :: grid_reader_type, grid_type, forward_solver_type, source_type
@@ -25,40 +24,34 @@ module ModEMControlFile
         character(:), allocatable :: QMR_iters, BCG_iters, max_divcor_calls, max_divcor_iters
         character(:), allocatable :: tolerance_divcor, tolerance_qmr
         !
-        !> Inversion parameters
-        character(:), allocatable :: inversion_type
-        character(:), allocatable :: max_inv_iters, max_grad_iters
-        character(:), allocatable :: tolerance_error, tolerance_rms
-        character(:), allocatable :: lambda
-        !
         contains
             !
-            final :: ModEMControlFile_dtor
+            final :: ForwardControlFile_dtor
             !
-    end type ModEMControlFile_t
+    end type ForwardControlFile_t
     !
-    interface ModEMControlFile_t
-        module procedure ModEMControlFile_ctor
-    end interface ModEMControlFile_t
+    interface ForwardControlFile_t
+        module procedure ForwardControlFile_ctor
+    end interface ForwardControlFile_t
 !
 contains
     !
-    !> Procedure ModEMControlFile_ctor
+    !> Procedure ForwardControlFile_ctor
     !> Read line by line of the data file, create Data Entry objects(MT, MT_REF or CSEM)
-    function ModEMControlFile_ctor( funit, fname ) result( self )
+    function ForwardControlFile_ctor( funit, fname ) result( self )
         implicit none
         !
         integer, intent( in ) :: funit
         character(:), allocatable, intent( in ) :: fname
         !
-        type( ModEMControlFile_t ) :: self
+        type( ForwardControlFile_t ) :: self
         !
         character(1000) :: full_line_text
         character(len=200), dimension(20) :: args
         character(:), allocatable :: line_text
         integer :: line_counter, io_stat, p_nargs
         !
-        !write( *,* ) "Constructor ModEMControlFile_t"
+        !write( *,* ) "Constructor ForwardControlFile_t"
         !
         call Compact( fname )
         !
@@ -77,78 +70,33 @@ contains
                     !
                     if( index( line_text, "grid_reader" ) > 0 ) then
                         self%grid_reader_type = trim( args(2) )
-                    endif
-                    !
-                    if( index( line_text, "grid" ) > 0 ) then
+                    else if( index( line_text, "grid_type" ) > 0 ) then
                         self%grid_type = trim( args(2) )
-                    endif
-                    !
-                    if( index( line_text, "forward_solver" ) > 0 ) then
+                    else if( index( line_text, "forward_solver" ) > 0 ) then
                         self%forward_solver_type = trim( args(2) )
-                    endif
-                    !
-                    if( index( line_text, "source" ) > 0 ) then
+                    else if( index( line_text, "source" ) > 0 ) then
                         self%source_type = trim( args(2) )
-                    endif
-                    !
-                    if( index( line_text, "model_method" ) > 0 ) then
+                    else if( index( line_text, "model_method" ) > 0 ) then
                         self%model_method = trim( args(2) )
-                    endif
-                    !
-                    if( index( line_text, "model_n_air_layer" ) > 0 ) then
+                    else if( index( line_text, "model_n_air_layer" ) > 0 ) then
                         self%model_n_air_layer = trim( args(2) )
-                    endif
-                    !
-                    if( index( line_text, "model_max_height" ) > 0 ) then
+                    else if( index( line_text, "model_max_height" ) > 0 ) then
                         self%model_max_height = trim( args(2) )
-                    endif
-                    !
-                    if( index( line_text, "QMR_iters" ) > 0 ) then
+                    else if( index( line_text, "QMR_iters" ) > 0 ) then
                         self%QMR_iters = trim( args(2) )
-                    endif
-                    !
-                    if( index( line_text, "BCG_iters" ) > 0 ) then
+                    else if( index( line_text, "BCG_iters" ) > 0 ) then
                         self%BCG_iters = trim( args(2) )
-                    endif
-                    !
-                    if( index( line_text, "max_divcor_calls" ) > 0 ) then
+                    else if( index( line_text, "max_divcor_calls" ) > 0 ) then
                         self%max_divcor_calls = trim( args(2) )
-                    endif
-                    !
-                    if( index( line_text, "max_divcor_iters" ) > 0 ) then
+                    else if( index( line_text, "max_divcor_iters" ) > 0 ) then
                         self%max_divcor_iters = trim( args(2) )
-                    endif
-                    !
-                    if( index( line_text, "tolerance_divcor" ) > 0 ) then
+                    else if( index( line_text, "tolerance_divcor" ) > 0 ) then
                         self%tolerance_divcor = trim( args(2) )
-                    endif
-                    !
-                    if( index( line_text, "tolerance_qmr" ) > 0 ) then
+                    else if( index( line_text, "tolerance_qmr" ) > 0 ) then
                         self%tolerance_qmr = trim( args(2) )
-                    endif
-                    !
-                    if( index( line_text, "inversion_type" ) > 0 ) then
-                        self%inversion_type = trim( args(2) )
-                    endif
-                    !
-                    if( index( line_text, "max_inv_iters" ) > 0 ) then
-                        self%max_inv_iters = trim( args(2) )
-                    endif
-                    !
-                    if( index( line_text, "max_grad_iters" ) > 0 ) then
-                        self%max_grad_iters = trim( args(2) )
-                    endif
-                    !
-                    if( index( line_text, "tolerance_error" ) > 0 ) then
-                        self%tolerance_error = trim( args(2) )
-                    endif
-                    !
-                    if( index( line_text, "tolerance_rms" ) > 0 ) then
-                        self%tolerance_rms = trim( args(2) )
-                    endif
-                    !
-                    if( index( line_text, "lambda" ) > 0 ) then
-                        self%lambda = trim( args(2) )
+                    else
+                        write( *, * ) "Error: Unsupported Forward Modeling parameter: ["//trim(line_text)//"]"
+                        stop 
                     endif
                     !
                 endif
@@ -160,8 +108,6 @@ contains
             ! Grid type
             if( allocated( self%grid_type ) ) then
                 !
-                write( *, * ) "          grid = ", self%grid_type
-                !
                 select case( self%grid_type )
                     case( "SG" )
                         grid_type = GRID_SG
@@ -172,7 +118,7 @@ contains
                         stop "Error: Wrong grid_type control, use [SG|MR]"
                 end select
                 !
-                write( *, "( A30, A20)" ) "          grid = ", grid_type
+                write( *, "( A30, A20)" ) "          grid_type = ", grid_type
                 !
             endif
             !
@@ -314,38 +260,21 @@ contains
                 !
             endif
             !
-            ! Inversion type
-            if( allocated( self%inversion_type ) ) then
-                !
-                select case( self%inversion_type )
-                    !
-                    case( "DCG" )
-                        inversion_type = DCG
-                    case( "NLCG" )
-                        inversion_type = NLCG
-                    case default
-                        inversion_type = ""
-                    stop "Error: Wrong inversion_type control, use [DCG|NLCG]"
-                    !
-                end select
-                !
-            endif
-            !
         else
-            write( *, * ) "Error opening [", fname, "] in ModEMControlFile_ctor"
+            write( *, * ) "Error opening [", fname, "] in ForwardControlFile_ctor"
             stop
         endif
         !
-    end function ModEMControlFile_ctor
+    end function ForwardControlFile_ctor
     !
     !> Deconstructor routine:
     !>     Deallocates inherent properties of this class.
-    subroutine ModEMControlFile_dtor( self )
+    subroutine ForwardControlFile_dtor( self )
         implicit none
         !
-        type( ModEMControlFile_t ), intent( inout ) :: self
+        type( ForwardControlFile_t ), intent( inout ) :: self
         !
-        !write( *,* ) "Destructor ModEMControlFile_t"
+        !write( *,* ) "Destructor ForwardControlFile_t"
         !
         if( allocated( self%grid_reader_type ) ) deallocate( self%grid_reader_type )
         if( allocated( self%grid_type ) ) deallocate( self%grid_type )
@@ -362,13 +291,6 @@ contains
         if( allocated( self%tolerance_divcor ) ) deallocate( self%tolerance_divcor )
         if( allocated( self%tolerance_qmr ) ) deallocate( self%tolerance_qmr )
         !
-        if( allocated( self%inversion_type ) ) deallocate( self%inversion_type )
-        if( allocated( self%max_inv_iters ) ) deallocate( self%max_inv_iters )
-        if( allocated( self%max_grad_iters ) ) deallocate( self%max_grad_iters )
-        if( allocated( self%tolerance_error ) ) deallocate( self%tolerance_error )
-        if( allocated( self%tolerance_rms ) ) deallocate( self%tolerance_rms )
-        if( allocated( self%lambda ) ) deallocate( self%lambda )
-        !
-    end subroutine ModEMControlFile_dtor
+    end subroutine ForwardControlFile_dtor
     !
-end module ModEMControlFile
+end module ForwardControlFile

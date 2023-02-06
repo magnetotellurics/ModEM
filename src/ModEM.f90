@@ -47,15 +47,18 @@ contains
         !
         call setupDefaultParameters()
         !
-        !> Validate arguments, set model_file_name, data_file_name, control_file_name, etc...
+        !> Validate arguments, set model_file_name, data_file_name, control_files, etc...
         call handleArguments()
         !
         write( *, * )
         write( *, * ) "Start ModEM-OO."
         write( *, * )
         !
-        !> Check parameters at the control file
-        if( has_control_file ) call handleControlFile()
+        !> Check parameters at the forward control file
+        if( has_fwd_control_file ) call handleForwardControlFile()
+        !
+        !> Check parameters at the inversion control file
+        if( has_inv_control_file ) call handleInversionControlFile()
         !
         !> Execute the job specified in the arguments
         call handleJob()
@@ -140,6 +143,10 @@ contains
         !
 #endif
         !
+        if( .NOT. has_inv_control_file ) then
+            inversion_type = DCG
+        endif
+        !
         !> Instantiate the ForwardSolver - Specific type can be chosen via control file
         select case( inversion_type )
             !
@@ -176,8 +183,8 @@ contains
         !
         !> Free the memory used by the global control file, which is no longer useful
         !> Except for the case of Inversion
-        if( index( modem_job, "Inversion" ) .LE. 0 .AND. allocated( control_file ) ) then
-            deallocate( control_file )
+        if( index( modem_job, "Inversion" ) .LE. 0 .AND. allocated( inv_control_file ) ) then
+            deallocate( inv_control_file )
         endif
         !
         select case( modem_job )
@@ -209,16 +216,26 @@ contains
     end subroutine handleJob
     !
     !> No subroutine briefing
-    subroutine handleControlFile()
+    !
+    subroutine handleForwardControlFile()
         implicit none
         !
-        write( *, * ) "     < Control File: [", control_file_name, "]"
+        write( *, * ) "     < FWD control File: [", fwd_control_file_name, "]"
         !
-        !> Instantiate the ControlFile object
-        !> Read control file and sets the options in the Constants module
-        allocate( control_file, source = ModEMControlFile_t( ioStartup, control_file_name ) )
+        allocate( fwd_control_file, source = ForwardControlFile_t( ioStartup, fwd_control_file_name ) )
         !
-    end subroutine handleControlFile
+    end subroutine handleForwardControlFile
+    !
+    !> No subroutine briefing
+    !
+    subroutine handleInversionControlFile()
+        implicit none
+        !
+        write( *, * ) "     < INV control File: [", inv_control_file_name, "]"
+        !
+        allocate( inv_control_file, source = InversionControlFile_t( ioStartup, inv_control_file_name ) )
+        !
+    end subroutine handleInversionControlFile
     !
     !> No subroutine briefing
     subroutine handleArguments()
@@ -243,12 +260,21 @@ contains
                  !
                  select case( argument )
                       !
-                      case( "-c", "--control" )
+                      case( "-cf", "--ctrl_fwd" )
                          !
                          call get_command_argument( argument_index + 1, argument )
-                         control_file_name = trim( argument )
+                         fwd_control_file_name = trim( argument )
                          !
-                         if( len( control_file_name ) > 0 ) has_control_file = .TRUE.
+                         if( len( fwd_control_file_name ) > 0 ) has_fwd_control_file = .TRUE.
+                         !
+                         argument_index = argument_index + 2
+                         !
+                      case( "-ci", "--ctrl_inv" )
+                         !
+                         call get_command_argument( argument_index + 1, argument )
+                         inv_control_file_name = trim( argument )
+                         !
+                         if( len( inv_control_file_name ) > 0 ) has_inv_control_file = .TRUE.
                          !
                          argument_index = argument_index + 2
                          !
@@ -345,12 +371,18 @@ contains
                       case( "-v", "--version" )
                          !
                          write( *, * ) "    + ModEM-OO version 1.0.0"
-                         stop
+                        stop
                          !
                       case( "-h", "--help" )
                          !
                          call printHelp()
                          call printUsage()
+                         stop
+                         !
+                      case( "-tmp", "--template" )
+                         !
+                         call printForwardControlFileTemplate
+                         call printInversionControlFileTemplate
                          stop
                          !
                       case( "-vb", "--verbose" )
@@ -383,12 +415,11 @@ contains
         e_solution_file_name = "esolution.bin"
         dsigma_file_name = "dsigma.rho"
         !
-        inversion_type = "DCG"
-        !
         ! Control flags
         has_outdir_name = .FALSE.
         !
-        has_control_file = .FALSE.
+        has_fwd_control_file = .FALSE.
+        has_inv_control_file = .FALSE.
         has_model_file = .FALSE.
         has_pmodel_file = .FALSE.
         has_data_file = .FALSE.
@@ -425,22 +456,22 @@ contains
         write( *, * ) "    Forward Modeling:"
         write( *, * ) "        <ModEM> -f -m <rFile_Model> -d <rFile_Data>"
         write( *, * ) "        Output:"
-        write( *, * ) "        - all_predicted_data.dat or the path specified by         [-pd]"
+        write( *, * ) "        - 'all_predicted_data.dat' or the path specified by      [-pd]"
         write( *, * ) ""
-        write( *, * ) "    serialJMult:"
+        write( *, * ) "    JMult:"
         write( *, * ) "        <ModEM> -j -m <rFile_Model> -pm <rFile_pModel> -d <rFile_Data>"
         write( *, * ) "        Output:"
-        write( *, * ) "        - jmhat.dat or the path specified by                  [-jm]"
+        write( *, * ) "        - 'jmhat.dat' or the path specified by                   [-jm]"
         write( *, * ) ""
-        write( *, * ) "    serialJMult_T:"
+        write( *, * ) "    JMult_T:"
         write( *, * ) "        <ModEM> -jt -m <rFile_Model> -d <rFile_Data>"
         write( *, * ) "        Output:"
-        write( *, * ) "        - dsigma.rho or the path specified by                 [-dm]"
+        write( *, * ) "        - 'dsigma.rho' or the path specified by                  [-dm]"
         write( *, * ) ""
         write( *, * ) "    Inversion:"
         write( *, * ) "        <ModEM> -i -m <rFile_Model> -d <rFile_Data>"
         write( *, * ) "        Output:"
-        write( *, * ) "        - directory named Output_<date>_<time> or specified by [-o]"
+        write( *, * ) "        - directory named 'Output_<date>_<time>' or specified by [-o]"
         !
     end subroutine printUsage
     !
@@ -460,20 +491,109 @@ contains
         write( *, * ) "        [-d],  [--data]      :  Flag to precede data file path."
         write( *, * ) "        [-m],  [--model]     :  Flag to precede model file path."
         write( *, * ) "        [-pm], [--pmodel]    :  Flag to precede perturbation model file path."
-        write( *, * ) "        [-c],  [--control]   :  Flag to precede user control file path."
+        write( *, * ) "        [-cf], [--ctrl_fwd]  :  Flag to precede forward control file path."
+        write( *, * ) "        [-ci], [--ctrl_inv]  :  Flag to precede inversion control file path."
         write( *, * ) "        [-o],  [--outdir]    :  Flag to precede output directory path."
         write( *, * ) "        [-dm], [--dmodel]    :  Flag to precede output dsigma model file path."
         write( *, * ) "        [-pd], [--predicted] :  Flag to precede output predicted data file path."
         write( *, * ) "        [-jm], [--jmhat]     :  Flag to precede output JmHat data file path."
         write( *, * ) "        [-es], [--esolution] :  Flag to precede binary output e-solution file path."
         write( *, * ) "        [-v],  [--version]   :  Print version."
-        write( *, * ) "        [-vb], [--verbose]   :  Print runtime information."
         write( *, * ) "        [-h],  [--help]      :  Print usage information."
+        write( *, * ) "        [-tmp],[--template]  :  Create control file templates."
         !
         write( *, * ) ""
         write( *, * ) "Version 1.0.0"
         !
     end subroutine printHelp
+    !
+    !> No subroutine briefing
+    !
+    subroutine printForwardControlFileTemplate()
+        implicit none
+        !
+        integer :: ios
+        !
+        open( unit = ioFwdTmp, file = "fwd_control_file_template.txt", status="unknown", iostat=ios )
+        !
+        if( ios == 0 ) then
+            !
+            write( ioFwdTmp, "(A46)" ) "##############################################"
+            write( ioFwdTmp, "(A46)" ) "# ModEM Forward Modeling Control File Template"
+            write( ioFwdTmp, "(A46)" ) "#     Here are all supported parameters       "
+            write( ioFwdTmp, "(A46)" ) "#     Comment or remove to use default        "
+            write( ioFwdTmp, "(A46)" ) "##############################################"
+            write( ioFwdTmp, "(A1)" )  "#"
+            write( ioFwdTmp, "(A18)" ) "# Grid parameters:"
+            write( ioFwdTmp, "(A1)" )  "#"
+            write( ioFwdTmp, "(A42)" ) "#grid_header [ModEM|HDF5]          : ModEM"
+            write( ioFwdTmp, "(A39)" ) "#grid_type [SG|MR]                 : SG"
+            write( ioFwdTmp, "(A1)" )  "#"
+            write( ioFwdTmp, "(A19)" ) "# Model parameters:"
+            write( ioFwdTmp, "(A1)" )  "#"
+            write( ioFwdTmp, "(A49)" ) "model_method [mirror|fixed height] : fixed height"
+            write( ioFwdTmp, "(A39)" ) "model_n_air_layer [10]             : 10"
+            write( ioFwdTmp, "(A42)" ) "model_max_height [200.0]           : 200.0"
+            write( ioFwdTmp, "(A1)" )  "#"
+            write( ioFwdTmp, "(A20)" ) "# Source parameters:"
+            write( ioFwdTmp, "(A1)" )  "#"
+            write( ioFwdTmp, "(A39)" ) "source [1D|2D]                     : 1D"
+            write( ioFwdTmp, "(A1)" )  "#"
+            write( ioFwdTmp, "(A20)" ) "# Solver parameters:"
+            write( ioFwdTmp, "(A1)" )  "#"
+            write( ioFwdTmp, "(A39)" ) "QMR_iters [40]                     : 40"
+            write( ioFwdTmp, "(A39)" ) "BCG_iters [80]                     : 80"
+            write( ioFwdTmp, "(A39)" ) "max_divcor_calls [20]              : 20"
+            write( ioFwdTmp, "(A40)" ) "max_divcor_iters [100]             : 100"
+            write( ioFwdTmp, "(A41)" ) "tolerance_qmr [1E-7]               : 1E-7"
+            write( ioFwdTmp, "(A41)" ) "tolerance_divcor [1E-5]            : 1E-5"
+            write( ioFwdTmp, "(A42)" ) "forward_solver [IT|IT_DC]          : IT_DC"
+            write( ioFwdTmp, "(A1)" )  "#"
+            !
+            close( ioFwdTmp )
+            !
+        else
+            !
+            stop "Error: printInversionControlFileTemplate > opening [inv_control_file_template.txt]"
+            !
+        endif
+        !
+    end subroutine printForwardControlFileTemplate
+    !
+    !> No subroutine briefing
+    !
+    subroutine printInversionControlFileTemplate()
+        implicit none
+        !
+        integer :: ios
+        !
+        open( unit = ioInvTmp, file = "inv_control_file_template.txt", status="unknown", iostat=ios )
+        !
+        if( ios == 0 ) then
+            !
+            write( ioInvTmp, "(A39)" ) "#######################################"
+            write( ioInvTmp, "(A39)" ) "# ModEM Inversion Control File Template"
+            write( ioInvTmp, "(A39)" ) "#     Here are all supported parameters"
+            write( ioInvTmp, "(A39)" ) "#     Comment or remove to use default "
+            write( ioInvTmp, "(A39)" ) "#######################################"
+            write( ioInvTmp, "(A1)" )  "#"
+            write( ioInvTmp, "(A31)" ) "inversion_type [DCG|NLCG] : DCG"
+            write( ioInvTmp, "(A29)" ) "max_inv_iters [5]         : 5"
+            write( ioInvTmp, "(A30)" ) "max_grad_iters [20]       : 20"
+            write( ioInvTmp, "(A32)" ) "tolerance_error [1E-3]    : 1E-3"
+            write( ioInvTmp, "(A32)" ) "tolerance_rms [1.05]      : 1.05"
+            write( ioInvTmp, "(A31)" ) "lambda [10.]              : 10."
+            write( ioInvTmp, "(A1)" )  "#"
+            !
+            close( ioInvTmp )
+            !
+        else
+            !
+            stop "Error: printInversionControlFileTemplate > opening [inv_control_file_template.txt]"
+            !
+        endif
+        !
+    end subroutine printInversionControlFileTemplate
     !
 end program ModEM
 !

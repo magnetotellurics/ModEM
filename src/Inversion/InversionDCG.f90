@@ -38,32 +38,31 @@ contains
         !
         call self%init
         !
-        if ( allocated( control_file%max_inv_iters ) ) then
-            read( control_file%max_inv_iters, * ) self%max_inv_iters
-        else
-            self%max_inv_iters = 5
+        self%max_inv_iters = 5
+        self%tolerance_rms = 1.05
+        self%lambda = 10.
+        !
+        if( has_inv_control_file ) then
+            !
+            if( allocated( inv_control_file%max_inv_iters ) ) &
+                read( inv_control_file%max_inv_iters, * ) self%max_inv_iters
+            !
+            if( allocated( inv_control_file%tolerance_rms ) ) &
+                read( inv_control_file%tolerance_rms, * ) self%tolerance_rms
+            !
+            if( allocated( inv_control_file%lambda ) ) &
+                read( inv_control_file%lambda, * ) self%lambda
+            !
         endif
         !
         write( *, "( A45, I20 )" ) "max_inv_iters = ", self%max_inv_iters
         !
-        if ( allocated( control_file%tolerance_rms ) ) then
-            read( control_file%tolerance_rms, * ) self%tolerance_rms
-        else
-            self%tolerance_rms = 1.05
-        endif
-        !
         write( *, "( A45, es20.2 )" ) "tolerance_rms = ", self%tolerance_rms
-        !
-        if ( allocated( control_file%lambda ) ) then
-            read( control_file%lambda, * ) self%lambda
-        else
-            self%lambda = 10.
-        endif
         !
         write( *, "( A45, es20.2 )" ) "lambda = ", self%lambda
         !
         !> Free the memory used by the global control file, which is no longer useful
-        if ( allocated( control_file ) )deallocate( control_file )
+        if( allocated( inv_control_file ) ) deallocate( inv_control_file )
         !
         allocate( self%r_err( self%max_grad_iters ) )
         !
@@ -183,6 +182,8 @@ contains
                 DCG_iter = DCG_iter + 1
                 !
             end do dcg_loop
+            !
+            close( ioInvLog )
             !
             !call deallocateDataGroupTxArray( JmHat )
             !call deallocateDataGroupTxArray( b )

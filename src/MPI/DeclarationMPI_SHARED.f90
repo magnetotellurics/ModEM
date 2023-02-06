@@ -5,7 +5,7 @@ module DeclarationMPI
     !
     use, intrinsic :: iso_c_binding, only: c_ptr, c_sizeof, c_f_pointer
     !
-    use ModEMControlFile
+    use ForwardControlFile
     !
     use ModelReader_Weerachai
     !

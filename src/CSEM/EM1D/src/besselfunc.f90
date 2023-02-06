@@ -59,17 +59,17 @@ real(kind=real64) function bessj0(x) result (bj0)
 
 
   x2 = x * x
-  IF (x == R_ZERO_real64) THEN
+  if(x == R_ZERO_real64) THEN
     bj0 = 1.0_real64
     RETURN
   END IF
-  IF (x <= 10.0_real64) THEN
+  if(x <= 10.0_real64) THEN
     bj0 = 1.0_real64
     r = 1.0_real64
     DO  k = 1, 35
       r = -0.25_real64 * r * x2 / (k*k)
       bj0 = bj0 + r
-      IF (ABS(r) < ABS(bj0)*relerrbes) EXIT
+      if(ABS(r) < ABS(bj0)*relerrbes) EXIT
     enddo
   ELSE
 
@@ -143,17 +143,17 @@ real(kind=real64) function bessj1(x) result(bj1)
 
 
   x2 = x * x
-  IF (x == R_ZERO_real64) THEN
+  if(x == R_ZERO_real64) THEN
     bj1 = R_ZERO_real64
     RETURN
   END IF
-  IF (x <= 9.0_real64) THEN
+  if(x <= 9.0_real64) THEN
     bj1 = 1.0_real64
     r = 1.0_real64
     DO  k = 1, 35
       r = -0.25_real64 * r * x2 / (k*(k+1))
       bj1 = bj1 + r
-      IF (ABS(r) < ABS(bj1)*relerrbes) EXIT
+      if(ABS(r) < ABS(bj1)*relerrbes) EXIT
     enddo
     bj1 = 0.5_real64 * x * bj1
   ELSE
@@ -198,10 +198,10 @@ real(kind=real64) FUNCTION ZEROJ(NZERO,ORDER)
                        OT4=-1951209.D0/220200960.D0
   real(kind=real64) :: BETA
 
-     IF (ORDER.EQ.0.0) THEN
+     if(ORDER.EQ.0.0) THEN
        BETA=(real(NZERO,kind=real64)-.25_real64) * dpi
        ZEROJ=BETA-ZT1/BETA-ZT2/BETA**3-ZT3/BETA**5-ZT4/BETA**7
-     ELSEIF (ORDER.EQ.1.0) THEN
+     ELSEif(ORDER.EQ.1.0) THEN
        BETA=(real(NZERO,kind=real64)+.25_real64) * dpi
        ZEROJ=BETA-OT1/BETA-OT2/BETA**3-OT3/BETA**5-OT4/BETA**7
      ENDIF
@@ -224,9 +224,9 @@ real(kind=real64) FUNCTION JBESS(X,ORDER)
 
   !internal variables
 
-     IF (ORDER.EQ.0.0) THEN
+     if(ORDER.EQ.0.0) THEN
        JBESS=bessj0(X)
-     ELSEIF (ORDER.EQ.1.0) THEN
+     ELSEif(ORDER.EQ.1.0) THEN
        JBESS=bessj1(X)
      ENDIF
      RETURN
