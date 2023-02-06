@@ -61,7 +61,7 @@ contains
         !
         write( *, * ) "Constructor InversionNLCG_t"
         !
-        call self%init()
+        call self%init
         !
         ! maximum number of iterations in one call to iterative solver
         self%max_inv_iters = 600
@@ -101,7 +101,7 @@ contains
         !
         write( *, * ) "Destructor InversionNLCG_t"
         !
-        call self%dealloc()
+        call self%dealloc
         !
     end subroutine InversionNLCG_dtor
     !

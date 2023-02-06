@@ -12,7 +12,7 @@ module Sensitivity
 contains
     !
     !> Routine to run a full serialJMult job 
-    !> and deliver the result (JmHat) in a text file <jmhat.dat>
+    !> and deliver the result(JmHat) in a text file <jmhat.dat>
     !
     subroutine jobJMult()
         implicit none
@@ -186,7 +186,7 @@ contains
     end subroutine JMult_Tx
     !
     !> Routine to run a full JMult_T job 
-    !> and deliver the result (dsigma) in a text file <dsigma.rho>
+    !> and deliver the result(dsigma) in a text file <dsigma.rho>
     !
     subroutine jobJMult_T()
         implicit none
@@ -270,7 +270,7 @@ contains
             if( allocated( dsigma ) ) deallocate( dsigma )
             allocate( dsigma, source = sigma )
             !
-            call dsigma%zeros()
+            call dsigma%zeros
             !
         else
             stop "Error: serialJMult_T > sigma not allocated"
@@ -329,7 +329,7 @@ contains
         !> Initialize dsigma with zeros
         allocate( dsigma, source = sigma )
         !
-        call dsigma%zeros()
+        call dsigma%zeros
         !
         !> Pointer to the tx_data's Transmitter
         Tx => getTransmitter( tx_data%i_tx )
@@ -340,7 +340,7 @@ contains
         do i_pol = 1, Tx%n_pol
             !
             bSrc( i_pol ) = cVector3D_SG_t( sigma%metric%grid, EDGE )
-            call bSrc( i_pol )%zeros()
+            call bSrc( i_pol )%zeros
             !
         enddo
         !

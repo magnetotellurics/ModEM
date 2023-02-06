@@ -38,7 +38,7 @@ module ModelParameter
             !
             !> Interfaces
             procedure( interface_zeros_model_parameter ), deferred, public :: zeros
-			!
+            !
             procedure( interface_copy_from_model_parameter ), deferred, public :: copyFrom
             generic :: assignment(=) => copyFrom
             !
@@ -159,9 +159,9 @@ module ModelParameter
         !
         !> No interface subroutine briefing
         subroutine interface_dpdemapping_model_parameter( self, dsigma, eVec )
-            import :: ModelParameter_t, Vector_t
+            import :: ModelParameter_t, Field_t
             class( ModelParameter_t ), intent( in ) :: self, dsigma
-            class( Vector_t ), intent( inout ) :: eVec
+            class( Field_t ), intent( inout ) :: eVec
         end subroutine interface_dpdemapping_model_parameter
         !
         !> No interface function briefing

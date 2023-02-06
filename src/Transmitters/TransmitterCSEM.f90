@@ -38,7 +38,7 @@ contains
         !
         !> write( *, * ) "Constructor TransmitterCSEM_t"
         !
-        call self%init()
+        call self%init
         !
         self%n_pol = 1
         !
@@ -69,7 +69,7 @@ contains
         !
         !> write( *, * ) "Destructor TransmitterCSEM_t"
         !
-        call self%dealloc()
+        call self%dealloc
         !
         deallocate( self%dipole )
         !

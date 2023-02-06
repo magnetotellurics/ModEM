@@ -24,30 +24,30 @@ module Transmitter
         !
         integer, allocatable, dimension(:) :: receiver_indexes
         !
-    contains
-        !
-        procedure, public :: init => initializeTx
-        !
-        procedure, public :: dealloc => deallocateTx
-        !
-        procedure, public :: updateFwdKey => updateFwdKeyTx
-        !
-        procedure, public :: updateReceiverIndexesArray
-        !
-        procedure( interface_solve_tx ), deferred, public :: solve
-        !
-        procedure( interface_is_equal_tx ), deferred, public :: isEqual
-        !
-        procedure( interface_print_tx ), deferred, public :: print
-        !
-        procedure, public :: setSource => setSourceTx
-        !
-        procedure, public :: PMult => PMult_Tx
-        !
-        procedure, public :: PMult_t => PMult_t_Tx
-        !
-        procedure, public :: writeESolution
-        !
+        contains
+            !
+            procedure( interface_solve_tx ), deferred, public :: solve
+            !
+            procedure( interface_is_equal_tx ), deferred, public :: isEqual
+            !
+            procedure( interface_print_tx ), deferred, public :: print
+            !
+            procedure, public :: init => initializeTx
+            !
+            procedure, public :: dealloc => deallocateTx
+            !
+            procedure, public :: updateFwdKey => updateFwdKeyTx
+            !
+            procedure, public :: updateReceiverIndexesArray
+            !
+            procedure, public :: setSource => setSourceTx
+            !
+            procedure, public :: PMult => PMult_Tx
+            !
+            procedure, public :: PMult_t => PMult_t_Tx
+            !
+            procedure, public :: writeESolution
+            !
     end type Transmitter_t
     !
     abstract interface
@@ -197,7 +197,7 @@ module Transmitter
             call sigma%dPDEmapping( dsigma, map_e_vector )
             !
             !> ON WORKING
-            minus_i_omega_mu = -isign * MU_0 * cmplx( 0., ( 2.0 * PI / self%period ), kind=prec )
+            minus_i_omega_mu = -isign * mu_0 * cmplx( 0., ( 2.0 * PI / self%period ), kind=prec )
             !
             !> Initialize and fill bSrc
             allocate( cVector3D_SG_t :: bSrc( self%n_pol ) )
@@ -259,7 +259,7 @@ module Transmitter
                 !
             enddo
             !
-            minus_i_omega_mu = -isign * MU_0 * cmplx( 0., ( 2.0 * PI / self%period ), kind=prec )
+            minus_i_omega_mu = -isign * mu_0 * cmplx( 0., ( 2.0 * PI / self%period ), kind=prec )
             !
             call eSens(1)%mult( minus_i_omega_mu )
             !
@@ -279,7 +279,7 @@ module Transmitter
         subroutine writeESolution( self )
             implicit none
             !
-            class( Transmitter_t ), intent( in ) :: self
+            class( Transmitter_t ), intent( inout ) :: self
             !
             integer :: i_pol, ios
             !

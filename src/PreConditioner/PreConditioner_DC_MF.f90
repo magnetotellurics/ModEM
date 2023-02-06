@@ -1,42 +1,42 @@
 !
-!> Derived class to define a PreConditioner_MF_DC
+!> Derived class to define a PreConditioner_DC_MF
 !>
 !> This is for preconditioning the divergence correction equations
 !
-module PreConditioner_MF_DC
+module PreConditioner_DC_MF
     !
     use PreConditioner
     use cScalar3D_SG
     use ModelOperator_MF
     !
-    type, extends( PreConditioner_t ) :: PreConditioner_MF_DC_t
+    type, extends( PreConditioner_t ) :: PreConditioner_DC_MF_t
         !
         type( cScalar3D_SG_t ) :: d
         !
         contains
             !
-            procedure, public :: setPreConditioner => setPreConditioner_MF_DC
-            procedure, public :: LTSolve => LTSolvePreConditioner_MF_DC
-            procedure, public :: UTSolve => UTSolvePreConditioner_MF_DC
-            procedure, public :: LUSolve => LUSolvePreConditioner_MF_DC
+            procedure, public :: setPreConditioner => setPreConditioner_DC_MF
+            procedure, public :: LTSolve => LTSolvePreConditioner_DC_MF
+            procedure, public :: UTSolve => UTSolvePreConditioner_DC_MF
+            procedure, public :: LUSolve => LUSolvePreConditioner_DC_MF
             !
-    end type PreConditioner_MF_DC_t
+    end type PreConditioner_DC_MF_t
     !
-    interface PreConditioner_MF_DC_t
-         module procedure PreConditioner_MF_DC_ctor
-    end interface PreConditioner_MF_DC_t
+    interface PreConditioner_DC_MF_t
+         module procedure PreConditioner_DC_MF_ctor
+    end interface PreConditioner_DC_MF_t
     !
 contains
     !
     !> No subroutine briefing
-	!
-    function PreConditioner_MF_DC_ctor( model_operator ) result( self ) 
+    !
+    function PreConditioner_DC_MF_ctor( model_operator ) result( self ) 
         implicit none
         !
         class( ModelOperator_t ), target, intent( in ) :: model_operator
-        type( PreConditioner_MF_DC_t ) :: self
+        type( PreConditioner_DC_MF_t ) :: self
         !
-        !write( *, * ) "Constructor PreConditioner_MF_DC_t"
+        !write( *, * ) "Constructor PreConditioner_DC_MF_t"
         !
         self%omega = R_ZERO
         !
@@ -44,17 +44,17 @@ contains
         !
         self%d = cScalar3D_SG_t( self%model_operator%metric%grid, NODE )
         !
-        call self%d%zeros()
+        call self%d%zeros
         !
-    end function PreConditioner_MF_DC_ctor
+    end function PreConditioner_DC_MF_ctor
     !
     !> SetPreConditioner -- could be an abstract routine, but in the CC case
     !>        we pass omega as a parameter, and that is not relevant here -- but since
     !>     omega is a property of that class could set, and not pass into this procedure explicitly
-    subroutine setPreConditioner_MF_DC( self, omega )
+    subroutine setPreConditioner_DC_MF( self, omega )
         implicit none
         !
-        class( PreConditioner_MF_DC_t ), intent( inout ) :: self
+        class( PreConditioner_DC_MF_t ), intent( inout ) :: self
         real( kind=prec ), intent( in ) :: omega
         !
         integer :: ix,iy,iz
@@ -88,47 +88,47 @@ contains
                 enddo
                 !
             class default
-                stop "setPreConditioner_MF_DC: Unclassified ModelOperator"
+                stop "Error: setPreConditioner_DC_MF > Unclassified ModelOperator"
             !
         end select
         !
-    end subroutine setPreConditioner_MF_DC
+    end subroutine setPreConditioner_DC_MF
     !
     !> LTsolve and UTsolve are in abstract class and must be defined -- but not used for DC which
     !>        this object will be used -- so just dummies here
-    subroutine LTSolvePreConditioner_MF_DC(self, inE, outE, adjoint)
+    subroutine LTSolvePreConditioner_DC_MF(self, inE, outE, adjoint)
         implicit none
         !
-        class( PreConditioner_MF_DC_t ), intent( inout ) :: self
+        class( PreConditioner_DC_MF_t ), intent( inout ) :: self
         class( Vector_t ), intent( in ) :: inE
         class( Vector_t ), intent( inout ) :: outE
         logical, intent( in ) :: adjoint
-        
-        stop "Error: LTsolve not coded for this pre-conditioner class"
         !
-    end subroutine LTSolvePreConditioner_MF_DC
+        stop "Error: LTSolvePreConditioner_DC_MF not implemented yet"
+        !
+    end subroutine LTSolvePreConditioner_DC_MF
     !
     !> No subroutine briefing
-    subroutine UTSolvePreConditioner_MF_DC( self, inE, outE, adjoint )
+    subroutine UTSolvePreConditioner_DC_MF( self, inE, outE, adjoint )
         implicit none
         !
-        class( PreConditioner_MF_DC_t ), intent( inout ) :: self
+        class( PreConditioner_DC_MF_t ), intent( inout ) :: self
         class( Vector_t ), intent( in ) :: inE
         class( Vector_t ), intent( inout ) :: outE
         logical, intent( in ) :: adjoint
-        
-        stop "Error: UTsolve not coded for this preconditioner class"
         !
-    end subroutine UTSolvePreConditioner_MF_DC
+        stop "Error: UTSolvePreConditioner_DC_MF not implemented yet"
+        !
+    end subroutine UTSolvePreConditioner_DC_MF
     !
-    !> Procedure LUSolvePreConditioner_MF_DC
+    !> Procedure LUSolvePreConditioner_DC_MF
     !> apply pre-conditioner, LU solve
     !
     !> No subroutine briefing
-    subroutine LUSolvePreConditioner_MF_DC( self, inPhi, outphi )
+    subroutine LUSolvePreConditioner_DC_MF( self, inPhi, outphi )
         implicit none
         !
-        class( PreConditioner_MF_DC_t ), intent( inout ) :: self
+        class( PreConditioner_DC_MF_t ), intent( inout ) :: self
         class( Scalar_t ), intent( in ) :: inPhi
         class( Scalar_t ), intent( inout ) :: outPhi
         !
@@ -143,10 +143,10 @@ contains
                     class is( cScalar3D_SG_t )
                         !
                         if( .NOT. outPhi%is_allocated ) then
-                            stop "outPhi in LUsolve not allocated yet"
+                            stop "Error: LUSolvePreConditioner_DC_MF > outPhi not allocated yet"
                         endif
                         !
-                        call outPhi%zeros()
+                        call outPhi%zeros
                         !
                         !> Instantiate the ModelOperator object
                         select type( model_operator => self%model_operator )
@@ -184,19 +184,19 @@ contains
                                 enddo
                                 !
                             class default
-                                stop "LUSolvePreConditioner_MF_DC: Unclassified ModelOperator"
+                                stop "Error: LUSolvePreConditioner_DC_MF > Unclassified ModelOperator"
                         end select
                         !
                     class default
-                        stop "LUSolvePreConditioner_MF_DC: Unclassified outPhi"
+                        stop "Error: LUSolvePreConditioner_DC_MF > Unclassified outPhi"
                     !
                 end select
                 !
             class default
-                stop "LUSolvePreConditioner_MF_DC: Unclassified inPhi"
+                stop "Error: LUSolvePreConditioner_DC_MF > Unclassified inPhi"
                 !
         end select
         !
-    end subroutine LUSolvePreConditioner_MF_DC
+    end subroutine LUSolvePreConditioner_DC_MF
     !
-end module PreConditioner_MF_DC
+end module PreConditioner_DC_MF

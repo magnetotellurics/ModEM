@@ -4,7 +4,8 @@
 module Solver_PCG
     !
     use Solver
-    use PreConditioner_MF_DC
+    use PreConditioner_DC_MF
+    use PreConditioner_DC_SP
     !
     !> Solver used only for Divergence Correction
     type, extends( Solver_t ) :: Solver_PCG_t
@@ -25,7 +26,7 @@ module Solver_PCG
 contains
     !
     !> No subroutine briefing
-	!
+    !
     function Solver_PCG_ctor( model_operator ) result( self )
         implicit none
         !
@@ -35,9 +36,23 @@ contains
         !
         !write( *, * ) "Constructor Solver_PCG_t"
         !
-        call self%init()
+        call self%init
         !
-        allocate( self%preconditioner, source = PreConditioner_MF_DC_t( model_operator ) )
+        !> Instantiate the PreConditioner object according to the ModelOperator type
+        select type( model_operator )
+            !
+            class is( ModelOperator_MF_t )
+                !
+                allocate( self%preconditioner, source = PreConditioner_DC_MF_t( model_operator ) )
+            !
+            class is( ModelOperator_SP_t )
+                !
+                allocate( self%preconditioner, source = PreConditioner_DC_SP_t( model_operator ) )
+                !
+            class default
+                stop "Solver_QMR_ctor: Unclassified ModelOperator"
+            !
+        end select
         !
         call self%setDefaults()
         !
@@ -73,7 +88,7 @@ contains
         !
         !>  create local cScalar objects -- could we also use modOp%createCScalar?
         allocate( r, source = x )    !> cannot zero x, since it is first guess
-        call r%zeros()
+        call r%zeros
         allocate( s, source = r )
         allocate( p, source = r )
         allocate( q, source = r )
@@ -108,7 +123,7 @@ contains
             !
             call p%linComb( s, beta, C_ONE )
             !
-            call q%zeros()
+            call q%zeros
             call self%preconditioner%model_operator%divCgrad( p, q )
             !
             alpha = delta / p%dotProd(q)

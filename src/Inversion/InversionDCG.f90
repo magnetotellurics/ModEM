@@ -36,7 +36,7 @@ contains
         !
         !write( *, * ) "Constructor InversionDCG_t"
         !
-        call self%init()
+        call self%init
         !
         if ( allocated( control_file%max_inv_iters ) ) then
             read( control_file%max_inv_iters, * ) self%max_inv_iters
@@ -79,7 +79,7 @@ contains
         !
         !write( *, * ) "Destructor InversionDCG_t"
         !
-        call self%dealloc()
+        call self%dealloc
         !
     end subroutine InversionDCG_dtor
     !

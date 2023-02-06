@@ -10,6 +10,7 @@ module GlobalVariables
     use Grid3D_SG
     !
     use ModelOperator_MF
+    use ModelOperator_SP
     !
     use ModelParameterCell_SG
     !
@@ -88,7 +89,7 @@ contains
         ! Verbose
         write( *, * ) "     < Model File: [", model_file_name, "]"
         !
-        !> Initialize main_grid and sigma0 with ModelReader (Only ModelReader_Weerachai by now????)
+        !> Initialize main_grid and sigma0 with ModelReader(Only ModelReader_Weerachai by now????)
         call model_reader%Read( model_file_name, main_grid, sigma0 ) 
         !
         !> Instantiate the ModelOperator object according to the main_grid type
@@ -111,11 +112,11 @@ contains
                 !
                 write( *, "( a39, f12.5, a4 )" ) "          Top of the air layers is at ", sum( air_layer%Dz ) / 1000, " km."
                 !
-                write( *, "( a31, f16.5, a2, f16.5, a2, f16.5, a4, f16.5 )" ) "          o(x,y,z) * rotDeg: (", main_grid%ox, ", ", main_grid%oy, ", ", main_grid%oz, ") * ", main_grid%rotDeg
+                write( *, "( a31, f16.5, a2, f16.5, a2, f16.5, a4, f16.5 )" ) "          o(x,y,z) * rotDeg:(", main_grid%ox, ", ", main_grid%oy, ", ", main_grid%oz, ") * ", main_grid%rotDeg
                 !
                 allocate( model_operator, source = ModelOperator_MF_t( main_grid ) )
                 !
-                call model_operator%setEquations()
+                call model_operator%setEquations
                 !
                 call sigma0%setMetric( model_operator%metric )
                 !
@@ -182,7 +183,7 @@ contains
             write( *, * ) "          Checked ", n_tx, " Transmitters."
             !
             do i_tx = 1, n_tx
-                call transmitters( i_tx )%Tx%print()
+                call transmitters( i_tx )%Tx%print
             enddo
             !
         else
@@ -249,7 +250,7 @@ contains
         implicit none
         !
         !> Deallocate global array of measured data
-        !if( allocated( all_measured_data ) ) call deallocateDataGroupTxArray( all_measured_data )
+        if( allocated( all_measured_data ) ) call deallocateData( all_measured_data )
         !
         !> Deallocate global array of Receivers
         if( allocated( receivers ) ) call deallocateReceiverArray()

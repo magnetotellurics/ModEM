@@ -4,7 +4,8 @@
 module Solver_QMR
     !
     use Solver
-    use PreConditioner_MF_CC
+    use PreConditioner_CC_MF
+    use PreConditioner_CC_SP
     !
     type, extends( Solver_t ) :: Solver_QMR_t
         !
@@ -25,7 +26,7 @@ module Solver_QMR
 contains
     !
     !> No subroutine briefing
-	!
+    !
     function Solver_QMR_ctor( model_operator ) result( self )
         implicit none
         !
@@ -35,9 +36,23 @@ contains
         !
         !write( *, * ) "Constructor Solver_QMR_t"
         !
-        call self%init()
+        call self%init
         !
-        allocate( self%preconditioner, source = PreConditioner_MF_CC_t( model_operator ) )
+        !> Instantiate the PreConditioner object according to the ModelOperator type
+        select type( model_operator )
+            !
+            class is( ModelOperator_MF_t )
+                !
+                allocate( self%preconditioner, source = PreConditioner_CC_MF_t( model_operator ) )
+            !
+            class is( ModelOperator_SP_t )
+                !
+                allocate( self%preconditioner, source = PreConditioner_CC_SP_t( model_operator ) )
+                !
+            class default
+                stop "Solver_QMR_ctor: Unclassified ModelOperator"
+            !
+        end select
         !
         call self%setDefaults()
         !
@@ -74,7 +89,7 @@ contains
         !> Allocate work Vector objects -- questions as in PCG
         allocate( R, source = x )
         !
-        call R%zeros() !>  can"t zero x -- if this is to be used as starting guess
+        call R%zeros !>  can"t zero x -- if this is to be used as starting guess
                        !>  also, never use AX -- which somehow is declared in ModEM!
         !
         allocate( Y, source = R )
@@ -195,7 +210,7 @@ contains
             !
             adjoint = .FALSE.
             !
-            call PT%Zeros()
+            call PT%zeros
             call self%preconditioner%model_operator%Amult( self%omega, P, PT, adjoint )
             EPSIL = Q%dotProd( PT )
             !
@@ -221,7 +236,7 @@ contains
             !
             adjoint = .TRUE.
             !
-            call WT%Zeros()
+            call WT%zeros
             call self%preconditioner%model_operator%Amult( self%omega, Q, WT, adjoint )
             !
             call WT%multAdd( -conjg( BETA ), W ) !>  WT = WT - conjg(BETA) * W

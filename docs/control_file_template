@@ -23,8 +23,8 @@ QMR_iters [40]                     : 80
 BCG_iters [80]                     : 80
 max_divcor_calls [20]              : 20
 max_divcor_iters [100]             : 100
-tolerance_qmr [1E-7]               : 1E-7
-tolerance_divcor [1E-5]            : 1E-5
+tolerance_qmr [1E-7]               : 1E-2
+tolerance_divcor [1E-5]            : 1E-1
 forward_solver [IT|IT_DC]          : IT_DC
 #
 # INVERSION

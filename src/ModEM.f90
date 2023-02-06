@@ -100,7 +100,7 @@ contains
             !> Initialize pmodel with Zeros
             allocate( dsigma, source = sigma )
             !
-            call dsigma%zeros()
+            call dsigma%zeros
             !
         else
             stop "Error: jobInversion > Missing Model file!"

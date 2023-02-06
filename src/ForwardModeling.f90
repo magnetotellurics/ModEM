@@ -47,7 +47,7 @@ contains
         !
     end subroutine solveAll
     !
-    !> Calculate E_Solution (e_sol) for a single Transmitter
+    !> Calculate E_Solution(e_sol) for a single Transmitter
     !> ForwardSolver must be allocated
     !
     subroutine solveTx( sigma, Tx )
@@ -81,7 +81,7 @@ contains
     end subroutine solveTx
     !
     !> Routine to run a full ForwardModeling job 
-    !> and deliver the result (PredictedData) in a text file <all_predicted_data.dat>
+    !> and deliver the result(PredictedData) in a text file <all_predicted_data.dat>
     !
     subroutine jobForwardModeling()
         implicit none

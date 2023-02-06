@@ -43,7 +43,7 @@ contains
         !
         !write( *, * ) "Constructor SourceMT_1D_t"
         !
-        call self%init()
+        call self%init
         !
         self%model_operator => model_operator
         !
@@ -64,7 +64,7 @@ contains
         !
         !write( *, * ) "Destructor SourceMT_1D_t"
         !
-        call self%dealloc()
+        call self%dealloc
         !
     end subroutine SourceMT_1D_dtor
     !

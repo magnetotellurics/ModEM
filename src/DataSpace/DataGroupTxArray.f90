@@ -76,6 +76,10 @@ module DataGroupTxArray
         module procedure :: updateDataGroupTxArray
     end interface updateData
     !
+    interface deallocateData
+        module procedure :: deallocateDataGroupTxArray
+    end interface deallocateData
+    !
     interface writeData
         module procedure :: writeDataGroupTxArray
     end interface writeData
@@ -125,7 +129,7 @@ contains
         !
         do i = 1, size( data_tx_array )
             !
-            call data_tx_array(i)%zeros()
+            call data_tx_array(i)%zeros
             !
         enddo
         !
@@ -412,6 +416,31 @@ contains
         !
     end subroutine updateDataGroupTxArray
     !
+    !> Deallocate all DataGroups of a particular DataGroupTxArray
+    !
+    subroutine deallocateDataGroupTxArray( data_tx_array )
+        implicit none
+        !
+        type( DataGroupTx_t ), allocatable, dimension(:), intent( inout ) :: data_tx_array
+        !
+        integer :: i, n_dtx
+        !
+        !write( *, * ) "deallocateDataGroupTxArray:", size( data_tx_array )
+        !
+        n_dtx = size( data_tx_array )
+        !
+        if( n_dtx == 1 ) then
+            deallocate( data_tx_array(1)%data )
+        else
+            do i = n_dtx, 1, -(1)
+                deallocate( data_tx_array(i)%data )
+            enddo
+        endif
+        !
+        deallocate( data_tx_array )
+        !
+    end subroutine deallocateDataGroupTxArray
+    !
     !> Write one DataGroupTxArray, with its proper Rx headers, 
     !> into to the file <file_name>
     !
@@ -532,7 +561,7 @@ contains
         !
         do i = 1, size( data_tx_array )
             !
-            call data_tx_array(i)%print()
+            call data_tx_array(i)%print
             !
         enddo
         !

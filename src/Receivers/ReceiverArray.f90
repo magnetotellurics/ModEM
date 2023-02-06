@@ -120,7 +120,7 @@ contains
         write( *, * ) size( receivers ), " ReceiverArray_t:"
         !
         do irx = 1, size( receivers )
-            call receivers( irx )%Rx%print()
+            call receivers( irx )%Rx%print
         enddo
         !
     end subroutine printReceiverArray

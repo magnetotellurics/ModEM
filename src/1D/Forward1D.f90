@@ -113,7 +113,7 @@ module Forward1D
         !>     LINEAR -- need to make sure that this is true when creating
         !>      or could add check/transformation here ...
         do i = 1,nlayer
-            beta(i) = sqrt(isign*ONE_I*MU_0*self%omega*self%sigma%CellCond(i))
+            beta(i) = sqrt( isign * ONE_I * mu_0 * self%omega * self%sigma%CellCond(i) )
             h(i) = self%sigma%ParamGrid%dz(i)     !>    layer thickness -- last is not used
         enddo
            

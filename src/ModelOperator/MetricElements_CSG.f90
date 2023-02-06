@@ -46,7 +46,7 @@ module MetricElements_CSG
 contains
     !
     !> No subroutine briefing
-	!
+    !
     function MetricElements_CSG_ctor( grid ) result( self )
         implicit none
         !
@@ -72,7 +72,7 @@ contains
         !
         !write( *, * ) "Destructor MetricElements_CSG"
         !
-        call self%dealloc()
+        call self%dealloc
         !
     end subroutine MetricElements_CSG_dtor
     !

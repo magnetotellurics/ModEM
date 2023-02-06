@@ -131,7 +131,7 @@ contains
         !
         do i_data = 1, size( self%data )
             !
-            call self%data( i_data )%zeros()
+            call self%data( i_data )%zeros
             !
         enddo
         !
@@ -329,7 +329,7 @@ contains
         write( *, * ) "    Write DataGroupTx_t for Tx: ", self%i_tx
         !
         do i_data = 1, size( self%data )
-            call self%data( i_data )%print()
+            call self%data( i_data )%print
         enddo
         !
     end subroutine printDataGroupTx

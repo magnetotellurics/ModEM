@@ -40,7 +40,7 @@ contains
         !
         !write( *, * ) "Constructor SourceMT_2D_t"
         !
-        call self%init()
+        call self%init
         !
         self%model_operator => model_operator
         self%sigma => sigma
@@ -59,7 +59,7 @@ contains
         !
         !write( *, * ) "Destructor SourceMT_2D_t"
         !
-        call self%dealloc()
+        call self%dealloc
         !
     end subroutine SourceMT_2D_dtor
     !
