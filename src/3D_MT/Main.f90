@@ -60,6 +60,7 @@ module Main
   !type(rhsVectorMTX_t), save            :: bAll
 
   logical                   :: write_model, write_data, write_EMsoln, write_EMrhs
+  
 
 
 
@@ -89,6 +90,28 @@ Contains
      end if
 
     end subroutine read_Efield_from_file
+!###########################################################
+   subroutine read_Efield_from_file_ModEMM(inFile)
+    character (*), intent(in)           :: inFile
+	
+    ! local
+    logical                                     :: exists
+
+    nestedEM_initialized = .false.
+    
+
+      inquire(FILE=inFile,EXIST=exists)
+      if (exists) then
+        write(6,*) 'The Master reads E field from: ',trim(inFile)
+
+        call read_solnVectorMTX(Larg_Grid,eAll,inFile)
+        !nestedEM_initialized = .true.
+      end if
+
+
+    end subroutine read_Efield_from_file_ModEMM
+	
+
 
   !**********************************************************************
   !   rewrite the defaults in the air layers structure
