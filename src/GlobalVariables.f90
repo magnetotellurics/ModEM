@@ -244,7 +244,7 @@ contains
             !
         endif
         !
-        call system( "mkdir -p "//outdir_name )
+        call EXECUTE_COMMAND_LINE( "mkdir -p "//outdir_name )
         !
     end subroutine createOutputDirectory
     !

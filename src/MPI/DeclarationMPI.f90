@@ -5,7 +5,9 @@ module DeclarationMPI
     !
     use GlobalVariables
     !
-    include 'mpif.h'
+    !include 'mpif.h'
+    use mpi
+    !use mpi_f08
     !
     !> MPI variables
     integer :: main_comm, mpi_rank, mpi_size, ierr

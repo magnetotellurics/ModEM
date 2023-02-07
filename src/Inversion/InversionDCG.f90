@@ -243,9 +243,7 @@ contains
         SS = dotProdData( res, Nres )
         !
         Ndata = countValues( res )
-
-        write( 2023, * ) "Ndata: ", Ndata
-        
+		!
         mNorm = mHat%dotProd( mHat )
         !
         Nmodel = mHat%countModel()
@@ -291,8 +289,6 @@ contains
         write( ioInvLog, "(a18)" ) "Relative CG-error:"
         write( ioInvLog, "( a9, i5, a10, es12.5, a10, es12.5 )" ) "CG-Iter= ", iter, ", error = ", self%r_err(iter), " Lambda= ", self%lambda
         !
-        write( 2023, "( a22, i5, a8, es12.5 )" ) "               CG_iter", iter, ": Error=", self%r_err(iter)
-        !
         cg_loop : do while ( self%r_err(iter) .GT. self%tolerance_error .AND. iter .LT. self%max_grad_iters )
             ! 
             call self%MultA_DS( p, dsigma, all_data, Ap )
@@ -326,8 +322,6 @@ contains
             !
             !> Write / Print DCG.log
             write( ioInvLog, "( a9, i5, a10, es12.5, a10, es12.5 )" ) "CG-Iter= ", iter, ", error = ", self%r_err(iter), " Lambda= ", self%lambda
-            !
-            write( 2023, "( a22, i5, a8, es12.5, a7, es12.5, a8, es12.5 )" ) "               CG_iter", iter, ": Alpha=", alpha, ", Beta=", beta, ", Error=", self%r_err( iter )
             !
         enddo cg_loop
         !
