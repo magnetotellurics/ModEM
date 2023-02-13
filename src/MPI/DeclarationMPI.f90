@@ -3,7 +3,7 @@
 !
 module DeclarationMPI
     !
-    use GlobalVariables
+    use CoreComponents
     !
     !include 'mpif.h'
     use mpi

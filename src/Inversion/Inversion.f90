@@ -1,5 +1,5 @@
 !
-!> Abstract Base class to define a Inversion
+!> Abstract Base class to encapsulate the basic components needed to perform ModEM Inversion
 !
 module Inversion
     !
@@ -56,6 +56,7 @@ module Inversion
 contains
     !
     !> No subroutine briefing
+    !
     subroutine initializeInversion( self )
         implicit none
         !
@@ -93,6 +94,7 @@ contains
     end subroutine initializeInversion
     !
     !> No subroutine briefing
+    !
     subroutine deallocateInversion( self )
         implicit none
         !

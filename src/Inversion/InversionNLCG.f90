@@ -54,6 +54,7 @@ module InversionNLCG
 contains
     !
     !> No function briefing
+	!
     function InversionNLCG_ctor() result( self )
         implicit none
         !
@@ -125,6 +126,7 @@ contains
     !
     !> Deconstructor routine:
     !>     Calls the base routine dealloc().
+	!
     subroutine InversionNLCG_dtor( self )
         implicit none
         !
@@ -136,17 +138,14 @@ contains
         !
     end subroutine InversionNLCG_dtor
     !
-    !>
+    !> No subroutine briefing
+	!
     subroutine solveInversionNLCG( self, all_data, sigma, dsigma )
         implicit none
         !
         class( InversionNLCG_t ), intent( inout ) :: self
-        !> all_data is data; on output it contains the responses for the inverse model
         type( DataGroupTx_t ), allocatable, dimension(:), intent( inout ) :: all_data
-        !
-        !> sigma is prior model parameter
         class( ModelParameter_t ), allocatable, intent( in ) :: sigma
-        !> dsigma is solution parameter ... on input dsigma contains starting guess
         class( ModelParameter_t ), allocatable, intent( inout ) :: dsigma
         !
         !> initial step size in the line search direction in model units
@@ -160,9 +159,8 @@ contains
         real( kind=prec ) :: rmsPrev, alpha, beta
         real( kind=prec ) :: gnorm, mNorm, Nmodel
         real( kind=prec ) :: grad_dot_h, g_dot_g
-        real( kind=prec ) :: g_dot_gPrev,g_dot_h
-        real( kind=prec ) :: gPrev_dot_gPrev 
-        real( kind=prec ) :: h_dot_g, h_dot_gPrev
+        real( kind=prec ) :: g_dot_gPrev, g_dot_h
+        real( kind=prec ) :: gPrev_dot_gPrev, h_dot_g, h_dot_gPrev
         integer :: iter, nCG, nLS, nfunc, ios
         type( EAllMTx_t ) :: e_all
         !
@@ -243,10 +241,7 @@ contains
                 valuePrev = r_value
                 !
                 grad_dot_h = grad%dotProd( h )
-
-                !write( *, * ) "grad_dot_h: ", grad_dot_h
-                !stop
-
+				!
                 ! at the end of line search, set mHat to the new r_value
                 ! mHat = mHat + alpha*h  and evaluate gradient at new mHat
                 ! data and solnVector only needed for output
