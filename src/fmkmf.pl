@@ -32,7 +32,7 @@ use File::Basename;
 #-------------------------------------------------
 # First check if the luser has any relevent environment vars set
 #--------------------------------------------
-if ( $ENV{FMKMF_F90} ) {
+if( $ENV{FMKMF_F90} ) {
   #print "\# FMKMF_F90 set to $ENV{FMKMF_F90}\n";
   $f90=$ENV{FMKMF_F90};
 } 
@@ -42,7 +42,7 @@ else {
 }
 
 
-if ( $ENV{FMKMF_SFTAG} ) {
+if( $ENV{FMKMF_SFTAG} ) {
   #print "\# FMKMF_SFTAG set to $ENV{FMKMF_SFTAG}\n";
   $sftag=$ENV{FMKMF_SFTAG};
 } 
@@ -51,7 +51,7 @@ else {
   $sftag="f90";
 }
 
-if ( $ENV{FMKMF_SPATH} ) {
+if( $ENV{FMKMF_SPATH} ) {
   #print "\# FMKMF_SPATH set to $ENV{FMKMF_SPATH}\n";
   $spath=$ENV{FMKMF_SPATH};
 } 
@@ -60,7 +60,7 @@ else {
   $spath=".";
 }
 
-if ( $ENV{FMKMF_OPTIM} ) {
+if( $ENV{FMKMF_OPTIM} ) {
   #print "\# FMKMF_OPTIM set to $ENV{FMKMF_OPTIM}\n";
   $optim=$ENV{FMKMF_OPTIM};
 } 
@@ -69,7 +69,7 @@ else {
   $optim="-O2";
 }
 
-if ( $ENV{FMKMF_MPIFLAGS} ) {
+if( $ENV{FMKMF_MPIFLAGS} ) {
   #print "\# FMKMF_MPIFLAGS set to $ENV{FMKMF_MPIFLAGS}\n";
   $mpiflags=$ENV{FMKMF_MPIFLAGS};
 } 
@@ -78,7 +78,7 @@ else {
   $mpiflags=" ";
 }
 
-if ( $ENV{FMKMF_LIBRARY_PATH} ) {
+if( $ENV{FMKMF_LIBRARY_PATH} ) {
   #print "\# FMKMF_LIBRARY_PATH set to $ENV{FMKMF_LIBRARY_PATH}\n";
   $libpath="-L$ENV{FMKMF_LIBRARY_PATH}";
 }
@@ -87,7 +87,7 @@ else {
   $libpath=" ";
 }
 
-if ( $ENV{FMKMF_LINKOPTS} ) {
+if( $ENV{FMKMF_LINKOPTS} ) {
   #print "\# FMKMF_LINKOPTS set to $ENV{FMKMF_LINKOPTS}\n";
   $linkopts=$ENV{FMKMF_LINKOPTS};
 } 
@@ -110,46 +110,46 @@ my  $DMPI = 0;
 while (@ARGV){
 
   $arg=shift;
-  if ($arg =~ /^-win$/){
+  if($arg =~ /^-win$/){
     $WIN = 1;
     print STDERR "# Creating a Windows style makefile\n";
   }
-  if ($arg =~ /^-p$/){
+  if($arg =~ /^-p$/){
     $spath=shift;
     print STDERR "# Using search path from cmd line:\n $spath\n";
   }
-  if ($arg =~ /^-f90$/){
+  if($arg =~ /^-f90$/){
     $f90=shift;
     print STDERR "# Using compile cmd $f90 from cmd line\n";
   }
-  if ($arg =~ /^-tag$/){
+  if($arg =~ /^-tag$/){
     $sftag=shift;
     print STDERR "# Using source file tag $sftag from cmd line\n";
   }
-  if ($arg =~ /^-opt$/){
+  if($arg =~ /^-opt$/){
     $optim=shift;
     print STDERR "# Using compiler optimization options $optim from cmd line\n";
   }
-  if ($arg =~ /^-mpi$/){
+  if($arg =~ /^-mpi$/){
     $mpiflags=shift;
-    if ($mpiflags =~ /MPI/) {
+    if($mpiflags =~ /MPI/) {
         $DMPI = 1; # MPI is defined
     }
     print STDERR "# Using compiler MPI flags $mpiflags from cmd line\n";
   }
-  if ($arg =~ /^-lp$/){
+  if($arg =~ /^-lp$/){
     $libpath=shift;
     print STDERR "# Using Library path $libpath from cmd line\n";
   }
-  if ($arg =~ /^-l$/){
+  if($arg =~ /^-l$/){
     $linkopts=shift;
     print STDERR "# Using Link options $linkopts from cmd line\n";
   }
-  if ($arg =~ /^-d$/){
+  if($arg =~ /^-d$/){
     $optiond=1;
     print STDERR "# Using debug option (full output on) from cmd line\n";
   }
-  if ($arg =~ /^-o$/){
+  if($arg =~ /^-o$/){
       $linkdir=shift;
       print STDERR "# Using $linkdir for object file output directory\n";
   }
@@ -238,16 +238,16 @@ print "OBJDIR = ../../objs/MT3D_OO\n";
 print "F90 = $f90\n";
 print "FFLAGS = $optim\n";
 print "MPIFLAGS = $mpiflags\n";
-if ($WIN) {
+if($WIN) {
     print "MODULE = \n";
-} elsif ($f90 =~ /^g95$/){
+} elsif($f90 =~ /^g95$/){
     print "MODULE = -fmod=\$(OBJDIR)\n";
-} elsif ($f90 =~ /^gfortran$/){
+} elsif($f90 =~ /^gfortran$/){
     print "MODULE = -J \$(OBJDIR)\n";
 } else {
     print "MODULE = -J \$(OBJDIR)\n";
 }
-if ($libpath !~ /^(\s*)$/){
+if($libpath !~ /^(\s*)$/){
     print "LIBS_PATH = -L$libpath\n";
 } else {
     print "LIBS_PATH = \n";    
@@ -265,7 +265,7 @@ print "\nall: $execfile \n";
 # Generate makefile entry for the Link step
 print "\n# Here is the link step \n";
 
-if ($WIN) {
+if($WIN) {
     print "$execfile: \$(OBJDIR) \$(OBJ) \n";
     print "\t \$(F90) /link \$(OUTDIR)/$execfile \$(OBJ) \$(LIBS_PATH) \$(LIBS)\n";
 } else {
@@ -322,12 +322,12 @@ sub process_fsource {
   my @modulelist=();
   my @includelist=();
   while ($line=<MAINPROG>) { 
-    if ($line =~ /^[ \t]*use (\w+)/i ) { # line matches regexp between / /
+    if($line =~ /^[ \t]*use (\w+)/i ) { # line matches regexp between / /
       my $modulefile = $1;
       if($optiond){
         print STDERR "# $mainprogfile Uses Module $modulefile\n";
       }
-      if ($modulefile =~ /MPI/) { # if MPI is found in module name, skip unless MPI is defined
+      if($modulefile =~ /MPI/) { # if MPI is found in module name, skip unless MPI is defined
           next unless ($DMPI);
       }
       @modulelist=(@modulelist,$modulefile);
@@ -336,7 +336,7 @@ sub process_fsource {
       if($optiond){
         print STDERR "# $mainprogfile Includes $includefile\n";
       }
-      if ($includefile =~ /MPI/) { # if MPI is found in module name, skip unless MPI is defined
+      if($includefile =~ /MPI/) { # if MPI is found in module name, skip unless MPI is defined
           next unless ($DMPI);
       }
       my $mainprogpath = dirname($mainprogfile); 
@@ -348,7 +348,7 @@ sub process_fsource {
 
   if($optiond){
     print STDERR "# Full list of modules in $mainprogfile: @modulelist \n";
-    if (@includelist > 0) {
+    if(@includelist > 0) {
         print STDERR "# Full list of includes in $mainprogfile: @includelist \n";
     }
   }
@@ -369,14 +369,14 @@ sub process_fsource {
       open( SOURCEFILE, "$pathsourcefile") or 
     die "Can't find source file $pathsourcefile: $!> \n";
       while ($line=<SOURCEFILE>){
-    if ($line =~ /^ *module (\w+)/i ){
+    if($line =~ /^ *module (\w+)/i ){
       if($1 =~ /^$module$/i){
         if($optiond){
           print STDERR "# Uses $module which is in $pathsourcefile\n";
         }
         @modfiles=(@modfiles,$pathsourcefile);
         
-        if (grep (/$pathsourcefile/,@global_modfiles )){
+        if(grep (/$pathsourcefile/,@global_modfiles )){
           if($optiond){
         print STDERR "# $pathsourcefile already in list\n";
           }
@@ -399,7 +399,7 @@ sub process_fsource {
   print STDERR "Couldn't find source file for module $module\n";
 }
 
-if ($WIN) {
+if($WIN) {
     $mainprogfile=~s/\//\\/g;
     # name of file we want to make
     $objfile=$mainprogfile;
@@ -424,7 +424,7 @@ $objfile="\$(OBJDIR)/$objfile";
 foreach  $mf (@modfiles) { 
   $obj=$mf;
   # replace source file name with .o
-  if ($WIN) {
+  if($WIN) {
       $obj=~s/\.${sftag}/\.obj/;
   } else {
       $obj=~s/\.${sftag}/\.o/;
@@ -437,12 +437,12 @@ foreach  $mf (@modfiles) {
 }
 
 @global_outlines=(@global_outlines,"\n$objfile:$mainprogfile @objlist @includelist\n");
-if ($WIN){
+if($WIN){
     @global_outlines=(@global_outlines,"\t \$(F90) -c \$(MODULE) \$(FFLAGS) \$(MPIFLAGS) \"$mainprogfile\" /link $objfile\n");
 } else {
     @global_outlines=(@global_outlines,"\t \$(F90) -c \$(MODULE) \$(FFLAGS) \$(MPIFLAGS) $mainprogfile -o $objfile\n");
 }
-#if (@includelist > 0) {
+#if(@includelist > 0) {
 #    @global_outlines=(@global_outlines,"\n$mainprogfile: @includelist \n");
 #}
 

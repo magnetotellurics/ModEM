@@ -290,7 +290,7 @@ contains
     end subroutine savePredictedDataRx
     !
     !> No subroutine briefing
-	!
+    !
     function getStringReceiverType( int_receiver_type ) result( str_receiver_type )
     !
         integer, intent( in ) :: int_receiver_type
@@ -331,7 +331,7 @@ contains
     end function getStringReceiverType
     !
     !> No subroutine briefing
-	!
+    !
     function getIntReceiverType( str_receiver_type ) result( int_receiver_type )
         !
         character(:), allocatable, intent( in ) :: str_receiver_type
@@ -406,7 +406,8 @@ contains
             ! SI units for B
             factor1 = ONE
         else
-            stop "Error: Unknown input units in ImpUnits: "//trim( oldUnits )
+            write( *, * ) "Error: Unknown input units in ImpUnits: [", trim( oldUnits ), "]"
+            stop
         end if
         !
         ! now convert [V/m]/[T] to the new units
@@ -426,7 +427,8 @@ contains
             ! SI units for B
             factor2 = ONE
         else
-            stop "Error: Unknown output units in ImpUnits: "//trim( newUnits )
+            write( *, * ) "Error: Unknown output units in ImpUnits: [", trim( newUnits ), "]"
+            stop
         end if
         !
         SI_factor = factor1 * factor2

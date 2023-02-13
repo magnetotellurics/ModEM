@@ -6,7 +6,7 @@ module ForwardModeling
 #ifdef MPI
     use MasterMPI
 #else
-    use GlobalVariables
+    use CoreComponents
 #endif
     !
     !> Public module routines

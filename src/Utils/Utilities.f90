@@ -473,7 +473,7 @@ module Utilities
         str=adjustl(outstr)
         !
     end subroutine compact
-	!
+    !
     !> Routine finds the first instance of a character from "delims" in the
     !> the string "str". The characters before the found delimiter are
     !> output in "before". The characters after the found delimiter are
@@ -535,7 +535,7 @@ module Utilities
         end if
         end do
         if(i >= lenstr) str=""
-        str=adjustl(str)			! remove initial spaces
+        str=adjustl(str)            ! remove initial spaces
         !
     end subroutine split
     !

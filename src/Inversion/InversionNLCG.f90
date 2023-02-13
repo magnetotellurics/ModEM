@@ -54,23 +54,32 @@ module InversionNLCG
 contains
     !
     !> No function briefing
+	!
     function InversionNLCG_ctor() result( self )
         implicit none
         !
         type( InversionNLCG_t ) :: self
         !
-        write( *, * ) "Constructor InversionNLCG_t"
+        !write( *, * ) "Constructor InversionNLCG_t"
         !
         call self%init
         !
-        ! maximum number of iterations in one call to iterative solver
-        self%max_inv_iters = 600
-        ! convergence criteria: return from solver if rms < tolerance_rms
+        !> Set default NLCG parameters
+        !
+        !> Maximum number of iterations in one call to iterative solver
+        self%max_inv_iters = 5
+        !
+        !> Convergence criteria: return from solver if rms < tolerance_rms
         self%tolerance_rms = 1.05
+        !
+        !> Initial r_value of lambda
+        self%lambda = 10.
+        !
+        !> CHECK IF THE FOLLOWING PARAMETERS ARE NECESSARY
+        !> AND IF THEY MUST BE IN THE CONTROL FILE 
+        !
         ! inversion stalls when abs(rms - rmsPrev) < fdiffTol (2e-3 works well)
         self%fdiffTol = 2.0e-3
-        ! initial r_value of lambda (will not override the NLCG input argument)
-        self%lambda = 1.
         ! exit if lambda < lambdaTol approx. 1e-4
         self%lambdaTol = 1.0e-8
         ! set lambda_i = lambda_{i-1}/k when the inversion stalls
@@ -88,34 +97,55 @@ contains
         ! model and data output file name
         self%fname = 'Modular'
         !
+        !> Set NLCG parameters from control file if its the case
+        if( has_inv_control_file ) then
+            !
+            if( allocated( inv_control_file%max_inv_iters ) ) &
+                read( inv_control_file%max_inv_iters, * ) self%max_inv_iters
+            !
+            if( allocated( inv_control_file%tolerance_rms ) ) &
+                read( inv_control_file%tolerance_rms, * ) self%tolerance_rms
+            !
+            if( allocated( inv_control_file%lambda ) ) &
+                read( inv_control_file%lambda, * ) self%lambda
+            !
+        endif
+        !
+        write( *, "( A45, I20 )" ) "max_inv_iters = ", self%max_inv_iters
+        !
+        write( *, "( A45, es20.2 )" ) "tolerance_rms = ", self%tolerance_rms
+        !
+        write( *, "( A45, es20.2 )" ) "lambda = ", self%lambda
+        !
+        !> Free the memory used by the global control file, which is no longer useful
+        if( allocated( inv_control_file ) ) deallocate( inv_control_file )
+        !
         allocate( self%r_err( self%max_grad_iters ) )
         !
     end function InversionNLCG_ctor
     !
     !> Deconstructor routine:
     !>     Calls the base routine dealloc().
+	!
     subroutine InversionNLCG_dtor( self )
         implicit none
         !
         type( InversionNLCG_t ), intent( inout ) :: self
         !
-        write( *, * ) "Destructor InversionNLCG_t"
+        !write( *, * ) "Destructor InversionNLCG_t"
         !
         call self%dealloc
         !
     end subroutine InversionNLCG_dtor
     !
-	!>
+    !> No subroutine briefing
+	!
     subroutine solveInversionNLCG( self, all_data, sigma, dsigma )
         implicit none
         !
         class( InversionNLCG_t ), intent( inout ) :: self
-        !> all_data is data; on output it contains the responses for the inverse model
         type( DataGroupTx_t ), allocatable, dimension(:), intent( inout ) :: all_data
-        !
-        !> sigma is prior model parameter
         class( ModelParameter_t ), allocatable, intent( in ) :: sigma
-        !> dsigma is solution parameter ... on input dsigma contains starting guess
         class( ModelParameter_t ), allocatable, intent( inout ) :: dsigma
         !
         !> initial step size in the line search direction in model units
@@ -129,9 +159,8 @@ contains
         real( kind=prec ) :: rmsPrev, alpha, beta
         real( kind=prec ) :: gnorm, mNorm, Nmodel
         real( kind=prec ) :: grad_dot_h, g_dot_g
-        real( kind=prec ) :: g_dot_gPrev,g_dot_h
-        real( kind=prec ) :: gPrev_dot_gPrev 
-        real( kind=prec ) :: h_dot_g, h_dot_gPrev
+        real( kind=prec ) :: g_dot_gPrev, g_dot_h
+        real( kind=prec ) :: gPrev_dot_gPrev, h_dot_g, h_dot_gPrev
         integer :: iter, nCG, nLS, nfunc, ios
         type( EAllMTx_t ) :: e_all
         !
@@ -176,7 +205,7 @@ contains
             !write( *, * ) "gnorm: ", gnorm
             !stop
             !
-            if ( gnorm < TOL6 ) then
+            if( gnorm < TOL6 ) then
                 stop "Error: NLCGsolver: Problem with your gradient computations: first gradient is zero"
             else
                 !
@@ -212,10 +241,7 @@ contains
                 valuePrev = r_value
                 !
                 grad_dot_h = grad%dotProd( h )
-
-                !write( *, * ) "grad_dot_h: ", grad_dot_h
-                !stop
-
+				!
                 ! at the end of line search, set mHat to the new r_value
                 ! mHat = mHat + alpha*h  and evaluate gradient at new mHat
                 ! data and solnVector only needed for output
@@ -327,7 +353,7 @@ contains
                 !> derivative = -g_{i+1}.dot.h_{i+1} to be negative, the condition
                 !> g_{i+1}.dot.(g_{i+1}+beta*h_i) > 0 must hold. Alternatively, books
                 !> say we can take beta > 0 (didn't work as well)
-                !> if ((beta.lt.R_ZERO).or.(g_dot_g + beta*g_dot_h .le. R_ZERO)&
+                !> if((beta.lt.R_ZERO).or.(g_dot_g + beta*g_dot_h .le. R_ZERO)&
                 !>    .and.(nCG .ge. self%nCGmax)) then  !PR+
                 if( g_dot_g + beta * g_dot_h .LE. R_ZERO .AND. nCG .GE. self%nCGmax ) then  !PR
                     !
@@ -698,7 +724,7 @@ contains
         !
         niter = niter + 1
         !
-        if ( f_1 - f_0 >= R_LARGE ) then
+        if( f_1 - f_0 >= R_LARGE ) then
             write( *, * ) "Error: Try a smaller starting r_value of alpha."
             write( *, * ) "Exiting..."
             stop
@@ -776,7 +802,7 @@ contains
         if( f < f_0 + c * alpha * g_0 ) then
             !
             ! if the initial guess was better than what we found, take it
-            if ( f_1 < f ) then
+            if( f_1 < f ) then
                 starting_guess = .TRUE.
                 alpha = alpha_1
                 dHat = dHat_1

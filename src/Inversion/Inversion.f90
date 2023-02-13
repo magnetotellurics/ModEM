@@ -1,5 +1,5 @@
 !
-!> Abstract Base class to define a Inversion
+!> Abstract Base class to encapsulate the basic components needed to perform ModEM Inversion
 !
 module Inversion
     !
@@ -56,26 +56,28 @@ module Inversion
 contains
     !
     !> No subroutine briefing
+    !
     subroutine initializeInversion( self )
         implicit none
         !
         class( Inversion_t ), intent( inout ) :: self
         !
+        self%max_grad_iters = 20
+        self%tolerance_error = 10E-4
+        !
+        if( has_inv_control_file ) then
+            !
+            if( allocated( inv_control_file%max_grad_iters ) ) &
+                read( inv_control_file%max_grad_iters, * ) self%max_grad_iters
+            !
+            if( allocated( inv_control_file%tolerance_error ) ) &
+                read( inv_control_file%tolerance_error, * ) self%tolerance_error
+            !
+        endif
+        !
         write( *, "( A45 )" ) "Using inversion parameters:"
         !
-        if ( allocated( control_file%max_grad_iters ) ) then
-            read( control_file%max_grad_iters, * ) self%max_grad_iters
-        else
-            self%max_grad_iters = 20
-        endif
-        !
         write( *, "( A45, I20 )" ) "max_grad_iters = ", self%max_grad_iters
-        !
-        if ( allocated( control_file%tolerance_error ) ) then
-            read( control_file%tolerance_error, * ) self%tolerance_error
-        else
-            self%tolerance_error = 10E-4
-        endif
         !
         write( *, "( A45, es20.2 )" ) "tolerance_error = ", self%tolerance_error
         !
@@ -92,6 +94,7 @@ contains
     end subroutine initializeInversion
     !
     !> No subroutine briefing
+    !
     subroutine deallocateInversion( self )
         implicit none
         !

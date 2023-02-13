@@ -293,7 +293,7 @@ contains
         !
         integer :: counter, nx, ny, nz, nzAir, nz_earth
         !
-        if ( .NOT. self%cell_cond%is_allocated ) then
+        if( .NOT. self%cell_cond%is_allocated ) then
             stop "Error: countModelParameterCell_SG > cell_cond not allocated!"
         endif
         !
@@ -575,7 +575,7 @@ contains
         !> Convert modelParam to natural log or log10 for output
         !paramType = userParamType
         !
-        !if ( self%%is_vti ) then
+        !if( self%%is_vti ) then
         !    call getValue_modelParam(m, paramType, self%cell_cond, v_v=ccond_v)
         !else
         !    call getValue_modelParam(m, paramType, self%cell_cond)

@@ -1,5 +1,5 @@
 !
-!> Prototype of a full ModEM parallel program
+!> Prototype of a full ModEM serial|parallel program
 !
 program ModEM
     !
@@ -9,14 +9,14 @@ program ModEM
     !
     call constructorMPI()
     !
-    !> MPI MASTER PROCESS
+    !> MPI Master process
     if( mpi_rank == 0 ) then
         !
-        call startProgram()
+        call runProgram()
         !
         call MPI_Finalize( ierr )
         !
-    !> MPI WORKER PROCESS
+    !> MPI Worker process
     else
         !
         call workerMainLoop()
@@ -28,14 +28,15 @@ program ModEM
     use InversionDCG
     use InversionNLCG
     !
-    call startProgram()
+    call runProgram()
     !
 #endif
     !
 contains
     !
-    !>
-    subroutine startProgram()
+    !> Main program protocol
+    !
+    subroutine runProgram()
         implicit none
         !
         real( kind=prec ) :: t_start, t_finish
@@ -47,15 +48,20 @@ contains
         !
         call setupDefaultParameters()
         !
-        !> Validate arguments, set model_file_name, data_file_name, control_file_name, etc...
+        !> Validate arguments, set model_file_name, data_file_name, control_files, etc...
         call handleArguments()
         !
         write( *, * )
         write( *, * ) "Start ModEM-OO."
         write( *, * )
         !
-        !> Check parameters at the control file
-        if( has_control_file ) call handleControlFile()
+        !> If it was passed by argument,
+        !> Check parameters at the forward control file
+        if( has_fwd_control_file ) call handleForwardControlFile()
+        !
+        !> If it was passed by argument,
+        !> Check parameters at the inversion control file
+        if( has_inv_control_file ) call handleInversionControlFile()
         !
         !> Execute the job specified in the arguments
         call handleJob()
@@ -70,14 +76,14 @@ contains
         write( *, "( a16, f16.3, a1 )" ) "Finish ModEM-OO:", ( t_finish - t_start ), "s"
         write( *, * )
         !
-    end subroutine startProgram
+    end subroutine runProgram
     !
     !> Routine to run a full Inversion Job - Minimize Residual
     !> Where:
-    !>    SIGMA (M) = Production model (for predicted data and final inversion model)
-    !>    PMODEL = Perturbation model  (if exist -dm readed input model)
-    !>    SIGMA0 = Readed input model  (-m)
-    !>    DSIGMA = From serialJMult_T        (????)
+    !>     sigma  = Input|Start model (for predicted data and final inversion model)
+    !>     pmodel = Perturbation model  (if exist -dm read input model)
+    !>     sigma0 = Read input model    (-m)
+    !>     dsigma = Production model (data gradient From serialJMult_T)
     !
     subroutine jobInversion()
         implicit none
@@ -140,6 +146,10 @@ contains
         !
 #endif
         !
+        if( .NOT. has_inv_control_file ) then
+            inversion_type = DCG
+        endif
+        !
         !> Instantiate the ForwardSolver - Specific type can be chosen via control file
         select case( inversion_type )
             !
@@ -171,13 +181,14 @@ contains
     end subroutine jobInversion
     !
     !> No subroutine briefing
+    !
     subroutine handleJob()
         implicit none
         !
+        !> Except for the case of Inversion,
         !> Free the memory used by the global control file, which is no longer useful
-        !> Except for the case of Inversion
-        if( index( modem_job, "Inversion" ) .LE. 0 .AND. allocated( control_file ) ) then
-            deallocate( control_file )
+        if( index( modem_job, "Inversion" ) .LE. 0 .AND. allocated( inv_control_file ) ) then
+            deallocate( inv_control_file )
         endif
         !
         select case( modem_job )
@@ -207,273 +218,6 @@ contains
         end select
         !
     end subroutine handleJob
-    !
-    !> No subroutine briefing
-    subroutine handleControlFile()
-        implicit none
-        !
-        write( *, * ) "     < Control File: [", control_file_name, "]"
-        !
-        !> Instantiate the ControlFile object
-        !> Read control file and sets the options in the Constants module
-        allocate( control_file, source = ModEMControlFile_t( ioStartup, control_file_name ) )
-        !
-    end subroutine handleControlFile
-    !
-    !> No subroutine briefing
-    subroutine handleArguments()
-        implicit none
-        !
-        character( len=200 ) :: argument
-        integer :: argument_index
-        !
-        if( command_argument_count() == 0 ) then
-            !
-            call printHelp()
-            call printUsage()
-            stop
-            !
-        else
-            !
-            argument_index = 1
-            !
-            do while( argument_index <= command_argument_count() ) 
-                 !
-                 call get_command_argument( argument_index, argument )
-                 !
-                 select case( argument )
-                      !
-                      case( "-c", "--control" )
-                         !
-                         call get_command_argument( argument_index + 1, argument )
-                         control_file_name = trim( argument )
-                         !
-                         if( len( control_file_name ) > 0 ) has_control_file = .TRUE.
-                         !
-                         argument_index = argument_index + 2
-                         !
-                      case( "-d", "--data" )
-                         !
-                         call get_command_argument( argument_index + 1, argument )
-                         data_file_name = trim( argument )
-                         !
-                         if( len( data_file_name ) > 0 ) has_data_file = .TRUE.
-                         !
-                         argument_index = argument_index + 2
-                         !
-                      case( "-f", "--forward" )
-                         !
-                         modem_job = "Forward"
-                         !
-                         argument_index = argument_index + 1
-                         !
-                      case( "-i", "--inversion" )
-                         !
-                         modem_job = "Inversion"
-                         !
-                         argument_index = argument_index + 1
-                         !
-                      case( "-j", "--jmult" )
-                         !
-                         modem_job = "serialJMult"
-                         !
-                         argument_index = argument_index + 1
-                         !
-                      case( "-jt", "--jmult_t" )
-                         !
-                         modem_job = "serialJMult_T"
-                         !
-                         argument_index = argument_index + 1
-                         !
-                      case( "-m", "--model" )
-                         !
-                         call get_command_argument( argument_index + 1, argument )
-                         model_file_name = trim( argument )
-                         !
-                         if( len( model_file_name ) > 0 ) has_model_file = .TRUE.
-                         !
-                         argument_index = argument_index + 2
-                         !
-                      case( "-o", "--outdir" )
-                         !
-                         call get_command_argument( argument_index + 1, argument )
-                         outdir_name = trim( argument )
-                         !
-                         if( len( outdir_name ) > 0 ) has_outdir_name = .TRUE.
-                         !
-                         argument_index = argument_index + 2
-                         !
-                      case( "-pm", "--pmodel" )
-                         !
-                         call get_command_argument( argument_index + 1, argument )
-                         pmodel_file_name = trim( argument )
-                         !
-                         if( len( pmodel_file_name ) > 0 ) has_pmodel_file = .TRUE.
-                         !
-                         argument_index = argument_index + 2
-                         !
-                      case( "-dm", "--dsigma" )
-                         !
-                         call get_command_argument( argument_index + 1, argument )
-                         dsigma_file_name = trim( argument )
-                         !
-                         argument_index = argument_index + 2
-                         !
-                      case( "-pd", "--predicted" )
-                         !
-                         call get_command_argument( argument_index + 1, argument )
-                         predicted_data_file_name = trim( argument )
-                         !
-                         argument_index = argument_index + 2
-                         !
-                      case( "-jm", "--jmhat" )
-                         !
-                         call get_command_argument( argument_index + 1, argument )
-                         jmhat_data_file_name = trim( argument )
-                         !
-                         argument_index = argument_index + 2
-                         !
-                      case( "-es", "--esolution" )
-                         !
-                         call get_command_argument( argument_index + 1, argument )
-                         e_solution_file_name = trim( argument )
-                         !
-                         if( len( e_solution_file_name ) > 0 ) has_e_solution_file = .TRUE.
-                         !
-                         argument_index = argument_index + 2
-                         !
-                      case( "-v", "--version" )
-                         !
-                         write( *, * ) "    + ModEM-OO version 1.0.0"
-                         stop
-                         !
-                      case( "-h", "--help" )
-                         !
-                         call printHelp()
-                         call printUsage()
-                         stop
-                         !
-                      case( "-vb", "--verbose" )
-                         !
-                         stop "Error: handleArguments > Verbose level not implemented yet!"
-                         !
-                      case default
-                         !
-                         write( *, * ) "Error: Unknown Argument: [", trim( argument ), "]"
-                         call printHelp()
-                         stop
-                         !
-                 end select
-                 !
-                 argument = ""
-                 !
-            enddo
-            !
-        endif
-        !
-    end subroutine handleArguments
-    !
-    !> No subroutine briefing
-    subroutine setupDefaultParameters()
-        implicit none
-        !
-        ! I|O
-        predicted_data_file_name = "all_predicted_data.dat"
-        jmhat_data_file_name = "jmhat.dat"
-        e_solution_file_name = "esolution.bin"
-        dsigma_file_name = "dsigma.rho"
-        !
-        inversion_type = "DCG"
-        !
-        ! Control flags
-        has_outdir_name = .FALSE.
-        !
-        has_control_file = .FALSE.
-        has_model_file = .FALSE.
-        has_pmodel_file = .FALSE.
-        has_data_file = .FALSE.
-        has_e_solution_file = .FALSE.
-        verbosis = .FALSE.
-        !
-        ! Solver parameters
-        QMR_iters = 40
-        BCG_iters = 80
-        max_divcor_calls = 20
-        max_divcor_iters = 100
-        tolerance_divcor = 1E-5
-        tolerance_qmr = 1E-7
-        !
-        forward_solver_type = FWD_IT_DC
-        !
-        ! Source parameters
-        source_type = SRC_MT_1D
-        get_1D_from = "Geometric_mean"
-        !
-        ! Model parameters
-        model_method = MM_METHOD_FIXED_H
-        model_n_air_layer = 10
-        model_max_height = 200.0
-        !
-    end subroutine setupDefaultParameters
-    !
-    !> No subroutine briefing
-    subroutine printUsage()
-        implicit none
-        !
-        write( *, * ) "ModEM Minimal Usage:"
-        write( *, * ) ""
-        write( *, * ) "    Forward Modeling:"
-        write( *, * ) "        <ModEM> -f -m <rFile_Model> -d <rFile_Data>"
-        write( *, * ) "        Output:"
-        write( *, * ) "        - all_predicted_data.dat or the path specified by         [-pd]"
-        write( *, * ) ""
-        write( *, * ) "    serialJMult:"
-        write( *, * ) "        <ModEM> -j -m <rFile_Model> -pm <rFile_pModel> -d <rFile_Data>"
-        write( *, * ) "        Output:"
-        write( *, * ) "        - jmhat.dat or the path specified by                  [-jm]"
-        write( *, * ) ""
-        write( *, * ) "    serialJMult_T:"
-        write( *, * ) "        <ModEM> -jt -m <rFile_Model> -d <rFile_Data>"
-        write( *, * ) "        Output:"
-        write( *, * ) "        - dsigma.rho or the path specified by                 [-dm]"
-        write( *, * ) ""
-        write( *, * ) "    Inversion:"
-        write( *, * ) "        <ModEM> -i -m <rFile_Model> -d <rFile_Data>"
-        write( *, * ) "        Output:"
-        write( *, * ) "        - directory named Output_<date>_<time> or specified by [-o]"
-        !
-    end subroutine printUsage
-    !
-    !> No subroutine briefing
-    subroutine printHelp()
-        implicit none
-        !
-        write( *, * ) "ModEM Options:"
-        write( *, * ) ""
-        write( *, * ) "    Flags to define a job:"
-        write( *, * ) "        [-f],  [--forward]   :  Forward Modeling."
-        write( *, * ) "        [-j],  [--jmult]     :  serialJMult."
-        write( *, * ) "        [-jt], [--jmult_t]   :  Transposed serialJMult."
-        write( *, * ) "        [-i],  [--inversion] :  Inversion."
-        write( *, * )
-        write( *, * ) "    Other arguments:"
-        write( *, * ) "        [-d],  [--data]      :  Flag to precede data file path."
-        write( *, * ) "        [-m],  [--model]     :  Flag to precede model file path."
-        write( *, * ) "        [-pm], [--pmodel]    :  Flag to precede perturbation model file path."
-        write( *, * ) "        [-c],  [--control]   :  Flag to precede user control file path."
-        write( *, * ) "        [-o],  [--outdir]    :  Flag to precede output directory path."
-        write( *, * ) "        [-dm], [--dmodel]    :  Flag to precede output dsigma model file path."
-        write( *, * ) "        [-pd], [--predicted] :  Flag to precede output predicted data file path."
-        write( *, * ) "        [-jm], [--jmhat]     :  Flag to precede output JmHat data file path."
-        write( *, * ) "        [-es], [--esolution] :  Flag to precede binary output e-solution file path."
-        write( *, * ) "        [-v],  [--version]   :  Print version."
-        write( *, * ) "        [-vb], [--verbose]   :  Print runtime information."
-        write( *, * ) "        [-h],  [--help]      :  Print usage information."
-        !
-        write( *, * ) ""
-        write( *, * ) "Version 1.0.0"
-        !
-    end subroutine printHelp
     !
 end program ModEM
 !
