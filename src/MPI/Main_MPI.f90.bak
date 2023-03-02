@@ -15,6 +15,7 @@ module Main_MPI
 
   implicit none
 
+
   ! temporary EM fields, that are saved for efficiency - to avoid
   !  memory allocation & deallocation for each transmitter
   type(solnVector_t), save, private		    :: e,e0
@@ -23,6 +24,10 @@ module Main_MPI
   
   
 Contains
+
+
+
+
 
 
 
@@ -873,7 +878,7 @@ Subroutine Worker_job (sigma,d)
 
    Integer        :: iper,ipol,i
    Integer        :: per_index,pol_index,stn_index,eAll_vec_size
-   character(20)                               :: which_proc,sys_command_line
+   character(20)                               :: which_proc
  
    type(modelParam_t), pointer   :: Jreal(:),Jimag(:)
    integer                       ::nComp,nFunc,iFunc,istat
@@ -909,8 +914,8 @@ write(node_info,'(a5,i3.3,a4)') 'node[',taskid,']:  '
 
 if (trim(worker_job_task%what_to_do) .eq. 'FORWARD') then
 
-		  !write(sys_command_line,'(a13,i3.3)') 'free -m >RAM_',taskid
-          !Call SYSTEM(sys_command_line)
+
+
           per_index=worker_job_task%per_index
           pol_index=worker_job_task%pol_index
           worker_job_task%taskid=taskid

@@ -327,7 +327,6 @@ Contains
    g = grad
    call linComb(MinusONE,grad,R_ZERO,grad,g)
    h = g
-   which_iter=iter
    do
       !  test for convergence ...
       if((rms.lt.iterControl%rmsTol).or.(iter.ge.iterControl%maxIter)) then
@@ -335,7 +334,7 @@ Contains
       end if
 
       iter = iter + 1
-      which_iter=iter
+
 	  ! save the values of the functional and the directional derivative
 	  rmsPrev = rms
 	  valuePrev = value

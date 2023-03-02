@@ -86,9 +86,6 @@ Contains
        case(Full_Impedance,Off_Diagonal_Impedance,Full_Vertical_Components)
           header = 'Period(s) Code GG_Lat GG_Lon X(m) Y(m) Z(m) Component Real Imag Error'
 
-       case(Full_Impedance_wAzimuth)
-          header = 'Period(s) Code GG_Lat GG_Lon X(m) Y(m) Z(m) Component Real Imag Error ExAzimuth'
-		  
        case(Full_Interstation_TF)
           header = 'Period(s) Code GG_Lat GG_Lon X(m) Y(m) Z(m) Ref_Code Ref_Lat '// &
                    'Ref_Lon Ref_X(m) Ref_Y(m) Ref_Z(m) Component Real Imag Error'
@@ -97,9 +94,9 @@ Contains
           header = 'Period(s) Code GG_Lat GG_Lon X(m) Y(m) Z(m) Component Value Error'
        case(Ex_Field,Ey_Field,Bx_Field,By_Field,Bz_Field)
           header = 'Tx_Dipole Tx_Period(s) Tx_Moment(Am) Tx_Azi Tx_Dip Tx_X(m) Tx_Y(x) Tx_Z(m) Code X(m) Y(x) Z(m) Component Real Imag Error'
-       case(Exy_Ampli_Phase,Bxy_Ampli_Phase)
+       case(Exy_Ampli_Phase)
           header = 'Tx_Dipole Tx_Period(s) Tx_Moment(Am) Tx_Azi Tx_Dip Tx_X(m) Tx_Y(x) Tx_Z(m) Code X(m) Y(x) Z(m) Component Real Error Rx_Azi'
-       case(Exy_Field,Bxy_Field)
+       case(Exy_Field)
           header = 'Tx_Dipole Tx_Period(s) Tx_Moment(Am) Tx_Azi Tx_Dip Tx_X(m) Tx_Y(x) Tx_Z(m) Code X(m) Y(x) Z(m) Component Real Imag Error Rx_Azi'
     end select
 
@@ -190,10 +187,14 @@ Contains
 
     open(unit=ioDat,file=cfile,form='formatted',status='unknown')
 
+    write(6,*) 'entered write_Z_list'
+
+    write(6,*) 'number of data types', size(typeDict)
     ! For each data type in dictionary, if data of this type exists, write it out.
     WRITE_DATA_TYPE: do iDt = 1,size(typeDict)
 
       nBlocks = countDataBlock(allData,iDt,iTxt)
+      write(6,*) 'nBlocks',nBlocks
       if (nBlocks == 0) then
 	! no data for this data type; skip it - this shouldn't happen anymore
 	! since the "defined" logical deals with this on input
@@ -289,31 +290,7 @@ Contains
             x = rxDict(iRx)%x
 
             select case (iDt)
-                case(Bz_Ampli_Phase)
-						do icomp = 1,ncomp
-							if (.not. exist(icomp)) then
-								cycle
-							end if
-							compid = typeDict(iDt)%id(icomp)
-							write(ioDat,'(a8)',iostat=ios,advance='no') trim(Dipole)
-							write(ioDat, '(a1)', iostat=ios,advance='no') ' '
-							write(ioDat,'(2es12.6)', iostat=ios, advance='no') Period
-							write(ioDat, '(a1)', iostat=ios,advance='no') ' '
-							write(ioDat,'(2es12.6)', iostat=ios, advance='no') Moment
-							write(ioDat,'(2f9.3, 3f12.3)',iostat=ios,advance='no') Azi, Dip, Tx
-							write(ioDat, '(a1)', iostat=ios,advance='no') ' '
-							write(ioDat,'(a20,3f12.3)',iostat=ios,advance='no') trim(siteid),x(:)
-							write(ioDat, '(a1)', iostat=ios,advance='no') ' '
-							if (icomp .eq. 1) then
-						       write(ioDat,'(a10,3es15.6)',iostat=ios) trim(compid),value(icomp),0.1
-							else
-							   write(ioDat,'(a10,3es15.6)',iostat=ios) trim(compid),value(icomp),5.0
-							end if
-							
-							countData = countData + 1
-                        end do	
-						
-                case(Exy_Ampli_Phase,Bxy_Ampli_Phase)
+                case(Exy_Ampli_Phase)
 				    Rx_Azi = rxDict(iRx)%Rx_Azi
 						do icomp = 1,ncomp
 							if (.not. exist(icomp)) then
@@ -327,7 +304,7 @@ Contains
 							write(ioDat,'(2es12.6)', iostat=ios, advance='no') Moment
 							write(ioDat,'(2f9.3, 3f12.3)',iostat=ios,advance='no') Azi, Dip, Tx
 							write(ioDat, '(a1)', iostat=ios,advance='no') ' '
-							write(ioDat,'(a20,3f12.3)',iostat=ios,advance='no') trim(siteid),x(:)
+							write(ioDat,'(a15,3f12.3)',iostat=ios,advance='no') trim(siteid),x(:)
 							write(ioDat, '(a1)', iostat=ios,advance='no') ' '
 							if (icomp .eq. 1) then
 						       write(ioDat,'(a10,3es15.6)',iostat=ios) trim(compid),value(icomp),0.1,Rx_Azi
@@ -338,7 +315,7 @@ Contains
 							countData = countData + 1
                         end do	
 						
-                case(Exy_Field,Bxy_Field)
+                case(Exy_Field)
 				    Rx_Azi = rxDict(iRx)%Rx_Azi
 						do icomp = 1,ncomp/2
 							if (.not. exist(2*icomp-1)) then
@@ -352,7 +329,7 @@ Contains
 							write(ioDat,'(2es12.6)', iostat=ios, advance='no') Moment
 							write(ioDat,'(2f9.3, 3f12.3)',iostat=ios,advance='no') Azi, Dip, Tx
 							write(ioDat, '(a1)', iostat=ios,advance='no') ' '
-							write(ioDat,'(a20,3f12.3)',iostat=ios,advance='no') trim(siteid),x(:)
+							write(ioDat,'(a15,3f12.3)',iostat=ios,advance='no') trim(siteid),x(:)
 							write(ioDat, '(a1)', iostat=ios,advance='no') ' '
 !							write(ioDat,'(a8,3es15.6)',iostat=ios) trim(compid),value(2*icomp-1),value(2*icomp), error(2*icomp)
 !							error(2*icomp) = sqrt(value(2*icomp-1)*value(2*icomp-1) + value(2*icomp)*value(2*icomp))/100.0;
@@ -378,7 +355,7 @@ Contains
 							write(ioDat,'(2es12.6)', iostat=ios, advance='no') Moment
 							write(ioDat,'(2f9.3, 3f12.3)',iostat=ios,advance='no') Azi, Dip, Tx
 							write(ioDat, '(a1)', iostat=ios,advance='no') ' '
-							write(ioDat,'(a20,3f12.3)',iostat=ios,advance='no') trim(siteid),x(:)
+							write(ioDat,'(a15,3f12.3)',iostat=ios,advance='no') trim(siteid),x(:)
 							write(ioDat, '(a1)', iostat=ios,advance='no') ' '
 !							write(ioDat,'(a8,3es15.6)',iostat=ios) trim(compid),value(2*icomp-1),value(2*icomp), error(2*icomp)
 !							error(2*icomp) = sqrt(value(2*icomp-1)*value(2*icomp-1) + value(2*icomp)*value(2*icomp))/100.0;
@@ -388,10 +365,7 @@ Contains
                             write(ioDat,'(a8,3es15.6)',iostat=ios) trim(compid),value(2*icomp-1),value(2*icomp),error(2*icomp)
                         end if
 							countData = countData + 1
-                        end do
-						!
-						!write( 1982, * ) "OUTPUT: ", conjugate, SI_factor, fileInfo(iTxt,iDt)%units_in_file, typeDict(iDt)%units
-						!
+                        end do				
                 case(Full_Impedance,Off_Diagonal_Impedance,Full_Vertical_Components)
 
                     do icomp = 1,ncomp/2
@@ -418,32 +392,7 @@ Contains
                         end if
                         countData = countData + 1
                     end do
-                case(Full_Impedance_wAzimuth)
-                   Rx_Azi = rxDict(iRx)%Rx_Azi
-                    do icomp = 1,ncomp/2
-                        if (.not. exist(2*icomp-1)) then
-                            cycle
-                        end if
-                        compid = typeDict(iDt)%id(icomp)
-                        write(ioDat,'(es13.6)',    iostat=ios,advance='no') Period
-                        write(ioDat, '(a1)', iostat=ios,advance='no') ' '
-                        if (FindStr(gridCoords, CARTESIAN)>0) then
-                            write(ioDat,'(a50,3f15.3)',iostat=ios,advance='no') trim(siteid),x(:)
-                   
-                        elseif (FindStr(gridCoords, SPHERICAL)>0) then
-                            read(siteid,'(a20,2f15.3)',iostat=ios) sitename,Xx(1),Xx(2)
-                            write(ioDat,'(a20,5f15.3)',iostat=ios,advance='no') trim(sitename),x(1),x(2),Xx(1),Xx(2),x(3)
-                            
-                        end if
-                        
 
-                        if (conjugate) then
-                            write(ioDat,'(a8,4es15.6)',iostat=ios) trim(compid),value(2*icomp-1),-value(2*icomp),error(2*icomp),Rx_Azi
-                        else
-                            write(ioDat,'(a8,4es15.6)',iostat=ios) trim(compid),value(2*icomp-1),value(2*icomp),error(2*icomp),Rx_Azi
-                        end if
-                        countData = countData + 1
-                    end do
                 case(Full_Interstation_TF)
 
                     do icomp = 1,ncomp/2
@@ -628,43 +577,7 @@ Contains
         READ_DATA_LINE: Do
 
         select case (iDt)
- 			case(Bz_Ampli_Phase)
-				read(ioDat,*,iostat=ios) Dipole, Period, Moment, Azi, Dip, Tx(1), Tx(2), Tx(3), code, x(1), x(2), x(3), compid, Zreal, Zerr
-				if (ios /= 0 ) then
-					backspace(ioDat)
-					exit
-				end if
-            			
-            		    aTx%Tx_type='CSEM'
-						aTx%nPol=1
-            			aTx%Dipole = Dipole
-				        aTx%period = Period
-            			aTx%omega = 2.0d0*PI/Period            		
-            			aTx%xyzTx = Tx
-            			aTx%azimuthTx = Azi
-            			aTx%dipTx = Dip
-            			atx%moment = Moment
-						
-                ! Find component id for this value
-                icomp = ImpComp(compid,iDt)
-
-                ! Update the transmitter dictionary and the index (sets up if necessary)
-                iTx = update_txDict(aTx)
-
-                ! Update the receiver dictionary and index (sets up if necessary)
-                ! For now, make lat & lon part of site ID; could use directly in the future
-                
-                if (FindStr(gridCoords, CARTESIAN)>0) then
-                    write(siteid,'(a20,2f9.3)') code,x(1),x(2)
-                   
-                elseif (FindStr(gridCoords, SPHERICAL)>0) then
-                write(siteid,'(a20,2f15.3)') code,x(1),x(2)
-                    x(1) = lat
-                    x(2) = lon
-                end if
-                iRx = update_rxDict(x,siteid)
-				
- 			case(Exy_Ampli_Phase,Bxy_Ampli_Phase)
+ 			case(Exy_Ampli_Phase)
 				read(ioDat,*,iostat=ios) Dipole, Period, Moment, Azi, Dip, Tx(1), Tx(2), Tx(3), code, x(1), x(2), x(3), compid, Zreal, Zerr,Rx_azi
 				if (ios /= 0 ) then
 					backspace(ioDat)
@@ -691,7 +604,7 @@ Contains
                 ! For now, make lat & lon part of site ID; could use directly in the future
                 
                 if (FindStr(gridCoords, CARTESIAN)>0) then
-                    write(siteid,'(a20,2f9.3)') code,x(1),x(2)
+                    write(siteid,'(a20,2f9.3)') code,lat,lon
                    
                 elseif (FindStr(gridCoords, SPHERICAL)>0) then
                 write(siteid,'(a20,2f15.3)') code,x(1),x(2)
@@ -699,7 +612,7 @@ Contains
                     x(2) = lon
                 end if
                 iRx = update_rxDict(x,siteid,Rx_azi)
- 			case(Exy_Field,Bxy_Field)
+ 			case(Exy_Field)
 				read(ioDat,*,iostat=ios) Dipole, Period, Moment, Azi, Dip, Tx(1), Tx(2), Tx(3), code, x(1), x(2), x(3), compid, Zreal, Zimag, Zerr,Rx_azi
 				if (ios /= 0 ) then
 					backspace(ioDat)
@@ -726,10 +639,10 @@ Contains
                 ! For now, make lat & lon part of site ID; could use directly in the future
                 
                 if (FindStr(gridCoords, CARTESIAN)>0) then
-                    write(siteid,'(a20,2f9.3)') code,x(1),x(2)
+                    write(siteid,'(a20,2f9.3)') code,lat,lon
                    
                 elseif (FindStr(gridCoords, SPHERICAL)>0) then
-                    write(siteid,'(a20,2f15.3)') code,x(1),x(2)
+                write(siteid,'(a20,2f15.3)') code,x(1),x(2)
                     x(1) = lat
                     x(2) = lon
                 end if
@@ -741,9 +654,7 @@ Contains
 					backspace(ioDat)
 					exit
 				end if
-            			!
-						!write( 1982, * ) "INPUT : ", conjugate, SI_factor, fileInfo(iTxt,iDt)%units_in_file, typeDict(iDt)%units
-						!
+            			
             		    aTx%Tx_type='CSEM'
 						aTx%nPol=1
             			aTx%Dipole = Dipole
@@ -764,7 +675,7 @@ Contains
                 ! For now, make lat & lon part of site ID; could use directly in the future
                 
                 if (FindStr(gridCoords, CARTESIAN)>0) then
-                    write(siteid,'(a20,2f9.3)') code,x(1),x(2)
+                    write(siteid,'(a20,2f9.3)') code,lat,lon
                    
                 elseif (FindStr(gridCoords, SPHERICAL)>0) then
                 write(siteid,'(a20,2f15.3)') code,x(1),x(2)
@@ -804,38 +715,6 @@ Contains
                 end if
                 iRx = update_rxDict(x,siteid)
 
-            case(Full_Impedance_wAzimuth)
-                read(ioDat,*,iostat=ios) Period,code,lat,lon,x(1),x(2),x(3),compid,Zreal,Zimag,Zerr,Rx_azi
-
-                if (ios /= 0) then
-                    backspace(ioDat)
-                    exit
-                end if
-            		    aTx%Tx_type='MT'
-						aTx%nPol=2
-				        aTx%period = Period
-            			aTx%omega = 2.0d0*PI/Period            		
-						
-                ! Find component id for this value
-                icomp = ImpComp(compid,iDt)
-
-                ! Update the transmitter dictionary and the index (sets up if necessary)
-                iTx = update_txDict(aTx)
-
-                ! Update the receiver dictionary and index (sets up if necessary)
-                ! For now, make lat & lon part of site ID; could use directly in the future
-                
-                if (FindStr(gridCoords, CARTESIAN)>0) then
-                    write(siteid,'(a20,2f9.3)') code,lat,lon
-                   
-                elseif (FindStr(gridCoords, SPHERICAL)>0) then
-                write(siteid,'(a20,2f15.3)') code,x(1),x(2)
-                    x(1) = lat
-                    x(2) = lon
-                end if
-                iRx = update_rxDict(x,siteid,Rx_azi)
-				
-				
             case(Full_Interstation_TF)
                 read(ioDat,*,iostat=ios) Period,code,lat,lon,x(1),x(2),x(3), &
                     ref_code,ref_lat,ref_lon,ref_x(1),ref_x(2),ref_x(3),compid,Zreal,Zimag,Zerr
@@ -932,8 +811,8 @@ Contains
         write(0,*) 'Tx_Dic Size', size(txDict)
 		write(0,*) 'Rx_Dic Size', size(rxDict)
   ! Create a single-type data vector from the new values
-        !nTx = size(txDict)
-        !nRx = size(rxDict)
+        nTx = size(txDict)
+        nRx = size(rxDict)
 	call create_dataVectorMTX(nTx,newData)
 	newData%allocated = .TRUE.
 	errorBar = .TRUE.

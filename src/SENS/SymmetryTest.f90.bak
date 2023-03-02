@@ -45,11 +45,7 @@ module SymmetryTest
 
   use SensComp
 #ifdef MPI
-#ifdef eAll_from_files
-     Use Main_MPI_files
-#else
-     Use Main_MPI_RAM
-#endif
+     Use Main_MPI
 #endif
   implicit none
 

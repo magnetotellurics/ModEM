@@ -284,6 +284,7 @@ Contains
    mHat = m
 
    !  compute the penalty functional and predicted data
+   eAll%SolnIndex=0
    call func(lambda,d,m0,mHat,value,mNorm,dHat,eAll,rms)
    call printf('START',lambda,alpha,value,mNorm,rms)
    call printf('START',lambda,alpha,value,mNorm,rms,logFile)
@@ -586,6 +587,7 @@ Contains
    call linComb(ONE,mHat_0,alpha_1,h,mHat_1)
 
    !  compute the penalty functional and predicted data at mHat_1
+   eAll_1%SolnIndex=1
    call func(lambda,d,m0,mHat_1,f_1,mNorm_1,dHat_1,eAll_1,rms_1)
    call printf('STARTLS',lambda,alpha,f_1,mNorm_1,rms_1)
    call printf('STARTLS',lambda,alpha,f_1,mNorm_1,rms_1,logFile)
@@ -617,6 +619,7 @@ Contains
     !     alpha = alpha_i/TWO ! reset alpha to ensure progress
     ! end if
     call linComb(ONE,mHat_0,alpha,h,mHat)
+	eAll%SolnIndex=0
     call func(lambda,d,m0,mHat,f,mNorm,dHat,eAll,rms)
     call printf('QUADLS',lambda,alpha,f,mNorm,rms)
     call printf('QUADLS',lambda,alpha,f,mNorm,rms,logFile)
@@ -650,6 +653,7 @@ Contains
    	alpha = alpha_1
    	dHat = dHat_1
    	eAll = eAll_1
+	eAll%SolnIndex=1
    	mHat = mHat_1
    	rms = rms_1
    	f = f_1
@@ -658,6 +662,7 @@ Contains
    ! compute gradient of the full penalty functional and exit
     if (relaxation) then
    		call linComb(ONE,mHat_0,gamma*alpha,h,mHat)
+		eAll%SolnIndex=0
     	call func(lambda,d,m0,mHat,f,mNorm,dHat,eAll,rms)
    		call printf('RELAX',lambda,gamma*alpha,f,mNorm,rms)
    		call printf('RELAX',lambda,gamma*alpha,f,mNorm,rms,logFile)
@@ -777,6 +782,7 @@ Contains
    ! compute the trial mHat, f, dHat, eAll, rms
    mHat_1 = mHat_0
    call linComb(ONE,mHat_0,alpha_1,h,mHat_1)
+   eAll_1%SolnIndex=1
    call func(lambda,d,m0,mHat_1,f_1,mNorm_1,dHat_1,eAll_1,rms_1)
    call printf('STARTLS',lambda,alpha,f_1,mNorm_1,rms_1)
    call printf('STARTLS',lambda,alpha,f_1,mNorm_1,rms_1,logFile)
@@ -797,12 +803,14 @@ Contains
   	alpha = alpha_1
    	dHat = dHat_1
     eAll = eAll_1
+	eAll%SolnIndex=1
    	mHat = mHat_1
    	rms = rms_1
    	f = f_1
     ! compute the gradient and exit
     if (relaxation) then
    	call linComb(ONE,mHat_0,gamma*alpha,h,mHat)
+		eAll%SolnIndex=0
     	call func(lambda,d,m0,mHat,f,mNorm,dHat,eAll,rms)
    	call printf('RELAX',lambda,gamma*alpha,f,mNorm,rms)
    	call printf('RELAX',lambda,gamma*alpha,f,mNorm,rms,logFile)
@@ -820,7 +828,9 @@ Contains
    ! otherwise compute the functional at the minimizer of the quadratic
    alpha = - b/(TWO*a)
    call linComb(ONE,mHat_0,alpha,h,mHat)
+ eAll%SolnIndex=0  
    call func(lambda,d,m0,mHat,f,mNorm,dHat,eAll,rms)
+  
    call printf('QUADLS',lambda,alpha,f,mNorm,rms)
    call printf('QUADLS',lambda,alpha,f,mNorm,rms,logFile)
    niter = niter + 1
@@ -832,6 +842,7 @@ Contains
    		alpha = alpha_1
    		dHat = dHat_1
      	eAll = eAll_1
+		eAll%SolnIndex=1
    		mHat = mHat_1
    		rms = rms_1
    		f = f_1
@@ -839,6 +850,7 @@ Contains
     ! compute the gradient and exit
     if (relaxation) then
    		call linComb(ONE,mHat_0,gamma*alpha,h,mHat)
+		eAll%SolnIndex=0
     	call func(lambda,d,m0,mHat,f,mNorm,dHat,eAll,rms)
    		call printf('RELAX',lambda,gamma*alpha,f,mNorm,rms)
    		call printf('RELAX',lambda,gamma*alpha,f,mNorm,rms,logFile)
@@ -886,6 +898,7 @@ Contains
         !  end if
         ! compute the penalty functional
         call linComb(ONE,mHat_0,alpha,h,mHat)
+		eAll%SolnIndex=0
         call func(lambda,d,m0,mHat,f,mNorm,dHat,eAll,rms)
         call printf('CUBICLS',lambda,alpha,f,mNorm,rms)
         call printf('CUBICLS',lambda,alpha,f,mNorm,rms,logFile)
@@ -917,6 +930,7 @@ Contains
    	alpha = alpha_1
    	dHat = dHat_1
    	eAll = eAll_1
+	eAll%SolnIndex=1
    	mHat = mHat_1
    	rms = rms_1
    	f = f_1
@@ -925,6 +939,7 @@ Contains
    ! compute gradient of the full penalty functional and exit
     if (relaxation) then
    		call linComb(ONE,mHat_0,gamma*alpha,h,mHat)
+		eAll%SolnIndex=0
     	call func(lambda,d,m0,mHat,f,mNorm,dHat,eAll,rms)
    		call printf('RELAX',lambda,gamma*alpha,f,mNorm,rms)
    		call printf('RELAX',lambda,gamma*alpha,f,mNorm,rms,logFile)
@@ -1081,6 +1096,7 @@ Contains
    mHat_1 = mHat_0
    ! mHat_1 = mHat_0 + dir*step
    call linComb(ONE,mHat_0,alpha_1,h,mHat_1)
+   eAll_1%SolnIndex=1
    call func(lambda,d,m0,mHat_1,f_1,mNorm_1,dHat_1,eAll_1,rms_1)
    call printf('STARTLS',lambda,alpha_1,f_1,mNorm_1,rms_1)
    call printf('STARTLS',lambda,alpha_1,f_1,mNorm_1,rms_1,logFile)
@@ -1106,6 +1122,7 @@ Contains
        alpha = alpha_1
        dHat = dHat_1
        eAll = eAll_1
+	   eAll%SolnIndex=1
        mHat = mHat_1
        rms = rms_1
        f = f_1
@@ -1121,6 +1138,7 @@ Contains
    end if
    ! otherwise compute the functional at the minimizer of the quadratic
    call linComb(ONE,mHat_0,alpha,h,mHat)
+   eAll%SolnIndex=0
    call func(lambda,d,m0,mHat,f,mNorm,dHat,eAll,rms)
    call printf('QUADLS',lambda,alpha,f,mNorm,rms)
    call printf('QUADLS',lambda,alpha,f,mNorm,rms,logFile)
@@ -1172,6 +1190,7 @@ Contains
                alpha = alpha_1
                dHat = dHat_1
                eAll = eAll_1
+			   eAll%SolnIndex=1
                mHat = mHat_1
                rms = rms_1
                f= f_1
@@ -1258,6 +1277,7 @@ Contains
            ! end if
            ! compute the penalty functional
            call linComb(ONE,mHat_0,alpha,h,mHat)
+		   eAll%SolnIndex=0
            call func(lambda,d,m0,mHat,f,mNorm,dHat,eAll,rms)
            call printf('CUBICLS',lambda,alpha,f,mNorm,rms)
            call printf('CUBICLS',lambda,alpha,f,mNorm,rms,logFile)
@@ -1324,6 +1344,7 @@ Contains
        alpha = alpha_1
        dHat = dHat_1
        eAll = eAll_1
+	   eAll%SolnIndex=1
        mHat = mHat_1
        rms = rms_1
        f= f_1

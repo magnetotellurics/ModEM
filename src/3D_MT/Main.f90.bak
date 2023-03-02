@@ -60,6 +60,7 @@ module Main
   !type(rhsVectorMTX_t), save            :: bAll
 
   logical                   :: write_model, write_data, write_EMsoln, write_EMrhs
+  
 
 
 

@@ -39,7 +39,7 @@ module dataFunc
 Contains
 
 !******************************************************************************
-  subroutine dataResp(ef,Sigma,iDT,iRX,Resp,Binv,Eout,Bout)
+  subroutine dataResp(ef,Sigma,iDT,iRX,Resp,Binv)
   ! given electric field solutions (both modes--and note
   !    that the solution knows about the transmitter used),
   ! and indices into data types and receiver dictionaries for one
@@ -72,19 +72,19 @@ Contains
   !  			Z(1) = PhiXX , Z(2) = PhiXY, Z(3) = PhiYX, Z(4) = PhiYY
 
   !  optional argument, useful for linearized impedance
-  complex(kind=prec), intent(out), optional	:: Binv(2,2),Eout(2,2),Bout(3,2)
+  complex(kind=prec), intent(out), optional	:: Binv(2,2)
 
   !  local variables
   integer			:: iMode, i,j,xyz,ij, iComp,ncomp,iFunc,nFunc
   real(kind=prec)	:: omega,x(3),x_ref(3),detX,Tx_azi,Rx_Azi
   complex(kind=prec)    :: tempZ(4)
   complex(kind=prec)	:: BB(3,2),EE(2,2),RR(2,2)
-  complex(kind=prec)	:: det,i_omega,ctemp,Ex_res,Ey_res,Bx_res,By_res
+  complex(kind=prec)	:: det,i_omega,ctemp,Ex_res,Ey_res
   type(sparsevecC)		:: Lex,Ley,Lez,Lbx,Lby,Lbz,Lrx,Lry
   logical			:: ComputeHz,ComputeE
   COMPLEX    VALUE, X1, Y1
   INTEGER    NOUT
-  real(kind=prec) :: HxAngle,ExAngle,HxAngle_ref,HyAngle,EyAngle
+
   !  probably should dependence on omega into BinterpSetup, as in 2D!
   omega = txDict(ef%tx)%omega
   Tx_azi=txDict(ef%tx)%azimuthTx
@@ -133,7 +133,7 @@ Contains
 		    Ex_res=dotProd_noConj_scvector_f(Lex,ef%pol(1))
 		    Ey_res=dotProd_noConj_scvector_f(Ley,ef%pol(1))
 		    !write(*,*)"Rx_Azi: ",rxDict(iRX)%ID, Rx_Azi 
-     	    Z(1) = (cos(D2R*Rx_Azi)*Ex_res)+(sin(D2R*Rx_Azi)*Ey_res)	
+     	    Z(1) = ((cos(D2R*(Rx_Azi)))*Ex_res)+((sin(D2R*(Rx_Azi)))*Ey_res)	
            		
        case (Ex_Field)
      	   x = rxDict(iRX)%x     	
@@ -165,43 +165,6 @@ Contains
 		   xyz = 3
 		   call BfromESetUp(ef%grid,omega,x,xyz,Lbz)   
 		   Z(1) = dotProd_noConj_scvector_f(Lbz,ef%pol(1))	 
-       case (Bz_Ampli_Phase)
-		   x = rxDict(iRX)%x
-		   xyz = 3
-		   call BfromESetUp(ef%grid,omega,x,xyz,Lbz)   
-		   tempZ(1) = dotProd_noConj_scvector_f(Lbz,ef%pol(1))	
-		   
-			Z(1)  = log10(abs(tempZ(1)))
-		    Z(2)  = atan2(ISIGN*dimag(tempZ(1)),real(tempZ(1)))*R2D			
-			!write(*,*)"Rx_Azi: ",iRX, Z(1),  Z(2)
-
-       case (Bxy_Field)
-            Rx_Azi=rxDict(iRX)%Rx_Azi
-     	    x = rxDict(iRX)%x     	
-		    xyz = 1
-		    call BfromESetUp(ef%grid,omega,x,xyz,Lbx)			
-		    xyz = 2
-		    call BfromESetUp(ef%grid,omega,x,xyz,Lby)	
-			
-		    Bx_res=dotProd_noConj_scvector_f(Lbx,ef%pol(1))
-		    By_res=dotProd_noConj_scvector_f(Lby,ef%pol(1))
-			
-     	    Z(1) = (cos(D2R*Rx_Azi)*Bx_res)+(sin(D2R*Rx_Azi)*By_res)	
-       case (Bxy_Ampli_Phase)
-            Rx_Azi=rxDict(iRX)%Rx_Azi
-     	    x = rxDict(iRX)%x     	
-		    xyz = 1
-		    call BfromESetUp(ef%grid,omega,x,xyz,Lbx)			
-		    xyz = 2
-		    call BfromESetUp(ef%grid,omega,x,xyz,Lby)	
-			
-		    Bx_res=dotProd_noConj_scvector_f(Lbx,ef%pol(1))
-		    By_res=dotProd_noConj_scvector_f(Lby,ef%pol(1))
-		    !write(*,*)"Rx_Azi: ",rxDict(iRX)%ID, Rx_Azi 
-     	    tempZ(1) = (((cos(D2R*Rx_Azi))*Bx_res)+((sin(D2R*Rx_Azi))*By_res))
-			
-			Z(1)  = log10(abs(tempZ(1)))
-		    Z(2)  = atan2(ISIGN*dimag(tempZ(1)),real(tempZ(1)))*R2D					
      case(Full_Impedance)
                x     = rxDict(iRX)%x         !Local site position (x,y,z)
 		     ! First set up interpolation functionals for Ex, Ey
@@ -237,55 +200,7 @@ Contains
 		              Z(ij) = EE(i,1)*BB(1,j)+EE(i,2)*BB(2,j)
 		           enddo
 		        enddo
-     case(Full_Impedance_wAzimuth)
-	          Rx_Azi=rxDict(iRX)%Rx_Azi
-               x     = rxDict(iRX)%x         !Local site position (x,y,z)
-		     ! First set up interpolation functionals for Ex, Ey
-			  xyz = 1
-			  call EinterpSetUp(ef%grid,x,xyz,Lex)
-			  xyz = 2
-			  call EinterpSetUp(ef%grid,x,xyz,Ley)
-			 ! Then set up interpolation functionals for Bx, By
-			  xyz = 1
-			  call BfromESetUp(ef%grid,omega,x,xyz,Lbx)
-			  xyz = 2
-			  call BfromESetUp(ef%grid,omega,x,xyz,Lby)
-			  ! loop over modes
-			  do iMode = 1,2
-			      ! electric fields
-			      EE(1,iMode) =  dotProd_noConj_scvector_f(Lex,ef%pol(iMode))
-			      EE(2,iMode) =  dotProd_noConj_scvector_f(Ley,ef%pol(iMode))
-			      ! magnetic fields
-			      BB(1,iMode) = dotProd_noConj_scvector_f(Lbx,ef%pol(iMode))
-			      BB(2,iMode) = dotProd_noConj_scvector_f(Lby,ef%pol(iMode))
-			 end do
 
-          ! 2019.05.16, Liu Zhongyin, Add Bout
-          if (present(Bout)) then
-               Bout = BB
-          endif
-		  if(present(Eout)) then
-			  Eout = EE
-		  endif
-		  
-			 !invert horizontal B matrix using Kramer's rule.
-			  det = BB(1,1)*BB(2,2)-BB(1,2)*BB(2,1)
-			  ctemp = BB(1,1)
-			  BB(1,1) =  BB(2,2)/det
-			  BB(2,2) =  ctemp/det
-			  BB(1,2) = -BB(1,2)/det
-			  BB(2,1) = -BB(2,1)/det
-
-			         do j = 1,2
-			           do i = 1,2
-			              ij = 2*(i-1)+j
-		              Z(ij) = EE(i,1)*BB(1,j)+EE(i,2)*BB(2,j)
-			           enddo
-			        enddo
-
-         ! 2019.03.20 Liu Zhongyin, Add rotateZ
-          call rotateZ(Z,iDT,Rx_Azi)  
-	 
      case(Off_Diagonal_Impedance)
               x     = rxDict(iRX)%x          !Local site position (x,y,z)
 		     ! First set up interpolation functionals for Ex, Ey
@@ -530,9 +445,8 @@ Contains
   type(sparsevecC)		:: Lex,Ley,Lez,Lbx,Lby,Lbz,Lrx,Lry
   logical			:: ComputeHz
   real(kind=prec)  :: HxAngle,ExAngle,HxAngle_ref,HyAngle,EyAngle,HyAngle_ref
-  type(sparsevecC) :: Lex_rot,Ley_rot,Lbx_rot,Lby_rot,Lrx_rot,Lry_rot,Lex_rot_ampli,Lex_rot_phase,Lbx_rot_ampli,Lbx_rot_phase,Lbz_ampli,Lbz_phase
-  complex(kind=prec) :: Eout(2,2),Bout(3,2),c3,c4
-  real(kind=prec) :: cos2a,sin2a,cosa,sina,det
+  type(sparsevecC) :: Lex_rot,Ley_rot,Lbx_rot,Lby_rot,Lrx_rot,Lry_rot,Lex_rot_ampli,Lex_rot_phase
+
 
   omega = txDict(e0%tx)%omega
   Tx_azi=txDict(e0%tx)%azimuthTx
@@ -572,13 +486,12 @@ if (txDict(e0%tx)%tx_type =='CSEM' .or. txDict(e0%tx)%tx_type =='DC') then
 		   Call dataResp(e0,Sigma0,Exy_Field,iRX,Resp) !--> Z(1) is Exy field
 		   
 		   !  Log10 (|e|)'=|e|' * 1/(|e|*log(10))=(e/|e|)* 1/(|e|*log(10))=  e/(|e|^2*log(10))
-           !write(*,*)"Rx_Azi: Lrows",iRX, Rx_Azi	
+           !write(*,*)"Rx_Azi: Lrows",iRX, conjg(Z(1))	
 		   c1= conjg(Z(1))/((abs(Z(1))**TWO)*dlog(10.0d0))
 		   call scMult_sparsevecc (c1,Lex_rot,Lex_rot_ampli)
-		   !write(*,*) "Ampli: ",c1,dreal(Z(1)),dimag(Z(1))
 		   
 		   !(180/pi) * i * conjg(E)/|E|^2 * Le
-		   c1= R2D*dcmplx(0.0d0,1.0d0)*conjg(Z(1))/ABS(Z(1))**TWO
+		   c1= dcmplx(0.0d0,1.0d0)*conjg(Z(1)) / (abs(Z(1))**TWO) *R2D
 		   call scMult_sparsevecc (c1,Lex_rot,Lex_rot_phase)
 		   
 		   L(1)%L(1) = Lex_rot_ampli 
@@ -628,64 +541,6 @@ if (txDict(e0%tx)%tx_type =='CSEM' .or. txDict(e0%tx)%tx_type =='DC') then
         xyz = 3
         call BfromESetUp(e0%grid,omega,x,xyz,Lbz)
 	   L(1)%L(1) = Lbz		
-    case (Bxy_Field) 
-	       Rx_Azi= rxDict(iRX)%Rx_Azi
-		   x = rxDict(iRX)%x
-		   xyz = 1
-		   call BfromESetUp(e0%grid,omega,x,xyz,Lbx)
-	       xyz = 2
-           call BfromESetUp(e0%grid,omega,x,xyz,Lby)
-		   c1 = (cos(D2R*Rx_Azi))
-		   c2 = (sin(D2R*Rx_Azi))
-		   call linComb_sparsevecc(Lbx,c1,Lby,c2,Lbx_rot)
-		   L(1)%L(1) = Lbx_rot
-    case (Bxy_Ampli_Phase)
-	       Rx_Azi= rxDict(iRX)%Rx_Azi
-		   x = rxDict(iRX)%x
-		   xyz = 1
-		   call BfromESetUp(e0%grid,omega,x,xyz,Lbx)
-	       xyz = 2
-           call BfromESetUp(e0%grid,omega,x,xyz,Lby)
-		   c1 = (cos(D2R*Rx_Azi))
-		   c2 = (sin(D2R*Rx_Azi))
-		   call linComb_sparsevecc(Lbx,c1,Lby,c2,Lbx_rot)
-		   
-		   
-		   Call dataResp(e0,Sigma0,Bxy_Field,iRX,Resp) !--> Z(1) is Bxy field
-		   
-		   !  Log10 (|e|)'=|e|' * 1/(|e|*log(10))=(e/|e|)* 1/(|e|*log(10))=  e/(|e|^2*log(10))
-           !write(*,*)"Rx_Azi: Lrows",iRX, conjg(Z(1))	
-		   c1= conjg(Z(1))/((abs(Z(1))**TWO)*dlog(10.0d0))
-		   call scMult_sparsevecc (c1,Lbx_rot,Lbx_rot_ampli)
-		   
-		   !(180/pi) * i * conjg(B)/|B|^2 * Le
-		   c1= dcmplx(0.0d0,1.0d0)*conjg(Z(1)) / (abs(Z(1))**TWO) *R2D
-		   call scMult_sparsevecc (c1,Lbx_rot,Lbx_rot_phase)
-		   
-		   L(1)%L(1) = Lbx_rot_ampli 
-		   L(2)%L(1) = Lbx_rot_phase
-		   
-    case (Bz_Ampli_Phase)
-  	    omega = txDict(e0%tx)%omega
-        x = rxDict(iRX)%x
-        xyz = 3
-        call BfromESetUp(e0%grid,omega,x,xyz,Lbz)
-		   
-		   
-		   Call dataResp(e0,Sigma0,Bz_Field,iRX,Resp) !--> Z(1) is Bz field
-		   
-		   !  Log10 (|e|)'=|e|' * 1/(|e|*log(10))=(e/|e|)* 1/(|e|*log(10))=  e/(|e|^2*log(10))
-           !write(*,*)"Rx_Azi: Lrows",iRX, conjg(Z(1))	
-		   c1= conjg(Z(1))/((abs(Z(1))**TWO)*dlog(10.0d0))
-		   call scMult_sparsevecc (c1,Lbz,Lbz_ampli)
-		   
-		   !(180/pi) * i * conjg(E)/|E|^2 * Le
-		   c1= dcmplx(0.0d0,1.0d0)*conjg(Z(1)) / (abs(Z(1))**TWO) *R2D
-		   call scMult_sparsevecc (c1,Lbz,Lbz_phase)
-		   
-		   L(1)%L(1) = Lbz_ampli 
-		   L(2)%L(1) = Lbz_phase
-		   
   endselect		
   call deall_sparsevecc(LI) 
   call deall_sparsevecc(Lex)
@@ -696,11 +551,7 @@ if (txDict(e0%tx)%tx_type =='CSEM' .or. txDict(e0%tx)%tx_type =='DC') then
   call deall_sparsevecc(Lex_rot)
   call deall_sparsevecc(Lex_rot_ampli)
   call deall_sparsevecc(Lex_rot_phase)
-  call deall_sparsevecc(Lbx_rot)
-  call deall_sparsevecc(Lbx_rot_ampli)
-  call deall_sparsevecc(Lbx_rot_phase)
-  call deall_sparsevecc(Lbz_ampli)
-  call deall_sparsevecc(Lbz_phase) 
+  
  return
 end if
 
@@ -717,18 +568,6 @@ end if
            enddo
         enddo
         Call dataResp(e0,Sigma0,Full_Impedance,iRX,Resp,Binv)
-     case(Full_Impedance_wAzimuth)
-        nComp = 4
-        ComputeHz = .false.
-        do j = 1,2
-           do i = 1,2
-              IJ(1,2*(i-1)+j) = i
-              IJ(2,2*(i-1)+j) = j
-              IJ(3,2*(i-1)+j) = i
-           enddo
-        enddo
-        Call dataResp(e0,Sigma0,Full_Impedance_wAzimuth,iRX,Resp,Binv,Eout,Bout)
-		
      case(Off_Diagonal_Impedance)
         nComp = 2
         ComputeHz = .false.
@@ -808,7 +647,8 @@ end if
 
 
 
-!if (typeDict(iDT)%tfType .eq. Full_Impedance .or. typeDict(iDT)%tfType .eq. Full_Interstation_TF .or. typeDict(iDT)%tfType .eq. Full_Vertical_Components .or. typeDict(iDT)%tfType .eq. Off_Diagonal_Impedance) then
+
+
   !  compute sparse vector representations of linearized functionals
   do n = 1,nComp
      !  i runs over rows of TF matrix, j runs over columns of TF
@@ -845,169 +685,6 @@ end if
         endif
      enddo
   enddo
-!end if 
-if (typeDict(iDT)%tfType .eq. Full_Impedance_wAzimuth) then
- Rx_Azi= rxDict(iRX)%Rx_Azi
-  cos2a = cos(2.0d0*Rx_Azi*D2R)
-  sin2a = sin(2.0d0*Rx_Azi*D2R)
-  cosa  = cos(Rx_Azi*D2R)
-  sina  = sin(Rx_Azi*D2R)
-  det   = Bout(1,1)*Bout(2,2) - Bout(1,2)*Bout(2,1)
-  
-    ! zxx
-   ! mode1
-   ! Zxx/Ex1
-   c1 =  Binv(1,1)*(1.0d0+cos2a) + Binv(1,2)*sin2a
-   c1 =  c1/2.0d0
-   ! Zxx/Ey1
-   c2 =  Binv(1,2)*(1.0d0-cos2a) + Binv(1,1)*sin2a
-   c2 =  c2/2.0d0
-   ! Zxx/Hx1
-   c3 =  Eout(2,2)*(1.0d0-cos2a)/2.0d0/det
-   c3 =  c3 + Eout(1,2)*sin2a/2.0d0/det
-   c3 =  c3 - Binv(1,1)*Z(1)
-   ! Zxx/Hy1
-   c4 = -Eout(1,2)*(1.0d0+cos2a)/2.0d0/det
-   c4 =  c4 - Eout(2,2)*sin2a/2.0d0/det
-   c4 =  c4 - Binv(1,2)*Z(1) 
-   Call linComb_sparsevecc(Lex,c1,Ley,c2,L1)
-   Call linComb_sparsevecc(Lbx,c3,Lby,c4,L2)
-   Call linComb_sparsevecc(L1,C_ONE,L2,C_ONE,L(1)%L(1))
-   ! mode2
-   ! Zxx/Ex2
-   c1 =  Binv(2,1)*(1.0d0+cos2a) + Binv(2,2)*sin2a
-   c1 =  c1/2.0d0
-   ! Zxx/Ey2
-   c2 =  Binv(2,2)*(1.0d0-cos2a) + Binv(2,1)*sin2a
-   c2 =  c2/2.0d0
-   ! Zxx/Hx2
-   c3 = -Eout(2,1)*(1.0d0-cos2a)/2.0d0/det
-   c3 =  c3 - Eout(1,1)*sin2a/2.0d0/det
-   c3 =  c3 - Binv(2,1)*Z(1)
-   ! Zxx/Hy2
-   c4 =  Eout(1,1)*(1.0d0+cos2a)/2.0d0/det
-   c4 =  c4 + Eout(2,1)*sin2a/2.0d0/det
-   c4 =  c4 - Binv(2,2)*Z(1)
-   Call linComb_sparsevecc(Lex,c1,Ley,c2,L1)
-   Call linComb_sparsevecc(Lbx,c3,Lby,c4,L2)
-   call linComb_sparsevecc(L1,C_ONE,L2,C_ONE,L(1)%L(2))
-
-   ! zxy
-   ! mode1
-   ! Zxy/Ex1
-   c1 =  Binv(1,2)*(1.0d0+cos2a) - Binv(1,1)*sin2a
-   c1 =  c1/2.0d0
-   ! Zxy/Ey1
-   c2 =  Binv(1,1)*(cos2a-1.0d0) + Binv(1,2)*sin2a
-   c2 =  c2/2.0d0
-   ! Zxy/Hx1
-   c3 =  Eout(1,2)*(1.0d0+cos2a)/2.0d0/det
-   c3 =  c3 + Eout(2,2)*sin2a/2.0d0/det
-   c3 =  c3 - Binv(1,1)*Z(2)
-   ! Zxy/Hy1
-   c4 = -Eout(2,2)*(cos2a-1.0d0)/2.0d0/det
-   c4 =  c4 + Eout(1,2)*sin2a/2.0d0/det
-   c4 =  c4 - Binv(1,2)*Z(2)
-   Call linComb_sparsevecc(Lex,c1,Ley,c2,L1)
-   Call linComb_sparsevecc(Lbx,c3,Lby,c4,L2)
-   Call linComb_sparsevecc(L1,C_ONE,L2,C_ONE,L(2)%L(1))
-   ! mode2
-   ! Zxy/Ex2
-   c1 =  Binv(2,2)*(1.0d0+cos2a) - Binv(2,1)*sin2a
-   c1 =  c1/2.0d0
-   ! Zxy/Ey2
-   c2 =  Binv(2,1)*(cos2a-1.0d0) + Binv(2,2)*sin2a
-   c2 =  c2/2.0d0
-   ! Zxy/Hx2
-   c3 = -Eout(1,1)*(1.0d0+cos2a)/2.0d0/det
-   c3 =  c3 - Eout(2,1)*sin2a/2.0d0/det
-   c3 =  c3 - Binv(2,1)*Z(2)
-   ! Zxy/Hy2
-   c4 =  Eout(2,1)*(cos2a-1.0d0)/2.0d0/det
-   c4 =  c4 - Eout(1,1)*sin2a/2.0d0/det
-   c4 =  c4 - Binv(2,2)*Z(2)
-   Call linComb_sparsevecc(Lex,c1,Ley,c2,L1)
-   Call linComb_sparsevecc(Lbx,c3,Lby,c4,L2)
-   Call linComb_sparsevecc(L1,C_ONE,L2,C_ONE,L(2)%L(2))
-
-   ! zyx
-   ! mode1
-   ! Zyx/Ex1
-   c1 =  Binv(1,2)*(cos2a-1.0d0) - Binv(1,1)*sin2a
-   c1 =  c1/2.0d0
-   ! Zyx/Ey1
-   c2 =  Binv(1,1)*(1.0d0+cos2a) + Binv(1,2)*sin2a
-   c2 =  c2/2.0d0
-   ! Zyx/Hx1
-   c3 =  Eout(1,2)*(cos2a-1.0d0)/2.0d0/det
-   c3 =  c3 + Eout(2,2)*sin2a/2.0d0/det
-   c3 =  c3 - Binv(1,1)*Z(3)
-   ! Zyx/Hy1
-   c4 = -Eout(2,2)*(1.0d0+cos2a)/2.0d0/det
-   c4 =  c4 + Eout(1,2)*sin2a/2.0d0/det
-   c4 =  c4 - Binv(1,2)*Z(3)
-   Call linComb_sparsevecc(Lex,c1,Ley,c2,L1)
-   Call linComb_sparsevecc(Lbx,c3,Lby,c4,L2)
-   Call linComb_sparsevecc(L1,C_ONE,L2,C_ONE,L(3)%L(1))
-   ! mode2
-   ! Zyx/Ex2
-   c1 =  Binv(2,2)*(cos2a-1.0d0) - Binv(2,1)*sin2a
-   c1 =  c1/2.0d0
-   ! Zyx/Ey2
-   c2 =  Binv(2,1)*(1.0d0+cos2a) + Binv(2,2)*sin2a
-   c2 =  c2/2.0d0
-   ! Zyx/Hx2
-   c3 = -Eout(1,1)*(cos2a-1.0d0)/2.0d0/det
-   c3 =  c3 - Eout(2,1)*sin2a/2.0d0/det
-   c3 =  c3 - Binv(2,1)*Z(3)
-   ! Zyx/Hy2
-   c4 =  Eout(2,1)*(1.0d0+cos2a)/2.0d0/det
-   c4 =  c4 - Eout(1,1)*sin2a/2.0d0/det
-   c4 =  c4 - Binv(2,2)*Z(3)
-   Call linComb_sparsevecc(Lex,c1,Ley,c2,L1)
-   Call linComb_sparsevecc(Lbx,c3,Lby,c4,L2)
-   Call linComb_sparsevecc(L1,C_ONE,L2,C_ONE,L(3)%L(2))
-
-   ! zyy
-   ! mode1
-   ! Zyy/Ex1
-   c1 =  Binv(1,1)*(1.0d0-cos2a) - Binv(1,2)*sin2a
-   c1 =  c1/2.0d0
-   ! Zyy/Ey1
-   c2 =  Binv(1,2)*(1.0d0+cos2a) - Binv(1,1)*sin2a
-   c2 =  c2/2.0d0
-   ! Zyy/Hx1
-   c3 =  Eout(2,2)*(1.0d0+cos2a)/2.0d0/det
-   c3 =  c3 - Eout(1,2)*sin2a/2.0d0/det
-   c3 =  c3 - Binv(1,1)*Z(4)
-   ! Zyy/Hy1
-   c4 = -Eout(1,2)*(1.0d0-cos2a)/2.0d0/det
-   c4 =  c4 + Eout(2,2)*sin2a/2.0d0/det
-   c4 =  c4 - Binv(1,2)*Z(4) 
-   Call linComb_sparsevecc(Lex,c1,Ley,c2,L1)
-   Call linComb_sparsevecc(Lbx,c3,Lby,c4,L2)
-   Call linComb_sparsevecc(L1,C_ONE,L2,C_ONE,L(4)%L(1))
-   ! mode2
-   ! Zyy/Ex2
-   c1 =  Binv(2,1)*(1.0d0-cos2a) - Binv(2,2)*sin2a
-   c1 =  c1/2.0d0
-   ! Zyy/Ey2
-   c2 =  Binv(2,2)*(1.0d0+cos2a) - Binv(2,1)*sin2a
-   c2 =  c2/2.0d0
-   ! Zyy/Hx2
-   c3 = -Eout(2,1)*(1.0d0+cos2a)/2.0d0/det
-   c3 =  c3 + Eout(1,1)*sin2a/2.0d0/det
-   c3 =  c3 - Binv(2,1)*Z(4)
-   ! Zyy/Hy2
-   c4 =  Eout(1,1)*(1.0d0-cos2a)/2.0d0/det
-   c4 =  c4 - Eout(2,1)*sin2a/2.0d0/det
-   c4 =  c4 - Binv(2,2)*Z(4)
-   Call linComb_sparsevecc(Lex,c1,Ley,c2,L1)
-   Call linComb_sparsevecc(Lbx,c3,Lby,c4,L2)
-   Call linComb_sparsevecc(L1,C_ONE,L2,C_ONE,L(4)%L(2)) 
-end if
-
-  
 if (typeDict(iDT)%tfType .eq. Off_Diagonal_Rho_Phase) then
        do k=1,2 ! 2 modes
         ! PHSYX
@@ -1205,112 +882,5 @@ if (typeDict(iDT)%tfType .eq. Off_Diagonal_Rho_Phase) then
   !enddo
 
   end subroutine Qrows
-  !****************************************************************************
-  ! 2019.05.25, Liu Zhongyin, Add rotate for field vector
-  ! from Orthogional to original layout
-   subroutine rotate_Model2Data(ch1,ch2,angle1,angle2,angle)
-   implicit none
-   complex(kind=prec), intent(inout) :: ch1,ch2
-   real(kind=prec), intent(in) :: angle1,angle2,angle
 
-   ! local vars
-   complex(kind=prec) :: tmpch1,tmpch2
-   real(kind=prec) :: tmpv
-
-   tmpch1 = ch1
-   tmpch2 = ch2
-   tmpv = 1.0d0/(sin(angle2*D2R - angle1*D2R))
-
-   ! ch1 =  sin(angle2*D2R - angle*D2R)*tmpch1 - sin(angle1*D2R - angle*D2R)*tmpch2
-   ! ch1 =  ch1/tmpv
-   ! ch2 = -cos(angle2*D2R - angle*D2R)*tmpch1 + cos(angle1*D2R - angle*D2R)*tmpch2
-   ! ch2 =  ch2/tmpv
-
-   ch1 =  sin(angle2*D2R - angle*D2R)*tmpch1 - cos(angle2*D2R - angle*D2R)*tmpch2
-   ch1 =  ch1/tmpv
-   ch2 = -sin(angle1*D2R - angle*D2R)*tmpch1 + cos(angle1*D2R - angle*D2R)*tmpch2
-   ch2 =  ch2/tmpv
-
-   ! ch1 = cos(angle1*D2R - angle*D2R)*tmpch1 + cos(angle2*D2R - angle*D2R)*tmpch2
-   ! ch2 = sin(angle1*D2R - angle*D2R)*tmpch1 + sin(angle2*D2R - angle*D2R)*tmpch2
-
-   end subroutine rotate_Model2Data
-  ! **********************************************************************
-  ! 2019.03.20 Liu Zhongyin, Add rotate for Z
-  ! Note: For the Off_Diagonal_Rho_Phase, this subroutine should be 
-  ! called before the calculation of Rho and Phase
-  subroutine rotateZ(d,iDT,angle)
-   implicit none
-   complex(kind=prec), intent(inout)   :: d(4)
-   integer, intent(in)                 :: iDT
-   real(kind=prec), intent(in)         :: angle
-
-   ! local varialbles
-   complex(kind=prec)        :: d1, d2, d3, d4
-   real(kind=prec)           :: cos2a, sin2a, sina, cosa
-
-  selectcase (iDT)
-      case(Full_Impedance, Phase_Tensor,Full_Impedance_wAzimuth)
-         cos2a = cos(2.0d0*angle*D2R)
-         sin2a = sin(2.0d0*angle*D2R)
-
-         d1 = (d(1)+d(4))/2.0d0
-         d2 = (d(1)-d(4))/2.0d0
-         d3 = (d(2)+d(3))/2.0d0
-         d4 = (d(2)-d(3))/2.0d0
-
-         d(1) =  d1+d2*cos2a+d3*sin2a
-         d(2) =  d4+d3*cos2a-d2*sin2a
-         d(3) = -d4+d3*cos2a-d2*sin2a
-         d(4) =  d1-d2*cos2a-d3*sin2a
-
-         ! d1 = 1/2.*((1.+cos2a)*d(1)+sin2a*d(2)+sin2a*d(3)+(1.-cos2a)*d(4))
-         ! d2 = 1/2.*(-sin2a*d(1)+(1.+cos2a)*d(2)-(1.-cos2a)*d(3)+sin2a*d(4))
-         ! d3 = 1/2.*(-sin2a*d(1)-(1.-cos2a)*d(2)+(1.+cos2a)*d(3)+sin2a*d(4))
-         ! d4 = 1/2.*((1.-cos2a)*d(1)-sin2a*d(2)-sin2a*d(3)+(1.+cos2a)*d(4))
-
-         ! d(1) = d1
-         ! d(2) = d2
-         ! d(3) = d3
-         ! d(4) = d4
-
-      case(Off_Diagonal_Impedance, Off_Diagonal_Rho_Phase)
-         cos2a = cos(2.0d0*angle*D2R)
-         sin2a = sin(2.0d0*angle*D2R)
-
-         d1 = (d(1)+d(4))/2.0d0
-         d2 = (d(1)-d(4))/2.0d0
-         d3 = (d(2)+d(3))/2.0d0
-         d4 = (d(2)-d(3))/2.0d0
-
-         d(1) =  d4+d3*cos2a-d2*sin2a
-         d(2) = -d4+d3*cos2a-d2*sin2a
-         d(3) =  cmplx(0.0d0,0.0d0)
-         d(4) =  cmplx(0.0d0,0.0d0)         
-
-         ! d1 = 1/2.*((1.+cos2a)*d(1)+sin2a*d(2)+sin2a*d(3)+(1.-cos2a)*d(4))
-         ! d2 = 1/2.*(-sin2a*d(1)+(1.+cos2a)*d(2)-(1.-cos2a)*d(3)+sin2a*d(4))
-         ! d3 = 1/2.*(-sin2a*d(1)-(1.-cos2a)*d(2)+(1.+cos2a)*d(3)+sin2a*d(4))
-         ! d4 = 1/2.*((1.-cos2a)*d(1)-sin2a*d(2)-sin2a*d(3)+(1.+cos2a)*d(4))
-
-         ! d(1) = d2
-         ! d(2) = d3
-         ! d(3) = cmplx(0.,0.)
-         ! d(4) = cmplx(0.,0.)
-
-      case(Full_Vertical_Components)
-         sina = sin(angle*D2R)
-         cosa = cos(angle*D2R)
-
-         d1 =  d(1)*cosa+d(2)*sina
-         d2 = -d(1)*sina+d(2)*cosa
-
-         d(1) = d1
-         d(2) = d2
-
-      case(Full_Interstation_TF)
-
-  end select
-
-  end subroutine rotateZ
 end module dataFunc

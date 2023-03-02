@@ -48,19 +48,17 @@ subroutine get_source_for_csem(sigma,grid,iTx,source)
 
         !call get_vti(sigma)
         !write(*,*) 'In get 1D'
-!if (.not. E_p%allocated) then
+
     write(*,*) trim(node_info), 'Start using ', trim(compute_1D_from),' to solve the 1D FWD problem'
     if (trim(compute_1D_from)=="Dipole1D") then
        call  get_source_for_csem_Dipole1D(sigma,grid,iTx,source)
     elseif (trim(compute_1D_from)=="EM1D") then
        call get_source_for_csem_EM1D(sigma,grid,iTx,source)
     end if
+	
     write(*,*) trim(node_info), 'finish using ', trim(compute_1D_from),' to solve the 1D FWD problem'
-!end if    
+    
   
-			!
-			!call printCVector( source, 2023, "CSEM SOURCE E" )
-			!
     
 end subroutine
 
@@ -98,23 +96,20 @@ subroutine get_source_for_csem_EM1D(sigma,grid,iTx,source)
   icur=1
   comm=1
   refl_var%nzrecHxy=0
-  refl_var%nzrecHz=0
-  call reflectivity_unified(src,bgdat,refl_var,ifreq,icur,comm) ! Output field will be saved in bgdat
+  call reflectivity_unified(src,bgdat,refl_var,ifreq,icur,comm) ! Output fiel will be saved in bgdat
   call create_Ep_from_EM1D(grid,bgdat) ! Put the 1D field into E_p
+  
   
    omega = txDict(iTx)%omega
    i_omega_mu = cmplx(0.,-1.0d0*ISIGN*MU_0*omega,kind=prec)
    !call diagMult(condAnomaly,E_P,source)
             ! write out EM solutions
    
-            ! call create_solnVectorMTX(1,eAll_temp)
-            ! call create_solnVector(grid,1,e_temp)
-            ! e_temp%pol(1)=E_P
-            ! call copy_solnVector(eAll_temp%solns(1),e_temp)
-			! !
-			! call deall_solnVector( e_temp )
-			! !
-         ! write(6,*) 'Saving the EM solution...'
+            call create_solnVectorMTX(1,eAll_temp)
+            call create_solnVector(grid,1,e_temp)
+            e_temp%pol(1)=E_P
+            call copy_solnVector(eAll_temp%solns(1),e_temp) 
+         write(6,*) 'Saving the EM solution...'
         ! call write_solnVectorMTX(eAll_temp,'E_P.sol')
  
          
@@ -126,7 +121,7 @@ subroutine get_source_for_csem_EM1D(sigma,grid,iTx,source)
 			
 			
 ! Clean stuff			
-!call deall(eAll_temp) 
+call deall(eAll_temp) 
 
 
 deallocate(bgdat%sigv, STAT=status)
@@ -134,13 +129,12 @@ deallocate(bgdat%sigh, STAT=status)
 deallocate(bgdat%epsrv, STAT=status)
 deallocate(bgdat%epsrh, STAT=status)
 deallocate(bgdat%zbound, STAT=status)
-deallocate(bgdat%Expos, STAT=status)
-deallocate(bgdat%Eypos, STAT=status)
-deallocate(bgdat%Ezpos, STAT=status)
-deallocate(bgdat%Ex, STAT=status)
-deallocate(bgdat%Ey, STAT=status)
-deallocate(bgdat%Ez, STAT=status)
-!
+! deallocate(bgdat%Expos, STAT=status)
+! deallocate(bgdat%Eypos, STAT=status)
+! deallocate(bgdat%Ezpos, STAT=status)
+!deallocate(bgdat%Ex, STAT=status)
+!deallocate(bgdat%Ey, STAT=status)
+!deallocate(bgdat%Ez, STAT=status)
 deallocate(src%nelem, STAT=status)
 deallocate(src%pos, STAT=status)
 deallocate(src%ljx, STAT=status)
@@ -151,8 +145,8 @@ deallocate(src%aky, STAT=status)
 deallocate(src%akz, STAT=status)
 
 !clean
-call deall_rvector(CondAnomaly_h)
-call deall_rvector(condAnomaly_v)
+ call deall_rvector(CondAnomaly_h)
+ call deall_rvector(condAnomaly_v)
 
 end subroutine get_source_for_csem_EM1D
 !#########################################################################
@@ -291,7 +285,7 @@ subroutine create_background_data(grid,bgdat)
    	  nx1 = (grid%Nx)*(grid%Ny+1)*(grid%Nz+1)
 	  ny1 = (grid%Nx+1)*(grid%Ny)*(grid%Nz+1)
 	  nz1 = (grid%Nx+1)*(grid%Ny+1)*(grid%Nz)
-    !write(*,*)"nx1,ny1,nz1: ", nx1,ny1,nz1
+    
     bgdat%nExy=	0
     bgdat%nEx = nx1
     bgdat%nEy = ny1
@@ -312,7 +306,7 @@ subroutine create_background_data(grid,bgdat)
  ! if (ierr.ne.0) call alloc_error(pid,'In-backgroundfield','Hpos',ierr)
   
   
-  allocate(bgdat%Ex(bgdat%nEx*1.5),bgdat%Ey(bgdat%nEy*1.5),bgdat%Ez(bgdat%nEz*1.5), stat=ierr)
+  allocate(bgdat%Ex(bgdat%nEx),bgdat%Ey(bgdat%nEy),bgdat%Ez(bgdat%nEz), stat=ierr)
   if (ierr.ne.0) call alloc_error(pid,'Out-backgroundfield','E fields',ierr)    
 
  ! allocate(bgdat%Hx(nxyz),bgdat%Hy(nxyz),bgdat%Hz(nxyz), stat=ierr)
@@ -613,7 +607,7 @@ logical, intent(in), optional                        :: FromFile
 								end do
                             end do
 							   sig1D_temp(k) = exp(temp_sigma_value/wt)
-					       !write(220,*)k,zlay1D_temp(k),1.0/sig1D_temp(k),sig1D_temp(k),get_1d_from
+					       write(220,*)k,zlay1D_temp(k),1.0/sig1D_temp(k),sig1D_temp(k),get_1d_from
    		               end do
 					elseif (trim(get_1D_from) =="At_Tx_Position") then
 					   do k = nzAir+1,nlay1D_temp
@@ -760,7 +754,7 @@ logical, intent(in), optional       :: FromFile
 
    		sig1D_temp_h(1:nzAir) = sigmaCell_h%v(1,1,1:nzAir)
         sig1D_temp_v(1:nzAir) = sigmaCell_v%v(1,1,1:nzAir)
-        !write(99,*)'get_1d_from= ',get_1d_from
+        write(99,*)'get_1d_from= ',get_1d_from
 			     if (trim(get_1D_from) =="Geometric_mean") then
 				       do k = nzAir+1,nlay1D_temp
 						wt = R_ZERO
@@ -950,9 +944,6 @@ subroutine setAnomConductivity(sigma)
    ! map conductivity onto edges
    Call ModelParamToEdge(sigma,cond)
    CondAnomaly_h = subtract_rvector_f(cond , condNomaly_h ) 
-   !
-   call deall_rvector(condNomaly_h)
-   !
    call deall_rvector(cond)
    
 end subroutine setAnomConductivity
@@ -979,12 +970,8 @@ subroutine setAnomConductivity_VTI(sigma)
 	  
    ! map conductivity onto edges
    Call ModelParamToEdge(sigma,cond)
-   CondAnomaly_h = subtract_rvector_f(cond , condNomaly_h )
-   CondAnomaly_v = subtract_rvector_f(cond , condNomaly_v )
-   !
-   call deall_rvector(condNomaly_v)
-   call deall_rvector(condNomaly_h)
-   !
+   CondAnomaly_h = subtract_rvector_f(cond , condNomaly_h ) 
+   CondAnomaly_v = subtract_rvector_f(cond , condNomaly_v )  
    call deall_rvector(cond)
    
 end subroutine setAnomConductivity_VTI

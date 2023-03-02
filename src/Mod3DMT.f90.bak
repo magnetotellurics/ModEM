@@ -220,7 +220,7 @@ program Mod3DMT
 		 ! Get eALL from inside Master_job_JmultT
          !call Master_job_fwdPred(sigma0,allData,eAll)
 		 if (Read_EMsoln) then
-		   call Master_job_JmultT(sigma0,allData,dsigma,eAll,s_hat=JT_multi_Tx_vec)
+		   call Master_job_JmultT(sigma0,allData,dsigma,eAll,s_hat)
 		 else
            call Master_job_JmultT(sigma0,allData,dsigma,s_hat=JT_multi_Tx_vec)
 		 end if

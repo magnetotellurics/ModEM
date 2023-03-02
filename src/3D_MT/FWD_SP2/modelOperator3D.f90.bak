@@ -162,7 +162,7 @@ Contains
 #endif
       ! don't really need this with modified system equation
       ! or do we?
-      ! call divCorSetUp()
+      ! call DivCorSetup()
 
    end subroutine UpdateFreq  ! UpdateFreq
    ! ***************************************************************************
@@ -197,17 +197,8 @@ Contains
        call deall(sigTemp2)
        Ne = size(EDGEi)+size(EDGEb)
        Nn = size(NODEi)+size(NODEb)
-	   
-	   if (allocated(SigEdge)) then
-	     deallocate(SigEdge)
-	   end if
-	   if (allocated(SigNode)) then
-	     deallocate(SigNode)
-	   end if	   
-	   
        allocate(SigEdge(Ne))
        allocate(SigNode(Nn))
-       
        SigEdge = sigVec
        SigNode = sigVec2
        SigEdge(EDGEb) = 0.0 !force the boundary to be zeros...
@@ -219,11 +210,8 @@ Contains
        call GradDivSetup2(SigEdge,SigNode)
        omega = 1.0 ! setup an (arbitary) working omega
        VomegaMuSig = MU_0*Omega*sigVec(EDGEi)*Vedge(EDGEi)
-	   
        deallocate(sigVec)
        deallocate(sigVec2)
-	   deallocate(SigEdge)
-	   deallocate(SigNode)
       ! TEMPORARY; REQUIRED FOR BOUNDARY CONDITIONS
       !  set static array for cell conductivities
       !  this stores conductivity values in a module structure
@@ -248,7 +236,7 @@ Contains
 #endif
       ! don't really need this with modified system equation
       ! or do we?
-      ! call divCorSetUp()
+      ! call DivCorSetup()
 
       ! TEMPORARY; REQUIRED FOR BOUNDARY CONDITIONS
       !  set static array for cell conductivities
@@ -303,8 +291,6 @@ Contains
          VomegaMuSig = MU_0*inOmega*sigVec(EDGEi)*Vedge(EDGEi)
          deallocate(sigVec)
          deallocate(sigVec2)
-	   deallocate(SigEdge)
-	   deallocate(SigNode)		 
          omega = inOmega
       else
          if(omega.gt.0) then
@@ -728,7 +714,7 @@ Contains
       return
    end subroutine
 !*****************************************************************************
-   subroutine divCorSetUp()
+   subroutine DivCorSetup()
    !  to complete setup conductivity is required
    !   DivCorInit has to be called before this routine
       implicit none
@@ -941,7 +927,6 @@ Contains
    deallocate(Eair)
    deallocate(Nearth)
    deallocate(Nair)
-
    end subroutine GradDivSetup
 
 !*****************************************************************************

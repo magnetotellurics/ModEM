@@ -28,12 +28,10 @@ subroutine create_model_param_place_holder(sigma_mpi)
 		 
 		 
          Nbytes=Nbytes+1  
-
-         if(associated(sigma_para_vec)) then
-             deallocate(sigma_para_vec)
-         end if
-              allocate(sigma_para_vec(Nbytes))
-            
+		 
+         if( associated( sigma_para_vec ) ) deallocate( sigma_para_vec )
+         allocate( sigma_para_vec( Nbytes ) )
+		 !
 
 end subroutine create_model_param_place_holder
 !#####################################################################################
@@ -86,6 +84,8 @@ subroutine Unpack_model_para_values(sigma_mpi)
 	   call MPI_Unpack(sigma_para_vec, Nbytes, index,sigma_mpi%updated,1, MPI_LOGICAL,MPI_COMM_WORLD, ierr)
 	   
 	   call MPI_Unpack(sigma_para_vec, Nbytes, index,sigma_mpi%paramType,80, MPI_CHARACTER,MPI_COMM_WORLD, ierr)
+	   
+	   deallocate( sigma_para_vec )
         
 end subroutine unPack_model_para_values
 !#####################################################################################

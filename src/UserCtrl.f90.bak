@@ -80,8 +80,6 @@ module UserCtrl
 	integer             :: output_level
 
   end type userdef_control
-  
-  logical Read_EMsoln
 
 Contains
 
@@ -396,12 +394,6 @@ Contains
 			if (narg > 4) then
 			   ctrl%rFile_fwdCtrl = temp(5)
 			end if
-      !   Addition  by GDE for ModEMM
-	  Read_EMsoln=.false.
-      if (narg > 5) then
-         ctrl%rFile_EMsoln = temp(6)
-		 Read_EMsoln=.true.
-      endif
 
 		  case (MULT_BY_J_T) ! T
 			if (narg < 3) then
@@ -415,12 +407,6 @@ Contains
 			if (narg > 3) then
 			   ctrl%rFile_fwdCtrl = temp(4)
 			end if
-      !   Addition by GDE for ModEMM
-	  Read_EMsoln=.false.
-      if (narg > 4) then
-         ctrl%rFile_EMsoln = temp(5)
-		 Read_EMsoln=.true.
-      endif
 
 		  case (MULT_BY_J_T_multi_Tx) ! x
 			if (narg < 3) then
@@ -434,12 +420,6 @@ Contains
 			if (narg > 3) then
 			   ctrl%rFile_fwdCtrl = temp(4)
 			end if
-      !   Addition by GDE for ModEMM
-	  Read_EMsoln=.false.
-      if (narg > 4) then
-         ctrl%rFile_EMsoln = temp(5)
-		 Read_EMsoln=.true.
-      endif
 
 		  case (INVERSE) ! I
 			if (narg < 3) then

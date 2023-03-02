@@ -8,6 +8,12 @@ module DataSpace
   use math_constants
   implicit none
 
+  INTERFACE OPERATOR ( - )
+     MODULE PROCEDURE substract_dataBlock_f
+     MODULE PROCEDURE substract_dataVector_f
+     MODULE PROCEDURE substract_dataVectorMTX_f
+  end interface
+  
   interface assignment (=)
      MODULE PROCEDURE copy_dataBlock
      MODULE PROCEDURE copy_dataVector
@@ -172,6 +178,7 @@ module DataSpace
   public            :: deall_dataBlock, deall_dataVector, deall_dataVectorMTX
   public            :: zero_dataBlock, zero_dataVector, zero_dataVectorMTX
   public			:: copy_dataBlock, copy_dataVector, copy_dataVectorMTX
+  public			:: substract_dataBlock_f, substract_dataVector_f, substract_dataVectorMTX_f
   public			:: linComb_dataBlock, linComb_dataVector, linComb_dataVectorMTX
   public            :: scMult_dataBlock, scMult_dataVector, scMult_dataVectorMTX
   public            :: scMultAdd_dataBlock, scMultAdd_dataVector, scMultAdd_dataVectorMTX
@@ -347,7 +354,59 @@ Contains
     end if
 
   end subroutine random_dataBlock
+  ! **********************************************************************
+  ! substract a data block  d1 - d2 ...
+  ! interface to =
+  ! check for size consistency, reallocate output if needed
 
+  function substract_dataBlock_f(d1, d2) result (dOut)
+
+    type (dataBlock_t), intent(in)		:: d1
+    type (dataBlock_t), intent(in)		:: d2
+    type (dataBlock_t)          		:: dOut
+	
+    ! check to see if d1 is allocated
+    if (.not. d1%allocated) then
+       call errStop('d1 not allocated yet for substract_dataVec')
+    endif
+    ! check to see if d2 is allocated
+    if (.not. d2%allocated) then
+       call errStop('d2 not allocated yet for substract_dataVec')
+    endif
+	
+    ! check to see whether the output (dOut) is allocated
+    if (.not. dOut%allocated) then
+       call create_dataBlock(d1%nComp, d1%nSite, dOut, d1%isComplex, d1%errorBar)
+    else
+       if ((d1%nComp .ne. dOut%nComp) .or. (d1%nSite .ne. dOut%nSite) .or. &
+          (d1%isComplex .neqv. dOut%isComplex) .or. &
+          (d1%errorBar .neqv. dOut%errorBar)) then
+          ! deallocate dOut, and reinitialize with correct parameters
+          call deall_dataBlock(dOut)
+          call create_dataBlock(d1%nComp, d1%nSite, dOut, d1%isComplex, d1%errorBar)
+       endif
+    endif
+
+    ! now copy the components
+    dOut%value=d1%value - d2%value
+    if (d1%errorBar) then
+       dOut%error = d1%error
+    endif
+    dOut%exist = d1%exist
+    dOut%normalized = d1%normalized
+    dOut%rx = d1%rx
+    dOut%tx = d1%tx
+    dOut%txType = d1%txType
+    dOut%dataType = d1%dataType
+    dOut%scalingFactor = d1%scalingFactor
+
+    ! if input is a temporary function output, deallocate
+    if (d1%temporary) then
+    	call deall_dataBlock(d1)
+    endif
+
+  end function substract_dataBlock_f
+  
   ! **********************************************************************
   ! copy a data block from d1 to d2 ...
   ! interface to =
@@ -851,7 +910,54 @@ Contains
     enddo
 
   end subroutine random_dataVector
+  ! **********************************************************************
+  ! substract a data vector d1 - d2 ...
+  ! interface to =
+  ! check for size consistency, reallocate output if needed
 
+  function substract_dataVector_f(d1, d2) result (dOUT)
+
+    type (dataVector_t), intent(in)		:: d1
+    type (dataVector_t), intent(in)	:: d2
+	type (dataVector_t)         	:: dOUT
+    ! local variable
+    integer                             :: i
+
+    ! check to see if RHS (d1) is allocated
+    if (.not. d1%allocated) then
+       call errStop('d1 not allocated yet for substract_dataVector')
+    endif
+    ! check to see if RHS (d1) is allocated
+    if (.not. d2%allocated) then
+       call errStop('d2 not allocated yet for substract_dataVector')
+    endif
+	
+	
+    ! check to see whether the LHS (d2) is allocated
+    if (.not. dOUT%allocated) then
+       call create_dataVector(d1%nDt, dOUT)
+    else
+       if (d1%nDt .ne. dOUT%nDt) then
+          ! deallocate dOUT, and reinitialize with correct number of data vectors
+          call deall_dataVector(dOUT)
+          call create_dataVector(d1%nDt, dOUT)
+       endif
+    endif
+
+    ! now copy the components
+    do i = 1, d1%nDt
+       dOUT%data(i)= d1%data(i) - d2%data(i)
+    enddo
+    dOUT%tx = d1%tx
+    dOUT%txType = d1%txType
+    dOUT%allocated = .true.
+
+    ! if input is a temporary function output, deallocate
+    if (d1%temporary) then
+    	call deall_dataVector(d1)
+    endif
+
+  end function substract_dataVector_f
   ! **********************************************************************
   ! copy a data vector from d1 to d2 ...
   ! interface to =
@@ -1259,7 +1365,53 @@ Contains
     enddo
 
   end subroutine random_dataVectorMTX
+  ! **********************************************************************
+  ! substract a d1 from d2 ...
+  ! interface to =
+  ! check for size consistency, reallocate output if needed
 
+  function substract_dataVectorMTX_f(d1, d2) result (dOUT)
+
+    type (dataVectorMTX_t), intent(in)		:: d1
+    type (dataVectorMTX_t), intent(in)	:: d2
+	type (dataVectorMTX_t)          	:: dOUT
+    ! local variable
+    integer                             :: j
+
+    ! check to see if RHS (d1) is allocated
+    if (.not. d1%allocated) then
+       call errStop('d1 not allocated yet for copy_dataVectorMTX')
+    endif
+	
+    if (.not. d2%allocated) then
+       call errStop('d2 not allocated yet for copy_dataVectorMTX')
+    endif
+	
+    ! check to see whether the LHS (d2) is allocated
+    if (.not. dOUT%allocated) then
+       call create_dataVectorMTX(d1%nTx, dOUT)
+    else
+       if (d1%nTx .ne. dOUT%nTx) then
+          ! deallocate d2, and reinitialize with correct number of data vectors
+          call deall_dataVectorMTX(dOUT)
+          call create_dataVectorMTX(d1%nTx, dOUT)
+       endif
+    endif
+
+    ! now copy the components
+    do j = 1, d1%nTx
+      dOUT%d(j)= d1%d(j) - d2%d(j)
+    enddo
+
+    dOUT%allocated = .true.
+
+    ! if input is a temporary function output, deallocate
+    if (d1%temporary) then
+    	call deall_dataVectorMTX(d1)
+    endif
+
+  end function substract_dataVectorMTX_f
+  
   ! **********************************************************************
   ! copy a data vector from d1 to d2 ...
   ! interface to =

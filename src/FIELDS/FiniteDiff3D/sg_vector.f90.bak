@@ -184,13 +184,13 @@ module sg_vector
      ! y: edge nodes in y-direction: dimension Nx+1, Ny, Nz+1
      ! z: edge nodes in z-direction: dimension Nx+1, Ny+1, Nz
      ! Note that the arrays are defined through dynamic memory allocation
-     complex(kind=prec), pointer, dimension(:,:,:) :: x, y, z
-     !
+     complex(kind=prec), pointer, dimension(:,:,:)  :: x, y, z
+
      ! Grid Dimensions:
      ! nx is grid dimension (number of cells) in the x-direction
      ! ny is grid dimension (number of cells) in the y-direction
      ! nz is grid dimension (number of cells) in the z-direction:
-     integer                                       :: nx = 0, ny = 0, nz = 0
+     integer                                          :: nx = 0, ny = 0, nz = 0
 
      ! allocated:  .true.  x, y, z arrays have been allocated
      logical		                              :: allocated = .false.
@@ -2084,19 +2084,14 @@ Contains
     type (rvector), intent(in)               :: E2
     type (cvector), intent(inout)            :: E3
 
-    if(.not.E1%allocated) then
-       write(0,*) 'E1 not allocated yet for diagMult_crvector'
-       return
-    endif
-	
-    if(.not.E2%allocated) then
-       write(0,*) 'E2 not allocated yet for diagMult_crvector'
+    if((.not.E1%allocated).or.(.not.E2%allocated)) then
+       write(0,*) 'RHS not allocated yet for diagMult_crvector'
        return
     endif
 
     ! check to see if LHS (E3) is active (allocated)
     if(.not.E3%allocated) then
-       write(0,*) 'E3 was not allocated for diagMult_crvector'
+       write(0,*) 'LHS was not allocated for diagMult_crvector'
     else
 
        ! Check whether all the vector nodes are of the same size
@@ -2993,148 +2988,5 @@ Contains
     E2%temporary = .true.
 
   end function imag_cvector_f  ! imag_cvector_f
-    !
-    !> No subroutine briefing
-    subroutine printRVector( E, io_unit, title )
-        implicit none
-        !
-        class( rvector ), intent( in ) :: E
-        integer, intent( in ), optional       :: io_unit
-        character(*), intent( in ), optional  :: title
-        !
-        integer :: ix, iy, iz, funit
-		integer, dimension(3) :: NdX, NdY, NdZ
-		!
-        if( E%gridType == EDGE ) then
-            !
-            NdX = (/E%nx, E%ny + 1, E%nz + 1/)
-            NdY = (/E%nx + 1, E%ny, E%nz + 1/)
-            NdZ = (/E%nx + 1, E%ny + 1, E%nz/)
-            !
-        else if( E%gridType == FACE ) then
-            !
-            NdX = (/E%nx + 1, E%ny, E%nz/)
-            NdY = (/E%nx, E%ny + 1, E%nz/)
-            NdZ = (/E%nx, E%ny, E%nz + 1/)
-            !
-        else
-            stop "Error: printRVector > Only EDGE or FACE types allowed."
-        endif
-        !
-        if( present( io_unit ) ) then
-            funit = io_unit
-        else
-            funit = 0
-        endif
-        !
-        if( present( title ) ) write( funit, * ) title
-        !
-        write( funit, * ) E%nx, E%ny, E%nz
-        write(funit, * ) "x-component",NdX
-        do ix = 1, NdX(1)
-             do iy = 1, NdX(2)
-                do iz = 1, NdX(3)
-                     if( E%x( ix, iy, iz ) /= 0 ) then
-                        write(funit,*) ix,iy,iz, ":[", E%x( ix, iy, iz ), "]"
-                     endif
-                enddo
-             enddo
-        enddo
-        !
-        write(funit,*) "y-component",NdY
-        do ix = 1, NdY(1)
-             do iy = 1, NdY(2)
-                do iz = 1, NdY(3)
-                     if( E%y( ix, iy, iz ) /= 0 ) then
-                        write(funit,*) ix,iy,iz, ":[", E%y( ix, iy, iz ), "]"
-                     endif
-                enddo
-             enddo
-        enddo
-        !
-        write(funit,*) "z-component",NdZ
-        do ix = 1, NdZ(1)
-             do iy = 1, NdZ(2)
-                do iz = 1, NdZ(3)
-                     if( E%z( ix, iy, iz ) /= 0 ) then
-                        write(funit,*) ix,iy,iz, ":[", E%z( ix, iy, iz ), "]"
-                     endif
-                enddo
-             enddo
-        enddo
-        !
-    end subroutine printRVector
-    !
-    !> No subroutine briefing
-    subroutine printCVector( E, io_unit, title )
-        implicit none
-        !
-        class( cvector ), intent( in ) :: E
-        integer, intent( in ), optional       :: io_unit
-        character(*), intent( in ), optional  :: title
-        !
-        integer :: ix, iy, iz, funit
-		integer, dimension(3) :: NdX, NdY, NdZ
-		!
-        if( E%gridType == EDGE ) then
-            !
-            NdX = (/E%nx, E%ny + 1, E%nz + 1/)
-            NdY = (/E%nx + 1, E%ny, E%nz + 1/)
-            NdZ = (/E%nx + 1, E%ny + 1, E%nz/)
-            !
-        else if( E%gridType == FACE ) then
-            !
-            NdX = (/E%nx + 1, E%ny, E%nz/)
-            NdY = (/E%nx, E%ny + 1, E%nz/)
-            NdZ = (/E%nx, E%ny, E%nz + 1/)
-            !
-        else
-			write( *, * ) E%gridType
-            stop "Error: printCVector > Only EDGE or FACE types allowed."
-        endif
-        !
-        if( present( io_unit ) ) then
-            funit = io_unit
-        else
-            funit = 0
-        endif
-        !
-        if( present( title ) ) write( funit, * ) title
-        !
-        write( funit, * ) E%nx, E%ny, E%nz
-        write(funit, * ) "x-component",NdX
-        do ix = 1, NdX(1)
-             do iy = 1, NdX(2)
-                do iz = 1, NdX(3)
-                     if( E%x( ix, iy, iz ) /= 0 ) then
-                        write(funit,*) ix,iy,iz, ":[", E%x( ix, iy, iz ), "]"
-                     endif
-                enddo
-             enddo
-        enddo
-        !
-        write(funit,*) "y-component",NdY
-        do ix = 1, NdY(1)
-             do iy = 1, NdY(2)
-                do iz = 1, NdY(3)
-                     if( E%y( ix, iy, iz ) /= 0 ) then
-                        write(funit,*) ix,iy,iz, ":[", E%y( ix, iy, iz ), "]"
-                     endif
-                enddo
-             enddo
-        enddo
-        !
-        write(funit,*) "z-component",NdZ
-        do ix = 1, NdZ(1)
-             do iy = 1, NdZ(2)
-                do iz = 1, NdZ(3)
-                     if( E%z( ix, iy, iz ) /= 0 ) then
-                        write(funit,*) ix,iy,iz, ":[", E%z( ix, iy, iz ), "]"
-                     endif
-                enddo
-             enddo
-        enddo
-        !
-    end subroutine printCVector
-    !
+
 end module sg_vector ! sg_vector

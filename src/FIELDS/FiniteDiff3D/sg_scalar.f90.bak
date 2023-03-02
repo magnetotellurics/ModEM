@@ -140,8 +140,7 @@ module sg_scalar
        diagMult_rcscalar, diagMult_crscalar, &
        diagMult_rcscalar_f, diagMult_crscalar_f, &
        dotProd_rscalar_f, dotProd_cscalar_f, &
-       linComb_rscalar, linComb_cscalar, scMultAdd_cscalar, &
-	   printRScalar, printCScalar
+       linComb_rscalar, linComb_cscalar, scMultAdd_cscalar
 
   ! ***************************************************************************
   ! type cscalar defines scalar for either edge or face in a staggered grid as
@@ -805,75 +804,7 @@ Contains
 	  deallocate(temp,STAT=istat)
 
   end subroutine read_iscalar
-    !
-    !> No subroutine briefing
-    subroutine printRScalar( E, io_unit, title )
-        implicit none
-        !
-        type (rscalar), intent(in)            :: E
-        integer, intent( in ), optional       :: io_unit
-        character(*), intent( in ), optional  :: title
-        !
-        integer :: ix, iy, iz, funit
-        !
-        if( present( io_unit ) ) then
-            funit = io_unit
-        else
-            funit = 0    !>    usually this will work to write to standard output
-        endif
-        if(present(title)) then
-          write(funit,*) title
-        endif
-        !
-        write( funit, * ) E%nx, E%ny, E%nz
-        !
-        write(funit,*) "scalar field"
-        do ix = 1, E%nx
-             do iy = 1, E%ny
-                  do iz = 1, E%nz
-                        if( E%v( ix, iy, iz ) /= 0 ) then
-                            write(funit,*) ix,iy,iz, ":[", E%v( ix, iy, iz ), "]"
-                        endif
-                  enddo
-             enddo
-        enddo
-        !
-    end subroutine printRScalar
-    !
-    !> No subroutine briefing
-    subroutine printCScalar( E, io_unit, title )
-        implicit none
-        !
-        type (cscalar), intent(in)            :: E
-        integer, intent( in ), optional       :: io_unit
-        character(*), intent( in ), optional  :: title
-        !
-        integer :: ix, iy, iz, funit
-        !
-        if( present( io_unit ) ) then
-            funit = io_unit
-        else
-            funit = 0    !>    usually this will work to write to standard output
-        endif
-        if(present(title)) then
-          write(funit,*) title
-        endif
-        !
-        write( funit, * ) E%nx, E%ny, E%nz
-        !
-        write(funit,*) "scalar field"
-        do ix = 1, E%nx
-             do iy = 1, E%ny
-                  do iz = 1, E%nz
-                        if( E%v( ix, iy, iz ) /= 0 ) then
-                            write(funit,*) ix,iy,iz, ":[", E%v( ix, iy, iz ), "]"
-                        endif
-                  enddo
-             enddo
-        enddo
-        !
-    end subroutine printCScalar
-    !
+
   !****************************************************************************
   ! write_rscalar writes an iscalar in a simple ASCII format; rscalar has
   ! to exist and be allocated before calling this routine, and the file unit

@@ -59,37 +59,36 @@ end interface
     !! polarizations; 2 for 3D MT - one electrical field solution for each
     !! allows a variable number of polarizations to accommodate other uses
     !! e.g. active source applications
-    !! NM: to make it possibile to have both MT and CSEM in one eAll solution, the nPol must be general.
-    !! Since nPol is defined from the Tx dictionary, there is NO need to have an abstract nPol.
-    !! AK: added Pol_name for more flexible read/write. 2018-04-27
-    integer                  :: nPol  
-    integer ,pointer      :: Pol_index(:)     
+	!! NM: to make it possibile to have both MT and CSEM in one eAll solution, the nPol must be general.
+	!! Since nPol is defined from the Tx dictionary, there is NO need to have an abstract nPol.
+	!! AK: added Pol_name for more flexible read/write. 2018-04-27
+    integer		          :: nPol  
+    integer ,pointer      :: Pol_index(:) 	
     character(20), pointer  :: Pol_name(:)
     type(cvector), pointer  :: pol(:)
 
     !! tx points to information in the transmitter dictionary about the source
     !!   used to compute the solution, e.g. omega/period;
     !!   do not duplicate it here to avoid potential problems
-    integer             :: tx = 0
+    integer 			:: tx = 0
 
     !! grid is a pointer to numerical discretization stored in SensMatrix
-    type(grid_t), pointer    :: grid
+    type(grid_t), pointer	:: grid
 
     !! allocated when the solnVector was created but not yet deallocated
-    logical            :: allocated = .false.
+    logical			:: allocated = .false.
 
     !! avoid memory leaks: set this to true for function outputs only
-    logical            :: temporary = .false.
+    logical			:: temporary = .false.
 
   end type solnVector_t
 
   type :: solnVectorMTX_t
     !! Generic solution type for storing solutions from multiple transmitters
-    integer                        :: nTx = 0
-    integer                        :: SolnIndex = 0
-    type(solnVector_t), pointer        :: solns(:)
-    logical                        :: allocated = .false.
-    logical                        :: temporary = .false.
+    integer						:: nTx = 0
+    type(solnVector_t), pointer		:: solns(:)
+    logical						:: allocated = .false.
+    logical						:: temporary = .false.
   end type solnVectorMTX_t
 
   type :: sparseVector_t
@@ -101,13 +100,13 @@ end interface
     !!  but then the generic create interface shouldn't use it either
     !!  unless sparse vectors require the grid pointer for something.
     !! Since nPol is defined from the Tx dictionary, there is NO need to have an abstract nPol.
-    integer                        :: nPol  
-    integer                        :: nCoeff = 0
-    type(sparsevecc), pointer    :: L(:)
-    logical                        :: allocated = .false.
-    logical                        :: temporary = .false.
+    integer						:: nPol  
+    integer						:: nCoeff = 0
+    type(sparsevecc), pointer	:: L(:)
+    logical						:: allocated = .false.
+    logical						:: temporary = .false.
     type(grid_t), pointer       :: grid
-    integer                        :: tx = 0
+    integer						:: tx = 0
   end type sparseVector_t
 
   type :: RHS_t
@@ -119,16 +118,16 @@ end interface
      ! representation, can't have both. So, if nonzero_Source,
      ! check sparse_Source, otherwise, source is zero.
 
-     character*3        :: adj = ''
+     character*3		:: adj = ''
      logical                    :: nonzero_BC     = .false.
      logical                    :: nonzero_Source = .false.
      logical                    :: sparse_Source  = .false.
-     logical            :: allocated      = .false.
-    logical                    :: temporary = .false.
-     type (cvector)         :: s
-     type (sparsevecc)         :: sSparse
-     type (cboundary)         :: bc
-     type(grid_t), pointer    :: grid
+     logical			:: allocated      = .false.
+    logical					:: temporary = .false.
+     type (cvector) 		:: s
+     type (sparsevecc) 		:: sSparse
+     type (cboundary) 		:: bc
+     type(grid_t), pointer	:: grid
      integer                :: tx = 0
   end type RHS_t
 
@@ -141,16 +140,16 @@ end interface
      ! representation, can't have both. So, if nonzero_Source,
      ! check sparse_Source, otherwise, source is zero.
 
-     integer                :: nPol
-     character(20), pointer :: Pol_name(:) ! Ex or Ey
-     type (RHS_t), pointer  :: b(:)
-     logical                :: nonzero_BC     = .false.
-     logical                :: nonzero_Source = .false.
-     logical                :: sparse_Source  = .false.
-     logical                :: allocated = .false.
-     logical                :: temporary = .false.
-     type(grid_t), pointer  :: grid
-     integer                :: tx = 0
+     integer				:: nPol
+     character(20), pointer	:: Pol_name(:) ! Ex or Ey
+     type (RHS_t), pointer	:: b(:)
+     logical                    :: nonzero_BC     = .false.
+     logical                    :: nonzero_Source = .false.
+     logical                    :: sparse_Source  = .false.
+     logical				:: allocated = .false.
+     logical				:: temporary = .false.
+     type(grid_t), pointer	:: grid
+     integer				:: tx = 0
   end type rhsVector_t
 
   type :: rhsVectorMTX_t
@@ -172,12 +171,12 @@ contains
      !  number of polarization obtained from the transmitter dictionary
 
        implicit none
-       type(grid_t), intent(in), target        :: grid
+       type(grid_t), intent(in), target	    :: grid
        integer, intent(in)                  :: iTx
-       type (solnVector_t), intent(inout)        :: e
+       type (solnVector_t), intent(inout)		:: e
 
        ! local variables
-       integer                :: k,istat,iPol
+       integer				:: k,istat,iPol
 
        if (e%allocated) then
           if (associated(e%grid, target=grid) .and. (e%tx == iTx)) then
@@ -189,7 +188,7 @@ contains
        end if
 
        e%nPol = txDict(iTx)%nPol
-       allocate(e%Pol_index(e%nPol), STAT=istat)
+	   allocate(e%Pol_index(e%nPol), STAT=istat)
        allocate(e%Pol_name(e%nPol), STAT=istat)
        
        do iPol=1,e%nPol
@@ -214,7 +213,7 @@ contains
        e%tx = iTx
        e%grid => grid
 
-       e%allocated = .true.
+	   e%allocated = .true.
 
      end subroutine create_solnVector
 
@@ -226,7 +225,7 @@ contains
        type (solnVector_t), intent(inout)   :: e
 
        ! local variables
-       integer                :: k, istat
+       integer				:: k, istat
 
        if (associated(e%pol)) then
           deallocate(e%Pol_index, STAT=istat)
@@ -250,11 +249,11 @@ contains
 
        !  3D  version
        implicit none
-       type (solnVector_t), intent(in)    :: eIn
-       type (solnVector_t), intent(inout)    :: eOut
+       type (solnVector_t), intent(in)	:: eIn
+       type (solnVector_t), intent(inout)	:: eOut
 
        ! local variables
-       integer                :: k
+       integer				:: k
 
        if (.not. eIn%allocated) then
          call errStop('input EM soln not allocated yet in copy_solnVector')
@@ -278,10 +277,10 @@ contains
      subroutine zero_solnVector(e)
      !  zeros a solution space object
 
-       type(solnVector_t), intent(inout)    :: e
+       type(solnVector_t), intent(inout)	:: e
 
        ! local variables
-       integer                :: k
+       integer				:: k
 
        do k = 1,e%nPol
           call zero_cvector(e%pol(k))
@@ -396,11 +395,11 @@ contains
 
        !  3D  version
        implicit none
-       type (solnVectorMTX_t), intent(in)    :: eIn
-       type (solnVectorMTX_t), intent(inout)    :: eOut
+       type (solnVectorMTX_t), intent(in)	:: eIn
+       type (solnVectorMTX_t), intent(inout)	:: eOut
 
        ! local variables
-       integer                :: j
+       integer				:: j
 
        if (.not. eIn%allocated) then
          call errStop('input multi-transmitter EM soln not allocated yet in copy_solnVectorMTX')
@@ -479,13 +478,13 @@ contains
       !  number of polarization obtained from the transmitter dictionary
 
        implicit none
-       type(grid_t), intent(in), target        :: grid
+       type(grid_t), intent(in), target	    :: grid
        integer, intent(in)                  :: iTx
-       type (sparseVector_t), intent(inout)        :: LC
-       integer, intent(in), optional        :: nCoeff
+       type (sparseVector_t), intent(inout)		:: LC
+       integer, intent(in), optional		:: nCoeff
 
        ! local variables
-       integer                :: nc,k,istat
+       integer				:: nc,k,istat
 
        if (present(nCoeff)) then
           nc = nCoeff
@@ -507,7 +506,7 @@ contains
        LC%nCoeff = nc
        LC%grid => grid
        LC%tx = iTx
-       LC%allocated = .true.
+	   LC%allocated = .true.
 
     end subroutine create_sparseVector
 
@@ -515,10 +514,10 @@ contains
     subroutine deall_sparseVector(LC)
 
       ! 3D version
-      type (sparseVector_t), intent(inout)       :: LC
+      type (sparseVector_t), intent(inout)   	:: LC
 
       ! local variables
-      integer                :: k,istat
+      integer				:: k,istat
 
       if (associated(LC%L)) then
          do k = 1,LC%nPol
@@ -535,11 +534,11 @@ contains
 
        !  3D  version
        implicit none
-       type (sparseVector_t), intent(in)    :: eIn
-       type (sparseVector_t), intent(inout)    :: eOut
+       type (sparseVector_t), intent(in)	:: eIn
+       type (sparseVector_t), intent(inout)	:: eOut
 
        ! local variables
-       integer                :: k
+       integer				:: k
 
        if (.not. eIn%allocated) then
          call errStop('input EM sparse vector not allocated yet in copy_sparseVector')
@@ -593,8 +592,8 @@ contains
        type (sparseVector_t), intent(in)             :: SV  ! sparse vector
        type (solnVector_t), intent(in)               :: FV  ! full vector
        logical, intent(in)                     :: conj_Case ! = .true.
-       complex(kind=prec)        :: c
-       integer                    :: k
+       complex(kind=prec)		:: c
+       integer					:: k
 
        c = C_ZERO
        if(conj_case) then
@@ -622,16 +621,16 @@ contains
      !     does not create sparse vectors if sparsesource = .true.
      !       (this would in any event require knowing number of
      !         non-zero coefficients to allow for)
-         ! NOTE: Does not do anything if b%allocated is .true.
+		 ! NOTE: Does not do anything if b%allocated is .true.
 
-       type(grid_t), intent(in),target    :: grid
+       type(grid_t), intent(in),target	:: grid
        integer, intent(in)              :: iTx
-       type (RHS_t), intent(inout)       :: b
+       type (RHS_t), intent(inout)   	:: b
 
-             if (b%allocated) then
-                    ! do nothing - exit the create subroutine
-                    !return        !NM: In case of MT and CSEM we need to create b for b%nonzero_source
-             endif
+			 if (b%allocated) then
+					! do nothing - exit the create subroutine
+					!return        !NM: In case of MT and CSEM we need to create b for b%nonzero_source
+			 endif
 
        if (b%nonzero_BC) then
           ! create boundary condition data structures for each polarization
@@ -725,7 +724,7 @@ contains
      subroutine zero_RHS(b)
      !  zeros a RHS object
 
-       type(RHS_t), intent(inout)    :: b
+       type(RHS_t), intent(inout)	:: b
 
        if(b%nonzero_source .and. b%allocated) then
           if(b%sparse_source) then
@@ -757,11 +756,11 @@ contains
      !       (this would in any event require knowing number of
      !         non-zero coefficients to allow for)
 
-       type(grid_t), intent(in),target    :: grid
+       type(grid_t), intent(in),target	:: grid
        integer, intent(in)              :: iTx
-       type (rhsVector_t), intent(inout)       :: b
+       type (rhsVector_t), intent(inout)   	:: b
 
-       integer                :: k,istat
+       integer				:: k,istat
 
        if (b%allocated) then
           if (associated(b%grid, target=grid) .and. (b%tx == iTx)) then
@@ -806,7 +805,7 @@ contains
 
        type (rhsVector_t), intent(inout)   :: b
 
-       integer            :: k,istat
+       integer			:: k,istat
 
        if (associated(b%b)) then
           do k = 1,b%nPol
@@ -826,11 +825,11 @@ contains
 
        !  3D  version
        implicit none
-       type (rhsVector_t), intent(in)    :: bIn
-       type (rhsVector_t), intent(inout)    :: bOut
+       type (rhsVector_t), intent(in)	:: bIn
+       type (rhsVector_t), intent(inout)	:: bOut
 
        ! local variables
-       integer                :: k
+       integer				:: k
 
        if (.not. bIn%allocated) then
          call errStop('input EM RHS not allocated yet in copy_rhsVector')
@@ -857,9 +856,9 @@ contains
      subroutine zero_rhsVector(b)
      !  zeros a rhsVector object
 
-       type(rhsVector_t), intent(inout)    :: b
+       type(rhsVector_t), intent(inout)	:: b
 
-       integer            :: k
+       integer			:: k
 
        do k = 1,b%nPol
           call zero_RHS(b%b(k))
@@ -1019,8 +1018,8 @@ contains
        type (rhsVector_t), intent(inout)             :: comb  ! full vector
 
      !  local variables
-       type(sparsevecc)            :: temp
-       integer                :: k
+       type(sparsevecc)			:: temp
+       integer				:: k
 
        comb%nonzero_source = .true.
 
@@ -1032,7 +1031,7 @@ contains
              if(comb%b(k)%sSparse%allocated) then
                 !  add to contentes of comb sparse vector and cs*SV
                 call linComb_sparsevecc(comb%b(k)%sSparse,C_ONE, &
-            SV%L(k),cs,temp)
+			SV%L(k),cs,temp)
              else
                 call scMult_sparsevecc(cs,SV%L(k),temp)
              endif

@@ -78,10 +78,6 @@ module dataTypes
   integer, parameter   :: Ez_Field = 12
   integer, parameter   :: Exy_Field = 13
   integer, parameter   :: Exy_Ampli_Phase = 14
-  integer, parameter   :: Bxy_Field = 15
-  integer, parameter   :: Bxy_Ampli_Phase = 16
-  integer, parameter   :: Bz_Ampli_Phase = 17
-  integer, parameter   :: Full_Impedance_wAzimuth = 18
 
 Contains
 
@@ -92,19 +88,8 @@ Contains
 
   	 integer     :: istat
 
-     allocate(typeDict(18),STAT=istat)
+     allocate(typeDict(14),STAT=istat)
 
-     typeDict(Full_Impedance_wAzimuth)%name = 'Full_Impedance_wAzimuth'
-     typeDict(Full_Impedance_wAzimuth)%isComplex = .true.
-     typeDict(Full_Impedance_wAzimuth)%tfType    = Full_Impedance_wAzimuth
-     typeDict(Full_Impedance_wAzimuth)%units     = '[V/m]/[T]'
-     typeDict(Full_Impedance_wAzimuth)%nComp     = 8
-     allocate(typeDict(Full_Impedance_wAzimuth)%id(4),STAT=istat)
-     typeDict(Full_Impedance_wAzimuth)%id(1)    = 'ZXX'
-     typeDict(Full_Impedance_wAzimuth)%id(2)    = 'ZXY'
-     typeDict(Full_Impedance_wAzimuth)%id(3)    = 'ZYX'
-     typeDict(Full_Impedance_wAzimuth)%id(4)    = 'ZYY'
-	 
      typeDict(Full_Impedance)%name = 'Full_Impedance'
      typeDict(Full_Impedance)%isComplex = .true.
      typeDict(Full_Impedance)%tfType    = Full_Impedance
@@ -235,31 +220,6 @@ Contains
      typeDict(Exy_Ampli_Phase)%id(1) = 'Exy_Ampli'
      typeDict(Exy_Ampli_Phase)%id(2) = 'Exy_Phase'
 	 
-     typeDict(Bxy_Field)%name = 'Bxy_Field'
-     typeDict(Bxy_Field)%isComplex = .true.
-     typeDict(Bxy_Field)%tfType    = Bxy_Field	
-     typeDict(Bxy_Field)%units     = '[T]'
-     typeDict(Bxy_Field)%nComp     = 2
-     allocate(typeDict(Bxy_Field)%id(1),STAT=istat)
-     typeDict(Bxy_Field)%id(1)    = 'Bxy_Field'	 
-
- 	 typeDict(Bxy_Ampli_Phase)%name = 'Bxy_Ampli_Phase'
-     typeDict(Bxy_Ampli_Phase)%isComplex = .false.
-     typeDict(Bxy_Ampli_Phase)%tfType    = Bxy_Ampli_Phase
-     typeDict(Bxy_Ampli_Phase)%units     = '[]'
-     typeDict(Bxy_Ampli_Phase)%nComp     = 2
-     allocate(typeDict(Bxy_Ampli_Phase)%id(2),STAT=istat)
-     typeDict(Bxy_Ampli_Phase)%id(1) = 'Bxy_Ampli'
-     typeDict(Bxy_Ampli_Phase)%id(2) = 'Bxy_Phase'
-	 
- 	 typeDict(Bz_Ampli_Phase)%name = 'Bz_Ampli_Phase'
-     typeDict(Bz_Ampli_Phase)%isComplex = .false.
-     typeDict(Bz_Ampli_Phase)%tfType    = Bz_Ampli_Phase
-     typeDict(Bz_Ampli_Phase)%units     = '[]'
-     typeDict(Bz_Ampli_Phase)%nComp     = 2
-     allocate(typeDict(Bz_Ampli_Phase)%id(2),STAT=istat)
-     typeDict(Bz_Ampli_Phase)%id(1) = 'Bz_Ampli'
-     typeDict(Bz_Ampli_Phase)%id(2) = 'Bz_Phase'	
 	 
   end subroutine setup_typeDict
 
@@ -361,9 +321,6 @@ Contains
        case('Full_Impedance')
           dataType = Full_Impedance
 
-       case('Full_Impedance_wAzimuth')
-          dataType = Full_Impedance_wAzimuth
-		  
        case('Off_Diagonal_Impedance')
           dataType = Off_Diagonal_Impedance
 
@@ -395,12 +352,6 @@ Contains
           dataType = Exy_Field
       case('Exy_Ampli_Phase')
           dataType = Exy_Ampli_Phase			  		  
-      case('Bxy_Field')
-          dataType = Bxy_Field	
-      case('Bxy_Ampli_Phase')
-          dataType = Bxy_Ampli_Phase
-      case('Bz_Ampli_Phase')
-          dataType = Bz_Ampli_Phase		  
        case default
           call errStop('Unknown data type:'//trim(typeName))
 
@@ -482,6 +433,7 @@ Contains
     deallocate(compids,STAT=istat)
 
   end function ImpTypeFromHeader
+
 
 !*************************************************************************
 ! Supports the old data format file: checks the order of components
