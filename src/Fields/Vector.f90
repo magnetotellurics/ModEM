@@ -19,22 +19,6 @@ module Vector
     !
     !> Global structures to store E from Transmitters
     !
-    !> For a single Tx
-    type :: EAllTx_t
-        !
-        class( Vector_t ), allocatable, dimension(:) :: pol
-        !
-    end type EAllTx_t
-    !
-    !> For multiple Txs
-    type :: EAllMTx_t
-        !
-        type( EAllTx_t ), allocatable, dimension(:) :: e
-        !
-        integer :: SolnIndex = 0
-        !
-    end type EAllMTx_t
-    !
     abstract interface
         !
         !> No interface function briefing

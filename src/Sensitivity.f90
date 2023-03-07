@@ -249,20 +249,26 @@ contains
     !> Call JMult_T_Tx with measured data for for all transmitters
     !> Add the result obtained for each transmitter into dsigma
     !
-    subroutine serialJMult_T( sigma, all_data, dsigma, new_sigma )
+    subroutine serialJMult_T( sigma, all_data, dsigma, new_sigma, SolnIndex )
         implicit none
         !
         class( ModelParameter_t ), intent( in ) :: sigma
         type( DataGroupTx_t ), dimension(:), intent( in ) :: all_data
         class( ModelParameter_t ), allocatable, intent( out ) :: dsigma
         logical, intent( inout ) :: new_sigma
+        integer, intent( in ), optional :: SolnIndex
         !
         class( Transmitter_t ), pointer :: Tx
         class( ModelParameter_t ), allocatable :: dsigma_tx
-        integer :: i_tx
+        integer :: i_tx, sol_index
         !
         ! Verbose
         !write( *, * ) "          - Start serialJMult_T"
+        !
+        sol_index = 0
+        !
+        !> Set SolnIndex if present
+        if( present( SolnIndex ) ) sol_index = SolnIndex
         !
         !> Initialize dsigma with zeros
         if( sigma%is_allocated ) then
@@ -289,7 +295,7 @@ contains
                 !
             endif
             !
-            call JMult_T_Tx( sigma, all_data( i_tx ), dsigma_tx, new_sigma )
+            call JMult_T_Tx( sigma, all_data( i_tx ), dsigma_tx, new_sigma, sol_index )
             !
             !> Add dsigma_tx to dsigma
             call dsigma%linComb( ONE, ONE, dsigma_tx )
@@ -310,13 +316,14 @@ contains
     !>     Solve ESens on the transmitter using a transpose SourceInteriorForce, with the new rhs.
     !>     Call Tx%PMult to get a new ModelParameter dsigma.
     !
-    subroutine JMult_T_Tx( sigma, tx_data, dsigma, new_sigma )
+    subroutine JMult_T_Tx( sigma, tx_data, dsigma, new_sigma, SolnIndex )
         implicit none
         !
         class( ModelParameter_t ), intent( in ) :: sigma
         type( DataGroupTx_t ), intent( in ) :: tx_data
         class( ModelParameter_t ), allocatable, intent( inout ) :: dsigma
         logical, intent( inout ) :: new_sigma
+        integer, intent( in ), optional :: SolnIndex
         !
         class( Vector_t ), allocatable :: lrows
         class( Vector_t ), allocatable, dimension(:) :: bSrc
@@ -324,7 +331,12 @@ contains
         class( Receiver_t ), pointer :: Rx
         type( DataGroup_t ) :: data_group
         complex( kind=prec ) :: tx_data_cvalue
-        integer :: i_data, i_comp, i_pol
+        integer :: i_data, i_comp, i_pol, sol_index
+        !
+        sol_index = 0
+        !
+        !> Set SolnIndex if present
+        if( present( SolnIndex ) ) sol_index = SolnIndex
         !
         !> Initialize dsigma with zeros
         allocate( dsigma, source = sigma )
@@ -333,6 +345,8 @@ contains
         !
         !> Pointer to the tx_data's Transmitter
         Tx => getTransmitter( tx_data%i_tx )
+        !
+        Tx%SolnIndex = sol_index
         !
         !> Initialize bSrc( n_pol ) with zeros
         allocate( cVector3D_SG_t :: bSrc( Tx%n_pol ) )

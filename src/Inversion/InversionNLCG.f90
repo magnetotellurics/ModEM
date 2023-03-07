@@ -45,7 +45,7 @@ module InversionNLCG
             !
     end type InversionNLCG_t
     !
-    private :: CdInvMult, outputFilesInversionDCG
+    private :: CdInvMult, outputFilesInversionNLCG
     !
     interface InversionNLCG_t
         module procedure InversionNLCG_ctor
@@ -54,7 +54,7 @@ module InversionNLCG
 contains
     !
     !> No function briefing
-	!
+    !
     function InversionNLCG_ctor() result( self )
         implicit none
         !
@@ -95,7 +95,7 @@ contains
         ! optional relaxation parameter (Renormalized Steepest Descent algorithm)
         self%gamma = 0.99
         ! model and data output file name
-        self%fname = 'Modular'
+        self%fname = "Modular"
         !
         !> Set NLCG parameters from control file if its the case
         if( has_inv_control_file ) then
@@ -126,7 +126,7 @@ contains
     !
     !> Deconstructor routine:
     !>     Calls the base routine dealloc().
-	!
+    !
     subroutine InversionNLCG_dtor( self )
         implicit none
         !
@@ -139,7 +139,7 @@ contains
     end subroutine InversionNLCG_dtor
     !
     !> No subroutine briefing
-	!
+    !
     subroutine solveInversionNLCG( self, all_data, sigma, dsigma )
         implicit none
         !
@@ -151,7 +151,7 @@ contains
         !> initial step size in the line search direction in model units
         real( kind=prec ) :: startdm
         !> flavor is a string that specifies the algorithm to use
-        character(80) :: flavor = 'Cubic'
+        character(80) :: flavor = "Cubic"
         !
         type( DataGroupTx_t ), allocatable, dimension(:) :: dHat, res
         class( ModelParameter_t ), allocatable :: mHat, grad, g, h, gPrev
@@ -161,8 +161,7 @@ contains
         real( kind=prec ) :: grad_dot_h, g_dot_g
         real( kind=prec ) :: g_dot_gPrev, g_dot_h
         real( kind=prec ) :: gPrev_dot_gPrev, h_dot_g, h_dot_gPrev
-        integer :: iter, nCG, nLS, nfunc, ios
-        type( EAllMTx_t ) :: e_all
+        integer :: iter, nCG, nLS, nfunc, ios, SolnIndex
         !
         !>
         call createOutputDirectory()
@@ -186,9 +185,9 @@ contains
             allocate( mHat, source = dsigma )
             !
             !  compute the penalty functional and predicted data
-            e_all%SolnIndex = 0
+            SolnIndex = 0
             !
-            call func( self, all_data, sigma, mHat, r_value, mNorm, dHat, e_all, rms )
+            call func( self, all_data, sigma, mHat, r_value, mNorm, dHat, SolnIndex, rms )
             !
             nfunc = 1
             !
@@ -198,7 +197,7 @@ contains
             call dsigma%linComb( ONE, ONE, sigma )
             !
             !> compute gradient of the full penalty functional
-            call gradient( self, all_data, sigma, mHat, grad, dHat, e_all )
+            call gradient( self, all_data, sigma, mHat, grad, dHat, SolnIndex )
             !
             gnorm = sqrt( grad%dotProd( grad ) )
             !
@@ -241,7 +240,7 @@ contains
                 valuePrev = r_value
                 !
                 grad_dot_h = grad%dotProd( h )
-				!
+                !
                 ! at the end of line search, set mHat to the new r_value
                 ! mHat = mHat + alpha*h  and evaluate gradient at new mHat
                 ! data and solnVector only needed for output
@@ -249,15 +248,18 @@ contains
                 !
                 select case( flavor )
                     !
-                    case( 'Cubic' )
-                        call self%lineSearchCubic( all_data, sigma, h, alpha, mHat, r_value, grad, rms, nLS, dHat, e_all )
-                        !call deall(e_all)
-                    case ('Quadratic')
-                        !call self%lineSearchQuadratic( all_data,sigma,h,alpha,mHat,r_value,grad,rms,nLS,dHat,e_all)
-                        !call deall(e_all)
-                    case ('Wolfe')
-                        !call self%lineSearchWolfe( all_data,sigma,h,alpha,mHat,r_value,grad,rms,nLS,dHat,e_all)
-                        !call deall(e_all)
+                    case( "Cubic" )
+                        !
+                        call self%lineSearchCubic( all_data, sigma, h, alpha, mHat, r_value, grad, rms, nLS, dHat )
+                        !
+                    case ( "Quadratic" )
+                        !
+                        !call self%lineSearchQuadratic( all_data,sigma,h,alpha,mHat,r_value,grad,rms,nLS,dHat )
+                        !
+                    case ( "Wolfe" )
+                        !
+                        !call self%lineSearchWolfe( all_data,sigma,h,alpha,mHat,r_value,grad,rms,nLS,dHat )
+                        !
                     case default
                         stop "Error: NLCGsolver: Unknown line search requested in NLCG"
                     !
@@ -298,6 +300,8 @@ contains
                 !
                 call linCombData( ONE, all_data, MinusONE, dHat, res )
                 !
+                call outputFilesInversionNLCG( iter, dHat, res, dsigma, mHat )
+                !
                 !> if alpha is too small, we are not making progress: update lambda
                 if( abs( rmsPrev - rms ) < self%fdiffTol ) then
                     !
@@ -333,7 +337,7 @@ contains
                     !
                     nCG = 0
                     !
-                    cycle !????
+                    cycle
                     !
                 endif
                 !
@@ -352,7 +356,7 @@ contains
                 !> h_{i+1} = g_{i+1} + beta * h_i. In order for the next directional
                 !> derivative = -g_{i+1}.dot.h_{i+1} to be negative, the condition
                 !> g_{i+1}.dot.(g_{i+1}+beta*h_i) > 0 must hold. Alternatively, books
-                !> say we can take beta > 0 (didn't work as well)
+                !> say we can take beta > 0 (didn"t work as well)
                 !> if((beta.lt.R_ZERO).or.(g_dot_g + beta*g_dot_h .le. R_ZERO)&
                 !>    .and.(nCG .ge. self%nCGmax)) then  !PR+
                 if( g_dot_g + beta * g_dot_h .LE. R_ZERO .AND. nCG .GE. self%nCGmax ) then  !PR
@@ -411,7 +415,7 @@ contains
     !> call linComb(ONE,dsigma,ONE,sigma,dsigma)
     !> call fwdPred(dsigma,dHat,e_all)
     !
-    subroutine gradient( self, all_data, sigma, mHat, grad, dHat, e_all )
+    subroutine gradient( self, all_data, sigma, mHat, grad, dHat, SolnIndex )
         implicit none
         !
         class( InversionNLCG_t ), intent( inout ) :: self
@@ -419,7 +423,7 @@ contains
         class( ModelParameter_t ), allocatable, intent( in ) :: sigma, mHat
         class( ModelParameter_t ), allocatable, intent( inout ) :: grad
         type( DataGroupTx_t ), allocatable, dimension(:), intent( inout ) :: dHat
-        type( EAllMTx_t ), intent( inout ) :: e_all
+        integer, intent( in ) :: SolnIndex
         !
         real( kind=prec ) :: Ndata, Nmodel, angle1, angle2, diff, diff1
         type( DataGroupTx_t ), allocatable, dimension(:) :: res
@@ -447,9 +451,9 @@ contains
         call CdInvMult( res )
         !
 #ifdef MPI
-        call masterJMult_T( dsigma, res, JTd )
+        call masterJMult_T( dsigma, res, JTd, SolnIndex )
 #else
-        call serialJMult_T( dsigma, res, JTd, self%new_sigma )
+        call serialJMult_T( dsigma, res, JTd, self%new_sigma, SolnIndex )
 #endif
         !
         allocate( CmJTd, source = model_cov%multBy_CmSqrt( JTd ) )
@@ -478,7 +482,7 @@ contains
     !> Also output the predicted data and the EM solution
     !> that can be used for evaluating the gradient
     !
-    subroutine func( self, all_data, sigma, mHat, F, mNorm, dHat, e_all, rms )
+    subroutine func( self, all_data, sigma, mHat, F, mNorm, dHat, SolnIndex, rms )
         implicit none
         !
         class( InversionNLCG_t ), intent( inout ) :: self
@@ -486,7 +490,7 @@ contains
         class( ModelParameter_t ), allocatable, intent( in ) :: sigma, mHat
         real( kind=prec ), intent( out ) :: F, mNorm
         type( DataGroupTx_t ), allocatable, dimension(:), intent( inout ) :: dHat
-        type( EAllMTx_t ), optional, intent( inout ) :: e_all
+        integer, intent( inout ) :: SolnIndex
         real( kind=prec ), optional, intent( out ) :: rms
         !
         type( DataGroupTx_t ), allocatable, dimension(:) :: res, Nres
@@ -505,11 +509,11 @@ contains
         !
 #ifdef MPI
         !
-        call masterForwardModelling( dsigma, dHat )
+        call masterForwardModelling( dsigma, dHat, SolnIndex )
         !
 #else
         !
-        call serialForwardModeling( dsigma, dHat, self%new_sigma, e_all )
+        call serialForwardModeling( dsigma, dHat, self%new_sigma, SolnIndex )
         !
 #endif
         !
@@ -638,20 +642,20 @@ contains
     !
     !> Set f(alpha) = func(mHat + alpha*h). Fit the quadratic
     !>     f_q(alpha) = a alpha^2 + b alpha + f(0)
-    !> using the information f(0), f'(0) and f(alpha_1) to obtain
-    !> a = (f(alpha_1) - f(0) - f'(0) alpha_1)/(alpha_1 * alpha_1),
-    !> b = f'(0).
+    !> using the information f(0), f"(0) and f(alpha_1) to obtain
+    !> a = (f(alpha_1) - f(0) - f"(0) alpha_1)/(alpha_1 * alpha_1),
+    !> b = f"(0).
     !> Then, the minimum point of the quadratic is alpha_q = -b/(2a),
     !> assuming that a > 0. If this try is not successful, fit a cubic
-    !>     f_c(alpha) = a alpha^3 + b alpha^2 + f'(0) alpha + f(0)
-    !> using f(0), f'(0), f(alpha_1) and f(alpha_q). Repeat as necessary.
+    !>     f_c(alpha) = a alpha^3 + b alpha^2 + f"(0) alpha + f(0)
+    !> using f(0), f"(0), f(alpha_1) and f(alpha_q). Repeat as necessary.
     !> Here, a and b are as described in the code.
     !> A new cubic is not identical to a previous curve since f_c is only
     !> an approximation to f: in general, f(alpha_c) /= f_c(alpha_c),
     !> hence the new point does not lie on the approximating curve.
     !
     !> Our solution has to satisfy the sufficient decrease condition
-    !>     f(alpha) < f(0) + c alpha f'(0).
+    !>     f(alpha) < f(0) + c alpha f"(0).
     !
     !> The optional relaxation parameter gamma is needed for algorithms
     !> like the Renormalised Steepest Descent (RSD). See the dynamical
@@ -659,7 +663,7 @@ contains
     !> To the best of my knowledge, it is not useful for NLCG.
     !
     subroutine lineSearchCubic( self, all_data, sigma, h, alpha, mHat, f, grad, &
-    rms, niter, dHat, e_all, gamma )
+    rms, niter, dHat, gamma )
         implicit none
         !
         class( InversionNLCG_t ), intent( inout ) :: self
@@ -672,7 +676,6 @@ contains
         real( kind=prec ), intent( out ) :: rms
         integer, intent( out ) :: niter
         type( DataGroupTx_t ), allocatable, dimension(:), intent( out ) :: dHat
-        type( EAllMTx_t ), intent( inout ) :: e_all
         !
         ! optionally add relaxation (e.g. for Renormalized Steepest Descent)
         real( kind=prec ), intent( in ), optional :: gamma
@@ -683,7 +686,7 @@ contains
         real( kind=prec ) :: g_0, f_0, f_1, f_i, f_j, rms_1, mNorm_1
         class( ModelParameter_t ), allocatable :: mHat_0, mHat_1
         type( DataGroupTx_t ), allocatable, dimension(:) :: dHat_1
-        type( EAllMTx_t ) :: eAll_1
+        integer :: SolnIndex
         !
         ! parameters
         c = self%c
@@ -697,7 +700,7 @@ contains
         !
         starting_guess = .FALSE.
         !
-        ! g_0 is the directional derivative f'(0) = (df/dm).dot.h
+        ! g_0 is the directional derivative f"(0) = (df/dm).dot.h
         g_0 = grad%dotProd( h )
         !
         ! alpha_1 is the initial step size, which is set in NLCG
@@ -716,9 +719,9 @@ contains
         !
         call mHat_1%linComb( ONE, alpha_1, h )
         !
-        eAll_1%SolnIndex = 1
+        SolnIndex = 1
         !
-        call self%func( all_data, sigma, mHat_1, f_1, mNorm_1, dHat_1, eAll_1, rms_1 )
+        call self%func( all_data, sigma, mHat_1, f_1, mNorm_1, dHat_1, SolnIndex, rms_1 )
         !
         write( *, * ) "lambda, alpha, f_1, mNorm_1, rms_1:", self%lambda, alpha, f_1, mNorm_1, rms_1
         !
@@ -744,9 +747,7 @@ contains
             !
             dHat = dHat_1
             !
-            e_all = eAll_1
-            !
-            e_all%SolnIndex = 1
+            SolnIndex = 1
             !
             mHat = mHat_1
             !
@@ -761,23 +762,21 @@ contains
                 !
                 call mHat%linComb( ONE, gamma * alpha, h )
                 !
-                e_all%SolnIndex = 0
+                SolnIndex = 0
                 !
-                call self%func( all_data, sigma, mHat, f, mNorm, dHat, e_all, rms )
+                call self%func( all_data, sigma, mHat, f, mNorm, dHat, SolnIndex, rms )
                 !
-                write( *, * ) "lambda, gamma*alpha, f, mNorm, rms:", self%lambda, gamma * alpha, f, mNorm, rms
+                write( *, * ) "lambda, gamma * alpha, f, mNorm, rms:", self%lambda, gamma * alpha, f, mNorm, rms
                 !
             endif
             !
-            call self%gradient( all_data, sigma, mHat, grad, dHat, e_all )
+            call self%gradient( all_data, sigma, mHat, grad, dHat, SolnIndex )
             !
             write( *, * ) "Quadratic has no minimum, exiting line search"
             !
             !call deallocateDataGroupTxArray( dHat_1 )
             !
             deallocate( mHat_0, mHat_1 )
-            !
-            !call deall_solnVectorMTX( eAll_1 )
             !
             return
             !
@@ -790,9 +789,9 @@ contains
         !
         call mHat%linComb( ONE, alpha, h )
         !
-        e_all%SolnIndex = 0
+        SolnIndex = 0
         !
-        call func( self, all_data, sigma, mHat, f, mNorm, dHat, e_all, rms )
+        call func( self, all_data, sigma, mHat, f, mNorm, dHat, SolnIndex, rms )
         !
         write( *, * ) "QUADLS: lambda, alpha, f, mNorm, rms:", self%lambda, alpha, f, mNorm, rms
         !
@@ -806,8 +805,7 @@ contains
                 starting_guess = .TRUE.
                 alpha = alpha_1
                 dHat = dHat_1
-                e_all = eAll_1
-                e_all%SolnIndex = 1
+                SolnIndex = 1
                 mHat = mHat_1
                 rms = rms_1
                 f = f_1
@@ -820,23 +818,21 @@ contains
                 !
                 call mHat%linComb( ONE, gamma * alpha, h )
                 !
-                e_all%SolnIndex = 0
+                SolnIndex = 0
                 !
-                call self%func( all_data, sigma, mHat, f, mNorm, dHat, e_all, rms )
+                call self%func( all_data, sigma, mHat, f, mNorm, dHat, SolnIndex, rms )
                 !
                 write( *, * ) "QUADLS: lambda, gamma*alpha, f, mNorm, rms:", self%lambda, gamma*alpha, f, mNorm, rms
                 !
             endif
             !
-            call self%gradient( all_data, sigma, mHat, grad, dHat, e_all )
+            call self%gradient( all_data, sigma, mHat, grad, dHat, SolnIndex )
             !
             write( *, * ) "Sufficient decrease condition satisfied, exiting line search"
             !
             !call deallocateDataGroupTxArray( dHat_1 )
             !
             deallocate( mHat_0, mHat_1 )
-            !
-            !call deall_solnVectorMTX(eAll_1)
             !
             return
             !
@@ -881,9 +877,9 @@ contains
                 !
                 call mHat%linComb( ONE, alpha, h )
                 !
-                e_all%SolnIndex = 0
+                SolnIndex = 0
                 !
-                call self%func( all_data, sigma, mHat, f, mNorm, dHat, e_all, rms )
+                call self%func( all_data, sigma, mHat, f, mNorm, dHat, SolnIndex, rms )
                 !
                 write( *, * ) "CUBICLS: lambda, alpha, f, mNorm, rms:", self%lambda, alpha, f, mNorm, rms
                 !
@@ -926,9 +922,7 @@ contains
             !
             dHat = dHat_1
             !
-            e_all = eAll_1
-            !
-            e_all%SolnIndex = 1
+            SolnIndex = 1
             !
             mHat = mHat_1
             !
@@ -944,15 +938,15 @@ contains
             !
             call mHat%linComb( ONE, gamma*alpha, h )
             !
-            e_all%SolnIndex = 0
+            SolnIndex = 0
             !
-            call self%func( all_data, sigma, mHat, f,mNorm, dHat, e_all,rms)
+            call self%func( all_data, sigma, mHat, f,mNorm, dHat, SolnIndex, rms )
             !
             write( *, * ) "RELAX: lambda, gamma*alpha, f, mNorm, rms:", self%lambda, gamma*alpha, f, mNorm, rms
             !
         endif
         !
-        call self%gradient( all_data, sigma, mHat, grad, dHat, e_all )
+        call self%gradient( all_data, sigma, mHat, grad, dHat, SolnIndex )
         !
         write( *, * ) "Gradient computed, line search finished"
         !
@@ -960,17 +954,15 @@ contains
         !
         deallocate( mHat_0, mHat_1 )
         !
-        !call deall_solnVectorMTX(eAll_1)
-        !
     end subroutine lineSearchCubic
     !
     !> ????
     !
-    subroutine outputFilesInversionNLCG( iter, all_predicted_data, res, dsigma, mHat )
+    subroutine outputFilesInversionNLCG( iter, dHat, res, dsigma, mHat )
         implicit none
         !
         integer, intent( in ) :: iter
-        type( DataGroupTx_t ), allocatable, dimension(:), intent( in ) :: all_predicted_data, res
+        type( DataGroupTx_t ), allocatable, dimension(:), intent( in ) :: dHat, res
         class( ModelParameter_t ), intent( in ) :: dsigma, mHat
         !
         character(100) :: out_file_name
@@ -979,11 +971,11 @@ contains
         character(3) :: char3
         !
         write( char3, "(i3.3)" ) iter
-        !
+		!
         !> Write predicted data for this NLCG iteration
-        out_file_name = trim( outdir_name )//"/PredictedData_NLCG_"//char3//".dat"
+        out_file_name = trim( outdir_name )//"/dHat_NLCG_"//char3//".dat"
         !
-        call writeData( all_predicted_data, trim( out_file_name ) )
+        call writeData( dHat, trim( out_file_name ) )
         !
         !> Write residual data for this NLCG iteration
         out_file_name = trim( outdir_name )//"/ResidualData_NLCG_"//char3//".dat"

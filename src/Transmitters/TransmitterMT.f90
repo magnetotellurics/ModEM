@@ -83,8 +83,18 @@ module TransmitterMT
             !
         else
             !
-            if( allocated( self%e_sol ) ) deallocate( self%e_sol )
-            allocate( cVector3D_SG_t :: self%e_sol(2) )
+            !> 
+            if( self%SolnIndex == 0 ) then
+                !
+                if( allocated( self%e_sol ) ) deallocate( self%e_sol )
+                allocate( cVector3D_SG_t :: self%e_sol(2) )
+                !
+            else
+                !
+                if( allocated( self%e_sol_1 ) ) deallocate( self%e_sol_1 )
+                allocate( cVector3D_SG_t :: self%e_sol_1(2) )
+                !
+            endif
             !
         endif
         !
@@ -103,7 +113,15 @@ module TransmitterMT
                 !
                 !write( *, "( a25, i5, a9, es12.5, a6, i5 )" ) "- Solving FWD MT Tx", self%i_tx, ", Period=", self%period, ", Pol=", i_pol
                 !
-                call self%forward_solver%createESolution( i_pol, self%source, self%e_sol( i_pol ) )
+                if( self%SolnIndex == 0 ) then
+                    !
+                    call self%forward_solver%createESolution( i_pol, self%source, self%e_sol( i_pol ) )
+                    !
+                else
+                    !
+                    call self%forward_solver%createESolution( i_pol, self%source, self%e_sol_1( i_pol ) )
+                    !
+                endif
                 !
             endif
             !
@@ -112,7 +130,7 @@ module TransmitterMT
     end subroutine solveTransmitterMT
     !
     !> No subroutine briefing
-	!
+    !
     function isEqualTransmitterMT( self, other ) result( equal )
         implicit none
         !

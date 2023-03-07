@@ -88,16 +88,22 @@ contains
     !> Calculate in parallel ESolution for all transmitters
     !> Calculate in parallel the predicted data for each transmitter-receiver pair.
     !
-    subroutine masterForwardModelling( sigma, all_predicted_data )
+    subroutine masterForwardModelling( sigma, all_predicted_data, SolnIndex )
         implicit none
         !
         class( ModelParameter_t ), intent( in ) :: sigma
         type( DataGroupTx_t ), allocatable, dimension(:), intent( out ) :: all_predicted_data
+        integer, intent( in ), optional :: SolnIndex
         !
-        integer :: worker_rank, tx_received, i_tx, i_data
+        integer :: worker_rank, tx_received, i_tx, i_data, sol_index
         !
         !> Verbose
         !write( *, * ) "     - Start masterForwardModelling"
+        !
+        sol_index = 0
+        !
+        !> Set SolnIndex if present
+        if( present( SolnIndex ) ) sol_index = SolnIndex
         !
         if( sigma%is_allocated ) then
             !
@@ -123,6 +129,7 @@ contains
             !
             job_info%job_name = job_forward
             job_info%i_tx = i_tx
+            job_info%sol_index = sol_index
             job_info%worker_rank = worker_rank
             job_info%data_size = allocateDataBuffer( all_predicted_data( i_tx ) )
             !
@@ -146,6 +153,7 @@ contains
             !
             job_info%job_name = job_forward
             job_info%i_tx = i_tx
+            job_info%sol_index = sol_index
             job_info%data_size = allocateDataBuffer( all_predicted_data( i_tx ) )
             !
             call sendTo( worker_rank )
@@ -256,19 +264,25 @@ contains
     !
     !> Calculate dsigma in parallel for all transmitters
     !
-    subroutine masterJMult_T( sigma, all_data, dsigma )
+    subroutine masterJMult_T( sigma, all_data, dsigma, SolnIndex )
         implicit none
         !
         class( ModelParameter_t ), intent( in ) :: sigma
         type( DataGroupTx_t ), dimension(:), intent( in ) :: all_data
         class( ModelParameter_t ), allocatable, intent( out ) :: dsigma
+        integer, intent( in ), optional :: SolnIndex
         !
         class( Scalar_t ), allocatable :: tx_model_cond
         !
-        integer :: worker_rank, i_tx, tx_received
+        integer :: worker_rank, i_tx, tx_received, sol_index
         !
         !> Verbose
         !write( *, * ) "     - Start masterJMult_T"
+        !
+        sol_index = 0
+        !
+        !> Set SolnIndex if present
+        if( present( SolnIndex ) ) sol_index = SolnIndex
         !
         !> And initialize dsigma with Zeros
         if( sigma%is_allocated ) then
@@ -294,6 +308,7 @@ contains
             !
             job_info%job_name = job_jmult_t
             job_info%i_tx = i_tx
+            job_info%sol_index = sol_index
             job_info%worker_rank = worker_rank
             job_info%data_size = allocateDataBuffer( all_data( i_tx ) )
             !
@@ -323,6 +338,7 @@ contains
             !
             job_info%job_name = job_jmult_t
             job_info%i_tx = i_tx
+            job_info%sol_index = sol_index
             job_info%data_size = allocateDataBuffer( all_data( i_tx ) )
             !
             call sendTo( job_info%worker_rank )

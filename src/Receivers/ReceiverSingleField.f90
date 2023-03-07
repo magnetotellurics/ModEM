@@ -165,7 +165,7 @@ contains
         !
         comega = cmplx( 0.0, 1./ ( 2.0 * PI / transmitter%period ), kind=prec )
         !
-        select type( tx_e_1 => transmitter%e_sol(1) )
+        select type( tx_e_1 => transmitter%getSolutionVector(1) )
             !
             class is( cVector3D_SG_t )
                 !

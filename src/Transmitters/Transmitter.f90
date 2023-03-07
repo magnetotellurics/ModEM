@@ -16,11 +16,11 @@ module Transmitter
         !
         class( Source_t ), allocatable :: source
         !
-        integer :: i_tx, n_pol, fwd_key(8)
+        integer :: i_tx, n_pol, fwd_key(8), SolnIndex
         !
         real( kind=prec ) :: period
         !
-        class( Vector_t ), allocatable, dimension(:) :: e_sol, e_sens
+        class( Vector_t ), allocatable, dimension(:) :: e_sol, e_sol_1, e_sens
         !
         integer, allocatable, dimension(:) :: receiver_indexes
         !
@@ -41,6 +41,8 @@ module Transmitter
             procedure, public :: updateReceiverIndexesArray
             !
             procedure, public :: setSource => setSourceTx
+            !
+            procedure, public :: getSolutionVector => getSolutionVectorTx
             !
             procedure, public :: PMult => PMult_Tx
             !
@@ -83,7 +85,10 @@ module Transmitter
             !
             self%i_tx = 0
             self%n_pol = 0
+            !
             call self%updateFwdKey()
+            !
+            self%SolnIndex = 0
             !
             self%period = R_ZERO
             !
@@ -103,6 +108,8 @@ module Transmitter
             if( allocated( E_p ) ) deallocate( E_p )
             !
             if( allocated( self%e_sol ) ) deallocate( self%e_sol )
+            !
+            if( allocated( self%e_sol_1 ) ) deallocate( self%e_sol_1 )
             !
             if( allocated( self%e_sens ) ) deallocate( self%e_sens )
             !
@@ -176,6 +183,24 @@ module Transmitter
             !
         end subroutine setSourceTx
         !
+        !> Allocate the source of this transmitter if it is allocated.
+        !> And define a new source for this transmitter, sent as an argument.
+        function getSolutionVectorTx( self, pol ) result( solution )
+            implicit none
+            !
+            class( Transmitter_t ), intent( in ) :: self
+            integer, intent( in ) :: pol
+            !
+            class( Vector_t ), pointer :: solution
+            !
+            if( self%SolnIndex == 0 ) then
+                allocate( solution, source = self%e_sol( pol ) )
+            else
+                allocate( solution, source = self%e_sol_1( pol ) )
+            endif
+            !
+        end function getSolutionVectorTx
+        !
         !> Returns a SourceInteriorForce from two distinct models, with the same ModelOperator.
         function PMult_Tx( self, sigma, dsigma, model_operator ) result( source_int_force )
             implicit none
@@ -204,7 +229,7 @@ module Transmitter
             !
             do pol = 1, self%n_pol
                 !
-                bSrc( pol ) = self%e_sol( pol )
+                bSrc( pol ) = self%getSolutionVector( pol )
                 !
                 call bSrc( pol )%mult( map_e_vector )
                 !
@@ -248,12 +273,12 @@ module Transmitter
             !> Copy e_sens to a local variable to keep its original value.
             allocate( eSens, source = self%e_sens )
             !
-            call eSens(1)%mult( self%e_sol(1) )
+            call eSens(1)%mult( self%getSolutionVector(1) )
             !
             !> Loop over all other polarizations, adding them to the first position
             do pol = 2, self%n_pol
                 !
-                call eSens( pol )%mult( self%e_sol( pol ) )
+                call eSens( pol )%mult( self%getSolutionVector( pol ) )
                 !
                 call eSens(1)%add( eSens( pol ) )
                 !

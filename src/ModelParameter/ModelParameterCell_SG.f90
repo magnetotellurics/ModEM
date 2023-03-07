@@ -271,8 +271,7 @@ contains
                 !
                 self%is_vti = rhs%is_vti
                 !
-                if( allocated( self%param_grid ) ) deallocate( self%param_grid )
-                allocate( self%param_grid, source = rhs%param_grid )
+                self%param_grid = rhs%param_grid
                 !
                 self%cell_cond = rhs%cell_cond
                 !

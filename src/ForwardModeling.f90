@@ -150,33 +150,29 @@ contains
     !>     Calculate the predicted data for each transmitter-receiver pair.
     !>     ForwardSolver must be allocated
     !
-    subroutine serialForwardModeling( sigma, all_predicted_data, new_sigma, e_all )
+    subroutine serialForwardModeling( sigma, all_predicted_data, new_sigma, SolnIndex )
         implicit none
         !
         class( ModelParameter_t ), intent( in ) :: sigma
         type( DataGroupTx_t ), allocatable, dimension(:), intent( inout ) :: all_predicted_data
         logical, intent( inout ) :: new_sigma
-        type( EAllMTx_t ), optional, intent( inout ) :: e_all
+        integer, intent( in ), optional :: SolnIndex
         !
         class( Transmitter_t ), pointer :: Tx
         class( Receiver_t ), pointer :: Rx
         type( DataGroup_t ) :: data_group
-        integer :: i_tx, n_tx, i_rx
+        integer :: i_tx, n_tx, i_rx, sol_index
         !
         ! Verbose
         write( *, * ) "          - Start Forward Modeling"
         !
+        sol_index = 0
+        !
+        !> Set SolnIndex if present
+        if( present( SolnIndex ) ) sol_index = SolnIndex
+        !
         !>
         n_tx = size( transmitters )
-        !
-        !> Set e_all if present
-        if( present( e_all ) ) then
-            !
-            !> SET e_all
-            if( allocated( e_all%e ) ) deallocate( e_all%e )
-            allocate( e_all%e( n_tx ) )
-            !
-        endif
         !
         !> Loop over all Transmitters
         do i_tx = 1, n_tx
@@ -184,15 +180,11 @@ contains
             !> Pointer to the Transmitter
             Tx => getTransmitter( i_tx )
             !
+            Tx%SolnIndex = sol_index
+            !
             if( new_sigma ) then
                 !
                 call solveTx( sigma, Tx )
-                !
-                if( present( e_all ) ) then
-                    !
-                    e_all%e( i_tx )%pol = Tx%e_sol
-                    !
-                endif
                 !
             endif
             !

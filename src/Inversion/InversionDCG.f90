@@ -243,7 +243,7 @@ contains
         SS = dotProdData( res, Nres )
         !
         Ndata = countValues( res )
-		!
+        !
         mNorm = mHat%dotProd( mHat )
         !
         Nmodel = mHat%countModel()

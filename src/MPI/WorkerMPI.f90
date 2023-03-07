@@ -127,6 +127,8 @@ contains
         !> Point to the transmitter specified by the master process 
         Tx => getTransmitter( job_info%i_tx )
         !
+        Tx%SolnIndex = job_info%sol_index
+        !
         if( job_info%new_sigma ) then
             !
             call txForwardSolver( Tx )
@@ -227,6 +229,8 @@ contains
         !> Point to the transmitter specified by the master process 
         Tx => getTransmitter( job_info%i_tx )
         !
+        Tx%SolnIndex = job_info%sol_index
+        !
         if( job_info%new_sigma ) then
             !
             call txForwardSolver( Tx )
@@ -235,7 +239,7 @@ contains
             !
         endif
         !
-        call JMult_T_Tx( sigma, tx_data, tx_dsigma, job_info%new_sigma )
+        call JMult_T_Tx( sigma, tx_data, tx_dsigma, job_info%new_sigma, Tx%SolnIndex )
         !
         !> Send job done and tx_dsigma's conductivity to master process
         job_info%job_name = job_done
