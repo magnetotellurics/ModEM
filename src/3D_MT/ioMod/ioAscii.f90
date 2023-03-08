@@ -322,28 +322,26 @@ Contains
 
   ! ***************************************************************************
   ! read electric field solution for one mode, frequency; open unit ioNum first ...
-  subroutine EfileRead(ioNum, ifreq, imode, fileOmega, inE)
+  subroutine EfileRead(ioNum, nRecSkip, fileOmega, inE)
 
     implicit none
-    integer, intent(in)             :: ioNum,ifreq,imode
+    integer, intent(in)             :: ioNum,nRecSkip
     type (cvector), intent(inout)       :: inE
     real (kind=prec), intent(out)   :: fileOmega
 
     !  local variables
-    integer                 :: nRecSkip, iskip
+    integer                 ::  iskip
 !    integer                    :: iskip
 
     !  following could be optional oututs
     integer             :: fileIfreq, fileMode
     character (len = 20)                :: ModeName
 
-    !  hard code number of modes for now
-    integer     :: nMode = 2
-
-    ! calculate number of records before the header for this frequency/mode
-    nRecSkip = ((ifreq-1)*nMode+(imode-1))*4+4
+    !   do this computation outside this subroutine -- nMode is not always 2 (or fixed?)
+    !nRecSkip = ((ifreq-1)*nMode+(imode-1))*4+4
 
     ! rewind the file, skip to header record
+    !   isn't there a better way?
     rewind(ioNum)
     do iskip = 1,nRecSkip
        read(ioNum)
@@ -498,7 +496,7 @@ Contains
       type(grid_t), intent(inout)            :: Larg_Grid
 
       !   local variables
-      integer           :: j,k,nMode = 2, ios,ig,cdot,filePer
+      integer           :: j,k,nMode = 2, ios,ig,cdot,filePer,nRecSkip
       integer           :: iTx,nTx
       character (len=3)         :: igchar
       character (len=20)        :: version = ''
@@ -518,13 +516,16 @@ Contains
          call create_solnVector(Larg_Grid,iTx,eAll%solns(iTx))
       end do		  
 		  
-		  
+          nRecSkip = 4
           do j = 1,nTx
        
              do k = 1,eAll%solns(j)%nPol
 
-               call EfileRead(ioE, j, k, omega, eAll%solns(j)%pol(k))
+               call EfileRead(ioE, nRecSkip, omega, eAll%solns(j)%pol(k))
 
+               nRecSkip = nRecSKip + 4
+
+               write(6,*) 'Tx # ',j , ' Polarization ',k,'  Freq. ',omega
                if (abs((omega - txDict(eAll%solns(j)%tx)%omega)/omega) > TOL6) then
                     write(0,*) 'Warning: frequencies don''t match on E-field input ',j
                endif
@@ -588,7 +589,7 @@ Contains
 
           !   local variables
           integer           :: j,k,jj,kk,nMode = 2, ios,istat,ig,cdot,filePer, nPol
-          integer           :: iTx,nTx
+          integer           :: iTx,nTx,nRecSkip
           character (len=3)         :: igchar
           character (len=20)        :: version = '',source_type,tx_type,mode
           character (len=30)        :: str
@@ -621,12 +622,14 @@ Contains
                   call create_rhsVector(grid,iTx,bAll%combs(iTx))
               end do
 
-
+              nRecSkip = 4
               do j = 1,nTx
 
                   do k = 1,bAll%combs(j)%nPol
 
-                      call EfileRead(ioE, j, k, omega, bAll%combs(j)%b(k)%s)
+                      call EfileRead(ioE, nRecSkip, omega, bAll%combs(j)%b(k)%s)
+                      
+                      nRecSkip = nRecSkip + 4
 
                       if (abs(omega - txDict(bAll%combs(j)%tx)%omega) > R_TINY) then
                           write(0,*) 'Warning: frequencies don''t match on E-field input ',j

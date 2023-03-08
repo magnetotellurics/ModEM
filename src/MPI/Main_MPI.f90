@@ -165,7 +165,7 @@ endif
 ! Check if an Esoln is passed    
 savedSolns = present(eAll)  
 if (.not. savedSolns )then
-    !call Master_Job_fwdPred(sigma,d,eAll)
+    call Master_Job_fwdPred(sigma,d,eAll)
 end if
 
 dest=0

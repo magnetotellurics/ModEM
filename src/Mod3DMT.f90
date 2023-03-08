@@ -3,7 +3,6 @@ program Mod3DMT
 ! Program for running 3D MT forward, sensitivity and inverse modelling
 ! Copyright (c) 2004-2014 Oregon State University
 !              AUTHORS  Gary Egbert, Anna Kelbert & Naser Meqbel
-!              College of Earth, Ocean and Atmospheric Sciences
 
 
      use SensComp
@@ -25,7 +24,10 @@ program Mod3DMT
 
      implicit none
 
-     integer :: iTx, Nmodel
+     integer :: iTx, Nmodel, j
+     !   I am adding this to main, for now -- need to list the transmitter indices for the
+     !     data vector,in order for MTX (-x option)
+     integer, allocatable     :: tx_index(:)
 
      ! Character-based information specified by the user
      type (userdef_control) :: cUserDef
@@ -106,6 +108,10 @@ program Mod3DMT
     end if 
 	
 #else
+    write(6,*) cUserDef%rFile_EMsoln
+    if (Read_EMsoln) then
+      call read_Efield_from_file_ModEMM(cUserDef%rFile_EMsoln)
+    end if 
       call setGrid(grid)
 #endif
 
@@ -176,8 +182,7 @@ program Mod3DMT
      case (COMPUTE_J)
         write(6,*) 'Calculating the full sensitivity matrix...'
 #ifdef MPI
-        call Master_job_fwdPred(sigma0,allData,eAll)
-        call Master_job_calcJ(allData,sigma0,sens,eAll)
+        call Master_job_calcJ(allData,sigma0,sens)
 #else
         call calcJ(allData,sigma0,sens)
 #endif
@@ -187,31 +192,40 @@ program Mod3DMT
         write(6,*) 'Multiplying by J...'
 
 #ifdef MPI
-    if (Read_EMsoln) then
-		call Master_job_fwdPred(sigma0,allData,eAll)
-	end if
-	call Master_job_Jmult(dsigma,sigma0,allData,eAll)
-	
+     if (Read_EMsoln) then
+        call Master_job_Jmult(dsigma,sigma0,allData,eAll)
+      else
+        call Master_job_Jmult(dsigma,sigma0,allData)
+      endif
 #else
+     if (read_EMsoln) then
+        write(6,*)  'Using eAll from file for Jmult'
+        call Jmult(dsigma,sigma0,allData,eAll)
+     else
         call Jmult(dsigma,sigma0,allData)
+     endif
 #endif
-
 
         call write_dataVectorMTX(allData,cUserDef%wFile_Data)
 
      case (MULT_BY_J_T)
          write(6,*) 'Multiplying by J^T...'
 #ifdef MPI
-   if (Read_EMsoln) then
+     if (Read_EMsoln) then
          call Master_job_JmultT(sigma0,allData,dsigma,eAll)
-   else   
+     else   
          call Master_job_JmultT(sigma0,allData,dsigma)
-   end if
+     end if
 #else
-         call JmultT(sigma0,allData,dsigma)
+     if (read_EMsoln) then
+        write(6,*)  'Using eAll from file for JmultT'
+        call JmultT(sigma0,allData,dsigma,eAll)
+     else
+        call JmultT(sigma0,allData,dsigma)
+     endif
 #endif
 
-         call write_modelParam(dsigma,cUserDef%wFile_dModel)
+     call write_modelParam(dsigma,cUserDef%wFile_dModel)
          
      case (MULT_BY_J_T_multi_Tx)
          write(6,*) 'Multiplying by J^T...output multi-Tx model vectors'
@@ -226,11 +240,27 @@ program Mod3DMT
 		 end if
 		 
 #else
-         !call fwdPred(sigma0,allData,eAll)
-         call JmultT(sigma0,allData,dsigma,JT_multi_Tx_vec=JT_multi_Tx_vec)
+     if (Read_EMsoln) then
+        write(6,*)  'Using eAll from file for JmultT_MTX'
+        call JmultT(sigma0,allData,dsigma,eAll,JT_multi_Tx_vec=JT_multi_Tx_vec)
+     else
+        call JmultT(sigma0,allData,dsigma,JT_multi_Tx_vec=JT_multi_Tx_vec)
+     endif
 #endif
          open(unit=ioSens, file=cUserDef%wFile_dModel, form='unformatted', iostat=ios)
          write(0,*) 'Output JT_multi_Tx_vec...'
+         call write_txDict_bin(ioSens)
+         allocate(tx_index(allData%nTx))
+         !   then find and output ordered list of txDict indices
+         !    better ways to do all of this, but perhaps also clean up MTX sensitivity output
+         do j = 1,allData%nTx
+           tx_index(j) = allData%d(j)%tx
+         enddo
+         write(header,*) 'tx_index'
+         write(ioSens) header
+         write(ioSens) allData%nTx
+         write(ioSens) tx_index
+         deallocate(tx_index)
          write(header,*) 'JT multi_Tx vectors'
          !write(ioSens) header
          call writeVec_modelParam_binary(size(JT_multi_Tx_vec),JT_multi_Tx_vec,header,cUserDef%wFile_dModel)
