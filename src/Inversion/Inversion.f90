@@ -9,19 +9,13 @@ module Inversion
     !
     type, abstract :: Inversion_t
         !
-        integer :: max_grad_iters, max_inv_iters, n_inv_iter
+        integer :: max_inv_iters, n_inv_iter
         !
-        real( kind=prec ) :: tolerance_error, tolerance_rms, lambda
-        !
-        real( kind=prec ), allocatable, dimension(:) :: r_err
-        !
-        logical :: new_sigma
+        real( kind=prec ) :: tolerance_rms, lambda
         !
         contains
             !
             procedure, public :: init => initializeInversion
-            !
-            procedure, public :: dealloc => deallocateInversion
             !
             procedure( interface_solve_inversion ), deferred, public :: solve
             !
@@ -62,24 +56,28 @@ contains
         !
         class( Inversion_t ), intent( inout ) :: self
         !
-        self%max_grad_iters = 20
-        self%tolerance_error = 10E-4
+        self%max_inv_iters = 5
+        self%tolerance_rms = 1.05
+        self%lambda = 10.
         !
         if( has_inv_control_file ) then
             !
-            if( allocated( inv_control_file%max_grad_iters ) ) &
-                read( inv_control_file%max_grad_iters, * ) self%max_grad_iters
+            if( allocated( inv_control_file%max_inv_iters ) ) &
+                read( inv_control_file%max_inv_iters, * ) self%max_inv_iters
             !
-            if( allocated( inv_control_file%tolerance_error ) ) &
-                read( inv_control_file%tolerance_error, * ) self%tolerance_error
+            if( allocated( inv_control_file%tolerance_rms ) ) &
+                read( inv_control_file%tolerance_rms, * ) self%tolerance_rms
+            !
+            if( allocated( inv_control_file%lambda ) ) &
+                read( inv_control_file%lambda, * ) self%lambda
             !
         endif
         !
-        write( *, "( A45 )" ) "Using inversion parameters:"
+        write( *, "( A45, I20 )" ) "max_inv_iters = ", self%max_inv_iters
         !
-        write( *, "( A45, I20 )" ) "max_grad_iters = ", self%max_grad_iters
+        write( *, "( A45, es20.2 )" ) "tolerance_rms = ", self%tolerance_rms
         !
-        write( *, "( A45, es20.2 )" ) "tolerance_error = ", self%tolerance_error
+        write( *, "( A45, es20.2 )" ) "lambda = ", self%lambda
         !
         self%max_inv_iters = 0
         !
@@ -89,20 +87,7 @@ contains
         !
         self%lambda = R_ZERO
         !
-        self%new_sigma = .TRUE.
-        !
     end subroutine initializeInversion
-    !
-    !> No subroutine briefing
-    !
-    subroutine deallocateInversion( self )
-        implicit none
-        !
-        class( Inversion_t ), intent( inout ) :: self
-        !
-        deallocate( self%r_err )
-        !
-    end subroutine deallocateInversion
     !
 end module Inversion
 !

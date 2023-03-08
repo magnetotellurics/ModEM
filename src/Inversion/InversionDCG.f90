@@ -7,7 +7,11 @@ module InversionDCG
     !
     type, extends( Inversion_t ) :: InversionDCG_t
         !
-        !> No derived properties
+        integer :: max_grad_iters
+        !
+        real( kind=prec ) :: tolerance_error
+        !
+        real( kind=prec ), allocatable, dimension(:) :: r_err
         !
         contains
             !
@@ -38,28 +42,24 @@ contains
         !
         call self%init
         !
-        self%max_inv_iters = 5
-        self%tolerance_rms = 1.05
-        self%lambda = 10.
+        self%max_grad_iters = 20
+        self%tolerance_error = 10E-4
         !
         if( has_inv_control_file ) then
             !
-            if( allocated( inv_control_file%max_inv_iters ) ) &
-                read( inv_control_file%max_inv_iters, * ) self%max_inv_iters
+            if( allocated( inv_control_file%max_grad_iters ) ) &
+                read( inv_control_file%max_grad_iters, * ) self%max_grad_iters
             !
-            if( allocated( inv_control_file%tolerance_rms ) ) &
-                read( inv_control_file%tolerance_rms, * ) self%tolerance_rms
-            !
-            if( allocated( inv_control_file%lambda ) ) &
-                read( inv_control_file%lambda, * ) self%lambda
+            if( allocated( inv_control_file%tolerance_error ) ) &
+                read( inv_control_file%tolerance_error, * ) self%tolerance_error
             !
         endif
         !
-        write( *, "( A45, I20 )" ) "max_inv_iters = ", self%max_inv_iters
+        write( *, "( A45 )" ) "Using inversion parameters:"
         !
-        write( *, "( A45, es20.2 )" ) "tolerance_rms = ", self%tolerance_rms
+        write( *, "( A45, I20 )" ) "max_grad_iters = ", self%max_grad_iters
         !
-        write( *, "( A45, es20.2 )" ) "lambda = ", self%lambda
+        write( *, "( A45, es20.2 )" ) "tolerance_error = ", self%tolerance_error
         !
         !> Free the memory used by the global control file, which is no longer useful
         if( allocated( inv_control_file ) ) deallocate( inv_control_file )
@@ -78,7 +78,7 @@ contains
         !
         !write( *, * ) "Destructor InversionDCG_t"
         !
-        call self%dealloc
+        deallocate( self%r_err )
         !
     end subroutine InversionDCG_dtor
     !
@@ -139,7 +139,7 @@ contains
 #ifdef MPI
                 call masterJMult( dsigma, mHat, JmHat )
 #else
-                call serialJMult( dsigma, mHat, JmHat, self%new_sigma )
+                call serialJMult( dsigma, mHat, JmHat )
 #endif
                 !
                 b = all_data
@@ -155,7 +155,7 @@ contains
 #ifdef MPI
                 call masterJMult_T( dsigma, dx, mHat )
 #else
-                call serialJMult_T( dsigma, dx, mHat, self%new_sigma )
+                call serialJMult_T( dsigma, dx, mHat )
 #endif
                 !
                 call model_cov%multBy_Cm( mHat )
@@ -228,7 +228,7 @@ contains
         !
 #else
         !
-        call serialForwardModeling( dsigma, all_predicted_data, self%new_sigma )
+        call serialForwardModeling( dsigma, all_predicted_data )
         !
 #endif
         !
@@ -352,7 +352,7 @@ contains
 #ifdef MPI
         call masterJMult_T( dsigma, p_temp, JTp )
 #else
-        call serialJMult_T( dsigma, p_temp, JTp, self%new_sigma )
+        call serialJMult_T( dsigma, p_temp, JTp )
 #endif
         !
         call model_cov%multBy_Cm( JTp )
@@ -362,7 +362,7 @@ contains
 #ifdef MPI
         call masterJMult( dsigma, JTp, Ap )
 #else
-        call serialJMult( dsigma, JTp, Ap, self%new_sigma )
+        call serialJMult( dsigma, JTp, Ap )
 #endif
         !
         deallocate( JTp )

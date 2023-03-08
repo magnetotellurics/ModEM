@@ -255,8 +255,6 @@ contains
             !
         enddo
         !
-        job_info%new_sigma = .FALSE.
-        !
         !> Verbose
         !write( *, * ) "     - Finish masterJMult"
         !
@@ -364,8 +362,6 @@ contains
             !
         enddo
         !
-        job_info%new_sigma = .FALSE.
-        !
         !> Verbose
         !write( *, * ) "     - Finish masterJMult_T"
         !
@@ -406,8 +402,6 @@ contains
         job_info%job_name = job_sigma_model
         !
         job_info%model_size = allocateModelBuffer( sigma, .FALSE. )
-        !
-        job_info%new_sigma = .TRUE.
         !
         !write( *, "(A45, i8)" ) "Sigma = ", job_info%model_size
         !
