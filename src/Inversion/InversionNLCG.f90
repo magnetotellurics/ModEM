@@ -120,8 +120,6 @@ contains
         !> Free the memory used by the global control file, which is no longer useful
         if( allocated( inv_control_file ) ) deallocate( inv_control_file )
         !
-        allocate( self%r_err( self%max_grad_iters ) )
-        !
     end function InversionNLCG_ctor
     !
     !> Deconstructor routine:
@@ -133,8 +131,6 @@ contains
         type( InversionNLCG_t ), intent( inout ) :: self
         !
         !write( *, * ) "Destructor InversionNLCG_t"
-        !
-        call self%dealloc
         !
     end subroutine InversionNLCG_dtor
     !
@@ -175,11 +171,15 @@ contains
         startdm = self%startdm
         !
         !>
-        open( unit = ioInvLog, file = trim( outdir_name )//"/DCG.log", status="unknown", position="append", iostat=ios )
+        open( unit = ioInvLog, file = trim( outdir_name )//"/NLCG.log", status="unknown", position="append", iostat=ios )
         !
         if( ios == 0 ) then
             !
-            write( *, * ) "lambda, startdm: ", self%lambda, startdm
+            write( *, "( a50, es12.5 )" ) "The initial damping parameter lambda is ", self%lambda
+            write( *, "( a64, f12.6 )" ) "The initial line search step size (in model units) is ", startdm
+            !
+            write( ioInvLog, "( a41, es8.1 )" ) "The initial damping parameter lambda is ", self%lambda
+            write( ioInvLog, "( a55, f12.6 )" ) "The initial line search step size (in model units) is ", startdm
             !
             ! starting model contains the rough deviations from the prior
             allocate( mHat, source = dsigma )
@@ -201,8 +201,8 @@ contains
             !
             gnorm = sqrt( grad%dotProd( grad ) )
             !
-            !write( *, * ) "gnorm: ", gnorm
-            !stop
+            write( *, "( a42, es12.5 )" ) "    GRAD: initial norm of the gradient is", gnorm
+            write( ioInvLog, "( a42, es12.5 )" ) "     GRAD: initial norm of the gradient is", gnorm
             !
             if( gnorm < TOL6 ) then
                 stop "Error: NLCGsolver: Problem with your gradient computations: first gradient is zero"
@@ -210,8 +210,8 @@ contains
                 !
                 alpha = startdm / gnorm
                 !
-                !write( *, * ) "alpha: ", alpha
-                !stop
+                write( *, "( a39, es12.5 )" ) "The initial value of alpha updated to ", alpha
+                write( ioInvLog, "( a39, es12.5 )" ) "The initial value of alpha updated to ", alpha
                 !
             endif
             !
@@ -244,7 +244,9 @@ contains
                 ! at the end of line search, set mHat to the new r_value
                 ! mHat = mHat + alpha*h  and evaluate gradient at new mHat
                 ! data and solnVector only needed for output
-                write( *, * ) "Starting line search..."
+                !
+                write( *, "(a23)" ) "Starting line search..."
+                write( ioInvLog, "(a23)" ) "Starting line search..."
                 !
                 select case( flavor )
                     !
@@ -283,13 +285,15 @@ contains
                 ! adjust the starting step to ensure super linear convergence properties
                 alpha = ( ONE + 0.01 ) * alpha
                 !
-                write( *, * ) "Completed NLCG iteration ", iter
-                !
+                write( *, "( a25, i5 )" ) "Completed NLCG iteration ", iter
+                write( ioInvLog, "( a25, i5 )" ) "Completed NLCG iteration ", iter
+                ! 
                 Nmodel = mHat%countModel()
                 !
                 mNorm = mHat%dotProd( mHat ) / Nmodel
                 !
                 write( *, * ) "     lambda, alpha, r_value, mNorm, rms: ", self%lambda, alpha, r_value, mNorm, rms
+                write( ioInvLog, * ) "     lambda, alpha, r_value, mNorm, rms: ", self%lambda, alpha, r_value, mNorm, rms
                 !
                 ! write out the intermediate model solution and responses
                 dsigma = model_cov%multBy_CmSqrt( mHat )
@@ -310,19 +314,22 @@ contains
                     !
                     ! check that lambda is still at a reasonable r_value
                     if( self%lambda < self%lambdaTol ) then
-                        stop "Error: NLCGsolver: Unable to get out of a local minimum."
+                        write( *, "(a55)" ) "Unable to get out of a local minimum. Exiting..."
+                        write( ioInvLog, "(a55)" ) "Unable to get out of a local minimum. Exiting..."
                         exit
                     endif
                     !
                     !> update alpha
                     gnorm = sqrt( grad%dotProd( grad ) )
                     !
-                    write( *, * ) "gnorm: ", gnorm
+                    write( *, "(a34,es12.5)" ) "The norm of the last gradient is ", gnorm
+                    write( ioInvLog, "(a34,es12.5)" ) "The norm of the last gradient is ", gnorm
                     !
                     !> alpha = min(self%alpha_1,startdm/gnorm)
                     alpha = min( ONE, startdm ) / gnorm
                     !
-                    write( *, * ) "alpha: ", alpha
+                    write( *, "( a48, es12.5 )" ) "The value of line search step alpha updated to ", alpha
+                    write( ioInvLog, "( a48, es12.5 )" ) "The value of line search step alpha updated to ", alpha
                     !
                     !> g = - grad
                     g = grad
@@ -332,6 +339,9 @@ contains
                     !> restart
                     write( *, * ) "Restarting NLCG with the damping parameter updated"
                     write( *, * ) "lambda, alpha, r_value, mNorm, rms: ", self%lambda, alpha, r_value, mNorm, rms
+                    !
+                    write( ioInvLog, * ) "Restarting NLCG with the damping parameter updated"
+                    write( ioInvLog, * ) "lambda, alpha, r_value, mNorm, rms: ", self%lambda, alpha, r_value, mNorm, rms
                     !
                     h = g
                     !
@@ -362,7 +372,8 @@ contains
                 if( g_dot_g + beta * g_dot_h .LE. R_ZERO .AND. nCG .GE. self%nCGmax ) then  !PR
                     !
                     ! restart
-                    write( *, * ) "Restarting NLCG to restore orthogonality"
+                    write( *, "(a45)" ) "Restarting NLCG to restore orthogonality"
+                    write( ioInvLog, "(a45)" ) "Restarting NLCG to restore orthogonality"
                     !
                     nCG = 0
                     !
@@ -391,6 +402,11 @@ contains
             !call deallocateDataGroupTxArray( dHat )
             !call deallocateDataGroupTxArray( res )
             !
+            write( *, "( a25, i5, a25, i5 )" ) "NLCG iterations:", iter," function evaluations:", nfunc
+            write( ioInvLog, "( a25, i5, a25, i5 )" ) "NLCG iterations:", iter," function evaluations:", nfunc
+            !
+            close( ioInvLog )
+            !
             ! Verbose
             write( *, * ) "     - Finish Inversion NLCG, output files in [", trim( outdir_name ), "]"
             !
@@ -398,7 +414,7 @@ contains
             !
         else
             !
-            write( *, * ) "Error opening [", trim( outdir_name )//"/DCG.log", "] in writeData!"
+            write( *, * ) "Error opening [", trim( outdir_name )//"/NLCG.log", "] in writeData!"
             stop
             !
         endif
@@ -443,17 +459,14 @@ contains
         !call linCombData( ONE, all_data, MinusONE, dHat, res )
         call subData( res, dHat )
         !
-        Ndata = countData( dHat )
-        !
-        !write( *, * ) "Ndata: ", Ndata
-        !stop
+        Ndata = countValues( dHat )
         !
         call CdInvMult( res )
         !
 #ifdef MPI
         call masterJMult_T( dsigma, res, JTd, SolnIndex )
 #else
-        call serialJMult_T( dsigma, res, JTd, self%new_sigma, SolnIndex )
+        call serialJMult_T( dsigma, res, JTd, SolnIndex )
 #endif
         !
         allocate( CmJTd, source = model_cov%multBy_CmSqrt( JTd ) )
@@ -513,7 +526,7 @@ contains
         !
 #else
         !
-        call serialForwardModeling( dsigma, dHat, self%new_sigma, SolnIndex )
+        call serialForwardModeling( dsigma, dHat, SolnIndex )
         !
 #endif
         !
@@ -528,7 +541,7 @@ contains
         !
         SS = dotProdData( res, Nres )
         !
-        Ndata = countData( res )
+        Ndata = countValues( res )
         !
         !> compute the model norm
         mNorm = mHat%dotProd( mHat )
@@ -662,16 +675,15 @@ contains
     !> systems in optimisation research (Pronzato et al [2000, 2001]).
     !> To the best of my knowledge, it is not useful for NLCG.
     !
-    subroutine lineSearchCubic( self, all_data, sigma, h, alpha, mHat, f, grad, &
-    rms, niter, dHat, gamma )
+    subroutine lineSearchCubic( self, all_data, sigma, h, alpha, mHat, f, grad, rms, niter, dHat, gamma )
         implicit none
         !
         class( InversionNLCG_t ), intent( inout ) :: self
         type( DataGroupTx_t ), allocatable, dimension(:), intent( in ) :: all_data
         class( ModelParameter_t ), allocatable, intent( in ) :: sigma, h  ! search direction
-        real( kind=prec ), intent(inout) :: alpha ! step size
+        real( kind=prec ), intent( inout ) :: alpha ! step size
         class( ModelParameter_t ), allocatable, intent( inout ) :: mHat
-        real( kind=prec ), intent(inout) :: f
+        real( kind=prec ), intent( inout ) :: f
         class( ModelParameter_t ), allocatable, intent( inout ) :: grad
         real( kind=prec ), intent( out ) :: rms
         integer, intent( out ) :: niter
@@ -724,6 +736,7 @@ contains
         call self%func( all_data, sigma, mHat_1, f_1, mNorm_1, dHat_1, SolnIndex, rms_1 )
         !
         write( *, * ) "lambda, alpha, f_1, mNorm_1, rms_1:", self%lambda, alpha, f_1, mNorm_1, rms_1
+        write( ioInvLog, * ) "lambda, alpha, f_1, mNorm_1, rms_1:", self%lambda, alpha, f_1, mNorm_1, rms_1
         !
         niter = niter + 1
         !
@@ -767,12 +780,14 @@ contains
                 call self%func( all_data, sigma, mHat, f, mNorm, dHat, SolnIndex, rms )
                 !
                 write( *, * ) "lambda, gamma * alpha, f, mNorm, rms:", self%lambda, gamma * alpha, f, mNorm, rms
+                write( ioInvLog, * ) "lambda, gamma * alpha, f, mNorm, rms:", self%lambda, gamma * alpha, f, mNorm, rms
                 !
             endif
             !
             call self%gradient( all_data, sigma, mHat, grad, dHat, SolnIndex )
             !
             write( *, * ) "Quadratic has no minimum, exiting line search"
+            write( ioInvLog, * ) "Quadratic has no minimum, exiting line search"
             !
             !call deallocateDataGroupTxArray( dHat_1 )
             !
@@ -794,6 +809,7 @@ contains
         call func( self, all_data, sigma, mHat, f, mNorm, dHat, SolnIndex, rms )
         !
         write( *, * ) "QUADLS: lambda, alpha, f, mNorm, rms:", self%lambda, alpha, f, mNorm, rms
+        write( ioInvLog, * ) "QUADLS: lambda, alpha, f, mNorm, rms:", self%lambda, alpha, f, mNorm, rms
         !
         niter = niter + 1
         !
@@ -823,12 +839,14 @@ contains
                 call self%func( all_data, sigma, mHat, f, mNorm, dHat, SolnIndex, rms )
                 !
                 write( *, * ) "QUADLS: lambda, gamma*alpha, f, mNorm, rms:", self%lambda, gamma*alpha, f, mNorm, rms
+                write( ioInvLog, * ) "QUADLS: lambda, gamma*alpha, f, mNorm, rms:", self%lambda, gamma*alpha, f, mNorm, rms
                 !
             endif
             !
             call self%gradient( all_data, sigma, mHat, grad, dHat, SolnIndex )
             !
             write( *, * ) "Sufficient decrease condition satisfied, exiting line search"
+            write( ioInvLog, * ) "Sufficient decrease condition satisfied, exiting line search"
             !
             !call deallocateDataGroupTxArray( dHat_1 )
             !
@@ -848,6 +866,7 @@ contains
         if( f > f_0 ) then
             !
             write( *, * ) "Unable to fit a quadratic due to bad gradient estimate, exiting line search"
+            write( ioInvLog, * ) "Unable to fit a quadratic due to bad gradient estimate, exiting line search"
             !
         else
             !
@@ -882,6 +901,7 @@ contains
                 call self%func( all_data, sigma, mHat, f, mNorm, dHat, SolnIndex, rms )
                 !
                 write( *, * ) "CUBICLS: lambda, alpha, f, mNorm, rms:", self%lambda, alpha, f, mNorm, rms
+                write( ioInvLog, * ) "CUBICLS: lambda, alpha, f, mNorm, rms:", self%lambda, alpha, f, mNorm, rms
                 !
                 niter = niter + 1
                 !
@@ -903,6 +923,7 @@ contains
                 if( abs( f_j - f_i ) < TOL8 ) then
                     !
                     write( *, * ) "Warning: exiting cubic search since the function no longer decreases!"
+                    write( ioInvLog, * ) "Warning: exiting cubic search since the function no longer decreases!"
                     !
                     exit
                     !
@@ -943,12 +964,14 @@ contains
             call self%func( all_data, sigma, mHat, f,mNorm, dHat, SolnIndex, rms )
             !
             write( *, * ) "RELAX: lambda, gamma*alpha, f, mNorm, rms:", self%lambda, gamma*alpha, f, mNorm, rms
+            write( ioInvLog, * ) "RELAX: lambda, gamma*alpha, f, mNorm, rms:", self%lambda, gamma*alpha, f, mNorm, rms
             !
         endif
         !
         call self%gradient( all_data, sigma, mHat, grad, dHat, SolnIndex )
         !
         write( *, * ) "Gradient computed, line search finished"
+        write( ioInvLog, * ) "Gradient computed, line search finished"
         !
         !call deallocateDataGroupTxArray(dHat_1)
         !
@@ -971,7 +994,7 @@ contains
         character(3) :: char3
         !
         write( char3, "(i3.3)" ) iter
-		!
+        !
         !> Write predicted data for this NLCG iteration
         out_file_name = trim( outdir_name )//"/dHat_NLCG_"//char3//".dat"
         !

@@ -21,8 +21,6 @@ contains
         !
         class( ModelParameter_t ), allocatable :: sigma, dsigma
         !
-        logical :: new_sigma
-        !
         ! Verbose
         !
         write( *, * ) "     - Start jobJMult"
@@ -67,9 +65,7 @@ contains
         !
         call createDistributeForwardSolver()
         !
-        new_sigma = .TRUE.
-        !
-        call serialJMult( sigma, dsigma, JmHat, new_sigma )
+        call serialJMult( sigma, dsigma, JmHat )
         !
 #endif
         !
@@ -87,12 +83,11 @@ contains
     !>     Set the transmitter source by calling PMult
     !>     Call JMult_TX for the transmitter
     !
-    subroutine serialJMult( sigma, dsigma, JmHat, new_sigma )
+    subroutine serialJMult( sigma, dsigma, JmHat )
         implicit none
         !
         class( ModelParameter_t ), intent( in ) :: sigma, dsigma
         type( DataGroupTx_t ), allocatable, dimension(:), intent( out ) :: JmHat
-        logical, intent( inout ) :: new_sigma
         !
         integer :: i_data_tx
         class( Transmitter_t ), pointer :: Tx
@@ -105,23 +100,14 @@ contains
             !> Pointer to the transmitter leading the current data
             Tx => getTransmitter( i_data_tx )
             !
-            !>
-            if( new_sigma ) then
-                !
-                call solveTx( sigma, Tx )
-                !
-            endif
-            !
             !> Switch Transmitter's source to SourceInteriorForce
             call Tx%setSource( Tx%PMult( sigma, dsigma, model_operator ) )
             !
             call Tx%solve()
             !
-            call JMult_Tx( JmHat( i_data_tx ), new_sigma )
+            call JMult_Tx( JmHat( i_data_tx ) )
             !
         enddo
-        !
-        new_sigma = .FALSE.
         !
         ! Verbose
         !write( *, * ) "          - Finish serialJMult"
@@ -131,11 +117,10 @@ contains
     !> Calculate JmHat for a single transmitter and store it in a DataGroupTx:
     !>     By the sum of all LRows * ESens
     !
-    subroutine JMult_Tx( JmHat_tx, new_sigma )
+    subroutine JMult_Tx( JmHat_tx )
         implicit none
         !
         type( DataGroupTx_t ), intent( inout ) :: JmHat_tx
-        logical, intent( in ) :: new_sigma
         !
         class( Vector_t ), allocatable :: lrows
         complex( kind=prec ) :: lrows_x_esens
@@ -152,7 +137,7 @@ contains
             !> Pointer to the data's Receiver
             Rx => getReceiver( JmHat_tx%data( i_data )%i_rx )
             !
-            if( new_sigma ) call Rx%setLRows( Tx )
+            call Rx%setLRows( Tx )
             !
             !> Loop over components
             do i_comp = 1, JmHat_tx%data( i_data )%n_comp
@@ -193,8 +178,6 @@ contains
         !
         class( ModelParameter_t ), allocatable :: sigma, dsigma
         !
-        logical :: new_sigma
-        !
         ! Verbose
         write( *, * ) "     - Start jobJMult_T"
         !
@@ -228,9 +211,7 @@ contains
         !
         call createDistributeForwardSolver()
         !
-        new_sigma = .TRUE.
-        !
-        call serialJMult_T( sigma, all_measured_data, dsigma, new_sigma )
+        call serialJMult_T( sigma, all_measured_data, dsigma )
         !
 #endif
         !
@@ -249,13 +230,12 @@ contains
     !> Call JMult_T_Tx with measured data for for all transmitters
     !> Add the result obtained for each transmitter into dsigma
     !
-    subroutine serialJMult_T( sigma, all_data, dsigma, new_sigma, SolnIndex )
+    subroutine serialJMult_T( sigma, all_data, dsigma, SolnIndex )
         implicit none
         !
         class( ModelParameter_t ), intent( in ) :: sigma
         type( DataGroupTx_t ), dimension(:), intent( in ) :: all_data
         class( ModelParameter_t ), allocatable, intent( out ) :: dsigma
-        logical, intent( inout ) :: new_sigma
         integer, intent( in ), optional :: SolnIndex
         !
         class( Transmitter_t ), pointer :: Tx
@@ -285,17 +265,7 @@ contains
         !> Loop over all transmitters
         do i_tx = 1, size( transmitters )
             !
-            !>
-            if( new_sigma ) then
-                !
-                !> Point to the current Transmitter
-                Tx => getTransmitter( i_tx )
-                !
-                call solveTx( sigma, Tx )
-                !
-            endif
-            !
-            call JMult_T_Tx( sigma, all_data( i_tx ), dsigma_tx, new_sigma, sol_index )
+            call JMult_T_Tx( sigma, all_data( i_tx ), dsigma_tx, sol_index )
             !
             !> Add dsigma_tx to dsigma
             call dsigma%linComb( ONE, ONE, dsigma_tx )
@@ -303,8 +273,6 @@ contains
             deallocate( dsigma_tx )
             !
         enddo
-        !
-        new_sigma = .TRUE.
         !
         ! Verbose
         !write( *, * ) "          - Finish serialJMult_T"
@@ -316,13 +284,12 @@ contains
     !>     Solve ESens on the transmitter using a transpose SourceInteriorForce, with the new rhs.
     !>     Call Tx%PMult to get a new ModelParameter dsigma.
     !
-    subroutine JMult_T_Tx( sigma, tx_data, dsigma, new_sigma, SolnIndex )
+    subroutine JMult_T_Tx( sigma, tx_data, dsigma, SolnIndex )
         implicit none
         !
         class( ModelParameter_t ), intent( in ) :: sigma
         type( DataGroupTx_t ), intent( in ) :: tx_data
         class( ModelParameter_t ), allocatable, intent( inout ) :: dsigma
-        logical, intent( inout ) :: new_sigma
         integer, intent( in ), optional :: SolnIndex
         !
         class( Vector_t ), allocatable :: lrows
@@ -366,7 +333,7 @@ contains
             !> Pointer to the data's Receiver
             Rx => getReceiver( tx_data%data( i_data )%i_rx )
             !
-            if( new_sigma ) call Rx%setLRows( Tx )
+            call Rx%setLRows( Tx )
             !
             !> Loop over the data components
             do i_comp = 1, data_group%n_comp

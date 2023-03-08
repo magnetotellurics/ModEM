@@ -129,13 +129,9 @@ contains
         !
         Tx%SolnIndex = job_info%sol_index
         !
-        if( job_info%new_sigma ) then
-            !
-            call txForwardSolver( Tx )
-            !
-            call solveTx( sigma, Tx )
-            !
-        endif
+        call txForwardSolver( Tx )
+        !
+        call solveTx( sigma, Tx )
         !
         !> Loop for each Receiver related to the Transmitter
         do i_rx = 1, size( Tx%receiver_indexes )
@@ -179,14 +175,6 @@ contains
         !> Point to the transmitter specified by the master process 
         Tx => getTransmitter( job_info%i_tx )
         !
-        if( job_info%new_sigma ) then
-            !
-            call txForwardSolver( Tx )
-            !
-            call solveTx( sigma, Tx )
-            !
-        endif
-        !
         !> Switch Transmitter's source to SourceInteriorForce from PMult
         call Tx%setSource( Tx%PMult( sigma, dsigma, model_operator ) )
         !
@@ -194,7 +182,7 @@ contains
         call Tx%solve()
         !
         !> serialJMult for the same Tx
-        call JMult_Tx( tx_data, job_info%new_sigma )
+        call JMult_Tx( tx_data )
         !
         !> Send job done and tx_data to master process
         job_info%job_name = job_done
@@ -231,15 +219,7 @@ contains
         !
         Tx%SolnIndex = job_info%sol_index
         !
-        if( job_info%new_sigma ) then
-            !
-            call txForwardSolver( Tx )
-            !
-            call solveTx( sigma, Tx )
-            !
-        endif
-        !
-        call JMult_T_Tx( sigma, tx_data, tx_dsigma, job_info%new_sigma, Tx%SolnIndex )
+        call JMult_T_Tx( sigma, tx_data, tx_dsigma, Tx%SolnIndex )
         !
         !> Send job done and tx_dsigma's conductivity to master process
         job_info%job_name = job_done

@@ -57,8 +57,6 @@ module DeclarationMPI
         integer :: data_size, model_size, basic_comp_size
         integer :: inv_iter, sol_index
         real( kind=prec ) :: tolerance_rms, lambda
-        logical :: new_sigma
-    
         !
     end type JobInfo_t
     !
@@ -1497,9 +1495,8 @@ contains
         call MPI_PACK_SIZE( 15, MPI_CHARACTER, main_comm, nbytes1, ierr )
         call MPI_PACK_SIZE( 7, MPI_INTEGER, main_comm, nbytes2, ierr )
         call MPI_PACK_SIZE( 2, MPI_DOUBLE_PRECISION, main_comm, nbytes3, ierr )
-        call MPI_PACK_SIZE( 1, MPI_LOGICAL, main_comm, nbytes4, ierr )
         !
-        job_info_buffer_size = ( nbytes1 + nbytes2 + nbytes3 + nbytes3 ) + 1
+        job_info_buffer_size = ( nbytes1 + nbytes2 + nbytes3 ) + 1
         !
         if( allocated( job_info_buffer ) ) deallocate( job_info_buffer )
         allocate( job_info_buffer( job_info_buffer_size ) )
@@ -1525,7 +1522,6 @@ contains
         call MPI_PACK( job_info%sol_index, 1, MPI_INTEGER, job_info_buffer, job_info_buffer_size, index, main_comm, ierr )
         call MPI_PACK( job_info%tolerance_rms, 1, MPI_DOUBLE_PRECISION, job_info_buffer, job_info_buffer_size, index, main_comm, ierr )
         call MPI_PACK( job_info%lambda, 1, MPI_DOUBLE_PRECISION, job_info_buffer, job_info_buffer_size, index, main_comm, ierr )
-        call MPI_PACK( job_info%new_sigma, 1, MPI_LOGICAL, job_info_buffer, job_info_buffer_size, index, main_comm, ierr )
         !
     end subroutine packJobInfoBuffer
     !
@@ -1546,7 +1542,6 @@ contains
         call MPI_UNPACK( job_info_buffer, job_info_buffer_size, index, job_info%sol_index, 1, MPI_INTEGER, main_comm, ierr )
         call MPI_UNPACK( job_info_buffer, job_info_buffer_size, index, job_info%tolerance_rms, 1, MPI_DOUBLE_PRECISION, main_comm, ierr )
         call MPI_UNPACK( job_info_buffer, job_info_buffer_size, index, job_info%lambda, 1, MPI_DOUBLE_PRECISION, main_comm, ierr )
-        call MPI_UNPACK( job_info_buffer, job_info_buffer_size, index, job_info%new_sigma, 1, MPI_LOGICAL, main_comm, ierr )
         !
     end subroutine unpackJobInfoBuffer
     !
