@@ -1,0 +1,17 @@
+node1:1
+node2:8
+node3:8
+node4:8
+node5:8
+node6:8
+node7:8
+node8:8
+node9:8
+node10:8
+node11:8
+node12:8
+node13:8
+node14:8
+node15:8
+node16:6
+node17:6

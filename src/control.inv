@@ -1,4 +1,4 @@
-Model and data output file name    : STB_CSEM1_4
+Model and data output file name    : JOINT_1
 Initial damping factor lambda      : 1.
 To update lambda divide by         : 10.
 Initial search step in model units : 10.
