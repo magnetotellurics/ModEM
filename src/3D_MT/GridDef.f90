@@ -459,6 +459,7 @@ Contains
         do iz = airlayers%Nz, 1, -1
             j = airlayers%Nz - iz + 1
             airlayers%Dz(iz) = ((airlayers%alpha)**(j-1))*grid%Dz(grid%NzAir+j)
+			write(*,*) "iZ, airLayers%Dz(iz)", iz, airLayers%Dz(iz)
         end do
 
         ! the topmost air layer has to be at least 30 km
@@ -479,20 +480,20 @@ Contains
             write(*,*) "iZ, airLayers%Dz(iz)", iz, airLayers%Dz(iz)
         end do
         !
-        ! z1_log = log10( grid%Dz( grid%NzAir + 1 ) )
-        ! dlogz = ( log10( airLayers%MaxHeight ) - z1_log ) / ( airLayers%Nz - 1 )
-        ! !
-        ! z_log = z1_log
-        ! height1 = 10.**z1_log
-        ! airLayers%Dz( airLayers%Nz ) = height1
-        ! do iz = airLayers%Nz-1, 1, -1
-           ! z_log = z_log + dlogz
-           ! height2 = 10.**z_log 
-           ! airLayers%Dz(iz) = height2-height1
-           ! height1 = height2
-           ! !
-            ! write(*,*) "iZ, airLayers%Dz(iz)", iz, airLayers%Dz(iz)
-        ! end do
+        z1_log = log10( grid%Dz( grid%NzAir + 1 ) )
+        dlogz = ( log10( airLayers%MaxHeight ) - z1_log ) / ( airLayers%Nz - 1 )
+        !
+        z_log = z1_log
+        height1 = 10.**z1_log
+        airLayers%Dz( airLayers%Nz ) = height1
+        do iz = airLayers%Nz-1, 1, -1
+           z_log = z_log + dlogz
+           height2 = 10.**z_log 
+           airLayers%Dz(iz) = height2-height1
+           height1 = height2
+           !
+            write(*,*) "iZ, airLayers%Dz(iz)", iz, airLayers%Dz(iz)
+        end do
 
     else if (index(airlayers%method,'read from file')>0) then
         ! air layers have been read from file and are already stored in Dz

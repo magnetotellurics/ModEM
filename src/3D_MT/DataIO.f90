@@ -934,6 +934,9 @@ Contains
   ! Create a single-type data vector from the new values
         !nTx = size(txDict)
         !nRx = size(rxDict)
+    !nTx = size(txDict)
+    !nRx = size(rxDict)
+	
 	call create_dataVectorMTX(nTx,newData)
 	newData%allocated = .TRUE.
 	errorBar = .TRUE.
@@ -997,7 +1000,7 @@ Contains
 
     ! Finished reading the data: write an empty line to screen
     write(0,*)
-
+write(*,*)"txDict(iTx)%Tx_type:", txDict(1)%Tx_type
     ! Finally, set up the index vectors in the data type dictionary - used for output
     nTxt = 1
     nTx = size(txDict)
