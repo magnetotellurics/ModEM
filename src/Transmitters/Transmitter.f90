@@ -185,13 +185,12 @@ module Transmitter
         !
         !> Allocate the source of this transmitter if it is allocated.
         !> And define a new source for this transmitter, sent as an argument.
-        function getSolutionVectorTx( self, pol ) result( solution )
+        subroutine getSolutionVectorTx( self, pol, solution )
             implicit none
             !
             class( Transmitter_t ), intent( in ) :: self
             integer, intent( in ) :: pol
-            !
-            class( Vector_t ), pointer :: solution
+            class( Vector_t ), pointer, intent( out ) :: solution
             !
             if( self%SolnIndex == 0 ) then
                 allocate( solution, source = self%e_sol( pol ) )
@@ -199,7 +198,7 @@ module Transmitter
                 allocate( solution, source = self%e_sol_1( pol ) )
             endif
             !
-        end function getSolutionVectorTx
+        end subroutine getSolutionVectorTx
         !
         !> Returns a SourceInteriorForce from two distinct models, with the same ModelOperator.
         function PMult_Tx( self, sigma, dsigma, model_operator ) result( source_int_force )
@@ -212,6 +211,7 @@ module Transmitter
             type( SourceInteriorForce_t ) :: source_int_force
             !
             class( Vector_t ), allocatable, dimension(:) :: bSrc
+            class( Vector_t ), pointer :: solution
             type( rVector3D_SG_t ) :: map_e_vector
             complex( kind=prec ) :: minus_i_omega_mu
             integer :: pol
@@ -229,7 +229,9 @@ module Transmitter
             !
             do pol = 1, self%n_pol
                 !
-                bSrc( pol ) = self%getSolutionVector( pol )
+                call self%getSolutionVector( pol, solution )
+                !
+                bSrc( pol ) = solution
                 !
                 call bSrc( pol )%mult( map_e_vector )
                 !
@@ -243,7 +245,7 @@ module Transmitter
             call source_int_force%setE( bSrc )
             !
             !> Free up local memory
-            deallocate( bSrc )
+            deallocate( bSrc, solution )
             !
             ! Verbose
             !write( *, * ) "               - Finish PMult"
@@ -259,6 +261,7 @@ module Transmitter
             class( ModelParameter_t ), allocatable, intent( inout ) :: dsigma
             !
             class( Vector_t ), allocatable, dimension(:) :: eSens
+            class( Vector_t ), pointer :: solution
             class( Field_t ), allocatable :: real_sens
             complex( kind=prec ) :: minus_i_omega_mu
             integer :: pol
@@ -273,12 +276,16 @@ module Transmitter
             !> Copy e_sens to a local variable to keep its original value.
             allocate( eSens, source = self%e_sens )
             !
-            call eSens(1)%mult( self%getSolutionVector(1) )
+            call self%getSolutionVector( 1, solution )
+            !
+            call eSens(1)%mult( solution )
             !
             !> Loop over all other polarizations, adding them to the first position
             do pol = 2, self%n_pol
                 !
-                call eSens( pol )%mult( self%getSolutionVector( pol ) )
+                call self%getSolutionVector( pol, solution )
+                !
+                call eSens( pol )%mult( solution )
                 !
                 call eSens(1)%add( eSens( pol ) )
                 !
@@ -296,7 +303,7 @@ module Transmitter
             !> Get dsigma from dPDEmappingT, using first position of eSens
             call sigma%dPDEmappingT( real_sens, dsigma )
             !
-            deallocate( real_sens )
+            deallocate( real_sens, solution )
             !
         end subroutine PMult_t_Tx
         !

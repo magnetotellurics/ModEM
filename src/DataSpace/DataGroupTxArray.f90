@@ -19,7 +19,7 @@ module DataGroupTxArray
     !
     !> Module variables
     logical :: conjugated_data
-    character(20) :: units_in_file
+    type( String_t ), allocatable, dimension(:) :: units_in_file
     !
     !> Module routines
     !> Routines for data operations
@@ -475,13 +475,13 @@ contains
                 !
                 receiver => getReceiver( data_group%i_rx )
                 !
-                call writeHeaderDataGroupTxArray( receiver, receiver_type )
+                SI_factor = ImpUnits( receiver%units, units_in_file(i)%str )
+                !
+                call writeHeaderDataGroupTxArray( i, receiver, receiver_type )
                 !
                 transmitter => getTransmitter( data_group%i_tx )
                 !
                 do j = 1, data_group%n_comp
-                    !
-                    SI_factor = ImpUnits( receiver%units, units_in_file )
                     !
                     if( conjugated_data ) then
                         !
@@ -569,11 +569,11 @@ contains
     !
     !> Write a header into the DataGroupTxArray text file
     !
-    subroutine writeHeaderDataGroupTxArray( receiver, receiver_type )
+    subroutine writeHeaderDataGroupTxArray( type_index, receiver, receiver_type )
         implicit none
         !
+        integer, intent( in ) :: type_index
         class( Receiver_t ), intent( in ) :: receiver
-        !
         integer, intent( inout ) :: receiver_type
         !
         if( receiver_type /= receiver%rx_type ) then
@@ -614,7 +614,7 @@ contains
                 write( ioPredData, "( 18a )" ) ">  exp(-i\omega t)"
             endif
             !
-            write( ioPredData, "( 50a )" ) ">  "//trim( units_in_file )
+            write( ioPredData, "( 50a )" ) ">  "//trim( units_in_file( type_index )%str )
             write( ioPredData, "( 10a )" ) ">     0.00"
             write( ioPredData, "( 20a )" ) ">     0.000    0.000"
             write( ioPredData, "( 1a, i8, i8 )" ) ">", size( transmitters ), size( receivers )

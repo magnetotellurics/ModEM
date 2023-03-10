@@ -1,0 +1,21 @@
+# FIXED TITLE
+# Period(s) Code GG_Lat GG_Lon X(m) Y(m) Z(m) Component Real Imag Error
+> Full_Impedance
+> exp(+i\omega t)
+> [mV/km]/[nT]
+> 0
+> 0.000000 0.000000
+> 1 1
+1.000000E+03  Line_1_1      0.000000      0.000000      -2000.000     -6000.000     0.000         ZXX     0.000000E+0     0.000000E+0     1.000000E-12
+1.000000E+03  Line_1_1      0.000000      0.000000      -2000.000     -6000.000     0.000         ZXY     0.000000E+0     0.000000E+0     1.000000E-12
+1.000000E+03  Line_1_1      0.000000      0.000000      -2000.000     -6000.000     0.000         ZYX     0.000000E+0     0.000000E+0     1.000000E-12
+1.000000E+03  Line_1_1      0.000000      0.000000      -2000.000     -6000.000     0.000         ZYY     0.000000E+0     0.000000E+0     1.000000E-12
+# FIXED TITLE
+# Tx_Dipole Tx_Period(s) Tx_Moment(Am) Tx_Azi Tx_Dip Tx_X(m) Tx_Y(m) Tx_Z(m) Code X(m) Y(m) Z(m) Component Real Imag Error                                                                              
+>  Ey_Field
+>  exp(+i\omega t)
+>  [V/m]
+>     0.00
+>    0.000   0.000
+>     1    1
+Electric 1.000000E-01 1.000000E+00   90.000    0.000       0.000   -6000.000       5.000       Line_1_1   -2000.000   -6000.000       0.000 Ey_Field  -6.337992E-10  -4.283864E-10   1.000000E-12

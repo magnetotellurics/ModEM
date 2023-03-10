@@ -230,16 +230,18 @@ contains
     !> Call JMult_T_Tx with measured data for for all transmitters
     !> Add the result obtained for each transmitter into dsigma
     !
-    subroutine serialJMult_T( sigma, all_data, dsigma, SolnIndex )
+    subroutine serialJMult_T( sigma, all_data, dsigma, SolnIndex, s_hat )
         implicit none
         !
         class( ModelParameter_t ), intent( in ) :: sigma
         type( DataGroupTx_t ), dimension(:), intent( in ) :: all_data
         class( ModelParameter_t ), allocatable, intent( out ) :: dsigma
         integer, intent( in ), optional :: SolnIndex
+        class( Scalar_t ), allocatable, dimension(:), intent( inout ), optional :: s_hat
         !
         class( Transmitter_t ), pointer :: Tx
         class( ModelParameter_t ), allocatable :: dsigma_tx
+        class( Scalar_t ), allocatable :: temp_scalar
         integer :: i_tx, sol_index
         !
         ! Verbose
@@ -267,10 +269,18 @@ contains
             !
             call JMult_T_Tx( sigma, all_data( i_tx ), dsigma_tx, sol_index )
             !
+            if( present( s_hat ) ) then
+                !
+                call dsigma_tx%getCond( temp_scalar )
+                !
+                s_hat( i_tx ) = temp_scalar
+                !
+            endif
+            !
             !> Add dsigma_tx to dsigma
             call dsigma%linComb( ONE, ONE, dsigma_tx )
             !
-            deallocate( dsigma_tx )
+            deallocate( dsigma_tx, temp_scalar )
             !
         enddo
         !

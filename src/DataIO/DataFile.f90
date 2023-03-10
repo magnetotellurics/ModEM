@@ -62,8 +62,6 @@ contains
         !
         conjugated_data = .FALSE.
         !
-        units_in_file = "[]"
-        !
     end subroutine initializeDataFile
     !
     !> No subroutine briefing
@@ -211,7 +209,7 @@ contains
             !
         endif
         !
-        SI_factor = ImpUnits( units_in_file, receiver%units )
+        SI_factor = ImpUnits( units_in_file( size( units_in_file ) )%str , receiver%units )
         !
         if( conjugated_data ) then
             !

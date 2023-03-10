@@ -30,7 +30,7 @@ module ReceiverOffDiagonalImpedance
 contains
     !
     !> No subroutine briefing
-	!
+    !
     function ReceiverOffDiagonalImpedance_ctor( location, rx_type ) result( self )
         implicit none
         !
@@ -108,15 +108,19 @@ contains
         integer :: i, j, ij
         complex( kind=prec ) :: comega, det
         complex( kind=prec ), allocatable :: BB(:,:), I_BB(:,:), EE(:,:)
+        class( Vector_t ), pointer :: tx_e_1, tx_e_2
         !
         comega = cmplx( 0.0, 1./ ( 2.0 * PI / transmitter%period ), kind=prec )
         !
         allocate( EE(2,2) )
+        call transmitter%getSolutionVector( 1, tx_e_1 )
+        call transmitter%getSolutionVector( 2, tx_e_2 )
         !
-        select type( tx_e_1 => transmitter%getSolutionVector(1) )
+        select type( tx_e_1 )
+            !
             class is( cVector3D_SG_t )
                 !
-                select type( tx_e_2 => transmitter%getSolutionVector(2) )
+                select type( tx_e_2 )
                     class is( cVector3D_SG_t )
                         !
                         EE(1,1) = self%Lex%dotProd( tx_e_1 )
@@ -166,6 +170,8 @@ contains
                         stop "evaluationFunctionRx: Unclassified transmitter%e_all_2"
                 end select
                 !
+                deallocate( tx_e_1, tx_e_2 )
+                !
             class default
                 stop "evaluationFunctionRx: Unclassified transmitter%e_all_1"
         end select
@@ -173,7 +179,7 @@ contains
     end subroutine predictedDataOffDiagonalImpedance
     !
     !> No subroutine briefing
-	!
+    !
     function isEqualOffDiagonalImpedance( self, other ) result( equal )
         implicit none
         !

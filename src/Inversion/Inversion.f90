@@ -11,7 +11,7 @@ module Inversion
         !
         integer :: max_inv_iters, n_inv_iter
         !
-        real( kind=prec ) :: tolerance_rms, lambda
+        real( kind=prec ) :: rms_tol, lambda
         !
         contains
             !
@@ -57,7 +57,7 @@ contains
         class( Inversion_t ), intent( inout ) :: self
         !
         self%max_inv_iters = 5
-        self%tolerance_rms = 1.05
+        self%rms_tol = 1.05
         self%lambda = 10.
         !
         if( has_inv_control_file ) then
@@ -65,27 +65,23 @@ contains
             if( allocated( inv_control_file%max_inv_iters ) ) &
                 read( inv_control_file%max_inv_iters, * ) self%max_inv_iters
             !
-            if( allocated( inv_control_file%tolerance_rms ) ) &
-                read( inv_control_file%tolerance_rms, * ) self%tolerance_rms
+            if( allocated( inv_control_file%rms_tol ) ) &
+                read( inv_control_file%rms_tol, * ) self%rms_tol
             !
             if( allocated( inv_control_file%lambda ) ) &
                 read( inv_control_file%lambda, * ) self%lambda
             !
         endif
         !
+        write( *, "( A45 )" ) "Using inversion parameters:"
+        !
         write( *, "( A45, I20 )" ) "max_inv_iters = ", self%max_inv_iters
         !
-        write( *, "( A45, es20.2 )" ) "tolerance_rms = ", self%tolerance_rms
+        write( *, "( A45, es20.2 )" ) "rms_tol = ", self%rms_tol
         !
         write( *, "( A45, es20.2 )" ) "lambda = ", self%lambda
         !
-        self%max_inv_iters = 0
-        !
         self%n_inv_iter = 0
-        !
-        self%tolerance_rms = R_ZERO
-        !
-        self%lambda = R_ZERO
         !
     end subroutine initializeInversion
     !

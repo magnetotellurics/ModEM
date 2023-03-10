@@ -62,7 +62,7 @@ real(kind=real64) function bessj0(x) result (bj0)
   if(x == R_ZERO_real64) THEN
     bj0 = 1.0_real64
     RETURN
-  END IF
+  endif
   if(x <= 10.0_real64) THEN
     bj0 = 1.0_real64
     r = 1.0_real64
@@ -85,7 +85,7 @@ real(kind=real64) function bessj0(x) result (bj0)
 
     bj0=sqrt(rp2/x)*(cos(t1)*(p0num/p0denom)-z*sin(t1)*(q0num/q0denom))  
 
-  END IF
+  endif
 
 endfunction bessj0
  
@@ -146,7 +146,7 @@ real(kind=real64) function bessj1(x) result(bj1)
   if(x == R_ZERO_real64) THEN
     bj1 = R_ZERO_real64
     RETURN
-  END IF
+  endif
   if(x <= 9.0_real64) THEN
     bj1 = 1.0_real64
     r = 1.0_real64
@@ -171,7 +171,7 @@ real(kind=real64) function bessj1(x) result(bj1)
     bj1=sqrt(rp2/x)*(cos(t2)*(p0num/p0denom)-z*sin(t2)*(q0num/q0denom))
 
 
-  END IF
+  endif
 
 endfunction bessj1
 

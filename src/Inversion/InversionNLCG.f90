@@ -9,9 +9,8 @@ module InversionNLCG
         !
         ! the condition to identify when the inversion stalls
         real( kind=prec ) :: fdiffTol
-        !
-        ! exit if lambda < lambdaTol approx. 1e-4
-        real( kind=prec ) :: lambdaTol
+        ! exit if lambda < lambda_tol approx. 1e-4
+        real( kind=prec ) :: lambda_tol
         ! set lambda_i = lambda_{i-1}/k when the inversion stalls
         real( kind=prec ) :: k
         ! the factor that ensures sufficient decrease in the line search
@@ -20,26 +19,20 @@ module InversionNLCG
         real( kind=prec ) :: c2
         ! restart CG every nCGmax iterations to ensure conjugacy
         integer :: nCGmax
-        ! restart CG if orthogonality is lost (not necessarily needed)
-        ! real( kind=prec ) :: delta ! 0.5
         ! the starting step for the line search
         real( kind=prec ) :: alpha_1
-        ! if alpha_{i+1} < alpha_i * k_{alpha}, set alpha_{i+1} = alpha_i/2
-        ! real( kind=prec ) :: alpha_k ! 0.1
-        ! if alpha_{i+1} - alpha_i < tol_{alpha}, set alpha_{i+1} = alpha_i/2
-        ! real( kind=prec ) :: alpha_tol ! 1.0e-2
         ! maximum initial delta mHat (overrides alpha_1)
         real( kind=prec ) :: startdm
         ! optional relaxation parameter (Renormalized Steepest Descent algorithm)
         real( kind=prec ) :: gamma
-        ! model and data output file name
-        character(80) :: fname
         !
         contains
             !
             final :: InversionNLCG_dtor
             !
             procedure, public :: solve => solveInversionNLCG
+            !
+            procedure, public :: handleGradVectors => handleGradVectorsNLCG
             !
             procedure, private :: gradient, func, update_damping_parameter, lineSearchCubic
             !
@@ -64,58 +57,49 @@ contains
         !
         call self%init
         !
-        !> Set default NLCG parameters
-        !
-        !> Maximum number of iterations in one call to iterative solver
-        self%max_inv_iters = 5
-        !
-        !> Convergence criteria: return from solver if rms < tolerance_rms
-        self%tolerance_rms = 1.05
-        !
-        !> Initial r_value of lambda
-        self%lambda = 10.
-        !
-        !> CHECK IF THE FOLLOWING PARAMETERS ARE NECESSARY
-        !> AND IF THEY MUST BE IN THE CONTROL FILE 
-        !
-        ! inversion stalls when abs(rms - rmsPrev) < fdiffTol (2e-3 works well)
-        self%fdiffTol = 2.0e-3
-        ! exit if lambda < lambdaTol approx. 1e-4
-        self%lambdaTol = 1.0e-8
-        ! set lambda_i = lambda_{i-1}/k when the inversion stalls
-        self%k = 10.
+        !> NLCG Default Parameters
         ! the factor that ensures sufficient decrease in the line search >=1e-4
         self%c = 1.0e-4
         ! restart CG every nCGmax iterations to ensure conjugacy
         self%nCGmax = 8
         ! the starting step for the line search
         self%alpha_1 = 20.
-        ! maximum initial delta mHat (overrides alpha_1)
-        self%startdm = 20.
         ! optional relaxation parameter (Renormalized Steepest Descent algorithm)
         self%gamma = 0.99
-        ! model and data output file name
-        self%fname = "Modular"
         !
-        !> Set NLCG parameters from control file if its the case
+        !> NLCG Parameters that can be defined via control file
+        ! exit if lambda < lambdaTol approx. 1e-8
+        self%lambda_tol = 1.0e-4
+        ! set lambda_i = lambda_{i-1}/k when the inversion stalls
+        self%k = 10.    !lambda_div
+        ! maximum initial delta mHat (overrides alpha_1)
+        self%startdm = 20.
+        ! inversion stalls when abs(rms - rmsPrev) < fdiffTol (2e-3 works well)
+        self%fdiffTol = 2.0e-3
+        !
         if( has_inv_control_file ) then
             !
-            if( allocated( inv_control_file%max_inv_iters ) ) &
-                read( inv_control_file%max_inv_iters, * ) self%max_inv_iters
+            if( allocated( inv_control_file%lambda_tol ) ) &
+                read( inv_control_file%lambda_tol, * ) self%lambda_tol
             !
-            if( allocated( inv_control_file%tolerance_rms ) ) &
-                read( inv_control_file%tolerance_rms, * ) self%tolerance_rms
+            if( allocated( inv_control_file%lambda_div ) ) &
+                read( inv_control_file%lambda_div, * ) self%k
             !
-            if( allocated( inv_control_file%lambda ) ) &
-                read( inv_control_file%lambda, * ) self%lambda
+            if( allocated( inv_control_file%startdm ) ) &
+                read( inv_control_file%startdm, * ) self%startdm
+            !
+            if( allocated( inv_control_file%fdiffTol ) ) &
+                read( inv_control_file%fdiffTol, * ) self%fdiffTol
             !
         endif
         !
-        write( *, "( A45, I20 )" ) "max_inv_iters = ", self%max_inv_iters
+        write( *, "( A45, es20.2 )" ) "lambda_tol = ", self%lambda_tol
         !
-        write( *, "( A45, es20.2 )" ) "tolerance_rms = ", self%tolerance_rms
+        write( *, "( A45, es20.2 )" ) "lambda_div = ", self%k
         !
-        write( *, "( A45, es20.2 )" ) "lambda = ", self%lambda
+        write( *, "( A45, es20.2 )" ) "startdm = ", self%startdm
+        !
+        write( *, "( A45, es20.2 )" ) "fdiffTol = ", self%fdiffTol
         !
         !> Free the memory used by the global control file, which is no longer useful
         if( allocated( inv_control_file ) ) deallocate( inv_control_file )
@@ -192,7 +176,7 @@ contains
             nfunc = 1
             !
             ! output (smoothed) initial model and responses for later reference
-            dsigma = model_cov%multBy_CmSqrt( mHat )
+            call model_cov%multBy_CmSqrt( mHat, dsigma )
             !
             call dsigma%linComb( ONE, ONE, sigma )
             !
@@ -217,7 +201,6 @@ contains
             !
             !> initialize CG: g = - grad; h = g
             nCG = 0
-            !
             iter = 0
             !
             allocate( g, source = grad )
@@ -226,9 +209,10 @@ contains
             !
             allocate( h, source = g )
             !
-            do
+            do! while( rms .GE. self%rms_tol .AND. iter .LT. self%max_inv_iters )
+                !
                 !  test for convergence ...
-                if( rms .LT. self%tolerance_rms .OR. iter .GE. self%max_inv_iters ) then
+                if( rms .LT. self%rms_tol .OR. iter .GE. self%max_inv_iters ) then
                     exit
                 endif
                 !
@@ -254,11 +238,11 @@ contains
                         !
                         call self%lineSearchCubic( all_data, sigma, h, alpha, mHat, r_value, grad, rms, nLS, dHat )
                         !
-                    case ( "Quadratic" )
+                    case( "Quadratic" )
                         !
                         !call self%lineSearchQuadratic( all_data,sigma,h,alpha,mHat,r_value,grad,rms,nLS,dHat )
                         !
-                    case ( "Wolfe" )
+                    case( "Wolfe" )
                         !
                         !call self%lineSearchWolfe( all_data,sigma,h,alpha,mHat,r_value,grad,rms,nLS,dHat )
                         !
@@ -296,7 +280,7 @@ contains
                 write( ioInvLog, * ) "     lambda, alpha, r_value, mNorm, rms: ", self%lambda, alpha, r_value, mNorm, rms
                 !
                 ! write out the intermediate model solution and responses
-                dsigma = model_cov%multBy_CmSqrt( mHat )
+                call model_cov%multBy_CmSqrt( mHat, dsigma )
                 !
                 call dsigma%linComb( ONE, ONE, sigma )
                 !
@@ -313,7 +297,7 @@ contains
                     call self%update_damping_parameter( mHat, r_value, grad )
                     !
                     ! check that lambda is still at a reasonable r_value
-                    if( self%lambda < self%lambdaTol ) then
+                    if( self%lambda < self%lambda_tol ) then
                         write( *, "(a55)" ) "Unable to get out of a local minimum. Exiting..."
                         write( ioInvLog, "(a55)" ) "Unable to get out of a local minimum. Exiting..."
                         exit
@@ -344,7 +328,6 @@ contains
                     write( ioInvLog, * ) "lambda, alpha, r_value, mNorm, rms: ", self%lambda, alpha, r_value, mNorm, rms
                     !
                     h = g
-                    !
                     nCG = 0
                     !
                     cycle
@@ -389,10 +372,10 @@ contains
                 !
                 call h%linComb( ONE, beta, h )
                 !
-            end do
+            enddo
             !
             !> multiply by C^{1/2} and add m_0
-            dsigma = model_cov%multBy_CmSqrt( mHat )
+            call model_cov%multBy_CmSqrt( mHat, dsigma )
             !
             call dsigma%linComb( ONE, ONE, sigma )
             !
@@ -410,7 +393,8 @@ contains
             ! Verbose
             write( *, * ) "     - Finish Inversion NLCG, output files in [", trim( outdir_name ), "]"
             !
-            deallocate( mHat, grad, g, h, gPrev )
+            if( allocated( gPrev ) ) deallocate( gPrev )
+            deallocate( mHat, grad, g, h )
             !
         else
             !
@@ -441,13 +425,13 @@ contains
         type( DataGroupTx_t ), allocatable, dimension(:), intent( inout ) :: dHat
         integer, intent( in ) :: SolnIndex
         !
-        real( kind=prec ) :: Ndata, Nmodel, angle1, angle2, diff, diff1
+        real( kind=prec ) :: Ndata, Nmodel
         type( DataGroupTx_t ), allocatable, dimension(:) :: res
         class( ModelParameter_t ), allocatable :: dsigma, JTd, CmJTd
-        integer :: j, i, icomp, isite
+        class( Scalar_t ), allocatable, dimension(:) :: s_hat
         !
         ! compute the smoothed model parameter vector
-        allocate( dsigma, source = model_cov%multBy_CmSqrt( mHat ) )
+        call model_cov%multBy_CmSqrt( mHat, dsigma )
         !
         ! overwriting the input with output
         call dsigma%linComb( ONE, ONE, sigma )
@@ -463,19 +447,19 @@ contains
         !
         call CdInvMult( res )
         !
+        !> ????
+        allocate( rScalar3D_SG_t :: s_hat( size( all_data ) ) )
+        !
 #ifdef MPI
-        call masterJMult_T( dsigma, res, JTd, SolnIndex )
+        call masterJMult_T( dsigma, res, JTd, SolnIndex, s_hat )
 #else
-        call serialJMult_T( dsigma, res, JTd, SolnIndex )
+        call serialJMult_T( dsigma, res, JTd, SolnIndex, s_hat )
 #endif
         !
-        allocate( CmJTd, source = model_cov%multBy_CmSqrt( JTd ) )
+        !> ????
+        call self%handleGradVectors( s_hat, all_data, dHat, JTd )
         !
-        ! compute the number of data and model parameters for scaling
-        Nmodel = mHat%countModel()
-        !
-        ! multiply by 2 (to be consistent with the formula)
-        ! and add the gradient of the model norm
+        call model_cov%multBy_CmSqrt( JTd, CmJTd )
         !
         if( allocated( grad ) ) then
             grad = CmJTd
@@ -483,6 +467,13 @@ contains
             allocate( grad, source = CmJTd )
         endif
         !
+        ! compute the number of data and model parameters for scaling
+        Nmodel = mHat%countModel()
+        !
+        ! multiply by 2 (to be consistent with the formula)
+        ! and add the gradient of the model norm
+        !
+        !call linComb(MinusTWO/Ndata,CmJTd,TWO*lambda/Nmodel,mHat,grad)
         call grad%linComb( MinusTWO / Ndata, TWO * self%lambda / Nmodel, mHat )
         !
         !call deallocateDataGroupTxArray( res )
@@ -490,6 +481,78 @@ contains
         deallocate( dsigma, JTd, CmJTd )
         !
     end subroutine gradient
+    !
+    !> ????
+    !
+    subroutine handleGradVectorsNLCG( self, s_hat, d, dHat, JTd )
+        implicit none
+        !
+        class( InversionNLCG_t ), intent( inout ) :: self
+        class( Scalar_t ), allocatable, dimension(:), intent( in ) :: s_hat
+        type( DataGroupTx_t ), dimension(:), intent( in ) :: d, dHat
+        class( ModelParameter_t ), intent( in ) :: JTd
+        !class( ModelParameter_t ), intent( out ) :: CmJTd
+        !
+        integer :: Ndata, i_tx, ios
+        class( Scalar_t ), allocatable :: temp_scalar
+        real( kind=prec ) :: grad_tx_norm, sum_grad_tx_norm, tx_rms, rms, SS
+        type( DataGroupTx_t ), allocatable, dimension(:) :: res, Nres 
+        !
+        !>
+        open( unit = ioGradLog, file = trim( outdir_name )//"/GradNLCG.log", status="unknown", position="append", iostat=ios )
+        !
+        if( ios == 0 ) then
+            !
+            write( ioGradLog, * ) "##########################"
+            !
+            res = d
+            !
+            call subData( res, dHat )
+            !
+            call CdInvMult( res, Nres )
+            !
+            sum_grad_tx_norm = 0.0
+            !
+            do i_tx = 1, size( res )
+                !
+                grad_tx_norm = sqrt( s_hat( i_tx )%dotProd( s_hat( i_tx ) ) )
+                !
+                tx_rms = sqrt( res( i_tx )%dotProd( Nres( i_tx ) ) / ( size( Nres( i_tx )%data ) * Nres( i_tx )%data(1)%n_comp * 2 ) )
+                !
+                write( *, * ) "grad_tx_norm, tx_rms: ", grad_tx_norm, tx_rms
+                write( ioGradLog, * ) "grad_tx_norm, tx_rms: ", grad_tx_norm, tx_rms
+                !
+                sum_grad_tx_norm = sum_grad_tx_norm + grad_tx_norm
+                !
+            enddo
+            !
+            write( *, * ) "SUM TX GRAD NORM: ", sum_grad_tx_norm
+            write( ioGradLog, * ) "sum_grad_tx_norm: ", sum_grad_tx_norm
+            !
+            call JTd%getCond( temp_scalar )
+            !
+            write( *, * ) "TOTAL GRAD NORM: ", real( sqrt( temp_scalar%dotProd( temp_scalar ) ), kind=prec )
+            write( ioGradLog, * ) "sum_grad_norm: ", real( sqrt( temp_scalar%dotProd( temp_scalar ) ), kind=prec )
+            !
+            SS = dotProdData( res, Nres )
+            !
+            Ndata = countValues( res )
+            !
+            rms = sqrt( SS / Ndata )
+            !
+            write( *, * ) "Total rms: ", rms
+            write( ioGradLog, * ) "Total rms: ", rms
+            !
+            close( ioGradLog )
+            !
+        else
+            !
+            write( *, * ) "Error opening [", trim( outdir_name )//"/GradNLCG.log", "] in handleGradVectorsNLCG!"
+            stop
+            !
+        endif
+        !
+    end subroutine handleGradVectorsNLCG
     !
     !> Compute the full penalty functional F
     !> Also output the predicted data and the EM solution
@@ -512,7 +575,7 @@ contains
         integer :: Ndata, Nmodel, j, i, isite
         !
         ! compute the smoothed model parameter vector
-        allocate( dsigma, source = model_cov%multBy_CmSqrt( mHat ) )
+        call model_cov%multBy_CmSqrt( mHat, dsigma )
         !
         ! overwriting input with output
         call dsigma%linComb( ONE, ONE, sigma )
@@ -521,13 +584,9 @@ contains
         dHat = all_data
         !
 #ifdef MPI
-        !
         call masterForwardModelling( dsigma, dHat, SolnIndex )
-        !
 #else
-        !
         call serialForwardModeling( dsigma, dHat, SolnIndex )
-        !
 #endif
         !
         !> initialize res
@@ -735,8 +794,8 @@ contains
         !
         call self%func( all_data, sigma, mHat_1, f_1, mNorm_1, dHat_1, SolnIndex, rms_1 )
         !
-        write( *, * ) "lambda, alpha, f_1, mNorm_1, rms_1:", self%lambda, alpha, f_1, mNorm_1, rms_1
-        write( ioInvLog, * ) "lambda, alpha, f_1, mNorm_1, rms_1:", self%lambda, alpha, f_1, mNorm_1, rms_1
+        write( *, * ) "STARTLS > lambda, alpha, f_1, mNorm_1, rms_1:", self%lambda, alpha, f_1, mNorm_1, rms_1
+        write( ioInvLog, * ) "STARTLS > lambda, alpha, f_1, mNorm_1, rms_1:", self%lambda, alpha, f_1, mNorm_1, rms_1
         !
         niter = niter + 1
         !
@@ -755,17 +814,11 @@ contains
         if( a < 0 ) then
             !
             starting_guess = .TRUE.
-            !
             alpha = alpha_1
-            !
             dHat = dHat_1
-            !
             SolnIndex = 1
-            !
             mHat = mHat_1
-            !
             rms = rms_1
-            !
             f = f_1
             !
             ! compute the gradient and exit
@@ -818,6 +871,7 @@ contains
             !
             ! if the initial guess was better than what we found, take it
             if( f_1 < f ) then
+                !
                 starting_guess = .TRUE.
                 alpha = alpha_1
                 dHat = dHat_1
@@ -825,6 +879,7 @@ contains
                 mHat = mHat_1
                 rms = rms_1
                 f = f_1
+                !
             endif
             !
             ! compute the gradient and exit
@@ -873,6 +928,7 @@ contains
             ! fit a cubic and backtrack (initialize)
             alpha_i = alpha_1
             f_i = f_1
+            !
             alpha_j = alpha
             f_j = f
             !
@@ -912,11 +968,9 @@ contains
                 !
                 ! if not, iterate, using the two most recent values of f & alpha
                 alpha_i = alpha_j
-                !
                 f_i = f_j
                 !
                 alpha_j = alpha
-                !
                 f_j = f
                 !
                 ! check that the function still decreases to avoid infinite loops in case of a bug
@@ -929,27 +983,26 @@ contains
                     !
                 endif
                 !
-            end do fit_cubic
+            enddo fit_cubic
             !
         endif
         !
         if( f_1 < f ) then
+            !
             starting_guess = .TRUE.
+            !
         endif
         !
         ! if the initial guess was better than what we found, take it
         if( starting_guess ) then
+            !
             alpha = alpha_1
-            !
             dHat = dHat_1
-            !
             SolnIndex = 1
-            !
             mHat = mHat_1
-            !
             rms = rms_1
-            !
             f = f_1
+            !
         endif
         !
         ! compute gradient of the full penalty functional and exit

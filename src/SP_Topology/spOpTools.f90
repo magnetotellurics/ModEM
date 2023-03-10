@@ -1748,7 +1748,7 @@ contains
             B%col=A%col-1
             B%val=A%val
             return
-        end if
+        endif
         nrow = A%nRow
         !nz_l = floor((A%row(nrow+1)-1)/np)
         if(present(isizes)) then ! split into given sizes
@@ -1764,7 +1764,7 @@ contains
         iend=nrow
         else
         iend=i*nrow_l+nrow_l
-        end if
+        endif
         endif
         allocate(rowT(iend-istart+1))
         rowT =(/(j, j=istart, iend) /)
@@ -1813,7 +1813,7 @@ contains
             B%col=A%col-1
             B%val=A%val
             return
-        end if
+        endif
         nrow = A%nRow
         !nz_l = floor((A%row(nrow+1)-1)/np)
         if(present(isizes)) then ! split according to the given sizes
@@ -1829,7 +1829,7 @@ contains
         iend=nrow
         else
         iend=i*nrow_l+nrow_l
-        end if
+        endif
         endif
         allocate(rowT(iend-istart+1))
         rowT =(/(j, j=istart, iend) /)
@@ -2318,7 +2318,7 @@ contains
         ! the diagonal element should be the last in each row 
         ! ONLY IF col is properly sorted
         L%val(L%row(i)-1) = C_ONE
-        end do
+        enddo
         call upperTri(Atmp, U)
         call deall_spMatCSR(Atmp)
         return
