@@ -456,7 +456,7 @@ contains
         !
         real( kind=prec ) :: SI_factor, r_error
         complex( kind=prec ) :: c_value
-        integer :: receiver_type, i, j, ios, n_data
+        integer :: receiver_type, i, j, ios, n_data, type_index
         !
         ! Verbose
         !write( *, * ) "     > Write Data to file: [", file_name, "]"
@@ -464,6 +464,8 @@ contains
         n_data = countData( data_tx_array )
         !
         receiver_type = 0
+        !
+        type_index = 0
         !
         open( unit = ioPredData, file = file_name, action = "write", form = "formatted", iostat = ios )
         !
@@ -475,9 +477,11 @@ contains
                 !
                 receiver => getReceiver( data_group%i_rx )
                 !
-                SI_factor = ImpUnits( receiver%units, units_in_file(i)%str )
+                call writeHeaderDataGroupTxArray( receiver, receiver_type, type_index )
                 !
-                call writeHeaderDataGroupTxArray( i, receiver, receiver_type )
+                !write( *, * ) "receiver%units, units_in_file( type_index )%str: [", receiver%units, "],[", units_in_file( type_index )%str, "]"
+                !
+                SI_factor = ImpUnits( receiver%units, units_in_file( type_index )%str )
                 !
                 transmitter => getTransmitter( data_group%i_tx )
                 !
@@ -569,14 +573,15 @@ contains
     !
     !> Write a header into the DataGroupTxArray text file
     !
-    subroutine writeHeaderDataGroupTxArray( type_index, receiver, receiver_type )
+    subroutine writeHeaderDataGroupTxArray( receiver, receiver_type, type_index )
         implicit none
         !
-        integer, intent( in ) :: type_index
         class( Receiver_t ), intent( in ) :: receiver
-        integer, intent( inout ) :: receiver_type
+        integer, intent( inout ) :: receiver_type, type_index
         !
         if( receiver_type /= receiver%rx_type ) then
+            !
+            type_index = type_index + 1
             !
             select case( receiver%rx_type )
                 !

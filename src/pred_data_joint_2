@@ -1,0 +1,21 @@
+ # Synthetic 3D MT data written by ModEM-OO
+ #   Period(s) Code GG_Lat GG_Lon X(m) Y(m) Z(m) Component Real Imag Error
+ >  Full_Impedance
+>  exp(+i\omega t)
+>  [mV/km]/[nT]
+>     0.00
+>     0.000    0.000
+>       2       2
+1.000000E+03 Line_1_1           0.000          0.000      -2000.000      -6000.000          0.000 ZXX    -9.922002E-03   -1.386165E-02    1.000000E+13
+1.000000E+03 Line_1_1           0.000          0.000      -2000.000      -6000.000          0.000 ZXY     1.842202E-01    2.130861E-01    1.000000E+13
+1.000000E+03 Line_1_1           0.000          0.000      -2000.000      -6000.000          0.000 ZYX    -1.244337E-01   -1.693920E-01    1.000000E+13
+1.000000E+03 Line_1_1           0.000          0.000      -2000.000      -6000.000          0.000 ZYY     1.528590E-02    1.764715E-02    1.000000E+13
+ # Synthetic 3D CSEM data written by ModEM-OO
+ #   Tx_Dipole Tx_Period(s) Tx_Moment(Am) Tx_Azi Tx_Dip Tx_X(m) Tx_Y(m) Tx_Z(m) Code X(m) Y(m) Z(m) Component Real Imag Error
+ >  Ey_Field
+>  exp(+i\omega t)
+>  [V/m]
+>     0.00
+>     0.000    0.000
+>       2       2
+Electric 1.000000E-01 1.000000E+00   90.000    0.000       0.000   -6000.000       5.000             Line_1_1   -2000.000   -6000.000       0.000 Ey_Field  -6.875920E-10   4.773985E-10   1.000000E+13
