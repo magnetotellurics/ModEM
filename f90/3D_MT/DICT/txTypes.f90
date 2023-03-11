@@ -26,7 +26,7 @@ module txTypes
 
   integer, parameter, public   :: MT = 1
   integer, parameter, public   :: CSEM = 2
-  integer, parameter, public   :: SFF = 4
+  integer, parameter, public   :: SFF = 3
   integer, parameter, public   :: TIDE = 4
   integer, parameter, public   :: GLOBAL = 5
 
