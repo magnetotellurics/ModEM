@@ -68,26 +68,26 @@ contains
                     !
                     if( index( line_text, "inversion_type" ) > 0 ) then
                         self%inversion_type = trim( args(2) )
-                    else if( index( line_text, "max_inv_iters" ) > 0 ) then
+                    elseif( index( line_text, "max_inv_iters" ) > 0 ) then
                         self%max_inv_iters = trim( args(2) )
-                    else if( index( line_text, "max_grad_iters" ) > 0 ) then
+                    elseif( index( line_text, "max_grad_iters" ) > 0 ) then
                         self%max_grad_iters = trim( args(2) )
-                    else if( index( line_text, "error_tol" ) > 0 ) then
+                    elseif( index( line_text, "error_tol" ) > 0 ) then
                         self%error_tol = trim( args(2) )
-                    else if( index( line_text, "rms_tol" ) > 0 ) then
+                    elseif( index( line_text, "rms_tol" ) > 0 ) then
                         self%rms_tol = trim( args(2) )
-                    else if( index( line_text, "lambda" ) > 0 ) then
+                    elseif( index( line_text, "lambda" ) > 0 ) then
                         self%lambda = trim( args(2) )
-                    else if( index( line_text, "lambda_tol" ) > 0 ) then
+                    elseif( index( line_text, "lambda_tol" ) > 0 ) then
                         self%lambda_tol = trim( args(2) )
-                    else if( index( line_text, "lambda_div" ) > 0 ) then
+                    elseif( index( line_text, "lambda_div" ) > 0 ) then
                         self%lambda_div = trim( args(2) )
-                    else if( index( line_text, "startdm" ) > 0 ) then
+                    elseif( index( line_text, "startdm" ) > 0 ) then
                         self%startdm = trim( args(2) )
-                    else if( index( line_text, "fdiffTol" ) > 0 ) then
+                    elseif( index( line_text, "fdiffTol" ) > 0 ) then
                         self%fdiffTol = trim( args(2) )
                     else
-                        write( *, * ) "Error: Unsupported Inversion parameter: ["//trim(line_text)//"]"
+                        write( *, * ) "     "//achar(27)//"[31m# Error:"//achar(27)//"[0m Unsupported Inversion parameter: ["//trim(line_text)//"]"
                         stop 
                     endif
                     !

@@ -70,32 +70,32 @@ contains
                     !
                     if( index( line_text, "grid_reader" ) > 0 ) then
                         self%grid_reader_type = trim( args(2) )
-                    else if( index( line_text, "grid_type" ) > 0 ) then
+                    elseif( index( line_text, "grid_type" ) > 0 ) then
                         self%grid_type = trim( args(2) )
-                    else if( index( line_text, "forward_solver" ) > 0 ) then
+                    elseif( index( line_text, "forward_solver" ) > 0 ) then
                         self%forward_solver_type = trim( args(2) )
-                    else if( index( line_text, "source" ) > 0 ) then
+                    elseif( index( line_text, "source" ) > 0 ) then
                         self%source_type = trim( args(2) )
-                    else if( index( line_text, "model_method" ) > 0 ) then
+                    elseif( index( line_text, "model_method" ) > 0 ) then
                         self%model_method = trim( args(2) )
-                    else if( index( line_text, "model_n_air_layer" ) > 0 ) then
+                    elseif( index( line_text, "model_n_air_layer" ) > 0 ) then
                         self%model_n_air_layer = trim( args(2) )
-                    else if( index( line_text, "model_max_height" ) > 0 ) then
+                    elseif( index( line_text, "model_max_height" ) > 0 ) then
                         self%model_max_height = trim( args(2) )
-                    else if( index( line_text, "QMR_iters" ) > 0 ) then
+                    elseif( index( line_text, "QMR_iters" ) > 0 ) then
                         self%QMR_iters = trim( args(2) )
-                    else if( index( line_text, "BCG_iters" ) > 0 ) then
+                    elseif( index( line_text, "BCG_iters" ) > 0 ) then
                         self%BCG_iters = trim( args(2) )
-                    else if( index( line_text, "max_divcor_calls" ) > 0 ) then
+                    elseif( index( line_text, "max_divcor_calls" ) > 0 ) then
                         self%max_divcor_calls = trim( args(2) )
-                    else if( index( line_text, "max_divcor_iters" ) > 0 ) then
+                    elseif( index( line_text, "max_divcor_iters" ) > 0 ) then
                         self%max_divcor_iters = trim( args(2) )
-                    else if( index( line_text, "tolerance_divcor" ) > 0 ) then
+                    elseif( index( line_text, "tolerance_divcor" ) > 0 ) then
                         self%tolerance_divcor = trim( args(2) )
-                    else if( index( line_text, "tolerance_qmr" ) > 0 ) then
+                    elseif( index( line_text, "tolerance_qmr" ) > 0 ) then
                         self%tolerance_qmr = trim( args(2) )
                     else
-                        write( *, * ) "Error: Unsupported Forward Modeling parameter: ["//trim(line_text)//"]"
+                        write( *, * ) "     "//achar(27)//"[31m# Error:"//achar(27)//"[0m Unsupported Forward Modeling parameter: ["//trim(line_text)//"]"
                         stop 
                     endif
                     !

@@ -328,13 +328,13 @@ contains
                         !
                    enddo
                    !
-                else if( trim( get_1D_from ) =="At_Tx_Position" ) then
+                elseif( trim( get_1D_from ) =="At_Tx_Position" ) then
                     !
                     do k = nzAir+1,nlay1D
                         sig1D(k)=sigma_cell%v(ixTx,iyTx,k-nzAir)
                     enddo
                     !
-                else if( trim( get_1d_from ) == "Geometric_mean_around_Tx" ) then
+                elseif( trim( get_1d_from ) == "Geometric_mean_around_Tx" ) then
                     do k = nzAir+1,nlay1D
                         !
                         wt = R_ZERO
@@ -354,7 +354,7 @@ contains
                         !
                     enddo
                     !
-                else if( trim( get_1d_from ) == "Full_Geometric_mean" ) then
+                elseif( trim( get_1d_from ) == "Full_Geometric_mean" ) then
                     !
                     wt = R_ZERO
                     temp_sigma_value=R_ZERO
@@ -380,7 +380,7 @@ contains
                         !
                     enddo
                     !
-                else if( trim( get_1d_from ) == "Fixed_Value" ) then
+                elseif( trim( get_1d_from ) == "Fixed_Value" ) then
                     !
                     temp_sigma_value = sigma_cell%v( ixTx, iyTx, k-nzAir ) !the value exactly below the Tx
                     !

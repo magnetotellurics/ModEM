@@ -119,7 +119,7 @@ contains
             self%NdY = (/self%nx + 1, self%ny, self%nz + 1/)
             self%NdZ = (/self%nx + 1, self%ny + 1, self%nz/)
             !
-        else if(self%grid_type == FACE) then
+        elseif(self%grid_type == FACE) then
             allocate(self%x(self%nx + 1, self%ny, self%nz), STAT = status)
             self%is_allocated = status.EQ.0
             !
@@ -519,7 +519,7 @@ contains
             self%y = R_ZERO
             self%z = R_ZERO
             !
-        else if( self%store_state .EQ. singleton ) then
+        elseif( self%store_state .EQ. singleton ) then
             !
             self%sv = R_ZERO
             !
@@ -737,7 +737,7 @@ contains
                         self%y = self%y + rhs%y
                         self%z = self%z + rhs%z
                         !
-                    else if( rhs%store_state .EQ. singleton ) then
+                    elseif( rhs%store_state .EQ. singleton ) then
                         !
                         self%sv = self%sv + rhs%sv
                         !
@@ -779,7 +779,7 @@ contains
                         self%y = c1 * self%y + c2 * rhs%y
                         self%z = c1 * self%z + c2 * rhs%z
                         !
-                    else if( rhs%store_state .EQ. singleton ) then
+                    elseif( rhs%store_state .EQ. singleton ) then
                         !
                         self%sv = c1 * self%sv + c2 * rhs%sv
                         !
@@ -810,7 +810,7 @@ contains
             self%y = self%y - cvalue
             self%z = self%z - cvalue
             !
-        else if( self%store_state .EQ. singleton ) then
+        elseif( self%store_state .EQ. singleton ) then
             !
             self%sv = self%sv - cvalue
             !
@@ -842,7 +842,7 @@ contains
                         self%y = self%y - rhs%y
                         self%z = self%z - rhs%z
                         !
-                    else if( rhs%store_state .EQ. singleton ) then
+                    elseif( rhs%store_state .EQ. singleton ) then
                         !
                         self%sv = self%sv - rhs%sv
                         !
@@ -875,7 +875,7 @@ contains
             self%y = self%y * rvalue
             self%z = self%z * rvalue
             !
-        else if( self%store_state .EQ. singleton ) then
+        elseif( self%store_state .EQ. singleton ) then
             !
             self%sv = self%sv * rvalue
             !
@@ -899,7 +899,7 @@ contains
             self%y = self%y * cvalue
             self%z = self%z * cvalue
             !
-        else if( self%store_state .EQ. singleton ) then
+        elseif( self%store_state .EQ. singleton ) then
             !
             self%sv = self%sv * cvalue
             !
@@ -931,7 +931,7 @@ contains
                         self%y = self%y * rhs%y
                         self%z = self%z * rhs%z
                         !
-                    else if( rhs%store_state .EQ. singleton ) then
+                    elseif( rhs%store_state .EQ. singleton ) then
                         !
                         self%sv = self%sv * rhs%sv
                         !
@@ -947,7 +947,7 @@ contains
                         self%y = self%y * rhs%v
                         self%z = self%z * rhs%v
                         !
-                    else if( rhs%store_state .EQ. singleton ) then
+                    elseif( rhs%store_state .EQ. singleton ) then
                         !
                         self%sv = self%sv * rhs%sv
                         !
@@ -963,7 +963,7 @@ contains
                         self%y = self%y * rhs%v
                         self%z = self%z * rhs%v
                         !
-                    else if( rhs%store_state .EQ. singleton ) then
+                    elseif( rhs%store_state .EQ. singleton ) then
                         !
                         self%sv = self%sv * rhs%sv
                         !
@@ -1013,7 +1013,7 @@ contains
                                 diag_mult%y = self%y * rhs%y
                                 diag_mult%z = self%z * rhs%z
                                 !
-                            else if( rhs%store_state .EQ. singleton ) then
+                            elseif( rhs%store_state .EQ. singleton ) then
                                 !
                                 diag_mult%sv = self%sv * rhs%sv
                                 !
@@ -1060,7 +1060,7 @@ contains
                         self%y = self%y + cvalue * rhs%y
                         self%z = self%z + cvalue * rhs%z
                         !
-                    else if( rhs%store_state .EQ. singleton ) then
+                    elseif( rhs%store_state .EQ. singleton ) then
                         !
                         self%sv = self%sv + cvalue * rhs%sv
                         !
@@ -1112,7 +1112,7 @@ contains
                         cvalue = cvalue + cmplx( sum( aux_vec%y * rhs%y ), 0.0, kind=prec )
                         cvalue = cvalue + cmplx( sum( aux_vec%z * rhs%z ), 0.0, kind=prec )
                         !
-                    else if( rhs%store_state .EQ. singleton ) then
+                    elseif( rhs%store_state .EQ. singleton ) then
                         !
                         cvalue = cvalue + cmplx( sum( aux_vec%sv * rhs%sv ), 0.0, kind=prec )
                         !
@@ -1145,7 +1145,7 @@ contains
             self%y = self%y / cvalue
             self%z = self%z / cvalue
             !
-        else if( self%store_state .EQ. singleton ) then
+        elseif( self%store_state .EQ. singleton ) then
             !
             self%sv = self%sv / cvalue
             !
@@ -1177,7 +1177,7 @@ contains
                         self%y = self%y / rhs%y
                         self%z = self%z / rhs%z
                         !
-                    else if( rhs%store_state .EQ. singleton ) then
+                    elseif( rhs%store_state .EQ. singleton ) then
                         !
                         self%sv = self%sv / rhs%sv
                         !
@@ -1193,7 +1193,7 @@ contains
                         self%y = self%y / rhs%v
                         self%z = self%z / rhs%v
                         !
-                    else if( rhs%store_state .EQ. singleton ) then
+                    elseif( rhs%store_state .EQ. singleton ) then
                         !
                         self%sv = self%sv / rhs%sv
                         !
@@ -1209,7 +1209,7 @@ contains
                         self%y = self%y / rhs%v
                         self%z = self%z / rhs%v
                         !
-                    else if( rhs%store_state .EQ. singleton ) then
+                    elseif( rhs%store_state .EQ. singleton ) then
                         !
                         self%sv = self%sv / rhs%sv
                         !
@@ -1436,7 +1436,7 @@ contains
                     reshape( cmplx( self%y, 0.0, kind=prec ), (/self%Nxyz(2), 1/) ), &
                     reshape( cmplx( self%z, 0.0, kind=prec ), (/self%Nxyz(3), 1/) )/)
             !
-        else if( self%store_state .EQ. singleton ) then
+        elseif( self%store_state .EQ. singleton ) then
             !
             array = self%sv
             !
@@ -1473,7 +1473,7 @@ contains
             !
             self%z = reshape( real( array(i1:i2), kind=prec ), self%NdZ )
             !
-        else if( self%store_state .EQ. singleton ) then
+        elseif( self%store_state .EQ. singleton ) then
             !
             self%sv = array
             !
@@ -1517,7 +1517,7 @@ contains
                     allocate( self%y( self%nx + 1, self%ny, self%nz + 1 ) )
                     allocate( self%z( self%nx + 1, self%ny + 1, self%nz ) )
                     !
-                else if( self%grid_type == FACE ) then
+                elseif( self%grid_type == FACE ) then
                     !
                     allocate( self%x( self%nx + 1, self%ny, self%nz ) )
                     allocate( self%y( self%nx, self%ny + 1, self%nz ) )
@@ -1544,7 +1544,7 @@ contains
                 self%store_state = compound
                 !
             case default
-                write( *, * ) "Error: switchStoreStateRScalar3D_SG > Unknown store_state :[", self%store_state, "]"
+                write( *, * ) "     "//achar(27)//"[31m# Error:"//achar(27)//"[0m switchStoreStateRScalar3D_SG > Unknown store_state :[", self%store_state, "]"
                 stop
             !
         end select
@@ -1584,7 +1584,7 @@ contains
                     self%y = rhs%y
                     self%z = rhs%z
                     !
-                else if( rhs%store_state .EQ. singleton ) then
+                elseif( rhs%store_state .EQ. singleton ) then
                     !
                     self%sv = rhs%sv
                     !
@@ -1628,12 +1628,12 @@ contains
             !> Check that the file is unformatted if binary, formatted if ascii.
             if((index(isbinary, "yes") > 0 .OR.index(isbinary, "YES") > 0) &
                   .AND.   .NOT. binary ) then
-                write( *, * ) "Error: readRVector3D_SG > Unable to readRVector3D_SG vector from unformatted file. ", &
+                write( *, * ) "     "//achar(27)//"[31m# Error:"//achar(27)//"[0m readRVector3D_SG > Unable to readRVector3D_SG vector from unformatted file. ", &
                         trim(fname), "."
                 stop
-            else if((index(isbinary, "no") > 0 .OR.index(isbinary, "NO") > 0) &
+            elseif((index(isbinary, "no") > 0 .OR.index(isbinary, "NO") > 0) &
                   .AND.binary) then
-                write( *, * ) "Error: readRVector3D_SG > Unable to readRVector3D_SG vector from formatted file ", &
+                write( *, * ) "     "//achar(27)//"[31m# Error:"//achar(27)//"[0m readRVector3D_SG > Unable to readRVector3D_SG vector from formatted file ", &
                         trim(fname), "."
                 stop
             endif
@@ -1641,16 +1641,16 @@ contains
             read(funit) Nx, Ny, Nz, grid_type
             !
             if(  .NOT. self%is_allocated) then
-                write( *, * ) "Error: readRVector3D_SG > Vector must be allocated before readRVector3D_SGing from ", &
+                write( *, * ) "     "//achar(27)//"[31m# Error:"//achar(27)//"[0m readRVector3D_SG > Vector must be allocated before readRVector3D_SGing from ", &
                         trim(fname), "."
                 stop
-            else if(self%grid_type.NE.grid_type) then
-                write( *, * ) "Error: readRVector3D_SG > Vector must be of type ", grid_type, &
+            elseif(self%grid_type.NE.grid_type) then
+                write( *, * ) "     "//achar(27)//"[31m# Error:"//achar(27)//"[0m readRVector3D_SG > Vector must be of type ", grid_type, &
                         &            "           before readRVector3D_SGing from ", trim (fname), "."
                 stop
-            else if((self%nx.NE.Nx).OR. &
+            elseif((self%nx.NE.Nx).OR. &
                   (self%ny.NE.Ny).OR.(self%nz.NE.Nz)) then
-                write( *, * ) "Error: readRVector3D_SG > Wrong size of vector on input from ", trim (fname), "."
+                write( *, * ) "     "//achar(27)//"[31m# Error:"//achar(27)//"[0m readRVector3D_SG > Wrong size of vector on input from ", trim (fname), "."
                 stop
             endif
             !
@@ -1694,12 +1694,12 @@ contains
             !> Check that the file is unformatted if binary, formatted if ascii.
             if((index(isbinary, "yes") > 0 .OR. index(isbinary, "YES") > 0) &
                   .AND.   .NOT. binary) then
-                write( *, * ) "Error: writeRVector3D_SG > Unable to writeRVector3D_SG vector to unformatted file. ", &
+                write( *, * ) "     "//achar(27)//"[31m# Error:"//achar(27)//"[0m writeRVector3D_SG > Unable to writeRVector3D_SG vector to unformatted file. ", &
                         trim(fname), "."
                 stop
-            else if((index(isbinary,"no") > 0.OR.index(isbinary,"NO") > 0) &
+            elseif((index(isbinary,"no") > 0.OR.index(isbinary,"NO") > 0) &
                   .AND.binary) then
-                write( *, * ) "Error: writeRVector3D_SG > Unable to writeRVector3D_SG vector to formatted file. ", &
+                write( *, * ) "     "//achar(27)//"[31m# Error:"//achar(27)//"[0m writeRVector3D_SG > Unable to writeRVector3D_SG vector to formatted file. ", &
                         trim(fname), "."
                 stop
             endif

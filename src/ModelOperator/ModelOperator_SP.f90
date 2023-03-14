@@ -416,7 +416,7 @@ contains
                 call inH%div( self%Metric%FaceArea )
                 !
                 if(.NOT.outE%is_allocated) then
-                     write( *, * ) "Error:  multCurlTModelOperatorSP > output vector not allocated"
+                     write( *, * ) "     "//achar(27)//"[31m# Error:"//achar(27)//"[0m  multCurlTModelOperatorSP > output vector not allocated"
                 endif
                 !
                 select type( outE )

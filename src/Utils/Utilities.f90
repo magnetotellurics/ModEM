@@ -306,9 +306,9 @@ module Utilities
         do 10 j=1, len(str2)
         !
         same= str1(i+j-1:i+j-1) .EQ. str2(j:j) .OR.  &
-        "A".le.str2(j:j) .and. str2(j:j).le."Z" .and.  &
+        "A".le.str2(j:j) .AND. str2(j:j).le."Z" .AND.  &
         ichar(str1(i+j-1:i+j-1)) .EQ. ichar(str2(j:j))+capdif .OR.  &
-        "a".le.str2(j:j) .and. str2(j:j).le."z" .and.  &
+        "a".le.str2(j:j) .AND. str2(j:j).le."z" .AND.  &
         ichar(str1(i+j-1:i+j-1)) .EQ. ichar(str2(j:j)) - capdif
         !
         if( .NOT.same) go to 20
@@ -630,7 +630,7 @@ module Utilities
         if( .NOT.present(i0) ) then
             first = 1
             last = size(a)
-        else if(.NOT.present(i1)) then
+        elseif(.NOT.present(i1)) then
             first = i0
             last = size(a)
         else 
@@ -640,7 +640,7 @@ module Utilities
         !
         if( first .GT. last ) then 
             stop "Error: QSort > first index is larger than the last in QSort!"
-        else if(first .EQ. last) then !only one element, no need to sort now
+        elseif(first .EQ. last) then !only one element, no need to sort now
             !     write(6, *) "no need to sort, only one element left"
             return
         endif

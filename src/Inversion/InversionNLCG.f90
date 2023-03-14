@@ -351,7 +351,7 @@ contains
                 !> g_{i+1}.dot.(g_{i+1}+beta*h_i) > 0 must hold. Alternatively, books
                 !> say we can take beta > 0 (didn"t work as well)
                 !> if((beta.lt.R_ZERO).or.(g_dot_g + beta*g_dot_h .le. R_ZERO)&
-                !>    .and.(nCG .ge. self%nCGmax)) then  !PR+
+                !>    .AND.(nCG .ge. self%nCGmax)) then  !PR+
                 if( g_dot_g + beta * g_dot_h .LE. R_ZERO .AND. nCG .GE. self%nCGmax ) then  !PR
                     !
                     ! restart
@@ -800,7 +800,7 @@ contains
         niter = niter + 1
         !
         if( f_1 - f_0 >= R_LARGE ) then
-            write( *, * ) "Error: Try a smaller starting r_value of alpha."
+            write( *, * ) "     "//achar(27)//"[31m# Error:"//achar(27)//"[0m Try a smaller starting r_value of alpha."
             write( *, * ) "Exiting..."
             stop
         endif

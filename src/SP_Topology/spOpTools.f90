@@ -295,10 +295,10 @@ contains
         type( spMatCSR_Real ), intent( in ) :: A
         type( spMatCSR_Real ), intent( in ) :: B
         sameSizeCSR_Real = .FALSE.
-        if(A%allocated .and. B%allocated .and.     &
-        A%nRow.gt.0 .and. B%nRow.gt. 0) then 
-        sameSizeCSR_Real = A%nRow.eq.B%nRow .and.  &
-        A%nCol.eq.B%nCol .and.                 &
+        if(A%allocated .AND. B%allocated .AND.     &
+        A%nRow.gt.0 .AND. B%nRow.gt. 0) then 
+        sameSizeCSR_Real = A%nRow.eq.B%nRow .AND.  &
+        A%nCol.eq.B%nCol .AND.                 &
         A%row(A%nRow+1).eq.B%row(B%nRow+1)
         endif
         !
@@ -312,10 +312,10 @@ contains
         type( spMatCSR_Cmplx ), intent( in ) :: A
         type( spMatCSR_Cmplx ), intent( in ) :: B
         sameSizeCSR_Cmplx = .FALSE.
-        if(A%allocated .and. B%allocated .and.     &
-        A%nRow.gt.0 .and. B%nRow.gt. 0) then 
-        sameSizeCSR_Cmplx = A%nRow.eq.B%nRow .and.  &
-        A%nCol.eq.B%nCol .and.                 &
+        if(A%allocated .AND. B%allocated .AND.     &
+        A%nRow.gt.0 .AND. B%nRow.gt. 0) then 
+        sameSizeCSR_Cmplx = A%nRow.eq.B%nRow .AND.  &
+        A%nCol.eq.B%nCol .AND.                 &
         A%row(A%nRow+1).eq.B%row(B%nRow+1)
         endif
         !
@@ -596,7 +596,7 @@ contains
         do k = B%row(jj), B%row(jj+1)-1 
         new = .TRUE.
         do l = 1, nCol
-        new = new.and.(colT(l).NE.B%col(k))
+        new = new.AND.(colT(l).NE.B%col(k))
         enddo
         if(new) then
         nCol = nCol+1
@@ -719,7 +719,7 @@ contains
         do k = B%row(jj), B%row(jj+1)-1 
         new = .TRUE.
         do l = 1, nCol
-        new = new.and.(colT(l).NE.B%col(k))
+        new = new.AND.(colT(l).NE.B%col(k))
         enddo
         if(new) then
         nCol = nCol+1
@@ -1634,8 +1634,8 @@ contains
         B%upper = .TRUE.
         B%lower = .TRUE.
         do i = 1, nBlks
-        B%upper = B%upper .and. A(i)%upper
-        B%lower = B%lower .and. A(i)%lower
+        B%upper = B%upper .AND. A(i)%upper
+        B%lower = B%lower .AND. A(i)%lower
         i2 = i1 + A(i)%nRow-1
         j2 = j1 + A(i)%row(A(i)%nRow+1)-2
         B%row(i1:i2) = A(i)%row(1:A(i)%nrow)+j1-1  
@@ -1676,8 +1676,8 @@ contains
         B%upper = .TRUE.
         B%lower = .TRUE.
         do i = 1, nBlks
-        B%upper = B%upper .and. A(i)%upper
-        B%lower = B%lower .and. A(i)%lower
+        B%upper = B%upper .AND. A(i)%upper
+        B%lower = B%lower .AND. A(i)%lower
         i2 = i1 + A(i)%nRow-1 
         j2 = j1 + A(i)%row(A(i)%nRow+1)-2
         B%row(i1:i2) = A(i)%row(1:A(i)%nrow)+j1-1  
@@ -1736,7 +1736,7 @@ contains
         colT =(/(j, j=1, A%nCol) /)
         if(A%nrow .LT. np) then
             stop "Error: splitRMAT > number of process is larger than number of rows!"
-        else if(np.eq.1) then
+        elseif(np.eq.1) then
             !write( *, * ) "only one process, returning the original Matrix"
             m = A%nRow
             n = A%nCol
@@ -1801,7 +1801,7 @@ contains
         colT =(/(j, j=1, A%nCol) /)
         if(A%nrow .LT. np) then
             stop "Error: splitCMAT > number of processes is larger than number of rows!"
-        else if(np.eq.1) then
+        elseif(np.eq.1) then
             !write( *, * ) "only one process, returning the original Matrix"
             m = A%nRow
             n = A%nCol
@@ -2049,7 +2049,7 @@ contains
         !   this index should correspond to positions where
         !   columns and values are stored in L
         ii = j - A%row(i) + L%row(i)
-        else if(i.LT.A%col(j)) then
+        elseif(i.LT.A%col(j)) then
         !    these are indicies into A matrix storage
         nij = nij+1
         ij(nij) = j
@@ -2120,7 +2120,7 @@ contains
         do j = A%row(i), A%row(i+1)-1
         if(A%col(j).eq.i) then
         d(i) = d(i) + A%val(j)
-        else if(A%col(j).LT.i) then
+        elseif(A%col(j).LT.i) then
         d(i) = d(i) - A%val(j)*A%val(j)*d(A%col(j))
         endif
         enddo
@@ -2169,7 +2169,7 @@ contains
         do j = A%row(i), A%row(i+1)-1
         if(A%col(j).eq.i) then
         d(i) = d(i) + A%val(j)
-        else if(A%col(j).LT.i) then
+        elseif(A%col(j).LT.i) then
         d(i) = d(i) - A%val(j)*A%val(j)*d(A%col(j))
         endif
         enddo
@@ -2220,7 +2220,7 @@ contains
         do j = L%row(i), L%row(i+1)-1 !loop through columns
         if(L%col(j).eq.i) then ! diagonal
         d(i) = d(i) + L%val(j) 
-        else if(L%col(j).LT.i) then ! take the L and U side
+        elseif(L%col(j).LT.i) then ! take the L and U side
         d(i) = d(i) - L%val(j)*UT%val(j)*d(L%col(j))
         endif
         enddo
@@ -2286,10 +2286,10 @@ contains
                 if(Atmp%col(j).eq.i) then !diagonal
                     d(i) = Atmp%val(j) ! store previous diagonal elements
                     exit ! exit as we reached the last element in L
-                else if(Atmp%col(j).LT.i) then
+                elseif(Atmp%col(j).LT.i) then
                     !
                     if(d(Atmp%col(j)).eq.C_ZERO) then
-                        write( *, * ) "Error: ilu0_Cmplx > zero pivoting in ILU0 "
+                        write( *, * ) "     "//achar(27)//"[31m# Error:"//achar(27)//"[0m ilu0_Cmplx > zero pivoting in ILU0 "
                         write( *, * ) "in col: ", Atmp%col(Atmp%row(i):Atmp%row(i+1)-1)
                         write( *, * ) "in row: ", Atmp%col(j)
                         stop
@@ -2360,7 +2360,7 @@ contains
         if(Atmp%col(j).eq.i) then !diagonal
         d(i) = Atmp%val(j) ! store previous diagonal elements
         exit ! exit as we reached the last element in L
-        else if(Atmp%col(j).LT.i) then
+        elseif(Atmp%col(j).LT.i) then
         if(d(Atmp%col(j)).eq.0.0) then
         stop "Error: ilu0_Real > zero pivoting in ILU0 "
         endif 
@@ -2414,7 +2414,7 @@ contains
         real(kind=prec) :: test, droptol, temp
 
         !   test for size consistency
-        if((A%nCol.NE.B%nCol).and.(A%nRow.NE.B%nRow)) then
+        if((A%nCol.NE.B%nCol).AND.(A%nRow.NE.B%nRow)) then
         stop "Error: RMATplusRMAT > matrix sizes incompatible"
         endif
         !    tolerance for dropping small entries derived as sums

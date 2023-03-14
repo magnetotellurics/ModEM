@@ -323,7 +323,7 @@ contains
             case( 12 )
                 str_receiver_type = "Full_Vertical_Magnetic"
             case default
-                write( *, * ) "Error: Unknown receiver type :[", int_receiver_type, "]"
+                write( *, * ) "     "//achar(27)//"[31m# Error:"//achar(27)//"[0m Unknown receiver type :[", int_receiver_type, "]"
                 stop "Receiver.f08: getStringReceiverType()"
             !
         end select
@@ -366,7 +366,7 @@ contains
             case( "Full_Vertical_Magnetic" )
                 int_receiver_type = 12
             case default
-                write( *, * ) "Error: Unknown receiver type :[", str_receiver_type, "]"
+                write( *, * ) "     "//achar(27)//"[31m# Error:"//achar(27)//"[0m Unknown receiver type :[", str_receiver_type, "]"
                 stop "Receiver.f08: getIntReceiverType()"
             !
         end select
@@ -393,20 +393,20 @@ contains
         if( index( oldUnits, "[V/m]/[T]" ) > 0 ) then
             ! SI units for E/B
             factor1 = ONE
-        else if( index( oldUnits, "[mV/km]/[nT]" ) > 0 ) then
+        elseif( index( oldUnits, "[mV/km]/[nT]" ) > 0 ) then
             ! practical units for E/B
             factor1 = ONE * 1000.0
-        else if( index( oldUnits, "[V/m]/[A/m]" ) > 0 .OR. index( oldUnits, "Ohm" ) > 0 ) then
+        elseif( index( oldUnits, "[V/m]/[A/m]" ) > 0 .OR. index( oldUnits, "Ohm" ) > 0 ) then
             ! SI units for E/H
             factor1 = ONE * 1000.0 * 10000.0 / ( 4 * PI ) ! approx. 796000.0
-        else if( index( oldUnits, "[V/m]" ) > 0 ) then
+        elseif( index( oldUnits, "[V/m]" ) > 0 ) then
             ! SI units for E
             factor1 = ONE
-        else if( index( oldUnits, "[T]" ) > 0 ) then
+        elseif( index( oldUnits, "[T]" ) > 0 ) then
             ! SI units for B
             factor1 = ONE
         else
-            write( *, * ) "Error: Unknown input units in ImpUnits: [", trim( oldUnits ), "]"
+            write( *, * ) "     "//achar(27)//"[31m# Error:"//achar(27)//"[0m Unknown input units in ImpUnits: [", trim( oldUnits ), "]"
             stop
         endif
         !
@@ -414,20 +414,20 @@ contains
         if( index( newUnits, "[V/m]/[T]" ) > 0 ) then
             ! SI units for E/B
             factor2 = ONE
-        else if( index( newUnits, "[mV/km]/[nT]" ) > 0 ) then
+        elseif( index( newUnits, "[mV/km]/[nT]" ) > 0 ) then
             ! practical units for E/B
             factor2 = ONE / 1000.0
-        else if( index( newUnits, "[V/m]/[A/m]") > 0 .OR. index( newUnits, "Ohm" ) > 0 ) then
+        elseif( index( newUnits, "[V/m]/[A/m]") > 0 .OR. index( newUnits, "Ohm" ) > 0 ) then
             ! SI units for E/H
             factor2 = ONE / ( 1000.0 * 10000.0 / ( 4 * PI ) )
-        else if(index( newUnits, "[V/m]") > 0 ) then
+        elseif(index( newUnits, "[V/m]") > 0 ) then
             ! SI units for E
             factor2 = ONE
-        else if( index( newUnits, "[T]") > 0 ) then
+        elseif( index( newUnits, "[T]") > 0 ) then
             ! SI units for B
             factor2 = ONE
         else
-            write( *, * ) "Error: Unknown output units in ImpUnits: [", trim( newUnits ), "]"
+            write( *, * ) "     "//achar(27)//"[31m# Error:"//achar(27)//"[0m Unknown output units in ImpUnits: [", trim( newUnits ), "]"
             stop
         endif
         !

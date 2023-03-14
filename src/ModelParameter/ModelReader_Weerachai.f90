@@ -75,7 +75,7 @@ contains
             !> Weerachai"s linear resistivity format
             if(index(someChar, "LOGE") > 0) then
                  paramType = LOGE
-            else if(index(someChar, "LOG10") > 0) then
+            elseif(index(someChar, "LOG10") > 0) then
                  paramType = LOG_10
             else
                  paramType = LINEAR
@@ -104,7 +104,7 @@ contains
                     if((index(paramType, "LOGE") > 0) .OR. &
                     (index(paramType, "LOG10") > 0)) then
                         ccond%v = -rho
-                    else if(index(paramType, "LINEAR") > 0) then
+                    elseif(index(paramType, "LINEAR") > 0) then
                         ccond%v = ONE/rho
                     endif
                     !

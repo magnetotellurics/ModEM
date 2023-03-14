@@ -73,6 +73,10 @@ module cVectorSparse3D_SG
             procedure, public :: fromFullVector => fromFullVectorCVectorSparse3D_SG
             procedure, public :: getFullVector => getFullVectorCVectorSparse3D_SG
             !
+            procedure, public :: reall => reallocateCVectorSparse3D_SG
+            !
+            procedure, private :: deallocateCVectorSparse3D_SG
+            !
     end type cVectorSparse3D_SG_t
     !
     interface cVectorSparse3D_SG_t
@@ -83,19 +87,50 @@ contains
     !
     !> No subroutine briefing
     !
-    function CVectorSparse3D_SG_ctor() result ( self )
+    function CVectorSparse3D_SG_ctor( nCoeff, grid_type ) result( self )
         implicit none
+        !
+        integer, intent( in ) :: nCoeff
+        character( len=4 ), intent( in ) :: grid_type
         !
         type( cVectorSparse3D_SG_t ) :: self
         !
+        integer                    :: status
+        !
         !write( *, * ) "Constructor CVectorSparse3D_SG"
         !
-        self%grid_type = ""
-        self%nCoeff = 0
+        call self%init
         !
-        self%is_allocated = .FALSE.
+        ! the old baggage is out of the door
+        if(self%is_allocated) then
+            deallocate(self%i, STAT = status)
+            deallocate(self%j, STAT = status)
+            deallocate(self%k, STAT = status)
+            deallocate(self%xyz, STAT = status)
+            deallocate(self%c, STAT = status)
+            self%grid_type = ''
+            self%is_allocated = .FALSE.
+        endif
         !
-        self%grid => null()
+        self%is_allocated = .TRUE.
+        allocate(self%i(nCoeff),STAT=status)
+        self%is_allocated = self%is_allocated .AND. (status .eq. 0)
+        allocate(self%j(nCoeff),STAT=status)
+        self%is_allocated = self%is_allocated .AND. (status .eq. 0)
+        allocate(self%k(nCoeff),STAT=status)
+        self%is_allocated = self%is_allocated .AND. (status .eq. 0)
+        allocate(self%xyz(nCoeff),STAT=status)
+        self%is_allocated = self%is_allocated .AND. (status .eq. 0)
+        allocate(self%c(nCoeff),STAT=status)
+        self%is_allocated = self%is_allocated .AND. (status .eq. 0)
+        !
+        self%nCoeff = nCoeff
+        self%i = 0
+        self%j = 0
+        self%k = 0
+        self%xyz = 0
+        self%c = C_ZERO
+        self%grid_type = grid_type
         !
     end function CVectorSparse3D_SG_ctor
     !
@@ -112,6 +147,17 @@ contains
         self%nCoeff = 0
         self%is_allocated = .FALSE.
         !
+        call self%deallocateCVectorSparse3D_SG()
+        !
+    end subroutine CVectorSparse3D_SG_dtor
+    !
+    !> No subroutine briefing
+    !
+    subroutine deallocateCVectorSparse3D_SG( self )
+        implicit none
+        !
+        class( cVectorSparse3D_SG_t ), intent( inout ) :: self
+        !
         if( allocated( self%i ) ) deallocate( self%i )
         if( allocated( self%j ) ) deallocate( self%j )
         if( allocated( self%k ) ) deallocate( self%k )
@@ -120,7 +166,7 @@ contains
         !
         if( allocated( self%c ) ) deallocate( self%c )
         !
-    end subroutine CVectorSparse3D_SG_dtor
+    end subroutine deallocateCVectorSparse3D_SG
     !
     !> No subroutine briefing
     !
@@ -221,14 +267,14 @@ contains
                             cvalue = cvalue + conjg( self%c(i) ) * rhs%x( xi, yi, zi )
                         !
                         !> dealing with y-component
-                        else if( self%xyz(i) == 2 ) then
+                        elseif( self%xyz(i) == 2 ) then
                             xi = self%i(i)
                             yi = self%j(i)
                             zi = self%k(i)
                             cvalue = cvalue + conjg( self%c(i) ) * rhs%y( xi, yi, zi )
                         !
                         !> dealing with z-component
-                        else if( self%xyz(i) == 3 ) then
+                        elseif( self%xyz(i) == 3 ) then
                             xi = self%i(i)
                             yi = self%j(i)
                             zi = self%k(i)
@@ -305,9 +351,9 @@ contains
         do ii = 1, size( self%xyz )
             if( self%xyz(ii) == 1 ) then
                 cvector%x( self%i(ii), self%j(ii), self%k(ii) ) = self%c(ii)
-            else if( self%xyz(ii) == 2 ) then
+            elseif( self%xyz(ii) == 2 ) then
                 cvector%y( self%i(ii), self%j(ii), self%k(ii) ) = self%c(ii)
-            else if( self%xyz(ii) == 3 ) then
+            elseif( self%xyz(ii) == 3 ) then
                 cvector%z( self%i(ii), self%j(ii), self%k(ii) ) = self%c(ii)
             endif
         enddo
@@ -684,7 +730,7 @@ contains
         class( cVectorSparse3D_SG_t ), intent( inout ) :: self
         class( Field_t ), intent( in ) :: rhs
         !
-        if( .NOT. rhs%is_allocated) then
+        if( .NOT. rhs%is_allocated ) then
             stop "Error: copyFromCVectorSparse3D_SG > rhs not allocated"
         endif
         !
@@ -741,6 +787,82 @@ contains
         !
     end subroutine writeCVectorSparse3D_SG
     !
+    !> Reallocates an object of type sparsevecc. The object has to already be
+    !> allocated. If allocated and shorter than nCoeff, more memory is
+    !> allocated at the end and the contents are preserved.
+    !> If allocated and longer than nCoeff, truncates to the first nCoeff values.
+    !> This is useful when we need to store the information somewhere, but do
+    !> not yet know the final length of the vector. Once it is fully read and
+    !> the number of coefficients is known, use this routine to truncate
+    !> to the correct length preserving all the values already stored.
+    !
+    subroutine reallocateCVectorSparse3D_SG( self, nCoeff )
+        implicit none
+        !
+        class( cVectorSparse3D_SG_t ), intent( inout ) :: self
+        integer, intent( in ) :: nCoeff
+        !
+        type( cVectorSparse3D_SG_t ) :: tempLC
+        integer :: n, status
+        !
+        ! the old baggage is out of the door
+        if( .NOT. self%is_allocated ) then
+            stop "Error: reallocateCVectorSparse3D_SG > Not self%is_allocated"
+        endif
+        !
+        tempLC = self
+        !
+        if( tempLC%nCoeff .EQ. nCoeff ) then
+            ! do nothing
+        else
+            call self%deallocateCVectorSparse3D_SG()
+            self%is_allocated = .true.
+            allocate(self%i(nCoeff),STAT=status)
+            self%is_allocated = self%is_allocated .AND. (status .eq. 0)
+            allocate(self%j(nCoeff),STAT=status)
+            self%is_allocated = self%is_allocated .AND. (status .eq. 0)
+            allocate(self%k(nCoeff),STAT=status)
+            self%is_allocated = self%is_allocated .AND. (status .eq. 0)
+            allocate(self%xyz(nCoeff),STAT=status)
+            self%is_allocated = self%is_allocated .AND. (status .eq. 0)
+            allocate(self%c(nCoeff),STAT=status)
+            self%is_allocated = self%is_allocated .AND. (status .eq. 0)
+            self%grid_type = tempLC%grid_type
+            self%nCoeff = nCoeff
+        endif
+        !
+        if( tempLC%nCoeff > nCoeff ) then
+            ! new vector will be shorter
+            do n = 1, nCoeff
+                self%i(n) = tempLC%i(n)
+                self%j(n) = tempLC%j(n)
+                self%k(n) = tempLC%k(n)
+                self%xyz(n) = tempLC%xyz(n)
+                self%c(n) = tempLC%c(n)
+            enddo
+            !
+        elseif( tempLC%nCoeff < nCoeff ) then
+            ! new vector will be longer; copy the old values
+            do n = 1, tempLC%nCoeff
+                self%i(n) = tempLC%i(n)
+                self%j(n) = tempLC%j(n)
+                self%k(n) = tempLC%k(n)
+                self%xyz(n) = tempLC%xyz(n)
+                self%c(n) = tempLC%c(n)
+            enddo
+            ! ... then pad with zeroes
+            do n = tempLC%nCoeff + 1, nCoeff
+                self%i(n) = 0
+                self%j(n) = 0
+                self%k(n) = 0
+                self%xyz(n) = 0
+                self%c(n) = C_ZERO
+            enddo
+            !
+        endif
+        !
+    end subroutine reallocateCVectorSparse3D_SG
+    !
     !> No subroutine briefing
     !
     subroutine printCVectorSparse3D_SG( self, io_unit, title, append )
@@ -764,9 +886,9 @@ contains
         do ii = 1, size( self%xyz )
             if( self%xyz(ii) == 1 ) then
                 write( funit, * ) "x(i,j,k):[", self%i(ii), self%j(ii), self%k(ii), "]=", self%c(ii)
-            else if( self%xyz(ii) == 2 ) then
+            elseif( self%xyz(ii) == 2 ) then
                 write( funit, * ) "y(i,j,k):[", self%i(ii), self%j(ii), self%k(ii), "]=", self%c(ii)
-            else if( self%xyz(ii) == 3 ) then
+            elseif( self%xyz(ii) == 3 ) then
                 write( funit, * ) "z(i,j,k):[", self%i(ii), self%j(ii), self%k(ii), "]=", self%c(ii)
             endif
         enddo

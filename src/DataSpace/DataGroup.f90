@@ -265,20 +265,20 @@ contains
             !
             if( abs(a) > R_ZERO .AND. abs(b) > R_ZERO ) then
                 stop "Error: linCombDataGroup: unable to add two data vectors with error bars"
-            else if( abs(a) > R_ZERO ) then
+            elseif( abs(a) > R_ZERO ) then
                 d_out%errors = a * self%errors
                 !d_out%normalized = self%normalized
-            else if( abs(b) > R_ZERO ) then
+            elseif( abs(b) > R_ZERO ) then
                 d_out%errors = b * d_in%errors
                 !d_out%normalized = d_in%normalized
             endif
             !
-        else if( self%error_bar ) then
+        elseif( self%error_bar ) then
             !
             d_out%errors = a * self%errors
             !d_out%normalized = self%normalized
             !
-        else if( d_in%error_bar ) then
+        elseif( d_in%error_bar ) then
             !
             d_out%errors = b * d_in%errors
             !d_out%normalized = d_in%normalized

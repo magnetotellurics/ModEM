@@ -95,7 +95,7 @@ contains
         !
         if( mpi_size < 2 ) then
             !
-            write( *, * ) "Error: Minimum of two processes required!"
+            write( *, * ) "     "//achar(27)//"[31m# Error:"//achar(27)//"[0m Minimum of two processes required!"
             write( *, * ) "       1 Master and 1 Worker."
             !
             call MPI_Finalize( ierr )

@@ -56,6 +56,7 @@ module CoreComponents
     character(:), allocatable :: pmodel_file_name
     character(:), allocatable :: data_file_name
     character(:), allocatable :: dsigma_file_name
+    character(:), allocatable :: cov_file_name
     character(:), allocatable :: e_solution_file_name
     character(:), allocatable :: modem_job
     !
@@ -64,6 +65,7 @@ module CoreComponents
     logical :: has_fwd_control_file
     logical :: has_inv_control_file
     logical :: has_model_file
+    logical :: has_cov_file
     logical :: has_pmodel_file
     logical :: has_data_file
     logical :: has_e_solution_file
@@ -186,7 +188,7 @@ contains
             !
         else
             !
-            write( *, * ) "Error: Number of Rx mismatched from Header :[", n_rx, " and ", data_file_standard%n_rx, "]"
+            write( *, * ) "     "//achar(27)//"[31m# Error:"//achar(27)//"[0m Number of Rx mismatched from Header :[", n_rx, " and ", data_file_standard%n_rx, "]"
             stop
             !
         endif
@@ -201,7 +203,7 @@ contains
             !
         else
              !
-             write( *, * ) "Error: Number of Tx mismatched from Header :[", n_tx, " and ", data_file_standard%n_tx, "]"
+             write( *, * ) "     "//achar(27)//"[31m# Error:"//achar(27)//"[0m Number of Tx mismatched from Header :[", n_tx, " and ", data_file_standard%n_tx, "]"
              stop
              !
         endif
@@ -325,6 +327,15 @@ contains
                          !
                          argument_index = argument_index + 2
                          !
+                      case( "-c", "--cov" )
+                         !
+                         call get_command_argument( argument_index + 1, argument )
+                         cov_file_name = trim( argument )
+                         !
+                         if( len( cov_file_name ) > 0 ) has_cov_file = .TRUE.
+                         !
+                         argument_index = argument_index + 2
+                         !
                       case( "-o", "--outdir" )
                          !
                          call get_command_argument( argument_index + 1, argument )
@@ -396,7 +407,7 @@ contains
                          !
                       case default
                          !
-                         write( *, * ) "Error: Unknown Argument: [", trim( argument ), "]"
+                         write( *, * ) "     "//achar(27)//"[31m# Error:"//achar(27)//"[0m Unknown Argument: [", trim( argument ), "]"
                          call printHelp()
                          stop
                          !
@@ -430,6 +441,7 @@ contains
         has_model_file = .FALSE.
         has_pmodel_file = .FALSE.
         has_data_file = .FALSE.
+        has_cov_file = .FALSE.
         has_e_solution_file = .FALSE.
         verbosis = .FALSE.
         !
@@ -527,15 +539,17 @@ contains
         if( allocated( jmhat_data_file_name ) ) deallocate( jmhat_data_file_name )
         if( allocated( e_solution_file_name ) ) deallocate( e_solution_file_name )
         !
+        if( allocated( model_file_name ) ) deallocate( model_file_name )
+        if( allocated( pmodel_file_name ) ) deallocate( pmodel_file_name )
+        if( allocated( data_file_name ) ) deallocate( data_file_name )
+        if( allocated( dsigma_file_name ) ) deallocate( dsigma_file_name )
+        if( allocated( cov_file_name ) ) deallocate( cov_file_name )
+        !
         if( allocated( fwd_control_file_name ) ) deallocate( fwd_control_file_name )
         if( allocated( fwd_control_file ) ) deallocate( fwd_control_file )
         if( allocated( inv_control_file_name ) ) deallocate( inv_control_file_name )
         if( allocated( inv_control_file ) ) deallocate( inv_control_file )
         !
-        if( allocated( model_file_name ) ) deallocate( model_file_name )
-        if( allocated( pmodel_file_name ) ) deallocate( pmodel_file_name )
-        if( allocated( data_file_name ) ) deallocate( data_file_name )
-        if( allocated( dsigma_file_name ) ) deallocate( dsigma_file_name )
         if( allocated( modem_job ) ) deallocate( modem_job )
         !
     end subroutine garbageCollector
@@ -586,6 +600,7 @@ contains
         write( *, * ) "        [-d],  [--data]      :  Flag to precede data file path."
         write( *, * ) "        [-m],  [--model]     :  Flag to precede model file path."
         write( *, * ) "        [-pm], [--pmodel]    :  Flag to precede perturbation model file path."
+        write( *, * ) "        [-c],  [--cov]       :  Flag to precede covariance file path."
         write( *, * ) "        [-cf], [--ctrl_fwd]  :  Flag to precede forward control file path."
         write( *, * ) "        [-ci], [--ctrl_inv]  :  Flag to precede inversion control file path."
         write( *, * ) "        [-o],  [--outdir]    :  Flag to precede output directory path."

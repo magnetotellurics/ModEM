@@ -126,14 +126,14 @@ contains
         integer :: nz
         !
         if( .NOT. self%is_allocated) then
-            write( *, * ) "ERROR: ModelParameter1D (SetConductivity)"
+            write( *, * ) "     "//achar(27)//"[31m# Error:"//achar(27)//"[0m ModelParameter1D (SetConductivity)"
             stop "     input object not allocated"
         endif
         !
         nz = size(CellCond)
         !
         if( nz .NE. self%ParamGrid%nz ) then
-            write( *, * ) "ERROR: ModelParameter1D (SetConductivity)"
+            write( *, * ) "     "//achar(27)//"[31m# Error:"//achar(27)//"[0m ModelParameter1D (SetConductivity)"
             stop "     input condutivity not consistent with grid"
         endif
         !

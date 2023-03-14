@@ -313,7 +313,7 @@ contains
                     !
                 case default
                     !
-                    write( *, * ) "Warning: txForwardSolver > Undefined forward_solver, using IT_DC"
+                    write( *, * ) achar(27)//"[91mWarning:"//achar(27)//"[0m txForwardSolver > Undefined type, using IT_DC"
                     !
                     allocate( forward_solver, source = ForwardSolverIT_DC_t( model_operator, QMR ) )
                     !

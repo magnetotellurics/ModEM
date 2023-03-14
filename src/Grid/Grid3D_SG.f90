@@ -386,7 +386,7 @@ contains
                 airLayers%dz(1) = airLayers%minTopDz
             endif
 
-        else if(index(airLayers%method, "fixed height") > 0) then 
+        elseif(index(airLayers%method, "fixed height") > 0) then 
             !
             !> ON IMPLEMENTATION
             z1_log = log10( self%Dz( self%NzAir + 1 ) )
@@ -412,7 +412,7 @@ contains
                 ! height1 = height2
             ! enddo
             !
-        else if(index(airLayers%method, "read from file") > 0) then
+        elseif(index(airLayers%method, "read from file") > 0) then
             !
             !> Air layers have been read from file and are
             !> already stored in Dz, so only need to reallocate

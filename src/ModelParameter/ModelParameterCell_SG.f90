@@ -200,9 +200,9 @@ contains
         !
         if( axis == 1 ) then
             cond_slice = self%SigMap( self%cell_cond%v(j,:,:) )
-        else if( axis == 2 ) then
+        elseif( axis == 2 ) then
             cond_slice = self%SigMap( self%cell_cond%v(:,j,:) )
-        else if( axis == 3 ) then
+        elseif( axis == 3 ) then
             cond_slice = self%SigMap( self%cell_cond%v(:,:,j) )
         else
             stop "ModelParameter:Slice2D: wrong axis"
@@ -515,23 +515,23 @@ contains
         !
         if( trim( param_type ) .EQ. trim( self%param_type ) ) then
             ! Nothing to be done
-        else if(self%param_type == "" ) then
+        elseif(self%param_type == "" ) then
             self%param_type = trim(param_type)
-        else if(self%param_type == LINEAR) then
+        elseif(self%param_type == LINEAR) then
             if(param_type == LOGE) then
                 self%cell_cond%v = log(self%cell_cond%v)
-            else if(param_type == LOG_10) then
+            elseif(param_type == LOG_10) then
                 self%cell_cond%v = log10(self%cell_cond%v)
             endif
-        else if(param_type == LINEAR) then
+        elseif(param_type == LINEAR) then
             if(self%param_type == LOGE) then
                 self%cell_cond%v = exp(self%cell_cond%v)
-            else if(self%param_type == LOG_10) then
+            elseif(self%param_type == LOG_10) then
                 self%cell_cond%v = exp(self%cell_cond%v * log(10.))
             endif
-        else if((self%param_type == LOGE) .AND. (param_type == LOG_10)) then
+        elseif((self%param_type == LOGE) .AND. (param_type == LOG_10)) then
             self%cell_cond%v = self%cell_cond%v / log(10.)
-        else if((self%param_type == LOG_10) .AND. (param_type == LOGE)) then
+        elseif((self%param_type == LOG_10) .AND. (param_type == LOGE)) then
             self%cell_cond%v = self%cell_cond%v * log(10.)
         else
             stop "Error: setTypeModelParameterCell_SG > Unknown param_type."
@@ -627,7 +627,7 @@ contains
             rho_h = self%cell_cond
             if((index(self%param_type,"LOGE" ) > 0) .OR. (index(self%param_type,"LOG10" ) > 0)) then
                 rho_h%v = -self%cell_cond%v
-            else if(index(self%param_type,"LINEAR" ) > 0) then
+            elseif(index(self%param_type,"LINEAR" ) > 0) then
                 rho_h%v = ONE/self%cell_cond%v
             endif
             !
@@ -655,7 +655,7 @@ contains
                 !
                 if((index(self%param_type,"LOGE" ) > 0) .OR. (index(self%param_type,"LOG10" ) > 0)) then
                     rho_v%v = -ccond_v%v
-                else if(index(self%param_type,"LINEAR" ) > 0) then
+                elseif(index(self%param_type,"LINEAR" ) > 0) then
                     rho_v%v = ONE/ccond_v%v
                 endif
                 !

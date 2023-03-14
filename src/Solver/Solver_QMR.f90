@@ -159,7 +159,7 @@ contains
             if( ( RHO .EQ. C_ZERO ) .OR. ( PSI .EQ. C_ZERO ) ) then
                 !
                 self%failed = .TRUE.
-                write( *, * ) "Error: solveQMR > Failed to converge"
+                write( *, * ) "     "//achar(27)//"[31m# Error:"//achar(27)//"[0m solveQMR > Failed to converge"
                 !
             endif
             !

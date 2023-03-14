@@ -103,6 +103,16 @@ contains
             !> Instantiate ModelCovariance
             allocate( model_cov, source = ModelCovarianceRec_t( sigma ) )
             !
+            if( has_cov_file ) then 
+                !
+                call model_cov%read_CmSqrt( cov_file_name )
+                !
+                write( *, * ) "     < Cov File: [", cov_file_name, "]"
+                !
+            else
+                write( *, * ) "     "//achar(27)//"[91m# Warning:"//achar(27)//"[0m jobInversion > Missing Covariance file!"
+            endif
+            !
             !> Initialize pmodel with Zeros
             allocate( dsigma, source = sigma )
             !
@@ -211,7 +221,7 @@ contains
                 !
             case default
                 !
-                write( *, * ) "Error: unknown job: [", modem_job, "]"
+                write( *, * ) "     "//achar(27)//"[31m# Error:"//achar(27)//"[0m unknown job: [", modem_job, "]"
                 call printHelp
                 stop
             !
