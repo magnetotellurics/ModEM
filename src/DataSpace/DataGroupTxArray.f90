@@ -477,6 +477,8 @@ contains
                 !
                 receiver => getReceiver( data_group%i_rx )
                 !
+                !> Write header if changed data type
+                !> Increase type_index
                 call writeHeaderDataGroupTxArray( receiver, receiver_type, type_index )
                 !
                 !write( *, * ) "receiver%units, units_in_file( type_index )%str: [", receiver%units, "],[", units_in_file( type_index )%str, "]"
