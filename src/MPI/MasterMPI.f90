@@ -262,13 +262,14 @@ contains
     !
     !> Calculate dsigma in parallel for all transmitters
     !
-    subroutine masterJMult_T( sigma, all_data, dsigma, SolnIndex )
+    subroutine masterJMult_T( sigma, all_data, dsigma, SolnIndex, s_hat )
         implicit none
         !
         class( ModelParameter_t ), intent( in ) :: sigma
         type( DataGroupTx_t ), dimension(:), intent( in ) :: all_data
         class( ModelParameter_t ), allocatable, intent( out ) :: dsigma
         integer, intent( in ), optional :: SolnIndex
+        class( Scalar_t ), allocatable, dimension(:), intent( inout ), optional :: s_hat
         !
         class( Scalar_t ), allocatable :: tx_model_cond
         !
@@ -327,6 +328,10 @@ contains
             !
             call receiveConductivity( tx_model_cond, job_info%worker_rank )
             !
+            if( present( s_hat ) ) then
+                s_hat( job_info%i_tx ) = tx_model_cond
+            endif
+            !
             call dsigma%addCond( tx_model_cond )
             !
             deallocate( tx_model_cond )
@@ -353,6 +358,10 @@ contains
             call dsigma%getCond( tx_model_cond )
             !
             call receiveConductivity( tx_model_cond, job_info%worker_rank )
+            !
+            if( present( s_hat ) ) then
+                s_hat( job_info%i_tx ) = tx_model_cond
+            endif
             !
             call dsigma%addCond( tx_model_cond )
             !

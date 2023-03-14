@@ -19,7 +19,7 @@ module DataGroupTxArray
     !
     !> Module variables
     logical :: conjugated_data
-    character(20) :: units_in_file
+    type( String_t ), allocatable, dimension(:) :: units_in_file
     !
     !> Module routines
     !> Routines for data operations
@@ -456,7 +456,7 @@ contains
         !
         real( kind=prec ) :: SI_factor, r_error
         complex( kind=prec ) :: c_value
-        integer :: receiver_type, i, j, ios, n_data
+        integer :: receiver_type, i, j, ios, n_data, type_index
         !
         ! Verbose
         !write( *, * ) "     > Write Data to file: [", file_name, "]"
@@ -464,6 +464,8 @@ contains
         n_data = countData( data_tx_array )
         !
         receiver_type = 0
+        !
+        type_index = 0
         !
         open( unit = ioPredData, file = file_name, action = "write", form = "formatted", iostat = ios )
         !
@@ -475,13 +477,17 @@ contains
                 !
                 receiver => getReceiver( data_group%i_rx )
                 !
-                call writeHeaderDataGroupTxArray( receiver, receiver_type )
+                !> Write header if changed data type
+                !> Increase type_index
+                call writeHeaderDataGroupTxArray( receiver, receiver_type, type_index )
+                !
+                !write( *, * ) "receiver%units, units_in_file( type_index )%str: [", receiver%units, "],[", units_in_file( type_index )%str, "]"
+                !
+                SI_factor = ImpUnits( receiver%units, units_in_file( type_index )%str )
                 !
                 transmitter => getTransmitter( data_group%i_tx )
                 !
                 do j = 1, data_group%n_comp
-                    !
-                    SI_factor = ImpUnits( receiver%units, units_in_file )
                     !
                     if( conjugated_data ) then
                         !
@@ -569,14 +575,15 @@ contains
     !
     !> Write a header into the DataGroupTxArray text file
     !
-    subroutine writeHeaderDataGroupTxArray( receiver, receiver_type )
+    subroutine writeHeaderDataGroupTxArray( receiver, receiver_type, type_index )
         implicit none
         !
         class( Receiver_t ), intent( in ) :: receiver
-        !
-        integer, intent( inout ) :: receiver_type
+        integer, intent( inout ) :: receiver_type, type_index
         !
         if( receiver_type /= receiver%rx_type ) then
+            !
+            type_index = type_index + 1
             !
             select case( receiver%rx_type )
                 !
@@ -614,7 +621,7 @@ contains
                 write( ioPredData, "( 18a )" ) ">  exp(-i\omega t)"
             endif
             !
-            write( ioPredData, "( 50a )" ) ">  "//trim( units_in_file )
+            write( ioPredData, "( 50a )" ) ">  "//trim( units_in_file( type_index )%str )
             write( ioPredData, "( 10a )" ) ">     0.00"
             write( ioPredData, "( 20a )" ) ">     0.000    0.000"
             write( ioPredData, "( 1a, i8, i8 )" ) ">", size( transmitters ), size( receivers )

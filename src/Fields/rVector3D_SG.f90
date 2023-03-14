@@ -1559,7 +1559,7 @@ contains
         class( rVector3D_SG_t ), intent( inout ) :: self
         class( Field_t ), intent( in ) :: rhs
         !
-        if( .NOT. rhs%is_allocated) then
+        if( .NOT. rhs%is_allocated ) then
             stop "Error: copyFromRVector3D_SG > rhs not allocated"
         endif
         !

@@ -76,7 +76,7 @@ contains
     end subroutine TransmitterCSEM_dtor
     !
     !> No subroutine briefing
-	!
+    !
     function isEqualTransmitterCSEM( self, other ) result( equal )
         implicit none
         !
@@ -115,7 +115,7 @@ contains
             stop "Error: solveTransmitterCSEM > source not allocated!"
         endif
         !
-        !> First allocate e_sol or e_sens, according to the Source case
+        !> First allocate e_sol, e_sol_1 or e_sens, according to the Source case
         if( self%source%calc_sens ) then
             !
             if( allocated( self%e_sens ) ) deallocate( self%e_sens )
@@ -123,8 +123,18 @@ contains
             !
         else
             !
-            if( allocated( self%e_sol ) ) deallocate( self%e_sol )
-            allocate( cVector3D_SG_t :: self%e_sol(1) )
+            !> 
+            if( self%SolnIndex == 0 ) then
+                !
+                if( allocated( self%e_sol ) ) deallocate( self%e_sol )
+                allocate( cVector3D_SG_t :: self%e_sol(1) )
+                !
+            else
+                !
+                if( allocated( self%e_sol_1 ) ) deallocate( self%e_sol_1 )
+                allocate( cVector3D_SG_t :: self%e_sol_1(1) )
+                !
+            endif
             !
         endif
         !
@@ -143,9 +153,19 @@ contains
             !
             !write( *, "( a24, i5, a9, es12.5)" ) "- Solving FWD CSEM Tx", self%i_tx, ", Period=", self%period
             !
-            call self%forward_solver%createESolution( 1, self%source, self%e_sol(1) )
-            !
-            call self%e_sol(1)%add( E_p )
+            if( self%SolnIndex == 0 ) then
+                !
+                call self%forward_solver%createESolution( 1, self%source, self%e_sol(1) )
+                !
+                call self%e_sol(1)%add( E_p )
+                !
+            else
+                !
+                call self%forward_solver%createESolution( 1, self%source, self%e_sol_1(1) )
+                !
+                call self%e_sol_1(1)%add( E_p )
+                !
+            endif
             !
         endif
         !

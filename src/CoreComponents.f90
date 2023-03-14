@@ -677,8 +677,8 @@ contains
             write( ioInvTmp, "(A31)" ) "inversion_type [DCG|NLCG] : DCG"
             write( ioInvTmp, "(A29)" ) "max_inv_iters [5]         : 5"
             write( ioInvTmp, "(A30)" ) "max_grad_iters [20]       : 20"
-            write( ioInvTmp, "(A32)" ) "tolerance_error [1E-3]    : 1E-3"
-            write( ioInvTmp, "(A32)" ) "tolerance_rms [1.05]      : 1.05"
+            write( ioInvTmp, "(A32)" ) "error_tol [1E-3]    : 1E-3"
+            write( ioInvTmp, "(A32)" ) "rms_tol [1.05]      : 1.05"
             write( ioInvTmp, "(A31)" ) "lambda [10.]              : 10."
             write( ioInvTmp, "(A1)" )  "#"
             !

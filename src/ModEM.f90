@@ -147,7 +147,7 @@ contains
 #endif
         !
         if( .NOT. has_inv_control_file ) then
-            inversion_type = DCG
+            inversion_type = NLCG
         endif
         !
         !> Instantiate the ForwardSolver - Specific type can be chosen via control file

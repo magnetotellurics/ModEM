@@ -59,17 +59,17 @@ ELSE
     itemp = indx(l+1)
     indx(l+1) = indx(ir)
     indx(ir) = itemp
-  END IF
+  endif
   if(arr(indx(l)) > arr(indx(ir))) THEN
     itemp = indx(l)
     indx(l) = indx(ir)
     indx(ir) = itemp
-  END IF
+  endif
   if(arr(indx(l+1)) > arr(indx(l))) THEN
     itemp = indx(l+1)
     indx(l+1) = indx(l)
     indx(l) = itemp
-  END IF
+  endif
   i = l + 1
   j = ir
   indxt = indx(l)
@@ -100,8 +100,8 @@ ELSE
     istack(jstack) = j - 1
     istack(jstack-1) = l
     l = i
-  END IF
-END IF
+  endif
+endif
 GO TO 1
 END SUBROUTINE indexx
 

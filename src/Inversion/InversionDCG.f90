@@ -9,7 +9,7 @@ module InversionDCG
         !
         integer :: max_grad_iters
         !
-        real( kind=prec ) :: tolerance_error
+        real( kind=prec ) :: error_tol
         !
         real( kind=prec ), allocatable, dimension(:) :: r_err
         !
@@ -43,23 +43,21 @@ contains
         call self%init
         !
         self%max_grad_iters = 20
-        self%tolerance_error = 10E-4
+        self%error_tol = 10E-4
         !
         if( has_inv_control_file ) then
             !
             if( allocated( inv_control_file%max_grad_iters ) ) &
                 read( inv_control_file%max_grad_iters, * ) self%max_grad_iters
             !
-            if( allocated( inv_control_file%tolerance_error ) ) &
-                read( inv_control_file%tolerance_error, * ) self%tolerance_error
+            if( allocated( inv_control_file%error_tol ) ) &
+                read( inv_control_file%error_tol, * ) self%error_tol
             !
         endif
         !
-        write( *, "( A45 )" ) "Using inversion parameters:"
-        !
         write( *, "( A45, I20 )" ) "max_grad_iters = ", self%max_grad_iters
         !
-        write( *, "( A45, es20.2 )" ) "tolerance_error = ", self%tolerance_error
+        write( *, "( A45, es20.2 )" ) "error_tol = ", self%error_tol
         !
         !> Free the memory used by the global control file, which is no longer useful
         if( allocated( inv_control_file ) ) deallocate( inv_control_file )
@@ -175,13 +173,13 @@ contains
                 write( ioInvLog, "( a10, a3, es12.5, a4, es12.5, a5, f18.5, a8, es12.5 )" ) "with:", " f=", f, " m2=", mNorm, " rms=", rms, " lambda=", self%lambda
                 !
                 !>
-                if( rms .LT. self%tolerance_rms .OR. DCG_iter .GE. self%max_inv_iters ) then
+                if( rms .LT. self%rms_tol .OR. DCG_iter .GE. self%max_inv_iters ) then
                     exit
-                end if
+                endif
                 !
                 DCG_iter = DCG_iter + 1
                 !
-            end do dcg_loop
+            enddo dcg_loop
             !
             close( ioInvLog )
             !
@@ -289,7 +287,7 @@ contains
         write( ioInvLog, "(a18)" ) "Relative CG-error:"
         write( ioInvLog, "( a9, i5, a10, es12.5, a10, es12.5 )" ) "CG-Iter= ", iter, ", error = ", self%r_err(iter), " Lambda= ", self%lambda
         !
-        cg_loop : do while ( self%r_err(iter) .GT. self%tolerance_error .AND. iter .LT. self%max_grad_iters )
+        cg_loop : do while( self%r_err(iter) .GT. self%error_tol .AND. iter .LT. self%max_grad_iters )
             ! 
             call self%MultA_DS( p, dsigma, all_data, Ap )
             !

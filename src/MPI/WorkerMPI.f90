@@ -208,6 +208,7 @@ contains
         implicit none
         !
         class( ModelParameter_t ), allocatable :: tx_dsigma
+        class( Scalar_t ), allocatable :: tx_dsigma_cond
         type( DataGroupTx_t ) :: tx_data
         class( Transmitter_t ), pointer :: Tx
         integer :: i
@@ -227,16 +228,9 @@ contains
         !
         call sendTo( master_id )
         !
-        select type( tx_dsigma )
-            !
-            class is( ModelParameterCell_SG_t )
-                !
-                call sendConductivity( tx_dsigma%cell_cond, master_id )
-                !
-            class default
-                stop "Error: workerJMult_T > Unclassified tx_dsigma"
-            !
-        end select
+        call tx_dsigma%getCond( tx_dsigma_cond )
+        !
+        call sendConductivity( tx_dsigma_cond, master_id )
         !
     end subroutine workerJMult_T
     !

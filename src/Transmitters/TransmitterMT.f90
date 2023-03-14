@@ -62,7 +62,7 @@ module TransmitterMT
         !
     end subroutine TransmitterMT_dtor
     !
-    !> Calculate e_sol or e_sens from with ForwardSolver
+    !> Calculate e_sol, e_sol_1 or e_sens from with ForwardSolver
     !> Depending of the Source%adjoint
     subroutine solveTransmitterMT( self )
         implicit none

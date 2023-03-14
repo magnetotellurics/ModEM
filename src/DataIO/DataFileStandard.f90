@@ -35,7 +35,7 @@ contains
         character(len=200), dimension(20) :: args
         !
         character(:), allocatable :: line_text, actual_type, code, code_ref, component, dipole
-        integer :: iDe, io_stat, p_nargs, n_rx
+        integer :: iDe, io_stat, p_nargs, n_tx, n_rx
         integer :: header_counter, header_line_counter, mt_counter, csem_counter
         real( kind=prec ) :: period, rvalue, imaginary, error
         real( kind=prec ) :: xyz_ref(3), latitude_ref, longitude_ref
@@ -189,7 +189,7 @@ contains
                          !> 0.00 ????, 0.000 0.000 ????
                          case( 5 )
                             !
-                            units_in_file = trim( args(2) )
+                            call updateFileUnitsArray( units_in_file, trim( args(2) ) )
                             !
                          !> [V/m]/[T] ????, 0.00 ????, 0.000 0.000 ????
                          case( 6, 7 )
@@ -197,13 +197,14 @@ contains
                          !> n_tx, n_rx
                          case( 8 )
                              !
-                             read( args(2), * ) self%n_tx
+                             read( args(2), * ) n_tx
                              read( args(3), * ) n_rx
                              !
                              header_counter = header_counter + 1
-                             write( *, "(A17, I8, A5, A30, A3, I8, A9, I8, A5)" ) "Header", header_counter, " -> [", trim(actual_type), "]: ", self%n_tx, " Txs and ", n_rx, " Rxs."
+                             write( *, "(A17, I8, A5, A20, A2, A15, A3, I8, A9, I8, A5)" ) "Header", header_counter, " -> (", trim(actual_type), ", ", trim(units_in_file( size( units_in_file ) )%str), "): ", n_tx, " Txs and ", n_rx, " Rxs."
                              !
                              self%n_rx = self%n_rx + n_rx
+                             self%n_tx = self%n_tx + n_tx
                              !
                          case default
                              !
@@ -232,6 +233,43 @@ contains
         endif
         !
     end function DataFileStandard_ctor
+    !
+    !> Dynamically add a new DataGroupTx to the array, always via reallocation.
+    !
+    subroutine updateFileUnitsArray( file_units_array, str_file_unit )
+        implicit none
+        !
+        type( String_t ), allocatable, dimension(:), intent( inout ) :: file_units_array
+        character(*), intent( in ) :: str_file_unit
+        !
+        integer :: n_dtx
+        type( String_t ), allocatable, dimension(:) :: temp_array
+        !
+        if( .NOT. allocated( file_units_array ) ) then
+            !
+            allocate( file_units_array(1) )
+            !
+            file_units_array(1)%str = str_file_unit
+            !
+        else
+            !
+            n_dtx = size( file_units_array )
+            !
+            allocate( temp_array( n_dtx + 1 ) )
+            !
+            temp_array( 1 : n_dtx ) = file_units_array(:)
+            !
+            temp_array( n_dtx + 1 )%str = str_file_unit
+            !
+            deallocate( file_units_array )
+            !
+            allocate( file_units_array, source = temp_array )
+            !
+            deallocate( temp_array )
+            !
+        endif
+        !
+    end subroutine updateFileUnitsArray
     !
     !> No subroutine briefing
     subroutine DataFileStandard_dtor( self )

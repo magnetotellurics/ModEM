@@ -17,8 +17,9 @@ module InversionControlFile
         !> Inversion parameters
         character(:), allocatable :: inversion_type
         character(:), allocatable :: max_inv_iters, max_grad_iters
-        character(:), allocatable :: tolerance_error, tolerance_rms
-        character(:), allocatable :: lambda
+        character(:), allocatable :: error_tol, rms_tol
+        character(:), allocatable :: lambda, lambda_tol, lambda_div
+        character(:), allocatable :: startdm, fdiffTol
         !
         contains
             !
@@ -34,6 +35,7 @@ contains
     !
     !> Procedure InversionControlFile_ctor
     !> Read line by line of the data file, create Data Entry objects(MT, MT_REF or CSEM)
+    !
     function InversionControlFile_ctor( funit, fname ) result( self )
         implicit none
         !
@@ -70,12 +72,20 @@ contains
                         self%max_inv_iters = trim( args(2) )
                     else if( index( line_text, "max_grad_iters" ) > 0 ) then
                         self%max_grad_iters = trim( args(2) )
-                    else if( index( line_text, "tolerance_error" ) > 0 ) then
-                        self%tolerance_error = trim( args(2) )
-                    else if( index( line_text, "tolerance_rms" ) > 0 ) then
-                        self%tolerance_rms = trim( args(2) )
+                    else if( index( line_text, "error_tol" ) > 0 ) then
+                        self%error_tol = trim( args(2) )
+                    else if( index( line_text, "rms_tol" ) > 0 ) then
+                        self%rms_tol = trim( args(2) )
                     else if( index( line_text, "lambda" ) > 0 ) then
                         self%lambda = trim( args(2) )
+                    else if( index( line_text, "lambda_tol" ) > 0 ) then
+                        self%lambda_tol = trim( args(2) )
+                    else if( index( line_text, "lambda_div" ) > 0 ) then
+                        self%lambda_div = trim( args(2) )
+                    else if( index( line_text, "startdm" ) > 0 ) then
+                        self%startdm = trim( args(2) )
+                    else if( index( line_text, "fdiffTol" ) > 0 ) then
+                        self%fdiffTol = trim( args(2) )
                     else
                         write( *, * ) "Error: Unsupported Inversion parameter: ["//trim(line_text)//"]"
                         stop 
@@ -123,9 +133,13 @@ contains
         if( allocated( self%inversion_type ) ) deallocate( self%inversion_type )
         if( allocated( self%max_inv_iters ) ) deallocate( self%max_inv_iters )
         if( allocated( self%max_grad_iters ) ) deallocate( self%max_grad_iters )
-        if( allocated( self%tolerance_error ) ) deallocate( self%tolerance_error )
-        if( allocated( self%tolerance_rms ) ) deallocate( self%tolerance_rms )
+        if( allocated( self%error_tol ) ) deallocate( self%error_tol )
+        if( allocated( self%rms_tol ) ) deallocate( self%rms_tol )
         if( allocated( self%lambda ) ) deallocate( self%lambda )
+        if( allocated( self%lambda_tol ) ) deallocate( self%lambda_tol )
+        if( allocated( self%lambda_div ) ) deallocate( self%lambda_div )
+        if( allocated( self%startdm ) ) deallocate( self%startdm )
+        if( allocated( self%fdiffTol ) ) deallocate( self%fdiffTol )
         !
     end subroutine InversionControlFile_dtor
     !

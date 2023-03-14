@@ -285,8 +285,8 @@ module Utilities
             if(Nvec(i) == n) then
                 ismember = .TRUE.
                 return
-            end if
-        end do
+            endif
+        enddo
         !
     end function
     !
@@ -351,8 +351,8 @@ module Utilities
                 if(nword.EQ.iwrd)then
                     begwrd= i
                     return
-                end if
-            end if
+                endif
+            endif
         enddo
         !
         begwrd = len(string)
@@ -387,7 +387,7 @@ module Utilities
         if(wasblk) nword= nword + 1
         wasblk= .FALSE.
         if(nword.EQ.iwrd) endwrd= i
-        end if
+        endif
         100   continue
         !
         endwrd= len(string)
@@ -425,7 +425,7 @@ module Utilities
         isnan = .TRUE.
         else
         isnan = .FALSE.
-        end if
+        endif
         !
     end function isnan
     !
@@ -458,7 +458,7 @@ module Utilities
                     if(isp==0) then
                         k=k+1
                         outstr(k:k)=" "
-                    end if
+                    endif
                     isp=1
                     !
                 case(33:)      ! not a space, quote, or control character
@@ -468,7 +468,7 @@ module Utilities
                     !
             end select
             !
-        end do
+        enddo
         !
         str=adjustl(outstr)
         !
@@ -504,24 +504,24 @@ module Utilities
         before(k:k)=ch
         ibsl=0
         cycle
-        end if
+        endif
         if(ch == "\\") then         ! backslash with backslash inactive
         k=k+1
         before(k:k)=ch
         ibsl=1
         cycle
-        end if
+        endif
         ipos=index(delims, ch)
         if(ipos == 0) then          ! character is not a delimiter
         k=k+1
         before(k:k)=ch
         cycle
-        end if
+        endif
         if(ch /= " ") then          ! character is a delimiter that is not a space
         str=str(i+1:)
         if(pres) sep=ch
         exit
-        end if
+        endif
         cha=str(i+1:i+1)            ! character is a space delimiter
         iposa=index(delims, cha)
         if(iposa > 0) then          ! next character is a delimiter
@@ -532,8 +532,8 @@ module Utilities
         str=str(i+1:)
         if(pres) sep=ch
         exit
-        end if
-        end do
+        endif
+        enddo
         if(i >= lenstr) str=""
         str=adjustl(str)            ! remove initial spaces
         !
@@ -562,14 +562,14 @@ module Utilities
         outstr(k:k)=ch
         ibsl=0
         cycle
-        end if
+        endif
         if(ch == "\\") then        ! backslash with backslash inactive
         ibsl=1
         cycle
-        end if
+        endif
         k=k+1
         outstr(k:k)=ch            ! non-backslash with backslash inactive
-        end do
+        enddo
 
         str=adjustl(outstr)
         !
@@ -656,11 +656,11 @@ module Utilities
             !
             do while(a(i).LT.pivot) !left half
                 i=i+1
-            end do
+            enddo
             !
             do while(pivot.LT.a(j)) !right half
                 j=j-1
-            end do
+            enddo
             !
             if( i .LT. j ) then 
                 ! swap array and index
@@ -678,7 +678,7 @@ module Utilities
                 exit
             endif
             !
-        end do
+        enddo
         !
         if( first .LT. i-1 ) then 
             !      write(6, *)  "taking care of the left part"

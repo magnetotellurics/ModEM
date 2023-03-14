@@ -30,7 +30,7 @@ module ReceiverSingleField
 contains
     !
     !> No subroutine briefing
-	!
+    !
     function ReceiverSingleField_ctor( location, azimuth, rx_type ) result( self )
         implicit none
         !
@@ -162,10 +162,13 @@ contains
         type( DataGroup_t ), intent( out ), optional :: data_group
         !
         complex( kind=prec ) :: comega
+        class( Vector_t ), pointer :: tx_e_1
         !
         comega = cmplx( 0.0, 1./ ( 2.0 * PI / transmitter%period ), kind=prec )
         !
-        select type( tx_e_1 => transmitter%getSolutionVector(1) )
+        call transmitter%getSolutionVector( 1, tx_e_1 )
+        !
+        select type( tx_e_1 )
             !
             class is( cVector3D_SG_t )
                 !
@@ -191,6 +194,8 @@ contains
                     !
                 endif
                 !
+                deallocate( tx_e_1 )
+                !
             class default
                 stop "evaluationFunctionRx: Unclassified temp_full_vec_ey"
             !
@@ -199,7 +204,7 @@ contains
     end subroutine predictedDataSingleField
     !
     !> No subroutine briefing
-	!
+    !
     function isEqualSingleField( self, other ) result( equal )
         implicit none
         !

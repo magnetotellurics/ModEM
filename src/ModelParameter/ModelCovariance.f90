@@ -170,27 +170,28 @@ contains
     !> the modelParam module. Before this routine can be called,
     !> it has to be initialized by calling create_CmSqrt(m).
     !
-    function multBy_CmSqrt( self, mhat ) result( dm )
+    subroutine multBy_CmSqrt( self, mhat, dsigma )
         implicit none
         !
         class( ModelCovarianceRec_t ), intent( in ) :: self
         class( ModelParameter_t ), allocatable, intent( in ) :: mhat
-        class( ModelParameter_t ), allocatable :: dm
+        class( ModelParameter_t ), allocatable, intent( inout ) :: dsigma
         !
-        allocate( dm, source = mhat )
+        if( allocated( dsigma ) ) deallocate( dsigma )
+        allocate( dsigma, source = mhat )
         !
         select type( mhat )
             !
             class is( ModelParameterCell_SG_t )
                 !
-                select type( dm )
+                select type( dsigma )
                     !
                     class is( ModelParameterCell_SG_t )
                         !
-                        call self%RecursiveAR( mhat%cell_cond%v, dm%cell_cond%v, self%N )
+                        call self%RecursiveAR( mhat%cell_cond%v, dsigma%cell_cond%v, self%N )
                         !
                     class default
-                        stop "Error: multBy_CmSqrt > Unclassified dm"
+                        stop "Error: multBy_CmSqrt > Unclassified dsigma"
                     !
                 end select
                 !
@@ -199,7 +200,7 @@ contains
             !
         end select
         !
-    end function multBy_CmSqrt
+    end subroutine multBy_CmSqrt
     !
     !> Multiplies by the inverse square root of the model covariance,
     !> which is viewed as a roughening operator. Intended

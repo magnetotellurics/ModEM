@@ -56,7 +56,7 @@ module DeclarationMPI
         integer :: worker_rank, i_tx
         integer :: data_size, model_size, basic_comp_size
         integer :: inv_iter, sol_index
-        real( kind=prec ) :: tolerance_rms, lambda
+        real( kind=prec ) :: rms_tol, lambda
         !
     end type JobInfo_t
     !
@@ -1520,7 +1520,7 @@ contains
         call MPI_PACK( job_info%basic_comp_size, 1, MPI_INTEGER, job_info_buffer, job_info_buffer_size, index, main_comm, ierr )
         call MPI_PACK( job_info%inv_iter, 1, MPI_INTEGER, job_info_buffer, job_info_buffer_size, index, main_comm, ierr )
         call MPI_PACK( job_info%sol_index, 1, MPI_INTEGER, job_info_buffer, job_info_buffer_size, index, main_comm, ierr )
-        call MPI_PACK( job_info%tolerance_rms, 1, MPI_DOUBLE_PRECISION, job_info_buffer, job_info_buffer_size, index, main_comm, ierr )
+        call MPI_PACK( job_info%rms_tol, 1, MPI_DOUBLE_PRECISION, job_info_buffer, job_info_buffer_size, index, main_comm, ierr )
         call MPI_PACK( job_info%lambda, 1, MPI_DOUBLE_PRECISION, job_info_buffer, job_info_buffer_size, index, main_comm, ierr )
         !
     end subroutine packJobInfoBuffer
@@ -1540,7 +1540,7 @@ contains
         call MPI_UNPACK( job_info_buffer, job_info_buffer_size, index, job_info%basic_comp_size, 1, MPI_INTEGER, main_comm, ierr )
         call MPI_UNPACK( job_info_buffer, job_info_buffer_size, index, job_info%inv_iter, 1, MPI_INTEGER, main_comm, ierr )
         call MPI_UNPACK( job_info_buffer, job_info_buffer_size, index, job_info%sol_index, 1, MPI_INTEGER, main_comm, ierr )
-        call MPI_UNPACK( job_info_buffer, job_info_buffer_size, index, job_info%tolerance_rms, 1, MPI_DOUBLE_PRECISION, main_comm, ierr )
+        call MPI_UNPACK( job_info_buffer, job_info_buffer_size, index, job_info%rms_tol, 1, MPI_DOUBLE_PRECISION, main_comm, ierr )
         call MPI_UNPACK( job_info_buffer, job_info_buffer_size, index, job_info%lambda, 1, MPI_DOUBLE_PRECISION, main_comm, ierr )
         !
     end subroutine unpackJobInfoBuffer

@@ -387,7 +387,7 @@ contains
         if( index( oldUnits, "[]"  ) > 0 .OR. index( newUnits, "[]" ) > 0 ) then
             SI_factor = ONE
             return
-        end if
+        endif
         !
         ! first convert the old units to [V/m]/[T]
         if( index( oldUnits, "[V/m]/[T]" ) > 0 ) then
@@ -408,7 +408,7 @@ contains
         else
             write( *, * ) "Error: Unknown input units in ImpUnits: [", trim( oldUnits ), "]"
             stop
-        end if
+        endif
         !
         ! now convert [V/m]/[T] to the new units
         if( index( newUnits, "[V/m]/[T]" ) > 0 ) then
@@ -429,7 +429,7 @@ contains
         else
             write( *, * ) "Error: Unknown output units in ImpUnits: [", trim( newUnits ), "]"
             stop
-        end if
+        endif
         !
         SI_factor = factor1 * factor2
         !

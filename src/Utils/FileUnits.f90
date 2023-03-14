@@ -20,4 +20,6 @@ module FileUnits
     !
     integer, parameter :: ioInvTmp = 1117
     !
+    integer, parameter :: ioGradLog = 1118
+    !
 end module FileUnits
