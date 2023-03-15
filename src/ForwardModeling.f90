@@ -47,7 +47,7 @@ contains
         !
     end subroutine solveAll
     !
-    !> Calculate E_Solution(e_sol) for a single Transmitter
+    !> Calculate E_Solution(e_sol_0) for a single Transmitter
     !> ForwardSolver must be allocated
     !
     subroutine solveTx( sigma, Tx )
@@ -63,11 +63,45 @@ contains
             !
             class is( TransmitterMT_t )
                 !
-                call Tx%setSource( SourceMT_1D_t( model_operator, sigma, Tx%period ) )
+                !> Instantiate the MT Source - Specific type can be chosen via control file
+                select case( source_type_mt )
+                    !
+                    case( SRC_MT_1D )
+                        !
+                        call Tx%setSource( SourceMT_1D_t( model_operator, sigma, Tx%period ) )
+                        !
+                    case( SRC_MT_2D )
+                        !
+                        call Tx%setSource( SourceMT_2D_t( model_operator, sigma, Tx%period ) )
+                        !
+                    case default
+                        !
+                        write( *, * ) "     "//achar(27)//"[91m# Warning:"//achar(27)//"[0m solveTx > Undefined source_type_mt, using 1D"
+                        !
+                        call Tx%setSource( SourceMT_1D_t( model_operator, sigma, Tx%period ) )
+                        !
+                end select
                 !
             class is( TransmitterCSEM_t )
                 !
-                call Tx%setSource( SourceCSEM_Dipole1D_t( model_operator, sigma, Tx%period, Tx%location, Tx%dip, Tx%azimuth, Tx%moment ) )
+                !> Instantiate the CSEM Source - Specific type can be chosen via control file
+                select case( source_type_csem )
+                    !
+                    case( SRC_CSEM_EM1D )
+                        !
+                        !call Tx%setSource( SourceCSEM_EM1D_t( model_operator, sigma, Tx%period, Tx%location, Tx%i_tx ) )
+                        !
+                    case( SRC_CSEM_DIPOLE1D )
+                        !
+                        call Tx%setSource( SourceCSEM_Dipole1D_t( model_operator, sigma, Tx%period, Tx%location, Tx%dip, Tx%azimuth, Tx%moment ) )
+                        !
+                    case default
+                        !
+                        write( *, * ) "     "//achar(27)//"[91m# Warning:"//achar(27)//"[0m solveTx > Undefined source_type_csem, using Dipole1D"
+                        !
+                        call Tx%setSource( SourceCSEM_Dipole1D_t( model_operator, sigma, Tx%period, Tx%location, Tx%dip, Tx%azimuth, Tx%moment ) )
+                        !
+                end select
                 !
             class default
                 stop "Error: solveTx > Unclassified Transmitter"
@@ -146,12 +180,12 @@ contains
     !>     Calculate the predicted data for each transmitter-receiver pair.
     !>     ForwardSolver must be allocated
     !
-    subroutine serialForwardModeling( sigma, all_predicted_data, SolnIndex )
+    subroutine serialForwardModeling( sigma, all_predicted_data, i_sol )
         implicit none
         !
         class( ModelParameter_t ), intent( in ) :: sigma
         type( DataGroupTx_t ), allocatable, dimension(:), intent( inout ) :: all_predicted_data
-        integer, intent( in ), optional :: SolnIndex
+        integer, intent( in ), optional :: i_sol
         !
         class( Transmitter_t ), pointer :: Tx
         class( Receiver_t ), pointer :: Rx
@@ -163,8 +197,8 @@ contains
         !
         sol_index = 0
         !
-        !> Set SolnIndex if present
-        if( present( SolnIndex ) ) sol_index = SolnIndex
+        !> Set i_sol if present
+        if( present( i_sol ) ) sol_index = i_sol
         !
         !>
         n_tx = size( transmitters )
@@ -175,7 +209,7 @@ contains
             !> Pointer to the Transmitter
             Tx => getTransmitter( i_tx )
             !
-            Tx%SolnIndex = sol_index
+            Tx%i_sol = sol_index
             !
             call solveTx( sigma, Tx )
             !
@@ -245,8 +279,8 @@ contains
             stop "Error: writeAllESolution > Theres no transmitters to write!"
         endif
         !
-        if( .NOT. allocated( transmitters(1)%Tx%e_sol ) .OR. size( transmitters(1)%Tx%e_sol ) .LT. 1 ) then
-            stop "Error: writeAllESolution > Theres no e_sol to write!"
+        if( .NOT. allocated( transmitters(1)%Tx%e_sol_0 ) .OR. size( transmitters(1)%Tx%e_sol_0 ) .LT. 1 ) then
+            stop "Error: writeAllESolution > Theres no e_sol_0 to write!"
         endif
         !
         ! Verbose

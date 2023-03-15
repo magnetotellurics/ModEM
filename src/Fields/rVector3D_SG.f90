@@ -707,7 +707,7 @@ contains
         !
         class( rVector3D_SG_t ), intent( inout ) :: self
         !
-        stop "Error: conjugateRVector3D_SG: Do not try to conjugate a real vector!"
+        stop "Error: conjugateRVector3D_SG: do not try to conjugate a real vector!"
         !
     end subroutine conjugateRVector3D_SG
     !

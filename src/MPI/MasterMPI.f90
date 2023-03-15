@@ -88,12 +88,12 @@ contains
     !> Calculate in parallel ESolution for all transmitters
     !> Calculate in parallel the predicted data for each transmitter-receiver pair.
     !
-    subroutine masterForwardModelling( sigma, all_predicted_data, SolnIndex )
+    subroutine masterForwardModelling( sigma, all_predicted_data, i_sol )
         implicit none
         !
         class( ModelParameter_t ), intent( in ) :: sigma
         type( DataGroupTx_t ), allocatable, dimension(:), intent( out ) :: all_predicted_data
-        integer, intent( in ), optional :: SolnIndex
+        integer, intent( in ), optional :: i_sol
         !
         integer :: worker_rank, tx_received, i_tx, i_data, sol_index
         !
@@ -102,8 +102,8 @@ contains
         !
         sol_index = 0
         !
-        !> Set SolnIndex if present
-        if( present( SolnIndex ) ) sol_index = SolnIndex
+        !> Set i_sol if present
+        if( present( i_sol ) ) sol_index = i_sol
         !
         if( sigma%is_allocated ) then
             !
@@ -262,13 +262,13 @@ contains
     !
     !> Calculate dsigma in parallel for all transmitters
     !
-    subroutine masterJMult_T( sigma, all_data, dsigma, SolnIndex, s_hat )
+    subroutine masterJMult_T( sigma, all_data, dsigma, i_sol, s_hat )
         implicit none
         !
         class( ModelParameter_t ), intent( in ) :: sigma
         type( DataGroupTx_t ), dimension(:), intent( in ) :: all_data
         class( ModelParameter_t ), allocatable, intent( out ) :: dsigma
-        integer, intent( in ), optional :: SolnIndex
+        integer, intent( in ), optional :: i_sol
         class( Scalar_t ), allocatable, dimension(:), intent( inout ), optional :: s_hat
         !
         class( Scalar_t ), allocatable :: tx_model_cond
@@ -280,8 +280,8 @@ contains
         !
         sol_index = 0
         !
-        !> Set SolnIndex if present
-        if( present( SolnIndex ) ) sol_index = SolnIndex
+        !> Set i_sol if present
+        if( present( i_sol ) ) sol_index = i_sol
         !
         !> And initialize dsigma with Zeros
         if( sigma%is_allocated ) then

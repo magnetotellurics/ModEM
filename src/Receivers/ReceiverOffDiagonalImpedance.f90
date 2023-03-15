@@ -121,7 +121,7 @@ contains
             class is( cVector3D_SG_t )
                 !
                 select type( tx_e_2 )
-					!
+                    !
                     class is( cVector3D_SG_t )
                         !
                         EE(1,1) = self%Lex%dotProd( tx_e_1 )

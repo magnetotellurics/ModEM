@@ -2,13 +2,13 @@
 !was tested for quad precision (that't why there's "quad" in the name)
 !back to using double precision here
 subroutine sort_dbl(n,arr)  
-       INTEGER(kind=int32) :: n
-       real(kind=real64) :: arr(n)  
+       INTEGER(kind=int32)  :: n
+       real(kind=real64)    :: arr(n)  
 
-       integer(kind=int32),parameter :: M=7, NSTACK=50
-       INTEGER(kind=int32) :: i,ir,j,jstack,k,l
+       integer(kind=int32),parameter  :: M=7, NSTACK=50
+       INTEGER(kind=int32)            :: i,ir,j,jstack,k,l
        integer(kind=int32),dimension(NSTACK) :: istack
-       real(kind=real64) :: a,temp
+       real(kind=real64)              :: a,temp
 
        jstack=0  
        l=1  
@@ -23,7 +23,7 @@ subroutine sort_dbl(n,arr)
            i=l-1  
  2         arr(i+1)=a  
  12      continue  
-         if(jstack.EQ.0)return  
+         if(jstack.eq.0)return  
          ir=istack(jstack)  
          l=istack(jstack-1)  
          jstack=jstack-2  
@@ -65,9 +65,9 @@ subroutine sort_dbl(n,arr)
          arr(j)=a  
          jstack=jstack+2  
          if(jstack.gt.NSTACK) then
-       write( *, * ) 'ERROR: NSTACK too small in sort'
-       stop 1
-     endif
+	   write(*,*) 'ERROR: NSTACK too small in sort'
+	   stop 1
+	 endif
          if(ir-i+1.ge.j-l)then 
            istack(jstack)=ir  
            istack(jstack-1)=i  

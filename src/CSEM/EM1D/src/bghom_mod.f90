@@ -1,8 +1,8 @@
 !****************************************************************
 !
-!>  FD EM module containing stuff for homogeneous background computations
+!  FD EM module containing stuff for homogeneous background computations
 !
-!>  Rita Streich 2009-2011
+!  Rita Streich 2009-2011
 !**************************************************************
 module bghom_mod
 

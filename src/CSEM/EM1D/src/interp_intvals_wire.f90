@@ -1,10 +1,10 @@
 !------------------------------------------------------------
-!>  1D EM subroutine interp_intvals_wire_allcomp
+!  1D EM subroutine interp_intvals_wire_allcomp
 !
-!>  get interpolated field values at receiver locations, horizontal wire source,
-!>    all field components at the same cordinates
+!  get interpolated field values at iReceiver locations, horizontal wire source,
+!    all field components at the same cordinates
 !
-!>  Rita Streich 2009-2011
+!  Rita Streich 2009-2011
 !------------------------------------------------------------
 subroutine interp_intvals_wire_allcomp(refl_var,bgdat,fld,src,sz,zr,omeps_recv,ommu, &
   func1Exwire,funcD0TE,funcAz1TE,func2Exwire,funcD0TM,funcdHxwire,ilay,funcD0TMfwd, &
@@ -13,70 +13,70 @@ subroutine interp_intvals_wire_allcomp(refl_var,bgdat,fld,src,sz,zr,omeps_recv,o
   implicit none
 
   !external variables
-  type(refl_struct) :: refl_var   !everything needed throughout 1D computations
-  type(backgrounddata) :: bgdat      !coordinate vectors and final output EM fields
-  type(receiverdata),dimension(:) :: fld        !field or derivative vectors for each wire, all components
-  type(sorec),intent( in ) :: src        !source definition (we need the currents here)
-  real(kind=real64),intent( in ) :: sz,zr      !source and receiver depth
-  complex(kind=real64),intent( in ) :: omeps_recv  !omega * eps in receiver layer
-  real(kind=real64),intent( in ) :: ommu       !omega * mu0
-  complex(kind=real64),external :: func1Exwire,funcD0TE,funcAz1TE,func2Exwire,funcD0TM,funcdHxwire
-  integer(kind=int32),intent( in ) :: ilay       !layer index for derivatives - leave at zero for forward modeling
-  complex(kind=real64),external,optional :: funcD0TMfwd  !function only needed for derivatives in receiver layer
-  complex(kind=real64),external,optional :: func2Exwirev,funcD0TMv,funcdHxwirev !integral derivatives for epsv
-  type(receiverdata),dimension(:),optional :: fldv       !field or derivative vectors for each wire, all components
+  type(refl_struct)               :: refl_var   !everything needed throughout 1D computations
+  type(backgrounddata)            :: bgdat      !coordinate vectors and final output EM fields
+  type(receiverdata),dimension(:)   :: fld        !field or derivative vectors for each wire, all components
+  type(sorec),intent(in)          :: src        !source definition (we need the currents here)
+  real(kind=real64),intent(in)    :: sz,zr      !source and iReceiver depth
+  complex(kind=real64),intent(in) :: omeps_recv  !omega * eps in iReceiver layer
+  real(kind=real64),intent(in)    :: ommu       !omega * mu0
+  complex(kind=real64),external   :: func1Exwire,funcD0TE,funcAz1TE,func2Exwire,funcD0TM,funcdHxwire
+  integer(kind=int32),intent(in)  :: ilay       !layer index for derivatives - leave at zero for forward modeling
+  complex(kind=real64),external,optional   :: funcD0TMfwd  !function only needed for derivatives in iReceiver layer
+  complex(kind=real64),external,optional   :: func2Exwirev,funcD0TMv,funcdHxwirev !integral derivatives for epsv
+  type(receiverdata),dimension(:),optional   :: fldv       !field or derivative vectors for each wire, all components
 
   !internal variables
-  integer(kind=int32) :: isrc    !source element counter
-  real(kind=real64) :: x,y,r   !temp source-receiver distances
-  integer(kind=int32) :: irec    !receiver counter
-  real(kind=real64) :: beta,betarot      !temp angles
+  integer(kind=int32)   :: isrc    !source element counter
+  real(kind=real64)     :: x,y,r   !temp source-iReceiver distances
+  integer(kind=int32)   :: irec    !iReceiver counter
+  real(kind=real64)     :: beta,betarot      !temp angles
 
-  complex(kind=real64) :: IExy,IHyx,IHz          !interpolated integral values for integrals along wire
-  complex(kind=real64) :: IendExy,IendEz,IendHxy !interpolated integral values for end points
+  complex(kind=real64)          :: IExy,IHyx,IHz          !interpolated integral values for integrals along wire
+  complex(kind=real64)          :: IendExy,IendEz,IendHxy !interpolated integral values for end points
 
-  logical,dimension(nintWiredvti) :: wellbehaved   !indicates if Hankel integration can be used
-  logical :: sz_eq_zr      !indicates if source and reveicer are at the same depth
-  integer(kind=int32),dimension(NREL) :: ibesord   !bessel function order (integer "array")
+  logical,dimension(nintWiredvti)   :: wellbehaved   !indicates if Hankel integration can be used
+  logical                       :: sz_eq_zr      !indicates if source and reveicer are at the same depth
+  integer(kind=int32),dimension(NREL)  :: ibesord   !bessel function order (integer "array")
 
-  complex(kind=real64) :: Exrot,Eyrot,Hxrot,Hyrot,Hzrot  !temp field values in cylindrical coordinates
-  real(kind=real64) :: cosbetasrc,sinbetasrc !cos(betasrc) and sin(betasrc), precompute for efficiency
-  real(kind=real64) :: cosbetarot,sinbetarot !cos(betarot) and sin(betarot), precompute for efficiency
-  real(kind=real64) :: const    !geometric constant
-  complex(kind=real64) :: constHz  !geometric constant for Hz
-  complex(kind=real64) :: constEz  !geometric constant for Ez
-  integer(kind=int32) :: idx      !source element index
-  integer(kind=int32) :: recidx   !receiver index
-  integer(kind=int32) :: ielemall,ielem       !wire element counters
-  integer(kind=int32) :: iep      !wire end point counter
-  real(kind=real64) :: xs,ys    !wire end point coordinates
-  complex(kind=real64) :: term1    !temp result for end point field values
+  complex(kind=real64)  :: Exrot,Eyrot,Hxrot,Hyrot,Hzrot  !temp field values in cylindrical coordinates
+  real(kind=real64)     :: cosbetasrc,sinbetasrc !cos(betasrc) and sin(betasrc), precompute for efficiency
+  real(kind=real64)     :: cosbetarot,sinbetarot !cos(betarot) and sin(betarot), precompute for efficiency
+  real(kind=real64)     :: const    !geometric constant
+  complex(kind=real64)  :: constHz  !geometric constant for Hz
+  complex(kind=real64)  :: constEz  !geometric constant for Ez
+  integer(kind=int32)   :: idx      !source element index
+  integer(kind=int32)   :: recidx   !iReceiver index
+  integer(kind=int32)   :: ielemall,ielem       !wire element counters
+  integer(kind=int32)   :: iep      !wire end point counter
+  real(kind=real64)     :: xs,ys    !wire end point coordinates
+  complex(kind=real64)  :: term1    !temp result for end point field values
   !signs for wire end points (predefine for efficiency, need just elements 1 and 4)
-  real(kind=real64),dimension(1:2),parameter :: signs = (/-1._real64,1._real64/)
-  real(kind=real64) :: sign     !sign for end point field values
+  real(kind=real64),dimension(1:2),parameter  :: signs = (/-1._real64,1._real64/)
+  real(kind=real64)     :: sign     !sign for end point field values
   !flag for computing epsv derivatives, not needed for forward computation, so "aniso" value cannot be used here
-  logical :: with_dvert
-  type(receiverdata),dimension(:),pointer :: Ewirerec  !points to Ez for isotropic and Ezv for VTI case
-  integer(kind=int32) :: ierr     !error index
-  integer(kind=int32) :: iwire    !wire counter
+  logical               :: with_dvert
+  type(receiverdata),dimension(:),pointer       :: Ewirerec  !points to Ez for isotropic and Ezv for VTI case
+  integer(kind=int32)   :: ierr     !error index
+  integer(kind=int32)   :: iwire    !wire counter
 
 
   !indicators for fast Hankel transform or adaptive integration
-  wellbehaved = .TRUE.
-  sz_eq_zr = .FALSE.
-  if(sz.EQ.zr) then
-    wellbehaved(1:2) = .FALSE.
-    wellbehaved(4:5) = .FALSE.
-    sz_eq_zr = .TRUE.
+  wellbehaved = .true.
+  sz_eq_zr = .false.
+  if (sz.eq.zr) then
+    wellbehaved(1:2) = .false.
+    wellbehaved(4:5) = .false.
+    sz_eq_zr = .true.
   endif
 
-  if(present(funcdHxwirev)) then
-    with_dvert = .TRUE.
-    if(sz_eq_zr) then
-      wellbehaved(8:9) = .FALSE.
+  if (present(funcdHxwirev)) then
+    with_dvert = .true.
+    if (sz_eq_zr) then
+      wellbehaved(8:9) = .false.
     endif
   else
-    with_dvert = .FALSE.
+    with_dvert = .false.
   endif
 
   !constant for Ez
@@ -111,12 +111,12 @@ subroutine interp_intvals_wire_allcomp(refl_var,bgdat,fld,src,sz,zr,omeps_recv,o
         betarot = beta - refl_var%betasrc(isrc)
 
 
-        r_is_zero: if(r.EQ.0._real64) then
+        r_is_zero: if (r.eq.0._real64) then
 
-          !quick & dirty: skip the point if receiver is right at source point
-          if(sz_eq_zr) then
-            if(refl_var%infolevel.ge.output_more) &
-              write(*,'(a)') 'WARNING: cannot handle a receiver at exactly the same location as a wire element yet, '// &
+          !quick & dirty: skip the point if iReceiver is right at source point
+          if (sz_eq_zr) then
+            if (refl_var%infolevel.ge.output_more) &
+              write(*,'(a)') 'WARNING: cannot handle a iReceiver at exactly the same location as a wire element yet, '// &
                 'ignoring this contribution!'
             cycle
           endif
@@ -128,10 +128,10 @@ subroutine interp_intvals_wire_allcomp(refl_var,bgdat,fld,src,sz,zr,omeps_recv,o
           IHz = 0._real64
 
         else !r is not zero
-          smallr: if(r.lt.rsplmin) then !r is but smaller than threshold radius for spline interpolation
+          smallr: if (r.lt.rsplmin) then !r is but smaller than threshold radius for spline interpolation
 
             !reflection coeff. for this radius
-            refl_var%refcoef_changed = .TRUE.
+            refl_var%refcoef_changed = .true.
             call prepare_refcoef(refl_var,r,0,aniso)
 
             !evaluate all integrals just for this radius
@@ -184,12 +184,12 @@ subroutine interp_intvals_wire_allcomp(refl_var,bgdat,fld,src,sz,zr,omeps_recv,o
         r = sqrt(x**2 + y**2)
 
         !distinguish case r=0 since here we need only 1 integral
-        chkr0: if(r .EQ. 0._real64) then
+        chkr0: if (r .eq. 0._real64) then
 
-          !quick & dirty: skip the point if receiver is right at source point
-          if(sz_eq_zr) then
-            if(refl_var%infolevel.ge.output_more) &
-              write(*,'(a)') 'WARNING: cannot handle a receiver at exactly the same location as a grounding point yet, '// &
+          !quick & dirty: skip the point if iReceiver is right at source point
+          if (sz_eq_zr) then
+            if (refl_var%infolevel.ge.output_more) &
+              write(*,'(a)') 'WARNING: cannot handle a iReceiver at exactly the same location as a grounding point yet, '// &
                 'ignoring this contribution!'
             cycle
           endif
@@ -208,10 +208,10 @@ subroutine interp_intvals_wire_allcomp(refl_var,bgdat,fld,src,sz,zr,omeps_recv,o
           cosbetarot = cos(betarot)
           sinbetarot = sin(betarot)
 
-          smallr1: if(r.lt.rsplmin) then !r is but smaller than threshold radius for spline interpolation
+          smallr1: if (r.lt.rsplmin) then !r is but smaller than threshold radius for spline interpolation
 
             !reflection coeff. for this radius
-            refl_var%refcoef_changed = .TRUE.
+            refl_var%refcoef_changed = .true.
             call prepare_refcoef(refl_var,r,0,aniso)
 
             !evaluate all integrals just for this radius
@@ -231,8 +231,8 @@ subroutine interp_intvals_wire_allcomp(refl_var,bgdat,fld,src,sz,zr,omeps_recv,o
           endif smallr1
 
           !include rotation here
-          !> Exrot etc. are field components in coordiante system wih axes parallel to source wire
-          !> E(irec,#) are field values in coord. system with original x,y axes
+          ! Exrot etc. are field components in coordiante system wih axes parallel to source wire
+          ! E(irec,#) are field values in coord. system with original x,y axes
           term1 = -sign * IendExy / dfourpi
           Exrot = term1 * cosbetarot
           Eyrot = term1 * sinbetarot
@@ -251,11 +251,11 @@ subroutine interp_intvals_wire_allcomp(refl_var,bgdat,fld,src,sz,zr,omeps_recv,o
         endif chkr0
 
         !VTI: epsv derivatives
-        dvert: if(with_dvert) then
-          chkr0v: if(r .EQ. 0._real64) then
+        dvert: if (with_dvert) then
+          chkr0v: if (r .eq. 0._real64) then
 
             !cycling was already done above, no need to query again here is src and rec are at exactly the same position
-            !if(sz_eq_zr) cycle
+            !if (sz_eq_zr) cycle
 
             !only need Bessel function of order 0, since Bessel function of order 1 is zero for r=0
             ibesord = 0
@@ -266,10 +266,10 @@ subroutine interp_intvals_wire_allcomp(refl_var,bgdat,fld,src,sz,zr,omeps_recv,o
 
           else !r is not zero
 
-            smallr1v: if(r.lt.rsplmin) then !r is but smaller than threshold radius for spline interpolation
+            smallr1v: if (r.lt.rsplmin) then !r is but smaller than threshold radius for spline interpolation
 
               !reflection coeff. for this radius
-              refl_var%refcoef_changed = .TRUE.
+              refl_var%refcoef_changed = .true.
               call prepare_refcoef(refl_var,r,0,aniso)
 
               !evaluate all integrals just for this radius
@@ -289,8 +289,8 @@ subroutine interp_intvals_wire_allcomp(refl_var,bgdat,fld,src,sz,zr,omeps_recv,o
             endif smallr1v
 
             !include rotation here
-            !> Exrot etc. are field components in coordiante system wih axes parallel to source wire
-            !> E(irec,#) are field values in coord. system with original x,y axes
+            ! Exrot etc. are field components in coordiante system wih axes parallel to source wire
+            ! E(irec,#) are field values in coord. system with original x,y axes
             term1 = -sign * IendExy / dfourpi
             Exrot = term1 * cosbetarot
             Eyrot = term1 * sinbetarot
@@ -314,15 +314,15 @@ subroutine interp_intvals_wire_allcomp(refl_var,bgdat,fld,src,sz,zr,omeps_recv,o
   enddo wires  !wires
 
 
-  !special contribution to derivative of Ez in receiver layer
-  deriv_ilayrec: if(ilay .EQ. ilayrec) then
+  !special contribution to derivative of Ez in iReceiver layer
+  deriv_ilayrec: if (ilay .eq. ilayrec) then
     allocate(Ewirerec(src%nwire),stat=ierr)
-    if(ierr.NE. 0) call alloc_error(pid,'interp_intvals_wire','WEwirerec',ierr)
+    if (ierr.ne. 0) call alloc_error(pid,'interp_intvals_wire','WEwirerec',ierr)
 
     !there is a factor epsv in the term before the Ez integral
     !-> for isotropic case, epsv becomes eps and contribution is added to E
     !-> for VTI case, derivative of this term only exists for epsv -> add to Ev, nothing added to E
-    if(with_dvert) then
+    if (with_dvert) then
       do iwire=1,src%nwire
         Ewirerec(iwire)%Ez => fldv(iwire)%Ez
       enddo
@@ -358,12 +358,12 @@ subroutine interp_intvals_wire_allcomp(refl_var,bgdat,fld,src,sz,zr,omeps_recv,o
           x = bgdat%Exypos(recidx,1) - xs
           r = sqrt(x**2 + y**2)
 
-          if(r.EQ.0._real64) then
+          if (r.eq.0._real64) then
             !skip integration right at source point - check this!
-            if(sz_eq_zr) cycle
+            if (sz_eq_zr) cycle
             IendEz = compute_1valr0(funcD0TMfwd)
           else
-            if(r.lt.rsplmin) then
+            if (r.lt.rsplmin) then
               !reflection coeff. for this radius
               call prepare_refcoef(refl_var,r,ved,aniso) !use "ved" to compute TM refl. coeff. only
               ibesord = 0
@@ -390,74 +390,74 @@ endsubroutine interp_intvals_wire_allcomp
 
 
 !------------------------------------------------------------
-!>  1D EM subroutine interp_intvals_wire_Exy
+!  1D EM subroutine interp_intvals_wire_Exy
 !
-!>  get interpolated field values at receiver locations, horizontal wire source
-!>    Ex and/or Ey only
+!  get interpolated field values at iReceiver locations, horizontal wire source
+!    Ex and/or Ey only
 !
-!>  Rita Streich 2009-2011
+!  Rita Streich 2009-2011
 !------------------------------------------------------------
 subroutine interp_intvals_wire_Exy(refl_var,bgdat,fld,src,sz,zr, func1Exwire,func2Exwire,ilay, func2Exwirev,fldv)
 
   implicit none
 
   !external variables
-  type(refl_struct) :: refl_var   !everything needed throughout 1D computations
-  type(backgrounddata) :: bgdat      !coordinate vectors and final output EM fields
+  type(refl_struct)               :: refl_var   !everything needed throughout 1D computations
+  type(backgrounddata)            :: bgdat      !coordinate vectors and final output EM fields
   type(receiverdata),dimension(:) :: fld        !field or derivative vectors for each wire, all components
-  type(sorec),intent( in ) :: src        !source definition (we need the currents here)
-  real(kind=real64),intent( in ) :: sz,zr      !source and receiver depth
-  complex(kind=real64),external :: func1Exwire,func2Exwire
-  integer(kind=int32),intent( in ) :: ilay       !layer index for derivatives - leave at zero for forward modeling
-  complex(kind=real64),external,optional :: func2Exwirev !integral derivatives for epsv
+  type(sorec),intent(in)          :: src        !source definition (we need the currents here)
+  real(kind=real64),intent(in)    :: sz,zr      !source and iReceiver depth
+  complex(kind=real64),external   :: func1Exwire,func2Exwire
+  integer(kind=int32),intent(in)  :: ilay       !layer index for derivatives - leave at zero for forward modeling
+  complex(kind=real64),external,optional   :: func2Exwirev !integral derivatives for epsv
   type(receiverdata),dimension(:),optional :: fldv         !field or derivative vectors for each wire, all components
 
   !internal variables
-  integer(kind=int32) :: isrc    !source element counter
-  real(kind=real64) :: x,y,r   !temp source-receiver distances
-  integer(kind=int32) :: irec    !receiver counter
-  real(kind=real64) :: beta,betarot      !temp angles
+  integer(kind=int32)   :: isrc    !source element counter
+  real(kind=real64)     :: x,y,r   !temp source-iReceiver distances
+  integer(kind=int32)   :: irec    !iReceiver counter
+  real(kind=real64)     :: beta,betarot      !temp angles
 
-  complex(kind=real64) :: IExy          !interpolated integral values for integrals along wire
-  complex(kind=real64) :: IendExy       !interpolated integral values for end points
+  complex(kind=real64)          :: IExy          !interpolated integral values for integrals along wire
+  complex(kind=real64)          :: IendExy       !interpolated integral values for end points
 
-  logical,dimension(nintWiredvti) :: wellbehaved   !indicates if Hankel integration can be used
-  logical :: sz_eq_zr      !indicates if source and reveicer are at the same depth
-  integer(kind=int32),dimension(NREL) :: ibesord   !bessel function order (integer "array")
+  logical,dimension(nintWiredvti)   :: wellbehaved   !indicates if Hankel integration can be used
+  logical                       :: sz_eq_zr      !indicates if source and reveicer are at the same depth
+  integer(kind=int32),dimension(NREL)  :: ibesord   !bessel function order (integer "array")
 
-  complex(kind=real64) :: Exrot,Eyrot  !temp field values in cylindrical coordinates
-  real(kind=real64) :: cosbetasrc,sinbetasrc !cos(betasrc) and sin(betasrc), precompute for efficiency
-  real(kind=real64) :: cosbetarot,sinbetarot !cos(betarot) and sin(betarot), precompute for efficiency
-  real(kind=real64) :: const    !geometric constant
-  integer(kind=int32) :: idx      !source element index
-  integer(kind=int32) :: recidx   !receiver index
-  integer(kind=int32) :: ielemall,ielem       !wire element counters
-  integer(kind=int32) :: iep      !wire end point counter
-  real(kind=real64) :: xs,ys    !wire end point coordinates
-  complex(kind=real64) :: term1    !temp result for end point field values
+  complex(kind=real64)  :: Exrot,Eyrot  !temp field values in cylindrical coordinates
+  real(kind=real64)     :: cosbetasrc,sinbetasrc !cos(betasrc) and sin(betasrc), precompute for efficiency
+  real(kind=real64)     :: cosbetarot,sinbetarot !cos(betarot) and sin(betarot), precompute for efficiency
+  real(kind=real64)     :: const    !geometric constant
+  integer(kind=int32)   :: idx      !source element index
+  integer(kind=int32)   :: recidx   !iReceiver index
+  integer(kind=int32)   :: ielemall,ielem       !wire element counters
+  integer(kind=int32)   :: iep      !wire end point counter
+  real(kind=real64)     :: xs,ys    !wire end point coordinates
+  complex(kind=real64)  :: term1    !temp result for end point field values
   !signs for wire end points (predefine for efficiency, need just elements 1 and 4)
-  real(kind=real64),dimension(1:2),parameter :: signs = (/-1._real64,1._real64/)
-  real(kind=real64) :: sign     !sign for end point field values
+  real(kind=real64),dimension(1:2),parameter  :: signs = (/-1._real64,1._real64/)
+  real(kind=real64)     :: sign     !sign for end point field values
   !flag for computing epsv derivatives, not needed for forward computation, so "aniso" value cannot be used here
-  logical :: with_dvert
+  logical               :: with_dvert
 
 
   !indicators for fast Hankel transform or adaptive integration
-  wellbehaved = .TRUE.
-  sz_eq_zr = .FALSE.
-  if(sz.EQ.zr) then
-    wellbehaved(1:2) = .FALSE.
-    wellbehaved(4:5) = .FALSE.
-    sz_eq_zr = .TRUE.
+  wellbehaved = .true.
+  sz_eq_zr = .false.
+  if (sz.eq.zr) then
+    wellbehaved(1:2) = .false.
+    wellbehaved(4:5) = .false.
+    sz_eq_zr = .true.
   endif
 
-  if(present(func2Exwirev)) then
-    with_dvert = .TRUE.
-    if(sz_eq_zr) then
-      wellbehaved(8:9) = .FALSE.
+  if (present(func2Exwirev)) then
+    with_dvert = .true.
+    if (sz_eq_zr) then
+      wellbehaved(8:9) = .false.
     endif
   else
-    with_dvert = .FALSE.
+    with_dvert = .false.
   endif
 
 
@@ -478,7 +478,7 @@ subroutine interp_intvals_wire_Exy(refl_var,bgdat,fld,src,sz,zr, func1Exwire,fun
       ielemall = ielemall + 1
 
       !same positions for Ex and Ey
-      exy_equalpos: if(bgdat%nExy.gt.0) then
+      exy_equalpos: if (bgdat%nExy.gt.0) then
 
       receivers: do irec=refl_var%irecstart,refl_var%irecend
         recidx = refl_var%irecperzExy(irec)
@@ -490,12 +490,12 @@ subroutine interp_intvals_wire_Exy(refl_var,bgdat,fld,src,sz,zr, func1Exwire,fun
         beta = atan2(y,x)
         betarot = beta - refl_var%betasrc(isrc)
 
-        r_is_zero: if(r.EQ.0._real64) then
+        r_is_zero: if (r.eq.0._real64) then
 
-          !quick & dirty: skip the point if receiver is right at source point
-          if(sz_eq_zr) then
-            if(refl_var%infolevel.ge.output_more) &
-              write(*,'(a)') 'WARNING: cannot handle a receiver at exactly the same location as a wire element yet, '// &
+          !quick & dirty: skip the point if iReceiver is right at source point
+          if (sz_eq_zr) then
+            if (refl_var%infolevel.ge.output_more) &
+              write(*,'(a)') 'WARNING: cannot handle a iReceiver at exactly the same location as a wire element yet, '// &
                 'ignoring this contribution!'
             cycle
           endif
@@ -505,10 +505,10 @@ subroutine interp_intvals_wire_Exy(refl_var,bgdat,fld,src,sz,zr, func1Exwire,fun
           IExy = compute_1valr0(func1Exwire)
 
         else !r is not zero
-          smallr: if(r.lt.rsplmin) then !r is but smaller than threshold radius for spline interpolation
+          smallr: if (r.lt.rsplmin) then !r is but smaller than threshold radius for spline interpolation
 
             !reflection coeff. for this radius
-            refl_var%refcoef_changed = .TRUE.
+            refl_var%refcoef_changed = .true.
             call prepare_refcoef(refl_var,r,0,aniso)
 
             !evaluate all integrals just for this radius
@@ -531,7 +531,7 @@ subroutine interp_intvals_wire_Exy(refl_var,bgdat,fld,src,sz,zr, func1Exwire,fun
 
       else
 
-        have_ex: if(bgdat%nEx .gt. 0) then
+        have_ex: if (bgdat%nEx .gt. 0) then
 
       receiversex: do irec=refl_var%irecstart,refl_var%irecend
         recidx = refl_var%irecperzExy(irec)
@@ -543,12 +543,12 @@ subroutine interp_intvals_wire_Exy(refl_var,bgdat,fld,src,sz,zr, func1Exwire,fun
         beta = atan2(y,x)
         betarot = beta - refl_var%betasrc(isrc)
 
-        r_is_zeroex: if(r.EQ.0._real64) then
+        r_is_zeroex: if (r.eq.0._real64) then
 
-          !quick & dirty: skip the point if receiver is right at source point
-          if(sz_eq_zr) then
-            if(refl_var%infolevel.ge.output_more) &
-              write(*,'(a)') 'WARNING: cannot handle a receiver at exactly the same location as a wire element yet, '// &
+          !quick & dirty: skip the point if iReceiver is right at source point
+          if (sz_eq_zr) then
+            if (refl_var%infolevel.ge.output_more) &
+              write(*,'(a)') 'WARNING: cannot handle a iReceiver at exactly the same location as a wire element yet, '// &
                 'ignoring this contribution!'
             cycle
           endif
@@ -558,10 +558,10 @@ subroutine interp_intvals_wire_Exy(refl_var,bgdat,fld,src,sz,zr, func1Exwire,fun
           IExy = compute_1valr0(func1Exwire)
 
         else !r is not zero
-          smallrex: if(r.lt.rsplmin) then !r is but smaller than threshold radius for spline interpolation
+          smallrex: if (r.lt.rsplmin) then !r is but smaller than threshold radius for spline interpolation
 
             !reflection coeff. for this radius
-            refl_var%refcoef_changed = .TRUE.
+            refl_var%refcoef_changed = .true.
             call prepare_refcoef(refl_var,r,0,aniso)
 
             !evaluate all integrals just for this radius
@@ -583,7 +583,7 @@ subroutine interp_intvals_wire_Exy(refl_var,bgdat,fld,src,sz,zr, func1Exwire,fun
 
         endif have_ex
 
-        have_ey: if(bgdat%nEy .gt. 0) then
+        have_ey: if (bgdat%nEy .gt. 0) then
 
       receiversey: do irec=refl_var%irecstart,refl_var%irecend
         recidx = refl_var%irecperzExy(irec)
@@ -595,12 +595,12 @@ subroutine interp_intvals_wire_Exy(refl_var,bgdat,fld,src,sz,zr, func1Exwire,fun
         beta = atan2(y,x)
         betarot = beta - refl_var%betasrc(isrc)
 
-        r_is_zeroey: if(r.EQ.0._real64) then
+        r_is_zeroey: if (r.eq.0._real64) then
 
-          !quick & dirty: skip the point if receiver is right at source point
-          if(sz_eq_zr) then
-            if(refl_var%infolevel.ge.output_more) &
-              write(*,'(a)') 'WARNING: cannot handle a receiver at exactly the same location as a wire element yet, '// &
+          !quick & dirty: skip the point if iReceiver is right at source point
+          if (sz_eq_zr) then
+            if (refl_var%infolevel.ge.output_more) &
+              write(*,'(a)') 'WARNING: cannot handle a iReceiver at exactly the same location as a wire element yet, '// &
                 'ignoring this contribution!'
             cycle
           endif
@@ -610,10 +610,10 @@ subroutine interp_intvals_wire_Exy(refl_var,bgdat,fld,src,sz,zr, func1Exwire,fun
           IExy = compute_1valr0(func1Exwire)
 
         else !r is not zero
-          smallrey: if(r.lt.rsplmin) then !r is but smaller than threshold radius for spline interpolation
+          smallrey: if (r.lt.rsplmin) then !r is but smaller than threshold radius for spline interpolation
 
             !reflection coeff. for this radius
-            refl_var%refcoef_changed = .TRUE.
+            refl_var%refcoef_changed = .true.
             call prepare_refcoef(refl_var,r,0,aniso)
 
             !evaluate all integrals just for this radius
@@ -646,7 +646,7 @@ subroutine interp_intvals_wire_Exy(refl_var,bgdat,fld,src,sz,zr, func1Exwire,fun
       sign = signs(iep)
 
       !same positions for Ex and Ey
-      exy_equalpos_ep: if(bgdat%nExy.gt.0) then
+      exy_equalpos_ep: if (bgdat%nExy.gt.0) then
 
       receivers1: do irec=refl_var%irecstart,refl_var%irecend
         recidx = refl_var%irecperzExy(irec)
@@ -656,12 +656,12 @@ subroutine interp_intvals_wire_Exy(refl_var,bgdat,fld,src,sz,zr, func1Exwire,fun
         r = sqrt(x**2 + y**2)
 
         !distinguish case r=0 since here we need only 1 integral
-        chkr0: if(r .EQ. 0._real64) then
+        chkr0: if (r .eq. 0._real64) then
 
-          !quick & dirty: skip the point if receiver is right at source point
-          if(sz_eq_zr) then
-            if(refl_var%infolevel.ge.output_more) &
-              write(*,'(a)') 'WARNING: cannot handle a receiver at exactly the same location as a grounding point yet, '// &
+          !quick & dirty: skip the point if iReceiver is right at source point
+          if (sz_eq_zr) then
+            if (refl_var%infolevel.ge.output_more) &
+              write(*,'(a)') 'WARNING: cannot handle a iReceiver at exactly the same location as a grounding point yet, '// &
                 'ignoring this contribution!'
             cycle
           endif
@@ -672,10 +672,10 @@ subroutine interp_intvals_wire_Exy(refl_var,bgdat,fld,src,sz,zr, func1Exwire,fun
           cosbetarot = cos(betarot)
           sinbetarot = sin(betarot)
 
-          smallr1: if(r.lt.rsplmin) then !r is but smaller than threshold radius for spline interpolation
+          smallr1: if (r.lt.rsplmin) then !r is but smaller than threshold radius for spline interpolation
 
             !reflection coeff. for this radius
-            refl_var%refcoef_changed = .TRUE.
+            refl_var%refcoef_changed = .true.
             call prepare_refcoef(refl_var,r,0,aniso)
 
             !evaluate all integrals just for this radius
@@ -687,8 +687,8 @@ subroutine interp_intvals_wire_Exy(refl_var,bgdat,fld,src,sz,zr, func1Exwire,fun
           endif smallr1
 
           !include rotation here
-          !> Exrot etc. are field components in coordiante system wih axes parallel to source wire
-          !> E(irec,#) are field values in coord. system with original x,y axes
+          ! Exrot etc. are field components in coordiante system wih axes parallel to source wire
+          ! E(irec,#) are field values in coord. system with original x,y axes
           term1 = -sign * IendExy / dfourpi
           Exrot = term1 * cosbetarot
           Eyrot = term1 * sinbetarot
@@ -697,12 +697,12 @@ subroutine interp_intvals_wire_Exy(refl_var,bgdat,fld,src,sz,zr, func1Exwire,fun
         endif chkr0
 
         !VTI: epsv derivatives
-        dvert: if(with_dvert) then
-          chkr0v: if(r .NE. 0._real64) then
-            smallr1v: if(r.lt.rsplmin) then !r is but smaller than threshold radius for spline interpolation
+        dvert: if (with_dvert) then
+          chkr0v: if (r .ne. 0._real64) then
+            smallr1v: if (r.lt.rsplmin) then !r is but smaller than threshold radius for spline interpolation
 
               !reflection coeff. for this radius
-              refl_var%refcoef_changed = .TRUE.
+              refl_var%refcoef_changed = .true.
               call prepare_refcoef(refl_var,r,0,aniso)
 
               !evaluate all integrals just for this radius
@@ -715,8 +715,8 @@ subroutine interp_intvals_wire_Exy(refl_var,bgdat,fld,src,sz,zr, func1Exwire,fun
             endif smallr1v
 
             !include rotation here
-            !> Exrot etc. are field components in coordiante system wih axes parallel to source wire
-            !> E(irec,#) are field values in coord. system with original x,y axes
+            ! Exrot etc. are field components in coordiante system wih axes parallel to source wire
+            ! E(irec,#) are field values in coord. system with original x,y axes
             term1 = -sign * IendExy / dfourpi
             Exrot = term1 * cosbetarot
             Eyrot = term1 * sinbetarot
@@ -729,7 +729,7 @@ subroutine interp_intvals_wire_Exy(refl_var,bgdat,fld,src,sz,zr, func1Exwire,fun
 
       else
 
-        have_ex_ep: if(bgdat%nEx .gt. 0) then
+        have_ex_ep: if (bgdat%nEx .gt. 0) then
 
       receivers1ex: do irec=refl_var%irecstart,refl_var%irecend
         recidx = refl_var%irecperzExy(irec)
@@ -739,12 +739,12 @@ subroutine interp_intvals_wire_Exy(refl_var,bgdat,fld,src,sz,zr, func1Exwire,fun
         r = sqrt(x**2 + y**2)
 
         !distinguish case r=0 since here we need only 1 integral
-        chkr0ex: if(r .EQ. 0._real64) then
+        chkr0ex: if (r .eq. 0._real64) then
 
-          !quick & dirty: skip the point if receiver is right at source point
-          if(sz_eq_zr) then
-            if(refl_var%infolevel.ge.output_more) &
-              write(*,'(a)') 'WARNING: cannot handle a receiver at exactly the same location as a grounding point yet, '// &
+          !quick & dirty: skip the point if iReceiver is right at source point
+          if (sz_eq_zr) then
+            if (refl_var%infolevel.ge.output_more) &
+              write(*,'(a)') 'WARNING: cannot handle a iReceiver at exactly the same location as a grounding point yet, '// &
                 'ignoring this contribution!'
             cycle
           endif
@@ -755,10 +755,10 @@ subroutine interp_intvals_wire_Exy(refl_var,bgdat,fld,src,sz,zr, func1Exwire,fun
           cosbetarot = cos(betarot)
           sinbetarot = sin(betarot)
 
-          smallr1ex: if(r.lt.rsplmin) then !r is but smaller than threshold radius for spline interpolation
+          smallr1ex: if (r.lt.rsplmin) then !r is but smaller than threshold radius for spline interpolation
 
             !reflection coeff. for this radius
-            refl_var%refcoef_changed = .TRUE.
+            refl_var%refcoef_changed = .true.
             call prepare_refcoef(refl_var,r,0,aniso)
 
             !evaluate all integrals just for this radius
@@ -770,8 +770,8 @@ subroutine interp_intvals_wire_Exy(refl_var,bgdat,fld,src,sz,zr, func1Exwire,fun
           endif smallr1ex
 
           !include rotation here
-          !> Exrot etc. are field components in coordiante system wih axes parallel to source wire
-          !> E(irec,#) are field values in coord. system with original x,y axes
+          ! Exrot etc. are field components in coordiante system wih axes parallel to source wire
+          ! E(irec,#) are field values in coord. system with original x,y axes
           term1 = -sign * IendExy / dfourpi
           Exrot = term1 * cosbetarot
           Eyrot = term1 * sinbetarot
@@ -779,12 +779,12 @@ subroutine interp_intvals_wire_Exy(refl_var,bgdat,fld,src,sz,zr, func1Exwire,fun
         endif chkr0ex
 
         !VTI: epsv derivatives
-        dvertex: if(with_dvert) then
-          chkr0vex: if(r .NE. 0._real64) then
-            smallr1vex: if(r.lt.rsplmin) then !r is but smaller than threshold radius for spline interpolation
+        dvertex: if (with_dvert) then
+          chkr0vex: if (r .ne. 0._real64) then
+            smallr1vex: if (r.lt.rsplmin) then !r is but smaller than threshold radius for spline interpolation
 
               !reflection coeff. for this radius
-              refl_var%refcoef_changed = .TRUE.
+              refl_var%refcoef_changed = .true.
               call prepare_refcoef(refl_var,r,0,aniso)
 
               !evaluate all integrals just for this radius
@@ -797,8 +797,8 @@ subroutine interp_intvals_wire_Exy(refl_var,bgdat,fld,src,sz,zr, func1Exwire,fun
             endif smallr1vex
 
             !include rotation here
-            !> Exrot etc. are field components in coordiante system wih axes parallel to source wire
-            !> E(irec,#) are field values in coord. system with original x,y axes
+            ! Exrot etc. are field components in coordiante system wih axes parallel to source wire
+            ! E(irec,#) are field values in coord. system with original x,y axes
             term1 = -sign * IendExy / dfourpi
             Exrot = term1 * cosbetarot
             Eyrot = term1 * sinbetarot
@@ -809,7 +809,7 @@ subroutine interp_intvals_wire_Exy(refl_var,bgdat,fld,src,sz,zr, func1Exwire,fun
 
         endif have_ex_ep
 
-        have_ey_ep: if(bgdat%nEy .gt. 0) then
+        have_ey_ep: if (bgdat%nEy .gt. 0) then
 
       receivers1ey: do irec=refl_var%irecstart,refl_var%irecend
         recidx = refl_var%irecperzExy(irec)
@@ -819,12 +819,12 @@ subroutine interp_intvals_wire_Exy(refl_var,bgdat,fld,src,sz,zr, func1Exwire,fun
         r = sqrt(x**2 + y**2)
 
         !distinguish case r=0 since here we need only 1 integral
-        chkr0ey: if(r .EQ. 0._real64) then
+        chkr0ey: if (r .eq. 0._real64) then
 
-          !quick & dirty: skip the point if receiver is right at source point
-          if(sz_eq_zr) then
-            if(refl_var%infolevel.ge.output_more) &
-              write(*,'(a)') 'WARNING: cannot handle a receiver at exactly the same location as a grounding point yet, '// &
+          !quick & dirty: skip the point if iReceiver is right at source point
+          if (sz_eq_zr) then
+            if (refl_var%infolevel.ge.output_more) &
+              write(*,'(a)') 'WARNING: cannot handle a iReceiver at exactly the same location as a grounding point yet, '// &
                 'ignoring this contribution!'
             cycle
           endif
@@ -835,10 +835,10 @@ subroutine interp_intvals_wire_Exy(refl_var,bgdat,fld,src,sz,zr, func1Exwire,fun
           cosbetarot = cos(betarot)
           sinbetarot = sin(betarot)
 
-          smallr1ey: if(r.lt.rsplmin) then !r is but smaller than threshold radius for spline interpolation
+          smallr1ey: if (r.lt.rsplmin) then !r is but smaller than threshold radius for spline interpolation
 
             !reflection coeff. for this radius
-            refl_var%refcoef_changed = .TRUE.
+            refl_var%refcoef_changed = .true.
             call prepare_refcoef(refl_var,r,0,aniso)
 
             !evaluate all integrals just for this radius
@@ -850,8 +850,8 @@ subroutine interp_intvals_wire_Exy(refl_var,bgdat,fld,src,sz,zr, func1Exwire,fun
           endif smallr1ey
 
           !include rotation here
-          !> Exrot etc. are field components in coordiante system wih axes parallel to source wire
-          !> E(irec,#) are field values in coord. system with original x,y axes
+          ! Exrot etc. are field components in coordiante system wih axes parallel to source wire
+          ! E(irec,#) are field values in coord. system with original x,y axes
           term1 = -sign * IendExy / dfourpi
           Exrot = term1 * cosbetarot
           Eyrot = term1 * sinbetarot
@@ -859,12 +859,12 @@ subroutine interp_intvals_wire_Exy(refl_var,bgdat,fld,src,sz,zr, func1Exwire,fun
         endif chkr0ey
 
         !VTI: epsv derivatives
-        dvertey: if(with_dvert) then
-          chkr0vey: if(r .NE. 0._real64) then
-            smallr1vey: if(r.lt.rsplmin) then !r is but smaller than threshold radius for spline interpolation
+        dvertey: if (with_dvert) then
+          chkr0vey: if (r .ne. 0._real64) then
+            smallr1vey: if (r.lt.rsplmin) then !r is but smaller than threshold radius for spline interpolation
 
               !reflection coeff. for this radius
-              refl_var%refcoef_changed = .TRUE.
+              refl_var%refcoef_changed = .true.
               call prepare_refcoef(refl_var,r,0,aniso)
 
               !evaluate all integrals just for this radius
@@ -877,8 +877,8 @@ subroutine interp_intvals_wire_Exy(refl_var,bgdat,fld,src,sz,zr, func1Exwire,fun
             endif smallr1vey
 
             !include rotation here
-            !> Exrot etc. are field components in coordiante system wih axes parallel to source wire
-            !> E(irec,#) are field values in coord. system with original x,y axes
+            ! Exrot etc. are field components in coordiante system wih axes parallel to source wire
+            ! E(irec,#) are field values in coord. system with original x,y axes
             term1 = -sign * IendExy / dfourpi
             Exrot = term1 * cosbetarot
             Eyrot = term1 * sinbetarot
@@ -897,78 +897,78 @@ endsubroutine interp_intvals_wire_Exy
 
 
 !------------------------------------------------------------
-!>  1D EM subroutine interp_intvals_wire_Ez
+!  1D EM subroutine interp_intvals_wire_Ez
 !
-!>  get interpolated field values at receiver locations, horizontal wire source,
-!>    Ez only
+!  get interpolated field values at iReceiver locations, horizontal wire source,
+!    Ez only
 !
-!>  Rita Streich 2009-2011
+!  Rita Streich 2009-2011
 !------------------------------------------------------------
 subroutine interp_intvals_wire_Ez(refl_var,bgdat,fld,src,sz,zr,omeps_recv, funcD0TM,ilay,funcD0TMfwd, funcD0TMv,fldv)
 
   implicit none
 
   !external variables
-  type(refl_struct) :: refl_var   !everything needed throughout 1D computations
-  type(backgrounddata) :: bgdat      !coordinate vectors and final output EM fields
-  type(receiverdata),dimension(:) :: fld        !field or derivative vectors for each wire, all components
-  type(sorec),intent( in ) :: src        !source definition (we need the currents here)
-  real(kind=real64),intent( in ) :: sz,zr      !source and receiver depth
-  complex(kind=real64),intent( in ) :: omeps_recv  !omega * eps in receiver layer
-  complex(kind=real64),external :: funcD0TM
-  integer(kind=int32),intent( in ) :: ilay       !layer index for derivatives - leave at zero for forward modeling
-  complex(kind=real64),external,optional :: funcD0TMfwd  !function only needed for derivatives in receiver layer
-  complex(kind=real64),external,optional :: funcD0TMv    !integral derivatives for epsv
-  type(receiverdata),dimension(:),optional :: fldv       !field or derivative vectors for each wire, all components
+  type(refl_struct)               :: refl_var   !everything needed throughout 1D computations
+  type(backgrounddata)            :: bgdat      !coordinate vectors and final output EM fields
+  type(receiverdata),dimension(:)   :: fld        !field or derivative vectors for each wire, all components
+  type(sorec),intent(in)          :: src        !source definition (we need the currents here)
+  real(kind=real64),intent(in)    :: sz,zr      !source and iReceiver depth
+  complex(kind=real64),intent(in) :: omeps_recv  !omega * eps in iReceiver layer
+  complex(kind=real64),external   :: funcD0TM
+  integer(kind=int32),intent(in)  :: ilay       !layer index for derivatives - leave at zero for forward modeling
+  complex(kind=real64),external,optional   :: funcD0TMfwd  !function only needed for derivatives in iReceiver layer
+  complex(kind=real64),external,optional   :: funcD0TMv    !integral derivatives for epsv
+  type(receiverdata),dimension(:),optional   :: fldv       !field or derivative vectors for each wire, all components
 
   !internal variables
-  integer(kind=int32) :: isrc    !source element counter
-  real(kind=real64) :: x,y,r   !temp source-receiver distances
-  integer(kind=int32) :: irec    !receiver counter
-  real(kind=real64) :: beta,betarot      !temp angles
+  integer(kind=int32)   :: isrc    !source element counter
+  real(kind=real64)     :: x,y,r   !temp source-iReceiver distances
+  integer(kind=int32)   :: irec    !iReceiver counter
+  real(kind=real64)     :: beta,betarot      !temp angles
 
-  complex(kind=real64) :: IendEz !interpolated integral values for end points
+  complex(kind=real64)          :: IendEz !interpolated integral values for end points
 
-  logical,dimension(nintWiredvti) :: wellbehaved   !indicates if Hankel integration can be used
-  logical :: sz_eq_zr      !indicates if source and reveicer are at the same depth
-  integer(kind=int32),dimension(NREL) :: ibesord   !bessel function order (integer "array")
+  logical,dimension(nintWiredvti)   :: wellbehaved   !indicates if Hankel integration can be used
+  logical                       :: sz_eq_zr      !indicates if source and reveicer are at the same depth
+  integer(kind=int32),dimension(NREL)  :: ibesord   !bessel function order (integer "array")
 
-  real(kind=real64) :: cosbetasrc,sinbetasrc !cos(betasrc) and sin(betasrc), precompute for efficiency
-  real(kind=real64) :: cosbetarot,sinbetarot !cos(betarot) and sin(betarot), precompute for efficiency
-  real(kind=real64) :: const    !geometric constant
-  complex(kind=real64) :: constEz  !geometric constant for Ez
-  integer(kind=int32) :: idx      !source element index
-  integer(kind=int32) :: recidx   !receiver index
-  integer(kind=int32) :: ielemall  !wire element counters
-  integer(kind=int32) :: iep      !wire end point counter
-  real(kind=real64) :: xs,ys    !wire end point coordinates
-  complex(kind=real64) :: term1    !temp result for end point field values
+  real(kind=real64)     :: cosbetasrc,sinbetasrc !cos(betasrc) and sin(betasrc), precompute for efficiency
+  real(kind=real64)     :: cosbetarot,sinbetarot !cos(betarot) and sin(betarot), precompute for efficiency
+  real(kind=real64)     :: const    !geometric constant
+  complex(kind=real64)  :: constEz  !geometric constant for Ez
+  integer(kind=int32)   :: idx      !source element index
+  integer(kind=int32)   :: recidx   !iReceiver index
+  integer(kind=int32)   :: ielemall  !wire element counters
+  integer(kind=int32)   :: iep      !wire end point counter
+  real(kind=real64)     :: xs,ys    !wire end point coordinates
+  complex(kind=real64)  :: term1    !temp result for end point field values
   !signs for wire end points (predefine for efficiency, need just elements 1 and 4)
-  real(kind=real64),dimension(1:2),parameter :: signs = (/-1._real64,1._real64/)
-  real(kind=real64) :: sign     !sign for end point field values
+  real(kind=real64),dimension(1:2),parameter  :: signs = (/-1._real64,1._real64/)
+  real(kind=real64)     :: sign     !sign for end point field values
   !flag for computing epsv derivatives, not needed for forward computation, so "aniso" value cannot be used here
-  logical :: with_dvert
-  type(receiverdata),dimension(:),pointer :: Ewirerec  !points to Ez for isotropic and Ezv for VTI case
-  integer(kind=int32) :: ierr     !error index
-  integer(kind=int32) :: iwire    !wire counter
+  logical               :: with_dvert
+  type(receiverdata),dimension(:),pointer       :: Ewirerec  !points to Ez for isotropic and Ezv for VTI case
+  integer(kind=int32)   :: ierr     !error index
+  integer(kind=int32)   :: iwire    !wire counter
 
 
   !indicators for fast Hankel transform or adaptive integration
-  wellbehaved = .TRUE.
-  sz_eq_zr = .FALSE.
-  if(sz.EQ.zr) then
-    wellbehaved(1:2) = .FALSE.
-    wellbehaved(4:5) = .FALSE.
-    sz_eq_zr = .TRUE.
+  wellbehaved = .true.
+  sz_eq_zr = .false.
+  if (sz.eq.zr) then
+    wellbehaved(1:2) = .false.
+    wellbehaved(4:5) = .false.
+    sz_eq_zr = .true.
   endif
 
-  if(present(funcD0TMv)) then
-    with_dvert = .TRUE.
-    if(sz_eq_zr) then
-      wellbehaved(8:9) = .FALSE.
+  if (present(funcD0TMv)) then
+    with_dvert = .true.
+    if (sz_eq_zr) then
+      wellbehaved(8:9) = .false.
     endif
   else
-    with_dvert = .FALSE.
+    with_dvert = .false.
   endif
 
   !constant for Ez
@@ -1002,12 +1002,12 @@ subroutine interp_intvals_wire_Ez(refl_var,bgdat,fld,src,sz,zr,omeps_recv, funcD
         r = sqrt(x**2 + y**2)
 
         !distinguish case r=0 since here we need only 1 integral
-        chkr0: if(r .EQ. 0._real64) then
+        chkr0: if (r .eq. 0._real64) then
 
-          !quick & dirty: skip the point if receiver is right at source point
-          if(sz_eq_zr) then
-            if(refl_var%infolevel.ge.output_more) &
-              write(*,'(a)') 'WARNING: cannot handle a receiver at exactly the same location as a grounding point yet, '// &
+          !quick & dirty: skip the point if iReceiver is right at source point
+          if (sz_eq_zr) then
+            if (refl_var%infolevel.ge.output_more) &
+              write(*,'(a)') 'WARNING: cannot handle a iReceiver at exactly the same location as a grounding point yet, '// &
                 'ignoring this contribution!'
             cycle
           endif
@@ -1026,10 +1026,10 @@ subroutine interp_intvals_wire_Ez(refl_var,bgdat,fld,src,sz,zr,omeps_recv, funcD
           cosbetarot = cos(betarot)
           sinbetarot = sin(betarot)
 
-          smallr1: if(r.lt.rsplmin) then !r is but smaller than threshold radius for spline interpolation
+          smallr1: if (r.lt.rsplmin) then !r is but smaller than threshold radius for spline interpolation
 
             !reflection coeff. for this radius
-            refl_var%refcoef_changed = .TRUE.
+            refl_var%refcoef_changed = .true.
             call prepare_refcoef(refl_var,r,0,aniso)
 
             !evaluate all integrals just for this radius
@@ -1041,16 +1041,16 @@ subroutine interp_intvals_wire_Ez(refl_var,bgdat,fld,src,sz,zr,omeps_recv, funcD
           endif smallr1
 
           !include rotation here
-          !> E(irec,#) are field values in coord. system with original x,y axes
+          ! E(irec,#) are field values in coord. system with original x,y axes
           term1 = sign * constEz * IendEz
           fld(idx)%Ez(recidx) = fld(idx)%Ez(recidx) + term1
         endif chkr0
 
         !VTI: epsv derivatives
-        dvert: if(with_dvert) then
-          chkr0v: if(r .EQ. 0._real64) then
+        dvert: if (with_dvert) then
+          chkr0v: if (r .eq. 0._real64) then
             !cycling was already done above, no need to query again here is src and rec are at exactly the same position
-            !if(sz_eq_zr) cycle
+            !if (sz_eq_zr) cycle
 
             !only need Bessel function of order 0, since Bessel function of order 1 is zero for r=0
             ibesord = 0
@@ -1059,10 +1059,10 @@ subroutine interp_intvals_wire_Ez(refl_var,bgdat,fld,src,sz,zr,omeps_recv, funcD
             term1 = sign * constEz * IendEz
             fldv(idx)%Ez(recidx) = fldv(idx)%Ez(recidx) + term1
           else !r is not zero
-            smallr1v: if(r.lt.rsplmin) then !r is but smaller than threshold radius for spline interpolation
+            smallr1v: if (r.lt.rsplmin) then !r is but smaller than threshold radius for spline interpolation
 
               !reflection coeff. for this radius
-              refl_var%refcoef_changed = .TRUE.
+              refl_var%refcoef_changed = .true.
               call prepare_refcoef(refl_var,r,0,aniso)
 
               !evaluate all integrals just for this radius
@@ -1074,7 +1074,7 @@ subroutine interp_intvals_wire_Ez(refl_var,bgdat,fld,src,sz,zr,omeps_recv, funcD
             endif smallr1v
 
             !include rotation here
-            !> E(irec,#) are field values in coord. system with original x,y axes
+            ! E(irec,#) are field values in coord. system with original x,y axes
             term1 = sign * constEz * IendEz
             fldv(Idx)%Ez(recidx) = fldv(idx)%Ez(recidx) + term1
           endif chkr0v
@@ -1085,15 +1085,15 @@ subroutine interp_intvals_wire_Ez(refl_var,bgdat,fld,src,sz,zr,omeps_recv, funcD
   enddo wires  !wires
 
 
-  !special contribution to derivative of Ez in receiver layer
-  deriv_ilayrec: if(ilay .EQ. ilayrec) then
+  !special contribution to derivative of Ez in iReceiver layer
+  deriv_ilayrec: if (ilay .eq. ilayrec) then
     allocate(Ewirerec(src%nwire),stat=ierr)
-    if(ierr.NE. 0) call alloc_error(pid,'interp_intvals_wire','WEwirerec',ierr)
+    if (ierr.ne. 0) call alloc_error(pid,'interp_intvals_wire','WEwirerec',ierr)
 
     !there is a factor epsv in the term before the Ez integral
     !-> for isotropic case, epsv becomes eps and contribution is added to E
     !-> for VTI case, derivative of this term only exists for epsv -> add to Ev, nothing added to E
-    if(with_dvert) then
+    if (with_dvert) then
       do iwire=1,src%nwire
         Ewirerec(iwire)%Ez => fldv(iwire)%Ez
       enddo
@@ -1129,12 +1129,12 @@ subroutine interp_intvals_wire_Ez(refl_var,bgdat,fld,src,sz,zr,omeps_recv, funcD
           x = bgdat%Ezpos(recidx,1) - xs
           r = sqrt(x**2 + y**2)
 
-          if(r.EQ.0._real64) then
+          if (r.eq.0._real64) then
             !skip integration right at source point - check this!
-            if(sz_eq_zr) cycle
+            if (sz_eq_zr) cycle
             IendEz = compute_1valr0(funcD0TMfwd)
           else
-            if(r.lt.rsplmin) then
+            if (r.lt.rsplmin) then
               !reflection coeff. for this radius
               call prepare_refcoef(refl_var,r,ved,aniso) !use "ved" to compute TM refl. coeff. only
               ibesord = 0
@@ -1161,74 +1161,74 @@ endsubroutine interp_intvals_wire_Ez
 
 
 !------------------------------------------------------------
-!>  1D EM subroutine interp_intvals_wire_Hxy
+!  1D EM subroutine interp_intvals_wire_Hxy
 !
-!>  get interpolated field values at receiver locations, horizontal wire source,
-!>    Hx and/or Hy only
+!  get interpolated field values at iReceiver locations, horizontal wire source,
+!    Hx and/or Hy only
 !
-!>  Rita Streich 2009-2011
+!  Rita Streich 2009-2011
 !------------------------------------------------------------
 subroutine interp_intvals_wire_Hxy(refl_var,bgdat,fld,src,sz,zr, funcD0TE,funcdHxwire,ilay, funcdHxwirev,fldv)
 
   implicit none
 
   !external variables
-  type(refl_struct) :: refl_var   !everything needed throughout 1D computations
-  type(backgrounddata) :: bgdat      !coordinate vectors and final output EM fields
-  type(receiverdata),dimension(:) :: fld        !field or derivative vectors for each wire, all components
-  type(sorec),intent( in ) :: src        !source definition (we need the currents here)
-  real(kind=real64),intent( in ) :: sz,zr      !source and receiver depth
-  complex(kind=real64),external :: funcD0TE,funcdHxwire
-  integer(kind=int32),intent( in ) :: ilay       !layer index for derivatives - leave at zero for forward modeling
-  complex(kind=real64),external,optional :: funcdHxwirev !integral derivatives for epsv
+  type(refl_struct)               :: refl_var   !everything needed throughout 1D computations
+  type(backgrounddata)            :: bgdat      !coordinate vectors and final output EM fields
+  type(receiverdata),dimension(:)   :: fld        !field or derivative vectors for each wire, all components
+  type(sorec),intent(in)          :: src        !source definition (we need the currents here)
+  real(kind=real64),intent(in)    :: sz,zr      !source and iReceiver depth
+  complex(kind=real64),external   :: funcD0TE,funcdHxwire
+  integer(kind=int32),intent(in)  :: ilay       !layer index for derivatives - leave at zero for forward modeling
+  complex(kind=real64),external,optional   :: funcdHxwirev !integral derivatives for epsv
   type(receiverdata),dimension(:),optional :: fldv         !field or derivative vectors for each wire, all components
 
   !internal variables
-  integer(kind=int32) :: isrc    !source element counter
-  real(kind=real64) :: x,y,r   !temp source-receiver distances
-  integer(kind=int32) :: irec    !receiver counter
-  real(kind=real64) :: beta,betarot      !temp angles
+  integer(kind=int32)   :: isrc    !source element counter
+  real(kind=real64)     :: x,y,r   !temp source-iReceiver distances
+  integer(kind=int32)   :: irec    !iReceiver counter
+  real(kind=real64)     :: beta,betarot      !temp angles
 
-  complex(kind=real64) :: IHyx          !interpolated integral values for integrals along wire
-  complex(kind=real64) :: IendHxy       !interpolated integral values for end points
+  complex(kind=real64)          :: IHyx          !interpolated integral values for integrals along wire
+  complex(kind=real64)          :: IendHxy       !interpolated integral values for end points
 
-  logical,dimension(nintWiredvti) :: wellbehaved   !indicates if Hankel integration can be used
-  logical :: sz_eq_zr      !indicates if source and reveicer are at the same depth
-  integer(kind=int32),dimension(NREL) :: ibesord   !bessel function order (integer "array")
+  logical,dimension(nintWiredvti)   :: wellbehaved   !indicates if Hankel integration can be used
+  logical                       :: sz_eq_zr      !indicates if source and reveicer are at the same depth
+  integer(kind=int32),dimension(NREL)  :: ibesord   !bessel function order (integer "array")
 
-  complex(kind=real64) :: Hxrot,Hyrot           !temp field values in cylindrical coordinates
-  real(kind=real64) :: cosbetasrc,sinbetasrc !cos(betasrc) and sin(betasrc), precompute for efficiency
-  real(kind=real64) :: cosbetarot,sinbetarot !cos(betarot) and sin(betarot), precompute for efficiency
-  real(kind=real64) :: const    !geometric constant
-  integer(kind=int32) :: idx      !source element index
-  integer(kind=int32) :: recidx   !receiver index
-  integer(kind=int32) :: ielemall,ielem       !wire element counters
-  integer(kind=int32) :: iep      !wire end point counter
-  real(kind=real64) :: xs,ys    !wire end point coordinates
-  complex(kind=real64) :: term1    !temp result for end point field values
+  complex(kind=real64)  :: Hxrot,Hyrot           !temp field values in cylindrical coordinates
+  real(kind=real64)     :: cosbetasrc,sinbetasrc !cos(betasrc) and sin(betasrc), precompute for efficiency
+  real(kind=real64)     :: cosbetarot,sinbetarot !cos(betarot) and sin(betarot), precompute for efficiency
+  real(kind=real64)     :: const    !geometric constant
+  integer(kind=int32)   :: idx      !source element index
+  integer(kind=int32)   :: recidx   !iReceiver index
+  integer(kind=int32)   :: ielemall,ielem       !wire element counters
+  integer(kind=int32)   :: iep      !wire end point counter
+  real(kind=real64)     :: xs,ys    !wire end point coordinates
+  complex(kind=real64)  :: term1    !temp result for end point field values
   !signs for wire end points (predefine for efficiency, need just elements 1 and 4)
-  real(kind=real64),dimension(1:2),parameter :: signs = (/-1._real64,1._real64/)
-  real(kind=real64) :: sign     !sign for end point field values
+  real(kind=real64),dimension(1:2),parameter  :: signs = (/-1._real64,1._real64/)
+  real(kind=real64)     :: sign     !sign for end point field values
   !flag for computing epsv derivatives, not needed for forward computation, so "aniso" value cannot be used here
-  logical :: with_dvert
+  logical               :: with_dvert
 
 
   !indicators for fast Hankel transform or adaptive integration
-  wellbehaved = .TRUE.
-  sz_eq_zr = .FALSE.
-  if(sz.EQ.zr) then
-    wellbehaved(1:2) = .FALSE.
-    wellbehaved(4:5) = .FALSE.
-    sz_eq_zr = .TRUE.
+  wellbehaved = .true.
+  sz_eq_zr = .false.
+  if (sz.eq.zr) then
+    wellbehaved(1:2) = .false.
+    wellbehaved(4:5) = .false.
+    sz_eq_zr = .true.
   endif
 
-  if(present(funcdHxwirev)) then
-    with_dvert = .TRUE.
-    if(sz_eq_zr) then
-      wellbehaved(8:9) = .FALSE.
+  if (present(funcdHxwirev)) then
+    with_dvert = .true.
+    if (sz_eq_zr) then
+      wellbehaved(8:9) = .false.
     endif
   else
-    with_dvert = .FALSE.
+    with_dvert = .false.
   endif
 
   !loop over wires
@@ -1248,7 +1248,7 @@ subroutine interp_intvals_wire_Hxy(refl_var,bgdat,fld,src,sz,zr, funcD0TE,funcdH
       ielemall = ielemall + 1
 
       !same positions for Hx and Hy
-      hxy_equalpos: if(bgdat%nExy.gt.0) then
+      hxy_equalpos: if (bgdat%nExy.gt.0) then
 
       receivers: do irec=refl_var%irecstart,refl_var%irecend
         recidx = refl_var%irecperzHxy(irec)
@@ -1260,11 +1260,11 @@ subroutine interp_intvals_wire_Hxy(refl_var,bgdat,fld,src,sz,zr, funcD0TE,funcdH
         beta = atan2(y,x)
         betarot = beta - refl_var%betasrc(isrc)
 
-        r_is_zero: if(r.EQ.0._real64) then
-          !quick & dirty: skip the point if receiver is right at source point
-          if(sz_eq_zr) then
-            if(refl_var%infolevel.ge.output_more) &
-              write(*,'(a)') 'WARNING: cannot handle a receiver at exactly the same location as a wire element yet, '// &
+        r_is_zero: if (r.eq.0._real64) then
+          !quick & dirty: skip the point if iReceiver is right at source point
+          if (sz_eq_zr) then
+            if (refl_var%infolevel.ge.output_more) &
+              write(*,'(a)') 'WARNING: cannot handle a iReceiver at exactly the same location as a wire element yet, '// &
                 'ignoring this contribution!'
             cycle
           endif
@@ -1273,10 +1273,10 @@ subroutine interp_intvals_wire_Hxy(refl_var,bgdat,fld,src,sz,zr, funcD0TE,funcdH
           ibesord = 0
           IHyx = compute_1valr0(funcD0TE)
         else !r is not zero
-          smallr: if(r.lt.rsplmin) then !r is but smaller than threshold radius for spline interpolation
+          smallr: if (r.lt.rsplmin) then !r is but smaller than threshold radius for spline interpolation
 
             !reflection coeff. for this radius
-            refl_var%refcoef_changed = .TRUE.
+            refl_var%refcoef_changed = .true.
             call prepare_refcoef(refl_var,r,0,aniso)
 
             !evaluate all integrals just for this radius
@@ -1297,7 +1297,7 @@ subroutine interp_intvals_wire_Hxy(refl_var,bgdat,fld,src,sz,zr, funcD0TE,funcdH
       enddo receivers !iy
 
       else
-        have_hx: if(bgdat%nHx .gt. 0) then
+        have_hx: if (bgdat%nHx .gt. 0) then
 
       receivershx: do irec=refl_var%irecstart,refl_var%irecend
         recidx = refl_var%irecperzHxy(irec)
@@ -1309,11 +1309,11 @@ subroutine interp_intvals_wire_Hxy(refl_var,bgdat,fld,src,sz,zr, funcD0TE,funcdH
         beta = atan2(y,x)
         betarot = beta - refl_var%betasrc(isrc)
 
-        r_is_zerohx: if(r.EQ.0._real64) then
-          !quick & dirty: skip the point if receiver is right at source point
-          if(sz_eq_zr) then
-            if(refl_var%infolevel.ge.output_more) &
-              write(*,'(a)') 'WARNING: cannot handle a receiver at exactly the same location as a wire element yet, '// &
+        r_is_zerohx: if (r.eq.0._real64) then
+          !quick & dirty: skip the point if iReceiver is right at source point
+          if (sz_eq_zr) then
+            if (refl_var%infolevel.ge.output_more) &
+              write(*,'(a)') 'WARNING: cannot handle a iReceiver at exactly the same location as a wire element yet, '// &
                 'ignoring this contribution!'
             cycle
           endif
@@ -1322,10 +1322,10 @@ subroutine interp_intvals_wire_Hxy(refl_var,bgdat,fld,src,sz,zr, funcD0TE,funcdH
           ibesord = 0
           IHyx = compute_1valr0(funcD0TE)
         else !r is not zero
-          smallrhx: if(r.lt.rsplmin) then !r is but smaller than threshold radius for spline interpolation
+          smallrhx: if (r.lt.rsplmin) then !r is but smaller than threshold radius for spline interpolation
 
             !reflection coeff. for this radius
-            refl_var%refcoef_changed = .TRUE.
+            refl_var%refcoef_changed = .true.
             call prepare_refcoef(refl_var,r,0,aniso)
 
             !evaluate all integrals just for this radius
@@ -1346,7 +1346,7 @@ subroutine interp_intvals_wire_Hxy(refl_var,bgdat,fld,src,sz,zr, funcD0TE,funcdH
 
         endif have_hx
 
-        have_hy: if(bgdat%nHy .gt. 0) then
+        have_hy: if (bgdat%nHy .gt. 0) then
 
       receivershy: do irec=refl_var%irecstart,refl_var%irecend
         recidx = refl_var%irecperzHxy(irec)
@@ -1358,11 +1358,11 @@ subroutine interp_intvals_wire_Hxy(refl_var,bgdat,fld,src,sz,zr, funcD0TE,funcdH
         beta = atan2(y,x)
         betarot = beta - refl_var%betasrc(isrc)
 
-        r_is_zerohy: if(r.EQ.0._real64) then
-          !quick & dirty: skip the point if receiver is right at source point
-          if(sz_eq_zr) then
-            if(refl_var%infolevel.ge.output_more) &
-              write(*,'(a)') 'WARNING: cannot handle a receiver at exactly the same location as a wire element yet, '// &
+        r_is_zerohy: if (r.eq.0._real64) then
+          !quick & dirty: skip the point if iReceiver is right at source point
+          if (sz_eq_zr) then
+            if (refl_var%infolevel.ge.output_more) &
+              write(*,'(a)') 'WARNING: cannot handle a iReceiver at exactly the same location as a wire element yet, '// &
                 'ignoring this contribution!'
             cycle
           endif
@@ -1371,10 +1371,10 @@ subroutine interp_intvals_wire_Hxy(refl_var,bgdat,fld,src,sz,zr, funcD0TE,funcdH
           ibesord = 0
           IHyx = compute_1valr0(funcD0TE)
         else !r is not zero
-          smallrhy: if(r.lt.rsplmin) then !r is but smaller than threshold radius for spline interpolation
+          smallrhy: if (r.lt.rsplmin) then !r is but smaller than threshold radius for spline interpolation
 
             !reflection coeff. for this radius
-            refl_var%refcoef_changed = .TRUE.
+            refl_var%refcoef_changed = .true.
             call prepare_refcoef(refl_var,r,0,aniso)
 
             !evaluate all integrals just for this radius
@@ -1406,7 +1406,7 @@ subroutine interp_intvals_wire_Hxy(refl_var,bgdat,fld,src,sz,zr, funcD0TE,funcdH
       sign = signs(iep)
 
       !same positions for Hx and Hy
-      hxy_equalpos_ep: if(bgdat%nHxy.gt.0) then
+      hxy_equalpos_ep: if (bgdat%nHxy.gt.0) then
 
       receivers1: do irec=refl_var%irecstart,refl_var%irecend
         recidx = refl_var%irecperzHxy(irec)
@@ -1416,12 +1416,12 @@ subroutine interp_intvals_wire_Hxy(refl_var,bgdat,fld,src,sz,zr, funcD0TE,funcdH
         r = sqrt(x**2 + y**2)
 
         !distinguish case r=0 since here we need only 1 integral
-        chkr0: if(r .EQ. 0._real64) then
+        chkr0: if (r .eq. 0._real64) then
 
-          !quick & dirty: skip the point if receiver is right at source point
-          if(sz_eq_zr) then
-            if(refl_var%infolevel.ge.output_more) &
-              write(*,'(a)') 'WARNING: cannot handle a receiver at exactly the same location as a grounding point yet, '// &
+          !quick & dirty: skip the point if iReceiver is right at source point
+          if (sz_eq_zr) then
+            if (refl_var%infolevel.ge.output_more) &
+              write(*,'(a)') 'WARNING: cannot handle a iReceiver at exactly the same location as a grounding point yet, '// &
                 'ignoring this contribution!'
             cycle
           endif
@@ -1432,10 +1432,10 @@ subroutine interp_intvals_wire_Hxy(refl_var,bgdat,fld,src,sz,zr, funcD0TE,funcdH
           cosbetarot = cos(betarot)
           sinbetarot = sin(betarot)
 
-          smallr1: if(r.lt.rsplmin) then !r is but smaller than threshold radius for spline interpolation
+          smallr1: if (r.lt.rsplmin) then !r is but smaller than threshold radius for spline interpolation
 
             !reflection coeff. for this radius
-            refl_var%refcoef_changed = .TRUE.
+            refl_var%refcoef_changed = .true.
             call prepare_refcoef(refl_var,r,0,aniso)
 
             !evaluate all integrals just for this radius
@@ -1448,8 +1448,8 @@ subroutine interp_intvals_wire_Hxy(refl_var,bgdat,fld,src,sz,zr, funcD0TE,funcdH
           endif smallr1
 
           !include rotation here
-          !> Exrot etc. are field components in coordiante system wih axes parallel to source wire
-          !> E(irec,#) are field values in coord. system with original x,y axes
+          ! Exrot etc. are field components in coordiante system wih axes parallel to source wire
+          ! E(irec,#) are field values in coord. system with original x,y axes
           term1 = sign * IendHxy / dfourpi
           Hxrot = term1 * sinbetarot
           Hyrot = -term1 * cosbetarot
@@ -1458,12 +1458,12 @@ subroutine interp_intvals_wire_Hxy(refl_var,bgdat,fld,src,sz,zr, funcD0TE,funcdH
         endif chkr0
 
         !VTI: epsv derivatives
-        dvert: if(with_dvert) then
-          chkr0v: if(r .NE. 0._real64) then
-            smallr1v: if(r.lt.rsplmin) then !r is but smaller than threshold radius for spline interpolation
+        dvert: if (with_dvert) then
+          chkr0v: if (r .ne. 0._real64) then
+            smallr1v: if (r.lt.rsplmin) then !r is but smaller than threshold radius for spline interpolation
 
               !reflection coeff. for this radius
-              refl_var%refcoef_changed = .TRUE.
+              refl_var%refcoef_changed = .true.
               call prepare_refcoef(refl_var,r,0,aniso)
 
               !evaluate all integrals just for this radius
@@ -1475,8 +1475,8 @@ subroutine interp_intvals_wire_Hxy(refl_var,bgdat,fld,src,sz,zr, funcD0TE,funcdH
             endif smallr1v
 
             !include rotation here
-            !> Exrot etc. are field components in coordiante system wih axes parallel to source wire
-            !> E(irec,#) are field values in coord. system with original x,y axes
+            ! Exrot etc. are field components in coordiante system wih axes parallel to source wire
+            ! E(irec,#) are field values in coord. system with original x,y axes
             term1 = sign * IendHxy / dfourpi
             Hxrot = term1 * sinbetarot
             Hyrot = -term1 * cosbetarot
@@ -1487,7 +1487,7 @@ subroutine interp_intvals_wire_Hxy(refl_var,bgdat,fld,src,sz,zr, funcD0TE,funcdH
       enddo receivers1 !receivers
 
       else
-        have_hx_ep: if(bgdat%nHx .gt. 0) then
+        have_hx_ep: if (bgdat%nHx .gt. 0) then
 
       receivers1hx: do irec=refl_var%irecstart,refl_var%irecend
         recidx = refl_var%irecperzHxy(irec)
@@ -1497,12 +1497,12 @@ subroutine interp_intvals_wire_Hxy(refl_var,bgdat,fld,src,sz,zr, funcD0TE,funcdH
         r = sqrt(x**2 + y**2)
 
         !distinguish case r=0 since here we need only 1 integral
-        chkr0hx: if(r .EQ. 0._real64) then
+        chkr0hx: if (r .eq. 0._real64) then
 
-          !quick & dirty: skip the point if receiver is right at source point
-          if(sz_eq_zr) then
-            if(refl_var%infolevel.ge.output_more) &
-              write(*,'(a)') 'WARNING: cannot handle a receiver at exactly the same location as a grounding point yet, '// &
+          !quick & dirty: skip the point if iReceiver is right at source point
+          if (sz_eq_zr) then
+            if (refl_var%infolevel.ge.output_more) &
+              write(*,'(a)') 'WARNING: cannot handle a iReceiver at exactly the same location as a grounding point yet, '// &
                 'ignoring this contribution!'
             cycle
           endif
@@ -1513,10 +1513,10 @@ subroutine interp_intvals_wire_Hxy(refl_var,bgdat,fld,src,sz,zr, funcD0TE,funcdH
           cosbetarot = cos(betarot)
           sinbetarot = sin(betarot)
 
-          smallr1hx: if(r.lt.rsplmin) then !r is but smaller than threshold radius for spline interpolation
+          smallr1hx: if (r.lt.rsplmin) then !r is but smaller than threshold radius for spline interpolation
 
             !reflection coeff. for this radius
-            refl_var%refcoef_changed = .TRUE.
+            refl_var%refcoef_changed = .true.
             call prepare_refcoef(refl_var,r,0,aniso)
 
             !evaluate all integrals just for this radius
@@ -1529,8 +1529,8 @@ subroutine interp_intvals_wire_Hxy(refl_var,bgdat,fld,src,sz,zr, funcD0TE,funcdH
           endif smallr1hx
 
           !include rotation here
-          !> Exrot etc. are field components in coordiante system wih axes parallel to source wire
-          !> E(irec,#) are field values in coord. system with original x,y axes
+          ! Exrot etc. are field components in coordiante system wih axes parallel to source wire
+          ! E(irec,#) are field values in coord. system with original x,y axes
           term1 = sign * IendHxy / dfourpi
           Hxrot = term1 * sinbetarot
           Hyrot = -term1 * cosbetarot
@@ -1538,12 +1538,12 @@ subroutine interp_intvals_wire_Hxy(refl_var,bgdat,fld,src,sz,zr, funcD0TE,funcdH
         endif chkr0hx
 
         !VTI: epsv derivatives
-        dverthx: if(with_dvert) then
-          chkr0vhx: if(r .NE. 0._real64) then
-            smallr1vhx: if(r.lt.rsplmin) then !r is but smaller than threshold radius for spline interpolation
+        dverthx: if (with_dvert) then
+          chkr0vhx: if (r .ne. 0._real64) then
+            smallr1vhx: if (r.lt.rsplmin) then !r is but smaller than threshold radius for spline interpolation
 
               !reflection coeff. for this radius
-              refl_var%refcoef_changed = .TRUE.
+              refl_var%refcoef_changed = .true.
               call prepare_refcoef(refl_var,r,0,aniso)
 
               !evaluate all integrals just for this radius
@@ -1555,8 +1555,8 @@ subroutine interp_intvals_wire_Hxy(refl_var,bgdat,fld,src,sz,zr, funcD0TE,funcdH
             endif smallr1vhx
 
             !include rotation here
-            !> Exrot etc. are field components in coordiante system wih axes parallel to source wire
-            !> E(irec,#) are field values in coord. system with original x,y axes
+            ! Exrot etc. are field components in coordiante system wih axes parallel to source wire
+            ! E(irec,#) are field values in coord. system with original x,y axes
             term1 = sign * IendHxy / dfourpi
             Hxrot = term1 * sinbetarot
             Hyrot = -term1 * cosbetarot
@@ -1567,7 +1567,7 @@ subroutine interp_intvals_wire_Hxy(refl_var,bgdat,fld,src,sz,zr, funcD0TE,funcdH
 
         endif have_hx_ep
 
-        have_hy_ep: if(bgdat%nHy .gt. 0) then
+        have_hy_ep: if (bgdat%nHy .gt. 0) then
 
       receivers1hy: do irec=refl_var%irecstart,refl_var%irecend
         recidx = refl_var%irecperzHxy(irec)
@@ -1577,12 +1577,12 @@ subroutine interp_intvals_wire_Hxy(refl_var,bgdat,fld,src,sz,zr, funcD0TE,funcdH
         r = sqrt(x**2 + y**2)
 
         !distinguish case r=0 since here we need only 1 integral
-        chkr0hy: if(r .EQ. 0._real64) then
+        chkr0hy: if (r .eq. 0._real64) then
 
-          !quick & dirty: skip the point if receiver is right at source point
-          if(sz_eq_zr) then
-            if(refl_var%infolevel.ge.output_more) &
-              write(*,'(a)') 'WARNING: cannot handle a receiver at exactly the same location as a grounding point yet, '// &
+          !quick & dirty: skip the point if iReceiver is right at source point
+          if (sz_eq_zr) then
+            if (refl_var%infolevel.ge.output_more) &
+              write(*,'(a)') 'WARNING: cannot handle a iReceiver at exactly the same location as a grounding point yet, '// &
                 'ignoring this contribution!'
             cycle
           endif
@@ -1593,10 +1593,10 @@ subroutine interp_intvals_wire_Hxy(refl_var,bgdat,fld,src,sz,zr, funcD0TE,funcdH
           cosbetarot = cos(betarot)
           sinbetarot = sin(betarot)
 
-          smallr1hy: if(r.lt.rsplmin) then !r is but smaller than threshold radius for spline interpolation
+          smallr1hy: if (r.lt.rsplmin) then !r is but smaller than threshold radius for spline interpolation
 
             !reflection coeff. for this radius
-            refl_var%refcoef_changed = .TRUE.
+            refl_var%refcoef_changed = .true.
             call prepare_refcoef(refl_var,r,0,aniso)
 
             !evaluate all integrals just for this radius
@@ -1609,8 +1609,8 @@ subroutine interp_intvals_wire_Hxy(refl_var,bgdat,fld,src,sz,zr, funcD0TE,funcdH
           endif smallr1hy
 
           !include rotation here
-          !> Exrot etc. are field components in coordiante system wih axes parallel to source wire
-          !> E(irec,#) are field values in coord. system with original x,y axes
+          ! Exrot etc. are field components in coordiante system wih axes parallel to source wire
+          ! E(irec,#) are field values in coord. system with original x,y axes
           term1 = sign * IendHxy / dfourpi
           Hxrot = term1 * sinbetarot
           Hyrot = -term1 * cosbetarot
@@ -1618,12 +1618,12 @@ subroutine interp_intvals_wire_Hxy(refl_var,bgdat,fld,src,sz,zr, funcD0TE,funcdH
         endif chkr0hy
 
         !VTI: epsv derivatives
-        dverthy: if(with_dvert) then
-          chkr0vhy: if(r .NE. 0._real64) then
-            smallr1vhy: if(r.lt.rsplmin) then !r is but smaller than threshold radius for spline interpolation
+        dverthy: if (with_dvert) then
+          chkr0vhy: if (r .ne. 0._real64) then
+            smallr1vhy: if (r.lt.rsplmin) then !r is but smaller than threshold radius for spline interpolation
 
               !reflection coeff. for this radius
-              refl_var%refcoef_changed = .TRUE.
+              refl_var%refcoef_changed = .true.
               call prepare_refcoef(refl_var,r,0,aniso)
 
               !evaluate all integrals just for this radius
@@ -1635,8 +1635,8 @@ subroutine interp_intvals_wire_Hxy(refl_var,bgdat,fld,src,sz,zr, funcD0TE,funcdH
             endif smallr1vhy
 
             !include rotation here
-            !> Exrot etc. are field components in coordiante system wih axes parallel to source wire
-            !> E(irec,#) are field values in coord. system with original x,y axes
+            ! Exrot etc. are field components in coordiante system wih axes parallel to source wire
+            ! E(irec,#) are field values in coord. system with original x,y axes
             term1 = sign * IendHxy / dfourpi
             Hxrot = term1 * sinbetarot
             Hyrot = -term1 * cosbetarot
@@ -1656,54 +1656,54 @@ endsubroutine interp_intvals_wire_Hxy
 
 
 !------------------------------------------------------------
-!>  1D EM subroutine interp_intvals_wire_Hz
+!  1D EM subroutine interp_intvals_wire_Hz
 !
-!>  get interpolated field values at receiver locations, horizontal wire source,
-!>    Hz only
+!  get interpolated field values at iReceiver locations, horizontal wire source,
+!    Hz only
 !
-!>  Rita Streich 2009-2011
+!  Rita Streich 2009-2011
 !------------------------------------------------------------
 subroutine interp_intvals_wire_Hz(refl_var,bgdat,fld,src,sz,zr,ommu, funcAz1TE,ilay)
 
   implicit none
 
   !external variables
-  type(refl_struct) :: refl_var   !everything needed throughout 1D computations
-  type(backgrounddata) :: bgdat      !coordinate vectors and final output EM fields
+  type(refl_struct)               :: refl_var   !everything needed throughout 1D computations
+  type(backgrounddata)            :: bgdat      !coordinate vectors and final output EM fields
   type(receiverdata),dimension(:) :: fld        !field or derivative vectors for each wire, all components
-  type(sorec),intent( in ) :: src        !source definition (we need the currents here)
-  real(kind=real64),intent( in ) :: sz,zr      !source and receiver depth
-  real(kind=real64),intent( in ) :: ommu       !omega * mu0
-  complex(kind=real64),external :: funcAz1TE
-  integer(kind=int32),intent( in ) :: ilay       !layer index for derivatives - leave at zero for forward modeling
+  type(sorec),intent(in)          :: src        !source definition (we need the currents here)
+  real(kind=real64),intent(in)    :: sz,zr      !source and iReceiver depth
+  real(kind=real64),intent(in)    :: ommu       !omega * mu0
+  complex(kind=real64),external   :: funcAz1TE
+  integer(kind=int32),intent(in)  :: ilay       !layer index for derivatives - leave at zero for forward modeling
 
   !internal variables
-  integer(kind=int32) :: isrc    !source element counter
-  real(kind=real64) :: x,y,r   !temp source-receiver distances
-  integer(kind=int32) :: irec    !receiver counter
-  real(kind=real64) :: beta,betarot      !temp angles
+  integer(kind=int32)   :: isrc    !source element counter
+  real(kind=real64)     :: x,y,r   !temp source-iReceiver distances
+  integer(kind=int32)   :: irec    !iReceiver counter
+  real(kind=real64)     :: beta,betarot      !temp angles
 
-  complex(kind=real64) :: IHz          !interpolated integral values for integrals along wire
+  complex(kind=real64)          :: IHz          !interpolated integral values for integrals along wire
 
-  logical,dimension(nintWiredvti) :: wellbehaved   !indicates if Hankel integration can be used
-  logical :: sz_eq_zr      !indicates if source and reveicer are at the same depth
-  integer(kind=int32),dimension(NREL) :: ibesord   !bessel function order (integer "array")
+  logical,dimension(nintWiredvti)   :: wellbehaved   !indicates if Hankel integration can be used
+  logical                       :: sz_eq_zr      !indicates if source and reveicer are at the same depth
+  integer(kind=int32),dimension(NREL)  :: ibesord   !bessel function order (integer "array")
 
-  complex(kind=real64) :: Hzrot    !temp field values in cylindrical coordinates
-  real(kind=real64) :: cosbetasrc,sinbetasrc !cos(betasrc) and sin(betasrc), precompute for efficiency
-  real(kind=real64) :: const    !geometric constant
-  complex(kind=real64) :: constHz  !geometric constant for Hz
-  integer(kind=int32) :: idx      !source element index
-  integer(kind=int32) :: recidx   !receiver index
-  integer(kind=int32) :: ielemall,ielem       !wire element counters
+  complex(kind=real64)  :: Hzrot    !temp field values in cylindrical coordinates
+  real(kind=real64)     :: cosbetasrc,sinbetasrc !cos(betasrc) and sin(betasrc), precompute for efficiency
+  real(kind=real64)     :: const    !geometric constant
+  complex(kind=real64)  :: constHz  !geometric constant for Hz
+  integer(kind=int32)   :: idx      !source element index
+  integer(kind=int32)   :: recidx   !iReceiver index
+  integer(kind=int32)   :: ielemall,ielem       !wire element counters
 
   !indicators for fast Hankel transform or adaptive integration
-  wellbehaved = .TRUE.
-  sz_eq_zr = .FALSE.
-  if(sz.EQ.zr) then
-    wellbehaved(1:2) = .FALSE.
-    wellbehaved(4:5) = .FALSE.
-    sz_eq_zr = .TRUE.
+  wellbehaved = .true.
+  sz_eq_zr = .false.
+  if (sz.eq.zr) then
+    wellbehaved(1:2) = .false.
+    wellbehaved(4:5) = .false.
+    sz_eq_zr = .true.
   endif
 
   !loop over wires
@@ -1733,21 +1733,21 @@ subroutine interp_intvals_wire_Hz(refl_var,bgdat,fld,src,sz,zr,ommu, funcAz1TE,i
         beta = atan2(y,x)
         betarot = beta - refl_var%betasrc(isrc)
 
-        r_is_zero: if(r.EQ.0._real64) then
+        r_is_zero: if (r.eq.0._real64) then
 
-          !quick & dirty: skip the point if receiver is right at source point
-          if(sz_eq_zr) then
-            if(refl_var%infolevel.ge.output_more) &
-              write(*,'(a)') 'WARNING: cannot handle a receiver at exactly the same location as a wire element yet, '// &
+          !quick & dirty: skip the point if iReceiver is right at source point
+          if (sz_eq_zr) then
+            if (refl_var%infolevel.ge.output_more) &
+              write(*,'(a)') 'WARNING: cannot handle a iReceiver at exactly the same location as a wire element yet, '// &
                 'ignoring this contribution!'
             cycle
           endif
           IHz = 0._real64
         else !r is not zero
-          smallr: if(r.lt.rsplmin) then !r is but smaller than threshold radius for spline interpolation
+          smallr: if (r.lt.rsplmin) then !r is but smaller than threshold radius for spline interpolation
 
             !reflection coeff. for this radius
-            refl_var%refcoef_changed = .TRUE.
+            refl_var%refcoef_changed = .true.
             call prepare_refcoef(refl_var,r,0,aniso)
 
             !evaluate all integrals just for this radius

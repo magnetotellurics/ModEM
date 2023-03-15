@@ -455,7 +455,7 @@ contains
         !
         class( iScalar3D_SG_t ), intent( inout ) :: self
         !
-        stop "Error: conjugateiScalar3D_SG: Do not try to conjugate a real scalar!"
+        stop "Error: conjugateiScalar3D_SG: do not try to conjugate a real scalar!"
         !
     end subroutine conjugateiScalar3D_SG
     !

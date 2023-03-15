@@ -139,7 +139,7 @@ contains
         call MPI_PACK_SIZE( len( e_solution_file_name ), MPI_CHARACTER, main_comm, nbytes(3), ierr )
         call MPI_PACK_SIZE( len( model_method ), MPI_CHARACTER, main_comm, nbytes(4), ierr )
         call MPI_PACK_SIZE( len( forward_solver_type ), MPI_CHARACTER, main_comm, nbytes(5), ierr )
-        call MPI_PACK_SIZE( len( source_type ), MPI_CHARACTER, main_comm, nbytes(6), ierr )
+        call MPI_PACK_SIZE( len( source_type_mt ), MPI_CHARACTER, main_comm, nbytes(6), ierr )
         call MPI_PACK_SIZE( len( get_1D_from ), MPI_CHARACTER, main_comm, nbytes(7), ierr )
         call MPI_PACK_SIZE( 1, MPI_LOGICAL, main_comm, nbytes(8), ierr )
         !
@@ -199,7 +199,7 @@ contains
         call MPI_PACK( len( e_solution_file_name ), 1, MPI_INTEGER, basic_comp_buffer, job_info%basic_comp_size, index, main_comm, ierr )
         call MPI_PACK( len( model_method ), 1, MPI_INTEGER, basic_comp_buffer, job_info%basic_comp_size, index, main_comm, ierr )
         call MPI_PACK( len( forward_solver_type ), 1, MPI_INTEGER, basic_comp_buffer, job_info%basic_comp_size, index, main_comm, ierr )
-        call MPI_PACK( len( source_type ), 1, MPI_INTEGER, basic_comp_buffer, job_info%basic_comp_size, index, main_comm, ierr )
+        call MPI_PACK( len( source_type_mt ), 1, MPI_INTEGER, basic_comp_buffer, job_info%basic_comp_size, index, main_comm, ierr )
         call MPI_PACK( len( get_1D_from ), 1, MPI_INTEGER, basic_comp_buffer, job_info%basic_comp_size, index, main_comm, ierr )
         call MPI_PACK( model_n_air_layer, 1, MPI_INTEGER, basic_comp_buffer, job_info%basic_comp_size, index, main_comm, ierr )
         call MPI_PACK( model_max_height, 1, MPI_DOUBLE_PRECISION, basic_comp_buffer, job_info%basic_comp_size, index, main_comm, ierr )
@@ -208,7 +208,7 @@ contains
         call MPI_PACK( e_solution_file_name, len( e_solution_file_name ), MPI_CHARACTER, basic_comp_buffer, job_info%basic_comp_size, index, main_comm, ierr )
         call MPI_PACK( model_method, len( model_method ), MPI_CHARACTER, basic_comp_buffer, job_info%basic_comp_size, index, main_comm, ierr )
         call MPI_PACK( forward_solver_type, len( forward_solver_type ), MPI_CHARACTER, basic_comp_buffer, job_info%basic_comp_size, index, main_comm, ierr )
-        call MPI_PACK( source_type, len( source_type ), MPI_CHARACTER, basic_comp_buffer, job_info%basic_comp_size, index, main_comm, ierr )
+        call MPI_PACK( source_type_mt, len( source_type_mt ), MPI_CHARACTER, basic_comp_buffer, job_info%basic_comp_size, index, main_comm, ierr )
         call MPI_PACK( get_1D_from, len( get_1D_from ), MPI_CHARACTER, basic_comp_buffer, job_info%basic_comp_size, index, main_comm, ierr )
         call MPI_PACK( has_pmodel_file, 1, MPI_LOGICAL, basic_comp_buffer, job_info%basic_comp_size, index, main_comm, ierr )
         !
@@ -264,8 +264,8 @@ contains
         allocate( character( n_forward_solver_type ) :: forward_solver_type )
         call MPI_UNPACK( basic_comp_buffer, job_info%basic_comp_size, index, forward_solver_type, n_forward_solver_type, MPI_CHARACTER, main_comm, ierr )
         !
-        allocate( character( n_source_type ) :: source_type )
-        call MPI_UNPACK( basic_comp_buffer, job_info%basic_comp_size, index, source_type, n_source_type, MPI_CHARACTER, main_comm, ierr )
+        allocate( character( n_source_type ) :: source_type_mt )
+        call MPI_UNPACK( basic_comp_buffer, job_info%basic_comp_size, index, source_type_mt, n_source_type, MPI_CHARACTER, main_comm, ierr )
         !
         allocate( character( n_get_1d_from ) :: get_1D_from )
         call MPI_UNPACK( basic_comp_buffer, job_info%basic_comp_size, index, get_1D_from, n_get_1d_from, MPI_CHARACTER, main_comm, ierr )

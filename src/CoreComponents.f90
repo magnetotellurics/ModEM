@@ -21,6 +21,7 @@ module CoreComponents
     !
     use SourceMT_1D
     use SourceMT_2D
+    !use SourceCSEM_EM1D
     use SourceCSEM_Dipole1D
     use SourceInteriorForce
     !
@@ -456,7 +457,7 @@ contains
         forward_solver_type = FWD_IT_DC
         !
         ! Source parameters
-        source_type = SRC_MT_1D
+        source_type_mt = SRC_MT_1D
         get_1D_from = "Geometric_mean"
         !
         ! Model parameters
@@ -532,7 +533,7 @@ contains
         if( allocated( inversion_type ) ) deallocate( inversion_type )
         !
         if( allocated( forward_solver_type ) ) deallocate( forward_solver_type )
-        if( allocated( source_type ) ) deallocate( source_type )
+        if( allocated( source_type_mt ) ) deallocate( source_type_mt )
         if( allocated( model_method ) ) deallocate( model_method )
         if( allocated( get_1D_from ) ) deallocate( get_1D_from )
         if( allocated( predicted_data_file_name ) ) deallocate( predicted_data_file_name )
@@ -544,6 +545,8 @@ contains
         if( allocated( data_file_name ) ) deallocate( data_file_name )
         if( allocated( dsigma_file_name ) ) deallocate( dsigma_file_name )
         if( allocated( cov_file_name ) ) deallocate( cov_file_name )
+        !
+        if( allocated( units_in_file ) ) deallocate( units_in_file )
         !
         if( allocated( fwd_control_file_name ) ) deallocate( fwd_control_file_name )
         if( allocated( fwd_control_file ) ) deallocate( fwd_control_file )

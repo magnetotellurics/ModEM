@@ -1,10 +1,10 @@
 !------------------------------------------------------------
-!>  1D EM subroutine interp_intvals_hed_allcomp
+!  1D EM subroutine interp_intvals_hed_allcomp
 !
-!>  get interpolated field values at receiver locations, HED source,
-!>    all field components at the same coordinates
+!  get interpolated field values at iReceiver locations, HED source,
+!    all field components at the same coordinates
 !
-!>  Rita Streich 2009-2011
+!  Rita Streich 2009-2011
 !------------------------------------------------------------
 subroutine interp_intvals_hed_allcomp(refl_var,src,ifreq,sz,zr,bgdat,Ex,Ey,Ez,Hx,Hy,Hz,omeps_recv,ommu, &
   funcA0TE,funcA0TM,funcA1TE,funcA1TM,funcDz1TM,funcD0TE,funcD0TM,funcD1TE,funcD1TM,funcAz1TE,ilay,funcDz1TMfwd, &
@@ -13,64 +13,64 @@ subroutine interp_intvals_hed_allcomp(refl_var,src,ifreq,sz,zr,bgdat,Ex,Ey,Ez,Hx
   implicit none
 
   !external variables
-  type(refl_struct) :: refl_var   !everything needed throughout 1D computations
-  type(sorec),intent( in ) :: src        !source definition (we need the currents here)
-  integer(kind=int32),intent( in ) :: ifreq      !frequency index
-  real(kind=real64),intent( in ) :: sz,zr      !source and receiver depth
+  type(refl_struct)               :: refl_var   !everything needed throughout 1D computations
+  type(sorec),intent(in)          :: src        !source definition (we need the currents here)
+  integer(kind=int32),intent(in)  :: ifreq      !frequency index
+  real(kind=real64),intent(in)    :: sz,zr      !source and iReceiver depth
   type(backgrounddata) :: bgdat      !coordinate vectors and output EM fields
     !input separate fields because the same routine is used both for fields and derivatives!
-  complex(kind=real64),dimension(:) :: Ex,Ey,Hx,Hy,Hz    !EM fields or dervatives (horizontal/isotropic)
-  complex(kind=real64),dimension(:),target :: Ez    !EM fields or dervatives (horizontal/isotropic)
-  complex(kind=real64),intent( in ) :: omeps_recv !omega * epsilon in receiver layer
-  real(kind=real64),intent( in ) :: ommu       !omega * mu0
-  complex(kind=real64),external :: funcA0TE,funcA0TM,funcA1TE,funcA1TM,funcDz1TM,funcD0TE,funcD0TM,funcD1TE,funcD1TM,funcAz1TE
-  integer(kind=int32),intent( in ) :: ilay       !layer index for derivatives - leave at zero for forward modeling
-  complex(kind=real64),external,optional :: funcDz1TMfwd  !function only needed for derivatives in receiver layer
-  complex(kind=real64),external,optional :: funcA0TMv,funcA1TMv,funcDz1TMv,funcD0TMv,funcD1TMv !functions for TM epsv deriv.
-  complex(kind=real64),dimension(:),optional :: Exv,Eyv,Hxv,Hyv,Hzv !EM field for epsv derivatives
-  complex(kind=real64),dimension(:),target,optional :: Ezv !EM field for epsv derivatives
+  complex(kind=real64),dimension(:)   :: Ex,Ey,Hx,Hy,Hz    !EM fields or dervatives (horizontal/isotropic)
+  complex(kind=real64),dimension(:),target   :: Ez    !EM fields or dervatives (horizontal/isotropic)
+  complex(kind=real64),intent(in) :: omeps_recv !omega * epsilon in iReceiver layer
+  real(kind=real64),intent(in)    :: ommu       !omega * mu0
+  complex(kind=real64),external   :: funcA0TE,funcA0TM,funcA1TE,funcA1TM,funcDz1TM,funcD0TE,funcD0TM,funcD1TE,funcD1TM,funcAz1TE
+  integer(kind=int32),intent(in)  :: ilay       !layer index for derivatives - leave at zero for forward modeling
+  complex(kind=real64),external,optional   :: funcDz1TMfwd  !function only needed for derivatives in iReceiver layer
+  complex(kind=real64),external,optional   :: funcA0TMv,funcA1TMv,funcDz1TMv,funcD0TMv,funcD1TMv !functions for TM epsv deriv.
+  complex(kind=real64),dimension(:),optional   :: Exv,Eyv,Hxv,Hyv,Hzv !EM field for epsv derivatives
+  complex(kind=real64),dimension(:),target,optional   :: Ezv !EM field for epsv derivatives
 
   !internal variables
-  integer(kind=int32) :: isrc    !source element counter
-  real(kind=real64) :: x,y,r   !temp source-receiver distances
-  integer(kind=int32) :: irec    !receiver counter
-  real(kind=real64) :: beta,betarot      !temp angles
+  integer(kind=int32)   :: isrc    !source element counter
+  real(kind=real64)     :: x,y,r   !temp source-iReceiver distances
+  integer(kind=int32)   :: irec    !iReceiver counter
+  real(kind=real64)     :: beta,betarot      !temp angles
 
-  complex(kind=real64) :: IA0TE,IA0TM,IA1TE,IA1TM,IDz1TM !interpolated integral values
-  complex(kind=real64) :: ID0TE,ID0TM,ID1TE,ID1TM,IAz1TE
+  complex(kind=real64)          :: IA0TE,IA0TM,IA1TE,IA1TM,IDz1TM !interpolated integral values
+  complex(kind=real64)          :: ID0TE,ID0TM,ID1TE,ID1TM,IAz1TE
 
-  logical,dimension(nintHEDdvti) :: wellbehaved  !indicates if Hankel integration can be used
-  logical :: sz_eq_zr     !indicates if source and reveicer are at the same depth
-  integer(kind=int32),dimension(NREL) :: ibesord   !bessel function order (integer "array")
+  logical,dimension(nintHEDdvti)    :: wellbehaved  !indicates if Hankel integration can be used
+  logical                       :: sz_eq_zr     !indicates if source and reveicer are at the same depth
+  integer(kind=int32),dimension(NREL)  :: ibesord   !bessel function order (integer "array")
 
-  complex(kind=real64) :: Er,Ebeta,Hr,Hbeta    !temp field values in cylindrical coordinates
-  real(kind=real64) :: cosbeta,sinbeta      !cos(beta) and sin(beta), precompute for efficiency
-  real(kind=real64) :: cosbetarot,sinbetarot      !cos(betarot) and sin(betarot), precompute for efficiency
-  complex(kind=real64) :: cur      !temp source current
-  complex(kind=real64) :: JEh      !source current times constants
-  integer(kind=int32) :: idx      !source element index
-  integer(kind=int32) :: recidx   !receiver index
+  complex(kind=real64)  :: Er,Ebeta,Hr,Hbeta    !temp field values in cylindrical coordinates
+  real(kind=real64)     :: cosbeta,sinbeta      !cos(beta) and sin(beta), precompute for efficiency
+  real(kind=real64)     :: cosbetarot,sinbetarot      !cos(betarot) and sin(betarot), precompute for efficiency
+  complex(kind=real64)  :: cur      !temp source current
+  complex(kind=real64)  :: JEh      !source current times constants
+  integer(kind=int32)   :: idx      !source element index
+  integer(kind=int32)   :: recidx   !iReceiver index
   !flag for computing epsv derivatives, not needed for forward computation, so "aniso" value cannot be used here
-  logical :: with_dvert
-  complex(kind=real64),dimension(:),pointer :: Erec  !points to Ez for isotropic and Ezv for VTI case
+  logical               :: with_dvert
+  complex(kind=real64),dimension(:),pointer   :: Erec  !points to Ez for isotropic and Ezv for VTI case
 
   !indicators for fast Hankel transform or adaptive integration
-  wellbehaved = .TRUE.
-  sz_eq_zr = .FALSE.
-  if(sz.EQ.zr) then
-    wellbehaved(2) = .FALSE.
-    wellbehaved(5:7) = .FALSE.
-    sz_eq_zr = .TRUE.
+  wellbehaved = .true.
+  sz_eq_zr = .false.
+  if (sz.eq.zr) then
+    wellbehaved(2) = .false.
+    wellbehaved(5:7) = .false.
+    sz_eq_zr = .true.
   endif
   
-  if(present(funcD1TMv)) then
-    with_dvert = .TRUE.
-    if(sz_eq_zr) then
-      wellbehaved(13) = .FALSE.
-      wellbehaved(15:16) = .FALSE.
+  if (present(funcD1TMv)) then
+    with_dvert = .true.
+    if (sz_eq_zr) then
+      wellbehaved(13) = .false.
+      wellbehaved(15:16) = .false.
     endif
   else
-    with_dvert = .FALSE.
+    with_dvert = .false.
   endif
 
 
@@ -98,11 +98,11 @@ subroutine interp_intvals_hed_allcomp(refl_var,src,ifreq,sz,zr,bgdat,Ex,Ey,Ez,Hx
       sinbetarot = sin(betarot)
 
 
-      r_is_zero: if(r.EQ.0._real64) then
-        !quick & dirty: skip the point if receiver is right at source point
-        if(sz_eq_zr) then
-          if(refl_var%infolevel.ge.output_more) then
-            write(*,'(a)') 'WARNING: cannot handle receiver right at source point yet!'
+      r_is_zero: if (r.eq.0._real64) then
+        !quick & dirty: skip the point if iReceiver is right at source point
+        if (sz_eq_zr) then
+          if (refl_var%infolevel.ge.output_more) then
+            write(*,'(a)') 'WARNING: cannot handle iReceiver right at source point yet!'
           endif
           cycle
         endif
@@ -122,10 +122,10 @@ subroutine interp_intvals_hed_allcomp(refl_var,src,ifreq,sz,zr,bgdat,Ex,Ey,Ez,Hx
         Hbeta = - JEh * cosbetarot * (0.5_real64 * (ID0TE + ID0TM))
         
       else !r is not zero
-        smallr: if(r.lt.rsplmin) then !r is but smaller than threshold radius for spline interpolation
+        smallr: if (r.lt.rsplmin) then !r is but smaller than threshold radius for spline interpolation
 
           !reflection coeff. for this radius
-          refl_var%refcoef_changed = .TRUE.
+          refl_var%refcoef_changed = .true.
           call prepare_refcoef(refl_var,r,hed,aniso)
 
           !evaluate all integrals just for this radius
@@ -188,11 +188,11 @@ subroutine interp_intvals_hed_allcomp(refl_var,src,ifreq,sz,zr,bgdat,Ex,Ey,Ez,Hx
       Hx(recidx) = Hx(recidx) + cosbeta*Hr - sinbeta*Hbeta
       Hy(recidx) = Hy(recidx) + sinbeta*Hr + cosbeta*Hbeta
 
-      dvert: if(with_dvert) then
-        r_is_zerov: if(r.EQ.0._real64) then
-          !not necessary to check if source and receiver coincide exactly
-          !>  since in that case the above check already effects going to next receiver
-          !if(sz_eq_zr) cycle
+      dvert: if (with_dvert) then
+        r_is_zerov: if (r.eq.0._real64) then
+          !not necessary to check if source and iReceiver coincide exactly
+          !  since in that case the above check already effects going to next iReceiver
+          !if (sz_eq_zr) cycle
 
           !Bessel function J0(r=0) = 1, J1(r=0) = 0
           !--> need to evaluate zero-order integrals only
@@ -207,10 +207,10 @@ subroutine interp_intvals_hed_allcomp(refl_var,src,ifreq,sz,zr,bgdat,Ex,Ey,Ez,Hx
           Hbeta = - JEh * cosbetarot * 0.5_real64 * ID0TM
         
         else !r is not zero
-          smallrv: if(r.lt.rsplmin) then !r is but smaller than threshold radius for spline interpolation
+          smallrv: if (r.lt.rsplmin) then !r is but smaller than threshold radius for spline interpolation
 
             !reflection coeff. for this radius
-            refl_var%refcoef_changed = .TRUE.
+            refl_var%refcoef_changed = .true.
             call prepare_refcoef(refl_var,r,hed,aniso)
 
             !evaluate all integrals just for this radius
@@ -261,20 +261,20 @@ subroutine interp_intvals_hed_allcomp(refl_var,src,ifreq,sz,zr,bgdat,Ex,Ey,Ez,Hx
   enddo  !source elements
   
   
-  !special term is needed for derivative of Ez in receiver layer
+  !special term is needed for derivative of Ez in iReceiver layer
   !isotropic: add this to deriv. for overall complex permittivity --> E
   !VTI: this term does not exist for epsh deriv, but exists for epsv deriv --> nothing added to E, add to Ev
-  deriv_ilayrec: if(ilay .EQ. ilayrec) then
+  deriv_ilayrec: if (ilay .eq. ilayrec) then
   
-    if(.NOT. present(funcDz1TMfwd)) then
-      write(*,'(a)') 'ERROR: function for Ez in receiver layer not given, cannot compute correct Ez derivative!'
+    if (.not. present(funcDz1TMfwd)) then
+      write(*,'(a)') 'ERROR: function for Ez in iReceiver layer not given, cannot compute correct Ez derivative!'
       return
     endif
   
     !there is a factor epsv in the term before the Ez integral
     !-> for isotropic case, epsv becomes eps and contribution is added to E
     !-> for VTI case, derivative of this term only exists for epsv -> add to Ev, nothing added to E
-    if(with_dvert) then
+    if (with_dvert) then
       Erec => Ezv
     else
       Erec => Ez
@@ -299,7 +299,7 @@ subroutine interp_intvals_hed_allcomp(refl_var,src,ifreq,sz,zr,bgdat,Ex,Ey,Ez,Hx
 
         r = sqrt(x**2 + y**2)
 
-        if(r.EQ.0._real64) then
+        if (r.eq.0._real64) then
           !Ez is zero for zero radius
           cycle
         else
@@ -308,7 +308,7 @@ subroutine interp_intvals_hed_allcomp(refl_var,src,ifreq,sz,zr,bgdat,Ex,Ey,Ez,Hx
           betarot = beta - refl_var%betasrc(isrc)
           cosbetarot = cos(betarot)
 
-          if(r.lt.rsplmin) then
+          if (r.lt.rsplmin) then
             !reflection coeff. for this radius
             call prepare_refcoef(refl_var,r,ved,aniso) !use "ved" to compute TM refl. coeff. only
             ibesord = 1
@@ -329,12 +329,12 @@ endsubroutine interp_intvals_hed_allcomp
 
 
 !------------------------------------------------------------
-!>  1D EM subroutine interp_intvals_hed_Exy
+!  1D EM subroutine interp_intvals_hed_Exy
 !
-!>  get interpolated field values at receiver locations, HED source,
-!>    Ex / Ey only
+!  get interpolated field values at iReceiver locations, HED source,
+!    Ex / Ey only
 !
-!>  Rita Streich 2009-2011
+!  Rita Streich 2009-2011
 !------------------------------------------------------------
 subroutine interp_intvals_hed_Exy(refl_var,src,ifreq,sz,zr,bgdat,Ex,Ey, funcA0TE,funcA0TM,funcA1TE,funcA1TM,ilay, &
   funcA0TMv,funcA1TMv,Exv,Eyv)
@@ -342,57 +342,57 @@ subroutine interp_intvals_hed_Exy(refl_var,src,ifreq,sz,zr,bgdat,Ex,Ey, funcA0TE
   implicit none
 
   !external variables
-  type(refl_struct) :: refl_var   !everything needed throughout 1D computations
-  type(sorec),intent( in ) :: src        !source definition (we need the currents here)
-  integer(kind=int32),intent( in ) :: ifreq      !frequency index
-  real(kind=real64),intent( in ) :: sz,zr      !source and receiver depth
+  type(refl_struct)               :: refl_var   !everything needed throughout 1D computations
+  type(sorec),intent(in)          :: src        !source definition (we need the currents here)
+  integer(kind=int32),intent(in)  :: ifreq      !frequency index
+  real(kind=real64),intent(in)    :: sz,zr      !source and iReceiver depth
   type(backgrounddata) :: bgdat      !coordinate vectors and output EM fields
     !input separate fields because the same routine is used both for fields and derivatives!
-  complex(kind=real64),dimension(:) :: Ex,Ey    !EM fields or dervatives (horizontal/isotropic)
-  complex(kind=real64),external :: funcA0TE,funcA0TM,funcA1TE,funcA1TM
-  integer(kind=int32),intent( in ) :: ilay       !layer index for derivatives - leave at zero for forward modeling
-  complex(kind=real64),external,optional :: funcA0TMv,funcA1TMv !functions for TM epsv deriv.
-  complex(kind=real64),dimension(:),optional :: Exv,Eyv !EM field for epsv derivatives
+  complex(kind=real64),dimension(:)   :: Ex,Ey    !EM fields or dervatives (horizontal/isotropic)
+  complex(kind=real64),external   :: funcA0TE,funcA0TM,funcA1TE,funcA1TM
+  integer(kind=int32),intent(in)  :: ilay       !layer index for derivatives - leave at zero for forward modeling
+  complex(kind=real64),external,optional   :: funcA0TMv,funcA1TMv !functions for TM epsv deriv.
+  complex(kind=real64),dimension(:),optional   :: Exv,Eyv !EM field for epsv derivatives
 
   !internal variables
-  integer(kind=int32) :: isrc    !source element counter
-  real(kind=real64) :: x,y,r   !temp source-receiver distances
-  integer(kind=int32) :: irec    !receiver counter
-  real(kind=real64) :: beta,betarot      !temp angles
+  integer(kind=int32)   :: isrc    !source element counter
+  real(kind=real64)     :: x,y,r   !temp source-iReceiver distances
+  integer(kind=int32)   :: irec    !iReceiver counter
+  real(kind=real64)     :: beta,betarot      !temp angles
 
-  complex(kind=real64) :: IA0TE,IA0TM,IA1TE,IA1TM !interpolated integral values
+  complex(kind=real64)          :: IA0TE,IA0TM,IA1TE,IA1TM !interpolated integral values
 
-  logical,dimension(nintHEDdvti) :: wellbehaved  !indicates if Hankel integration can be used
-  logical :: sz_eq_zr     !indicates if source and reveicer are at the same depth
-  integer(kind=int32),dimension(NREL) :: ibesord   !bessel function order (integer "array")
+  logical,dimension(nintHEDdvti)    :: wellbehaved  !indicates if Hankel integration can be used
+  logical                       :: sz_eq_zr     !indicates if source and reveicer are at the same depth
+  integer(kind=int32),dimension(NREL)  :: ibesord   !bessel function order (integer "array")
 
-  complex(kind=real64) :: Er,Ebeta    !temp field values in cylindrical coordinates
-  real(kind=real64) :: cosbeta,sinbeta      !cos(beta) and sin(beta), precompute for efficiency
-  real(kind=real64) :: cosbetarot,sinbetarot      !cos(betarot) and sin(betarot), precompute for efficiency
-  complex(kind=real64) :: cur      !temp source current
-  complex(kind=real64) :: JEh      !source current times constants
-  integer(kind=int32) :: idx      !source element index
-  integer(kind=int32) :: recidx   !receiver index
+  complex(kind=real64)  :: Er,Ebeta    !temp field values in cylindrical coordinates
+  real(kind=real64)     :: cosbeta,sinbeta      !cos(beta) and sin(beta), precompute for efficiency
+  real(kind=real64)     :: cosbetarot,sinbetarot      !cos(betarot) and sin(betarot), precompute for efficiency
+  complex(kind=real64)  :: cur      !temp source current
+  complex(kind=real64)  :: JEh      !source current times constants
+  integer(kind=int32)   :: idx      !source element index
+  integer(kind=int32)   :: recidx   !iReceiver index
   !flag for computing epsv derivatives, not needed for forward computation, so "aniso" value cannot be used here
-  logical :: with_dvert
+  logical               :: with_dvert
 
   !indicators for fast Hankel transform or adaptive integration
-  wellbehaved = .TRUE.
-  sz_eq_zr = .FALSE.
-  if(sz.EQ.zr) then
-    wellbehaved(2) = .FALSE.
-    wellbehaved(5:7) = .FALSE.
-    sz_eq_zr = .TRUE.
+  wellbehaved = .true.
+  sz_eq_zr = .false.
+  if (sz.eq.zr) then
+    wellbehaved(2) = .false.
+    wellbehaved(5:7) = .false.
+    sz_eq_zr = .true.
   endif
   
-  if(present(funcA0TMv)) then
-    with_dvert = .TRUE.
-    if(sz_eq_zr) then
-      wellbehaved(13) = .FALSE.
-      wellbehaved(15:16) = .FALSE.
+  if (present(funcA0TMv)) then
+    with_dvert = .true.
+    if (sz_eq_zr) then
+      wellbehaved(13) = .false.
+      wellbehaved(15:16) = .false.
     endif
   else
-    with_dvert = .FALSE.
+    with_dvert = .false.
   endif
 
 
@@ -405,7 +405,7 @@ subroutine interp_intvals_hed_Exy(refl_var,src,ifreq,sz,zr,bgdat,Ex,Ey, funcA0TE
     JEh = cur * sqrt(src%ljx(idx)**2 + src%ljy(idx)**2) / dfourpi
 
     !same positions for Ex and Ey
-    exy_equalpos: if(bgdat%nExy.gt.0) then
+    exy_equalpos: if (bgdat%nExy.gt.0) then
 
       do irec=refl_var%irecstart,refl_var%irecend
         recidx = refl_var%irecperzExy(irec)
@@ -421,11 +421,11 @@ subroutine interp_intvals_hed_Exy(refl_var,src,ifreq,sz,zr,bgdat,Ex,Ey, funcA0TE
         cosbetarot = cos(betarot)
         sinbetarot = sin(betarot)
 
-        r_is_zero: if(r.EQ.0._real64) then
-          !quick & dirty: skip the point if receiver is right at source point
-          if(sz_eq_zr) then
-            if(refl_var%infolevel.ge.output_more) then
-              write(*,'(a)') 'WARNING: cannot handle receiver right at source point yet!'
+        r_is_zero: if (r.eq.0._real64) then
+          !quick & dirty: skip the point if iReceiver is right at source point
+          if (sz_eq_zr) then
+            if (refl_var%infolevel.ge.output_more) then
+              write(*,'(a)') 'WARNING: cannot handle iReceiver right at source point yet!'
             endif
             cycle
           endif
@@ -441,10 +441,10 @@ subroutine interp_intvals_hed_Exy(refl_var,src,ifreq,sz,zr,bgdat,Ex,Ey, funcA0TE
           Ebeta = JEh * sinbetarot * (0.5_real64 * (IA0TE + IA0TM))
 
         else !r is not zero
-          smallr: if(r.lt.rsplmin) then !r is but smaller than threshold radius for spline interpolation
+          smallr: if (r.lt.rsplmin) then !r is but smaller than threshold radius for spline interpolation
 
             !reflection coeff. for this radius
-            refl_var%refcoef_changed = .TRUE.
+            refl_var%refcoef_changed = .true.
             call prepare_refcoef(refl_var,r,hed,aniso)
 
             !evaluate all integrals just for this radius
@@ -473,11 +473,11 @@ subroutine interp_intvals_hed_Exy(refl_var,src,ifreq,sz,zr,bgdat,Ex,Ey, funcA0TE
         Ex(recidx) = Ex(recidx) + cosbeta*Er - sinbeta*Ebeta
         Ey(recidx) = Ey(recidx) + sinbeta*Er + cosbeta*Ebeta
 
-        dvert: if(with_dvert) then
-          r_is_zerov: if(r.EQ.0._real64) then
-            !not necessary to check if source and receiver coincide exactly
-            !>  since in that case the above check already effects going to next receiver
-            !if(sz_eq_zr) cycle
+        dvert: if (with_dvert) then
+          r_is_zerov: if (r.eq.0._real64) then
+            !not necessary to check if source and iReceiver coincide exactly
+            !  since in that case the above check already effects going to next iReceiver
+            !if (sz_eq_zr) cycle
 
             !Bessel function J0(r=0) = 1, J1(r=0) = 0
             !--> need to evaluate zero-order integrals only
@@ -489,10 +489,10 @@ subroutine interp_intvals_hed_Exy(refl_var,src,ifreq,sz,zr,bgdat,Ex,Ey, funcA0TE
             Ebeta = JEh * sinbetarot * 0.5_real64 * IA0TM
 
           else !r is not zero
-            smallrv: if(r.lt.rsplmin) then !r is but smaller than threshold radius for spline interpolation
+            smallrv: if (r.lt.rsplmin) then !r is but smaller than threshold radius for spline interpolation
 
               !reflection coeff. for this radius
-              refl_var%refcoef_changed = .TRUE.
+              refl_var%refcoef_changed = .true.
               call prepare_refcoef(refl_var,r,hed,aniso)
 
               !evaluate all integrals just for this radius
@@ -522,7 +522,7 @@ subroutine interp_intvals_hed_Exy(refl_var,src,ifreq,sz,zr,bgdat,Ex,Ey, funcA0TE
 
     else
 
-      have_ex: if(bgdat%nEx .gt. 0) then
+      have_ex: if (bgdat%nEx .gt. 0) then
 
       do irec=refl_var%irecstart,refl_var%irecend
         recidx = refl_var%irecperzExy(irec)
@@ -538,11 +538,11 @@ subroutine interp_intvals_hed_Exy(refl_var,src,ifreq,sz,zr,bgdat,Ex,Ey, funcA0TE
         cosbetarot = cos(betarot)
         sinbetarot = sin(betarot)
 
-        r_is_zeroex: if(r.EQ.0._real64) then
-          !quick & dirty: skip the point if receiver is right at source point
-          if(sz_eq_zr) then
-            if(refl_var%infolevel.ge.output_more) then
-              write(*,'(a)') 'WARNING: cannot handle receiver right at source point yet!'
+        r_is_zeroex: if (r.eq.0._real64) then
+          !quick & dirty: skip the point if iReceiver is right at source point
+          if (sz_eq_zr) then
+            if (refl_var%infolevel.ge.output_more) then
+              write(*,'(a)') 'WARNING: cannot handle iReceiver right at source point yet!'
             endif
             cycle
           endif
@@ -558,10 +558,10 @@ subroutine interp_intvals_hed_Exy(refl_var,src,ifreq,sz,zr,bgdat,Ex,Ey, funcA0TE
           Ebeta = JEh * sinbetarot * (0.5_real64 * (IA0TE + IA0TM))
 
         else !r is not zero
-          smallrex: if(r.lt.rsplmin) then !r is but smaller than threshold radius for spline interpolation
+          smallrex: if (r.lt.rsplmin) then !r is but smaller than threshold radius for spline interpolation
 
             !reflection coeff. for this radius
-            refl_var%refcoef_changed = .TRUE.
+            refl_var%refcoef_changed = .true.
             call prepare_refcoef(refl_var,r,hed,aniso)
 
             !evaluate all integrals just for this radius
@@ -589,11 +589,11 @@ subroutine interp_intvals_hed_Exy(refl_var,src,ifreq,sz,zr,bgdat,Ex,Ey, funcA0TE
         !don't take complex conjugate here, but at the very end!
         Ex(recidx) = Ex(recidx) + cosbeta*Er - sinbeta*Ebeta
 
-        dvertex: if(with_dvert) then
-          r_is_zerovex: if(r.EQ.0._real64) then
-            !not necessary to check if source and receiver coincide exactly
-            !>  since in that case the above check already effects going to next receiver
-            !if(sz_eq_zr) cycle
+        dvertex: if (with_dvert) then
+          r_is_zerovex: if (r.eq.0._real64) then
+            !not necessary to check if source and iReceiver coincide exactly
+            !  since in that case the above check already effects going to next iReceiver
+            !if (sz_eq_zr) cycle
 
             !Bessel function J0(r=0) = 1, J1(r=0) = 0
             !--> need to evaluate zero-order integrals only
@@ -605,10 +605,10 @@ subroutine interp_intvals_hed_Exy(refl_var,src,ifreq,sz,zr,bgdat,Ex,Ey, funcA0TE
             Ebeta = JEh * sinbetarot * 0.5_real64 * IA0TM
 
           else !r is not zero
-            smallrvex: if(r.lt.rsplmin) then !r is but smaller than threshold radius for spline interpolation
+            smallrvex: if (r.lt.rsplmin) then !r is but smaller than threshold radius for spline interpolation
 
               !reflection coeff. for this radius
-              refl_var%refcoef_changed = .TRUE.
+              refl_var%refcoef_changed = .true.
               call prepare_refcoef(refl_var,r,hed,aniso)
 
               !evaluate all integrals just for this radius
@@ -636,7 +636,7 @@ subroutine interp_intvals_hed_Exy(refl_var,src,ifreq,sz,zr,bgdat,Ex,Ey, funcA0TE
 
       endif have_ex
 
-      have_ey: if(bgdat%nEy .gt. 0) then
+      have_ey: if (bgdat%nEy .gt. 0) then
 
       do irec=refl_var%irecstart,refl_var%irecend
         recidx = refl_var%irecperzExy(irec)
@@ -652,11 +652,11 @@ subroutine interp_intvals_hed_Exy(refl_var,src,ifreq,sz,zr,bgdat,Ex,Ey, funcA0TE
         cosbetarot = cos(betarot)
         sinbetarot = sin(betarot)
 
-        r_is_zeroey: if(r.EQ.0._real64) then
-          !quick & dirty: skip the point if receiver is right at source point
-          if(sz_eq_zr) then
-            if(refl_var%infolevel.ge.output_more) then
-              write(*,'(a)') 'WARNING: cannot handle receiver right at source point yet!'
+        r_is_zeroey: if (r.eq.0._real64) then
+          !quick & dirty: skip the point if iReceiver is right at source point
+          if (sz_eq_zr) then
+            if (refl_var%infolevel.ge.output_more) then
+              write(*,'(a)') 'WARNING: cannot handle iReceiver right at source point yet!'
             endif
             cycle
           endif
@@ -672,10 +672,10 @@ subroutine interp_intvals_hed_Exy(refl_var,src,ifreq,sz,zr,bgdat,Ex,Ey, funcA0TE
           Ebeta = JEh * sinbetarot * (0.5_real64 * (IA0TE + IA0TM))
 
         else !r is not zero
-          smallrey: if(r.lt.rsplmin) then !r is but smaller than threshold radius for spline interpolation
+          smallrey: if (r.lt.rsplmin) then !r is but smaller than threshold radius for spline interpolation
 
             !reflection coeff. for this radius
-            refl_var%refcoef_changed = .TRUE.
+            refl_var%refcoef_changed = .true.
             call prepare_refcoef(refl_var,r,hed,aniso)
 
             !evaluate all integrals just for this radius
@@ -703,11 +703,11 @@ subroutine interp_intvals_hed_Exy(refl_var,src,ifreq,sz,zr,bgdat,Ex,Ey, funcA0TE
         !don't take complex conjugate here, but at the very end!
         Ey(recidx) = Ey(recidx) + sinbeta*Er + cosbeta*Ebeta
 
-        dvertey: if(with_dvert) then
-          r_is_zerovey: if(r.EQ.0._real64) then
-            !not necessary to check if source and receiver coincide exactly
-            !>  since in that case the above check already effects going to next receiver
-            !if(sz_eq_zr) cycle
+        dvertey: if (with_dvert) then
+          r_is_zerovey: if (r.eq.0._real64) then
+            !not necessary to check if source and iReceiver coincide exactly
+            !  since in that case the above check already effects going to next iReceiver
+            !if (sz_eq_zr) cycle
 
             !Bessel function J0(r=0) = 1, J1(r=0) = 0
             !--> need to evaluate zero-order integrals only
@@ -719,10 +719,10 @@ subroutine interp_intvals_hed_Exy(refl_var,src,ifreq,sz,zr,bgdat,Ex,Ey, funcA0TE
             Ebeta = JEh * sinbetarot * 0.5_real64 * IA0TM
 
           else !r is not zero
-            smallrvey: if(r.lt.rsplmin) then !r is but smaller than threshold radius for spline interpolation
+            smallrvey: if (r.lt.rsplmin) then !r is but smaller than threshold radius for spline interpolation
 
               !reflection coeff. for this radius
-              refl_var%refcoef_changed = .TRUE.
+              refl_var%refcoef_changed = .true.
               call prepare_refcoef(refl_var,r,hed,aniso)
 
               !evaluate all integrals just for this radius
@@ -757,71 +757,71 @@ endsubroutine interp_intvals_hed_Exy
 
 
 !------------------------------------------------------------
-!>  1D EM subroutine interp_intvals_hed_Ez
+!  1D EM subroutine interp_intvals_hed_Ez
 !
-!>  get interpolated field values at receiver locations, HED source,
-!>    Ez only
+!  get interpolated field values at iReceiver locations, HED source,
+!    Ez only
 !
-!>  Rita Streich 2009-2011
+!  Rita Streich 2009-2011
 !------------------------------------------------------------
 subroutine interp_intvals_hed_Ez(refl_var,src,ifreq,sz,zr,bgdat,Ez,omeps_recv, funcDz1TM,ilay,funcDz1TMfwd, funcDz1TMv,Ezv)
 
   implicit none
 
   !external variables
-  type(refl_struct) :: refl_var   !everything needed throughout 1D computations
-  type(sorec),intent( in ) :: src        !source definition (we need the currents here)
-  integer(kind=int32),intent( in ) :: ifreq      !frequency index
-  real(kind=real64),intent( in ) :: sz,zr      !source and receiver depth
+  type(refl_struct)               :: refl_var   !everything needed throughout 1D computations
+  type(sorec),intent(in)          :: src        !source definition (we need the currents here)
+  integer(kind=int32),intent(in)  :: ifreq      !frequency index
+  real(kind=real64),intent(in)    :: sz,zr      !source and iReceiver depth
   type(backgrounddata) :: bgdat      !coordinate vectors and output EM fields
     !input separate fields because the same routine is used both for fields and derivatives!
-  complex(kind=real64),dimension(:),target :: Ez    !EM fields or dervatives (horizontal/isotropic)
-  complex(kind=real64),intent( in ) :: omeps_recv !omega * epsilon in receiver layer
-  complex(kind=real64),external :: funcDz1TM
-  integer(kind=int32),intent( in ) :: ilay       !layer index for derivatives - leave at zero for forward modeling
-  complex(kind=real64),external,optional :: funcDz1TMfwd  !function only needed for derivatives in receiver layer
-  complex(kind=real64),external,optional :: funcDz1TMv !functions for TM epsv deriv.
-  complex(kind=real64),dimension(:),target,optional :: Ezv !EM field for epsv derivatives
+  complex(kind=real64),dimension(:),target   :: Ez    !EM fields or dervatives (horizontal/isotropic)
+  complex(kind=real64),intent(in) :: omeps_recv !omega * epsilon in iReceiver layer
+  complex(kind=real64),external   :: funcDz1TM
+  integer(kind=int32),intent(in)  :: ilay       !layer index for derivatives - leave at zero for forward modeling
+  complex(kind=real64),external,optional   :: funcDz1TMfwd  !function only needed for derivatives in iReceiver layer
+  complex(kind=real64),external,optional   :: funcDz1TMv !functions for TM epsv deriv.
+  complex(kind=real64),dimension(:),target,optional   :: Ezv !EM field for epsv derivatives
 
   !internal variables
-  integer(kind=int32) :: isrc    !source element counter
-  real(kind=real64) :: x,y,r   !temp source-receiver distances
-  integer(kind=int32) :: irec    !receiver counter
-  real(kind=real64) :: beta,betarot      !temp angles
+  integer(kind=int32)   :: isrc    !source element counter
+  real(kind=real64)     :: x,y,r   !temp source-iReceiver distances
+  integer(kind=int32)   :: irec    !iReceiver counter
+  real(kind=real64)     :: beta,betarot      !temp angles
 
-  complex(kind=real64) :: IDz1TM !interpolated integral values
+  complex(kind=real64)          :: IDz1TM !interpolated integral values
 
-  logical,dimension(nintHEDdvti) :: wellbehaved  !indicates if Hankel integration can be used
-  logical :: sz_eq_zr     !indicates if source and reveicer are at the same depth
-  integer(kind=int32),dimension(NREL) :: ibesord   !bessel function order (integer "array")
+  logical,dimension(nintHEDdvti)    :: wellbehaved  !indicates if Hankel integration can be used
+  logical                       :: sz_eq_zr     !indicates if source and reveicer are at the same depth
+  integer(kind=int32),dimension(NREL)  :: ibesord   !bessel function order (integer "array")
 
-  real(kind=real64) :: cosbeta,sinbeta      !cos(beta) and sin(beta), precompute for efficiency
-  real(kind=real64) :: cosbetarot,sinbetarot      !cos(betarot) and sin(betarot), precompute for efficiency
-  complex(kind=real64) :: cur      !temp source current
-  complex(kind=real64) :: JEh      !source current times constants
-  integer(kind=int32) :: idx      !source element index
-  integer(kind=int32) :: recidx   !receiver index
+  real(kind=real64)     :: cosbeta,sinbeta      !cos(beta) and sin(beta), precompute for efficiency
+  real(kind=real64)     :: cosbetarot,sinbetarot      !cos(betarot) and sin(betarot), precompute for efficiency
+  complex(kind=real64)  :: cur      !temp source current
+  complex(kind=real64)  :: JEh      !source current times constants
+  integer(kind=int32)   :: idx      !source element index
+  integer(kind=int32)   :: recidx   !iReceiver index
   !flag for computing epsv derivatives, not needed for forward computation, so "aniso" value cannot be used here
-  logical :: with_dvert
-  complex(kind=real64),dimension(:),pointer :: Erec  !points to Ez for isotropic and Ezv for VTI case
+  logical               :: with_dvert
+  complex(kind=real64),dimension(:),pointer   :: Erec  !points to Ez for isotropic and Ezv for VTI case
 
   !indicators for fast Hankel transform or adaptive integration
-  wellbehaved = .TRUE.
-  sz_eq_zr = .FALSE.
-  if(sz.EQ.zr) then
-    wellbehaved(2) = .FALSE.
-    wellbehaved(5:7) = .FALSE.
-    sz_eq_zr = .TRUE.
+  wellbehaved = .true.
+  sz_eq_zr = .false.
+  if (sz.eq.zr) then
+    wellbehaved(2) = .false.
+    wellbehaved(5:7) = .false.
+    sz_eq_zr = .true.
   endif
   
-  if(present(funcDz1TMv)) then
-    with_dvert = .TRUE.
-    if(sz_eq_zr) then
-      wellbehaved(13) = .FALSE.
-      wellbehaved(15:16) = .FALSE.
+  if (present(funcDz1TMv)) then
+    with_dvert = .true.
+    if (sz_eq_zr) then
+      wellbehaved(13) = .false.
+      wellbehaved(15:16) = .false.
     endif
   else
-    with_dvert = .FALSE.
+    with_dvert = .false.
   endif
 
 
@@ -849,20 +849,20 @@ subroutine interp_intvals_hed_Ez(refl_var,src,ifreq,sz,zr,bgdat,Ez,omeps_recv, f
       sinbetarot = sin(betarot)
 
 
-      r_is_zero: if(r.EQ.0._real64) then
-        !quick & dirty: skip the point if receiver is right at source point
-        if(sz_eq_zr) then
-          if(refl_var%infolevel.ge.output_more) then
-            write(*,'(a)') 'WARNING: cannot handle receiver right at source point yet!'
+      r_is_zero: if (r.eq.0._real64) then
+        !quick & dirty: skip the point if iReceiver is right at source point
+        if (sz_eq_zr) then
+          if (refl_var%infolevel.ge.output_more) then
+            write(*,'(a)') 'WARNING: cannot handle iReceiver right at source point yet!'
           endif
           cycle
         endif
 
       else !r is not zero
-        smallr: if(r.lt.rsplmin) then !r is but smaller than threshold radius for spline interpolation
+        smallr: if (r.lt.rsplmin) then !r is but smaller than threshold radius for spline interpolation
 
           !reflection coeff. for this radius
-          refl_var%refcoef_changed = .TRUE.
+          refl_var%refcoef_changed = .true.
           call prepare_refcoef(refl_var,r,hed,aniso)
 
           !evaluate all integrals just for this radius
@@ -878,17 +878,17 @@ subroutine interp_intvals_hed_Ez(refl_var,src,ifreq,sz,zr,bgdat,Ez,omeps_recv, f
         Ez(recidx) = Ez(recidx) + JEh * dci * cosbetarot * IDz1TM / omeps_recv
       endif r_is_zero
 
-      dvert: if(with_dvert) then
-        r_is_zerov: if(r.EQ.0._real64) then
-          !not necessary to check if source and receiver coincide exactly
-          !>  since in that case the above check already effects going to next receiver
-          !if(sz_eq_zr) cycle
+      dvert: if (with_dvert) then
+        r_is_zerov: if (r.eq.0._real64) then
+          !not necessary to check if source and iReceiver coincide exactly
+          !  since in that case the above check already effects going to next iReceiver
+          !if (sz_eq_zr) cycle
 
         else !r is not zero
-          smallrv: if(r.lt.rsplmin) then !r is but smaller than threshold radius for spline interpolation
+          smallrv: if (r.lt.rsplmin) then !r is but smaller than threshold radius for spline interpolation
 
             !reflection coeff. for this radius
-            refl_var%refcoef_changed = .TRUE.
+            refl_var%refcoef_changed = .true.
             call prepare_refcoef(refl_var,r,hed,aniso)
 
             !evaluate all integrals just for this radius
@@ -909,20 +909,20 @@ subroutine interp_intvals_hed_Ez(refl_var,src,ifreq,sz,zr,bgdat,Ez,omeps_recv, f
   enddo  !source elements
   
   
-  !special term is needed for derivative of Ez in receiver layer
+  !special term is needed for derivative of Ez in iReceiver layer
   !isotropic: add this to deriv. for overall complex permittivity --> E
   !VTI: this term does not exist for epsh deriv, but exists for epsv deriv --> nothing added to E, add to Ev
-  deriv_ilayrec: if(ilay .EQ. ilayrec) then
+  deriv_ilayrec: if (ilay .eq. ilayrec) then
   
-    if(.NOT. present(funcDz1TMfwd)) then
-      write(*,'(a)') 'ERROR: function for Ez in receiver layer not given, cannot compute correct Ez derivative!'
+    if (.not. present(funcDz1TMfwd)) then
+      write(*,'(a)') 'ERROR: function for Ez in iReceiver layer not given, cannot compute correct Ez derivative!'
       return
     endif
   
     !there is a factor epsv in the term before the Ez integral
     !-> for isotropic case, epsv becomes eps and contribution is added to E
     !-> for VTI case, derivative of this term only exists for epsv -> add to Ev, nothing added to E
-    if(with_dvert) then
+    if (with_dvert) then
       Erec => Ezv
     else
       Erec => Ez
@@ -947,7 +947,7 @@ subroutine interp_intvals_hed_Ez(refl_var,src,ifreq,sz,zr,bgdat,Ez,omeps_recv, f
 
         r = sqrt(x**2 + y**2)
 
-        if(r.EQ.0._real64) then
+        if (r.eq.0._real64) then
           !Ez is zero for zero radius
           cycle
         else
@@ -956,7 +956,7 @@ subroutine interp_intvals_hed_Ez(refl_var,src,ifreq,sz,zr,bgdat,Ez,omeps_recv, f
           betarot = beta - refl_var%betasrc(isrc)
           cosbetarot = cos(betarot)
 
-          if(r.lt.rsplmin) then
+          if (r.lt.rsplmin) then
             !reflection coeff. for this radius
             call prepare_refcoef(refl_var,r,ved,aniso) !use "ved" to compute TM refl. coeff. only
             ibesord = 1
@@ -975,12 +975,12 @@ endsubroutine interp_intvals_hed_Ez
 
 
 !------------------------------------------------------------
-!>  1D EM subroutine interp_intvals_hed_Hxy
+!  1D EM subroutine interp_intvals_hed_Hxy
 !
-!>  get interpolated field values at receiver locations, HED source,
-!>    Hx and / or Hy only
+!  get interpolated field values at iReceiver locations, HED source,
+!    Hx and / or Hy only
 !
-!>  Rita Streich 2009-2011
+!  Rita Streich 2009-2011
 !------------------------------------------------------------
 subroutine interp_intvals_hed_Hxy(refl_var,src,ifreq,sz,zr,bgdat,Hx,Hy, &
   funcD0TE,funcD0TM,funcD1TE,funcD1TM,ilay, funcD0TMv,funcD1TMv,Hxv,Hyv)
@@ -988,57 +988,57 @@ subroutine interp_intvals_hed_Hxy(refl_var,src,ifreq,sz,zr,bgdat,Hx,Hy, &
   implicit none
 
   !external variables
-  type(refl_struct) :: refl_var   !everything needed throughout 1D computations
-  type(sorec),intent( in ) :: src        !source definition (we need the currents here)
-  integer(kind=int32),intent( in ) :: ifreq      !frequency index
-  real(kind=real64),intent( in ) :: sz,zr      !source and receiver depth
+  type(refl_struct)               :: refl_var   !everything needed throughout 1D computations
+  type(sorec),intent(in)          :: src        !source definition (we need the currents here)
+  integer(kind=int32),intent(in)  :: ifreq      !frequency index
+  real(kind=real64),intent(in)    :: sz,zr      !source and iReceiver depth
   type(backgrounddata) :: bgdat      !coordinate vectors and output EM fields
     !input separate fields because the same routine is used both for fields and derivatives!
-  complex(kind=real64),dimension(:) :: Hx,Hy    !EM fields or dervatives (horizontal/isotropic)
-  complex(kind=real64),external :: funcD0TE,funcD0TM,funcD1TE,funcD1TM
-  integer(kind=int32),intent( in ) :: ilay       !layer index for derivatives - leave at zero for forward modeling
-  complex(kind=real64),external,optional :: funcD0TMv,funcD1TMv !functions for TM epsv deriv.
-  complex(kind=real64),dimension(:),optional :: Hxv,Hyv !EM field for epsv derivatives
+  complex(kind=real64),dimension(:)   :: Hx,Hy    !EM fields or dervatives (horizontal/isotropic)
+  complex(kind=real64),external   :: funcD0TE,funcD0TM,funcD1TE,funcD1TM
+  integer(kind=int32),intent(in)  :: ilay       !layer index for derivatives - leave at zero for forward modeling
+  complex(kind=real64),external,optional   :: funcD0TMv,funcD1TMv !functions for TM epsv deriv.
+  complex(kind=real64),dimension(:),optional   :: Hxv,Hyv !EM field for epsv derivatives
 
   !internal variables
-  integer(kind=int32) :: isrc    !source element counter
-  real(kind=real64) :: x,y,r   !temp source-receiver distances
-  integer(kind=int32) :: irec    !receiver counter
-  real(kind=real64) :: beta,betarot      !temp angles
+  integer(kind=int32)   :: isrc    !source element counter
+  real(kind=real64)     :: x,y,r   !temp source-iReceiver distances
+  integer(kind=int32)   :: irec    !iReceiver counter
+  real(kind=real64)     :: beta,betarot      !temp angles
 
-  complex(kind=real64) :: ID0TE,ID0TM,ID1TE,ID1TM !interpolated integral values
+  complex(kind=real64)          :: ID0TE,ID0TM,ID1TE,ID1TM !interpolated integral values
 
-  logical,dimension(nintHEDdvti) :: wellbehaved  !indicates if Hankel integration can be used
-  logical :: sz_eq_zr     !indicates if source and reveicer are at the same depth
-  integer(kind=int32),dimension(NREL) :: ibesord   !bessel function order (integer "array")
+  logical,dimension(nintHEDdvti)    :: wellbehaved  !indicates if Hankel integration can be used
+  logical                       :: sz_eq_zr     !indicates if source and reveicer are at the same depth
+  integer(kind=int32),dimension(NREL)  :: ibesord   !bessel function order (integer "array")
 
-  complex(kind=real64) :: Hr,Hbeta             !temp field values in cylindrical coordinates
-  real(kind=real64) :: cosbeta,sinbeta      !cos(beta) and sin(beta), precompute for efficiency
-  real(kind=real64) :: cosbetarot,sinbetarot      !cos(betarot) and sin(betarot), precompute for efficiency
-  complex(kind=real64) :: cur      !temp source current
-  complex(kind=real64) :: JEh      !source current times constants
-  integer(kind=int32) :: idx      !source element index
-  integer(kind=int32) :: recidx   !receiver index
+  complex(kind=real64)  :: Hr,Hbeta             !temp field values in cylindrical coordinates
+  real(kind=real64)     :: cosbeta,sinbeta      !cos(beta) and sin(beta), precompute for efficiency
+  real(kind=real64)     :: cosbetarot,sinbetarot      !cos(betarot) and sin(betarot), precompute for efficiency
+  complex(kind=real64)  :: cur      !temp source current
+  complex(kind=real64)  :: JEh      !source current times constants
+  integer(kind=int32)   :: idx      !source element index
+  integer(kind=int32)   :: recidx   !iReceiver index
   !flag for computing epsv derivatives, not needed for forward computation, so "aniso" value cannot be used here
-  logical :: with_dvert
+  logical               :: with_dvert
 
   !indicators for fast Hankel transform or adaptive integration
-  wellbehaved = .TRUE.
-  sz_eq_zr = .FALSE.
-  if(sz.EQ.zr) then
-    wellbehaved(2) = .FALSE.
-    wellbehaved(5:7) = .FALSE.
-    sz_eq_zr = .TRUE.
+  wellbehaved = .true.
+  sz_eq_zr = .false.
+  if (sz.eq.zr) then
+    wellbehaved(2) = .false.
+    wellbehaved(5:7) = .false.
+    sz_eq_zr = .true.
   endif
   
-  if(present(funcD1TMv)) then
-    with_dvert = .TRUE.
-    if(sz_eq_zr) then
-      wellbehaved(13) = .FALSE.
-      wellbehaved(15:16) = .FALSE.
+  if (present(funcD1TMv)) then
+    with_dvert = .true.
+    if (sz_eq_zr) then
+      wellbehaved(13) = .false.
+      wellbehaved(15:16) = .false.
     endif
   else
-    with_dvert = .FALSE.
+    with_dvert = .false.
   endif
 
 
@@ -1050,7 +1050,7 @@ subroutine interp_intvals_hed_Hxy(refl_var,src,ifreq,sz,zr,bgdat,Hx,Hy, &
     cur = conjg(src%cur(idx,ifreq))
     JEh = cur * sqrt(src%ljx(idx)**2 + src%ljy(idx)**2) / dfourpi
 
-    equal_Hxypos: if(bgdat%nHxy.gt.0) then
+    equal_Hxypos: if (bgdat%nHxy.gt.0) then
 
     do irec=refl_var%irecstart,refl_var%irecend
       recidx = refl_var%irecperzHxy(irec)
@@ -1068,11 +1068,11 @@ subroutine interp_intvals_hed_Hxy(refl_var,src,ifreq,sz,zr,bgdat,Hx,Hy, &
       sinbetarot = sin(betarot)
 
 
-      r_is_zero: if(r.EQ.0._real64) then
-        !quick & dirty: skip the point if receiver is right at source point
-        if(sz_eq_zr) then
-          if(refl_var%infolevel.ge.output_more) then
-            write(*,'(a)') 'WARNING: cannot handle receiver right at source point yet!'
+      r_is_zero: if (r.eq.0._real64) then
+        !quick & dirty: skip the point if iReceiver is right at source point
+        if (sz_eq_zr) then
+          if (refl_var%infolevel.ge.output_more) then
+            write(*,'(a)') 'WARNING: cannot handle iReceiver right at source point yet!'
           endif
           cycle
         endif
@@ -1088,10 +1088,10 @@ subroutine interp_intvals_hed_Hxy(refl_var,src,ifreq,sz,zr,bgdat,Hx,Hy, &
         Hbeta = - JEh * cosbetarot * (0.5_real64 * (ID0TE + ID0TM))
         
       else !r is not zero
-        smallr: if(r.lt.rsplmin) then !r is but smaller than threshold radius for spline interpolation
+        smallr: if (r.lt.rsplmin) then !r is but smaller than threshold radius for spline interpolation
 
           !reflection coeff. for this radius
-          refl_var%refcoef_changed = .TRUE.
+          refl_var%refcoef_changed = .true.
           call prepare_refcoef(refl_var,r,hed,aniso)
 
           !evaluate all integrals just for this radius
@@ -1119,11 +1119,11 @@ subroutine interp_intvals_hed_Hxy(refl_var,src,ifreq,sz,zr,bgdat,Hx,Hy, &
       Hx(recidx) = Hx(recidx) + cosbeta*Hr - sinbeta*Hbeta
       Hy(recidx) = Hy(recidx) + sinbeta*Hr + cosbeta*Hbeta
 
-      dvert: if(with_dvert) then
-        r_is_zerov: if(r.EQ.0._real64) then
-          !not necessary to check if source and receiver coincide exactly
-          !>  since in that case the above check already effects going to next receiver
-          !if(sz_eq_zr) cycle
+      dvert: if (with_dvert) then
+        r_is_zerov: if (r.eq.0._real64) then
+          !not necessary to check if source and iReceiver coincide exactly
+          !  since in that case the above check already effects going to next iReceiver
+          !if (sz_eq_zr) cycle
 
           !Bessel function J0(r=0) = 1, J1(r=0) = 0
           !--> need to evaluate zero-order integrals only
@@ -1135,10 +1135,10 @@ subroutine interp_intvals_hed_Hxy(refl_var,src,ifreq,sz,zr,bgdat,Hx,Hy, &
           Hbeta = - JEh * cosbetarot * 0.5_real64 * ID0TM
         
         else !r is not zero
-          smallrv: if(r.lt.rsplmin) then !r is but smaller than threshold radius for spline interpolation
+          smallrv: if (r.lt.rsplmin) then !r is but smaller than threshold radius for spline interpolation
 
             !reflection coeff. for this radius
-            refl_var%refcoef_changed = .TRUE.
+            refl_var%refcoef_changed = .true.
             call prepare_refcoef(refl_var,r,hed,aniso)
 
             !evaluate all integrals just for this radius
@@ -1166,7 +1166,7 @@ subroutine interp_intvals_hed_Hxy(refl_var,src,ifreq,sz,zr,bgdat,Hx,Hy, &
     enddo !irec
 
     else
-      have_Hx: if(bgdat%nHx.gt.0) then
+      have_Hx: if (bgdat%nHx.gt.0) then
 
     do irec=refl_var%irecstart,refl_var%irecend
       recidx = refl_var%irecperzHxy(irec)
@@ -1184,11 +1184,11 @@ subroutine interp_intvals_hed_Hxy(refl_var,src,ifreq,sz,zr,bgdat,Hx,Hy, &
       sinbetarot = sin(betarot)
 
 
-      r_is_zerohx: if(r.EQ.0._real64) then
-        !quick & dirty: skip the point if receiver is right at source point
-        if(sz_eq_zr) then
-          if(refl_var%infolevel.ge.output_more) then
-            write(*,'(a)') 'WARNING: cannot handle receiver right at source point yet!'
+      r_is_zerohx: if (r.eq.0._real64) then
+        !quick & dirty: skip the point if iReceiver is right at source point
+        if (sz_eq_zr) then
+          if (refl_var%infolevel.ge.output_more) then
+            write(*,'(a)') 'WARNING: cannot handle iReceiver right at source point yet!'
           endif
           cycle
         endif
@@ -1204,10 +1204,10 @@ subroutine interp_intvals_hed_Hxy(refl_var,src,ifreq,sz,zr,bgdat,Hx,Hy, &
         Hbeta = - JEh * cosbetarot * (0.5_real64 * (ID0TE + ID0TM))
         
       else !r is not zero
-        smallrhx: if(r.lt.rsplmin) then !r is but smaller than threshold radius for spline interpolation
+        smallrhx: if (r.lt.rsplmin) then !r is but smaller than threshold radius for spline interpolation
 
           !reflection coeff. for this radius
-          refl_var%refcoef_changed = .TRUE.
+          refl_var%refcoef_changed = .true.
           call prepare_refcoef(refl_var,r,hed,aniso)
 
           !evaluate all integrals just for this radius
@@ -1234,11 +1234,11 @@ subroutine interp_intvals_hed_Hxy(refl_var,src,ifreq,sz,zr,bgdat,Hx,Hy, &
       !don't take complex conjugate here, but at the very end!
       Hx(recidx) = Hx(recidx) + cosbeta*Hr - sinbeta*Hbeta
 
-      dverthx: if(with_dvert) then
-        r_is_zerovhx: if(r.EQ.0._real64) then
-          !not necessary to check if source and receiver coincide exactly
-          !>  since in that case the above check already effects going to next receiver
-          !if(sz_eq_zr) cycle
+      dverthx: if (with_dvert) then
+        r_is_zerovhx: if (r.eq.0._real64) then
+          !not necessary to check if source and iReceiver coincide exactly
+          !  since in that case the above check already effects going to next iReceiver
+          !if (sz_eq_zr) cycle
 
           !Bessel function J0(r=0) = 1, J1(r=0) = 0
           !--> need to evaluate zero-order integrals only
@@ -1250,10 +1250,10 @@ subroutine interp_intvals_hed_Hxy(refl_var,src,ifreq,sz,zr,bgdat,Hx,Hy, &
           Hbeta = - JEh * cosbetarot * 0.5_real64 * ID0TM
         
         else !r is not zero
-          smallrvhx: if(r.lt.rsplmin) then !r is but smaller than threshold radius for spline interpolation
+          smallrvhx: if (r.lt.rsplmin) then !r is but smaller than threshold radius for spline interpolation
 
             !reflection coeff. for this radius
-            refl_var%refcoef_changed = .TRUE.
+            refl_var%refcoef_changed = .true.
             call prepare_refcoef(refl_var,r,hed,aniso)
 
             !evaluate all integrals just for this radius
@@ -1281,7 +1281,7 @@ subroutine interp_intvals_hed_Hxy(refl_var,src,ifreq,sz,zr,bgdat,Hx,Hy, &
 
       endif have_Hx
 
-      have_Hy: if(bgdat%nHy.gt.0) then
+      have_Hy: if (bgdat%nHy.gt.0) then
 
     do irec=refl_var%irecstart,refl_var%irecend
       recidx = refl_var%irecperzHxy(irec)
@@ -1298,11 +1298,11 @@ subroutine interp_intvals_hed_Hxy(refl_var,src,ifreq,sz,zr,bgdat,Hx,Hy, &
       cosbetarot = cos(betarot)
       sinbetarot = sin(betarot)
 
-      r_is_zerohy: if(r.EQ.0._real64) then
-        !quick & dirty: skip the point if receiver is right at source point
-        if(sz_eq_zr) then
-          if(refl_var%infolevel.ge.output_more) then
-            write(*,'(a)') 'WARNING: cannot handle receiver right at source point yet!'
+      r_is_zerohy: if (r.eq.0._real64) then
+        !quick & dirty: skip the point if iReceiver is right at source point
+        if (sz_eq_zr) then
+          if (refl_var%infolevel.ge.output_more) then
+            write(*,'(a)') 'WARNING: cannot handle iReceiver right at source point yet!'
           endif
           cycle
         endif
@@ -1318,10 +1318,10 @@ subroutine interp_intvals_hed_Hxy(refl_var,src,ifreq,sz,zr,bgdat,Hx,Hy, &
         Hbeta = - JEh * cosbetarot * (0.5_real64 * (ID0TE + ID0TM))
         
       else !r is not zero
-        smallrhy: if(r.lt.rsplmin) then !r is but smaller than threshold radius for spline interpolation
+        smallrhy: if (r.lt.rsplmin) then !r is but smaller than threshold radius for spline interpolation
 
           !reflection coeff. for this radius
-          refl_var%refcoef_changed = .TRUE.
+          refl_var%refcoef_changed = .true.
           call prepare_refcoef(refl_var,r,hed,aniso)
 
           !evaluate all integrals just for this radius
@@ -1348,11 +1348,11 @@ subroutine interp_intvals_hed_Hxy(refl_var,src,ifreq,sz,zr,bgdat,Hx,Hy, &
       !don't take complex conjugate here, but at the very end!
       Hy(recidx) = Hy(recidx) + sinbeta*Hr + cosbeta*Hbeta
 
-      dverthy: if(with_dvert) then
-        r_is_zerovhy: if(r.EQ.0._real64) then
-          !not necessary to check if source and receiver coincide exactly
-          !>  since in that case the above check already effects going to next receiver
-          !if(sz_eq_zr) cycle
+      dverthy: if (with_dvert) then
+        r_is_zerovhy: if (r.eq.0._real64) then
+          !not necessary to check if source and iReceiver coincide exactly
+          !  since in that case the above check already effects going to next iReceiver
+          !if (sz_eq_zr) cycle
 
           !Bessel function J0(r=0) = 1, J1(r=0) = 0
           !--> need to evaluate zero-order integrals only
@@ -1364,10 +1364,10 @@ subroutine interp_intvals_hed_Hxy(refl_var,src,ifreq,sz,zr,bgdat,Hx,Hy, &
           Hbeta = - JEh * cosbetarot * 0.5_real64 * ID0TM
         
         else !r is not zero
-          smallrvhy: if(r.lt.rsplmin) then !r is but smaller than threshold radius for spline interpolation
+          smallrvhy: if (r.lt.rsplmin) then !r is but smaller than threshold radius for spline interpolation
 
             !reflection coeff. for this radius
-            refl_var%refcoef_changed = .TRUE.
+            refl_var%refcoef_changed = .true.
             call prepare_refcoef(refl_var,r,hed,aniso)
 
             !evaluate all integrals just for this radius
@@ -1402,52 +1402,52 @@ endsubroutine interp_intvals_hed_Hxy
 
 
 !------------------------------------------------------------
-!>  1D EM subroutine interp_intvals_hed_Hz
+!  1D EM subroutine interp_intvals_hed_Hz
 !
-!>  get interpolated field values at receiver locations, HED source,
-!>    Hz only
+!  get interpolated field values at iReceiver locations, HED source,
+!    Hz only
 !
-!>  Rita Streich 2009-2011
+!  Rita Streich 2009-2011
 !------------------------------------------------------------
 subroutine interp_intvals_hed_Hz(refl_var,src,ifreq,sz,zr,bgdat,Hz,ommu, funcAz1TE,ilay)
 
   implicit none
 
   !external variables
-  type(refl_struct) :: refl_var   !everything needed throughout 1D computations
-  type(sorec),intent( in ) :: src        !source definition (we need the currents here)
-  integer(kind=int32),intent( in ) :: ifreq      !frequency index
-  real(kind=real64),intent( in ) :: sz,zr      !source and receiver depth
+  type(refl_struct)               :: refl_var   !everything needed throughout 1D computations
+  type(sorec),intent(in)          :: src        !source definition (we need the currents here)
+  integer(kind=int32),intent(in)  :: ifreq      !frequency index
+  real(kind=real64),intent(in)    :: sz,zr      !source and iReceiver depth
   type(backgrounddata) :: bgdat      !coordinate vectors and output EM fields
     !input separate fields because the same routine is used both for fields and derivatives!
-  complex(kind=real64),dimension(:) :: Hz    !EM fields or dervatives (horizontal/isotropic)
-  real(kind=real64),intent( in ) :: ommu       !omega * mu0
-  complex(kind=real64),external :: funcAz1TE
-  integer(kind=int32),intent( in ) :: ilay       !layer index for derivatives - leave at zero for forward modeling
+  complex(kind=real64),dimension(:)   :: Hz    !EM fields or dervatives (horizontal/isotropic)
+  real(kind=real64),intent(in)    :: ommu       !omega * mu0
+  complex(kind=real64),external   :: funcAz1TE
+  integer(kind=int32),intent(in)  :: ilay       !layer index for derivatives - leave at zero for forward modeling
 
   !internal variables
-  integer(kind=int32) :: isrc    !source element counter
-  real(kind=real64) :: x,y,r   !temp source-receiver distances
-  integer(kind=int32) :: irec    !receiver counter
-  real(kind=real64) :: beta,betarot      !temp angles
+  integer(kind=int32)   :: isrc    !source element counter
+  real(kind=real64)     :: x,y,r   !temp source-iReceiver distances
+  integer(kind=int32)   :: irec    !iReceiver counter
+  real(kind=real64)     :: beta,betarot      !temp angles
 
-  complex(kind=real64) :: IAz1TE !interpolated integral values
+  complex(kind=real64)          :: IAz1TE !interpolated integral values
 
-  logical,dimension(nintHEDdvti) :: wellbehaved  !indicates if Hankel integration can be used
-  logical :: sz_eq_zr     !indicates if source and reveicer are at the same depth
-  integer(kind=int32),dimension(NREL) :: ibesord   !bessel function order (integer "array")
+  logical,dimension(nintHEDdvti)    :: wellbehaved  !indicates if Hankel integration can be used
+  logical                       :: sz_eq_zr     !indicates if source and reveicer are at the same depth
+  integer(kind=int32),dimension(NREL)  :: ibesord   !bessel function order (integer "array")
 
-  real(kind=real64) :: sinbetarot      !cos(betarot) and sin(betarot), precompute for efficiency
-  complex(kind=real64) :: cur      !temp source current
-  complex(kind=real64) :: JEh      !source current times constants
-  integer(kind=int32) :: idx      !source element index
-  integer(kind=int32) :: recidx   !receiver index
+  real(kind=real64)     :: sinbetarot      !cos(betarot) and sin(betarot), precompute for efficiency
+  complex(kind=real64)  :: cur      !temp source current
+  complex(kind=real64)  :: JEh      !source current times constants
+  integer(kind=int32)   :: idx      !source element index
+  integer(kind=int32)   :: recidx   !iReceiver index
 
   !indicators for fast Hankel transform or adaptive integration
-  wellbehaved = .TRUE. !only need element (10), no deriv. with respect to vertical medium properties
-  sz_eq_zr = .FALSE.
-  if(sz.EQ.zr) then
-    sz_eq_zr = .TRUE.
+  wellbehaved = .true. !only need element (10), no deriv. with respect to vertical medium properties
+  sz_eq_zr = .false.
+  if (sz.eq.zr) then
+    sz_eq_zr = .true.
   endif
 
   do isrc = refl_var%isrcstart,refl_var%isrcend
@@ -1471,20 +1471,20 @@ subroutine interp_intvals_hed_Hz(refl_var,src,ifreq,sz,zr,bgdat,Hz,ommu, funcAz1
       sinbetarot = sin(betarot)
 
 
-      r_is_zero: if(r.EQ.0._real64) then
-        !quick & dirty: skip the point if receiver is right at source point
-        if(sz_eq_zr) then
-          if(refl_var%infolevel.ge.output_more) then
-            write(*,'(a)') 'WARNING: cannot handle receiver right at source point yet!'
+      r_is_zero: if (r.eq.0._real64) then
+        !quick & dirty: skip the point if iReceiver is right at source point
+        if (sz_eq_zr) then
+          if (refl_var%infolevel.ge.output_more) then
+            write(*,'(a)') 'WARNING: cannot handle iReceiver right at source point yet!'
           endif
           cycle
         endif
 
       else !r is not zero
-        smallr: if(r.lt.rsplmin) then !r is but smaller than threshold radius for spline interpolation
+        smallr: if (r.lt.rsplmin) then !r is but smaller than threshold radius for spline interpolation
 
           !reflection coeff. for this radius
-          refl_var%refcoef_changed = .TRUE.
+          refl_var%refcoef_changed = .true.
           call prepare_refcoef(refl_var,r,hed,aniso)
 
           !evaluate all integrals just for this radius

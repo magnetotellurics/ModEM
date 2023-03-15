@@ -1,9 +1,9 @@
 !****************************************************************
 !
-!> EM modeling module containing some utility functions eg for
-!>   error handling and sorting
+! EM modeling module containing some utility functions eg for
+!   error handling and sorting
 !
-!> Rita Streich 2011
+! Rita Streich 2011
 !**************************************************************
 module util_mod
 
@@ -24,18 +24,18 @@ module util_mod
 #endif
 
 public::    alloc_error, &        !subroutine in errors.F90
-            readwrite_error, &    !>        "
-            open_error, &         !>        "
-            close_error, &        !>        "
-            exist_error, &        !>        "
-            invalid_error         !>        "
+            readwrite_error, &    !        "
+            open_error, &         !        "
+            close_error, &        !        "
+            exist_error, &        !        "
+            invalid_error         !        "
             
 #ifdef USE_MPI
-public::    error_mpi             !>        "
+public::    error_mpi             !        "
 #endif
 
-  integer(kind=int32) :: pid = 0   !my process ID in MPI_COMM_WORLD (initialize in case MPI is not used)
-  integer(kind=int32) :: nproc = 1 !number of processes in MPI_COMM_WORLD
+  integer(kind=int32)  :: pid = 0   !my process ID in MPI_COMM_WORLD (initialize in case MPI is not used)
+  integer(kind=int32)  :: nproc = 1 !number of processes in MPI_COMM_WORLD
 
 contains
 

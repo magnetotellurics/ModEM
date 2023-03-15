@@ -86,7 +86,7 @@ contains
         !
     end subroutine workerMainLoop
     !
-    !> Calculate E_Solution (e_sol) for the process single Transmitter
+    !> Calculate E_Solution (e_sol_0) for the process single Transmitter
     !
     subroutine workerSolve()
         implicit none
@@ -127,7 +127,7 @@ contains
         !> Point to the transmitter specified by the master process 
         Tx => getTransmitter( job_info%i_tx )
         !
-        Tx%SolnIndex = job_info%sol_index
+        Tx%i_sol = job_info%sol_index
         !
         call txForwardSolver( Tx )
         !
@@ -218,9 +218,9 @@ contains
         !> Point to the transmitter specified by the master process 
         Tx => getTransmitter( job_info%i_tx )
         !
-        Tx%SolnIndex = job_info%sol_index
+        Tx%i_sol = job_info%sol_index
         !
-        call JMult_T_Tx( sigma, tx_data, tx_dsigma, Tx%SolnIndex )
+        call JMult_T_Tx( sigma, tx_data, tx_dsigma, Tx%i_sol )
         !
         !> Send job done and tx_dsigma's conductivity to master process
         job_info%job_name = job_done

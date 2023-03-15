@@ -1,93 +1,93 @@
 !**************************************************************
-!>  FD EM subroutine find_srcdepths
-!>  Purpose:  get and sort unique source element depths for one 
-!>    wire source or composite dipole source
+!  FD EM subroutine find_srcdepths
+!  Purpose:  get and sort unique source element depths for one 
+!    wire source or composite dipole source
 !
-!>  Rita Streich 2009-2011
+!  Rita Streich 2009-2011
 !**************************************************************
 subroutine find_srcdepths(src,refl_var,dipoletype)
 
   implicit none
 
   !external variables
-  type(sorec),intent( in ) :: src           !source definitions for one source
-  type(refl_struct) :: refl_var      !all variables that have to be remembered while computing 1D fields
-  integer(kind=int32),intent( in ) :: dipoletype    !the type of dipole elements to look for
+  type(sorec),intent(in)          :: src           !source definitions for one source
+  type(refl_struct)               :: refl_var      !all variables that have to be remembered while computing 1D fields
+  integer(kind=int32),intent(in)  :: dipoletype    !the type of dipole elements to look for
 
   !internal variables
-  integer(kind=int32) :: ierr       !error index
-  integer(kind=Int32) :: nelem      !temp number of source elements
-  integer(kind=int32) :: nelemtot   !total number of dipole elements within source, can be the sum over different dipole types
-  integer(kind=int32) :: ielem,nzs  !counters
-  real(kind=real64),dimension(:),allocatable :: zstmp     !different depths
-  integer(kind=int32),dimension(:),allocatable :: nsrcperz  !how many receivers / source elements at each depth
-  integer(kind=int32),dimension(:),allocatable :: srcidx    !source element indices
-  real(kind=real64),dimension(:),allocatable :: zstmpall  !depths of all source elements considered, can have duplicates
-  integer(kind=int32) :: idx   !temp index for remapping source points
-  real(kind=real64) :: lx,ly !x,y lengths of wires
+  integer(kind=int32)   :: ierr       !error index
+  integer(kind=Int32)   :: nelem      !temp number of source elements
+  integer(kind=int32)   :: nelemtot   !total number of dipole elements within source, can be the sum over different dipole types
+  integer(kind=int32)   :: ielem,nzs  !counters
+  real(kind=real64),dimension(:),allocatable    :: zstmp     !different depths
+  integer(kind=int32),dimension(:),allocatable  :: nsrcperz  !how many receivers / source elements at each depth
+  integer(kind=int32),dimension(:),allocatable  :: srcidx    !source element indices
+  real(kind=real64),dimension(:),allocatable    :: zstmpall  !depths of all source elements considered, can have duplicates
+  integer(kind=int32)   :: idx   !temp index for remapping source points
+  real(kind=real64)     :: lx,ly !x,y lengths of wires
 
 
   !------------------------------------------------------
   !extract elements for one particular source type
   !------------------------------------------------------
 
-  select case(src%type)
-  case(dipole)
+  select case (src%type)
+  case (dipole)
 
     !check input
-    if((dipoletype.lt.hed) .OR. (dipoletype.gt.vmd)) &
+    if ((dipoletype.lt.hed) .or. (dipoletype.gt.vmd)) &
       call invalid_error(pid,'find_srcdepths','','dipoletype',intnum=dipoletype)
 
     nelemtot = src%nelem(1)
     allocate(zstmpall(nelemtot),srcidx(nelemtot), stat=ierr)
-    if(ierr.NE.0) call alloc_error(pid,'find_srcdepths','zstmpall',ierr)
+    if (ierr.ne.0) call alloc_error(pid,'find_srcdepths','zstmpall',ierr)
 
 
     nelem = 0
 
     !composite dipole sources may contain different dipole types
-    select case(dipoletype)
-    case(hed) !horizontal electric dipole
+    select case (dipoletype)
+    case (hed) !horizontal electric dipole
 
       do ielem=1,nelemtot
-        if((src%ljx(ielem).NE.0._real64) .OR. (src%ljy(ielem).NE.0._real64)) then
+        if ((src%ljx(ielem).ne.0._real64) .or. (src%ljy(ielem).ne.0._real64)) then
           nelem = nelem + 1
           srcidx(nelem) = ielem
           zstmpall(nelem) = src%pos(3,ielem)
         endif
       enddo
 
-      if(nelem .gt. 0) then
+      if (nelem .gt. 0) then
         allocate(refl_var%betasrc(1:nelem), stat=ierr)
-        if(ierr.NE.0) call alloc_error(pid,'find_srcdepths','betasrc',ierr)
+        if (ierr.ne.0) call alloc_error(pid,'find_srcdepths','betasrc',ierr)
       endif
 
-    case(ved) !vertical electric dipole
+    case (ved) !vertical electric dipole
       do ielem=1,nelemtot
-        if(src%ljz(ielem).NE.0._real64) then
+        if (src%ljz(ielem).ne.0._real64) then
           nelem = nelem + 1
           srcidx(nelem) = ielem
           zstmpall(nelem) = src%pos(3,ielem)
         endif
       enddo
 
-    case(hmd) !horizontal magnetic dipole
+    case (hmd) !horizontal magnetic dipole
       do ielem=1,nelemtot
-        if((src%akx(ielem).NE.0._real64) .OR. (src%aky(ielem).NE.0._real64)) then
+        if ((src%akx(ielem).ne.0._real64) .or. (src%aky(ielem).ne.0._real64)) then
           nelem = nelem + 1
           srcidx(nelem) = ielem
           zstmpall(nelem) = src%pos(3,ielem)
         endif
       enddo
 
-      if(nelem .gt. 0) then
+      if (nelem .gt. 0) then
         allocate(refl_var%betasrc(1:nelem), stat=ierr)
-        if(ierr.NE.0) call alloc_error(pid,'find_srcdepths','betasrc',ierr)
+        if (ierr.ne.0) call alloc_error(pid,'find_srcdepths','betasrc',ierr)
       endif
 
-    case(vmd) !vertical magnetic dipole
+    case (vmd) !vertical magnetic dipole
       do ielem=1,nelemtot
-        if(src%akz(ielem).NE.0.d0) then
+        if (src%akz(ielem).ne.0.d0) then
           nelem = nelem + 1
           srcidx(nelem) = ielem
           zstmpall(nelem) = src%pos(3,ielem)
@@ -99,15 +99,15 @@ subroutine find_srcdepths(src,refl_var,dipoletype)
 
   !horizontal wire sources (so far!) contain horizontal electrical source elements only
   !no need to scan through wires (for now!) - should add option for vertical wire components!
-  case(wire)
+  case (wire)
 
     nelem = src%nwire
 
     allocate(refl_var%betasrc(1:nelem), stat=ierr)
-    if(ierr.NE.0) call alloc_error(pid,'find_srcdepths','betasrc',ierr)
+    if (ierr.ne.0) call alloc_error(pid,'find_srcdepths','betasrc',ierr)
 
     allocate(zstmpall(nelem), stat=ierr)
-    if(ierr.NE.0) call alloc_error(pid,'find_srcdepths','zstmpall',ierr)
+    if (ierr.ne.0) call alloc_error(pid,'find_srcdepths','zstmpall',ierr)
 
     do ielem=1,nelem
       zstmpall(ielem) = src%wire(ielem)%endpos(3,1)
@@ -118,15 +118,15 @@ subroutine find_srcdepths(src,refl_var,dipoletype)
 
   !------------------------------------------------------
   !if source elements for the given dipole type exist (or we have a wire source),
-  !>  then find unique depths of those source elements
+  !  then find unique depths of those source elements
   !------------------------------------------------------
-  if(nelem .gt. 0) then
+  if (nelem .gt. 0) then
 
     allocate(nsrcperz(nelem),zstmp(nelem), stat=ierr)
-    if(ierr.NE.0) call alloc_error(pid,'find_srcdepths','nsrcperz',ierr)
+    if (ierr.ne.0) call alloc_error(pid,'find_srcdepths','nsrcperz',ierr)
 
     allocate(refl_var%isrcperz(nelem), stat=ierr)
-    if(ierr.NE.0) call alloc_error(pid,'find_srcdepths','refl_var%isrcperz',ierr)
+    if (ierr.ne.0) call alloc_error(pid,'find_srcdepths','refl_var%isrcperz',ierr)
 
 
     !get sort indices for source depths
@@ -136,8 +136,8 @@ subroutine find_srcdepths(src,refl_var,dipoletype)
     call indexx(nelem,zstmpall,refl_var%isrcperz)
 
 
-    select case(src%type)
-    case(dipole)
+    select case (src%type)
+    case (dipole)
 
       !replace indices with those from original source vector
       !this will only have an effect if there are multiple dipole element types within the source
@@ -154,7 +154,7 @@ subroutine find_srcdepths(src,refl_var,dipoletype)
 
       do ielem=2,nelem
 
-        if(src%pos(3,refl_var%isrcperz(ielem)) .EQ. src%pos(3,refl_var%isrcperz(ielem-1))) then
+        if (src%pos(3,refl_var%isrcperz(ielem)) .eq. src%pos(3,refl_var%isrcperz(ielem-1))) then
           nsrcperz(nzs) = nsrcperz(nzs) + 1
         else
           nzs = nzs + 1
@@ -165,14 +165,14 @@ subroutine find_srcdepths(src,refl_var,dipoletype)
 
 
       !angles for HED sources
-      if(dipoletype.EQ.hed) then
+      if (dipoletype.eq.hed) then
         do ielem=1,nelem
           idx = refl_var%isrcperz(ielem)
           refl_var%betasrc(ielem) = atan2(src%ljy(idx),src%ljx(idx))
         enddo
 
       !angles for HMD sources
-      elseif(dipoletype.EQ.hmd) then
+      elseif (dipoletype.eq.hmd) then
         do ielem=1,nelem
           idx = refl_var%isrcperz(ielem)
           refl_var%betasrc(ielem) = atan2(src%aky(idx),src%akx(idx))
@@ -181,14 +181,14 @@ subroutine find_srcdepths(src,refl_var,dipoletype)
 
 
     !wire sources
-    case(wire)
+    case (wire)
       zstmp = 0._real64
       zstmp(1) = src%wire(refl_var%isrcperz(1))%endpos(3,1)
       nsrcperz(1) = 1
 
       do ielem=2,nelem
 
-        if(src%wire(refl_var%isrcperz(ielem))%endpos(3,1) .EQ. src%wire(refl_var%isrcperz(ielem-1))%endpos(3,1)) then
+        if (src%wire(refl_var%isrcperz(ielem))%endpos(3,1) .eq. src%wire(refl_var%isrcperz(ielem-1))%endpos(3,1)) then
           nsrcperz(nzs) = nsrcperz(nzs) + 1
         else
           nzs = nzs + 1
@@ -213,7 +213,7 @@ subroutine find_srcdepths(src,refl_var,dipoletype)
     !copy results into refl_var structure
     refl_var%nzsrc = nzs
     allocate(refl_var%zsrc(nzs),refl_var%nsrcperz(nzs), stat=ierr)
-    if(ierr.NE.0) call alloc_error(pid,'find_srcdepths','nzs',ierr)
+    if (ierr.ne.0) call alloc_error(pid,'find_srcdepths','nzs',ierr)
     refl_var%zsrc = zstmp(1:nzs)
     refl_var%nsrcperz = nsrcperz(1:nzs)
 
@@ -225,7 +225,7 @@ subroutine find_srcdepths(src,refl_var,dipoletype)
   endif
 
   deallocate(zstmpall, stat=ierr)
-  if(src%type .EQ. dipole) deallocate(srcidx, stat=ierr)
+  if (src%type .eq. dipole) deallocate(srcidx, stat=ierr)
 
 endsubroutine find_srcdepths
 

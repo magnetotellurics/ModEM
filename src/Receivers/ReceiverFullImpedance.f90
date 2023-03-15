@@ -164,73 +164,59 @@ contains
         !
         comega = cmplx( 0.0, 1. / ( 2.0 * PI / transmitter%period ), kind=prec )
         !
-        allocate( EE(2,2) )
         call transmitter%getSolutionVector( 1, tx_e_1 )
         call transmitter%getSolutionVector( 2, tx_e_2 )
         !
-        select type( tx_e_1 )
-            class is( cVector3D_SG_t )
-                !
-                select type( tx_e_2 )
-                    class is( cVector3D_SG_t )
-                        !
-                        EE(1,1) = self%Lex%dotProd( tx_e_1 )
-                        EE(2,1) = self%Ley%dotProd( tx_e_1 )
-                        EE(1,2) = self%Lex%dotProd( tx_e_2 )
-                        EE(2,2) = self%Ley%dotProd( tx_e_2 )
-                        !
-                        allocate( BB( 2, 2 ) )
-                        !
-                        BB(1,1) = self%Lbx%dotProd( tx_e_1 )
-                        BB(2,1) = self%Lby%dotProd( tx_e_1 )
-                        BB(1,2) = self%Lbx%dotProd( tx_e_2 )
-                        BB(2,2) = self%Lby%dotProd( tx_e_2 )
-                        !
-                        BB = isign * BB * comega
-                        !
-                        det = BB(1,1) * BB(2,2) - BB(1,2) * BB(2,1)
-                        !
-                        if( allocated( self%I_BB ) ) deallocate( self%I_BB )
-                        allocate( self%I_BB(2,2) )
-                        !
-                        if( det /= 0 ) then
-                            self%I_BB(1,1) =  BB(2,2) / det
-                            self%I_BB(2,2) =  BB(1,1) / det
-                            self%I_BB(1,2) = -BB(1,2) / det
-                            self%I_BB(2,1) = -BB(2,1) / det
-                        else
-                            stop "Error: predictedDataFullImpedance > Determinant is Zero!"
-                        endif
-                        !
-                        deallocate( BB )
-                        !
-                        if( allocated( self%response ) ) deallocate( self%response )
-                        allocate( self%response(4) )
-                        !
-                        do j = 1, 2
-                             do i = 1, 2
-                                 ij = 2 * ( i-1 ) + j
-                                 self%response(ij) = EE(i,1) * self%I_BB(1,j) + EE(i,2) * self%I_BB(2,j)
-                             enddo
-                        enddo
-                        !
-                        deallocate( EE )
-                        !
-                        if( present( data_group ) ) then
-                            !
-                            call self%savePredictedData( transmitter, data_group )
-                            !
-                        endif
-                        !
-                    class default
-                        stop "Error: predictedDataFullImpedance: Unclassified tx_e_2"
-                end select
-                !
-                deallocate( tx_e_1, tx_e_2 )
-                !
-            class default
-                stop "Error: predictedDataFullImpedance: Unclassified tx_e_1"
-        end select
+        allocate( EE(2,2) )
+        EE(1,1) = self%Lex%dotProd( tx_e_1 )
+        EE(2,1) = self%Ley%dotProd( tx_e_1 )
+        EE(1,2) = self%Lex%dotProd( tx_e_2 )
+        EE(2,2) = self%Ley%dotProd( tx_e_2 )
+        !
+        allocate( BB( 2, 2 ) )
+        BB(1,1) = self%Lbx%dotProd( tx_e_1 )
+        BB(2,1) = self%Lby%dotProd( tx_e_1 )
+        BB(1,2) = self%Lbx%dotProd( tx_e_2 )
+        BB(2,2) = self%Lby%dotProd( tx_e_2 )
+        !
+        deallocate( tx_e_1 )
+        deallocate( tx_e_2 )
+        !
+        BB = isign * BB * comega
+        !
+        det = BB(1,1) * BB(2,2) - BB(1,2) * BB(2,1)
+        !
+        if( allocated( self%I_BB ) ) deallocate( self%I_BB )
+        allocate( self%I_BB(2,2) )
+        !
+        if( det /= 0 ) then
+            self%I_BB(1,1) =  BB(2,2) / det
+            self%I_BB(2,2) =  BB(1,1) / det
+            self%I_BB(1,2) = -BB(1,2) / det
+            self%I_BB(2,1) = -BB(2,1) / det
+        else
+            stop "Error: predictedDataFullImpedance > Determinant is Zero!"
+        endif
+        !
+        deallocate( BB )
+        !
+        if( allocated( self%response ) ) deallocate( self%response )
+        allocate( self%response(4) )
+        !
+        do j = 1, 2
+             do i = 1, 2
+                 ij = 2 * ( i-1 ) + j
+                 self%response(ij) = EE(i,1) * self%I_BB(1,j) + EE(i,2) * self%I_BB(2,j)
+             enddo
+        enddo
+        !
+        deallocate( EE )
+        !
+        if( present( data_group ) ) then
+            !
+            call self%savePredictedData( transmitter, data_group )
+            !
+        endif
         !
     end subroutine predictedDataFullImpedance
     !

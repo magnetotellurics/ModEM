@@ -24,9 +24,10 @@ module SourceCSEM_Dipole1D
             final :: SourceCSEM_Dipole1D_dtor
             !
             procedure, public :: createE => createE_SourceCSEM_Dipole1D
+            !
             procedure, public :: createRHS => createRHS_SourceCSEM_Dipole1D
-            procedure, public :: create_Ep_from_Dipole1D
-            procedure, public :: set1DModel
+            !
+            procedure, private :: set1DModel, create_Ep_from_Dipole1D
             !
     end type SourceCSEM_Dipole1D_T
     !

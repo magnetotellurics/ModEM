@@ -28,6 +28,7 @@ module TransmitterMT
     contains
     !
     !> TransmitterMT constructor
+    !
     function TransmitterMT_ctor( period ) result ( self )
         implicit none
         !
@@ -51,6 +52,7 @@ module TransmitterMT
     !
     !> Deconstructor routine:
     !>     Calls the base routine dealloc().
+    !
     subroutine TransmitterMT_dtor( self )
         implicit none
         !
@@ -62,8 +64,9 @@ module TransmitterMT
         !
     end subroutine TransmitterMT_dtor
     !
-    !> Calculate e_sol, e_sol_1 or e_sens from with ForwardSolver
+    !> Calculate e_sol_0, e_sol_1 or e_sens from with ForwardSolver
     !> Depending of the Source%adjoint
+    !
     subroutine solveTransmitterMT( self )
         implicit none
         !
@@ -75,7 +78,7 @@ module TransmitterMT
             stop "Error: solveTransmitterMT > source not allocated!"
         endif
         !
-        !> First allocate e_sol or e_sens, according to the Source case
+        !> First allocate e_sol_0 or e_sens, according to the Source case
         if( self%source%calc_sens ) then
             !
             if( allocated( self%e_sens ) ) deallocate( self%e_sens )
@@ -84,10 +87,10 @@ module TransmitterMT
         else
             !
             !> 
-            if( self%SolnIndex == 0 ) then
+            if( self%i_sol == 0 ) then
                 !
-                if( allocated( self%e_sol ) ) deallocate( self%e_sol )
-                allocate( cVector3D_SG_t :: self%e_sol(2) )
+                if( allocated( self%e_sol_0 ) ) deallocate( self%e_sol_0 )
+                allocate( cVector3D_SG_t :: self%e_sol_0(2) )
                 !
             else
                 !
@@ -98,7 +101,7 @@ module TransmitterMT
             !
         endif
         !
-        !> Calculate e_sol or e_sens through ForwardSolver
+        !> Calculate e_sol_0 or e_sens through ForwardSolver
         !> For all polarizations (MT n_pol = 2)
         do i_pol = 1, self%n_pol
             !
@@ -113,9 +116,9 @@ module TransmitterMT
                 !
                 !write( *, "( a25, i5, a9, es12.5, a6, i5 )" ) "- Solving FWD MT Tx", self%i_tx, ", Period=", self%period, ", Pol=", i_pol
                 !
-                if( self%SolnIndex == 0 ) then
+                if( self%i_sol == 0 ) then
                     !
-                    call self%forward_solver%createESolution( i_pol, self%source, self%e_sol( i_pol ) )
+                    call self%forward_solver%createESolution( i_pol, self%source, self%e_sol_0( i_pol ) )
                     !
                 else
                     !
@@ -157,6 +160,7 @@ module TransmitterMT
     end function isEqualTransmitterMT
     !
     !> No subroutine briefing
+    !
     subroutine printTransmitterMT( self )
         implicit none
         !

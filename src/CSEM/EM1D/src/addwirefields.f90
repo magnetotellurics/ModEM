@@ -1,9 +1,9 @@
 !---------------------------------------------------------
-!> EM1D subroutine addwirefields
+! EM1D subroutine addwirefields
 !
-!> add fields for the separate wire segments of a multi-segment wire source
+! add fields for the separate wire segments of a multi-segment wire source
 !
-!> Rita Streich 2011
+! Rita Streich 2011
 !---------------------------------------------------------
 subroutine addwirefields(bgdat,refl_var,src,icur,ifreq)
 
@@ -11,18 +11,18 @@ subroutine addwirefields(bgdat,refl_var,src,icur,ifreq)
 
   !external variables
   type(backgrounddata) :: bgdat      !coordinate vectors and output EM fields
-  type(refl_struct) :: refl_var   !all variables that have to be remembered while computing 1D fields
-  type(sorec) :: src        !a single source
-  integer(kind=int32) :: icur       !source current counter
-  integer(kind=int32) :: ifreq      !index of frequency component
+  type(refl_struct)    :: refl_var   !all variables that have to be remembered while computing 1D fields
+  type(sorec)          :: src        !a single source
+  integer(kind=int32)  :: icur       !source current counter
+  integer(kind=int32)  :: ifreq      !index of frequency component
 
   !internal variables
-  integer(kind=int32) :: icurstart     !temp index for wire currents
-  integer(kind=int32) :: iwire         !wire counter
-  complex(kind=real64) :: cur           !temp source current
-  integer(kind=int32) :: irec          !receiver counter
-  integer(kind=int32) :: ilay          !layer counter for derivatives
-  integer(kind=int32) :: nrecEx,nrecEy,nrecEz,nrecHx,nrecHy,nrecHz   !nr of receivers for each field component
+  integer(kind=int32)            :: icurstart     !temp index for wire currents
+  integer(kind=int32)            :: iwire         !wire counter
+  complex(kind=real64)           :: cur           !temp source current
+  integer(kind=int32)            :: irec          !iReceiver counter
+  integer(kind=int32)            :: ilay          !layer counter for derivatives
+  integer(kind=int32)            :: nrecEx,nrecEy,nrecEz,nrecHx,nrecHy,nrecHz   !nr of receivers for each field component
 
 
   nrecEx = size(bgdat%Ex,1)
@@ -36,7 +36,7 @@ subroutine addwirefields(bgdat,refl_var,src,icur,ifreq)
   !add up fields from separate wires
   icurstart = (icur-1)*src%nwire
 
-  if((bgdat%dowhat.EQ.fwdmodel) .OR. (bgdat%dowhat.EQ.fwd_deriv)) then
+  if ((bgdat%dowhat.eq.fwdmodel) .or. (bgdat%dowhat.eq.fwd_deriv)) then
     addfields: do iwire=1,src%nwire
       !take complex conjugate of current here to match Loeseth's sign convention
       !careful: some frequency components of the currents can be zero
@@ -63,7 +63,7 @@ subroutine addwirefields(bgdat,refl_var,src,icur,ifreq)
     enddo addfields
   endif
 
-  if(bgdat%dowhat.ge.deriv) then
+  if (bgdat%dowhat.ge.deriv) then
     addfieldsderiv: do iwire=1,src%nwire
       !careful: some frequency components of the currents can be zero
       !--> do NOT overwrite values in Ewire, but multiply the current at the very end!
@@ -89,7 +89,7 @@ subroutine addwirefields(bgdat,refl_var,src,icur,ifreq)
         enddo
       enddo
     enddo addfieldsderiv
-    if(bgdat%aniso .EQ. vti) then
+    if (bgdat%aniso .eq. vti) then
       addfieldsderivv: do iwire=1,src%nwire
         cur = conjg(src%cur(icurstart+iwire,ifreq))
         do ilay = 1,nlay

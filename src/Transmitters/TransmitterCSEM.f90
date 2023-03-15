@@ -29,6 +29,7 @@ module TransmitterCSEM
 contains
     !
     !> Parametrized constructor
+    !
     function TransmitterCSEM_ctor( period, location, azimuth, dip, moment, dipole ) result ( self )
         !
         type( TransmitterCSEM_t ) :: self
@@ -62,6 +63,7 @@ contains
     !
     !> Deconstructor routine:
     !>     Calls the base routine dealloc().
+    !
     subroutine TransmitterCSEM_dtor( self )
         implicit none
         !
@@ -106,6 +108,7 @@ contains
     end function isEqualTransmitterCSEM
     !
     !> No subroutine briefing
+    !
     subroutine solveTransmitterCSEM( self )
         implicit none
         !
@@ -115,7 +118,7 @@ contains
             stop "Error: solveTransmitterCSEM > source not allocated!"
         endif
         !
-        !> First allocate e_sol, e_sol_1 or e_sens, according to the Source case
+        !> First allocate e_sol_0, e_sol_1 or e_sens, according to the Source case
         if( self%source%calc_sens ) then
             !
             if( allocated( self%e_sens ) ) deallocate( self%e_sens )
@@ -124,10 +127,10 @@ contains
         else
             !
             !> 
-            if( self%SolnIndex == 0 ) then
+            if( self%i_sol == 0 ) then
                 !
-                if( allocated( self%e_sol ) ) deallocate( self%e_sol )
-                allocate( cVector3D_SG_t :: self%e_sol(1) )
+                if( allocated( self%e_sol_0 ) ) deallocate( self%e_sol_0 )
+                allocate( cVector3D_SG_t :: self%e_sol_0(1) )
                 !
             else
                 !
@@ -138,7 +141,7 @@ contains
             !
         endif
         !
-        !> Calculate e_sol or e_sens through ForwardSolver
+        !> Calculate e_sol_0 or e_sens through ForwardSolver
         !> For one polarization (CSEM n_pol = 1)
         if( self%source%calc_sens ) then
             !
@@ -153,11 +156,11 @@ contains
             !
             !write( *, "( a24, i5, a9, es12.5)" ) "- Solving FWD CSEM Tx", self%i_tx, ", Period=", self%period
             !
-            if( self%SolnIndex == 0 ) then
+            if( self%i_sol == 0 ) then
                 !
-                call self%forward_solver%createESolution( 1, self%source, self%e_sol(1) )
+                call self%forward_solver%createESolution( 1, self%source, self%e_sol_0(1) )
                 !
-                call self%e_sol(1)%add( E_p )
+                call self%e_sol_0(1)%add( E_p )
                 !
             else
                 !
@@ -172,6 +175,7 @@ contains
     end subroutine solveTransmitterCSEM
     !
     !> No subroutine briefing
+    !
     subroutine printTransmitterCSEM( self )
         implicit none
         !

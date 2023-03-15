@@ -1,10 +1,7 @@
-!>*************
-!>
+!
 !> Class to read a control file
 !> And set Forward Modeling parameters
-!>
-!>*************
-!>
+!
 module ForwardControlFile
     !
     use Constants
@@ -16,8 +13,9 @@ module ForwardControlFile
     !
     type :: ForwardControlFile_t
         !
-        !> FWD Components parameters
-        character(:), allocatable :: grid_reader_type, grid_type, forward_solver_type, source_type
+        !> FWD Component parameters
+        character(:), allocatable :: grid_reader_type, grid_type, forward_solver_type
+        character(:), allocatable :: source_type_mt, source_type_csem
         character(:), allocatable :: model_method, model_n_air_layer, model_max_height
         !
         !> Solver parameters
@@ -74,8 +72,10 @@ contains
                         self%grid_type = trim( args(2) )
                     elseif( index( line_text, "forward_solver" ) > 0 ) then
                         self%forward_solver_type = trim( args(2) )
-                    elseif( index( line_text, "source" ) > 0 ) then
-                        self%source_type = trim( args(2) )
+                    elseif( index( line_text, "source_type_mt" ) > 0 ) then
+                        self%source_type_mt = trim( args(2) )
+                    elseif( index( line_text, "source_type_csem" ) > 0 ) then
+                        self%source_type_csem = trim( args(2) )
                     elseif( index( line_text, "model_method" ) > 0 ) then
                         self%model_method = trim( args(2) )
                     elseif( index( line_text, "model_n_air_layer" ) > 0 ) then
@@ -118,7 +118,7 @@ contains
                         stop "Error: Wrong grid_type control, use [SG|MR]"
                 end select
                 !
-                write( *, "( A30, A20)" ) "          grid_type = ", grid_type
+                write( *, "( A30, A20)" ) "          Grid Type = ", grid_type
                 !
             endif
             !
@@ -126,7 +126,7 @@ contains
             if( allocated( self%grid_reader_type ) ) then
                 !
                 ! TO BE IMPLEMENTED
-                write( *, "( A30, A20)" ) "          grid_reader = ", self%grid_reader_type
+                write( *, "( A30, A20)" ) "          Grid Reader = ", self%grid_reader_type
                 !
             endif
             !
@@ -147,26 +147,45 @@ contains
                     !
                 end select
                 !
-                write( *, "( A30, A20)" ) "          fwd_solver = ", forward_solver_type
+                write( *, "( A30, A20)" ) "          FWD Solver = ", forward_solver_type
                 !
             endif
             !
-            ! Source_type
-            if( allocated( self%source_type ) ) then
+            ! MT Source_type
+            if( allocated( self%source_type_mt ) ) then
                 !
-                select case( self%source_type )
+                select case( self%source_type_mt )
                     !
                     case( "1D" )
-                        source_type = SRC_MT_1D
+                        source_type_mt = SRC_MT_1D
                     case( "2D" )
-                        source_type = SRC_MT_2D
+                        source_type_mt = SRC_MT_2D
                     case default
-                        source_type = ""
-                    stop "Error: Wrong source control, use [1D|2D]"
-                    !
+                        source_type_mt = ""
+                        stop "Error: Wrong MT Source control, use [1D|2D]"
+                        !
                 end select
                 !
-                write( *, "( A30, A20)" ) "          source = ", source_type
+                write( *, "( A30, A20)" ) "          MT Source = ", source_type_mt
+                !
+            endif
+            !
+            ! CSEM Source_type
+            if( allocated( self%source_type_csem ) ) then
+                !
+                select case( self%source_type_csem )
+                    !
+                    case( "EM1D" )
+                        source_type_csem = SRC_CSEM_EM1D
+                    case( "Dipole1D" )
+                        source_type_csem = SRC_CSEM_DIPOLE1D
+                    case default
+                        source_type_csem = ""
+                        stop "Error: Wrong CSEM Source control, use [EM1D|Dipole1D]"
+                        !
+                end select
+                !
+                write( *, "( A30, A20)" ) "          CSEM Source = ", source_type_csem
                 !
             endif
             !
@@ -184,7 +203,7 @@ contains
                     stop "Error: Wrong model_method control, use [mirror|fixed height]"
                     !
                 end select
-                write( *, "( A30, A20)" ) "          model_method = ", model_method
+                write( *, "( A30, A20)" ) "          Model Method = ", model_method
                 !
             endif
             !
@@ -193,7 +212,7 @@ contains
                 !
                 read( self%model_n_air_layer, "(I8)" ) model_n_air_layer
                 !
-                write( *, "( A30, I20)" ) "          model_n_air_layer = ", model_n_air_layer
+                write( *, "( A30, I20)" ) "          N Air Layers = ", model_n_air_layer
                 !
             endif
             !
@@ -202,7 +221,7 @@ contains
                 !
                 read( self%model_max_height, "(f15.6)" ) model_max_height
                 !
-                write( *, "( A30, f20.2)" ) "          model_max_height = ", model_max_height
+                write( *, "( A30, f20.2)" ) "          Model Max Height = ", model_max_height
                 !
             endif
             !
@@ -211,7 +230,7 @@ contains
                 !
                 read( self%QMR_iters, "(I8)" ) QMR_iters
                 !
-                write( *, "( A30, I20)" ) "          QMR_iters = ", QMR_iters
+                write( *, "( A30, I20)" ) "          QMR Iters = ", QMR_iters
                 !
             endif
             !
@@ -220,7 +239,7 @@ contains
                 !
                 read( self%BCG_iters, "(I8)" ) BCG_iters
                 !
-                write( *, "( A30, I20)" ) "          BCG_iters = ", BCG_iters
+                write( *, "( A30, I20)" ) "          BCG Iters = ", BCG_iters
                 !
             endif
             !
@@ -229,7 +248,7 @@ contains
                 !
                 read( self%max_divcor_calls, "(I8)" ) max_divcor_calls
                 !
-                write( *, "( A30, I20)" ) "          max_divcor_calls = ", max_divcor_calls
+                write( *, "( A30, I20)" ) "          Max Divcor Calls = ", max_divcor_calls
                 !
             endif
             !
@@ -238,7 +257,7 @@ contains
                 !
                 read( self%max_divcor_iters, "(I8)" ) max_divcor_iters
                 !
-                write( *, "( A30, I20)" ) "          max_divcor_iters = ", max_divcor_iters
+                write( *, "( A30, I20)" ) "          Max Divcor Iters = ", max_divcor_iters
                 !
             endif
             !
@@ -247,7 +266,7 @@ contains
                 !
                 read( self%tolerance_divcor, * ) tolerance_divcor
                 !
-                write( *, "( A30, es20.2)" ) "          tolerance_divcor = ", tolerance_divcor
+                write( *, "( A30, es20.2)" ) "          Divcor Tolerance = ", tolerance_divcor
                 !
             endif
             !
@@ -256,7 +275,7 @@ contains
                 !
                 read( self%tolerance_qmr, * ) tolerance_qmr
                 !
-                write( *, "( A30, es20.2)" ) "          tolerance_qmr = ", tolerance_qmr
+                write( *, "( A30, es20.2)" ) "          QMR Tolerance = ", tolerance_qmr
                 !
             endif
             !
@@ -278,14 +297,19 @@ contains
         !
         if( allocated( self%grid_reader_type ) ) deallocate( self%grid_reader_type )
         if( allocated( self%grid_type ) ) deallocate( self%grid_type )
+        !
         if( allocated( self%forward_solver_type ) ) deallocate( self%forward_solver_type )
-        if( allocated( self%source_type ) ) deallocate( self%source_type )
+        !
+        if( allocated( self%source_type_mt ) ) deallocate( self%source_type_mt )
+        if( allocated( self%source_type_csem ) ) deallocate( self%source_type_csem )
+        !
         if( allocated( self%model_method ) ) deallocate( self%model_method )
         if( allocated( self%model_n_air_layer ) ) deallocate( self%model_n_air_layer )
         if( allocated( self%model_max_height ) ) deallocate( self%model_max_height )
-        if( allocated( self%QMR_iters ) ) deallocate( self%QMR_iters )
         !
+        if( allocated( self%QMR_iters ) ) deallocate( self%QMR_iters )
         if( allocated( self%BCG_iters ) ) deallocate( self%BCG_iters )
+        !
         if( allocated( self%max_divcor_calls ) ) deallocate( self%max_divcor_calls )
         if( allocated( self%max_divcor_iters ) ) deallocate( self%max_divcor_iters )
         if( allocated( self%tolerance_divcor ) ) deallocate( self%tolerance_divcor )

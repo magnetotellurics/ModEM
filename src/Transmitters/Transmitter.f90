@@ -12,15 +12,15 @@ module Transmitter
     !
     type, abstract :: Transmitter_t
         !
-        class( ForwardSolver_t ), pointer :: forward_solver
+        real( kind=prec ) :: period
         !
         class( Source_t ), allocatable :: source
         !
-        integer :: i_tx, n_pol, fwd_key(8), SolnIndex
+        class( ForwardSolver_t ), pointer :: forward_solver
         !
-        real( kind=prec ) :: period
+        integer :: i_tx, n_pol, i_sol, fwd_key(8)
         !
-        class( Vector_t ), allocatable, dimension(:) :: e_sol, e_sol_1, e_sens
+        class( Vector_t ), allocatable, dimension(:) :: e_sol_0, e_sol_1, e_sens
         !
         integer, allocatable, dimension(:) :: receiver_indexes
         !
@@ -83,21 +83,21 @@ module Transmitter
             !
             class( Transmitter_t ), intent( inout ) :: self
             !
-            self%i_tx = 0
-            self%n_pol = 0
-            !
-            call self%updateFwdKey()
-            !
-            self%SolnIndex = 0
-            !
             self%period = R_ZERO
             !
             self%forward_solver => null()
+            !
+            self%i_tx = 0
+            self%n_pol = 0
+            self%i_sol = 0
+            !
+            call self%updateFwdKey()
             !
         end subroutine initializeTx
         !
         !> Free the memory used by all allocatable variables belonging to this transmitter.
         !> Called before anything in the destructor of derived classes.
+        !
         subroutine deallocateTx( self )
             implicit none
             !
@@ -107,7 +107,7 @@ module Transmitter
             !
             if( allocated( E_p ) ) deallocate( E_p )
             !
-            if( allocated( self%e_sol ) ) deallocate( self%e_sol )
+            if( allocated( self%e_sol_0 ) ) deallocate( self%e_sol_0 )
             !
             if( allocated( self%e_sol_1 ) ) deallocate( self%e_sol_1 )
             !
@@ -118,6 +118,7 @@ module Transmitter
         end subroutine deallocateTx
         !
         !> No procedure briefing
+        !
         subroutine updateFwdKeyTx( self )
             implicit none
             !
@@ -129,6 +130,7 @@ module Transmitter
         !
         !> Add a receiver index to the integer array (receiver_indexes).
         !> Increasing the size of the array, if the index does not already exist.
+        !
         subroutine updateReceiverIndexesArray( self, new_int )
             implicit none
             !
@@ -172,6 +174,7 @@ module Transmitter
         !
         !> Allocate the source of this transmitter if it is allocated.
         !> And define a new source for this transmitter, sent as an argument.
+        !
         subroutine setSourceTx( self, source )
             implicit none
             !
@@ -185,6 +188,7 @@ module Transmitter
         !
         !> Allocate the source of this transmitter if it is allocated.
         !> And define a new source for this transmitter, sent as an argument.
+        !
         subroutine getSolutionVectorTx( self, pol, solution )
             implicit none
             !
@@ -192,8 +196,8 @@ module Transmitter
             integer, intent( in ) :: pol
             class( Vector_t ), pointer, intent( out ) :: solution
             !
-            if( self%SolnIndex == 0 ) then
-                allocate( solution, source = self%e_sol( pol ) )
+            if( self%i_sol == 0 ) then
+                allocate( solution, source = self%e_sol_0( pol ) )
             else
                 allocate( solution, source = self%e_sol_1( pol ) )
             endif
@@ -201,6 +205,7 @@ module Transmitter
         end subroutine getSolutionVectorTx
         !
         !> Returns a SourceInteriorForce from two distinct models, with the same ModelOperator.
+        !
         function PMult_Tx( self, sigma, dsigma, model_operator ) result( source_int_force )
             implicit none
             !
@@ -215,6 +220,7 @@ module Transmitter
             type( rVector3D_SG_t ) :: map_e_vector
             complex( kind=prec ) :: minus_i_omega_mu
             integer :: pol
+            !
             ! Verbose
             !write( *, * ) "               - Start PMult"
             !
@@ -232,6 +238,8 @@ module Transmitter
                 call self%getSolutionVector( pol, solution )
                 !
                 bSrc( pol ) = solution
+                !
+                deallocate( solution )
                 !
                 call bSrc( pol )%mult( map_e_vector )
                 !
@@ -253,6 +261,7 @@ module Transmitter
         end function PMult_Tx
         !
         !> Defines a new model (dsigma) from a previous model and e_sens for this transmitter.
+        !
         subroutine PMult_t_Tx( self, sigma, dsigma )
             implicit none
             !
@@ -280,12 +289,16 @@ module Transmitter
             !
             call eSens(1)%mult( solution )
             !
+            deallocate( solution )
+            !
             !> Loop over all other polarizations, adding them to the first position
             do pol = 2, self%n_pol
                 !
                 call self%getSolutionVector( pol, solution )
                 !
                 call eSens( pol )%mult( solution )
+                !
+                deallocate( solution )
                 !
                 call eSens(1)%add( eSens( pol ) )
                 !
@@ -303,11 +316,12 @@ module Transmitter
             !> Get dsigma from dPDEmappingT, using first position of eSens
             call sigma%dPDEmappingT( real_sens, dsigma )
             !
-            deallocate( real_sens, solution )
+            deallocate( real_sens )
             !
         end subroutine PMult_t_Tx
         !
         !> No subroutine briefing
+        !
         subroutine writeESolution( self )
             implicit none
             !
@@ -336,7 +350,7 @@ module Transmitter
                     !> write the frequency header - 1 record
                     write( ioESolution ) omega, self%i_tx, i_pol, ModeName
                     !
-                    call self%e_sol( i_pol )%write( ioESolution )
+                    call self%e_sol_0( i_pol )%write( ioESolution )
                     !
                     close( ioESolution )
                     !

@@ -1,27 +1,27 @@
 !****************************************************************
-!>  1D EM subroutine precomp_intval
-!>    compute integral values for one integral for logarithmically spaced radii
-!>    by fast Hankel transform
+!  1D EM subroutine precomp_intval
+!    compute integral values for one integral for logarithmically spaced radii
+!    by fast Hankel transform
 !
-!>  source and receiver depths are not needed here since they have already been absorbed
-!>    into dz vectors
+!  source and iReceiver depths are not needed here since they have already been absorbed
+!    into dz vectors
 !
-!>  Rita Streich 2009
+!  Rita Streich 2009
 !****************************************************************
 subroutine precomp_intval_fht(refl_var,ibesord,intfunc,iint)
 
   implicit none
 
   !external variables
-  type(refl_struct) :: refl_var  !all stuff for 1D computations
-  integer(kind=int32),dimension(1),intent( in ) :: ibesord   !bessel function order
-  complex(kind=real64),external :: intfunc   !integral function (for receivers above or below source)
-  integer(kind=int32),intent( in ) :: iint      !where to write output
+  type(refl_struct)               :: refl_var  !all stuff for 1D computations
+  integer(kind=int32),dimension(1),intent(in)  :: ibesord   !bessel function order
+  complex(kind=real64),external   :: intfunc   !integral function (for receivers above or below source)
+  integer(kind=int32),intent(in)  :: iint      !where to write output
 
   !internal variables
-  integer(kind=int32) :: irad      !radius counter
-  integer(kind=int32) :: ierr      !error index
-  integer(kind=int32) :: NOFUN1    !number of function evaluations
+  integer(kind=int32)             :: irad      !radius counter
+  integer(kind=int32)             :: ierr      !error index
+  integer(kind=int32)             :: NOFUN1    !number of function evaluations
 
 
   !use temp array for integral values because it has to be a 2D array
@@ -44,30 +44,30 @@ endsubroutine precomp_intval_fht
 
 
 !****************************************************************
-!>  1D EM subroutine precomp_intval_fht_rel
-!>    compute integral values for one integral for logarithmically spaced radii
-!>    by fast Hankel transform - expoint related Hankel integrals!
+!  1D EM subroutine precomp_intval_fht_rel
+!    compute integral values for one integral for logarithmically spaced radii
+!    by fast Hankel transform - expoint related Hankel integrals!
 !
-!>  Rita Streich 2010
+!  Rita Streich 2010
 !****************************************************************
 subroutine precomp_intval_fht_rel(refl_var,nrel,ibesord,ijrel,intfunc,iint)
 
   implicit none
 
   !external variables
-  type(refl_struct) :: refl_var  !all stuff for 1D computations
-  integer(kind=int32),intent( in ) :: nrel      !nr of related Hankel integrals
-  integer(kind=int32),dimension(nrel),intent( in ) :: ibesord   !bessel function order
-  integer(kind=int32),dimension(2,nrel),intent( in ) :: ijrel   !parameters for related Hankel integrals
-  complex(kind=real64),external :: intfunc   !integral function (for receivers above or below source)
-  integer(kind=int32),dimension(nrel),intent( in ) :: iint      !where to write output
+  type(refl_struct)               :: refl_var  !all stuff for 1D computations
+  integer(kind=int32),intent(in)  :: nrel      !nr of related Hankel integrals
+  integer(kind=int32),dimension(nrel),intent(in)  :: ibesord   !bessel function order
+  integer(kind=int32),dimension(2,nrel),intent(in)  :: ijrel   !parameters for related Hankel integrals
+  complex(kind=real64),external   :: intfunc   !integral function (for receivers above or below source)
+  integer(kind=int32),dimension(nrel),intent(in)  :: iint      !where to write output
 
   !internal variables
-  integer(kind=int32) :: irad      !radius counter
-  integer(kind=int32) :: ierr      !error index
-  integer(kind=int32) :: NOFUN1    !number of function evaluations
-  integer(kind=int32) :: irel      !counter for related integrals
-  integer(kind=int32) :: iout      !output data index
+  integer(kind=int32)             :: irad      !radius counter
+  integer(kind=int32)             :: ierr      !error index
+  integer(kind=int32)             :: NOFUN1    !number of function evaluations
+  integer(kind=int32)             :: irel      !counter for related integrals
+  integer(kind=int32)             :: iout      !output data index
 
 
   !use temp array for integral values because it has to be a 2D array
@@ -94,29 +94,29 @@ endsubroutine precomp_intval_fht_rel
 
 
 !****************************************************************
-!>  1D EM subroutine precomp_intval_adaptive
-!>    compute integral values for one integral for logarithmically spaced radii
-!>    by adaptive integration
+!  1D EM subroutine precomp_intval_adaptive
+!    compute integral values for one integral for logarithmically spaced radii
+!    by adaptive integration
 !
-!>  Rita Streich 2009
+!  Rita Streich 2009
 !****************************************************************
 subroutine precomp_intval_adaptive(refl_var,besorder,intfunc,iint,sz,zr)
 
   implicit none
 
   !external variables
-  type(refl_struct) :: refl_var  !all stuff for 1D computations
-  real(kind=real64),intent( in ) :: besorder  !bessel function order
-  complex(kind=real64),external :: intfunc   !integral kernel function
-  integer(kind=int32),intent( in ) :: iint      !where to write output
-  real(kind=real64),intent( in ) :: sz,zr     !source and receiver depth
+  type(refl_struct)               :: refl_var  !all stuff for 1D computations
+  real(kind=real64),intent(in)    :: besorder  !bessel function order
+  complex(kind=real64),external   :: intfunc   !integral kernel function
+  integer(kind=int32),intent(in)  :: iint      !where to write output
+  real(kind=real64),intent(in)    :: sz,zr     !source and iReceiver depth
 
   !internal variables
-  integer(kind=int32) :: irad     !counter for radii
-  integer(kind=int32) :: npieces  !number of sub-intervals for adaptive integration
-  real(kind=real64) :: r        !temp radius
-  integer(kind=int32) :: newint   !switch for adpative integration, no previous kernels are re-used
-  integer(kind=int32) :: ierr     !error index
+  integer(kind=int32)     :: irad     !counter for radii
+  integer(kind=int32)     :: npieces  !number of sub-intervals for adaptive integration
+  real(kind=real64)       :: r        !temp radius
+  integer(kind=int32)     :: newint   !switch for adpative integration, no previous kernels are re-used
+  integer(kind=int32)     :: ierr     !error index
 
 
   !compute integral value for each radius separately
@@ -137,28 +137,28 @@ endsubroutine precomp_intval_adaptive
 
 
 !****************************************************************
-!>  1D EM subroutine precomp_intvals_hed
-!>    compute integral values for all integrals for HED source
+!  1D EM subroutine precomp_intvals_hed
+!    compute integral values for all integrals for HED source
 !
-!>  Rita Streich 2009
+!  Rita Streich 2009
 !****************************************************************
 subroutine precomp_intvals_hed(refl_var,sz,zr)
 
   implicit none
 
   !external variables
-  type(refl_struct) :: refl_var  !stuff to remember throughout 1D computations
-  real(kind=real64),intent( in ) :: sz,zr     !source and receiver depth
+  type(refl_struct)             :: refl_var  !stuff to remember throughout 1D computations
+  real(kind=real64),intent(in)  :: sz,zr     !source and iReceiver depth
 
   !internal variables
-  integer(kind=int32),dimension(nrelmax) :: ibesord   !bessel function order (integer "array")
-  real(kind=real64) :: besorder  !Bessel function order (real)
-  real(kind=real64) :: fact      !multiplication factor for radii
-  integer(kind=int32) :: irad      !radius counter
-  integer(kind=int32),dimension(nrelmax) :: iint  !indicates locations for integration results inoutput structure
+  integer(kind=int32),dimension(nrelmax)  :: ibesord   !bessel function order (integer "array")
+  real(kind=real64)             :: besorder  !Bessel function order (real)
+  real(kind=real64)             :: fact      !multiplication factor for radii
+  integer(kind=int32)           :: irad      !radius counter
+  integer(kind=int32),dimension(nrelmax)  :: iint  !indicates locations for integration results in output structure
 
   !receivers above source
-  if(sz .gt. zr) then
+  if (sz .gt. zr) then
 
 
     !related integrals: IA1TE, IA0TE, IAz1TE, same integrand just different kappa factors and Bessel function orders
@@ -193,8 +193,8 @@ subroutine precomp_intvals_hed(refl_var,sz,zr)
     iint(3) = 5    !integral iabvDz1TM (for Ez)
     call precomp_intval_fht_rel(refl_var,3,ibesord,ijrel,iabvD1TM,iint)
  
-  !receiver below source
-  elseif(sz .lt. zr) then
+  !iReceiver below source
+  elseif (sz .lt. zr) then
 
     ibesord(1:3:2) = 1
     ibesord(2) = 0
@@ -219,10 +219,10 @@ subroutine precomp_intvals_hed(refl_var,sz,zr)
     iint(3) = 5    !integral iblwDz1TM (for Ez)
     call precomp_intval_fht_rel(refl_var,3,ibesord,ijrel,iblwD1TM,iint)
 
-  !receiver exactly at source depth
+  !iReceiver exactly at source depth
   else
-    if(refl_var%infolevel.ge.output_more) then
-      write(*,'(a)') 'WARNING: source depth = receiver depth, entering adaptive integration, this can be SLOW!'
+    if (refl_var%infolevel.ge.output_more) then
+      write(*,'(a)') 'WARNING: source depth = iReceiver depth, entering adaptive integration, this can be SLOW!'
     endif
 
     !precompute logarithmic radii, start from largest, so that it's the same as for Hankel transforms
@@ -243,7 +243,7 @@ subroutine precomp_intvals_hed(refl_var,sz,zr)
     call precomp_intval_adaptive(refl_var,besorder,iabvD0TM,7,sz,zr)
 
     !do spline interpolation here and not inside precomp_intval_adaptive
-    !> so that there is no need to go back and forth between radii and their logarithms
+    ! so that there is no need to go back and forth between radii and their logarithms
 
     !take logarithm of radii - this makes spline interpolation more accurate
     do irad=1,refl_var%nrad
@@ -285,29 +285,29 @@ endsubroutine precomp_intvals_hed
 
 
 !****************************************************************
-!>  FD EM subroutine precomp_intvals_Exy_hed
-!>    compute integral values for integrals needed for Ex and Ey, HED source
+!  FD EM subroutine precomp_intvals_Exy_hed
+!    compute integral values for integrals needed for Ex and Ey, HED source
 !
-!>  Rita Streich 2009
+!  Rita Streich 2009
 !****************************************************************
 subroutine precomp_intvals_Exy_hed(refl_var,sz,zr)
 
   implicit none
 
   !external variables
-  type(refl_struct) :: refl_var  !stuff to remember throughout 1D computations
-  real(kind=real64),intent( in ) :: sz,zr     !source and receiver depth
+  type(refl_struct)             :: refl_var  !stuff to remember throughout 1D computations
+  real(kind=real64),intent(in)  :: sz,zr     !source and iReceiver depth
 
   !internal variables
-  integer(kind=int32),dimension(nrelmax) :: ibesord   !bessel function order (integer "array")
-  real(kind=real64) :: besorder  !Bessel function order (real)
-  real(kind=real64) :: fact      !multiplication factor for radii
-  integer(kind=int32) :: irad      !radius counter
-  integer(kind=int32),dimension(nrelmax) :: iint  !indicates locations for integration results inoutput structure
+  integer(kind=int32),dimension(nrelmax)  :: ibesord   !bessel function order (integer "array")
+  real(kind=real64)             :: besorder  !Bessel function order (real)
+  real(kind=real64)             :: fact      !multiplication factor for radii
+  integer(kind=int32)           :: irad      !radius counter
+  integer(kind=int32),dimension(nrelmax)  :: iint  !indicates locations for integration results in output structure
 
 
   !receivers above source
-  if(sz .gt. zr) then
+  if (sz .gt. zr) then
 
     !related integrals: IA1TE, IA0TE, same integrand just different kappa factors and Bessel function orders
     !basis is IA1TE, contains no kappa, Bessel order 1
@@ -327,8 +327,8 @@ subroutine precomp_intvals_Exy_hed(refl_var,sz,zr)
     iint(2) = 2    !integral IabvA0TM
     call precomp_intval_fht_rel(refl_var,2,ibesord,ijrel,iabvA1TM,iint)
 
-  !receiver below source
-  elseif(sz .lt. zr) then
+  !iReceiver below source
+  elseif (sz .lt. zr) then
 
     ibesord = 1
     ibesord(2) = 0
@@ -342,7 +342,7 @@ subroutine precomp_intvals_Exy_hed(refl_var,sz,zr)
     iint(2) = 2    !integral IblwA0TM
     call precomp_intval_fht_rel(refl_var,2,ibesord,ijrel,iblwA1TM,iint)
 
-  !receiver exactly at source depth
+  !iReceiver exactly at source depth
   else
 
     !precompute logarithmic radii, start from largest, so that it's the same as for Hankel transforms
@@ -357,7 +357,7 @@ subroutine precomp_intvals_Exy_hed(refl_var,sz,zr)
     call precomp_intval_adaptive(refl_var,besorder,iabvA0TM,2,sz,zr)
 
     !do spline interpolation here and not inside precomp_intval_adaptive
-    !> so that there is no need to go back and forth between radii and their logarithms
+    ! so that there is no need to go back and forth between radii and their logarithms
 
     !take logarithm of radii - this makes spline interpolation more accurate
     do irad=1,refl_var%nrad
@@ -387,40 +387,40 @@ endsubroutine precomp_intvals_Exy_hed
 
 
 !****************************************************************
-!>  FD EM subroutine precomp_intvals_Ez_hed
-!>    compute integral values for the integral needed for Ez, HED source
+!  FD EM subroutine precomp_intvals_Ez_hed
+!    compute integral values for the integral needed for Ez, HED source
 !
-!>  Rita Streich 2009
+!  Rita Streich 2009
 !****************************************************************
 subroutine precomp_intvals_Ez_hed(refl_var,sz,zr)
 
   implicit none
 
   !external variables
-  type(refl_struct) :: refl_var  !stuff to remember throughout 1D computations
-  real(kind=real64),intent( in ) :: sz,zr     !source and receiver depth
+  type(refl_struct)             :: refl_var  !stuff to remember throughout 1D computations
+  real(kind=real64),intent(in)  :: sz,zr     !source and iReceiver depth
 
   !internal variables
-  integer(kind=int32),dimension(NREL) :: ibesord   !bessel function order (integer "array")
-  real(kind=real64) :: besorder  !Bessel function order (real)
-  real(kind=real64) :: fact      !multiplication factor for radii
-  integer(kind=int32) :: irad      !radius counter
+  integer(kind=int32),dimension(NREL)  :: ibesord   !bessel function order (integer "array")
+  real(kind=real64)             :: besorder  !Bessel function order (real)
+  real(kind=real64)             :: fact      !multiplication factor for radii
+  integer(kind=int32)           :: irad      !radius counter
 
 
   !receivers above source
-  if(sz .gt. zr) then
+  if (sz .gt. zr) then
 
     !integral for Ez
     ibesord = 1
     call precomp_intval_fht(refl_var,ibesord,iabvDz1TM,5)
 
-  !receiver below source
-  elseif(sz .lt. zr) then
+  !iReceiver below source
+  elseif (sz .lt. zr) then
 
     ibesord = 1
     call precomp_intval_fht(refl_var,ibesord,iblwDz1TM,5)
 
-  !receiver exactly at source depth
+  !iReceiver exactly at source depth
   else
 
     !precompute logarithmic radii, start from largest, so that it's the same as for Hankel transforms
@@ -449,29 +449,29 @@ endsubroutine precomp_intvals_Ez_hed
 
 
 !****************************************************************
-!>  FD EM subroutine precomp_intvals_Hxy_hed
-!>    compute integral values for all integrals for HED source, Hx and Hy
+!  FD EM subroutine precomp_intvals_Hxy_hed
+!    compute integral values for all integrals for HED source, Hx and Hy
 !
-!>  Rita Streich 2011
+!  Rita Streich 2011
 !****************************************************************
 subroutine precomp_intvals_Hxy_hed(refl_var,sz,zr)
 
   implicit none
 
   !external variables
-  type(refl_struct) :: refl_var  !stuff to remember throughout 1D computations
-  real(kind=real64),intent( in ) :: sz,zr     !source and receiver depth
+  type(refl_struct)             :: refl_var  !stuff to remember throughout 1D computations
+  real(kind=real64),intent(in)  :: sz,zr     !source and iReceiver depth
 
   !internal variables
-  integer(kind=int32),dimension(nrelmax) :: ibesord   !bessel function order (integer "array")
-  real(kind=real64) :: besorder  !Bessel function order (real)
-  real(kind=real64) :: fact      !multiplication factor for radii
-  integer(kind=int32) :: irad      !radius counter
-  integer(kind=int32),dimension(nrelmax) :: iint  !indicates locations for integration results inoutput structure
+  integer(kind=int32),dimension(nrelmax)  :: ibesord   !bessel function order (integer "array")
+  real(kind=real64)             :: besorder  !Bessel function order (real)
+  real(kind=real64)             :: fact      !multiplication factor for radii
+  integer(kind=int32)           :: irad      !radius counter
+  integer(kind=int32),dimension(nrelmax)  :: iint  !indicates locations for integration results in output structure
 
 
   !receivers above source
-  if(sz .gt. zr) then
+  if (sz .gt. zr) then
 
     !related integrals: IA1TE, IA0TE, IAz1TE, same integrand just different kappa factors and Bessel function orders
     !basis is IA1TE, contains no kappa, Bessel order 1
@@ -491,8 +491,8 @@ subroutine precomp_intvals_Hxy_hed(refl_var,sz,zr)
     iint(2) = 7    !integral iabvD0TM
     call precomp_intval_fht_rel(refl_var,2,ibesord,ijrel,iabvD1TM,iint)
 
-  !receiver below source
-  elseif(sz .lt. zr) then
+  !iReceiver below source
+  elseif (sz .lt. zr) then
 
     ibesord = 1
     ibesord(2) = 0
@@ -506,11 +506,11 @@ subroutine precomp_intvals_Hxy_hed(refl_var,sz,zr)
     iint(2) = 7    !integral iblwD0TM
     call precomp_intval_fht_rel(refl_var,2,ibesord,ijrel,iblwD1TM,iint)
 
-  !receiver exactly at source depth
+  !iReceiver exactly at source depth
   else
 
-    if(refl_var%infolevel .ge. output_more) then
-      write(*,'(a)') 'WARNING: source depth = receiver depth, entering adaptive integration, this can be SLOW!'
+    if (refl_var%infolevel .ge. output_more) then
+      write(*,'(a)') 'WARNING: source depth = iReceiver depth, entering adaptive integration, this can be SLOW!'
     endif
 
     !precompute logarithmic radii, start from largest, so that it's the same as for Hankel transforms
@@ -526,7 +526,7 @@ subroutine precomp_intvals_Hxy_hed(refl_var,sz,zr)
     call precomp_intval_adaptive(refl_var,besorder,iabvD0TM,7,sz,zr)
 
     !do spline interpolation here and not inside precomp_intval_adaptive
-    !> so that there is no need to go back and forth between radii and their logarithms
+    ! so that there is no need to go back and forth between radii and their logarithms
 
     !take logarithm of radii - this makes spline interpolation more accurate
     do irad=1,refl_var%nrad
@@ -551,30 +551,30 @@ endsubroutine precomp_intvals_Hxy_hed
 
 
 !****************************************************************
-!>  FD EM subroutine precomp_intvals_Hz_hed
-!>    compute integral values for all integrals for HED source, Hz only
+!  FD EM subroutine precomp_intvals_Hz_hed
+!    compute integral values for all integrals for HED source, Hz only
 !
-!>  Rita Streich 2011
+!  Rita Streich 2011
 !****************************************************************
 subroutine precomp_intvals_Hz_hed(refl_var,sz,zr)
 
   implicit none
 
   !external variables
-  type(refl_struct) :: refl_var  !stuff to remember throughout 1D computations
-  real(kind=real64),intent( in ) :: sz,zr     !source and receiver depth
+  type(refl_struct)             :: refl_var  !stuff to remember throughout 1D computations
+  real(kind=real64),intent(in)  :: sz,zr     !source and iReceiver depth
 
   !internal variables
-  integer(kind=int32),dimension(nrelmax) :: ibesord   !bessel function order (integer "array")
+  integer(kind=int32),dimension(nrelmax)  :: ibesord   !bessel function order (integer "array")
 
 
   !receivers above source
-  !include case that receiver is exactly at source depth here: integral is "well-behaved", adaptive integration not needed
-  if(sz .ge. zr) then
+  !include case that iReceiver is exactly at source depth here: integral is "well-behaved", adaptive integration not needed
+  if (sz .ge. zr) then
     ibesord = 1
     call precomp_intval_fht(refl_var,ibesord,iabvAz1TE,10)
 
-  !receiver below source
+  !iReceiver below source
   else
     ibesord = 1
     call precomp_intval_fht(refl_var,ibesord,iblwAz1TE,10)
@@ -584,29 +584,29 @@ endsubroutine precomp_intvals_Hz_hed
 
 
 !****************************************************************
-!>  1D EM subroutine precomp_intvals_ved
-!>    compute integral values for all integrals for VED source
+!  1D EM subroutine precomp_intvals_ved
+!    compute integral values for all integrals for VED source
 !
-!>  Rita Streich 2009
+!  Rita Streich 2009
 !****************************************************************
 subroutine precomp_intvals_ved(refl_var,sz,zr)
 
   implicit none
 
   !external variables
-  type(refl_struct) :: refl_var  !stuff to remember throughout 1D computations
-  real(kind=real64),intent( in ) :: sz,zr     !source and receiver depth
+  type(refl_struct)             :: refl_var  !stuff to remember throughout 1D computations
+  real(kind=real64),intent(in)  :: sz,zr     !source and iReceiver depth
 
   !internal variables
-  integer(kind=int32),dimension(nrelmax) :: ibesord   !bessel function order (integer "array")
-  real(kind=real64) :: besorder  !Bessel function order (real)
-  real(kind=real64) :: fact      !multiplication factor for radii
-  integer(kind=int32) :: irad      !radius counter
-  integer(kind=int32),dimension(nrelmax) :: iint  !indicates locations for integration results inoutput structure
+  integer(kind=int32),dimension(nrelmax)  :: ibesord   !bessel function order (integer "array")
+  real(kind=real64)             :: besorder  !Bessel function order (real)
+  real(kind=real64)             :: fact      !multiplication factor for radii
+  integer(kind=int32)           :: irad      !radius counter
+  integer(kind=int32),dimension(nrelmax)  :: iint  !indicates locations for integration results in output structure
 
 
   !receivers above source
-  if(sz .gt. zr) then
+  if (sz .gt. zr) then
 
     !compute well-behaved integrals by fast Hankel transform
     !related integrals: iabvC1TMved and iabvC0TMved
@@ -622,8 +622,8 @@ subroutine precomp_intvals_ved(refl_var,sz,zr)
     ibesord = 1
     call precomp_intval_fht(refl_var,ibesord,iabvB1TMved,1)
 
-  !receiver below source
-  elseif(sz .lt. zr) then
+  !iReceiver below source
+  elseif (sz .lt. zr) then
 
     !related integrals: iblwC1TMved and iblwC0TMved
     ibesord(1) = 1
@@ -636,7 +636,7 @@ subroutine precomp_intvals_ved(refl_var,sz,zr)
     ibesord = 1
     call precomp_intval_fht(refl_var,ibesord,iblwB1TMved,1)
 
-  !receiver exactly at source depth
+  !iReceiver exactly at source depth
   else
 
     !precompute logarithmic radii, start from largest, so that it's the same as for Hankel transforms
@@ -655,7 +655,7 @@ subroutine precomp_intvals_ved(refl_var,sz,zr)
 
 
     !do spline interpolation here and not inside precomp_intval_adaptive
-    !> so that there is no need to go back and forth between radii and their logarithms
+    ! so that there is no need to go back and forth between radii and their logarithms
 
     !take logarithm of radii - this makes spline interpolation more accurate
     do irad=1,refl_var%nrad
@@ -679,40 +679,40 @@ endsubroutine precomp_intvals_ved
 
 
 !****************************************************************
-!>  FD EM subroutine precomp_intvals_Exy_ved
-!>    compute integral values for the integral needed for Ex and Ey, VED source
+!  FD EM subroutine precomp_intvals_Exy_ved
+!    compute integral values for the integral needed for Ex and Ey, VED source
 !
-!>  Rita Streich 2009
+!  Rita Streich 2009
 !****************************************************************
 subroutine precomp_intvals_Exy_ved(refl_var,sz,zr)
 
   implicit none
 
   !external variables
-  type(refl_struct) :: refl_var  !stuff to remember throughout 1D computations
-  real(kind=real64),intent( in ) :: sz,zr     !source and receiver depth
+  type(refl_struct)             :: refl_var  !stuff to remember throughout 1D computations
+  real(kind=real64),intent(in)  :: sz,zr     !source and iReceiver depth
 
   !internal variables
-  integer(kind=int32),dimension(NREL) :: ibesord   !bessel function order (integer "array")
-  real(kind=real64) :: besorder  !Bessel function order (real)
-  real(kind=real64) :: fact      !multiplication factor for radii
-  integer(kind=int32) :: irad      !radius counter
+  integer(kind=int32),dimension(NREL)  :: ibesord   !bessel function order (integer "array")
+  real(kind=real64)             :: besorder  !Bessel function order (real)
+  real(kind=real64)             :: fact      !multiplication factor for radii
+  integer(kind=int32)           :: irad      !radius counter
 
 
   !receivers above source
-  if(sz .gt. zr) then
+  if (sz .gt. zr) then
 
     !integral for Ex and Ey
     ibesord = 1
     call precomp_intval_fht(refl_var,ibesord,iabvB1TMved,1)
 
-  !receiver below source
-  elseif(sz .lt. zr) then
+  !iReceiver below source
+  elseif (sz .lt. zr) then
 
     ibesord = 1
     call precomp_intval_fht(refl_var,ibesord,iblwB1TMved,1)
 
-  !receiver exactly at source depth
+  !iReceiver exactly at source depth
   else
 
     !logarithmic radii, same as returned from Fast Hankel transforms
@@ -742,40 +742,40 @@ endsubroutine precomp_intvals_Exy_ved
 
 
 !****************************************************************
-!>  FD EM subroutine precomp_intvals_Ez_ved
-!>    compute integral values for the integral needed for Ez, VED source
+!  FD EM subroutine precomp_intvals_Ez_ved
+!    compute integral values for the integral needed for Ez, VED source
 !
-!>  Rita Streich 2009
+!  Rita Streich 2009
 !****************************************************************
 subroutine precomp_intvals_Ez_ved(refl_var,sz,zr)
 
   implicit none
 
   !external variables
-  type(refl_struct) :: refl_var  !stuff to remember throughout 1D computations
-  real(kind=real64),intent( in ) :: sz,zr     !source and receiver depth
+  type(refl_struct)             :: refl_var  !stuff to remember throughout 1D computations
+  real(kind=real64),intent(in)  :: sz,zr     !source and iReceiver depth
 
   !internal variables
-  integer(kind=int32),dimension(NREL) :: ibesord   !bessel function order (integer "array")
-  real(kind=real64) :: besorder  !Bessel function order (real)
-  real(kind=real64) :: fact      !multiplication factor for radii
-  integer(kind=int32) :: irad      !radius counter
+  integer(kind=int32),dimension(NREL)  :: ibesord   !bessel function order (integer "array")
+  real(kind=real64)             :: besorder  !Bessel function order (real)
+  real(kind=real64)             :: fact      !multiplication factor for radii
+  integer(kind=int32)           :: irad      !radius counter
 
 
   !receivers above source
-  if(sz .gt. zr) then
+  if (sz .gt. zr) then
 
     !integral for Ez
     ibesord = 0
     call precomp_intval_fht(refl_var,ibesord,iabvC0TMved,2)
 
-  !receiver below source
-  elseif(sz .lt. zr) then
+  !iReceiver below source
+  elseif (sz .lt. zr) then
 
     ibesord = 0
     call precomp_intval_fht(refl_var,ibesord,iblwC0TMved,2)
 
-  !receiver exactly at source depth
+  !iReceiver exactly at source depth
   else
 
     !precompute logarithmic radii, start from largest, so that it's the same as for Hankel transforms
@@ -791,7 +791,7 @@ subroutine precomp_intvals_Ez_ved(refl_var,sz,zr)
 
 
     !do spline interpolation here and not inside precomp_intval_adaptive
-    !> so that there is no need to go back and forth between radii and their logarithms
+    ! so that there is no need to go back and forth between radii and their logarithms
 
     !take logarithm of radii - this makes spline interpolation more accurate
     do irad=1,refl_var%nrad
@@ -808,31 +808,31 @@ endsubroutine precomp_intvals_Ez_ved
 
 
 !****************************************************************
-!>  FD EM subroutine precomp_intvals_Hxy_ved
-!>    compute integral values for all integrals for VED source, Hx and Hy
+!  FD EM subroutine precomp_intvals_Hxy_ved
+!    compute integral values for all integrals for VED source, Hx and Hy
 !
-!>  Rita Streich 2009-2011
+!  Rita Streich 2009-2011
 !****************************************************************
 subroutine precomp_intvals_Hxy_ved(refl_var,sz,zr)
 
   implicit none
 
   !external variables
-  type(refl_struct) :: refl_var  !stuff to remember throughout 1D computations
-  real(kind=real64),intent( in ) :: sz,zr     !source and receiver depth
+  type(refl_struct)             :: refl_var  !stuff to remember throughout 1D computations
+  real(kind=real64),intent(in)  :: sz,zr     !source and iReceiver depth
 
   !internal variables
-  integer(kind=int32),dimension(nrelmax) :: ibesord   !bessel function order (integer "array")
+  integer(kind=int32),dimension(nrelmax)  :: ibesord   !bessel function order (integer "array")
 
 
   !receivers above source
-  if(sz .ge. zr) then
+  if (sz .ge. zr) then
 
     !integral for Hx and Hy
     ibesord = 1
     call precomp_intval_fht(refl_var,ibesord,iabvC1TMved,3)
 
-  !receiver below source
+  !iReceiver below source
   else
     ibesord = 1
     call precomp_intval_fht(refl_var,ibesord,iblwC1TMved,3)
@@ -842,29 +842,29 @@ endsubroutine precomp_intvals_Hxy_ved
 
 
 !****************************************************************
-!>  FD EM subroutine precomp_intvals_hmd
-!>    compute integral values for all integrals for HMD source
+!  FD EM subroutine precomp_intvals_hmd
+!    compute integral values for all integrals for HMD source
 !
-!>  Rita Streich 2009
+!  Rita Streich 2009
 !****************************************************************
 subroutine precomp_intvals_hmd(refl_var,sz,zr)
 
   implicit none
 
   !external variables
-  type(refl_struct) :: refl_var  !stuff to remember throughout 1D computations
-  real(kind=real64),intent( in ) :: sz,zr     !source and receiver depth
+  type(refl_struct)             :: refl_var  !stuff to remember throughout 1D computations
+  real(kind=real64),intent(in)  :: sz,zr     !source and iReceiver depth
 
   !internal variables
-  integer(kind=int32),dimension(nrelmax) :: ibesord   !bessel function order (integer "array")
-  real(kind=real64) :: besorder  !Bessel function order (real)
-  real(kind=real64) :: fact      !multiplication factor for radii
-  integer(kind=int32) :: irad      !radius counter
-  integer(kind=int32),dimension(nrelmax) :: iint  !indicates locations for integration results inoutput structure
+  integer(kind=int32),dimension(nrelmax)  :: ibesord   !bessel function order (integer "array")
+  real(kind=real64)             :: besorder  !Bessel function order (real)
+  real(kind=real64)             :: fact      !multiplication factor for radii
+  integer(kind=int32)           :: irad      !radius counter
+  integer(kind=int32),dimension(nrelmax)  :: iint  !indicates locations for integration results in output structure
 
 
   !receivers above source
-  if(sz .gt. zr) then
+  if (sz .gt. zr) then
 
     !related integrals: IB1TE, IB0TE, IBz1TE, same integrand just different kappa factors and Bessel function orders
     !basis is IB1TE, contains no kappa, Bessel order 1
@@ -898,8 +898,8 @@ subroutine precomp_intvals_hmd(refl_var,sz,zr)
     iint(3) = 5    !integral iabvCz1TM (for Ez)
     call precomp_intval_fht_rel(refl_var,3,ibesord,ijrel,iabvC1TM,iint)
 
-  !receiver below source
-  elseif(sz .lt. zr) then
+  !iReceiver below source
+  elseif (sz .lt. zr) then
 
     !related integrals: IB1TE, IB0TE, IBz1TE, same integrand just different kappa factors and Bessel function orders
     !basis is IB1TE, contains no kappa, Bessel order 1
@@ -933,7 +933,7 @@ subroutine precomp_intvals_hmd(refl_var,sz,zr)
     iint(3) = 5    !integral iblwCz1TM (for Ez)
     call precomp_intval_fht_rel(refl_var,3,ibesord,ijrel,iblwC1TM,iint)
 
-  !receiver exactly at source depth
+  !iReceiver exactly at source depth
   else
 
     !precompute logarithmic radii, start from largest, so that it's the same as for Hankel transforms
@@ -956,7 +956,7 @@ subroutine precomp_intvals_hmd(refl_var,sz,zr)
 
 
     !do spline interpolation here and not inside precomp_intval_adaptive
-    !> so that there is no need to go back and forth between radii and their logarithms
+    ! so that there is no need to go back and forth between radii and their logarithms
 
     !take logarithm of radii - this makes spline interpolation more accurate
     do irad=1,refl_var%nrad
@@ -998,29 +998,29 @@ endsubroutine precomp_intvals_hmd
 
 
 !****************************************************************
-!>  FD EM subroutine precomp_intvals_Exy_hmd
-!>    compute integral values for all integrals needed for Ex and Ey, HMD source
+!  FD EM subroutine precomp_intvals_Exy_hmd
+!    compute integral values for all integrals needed for Ex and Ey, HMD source
 !
-!>  Rita Streich 2009
+!  Rita Streich 2009
 !****************************************************************
 subroutine precomp_intvals_Exy_hmd(refl_var,sz,zr)
 
   implicit none
 
   !external variables
-  type(refl_struct) :: refl_var  !stuff to remember throughout 1D computations
-  real(kind=real64),intent( in ) :: sz,zr     !source and receiver depth
+  type(refl_struct)             :: refl_var  !stuff to remember throughout 1D computations
+  real(kind=real64),intent(in)  :: sz,zr     !source and iReceiver depth
 
   !internal variables
-  integer(kind=int32),dimension(nrelmax) :: ibesord   !bessel function order (integer "array")
-  real(kind=real64) :: besorder  !Bessel function order (real)
-  real(kind=real64) :: fact      !multiplication factor for radii
-  integer(kind=int32) :: irad      !radius counter
-  integer(kind=int32),dimension(nrelmax) :: iint  !indicates locations for integration results inoutput structure
+  integer(kind=int32),dimension(nrelmax)  :: ibesord   !bessel function order (integer "array")
+  real(kind=real64)             :: besorder  !Bessel function order (real)
+  real(kind=real64)             :: fact      !multiplication factor for radii
+  integer(kind=int32)           :: irad      !radius counter
+  integer(kind=int32),dimension(nrelmax)  :: iint  !indicates locations for integration results in output structure
 
 
   !receivers above source
-  if(sz .gt. zr) then
+  if (sz .gt. zr) then
 
     !related integrals: IB1TE, IB0TE, same integrand just different kappa factors and Bessel function orders
     !basis is IB1TE, contains no kappa, Bessel order 1
@@ -1041,8 +1041,8 @@ subroutine precomp_intvals_Exy_hmd(refl_var,sz,zr)
     iint(2) = 2    !integral IabvB0TM
     call precomp_intval_fht_rel(refl_var,2,ibesord,ijrel,iabvB1TM,iint)
 
-  !receiver below source
-  elseif(sz .lt. zr) then
+  !iReceiver below source
+  elseif (sz .lt. zr) then
 
     !related integrals: IB1TE, IB0TE, same integrand just different kappa factors and Bessel function orders
     !basis is IB1TE, contains no kappa, Bessel order 1
@@ -1062,7 +1062,7 @@ subroutine precomp_intvals_Exy_hmd(refl_var,sz,zr)
     iint(2) = 2    !integral IblwB0TM
     call precomp_intval_fht_rel(refl_var,2,ibesord,ijrel,iblwB1TM,iint)
 
-  !receiver exactly at source depth
+  !iReceiver exactly at source depth
   else
 
     !precompute logarithmic radii, as returned from FHT
@@ -1101,32 +1101,32 @@ endsubroutine precomp_intvals_Exy_hmd
 
 
 !****************************************************************
-!>  FD EM subroutine precomp_intvals_Ez_hmd
-!>    compute integral values for the integral needed for Ez, HMD source
+!  FD EM subroutine precomp_intvals_Ez_hmd
+!    compute integral values for the integral needed for Ez, HMD source
 !
-!>  Rita Streich 2009
+!  Rita Streich 2009
 !****************************************************************
 subroutine precomp_intvals_Ez_hmd(refl_var,sz,zr)
 
   implicit none
 
   !external variables
-  type(refl_struct) :: refl_var  !stuff to remember throughout 1D computations
-  real(kind=real64),intent( in ) :: sz,zr     !source and receiver depth
+  type(refl_struct)             :: refl_var  !stuff to remember throughout 1D computations
+  real(kind=real64),intent(in)  :: sz,zr     !source and iReceiver depth
 
   !internal variables
-  integer(kind=int32),dimension(NREL) :: ibesord   !bessel function order (integer "array")
+  integer(kind=int32),dimension(NREL)  :: ibesord   !bessel function order (integer "array")
 
 
   !receivers above source
-  if(sz .ge. zr) then
+  if (sz .ge. zr) then
 
     !integral for Ez
-    !the integral is "easy" --> don't need special case for receiver exactly at source depth
+    !the integral is "easy" --> don't need special case for iReceiver exactly at source depth
     ibesord = 1
     call precomp_intval_fht(refl_var,ibesord,iabvCz1TM,5)
 
-  !receiver below source
+  !iReceiver below source
   else
 
     ibesord = 1
@@ -1138,29 +1138,29 @@ endsubroutine precomp_intvals_Ez_hmd
 
 
 !****************************************************************
-!>  FD EM subroutine precomp_intvals_Hxy_hmd
-!>    compute integral values for all integrals for HMD source, Hx/Hy
+!  FD EM subroutine precomp_intvals_Hxy_hmd
+!    compute integral values for all integrals for HMD source, Hx/Hy
 !
-!>  Rita Streich 2009-2011
+!  Rita Streich 2009-2011
 !****************************************************************
 subroutine precomp_intvals_Hxy_hmd(refl_var,sz,zr)
 
   implicit none
 
   !external variables
-  type(refl_struct) :: refl_var  !stuff to remember throughout 1D computations
-  real(kind=real64),intent( in ) :: sz,zr     !source and receiver depth
+  type(refl_struct)             :: refl_var  !stuff to remember throughout 1D computations
+  real(kind=real64),intent(in)  :: sz,zr     !source and iReceiver depth
 
   !internal variables
-  integer(kind=int32),dimension(nrelmax) :: ibesord   !bessel function order (integer "array")
-  real(kind=real64) :: besorder  !Bessel function order (real)
-  real(kind=real64) :: fact      !multiplication factor for radii
-  integer(kind=int32) :: irad      !radius counter
-  integer(kind=int32),dimension(nrelmax) :: iint  !indicates locations for integration results inoutput structure
+  integer(kind=int32),dimension(nrelmax)  :: ibesord   !bessel function order (integer "array")
+  real(kind=real64)             :: besorder  !Bessel function order (real)
+  real(kind=real64)             :: fact      !multiplication factor for radii
+  integer(kind=int32)           :: irad      !radius counter
+  integer(kind=int32),dimension(nrelmax)  :: iint  !indicates locations for integration results in output structure
 
 
   !receivers above source
-  if(sz .gt. zr) then
+  if (sz .gt. zr) then
 
     !related integrals: IB1TE, IB0TE, IBz1TE, same integrand just different kappa factors and Bessel function orders
     !basis is IB1TE, contains no kappa, Bessel order 1
@@ -1180,8 +1180,8 @@ subroutine precomp_intvals_Hxy_hmd(refl_var,sz,zr)
     iint(2) = 7    !integral iabvC0TM
     call precomp_intval_fht_rel(refl_var,2,ibesord,ijrel,iabvC1TM,iint)
 
-  !receiver below source
-  elseif(sz .lt. zr) then
+  !iReceiver below source
+  elseif (sz .lt. zr) then
 
     !related integrals: IB1TE, IB0TE, IBz1TE, same integrand just different kappa factors and Bessel function orders
     !basis is IB1TE, contains no kappa, Bessel order 1
@@ -1201,7 +1201,7 @@ subroutine precomp_intvals_Hxy_hmd(refl_var,sz,zr)
     iint(2) = 7    !integral iblwC0TM
     call precomp_intval_fht_rel(refl_var,2,ibesord,ijrel,iblwC1TM,iint)
 
-  !receiver exactly at source depth
+  !iReceiver exactly at source depth
   else
 
     !precompute logarithmic radii, start from largest, so that it's the same as for Hankel transforms
@@ -1216,7 +1216,7 @@ subroutine precomp_intvals_Hxy_hmd(refl_var,sz,zr)
     call precomp_intval_adaptive(refl_var,besorder,iabvC0TE,6,sz,zr)
 
     !do spline interpolation here and not inside precomp_intval_adaptive
-    !> so that there is no need to go back and forth between radii and their logarithms
+    ! so that there is no need to go back and forth between radii and their logarithms
 
     !take logarithm of radii - this makes spline interpolation more accurate
     do irad=1,refl_var%nrad
@@ -1246,40 +1246,40 @@ endsubroutine precomp_intvals_Hxy_hmd
 
 
 !****************************************************************
-!>  FD EM subroutine precomp_intvals_Hz_hmd
-!>    compute integral values for all integrals for HMD source, Hz only
+!  FD EM subroutine precomp_intvals_Hz_hmd
+!    compute integral values for all integrals for HMD source, Hz only
 !
-!>  Rita Streich 2009-2011
+!  Rita Streich 2009-2011
 !****************************************************************
 subroutine precomp_intvals_Hz_hmd(refl_var,sz,zr)
 
   implicit none
 
   !external variables
-  type(refl_struct) :: refl_var  !stuff to remember throughout 1D computations
-  real(kind=real64),intent( in ) :: sz,zr     !source and receiver depth
+  type(refl_struct)             :: refl_var  !stuff to remember throughout 1D computations
+  real(kind=real64),intent(in)  :: sz,zr     !source and iReceiver depth
 
   !internal variables
-  integer(kind=int32),dimension(nrelmax) :: ibesord   !bessel function order (integer "array")
-  real(kind=real64) :: besorder  !Bessel function order (real)
-  real(kind=real64) :: fact      !multiplication factor for radii
-  integer(kind=int32) :: irad      !radius counter
+  integer(kind=int32),dimension(nrelmax)  :: ibesord   !bessel function order (integer "array")
+  real(kind=real64)             :: besorder  !Bessel function order (real)
+  real(kind=real64)             :: fact      !multiplication factor for radii
+  integer(kind=int32)           :: irad      !radius counter
 
 
   !receivers above source
-  if(sz .gt. zr) then
+  if (sz .gt. zr) then
 
     !IBz1TE contains kappa^2, Bessel order 1
     ibesord = 1
     call precomp_intval_fht(refl_var,ibesord,iabvBz1TE,10)
 
-  !receiver below source
-  elseif(sz .lt. zr) then
+  !iReceiver below source
+  elseif (sz .lt. zr) then
 
     ibesord = 1
     call precomp_intval_fht(refl_var,ibesord,iblwBz1TE,10)
 
-  !receiver exactly at source depth
+  !iReceiver exactly at source depth
   else
 
     !precompute logarithmic radii, start from largest, so that it's the same as for Hankel transforms
@@ -1294,7 +1294,7 @@ subroutine precomp_intvals_Hz_hmd(refl_var,sz,zr)
     call precomp_intval_adaptive(refl_var,besorder,iabvBz1TE,10,sz,zr)
 
     !do spline interpolation here and not inside precomp_intval_adaptive
-    !> so that there is no need to go back and forth between radii and their logarithms
+    ! so that there is no need to go back and forth between radii and their logarithms
 
     !take logarithm of radii - this makes spline interpolation more accurate
     do irad=1,refl_var%nrad
@@ -1311,29 +1311,29 @@ endsubroutine precomp_intvals_Hz_hmd
 
 
 !****************************************************************
-!>  1D EM subroutine precomp_intvals_vmd
-!>    compute integral values for all integrals for VMD source
+!  1D EM subroutine precomp_intvals_vmd
+!    compute integral values for all integrals for VMD source
 !
-!>  Rita Streich 2009
+!  Rita Streich 2009
 !****************************************************************
 subroutine precomp_intvals_vmd(refl_var,sz,zr)
 
   implicit none
 
   !external variables
-  type(refl_struct) :: refl_var  !stuff to remember throughout 1D computations
-  real(kind=real64),intent( in ) :: sz,zr     !source and receiver depth
+  type(refl_struct)             :: refl_var  !stuff to remember throughout 1D computations
+  real(kind=real64),intent(in)  :: sz,zr     !source and iReceiver depth
 
   !internal variables
-  integer(kind=int32),dimension(nrelmax) :: ibesord   !bessel function order (integer "array")
-  real(kind=real64) :: besorder  !Bessel function order (real)
-  real(kind=real64) :: fact      !multiplication factor for radii
-  integer(kind=int32) :: irad      !radius counter
-  integer(kind=int32),dimension(nrelmax) :: iint  !indicates locations for integration results inoutput structure
+  integer(kind=int32),dimension(nrelmax)  :: ibesord   !bessel function order (integer "array")
+  real(kind=real64)             :: besorder  !Bessel function order (real)
+  real(kind=real64)             :: fact      !multiplication factor for radii
+  integer(kind=int32)           :: irad      !radius counter
+  integer(kind=int32),dimension(nrelmax)  :: iint  !indicates locations for integration results in output structure
 
 
   !receivers above source
-  if(sz .gt. zr) then
+  if (sz .gt. zr) then
 
     !related integrals: iabvA1TEvmd and iabvA0TEvmd
     ibesord(1) = 1
@@ -1349,8 +1349,8 @@ subroutine precomp_intvals_vmd(refl_var,sz,zr)
     ibesord = 1
     call precomp_intval_fht(refl_var,ibesord,iabvD1TEvmd,2)
 
-  !receiver below source
-  elseif(sz .lt. zr) then
+  !iReceiver below source
+  elseif (sz .lt. zr) then
 
     !related integrals: iblwA1TEvmd and iblwA0TEvmd
     ibesord(1) = 1
@@ -1363,7 +1363,7 @@ subroutine precomp_intvals_vmd(refl_var,sz,zr)
     ibesord = 1
     call precomp_intval_fht(refl_var,ibesord,iblwD1TEvmd,2)
 
-  !receiver exactly at source depth
+  !iReceiver exactly at source depth
   else
 
     !precompute logarithmic radii, start from largest, so that it's the same as for Hankel transforms
@@ -1381,7 +1381,7 @@ subroutine precomp_intvals_vmd(refl_var,sz,zr)
     call precomp_intval_adaptive(refl_var,besorder,iabvA0TEvmd,3,sz,zr)
 
     !do spline interpolation here and not inside precomp_intval_adaptive
-    !> so that there is no need to go back and forth between radii and their logarithms
+    ! so that there is no need to go back and forth between radii and their logarithms
 
     !take logarithm of radii - this makes spline interpolation more accurate
     do irad=1,refl_var%nrad
@@ -1405,28 +1405,28 @@ endsubroutine precomp_intvals_vmd
 
 
 !****************************************************************
-!>  FD EM subroutine precomp_intvals_Exy_vmd
-!>    compute integral values for the integral needed for Ex and Ey, VMD source
+!  FD EM subroutine precomp_intvals_Exy_vmd
+!    compute integral values for the integral needed for Ex and Ey, VMD source
 !
-!>  Rita Streich 2009
+!  Rita Streich 2009
 !****************************************************************
 subroutine precomp_intvals_Exy_vmd(refl_var,sz,zr)
 
   implicit none
 
   !external variables
-  type(refl_struct) :: refl_var  !stuff to remember throughout 1D computations
-  real(kind=real64),intent( in ) :: sz,zr     !source and receiver depth
+  type(refl_struct)             :: refl_var  !stuff to remember throughout 1D computations
+  real(kind=real64),intent(in)  :: sz,zr     !source and iReceiver depth
 
   !internal variables
-  integer(kind=int32),dimension(NREL) :: ibesord   !bessel function order (integer "array")
+  integer(kind=int32),dimension(NREL)  :: ibesord   !bessel function order (integer "array")
 
 
   !receivers above source
-  if(sz .ge. zr) then
+  if (sz .ge. zr) then
 
     !integral for Ex and Ey
-    !the integral is "easy" --> don't need special case for receiver exactly at source depth
+    !the integral is "easy" --> don't need special case for iReceiver exactly at source depth
     ibesord = 1
     call precomp_intval_fht(refl_var,ibesord,iabvA1TEvmd,1)
 
@@ -1440,40 +1440,40 @@ endsubroutine precomp_intvals_Exy_vmd
 
 
 !****************************************************************
-!>  FD EM subroutine precomp_intvals_Hxy_vmd
-!>    compute integral values for all integrals for VMD source, Hx/Hy
+!  FD EM subroutine precomp_intvals_Hxy_vmd
+!    compute integral values for all integrals for VMD source, Hx/Hy
 !
-!>  Rita Streich 2009-2011
+!  Rita Streich 2009-2011
 !****************************************************************
 subroutine precomp_intvals_Hxy_vmd(refl_var,sz,zr)
 
   implicit none
 
   !external variables
-  type(refl_struct) :: refl_var  !stuff to remember throughout 1D computations
-  real(kind=real64),intent( in ) :: sz,zr     !source and receiver depth
+  type(refl_struct)             :: refl_var  !stuff to remember throughout 1D computations
+  real(kind=real64),intent(in)  :: sz,zr     !source and iReceiver depth
 
   !internal variables
-  integer(kind=int32),dimension(nrelmax) :: ibesord   !bessel function order (integer "array")
-  real(kind=real64) :: besorder  !Bessel function order (real)
-  real(kind=real64) :: fact      !multiplication factor for radii
-  integer(kind=int32) :: irad      !radius counter
+  integer(kind=int32),dimension(nrelmax)  :: ibesord   !bessel function order (integer "array")
+  real(kind=real64)             :: besorder  !Bessel function order (real)
+  real(kind=real64)             :: fact      !multiplication factor for radii
+  integer(kind=int32)           :: irad      !radius counter
 
 
   !receivers above source
-  if(sz .gt. zr) then
+  if (sz .gt. zr) then
 
     !integral for Hx and Hy
     ibesord = 1
     call precomp_intval_fht(refl_var,ibesord,iabvD1TEvmd,2)
 
-  !receiver below source
-  elseif(sz .lt. zr) then
+  !iReceiver below source
+  elseif (sz .lt. zr) then
 
     ibesord = 1
     call precomp_intval_fht(refl_var,ibesord,iblwD1TEvmd,2)
 
-  !receiver exactly at source depth
+  !iReceiver exactly at source depth
   else
 
     !precompute logarithmic radii, start from largest, so that it's the same as for Hankel transforms
@@ -1488,7 +1488,7 @@ subroutine precomp_intvals_Hxy_vmd(refl_var,sz,zr)
     call precomp_intval_adaptive(refl_var,besorder,iabvD1TEvmd,2,sz,zr)
 
     !do spline interpolation here and not inside precomp_intval_adaptive
-    !> so that there is no need to go back and forth between radii and their logarithms
+    ! so that there is no need to go back and forth between radii and their logarithms
 
     !take logarithm of radii - this makes spline interpolation more accurate
     do irad=1,refl_var%nrad
@@ -1505,40 +1505,40 @@ endsubroutine precomp_intvals_Hxy_vmd
 
 
 !****************************************************************
-!>  FD EM subroutine precomp_intvals_Hz_vmd
-!>    compute integral values for all integrals for VMD source, Hz only
+!  FD EM subroutine precomp_intvals_Hz_vmd
+!    compute integral values for all integrals for VMD source, Hz only
 !
-!>  Rita Streich 2009-2011
+!  Rita Streich 2009-2011
 !****************************************************************
 subroutine precomp_intvals_Hz_vmd(refl_var,sz,zr)
 
   implicit none
 
   !external variables
-  type(refl_struct) :: refl_var  !stuff to remember throughout 1D computations
-  real(kind=real64),intent( in ) :: sz,zr     !source and receiver depth
+  type(refl_struct)             :: refl_var  !stuff to remember throughout 1D computations
+  real(kind=real64),intent(in)  :: sz,zr     !source and iReceiver depth
 
   !internal variables
-  integer(kind=int32),dimension(nrelmax) :: ibesord   !bessel function order (integer "array")
-  real(kind=real64) :: besorder  !Bessel function order (real)
-  real(kind=real64) :: fact      !multiplication factor for radii
-  integer(kind=int32) :: irad      !radius counter
+  integer(kind=int32),dimension(nrelmax)  :: ibesord   !bessel function order (integer "array")
+  real(kind=real64)             :: besorder  !Bessel function order (real)
+  real(kind=real64)             :: fact      !multiplication factor for radii
+  integer(kind=int32)           :: irad      !radius counter
 
 
   !receivers above source
-  if(sz .gt. zr) then
+  if (sz .gt. zr) then
 
     !integral for Hz
     ibesord = 0
     call precomp_intval_fht(refl_var,ibesord,iabvA0TEvmd,3)
 
-  !receiver below source
-  elseif(sz .lt. zr) then
+  !iReceiver below source
+  elseif (sz .lt. zr) then
 
     ibesord = 0
     call precomp_intval_fht(refl_var,ibesord,iblwA0TEvmd,3)
 
-  !receiver exactly at source depth
+  !iReceiver exactly at source depth
   else
 
     !precompute logarithmic radii, start from largest, so that it's the same as for Hankel transforms
@@ -1553,7 +1553,7 @@ subroutine precomp_intvals_Hz_vmd(refl_var,sz,zr)
     call precomp_intval_adaptive(refl_var,besorder,iabvA0TEvmd,3,sz,zr)
 
     !do spline interpolation here and not inside precomp_intval_adaptive
-    !> so that there is no need to go back and forth between radii and their logarithms
+    ! so that there is no need to go back and forth between radii and their logarithms
 
     !take logarithm of radii - this makes spline interpolation more accurate
     do irad=1,refl_var%nrad
@@ -1570,28 +1570,28 @@ endsubroutine precomp_intvals_Hz_vmd
 
 
 !****************************************************************
-!>  FD EM subroutine precomp_intvals_wire
-!>    compute integral values for all integrals along wires
+!  FD EM subroutine precomp_intvals_wire
+!    compute integral values for all integrals along wires
 !
-!>  Rita Streich 2009
+!  Rita Streich 2009
 !****************************************************************
 subroutine precomp_intvals_wire(refl_var,sz,zr)
 
   implicit none
 
   !external variables
-  type(refl_struct) :: refl_var  !stuff to remember throughout 1D computations
-  real(kind=real64),intent( in ) :: sz,zr     !source and receiver depth
+  type(refl_struct)             :: refl_var  !stuff to remember throughout 1D computations
+  real(kind=real64),intent(in)  :: sz,zr     !source and iReceiver depth
 
   !internal variables
-  integer(kind=int32),dimension(NREL) :: ibesord   !bessel function order (integer "array")
-  real(kind=real64) :: besorder  !Bessel function order (real)
-  real(kind=real64) :: fact      !multiplication factor for radii
-  integer(kind=int32) :: irad      !radius counter
+  integer(kind=int32),dimension(NREL)  :: ibesord   !bessel function order (integer "array")
+  real(kind=real64)             :: besorder  !Bessel function order (real)
+  real(kind=real64)             :: fact      !multiplication factor for radii
+  integer(kind=int32)           :: irad      !radius counter
 
 
   !receivers above source
-  if(sz .gt. zr) then
+  if (sz .gt. zr) then
 
     !integrals along wires
     !integral for Ex (and Ey)
@@ -1619,8 +1619,8 @@ subroutine precomp_intvals_wire(refl_var,sz,zr)
     ibesord = 1
     call precomp_intval_fht(refl_var,ibesord,idabvHxwire,6)
 
-  !receiver below source
-  elseif(sz .lt. zr) then
+  !iReceiver below source
+  elseif (sz .lt. zr) then
 
     ibesord = 0
     call precomp_intval_fht(refl_var,ibesord,i1blwExwire,1)
@@ -1635,7 +1635,7 @@ subroutine precomp_intvals_wire(refl_var,sz,zr)
     ibesord = 1
     call precomp_intval_fht(refl_var,ibesord,idblwHxwire,6)
 
-  !receiver exactly at source depth
+  !iReceiver exactly at source depth
   else
 
     !precompute logarithmic radii, start from largest, so that it's the same as for Hankel transforms
@@ -1686,29 +1686,29 @@ endsubroutine precomp_intvals_wire
 
 
 !****************************************************************
-!>  FD EM subroutine precomp_intvals_Exy_wire
-!>    compute integral values for Ex or Ey component for integrals along wires
-!>    and at wire end points
+!  FD EM subroutine precomp_intvals_Exy_wire
+!    compute integral values for Ex or Ey component for integrals along wires
+!    and at wire end points
 !
-!>  Rita Streich 2009
+!  Rita Streich 2009
 !****************************************************************
 subroutine precomp_intvals_Exy_wire(refl_var,sz,zr)
 
   implicit none
 
   !external variables
-  type(refl_struct) :: refl_var  !stuff to remember throughout 1D computations
-  real(kind=real64),intent( in ) :: sz,zr     !source and receiver depth
+  type(refl_struct)             :: refl_var  !stuff to remember throughout 1D computations
+  real(kind=real64),intent(in)  :: sz,zr     !source and iReceiver depth
 
   !internal variables
-  integer(kind=int32),dimension(NREL) :: ibesord   !bessel function order (integer "array")
-  real(kind=real64) :: besorder  !Bessel function order (real)
-  real(kind=real64) :: fact      !multiplication factor for radii
-  integer(kind=int32) :: irad      !radius counter
+  integer(kind=int32),dimension(NREL)  :: ibesord   !bessel function order (integer "array")
+  real(kind=real64)             :: besorder  !Bessel function order (real)
+  real(kind=real64)             :: fact      !multiplication factor for radii
+  integer(kind=int32)           :: irad      !radius counter
 
 
   !receivers above source
-  if(sz .gt. zr) then
+  if (sz .gt. zr) then
 
     !integral for Ex and Ey along wires
     ibesord = 0
@@ -1718,15 +1718,15 @@ subroutine precomp_intvals_Exy_wire(refl_var,sz,zr)
     ibesord = 1
     call precomp_intval_fht(refl_var,ibesord,i2abvExwire,4)
 
-  !receiver below source
-  elseif(sz .lt. zr) then
+  !iReceiver below source
+  elseif (sz .lt. zr) then
 
     ibesord = 0
     call precomp_intval_fht(refl_var,ibesord,i1blwExwire,1)
     ibesord = 1
     call precomp_intval_fht(refl_var,ibesord,i2blwExwire,4)
 
-  !receiver exactly at source depth
+  !iReceiver exactly at source depth
   else
 
     !precompute logarithmic radii as returned from fast Hankel transform
@@ -1762,40 +1762,40 @@ endsubroutine precomp_intvals_Exy_wire
 
 
 !****************************************************************
-!> FD EM subroutine precomp_intvals_Ez_wire
-!>   compute integral values for the integral needed for Ez (contribution from wire end points)
+! FD EM subroutine precomp_intvals_Ez_wire
+!   compute integral values for the integral needed for Ez (contribution from wire end points)
 !
-!> Rita Streich 2009
+! Rita Streich 2009
 !****************************************************************
 subroutine precomp_intvals_Ez_wire(refl_var,sz,zr)
 
   implicit none
 
   !external variables
-  type(refl_struct) :: refl_var  !stuff to remember throughout 1D computations
-  real(kind=real64),intent( in ) :: sz,zr     !source and receiver depth
+  type(refl_struct)             :: refl_var  !stuff to remember throughout 1D computations
+  real(kind=real64),intent(in)  :: sz,zr     !source and iReceiver depth
 
   !internal variables
-  integer(kind=int32),dimension(NREL) :: ibesord   !bessel function order (integer "array")
-  real(kind=real64) :: besorder  !Bessel function order (real)
-  real(kind=real64) :: fact      !multiplication factor for radii
-  integer(kind=int32) :: irad      !radius counter
+  integer(kind=int32),dimension(NREL)  :: ibesord   !bessel function order (integer "array")
+  real(kind=real64)             :: besorder  !Bessel function order (real)
+  real(kind=real64)             :: fact      !multiplication factor for radii
+  integer(kind=int32)           :: irad      !radius counter
 
 
   !receivers above source
-  if(sz .gt. zr) then
+  if (sz .gt. zr) then
 
     !integral for Ez
     ibesord = 0
     call precomp_intval_fht(refl_var,ibesord,iabvD0TM,5)
 
-  !receiver below source
-  elseif(sz .lt. zr) then
+  !iReceiver below source
+  elseif (sz .lt. zr) then
 
     ibesord = 0
     call precomp_intval_fht(refl_var,ibesord,iblwD0TM,5)
 
-  !receiver exactly at source depth
+  !iReceiver exactly at source depth
   else
 
     !precompute logarithmic radii, start from largest, so that it's the same as for Hankel transforms
@@ -1827,28 +1827,28 @@ endsubroutine precomp_intvals_Ez_wire
 
 
 !****************************************************************
-!>  FD EM subroutine precomp_intvals_Hxy_wire
-!>    compute integral values for all integrals along wires, Hx/Hy
+!  FD EM subroutine precomp_intvals_Hxy_wire
+!    compute integral values for all integrals along wires, Hx/Hy
 !
-!>  Rita Streich 2009-2011
+!  Rita Streich 2009-2011
 !****************************************************************
 subroutine precomp_intvals_Hxy_wire(refl_var,sz,zr)
 
   implicit none
 
   !external variables
-  type(refl_struct) :: refl_var  !stuff to remember throughout 1D computations
-  real(kind=real64),intent( in ) :: sz,zr     !source and receiver depth
+  type(refl_struct)             :: refl_var  !stuff to remember throughout 1D computations
+  real(kind=real64),intent(in)  :: sz,zr     !source and iReceiver depth
 
   !internal variables
-  integer(kind=int32),dimension(NREL) :: ibesord   !bessel function order (integer "array")
-  real(kind=real64) :: besorder  !Bessel function order (real)
-  real(kind=real64) :: fact      !multiplication factor for radii
-  integer(kind=int32) :: irad      !radius counter
+  integer(kind=int32),dimension(NREL)  :: ibesord   !bessel function order (integer "array")
+  real(kind=real64)             :: besorder  !Bessel function order (real)
+  real(kind=real64)             :: fact      !multiplication factor for radii
+  integer(kind=int32)           :: irad      !radius counter
 
 
   !receivers above source
-  if(sz .gt. zr) then
+  if (sz .gt. zr) then
 
     !integral for Hy and Hx along wire
     ibesord = 0
@@ -1858,15 +1858,15 @@ subroutine precomp_intvals_Hxy_wire(refl_var,sz,zr)
     ibesord = 1
     call precomp_intval_fht(refl_var,ibesord,idabvHxwire,6)
 
-  !receiver below source
-  elseif(sz .lt. zr) then
+  !iReceiver below source
+  elseif (sz .lt. zr) then
 
     ibesord = 0
     call precomp_intval_fht(refl_var,ibesord,iblwD0TE,2)
     ibesord = 1
     call precomp_intval_fht(refl_var,ibesord,idblwHxwire,6)
 
-  !receiver exactly at source depth
+  !iReceiver exactly at source depth
   else
 
     !precompute logarithmic radii, start from largest, so that it's the same as for Hankel transforms
@@ -1900,31 +1900,31 @@ endsubroutine precomp_intvals_Hxy_wire
 
 
 !****************************************************************
-!>  FD EM subroutine precomp_intvals_Hz_wire
-!>    compute integral values for all integrals along wires, Hz only
+!  FD EM subroutine precomp_intvals_Hz_wire
+!    compute integral values for all integrals along wires, Hz only
 !
-!>  Rita Streich 2009-2011
+!  Rita Streich 2009-2011
 !****************************************************************
 subroutine precomp_intvals_Hz_wire(refl_var,sz,zr)
 
   implicit none
 
   !external variables
-  type(refl_struct) :: refl_var  !stuff to remember throughout 1D computations
-  real(kind=real64),intent( in ) :: sz,zr     !source and receiver depth
+  type(refl_struct)             :: refl_var  !stuff to remember throughout 1D computations
+  real(kind=real64),intent(in)  :: sz,zr     !source and iReceiver depth
 
   !internal variables
-  integer(kind=int32),dimension(NREL) :: ibesord   !bessel function order (integer "array")
+  integer(kind=int32),dimension(NREL)  :: ibesord   !bessel function order (integer "array")
 
 
   ibesord = 1
 
   !receivers above source
-  if(sz .ge. zr) then
+  if (sz .ge. zr) then
     !integrals along wires
     !integral for Hz - no need for adaptive integration for this integral
     call precomp_intval_fht(refl_var,ibesord,iabvAz1TE,3)
-  !receiver below source
+  !iReceiver below source
   else
     call precomp_intval_fht(refl_var,ibesord,iblwAz1TE,3)
   endif

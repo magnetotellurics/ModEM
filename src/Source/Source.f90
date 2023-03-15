@@ -6,9 +6,13 @@ module Source
     use ModelOperator
     use ModelParameter
     !
-    character(:), allocatable :: source_type
+    character(:), allocatable :: source_type_mt
     character( len=11 ), parameter :: SRC_MT_1D = "SourceMT_1D"
     character( len=11 ), parameter :: SRC_MT_2D = "SourceMT_2D"
+    !
+    character(:), allocatable :: source_type_csem
+    character( len=15 ), parameter :: SRC_CSEM_EM1D = "SourceCSEM_EM1D"
+    character( len=19 ), parameter :: SRC_CSEM_DIPOLE1D = "SourceCSEM_Dipole1D"
     !
     character(:), allocatable :: get_1D_from
     !

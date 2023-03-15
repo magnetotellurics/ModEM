@@ -230,13 +230,13 @@ contains
     !> Call JMult_T_Tx with measured data for for all transmitters
     !> Add the result obtained for each transmitter into dsigma
     !
-    subroutine serialJMult_T( sigma, all_data, dsigma, SolnIndex, s_hat )
+    subroutine serialJMult_T( sigma, all_data, dsigma, i_sol, s_hat )
         implicit none
         !
         class( ModelParameter_t ), intent( in ) :: sigma
         type( DataGroupTx_t ), dimension(:), intent( in ) :: all_data
         class( ModelParameter_t ), allocatable, intent( out ) :: dsigma
-        integer, intent( in ), optional :: SolnIndex
+        integer, intent( in ), optional :: i_sol
         class( Scalar_t ), allocatable, dimension(:), intent( inout ), optional :: s_hat
         !
         class( Transmitter_t ), pointer :: Tx
@@ -249,8 +249,8 @@ contains
         !
         sol_index = 0
         !
-        !> Set SolnIndex if present
-        if( present( SolnIndex ) ) sol_index = SolnIndex
+        !> Set i_sol if present
+        if( present( i_sol ) ) sol_index = i_sol
         !
         !> Initialize dsigma with zeros
         if( sigma%is_allocated ) then
@@ -294,13 +294,13 @@ contains
     !>     Solve ESens on the transmitter using a transpose SourceInteriorForce, with the new rhs.
     !>     Call Tx%PMult to get a new ModelParameter dsigma.
     !
-    subroutine JMult_T_Tx( sigma, tx_data, dsigma, SolnIndex )
+    subroutine JMult_T_Tx( sigma, tx_data, dsigma, i_sol )
         implicit none
         !
         class( ModelParameter_t ), intent( in ) :: sigma
         type( DataGroupTx_t ), intent( in ) :: tx_data
         class( ModelParameter_t ), allocatable, intent( inout ) :: dsigma
-        integer, intent( in ), optional :: SolnIndex
+        integer, intent( in ), optional :: i_sol
         !
         class( Vector_t ), allocatable :: lrows
         class( Vector_t ), allocatable, dimension(:) :: bSrc
@@ -312,8 +312,8 @@ contains
         !
         sol_index = 0
         !
-        !> Set SolnIndex if present
-        if( present( SolnIndex ) ) sol_index = SolnIndex
+        !> Set i_sol if present
+        if( present( i_sol ) ) sol_index = i_sol
         !
         !> Initialize dsigma with zeros
         allocate( dsigma, source = sigma )
@@ -323,7 +323,7 @@ contains
         !> Pointer to the tx_data's Transmitter
         Tx => getTransmitter( tx_data%i_tx )
         !
-        Tx%SolnIndex = sol_index
+        Tx%i_sol = sol_index
         !
         !> Initialize bSrc( n_pol ) with zeros
         allocate( cVector3D_SG_t :: bSrc( Tx%n_pol ) )
