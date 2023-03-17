@@ -1,5 +1,5 @@
 !---------------------------------------------------------
-! integrand 1 for Ex for long wire source, iReceiver above source
+! integrand 1 for Ex for long wire source, receiver above source
 !---------------------------------------------------------
 function i1abvExwire(kappa) result(res)
 
@@ -16,7 +16,7 @@ endfunction i1abvExwire
 
 
 !---------------------------------------------------------
-! integrand 1 for Ex for long wire source, iReceiver below source
+! integrand 1 for Ex for long wire source, receiver below source
 !---------------------------------------------------------
 function i1blwExwire(kappa) result(res)
 
@@ -32,7 +32,7 @@ endfunction i1blwExwire
 
 
 !---------------------------------------------------------
-! integrand 2 for Ex for long wire source, iReceiver above source
+! integrand 2 for Ex for long wire source, receiver above source
 !---------------------------------------------------------
 function i2abvExwire(kappa) result(res)
 
@@ -56,7 +56,7 @@ endfunction i2abvExwire
 
 
 !---------------------------------------------------------
-! integrand 2 for Ex for long wire source, iReceiver below source
+! integrand 2 for Ex for long wire source, receiver below source
 !---------------------------------------------------------
 function i2blwExwire(kappa) result(res)
 
@@ -1219,7 +1219,7 @@ subroutine get_rt_abv(rtEH,ra,rdnsrc,kappa,tu,transfunc)
   ru = refl_response_dn(ilayrec,ilaysrc-1,trans_below_rec,ilayrec,zeroc)
 
 
-  !"up" transmission response from between source and receivers - iterate from iReceiver to source layer
+  !"up" transmission response from between source and receivers - iterate from receiver to source layer
   ru_up = zeroc
   tu = trans_response_up(ilayrec,ilaysrc,trans_below_rec,ilayrec,trans_below_rec(ilayrec),ru_up)
 
@@ -1497,7 +1497,7 @@ subroutine set_trans_abvTE()
   !transmission through homogeneous layers above receivers
   trans_above_rec(2:ilayrec) = exp(jomega*pvert(2:ilayrec) * dz_above_rec)
 
-  !transmission through homogeneous regions between source and iReceiver
+  !transmission through homogeneous regions between source and receiver
   trans_below_rec(ilayrec:ilaysrc) = exp(jomega*pvert(ilayrec:ilaysrc) * dz_below_rec)
 
 endsubroutine set_trans_abvTE
@@ -1523,7 +1523,7 @@ subroutine set_trans_abvTM()
   !transmission through homogeneous layers above receivers
   trans_above_rec(2:ilayrec) = exp(jomega*pvert(2:ilayrec) * dz_above_rec)
 
-  !transmission through homogeneous regions between source and iReceiver
+  !transmission through homogeneous regions between source and receiver
   trans_below_rec(ilayrec:ilaysrc) = exp(jomega*pvert(ilayrec:ilaysrc) * dz_below_rec)
 
 endsubroutine set_trans_abvTM
@@ -1546,7 +1546,7 @@ subroutine set_trans_blwTE()
   !transmission through homogeneous layers below source
   trans_below_src(ilaysrc:nlay-1) = exp(jomega*pvert(ilaysrc:nlay-1) * dz_below_src)
 
-  !transmission through homogeneous regions between source and iReceiver
+  !transmission through homogeneous regions between source and receiver
   trans_above_rec(ilaysrc:ilayrec) = exp(jomega*pvert(ilaysrc:ilayrec) * dz_above_rec)
 
   !transmission through homogeneous layers below receivers
@@ -1571,7 +1571,7 @@ subroutine set_trans_blwTM()
   !transmission through homogeneous layers below source
   trans_below_src(ilaysrc:nlay-1) = exp(jomega*pvert(ilaysrc:nlay-1) * dz_below_src)
 
-  !transmission through homogeneous regions between source and iReceiver
+  !transmission through homogeneous regions between source and receiver
   trans_above_rec(ilaysrc:ilayrec) = exp(jomega*pvert(ilaysrc:ilayrec) * dz_above_rec)
 
   !transmission through homogeneous layers below receivers
@@ -1591,7 +1591,7 @@ complex(kind=real64) function refl_response_dn(ilaytop,ilaybot,trans_blw,startid
   !external variables
   integer(kind=int32)   :: ilaytop,ilaybot  !layer indices: start recursion from ilaybot, go to ilaytop
   integer(kind=int32),intent(in)      :: startidx  !start index of transm. coeff. vector
-  complex(kind=real64),dimension(startidx:),intent(in) :: trans_blw !transm. coeff. either with respect to source or iReceiver
+  complex(kind=real64),dimension(startidx:),intent(in) :: trans_blw !transm. coeff. either with respect to source or receiver
   complex(kind=real64),intent(in) :: refstart  !start value for refl. response, input this so function can be called step by step
 
   !internal variable
@@ -1621,7 +1621,7 @@ complex(kind=real64) function refl_response_up(ilaytop,ilaybot,trans_abv,startid
   !external variables
   integer(kind=int32)   :: ilaytop,ilaybot  !layer indices: start recursion from ilaytop, go to ilaybot
   integer(kind=int32),intent(in)      :: startidx  !start index of transm. coeff. vector
-  complex(kind=real64),dimension(startidx:),intent(in) :: trans_abv !transm. coeff. either with respect to source or iReceiver
+  complex(kind=real64),dimension(startidx:),intent(in) :: trans_abv !transm. coeff. either with respect to source or receiver
   complex(kind=real64),intent(in) :: refstart  !start value for refl. response, input this so function can be called step by step
 
   !internal variable
@@ -1651,7 +1651,7 @@ complex(kind=real64) function trans_response_up(ilaytop,ilaybot,trans_blw,starti
   !external variables
   integer(kind=int32)   :: ilaytop,ilaybot  !layer indices: start recursion from ilaytop, go to ilaybot
   integer(kind=int32),intent(in)      :: startidx  !start index of transm. coeff. vector
-  complex(kind=real64),dimension(startidx:),intent(in) :: trans_blw !transm. coeff. with respect to iReceiver layer
+  complex(kind=real64),dimension(startidx:),intent(in) :: trans_blw !transm. coeff. with respect to receiver layer
   complex(kind=real64),intent(in) :: trstart  !start value for transm. response, input so function can be called step by step
   complex(kind=real64),intent(inout)  :: ru_up     !refl. response, input and return!
 
@@ -1688,7 +1688,7 @@ complex(kind=real64) function trans_response_dn(ilaytop,ilaybot,trans_abv,starti
   !external variables
   integer(kind=int32)   :: ilaytop,ilaybot  !layer indices: start recursion from ilaytop, go to ilaybot
   integer(kind=int32),intent(in)      :: startidx  !start index of transm. coeff. vector
-  complex(kind=real64),dimension(startidx:),intent(in) :: trans_abv !transm. coeff. with respect to iReceiver layer
+  complex(kind=real64),dimension(startidx:),intent(in) :: trans_abv !transm. coeff. with respect to receiver layer
   complex(kind=real64),intent(in)     :: trstart   !start value for rtansm. response, input to enable step-by-step calling
   complex(kind=real64),intent(inout)  :: rd_dn   !refl. response, input and return!
 

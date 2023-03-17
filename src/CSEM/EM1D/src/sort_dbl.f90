@@ -65,9 +65,9 @@ subroutine sort_dbl(n,arr)
          arr(j)=a  
          jstack=jstack+2  
          if(jstack.gt.NSTACK) then
-	   write(*,*) 'ERROR: NSTACK too small in sort'
-	   stop 1
-	 endif
+       write(*,*) 'ERROR: NSTACK too small in sort'
+       stop 1
+     endif
          if(ir-i+1.ge.j-l)then 
            istack(jstack)=ir  
            istack(jstack-1)=i  

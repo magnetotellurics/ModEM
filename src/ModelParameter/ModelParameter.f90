@@ -105,7 +105,7 @@ module ModelParameter
         subroutine interface_add_cond_model_parameter( self, ccond )
             import :: ModelParameter_t, Scalar_t
             class( ModelParameter_t ), intent( inout ) :: self
-            class( Scalar_t ), allocatable, intent( in ) :: ccond
+            class( Scalar_t ), intent( in ) :: ccond
         end subroutine interface_add_cond_model_parameter
         !
         !> No interface subroutine briefing

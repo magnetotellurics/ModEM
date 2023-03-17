@@ -32,13 +32,11 @@ module InversionNLCG
             !
             procedure, public :: solve => solveInversionNLCG
             !
-            procedure, public :: handleGradVectors => handleGradVectorsNLCG
-            !
             procedure, private :: gradient, func, updateDampingParameter, lineSearchCubic
             !
     end type InversionNLCG_t
     !
-    private :: cdInvMult, outputFilesInversionNLCG
+    private :: weightGradrients, cdInvMult, outputFilesInversionNLCG
     !
     interface InversionNLCG_t
         module procedure InversionNLCG_ctor
@@ -419,11 +417,11 @@ contains
     subroutine gradient( self, all_data, sigma, mHat, grad, dHat, i_sol )
         implicit none
         !
-        class( InversionNLCG_t ), intent( inout ) :: self
+        class( InversionNLCG_t ), intent( in ) :: self
         type( DataGroupTx_t ), allocatable, dimension(:), intent( in ) :: all_data
         class( ModelParameter_t ), allocatable, intent( in ) :: sigma, mHat
         class( ModelParameter_t ), allocatable, intent( inout ) :: grad
-        type( DataGroupTx_t ), allocatable, dimension(:), intent( inout ) :: dHat
+        type( DataGroupTx_t ), allocatable, dimension(:), intent( in ) :: dHat
         integer, intent( in ) :: i_sol
         !
         real( kind=prec ) :: Ndata, Nmodel
@@ -458,7 +456,8 @@ contains
 #endif
         !
         !> ????
-        call self%handleGradVectors( s_hat, all_data, dHat, JTd )
+        if( joint_type /= INV_UNWEIGHTED ) &
+        call weightGradrients( s_hat, all_data, dHat, JTd )
         !
         call model_cov%multBy_CmSqrt( JTd, CmJTd )
         !
@@ -482,24 +481,26 @@ contains
     !
     !> ????
     !
-    subroutine handleGradVectorsNLCG( self, s_hat, d, dHat, JTd )
+    subroutine weightGradrients( s_hat, d, dHat, JTd )
         implicit none
         !
-        class( InversionNLCG_t ), intent( inout ) :: self
         class( Scalar_t ), allocatable, dimension(:), intent( in ) :: s_hat
         type( DataGroupTx_t ), dimension(:), intent( in ) :: d, dHat
-        class( ModelParameter_t ), intent( in ) :: JTd
-        !class( ModelParameter_t ), intent( out ) :: CmJTd
+        class( ModelParameter_t ), intent( inout ) :: JTd
         !
-        integer :: Ndata, i_tx, ios
+        integer :: Ndata, i_tx, n_tx, ios
         class( Scalar_t ), allocatable :: temp_scalar
-        real( kind=prec ) :: grad_tx_norm, sum_grad_tx_norm, tx_rms, rms, SS
-        type( DataGroupTx_t ), allocatable, dimension(:) :: res, Nres 
+        real( kind=prec ) :: rms, SS
+        real( kind=prec ) :: sum_tx_grad_norm, mt_grad_norm, csem_grad_norm
+        real( kind=prec ) :: sum_tx_rms, mt_rms, csem_rms
+        type( DataGroupTx_t ), allocatable, dimension(:) :: res, Nres
+        real( kind=prec ), allocatable, dimension(:) :: tx_weights, tx_grad_norms, tx_rms
         !
-        !>
         open( unit = ioGradLog, file = trim( outdir_name )//"/GradNLCG.log", status="unknown", position="append", iostat=ios )
         !
         if( ios == 0 ) then
+            !
+            n_tx = size( transmitters )
             !
             write( ioGradLog, * ) "##########################"
             !
@@ -509,28 +510,75 @@ contains
             !
             call cdInvMult( res, Nres )
             !
-            sum_grad_tx_norm = 0.0
+            sum_tx_grad_norm = 0.0
+            sum_tx_rms = 0.0
+            mt_grad_norm = 0.0
+            csem_grad_norm = 0.0
+            mt_rms = 0.0
+            csem_rms = 0.0
             !
-            do i_tx = 1, size( res )
+            n_tx = size( transmitters )
+            !
+            !> Initialize the array of weights
+            allocate( tx_weights( n_tx ) )
+            allocate( tx_grad_norms( n_tx ) )
+            allocate( tx_rms( n_tx ) )
+            !
+            do i_tx = 1, n_tx
                 !
-                grad_tx_norm = sqrt( s_hat( i_tx )%dotProd( s_hat( i_tx ) ) )
+                tx_grad_norms( i_tx ) = sqrt( s_hat( i_tx )%dotProd( s_hat( i_tx ) ) )
                 !
-                tx_rms = sqrt( res( i_tx )%dotProd( Nres( i_tx ) ) / ( size( Nres( i_tx )%data ) * Nres( i_tx )%data(1)%n_comp * 2 ) )
+                tx_rms( i_tx ) = sqrt( res( i_tx )%dotProd( Nres( i_tx ) ) / ( size( Nres( i_tx )%data ) * Nres( i_tx )%data(1)%n_comp * 2 ) )
                 !
-                write( *, * ) "grad_tx_norm, tx_rms: ", grad_tx_norm, tx_rms
-                write( ioGradLog, * ) "grad_tx_norm, tx_rms: ", grad_tx_norm, tx_rms
+                !> Instantiate Transmitter's Source - According to transmitter type and chosen via control file
+                select type( Tx => getTransmitter( i_tx ) )
+                    !
+                    class is( TransmitterMT_t )
+                        !
+                        mt_grad_norm = mt_grad_norm + tx_grad_norms( i_tx )
+                        mt_rms = mt_rms + tx_rms( i_tx )
+                        !
+                        write( *, * ) "MT > GRAD_NORM, RMS: ", tx_grad_norms( i_tx ), tx_rms( i_tx )
+                        write( ioGradLog, * ) "MT > GRAD_NORM, RMS: ", tx_grad_norms( i_tx ), tx_rms( i_tx )
+                        !
+                    class is( TransmitterCSEM_t )
+                        !
+                        csem_grad_norm = csem_grad_norm + tx_grad_norms( i_tx )
+                        csem_rms = csem_rms + tx_rms( i_tx )
+                        !
+                        write( *, * ) "CSEM > GRAD_NORM, RMS: ", tx_grad_norms( i_tx ), tx_rms( i_tx )
+                        write( ioGradLog, * ) "CSEM > GRAD_NORM, RMS: ", tx_grad_norms( i_tx ), tx_rms( i_tx )
+                        !
+                    class default
+                        stop "Error: handleGradVectorsNLCG > Unclassified Transmitter"
+                    !
+                end select
                 !
-                sum_grad_tx_norm = sum_grad_tx_norm + grad_tx_norm
+                sum_tx_grad_norm = sum_tx_grad_norm + tx_grad_norms( i_tx )
+                sum_tx_rms = sum_tx_rms + tx_rms( i_tx )
                 !
             enddo
             !
-            write( *, * ) "SUM TX GRAD NORM: ", sum_grad_tx_norm
-            write( ioGradLog, * ) "sum_grad_tx_norm: ", sum_grad_tx_norm
+            write( *, * ) "SUM TX GRAD NORM = MT + CSEM", sum_tx_grad_norm, mt_grad_norm, csem_grad_norm
+            write( ioGradLog, * ) "SUM TX GRAD NORM = MT + CSEM", sum_tx_grad_norm, mt_grad_norm, csem_grad_norm
             !
+            write( *, * ) "SUM TX RMS = MT + CSEM", sum_tx_rms, mt_rms, csem_rms
+            write( ioGradLog, * ) "SUM TX RMS = MT + CSEM", sum_tx_rms, mt_rms, csem_rms
+            !
+            do i_tx = 1, n_tx
+                !
+                tx_weights( i_tx ) = sum_tx_grad_norm / tx_grad_norms( i_tx )
+                !
+            enddo
+            !
+            write( *, * ) "TX WEIGHTS: ", tx_weights
+            write( ioGradLog, * ) "TX WEIGHTS: ", tx_weights
+            !
+            !> Get gradient conductivity
             call JTd%getCond( temp_scalar )
             !
             write( *, * ) "TOTAL GRAD NORM: ", real( sqrt( temp_scalar%dotProd( temp_scalar ) ), kind=prec )
-            write( ioGradLog, * ) "sum_grad_norm: ", real( sqrt( temp_scalar%dotProd( temp_scalar ) ), kind=prec )
+            write( ioGradLog, * ) "TOTAL GRAD NORM: ", real( sqrt( temp_scalar%dotProd( temp_scalar ) ), kind=prec )
             !
             SS = dotProdData( res, Nres )
             !
@@ -538,8 +586,22 @@ contains
             !
             rms = sqrt( SS / Ndata )
             !
-            write( *, * ) "Total rms: ", rms
-            write( ioGradLog, * ) "Total rms: ", rms
+            write( *, * ) "TOTAL RMS: ", rms
+            write( ioGradLog, * ) "TOTAL RMS: ", rms
+            !
+            !> Set back gradient conductivity
+            call JTd%zeros()
+            do i_tx = 1, n_tx
+                !
+                temp_scalar = s_hat( i_tx )
+                !
+                call temp_scalar%mult( tx_weights( i_tx ) )
+                !
+                call JTd%addCond( temp_scalar )
+                !
+            enddo
+            !
+            deallocate( tx_weights )
             !
             close( ioGradLog )
             !
@@ -550,7 +612,7 @@ contains
             !
         endif
         !
-    end subroutine handleGradVectorsNLCG
+    end subroutine weightGradrients
     !
     !> Compute the full penalty functional F
     !> Also output the predicted data and the EM solution

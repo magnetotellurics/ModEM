@@ -97,7 +97,7 @@ contains
                         !
                     case default
                         !
-                        write( *, * ) "     "//achar(27)//"[91m# Warning:"//achar(27)//"[0m solveTx > Undefined source_type_csem, using Dipole1D"
+                        write( *, * ) "     "//achar(27)//"[91m# Warning:"//achar(27)//"[0m solveTx > Undefined source_type_csem, using Dipole1D: [", source_type_csem, "]"
                         !
                         call Tx%setSource( SourceCSEM_Dipole1D_t( model_operator, sigma, Tx%period, Tx%location, Tx%dip, Tx%azimuth, Tx%moment ) )
                         !

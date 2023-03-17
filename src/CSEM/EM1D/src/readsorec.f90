@@ -1,7 +1,7 @@
 !**********************************************************************
 !  FD EM subroutine readsorec
 !
-!  Purpose:  read source or iReceiver specifications from ascii input file
+!  Purpose:  read source or receiver specifications from ascii input file
 !
 !  Rita Streich 2009-2011
 !**********************************************************************
@@ -12,7 +12,7 @@ subroutine readsorec(filename,src,comm)
 
   !external variables
   character(len=namlen),intent(in)      :: filename
-  type(sorec),dimension(:),pointer      :: src        !source or iReceiver structure
+  type(sorec),dimension(:),pointer      :: src        !source or receiver structure
   integer(kind=int32),intent(in)        :: comm   !MPI communicator (not required for serial I/O)
 
   !internal variables
@@ -21,7 +21,7 @@ subroutine readsorec(filename,src,comm)
   integer(kind=int32)    :: nsorec       !number of sources/receivers
   integer(kind=int32)    :: ishot        !counter
   character(len=6)       :: ishotstr     !string for error output
-  integer(kind=int32)    :: isrc         !source/iReceiver index (not really used)
+  integer(kind=int32)    :: isrc         !source/receiver index (not really used)
 
 
   !let only processs 0 access the file!
@@ -32,7 +32,7 @@ subroutine readsorec(filename,src,comm)
     open(unit=lu,file=trim(adjustl(filename)),status='old',iostat=ierr)
     if (ierr.ne.0) call open_error(pid,'readsorec',filename,ierr)
 
-    !read number of sources or iReceiver groups
+    !read number of sources or receiver groups
     read(lu,*,iostat=ierr) nsorec
     if (ierr.ne.0) call readwrite_error(pid,'readsorec',filename,'r',ierr)
   endif
@@ -42,9 +42,9 @@ subroutine readsorec(filename,src,comm)
   if(ierr.ne.MPI_SUCCESS) call error_mpi(pid,'readsorec','MPI_Bcast nsorec',ierr)
 #endif
 
-  !allocate source / iReceiver structure
+  !allocate source / receiver structure
   allocate(src(nsorec), stat=ierr)
-  if (ierr.ne.0) call alloc_error(pid,'readsorec','source/iReceiver structure ',ierr)
+  if (ierr.ne.0) call alloc_error(pid,'readsorec','source/receiver structure ',ierr)
 
 
   do ishot=1,nsorec
@@ -54,7 +54,7 @@ subroutine readsorec(filename,src,comm)
       !RS 08.06.2011 new format: source name is in this line in sorpos files
       !receivers need individual names so there is no name needed here,
       !  but still for consistency with sorpos files we put a dummy name here,
-      !  this could be used later to identify which iReceiver group to use for which source
+      !  this could be used later to identify which receiver group to use for which source
       read(lu,*,iostat=ierr) isrc, src(ishot)%type, src(ishot)%srcname
       if (ierr.ne.0) call io_error(pid,filename,'reading source type and name from',ierr)
     endif
@@ -66,7 +66,7 @@ subroutine readsorec(filename,src,comm)
     if(ierr.ne.MPI_SUCCESS) call error_mpi(pid,'readsorec','MPI_Bcast source name',ierr)
 #endif
 
-    !read the source (or iReceiver) group
+    !read the source (or receiver) group
     select case (src(ishot)%type)
 
     !dipole sources
@@ -84,19 +84,19 @@ subroutine readsorec(filename,src,comm)
 
 
     !receivers
-    case (iReceiver)
+    case (receiver)
       call read_receivers(src(ishot),lu,comm)
 
     !invalid source type: write error message & exit
     case default
 
       write(ishotstr,'(i6)') ishot
-      call invalid_error(pid,'readsorec',filename,'source/iReceiver type for "shot" '//trim(adjustl(ishotstr))//' ', &
+      call invalid_error(pid,'readsorec',filename,'source/receiver type for "shot" '//trim(adjustl(ishotstr))//' ', &
         intnum=src(ishot)%type)
 
     end select
 
-  enddo !sources or iReceiver groups
+  enddo !sources or receiver groups
 
 
   if (pid .eq. 0) then
@@ -597,7 +597,7 @@ endsubroutine read_starsource
 !**********************************************************************
 !  FD EM subroutine read_receivers
 !
-!  Purpose:  read receivers of one iReceiver group
+!  Purpose:  read receivers of one receiver group
 !
 !  Rita Streich 2009-2011
 !**********************************************************************
@@ -606,7 +606,7 @@ subroutine read_receivers(rec,lu,comm)
   implicit none
 
   !external variables
-  type(sorec)                     :: rec !the iReceiver group
+  type(sorec)                     :: rec !the receiver group
   integer(kind=int32),intent(in)  :: lu  !file unit numbe
   integer(kind=int32),intent(in)        :: comm   !MPI communicator (not required for serial I/O)
 
@@ -643,24 +643,24 @@ subroutine read_receivers(rec,lu,comm)
   rec%nelem(1) = nelem
 
 
-  !array for iReceiver positions
+  !array for receiver positions
   allocate(rec%pos(3,nelem),rec%recnames(nelem), stat=ierr)
-  if (ierr.ne.0) call alloc_error(pid,'read_receivers','array for iReceiver positions',ierr)
+  if (ierr.ne.0) call alloc_error(pid,'read_receivers','array for receiver positions',ierr)
 
 
-  !read iReceiver positions
+  !read receiver positions
   if (pid .eq. 0) then
     !implicit loop is faster
     read(lu,*,iostat=ierr) (rec%pos(:,ielem),rec%recnames(ielem),ielem=1,nelem)
-    if (ierr.ne.0) call io_error(pid,filename,'reading iReceiver positions from ',ierr)
+    if (ierr.ne.0) call io_error(pid,filename,'reading receiver positions from ',ierr)
   endif
 
-  !communicate iReceiver positions and names
+  !communicate receiver positions and names
 #ifdef USE_MPI
   call MPI_Bcast(rec%pos,3*nelem,MPI_DOUBLE_PRECISION,0,comm,ierr)
-  if(ierr.ne.MPI_SUCCESS) call error_mpi(pid,'read_receivers','MPI_Bcast iReceiver positions',ierr)
+  if(ierr.ne.MPI_SUCCESS) call error_mpi(pid,'read_receivers','MPI_Bcast receiver positions',ierr)
   call MPI_Bcast(rec%recnames,namlen*nelem,MPI_CHARACTER,0,comm,ierr)
-  if(ierr.ne.MPI_SUCCESS) call error_mpi(pid,'read_receivers','MPI_Bcast iReceiver names',ierr)
+  if(ierr.ne.MPI_SUCCESS) call error_mpi(pid,'read_receivers','MPI_Bcast receiver names',ierr)
 #endif
 
 endsubroutine read_receivers

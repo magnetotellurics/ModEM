@@ -1,6 +1,6 @@
 !******************************************************************************
 !  FD EM subroutine find_radii_global
-!    find overallmin/max radii for all source/iReceiver depths, all field components
+!    find overallmin/max radii for all source/receiver depths, all field components
 !    general routine for all instances of calling 1d bg computation
 !
 !  Rita Streich 2011
@@ -16,7 +16,7 @@ subroutine find_radii_global(refl_var,src,bgdat,comm)
   integer(kind=int32),intent(in)   :: comm       !MPI communicator
 
   !internal variables
-  integer(kind=int32)   :: izrmax          !index for maximum iReceiver depth to check
+  integer(kind=int32)   :: izrmax          !index for maximum receiver depth to check
   real(kind=real64)     :: rmin,rmax       !temp radii
 
 
@@ -28,7 +28,7 @@ subroutine find_radii_global(refl_var,src,bgdat,comm)
   !same coordinates for all field components
   if (bgdat%allcomp_samecoord) then
 
-    !same horizontal coordinates for all iReceiver (grid cell) depths?
+    !same horizontal coordinates for all receiver (grid cell) depths?
     if (bgdat%allzrec_samecoord) then
       izrmax = 1
     else
@@ -97,7 +97,7 @@ subroutine find_radii_global(refl_var,src,bgdat,comm)
   endif
 
   !remember min and max radii for later Fast Hankel Transform
-  !not every iReceiver depth will be present on all processes --> this routine is not executed by all procs simultaneously
+  !not every receiver depth will be present on all processes --> this routine is not executed by all procs simultaneously
   !--> quick & dirty: do not exchange min/max radius info
   !BUT: this causes little jumps of field values across domain boundaries
   call store_rmaxmin(refl_var,rmax,rmin, comm)
@@ -110,7 +110,7 @@ endsubroutine find_radii_global
 !    find maximum / minimum radii for 1d integral evaluations
 !    use original source definitions without pre-sorting
 !      (no benefit from sorting since we have to look at radii for all source elements anynway)
-!    iReceiver coordinates are pre-sorted by depth for higher efficiency
+!    receiver coordinates are pre-sorted by depth for higher efficiency
 !
 !  Rita Streich 2011
 !******************************************************************************
@@ -121,16 +121,16 @@ subroutine update_maxminrad(src,pos,nrecperz,recidx,izrmax,rmax,rmin)
   !external variables
   type(sorec),intent(in)                        :: src     !source specifications
   real(kind=real64),dimension(:,:),intent(in)   :: pos     !positions where both Ex and Ey are computed 
-  integer(kind=int32),dimension(:),intent(in)  :: nrecperz  !nr of points for each iReceiver depth
+  integer(kind=int32),dimension(:),intent(in)  :: nrecperz  !nr of points for each receiver depth
   integer(kind=int32),dimension(:),intent(in)  :: recidx       !indices for receivers at each depth
-  integer(kind=int32)              :: izrmax     !index for max. iReceiver depth to consider
+  integer(kind=int32)              :: izrmax     !index for max. receiver depth to consider
   real(kind=real64),intent(inout)  :: rmax,rmin  !maximum and minimum radii
 
   !internal variables
-  integer(kind=int32)      :: izr        !iReceiver depth index
+  integer(kind=int32)      :: izr        !receiver depth index
   integer(kind=int32)      :: ielem      !sorce element counter
-  real(kind=real64)        :: x,y                !source element - iReceiver distance
-  integer(kind=int32)      :: irecstart,irecend,irec  !iReceiver indices
+  real(kind=real64)        :: x,y                !source element - receiver distance
+  integer(kind=int32)      :: irecstart,irecend,irec  !receiver indices
   real(kind=real64)        :: rtmp               !temp radius
   integer(kind=int32)      :: iw         !wire counter
 

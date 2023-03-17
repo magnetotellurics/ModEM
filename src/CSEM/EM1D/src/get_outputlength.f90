@@ -11,12 +11,12 @@ integer(kind=int32) function get_outputlength(sources,receivers) result(nrecout)
 
   !external variables
   type(sorec),dimension(:),intent(in)    :: sources     !source definitions
-  type(sorec),dimension(:),intent(in)    :: receivers   !iReceiver definitions
+  type(sorec),dimension(:),intent(in)    :: receivers   !receiver definitions
 
   !internal variables
-  integer(kind=int32)       :: nsrc,nrec   !number of source and iReceiver groups
-  integer(kind=int32)       :: recinc      !iReceiver increment
-  integer(kind=int32)       :: isrc,irec   !source and iReceiver counters
+  integer(kind=int32)       :: nsrc,nrec   !number of source and receiver groups
+  integer(kind=int32)       :: recinc      !receiver increment
+  integer(kind=int32)       :: isrc,irec   !source and receiver counters
   integer(kind=MPI_OFFSET_KIND)  :: nrec_out_tot  !total number of receivers, added up over all sources
 
   nsrc = size(sources)

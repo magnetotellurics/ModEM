@@ -11,11 +11,17 @@ module InversionControlFile
     use String
     !
     character(:), allocatable :: inversion_type
+    character( len=3 ), parameter :: DCG = "DCG"
+    character( len=4 ), parameter :: NLCG = "NLCG"
+    !
+    character(:), allocatable :: joint_type
+    character( len=15 ), parameter :: INV_UNWEIGHTED = "UnweightedJoint"
+    character( len=12 ), parameter :: INV_TX_BASED = "TxBasedJoint"
     !
     type :: InversionControlFile_t
         !
         !> Inversion parameters
-        character(:), allocatable :: inversion_type
+        character(:), allocatable :: inversion_type, joint_type
         character(:), allocatable :: max_inv_iters, max_grad_iters
         character(:), allocatable :: error_tol, rms_tol
         character(:), allocatable :: lambda, lambda_tol, lambda_div
@@ -68,6 +74,8 @@ contains
                     !
                     if( index( line_text, "inversion_type" ) > 0 ) then
                         self%inversion_type = trim( args(2) )
+                    elseif( index( line_text, "joint_type" ) > 0 ) then
+                        self%joint_type = trim( args(2) )
                     elseif( index( line_text, "max_inv_iters" ) > 0 ) then
                         self%max_inv_iters = trim( args(2) )
                     elseif( index( line_text, "max_grad_iters" ) > 0 ) then
@@ -109,6 +117,23 @@ contains
                     case default
                         inversion_type = ""
                     stop "Error: Wrong inversion_type control, use [DCG|NLCG]"
+                    !
+                end select
+                !
+            endif
+            !
+            ! Joint type
+            if( allocated( self%joint_type ) ) then
+                !
+                select case( self%joint_type )
+                    !
+                    case( "Unweighted" )
+                        joint_type = INV_UNWEIGHTED
+                    case( "TxBased" )
+                        joint_type = INV_TX_BASED
+                    case default
+                        joint_type = ""
+                    stop "Error: Wrong joint_type control, use [Unweighted|TxBased]"
                     !
                 end select
                 !

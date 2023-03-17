@@ -40,15 +40,15 @@ module refl_mod_new
     integer(kind=int32)                      :: isrcstart,isrcend !indices for source range for one depth
     real(kind=real64),dimension(:),pointer   :: xs,ys      !horizontal positions of dipole or wire elements
 
-    !iReceiver description
-    !number of unique iReceiver depths within one iReceiver group, separate for each field component
+    !receiver description
+    !number of unique receiver depths within one receiver group, separate for each field component
     !combine Exy and Hxy because they require the same integral evaluations
     integer(kind=int32)                      :: nzrecExy,nzrecEz,nzrecHxy,nzrecHz
     !indices for receivers at each depth, separate for different field components
     integer(kind=int32),dimension(:),pointer :: irecperzExy,irecperzEz,irecperzHxy,irecperzHz
-    !unique iReceiver depths, separate for different field components
+    !unique receiver depths, separate for different field components
     real(kind=real64),dimension(:),pointer   :: zrecExy,zrecEz,zrecHxy,zrecHz
-    !number of receivers at each iReceiver depth, separate for different field components
+    !number of receivers at each receiver depth, separate for different field components
     integer(kind=int32),dimension(:),pointer :: nrecperzExy,nrecperzEz,nrecperzHxy,nrecperzHz
 
     integer(kind=int32)                      :: irecstart,irecend !indices for source range for one depth

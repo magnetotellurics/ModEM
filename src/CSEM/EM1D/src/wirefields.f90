@@ -107,7 +107,7 @@ endsubroutine init_1wirefield
 !**********************************************************************
 !  FD EM subroutine clean_wirefields
 !
-!  Purpose: clean up EM field vectors of iReceiver locations for the separate wires of
+!  Purpose: clean up EM field vectors of receiver locations for the separate wires of
 !    a wire source
 !
 !  Rita Streich 2011

@@ -15,7 +15,7 @@
 !!$  complex(kind=real64),external   :: intfunc          !function to use for small (or zero) radius
 !!$  integer(kind=int32),intent(in)  :: iint             !which part of "intvalues" to use
 !!$  real(kind=real64),intent(in)    :: r                !radius
-!!$  real(kind=real64),intent(in)    :: sz,zr            !source and iReceiver depth
+!!$  real(kind=real64),intent(in)    :: sz,zr            !source and receiver depth
 !!$  integer(kind=int32),dimension(NREL),intent(in)  :: ibesord  !bessel function order
 !!$  logical,intent(in)     :: wellbehaved  !indicates if we can use fast Hankel transform for sz = zr
 !!$  real(kind=real64),intent(in)    :: rspl !minimum radius at which spline interpolation is allowed
@@ -36,13 +36,13 @@
 !!$  !radius smaller than threshold for spline interpolation
 !!$  if (r .lt. rspl) then
 !!$
-!!$    !zero radius, but source and iReceiver not at the same depth
+!!$    !zero radius, but source and receiver not at the same depth
 !!$    if (r .eq. 0.d0) then
 !!$
 !!$      !Bessel function J1(0) = 0, so no need to enter adaptive integration if besorder =1
 !!$      if (ibesord(1) .ne. 1) then
 !!$
-!!$        !the case that iReceiver is exactly at source point is NOT included - work this out later!!!
+!!$        !the case that receiver is exactly at source point is NOT included - work this out later!!!
 !!$
 !!$        !get real part of integral
 !!$        !realval will call intfunc
@@ -59,14 +59,14 @@
 !!$    !non-zero, small radius
 !!$    else
 !!$
-!!$      !iReceiver not at source depth or "easy" integral
+!!$      !receiver not at source depth or "easy" integral
 !!$      if (wellbehaved) then
 !!$
 !!$        !use temp array for integral values because it has to be a 2D array
 !!$        call zhankl(r,1,NREL,TOL,NTOL,ibesord,intfunc,IJREL,ZWORK,valtmp,rout,NOFUN1,ierr)
 !!$        val = valtmp(1,1)
 !!$
-!!$      !iReceiver exactly at source depth and badly behaved integral
+!!$      !receiver exactly at source depth and badly behaved integral
 !!$      else
 !!$
 !!$        npieces = getnpieces(r,sz,zr)
@@ -76,7 +76,7 @@
 !!$        CALL BESAUT(intvalre,intvalim,besorder,GAUSLO,GAUSHI,r,intfunc,relerr,abserr,npieces,newint,0,branchpt,ierr)
 !!$        val = cmplx(intvalre,intvalim)
 !!$
-!!$      endif !iReceiver depth relative to source depth
+!!$      endif !receiver depth relative to source depth
 !!$
 !!$    endif
 !!$
@@ -136,7 +136,7 @@ function compute_1val(intfunc,r,sz,zr,ibesord,wellbehaved) result(val)
   complex(kind=real64)   :: val         !interpolated integral value
   complex(kind=real64),external   :: intfunc          !function to use for small (or zero) radius
   real(kind=real64),intent(in)    :: r                !radius
-  real(kind=real64),intent(in)    :: sz,zr            !source and iReceiver depth
+  real(kind=real64),intent(in)    :: sz,zr            !source and receiver depth
   integer(kind=int32),dimension(NREL),intent(in)  :: ibesord  !bessel function order
   logical,intent(in)     :: wellbehaved  !indicates if we can use fast Hankel transform for sz = zr
 
@@ -151,14 +151,14 @@ function compute_1val(intfunc,r,sz,zr,ibesord,wellbehaved) result(val)
   integer(kind=int32)    :: NOFUN1   !Nr of function evaluations in FHT
 
 
-  !iReceiver not at source depth or "easy" integral
+  !receiver not at source depth or "easy" integral
   if (wellbehaved) then
 
     !use temp array for integral values because it has to be a 2D array
     call zhankl(r,1,NREL,TOL,NTOL,ibesord,intfunc,IJREL,ZWORK,valtmp,rout,NOFUN1,ierr)
     val = valtmp(1,1)
 
-  !iReceiver exactly at source depth and badly behaved integral
+  !receiver exactly at source depth and badly behaved integral
   else
 
     npieces = getnpieces(r,sz,zr)
@@ -168,7 +168,7 @@ function compute_1val(intfunc,r,sz,zr,ibesord,wellbehaved) result(val)
     CALL BESAUT(intvalre,intvalim,besorder,GAUSLO,GAUSHI,r,intfunc,relerr,abserr,npieces,newint,0,branchpt,ierr)
     val = cmplx(intvalre,intvalim)
 
-  endif !iReceiver depth relative to source depth
+  endif !receiver depth relative to source depth
 
 endfunction compute_1val
 
@@ -198,7 +198,7 @@ function compute_1valr0(intfunc) result(val)
   !Bessel function J1(0) = 0, so no need to enter adaptive integration if besorder =1
 !!$  if (ibesord(1) .ne. 1) then
 
-    !the case that iReceiver is exactly at source point is NOT included - work this out later!!!
+    !the case that receiver is exactly at source point is NOT included - work this out later!!!
 
     ikap = -1 !indicate that we have to recompute all interface refl./transm. coeff.
     !get real part of integral

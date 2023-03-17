@@ -230,7 +230,7 @@ contains
         implicit none
         !
         class( ModelParameterCell_SG_t ), intent( inout ) :: self
-        class( Scalar_t ), allocatable, intent( in ) :: ccond
+        class( Scalar_t ), intent( in ) :: ccond
         !
         call self%cell_cond%add( ccond )
         !

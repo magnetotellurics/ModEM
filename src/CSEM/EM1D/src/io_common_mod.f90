@@ -107,18 +107,18 @@ module io_common_mod
   end type wavelet
 
 
-  !source and iReceiver specifications
+  !source and receiver specifications
   type sorec
     integer(kind=int32)                         :: type   !source type for each source: dipoles, wire, star
-    character(len=namlen)                       :: srcname   !name of source, or dummy name of iReceiver groups
+    character(len=namlen)                       :: srcname   !name of source, or dummy name of receiver groups
     integer(kind=int32)                         :: nwire  !for wire sources: number of wires composing a source
     integer(kind=int32)                         :: ncur   !number of input currents for "star" sources
-    integer(kind=int32),dimension(:),pointer    :: nelem  !number of source/iReceiver points within each "shot":
+    integer(kind=int32),dimension(:),pointer    :: nelem  !number of source/receiver points within each "shot":
                                                                   ! for dipole sources: number of dipole elements
                                                                   ! for wire sources: number of wire elements on each wire
                                                                   ! for receivers: number of receivers
     character(len=namlen),dimension(:),allocatable :: recnames    !names of individual receivers
-    real(kind=real64),dimension(:,:),pointer    :: pos    ! dipole source/iReceiver positions, will be first dim: xyz, 2dn dim: source index
+    real(kind=real64),dimension(:,:),pointer    :: pos    ! dipole source/receiver positions, will be first dim: xyz, 2dn dim: source index
                                                           !  presently first dim: source index, 2dn dim: xyz!!!
     integer(kind=int32),dimension(:,:),pointer  :: ipos   ! positions in grid units, relative to field points
     integer(kind=int32),dimension(:,:),pointer  :: iposstag ! positions in grid units on staggered grids, rel. to field points
@@ -169,13 +169,13 @@ module io_common_mod
 
 
   !source types
-  integer(kind=int32),parameter   :: iReceiver = 0
+  integer(kind=int32),parameter   :: receiver = 0
   integer(kind=int32),parameter   :: dipole = 1
   integer(kind=int32),parameter   :: wire = 2
   integer(kind=int32),parameter   :: star = 3
 
   !source type descriptions
-  character(len=10),dimension(iReceiver:star),parameter  :: srctypestr = (/'receiver','dipole  ','wire    ','star    '/)
+  character(len=10),dimension(receiver:star),parameter  :: srctypestr = (/'receiver','dipole  ','wire    ','star    '/)
 
   !domains for wavelet definition
   integer(kind=int32),parameter   :: timedom = 1

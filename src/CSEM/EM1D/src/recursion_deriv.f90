@@ -68,7 +68,7 @@ complex(kind=real64) function iabvA1TMderiv(kappa) result(res)
   !internal variables
   complex(kind=real64)            :: drefRaTM ! dRa / depsilon_m
   complex(kind=real64)            :: refRaTM  !total reflection response
-  complex(kind=real64)            :: termadd  !additional term if source and/or iReceiver is in layer m
+  complex(kind=real64)            :: termadd  !additional term if source and/or receiver is in layer m
 
   !set vertical wavenumbers and interface reflection coeff.
   call set_fresnelcoef_TM(kappa,pvert)
@@ -79,11 +79,11 @@ complex(kind=real64) function iabvA1TMderiv(kappa) result(res)
   !entire integrand (except for Bessel function, which is handled by zhankl)
   res = sqrt(pvert(ilayrec)*pvert(ilaysrc) / (epsh(ilayrec)*epsh(ilaysrc))) * drefRaTM
 
-  !special contributions if layer m is the source or(and) iReceiver layer
+  !special contributions if layer m is the source or(and) receiver layer
   if ((ilaym.eq.ilayrec) .or. (ilaym.eq.ilaysrc)) then
     refRaTM = iabvA1TM(kappa) !factor sqrt(pvert pvert epsr epsr ...) is contained in integral value
     termadd = 0.5_real64 * (-1./epsh(ilaym) + dmu0/(2.*pvert(ilaym)**2) ) * refRaTM
-    !layer m is iReceiver layer
+    !layer m is receiver layer
     if (ilaym .eq. ilayrec) res = res + termadd
     !layer m is source layer
     if (ilaym .eq. ilaysrc) res = res + termadd
@@ -105,7 +105,7 @@ complex(kind=real64) function iabvA1TMderivh(kappa) result(res)
   !internal variables
   complex(kind=real64)            :: drefRaTM ! dRa / depsilon_m
   complex(kind=real64)            :: refRaTM  !total reflection response
-  complex(kind=real64)            :: termadd  !additional term if source and/or iReceiver is in layer m
+  complex(kind=real64)            :: termadd  !additional term if source and/or receiver is in layer m
   real(kind=real64)               :: phsq     !horiz. slowness
 
   !set vertical wavenumbers and interface reflection coeff.
@@ -117,12 +117,12 @@ complex(kind=real64) function iabvA1TMderivh(kappa) result(res)
   !entire integrand (except for Bessel function, which is handled by zhankl)
   res = sqrt(pvert(ilayrec)*pvert(ilaysrc) / (epsh(ilayrec)*epsh(ilaysrc))) * drefRaTM
 
-  !special contributions if layer m is the source or(and) iReceiver layer
+  !special contributions if layer m is the source or(and) receiver layer
   if ((ilaym.eq.ilayrec) .or. (ilaym.eq.ilaysrc)) then
     refRaTM = iabvA1TM(kappa) !factor sqrt(pvert pvert epsr epsr ...) is contained in integral value
     phsq = (kappa / omega)**2
     termadd = 0.5_real64 * (-1./epsh(ilaym) + (dmu0 - phsq/epsv(ilaym))/(2.*pvert(ilaym)**2) ) * refRaTM
-    !layer m is iReceiver layer
+    !layer m is receiver layer
     if (ilaym .eq. ilayrec) res = res + termadd
     !layer m is source layer
     if (ilaym .eq. ilaysrc) res = res + termadd
@@ -144,7 +144,7 @@ complex(kind=real64) function iabvA1TMderivv(kappa) result(res)
   !internal variables
   complex(kind=real64)            :: drefRaTM ! dRa / depsilon_m
   complex(kind=real64)            :: refRaTM  !total reflection response
-  complex(kind=real64)            :: termadd  !additional term if source and/or iReceiver is in layer m
+  complex(kind=real64)            :: termadd  !additional term if source and/or receiver is in layer m
   real(kind=real64)               :: phsq     !horiz. slowness
 
   !set vertical wavenumbers and interface reflection coeff.
@@ -156,12 +156,12 @@ complex(kind=real64) function iabvA1TMderivv(kappa) result(res)
   !entire integrand (except for Bessel function, which is handled by zhankl)
   res = sqrt(pvert(ilayrec)*pvert(ilaysrc) / (epsh(ilayrec)*epsh(ilaysrc))) * drefRaTM
 
-  !special contributions if layer m is the source or(and) iReceiver layer
+  !special contributions if layer m is the source or(and) receiver layer
   if ((ilaym.eq.ilayrec) .or. (ilaym.eq.ilaysrc)) then
     refRaTM = iabvA1TM(kappa) !factor sqrt(pvert pvert epsr epsr ...) is contained in integral value
     phsq = (kappa / omega)**2
     termadd = (epsh(ilaym)*phsq / (4.* (epsv(ilaym)*pvert(ilaym))**2)) * refRaTM
-    !layer m is iReceiver layer
+    !layer m is receiver layer
     if (ilaym .eq. ilayrec) res = res + termadd
     !layer m is source layer
     if (ilaym .eq. ilaysrc) res = res + termadd
@@ -183,7 +183,7 @@ complex(kind=real64) function iblwA1TMderiv(kappa) result(res)
   !internal variables
   complex(kind=real64)            :: drefRaTM ! dRa / depsilon_m
   complex(kind=real64)            :: refRaTM  !total reflection response
-  complex(kind=real64)            :: termadd  !additional term if source and/or iReceiver is in layer m
+  complex(kind=real64)            :: termadd  !additional term if source and/or receiver is in layer m
 
   !set vertical wavenumbers and interface reflection coeff.
   call set_fresnelcoef_TM(kappa,pvert)
@@ -194,11 +194,11 @@ complex(kind=real64) function iblwA1TMderiv(kappa) result(res)
   !entire integrand (except for Bessel function, which is handled by zhankl)
   res = sqrt(pvert(ilayrec)*pvert(ilaysrc) / (epsh(ilayrec)*epsh(ilaysrc))) * drefRaTM
 
-  !special contributions if layer m is the source or(and) iReceiver layer
+  !special contributions if layer m is the source or(and) receiver layer
   if ((ilaym.eq.ilayrec) .or. (ilaym.eq.ilaysrc)) then
     refRaTM = iblwA1TM(kappa) !factor sqrt(pvert pvert epsr epsr ...) is contained in integral value
     termadd = 0.5_real64 * (-1./epsh(ilaym) + dmu0/(2.*pvert(ilaym)**2) ) * refRaTM
-    !layer m is iReceiver layer
+    !layer m is receiver layer
     if (ilaym .eq. ilayrec) res = res + termadd
     !layer m is source layer
     if (ilaym .eq. ilaysrc) res = res + termadd
@@ -220,7 +220,7 @@ complex(kind=real64) function iblwA1TMderivh(kappa) result(res)
   !internal variables
   complex(kind=real64)            :: drefRaTM ! dRa / depsilon_m
   complex(kind=real64)            :: refRaTM  !total reflection response
-  complex(kind=real64)            :: termadd  !additional term if source and/or iReceiver is in layer m
+  complex(kind=real64)            :: termadd  !additional term if source and/or receiver is in layer m
   real(kind=real64)               :: phsq     !horiz. slowness
 
   !set vertical wavenumbers and interface reflection coeff.
@@ -232,12 +232,12 @@ complex(kind=real64) function iblwA1TMderivh(kappa) result(res)
   !entire integrand (except for Bessel function, which is handled by zhankl)
   res = sqrt(pvert(ilayrec)*pvert(ilaysrc) / (epsh(ilayrec)*epsh(ilaysrc))) * drefRaTM
 
-  !special contributions if layer m is the source or(and) iReceiver layer
+  !special contributions if layer m is the source or(and) receiver layer
   if ((ilaym.eq.ilayrec) .or. (ilaym.eq.ilaysrc)) then
     refRaTM = iblwA1TM(kappa) !factor sqrt(pvert pvert epsr epsr ...) is contained in integral value
     phsq = (kappa / omega)**2
     termadd = 0.5_real64 * (-1./epsh(ilaym) + (dmu0 - phsq/epsv(ilaym))/(2.*pvert(ilaym)**2) ) * refRaTM
-    !layer m is iReceiver layer
+    !layer m is receiver layer
     if (ilaym .eq. ilayrec) res = res + termadd
     !layer m is source layer
     if (ilaym .eq. ilaysrc) res = res + termadd
@@ -259,7 +259,7 @@ complex(kind=real64) function iblwA1TMderivv(kappa) result(res)
   !internal variables
   complex(kind=real64)            :: drefRaTM ! dRa / depsilon_m
   complex(kind=real64)            :: refRaTM  !total reflection response
-  complex(kind=real64)            :: termadd  !additional term if source and/or iReceiver is in layer m
+  complex(kind=real64)            :: termadd  !additional term if source and/or receiver is in layer m
   real(Kind=real64)               :: phsq     !horiz. slowness
 
   !set vertical wavenumbers and interface reflection coeff.
@@ -271,12 +271,12 @@ complex(kind=real64) function iblwA1TMderivv(kappa) result(res)
   !entire integrand (except for Bessel function, which is handled by zhankl)
   res = sqrt(pvert(ilayrec)*pvert(ilaysrc) / (epsh(ilayrec)*epsh(ilaysrc))) * drefRaTM
 
-  !special contributions if layer m is the source or(and) iReceiver layer
+  !special contributions if layer m is the source or(and) receiver layer
   if ((ilaym.eq.ilayrec) .or. (ilaym.eq.ilaysrc)) then
     refRaTM = iblwA1TM(kappa) !factor sqrt(pvert pvert epsr epsr ...) is contained in integral value
     phsq = (kappa / omega)**2
     termadd = (epsh(ilaym)*phsq / (4.* (epsv(ilaym)*pvert(ilaym))**2)) * refRaTM
-    !layer m is iReceiver layer
+    !layer m is receiver layer
     if (ilaym .eq. ilayrec) res = res + termadd
     !layer m is source layer
     if (ilaym .eq. ilaysrc) res = res + termadd
@@ -323,7 +323,7 @@ complex(kind=real64) function iabvA1TEderiv(kappa) result(res)
   !internal variables
   complex(kind=real64)            :: drefRaTE ! dRa / depsilon_m
   complex(kind=real64)            :: refRaTE  !total reflection response
-  complex(kind=real64)            :: termadd  !additional term if source and/or iReceiver is in layer m
+  complex(kind=real64)            :: termadd  !additional term if source and/or receiver is in layer m
 
   !set vertical wavenumbers and interface reflection coeff.
   call set_fresnelcoef_TE(kappa,pvert)
@@ -334,11 +334,11 @@ complex(kind=real64) function iabvA1TEderiv(kappa) result(res)
   !entire integrand (except for Bessel function, which is handled by zhankl)
   res = (dmu0 / sqrt(pvert(ilayrec)*pvert(ilaysrc))) * drefRaTE
 
-  !special contributions if layer m is the source or(and) iReceiver layer
+  !special contributions if layer m is the source or(and) receiver layer
   if ((ilaym.eq.ilayrec) .or. (ilaym.eq.ilaysrc)) then
     refRaTE = iabvA1TE(kappa) !factor sqrt(pvert pvert epsr epsr ...) is contained in integral value
     termadd = (dmu0 / (4.*pvert(ilaym)**2) ) * refRaTE
-    !layer m is iReceiver layer
+    !layer m is receiver layer
     if (ilaym .eq. ilayrec) res = res - termadd
     !layer m is source layer
     if (ilaym .eq. ilaysrc) res = res - termadd
@@ -360,7 +360,7 @@ complex(kind=real64) function iblwA1TEderiv(kappa) result(res)
   !internal variables
   complex(kind=real64)            :: drefRaTE ! dRa / depsilon_m
   complex(kind=real64)            :: refRaTE  !total reflection response
-  complex(kind=real64)            :: termadd  !additional term if source and/or iReceiver is in layer m
+  complex(kind=real64)            :: termadd  !additional term if source and/or receiver is in layer m
 
   !set vertical wavenumbers and interface reflection coeff.
   call set_fresnelcoef_TE(kappa,pvert)
@@ -371,11 +371,11 @@ complex(kind=real64) function iblwA1TEderiv(kappa) result(res)
   !entire integrand (except for Bessel function, which is handled by zhankl)
   res = (dmu0 / sqrt(pvert(ilayrec)*pvert(ilaysrc))) * drefRaTE
 
-  !special contributions if layer m is the source or(and) iReceiver layer
+  !special contributions if layer m is the source or(and) receiver layer
   if ((ilaym.eq.ilayrec) .or. (ilaym.eq.ilaysrc)) then
     refRaTE = iblwA1TE(kappa) !factor sqrt(pvert pvert epsr epsr ...) is contained in integral value
     termadd = (dmu0 / (4.*pvert(ilaym)**2) ) * refRaTE
-    !layer m is iReceiver layer
+    !layer m is receiver layer
     if (ilaym .eq. ilayrec) res = res - termadd
     !layer m is source layer
     if (ilaym .eq. ilaysrc) res = res - termadd
@@ -447,7 +447,7 @@ complex(kind=real64) function iabvD1TEderiv(kappa) result(res)
   !internal variables
   complex(kind=real64)            :: drefRdTE ! dRa / depsilon_m
   complex(kind=real64)            :: refRdTE  !total reflection response
-  complex(kind=real64)            :: termadd  !additional term if source and/or iReceiver is in layer m
+  complex(kind=real64)            :: termadd  !additional term if source and/or receiver is in layer m
 
   !set vertical wavenumbers and interface reflection coeff.
   call set_fresnelcoef_TE(kappa,pvert)
@@ -458,11 +458,11 @@ complex(kind=real64) function iabvD1TEderiv(kappa) result(res)
   !entire integrand (except for Bessel function, which is handled by zhankl)
   res = - sqrt(pvert(ilayrec)/pvert(ilaysrc)) * drefRdTE
 
-  !special contributions if layer m is the source or(and) iReceiver layer
+  !special contributions if layer m is the source or(and) receiver layer
   if ((ilaym.eq.ilayrec) .or. (ilaym.eq.ilaysrc)) then
     refRdTE = iabvD1TE(kappa) !factor sqrt(pvert pvert epsr epsr ...) is contained in integral value
     termadd = (dmu0 / (4.*pvert(ilaym)**2)) * refRdTE !"minus" is contained in refRdTE
-    !layer m is iReceiver layer
+    !layer m is receiver layer
     if (ilaym .eq. ilayrec) res = res + termadd
     !layer m is source layer
     if (ilaym .eq. ilaysrc) res = res - termadd !"minus" is contained in refRdTE
@@ -484,7 +484,7 @@ complex(kind=real64) function iblwD1TEderiv(kappa) result(res)
   !internal variables
   complex(kind=real64)            :: drefRdTE ! dRa / depsilon_m
   complex(kind=real64)            :: refRdTE  !total reflection response
-  complex(kind=real64)            :: termadd  !additional term if source and/or iReceiver is in layer m
+  complex(kind=real64)            :: termadd  !additional term if source and/or receiver is in layer m
 
   !set vertical wavenumbers and interface reflection coeff.
   call set_fresnelcoef_TE(kappa,pvert)
@@ -495,11 +495,11 @@ complex(kind=real64) function iblwD1TEderiv(kappa) result(res)
   !entire integrand (except for Bessel function, which is handled by zhankl)
   res = - sqrt(pvert(ilayrec)/pvert(ilaysrc)) * drefRdTE
 
-  !special contributions if layer m is the source or(and) iReceiver layer
+  !special contributions if layer m is the source or(and) receiver layer
   if ((ilaym.eq.ilayrec) .or. (ilaym.eq.ilaysrc)) then
     refRdTE = iblwD1TE(kappa)
     termadd = (dmu0 / (4.*pvert(ilaym)**2)) * refRdTE !"minus" is contained in refRdTE
-    !layer m is iReceiver layer
+    !layer m is receiver layer
     if (ilaym .eq. ilayrec) res = res + termadd
     !layer m is source layer
     if (ilaym .eq. ilaysrc) res = res - termadd !"minus" is contained in refRdTE
@@ -576,7 +576,7 @@ complex(kind=real64) function iabvD1TMderiv(kappa) result(res)
   !internal variables
   complex(kind=real64)            :: drefRdTM ! dRa / depsilon_m
   complex(kind=real64)            :: refRdTM  !total reflection response
-  complex(kind=real64)            :: termadd  !additional term if source and/or iReceiver is in layer m
+  complex(kind=real64)            :: termadd  !additional term if source and/or receiver is in layer m
 
   !set vertical wavenumbers and interface reflection coeff.
   call set_fresnelcoef_TM(kappa,pvert)
@@ -587,11 +587,11 @@ complex(kind=real64) function iabvD1TMderiv(kappa) result(res)
   !entire integrand (except for Bessel function, which is handled by zhankl)
   res = - sqrt(epsh(ilayrec)*pvert(ilaysrc) / (pvert(ilayrec)*epsh(ilaysrc))) * drefRdTM
 
-  !special contributions if layer m is the source or(and) iReceiver layer
+  !special contributions if layer m is the source or(and) receiver layer
   if ((ilaym.eq.ilayrec) .or. (ilaym.eq.ilaysrc)) then
     refRdTM = iabvD1TM(kappa) !contains a minus
     termadd = (1./(2.*epsh(ilaym)) - dmu0/(4.*pvert(ilaym)**2)) * refRdTM
-    !layer m is iReceiver layer
+    !layer m is receiver layer
     if (ilaym .eq. ilayrec) res = res + termadd
     !layer m is source layer
     if (ilaym .eq. ilaysrc) res = res - termadd
@@ -613,7 +613,7 @@ complex(kind=real64) function iabvD1TMderivh(kappa) result(res)
   !internal variables
   complex(kind=real64)            :: drefRdTM ! dRa / depsilon_m
   complex(kind=real64)            :: refRdTM  !total reflection response
-  complex(kind=real64)            :: termadd  !additional term if source and/or iReceiver is in layer m
+  complex(kind=real64)            :: termadd  !additional term if source and/or receiver is in layer m
   real(kind=real64)               :: phsq     !horiz. slowness
 
   !set vertical wavenumbers and interface reflection coeff.
@@ -625,12 +625,12 @@ complex(kind=real64) function iabvD1TMderivh(kappa) result(res)
   !entire integrand (except for Bessel function, which is handled by zhankl)
   res = - sqrt(epsh(ilayrec)*pvert(ilaysrc) / (pvert(ilayrec)*epsh(ilaysrc))) * drefRdTM
 
-  !special contributions if layer m is the source or(and) iReceiver layer
+  !special contributions if layer m is the source or(and) receiver layer
   if ((ilaym.eq.ilayrec) .or. (ilaym.eq.ilaysrc)) then
     refRdTM = iabvD1TM(kappa) !contains a minus
     phsq = (kappa / omega)**2
     termadd = (1./(2.*epsh(ilaym)) - (dmu0 - phsq/epsv(ilaym))/(4.*pvert(ilaym)**2)) * refRdTM
-    !layer m is iReceiver layer
+    !layer m is receiver layer
     if (ilaym .eq. ilayrec) res = res + termadd
     !layer m is source layer
     if (ilaym .eq. ilaysrc) res = res - termadd
@@ -652,7 +652,7 @@ complex(kind=real64) function iabvD1TMderivv(kappa) result(res)
   !internal variables
   complex(kind=real64)            :: drefRdTM ! dRa / depsilon_m
   complex(kind=real64)            :: refRdTM  !total reflection response
-  complex(kind=real64)            :: termadd  !additional term if source and/or iReceiver is in layer m
+  complex(kind=real64)            :: termadd  !additional term if source and/or receiver is in layer m
   real(kind=real64)               :: phsq     !horiz. slowness
 
   !set vertical wavenumbers and interface reflection coeff.
@@ -664,13 +664,13 @@ complex(kind=real64) function iabvD1TMderivv(kappa) result(res)
   !entire integrand (except for Bessel function, which is handled by zhankl)
   res = - sqrt(epsh(ilayrec)*pvert(ilaysrc) / (pvert(ilayrec)*epsh(ilaysrc))) * drefRdTM
 
-  !special contributions if layer m is the source or(and) iReceiver layer
+  !special contributions if layer m is the source or(and) receiver layer
   if ((ilaym.eq.ilayrec) .or. (ilaym.eq.ilaysrc)) then
     refRdTM = iabvD1TM(kappa) !contains a minus
     phsq = (kappa / omega)**2
     !include minus here, then +/- termadd is the same as for epsh
     termadd = (- epsh(ilaym)*phsq / (4.* (epsv(ilaym)*pvert(ilaym))**2)) * refRdTM
-    !layer m is iReceiver layer
+    !layer m is receiver layer
     if (ilaym .eq. ilayrec) res = res + termadd
     !layer m is source layer
     if (ilaym .eq. ilaysrc) res = res - termadd
@@ -691,7 +691,7 @@ complex(kind=real64) function iblwD1TMderiv(kappa) result(res)
   !internal variables
   complex(kind=real64)            :: drefRdTM ! dRa / depsilon_m
   complex(kind=real64)            :: refRdTM  !total reflection response
-  complex(kind=real64)            :: termadd  !additional term if source and/or iReceiver is in layer m
+  complex(kind=real64)            :: termadd  !additional term if source and/or receiver is in layer m
 
   !set vertical wavenumbers and interface reflection coeff.
   call set_fresnelcoef_TM(kappa,pvert)
@@ -702,11 +702,11 @@ complex(kind=real64) function iblwD1TMderiv(kappa) result(res)
   !entire integrand (except for Bessel function, which is handled by zhankl)
   res = - sqrt(epsh(ilayrec)*pvert(ilaysrc) / (pvert(ilayrec)*epsh(ilaysrc))) * drefRdTM
 
-  !special contributions if layer m is the source or(and) iReceiver layer
+  !special contributions if layer m is the source or(and) receiver layer
   if ((ilaym.eq.ilayrec) .or. (ilaym.eq.ilaysrc)) then
     refRdTM = iblwD1TM(kappa) !contains a minus
     termadd = (1./(2.*epsh(ilaym)) - dmu0/(4.*pvert(ilaym)**2)) * refRdTM
-    !layer m is iReceiver layer
+    !layer m is receiver layer
     if (ilaym .eq. ilayrec) res = res + termadd
     !layer m is source layer
     if (ilaym .eq. ilaysrc) res = res - termadd
@@ -727,7 +727,7 @@ complex(kind=real64) function iblwD1TMderivh(kappa) result(res)
   !internal variables
   complex(kind=real64)            :: drefRdTM ! dRa / depsilon_m
   complex(kind=real64)            :: refRdTM  !total reflection response
-  complex(kind=real64)            :: termadd  !additional term if source and/or iReceiver is in layer m
+  complex(kind=real64)            :: termadd  !additional term if source and/or receiver is in layer m
   real(kind=real64)               :: phsq     !horiz. slowness
 
   !set vertical wavenumbers and interface reflection coeff.
@@ -739,12 +739,12 @@ complex(kind=real64) function iblwD1TMderivh(kappa) result(res)
   !entire integrand (except for Bessel function, which is handled by zhankl)
   res = - sqrt(epsh(ilayrec)*pvert(ilaysrc) / (pvert(ilayrec)*epsh(ilaysrc))) * drefRdTM
 
-  !special contributions if layer m is the source or(and) iReceiver layer
+  !special contributions if layer m is the source or(and) receiver layer
   if ((ilaym.eq.ilayrec) .or. (ilaym.eq.ilaysrc)) then
     refRdTM = iblwD1TM(kappa) !contains a minus
     phsq = (kappa / omega)**2
     termadd = (1./(2.*epsh(ilaym)) - (dmu0 - phsq/epsv(ilaym))/(4.*pvert(ilaym)**2)) * refRdTM
-    !layer m is iReceiver layer
+    !layer m is receiver layer
     if (ilaym .eq. ilayrec) res = res + termadd
     !layer m is source layer
     if (ilaym .eq. ilaysrc) res = res - termadd
@@ -765,7 +765,7 @@ complex(kind=real64) function iblwD1TMderivv(kappa) result(res)
   !internal variables
   complex(kind=real64)            :: drefRdTM ! dRa / depsilon_m
   complex(kind=real64)            :: refRdTM  !total reflection response
-  complex(kind=real64)            :: termadd  !additional term if source and/or iReceiver is in layer m
+  complex(kind=real64)            :: termadd  !additional term if source and/or receiver is in layer m
   real(kind=real64)               :: phsq     !horiz. slowness
 
   !set vertical wavenumbers and interface reflection coeff.
@@ -777,13 +777,13 @@ complex(kind=real64) function iblwD1TMderivv(kappa) result(res)
   !entire integrand (except for Bessel function, which is handled by zhankl)
   res = - sqrt(epsh(ilayrec)*pvert(ilaysrc) / (pvert(ilayrec)*epsh(ilaysrc))) * drefRdTM
 
-  !special contributions if layer m is the source or(and) iReceiver layer
+  !special contributions if layer m is the source or(and) receiver layer
   if ((ilaym.eq.ilayrec) .or. (ilaym.eq.ilaysrc)) then
     refRdTM = iblwD1TM(kappa) !contains a minus
     phsq = (kappa / omega)**2
     !include minus here, then +/- termadd is the same as for epsh
     termadd = (- epsh(ilaym)*phsq / (4.* (epsv(ilaym)*pvert(ilaym))**2)) * refRdTM
-    !layer m is iReceiver layer
+    !layer m is receiver layer
     if (ilaym .eq. ilayrec) res = res + termadd
     !layer m is source layer
     if (ilaym .eq. ilaysrc) res = res - termadd
@@ -885,7 +885,7 @@ complex(kind=real64) function iabvB1TEderiv(kappa) result(res)
   !internal variables
   complex(kind=real64)            :: drefRbTE ! dRa / depsilon_m
   complex(kind=real64)            :: refRbTE  !total reflection response
-  complex(kind=real64)            :: termadd  !additional term if source and/or iReceiver is in layer m
+  complex(kind=real64)            :: termadd  !additional term if source and/or receiver is in layer m
 
   !set vertical wavenumbers and interface reflection coeff.
   call set_fresnelcoef_TE(kappa,pvert)
@@ -896,11 +896,11 @@ complex(kind=real64) function iabvB1TEderiv(kappa) result(res)
   !entire integrand (except for Bessel function, which is handled by zhankl)
   res = sqrt(pvert(ilaysrc)/pvert(ilayrec)) * drefRbTE
 
-  !special contributions if layer m is the source or(and) iReceiver layer
+  !special contributions if layer m is the source or(and) receiver layer
   if ((ilaym.eq.ilayrec) .or. (ilaym.eq.ilaysrc)) then
     refRbTE = iabvB1TE(kappa)
     termadd = (dmu0 / (4.*pvert(ilaym)**2)) * refRbTE
-    !layer m is iReceiver layer
+    !layer m is receiver layer
     if (ilaym .eq. ilayrec) res = res - termadd
     !layer m is source layer
     if (ilaym .eq. ilaysrc) res = res + termadd
@@ -921,7 +921,7 @@ complex(kind=real64) function iblwB1TEderiv(kappa) result(res)
   !internal variables
   complex(kind=real64)            :: drefRbTE ! dRa / depsilon_m
   complex(kind=real64)            :: refRbTE  !total reflection response
-  complex(kind=real64)            :: termadd  !additional term if source and/or iReceiver is in layer m
+  complex(kind=real64)            :: termadd  !additional term if source and/or receiver is in layer m
 
   !set vertical wavenumbers and interface reflection coeff.
   call set_fresnelcoef_TE(kappa,pvert)
@@ -932,11 +932,11 @@ complex(kind=real64) function iblwB1TEderiv(kappa) result(res)
   !entire integrand (except for Bessel function, which is handled by zhankl)
   res = sqrt(pvert(ilaysrc)/pvert(ilayrec)) * drefRbTE
 
-  !special contributions if layer m is the source or(and) iReceiver layer
+  !special contributions if layer m is the source or(and) receiver layer
   if ((ilaym.eq.ilayrec) .or. (ilaym.eq.ilaysrc)) then
     refRbTE = iblwB1TE(kappa)
     termadd = (dmu0 / (4.*pvert(ilaym)**2)) * refRbTE
-    !layer m is iReceiver layer
+    !layer m is receiver layer
     if (ilaym .eq. ilayrec) res = res - termadd
     !layer m is source layer
     if (ilaym .eq. ilaysrc) res = res + termadd
@@ -1039,7 +1039,7 @@ complex(kind=real64) function iabvB1TMderiv(kappa) result(res)
   !internal variables
   complex(kind=real64)            :: drefRbTM ! dRa / depsilon_m
   complex(kind=real64)            :: refRbTM  !total reflection response
-  complex(kind=real64)            :: termadd  !additional term if source and/or iReceiver is in layer m
+  complex(kind=real64)            :: termadd  !additional term if source and/or receiver is in layer m
 
   !set vertical wavenumbers and interface reflection coeff.
   call set_fresnelcoef_TM(kappa,pvert)
@@ -1050,11 +1050,11 @@ complex(kind=real64) function iabvB1TMderiv(kappa) result(res)
   !entire integrand (except for Bessel function, which is handled by zhankl)
   res = sqrt(pvert(ilayrec)*epsh(ilaysrc) / (epsh(ilayrec)*pvert(ilaysrc))) * drefRbTM
 
-  !special contributions if layer m is the source or(and) iReceiver layer
+  !special contributions if layer m is the source or(and) receiver layer
   if ((ilaym.eq.ilayrec) .or. (ilaym.eq.ilaysrc)) then
     refRbTM = iabvB1TM(kappa)
     termadd = (1./(2.*epsh(ilaym)) - dmu0/(4.*pvert(ilaym)**2)) * refRbTM
-    !layer m is iReceiver layer
+    !layer m is receiver layer
     if (ilaym .eq. ilayrec) res = res - termadd
     !layer m is source layer
     if (ilaym .eq. ilaysrc) res = res + termadd
@@ -1075,7 +1075,7 @@ complex(kind=real64) function iabvB1TMderivh(kappa) result(res)
   !internal variables
   complex(kind=real64)            :: drefRbTM ! dRa / depsilon_m
   complex(kind=real64)            :: refRbTM  !total reflection response
-  complex(kind=real64)            :: termadd  !additional term if source and/or iReceiver is in layer m
+  complex(kind=real64)            :: termadd  !additional term if source and/or receiver is in layer m
   real(kind=real64)   :: phsq  !horiz. slowness
 
   !set vertical wavenumbers and interface reflection coeff.
@@ -1087,12 +1087,12 @@ complex(kind=real64) function iabvB1TMderivh(kappa) result(res)
   !entire integrand (except for Bessel function, which is handled by zhankl)
   res = sqrt(pvert(ilayrec)*epsh(ilaysrc) / (epsh(ilayrec)*pvert(ilaysrc))) * drefRbTM
 
-  !special contributions if layer m is the source or(and) iReceiver layer
+  !special contributions if layer m is the source or(and) receiver layer
   if ((ilaym.eq.ilayrec) .or. (ilaym.eq.ilaysrc)) then
     refRbTM = iabvB1TM(kappa)
     phsq = (kappa / omega)**2
     termadd = (1./(2.*epsh(ilaym)) - (dmu0 - phsq/epsv(ilaym))/(4.*pvert(ilaym)**2)) * refRbTM
-    !layer m is iReceiver layer
+    !layer m is receiver layer
     if (ilaym .eq. ilayrec) res = res - termadd
     !layer m is source layer
     if (ilaym .eq. ilaysrc) res = res + termadd
@@ -1114,7 +1114,7 @@ complex(kind=real64) function iabvB1TMderivv(kappa) result(res)
   !internal variables
   complex(kind=real64)            :: drefRbTM ! dRa / depsilon_m
   complex(kind=real64)            :: refRbTM  !total reflection response
-  complex(kind=real64)            :: termadd  !additional term if source and/or iReceiver is in layer m
+  complex(kind=real64)            :: termadd  !additional term if source and/or receiver is in layer m
   real(Kind=real64)   :: phsq   !horiz. slowness
 
   !set vertical wavenumbers and interface reflection coeff.
@@ -1126,12 +1126,12 @@ complex(kind=real64) function iabvB1TMderivv(kappa) result(res)
   !entire integrand (except for Bessel function, which is handled by zhankl)
   res = sqrt(pvert(ilayrec)*epsh(ilaysrc) / (epsh(ilayrec)*pvert(ilaysrc))) * drefRbTM
 
-  !special contributions if layer m is the source or(and) iReceiver layer
+  !special contributions if layer m is the source or(and) receiver layer
   if ((ilaym.eq.ilayrec) .or. (ilaym.eq.ilaysrc)) then
     refRbTM = iabvB1TM(kappa)
     phsq = (kappa / omega)**2
     termadd = (- epsh(ilaym)*phsq / (4.* (epsv(ilaym) * pvert(ilaym))**2)) * refRbTM
-    !layer m is iReceiver layer
+    !layer m is receiver layer
     if (ilaym .eq. ilayrec) res = res - termadd
     !layer m is source layer
     if (ilaym .eq. ilaysrc) res = res + termadd
@@ -1152,7 +1152,7 @@ complex(kind=real64) function iblwB1TMderiv(kappa) result(res)
   !internal variables
   complex(kind=real64)            :: drefRbTM ! dRa / depsilon_m
   complex(kind=real64)            :: refRbTM  !total reflection response
-  complex(kind=real64)            :: termadd  !additional term if source and/or iReceiver is in layer m
+  complex(kind=real64)            :: termadd  !additional term if source and/or receiver is in layer m
 
   !set vertical wavenumbers and interface reflection coeff.
   call set_fresnelcoef_TM(kappa,pvert)
@@ -1163,11 +1163,11 @@ complex(kind=real64) function iblwB1TMderiv(kappa) result(res)
   !entire integrand (except for Bessel function, which is handled by zhankl)
   res = sqrt(pvert(ilayrec)*epsh(ilaysrc) / (epsh(ilayrec)*pvert(ilaysrc))) * drefRbTM
 
-  !special contributions if layer m is the source or(and) iReceiver layer
+  !special contributions if layer m is the source or(and) receiver layer
   if ((ilaym.eq.ilayrec) .or. (ilaym.eq.ilaysrc)) then
     refRbTM = iblwB1TM(kappa)
     termadd = (1./(2.*epsh(ilaym)) - dmu0/(4.*pvert(ilaym)**2)) * refRbTM
-    !layer m is iReceiver layer
+    !layer m is receiver layer
     if (ilaym .eq. ilayrec) res = res - termadd
     !layer m is source layer
     if (ilaym .eq. ilaysrc) res = res + termadd
@@ -1189,7 +1189,7 @@ complex(kind=real64) function iblwB1TMderivh(kappa) result(res)
   !internal variables
   complex(kind=real64)            :: drefRbTM ! dRa / depsilon_m
   complex(kind=real64)            :: refRbTM  !total reflection response
-  complex(kind=real64)            :: termadd  !additional term if source and/or iReceiver is in layer m
+  complex(kind=real64)            :: termadd  !additional term if source and/or receiver is in layer m
   real(kind=real64)  :: phsq  !horiz. slowness
 
   !set vertical wavenumbers and interface reflection coeff.
@@ -1201,12 +1201,12 @@ complex(kind=real64) function iblwB1TMderivh(kappa) result(res)
   !entire integrand (except for Bessel function, which is handled by zhankl)
   res = sqrt(pvert(ilayrec)*epsh(ilaysrc) / (epsh(ilayrec)*pvert(ilaysrc))) * drefRbTM
 
-  !special contributions if layer m is the source or(and) iReceiver layer
+  !special contributions if layer m is the source or(and) receiver layer
   if ((ilaym.eq.ilayrec) .or. (ilaym.eq.ilaysrc)) then
     refRbTM = iblwB1TM(kappa)
     phsq = (kappa / omega)**2
     termadd = (1./(2.*epsh(ilaym)) - (dmu0 - phsq/epsv(ilaym))/(4.*pvert(ilaym)**2)) * refRbTM
-    !layer m is iReceiver layer
+    !layer m is receiver layer
     if (ilaym .eq. ilayrec) res = res - termadd
     !layer m is source layer
     if (ilaym .eq. ilaysrc) res = res + termadd
@@ -1228,7 +1228,7 @@ complex(kind=real64) function iblwB1TMderivv(kappa) result(res)
   !internal variables
   complex(kind=real64)            :: drefRbTM ! dRa / depsilon_m
   complex(kind=real64)            :: refRbTM  !total reflection response
-  complex(kind=real64)            :: termadd  !additional term if source and/or iReceiver is in layer m
+  complex(kind=real64)            :: termadd  !additional term if source and/or receiver is in layer m
   real(kind=real64)  :: phsq  !horiz. slowness
 
   !set vertical wavenumbers and interface reflection coeff.
@@ -1240,12 +1240,12 @@ complex(kind=real64) function iblwB1TMderivv(kappa) result(res)
   !entire integrand (except for Bessel function, which is handled by zhankl)
   res = sqrt(pvert(ilayrec)*epsh(ilaysrc) / (epsh(ilayrec)*pvert(ilaysrc))) * drefRbTM
 
-  !special contributions if layer m is the source or(and) iReceiver layer
+  !special contributions if layer m is the source or(and) receiver layer
   if ((ilaym.eq.ilayrec) .or. (ilaym.eq.ilaysrc)) then
     refRbTM = iblwB1TM(kappa)
     phsq = (kappa / omega)**2
     termadd = (- epsh(ilaym)*phsq / (4.* (epsv(ilaym) * pvert(ilaym))**2)) * refRbTM
-    !layer m is iReceiver layer
+    !layer m is receiver layer
     if (ilaym .eq. ilayrec) res = res - termadd
     !layer m is source layer
     if (ilaym .eq. ilaysrc) res = res + termadd
@@ -1291,7 +1291,7 @@ complex(kind=real64) function iabvC1TEderiv(kappa) result(res)
   !internal variables
   complex(kind=real64)            :: drefRcTE ! dRa / depsilon_m
   complex(kind=real64)            :: refRcTE  !total reflection response
-  complex(kind=real64)            :: termadd  !additional term if source and/or iReceiver is in layer m
+  complex(kind=real64)            :: termadd  !additional term if source and/or receiver is in layer m
 
   !set vertical wavenumbers and interface reflection coeff.
   call set_fresnelcoef_TE(kappa,pvert)
@@ -1302,11 +1302,11 @@ complex(kind=real64) function iabvC1TEderiv(kappa) result(res)
   !entire integrand (except for Bessel function, which is handled by zhankl)
   res = - (sqrt(pvert(ilayrec)*pvert(ilaysrc)) / dmu0) * drefRcTE
 
-  !special contributions if layer m is the source or(and) iReceiver layer
+  !special contributions if layer m is the source or(and) receiver layer
   if ((ilaym.eq.ilayrec) .or. (ilaym.eq.ilaysrc)) then
     refRcTE = iabvC1TE(kappa) !contains a minus
     termadd = (dmu0 / (4.*pvert(ilaym)**2)) * refRcTE
-    !layer m is iReceiver layer
+    !layer m is receiver layer
     if (ilaym .eq. ilayrec) res = res + termadd
     !layer m is source layer
     if (ilaym .eq. ilaysrc) res = res + termadd
@@ -1327,7 +1327,7 @@ complex(kind=real64) function iblwC1TEderiv(kappa) result(res)
   !internal variables
   complex(kind=real64)            :: drefRcTE ! dRa / depsilon_m
   complex(kind=real64)            :: refRcTE  !total reflection response
-  complex(kind=real64)            :: termadd  !additional term if source and/or iReceiver is in layer m
+  complex(kind=real64)            :: termadd  !additional term if source and/or receiver is in layer m
 
   !set vertical wavenumbers and interface reflection coeff.
   call set_fresnelcoef_TE(kappa,pvert)
@@ -1338,11 +1338,11 @@ complex(kind=real64) function iblwC1TEderiv(kappa) result(res)
   !entire integrand (except for Bessel function, which is handled by zhankl)
   res = - (sqrt(pvert(ilayrec)*pvert(ilaysrc)) / dmu0) * drefRcTE
 
-  !special contributions if layer m is the source or(and) iReceiver layer
+  !special contributions if layer m is the source or(and) receiver layer
   if ((ilaym.eq.ilayrec) .or. (ilaym.eq.ilaysrc)) then
     refRcTE = iblwC1TE(kappa) !contains  aminus
     termadd = (dmu0 / (4.*pvert(ilaym)**2)) * refRcTE
-    !layer m is iReceiver layer
+    !layer m is receiver layer
     if (ilaym .eq. ilayrec) res = res + termadd
     !layer m is source layer
     if (ilaym .eq. ilaysrc) res = res + termadd
@@ -1420,7 +1420,7 @@ complex(kind=real64) function iabvC1TMderiv(kappa) result(res)
   !internal variables
   complex(kind=real64)            :: drefRcTM ! dRc / depsilon_m
   complex(kind=real64)            :: refRcTM  !total reflection response
-  complex(kind=real64)            :: termadd  !additional term if source and/or iReceiver is in layer m
+  complex(kind=real64)            :: termadd  !additional term if source and/or receiver is in layer m
 
   !set vertical wavenumbers and interface reflection coeff.
   call set_fresnelcoef_TM(kappa,pvert)
@@ -1431,11 +1431,11 @@ complex(kind=real64) function iabvC1TMderiv(kappa) result(res)
   !entire integrand (except for Bessel function, which is handled by zhankl)
   res = - sqrt(epsh(ilayrec)*epsh(ilaysrc) / (pvert(ilayrec)*pvert(ilaysrc))) * drefRcTM
 
-  !special contributions if layer m is the source or(and) iReceiver layer
+  !special contributions if layer m is the source or(and) receiver layer
   if ((ilaym.eq.ilayrec) .or. (ilaym.eq.ilaysrc)) then
     refRcTM = iabvC1TM(kappa) !contains a minus
     termadd = (1./(2.*epsh(ilaym)) - dmu0/(4.*pvert(ilaym)**2)) * refRcTM
-    !layer m is iReceiver layer
+    !layer m is receiver layer
     if (ilaym .eq. ilayrec) res = res + termadd
     !layer m is source layer
     if (ilaym .eq. ilaysrc) res = res + termadd
@@ -1457,7 +1457,7 @@ complex(kind=real64) function iabvC1TMderivh(kappa) result(res)
   !internal variables
   complex(kind=real64)            :: drefRcTM ! dRc / depsilon_m
   complex(kind=real64)            :: refRcTM  !total reflection response
-  complex(kind=real64)            :: termadd  !additional term if source and/or iReceiver is in layer m
+  complex(kind=real64)            :: termadd  !additional term if source and/or receiver is in layer m
   real(kind=real64)   :: phsq   !horiz. slowness
 
   !set vertical wavenumbers and interface reflection coeff.
@@ -1469,12 +1469,12 @@ complex(kind=real64) function iabvC1TMderivh(kappa) result(res)
   !entire integrand (except for Bessel function, which is handled by zhankl)
   res = - sqrt(epsh(ilayrec)*epsh(ilaysrc) / (pvert(ilayrec)*pvert(ilaysrc))) * drefRcTM
 
-  !special contributions if layer m is the source or(and) iReceiver layer
+  !special contributions if layer m is the source or(and) receiver layer
   if ((ilaym.eq.ilayrec) .or. (ilaym.eq.ilaysrc)) then
     refRcTM = iabvC1TM(kappa) !contains a minus
     phsq = (kappa / omega)**2
     termadd = (1./(2.*epsh(ilaym)) - (dmu0 - phsq/epsv(ilaym))/(4.*pvert(ilaym)**2)) * refRcTM
-    !layer m is iReceiver layer
+    !layer m is receiver layer
     if (ilaym .eq. ilayrec) res = res + termadd
     !layer m is source layer
     if (ilaym .eq. ilaysrc) res = res + termadd
@@ -1496,7 +1496,7 @@ complex(kind=real64) function iabvC1TMderivv(kappa) result(res)
   !internal variables
   complex(kind=real64)            :: drefRcTM ! dRc / depsilon_m
   complex(kind=real64)            :: refRcTM  !total reflection response
-  complex(kind=real64)            :: termadd  !additional term if source and/or iReceiver is in layer m
+  complex(kind=real64)            :: termadd  !additional term if source and/or receiver is in layer m
   real(kind=real64)   :: phsq   !horiz. slowness
 
   !set vertical wavenumbers and interface reflection coeff.
@@ -1508,12 +1508,12 @@ complex(kind=real64) function iabvC1TMderivv(kappa) result(res)
   !entire integrand (except for Bessel function, which is handled by zhankl)
   res = - sqrt(epsh(ilayrec)*epsh(ilaysrc) / (pvert(ilayrec)*pvert(ilaysrc))) * drefRcTM
 
-  !special contributions if layer m is the source or(and) iReceiver layer
+  !special contributions if layer m is the source or(and) receiver layer
   if ((ilaym.eq.ilayrec) .or. (ilaym.eq.ilaysrc)) then
     refRcTM = iabvC1TM(kappa) !contains a minus
     phsq = (kappa / omega)**2
     termadd = (- epsh(ilaym)*phsq / (4.* (epsv(ilaym) * pvert(ilaym))**2)) * refRcTM
-    !layer m is iReceiver layer
+    !layer m is receiver layer
     if (ilaym .eq. ilayrec) res = res + termadd
     !layer m is source layer
     if (ilaym .eq. ilaysrc) res = res + termadd
@@ -1534,7 +1534,7 @@ complex(kind=real64) function iblwC1TMderiv(kappa) result(res)
   !internal variables
   complex(kind=real64)            :: drefRcTM ! dRc / depsilon_m
   complex(kind=real64)            :: refRcTM  !total reflection response
-  complex(kind=real64)            :: termadd  !additional term if source and/or iReceiver is in layer m
+  complex(kind=real64)            :: termadd  !additional term if source and/or receiver is in layer m
   !!!TEST
 !!$  complex(kind=real64)  :: dT_depsm_num
 !!$  real(kind=real64)     :: errnum
@@ -1550,11 +1550,11 @@ complex(kind=real64) function iblwC1TMderiv(kappa) result(res)
   !entire integrand (except for Bessel function, which is handled by zhankl)
   res = - sqrt(epsh(ilayrec)*epsh(ilaysrc) / (pvert(ilayrec)*pvert(ilaysrc))) * drefRcTM
 
-  !special contributions if layer m is the source or(and) iReceiver layer
+  !special contributions if layer m is the source or(and) receiver layer
   if ((ilaym.eq.ilayrec) .or. (ilaym.eq.ilaysrc)) then
     refRcTM = iblwC1TM(kappa) !contains a minus
     termadd = (1./(2.*epsh(ilaym)) - dmu0/(4.*pvert(ilaym)**2)) * refRcTM
-    !layer m is iReceiver layer
+    !layer m is receiver layer
     if (ilaym .eq. ilayrec) res = res + termadd
     !layer m is source layer
     if (ilaym .eq. ilaysrc) res = res + termadd
@@ -1581,7 +1581,7 @@ complex(kind=real64) function iblwC1TMderivh(kappa) result(res)
   !internal variables
   complex(kind=real64)            :: drefRcTM ! dRc / depsilon_m
   complex(kind=real64)            :: refRcTM  !total reflection response
-  complex(kind=real64)            :: termadd  !additional term if source and/or iReceiver is in layer m
+  complex(kind=real64)            :: termadd  !additional term if source and/or receiver is in layer m
   real(kind=real64)   :: phsq   !horiz. slowness
 
 
@@ -1594,12 +1594,12 @@ complex(kind=real64) function iblwC1TMderivh(kappa) result(res)
   !entire integrand (except for Bessel function, which is handled by zhankl)
   res = - sqrt(epsh(ilayrec)*epsh(ilaysrc) / (pvert(ilayrec)*pvert(ilaysrc))) * drefRcTM
 
-  !special contributions if layer m is the source or(and) iReceiver layer
+  !special contributions if layer m is the source or(and) receiver layer
   if ((ilaym.eq.ilayrec) .or. (ilaym.eq.ilaysrc)) then
     refRcTM = iblwC1TM(kappa) !contains a minus
     phsq = (kappa / omega)**2
     termadd = (1./(2.*epsh(ilaym)) - (dmu0 - phsq/epsv(ilaym))/(4.*pvert(ilaym)**2)) * refRcTM
-    !layer m is iReceiver layer
+    !layer m is receiver layer
     if (ilaym .eq. ilayrec) res = res + termadd
     !layer m is source layer
     if (ilaym .eq. ilaysrc) res = res + termadd
@@ -1621,7 +1621,7 @@ complex(kind=real64) function iblwC1TMderivv(kappa) result(res)
   !internal variables
   complex(kind=real64)            :: drefRcTM ! dRc / depsilon_m
   complex(kind=real64)            :: refRcTM  !total reflection response
-  complex(kind=real64)            :: termadd  !additional term if source and/or iReceiver is in layer m
+  complex(kind=real64)            :: termadd  !additional term if source and/or receiver is in layer m
   real(kind=real64)   :: phsq   !horiz. slowness
 
   !set vertical wavenumbers and interface reflection coeff.
@@ -1633,12 +1633,12 @@ complex(kind=real64) function iblwC1TMderivv(kappa) result(res)
   !entire integrand (except for Bessel function, which is handled by zhankl)
   res = - sqrt(epsh(ilayrec)*epsh(ilaysrc) / (pvert(ilayrec)*pvert(ilaysrc))) * drefRcTM
 
-  !special contributions if layer m is the source or(and) iReceiver layer
+  !special contributions if layer m is the source or(and) receiver layer
   if ((ilaym.eq.ilayrec) .or. (ilaym.eq.ilaysrc)) then
     refRcTM = iblwC1TM(kappa) !contains a minus
     phsq = (kappa / omega)**2
     termadd = (- epsh(ilaym)*phsq / (4.* (epsv(ilaym) * pvert(ilaym))**2)) * refRcTM
-    !layer m is iReceiver layer
+    !layer m is receiver layer
     if (ilaym .eq. ilayrec) res = res + termadd
     !layer m is source layer
     if (ilaym .eq. ilaysrc) res = res + termadd
@@ -2201,11 +2201,11 @@ complex(kind=real64) function get_drefR_abv(sgn1,sgn2,transfunc, func_dexp, func
   drefR_dRdnsrc = tu*(1.+sgn1*ra)*(1.+sgn2*rupsrc) / (ruaterm * rsrcterm**2)
   drefR_dRupsrc = tu*(1.+sgn1*ra)*(rdnsrc+sgn2)*rdnsrc / (ruaterm * rsrcterm**2)
 
-  !derivative dTu / depsilon_m - from iReceiver to source
+  !derivative dTu / depsilon_m - from receiver to source
   dTu_depsm = dtrans_response_up(ilayrec,ilaysrc,trans_below_rec,dz_below_rec,ilayrec,ilaysrc,kappa, func_dexp,func_coef)
-  !derivative dRa / depsilon_m - from top to iReceiver
+  !derivative dRa / depsilon_m - from top to receiver
   dRa_depsm = drefl_response_up(1,ilayrec,trans_above_rec,dz_above_rec,2,ilayrec,kappa, func_dexp,func_coef)
-  !derivative dRu / depsilon_m - recursion from source to iReceiver
+  !derivative dRu / depsilon_m - recursion from source to receiver
   dRu_depsm = drefl_response_dn(ilayrec,ilaysrc,trans_below_rec,dz_below_rec,ilayrec,ilaysrc,kappa, func_dexp,func_coef)
   !derivative dRupsrc / depsilon_m - from top to source
   dRupsrc_depsm = drefl_response_up(1,ilaysrc,trans_above_src,dz_above_src,2,ilaysrc,kappa, func_dexp,func_coef)
@@ -2266,11 +2266,11 @@ complex(kind=real64) function get_drefR_blw(sgn1,sgn2,transfunc, func_dexp,func_
   drefR_dRupsrc = td*(rb+sgn1)*(rdnsrc+sgn2) / ( rdbterm * rsrcterm**2 )
   drefR_dRdnsrc = td*(rb+sgn1)*(1.+sgn2*rupsrc)*rupsrc / (rdbterm * rsrcterm**2)
 
-  !derivative dTd / depsilon_m - from iReceiver to source
+  !derivative dTd / depsilon_m - from receiver to source
   dTd_depsm = dtrans_response_dn(ilaysrc,ilayrec,trans_above_rec,dz_above_rec,ilaysrc,ilayrec,kappa, func_dexp,func_coef)
-  !derivative dRb / depsilon_m - from bottom to iReceiver
+  !derivative dRb / depsilon_m - from bottom to receiver
   dRb_depsm = drefl_response_dn(ilayrec,nlay,trans_below_rec,dz_below_rec,ilayrec,nlay-1,kappa, func_dexp,func_coef)
-  !derivative dRd / depsilon_m - recursion from source to iReceiver
+  !derivative dRd / depsilon_m - recursion from source to receiver
   dRd_depsm = drefl_response_up(ilaysrc,ilayrec,trans_above_rec,dz_above_rec,ilaysrc,ilayrec,kappa, func_dexp,func_coef)
   !derivative dRupsrc / depsilon_m - from top to source
   dRupsrc_depsm = drefl_response_up(1,ilaysrc,trans_above_src,dz_above_src,2,ilaysrc,kappa, func_dexp,func_coef)
@@ -2285,7 +2285,7 @@ endfunction get_drefR_blw
 
 
 !---------------------------------------------------------
-! derivative of "downgoing" transmission response between source and iReceiver
+! derivative of "downgoing" transmission response between source and receiver
 ! TE or TM, generic for iso, vti epsh, epsv
 ! deriv. with respect to layer ilaym, i.e. dTd_TM / depsilon_m
 ! RS 2011
@@ -2323,7 +2323,7 @@ complex(kind=real64) function dtrans_response_dn(ilaytop,ilaybot,trans_abv,dz_ab
 
 
   !derivative for layer ilaym
-  !--> special (simplified) case if this is at the bottom of the layer stack considered (i.e. ilaym = iReceiver layer)
+  !--> special (simplified) case if this is at the bottom of the layer stack considered (i.e. ilaym = receiver layer)
   fact_dexp = func_dexp(dz_abv(ilaym),kappa) / 2.
   if (ilaym .eq. ilaybot) then
     transT = trans_abv(ilaym)
@@ -2404,7 +2404,7 @@ endfunction dtrans_response_dn
 
 
 !---------------------------------------------------------
-! derivative of "upgoing" TM transmission response between source and iReceiver
+! derivative of "upgoing" TM transmission response between source and receiver
 ! TE or TM, generic for iso, vti epsh, epsv
 ! deriv. with respect to layer ilaym, i.e. dTd_TM / depsilon_m
 ! RS 2011
@@ -2442,7 +2442,7 @@ complex(kind=real64) function dtrans_response_up(ilaytop,ilaybot,trans_blw,dz_bl
 
 
   !derivative for layer ilaym
-  !--> special (simplified) case if this is at the top of the layer stack considered (i.e. ilaym = iReceiver layer)
+  !--> special (simplified) case if this is at the top of the layer stack considered (i.e. ilaym = receiver layer)
   fact_dexp = func_dexp(dz_blw(ilaym),kappa) / 2.
   if (ilaym .eq. ilaytop) then
     transT = trans_blw(ilaym)

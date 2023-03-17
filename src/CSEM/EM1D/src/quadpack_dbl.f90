@@ -5349,7 +5349,7 @@ subroutine qc25s ( f, a, b, bl, br, alfa, beta, ri, rj, rg, rh, result, &
 !
 !  If a > bl and b < br, apply the 15-point Gauss-Kronrod scheme.
 !
-  call qk15w ( f, qwgts(), a, b, alfa, beta, integr, bl, br, result, abserr, &
+  call qk15w ( f, qwgts, a, b, alfa, beta, integr, bl, br, result, abserr, &
     resabs, resasc )
 
   neval = 15

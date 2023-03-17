@@ -20,7 +20,7 @@ subroutine addwirefields(bgdat,refl_var,src,icur,ifreq)
   integer(kind=int32)            :: icurstart     !temp index for wire currents
   integer(kind=int32)            :: iwire         !wire counter
   complex(kind=real64)           :: cur           !temp source current
-  integer(kind=int32)            :: irec          !iReceiver counter
+  integer(kind=int32)            :: irec          !receiver counter
   integer(kind=int32)            :: ilay          !layer counter for derivatives
   integer(kind=int32)            :: nrecEx,nrecEy,nrecEz,nrecHx,nrecHy,nrecHz   !nr of receivers for each field component
 

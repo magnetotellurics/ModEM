@@ -101,9 +101,6 @@ module Constants
     character( len=6 ), parameter :: LINEAR = "LINEAR"
     character( len=6 ), parameter :: LOG_10 = "LOG_10"
     !
-    character( len=3 ), parameter :: DCG = "DCG"
-    character( len=4 ), parameter :: NLCG = "NLCG"
-    !
     !> Field Store States
     integer, parameter :: compound = 1
     integer, parameter :: singleton = 2

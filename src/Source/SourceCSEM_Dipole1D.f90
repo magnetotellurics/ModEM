@@ -291,10 +291,11 @@ contains
                 ixTx = minNode( xTx1D, sigma_cell%grid%xEdge )
                 iyTx = minNode( yTx1D, sigma_cell%grid%yEdge )
                 !
-                if( allocated( zlay1D ) ) deallocate( zlay1D, sig1D )
+                if( allocated( zlay1D ) ) deallocate( zlay1D )
+                if( allocated( sig1D ) ) deallocate( sig1D )
                 !
-                allocate( zlay1D(nlay1D) )
-                allocate( sig1D(nlay1D) )
+                allocate( zlay1D( nlay1D ) )
+                allocate( sig1D( nlay1D ) )
                 !
                 do k=1,nlay1D
                     zlay1D(k) = sigma_cell%grid%zEdge(k)

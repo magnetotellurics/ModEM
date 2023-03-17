@@ -1,7 +1,7 @@
 !------------------------------------------------------------
 !  1D EM subroutine interp_intvals_vmd_allcomp
 !
-!  get interpolated field values at iReceiver locations, VMD source
+!  get interpolated field values at receiver locations, VMD source
 !  NO change required for VTI since VMD fields do not depend on epsv
 !  Rita Streich 2009-2011
 !------------------------------------------------------------
@@ -14,7 +14,7 @@ subroutine interp_intvals_vmd_allcomp(refl_var,src,ifreq,sz,zr,bgdat,Ex,Ey,Ez,Hx
   type(refl_struct)               :: refl_var   !everything needed throughout 1D computations
   type(sorec),intent(in)          :: src        !source definition (we need the currents here)
   integer(kind=int32),intent(in)  :: ifreq      !frequency index
-  real(kind=real64),intent(in)    :: sz,zr      !source and iReceiver depth
+  real(kind=real64),intent(in)    :: sz,zr      !source and receiver depth
   type(backgrounddata) :: bgdat      !coordinate vectors and output EM fields
   complex(kind=real64),dimension(:)   :: Ex,Ey,Ez,Hx,Hy,Hz  !electric and magnetic field vectors
   complex(kind=real64),intent(in) :: j_om_mu    !j * omega * mu0
@@ -24,8 +24,8 @@ subroutine interp_intvals_vmd_allcomp(refl_var,src,ifreq,sz,zr,bgdat,Ex,Ey,Ez,Hx
 
   !internal variables
   integer(kind=int32)   :: isrc    !source element counter
-  real(kind=real64)     :: x,y,r   !temp source-iReceiver distances
-  integer(kind=int32)   :: irec    !iReceiver counter
+  real(kind=real64)     :: x,y,r   !temp source-receiver distances
+  integer(kind=int32)   :: irec    !receiver counter
   real(kind=real64)     :: beta    !temp angle
 
   complex(kind=real64)          :: IA1TEvmd,ID1TEvmd,IA0TEvmd !interpolated integral values
@@ -39,7 +39,7 @@ subroutine interp_intvals_vmd_allcomp(refl_var,src,ifreq,sz,zr,bgdat,Ex,Ey,Ez,Hx
   complex(kind=real64)  :: cur      !temp source current
   complex(kind=real64)  :: JMz      !source current times constants
   integer(kind=int32)   :: idx      !source element index
-  integer(kind=int32)   :: recidx   !iReceiver index
+  integer(kind=int32)   :: recidx   !receiver index
 
   !indicators for fast Hankel transform or adaptive integration
   wellbehaved = .true.
@@ -71,10 +71,10 @@ subroutine interp_intvals_vmd_allcomp(refl_var,src,ifreq,sz,zr,bgdat,Ex,Ey,Ez,Hx
       !check case r=0 only once...
       r_is_zero: if (r .eq. 0._real64) then
 
-        !quick & dirty: skip the point if iReceiver is right at source point
+        !quick & dirty: skip the point if receiver is right at source point
         if (sz_eq_zr) then
           if (refl_var%infolevel.ge.output_more) then
-            write(*,'(a)') 'WARNING: cannot handle iReceiver right at source point yet!'
+            write(*,'(a)') 'WARNING: cannot handle receiver right at source point yet!'
           endif
           !still add special contribution right at source point
           if (ilay.eq.0) Hz(recidx) = Hz(recidx) - JMz / j_om_mu
@@ -132,7 +132,7 @@ endsubroutine interp_intvals_vmd_allcomp
 !------------------------------------------------------------
 !  1D EM subroutine interp_intvals_vmd_Exy, Ex and/or Ey only
 !
-!  get interpolated field values at iReceiver locations, VMD source
+!  get interpolated field values at receiver locations, VMD source
 !  NO change required for VTI since VMD fields do not depend on epsv
 !  Rita Streich 2009-2011
 !------------------------------------------------------------
@@ -144,7 +144,7 @@ subroutine interp_intvals_vmd_Exy(refl_var,src,ifreq,sz,zr,bgdat,Ex,Ey,j_om_mu, 
   type(refl_struct)               :: refl_var   !everything needed throughout 1D computations
   type(sorec),intent(in)          :: src        !source definition (we need the currents here)
   integer(kind=int32),intent(in)  :: ifreq      !frequency index
-  real(kind=real64),intent(in)    :: sz,zr      !source and iReceiver depth
+  real(kind=real64),intent(in)    :: sz,zr      !source and receiver depth
   type(backgrounddata) :: bgdat      !coordinate vectors and output EM fields
   complex(kind=real64),dimension(:)   :: Ex,Ey  !electric and magnetic field vectors
   complex(kind=real64),intent(in) :: j_om_mu    !j * omega * mu0
@@ -153,8 +153,8 @@ subroutine interp_intvals_vmd_Exy(refl_var,src,ifreq,sz,zr,bgdat,Ex,Ey,j_om_mu, 
 
   !internal variables
   integer(kind=int32)   :: isrc    !source element counter
-  real(kind=real64)     :: x,y,r   !temp source-iReceiver distances
-  integer(kind=int32)   :: irec    !iReceiver counter
+  real(kind=real64)     :: x,y,r   !temp source-receiver distances
+  integer(kind=int32)   :: irec    !receiver counter
   real(kind=real64)     :: beta    !temp angle
 
   complex(kind=real64)          :: IA1TEvmd !interpolated integral values
@@ -168,7 +168,7 @@ subroutine interp_intvals_vmd_Exy(refl_var,src,ifreq,sz,zr,bgdat,Ex,Ey,j_om_mu, 
   complex(kind=real64)  :: cur      !temp source current
   complex(kind=real64)  :: JMz      !source current times constants
   integer(kind=int32)   :: idx      !source element index
-  integer(kind=int32)   :: recidx   !iReceiver index
+  integer(kind=int32)   :: recidx   !receiver index
 
   !indicators for fast Hankel transform or adaptive integration
   wellbehaved = .true.
@@ -204,10 +204,10 @@ subroutine interp_intvals_vmd_Exy(refl_var,src,ifreq,sz,zr,bgdat,Ex,Ey,j_om_mu, 
       !check case r=0 only once...
       r_is_zero: if (r .eq. 0._real64) then
 
-        !quick & dirty: skip the point if iReceiver is right at source point
+        !quick & dirty: skip the point if receiver is right at source point
         if (sz_eq_zr) then
           if (refl_var%infolevel.ge.output_more) &
-            write(*,'(a)') 'WARNING: cannot handle iReceiver right at source point yet!'
+            write(*,'(a)') 'WARNING: cannot handle receiver right at source point yet!'
           cycle
         endif
 
@@ -250,10 +250,10 @@ subroutine interp_intvals_vmd_Exy(refl_var,src,ifreq,sz,zr,bgdat,Ex,Ey,j_om_mu, 
       !check case r=0 only once...
       r_is_zeroex: if (r .eq. 0._real64) then
 
-        !quick & dirty: skip the point if iReceiver is right at source point
+        !quick & dirty: skip the point if receiver is right at source point
         if (sz_eq_zr) then
           if (refl_var%infolevel.ge.output_more) &
-            write(*,'(a)') 'WARNING: cannot handle iReceiver right at source point yet!'
+            write(*,'(a)') 'WARNING: cannot handle receiver right at source point yet!'
           cycle
         endif
 
@@ -295,10 +295,10 @@ subroutine interp_intvals_vmd_Exy(refl_var,src,ifreq,sz,zr,bgdat,Ex,Ey,j_om_mu, 
       !check case r=0 only once...
       r_is_zeroey: if (r .eq. 0._real64) then
 
-        !quick & dirty: skip the point if iReceiver is right at source point
+        !quick & dirty: skip the point if receiver is right at source point
         if (sz_eq_zr) then
           if (refl_var%infolevel.ge.output_more) &
-            write(*,'(a)') 'WARNING: cannot handle iReceiver right at source point yet!'
+            write(*,'(a)') 'WARNING: cannot handle receiver right at source point yet!'
           cycle
         endif
 
@@ -334,7 +334,7 @@ endsubroutine interp_intvals_vmd_Exy
 !------------------------------------------------------------
 !  1D EM subroutine interp_intvals_vmd_Hxy
 !
-!  get interpolated field values at iReceiver locations, VMD source
+!  get interpolated field values at receiver locations, VMD source
 !  NO change required for VTI since VMD fields do not depend on epsv
 !  Rita Streich 2009-2011
 !------------------------------------------------------------
@@ -346,7 +346,7 @@ subroutine interp_intvals_vmd_Hxy(refl_var,src,ifreq,sz,zr,bgdat,Hx,Hy,j_om_mu, 
   type(refl_struct)               :: refl_var   !everything needed throughout 1D computations
   type(sorec),intent(in)          :: src        !source definition (we need the currents here)
   integer(kind=int32),intent(in)  :: ifreq      !frequency index
-  real(kind=real64),intent(in)    :: sz,zr      !source and iReceiver depth
+  real(kind=real64),intent(in)    :: sz,zr      !source and receiver depth
   type(backgrounddata) :: bgdat      !coordinate vectors and output EM fields
   complex(kind=real64),dimension(:)   :: Hx,Hy  !electric and magnetic field vectors
   complex(kind=real64),intent(in) :: j_om_mu    !j * omega * mu0
@@ -355,8 +355,8 @@ subroutine interp_intvals_vmd_Hxy(refl_var,src,ifreq,sz,zr,bgdat,Hx,Hy,j_om_mu, 
 
   !internal variables
   integer(kind=int32)   :: isrc    !source element counter
-  real(kind=real64)     :: x,y,r   !temp source-iReceiver distances
-  integer(kind=int32)   :: irec    !iReceiver counter
+  real(kind=real64)     :: x,y,r   !temp source-receiver distances
+  integer(kind=int32)   :: irec    !receiver counter
   real(kind=real64)     :: beta    !temp angle
 
   complex(kind=real64)          :: ID1TEvmd !interpolated integral values
@@ -370,7 +370,7 @@ subroutine interp_intvals_vmd_Hxy(refl_var,src,ifreq,sz,zr,bgdat,Hx,Hy,j_om_mu, 
   complex(kind=real64)  :: cur      !temp source current
   complex(kind=real64)  :: JMz      !source current times constants
   integer(kind=int32)   :: idx      !source element index
-  integer(kind=int32)   :: recidx   !iReceiver index
+  integer(kind=int32)   :: recidx   !receiver index
 
   !indicators for fast Hankel transform or adaptive integration
   wellbehaved = .true.
@@ -406,10 +406,10 @@ subroutine interp_intvals_vmd_Hxy(refl_var,src,ifreq,sz,zr,bgdat,Hx,Hy,j_om_mu, 
       !check case r=0 only once...
       r_is_zero: if (r .eq. 0._real64) then
 
-        !quick & dirty: skip the point if iReceiver is right at source point
+        !quick & dirty: skip the point if receiver is right at source point
         if (sz_eq_zr) then
           if (refl_var%infolevel.ge.output_more) &
-            write(*,'(a)') 'WARNING: cannot handle iReceiver right at source point yet!'
+            write(*,'(a)') 'WARNING: cannot handle receiver right at source point yet!'
           cycle
         endif
 
@@ -452,10 +452,10 @@ subroutine interp_intvals_vmd_Hxy(refl_var,src,ifreq,sz,zr,bgdat,Hx,Hy,j_om_mu, 
       !check case r=0 only once...
       r_is_zerohx: if (r .eq. 0._real64) then
 
-        !quick & dirty: skip the point if iReceiver is right at source point
+        !quick & dirty: skip the point if receiver is right at source point
         if (sz_eq_zr) then
           if (refl_var%infolevel.ge.output_more) &
-            write(*,'(a)') 'WARNING: cannot handle iReceiver right at source point yet!'
+            write(*,'(a)') 'WARNING: cannot handle receiver right at source point yet!'
           cycle
         endif
 
@@ -497,10 +497,10 @@ subroutine interp_intvals_vmd_Hxy(refl_var,src,ifreq,sz,zr,bgdat,Hx,Hy,j_om_mu, 
       !check case r=0 only once...
       r_is_zerohy: if (r .eq. 0._real64) then
 
-        !quick & dirty: skip the point if iReceiver is right at source point
+        !quick & dirty: skip the point if receiver is right at source point
         if (sz_eq_zr) then
           if (refl_var%infolevel.ge.output_more) &
-            write(*,'(a)') 'WARNING: cannot handle iReceiver right at source point yet!'
+            write(*,'(a)') 'WARNING: cannot handle receiver right at source point yet!'
           cycle
         endif
 
@@ -536,7 +536,7 @@ endsubroutine interp_intvals_vmd_Hxy
 !------------------------------------------------------------
 !  1D EM subroutine interp_intvals_vmd_Hz, Hz only
 !
-!  get interpolated field values at iReceiver locations, VMD source
+!  get interpolated field values at receiver locations, VMD source
 !  NO change required for VTI since VMD fields do not depend on epsv
 !  Rita Streich 2009-2011
 !------------------------------------------------------------
@@ -548,7 +548,7 @@ subroutine interp_intvals_vmd_Hz(refl_var,src,ifreq,sz,zr,bgdat,Hz,j_om_mu,ommus
   type(refl_struct)               :: refl_var   !everything needed throughout 1D computations
   type(sorec),intent(in)          :: src        !source definition (we need the currents here)
   integer(kind=int32),intent(in)  :: ifreq      !frequency index
-  real(kind=real64),intent(in)    :: sz,zr      !source and iReceiver depth
+  real(kind=real64),intent(in)    :: sz,zr      !source and receiver depth
   type(backgrounddata) :: bgdat      !coordinate vectors and output EM fields
   complex(kind=real64),dimension(:)   :: Hz  !electric and magnetic field vectors
   complex(kind=real64),intent(in) :: j_om_mu    !j * omega * mu0
@@ -558,8 +558,8 @@ subroutine interp_intvals_vmd_Hz(refl_var,src,ifreq,sz,zr,bgdat,Hz,j_om_mu,ommus
 
   !internal variables
   integer(kind=int32)   :: isrc    !source element counter
-  real(kind=real64)     :: x,y,r   !temp source-iReceiver distances
-  integer(kind=int32)   :: irec    !iReceiver counter
+  real(kind=real64)     :: x,y,r   !temp source-receiver distances
+  integer(kind=int32)   :: irec    !receiver counter
   real(kind=real64)     :: beta    !temp angle
 
   complex(kind=real64)          :: IA0TEvmd !interpolated integral values
@@ -572,7 +572,7 @@ subroutine interp_intvals_vmd_Hz(refl_var,src,ifreq,sz,zr,bgdat,Hz,j_om_mu,ommus
   complex(kind=real64)  :: cur      !temp source current
   complex(kind=real64)  :: JMz      !source current times constants
   integer(kind=int32)   :: idx      !source element index
-  integer(kind=int32)   :: recidx   !iReceiver index
+  integer(kind=int32)   :: recidx   !receiver index
 
   !indicators for fast Hankel transform or adaptive integration
   wellbehaved = .true.
@@ -604,10 +604,10 @@ subroutine interp_intvals_vmd_Hz(refl_var,src,ifreq,sz,zr,bgdat,Hz,j_om_mu,ommus
       !check case r=0 only once...
       r_is_zero: if (r .eq. 0._real64) then
 
-        !quick & dirty: skip the point if iReceiver is right at source point
+        !quick & dirty: skip the point if receiver is right at source point
         if (sz_eq_zr) then
           if (refl_var%infolevel.ge.output_more) &
-            write(*,'(a)') 'WARNING: cannot handle iReceiver right at source point yet!'
+            write(*,'(a)') 'WARNING: cannot handle receiver right at source point yet!'
           !still add special contribution right at source point
           if (ilay.eq.0) Hz(recidx) = Hz(recidx) - JMz / j_om_mu
           !skip numerical integral evaluations - they would most likely fail anyway, need to look at this...

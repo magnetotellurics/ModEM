@@ -2,7 +2,7 @@
 !
 !  FD EM module for adaptive integration, used in computation of fields for 1D medium
 !    in special cases for a few integrals
-!    if the source and iReceiver are exactly at the same depth
+!    if the source and receiver are exactly at the same depth
 !
 !  Programmed: Rita Streich 2009-2011
 !**************************************************************

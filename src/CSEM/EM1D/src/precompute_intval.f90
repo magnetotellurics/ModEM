@@ -3,7 +3,7 @@
 !    compute integral values for one integral for logarithmically spaced radii
 !    by fast Hankel transform
 !
-!  source and iReceiver depths are not needed here since they have already been absorbed
+!  source and receiver depths are not needed here since they have already been absorbed
 !    into dz vectors
 !
 !  Rita Streich 2009
@@ -109,7 +109,7 @@ subroutine precomp_intval_adaptive(refl_var,besorder,intfunc,iint,sz,zr)
   real(kind=real64),intent(in)    :: besorder  !bessel function order
   complex(kind=real64),external   :: intfunc   !integral kernel function
   integer(kind=int32),intent(in)  :: iint      !where to write output
-  real(kind=real64),intent(in)    :: sz,zr     !source and iReceiver depth
+  real(kind=real64),intent(in)    :: sz,zr     !source and receiver depth
 
   !internal variables
   integer(kind=int32)     :: irad     !counter for radii
@@ -148,7 +148,7 @@ subroutine precomp_intvals_hed(refl_var,sz,zr)
 
   !external variables
   type(refl_struct)             :: refl_var  !stuff to remember throughout 1D computations
-  real(kind=real64),intent(in)  :: sz,zr     !source and iReceiver depth
+  real(kind=real64),intent(in)  :: sz,zr     !source and receiver depth
 
   !internal variables
   integer(kind=int32),dimension(nrelmax)  :: ibesord   !bessel function order (integer "array")
@@ -193,7 +193,7 @@ subroutine precomp_intvals_hed(refl_var,sz,zr)
     iint(3) = 5    !integral iabvDz1TM (for Ez)
     call precomp_intval_fht_rel(refl_var,3,ibesord,ijrel,iabvD1TM,iint)
  
-  !iReceiver below source
+  !receiver below source
   elseif (sz .lt. zr) then
 
     ibesord(1:3:2) = 1
@@ -219,10 +219,10 @@ subroutine precomp_intvals_hed(refl_var,sz,zr)
     iint(3) = 5    !integral iblwDz1TM (for Ez)
     call precomp_intval_fht_rel(refl_var,3,ibesord,ijrel,iblwD1TM,iint)
 
-  !iReceiver exactly at source depth
+  !receiver exactly at source depth
   else
     if (refl_var%infolevel.ge.output_more) then
-      write(*,'(a)') 'WARNING: source depth = iReceiver depth, entering adaptive integration, this can be SLOW!'
+      write(*,'(a)') 'WARNING: source depth = receiver depth, entering adaptive integration, this can be SLOW!'
     endif
 
     !precompute logarithmic radii, start from largest, so that it's the same as for Hankel transforms
@@ -296,7 +296,7 @@ subroutine precomp_intvals_Exy_hed(refl_var,sz,zr)
 
   !external variables
   type(refl_struct)             :: refl_var  !stuff to remember throughout 1D computations
-  real(kind=real64),intent(in)  :: sz,zr     !source and iReceiver depth
+  real(kind=real64),intent(in)  :: sz,zr     !source and receiver depth
 
   !internal variables
   integer(kind=int32),dimension(nrelmax)  :: ibesord   !bessel function order (integer "array")
@@ -327,7 +327,7 @@ subroutine precomp_intvals_Exy_hed(refl_var,sz,zr)
     iint(2) = 2    !integral IabvA0TM
     call precomp_intval_fht_rel(refl_var,2,ibesord,ijrel,iabvA1TM,iint)
 
-  !iReceiver below source
+  !receiver below source
   elseif (sz .lt. zr) then
 
     ibesord = 1
@@ -342,7 +342,7 @@ subroutine precomp_intvals_Exy_hed(refl_var,sz,zr)
     iint(2) = 2    !integral IblwA0TM
     call precomp_intval_fht_rel(refl_var,2,ibesord,ijrel,iblwA1TM,iint)
 
-  !iReceiver exactly at source depth
+  !receiver exactly at source depth
   else
 
     !precompute logarithmic radii, start from largest, so that it's the same as for Hankel transforms
@@ -398,7 +398,7 @@ subroutine precomp_intvals_Ez_hed(refl_var,sz,zr)
 
   !external variables
   type(refl_struct)             :: refl_var  !stuff to remember throughout 1D computations
-  real(kind=real64),intent(in)  :: sz,zr     !source and iReceiver depth
+  real(kind=real64),intent(in)  :: sz,zr     !source and receiver depth
 
   !internal variables
   integer(kind=int32),dimension(NREL)  :: ibesord   !bessel function order (integer "array")
@@ -414,13 +414,13 @@ subroutine precomp_intvals_Ez_hed(refl_var,sz,zr)
     ibesord = 1
     call precomp_intval_fht(refl_var,ibesord,iabvDz1TM,5)
 
-  !iReceiver below source
+  !receiver below source
   elseif (sz .lt. zr) then
 
     ibesord = 1
     call precomp_intval_fht(refl_var,ibesord,iblwDz1TM,5)
 
-  !iReceiver exactly at source depth
+  !receiver exactly at source depth
   else
 
     !precompute logarithmic radii, start from largest, so that it's the same as for Hankel transforms
@@ -460,7 +460,7 @@ subroutine precomp_intvals_Hxy_hed(refl_var,sz,zr)
 
   !external variables
   type(refl_struct)             :: refl_var  !stuff to remember throughout 1D computations
-  real(kind=real64),intent(in)  :: sz,zr     !source and iReceiver depth
+  real(kind=real64),intent(in)  :: sz,zr     !source and receiver depth
 
   !internal variables
   integer(kind=int32),dimension(nrelmax)  :: ibesord   !bessel function order (integer "array")
@@ -491,7 +491,7 @@ subroutine precomp_intvals_Hxy_hed(refl_var,sz,zr)
     iint(2) = 7    !integral iabvD0TM
     call precomp_intval_fht_rel(refl_var,2,ibesord,ijrel,iabvD1TM,iint)
 
-  !iReceiver below source
+  !receiver below source
   elseif (sz .lt. zr) then
 
     ibesord = 1
@@ -506,11 +506,11 @@ subroutine precomp_intvals_Hxy_hed(refl_var,sz,zr)
     iint(2) = 7    !integral iblwD0TM
     call precomp_intval_fht_rel(refl_var,2,ibesord,ijrel,iblwD1TM,iint)
 
-  !iReceiver exactly at source depth
+  !receiver exactly at source depth
   else
 
     if (refl_var%infolevel .ge. output_more) then
-      write(*,'(a)') 'WARNING: source depth = iReceiver depth, entering adaptive integration, this can be SLOW!'
+      write(*,'(a)') 'WARNING: source depth = receiver depth, entering adaptive integration, this can be SLOW!'
     endif
 
     !precompute logarithmic radii, start from largest, so that it's the same as for Hankel transforms
@@ -562,19 +562,19 @@ subroutine precomp_intvals_Hz_hed(refl_var,sz,zr)
 
   !external variables
   type(refl_struct)             :: refl_var  !stuff to remember throughout 1D computations
-  real(kind=real64),intent(in)  :: sz,zr     !source and iReceiver depth
+  real(kind=real64),intent(in)  :: sz,zr     !source and receiver depth
 
   !internal variables
   integer(kind=int32),dimension(nrelmax)  :: ibesord   !bessel function order (integer "array")
 
 
   !receivers above source
-  !include case that iReceiver is exactly at source depth here: integral is "well-behaved", adaptive integration not needed
+  !include case that receiver is exactly at source depth here: integral is "well-behaved", adaptive integration not needed
   if (sz .ge. zr) then
     ibesord = 1
     call precomp_intval_fht(refl_var,ibesord,iabvAz1TE,10)
 
-  !iReceiver below source
+  !receiver below source
   else
     ibesord = 1
     call precomp_intval_fht(refl_var,ibesord,iblwAz1TE,10)
@@ -595,7 +595,7 @@ subroutine precomp_intvals_ved(refl_var,sz,zr)
 
   !external variables
   type(refl_struct)             :: refl_var  !stuff to remember throughout 1D computations
-  real(kind=real64),intent(in)  :: sz,zr     !source and iReceiver depth
+  real(kind=real64),intent(in)  :: sz,zr     !source and receiver depth
 
   !internal variables
   integer(kind=int32),dimension(nrelmax)  :: ibesord   !bessel function order (integer "array")
@@ -622,7 +622,7 @@ subroutine precomp_intvals_ved(refl_var,sz,zr)
     ibesord = 1
     call precomp_intval_fht(refl_var,ibesord,iabvB1TMved,1)
 
-  !iReceiver below source
+  !receiver below source
   elseif (sz .lt. zr) then
 
     !related integrals: iblwC1TMved and iblwC0TMved
@@ -636,7 +636,7 @@ subroutine precomp_intvals_ved(refl_var,sz,zr)
     ibesord = 1
     call precomp_intval_fht(refl_var,ibesord,iblwB1TMved,1)
 
-  !iReceiver exactly at source depth
+  !receiver exactly at source depth
   else
 
     !precompute logarithmic radii, start from largest, so that it's the same as for Hankel transforms
@@ -690,7 +690,7 @@ subroutine precomp_intvals_Exy_ved(refl_var,sz,zr)
 
   !external variables
   type(refl_struct)             :: refl_var  !stuff to remember throughout 1D computations
-  real(kind=real64),intent(in)  :: sz,zr     !source and iReceiver depth
+  real(kind=real64),intent(in)  :: sz,zr     !source and receiver depth
 
   !internal variables
   integer(kind=int32),dimension(NREL)  :: ibesord   !bessel function order (integer "array")
@@ -706,13 +706,13 @@ subroutine precomp_intvals_Exy_ved(refl_var,sz,zr)
     ibesord = 1
     call precomp_intval_fht(refl_var,ibesord,iabvB1TMved,1)
 
-  !iReceiver below source
+  !receiver below source
   elseif (sz .lt. zr) then
 
     ibesord = 1
     call precomp_intval_fht(refl_var,ibesord,iblwB1TMved,1)
 
-  !iReceiver exactly at source depth
+  !receiver exactly at source depth
   else
 
     !logarithmic radii, same as returned from Fast Hankel transforms
@@ -753,7 +753,7 @@ subroutine precomp_intvals_Ez_ved(refl_var,sz,zr)
 
   !external variables
   type(refl_struct)             :: refl_var  !stuff to remember throughout 1D computations
-  real(kind=real64),intent(in)  :: sz,zr     !source and iReceiver depth
+  real(kind=real64),intent(in)  :: sz,zr     !source and receiver depth
 
   !internal variables
   integer(kind=int32),dimension(NREL)  :: ibesord   !bessel function order (integer "array")
@@ -769,13 +769,13 @@ subroutine precomp_intvals_Ez_ved(refl_var,sz,zr)
     ibesord = 0
     call precomp_intval_fht(refl_var,ibesord,iabvC0TMved,2)
 
-  !iReceiver below source
+  !receiver below source
   elseif (sz .lt. zr) then
 
     ibesord = 0
     call precomp_intval_fht(refl_var,ibesord,iblwC0TMved,2)
 
-  !iReceiver exactly at source depth
+  !receiver exactly at source depth
   else
 
     !precompute logarithmic radii, start from largest, so that it's the same as for Hankel transforms
@@ -819,7 +819,7 @@ subroutine precomp_intvals_Hxy_ved(refl_var,sz,zr)
 
   !external variables
   type(refl_struct)             :: refl_var  !stuff to remember throughout 1D computations
-  real(kind=real64),intent(in)  :: sz,zr     !source and iReceiver depth
+  real(kind=real64),intent(in)  :: sz,zr     !source and receiver depth
 
   !internal variables
   integer(kind=int32),dimension(nrelmax)  :: ibesord   !bessel function order (integer "array")
@@ -832,7 +832,7 @@ subroutine precomp_intvals_Hxy_ved(refl_var,sz,zr)
     ibesord = 1
     call precomp_intval_fht(refl_var,ibesord,iabvC1TMved,3)
 
-  !iReceiver below source
+  !receiver below source
   else
     ibesord = 1
     call precomp_intval_fht(refl_var,ibesord,iblwC1TMved,3)
@@ -853,7 +853,7 @@ subroutine precomp_intvals_hmd(refl_var,sz,zr)
 
   !external variables
   type(refl_struct)             :: refl_var  !stuff to remember throughout 1D computations
-  real(kind=real64),intent(in)  :: sz,zr     !source and iReceiver depth
+  real(kind=real64),intent(in)  :: sz,zr     !source and receiver depth
 
   !internal variables
   integer(kind=int32),dimension(nrelmax)  :: ibesord   !bessel function order (integer "array")
@@ -898,7 +898,7 @@ subroutine precomp_intvals_hmd(refl_var,sz,zr)
     iint(3) = 5    !integral iabvCz1TM (for Ez)
     call precomp_intval_fht_rel(refl_var,3,ibesord,ijrel,iabvC1TM,iint)
 
-  !iReceiver below source
+  !receiver below source
   elseif (sz .lt. zr) then
 
     !related integrals: IB1TE, IB0TE, IBz1TE, same integrand just different kappa factors and Bessel function orders
@@ -933,7 +933,7 @@ subroutine precomp_intvals_hmd(refl_var,sz,zr)
     iint(3) = 5    !integral iblwCz1TM (for Ez)
     call precomp_intval_fht_rel(refl_var,3,ibesord,ijrel,iblwC1TM,iint)
 
-  !iReceiver exactly at source depth
+  !receiver exactly at source depth
   else
 
     !precompute logarithmic radii, start from largest, so that it's the same as for Hankel transforms
@@ -1009,7 +1009,7 @@ subroutine precomp_intvals_Exy_hmd(refl_var,sz,zr)
 
   !external variables
   type(refl_struct)             :: refl_var  !stuff to remember throughout 1D computations
-  real(kind=real64),intent(in)  :: sz,zr     !source and iReceiver depth
+  real(kind=real64),intent(in)  :: sz,zr     !source and receiver depth
 
   !internal variables
   integer(kind=int32),dimension(nrelmax)  :: ibesord   !bessel function order (integer "array")
@@ -1041,7 +1041,7 @@ subroutine precomp_intvals_Exy_hmd(refl_var,sz,zr)
     iint(2) = 2    !integral IabvB0TM
     call precomp_intval_fht_rel(refl_var,2,ibesord,ijrel,iabvB1TM,iint)
 
-  !iReceiver below source
+  !receiver below source
   elseif (sz .lt. zr) then
 
     !related integrals: IB1TE, IB0TE, same integrand just different kappa factors and Bessel function orders
@@ -1062,7 +1062,7 @@ subroutine precomp_intvals_Exy_hmd(refl_var,sz,zr)
     iint(2) = 2    !integral IblwB0TM
     call precomp_intval_fht_rel(refl_var,2,ibesord,ijrel,iblwB1TM,iint)
 
-  !iReceiver exactly at source depth
+  !receiver exactly at source depth
   else
 
     !precompute logarithmic radii, as returned from FHT
@@ -1112,7 +1112,7 @@ subroutine precomp_intvals_Ez_hmd(refl_var,sz,zr)
 
   !external variables
   type(refl_struct)             :: refl_var  !stuff to remember throughout 1D computations
-  real(kind=real64),intent(in)  :: sz,zr     !source and iReceiver depth
+  real(kind=real64),intent(in)  :: sz,zr     !source and receiver depth
 
   !internal variables
   integer(kind=int32),dimension(NREL)  :: ibesord   !bessel function order (integer "array")
@@ -1122,11 +1122,11 @@ subroutine precomp_intvals_Ez_hmd(refl_var,sz,zr)
   if (sz .ge. zr) then
 
     !integral for Ez
-    !the integral is "easy" --> don't need special case for iReceiver exactly at source depth
+    !the integral is "easy" --> don't need special case for receiver exactly at source depth
     ibesord = 1
     call precomp_intval_fht(refl_var,ibesord,iabvCz1TM,5)
 
-  !iReceiver below source
+  !receiver below source
   else
 
     ibesord = 1
@@ -1149,7 +1149,7 @@ subroutine precomp_intvals_Hxy_hmd(refl_var,sz,zr)
 
   !external variables
   type(refl_struct)             :: refl_var  !stuff to remember throughout 1D computations
-  real(kind=real64),intent(in)  :: sz,zr     !source and iReceiver depth
+  real(kind=real64),intent(in)  :: sz,zr     !source and receiver depth
 
   !internal variables
   integer(kind=int32),dimension(nrelmax)  :: ibesord   !bessel function order (integer "array")
@@ -1180,7 +1180,7 @@ subroutine precomp_intvals_Hxy_hmd(refl_var,sz,zr)
     iint(2) = 7    !integral iabvC0TM
     call precomp_intval_fht_rel(refl_var,2,ibesord,ijrel,iabvC1TM,iint)
 
-  !iReceiver below source
+  !receiver below source
   elseif (sz .lt. zr) then
 
     !related integrals: IB1TE, IB0TE, IBz1TE, same integrand just different kappa factors and Bessel function orders
@@ -1201,7 +1201,7 @@ subroutine precomp_intvals_Hxy_hmd(refl_var,sz,zr)
     iint(2) = 7    !integral iblwC0TM
     call precomp_intval_fht_rel(refl_var,2,ibesord,ijrel,iblwC1TM,iint)
 
-  !iReceiver exactly at source depth
+  !receiver exactly at source depth
   else
 
     !precompute logarithmic radii, start from largest, so that it's the same as for Hankel transforms
@@ -1257,7 +1257,7 @@ subroutine precomp_intvals_Hz_hmd(refl_var,sz,zr)
 
   !external variables
   type(refl_struct)             :: refl_var  !stuff to remember throughout 1D computations
-  real(kind=real64),intent(in)  :: sz,zr     !source and iReceiver depth
+  real(kind=real64),intent(in)  :: sz,zr     !source and receiver depth
 
   !internal variables
   integer(kind=int32),dimension(nrelmax)  :: ibesord   !bessel function order (integer "array")
@@ -1273,13 +1273,13 @@ subroutine precomp_intvals_Hz_hmd(refl_var,sz,zr)
     ibesord = 1
     call precomp_intval_fht(refl_var,ibesord,iabvBz1TE,10)
 
-  !iReceiver below source
+  !receiver below source
   elseif (sz .lt. zr) then
 
     ibesord = 1
     call precomp_intval_fht(refl_var,ibesord,iblwBz1TE,10)
 
-  !iReceiver exactly at source depth
+  !receiver exactly at source depth
   else
 
     !precompute logarithmic radii, start from largest, so that it's the same as for Hankel transforms
@@ -1322,7 +1322,7 @@ subroutine precomp_intvals_vmd(refl_var,sz,zr)
 
   !external variables
   type(refl_struct)             :: refl_var  !stuff to remember throughout 1D computations
-  real(kind=real64),intent(in)  :: sz,zr     !source and iReceiver depth
+  real(kind=real64),intent(in)  :: sz,zr     !source and receiver depth
 
   !internal variables
   integer(kind=int32),dimension(nrelmax)  :: ibesord   !bessel function order (integer "array")
@@ -1349,7 +1349,7 @@ subroutine precomp_intvals_vmd(refl_var,sz,zr)
     ibesord = 1
     call precomp_intval_fht(refl_var,ibesord,iabvD1TEvmd,2)
 
-  !iReceiver below source
+  !receiver below source
   elseif (sz .lt. zr) then
 
     !related integrals: iblwA1TEvmd and iblwA0TEvmd
@@ -1363,7 +1363,7 @@ subroutine precomp_intvals_vmd(refl_var,sz,zr)
     ibesord = 1
     call precomp_intval_fht(refl_var,ibesord,iblwD1TEvmd,2)
 
-  !iReceiver exactly at source depth
+  !receiver exactly at source depth
   else
 
     !precompute logarithmic radii, start from largest, so that it's the same as for Hankel transforms
@@ -1416,7 +1416,7 @@ subroutine precomp_intvals_Exy_vmd(refl_var,sz,zr)
 
   !external variables
   type(refl_struct)             :: refl_var  !stuff to remember throughout 1D computations
-  real(kind=real64),intent(in)  :: sz,zr     !source and iReceiver depth
+  real(kind=real64),intent(in)  :: sz,zr     !source and receiver depth
 
   !internal variables
   integer(kind=int32),dimension(NREL)  :: ibesord   !bessel function order (integer "array")
@@ -1426,7 +1426,7 @@ subroutine precomp_intvals_Exy_vmd(refl_var,sz,zr)
   if (sz .ge. zr) then
 
     !integral for Ex and Ey
-    !the integral is "easy" --> don't need special case for iReceiver exactly at source depth
+    !the integral is "easy" --> don't need special case for receiver exactly at source depth
     ibesord = 1
     call precomp_intval_fht(refl_var,ibesord,iabvA1TEvmd,1)
 
@@ -1451,7 +1451,7 @@ subroutine precomp_intvals_Hxy_vmd(refl_var,sz,zr)
 
   !external variables
   type(refl_struct)             :: refl_var  !stuff to remember throughout 1D computations
-  real(kind=real64),intent(in)  :: sz,zr     !source and iReceiver depth
+  real(kind=real64),intent(in)  :: sz,zr     !source and receiver depth
 
   !internal variables
   integer(kind=int32),dimension(nrelmax)  :: ibesord   !bessel function order (integer "array")
@@ -1467,13 +1467,13 @@ subroutine precomp_intvals_Hxy_vmd(refl_var,sz,zr)
     ibesord = 1
     call precomp_intval_fht(refl_var,ibesord,iabvD1TEvmd,2)
 
-  !iReceiver below source
+  !receiver below source
   elseif (sz .lt. zr) then
 
     ibesord = 1
     call precomp_intval_fht(refl_var,ibesord,iblwD1TEvmd,2)
 
-  !iReceiver exactly at source depth
+  !receiver exactly at source depth
   else
 
     !precompute logarithmic radii, start from largest, so that it's the same as for Hankel transforms
@@ -1516,7 +1516,7 @@ subroutine precomp_intvals_Hz_vmd(refl_var,sz,zr)
 
   !external variables
   type(refl_struct)             :: refl_var  !stuff to remember throughout 1D computations
-  real(kind=real64),intent(in)  :: sz,zr     !source and iReceiver depth
+  real(kind=real64),intent(in)  :: sz,zr     !source and receiver depth
 
   !internal variables
   integer(kind=int32),dimension(nrelmax)  :: ibesord   !bessel function order (integer "array")
@@ -1532,13 +1532,13 @@ subroutine precomp_intvals_Hz_vmd(refl_var,sz,zr)
     ibesord = 0
     call precomp_intval_fht(refl_var,ibesord,iabvA0TEvmd,3)
 
-  !iReceiver below source
+  !receiver below source
   elseif (sz .lt. zr) then
 
     ibesord = 0
     call precomp_intval_fht(refl_var,ibesord,iblwA0TEvmd,3)
 
-  !iReceiver exactly at source depth
+  !receiver exactly at source depth
   else
 
     !precompute logarithmic radii, start from largest, so that it's the same as for Hankel transforms
@@ -1581,7 +1581,7 @@ subroutine precomp_intvals_wire(refl_var,sz,zr)
 
   !external variables
   type(refl_struct)             :: refl_var  !stuff to remember throughout 1D computations
-  real(kind=real64),intent(in)  :: sz,zr     !source and iReceiver depth
+  real(kind=real64),intent(in)  :: sz,zr     !source and receiver depth
 
   !internal variables
   integer(kind=int32),dimension(NREL)  :: ibesord   !bessel function order (integer "array")
@@ -1619,7 +1619,7 @@ subroutine precomp_intvals_wire(refl_var,sz,zr)
     ibesord = 1
     call precomp_intval_fht(refl_var,ibesord,idabvHxwire,6)
 
-  !iReceiver below source
+  !receiver below source
   elseif (sz .lt. zr) then
 
     ibesord = 0
@@ -1635,7 +1635,7 @@ subroutine precomp_intvals_wire(refl_var,sz,zr)
     ibesord = 1
     call precomp_intval_fht(refl_var,ibesord,idblwHxwire,6)
 
-  !iReceiver exactly at source depth
+  !receiver exactly at source depth
   else
 
     !precompute logarithmic radii, start from largest, so that it's the same as for Hankel transforms
@@ -1698,7 +1698,7 @@ subroutine precomp_intvals_Exy_wire(refl_var,sz,zr)
 
   !external variables
   type(refl_struct)             :: refl_var  !stuff to remember throughout 1D computations
-  real(kind=real64),intent(in)  :: sz,zr     !source and iReceiver depth
+  real(kind=real64),intent(in)  :: sz,zr     !source and receiver depth
 
   !internal variables
   integer(kind=int32),dimension(NREL)  :: ibesord   !bessel function order (integer "array")
@@ -1718,7 +1718,7 @@ subroutine precomp_intvals_Exy_wire(refl_var,sz,zr)
     ibesord = 1
     call precomp_intval_fht(refl_var,ibesord,i2abvExwire,4)
 
-  !iReceiver below source
+  !receiver below source
   elseif (sz .lt. zr) then
 
     ibesord = 0
@@ -1726,7 +1726,7 @@ subroutine precomp_intvals_Exy_wire(refl_var,sz,zr)
     ibesord = 1
     call precomp_intval_fht(refl_var,ibesord,i2blwExwire,4)
 
-  !iReceiver exactly at source depth
+  !receiver exactly at source depth
   else
 
     !precompute logarithmic radii as returned from fast Hankel transform
@@ -1773,7 +1773,7 @@ subroutine precomp_intvals_Ez_wire(refl_var,sz,zr)
 
   !external variables
   type(refl_struct)             :: refl_var  !stuff to remember throughout 1D computations
-  real(kind=real64),intent(in)  :: sz,zr     !source and iReceiver depth
+  real(kind=real64),intent(in)  :: sz,zr     !source and receiver depth
 
   !internal variables
   integer(kind=int32),dimension(NREL)  :: ibesord   !bessel function order (integer "array")
@@ -1789,13 +1789,13 @@ subroutine precomp_intvals_Ez_wire(refl_var,sz,zr)
     ibesord = 0
     call precomp_intval_fht(refl_var,ibesord,iabvD0TM,5)
 
-  !iReceiver below source
+  !receiver below source
   elseif (sz .lt. zr) then
 
     ibesord = 0
     call precomp_intval_fht(refl_var,ibesord,iblwD0TM,5)
 
-  !iReceiver exactly at source depth
+  !receiver exactly at source depth
   else
 
     !precompute logarithmic radii, start from largest, so that it's the same as for Hankel transforms
@@ -1838,7 +1838,7 @@ subroutine precomp_intvals_Hxy_wire(refl_var,sz,zr)
 
   !external variables
   type(refl_struct)             :: refl_var  !stuff to remember throughout 1D computations
-  real(kind=real64),intent(in)  :: sz,zr     !source and iReceiver depth
+  real(kind=real64),intent(in)  :: sz,zr     !source and receiver depth
 
   !internal variables
   integer(kind=int32),dimension(NREL)  :: ibesord   !bessel function order (integer "array")
@@ -1858,7 +1858,7 @@ subroutine precomp_intvals_Hxy_wire(refl_var,sz,zr)
     ibesord = 1
     call precomp_intval_fht(refl_var,ibesord,idabvHxwire,6)
 
-  !iReceiver below source
+  !receiver below source
   elseif (sz .lt. zr) then
 
     ibesord = 0
@@ -1866,7 +1866,7 @@ subroutine precomp_intvals_Hxy_wire(refl_var,sz,zr)
     ibesord = 1
     call precomp_intval_fht(refl_var,ibesord,idblwHxwire,6)
 
-  !iReceiver exactly at source depth
+  !receiver exactly at source depth
   else
 
     !precompute logarithmic radii, start from largest, so that it's the same as for Hankel transforms
@@ -1911,7 +1911,7 @@ subroutine precomp_intvals_Hz_wire(refl_var,sz,zr)
 
   !external variables
   type(refl_struct)             :: refl_var  !stuff to remember throughout 1D computations
-  real(kind=real64),intent(in)  :: sz,zr     !source and iReceiver depth
+  real(kind=real64),intent(in)  :: sz,zr     !source and receiver depth
 
   !internal variables
   integer(kind=int32),dimension(NREL)  :: ibesord   !bessel function order (integer "array")
@@ -1924,7 +1924,7 @@ subroutine precomp_intvals_Hz_wire(refl_var,sz,zr)
     !integrals along wires
     !integral for Hz - no need for adaptive integration for this integral
     call precomp_intval_fht(refl_var,ibesord,iabvAz1TE,3)
-  !iReceiver below source
+  !receiver below source
   else
     call precomp_intval_fht(refl_var,ibesord,iblwAz1TE,3)
   endif

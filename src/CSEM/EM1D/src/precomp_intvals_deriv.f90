@@ -12,11 +12,11 @@ subroutine precomp_intvals_deriv_hed(refl_var,sz,zr,ilay, &
 
   !external variables
   type(refl_struct)             :: refl_var  !stuff to remember throughout 1D computations
-  real(kind=real64),intent(in)  :: sz,zr     !source and iReceiver depth
+  real(kind=real64),intent(in)  :: sz,zr     !source and receiver depth
   integer(kind=int32),intent(in) :: ilay     !layer index, compute derivatives with respect to this layer
   !derivatives of integrals with respect to epsh or isotropic
   complex(kind=real64),external  :: funcA0TE,funcA0TM,funcA1TE,funcA1TM,funcDz1TM,funcD0TE,funcD0TM,funcD1TE,funcD1TM,funcAz1TE
-  complex(kind=real64),external,optional   :: funcDz1TMfwd  !function only needed for derivatives in iReceiver layer
+  complex(kind=real64),external,optional   :: funcDz1TMfwd  !function only needed for derivatives in receiver layer
   !derivatives of TM integrals with respect to epsv in VTI case
   complex(kind=real64),external,optional  :: funcA0TMv,funcA1TMv,funcDz1TMv,funcD0TMv,funcD1TMv
 
@@ -68,7 +68,7 @@ subroutine precomp_intvals_deriv_hed(refl_var,sz,zr,ilay, &
     iint(3) = 5    !integral iabvDz1TMderiv (for Ez)
     call precomp_intval_fht_rel(refl_var,3,ibesord,ijrel,funcD1TM,iint)
  
-    !special in iReceiver layer: there is an eps in front of the integral, so we also need 
+    !special in receiver layer: there is an eps in front of the integral, so we also need 
     ! derivative of term in front of integral times integral without derivative
     if (ilaym .eq. ilayrec) then
       ibesord = 1
@@ -90,10 +90,10 @@ subroutine precomp_intvals_deriv_hed(refl_var,sz,zr,ilay, &
       call precomp_intval_fht_rel(refl_var,3,ibesord,ijrel,funcD1TMv,iint)
     endif
 
-  !iReceiver exactly at source depth
+  !receiver exactly at source depth
   else
 
-    write(*,'(a)') 'WARNING: source depth = iReceiver depth, entering adaptive integration, this can be SLOW!'
+    write(*,'(a)') 'WARNING: source depth = receiver depth, entering adaptive integration, this can be SLOW!'
 
     !precompute logarithmic radii, start from largest, so that it's the same as for Hankel transforms
     fact = exp(logspace)
@@ -203,7 +203,7 @@ subroutine precomp_intvals_deriv_hed_Exy(refl_var,sz,zr,ilay, &
 
   !external variables
   type(refl_struct)             :: refl_var  !stuff to remember throughout 1D computations
-  real(kind=real64),intent(in)  :: sz,zr     !source and iReceiver depth
+  real(kind=real64),intent(in)  :: sz,zr     !source and receiver depth
   integer(kind=int32),intent(in) :: ilay     !layer index, compute derivatives with respect to this layer
   !derivatives of integrals with respect to epsh or isotropic
   complex(kind=real64),external  :: funcA0TE,funcA0TM,funcA1TE,funcA1TM
@@ -255,11 +255,11 @@ subroutine precomp_intvals_deriv_hed_Exy(refl_var,sz,zr,ilay, &
  
     endif
 
-  !iReceiver exactly at source depth
+  !receiver exactly at source depth
   else
 
     if (refl_var%infolevel .gt. output_final) &
-      write(*,'(a)') 'WARNING: source depth = iReceiver depth, entering adaptive integration, this can be SLOW!'
+      write(*,'(a)') 'WARNING: source depth = receiver depth, entering adaptive integration, this can be SLOW!'
 
     !precompute logarithmic radii, start from largest, so that it's the same as for Hankel transforms
     fact = exp(logspace)
@@ -332,11 +332,11 @@ subroutine precomp_intvals_deriv_hed_Ez(refl_var,sz,zr,ilay, &
 
   !external variables
   type(refl_struct)             :: refl_var  !stuff to remember throughout 1D computations
-  real(kind=real64),intent(in)  :: sz,zr     !source and iReceiver depth
+  real(kind=real64),intent(in)  :: sz,zr     !source and receiver depth
   integer(kind=int32),intent(in) :: ilay     !layer index, compute derivatives with respect to this layer
   !derivatives of integrals with respect to epsh or isotropic
   complex(kind=real64),external  :: funcDz1TM
-  complex(kind=real64),external,optional   :: funcDz1TMfwd  !function only needed for derivatives in iReceiver layer
+  complex(kind=real64),external,optional   :: funcDz1TMfwd  !function only needed for derivatives in receiver layer
   !derivatives of TM integrals with respect to epsv in VTI case
   complex(kind=real64),external,optional  :: funcDz1TMv
 
@@ -364,7 +364,7 @@ subroutine precomp_intvals_deriv_hed_Ez(refl_var,sz,zr,ilay, &
     !related integrals D_TMderiv
     call precomp_intval_fht(refl_var,ibesord,funcDz1TM,5)
 
-    !special in iReceiver layer: there is an eps in front of the integral, so we also need 
+    !special in receiver layer: there is an eps in front of the integral, so we also need 
     ! derivative of term in front of integral times integral without derivative
     if (ilaym .eq. ilayrec) then
       call precomp_intval_fht(refl_var,ibesord,funcDz1TMfwd,11)
@@ -375,10 +375,10 @@ subroutine precomp_intvals_deriv_hed_Ez(refl_var,sz,zr,ilay, &
       call precomp_intval_fht(refl_var,ibesord,funcDz1TMv,16)
     endif
 
-  !iReceiver exactly at source depth
+  !receiver exactly at source depth
   else
 
-    write(*,'(a)') 'WARNING: source depth = iReceiver depth, entering adaptive integration, this can be SLOW!'
+    write(*,'(a)') 'WARNING: source depth = receiver depth, entering adaptive integration, this can be SLOW!'
 
     !precompute logarithmic radii, start from largest, so that it's the same as for Hankel transforms
     fact = exp(logspace)
@@ -442,7 +442,7 @@ subroutine precomp_intvals_deriv_hed_Hxy(refl_var,sz,zr,ilay, &
 
   !external variables
   type(refl_struct)             :: refl_var  !stuff to remember throughout 1D computations
-  real(kind=real64),intent(in)  :: sz,zr     !source and iReceiver depth
+  real(kind=real64),intent(in)  :: sz,zr     !source and receiver depth
   integer(kind=int32),intent(in) :: ilay     !layer index, compute derivatives with respect to this layer
   !derivatives of integrals with respect to epsh or isotropic
   complex(kind=real64),external  :: funcD0TE,funcD0TM,funcD1TE,funcD1TM
@@ -493,10 +493,10 @@ subroutine precomp_intvals_deriv_hed_Hxy(refl_var,sz,zr,ilay, &
       call precomp_intval_fht_rel(refl_var,2,ibesord,ijrel,funcD1TMv,iint)
     endif
 
-  !iReceiver exactly at source depth
+  !receiver exactly at source depth
   else
 
-    write(*,'(a)') 'WARNING: source depth = iReceiver depth, entering adaptive integration, this can be SLOW!'
+    write(*,'(a)') 'WARNING: source depth = receiver depth, entering adaptive integration, this can be SLOW!'
 
     !precompute logarithmic radii, start from largest, so that it's the same as for Hankel transforms
     fact = exp(logspace)
@@ -563,7 +563,7 @@ subroutine precomp_intvals_deriv_hed_Hz(refl_var,sz,zr,ilay, funcAz1TE)
 
   !external variables
   type(refl_struct)             :: refl_var  !stuff to remember throughout 1D computations
-  real(kind=real64),intent(in)  :: sz,zr     !source and iReceiver depth
+  real(kind=real64),intent(in)  :: sz,zr     !source and receiver depth
   integer(kind=int32),intent(in) :: ilay     !layer index, compute derivatives with respect to this layer
   !derivatives of integrals with respect to epsh or isotropic
   complex(kind=real64),external  :: funcAz1TE
@@ -594,7 +594,7 @@ subroutine precomp_intvals_deriv_ved(refl_var,sz,zr,ilay, &
 
   !external variables
   type(refl_struct)             :: refl_var  !stuff to remember throughout 1D computations
-  real(kind=real64),intent(in)  :: sz,zr     !source and iReceiver depth
+  real(kind=real64),intent(in)  :: sz,zr     !source and receiver depth
   integer(kind=int32),intent(in) :: ilay     !layer index, compute derivatives with respect to this layer
   complex(kind=real64),external   :: funcB1TMved,funcC0TMved,funcC1TMved
   complex(kind=real64),external   :: funcB1TMfwd,funcC0TMfwd,funcC1TMfwd
@@ -639,7 +639,7 @@ subroutine precomp_intvals_deriv_ved(refl_var,sz,zr,ilay, &
         iint(2) = 5    !integral iabvC0TMved
         call precomp_intval_fht_rel(refl_var,2,ibesord,ijrel,funcC1TMfwd,iint)
 
-    !special term for Ez needed in source AND iReceiver layer
+    !special term for Ez needed in source AND receiver layer
     elseif (ilaym .eq. ilayrec) then
       ibesord = 0
       call precomp_intval_fht(refl_var,ibesord,funcC0TMfwd,5) !Ez
@@ -660,7 +660,7 @@ subroutine precomp_intvals_deriv_ved(refl_var,sz,zr,ilay, &
       call precomp_intval_fht(refl_var,ibesord,funcB1TMvedv,7)
     endif
 
-  !iReceiver exactly at source depth
+  !receiver exactly at source depth
   else
 
     !precompute radii at logarithmic spacing, start from largest, so that it's the same as for Hankel transforms
@@ -676,7 +676,7 @@ subroutine precomp_intvals_deriv_ved(refl_var,sz,zr,ilay, &
     besorder = 0._real64
     call precomp_intval_adaptive(refl_var,besorder,funcC0TMved,2,sz,zr)
 
-    !special term for Ez needed in source AND iReceiver layer
+    !special term for Ez needed in source AND receiver layer
     if ((ilaym .eq. ilayrec) .or. (ilaym .eq. ilaysrc)) then
       besorder = 0._real64
       call precomp_intval_adaptive(refl_var,besorder,funcC0TMfwd,5,sz,zr)
@@ -716,7 +716,7 @@ subroutine precomp_intvals_deriv_ved(refl_var,sz,zr,ilay, &
       call spline(refl_var%radlog,refl_var%intvalim(:,8),refl_var%nrad,spl_endval,spl_endval,refl_var%spl_derivim(:,8))
     endif
 
-    !special term for Ez needed in source AND iReceiver layer
+    !special term for Ez needed in source AND receiver layer
     if ((ilaym .eq. ilayrec) .or. (ilaym .eq. ilaysrc)) then
       call spline(refl_var%radlog,refl_var%intvalre(:,5),refl_var%nrad,spl_endval,spl_endval,refl_var%spl_derivre(:,5))
       call spline(refl_var%radlog,refl_var%intvalim(:,5),refl_var%nrad,spl_endval,spl_endval,refl_var%spl_derivim(:,5))
@@ -737,7 +737,7 @@ subroutine precomp_intvals_deriv_ved(refl_var,sz,zr,ilay, &
       call precomp_intval_fht(refl_var,ibesord,funcC1TMvedv,9)
     endif
     
-  endif !iReceiver location above or below source
+  endif !receiver location above or below source
 
 endsubroutine precomp_intvals_deriv_ved
 
@@ -754,7 +754,7 @@ subroutine precomp_intvals_deriv_ved_Exy(refl_var,sz,zr,ilay, funcB1TMved, funcB
 
   !external variables
   type(refl_struct)             :: refl_var  !stuff to remember throughout 1D computations
-  real(kind=real64),intent(in)  :: sz,zr     !source and iReceiver depth
+  real(kind=real64),intent(in)  :: sz,zr     !source and receiver depth
   integer(kind=int32),intent(in) :: ilay     !layer index, compute derivatives with respect to this layer
   complex(kind=real64),external   :: funcB1TMved
   complex(kind=real64),external   :: funcB1TMfwd
@@ -790,7 +790,7 @@ subroutine precomp_intvals_deriv_ved_Exy(refl_var,sz,zr,ilay, funcB1TMved, funcB
       call precomp_intval_fht(refl_var,ibesord,funcB1TMvedv,7)
     endif
 
-  !iReceiver exactly at source depth
+  !receiver exactly at source depth
   else
 
     !precompute radii at logarithmic spacing, start from largest, so that it's the same as for Hankel transforms
@@ -839,7 +839,7 @@ subroutine precomp_intvals_deriv_ved_Exy(refl_var,sz,zr,ilay, funcB1TMved, funcB
       call spline(refl_var%radlog,refl_var%intvalim(:,4),refl_var%nrad,spl_endval,spl_endval,refl_var%spl_derivim(:,4))
     endif
 
-  endif !iReceiver location above or below source
+  endif !receiver location above or below source
 
 endsubroutine precomp_intvals_deriv_ved_Exy
 
@@ -856,7 +856,7 @@ subroutine precomp_intvals_deriv_ved_Ez(refl_var,sz,zr,ilay, funcC0TMved, funcC0
 
   !external variables
   type(refl_struct)             :: refl_var  !stuff to remember throughout 1D computations
-  real(kind=real64),intent(in)  :: sz,zr     !source and iReceiver depth
+  real(kind=real64),intent(in)  :: sz,zr     !source and receiver depth
   integer(kind=int32),intent(in) :: ilay     !layer index, compute derivatives with respect to this layer
   complex(kind=real64),external   :: funcC0TMved
   complex(kind=real64),external   :: funcC0TMfwd
@@ -879,7 +879,7 @@ subroutine precomp_intvals_deriv_ved_Ez(refl_var,sz,zr,ilay, funcC0TMved, funcC0
     call precomp_intval_fht(refl_var,ibesord,funcC0TMved,2) !integral iabvC0TMvedderiv (for Ez)
 
     if ((ilaym .eq. ilaysrc) .or. (ilaym .eq. ilayrec)) then
-      !special term for Ez needed in source AND iReceiver layer
+      !special term for Ez needed in source AND receiver layer
       call precomp_intval_fht(refl_var,ibesord,funcC0TMfwd,5) !integral iabvC0TMved (for Ez)
     endif
     
@@ -888,7 +888,7 @@ subroutine precomp_intvals_deriv_ved_Ez(refl_var,sz,zr,ilay, funcC0TMved, funcC0
       call precomp_intval_fht(refl_var,ibesord,funcC0TMvedv,8)  !integral iabvC0TMvedderivv (for Ez)
     endif
 
-  !iReceiver exactly at source depth
+  !receiver exactly at source depth
   else
 
     !precompute radii at logarithmic spacing, start from largest, so that it's the same as for Hankel transforms
@@ -903,7 +903,7 @@ subroutine precomp_intvals_deriv_ved_Ez(refl_var,sz,zr,ilay, funcC0TMved, funcC0
     !compute badly behaved integrals by adaptive integration
     call precomp_intval_adaptive(refl_var,besorder,funcC0TMved,2,sz,zr)
 
-    !special term for Ez needed in source AND iReceiver layer
+    !special term for Ez needed in source AND receiver layer
     if ((ilaym .eq. ilayrec) .or. (ilaym .eq. ilaysrc)) then
       call precomp_intval_adaptive(refl_var,besorder,funcC0TMfwd,5,sz,zr)
     endif
@@ -930,13 +930,13 @@ subroutine precomp_intvals_deriv_ved_Ez(refl_var,sz,zr,ilay, funcC0TMved, funcC0
       call spline(refl_var%radlog,refl_var%intvalim(:,8),refl_var%nrad,spl_endval,spl_endval,refl_var%spl_derivim(:,8))
     endif
 
-    !special term for Ez needed in source AND iReceiver layer
+    !special term for Ez needed in source AND receiver layer
     if ((ilaym .eq. ilayrec) .or. (ilaym .eq. ilaysrc)) then
       call spline(refl_var%radlog,refl_var%intvalre(:,5),refl_var%nrad,spl_endval,spl_endval,refl_var%spl_derivre(:,5))
       call spline(refl_var%radlog,refl_var%intvalim(:,5),refl_var%nrad,spl_endval,spl_endval,refl_var%spl_derivim(:,5))
     endif
     
-  endif !iReceiver location above or below source
+  endif !receiver location above or below source
 
 endsubroutine precomp_intvals_deriv_ved_Ez
 
@@ -953,7 +953,7 @@ subroutine precomp_intvals_deriv_ved_Hxy(refl_var,sz,zr,ilay, funcC1TMved, funcC
 
   !external variables
   type(refl_struct)             :: refl_var  !stuff to remember throughout 1D computations
-  real(kind=real64),intent(in)  :: sz,zr     !source and iReceiver depth
+  real(kind=real64),intent(in)  :: sz,zr     !source and receiver depth
   integer(kind=int32),intent(in) :: ilay     !layer index, compute derivatives with respect to this layer
   complex(kind=real64),external   :: funcC1TMved
   complex(kind=real64),external   :: funcC1TMfwd
@@ -968,7 +968,7 @@ subroutine precomp_intvals_deriv_ved_Hxy(refl_var,sz,zr,ilay, funcC1TMved, funcC
 
   ibesord = 1
 
-  !all integrals well-behaved, no need to distinguish special case for source depth = iReceiver depth
+  !all integrals well-behaved, no need to distinguish special case for source depth = receiver depth
 
     call precomp_intval_fht(refl_var,ibesord,funcC1TMved,3) !integral iabvCz1TMderiv (for Hx and Hy)
 
@@ -999,10 +999,10 @@ subroutine precomp_intvals_deriv_hmd(refl_var,sz,zr,ilay, &
 
   !external variables
   type(refl_struct)             :: refl_var  !stuff to remember throughout 1D computations
-  real(kind=real64),intent(in)  :: sz,zr     !source and iReceiver depth
+  real(kind=real64),intent(in)  :: sz,zr     !source and receiver depth
   integer(kind=int32),intent(in) :: ilay     !layer index, compute derivatives with respect to this layer
   complex(kind=real64),external   :: funcB0TE,funcB0TM,funcB1TE,funcB1TM,funcCz1TM,funcC0TE,funcC0TM,funcC1TE,funcC1TM,funcBz1TE
-  complex(kind=real64),external   :: funcCz1TMfwd  !function only needed for derivatives in iReceiver layer
+  complex(kind=real64),external   :: funcCz1TMfwd  !function only needed for derivatives in receiver layer
   complex(kind=real64),external,optional   :: funcB0TMv,funcB1TMv,funcCz1TMv,funcC0TMv,funcC1TMv !functions for epsv derivatives
 
   !internal variables
@@ -1051,7 +1051,7 @@ subroutine precomp_intvals_deriv_hmd(refl_var,sz,zr,ilay, &
     iint(3) = 5    !integral iabvCz1TMderiv (for Ez)
     call precomp_intval_fht_rel(refl_var,3,ibesord,ijrel,funcC1TM,iint)
 
-    !special in iReceiver layer: there is an eps in front of the integral, so we also need 
+    !special in receiver layer: there is an eps in front of the integral, so we also need 
     ! derivative of term in front of integral times integral without derivative
     if (ilaym .eq. ilayrec) then
       ibesord = 1
@@ -1073,7 +1073,7 @@ subroutine precomp_intvals_deriv_hmd(refl_var,sz,zr,ilay, &
       call precomp_intval_fht_rel(refl_var,3,ibesord,ijrel,funcC1TMv,iint)
     endif
 
-  !iReceiver exactly at source depth
+  !receiver exactly at source depth
   else
 
     !precompute logarithmic radii, start from largest, so that it's the same as for Hankel transforms
@@ -1178,7 +1178,7 @@ subroutine precomp_intvals_deriv_hmd_Exy(refl_var,sz,zr,ilay, funcB0TE,funcB0TM,
 
   !external variables
   type(refl_struct)             :: refl_var  !stuff to remember throughout 1D computations
-  real(kind=real64),intent(in)  :: sz,zr     !source and iReceiver depth
+  real(kind=real64),intent(in)  :: sz,zr     !source and receiver depth
   integer(kind=int32),intent(in) :: ilay     !layer index, compute derivatives with respect to this layer
   complex(kind=real64),external   :: funcB0TE,funcB0TM,funcB1TE,funcB1TM
   complex(kind=real64),external,optional   :: funcB0TMv,funcB1TMv !functions for epsv derivatives
@@ -1224,7 +1224,7 @@ subroutine precomp_intvals_deriv_hmd_Exy(refl_var,sz,zr,ilay, funcB0TE,funcB0TM,
       call precomp_intval_fht_rel(refl_var,2,ibesord,ijrel,funcB1TMv,iint)
     endif
 
-  !iReceiver exactly at source depth
+  !receiver exactly at source depth
   else
 
     !precompute logarithmic radii, start from largest, so that it's the same as for Hankel transforms
@@ -1291,10 +1291,10 @@ subroutine precomp_intvals_deriv_hmd_Ez(refl_var,sz,zr,ilay, funcCz1TM,funcCz1TM
 
   !external variables
   type(refl_struct)             :: refl_var  !stuff to remember throughout 1D computations
-  real(kind=real64),intent(in)  :: sz,zr     !source and iReceiver depth
+  real(kind=real64),intent(in)  :: sz,zr     !source and receiver depth
   integer(kind=int32),intent(in) :: ilay     !layer index, compute derivatives with respect to this layer
   complex(kind=real64),external   :: funcCz1TM
-  complex(kind=real64),external   :: funcCz1TMfwd  !function only needed for derivatives in iReceiver layer
+  complex(kind=real64),external   :: funcCz1TMfwd  !function only needed for derivatives in receiver layer
   complex(kind=real64),external,optional   :: funcCz1TMv !functions for epsv derivatives
 
   !internal variables
@@ -1310,7 +1310,7 @@ subroutine precomp_intvals_deriv_hmd_Ez(refl_var,sz,zr,ilay, funcCz1TM,funcCz1TM
 
     call precomp_intval_fht(refl_var,ibesord,funcCz1TM,5)  !integral iabvCz1TMderiv (for Ez)
 
-    !special in iReceiver layer: there is an eps in front of the integral, so we also need 
+    !special in receiver layer: there is an eps in front of the integral, so we also need 
     ! derivative of term in front of integral times integral without derivative
     if (ilaym .eq. ilayrec) then
       call precomp_intval_fht(refl_var,ibesord,funcCz1TMfwd,11)
@@ -1336,7 +1336,7 @@ subroutine precomp_intvals_deriv_hmd_Hxy(refl_var,sz,zr,ilay, funcC0TE,funcC0TM,
 
   !external variables
   type(refl_struct)             :: refl_var  !stuff to remember throughout 1D computations
-  real(kind=real64),intent(in)  :: sz,zr     !source and iReceiver depth
+  real(kind=real64),intent(in)  :: sz,zr     !source and receiver depth
   integer(kind=int32),intent(in) :: ilay     !layer index, compute derivatives with respect to this layer
   complex(kind=real64),external   :: funcC0TE,funcC0TM,funcC1TE,funcC1TM
   complex(kind=real64),external,optional   :: funcC0TMv,funcC1TMv !functions for epsv derivatives
@@ -1377,7 +1377,7 @@ subroutine precomp_intvals_deriv_hmd_Hxy(refl_var,sz,zr,ilay, funcC0TE,funcC0TM,
       call precomp_intval_fht_rel(refl_var,2,ibesord,ijrel,funcC1TMv,iint)
     endif
 
-  !iReceiver exactly at source depth
+  !receiver exactly at source depth
   else
 
     !precompute logarithmic radii, start from largest, so that it's the same as for Hankel transforms
@@ -1440,7 +1440,7 @@ subroutine precomp_intvals_deriv_hmd_Hz(refl_var,sz,zr,ilay, funcBz1TE)
 
   !external variables
   type(refl_struct)             :: refl_var  !stuff to remember throughout 1D computations
-  real(kind=real64),intent(in)  :: sz,zr     !source and iReceiver depth
+  real(kind=real64),intent(in)  :: sz,zr     !source and receiver depth
   integer(kind=int32),intent(in) :: ilay     !layer index, compute derivatives with respect to this layer
   complex(kind=real64),external   :: funcBz1TE
 
@@ -1460,7 +1460,7 @@ subroutine precomp_intvals_deriv_hmd_Hz(refl_var,sz,zr,ilay, funcBz1TE)
     ibesord = 1
     call precomp_intval_fht(refl_var,ibesord,funcBz1TE,10) !integral IabvBz1TEderiv (for Hz)
 
-  !iReceiver exactly at source depth
+  !receiver exactly at source depth
   else
 
     !precompute logarithmic radii, start from largest, so that it's the same as for Hankel transforms
@@ -1500,7 +1500,7 @@ subroutine precomp_intvals_deriv_vmd(refl_var,sz,zr,ilay, funcA1TEvmd,funcD1TEvm
 
   !external variables
   type(refl_struct)             :: refl_var  !stuff to remember throughout 1D computations
-  real(kind=real64),intent(in)  :: sz,zr     !source and iReceiver depth
+  real(kind=real64),intent(in)  :: sz,zr     !source and receiver depth
   integer(kind=int32),intent(in) :: ilay     !layer index, compute derivatives with respect to this layer
   complex(kind=real64),external  :: funcA1TEvmd,funcD1TEvmd,funcA0TEvmd !integral derivative functions
 
@@ -1532,7 +1532,7 @@ subroutine precomp_intvals_deriv_vmd(refl_var,sz,zr,ilay, funcA1TEvmd,funcD1TEvm
     ibesord = 1
     call precomp_intval_fht(refl_var,ibesord,funcD1TEvmd,2)
 
-  !iReceiver exactly at source depth
+  !receiver exactly at source depth
   else
 
     !precompute logarithmic radii, start from largest, so that it's the same as for Hankel transforms
@@ -1584,7 +1584,7 @@ subroutine precomp_intvals_deriv_vmd_Exy(refl_var,sz,zr,ilay, funcA1TEvmd)
 
   !external variables
   type(refl_struct)             :: refl_var  !stuff to remember throughout 1D computations
-  real(kind=real64),intent(in)  :: sz,zr     !source and iReceiver depth
+  real(kind=real64),intent(in)  :: sz,zr     !source and receiver depth
   integer(kind=int32),intent(in) :: ilay     !layer index, compute derivatives with respect to this layer
   complex(kind=real64),external  :: funcA1TEvmd !integral derivative functions
 
@@ -1615,7 +1615,7 @@ subroutine precomp_intvals_deriv_vmd_Hxy(refl_var,sz,zr,ilay, funcD1TEvmd)
 
   !external variables
   type(refl_struct)             :: refl_var  !stuff to remember throughout 1D computations
-  real(kind=real64),intent(in)  :: sz,zr     !source and iReceiver depth
+  real(kind=real64),intent(in)  :: sz,zr     !source and receiver depth
   integer(kind=int32),intent(in) :: ilay     !layer index, compute derivatives with respect to this layer
   complex(kind=real64),external  :: funcD1TEvmd !integral derivative functions
 
@@ -1636,7 +1636,7 @@ subroutine precomp_intvals_deriv_vmd_Hxy(refl_var,sz,zr,ilay, funcD1TEvmd)
     ibesord = 1
     call precomp_intval_fht(refl_var,ibesord,funcD1TEvmd,2)
 
-  !iReceiver exactly at source depth
+  !receiver exactly at source depth
   else
 
     !precompute logarithmic radii, start from largest, so that it's the same as for Hankel transforms
@@ -1675,7 +1675,7 @@ subroutine precomp_intvals_deriv_vmd_Hz(refl_var,sz,zr,ilay, funcA0TEvmd)
 
   !external variables
   type(refl_struct)             :: refl_var  !stuff to remember throughout 1D computations
-  real(kind=real64),intent(in)  :: sz,zr     !source and iReceiver depth
+  real(kind=real64),intent(in)  :: sz,zr     !source and receiver depth
   integer(kind=int32),intent(in) :: ilay     !layer index, compute derivatives with respect to this layer
   complex(kind=real64),external  :: funcA0TEvmd !integral derivative functions
 
@@ -1695,7 +1695,7 @@ subroutine precomp_intvals_deriv_vmd_Hz(refl_var,sz,zr,ilay, funcA0TEvmd)
     ibesord = 0
     call precomp_intval_fht(refl_var,ibesord,funcA0TEvmd,3)  !integral iabv/blwA0TEvmdderiv (for Hz)
 
-  !iReceiver exactly at source depth
+  !receiver exactly at source depth
   else
 
     !precompute logarithmic radii, start from largest, so that it's the same as for Hankel transforms
@@ -1736,10 +1736,10 @@ subroutine precomp_intvals_deriv_wire(refl_var,sz,zr,ilay, &
 
   !external variables
   type(refl_struct)             :: refl_var  !stuff to remember throughout 1D computations
-  real(kind=real64),intent(in)  :: sz,zr     !source and iReceiver depth
+  real(kind=real64),intent(in)  :: sz,zr     !source and receiver depth
   integer(kind=int32),intent(in)  :: ilay     !layer index, compute derivatives with respect to this layer
   complex(kind=real64),external   :: func1Exwire,funcD0TE,funcAz1TE,func2Exwire,funcD0TM,funcdHxwire
-  complex(kind=real64),external   :: funcD0TMfwd  !function only needed for derivatives in iReceiver layer
+  complex(kind=real64),external   :: funcD0TMfwd  !function only needed for derivatives in receiver layer
   complex(kind=real64),external,optional   :: func2Exwirev,funcD0TMv,funcdHxwirev !integral derivatives for epsv
 
   !internal variables
@@ -1781,7 +1781,7 @@ subroutine precomp_intvals_deriv_wire(refl_var,sz,zr,ilay, &
     ibesord = 1
     call precomp_intval_fht(refl_var,ibesord,funcdHxwire,6)
 
-    !special in iReceiver layer for Ez: there is an eps in front of the integral, so we also need 
+    !special in receiver layer for Ez: there is an eps in front of the integral, so we also need 
     ! derivative of term in front of integral times integral without derivative
     if (ilaym .eq. ilayrec) then
       ibesord = 0
@@ -1798,7 +1798,7 @@ subroutine precomp_intvals_deriv_wire(refl_var,sz,zr,ilay, &
       call precomp_intval_fht(refl_var,ibesord,funcdHxwirev,10)
     endif
 
-  !iReceiver exactly at source depth
+  !receiver exactly at source depth
   else
 
     !precompute logarithmic radii, start from largest, so that it's the same as for Hankel transforms
@@ -1819,7 +1819,7 @@ subroutine precomp_intvals_deriv_wire(refl_var,sz,zr,ilay, &
     besorder = 0._real64
     call precomp_intval_adaptive(refl_var,besorder,funcD0TM,5,sz,zr)
 
-    !special term for derivative of Ez in iReceiver layer
+    !special term for derivative of Ez in receiver layer
     if (ilaym .eq. ilayrec) then
       besorder = 0._real64
       call precomp_intval_adaptive(refl_var,besorder,funcD0TMfwd,7,sz,zr)
@@ -1849,7 +1849,7 @@ subroutine precomp_intvals_deriv_wire(refl_var,sz,zr,ilay, &
     call spline(refl_var%radlog,refl_var%intvalre(:,5),refl_var%nrad,spl_endval,spl_endval,refl_var%spl_derivre(:,5))
     call spline(refl_var%radlog,refl_var%intvalim(:,5),refl_var%nrad,spl_endval,spl_endval,refl_var%spl_derivim(:,5))
 
-    !special term for derivative of Ez in iReceiver layer
+    !special term for derivative of Ez in receiver layer
     if (ilaym .eq. ilayrec) then
       call spline(refl_var%radlog,refl_var%intvalre(:,7),refl_var%nrad,spl_endval,spl_endval,refl_var%spl_derivre(:,7))
       call spline(refl_var%radlog,refl_var%intvalim(:,7),refl_var%nrad,spl_endval,spl_endval,refl_var%spl_derivim(:,7))
@@ -1887,7 +1887,7 @@ subroutine precomp_intvals_deriv_wire_Exy(refl_var,sz,zr,ilay, func1Exwire,func2
 
   !external variables
   type(refl_struct)             :: refl_var  !stuff to remember throughout 1D computations
-  real(kind=real64),intent(in)  :: sz,zr     !source and iReceiver depth
+  real(kind=real64),intent(in)  :: sz,zr     !source and receiver depth
   integer(kind=int32),intent(in)  :: ilay     !layer index, compute derivatives with respect to this layer
   complex(kind=real64),external   :: func1Exwire,func2Exwire
   complex(kind=real64),external,optional   :: func2Exwirev !integral derivatives for epsv
@@ -1921,7 +1921,7 @@ subroutine precomp_intvals_deriv_wire_Exy(refl_var,sz,zr,ilay, func1Exwire,func2
       call precomp_intval_fht(refl_var,ibesord,func2Exwirev,8)
     endif
 
-  !iReceiver exactly at source depth
+  !receiver exactly at source depth
   else
 
     !precompute logarithmic radii, start from largest, so that it's the same as for Hankel transforms
@@ -1979,10 +1979,10 @@ subroutine precomp_intvals_deriv_wire_Ez(refl_var,sz,zr,ilay, funcD0TM,funcD0TMf
 
   !external variables
   type(refl_struct)             :: refl_var  !stuff to remember throughout 1D computations
-  real(kind=real64),intent(in)  :: sz,zr     !source and iReceiver depth
+  real(kind=real64),intent(in)  :: sz,zr     !source and receiver depth
   integer(kind=int32),intent(in)  :: ilay     !layer index, compute derivatives with respect to this layer
   complex(kind=real64),external   :: funcD0TM
-  complex(kind=real64),external   :: funcD0TMfwd  !function only needed for derivatives in iReceiver layer
+  complex(kind=real64),external   :: funcD0TMfwd  !function only needed for derivatives in receiver layer
   complex(kind=real64),external,optional   :: funcD0TMv !integral derivatives for epsv
 
   !internal variables
@@ -2003,7 +2003,7 @@ subroutine precomp_intvals_deriv_wire_Ez(refl_var,sz,zr,ilay, funcD0TM,funcD0TMf
     ibesord = 0
     call precomp_intval_fht(refl_var,ibesord,funcD0TM,5)
 
-    !special in iReceiver layer for Ez: there is an eps in front of the integral, so we also need 
+    !special in receiver layer for Ez: there is an eps in front of the integral, so we also need 
     ! derivative of term in front of integral times integral without derivative
     if (ilaym .eq. ilayrec) then
       ibesord = 0
@@ -2016,7 +2016,7 @@ subroutine precomp_intvals_deriv_wire_Ez(refl_var,sz,zr,ilay, funcD0TM,funcD0TMf
       call precomp_intval_fht(refl_var,ibesord,funcD0TMv,9)
     endif
 
-  !iReceiver exactly at source depth
+  !receiver exactly at source depth
   else
 
     !precompute logarithmic radii, start from largest, so that it's the same as for Hankel transforms
@@ -2032,7 +2032,7 @@ subroutine precomp_intvals_deriv_wire_Ez(refl_var,sz,zr,ilay, funcD0TM,funcD0TMf
     besorder = 0._real64
     call precomp_intval_adaptive(refl_var,besorder,funcD0TM,5,sz,zr)
 
-    !special term for derivative of Ez in iReceiver layer
+    !special term for derivative of Ez in receiver layer
     if (ilaym .eq. ilayrec) then
       besorder = 0._real64
       call precomp_intval_adaptive(refl_var,besorder,funcD0TMfwd,7,sz,zr)
@@ -2054,7 +2054,7 @@ subroutine precomp_intvals_deriv_wire_Ez(refl_var,sz,zr,ilay, funcD0TM,funcD0TMf
     call spline(refl_var%radlog,refl_var%intvalre(:,5),refl_var%nrad,spl_endval,spl_endval,refl_var%spl_derivre(:,5))
     call spline(refl_var%radlog,refl_var%intvalim(:,5),refl_var%nrad,spl_endval,spl_endval,refl_var%spl_derivim(:,5))
 
-    !special term for derivative of Ez in iReceiver layer
+    !special term for derivative of Ez in receiver layer
     if (ilaym .eq. ilayrec) then
       call spline(refl_var%radlog,refl_var%intvalre(:,7),refl_var%nrad,spl_endval,spl_endval,refl_var%spl_derivre(:,7))
       call spline(refl_var%radlog,refl_var%intvalim(:,7),refl_var%nrad,spl_endval,spl_endval,refl_var%spl_derivim(:,7))
@@ -2082,7 +2082,7 @@ subroutine precomp_intvals_deriv_wire_Hxy(refl_var,sz,zr,ilay, funcD0TE,funcdHxw
 
   !external variables
   type(refl_struct)             :: refl_var  !stuff to remember throughout 1D computations
-  real(kind=real64),intent(in)  :: sz,zr     !source and iReceiver depth
+  real(kind=real64),intent(in)  :: sz,zr     !source and receiver depth
   integer(kind=int32),intent(in)  :: ilay     !layer index, compute derivatives with respect to this layer
   complex(kind=real64),external   :: funcD0TE,funcdHxwire
   complex(kind=real64),external,optional   :: funcdHxwirev !integral derivatives for epsv
@@ -2116,7 +2116,7 @@ subroutine precomp_intvals_deriv_wire_Hxy(refl_var,sz,zr,ilay, funcD0TE,funcdHxw
       call precomp_intval_fht(refl_var,ibesord,funcdHxwirev,10)
     endif
 
-  !iReceiver exactly at source depth
+  !receiver exactly at source depth
   else
 
     !precompute logarithmic radii, start from largest, so that it's the same as for Hankel transforms
@@ -2167,7 +2167,7 @@ subroutine precomp_intvals_deriv_wire_Hz(refl_var,sz,zr,ilay, funcAz1TE)
 
   !external variables
   type(refl_struct)             :: refl_var  !stuff to remember throughout 1D computations
-  real(kind=real64),intent(in)  :: sz,zr     !source and iReceiver depth
+  real(kind=real64),intent(in)  :: sz,zr     !source and receiver depth
   integer(kind=int32),intent(in)  :: ilay     !layer index, compute derivatives with respect to this layer
   complex(kind=real64),external   :: funcAz1TE
 
@@ -2178,7 +2178,7 @@ subroutine precomp_intvals_deriv_wire_Hz(refl_var,sz,zr,ilay, funcAz1TE)
   !ilaym is defined in medium_mod, visible nearly everywhere
   ilaym = ilay
 
-  !no need for special case for iReceiver exactly at source depth
+  !no need for special case for receiver exactly at source depth
   !integral along wire for Hz
   ibesord = 1
   call precomp_intval_fht(refl_var,ibesord,funcAz1TE,3)

@@ -1,7 +1,7 @@
 !------------------------------------------------------------
 !  1D EM subroutine interp_intvals_wire_allcomp
 !
-!  get interpolated field values at iReceiver locations, horizontal wire source,
+!  get interpolated field values at receiver locations, horizontal wire source,
 !    all field components at the same cordinates
 !
 !  Rita Streich 2009-2011
@@ -17,19 +17,19 @@ subroutine interp_intvals_wire_allcomp(refl_var,bgdat,fld,src,sz,zr,omeps_recv,o
   type(backgrounddata)            :: bgdat      !coordinate vectors and final output EM fields
   type(receiverdata),dimension(:)   :: fld        !field or derivative vectors for each wire, all components
   type(sorec),intent(in)          :: src        !source definition (we need the currents here)
-  real(kind=real64),intent(in)    :: sz,zr      !source and iReceiver depth
-  complex(kind=real64),intent(in) :: omeps_recv  !omega * eps in iReceiver layer
+  real(kind=real64),intent(in)    :: sz,zr      !source and receiver depth
+  complex(kind=real64),intent(in) :: omeps_recv  !omega * eps in receiver layer
   real(kind=real64),intent(in)    :: ommu       !omega * mu0
   complex(kind=real64),external   :: func1Exwire,funcD0TE,funcAz1TE,func2Exwire,funcD0TM,funcdHxwire
   integer(kind=int32),intent(in)  :: ilay       !layer index for derivatives - leave at zero for forward modeling
-  complex(kind=real64),external,optional   :: funcD0TMfwd  !function only needed for derivatives in iReceiver layer
+  complex(kind=real64),external,optional   :: funcD0TMfwd  !function only needed for derivatives in receiver layer
   complex(kind=real64),external,optional   :: func2Exwirev,funcD0TMv,funcdHxwirev !integral derivatives for epsv
   type(receiverdata),dimension(:),optional   :: fldv       !field or derivative vectors for each wire, all components
 
   !internal variables
   integer(kind=int32)   :: isrc    !source element counter
-  real(kind=real64)     :: x,y,r   !temp source-iReceiver distances
-  integer(kind=int32)   :: irec    !iReceiver counter
+  real(kind=real64)     :: x,y,r   !temp source-receiver distances
+  integer(kind=int32)   :: irec    !receiver counter
   real(kind=real64)     :: beta,betarot      !temp angles
 
   complex(kind=real64)          :: IExy,IHyx,IHz          !interpolated integral values for integrals along wire
@@ -46,7 +46,7 @@ subroutine interp_intvals_wire_allcomp(refl_var,bgdat,fld,src,sz,zr,omeps_recv,o
   complex(kind=real64)  :: constHz  !geometric constant for Hz
   complex(kind=real64)  :: constEz  !geometric constant for Ez
   integer(kind=int32)   :: idx      !source element index
-  integer(kind=int32)   :: recidx   !iReceiver index
+  integer(kind=int32)   :: recidx   !receiver index
   integer(kind=int32)   :: ielemall,ielem       !wire element counters
   integer(kind=int32)   :: iep      !wire end point counter
   real(kind=real64)     :: xs,ys    !wire end point coordinates
@@ -113,10 +113,10 @@ subroutine interp_intvals_wire_allcomp(refl_var,bgdat,fld,src,sz,zr,omeps_recv,o
 
         r_is_zero: if (r.eq.0._real64) then
 
-          !quick & dirty: skip the point if iReceiver is right at source point
+          !quick & dirty: skip the point if receiver is right at source point
           if (sz_eq_zr) then
             if (refl_var%infolevel.ge.output_more) &
-              write(*,'(a)') 'WARNING: cannot handle a iReceiver at exactly the same location as a wire element yet, '// &
+              write(*,'(a)') 'WARNING: cannot handle a receiver at exactly the same location as a wire element yet, '// &
                 'ignoring this contribution!'
             cycle
           endif
@@ -186,10 +186,10 @@ subroutine interp_intvals_wire_allcomp(refl_var,bgdat,fld,src,sz,zr,omeps_recv,o
         !distinguish case r=0 since here we need only 1 integral
         chkr0: if (r .eq. 0._real64) then
 
-          !quick & dirty: skip the point if iReceiver is right at source point
+          !quick & dirty: skip the point if receiver is right at source point
           if (sz_eq_zr) then
             if (refl_var%infolevel.ge.output_more) &
-              write(*,'(a)') 'WARNING: cannot handle a iReceiver at exactly the same location as a grounding point yet, '// &
+              write(*,'(a)') 'WARNING: cannot handle a receiver at exactly the same location as a grounding point yet, '// &
                 'ignoring this contribution!'
             cycle
           endif
@@ -314,7 +314,7 @@ subroutine interp_intvals_wire_allcomp(refl_var,bgdat,fld,src,sz,zr,omeps_recv,o
   enddo wires  !wires
 
 
-  !special contribution to derivative of Ez in iReceiver layer
+  !special contribution to derivative of Ez in receiver layer
   deriv_ilayrec: if (ilay .eq. ilayrec) then
     allocate(Ewirerec(src%nwire),stat=ierr)
     if (ierr.ne. 0) call alloc_error(pid,'interp_intvals_wire','WEwirerec',ierr)
@@ -392,7 +392,7 @@ endsubroutine interp_intvals_wire_allcomp
 !------------------------------------------------------------
 !  1D EM subroutine interp_intvals_wire_Exy
 !
-!  get interpolated field values at iReceiver locations, horizontal wire source
+!  get interpolated field values at receiver locations, horizontal wire source
 !    Ex and/or Ey only
 !
 !  Rita Streich 2009-2011
@@ -406,7 +406,7 @@ subroutine interp_intvals_wire_Exy(refl_var,bgdat,fld,src,sz,zr, func1Exwire,fun
   type(backgrounddata)            :: bgdat      !coordinate vectors and final output EM fields
   type(receiverdata),dimension(:) :: fld        !field or derivative vectors for each wire, all components
   type(sorec),intent(in)          :: src        !source definition (we need the currents here)
-  real(kind=real64),intent(in)    :: sz,zr      !source and iReceiver depth
+  real(kind=real64),intent(in)    :: sz,zr      !source and receiver depth
   complex(kind=real64),external   :: func1Exwire,func2Exwire
   integer(kind=int32),intent(in)  :: ilay       !layer index for derivatives - leave at zero for forward modeling
   complex(kind=real64),external,optional   :: func2Exwirev !integral derivatives for epsv
@@ -414,8 +414,8 @@ subroutine interp_intvals_wire_Exy(refl_var,bgdat,fld,src,sz,zr, func1Exwire,fun
 
   !internal variables
   integer(kind=int32)   :: isrc    !source element counter
-  real(kind=real64)     :: x,y,r   !temp source-iReceiver distances
-  integer(kind=int32)   :: irec    !iReceiver counter
+  real(kind=real64)     :: x,y,r   !temp source-receiver distances
+  integer(kind=int32)   :: irec    !receiver counter
   real(kind=real64)     :: beta,betarot      !temp angles
 
   complex(kind=real64)          :: IExy          !interpolated integral values for integrals along wire
@@ -430,7 +430,7 @@ subroutine interp_intvals_wire_Exy(refl_var,bgdat,fld,src,sz,zr, func1Exwire,fun
   real(kind=real64)     :: cosbetarot,sinbetarot !cos(betarot) and sin(betarot), precompute for efficiency
   real(kind=real64)     :: const    !geometric constant
   integer(kind=int32)   :: idx      !source element index
-  integer(kind=int32)   :: recidx   !iReceiver index
+  integer(kind=int32)   :: recidx   !receiver index
   integer(kind=int32)   :: ielemall,ielem       !wire element counters
   integer(kind=int32)   :: iep      !wire end point counter
   real(kind=real64)     :: xs,ys    !wire end point coordinates
@@ -492,10 +492,10 @@ subroutine interp_intvals_wire_Exy(refl_var,bgdat,fld,src,sz,zr, func1Exwire,fun
 
         r_is_zero: if (r.eq.0._real64) then
 
-          !quick & dirty: skip the point if iReceiver is right at source point
+          !quick & dirty: skip the point if receiver is right at source point
           if (sz_eq_zr) then
             if (refl_var%infolevel.ge.output_more) &
-              write(*,'(a)') 'WARNING: cannot handle a iReceiver at exactly the same location as a wire element yet, '// &
+              write(*,'(a)') 'WARNING: cannot handle a receiver at exactly the same location as a wire element yet, '// &
                 'ignoring this contribution!'
             cycle
           endif
@@ -545,10 +545,10 @@ subroutine interp_intvals_wire_Exy(refl_var,bgdat,fld,src,sz,zr, func1Exwire,fun
 
         r_is_zeroex: if (r.eq.0._real64) then
 
-          !quick & dirty: skip the point if iReceiver is right at source point
+          !quick & dirty: skip the point if receiver is right at source point
           if (sz_eq_zr) then
             if (refl_var%infolevel.ge.output_more) &
-              write(*,'(a)') 'WARNING: cannot handle a iReceiver at exactly the same location as a wire element yet, '// &
+              write(*,'(a)') 'WARNING: cannot handle a receiver at exactly the same location as a wire element yet, '// &
                 'ignoring this contribution!'
             cycle
           endif
@@ -597,10 +597,10 @@ subroutine interp_intvals_wire_Exy(refl_var,bgdat,fld,src,sz,zr, func1Exwire,fun
 
         r_is_zeroey: if (r.eq.0._real64) then
 
-          !quick & dirty: skip the point if iReceiver is right at source point
+          !quick & dirty: skip the point if receiver is right at source point
           if (sz_eq_zr) then
             if (refl_var%infolevel.ge.output_more) &
-              write(*,'(a)') 'WARNING: cannot handle a iReceiver at exactly the same location as a wire element yet, '// &
+              write(*,'(a)') 'WARNING: cannot handle a receiver at exactly the same location as a wire element yet, '// &
                 'ignoring this contribution!'
             cycle
           endif
@@ -658,10 +658,10 @@ subroutine interp_intvals_wire_Exy(refl_var,bgdat,fld,src,sz,zr, func1Exwire,fun
         !distinguish case r=0 since here we need only 1 integral
         chkr0: if (r .eq. 0._real64) then
 
-          !quick & dirty: skip the point if iReceiver is right at source point
+          !quick & dirty: skip the point if receiver is right at source point
           if (sz_eq_zr) then
             if (refl_var%infolevel.ge.output_more) &
-              write(*,'(a)') 'WARNING: cannot handle a iReceiver at exactly the same location as a grounding point yet, '// &
+              write(*,'(a)') 'WARNING: cannot handle a receiver at exactly the same location as a grounding point yet, '// &
                 'ignoring this contribution!'
             cycle
           endif
@@ -741,10 +741,10 @@ subroutine interp_intvals_wire_Exy(refl_var,bgdat,fld,src,sz,zr, func1Exwire,fun
         !distinguish case r=0 since here we need only 1 integral
         chkr0ex: if (r .eq. 0._real64) then
 
-          !quick & dirty: skip the point if iReceiver is right at source point
+          !quick & dirty: skip the point if receiver is right at source point
           if (sz_eq_zr) then
             if (refl_var%infolevel.ge.output_more) &
-              write(*,'(a)') 'WARNING: cannot handle a iReceiver at exactly the same location as a grounding point yet, '// &
+              write(*,'(a)') 'WARNING: cannot handle a receiver at exactly the same location as a grounding point yet, '// &
                 'ignoring this contribution!'
             cycle
           endif
@@ -821,10 +821,10 @@ subroutine interp_intvals_wire_Exy(refl_var,bgdat,fld,src,sz,zr, func1Exwire,fun
         !distinguish case r=0 since here we need only 1 integral
         chkr0ey: if (r .eq. 0._real64) then
 
-          !quick & dirty: skip the point if iReceiver is right at source point
+          !quick & dirty: skip the point if receiver is right at source point
           if (sz_eq_zr) then
             if (refl_var%infolevel.ge.output_more) &
-              write(*,'(a)') 'WARNING: cannot handle a iReceiver at exactly the same location as a grounding point yet, '// &
+              write(*,'(a)') 'WARNING: cannot handle a receiver at exactly the same location as a grounding point yet, '// &
                 'ignoring this contribution!'
             cycle
           endif
@@ -899,7 +899,7 @@ endsubroutine interp_intvals_wire_Exy
 !------------------------------------------------------------
 !  1D EM subroutine interp_intvals_wire_Ez
 !
-!  get interpolated field values at iReceiver locations, horizontal wire source,
+!  get interpolated field values at receiver locations, horizontal wire source,
 !    Ez only
 !
 !  Rita Streich 2009-2011
@@ -913,18 +913,18 @@ subroutine interp_intvals_wire_Ez(refl_var,bgdat,fld,src,sz,zr,omeps_recv, funcD
   type(backgrounddata)            :: bgdat      !coordinate vectors and final output EM fields
   type(receiverdata),dimension(:)   :: fld        !field or derivative vectors for each wire, all components
   type(sorec),intent(in)          :: src        !source definition (we need the currents here)
-  real(kind=real64),intent(in)    :: sz,zr      !source and iReceiver depth
-  complex(kind=real64),intent(in) :: omeps_recv  !omega * eps in iReceiver layer
+  real(kind=real64),intent(in)    :: sz,zr      !source and receiver depth
+  complex(kind=real64),intent(in) :: omeps_recv  !omega * eps in receiver layer
   complex(kind=real64),external   :: funcD0TM
   integer(kind=int32),intent(in)  :: ilay       !layer index for derivatives - leave at zero for forward modeling
-  complex(kind=real64),external,optional   :: funcD0TMfwd  !function only needed for derivatives in iReceiver layer
+  complex(kind=real64),external,optional   :: funcD0TMfwd  !function only needed for derivatives in receiver layer
   complex(kind=real64),external,optional   :: funcD0TMv    !integral derivatives for epsv
   type(receiverdata),dimension(:),optional   :: fldv       !field or derivative vectors for each wire, all components
 
   !internal variables
   integer(kind=int32)   :: isrc    !source element counter
-  real(kind=real64)     :: x,y,r   !temp source-iReceiver distances
-  integer(kind=int32)   :: irec    !iReceiver counter
+  real(kind=real64)     :: x,y,r   !temp source-receiver distances
+  integer(kind=int32)   :: irec    !receiver counter
   real(kind=real64)     :: beta,betarot      !temp angles
 
   complex(kind=real64)          :: IendEz !interpolated integral values for end points
@@ -938,7 +938,7 @@ subroutine interp_intvals_wire_Ez(refl_var,bgdat,fld,src,sz,zr,omeps_recv, funcD
   real(kind=real64)     :: const    !geometric constant
   complex(kind=real64)  :: constEz  !geometric constant for Ez
   integer(kind=int32)   :: idx      !source element index
-  integer(kind=int32)   :: recidx   !iReceiver index
+  integer(kind=int32)   :: recidx   !receiver index
   integer(kind=int32)   :: ielemall  !wire element counters
   integer(kind=int32)   :: iep      !wire end point counter
   real(kind=real64)     :: xs,ys    !wire end point coordinates
@@ -1004,10 +1004,10 @@ subroutine interp_intvals_wire_Ez(refl_var,bgdat,fld,src,sz,zr,omeps_recv, funcD
         !distinguish case r=0 since here we need only 1 integral
         chkr0: if (r .eq. 0._real64) then
 
-          !quick & dirty: skip the point if iReceiver is right at source point
+          !quick & dirty: skip the point if receiver is right at source point
           if (sz_eq_zr) then
             if (refl_var%infolevel.ge.output_more) &
-              write(*,'(a)') 'WARNING: cannot handle a iReceiver at exactly the same location as a grounding point yet, '// &
+              write(*,'(a)') 'WARNING: cannot handle a receiver at exactly the same location as a grounding point yet, '// &
                 'ignoring this contribution!'
             cycle
           endif
@@ -1085,7 +1085,7 @@ subroutine interp_intvals_wire_Ez(refl_var,bgdat,fld,src,sz,zr,omeps_recv, funcD
   enddo wires  !wires
 
 
-  !special contribution to derivative of Ez in iReceiver layer
+  !special contribution to derivative of Ez in receiver layer
   deriv_ilayrec: if (ilay .eq. ilayrec) then
     allocate(Ewirerec(src%nwire),stat=ierr)
     if (ierr.ne. 0) call alloc_error(pid,'interp_intvals_wire','WEwirerec',ierr)
@@ -1163,7 +1163,7 @@ endsubroutine interp_intvals_wire_Ez
 !------------------------------------------------------------
 !  1D EM subroutine interp_intvals_wire_Hxy
 !
-!  get interpolated field values at iReceiver locations, horizontal wire source,
+!  get interpolated field values at receiver locations, horizontal wire source,
 !    Hx and/or Hy only
 !
 !  Rita Streich 2009-2011
@@ -1177,7 +1177,7 @@ subroutine interp_intvals_wire_Hxy(refl_var,bgdat,fld,src,sz,zr, funcD0TE,funcdH
   type(backgrounddata)            :: bgdat      !coordinate vectors and final output EM fields
   type(receiverdata),dimension(:)   :: fld        !field or derivative vectors for each wire, all components
   type(sorec),intent(in)          :: src        !source definition (we need the currents here)
-  real(kind=real64),intent(in)    :: sz,zr      !source and iReceiver depth
+  real(kind=real64),intent(in)    :: sz,zr      !source and receiver depth
   complex(kind=real64),external   :: funcD0TE,funcdHxwire
   integer(kind=int32),intent(in)  :: ilay       !layer index for derivatives - leave at zero for forward modeling
   complex(kind=real64),external,optional   :: funcdHxwirev !integral derivatives for epsv
@@ -1185,8 +1185,8 @@ subroutine interp_intvals_wire_Hxy(refl_var,bgdat,fld,src,sz,zr, funcD0TE,funcdH
 
   !internal variables
   integer(kind=int32)   :: isrc    !source element counter
-  real(kind=real64)     :: x,y,r   !temp source-iReceiver distances
-  integer(kind=int32)   :: irec    !iReceiver counter
+  real(kind=real64)     :: x,y,r   !temp source-receiver distances
+  integer(kind=int32)   :: irec    !receiver counter
   real(kind=real64)     :: beta,betarot      !temp angles
 
   complex(kind=real64)          :: IHyx          !interpolated integral values for integrals along wire
@@ -1201,7 +1201,7 @@ subroutine interp_intvals_wire_Hxy(refl_var,bgdat,fld,src,sz,zr, funcD0TE,funcdH
   real(kind=real64)     :: cosbetarot,sinbetarot !cos(betarot) and sin(betarot), precompute for efficiency
   real(kind=real64)     :: const    !geometric constant
   integer(kind=int32)   :: idx      !source element index
-  integer(kind=int32)   :: recidx   !iReceiver index
+  integer(kind=int32)   :: recidx   !receiver index
   integer(kind=int32)   :: ielemall,ielem       !wire element counters
   integer(kind=int32)   :: iep      !wire end point counter
   real(kind=real64)     :: xs,ys    !wire end point coordinates
@@ -1261,10 +1261,10 @@ subroutine interp_intvals_wire_Hxy(refl_var,bgdat,fld,src,sz,zr, funcD0TE,funcdH
         betarot = beta - refl_var%betasrc(isrc)
 
         r_is_zero: if (r.eq.0._real64) then
-          !quick & dirty: skip the point if iReceiver is right at source point
+          !quick & dirty: skip the point if receiver is right at source point
           if (sz_eq_zr) then
             if (refl_var%infolevel.ge.output_more) &
-              write(*,'(a)') 'WARNING: cannot handle a iReceiver at exactly the same location as a wire element yet, '// &
+              write(*,'(a)') 'WARNING: cannot handle a receiver at exactly the same location as a wire element yet, '// &
                 'ignoring this contribution!'
             cycle
           endif
@@ -1310,10 +1310,10 @@ subroutine interp_intvals_wire_Hxy(refl_var,bgdat,fld,src,sz,zr, funcD0TE,funcdH
         betarot = beta - refl_var%betasrc(isrc)
 
         r_is_zerohx: if (r.eq.0._real64) then
-          !quick & dirty: skip the point if iReceiver is right at source point
+          !quick & dirty: skip the point if receiver is right at source point
           if (sz_eq_zr) then
             if (refl_var%infolevel.ge.output_more) &
-              write(*,'(a)') 'WARNING: cannot handle a iReceiver at exactly the same location as a wire element yet, '// &
+              write(*,'(a)') 'WARNING: cannot handle a receiver at exactly the same location as a wire element yet, '// &
                 'ignoring this contribution!'
             cycle
           endif
@@ -1359,10 +1359,10 @@ subroutine interp_intvals_wire_Hxy(refl_var,bgdat,fld,src,sz,zr, funcD0TE,funcdH
         betarot = beta - refl_var%betasrc(isrc)
 
         r_is_zerohy: if (r.eq.0._real64) then
-          !quick & dirty: skip the point if iReceiver is right at source point
+          !quick & dirty: skip the point if receiver is right at source point
           if (sz_eq_zr) then
             if (refl_var%infolevel.ge.output_more) &
-              write(*,'(a)') 'WARNING: cannot handle a iReceiver at exactly the same location as a wire element yet, '// &
+              write(*,'(a)') 'WARNING: cannot handle a receiver at exactly the same location as a wire element yet, '// &
                 'ignoring this contribution!'
             cycle
           endif
@@ -1418,10 +1418,10 @@ subroutine interp_intvals_wire_Hxy(refl_var,bgdat,fld,src,sz,zr, funcD0TE,funcdH
         !distinguish case r=0 since here we need only 1 integral
         chkr0: if (r .eq. 0._real64) then
 
-          !quick & dirty: skip the point if iReceiver is right at source point
+          !quick & dirty: skip the point if receiver is right at source point
           if (sz_eq_zr) then
             if (refl_var%infolevel.ge.output_more) &
-              write(*,'(a)') 'WARNING: cannot handle a iReceiver at exactly the same location as a grounding point yet, '// &
+              write(*,'(a)') 'WARNING: cannot handle a receiver at exactly the same location as a grounding point yet, '// &
                 'ignoring this contribution!'
             cycle
           endif
@@ -1499,10 +1499,10 @@ subroutine interp_intvals_wire_Hxy(refl_var,bgdat,fld,src,sz,zr, funcD0TE,funcdH
         !distinguish case r=0 since here we need only 1 integral
         chkr0hx: if (r .eq. 0._real64) then
 
-          !quick & dirty: skip the point if iReceiver is right at source point
+          !quick & dirty: skip the point if receiver is right at source point
           if (sz_eq_zr) then
             if (refl_var%infolevel.ge.output_more) &
-              write(*,'(a)') 'WARNING: cannot handle a iReceiver at exactly the same location as a grounding point yet, '// &
+              write(*,'(a)') 'WARNING: cannot handle a receiver at exactly the same location as a grounding point yet, '// &
                 'ignoring this contribution!'
             cycle
           endif
@@ -1579,10 +1579,10 @@ subroutine interp_intvals_wire_Hxy(refl_var,bgdat,fld,src,sz,zr, funcD0TE,funcdH
         !distinguish case r=0 since here we need only 1 integral
         chkr0hy: if (r .eq. 0._real64) then
 
-          !quick & dirty: skip the point if iReceiver is right at source point
+          !quick & dirty: skip the point if receiver is right at source point
           if (sz_eq_zr) then
             if (refl_var%infolevel.ge.output_more) &
-              write(*,'(a)') 'WARNING: cannot handle a iReceiver at exactly the same location as a grounding point yet, '// &
+              write(*,'(a)') 'WARNING: cannot handle a receiver at exactly the same location as a grounding point yet, '// &
                 'ignoring this contribution!'
             cycle
           endif
@@ -1658,7 +1658,7 @@ endsubroutine interp_intvals_wire_Hxy
 !------------------------------------------------------------
 !  1D EM subroutine interp_intvals_wire_Hz
 !
-!  get interpolated field values at iReceiver locations, horizontal wire source,
+!  get interpolated field values at receiver locations, horizontal wire source,
 !    Hz only
 !
 !  Rita Streich 2009-2011
@@ -1672,15 +1672,15 @@ subroutine interp_intvals_wire_Hz(refl_var,bgdat,fld,src,sz,zr,ommu, funcAz1TE,i
   type(backgrounddata)            :: bgdat      !coordinate vectors and final output EM fields
   type(receiverdata),dimension(:) :: fld        !field or derivative vectors for each wire, all components
   type(sorec),intent(in)          :: src        !source definition (we need the currents here)
-  real(kind=real64),intent(in)    :: sz,zr      !source and iReceiver depth
+  real(kind=real64),intent(in)    :: sz,zr      !source and receiver depth
   real(kind=real64),intent(in)    :: ommu       !omega * mu0
   complex(kind=real64),external   :: funcAz1TE
   integer(kind=int32),intent(in)  :: ilay       !layer index for derivatives - leave at zero for forward modeling
 
   !internal variables
   integer(kind=int32)   :: isrc    !source element counter
-  real(kind=real64)     :: x,y,r   !temp source-iReceiver distances
-  integer(kind=int32)   :: irec    !iReceiver counter
+  real(kind=real64)     :: x,y,r   !temp source-receiver distances
+  integer(kind=int32)   :: irec    !receiver counter
   real(kind=real64)     :: beta,betarot      !temp angles
 
   complex(kind=real64)          :: IHz          !interpolated integral values for integrals along wire
@@ -1694,7 +1694,7 @@ subroutine interp_intvals_wire_Hz(refl_var,bgdat,fld,src,sz,zr,ommu, funcAz1TE,i
   real(kind=real64)     :: const    !geometric constant
   complex(kind=real64)  :: constHz  !geometric constant for Hz
   integer(kind=int32)   :: idx      !source element index
-  integer(kind=int32)   :: recidx   !iReceiver index
+  integer(kind=int32)   :: recidx   !receiver index
   integer(kind=int32)   :: ielemall,ielem       !wire element counters
 
   !indicators for fast Hankel transform or adaptive integration
@@ -1735,10 +1735,10 @@ subroutine interp_intvals_wire_Hz(refl_var,bgdat,fld,src,sz,zr,ommu, funcAz1TE,i
 
         r_is_zero: if (r.eq.0._real64) then
 
-          !quick & dirty: skip the point if iReceiver is right at source point
+          !quick & dirty: skip the point if receiver is right at source point
           if (sz_eq_zr) then
             if (refl_var%infolevel.ge.output_more) &
-              write(*,'(a)') 'WARNING: cannot handle a iReceiver at exactly the same location as a wire element yet, '// &
+              write(*,'(a)') 'WARNING: cannot handle a receiver at exactly the same location as a wire element yet, '// &
                 'ignoring this contribution!'
             cycle
           endif

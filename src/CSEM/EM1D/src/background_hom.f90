@@ -32,22 +32,22 @@ subroutine background_hom_unified(bgdat,src,ifreq,icur)
   real(kind=real64)    :: dlwx,dlwy       !lengths of wire elements
   complex(kind=real64) :: cur       !temp source current
   real(kind=real64)    :: sx,sy,sz  !source position, does not have to be on grid here
-  integer(kind=int32)  :: irec      !iReceiver counter
+  integer(kind=int32)  :: irec      !receiver counter
   real(kind=real64)    :: x,y,z     !grid point coordinates, full grid, relative to source!
   real(kind=real64)    :: dx,dy,dz  !dx,dy,dz
   real(kind=real64)    :: r         !radius, source - grid point distance
-  real(kind=real64)    :: dv        !size of volume element (used only for iReceiver exactly at source point)
+  real(kind=real64)    :: dv        !size of volume element (used only for receiver exactly at source point)
   complex(kind=real64),dimension(3) :: src_j,src_k        !source signatures for a single point
   complex(kind=real64),dimension(3) :: gej,gek,ghj,ghk    !lines of greens function tensors, re-used for lines 1,2,3
 
 
-  !iReceiver data are collected on process 0, but computation for long wires or many dipole elements can be lengthy
+  !receiver data are collected on process 0, but computation for long wires or many dipole elements can be lengthy
   !--> share the work!
 
   !some initialization...
   ngrp = size(src%nelem) !number of dipole elements or wires
 
-  !dummy cell volume, only used for the special case if source and iReceiver coincide exactly
+  !dummy cell volume, only used for the special case if source and receiver coincide exactly
   dv = 1._real64
 
   !frequency
@@ -199,7 +199,7 @@ subroutine background_hom_unified(bgdat,src,ifreq,icur)
             ghk = greens_ej3(r,x,y,z,zetainv,gamma,dv)
             bgdat%Hz(irec) = bgdat%Hz(irec) + sum(ghk*src_k)
           endif
-        enddo  !iReceiver points
+        enddo  !receiver points
 
       else !different coordinates for different field components
 
@@ -234,7 +234,7 @@ subroutine background_hom_unified(bgdat,src,ifreq,icur)
               gek = greens_ek2(r,x,y,z,gamma)
               bgdat%Ey(irec) = bgdat%Ey(irec) + sum(gek*src_k)
             endif
-          enddo  !iReceiver points
+          enddo  !receiver points
 
        else
 
@@ -256,7 +256,7 @@ subroutine background_hom_unified(bgdat,src,ifreq,icur)
               gek = greens_ek1(r,x,y,z,gamma)
               bgdat%Ex(irec) = bgdat%Ex(irec) + sum(gek*src_k)
             endif
-          enddo  !iReceiver points
+          enddo  !receiver points
          
           !Ey only
           do irec = 1,bgdat%nEy
@@ -278,7 +278,7 @@ subroutine background_hom_unified(bgdat,src,ifreq,icur)
               gek = greens_ek2(r,x,y,z,gamma)
               bgdat%Ey(irec) = bgdat%Ey(irec) + sum(gek*src_k)
             endif
-          enddo  !iReceiver points
+          enddo  !receiver points
         endif common_Exy
 
         !Ez
@@ -299,7 +299,7 @@ subroutine background_hom_unified(bgdat,src,ifreq,icur)
             gek = greens_ek3(r,x,y,z,gamma)
             bgdat%Ez(irec) = bgdat%Ez(irec) + sum(gek*src_k)
           endif
-        enddo  !iReceiver points
+        enddo  !receiver points
 
 
         !Hx / Hy
@@ -333,7 +333,7 @@ subroutine background_hom_unified(bgdat,src,ifreq,icur)
               ghk = greens_ej2(r,x,y,z,zetainv,gamma,dv)
               bgdat%Hy(irec) = bgdat%Hy(irec) + sum(ghk*src_k)
             endif
-          enddo  !iReceiver points
+          enddo  !receiver points
 
        else
 
@@ -355,7 +355,7 @@ subroutine background_hom_unified(bgdat,src,ifreq,icur)
               ghk = greens_ej1(r,x,y,z,zetainv,gamma,dv)
               bgdat%Hx(irec) = bgdat%Hx(irec) + sum(ghk*src_k)
             endif
-          enddo  !iReceiver points
+          enddo  !receiver points
          
           !Hy only
           do irec = 1,bgdat%nHy
@@ -376,7 +376,7 @@ subroutine background_hom_unified(bgdat,src,ifreq,icur)
               ghk = greens_ej2(r,x,y,z,zetainv,gamma,dv)
               bgdat%Hy(irec) = bgdat%Hy(irec) + sum(ghk*src_k)
             endif
-          enddo  !iReceiver points
+          enddo  !receiver points
         endif common_Hxy
 
         !Hz
@@ -397,7 +397,7 @@ subroutine background_hom_unified(bgdat,src,ifreq,icur)
             ghk = greens_ej3(r,x,y,z,zetainv,gamma,dv)
             bgdat%Hz(irec) = bgdat%Hz(irec) + sum(ghk*src_k)
           endif
-        enddo  !iReceiver points
+        enddo  !receiver points
       endif samecoord
 
     enddo  !source (i.e. dipole or wire) elements

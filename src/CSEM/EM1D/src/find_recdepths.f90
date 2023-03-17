@@ -1,6 +1,6 @@
 !**************************************************************
 !  FD EM subroutine find_recdepths_general
-!  Purpose:  get unique iReceiver depths and sort receivers (or grid points) by depth
+!  Purpose:  get unique receiver depths and sort receivers (or grid points) by depth
 !    there may be different positions for different field components
 !
 !  Rita Streich 2011
@@ -70,7 +70,7 @@ endsubroutine find_recdepths_general
 
 !**************************************************************
 !  FD EM subroutine find_recdepths_1comp
-!  Purpose:  get unique iReceiver depths and sort receivers (or grid points) by depth
+!  Purpose:  get unique receiver depths and sort receivers (or grid points) by depth
 !    for one field component
 !
 !  Rita Streich 2011
@@ -83,9 +83,9 @@ subroutine find_recdepths_1comp(nrec,pos,irecperz,nzrec,zrec,nrecperz_out)
   integer(kind=int32),intent(in)   :: nrec   !number of points at which fields have to be computed
   real(kind=real64),dimension(:,:), intent(in)  :: pos   !positions (nrec,3)
   integer(kind=int32),dimension(:),pointer,intent(out)     :: irecperz   !indices for receivers at each depth
-  integer(kind=int32),intent(out)              :: nzrec  !number of unique iReceiver depths
-  real(kind=real64),dimension(:),pointer       :: zrec   !unique iReceiver depths
-  integer(kind=int32),dimension(:),pointer     :: nrecperz_out  !number of receivers at each iReceiver depth
+  integer(kind=int32),intent(out)              :: nzrec  !number of unique receiver depths
+  real(kind=real64),dimension(:),pointer       :: zrec   !unique receiver depths
+  integer(kind=int32),dimension(:),pointer     :: nrecperz_out  !number of receivers at each receiver depth
 
   !internal variables
   integer(kind=int32)   :: ierr       !error index
@@ -101,14 +101,14 @@ subroutine find_recdepths_1comp(nrec,pos,irecperz,nzrec,zrec,nrecperz_out)
   allocate(zrtmp(nrec),nrecperz(nrec), stat=ierr)
   if (ierr.ne.0) call alloc_error(pid,'find_recdepths_1comp','zrtmp,nrecperz',ierr)
 
-  !get sort indices for iReceiver depths
+  !get sort indices for receiver depths
   call indexx(nrec,pos(:,3),irecperz)
 
   if (nrec .eq. 0) then
     nzr = 0
   else
 
-    !find different iReceiver depths
+    !find different receiver depths
     zrtmp = 0._real64
     nzr = 1
     zrtmp(1) = pos(irecperz(1),3)
@@ -138,8 +138,8 @@ endsubroutine find_recdepths_1comp
 
 !**************************************************************
 !  FD EM subroutine clean_zrec
-!  Purpose:  get unique iReceiver depths and sort receivers (or grid points) by depth
-!    for one field componentdeallocate vectors for iReceiver depth sorting
+!  Purpose:  get unique receiver depths and sort receivers (or grid points) by depth
+!    for one field componentdeallocate vectors for receiver depth sorting
 !
 !  Rita Streich 2011
 !**************************************************************

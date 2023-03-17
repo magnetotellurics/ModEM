@@ -6,6 +6,8 @@ module Inversion
     use ModelParameter
     use DataGroupTxArray
     use Sensitivity
+    use TransmitterMT
+    use TransmitterCSEM
     !
     type, abstract :: Inversion_t
         !

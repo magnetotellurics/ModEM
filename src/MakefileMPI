@@ -1,10 +1,10 @@
 # Makefile suited for building the ModEM program
 # Generated using: ./fmkmf.pl [OPTIONS] ModEM.f90 > Makefile
 # with command line options
-# -p .:1D:2D:CSEM/Dipole1D:CSEM/EM1D:CSEM/EM1D/src:DataIO:DataSpace:Inversion:SP_Topology:Fields:ForwardSolver:Grid:ModelOperator:PreConditioner:ModelParameter:MPI:Receivers:Solver:Source:Transmitters:Utils
-# -f90 mpif90 -std=f2008 (compiler)
-# -opt -g -ffree-line-length-none -Wno-all (compiler optimisation)
-# -lp /usr/lib64 (linking options: path to libraries)
+# -p .:1D:2D:CSEM/EM1D:CSEM/EM1D/src:CSEM/Dipole1d:DataIO:DataSpace:Inversion:SP_Topology:Fields:ForwardSolver:Grid:ModelOperator:PreConditioner:ModelParameter:MPI:Receivers:Solver:Source:Transmitters:Utils
+# -f90 mpif90 (compiler)
+# -opt -g -Wno-all -fbacktrace -ffree-line-length-none (compiler optimisation)
+# -lp -L/usr/lib64  -L/usr/lib/x86_64-linux-gnu (linking options: path to libraries)
 # -l -llapack -lblas -lfftw3l -lfftw3f -lfftw3 (linking options)
 # -o objs/MT3D_OO_MPI (output directory for object files)
 
@@ -45,11 +45,11 @@
 # ------------------Macro-Defs---------------------
 include Makefile.local
 OBJDIR = ../../objs/MT3D_OO
-F90 = mpif90 -std=f2008
-FFLAGS = -g -ffree-line-length-none -Wno-all
-MPIFLAGS = -x f95-cpp-input -DMPI
+F90 = mpif90
+FFLAGS = -g -Wno-all -fbacktrace -ffree-line-length-none
+MPIFLAGS = -x f95-cpp-input -DMPI -I/usr/include/
 MODULE = -J $(OBJDIR)
-LIBS_PATH = -L/usr/lib64
+LIBS_PATH = -L-L/usr/lib64  -L/usr/lib/x86_64-linux-gnu
 LIBS = -llapack -lblas -lfftw3l -lfftw3f -lfftw3
 
 # -------------------End-macro-Defs---------------------------
@@ -214,11 +214,11 @@ $(OBJDIR)/Forward2D.o:2D/Forward2D.f90 $(OBJDIR)/Constants.o $(OBJDIR)/Grid2D.o 
 $(OBJDIR)/SourceMT_2D.o:Source/SourceMT_2D.f90 $(OBJDIR)/Constants.o $(OBJDIR)/Source.o $(OBJDIR)/cVector3D_SG.o $(OBJDIR)/Grid3D_SG.o $(OBJDIR)/Forward2D.o 
 	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) Source/SourceMT_2D.f90 -o $(OBJDIR)/SourceMT_2D.o
 
-$(OBJDIR)/FilterModules.o:CSEM/Dipole1D/FilterModules.f90  
-	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) CSEM/Dipole1D/FilterModules.f90 -o $(OBJDIR)/FilterModules.o
+$(OBJDIR)/FilterModules.o:CSEM/Dipole1d/FilterModules.f90  
+	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) CSEM/Dipole1d/FilterModules.f90 -o $(OBJDIR)/FilterModules.o
 
-$(OBJDIR)/Dipole1D.o:CSEM/Dipole1D/Dipole1D.f90 $(OBJDIR)/FilterModules.o $(OBJDIR)/FilterModules.o $(OBJDIR)/FilterModules.o $(OBJDIR)/FilterModules.o $(OBJDIR)/FilterModules.o 
-	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) CSEM/Dipole1D/Dipole1D.f90 -o $(OBJDIR)/Dipole1D.o
+$(OBJDIR)/Dipole1D.o:CSEM/Dipole1d/Dipole1D.f90 $(OBJDIR)/FilterModules.o $(OBJDIR)/FilterModules.o $(OBJDIR)/FilterModules.o $(OBJDIR)/FilterModules.o $(OBJDIR)/FilterModules.o 
+	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) CSEM/Dipole1d/Dipole1D.f90 -o $(OBJDIR)/Dipole1D.o
 
 $(OBJDIR)/SourceCSEM_Dipole1D.o:Source/SourceCSEM_Dipole1D.f90 $(OBJDIR)/Dipole1D.o $(OBJDIR)/Constants.o $(OBJDIR)/cVector3D_SG.o $(OBJDIR)/rVector3D_SG.o $(OBJDIR)/Grid3D_SG.o $(OBJDIR)/Source.o $(OBJDIR)/ModelOperator.o $(OBJDIR)/ModelParameterCell_SG.o 
 	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) Source/SourceCSEM_Dipole1D.f90 -o $(OBJDIR)/SourceCSEM_Dipole1D.o
@@ -307,7 +307,7 @@ $(OBJDIR)/ForwardModeling.o:./ForwardModeling.f90 $(OBJDIR)/MasterMPI.o $(OBJDIR
 $(OBJDIR)/Sensitivity.o:./Sensitivity.f90 $(OBJDIR)/ForwardModeling.o 
 	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) ./Sensitivity.f90 -o $(OBJDIR)/Sensitivity.o
 
-$(OBJDIR)/Inversion.o:Inversion/Inversion.f90 $(OBJDIR)/ModelParameter.o $(OBJDIR)/DataGroupTxArray.o $(OBJDIR)/Sensitivity.o 
+$(OBJDIR)/Inversion.o:Inversion/Inversion.f90 $(OBJDIR)/ModelParameter.o $(OBJDIR)/DataGroupTxArray.o $(OBJDIR)/Sensitivity.o $(OBJDIR)/TransmitterMT.o $(OBJDIR)/TransmitterCSEM.o 
 	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) Inversion/Inversion.f90 -o $(OBJDIR)/Inversion.o
 
 $(OBJDIR)/InversionDCG.o:Inversion/InversionDCG.f90 $(OBJDIR)/Inversion.o 

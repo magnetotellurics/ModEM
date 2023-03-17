@@ -1,7 +1,7 @@
 !------------------------------------------------------------
 !  1D EM subroutine interp_intvals_hmd_allcomp
 !
-!  get interpolated field values at iReceiver locations, HMD source,
+!  get interpolated field values at receiver locations, HMD source,
 !  all field components at the same locations
 !
 !  Rita Streich 2009-2011
@@ -16,24 +16,24 @@ subroutine interp_intvals_hmd_allcomp(refl_var,src,ifreq,sz,zr,bgdat,Ex,Ey,Ez,Hx
   type(refl_struct)               :: refl_var   !everything needed throughout 1D computations
   type(sorec),intent(in)          :: src        !source definition (we need the currents here)
   integer(kind=int32),intent(in)  :: ifreq      !frequency index
-  real(kind=real64),intent(in)    :: sz,zr      !source and iReceiver depth
+  real(kind=real64),intent(in)    :: sz,zr      !source and receiver depth
   type(backgrounddata) :: bgdat      !coordinate vectors and output EM fields
     !input separate fields because the same routine is used both for fields and derivatives!
   complex(kind=real64),dimension(:)   :: Ex,Ey,Hx,Hy,Hz  !electric and magnetic fields: nr of receivers
   complex(kind=real64),dimension(:),target   :: Ez  !electric fields: nr of receivers
-  complex(kind=real64),intent(in) :: omeps_recv  !omega * epsilon in iReceiver layer
+  complex(kind=real64),intent(in) :: omeps_recv  !omega * epsilon in receiver layer
   complex(kind=real64),intent(in) :: j_om_mu    !j * omega * mu0
   complex(kind=real64),external   :: funcB0TE,funcB0TM,funcB1TE,funcB1TM,funcCz1TM,funcC0TE,funcC0TM,funcC1TE,funcC1TM,funcBz1TE
   integer(kind=int32),intent(in)  :: ilay       !layer index for derivatives - leave at zero for forward modeling
-  complex(kind=real64),external,optional   :: funcCz1TMfwd  !function only needed for derivatives in iReceiver layer
+  complex(kind=real64),external,optional   :: funcCz1TMfwd  !function only needed for derivatives in receiver layer
   complex(kind=real64),external,optional   :: funcB0TMv,funcB1TMv,funcCz1TMv,funcC0TMv,funcC1TMv !derivative integrals for epsv
   complex(kind=real64),dimension(:),optional   :: Exv,Eyv,Hxv,Hyv,Hzv  !electric and magnetic fields: nr of receivers
   complex(kind=real64),dimension(:),target,optional   :: Ezv  !electric fields: nr of receivers
 
   !internal variables
   integer(kind=int32)   :: isrc    !source element counter
-  real(kind=real64)     :: x,y,r   !temp source-iReceiver distances
-  integer(kind=int32)   :: irec    !iReceiver counter
+  real(kind=real64)     :: x,y,r   !temp source-receiver distances
+  integer(kind=int32)   :: irec    !receiver counter
   real(kind=real64)     :: beta,betarot      !temp angles
 
   complex(kind=real64)          :: IB0TE,IB0TM,IB1TE,IB1TM,IBz1TE !interpolated integral values
@@ -49,7 +49,7 @@ subroutine interp_intvals_hmd_allcomp(refl_var,src,ifreq,sz,zr,bgdat,Ex,Ey,Ez,Hx
   complex(kind=real64)  :: cur      !temp source current
   complex(kind=real64)  :: JMh      !source current times constants
   integer(kind=int32)   :: idx      !source element index
-  integer(kind=int32)   :: recidx   !iReceiver index
+  integer(kind=int32)   :: recidx   !receiver index
   !flag for computing epsv derivatives, not needed for forward computation, so "aniso" value cannot be used here
   logical               :: with_dvert
   complex(kind=real64),dimension(:),pointer   :: Erec  !points to either Ez (isotropic) or Ezv (VTI)
@@ -98,10 +98,10 @@ subroutine interp_intvals_hmd_allcomp(refl_var,src,ifreq,sz,zr,bgdat,Ex,Ey,Ez,Hx
  
       r_is_zero: if (r.eq.0._real64) then
 
-        !quick & dirty: skip the point if iReceiver is right at source point
+        !quick & dirty: skip the point if receiver is right at source point
         if (sz_eq_zr) then
           if (refl_var%infolevel.ge.output_more) &
-            write(*,'(a)') 'WARNING: cannot handle iReceiver right at source point yet!'
+            write(*,'(a)') 'WARNING: cannot handle receiver right at source point yet!'
           !skip numerical integral evaluations - they would most likely fail, need to look at this...
           cycle
         endif
@@ -192,7 +192,7 @@ subroutine interp_intvals_hmd_allcomp(refl_var,src,ifreq,sz,zr,bgdat,Ex,Ey,Ez,Hx
       dvert: if (with_dvert) then
         r_is_zerov: if (r.eq.0._real64) then
 
-          !already cycled if iReceiver is exactly at source point
+          !already cycled if receiver is exactly at source point
           !if (sz_eq_zr) cycle
 
           !Bessel function J0(r=0) = 1, J1(r=0) = 0
@@ -264,11 +264,11 @@ subroutine interp_intvals_hmd_allcomp(refl_var,src,ifreq,sz,zr,bgdat,Ex,Ey,Ez,Hx
   enddo  !source elements
 
 
-  !special term for Ez for derivatives in iReceiver layer
+  !special term for Ez for derivatives in receiver layer
   deriv_ilayrec: if (ilay .eq. ilayrec) then
   
     if (.not. present(funcCz1TMfwd)) then
-      write(*,'(a)') 'ERROR: function for Ez in iReceiver layer not given, cannot compute correct Ez derivative!'
+      write(*,'(a)') 'ERROR: function for Ez in receiver layer not given, cannot compute correct Ez derivative!'
       return
     endif
 
@@ -329,7 +329,7 @@ endsubroutine interp_intvals_hmd_allcomp
 !------------------------------------------------------------
 !  1D EM subroutine interp_intvals_hmd_Exy
 !
-!  get interpolated field values at iReceiver locations, HMD source,
+!  get interpolated field values at receiver locations, HMD source,
 !  Ex and / or Ey only
 !
 !  Rita Streich 2009-2011
@@ -343,7 +343,7 @@ subroutine interp_intvals_hmd_Exy(refl_var,src,ifreq,sz,zr,bgdat,Ex,Ey,j_om_mu, 
   type(refl_struct)               :: refl_var   !everything needed throughout 1D computations
   type(sorec),intent(in)          :: src        !source definition (we need the currents here)
   integer(kind=int32),intent(in)  :: ifreq      !frequency index
-  real(kind=real64),intent(in)    :: sz,zr      !source and iReceiver depth
+  real(kind=real64),intent(in)    :: sz,zr      !source and receiver depth
   type(backgrounddata) :: bgdat      !coordinate vectors and output EM fields
     !input separate fields because the same routine is used both for fields and derivatives!
   complex(kind=real64),dimension(:)   :: Ex,Ey  !electric and magnetic fields: nr of receivers
@@ -355,8 +355,8 @@ subroutine interp_intvals_hmd_Exy(refl_var,src,ifreq,sz,zr,bgdat,Ex,Ey,j_om_mu, 
 
   !internal variables
   integer(kind=int32)   :: isrc    !source element counter
-  real(kind=real64)     :: x,y,r   !temp source-iReceiver distances
-  integer(kind=int32)   :: irec    !iReceiver counter
+  real(kind=real64)     :: x,y,r   !temp source-receiver distances
+  integer(kind=int32)   :: irec    !receiver counter
   real(kind=real64)     :: beta,betarot      !temp angles
 
   complex(kind=real64)          :: IB0TE,IB0TM,IB1TE,IB1TM !interpolated integral values
@@ -371,7 +371,7 @@ subroutine interp_intvals_hmd_Exy(refl_var,src,ifreq,sz,zr,bgdat,Ex,Ey,j_om_mu, 
   complex(kind=real64)  :: cur      !temp source current
   complex(kind=real64)  :: JMh      !source current times constants
   integer(kind=int32)   :: idx      !source element index
-  integer(kind=int32)   :: recidx   !iReceiver index
+  integer(kind=int32)   :: recidx   !receiver index
   !flag for computing epsv derivatives, not needed for forward computation, so "aniso" value cannot be used here
   logical               :: with_dvert
 
@@ -421,10 +421,10 @@ subroutine interp_intvals_hmd_Exy(refl_var,src,ifreq,sz,zr,bgdat,Ex,Ey,j_om_mu, 
 
        r_is_zero: if (r.eq.0._real64) then
 
-        !quick & dirty: skip the point if iReceiver is right at source point
+        !quick & dirty: skip the point if receiver is right at source point
         if (sz_eq_zr) then
           if (refl_var%infolevel.ge.output_more) &
-            write(*,'(a)') 'WARNING: cannot handle iReceiver right at source point yet!'
+            write(*,'(a)') 'WARNING: cannot handle receiver right at source point yet!'
           !skip numerical integral evaluations - they would most likely fail, need to look at this...
           cycle
         endif
@@ -474,7 +474,7 @@ subroutine interp_intvals_hmd_Exy(refl_var,src,ifreq,sz,zr,bgdat,Ex,Ey,j_om_mu, 
       !VTI: deriv. for epsv
       dvert: if (with_dvert) then
         r_is_zerov: if (r.eq.0._real64) then
-          !already cycled if iReceiver is exactly at source point
+          !already cycled if receiver is exactly at source point
           !if (sz_eq_zr) cycle
 
           !Bessel function J0(r=0) = 1, J1(r=0) = 0
@@ -533,10 +533,10 @@ subroutine interp_intvals_hmd_Exy(refl_var,src,ifreq,sz,zr,bgdat,Ex,Ey,j_om_mu, 
 
        r_is_zeroex: if (r.eq.0._real64) then
 
-        !quick & dirty: skip the point if iReceiver is right at source point
+        !quick & dirty: skip the point if receiver is right at source point
         if (sz_eq_zr) then
           if (refl_var%infolevel.ge.output_more) &
-            write(*,'(a)') 'WARNING: cannot handle iReceiver right at source point yet!'
+            write(*,'(a)') 'WARNING: cannot handle receiver right at source point yet!'
           !skip numerical integral evaluations - they would most likely fail, need to look at this...
           cycle
         endif
@@ -585,7 +585,7 @@ subroutine interp_intvals_hmd_Exy(refl_var,src,ifreq,sz,zr,bgdat,Ex,Ey,j_om_mu, 
       !VTI: deriv. for epsv
       dvertex: if (with_dvert) then
         r_is_zerovex: if (r.eq.0._real64) then
-          !already cycled if iReceiver is exactly at source point
+          !already cycled if receiver is exactly at source point
           !if (sz_eq_zr) cycle
 
           !Bessel function J0(r=0) = 1, J1(r=0) = 0
@@ -642,10 +642,10 @@ subroutine interp_intvals_hmd_Exy(refl_var,src,ifreq,sz,zr,bgdat,Ex,Ey,j_om_mu, 
 
        r_is_zeroey: if (r.eq.0._real64) then
 
-        !quick & dirty: skip the point if iReceiver is right at source point
+        !quick & dirty: skip the point if receiver is right at source point
         if (sz_eq_zr) then
           if (refl_var%infolevel.ge.output_more) &
-            write(*,'(a)') 'WARNING: cannot handle iReceiver right at source point yet!'
+            write(*,'(a)') 'WARNING: cannot handle receiver right at source point yet!'
           !skip numerical integral evaluations - they would most likely fail, need to look at this...
           cycle
         endif
@@ -694,7 +694,7 @@ subroutine interp_intvals_hmd_Exy(refl_var,src,ifreq,sz,zr,bgdat,Ex,Ey,j_om_mu, 
       !VTI: deriv. for epsv
       dvertey: if (with_dvert) then
         r_is_zerovey: if (r.eq.0._real64) then
-          !already cycled if iReceiver is exactly at source point
+          !already cycled if receiver is exactly at source point
           !if (sz_eq_zr) cycle
 
           !Bessel function J0(r=0) = 1, J1(r=0) = 0
@@ -743,7 +743,7 @@ endsubroutine interp_intvals_hmd_Exy
 !------------------------------------------------------------
 !  1D EM subroutine interp_intvals_hmd_Ez
 !
-!  get interpolated field values at iReceiver locations, HMD source,
+!  get interpolated field values at receiver locations, HMD source,
 !  Ez only
 !
 !  Rita Streich 2009-2011
@@ -756,22 +756,22 @@ subroutine interp_intvals_hmd_Ez(refl_var,src,ifreq,sz,zr,bgdat,Ez,omeps_recv,j_
   type(refl_struct)               :: refl_var   !everything needed throughout 1D computations
   type(sorec),intent(in)          :: src        !source definition (we need the currents here)
   integer(kind=int32),intent(in)  :: ifreq      !frequency index
-  real(kind=real64),intent(in)    :: sz,zr      !source and iReceiver depth
+  real(kind=real64),intent(in)    :: sz,zr      !source and receiver depth
   type(backgrounddata) :: bgdat      !coordinate vectors and output EM fields
     !input separate fields because the same routine is used both for fields and derivatives!
   complex(kind=real64),dimension(:),target   :: Ez  !electric fields: nr of receivers
-  complex(kind=real64),intent(in) :: omeps_recv  !omega * epsilon in iReceiver layer
+  complex(kind=real64),intent(in) :: omeps_recv  !omega * epsilon in receiver layer
   complex(kind=real64),intent(in) :: j_om_mu    !j * omega * mu0
   complex(kind=real64),external   :: funcCz1TM
   integer(kind=int32),intent(in)  :: ilay       !layer index for derivatives - leave at zero for forward modeling
-  complex(kind=real64),external,optional   :: funcCz1TMfwd  !function only needed for derivatives in iReceiver layer
+  complex(kind=real64),external,optional   :: funcCz1TMfwd  !function only needed for derivatives in receiver layer
   complex(kind=real64),external,optional   :: funcCz1TMv !derivative integrals for epsv
   complex(kind=real64),dimension(:),target,optional   :: Ezv  !electric fields: nr of receivers
 
   !internal variables
   integer(kind=int32)   :: isrc    !source element counter
-  real(kind=real64)     :: x,y,r   !temp source-iReceiver distances
-  integer(kind=int32)   :: irec    !iReceiver counter
+  real(kind=real64)     :: x,y,r   !temp source-receiver distances
+  integer(kind=int32)   :: irec    !receiver counter
   real(kind=real64)     :: beta,betarot      !temp angles
 
   complex(kind=real64)          :: ICz1TM !interpolated integral values
@@ -785,7 +785,7 @@ subroutine interp_intvals_hmd_Ez(refl_var,src,ifreq,sz,zr,bgdat,Ez,omeps_recv,j_
   complex(kind=real64)  :: cur      !temp source current
   complex(kind=real64)  :: JMh      !source current times constants
   integer(kind=int32)   :: idx      !source element index
-  integer(kind=int32)   :: recidx   !iReceiver index
+  integer(kind=int32)   :: recidx   !receiver index
   !flag for computing epsv derivatives, not needed for forward computation, so "aniso" value cannot be used here
   logical               :: with_dvert
   complex(kind=real64),dimension(:),pointer   :: Erec  !points to either Ez (isotropic) or Ezv (VTI)
@@ -833,10 +833,10 @@ subroutine interp_intvals_hmd_Ez(refl_var,src,ifreq,sz,zr,bgdat,Ez,omeps_recv,j_
  
       r_is_zero: if (r.eq.0._real64) then
 
-        !quick & dirty: skip the point if iReceiver is right at source point
+        !quick & dirty: skip the point if receiver is right at source point
         if (sz_eq_zr) then
           if (refl_var%infolevel.ge.output_more) &
-            write(*,'(a)') 'WARNING: cannot handle iReceiver right at source point yet!'
+            write(*,'(a)') 'WARNING: cannot handle receiver right at source point yet!'
           cycle
         endif
 
@@ -883,11 +883,11 @@ subroutine interp_intvals_hmd_Ez(refl_var,src,ifreq,sz,zr,bgdat,Ez,omeps_recv,j_
   enddo  !source elements
 
 
-  !special term for Ez for derivatives in iReceiver layer
+  !special term for Ez for derivatives in receiver layer
   deriv_ilayrec: if (ilay .eq. ilayrec) then
   
     if (.not. present(funcCz1TMfwd)) then
-      write(*,'(a)') 'ERROR: function for Ez in iReceiver layer not given, cannot compute correct Ez derivative!'
+      write(*,'(a)') 'ERROR: function for Ez in receiver layer not given, cannot compute correct Ez derivative!'
       return
     endif
 
@@ -948,7 +948,7 @@ endsubroutine interp_intvals_hmd_Ez
 !------------------------------------------------------------
 !  1D EM subroutine interp_intvals_hmd_Hxy
 !
-!  get interpolated field values at iReceiver locations, HMD source,
+!  get interpolated field values at receiver locations, HMD source,
 !  Hx and / or Hy only
 !
 !  Rita Streich 2009-2011
@@ -962,7 +962,7 @@ subroutine interp_intvals_hmd_Hxy(refl_var,src,ifreq,sz,zr,bgdat,Hx,Hy,j_om_mu, 
   type(refl_struct)               :: refl_var   !everything needed throughout 1D computations
   type(sorec),intent(in)          :: src        !source definition (we need the currents here)
   integer(kind=int32),intent(in)  :: ifreq      !frequency index
-  real(kind=real64),intent(in)    :: sz,zr      !source and iReceiver depth
+  real(kind=real64),intent(in)    :: sz,zr      !source and receiver depth
   type(backgrounddata) :: bgdat      !coordinate vectors and output EM fields
     !input separate fields because the same routine is used both for fields and derivatives!
   complex(kind=real64),dimension(:)   :: Hx,Hy  !electric and magnetic fields: nr of receivers
@@ -974,8 +974,8 @@ subroutine interp_intvals_hmd_Hxy(refl_var,src,ifreq,sz,zr,bgdat,Hx,Hy,j_om_mu, 
 
   !internal variables
   integer(kind=int32)   :: isrc    !source element counter
-  real(kind=real64)     :: x,y,r   !temp source-iReceiver distances
-  integer(kind=int32)   :: irec    !iReceiver counter
+  real(kind=real64)     :: x,y,r   !temp source-receiver distances
+  integer(kind=int32)   :: irec    !receiver counter
   real(kind=real64)     :: beta,betarot      !temp angles
 
   complex(kind=real64)          :: IC0TE,IC0TM,IC1TE,IC1TM !interpolated integral values
@@ -990,7 +990,7 @@ subroutine interp_intvals_hmd_Hxy(refl_var,src,ifreq,sz,zr,bgdat,Hx,Hy,j_om_mu, 
   complex(kind=real64)  :: cur      !temp source current
   complex(kind=real64)  :: JMh      !source current times constants
   integer(kind=int32)   :: idx      !source element index
-  integer(kind=int32)   :: recidx   !iReceiver index
+  integer(kind=int32)   :: recidx   !receiver index
   !flag for computing epsv derivatives, not needed for forward computation, so "aniso" value cannot be used here
   logical               :: with_dvert
 
@@ -1042,10 +1042,10 @@ subroutine interp_intvals_hmd_Hxy(refl_var,src,ifreq,sz,zr,bgdat,Hx,Hy,j_om_mu, 
  
       r_is_zero: if (r.eq.0._real64) then
 
-        !quick & dirty: skip the point if iReceiver is right at source point
+        !quick & dirty: skip the point if receiver is right at source point
         if (sz_eq_zr) then
           if (refl_var%infolevel.ge.output_more) &
-            write(*,'(a)') 'WARNING: cannot handle iReceiver right at source point yet!'
+            write(*,'(a)') 'WARNING: cannot handle receiver right at source point yet!'
           cycle
         endif
 
@@ -1090,7 +1090,7 @@ subroutine interp_intvals_hmd_Hxy(refl_var,src,ifreq,sz,zr,bgdat,Hx,Hy,j_om_mu, 
       !VTI: deriv. for epsv
       dvert: if (with_dvert) then
         r_is_zerov: if (r.eq.0._real64) then
-          !already cycled if iReceiver is exactly at source point
+          !already cycled if receiver is exactly at source point
           !if (sz_eq_zr) cycle
           IC0TM = compute_1valr0(funcC0TMv)
 
@@ -1142,10 +1142,10 @@ subroutine interp_intvals_hmd_Hxy(refl_var,src,ifreq,sz,zr,bgdat,Hx,Hy,j_om_mu, 
  
       r_is_zerohx: if (r.eq.0._real64) then
 
-        !quick & dirty: skip the point if iReceiver is right at source point
+        !quick & dirty: skip the point if receiver is right at source point
         if (sz_eq_zr) then
           if (refl_var%infolevel.ge.output_more) &
-            write(*,'(a)') 'WARNING: cannot handle iReceiver right at source point yet!'
+            write(*,'(a)') 'WARNING: cannot handle receiver right at source point yet!'
           cycle
         endif
 
@@ -1189,7 +1189,7 @@ subroutine interp_intvals_hmd_Hxy(refl_var,src,ifreq,sz,zr,bgdat,Hx,Hy,j_om_mu, 
       !VTI: deriv. for epsv
       dverthx: if (with_dvert) then
         r_is_zerovhx: if (r.eq.0._real64) then
-          !already cycled if iReceiver is exactly at source point
+          !already cycled if receiver is exactly at source point
           !if (sz_eq_zr) cycle
           IC0TM = compute_1valr0(funcC0TMv)
 
@@ -1240,10 +1240,10 @@ subroutine interp_intvals_hmd_Hxy(refl_var,src,ifreq,sz,zr,bgdat,Hx,Hy,j_om_mu, 
 
        r_is_zerohy: if (r.eq.0._real64) then
 
-        !quick & dirty: skip the point if iReceiver is right at source point
+        !quick & dirty: skip the point if receiver is right at source point
         if (sz_eq_zr) then
           if (refl_var%infolevel.ge.output_more) &
-            write(*,'(a)') 'WARNING: cannot handle iReceiver right at source point yet!'
+            write(*,'(a)') 'WARNING: cannot handle receiver right at source point yet!'
           cycle
         endif
 
@@ -1287,7 +1287,7 @@ subroutine interp_intvals_hmd_Hxy(refl_var,src,ifreq,sz,zr,bgdat,Hx,Hy,j_om_mu, 
       !VTI: deriv. for epsv
       dverthy: if (with_dvert) then
         r_is_zerovhy: if (r.eq.0._real64) then
-          !already cycled if iReceiver is exactly at source point
+          !already cycled if receiver is exactly at source point
           !if (sz_eq_zr) cycle
           IC0TM = compute_1valr0(funcC0TMv)
 
@@ -1329,7 +1329,7 @@ endsubroutine interp_intvals_hmd_Hxy
 !------------------------------------------------------------
 !  1D EM subroutine interp_intvals_hmd_Hz
 !
-!  get interpolated field values at iReceiver locations, HMD source,
+!  get interpolated field values at receiver locations, HMD source,
 !  Hz only
 !
 !  Rita Streich 2009-2011
@@ -1342,7 +1342,7 @@ subroutine interp_intvals_hmd_Hz(refl_var,src,ifreq,sz,zr,bgdat,Hz,j_om_mu, func
   type(refl_struct)               :: refl_var   !everything needed throughout 1D computations
   type(sorec),intent(in)          :: src        !source definition (we need the currents here)
   integer(kind=int32),intent(in)  :: ifreq      !frequency index
-  real(kind=real64),intent(in)    :: sz,zr      !source and iReceiver depth
+  real(kind=real64),intent(in)    :: sz,zr      !source and receiver depth
   type(backgrounddata) :: bgdat      !coordinate vectors and output EM fields
     !input separate fields because the same routine is used both for fields and derivatives!
   complex(kind=real64),dimension(:)   :: Hz  !electric and magnetic fields: nr of receivers
@@ -1352,8 +1352,8 @@ subroutine interp_intvals_hmd_Hz(refl_var,src,ifreq,sz,zr,bgdat,Hz,j_om_mu, func
 
   !internal variables
   integer(kind=int32)   :: isrc    !source element counter
-  real(kind=real64)     :: x,y,r   !temp source-iReceiver distances
-  integer(kind=int32)   :: irec    !iReceiver counter
+  real(kind=real64)     :: x,y,r   !temp source-receiver distances
+  integer(kind=int32)   :: irec    !receiver counter
   real(kind=real64)     :: beta,betarot      !temp angles
 
   complex(kind=real64)          :: IBz1TE !interpolated integral values
@@ -1366,7 +1366,7 @@ subroutine interp_intvals_hmd_Hz(refl_var,src,ifreq,sz,zr,bgdat,Hz,j_om_mu, func
   complex(kind=real64)  :: cur      !temp source current
   complex(kind=real64)  :: JMh      !source current times constants
   integer(kind=int32)   :: idx      !source element index
-  integer(kind=int32)   :: recidx   !iReceiver index
+  integer(kind=int32)   :: recidx   !receiver index
 
   !indicators for fast Hankel transform or adaptive integration
   wellbehaved = .true.
@@ -1398,10 +1398,10 @@ subroutine interp_intvals_hmd_Hz(refl_var,src,ifreq,sz,zr,bgdat,Hz,j_om_mu, func
  
       r_is_zero: if (r.eq.0._real64) then
 
-        !quick & dirty: skip the point if iReceiver is right at source point
+        !quick & dirty: skip the point if receiver is right at source point
         if (sz_eq_zr) then
           if (refl_var%infolevel.ge.output_more) &
-            write(*,'(a)') 'WARNING: cannot handle iReceiver right at source point yet!'
+            write(*,'(a)') 'WARNING: cannot handle receiver right at source point yet!'
           cycle
         endif
 

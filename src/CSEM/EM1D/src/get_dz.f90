@@ -46,7 +46,7 @@ endsubroutine get_dzsrc
 
 !-----------------------------------------------------------------
 ! FD EM subroutine get_dzrec:
-!   find layer thicknesses above and below iReceiver
+!   find layer thicknesses above and below receiver
 !
 ! Rita Streich 2009
 !-----------------------------------------------------------------
@@ -55,9 +55,9 @@ subroutine get_dzrec(sz,zr,zbound,ilayrec,ilaysrc,nlay)
   implicit none
 
   !external variables
-  real(kind=real64),intent(in)                   :: sz,zr  !source and iReceiver depths
+  real(kind=real64),intent(in)                   :: sz,zr  !source and receiver depths
   real(kind=real64),dimension(:),intent(in)      :: zbound !depths of layer boundaries
-  integer(kind=int32),intent(in)                 :: ilayrec,ilaysrc !iReceiver and source layers
+  integer(kind=int32),intent(in)                 :: ilayrec,ilaysrc !receiver and source layers
   integer(kind=int32),intent(in)                 :: nlay  !total number of layers
 
   !internal variables
@@ -136,7 +136,7 @@ function getnpieces(r,sz,zr) result(npieces)
   !external variables
   integer(kind=int32)   :: npieces
   real(kind=real64)     :: r      !horizontal radius
-  real(kind=real64)     :: sz,zr  !source and iReceiver depths
+  real(kind=real64)     :: sz,zr  !source and receiver depths
 
 
   if (r .lt. 1._real64) then
@@ -192,7 +192,7 @@ endsubroutine prepare_srcdepth
 
 !-------------------------------------------------------
 ! FD EM subroutine prepare_recdepth
-!   some initializations for one particular iReceiver depth
+!   some initializations for one particular receiver depth
 !
 ! Rita Streich 2011
 !-------------------------------------------------------
@@ -201,12 +201,12 @@ subroutine prepare_recdepth(zr,omeps_recv,refl_var,  zr_in,nrecperz,izrec,sz,zbo
   implicit none
 
   !external variables
-  real(kind=real64),intent(out)            :: zr          !iReceiver depth, checked for near-equality to source depth
-  complex(kind=real64),intent(out)         :: omeps_recv   !vertical omeps in iReceiver layer
+  real(kind=real64),intent(out)            :: zr          !receiver depth, checked for near-equality to source depth
+  complex(kind=real64),intent(out)         :: omeps_recv   !vertical omeps in receiver layer
   type(refl_struct),intent(inout)          :: refl_var    !container for stuff needed throughout 1D computations
-  real(kind=real64),dimension(:),intent(in)             :: zr_in       !iReceiver depth
-    integer(kind=int32),dimension(:),pointer :: nrecperz  !number of receivers at each iReceiver depth
-  integer(kind=int32),intent(in)           :: izrec       !counter for iReceiver depths
+  real(kind=real64),dimension(:),intent(in)             :: zr_in       !receiver depth
+    integer(kind=int32),dimension(:),pointer :: nrecperz  !number of receivers at each receiver depth
+  integer(kind=int32),intent(in)           :: izrec       !counter for receiver depths
   real(kind=real64),intent(in)             :: sz          !source depth
   real(kind=real64),dimension(:),pointer,intent(in)     :: zbound  !depths of layer boundaries
   integer(kind=int32),intent(in)           :: aniso       !anisotropy index
@@ -215,8 +215,8 @@ subroutine prepare_recdepth(zr,omeps_recv,refl_var,  zr_in,nrecperz,izrec,sz,zbo
 
 
   !internal variables
-  real(kind=real64)              :: zd            !difference between source and iReceiver depths
-  real(kind=real64),parameter    :: zdtiny = 1.e-10  !very small difference between source and iReceiver depth -> set sz = zr
+  real(kind=real64)              :: zd            !difference between source and receiver depths
+  real(kind=real64),parameter    :: zdtiny = 1.e-10  !very small difference between source and receiver depth -> set sz = zr
 
 
   zr = zr_in(izrec)
@@ -233,7 +233,7 @@ subroutine prepare_recdepth(zr,omeps_recv,refl_var,  zr_in,nrecperz,izrec,sz,zbo
   ! get layer thicknesses and prepare reflection and transmission matrices - receivers:
   call get_dzrec(sz,zr,zbound,ilayrec,ilaysrc,nlay)
 
-  !medium property of iReceiver layer
+  !medium property of receiver layer
   omeps_recv = omega * epsv(ilayrec)
 
   !precompute interface refl. and transm. coeff.

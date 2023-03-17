@@ -15,7 +15,7 @@ module TransmitterArray
     !> Global generic array of Transmitters
     type( Tx_t ), allocatable, dimension(:), target :: transmitters
     !
-    public :: getTransmitter, printTransmitterArray
+    public :: getTransmitter, printTransmitterArray, countTransmitterTypes
     public :: updateTransmitterArray, deallocateTransmitterArray
     !
 contains
@@ -73,7 +73,7 @@ contains
     end function updateTransmitterArray
     !
     !> No subroutine briefing
-	!
+    !
     function getTransmitter( iTx ) result( tx )
         implicit none
         !
