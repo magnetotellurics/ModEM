@@ -24,4 +24,8 @@ module FileUnits
     !
     integer, parameter :: ioGradLog = 1119
     !
+    integer, parameter :: ioGradNorm = 1120
+    !
+    integer, parameter :: ioGradRMS = 1121
+    !
 end module FileUnits

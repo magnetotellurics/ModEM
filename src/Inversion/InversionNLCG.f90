@@ -456,7 +456,6 @@ contains
 #endif
         !
         !> ????
-        if( joint_type /= INV_UNWEIGHTED ) &
         call weightGradrients( s_hat, all_data, dHat, JTd )
         !
         call model_cov%multBy_CmSqrt( JTd, CmJTd )
@@ -490,26 +489,31 @@ contains
         !
         integer :: Ndata, i_tx, n_tx, ios
         class( Scalar_t ), allocatable :: temp_scalar
-        real( kind=prec ) :: rms, SS
+        real( kind=prec ) :: grad_norm, rms, SS
         real( kind=prec ) :: sum_tx_grad_norm, mt_grad_norm, csem_grad_norm
         real( kind=prec ) :: sum_tx_rms, mt_rms, csem_rms
         type( DataGroupTx_t ), allocatable, dimension(:) :: res, Nres
         real( kind=prec ), allocatable, dimension(:) :: tx_weights, tx_grad_norms, tx_rms
         !
+        !> Open a file for output the operations realized on the gradient
         open( unit = ioGradLog, file = trim( outdir_name )//"/GradNLCG.log", status="unknown", position="append", iostat=ios )
         !
+        open( unit = ioGradNorm, file = trim( outdir_name )//"/GradNorm.log", status="unknown", position="append", iostat=ios )
+        !
+        open( unit = ioGradRMS, file = trim( outdir_name )//"/GradRMS.log", status="unknown", position="append", iostat=ios )
+        !
         if( ios == 0 ) then
-            !
-            n_tx = size( transmitters )
             !
             write( ioGradLog, * ) "##########################"
             !
             res = d
             !
+            !> res = res - dHat
             call subData( res, dHat )
             !
             call cdInvMult( res, Nres )
             !
+            !> Zero the variables for summation
             sum_tx_grad_norm = 0.0
             sum_tx_rms = 0.0
             mt_grad_norm = 0.0
@@ -517,9 +521,9 @@ contains
             mt_rms = 0.0
             csem_rms = 0.0
             !
+            !> Allocate arrays to store values for each of the n_tx transmitters
             n_tx = size( transmitters )
             !
-            !> Initialize the array of weights
             allocate( tx_weights( n_tx ) )
             allocate( tx_grad_norms( n_tx ) )
             allocate( tx_rms( n_tx ) )
@@ -528,7 +532,11 @@ contains
                 !
                 tx_grad_norms( i_tx ) = sqrt( s_hat( i_tx )%dotProd( s_hat( i_tx ) ) )
                 !
+                write( ioGradNorm, "( f15.3, A1 )", advance = "no" ) tx_grad_norms( i_tx ), ","
+                !
                 tx_rms( i_tx ) = sqrt( res( i_tx )%dotProd( Nres( i_tx ) ) / ( size( Nres( i_tx )%data ) * Nres( i_tx )%data(1)%n_comp * 2 ) )
+                !
+                write( ioGradRMS, "( f15.3, A1 )", advance = "no" ) tx_rms( i_tx ), ","
                 !
                 !> Instantiate Transmitter's Source - According to transmitter type and chosen via control file
                 select type( Tx => getTransmitter( i_tx ) )
@@ -559,26 +567,16 @@ contains
                 !
             enddo
             !
-            write( *, * ) "SUM TX GRAD NORM = MT + CSEM", sum_tx_grad_norm, mt_grad_norm, csem_grad_norm
-            write( ioGradLog, * ) "SUM TX GRAD NORM = MT + CSEM", sum_tx_grad_norm, mt_grad_norm, csem_grad_norm
-            !
-            write( *, * ) "SUM TX RMS = MT + CSEM", sum_tx_rms, mt_rms, csem_rms
-            write( ioGradLog, * ) "SUM TX RMS = MT + CSEM", sum_tx_rms, mt_rms, csem_rms
-            !
-            do i_tx = 1, n_tx
-                !
-                tx_weights( i_tx ) = sum_tx_grad_norm / tx_grad_norms( i_tx )
-                !
-            enddo
-            !
-            write( *, * ) "TX WEIGHTS: ", tx_weights
-            write( ioGradLog, * ) "TX WEIGHTS: ", tx_weights
-            !
             !> Get gradient conductivity
             call JTd%getCond( temp_scalar )
             !
-            write( *, * ) "TOTAL GRAD NORM: ", real( sqrt( temp_scalar%dotProd( temp_scalar ) ), kind=prec )
-            write( ioGradLog, * ) "TOTAL GRAD NORM: ", real( sqrt( temp_scalar%dotProd( temp_scalar ) ), kind=prec )
+            grad_norm = real( sqrt( temp_scalar%dotProd( temp_scalar ) ), kind=prec )
+            !
+            write( *, * ) "MODEL GRAD NORM: ", grad_norm
+            write( ioGradLog, * ) "MODEL GRAD NORM: ", grad_norm
+            !
+            write( *, * ) "SUM TX GRAD NORM = MT + CSEM", sum_tx_grad_norm, mt_grad_norm, csem_grad_norm
+            write( ioGradLog, * ) "SUM TX GRAD NORM = MT + CSEM", sum_tx_grad_norm, mt_grad_norm, csem_grad_norm
             !
             SS = dotProdData( res, Nres )
             !
@@ -586,22 +584,59 @@ contains
             !
             rms = sqrt( SS / Ndata )
             !
-            write( *, * ) "TOTAL RMS: ", rms
-            write( ioGradLog, * ) "TOTAL RMS: ", rms
+            write( *, * ) "RMS: ", rms
             !
-            !> Set back gradient conductivity
-            call JTd%zeros()
+            write( ioGradRMS, "( f15.3 )" ) rms
+            !
+            close( ioGradRMS )
+            !
+            write( ioGradLog, * ) "RMS: ", rms
+            !
+            write( *, * ) "AVG/SUM TX RMS = MT + CSEM", sum_tx_rms/n_tx, sum_tx_rms, mt_rms, csem_rms
+            write( ioGradLog, * ) "AVG/SUM TX RMS = MT + CSEM", sum_tx_rms/n_tx, sum_tx_rms, mt_rms, csem_rms
+            !
             do i_tx = 1, n_tx
                 !
-                temp_scalar = s_hat( i_tx )
-                !
-                call temp_scalar%mult( tx_weights( i_tx ) )
-                !
-                call JTd%addCond( temp_scalar )
+                tx_weights( i_tx ) = sum_tx_grad_norm / ( tx_grad_norms( i_tx ) * n_tx )
                 !
             enddo
             !
-            deallocate( tx_weights )
+            write( *, * ) "TX WEIGHTS: ", tx_weights
+            write( ioGradLog, * ) "TX WEIGHTS: ", tx_weights
+            !
+            if( joint_type /= INV_UNWEIGHTED ) then
+                !
+                !> Set back the weighted gradient conductivity
+                call JTd%zeros()
+                do i_tx = 1, n_tx
+                    !
+                    temp_scalar = s_hat( i_tx )
+                    !
+                    call temp_scalar%mult( tx_weights( i_tx ) )
+                    !
+                    call JTd%addCond( temp_scalar )
+                    !
+                enddo
+                !
+            endif
+            !
+            deallocate( temp_scalar )
+            !
+            !> Get gradient conductivity
+            call JTd%getCond( temp_scalar )
+            !
+            grad_norm = real( sqrt( temp_scalar%dotProd( temp_scalar ) ), kind=prec )
+            !
+            
+            write( *, * ) "FINAL GRAD NORM: ", grad_norm
+            !
+            write( ioGradNorm, "( f15.3 )" ) grad_norm
+            !
+            close( ioGradNorm )
+            !
+            write( ioGradLog, * ) "FINAL GRAD NORM: ", grad_norm
+            !
+            deallocate( tx_weights, tx_grad_norms, tx_rms, temp_scalar )
             !
             close( ioGradLog )
             !
