@@ -36,7 +36,7 @@ module InversionNLCG
             !
     end type InversionNLCG_t
     !
-    private :: weightGradrients, cdInvMult, outputFilesInversionNLCG
+    private :: weightGradrients, writeHeaders, cdInvMult, outputFilesInversionNLCG
     !
     interface InversionNLCG_t
         module procedure InversionNLCG_ctor
@@ -143,6 +143,8 @@ contains
         !
         !>
         call createOutputDirectory()
+        !
+        call writeHeaders
         !
         ! Verbose
         write( *, * ) "     - Start Inversion NLCG, output files in [", trim( outdir_name ), "]"
@@ -479,6 +481,53 @@ contains
     end subroutine gradient
     !
     !> ????
+    !
+    subroutine writeHeaders()
+        implicit none
+        !
+        integer :: i_tx, n_tx, ios
+        !
+        n_tx = size( transmitters )
+        !
+        open( unit = ioGradNorm, file = trim( outdir_name )//"/GradNorm.log", status="unknown", position="append", iostat=ios )
+        !
+        open( unit = ioGradRMS, file = trim( outdir_name )//"/GradRMS.log", status="unknown", position="append", iostat=ios )
+        !
+        do i_tx = 1, n_tx + 1
+            !
+            if( i_tx == n_tx + 1 ) then
+                !
+                write( ioGradNorm, "( A12 )" ) "Grad"
+                write( ioGradRMS, "( A12 )" ) "RMS"
+                !
+            else
+                !
+                !> Instantiate Transmitter's Source - According to transmitter type and chosen via control file
+                select type( Tx => getTransmitter( i_tx ) )
+                    !
+                    class is( TransmitterMT_t )
+                        !
+                        write( ioGradNorm, "( A12, i3, A2 )", advance = "no" ) "MT", i_tx, ", "
+                        write( ioGradRMS, "( A12, i3, A2 )", advance = "no" ) "MT", i_tx, ", "
+                        !
+                    class is( TransmitterCSEM_t )
+                        !
+                        write( ioGradNorm, "( A12, i3, A2 )", advance = "no" ) "CSEM", i_tx, ", "
+                        write( ioGradRMS, "( A12, i3, A2 )", advance = "no" ) "CSEM", i_tx, ", "
+                        !
+                    class default
+                        stop "Error: writeHeaders > Unclassified Transmitter"
+                    !
+                end select
+                !
+            endif
+        enddo
+        !
+        close( ioGradNorm )
+        !
+        close( ioGradRMS )
+        !
+    end subroutine writeHeaders
     !
     subroutine weightGradrients( s_hat, d, dHat, JTd )
         implicit none
