@@ -193,7 +193,7 @@ contains
             stop
             !
         endif
-        !
+            !
         if( n_tx == data_file_standard%n_tx ) then
             !
             write( *, * ) "          Checked ", n_tx, " Transmitters."

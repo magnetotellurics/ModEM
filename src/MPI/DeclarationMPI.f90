@@ -101,6 +101,7 @@ contains
             call MPI_Finalize( ierr )
             !
             stop
+            !
         endif 
         !
         !> Set mpi_rank with process id for mpi_comm_world
