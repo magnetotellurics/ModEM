@@ -5,16 +5,19 @@ module ModelOperator_SP
     !
     use ModelOperator
     use spOpTopology_SG
+    use spOpTopology_MR
     use MetricElements_CSG
     use ModelParameterCell_SG
     !
     type, extends( ModelOperator_t ) :: ModelOperator_SP_t
         !
+        type( spOpTopology_SG_t ) :: topology_sg
+        !
         class( Scalar_t ), allocatable :: sigma_C
         integer, allocatable, dimension(:) :: EDGEi, EDGEb
         integer, allocatable, dimension(:) :: NODEi, NODEb
         !
-        type( spMatCSR_Real ) :: CCii, CCib
+        type( spMatCSR_Real ) :: CC, CCii, CCib
         !
         real( kind=prec ) :: omega
         !
@@ -36,6 +39,8 @@ module ModelOperator_SP
             procedure, public :: multAib => multAibModelOperatorSP
             procedure, public :: multCurlT => multCurlTModelOperatorSP
             procedure, public :: divCorSetUp => divCorSetUpModelOperatorSP
+            !
+            procedure, public :: divCorInit => divCorInitModelOperatorSP
             !
             procedure :: divCgrad => divCgradModelOperatorSP
             procedure :: divC => divCModelOperatorSP
@@ -68,31 +73,34 @@ contains
         !
         call self%init
         !
-        call self%create( grid )
+        !> Instantiation of the specific object MetricElements
+        allocate( self%metric, source = MetricElements_CSG_t( grid ) )
+        !
+        call self%create
         !
     end function ModelOperator_SP_ctor
     !
     !> No subroutine briefing
-    subroutine createModelOperatorSP( self, grid )
+    subroutine createModelOperatorSP( self )
         implicit none
         !
         class( ModelOperator_SP_t ), intent( inout ) :: self
-        class( Grid_t ), target, intent( in ) :: grid
         !
-        integer :: nz, nInterior
+        integer :: nInterior
         !
         self%is_allocated = .FALSE.
-        !
-        self%metric%grid => grid
         !
         !> Set sparse matrices for curl (T) and grad (G)
         !> operator topologies; these sparse matrices are stored
         !> in module spOpTopology
-        call setCurlTopology( grid )
         !
-        call setGradTopology( grid )
+        self%topology_sg = spOpTopology_SG_t( self%metric%grid )
         !
-        call boundaryIndexSP( EDGE, grid, self%EDGEb, self%EDGEi )
+        call self%topology_sg%curl( T )
+        !
+        call self%topology_sg%grad( G )
+        !
+        call boundaryIndexSP( EDGE, self%metric%grid, self%EDGEb, self%EDGEi )
         !
         nInterior = size( self%EDGEi )
         !
@@ -102,12 +110,8 @@ contains
         !> here for all edges
         allocate( self%VomegaMuSig( nInterior ) )
         !
-        allocate( self%metric, source = MetricElements_CSG_t( grid ) )
-        !
         !> set a default omega
         self%omega = 0.0
-        !
-        call self%setEquations
         !
         self%is_allocated = .TRUE.
         !
@@ -146,11 +150,9 @@ contains
         call deall_spMatCSR( self%VDsG_L )
         call deall_spMatCSR( self%VDsG_U )
         !
-        !> interior and edge indicies
-        deallocate( self%EDGEi )
-        deallocate( self%EDGEb )
-        deallocate( self%NODEi )
-        deallocate( self%NODEb )
+        !> interior and edge indexes
+        deallocate( self%EDGEi, self%EDGEb )
+        deallocate( self%NODEi, self%NODEb )
         !
         !> and the edge conductivities
         if( allocated( self%VomegaMuSig ) ) then
@@ -159,7 +161,9 @@ contains
         !
         !> and the cell conductivities
         !> note that sigma_C is only needed to set up boundary conditions
-        deallocate( self%sigma_C )
+        if( allocated( self%sigma_C ) ) then
+            deallocate( self%sigma_C )
+        endif
         !
         self%is_allocated = .FALSE.
         !
@@ -173,7 +177,7 @@ contains
         implicit none
         !
         class( ModelOperator_SP_t ), intent( inout ) :: self
-        type( spMatCSR_Real )       :: Temp, CC, Ttrans
+        type( spMatCSR_Real ) :: Temp, Ttrans
         integer :: m, n, nz
         real( kind=prec ), allocatable, dimension(:) :: Dtemp
         integer :: fid
@@ -181,24 +185,37 @@ contains
         m = T%nRow
         n = T%nCol
         nz = T%row( T%nRow + 1 ) - 1
+        !
         allocate( Dtemp( m ) )
+        !
         call create_spMatCSR( m, n, nz, Temp )
         call create_spMatCSR( n, m, nz, Ttrans )
-        call create_spMatCSR( m, n, nz, CC )
+        call create_spMatCSR( m, n, nz, self%CC )
+        !
         call RMATxDIAG( T, real( self%metric%EdgeLength%getArray(), kind=prec ), Temp )
+        !
         Dtemp = self%metric%DualEdgeLength%getArray() / self%metric%FaceArea%getArray()
-        call DIAGxRMAT( Dtemp, Temp, CC )
+        !
+        call DIAGxRMAT( Dtemp, Temp, self%CC )
+        !
         call RMATtrans( T, Ttrans )
-        call RMATxRMAT( Ttrans, CC, Temp )
-        call DIAGxRMAT( real( self%metric%EdgeLength%getArray(), kind=prec ), Temp, CC )
-        call subMatrix_Real( CC, self%EDGEi, self%EDGEi, self%CCii )
-        call subMatrix_Real( CC, self%EDGEi, self%EDGEb, self%CCib )
+        !
+        call RMATxRMAT( Ttrans, self%CC, Temp )
+        !
+        call DIAGxRMAT( real( self%metric%EdgeLength%getArray(), kind=prec ), Temp, self%CC )
+        !
+        call subMatrix_Real( self%CC, self%EDGEi, self%EDGEi, self%CCii )
+        !
+        call subMatrix_Real( self%CC, self%EDGEi, self%EDGEb, self%CCib )
+        !
         call deall_spMatCSR( Temp )
         call deall_spMatCSR( Ttrans )
-        call deall_spMatCSR( CC )
+        !
         deallocate( Dtemp )
         !
         self%eqset = .TRUE.
+        !
+        call self%divCorInit
         !
         call self%divCorSetUp
         !
@@ -214,7 +231,7 @@ contains
         !
         integer :: i
         type( rvector3D_SG_t ) :: temp_vec, sig_temp_vec
-        type( rScalar3D_SG_t ) :: cell_cond
+        type( rScalar3D_SG_t ) :: cell_cond_h
         !
         sig_temp_vec = rvector3D_SG_t( self%metric%grid, EDGE )
         !
@@ -238,11 +255,72 @@ contains
         !> rvector sigma_C is created if it is not yet allocated
         !
         !> ON -> call ModelParamToCell( sigma, sigma_C )
-        cell_cond = rScalar3D_SG_t( self%metric%grid, EDGE )
-        caLL cell_cond%setArray( cmplx( self%VomegaMuSig, 0.0, kind=prec ) )
-        call sigma%dPDEmapping( ModelParameterCell_SG_ctor( self%metric%grid, cell_cond ), self%sigma_C )
+        cell_cond_h = rScalar3D_SG_t( self%metric%grid, CELL_EARTH )
+        !
+        caLL cell_cond_h%setArray( cmplx( self%VomegaMuSig, 0.0, kind=prec ) )
+        !
+        call sigma%dPDEmapping( ModelParameterCell_SG_ctor( self%metric%grid, cell_cond_h ), self%sigma_C )
         !
     end subroutine setCondModelOperatorSP
+    !
+    !> To complete setup conductivity is required
+    !> DivCorInit has to be called before this routine
+    !
+    subroutine divCorInitModelOperatorSP( self )
+        implicit none
+        !
+        class( ModelOperator_SP_t ), intent( inout ) :: self
+        !
+        type( spMatCSR_Real ) :: Temp, Temp2
+        real( kind=prec ), allocatable, dimension(:) :: d, aux_vec
+        integer, allocatable, dimension(:) :: allNodes
+        integer :: i, m
+        !
+        !> set indexes for interior and boundary nodes
+        call boundaryIndexSP( CORNER, self%metric%grid, self%NODEb, self%NODEi )
+        !
+        !> (1) first construct VDiv operator transpose of topology
+        call RMATtrans( G, Temp )
+        !
+        !> pre-multiply by dual face area
+        aux_vec = real( self%metric%DualFaceArea%getArray(), kind=prec )
+        !
+        call RMATxDIAG( Temp, aux_vec, Temp2 )
+        !
+        write( *, * ) "Temp2%nRow, Temp2%nCol: ", Temp2%nRow, Temp2%nCol
+        !
+        call deall_spMatCSR( Temp )
+        !
+        !> select out interior nodes, edges
+        call subMatrix_Real( Temp2, self%NODEi, self%EDGEi, self%VDiv )
+        !
+        write( *, * ) "self%VDiv%nRow, self%VDiv%nCol: ", self%VDiv%nRow, self%VDiv%nCol
+        !
+        call deall_spMatCSR( Temp2 )
+        !
+        !> (2) next turn G into actual gradient (not just topology,
+        !> all nodes-> interior edges (not clear this is what we want!)
+        allocate( d( G%nRow ) )
+        !
+        aux_vec = real( self%metric%EdgeLength%getArray(), kind=prec )
+        !
+        do i = 1, G%nRow
+            d(i) = 1. / aux_vec(i)
+        enddo
+        !
+        allocate( allNodes( G%nCol ) )
+        !
+        do i=1,G%nCol
+            allNodes(i) = i
+        enddo
+        !
+        call DIAGxRMAT( d, G, Temp )
+        call subMatrix_Real( Temp, self%EDGEi, allNodes, G )
+        call deall_spMatCSR( Temp )
+        !
+        deallocate( allNodes, d )
+        !
+    end subroutine divCorInitModelOperatorSP
     !
     !> To complete setup conductivity is required
     !> DivCorInit has to be called before this routine
@@ -255,7 +333,7 @@ contains
         type( spMatCSR_Real ) :: temp_matrix
         type( rvector3D_SG_t ) :: temp_vec
         real( kind=prec ), allocatable, dimension(:) :: d
-        integer, allocatable, dimension(:) ::  allNodes
+        integer, allocatable, dimension(:) :: allNodes
         integer :: n, i
         !
         !> Construct VDs .. multiply VDiv by Conductivity on edges; can use VomegaMuSig
@@ -275,6 +353,7 @@ contains
         !
         !>Construct VDsG: symmetric operator for divergence correction solver
         allocate( allNodes( G%nRow ) )
+        !
         do i = 1, G%nRow
             allNodes( i ) = i
         enddo
@@ -282,6 +361,7 @@ contains
         call subMatrix_Real( G, allNodes, self%NODEi, temp_matrix )
         !
         call RMATxRMAT( self%VDs, temp_matrix, self%VDsG )
+        !
         ! Setup preconditioner
         call Dilu_Real( self%VDsG, self%VDsG_L, self%VDsG_U )
         !
@@ -316,7 +396,14 @@ contains
         !
         temp_array_inE = inE%getArray()
         !
-        call RMATxCVEC( self%CCii, temp_array_inE, temp_array_outE )
+        temp_array_outE = temp_array_inE
+        temp_array_outE = C_ZERO
+        !
+        ! ON CCii DIFFERENT LENGTH ???? 
+        ! call RMATxCVEC( self%CCii, temp_array_inE, temp_array_outE )
+        !
+        ! CC Works
+        call RMATxCVEC( self%CC, temp_array_inE, temp_array_outE )
         !
         if( present( p_adjoint ) ) then
             adjoint = p_adjoint
@@ -351,20 +438,23 @@ contains
         class( Field_t ), intent( in ) :: bdry
         class( Vector_t ), intent( inout ) :: outE
         !
-        stop "Error: multAibModelOperatorSP not implemented > Code ready but commented out!"
-        ! !
-        ! logical :: adjoint
-        ! type( spMatCSR_Real ) :: CCibt
-        ! complex( kind=prec ), allocatable, dimension(:) :: temp_array, temp_array_inE, temp_array_outE
-        ! !
-        ! if( .NOT. bdry%is_allocated ) then
-            ! stop "Error: amultModelOperatorSP > bdry not allocated"
-        ! endif
-        ! !
-        ! temp_array_inE = bdry%getArray()
-        ! !
-        ! call RMATxCVEC( self%CCii, temp_array_inE, temp_array_outE )
-        ! !
+        complex( kind=prec ), allocatable, dimension(:) :: temp_array, temp_array_inE, temp_array_outE
+        !
+        if( .NOT. bdry%is_allocated ) then
+            stop "Error: amultModelOperatorSP > bdry not allocated"
+        endif
+        !
+        temp_array_inE = bdry%getArray()
+        !
+        temp_array_outE = temp_array_inE
+        temp_array_outE = C_ZERO
+        !
+        ! ON CCib DIFFERENT LENGTH ???? 
+        ! call RMATxCVEC( self%CCib, temp_array_inE, temp_array_outE )
+        !
+        ! CC Works
+        call RMATxCVEC( self%CC, temp_array_inE, temp_array_outE )
+        !
         ! if( present( p_adjoint ) ) then
             ! adjoint = p_adjoint
         ! else
@@ -389,15 +479,15 @@ contains
         ! else
             ! call RMATxCVEC( self%CCib, temp_array_inE, temp_array_outE )
         ! endif
-        ! !
-        ! deallocate( temp_array_inE )
-        ! !
-        ! outE = rVector3D_SG_t( self%metric%grid, EDGE )
-        ! !
-        ! call outE%setArray( temp_array_outE )
-        ! !
-        ! deallocate( temp_array_outE )
-        ! !
+        !
+        deallocate( temp_array_inE )
+        !
+        outE = rVector3D_SG_t( self%metric%grid, EDGE )
+        !
+        call outE%setArray( temp_array_outE )
+        !
+        deallocate( temp_array_outE )
+        !
     end subroutine multAibModelOperatorSP
     !
     !> No subroutine briefing
@@ -416,7 +506,7 @@ contains
                 call inH%div( self%Metric%FaceArea )
                 !
                 if(.NOT.outE%is_allocated) then
-                     write( *, * ) "     "//achar(27)//"[31m# Error:"//achar(27)//"[0m  multCurlTModelOperatorSP > output vector not allocated"
+                     write( *, * ) "Error:  multCurlTModelOperatorSP > output vector not allocated"
                 endif
                 !
                 select type( outE )
@@ -474,7 +564,10 @@ contains
         !
         temp_array_inPhi = inPhi%getArray()
         !
-        call RMATxCVEC( self%VDsG, inPhi%getArray(), temp_array_outPhi )
+        temp_array_outPhi = temp_array_inPhi
+        temp_array_outPhi = C_ZERO
+        !
+        call RMATxCVEC( self%VDsG, temp_array_inPhi, temp_array_outPhi )
         !
         deallocate( temp_array_inPhi )
         !
@@ -497,6 +590,9 @@ contains
         complex( kind=prec ), allocatable, dimension(:) :: temp_array_inE, temp_array_outPhi
         !
         temp_array_inE = inE%getArray()
+        !
+        temp_array_outPhi = temp_array_inE
+        temp_array_outPhi = C_ZERO
         !
         call RMATxCVEC( self%VDs, temp_array_inE, temp_array_outPhi )
         !
@@ -521,6 +617,9 @@ contains
         complex( kind=prec ), allocatable, dimension(:) :: temp_array_inPhi, temp_array_outE
         !
         temp_array_inPhi = inPhi%getArray()
+        !
+        temp_array_outE = temp_array_inPhi
+        temp_array_outE = C_ZERO
         !
         call RMATxCVEC( G, temp_array_inPhi, temp_array_outE )
         !
@@ -549,6 +648,9 @@ contains
         call RMATtrans( G, D )
         !
         temp_array_inE = inE%getArray()
+        !
+        temp_array_outPhi = temp_array_inE
+        temp_array_outPhi = C_ZERO
         !
         call RMATxCVEC( D, temp_array_inE, temp_array_outPhi )
         !

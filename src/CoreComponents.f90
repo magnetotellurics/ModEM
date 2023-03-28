@@ -21,7 +21,7 @@ module CoreComponents
     !
     use SourceMT_1D
     use SourceMT_2D
-    !use SourceCSEM_EM1D
+    use SourceCSEM_EM1D
     use SourceCSEM_Dipole1D
     use SourceInteriorForce
     !
@@ -458,7 +458,7 @@ contains
         !
         ! Source parameters
         source_type_mt = SRC_MT_1D
-        get_1D_from = "Geometric_mean"
+        get_1d_from = "Geometric_mean"
         !
         ! Model parameters
         model_method = MM_METHOD_FIXED_H
@@ -535,7 +535,7 @@ contains
         if( allocated( forward_solver_type ) ) deallocate( forward_solver_type )
         if( allocated( source_type_mt ) ) deallocate( source_type_mt )
         if( allocated( model_method ) ) deallocate( model_method )
-        if( allocated( get_1D_from ) ) deallocate( get_1D_from )
+        if( allocated( get_1d_from ) ) deallocate( get_1d_from )
         if( allocated( predicted_data_file_name ) ) deallocate( predicted_data_file_name )
         if( allocated( jmhat_data_file_name ) ) deallocate( jmhat_data_file_name )
         if( allocated( e_solution_file_name ) ) deallocate( e_solution_file_name )
@@ -595,8 +595,8 @@ contains
         write( *, * ) ""
         write( *, * ) "    Flags to define a job:"
         write( *, * ) "        [-f],  [--forward]   :  Forward Modeling."
-        write( *, * ) "        [-j],  [--jmult]     :  serialJMult."
-        write( *, * ) "        [-jt], [--jmult_t]   :  Transposed serialJMult."
+        write( *, * ) "        [-j],  [--jmult]     :  Jacobian Multiplication."
+        write( *, * ) "        [-jt], [--jmult_t]   :  Transposed Jacobian Multiplication."
         write( *, * ) "        [-i],  [--inversion] :  Inversion."
         write( *, * )
         write( *, * ) "    Other arguments:"
@@ -635,40 +635,42 @@ contains
             write( ioFwdTmp, "(A46)" ) "##############################################"
             write( ioFwdTmp, "(A46)" ) "# ModEM Forward Modeling Control File Template"
             write( ioFwdTmp, "(A46)" ) "#     Here are all supported parameters       "
-            write( ioFwdTmp, "(A46)" ) "#     Comment or remove to use default        "
+            write( ioFwdTmp, "(A46)" ) "#     Comment or remove to use default value  "
             write( ioFwdTmp, "(A46)" ) "##############################################"
             write( ioFwdTmp, "(A1)" )  "#"
-            write( ioFwdTmp, "(A18)" ) "# Grid parameters:"
+            write( ioFwdTmp, "(A19)" ) "# <Grid parameters>"
             write( ioFwdTmp, "(A1)" )  "#"
-            write( ioFwdTmp, "(A42)" ) "#grid_header [ModEM|HDF5]          : ModEM"
-            write( ioFwdTmp, "(A39)" ) "#grid_type [SG|MR]                 : SG"
+            write( ioFwdTmp, "(A33)" ) "#grid_header [ModEM|HDF5] : ModEM"
+            write( ioFwdTmp, "(A30)" ) "#grid_type [SG|MR]        : SG"
             write( ioFwdTmp, "(A1)" )  "#"
-            write( ioFwdTmp, "(A19)" ) "# Model parameters:"
+            write( ioFwdTmp, "(A20)" ) "# <Model parameters>"
             write( ioFwdTmp, "(A1)" )  "#"
             write( ioFwdTmp, "(A49)" ) "model_method [mirror|fixed height] : fixed height"
             write( ioFwdTmp, "(A39)" ) "model_n_air_layer [10]             : 10"
             write( ioFwdTmp, "(A42)" ) "model_max_height [200.0]           : 200.0"
             write( ioFwdTmp, "(A1)" )  "#"
-            write( ioFwdTmp, "(A20)" ) "# Source parameters:"
+            write( ioFwdTmp, "(A21)" ) "# <Source parameters>"
             write( ioFwdTmp, "(A1)" )  "#"
-            write( ioFwdTmp, "(A39)" ) "source [1D|2D]                     : 1D"
+            write( ioFwdTmp, "(A66)" ) "source_type_mt [1D|2D]                                        : 1D"
+            write( ioFwdTmp, "(A68)" ) "source_type_csem [EM1D|Dipole1D]                              : EM1D"
+            write( ioFwdTmp, "(A78)" ) "get_1d_from [Fixed|Geometric_mean|Mean_around_Tx|Tx_Position] : Geometric_mean"
             write( ioFwdTmp, "(A1)" )  "#"
-            write( ioFwdTmp, "(A20)" ) "# Solver parameters:"
+            write( ioFwdTmp, "(A21)" ) "# <Solver parameters>"
             write( ioFwdTmp, "(A1)" )  "#"
-            write( ioFwdTmp, "(A39)" ) "QMR_iters [40]                     : 40"
-            write( ioFwdTmp, "(A39)" ) "BCG_iters [80]                     : 80"
-            write( ioFwdTmp, "(A39)" ) "max_divcor_calls [20]              : 20"
-            write( ioFwdTmp, "(A40)" ) "max_divcor_iters [100]             : 100"
-            write( ioFwdTmp, "(A41)" ) "tolerance_qmr [1E-7]               : 1E-7"
-            write( ioFwdTmp, "(A41)" ) "tolerance_divcor [1E-5]            : 1E-5"
-            write( ioFwdTmp, "(A42)" ) "forward_solver [IT|IT_DC]          : IT_DC"
+            write( ioFwdTmp, "(A30)" ) "QMR_iters [40]            : 40"
+            write( ioFwdTmp, "(A30)" ) "BCG_iters [80]            : 80"
+            write( ioFwdTmp, "(A30)" ) "max_divcor_calls [20]     : 20"
+            write( ioFwdTmp, "(A31)" ) "max_divcor_iters [100]    : 100"
+            write( ioFwdTmp, "(A32)" ) "tolerance_qmr [1E-7]      : 1E-7"
+            write( ioFwdTmp, "(A32)" ) "tolerance_divcor [1E-5]   : 1E-5"
+            write( ioFwdTmp, "(A33)" ) "forward_solver [IT|IT_DC] : IT_DC"
             write( ioFwdTmp, "(A1)" )  "#"
             !
             close( ioFwdTmp )
             !
         else
             !
-            stop "Error: printInversionControlFileTemplate > opening [inv_control_file_template.txt]"
+            stop "Error: printInversionControlFileTemplate > opening [fwd_ctrl_template.txt]"
             !
         endif
         !
@@ -686,25 +688,29 @@ contains
         !
         if( ios == 0 ) then
             !
-            write( ioInvTmp, "(A39)" ) "#######################################"
-            write( ioInvTmp, "(A39)" ) "# ModEM Inversion Control File Template"
-            write( ioInvTmp, "(A39)" ) "#     Here are all supported parameters"
-            write( ioInvTmp, "(A39)" ) "#     Comment or remove to use default "
-            write( ioInvTmp, "(A39)" ) "#######################################"
+            write( ioInvTmp, "(A46)" ) "##############################################"
+            write( ioInvTmp, "(A46)" ) "# ModEM Inversion Control File Template       "
+            write( ioInvTmp, "(A46)" ) "#     Here are all supported parameters       "
+            write( ioInvTmp, "(A46)" ) "#     Comment or remove to use default values "
+            write( ioInvTmp, "(A46)" ) "##############################################"
             write( ioInvTmp, "(A1)" )  "#"
-            write( ioInvTmp, "(A31)" ) "inversion_type [DCG|NLCG] : DCG"
-            write( ioInvTmp, "(A29)" ) "max_inv_iters [5]         : 5"
-            write( ioInvTmp, "(A30)" ) "max_grad_iters [20]       : 20"
-            write( ioInvTmp, "(A32)" ) "error_tol [1E-3]    : 1E-3"
-            write( ioInvTmp, "(A32)" ) "rms_tol [1.05]      : 1.05"
-            write( ioInvTmp, "(A31)" ) "lambda [10.]              : 10."
+            write( ioInvTmp, "(A38)" ) "inversion_type [DCG|NLCG]       : NLCG"
+            write( ioInvTmp, "(A44)" ) "joint_type [Unweighted|TxBased] : Unweighted"
+            write( ioInvTmp, "(A36)" ) "max_inv_iters [50]              : 50"
+            write( ioInvTmp, "(A36)" ) "max_grad_iters [20]             : 20"
+            write( ioInvTmp, "(A38)" ) "error_tol [1E-3]                : 1E-3"
+            write( ioInvTmp, "(A38)" ) "rms_tol [1.05]                  : 1.05"
+            write( ioInvTmp, "(A36)" ) "lambda [1.]                     : 1."
+            write( ioInvTmp, "(A40)" ) "lambda_tol [1.0e-4]             : 1.0e-8"
+            write( ioInvTmp, "(A37)" ) "lambda_div [20.]                : 10."
+            write( ioInvTmp, "(A37)" ) "startdm [20.]                   : 10."
             write( ioInvTmp, "(A1)" )  "#"
             !
             close( ioInvTmp )
             !
         else
             !
-            stop "Error: printInversionControlFileTemplate > opening [inv_control_file_template.txt]"
+            stop "Error: printInversionControlFileTemplate > opening [inv_ctrl_template.txt]"
             !
         endif
         !

@@ -55,7 +55,7 @@ contains
         !
         !write( *, * ) "Destructor PreConditioner_DC_SP_t"
         !
-        if( allocated( self%phi ) ) deallocate( self%phi )
+        deallocate( self%phi )
         !
     end subroutine PreConditioner_DC_SP_dtor
     !
@@ -78,12 +78,6 @@ contains
                 !
                 write( *, * ) "DEVELPMENT HOT SPOT > setPreConditioner_DC_SP:"
                 write( *, * ) "model_operator%VDsG_L and model_operator%VDsG_U should be allocated before at divCorSetUpModelOperatorSP"
-                !
-                if( allocated( self%phi ) ) deallocate( self%phi )
-                !
-                allocate( self%phi( size( model_operator%NODEi ) ) )
-                !
-                self%phi = C_ZERO
                 !
             class default
                 stop "Error: setPreConditioner_DC_SP > Unclassified ModelOperator"

@@ -19,7 +19,7 @@ module ModelParameterCell_SG
         !
         class( Grid_t ), allocatable :: param_grid
         !
-        type( rScalar3D_SG_t ) :: cell_cond
+        type( rScalar3D_SG_t ) :: cell_cond_h, cell_cond_v
         !
         contains
             !
@@ -28,6 +28,9 @@ module ModelParameterCell_SG
             procedure, public :: getCond => getCondModelParameterCell_SG
             !
             procedure, public :: addCond => addCondModelParameterCell_SG
+            !
+            procedure, public :: getValue => getValueModelParameterCell_SG
+            procedure, public :: setValue => setValueModelParameterCell_SG
             !
             procedure, public :: zeros => zerosModelParameterCell_SG
             !
@@ -38,6 +41,8 @@ module ModelParameterCell_SG
             procedure, public :: dotProd => dotProdModelParameterCell_SG
             !
             procedure, public :: linComb => linCombModelParameterCell_SG
+            !
+            procedure, public :: ModelParamToCell => ModelParamToCellParameterCell_SG
             !
             procedure, public :: PDEmapping => PDEmappingModelParameterCell_SG
             procedure, public :: dPDEmapping => dPDEmappingModelParameterCell_SG
@@ -64,11 +69,11 @@ contains
     !
     !> No subroutine briefing
     !
-    function ModelParameterCell_SG_ctor( grid, cell_cond, param_type ) result( self )
+    function ModelParameterCell_SG_ctor( grid, cell_cond_h, param_type ) result( self )
         implicit none
         !
         class( Grid_t ), intent( in ) :: grid
-        class( Scalar_t ), intent( in ) :: cell_cond
+        class( Scalar_t ), intent( in ) :: cell_cond_h
         character(:), allocatable, optional, intent( in ) :: param_type
         !
         type( ModelParameterCell_SG_t ) :: self
@@ -91,8 +96,8 @@ contains
                     ( grid%nz - grid%nzAir ), grid%dx, grid%dy, &
                     grid%dz( grid%nzAir+1:grid%nz ) ) )
         !
-        self%cell_cond = cell_cond
-        self%cell_cond%store_state = compound
+        self%cell_cond_h = cell_cond_h
+        self%cell_cond_h%store_state = compound
         !
         if( present( param_type ) ) then
             !
@@ -132,7 +137,7 @@ contains
         !
         allocate( cond_slice( model_param_1D%grid%nz ) )
         !
-        cond_slice = self%SigMap( self%cell_cond%v( ix, iy, : ) )
+        cond_slice = self%SigMap( self%cell_cond_h%v( ix, iy, : ) )
         !
         call model_param_1D%SetConductivity( cond_slice, self%air_cond, self%param_type, self%mKey )
         !
@@ -164,7 +169,7 @@ contains
             do i = 1, self%metric%grid%Nx
                 do j = 1, self%metric%grid%Ny
                     wt = wt + self%metric%grid%dx(i) * self%metric%grid%dy(j)
-                    temp_sigma_value = temp_sigma_value + self%cell_cond%v( i, j, k ) * &
+                    temp_sigma_value = temp_sigma_value + self%cell_cond_h%v( i, j, k ) * &
                     self%metric%grid%dx(i) * self%metric%grid%dy(j)
                 enddo
             enddo
@@ -199,11 +204,11 @@ contains
         allocate( cond_slice( self%metric%grid%ny, self%metric%grid%nzEarth ) )
         !
         if( axis == 1 ) then
-            cond_slice = self%SigMap( self%cell_cond%v(j,:,:) )
+            cond_slice = self%SigMap( self%cell_cond_h%v(j,:,:) )
         elseif( axis == 2 ) then
-            cond_slice = self%SigMap( self%cell_cond%v(:,j,:) )
+            cond_slice = self%SigMap( self%cell_cond_h%v(:,j,:) )
         elseif( axis == 3 ) then
-            cond_slice = self%SigMap( self%cell_cond%v(:,:,j) )
+            cond_slice = self%SigMap( self%cell_cond_h%v(:,:,j) )
         else
             stop "ModelParameter:Slice2D: wrong axis"
         endif
@@ -221,7 +226,7 @@ contains
         class( ModelParameterCell_SG_t ), intent( in ) :: self
         class( Scalar_t ), allocatable, intent( inout ) :: ccond
         !
-        allocate( ccond, source = self%cell_cond )
+        allocate( ccond, source = self%cell_cond_h )
         !
     end subroutine getCondModelParameterCell_SG
     !
@@ -232,9 +237,112 @@ contains
         class( ModelParameterCell_SG_t ), intent( inout ) :: self
         class( Scalar_t ), intent( in ) :: ccond
         !
-        call self%cell_cond%add( ccond )
+        call self%cell_cond_h%add( ccond )
         !
     end subroutine addCondModelParameterCell_SG
+    !
+    !> Gets cell conductivities from a model parameter object m
+    !
+    !> Extracts the values of v and vAir;
+    !> values that are extracted are converted to paramType.
+    !> Different from ModelParamToCell in that the value
+    !> that gets extracted is exactly what is stored in the modelParam:
+    !> it does not contain any air layers. This is needed for BC_x0_WS.
+    !
+    subroutine getValueModelParameterCell_SG( self, paramType, v_h, vAir, v_v )
+        implicit none
+        !
+        class( ModelParameterCell_SG_t ), intent( in ) :: self
+        character(:), allocatable, intent( inout ) :: paramType
+        class( Scalar_t ), intent( out ) :: v_h
+        real(kind = prec) , intent( out ), optional :: vAir
+        class( Scalar_t ), intent( out ), optional :: v_v
+        !
+        class( ModelParameterCell_SG_t ), allocatable :: mTemp
+        !
+        if ( .NOT. self%is_allocated ) then
+            write( *, * ) "ERROR: setValueModelParameter > Input modelParam must be allocated before calling."
+        endif
+        !
+        if( trim(paramType) .EQ. '' ) then
+            paramType = self%param_type
+        endif
+        !
+        ! create a temporary copy
+        allocate( mTemp, source = self )
+        !
+        ! convert model to the required type
+        call mTemp%setType( paramType )
+        !
+        ! set values
+        v_h = mTemp%cell_cond_h
+        !
+        if( present( v_v ) ) then
+            !
+            if( self%is_vti ) then
+                v_v = mTemp%cell_cond_v
+            else
+                v_v = v_h
+            endif
+            !
+        endif
+        !
+        if( present( vAir ) ) then
+            vAir = mTemp%air_cond
+        endif
+        !
+        ! deallocate temporary model parameter
+        deallocate( mTemp )
+        !
+    end subroutine getValueModelParameterCell_SG
+    !
+    !> Sets cell conductivities in a model parameter object m
+    !> the values of v and vAir are determined by paramType;
+    !> if different from that of the model parameter, returns
+    !> an error. To avoid this error, first convert m to the
+    !> required paramType using setType_modelParam.
+    !
+    subroutine setValueModelParameterCell_SG( self, paramType, v_h, vAir, v_v )
+        implicit none
+        !
+        class( ModelParameterCell_SG_t ), intent( inout ) :: self
+        character(:), allocatable, intent( in ) :: paramType
+        class( Scalar_t ), intent( in ) :: v_h
+        real(kind = prec) , intent( in ), optional :: vAir
+        class( Scalar_t ), intent( in ), optional :: v_v
+        !
+        if( .NOT. ( self%is_allocated )) then
+            write( *, * ) "ERROR: setValueModelParameter > Output modelParam must be allocated before calling setValue_modelParam."
+        endif
+        !
+        ! Error checking
+        if( ( self%metric%grid%Ny .NE. v_h%Ny ) .OR. ( self%metric%grid%Nx .NE. v_h%Nx ) .OR. &
+            ( self%metric%grid%NzEarth .NE. v_h%Nz ) ) then
+            write( *, * ) "ERROR: setValueModelParameter > modelParam/rscalar dimensions disagree in setValue_modelParam."
+        else if( paramType .NE. self%param_type ) then
+            write( *, * ) "ERROR: setValueModelParameter > paramTypes not consistent in setValue_modelParam."
+        endif
+        !
+        self%cell_cond_h = v_h
+        !
+        if( present( v_v ) ) then
+            !
+            if( self%is_vti ) then
+                self%cell_cond_v = v_v
+            else
+                self%cell_cond_v = self%cell_cond_h
+            endif
+            !
+        endif
+        !
+        if( present( vAir ) ) then
+            self%air_cond = vAir
+        endif
+        !
+        self%updated = .TRUE.
+        self%zero_valued = .FALSE.
+        !
+    end subroutine setValueModelParameterCell_SG
     !
     !> No subroutine briefing
     subroutine zerosModelParameterCell_SG( self )
@@ -242,7 +350,7 @@ contains
         !
         class( ModelParameterCell_SG_t ), intent( inout ) :: self
         !
-        call self%cell_cond%zeros
+        call self%cell_cond_h%zeros
         !
     end subroutine zerosModelParameterCell_SG
     !
@@ -273,7 +381,7 @@ contains
                 !
                 self%param_grid = rhs%param_grid
                 !
-                self%cell_cond = rhs%cell_cond
+                self%cell_cond_h = rhs%cell_cond_h
                 !
                 self%SigMap_ptr => rhs%SigMap_ptr
                 !
@@ -292,16 +400,16 @@ contains
         !
         integer :: counter, nx, ny, nz, nzAir, nz_earth
         !
-        if( .NOT. self%cell_cond%is_allocated ) then
-            stop "Error: countModelParameterCell_SG > cell_cond not allocated!"
+        if( .NOT. self%cell_cond_h%is_allocated ) then
+            stop "Error: countModelParameterCell_SG > cell_cond_h not allocated!"
         endif
         !
         !
         !> Grid dimensions
-        call self%cell_cond%grid%getDimensions( nx, ny, nz, nzAir )
+        call self%cell_cond_h%grid%getDimensions( nx, ny, nz, nzAir )
         nz_earth = nz - nzAir
         !
-        counter = self%cell_cond%Nx * self%cell_cond%Ny * nz_earth
+        counter = self%cell_cond_h%Nx * self%cell_cond_h%Ny * nz_earth
         !
     end function countModelParameterCell_SG
     !
@@ -316,9 +424,9 @@ contains
         select type( rhs )
             class is( ModelParameterCell_SG_t )
                 !
-                if( self%cell_cond%isCompatible( rhs%cell_cond ) ) then
+                if( self%cell_cond_h%isCompatible( rhs%cell_cond_h ) ) then
                     !
-                    self%cell_cond%v = a1 * self%cell_cond%v + a2 * rhs%cell_cond%v
+                    self%cell_cond_h%v = a1 * self%cell_cond_h%v + a2 * rhs%cell_cond_h%v
                     !
                 else
                     stop "Error: linCombModelParameterCell_SG > Incompatible rhs"
@@ -347,9 +455,9 @@ contains
             !
             class is( ModelParameterCell_SG_t )
                 !
-                if( self%cell_cond%isCompatible( rhs%cell_cond ) ) then
+                if( self%cell_cond_h%isCompatible( rhs%cell_cond_h ) ) then
                     !
-                    rvalue = rvalue + sum( self%cell_cond%v * rhs%cell_cond%v )
+                    rvalue = rvalue + sum( self%cell_cond_h%v * rhs%cell_cond_h%v )
                     !
                 else
                     stop "Error: dotProdModelParameterCell_SG > Incompatible rhs"
@@ -361,8 +469,76 @@ contains
         end select
         !
     end function dotProdModelParameterCell_SG
+    !**
+    !
+    ! cCond_v     Vertical conductivity
+    ! cCond_h     Horizontal conductivity
+    !*
+    subroutine ModelParamToCellParameterCell_SG( self, cCond_h, paramType, grid, AirCond, cCond_v )
+        implicit none
+        !
+        class( ModelParameterCell_SG_t ), intent( in ) :: self
+        type( rScalar3D_SG_t ), intent( inout ) :: cCond_h
+        character(:), allocatable, intent( out ), optional :: paramType
+        class( Grid_t ), allocatable, intent( out ), optional :: grid
+        real( kind=prec ), intent( out ), optional :: AirCond
+        type( rScalar3D_SG_t ), intent( out ), optional :: cCond_v
+        !
+        cCond_h = rScalar3D_SG_t( self%metric%grid, CENTER )
+        !
+        if( present( cCond_v ) ) then
+            cCond_v = rScalar3D_SG_t( self%metric%grid, CENTER )
+        endif
+        !
+        if( self%param_type .EQ. LOGE ) then
+            !
+            if( present( cCond_v ) ) then
+                cCond_v%v( :, :, 1:self%metric%grid%NzAir ) = exp( self%air_cond )
+                if ( self%is_vti ) then
+                    cCond_v%v( :, :, self%metric%grid%NzAir + 1 : self%metric%grid%Nz ) = exp( self%cell_cond_v%v )
+                else
+                    cCond_v%v( :, :, self%metric%grid%NzAir + 1 : self%metric%grid%Nz ) = exp( self%cell_cond_h%v )
+                endif
+                !
+            endif
+            !
+            cCond_h%v( :, :, 1:self%metric%grid%NzAir ) = exp( self%air_cond )
+            cCond_h%v( :, :, self%metric%grid%NzAir + 1 : self%metric%grid%Nz ) = exp( self%cell_cond_h%v )
+            !
+        else
+            !
+            if (present(cCond_v)) then
+                !
+                cCond_v%v( :, :, 1:self%metric%grid%NzAir ) = self%air_cond
+                if (self%is_vti) then
+                    cCond_v%v( :, :, self%metric%grid%NzAir + 1 : self%metric%grid%Nz ) = self%cell_cond_v%v
+                else
+                    cCond_v%v( :, :, self%metric%grid%NzAir + 1 : self%metric%grid%Nz ) = self%cell_cond_h%v
+                endif
+                !
+            endif
+            !
+            cCond_h%v( :, :, 1:self%metric%grid%NzAir ) = self%air_cond
+            cCond_h%v( :, :, self%metric%grid%NzAir + 1 : self%metric%grid%Nz ) = self%cell_cond_h%v
+            !
+        endif
+        !
+        if( present( paramType ) ) then
+            paramType = self%param_type
+        endif
+        !
+        if( present( grid ) ) then
+            allocate( grid, source = self%metric%grid )
+        endif
+        !
+        if( present( AirCond ) ) then
+            AirCond = self%air_cond
+        endif
+        !
+    end subroutine ModelParamToCellParameterCell_SG
     !
     !> Map the entire model cells into a single edge Vector_t (eVec).
+    !
     subroutine PDEmappingModelParameterCell_SG( self, eVec )
         implicit none
         !
@@ -386,7 +562,7 @@ contains
         !
         sigma_cell%v( :, :, 1:k0 ) = self%air_cond
         !
-        sigma_cell%v( :, :, k1:k2 ) = self%SigMap( self%cell_cond%v )
+        sigma_cell%v( :, :, k1:k2 ) = self%SigMap( self%cell_cond_h%v )
         !
         call sigma_cell%mult( self%metric%VCell )
         !
@@ -426,14 +602,14 @@ contains
         !> Ensure values in air are zero.
         call sigma_cell%zeros
         !
-        sigma_cell%v( :, :, k1:k2 ) = self%SigMap( self%cell_cond%v, JOB )
+        sigma_cell%v( :, :, k1:k2 ) = self%SigMap( self%cell_cond_h%v, JOB )
         !
-        !> Required to access the cell_cond attribute of ModelParameterCell_SG
+        !> Required to access the cell_cond_h attribute of ModelParameterCell_SG
         select type( dsigma )
             !
             class is( ModelParameterCell_SG_t )
                 !
-                sigma_cell%v(:,:,k1:k2) = sigma_cell%v(:,:,k1:k2) * dsigma%cell_cond%v
+                sigma_cell%v(:,:,k1:k2) = sigma_cell%v(:,:,k1:k2) * dsigma%cell_cond_h%v
                 !
             class default
                 stop "Error: dPDEmappingModelParameterCell_SG > Unclassified dsigma"
@@ -449,6 +625,7 @@ contains
     end subroutine dPDEmappingModelParameterCell_SG
     !
     !> Transpose the perturbation represented in a Vector_t (eVec), to a new dsigma model.
+    !
     subroutine dPDEmappingTModelParameterCell_SG( self, eVec, dsigma )
         implicit none
         !
@@ -460,7 +637,7 @@ contains
         character( len=5 ), parameter :: JOB = "DERIV"
         integer :: k0, k1, k2
         !
-        allocate( dsigma, source = ModelParameterCell_SG_t( self%param_grid, self%cell_cond, self%param_type ) )
+        allocate( dsigma, source = ModelParameterCell_SG_t( self%param_grid, self%cell_cond_h, self%param_type ) )
         !
         select type( dsigma )
             !
@@ -482,13 +659,13 @@ contains
                         !
                         call sigma_cell%mult( self%metric%Vcell )
                         !
-                        dsigma%cell_cond%v = self%SigMap( self%cell_cond%v, JOB ) 
+                        dsigma%cell_cond_h%v = self%SigMap( self%cell_cond_h%v, JOB ) 
                         !
                         k0 = self%metric%grid%NzAir
                         k1 = k0 + 1
                         k2 = self%metric%grid%Nz
                         !
-                        dsigma%cell_cond%v = dsigma%cell_cond%v * sigma_cell%v(:,:,k1:k2) !* by self or dsigma ????
+                        dsigma%cell_cond_h%v = dsigma%cell_cond_h%v * sigma_cell%v(:,:,k1:k2) !* by self or dsigma ????
                         !
                     class default
                         stop "Error: dPDEmappingTModelParameterCell_SG > Unclassified sigma_cell."
@@ -519,20 +696,20 @@ contains
             self%param_type = trim(param_type)
         elseif(self%param_type == LINEAR) then
             if(param_type == LOGE) then
-                self%cell_cond%v = log(self%cell_cond%v)
+                self%cell_cond_h%v = log(self%cell_cond_h%v)
             elseif(param_type == LOG_10) then
-                self%cell_cond%v = log10(self%cell_cond%v)
+                self%cell_cond_h%v = log10(self%cell_cond_h%v)
             endif
         elseif(param_type == LINEAR) then
             if(self%param_type == LOGE) then
-                self%cell_cond%v = exp(self%cell_cond%v)
+                self%cell_cond_h%v = exp(self%cell_cond_h%v)
             elseif(self%param_type == LOG_10) then
-                self%cell_cond%v = exp(self%cell_cond%v * log(10.))
+                self%cell_cond_h%v = exp(self%cell_cond_h%v * log(10.))
             endif
         elseif((self%param_type == LOGE) .AND. (param_type == LOG_10)) then
-            self%cell_cond%v = self%cell_cond%v / log(10.)
+            self%cell_cond_h%v = self%cell_cond_h%v / log(10.)
         elseif((self%param_type == LOG_10) .AND. (param_type == LOGE)) then
-            self%cell_cond%v = self%cell_cond%v * log(10.)
+            self%cell_cond_h%v = self%cell_cond_h%v * log(10.)
         else
             stop "Error: setTypeModelParameterCell_SG > Unknown param_type."
         endif
@@ -550,7 +727,7 @@ contains
         write( *, * ) "ModelParameterCell_SG_t:", self%mKey, self%air_cond, self%param_type, &
         self%zero_valued, self%is_allocated, self%param_grid%nx, self%param_grid%ny, self%param_grid%nz, self%param_grid%nzAir
         !
-        !call self%cell_cond%print
+        !call self%cell_cond_h%print
         !
     end subroutine printParameterCell_SG
     !
@@ -575,9 +752,9 @@ contains
         !paramType = userParamType
         !
         !if( self%%is_vti ) then
-        !    call getValue_modelParam(m, paramType, self%cell_cond, v_v=ccond_v)
+        !    call getValue_modelParam(m, paramType, self%cell_cond_h, v_v=ccond_v)
         !else
-        !    call getValue_modelParam(m, paramType, self%cell_cond)
+        !    call getValue_modelParam(m, paramType, self%cell_cond_h)
         !endif
         !
         open( ioModelParam, file = file_name, action = "write", form = "formatted", iostat = ios )
@@ -624,11 +801,11 @@ contains
             write( ioModelParam, * )
             !
             !> Convert (horizontal) conductivity to resistivity
-            rho_h = self%cell_cond
+            rho_h = self%cell_cond_h
             if((index(self%param_type,"LOGE" ) > 0) .OR. (index(self%param_type,"LOG10" ) > 0)) then
-                rho_h%v = -self%cell_cond%v
+                rho_h%v = -self%cell_cond_h%v
             elseif(index(self%param_type,"LINEAR" ) > 0) then
-                rho_h%v = ONE/self%cell_cond%v
+                rho_h%v = ONE/self%cell_cond_h%v
             endif
             !
             !> Write the (horizontal) resistivity

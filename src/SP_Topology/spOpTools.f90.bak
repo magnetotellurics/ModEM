@@ -16,9 +16,9 @@ module SpOpTools
     type :: spMatCSR_Real
         integer :: nRow=0
         integer :: nCol=0
-        integer, allocatable, dimension(:) :: row, col
-        real( kind=prec ), allocatable, dimension(:) :: val
-        logical :: is_allocated = .FALSE.
+        integer, pointer, dimension(:) :: row, col
+        real(kind=prec), pointer, dimension(:) :: val
+        logical :: allocated = .FALSE.
         logical :: lower = .FALSE.
         logical :: upper = .FALSE.
     end type
@@ -26,9 +26,9 @@ module SpOpTools
     type :: spMatCSR_Cmplx
         integer :: nRow=0
         integer :: nCol=0
-        integer, allocatable, dimension(:) :: row, col
-        complex( kind=prec ), allocatable, dimension(:) :: val
-        logical :: is_allocated = .FALSE.
+        integer, pointer, dimension(:) :: row, col
+        complex(kind=prec), pointer, dimension(:) :: val
+        logical :: allocated = .FALSE.
         logical :: lower = .FALSE.
         logical :: upper = .FALSE.
     end type
@@ -36,9 +36,9 @@ module SpOpTools
     type :: spMatIJS_Real
         integer :: nRow=0
         integer :: nCol=0
-        integer, allocatable, dimension(:) :: I, J
-        real( kind=prec ), allocatable, dimension(:) :: S
-        logical :: is_allocated = .FALSE.
+        integer, pointer, dimension(:) :: I, J
+        real(kind=prec), pointer, dimension(:) :: S
+        logical :: allocated = .FALSE.
         logical :: lower = .FALSE.
         logical :: upper = .FALSE.
     end type
@@ -46,9 +46,9 @@ module SpOpTools
     type :: spMatIJS_Cmplx
         integer :: nRow=0
         integer :: nCol=0
-        integer, allocatable, dimension(:) :: I, J
-        complex( kind=prec ), allocatable, dimension(:) :: S
-        logical :: is_allocated = .FALSE.
+        integer, pointer, dimension(:) :: I, J
+        complex(kind=prec), pointer, dimension(:) :: S
+        logical :: allocated = .FALSE.
         logical :: lower = .FALSE.
         logical :: upper = .FALSE.
     end type
@@ -127,24 +127,24 @@ contains
     !
     !> No subroutine briefing
     !
-    subroutine create_spMatCSR_Real( m, n, nz, A )
+    subroutine create_spMatCSR_Real(m, n, nz, A)
         implicit none
         !
         integer, intent( in ) :: m, n, nz
         !   A will be sparse m x n with nz non-zero elements
         type( spMatCSR_Real ), intent( inout ) :: A
-        !
-        if(A%is_allocated) then
-            call deall_spMatCSR(A)
+
+        if(A%allocated) then
+        call deall_spMatCSR(A)
         endif
-        !
+
         A%nRow = m
         A%nCol = n
         allocate(A%row(m+1))
         allocate(A%col(nz))
         allocate(A%val(nz))
         A%row(m+1)=nz+1
-        A%is_allocated = .TRUE.
+        A%allocated = .TRUE.
         !
     end subroutine create_spMatCSR_Real
     !
@@ -157,7 +157,7 @@ contains
         !   A will be sparse m x n with nz non-zero elements
         type( spMatCSR_Cmplx ), intent( inout ) :: A
 
-        if(A%is_allocated) then
+        if(A%allocated) then
         call deall_spMatCSR(A)
         endif
 
@@ -167,7 +167,7 @@ contains
         allocate(A%col(nz))
         allocate(A%val(nz))
         A%row(m+1)=nz+1
-        A%is_allocated = .TRUE.
+        A%allocated = .TRUE.
         !
     end subroutine create_spMatCSR_Cmplx
     !
@@ -180,7 +180,7 @@ contains
         !   A will be sparse m x n with nz non-zero elements
         type(spMatIJS_Real), intent( inout ) :: A
 
-        if(A%is_allocated) then
+        if(A%allocated) then
         call deall_spMatIJS(A)
         endif
 
@@ -189,7 +189,7 @@ contains
         allocate(A%I(nz))
         allocate(A%J(nz))
         allocate(A%S(nz))
-        A%is_allocated = .TRUE.
+        A%allocated = .TRUE.
         !
     end subroutine create_spMatIJS_Real
     !
@@ -202,7 +202,7 @@ contains
         !   A will be sparse m x n with nz non-zero elements
         type(spMatIJS_Cmplx), intent( inout ) :: A
 
-        if(A%is_allocated) then
+        if(A%allocated) then
         call deall_spMatIJS(A)
         endif
 
@@ -211,7 +211,7 @@ contains
         allocate(A%I(nz))
         allocate(A%J(nz))
         allocate(A%S(nz))
-        A%is_allocated = .TRUE.
+        A%allocated = .TRUE.
         return
     end subroutine create_spMatIJS_Cmplx
     !
@@ -221,11 +221,11 @@ contains
         implicit none
         !
         type( spMatCSR_Real ) :: A
-        if(A%is_allocated) then
+        if(A%allocated) then
         deallocate(A%row)
         deallocate(A%col)
         deallocate(A%val)
-        A%is_allocated = .FALSE.
+        A%allocated = .FALSE.
         A%upper = .FALSE.
         A%lower = .FALSE.
         A%nRow = 0
@@ -240,11 +240,11 @@ contains
         implicit none
         !
         type( spMatCSR_Cmplx ) :: A
-        if(A%is_allocated) then
+        if(A%allocated) then
         deallocate(A%row)
         deallocate(A%col)
         deallocate(A%val)
-        A%is_allocated = .FALSE.
+        A%allocated = .FALSE.
         A%upper = .FALSE.
         A%lower = .FALSE.
         A%nRow = 0
@@ -259,11 +259,11 @@ contains
         implicit none
         !
         type(spMatIJS_Real) :: A
-        if(A%is_allocated) then
+        if(A%allocated) then
         deallocate(A%I)
         deallocate(A%J)
         deallocate(A%S)
-        A%is_allocated = .FALSE.
+        A%allocated = .FALSE.
         A%nRow = 0
         A%nCol = 0
         return
@@ -276,11 +276,11 @@ contains
         implicit none
         !
         type(spMatIJS_Cmplx) :: A
-        if(A%is_allocated) then
+        if(A%allocated) then
         deallocate(A%I)
         deallocate(A%J)
         deallocate(A%S)
-        A%is_allocated = .FALSE.
+        A%allocated = .FALSE.
         A%nRow = 0
         A%nCol = 0
         return
@@ -289,36 +289,34 @@ contains
     !
     !> No function briefing
     !
-    function sameSizeCSR_Real( A, B ) result( same_size )
+    logical function sameSizeCSR_Real(A, B)
         implicit none
         !
-        type( spMatCSR_Real ), intent( in ) :: A, B
-        !
-        logical :: same_size
-        !
-        same_size = .FALSE.
-        !
-        if( A%is_allocated .AND. B%is_allocated .AND. A%nRow .GT. 0 .AND. B%nRow .GT. 0 ) then 
-            same_size = A%nRow .EQ. B%nRow .AND. A%nCol .EQ. B%nCol .AND. &
-            A%row( A%nRow + 1 ) .EQ. B%row( B%nRow + 1 )
+        type( spMatCSR_Real ), intent( in ) :: A
+        type( spMatCSR_Real ), intent( in ) :: B
+        sameSizeCSR_Real = .FALSE.
+        if(A%allocated .AND. B%allocated .AND.     &
+        A%nRow.gt.0 .AND. B%nRow.gt. 0) then 
+        sameSizeCSR_Real = A%nRow.eq.B%nRow .AND.  &
+        A%nCol.eq.B%nCol .AND.                 &
+        A%row(A%nRow+1).eq.B%row(B%nRow+1)
         endif
         !
     end function sameSizeCSR_Real
     !
     !> No function briefing
     !
-    function sameSizeCSR_Cmplx( A, B ) result( same_size )
+    logical function sameSizeCSR_Cmplx(A, B)
         implicit none
         !
-        type( spMatCSR_Cmplx ), intent( in ) :: A, B
-        !
-        logical :: same_size
-        !
-        same_size = .FALSE.
-        !
-        if( A%is_allocated .AND. B%is_allocated .AND. A%nRow .GT. 0 .AND. B%nRow .GT. 0 ) then 
-            same_size = A%nRow .EQ. B%nRow .AND. A%nCol .EQ. B%nCol .AND. &
-            A%row( A%nRow + 1 ) .EQ. B%row( B%nRow + 1 )
+        type( spMatCSR_Cmplx ), intent( in ) :: A
+        type( spMatCSR_Cmplx ), intent( in ) :: B
+        sameSizeCSR_Cmplx = .FALSE.
+        if(A%allocated .AND. B%allocated .AND.     &
+        A%nRow.gt.0 .AND. B%nRow.gt. 0) then 
+        sameSizeCSR_Cmplx = A%nRow.eq.B%nRow .AND.  &
+        A%nCol.eq.B%nCol .AND.                 &
+        A%row(A%nRow+1).eq.B%row(B%nRow+1)
         endif
         !
     end function sameSizeCSR_Cmplx
@@ -356,11 +354,11 @@ contains
     subroutine CSR2IJS_Real(C, S)
         implicit none
         !
-        type( spMatCSR_Real ), intent( in ) :: C
-        type(spMatIJS_Real), intent( inout ) :: S
+        type( spMatCSR_Real ), intent( in ) ::  C
+        type(spMatIJS_Real), intent( inout ) ::  S
         integer :: ij, i, j
         ! for now no error checking
-        if(.NOT.S%is_allocated) then
+        if(.NOT.S%allocated) then
         stop "Error: CSR2IJS_Real > allocate output matrix before call"
         endif
         ij = 0
@@ -380,11 +378,11 @@ contains
     subroutine CSR2IJS_Cmplx(C, S)
         implicit none
         !
-        type( spMatCSR_Cmplx ), intent( in ) :: C
-        type(spMatIJS_Cmplx), intent( inout ) :: S
+        type( spMatCSR_Cmplx ), intent( in ) ::  C
+        type(spMatIJS_Cmplx), intent( inout ) ::  S
         integer :: ij, i, j
         ! for now no error checking
-        if(.NOT.S%is_allocated) then
+        if(.NOT.S%allocated) then
         stop "Error: CSR2IJS_Cmplx > allocate output matrix before call"
         endif
         ij = 0
@@ -404,15 +402,15 @@ contains
     subroutine IJS2CSR_Real(S, C)
         implicit none
         !
-        type(spMatIJS_Real), intent( in ) :: S
-        type( spMatCSR_Real ), intent( inout ) :: C
+        type(spMatIJS_Real), intent( in ) ::  S
+        type( spMatCSR_Real ), intent( inout ) ::  C
         integer :: i, j, nz
         integer, allocatable, dimension(:) :: rowT
 
 
         allocate(rowT(S%nRow+1))
 
-        if(.NOT.C%is_allocated) then
+        if(.NOT.C%Allocated) then
         stop "Error: IJS2CSR_Real > allocate output matrix before call"
         endif
 
@@ -449,14 +447,14 @@ contains
     subroutine IJS2CSR_Cmplx(S, C)
         implicit none
         !
-        type(spMatIJS_Cmplx), intent( in ) :: S
-        type( spMatCSR_Cmplx ), intent( inout ) :: C
+        type(spMatIJS_Cmplx), intent( in ) ::  S
+        type( spMatCSR_Cmplx ), intent( inout ) ::  C
         integer :: i, j, nz
         integer, allocatable, dimension(:) :: rowT
 
         allocate(rowT(S%nRow+1))
 
-        if(.NOT.C%is_allocated) then
+        if(.NOT.C%Allocated) then
         stop "Error: IJS2CSR_Cmplx > allocate output matrix before call"
         endif
 
@@ -486,27 +484,27 @@ contains
     !
     ! multiply a complex vector x by a real sparse CSR matrix A 
     !
-    subroutine RMATxCVEC( A, x, y )
+    subroutine RMATxCVEC(A, x, y)
         implicit none
         !
         type( spMatCSR_Real ), intent( in ) :: A
-        complex( kind=prec ), dimension(:), intent( in ) :: x
-        complex( kind=prec ), dimension(:), intent( inout ) :: y
-        !
+        complex(kind=prec), dimension(:), intent( in ) :: x
+        complex(kind=prec), dimension(:), intent( inout ) :: y
+
         integer :: i, j
-        !
-        !> lets start coding this with little checking -- assume
-        !> everything is allocated and correct on entry
-        !
-        if( A%nCol .NE. size(x) ) then
-            stop "Error: RMATxCVEC > matrix and vector sizes incompatible"
+
+        ! lets start coding this with little checking -- assume
+        ! everything is allocated and correct on entry
+
+        if(A%nCol.NE.size(x)) then
+        stop "Error: RMATxCVEC > matrix and vector sizes incompatible"
         endif
-        !
+
         do i = 1, A%nRow
-            y(i) = C_ZERO
-            do j = A%row(i), A%row(i+1)-1 
-                y(i) = y(i)+A%val(j)*x(A%col(j))
-            enddo
+        y(i) = C_ZERO
+        do j = A%row(i), A%row(i+1)-1 
+        y(i) = y(i)+A%val(j)*x(A%col(j))
+        enddo
         enddo
         !
     end subroutine RMATxCVEC
@@ -517,8 +515,8 @@ contains
         implicit none
         !
         type( spMatCSR_Real ), intent( in ) :: A
-        real( kind=prec ), dimension(:), intent( in ) :: x
-        real( kind=prec ), dimension(:), intent( inout ) :: y
+        real(kind=prec), dimension(:), intent( in ) :: x
+        real(kind=prec), dimension(:), intent( inout ) :: y
 
         integer :: i, j
 
@@ -544,8 +542,8 @@ contains
         implicit none
         !
         type( spMatCSR_Cmplx ), intent( in ) :: A
-        complex( kind=prec ), dimension(:), intent( in ) :: x
-        complex( kind=prec ), dimension(:), intent( inout ) :: y
+        complex(kind=prec), dimension(:), intent( in ) :: x
+        complex(kind=prec), dimension(:), intent( inout ) :: y
 
         integer :: i, j
 
@@ -565,147 +563,138 @@ contains
         return
     end subroutine CMATxCVEC
     !
-    !> matix-vector multiplication
+    !  matix-vector multiplication
     !
-    subroutine RMATxRMAT( A, B, C )
+    subroutine RMATxRMAT(A, B, C)
         implicit none
         !
-        type( spMatCSR_Real ), intent( in ) :: A, B
-        type( spMatCSR_Real ), intent( out ) :: C
-        !
+        type( spMatCSR_Real ), intent( in ) :: A
+        type( spMatCSR_Real ), intent( in ) :: B
+        type( spMatCSR_Real ), intent( inout ) :: C
         type( spMatCSR_Real ) :: Ctmp
+
         integer :: i, j, k, nColMax, nCol, m, n, nz, nnz, jj, j1, j2, i1, i2, l, nzero
-        integer, allocatable, dimension(:) :: colT, rowT
-        logical :: new
-        !
-        allocate( rowT( A%nRow + 1 ) )
-        nColMax = maxColumnsR(A) * maxColumnsR(B)
-        allocate( colT( nColMax ) )
-        !
-        if( A%nCol .NE. B%nRow ) then
-            stop "Error: RMATxRMAT > matrix sizes incompatible"
+        integer, allocatable, dimension(:) :: colT
+        integer, allocatable, dimension(:) :: rowT
+        logical  new
+
+        allocate(rowT(A%nRow+1))
+        nColMax = maxColumnsR(A)*maxColumnsR(B)
+        allocate(colT(nColMax))
+
+        if(A%nCol.NE.B%nRow) then
+        stop "Error: RMATxRMAT > matrix sizes incompatible"
         endif
-        !
-        !> first pass: find numbers of columns in each row of output matrix C
+
+        !   first pass: find numbers of columns in each row of output
+        !            matrix C
         rowT(1) = 1
-        !
         do i = 1, A%nRow
-            nCol = 0
-            do j = A%row(i), A%row(i+1)-1
-                jj = A%col(j)
-                do k = B%row(jj), B%row(jj+1)-1 
-                    !
-                    new = .TRUE.
-                    do l = 1, nCol
-                        new = new.and.(colT(l).NE.B%col(k))
-                    enddo
-                    !
-                    if( new ) then
-                        nCol = nCol+1
-                        colT(nCol) = B%col(k)
-                    endif
-                enddo
-            enddo
-            rowT(i+1) = rowT(i)+nCol
+        nCol = 0
+        do j = A%row(i), A%row(i+1)-1
+        jj = A%col(j)
+        do k = B%row(jj), B%row(jj+1)-1 
+        new = .TRUE.
+        do l = 1, nCol
+        new = new.AND.(colT(l).NE.B%col(k))
         enddo
-        !
-        !> create output sparse matrix
-        !> rowT is now row vector for output C
+        if(new) then
+        nCol = nCol+1
+        colT(nCol) = B%col(k)
+        endif
+        enddo
+        enddo
+        rowT(i+1) = rowT(i)+nCol 
+        enddo
+        !  create output sparse matrix
+        !  rowT is now row vector for output C
         m = A%nRow
         n = B%nCol
         nz = rowT(m+1)-1
-        if(C%is_allocated) then
+        if(C%allocated) then
         call deall_spMatCSR(C)
         endif
         call create_spMatCSR(m, n, nz, Ctmp)
-        !
-        !> second pass: fill in columns and values of output matrix C
-        !
+        !   second pass: fill in columns and values of output
+        !            matrix C
+
         nzero = 0
         Ctmp%row = rowT
         deallocate(rowT)
-        !
         do i = 1, A%nRow
-            nCol = 0
-            i1 = Ctmp%row(i)
-            i2 = Ctmp%row(i+1)-1
-            Ctmp%val(i1:i2) = 0.0d0
-            do j = A%row(i), A%row(i+1)-1
-                jj = A%col(j)
-                do k = B%row(jj), B%row(jj+1)-1 
-                    new = .TRUE.
-                    do l = 1, nCol
-                        if(colT(l).eq.B%col(k))then
-                            new = .FALSE.
-                            exit
-                        endif
-                    enddo
-                    !
-                    if(new) then
-                        nCol = nCol+1
-                        colT(nCol) = B%col(k)
-                        Ctmp%val(i1+nCol-1) = A%val(j)*B%val(k)
-                        Ctmp%col(i1+nCol-1) = B%col(k)
-                        if(Ctmp%val(i1+nCol-1).eq.0.0) then ! new entry
-                            nzero = nzero +1
-                        endif
-                    else
-                        Ctmp%val(i1+l-1) = Ctmp%val(i1+l-1) + A%val(j)*B%val(k)
-                        if(Ctmp%val(i1+l-1).eq.0.0) then ! no new entry 
-                            ! but could cancel out nonetheless
-                            nzero = nzero +1
-                        endif
-                    endif
-                enddo
-            enddo
+        nCol = 0
+        i1 = Ctmp%row(i)
+        i2 = Ctmp%row(i+1)-1
+        Ctmp%val(i1:i2) = 0.0d0
+        do j = A%row(i), A%row(i+1)-1
+        jj = A%col(j)
+        do k = B%row(jj), B%row(jj+1)-1 
+        new = .TRUE.
+        do l = 1, nCol
+        if(colT(l).eq.B%col(k))then
+        new = .FALSE.
+        exit
+        endif
         enddo
-        !
-        deallocate( colT )
+        if(new) then
+        nCol = nCol+1
+        colT(nCol) = B%col(k)
+        Ctmp%val(i1+nCol-1) = A%val(j)*B%val(k)
+        Ctmp%col(i1+nCol-1) = B%col(k)
+        if(Ctmp%val(i1+nCol-1).eq.0.0) then ! new entry
+        nzero = nzero +1
+        endif
+        else
+        Ctmp%val(i1+l-1) = Ctmp%val(i1+l-1) + A%val(j)*B%val(k)
+        if(Ctmp%val(i1+l-1).eq.0.0) then ! no new entry 
+        ! but could cancel out nonetheless
+        nzero = nzero +1
+        endif
+        endif
+        enddo
+        enddo
+        enddo
+        deallocate(colT)
         ! now try to clear zeros in Btmp
         nz = nz - nzero
-        !
         call create_spMatCSR(m, n, nz, C)  
-        !
-        if( nzero .EQ. 0 ) then
-            C%row=Ctmp%row
-            C%col=Ctmp%col
-            C%val=Ctmp%val
-        else
-            j1 = 1
-            k  = 0
-            nz = 1
-            do i = 1, m
-                nnz = 0
-                j2 = Ctmp%row(i+1)-1
-                do j = j1, j2
-                    if(abs(Ctmp%val(j)).GT. 0) then
-                        nnz = nnz + 1
-                        k = k+1
-                        C%col(k) = Ctmp%col(j)
-                        C%val(k) = Ctmp%val(j)
-                    endif
-                enddo
-                !
-                j1 = j2+1
-                C%row(i) = nz
-                nz = nz + nnz
-            enddo
-            !
-            C%row(m+1) = nz
-            !
+        if(nzero.eq.0) then
+        C%row=Ctmp%row
+        C%col=Ctmp%col
+        C%val=Ctmp%val
+        else 
+        j1 = 1
+        k  = 0
+        nz = 1
+        do i = 1, m
+        nnz = 0
+        j2 = Ctmp%row(i+1)-1
+        do j = j1, j2
+        if(abs(Ctmp%val(j)).gt. 0) then
+        nnz = nnz + 1
+        k = k+1
+        C%col(k) = Ctmp%col(j)
+        C%val(k) = Ctmp%val(j)
         endif
-        !
+        enddo
+        j1 = j2+1
+        C%row(i) = nz
+        nz = nz + nnz
+        enddo
+        C%row(m+1) = nz
+        endif
         call deall_spMatCSR_Real(Ctmp)
         !
     end subroutine RMATxRMAT
     !
     !> Matix-vector multiplication, complex version
     !
-    subroutine CMATxCMAT( A, B, C )
+    subroutine CMATxCMAT(A, B, C)
         implicit none
         !
-        type( spMatCSR_Cmplx ), intent( in ) :: A, B
-        type( spMatCSR_Cmplx ), intent( out ) :: C
+        type( spMatCSR_Cmplx ), intent( in ) :: A
+        type( spMatCSR_Cmplx ), intent( in ) :: B
+        type( spMatCSR_Cmplx ), intent( inout ) :: C
 
         integer :: i, j, k, nColMax, nCol, m, n, nz, jj, i1, i2, l
         integer, allocatable, dimension(:) :: colT
@@ -730,7 +719,7 @@ contains
         do k = B%row(jj), B%row(jj+1)-1 
         new = .TRUE.
         do l = 1, nCol
-        new = new.and.(colT(l).NE.B%col(k))
+        new = new.AND.(colT(l).NE.B%col(k))
         enddo
         if(new) then
         nCol = nCol+1
@@ -784,17 +773,16 @@ contains
     !
     !> Premultiply sparse matrix A by diagonal matrix D real version
     !
-    subroutine DIAGxRMAT( D, A, B )
+    subroutine DIAGxRMAT(D, A, B)
         implicit none
         !
         type( spMatCSR_Real ), intent( in ) :: A
-        real( kind=prec ), intent( in ), dimension(:) :: D
-        type( spMatCSR_Real ), intent( out ) :: B
-        !
+        real(kind=prec), intent( in ), dimension(:) :: D
+        type( spMatCSR_Real ), intent( inout ) :: B
         type( spMatCSR_Real ) :: Btmp
-        !
+
         integer :: i, j, j1, j2, k, n, m, nz, nnz, nzero
-        !
+
         if(A%nRow.NE.size(D)) then
         stop "Error: DIAGxRMAT > matrix sizes incompatible"
         endif
@@ -802,7 +790,7 @@ contains
         n = A%nCol
         nz = A%row(A%nRow+1)-1
         if(.NOT.sameSizeCSR_Real(A, B)) then
-        if(B%is_allocated) then
+        if(B%allocated) then
         call deall_spMatCSR_Real(B)
         endif
         call create_spMatCSR(m, n, nz, B)  
@@ -822,7 +810,7 @@ contains
         enddo
         ! now try to clear zeros in Btmp
         nz = nz - nzero
-        if(nzero.EQ.0) then
+        if(nzero.eq.0) then
         B%row=Btmp%row
         B%col=Btmp%col
         B%val=Btmp%val
@@ -834,7 +822,7 @@ contains
         nnz = 0
         j2 = Btmp%row(i+1)-1
         do j = j1, j2
-        if(abs(Btmp%val(j)).GT. 0) then
+        if(abs(Btmp%val(j)).gt. 0) then
         nnz = nnz + 1
         k = k+1
         B%col(k) = Btmp%col(j)
@@ -853,12 +841,12 @@ contains
     !
     !> Premultiply sparse matrix A by diagonal matrix D complex version
     !
-    subroutine DIAGxCMAT( D, A, B )
+    subroutine DIAGxCMAT(D, A, B)
         implicit none
         !
         type( spMatCSR_Cmplx ), intent( in ) :: A
-        complex( kind=prec ), intent( in ), dimension(:) :: D
-        type( spMatCSR_Cmplx ), intent( out ) :: B
+        complex(kind=prec), intent( in ), dimension(:) :: D
+        type( spMatCSR_Cmplx ), intent( inout ) :: B
 
         integer :: i, j, m, n, nz
 
@@ -866,7 +854,7 @@ contains
         stop "Error: DIAGxCMAT > matrix sizes incompatible"
         endif
         if(.NOT.sameSizeCSR_Cmplx(A, B)) then
-        if(B%is_allocated) then
+        if(B%allocated) then
         call deall_spMatCSR(B)
         endif
         m = A%nRow
@@ -889,76 +877,71 @@ contains
     !  postmultiply sparse matrix A by diagonal matrix D
     !        real version
     !
-    subroutine RMATxDIAG( A, D, B )
+    subroutine RMATxDIAG(A, D, B)
         implicit none
         !
         type( spMatCSR_Real ), intent( in ) :: A
-        real( kind=prec ), intent( in ), dimension(:) :: D
-        type( spMatCSR_Real ), intent( out ) :: B
-        !
+        real(kind=prec), intent( in ), dimension(:) :: D
+        type( spMatCSR_Real ), intent( inout ) :: B
         type( spMatCSR_Real ) :: Btmp
+
         integer :: i, j, j1, j2, k, m, n, nz, nnz, nzero
-        !
-        if( A%nCol .NE. size( D ) ) then
-            stop "Error: RMATxDIAG > matrix sizes incompatible"
+
+        if(A%nCol.NE.size(D)) then
+        stop "Error: RMATxDIAG > matrix sizes incompatible"
         endif
-        !
         m = A%nRow
         n = A%nCol
         nz = A%row(A%nRow+1)-1
         if(.NOT.sameSizeCSR_Real(A, B)) then
-            if(B%is_allocated) then
-                call deall_spMatCSR_Real(B)
-            endif
-            call create_spMatCSR(m, n, nz, B)  
+        if(B%allocated) then
+        call deall_spMatCSR_Real(B)
         endif
-        !
+        call create_spMatCSR(m, n, nz, B)  
+        endif
         call create_spMatCSR(m, n, nz, Btmp)  
         nzero = 0
         Btmp%row(1) = 1
         do i = 1, A%nRow 
-            Btmp%row(i+1) = A%row(i+1)
-            do j = A%row(i), A%row(i+1)-1
-                Btmp%val(j) = A%val(j)*D(A%col(j))
-                Btmp%col(j) = A%col(j)
-                if(Btmp%val(j).eq.0.0) then ! mark zero elements
-                    nzero = nzero + 1
-                endif
-            enddo
+        Btmp%row(i+1) = A%row(i+1)
+        do j = A%row(i), A%row(i+1)-1
+        Btmp%val(j) = A%val(j)*D(A%col(j))
+        Btmp%col(j) = A%col(j)
+        if(Btmp%val(j).eq.0.0) then ! mark zero elements
+        nzero = nzero + 1
+        endif
+        enddo
         enddo
         ! now try to clear zeros in Btmp
         nz = nz - nzero
-        !
-        call create_spMatCSR(m, n, nz, B)
-        !
-        if( nzero .EQ. 0 ) then
-            B%row=Btmp%row
-            B%col=Btmp%col
-            B%val=Btmp%val
+        call create_spMatCSR(m, n, nz, B)  
+        if(nzero.eq.0) then
+        B%row=Btmp%row
+        B%col=Btmp%col
+        B%val=Btmp%val
         else 
-            j1 = 1
-            k  = 0
-            nz = 1
-            do i = 1, m
-                nnz = 0
-                j2 = Btmp%row(i+1)-1
-                do j = j1, j2
-                    if(abs(Btmp%val(j)).GT. 0) then
-                        nnz = nnz + 1
-                        k = k+1
-                        B%col(k) = Btmp%col(j)
-                        B%val(k) = Btmp%val(j)
-                    endif
-                enddo
-                j1 = j2+1
-                B%row(i) = nz
-                nz = nz + nnz
-            enddo
-            B%row(m+1) = nz
+        j1 = 1
+        k  = 0
+        nz = 1
+        do i = 1, m
+        nnz = 0
+        j2 = Btmp%row(i+1)-1
+        do j = j1, j2
+        if(abs(Btmp%val(j)).gt. 0) then
+        nnz = nnz + 1
+        k = k+1
+        B%col(k) = Btmp%col(j)
+        B%val(k) = Btmp%val(j)
         endif
-        !
+        enddo
+        j1 = j2+1
+        B%row(i) = nz
+        nz = nz + nnz
+        enddo
+        B%row(m+1) = nz
+        endif
         call deall_spMatCSR_Real(Btmp)
-        !
+        return
     end subroutine RMATxDIAG
     !
     !> Postmultiply sparse matrix A by diagonal matrix D complex version
@@ -967,7 +950,7 @@ contains
         implicit none
         !
         type( spMatCSR_Cmplx ), intent( in ) :: A
-        real( kind=prec ), intent( in ), dimension(:) :: D
+        real(kind=prec), intent( in ), dimension(:) :: D
         type( spMatCSR_Cmplx ), intent( inout ) :: B
 
         integer :: i, j, m, n, nz
@@ -976,7 +959,7 @@ contains
         stop "Error: CMATxDIAG > matrix sizes incompatible"
         endif
         if(.NOT.sameSizeCSR_Cmplx(A, B)) then
-        if(B%is_allocated) then
+        if(B%allocated) then
         call deall_spMatCSR(B)
         endif
         m = A%nRow
@@ -993,24 +976,21 @@ contains
         B%col(j) = A%col(j)
         enddo
         enddo
-        !
+        return
     end subroutine
     !
     !> No subroutine briefing
     !
-    subroutine CMATtrans( A, Atrans, Conj )
+    subroutine CMATtrans(A, Atrans, Conj)
         implicit none
         !
         type( spMatCSR_Cmplx ), intent( in ) :: A
-        type( spMatCSR_Cmplx ), intent( out ) :: Atrans
+        type( spMatCSR_Cmplx ), intent( inout ) :: Atrans
         logical, intent( in ), optional :: Conj
-        !
-        type( spMatIJS_Cmplx ) :: B
+        type(spMatIJS_Cmplx) :: B
         integer :: i, nz, temp
-        logical :: conjugate
-        !
-        conjugate = .TRUE.
-        !
+        logical :: conjugate = .TRUE.
+
         if(present(Conj)) then 
         conjugate = Conj
         endif
@@ -1029,7 +1009,7 @@ contains
         temp = B%nRow
         B%nRow = B%nCol
         B%nCol = temp
-        !
+
         call IJS2CSR(B, Atrans)
         call deall_spMATIJS(B)
         if(A%lower) then
@@ -1038,25 +1018,24 @@ contains
         if(A%upper) then
         Atrans%lower = .TRUE.
         endif 
-        !
+        return
     end subroutine
     !
     !> No subroutine briefing
     !
-    subroutine RMATtrans( A, Atrans )
+    subroutine RMATtrans(A, Atrans)
         implicit none
         !
         type( spMatCSR_Real ), intent( in ) :: A
-        type( spMatCSR_Real ), intent( out ) :: Atrans
-        !
-        type( spMatIJS_Real ) :: B
+        type( spMatCSR_Real ), intent( inout ) :: Atrans
+        type(spMatIJS_Real) :: B
         integer :: i, nz, nz1, temp
-        !
+
         nz = A%row(A%nRow+1)-1
         call create_spMatCSR(A%nCol, A%nRow, nz, Atrans)
-        !
+
         call create_spMatIJS(A%nRow, A%nCol, nz, B)
-        !
+
         call CSR2IJS(A, B)
         do i = 1, nz
         temp = B%I(i)
@@ -1066,17 +1045,17 @@ contains
         temp = B%nRow
         B%nRow = B%nCol
         B%nCol = temp
-        !
+
         call IJS2CSR_Real(B, Atrans)
         call deall_spMATIJS(B)
-        !
+
         if(A%lower) then
         Atrans%upper = .TRUE.
         endif 
         if(A%upper) then
         Atrans%lower = .TRUE.
         endif 
-        !
+        return
     end subroutine
     !
     !> No subroutine briefing
@@ -1090,26 +1069,26 @@ contains
         write(fid) A%row
         write(fid) A%col
         write(fid) A%val
-        !
+        return
     end subroutine
     !
     !> No subroutine briefing
     !
-    subroutine read_CSR_real( fid, A )
+    subroutine read_CSR_real(fid, A)
         implicit none
         !
         integer, intent( in ) :: fid
-        type( spMatCSR_Real ), intent( out ) :: A
+        type( spMatCSR_Real ), intent( inout ) :: A
         integer :: n, m, nz
         read(fid) n, m, nz
-        if(A%is_allocated) then
+        if(A%allocated) then
         call deall_spMatCSR(A)
         endif
         call create_spMatCSR(n, m, nz, A)
         read(fid) A%row
         read(fid) A%col
         read(fid) A%val
-        !
+        return
     end subroutine
     !
     !> No subroutine briefing
@@ -1123,26 +1102,26 @@ contains
         write(fid) A%row
         write(fid) A%col
         write(fid) A%val
-        !
+        return
     end subroutine
     !
     !> No subroutine briefing
     !
-    subroutine read_CSR_Cmplx( fid, A )
+    subroutine read_CSR_Cmplx(fid, A)
         implicit none
         !
         integer, intent( in ) :: fid
-        type( spMatCSR_Cmplx ), intent( out ) :: A
+        type( spMatCSR_Cmplx ), intent( inout ) :: A
         integer :: n, m, nz
         read(fid) n, m, nz
-        if(A%is_allocated) then
+        if(A%allocated) then
         call deall_spMatCSR(A)
         endif
         call create_spMatCSR(n, m, nz, A)
         read(fid) A%row
         read(fid) A%col
         read(fid) A%val
-        !
+        return
     end subroutine
     !
     !> No subroutine briefing
@@ -1185,17 +1164,17 @@ contains
         implicit none
         !
         integer, intent( in ) :: fid
-        type(spMatIJS_Real), intent( out ) :: A
+        type(spMatIJS_Real), intent( inout ) :: A
         integer :: n, m, nz
         read(fid) n, m, nz
-        if(A%is_allocated) then
+        if(A%allocated) then
         call deall_spMatIJS(A)
         endif
         call create_spMatIJS(n, m, nz, A)
         read(fid) A%I
         read(fid) A%J
         read(fid) A%S
-        !
+        return
     end subroutine
     !
     !> No subroutine briefing
@@ -1204,17 +1183,17 @@ contains
         implicit none
         !
         integer, intent( in ) :: fid
-        type(spMatIJS_Cmplx), intent( out ) :: A
+        type(spMatIJS_Cmplx), intent( inout ) :: A
         integer :: n, m, nz
         read(fid) n, m, nz
-        if(A%is_allocated) then
+        if(A%allocated) then
         call deall_spMatIJS(A)
         endif
         call create_spMatIJS(n, m, nz, A)
         read(fid) A%I
         read(fid) A%J
         read(fid) A%S
-        !
+        return
     end subroutine
     !
     !> No subroutine briefing
@@ -1236,7 +1215,7 @@ contains
         call write_IJS_real(fid, B)
         close(fid)
         call deall_spMatIJS(B)
-        !
+        return
     end subroutine
     !
     !> No subroutine briefing
@@ -1263,11 +1242,11 @@ contains
     !
     !> Extract lower triangular part of matrix A in CSR storage
     !
-    subroutine lowerTri_Real( A, L )
+    subroutine lowerTri_Real(A, L)
         implicit none
         !
-        type( spMatCSR_Real ), intent( in ) :: A
-        type( spMatCSR_Real ), intent( out ) :: L
+        type( spMatCSR_Real ), intent( in ) ::  A
+        type( spMatCSR_Real ), intent( inout ) ::  L
         integer :: kk, n, m, i, j, nz
         integer, allocatable, dimension(:) :: rowT
 
@@ -1314,11 +1293,11 @@ contains
     !
     !> Extract lower triangular part of matrix A in CSR storage
     !
-    subroutine upperTri_Real( A, U )
+    subroutine upperTri_Real(A, U)
         implicit none
         !
-        type( spMatCSR_Real ), intent( in ) :: A
-        type( spMatCSR_Real ), intent( out ) :: U
+        type( spMatCSR_Real ), intent( in ) ::  A
+        type( spMatCSR_Real ), intent( inout ) ::  U
         integer :: kk, n, m, i, j, nz
         integer, allocatable, dimension(:) :: rowT
 
@@ -1365,11 +1344,11 @@ contains
     !
     !> Extract lower triangular part of matrix A in CSR storage
     !
-    subroutine lowerTri_Cmplx( A, L )
+    subroutine lowerTri_Cmplx(A, L)
         implicit none
         !
-        type( spMatCSR_Cmplx ), intent( in ) :: A
-        type( spMatCSR_Cmplx ), intent( out ) :: L
+        type( spMatCSR_Cmplx ), intent( in ) ::  A
+        type( spMatCSR_Cmplx ), intent( inout ) ::  L
         integer :: kk, n, m, i, j, nz
         integer, allocatable, dimension(:) :: rowT
 
@@ -1416,11 +1395,11 @@ contains
     !
     !> Extract lower triangular part of matrix A in CSR storage
     !
-    subroutine upperTri_Cmplx( A, U )
+    subroutine upperTri_Cmplx(A, U)
         implicit none
         !
-        type( spMatCSR_Cmplx ), intent( in ) :: A
-        type( spMatCSR_Cmplx ), intent( out ) :: U
+        type( spMatCSR_Cmplx ), intent( in ) ::  A
+        type( spMatCSR_Cmplx ), intent( inout ) ::  U
         integer :: kk, n, m, i, j, nz
         integer, allocatable, dimension(:) :: rowT
 
@@ -1470,8 +1449,8 @@ contains
     subroutine diag_Real(A, D)
         implicit none
         !
-        type( spMatCSR_Real ), intent( in ) :: A
-        real( kind=prec ), allocatable, intent( inout ) :: D(:)
+        type( spMatCSR_Real ), intent( in ) ::  A
+        real(kind=prec), allocatable, intent( inout ) :: D(:)
         integer :: n, m, i, j
 
         m = A%nRow
@@ -1498,8 +1477,8 @@ contains
     subroutine diag_Cmplx(A, D)
         implicit none
         !
-        type( spMatCSR_Cmplx ), intent( in ) :: A
-        complex( kind=prec ), allocatable, intent( inout ) :: D(:)
+        type( spMatCSR_Cmplx ), intent( in ) ::  A
+        complex(kind=prec), allocatable, intent( inout ) :: D(:)
         integer :: n, m, i, j
 
         m = A%nRow
@@ -1523,12 +1502,12 @@ contains
     !
     !> Extract submatrix of A with rows and columns given by integer arrays r and c 
     !
-    subroutine subMatrix_Real( A, r, c, B )
+    subroutine subMatrix_Real(A, r, c, B)
         implicit none
         !
-        type( spMatCSR_Real ), intent( in ) :: A
-        type( spMatCSR_Real ), intent( out ) :: B
-        integer, intent( in ) :: r(:), c(:)
+        type( spMatCSR_Real ), intent( in ) ::  A
+        type( spMatCSR_Real ), intent( inout ) ::  B
+        integer, intent( in ) ::  r(:), c(:)
         integer :: kk, n, m, i, j, nz, k
         integer, allocatable, dimension(:) :: rowT, colT
 
@@ -1537,42 +1516,41 @@ contains
         allocate(rowT(m+1))
         allocate(colT(A%nCol))
         colT = 0
-        !
         do i = 1, n
-            colT(c(i)) = i
+        colT(c(i)) = i
         enddo
-        !
-        !> count number of entries in each row
+
+        !   count number of entries in each row
         rowT = 0
         nz = 0
         do i =1, m
-            do j = A%row(r(i)), A%row(r(i)+1)-1
-                if( colT(A%col(j)) .GT. 0 ) then
-                    rowT(i) = rowT(i)+1
-                    nz = nz+1
-                endif
-            enddo
+        do j = A%row(r(i)), A%row(r(i)+1)-1
+        if(colT(A%col(j)).gt.0) then
+        rowT(i) = rowT(i)+1
+        nz = nz+1
+        endif
         enddo
-        !
+        enddo
+
         call create_spMatCSR(m, n, nz, B)
-        !
+
         !   set row array in output CSR matrix
         B%row(1) = 1
         do i = 1, B%nRow
-            B%row(i+1) = B%row(i)+rowT(i)
+        B%row(i+1) = B%row(i)+rowT(i)
         enddo
-        !
+
         do i =1, m
-            kk = 0
-            do j = A%row(r(i)), A%row(r(i)+1)-1
-                if(colT(A%col(j)).GT.0) then
-                    B%col(B%row(i)+kk) = colT(A%col(j))
-                    B%val(B%row(i)+kk) = A%val(j)
-                    kk = kk+1
-                endif
-            enddo
+        kk = 0
+        do j = A%row(r(i)), A%row(r(i)+1)-1
+        if(colT(A%col(j)).gt.0) then
+        B%col(B%row(i)+kk) = colT(A%col(j))
+        B%val(B%row(i)+kk) = A%val(j)
+        kk = kk+1
+        endif
         enddo
-        !
+        enddo
+        return
     end subroutine subMatrix_Real
     !
     !> Extract submatrix of A with rows and columns given by integer arrays r and c 
@@ -1580,13 +1558,12 @@ contains
     subroutine subMatrix_Cmplx(A, r, c, B)
         implicit none
         !
-        type( spMatCSR_Cmplx ), intent( in ) :: A
-        integer, intent( in ) :: r(:), c(:)
-        type( spMatCSR_Cmplx ), intent( out ) :: B
-        !
+        type( spMatCSR_Cmplx ), intent( in ) ::  A
+        type( spMatCSR_Cmplx ), intent( inout ) ::  B
+        integer, intent( in )    ::      r(:), c(:)
         integer :: kk, n, m, i, j, nz, k
         integer, allocatable, dimension(:) :: rowT, colT
-        !
+
         m = size(r)
         n = size(c)
         allocate(rowT(m+1))
@@ -1595,37 +1572,38 @@ contains
         do i = 1, n
         colT(c(i)) = i
         enddo
-        !
+
         !   count number of entries in each row
         rowT = 0
         nz = 0
         do i =1, m
         do j = A%row(r(i)), A%row(r(i)+1)-1
-        if(colT(A%col(j)).GT.0) then
+        if(colT(A%col(j)).gt.0) then
         rowT(i) = rowT(i)+1
         nz = nz+1
         endif
         enddo
         enddo
-        !
+
         call create_spMatCSR(m, n, nz, B)
-        !
+
         !   set row array in output CSR matrix
         B%row(1) = 1
         do i = 1, B%nRow
         B%row(i+1) = B%row(i)+rowT(i)
         enddo
-        !
+
         do i =1, m
         kk = 0
         do j = A%row(r(i)), A%row(r(i)+1)-1
-        if(colT(A%col(j)).GT.0) then
+        if(colT(A%col(j)).gt.0) then
         B%col(B%row(i)+kk) = colT(A%col(j))
         B%val(B%row(i)+kk) = A%val(j)
         kk = kk+1
         endif
         enddo
         enddo
+        return
         !
     end subroutine subMatrix_Cmplx
     !
@@ -1635,8 +1613,8 @@ contains
     subroutine BlkDiag_Real(A, B)
         implicit none
         !
-        type( spMatCSR_Real ), pointer, intent( in ) :: A(:)
-        type( spMatCSR_Real ), intent( out ) :: B
+        type( spMatCSR_Real ), pointer, intent( in ) ::  A(:)
+        type( spMatCSR_Real ), intent( inout ) ::  B
 
         integer :: nBlks, nRowB, nColB, nzB, i, i1, j1, i2, j2, k1
 
@@ -1677,8 +1655,8 @@ contains
     subroutine BlkDiag_Cmplx(A, B)
         implicit none
         !
-        type( spMatCSR_Cmplx ), pointer, intent( in ) :: A(:)
-        type( spMatCSR_Cmplx ), intent( out ) :: B
+        type( spMatCSR_Cmplx ), pointer, intent( in ) ::  A(:)
+        type( spMatCSR_Cmplx ), intent( inout ) ::  B
 
         integer :: nBlks, nRowB, nColB, nzB, i, i1, j1, i2, j2, k1
 
@@ -1718,8 +1696,8 @@ contains
     subroutine R2C_CSR(Ar, Ac)
         implicit none
         !
-        type( spMatCSR_Real ), intent( in ) :: Ar
-        type( spMatCSR_Cmplx ), intent( out ) :: Ac
+        type( spMatCSR_Real ), intent( in ) ::  Ar
+        type( spMatCSR_Cmplx ), intent( inout ) ::  Ac
         integer :: nRow, nCol, nz, i
 
         nRow = Ar%nRow
@@ -1745,21 +1723,20 @@ contains
     subroutine splitRMAT(A, i, np, B, isizes)
         implicit none
         !
-        type( spMatCSR_Real ), intent( in ) :: A  ! original matrix
-        type( spMatCSR_Real ), intent( out ) :: B  ! submatrix
-        integer, intent( in ) :: i, np
-        integer, intent( in ), pointer, dimension(:), optional :: isizes
-        !
-        integer :: istart, iend, nrow_l, j, k
-        integer :: m, n, nz, nz_l, nsub
-        real :: nrow
-        integer, allocatable, dimension(:) :: rowT, colT
-        !
+        type( spMatCSR_Real ), intent( in ) ::  A  ! original matrix
+        type( spMatCSR_Real ), intent( inout ) ::  B  ! submatrix
+        integer, intent( in ) ::  i, np
+        integer, intent( in ), pointer, dimension(:), optional ::  isizes
+        integer ::  istart, iend, nrow_l, j, k
+        integer ::  m, n, nz, nz_l, nsub
+        real ::  nrow
+        integer, allocatable, dimension(:) ::  rowT, colT
+
         allocate(colT(A%nCol))
         colT =(/(j, j=1, A%nCol) /)
         if(A%nrow .LT. np) then
             stop "Error: splitRMAT > number of process is larger than number of rows!"
-        else if(np.EQ.1) then
+        elseif(np.eq.1) then
             !write( *, * ) "only one process, returning the original Matrix"
             m = A%nRow
             n = A%nCol
@@ -1771,7 +1748,7 @@ contains
             B%col=A%col-1
             B%val=A%val
             return
-        end if
+        endif
         nrow = A%nRow
         !nz_l = floor((A%row(nrow+1)-1)/np)
         if(present(isizes)) then ! split into given sizes
@@ -1783,11 +1760,11 @@ contains
         else
         nrow_l = floor(nrow/np)
         istart=i*nrow_l+1
-        if(i+1 .EQ. np)  then! the last sub-matrix
+        if(i+1 .eq. np)  then! the last sub-matrix
         iend=nrow
         else
         iend=i*nrow_l+nrow_l
-        end if
+        endif
         endif
         allocate(rowT(iend-istart+1))
         rowT =(/(j, j=istart, iend) /)
@@ -1811,20 +1788,20 @@ contains
     subroutine splitCMAT(A, i, np, B, isizes)
         implicit none
         !
-        type( spMatCSR_Cmplx ), intent( in ) :: A  ! original matrix
-        type( spMatCSR_Cmplx ), intent( out ) :: B  ! submatrix
-        integer, intent( in ) :: i, np
-        integer, intent( in ), pointer, dimension(:), optional :: isizes
-        integer :: istart, iend, nrow_l, j, k
-        integer :: m, n, nz
-        real :: nrow
-        integer, allocatable, dimension(:) :: rowT, colT
+        type( spMatCSR_Cmplx ), intent( in ) ::  A  ! original matrix
+        type( spMatCSR_Cmplx ), intent( inout ) ::  B  ! submatrix
+        integer, intent( in ) ::  i, np
+        integer, intent( in ), pointer, dimension(:), optional ::  isizes
+        integer ::  istart, iend, nrow_l, j, k
+        integer ::  m, n, nz
+        real ::  nrow
+        integer, allocatable, dimension(:) ::  rowT, colT
         !
         allocate(colT(A%nCol))
         colT =(/(j, j=1, A%nCol) /)
         if(A%nrow .LT. np) then
             stop "Error: splitCMAT > number of processes is larger than number of rows!"
-        else if(np.EQ.1) then
+        elseif(np.eq.1) then
             !write( *, * ) "only one process, returning the original Matrix"
             m = A%nRow
             n = A%nCol
@@ -1836,7 +1813,7 @@ contains
             B%col=A%col-1
             B%val=A%val
             return
-        end if
+        endif
         nrow = A%nRow
         !nz_l = floor((A%row(nrow+1)-1)/np)
         if(present(isizes)) then ! split according to the given sizes
@@ -1848,11 +1825,11 @@ contains
         else ! split evenly 
         nrow_l = floor(nrow/np)
         istart=i*nrow_l+1
-        if(i+1 .EQ. np)  then! the last sub-matrix
+        if(i+1 .eq. np)  then! the last sub-matrix
         iend=nrow
         else
         iend=i*nrow_l+nrow_l
-        end if
+        endif
         endif
         allocate(rowT(iend-istart+1))
         rowT =(/(j, j=istart, iend) /)
@@ -1867,41 +1844,38 @@ contains
     !> Solve system Lx = b for complex vector x, lower triangular L
     !> here real or cmplx refers to U; x is always complex
     !
-    subroutine LTsolve_Cmplx( L, b, x )
+    subroutine LTsolve_Cmplx(L, b, x)
         implicit none
         !
         type( spMatCSR_Cmplx ), intent( in ) :: L
-        complex( kind=prec ), dimension(:), intent( in ) :: b
-        complex( kind=prec ), dimension(:), intent( inout ) :: x
-        !
-        complex( kind=prec ) :: d
+        complex(kind=prec), dimension(:), intent( in ) :: b
+        complex(kind=prec), dimension(:), intent( inout ) :: x
+
+        complex(kind=prec) :: d
         integer :: i, j
-        !
-        if( L%nRow .NE. L%nCol ) then
-            stop "Error: LTsolve_Cmplx > sparse matrix must be square"
-        endif
-        !
-        if( .NOT. L%lower ) then
-            stop "Error: LTsolve_Cmplx > sparse matrix must be lower triangular"
+
+        if(L%nRow .NE.L%nCol) then
+        stop "Error: LTsolve_Cmplx > sparse matrix must be square"
         endif 
-        !
-        if( size(x) .NE. L%nRow ) then
-            stop "Error: LTsolve_Cmplx > output vector x not of correct size"
-        endif
-        !
+        if(.NOT.L%lower) then
+        stop "Error: LTsolve_Cmplx > sparse matrix must be lower triangular"
+        endif 
+        if(size(x).NE.L%nRow) then
+        stop "Error: LTsolve_Cmplx > output vector x not of correct size"
+        endif 
         do i = 1, L%nRow
-            x(i) = b(i)
-            do j = L%row(i), L%row(i+1)-1
-                if(L%col(j).LT.i) then
-                    x(i) = x(i)-L%val(j)*x(L%col(j))
-                else
-                    !   in this case L%col(j) = i
-                    d = L%val(j)
-                endif
-            enddo
-            x(i) = x(i)/d
+        x(i) = b(i)
+        do j = L%row(i), L%row(i+1)-1
+        if(L%col(j).LT.i) then
+        x(i) = x(i)-L%val(j)*x(L%col(j))
+        else
+        !   in this case L%col(j) = i
+        d = L%val(j)
+        endif
         enddo
-        !
+        x(i) = x(i)/d
+        enddo
+        return 
     end subroutine LTsolve_Cmplx
     !
     !> Solve system Ux = b for complex vector x, upper triangular U
@@ -1911,11 +1885,11 @@ contains
         implicit none
         !
         type( spMatCSR_Cmplx ), intent( in ) :: U
-        complex( kind=prec ), dimension(:), intent( in ) :: b
-        complex( kind=prec ), dimension(:), intent( inout ) :: x
+        complex(kind=prec), dimension(:), intent( in ) :: b
+        complex(kind=prec), dimension(:), intent( inout ) :: x
 
         integer :: i, j
-        complex( kind=prec ) :: d
+        complex(kind=prec) :: d
 
         if(U%nRow .NE.U%nCol) then
         stop "Error: UTsolve_Cmplx > sparse matrix must be square"
@@ -1929,7 +1903,7 @@ contains
         do i = U%nRow, 1, -1
         x(i) = b(i)
         do j = U%row(i), U%row(i+1)-1
-        if(U%col(j).GT.i) then
+        if(U%col(j).gt.i) then
         x(i) = x(i)-U%val(j)*x(U%col(j))
         else
         !   in this case U%col(j) = i
@@ -1948,10 +1922,10 @@ contains
         implicit none
         !
         type( spMatCSR_Real ), intent( in ) :: L
-        complex( kind=prec ), dimension(:), intent( in ) :: b
-        complex( kind=prec ), dimension(:), intent( inout ) :: x
+        complex(kind=prec), dimension(:), intent( in ) :: b
+        complex(kind=prec), dimension(:), intent( inout ) :: x
 
-        real( kind=prec ) :: d
+        real(kind=prec) :: d
         integer :: i, j
 
         if(L%nRow .NE.L%nCol) then
@@ -1985,11 +1959,11 @@ contains
         implicit none
         !
         type( spMatCSR_Real ), intent( in ) :: U
-        complex( kind=prec ), dimension(:), intent( in ) :: b
-        complex( kind=prec ), dimension(:), intent( inout ) :: x
+        complex(kind=prec), dimension(:), intent( in ) :: b
+        complex(kind=prec), dimension(:), intent( inout ) :: x
 
         integer :: i, j
-        real( kind=prec ) :: d
+        real(kind=prec) :: d
 
         if(U%nRow .NE.U%nCol) then
         stop "Error: UTsolve_Real > sparse matrix must be square"
@@ -2003,7 +1977,7 @@ contains
         do i = U%nRow, 1, -1
         x(i) = b(i)
         do j = U%row(i), U%row(i+1)-1
-        if(U%col(j).GT.i) then
+        if(U%col(j).gt.i) then
         x(i) = x(i)-U%val(j)*x(U%col(j))
         else
         !   in this case U%col(j) = i
@@ -2019,30 +1993,29 @@ contains
     !> Specialized routine to add imaginary D to diagonal of real sparse
     !> matrix A, saving output to complex sparse matrix B
     !
-    subroutine CSR_R2Cdiag( A, d, B )
+    subroutine CSR_R2Cdiag(A, d, B)
         implicit none
         !
         type( spMatCSR_Real ), intent( in ) :: A
-        real( kind=prec ), dimension(:), intent( in ) :: d
-        type( spMatCSR_Cmplx ), intent( out ) :: B
-        !
+        real(kind=prec), dimension(:), intent( in ) :: d
+        type( spMatCSR_Cmplx ), intent( inout ) :: B
         integer :: n, m, nz, i, j
-        !
+
         m = A%nRow
         n = A%nCol
         nz = A%row(m+1)-1
-        call create_spMatCSR_Cmplx( m, n, nz, B )
+        call create_spMatCSR_Cmplx(m, n, nz, B)
         B%row  = A%row
         B%col = A%col
         B%val = A%val
         do i =1, m
-            do j =B%row(i), B%row(i+1)-1
-                !   not sure ISIGN should be here!
-                if(B%col(j) .EQ. i) then
-                    B%val(j) = B%val(j)+ISIGN*CMPLX(0.0, 1.0, 8)*d(i)
-                    exit
-                endif
-            enddo
+        do j =B%row(i), B%row(i+1)-1
+        !   not sure ISIGN should be here!
+        if(B%col(j) .eq. i) then
+        B%val(j) = B%val(j)+ISIGN*CMPLX(0.0, 1.0, 8)*d(i)
+        exit
+        endif
+        enddo
         enddo
         !
     end subroutine CSR_R2Cdiag
@@ -2055,8 +2028,8 @@ contains
     subroutine CholInc_Real(A, L)
         implicit none
         !
-        type( spMatCSR_Real ), intent( in ) :: A
-        type( spMatCSR_Real ), intent( inout ) :: L
+        type( spMatCSR_Real ), intent( in ) ::  A
+        type( spMatCSR_Real ), intent( inout ) ::  L
         integer :: ii, mMax, n, m, i, j, nij, nji, k, k1, nij1, nji1, i1, j1
         integer, allocatable, dimension(:) :: ij, ji, ji1
         !
@@ -2072,11 +2045,11 @@ contains
         nij = 0
         nji = 0
         do j = A%row(i), A%row(i+1)-1 !sweep in columns
-        if(i.EQ.A%col(j)) then
+        if(i.eq.A%col(j)) then
         !   this index should correspond to positions where
         !   columns and values are stored in L
         ii = j - A%row(i) + L%row(i)
-        else if(i.LT.A%col(j)) then
+        elseif(i.LT.A%col(j)) then
         !    these are indicies into A matrix storage
         nij = nij+1
         ij(nij) = j
@@ -2102,7 +2075,7 @@ contains
         nji1 = 0
         !  divide up elements in this row: diagonal, to left
         do k = L%row(i1), L%row(i1+1)-1
-        if(i.EQ.L%col(k)) then
+        if(i.eq.L%col(k)) then
         j1 = k
         else
         nji1 = nji1+1 
@@ -2135,7 +2108,7 @@ contains
         type( spMatCSR_Real ), intent( in ) :: A
         type( spMatCSR_Real ), intent( inout ) :: L, U
 
-        real( kind=prec ), allocatable, dimension(:) ::d
+        real(kind=prec), allocatable, dimension(:) ::d
         integer ::n, m, nz, i, j
 
         call lowerTri(A, L)
@@ -2147,7 +2120,7 @@ contains
         do j = A%row(i), A%row(i+1)-1
         if(A%col(j).eq.i) then
         d(i) = d(i) + A%val(j)
-        else if(A%col(j).LT.i) then
+        elseif(A%col(j).LT.i) then
         d(i) = d(i) - A%val(j)*A%val(j)*d(A%col(j))
         endif
         enddo
@@ -2184,7 +2157,7 @@ contains
         type( spMatCSR_Cmplx ), intent( in ) :: A
         type( spMatCSR_Cmplx ), intent( inout ) :: L, U
 
-        complex( kind=prec ), allocatable, dimension(:) ::d
+        complex(kind=prec), allocatable, dimension(:) ::d
         integer ::n, m, nz, i, j
 
         call lowerTri(A, L)
@@ -2196,7 +2169,7 @@ contains
         do j = A%row(i), A%row(i+1)-1
         if(A%col(j).eq.i) then
         d(i) = d(i) + A%val(j)
-        else if(A%col(j).LT.i) then
+        elseif(A%col(j).LT.i) then
         d(i) = d(i) - A%val(j)*A%val(j)*d(A%col(j))
         endif
         enddo
@@ -2234,7 +2207,7 @@ contains
         type( spMatCSR_Cmplx ), intent( inout ) :: L, U
         type( spMatCSR_Cmplx ) :: UT
 
-        complex( kind=prec ), allocatable, dimension(:) ::d
+        complex(kind=prec), allocatable, dimension(:) ::d
         integer ::n, m, nz, i, j
 
         call lowerTri(A, L)
@@ -2247,7 +2220,7 @@ contains
         do j = L%row(i), L%row(i+1)-1 !loop through columns
         if(L%col(j).eq.i) then ! diagonal
         d(i) = d(i) + L%val(j) 
-        else if(L%col(j).LT.i) then ! take the L and U side
+        elseif(L%col(j).LT.i) then ! take the L and U side
         d(i) = d(i) - L%val(j)*UT%val(j)*d(L%col(j))
         endif
         enddo
@@ -2290,8 +2263,8 @@ contains
         type( spMatCSR_Cmplx ), intent( in ) :: A
         type( spMatCSR_Cmplx ), intent( inout ) :: L, U
         type( spMatCSR_Cmplx ) :: Atmp
-        complex( kind=prec ), allocatable, dimension(:) ::d
-        complex( kind=prec ) :: piv
+        complex(kind=prec), allocatable, dimension(:) ::d
+        complex(kind=prec) :: piv
         integer :: n, m, nz, i, j, j2, k, p
         !
         allocate(d(A%nRow))
@@ -2313,10 +2286,10 @@ contains
                 if(Atmp%col(j).eq.i) then !diagonal
                     d(i) = Atmp%val(j) ! store previous diagonal elements
                     exit ! exit as we reached the last element in L
-                else if(Atmp%col(j).LT.i) then
+                elseif(Atmp%col(j).LT.i) then
                     !
                     if(d(Atmp%col(j)).eq.C_ZERO) then
-                        write( *, * ) "Error: ilu0_Cmplx > zero pivoting in ILU0 "
+                        write( *, * ) "     "//achar(27)//"[31m# Error:"//achar(27)//"[0m ilu0_Cmplx > zero pivoting in ILU0 "
                         write( *, * ) "in col: ", Atmp%col(Atmp%row(i):Atmp%row(i+1)-1)
                         write( *, * ) "in row: ", Atmp%col(j)
                         stop
@@ -2345,7 +2318,7 @@ contains
         ! the diagonal element should be the last in each row 
         ! ONLY IF col is properly sorted
         L%val(L%row(i)-1) = C_ONE
-        end do
+        enddo
         call upperTri(Atmp, U)
         call deall_spMatCSR(Atmp)
         return
@@ -2366,8 +2339,8 @@ contains
         type( spMatCSR_Real ), intent( in ) :: A
         type( spMatCSR_Real ), intent( inout ) :: L, U
         type( spMatCSR_Real ) :: Atmp
-        real( kind=prec ), allocatable, dimension(:):: d
-        real( kind=prec ) :: piv
+        real(kind=prec), allocatable, dimension(:):: d
+        real(kind=prec) :: piv
         integer :: n, m, nz, i, j, j2, k, p
 
         allocate(d(A%nRow))
@@ -2387,7 +2360,7 @@ contains
         if(Atmp%col(j).eq.i) then !diagonal
         d(i) = Atmp%val(j) ! store previous diagonal elements
         exit ! exit as we reached the last element in L
-        else if(Atmp%col(j).LT.i) then
+        elseif(Atmp%col(j).LT.i) then
         if(d(Atmp%col(j)).eq.0.0) then
         stop "Error: ilu0_Real > zero pivoting in ILU0 "
         endif 
@@ -2425,20 +2398,23 @@ contains
     !
     !> Matix-Matrix sum, real version
     !
-    subroutine RMATplusRMAT( A, B, C, tol )
+    subroutine RMATplusRMAT(A, B, C, tol)
         implicit none
         !
-        type( spMatCSR_Real ), intent( in ) :: A, B
-        type( spMatCSR_Real ), intent( out ) :: C
-        real( kind=prec ), intent( in ), optional :: tol
-        !
+        type( spMatCSR_Real ), intent( in ) :: A
+        type( spMatCSR_Real ), intent( in ) :: B
+        type( spMatCSR_Real ), intent( inout ) :: C
+
+        real(kind=prec), intent( in ), optional :: tol
         type( spMatCSR_Real ) :: Ctemp
+
+
         integer :: i, j, k, m, n, nz, jj, i1, j1, j2, nnz, nzero
         logical               new
-        real( kind=prec ) :: test, droptol, temp
-        !
+        real(kind=prec) :: test, droptol, temp
+
         !   test for size consistency
-        if((A%nCol.NE.B%nCol).and.(A%nRow.NE.B%nRow)) then
+        if((A%nCol.NE.B%nCol).AND.(A%nRow.NE.B%nRow)) then
         stop "Error: RMATplusRMAT > matrix sizes incompatible"
         endif
         !    tolerance for dropping small entries derived as sums
@@ -2477,7 +2453,7 @@ contains
         else
         test = abs(temp)/abs(B%val(k))
         endif
-        if(test.GT. droptol) then
+        if(test.gt. droptol) then
         Ctemp%val(jj) = temp
         else
         nzero = nzero + 1
@@ -2510,7 +2486,7 @@ contains
         nnz = 0
         j2 = j1+Ctemp%row(i)-1  
         do j = j1, j2
-        if(abs(Ctemp%val(j)).GT. 0) then
+        if(abs(Ctemp%val(j)).gt. 0) then
         nnz = nnz + 1             
         i1 = i1+1
         C%col(i1) = Ctemp%col(j)
@@ -2536,7 +2512,7 @@ contains
         type( spMatCSR_Real ), intent( inout ) :: A
         integer :: i, j1, j2, k
         integer, allocatable, dimension(:) :: idx
-        real( kind=prec ), allocatable, dimension(:) :: col
+        real(kind=prec), allocatable, dimension(:) :: col
         do i = 2, A%nRow+1
         j1=A%row(i-1)
         j2=A%row(i)-1
@@ -2562,7 +2538,7 @@ contains
         type( spMatCSR_Cmplx ), intent( inout ) :: A
         integer :: i, j1, j2, k
         integer, allocatable, dimension(:) :: idx
-        real( kind=prec ), allocatable, dimension(:) :: col
+        real(kind=prec), allocatable, dimension(:) :: col
         do i = 2, A%nRow+1
         j1=A%row(i-1)
         j2=A%row(i)-1
@@ -2586,14 +2562,12 @@ contains
     !> this assumes the matrix indices starts from ZERO instead of ONE
     !> need to be modified to use in other circumstances
     !
-    subroutine RMAT2CMAT( R, C )
+    subroutine RMAT2CMAT(R, C)
         implicit none
         !
         type( spMatCSR_Real ), intent( in ) :: R
-        type( spMatCSR_Cmplx ), intent( out ) :: C
-        !
+        type( spMatCSR_Cmplx ), intent( inout ) :: C
         integer :: m, n, nnz
-        !
         m = R%nRow
         n = R%nCol
         nnz = R%row(R%nRow+1)
@@ -2601,21 +2575,21 @@ contains
         C%row = R%row
         C%col = R%col
         C%val = R%val
-        !
+        return
     end subroutine
     !
     !> following subroutines depend only on grid, but are used for
     !> converting between ModEM data structures/matrix-free operators
     !> and simple column vectors/sparse matrices
     !
-    subroutine setLimitsSP( node_type, grid, nx, ny, nz )
+    subroutine setLimitsSP( nodeType, grid, nx, ny, nz )
         implicit none
         !
-        character(*), intent( in ) :: node_type
+        character(*), intent( in ) :: nodeType
         class( Grid_t ), intent( in ) :: grid
         integer, intent( out ) :: nx, ny, nz
         !
-        selectcase(node_type)
+        selectcase(nodeType)
             !
             case(CENTER)
                 nx = grid%nx
@@ -2656,37 +2630,37 @@ contains
     !
     !> No subroutine briefing
     !
-    subroutine nEdgesSP(grid, n_xedge, n_yedge, n_zedge)
+    subroutine nEdgesSP(grid, nXedge, nYedge, nZedge)
         implicit none
         !
         class( Grid_t ), intent(in)    :: grid
-        integer, intent(out)  :: n_xedge, n_yedge, n_zedge
+        integer, intent(out)  ::  nXedge, nYedge, nZedge
         integer nx, ny, nz
 
         call setLimitsSP(XEDGE, grid, nx, ny, nz)
-        n_xedge = nx*ny*nz
+        nXedge = nx*ny*nz
         call setLimitsSP(YEDGE, grid, nx, ny, nz)
-        n_yedge = nx*ny*nz
+        nYedge = nx*ny*nz
         call setLimitsSP(ZEDGE, grid, nx, ny, nz)
-        n_zedge = nx*ny*nz
+        nZedge = nx*ny*nz
         !
     end subroutine
     !
     !> No subroutine briefing
     !
-    subroutine nFacesSP(grid, n_xface, n_yface, n_zface)
+    subroutine nFacesSP(grid, nXface, nYface, nZface)
         implicit none
         !
         class( Grid_t ), intent(in)    :: grid
-        integer, intent(out) :: n_xface, n_yface, n_zface
+        integer, intent(out) ::  nXface, nYface, nZface
         integer nx, ny, nz
 
         call setLimitsSP(XFACE, grid, nx, ny, nz)
-        n_xface = nx*ny*nz
+        nXface = nx*ny*nz
         call setLimitsSP(YFACE, grid, nx, ny, nz)
-        n_yface = nx*ny*nz
+        nYface = nx*ny*nz
         call setLimitsSP(ZFACE, grid, nx, ny, nz)
-        n_zface = nx*ny*nz
+        nZface = nx*ny*nz
         !
     end subroutine
     !
@@ -2695,17 +2669,17 @@ contains
     !> e.g., among the list of y-Faces.   An offset needs to be
     !> added to get index in list of all faces(for example)
     !
-    subroutine gridIndexSP(node_type, grid, IndVec, I, J, K)
+    subroutine gridIndexSP(nodeType, grid, IndVec, I, J, K)
         implicit none
         !
-        character(*), intent(in)    :: node_type
+        character(*), intent(in)    :: nodeType
         class( Grid_t ), intent(in)    :: grid
         integer, dimension(:), intent(in)        :: IndVec
         integer, dimension(:), intent(out)        :: I, J, K
-        integer            :: nx, ny, nz, nxy, nVec, ii
-        real(4)           :: rNxy, rNx
+        integer            ::   nx, ny, nz, nxy, nVec, ii
+        real(4)           ::   rNxy, rNx
 
-        call setLimitsSP(node_type, grid, nx, ny, nz)
+        call setLimitsSP(nodeType, grid, nx, ny, nz)
         nVec = size(IndVec)
         if(nVec.NE.size(I)) then
         stop "Error: gridIndexSP >size of IndVec and I do not agree"
@@ -2723,27 +2697,27 @@ contains
         J(ii) = mod(ceiling(float(IndVec(ii))/rNx), ny)
         K(ii) = ceiling(float(IndVec(ii))/rNxy)
         enddo
-        where(I.EQ.0) I = nx
-        where(J.EQ.0) J = ny
-        where(K.EQ.0) K = nz
+        where(I.eq.0) I = nx
+        where(J.eq.0) J = ny
+        where(K.eq.0) K = nz
         !
     end subroutine gridIndexSP
     !
     !> Based on matlab method of same name in class TGrid3D
     !> returned array IndVec gives numbering of nodes within
-    !> the list for node_type; need to add an offset for position
+    !> the list for nodeType; need to add an offset for position
     !> in full list of all faces or edges(not nodes and cells)
     !
-    subroutine vectorIndexSP(node_type, grid, I, J, K, IndVec)
+    subroutine vectorIndexSP(nodeType, grid, I, J, K, IndVec)
         implicit none
         !
-        character(*), intent(in)    :: node_type
+        character(*), intent(in)    :: nodeType
         class( Grid_t ), intent(in)    :: grid
         integer, dimension(:), intent(out)        :: IndVec
         integer, dimension(:), intent(in)        :: I, J, K
-        integer            :: nx, ny, nz, nxy, nVec, ii
+        integer            ::   nx, ny, nz, nxy, nVec, ii
 
-        call setLimitsSP(node_type, grid, nx, ny, nz)
+        call setLimitsSP(nodeType, grid, nx, ny, nz)
         nVec = size(IndVec)
         if(nVec.NE.size(I)) then
         stop "Error: vectorIndexSP >size of IndVec and I do not agree"

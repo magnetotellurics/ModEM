@@ -236,7 +236,7 @@ contains
                          !> Units: [V/m]/[T], []
                          case( 5 )
                             !
-                            call updateFileUnitsArray( units_in_file, trim( args(2) ) )
+                            units_in_file = trim( args(2) )
                             !
                          !> geographic_orientation
                          case( 6 )

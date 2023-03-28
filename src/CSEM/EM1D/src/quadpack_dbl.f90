@@ -4674,7 +4674,7 @@ subroutine qc25c ( f, a, b, c, result, abserr, krul, neval )
   real*8 p2
   real*8 p3
   real*8 p4
-  real*8, external :: qwgtc
+  !real*8, external :: qwgtc
   real*8 resabs
   real*8 resasc
   real*8 result
@@ -4940,7 +4940,7 @@ subroutine qc25o ( f, a, b, omega, integr, nrmom, maxp1, ksave, result, &
   real*8 p2
   real*8 p3
   real*8 p4
-  real*8, external :: qwgto
+  !real*8, external :: qwgto
   real*8 resabs
   real*8 resasc
   real*8 resc12
@@ -5319,7 +5319,7 @@ subroutine qc25s ( f, a, b, bl, br, alfa, beta, ri, rj, rg, rh, result, &
   integer integr
   integer isym
   integer neval
-  real*8, external :: qwgts
+  !real*8, external :: qwgts
   real*8 resabs
   real*8 resasc
   real*8 result

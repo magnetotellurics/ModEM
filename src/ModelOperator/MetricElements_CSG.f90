@@ -144,17 +144,17 @@ contains
                 !
                 !> x-component edge length elements
                 do ix = 1, self%grid%nx+1
-                    dual_edge_length%x(ix, :, :) = self%grid%delX(ix)
+                    dual_edge_length%x(ix, :, :) = self%grid%del_x(ix)
                 enddo
                 !
                 !> y-component edge length elements
                 do iy = 1, self%grid%ny+1
-                    dual_edge_length%y(:, iy, :) = self%grid%delY(iy)
+                    dual_edge_length%y(:, iy, :) = self%grid%del_y(iy)
                 enddo
                 !
                 !> z-component edge length elements
                 do iz = 1, self%grid%nz+1
-                    dual_edge_length%z(:, :, iz) = self%grid%delZ(iz)
+                    dual_edge_length%z(:, :, iz) = self%grid%del_z(iz)
                 enddo
                 !
         end select
@@ -225,7 +225,7 @@ contains
                do ix = 1, self%grid%nx
                    do iy = 1, self%grid%ny+1
                       do iz = 1, self%grid%nz+1
-                          dual_face_area%x(ix, iy, iz) = self%grid%delY(iy) * self%grid%delZ(iz)
+                          dual_face_area%x(ix, iy, iz) = self%grid%del_y(iy) * self%grid%del_z(iz)
                       enddo
                    enddo
                enddo
@@ -234,7 +234,7 @@ contains
                do ix = 1,self%grid%nx + 1
                    do iy = 1,self%grid%ny
                       do iz = 1,self%grid%nz + 1
-                          dual_face_area%y(ix, iy, iz) = self%grid%delX(ix) * self%grid%delZ(iz)
+                          dual_face_area%y(ix, iy, iz) = self%grid%del_x(ix) * self%grid%del_z(iz)
                       enddo
                    enddo
                enddo
@@ -243,7 +243,7 @@ contains
                do ix = 1, self%grid%nx + 1
                    do iy = 1, self%grid%ny + 1
                       do iz = 1, self%grid%nz
-                          dual_face_area%z(ix, iy, iz) = self%grid%delX(ix) * self%grid%delY(iy)
+                          dual_face_area%z(ix, iy, iz) = self%grid%del_x(ix) * self%grid%del_y(iy)
                       enddo
                    enddo
                enddo
@@ -268,7 +268,7 @@ contains
                       do k = 1, self%grid%nz + 1
                           !> note that we are multiplying
                           !> using the distances with corner of a cell as a center
-                          vnode%v(i, j, k) = self%grid%delX(i) * self%grid%delY(j) * self%grid%delZ(k)
+                          vnode%v(i, j, k) = self%grid%del_x(i) * self%grid%del_y(j) * self%grid%del_z(k)
                       enddo
                    enddo
                enddo

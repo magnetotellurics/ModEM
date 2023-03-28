@@ -198,9 +198,10 @@ contains
         implicit none
         !
         class( cVectorSparse3D_SG_t ), intent( inout ) :: self
-        character(:), allocatable, intent( in ) :: bdry
+        character(*), intent( in ) :: bdry
         complex( kind=prec ), intent( in ) :: cvalue
         logical, intent( in ), optional :: int_only
+        logical :: int_only_p
         !
         stop "Error: setOneBoundaryCVectorSparse3D_SG not implemented yet!"
         !

@@ -97,29 +97,29 @@ contains
         yTx1D = self%location(2)
         zTx1D = self%location(3)
         ftx1D = 1.0d0/self%period
-        sdm1D = self%moment          !> (Am), dipole moment. Normalize to unit source moment
-        azimuthTx1D = self%azimuth   !> (degrees) 
+        sdm1D = self%moment           !> (Am), dipole moment. Normalize to unit source moment
+        azimuthTx1D = self%azimuth    !> (degrees) 
         dipTx1D = self%dip
         !
-        HTmethod1D = "kk_ht_201" !> Use 201 point HT digital filters.
-        outputdomain1D = "spatial"   !> Assume spatial domain comps
-        lbcomp = .FALSE.     !> This is changed to true if magnetics in data file
-        lUseSpline1D = .TRUE.      !> Use spline interpolation for faster 1D computations
-        linversion = .FALSE.     !> Compute derivatives with respect to self%sigma(layers)
+        HTmethod1D = "kk_ht_201"      !> Use 201 point HT digital filters.
+        outputdomain1D = "spatial"    !> Assume spatial domain comps
+        lbcomp = .FALSE.              !> This is changed to true if magnetics in data file
+        lUseSpline1D = .TRUE.         !> Use spline interpolation for faster 1D computations
+        linversion = .FALSE.          !> Compute derivatives with respect to self%sigma(layers)
         !
-        phaseConvention = "lag"      !> The usual default is lag, where phase becomes larger 
-        !> positive values with increasing range.
-        lenTx1D = 00.d0      !> (m) Dipole length 0 = point dipole
-        numIntegPts = 0          !> Number of points to use for Gauss quadrature integration for finite dipole
+        phaseConvention = "lag"    !> The usual default is lag, where phase becomes larger 
+                                   !> positive values with increasing range.
+        lenTx1D = 00.d0            !> (m) Dipole length 0 = point dipole
+        numIntegPts = 0            !> Number of points to use for Gauss quadrature integration for finite dipole
         !
         !> Verbose...
         write( *, * ) "          - Extract CSEM Source from Dipole 1D"
         !
         call self%set1DModel( xTx1D, yTx1D )
         !
-        call initilize_1d_vectors( self%sigma%metric%grid ) !> Initilize the 1D vectors where to compupte the e_field field
+        call initilize_1d_vectors( self%sigma%metric%grid )    !> Initilize the 1D vectors where to compupte the e_field field
         !
-        call comp_dipole1D !> Calculate e_field-Field by Key"s code
+        call comp_dipole1D    !> Calculate e_field-Field by Key"s code
         !
         call self%create_Ep_from_Dipole1D( self%sigma%metric%grid )
         !
@@ -149,14 +149,22 @@ contains
         n1D = n1D + ( grid%Nx+1 ) * ( grid%Ny ) * ( grid%Nz+1 )
         n1D = n1D + ( grid%Nx+1 ) * ( grid%Ny+1 ) * ( grid%Nz )
         !
-        if( allocated( x1D ) ) then  
-            deallocate( x1D, y1D, z1D )
-            deallocate( ex1D, ey1D, jz1D )
-            deallocate( bx1D, by1D, bz1D )
-        endif
+        if( allocated( x1D ) ) deallocate( x1D )
+        if( allocated( y1D ) ) deallocate( y1D )
+        if( allocated( z1D ) ) deallocate( z1D )
         !
         allocate ( x1D(n1D), y1D(n1D), z1D(n1D) )
+        !
+        if( allocated( ex1D ) ) deallocate( ex1D )
+        if( allocated( ey1D ) ) deallocate( ey1D )
+        if( allocated( jz1D ) ) deallocate( jz1D )
+        !
         allocate ( ex1D(n1D), ey1D(n1D), jz1D(n1D) )
+        !
+        if( allocated( bx1D ) ) deallocate( bx1D )
+        if( allocated( by1D ) ) deallocate( by1D )
+        if( allocated( bz1D ) ) deallocate( bz1D )
+        !
         allocate ( bx1D(n1D), by1D(n1D), bz1D(n1D) )
         !
         !====================================================================
@@ -264,7 +272,7 @@ contains
     subroutine set1DModel( self, xTx1D, yTx1D )
         !
         class( SourceCSEM_Dipole1D_t ), intent( inout ) :: self
-        real( kind=prec ),intent( in ) :: xTx1D, yTx1D 
+        real( kind=prec ), intent( in ) :: xTx1D, yTx1D 
         !
         type( rScalar3D_SG_t ) :: sigma_cell, model
         character( len=80 ) :: param_type
@@ -275,15 +283,15 @@ contains
         !
         class( Vector_t ), allocatable :: model_param_map, amodel_map
         !
-        !>   first define conductivity on cells  
-        !>   (extract into variable which is public)
-        !call modelParamToCell(sigma, sigma_cell, param_type)
+        !> first define conductivity on cells  
+        !> (extract into variable which is public)
+        !> call modelParamToCell(sigma, sigma_cell, param_type)
         !
         select type( sigma => self%sigma )
             !
             class is( ModelParameterCell_SG_t )
                 !
-                sigma_cell = sigma%cell_cond
+                sigma_cell = sigma%cell_cond_h
                 nlay1D = sigma_cell%nz + sigma_cell%grid%nzAir
                 nzEarth = sigma_cell%grid%nzEarth
                 nzAir = sigma_cell%grid%nzAir
@@ -309,9 +317,9 @@ contains
                 sig1D(1:nzAir) = SIGMA_AIR !sigma_cell%v(1,1,1:nzAir)
                 !
                 !> Verbose
-                write( *, * ) "          - Get 1D according to: ", trim(get_1D_from)
+                write( *, * ) "          - Get 1D according to: ", trim( get_1d_from )
                 !
-                if( trim(get_1D_from) =="Geometric_mean" ) then
+                if( trim(get_1d_from) =="Geometric_mean" ) then
                     !
                     do k = nzAir+1,nlay1D
                         wt = R_ZERO
@@ -330,13 +338,13 @@ contains
                         !
                    enddo
                    !
-                elseif( trim( get_1D_from ) =="At_Tx_Position" ) then
+                elseif( trim( get_1d_from ) == "Tx_Position" ) then
                     !
                     do k = nzAir+1,nlay1D
                         sig1D(k)=sigma_cell%v(ixTx,iyTx,k-nzAir)
                     enddo
                     !
-                elseif( trim( get_1d_from ) == "Geometric_mean_around_Tx" ) then
+                elseif( trim( get_1d_from ) == "Mean_around_Tx" ) then
                     do k = nzAir+1,nlay1D
                         !
                         wt = R_ZERO
@@ -356,7 +364,7 @@ contains
                         !
                     enddo
                     !
-                elseif( trim( get_1d_from ) == "Full_Geometric_mean" ) then
+                elseif( trim( get_1d_from ) == "Geometric_mean" ) then
                     !
                     wt = R_ZERO
                     temp_sigma_value=R_ZERO
@@ -382,7 +390,7 @@ contains
                         !
                     enddo
                     !
-                elseif( trim( get_1d_from ) == "Fixed_Value" ) then
+                elseif( trim( get_1d_from ) == "Fixed" ) then
                     !
                     temp_sigma_value = sigma_cell%v( ixTx, iyTx, k-nzAir ) !the value exactly below the Tx
                     !
@@ -416,7 +424,7 @@ contains
                 !
                 amodel = sigma
                 !
-                amodel%cell_cond = model
+                amodel%cell_cond_h = model
                 !
                 call sigma%PDEmapping( model_param_map )
                 !

@@ -15,7 +15,6 @@ module DataFile
     use ReceiverFullVerticalMagnetic
     use ReceiverOffDiagonalImpedance
     use ReceiverSingleField
-    use ReceiverExyAmpliPhase
     use ReceiverArray
     !
     use TransmitterMT
@@ -26,10 +25,6 @@ module DataFile
     !
     !> Abstract Class DataFile_t
     type, abstract :: DataFile_t
-        !
-        real( kind=prec ) :: geographic_orientation
-        !
-        real( kind=prec ), dimension(2) :: origin
         !
         integer :: n_tx, n_rx
         !

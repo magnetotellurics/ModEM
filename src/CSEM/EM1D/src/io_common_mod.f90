@@ -169,13 +169,13 @@ module io_common_mod
 
 
   !source types
-  integer(kind=int32),parameter   :: receiver = 0
+  integer(kind=int32),parameter   :: receiver_type = 0
   integer(kind=int32),parameter   :: dipole = 1
   integer(kind=int32),parameter   :: wire = 2
   integer(kind=int32),parameter   :: star = 3
 
   !source type descriptions
-  character(len=10),dimension(receiver:star),parameter  :: srctypestr = (/'receiver','dipole  ','wire    ','star    '/)
+  character(len=10),dimension(receiver_type:star),parameter  :: srctypestr = (/'receiver','dipole  ','wire    ','star    '/)
 
   !domains for wavelet definition
   integer(kind=int32),parameter   :: timedom = 1

@@ -98,7 +98,7 @@ contains
         call MPI_PACK_SIZE( len( model_method ), MPI_CHARACTER, node_comm, nbytes(4), ierr )
         call MPI_PACK_SIZE( len( forward_solver_type ), MPI_CHARACTER, node_comm, nbytes(5), ierr )
         call MPI_PACK_SIZE( len( source_type_mt ), MPI_CHARACTER, node_comm, nbytes(6), ierr )
-        call MPI_PACK_SIZE( len( get_1D_from ), MPI_CHARACTER, node_comm, nbytes(7), ierr )
+        call MPI_PACK_SIZE( len( get_1d_from ), MPI_CHARACTER, node_comm, nbytes(7), ierr )
         call MPI_PACK_SIZE( 1, MPI_LOGICAL, node_comm, nbytes(8), ierr )
         !
         shared_buffer_size = shared_buffer_size + allocateGridBuffer( main_grid )
@@ -175,7 +175,7 @@ contains
         call MPI_PACK( len( model_method ), 1, MPI_INTEGER, shared_buffer, shared_buffer_size, index, node_comm, ierr )
         call MPI_PACK( len( forward_solver_type ), 1, MPI_INTEGER, shared_buffer, shared_buffer_size, index, node_comm, ierr )
         call MPI_PACK( len( source_type_mt ), 1, MPI_INTEGER, shared_buffer, shared_buffer_size, index, node_comm, ierr )
-        call MPI_PACK( len( get_1D_from ), 1, MPI_INTEGER, shared_buffer, shared_buffer_size, index, node_comm, ierr )
+        call MPI_PACK( len( get_1d_from ), 1, MPI_INTEGER, shared_buffer, shared_buffer_size, index, node_comm, ierr )
         call MPI_PACK( model_n_air_layer, 1, MPI_INTEGER, shared_buffer, shared_buffer_size, index, node_comm, ierr )
         call MPI_PACK( model_max_height, 1, MPI_DOUBLE_PRECISION, shared_buffer, shared_buffer_size, index, node_comm, ierr )
         call MPI_PACK( tolerance_divcor, 1, MPI_DOUBLE_PRECISION, shared_buffer, shared_buffer_size, index, node_comm, ierr )
@@ -184,7 +184,7 @@ contains
         call MPI_PACK( model_method, len( model_method ), MPI_CHARACTER, shared_buffer, shared_buffer_size, index, node_comm, ierr )
         call MPI_PACK( forward_solver_type, len( forward_solver_type ), MPI_CHARACTER, shared_buffer, shared_buffer_size, index, node_comm, ierr )
         call MPI_PACK( source_type_mt, len( source_type_mt ), MPI_CHARACTER, shared_buffer, shared_buffer_size, index, node_comm, ierr )
-        call MPI_PACK( get_1D_from, len( get_1D_from ), MPI_CHARACTER, shared_buffer, shared_buffer_size, index, node_comm, ierr )
+        call MPI_PACK( get_1d_from, len( get_1d_from ), MPI_CHARACTER, shared_buffer, shared_buffer_size, index, node_comm, ierr )
         call MPI_PACK( has_pmodel_file, 1, MPI_LOGICAL, shared_buffer, shared_buffer_size, index, node_comm, ierr )
         !
         call packGridBuffer( main_grid, index )
@@ -253,8 +253,8 @@ contains
         allocate( character( n_source_type ) :: source_type_mt )
         call MPI_UNPACK( shared_buffer, shared_buffer_size, index, source_type_mt, n_source_type, MPI_CHARACTER, node_comm, ierr )
         !
-        allocate( character( n_get_1d_from ) :: get_1D_from )
-        call MPI_UNPACK( shared_buffer, shared_buffer_size, index, get_1D_from, n_get_1d_from, MPI_CHARACTER, node_comm, ierr )
+        allocate( character( n_get_1d_from ) :: get_1d_from )
+        call MPI_UNPACK( shared_buffer, shared_buffer_size, index, get_1d_from, n_get_1d_from, MPI_CHARACTER, node_comm, ierr )
         !
         call MPI_UNPACK( shared_buffer, shared_buffer_size, index, has_pmodel_file, 1, MPI_LOGICAL, node_comm, ierr )
         !
@@ -892,7 +892,7 @@ contains
                 !
                 model_parameter_size_bytes = model_parameter_size_bytes + allocateGridBuffer( target_model_param%param_grid )
                 !
-                model_parameter_size_bytes = model_parameter_size_bytes + allocateScalarBuffer( target_model_param%cell_cond )
+                model_parameter_size_bytes = model_parameter_size_bytes + allocateScalarBuffer( target_model_param%cell_cond_h )
                 !
                 do i = 1, size( nbytes )
                     model_parameter_size_bytes = model_parameter_size_bytes + nbytes(i)
@@ -928,7 +928,7 @@ contains
                 !
                 call packGridBuffer( target_model_param%param_grid, index )
                 !
-                call packScalarBuffer( target_model_param%cell_cond, index )
+                call packScalarBuffer( target_model_param%cell_cond_h, index )
                 !
             class default
                stop "allocateModelBuffer: Unclassified target_model_param"
@@ -973,7 +973,7 @@ contains
                         !
                         allocate( target_model_param%param_grid, source = unpackGridBuffer( index ) )
                         !
-                        call unpackScalarBuffer( target_model_param%cell_cond, main_grid, index )
+                        call unpackScalarBuffer( target_model_param%cell_cond_h, main_grid, index )
                         !
                         call target_model_param%SetSigMap( target_model_param%param_type )
                         !

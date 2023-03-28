@@ -113,7 +113,7 @@ contains
         !
         !> compute the size of current Divergence before (using dot product)
         !>    this will be part of diagnostics
-        self%divJ(1) = sqrt( phiRHS .dot. phiRHS )
+        self%divJ(1) = sqrt( phiRHS%dotProd( phiRHS ) )
         !
         !> point-wise multiplication with volume weights centered on corner nodes
         !
@@ -151,7 +151,7 @@ contains
         endif
         !
         !> compute the size of current Divergence after
-        self%divJ(2) = sqrt( phiRHS .dot. phiRHS )
+        self%divJ(2) = sqrt( phiRHS%dotProd( phiRHS ) )
         !
         !write( *, * ) "                    DivJ: ", self%divJ(1), " => ", self%divJ(2)
         !

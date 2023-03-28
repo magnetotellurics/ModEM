@@ -84,7 +84,7 @@ subroutine readsorec(filename,src,comm)
 
 
     !receivers
-    case (receiver)
+    case (receiver_type)
       call read_receivers(src(ishot),lu,comm)
 
     !invalid source type: write error message & exit

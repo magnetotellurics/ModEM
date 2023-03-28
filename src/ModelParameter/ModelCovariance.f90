@@ -160,7 +160,7 @@ contains
                     !
                     class is( ModelParameterCell_SG_t )
                         !
-                        call self%RecursiveAR( temp_model%cell_cond%v, target_model%cell_cond%v, 2 )
+                        call self%RecursiveAR( temp_model%cell_cond_h%v, target_model%cell_cond_h%v, 2 )
                         !
                     class default
                         stop "Error: multBy_Cm > Unclassified target_model"
@@ -201,7 +201,7 @@ contains
                     !
                     class is( ModelParameterCell_SG_t )
                         !
-                        call self%RecursiveAR( mhat%cell_cond%v, dsigma%cell_cond%v, self%N )
+                        call self%RecursiveAR( mhat%cell_cond_h%v, dsigma%cell_cond_h%v, self%N )
                         !
                     class default
                         stop "Error: multBy_CmSqrt > Unclassified dsigma"
@@ -239,7 +239,7 @@ contains
                     !
                     class is( ModelParameterCell_SG_t )
                         !
-                        call self%RecursiveARInv( dm%cell_cond%v, mhat%cell_cond%v, self%N )
+                        call self%RecursiveARInv( dm%cell_cond_h%v, mhat%cell_cond_h%v, self%N )
                         !
                     class default
                         stop "Error: multBy_CmSqrtInv > Unclassified dm"

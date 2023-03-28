@@ -79,9 +79,9 @@ contains
         type( spMatCSR_Cmplx ) :: Axx
         type( spMatCSR_Cmplx ), pointer  :: Lblk(:), Ublk(:)
         !
-        ! find indexes of x, y, z elements
+        ! find indicies of x, y, z elements
         !
-        ! this generates indexes (in list of interior edges)
+        ! this generates indicies (in list of interior edges)
         ! for x, y, z edges
         nEdgeT = 0
         !
@@ -113,7 +113,7 @@ contains
         !
         iz = (/ (j, j=nEdgeT+1, nEdgeT+nEdge) /)
         !
-        ! Construct sub-matrices for x, y, z components
+        ! Construct submatrices for x, y, z components
         allocate( Lblk(3) )
         allocate( Ublk(3) )
         !
@@ -202,21 +202,21 @@ contains
         class( Vector_t ), intent( inout ) :: outE
         logical, intent( in ) :: adjoint
         !
-        complex( kind=prec ), allocatable, dimension(:) :: temp_array_outE
+        complex( kind=prec ), allocatable, dimension(:) :: temp_array_inE, temp_array_outE
+        !
+        temp_array_inE = inE%getArray()
         !
         if( adjoint ) then
             !
-            allocate( temp_array_outE( self%LH%nRow ) )
-            !
-            call UTsolve_Cmplx( self%LH, inE%getArray(), temp_array_outE )
+            call UTsolve_Cmplx( self%LH, temp_array_inE, temp_array_outE )
             !
         else
             !
-            allocate( temp_array_outE( self%L%nRow ) )
-            !
-            call LTsolve_Cmplx( self%L, inE%getArray(), temp_array_outE )
+            call LTsolve_Cmplx( self%L, temp_array_inE, temp_array_outE )
             !
         endif
+        !
+        deallocate( temp_array_inE )
         !
         call outE%setArray( temp_array_outE )
         !
@@ -236,21 +236,21 @@ contains
         class( Vector_t ), intent( inout ) :: outE
         logical, intent( in ) :: adjoint
         !
-        complex( kind=prec ), allocatable, dimension(:) :: temp_array_outE
+        complex( kind=prec ), allocatable, dimension(:) :: temp_array_inE, temp_array_outE
+        !
+        temp_array_inE = inE%getArray()
         !
         if( adjoint ) then
             !
-            allocate( temp_array_outE( self%UH%nRow ) )
-            !
-            call LTsolve_Cmplx( self%UH, inE%getArray(), temp_array_outE )
+            call LTsolve_Cmplx( self%UH, temp_array_inE, temp_array_outE )
             !
         else
             !
-            allocate( temp_array_outE( self%U%nRow ) )
-            !
-            call UTsolve_Cmplx( self%U, inE%getArray(), temp_array_outE )
+            call LTsolve_Cmplx( self%U, temp_array_inE, temp_array_outE )
             !
         endif
+        !
+        deallocate( temp_array_inE )
         !
         call outE%setArray( temp_array_outE )
         !

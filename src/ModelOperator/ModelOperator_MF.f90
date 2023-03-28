@@ -180,6 +180,7 @@ contains
     end subroutine deallocateModelOperatorMF
     !
     !> No subroutine briefing
+	!
     subroutine setEquationsModelOperatorMF( self )
         implicit none
         !
@@ -188,13 +189,13 @@ contains
         integer :: ix, iy, iz 
         !
         do iy = 2, self%metric%grid%ny
-            self%xXY(iy, 2) = -1.0 / (self%metric%grid%delY(iy) * self%metric%grid%dy(iy))
-            self%xXY(iy, 1) = -1.0 / (self%metric%grid%delY(iy) * self%metric%grid%dy(iy-1))
+            self%xXY(iy, 2) = -1.0 / (self%metric%grid%del_y(iy) * self%metric%grid%dy(iy))
+            self%xXY(iy, 1) = -1.0 / (self%metric%grid%del_y(iy) * self%metric%grid%dy(iy-1))
         enddo
         !
         do iz = 2, self%metric%grid%nz
-            self%xXZ(iz, 2) = -1.0 / (self%metric%grid%delZ(iz) * self%metric%grid%dz(iz))
-            self%xXZ(iz, 1) = -1.0 / (self%metric%grid%delZ(iz) * self%metric%grid%dz(iz-1))
+            self%xXZ(iz, 2) = -1.0 / (self%metric%grid%del_z(iz) * self%metric%grid%dz(iz))
+            self%xXZ(iz, 1) = -1.0 / (self%metric%grid%del_z(iz) * self%metric%grid%dz(iz-1))
         enddo
         !
         do iy = 2, self%metric%grid%ny
@@ -206,24 +207,24 @@ contains
         !
         do ix = 1, self%metric%grid%nx
             do iy = 2, self%metric%grid%ny
-                self%xY(ix, iy) = 1.0 / (self%metric%grid%delY(iy)*self%metric%grid%dx(ix))
+                self%xY(ix, iy) = 1.0 / (self%metric%grid%del_y(iy)*self%metric%grid%dx(ix))
             enddo
         enddo
         !
         do ix = 1, self%metric%grid%nx
             do iz = 2, self%metric%grid%nz
-                self%xZ(ix, iz) = 1.0 / (self%metric%grid%delZ(iz)*self%metric%grid%dx(ix))
+                self%xZ(ix, iz) = 1.0 / (self%metric%grid%del_z(iz)*self%metric%grid%dx(ix))
             enddo
         enddo
         !
         do iz = 2, self%metric%grid%nz
-            self%yYZ(iz, 2) = -1.0 / (self%metric%grid%delZ(iz)*self%metric%grid%dz(iz))
-            self%yYZ(iz, 1) = -1.0 / (self%metric%grid%delZ(iz)*self%metric%grid%dz(iz-1))
+            self%yYZ(iz, 2) = -1.0 / (self%metric%grid%del_z(iz)*self%metric%grid%dz(iz))
+            self%yYZ(iz, 1) = -1.0 / (self%metric%grid%del_z(iz)*self%metric%grid%dz(iz-1))
         enddo
         !
         do ix = 2, self%metric%grid%nx
-            self%yYX(ix, 2) = -1.0 / (self%metric%grid%delX(ix)*self%metric%grid%dx(ix))
-            self%yYX(ix, 1) = -1.0 / (self%metric%grid%delX(ix)*self%metric%grid%dx(ix-1))
+            self%yYX(ix, 2) = -1.0 / (self%metric%grid%del_x(ix)*self%metric%grid%dx(ix))
+            self%yYX(ix, 1) = -1.0 / (self%metric%grid%del_x(ix)*self%metric%grid%dx(ix-1))
         enddo
         !
         do ix = 2, self%metric%grid%nx
@@ -235,24 +236,24 @@ contains
         !
         do iy = 1, self%metric%grid%ny
             do iz = 2, self%metric%grid%nz
-                self%yZ(iy, iz) = 1.0 / (self%metric%grid%delZ(iz)*self%metric%grid%dy(iy))
+                self%yZ(iy, iz) = 1.0 / (self%metric%grid%del_z(iz)*self%metric%grid%dy(iy))
             enddo
         enddo
         !
         do ix = 2, self%metric%grid%nx
             do iy = 1, self%metric%grid%ny
-                self%yX(ix, iy) = 1.0 / (self%metric%grid%delX(ix)*self%metric%grid%dy(iy))
+                self%yX(ix, iy) = 1.0 / (self%metric%grid%del_x(ix)*self%metric%grid%dy(iy))
             enddo
         enddo
         !
         do ix = 2, self%metric%grid%nx
-            self%zZX(ix, 2) = -1.0 / (self%metric%grid%delX(ix)*self%metric%grid%dx(ix))
-            self%zZX(ix, 1) = -1.0 / (self%metric%grid%delX(ix)*self%metric%grid%dx(ix-1))
+            self%zZX(ix, 2) = -1.0 / (self%metric%grid%del_x(ix)*self%metric%grid%dx(ix))
+            self%zZX(ix, 1) = -1.0 / (self%metric%grid%del_x(ix)*self%metric%grid%dx(ix-1))
         enddo
         !
         do iy = 2, self%metric%grid%ny
-            self%zZY(iy, 2) = -1.0 / (self%metric%grid%delY(iy)*self%metric%grid%dy(iy))
-            self%zZY(iy, 1) = -1.0 / (self%metric%grid%delY(iy)*self%metric%grid%dy(iy-1))
+            self%zZY(iy, 2) = -1.0 / (self%metric%grid%del_y(iy)*self%metric%grid%dy(iy))
+            self%zZY(iy, 1) = -1.0 / (self%metric%grid%del_y(iy)*self%metric%grid%dy(iy-1))
         enddo
         !
         do ix = 2, self%metric%grid%nx
@@ -264,13 +265,13 @@ contains
         !
         do ix = 2, self%metric%grid%nx
              do iz = 1, self%metric%grid%nz
-                    self%zX(ix, iz) = 1.0 / (self%metric%grid%delX(ix)*self%metric%grid%dz(iz))
+                    self%zX(ix, iz) = 1.0 / (self%metric%grid%del_x(ix)*self%metric%grid%dz(iz))
              enddo
         enddo
         !
         do iy = 2, self%metric%grid%ny
             do iz = 1, self%metric%grid%nz
-                self%zY(iy, iz) = 1.0 / (self%metric%grid%delY(iy)*self%metric%grid%dz(iz))
+                self%zY(iy, iz) = 1.0 / (self%metric%grid%del_y(iy)*self%metric%grid%dz(iz))
             enddo
         enddo
         !
@@ -301,22 +302,22 @@ contains
             do iy = 2, self%metric%grid%ny
                 do ix = 2, self%metric%grid%nx
                     self%db1%x(ix, iy, iz) = self%Sigma_E%x(ix - 1, iy, iz)/ &
-                    (self%metric%grid%dx(ix - 1)*self%metric%grid%delX(ix))
+                    (self%metric%grid%dx(ix - 1)*self%metric%grid%del_x(ix))
                     !
                     self%db2%x(ix, iy, iz) = self%Sigma_E%x(ix, iy, iz)/ &
-                    (self%metric%grid%dx(ix)*self%metric%grid%delX(ix))
+                    (self%metric%grid%dx(ix)*self%metric%grid%del_x(ix))
                     !
                     self%db1%y(ix, iy, iz) = self%Sigma_E%y(ix, iy - 1, iz)/ &
-                    (self%metric%grid%dy(iy - 1)*self%metric%grid%delY(iy))
+                    (self%metric%grid%dy(iy - 1)*self%metric%grid%del_y(iy))
                     !
                     self%db2%y(ix, iy, iz) = self%Sigma_E%y(ix, iy, iz)/ &
-                    (self%metric%grid%dy(iy)*self%metric%grid%delY(iy))
+                    (self%metric%grid%dy(iy)*self%metric%grid%del_y(iy))
                     !
                     self%db1%z(ix, iy, iz) = self%Sigma_E%z(ix, iy, iz - 1)/ &
-                    (self%metric%grid%dz(iz - 1)*self%metric%grid%delZ(iz))
+                    (self%metric%grid%dz(iz - 1)*self%metric%grid%del_z(iz))
                     !
                     self%db2%z(ix, iy, iz) = self%Sigma_E%z(ix, iy, iz)/ &
-                    (self%metric%grid%dz(iz)*self%metric%grid%delZ(iz))
+                    (self%metric%grid%dz(iz)*self%metric%grid%del_z(iz))
                     !
                     self%c%v(ix, iy, iz) = - (self%db1%x(ix, iy, iz) + &
                     self%db2%x(ix, iy, iz) + &
@@ -511,8 +512,8 @@ contains
                 !
                 call inH%div( self%Metric%FaceArea )
                 !
-                if(.NOT.outE%is_allocated) then
-                     write( *, * ) "     "//achar(27)//"[31m# Error:"//achar(27)//"[0m  multCurlTModelOperatorMF > output vector not allocated"
+                if( .NOT. outE%is_allocated ) then
+                     write( *, * ) "Error:  multCurlTModelOperatorMF > output vector not allocated"
                 endif
                 !
                 select type( outE )
@@ -548,7 +549,7 @@ contains
                     class default
                         stop "Error: multCurlTModelOperatorMF > Incompatible input [outE]"
                 end select
-                    !> 
+                    !
             class default
                 stop "Error: multCurlTModelOperatorMF > Incompatible input [inH]"
                 !
@@ -569,9 +570,10 @@ contains
         integer :: ix, iy, iz
         !
         select type( outphi )
+            !
             class is( cScalar3D_SG_t )
                 !
-                if(.NOT.outPhi%is_allocated) then
+                if( .NOT. outPhi%is_allocated) then
                     stop "Error: divCgradModelOperatorMF > Output cScalar object not allocated"
                 endif
                 !

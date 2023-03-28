@@ -89,7 +89,7 @@ contains
                     !
                     case( SRC_CSEM_EM1D )
                         !
-                        !call Tx%setSource( SourceCSEM_EM1D_t( model_operator, sigma, Tx%period, Tx%location, Tx%i_tx ) )
+                        call Tx%setSource( SourceCSEM_EM1D_t( model_operator, sigma, Tx%period, Tx%location, Tx%i_tx ) )
                         !
                     case( SRC_CSEM_DIPOLE1D )
                         !

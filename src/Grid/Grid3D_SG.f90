@@ -13,13 +13,13 @@ module Grid3D_SG
             !
             final :: Grid3D_SG_dtor
             !
-            procedure, public :: NumberOfEdges => NumberOfEdgesGrid3D_SG
-            procedure, public :: NumberOfFaces => NumberOfFacesGrid3D_SG
-            procedure, public :: NumberOfNodes => NumberOfNodesGrid3D_SG
-            procedure, public :: GridIndex => GridIndexGrid3D_SG
-            procedure, public :: VectorIndex => VectorIndexGrid3D_SG
+            procedure, public :: numberOfEdges => numberOfEdgesGrid3D_SG
+            procedure, public :: numberOfFaces => numberOfFacesGrid3D_SG
+            procedure, public :: numberOfNodes => numberOfNodesGrid3D_SG
+            procedure, public :: numberOfCells => numberOfCellsGrid3D_SG
+            procedure, public :: gridIndex => gridIndexGrid3D_SG
+            procedure, public :: vectorIndex => vectorIndexGrid3D_SG
             procedure, public :: Limits => LimitsGrid3D_SG
-            procedure, public :: IsAllocated => IsAllocatedGrid3D_SG
             procedure, public :: Length => LengthGrid3D_SG
             !
             !
@@ -31,8 +31,6 @@ module Grid3D_SG
             !
             procedure, public :: SetCellSizes => SetCellSizesGrid3D_SG
             procedure, public :: GetCellSizes => GetCellSizesGrid3D_SG
-            !
-            procedure, public :: Copy_from => Copy_fromGrid3D_SG
             !
             procedure, public :: Slice1D => Slice1DGrid3D_SG
             procedure, public :: Slice2D => Slice2DGrid3D_SG
@@ -63,7 +61,7 @@ module Grid3D_SG
 contains
     !
     !> No subroutine briefing
-	!
+    !
     function Slice1DGrid3D_SG( self ) result( g1D )
         implicit none
         !
@@ -75,7 +73,7 @@ contains
     end function Slice1DGrid3D_SG
     !
     !> No subroutine briefing
-	!
+    !
     function Slice2DGrid3D_SG( self ) result( g2D )
         implicit none
         !
@@ -170,12 +168,12 @@ contains
         allocate( self%dyInv(ny) )
         allocate( self%dzInv(nz) )
         !
-        !> delX, delY, and delZ are the distances between
+        !> del_x, del_y, and del_z are the distances between
         !> the electrical field defined on the center of the
         !> edges in x, y, and z axes, respectively.
-        allocate( self%delX(nx + 1) )
-        allocate( self%delY(ny + 1) )
-        allocate( self%delZ(nz + 1) )
+        allocate( self%del_x(nx + 1) )
+        allocate( self%del_y(ny + 1) )
+        allocate( self%del_z(nz + 1) )
         !
         allocate( self%delXInv(nx + 1) )
         allocate( self%delYInv(ny + 1) )
@@ -256,45 +254,45 @@ contains
         self%zAirThick = self%zEdge(nzAir + 1)
         !
         !> Distance between center of the selfs
-        self%delX(1) = self%dx(1)
+        self%del_x(1) = self%dx(1)
         do ix = 2, self%nx
-            self%delX(ix) = self%dx(ix - 1) + self%dx(ix)
+            self%del_x(ix) = self%dx(ix - 1) + self%dx(ix)
         enddo
-        self%delX(self%nx + 1) = self%dx(self%nx)
-        self%delX = self%delX/2.0
+        self%del_x(self%nx + 1) = self%dx(self%nx)
+        self%del_x = self%del_x/2.0
         !
-        self%delY(1) = self%dy(1)
+        self%del_y(1) = self%dy(1)
         do iy = 2, self%ny
-            self%delY(iy) = self%dy(iy - 1) + self%dy(iy)
+            self%del_y(iy) = self%dy(iy - 1) + self%dy(iy)
         enddo
-        self%delY(self%ny + 1) = self%dy(self%ny)
-        self%delY = self%delY/2.0
+        self%del_y(self%ny + 1) = self%dy(self%ny)
+        self%del_y = self%del_y/2.0
         !
-        self%delZ(1) = self%dz(1)
+        self%del_z(1) = self%dz(1)
         do iz = 2, self%nz
-            self%delZ(iz) = self%dz(iz - 1) + self%dz(iz)
+            self%del_z(iz) = self%dz(iz - 1) + self%dz(iz)
         enddo
-        self%delZ(self%nz + 1) = self%dz(self%nz)
-        self%delZ = self%delZ/2.0
+        self%del_z(self%nz + 1) = self%dz(self%nz)
+        self%del_z = self%del_z/2.0
         !
-        self%delXInv = 1/self%delX
-        self%delYInv = 1/self%delY
-        self%delZInv = 1/self%delZ
+        self%delXInv = 1/self%del_x
+        self%delYInv = 1/self%del_y
+        self%delZInv = 1/self%del_z
         !
         !> Cumulative distance between the centers, adjusted to model origin
         xCum = R_ZERO
         yCum = R_ZERO
         zCum = R_ZERO
         do ix = 1, self%nx
-            xCum = xCum + self%delX(ix)
+            xCum = xCum + self%del_x(ix)
             self%xCenter(ix) = xCum + ox
         enddo
         do iy = 1, self%ny
-            yCum = yCum + self%delY(iy)
+            yCum = yCum + self%del_y(iy)
             self%yCenter(iy) = yCum + oy
         enddo
         do iz = 1, self%nz
-            zCum = zCum + self%delZ(iz)
+            zCum = zCum + self%del_z(iz)
             self%zCenter(iz) = zCum
         enddo
         !> Need to be careful here ... grid origin is given
@@ -386,7 +384,7 @@ contains
                 airLayers%dz(1) = airLayers%minTopDz
             endif
 
-        elseif(index(airLayers%method, "fixed height") > 0) then 
+        else if(index(airLayers%method, "fixed height") > 0) then 
             !
             !> ON IMPLEMENTATION
             z1_log = log10( self%Dz( self%NzAir + 1 ) )
@@ -412,7 +410,7 @@ contains
                 ! height1 = height2
             ! enddo
             !
-        elseif(index(airLayers%method, "read from file") > 0) then
+        else if(index(airLayers%method, "read from file") > 0) then
             !
             !> Air layers have been read from file and are
             !> already stored in Dz, so only need to reallocate
@@ -502,7 +500,7 @@ contains
         class( Grid3D_SG_t ), intent(inout) :: self
         real( kind=prec ), dimension(:), intent( in ) :: dx, dy, dz
         !
-        if(.NOT.self%IsAllocated() ) then
+        if( .NOT. self%is_allocated ) then
              stop "Error: SetCellSizesGrid3D_SG > Grid not allocated."
         endif
         !
@@ -527,9 +525,8 @@ contains
         class( Grid3D_SG_t ), intent( in ) :: self
         real( kind=prec ), intent( out ) :: dx(:), dy(:), dz(:)
         !
-        if(.NOT.self%IsAllocated() ) then
-             write( *, * ) "Error:Grid3D_SG_t:GetCellSizes:"
-             stop "    Grid not allocated."
+        if( .NOT. self%is_allocated ) then
+             stop "Error: GetCellSizesGrid3D_SG > Grid not allocated."
         endif
         !
         !> Check dimensions
@@ -546,48 +543,48 @@ contains
     end subroutine GetCellSizesGrid3D_SG
     !
     !> No subroutine briefing
-    subroutine NumberOfEdgesGrid3D_SG(self, nXedge, nYedge, nZedge)
+    subroutine numberOfEdgesGrid3D_SG( self, n_xedge, n_yedge, n_zedge )
         implicit none
         !
         class( Grid3D_SG_t ), intent( in ) :: self
-        integer, intent( out ) :: nXedge, nYedge, nZedge
+        integer, intent( out ) :: n_xedge, n_yedge, n_zedge
         !
         integer :: nx, ny, nz
-        
-        call self%Limits( "XEDGE", nx, ny, nz )
-        nXedge = nx*ny*nz
-        
-        call self%Limits( "YEDGE", nx, ny, nz )
-        nYedge = nx*ny*nz
-
-        call self%Limits( "ZEDGE", nx, ny, nz )
-        nZedge = nx*ny*nz
-        
-    end subroutine NumberOfEdgesGrid3D_SG
+        !
+        call self%Limits( XEDGE, nx, ny, nz )
+        n_xedge = nx * ny * nz
+        !
+        call self%Limits( YEDGE, nx, ny, nz )
+        n_yedge  = nx * ny * nz
+        !
+        call self%Limits( ZEDGE, nx, ny, nz )
+        n_zedge = nx * ny * nz
+        !
+    end subroutine numberOfEdgesGrid3D_SG
     !
     !> No subroutine briefing
-    subroutine NumberOfFacesGrid3D_SG( self, nXface, nYface, nZface ) 
+    subroutine numberOfFacesGrid3D_SG( self, n_xface, n_yface, n_zface ) 
         implicit none
         !
         class( Grid3D_SG_t ), intent( in ) :: self
-        integer, intent( out ) :: nXface, nYface, nZface
+        integer, intent( out ) :: n_xface, n_yface, n_zface
         !
         integer :: nx, ny, nz
         
-        call self%Limits("XFACE", nx, ny, nz)
-        nXface = nx*ny*nz
+        call self%Limits( XFACE, nx, ny, nz )
+        n_xface = nx * ny * nz
         
-        call self%Limits("YFACE", nx, ny, nz)
-        nYface = nx*ny*nz
+        call self%Limits( YFACE, nx, ny, nz )
+        n_yface = nx * ny * nz
         
-        call self%Limits("ZFACE", nx, ny, nz)
-        nZface = nx*ny*nz
+        call self%Limits( ZFACE, nx, ny, nz )
+        n_zface = nx * ny * nz
         
-    end subroutine NumberOfFacesGrid3D_SG
+    end subroutine numberOfFacesGrid3D_SG
     !
     !> No subroutine briefing
-	!
-    function NumberOfNodesGrid3D_SG( self ) result(n)
+    !
+    function numberOfNodesGrid3D_SG( self ) result(n)
         implicit none
         !
         class( Grid3D_SG_t ), intent( in ) :: self
@@ -596,27 +593,39 @@ contains
         
         n = (self%nx + 1)*(self%ny + 1)*(self%nz + 1)
 
-    end function NumberOfNodesGrid3D_SG
+    end function numberOfNodesGrid3D_SG
     !
-    !> GridIndex
-    !>
+    !> No function briefing
+    !
+    function numberOfCellsGrid3D_SG( self ) result( n )
+        implicit none
+        !
+        class( Grid3D_SG_t ), intent( in ) :: self
+        !
+        integer :: n
+        !
+        stop "Error: numberOfCellsGrid3D_SG not implemented"
+        !
+    end function numberOfCellsGrid3D_SG
+    !
     !> Based on matlab method of same name in class Grid_t3D
     !> IndVec is the index within the list of nodes of a fixed type
     !> e.g., among the list of y-Faces.     An offset needs to be
     !> added to get index in list of all faces (for example).
-    subroutine GridIndexGrid3D_SG( self, nodeType, indVec, i, j, k )
+    !
+    subroutine gridIndexGrid3D_SG( self, node_type, ind_vec, i, j, k )
         implicit none
         !
         class( Grid3D_SG_t ), intent( in ) :: self
-        character(*), intent( in ) :: nodeType
-        integer, intent( in ) :: indVec(:)
+        character(*), intent( in ) :: node_type
+        integer, intent( in ) :: ind_vec(:)
         integer, intent( out ) :: i(:), j(:), k(:)
         !
         integer :: nx, ny, nz, nVec, ii
         real(4) :: rNxy, rNx
 
-        call self%Limits(nodeType, nx, ny, nz)
-        nVec = size(indVec)
+        call self%Limits(node_type, nx, ny, nz)
+        nVec = size(ind_vec)
         
         if(nVec.NE.size(i) ) then
              stop "Size of 'ind_vec' and 'i' do not agree."
@@ -634,36 +643,36 @@ contains
         rNx = float(nx)
         
         do ii = 1, nVec
-            i(ii) = mod(indVec(ii), nx)
-            j(ii) = mod(ceiling(float(indVec(ii) )/rNx), ny)
-            k(ii) = ceiling(float(indVec(ii) )/rNxy)
+            i(ii) = mod(ind_vec(ii), nx)
+            j(ii) = mod(ceiling(float(ind_vec(ii) )/rNx), ny)
+            k(ii) = ceiling(float(ind_vec(ii) )/rNxy)
         enddo
         
         where(i.EQ.0) i = nx
         where(j.EQ.0) j = ny
         where(k.EQ.0) k = nz
 
-    end subroutine GridIndexGrid3D_SG
+    end subroutine gridIndexGrid3D_SG
     !
-    !> VectorIndex
+    !> vectorIndex
     !
     !> Based on matlab method of same name in class Grid_t3D
     !> returned array IndVec gives numbering of nodes within
-    !> the list for nodeType; need to add an offset for position
+    !> the list for node_type; need to add an offset for position
     !> in full list of all faces or edges (not nodes and cells).
-    subroutine VectorIndexGrid3D_SG( self, nodeType, i, j, k, indVec )
+    subroutine vectorIndexGrid3D_SG( self, node_type, i, j, k, ind_vec )
         implicit none
         !
         class( Grid3D_SG_t ), intent( in ) :: self
-        character(*), intent( in ) :: nodeType
+        character(*), intent( in ) :: node_type
         integer, intent( in ) :: i(:), j(:), k(:)
-        integer, intent( out ) :: indVec(:)
+        integer, intent( out ) :: ind_vec(:)
         !
         integer :: nx, ny, nz, nxy, nVec, ii
         
-        call self%Limits(nodeType, nx, ny, nz)
+        call self%Limits(node_type, nx, ny, nz)
         
-        nVec = size(indVec)
+        nVec = size(ind_vec)
         
         if(nVec.NE.size (i) ) then
              stop "Size of 'ind_vec' and 'i' do not agree."
@@ -679,70 +688,66 @@ contains
         
         nxy = nx*ny
         do ii = 1, nVec
-             indVec(ii) = (K(ii) - 1) * nxy + (j(ii) - 1) * nx + i(ii)
+             ind_vec(ii) = (K(ii) - 1) * nxy + (j(ii) - 1) * nx + i(ii)
         enddo
         
-    end subroutine VectorIndexGrid3D_SG
+    end subroutine vectorIndexGrid3D_SG
     !
     !> No subroutine briefing
-    subroutine LimitsGrid3D_SG( self, nodeType, nx, ny, nz )
+    subroutine LimitsGrid3D_SG( self, node_type, nx, ny, nz )
         implicit none
         !
         class( Grid3D_SG_t ), intent( in ) :: self
-        character(*), intent( in ) :: nodeType
+        character(*), intent( in ) :: node_type
         integer, intent( out ) :: nx, ny, nz
         !
-        select case(nodeType)
-        case(CENTER)
-             nx = self%nx
-             ny = self%ny
-             nz = self%nz
-        case(CORNER)
-             nx = self%nx + 1
-             ny = self%ny + 1
-             nz = self%nz + 1
-        case(XEDGE)
-             nx = self%nx
-             ny = self%ny + 1
-             nz = self%nz + 1
-        case(XFACE)
-             nx = self%nx + 1
-             ny = self%ny
-             nz = self%nz
-        case(YEDGE)
-             nx = self%nx + 1
-             ny = self%ny
-             nz = self%nz + 1
-        case(YFACE)
-             nx = self%nx
-             ny = self%ny + 1
-             nz = self%nz
-        case(ZEDGE)
-             nx = self%nx + 1
-             ny = self%ny + 1
-             nz = self%nz
-        case(ZFACE)
-             nx = self%nx
-             ny = self%ny
-             nz = self%nz + 1
+        select case( node_type )
+        !
+            case(CENTER)
+                 nx = self%nx
+                 ny = self%ny
+                 nz = self%nz
+            case(CORNER)
+                 nx = self%nx + 1
+                 ny = self%ny + 1
+                 nz = self%nz + 1
+            case(XEDGE)
+                nx = self%nx
+                ny = self%ny + 1
+                nz = self%nz + 1
+                !
+            case(XFACE)
+                 nx = self%nx + 1
+                 ny = self%ny
+                 nz = self%nz
+            case(YEDGE)
+                 nx = self%nx + 1
+                 ny = self%ny
+                 nz = self%nz + 1
+            case(YFACE)
+                 nx = self%nx
+                 ny = self%ny + 1
+                 nz = self%nz
+            case(ZEDGE)
+                 nx = self%nx + 1
+                 ny = self%ny + 1
+                 nz = self%nz
+            case(ZFACE)
+                 nx = self%nx
+                 ny = self%ny
+                 nz = self%nz + 1
+                !
+            case default
+                !
+                write( *, * ) "Error: LimitsGrid3D_SG > Undefined node_type [", node_type, "]"
+                stop
+                !
         end select
         !
     end subroutine LimitsGrid3D_SG
     !
     !> No subroutine briefing
-	!
-    function IsAllocatedGrid3D_SG( self ) result(f)
-        implicit none
-        !
-        class( Grid3D_SG_t ), intent( in ) :: self
-        !
-        logical :: f
-        !
-        f = self%is_allocated
-    end function IsAllocatedGrid3D_SG
     !
-    !> No subroutine briefing
-	!
     function LengthGrid3D_SG( self ) result(n)
         class( Grid3D_SG_t ), intent( in ) :: self
         integer :: n
@@ -751,12 +756,4 @@ contains
         !
     end function LengthGrid3D_SG
     !
-    !> No subroutine briefing
-    subroutine Copy_fromGrid3D_SG(self, g)
-        implicit none
-        !
-        class( Grid3D_SG_t ), intent(inout) :: self
-        class(Grid_t), intent( in ) :: g
-    end subroutine Copy_fromGrid3D_SG
-    
 end module Grid3D_SG

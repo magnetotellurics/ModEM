@@ -106,17 +106,17 @@ contains
              allocate(self%v(nx + 1, ny + 1, nz + 1), STAT = status)    
              self%NdV = (/self%nx + 1, self%ny + 1, self%nz + 1/)
              
-        elseif( grid_type == CENTER) then             
+        else if( grid_type == CENTER) then             
              allocate(self%v(nx, ny, nz), STAT = status) 
              self%NdV = (/self%nx, self%ny, self%nz/)
              
-        elseif( grid_type == CELL_EARTH) then
+        else if( grid_type == CELL_EARTH) then
              self%nz = nz_earth
              allocate(self%v(nx, ny, nz_earth), STAT = status)
              self%NdV = (/nx, ny, nz_earth/)
              
         else
-             write( *, * ) "     "//achar(27)//"[31m# Error:"//achar(27)//"[0m cScalar3D_SG_ctor > unrecognized grid type: [", grid_type, "]"
+             write( *, * ) "Error: cScalar3D_SG_ctor > unrecognized grid type: [", grid_type, "]"
              stop
         endif
         !
@@ -182,7 +182,7 @@ contains
         implicit none
         !
         class( cScalar3D_SG_t ), intent( inout ) :: self
-        character(:), allocatable, intent( in ) :: bdry
+        character(*), intent( in ) :: bdry
         complex( kind=prec ), intent( in ) :: cvalue
         logical, intent( in ), optional :: int_only
         !
@@ -402,7 +402,7 @@ contains
             !
             self%v = R_ZERO
             !
-        elseif( self%store_state .EQ. singleton ) then
+        else if( self%store_state .EQ. singleton ) then
             !
             self%sv = R_ZERO
             !
@@ -453,7 +453,7 @@ contains
             !
             self%v = conjg( self%v )
             !
-        elseif( self%store_state .EQ. singleton ) then
+        else if( self%store_state .EQ. singleton ) then
             !
             self%sv = conjg( self%sv )
             !
@@ -487,7 +487,7 @@ contains
                         !
                         self%v = self%v + rhs%v
                         !
-                    elseif( rhs%store_state .EQ. singleton ) then
+                    else if( rhs%store_state .EQ. singleton ) then
                         !
                         self%sv = self%sv + rhs%sv
                         !
@@ -501,7 +501,7 @@ contains
                         !
                         self%v = self%v + rhs%v
                         !
-                    elseif( rhs%store_state .EQ. singleton ) then
+                    else if( rhs%store_state .EQ. singleton ) then
                         !
                         self%sv = self%sv + rhs%sv
                         !
@@ -542,7 +542,7 @@ contains
                         !
                         self%v = c1 * self%v + c2 * rhs%v
                         !
-                    elseif( rhs%store_state .EQ. singleton ) then
+                    else if( rhs%store_state .EQ. singleton ) then
                         !
                         self%sv = c1 * self%sv + c2 * rhs%sv
                         !
@@ -572,7 +572,7 @@ contains
             !
             self%v = self%v - cvalue
             !
-        elseif( self%store_state .EQ. singleton ) then
+        else if( self%store_state .EQ. singleton ) then
             !
             self%sv = self%sv - cvalue
             !
@@ -602,7 +602,7 @@ contains
                         !
                         self%v = self%v - rhs%v
                         !
-                    elseif( rhs%store_state .EQ. singleton ) then
+                    else if( rhs%store_state .EQ. singleton ) then
                         !
                         self%sv = self%sv - rhs%sv
                         !
@@ -616,7 +616,7 @@ contains
                         !
                         self%v = self%v - rhs%v
                         !
-                    elseif( rhs%store_state .EQ. singleton ) then
+                    else if( rhs%store_state .EQ. singleton ) then
                         !
                         self%sv = self%sv - rhs%sv
                         !
@@ -647,7 +647,7 @@ contains
             !
             self%v = self%v * rvalue
             !
-        elseif( self%store_state .EQ. singleton ) then
+        else if( self%store_state .EQ. singleton ) then
             !
             self%sv = self%sv * rvalue
             !
@@ -669,7 +669,7 @@ contains
             !
             self%v = self%v * cvalue
             !
-        elseif( self%store_state .EQ. singleton ) then
+        else if( self%store_state .EQ. singleton ) then
             !
             self%sv = self%sv * cvalue
             !
@@ -699,7 +699,7 @@ contains
                         !
                         self%v = self%v * rhs%v
                         !
-                    elseif( rhs%store_state .EQ. singleton ) then
+                    else if( rhs%store_state .EQ. singleton ) then
                         !
                         self%sv = self%sv * rhs%sv
                         !
@@ -713,7 +713,7 @@ contains
                         !
                         self%v = self%v * rhs%v
                         !
-                    elseif( rhs%store_state .EQ. singleton ) then
+                    else if( rhs%store_state .EQ. singleton ) then
                         !
                         self%sv = self%sv * rhs%sv
                         !
@@ -753,7 +753,7 @@ contains
                         !
                         self%v = self%v + cvalue * rhs%v
                         !
-                    elseif( rhs%store_state .EQ. singleton ) then
+                    else if( rhs%store_state .EQ. singleton ) then
                         !
                         self%sv = self%sv + cvalue * rhs%sv
                         !
@@ -782,33 +782,34 @@ contains
         !
         complex( kind=prec ) :: cvalue
         !
-        type( cScalar3D_SG_t ) :: aux_vec
-        !
         if( self%isCompatible( rhs ) ) then
             !
-            aux_vec = self
-            if( aux_vec%store_state /= rhs%store_state ) call aux_vec%switchStoreState
-            !
-            select type( rhs )
+            if( self%store_state == rhs%store_state ) then
                 !
-                class is( cScalar3D_SG_t )
+                select type( rhs )
                     !
-                    if( rhs%store_state .EQ. compound ) then
+                    class is( cScalar3D_SG_t )
                         !
-                        cvalue = sum( conjg( aux_vec%v ) * rhs%v )
+                        if( rhs%store_state .EQ. compound ) then
+                            !
+                            cvalue = sum( conjg( self%v ) * rhs%v )
+                            !
+                        else if( rhs%store_state .EQ. singleton ) then
+                            !
+                            cvalue = sum( conjg( self%sv ) * rhs%sv )
+                            !
+                        else
+                            stop "Error: dotProdRVector3D_SG > Unknown rhs store_state!"
+                        endif
                         !
-                    elseif( rhs%store_state .EQ. singleton ) then
-                        !
-                        cvalue = sum( conjg( aux_vec%sv ) * rhs%sv )
-                        !
-                    else
-                        stop "Error: dotProdRVector3D_SG > Unknown rhs store_state!"
-                    endif
+                    class default
+                        stop "Error: dotProdCScalar3D_SG > undefined rhs"
                     !
-                class default
-                    stop "Error: dotProdCScalar3D_SG > undefined rhs"
+                end select
                 !
-            end select
+            else
+                stop "Error: dotProdCScalar3D_SG > Incompatible store_state"
+            endif
             !
         else
             stop "Error: dotProdCScalar3D_SG > Incompatible rhs"
@@ -828,7 +829,7 @@ contains
             !
             self%v = self%v / cvalue
             !
-        elseif( self%store_state .EQ. singleton ) then
+        else if( self%store_state .EQ. singleton ) then
             !
             self%sv = self%sv / cvalue
             !
@@ -858,7 +859,7 @@ contains
                         !
                         self%v = self%v / rhs%v
                         !
-                    elseif( rhs%store_state .EQ. singleton ) then
+                    else if( rhs%store_state .EQ. singleton ) then
                         !
                         self%sv = self%sv / rhs%sv
                         !
@@ -872,7 +873,7 @@ contains
                         !
                         self%v = self%v / rhs%v
                         !
-                    elseif( rhs%store_state .EQ. singleton ) then
+                    else if( rhs%store_state .EQ. singleton ) then
                         !
                         self%sv = self%sv / rhs%sv
                         !
@@ -928,7 +929,7 @@ contains
             allocate( array( self%length() ) )
             array = (/reshape( self%v, (/self%Nxyz, 1/))/)
             !
-        elseif( self%store_state .EQ. singleton ) then
+        else if( self%store_state .EQ. singleton ) then
             !
             array = self%sv
             !
@@ -950,7 +951,7 @@ contains
             !
             self%v = reshape( array, (/self%NdV(1), self%NdV(2), self%NdV(3)/) )
             !
-        elseif( self%store_state .EQ. singleton ) then
+        else if( self%store_state .EQ. singleton ) then
             !
             self%sv = array
             !
@@ -987,18 +988,18 @@ contains
                     !
                     allocate( self%v( self%nx + 1, self%ny + 1, self%nz + 1 ) )
                     !
-                elseif( self%grid_type == CENTER ) then
+                else if( self%grid_type == CENTER ) then
                     !
                     allocate( self%v( self%nx, self%ny, self%nz ) )
                     !
-                elseif( self%grid_type == CELL_EARTH ) then
+                else if( self%grid_type == CELL_EARTH ) then
                     !
                     call self%grid%getDimensions( self%nx, self%ny, self%nz, nzAir )
                     !
                     allocate( self%v( self%nx, self%ny, self%nz - nzAir ) )
                     !
                 else
-                     write( *, * ) "     "//achar(27)//"[31m# Error:"//achar(27)//"[0m switchStoreStateCScalar3D_SG > unrecognized grid type: [", self%grid_type, "]"
+                     write( *, * ) "Error: switchStoreStateCScalar3D_SG > unrecognized grid type: [", self%grid_type, "]"
                      stop
                 endif
                 !
@@ -1009,7 +1010,7 @@ contains
                 self%store_state = compound
                 !
             case default
-                write( *, * ) "     "//achar(27)//"[31m# Error:"//achar(27)//"[0m switchStoreStateCScalar3D_SG > Unknown store_state :[", self%store_state, "]"
+                write( *, * ) "Error: switchStoreStateCScalar3D_SG > Unknown store_state :[", self%store_state, "]"
                 stop
             !
         end select
@@ -1046,7 +1047,7 @@ contains
                     !
                     self%v = rhs%v
                     !
-                elseif( rhs%store_state .EQ. singleton ) then
+                else if( rhs%store_state .EQ. singleton ) then
                     !
                     self%sv = rhs%sv
                     !
@@ -1063,7 +1064,7 @@ contains
                     !
                     self%v = rhs%v
                     !
-                elseif( rhs%store_state .EQ. singleton ) then
+                else if( rhs%store_state .EQ. singleton ) then
                     !
                     self%sv = rhs%sv
                     !
@@ -1103,7 +1104,7 @@ contains
         !
         if( .NOT. present( ftype ) ) then
              binary = .FALSE.
-        elseif( index (ftype, "b") > 0) then
+        else if( index (ftype, "b") > 0) then
              binary = .TRUE.
         else
              binary = .FALSE.
@@ -1116,13 +1117,13 @@ contains
             !> check that the file is unformatted if binary, formatted if ascii
             if( (index(isbinary, "yes") > 0 .OR. index(isbinary, "YES") > 0) &
                      .AND.  .NOT. binary) then             
-                 write( *, * ) "     "//achar(27)//"[31m# Error:"//achar(27)//"[0m cScalar3D_SG_t::readCScalar3D_SG: "
+                 write( *, * ) "Error: cScalar3D_SG_t::readCScalar3D_SG: "
                  write( *, * ) "            Unable to read scalar from unformatted file ", &
                             trim(fname), ".Exiting."
                  stop
-            elseif( (index(isbinary, "no") > 0 .OR. index(isbinary, "NO") > 0) &
+            else if( (index(isbinary, "no") > 0 .OR. index(isbinary, "NO") > 0) &
                      .AND.binary) then
-                 write( *, * ) "     "//achar(27)//"[31m# Error:"//achar(27)//"[0m cScalar3D_SG_t::readCScalar3D_SG: "
+                 write( *, * ) "Error: cScalar3D_SG_t::readCScalar3D_SG: "
                  write( *, * ) "            Unable to read scalar from formatted file ", &
                             trim(fname), ". Exiting."
                  stop
@@ -1146,10 +1147,10 @@ contains
                  if( istat /= 0) exit
                  !
                  if( (k1 < 0) .OR. (k2 > Nz)) then
-                        write( *, * ) "     "//achar(27)//"[31m# Error:"//achar(27)//"[0m cScalar3D_SG::readCScalar3D_SG: "
+                        write( *, * ) "Error: cScalar3D_SG::readCScalar3D_SG: "
                         write( *, * ) "      While reading the ", i, "th block. Exiting."
                         stop
-                 elseif( k1 > k2) then
+                 else if( k1 > k2) then
                         write( *, * ) "Warning: cScalar3D_SG::readCScalar3D_SG: "
                         write( *, * ) "                Block ", i, " will be ignored."
                  endif
@@ -1158,7 +1159,7 @@ contains
                         read(funit, *, iostat = istat) temp
                         
                         if( istat /= 0) then
-                             write( *, * ) "     "//achar(27)//"[31m# Error:"//achar(27)//"[0m cScalar3D_SG::readCScalar3D_SG: "
+                             write( *, * ) "Error: cScalar3D_SG::readCScalar3D_SG: "
                              write( *, * ) "            While reading the ", j, "th row in ", i,"th block. Exiting."
                              stop
                         endif
@@ -1208,7 +1209,7 @@ contains
         !
         if(  .NOT. present(ftype)) then
              binary = .FALSE.
-        elseif( index(ftype, "b") > 0) then
+        else if( index(ftype, "b") > 0) then
              binary = .TRUE.
         else
              binary = .FALSE.
@@ -1220,14 +1221,14 @@ contains
             !
             if( (index(isbinary, "yes") > 0 .OR. index(isbinary, "YES") > 0) &
                      .AND. .NOT. binary) then             
-                 write( *, * ) "     "//achar(27)//"[31m# Error:"//achar(27)//"[0m cScalar3D_SG::writeCScalar3D_SG: "
+                 write( *, * ) "Error: cScalar3D_SG::writeCScalar3D_SG: "
                  write( *, * ) "            Unable to write vector to unformatted file ", &
                             trim(fname), ". Exiting."
                  !
                  stop
-            elseif( (index(isbinary,"no") > 0 .OR. index(isbinary,"NO") > 0) &
+            else if( (index(isbinary,"no") > 0 .OR. index(isbinary,"NO") > 0) &
                      .AND.binary) then
-                 write( *, * ) "     "//achar(27)//"[31m# Error:"//achar(27)//"[0m cScalar3D_SG::writeCScalar3D_SG: "
+                 write( *, * ) "Error: cScalar3D_SG::writeCScalar3D_SG: "
                  write( *, * ) " Unable to write vector to formatted file ", &
                             trim(fname), ". Exiting."
                  !
@@ -1265,7 +1266,7 @@ contains
                  write(funit, "(2i5)", iostat = istat) k1, k2
                  !
                  if( istat /= 0) then
-                        write( *, * ) "     "//achar(27)//"[31m# Error:"//achar(27)//"[0m cScalar3D_SG::writeCScalar3D_SG: "
+                        write( *, * ) "Error: cScalar3D_SG::writeCScalar3D_SG: "
                         write( *, * ) "            Failed while writing to file. Exiting."
                         
                         stop

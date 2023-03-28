@@ -7,6 +7,11 @@ module Field
     use Constants
     use Grid
     !
+    character(:), allocatable :: field_type
+    character( len=13 ), parameter :: FIELD_STD = "StandardField"
+    character( len=17 ), parameter :: FIELD_SP = "SparseMatrixField"
+    character( len=19 ), parameter :: FIELD_SP2 = "SparseMatrixFieldV2"
+    !
     type, abstract :: Field_t
         !
         class( Grid_t ), pointer :: grid
@@ -53,7 +58,6 @@ module Field
             procedure( interface_mult_add_field ), deferred, public :: multAdd
             !
             procedure( interface_dot_product_field ), deferred, public :: dotProd
-            generic :: operator(.dot.) => dotProd
             !
             procedure( interface_field_div_by_field ), deferred, public :: divByField
             procedure( interface_field_div_by_value ), deferred, public :: divByValue
@@ -113,7 +117,7 @@ module Field
         subroutine interface_set_one_boundary_field( self, bdry, cvalue, int_only )
             import :: Field_t, prec
             class( Field_t ), intent( inout ) :: self
-            character(:), allocatable, intent( in ) :: bdry
+            character(*), intent( in ) :: bdry
             complex( kind=prec ), intent( in ) :: cvalue
             logical, intent( in ), optional :: int_only
         end subroutine interface_set_one_boundary_field

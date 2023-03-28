@@ -18,6 +18,7 @@ module Grid
     character( len=6 ), parameter :: MM_METHOD_MIRROR = "mirror"
     !
     integer :: model_n_air_layer
+    !
     real( kind=prec ) :: model_max_height
     !
     type, abstract :: Grid_t
@@ -29,22 +30,18 @@ module Grid
         real( kind=prec ) :: rotDeg
         !
         integer :: nx, ny, nz
-        !
         integer :: nzAir   !> Number of air layers
         integer :: nzEarth !> Number of earth layers
         !
         real( kind=prec ), allocatable, dimension(:) :: dx, dy, dz
         real( kind=prec ), allocatable, dimension(:) :: dxInv, dyInv, dzInv
         !
-        real( kind=prec ), allocatable, dimension(:) :: delX, delY, delZ
+        real( kind=prec ), allocatable, dimension(:) :: del_x, del_y, del_z
         real( kind=prec ), allocatable, dimension(:) :: delXInv, delYInv, delZInv
         !
-        real( kind=prec ), allocatable, dimension(:) :: xEdge
-        real( kind=prec ), allocatable, dimension(:) :: yEdge
-        real( kind=prec ), allocatable, dimension(:) :: zEdge
-        real( kind=prec ), allocatable, dimension(:) :: xCenter
-        real( kind=prec ), allocatable, dimension(:) :: yCenter
-        real( kind=prec ), allocatable, dimension(:) :: zCenter
+        real( kind=prec ), allocatable, dimension(:) :: xEdge, yEdge, zEdge
+        !
+        real( kind=prec ), allocatable, dimension(:) :: xCenter, yCenter, zCenter
         !
         real( kind=prec ) :: zAirThick
         !
@@ -55,115 +52,107 @@ module Grid
             procedure, public :: init => initializeGrid
             procedure, public :: dealloc => deallocateGrid
             !
-            procedure(interface_NumberOfEdges), deferred, public :: NumberOfEdges
-            procedure(interface_NumberOfFaces), deferred, public :: NumberOfFaces
-            procedure(interface_NumberOfNodes), deferred, public :: NumberOfNodes
-            procedure(interface_GridIndex), deferred, public :: GridIndex
-            procedure(interface_VectorIndex), deferred, public :: VectorIndex
-            procedure(interface_Limits), deferred, public :: Limits
-            procedure(interface_IsAllocated), deferred, public :: IsAllocated
-
-            procedure(interface_Copy_from), deferred, public :: Copy_from
-
-            procedure(interface_SetCellSizes), deferred, public :: SetCellSizes
-
-            procedure(interface_slice_1d_grid), deferred, public :: Slice1D
-            procedure(interface_slice_2d_grid), deferred, public :: Slice2D
-            
-            procedure, public :: getDimensions => GetDimensionsGrid
-            
-            procedure, public :: SetOrigin
-            procedure, public :: GetOrigin
-
-            procedure, public :: SetGridRotation
-            procedure, public :: GetGridRotation
-
-            procedure, public :: SetGridGeometry
-            procedure, public :: GetGridGeometry
-
+            procedure( interface_numberOfEdges ), deferred, public :: numberOfEdges
+            procedure( interface_numberOfFaces ), deferred, public :: numberOfFaces
+            procedure( interface_numberOfNodes ), deferred, public :: numberOfNodes
+            procedure( interface_numberOfCells ), deferred, public :: numberOfCells
+            procedure( interface_gridIndex ), deferred, public :: gridIndex
+            procedure( interface_vectorIndex ), deferred, public :: vectorIndex
+            procedure( interface_Limits ), deferred, public :: limits
+            !
+            procedure( interface_setcellsizes ), deferred, public :: setCellSizes
+            !
+            procedure( interface_slice_1d_grid ), deferred, public :: slice1D
+            procedure( interface_slice_2d_grid ), deferred, public :: slice2D
+            !
+            procedure, public :: getDimensions => getDimensionsGrid
+            !
+            procedure, public :: setOrigin
+            procedure, public :: getOrigin
+            !
+            procedure, public :: setGridRotation
+            procedure, public :: getGridRotation
+            !
+            procedure, public :: setGridGeometry
+            procedure, public :: getGridGeometry
+            !
     end type Grid_t
     !
     abstract interface
         !
         !> No interface subroutine briefing
-        subroutine interface_NumberOfEdges( self, nXedge, nYedge, nZedge )
+        subroutine interface_numberOfEdges( self, n_xedge, n_yedge, n_zedge )
             import :: Grid_t
             class( Grid_t ), intent( in ) :: self
-            integer, intent( out ) :: nXedge, nYedge, nZedge
-        end subroutine interface_NumberOfEdges
+            integer, intent( out ) :: n_xedge, n_yedge, n_zedge
+        end subroutine interface_numberOfEdges
         !
         !> No interface subroutine briefing
-        subroutine interface_NumberOfFaces(self, nXface, nYface, nZface) 
+        subroutine interface_numberOfFaces( self, n_xface, n_yface, n_zface ) 
             import :: Grid_t
             class( Grid_t ), intent( in ) :: self
-            integer, intent( out ) :: nXface, nYface, nZface
-        end subroutine interface_NumberOfFaces
+            integer, intent( out ) :: n_xface, n_yface, n_zface
+        end subroutine interface_numberOfFaces
         !
         !> No interface function briefing
-        function interface_NumberOfNodes( self ) result(n)
+        function interface_numberOfNodes( self ) result(n)
             import :: Grid_t
             class( Grid_t ), intent( in ) :: self
             integer :: n
-        end function interface_NumberOfNodes
+        end function interface_numberOfNodes
         !
-        !> GridIndex
+        !> No interface function briefing
+        function interface_numberOfCells( self ) result(n)
+            import :: Grid_t
+            class( Grid_t ), intent( in ) :: self
+            integer :: n
+        end function interface_numberOfCells
         !
         !> Based on matlab method of same name in class Grid_t
         !> IndVec is the index within the list of nodes of a fixed type
         !> e.g., among the list of y-Faces.     An offset needs to be
         !> added to get index in list of all faces (for example).
-        subroutine interface_GridIndex(self, nodeType, indVec, i, j, k)
+        !
+        subroutine interface_gridIndex( self, node_type, ind_vec, i, j, k )
             import :: Grid_t
             class( Grid_t ), intent( in ) :: self
-            character(*), intent( in ) :: nodeType
-            integer, dimension (:), intent( in ) :: indVec
+            character(*), intent( in ) :: node_type
+            integer, dimension (:), intent( in ) :: ind_vec
             integer, dimension (:), intent( out ) :: i, j, k
-        end subroutine interface_GridIndex
-        !
-        !> VectorIndex
+        end subroutine interface_gridIndex
         !
         !> Based on matlab method of same name in class Grid_t
         !> returned array IndVec gives numbering of nodes within
-        !> the list for nodeType; need to add an offset for position
+        !> the list for node_type; need to add an offset for position
         !> in full list of all faces or edges (not nodes and cells).
-        subroutine interface_VectorIndex(self, nodeType, i, j, k, indVec)
+        !
+        subroutine interface_vectorIndex(self, node_type, i, j, k, ind_vec)
             import :: Grid_t
             class( Grid_t ), intent( in ) :: self
-            character(*), intent( in ) :: nodeType
+            character(*), intent( in ) :: node_type
             integer, dimension (:), intent( in ) :: i, j, k
-            integer, dimension (:), intent( out ) :: indVec
-        end subroutine interface_VectorIndex
+            integer, dimension (:), intent( out ) :: ind_vec
+        end subroutine interface_vectorIndex
         !
         !> No interface subroutine briefing
-        subroutine interface_Limits(self, nodeType, nx, ny, nz)
+        !
+        subroutine interface_Limits(self, node_type, nx, ny, nz)
             import :: Grid_t
             class( Grid_t ), intent( in ) :: self
-            character(*), intent( in ) :: nodeType
+            character(*), intent( in ) :: node_type
             integer, intent( out ) :: nx, ny, nz
         end subroutine interface_Limits
         !
-        !> No interface function briefing
-        function interface_IsAllocated( self ) result(f)
-            import :: Grid_t
-            class( Grid_t ), intent( in ) :: self
-            logical :: f
-        end function interface_IsAllocated
-        !
         !> No interface subroutine briefing
-        subroutine interface_Copy_from(self, g)
-            import :: Grid_t
-            class( Grid_t ), intent(inout) :: self
-            class( Grid_t ), intent( in ) :: g
-        end subroutine interface_Copy_from
         !
-        !> No interface subroutine briefing
-        subroutine interface_SetCellSizes(self, dx, dy, dz)
+        subroutine interface_SetCellSizes( self, dx, dy, dz )
             import :: Grid_t, prec
-            class( Grid_t ), intent(inout) :: self
+            class( Grid_t ), intent( inout ) :: self
             real( kind=prec ), dimension(:), intent( in ) :: dx, dy, dz
         end subroutine interface_SetCellSizes
         !
         !> No interface function briefing
+        !
         function interface_slice_1d_grid( self ) result( g1D )
             import :: Grid_t, Grid1D_t
             class( Grid_t ), intent( in ) :: self
@@ -171,6 +160,7 @@ module Grid
         end function interface_slice_1d_grid
         !
         !> No interface function briefing
+        !
         function interface_slice_2d_grid( self ) result( g2D )
             import :: Grid_t, Grid2D_t
             class( Grid_t ), intent( in ) :: self
@@ -182,6 +172,7 @@ module Grid
 contains
     !
     !> No subroutine briefing
+    !
     subroutine GetDimensionsGrid( self, nx, ny, nz, nzAir )
         implicit none
         !
@@ -196,64 +187,72 @@ contains
     end subroutine GetDimensionsGrid
     !
     !> No subroutine briefing
-    subroutine SetOrigin(self, ox, oy, oz)
+    !
+    subroutine SetOrigin( self, ox, oy, oz )
         implicit none
         !
         class( Grid_t ), intent(inout) :: self
         real( kind=prec ), intent( in ) :: ox, oy, oz
-        
+        !
         self%ox = ox
         self%oy = oy
         self%oz = oz
+        !
     end subroutine SetOrigin
     !
     !> No subroutine briefing
-    subroutine GetOrigin(self, ox, oy, oz)
+    !
+    subroutine GetOrigin( self, ox, oy, oz )
         implicit none
         !
         class( Grid_t ), intent( in ) :: self
         real( kind=prec ), intent( out ) :: ox, oy, oz
-        
+        !
         ox = self%ox
         oy = self%oy
         oz = self%oz
+        !
     end subroutine GetOrigin
     !
     !> No subroutine briefing
-    subroutine SetGridRotation(self, rotDeg)
+    !
+    subroutine SetGridRotation( self, rotDeg )
         implicit none
         !
-        class( Grid_t ), intent(inout) :: self
+        class( Grid_t ), intent( inout ) :: self
         real( kind=prec ), intent( in ) :: rotDeg
-        
+        !
         self%rotDeg = rotDeg
+        !
     end subroutine SetGridRotation
     !
     !> No subroutine briefing
-	!
+    !
     function GetGridRotation( self ) result(rotDeg)
         implicit none
         !
         class( Grid_t ), intent( in ) :: self
         !
         real( kind=prec ) :: rotDeg
-        
+        !
         rotDeg = self%rotDeg
+        !
     end function GetGridRotation
     !
     !> No subroutine briefing
-    subroutine SetGridGeometry(self, s)
+    !
+    subroutine SetGridGeometry( self, s )
         implicit none
         !
-        class( Grid_t ), intent(inout) :: self
+        class( Grid_t ), intent( inout ) :: self
         character(*), intent( in ) :: s
         !
         self%geometry = s
         !
     end subroutine SetGridGeometry
     !
-    !> No subroutine briefing
-	!
+    !> No function briefing
+    !
     function GetGridGeometry( self ) result(s)
         implicit none
         !
@@ -266,6 +265,7 @@ contains
     end function GetGridGeometry
     !
     !> No subroutine briefing
+    !
     subroutine initializeGrid( self )
         implicit none
         !
@@ -293,6 +293,7 @@ contains
     end subroutine initializeGrid
     !
     !> No subroutine briefing
+    !
     subroutine deallocateGrid( self )
         implicit none
         !
@@ -310,9 +311,9 @@ contains
         deallocate( self%dyInv )
         deallocate( self%dzInv )
         !
-        deallocate( self%delX )
-        deallocate( self%delY )
-        deallocate( self%delZ )
+        deallocate( self%del_x )
+        deallocate( self%del_y )
+        deallocate( self%del_z )
         !
         deallocate( self%delXInv )
         deallocate( self%delYInv )

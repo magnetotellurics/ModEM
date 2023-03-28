@@ -60,7 +60,7 @@ Module Esoln2DTM
     !
     !> No subroutine briefing
     subroutine Esoln2DTM_dtor( self )
-        type(Esoln2DTM_T) :: self
+        type(Esoln2DTM_T) ::    self
 
         if(self%is_allocated) then
             deallocate(self%Ey)

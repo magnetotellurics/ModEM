@@ -213,7 +213,7 @@ module Forward1D
             else
                 zLayer = z(i)
             endif
-            if( layerInd .GT. 0 ) then
+            if( layerInd .GT. 0) then
                 !> downgoing and upgoing coeffcients for this layer
                 d = b(2*layerInd-1)
                 if(layerInd .lt. nlayer) then

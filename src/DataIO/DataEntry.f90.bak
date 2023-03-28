@@ -10,9 +10,7 @@ module DataEntry
         integer :: id
         character(:), allocatable :: type, code, component
         real( kind=prec ) :: period, location(3)
-        real( kind=prec ) :: real, imaginary, error, azimuth
-        !
-        logical :: is_complex
+        real( kind=prec ) :: real, imaginary, error
         !
     contains
         !
@@ -20,6 +18,7 @@ module DataEntry
         procedure( interface_get_copy_data_entry ), deferred, public :: getCopy
         !
         procedure, public :: isEqual => isEqualDe
+        procedure, public :: isComplex => isComplexDe
         !
     end type DataEntry_t
     !
@@ -65,5 +64,22 @@ contains
         endif
         !
     end function isEqualDe
+    !
+    !> No subroutine briefing
 	!
+    function isComplexDe( self ) result ( complex )
+        class( DataEntry_t ), intent( in ) :: self
+        logical :: complex
+        !
+        complex = .TRUE.
+        !
+        if( ( index( self%type, "Off_Diagonal_Rho_Phase" ) /= 0 ) .OR.   &
+            ( index( self%type, "Phase_Tensor" ) /= 0 ) ) then
+        !
+            complex = .FALSE.
+        !
+        endif
+        !
+    end function isComplexDe
+    !
 end module DataEntry

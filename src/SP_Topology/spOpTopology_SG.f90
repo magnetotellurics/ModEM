@@ -1,62 +1,92 @@
 !
-!> Not sure what this module really represents ... if just topology
-!> do we want to keep the grid here?
-!> type(grid_t), private, target ::      mGrid   ! The model grid
+!> This file is part of the ModEM modeling and inversion package.
+!> 
+!> LICENSING information
 !
-!> This could just be topology, or we could put metric elements here
-!> Also ... then we would also have actual curl-curl + diagonal(A)
+!> Copyright (C) 2020 ModEM research group.
+!> Contact: http://
+!
+!> GNU General Public License Usage
+!> This file may be used under the terms of the GNU
+!> General Public License version 3.0 as published by the Free Software
+!> Foundation and appearing in the file LICENSE.GPL included in the
+!> packaging of this file.  Please review the following information to
+!> ensure the GNU General Public License version 3.0 requirements will be
+!> met: http://www.gnu.org/copyleft/gpl.html.
+!> 
+!> SUMMARY
+!> 
+!> No Module briefing
 !
 module spOpTopology_SG
     !
-    use SpOpTools
+    use spOpTopology
+    use Grid3D_SG
     !
-    implicit none
+    type, extends( spOpTopology_t ) :: spOpTopology_SG_t
+        !
+        class( Grid_t ), pointer :: grid
+        !
+        contains
+            !
+            procedure, public :: curl => curlSpOpTopology_SG
+            !
+            procedure, public :: grad => gradSpOpTopology_SG
+            !
+    end type spOpTopology_SG_t
     !
-    !> Sparse grad topology : maps from all nodes to all edges
-    type( spMatCSR_Real ) :: G
-    !
-    !> Sparse curl topology : maps from all edges to all faces
-    type( spMatCSR_Real ) :: T
+    interface spOpTopology_SG_t
+        module procedure spOpTopology_SG_ctor
+    end interface spOpTopology_SG_t
     !
 contains
     !
-    !> This maps from all edges to all faces; rows of matrix correspond to  faces
-    !> enumerated with all xFaces, then yFaces, then zFaces
-    !> Columns follow a similar pattern for edges
-    !
-    subroutine setCurlTopology( grid )
+    function spOpTopology_SG_ctor( grid ) result( self )
         implicit none
         !
-        class( Grid_t ), intent( in ) :: grid 
+        class( Grid_t ), pointer, intent( in ) :: grid
         !
-        integer :: nXedge, nYedge, nZedge, nXface, nYface, nZface, ii, jj, n, m, nz
-        integer, allocatable, dimension(:) :: IndVec, I, J, K
+        type( spOpTopology_SG_t ) :: self
         !
-        call nEdgesSP(grid, nXedge, nYedge, nZedge)
-        call nFacesSP(grid, nXface, nYface, nZface)
+        self%grid => grid
         !
-        m = nXface+nYface+nZface
-        n = nXedge+nYedge+nZedge
-        nz = 4*m
+    end function spOpTopology_SG_ctor
+    !
+    subroutine curlSpOpTopology_SG( self, T ) 
+        implicit none
         !
-        call create_spMatCSR(m, n, nz, T)
+        class( spOpTopology_SG_t ), intent( inout ) :: self
+        type( spMatCSR_Real ), intent( inout ) :: T
+        !  
+        integer :: nXedge, nYedge, nZedge
+        integer :: nXface, nYface, nZface
+        integer :: ii, jj, n, m, nz
+        integer, dimension (:), allocatable :: IndVec, I, J, K
         !
-        ! write(0, *) "m, n, nz for Curl", m, n, nz
+        call self%grid%numberOfEdges( nXedge, nYedge, nZedge )
         !
-        deallocate(T%row)
-        allocate(T%row(T%nRow+1))
+        call self%grid%numberOfFaces( nXface, nYface, nZface )
         !
-        deallocate(T%col)
-        allocate(T%col(4*T%nRow))
+        m = nXface + nYface + nZface
+        n = nXedge + nYedge + nZedge
+        nz = 4 * m
         !
-        deallocate(T%val)
-        allocate(T%val(4*T%nRow))
+        call create_spMatCSR( m, n, nz, T )
+        !
+        deallocate( T%row )
+        allocate( T%row( T%nRow + 1 ) )
+        !
+        deallocate( T%col )
+        allocate( T%col( 4 * T%nRow ) )
+        !
+        deallocate( T%val )
+        allocate( T%val( 4 * T%nRow ) )
         !
         T%row(1) = 1
+        !
         do ii = 1, T%nRow
-            T%row(ii+1) = 4*ii+1
-            ! probably better to set values as we go ...
-        enddo
+            T%row( ii +  1) = 4 * ii + 1
+        end do
         !
         ! xFaces
         allocate(IndVec(nXface))
@@ -64,101 +94,95 @@ contains
         allocate(J(nXface))
         allocate(K(nXface))
         !
-        do ii=1, nXface
+        do ii = 1, nXface
             IndVec(ii) = ii
-        enddo
+        end do
         !
-        call gridIndexSP("XFACE", grid, IndVec, I, J, K)
-        call vectorIndexSP("YEDGE", grid, I, J, K, IndVec)
-        !
-        do ii = 1, nXface
-            T%col(4*ii-3) = IndVec(ii)+nXedge
-            T%val(4*ii-3) = 1
-        enddo
-        !
-        call vectorIndexSP("ZEDGE", grid, I, J, K, IndVec)
+        call self%grid%gridIndex( XFACE, IndVec, I, J, K )
+        call self%grid%vectorIndex( YEDGE, I, J, K, IndVec )
         !
         do ii = 1, nXface
-            T%col(4*ii-1) = IndVec(ii)+nXedge+nYedge
-            T%val(4*ii-1) = -1
-        enddo
+            T%col( 4 * ii - 3 ) = IndVec(ii) + nXedge
+            T%val( 4 * ii - 3 ) = 1
+        end do
         !
-        K = K+1
-        !
-        call vectorIndexSP("YEDGE", grid, I, J, K, IndVec)
+        call self%grid%vectorIndex( ZEDGE, I, J, K, IndVec )
         !
         do ii = 1, nXface
-            T%col(4*ii-2) = IndVec(ii)+nXedge
-            T%val(4*ii-2) = -1
-        enddo
+            T%col( 4 * ii - 1 ) = IndVec(ii) + nXedge + nYedge
+            T%val( 4 * ii - 1 ) = -1
+        end do
         !
-        K = K-1
-        J = J+1
+        K = K + 1
         !
-        call vectorIndexSP("ZEDGE", grid, I, J, K, IndVec)
+        call self%grid%vectorIndex ( YEDGE, I, J, K, IndVec )
         !
         do ii = 1, nXface
-            T%col(4*ii) = IndVec(ii)+nXedge+nYedge
+            T%col(4*ii - 2) = IndVec(ii) + nXedge
+            T%val(4*ii - 2) = -1
+        end do
+        !
+        K = K - 1
+        J = J + 1
+        !
+        call self%grid%vectorIndex ( ZEDGE, I, J, K, IndVec )
+        !
+        do ii = 1, nXface
+            T%col(4*ii) = IndVec(ii) + nXedge + nYedge
             T%val(4*ii) = 1
-        enddo
+        end do
         !
-        deallocate(IndVec)
-        deallocate(I)
-        deallocate(J)
-        deallocate(K)
+        deallocate( IndVec, I, J, K )
         !
         ! yFaces
-        allocate(IndVec(nYface))
-        allocate(I(nYface))
-        allocate(J(nYface))
-        allocate(K(nYface))
+        allocate( IndVec( nYface ) )
+        allocate( I( nYface ) )
+        allocate( J( nYface ) )
+        allocate( K( nYface ) )
         !
-        do ii=1, nYface
+        do ii = 1, nYface
             IndVec(ii) = ii
-        enddo
+        end do
         !
-        call gridIndexSP("YFACE", grid, IndVec, I, J, K)
-        call vectorIndexSP("XEDGE", grid, I, J, K, IndVec)
-        !
-        do ii = 1, nYface
-            jj = ii + nXface
-            T%col(4*jj-3) = IndVec(ii)
-            T%val(4*jj-3) = -1
-        enddo
-        !
-        call vectorIndexSP("ZEDGE", grid, I, J, K, IndVec)
+        call self%grid%gridIndex( YFACE, IndVec, I, J, K )
+        call self%grid%vectorIndex( XEDGE, I, J, K, IndVec )
         !
         do ii = 1, nYface
             jj = ii + nXface
-            T%col(4*jj-1) = IndVec(ii)+nXedge+nYedge
-            T%val(4*jj-1) = 1
-        enddo
+            T%col(4*jj - 3) = IndVec(ii)
+            T%val(4*jj - 3) = -1
+        end do
         !
-        K = K+1
-        !
-        call vectorIndexSP("XEDGE", grid, I, J, K, IndVec)
+        call self%grid%vectorIndex(ZEDGE, I, J, K, IndVec)
         !
         do ii = 1, nYface
             jj = ii + nXface
-            T%col(4*jj-2) = IndVec(ii)
-            T%val(4*jj-2) = 1
-        enddo
+            T%col(4*jj - 1) = IndVec(ii) + nXedge + nYedge
+            T%val(4*jj - 1) = 1
+        end do
         !
-        K = K-1
-        I = I+1
+        K = K + 1
         !
-        call vectorIndexSP("ZEDGE", grid, I, J, K, IndVec)
+        call self%grid%vectorIndex(XEDGE, I, J, K, IndVec)
         !
         do ii = 1, nYface
             jj = ii + nXface
-            T%col(4*jj) = IndVec(ii)+nXedge+nYedge
+            T%col(4*jj - 2) = IndVec(ii)
+            T%val(4*jj - 2) = 1
+        end do
+        !
+        K = K - 1
+        I = I + 1
+        !
+        call self%grid%vectorIndex (ZEDGE, I, J, K, IndVec)
+        !
+        do ii = 1, nYface
+            jj = ii + nXface
+            T%col(4*jj) = IndVec(ii) + nXedge + nYedge
             T%val(4*jj) = -1
-        enddo
+        end do
         !
-        deallocate(IndVec)
-        deallocate(I)
-        deallocate(J)
-        deallocate(K)
+        deallocate( IndVec, I, J, K )
         !
         ! zFaces
         allocate(IndVec(nZface))
@@ -166,85 +190,79 @@ contains
         allocate(J(nZface))
         allocate(K(nZface))
         !
-        do ii=1, nZface
+        do ii = 1, nZface
             IndVec(ii) = ii
-        enddo
+        end do
         !
-        call gridIndexSP("ZFACE", grid, IndVec, I, J, K)
-        call vectorIndexSP("XEDGE", grid, I, J, K, IndVec)
-        !
-        do ii = 1, nZface
-            jj = ii + nXface + nYface
-            T%col(4*jj-3) = IndVec(ii)
-            T%val(4*jj-3) = 1
-        enddo
-        !
-        call vectorIndexSP("YEDGE", grid, I, J, K, IndVec)
+        call self%grid%gridIndex (ZFACE, IndVec, I, J, K)
+        call self%grid%vectorIndex (XEDGE, I, J, K, IndVec)
         !
         do ii = 1, nZface
             jj = ii + nXface + nYface
-            T%col(4*jj-1) = IndVec(ii)+nXedge
-            T%val(4*jj-1) = -1
-        enddo
+            T%col(4*jj - 3) = IndVec(ii)
+            T%val(4*jj - 3) = 1
+        end do
         !
-        J = J+1
-        !
-        call vectorIndexSP("XEDGE", grid, I, J, K, IndVec)
+        call self%grid%vectorIndex (YEDGE, I, J, K, IndVec)
         !
         do ii = 1, nZface
             jj = ii + nXface + nYface
-            T%col(4*jj-2) = IndVec(ii)
-            T%val(4*jj-2) = -1
-        enddo
+            T%col(4*jj - 1) = IndVec(ii) + nXedge
+            T%val(4*jj - 1) = -1
+        end do
         !
-        I = I+1
-        J = J-1
+        J = J + 1
         !
-        call vectorIndexSP("YEDGE", grid, I, J, K, IndVec)
+        call self%grid%vectorIndex (XEDGE, I, J, K, IndVec)
         !
         do ii = 1, nZface
             jj = ii + nXface + nYface
-            T%col(4*jj) = IndVec(ii)+nXedge
+            T%col(4*jj - 2) = IndVec(ii)
+            T%val(4*jj - 2) = -1
+        end do
+        !
+        I = I + 1
+        J = J - 1
+        !
+        call self%grid%vectorIndex (YEDGE, I, J, K, IndVec)
+        !
+        do ii = 1, nZface
+            jj = ii + nXface + nYface
+            T%col(4*jj) = IndVec(ii) + nXedge
             T%val(4*jj) = 1
-        enddo
+        end do
         !
-        deallocate(IndVec)
-        deallocate(I)
-        deallocate(J)
-        deallocate(K)
+        deallocate( IndVec, I, J, K )
         !
-    end subroutine
-    !
-    !> This maps from all nodes to all edges; rows of matrix correspond to  edges
-    !> enumerated with all xEdges, then yEdges, then zEdges
-    !
-    subroutine setGradTopology(grid)
+    end subroutine curlSpOpTopology_SG
+
+    subroutine gradSpOpTopology_SG( self, G )
         implicit none
         !
-        class( Grid_t ), intent( in ) :: grid 
-        integer :: nXedge, nYedge, nZedge, nNodes, ii, jj, n, m, nz, nx, ny
-        integer, allocatable, dimension(:) :: IndVec, I, J, K
+        class( spOpTopology_SG_t ), intent( inout ) :: self
+        type( spMatCSR_Real ), intent( inout ) :: G
         !
-        call nEdgesSP(grid, nXedge, nYedge, nZedge)
-        call setLimitsSP(CORNER, grid, nx, ny, nz)
+        integer :: nXedge, nYedge, nZedge, nNodes
+        integer :: ii, jj, n, m, nz, nx, ny
+        integer, dimension (:), allocatable :: IndVec, I, J, K
         !
-        !     write(0, *) "nx, ny, nz", nz, ny, nz
+        call self%grid%numberOfEdges (nXedge, nYedge, nZedge)
+        call self%grid%limits(CORNER, nx, ny, nz)
+        !
         nNodes = nx*ny*nz
-        m = nXedge+nYedge+nZedge
+        m = nXedge + nYedge + nZedge
         n = nNodes
         nz = 2*m
+        !
         call create_spMatCSR(m, n, nz, G)
         !
-        !     write(0, *) "m, n, nz for G", m, n, nz
-        !     write(0, *) "# edges", nXedge, nYedge, nZedge
+        G%row(1) = 1
         !
-        G%row(1) = 1 
-        !
-        do ii = 1, G%nRow
-            G%row(ii+1) = 2*ii + 1
-            G%val(2*ii-1) = -1
+        do ii = 1,G%nRow
+            G%row(ii + 1) = 2*ii + 1
+            G%val(2*ii - 1) = -1
             G%val(2*ii) = 1
-        enddo
+        end do
         !
         ! xedges
         allocate(IndVec(nXedge))
@@ -252,29 +270,26 @@ contains
         allocate(J(nXedge))
         allocate(K(nXedge))
         !
-        do ii=1, nXedge
+        do ii = 1, nXedge
             IndVec(ii) = ii
-        enddo
+        end do
         !
-        call gridIndexSP("XEDGE", grid, IndVec, I, J, K)
-        call vectorIndexSP(CORNER, grid, I, J, K, IndVec)
+        call self%grid%gridIndex (XEDGE, IndVec, I, J, K)
+        call self%grid%vectorIndex (CORNER, I, J, K, IndVec)
         !
         do ii = 1, nXedge
-            G%col(2*ii-1) = IndVec(ii)
-        enddo
+            G%col(2*ii - 1) = IndVec(ii)
+        end do
         !
-        I = I+1
+        I = I + 1
         !
-        call vectorIndexSP(CORNER, grid, I, J, K, IndVec)
+        call self%grid%vectorIndex (CORNER, I, J, K, IndVec)
         !
         do ii = 1, nXedge
             G%col(2*ii) = IndVec(ii)
-        enddo
+        end do
         !
-        deallocate(IndVec)
-        deallocate(I)
-        deallocate(J)
-        deallocate(K)
+        deallocate( IndVec, I, J, K )
         !
         ! yedges
         allocate(IndVec(nYedge))
@@ -282,31 +297,28 @@ contains
         allocate(J(nYedge))
         allocate(K(nYedge))
         !
-        do ii=1, nYedge
-            IndVec(ii) = ii
-        enddo
+        do ii = 1, nYedge
+        IndVec(ii) = ii
+        end do
         !
-        call gridIndexSP("YEDGE", grid, IndVec, I, J, K)
-        call vectorIndexSP(CORNER, grid, I, J, K, IndVec)
+        call self%grid%gridIndex (YEDGE, IndVec, I, J, K)
+        call self%grid%vectorIndex (CORNER, I, J, K, IndVec)
         !
         do ii = 1, nYedge
-            jj = ii+nXedge
-            G%col(2*jj-1) = IndVec(ii)
-        enddo
+        jj = ii + nXedge
+        G%col(2*jj - 1) = IndVec(ii)
+        end do
         !
-        J = J+1
+        J = J + 1
         !
-        call vectorIndexSP(CORNER, grid, I, J, K, IndVec)
+        call self%grid%vectorIndex (CORNER, I, J, K, IndVec)
         !
         do ii = 1, nYedge
-            jj = ii+nXedge
-            G%col(2*jj) = IndVec(ii)
-        enddo
+        jj = ii + nXedge
+        G%col(2*jj) = IndVec(ii)
+        end do
         !
-        deallocate(IndVec)
-        deallocate(I)
-        deallocate(J)
-        deallocate(K)
+        deallocate( IndVec, I, J, K )
         !
         ! zedges
         allocate(IndVec(nZedge))
@@ -314,32 +326,29 @@ contains
         allocate(J(nZedge))
         allocate(K(nZedge))
         !
-        do ii=1, nZedge
+        do ii = 1, nZedge
             IndVec(ii) = ii
-        enddo
+        end do
         !
-        call gridIndexSP("ZEDGE", grid, IndVec, I, J, K)
-        call vectorIndexSP(CORNER, grid, I, J, K, IndVec)
-        !
-        do ii = 1, nZedge
-            jj = ii+nXedge+nYedge
-            G%col(2*jj-1) = IndVec(ii)
-        enddo
-        !
-        K = K+1
-        !
-        call vectorIndexSP(CORNER, grid, I, J, K, IndVec)
+        call self%grid%gridIndex (ZEDGE, IndVec, I, J, K)
+        call self%grid%vectorIndex (CORNER, I, J, K, IndVec)
         !
         do ii = 1, nZedge
-            jj = ii+nXedge+nYedge
+            jj = ii + nXedge + nYedge
+            G%col(2*jj - 1) = IndVec(ii)
+        end do
+        !
+        K = K + 1
+        !
+        call self%grid%vectorIndex (CORNER, I, J, K, IndVec)
+        !
+        do ii = 1, nZedge
+            jj = ii + nXedge + nYedge
             G%col(2*jj) = IndVec(ii)
-        enddo
+        end do
         !
-        deallocate(IndVec)
-        deallocate(I)
-        deallocate(J)
-        deallocate(K)
+        deallocate( IndVec, I, J, K )
         !
-    end subroutine
-    !
-end module
+    end subroutine gradSpOpTopology_SG
+
+end module spOpTopology_SG

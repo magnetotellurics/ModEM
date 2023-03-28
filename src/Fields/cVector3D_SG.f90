@@ -115,7 +115,7 @@ contains
             self%NdY = (/self%nx + 1, self%ny, self%nz + 1/)
             self%NdZ = (/self%nx + 1, self%ny + 1, self%nz/)
             !
-        elseif(self%grid_type == FACE) then
+        else if(self%grid_type == FACE) then
             !
             allocate(self%x(self%nx + 1, self%ny, self%nz), STAT = status)
             self%is_allocated = status.EQ.0
@@ -234,7 +234,7 @@ contains
         implicit none
         !
         class( cVector3D_SG_t ), intent( inout ) :: self
-        character(:), allocatable, intent( in ) :: bdry
+        character(*), intent( in ) :: bdry
         complex( kind=prec ), intent( in ) :: cvalue
         logical, intent( in ), optional :: int_only
         !
@@ -516,7 +516,7 @@ contains
             self%y = C_ZERO
             self%z = C_ZERO
             !
-        elseif( self%store_state .EQ. singleton ) then
+        else if( self%store_state .EQ. singleton ) then
             !
             self%sv = C_ZERO
             !
@@ -722,7 +722,7 @@ contains
             self%y = conjg( self%y )
             self%z = conjg( self%z )
             !
-        elseif( self%store_state .EQ. singleton ) then
+        else if( self%store_state .EQ. singleton ) then
             !
             self%sv = conjg( self%sv )
             !
@@ -758,7 +758,7 @@ contains
                         self%y = self%y + rhs%y
                         self%z = self%z + rhs%z
                         !
-                    elseif( rhs%store_state .EQ. singleton ) then
+                    else if( rhs%store_state .EQ. singleton ) then
                         !
                         self%sv = self%sv + rhs%sv
                         !
@@ -774,7 +774,7 @@ contains
                         self%y = self%y + rhs%y
                         self%z = self%z + rhs%z
                         !
-                    elseif( rhs%store_state .EQ. singleton ) then
+                    else if( rhs%store_state .EQ. singleton ) then
                         !
                         self%sv = self%sv + rhs%sv
                         !
@@ -790,7 +790,7 @@ contains
                         self%y = self%y + rhs%v
                         self%z = self%z + rhs%v
                         !
-                    elseif( rhs%store_state .EQ. singleton ) then
+                    else if( rhs%store_state .EQ. singleton ) then
                         !
                         self%sv = self%sv + rhs%sv
                         !
@@ -806,7 +806,7 @@ contains
                         self%y = self%y + rhs%v
                         self%z = self%z + rhs%v
                         !
-                    elseif( rhs%store_state .EQ. singleton ) then
+                    else if( rhs%store_state .EQ. singleton ) then
                         !
                         self%sv = self%sv + rhs%sv
                         !
@@ -848,7 +848,7 @@ contains
                         self%y = c1 * self%y + c2 * rhs%y
                         self%z = c1 * self%z + c2 * rhs%z
                         !
-                    elseif( rhs%store_state .EQ. singleton ) then
+                    else if( rhs%store_state .EQ. singleton ) then
                         !
                         self%sv = c1 * self%sv + c2 * rhs%sv
                         !
@@ -879,7 +879,7 @@ contains
             self%y = self%y - cvalue
             self%z = self%z - cvalue
             !
-        elseif( self%store_state .EQ. singleton ) then
+        else if( self%store_state .EQ. singleton ) then
             !
             self%sv = self%sv - cvalue
             !
@@ -911,7 +911,7 @@ contains
                         self%y = self%y - rhs%y
                         self%z = self%z - rhs%z
                         !
-                    elseif( rhs%store_state .EQ. singleton ) then
+                    else if( rhs%store_state .EQ. singleton ) then
                         !
                         self%sv = self%sv - rhs%sv
                         !
@@ -927,7 +927,7 @@ contains
                         self%y = self%y - rhs%y
                         self%z = self%z - rhs%z
                         !
-                    elseif( rhs%store_state .EQ. singleton ) then
+                    else if( rhs%store_state .EQ. singleton ) then
                         !
                         self%sv = self%sv - rhs%sv
                         !
@@ -943,7 +943,7 @@ contains
                         self%y = self%y - rhs%v
                         self%z = self%z - rhs%v
                         !
-                    elseif( rhs%store_state .EQ. singleton ) then
+                    else if( rhs%store_state .EQ. singleton ) then
                         !
                         self%sv = self%sv - rhs%sv
                         !
@@ -959,7 +959,7 @@ contains
                         self%y = self%y - rhs%v
                         self%z = self%z - rhs%v
                         !
-                    elseif( rhs%store_state .EQ. singleton ) then
+                    else if( rhs%store_state .EQ. singleton ) then
                         !
                         self%sv = self%sv - rhs%sv
                         !
@@ -992,7 +992,7 @@ contains
             self%y = self%y * rvalue
             self%z = self%z * rvalue
             !
-        elseif( self%store_state .EQ. singleton ) then
+        else if( self%store_state .EQ. singleton ) then
             !
             self%sv = self%sv * rvalue
             !
@@ -1016,7 +1016,7 @@ contains
             self%y = self%y * cvalue
             self%z = self%z * cvalue
             !
-        elseif( self%store_state .EQ. singleton ) then
+        else if( self%store_state .EQ. singleton ) then
             !
             self%sv = self%sv * cvalue
             !
@@ -1048,7 +1048,7 @@ contains
                         self%y = self%y * rhs%y
                         self%z = self%z * rhs%z
                         !
-                    elseif( rhs%store_state .EQ. singleton ) then
+                    else if( rhs%store_state .EQ. singleton ) then
                         !
                         self%sv = self%sv * rhs%sv
                         !
@@ -1064,7 +1064,7 @@ contains
                         self%y = self%y * rhs%y
                         self%z = self%z * rhs%z
                         !
-                    elseif( rhs%store_state .EQ. singleton ) then
+                    else if( rhs%store_state .EQ. singleton ) then
                         !
                         self%sv = self%sv * rhs%sv
                         !
@@ -1080,7 +1080,7 @@ contains
                         self%y = self%y * rhs%v
                         self%z = self%z * rhs%v
                         !
-                    elseif( rhs%store_state .EQ. singleton ) then
+                    else if( rhs%store_state .EQ. singleton ) then
                         !
                         self%sv = self%sv * rhs%sv
                         !
@@ -1096,7 +1096,7 @@ contains
                         self%y = self%y * rhs%v
                         self%z = self%z * rhs%v
                         !
-                    elseif( rhs%store_state .EQ. singleton ) then
+                    else if( rhs%store_state .EQ. singleton ) then
                         !
                         self%sv = self%sv * rhs%sv
                         !
@@ -1147,7 +1147,7 @@ contains
                                 diag_mult%y = self%y * rhs%y
                                 diag_mult%z = self%z * rhs%z
                                 !
-                            elseif( rhs%store_state .EQ. singleton ) then
+                            else if( rhs%store_state .EQ. singleton ) then
                                 !
                                 diag_mult%sv = self%sv * rhs%sv
                                 !
@@ -1163,7 +1163,7 @@ contains
                                 diag_mult%y = self%y * rhs%y
                                 diag_mult%z = self%z * rhs%z
                                 !
-                            elseif( rhs%store_state .EQ. singleton ) then
+                            else if( rhs%store_state .EQ. singleton ) then
                                 !
                                 diag_mult%sv = self%sv * rhs%sv
                                 !
@@ -1208,7 +1208,7 @@ contains
                         self%y = self%y + cvalue * rhs%y
                         self%z = self%z + cvalue * rhs%z
                         !
-                    elseif( rhs%store_state .EQ. singleton ) then
+                    else if( rhs%store_state .EQ. singleton ) then
                         !
                         self%sv = self%sv + cvalue * rhs%sv
                         !
@@ -1237,8 +1237,6 @@ contains
         !
         complex( kind=prec ) :: cvalue
         !
-        type( cVector3D_SG_t ) :: aux_vec
-        !
         cvalue = C_ZERO
         !
         if( ( .NOT. self%is_allocated ) .OR. ( .NOT. rhs%is_allocated ) ) then
@@ -1247,31 +1245,34 @@ contains
         !
         if( self%isCompatible( rhs ) ) then
             !
-            aux_vec = self
-            if( aux_vec%store_state /= rhs%store_state ) call aux_vec%switchStoreState
-            !
-            select type( rhs )
+            if( self%store_state == rhs%store_state ) then
                 !
-                class is( cVector3D_SG_t )
+                select type( rhs )
                     !
-                    if( rhs%store_state .EQ. compound ) then
+                    class is( cVector3D_SG_t )
                         !
-                        cvalue = cvalue + sum( conjg( aux_vec%x ) * rhs%x )
-                        cvalue = cvalue + sum( conjg( aux_vec%y ) * rhs%y )
-                        cvalue = cvalue + sum( conjg( aux_vec%z ) * rhs%z )
+                        if( rhs%store_state .EQ. compound ) then
+                            !
+                            cvalue = cvalue + sum( conjg( self%x ) * rhs%x )
+                            cvalue = cvalue + sum( conjg( self%y ) * rhs%y )
+                            cvalue = cvalue + sum( conjg( self%z ) * rhs%z )
+                            !
+                        else if( rhs%store_state .EQ. singleton ) then
+                            !
+                            cvalue = cvalue + sum( conjg( self%sv ) * rhs%sv )
+                            !
+                        else
+                            stop "Error: dotProdCVector3D_SG > Unknown rhs store_state!"
+                        endif
                         !
-                    elseif( rhs%store_state .EQ. singleton ) then
-                        !
-                        cvalue = cvalue + sum( conjg( aux_vec%sv ) * rhs%sv )
-                        !
-                    else
-                        stop "Error: dotProdCVector3D_SG > Unknown rhs store_state!"
-                    endif
+                    class default
+                        stop "Error: dotProdCVector3D_SG: undefined rhs"
                     !
-                class default
-                    stop "Error: dotProdCVector3D_SG: undefined rhs"
+                end select
                 !
-            end select
+            else
+                stop "Error: dotProdCVector3D_SG > Incompatible store_state"
+            endif
             !
         else
             stop "Error: dotProdCVector3D_SG > Incompatible rhs"
@@ -1293,7 +1294,7 @@ contains
             self%y = self%y / cvalue
             self%z = self%z / cvalue
             !
-        elseif( self%store_state .EQ. singleton ) then
+        else if( self%store_state .EQ. singleton ) then
             !
             self%sv = self%sv / cvalue
             !
@@ -1325,7 +1326,7 @@ contains
                         self%y = self%y / rhs%y
                         self%z = self%z / rhs%z
                         !
-                    elseif( rhs%store_state .EQ. singleton ) then
+                    else if( rhs%store_state .EQ. singleton ) then
                         !
                         self%sv = self%sv / rhs%sv
                         !
@@ -1341,7 +1342,7 @@ contains
                         self%y = self%y / rhs%y
                         self%z = self%z / rhs%z
                         !
-                    elseif( rhs%store_state .EQ. singleton ) then
+                    else if( rhs%store_state .EQ. singleton ) then
                         !
                         self%sv = self%sv / rhs%sv
                         !
@@ -1357,7 +1358,7 @@ contains
                         self%y = self%y / rhs%v
                         self%z = self%z / rhs%v
                         !
-                    elseif( rhs%store_state .EQ. singleton ) then
+                    else if( rhs%store_state .EQ. singleton ) then
                         !
                         self%sv = self%sv / rhs%sv
                         !
@@ -1373,7 +1374,7 @@ contains
                         self%y = self%y / rhs%v
                         self%z = self%z / rhs%v
                         !
-                    elseif( rhs%store_state .EQ. singleton ) then
+                    else if( rhs%store_state .EQ. singleton ) then
                         !
                         self%sv = self%sv / rhs%sv
                         !
@@ -1420,29 +1421,29 @@ contains
                         select case(xyz)
                             !
                             case("x")
-                                allocate(xC(size(grid%delX)))
+                                allocate(xC(size(grid%del_x)))
                                 allocate(yC(size(grid%dy + 1)))
                                 allocate(zC(size(grid%dz + 1)))
                                 !
-                                xC = CumSum(grid%delX)
+                                xC = CumSum(grid%del_x)
                                 yC = CumSum([0._prec, grid%dy])
                                 zC = CumSum([0._prec, grid%dz])
                             case("y")
                                 allocate(xC(size(grid%dx + 1)))
-                                allocate(yC(size(grid%delY)))
+                                allocate(yC(size(grid%del_y)))
                                 allocate(zC(size(grid%dz)))
                                 
                                 xC = CumSum([0._prec, grid%dx])
-                                yC = CumSum([grid%delY])
+                                yC = CumSum([grid%del_y])
                                 zC = CumSum([0._prec, grid%dz])
                             case("z")
                                 allocate(xC(size(grid%dx + 1)))
                                 allocate(yC(size(grid%dy + 1)))
-                                allocate(zC(size(grid%delZ)))
+                                allocate(zC(size(grid%del_z)))
                                 
                                 xC = CumSum([0._prec, grid%dx])
                                 yC = CumSum([0._prec, grid%dy])
-                                zC = CumSum([grid%delZ])
+                                zC = CumSum([grid%del_z])
                                 !
                             case default
                                 stop "Error: interpFuncCVector3D_SG: Unknown xyz"
@@ -1456,27 +1457,27 @@ contains
                         select case(xyz)
                             case("x")
                                 allocate(xC(size(grid%dx + 1)))
-                                allocate(yC(size(grid%delY)))
-                                allocate(zC(size(grid%delZ)))
+                                allocate(yC(size(grid%del_y)))
+                                allocate(zC(size(grid%del_z)))
                                 
                                 xC = CumSum([0._prec, grid%dx])
-                                yC = CumSum([grid%delY])
-                                zC = CumSum([grid%delZ])
+                                yC = CumSum([grid%del_y])
+                                zC = CumSum([grid%del_z])
                             case("y")
-                                allocate(xC(size(grid%delX)))
+                                allocate(xC(size(grid%del_x)))
                                 allocate(yC(size(grid%dy + 1)))
-                                allocate(zC(size(grid%delZ)))
+                                allocate(zC(size(grid%del_z)))
                                 
-                                xC = CumSum([grid%delX])
+                                xC = CumSum([grid%del_x])
                                 yC = CumSum([0._prec, grid%dy])
-                                zC = CumSum([grid%delZ])
+                                zC = CumSum([grid%del_z])
                             case("z")
-                                allocate(xC(size(grid%delX)))
-                                allocate(yC(size(grid%delY)))
+                                allocate(xC(size(grid%del_x)))
+                                allocate(yC(size(grid%del_y)))
                                 allocate(zC(size(grid%dz + 1)))
                                 
-                                xC = CumSum([grid%delX])
-                                yC = CumSum([grid%delY])
+                                xC = CumSum([grid%del_x])
+                                yC = CumSum([grid%del_y])
                                 zC = CumSum([0._prec, grid%dz])
                                 !
                             case default
@@ -1626,7 +1627,7 @@ contains
                       reshape(self%y, (/self%Nxyz(2), 1/)), &
                       reshape(self%z, (/self%Nxyz(3), 1/))/)
             !
-        elseif( self%store_state .EQ. singleton ) then
+        else if( self%store_state .EQ. singleton ) then
             !
             array = self%sv
             !
@@ -1661,7 +1662,7 @@ contains
             !
             self%z = reshape(array(i1:i2), self%NdZ)
             !
-        elseif( self%store_state .EQ. singleton ) then
+        else if( self%store_state .EQ. singleton ) then
             !
             self%sv = array
             !
@@ -1705,7 +1706,7 @@ contains
                     allocate( self%y( self%nx + 1, self%ny, self%nz + 1 ) )
                     allocate( self%z( self%nx + 1, self%ny + 1, self%nz ) )
                     !
-                elseif( self%grid_type == FACE ) then
+                else if( self%grid_type == FACE ) then
                     !
                     allocate( self%x( self%nx + 1, self%ny, self%nz ) )
                     allocate( self%y( self%nx, self%ny + 1, self%nz ) )
@@ -1732,7 +1733,7 @@ contains
                 self%store_state = compound
                 !
             case default
-                write( *, * ) "     "//achar(27)//"[31m# Error:"//achar(27)//"[0m switchStoreStateCVector3D_SG > Unknown store_state :[", self%store_state, "]"
+                write( *, * ) "Error: switchStoreStateCVector3D_SG > Unknown store_state :[", self%store_state, "]"
                 stop
             !
         end select
@@ -1773,7 +1774,7 @@ contains
                     self%y = rhs%y
                     self%z = rhs%z
                     !
-                elseif( self%store_state .EQ. singleton ) then
+                else if( self%store_state .EQ. singleton ) then
                     !
                     self%sv = rhs%sv
                     !
@@ -1794,7 +1795,7 @@ contains
                     self%y = rhs%y
                     self%z = rhs%z
                     !
-                elseif( rhs%store_state .EQ. singleton ) then
+                else if( rhs%store_state .EQ. singleton ) then
                     !
                     self%sv = rhs%sv
                     !
@@ -1839,12 +1840,12 @@ contains
             !> Check that the file is unformatted if binary, formatted if ascii.
             if((index(isbinary, "yes") > 0 .OR.index(isbinary, "YES") > 0) &
                   .AND.   .NOT. binary ) then
-                write( *, * ) "     "//achar(27)//"[31m# Error:"//achar(27)//"[0m readCVector3D_SG > Unable to readCVector3D_SG vector from unformatted file. ", &
+                write( *, * ) "Error: readCVector3D_SG > Unable to readCVector3D_SG vector from unformatted file. ", &
                         trim(fname), "."
                 stop
-            elseif((index(isbinary, "no") > 0 .OR.index(isbinary, "NO") > 0) &
+            else if((index(isbinary, "no") > 0 .OR.index(isbinary, "NO") > 0) &
                   .AND.binary) then
-                write( *, * ) "     "//achar(27)//"[31m# Error:"//achar(27)//"[0m readCVector3D_SG > Unable to readCVector3D_SG vector from formatted file ", &
+                write( *, * ) "Error: readCVector3D_SG > Unable to readCVector3D_SG vector from formatted file ", &
                         trim(fname), "."
                 stop
             endif
@@ -1852,16 +1853,16 @@ contains
             read(funit) Nx, Ny, Nz, grid_type
             !
             if(  .NOT. self%is_allocated) then
-                write( *, * ) "     "//achar(27)//"[31m# Error:"//achar(27)//"[0m readCVector3D_SG > Vector must be allocated before readCVector3D_SGing from ", &
+                write( *, * ) "Error: readCVector3D_SG > Vector must be allocated before readCVector3D_SGing from ", &
                         trim(fname), "."
                 stop
-            elseif(self%grid_type.NE.grid_type) then
-                write( *, * ) "     "//achar(27)//"[31m# Error:"//achar(27)//"[0m readCVector3D_SG > Vector must be of type ", grid_type, &
+            else if(self%grid_type.NE.grid_type) then
+                write( *, * ) "Error: readCVector3D_SG > Vector must be of type ", grid_type, &
                         &            "           before readCVector3D_SGing from ", trim (fname), "."
                 stop
-            elseif((self%nx.NE.Nx).OR. &
+            else if((self%nx.NE.Nx).OR. &
                   (self%ny.NE.Ny).OR.(self%nz.NE.Nz)) then
-                write( *, * ) "     "//achar(27)//"[31m# Error:"//achar(27)//"[0m readCVector3D_SG > Wrong size of vector on input from ", trim (fname), "."
+                write( *, * ) "Error: readCVector3D_SG > Wrong size of vector on input from ", trim (fname), "."
                 stop
             endif
             !
@@ -1905,12 +1906,12 @@ contains
             !> Check that the file is unformatted if binary, formatted if ascii.
             if((index(isbinary, "yes") > 0.OR.index(isbinary, "YES") > 0) &
                   .AND.   .NOT. binary) then
-                write( *, * ) "     "//achar(27)//"[31m# Error:"//achar(27)//"[0m writeCVector3D_SG > Unable to writeCVector3D_SG vector to unformatted file. ", &
+                write( *, * ) "Error: writeCVector3D_SG > Unable to writeCVector3D_SG vector to unformatted file. ", &
                         trim(fname), "."
                 stop
-            elseif((index(isbinary,"no") > 0.OR.index(isbinary,"NO") > 0) &
+            else if((index(isbinary,"no") > 0.OR.index(isbinary,"NO") > 0) &
                   .AND.binary) then
-                write( *, * ) "     "//achar(27)//"[31m# Error:"//achar(27)//"[0m writeCVector3D_SG > Unable to writeCVector3D_SG vector to formatted file. ", &
+                write( *, * ) "Error: writeCVector3D_SG > Unable to writeCVector3D_SG vector to formatted file. ", &
                         trim(fname), "."
                 stop
             endif

@@ -159,7 +159,7 @@ contains
     !> Calculate JmHat for the data_tx's transmitter:
     !>     Set the transmitter's source by calling PMult.
     !>     Solve e_sens for the transmitter.
-    !> Send dsigma%cell_cond to master process
+    !> Send dsigma%cell_cond_h to master process
     !> Require previous call of workerSolve or masterSolveAll
     !
     subroutine workerJMult()
@@ -201,7 +201,7 @@ contains
     !>     Create a rhs from LRows * residual data for all receivers related to the transmitter.
     !>     Solve ESens on the transmitter using a transpose SourceInteriorForce, with the new rhs.
     !>     Call Tx%PMult to get a new ModelParameter dsigma.
-    !> Send dsigma%cell_cond to master process
+    !> Send dsigma%cell_cond_h to master process
     !> Require previous call of workerSolve or masterSolveAll
     !
     subroutine workerJMult_T()

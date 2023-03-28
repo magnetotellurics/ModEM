@@ -746,7 +746,6 @@ contains
         !
         Ndata = countValues( res )
         !
-        !> compute the model norm
         mNorm = mHat%dotProd( mHat )
         !
         Nmodel = mHat%countModel()

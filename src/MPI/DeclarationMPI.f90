@@ -142,7 +142,7 @@ contains
         call MPI_PACK_SIZE( len( forward_solver_type ), MPI_CHARACTER, main_comm, nbytes(5), ierr )
         call MPI_PACK_SIZE( len( source_type_mt ), MPI_CHARACTER, main_comm, nbytes(6), ierr )
         call MPI_PACK_SIZE( len( source_type_csem ), MPI_CHARACTER, main_comm, nbytes(7), ierr )
-        call MPI_PACK_SIZE( len( get_1D_from ), MPI_CHARACTER, main_comm, nbytes(8), ierr )
+        call MPI_PACK_SIZE( len( get_1d_from ), MPI_CHARACTER, main_comm, nbytes(8), ierr )
         call MPI_PACK_SIZE( len( joint_type ), MPI_CHARACTER, main_comm, nbytes(9), ierr )
         call MPI_PACK_SIZE( 1, MPI_LOGICAL, main_comm, nbytes(10), ierr )
         !
@@ -204,7 +204,7 @@ contains
         call MPI_PACK( len( forward_solver_type ), 1, MPI_INTEGER, basic_comp_buffer, job_info%basic_comp_size, index, main_comm, ierr )
         call MPI_PACK( len( source_type_mt ), 1, MPI_INTEGER, basic_comp_buffer, job_info%basic_comp_size, index, main_comm, ierr )
         call MPI_PACK( len( source_type_csem ), 1, MPI_INTEGER, basic_comp_buffer, job_info%basic_comp_size, index, main_comm, ierr )
-        call MPI_PACK( len( get_1D_from ), 1, MPI_INTEGER, basic_comp_buffer, job_info%basic_comp_size, index, main_comm, ierr )
+        call MPI_PACK( len( get_1d_from ), 1, MPI_INTEGER, basic_comp_buffer, job_info%basic_comp_size, index, main_comm, ierr )
         call MPI_PACK( len( joint_type ), 1, MPI_INTEGER, basic_comp_buffer, job_info%basic_comp_size, index, main_comm, ierr )
         call MPI_PACK( model_n_air_layer, 1, MPI_INTEGER, basic_comp_buffer, job_info%basic_comp_size, index, main_comm, ierr )
         call MPI_PACK( model_max_height, 1, MPI_DOUBLE_PRECISION, basic_comp_buffer, job_info%basic_comp_size, index, main_comm, ierr )
@@ -215,7 +215,7 @@ contains
         call MPI_PACK( forward_solver_type, len( forward_solver_type ), MPI_CHARACTER, basic_comp_buffer, job_info%basic_comp_size, index, main_comm, ierr )
         call MPI_PACK( source_type_mt, len( source_type_mt ), MPI_CHARACTER, basic_comp_buffer, job_info%basic_comp_size, index, main_comm, ierr )
         call MPI_PACK( source_type_csem, len( source_type_csem ), MPI_CHARACTER, basic_comp_buffer, job_info%basic_comp_size, index, main_comm, ierr )
-        call MPI_PACK( get_1D_from, len( get_1D_from ), MPI_CHARACTER, basic_comp_buffer, job_info%basic_comp_size, index, main_comm, ierr )
+        call MPI_PACK( get_1d_from, len( get_1d_from ), MPI_CHARACTER, basic_comp_buffer, job_info%basic_comp_size, index, main_comm, ierr )
         call MPI_PACK( joint_type, len( joint_type ), MPI_CHARACTER, basic_comp_buffer, job_info%basic_comp_size, index, main_comm, ierr )
         call MPI_PACK( has_pmodel_file, 1, MPI_LOGICAL, basic_comp_buffer, job_info%basic_comp_size, index, main_comm, ierr )
         !
@@ -279,8 +279,8 @@ contains
         allocate( character( n_source_type_csem ) :: source_type_csem )
         call MPI_UNPACK( basic_comp_buffer, job_info%basic_comp_size, index, source_type_csem, n_source_type_csem, MPI_CHARACTER, main_comm, ierr )
         !
-        allocate( character( n_get_1d_from ) :: get_1D_from )
-        call MPI_UNPACK( basic_comp_buffer, job_info%basic_comp_size, index, get_1D_from, n_get_1d_from, MPI_CHARACTER, main_comm, ierr )
+        allocate( character( n_get_1d_from ) :: get_1d_from )
+        call MPI_UNPACK( basic_comp_buffer, job_info%basic_comp_size, index, get_1d_from, n_get_1d_from, MPI_CHARACTER, main_comm, ierr )
         !
         allocate( character( n_joint_type ) :: joint_type )
         call MPI_UNPACK( basic_comp_buffer, job_info%basic_comp_size, index, joint_type, n_joint_type, MPI_CHARACTER, main_comm, ierr )
@@ -369,9 +369,9 @@ contains
         call MPI_PACK_SIZE( size( grid%dxInv ), MPI_DOUBLE_PRECISION, main_comm, nbytes(8), ierr )
         call MPI_PACK_SIZE( size( grid%dyInv ), MPI_DOUBLE_PRECISION, main_comm, nbytes(9), ierr )
         call MPI_PACK_SIZE( size( grid%dzInv ), MPI_DOUBLE_PRECISION, main_comm, nbytes(10), ierr )
-        call MPI_PACK_SIZE( size( grid%delX ), MPI_DOUBLE_PRECISION, main_comm, nbytes(11), ierr )
-        call MPI_PACK_SIZE( size( grid%delY ), MPI_DOUBLE_PRECISION, main_comm, nbytes(12), ierr )
-        call MPI_PACK_SIZE( size( grid%delZ ), MPI_DOUBLE_PRECISION, main_comm, nbytes(13), ierr )
+        call MPI_PACK_SIZE( size( grid%del_x ), MPI_DOUBLE_PRECISION, main_comm, nbytes(11), ierr )
+        call MPI_PACK_SIZE( size( grid%del_y ), MPI_DOUBLE_PRECISION, main_comm, nbytes(12), ierr )
+        call MPI_PACK_SIZE( size( grid%del_z ), MPI_DOUBLE_PRECISION, main_comm, nbytes(13), ierr )
         call MPI_PACK_SIZE( size( grid%delXInv ), MPI_DOUBLE_PRECISION, main_comm, nbytes(14), ierr )
         call MPI_PACK_SIZE( size( grid%delYInv ), MPI_DOUBLE_PRECISION, main_comm, nbytes(15), ierr )
         call MPI_PACK_SIZE( size( grid%delZInv ), MPI_DOUBLE_PRECISION, main_comm, nbytes(16), ierr )
@@ -422,9 +422,9 @@ contains
                 call MPI_PACK( size( grid%dxInv ), 1, MPI_INTEGER, parent_buffer, parent_buffer_size, index, main_comm, ierr )
                 call MPI_PACK( size( grid%dyInv ), 1, MPI_INTEGER, parent_buffer, parent_buffer_size, index, main_comm, ierr )
                 call MPI_PACK( size( grid%dzInv ), 1, MPI_INTEGER, parent_buffer, parent_buffer_size, index, main_comm, ierr )
-                call MPI_PACK( size( grid%delX ), 1, MPI_INTEGER, parent_buffer, parent_buffer_size, index, main_comm, ierr )
-                call MPI_PACK( size( grid%delY ), 1, MPI_INTEGER, parent_buffer, parent_buffer_size, index, main_comm, ierr )
-                call MPI_PACK( size( grid%delZ ), 1, MPI_INTEGER, parent_buffer, parent_buffer_size, index, main_comm, ierr )
+                call MPI_PACK( size( grid%del_x ), 1, MPI_INTEGER, parent_buffer, parent_buffer_size, index, main_comm, ierr )
+                call MPI_PACK( size( grid%del_y ), 1, MPI_INTEGER, parent_buffer, parent_buffer_size, index, main_comm, ierr )
+                call MPI_PACK( size( grid%del_z ), 1, MPI_INTEGER, parent_buffer, parent_buffer_size, index, main_comm, ierr )
                 call MPI_PACK( size( grid%delXInv ), 1, MPI_INTEGER, parent_buffer, parent_buffer_size, index, main_comm, ierr )
                 call MPI_PACK( size( grid%delYInv ), 1, MPI_INTEGER, parent_buffer, parent_buffer_size, index, main_comm, ierr )
                 call MPI_PACK( size( grid%delZInv ), 1, MPI_INTEGER, parent_buffer, parent_buffer_size, index, main_comm, ierr )
@@ -452,9 +452,9 @@ contains
                 call MPI_PACK( grid%dxInv(1), size( grid%dxInv ), MPI_DOUBLE_PRECISION, parent_buffer, parent_buffer_size, index, main_comm, ierr )
                 call MPI_PACK( grid%dyInv(1), size( grid%dyInv ), MPI_DOUBLE_PRECISION, parent_buffer, parent_buffer_size, index, main_comm, ierr )
                 call MPI_PACK( grid%dzInv(1), size( grid%dzInv ), MPI_DOUBLE_PRECISION, parent_buffer, parent_buffer_size, index, main_comm, ierr )
-                call MPI_PACK( grid%delX(1), size( grid%delX ), MPI_DOUBLE_PRECISION, parent_buffer, parent_buffer_size, index, main_comm, ierr )
-                call MPI_PACK( grid%delY(1), size( grid%delY ), MPI_DOUBLE_PRECISION, parent_buffer, parent_buffer_size, index, main_comm, ierr )
-                call MPI_PACK( grid%delZ(1), size( grid%delZ ), MPI_DOUBLE_PRECISION, parent_buffer, parent_buffer_size, index, main_comm, ierr )
+                call MPI_PACK( grid%del_x(1), size( grid%del_x ), MPI_DOUBLE_PRECISION, parent_buffer, parent_buffer_size, index, main_comm, ierr )
+                call MPI_PACK( grid%del_y(1), size( grid%del_y ), MPI_DOUBLE_PRECISION, parent_buffer, parent_buffer_size, index, main_comm, ierr )
+                call MPI_PACK( grid%del_z(1), size( grid%del_z ), MPI_DOUBLE_PRECISION, parent_buffer, parent_buffer_size, index, main_comm, ierr )
                 call MPI_PACK( grid%delXInv(1), size( grid%delXInv ), MPI_DOUBLE_PRECISION, parent_buffer, parent_buffer_size, index, main_comm, ierr )
                 call MPI_PACK( grid%delYInv(1), size( grid%delYInv ), MPI_DOUBLE_PRECISION, parent_buffer, parent_buffer_size, index, main_comm, ierr )
                 call MPI_PACK( grid%delZInv(1), size( grid%delZInv ), MPI_DOUBLE_PRECISION, parent_buffer, parent_buffer_size, index, main_comm, ierr )
@@ -551,14 +551,14 @@ contains
                         allocate( grid%dzInv( grid_dzInv ) )
                         call MPI_UNPACK( parent_buffer, parent_buffer_size, index, grid%dzInv(1), grid_dzInv, MPI_DOUBLE_PRECISION, main_comm, ierr )
                         !
-                        allocate( grid%delX( grid_delX ) )
-                        call MPI_UNPACK( parent_buffer, parent_buffer_size, index, grid%delX(1), grid_delX, MPI_DOUBLE_PRECISION, main_comm, ierr )
+                        allocate( grid%del_x( grid_delX ) )
+                        call MPI_UNPACK( parent_buffer, parent_buffer_size, index, grid%del_x(1), grid_delX, MPI_DOUBLE_PRECISION, main_comm, ierr )
                         !
-                        allocate( grid%delY( grid_delY ) )
-                        call MPI_UNPACK( parent_buffer, parent_buffer_size, index, grid%delY(1), grid_delY, MPI_DOUBLE_PRECISION, main_comm, ierr )
+                        allocate( grid%del_y( grid_delY ) )
+                        call MPI_UNPACK( parent_buffer, parent_buffer_size, index, grid%del_y(1), grid_delY, MPI_DOUBLE_PRECISION, main_comm, ierr )
                         !
-                        allocate( grid%delZ( grid_delZ ) )
-                        call MPI_UNPACK( parent_buffer, parent_buffer_size, index, grid%delZ(1), grid_delZ, MPI_DOUBLE_PRECISION, main_comm, ierr )
+                        allocate( grid%del_z( grid_delZ ) )
+                        call MPI_UNPACK( parent_buffer, parent_buffer_size, index, grid%del_z(1), grid_delZ, MPI_DOUBLE_PRECISION, main_comm, ierr )
                         !
                         allocate( grid%delXInv( grid_delXInv ) )
                         call MPI_UNPACK( parent_buffer, parent_buffer_size, index, grid%delXInv(1), grid_delXInv, MPI_DOUBLE_PRECISION, main_comm, ierr )
@@ -646,7 +646,7 @@ contains
                 !
                 model_buffer_size = model_buffer_size + allocateGridBuffer( model%param_grid, .TRUE. )
                 !
-                model_buffer_size = model_buffer_size + allocateScalarBuffer( model%cell_cond )
+                model_buffer_size = model_buffer_size + allocateScalarBuffer( model%cell_cond_h )
                 !
                 do i = 1, size( nbytes )
                     model_buffer_size = model_buffer_size + nbytes(i)
@@ -693,7 +693,7 @@ contains
                 !
                 call packGridBuffer( model%param_grid, parent_buffer, parent_buffer_size, index )
                 !
-                call packScalarBuffer( model%cell_cond, parent_buffer, parent_buffer_size, index )
+                call packScalarBuffer( model%cell_cond_h, parent_buffer, parent_buffer_size, index )
                 !
             class default
                stop "allocateModelBuffer: Unclassified model"
@@ -742,7 +742,7 @@ contains
                         !
                         call unpackGridBuffer( model%param_grid, parent_buffer, parent_buffer_size, index )
                         !
-                        call unpackScalarBuffer( model%cell_cond, main_grid, parent_buffer, parent_buffer_size, index )
+                        call unpackScalarBuffer( model%cell_cond_h, main_grid, parent_buffer, parent_buffer_size, index )
                         !
                         call model%SetSigMap( model%param_type )
                         !

@@ -15,7 +15,7 @@ module ForwardControlFile
         !
         !> FWD Component parameters
         character(:), allocatable :: grid_reader_type, grid_type, forward_solver_type
-        character(:), allocatable :: source_type_mt, source_type_csem
+        character(:), allocatable :: source_type_mt, source_type_csem, get_1d_from
         character(:), allocatable :: model_method, model_n_air_layer, model_max_height
         !
         !> Solver parameters
@@ -76,6 +76,8 @@ contains
                         self%source_type_mt = trim( args(2) )
                     elseif( index( line_text, "source_type_csem" ) > 0 ) then
                         self%source_type_csem = trim( args(2) )
+                    elseif( index( line_text, "get_1d_from" ) > 0 ) then
+                        self%get_1d_from = trim( args(2) )
                     elseif( index( line_text, "model_method" ) > 0 ) then
                         self%model_method = trim( args(2) )
                     elseif( index( line_text, "model_n_air_layer" ) > 0 ) then
@@ -186,6 +188,29 @@ contains
                 end select
                 !
                 write( *, "( A30, A20)" ) "          CSEM Source = ", source_type_csem
+                !
+            endif
+            !
+            ! CSEM Source_type
+            if( allocated( self%get_1d_from ) ) then
+                !
+                select case( self%get_1d_from )
+                    !
+                    case( "Fixed" )
+                        get_1d_from = FROM_FIXED_VALUE
+                    case( "Geometric_mean" )
+                        get_1d_from = FROM_GEO_MEAN
+                    case( "Mean_around_Tx" )
+                        get_1d_from = FROM_TX_GEO_MEAN
+                    case( "Tx_Position" )
+                        get_1d_from = FROM_TX_LOCATION
+                    case default
+                        get_1d_from = ""
+                        write( *, * ) "Error: Wrong get_1d_from, use [Fixed|Geometric_mean|Mean_around_Tx|Tx_Position]"
+                        !
+                end select
+                !
+                write( *, "( A30, A20)" ) "          Get 1D from = ", get_1d_from
                 !
             endif
             !

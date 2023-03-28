@@ -136,7 +136,7 @@ module refl_mod_new
 
 			
 contains
-  include 'quadpack_dbl.f90'
+#include "quadpack_dbl.f90"
   include 'reflectivity.f90'
   include 'init_refcoef.f90'
   include 'find_recdepths.f90'

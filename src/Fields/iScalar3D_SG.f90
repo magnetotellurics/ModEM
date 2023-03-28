@@ -169,9 +169,9 @@ contains
         !
         select case( self%grid_type )
             case( CORNER ) 
-                 self%v((/1, self%NdV(1)/), :, :) = real( cvalue, kind=prec )
-                 self%v(:, (/1, self%NdV(2)/), :) = real( cvalue, kind=prec )
-                 self%v(:, :, (/1, self%NdV(3)/)) = real( cvalue, kind=prec )
+                 self%v((/1, self%NdV(1)/), :, :) = cvalue
+                 self%v(:, (/1, self%NdV(2)/), :) = cvalue
+                 self%v(:, :, (/1, self%NdV(3)/)) = cvalue
                  !
             case default
                  stop "Error: setAllBoundaryiScalar3D_SG > Grid type not recognized."
@@ -185,10 +185,9 @@ contains
         implicit none
         !
         class( iScalar3D_SG_t ), intent( inout ) :: self
-        character(:), allocatable, intent( in ) :: bdry
+        character(*), intent( in ) :: bdry
         complex( kind=prec ), intent( in ) :: cvalue
         logical, intent( in ), optional :: int_only
-        !
         logical :: int_only_p
         !
         if( self%store_state /= compound ) then
@@ -206,49 +205,49 @@ contains
              if( int_only_p) then
                 select case(bdry)
                 case("x1")
-                     self%v(1, 2:self%NdV(2)-1, 2:self%NdV(3)-1) = real( cvalue, kind=prec ) 
+                     self%v(1, 2:self%NdV(2)-1, 2:self%NdV(3)-1) = cvalue 
                 case("x2")
-                     self%v(self%NdV(1), 2:self%NdV(2)-1, 2:self%NdV(3)-1) = real( cvalue, kind=prec )
+                     self%v(self%NdV(1), 2:self%NdV(2)-1, 2:self%NdV(3)-1) = cvalue
                 case("y1")
-                     self%v(2:self%NdV(1)-1, 1, 2:self%NdV(3)-1) = real( cvalue, kind=prec )
+                     self%v(2:self%NdV(1)-1, 1, 2:self%NdV(3)-1) = cvalue
                 case("y2")
-                     self%v(2:self%NdV(1)-1, self%NdV(2), 2:self%NdV(3)-1) = real( cvalue, kind=prec )
+                     self%v(2:self%NdV(1)-1, self%NdV(2), 2:self%NdV(3)-1) = cvalue
                 case("z1")
-                     self%v(2:self%NdV(1)-1, 2:self%NdV(2)-1, 1) = real( cvalue, kind=prec )
+                     self%v(2:self%NdV(1)-1, 2:self%NdV(2)-1, 1) = cvalue
                 case("z2")
-                     self%v(2:self%NdV(1)-1, 2:self%NdV(2)-1, self%NdV(3)) = real( cvalue, kind=prec )
+                     self%v(2:self%NdV(1)-1, 2:self%NdV(2)-1, self%NdV(3)) = cvalue
                 end select
              else
                 select case(bdry)
                 case("x1")
-                     self%v(1, :, :) = real( cvalue, kind=prec )
+                     self%v(1, :, :) = cvalue
                 case("x2")
-                     self%v(self%NdV(1), :, :) = real( cvalue, kind=prec )
+                     self%v(self%NdV(1), :, :) = cvalue
                 case("y1")
-                     self%v(:, 1, :) = real( cvalue, kind=prec )
+                     self%v(:, 1, :) = cvalue
                 case("y2")
-                     self%v(:, self%NdV(2), :) = real( cvalue, kind=prec )
+                     self%v(:, self%NdV(2), :) = cvalue
                 case("z1")
-                     self%v(:, :, 1) = real( cvalue, kind=prec )
+                     self%v(:, :, 1) = cvalue
                 case("z2")
-                     self%v(:, :, self%NdV(3)) = real( cvalue, kind=prec )
+                     self%v(:, :, self%NdV(3)) = cvalue
                 end select
              endif
              !
         case(FACE)
              select case(bdry)
                  case("x1")
-                    self%v(1, :, :) = real( cvalue, kind=prec )
+                    self%v(1, :, :) = cvalue
                  case("x2")
-                    self%v(self%NdV(1), :, :) = real( cvalue, kind=prec )
+                    self%v(self%NdV(1), :, :) = cvalue
                  case("y1")
-                    self%v(:, 1, :) = real( cvalue, kind=prec )
+                    self%v(:, 1, :) = cvalue
                  case("y2")
-                    self%v(:, self%NdV(2), :) = real( cvalue, kind=prec )
+                    self%v(:, self%NdV(2), :) = cvalue
                  case("z1")
-                    self%v(:, :, 1) = real( cvalue, kind=prec )
+                    self%v(:, :, 1) = cvalue
                  case("z2")
-                    self%v(:, :, self%NdV(3)) = real( cvalue, kind=prec )
+                    self%v(:, :, self%NdV(3)) = cvalue
              end select
              !
         case default
@@ -737,33 +736,34 @@ contains
         !
         complex( kind=prec ) :: cvalue
         !
-        type( iScalar3D_SG_t ) :: aux_vec
-        !
         if( self%isCompatible( rhs ) ) then
             !
-            aux_vec = self
-            if( aux_vec%store_state /= rhs%store_state ) call aux_vec%switchStoreState
-            !
-            select type( rhs )
+            if( self%store_state == rhs%store_state ) then
                 !
-                class is( iScalar3D_SG_t )
+                select type( rhs )
                     !
-                    if( rhs%store_state .EQ. compound ) then
+                    class is( iScalar3D_SG_t )
                         !
-                        cvalue = cmplx( sum( aux_vec%v * rhs%v ), 0.0, kind=prec )
+                        if( rhs%store_state .EQ. compound ) then
+                            !
+                            cvalue = cmplx( sum( self%v * rhs%v ), 0.0, kind=prec )
+                            !
+                        elseif( rhs%store_state .EQ. singleton ) then
+                            !
+                            cvalue = cmplx( sum( self%sv * rhs%sv ), 0.0, kind=prec )
+                            !
+                        else
+                            stop "Error: dotProdRVector3D_SG > Unknown rhs store_state!"
+                        endif
                         !
-                    elseif( rhs%store_state .EQ. singleton ) then
-                        !
-                        cvalue = cmplx( sum( aux_vec%sv * rhs%sv ), 0.0, kind=prec )
-                        !
-                    else
-                        stop "Error: dotProdRVector3D_SG > Unknown rhs store_state!"
-                    endif
+                    class default
+                        stop "Error: dotProdiScalar3D_SG > undefined rhs"
                     !
-                class default
-                    stop "Error: dotProdiScalar3D_SG > undefined rhs"
+                end select
                 !
-            end select
+            else
+                stop "Error: dotProdiScalar3D_SG > Incompatible store_state"
+            endif
             !
         else
             stop "Error: dotProdiScalar3D_SG > Incompatible rhs"

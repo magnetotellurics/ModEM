@@ -186,7 +186,7 @@ contains
         write( *, "( A30, I8, A13, f16.3, f16.3, f16.3, A10, es16.5, A6, I8)" ) &
         "TransmitterCSEM", self%i_tx, &
         ", Location= [", self%location(1), self%location(2), self%location(3), &
-        "], Period=",    self%period, &
+        "], Period=", self%period, &
         ", NRx=", size( self%receiver_indexes )
         !
     end subroutine printTransmitterCSEM

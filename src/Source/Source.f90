@@ -14,7 +14,11 @@ module Source
     character( len=15 ), parameter :: SRC_CSEM_EM1D = "SourceCSEM_EM1D"
     character( len=19 ), parameter :: SRC_CSEM_DIPOLE1D = "SourceCSEM_Dipole1D"
     !
-    character(:), allocatable :: get_1D_from
+    character(:), allocatable :: get_1d_from
+    character( len=5 ), parameter :: FROM_FIXED_VALUE = "Fixed"
+    character( len=14 ), parameter :: FROM_GEO_MEAN = "Geometric_mean"
+    character( len=14 ), parameter :: FROM_TX_GEO_MEAN = "Mean_around_Tx"
+    character( len=11 ), parameter :: FROM_TX_LOCATION = "Tx_Position"
     !
     class( Vector_t ), allocatable :: E_p
     !
