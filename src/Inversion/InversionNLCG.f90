@@ -458,7 +458,7 @@ contains
 #endif
         !
         !> ????
-        call weightGradrients( s_hat, all_data, dHat, JTd )
+        !call weightGradrients( s_hat, all_data, dHat, JTd )
         !
         call model_cov%multBy_CmSqrt( JTd, CmJTd )
         !
