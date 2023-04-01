@@ -1135,10 +1135,10 @@ elseif (trim(worker_job_task%what_to_do) .eq. 'Jmult') then
                        worker_job_task%taskid=taskid
      
                     call initSolver(per_index,sigma,grid,e0,e,comb) 
-                   
+                   call get_nPol_MPI(e0)
                    
                     write(6,'(a12,a18,i5,a12)') node_info, ' Start Receiving ' , orginal_nPol, ' from Master'
-                  do ipol=1,orginal_nPol 
+                  do ipol=1,nPol_MPI 
                     which_pol=ipol                  
                     call create_e_param_place_holder(e0)
                     call MPI_RECV(e_para_vec, Nbytes, MPI_PACKED, 0, FROM_MASTER,MPI_COMM_WORLD, STATUS, ierr)
