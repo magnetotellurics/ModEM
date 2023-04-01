@@ -115,9 +115,9 @@ contains
                 !
         end select
         !
-        rx_type = getIntReceiverType( data_entry%type )
+        rx_type = getIntReceiverType( data_entry%dtype )
         !
-        select case( data_entry%type )
+        select case( data_entry%dtype )
             !
             case( "Ex_Field" )
                 !
@@ -191,7 +191,7 @@ contains
                 receiver%units = "[]"
                 !
             case default
-                write( *, * ) "Unknown Receiver type :[", data_entry%type, "]"
+                write( *, * ) "Unknown Receiver type :[", data_entry%dtype, "]"
                 stop "Error: DataFile > loadReceiversAndTransmitters"
             !
         end select
@@ -224,13 +224,13 @@ contains
         !
         if( conjugated_data ) then
             !
-            c_value = cmplx( data_entry%real, -data_entry%imaginary, kind=prec )
+            c_value = cmplx( data_entry%rvalue, -data_entry%imaginary, kind=prec )
             !
             r_error = -data_entry%error * SI_factor
             !
         else
             !
-            c_value = cmplx( data_entry%real, data_entry%imaginary, kind=prec )
+            c_value = cmplx( data_entry%rvalue, data_entry%imaginary, kind=prec )
             !
             r_error = data_entry%error * SI_factor
             !

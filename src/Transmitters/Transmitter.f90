@@ -253,7 +253,7 @@ module Transmitter
             call source_int_force%setE( bSrc )
             !
             !> Free up local memory
-            deallocate( bSrc, solution )
+            deallocate( bSrc )
             !
             ! Verbose
             !write( *, * ) "               - Finish PMult"

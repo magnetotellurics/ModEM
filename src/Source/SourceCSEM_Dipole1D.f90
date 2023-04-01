@@ -38,6 +38,7 @@ module SourceCSEM_Dipole1D
 contains
     !
     !> SourceCSEM_Dipole1D constructor
+    !
     function SourceCSEM_Dipole1D_ctor( model_operator, sigma, period, location, dip, azimuth, moment ) result( self )
         implicit none
         !
@@ -73,6 +74,7 @@ contains
     !
     !> Deconstructor routine:
     !>     Calls the base routine dealloc().
+    !
     subroutine SourceCSEM_Dipole1D_dtor( self )
         implicit none
         !
@@ -85,6 +87,7 @@ contains
     end subroutine SourceCSEM_Dipole1D_dtor
     !
     !> Set self%E from forward modeling 1D
+    !
     subroutine createE_SourceCSEM_Dipole1D( self )
         implicit none
         !
@@ -138,6 +141,7 @@ contains
     end subroutine createE_SourceCSEM_Dipole1D
     !
     !> No subroutine briefing
+    !
     subroutine initilize_1d_vectors( grid )
         implicit none
         !
@@ -211,6 +215,7 @@ contains
     end subroutine initilize_1d_vectors 
     !
     !> No subroutine briefing
+    !
     subroutine create_Ep_from_Dipole1D( self, grid )
         implicit none
         !
@@ -269,6 +274,7 @@ contains
     end subroutine create_Ep_from_Dipole1D
     !
     !> No subroutine briefing
+    !
     subroutine set1DModel( self, xTx1D, yTx1D )
         !
         class( SourceCSEM_Dipole1D_t ), intent( inout ) :: self
@@ -439,6 +445,7 @@ contains
     end subroutine set1DModel
     !
     !> Set RHS from self%E
+    !
     subroutine createRHS_SourceCSEM_Dipole1D( self )
         implicit none
         !

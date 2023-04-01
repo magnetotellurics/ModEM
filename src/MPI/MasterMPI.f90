@@ -377,6 +377,7 @@ contains
     end subroutine masterJMult_T
     !
     !> Send FWD basic components to all workers
+    !
     subroutine broadcastBasicComponents()
         implicit none
         !
@@ -394,13 +395,14 @@ contains
             !
         enddo
         !
-        call MPI_BARRIER( main_comm, ierr )
+        call MPI_BARRIER( MPI_COMM_WORLD, ierr )
         !
         deallocate( basic_comp_buffer )
         !
     end subroutine broadcastBasicComponents
     !
     !> Send sigma to all workers
+    !
     subroutine broadcastSigma( sigma )
         implicit none
         !
@@ -422,13 +424,14 @@ contains
             !
         enddo
         !
-        call MPI_BARRIER( main_comm, ierr )
+        call MPI_BARRIER( MPI_COMM_WORLD, ierr )
         !
         deallocate( model_buffer )
         !
     end subroutine broadcastSigma
     !
     !> Send dsigma to all workers
+    !
     subroutine broadcastDSigma( dsigma )
         implicit none
         !
@@ -450,13 +453,14 @@ contains
             !
         enddo
         !
-        call MPI_BARRIER( main_comm, ierr )
+        call MPI_BARRIER( MPI_COMM_WORLD, ierr )
         !
         deallocate( model_buffer )
         !
     end subroutine broadcastDSigma
     !
     !> Send sigma model to all workers
+    !
     subroutine broadcastFinish
         implicit none
         !

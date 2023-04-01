@@ -11,6 +11,8 @@ module DataEntryMT
         !
     contains
         !
+        final :: DataEntryMT_dtor
+        !
         procedure, public :: write => writeDataEntryMT
         procedure, public :: getCopy => getCopyDataEntryMT
         !
@@ -23,43 +25,59 @@ module DataEntryMT
 contains
     !
     !> Parametrized constructor
-    function DataEntryMT_ctor( id, type, period, code, latitude, longitude, location, component, real, imaginary, error ) result ( self )
+    function DataEntryMT_ctor( i_de, dtype, period, code, latitude, longitude, location, component, rvalue, imaginary, error ) result ( self )
         implicit none
         !
         type( DataEntryMT_t ) :: self
         !
-        integer, intent( in ) :: id
-        character(:), allocatable, intent( in ) :: type, code, component
+        integer, intent( in ) :: i_de
+        character(:), allocatable, intent( in ) :: dtype, code, component
         real( kind=prec ), intent( in ) :: period, latitude, longitude, location(3)
-        real( kind=prec ), intent( in ) :: real, imaginary, error
+        real( kind=prec ), intent( in ) :: rvalue, imaginary, error
         !
         !write( *, * ) "Constructor DataEntryMT_t"
         !
-        self%id = id
-        self%type = type
+        call self%init
+        !
+        self%i_de = i_de
+        self%dtype = dtype
         self%period = period
         self%code = code
         self%latitude = latitude
         self%longitude = longitude
         self%location = location
         self%component = component
-        self%real = real
+        self%rvalue = rvalue
         self%imaginary = imaginary
         self%error = error
         !
     end function DataEntryMT_ctor
     !
+    !> Deconstructor routine:
+    !>     Calls the base routine dealloc().
+    !
+    subroutine DataEntryMT_dtor( self )
+        implicit none
+        !
+        type( DataEntryMT_t ), intent( inout ) :: self
+        !
+        !write( *, * ) "Destructor DataEntryMT_t:", self%id
+        !
+        call self%dealloc
+        !
+    end subroutine DataEntryMT_dtor
+    !
     !> No subroutine briefing
-	!
+    !
     function getCopyDataEntryMT( self ) result ( copy )
         implicit none
         !
         class( DataEntryMT_t ), intent( in ) :: self
         class( DataEntry_t ), allocatable :: copy
         !
-        allocate( copy, source = DataEntryMT_t( self%id, self%type, self%period, self%code, &
+        allocate( copy, source = DataEntryMT_t( self%i_de, self%dtype, self%period, self%code, &
                   self%latitude, self%longitude, self%location, &
-                  self%component, self%real, self%imaginary, self%error ) )
+                  self%component, self%rvalue, self%imaginary, self%error ) )
         !
     end function getCopyDataEntryMT
     !
@@ -67,8 +85,8 @@ contains
     subroutine writeDataEntryMT( self )
         class( DataEntryMT_t ), intent( in ) :: self
         !
-        write( *, * ) "Write DataEntryMT_t: ", self%id, self%type, self%period, self%code,    &
-        self%latitude, self%longitude, self%location, self%component, self%real, self%imaginary, self%error
+        write( *, * ) "Write DataEntryMT_t: ", self%i_de, self%dtype, self%period, self%code,    &
+        self%latitude, self%longitude, self%location, self%component, self%rvalue, self%imaginary, self%error
         !
     end subroutine writeDataEntryMT
     !

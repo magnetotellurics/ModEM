@@ -40,12 +40,12 @@ module DeclarationMPI
     integer, parameter :: receiver_single_field = 4
     !
     !> Labels for ModEM jobs
-    character( len=15 ) :: job_master = "MASTER_JOB", job_done = "FINISH_JOB"
-    character( len=15 ) :: job_finish = "STOP_JOBS", job_inversion = "JOB_INVERSION"
-    character( len=15 ) :: job_em_solve = "JOB_EM_SOLVE", job_forward = "JOB_FORWARD"
+    character( len=15 ) :: job_master = "MASTER_JOB", job_finish = "STOP_JOBS", job_done = "FINISH_JOB"
+    character( len=15 ) :: job_em_solve = "JOB_EM_SOLVE", job_forward = "JOB_FORWARD", job_inversion = "JOB_INVERSION"
     character( len=15 ) :: job_jmult = "JOB_JMULT", job_jmult_t = "JOB_JMULT_T"
     character( len=15 ) :: job_basic_components = "HANDLE_FWD_COMP"
-    character( len=15 ) :: job_sigma_model = "HANDLE_SIGMA", job_dsigma_model = "HANDLE_DSIGMA"
+    character( len=15 ) :: job_sigma_model = "HANDLE_SIGMA"
+    character( len=15 ) :: job_dsigma_model = "HANDLE_DSIGMA"
     !
     !> Structure to gather necessary MPI information for the execution of the different ModEM jobs.
     type :: JobInfo_t
@@ -96,7 +96,7 @@ contains
         if( mpi_size < 2 ) then
             !
             write( *, * ) "     "//achar(27)//"[31m# Error:"//achar(27)//"[0m Minimum of two processes required!"
-            write( *, * ) "       1 Master and 1 Worker."
+            write( *, * ) "        1 Master and 1 Worker."
             !
             call MPI_Finalize( ierr )
             !
@@ -111,6 +111,7 @@ contains
     !
     !> Allocates initial memory buffer for ForwardModelling
     !> With a preset size (for workers)
+	!
     subroutine createBasicComponentsBuffer()
         implicit none
         !
@@ -124,6 +125,7 @@ contains
     !
     !> Allocates initial memory buffer for ForwardModelling
     !> Making room for necessary information about Grid, Model and arrays of Transmitters and Receivers.
+	!
     function allocateBasicComponentsBuffer() result( basic_comp_size )
         implicit none
         !

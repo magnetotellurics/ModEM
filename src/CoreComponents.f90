@@ -49,6 +49,8 @@ module CoreComponents
     class( ModelCovarianceRec_t ), allocatable :: model_cov
     !
     !> Program Control Variables
+    character(8) :: str_date
+    character(6) :: str_time
     character(50) :: outdir_name
     !
     character(:), allocatable :: fwd_control_file_name
@@ -473,13 +475,7 @@ contains
     subroutine createOutputDirectory()
         implicit none
         !
-        character(8) str_date
-        character(6) str_time
-        !
         if( .NOT. has_outdir_name ) then
-            !
-            !>
-            call date_and_time( str_date, str_time )
             !
             select case( inversion_type )
                 !

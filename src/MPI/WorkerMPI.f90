@@ -244,7 +244,7 @@ contains
         !
         call receiveBasicComponents( master_id )
         !
-        call MPI_BARRIER( main_comm, ierr )
+        call MPI_BARRIER( MPI_COMM_WORLD, ierr )
         !
         !write( *, "( a30, i5, a11, i10, a11 )" ) "Worker", mpi_rank, " Received: ", job_info%basic_comp_size, " bytes."
         !
@@ -271,7 +271,7 @@ contains
         !
         call receiveModel( sigma, master_id )
         !
-        call MPI_BARRIER( main_comm, ierr )
+        call MPI_BARRIER( MPI_COMM_WORLD, ierr )
         !
         !write( *, "( a30, i5, a11, i10, a11 )" ) "Worker", mpi_rank, " Received: ", job_info%model_size, " bytes."
         !
@@ -288,7 +288,7 @@ contains
         !
         call receiveModel( dsigma, master_id )
         !
-        call MPI_BARRIER( main_comm, ierr )
+        call MPI_BARRIER( MPI_COMM_WORLD, ierr )
         !
         !write( *, "( a30, i5, a11, i10, a11 )" ) "Worker", mpi_rank, " Received: ", job_info%model_size, " bytes."
         !
@@ -303,23 +303,27 @@ contains
         !
         class( Transmitter_t ), pointer, intent( inout ) :: Tx
         !
-        if( .NOT. allocated( forward_solver ) ) then
+        if( allocated( forward_solver ) ) deallocate( forward_solver )
+        !
+        !> Instantiate the ForwardSolver - Specific type can be chosen via control file
+        select case( forward_solver_type )
             !
-            !> Instantiate the ForwardSolver - Specific type can be chosen via control file
-            select case( forward_solver_type )
+            case( FWD_IT_DC )
                 !
-                case( FWD_IT_DC )
-                    allocate( forward_solver, source = ForwardSolverIT_DC_t( model_operator, QMR ) )
-                    !
-                case default
-                    !
-                    write( *, * ) achar(27)//"[91mWarning:"//achar(27)//"[0m txForwardSolver > Undefined type, using IT_DC"
-                    !
-                    allocate( forward_solver, source = ForwardSolverIT_DC_t( model_operator, QMR ) )
-                    !
-            end select
-            !
-        endif
+                allocate( forward_solver, source = ForwardSolverIT_DC_t( model_operator, QMR ) )
+                !
+            case( "" )
+                !
+                write( *, * ) "     "//achar(27)//"[91m# Warning:"//achar(27)//"[0m txForwardSolver > Forward Solver type not provided, using IT_DC."
+                !
+                allocate( forward_solver, source = ForwardSolverIT_DC_t( model_operator, QMR ) )
+                !
+            case default
+                !
+                write( *, * ) "Wrong Forward Solver type: [", forward_solver_type, "]"
+                stop
+                !
+        end select
         !
         Tx%forward_solver => forward_solver
         !

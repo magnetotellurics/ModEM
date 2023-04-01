@@ -458,7 +458,7 @@ contains
 #endif
         !
         !> ????
-        !call weightGradrients( s_hat, all_data, dHat, JTd )
+        call weightGradrients( s_hat, all_data, dHat, JTd )
         !
         call model_cov%multBy_CmSqrt( JTd, CmJTd )
         !
@@ -1200,14 +1200,12 @@ contains
         class( ModelParameter_t ), intent( in ) :: dsigma, mHat
         !
         character(100) :: out_file_name
-        character(8) str_date
-        character(6) str_time
         character(3) :: char3
         !
         write( char3, "(i3.3)" ) iter
         !
         !> Write predicted data for this NLCG iteration
-        out_file_name = trim( outdir_name )//"/dHat_NLCG_"//char3//".dat"
+        out_file_name = trim( outdir_name )//"/PredictedData_NLCG_"//char3//".dat"
         !
         call writeData( dHat, trim( out_file_name ) )
         !

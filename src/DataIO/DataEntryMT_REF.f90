@@ -15,6 +15,8 @@ module DataEntryMT_REF
         !
     contains
         !
+        final :: DataEntryMT_REF_dtor
+        !
         procedure, public :: write => writeDataEntryMT_REF
         procedure, public :: getCopy => getCopyDataEntryMT_REF
         !
@@ -27,24 +29,26 @@ module DataEntryMT_REF
 contains
     !
     !> Parametrized constructor
-    function DataEntryMT_REF_ctor( id, type,    &
-            period, code, latitude, longitude, location, code_ref,    &
-            latitude_ref, longitude_ref, location_ref, component, real, imaginary, error ) result ( self )
+    function DataEntryMT_REF_ctor( i_de, dtype,    &
+        period, code, latitude, longitude, location, code_ref,    &
+        latitude_ref, longitude_ref, location_ref, component, rvalue, imaginary, error ) result ( self )
         implicit none
         !
         type( DataEntryMT_REF_t ) :: self
         !
-        integer, intent( in ) :: id
-        character(:), allocatable, intent( in ) :: type, code, code_ref, component
+        integer, intent( in ) :: i_de
+        character(:), allocatable, intent( in ) :: dtype, code, code_ref, component
         real( kind=prec ), intent( in ) :: period, latitude, longitude, &
-                                                   latitude_ref, longitude_ref, &
-                                                   location(3), location_ref(3)
-        real( kind=prec ), intent( in ) :: real, imaginary, error
+                                           latitude_ref, longitude_ref, &
+                                           location(3), location_ref(3)
+        real( kind=prec ), intent( in ) :: rvalue, imaginary, error
         !
         !write( *, * ) "Constructor DataEntryMT_REF_t"
         !
-        self%id = id
-        self%type = type
+        call self%init
+        !
+        self%i_de = i_de
+        self%dtype = dtype
         self%period = period
         self%code = code
         self%latitude = latitude
@@ -55,24 +59,40 @@ contains
         self%longitude_ref = longitude_ref
         self%location_ref = location_ref
         self%component = component
-        self%real = real
+        self%rvalue = rvalue
         self%imaginary = imaginary
         self%error = error
         !
     end function DataEntryMT_REF_ctor
     !
+    !> Deconstructor routine:
+    !>     Calls the base routine dealloc().
+    !
+    subroutine DataEntryMT_REF_dtor( self )
+        implicit none
+        !
+        type( DataEntryMT_REF_t ), intent( inout ) :: self
+        !
+        !write( *, * ) "Destructor DataEntryMT_REF_t:", self%id
+        !
+        call self%dealloc
+        !
+        if( allocated( self%code_ref ) ) deallocate( self%code_ref )
+        !
+    end subroutine DataEntryMT_REF_dtor
+    !
     !> No subroutine briefing
-	!
+    !
     function getCopyDataEntryMT_REF( self ) result ( copy )
         implicit none
         !
         class( DataEntryMT_REF_t ), intent( in ) :: self
-      class( DataEntry_t ), allocatable :: copy
+        class( DataEntry_t ), allocatable :: copy
         !
-        allocate( copy, source = DataEntryMT_REF_t( self%id, self%type,    &
-                     self%period, self%code, self%latitude, self%longitude, self%location, self%code_ref,    &
-                     self%latitude_ref, self%longitude_ref, self%location_ref, self%component, &
-                self%real, self%imaginary, self%error ) )
+        allocate( copy, source = DataEntryMT_REF_t( self%i_de, self%dtype,    &
+                  self%period, self%code, self%latitude, self%longitude, self%location, self%code_ref,    &
+                  self%latitude_ref, self%longitude_ref, self%location_ref, self%component, &
+                  self%rvalue, self%imaginary, self%error ) )
         !
     end function getCopyDataEntryMT_REF
     !
@@ -80,9 +100,9 @@ contains
     subroutine writeDataEntryMT_REF( self )
         class( DataEntryMT_REF_t ), intent( in ) :: self
         !
-        write( *, * ) "Write DataEntryMT_REF_t: ", self%id, self%type, self%period, self%code,    &
+        write( *, * ) "Write DataEntryMT_REF_t: ", self%i_de, self%dtype, self%period, self%code,    &
         self%latitude, self%longitude, self%location, self%code_ref, self%latitude_ref, self%longitude_ref,    &
-        self%location_ref, self%component, self%real, self%imaginary, self%error
+        self%location_ref, self%component, self%rvalue, self%imaginary, self%error
         !
     end subroutine writeDataEntryMT_REF
     !

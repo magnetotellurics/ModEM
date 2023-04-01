@@ -2,7 +2,7 @@
 !> math_constants.f90 defines math constants and other parameters
 !
 !> AUTHORS    Gary Egbert, Anna Kelbert & Naser Meqbel
-!>                    College of Earth, Ocean and Atmospheric Sciences.
+!>     College of Earth, Ocean and Atmospheric Sciences.
 !
 module Constants
     implicit none
@@ -85,16 +85,11 @@ module Constants
     character( len=8 ), parameter :: REGION = "Regional"
     character( len=6 ), parameter :: SPHERE = "Global"
     !
-    !> Grid type options (global will always use spherical coords)
-    character( len=6 ), parameter :: is_scalar = "SCALAR"
-    character( len=6 ), parameter :: is_vector = "VECTOR"
-    !
     character( len=7 ), parameter :: FORWARD = "FORWARD"
     character( len=7 ), parameter :: INVERSE = "INVERSE"
     character( len=5 ), parameter :: DERIV = "DERIV"
     !
     character( len=40 ), parameter :: DATA_FILE_TITLE_MT = "Synthetic 3D MT data written by ModEM-OO"
-    !
     character( len=42 ), parameter :: DATA_FILE_TITLE_CSEM = "Synthetic 3D CSEM data written by ModEM-OO"
     !
     character( len=4 ), parameter :: LOGE = "LOGE"

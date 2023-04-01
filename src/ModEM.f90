@@ -41,6 +41,8 @@ contains
         !
         real( kind=prec ) :: t_start, t_finish
         !
+        call date_and_time( str_date, str_time )
+        !
         !> Start the program and runtime count
         call cpu_time( t_start )
         !
@@ -52,7 +54,7 @@ contains
         call handleArguments()
         !
         write( *, * )
-        write( *, * ) "Start ModEM-OO."
+        write( *, "(a18, a8, a1, a6, a1)" ) "Start ModEM-OO at ", str_date, "_", str_time, "."
         write( *, * )
         !
         !> If it was passed by argument,

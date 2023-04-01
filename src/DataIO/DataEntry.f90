@@ -7,10 +7,10 @@ module DataEntry
     !
     type, abstract :: DataEntry_t
         !
-        integer :: id
-        character(:), allocatable :: type, code, component
+        integer :: i_de
+        character(:), allocatable :: dtype, code, component
         real( kind=prec ) :: period, location(3)
-        real( kind=prec ) :: real, imaginary, error, azimuth
+        real( kind=prec ) :: rvalue, imaginary, error, azimuth
         !
         logical :: is_complex
         !
@@ -18,6 +18,10 @@ module DataEntry
         !
         procedure( interface_write ), deferred, public :: write
         procedure( interface_get_copy_data_entry ), deferred, public :: getCopy
+        !
+        procedure, public :: init => initializeDataEntry
+        !
+        procedure, public :: dealloc => deallocateDataEntry
         !
         procedure, public :: isEqual => isEqualDe
         !
@@ -43,27 +47,63 @@ module DataEntry
     !
 contains
     !
+    !> Initialize transmitter base variables (Avoid initialization on declaration).
+    !
+    subroutine initializeDataEntry( self )
+        implicit none
+        !
+        class( DataEntry_t ), intent( inout ) :: self
+        !
+        self%i_de = 0
+        self%dtype = ""
+        self%code = ""
+        self%component = ""
+        self%period = R_ZERO
+        self%location = R_ZERO
+        self%rvalue = R_ZERO
+        self%imaginary = R_ZERO
+        self%error = R_ZERO
+        self%azimuth = R_ZERO
+        !
+    end subroutine initializeDataEntry
+    !
+    !> Free the memory used by all allocatable variables belonging to this transmitter.
+    !> Called before anything in the destructor of derived classes.
+    !
+    subroutine deallocateDataEntry( self )
+        implicit none
+        !
+        class( DataEntry_t ), intent( inout ) :: self
+        !
+        if( allocated( self%dtype ) ) deallocate( self%dtype )
+        !
+        if( allocated( self%code ) ) deallocate( self%code )
+        !
+        if( allocated( self%component ) ) deallocate( self%component )
+        !
+    end subroutine deallocateDataEntry
+    !
     !> No subroutine briefing
-	!
+    !
     function isEqualDe( self, other ) result ( equal )
         class( DataEntry_t ), intent( in ) :: self, other
         logical :: equal
         !
         equal = .FALSE.
         !
-        if( self%type .Eq. other%type .AND.                          &
+        if( self%dtype .EQ. other%dtype .AND.                        &
             ABS( self%period - other%period ) < TOL6 .AND.           & 
             ABS( self%location(1) - other%location(1) ) < TOL6 .AND. &
             ABS( self%location(2) - other%location(2) ) < TOL6 .AND. &
             ABS( self%location(3) - other%location(3) ) < TOL6 .AND. &
-            self%code .Eq. other%code .AND.                          &
-            self%component .Eq. other%component .AND.                &
-            ABS( self%real - other%real ) < TOL6 .AND.               &
+            self%code .EQ. other%code .AND.                          &
+            self%component .EQ. other%component .AND.                &
+            ABS( self%rvalue - other%rvalue ) < TOL6 .AND.           &
             ABS( self%imaginary - other%imaginary ) < TOL6 .AND.     &
             ABS( self%error - other%error ) < TOL6 ) then
                 equal = .TRUE.
         endif
         !
     end function isEqualDe
-	!
+    !
 end module DataEntry

@@ -18,7 +18,8 @@ module ForwardModeling
 contains
     !
     !> Calculate ESolution for all transmitters.
-    !> ForwardSolver must be allocated
+    !> ForwardSolver must be allocated!
+    !
     subroutine solveAll( sigma )
         implicit none
         !
@@ -74,11 +75,16 @@ contains
                         !
                         call Tx%setSource( SourceMT_2D_t( model_operator, sigma, Tx%period ) )
                         !
-                    case default
+                    case( "" )
                         !
-                        write( *, * ) "     "//achar(27)//"[91m# Warning:"//achar(27)//"[0m solveTx > Undefined source_type_mt, using 1D"
+                        write( *, * ) "     "//achar(27)//"[91m# Warning:"//achar(27)//"[0m solveTx > MT Source type not provided, using SourceMT_1D_t."
                         !
                         call Tx%setSource( SourceMT_1D_t( model_operator, sigma, Tx%period ) )
+                        !
+                    case default
+                        !
+                        write( *, * ) "Wrong MT Source type: [", source_type_mt, "]"
+                        stop
                         !
                 end select
                 !
@@ -95,11 +101,16 @@ contains
                         !
                         call Tx%setSource( SourceCSEM_Dipole1D_t( model_operator, sigma, Tx%period, Tx%location, Tx%dip, Tx%azimuth, Tx%moment ) )
                         !
-                    case default
+                    case( "" )
                         !
-                        write( *, * ) "     "//achar(27)//"[91m# Warning:"//achar(27)//"[0m solveTx > Undefined source_type_csem, using Dipole1D: [", source_type_csem, "]"
+                        write( *, * ) "     "//achar(27)//"[91m# Warning:"//achar(27)//"[0m solveTx > CSEM Source type not provided, using Dipole1D."
                         !
                         call Tx%setSource( SourceCSEM_Dipole1D_t( model_operator, sigma, Tx%period, Tx%location, Tx%dip, Tx%azimuth, Tx%moment ) )
+                        !
+                    case default
+                        !
+                        write( *, * ) "Wrong CSEM Source type: [", source_type_csem, "]"
+                        stop
                         !
                 end select
                 !
@@ -248,13 +259,19 @@ contains
         select case( forward_solver_type )
             !
             case( FWD_IT_DC )
+                !
+                allocate( forward_solver, source = ForwardSolverIT_DC_t( model_operator, QMR ) )
+                !
+            case( "" )
+                !
+                write( *, * ) "     "//achar(27)//"[91m# Warning:"//achar(27)//"[0m createDistributeForwardSolver > Forward Solver type not provided, using IT_DC."
+                !
                 allocate( forward_solver, source = ForwardSolverIT_DC_t( model_operator, QMR ) )
                 !
             case default
                 !
-                write( *, * ) "Warning: createDistributeForwardSolver > Undefined forward_solver, using IT_DC"
-                !
-                allocate( forward_solver, source = ForwardSolverIT_DC_t( model_operator, QMR ) )
+                write( *, * ) "Wrong Forward Solver type: [", forward_solver_type, "]"
+                stop
                 !
         end select
         !
@@ -268,6 +285,7 @@ contains
     !
     !> Write all e_solutions, with its proper Rx headers, 
     !> into to the binary file <predicted_data_file_name>
+    !
     subroutine writeAllESolution( file_name )
         implicit none
         !

@@ -12,6 +12,8 @@ module DataEntryCSEM
         !
         contains
             !
+            final :: DataEntryCSEM_dtor
+            !
             procedure, public :: write => writeDataEntryCSEM
             procedure, public :: getCopy => getCopyDataEntryCSEM
             !
@@ -24,20 +26,23 @@ module DataEntryCSEM
 contains
     !
     !> Parametrized constructor
-    function DataEntryCSEM_ctor( id, type, dipole, period, moment, tx_azimuth, &
-        dip, tx_location, code, location, component, real, imaginary, error, azimuth ) result( self )
+    function DataEntryCSEM_ctor( i_de, dtype, dipole, period, moment, tx_azimuth, &
+        dip, tx_location, code, location, component, rvalue, imaginary, error, azimuth ) result( self )
         implicit none
+        !
         type( DataEntryCSEM_t ) :: self
-        integer, intent( in ) :: id
-        character(:), allocatable, intent( in ) :: type, dipole, code, component
+        integer, intent( in ) :: i_de
+        character(:), allocatable, intent( in ) :: dtype, dipole, code, component
         real( kind=prec ), intent( in ) :: period, moment, tx_azimuth, dip, location(3), tx_location(3)
-        real( kind=prec ), intent( in ) :: real, imaginary, error
+        real( kind=prec ), intent( in ) :: rvalue, imaginary, error
         real( kind=prec ), intent( in ), optional :: azimuth
         !
         !write( *, * ) "Constructor DataEntryCSEM_t", dipole
         !
-        self%id = id
-        self%type = type
+        call self%init
+        !
+        self%i_de = i_de
+        self%dtype = dtype
         self%dipole = dipole
         self%period = period
         self%moment = moment
@@ -47,7 +52,7 @@ contains
         self%code = code
         self%location = location
         self%component = component
-        self%real = real
+        self%rvalue = rvalue
         self%imaginary = imaginary
         self%error = error
         !
@@ -60,6 +65,22 @@ contains
         !
     end function DataEntryCSEM_ctor
     !
+    !> Deconstructor routine:
+    !>     Calls the base routine dealloc().
+    !
+    subroutine DataEntryCSEM_dtor( self )
+        implicit none
+        !
+        type( DataEntryCSEM_t ), intent( inout ) :: self
+        !
+        !write( *, * ) "Destructor DataEntryCSEM_t:", self%id
+        !
+        call self%dealloc
+        !
+        if( allocated( self%dipole ) ) deallocate( self%dipole )
+        !
+    end subroutine DataEntryCSEM_dtor
+    !
     !> No subroutine briefing
     !
     function getCopyDataEntryCSEM( self ) result ( copy )
@@ -68,9 +89,9 @@ contains
         class( DataEntryCSEM_t ), intent( in ) :: self
       class( DataEntry_t ), allocatable :: copy
         !
-        allocate( copy, source = DataEntryCSEM_t( self%id, self%type,    &
-                     self%dipole, self%period, self%moment, self%tx_azimuth, self%dip, self%tx_location,    &
-                     self%code, self%location, self%component, self%real, self%imaginary, self%error ) )
+        allocate( copy, source = DataEntryCSEM_t( self%i_de, self%dtype,    &
+                  self%dipole, self%period, self%moment, self%tx_azimuth, self%dip, self%tx_location,    &
+                  self%code, self%location, self%component, self%rvalue, self%imaginary, self%error ) )
         !
     end function getCopyDataEntryCSEM
     !
@@ -78,9 +99,9 @@ contains
     subroutine writeDataEntryCSEM( self )
         class( DataEntryCSEM_t ), intent( in ) :: self
         !
-        write( *, * ) "Write DataEntryCSEM_t: ", self%id, self%type, self%dipole, self%period,        &
+        write( *, * ) "Write DataEntryCSEM_t: ", self%i_de, self%dtype, self%dipole, self%period,    &
         self%moment, self%tx_azimuth, self%dip, self%tx_location, self%code, self%location, self%component,    &
-        self%real, self%imaginary, self%error
+        self%rvalue, self%imaginary, self%error
         !
     end subroutine writeDataEntryCSEM
     !

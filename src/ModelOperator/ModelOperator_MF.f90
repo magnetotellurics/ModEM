@@ -265,7 +265,7 @@ contains
         !
         do ix = 2, self%metric%grid%nx
              do iz = 1, self%metric%grid%nz
-                    self%zX(ix, iz) = 1.0 / (self%metric%grid%del_x(ix)*self%metric%grid%dz(iz))
+                 self%zX(ix, iz) = 1.0 / (self%metric%grid%del_x(ix)*self%metric%grid%dz(iz))
              enddo
         enddo
         !
