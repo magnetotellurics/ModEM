@@ -113,9 +113,11 @@ contains
         comega = cmplx( 0.0, 1./ ( 2.0 * PI / transmitter%period ), kind=prec )
         !
         allocate( EE(2,2) )
-        call transmitter%getSolutionVector( 1, tx_e_1 )
-        call transmitter%getSolutionVector( 2, tx_e_2 )
-        !
+		!
+		tx_e_1 = transmitter%getSolutionVector( 1 )
+		!
+		tx_e_2 = transmitter%getSolutionVector( 2 )
+		!
         select type( tx_e_1 )
             !
             class is( cVector3D_SG_t )

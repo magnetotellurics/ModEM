@@ -210,7 +210,9 @@ contains
 #else
         !
         call createDistributeForwardSolver()
-        !
+		!
+        call solveAll( sigma )
+		!
         call serialJMult_T( sigma, all_measured_data, dsigma )
         !
 #endif
@@ -280,7 +282,7 @@ contains
             !> Add dsigma_tx to dsigma
             call dsigma%linComb( ONE, ONE, dsigma_tx )
             !
-            deallocate( dsigma_tx, temp_scalar )
+            deallocate( dsigma_tx )
             !
         enddo
         !

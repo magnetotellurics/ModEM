@@ -87,7 +87,7 @@ contains
             allocate( grid, source = Grid3D_SG_t( nx, ny, nzAir, nzEarth, dx, dy, dz ) )
             !
             !> Read conductivity values in a model parameter object.
-            allocate(rho(nx, ny, nzEarth))
+            allocate( rho( nx, ny, nzEarth ) )
             do k = 1, nzEarth
                 do j = 1, ny
                     read(ioPrm, *, iostat = io_stat) (rho(i, j, k), i = nx, 1, -1)
@@ -107,6 +107,8 @@ contains
                     elseif(index(paramType, "LINEAR") > 0) then
                         ccond%v = ONE/rho
                     endif
+                    !
+                    deallocate( rho )
                     !
                     allocate( model, source = ModelParameterCell_SG_t( grid, ccond, paramType ) )
                     !

@@ -55,9 +55,6 @@ contains
         class( DataEntry_t ), intent( inout ) :: self
         !
         self%i_de = 0
-        self%dtype = ""
-        self%code = ""
-        self%component = ""
         self%period = R_ZERO
         self%location = R_ZERO
         self%rvalue = R_ZERO

@@ -139,9 +139,9 @@ contains
         class( Vector_t ), pointer :: tx_e_1
         !
         comega = cmplx( 0.0, 1./ ( 2.0 * PI / transmitter%period ), kind=prec )
-        !
-        call transmitter%getSolutionVector( 1, tx_e_1 )
-        !
+		!
+		tx_e_1 = transmitter%getSolutionVector( 1 )
+		!
         select type( tx_e_1 )
             !
             class is( cVector3D_SG_t )

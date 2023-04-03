@@ -356,7 +356,7 @@ contains
         implicit none
         !
         class( Field_t ), intent( in ) :: self
-        class( Field_t ), allocatable, intent( inout ) :: boundary
+        class( Field_t ), allocatable, intent( out ) :: boundary
         !
         allocate( boundary, source = self )
         !
@@ -369,7 +369,7 @@ contains
         implicit none
         !
         class( Field_t ), intent( in ) :: self
-        class( Field_t ), allocatable, intent( inout ) :: interior
+        class( Field_t ), allocatable, intent( out ) :: interior
         !
         allocate( interior, source = self )
         !
