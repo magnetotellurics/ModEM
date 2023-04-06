@@ -56,14 +56,14 @@ subroutine interp_intvals_ved_allcomp(refl_var,src,ifreq,sz,zr,bgdat,Ex,Ey,Ez,Hx
   !indicators for fast Hankel transform or adaptive integration
   wellbehaved = .true.
   sz_eq_zr = .false.
-  if (sz.eq.zr) then
+  if(sz.eq.zr) then
     wellbehaved(1:2) = .false.
     sz_eq_zr = .true.
   endif
 
-  if (present(funcC1TMvedv)) then
+  if(present(funcC1TMvedv)) then
     with_dvert = .true.
-    if (sz_eq_zr) then
+    if(sz_eq_zr) then
       wellbehaved(7:8) = .false.
     endif
   else
@@ -90,15 +90,15 @@ subroutine interp_intvals_ved_allcomp(refl_var,src,ifreq,sz,zr,bgdat,Ex,Ey,Ez,Hx
       cosbeta = cos(beta)
       sinbeta = sin(beta)
 
-      r_is_zero: if (r.eq.0._real64) then
+      r_is_zero: if(r.eq.0._real64) then
 
         !quick & dirty: skip the point if receiver is right at source point
-        if (sz_eq_zr) then
-          if (refl_var%infolevel.ge.output_more) &
+        if(sz_eq_zr) then
+          if(refl_var%infolevel.ge.output_more) &
             write(*,'(a)') 'WARNING: cannot handle receiver right at source point yet!'
 
           !still add special contribution right at source point - here for forward modeling only!!!
-          if (ilay .eq. 0)  Ez(recidx) = Ez(recidx) + JEz / (dci * omeps_srcv)
+          if(ilay .eq. 0)  Ez(recidx) = Ez(recidx) + JEz / (dci * omeps_srcv)
 
           !skip numerical integral evaluations - they would most likely fail anyway, need to look at this...
           cycle
@@ -110,7 +110,7 @@ subroutine interp_intvals_ved_allcomp(refl_var,src,ifreq,sz,zr,bgdat,Ex,Ey,Ez,Hx
         IC1TMved = 0._real64
 
       else  !r is not zero
-        smallr: if (r.lt.rsplmin) then !r is but smaller than threshold radius for spline interpolation
+        smallr: if(r.lt.rsplmin) then !r is but smaller than threshold radius for spline interpolation
 
           !reflection coeff. for this radius
           refl_var%refcoef_changed = .true.
@@ -152,12 +152,12 @@ subroutine interp_intvals_ved_allcomp(refl_var,src,ifreq,sz,zr,bgdat,Ex,Ey,Ez,Hx
 
       !no Hz for VED source
       
-      dvert: if (with_dvert) then
-        r_is_zerov: if (r.eq.0._real64) then
+      dvert: if(with_dvert) then
+        r_is_zerov: if(r.eq.0._real64) then
 
           !cycling already done for epsh
           !special contribution right at source point is ignored here and added later!!!
-          !if (sz_eq_zr) cycle
+          !if(sz_eq_zr) cycle
 
           !we only have an Ez component for r=0
           IB1TMved = 0._real64
@@ -165,7 +165,7 @@ subroutine interp_intvals_ved_allcomp(refl_var,src,ifreq,sz,zr,bgdat,Ex,Ey,Ez,Hx
           IC1TMved = 0._real64
 
         else  !r is not zero
-          smallrv: if (r.lt.rsplmin) then !r is but smaller than threshold radius for spline interpolation
+          smallrv: if(r.lt.rsplmin) then !r is but smaller than threshold radius for spline interpolation
 
             !reflection coeff. for this radius
             refl_var%refcoef_changed = .true.
@@ -211,9 +211,9 @@ subroutine interp_intvals_ved_allcomp(refl_var,src,ifreq,sz,zr,bgdat,Ex,Ey,Ez,Hx
 
   !special terms for all components in source layer:
   !add to overall integral derivatives for isotropic case, to epsv derivatives for VTI
-  deriv_ilaysrc: if (ilay .eq. ilaysrc) then
+  deriv_ilaysrc: if(ilay .eq. ilaysrc) then
 
-    if (with_dvert) then
+    if(with_dvert) then
       Exrec => Exv
       Eyrec => Eyv
       Ezrec => Ezv
@@ -230,7 +230,7 @@ subroutine interp_intvals_ved_allcomp(refl_var,src,ifreq,sz,zr,bgdat,Ex,Ey,Ez,Hx
     endif
 
     !check if receivers are in the same layer - in that case, add all special terms in one go
-    if (ilay .eq. ilayrec) then
+    if(ilay .eq. ilayrec) then
       isrec = 1._real64
     else
       isrec = 0._real64
@@ -262,10 +262,10 @@ subroutine interp_intvals_ved_allcomp(refl_var,src,ifreq,sz,zr,bgdat,Ex,Ey,Ez,Hx
         cosbeta = cos(beta)
         sinbeta = sin(beta)
 
-        r_is_zero2: if (r.eq.0._real64) then
+        r_is_zero2: if(r.eq.0._real64) then
 
           !quick & dirty: skip the point if receiver is right at source point
-          if (sz_eq_zr) then
+          if(sz_eq_zr) then
             !still add special contribution right at source point - here for derivatives only
             Ezrec(recidx) = Ezrec(recidx) - JEz / (dci * omeps_srcv * epsv(ilaysrc))
             !skip numerical integral evaluations - they would most likely fail anyway, need to look at this...
@@ -278,7 +278,7 @@ subroutine interp_intvals_ved_allcomp(refl_var,src,ifreq,sz,zr,bgdat,Ex,Ey,Ez,Hx
           IC1TMved = 0._real64
 
         else  !r is not zero
-          smallr2: if (r.lt.rsplmin) then !r is but smaller than threshold radius for spline interpolation
+          smallr2: if(r.lt.rsplmin) then !r is but smaller than threshold radius for spline interpolation
 
             !reflection coeff. for this radius
             call prepare_refcoef(refl_var,r,ved,aniso)
@@ -318,9 +318,9 @@ subroutine interp_intvals_ved_allcomp(refl_var,src,ifreq,sz,zr,bgdat,Ex,Ey,Ez,Hx
     enddo  !source elements
 
   !derivatives for receiver layer, receivers NOT in source layer
-  elseif (ilay .eq. ilayrec) then
+  elseif(ilay .eq. ilayrec) then
 
-    if (with_dvert) then
+    if(with_dvert) then
       Ezrec => Ezv
     else
       Ezrec => Ez
@@ -344,13 +344,13 @@ subroutine interp_intvals_ved_allcomp(refl_var,src,ifreq,sz,zr,bgdat,Ex,Ey,Ez,Hx
         x = bgdat%Exypos(recidx,1) - refl_var%xs(isrc)
         r = sqrt(x**2 + y**2)
 
-        r_is_zero3: if (r.eq.0._real64) then
+        r_is_zero3: if(r.eq.0._real64) then
           !quick & dirty: skip the point if receiver is right at source point
-          if (sz_eq_zr) cycle
+          if(sz_eq_zr) cycle
           IC0TMved = compute_1valr0(funcC0TMfwd)
 
         else  !r is not zero
-          smallr3: if (r.lt.rsplmin) then !r is but smaller than threshold radius for spline interpolation
+          smallr3: if(r.lt.rsplmin) then !r is but smaller than threshold radius for spline interpolation
             !reflection coeff. for this radius
             call prepare_refcoef(refl_var,r,ved,aniso)
 
@@ -425,14 +425,14 @@ subroutine interp_intvals_ved_Exy(refl_var,src,ifreq,sz,zr,bgdat,Ex,Ey,omeps_src
   !indicators for fast Hankel transform or adaptive integration
   wellbehaved = .true.
   sz_eq_zr = .false.
-  if (sz.eq.zr) then
+  if(sz.eq.zr) then
     wellbehaved(1:2) = .false.
     sz_eq_zr = .true.
   endif
 
-  if (present(funcB1TMvedv)) then
+  if(present(funcB1TMvedv)) then
     with_dvert = .true.
-    if (sz_eq_zr) then
+    if(sz_eq_zr) then
       wellbehaved(7:8) = .false.
     endif
   else
@@ -449,7 +449,7 @@ subroutine interp_intvals_ved_Exy(refl_var,src,ifreq,sz,zr,bgdat,Ex,Ey,omeps_src
 
 
     !same positions for Ex and Ey
-    exy_equalpos: if (bgdat%nExy.gt.0) then
+    exy_equalpos: if(bgdat%nExy.gt.0) then
 
     do irec=refl_var%irecstart,refl_var%irecend
       recidx = refl_var%irecperzExy(irec)
@@ -463,18 +463,18 @@ subroutine interp_intvals_ved_Exy(refl_var,src,ifreq,sz,zr,bgdat,Ex,Ey,omeps_src
       cosbeta = cos(beta)
       sinbeta = sin(beta)
 
-      r_is_zero: if (r.eq.0._real64) then
+      r_is_zero: if(r.eq.0._real64) then
 
         !quick & dirty: skip the point if receiver is right at source point
-        if (sz_eq_zr) then
-          if (refl_var%infolevel.ge.output_more) &
+        if(sz_eq_zr) then
+          if(refl_var%infolevel.ge.output_more) &
             write(*,'(a)') 'WARNING: cannot handle receiver right at source point yet!'
           !skip numerical integral evaluations - they would most likely fail anyway, need to look at this...
           cycle
         endif
         IB1TMved = 0._real64
       else  !r is not zero
-        smallr: if (r.lt.rsplmin) then !r is but smaller than threshold radius for spline interpolation
+        smallr: if(r.lt.rsplmin) then !r is but smaller than threshold radius for spline interpolation
 
           !reflection coeff. for this radius
           refl_var%refcoef_changed = .true.
@@ -496,15 +496,15 @@ subroutine interp_intvals_ved_Exy(refl_var,src,ifreq,sz,zr,bgdat,Ex,Ey,omeps_src
       Ex(recidx) = Ex(recidx) + cosbeta*Er
       Ey(recidx) = Ey(recidx) + sinbeta*Er
 
-      dvert: if (with_dvert) then
-        r_is_zerov: if (r.eq.0._real64) then
+      dvert: if(with_dvert) then
+        r_is_zerov: if(r.eq.0._real64) then
 
           !cycling already done for epsh
           !special contribution right at source point is ignored here and added later!!!
-          !if (sz_eq_zr) cycle
+          !if(sz_eq_zr) cycle
           IB1TMved = 0._real64
         else  !r is not zero
-          smallrv: if (r.lt.rsplmin) then !r is but smaller than threshold radius for spline interpolation
+          smallrv: if(r.lt.rsplmin) then !r is but smaller than threshold radius for spline interpolation
 
             !reflection coeff. for this radius
             refl_var%refcoef_changed = .true.
@@ -529,7 +529,7 @@ subroutine interp_intvals_ved_Exy(refl_var,src,ifreq,sz,zr,bgdat,Ex,Ey,omeps_src
 
     else
 
-      have_ex: if (bgdat%nEx .gt. 0) then
+      have_ex: if(bgdat%nEx .gt. 0) then
 
     do irec=refl_var%irecstart,refl_var%irecend
       recidx = refl_var%irecperzExy(irec)
@@ -543,18 +543,18 @@ subroutine interp_intvals_ved_Exy(refl_var,src,ifreq,sz,zr,bgdat,Ex,Ey,omeps_src
       cosbeta = cos(beta)
       sinbeta = sin(beta)
 
-      r_is_zeroex: if (r.eq.0._real64) then
+      r_is_zeroex: if(r.eq.0._real64) then
 
         !quick & dirty: skip the point if receiver is right at source point
-        if (sz_eq_zr) then
-          if (refl_var%infolevel.ge.output_more) &
+        if(sz_eq_zr) then
+          if(refl_var%infolevel.ge.output_more) &
             write(*,'(a)') 'WARNING: cannot handle receiver right at source point yet!'
           !skip numerical integral evaluations - they would most likely fail anyway, need to look at this...
           cycle
         endif
         IB1TMved = 0._real64
       else  !r is not zero
-        smallrex: if (r.lt.rsplmin) then !r is but smaller than threshold radius for spline interpolation
+        smallrex: if(r.lt.rsplmin) then !r is but smaller than threshold radius for spline interpolation
 
           !reflection coeff. for this radius
           refl_var%refcoef_changed = .true.
@@ -575,15 +575,15 @@ subroutine interp_intvals_ved_Exy(refl_var,src,ifreq,sz,zr,bgdat,Ex,Ey,omeps_src
       !don't take complex conjugate here, but at the very end!
       Ex(recidx) = Ex(recidx) + cosbeta*Er
 
-      dvertex: if (with_dvert) then
-        r_is_zerovex: if (r.eq.0._real64) then
+      dvertex: if(with_dvert) then
+        r_is_zerovex: if(r.eq.0._real64) then
 
           !cycling already done for epsh
           !special contribution right at source point is ignored here and added later!!!
-          !if (sz_eq_zr) cycle
+          !if(sz_eq_zr) cycle
           IB1TMved = 0._real64
         else  !r is not zero
-          smallrvex: if (r.lt.rsplmin) then !r is but smaller than threshold radius for spline interpolation
+          smallrvex: if(r.lt.rsplmin) then !r is but smaller than threshold radius for spline interpolation
 
             !reflection coeff. for this radius
             refl_var%refcoef_changed = .true.
@@ -607,7 +607,7 @@ subroutine interp_intvals_ved_Exy(refl_var,src,ifreq,sz,zr,bgdat,Ex,Ey,omeps_src
 
       endif have_ex
 
-      have_ey: if (bgdat%nEy .gt. 0) then
+      have_ey: if(bgdat%nEy .gt. 0) then
 
     do irec=refl_var%irecstart,refl_var%irecend
       recidx = refl_var%irecperzExy(irec)
@@ -621,18 +621,18 @@ subroutine interp_intvals_ved_Exy(refl_var,src,ifreq,sz,zr,bgdat,Ex,Ey,omeps_src
       cosbeta = cos(beta)
       sinbeta = sin(beta)
 
-      r_is_zeroey: if (r.eq.0._real64) then
+      r_is_zeroey: if(r.eq.0._real64) then
 
         !quick & dirty: skip the point if receiver is right at source point
-        if (sz_eq_zr) then
-          if (refl_var%infolevel.ge.output_more) &
+        if(sz_eq_zr) then
+          if(refl_var%infolevel.ge.output_more) &
             write(*,'(a)') 'WARNING: cannot handle receiver right at source point yet!'
           !skip numerical integral evaluations - they would most likely fail anyway, need to look at this...
           cycle
         endif
         IB1TMved = 0._real64
       else  !r is not zero
-        smallrey: if (r.lt.rsplmin) then !r is but smaller than threshold radius for spline interpolation
+        smallrey: if(r.lt.rsplmin) then !r is but smaller than threshold radius for spline interpolation
 
           !reflection coeff. for this radius
           refl_var%refcoef_changed = .true.
@@ -653,15 +653,15 @@ subroutine interp_intvals_ved_Exy(refl_var,src,ifreq,sz,zr,bgdat,Ex,Ey,omeps_src
       !don't take complex conjugate here, but at the very end!
       Ey(recidx) = Ey(recidx) + sinbeta*Er
 
-      dvertey: if (with_dvert) then
-        r_is_zerovey: if (r.eq.0._real64) then
+      dvertey: if(with_dvert) then
+        r_is_zerovey: if(r.eq.0._real64) then
 
           !cycling already done for epsh
           !special contribution right at source point is ignored here and added later!!!
-          !if (sz_eq_zr) cycle
+          !if(sz_eq_zr) cycle
           IB1TMved = 0._real64
         else  !r is not zero
-          smallrvey: if (r.lt.rsplmin) then !r is but smaller than threshold radius for spline interpolation
+          smallrvey: if(r.lt.rsplmin) then !r is but smaller than threshold radius for spline interpolation
 
             !reflection coeff. for this radius
             refl_var%refcoef_changed = .true.
@@ -691,9 +691,9 @@ subroutine interp_intvals_ved_Exy(refl_var,src,ifreq,sz,zr,bgdat,Ex,Ey,omeps_src
 
   !special terms for all components in source layer:
   !add to overall integral derivatives for isotropic case, to epsv derivatives for VTI
-  deriv_ilaysrc: if (ilay .eq. ilaysrc) then
+  deriv_ilaysrc: if(ilay .eq. ilaysrc) then
 
-    if (with_dvert) then
+    if(with_dvert) then
       Exrec => Exv
       Eyrec => Eyv
     else
@@ -702,7 +702,7 @@ subroutine interp_intvals_ved_Exy(refl_var,src,ifreq,sz,zr,bgdat,Ex,Ey,omeps_src
     endif
 
     !check if receivers are in the same layer - in that case, add all special terms in one go
-    if (ilay .eq. ilayrec) then
+    if(ilay .eq. ilayrec) then
       isrec = 1._real64
     else
       isrec = 0._real64
@@ -721,7 +721,7 @@ subroutine interp_intvals_ved_Exy(refl_var,src,ifreq,sz,zr,bgdat,Ex,Ey,omeps_src
 
 
     !same positions for Ex and Ey
-    exy_equalpossrc: if (bgdat%nExy.gt.0) then
+    exy_equalpossrc: if(bgdat%nExy.gt.0) then
 
       do irec=refl_var%irecstart,refl_var%irecend
         recidx = refl_var%irecperzExy(irec)
@@ -735,15 +735,15 @@ subroutine interp_intvals_ved_Exy(refl_var,src,ifreq,sz,zr,bgdat,Ex,Ey,omeps_src
         cosbeta = cos(beta)
         sinbeta = sin(beta)
 
-        r_is_zero2src: if (r.eq.0._real64) then
+        r_is_zero2src: if(r.eq.0._real64) then
 
           !quick & dirty: skip the point if receiver is right at source point
-          if (sz_eq_zr) cycle
+          if(sz_eq_zr) cycle
 
           !we only have an Ez component for r=0
           IB1TMved = 0._real64
         else  !r is not zero
-          smallr2src: if (r.lt.rsplmin) then !r is but smaller than threshold radius for spline interpolation
+          smallr2src: if(r.lt.rsplmin) then !r is but smaller than threshold radius for spline interpolation
 
             !reflection coeff. for this radius
             call prepare_refcoef(refl_var,r,ved,aniso)
@@ -764,7 +764,7 @@ subroutine interp_intvals_ved_Exy(refl_var,src,ifreq,sz,zr,bgdat,Ex,Ey,omeps_src
 
     else
 
-      have_exsrc: if (bgdat%nEx .gt. 0) then
+      have_exsrc: if(bgdat%nEx .gt. 0) then
 
       do irec=refl_var%irecstart,refl_var%irecend
         recidx = refl_var%irecperzExy(irec)
@@ -778,15 +778,15 @@ subroutine interp_intvals_ved_Exy(refl_var,src,ifreq,sz,zr,bgdat,Ex,Ey,omeps_src
         cosbeta = cos(beta)
         sinbeta = sin(beta)
 
-        r_is_zero2srcex: if (r.eq.0._real64) then
+        r_is_zero2srcex: if(r.eq.0._real64) then
 
           !quick & dirty: skip the point if receiver is right at source point
-          if (sz_eq_zr) cycle
+          if(sz_eq_zr) cycle
 
           !we only have an Ez component for r=0
           IB1TMved = 0._real64
         else  !r is not zero
-          smallr2srcex: if (r.lt.rsplmin) then !r is but smaller than threshold radius for spline interpolation
+          smallr2srcex: if(r.lt.rsplmin) then !r is but smaller than threshold radius for spline interpolation
 
             !reflection coeff. for this radius
             call prepare_refcoef(refl_var,r,ved,aniso)
@@ -804,7 +804,7 @@ subroutine interp_intvals_ved_Exy(refl_var,src,ifreq,sz,zr,bgdat,Ex,Ey,omeps_src
 
       endif have_exsrc
 
-      have_eysrc: if (bgdat%nEy .gt. 0) then
+      have_eysrc: if(bgdat%nEy .gt. 0) then
 
       do irec=refl_var%irecstart,refl_var%irecend
         recidx = refl_var%irecperzExy(irec)
@@ -818,15 +818,15 @@ subroutine interp_intvals_ved_Exy(refl_var,src,ifreq,sz,zr,bgdat,Ex,Ey,omeps_src
         cosbeta = cos(beta)
         sinbeta = sin(beta)
 
-        r_is_zero2srcey: if (r.eq.0._real64) then
+        r_is_zero2srcey: if(r.eq.0._real64) then
 
           !quick & dirty: skip the point if receiver is right at source point
-          if (sz_eq_zr) cycle
+          if(sz_eq_zr) cycle
 
           !we only have an Ez component for r=0
           IB1TMved = 0._real64
         else  !r is not zero
-          smallr2srcey: if (r.lt.rsplmin) then !r is but smaller than threshold radius for spline interpolation
+          smallr2srcey: if(r.lt.rsplmin) then !r is but smaller than threshold radius for spline interpolation
 
             !reflection coeff. for this radius
             call prepare_refcoef(refl_var,r,ved,aniso)
@@ -905,14 +905,14 @@ subroutine interp_intvals_ved_Ez(refl_var,src,ifreq,sz,zr,bgdat,Ez,omeps_srcv,om
   !indicators for fast Hankel transform or adaptive integration
   wellbehaved = .true.
   sz_eq_zr = .false.
-  if (sz.eq.zr) then
+  if(sz.eq.zr) then
     wellbehaved(1:2) = .false.
     sz_eq_zr = .true.
   endif
 
-  if (present(funcC0TMvedv)) then
+  if(present(funcC0TMvedv)) then
     with_dvert = .true.
-    if (sz_eq_zr) then
+    if(sz_eq_zr) then
       wellbehaved(7:8) = .false.
     endif
   else
@@ -934,20 +934,20 @@ subroutine interp_intvals_ved_Ez(refl_var,src,ifreq,sz,zr,bgdat,Ez,omeps_srcv,om
       x = bgdat%Ezpos(recidx,1) - refl_var%xs(isrc)
       r = sqrt(x**2 + y**2)
 
-      r_is_zero: if (r.eq.0._real64) then
+      r_is_zero: if(r.eq.0._real64) then
 
         !quick & dirty: skip the point if receiver is right at source point
-        if (sz_eq_zr) then
-          if (refl_var%infolevel.ge.output_more) &
+        if(sz_eq_zr) then
+          if(refl_var%infolevel.ge.output_more) &
             write(*,'(a)') 'WARNING: cannot handle receiver right at source point yet!'
           !still add special contribution right at source point - here for forward modeling only!!!
-          if (ilay .eq. 0)  Ez(recidx) = Ez(recidx) + JEz / (dci * omeps_srcv)
+          if(ilay .eq. 0)  Ez(recidx) = Ez(recidx) + JEz / (dci * omeps_srcv)
           !skip numerical integral evaluations - they would most likely fail anyway, need to look at this...
           cycle
         endif
         IC0TMved = compute_1valr0(funcC0TMved)
       else  !r is not zero
-        smallr: if (r.lt.rsplmin) then !r is but smaller than threshold radius for spline interpolation
+        smallr: if(r.lt.rsplmin) then !r is but smaller than threshold radius for spline interpolation
 
           !reflection coeff. for this radius
           refl_var%refcoef_changed = .true.
@@ -963,16 +963,16 @@ subroutine interp_intvals_ved_Ez(refl_var,src,ifreq,sz,zr,bgdat,Ez,omeps_srcv,om
       !Ez in original x-y coordinate system
       Ez(recidx) = Ez(recidx) - JEz * IC0TMved / (omeps_srcv * omeps_recv)
 
-      dvert: if (with_dvert) then
-        r_is_zerov: if (r.eq.0._real64) then
+      dvert: if(with_dvert) then
+        r_is_zerov: if(r.eq.0._real64) then
 
           !cycling already done for epsh
           !special contribution right at source point is ignored here and added later!!!
-          !if (sz_eq_zr) cycle
+          !if(sz_eq_zr) cycle
 
           IC0TMved = compute_1valr0(funcC0TMvedv)
         else  !r is not zero
-          smallrv: if (r.lt.rsplmin) then !r is but smaller than threshold radius for spline interpolation
+          smallrv: if(r.lt.rsplmin) then !r is but smaller than threshold radius for spline interpolation
 
             !reflection coeff. for this radius
             refl_var%refcoef_changed = .true.
@@ -993,16 +993,16 @@ subroutine interp_intvals_ved_Ez(refl_var,src,ifreq,sz,zr,bgdat,Ez,omeps_srcv,om
 
   !special terms for all components in source layer:
   !add to overall integral derivatives for isotropic case, to epsv derivatives for VTI
-  deriv_ilaysrc: if (ilay .eq. ilaysrc) then
+  deriv_ilaysrc: if(ilay .eq. ilaysrc) then
 
-    if (with_dvert) then
+    if(with_dvert) then
       Ezrec => Ezv
     else
       Ezrec => Ez
     endif
 
     !check if receivers are in the same layer - in that case, add all special terms in one go
-    if (ilay .eq. ilayrec) then
+    if(ilay .eq. ilayrec) then
       isrec = 1._real64
     else
       isrec = 0._real64
@@ -1028,17 +1028,17 @@ subroutine interp_intvals_ved_Ez(refl_var,src,ifreq,sz,zr,bgdat,Ez,omeps_srcv,om
         x = bgdat%Ezpos(recidx,1) - refl_var%xs(isrc)
         r = sqrt(x**2 + y**2)
 
-        r_is_zero2: if (r.eq.0._real64) then
+        r_is_zero2: if(r.eq.0._real64) then
 
           !quick & dirty: skip the point if receiver is right at source point
-          if (sz_eq_zr) then
+          if(sz_eq_zr) then
             !still add special contribution right at source point - here for derivatives only
             Ezrec(recidx) = Ezrec(recidx) - JEz / (dci * omeps_srcv * epsv(ilaysrc))
             cycle
           endif
           IC0TMved = compute_1valr0(funcC0TMfwd)
         else  !r is not zero
-          smallr2: if (r.lt.rsplmin) then !r is but smaller than threshold radius for spline interpolation
+          smallr2: if(r.lt.rsplmin) then !r is but smaller than threshold radius for spline interpolation
 
             !reflection coeff. for this radius
             call prepare_refcoef(refl_var,r,ved,aniso)
@@ -1055,9 +1055,9 @@ subroutine interp_intvals_ved_Ez(refl_var,src,ifreq,sz,zr,bgdat,Ez,omeps_srcv,om
     enddo  !source elements
 
   !derivatives for receiver layer, receivers NOT in source layer
-  elseif (ilay .eq. ilayrec) then
+  elseif(ilay .eq. ilayrec) then
 
-    if (with_dvert) then
+    if(with_dvert) then
       Ezrec => Ezv
     else
       Ezrec => Ez
@@ -1081,13 +1081,13 @@ subroutine interp_intvals_ved_Ez(refl_var,src,ifreq,sz,zr,bgdat,Ez,omeps_srcv,om
         x = bgdat%Ezpos(recidx,1) - refl_var%xs(isrc)
         r = sqrt(x**2 + y**2)
 
-        r_is_zero3: if (r.eq.0._real64) then
+        r_is_zero3: if(r.eq.0._real64) then
           !quick & dirty: skip the point if receiver is right at source point
-          if (sz_eq_zr) cycle
+          if(sz_eq_zr) cycle
           IC0TMved = compute_1valr0(funcC0TMfwd)
 
         else  !r is not zero
-          smallr3: if (r.lt.rsplmin) then !r is but smaller than threshold radius for spline interpolation
+          smallr3: if(r.lt.rsplmin) then !r is but smaller than threshold radius for spline interpolation
             !reflection coeff. for this radius
             call prepare_refcoef(refl_var,r,ved,aniso)
 
@@ -1162,14 +1162,14 @@ subroutine interp_intvals_ved_Hxy(refl_var,src,ifreq,sz,zr,bgdat,Hx,Hy,omeps_src
   !indicators for fast Hankel transform or adaptive integration
   wellbehaved = .true.
   sz_eq_zr = .false.
-  if (sz.eq.zr) then
+  if(sz.eq.zr) then
     wellbehaved(1:2) = .false.
     sz_eq_zr = .true.
   endif
 
-  if (present(funcC1TMvedv)) then
+  if(present(funcC1TMvedv)) then
     with_dvert = .true.
-    if (sz_eq_zr) then
+    if(sz_eq_zr) then
       wellbehaved(7:8) = .false.
     endif
   else
@@ -1186,7 +1186,7 @@ subroutine interp_intvals_ved_Hxy(refl_var,src,ifreq,sz,zr,bgdat,Hx,Hy,omeps_src
 
 
     !same positions for Hx and Hy
-    hxy_equalpos: if (bgdat%nHxy.gt.0) then
+    hxy_equalpos: if(bgdat%nHxy.gt.0) then
 
     do irec=refl_var%irecstart,refl_var%irecend
       recidx = refl_var%irecperzHxy(irec)
@@ -1199,17 +1199,17 @@ subroutine interp_intvals_ved_Hxy(refl_var,src,ifreq,sz,zr,bgdat,Hx,Hy,omeps_src
       cosbeta = cos(beta)
       sinbeta = sin(beta)
 
-      r_is_zero: if (r.eq.0._real64) then
+      r_is_zero: if(r.eq.0._real64) then
 
         !quick & dirty: skip the point if receiver is right at source point
-        if (sz_eq_zr) then
-          if (refl_var%infolevel.ge.output_more) &
+        if(sz_eq_zr) then
+          if(refl_var%infolevel.ge.output_more) &
             write(*,'(a)') 'WARNING: cannot handle receiver right at source point yet!'
           cycle
         endif
         IC1TMved = 0._real64
       else  !r is not zero
-        smallr: if (r.lt.rsplmin) then !r is but smaller than threshold radius for spline interpolation
+        smallr: if(r.lt.rsplmin) then !r is but smaller than threshold radius for spline interpolation
 
           !reflection coeff. for this radius
           refl_var%refcoef_changed = .true.
@@ -1228,13 +1228,13 @@ subroutine interp_intvals_ved_Hxy(refl_var,src,ifreq,sz,zr,bgdat,Hx,Hy,omeps_src
       Hx(recidx) = Hx(recidx) - sinbeta*Hbeta
       Hy(recidx) = Hy(recidx) + cosbeta*Hbeta
 
-      dvert: if (with_dvert) then
-        r_is_zerov: if (r.eq.0._real64) then
+      dvert: if(with_dvert) then
+        r_is_zerov: if(r.eq.0._real64) then
           !cycling already done for epsh
-          !if (sz_eq_zr) cycle
+          !if(sz_eq_zr) cycle
           IC1TMved = 0._real64
         else  !r is not zero
-          smallrv: if (r.lt.rsplmin) then !r is but smaller than threshold radius for spline interpolation
+          smallrv: if(r.lt.rsplmin) then !r is but smaller than threshold radius for spline interpolation
 
             !reflection coeff. for this radius
             refl_var%refcoef_changed = .true.
@@ -1257,7 +1257,7 @@ subroutine interp_intvals_ved_Hxy(refl_var,src,ifreq,sz,zr,bgdat,Hx,Hy,omeps_src
 
     else
 
-      have_hx: if (bgdat%nHx .gt. 0) then
+      have_hx: if(bgdat%nHx .gt. 0) then
 
     do irec=refl_var%irecstart,refl_var%irecend
       recidx = refl_var%irecperzHxy(irec)
@@ -1270,17 +1270,17 @@ subroutine interp_intvals_ved_Hxy(refl_var,src,ifreq,sz,zr,bgdat,Hx,Hy,omeps_src
       cosbeta = cos(beta)
       sinbeta = sin(beta)
 
-      r_is_zerohx: if (r.eq.0._real64) then
+      r_is_zerohx: if(r.eq.0._real64) then
 
         !quick & dirty: skip the point if receiver is right at source point
-        if (sz_eq_zr) then
-          if (refl_var%infolevel.ge.output_more) &
+        if(sz_eq_zr) then
+          if(refl_var%infolevel.ge.output_more) &
             write(*,'(a)') 'WARNING: cannot handle receiver right at source point yet!'
           cycle
         endif
         IC1TMved = 0._real64
       else  !r is not zero
-        smallrhx: if (r.lt.rsplmin) then !r is but smaller than threshold radius for spline interpolation
+        smallrhx: if(r.lt.rsplmin) then !r is but smaller than threshold radius for spline interpolation
 
           !reflection coeff. for this radius
           refl_var%refcoef_changed = .true.
@@ -1298,13 +1298,13 @@ subroutine interp_intvals_ved_Hxy(refl_var,src,ifreq,sz,zr,bgdat,Hx,Hy,omeps_src
       !Hx, Hy in original x-y coordinate system
       Hx(recidx) = Hx(recidx) - sinbeta*Hbeta
 
-      dverthx: if (with_dvert) then
-        r_is_zerovhx: if (r.eq.0._real64) then
+      dverthx: if(with_dvert) then
+        r_is_zerovhx: if(r.eq.0._real64) then
           !cycling already done for epsh
-          !if (sz_eq_zr) cycle
+          !if(sz_eq_zr) cycle
           IC1TMved = 0._real64
         else  !r is not zero
-          smallrvhx: if (r.lt.rsplmin) then !r is but smaller than threshold radius for spline interpolation
+          smallrvhx: if(r.lt.rsplmin) then !r is but smaller than threshold radius for spline interpolation
 
             !reflection coeff. for this radius
             refl_var%refcoef_changed = .true.
@@ -1326,7 +1326,7 @@ subroutine interp_intvals_ved_Hxy(refl_var,src,ifreq,sz,zr,bgdat,Hx,Hy,omeps_src
 
       endif have_hx
 
-      have_hy: if (bgdat%nHy .gt. 0) then
+      have_hy: if(bgdat%nHy .gt. 0) then
 
     do irec=refl_var%irecstart,refl_var%irecend
       recidx = refl_var%irecperzHxy(irec)
@@ -1339,17 +1339,17 @@ subroutine interp_intvals_ved_Hxy(refl_var,src,ifreq,sz,zr,bgdat,Hx,Hy,omeps_src
       cosbeta = cos(beta)
       sinbeta = sin(beta)
 
-      r_is_zerohy: if (r.eq.0._real64) then
+      r_is_zerohy: if(r.eq.0._real64) then
 
         !quick & dirty: skip the point if receiver is right at source point
-        if (sz_eq_zr) then
-          if (refl_var%infolevel.ge.output_more) &
+        if(sz_eq_zr) then
+          if(refl_var%infolevel.ge.output_more) &
             write(*,'(a)') 'WARNING: cannot handle receiver right at source point yet!'
           cycle
         endif
         IC1TMved = 0._real64
       else  !r is not zero
-        smallrhy: if (r.lt.rsplmin) then !r is but smaller than threshold radius for spline interpolation
+        smallrhy: if(r.lt.rsplmin) then !r is but smaller than threshold radius for spline interpolation
 
           !reflection coeff. for this radius
           refl_var%refcoef_changed = .true.
@@ -1367,13 +1367,13 @@ subroutine interp_intvals_ved_Hxy(refl_var,src,ifreq,sz,zr,bgdat,Hx,Hy,omeps_src
       !Hx, Hy in original x-y coordinate system
       Hy(recidx) = Hy(recidx) + cosbeta*Hbeta
 
-      dverthy: if (with_dvert) then
-        r_is_zerovhy: if (r.eq.0._real64) then
+      dverthy: if(with_dvert) then
+        r_is_zerovhy: if(r.eq.0._real64) then
           !cycling already done for epsh
-          !if (sz_eq_zr) cycle
+          !if(sz_eq_zr) cycle
           IC1TMved = 0._real64
         else  !r is not zero
-          smallrvhy: if (r.lt.rsplmin) then !r is but smaller than threshold radius for spline interpolation
+          smallrvhy: if(r.lt.rsplmin) then !r is but smaller than threshold radius for spline interpolation
 
             !reflection coeff. for this radius
             refl_var%refcoef_changed = .true.
@@ -1402,9 +1402,9 @@ subroutine interp_intvals_ved_Hxy(refl_var,src,ifreq,sz,zr,bgdat,Hx,Hy,omeps_src
 
   !special terms for all components in source layer:
   !add to overall integral derivatives for isotropic case, to epsv derivatives for VTI
-  deriv_ilaysrc: if (ilay .eq. ilaysrc) then
+  deriv_ilaysrc: if(ilay .eq. ilaysrc) then
 
-    if (with_dvert) then
+    if(with_dvert) then
       Hxrec => Hxv
       Hyrec => Hyv
     else
@@ -1413,7 +1413,7 @@ subroutine interp_intvals_ved_Hxy(refl_var,src,ifreq,sz,zr,bgdat,Hx,Hy,omeps_src
     endif
 
     !check if receivers are in the same layer - in that case, add all special terms in one go
-    if (ilay .eq. ilayrec) then
+    if(ilay .eq. ilayrec) then
       isrec = 1._real64
     else
       isrec = 0._real64
@@ -1432,7 +1432,7 @@ subroutine interp_intvals_ved_Hxy(refl_var,src,ifreq,sz,zr,bgdat,Hx,Hy,omeps_src
 
 
     !same positions for Hx and Hy
-    hxy_equalpossrc: if (bgdat%nHxy.gt.0) then
+    hxy_equalpossrc: if(bgdat%nHxy.gt.0) then
 
       do irec=refl_var%irecstart,refl_var%irecend
         recidx = refl_var%irecperzHxy(irec)
@@ -1445,14 +1445,14 @@ subroutine interp_intvals_ved_Hxy(refl_var,src,ifreq,sz,zr,bgdat,Hx,Hy,omeps_src
         cosbeta = cos(beta)
         sinbeta = sin(beta)
 
-        r_is_zero2: if (r.eq.0._real64) then
+        r_is_zero2: if(r.eq.0._real64) then
 
           !quick & dirty: skip the point if receiver is right at source point
-          if (sz_eq_zr) cycle
+          if(sz_eq_zr) cycle
 
           IC1TMved = 0._real64
         else  !r is not zero
-          smallr2: if (r.lt.rsplmin) then !r is but smaller than threshold radius for spline interpolation
+          smallr2: if(r.lt.rsplmin) then !r is but smaller than threshold radius for spline interpolation
 
             !reflection coeff. for this radius
             call prepare_refcoef(refl_var,r,ved,aniso)
@@ -1472,7 +1472,7 @@ subroutine interp_intvals_ved_Hxy(refl_var,src,ifreq,sz,zr,bgdat,Hx,Hy,omeps_src
 
     else
 
-      have_hxsrc: if (bgdat%nHx .gt. 0) then
+      have_hxsrc: if(bgdat%nHx .gt. 0) then
 
       do irec=refl_var%irecstart,refl_var%irecend
         recidx = refl_var%irecperzHxy(irec)
@@ -1484,14 +1484,14 @@ subroutine interp_intvals_ved_Hxy(refl_var,src,ifreq,sz,zr,bgdat,Hx,Hy,omeps_src
         beta = atan2(y,x)
         sinbeta = sin(beta)
 
-        r_is_zero2hx: if (r.eq.0._real64) then
+        r_is_zero2hx: if(r.eq.0._real64) then
 
           !quick & dirty: skip the point if receiver is right at source point
-          if (sz_eq_zr) cycle
+          if(sz_eq_zr) cycle
 
           IC1TMved = 0._real64
         else  !r is not zero
-          smallr2hx: if (r.lt.rsplmin) then !r is but smaller than threshold radius for spline interpolation
+          smallr2hx: if(r.lt.rsplmin) then !r is but smaller than threshold radius for spline interpolation
 
             !reflection coeff. for this radius
             call prepare_refcoef(refl_var,r,ved,aniso)
@@ -1510,7 +1510,7 @@ subroutine interp_intvals_ved_Hxy(refl_var,src,ifreq,sz,zr,bgdat,Hx,Hy,omeps_src
 
       endif have_hxsrc
 
-      have_hysrc: if (bgdat%nHy .gt. 0) then
+      have_hysrc: if(bgdat%nHy .gt. 0) then
 
       do irec=refl_var%irecstart,refl_var%irecend
         recidx = refl_var%irecperzHxy(irec)
@@ -1522,14 +1522,14 @@ subroutine interp_intvals_ved_Hxy(refl_var,src,ifreq,sz,zr,bgdat,Hx,Hy,omeps_src
         beta = atan2(y,x)
         cosbeta = cos(beta)
 
-        r_is_zero2hy: if (r.eq.0._real64) then
+        r_is_zero2hy: if(r.eq.0._real64) then
 
           !quick & dirty: skip the point if receiver is right at source point
-          if (sz_eq_zr) cycle
+          if(sz_eq_zr) cycle
 
           IC1TMved = 0._real64
         else  !r is not zero
-          smallr2hy: if (r.lt.rsplmin) then !r is but smaller than threshold radius for spline interpolation
+          smallr2hy: if(r.lt.rsplmin) then !r is but smaller than threshold radius for spline interpolation
 
             !reflection coeff. for this radius
             call prepare_refcoef(refl_var,r,ved,aniso)

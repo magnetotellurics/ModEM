@@ -260,7 +260,7 @@ contains
         !
         class( ModelParameterCell_SG_t ), allocatable :: mTemp
         !
-        if ( .NOT. self%is_allocated ) then
+        if( .NOT. self%is_allocated ) then
             write( *, * ) "ERROR: setValueModelParameter > Input modelParam must be allocated before calling."
         endif
         !
@@ -484,17 +484,17 @@ contains
         real( kind=prec ), intent( out ), optional :: AirCond
         type( rScalar3D_SG_t ), intent( out ), optional :: cCond_v
         !
-        cCond_h = rScalar3D_SG_t( self%metric%grid, CENTER )
+        cCond_h = rScalar3D_SG_t( self%metric%grid, CELL )
         !
         if( present( cCond_v ) ) then
-            cCond_v = rScalar3D_SG_t( self%metric%grid, CENTER )
+            cCond_v = rScalar3D_SG_t( self%metric%grid, CELL )
         endif
         !
         if( self%param_type .EQ. LOGE ) then
             !
             if( present( cCond_v ) ) then
                 cCond_v%v( :, :, 1:self%metric%grid%NzAir ) = exp( self%air_cond )
-                if ( self%is_vti ) then
+                if( self%is_vti ) then
                     cCond_v%v( :, :, self%metric%grid%NzAir + 1 : self%metric%grid%Nz ) = exp( self%cell_cond_v%v )
                 else
                     cCond_v%v( :, :, self%metric%grid%NzAir + 1 : self%metric%grid%Nz ) = exp( self%cell_cond_h%v )
@@ -507,10 +507,10 @@ contains
             !
         else
             !
-            if (present(cCond_v)) then
+            if(present(cCond_v)) then
                 !
                 cCond_v%v( :, :, 1:self%metric%grid%NzAir ) = self%air_cond
-                if (self%is_vti) then
+                if(self%is_vti) then
                     cCond_v%v( :, :, self%metric%grid%NzAir + 1 : self%metric%grid%Nz ) = self%cell_cond_v%v
                 else
                     cCond_v%v( :, :, self%metric%grid%NzAir + 1 : self%metric%grid%Nz ) = self%cell_cond_h%v

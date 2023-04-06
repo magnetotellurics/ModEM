@@ -23,10 +23,10 @@ SUBROUTINE spline(x,y,n,yp1,ypn,y2)
 
 
        allocate(u(n), stat=ierr)
-       if (ierr .ne. 0) call alloc_error(-1,'spline','u vector',ierr)
+       if(ierr .ne. 0) call alloc_error(-1,'spline','u vector',ierr)
 
  
-       if (yp1 .gt. .99d30) then  
+       if(yp1 .gt. .99d30) then  
          y2(1)=0.  
          u(1)=0.  
  
@@ -44,7 +44,7 @@ SUBROUTINE spline(x,y,n,yp1,ypn,y2)
  
  11    continue  
  
-       if (ypn.gt..99d30) then  
+       if(ypn.gt..99d30) then  
          qn=0.  
          un=0.  
  
@@ -90,7 +90,7 @@ SUBROUTINE splint(xa,ya,y2a,n,x,y)
        klo=1  
        khi=n  
  
- 1     if (khi-klo.gt.1) then  
+ 1     if(khi-klo.gt.1) then  
          k=(khi+klo)/2  
          if(xa(k).gt.x)then  
            khi=k  
@@ -101,7 +101,7 @@ SUBROUTINE splint(xa,ya,y2a,n,x,y)
        endif  
  
        h=xa(khi)-xa(klo)  
-       if (h.eq.0.) then
+       if(h.eq.0.) then
          write(*,'(a)') 'ERROR in spline interpolation: bad xa input in splint'
 #ifdef USE_MPI
          call MPI_Abort(MPI_COMM_WORLD,-49,ierr)
@@ -133,7 +133,7 @@ SUBROUTINE splie2(x2a,ya,m,n,y2a)
  
 
        allocate(y2tmp(n),ytmp(n), stat=ierr)
-       if (ierr.ne.0) call alloc_error(-1,'splie2','ytmp, y2tmp',ierr)
+       if(ierr.ne.0) call alloc_error(-1,'splie2','ytmp, y2tmp',ierr)
 
        do 13 j=1,m  
          do 11 k=1,n  
@@ -167,7 +167,7 @@ SUBROUTINE splin2(x1a,x2a,ya,y2a,m,n,x1,x2,y)
  
 
        allocate(y2tmp(n),ytmp(n),yytmp(n), stat=ierr)
-       if (ierr.ne.0) call alloc_error(-1,'splin2','ytmp, y2tmp, yytmp',ierr)
+       if(ierr.ne.0) call alloc_error(-1,'splin2','ytmp, y2tmp, yytmp',ierr)
 
 
        do 12 j=1,m  

@@ -63,6 +63,8 @@ module cScalar3D_SG
             procedure, public :: write => writeCScalar3D_SG
             procedure, public :: print => printCScalar3D_SG
             !
+            procedure, public :: setInteriorMask => setInteriorMaskCScalar3D_SG
+			!
     end type cScalar3D_SG_t
     !
     interface cScalar3D_SG_t
@@ -81,7 +83,7 @@ contains
         !
         type( cScalar3D_SG_t ) :: self
         !
-        integer :: nx, ny, nz, nzAir, nz_earth, status
+        integer :: nx, ny, nz, nzAir, nz_earth, istat
         !
         !write( *, * ) "Constructor cScalar3D_SG"
         !
@@ -102,26 +104,26 @@ contains
         !> self%allocated will be true if all allocations succeed
         self%is_allocated = .TRUE.
         !
-        if( grid_type == CORNER) then
-             allocate(self%v(nx + 1, ny + 1, nz + 1), STAT = status)    
+        if( grid_type == NODE ) then
+             allocate(self%v(nx + 1, ny + 1, nz + 1), stat = istat )
              self%NdV = (/self%nx + 1, self%ny + 1, self%nz + 1/)
-             
-        else if( grid_type == CENTER) then             
-             allocate(self%v(nx, ny, nz), STAT = status) 
+             !
+        else if( grid_type == CELL ) then
+             allocate(self%v(nx, ny, nz), stat = istat )
              self%NdV = (/self%nx, self%ny, self%nz/)
-             
-        else if( grid_type == CELL_EARTH) then
+             !
+        else if( grid_type == CELL_EARTH ) then
              self%nz = nz_earth
-             allocate(self%v(nx, ny, nz_earth), STAT = status)
+             allocate(self%v(nx, ny, nz_earth), stat = istat )
              self%NdV = (/nx, ny, nz_earth/)
-             
+             !
         else
              write( *, * ) "Error: cScalar3D_SG_ctor > unrecognized grid type: [", grid_type, "]"
              stop
         endif
         !
-        self%is_allocated = self%is_allocated.AND.(status .EQ. 0)
-        if( self%is_allocated) then
+        self%is_allocated = self%is_allocated .AND. ( istat .EQ. 0 )
+        if( self%is_allocated ) then
              self%v = C_ZERO
         else
              stop "Error: cScalar3D_SG_ctor > Unable to allocate cScalar - invalid grid supplied"
@@ -129,6 +131,9 @@ contains
         !
         self%Nxyz = product( self%NdV )
         !
+		call self%setInteriorMask
+		call self%zeros
+		!
     end function cScalar3D_SG_ctor
     !
     !> No subroutine briefing
@@ -165,13 +170,17 @@ contains
         endif
         !
         select case( self%grid_type )
-            case(CORNER) 
-                 self%v((/1, self%NdV(1)/), :, :) = cvalue
-                 self%v(:, (/1, self%NdV(2)/), :) = cvalue
-                 self%v(:, :, (/1, self%NdV(3)/)) = cvalue
-                 !
+            !
+            case( NODE )
+                !
+                self%v((/1, self%NdV(1)/), :, :) = cvalue
+                self%v(:, (/1, self%NdV(2)/), :) = cvalue
+                self%v(:, :, (/1, self%NdV(3)/)) = cvalue
+                !
             case default
-                 stop "Error: setAllBoundaryCScalar3D_SG > Grid type not recognized. Exiting."
+                write( *, * ) "Error: setAllBoundaryCScalar3D_SG > Invalid grid type [", self%grid_type, "]"
+                stop
+            !
         end select
         !
     end subroutine setAllBoundaryCScalar3D_SG
@@ -199,57 +208,65 @@ contains
         endif
         !
         select case( self%grid_type )
-        case(CORNER)
-             if( int_only_p) then
+            !
+            case( NODE )
+                if( int_only_p) then
+                    !
+                    select case(bdry)
+                        case("x1")
+                            self%v(1, 2:self%NdV(2)-1, 2:self%NdV(3)-1) = cvalue 
+                        case("x2")
+                            self%v(self%NdV(1), 2:self%NdV(2)-1, 2:self%NdV(3)-1) = cvalue
+                        case("y1")
+                            self%v(2:self%NdV(1)-1, 1, 2:self%NdV(3)-1) = cvalue
+                        case("y2")
+                            self%v(2:self%NdV(1)-1, self%NdV(2), 2:self%NdV(3)-1) = cvalue
+                        case("z1")
+                            self%v(2:self%NdV(1)-1, 2:self%NdV(2)-1, 1) = cvalue
+                        case("z2")
+                            self%v(2:self%NdV(1)-1, 2:self%NdV(2)-1, self%NdV(3)) = cvalue
+                    end select
+                    !
+                else
+                    !
+                    select case(bdry)
+                        case("x1")
+                            self%v(1, :, :) = cvalue
+                        case("x2")
+                            self%v(self%NdV(1), :, :) = cvalue
+                        case("y1")
+                            self%v(:, 1, :) = cvalue
+                        case("y2")
+                            self%v(:, self%NdV(2), :) = cvalue
+                        case("z1")
+                            self%v(:, :, 1) = cvalue
+                        case("z2")
+                            self%v(:, :, self%NdV(3)) = cvalue
+                    end select
+                    !
+                endif
+                !
+            case( FACE )
+                !
                 select case(bdry)
-                case("x1")
-                     self%v(1, 2:self%NdV(2)-1, 2:self%NdV(3)-1) = cvalue 
-                case("x2")
-                     self%v(self%NdV(1), 2:self%NdV(2)-1, 2:self%NdV(3)-1) = cvalue
-                case("y1")
-                     self%v(2:self%NdV(1)-1, 1, 2:self%NdV(3)-1) = cvalue
-                case("y2")
-                     self%v(2:self%NdV(1)-1, self%NdV(2), 2:self%NdV(3)-1) = cvalue
-                case("z1")
-                     self%v(2:self%NdV(1)-1, 2:self%NdV(2)-1, 1) = cvalue
-                case("z2")
-                     self%v(2:self%NdV(1)-1, 2:self%NdV(2)-1, self%NdV(3)) = cvalue
+                    case("x1")
+                      self%v(1, :, :) = cvalue
+                    case("x2")
+                      self%v(self%NdV(1), :, :) = cvalue
+                    case("y1")
+                      self%v(:, 1, :) = cvalue
+                    case("y2")
+                      self%v(:, self%NdV(2), :) = cvalue
+                    case("z1")
+                      self%v(:, :, 1) = cvalue
+                    case("z2")
+                      self%v(:, :, self%NdV(3)) = cvalue
                 end select
-             else
-                select case(bdry)
-                case("x1")
-                     self%v(1, :, :) = cvalue
-                case("x2")
-                     self%v(self%NdV(1), :, :) = cvalue
-                case("y1")
-                     self%v(:, 1, :) = cvalue
-                case("y2")
-                     self%v(:, self%NdV(2), :) = cvalue
-                case("z1")
-                     self%v(:, :, 1) = cvalue
-                case("z2")
-                     self%v(:, :, self%NdV(3)) = cvalue
-                end select
-             endif
-             !
-        case(FACE)
-             select case(bdry)
-                 case("x1")
-                    self%v(1, :, :) = cvalue
-                 case("x2")
-                    self%v(self%NdV(1), :, :) = cvalue
-                 case("y1")
-                    self%v(:, 1, :) = cvalue
-                 case("y2")
-                    self%v(:, self%NdV(2), :) = cvalue
-                 case("z1")
-                    self%v(:, :, 1) = cvalue
-                 case("z2")
-                    self%v(:, :, self%NdV(3)) = cvalue
-             end select
-             !
-        case default
-             stop "Error: setOneBoundaryCScalar3D_SG > Invalid grid type"
+                !
+            case default
+                write( *, * ) "Error: setOneBoundaryCScalar3D_SG > Invalid grid type [", self%grid_type, "]"
+                stop
+            !
         end select
         !
     end subroutine setOneBoundaryCScalar3D_SG
@@ -291,7 +308,8 @@ contains
         endif
         !
         select case( self%grid_type )
-            case(CORNER)
+            !
+            case( NODE )
                 !
                 phi%v(1,:,:) = 1
                 phi%v(phi%nx+1,:,:) = 1
@@ -303,7 +321,9 @@ contains
                 temp = phi%getArray()
                 !
             case default
-                stop "Error: intBdryIndicesCScalar3D_SG: Unknown self%grid_type"
+                write( *, * ) "Error: intBdryIndicesCScalar3D_SG > Invalid grid type [", self%grid_type, "]"
+                stop
+            !
         end select
         !
         nVecT = size( phi%v )
@@ -350,9 +370,9 @@ contains
     !> No subroutine briefing
     !
     subroutine setVecComponentsCScalar3D_SG( self, xyz, &
-                                             xmin, xstep, xmax, &
-                                             ymin, ystep, ymax, &
-                                             zmin, zstep, zmax, cvalue )
+                                           xmin, xstep, xmax, &
+                                           ymin, ystep, ymax, &
+                                           zmin, zstep, zmax, cvalue )
         implicit none
         !
         class( cScalar3D_SG_t ), intent( inout ) :: self
@@ -482,35 +502,35 @@ contains
             select type( rhs )
                 !
                 class is( cScalar3D_SG_t )
-                    !
-                    if( rhs%store_state .EQ. compound ) then
-                        !
-                        self%v = self%v + rhs%v
-                        !
-                    else if( rhs%store_state .EQ. singleton ) then
-                        !
-                        self%sv = self%sv + rhs%sv
-                        !
-                    else
-                        stop "Error: addCScalar3D_SG > Unknown rhs store_state!"
-                    endif
-                    !
+                   !
+                   if( rhs%store_state .EQ. compound ) then
+                       !
+                       self%v = self%v + rhs%v
+                       !
+                   else if( rhs%store_state .EQ. singleton ) then
+                       !
+                       self%sv = self%sv + rhs%sv
+                       !
+                   else
+                       stop "Error: addCScalar3D_SG > Unknown rhs store_state!"
+                   endif
+                   !
                 class is( rScalar3D_SG_t )
-                    !
-                    if( rhs%store_state .EQ. compound ) then
-                        !
-                        self%v = self%v + rhs%v
-                        !
-                    else if( rhs%store_state .EQ. singleton ) then
-                        !
-                        self%sv = self%sv + rhs%sv
-                        !
-                    else
-                        stop "Error: addCScalar3D_SG > Unknown rhs store_state!"
-                    endif
-                    !
+                   !
+                   if( rhs%store_state .EQ. compound ) then
+                       !
+                       self%v = self%v + rhs%v
+                       !
+                   else if( rhs%store_state .EQ. singleton ) then
+                       !
+                       self%sv = self%sv + rhs%sv
+                       !
+                   else
+                       stop "Error: addCScalar3D_SG > Unknown rhs store_state!"
+                   endif
+                   !
                 class default
-                    stop "Error: addCScalar3D_SG: undefined rhs"
+                   stop "Error: addCScalar3D_SG: undefined rhs"
                 !
             end select
             !
@@ -537,21 +557,21 @@ contains
             select type( rhs )
                 !
                 class is( cScalar3D_SG_t )
-                    !
-                    if( rhs%store_state .EQ. compound ) then
-                        !
-                        self%v = c1 * self%v + c2 * rhs%v
-                        !
-                    else if( rhs%store_state .EQ. singleton ) then
-                        !
-                        self%sv = c1 * self%sv + c2 * rhs%sv
-                        !
-                    else
-                        stop "Error: linCombCScalar3D_SG > Unknown rhs store_state!"
-                    endif
-                    !
+                   !
+                   if( rhs%store_state .EQ. compound ) then
+                       !
+                       self%v = c1 * self%v + c2 * rhs%v
+                       !
+                   else if( rhs%store_state .EQ. singleton ) then
+                       !
+                       self%sv = c1 * self%sv + c2 * rhs%sv
+                       !
+                   else
+                       stop "Error: linCombCScalar3D_SG > Unknown rhs store_state!"
+                   endif
+                   !
                 class default
-                    stop "Error: linCombCScalar3D_SG: undefined rhs"
+                   stop "Error: linCombCScalar3D_SG: undefined rhs"
                 !
             end select
         else
@@ -597,35 +617,35 @@ contains
             select type( rhs )
                 !
                 class is( cScalar3D_SG_t )
-                    !
-                    if( rhs%store_state .EQ. compound ) then
-                        !
-                        self%v = self%v - rhs%v
-                        !
-                    else if( rhs%store_state .EQ. singleton ) then
-                        !
-                        self%sv = self%sv - rhs%sv
-                        !
-                    else
-                        stop "Error: subFieldCScalar3D_SG > Unknown rhs store_state!"
-                    endif
-                    !
+                   !
+                   if( rhs%store_state .EQ. compound ) then
+                       !
+                       self%v = self%v - rhs%v
+                       !
+                   else if( rhs%store_state .EQ. singleton ) then
+                       !
+                       self%sv = self%sv - rhs%sv
+                       !
+                   else
+                       stop "Error: subFieldCScalar3D_SG > Unknown rhs store_state!"
+                   endif
+                   !
                 class is( rScalar3D_SG_t )
-                    !
-                    if( rhs%store_state .EQ. compound ) then
-                        !
-                        self%v = self%v - rhs%v
-                        !
-                    else if( rhs%store_state .EQ. singleton ) then
-                        !
-                        self%sv = self%sv - rhs%sv
-                        !
-                    else
-                        stop "Error: subFieldCScalar3D_SG > Unknown rhs store_state!"
-                    endif
-                    !
+                   !
+                   if( rhs%store_state .EQ. compound ) then
+                       !
+                       self%v = self%v - rhs%v
+                       !
+                   else if( rhs%store_state .EQ. singleton ) then
+                       !
+                       self%sv = self%sv - rhs%sv
+                       !
+                   else
+                       stop "Error: subFieldCScalar3D_SG > Unknown rhs store_state!"
+                   endif
+                   !
                 class default
-                    stop "Error: subFieldCScalar3D_SG: undefined rhs"
+                   stop "Error: subFieldCScalar3D_SG: undefined rhs"
                 !
             end select
             !
@@ -694,35 +714,35 @@ contains
             select type( rhs )
                 !
                 class is( cScalar3D_SG_t )
-                    !
-                    if( rhs%store_state .EQ. compound ) then
-                        !
-                        self%v = self%v * rhs%v
-                        !
-                    else if( rhs%store_state .EQ. singleton ) then
-                        !
-                        self%sv = self%sv * rhs%sv
-                        !
-                    else
-                        stop "Error: multByFieldCScalar3D_SG > Unknown rhs store_state!"
-                    endif
-                    !
+                   !
+                   if( rhs%store_state .EQ. compound ) then
+                       !
+                       self%v = self%v * rhs%v
+                       !
+                   else if( rhs%store_state .EQ. singleton ) then
+                       !
+                       self%sv = self%sv * rhs%sv
+                       !
+                   else
+                       stop "Error: multByFieldCScalar3D_SG > Unknown rhs store_state!"
+                   endif
+                   !
                 class is( rScalar3D_SG_t )
-                    !
-                    if( rhs%store_state .EQ. compound ) then
-                        !
-                        self%v = self%v * rhs%v
-                        !
-                    else if( rhs%store_state .EQ. singleton ) then
-                        !
-                        self%sv = self%sv * rhs%sv
-                        !
-                    else
-                        stop "Error: multByFieldCScalar3D_SG > Unknown rhs store_state!"
-                    endif
-                    !
+                   !
+                   if( rhs%store_state .EQ. compound ) then
+                       !
+                       self%v = self%v * rhs%v
+                       !
+                   else if( rhs%store_state .EQ. singleton ) then
+                       !
+                       self%sv = self%sv * rhs%sv
+                       !
+                   else
+                       stop "Error: multByFieldCScalar3D_SG > Unknown rhs store_state!"
+                   endif
+                   !
                 class default
-                    stop "Error: multByFieldCScalar3D_SG: undefined rhs"
+                   stop "Error: multByFieldCScalar3D_SG: undefined rhs"
                 !
             end select
             !
@@ -748,22 +768,22 @@ contains
             select type( rhs )
                 !
                 class is( cScalar3D_SG_t )
-                    !
-                    if( rhs%store_state .EQ. compound ) then
-                        !
-                        self%v = self%v + cvalue * rhs%v
-                        !
-                    else if( rhs%store_state .EQ. singleton ) then
-                        !
-                        self%sv = self%sv + cvalue * rhs%sv
-                        !
-                    else
-                        stop "Error: multAddCScalar3D_SG > Unknown rhs store_state!"
-                    endif
-                    !
+                   !
+                   if( rhs%store_state .EQ. compound ) then
+                       !
+                       self%v = self%v + cvalue * rhs%v
+                       !
+                   else if( rhs%store_state .EQ. singleton ) then
+                       !
+                       self%sv = self%sv + cvalue * rhs%sv
+                       !
+                   else
+                       stop "Error: multAddCScalar3D_SG > Unknown rhs store_state!"
+                   endif
+                   !
                 class default
-                    stop "Error: multAddCScalar3D_SG: undefined rhs"
-                    !
+                   stop "Error: multAddCScalar3D_SG: undefined rhs"
+                   !
             end select
             !
         else
@@ -787,24 +807,24 @@ contains
             if( self%store_state == rhs%store_state ) then
                 !
                 select type( rhs )
-                    !
-                    class is( cScalar3D_SG_t )
-                        !
-                        if( rhs%store_state .EQ. compound ) then
-                            !
-                            cvalue = sum( conjg( self%v ) * rhs%v )
-                            !
-                        else if( rhs%store_state .EQ. singleton ) then
-                            !
-                            cvalue = sum( conjg( self%sv ) * rhs%sv )
-                            !
-                        else
-                            stop "Error: dotProdRVector3D_SG > Unknown rhs store_state!"
-                        endif
-                        !
-                    class default
-                        stop "Error: dotProdCScalar3D_SG > undefined rhs"
-                    !
+                   !
+                   class is( cScalar3D_SG_t )
+                       !
+                       if( rhs%store_state .EQ. compound ) then
+                           !
+                           cvalue = sum( conjg( self%v ) * rhs%v )
+                           !
+                       else if( rhs%store_state .EQ. singleton ) then
+                           !
+                           cvalue = sum( conjg( self%sv ) * rhs%sv )
+                           !
+                       else
+                           stop "Error: dotProdRVector3D_SG > Unknown rhs store_state!"
+                       endif
+                       !
+                   class default
+                       stop "Error: dotProdCScalar3D_SG > undefined rhs"
+                   !
                 end select
                 !
             else
@@ -854,35 +874,35 @@ contains
             select type( rhs )
                 !
                 class is( cScalar3D_SG_t )
-                    !
-                    if( rhs%store_state .EQ. compound ) then
-                        !
-                        self%v = self%v / rhs%v
-                        !
-                    else if( rhs%store_state .EQ. singleton ) then
-                        !
-                        self%sv = self%sv / rhs%sv
-                        !
-                    else
-                        stop "Error: multByFieldCScalar3D_SG > Unknown rhs store_state!"
-                    endif
-                    !
+                   !
+                   if( rhs%store_state .EQ. compound ) then
+                       !
+                       self%v = self%v / rhs%v
+                       !
+                   else if( rhs%store_state .EQ. singleton ) then
+                       !
+                       self%sv = self%sv / rhs%sv
+                       !
+                   else
+                       stop "Error: multByFieldCScalar3D_SG > Unknown rhs store_state!"
+                   endif
+                   !
                 class is( rScalar3D_SG_t )
-                    !
-                    if( rhs%store_state .EQ. compound ) then
-                        !
-                        self%v = self%v / rhs%v
-                        !
-                    else if( rhs%store_state .EQ. singleton ) then
-                        !
-                        self%sv = self%sv / rhs%sv
-                        !
-                    else
-                        stop "Error: multByFieldCScalar3D_SG > Unknown rhs store_state!"
-                    endif
-                    !
+                   !
+                   if( rhs%store_state .EQ. compound ) then
+                       !
+                       self%v = self%v / rhs%v
+                       !
+                   else if( rhs%store_state .EQ. singleton ) then
+                       !
+                       self%sv = self%sv / rhs%sv
+                       !
+                   else
+                       stop "Error: multByFieldCScalar3D_SG > Unknown rhs store_state!"
+                   endif
+                   !
                 class default
-                    stop "Error: multByFieldCScalar3D_SG: undefined rhs"
+                   stop "Error: multByFieldCScalar3D_SG: undefined rhs"
                 !
             end select
             !
@@ -984,23 +1004,23 @@ contains
                 !
             case( singleton )
                 !
-                if( self%grid_type == CORNER ) then
-                    !
-                    allocate( self%v( self%nx + 1, self%ny + 1, self%nz + 1 ) )
-                    !
-                else if( self%grid_type == CENTER ) then
-                    !
-                    allocate( self%v( self%nx, self%ny, self%nz ) )
-                    !
+                if( self%grid_type == NODE ) then
+                   !
+                   allocate( self%v( self%nx + 1, self%ny + 1, self%nz + 1 ) )
+                   !
+                else if( self%grid_type == CELL ) then
+                   !
+                   allocate( self%v( self%nx, self%ny, self%nz ) )
+                   !
                 else if( self%grid_type == CELL_EARTH ) then
-                    !
-                    call self%grid%getDimensions( self%nx, self%ny, self%nz, nzAir )
-                    !
-                    allocate( self%v( self%nx, self%ny, self%nz - nzAir ) )
-                    !
+                   !
+                   call self%grid%getDimensions( self%nx, self%ny, self%nz, nzAir )
+                   !
+                   allocate( self%v( self%nx, self%ny, self%nz - nzAir ) )
+                   !
                 else
-                     write( *, * ) "Error: switchStoreStateCScalar3D_SG > unrecognized grid type: [", self%grid_type, "]"
-                     stop
+                    write( *, * ) "Error: switchStoreStateCScalar3D_SG > unrecognized grid type: [", self%grid_type, "]"
+                    stop
                 endif
                 !
                 self%v = reshape( self%sv, (/self%NdV(1), self%NdV(2), self%NdV(3)/) )
@@ -1036,6 +1056,8 @@ contains
         self%nz = rhs%nz
         self%store_state = rhs%store_state
         !
+		self%mask_interior = rhs%mask_interior
+		!
         select type( rhs )
             !
             class is( cScalar3D_SG_t )
@@ -1044,15 +1066,15 @@ contains
                 self%Nxyz = rhs%Nxyz
                 !
                 if( rhs%store_state .EQ. compound ) then
-                    !
-                    self%v = rhs%v
-                    !
+                   !
+                   self%v = rhs%v
+                   !
                 else if( rhs%store_state .EQ. singleton ) then
-                    !
-                    self%sv = rhs%sv
-                    !
+                   !
+                   self%sv = rhs%sv
+                   !
                 else
-                    stop "Error: copyFromCScalar3D_SG > Unknown store_state!"
+                   stop "Error: copyFromCScalar3D_SG > Unknown store_state!"
                 endif
                 !
             class is( rScalar3D_SG_t )
@@ -1061,15 +1083,15 @@ contains
                 self%Nxyz = rhs%Nxyz
                 !
                 if( rhs%store_state .EQ. compound ) then
-                    !
-                    self%v = rhs%v
-                    !
+                   !
+                   self%v = rhs%v
+                   !
                 else if( rhs%store_state .EQ. singleton ) then
-                    !
-                    self%sv = rhs%sv
-                    !
+                   !
+                   self%sv = rhs%sv
+                   !
                 else
-                    stop "Error: copyFromCScalar3D_SG > Unknown store_state!"
+                   stop "Error: copyFromCScalar3D_SG > Unknown store_state!"
                 endif
                 !
             class default
@@ -1116,63 +1138,63 @@ contains
             !
             !> check that the file is unformatted if binary, formatted if ascii
             if( (index(isbinary, "yes") > 0 .OR. index(isbinary, "YES") > 0) &
-                     .AND.  .NOT. binary) then             
-                 write( *, * ) "Error: cScalar3D_SG_t::readCScalar3D_SG: "
-                 write( *, * ) "            Unable to read scalar from unformatted file ", &
-                            trim(fname), ".Exiting."
-                 stop
+                    .AND.  .NOT. binary) then             
+                write( *, * ) "Error: cScalar3D_SG_t::readCScalar3D_SG: "
+                write( *, * ) "            Unable to read scalar from unformatted file ", &
+                           trim(fname), ".Exiting."
+                stop
             else if( (index(isbinary, "no") > 0 .OR. index(isbinary, "NO") > 0) &
-                     .AND.binary) then
-                 write( *, * ) "Error: cScalar3D_SG_t::readCScalar3D_SG: "
-                 write( *, * ) "            Unable to read scalar from formatted file ", &
-                            trim(fname), ". Exiting."
-                 stop
+                    .AND.binary) then
+                write( *, * ) "Error: cScalar3D_SG_t::readCScalar3D_SG: "
+                write( *, * ) "            Unable to read scalar from formatted file ", &
+                           trim(fname), ". Exiting."
+                stop
             endif
             !
             if( binary) then
-                 !> read binary from unformatted files
-                 read(funit) self%Nx, self%Ny, self%Nz, grid_type
-                 read(funit) self%v
+                !> read binary from unformatted files
+                read(funit) self%Nx, self%Ny, self%Nz, grid_type
+                read(funit) self%v
             endif
             !
             Nx = size(self%v, 1)
             Ny = size(self%v, 2)
             Nz = size(self%v, 3)
             !
-            allocate(temp(Ny), STAT = istat)
+            allocate(temp(Ny), stat = istat)
             !
             i = 1
             do
-                 read(funit, *, iostat = istat) k1, k2
-                 if( istat /= 0) exit
-                 !
-                 if( (k1 < 0) .OR. (k2 > Nz)) then
-                        write( *, * ) "Error: cScalar3D_SG::readCScalar3D_SG: "
-                        write( *, * ) "      While reading the ", i, "th block. Exiting."
-                        stop
-                 else if( k1 > k2) then
-                        write( *, * ) "Warning: cScalar3D_SG::readCScalar3D_SG: "
-                        write( *, * ) "                Block ", i, " will be ignored."
-                 endif
-                 !
-                 do j = Nx, 1, -1
-                        read(funit, *, iostat = istat) temp
-                        
-                        if( istat /= 0) then
-                             write( *, * ) "Error: cScalar3D_SG::readCScalar3D_SG: "
-                             write( *, * ) "            While reading the ", j, "th row in ", i,"th block. Exiting."
-                             stop
-                        endif
-                        
-                        do k = k1, k2
-                             self%v(j, :, k) = temp
-                        enddo
-                 enddo
-                 !
-                 if( k == Nz) exit
-                 !
-                 i = i + 1
-                 !
+                read(funit, *, iostat = istat) k1, k2
+                if( istat /= 0) exit
+                !
+                if( (k1 < 0) .OR. (k2 > Nz)) then
+                       write( *, * ) "Error: cScalar3D_SG::readCScalar3D_SG: "
+                       write( *, * ) "      While reading the ", i, "th block. Exiting."
+                       stop
+                else if( k1 > k2) then
+                       write( *, * ) "Warning: cScalar3D_SG::readCScalar3D_SG: "
+                       write( *, * ) "                Block ", i, " will be ignored."
+                endif
+                !
+                do j = Nx, 1, -1
+                       read(funit, *, iostat = istat) temp
+                       
+                       if( istat /= 0) then
+                            write( *, * ) "Error: cScalar3D_SG::readCScalar3D_SG: "
+                            write( *, * ) "            While reading the ", j, "th row in ", i,"th block. Exiting."
+                            stop
+                       endif
+                       
+                       do k = k1, k2
+                            self%v(j, :, k) = temp
+                       enddo
+                enddo
+                !
+                if( k == Nz) exit
+                !
+                i = i + 1
+                !
             enddo
             !
             deallocate( temp )
@@ -1220,25 +1242,25 @@ contains
         if( ok ) then
             !
             if( (index(isbinary, "yes") > 0 .OR. index(isbinary, "YES") > 0) &
-                     .AND. .NOT. binary) then             
-                 write( *, * ) "Error: cScalar3D_SG::writeCScalar3D_SG: "
-                 write( *, * ) "            Unable to write vector to unformatted file ", &
-                            trim(fname), ". Exiting."
-                 !
-                 stop
+                    .AND. .NOT. binary) then             
+                write( *, * ) "Error: cScalar3D_SG::writeCScalar3D_SG: "
+                write( *, * ) "            Unable to write vector to unformatted file ", &
+                           trim(fname), ". Exiting."
+                !
+                stop
             else if( (index(isbinary,"no") > 0 .OR. index(isbinary,"NO") > 0) &
-                     .AND.binary) then
-                 write( *, * ) "Error: cScalar3D_SG::writeCScalar3D_SG: "
-                 write( *, * ) " Unable to write vector to formatted file ", &
-                            trim(fname), ". Exiting."
-                 !
-                 stop
+                    .AND.binary) then
+                write( *, * ) "Error: cScalar3D_SG::writeCScalar3D_SG: "
+                write( *, * ) " Unable to write vector to formatted file ", &
+                           trim(fname), ". Exiting."
+                !
+                stop
             endif
             !
             if( binary) then
-                 write(funit) self%nx, self%ny, self%nz, self%grid_type
-                 write(funit) self%v             
-                 return
+                write(funit) self%nx, self%ny, self%nz, self%grid_type
+                write(funit) self%v             
+                return
             endif
             !
             !
@@ -1250,41 +1272,41 @@ contains
             Ny = size(self%v, 2)
             Nz = size(self%v, 3)
             !
-            allocate(temp(Nx, Ny), STAT = istat)
+            allocate(temp(Nx, Ny), stat = istat)
             !
             k1 = 1
             do
-                 k2 = Nz
-                 do k = k1, Nz - 1
-                        temp = abs(self%v(:, :, k + 1) - self%v(:, :, k))
-                        if( maxval(real(temp)) > TOL6) then
-                             k2 = k
-                             exit
-                        endif
-                 enddo
-                 !
-                 write(funit, "(2i5)", iostat = istat) k1, k2
-                 !
-                 if( istat /= 0) then
-                        write( *, * ) "Error: cScalar3D_SG::writeCScalar3D_SG: "
-                        write( *, * ) "            Failed while writing to file. Exiting."
-                        
-                        stop
-                 endif
-                 !
-                 temp = self%v(:, :, k1)
-                 !
-                 do i = Nx, 1, -1
-                        do j = 1, Ny
-                             write(funit, "(es13.5)", iostat = istat, &
-                                        advance = "no") self%v(i, j, k1)
-                        enddo
-                        write(funit, *)
-                 enddo
-                 !
-                 k1 = k2 + 1
-                 !
-                 if( k1 > Nz) exit
+                k2 = Nz
+                do k = k1, Nz - 1
+                       temp = abs(self%v(:, :, k + 1) - self%v(:, :, k))
+                       if( maxval(real(temp)) > TOL6) then
+                            k2 = k
+                            exit
+                       endif
+                enddo
+                !
+                write(funit, "(2i5)", iostat = istat) k1, k2
+                !
+                if( istat /= 0) then
+                       write( *, * ) "Error: cScalar3D_SG::writeCScalar3D_SG: "
+                       write( *, * ) "            Failed while writing to file. Exiting."
+                       
+                       stop
+                endif
+                !
+                temp = self%v(:, :, k1)
+                !
+                do i = Nx, 1, -1
+                       do j = 1, Ny
+                            write(funit, "(es13.5)", iostat = istat, &
+                                      advance = "no") self%v(i, j, k1)
+                       enddo
+                       write(funit, *)
+                enddo
+                !
+                k1 = k2 + 1
+                !
+                if( k1 > Nz) exit
             enddo
             !
             deallocate( temp )
@@ -1325,14 +1347,39 @@ contains
         write(funit,*) "scalar field"
         do ix = 1, self%nx
              do iy = 1, self%ny
-                  do iz = 1, self%nz
-                        if( self%v( ix, iy, iz ) /= 0 ) then
-                            write(funit,*) ix,iy,iz, ":[", self%v( ix, iy, iz ), "]"
-                        endif
-                  enddo
+                 do iz = 1, self%nz
+                       if( self%v( ix, iy, iz ) /= 0 ) then
+                           write(funit,*) ix,iy,iz, ":[", self%v( ix, iy, iz ), "]"
+                       endif
+                 enddo
              enddo
         enddo
         !
     end subroutine printCScalar3D_SG
+    !
+    !> No subroutine briefing
+    !
+    subroutine setInteriorMaskCScalar3D_SG( self )
+        implicit none
+        !
+        class( cScalar3D_SG_t ), intent( inout ) :: self
+        !
+        class( Field_t ), allocatable :: aux_field
+        real( kind=prec ), dimension(:), allocatable :: r_array
+        !
+        allocate( aux_field, source = self )
+        call aux_field%zeros()
+        !
+        call aux_field%setAllboundary( C_ONE )
+        !
+        r_array = aux_field%getArray()
+        !
+        self%mask_interior = r_array == 0
+        !
+        !write( *, * ) "self%mask_interior:", self%mask_interior
+        !
+		deallocate( aux_field )
+		!
+    end subroutine setInteriorMaskCScalar3D_SG
     !
 end module cScalar3D_SG

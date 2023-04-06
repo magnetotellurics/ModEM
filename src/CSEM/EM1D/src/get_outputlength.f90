@@ -23,7 +23,7 @@ integer(kind=int32) function get_outputlength(sources,receivers) result(nrecout)
   nrec = size(receivers)
 
   irec = 1
-  if (nrec .eq. 1) then
+  if(nrec .eq. 1) then
     recinc = 0
   else
     recinc = 1

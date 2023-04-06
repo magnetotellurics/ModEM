@@ -221,11 +221,11 @@ contains
         self%sub_grids(k)%dz = Dz
         !
         ! Origin correction for spherical grid
-        if (i1 < nz_air) then
+        if(i1 < nz_air) then
             ! Whole sub-grid in the air
             self%sub_grids(k)%oz = sum (self%dz(i2 + 1 : self%nzAir))
             !
-        else if (i1 > self%nzAir + 1) then
+        else if(i1 > self%nzAir + 1) then
             self%sub_grids(k)%oz = -1.0*&
             sum (self%dz(self%nzAir + 1 : i1 - 1))
         else
@@ -252,7 +252,7 @@ contains
                 do iout = 1, n
                     tmp(iout) = 0.0
                     do k = iout, iout - (cs_in - 1), -1
-                        if (k < 1) exit
+                        if(k < 1) exit
                         tmp(iout) = tmp(iout) + D_in(k)
                     enddo
                 enddo
@@ -374,7 +374,7 @@ contains
         character :: ctmp
         integer :: itmp
         !
-        if (self%is_initialized) then
+        if(self%is_initialized) then
             ctmp = node_type
         endif
         !
@@ -423,7 +423,7 @@ contains
         !
         character(1) :: tmp
         !
-        if (self%is_initialized) then
+        if(self%is_initialized) then
             tmp = node_type
         endif
         !
@@ -488,9 +488,9 @@ contains
                     self%n_active_face( 2, iGrid ) + &
                     self%n_active_face( 3, iGrid )
                 case( NODE )
-                    n_active(iGrid) = self%n_active_node(iGrid)
+                    n_active(iGrid) = self%n_active_node( iGrid )
                 case( CELL )
-                    n_active(iGrid) = self%n_active_cell(iGrid)
+                    n_active(iGrid) = self%n_active_cell( iGrid )
                 case default
                     stop "Error: nActiveGrid3D_MR > Unknown grid_type"
                 !
@@ -509,9 +509,7 @@ contains
         !
         integer :: iGrid
         logical :: TopBottom(2)
-        !
-        ! THIS DIMENSIONS COME FROM WHERE ????
-        integer :: nX,nY,nZ
+        integer :: nX, nY, nZ
         !  just the algorithm here
         !self%Nactive = 0
         !
@@ -519,21 +517,21 @@ contains
             !  this sets limits (in vertical) of active faces, edges, nodes
             !  First set total--active + inactive for sub-grid
             !
-            call self%sub_grids(iGrid)%numberOfEdges(nX,nY,nZ)
-            self%n_active_edge(1,iGrid) = nX
-            self%n_active_edge(2,iGrid) = nY
-            self%n_active_edge(3,iGrid) = nZ
+            call self%sub_grids( iGrid )%numberOfEdges( nX, nY, nZ )
+            self%n_active_edge( 1, iGrid ) = nX
+            self%n_active_edge( 2, iGrid ) = nY
+            self%n_active_edge( 3, iGrid ) = nZ
             !
-            call self%sub_grids(iGrid)%numberOfFaces(nX,nY,nZ)
-            self%n_active_face(1,iGrid) = nX
-            self%n_active_face(2,iGrid) = nY
-            self%n_active_face(3,iGrid) = nZ
+            call self%sub_grids( iGrid )%numberOfFaces( nX, nY, nZ )
+            self%n_active_face( 1, iGrid ) = nX
+            self%n_active_face( 2, iGrid ) = nY
+            self%n_active_face( 3, iGrid ) = nZ
             !
-            self%n_active_node(iGrid) = self%sub_grids(iGrid)%numberOfNodes()
+            self%n_active_node( iGrid ) = self%sub_grids( iGrid )%numberOfNodes()
             !  not sure this function is defined -- value his nx*ny*nz
-            self%n_active_cell(iGrid) = self%sub_grids(iGrid)%numberOfCells()
+            self%n_active_cell( iGrid ) = self%sub_grids( iGrid )%numberOfCells()
             !
-            TopBottom = self%active(iGrid)
+            TopBottom = self%active( iGrid )
             !
             ! IF WHAT ????
             if( TopBottom(1) ) then
@@ -668,7 +666,7 @@ contains
                 m_out(:, :, i) = m_out(:, :, 1)
             end do
             !
-        end if
+        endif
         !
     end function repMat
     !

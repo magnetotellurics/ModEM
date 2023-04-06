@@ -77,7 +77,7 @@ SUBROUTINE BESAUT(BESR,BESI,ORDER,NL,NU,R,FUNCT,RERR,AERR,NPCS,NEW,NSUM,XSUM,IER
 
 
      NF=0
-     IF (NL.GT.NU) THEN
+     if(NL.GT.NU) THEN
        BESR=0.
        BESI=0.
        IERR=1
@@ -85,7 +85,7 @@ SUBROUTINE BESAUT(BESR,BESI,ORDER,NL,NU,R,FUNCT,RERR,AERR,NPCS,NEW,NSUM,XSUM,IER
        ENDIF
      NW=MAX(NEW,1)
      CALL BESTRN(BESR,BESI,ORDER,NL,R,FUNCT,.1*RERR,.1*AERR,NPCS,XSUM,NSUM,NW,IERR)
-     IF ((IERR.NE.0).AND.(NL.EQ.7)) THEN
+     if((IERR.NE.0).AND.(NL.EQ.7)) THEN
        NG=NL
        RETURN
      ELSE
@@ -93,12 +93,12 @@ SUBROUTINE BESAUT(BESR,BESI,ORDER,NL,NU,R,FUNCT,RERR,AERR,NPCS,NEW,NSUM,XSUM,IER
        OLDI=BESI
        DO 10 N=NL+1,NU
          CALL BESTRN(BESR,BESI,ORDER,N,R,FUNCT,.1*RERR,.1*AERR,NPCS,XSUM,NSUM,2,IERR)
-         IF ((IERR.NE.0).AND.(N.EQ.7)) THEN
+         if((IERR.NE.0).AND.(N.EQ.7)) THEN
            !BESR=OLDR
            !BESI=OLDI
            NG=N
            RETURN
-         ELSEIF ((ABS(BESR-OLDR).LE.RERR*ABS(BESR)+AERR).AND. &
+         ELSEif((ABS(BESR-OLDR).LE.RERR*ABS(BESR)+AERR).AND. &
                  (ABS(BESI-OLDI).LE.RERR*ABS(BESI)+AERR)) THEN
            NG=N
            RETURN
@@ -230,7 +230,7 @@ SUBROUTINE BESTRN(BESR,BESI,ORDER,NG,R,FUNCT,RERR,AERR,NPCS,XSUM,NSUM,NEW,IERR)
   real(kind=real64)                  :: TERMR,TERMI,TR,TI,LR,LI
 
 
-     IF (NEW.EQ.2) THEN
+     if(NEW.EQ.2) THEN
        NPO=NPS
      ELSE
        DO 5 I=1,NTERM
@@ -240,7 +240,7 @@ SUBROUTINE BESTRN(BESR,BESI,ORDER,NG,R,FUNCT,RERR,AERR,NPCS,XSUM,NSUM,NEW,IERR)
        NPO=NTERM
      ENDIF
 !  Check for trivial case
-     IF ((ORDER.NE.0.0).AND.(R.EQ.0.)) THEN
+     if((ORDER.NE.0.0).AND.(R.EQ.0.)) THEN
        BESR=0.
        BESI=0.
        IERR=0
@@ -257,20 +257,20 @@ SUBROUTINE BESTRN(BESR,BESI,ORDER,NG,R,FUNCT,RERR,AERR,NPCS,XSUM,NSUM,NEW,IERR)
      XSUMR=0.0
      XSUMI=0.0
 
-     IF (NSUM.GT.0) THEN
+     if(NSUM.GT.0) THEN
 !  compute Bessel transform explicitly on (0,XSUM(NSUM))
        LASTR=0.0
        LASTI=0.0
        DO 10 N=1,NSUM
-         IF ((NW.EQ.2).AND.(NP.GT.NPO)) NW=1
-         IF (NP.GT.NTERM) NW=0
+         if((NW.EQ.2).AND.(NP.GT.NPO)) NW=1
+         if(NP.GT.NTERM) NW=0
          A=B
          B=XSUM(N)
          CALL BESQUD(A,B,TERMR,TERMI,NG,NW,ORDER,R,FUNCT)
 
          XSUMR=XSUMR+TERMR
          XSUMI=XSUMI+TERMI
-         IF ((ABS(XSUMR-LASTR).LE.RERR*ABS(XSUMR)+AERR).AND. &
+         if((ABS(XSUMR-LASTR).LE.RERR*ABS(XSUMR)+AERR).AND. &
              (ABS(XSUMI-LASTI).LE.RERR*ABS(XSUMI)+AERR)) THEN
            BESR=XSUMR
            BESI=XSUMI
@@ -286,7 +286,7 @@ SUBROUTINE BESTRN(BESR,BESI,ORDER,NG,R,FUNCT,RERR,AERR,NPCS,XSUM,NSUM,NEW,IERR)
 
 !  Find first zero crossing of Bessel function beyond XSUM(NSUM)
 15     CONTINUE
-       IF (ZEROJ(NPB,ORDER).GT.XSUM(NSUM)*R) GOTO 20
+       if(ZEROJ(NPB,ORDER).GT.XSUM(NSUM)*R) GOTO 20
        NPB=NPB+1
        GOTO 15
      ENDIF
@@ -301,9 +301,9 @@ SUBROUTINE BESTRN(BESR,BESI,ORDER,NG,R,FUNCT,RERR,AERR,NPCS,XSUM,NSUM,NEW,IERR)
 !  Calculate terms and sum with PADECF, quitting when convergence is
 !  obtained
      DO 30 N=1,NSTOP
-       IF (NPCS.EQ.1) THEN
-         IF ((NW.EQ.2).AND.(NP.GT.NPO)) NW=1
-         IF (NP.GT.NTERM) NW=0
+       if(NPCS.EQ.1) THEN
+         if((NW.EQ.2).AND.(NP.GT.NPO)) NW=1
+         if(NP.GT.NTERM) NW=0
          CALL BESQUD(A,B,TERMR,TERMI,NG,NW,ORDER,R,FUNCT)
          NP=NP+1
 
@@ -316,12 +316,12 @@ SUBROUTINE BESTRN(BESR,BESI,ORDER,NG,R,FUNCT,RERR,AERR,NPCS,XSUM,NSUM,NEW,IERR)
          AA=A
          BB=A+XINC
          DO 25 I=1,NPCS
-           IF ((NW.EQ.2).AND.(NP.GT.NPO)) NW=1
-           IF (NP.GT.NTERM) NW=0
+           if((NW.EQ.2).AND.(NP.GT.NPO)) NW=1
+           if(NP.GT.NTERM) NW=0
            CALL BESQUD(AA,BB,TR,TI,NG,NW,ORDER,R,FUNCT)
            TERMR=TERMR+TR
            TERMI=TERMI+TI
-           IF ((ABS(TERMR-LR).LE.RERR*ABS(TERMR)+AERR).AND. &
+           if((ABS(TERMR-LR).LE.RERR*ABS(TERMR)+AERR).AND. &
            (ABS(TERMI-LI).LE.RERR*ABS(TERMI)+AERR)) THEN
              GOTO 26
            ELSE
@@ -341,7 +341,7 @@ SUBROUTINE BESTRN(BESR,BESI,ORDER,NG,R,FUNCT,RERR,AERR,NPCS,XSUM,NSUM,NEW,IERR)
        SR(L)=TERMR
        SI(L)=TERMI
        CALL PADECF(SUMR,SUMI,SR,SI,L)
-       IF ((ABS(SUMR-LASTR).LE.RERR*ABS(SUMR)+AERR).AND. &
+       if((ABS(SUMR-LASTR).LE.RERR*ABS(SUMR)+AERR).AND. &
            (ABS(SUMI-LASTI).LE.RERR*ABS(SUMI)+AERR)) THEN
          BESR=XSUMR+SUMR
          BESI=XSUMI+SUMI
@@ -665,12 +665,12 @@ SUBROUTINE BESQUD(A,B,BESR,BESI,NG,NEW,ORDER,R,F)
      0.14093886410782462614E-01_real64/
 
 !  check for trivial case
-     IF (A.GE.B) THEN
+     if(A.GE.B) THEN
        BESR=0.
        BESI=0.
        RETURN
      ENDIF
-     IF (NEW.EQ.2) GOTO 200
+     if(NEW.EQ.2) GOTO 200
 !  scale factors
      SUM=(B+A)/2.
      DIFF=(B-A)/2.
@@ -682,7 +682,7 @@ SUBROUTINE BESQUD(A,B,BESR,BESI,NG,NEW,ORDER,R,F)
      BESF=JBESS(SUM*R,ORDER)
      FZEROR=BESF*FZEROR
      FZEROI=BESF*FZEROI
-     IF (NEW.EQ.1) THEN
+     if(NEW.EQ.1) THEN
        KARG(1,NP)=SUM
        KERN(1,NP)=FZEROR
        KERN(2,NP)=FZEROI
@@ -710,7 +710,7 @@ SUBROUTINE BESQUD(A,B,BESR,BESI,NG,NEW,ORDER,R,F)
          NF=NF+2
          BES1(J)=JBESS(SUMP*R,ORDER)
          BES2(J)=JBESS(SUMM*R,ORDER)
-         IF (NEW.GE.1) THEN
+         if(NEW.GE.1) THEN
            KARG(LA,NP)=SUMP
            KARG(LA+1,NP)=SUMM
            LA=LA+2
@@ -727,7 +727,7 @@ SUBROUTINE BESQUD(A,B,BESR,BESI,NG,NEW,ORDER,R,F)
          FUNCT(N+1)=FI1(J)+FI2(J)
          N=N+2
 20     CONTINUE
-       IF (NEW.GE.1) THEN
+       if(NEW.GE.1) THEN
          DO 30 J=1,NWA(K)
            KERN(LK,NP)=FR1(J)
            KERN(LK+1,NP)=FI1(J)
@@ -746,7 +746,7 @@ SUBROUTINE BESQUD(A,B,BESR,BESI,NG,NEW,ORDER,R,F)
      ACUMI=DOT(NW,WT(NW:2*NW-1),1,FUNCT(2:254),2)
      BESR=(ACUMR+WT(2*NW)*FZEROR)*DIFF
      BESI=(ACUMI+WT(2*NW)*FZEROI)*DIFF
-     IF (NP.LE.NTERM) NK(NP)=NG
+     if(NP.LE.NTERM) NK(NP)=NG
      RETURN
 200  CONTINUE
 !  construct funct from saved kernels
@@ -761,7 +761,7 @@ SUBROUTINE BESQUD(A,B,BESR,BESI,NG,NEW,ORDER,R,F)
        FUNCT(N+1)=KERN(LK+1,NP)+KERN(LK+3,NP)
        LK=LK+4
 210     CONTINUE
-     IF (NK(NP).GE.NG) THEN
+     if(NK(NP).GE.NG) THEN
 !  no additional orders required - compute dot product of weitghs with
 !    integrand values and return
        ACUMR=DOT(NW,WT(NW:2*NW-1),1,FUNCT(1:253),2)
@@ -819,9 +819,9 @@ SUBROUTINE PADECF(SUMR,SUMI,SR,SI,N)
   DATA DR(0)/-1./,DI(0)/0./
   SAVE XR,XI,DR,DI,CFCOR,CFCOI
 
-     IF (N.LT.3) THEN
+     if(N.LT.3) THEN
 !  initialize for recursive calculations
-       IF (N.EQ.1) THEN
+       if(N.EQ.1) THEN
          DO 10 I=1,NC
            XR(I)=0.
            XI(I)=0.
@@ -928,13 +928,13 @@ real(kind=real64) FUNCTION DOT(N,X1,INC1,X2,INC2)
   integer(kind=int32)             :: I,K
 
 
-     IF (INC2.GT.0) THEN
+     if(INC2.GT.0) THEN
        K=1
      ELSE
        K=N*ABS(INC2)
      ENDIF
      DOT=0.0
-     IF (INC1.GT.0) THEN
+     if(INC1.GT.0) THEN
        DO 10 I=1,N,INC1
          DOT=DOT+X1(I)*X2(K)
          K=K+INC2

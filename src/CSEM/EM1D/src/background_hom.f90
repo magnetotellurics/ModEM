@@ -118,13 +118,13 @@ subroutine background_hom_unified(bgdat,src,ifreq,icur)
         cur = src%cur(ielem,ifreq)
 
         !source signature
-        if (elsrc) then
+        if(elsrc) then
           !source dipole length times (complex) source current
           src_j(1) = src%ljx(ielem) * cur
           src_j(2) = src%ljy(ielem) * cur
           src_j(3) = src%ljz(ielem) * cur
         endif
-        if (magsrc) then
+        if(magsrc) then
           !components of the source loop area times (complex) source current
           !factor -j*omega*mu0 as in Loeseth and Ursin, 2007
           src_k(1) = - j_om_mu * src%akx(ielem) * cur
@@ -141,7 +141,7 @@ subroutine background_hom_unified(bgdat,src,ifreq,icur)
       end select
 
       !same coordinates for all field components?
-      samecoord: if (bgdat%allcomp_samecoord) then
+      samecoord: if(bgdat%allcomp_samecoord) then
 
         !loop over receivers
         do irec = 1,bgdat%nExy
@@ -154,7 +154,7 @@ subroutine background_hom_unified(bgdat,src,ifreq,icur)
           !Ex = Gej11*J1 + Gej12*J2 + Gej13*J3  +  Gek11*K1 + Gek12*K2 + Gek13*K3
 
           !contribution of electric sources
-          if (elsrc) then
+          if(elsrc) then
 
             !put in dv in case point is right at source
             !Ex
@@ -178,7 +178,7 @@ subroutine background_hom_unified(bgdat,src,ifreq,icur)
           endif
 
           !contribution of magnetic sources
-          if (magsrc) then
+          if(magsrc) then
 
             !Ex
             gek = greens_ek1(r,x,y,z,gamma)
@@ -205,7 +205,7 @@ subroutine background_hom_unified(bgdat,src,ifreq,icur)
 
         !Ex / Ey
         !common coordinates for Ex and Ey
-        common_Exy: if (bgdat%nExy.gt.0) then
+        common_Exy: if(bgdat%nExy.gt.0) then
 
           !loop over receivers
           do irec = 1,bgdat%nExy
@@ -216,7 +216,7 @@ subroutine background_hom_unified(bgdat,src,ifreq,icur)
             r = radius0(x,y,z)
 
             !contribution of electric sources
-            if (elsrc) then
+            if(elsrc) then
               !Ex
               gej = greens_ej1(r,x,y,z,etainv,gamma,dv)
               bgdat%Ex(irec) = bgdat%Ex(irec) + sum(gej*src_j)
@@ -226,7 +226,7 @@ subroutine background_hom_unified(bgdat,src,ifreq,icur)
             endif
 
             !contribution of magnetic sources
-            if (magsrc) then
+            if(magsrc) then
               !Ex
               gek = greens_ek1(r,x,y,z,gamma)
               bgdat%Ex(irec) = bgdat%Ex(irec) + sum(gek*src_k)
@@ -247,12 +247,12 @@ subroutine background_hom_unified(bgdat,src,ifreq,icur)
             r = radius0(x,y,z)
 
             !contribution of electric sources
-            if (elsrc) then
+            if(elsrc) then
               gej = greens_ej1(r,x,y,z,etainv,gamma,dv)
               bgdat%Ex(irec) = bgdat%Ex(irec) + sum(gej*src_j)
             endif
             !contribution of magnetic sources
-            if (magsrc) then
+            if(magsrc) then
               gek = greens_ek1(r,x,y,z,gamma)
               bgdat%Ex(irec) = bgdat%Ex(irec) + sum(gek*src_k)
             endif
@@ -267,13 +267,13 @@ subroutine background_hom_unified(bgdat,src,ifreq,icur)
             r = radius0(x,y,z)
 
             !contribution of electric sources
-            if (elsrc) then
+            if(elsrc) then
               gej = greens_ej2(r,x,y,z,etainv,gamma,dv)
               bgdat%Ey(irec) = bgdat%Ey(irec) + sum(gej*src_j)
             endif
 
             !contribution of magnetic sources
-            if (magsrc) then
+            if(magsrc) then
               !Ey
               gek = greens_ek2(r,x,y,z,gamma)
               bgdat%Ey(irec) = bgdat%Ey(irec) + sum(gek*src_k)
@@ -290,12 +290,12 @@ subroutine background_hom_unified(bgdat,src,ifreq,icur)
           r = radius0(x,y,z)
 
           !contribution of electric sources
-          if (elsrc) then
+          if(elsrc) then
             gej = greens_ej3(r,x,y,z,etainv,gamma,dv)
             bgdat%Ez(irec) = bgdat%Ez(irec) + sum(gej*src_j)
           endif
           !contribution of magnetic sources
-          if (magsrc) then
+          if(magsrc) then
             gek = greens_ek3(r,x,y,z,gamma)
             bgdat%Ez(irec) = bgdat%Ez(irec) + sum(gek*src_k)
           endif
@@ -304,7 +304,7 @@ subroutine background_hom_unified(bgdat,src,ifreq,icur)
 
         !Hx / Hy
         !common coordinates for Hx and Hy
-        common_Hxy: if (bgdat%nHxy.gt.0) then
+        common_Hxy: if(bgdat%nHxy.gt.0) then
 
           !loop over receivers
           do irec = 1,bgdat%nHxy
@@ -315,7 +315,7 @@ subroutine background_hom_unified(bgdat,src,ifreq,icur)
             r = radius0(x,y,z)
 
             !contribution of electric sources
-            if (elsrc) then
+            if(elsrc) then
               !Hx
               ghj = greens_ek1(r,x,y,z,gamma)
               bgdat%Hx(irec) = bgdat%Hx(irec) - sum(ghj*src_j)
@@ -325,7 +325,7 @@ subroutine background_hom_unified(bgdat,src,ifreq,icur)
             endif
 
             !contribution of magnetic sources
-            if (magsrc) then
+            if(magsrc) then
               !Hx
               ghk = greens_ej1(r,x,y,z,zetainv,gamma,dv)
               bgdat%Hx(irec) = bgdat%Hx(irec) + sum(ghk*src_k)
@@ -346,12 +346,12 @@ subroutine background_hom_unified(bgdat,src,ifreq,icur)
             r = radius0(x,y,z)
 
             !contribution of electric sources
-            if (elsrc) then
+            if(elsrc) then
               ghj = greens_ek1(r,x,y,z,gamma)
               bgdat%Hx(irec) = bgdat%Hx(irec) - sum(ghj*src_j)
             endif
             !contribution of magnetic sources
-            if (magsrc) then
+            if(magsrc) then
               ghk = greens_ej1(r,x,y,z,zetainv,gamma,dv)
               bgdat%Hx(irec) = bgdat%Hx(irec) + sum(ghk*src_k)
             endif
@@ -366,13 +366,13 @@ subroutine background_hom_unified(bgdat,src,ifreq,icur)
             r = radius0(x,y,z)
 
             !contribution of electric sources
-            if (elsrc) then
+            if(elsrc) then
               ghj = greens_ek2(r,x,y,z,gamma)
               bgdat%Hy(irec) = bgdat%Hy(irec) - sum(ghj*src_j)
             endif
 
             !contribution of magnetic sources
-            if (magsrc) then
+            if(magsrc) then
               ghk = greens_ej2(r,x,y,z,zetainv,gamma,dv)
               bgdat%Hy(irec) = bgdat%Hy(irec) + sum(ghk*src_k)
             endif
@@ -388,12 +388,12 @@ subroutine background_hom_unified(bgdat,src,ifreq,icur)
           r = radius0(x,y,z)
 
           !contribution of electric sources
-          if (elsrc) then
+          if(elsrc) then
             ghj = greens_ek3(r,x,y,z,gamma)
             bgdat%Hz(irec) = bgdat%Hz(irec) - sum(ghj*src_j)
           endif
           !contribution of magnetic sources
-          if (magsrc) then
+          if(magsrc) then
             ghk = greens_ej3(r,x,y,z,zetainv,gamma,dv)
             bgdat%Hz(irec) = bgdat%Hz(irec) + sum(ghk*src_k)
           endif

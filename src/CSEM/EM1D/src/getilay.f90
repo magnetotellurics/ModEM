@@ -21,10 +21,10 @@ function getilay(z,zbound) result(lay)
 
   lay = 1
   do ilay=1,nzb
-    !if (z .gt. zbound(ilay)) lay = lay + 1
+    !if(z .gt. zbound(ilay)) lay = lay + 1
     ! for source right on boundary, define source to be in lower medium
     ! --> this is more stable and more appropriate for grounded sources
-    if (z .ge. zbound(ilay)) lay = lay + 1
+    if(z .ge. zbound(ilay)) lay = lay + 1
   enddo
 
 endfunction getilay

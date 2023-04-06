@@ -703,36 +703,36 @@ contains
         !
         select case( node_type )
         !
-            case(CENTER)
+            case( CELL, CELL_EARTH )
                  nx = self%nx
                  ny = self%ny
                  nz = self%nz
-            case(CORNER)
+            case( NODE )
                  nx = self%nx + 1
                  ny = self%ny + 1
                  nz = self%nz + 1
-            case(XEDGE)
+            case( XEDGE )
                 nx = self%nx
                 ny = self%ny + 1
                 nz = self%nz + 1
                 !
-            case(XFACE)
+            case( XFACE )
                  nx = self%nx + 1
                  ny = self%ny
                  nz = self%nz
-            case(YEDGE)
+            case( YEDGE )
                  nx = self%nx + 1
                  ny = self%ny
                  nz = self%nz + 1
-            case(YFACE)
+            case( YFACE )
                  nx = self%nx
                  ny = self%ny + 1
                  nz = self%nz
-            case(ZEDGE)
+            case( ZEDGE )
                  nx = self%nx + 1
                  ny = self%ny + 1
                  nz = self%nz
-            case(ZFACE)
+            case( ZFACE )
                  nx = self%nx
                  ny = self%ny
                  nz = self%nz + 1

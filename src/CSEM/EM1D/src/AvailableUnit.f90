@@ -18,10 +18,10 @@ integer(kind=int32) function AvailableUnit()
 
   do i=20,98765
      inquire(Unit=i,Opened=isOpen)
-     if (.not.isOpen) then
+     if(.not.isOpen) then
         AvailableUnit = i
         return
-     end if
+     endif
   end do
 
   !we get here if no unit number was found

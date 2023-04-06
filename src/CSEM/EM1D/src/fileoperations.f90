@@ -17,17 +17,17 @@ subroutine checkfileexist(filename,required,lexist)
 
   lexist = .false.
 
-  if (required) then
+  if(required) then
     !hard check, crash if file is not present
     inquire(file=trim(adjustl(filename)), exist=lexist)
-    if (.not. lexist) call exist_error(pid,trim(adjustl(filename)))
+    if(.not. lexist) call exist_error(pid,trim(adjustl(filename)))
   else
     !soft check, only if filename was not set to 'none'
-    if (trim(adjustl(filename)).ne.'none') then
+    if(trim(adjustl(filename)).ne.'none') then
       inquire(file=trim(adjustl(filename)), exist=lexist)
       !set filename to none if file is not present
-      if (.not.lexist) then
-        if (pid .eq. 0) then
+      if(.not.lexist) then
+        if(pid .eq. 0) then
           write(*,fmt='(a26,a)') 'WARNING: cannot find file ',trim(adjustl(filename))
           write(*,fmt='(a)')     'File will not be used.'
         endif

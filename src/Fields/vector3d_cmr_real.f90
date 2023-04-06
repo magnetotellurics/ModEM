@@ -606,7 +606,7 @@ contains
     !
     call self%Zero()
 
-    allocate (vFull(self%Length_full ()))
+    allocate (vFull(self%length_full ()))
     vFull(self%ind_active) = v
     call self%Set_full (vFull)
   end subroutine Set_array_
@@ -669,7 +669,7 @@ contains
     ! Executable statements
     !***********************
     !
-    n = self%Length_full ()
+    n = self%length_full ()
     allocate (v(n))
 
     v = R_ZERO
@@ -678,7 +678,7 @@ contains
     i2 = 0
 
     do k = 1, self%grid_ptr%ngrids
-       n = self%sub_vectors(k)%Length()         
+       n = self%sub_vectors(k)%length()         
        i2 = i2 + n
        call self%sub_vectors(k)%Get_array (v_temp)
        v(i1:i2) = v_temp
@@ -701,7 +701,7 @@ contains
     !
     i1 = 1; i2 = 0;
     do k = 1, self%grid_ptr%ngrids
-       n = self%sub_vectors(k)%Length()
+       n = self%sub_vectors(k)%length()
        i2 = i2 + n
        call self%sub_vectors(k)%Set_array (v(i1:i2))
        i1 = i1 + n
@@ -727,7 +727,7 @@ contains
     !
     n = 0
     do k = 1, self%grid_ptr%ngrids
-       n = n + self%sub_vectors(k)%Length()
+       n = n + self%sub_vectors(k)%length()
     end do
 
   end function Length_full_
@@ -749,7 +749,7 @@ contains
     ! Executable statements
     !***********************
     !
-    n = self%Length_full ()
+    n = self%length_full ()
     call self%Get_full (v)
 
     n_I = 0
@@ -786,7 +786,7 @@ contains
     ! Executable statements
     !***********************
     !
-    n = self%Length()
+    n = self%length()
     allocate (v(n))
     call self%Get_array (v)
 

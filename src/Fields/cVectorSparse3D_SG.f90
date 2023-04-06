@@ -68,6 +68,8 @@ module cVectorSparse3D_SG
             procedure, public :: read => readCVectorSparse3D_SG
             procedure, public :: write => writeCVectorSparse3D_SG
             procedure, public :: print => printCVectorSparse3D_SG
+			!
+            procedure, public :: setInteriorMask => setInteriorMaskCVectorSparse3D_SG
             !
             !> Module routines
             procedure, public :: fromFullVector => fromFullVectorCVectorSparse3D_SG
@@ -896,4 +898,13 @@ contains
        !
     end subroutine printCVectorSparse3D_SG
     !
+    !> No subroutine briefing
+    !
+    subroutine setInteriorMaskCVectorSparse3D_SG( self )
+        implicit none
+        !
+        class( cVectorSparse3D_SG_t ), intent( inout ) :: self
+        !
+	end subroutine setInteriorMaskCVectorSparse3D_SG
+	!
 end module cVectorSparse3D_SG  

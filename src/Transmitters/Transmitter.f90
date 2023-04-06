@@ -189,23 +189,20 @@ module Transmitter
         !> Allocate the source of this transmitter if it is allocated.
         !> And define a new source for this transmitter, sent as an argument.
         !
-        function getSolutionVectorTx( self, pol ) result( solution )
+        subroutine getSolutionVectorTx( self, pol, solution )
             implicit none
             !
             class( Transmitter_t ), intent( in ) :: self
             integer, intent( in ) :: pol
-			!
-            class( Vector_t ), allocatable, target :: solution
+            class( Vector_t ), pointer, intent( out ) :: solution
             !
-			write( *, * ) "TX i_SOL: ", self%i_sol
-			!
             if( self%i_sol == 0 ) then
                 allocate( solution, source = self%e_sol_0( pol ) )
             else
                 allocate( solution, source = self%e_sol_1( pol ) )
             endif
             !
-        end function getSolutionVectorTx
+        end subroutine getSolutionVectorTx
         !
         !> Returns a SourceInteriorForce from two distinct models, with the same ModelOperator.
         !
@@ -238,9 +235,11 @@ module Transmitter
             !
             do pol = 1, self%n_pol
                 !
-                solution = self%getSolutionVector( pol )
+                call self%getSolutionVector( pol, solution )
                 !
                 bSrc( pol ) = solution
+                !
+                deallocate( solution )
                 !
                 call bSrc( pol )%mult( map_e_vector )
                 !
@@ -285,17 +284,21 @@ module Transmitter
             !
             !> Copy e_sens to a local variable to keep its original value.
             allocate( eSens, source = self%e_sens )
-			!
-			solution = self%getSolutionVector( 1 )
-			!
+            !
+            call self%getSolutionVector( 1, solution )
+            !
             call eSens(1)%mult( solution )
+            !
+            deallocate( solution )
             !
             !> Loop over all other polarizations, adding them to the first position
             do pol = 2, self%n_pol
                 !
-                solution = self%getSolutionVector( pol )
+                call self%getSolutionVector( pol, solution )
                 !
                 call eSens( pol )%mult( solution )
+                !
+                deallocate( solution )
                 !
                 call eSens(1)%add( eSens( pol ) )
                 !

@@ -1397,7 +1397,7 @@ subroutine set_fresnelcoef_TE(kappa,pvert)
     !reflection and transmission coefficients through interfaces
     do ilay = 1,nlay-1
       rup(ilay) = (pvert(ilay+1) - pvert(ilay)) / (pvert(ilay+1) + pvert(ilay))
-      if (pvert(ilay).eq.pvert(ilay+1)) then
+      if(pvert(ilay).eq.pvert(ilay+1)) then
         tup(ilay) = 1._real64
       else
         tup(ilay) = 2._real64*sqrt(pvert(ilay)*pvert(ilay+1)) / (pvert(ilay+1) + pvert(ilay))
@@ -1462,7 +1462,7 @@ subroutine set_fresnelcoef_TM(kappa,pvert)
        	!WARNING: minus is not in formula 121 of Løseth and Ursin, but setting a minus here
 	!  makes field values reasonable for receivers in different layer than source
 	!  (checked on 2-layer model: integrals A1TE and A1TM have to nearly cancel out)
-      if (pvert(ilay).eq.pvert(ilay+1)) then
+      if(pvert(ilay).eq.pvert(ilay+1)) then
         tup(ilay) = 1._real64
       else
         tup(ilay) = -2._real64*sqrt(epsh(ilay)*epsh(ilay+1)*pvert(ilay)*pvert(ilay+1)) / &

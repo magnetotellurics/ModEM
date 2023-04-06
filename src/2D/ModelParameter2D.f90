@@ -88,7 +88,7 @@ contains
         class(ModelParameter2D_t), intent( in ) :: self
         integer :: nParam
         
-        nParam = self%grid%Length()
+        nParam = self%grid%length()
 
     end function lengthModelParameter2D
     !

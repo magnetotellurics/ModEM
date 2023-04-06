@@ -45,6 +45,9 @@ module Grid
         !
         real( kind=prec ) :: zAirThick
         !
+        integer, dimension(:), allocatable :: ind_interior_edges, ind_interior_nodes
+        integer, dimension(:), allocatable :: ind_boundaries_edges, ind_boundaries_nodes
+        !
         logical :: is_allocated
         !
         contains

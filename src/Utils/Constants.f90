@@ -7,11 +7,12 @@
 module Constants
     implicit none
     !
-    character( len=4 ), parameter :: NODE = "NODE"
-    character( len=4 ), parameter :: FACE = "FACE"
+    !> VECTOR
     character( len=4 ), parameter :: EDGE = "EDGE"
-    character( len=4 ), parameter :: CENTER = "CELL"
-    character( len=4 ), parameter :: CORNER = "NODE"
+    character( len=4 ), parameter :: FACE = "FACE"
+    !
+    !> SCALAR
+    character( len=4 ), parameter :: NODE = "NODE"
     character( len=4 ), parameter :: CELL = "CELL"
     character( len=10 ), parameter :: CELL_EARTH = "CELL EARTH"
     !

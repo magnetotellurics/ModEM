@@ -93,13 +93,9 @@ contains
         !
         comega = isign * cmplx( 0.0, 1. / ( 2.0 * PI / transmitter%period ), kind=prec )
         !
-		write( *, * ) "LR 1"
-		!
         !> Call the predicted data routine to calculate responses
         call self%predictedData( transmitter )
         !
-		write( *, * ) "LR 2"
-		!
         !> Allocate LRows matrix [ n_pol = 2, n_comp = 4 ]
         if( allocated( self%lrows ) ) deallocate( self%lrows )
         allocate( cVector3D_SG_t :: self%lrows( transmitter%n_pol, self%n_comp ) )
@@ -166,25 +162,21 @@ contains
         complex( kind=prec ), allocatable :: BB(:,:), EE(:,:)
         class( Vector_t ), pointer :: tx_e_1, tx_e_2
         !
-		write( *, * ) "PD 1"
-		!
         comega = cmplx( 0.0, 1. / ( 2.0 * PI / transmitter%period ), kind=prec )
         !
-		write( *, * ) "PD 2"
-		!
-		tx_e_1 = transmitter%getSolutionVector( 1 )
-		!
-		tx_e_2 = transmitter%getSolutionVector( 2 )
-		!
-		write( *, * ) "PD 3"
-		!
+        call transmitter%getSolutionVector( 1, tx_e_1 )
+        !
+        call transmitter%getSolutionVector( 2, tx_e_2 )
+        !
         allocate( EE(2,2) )
         EE(1,1) = self%Lex%dotProd( tx_e_1 )
         EE(2,1) = self%Ley%dotProd( tx_e_1 )
         EE(1,2) = self%Lex%dotProd( tx_e_2 )
         EE(2,2) = self%Ley%dotProd( tx_e_2 )
         !
-		write( *, * ) "PD 4"
+		write( *, * ) "EE"
+		write( *, * ) EE(1,1), EE(1,2)
+		write( *, * ) EE(2,1), EE(2,2)
 		!
         allocate( BB( 2, 2 ) )
         BB(1,1) = self%Lbx%dotProd( tx_e_1 )
@@ -192,7 +184,9 @@ contains
         BB(1,2) = self%Lbx%dotProd( tx_e_2 )
         BB(2,2) = self%Lby%dotProd( tx_e_2 )
         !
-		write( *, * ) "PD 5"
+		write( *, * ) "BB"
+		write( *, * ) BB(1,1), BB(1,2)
+		write( *, * ) BB(2,1), BB(2,2)
 		!
         deallocate( tx_e_1 )
         deallocate( tx_e_2 )
@@ -201,8 +195,6 @@ contains
         !
         det = BB(1,1) * BB(2,2) - BB(1,2) * BB(2,1)
         !
-		write( *, * ) "PD 6"
-		!
         if( allocated( self%I_BB ) ) deallocate( self%I_BB )
         allocate( self%I_BB(2,2) )
         !
@@ -215,8 +207,6 @@ contains
             stop "Error: predictedDataFullImpedance > Determinant is Zero!"
         endif
         !
-		write( *, * ) "PD 7"
-		!
         deallocate( BB )
         !
         if( allocated( self%response ) ) deallocate( self%response )
@@ -231,16 +221,12 @@ contains
         !
         deallocate( EE )
         !
-		write( *, * ) "PD 8"
-		!
         if( present( data_group ) ) then
             !
             call self%savePredictedData( transmitter, data_group )
             !
         endif
         !
-		write( *, * ) "PD 9"
-		!
     end subroutine predictedDataFullImpedance
     !
     !> No subroutine briefing

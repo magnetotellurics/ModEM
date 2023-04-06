@@ -35,12 +35,12 @@ subroutine find_srcdepths(src,refl_var,dipoletype)
   case (dipole)
 
     !check input
-    if ((dipoletype.lt.hed) .or. (dipoletype.gt.vmd)) &
+    if((dipoletype.lt.hed) .or. (dipoletype.gt.vmd)) &
       call invalid_error(pid,'find_srcdepths','','dipoletype',intnum=dipoletype)
 
     nelemtot = src%nelem(1)
     allocate(zstmpall(nelemtot),srcidx(nelemtot), stat=ierr)
-    if (ierr.ne.0) call alloc_error(pid,'find_srcdepths','zstmpall',ierr)
+    if(ierr.ne.0) call alloc_error(pid,'find_srcdepths','zstmpall',ierr)
 
 
     nelem = 0
@@ -50,21 +50,21 @@ subroutine find_srcdepths(src,refl_var,dipoletype)
     case (hed) !horizontal electric dipole
 
       do ielem=1,nelemtot
-        if ((src%ljx(ielem).ne.0._real64) .or. (src%ljy(ielem).ne.0._real64)) then
+        if((src%ljx(ielem).ne.0._real64) .or. (src%ljy(ielem).ne.0._real64)) then
           nelem = nelem + 1
           srcidx(nelem) = ielem
           zstmpall(nelem) = src%pos(3,ielem)
         endif
       enddo
 
-      if (nelem .gt. 0) then
+      if(nelem .gt. 0) then
         allocate(refl_var%betasrc(1:nelem), stat=ierr)
-        if (ierr.ne.0) call alloc_error(pid,'find_srcdepths','betasrc',ierr)
+        if(ierr.ne.0) call alloc_error(pid,'find_srcdepths','betasrc',ierr)
       endif
 
     case (ved) !vertical electric dipole
       do ielem=1,nelemtot
-        if (src%ljz(ielem).ne.0._real64) then
+        if(src%ljz(ielem).ne.0._real64) then
           nelem = nelem + 1
           srcidx(nelem) = ielem
           zstmpall(nelem) = src%pos(3,ielem)
@@ -73,21 +73,21 @@ subroutine find_srcdepths(src,refl_var,dipoletype)
 
     case (hmd) !horizontal magnetic dipole
       do ielem=1,nelemtot
-        if ((src%akx(ielem).ne.0._real64) .or. (src%aky(ielem).ne.0._real64)) then
+        if((src%akx(ielem).ne.0._real64) .or. (src%aky(ielem).ne.0._real64)) then
           nelem = nelem + 1
           srcidx(nelem) = ielem
           zstmpall(nelem) = src%pos(3,ielem)
         endif
       enddo
 
-      if (nelem .gt. 0) then
+      if(nelem .gt. 0) then
         allocate(refl_var%betasrc(1:nelem), stat=ierr)
-        if (ierr.ne.0) call alloc_error(pid,'find_srcdepths','betasrc',ierr)
+        if(ierr.ne.0) call alloc_error(pid,'find_srcdepths','betasrc',ierr)
       endif
 
     case (vmd) !vertical magnetic dipole
       do ielem=1,nelemtot
-        if (src%akz(ielem).ne.0.d0) then
+        if(src%akz(ielem).ne.0.d0) then
           nelem = nelem + 1
           srcidx(nelem) = ielem
           zstmpall(nelem) = src%pos(3,ielem)
@@ -104,10 +104,10 @@ subroutine find_srcdepths(src,refl_var,dipoletype)
     nelem = src%nwire
 
     allocate(refl_var%betasrc(1:nelem), stat=ierr)
-    if (ierr.ne.0) call alloc_error(pid,'find_srcdepths','betasrc',ierr)
+    if(ierr.ne.0) call alloc_error(pid,'find_srcdepths','betasrc',ierr)
 
     allocate(zstmpall(nelem), stat=ierr)
-    if (ierr.ne.0) call alloc_error(pid,'find_srcdepths','zstmpall',ierr)
+    if(ierr.ne.0) call alloc_error(pid,'find_srcdepths','zstmpall',ierr)
 
     do ielem=1,nelem
       zstmpall(ielem) = src%wire(ielem)%endpos(3,1)
@@ -120,13 +120,13 @@ subroutine find_srcdepths(src,refl_var,dipoletype)
   !if source elements for the given dipole type exist (or we have a wire source),
   !  then find unique depths of those source elements
   !------------------------------------------------------
-  if (nelem .gt. 0) then
+  if(nelem .gt. 0) then
 
     allocate(nsrcperz(nelem),zstmp(nelem), stat=ierr)
-    if (ierr.ne.0) call alloc_error(pid,'find_srcdepths','nsrcperz',ierr)
+    if(ierr.ne.0) call alloc_error(pid,'find_srcdepths','nsrcperz',ierr)
 
     allocate(refl_var%isrcperz(nelem), stat=ierr)
-    if (ierr.ne.0) call alloc_error(pid,'find_srcdepths','refl_var%isrcperz',ierr)
+    if(ierr.ne.0) call alloc_error(pid,'find_srcdepths','refl_var%isrcperz',ierr)
 
 
     !get sort indices for source depths
@@ -154,7 +154,7 @@ subroutine find_srcdepths(src,refl_var,dipoletype)
 
       do ielem=2,nelem
 
-        if (src%pos(3,refl_var%isrcperz(ielem)) .eq. src%pos(3,refl_var%isrcperz(ielem-1))) then
+        if(src%pos(3,refl_var%isrcperz(ielem)) .eq. src%pos(3,refl_var%isrcperz(ielem-1))) then
           nsrcperz(nzs) = nsrcperz(nzs) + 1
         else
           nzs = nzs + 1
@@ -165,14 +165,14 @@ subroutine find_srcdepths(src,refl_var,dipoletype)
 
 
       !angles for HED sources
-      if (dipoletype.eq.hed) then
+      if(dipoletype.eq.hed) then
         do ielem=1,nelem
           idx = refl_var%isrcperz(ielem)
           refl_var%betasrc(ielem) = atan2(src%ljy(idx),src%ljx(idx))
         enddo
 
       !angles for HMD sources
-      elseif (dipoletype.eq.hmd) then
+      elseif(dipoletype.eq.hmd) then
         do ielem=1,nelem
           idx = refl_var%isrcperz(ielem)
           refl_var%betasrc(ielem) = atan2(src%aky(idx),src%akx(idx))
@@ -188,7 +188,7 @@ subroutine find_srcdepths(src,refl_var,dipoletype)
 
       do ielem=2,nelem
 
-        if (src%wire(refl_var%isrcperz(ielem))%endpos(3,1) .eq. src%wire(refl_var%isrcperz(ielem-1))%endpos(3,1)) then
+        if(src%wire(refl_var%isrcperz(ielem))%endpos(3,1) .eq. src%wire(refl_var%isrcperz(ielem-1))%endpos(3,1)) then
           nsrcperz(nzs) = nsrcperz(nzs) + 1
         else
           nzs = nzs + 1
@@ -213,7 +213,7 @@ subroutine find_srcdepths(src,refl_var,dipoletype)
     !copy results into refl_var structure
     refl_var%nzsrc = nzs
     allocate(refl_var%zsrc(nzs),refl_var%nsrcperz(nzs), stat=ierr)
-    if (ierr.ne.0) call alloc_error(pid,'find_srcdepths','nzs',ierr)
+    if(ierr.ne.0) call alloc_error(pid,'find_srcdepths','nzs',ierr)
     refl_var%zsrc = zstmp(1:nzs)
     refl_var%nsrcperz = nsrcperz(1:nzs)
 
@@ -225,7 +225,7 @@ subroutine find_srcdepths(src,refl_var,dipoletype)
   endif
 
   deallocate(zstmpall, stat=ierr)
-  if (src%type .eq. dipole) deallocate(srcidx, stat=ierr)
+  if(src%type .eq. dipole) deallocate(srcidx, stat=ierr)
 
 endsubroutine find_srcdepths
 

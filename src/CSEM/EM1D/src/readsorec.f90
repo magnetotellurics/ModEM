@@ -26,15 +26,15 @@ subroutine readsorec(filename,src,comm)
 
   !let only processs 0 access the file!
   !let all processes know all sources
-  if (pid .eq. 0) then
+  if(pid .eq. 0) then
     !open file
     lu = AvailableUnit()
     open(unit=lu,file=trim(adjustl(filename)),status='old',iostat=ierr)
-    if (ierr.ne.0) call open_error(pid,'readsorec',filename,ierr)
+    if(ierr.ne.0) call open_error(pid,'readsorec',filename,ierr)
 
     !read number of sources or receiver groups
     read(lu,*,iostat=ierr) nsorec
-    if (ierr.ne.0) call readwrite_error(pid,'readsorec',filename,'r',ierr)
+    if(ierr.ne.0) call readwrite_error(pid,'readsorec',filename,'r',ierr)
   endif
 
 #ifdef USE_MPI
@@ -44,19 +44,19 @@ subroutine readsorec(filename,src,comm)
 
   !allocate source / receiver structure
   allocate(src(nsorec), stat=ierr)
-  if (ierr.ne.0) call alloc_error(pid,'readsorec','source/receiver structure ',ierr)
+  if(ierr.ne.0) call alloc_error(pid,'readsorec','source/receiver structure ',ierr)
 
 
   do ishot=1,nsorec
 
-    if (pid .eq. 0) then
+    if(pid .eq. 0) then
       !read line containing "shot" index, source type
       !RS 08.06.2011 new format: source name is in this line in sorpos files
       !receivers need individual names so there is no name needed here,
       !  but still for consistency with sorpos files we put a dummy name here,
       !  this could be used later to identify which receiver group to use for which source
       read(lu,*,iostat=ierr) isrc, src(ishot)%type, src(ishot)%srcname
-      if (ierr.ne.0) call io_error(pid,filename,'reading source type and name from',ierr)
+      if(ierr.ne.0) call io_error(pid,filename,'reading source type and name from',ierr)
     endif
 
 #ifdef USE_MPI
@@ -99,10 +99,10 @@ subroutine readsorec(filename,src,comm)
   enddo !sources or receiver groups
 
 
-  if (pid .eq. 0) then
+  if(pid .eq. 0) then
     !close the file
     close(lu, iostat=ierr)
-    if (ierr.ne.0) call close_error(pid,'readgeometry',filename,ierr)
+    if(ierr.ne.0) call close_error(pid,'readgeometry',filename,ierr)
   endif
 
 endsubroutine readsorec
@@ -135,19 +135,19 @@ subroutine read_dipolesource(src,lu,comm)
 
   !1-element vector for number of dipole elements (for wire source this would be nr of elements for each wire)
   allocate(src%nelem(1), stat=ierr)
-  if (ierr.ne.0) call alloc_error(pid,'read_dipolesource','nelem',ierr)
+  if(ierr.ne.0) call alloc_error(pid,'read_dipolesource','nelem',ierr)
 
 
   !get number of dipole elements
-  if (pid .eq. 0) then
+  if(pid .eq. 0) then
     !get file name
     inquire(lu, NAME=filename)
 
     read(lu,*,iostat=ierr) nelem
-    if (ierr.ne.0) call io_error(pid,filename,'reading number of dipole elements from ',ierr)
+    if(ierr.ne.0) call io_error(pid,filename,'reading number of dipole elements from ',ierr)
 
     !check number
-    if (nelem.le.0) call invalid_error(pid,'read_dipolesource',filename,'number of dipole elements ',intnum=nelem)
+    if(nelem.le.0) call invalid_error(pid,'read_dipolesource',filename,'number of dipole elements ',intnum=nelem)
   endif
 
   !communicate nr of dipole elements
@@ -161,20 +161,20 @@ subroutine read_dipolesource(src,lu,comm)
 
   !array for dipole positions
   allocate(src%pos(3,nelem), stat=ierr)
-  if (ierr.ne.0) call alloc_error(pid,'read_dipolesource','array for dipole positions',ierr)
+  if(ierr.ne.0) call alloc_error(pid,'read_dipolesource','array for dipole positions',ierr)
 
   !info on source components
   allocate(src%ljx(nelem),src%ljy(nelem),src%ljz(nelem),src%akx(nelem),src%aky(nelem),src%akz(nelem), stat=ierr)
-  if (ierr.ne.0) call alloc_error(pid,'read_dipolesource','dipole source component vectors',ierr)
+  if(ierr.ne.0) call alloc_error(pid,'read_dipolesource','dipole source component vectors',ierr)
 
 
-  if (pid .eq. 0) then
+  if(pid .eq. 0) then
     !read dipole element specifications
     do ielem = 1, nelem
       read(lu,*,iostat=ierr) src%pos(:,ielem), &
                              src%ljx(ielem),src%ljy(ielem),src%ljz(ielem), &
                              src%akx(ielem),src%aky(ielem),src%akz(ielem)
-      if (ierr.ne.0) call io_error(pid,filename,'reading dipole components from ',ierr)
+      if(ierr.ne.0) call io_error(pid,filename,'reading dipole components from ',ierr)
     enddo
   endif
 
@@ -238,15 +238,15 @@ subroutine read_wiresource(src,lu,comm)
 
 
   !get number of long wire segments composing this source
-  if (pid .eq. 0) then
+  if(pid .eq. 0) then
     !get file name
     inquire(lu, NAME=filename)
 
     read(lu,*,iostat=ierr) nwire
-    if (ierr.ne.0) call io_error(pid,filename,'reading number of wires from ',ierr)
+    if(ierr.ne.0) call io_error(pid,filename,'reading number of wires from ',ierr)
 
     !check number
-    if (nwire.le.0) call invalid_error(pid,'read_wiresource',filename,'number of wires within source ',intnum=nwire)
+    if(nwire.le.0) call invalid_error(pid,'read_wiresource',filename,'number of wires within source ',intnum=nwire)
   endif
 
   !communicate nr of long wire segments
@@ -260,20 +260,20 @@ subroutine read_wiresource(src,lu,comm)
 
   !vectors for number of wire elements and wire element lengths
   allocate(src%nelem(nwire),src%wire(nwire), stat=ierr)
-  if (ierr.ne.0) call alloc_error(pid,'read_wiresource','nelem for wire source',ierr)
+  if(ierr.ne.0) call alloc_error(pid,'read_wiresource','nelem for wire source',ierr)
 
   !temp positions and element lengths
   allocate(postmp(7,nwire), stat=ierr)
-  if (ierr.ne.0) call alloc_error(pid,'read_wiresource','postmp',ierr)
+  if(ierr.ne.0) call alloc_error(pid,'read_wiresource','postmp',ierr)
 
   !read wire specifications
-  if (pid .eq. 0) then
+  if(pid .eq. 0) then
     do iwire=1,nwire
       read(lu,*,iostat=ierr) postmp(:,iwire)
-      if (ierr.ne.0) call io_error(pid,filename,'position of wire source',ierr)
+      if(ierr.ne.0) call io_error(pid,filename,'position of wire source',ierr)
 
       !for now, we can only handle horizontal wires! Relax this later!
-      if (postmp(3,iwire) .ne. postmp(6,iwire)) then
+      if(postmp(3,iwire) .ne. postmp(6,iwire)) then
         call invalid_error(pid,'read_wiresource',filename,'wirepos',realnum=postmp(6,iwire))
       endif
 
@@ -312,7 +312,7 @@ subroutine read_wiresource(src,lu,comm)
 
     !array for positions of wire elements
     allocate(src%wire(iwire)%elempos(nelem,3), stat=ierr)
-    if (ierr.ne.0) call alloc_error(pid,'read_wiresource','elempos',ierr)
+    if(ierr.ne.0) call alloc_error(pid,'read_wiresource','elempos',ierr)
 
     !x, y wire lengths
     lx = src%wire(iwire)%endpos(1,2) - src%wire(iwire)%endpos(1,1)
@@ -389,15 +389,15 @@ subroutine read_starsource(src,lu,comm)
 
 
   !get number of wires composing this source
-  if (pid .eq. 0) then
+  if(pid .eq. 0) then
     !get file name
     inquire(lu, NAME=filename)
 
     read(lu,*,iostat=ierr) nwire
-    if (ierr.ne.0) call io_error(pid,filename,'reading number of wires from ',ierr)
+    if(ierr.ne.0) call io_error(pid,filename,'reading number of wires from ',ierr)
 
     !check number
-    if (nwire.le.0) call invalid_error(pid,'read_starsource',filename,'number of wires within source ',intnum=nwire)
+    if(nwire.le.0) call invalid_error(pid,'read_starsource',filename,'number of wires within source ',intnum=nwire)
   endif
 
   !communicate nr of long wire segments
@@ -410,17 +410,17 @@ subroutine read_starsource(src,lu,comm)
 
   !vectors for number of wire elements and wire element lengths
   allocate(src%nelem(nwire),src%wire(nwire), stat=ierr)
-  if (ierr.ne.0) call alloc_error(pid,'read_starsource','nelem for star source',ierr)
+  if(ierr.ne.0) call alloc_error(pid,'read_starsource','nelem for star source',ierr)
 
   !temp positions and element lengths
   allocate(postmp(4,nwire), stat=ierr)
-  if (ierr.ne.0) call alloc_error(pid,'read_starsource','postmp',ierr)
+  if(ierr.ne.0) call alloc_error(pid,'read_starsource','postmp',ierr)
 
 
   !get center point := end point of all wires
-  if (pid .eq. 0) then
+  if(pid .eq. 0) then
     read(lu,*,iostat=ierr) src%wire(1)%endpos(:,2)
-    if (ierr.ne.0) call io_error(pid,filename,'center point of star source',ierr)
+    if(ierr.ne.0) call io_error(pid,filename,'center point of star source',ierr)
   endif
 
   !communicate center point
@@ -436,7 +436,7 @@ subroutine read_starsource(src,lu,comm)
 
 
   !get wire start points and wire element lengths
-  if (pid .eq. 0) then
+  if(pid .eq. 0) then
     !remember end point
     x1 = src%wire(1)%endpos(1,2)
     y1 = src%wire(1)%endpos(2,2)
@@ -445,10 +445,10 @@ subroutine read_starsource(src,lu,comm)
     do iwire=1,nwire
       !read start point and length of wire elements
       read(lu,*,iostat=ierr) postmp(:,iwire)
-      if (ierr.ne.0) call io_error(pid,filename,'reading start point of wire from',ierr)
+      if(ierr.ne.0) call io_error(pid,filename,'reading start point of wire from',ierr)
 
       !for now, we can only handle horizontal wires! Relax this later!
-      if (postmp(3,iwire) .ne. src%wire(1)%endpos(3,2)) then
+      if(postmp(3,iwire) .ne. src%wire(1)%endpos(3,2)) then
         call invalid_error(pid,'read_starsource',filename,'wirepos',realnum=postmp(3,iwire))
       endif
 
@@ -485,7 +485,7 @@ subroutine read_starsource(src,lu,comm)
 
     !array for positions of wire elements
     allocate(src%wire(iwire)%elempos(nelem,3), stat=ierr)
-    if (ierr.ne.0) call alloc_error(pid,'read_wiresource','elempos',ierr)
+    if(ierr.ne.0) call alloc_error(pid,'read_wiresource','elempos',ierr)
 
     !x, y wire lengths
     lx = src%wire(iwire)%endpos(1,2) - src%wire(iwire)%endpos(1,1)
@@ -520,9 +520,9 @@ subroutine read_starsource(src,lu,comm)
       
 
   !get number of input currents
-  if (pid .eq. 0) then
+  if(pid .eq. 0) then
     read(lu,*,iostat=ierr) ncur
-    if (ierr.ne.0) call io_error(pid,filename,'reading number of source currents from ',ierr)
+    if(ierr.ne.0) call io_error(pid,filename,'reading number of source currents from ',ierr)
   endif
 
 #ifdef USE_MPI
@@ -534,17 +534,17 @@ subroutine read_starsource(src,lu,comm)
 
   !rotation frequency and phase constant
   allocate(src%omegarot(ncur),src%fi0(ncur), src%wavnames(ncur), stat=ierr)
-  if (ierr.ne.0) call alloc_error(pid,'read_starsource','omegarot, fi0, wavnames', ierr)
+  if(ierr.ne.0) call alloc_error(pid,'read_starsource','omegarot, fi0, wavnames', ierr)
 
 
-  if (pid .eq. 0) then
+  if(pid .eq. 0) then
     !read source current specifications
     do icur=1,ncur
 
       !wavelet at the modeling frequencies is not enough
       !instead, we need the full wavelet here to allow extracting I(omega+omegarot) and I(omega-omegarot)
       read(lu,*,iostat=ierr) iicur, wavidx, src%omegarot(icur), src%fi0(icur)
-      if (ierr.ne.0) call io_error(pid,filename,'reading omegarot and fi0 from ',ierr)
+      if(ierr.ne.0) call io_error(pid,filename,'reading omegarot and fi0 from ',ierr)
 
       !in input file we define frequency f, now convert it to omega
       src%omegarot(icur) = src%omegarot(icur) * dtwopi
@@ -553,17 +553,17 @@ subroutine read_starsource(src,lu,comm)
 
 
       !read wavelet file name if there is a new wavelet
-      if (wavidx .eq. isnew) then
+      if(wavidx .eq. isnew) then
         read(lu,*,iostat=ierr) src%wavnames(icur)
-        if (ierr.ne.0) call io_error(pid,filename,'reading name of wavelet file from ',ierr)
+        if(ierr.ne.0) call io_error(pid,filename,'reading name of wavelet file from ',ierr)
       else
 
         !force new wavelet for first current
-        if (icur .eq. 1) call invalid_error(pid,'read_starsource',filename,'wavelet index for first current ',intnum=wavidx)
+        if(icur .eq. 1) call invalid_error(pid,'read_starsource',filename,'wavelet index for first current ',intnum=wavidx)
 
         !set name to none if there is no new wavelet for this current
         !  (i.e. only the rotation frequency or constant phase shift change)
-        if (wavidx .eq. isold) then
+        if(wavidx .eq. isold) then
           src%wavnames(icur) = 'none'
 
         !invalid value for wavelet index
@@ -619,19 +619,19 @@ subroutine read_receivers(rec,lu,comm)
 
   !1-element vector for number of receivers
   allocate(rec%nelem(1), stat=ierr)
-  if (ierr.ne.0) call alloc_error(pid,'read_receivers','nelem for receivers',ierr)
+  if(ierr.ne.0) call alloc_error(pid,'read_receivers','nelem for receivers',ierr)
 
 
   !get number of receivers
-  if (pid .eq. 0) then
+  if(pid .eq. 0) then
     !get file name
     inquire(lu, NAME=filename)
 
     read(lu,*,iostat=ierr) nelem
-    if (ierr.ne.0) call io_error(pid,filename,'reading number of receivers from ',ierr)
+    if(ierr.ne.0) call io_error(pid,filename,'reading number of receivers from ',ierr)
 
     !check number
-    if (nelem.le.0) call invalid_error(pid,'read_receivers',filename,'number of receivers ',intnum=nelem)
+    if(nelem.le.0) call invalid_error(pid,'read_receivers',filename,'number of receivers ',intnum=nelem)
   endif
 
   !communicate nr of receivers
@@ -645,14 +645,14 @@ subroutine read_receivers(rec,lu,comm)
 
   !array for receiver positions
   allocate(rec%pos(3,nelem),rec%recnames(nelem), stat=ierr)
-  if (ierr.ne.0) call alloc_error(pid,'read_receivers','array for receiver positions',ierr)
+  if(ierr.ne.0) call alloc_error(pid,'read_receivers','array for receiver positions',ierr)
 
 
   !read receiver positions
-  if (pid .eq. 0) then
+  if(pid .eq. 0) then
     !implicit loop is faster
     read(lu,*,iostat=ierr) (rec%pos(:,ielem),rec%recnames(ielem),ielem=1,nelem)
-    if (ierr.ne.0) call io_error(pid,filename,'reading receiver positions from ',ierr)
+    if(ierr.ne.0) call io_error(pid,filename,'reading receiver positions from ',ierr)
   endif
 
   !communicate receiver positions and names
@@ -693,7 +693,7 @@ subroutine checksourcecomp(src)
   src%elsrc = .false.
   do ipt = 1,npoint
     !stop scanning source components as soon as there is one non-zero value
-    if ((src%ljx(ipt).ne.0.) .or. (src%ljy(ipt).ne.0.) .or. (src%ljz(ipt).ne.0.)) then
+    if((src%ljx(ipt).ne.0.) .or. (src%ljy(ipt).ne.0.) .or. (src%ljz(ipt).ne.0.)) then
       src%elsrc = .true.
       exit
     endif
@@ -702,7 +702,7 @@ subroutine checksourcecomp(src)
   !magnetic sources
   src%magsrc = .false.
   do ipt = 1,npoint
-    if ((src%akx(ipt).ne.0.) .or. (src%aky(ipt).ne.0.) .or. (src%akz(ipt).ne.0.)) then
+    if((src%akx(ipt).ne.0.) .or. (src%aky(ipt).ne.0.) .or. (src%akz(ipt).ne.0.)) then
       src%magsrc = .true.
       exit
     endif

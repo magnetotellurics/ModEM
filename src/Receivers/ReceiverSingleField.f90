@@ -166,7 +166,7 @@ contains
         !
         comega = cmplx( 0.0, 1./ ( 2.0 * PI / transmitter%period ), kind=prec )
 		!
-		tx_e_1 = transmitter%getSolutionVector( 1 )
+		call transmitter%getSolutionVector( 1, tx_e_1 )
 		!
         select type( tx_e_1 )
             !

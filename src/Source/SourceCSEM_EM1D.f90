@@ -321,14 +321,14 @@ contains
         !> Verbose
         write( *, * ) "          - Get 1D according to: ", trim( get_1d_from )
         !
-        if (trim(get_1d_from) == "Geometric_mean") then
+        if(trim(get_1d_from) == "Geometric_mean") then
             !
             do k = nzAir+1,nlay1D_temp
                 wt = R_ZERO
                 temp_sigma_value=R_ZERO
                 do i = 1,Nx
                     do j = 1,Ny
-                        if (log(sigmaCell_h%v(i,j,k)) .gt. -20.0 ) then
+                        if(log(sigmaCell_h%v(i,j,k)) .gt. -20.0 ) then
                             wt = wt + sigmaCell_h%grid%dx(i)*sigmaCell_h%grid%dy(j)
                             temp_sigma_value = temp_sigma_value + log(sigmaCell_h%v(i,j,k))* &
                             sigmaCell_h%grid%dx(i)*sigmaCell_h%grid%dy(j)
@@ -343,7 +343,7 @@ contains
                 temp_sigma_value=R_ZERO
                 do i = 1,Nx
                     do j = 1,Ny
-                        if (log(sigmaCell_v%v(i,j,k)) .gt. -20.0  ) then
+                        if(log(sigmaCell_v%v(i,j,k)) .gt. -20.0  ) then
                             wt = wt + sigmaCell_v%grid%dx(i)*sigmaCell_v%grid%dy(j)
                             temp_sigma_value = temp_sigma_value + log(sigmaCell_v%v(i,j,k))* &
                             sigmaCell_v%grid%dx(i)*sigmaCell_v%grid%dy(j)
@@ -371,7 +371,7 @@ contains
                 wt = R_ZERO
                 do i = ixTx-5,ixTx+5
                     do j = iyTx-5,iyTx+5
-                        if (log(sigmaCell_h%v(i,j,k)) .gt. -20.0  ) then
+                        if(log(sigmaCell_h%v(i,j,k)) .gt. -20.0  ) then
                             wt = wt + sigmaCell_h%grid%dx(i)*sigmaCell_h%grid%dy(j)
                             sig1D_temp_h(k) = sig1D_temp_h(k) + log(sigmaCell_h%v(i,j,k))* &
                             sigmaCell_h%grid%dx(i)*sigmaCell_h%grid%dy(j)
@@ -385,7 +385,7 @@ contains
                 wt = R_ZERO
                 do i = ixTx-5,ixTx+5
                     do j = iyTx-5,iyTx+5
-                        if (log(sigmaCell_v%v(i,j,k)) .gt. -20.0  ) then
+                        if(log(sigmaCell_v%v(i,j,k)) .gt. -20.0  ) then
                             wt = wt + sigmaCell_v%grid%dx(i)*sigmaCell_v%grid%dy(j)
                             sig1D_temp_v(k) = sig1D_temp_v(k) + log(sigmaCell_v%v(i,j,k))* &
                             sigmaCell_v%grid%dx(i)*sigmaCell_v%grid%dy(j)
@@ -402,7 +402,7 @@ contains
             do k = nzAir+1,nlay1D_temp
                 do i = 1,Nx
                     do j = 1,Ny
-                        if (log(sigmaCell_h%v(i,j,k)) .gt. -20.0  ) then
+                        if(log(sigmaCell_h%v(i,j,k)) .gt. -20.0  ) then
                             counter=counter+1
                             wt = wt + sigmaCell_h%grid%dx(i)*sigmaCell_h%grid%dy(j)*sigmaCell_h%grid%dz(k)
                             temp_sigma_value = temp_sigma_value + log(sigmaCell_h%v(i,j,k))
@@ -420,7 +420,7 @@ contains
             do k = nzAir+1,nlay1D_temp
                 do i = 1,Nx
                     do j = 1,Ny
-                        if (log(sigmaCell_v%v(i,j,k)) .gt. -20.0  ) then
+                        if(log(sigmaCell_v%v(i,j,k)) .gt. -20.0  ) then
                             counter=counter+1
                             wt = wt + sigmaCell_v%grid%dx(i)*sigmaCell_v%grid%dy(j)*sigmaCell_v%grid%dz(k)
                             temp_sigma_value = temp_sigma_value + log(sigmaCell_v%v(i,j,k))
@@ -534,10 +534,10 @@ contains
         bgdat%nlay= nlay1D_temp
         !allocate vectors for medium properties
         allocate(bgdat%sigv(bgdat%nlay),bgdat%sigh(bgdat%nlay),bgdat%epsrv(bgdat%nlay),bgdat%epsrh(bgdat%nlay), stat=ierr)
-        !if (ierr.ne.0) call alloc_error(pid,'readinput','sig, epsr',ierr)
+        !if(ierr.ne.0) call alloc_error(pid,'readinput','sig, epsr',ierr)
         !allocate vector for layer boundary depths: 1 element less than nr of layers
         allocate(bgdat%zbound(bgdat%nlay-1),stat=ierr)
-        !if (ierr.ne.0) call alloc_error(pid,'readinput','zbound',ierr)
+        !if(ierr.ne.0) call alloc_error(pid,'readinput','zbound',ierr)
         !
         bgdat%rsplmin = 50.0
         bgdat%aniso = vti !default vti, change to iso if any layer is isotropic!!! OR keep it VTI in all cases: if isotropic case, sig1D_temp_h==sig1D_temp_v 
@@ -576,7 +576,7 @@ contains
         if( ierr .NE. 0 ) call alloc_error(pid,'In-backgroundfield','Epos',ierr)
         !
         ! allocate(bgdat%Hxpos(bgdat%nHx,3),bgdat%Hypos(bgdat%nHy,3),bgdat%Hzpos(bgdat%nHz,3), stat=ierr)
-        ! if (ierr.ne.0) call alloc_error(pid,'In-backgroundfield','Hpos',ierr)
+        ! if(ierr.ne.0) call alloc_error(pid,'In-backgroundfield','Hpos',ierr)
         !
         ix = bgdat%nEx*1.5
         iy = bgdat%nEy*1.5
@@ -585,7 +585,7 @@ contains
         if( ierr .NE. 0 ) call alloc_error(pid,'Out-backgroundfield','E fields',ierr)    
         !
         ! allocate(bgdat%Hx(nxyz),bgdat%Hy(nxyz),bgdat%Hz(nxyz), stat=ierr)
-        ! if (ierr.ne.0) call alloc_error(pid,'Out-backgroundfield','H fields',ierr)  
+        ! if(ierr.ne.0) call alloc_error(pid,'Out-backgroundfield','H fields',ierr)  
         !
         bgdat%Expos=0
         bgdat%Eypos=0

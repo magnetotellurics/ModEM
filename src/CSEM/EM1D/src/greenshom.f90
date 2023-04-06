@@ -58,7 +58,7 @@ function greens_ej1(r,x,y,z,etainv,gamma,dv)
   !  Antennas and propagation AP-28(3), 311-317
   !and PhD thesis of J. van der Kruk
   !but not sure if taking the limit for a point source from formula for source volume was correct...
-  if (r .eq. 0._real64) then
+  if(r .eq. 0._real64) then
     !remember etainv = 1/(4 pi eta)
     greens_ej1(1) = ((gamma**3 - dfourpi/3._real64) * etainv) / dv
     greens_ej1(2) = (( - dfourpi/3._real64) * etainv) / dv !0._real64
@@ -107,7 +107,7 @@ function greens_ej2(r,x,y,z,etainv,gamma,dv)
 
 
   !special case for source point
-  if (r .eq. 0._real64) then
+  if(r .eq. 0._real64) then
     !remember etainv = 1/(4 pi eta)
     greens_ej2(1) = (( - dfourpi/3._real64) * etainv) / dv !0._real64
     greens_ej2(2) = ((gamma**3 - dfourpi/3._real64) * etainv) / dv
@@ -155,7 +155,7 @@ function greens_ej3(r,x,y,z,etainv,gamma,dv)
 
 
   !special case for source point
-  if (r .eq. 0._real64) then
+  if(r .eq. 0._real64) then
     !remember etainv = 1/(4 pi eta)
     greens_ej3(1) = (( - dfourpi/3._real64) * etainv) / dv !0._real64
     greens_ej3(2) = (( - dfourpi/3._real64) * etainv) / dv !0._real64
@@ -198,7 +198,7 @@ function greens_ek1(r,x,y,z,gamma)
 
 
   !special case for source point
-  if (r .eq. 0._real64) then
+  if(r .eq. 0._real64) then
     greens_ek1 = 0._real64
   else
 
@@ -231,7 +231,7 @@ function greens_ek2(r,x,y,z,gamma)
 
 
   !special case for source point
-  if (r .eq. 0._real64) then
+  if(r .eq. 0._real64) then
     greens_ek2 = 0._real64
   else
 
@@ -264,7 +264,7 @@ function greens_ek3(r,x,y,z,gamma)
 
 
   !special case for source point
-  if (r .eq. 0._real64) then
+  if(r .eq. 0._real64) then
     greens_ek3 = 0._real64
   else
 

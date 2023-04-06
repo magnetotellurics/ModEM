@@ -13,7 +13,9 @@ module ForwardControlFile
     !
     type :: ForwardControlFile_t
         !
-        !> FWD Component parameters
+        !> FWD Components parameters
+        character(:), allocatable :: field_type
+        !
         character(:), allocatable :: grid_reader_type, grid_type, forward_solver_type
         character(:), allocatable :: source_type_mt, source_type_csem, get_1d_from
         character(:), allocatable :: model_method, model_n_air_layer, model_max_height
@@ -70,6 +72,8 @@ contains
                         self%grid_reader_type = trim( args(2) )
                     elseif( index( line_text, "grid_type" ) > 0 ) then
                         self%grid_type = trim( args(2) )
+                    elseif( index( line_text, "field_type" ) > 0 ) then
+                        self%field_type = trim( args(2) )
                     elseif( index( line_text, "forward_solver" ) > 0 ) then
                         self%forward_solver_type = trim( args(2) )
                     elseif( index( line_text, "source_type_mt" ) > 0 ) then
@@ -106,6 +110,25 @@ contains
             enddo
             !
 10          close( unit = funit )
+            !
+            ! Field type
+            if( allocated( self%field_type ) ) then
+                !
+                select case( self%field_type )
+                    case( "MF" )
+                        field_type = FIELD_MF
+                    case( "SP" )
+                        field_type = FIELD_SP
+                    case( "SP2" )
+                        field_type = FIELD_SP2
+                    case default
+                        field_type = ""
+                        stop "Error: Wrong field_type control, use [MF|SP|SP2]"
+                end select
+                !
+                write( *, "( A30, A20)" ) "          field_type = ", field_type
+                !
+            endif
             !
             ! Grid type
             if( allocated( self%grid_type ) ) then

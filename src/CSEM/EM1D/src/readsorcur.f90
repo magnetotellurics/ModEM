@@ -59,7 +59,7 @@ subroutine readsorcur(filename,freqdat,sources,comm)
 #ifdef USE_MPI
   !get size of complex MPI datatype
   call MPI_Type_size(MPI_COMPLEX,cplx_size,ierr)
-  if (ierr.ne.MPI_SUCCESS) call error_mpi(pid,'getinput','MPI_Type_size',ierr)
+  if(ierr.ne.MPI_SUCCESS) call error_mpi(pid,'getinput','MPI_Type_size',ierr)
 #else
   cplx_size = 8
 #endif
@@ -109,20 +109,20 @@ subroutine readsorcur(filename,freqdat,sources,comm)
 
   !read simple binary current file if there are any dipole or simple wire sources
   !nothing to do here if we only have "star" sources with separate wavelet files
-  if (nrecmax .gt. 0) then
+  if(nrecmax .gt. 0) then
 
     !temp matrix for currents - this should be the only place where currents are not split by sources!
     allocate(curtmp(nrecmax,nfreq),stat=ierr)
-    if (ierr.ne.0) call alloc_error(pid,'readsorcur','temp source current vector',ierr)
+    if(ierr.ne.0) call alloc_error(pid,'readsorcur','temp source current vector',ierr)
 
 
     !get file size
 #ifdef USE_MPI
     call MPI_File_open(comm,trim(adjustl(filename)),MPI_MODE_RDONLY,MPI_INFO_NULL,lu,ierr)
-    if (ierr .ne. MPI_SUCCESS) call error_mpi(pid,'readsorcur','MPI_File_open',ierr)
+    if(ierr .ne. MPI_SUCCESS) call error_mpi(pid,'readsorcur','MPI_File_open',ierr)
 
     call MPI_File_get_size(lu,filesize,ierr)
-    if (ierr .ne. MPI_SUCCESS) call error_mpi(pid,'readsorcur','MPI_File_get_size',ierr)
+    if(ierr .ne. MPI_SUCCESS) call error_mpi(pid,'readsorcur','MPI_File_get_size',ierr)
 #else
     filesize = getfilesize(filename)
 #endif
@@ -136,7 +136,7 @@ subroutine readsorcur(filename,freqdat,sources,comm)
     !  file size has to be 8bytes times the number of frequencies
     !or we can have different source currents for each source point, in this case the
     !  file size has to be 8bytes times the number of frequencies times the number of source elements / wires (nrecmax)
-    if ((filesize.ne.nfreq) .and. (filesize.ne.(nfreq*nrecmax))) then
+    if((filesize.ne.nfreq) .and. (filesize.ne.(nfreq*nrecmax))) then
       write(unit=flenstr,fmt='(i9)') filesize
       write(unit=freqstr,fmt='(i6)') nfreq
       write(unit=nsrcstr,fmt='(i8)') nfreq*nrecmax
@@ -156,24 +156,24 @@ subroutine readsorcur(filename,freqdat,sources,comm)
 #ifdef USE_MPI
     !if file is ok, read it (transpose while sorting into curtmp)
     call MPI_Type_vector(nfreq,1,nrecmax,MPI_COMPLEX,curtype,ierr)
-    if (ierr .ne. MPI_SUCCESS) call error_mpi(pid,'readsorcur','MPI_Type_vector',ierr)
+    if(ierr .ne. MPI_SUCCESS) call error_mpi(pid,'readsorcur','MPI_Type_vector',ierr)
     call MPI_Type_commit(curtype,ierr)
-    if (ierr .ne. MPI_SUCCESS) call error_mpi(pid,'readsorcur','MPI_Type_commit',ierr)
+    if(ierr .ne. MPI_SUCCESS) call error_mpi(pid,'readsorcur','MPI_Type_commit',ierr)
 
     disp = 0
     call MPI_File_set_view(lu,disp,MPI_COMPLEX,MPI_COMPLEX,'native',MPI_INFO_NULL,ierr)
-    if (ierr .ne. MPI_SUCCESS) call error_mpi(pid,'readsorcur','MPI_File_set_view',ierr)
+    if(ierr .ne. MPI_SUCCESS) call error_mpi(pid,'readsorcur','MPI_File_set_view',ierr)
 
     do irec=1,nrec
       call MPI_File_read(lu,curtmp(irec,1),1,curtype,MPI_STATUS_IGNORE,ierr)
-      if (ierr .ne. MPI_SUCCESS) call error_mpi(pid,'readsorcur','MPI_File_read',ierr)
+      if(ierr .ne. MPI_SUCCESS) call error_mpi(pid,'readsorcur','MPI_File_read',ierr)
     enddo
 
     call MPI_File_close(lu,ierr)
-    if (ierr .ne. MPI_SUCCESS) call error_mpi(pid,'readsorcur','MPI_File_close',ierr)
+    if(ierr .ne. MPI_SUCCESS) call error_mpi(pid,'readsorcur','MPI_File_close',ierr)
 
     call MPI_Type_free(curtype,ierr)
-    if (ierr .ne. MPI_SUCCESS) call error_mpi(pid,'readsorcur','MPI_Type_free',ierr)
+    if(ierr .ne. MPI_SUCCESS) call error_mpi(pid,'readsorcur','MPI_Type_free',ierr)
 #else    
 
     lu = AvailableUnit()
@@ -182,12 +182,12 @@ subroutine readsorcur(filename,freqdat,sources,comm)
     inquire(iolength=iolen) curtmp(1,:)
     open(unit=lu,file=trim(adjustl(filename)),form='unformatted',access='direct', &
         status='old',recl=iolen,iostat=ierr)
-    if (ierr.ne.0) call io_error(pid,filename,'opening ',ierr)
+    if(ierr.ne.0) call io_error(pid,filename,'opening ',ierr)
 
     !read data into temp array
     do irec=1,nrec
       read(unit=lu,rec=irec,iostat=ierr) (curtmp(irec,ifreq),ifreq=1,nfreq)
-      if (ierr.ne.0) call io_error(pid,filename,'reading ',ierr)
+      if(ierr.ne.0) call io_error(pid,filename,'reading ',ierr)
     enddo
 
     !close source file
@@ -198,7 +198,7 @@ subroutine readsorcur(filename,freqdat,sources,comm)
 
 
   !the same current used for all sources
-  if (nrec .eq. 1) then
+  if(nrec .eq. 1) then
     recinc = 0
     
   !different currents for each source element / wire
@@ -218,7 +218,7 @@ subroutine readsorcur(filename,freqdat,sources,comm)
 
       !allocate matrix for source currents
       allocate(src%cur(src%nelem(1),nfreq),stat=ierr)
-      if (ierr.ne.0) call alloc_error(pid,'readsorcur','source current matrix',ierr)
+      if(ierr.ne.0) call alloc_error(pid,'readsorcur','source current matrix',ierr)
 
       do ielem=1,src%nelem(1)
         !CAUTION: Loeseth's sign convention is opposite to the one I want to use!!!
@@ -233,7 +233,7 @@ subroutine readsorcur(filename,freqdat,sources,comm)
 
       !allocate matrix for source currents
       allocate(src%cur(src%nwire,nfreq),stat=ierr)
-      if (ierr.ne.0) call alloc_error(pid,'readsorcur','source current matrix',ierr)
+      if(ierr.ne.0) call alloc_error(pid,'readsorcur','source current matrix',ierr)
 
       do iwire=1,src%nwire
         !CAUTION: Loeseth's sign convention is opposite to the one I want to use!!!
@@ -249,7 +249,7 @@ subroutine readsorcur(filename,freqdat,sources,comm)
       
       !allocate matrix for source currents
       allocate(src%cur(src%ncur*src%nwire,nfreq),stat=ierr)
-      if (ierr.ne.0) call alloc_error(pid,'readsorcur','source current matrix',ierr)
+      if(ierr.ne.0) call alloc_error(pid,'readsorcur','source current matrix',ierr)
 
       !phase angle separation between the wires
       dfi = (360._real64 / real(src%nwire,kind=real64)) * (dpi/180._real64)
@@ -257,7 +257,7 @@ subroutine readsorcur(filename,freqdat,sources,comm)
       iicur = 1
       currents: do icur = 1,src%ncur
 
-        if (src%wavnames(icur) .ne. 'none' ) then
+        if(src%wavnames(icur) .ne. 'none' ) then
           !output from readwavelet is a frequency domain wavelet,
           !  vector length nf
           !  angular frequencies specified in wav%omega
@@ -328,8 +328,8 @@ subroutine readsorcur(filename,freqdat,sources,comm)
   enddo sourceloop
 
 
-  if (nrecmax.gt.0) deallocate(curtmp, stat=ierr)
-  if (haswav) deallocate(wav%re,wav%im,wav%spline_re,wav%spline_im,wav%omega, stat=ierr)
+  if(nrecmax.gt.0) deallocate(curtmp, stat=ierr)
+  if(haswav) deallocate(wav%re,wav%im,wav%spline_re,wav%spline_im,wav%omega, stat=ierr)
 
 endsubroutine readsorcur
 

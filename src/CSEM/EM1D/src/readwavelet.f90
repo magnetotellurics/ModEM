@@ -32,15 +32,15 @@ subroutine readwavelet(filename,wav)
   real(kind=real64)     :: samp  !one wavelet sample (need this since gfortran does not accept reading into wavelet vector directly)
 
 
-  if (pid .eq. 0) then
+  if(pid .eq. 0) then
     !open wavelet file
     lu = AvailableUnit()
     open(unit=lu,file=trim(adjustl(filename)),status='old',iostat=ierr)
-    if (ierr.ne.0) call io_error(pid,filename,'opening ',ierr)
+    if(ierr.ne.0) call io_error(pid,filename,'opening ',ierr)
 
     !read domain
     read(lu,*,iostat=ierr) dom
-    if (ierr.ne.0) call io_error(pid,filename,'reading wavelet domain from ',ierr)
+    if(ierr.ne.0) call io_error(pid,filename,'reading wavelet domain from ',ierr)
   endif
 
 #ifdef USE_MPI
@@ -53,21 +53,21 @@ subroutine readwavelet(filename,wav)
   !time domain wavelet: read wavelet to temp vector, then transform to frequency domain
   case (timedom)
 
-    if (pid .eq. 0) then
+    if(pid .eq. 0) then
       !read number of samples and time step
       read(lu,*,iostat=ierr) nt,dt
-      if (ierr.ne.0) call io_error(pid,filename,'reading nt, dt from ',ierr)
-      if (nt.le.0) call invalid_error(pid,'readwavelet',filename,'number of time steps ',intnum=nt)
-      if (dt.le.0.d0) call invalid_error(pid,'readwavelet',filename,'time step ',realnum=dt)
+      if(ierr.ne.0) call io_error(pid,filename,'reading nt, dt from ',ierr)
+      if(nt.le.0) call invalid_error(pid,'readwavelet',filename,'number of time steps ',intnum=nt)
+      if(dt.le.0.d0) call invalid_error(pid,'readwavelet',filename,'time step ',realnum=dt)
     
       !allocate according to C convention and such that frequency zero is at zero'th element
       allocate(twav(0:nt-1), stat=ierr)
-      if (ierr.ne.0) call alloc_error(pid,'readwavelet','time domain wavelet',ierr)
+      if(ierr.ne.0) call alloc_error(pid,'readwavelet','time domain wavelet',ierr)
 
       !read the wavelet
       do it=0,nt-1
         read(lu,*,iostat=ierr) samp
-        if (ierr.ne.0) then
+        if(ierr.ne.0) then
           write(itstr,'(i9)') it
           call io_error(pid,filename,'reading wavelet sample '//trim(adjustl(itstr))//' from ',ierr)
         endif
@@ -83,17 +83,17 @@ subroutine readwavelet(filename,wav)
 #endif
 
     !reallocate wav if it is not allocated at the same length already
-    if (associated(wav%re)) then
+    if(associated(wav%re)) then
       wav%nf = size(wav%re)
     else !wavelet not pre-allocated
       wav%nf = 0
     endif
 
 
-    if (wav%nf .ne. nt) then
-      if (associated(wav%re)) deallocate(wav%re,wav%im,wav%spline_re,wav%spline_im,wav%omega, stat=ierr)
+    if(wav%nf .ne. nt) then
+      if(associated(wav%re)) deallocate(wav%re,wav%im,wav%spline_re,wav%spline_im,wav%omega, stat=ierr)
       !start from negative frequencies
-      if (mod(nt,2) .eq. 1) then
+      if(mod(nt,2) .eq. 1) then
         isplit = 1
         if0 = -(nt-1)/2
         if1 = (nt-1)/2
@@ -105,7 +105,7 @@ subroutine readwavelet(filename,wav)
 
       allocate(wav%re(if0:if1),wav%im(if0:if1),wav%spline_re(if0:if1),wav%spline_im(if0:if1), &
                wav%omega(if0:if1), stat=ierr)
-      if (ierr.ne.0) call alloc_error(pid,'readwavelet','freq domain wavelet',ierr)
+      if(ierr.ne.0) call alloc_error(pid,'readwavelet','freq domain wavelet',ierr)
       wav%nf = nt
 
     endif
@@ -115,9 +115,9 @@ subroutine readwavelet(filename,wav)
     wav%domega = df * dtwopi
 
     !transform the wavelet to frequency domain
-    if (pid .eq. 0) then
+    if(pid .eq. 0) then
       allocate(wavtmp(if0:if1), stat=ierr)
-      if (ierr.ne.0) call alloc_error(pid,'readwavelet','wavtmp',ierr)
+      if(ierr.ne.0) call alloc_error(pid,'readwavelet','wavtmp',ierr)
 
       !transform wavelet to frequency domain
       call transform_wav(wav%nf, twav, wavtmp)
@@ -143,10 +143,10 @@ subroutine readwavelet(filename,wav)
   !frequency domain wavelet: directly read wavelet into wavelet vector
   case (freqdom)
 
-    if (pid .eq. 0)   then
+    if(pid .eq. 0)   then
       !read number of frequency samples, start frequency and frequency step
       read(lu,*,iostat=ierr) nf_in,df
-      if (ierr.ne.0) call io_error(pid,filename,'reading nf_in, df from ',ierr)
+      if(ierr.ne.0) call io_error(pid,filename,'reading nf_in, df from ',ierr)
     endif
     wav%domega = df * dtwopi
 
@@ -158,7 +158,7 @@ subroutine readwavelet(filename,wav)
 #endif
 
     !check if wav was previously allocated
-    if (.not. associated(wav%re)) then !wavelet not pre-allocated
+    if(.not. associated(wav%re)) then !wavelet not pre-allocated
       wav%nf = 0
     !else
     !otherwise wav%nf already matches the size of the previous wavelet
@@ -169,26 +169,26 @@ subroutine readwavelet(filename,wav)
     !assume that:
     !  input wavelet goes from zero to fmax=(nf/2)*df
     !  output wavelet goes from -(nf/2)*df to (nf/2-1)*df
-    if (wav%nf .ne. (2*(nf_in-1))) then
-      if (wav%nf .ge. 1) deallocate(wav%re,wav%im,wav%spline_re,wav%spline_im,wav%omega, stat=ierr)
+    if(wav%nf .ne. (2*(nf_in-1))) then
+      if(wav%nf .ge. 1) deallocate(wav%re,wav%im,wav%spline_re,wav%spline_im,wav%omega, stat=ierr)
       if0 = -nf_in + 1
       if1 = nf_in - 2
       allocate(wav%re(if0:if1),wav%im(if0:if1),wav%spline_re(if0:if1),wav%spline_im(if0:if1),wav%omega(if0:if1), stat=ierr)
-      if (ierr.ne.0) call alloc_error(pid,'readwavelet','freq domain wavelet',ierr)
+      if(ierr.ne.0) call alloc_error(pid,'readwavelet','freq domain wavelet',ierr)
       wav%nf = if1 - if0 + 1
     endif
 
 
-    if (pid .eq. 0) then
+    if(pid .eq. 0) then
       !read wavelet
       ! frequency components 0 to nf/2-1
       do ifreq=0,nf_in-2
         read(lu,*,iostat=ierr) wav%re(ifreq),wav%im(ifreq)
-        if (ierr.ne.0) call io_error(pid,filename,'reading a wavelet sample from ',ierr)
+        if(ierr.ne.0) call io_error(pid,filename,'reading a wavelet sample from ',ierr)
       enddo
       ! frequency component nf/2
       read(lu,*,iostat=ierr) wav%re(if0),wav%im(if0)
-      if (ierr.ne.0) call io_error(pid,filename,'reading a wavelet sample from ',ierr)
+      if(ierr.ne.0) call io_error(pid,filename,'reading a wavelet sample from ',ierr)
 
     endif
 
@@ -216,10 +216,10 @@ subroutine readwavelet(filename,wav)
     call invalid_error(pid,'readwavelet',filename,'domain ',intnum=dom)
   end select
 
-  if (pid .eq. 0) then
+  if(pid .eq. 0) then
     !close the wavelet file
     close(lu, iostat=ierr)
-    if (ierr.ne.0) call io_error(pid,filename,'closing',ierr)
+    if(ierr.ne.0) call io_error(pid,filename,'closing',ierr)
   endif !pid is 0
 
 
@@ -258,13 +258,13 @@ subroutine wrap_omega(omega,omegamin,omegamax,omegaperiod)
 
   !check upper bound of interval
   do
-    if (omega .le. omegamax) exit
+    if(omega .le. omegamax) exit
     omega = omega - omegaperiod
   enddo
   !check lower bound of interval
   !(always check both since omega may be negative)
   do
-    if (omega .ge. omegamin) exit
+    if(omega .ge. omegamin) exit
     omega = omega + omegaperiod
   enddo
 

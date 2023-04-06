@@ -32,23 +32,23 @@ subroutine counter_service(comm,val,valmax,ndone)
 !!$#endif
 
   !remember max value, if input max value is negative, this is a flag for using the the max value stored in counter module
-  if (valmax.gt.0) count_max = valmax
+  if(valmax.gt.0) count_max = valmax
 
   do
     !MPI_Iprobe Works fine in mvapich0.9.9.
     call MPI_Iprobe(MPI_ANY_SOURCE,countertag,comm,flag,stat,ierr)
-    if (ierr.ne.MPI_SUCCESS) call error_mpi(pid,'counter_service','MPI_Iprobe',ierr)
-    if (.not.flag) then
+    if(ierr.ne.MPI_SUCCESS) call error_mpi(pid,'counter_service','MPI_Iprobe',ierr)
+    if(.not.flag) then
       exit
     else
       requester = stat(MPI_SOURCE)
       call MPI_Recv(dum,0,MPI_INTEGER,requester,countertag,comm,stat,ierr)
-      if (ierr.ne.MPI_SUCCESS) call error_mpi(pid,'counter_service','MPI_Recv',ierr)
+      if(ierr.ne.MPI_SUCCESS) call error_mpi(pid,'counter_service','MPI_Recv',ierr)
       val = val + 1
       call MPI_RSend(val,1,MPI_INTEGER,requester,countertag,comm,ierr)
-      if (ierr.ne.MPI_SUCCESS) call error_mpi(pid,'counter_service','MPI_Send',ierr)
+      if(ierr.ne.MPI_SUCCESS) call error_mpi(pid,'counter_service','MPI_Send',ierr)
 
-      if (val .gt. count_max) then
+      if(val .gt. count_max) then
         ndone = ndone + 1
       endif
     endif
@@ -93,22 +93,22 @@ subroutine counter_finish(comm,val,ndone,ngrp)
 
   do
     call MPI_Iprobe(MPI_ANY_SOURCE,countertag,comm,flag,stat,ierr)
-    if (ierr.ne.MPI_SUCCESS) call error_mpi(pid,'counter_service','MPI_Iprobe',ierr)
+    if(ierr.ne.MPI_SUCCESS) call error_mpi(pid,'counter_service','MPI_Iprobe',ierr)
 
-    if (.not.flag) then
+    if(.not.flag) then
       call sleep(1) !sleep 1 second
     else
       requester = stat(MPI_SOURCE)
       call MPI_Recv(dum,0,MPI_INTEGER,requester,countertag,comm,stat,ierr)
-      if (ierr.ne.MPI_SUCCESS) call error_mpi(pid,'counter_service','MPI_Recv',ierr)
+      if(ierr.ne.MPI_SUCCESS) call error_mpi(pid,'counter_service','MPI_Recv',ierr)
       val = val + 1
       call MPI_Send(val,1,MPI_INTEGER,requester,countertag,comm,ierr)
-      if (ierr.ne.MPI_SUCCESS) call error_mpi(pid,'counter_service','MPI_Send',ierr)
+      if(ierr.ne.MPI_SUCCESS) call error_mpi(pid,'counter_service','MPI_Send',ierr)
 
       ndone = ndone + 1
     endif
 
-    if (ndone.eq.(ngrp-1)) exit
+    if(ndone.eq.(ngrp-1)) exit
 
   enddo
 

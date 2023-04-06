@@ -13,7 +13,7 @@ function reallocate_int_1d(trace, newdim)
     integer(kind=int32)             :: nold, ierr, i
 
     allocate(reallocate_int_1d(1:newdim), stat=ierr)
-    if (ierr .ne. 0) call alloc_error(pid,'reallocate_int_1d','new vector',ierr)
+    if(ierr .ne. 0) call alloc_error(pid,'reallocate_int_1d','new vector',ierr)
 
     if(.not. associated(trace)) return
     nold = min(size(trace), newdim)
@@ -40,7 +40,7 @@ function reallocate_dcplx_1d(trace, newdim)
     integer(kind=int32)             :: nold, ierr, i
 
     allocate(reallocate_dcplx_1d(1:newdim), stat=ierr)
-    if (ierr .ne. 0) call alloc_error(pid,'reallocate_dcplx_1d','new vector',ierr)
+    if(ierr .ne. 0) call alloc_error(pid,'reallocate_dcplx_1d','new vector',ierr)
 
     if(.not. associated(trace)) return
     nold = min(size(trace), newdim)

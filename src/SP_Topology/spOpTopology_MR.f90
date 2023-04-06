@@ -241,7 +241,7 @@ module spOpTopology_MR
         type(rScalar3D_MR_t) :: v
         integer :: n
         !
-        v = rScalar3D_MR_t (self%grid, CORNER)
+        v = rScalar3D_MR_t (self%grid, NODE)
         n = size (v%ind_interior)
         allocate (ni(n))
         ni = v%ind_interior
@@ -263,7 +263,7 @@ module spOpTopology_MR
         ! Executable statements
         !***********************
         !
-        v = rScalar3D_MR_t (self%grid, CORNER)
+        v = rScalar3D_MR_t (self%grid, NODE)
         n = size (v%ind_boundaries)
         allocate (nb(n))
         nb = v%ind_boundaries
@@ -413,7 +413,7 @@ module spOpTopology_MR
         n_grids = size (vecR%sub_vectors)
 
         SubGrids:do k = 2, n_grids
-        if (self%grid%Coarseness(k - 1, 1) < &
+        if(self%grid%Coarseness(k - 1, 1) < &
         self%grid%Coarseness(k, 1)) then
         !**
         ! Fine grid is on top -- z-level to average to is at
@@ -474,7 +474,7 @@ module spOpTopology_MR
         end do
 
         kVecC = k - 1
-        end if
+        endif
 
         do i = 1, 2
         call vecC1%sub_vectors(kVecC)%&
@@ -621,7 +621,7 @@ module spOpTopology_MR
         n_rows = self%grid%numberOfNodes()
 
         ! Create a vector consisting of all nodes
-        vecR = rScalar3D_MR_t (self%grid, CORNER)
+        vecR = rScalar3D_MR_t (self%grid, NODE)
 
         n_cols = size (vecR%ind_active)
         allocate (R(n_cols), C(n_cols), S(n_cols))
@@ -688,7 +688,7 @@ module spOpTopology_MR
         cC = (/(i, i = 1, 9)/)
 
         do i = 1, 9
-        vecC(i) = rScalar3D_MR_t (self%grid, CORNER)
+        vecC(i) = rScalar3D_MR_t (self%grid, NODE)
         end do
 
         !**
@@ -699,7 +699,7 @@ module spOpTopology_MR
         n_grids = size (vecR%sub_scalars)
 
         SubGrids:do k = 2, n_grids
-        if (self%grid%Coarseness(k - 1, 1) < &
+        if(self%grid%Coarseness(k - 1, 1) < &
         self%grid%Coarseness(k, 1)) then
         ! Fine grid is on top -- z-level for averaging is at
         ! bottom of grid k - 1.
@@ -730,7 +730,7 @@ module spOpTopology_MR
         end do
 
         kVecC = k - 1
-        end if
+        endif
 
         do i = 1, 9
         call vecC(i)%sub_scalars(kVecC)%setVecComponents(&

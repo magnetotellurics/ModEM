@@ -26,7 +26,7 @@ subroutine get_dzsrc(sz,zbound,ilaysrc,nlay)
   !these vectors are defined globally in refl. module
   allocate(trans_above_src(2:ilaysrc),trans_below_src(ilaysrc:nlay-1), &
            dz_above_src(2:ilaysrc), dz_below_src(ilaysrc:nlay-1), stat=ierr)
-  if (ierr.ne.0) call alloc_error(pid,'get_dzsrc','homogeneous region transmission coefficients',ierr)
+  if(ierr.ne.0) call alloc_error(pid,'get_dzsrc','homogeneous region transmission coefficients',ierr)
 
 
   !precompute layer thicknesses - source
@@ -35,8 +35,8 @@ subroutine get_dzsrc(sz,zbound,ilaysrc,nlay)
   do ilay=2,ilaysrc-1
     dz_above_src(ilay) = zbound(ilay) - zbound(ilay-1)
   enddo
-  if (ilaysrc.gt.1) dz_above_src(ilaysrc) = sz - zbound(ilaysrc-1)
-  if (ilaysrc.lt.nlay) dz_below_src(ilaysrc) = zbound(ilaysrc) - sz
+  if(ilaysrc.gt.1) dz_above_src(ilaysrc) = sz - zbound(ilaysrc-1)
+  if(ilaysrc.lt.nlay) dz_below_src(ilaysrc) = zbound(ilaysrc) - sz
   do ilay=ilaysrc+1,nlay-1
     dz_below_src(ilay) = zbound(ilay) - zbound(ilay-1)
   enddo
@@ -66,23 +66,23 @@ subroutine get_dzrec(sz,zr,zbound,ilayrec,ilaysrc,nlay)
 
 
 
-  if (sz .ge. zr) then
-  !if (sz .gt. zr) then
+  if(sz .ge. zr) then
+  !if(sz .gt. zr) then
 
     !receivers above source: trans_below_rec is from source to receivers
     allocate(trans_below_rec(ilayrec:ilaysrc), trans_above_rec(2:ilayrec), &
              dz_below_rec(ilayrec:ilaysrc), dz_above_rec(2:ilayrec), stat=ierr)
-    if (ierr.ne.0) call alloc_error(pid,'get_dzrec','homogeneous region transmission coefficients rec',ierr)
+    if(ierr.ne.0) call alloc_error(pid,'get_dzrec','homogeneous region transmission coefficients rec',ierr)
 
 
     !layers above receivers - independent of source
     do ilay=2,ilayrec-1
       dz_above_rec(ilay) = zbound(ilay) - zbound(ilay-1)
     enddo
-    if (ilayrec .ge. 2) dz_above_rec(ilayrec) = zr - zbound(ilayrec-1)
+    if(ilayrec .ge. 2) dz_above_rec(ilayrec) = zr - zbound(ilayrec-1)
 
     !layers below receivers - dependent on source depth
-    if (ilayrec .eq. ilaysrc) then
+    if(ilayrec .eq. ilaysrc) then
       dz_below_rec(ilayrec) = sz - zr
     else
       dz_below_rec(ilayrec) = zbound(ilayrec) - zr
@@ -97,11 +97,11 @@ subroutine get_dzrec(sz,zr,zbound,ilayrec,ilaysrc,nlay)
     !receivers below source: trans_above_rec is from receivers to source
     allocate(trans_above_rec(ilaysrc:ilayrec), trans_below_rec(ilayrec:nlay-1), &
              dz_above_rec(ilaysrc:ilayrec), dz_below_rec(ilayrec:nlay-1), stat=ierr)
-    if (ierr.ne.0) call alloc_error(pid,'get_dzrec','homogeneous region transmission coefficients rec',ierr)
+    if(ierr.ne.0) call alloc_error(pid,'get_dzrec','homogeneous region transmission coefficients rec',ierr)
 
 
     !layers above receivers - dependent on source depth
-    if (ilayrec .eq. ilaysrc) then
+    if(ilayrec .eq. ilaysrc) then
       dz_above_rec(ilayrec) = zr - sz
     else
       dz_above_rec(ilaysrc) = zbound(ilaysrc) - sz
@@ -112,7 +112,7 @@ subroutine get_dzrec(sz,zr,zbound,ilayrec,ilaysrc,nlay)
     endif
 
     !layers below receivers - independent of source
-    if (ilayrec .lt. nlay) dz_below_rec(ilayrec) = zbound(ilayrec) - zr
+    if(ilayrec .lt. nlay) dz_below_rec(ilayrec) = zbound(ilayrec) - zr
     do ilay=ilayrec+1,nlay-1
       dz_below_rec(ilay) = zbound(ilay) - zbound(ilay-1)
     enddo
@@ -139,8 +139,8 @@ function getnpieces(r,sz,zr) result(npieces)
   real(kind=real64)     :: sz,zr  !source and receiver depths
 
 
-  if (r .lt. 1._real64) then
-    if (abs(zr-sz).gt.1._real64) then
+  if(r .lt. 1._real64) then
+    if(abs(zr-sz).gt.1._real64) then
       npieces = ((1._real64/r) * (log(abs(zr-sz))))
     else
       npieces = int((1._real64/r))
@@ -221,7 +221,7 @@ subroutine prepare_recdepth(zr,omeps_recv,refl_var,  zr_in,nrecperz,izrec,sz,zbo
 
   zr = zr_in(izrec)
   zd = abs((zr-sz)/sz)
-  if (zd.lt.zdtiny) zr = sz
+  if(zd.lt.zdtiny) zr = sz
 
   refl_var%irecstart = sum(nrecperz(1:izrec-1)) + 1
   refl_var%irecend = refl_var%irecstart - 1 + nrecperz(izrec)

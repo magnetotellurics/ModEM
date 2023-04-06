@@ -68,6 +68,8 @@ module rVector3D_SG
             procedure, public :: read => readRVector3D_SG
             procedure, public :: write => writeRVector3D_SG
             !
+            procedure, public :: setInteriorMask => setInteriorMaskRVector3D_SG
+            !
     end type rVector3D_SG_t
     !
     public :: getRvector, setRvector, EdgeLength
@@ -148,6 +150,9 @@ contains
         endif
         !
         self%Nxyz = (/product(self%NdX), product(self%NdY), product(self%NdZ)/)
+        !
+        call self%setInteriorMask
+        call self%zeros
         !
     end function rVector3D_SG_ctor
     !
@@ -1573,6 +1578,8 @@ contains
         self%nz = rhs%nz
         self%store_state = rhs%store_state
         !
+        self%mask_interior = rhs%mask_interior
+        !
         select type( rhs )
             class is( rVector3D_SG_t )
                 !
@@ -1895,5 +1902,28 @@ contains
         enddo
         !
     end subroutine EdgeLength
+    !
+    !> No subroutine briefing
+    !
+    subroutine setInteriorMaskRVector3D_SG( self )
+        implicit none
+        !
+        class( rVector3D_SG_t ), intent( inout ) :: self
+        !
+        class( Field_t ), allocatable :: aux_field
+        complex( kind=prec ), dimension(:), allocatable :: r_array
+        !
+        allocate( aux_field, source = self )
+        call aux_field%zeros()
+        !
+        call aux_field%setAllboundary( C_ONE )
+        !
+        r_array = aux_field%getArray()
+        !
+        self%mask_interior = r_array == 0
+        !
+        deallocate( aux_field )
+        !
+    end subroutine setInteriorMaskRVector3D_SG
     !
 end module rVector3D_SG

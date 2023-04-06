@@ -67,6 +67,8 @@ module cVector3D_SG
             procedure, public :: write => writeCVector3D_SG
             procedure, public :: print => printCVector3D_SG
             !
+            procedure, public :: setInteriorMask => setInteriorMaskCVector3D_SG
+               !
     end type cVector3D_SG_t
     !
     interface cVector3D_SG_t
@@ -144,6 +146,9 @@ contains
         !
         self%Nxyz = (/product(self%NdX), product(self%NdY), product(self%NdZ)/)
         !
+          call self%setInteriorMask
+          call self%zeros
+          !
     end function cVector3D_SG_ctor
     !
     !> No subroutine briefing
@@ -1759,6 +1764,8 @@ contains
         self%nz = rhs%nz
         self%store_state = rhs%store_state
         !
+		self%mask_interior = rhs%mask_interior
+		!
         select type( rhs )
             !
             class is( cVector3D_SG_t )
@@ -1986,5 +1993,28 @@ contains
         enddo
         !
     end subroutine printCVector3D_SG
+    !
+    !> No subroutine briefing
+    !
+    subroutine setInteriorMaskCVector3D_SG( self )
+        implicit none
+        !
+        class( cVector3D_SG_t ), intent( inout ) :: self
+        !
+        class( Field_t ), allocatable :: aux_field
+        real( kind=prec ), dimension(:), allocatable :: r_array
+        !
+        allocate( aux_field, source = self )
+        call aux_field%zeros()
+        !
+        call aux_field%setAllboundary( C_ONE )
+        !
+        r_array = aux_field%getArray()
+        !
+        self%mask_interior = r_array == 0
+        !
+		deallocate( aux_field )
+		!
+    end subroutine setInteriorMaskCVector3D_SG
     !
 end module cVector3D_SG

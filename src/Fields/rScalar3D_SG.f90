@@ -64,6 +64,8 @@ module rScalar3D_SG
             procedure, public :: write => writeRScalar3D_SG
             procedure, public :: print => printRScalar3D_SG
             !
+            procedure, public :: setInteriorMask => setInteriorMaskRScalar3D_SG
+            !
     end type rScalar3D_SG_t
     !
     interface rScalar3D_SG_t
@@ -104,11 +106,11 @@ contains
         !> self%allocated will be true if all allocations succeed
         self%is_allocated = .TRUE.
         !
-        if( grid_type == CORNER ) then
-             allocate(self%v(nx + 1, ny + 1, nz + 1), STAT = status)    
+        if( grid_type == NODE ) then
+             allocate(self%v(nx + 1, ny + 1, nz + 1), STAT = status)
              self%NdV = (/self%nx + 1, self%ny + 1, self%nz + 1/)
         !
-        else if( grid_type == CENTER ) then
+        else if( grid_type == CELL ) then
              allocate(self%v(nx, ny, nz), STAT = status) 
              self%NdV = (/self%nx, self%ny, self%nz/)
         !
@@ -132,6 +134,9 @@ contains
         !
         self%Nxyz = product( self%NdV )
         !
+		call self%setInteriorMask
+		call self%zeros
+		!
     end function rScalar3D_SG_ctor
     !
     !> No subroutine briefing
@@ -168,13 +173,16 @@ contains
         endif
         !
         select case( self%grid_type )
-            case( CORNER ) 
+            !
+            case( NODE ) 
                  self%v((/1, self%NdV(1)/), :, :) = real( cvalue, kind=prec )
                  self%v(:, (/1, self%NdV(2)/), :) = real( cvalue, kind=prec )
                  self%v(:, :, (/1, self%NdV(3)/)) = real( cvalue, kind=prec )
                  !
             case default
-                 stop "Error: setAllBoundaryRScalar3D_SG > Grid type not recognized."
+				write( *, * ) "Error: setAllBoundaryRScalar3D_SG > Grid type not recognized [", self%grid_type, "]"
+				stop
+				!
         end select
         !
     end subroutine setAllBoundaryRScalar3D_SG
@@ -202,57 +210,69 @@ contains
         endif
         !
         select case( self%grid_type )
-        case(CORNER)
-             if( int_only_p) then
-                select case(bdry)
-                case("x1")
-                     self%v(1, 2:self%NdV(2)-1, 2:self%NdV(3)-1) = real( cvalue, kind=prec ) 
-                case("x2")
-                     self%v(self%NdV(1), 2:self%NdV(2)-1, 2:self%NdV(3)-1) = real( cvalue, kind=prec )
-                case("y1")
-                     self%v(2:self%NdV(1)-1, 1, 2:self%NdV(3)-1) = real( cvalue, kind=prec )
-                case("y2")
-                     self%v(2:self%NdV(1)-1, self%NdV(2), 2:self%NdV(3)-1) = real( cvalue, kind=prec )
-                case("z1")
-                     self%v(2:self%NdV(1)-1, 2:self%NdV(2)-1, 1) = real( cvalue, kind=prec )
-                case("z2")
-                     self%v(2:self%NdV(1)-1, 2:self%NdV(2)-1, self%NdV(3)) = real( cvalue, kind=prec )
+            !
+            case( NODE )
+                !
+                if( int_only_p) then
+                    !
+                    select case( bdry )
+                        !
+                        case("x1")
+                            self%v(1, 2:self%NdV(2)-1, 2:self%NdV(3)-1) = real( cvalue, kind=prec ) 
+                        case("x2")
+                            self%v(self%NdV(1), 2:self%NdV(2)-1, 2:self%NdV(3)-1) = real( cvalue, kind=prec )
+                        case("y1")
+                            self%v(2:self%NdV(1)-1, 1, 2:self%NdV(3)-1) = real( cvalue, kind=prec )
+                        case("y2")
+                            self%v(2:self%NdV(1)-1, self%NdV(2), 2:self%NdV(3)-1) = real( cvalue, kind=prec )
+                        case("z1")
+                            self%v(2:self%NdV(1)-1, 2:self%NdV(2)-1, 1) = real( cvalue, kind=prec )
+                        case("z2")
+                            self%v(2:self%NdV(1)-1, 2:self%NdV(2)-1, self%NdV(3)) = real( cvalue, kind=prec )
+                        !
+                    end select
+                else
+                    !
+                    select case(bdry)
+                        !
+                        case("x1")
+                            self%v(1, :, :) = real( cvalue, kind=prec )
+                        case("x2")
+                            self%v(self%NdV(1), :, :) = real( cvalue, kind=prec )
+                        case("y1")
+                            self%v(:, 1, :) = real( cvalue, kind=prec )
+                        case("y2")
+                            self%v(:, self%NdV(2), :) = real( cvalue, kind=prec )
+                        case("z1")
+                            self%v(:, :, 1) = real( cvalue, kind=prec )
+                        case("z2")
+                            self%v(:, :, self%NdV(3)) = real( cvalue, kind=prec )
+                        !
+                    end select
+                    !
+                endif
+                !
+            case( FACE )
+                !
+                select case( bdry )
+                    !
+                    case("x1")
+                        self%v(1, :, :) = real( cvalue, kind=prec )
+                    case("x2")
+                        self%v(self%NdV(1), :, :) = real( cvalue, kind=prec )
+                    case("y1")
+                        self%v(:, 1, :) = real( cvalue, kind=prec )
+                    case("y2")
+                        self%v(:, self%NdV(2), :) = real( cvalue, kind=prec )
+                    case("z1")
+                        self%v(:, :, 1) = real( cvalue, kind=prec )
+                    case("z2")
+                        self%v(:, :, self%NdV(3)) = real( cvalue, kind=prec )
                 end select
-             else
-                select case(bdry)
-                case("x1")
-                     self%v(1, :, :) = real( cvalue, kind=prec )
-                case("x2")
-                     self%v(self%NdV(1), :, :) = real( cvalue, kind=prec )
-                case("y1")
-                     self%v(:, 1, :) = real( cvalue, kind=prec )
-                case("y2")
-                     self%v(:, self%NdV(2), :) = real( cvalue, kind=prec )
-                case("z1")
-                     self%v(:, :, 1) = real( cvalue, kind=prec )
-                case("z2")
-                     self%v(:, :, self%NdV(3)) = real( cvalue, kind=prec )
-                end select
-             endif
-             !
-        case(FACE)
-             select case(bdry)
-                 case("x1")
-                    self%v(1, :, :) = real( cvalue, kind=prec )
-                 case("x2")
-                    self%v(self%NdV(1), :, :) = real( cvalue, kind=prec )
-                 case("y1")
-                    self%v(:, 1, :) = real( cvalue, kind=prec )
-                 case("y2")
-                    self%v(:, self%NdV(2), :) = real( cvalue, kind=prec )
-                 case("z1")
-                    self%v(:, :, 1) = real( cvalue, kind=prec )
-                 case("z2")
-                    self%v(:, :, self%NdV(3)) = real( cvalue, kind=prec )
-             end select
-             !
-        case default
-             stop "Error: setOneBoundaryRScalar3D_SG > Invalid grid type"
+                !
+            case default
+                stop "Error: setOneBoundaryRScalar3D_SG > Invalid grid type"
+            !
         end select
         !
     end subroutine setOneBoundaryRScalar3D_SG
@@ -300,7 +320,7 @@ contains
         !
         select case( self%grid_type )
             !
-            case(CORNER)
+            case( NODE )
                  !
                  phi%v(1,:,:) = 1
                  phi%v(phi%nx+1,:,:) = 1
@@ -313,7 +333,7 @@ contains
                  !
             case default
                  stop "Error: intBdryIndicesRScalar3D_SG: Unknown self%grid_type"
-                 !
+            !
         end select
         !
         nVecT = size( phi%v )
@@ -915,11 +935,11 @@ contains
                 !
             case( singleton )
                 !
-                if( self%grid_type == CORNER ) then
+                if( self%grid_type == NODE ) then
                     !
                     allocate( self%v( self%nx + 1, self%ny + 1, self%nz + 1 ) )
                     !
-                else if( self%grid_type == CENTER ) then
+                else if( self%grid_type == CELL ) then
                     !
                     allocate( self%v( self%nx, self%ny, self%nz ) )
                     !
@@ -967,6 +987,8 @@ contains
         self%nz = rhs%nz
         self%store_state = rhs%store_state
         !
+		self%mask_interior = rhs%mask_interior
+		!
         select type( rhs )
             !
             class is( rScalar3D_SG_t )
@@ -1242,5 +1264,29 @@ contains
         enddo
         !
     end subroutine printRScalar3D_SG
+    !
+    !> No subroutine briefing
+    !
+    subroutine setInteriorMaskRScalar3D_SG( self )
+        implicit none
+        !
+        class( rScalar3D_SG_t ), intent( inout ) :: self
+        !
+        class( Field_t ), allocatable :: aux_field
+        real( kind=prec ), dimension(:), allocatable :: r_array
+        !
+        allocate( aux_field, source = self )
+        aux_field%grid_type = NODE
+        call aux_field%zeros()
+        !
+        call aux_field%setAllboundary( C_ONE )
+        !
+        r_array = aux_field%getArray()
+        !
+        self%mask_interior = ( r_array .EQ. 0 )
+        !
+        deallocate( aux_field )
+        !
+    end subroutine setInteriorMaskRScalar3D_SG
     !
 end module rScalar3D_SG

@@ -29,44 +29,44 @@ subroutine getfreqs(fdef,nf,fstart,df,fname,freqdat)
 
 
   !equally spaced frequencies as defined in jobfile
-  if (fdef.eq.1) then
+  if(fdef.eq.1) then
     !use parameters from input file
 
     freqdat%nfreq = nf
 
     !allocate frequency vector
     allocate(freqdat%omega(nf), stat=ierr)
-    if (ierr.ne.0) call alloc_error(pid,'getfreqs','frequency vector',ierr)
+    if(ierr.ne.0) call alloc_error(pid,'getfreqs','frequency vector',ierr)
 
     !populate frequency vector
     do ifreq=1,freqdat%nfreq
       freqdat%omega(ifreq) = fstart+(ifreq-1)*df
     enddo
 
-  elseif (fdef.eq.2) then
+  elseif(fdef.eq.2) then
     !get all info from separate file
     lu = AvailableUnit()
     open(unit=lu,file=trim(adjustl(fname)),status='old',iostat=ierr)
-    if (ierr.ne.0) call open_error(pid,'getfreqs',fname,ierr)
+    if(ierr.ne.0) call open_error(pid,'getfreqs',fname,ierr)
 
     !read number of frequencies
     read(lu,*,iostat=ierr) freqdat%nfreq
-    if (ierr.ne.0) call readwrite_error(pid,'getfreqs',fname,'r',ierr,1_int64)
+    if(ierr.ne.0) call readwrite_error(pid,'getfreqs',fname,'r',ierr,1_int64)
     nf = freqdat%nfreq
 
     !allocate frequency vector
     allocate(freqdat%omega(freqdat%nfreq), stat=ierr)
-    if (ierr.ne.0) call alloc_error(pid,'getfreqs','frequency vector',ierr)
+    if(ierr.ne.0) call alloc_error(pid,'getfreqs','frequency vector',ierr)
 
     !read frequencies from file
     do ifreq=1,freqdat%nfreq
       read(lu,*,iostat=ierr) freqdat%omega(ifreq)
-      if (ierr.ne.0) call readwrite_error(pid,'getfreqs',fname,'r',ierr,ifreq+1_int64)
+      if(ierr.ne.0) call readwrite_error(pid,'getfreqs',fname,'r',ierr,ifreq+1_int64)
     enddo
 
     !close file
     close(lu,iostat=ierr)
-    if (ierr.ne.0) call close_error(pid,'getfreqs',fname,ierr)
+    if(ierr.ne.0) call close_error(pid,'getfreqs',fname,ierr)
 
   endif
 

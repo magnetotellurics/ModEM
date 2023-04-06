@@ -134,14 +134,13 @@ contains
         class( Transmitter_t ), intent( in ) :: transmitter
         type( DataGroup_t ), intent( out ), optional :: data_group
         !
-        complex( kind=prec ) :: comega
-        complex( kind=prec )    :: Ex_res, Ey_res, tempZ
+        complex( kind=prec ) :: comega, Ex_res, Ey_res, tempZ
         class( Vector_t ), pointer :: tx_e_1
         !
         comega = cmplx( 0.0, 1./ ( 2.0 * PI / transmitter%period ), kind=prec )
-		!
-		tx_e_1 = transmitter%getSolutionVector( 1 )
-		!
+        !
+        call transmitter%getSolutionVector( 1, tx_e_1 )
+        !
         select type( tx_e_1 )
             !
             class is( cVector3D_SG_t )

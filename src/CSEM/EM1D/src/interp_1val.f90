@@ -34,13 +34,13 @@
 !!$
 !!$
 !!$  !radius smaller than threshold for spline interpolation
-!!$  if (r .lt. rspl) then
+!!$  if(r .lt. rspl) then
 !!$
 !!$    !zero radius, but source and receiver not at the same depth
-!!$    if (r .eq. 0.d0) then
+!!$    if(r .eq. 0.d0) then
 !!$
 !!$      !Bessel function J1(0) = 0, so no need to enter adaptive integration if besorder =1
-!!$      if (ibesord(1) .ne. 1) then
+!!$      if(ibesord(1) .ne. 1) then
 !!$
 !!$        !the case that receiver is exactly at source point is NOT included - work this out later!!!
 !!$
@@ -60,7 +60,7 @@
 !!$    else
 !!$
 !!$      !receiver not at source depth or "easy" integral
-!!$      if (wellbehaved) then
+!!$      if(wellbehaved) then
 !!$
 !!$        !use temp array for integral values because it has to be a 2D array
 !!$        call zhankl(r,1,NREL,TOL,NTOL,ibesord,intfunc,IJREL,ZWORK,valtmp,rout,NOFUN1,ierr)
@@ -152,7 +152,7 @@ function compute_1val(intfunc,r,sz,zr,ibesord,wellbehaved) result(val)
 
 
   !receiver not at source depth or "easy" integral
-  if (wellbehaved) then
+  if(wellbehaved) then
 
     !use temp array for integral values because it has to be a 2D array
     call zhankl(r,1,NREL,TOL,NTOL,ibesord,intfunc,IJREL,ZWORK,valtmp,rout,NOFUN1,ierr)
@@ -196,7 +196,7 @@ function compute_1valr0(intfunc) result(val)
 
 
   !Bessel function J1(0) = 0, so no need to enter adaptive integration if besorder =1
-!!$  if (ibesord(1) .ne. 1) then
+!!$  if(ibesord(1) .ne. 1) then
 
     !the case that receiver is exactly at source point is NOT included - work this out later!!!
 

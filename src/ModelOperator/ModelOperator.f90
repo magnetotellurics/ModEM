@@ -53,6 +53,17 @@ module ModelOperator
         end subroutine interface_set_cond_model_operator
         !
         !> No interface subroutine briefing
+        subroutine interface_amult_model_operator( self, omega, inE, outE, p_adjoint )
+            import :: ModelOperator_t, Field_t, prec, Vector_t
+            !
+            class( ModelOperator_t ), intent( in ) :: self
+            real( kind = prec ), intent( in ), optional :: omega
+            class( Field_t ), intent( in ) :: inE
+            class( Vector_t ), intent( inout ) :: outE
+            logical, intent( in ), optional :: p_adjoint
+        end subroutine interface_amult_model_operator
+        !
+        !> No interface subroutine briefing
         subroutine interface_multaib_model_operator( self, bdry, outE )
             import :: ModelOperator_t, Field_t, Vector_t
             !
@@ -69,18 +80,7 @@ module ModelOperator
             class( Vector_t ), intent( inout ) :: inH
             class( Vector_t ), allocatable, intent( inout ) :: outE
         end subroutine interface_multcurl_t_model_operator
-        !
-        !> No interface subroutine briefing
-        subroutine interface_amult_model_operator( self, omega, inE, outE, p_adjoint )
-            import :: ModelOperator_t, Field_t, prec, Vector_t
-            !
-            class( ModelOperator_t ), intent( in ) :: self
-            real( kind = prec ), intent( in ), optional :: omega
-            class( Field_t ), intent( in ) :: inE
-            class( Vector_t ), intent( inout ) :: outE
-            logical, intent( in ), optional :: p_adjoint
-        end subroutine interface_amult_model_operator
-        !
+		!
         !> No interface subroutine briefing
         subroutine interface_divcor_setup_model_operator( self )
             import :: ModelOperator_t

@@ -434,11 +434,11 @@ contains
         !>     need to either make node types explicit, or include the parameter definitions
         !>         from abstract grid class
         select case(nodeType)
-             case(CENTER)
+             case(CELL, CELL_EARTH)
                     ny = self%ny
                     nz = self%nz
 
-             case(CORNER)
+             case(NODE)
                     ny = self%ny + 1
                     nz = self%nz + 1
 

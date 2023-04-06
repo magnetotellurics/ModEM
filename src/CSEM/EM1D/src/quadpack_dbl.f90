@@ -460,10 +460,10 @@ subroutine qage ( f, a, b, epsabs, epsrel, key, limit, result, abserr, neval, &
   elist(1) = 0.0d0
   iord(1) = 0
 
-  if ( epsabs < 0.0d0 .and. epsrel < 0.0d0 ) then
+  if( epsabs < 0.0d0 .and. epsrel < 0.0d0 ) then
     ier = 6
     return
-  end if
+  endif
 !
 !  First approximation to the integral.
 !
@@ -474,19 +474,19 @@ subroutine qage ( f, a, b, epsabs, epsrel, key, limit, result, abserr, neval, &
   c = keyf
   neval = 0
 
-  if ( keyf == 1 ) then
+  if( keyf == 1 ) then
     call qk15 ( f, a, b, result, abserr, defabs, resabs )
-  else if ( keyf == 2 ) then
+  else if( keyf == 2 ) then
     call qk21 ( f, a, b, result, abserr, defabs, resabs )
-  else if ( keyf == 3 ) then
+  else if( keyf == 3 ) then
     call qk31 ( f, a, b, result, abserr, defabs, resabs )
-  else if ( keyf == 4 ) then
+  else if( keyf == 4 ) then
     call qk41 ( f, a, b, result, abserr, defabs, resabs )
-  else if ( keyf == 5 ) then
+  else if( keyf == 5 ) then
     call qk51 ( f, a, b, result, abserr, defabs, resabs )
-  else if ( keyf == 6 ) then
+  else if( keyf == 6 ) then
     call qk61 ( f, a, b, result, abserr, defabs, resabs )
-  end if
+  endif
 
   last = 1
   rlist(1) = result
@@ -497,28 +497,28 @@ subroutine qage ( f, a, b, epsabs, epsrel, key, limit, result, abserr, neval, &
 !
   errbnd = max ( epsabs, epsrel * abs ( result ) )
 
-  if ( abserr <= 5.0e+01 * epsilon ( defabs ) * defabs .and. &
+  if( abserr <= 5.0e+01 * epsilon ( defabs ) * defabs .and. &
     errbnd < abserr ) then
     ier = 2
-  end if
+  endif
 
-  if ( limit == 1 ) then
+  if( limit == 1 ) then
     ier = 1
-  end if
+  endif
 
-  if ( ier /= 0 .or. &
+  if( ier /= 0 .or. &
     ( abserr <= errbnd .and. abserr /= resabs ) .or. &
     abserr == 0.0d0 ) then
 
-    if ( keyf /= 1 ) then
+    if( keyf /= 1 ) then
       neval = (10*keyf+1) * (2*neval+1)
     else
       neval = 30 * neval + 15
-    end if
+    endif
 
     return
 
-  end if
+  endif
 !
 !  Initialization.
 !
@@ -539,33 +539,33 @@ subroutine qage ( f, a, b, epsabs, epsrel, key, limit, result, abserr, neval, &
     a2 = b1
     b2 = blist(maxerr)
 
-    if ( keyf == 1 ) then
+    if( keyf == 1 ) then
       call qk15 ( f, a1, b1, area1, error1, resabs, defab1 )
-    else if ( keyf == 2 ) then
+    else if( keyf == 2 ) then
       call qk21 ( f, a1, b1, area1, error1, resabs, defab1 )
-    else if ( keyf == 3 ) then
+    else if( keyf == 3 ) then
       call qk31 ( f, a1, b1, area1, error1, resabs, defab1 )
-    else if ( keyf == 4 ) then
+    else if( keyf == 4 ) then
       call qk41 ( f, a1, b1, area1, error1, resabs, defab1)
-    else if ( keyf == 5 ) then
+    else if( keyf == 5 ) then
       call qk51 ( f, a1, b1, area1, error1, resabs, defab1 )
-    else if ( keyf == 6 ) then
+    else if( keyf == 6 ) then
       call qk61 ( f, a1, b1, area1, error1, resabs, defab1 )
-    end if
+    endif
 
-    if ( keyf == 1 ) then
+    if( keyf == 1 ) then
       call qk15 ( f, a2, b2, area2, error2, resabs, defab2 )
-    else if ( keyf == 2 ) then
+    else if( keyf == 2 ) then
       call qk21 ( f, a2, b2, area2, error2, resabs, defab2 )
-    else if ( keyf == 3 ) then
+    else if( keyf == 3 ) then
       call qk31 ( f, a2, b2, area2, error2, resabs, defab2 )
-    else if ( keyf == 4 ) then
+    else if( keyf == 4 ) then
       call qk41 ( f, a2, b2, area2, error2, resabs, defab2 )
-    else if ( keyf == 5 ) then
+    else if( keyf == 5 ) then
       call qk51 ( f, a2, b2, area2, error2, resabs, defab2 )
-    else if ( keyf == 6 ) then
+    else if( keyf == 6 ) then
       call qk61 ( f, a2, b2, area2, error2, resabs, defab2 )
-    end if
+    endif
 !
 !  Improve previous approximations to integral and error and
 !  test for accuracy.
@@ -576,18 +576,18 @@ subroutine qage ( f, a, b, epsabs, epsrel, key, limit, result, abserr, neval, &
     errsum = errsum + erro12 - errmax
     area = area + area12 - rlist(maxerr)
 
-    if ( defab1 /= error1 .and. defab2 /= error2 ) then
+    if( defab1 /= error1 .and. defab2 /= error2 ) then
 
-      if ( abs ( rlist(maxerr) - area12 ) <= 1.0e-05 * abs ( area12 ) &
+      if( abs ( rlist(maxerr) - area12 ) <= 1.0e-05 * abs ( area12 ) &
         .and. 9.9e-01 * errmax <= erro12 ) then
         iroff1 = iroff1 + 1
-      end if
+      endif
 
-      if ( 10 < last .and. errmax < erro12 ) then
+      if( 10 < last .and. errmax < erro12 ) then
         iroff2 = iroff2 + 1
-      end if
+      endif
 
-    end if
+    endif
 
     rlist(maxerr) = area1
     rlist(last) = area2
@@ -595,32 +595,32 @@ subroutine qage ( f, a, b, epsabs, epsrel, key, limit, result, abserr, neval, &
 !
 !  Test for roundoff error and eventually set error flag.
 !
-    if ( errbnd < errsum ) then
+    if( errbnd < errsum ) then
 
-      if ( 6 <= iroff1 .or. 20 <= iroff2 ) then
+      if( 6 <= iroff1 .or. 20 <= iroff2 ) then
         ier = 2
-      end if
+      endif
 !
 !  Set error flag in the case that the number of subintervals
 !  equals limit.
 !
-      if ( last == limit ) then
+      if( last == limit ) then
         ier = 1
-      end if
+      endif
 !
 !  Set error flag in the case of bad integrand behavior
 !  at a point of the integration range.
 !
-      if ( max ( abs ( a1 ), abs ( b2 ) ) <= ( 1.0d0 + c * 1.0e+03 * &
+      if( max ( abs ( a1 ), abs ( b2 ) ) <= ( 1.0d0 + c * 1.0e+03 * &
         epsilon ( a1 ) ) * ( abs ( a2 ) + 1.0e+04 * tiny ( a2 ) ) ) then
         ier = 3
-      end if
+      endif
 
-    end if
+    endif
 !
 !  Append the newly-created intervals to the list.
 !
-    if ( error2 <= error1 ) then
+    if( error2 <= error1 ) then
       alist(last) = a2
       blist(maxerr) = b1
       blist(last) = b2
@@ -634,7 +634,7 @@ subroutine qage ( f, a, b, epsabs, epsrel, key, limit, result, abserr, neval, &
       rlist(last) = area1
       elist(maxerr) = error2
       elist(last) = error1
-    end if
+    endif
 !
 !  Call QSORT to maintain the descending ordering
 !  in the list of error estimates and select the subinterval
@@ -642,9 +642,9 @@ subroutine qage ( f, a, b, epsabs, epsrel, key, limit, result, abserr, neval, &
 !
     call qsort ( limit, last, maxerr, errmax, elist, iord, nrmax )
  
-    if ( ier /= 0 .or. errsum <= errbnd ) then
+    if( ier /= 0 .or. errsum <= errbnd ) then
       exit
-    end if
+    endif
 
   end do
 !
@@ -654,11 +654,11 @@ subroutine qage ( f, a, b, epsabs, epsrel, key, limit, result, abserr, neval, &
 
   abserr = errsum
 
-  if ( keyf /= 1 ) then
+  if( keyf /= 1 ) then
     neval = ( 10 * keyf + 1 ) * ( 2 * neval + 1 )
   else
     neval = 30 * neval + 15
-  end if
+  endif
 
   return
 end
@@ -867,14 +867,14 @@ subroutine qagi ( f, bound, inf, epsabs, epsrel, result, abserr, neval, ier, lim
 !
 !  Test on validity of parameters.
 !
-  if ( epsabs < 0.0d0 .and. epsrel < 0.0d0 ) then
+  if( epsabs < 0.0d0 .and. epsrel < 0.0d0 ) then
     ier = 6
     return
-  end if
+  endif
 
 
   !RS: flexible limit
-  if (present(limit_in)) then
+  if(present(limit_in)) then
     limit = limit_in
   else
     limit = limit_default
@@ -901,11 +901,11 @@ subroutine qagi ( f, bound, inf, epsabs, epsrel, result, abserr, neval, ier, lim
 !  i1 = integral of f over (-infinity,0),
 !  i2 = integral of f over (0,+infinity).
 !
-  if ( inf == 2 ) then
+  if( inf == 2 ) then
     boun = 0.0d0
   else
     boun = bound
-  end if
+  endif
 
   call qk15i ( f, boun, inf, 0.0d0, 1.0d0, result, abserr, defabs, resabs )
 !
@@ -918,16 +918,16 @@ subroutine qagi ( f, bound, inf, epsabs, epsrel, result, abserr, neval, ier, lim
   dres = abs ( result )
   errbnd = max ( epsabs, epsrel * dres )
 
-  if ( abserr <= 100.0d0 * epsilon ( defabs ) * defabs .and. &
+  if( abserr <= 100.0d0 * epsilon ( defabs ) * defabs .and. &
     errbnd < abserr ) then
     ier = 2
-  end if
+  endif
 
-  if ( limit == 1 ) then
+  if( limit == 1 ) then
     ier = 1
-  end if
+  endif
 
-  if ( ier /= 0 .or. (abserr <= errbnd .and. abserr /= resabs ) .or. &
+  if( ier /= 0 .or. (abserr <= errbnd .and. abserr /= resabs ) .or. &
     abserr == 0.0d0 ) go to 130
 !
 !  Initialization.
@@ -949,11 +949,11 @@ subroutine qagi ( f, bound, inf, epsabs, epsrel, result, abserr, neval, ier, lim
   iroff2 = 0
   iroff3 = 0
 
-  if ( ( 1.0d0 - 5.0e+01 * epsilon ( defabs ) ) * defabs <= dres ) then
+  if( ( 1.0d0 - 5.0e+01 * epsilon ( defabs ) ) * defabs <= dres ) then
     ksgn = 1
   else
     ksgn = -1
-  end if
+  endif
 
   do last = 2, limit
 !
@@ -975,26 +975,26 @@ subroutine qagi ( f, bound, inf, epsabs, epsrel, result, abserr, neval, ier, lim
     errsum = errsum + erro12 - errmax
     area = area + area12 - rlist(maxerr)
 
-    if ( defab1 /= error1 .and. defab2 /= error2 ) then
+    if( defab1 /= error1 .and. defab2 /= error2 ) then
 
-      if ( abs ( rlist(maxerr) - area12 ) <= 1.0e-05 * abs ( area12 ) &
+      if( abs ( rlist(maxerr) - area12 ) <= 1.0e-05 * abs ( area12 ) &
         .and. 9.9e-01 * errmax <= erro12 ) then
 
-        if ( extrap ) then
+        if( extrap ) then
           iroff2 = iroff2 + 1
-        end if
+        endif
 
-        if ( .not. extrap ) then
+        if( .not. extrap ) then
           iroff1 = iroff1 + 1
-        end if
+        endif
 
-      end if
+      endif
 
-      if ( 10 < last .and. errmax < erro12 ) then
+      if( 10 < last .and. errmax < erro12 ) then
         iroff3 = iroff3 + 1
-      end if
+      endif
 
-    end if
+    endif
 
     rlist(maxerr) = area1
     rlist(last) = area2
@@ -1002,31 +1002,31 @@ subroutine qagi ( f, bound, inf, epsabs, epsrel, result, abserr, neval, ier, lim
 !
 !  Test for roundoff error and eventually set error flag.
 !
-    if ( 10 <= iroff1 + iroff2 .or. 20 <= iroff3 ) then
+    if( 10 <= iroff1 + iroff2 .or. 20 <= iroff3 ) then
       ier = 2
-    end if
+    endif
 
-    if ( 5 <= iroff2 ) then
+    if( 5 <= iroff2 ) then
       ierro = 3
-    end if
+    endif
 !
 !  Set error flag in the case that the number of subintervals equals LIMIT.
 !
-    if ( last == limit ) then
+    if( last == limit ) then
       ier = 1
-    end if
+    endif
 !
 !  Set error flag in the case of bad integrand behavior
 !  at some points of the integration range.
 !
-    if ( max ( abs(a1), abs(b2) ) <= (1.0d0 + 1.0e+03 * epsilon ( a1 ) ) * &
+    if( max ( abs(a1), abs(b2) ) <= (1.0d0 + 1.0e+03 * epsilon ( a1 ) ) * &
     ( abs(a2) + 1.0e+03 * tiny ( a2 ) )) then
       ier = 4
-    end if
+    endif
 !
 !  Append the newly-created intervals to the list.
 !
-    if ( error2 <= error1 ) then
+    if( error2 <= error1 ) then
       alist(last) = a2
       blist(maxerr) = b1
       blist(last) = b2
@@ -1040,7 +1040,7 @@ subroutine qagi ( f, bound, inf, epsabs, epsrel, result, abserr, neval, ier, lim
       rlist(last) = area1
       elist(maxerr) = error2
       elist(last) = error1
-    end if
+    endif
 !
 !  Call QSORT to maintain the descending ordering
 !  in the list of error estimates and select the subinterval
@@ -1048,47 +1048,47 @@ subroutine qagi ( f, bound, inf, epsabs, epsrel, result, abserr, neval, ier, lim
 !
     call qsort ( limit, last, maxerr, errmax, elist, iord, nrmax )
 
-    if ( errsum <= errbnd ) go to 115
+    if( errsum <= errbnd ) go to 115
 
-    if ( ier /= 0 ) then
+    if( ier /= 0 ) then
       exit
-    end if
+    endif
 
-    if ( last == 2 ) then
+    if( last == 2 ) then
       small = 3.75e-01
       erlarg = errsum
       ertest = errbnd
       rlist2(2) = area
       cycle
-    end if
+    endif
 
-    if ( noext ) then
+    if( noext ) then
       cycle
-    end if
+    endif
 
     erlarg = erlarg - erlast
 
-    if ( small < abs ( b1 - a1 ) ) then
+    if( small < abs ( b1 - a1 ) ) then
       erlarg = erlarg + erro12
-    end if
+    endif
 !
 !  Test whether the interval to be bisected next is the
 !  smallest interval.
 !
-    if ( .not. extrap ) then
+    if( .not. extrap ) then
 
-      if ( small < abs ( blist(maxerr) - alist(maxerr) ) ) then
+      if( small < abs ( blist(maxerr) - alist(maxerr) ) ) then
         cycle
-      end if
+      endif
 
       extrap = .true.
       nrmax = 2
 
-    end if
+    endif
 
-    if ( ierro == 3 .or. erlarg <= ertest ) then
+    if( ierro == 3 .or. erlarg <= ertest ) then
       go to 60
-    end if
+    endif
 !
 !  The smallest interval has the largest error.
 !  before bisecting decrease the sum of the errors over the
@@ -1097,16 +1097,16 @@ subroutine qagi ( f, bound, inf, epsabs, epsrel, result, abserr, neval, ier, lim
     id = nrmax
     jupbnd = last
 
-    if ( (2+limit/2) < last ) then
+    if( (2+limit/2) < last ) then
       jupbnd = limit + 3 - last
-    end if
+    endif
 
     do k = id, jupbnd
       maxerr = iord(nrmax)
       errmax = elist(maxerr)
-      if ( small < abs ( blist(maxerr) - alist(maxerr) ) ) then
+      if( small < abs ( blist(maxerr) - alist(maxerr) ) ) then
         go to 90
-      end if
+      endif
       nrmax = nrmax + 1
     end do
 !
@@ -1119,11 +1119,11 @@ subroutine qagi ( f, bound, inf, epsabs, epsrel, result, abserr, neval, ier, lim
     call qextr ( numrl2, rlist2, reseps, abseps, res3la, nres ) 
     ktmin = ktmin+1
 
-    if ( 5 < ktmin .and. abserr < 1.0e-03 * errsum ) then
+    if( 5 < ktmin .and. abserr < 1.0e-03 * errsum ) then
       ier = 5
-    end if
+    endif
 
-    if ( abseps < abserr ) then
+    if( abseps < abserr ) then
 
       ktmin = 0
       abserr = abseps
@@ -1131,21 +1131,21 @@ subroutine qagi ( f, bound, inf, epsabs, epsrel, result, abserr, neval, ier, lim
       correc = erlarg
       ertest = max ( epsabs, epsrel * abs(reseps) )
 
-      if ( abserr <= ertest ) then
+      if( abserr <= ertest ) then
         exit
-      end if
+      endif
 
-    end if
+    endif
 !
 !  Prepare bisection of the smallest interval.
 !
-    if ( numrl2 == 1 ) then
+    if( numrl2 == 1 ) then
       noext = .true.
-    end if
+    endif
 
-    if ( ier == 5 ) then
+    if( ier == 5 ) then
       exit
-    end if
+    endif
 
     maxerr = iord(1)
     errmax = elist(maxerr)
@@ -1160,54 +1160,54 @@ subroutine qagi ( f, bound, inf, epsabs, epsrel, result, abserr, neval, ier, lim
 !
 !  Set final result and error estimate.
 !
-  if ( abserr == huge ( abserr ) ) then
+  if( abserr == huge ( abserr ) ) then
     go to 115
-  end if
+  endif
 
-  if ( ( ier + ierro ) == 0 ) then
+  if( ( ier + ierro ) == 0 ) then
     go to 110
-  end if
+  endif
 
-  if ( ierro == 3 ) then
+  if( ierro == 3 ) then
     abserr = abserr + correc
-  end if
+  endif
 
-  if ( ier == 0 ) then
+  if( ier == 0 ) then
     ier = 3
-  end if
+  endif
 
-  if ( result /= 0.0d0 .and. area /= 0.0d0) then
+  if( result /= 0.0d0 .and. area /= 0.0d0) then
     go to 105
-  end if
+  endif
 
-  if ( errsum < abserr ) then
+  if( errsum < abserr ) then
     go to 115
-  end if
+  endif
 
-  if ( area == 0.0d0 ) then
+  if( area == 0.0d0 ) then
     go to 130
-  end if
+  endif
 
   go to 110
 
 105 continue
 
-  if ( errsum / abs ( area ) < abserr / abs ( result )  ) then
+  if( errsum / abs ( area ) < abserr / abs ( result )  ) then
     go to 115
-  end if
+  endif
 !
 !  Test on divergence
 !
 110 continue
 
-  if ( ksgn == (-1) .and. &
+  if( ksgn == (-1) .and. &
   max ( abs(result), abs(area) ) <=  defabs * 1.0e-02) go to 130
 
-  if ( 1.0e-02 > (result/area) .or. &
+  if( 1.0e-02 > (result/area) .or. &
     (result/area) > 1.0e+02 .or. &
     errsum > abs(area)) then
     ier = 6
-  end if
+  endif
 
   go to 130
 !
@@ -1221,13 +1221,13 @@ subroutine qagi ( f, bound, inf, epsabs, epsrel, result, abserr, neval, ier, lim
   130 continue
 
   neval = 30 * last - 15
-  if ( inf == 2 ) then
+  if( inf == 2 ) then
     neval = 2 * neval
-  end if
+  endif
 
-  if ( 2 < ier ) then
+  if( 2 < ier ) then
     ier = ier - 1
-  end if
+  endif
 
   !RS: flexible limit
   deallocate(alist,blist,elist,iord,rlist, stat=ier0)
@@ -1323,10 +1323,10 @@ subroutine qagic ( f, fcplx, bound, inf, epsabs, epsrel, result, abserr, neval, 
   elist(1) = 0.0d0
   iord(1) = 0
 
-  if ( epsabs < 0.0d0 .and. epsrel < 0.0d0 ) then
+  if( epsabs < 0.0d0 .and. epsrel < 0.0d0 ) then
     ier = 6
     return
-  end if
+  endif
 !
 !  First approximation to the integral.
 !
@@ -1335,11 +1335,11 @@ subroutine qagic ( f, fcplx, bound, inf, epsabs, epsrel, result, abserr, neval, 
 !  i1 = integral of f over (-infinity,0),
 !  i2 = integral of f over (0,+infinity).
 !
-  if ( inf == 2 ) then
+  if( inf == 2 ) then
     boun = 0.0d0
   else
     boun = bound
-  end if
+  endif
 
   call qk15ic ( f, fcplx, boun, inf, 0.0d0, 1.0d0, result, abserr, defabs, resabs )
 !
@@ -1352,16 +1352,16 @@ subroutine qagic ( f, fcplx, bound, inf, epsabs, epsrel, result, abserr, neval, 
   dres = abs ( result )
   errbnd = max ( epsabs, epsrel * dres )
 
-  if ( abserr <= 100.0d0 * epsilon ( defabs ) * defabs .and. &
+  if( abserr <= 100.0d0 * epsilon ( defabs ) * defabs .and. &
     errbnd < abserr ) then
     ier = 2
-  end if
+  endif
 
-  if ( limit == 1 ) then
+  if( limit == 1 ) then
     ier = 1
-  end if
+  endif
 
-  if ( ier /= 0 .or. (abserr <= errbnd .and. abserr /= resabs ) .or. &
+  if( ier /= 0 .or. (abserr <= errbnd .and. abserr /= resabs ) .or. &
     abserr == 0.0d0 ) go to 130
 !
 !  Initialization.
@@ -1383,11 +1383,11 @@ subroutine qagic ( f, fcplx, bound, inf, epsabs, epsrel, result, abserr, neval, 
   iroff2 = 0
   iroff3 = 0
 
-  if ( ( 1.0d0 - 5.0e+01 * epsilon ( defabs ) ) * defabs <= dres ) then
+  if( ( 1.0d0 - 5.0e+01 * epsilon ( defabs ) ) * defabs <= dres ) then
     ksgn = 1
   else
     ksgn = -1
-  end if
+  endif
 
   do last = 2, limit
 !
@@ -1409,26 +1409,26 @@ subroutine qagic ( f, fcplx, bound, inf, epsabs, epsrel, result, abserr, neval, 
     errsum = errsum + erro12 - errmax
     area = area + area12 - rlist(maxerr)
 
-    if ( defab1 /= error1 .and. defab2 /= error2 ) then
+    if( defab1 /= error1 .and. defab2 /= error2 ) then
 
-      if ( abs ( rlist(maxerr) - area12 ) <= 1.0e-05 * abs ( area12 ) &
+      if( abs ( rlist(maxerr) - area12 ) <= 1.0e-05 * abs ( area12 ) &
         .and. 9.9e-01 * errmax <= erro12 ) then
 
-        if ( extrap ) then
+        if( extrap ) then
           iroff2 = iroff2 + 1
-        end if
+        endif
 
-        if ( .not. extrap ) then
+        if( .not. extrap ) then
           iroff1 = iroff1 + 1
-        end if
+        endif
 
-      end if
+      endif
 
-      if ( 10 < last .and. errmax < erro12 ) then
+      if( 10 < last .and. errmax < erro12 ) then
         iroff3 = iroff3 + 1
-      end if
+      endif
 
-    end if
+    endif
 
     rlist(maxerr) = area1
     rlist(last) = area2
@@ -1436,31 +1436,31 @@ subroutine qagic ( f, fcplx, bound, inf, epsabs, epsrel, result, abserr, neval, 
 !
 !  Test for roundoff error and eventually set error flag.
 !
-    if ( 10 <= iroff1 + iroff2 .or. 20 <= iroff3 ) then
+    if( 10 <= iroff1 + iroff2 .or. 20 <= iroff3 ) then
       ier = 2
-    end if
+    endif
 
-    if ( 5 <= iroff2 ) then
+    if( 5 <= iroff2 ) then
       ierro = 3
-    end if
+    endif
 !
 !  Set error flag in the case that the number of subintervals equals LIMIT.
 !
-    if ( last == limit ) then
+    if( last == limit ) then
       ier = 1
-    end if
+    endif
 !
 !  Set error flag in the case of bad integrand behavior
 !  at some points of the integration range.
 !
-    if ( max ( abs(a1), abs(b2) ) <= (1.0d0 + 1.0e+03 * epsilon ( a1 ) ) * &
+    if( max ( abs(a1), abs(b2) ) <= (1.0d0 + 1.0e+03 * epsilon ( a1 ) ) * &
     ( abs(a2) + 1.0e+03 * tiny ( a2 ) )) then
       ier = 4
-    end if
+    endif
 !
 !  Append the newly-created intervals to the list.
 !
-    if ( error2 <= error1 ) then
+    if( error2 <= error1 ) then
       alist(last) = a2
       blist(maxerr) = b1
       blist(last) = b2
@@ -1474,7 +1474,7 @@ subroutine qagic ( f, fcplx, bound, inf, epsabs, epsrel, result, abserr, neval, 
       rlist(last) = area1
       elist(maxerr) = error2
       elist(last) = error1
-    end if
+    endif
 !
 !  Call QSORT to maintain the descending ordering
 !  in the list of error estimates and select the subinterval
@@ -1482,47 +1482,47 @@ subroutine qagic ( f, fcplx, bound, inf, epsabs, epsrel, result, abserr, neval, 
 !
     call qsort ( limit, last, maxerr, errmax, elist, iord, nrmax )
 
-    if ( errsum <= errbnd ) go to 115
+    if( errsum <= errbnd ) go to 115
 
-    if ( ier /= 0 ) then
+    if( ier /= 0 ) then
       exit
-    end if
+    endif
 
-    if ( last == 2 ) then
+    if( last == 2 ) then
       small = 3.75e-01
       erlarg = errsum
       ertest = errbnd
       rlist2(2) = area
       cycle
-    end if
+    endif
 
-    if ( noext ) then
+    if( noext ) then
       cycle
-    end if
+    endif
 
     erlarg = erlarg - erlast
 
-    if ( small < abs ( b1 - a1 ) ) then
+    if( small < abs ( b1 - a1 ) ) then
       erlarg = erlarg + erro12
-    end if
+    endif
 !
 !  Test whether the interval to be bisected next is the
 !  smallest interval.
 !
-    if ( .not. extrap ) then
+    if( .not. extrap ) then
 
-      if ( small < abs ( blist(maxerr) - alist(maxerr) ) ) then
+      if( small < abs ( blist(maxerr) - alist(maxerr) ) ) then
         cycle
-      end if
+      endif
 
       extrap = .true.
       nrmax = 2
 
-    end if
+    endif
 
-    if ( ierro == 3 .or. erlarg <= ertest ) then
+    if( ierro == 3 .or. erlarg <= ertest ) then
       go to 60
-    end if
+    endif
 !
 !  The smallest interval has the largest error.
 !  before bisecting decrease the sum of the errors over the
@@ -1531,16 +1531,16 @@ subroutine qagic ( f, fcplx, bound, inf, epsabs, epsrel, result, abserr, neval, 
     id = nrmax
     jupbnd = last
 
-    if ( (2+limit/2) < last ) then
+    if( (2+limit/2) < last ) then
       jupbnd = limit + 3 - last
-    end if
+    endif
 
     do k = id, jupbnd
       maxerr = iord(nrmax)
       errmax = elist(maxerr)
-      if ( small < abs ( blist(maxerr) - alist(maxerr) ) ) then
+      if( small < abs ( blist(maxerr) - alist(maxerr) ) ) then
         go to 90
-      end if
+      endif
       nrmax = nrmax + 1
     end do
 !
@@ -1553,11 +1553,11 @@ subroutine qagic ( f, fcplx, bound, inf, epsabs, epsrel, result, abserr, neval, 
     call qextr ( numrl2, rlist2, reseps, abseps, res3la, nres ) 
     ktmin = ktmin+1
 
-    if ( 5 < ktmin .and. abserr < 1.0e-03 * errsum ) then
+    if( 5 < ktmin .and. abserr < 1.0e-03 * errsum ) then
       ier = 5
-    end if
+    endif
 
-    if ( abseps < abserr ) then
+    if( abseps < abserr ) then
 
       ktmin = 0
       abserr = abseps
@@ -1565,21 +1565,21 @@ subroutine qagic ( f, fcplx, bound, inf, epsabs, epsrel, result, abserr, neval, 
       correc = erlarg
       ertest = max ( epsabs, epsrel * abs(reseps) )
 
-      if ( abserr <= ertest ) then
+      if( abserr <= ertest ) then
         exit
-      end if
+      endif
 
-    end if
+    endif
 !
 !  Prepare bisection of the smallest interval.
 !
-    if ( numrl2 == 1 ) then
+    if( numrl2 == 1 ) then
       noext = .true.
-    end if
+    endif
 
-    if ( ier == 5 ) then
+    if( ier == 5 ) then
       exit
-    end if
+    endif
 
     maxerr = iord(1)
     errmax = elist(maxerr)
@@ -1594,54 +1594,54 @@ subroutine qagic ( f, fcplx, bound, inf, epsabs, epsrel, result, abserr, neval, 
 !
 !  Set final result and error estimate.
 !
-  if ( abserr == huge ( abserr ) ) then
+  if( abserr == huge ( abserr ) ) then
     go to 115
-  end if
+  endif
 
-  if ( ( ier + ierro ) == 0 ) then
+  if( ( ier + ierro ) == 0 ) then
     go to 110
-  end if
+  endif
 
-  if ( ierro == 3 ) then
+  if( ierro == 3 ) then
     abserr = abserr + correc
-  end if
+  endif
 
-  if ( ier == 0 ) then
+  if( ier == 0 ) then
     ier = 3
-  end if
+  endif
 
-  if ( result /= 0.0d0 .and. area /= 0.0d0) then
+  if( result /= 0.0d0 .and. area /= 0.0d0) then
     go to 105
-  end if
+  endif
 
-  if ( errsum < abserr ) then
+  if( errsum < abserr ) then
     go to 115
-  end if
+  endif
 
-  if ( area == 0.0d0 ) then
+  if( area == 0.0d0 ) then
     go to 130
-  end if
+  endif
 
   go to 110
 
 105 continue
 
-  if ( errsum / abs ( area ) < abserr / abs ( result )  ) then
+  if( errsum / abs ( area ) < abserr / abs ( result )  ) then
     go to 115
-  end if
+  endif
 !
 !  Test on divergence
 !
 110 continue
 
-  if ( ksgn == (-1) .and. &
+  if( ksgn == (-1) .and. &
   max ( abs(result), abs(area) ) <=  defabs * 1.0e-02) go to 130
 
-  if ( 1.0e-02 > (result/area) .or. &
+  if( 1.0e-02 > (result/area) .or. &
     (result/area) > 1.0e+02 .or. &
     errsum > abs(area)) then
     ier = 6
-  end if
+  endif
 
   go to 130
 !
@@ -1655,13 +1655,13 @@ subroutine qagic ( f, fcplx, bound, inf, epsabs, epsrel, result, abserr, neval, 
   130 continue
 
   neval = 30 * last - 15
-  if ( inf == 2 ) then
+  if( inf == 2 ) then
     neval = 2 * neval
-  end if
+  endif
 
-  if ( 2 < ier ) then
+  if( 2 < ier ) then
     ier = ier - 1
-  end if
+  endif
 
   return
 endsubroutine qagic
@@ -1909,23 +1909,23 @@ subroutine qagp ( f, a, b, npts2, points, epsabs, epsrel, result, abserr, &
   level(1) = 0
   npts = npts2 - 2
 
-  if ( npts2 < 2 ) then
+  if( npts2 < 2 ) then
     ier = 6
     return
-  else if ( limit <= npts .or. ( epsabs < 0.0d0 .and. &
+  else if( limit <= npts .or. ( epsabs < 0.0d0 .and. &
     epsrel < 0.0d0) ) then
     ier = 6
     return
-  end if
+  endif
 !
 !  If any break points are provided, sort them into an
 !  ascending sequence.
 !
-  if ( b < a ) then
+  if( b < a ) then
     sign = -1.0d0
   else
     sign = +1.0d0
-  end if
+  endif
 
   pts(1) = min ( a, b )
 
@@ -1937,24 +1937,24 @@ subroutine qagp ( f, a, b, npts2, points, epsabs, epsrel, result, abserr, &
   nint = npts+1
   a1 = pts(1)
 
-  if ( npts /= 0 ) then
+  if( npts /= 0 ) then
 
     do i = 1, nint
       do j = i+1, nint+1
-        if ( pts(j) < pts(i) ) then
+        if( pts(j) < pts(i) ) then
           temp   = pts(i)
           pts(i) = pts(j)
           pts(j) = temp
-        end if
+        endif
       end do
     end do
 
-    if ( pts(1) /= min ( a, b ) .or. pts(nint+1) /= max ( a, b ) ) then
+    if( pts(1) /= min ( a, b ) .or. pts(nint+1) /= max ( a, b ) ) then
       ier = 6
       return
-    end if
+    endif
 
-  end if
+  endif
 !
 !  Compute first integral and error approximations.
 !
@@ -1968,9 +1968,9 @@ subroutine qagp ( f, a, b, npts2, points, epsabs, epsrel, result, abserr, &
     result = result + area1
     ndin(i) = 0
 
-    if ( error1 == resa .and. error1 /= 0.0d0 ) then
+    if( error1 == resa .and. error1 /= 0.0d0 ) then
       ndin(i) = 1
-    end if
+    endif
 
     resabs = resabs + defabs
     level(i) = 0
@@ -1986,9 +1986,9 @@ subroutine qagp ( f, a, b, npts2, points, epsabs, epsrel, result, abserr, &
   errsum = 0.0d0
 
   do i = 1, nint
-    if ( ndin(i) == 1 ) then
+    if( ndin(i) == 1 ) then
       elist(i) = abserr
-    end if
+    endif
     errsum = errsum + elist(i)
   end do
 !
@@ -1999,12 +1999,12 @@ subroutine qagp ( f, a, b, npts2, points, epsabs, epsrel, result, abserr, &
   dres = abs ( result )
   errbnd = max ( epsabs, epsrel * dres )
 
-  if ( abserr <= 1.0e+02 * epsilon ( resabs ) * resabs .and. &
+  if( abserr <= 1.0e+02 * epsilon ( resabs ) * resabs .and. &
     abserr > errbnd ) then
     ier = 2
-  end if
+  endif
 
-  if ( nint /= 1 ) then
+  if( nint /= 1 ) then
 
     do i = 1, npts
 
@@ -2013,28 +2013,28 @@ subroutine qagp ( f, a, b, npts2, points, epsabs, epsrel, result, abserr, &
 
       do j = jlow, nint
         ind2 = iord(j)
-        if ( elist(ind1) <= elist(ind2) ) then
+        if( elist(ind1) <= elist(ind2) ) then
           ind1 = ind2
           k = j
-        end if
+        endif
       end do
 
-      if ( ind1 /= iord(i) ) then
+      if( ind1 /= iord(i) ) then
         iord(k) = iord(i)
         iord(i) = ind1
-      end if
+      endif
 
     end do
 
-    if ( limit < npts2 ) then
+    if( limit < npts2 ) then
       ier = 1
-    end if
+    endif
 
-  end if
+  endif
 
-  if ( ier /= 0 .or. abserr <= errbnd ) then
+  if( ier /= 0 .or. abserr <= errbnd ) then
     return
-  end if
+  endif
 !
 !  Initialization
 !
@@ -2057,11 +2057,11 @@ subroutine qagp ( f, a, b, npts2, points, epsabs, epsrel, result, abserr, &
   ierro = 0
   abserr = huge ( abserr )
 
-  if ( dres >= ( 1.0d0 - 0.5d0 * epsilon ( resabs ) ) * resabs ) then
+  if( dres >= ( 1.0d0 - 0.5d0 * epsilon ( resabs ) ) * resabs ) then
     ksgn = 1
   else
     ksgn = -1
-  end if
+  endif
 
   do last = npts2, limit
 !
@@ -2085,24 +2085,24 @@ subroutine qagp ( f, a, b, npts2, points, epsabs, epsrel, result, abserr, &
     errsum = errsum + erro12 -errmax
     area = area + area12 - rlist(maxerr)
 
-    if ( defab1 /= error1 .and. defab2 /= error2 ) then
+    if( defab1 /= error1 .and. defab2 /= error2 ) then
 
-      if ( abs ( rlist ( maxerr ) - area12 ) <= 1.0e-05 * abs(area12) .and. &
+      if( abs ( rlist ( maxerr ) - area12 ) <= 1.0e-05 * abs(area12) .and. &
         erro12 >= 9.9e-01 * errmax ) then
 
-        if ( extrap ) then
+        if( extrap ) then
           iroff2 = iroff2+1
         else
           iroff1 = iroff1+1
-        end if
+        endif
 
-      end if
+      endif
 
-      if ( last > 10 .and. erro12 > errmax ) then
+      if( last > 10 .and. erro12 > errmax ) then
         iroff3 = iroff3 + 1
-      end if
+      endif
 
-    end if
+    endif
 
     level(maxerr) = levcur
     level(last) = levcur
@@ -2112,32 +2112,32 @@ subroutine qagp ( f, a, b, npts2, points, epsabs, epsrel, result, abserr, &
 !
 !  Test for roundoff error and eventually set error flag.
 !
-    if ( 10 <= iroff1 + iroff2 .or. 20 <= iroff3 ) then
+    if( 10 <= iroff1 + iroff2 .or. 20 <= iroff3 ) then
       ier = 2
-    end if
+    endif
 
-    if ( 5 <= iroff2 ) then
+    if( 5 <= iroff2 ) then
       ierro = 3
-    end if
+    endif
 !
 !  Set error flag in the case that the number of subintervals
 !  equals limit.
 !
-    if ( last == limit ) then
+    if( last == limit ) then
       ier = 1
-    end if
+    endif
 !
 !  Set error flag in the case of bad integrand behavior
 !  at a point of the integration range
 !
-    if ( max ( abs(a1), abs(b2)) <= ( 1.0d0 + 1.0e+03 * epsilon ( a1 ) )* &
+    if( max ( abs(a1), abs(b2)) <= ( 1.0d0 + 1.0e+03 * epsilon ( a1 ) )* &
     ( abs ( a2 ) + 1.0e+03 * tiny ( a2 ) ) ) then
       ier = 4
-    end if
+    endif
 !
 !  Append the newly-created intervals to the list.
 !
-    if ( error2 <= error1 ) then
+    if( error2 <= error1 ) then
       alist(last) = a2
       blist(maxerr) = b1
       blist(last) = b2
@@ -2151,7 +2151,7 @@ subroutine qagp ( f, a, b, npts2, points, epsabs, epsrel, result, abserr, &
       rlist(last) = area1
       elist(maxerr) = error2
       elist(last) = error1
-    end if
+    endif
 !
 !  Call QSORT to maintain the descending ordering
 !  in the list of error estimates and select the subinterval
@@ -2159,78 +2159,78 @@ subroutine qagp ( f, a, b, npts2, points, epsabs, epsrel, result, abserr, &
 !
     call qsort ( limit, last, maxerr, errmax, elist, iord, nrmax )
 
-    if ( errsum <= errbnd ) then
+    if( errsum <= errbnd ) then
       go to 190
-    end if
+    endif
 
-    if ( ier /= 0 ) then
+    if( ier /= 0 ) then
       exit
-    end if
+    endif
 
-    if ( noext ) then
+    if( noext ) then
       cycle
-    end if
+    endif
 
     erlarg = erlarg - erlast
 
-    if ( levcur+1 <= levmax ) then
+    if( levcur+1 <= levmax ) then
       erlarg = erlarg + erro12
-    end if
+    endif
 !
 !  Test whether the interval to be bisected next is the
 !  smallest interval.
 !
-    if ( .not. extrap ) then
+    if( .not. extrap ) then
 
-      if ( level(maxerr)+1 <= levmax ) then
+      if( level(maxerr)+1 <= levmax ) then
         cycle
-      end if
+      endif
 
       extrap = .true.
       nrmax = 2
 
-    end if
+    endif
 !
 !  The smallest interval has the largest error.
 !  Before bisecting decrease the sum of the errors over the
 !  larger intervals (erlarg) and perform extrapolation.
 !
-    if ( ierro /= 3 .and. erlarg > ertest ) then
+    if( ierro /= 3 .and. erlarg > ertest ) then
 
       id = nrmax
       jupbnd = last
-      if ( last > (2+limit/2) ) then
+      if( last > (2+limit/2) ) then
         jupbnd = limit+3-last
-      end if
+      endif
 
       do k = id, jupbnd
         maxerr = iord(nrmax)
         errmax = elist(maxerr)
-        if ( level(maxerr)+1 <= levmax ) then
+        if( level(maxerr)+1 <= levmax ) then
           go to 160
-        end if
+        endif
         nrmax = nrmax + 1
       end do
 
-    end if
+    endif
 !
 !  Perform extrapolation.
 !
     numrl2 = numrl2 + 1
     rlist2(numrl2) = area
 
-    if ( numrl2 <= 2 ) then
+    if( numrl2 <= 2 ) then
       go to 155
-    end if
+    endif
 
     call qextr ( numrl2, rlist2, reseps, abseps, res3la, nres )
     ktmin = ktmin+1
 
-    if ( 5 < ktmin .and. abserr < 1.0e-03 * errsum ) then
+    if( 5 < ktmin .and. abserr < 1.0e-03 * errsum ) then
       ier = 5
-    end if
+    endif
 
-    if ( abseps < abserr ) then
+    if( abseps < abserr ) then
 
       ktmin = 0
       abserr = abseps
@@ -2238,21 +2238,21 @@ subroutine qagp ( f, a, b, npts2, points, epsabs, epsrel, result, abserr, &
       correc = erlarg
       ertest = max ( epsabs, epsrel * abs(reseps) )
 
-      if ( abserr < ertest ) then
+      if( abserr < ertest ) then
         exit
-      end if
+      endif
 
-    end if
+    endif
 !
 !  Prepare bisection of the smallest interval.
 !
-    if ( numrl2 == 1 ) then
+    if( numrl2 == 1 ) then
       noext = .true.
-    end if
+    endif
 
-    if ( 5 <= ier ) then
+    if( 5 <= ier ) then
       exit
-    end if
+    endif
 
 155 continue
 
@@ -2269,53 +2269,53 @@ subroutine qagp ( f, a, b, npts2, points, epsabs, epsrel, result, abserr, &
 !
 !  Set the final result.
 !
-  if ( abserr == huge ( abserr ) ) then
+  if( abserr == huge ( abserr ) ) then
     go to 190
-  end if
+  endif
 
-  if ( ( ier + ierro ) == 0 ) then
+  if( ( ier + ierro ) == 0 ) then
     go to 180
-  end if
+  endif
 
-  if ( ierro == 3 ) then
+  if( ierro == 3 ) then
     abserr = abserr + correc
-  end if
+  endif
 
-  if ( ier == 0 ) then
+  if( ier == 0 ) then
     ier = 3
-  end if
+  endif
 
-  if ( result /= 0.0d0 .and. area /= 0.0d0 ) then
+  if( result /= 0.0d0 .and. area /= 0.0d0 ) then
     go to 175
-  end if
+  endif
 
-  if ( errsum < abserr ) then
+  if( errsum < abserr ) then
     go to 190
-  end if
+  endif
 
-  if ( area == 0.0d0 ) then
+  if( area == 0.0d0 ) then
     go to 210
-  end if
+  endif
 
   go to 180
 
 175 continue
 
-  if ( abserr / abs(result) > errsum / abs(area) ) then
+  if( abserr / abs(result) > errsum / abs(area) ) then
     go to 190
-  end if
+  endif
 !
 !  Test on divergence.
 !
   180 continue
 
-  if ( ksgn == (-1) .and. max ( abs(result),abs(area)) <=  &
+  if( ksgn == (-1) .and. max ( abs(result),abs(area)) <=  &
     resabs*1.0e-02 ) go to 210
 
-  if ( 1.0e-02 > (result/area) .or. (result/area) > 1.0e+02 .or. &
+  if( 1.0e-02 > (result/area) .or. (result/area) > 1.0e+02 .or. &
     errsum > abs(area) ) then
     ier = 6
-  end if
+  endif
 
   go to 210
 !
@@ -2329,9 +2329,9 @@ subroutine qagp ( f, a, b, npts2, points, epsabs, epsrel, result, abserr, &
 
 210 continue
 
-  if ( 2 < ier ) then
+  if( 2 < ier ) then
     ier = ier - 1
-  end if
+  endif
 
   result = result * sign
 
@@ -2547,10 +2547,10 @@ subroutine qags ( f, a, b, epsabs, epsrel, result, abserr, neval, ier )
   rlist(1) = 0.0d0
   elist(1) = 0.0d0
 
-  if ( epsabs < 0.0d0 .and. epsrel < 0.0d0 ) then
+  if( epsabs < 0.0d0 .and. epsrel < 0.0d0 ) then
     ier = 6
     return
-  end if
+  endif
 !
 !  First approximation to the integral.
 !
@@ -2566,16 +2566,16 @@ subroutine qags ( f, a, b, epsabs, epsrel, result, abserr, neval, ier )
   elist(1) = abserr
   iord(1) = 1
 
-  if ( abserr <= 1.0e+02 * epsilon ( defabs ) * defabs .and. &
+  if( abserr <= 1.0e+02 * epsilon ( defabs ) * defabs .and. &
     abserr > errbnd ) then
     ier = 2
-  end if
+  endif
 
-  if ( limit == 1 ) then
+  if( limit == 1 ) then
     ier = 1
-  end if
+  endif
 
-  if ( ier /= 0 .or. (abserr <= errbnd .and. abserr /= resabs ) .or. &
+  if( ier /= 0 .or. (abserr <= errbnd .and. abserr /= resabs ) .or. &
     abserr == 0.0d0 ) go to 140
 !
 !  Initialization.
@@ -2596,11 +2596,11 @@ subroutine qags ( f, a, b, epsabs, epsrel, result, abserr, neval, ier )
   iroff2 = 0
   iroff3 = 0
 
-  if ( dres >= (1.0d0-5.0e+01* epsilon ( defabs ) ) * defabs ) then
+  if( dres >= (1.0d0-5.0e+01* epsilon ( defabs ) ) * defabs ) then
     ksgn = 1
   else
     ksgn = -1
-  end if
+  endif
 
   do last = 2, limit
 !
@@ -2622,22 +2622,22 @@ subroutine qags ( f, a, b, epsabs, epsrel, result, abserr, neval, ier )
     errsum = errsum+erro12-errmax
     area = area+area12-rlist(maxerr)
 
-    if ( defab1 == error1 .or. defab2 == error2 ) go to 15
+    if( defab1 == error1 .or. defab2 == error2 ) go to 15
 
-    if ( abs ( rlist(maxerr) - area12) > 1.0e-05 * abs(area12) &
+    if( abs ( rlist(maxerr) - area12) > 1.0e-05 * abs(area12) &
       .or. erro12 < 9.9e-01 * errmax ) go to 10
 
-    if ( extrap ) then
+    if( extrap ) then
       iroff2 = iroff2+1
     else
       iroff1 = iroff1+1
-    end if
+    endif
 
 10  continue
 
-    if ( last > 10 .and. erro12 > errmax ) then
+    if( last > 10 .and. erro12 > errmax ) then
       iroff3 = iroff3+1
-    end if
+    endif
 
 15  continue
 
@@ -2647,32 +2647,32 @@ subroutine qags ( f, a, b, epsabs, epsrel, result, abserr, neval, ier )
 !
 !  Test for roundoff error and eventually set error flag.
 !
-    if ( iroff1+iroff2 >= 10 .or. iroff3 >= 20 ) then
+    if( iroff1+iroff2 >= 10 .or. iroff3 >= 20 ) then
       ier = 2
-    end if
+    endif
 
-    if ( iroff2 >= 5 ) then
+    if( iroff2 >= 5 ) then
       ierro = 3
-    end if
+    endif
 !
 !  Set error flag in the case that the number of subintervals
 !  equals limit.
 !
-    if ( last == limit ) then
+    if( last == limit ) then
       ier = 1
-    end if
+    endif
 !
 !  Set error flag in the case of bad integrand behavior
 !  at a point of the integration range.
 !
-    if ( max ( abs(a1),abs(b2)) <= (1.0d0+1.0e+03* epsilon ( a1 ) )* &
+    if( max ( abs(a1),abs(b2)) <= (1.0d0+1.0e+03* epsilon ( a1 ) )* &
       (abs(a2)+1.0e+03* tiny ( a2 ) ) ) then
       ier = 4
-    end if
+    endif
 !
 !  Append the newly-created intervals to the list.
 !
-    if ( error2 <= error1 ) then
+    if( error2 <= error1 ) then
       alist(last) = a2
       blist(maxerr) = b1
       blist(last) = b2
@@ -2686,7 +2686,7 @@ subroutine qags ( f, a, b, epsabs, epsrel, result, abserr, neval, ier )
       rlist(last) = area1
       elist(maxerr) = error2
       elist(last) = error1
-    end if
+    endif
 !
 !  Call QSORT to maintain the descending ordering
 !  in the list of error estimates and select the subinterval
@@ -2694,29 +2694,29 @@ subroutine qags ( f, a, b, epsabs, epsrel, result, abserr, neval, ier )
 !
     call qsort ( limit, last, maxerr, errmax, elist, iord, nrmax )
 
-    if ( errsum <= errbnd ) go to 115
+    if( errsum <= errbnd ) go to 115
 
-    if ( ier /= 0 ) then
+    if( ier /= 0 ) then
       exit
-    end if
+    endif
 
-    if ( last == 2 ) go to 80
-    if ( noext ) go to 90
+    if( last == 2 ) go to 80
+    if( noext ) go to 90
 
     erlarg = erlarg-erlast
 
-    if ( abs(b1-a1) > small ) then
+    if( abs(b1-a1) > small ) then
       erlarg = erlarg+erro12
-    end if
+    endif
 !
 !  Test whether the interval to be bisected next is the
 !  smallest interval.
 !
-    if ( .not. extrap ) then
-      if ( abs(blist(maxerr)-alist(maxerr)) > small ) go to 90
+    if( .not. extrap ) then
+      if( abs(blist(maxerr)-alist(maxerr)) > small ) go to 90
       extrap = .true.
       nrmax = 2
-    end if
+    endif
 
 !40  continue
 !
@@ -2724,25 +2724,25 @@ subroutine qags ( f, a, b, epsabs, epsrel, result, abserr, neval, ier )
 !  Before bisecting decrease the sum of the errors over the
 !  larger intervals (erlarg) and perform extrapolation.
 !
-    if ( ierro /= 3 .and. erlarg > ertest ) then
+    if( ierro /= 3 .and. erlarg > ertest ) then
 
       id = nrmax
       jupbnd = last
 
-      if ( last > (2+limit/2) ) then
+      if( last > (2+limit/2) ) then
         jupbnd = limit+3-last
-      end if
+      endif
 
       do k = id, jupbnd
         maxerr = iord(nrmax)
         errmax = elist(maxerr)
-        if ( abs(blist(maxerr)-alist(maxerr)) > small ) then
+        if( abs(blist(maxerr)-alist(maxerr)) > small ) then
           go to 90
-        end if
+        endif
         nrmax = nrmax+1
       end do
 
-    end if
+    endif
 !
 !  Perform extrapolation.
 !
@@ -2753,11 +2753,11 @@ subroutine qags ( f, a, b, epsabs, epsrel, result, abserr, neval, ier )
     call qextr ( numrl2, rlist2, reseps, abseps, res3la, nres )
     ktmin = ktmin+1
 
-    if ( ktmin > 5 .and. abserr < 1.0e-03 * errsum ) then
+    if( ktmin > 5 .and. abserr < 1.0e-03 * errsum ) then
       ier = 5
-    end if
+    endif
 
-    if ( abseps < abserr ) then
+    if( abseps < abserr ) then
 
       ktmin = 0
       abserr = abseps
@@ -2765,21 +2765,21 @@ subroutine qags ( f, a, b, epsabs, epsrel, result, abserr, neval, ier )
       correc = erlarg
       ertest = max ( epsabs,epsrel*abs(reseps))
 
-      if ( abserr <= ertest ) then
+      if( abserr <= ertest ) then
         exit
-      end if
+      endif
 
-    end if
+    endif
 !
 !  Prepare bisection of the smallest interval.
 !
-    if ( numrl2 == 1 ) then
+    if( numrl2 == 1 ) then
       noext = .true.
-    end if
+    endif
 
-    if ( ier == 5 ) then
+    if( ier == 5 ) then
       exit
-    end if
+    endif
 
     maxerr = iord(1)
     errmax = elist(maxerr)
@@ -2802,45 +2802,45 @@ subroutine qags ( f, a, b, epsabs, epsrel, result, abserr, neval, ier )
 !
 !  Set final result and error estimate.
 !
-  if ( abserr == huge ( abserr ) ) then
+  if( abserr == huge ( abserr ) ) then
     go to 115
-  end if
+  endif
 
-  if ( ier + ierro == 0 ) then
+  if( ier + ierro == 0 ) then
     go to 110
-  end if
+  endif
 
-  if ( ierro == 3 ) then
+  if( ierro == 3 ) then
     abserr = abserr + correc
-  end if
+  endif
 
-  if ( ier == 0 ) then
+  if( ier == 0 ) then
     ier = 3
-  end if
+  endif
 
-  if ( result /= 0.0d0.and.area /= 0.0d0 ) then
+  if( result /= 0.0d0.and.area /= 0.0d0 ) then
     go to 105
-  end if
+  endif
 
-  if ( abserr > errsum ) go to 115
-  if ( area == 0.0d0 ) go to 130
+  if( abserr > errsum ) go to 115
+  if( area == 0.0d0 ) go to 130
   go to 110
 
 105 continue
 
-  if ( abserr/abs(result) > errsum/abs(area) ) go to 115
+  if( abserr/abs(result) > errsum/abs(area) ) go to 115
 !
 !  Test on divergence.
 !
 110 continue
 
-  if ( ksgn == (-1).and.max ( abs(result),abs(area)) <=  &
+  if( ksgn == (-1).and.max ( abs(result),abs(area)) <=  &
    defabs*1.0e-02 ) go to 130
 
-  if ( 1.0e-02 > (result/area) .or. (result/area) > 1.0e+02 &
+  if( 1.0e-02 > (result/area) .or. (result/area) > 1.0e+02 &
    .or. errsum > abs(area) ) then
     ier = 6
-  end if
+  endif
 
   go to 130
 !
@@ -2854,9 +2854,9 @@ subroutine qags ( f, a, b, epsabs, epsrel, result, abserr, neval, ier )
 
 130 continue
  
-  if ( 2 < ier ) then
+  if( 2 < ier ) then
     ier = ier - 1
-  end if
+  endif
 
 140 continue
 
@@ -3165,26 +3165,26 @@ subroutine qawce ( f, a, b, c, epsabs, epsrel, limit, result, abserr, neval, &
   result = 0.0d0
   abserr = 0.0d0
 
-  if ( c == a  ) then
+  if( c == a  ) then
     ier = 6
     return
-  else if ( c == b ) then
+  else if( c == b ) then
     ier = 6
     return
-  else if ( epsabs < 0.0d0 .and. epsrel < 0.0d0 ) then
+  else if( epsabs < 0.0d0 .and. epsrel < 0.0d0 ) then
     ier = 6
     return
-  end if
+  endif
 !
 !  First approximation to the integral.
 !
-  if ( a <= b ) then
+  if( a <= b ) then
     aa = a
     bb = b
   else
     aa = b
     bb = a
-  end if
+  endif
 
   krule = 1
   call qc25c ( f, aa, bb, c, result, abserr, krule, neval )
@@ -3199,14 +3199,14 @@ subroutine qawce ( f, a, b, c, epsabs, epsrel, limit, result, abserr, neval, &
 !
   errbnd = max ( epsabs, epsrel * abs(result) )
 
-  if ( limit == 1 ) then
+  if( limit == 1 ) then
     ier = 1
     go to 70
-  end if
+  endif
 
-  if ( abserr < min ( 1.0e-02 * abs(result), errbnd)  ) then
+  if( abserr < min ( 1.0e-02 * abs(result), errbnd)  ) then
     go to 70
-  end if
+  endif
 !
 !  Initialization
 !
@@ -3229,13 +3229,13 @@ subroutine qawce ( f, a, b, c, epsabs, epsrel, limit, result, abserr, neval, &
     b1 = 5.0e-01*(alist(maxerr)+blist(maxerr))
     b2 = blist(maxerr)
 
-    if ( c <= b1 .and. a1 < c ) then
+    if( c <= b1 .and. a1 < c ) then
       b1 = 5.0e-01*(c+b2)
-    end if
+    endif
 
-    if ( b1 < c .and. c < b2 ) then
+    if( b1 < c .and. c < b2 ) then
       b1 = 5.0e-01 * ( a1 + c )
-    end if
+    endif
 
     a2 = b1
     krule = 2
@@ -3254,46 +3254,46 @@ subroutine qawce ( f, a, b, c, epsabs, epsrel, limit, result, abserr, neval, &
     errsum = errsum + erro12 - errmax
     area = area + area12 - rlist(maxerr)
 
-    if ( abs ( rlist(maxerr)-area12) < 1.0e-05 * abs(area12) &
+    if( abs ( rlist(maxerr)-area12) < 1.0e-05 * abs(area12) &
       .and. erro12 >= 9.9e-01 * errmax .and. krule == 0 ) &
       iroff1 = iroff1+1
 
-    if ( last > 10.and.erro12 > errmax .and. krule == 0 ) then
+    if( last > 10.and.erro12 > errmax .and. krule == 0 ) then
       iroff2 = iroff2+1
-    end if
+    endif
 
     rlist(maxerr) = area1
     rlist(last) = area2
     errbnd = max ( epsabs, epsrel * abs(area) )
 
-    if ( errsum > errbnd ) then
+    if( errsum > errbnd ) then
 !
 !  Test for roundoff error and eventually set error flag.
 !
-      if ( iroff1 >= 6 .and. iroff2 > 20 ) then
+      if( iroff1 >= 6 .and. iroff2 > 20 ) then
         ier = 2
-      end if
+      endif
 !
 !  Set error flag in the case that number of interval
 !  bisections exceeds limit.
 !
-      if ( last == limit ) then
+      if( last == limit ) then
         ier = 1
-      end if
+      endif
 !
 !  Set error flag in the case of bad integrand behavior at
 !  a point of the integration range.
 !
-      if ( max ( abs(a1), abs(b2) ) <= ( 1.0d0 + 1.0e+03 * epsilon ( a1 ) ) &
+      if( max ( abs(a1), abs(b2) ) <= ( 1.0d0 + 1.0e+03 * epsilon ( a1 ) ) &
         *( abs(a2)+1.0e+03* tiny ( a2 ) )) then
         ier = 3
-      end if
+      endif
 
-    end if
+    endif
 !
 !  Append the newly-created intervals to the list.
 !
-    if ( error2 <= error1 ) then
+    if( error2 <= error1 ) then
       alist(last) = a2
       blist(maxerr) = b1
       blist(last) = b2
@@ -3307,7 +3307,7 @@ subroutine qawce ( f, a, b, c, epsabs, epsrel, limit, result, abserr, neval, &
       rlist(last) = area1
       elist(maxerr) = error2
       elist(last) = error1
-    end if
+    endif
 !
 !  Call QSORT to maintain the descending ordering
 !  in the list of error estimates and select the subinterval
@@ -3315,9 +3315,9 @@ subroutine qawce ( f, a, b, c, epsabs, epsrel, limit, result, abserr, neval, &
 !
     call qsort ( limit, last, maxerr, errmax, elist, iord, nrmax )
 
-    if ( ier /= 0 .or. errsum <= errbnd ) then
+    if( ier /= 0 .or. errsum <= errbnd ) then
       exit
-    end if
+    endif
 
   end do
 !
@@ -3329,9 +3329,9 @@ subroutine qawce ( f, a, b, c, epsabs, epsrel, limit, result, abserr, neval, &
 
 70 continue 
 
-  if ( aa == b ) then
+  if( aa == b ) then
     result = - result
-  end if
+  endif
 
   return
 end
@@ -3461,9 +3461,9 @@ subroutine qawf ( f, a, omega, integr, epsabs, result, abserr, neval, ier )
   result = 0.0d0
   abserr = 0.0d0
 
-  if ( limlst < 3 .or. maxp1 < 1 ) then
+  if( limlst < 3 .or. maxp1 < 1 ) then
     return
-  end if
+  endif
 
   call qawfe ( f, a, omega, integr, epsabs, limlst, limit, maxp1, &
     result, abserr, neval, ier, rslst, erlst, ierlst, lst, alist, blist, &
@@ -3738,23 +3738,23 @@ subroutine qawfe ( f, a, omega, integr, epsabs, limlst, limit, maxp1, &
   lst = 0
   ier = 0
 
-  if ( (integr /= 1 .and. integr /= 2 ) .or. &
+  if( (integr /= 1 .and. integr /= 2 ) .or. &
     epsabs <= 0.0d0 .or. &
     limlst < 3 ) then
     ier = 6
     return
-  end if
+  endif
 
-  if ( omega == 0.0d0 ) then
+  if( omega == 0.0d0 ) then
 
-    if ( integr == 1 ) then
+    if( integr == 1 ) then
      ! call qagi ( f, 0.0d0, 1, epsabs, 0.0d0, result, abserr, neval, ier,)
     else
       result = 0.0d0
       abserr = 0.0d0
       neval = 0
       ier = 0
-    end if
+    endif
 
     rslst(1) = result
     erlst(1) = abserr
@@ -3762,7 +3762,7 @@ subroutine qawfe ( f, a, omega, integr, epsabs, limlst, limit, maxp1, &
     lst = 1
 
     return
-  end if
+  endif
 !
 !  Initializations.
 !
@@ -3779,9 +3779,9 @@ subroutine qawfe ( f, a, omega, integr, epsabs, limlst, limit, maxp1, &
   p1 = 1.0d0-p
   eps = epsabs
 
-  if ( epsabs > tiny ( epsabs ) / p1 ) then
+  if( epsabs > tiny ( epsabs ) / p1 ) then
     eps = epsabs * p1
-  end if
+  endif
 
   ep = eps
   fact = 1.0d0
@@ -3807,37 +3807,37 @@ subroutine qawfe ( f, a, omega, integr, epsabs, limlst, limit, maxp1, &
 !
 !  Test on accuracy with partial sum.
 !
-    if ((errsum+drl) <= epsabs.and.lst >= 6) then
+    if((errsum+drl) <= epsabs.and.lst >= 6) then
       go to 80
-    end if
+    endif
 
     correc = max ( correc,erlst(lst))
 
-    if ( ierlst(lst) /= 0 ) then
+    if( ierlst(lst) /= 0 ) then
       eps = max ( ep,correc*p1)
       ier = 7
-    end if
+    endif
 
-    if ( ier == 7 .and. (errsum+drl) <= correc*1.0e+01.and. lst > 5) go to 80
+    if( ier == 7 .and. (errsum+drl) <= correc*1.0e+01.and. lst > 5) go to 80
 
     numrl2 = numrl2+1
 
-    if ( lst <= 1 ) then
+    if( lst <= 1 ) then
       psum(1) = rslst(1)
       go to 40
-    end if
+    endif
 
     psum(numrl2) = psum(ll) + rslst(lst)
 
-    if ( lst == 2 ) then
+    if( lst == 2 ) then
       go to 40
-    end if
+    endif
 !
 !  Test on maximum number of subintervals
 !
-    if ( lst == limlst ) then
+    if( lst == limlst ) then
       ier = 8
-    end if
+    endif
 !
 !  Perform new extrapolation
 !
@@ -3847,11 +3847,11 @@ subroutine qawfe ( f, a, omega, integr, epsabs, limlst, limit, maxp1, &
 !
     ktmin = ktmin + 1
 
-    if ( ktmin >= 15 .and. abserr <= 1.0e-03 * (errsum+drl) ) then
+    if( ktmin >= 15 .and. abserr <= 1.0e-03 * (errsum+drl) ) then
       ier = 9
     end  if
 
-    if ( abseps <= abserr .or. lst == 3 ) then
+    if( abseps <= abserr .or. lst == 3 ) then
 
       abserr = abseps
       result = reseps
@@ -3861,19 +3861,19 @@ subroutine qawfe ( f, a, omega, integr, epsabs, limlst, limit, maxp1, &
 !  sum) or extrapolated result yields the best integral
 !  approximation
 !
-      if ( ( abserr + 1.0e+01 * correc ) <= epsabs ) then
+      if( ( abserr + 1.0e+01 * correc ) <= epsabs ) then
         exit
-      end if
+      endif
 
-      if ( abserr <= epsabs .and. 1.0e+01 * correc >= epsabs ) then
+      if( abserr <= epsabs .and. 1.0e+01 * correc >= epsabs ) then
         exit
-      end if
+      endif
 
-    end if
+    endif
 
-    if ( ier /= 0 .and. ier /= 7 ) then
+    if( ier /= 0 .and. ier /= 7 ) then
       exit
-    end if
+    endif
 
 40  continue
 
@@ -3889,31 +3889,31 @@ subroutine qawfe ( f, a, omega, integr, epsabs, limlst, limit, maxp1, &
 
   abserr = abserr + 1.0e+01 * correc
 
-  if ( ier == 0 ) then
+  if( ier == 0 ) then
     return
-  end if
+  endif
 
-  if ( result /= 0.0d0 .and. psum(numrl2) /= 0.0d0) go to 70
+  if( result /= 0.0d0 .and. psum(numrl2) /= 0.0d0) go to 70
 
-  if ( abserr > errsum ) then
+  if( abserr > errsum ) then
     go to 80
-  end if
+  endif
 
-  if ( psum(numrl2) == 0.0d0 ) then
+  if( psum(numrl2) == 0.0d0 ) then
     return
-  end if
+  endif
 
 70 continue
 
-  if ( abserr / abs(result) <= (errsum+drl)/abs(psum(numrl2)) ) then
+  if( abserr / abs(result) <= (errsum+drl)/abs(psum(numrl2)) ) then
 
-    if ( ier >= 1 .and. ier /= 7 ) then
+    if( ier >= 1 .and. ier /= 7 ) then
       abserr = abserr + drl
-    end if
+    endif
 
     return
 
-  end if
+  endif
 
 80 continue
 
@@ -4386,7 +4386,7 @@ subroutine qawse ( f, a, b, alfa, beta, integr, epsabs, epsrel, limit, &
   result = 0.0d0
   abserr = 0.0d0
 
-  if ( b <= a .or. &
+  if( b <= a .or. &
     (epsabs < 0.0d0 .and. epsrel < 0.0d0) .or. &
     alfa <= (-1.0d0) .or. &
     beta <= (-1.0d0) .or. &
@@ -4395,7 +4395,7 @@ subroutine qawse ( f, a, b, alfa, beta, integr, epsabs, epsrel, limit, &
     limit < 2 ) then
     ier = 6
     return
-  end if
+  endif
 !
 !  Compute the modified Chebyshev moments.
 !
@@ -4424,7 +4424,7 @@ subroutine qawse ( f, a, b, alfa, beta, integr, epsabs, epsrel, limit, &
 !
 !  Initialization.
 !
-  if ( error2 <= error1 ) then
+  if( error2 <= error1 ) then
     alist(1) = a
     alist(2) = centre
     blist(1) = centre
@@ -4442,19 +4442,19 @@ subroutine qawse ( f, a, b, alfa, beta, integr, epsabs, epsrel, limit, &
     rlist(2) = area1
     elist(1) = error2
     elist(2) = error1
-  end if
+  endif
 
   iord(1) = 1
   iord(2) = 2
 
-  if ( limit == 2 ) then
+  if( limit == 2 ) then
     ier = 1
     return
-  end if
+  endif
 
-  if ( abserr <= errbnd ) then
+  if( abserr <= errbnd ) then
     return
-  end if
+  endif
 
   errmax = elist(1)
   maxerr = 1
@@ -4493,22 +4493,22 @@ subroutine qawse ( f, a, b, alfa, beta, integr, epsabs, epsrel, limit, &
 !
 !  Test for roundoff error.
 !
-    if ( a /= a1 .and. b /= b2 ) then
+    if( a /= a1 .and. b /= b2 ) then
 
-      if ( resas1 /= error1 .and. resas2 /= error2 ) then
+      if( resas1 /= error1 .and. resas2 /= error2 ) then
 
-        if ( abs ( rlist(maxerr) - area12 ) < 1.0e-05 * abs ( area12 ) &
+        if( abs ( rlist(maxerr) - area12 ) < 1.0e-05 * abs ( area12 ) &
           .and.erro12 >= 9.9e-01*errmax ) then
           iroff1 = iroff1 + 1
-        end if
+        endif
 
-        if ( last > 10 .and. erro12 > errmax ) then
+        if( last > 10 .and. erro12 > errmax ) then
           iroff2 = iroff2 + 1
-        end if
+        endif
 
-      end if
+      endif
 
-    end if
+    endif
 
     rlist(maxerr) = area1
     rlist(last) = area2
@@ -4517,34 +4517,34 @@ subroutine qawse ( f, a, b, alfa, beta, integr, epsabs, epsrel, limit, &
 !
     errbnd = max ( epsabs, epsrel * abs ( area ) )
 
-    if ( errsum > errbnd ) then
+    if( errsum > errbnd ) then
 !
 !  Set error flag in the case that the number of interval
 !  bisections exceeds limit.
 !
-      if ( last == limit ) then
+      if( last == limit ) then
         ier = 1
-      end if
+      endif
 !
 !  Set error flag in the case of roundoff error.
 !
-      if ( iroff1 >= 6 .or. iroff2 >= 20 ) then
+      if( iroff1 >= 6 .or. iroff2 >= 20 ) then
         ier = 2
-     end if
+     endif
 !
 !  Set error flag in the case of bad integrand behavior
 !  at interior points of integration range.
 !
-      if ( max ( abs(a1),abs(b2)) <= (1.0d0+1.0e+03* epsilon ( a1 ) )* &
+      if( max ( abs(a1),abs(b2)) <= (1.0d0+1.0e+03* epsilon ( a1 ) )* &
         ( abs(a2) + 1.0e+03* tiny ( a2) )) then
         ier = 3
-      end if
+      endif
 
-    end if
+    endif
 !
 !  Append the newly-created intervals to the list.
 !
-    if ( error2 <= error1 ) then
+    if( error2 <= error1 ) then
       alist(last) = a2
       blist(maxerr) = b1
       blist(last) = b2
@@ -4558,7 +4558,7 @@ subroutine qawse ( f, a, b, alfa, beta, integr, epsabs, epsrel, limit, &
       rlist(last) = area1
       elist(maxerr) = error2
       elist(last) = error1
-    end if
+    endif
 !
 !  Call QSORT to maintain the descending ordering
 !  in the list of error estimates and select the subinterval
@@ -4566,9 +4566,9 @@ subroutine qawse ( f, a, b, alfa, beta, integr, epsabs, epsrel, limit, &
 !
     call qsort ( limit, last, maxerr, errmax, elist, iord, nrmax )
 
-    if ( ier /= 0 .or. errsum <= errbnd ) then
+    if( ier /= 0 .or. errsum <= errbnd ) then
       exit
-    end if
+    endif
 
   end do
 !
@@ -4695,16 +4695,16 @@ subroutine qc25c ( f, a, b, c, result, abserr, krul, neval )
 !
 !  Apply the 15-point Gauss-Kronrod scheme.
 !
-  if ( abs ( cc ) >= 1.1d0 ) then
+  if( abs ( cc ) >= 1.1d0 ) then
     krul = krul - 1
     call qk15w ( f, qwgtc, c, p2, p3, p4, kp, a, b, result, abserr, &
       resabs, resasc )
     neval = 15
-    if ( resasc == abserr ) then
+    if( resasc == abserr ) then
       krul = krul+1
-    end if
+    endif
     return
-  end if
+  endif
 !
 !  Use the generalized Clenshaw-Curtis method.
 !
@@ -4737,9 +4737,9 @@ subroutine qc25c ( f, a, b, c, result, abserr, krul, neval )
   do k = 3, 13
     amom2 = 2.0d0 * cc * amom1 - amom0
     ak22 = ( k - 2 ) * ( k - 2 )
-    if ( ( k / 2 ) * 2 == k ) then
+    if( ( k / 2 ) * 2 == k ) then
       amom2 = amom2 - 4.0d0 / ( ak22 - 1.0d0 )
-    end if
+    endif
     res12 = res12 + cheb12(k) * amom2
     res24 = res24 + cheb24(k) * amom2
     amom0 = amom1
@@ -4749,9 +4749,9 @@ subroutine qc25c ( f, a, b, c, result, abserr, krul, neval )
   do k = 14, 25
     amom2 = 2.0d0 * cc * amom1 - amom0
     ak22 = ( k - 2 ) * ( k - 2 )
-    if ( ( k / 2 ) * 2 == k ) then
+    if( ( k / 2 ) * 2 == k ) then
       amom2 = amom2 - 4.0d0 / ( ak22 - 1.0d0 )
-    end if
+    endif
     res24 = res24 + cheb24(k) * amom2
     amom0 = amom1
     amom1 = amom2
@@ -4968,7 +4968,7 @@ subroutine qc25o ( f, a, b, omega, integr, nrmom, maxp1, ksave, result, &
 !  is less than (bb-aa)/2**(maxp1-2), where (aa,bb) is the
 !  original integration interval.
 !
-  if ( abs ( parint ) <= 2.0d0 ) then
+  if( abs ( parint ) <= 2.0d0 ) then
 
     call qk15w ( f, qwgto, omega, p2, p3, p4, integr, a, b, result, &
       abserr, resabs, resasc )
@@ -4976,7 +4976,7 @@ subroutine qc25o ( f, a, b, omega, integr, nrmom, maxp1, ksave, result, &
     neval = 15
     return
 
-  end if
+  endif
 !
 !  Compute the integral using the generalized clenshaw-curtis method.
 !
@@ -4988,9 +4988,9 @@ subroutine qc25o ( f, a, b, omega, integr, nrmom, maxp1, ksave, result, &
 !  Check whether the Chebyshev moments for this interval
 !  have already been computed.
 !
-  if ( nrmom < momcom .or. ksave == 1 ) then
+  if( nrmom < momcom .or. ksave == 1 ) then
     go to 140
-  end if
+  endif
 !
 !  Compute a new set of Chebyshev moments.
 !
@@ -5010,9 +5010,9 @@ subroutine qc25o ( f, a, b, omega, integr, nrmom, maxp1, ksave, result, &
   ac = 8.0d0*cospar
   as = 2.4e+01*parint*sinpar
 
-  if ( abs ( parint ) > 2.4e+01 ) then
+  if( abs ( parint ) > 2.4e+01 ) then
     go to 70
-  end if
+  endif
 !
 !  Compute the Chebyshev moments as the solutions of a boundary value 
 !  problem with one initial value (v(3)) and one end value computed
@@ -5051,7 +5051,7 @@ subroutine qc25o ( f, a, b, omega, integr, nrmom, maxp1, ksave, result, &
 
   do i = 1, noeq1
 
-    if ( abs(d1(i)) > abs(d(i)) ) then
+    if( abs(d1(i)) > abs(d(i)) ) then
       an = d1(i)
       d1(i) = d(i)
       d(i) = an
@@ -5063,7 +5063,7 @@ subroutine qc25o ( f, a, b, omega, integr, nrmom, maxp1, ksave, result, &
       an = v(i+4)
       v(i+4) = v(i+3)
       v(i+3) = an
-    end if
+    endif
 
     d(i+1) = d(i+1)-d2(i)*d1(i)/d(i)
     d2(i+1) = d2(i+1)-d3(i)*d1(i)/d(i)
@@ -5111,7 +5111,7 @@ subroutine qc25o ( f, a, b, omega, integr, nrmom, maxp1, ksave, result, &
   chebmo(m,2) = v(1)
   chebmo(m,4) = v(2)
 
-  if ( abs(parint) <= 2.4e+01 ) then
+  if( abs(parint) <= 2.4e+01 ) then
 
     do k = 3, 12
       an = k
@@ -5134,17 +5134,17 @@ subroutine qc25o ( f, a, b, omega, integr, nrmom, maxp1, ksave, result, &
       chebmo(m,2*i) = v(i)
     end do
 
-  end if
+  endif
 
 140 continue
 
-  if ( nrmom < momcom ) then
+  if( nrmom < momcom ) then
     m = nrmom + 1
-  end if
+  endif
 
-  if ( momcom < maxp1 - 1 .and. nrmom >= momcom ) then
+  if( momcom < maxp1 - 1 .and. nrmom >= momcom ) then
     momcom = momcom + 1
-  end if
+  endif
 !
 !  Compute the coefficients of the Chebyshev expansions
 !  of degrees 12 and 24 of the function F.
@@ -5189,10 +5189,10 @@ subroutine qc25o ( f, a, b, omega, integr, nrmom, maxp1, ksave, result, &
     ress24 = ress24+cheb24(k+1)*chebmo(m,k+1)
     resabs = resabs+abs(cheb24(k))+abs(cheb24(k+1))
 
-    if ( j <= 5 ) then
+    if( j <= 5 ) then
       estc = estc+abs(cheb24(k)*chebmo(m,k))
       ests = ests+abs(cheb24(k+1)*chebmo(m,k+1))
-    end if
+    endif
 
     k = k-2
 
@@ -5200,13 +5200,13 @@ subroutine qc25o ( f, a, b, omega, integr, nrmom, maxp1, ksave, result, &
 
   resabs = resabs * abs ( hlgth )
 
-  if ( integr == 1 ) then
+  if( integr == 1 ) then
     result = conc * resc24-cons*ress24
     abserr = abs ( conc * estc ) + abs ( cons * ests )
   else
     result = conc*ress24+cons*resc24
     abserr = abs(conc*ests)+abs(cons*estc)
-  end if
+  endif
 
   return
 end
@@ -5340,11 +5340,11 @@ subroutine qc25s ( f, a, b, bl, br, alfa, beta, ri, rj, rg, rh, result, &
 
   neval = 25
 
-  if ( bl == a .and. (alfa /= 0.0d0 .or. integr == 2 .or. integr == 4)) then
+  if( bl == a .and. (alfa /= 0.0d0 .or. integr == 2 .or. integr == 4)) then
     go to 10
-  end if
+  endif
 
-  if ( br == b .and. (beta /= 0.0d0 .or. integr == 3 .or. integr == 4)) &
+  if( br == b .and. (beta /= 0.0d0 .or. integr == 3 .or. integr == 4)) &
     go to 140
 !
 !  If a > bl and b < br, apply the 15-point Gauss-Kronrod scheme.
@@ -5382,7 +5382,7 @@ subroutine qc25s ( f, a, b, bl, br, alfa, beta, ri, rj, rg, rh, result, &
   res12 = 0.0d0
   res24 = 0.0d0
 
-  if ( integr > 2 ) go to 70
+  if( integr > 2 ) go to 70
 
   call qcheb ( x, fval, cheb12, cheb24 )
 !
@@ -5397,7 +5397,7 @@ subroutine qc25s ( f, a, b, bl, br, alfa, beta, ri, rj, rg, rh, result, &
     res24 = res24 + cheb24(i) * ri(i)
   end do
 
-  if ( integr == 1 ) go to 130
+  if( integr == 1 ) go to 130
 !
 !  integr = 2
 !
@@ -5447,9 +5447,9 @@ subroutine qc25s ( f, a, b, bl, br, alfa, beta, ri, rj, rg, rh, result, &
     res24 = res24+cheb24(i)*ri(i)
   end do
 
-  if ( integr == 3 ) then
+  if( integr == 3 ) then
     go to 130
-  end if
+  endif
 !
 !  integr = 4
 !
@@ -5501,9 +5501,9 @@ subroutine qc25s ( f, a, b, bl, br, alfa, beta, ri, rj, rg, rh, result, &
   res12 = 0.0d0
   res24 = 0.0d0
 
-  if ( integr == 2 .or. integr == 4 ) then
+  if( integr == 2 .or. integr == 4 ) then
     go to 200
-  end if
+  endif
 !
 !  integr = 1  (or 3)
 !
@@ -5518,7 +5518,7 @@ subroutine qc25s ( f, a, b, bl, br, alfa, beta, ri, rj, rg, rh, result, &
     res24 = res24+cheb24(i)*rj(i)
   end do
 
-  if ( integr == 1 ) go to 260
+  if( integr == 1 ) go to 260
 !
 !  integr = 3
 !
@@ -5568,7 +5568,7 @@ subroutine qc25s ( f, a, b, bl, br, alfa, beta, ri, rj, rg, rh, result, &
     res24 = res24+cheb24(i)*rj(i)
   end do
 
-  if ( integr == 2 ) go to 260
+  if( integr == 2 ) go to 260
 
   dc = log(br-bl)
   result = res24*dc
@@ -5864,10 +5864,10 @@ subroutine qextr ( n, epstab, result, abserr, res3la, nres )
   abserr = huge ( abserr )
   result = epstab(n)
 
-  if ( n < 3 ) then
+  if( n < 3 ) then
     abserr = max ( abserr,0.5d0* epsilon ( result ) *abs(result))
     return
-  end if
+  endif
 
   limexp = 50
   epstab(n+2) = epstab(n)
@@ -5895,12 +5895,12 @@ subroutine qextr ( n, epstab, result, abserr, res3la, nres )
 !  If e0, e1 and e2 are equal to within machine accuracy, convergence 
 !  is assumed.
 !
-    if ( err2 <= tol2 .and. err3 <= tol3 ) then
+    if( err2 <= tol2 .and. err3 <= tol3 ) then
       result = res
       abserr = err2+err3
       abserr = max ( abserr,0.5d0* epsilon ( result ) *abs(result))
       return
-    end if
+    endif
 
     e3 = epstab(k1)
     epstab(k1) = e1
@@ -5911,7 +5911,7 @@ subroutine qextr ( n, epstab, result, abserr, res3la, nres )
 !  If two elements are very close to each other, omit a part
 !  of the table by adjusting the value of N.
 !
-    if ( err1 <= tol1 .or. err2 <= tol2 .or. err3 <= tol3 ) go to 20
+    if( err1 <= tol1 .or. err2 <= tol2 .or. err3 <= tol3 ) go to 20
 
     ss = 1.0d0/delta1+1.0d0/delta2-1.0d0/delta3
     epsinf = abs ( ss*e1 )
@@ -5919,7 +5919,7 @@ subroutine qextr ( n, epstab, result, abserr, res3la, nres )
 !  Test to detect irregular behavior in the table, and
 !  eventually omit a part of the table adjusting the value of N.
 !
-    if ( epsinf > 1.0e-04 ) go to 30
+    if( epsinf > 1.0e-04 ) go to 30
 
 20  continue
 
@@ -5935,24 +5935,24 @@ subroutine qextr ( n, epstab, result, abserr, res3la, nres )
     k1 = k1-2
     error = err2+abs(res-e2)+err3
 
-    if ( error <= abserr ) then
+    if( error <= abserr ) then
       abserr = error
       result = res
-    end if
+    endif
 
   end do
 !
 !  Shift the table.
 !
-  if ( n == limexp ) then
+  if( n == limexp ) then
     n = 2*(limexp/2)-1
-  end if
+  endif
 
-  if ( (num/2)*2 == num ) then
+  if( (num/2)*2 == num ) then
     ib = 2
   else
     ib = 1
-  end if
+  endif
 
   ie = newelm+1
 
@@ -5962,7 +5962,7 @@ subroutine qextr ( n, epstab, result, abserr, res3la, nres )
     ib = ib2
   end do
 
-  if ( num /= n ) then
+  if( num /= n ) then
 
     indx = num-n+1
 
@@ -5971,9 +5971,9 @@ subroutine qextr ( n, epstab, result, abserr, res3la, nres )
       indx = indx+1
     end do
 
-  end if
+  endif
 
-  if ( nres < 4 ) then
+  if( nres < 4 ) then
     res3la(nres) = result
     abserr = huge ( abserr )
   else
@@ -5982,7 +5982,7 @@ subroutine qextr ( n, epstab, result, abserr, res3la, nres )
     res3la(1) = res3la(2)
     res3la(2) = res3la(3)
     res3la(3) = result
-  end if
+  endif
 
   abserr = max ( abserr,0.5d0* epsilon ( result ) *abs(result))
 
@@ -6294,20 +6294,20 @@ subroutine qfour ( f, a, b, omega, integr, epsabs, epsrel, limit, icall, &
   iord(1) = 0
   nnlog(1) = 0
 
-  if ( (integr /= 1.and.integr /= 2) .or. (epsabs < 0.0d0.and. &
+  if( (integr /= 1.and.integr /= 2) .or. (epsabs < 0.0d0.and. &
     epsrel < 0.0d0) .or. icall < 1 .or. maxp1 < 1 ) then
     ier = 6
     return
-  end if
+  endif
 !
 !  First approximation to the integral.
 !
   domega = abs ( omega )
   nrmom = 0
 
-  if ( icall <= 1 ) then
+  if( icall <= 1 ) then
     momcom = 0
-  end if
+  endif
 
   call qc25o ( f, a, b, domega, integr, nrmom, maxp1, 0, result, abserr, &
     neval, defabs, resabs, momcom, chebmo )
@@ -6319,16 +6319,16 @@ subroutine qfour ( f, a, b, omega, integr, epsabs, epsrel, limit, icall, &
   rlist(1) = result
   elist(1) = abserr
   iord(1) = 1
-  if ( abserr <= 1.0e+02* epsilon ( defabs ) *defabs .and. &
+  if( abserr <= 1.0e+02* epsilon ( defabs ) *defabs .and. &
     abserr > errbnd ) ier = 2
 
-  if ( limit == 1 ) then
+  if( limit == 1 ) then
     ier = 1
-  end if
+  endif
 
-  if ( ier /= 0 .or. abserr <= errbnd ) then
+  if( ier /= 0 .or. abserr <= errbnd ) then
     go to 200
-  end if
+  endif
 !
 !  Initializations
 !
@@ -6350,21 +6350,21 @@ subroutine qfour ( f, a, b, omega, integr, epsabs, epsrel, limit, icall, &
   numrl2 = 0
   extall = .false.
 
-  if ( 5.0e-01*abs(b-a)*domega <= 2.0d0) then
+  if( 5.0e-01*abs(b-a)*domega <= 2.0d0) then
     numrl2 = 1
     extall = .true.
     rlist2(1) = result
-  end if
+  endif
 
-  if ( 2.5e-01 * abs(b-a) * domega <= 2.0d0 ) then
+  if( 2.5e-01 * abs(b-a) * domega <= 2.0d0 ) then
     extall = .true.
-  end if
+  endif
 
-  if ( dres >= (1.0d0-5.0e+01* epsilon ( defabs ) )*defabs ) then
+  if( dres >= (1.0d0-5.0e+01* epsilon ( defabs ) )*defabs ) then
     ksgn = 1
   else
     ksgn = -1
-  end if
+  endif
 !
 !  main do-loop
 !
@@ -6396,18 +6396,18 @@ subroutine qfour ( f, a, b, omega, integr, epsabs, epsrel, limit, icall, &
     erro12 = error1+error2
     errsum = errsum+erro12-errmax
     area = area+area12-rlist(maxerr)
-    if ( defab1 == error1 .or. defab2 == error2 ) go to 25
-    if ( abs(rlist(maxerr)-area12) > 1.0e-05*abs(area12) &
+    if( defab1 == error1 .or. defab2 == error2 ) go to 25
+    if( abs(rlist(maxerr)-area12) > 1.0e-05*abs(area12) &
     .or. erro12 < 9.9e-01*errmax ) go to 20
-    if ( extrap ) iroff2 = iroff2+1
+    if( extrap ) iroff2 = iroff2+1
 
-    if ( .not.extrap ) then
+    if( .not.extrap ) then
       iroff1 = iroff1+1
-    end if
+    endif
 
 20  continue
 
-    if ( last > 10.and.erro12 > errmax ) iroff3 = iroff3+1
+    if( last > 10.and.erro12 > errmax ) iroff3 = iroff3+1
 
 25  continue
 
@@ -6419,28 +6419,28 @@ subroutine qfour ( f, a, b, omega, integr, epsabs, epsrel, limit, icall, &
 !
 !  Test for roundoff error and eventually set error flag
 !
-    if ( iroff1+iroff2 >= 10 .or. iroff3 >= 20 ) ier = 2
+    if( iroff1+iroff2 >= 10 .or. iroff3 >= 20 ) ier = 2
 
-    if ( iroff2 >= 5) ierro = 3
+    if( iroff2 >= 5) ierro = 3
 !
 !  Set error flag in the case that the number of subintervals
 !  equals limit.
 !
-    if ( last == limit ) then
+    if( last == limit ) then
       ier = 1
-    end if
+    endif
 !
 !  Set error flag in the case of bad integrand behavior at
 !  a point of the integration range.
 !
-    if ( max ( abs(a1),abs(b2)) <= (1.0d0+1.0e+03* epsilon ( a1 ) ) &
+    if( max ( abs(a1),abs(b2)) <= (1.0d0+1.0e+03* epsilon ( a1 ) ) &
     *(abs(a2)+1.0e+03* tiny ( a2 ) )) then
       ier = 4
-    end if
+    endif
 !
 !  Append the newly-created intervals to the list.
 !
-    if ( error2 <= error1 ) then
+    if( error2 <= error1 ) then
       alist(last) = a2
       blist(maxerr) = b1
       blist(last) = b2
@@ -6454,7 +6454,7 @@ subroutine qfour ( f, a, b, omega, integr, epsabs, epsrel, limit, icall, &
       rlist(last) = area1
       elist(maxerr) = error2
       elist(last) = error1
-    end if
+    endif
 !
 !  Call QSORT to maintain the descending ordering
 !  in the list of error estimates and select the subinterval
@@ -6463,24 +6463,24 @@ subroutine qfour ( f, a, b, omega, integr, epsabs, epsrel, limit, icall, &
 
     call qsort ( limit, last, maxerr, errmax, elist, iord, nrmax )
 
-    if ( errsum <= errbnd ) then
+    if( errsum <= errbnd ) then
       go to 170
-    end if
+    endif
 
-    if ( ier /= 0 ) then
+    if( ier /= 0 ) then
       exit
-    end if
+    endif
 
-    if ( last == 2 .and. extall ) go to 120
+    if( last == 2 .and. extall ) go to 120
 
-    if ( noext ) then
+    if( noext ) then
       cycle
-    end if
+    endif
 
-    if ( .not. extall ) go to 50
+    if( .not. extall ) go to 50
     erlarg = erlarg-erlast
-    if ( abs(b1-a1) > small ) erlarg = erlarg+erro12
-    if ( extrap ) go to 70
+    if( abs(b1-a1) > small ) erlarg = erlarg+erro12
+    if( extrap ) go to 70
 !
 !  Test whether the interval to be bisected next is the
 !  smallest interval.
@@ -6489,11 +6489,11 @@ subroutine qfour ( f, a, b, omega, integr, epsabs, epsrel, limit, icall, &
 
     width = abs(blist(maxerr)-alist(maxerr))
 
-    if ( width > small ) then
+    if( width > small ) then
       cycle
-    end if
+    endif
 
-    if ( extall ) go to 60
+    if( extall ) go to 60
 !
 !  Test whether we can start with the extrapolation procedure
 !  (we do this if we integrate over the next interval with
@@ -6501,9 +6501,9 @@ subroutine qfour ( f, a, b, omega, integr, epsabs, epsrel, limit, icall, &
 !
     small = small*5.0e-01
 
-    if ( 2.5e-01*width*domega > 2.0d0 ) then
+    if( 2.5e-01*width*domega > 2.0d0 ) then
       cycle
-    end if
+    endif
 
     extall = .true.
     go to 130
@@ -6515,7 +6515,7 @@ subroutine qfour ( f, a, b, omega, integr, epsabs, epsrel, limit, icall, &
 
 70  continue
 
-    if ( ierro == 3 .or. erlarg <= ertest ) go to 90
+    if( ierro == 3 .or. erlarg <= ertest ) go to 90
 !
 !  The smallest interval has the largest error.
 !  Before bisecting decrease the sum of the errors over the
@@ -6523,16 +6523,16 @@ subroutine qfour ( f, a, b, omega, integr, epsabs, epsrel, limit, icall, &
 !
     jupbnd = last
 
-    if ( last > (limit/2+2) ) then
+    if( last > (limit/2+2) ) then
       jupbnd = limit+3-last
-    end if
+    endif
 
     id = nrmax
 
     do k = id, jupbnd
       maxerr = iord(nrmax)
       errmax = elist(maxerr)
-      if ( abs(blist(maxerr)-alist(maxerr)) > small ) go to 140
+      if( abs(blist(maxerr)-alist(maxerr)) > small ) go to 140
       nrmax = nrmax+1
     end do
 !
@@ -6543,16 +6543,16 @@ subroutine qfour ( f, a, b, omega, integr, epsabs, epsrel, limit, icall, &
     numrl2 = numrl2+1
     rlist2(numrl2) = area
 
-    if ( numrl2 < 3 ) go to 110
+    if( numrl2 < 3 ) go to 110
 
     call qextr ( numrl2, rlist2, reseps, abseps, res3la, nres )
     ktmin = ktmin+1
 
-    if ( ktmin > 5.and.abserr < 1.0e-03*errsum ) then
+    if( ktmin > 5.and.abserr < 1.0e-03*errsum ) then
       ier = 5
-    end if
+    endif
 
-    if ( abseps >= abserr ) go to 100
+    if( abseps >= abserr ) go to 100
 
     ktmin = 0
     abserr = abseps
@@ -6560,21 +6560,21 @@ subroutine qfour ( f, a, b, omega, integr, epsabs, epsrel, limit, icall, &
     correc = erlarg
     ertest = max ( epsabs, epsrel*abs(reseps))
 
-    if ( abserr <= ertest ) then
+    if( abserr <= ertest ) then
       exit
-    end if
+    endif
 !
 !  Prepare bisection of the smallest interval.
 !
 100 continue
 
-    if ( numrl2 == 1 ) then
+    if( numrl2 == 1 ) then
       noext = .true.
-    end if
+    endif
 
-    if ( ier == 5 ) then
+    if( ier == 5 ) then
       exit
-    end if
+    endif
 
 110 continue
 
@@ -6603,30 +6603,30 @@ subroutine qfour ( f, a, b, omega, integr, epsabs, epsrel, limit, icall, &
 !
 !  set the final result.
 !
-  if ( abserr == huge ( abserr ) .or. nres == 0 ) then
+  if( abserr == huge ( abserr ) .or. nres == 0 ) then
     go to 170
-  end if
+  endif
 
-  if ( ier+ierro == 0 ) go to 165
-  if ( ierro == 3 ) abserr = abserr+correc
-  if ( ier == 0 ) ier = 3
-  if ( result /= 0.0d0.and.area /= 0.0d0 ) go to 160
-  if ( abserr > errsum ) go to 170
-  if ( area == 0.0d0 ) go to 190
+  if( ier+ierro == 0 ) go to 165
+  if( ierro == 3 ) abserr = abserr+correc
+  if( ier == 0 ) ier = 3
+  if( result /= 0.0d0.and.area /= 0.0d0 ) go to 160
+  if( abserr > errsum ) go to 170
+  if( area == 0.0d0 ) go to 190
   go to 165
 
 160 continue
 
-  if ( abserr/abs(result) > errsum/abs(area) ) go to 170
+  if( abserr/abs(result) > errsum/abs(area) ) go to 170
 !
 !  Test on divergence.
 !
   165 continue
 
-  if ( ksgn == (-1) .and. max ( abs(result),abs(area)) <=  &
+  if( ksgn == (-1) .and. max ( abs(result),abs(area)) <=  &
    defabs*1.0e-02 ) go to 190
 
-  if ( 1.0e-02 > (result/area) .or. (result/area) > 1.0e+02 &
+  if( 1.0e-02 > (result/area) .or. (result/area) > 1.0e+02 &
    .or. errsum >= abs(area) ) ier = 6
 
   go to 190
@@ -6641,13 +6641,13 @@ subroutine qfour ( f, a, b, omega, integr, epsabs, epsrel, limit, icall, &
 
 190 continue
 
-  if (ier > 2) ier=ier-1
+  if(ier > 2) ier=ier-1
 
 200 continue
 
-  if ( integr == 2 .and. omega < 0.0d0 ) then
+  if( integr == 2 .and. omega < 0.0d0 ) then
     result = -result
-  end if
+  endif
 
   return
 end
@@ -6816,13 +6816,13 @@ subroutine qk15 ( f, a, b, result, abserr, resabs, resasc )
   resasc = resasc*dhlgth
   abserr = abs((resk-resg)*hlgth)
 
-  if ( resasc /= 0.0d0.and.abserr /= 0.0d0 ) then
+  if( resasc /= 0.0d0.and.abserr /= 0.0d0 ) then
     abserr = resasc*min ( 1.0d0,(2.0e+02*abserr/resasc)**1.5d0)
-  end if
+  endif
 
-  if ( resabs > tiny ( resabs ) / (5.0e+01* epsilon ( resabs ) ) ) then
+  if( resabs > tiny ( resabs ) / (5.0e+01* epsilon ( resabs ) ) ) then
     abserr = max (( epsilon ( resabs ) *5.0e+01)*resabs,abserr)
-  end if
+  endif
 
   return
 end
@@ -6969,7 +6969,7 @@ subroutine qk15i ( f, boun, inf, a, b, result, abserr, resabs, resasc )
   hlgth = 5.0e-01*(b-a)
   tabsc1 = boun+dinf*(1.0d0-centr)/centr
   fval1 = f(tabsc1)
-  if ( inf == 2 ) fval1 = fval1+f(-tabsc1)
+  if( inf == 2 ) fval1 = fval1+f(-tabsc1)
   fc = (fval1/centr)/centr
 !
 !  Compute the 15-point Kronrod approximation to the integral,
@@ -6989,10 +6989,10 @@ subroutine qk15i ( f, boun, inf, a, b, result, abserr, resabs, resasc )
     fval1 = f(tabsc1)
     fval2 = f(tabsc2)
 
-    if ( inf == 2 ) then
+    if( inf == 2 ) then
       fval1 = fval1+f(-tabsc1)
       fval2 = fval2+f(-tabsc2)
-    end if
+    endif
 
     fval1 = (fval1/absc1)/absc1
     fval2 = (fval2/absc2)/absc2
@@ -7016,13 +7016,13 @@ subroutine qk15i ( f, boun, inf, a, b, result, abserr, resabs, resasc )
   resabs = resabs * hlgth
   abserr = abs ( ( resk - resg ) * hlgth )
 
-  if ( resasc /= 0.0d0.and.abserr /= 0.0d0) then
+  if( resasc /= 0.0d0.and.abserr /= 0.0d0) then
     abserr = resasc* min ( 1.0d0,(2.0e+02*abserr/resasc)**1.5d0)
-  end if
+  endif
 
-  if ( resabs > tiny ( resabs ) / ( 5.0e+01 * epsilon ( resabs ) ) ) then
+  if( resabs > tiny ( resabs ) / ( 5.0e+01 * epsilon ( resabs ) ) ) then
     abserr = max (( epsilon ( resabs ) *5.0e+01)*resabs,abserr)
-  end if
+  endif
 
   return
 end
@@ -7109,7 +7109,7 @@ subroutine qk15ic ( f, fcplx, boun, inf, a, b, result, abserr, resabs, resasc )
   hlgth = 5.0e-01*(b-a)
   tabsc1 = boun+dinf*(1.0d0-centr)/centr
   fval1 = f(fcplx,tabsc1)
-  if ( inf == 2 ) fval1 = fval1+f(fcplx,-tabsc1)
+  if( inf == 2 ) fval1 = fval1+f(fcplx,-tabsc1)
   fc = (fval1/centr)/centr
 !
 !  Compute the 15-point Kronrod approximation to the integral,
@@ -7129,10 +7129,10 @@ subroutine qk15ic ( f, fcplx, boun, inf, a, b, result, abserr, resabs, resasc )
     fval1 = f(fcplx,tabsc1)
     fval2 = f(fcplx,tabsc2)
 
-    if ( inf == 2 ) then
+    if( inf == 2 ) then
       fval1 = fval1+f(fcplx,-tabsc1)
       fval2 = fval2+f(fcplx,-tabsc2)
-    end if
+    endif
 
     fval1 = (fval1/absc1)/absc1
     fval2 = (fval2/absc2)/absc2
@@ -7156,13 +7156,13 @@ subroutine qk15ic ( f, fcplx, boun, inf, a, b, result, abserr, resabs, resasc )
   resabs = resabs * hlgth
   abserr = abs ( ( resk - resg ) * hlgth )
 
-  if ( resasc /= 0.0d0.and.abserr /= 0.0d0) then
+  if( resasc /= 0.0d0.and.abserr /= 0.0d0) then
     abserr = resasc* min ( 1.0d0,(2.0e+02*abserr/resasc)**1.5d0)
-  end if
+  endif
 
-  if ( resabs > tiny ( resabs ) / ( 5.0e+01 * epsilon ( resabs ) ) ) then
+  if( resabs > tiny ( resabs ) / ( 5.0e+01 * epsilon ( resabs ) ) ) then
     abserr = max (( epsilon ( resabs ) *5.0e+01)*resabs,abserr)
-  end if
+  endif
 
   return
 endsubroutine qk15ic
@@ -7355,13 +7355,13 @@ subroutine qk15w ( f, w, p1, p2, p3, p4, kp, a, b, result, abserr, resabs, &
   resasc = resasc*dhlgth
   abserr = abs((resk-resg)*hlgth)
 
-  if ( resasc /= 0.0d0.and.abserr /= 0.0d0) then
+  if( resasc /= 0.0d0.and.abserr /= 0.0d0) then
     abserr = resasc*min ( 1.0d0,(2.0e+02*abserr/resasc)**1.5d0)
-  end if
+  endif
 
-  if ( resabs > tiny ( resabs ) /(5.0e+01* epsilon ( resabs ) ) ) then
+  if( resabs > tiny ( resabs ) /(5.0e+01* epsilon ( resabs ) ) ) then
     abserr = max ( ( epsilon ( resabs ) * 5.0e+01)*resabs,abserr)
-  end if
+  endif
 
   return
 end
@@ -7540,13 +7540,13 @@ subroutine qk21 ( f, a, b, result, abserr, resabs, resasc )
   resasc = resasc*dhlgth
   abserr = abs((resk-resg)*hlgth)
 
-  if ( resasc /= 0.0d0.and.abserr /= 0.0d0) then
+  if( resasc /= 0.0d0.and.abserr /= 0.0d0) then
     abserr = resasc*min ( 1.0d0,(2.0e+02*abserr/resasc)**1.5d0)
-  end if
+  endif
 
-  if ( resabs > tiny ( resabs ) /(5.0e+01* epsilon ( resabs ) )) then
+  if( resabs > tiny ( resabs ) /(5.0e+01* epsilon ( resabs ) )) then
     abserr = max (( epsilon ( resabs ) *5.0e+01)*resabs,abserr)
-  end if
+  endif
 
   return
 end
@@ -7729,12 +7729,12 @@ subroutine qk31 ( f, a, b, result, abserr, resabs, resasc )
   resasc = resasc*dhlgth
   abserr = abs((resk-resg)*hlgth)
 
-  if ( resasc /= 0.0d0.and.abserr /= 0.0d0) &
+  if( resasc /= 0.0d0.and.abserr /= 0.0d0) &
     abserr = resasc*min ( 1.0d0,(2.0e+02*abserr/resasc)**1.5d0)
 
-  if ( resabs > tiny ( resabs ) /(5.0e+01* epsilon ( resabs ) )) then
+  if( resabs > tiny ( resabs ) /(5.0e+01* epsilon ( resabs ) )) then
     abserr = max (( epsilon ( resabs ) *5.0e+01)*resabs,abserr)
-  end if
+  endif
 
   return
 end
@@ -7925,12 +7925,12 @@ subroutine qk41 ( f, a, b, result, abserr, resabs, resasc )
   resasc = resasc*dhlgth
   abserr = abs((resk-resg)*hlgth)
 
-  if ( resasc /= 0.0d0.and.abserr /= 0.0d0) &
+  if( resasc /= 0.0d0.and.abserr /= 0.0d0) &
     abserr = resasc*min ( 1.0d0,(2.0e+02*abserr/resasc)**1.5d0)
 
-  if ( resabs > tiny ( resabs ) /(5.0e+01* epsilon ( resabs ) )) then
+  if( resabs > tiny ( resabs ) /(5.0e+01* epsilon ( resabs ) )) then
     abserr = max (( epsilon ( resabs ) *5.0e+01)*resabs,abserr)
-  end if
+  endif
 
   return
 end
@@ -8129,13 +8129,13 @@ subroutine qk51 ( f, a, b, result, abserr, resabs, resasc )
   resasc = resasc*dhlgth
   abserr = abs((resk-resg)*hlgth)
 
-  if ( resasc /= 0.0d0.and.abserr /= 0.0d0) then
+  if( resasc /= 0.0d0.and.abserr /= 0.0d0) then
     abserr = resasc*min ( 1.0d0,(2.0e+02*abserr/resasc)**1.5d0)
-  end if
+  endif
 
-  if ( resabs > tiny ( resabs ) / (5.0e+01* epsilon ( resabs ) ) ) then
+  if( resabs > tiny ( resabs ) / (5.0e+01* epsilon ( resabs ) ) ) then
     abserr = max (( epsilon ( resabs ) *5.0e+01)*resabs,abserr)
-  end if
+  endif
 
   return
 end
@@ -8345,13 +8345,13 @@ subroutine qk61 ( f, a, b, result, abserr, resabs, resasc )
   resasc = resasc*dhlgth
   abserr = abs((resk-resg)*hlgth)
 
-  if ( resasc /= 0.0d0 .and. abserr /= 0.0d0) then
+  if( resasc /= 0.0d0 .and. abserr /= 0.0d0) then
     abserr = resasc*min ( 1.0d0,(2.0e+02*abserr/resasc)**1.5d0)
-  end if
+  endif
 
-  if ( resabs > tiny ( resabs ) / (5.0e+01* epsilon ( resabs ) )) then
+  if( resabs > tiny ( resabs ) / (5.0e+01* epsilon ( resabs ) )) then
     abserr = max ( ( epsilon ( resabs ) *5.0e+01)*resabs, abserr )
-  end if
+  endif
 
   return
 end
@@ -8457,8 +8457,8 @@ subroutine qmomo ( alfa, beta, ri, rj, rg, rh, integr )
     an = an+1.0d0
   end do
 
-  if ( integr == 1 ) go to 70
-  if ( integr == 3 ) go to 40
+  if( integr == 1 ) go to 70
+  if( integr == 3 ) go to 40
 !
 !  Compute RG using a forward recurrence relation.
 !
@@ -8476,7 +8476,7 @@ subroutine qmomo ( alfa, beta, ri, rj, rg, rh, integr )
     im1 = i
   end do
 
-  if ( integr == 2 ) go to 70
+  if( integr == 2 ) go to 70
 !
 !  Compute RH using a forward recurrence relation.
 !
@@ -8748,10 +8748,10 @@ subroutine qng ( f, a, b, epsabs, epsrel, result, abserr, neval, ier )
   abserr = 0.0d0
   neval = 0
 
-  if ( epsabs < 0.0d0 .and. epsrel < 0.0d0 ) then
+  if( epsabs < 0.0d0 .and. epsrel < 0.0d0 ) then
     ier = 6
     return
-  end if
+  endif
 
   hlgth = 5.0e-01 * ( b - a )
   dhlgth = abs ( hlgth )
@@ -8764,7 +8764,7 @@ subroutine qng ( f, a, b, epsabs, epsrel, result, abserr, neval, ier )
 !
   do l = 1, 3
 
-    if ( l == 1 ) then
+    if( l == 1 ) then
 
       res10 = 0.0d0
       res21 = w21b(6) * fcentr
@@ -8815,7 +8815,7 @@ subroutine qng ( f, a, b, epsabs, epsrel, result, abserr, neval, ier )
 !
 !  Compute the integral using the 43-point formula.
 !
-    else if ( l == 2 ) then
+    else if( l == 2 ) then
 
       res43 = w43b(12)*fcentr
       neval = 43
@@ -8839,7 +8839,7 @@ subroutine qng ( f, a, b, epsabs, epsrel, result, abserr, neval, ier )
 !
 !  Compute the integral using the 87-point formula.
 !
-    else if ( l == 3 ) then
+    else if( l == 3 ) then
 
       res87 = w87b(23) * fcentr
       neval = 87
@@ -8856,23 +8856,23 @@ subroutine qng ( f, a, b, epsabs, epsrel, result, abserr, neval, ier )
       result = res87 * hlgth
       abserr = abs ( ( res87 - res43) * hlgth )
 
-    end if
+    endif
 
-    if ( resasc /= 0.0d0.and.abserr /= 0.0d0 ) then
+    if( resasc /= 0.0d0.and.abserr /= 0.0d0 ) then
       abserr = resasc * min ( 1.0d0,(2.0e+02*abserr/resasc)**1.5d0)
-    end if
+    endif
 
-    if ( resabs > tiny ( resabs ) / ( 5.0e+01 * epsilon ( resabs ) ) ) then
+    if( resabs > tiny ( resabs ) / ( 5.0e+01 * epsilon ( resabs ) ) ) then
       abserr = max (( epsilon ( resabs ) *5.0e+01) * resabs, abserr )
-    end if
+    endif
 
-    if ( abserr <= max ( epsabs, epsrel*abs(result))) then
+    if( abserr <= max ( epsabs, epsrel*abs(result))) then
       ier = 0
-    end if
+    endif
 
-    if ( ier == 0 ) then
+    if( ier == 0 ) then
       exit
-    end if
+    endif
 
   end do
 
@@ -8951,11 +8951,11 @@ subroutine qsort ( limit, last, maxerr, ermax, elist, iord, nrmax )
 !
 !  Check whether the list contains more than two error estimates.
 !
-  if ( last <= 2 ) then
+  if( last <= 2 ) then
     iord(1) = 1
     iord(2) = 2
     go to 90
-  end if
+  endif
 !
 !  This part of the routine is only executed if, due to a
 !  difficult integrand, subdivision increased the error
@@ -8968,9 +8968,9 @@ subroutine qsort ( limit, last, maxerr, ermax, elist, iord, nrmax )
 
     isucc = iord(nrmax-1)
 
-    if ( errmax <= elist(isucc) ) then
+    if( errmax <= elist(isucc) ) then
       exit
-    end if
+    endif
 
     iord(nrmax) = isucc
     nrmax = nrmax-1
@@ -8983,9 +8983,9 @@ subroutine qsort ( limit, last, maxerr, ermax, elist, iord, nrmax )
 !
   jupbn = last
 
-  if ( (limit/2+2) < last ) then
+  if( (limit/2+2) < last ) then
     jupbn = limit+3-last
-  end if
+  endif
 
   errmin = elist(last)
 !
@@ -8997,9 +8997,9 @@ subroutine qsort ( limit, last, maxerr, ermax, elist, iord, nrmax )
 
   do i = ibeg, jbnd
     isucc = iord(i)
-    if ( elist(isucc) <= errmax ) then
+    if( elist(isucc) <= errmax ) then
       go to 60
-    end if
+    endif
     iord(i-1) = isucc
   end do
 
@@ -9016,9 +9016,9 @@ subroutine qsort ( limit, last, maxerr, ermax, elist, iord, nrmax )
 
   do j = i, jbnd
     isucc = iord(k)
-    if ( errmin < elist(isucc) ) then
+    if( errmin < elist(isucc) ) then
       go to 80
-    end if
+    endif
     iord(k+1) = isucc
     k = k-1
   end do
@@ -9129,11 +9129,11 @@ function qwgto ( x, omega, p2, p3, p4, integr )
   real*8 qwgto
   real*8 x
 
-  if ( integr == 1 ) then
+  if( integr == 1 ) then
     qwgto = cos ( omega * x )
-  else if ( integr == 2 ) then
+  else if( integr == 2 ) then
     qwgto = sin ( omega * x )
-  end if
+  endif
 
   return
 end
@@ -9181,15 +9181,15 @@ function qwgts ( x, a, b, alfa, beta, integr )
   real*8 qwgts
   real*8 x
 
-  if ( integr == 1 ) then
+  if( integr == 1 ) then
     qwgts = ( x - a )**alfa * ( b - x )**beta
-  else if ( integr == 2 ) then
+  else if( integr == 2 ) then
     qwgts = ( x - a )**alfa * ( b - x )**beta * log ( x - a )
-  else if ( integr == 3 ) then
+  else if( integr == 3 ) then
     qwgts = ( x - a )**alfa * ( b - x )**beta * log ( b - x )
-  else if ( integr == 4 ) then
+  else if( integr == 4 ) then
     qwgts = ( x - a )**alfa * ( b - x )**beta * log ( x - a ) * log ( b - x )
-  end if
+  endif
 
   return
 end
@@ -9244,26 +9244,26 @@ subroutine timestamp ( )
   s = values(7)
   mm = values(8)
 
-  if ( h < 12 ) then
+  if( h < 12 ) then
     ampm = 'AM'
-  else if ( h == 12 ) then
-    if ( n == 0 .and. s == 0 ) then
+  else if( h == 12 ) then
+    if( n == 0 .and. s == 0 ) then
       ampm = 'Noon'
     else
       ampm = 'PM'
-    end if
+    endif
   else
     h = h - 12
-    if ( h < 12 ) then
+    if( h < 12 ) then
       ampm = 'PM'
-    else if ( h == 12 ) then
-      if ( n == 0 .and. s == 0 ) then
+    else if( h == 12 ) then
+      if( n == 0 .and. s == 0 ) then
         ampm = 'Midnight'
       else
         ampm = 'AM'
-      end if
-    end if
-  end if
+      endif
+    endif
+  endif
 
   write ( *, '(a,1x,i2,1x,i4,2x,i2,a1,i2.2,a1,i2.2,a1,i3.3,1x,a)' ) &
     trim ( month(m) ), d, y, h, ':', n, ':', s, '.', mm, trim ( ampm )

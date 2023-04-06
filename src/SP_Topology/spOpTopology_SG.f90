@@ -247,7 +247,7 @@ contains
         integer, dimension (:), allocatable :: IndVec, I, J, K
         !
         call self%grid%numberOfEdges (nXedge, nYedge, nZedge)
-        call self%grid%limits(CORNER, nx, ny, nz)
+        call self%grid%limits(NODE, nx, ny, nz)
         !
         nNodes = nx*ny*nz
         m = nXedge + nYedge + nZedge
@@ -275,7 +275,7 @@ contains
         end do
         !
         call self%grid%gridIndex (XEDGE, IndVec, I, J, K)
-        call self%grid%vectorIndex (CORNER, I, J, K, IndVec)
+        call self%grid%vectorIndex (NODE, I, J, K, IndVec)
         !
         do ii = 1, nXedge
             G%col(2*ii - 1) = IndVec(ii)
@@ -283,7 +283,7 @@ contains
         !
         I = I + 1
         !
-        call self%grid%vectorIndex (CORNER, I, J, K, IndVec)
+        call self%grid%vectorIndex (NODE, I, J, K, IndVec)
         !
         do ii = 1, nXedge
             G%col(2*ii) = IndVec(ii)
@@ -302,7 +302,7 @@ contains
         end do
         !
         call self%grid%gridIndex (YEDGE, IndVec, I, J, K)
-        call self%grid%vectorIndex (CORNER, I, J, K, IndVec)
+        call self%grid%vectorIndex (NODE, I, J, K, IndVec)
         !
         do ii = 1, nYedge
         jj = ii + nXedge
@@ -311,7 +311,7 @@ contains
         !
         J = J + 1
         !
-        call self%grid%vectorIndex (CORNER, I, J, K, IndVec)
+        call self%grid%vectorIndex (NODE, I, J, K, IndVec)
         !
         do ii = 1, nYedge
         jj = ii + nXedge
@@ -331,7 +331,7 @@ contains
         end do
         !
         call self%grid%gridIndex (ZEDGE, IndVec, I, J, K)
-        call self%grid%vectorIndex (CORNER, I, J, K, IndVec)
+        call self%grid%vectorIndex (NODE, I, J, K, IndVec)
         !
         do ii = 1, nZedge
             jj = ii + nXedge + nYedge
@@ -340,7 +340,7 @@ contains
         !
         K = K + 1
         !
-        call self%grid%vectorIndex (CORNER, I, J, K, IndVec)
+        call self%grid%vectorIndex (NODE, I, J, K, IndVec)
         !
         do ii = 1, nZedge
             jj = ii + nXedge + nYedge

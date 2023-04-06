@@ -21,19 +21,19 @@ subroutine init_wirefields(src,refl_var,bgdat)
   integer(kind=int32)      :: ilay  !layer counter
 
 
-  if ((bgdat%dowhat .eq. fwdmodel) .or. (bgdat%dowhat.eq.fwd_deriv)) then
+  if((bgdat%dowhat .eq. fwdmodel) .or. (bgdat%dowhat.eq.fwd_deriv)) then
 
     allocate(refl_var%EHwire(src%nwire), stat=ierr)
-    if (ierr.ne.0) call alloc_error(pid,'init_wirefields','EHwire',ierr)
+    if(ierr.ne.0) call alloc_error(pid,'init_wirefields','EHwire',ierr)
 
     do iwire=1,src%nwire
       call init_1wirefield(refl_var%EHwire(iwire),bgdat)
     enddo
   endif
 
-  if (bgdat%dowhat.ge.deriv) then
+  if(bgdat%dowhat.ge.deriv) then
     allocate(refl_var%EHwirederiv(src%nwire,bgdat%nlay), stat=ierr)
-    if (ierr.ne.0) call alloc_error(pid,'init_wirefields','EHwirederiv',ierr)
+    if(ierr.ne.0) call alloc_error(pid,'init_wirefields','EHwirederiv',ierr)
 
     do ilay = 1,bgdat%nlay
       do iwire=1,src%nwire
@@ -41,9 +41,9 @@ subroutine init_wirefields(src,refl_var,bgdat)
       enddo
     enddo
 
-    if (bgdat%aniso.eq.vti) then
+    if(bgdat%aniso.eq.vti) then
       allocate(refl_var%EHwirederivv(src%nwire,bgdat%nlay), stat=ierr)
-      if (ierr.ne.0) call alloc_error(pid,'init_wirefields','EHwirederivv',ierr)
+      if(ierr.ne.0) call alloc_error(pid,'init_wirefields','EHwirederivv',ierr)
 
       do ilay = 1,bgdat%nlay
         do iwire=1,src%nwire
@@ -77,22 +77,22 @@ subroutine init_1wirefield(EHwire,bgdat)
   integer(kind=int32)   :: ierr  !error index
 
 
-      if (bgdat%nExy.gt.0) then
+      if(bgdat%nExy.gt.0) then
         allocate(EHwire%Ex(bgdat%nExy),EHwire%Ey(bgdat%nExy), stat=ierr)
       else
         allocate(EHwire%Ex(bgdat%nEx),EHwire%Ey(bgdat%nEy), stat=ierr)
       endif
-      if (ierr.ne.0) call alloc_error(pid,'init_1wirefield','Ex,Ey',ierr)
+      if(ierr.ne.0) call alloc_error(pid,'init_1wirefield','Ex,Ey',ierr)
 
-      if (bgdat%nHxy.gt.0) then
+      if(bgdat%nHxy.gt.0) then
         allocate(EHwire%Hx(bgdat%nHxy),EHwire%Hy(bgdat%nHxy), stat=ierr)
       else
         allocate(EHwire%Hx(bgdat%nHx),EHwire%Hy(bgdat%nHy), stat=ierr)
       endif
-      if (ierr.ne.0) call alloc_error(pid,'init_1wirefield','Hx,Hy',ierr)
+      if(ierr.ne.0) call alloc_error(pid,'init_1wirefield','Hx,Hy',ierr)
 
       allocate(EHwire%Ez(bgdat%nEz),EHwire%Hz(bgdat%nHz), stat=ierr)
-      if (ierr.ne.0) call alloc_error(pid,'init_1wirefield','Ez,Hz',ierr)
+      if(ierr.ne.0) call alloc_error(pid,'init_1wirefield','Ez,Hz',ierr)
 
       EHwire%Ex = 0._real64
       EHwire%Ey = 0._real64
@@ -128,7 +128,7 @@ subroutine clean_wirefields(src,refl_var,bgdat)
   integer(kind=int32)      :: ilay  !layer counter
 
 
-  if ((bgdat%dowhat.eq.fwdmodel) .or. (bgdat%dowhat.eq.fwd_deriv)) then
+  if((bgdat%dowhat.eq.fwdmodel) .or. (bgdat%dowhat.eq.fwd_deriv)) then
     do iwire=1,src%nwire
       fields => refl_var%EHwire(iwire)
       deallocate(fields%Ex,fields%Ey,fields%Ez,fields%Hx,fields%Hy,fields%Hz, stat=ierr)
@@ -136,7 +136,7 @@ subroutine clean_wirefields(src,refl_var,bgdat)
     deallocate(refl_var%EHwire, stat=ierr)
   endif
 
-  if (bgdat%dowhat.ge.deriv) then
+  if(bgdat%dowhat.ge.deriv) then
     do ilay=1,bgdat%nlay
       do iwire=1,src%nwire
         fields => refl_var%EHwirederiv(iwire,ilay)
@@ -145,7 +145,7 @@ subroutine clean_wirefields(src,refl_var,bgdat)
     enddo
     deallocate(refl_var%EHwirederiv, stat=ierr)
 
-    if (bgdat%aniso.eq.vti) then
+    if(bgdat%aniso.eq.vti) then
       do ilay=1,bgdat%nlay
         do iwire=1,src%nwire
           fields => refl_var%EHwirederivv(iwire,ilay)

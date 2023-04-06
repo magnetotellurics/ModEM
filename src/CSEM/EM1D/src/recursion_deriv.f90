@@ -80,13 +80,13 @@ complex(kind=real64) function iabvA1TMderiv(kappa) result(res)
   res = sqrt(pvert(ilayrec)*pvert(ilaysrc) / (epsh(ilayrec)*epsh(ilaysrc))) * drefRaTM
 
   !special contributions if layer m is the source or(and) receiver layer
-  if ((ilaym.eq.ilayrec) .or. (ilaym.eq.ilaysrc)) then
+  if((ilaym.eq.ilayrec) .or. (ilaym.eq.ilaysrc)) then
     refRaTM = iabvA1TM(kappa) !factor sqrt(pvert pvert epsr epsr ...) is contained in integral value
     termadd = 0.5_real64 * (-1./epsh(ilaym) + dmu0/(2.*pvert(ilaym)**2) ) * refRaTM
     !layer m is receiver layer
-    if (ilaym .eq. ilayrec) res = res + termadd
+    if(ilaym .eq. ilayrec) res = res + termadd
     !layer m is source layer
-    if (ilaym .eq. ilaysrc) res = res + termadd
+    if(ilaym .eq. ilaysrc) res = res + termadd
   endif
 
 endfunction iabvA1TMderiv
@@ -118,14 +118,14 @@ complex(kind=real64) function iabvA1TMderivh(kappa) result(res)
   res = sqrt(pvert(ilayrec)*pvert(ilaysrc) / (epsh(ilayrec)*epsh(ilaysrc))) * drefRaTM
 
   !special contributions if layer m is the source or(and) receiver layer
-  if ((ilaym.eq.ilayrec) .or. (ilaym.eq.ilaysrc)) then
+  if((ilaym.eq.ilayrec) .or. (ilaym.eq.ilaysrc)) then
     refRaTM = iabvA1TM(kappa) !factor sqrt(pvert pvert epsr epsr ...) is contained in integral value
     phsq = (kappa / omega)**2
     termadd = 0.5_real64 * (-1./epsh(ilaym) + (dmu0 - phsq/epsv(ilaym))/(2.*pvert(ilaym)**2) ) * refRaTM
     !layer m is receiver layer
-    if (ilaym .eq. ilayrec) res = res + termadd
+    if(ilaym .eq. ilayrec) res = res + termadd
     !layer m is source layer
-    if (ilaym .eq. ilaysrc) res = res + termadd
+    if(ilaym .eq. ilaysrc) res = res + termadd
   endif
 
 endfunction iabvA1TMderivh
@@ -157,14 +157,14 @@ complex(kind=real64) function iabvA1TMderivv(kappa) result(res)
   res = sqrt(pvert(ilayrec)*pvert(ilaysrc) / (epsh(ilayrec)*epsh(ilaysrc))) * drefRaTM
 
   !special contributions if layer m is the source or(and) receiver layer
-  if ((ilaym.eq.ilayrec) .or. (ilaym.eq.ilaysrc)) then
+  if((ilaym.eq.ilayrec) .or. (ilaym.eq.ilaysrc)) then
     refRaTM = iabvA1TM(kappa) !factor sqrt(pvert pvert epsr epsr ...) is contained in integral value
     phsq = (kappa / omega)**2
     termadd = (epsh(ilaym)*phsq / (4.* (epsv(ilaym)*pvert(ilaym))**2)) * refRaTM
     !layer m is receiver layer
-    if (ilaym .eq. ilayrec) res = res + termadd
+    if(ilaym .eq. ilayrec) res = res + termadd
     !layer m is source layer
-    if (ilaym .eq. ilaysrc) res = res + termadd
+    if(ilaym .eq. ilaysrc) res = res + termadd
   endif
 
 endfunction iabvA1TMderivv
@@ -195,13 +195,13 @@ complex(kind=real64) function iblwA1TMderiv(kappa) result(res)
   res = sqrt(pvert(ilayrec)*pvert(ilaysrc) / (epsh(ilayrec)*epsh(ilaysrc))) * drefRaTM
 
   !special contributions if layer m is the source or(and) receiver layer
-  if ((ilaym.eq.ilayrec) .or. (ilaym.eq.ilaysrc)) then
+  if((ilaym.eq.ilayrec) .or. (ilaym.eq.ilaysrc)) then
     refRaTM = iblwA1TM(kappa) !factor sqrt(pvert pvert epsr epsr ...) is contained in integral value
     termadd = 0.5_real64 * (-1./epsh(ilaym) + dmu0/(2.*pvert(ilaym)**2) ) * refRaTM
     !layer m is receiver layer
-    if (ilaym .eq. ilayrec) res = res + termadd
+    if(ilaym .eq. ilayrec) res = res + termadd
     !layer m is source layer
-    if (ilaym .eq. ilaysrc) res = res + termadd
+    if(ilaym .eq. ilaysrc) res = res + termadd
   endif
 
 endfunction iblwA1TMderiv
@@ -233,14 +233,14 @@ complex(kind=real64) function iblwA1TMderivh(kappa) result(res)
   res = sqrt(pvert(ilayrec)*pvert(ilaysrc) / (epsh(ilayrec)*epsh(ilaysrc))) * drefRaTM
 
   !special contributions if layer m is the source or(and) receiver layer
-  if ((ilaym.eq.ilayrec) .or. (ilaym.eq.ilaysrc)) then
+  if((ilaym.eq.ilayrec) .or. (ilaym.eq.ilaysrc)) then
     refRaTM = iblwA1TM(kappa) !factor sqrt(pvert pvert epsr epsr ...) is contained in integral value
     phsq = (kappa / omega)**2
     termadd = 0.5_real64 * (-1./epsh(ilaym) + (dmu0 - phsq/epsv(ilaym))/(2.*pvert(ilaym)**2) ) * refRaTM
     !layer m is receiver layer
-    if (ilaym .eq. ilayrec) res = res + termadd
+    if(ilaym .eq. ilayrec) res = res + termadd
     !layer m is source layer
-    if (ilaym .eq. ilaysrc) res = res + termadd
+    if(ilaym .eq. ilaysrc) res = res + termadd
   endif
 
 endfunction iblwA1TMderivh
@@ -272,14 +272,14 @@ complex(kind=real64) function iblwA1TMderivv(kappa) result(res)
   res = sqrt(pvert(ilayrec)*pvert(ilaysrc) / (epsh(ilayrec)*epsh(ilaysrc))) * drefRaTM
 
   !special contributions if layer m is the source or(and) receiver layer
-  if ((ilaym.eq.ilayrec) .or. (ilaym.eq.ilaysrc)) then
+  if((ilaym.eq.ilayrec) .or. (ilaym.eq.ilaysrc)) then
     refRaTM = iblwA1TM(kappa) !factor sqrt(pvert pvert epsr epsr ...) is contained in integral value
     phsq = (kappa / omega)**2
     termadd = (epsh(ilaym)*phsq / (4.* (epsv(ilaym)*pvert(ilaym))**2)) * refRaTM
     !layer m is receiver layer
-    if (ilaym .eq. ilayrec) res = res + termadd
+    if(ilaym .eq. ilayrec) res = res + termadd
     !layer m is source layer
-    if (ilaym .eq. ilaysrc) res = res + termadd
+    if(ilaym .eq. ilaysrc) res = res + termadd
   endif
 
 endfunction iblwA1TMderivv
@@ -335,13 +335,13 @@ complex(kind=real64) function iabvA1TEderiv(kappa) result(res)
   res = (dmu0 / sqrt(pvert(ilayrec)*pvert(ilaysrc))) * drefRaTE
 
   !special contributions if layer m is the source or(and) receiver layer
-  if ((ilaym.eq.ilayrec) .or. (ilaym.eq.ilaysrc)) then
+  if((ilaym.eq.ilayrec) .or. (ilaym.eq.ilaysrc)) then
     refRaTE = iabvA1TE(kappa) !factor sqrt(pvert pvert epsr epsr ...) is contained in integral value
     termadd = (dmu0 / (4.*pvert(ilaym)**2) ) * refRaTE
     !layer m is receiver layer
-    if (ilaym .eq. ilayrec) res = res - termadd
+    if(ilaym .eq. ilayrec) res = res - termadd
     !layer m is source layer
-    if (ilaym .eq. ilaysrc) res = res - termadd
+    if(ilaym .eq. ilaysrc) res = res - termadd
   endif
 
 endfunction iabvA1TEderiv
@@ -372,13 +372,13 @@ complex(kind=real64) function iblwA1TEderiv(kappa) result(res)
   res = (dmu0 / sqrt(pvert(ilayrec)*pvert(ilaysrc))) * drefRaTE
 
   !special contributions if layer m is the source or(and) receiver layer
-  if ((ilaym.eq.ilayrec) .or. (ilaym.eq.ilaysrc)) then
+  if((ilaym.eq.ilayrec) .or. (ilaym.eq.ilaysrc)) then
     refRaTE = iblwA1TE(kappa) !factor sqrt(pvert pvert epsr epsr ...) is contained in integral value
     termadd = (dmu0 / (4.*pvert(ilaym)**2) ) * refRaTE
     !layer m is receiver layer
-    if (ilaym .eq. ilayrec) res = res - termadd
+    if(ilaym .eq. ilayrec) res = res - termadd
     !layer m is source layer
-    if (ilaym .eq. ilaysrc) res = res - termadd
+    if(ilaym .eq. ilaysrc) res = res - termadd
   endif
 
 endfunction iblwA1TEderiv
@@ -459,13 +459,13 @@ complex(kind=real64) function iabvD1TEderiv(kappa) result(res)
   res = - sqrt(pvert(ilayrec)/pvert(ilaysrc)) * drefRdTE
 
   !special contributions if layer m is the source or(and) receiver layer
-  if ((ilaym.eq.ilayrec) .or. (ilaym.eq.ilaysrc)) then
+  if((ilaym.eq.ilayrec) .or. (ilaym.eq.ilaysrc)) then
     refRdTE = iabvD1TE(kappa) !factor sqrt(pvert pvert epsr epsr ...) is contained in integral value
     termadd = (dmu0 / (4.*pvert(ilaym)**2)) * refRdTE !"minus" is contained in refRdTE
     !layer m is receiver layer
-    if (ilaym .eq. ilayrec) res = res + termadd
+    if(ilaym .eq. ilayrec) res = res + termadd
     !layer m is source layer
-    if (ilaym .eq. ilaysrc) res = res - termadd !"minus" is contained in refRdTE
+    if(ilaym .eq. ilaysrc) res = res - termadd !"minus" is contained in refRdTE
   endif
 
 endfunction iabvD1TEderiv
@@ -496,13 +496,13 @@ complex(kind=real64) function iblwD1TEderiv(kappa) result(res)
   res = - sqrt(pvert(ilayrec)/pvert(ilaysrc)) * drefRdTE
 
   !special contributions if layer m is the source or(and) receiver layer
-  if ((ilaym.eq.ilayrec) .or. (ilaym.eq.ilaysrc)) then
+  if((ilaym.eq.ilayrec) .or. (ilaym.eq.ilaysrc)) then
     refRdTE = iblwD1TE(kappa)
     termadd = (dmu0 / (4.*pvert(ilaym)**2)) * refRdTE !"minus" is contained in refRdTE
     !layer m is receiver layer
-    if (ilaym .eq. ilayrec) res = res + termadd
+    if(ilaym .eq. ilayrec) res = res + termadd
     !layer m is source layer
-    if (ilaym .eq. ilaysrc) res = res - termadd !"minus" is contained in refRdTE
+    if(ilaym .eq. ilaysrc) res = res - termadd !"minus" is contained in refRdTE
   endif
 
 endfunction iblwD1TEderiv
@@ -588,13 +588,13 @@ complex(kind=real64) function iabvD1TMderiv(kappa) result(res)
   res = - sqrt(epsh(ilayrec)*pvert(ilaysrc) / (pvert(ilayrec)*epsh(ilaysrc))) * drefRdTM
 
   !special contributions if layer m is the source or(and) receiver layer
-  if ((ilaym.eq.ilayrec) .or. (ilaym.eq.ilaysrc)) then
+  if((ilaym.eq.ilayrec) .or. (ilaym.eq.ilaysrc)) then
     refRdTM = iabvD1TM(kappa) !contains a minus
     termadd = (1./(2.*epsh(ilaym)) - dmu0/(4.*pvert(ilaym)**2)) * refRdTM
     !layer m is receiver layer
-    if (ilaym .eq. ilayrec) res = res + termadd
+    if(ilaym .eq. ilayrec) res = res + termadd
     !layer m is source layer
-    if (ilaym .eq. ilaysrc) res = res - termadd
+    if(ilaym .eq. ilaysrc) res = res - termadd
   endif
 
 endfunction iabvD1TMderiv
@@ -626,14 +626,14 @@ complex(kind=real64) function iabvD1TMderivh(kappa) result(res)
   res = - sqrt(epsh(ilayrec)*pvert(ilaysrc) / (pvert(ilayrec)*epsh(ilaysrc))) * drefRdTM
 
   !special contributions if layer m is the source or(and) receiver layer
-  if ((ilaym.eq.ilayrec) .or. (ilaym.eq.ilaysrc)) then
+  if((ilaym.eq.ilayrec) .or. (ilaym.eq.ilaysrc)) then
     refRdTM = iabvD1TM(kappa) !contains a minus
     phsq = (kappa / omega)**2
     termadd = (1./(2.*epsh(ilaym)) - (dmu0 - phsq/epsv(ilaym))/(4.*pvert(ilaym)**2)) * refRdTM
     !layer m is receiver layer
-    if (ilaym .eq. ilayrec) res = res + termadd
+    if(ilaym .eq. ilayrec) res = res + termadd
     !layer m is source layer
-    if (ilaym .eq. ilaysrc) res = res - termadd
+    if(ilaym .eq. ilaysrc) res = res - termadd
   endif
 
 endfunction iabvD1TMderivh
@@ -665,15 +665,15 @@ complex(kind=real64) function iabvD1TMderivv(kappa) result(res)
   res = - sqrt(epsh(ilayrec)*pvert(ilaysrc) / (pvert(ilayrec)*epsh(ilaysrc))) * drefRdTM
 
   !special contributions if layer m is the source or(and) receiver layer
-  if ((ilaym.eq.ilayrec) .or. (ilaym.eq.ilaysrc)) then
+  if((ilaym.eq.ilayrec) .or. (ilaym.eq.ilaysrc)) then
     refRdTM = iabvD1TM(kappa) !contains a minus
     phsq = (kappa / omega)**2
     !include minus here, then +/- termadd is the same as for epsh
     termadd = (- epsh(ilaym)*phsq / (4.* (epsv(ilaym)*pvert(ilaym))**2)) * refRdTM
     !layer m is receiver layer
-    if (ilaym .eq. ilayrec) res = res + termadd
+    if(ilaym .eq. ilayrec) res = res + termadd
     !layer m is source layer
-    if (ilaym .eq. ilaysrc) res = res - termadd
+    if(ilaym .eq. ilaysrc) res = res - termadd
   endif
 
 endfunction iabvD1TMderivv
@@ -703,13 +703,13 @@ complex(kind=real64) function iblwD1TMderiv(kappa) result(res)
   res = - sqrt(epsh(ilayrec)*pvert(ilaysrc) / (pvert(ilayrec)*epsh(ilaysrc))) * drefRdTM
 
   !special contributions if layer m is the source or(and) receiver layer
-  if ((ilaym.eq.ilayrec) .or. (ilaym.eq.ilaysrc)) then
+  if((ilaym.eq.ilayrec) .or. (ilaym.eq.ilaysrc)) then
     refRdTM = iblwD1TM(kappa) !contains a minus
     termadd = (1./(2.*epsh(ilaym)) - dmu0/(4.*pvert(ilaym)**2)) * refRdTM
     !layer m is receiver layer
-    if (ilaym .eq. ilayrec) res = res + termadd
+    if(ilaym .eq. ilayrec) res = res + termadd
     !layer m is source layer
-    if (ilaym .eq. ilaysrc) res = res - termadd
+    if(ilaym .eq. ilaysrc) res = res - termadd
   endif
 
 endfunction iblwD1TMderiv
@@ -740,14 +740,14 @@ complex(kind=real64) function iblwD1TMderivh(kappa) result(res)
   res = - sqrt(epsh(ilayrec)*pvert(ilaysrc) / (pvert(ilayrec)*epsh(ilaysrc))) * drefRdTM
 
   !special contributions if layer m is the source or(and) receiver layer
-  if ((ilaym.eq.ilayrec) .or. (ilaym.eq.ilaysrc)) then
+  if((ilaym.eq.ilayrec) .or. (ilaym.eq.ilaysrc)) then
     refRdTM = iblwD1TM(kappa) !contains a minus
     phsq = (kappa / omega)**2
     termadd = (1./(2.*epsh(ilaym)) - (dmu0 - phsq/epsv(ilaym))/(4.*pvert(ilaym)**2)) * refRdTM
     !layer m is receiver layer
-    if (ilaym .eq. ilayrec) res = res + termadd
+    if(ilaym .eq. ilayrec) res = res + termadd
     !layer m is source layer
-    if (ilaym .eq. ilaysrc) res = res - termadd
+    if(ilaym .eq. ilaysrc) res = res - termadd
   endif
 
 endfunction iblwD1TMderivh
@@ -778,15 +778,15 @@ complex(kind=real64) function iblwD1TMderivv(kappa) result(res)
   res = - sqrt(epsh(ilayrec)*pvert(ilaysrc) / (pvert(ilayrec)*epsh(ilaysrc))) * drefRdTM
 
   !special contributions if layer m is the source or(and) receiver layer
-  if ((ilaym.eq.ilayrec) .or. (ilaym.eq.ilaysrc)) then
+  if((ilaym.eq.ilayrec) .or. (ilaym.eq.ilaysrc)) then
     refRdTM = iblwD1TM(kappa) !contains a minus
     phsq = (kappa / omega)**2
     !include minus here, then +/- termadd is the same as for epsh
     termadd = (- epsh(ilaym)*phsq / (4.* (epsv(ilaym)*pvert(ilaym))**2)) * refRdTM
     !layer m is receiver layer
-    if (ilaym .eq. ilayrec) res = res + termadd
+    if(ilaym .eq. ilayrec) res = res + termadd
     !layer m is source layer
-    if (ilaym .eq. ilaysrc) res = res - termadd
+    if(ilaym .eq. ilaysrc) res = res - termadd
   endif
 
 endfunction iblwD1TMderivv
@@ -897,13 +897,13 @@ complex(kind=real64) function iabvB1TEderiv(kappa) result(res)
   res = sqrt(pvert(ilaysrc)/pvert(ilayrec)) * drefRbTE
 
   !special contributions if layer m is the source or(and) receiver layer
-  if ((ilaym.eq.ilayrec) .or. (ilaym.eq.ilaysrc)) then
+  if((ilaym.eq.ilayrec) .or. (ilaym.eq.ilaysrc)) then
     refRbTE = iabvB1TE(kappa)
     termadd = (dmu0 / (4.*pvert(ilaym)**2)) * refRbTE
     !layer m is receiver layer
-    if (ilaym .eq. ilayrec) res = res - termadd
+    if(ilaym .eq. ilayrec) res = res - termadd
     !layer m is source layer
-    if (ilaym .eq. ilaysrc) res = res + termadd
+    if(ilaym .eq. ilaysrc) res = res + termadd
   endif
 
 endfunction iabvB1TEderiv
@@ -933,13 +933,13 @@ complex(kind=real64) function iblwB1TEderiv(kappa) result(res)
   res = sqrt(pvert(ilaysrc)/pvert(ilayrec)) * drefRbTE
 
   !special contributions if layer m is the source or(and) receiver layer
-  if ((ilaym.eq.ilayrec) .or. (ilaym.eq.ilaysrc)) then
+  if((ilaym.eq.ilayrec) .or. (ilaym.eq.ilaysrc)) then
     refRbTE = iblwB1TE(kappa)
     termadd = (dmu0 / (4.*pvert(ilaym)**2)) * refRbTE
     !layer m is receiver layer
-    if (ilaym .eq. ilayrec) res = res - termadd
+    if(ilaym .eq. ilayrec) res = res - termadd
     !layer m is source layer
-    if (ilaym .eq. ilaysrc) res = res + termadd
+    if(ilaym .eq. ilaysrc) res = res + termadd
   endif
 
 endfunction iblwB1TEderiv
@@ -1051,13 +1051,13 @@ complex(kind=real64) function iabvB1TMderiv(kappa) result(res)
   res = sqrt(pvert(ilayrec)*epsh(ilaysrc) / (epsh(ilayrec)*pvert(ilaysrc))) * drefRbTM
 
   !special contributions if layer m is the source or(and) receiver layer
-  if ((ilaym.eq.ilayrec) .or. (ilaym.eq.ilaysrc)) then
+  if((ilaym.eq.ilayrec) .or. (ilaym.eq.ilaysrc)) then
     refRbTM = iabvB1TM(kappa)
     termadd = (1./(2.*epsh(ilaym)) - dmu0/(4.*pvert(ilaym)**2)) * refRbTM
     !layer m is receiver layer
-    if (ilaym .eq. ilayrec) res = res - termadd
+    if(ilaym .eq. ilayrec) res = res - termadd
     !layer m is source layer
-    if (ilaym .eq. ilaysrc) res = res + termadd
+    if(ilaym .eq. ilaysrc) res = res + termadd
   endif
 
 endfunction iabvB1TMderiv
@@ -1088,14 +1088,14 @@ complex(kind=real64) function iabvB1TMderivh(kappa) result(res)
   res = sqrt(pvert(ilayrec)*epsh(ilaysrc) / (epsh(ilayrec)*pvert(ilaysrc))) * drefRbTM
 
   !special contributions if layer m is the source or(and) receiver layer
-  if ((ilaym.eq.ilayrec) .or. (ilaym.eq.ilaysrc)) then
+  if((ilaym.eq.ilayrec) .or. (ilaym.eq.ilaysrc)) then
     refRbTM = iabvB1TM(kappa)
     phsq = (kappa / omega)**2
     termadd = (1./(2.*epsh(ilaym)) - (dmu0 - phsq/epsv(ilaym))/(4.*pvert(ilaym)**2)) * refRbTM
     !layer m is receiver layer
-    if (ilaym .eq. ilayrec) res = res - termadd
+    if(ilaym .eq. ilayrec) res = res - termadd
     !layer m is source layer
-    if (ilaym .eq. ilaysrc) res = res + termadd
+    if(ilaym .eq. ilaysrc) res = res + termadd
   endif
 
 endfunction iabvB1TMderivh
@@ -1127,14 +1127,14 @@ complex(kind=real64) function iabvB1TMderivv(kappa) result(res)
   res = sqrt(pvert(ilayrec)*epsh(ilaysrc) / (epsh(ilayrec)*pvert(ilaysrc))) * drefRbTM
 
   !special contributions if layer m is the source or(and) receiver layer
-  if ((ilaym.eq.ilayrec) .or. (ilaym.eq.ilaysrc)) then
+  if((ilaym.eq.ilayrec) .or. (ilaym.eq.ilaysrc)) then
     refRbTM = iabvB1TM(kappa)
     phsq = (kappa / omega)**2
     termadd = (- epsh(ilaym)*phsq / (4.* (epsv(ilaym) * pvert(ilaym))**2)) * refRbTM
     !layer m is receiver layer
-    if (ilaym .eq. ilayrec) res = res - termadd
+    if(ilaym .eq. ilayrec) res = res - termadd
     !layer m is source layer
-    if (ilaym .eq. ilaysrc) res = res + termadd
+    if(ilaym .eq. ilaysrc) res = res + termadd
   endif
 
 endfunction iabvB1TMderivv
@@ -1164,13 +1164,13 @@ complex(kind=real64) function iblwB1TMderiv(kappa) result(res)
   res = sqrt(pvert(ilayrec)*epsh(ilaysrc) / (epsh(ilayrec)*pvert(ilaysrc))) * drefRbTM
 
   !special contributions if layer m is the source or(and) receiver layer
-  if ((ilaym.eq.ilayrec) .or. (ilaym.eq.ilaysrc)) then
+  if((ilaym.eq.ilayrec) .or. (ilaym.eq.ilaysrc)) then
     refRbTM = iblwB1TM(kappa)
     termadd = (1./(2.*epsh(ilaym)) - dmu0/(4.*pvert(ilaym)**2)) * refRbTM
     !layer m is receiver layer
-    if (ilaym .eq. ilayrec) res = res - termadd
+    if(ilaym .eq. ilayrec) res = res - termadd
     !layer m is source layer
-    if (ilaym .eq. ilaysrc) res = res + termadd
+    if(ilaym .eq. ilaysrc) res = res + termadd
   endif
 
 endfunction iblwB1TMderiv
@@ -1202,14 +1202,14 @@ complex(kind=real64) function iblwB1TMderivh(kappa) result(res)
   res = sqrt(pvert(ilayrec)*epsh(ilaysrc) / (epsh(ilayrec)*pvert(ilaysrc))) * drefRbTM
 
   !special contributions if layer m is the source or(and) receiver layer
-  if ((ilaym.eq.ilayrec) .or. (ilaym.eq.ilaysrc)) then
+  if((ilaym.eq.ilayrec) .or. (ilaym.eq.ilaysrc)) then
     refRbTM = iblwB1TM(kappa)
     phsq = (kappa / omega)**2
     termadd = (1./(2.*epsh(ilaym)) - (dmu0 - phsq/epsv(ilaym))/(4.*pvert(ilaym)**2)) * refRbTM
     !layer m is receiver layer
-    if (ilaym .eq. ilayrec) res = res - termadd
+    if(ilaym .eq. ilayrec) res = res - termadd
     !layer m is source layer
-    if (ilaym .eq. ilaysrc) res = res + termadd
+    if(ilaym .eq. ilaysrc) res = res + termadd
   endif
 
 endfunction iblwB1TMderivh
@@ -1241,14 +1241,14 @@ complex(kind=real64) function iblwB1TMderivv(kappa) result(res)
   res = sqrt(pvert(ilayrec)*epsh(ilaysrc) / (epsh(ilayrec)*pvert(ilaysrc))) * drefRbTM
 
   !special contributions if layer m is the source or(and) receiver layer
-  if ((ilaym.eq.ilayrec) .or. (ilaym.eq.ilaysrc)) then
+  if((ilaym.eq.ilayrec) .or. (ilaym.eq.ilaysrc)) then
     refRbTM = iblwB1TM(kappa)
     phsq = (kappa / omega)**2
     termadd = (- epsh(ilaym)*phsq / (4.* (epsv(ilaym) * pvert(ilaym))**2)) * refRbTM
     !layer m is receiver layer
-    if (ilaym .eq. ilayrec) res = res - termadd
+    if(ilaym .eq. ilayrec) res = res - termadd
     !layer m is source layer
-    if (ilaym .eq. ilaysrc) res = res + termadd
+    if(ilaym .eq. ilaysrc) res = res + termadd
   endif
 
 endfunction iblwB1TMderivv
@@ -1303,13 +1303,13 @@ complex(kind=real64) function iabvC1TEderiv(kappa) result(res)
   res = - (sqrt(pvert(ilayrec)*pvert(ilaysrc)) / dmu0) * drefRcTE
 
   !special contributions if layer m is the source or(and) receiver layer
-  if ((ilaym.eq.ilayrec) .or. (ilaym.eq.ilaysrc)) then
+  if((ilaym.eq.ilayrec) .or. (ilaym.eq.ilaysrc)) then
     refRcTE = iabvC1TE(kappa) !contains a minus
     termadd = (dmu0 / (4.*pvert(ilaym)**2)) * refRcTE
     !layer m is receiver layer
-    if (ilaym .eq. ilayrec) res = res + termadd
+    if(ilaym .eq. ilayrec) res = res + termadd
     !layer m is source layer
-    if (ilaym .eq. ilaysrc) res = res + termadd
+    if(ilaym .eq. ilaysrc) res = res + termadd
   endif
 
 endfunction iabvC1TEderiv
@@ -1339,13 +1339,13 @@ complex(kind=real64) function iblwC1TEderiv(kappa) result(res)
   res = - (sqrt(pvert(ilayrec)*pvert(ilaysrc)) / dmu0) * drefRcTE
 
   !special contributions if layer m is the source or(and) receiver layer
-  if ((ilaym.eq.ilayrec) .or. (ilaym.eq.ilaysrc)) then
+  if((ilaym.eq.ilayrec) .or. (ilaym.eq.ilaysrc)) then
     refRcTE = iblwC1TE(kappa) !contains  aminus
     termadd = (dmu0 / (4.*pvert(ilaym)**2)) * refRcTE
     !layer m is receiver layer
-    if (ilaym .eq. ilayrec) res = res + termadd
+    if(ilaym .eq. ilayrec) res = res + termadd
     !layer m is source layer
-    if (ilaym .eq. ilaysrc) res = res + termadd
+    if(ilaym .eq. ilaysrc) res = res + termadd
   endif
 
 endfunction iblwC1TEderiv
@@ -1432,13 +1432,13 @@ complex(kind=real64) function iabvC1TMderiv(kappa) result(res)
   res = - sqrt(epsh(ilayrec)*epsh(ilaysrc) / (pvert(ilayrec)*pvert(ilaysrc))) * drefRcTM
 
   !special contributions if layer m is the source or(and) receiver layer
-  if ((ilaym.eq.ilayrec) .or. (ilaym.eq.ilaysrc)) then
+  if((ilaym.eq.ilayrec) .or. (ilaym.eq.ilaysrc)) then
     refRcTM = iabvC1TM(kappa) !contains a minus
     termadd = (1./(2.*epsh(ilaym)) - dmu0/(4.*pvert(ilaym)**2)) * refRcTM
     !layer m is receiver layer
-    if (ilaym .eq. ilayrec) res = res + termadd
+    if(ilaym .eq. ilayrec) res = res + termadd
     !layer m is source layer
-    if (ilaym .eq. ilaysrc) res = res + termadd
+    if(ilaym .eq. ilaysrc) res = res + termadd
   endif
 
 endfunction iabvC1TMderiv
@@ -1470,14 +1470,14 @@ complex(kind=real64) function iabvC1TMderivh(kappa) result(res)
   res = - sqrt(epsh(ilayrec)*epsh(ilaysrc) / (pvert(ilayrec)*pvert(ilaysrc))) * drefRcTM
 
   !special contributions if layer m is the source or(and) receiver layer
-  if ((ilaym.eq.ilayrec) .or. (ilaym.eq.ilaysrc)) then
+  if((ilaym.eq.ilayrec) .or. (ilaym.eq.ilaysrc)) then
     refRcTM = iabvC1TM(kappa) !contains a minus
     phsq = (kappa / omega)**2
     termadd = (1./(2.*epsh(ilaym)) - (dmu0 - phsq/epsv(ilaym))/(4.*pvert(ilaym)**2)) * refRcTM
     !layer m is receiver layer
-    if (ilaym .eq. ilayrec) res = res + termadd
+    if(ilaym .eq. ilayrec) res = res + termadd
     !layer m is source layer
-    if (ilaym .eq. ilaysrc) res = res + termadd
+    if(ilaym .eq. ilaysrc) res = res + termadd
   endif
 
 endfunction iabvC1TMderivh
@@ -1509,14 +1509,14 @@ complex(kind=real64) function iabvC1TMderivv(kappa) result(res)
   res = - sqrt(epsh(ilayrec)*epsh(ilaysrc) / (pvert(ilayrec)*pvert(ilaysrc))) * drefRcTM
 
   !special contributions if layer m is the source or(and) receiver layer
-  if ((ilaym.eq.ilayrec) .or. (ilaym.eq.ilaysrc)) then
+  if((ilaym.eq.ilayrec) .or. (ilaym.eq.ilaysrc)) then
     refRcTM = iabvC1TM(kappa) !contains a minus
     phsq = (kappa / omega)**2
     termadd = (- epsh(ilaym)*phsq / (4.* (epsv(ilaym) * pvert(ilaym))**2)) * refRcTM
     !layer m is receiver layer
-    if (ilaym .eq. ilayrec) res = res + termadd
+    if(ilaym .eq. ilayrec) res = res + termadd
     !layer m is source layer
-    if (ilaym .eq. ilaysrc) res = res + termadd
+    if(ilaym .eq. ilaysrc) res = res + termadd
   endif
 
 endfunction iabvC1TMderivv
@@ -1551,13 +1551,13 @@ complex(kind=real64) function iblwC1TMderiv(kappa) result(res)
   res = - sqrt(epsh(ilayrec)*epsh(ilaysrc) / (pvert(ilayrec)*pvert(ilaysrc))) * drefRcTM
 
   !special contributions if layer m is the source or(and) receiver layer
-  if ((ilaym.eq.ilayrec) .or. (ilaym.eq.ilaysrc)) then
+  if((ilaym.eq.ilayrec) .or. (ilaym.eq.ilaysrc)) then
     refRcTM = iblwC1TM(kappa) !contains a minus
     termadd = (1./(2.*epsh(ilaym)) - dmu0/(4.*pvert(ilaym)**2)) * refRcTM
     !layer m is receiver layer
-    if (ilaym .eq. ilayrec) res = res + termadd
+    if(ilaym .eq. ilayrec) res = res + termadd
     !layer m is source layer
-    if (ilaym .eq. ilaysrc) res = res + termadd
+    if(ilaym .eq. ilaysrc) res = res + termadd
   endif
 
   !test: numerical derivative d_someting / depsilon_m
@@ -1595,14 +1595,14 @@ complex(kind=real64) function iblwC1TMderivh(kappa) result(res)
   res = - sqrt(epsh(ilayrec)*epsh(ilaysrc) / (pvert(ilayrec)*pvert(ilaysrc))) * drefRcTM
 
   !special contributions if layer m is the source or(and) receiver layer
-  if ((ilaym.eq.ilayrec) .or. (ilaym.eq.ilaysrc)) then
+  if((ilaym.eq.ilayrec) .or. (ilaym.eq.ilaysrc)) then
     refRcTM = iblwC1TM(kappa) !contains a minus
     phsq = (kappa / omega)**2
     termadd = (1./(2.*epsh(ilaym)) - (dmu0 - phsq/epsv(ilaym))/(4.*pvert(ilaym)**2)) * refRcTM
     !layer m is receiver layer
-    if (ilaym .eq. ilayrec) res = res + termadd
+    if(ilaym .eq. ilayrec) res = res + termadd
     !layer m is source layer
-    if (ilaym .eq. ilaysrc) res = res + termadd
+    if(ilaym .eq. ilaysrc) res = res + termadd
   endif
 
 endfunction iblwC1TMderivh
@@ -1634,14 +1634,14 @@ complex(kind=real64) function iblwC1TMderivv(kappa) result(res)
   res = - sqrt(epsh(ilayrec)*epsh(ilaysrc) / (pvert(ilayrec)*pvert(ilaysrc))) * drefRcTM
 
   !special contributions if layer m is the source or(and) receiver layer
-  if ((ilaym.eq.ilayrec) .or. (ilaym.eq.ilaysrc)) then
+  if((ilaym.eq.ilayrec) .or. (ilaym.eq.ilaysrc)) then
     refRcTM = iblwC1TM(kappa) !contains a minus
     phsq = (kappa / omega)**2
     termadd = (- epsh(ilaym)*phsq / (4.* (epsv(ilaym) * pvert(ilaym))**2)) * refRcTM
     !layer m is receiver layer
-    if (ilaym .eq. ilayrec) res = res + termadd
+    if(ilaym .eq. ilayrec) res = res + termadd
     !layer m is source layer
-    if (ilaym .eq. ilaysrc) res = res + termadd
+    if(ilaym .eq. ilaysrc) res = res + termadd
   endif
 
 endfunction iblwC1TMderivv
@@ -2319,13 +2319,13 @@ complex(kind=real64) function dtrans_response_dn(ilaytop,ilaybot,trans_abv,dz_ab
   ilaym1 = ilaym + 1
 
   !term stays zero if layer m is outside range in which this recursion applies
-  if ((ilaym.lt.ilaytop) .or. (ilaym.gt.ilaybot)) return
+  if((ilaym.lt.ilaytop) .or. (ilaym.gt.ilaybot)) return
 
 
   !derivative for layer ilaym
   !--> special (simplified) case if this is at the bottom of the layer stack considered (i.e. ilaym = receiver layer)
   fact_dexp = func_dexp(dz_abv(ilaym),kappa) / 2.
-  if (ilaym .eq. ilaybot) then
+  if(ilaym .eq. ilaybot) then
     transT = trans_abv(ilaym)
     dtransT = trans_abv(ilaym) * fact_dexp
     drefT = 0._real64
@@ -2361,7 +2361,7 @@ complex(kind=real64) function dtrans_response_dn(ilaytop,ilaybot,trans_abv,dz_ab
 
   !derivative for the layer above ilaym
   !special case again since the interface refl./transm. coeff. still depend on eps(ilaym)
-  if (ilaym.gt.ilaytop) then !nothing more to do if ilaym is top layer of the stack considered
+  if(ilaym.gt.ilaytop) then !nothing more to do if ilaym is top layer of the stack considered
     !FIRST: update dtransTM using results from previous layer
     !we already have transm. and refl. responses for layers up to ilaym, so no update needed here
     denom = 1.-rup(ilaym-1)*refT
@@ -2438,13 +2438,13 @@ complex(kind=real64) function dtrans_response_up(ilaytop,ilaybot,trans_blw,dz_bl
   ilaym1 = ilaym - 1
 
   !term stays zero if layer m is outside range in which this recursion applies
-  if ((ilaym.lt.ilaytop) .or. (ilaym.gt.ilaybot)) return
+  if((ilaym.lt.ilaytop) .or. (ilaym.gt.ilaybot)) return
 
 
   !derivative for layer ilaym
   !--> special (simplified) case if this is at the top of the layer stack considered (i.e. ilaym = receiver layer)
   fact_dexp = func_dexp(dz_blw(ilaym),kappa) / 2.
-  if (ilaym .eq. ilaytop) then
+  if(ilaym .eq. ilaytop) then
     transT = trans_blw(ilaym)
     dtransT = trans_blw(ilaym) * fact_dexp
     drefT = 0._real64
@@ -2479,7 +2479,7 @@ complex(kind=real64) function dtrans_response_up(ilaytop,ilaybot,trans_blw,dz_bl
 
   !derivative for the layer below ilaym
   !special case again since the interface refl./transm. coeff. still depend on eps(ilaym)
-  if (ilaym.lt.ilaybot) then !nothing more to do if ilaym is bottom layer of the stack considered
+  if(ilaym.lt.ilaybot) then !nothing more to do if ilaym is bottom layer of the stack considered
     !FIRST: update dtransTM using results from previous layer
     !we already have transm. and refl. responses for layers down to ilaym, so no update needed here
     denom = 1.-rdn(ilaym)*refT
@@ -2553,13 +2553,13 @@ complex(kind=real64) function drefl_response_dn(ilaytop,ilaybot,trans_blw,dz_blw
   ilaym1 = ilaym + 1
 
   !term stays zero if layer m is outside range in which this recursion applies
-  if ((ilaym.lt.ilaytop) .or. (ilaym.gt.ilaybot)) return
+  if((ilaym.lt.ilaytop) .or. (ilaym.gt.ilaybot)) return
 
   !derivative of refl. response for layer ilaym
   !- depends on recursive refl. response for next lower layer
   !--> special case: if layer m is the lowest of the stack considered, refl. response for next layer does not exist
   !--> then derivative is zero
-  if (ilaym .eq. ilaybot) then
+  if(ilaym .eq. ilaybot) then
     drefT = 0._real64
     refT = 0._real64
   else
@@ -2584,7 +2584,7 @@ complex(kind=real64) function drefl_response_dn(ilaytop,ilaybot,trans_blw,dz_blw
 
   !derivative of refl response up to the layer above ilaym
   !special case again since the interface refl./transm. coeff. still depend on ilaym
-  if (ilaym.gt.ilaytop) then !nothing more to do if ilaym is top layer of the stack considered
+  if(ilaym.gt.ilaytop) then !nothing more to do if ilaym is top layer of the stack considered
     !FIRST add the term containing deriv. of refl. up to layer m
     denom = 1.-rup(ilaym-1)*refT
     drefT = drefT * (trans_blw(ilaym-1) * tup(ilaym-1) / denom)**2
@@ -2642,13 +2642,13 @@ complex(kind=real64) function drefl_response_up(ilaytop,ilaybot,trans_abv,dz_abv
   ilaym1 = ilaym - 1
 
   !term stays zero if layer m is outside range in which this recursion applies
-  if ((ilaym.lt.ilaytop) .or. (ilaym.gt.ilaybot)) return
+  if((ilaym.lt.ilaytop) .or. (ilaym.gt.ilaybot)) return
 
   !derivative of refl. response for layer ilaym
   !- depends on recursive refl. response for next higher layer
   !--> special case: if layer m is the top of the stack considered, refl. response for layer above does not exist
   !--> then derivative is zero
-  if (ilaym .eq. ilaytop) then
+  if(ilaym .eq. ilaytop) then
     drefT = 0._real64
     refT = 0._real64
   else
@@ -2671,7 +2671,7 @@ complex(kind=real64) function drefl_response_up(ilaytop,ilaybot,trans_abv,dz_abv
 
   !derivative of refl response down to the layer below ilaym
   !special case again since the interface refl./transm. coeff. still depend on ilaym
-  if (ilaym.lt.ilaybot) then !nothing more to do if ilaym is bottom layer of the stack considered
+  if(ilaym.lt.ilaybot) then !nothing more to do if ilaym is bottom layer of the stack considered
     !FIRST add the term containing deriv. of refl. up to layer m
     denom = 1. - rdn(ilaym) * refT
     drefT = drefT * (trans_abv(ilaym+1) * tdn(ilaym) / denom)**2

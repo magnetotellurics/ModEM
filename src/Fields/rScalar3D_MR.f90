@@ -9,7 +9,7 @@ module rScalar3D_MR
     type, extends( rScalar3D_SG_t ) :: rScalar3D_MR_t
         !
         type( rScalar3D_SG_t ), allocatable :: sub_scalars(:)
-        !
+		!
         integer, dimension(:), allocatable :: ind_active
         integer, dimension(:), allocatable :: ind_interior
         integer, dimension(:), allocatable :: ind_boundaries
@@ -81,6 +81,8 @@ module rScalar3D_MR
             procedure, public :: write => writeRScalar3D_MR
             procedure, public :: print => printRScalar3D_MR
             !
+            procedure, public :: setInteriorMask => setInteriorMaskRScalar3D_MR
+			!
     end type rScalar3D_MR_t
     !
     interface rScalar3D_MR_t
@@ -105,10 +107,6 @@ contains
         self%grid_type = E_in%grid_type
         !
         call self%initializeSub
-        !
-        self%ind_active = E_in%ind_active
-        self%ind_interior = E_in%ind_interior
-        self%ind_boundaries = E_in%ind_boundaries
         !
         select type( grid => E_in%grid )
             !
@@ -190,7 +188,7 @@ contains
             xy = .FALSE.
         else
             xy = xy_in
-        end if
+        endif
         !
         select type( grid => self%grid )
             !
@@ -205,11 +203,11 @@ contains
                 ! Loop over interfaces: set redundant interface edges to 2
                 select case( self%grid_type )
                     !
-                    case (EDGE)
+                    case( EDGE )
                         int_only = .TRUE.
-                    case (FACE)
+                    case( FACE )
                         int_only = .FALSE.
-                    case (CORNER)
+                    case( NODE )
                         int_only = .TRUE.
                     case default
                         !
@@ -224,24 +222,24 @@ contains
                         ! not active; also reset interior part of interface
                         ! edges to 0
                         if( xy ) then
-                            call self%sub_scalars(k-1)%setOneBoundary ("z2_x", cmplx( -1.0_prec, 0.0, kind=prec ) )
-                            call self%sub_scalars(k-1)%setOneBoundary ("z2_y", cmplx( -10.0_prec, 0.0, kind=prec ) )
+                            call self%sub_scalars(k-1)%setOneBoundary( "z2_x", cmplx( -1.0_prec, 0.0, kind=prec ) )
+                            call self%sub_scalars(k-1)%setOneBoundary( "z2_y", cmplx( -10.0_prec, 0.0, kind=prec ) )
                         else
-                            call self%sub_scalars(k-1)%setOneBoundary ("z2", cmplx( -1.0_prec, 0.0, kind=prec ) )
+                            call self%sub_scalars(k-1)%setOneBoundary( "z2", cmplx( -1.0_prec, 0.0, kind=prec ) )
                         endif
                         !
-                        call self%sub_scalars(k)%setOneBoundary ("z1", cmplx( 0._prec, 0.0, kind=prec ), int_only )
+                        call self%sub_scalars(k)%setOneBoundary( "z1", cmplx( 0._prec, 0.0, kind=prec ), int_only )
                     else
                         if( xy ) then
-                            call self%sub_scalars(k)%setOneBoundary ("z1_x", cmplx( -1.0_prec, 0.0, kind=prec ) )
-                            call self%sub_scalars(k)%setOneBoundary ("z1_y", cmplx( -10.0_prec, 0.0, kind=prec ) )
+                            call self%sub_scalars(k)%setOneBoundary( "z1_x", cmplx( -1.0_prec, 0.0, kind=prec ) )
+                            call self%sub_scalars(k)%setOneBoundary( "z1_y", cmplx( -10.0_prec, 0.0, kind=prec ) )
                         else
-                            call self%sub_scalars(k)%setOneBoundary ("z1", cmplx( -1.0_prec, 0.0, kind=prec ) )
+                            call self%sub_scalars(k)%setOneBoundary( "z1", cmplx( -1.0_prec, 0.0, kind=prec ) )
                         endif
                         !
-                        call self%sub_scalars(k-1)%setOneBoundary ("z2", cmplx( 0._prec, 0.0, kind=prec ), int_only )
+                        call self%sub_scalars(k-1)%setOneBoundary( "z2", cmplx( 0._prec, 0.0, kind=prec ), int_only )
                         !
-                    end if
+                    endif
                     !
                 end do
                 !
@@ -252,20 +250,21 @@ contains
         !
         ! Set active, interior, and boundary edges. ***
         !
-        call self%getFull(v_1)
+        call self%getFull( v_1 )
         !
-        n_full = size (v_1)
+        n_full = size( v_1 )
         !
         n_active = 0
         do k = 1, n_full
             if (v_1(k) >= 0) then
                 n_active = n_active + 1
-            end if
+            endif
         end do
         !
         if (allocated (self%ind_active)) then
             deallocate (self%ind_active)
-        end if
+        endif
+        !
         allocate (self%ind_active(n_active))
         !
         i = 0
@@ -273,42 +272,44 @@ contains
             if (v_1(k) >= 0) then
                 i = i + 1
                 self%ind_active(i) = k
-            end if
+            endif
         end do
         !
         n_interior = 0
         do k = 1, n_full
             if (v_1(k) == 0) then
                 n_interior = n_interior + 1
-            end if
+            endif
         end do
         !
         allocate (v_2(n_active))
         v_2 = v_1(self%ind_active)
         !
-        if (allocated (self%ind_interior)) then
-            deallocate (self%ind_interior)
-        end if
-        allocate (self%ind_interior(n_interior))
+        if( allocated( self%ind_interior ) ) then
+            deallocate( self%ind_interior )
+        endif
+        !
+        allocate( self%ind_interior( n_interior ) )
         !
         i = 0
         do k = 1, n_active
-            if (v_2(k) == 0) then
+            if( v_2(k) == 0 ) then
                 i = i + 1
                 self%ind_interior(i) = k
-            end if
+            endif
         end do
         !!
         n_boundaries = 0
         do k = 1, n_active
             if (v_2(k) == 1) then
                 n_boundaries = n_boundaries + 1
-            end if
+            endif
         end do
         !
         if (allocated (self%ind_boundaries)) then
             deallocate (self%ind_boundaries)
-        end if
+        endif
+        !
         allocate (self%ind_boundaries(n_boundaries)) 
         !
         i = 0
@@ -316,7 +317,7 @@ contains
             if (v_2(k) == 1) then
                 i = i + 1
                 self%ind_boundaries(i) = k
-            end if
+            endif
         end do
         !
     end subroutine setActiveIntBoundaryRScalar3D_MR
@@ -337,7 +338,7 @@ contains
                 !
                 i1 = 1; i2 = 0;
                 do k = 1, grid%n_grids
-                    n = self%sub_scalars(k)%Length ()
+                    n = self%sub_scalars(k)%length ()
                     i2 = i2 + n
                     call self%sub_scalars(k)%setArray( cmplx( v(i1:i2), 0.0, kind=prec ) )
                     i1 = i1 + n
@@ -375,7 +376,7 @@ contains
             class is( Grid3D_MR_t )
                 !
                 do k = 1, grid%n_grids
-                    n = self%sub_scalars(k)%Length()
+                    n = self%sub_scalars(k)%length()
                     i2 = i2 + n
                     v_temp = self%sub_scalars(k)%getArray()
                     v(i1:i2) = v_temp
@@ -442,7 +443,7 @@ contains
             if (v(k) == c) then
                 n_I = n_I + 1
                 I(n_I) = k
-            end if
+            endif
         end do
         !
     end function findFullRScalar3D_MR
@@ -453,13 +454,13 @@ contains
         implicit none
         !
         class( rScalar3D_MR_t ), intent( in ) :: self
-        real( kind=prec ), intent (in) :: c
+        real( kind=prec ), intent( in ) :: c
         !
         integer, dimension(:), allocatable :: I
         real( kind=prec ), dimension(:), allocatable :: v
         integer :: n, n_I, k
         !
-        n = self%Length()
+        n = self%length()
         allocate (v(n))
         v = self%getArray()
         !
@@ -475,7 +476,7 @@ contains
             if (v(k) == c) then
                 n_I = n_I + 1
                 I(n_I) = k
-            end if
+            endif
         end do
         !
     end function findValueRScalar3D_MR
@@ -589,57 +590,61 @@ contains
         endif
         !
         select case( self%grid_type )
-        case(CORNER)
-             if( int_only_p) then
-                select case(bdry)
-                case("x1")
-                     self%v(1, 2:self%NdV(2)-1, 2:self%NdV(3)-1) = real( cvalue, kind=prec ) 
-                case("x2")
-                     self%v(self%NdV(1), 2:self%NdV(2)-1, 2:self%NdV(3)-1) = real( cvalue, kind=prec )
-                case("y1")
-                     self%v(2:self%NdV(1)-1, 1, 2:self%NdV(3)-1) = real( cvalue, kind=prec )
-                case("y2")
-                     self%v(2:self%NdV(1)-1, self%NdV(2), 2:self%NdV(3)-1) = real( cvalue, kind=prec )
-                case("z1")
-                     self%v(2:self%NdV(1)-1, 2:self%NdV(2)-1, 1) = real( cvalue, kind=prec )
-                case("z2")
-                     self%v(2:self%NdV(1)-1, 2:self%NdV(2)-1, self%NdV(3)) = real( cvalue, kind=prec )
-                end select
-             else
-                select case(bdry)
-                case("x1")
-                     self%v(1, :, :) = real( cvalue, kind=prec )
-                case("x2")
-                     self%v(self%NdV(1), :, :) = real( cvalue, kind=prec )
-                case("y1")
-                     self%v(:, 1, :) = real( cvalue, kind=prec )
-                case("y2")
-                     self%v(:, self%NdV(2), :) = real( cvalue, kind=prec )
-                case("z1")
-                     self%v(:, :, 1) = real( cvalue, kind=prec )
-                case("z2")
-                     self%v(:, :, self%NdV(3)) = real( cvalue, kind=prec )
-                end select
-             endif
-             !
-        case(FACE)
-             select case(bdry)
-                 case("x1")
-                    self%v(1, :, :) = real( cvalue, kind=prec )
-                 case("x2")
-                    self%v(self%NdV(1), :, :) = real( cvalue, kind=prec )
-                 case("y1")
-                    self%v(:, 1, :) = real( cvalue, kind=prec )
-                 case("y2")
-                    self%v(:, self%NdV(2), :) = real( cvalue, kind=prec )
-                 case("z1")
-                    self%v(:, :, 1) = real( cvalue, kind=prec )
-                 case("z2")
-                    self%v(:, :, self%NdV(3)) = real( cvalue, kind=prec )
-             end select
-             !
-        case default
-             stop "Error: setOneBoundaryRScalar3D_MR > Invalid grid type"
+            case( NODE )
+                !
+                if( int_only_p ) then
+                    !
+                    select case(bdry)
+                        case("x1")
+                             self%v(1, 2:self%NdV(2)-1, 2:self%NdV(3)-1) = real( cvalue, kind=prec ) 
+                        case("x2")
+                             self%v(self%NdV(1), 2:self%NdV(2)-1, 2:self%NdV(3)-1) = real( cvalue, kind=prec )
+                        case("y1")
+                             self%v(2:self%NdV(1)-1, 1, 2:self%NdV(3)-1) = real( cvalue, kind=prec )
+                        case("y2")
+                             self%v(2:self%NdV(1)-1, self%NdV(2), 2:self%NdV(3)-1) = real( cvalue, kind=prec )
+                        case("z1")
+                             self%v(2:self%NdV(1)-1, 2:self%NdV(2)-1, 1) = real( cvalue, kind=prec )
+                        case("z2")
+                             self%v(2:self%NdV(1)-1, 2:self%NdV(2)-1, self%NdV(3)) = real( cvalue, kind=prec )
+                    end select
+                    !
+                 else
+                    !
+                    select case(bdry)
+                        case("x1")
+                             self%v(1, :, :) = real( cvalue, kind=prec )
+                        case("x2")
+                             self%v(self%NdV(1), :, :) = real( cvalue, kind=prec )
+                        case("y1")
+                             self%v(:, 1, :) = real( cvalue, kind=prec )
+                        case("y2")
+                             self%v(:, self%NdV(2), :) = real( cvalue, kind=prec )
+                        case("z1")
+                             self%v(:, :, 1) = real( cvalue, kind=prec )
+                        case("z2")
+                             self%v(:, :, self%NdV(3)) = real( cvalue, kind=prec )
+                    end select
+                 endif
+                 !
+            case( FACE )
+                 select case(bdry)
+                     case("x1")
+                        self%v(1, :, :) = real( cvalue, kind=prec )
+                     case("x2")
+                        self%v(self%NdV(1), :, :) = real( cvalue, kind=prec )
+                     case("y1")
+                        self%v(:, 1, :) = real( cvalue, kind=prec )
+                     case("y2")
+                        self%v(:, self%NdV(2), :) = real( cvalue, kind=prec )
+                     case("z1")
+                        self%v(:, :, 1) = real( cvalue, kind=prec )
+                     case("z2")
+                        self%v(:, :, self%NdV(3)) = real( cvalue, kind=prec )
+                 end select
+                 !
+            case default
+                 stop "Error: setOneBoundaryRScalar3D_MR > Invalid grid type"
         end select
         !
     end subroutine setOneBoundaryRScalar3D_MR
@@ -1009,11 +1014,11 @@ contains
                 !
             case( singleton )
                 !
-                if( self%grid_type == CORNER ) then
+                if( self%grid_type == NODE ) then
                     !
                     allocate( self%v( self%nx + 1, self%ny + 1, self%nz + 1 ) )
                     !
-                else if( self%grid_type == CENTER ) then
+                else if( self%grid_type == CELL ) then
                     !
                     allocate( self%v( self%nx, self%ny, self%nz ) )
                     !
@@ -1161,4 +1166,15 @@ contains
         !
     end subroutine printRScalar3D_MR
     !
+    !> No subroutine briefing
+    !
+    subroutine setInteriorMaskRScalar3D_MR( self )
+        implicit none
+        !
+        class( rScalar3D_MR_t ), intent( inout ) :: self
+        !
+        stop "Error: setInteriorMaskRScalar3D_MR not implemented!"
+        !
+    end subroutine setInteriorMaskRScalar3D_MR
+	!
 end module rScalar3D_MR

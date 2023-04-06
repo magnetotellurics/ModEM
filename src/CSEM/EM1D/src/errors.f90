@@ -97,8 +97,8 @@ subroutine invalid_error(pid,routine,filename,var,intnum,realnum)
   write(*,'(a)') 'Process '//trim(adjustl(pidstr))//': ERROR in '//trim(adjustl(routine))//':'
   write(*,'(a)') 'Process '//trim(adjustl(pidstr))//': Found invalid value for '//trim(adjustl(var))//' in file ' &
     //trim(adjustl(filename))//':'
-  if (present(intnum)) write(*,'(a24,i10)') 'Value on process '//trim(adjustl(pidstr))//': ',intnum
-  if (present(realnum)) write(*,'(a24,g20.12)') 'Value on process '//trim(adjustl(pidstr))//': ', realnum
+  if(present(intnum)) write(*,'(a24,i10)') 'Value on process '//trim(adjustl(pidstr))//': ',intnum
+  if(present(realnum)) write(*,'(a24,g20.12)') 'Value on process '//trim(adjustl(pidstr))//': ', realnum
   write(*,'(a)') 'Exiting!'
 #ifdef USE_MPI
   call MPI_Abort(MPI_COMM_WORLD,-4,mpierr)
@@ -175,9 +175,9 @@ subroutine readwrite_error(pid,routine,unitname,action,ierr,irec)
   character(len=5)               :: pidstr    !string to write process id to
   character(len=24)              :: actionstr !output message string
 
-  if (action.eq.'w') then
+  if(action.eq.'w') then
     actionstr = 'write to'
-  elseif (action.eq.'r') then
+  elseif(action.eq.'r') then
     actionstr = 'read from'
   else
     actionstr = 'do some I/O on'
@@ -188,7 +188,7 @@ subroutine readwrite_error(pid,routine,unitname,action,ierr,irec)
   write(*,'(a)') 'Process '//trim(adjustl(pidstr))//': ERROR in '//trim(adjustl(routine))//&
     ' when trying to '//trim(actionstr)//' '//trim(adjustl(unitname))
   write(*,'(a12,i5)') 'Error code: ',ierr
-  if (present(irec)) write(*,'(a15,i10)') 'Record number: ',irec
+  if(present(irec)) write(*,'(a15,i10)') 'Record number: ',irec
 #ifdef USE_MPI
   call MPI_Abort(MPI_COMM_WORLD,-42,mpierr)
 #endif

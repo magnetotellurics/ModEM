@@ -23,12 +23,12 @@ subroutine init_refcoef()
   allocate(rupallTE(nlay-1,0:filtlen),rupallTM(nlay-1,0:filtlen),rdnallTE(nlay-1,0:filtlen),rdnallTM(nlay-1,0:filtlen), &
            tupallTE(nlay-1,0:filtlen),tupallTM(nlay-1,0:filtlen),tdnallTE(nlay-1,0:filtlen),tdnallTM(nlay-1,0:filtlen), &
            pvertall1(nlay,0:filtlen),pvertall2(nlay,0:filtlen), stat=ierr)
-  if (ierr.ne.0) call alloc_error(pid,'init_refcoef','interface reflection and transmission coeff. vectors',ierr)
+  if(ierr.ne.0) call alloc_error(pid,'init_refcoef','interface reflection and transmission coeff. vectors',ierr)
 
 
   ! for each interface --> nr of layers - 1, will be used for both TE and TM mode
 !!$  allocate(rup(nlay-1),rdn(nlay-1), tup(nlay-1),tdn(nlay-1), stat=ierr)
-!!$  if (ierr.ne.0) call alloc_error(pid,'init_refcoef','interface reflection and transmission coeff. vectors',ierr)
+!!$  if(ierr.ne.0) call alloc_error(pid,'init_refcoef','interface reflection and transmission coeff. vectors',ierr)
 
 
 endsubroutine init_refcoef
@@ -66,12 +66,12 @@ subroutine prepare_refcoef(refl_var,r,dipoletype,aniso)
   DATA ABSCIS/0.7059431685223780D0/        !factor for determining central wavenumber, taken from Hankel routine
 
 
-if (refl_var%refcoef_changed) then
+if(refl_var%refcoef_changed) then
 
  kap0 = ABSCIS / r
  kappasq = kap0**2
  phsq = kappasq / omegasq
- isiso: if (aniso .eq. iso) then
+ isiso: if(aniso .eq. iso) then
   !get vertical wavenumbers first - use the same wavenumbers as inside Hankel routine
   pvertall1(:,298) = sqrt(epsmuv(:) - phsq)
 
@@ -137,7 +137,7 @@ if (refl_var%refcoef_changed) then
 	!WARNING: minus is not in formula 121 of Løseth and Ursin, but setting a minus here
 	!  makes field values reasonable for receivers in different layer than source
 	!  (checked on 2-layer model: integrals A1TE and A1TM have to nearly cancel out)
-      if (pvertall2(ilay,298).eq.pvertall2(ilay+1,298)) then
+      if(pvertall2(ilay,298).eq.pvertall2(ilay+1,298)) then
         tupallTM(ilay,1:fl) = 1._real64
       else
         tupallTM(ilay,1:fl) = -2._real64*sqrt(epsh(ilay)*epsh(ilay+1)*pvertall2(ilay,1:fl)*pvertall2(ilay+1,1:fl)) / &
@@ -154,7 +154,7 @@ if (refl_var%refcoef_changed) then
 
     do ilay = 1,nlay-1
       rupallTE(ilay,1:fl) = (1._real64 - pvertall1(ilay,1:fl)/pvertall1(ilay+1,1:fl)) / (1 + pvertall1(ilay,1:fl)/pvertall1(ilay+1,1:fl))
-      if (pvertall1(ilay,298).eq.pvertall1(ilay+1,298)) then
+      if(pvertall1(ilay,298).eq.pvertall1(ilay+1,298)) then
         tupallTE(ilay,1:fl) = 1._real64
       else
         tupallTE(ilay,1:fl) = 2._real64*sqrt(pvertall1(ilay,1:fl)*pvertall1(ilay+1,1:fl)) / (pvertall1(ilay+1,1:fl) + pvertall1(ilay,1:fl))
@@ -172,7 +172,7 @@ if (refl_var%refcoef_changed) then
       rupallTM(ilay,1:fl) = -(1._real64 - (epsh(ilay+1)*pvertall2(ilay,1:fl)) / (epsh(ilay)*pvertall2(ilay+1,1:fl)))/ &
                             (1._real64 + (epsh(ilay+1)*pvertall2(ilay,1:fl)) / (epsh(ilay)*pvertall2(ilay+1,1:fl)))
         !rupallTM(ilay,1:fl) = (epsh(ilay+1)*pvertall2(ilay,1:fl)-epsh(ilay)*pvertall2(ilay+1,1:fl))/(epsh(ilay+1)*pvertall2(ilay,1:fl)+epsh(ilay)*pvertall2(ilay+1,1:fl))
-      if (pvertall2(ilay,298).eq.pvertall2(ilay+1,298)) then
+      if(pvertall2(ilay,298).eq.pvertall2(ilay+1,298)) then
         tupallTM(ilay,1:fl) = 1._real64
       else
         tupallTM(ilay,1:fl) = -2._real64*sqrt(epsh(ilay)*epsh(ilay+1)*pvertall2(ilay,1:fl)*pvertall2(ilay+1,1:fl)) / &
@@ -180,7 +180,7 @@ if (refl_var%refcoef_changed) then
       endif
 
       rupallTE(ilay,1:fl) = (1._real64 - pvertall1(ilay,1:fl)/pvertall1(ilay+1,1:fl)) / (1._real64 + pvertall1(ilay,1:fl)/pvertall1(ilay+1,1:fl))
-      if (pvertall1(ilay,298).eq.pvertall1(ilay+1,298)) then
+      if(pvertall1(ilay,298).eq.pvertall1(ilay+1,298)) then
         tupallTE(ilay,1:fl) = 1._real64
       else
         tupallTE(ilay,1:fl) = 2._real64*sqrt(pvertall1(ilay,1:fl)*pvertall1(ilay+1,1:fl)) / (pvertall1(ilay+1,1:fl) + pvertall1(ilay,1:fl))

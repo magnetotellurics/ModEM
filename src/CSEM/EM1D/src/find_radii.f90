@@ -26,10 +26,10 @@ subroutine find_radii_global(refl_var,src,bgdat,comm)
 
   !2x2 matrix of different cases:
   !same coordinates for all field components
-  if (bgdat%allcomp_samecoord) then
+  if(bgdat%allcomp_samecoord) then
 
     !same horizontal coordinates for all receiver (grid cell) depths?
-    if (bgdat%allzrec_samecoord) then
+    if(bgdat%allzrec_samecoord) then
       izrmax = 1
     else
       izrmax = refl_var%nzrecExy
@@ -39,58 +39,58 @@ subroutine find_radii_global(refl_var,src,bgdat,comm)
   else
 
     !radii for Ex and Ey
-    if (bgdat%allzrec_samecoord) then
+    if(bgdat%allzrec_samecoord) then
       izrmax = 1
     else
       izrmax = refl_var%nzrecExy
     endif
-    have_commonExy: if (bgdat%nExy.gt.0) then
+    have_commonExy: if(bgdat%nExy.gt.0) then
       call update_maxminrad(src,bgdat%Exypos,refl_var%nrecperzExy,refl_var%irecperzExy,izrmax,rmax,rmin)
     else
 
-      if (bgdat%nEx.gt.0) then
+      if(bgdat%nEx.gt.0) then
         call update_maxminrad(src,bgdat%Expos,refl_var%nrecperzExy,refl_var%irecperzExy,izrmax,rmax,rmin)
       endif
-      if (bgdat%nEy.gt.0) then
+      if(bgdat%nEy.gt.0) then
         call update_maxminrad(src,bgdat%Eypos,refl_var%nrecperzExy,refl_var%irecperzExy,izrmax,rmax,rmin)
       endif
     endif have_commonExy
 
     !radii for Ez
-    if (bgdat%allzrec_samecoord) then
+    if(bgdat%allzrec_samecoord) then
       izrmax = 1
     else
       izrmax = refl_var%nzrecEz
     endif
-    have_Ez: if (bgdat%nEz.gt.0) then
+    have_Ez: if(bgdat%nEz.gt.0) then
       call update_maxminrad(src,bgdat%Ezpos,refl_var%nrecperzEz,refl_var%irecperzEz,izrmax,rmax,rmin)
     endif have_Ez
 
     !radii for Hx and Hy
-    if (bgdat%allzrec_samecoord) then
+    if(bgdat%allzrec_samecoord) then
       izrmax = 1
     else
       izrmax = refl_var%nzrecHxy
     endif
-    have_commonHxy: if (bgdat%nHxy.gt.0) then
+    have_commonHxy: if(bgdat%nHxy.gt.0) then
       call update_maxminrad(src,bgdat%Hxypos,refl_var%nrecperzHxy,refl_var%irecperzHxy,izrmax,rmax,rmin)
     else
 
-      if (bgdat%nHx.gt.0) then
+      if(bgdat%nHx.gt.0) then
         call update_maxminrad(src,bgdat%Hxpos,refl_var%nrecperzHxy,refl_var%irecperzHxy,izrmax,rmax,rmin)
       endif
-      if (bgdat%nHy.gt.0) then
+      if(bgdat%nHy.gt.0) then
         call update_maxminrad(src,bgdat%Hypos,refl_var%nrecperzHxy,refl_var%irecperzHxy,izrmax,rmax,rmin)
       endif
     endif have_commonHxy
 
     !radii for Hz
-    if (bgdat%allzrec_samecoord) then
+    if(bgdat%allzrec_samecoord) then
       izrmax = 1
     else
       izrmax = refl_var%nzrecHz
     endif
-    have_Hz: if (bgdat%nHz.gt.0) then
+    have_Hz: if(bgdat%nHz.gt.0) then
       call update_maxminrad(src,bgdat%Hzpos,refl_var%nrecperzHz,refl_var%irecperzHz,izrmax,rmax,rmin)
     endif have_Hz
 
@@ -154,9 +154,9 @@ subroutine update_maxminrad(src,pos,nrecperz,recidx,izrmax,rmax,rmin)
 
           rtmp = sqrt(x**2 + y**2)
 
-          if (rtmp .ne. 0._real64) then
-            if (rtmp .lt. rmin) rmin = rtmp
-            if (rtmp .gt. rmax) rmax = rtmp
+          if(rtmp .ne. 0._real64) then
+            if(rtmp .lt. rmin) rmin = rtmp
+            if(rtmp .gt. rmax) rmax = rtmp
           endif
 
         enddo recs
@@ -179,9 +179,9 @@ subroutine update_maxminrad(src,pos,nrecperz,recidx,izrmax,rmax,rmin)
 
             rtmp = sqrt(x**2 + y**2)
 
-            if (rtmp .ne. 0._real64) then
-              if (rtmp .lt. rmin) rmin = rtmp
-              if (rtmp .gt. rmax) rmax = rtmp
+            if(rtmp .ne. 0._real64) then
+              if(rtmp .lt. rmin) rmin = rtmp
+              if(rtmp .gt. rmax) rmax = rtmp
             endif
 
           enddo recsw
@@ -201,9 +201,9 @@ subroutine update_maxminrad(src,pos,nrecperz,recidx,izrmax,rmax,rmin)
 
             rtmp = sqrt(x**2 + y**2)
 
-            if (rtmp .ne. 0._real64) then
-              if (rtmp .lt. rmin) rmin = rtmp
-              if (rtmp .gt. rmax) rmax = rtmp
+            if(rtmp .ne. 0._real64) then
+              if(rtmp .lt. rmin) rmin = rtmp
+              if(rtmp .gt. rmax) rmax = rtmp
             endif
 
           enddo recswe
@@ -257,7 +257,7 @@ subroutine extract_srccoord_general(refl_var,src,izsrc)
   case (dipole)
 
     allocate(refl_var%xs(isrcstart:isrcend),refl_var%ys(isrcstart:isrcend), stat=ierr)
-    if (ierr.ne.0) call alloc_error(pid,'extract_srccoord_general','xs,ys for dipole',ierr)
+    if(ierr.ne.0) call alloc_error(pid,'extract_srccoord_general','xs,ys for dipole',ierr)
 
     !dipole sources: copy (and re-sort) the relevant positions from src structure
     do isrc = isrcstart,isrcend
@@ -278,7 +278,7 @@ subroutine extract_srccoord_general(refl_var,src,izsrc)
 
     !vectors for all wire elements
     allocate(refl_var%xs(nelemall),refl_var%ys(nelemall), stat=ierr)
-    if (ierr.ne.0) call alloc_error(pid,'extract_srccoord_general','xs,ys for wire',ierr)
+    if(ierr.ne.0) call alloc_error(pid,'extract_srccoord_general','xs,ys for wire',ierr)
 
 
     ielemall = 0
@@ -340,7 +340,7 @@ subroutine store_rmaxmin(refl_var,rmax,rmin, comm)
 #endif
 
   !fix if there is no positive non-zero radius
-  if (rminall.gt.rmaxall) then
+  if(rminall.gt.rmaxall) then
     rminall = 1.
     rmaxall = 1.
   endif
@@ -354,7 +354,7 @@ subroutine store_rmaxmin(refl_var,rmax,rmin, comm)
   !number of radius values at logarithmic spacing
   !use minimum non-zero radius here
   !rmax was initiated to -1 and stayed at this value if we only had a zero radius during radius search
-  if (rmaxall .gt. 0._real64) then
+  if(rmaxall .gt. 0._real64) then
     nrad = 1 + int(ceiling(10._real64*log(refl_var%rmax/rminall)))  !log is log10
   else
     nrad = 1
@@ -366,7 +366,7 @@ subroutine store_rmaxmin(refl_var,rmax,rmin, comm)
   !radius vectors for integration radii and temp integral values
   !radii are (re-)populated each time during fast Hankel integration
   allocate(refl_var%radlog(nrad),refl_var%intvaltmp(nrad,NRELmax), stat=ierr)
-  if (ierr.ne.0) call alloc_error(pid,'find_radii_grid','refl_var%radlog etc.',ierr)
+  if(ierr.ne.0) call alloc_error(pid,'find_radii_grid','refl_var%radlog etc.',ierr)
 
 endsubroutine store_rmaxmin
 

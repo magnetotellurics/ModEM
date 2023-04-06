@@ -449,7 +449,7 @@ module dipole1d
 !   
 ! KWK Feb 10, 2010  Added Gauss quadrature option to David's finite dipole integration loop
 !
-    if (lenTx1D /= 0.d0) then
+    if(lenTx1D /= 0.d0) then
            
         ! For convenience, get dip & azm in radians
         dip = dipTx1D * pi / 180.d0
@@ -463,7 +463,7 @@ module dipole1d
         !
         ! Compute weights and integration points:
         !
-        if (numIntegPts < 1) numIntegPts = 1  ! stupid user, don't do that!
+        if(numIntegPts < 1) numIntegPts = 1  ! stupid user, don't do that!
         
         allocate(weights(numIntegPts), xint(numIntegPts))
         
@@ -495,7 +495,7 @@ module dipole1d
         !       the same size!  It is simpler to make the working vars the same
         !       size than to always remember to code ex1D(1:n1D) = w_ex1D(1:n1D)
         nActual1D = size(ex1D,1)
-        if (linversion) then
+        if(linversion) then
             nActualnlay1D  = size(dexdsig,2)
         endif
         
@@ -508,7 +508,7 @@ module dipole1d
         w_bx1D  = (0.d0,0.d0)
         w_by1D  = (0.d0,0.d0)
         w_bz1D  = (0.d0,0.d0)
-        if (linversion) then
+        if(linversion) then
             allocate (w_dexdsig(nActual1D,nActualnlay1D), w_dbxdsig(nActual1D,nActualnlay1D))
             allocate (w_deydsig(nActual1D,nActualnlay1D), w_dbydsig(nActual1D,nActualnlay1D))
             allocate (w_djzdsig(nActual1D,nActualnlay1D), w_dbzdsig(nActual1D,nActualnlay1D))
@@ -534,7 +534,7 @@ module dipole1d
         ! Coord system is NED: x=north, y=east, z=+ve down
         ! Azimuth is degrees clockwise from north of the HEAD
         ! Dip is degrees DOWN from horizontal of the HEAD
-        if (lenTx1D /= 0.d0) then
+        if(lenTx1D /= 0.d0) then
             xTx1D   = ctr_xTx1D + (xint(j) * cos(dip) * cos(azm))
             yTx1D   = ctr_yTx1D + (xint(j) * cos(dip) * sin(azm))
             zTx1D   = ctr_zTx1D + (xint(j) * sin(dip))
@@ -546,10 +546,10 @@ module dipole1d
         !
         !  Pre-compute potential coefficients for later use in spline interpolation:
         !
-        if ( n1d==1 ) then ! Don't use spline if only a single receiver 
+        if( n1d==1 ) then ! Don't use spline if only a single receiver 
             lUseSpline1D = .false.
         endif
-        if (lUseSpline1D) then     
+        if(lUseSpline1D) then     
             call PrecomputePotCoeffs
         endif
 !
@@ -577,7 +577,7 @@ module dipole1d
 !
 ! Apply Phase Convention:
 !
-        if (phaseConvention(1:4) == 'lead') then 
+        if(phaseConvention(1:4) == 'lead') then 
             ! Change from Dipole1D's lag (exp(-iwt)) to lead (exp(+iwt))
             ex1D = conjg(ex1D)
             ey1D = conjg(ey1D)
@@ -614,14 +614,14 @@ module dipole1d
 !	   endif
 
         ! If doing a finite dipole, add weighted contribution to the sum
-        if (lenTx1D /= 0.d0) then
+        if(lenTx1D /= 0.d0) then
             w_ex1D = w_ex1D + ex1D*weights(j)
             w_ey1D = w_ey1D + ey1D*weights(j)
             w_jz1D = w_jz1D + jz1D*weights(j)
             w_bx1D = w_bx1D + bx1D*weights(j)
             w_by1D = w_by1D + by1D*weights(j)
             w_bz1D = w_bz1D + bz1D*weights(j)
-            if (linversion) then
+            if(linversion) then
                 w_dexdsig = w_dexdsig + dexdsig*weights(j)
                 w_deydsig = w_deydsig + deydsig*weights(j)
                 w_djzdsig = w_djzdsig + djzdsig*weights(j)
@@ -641,7 +641,7 @@ module dipole1d
 !
 ! If we did a finite dipole...
 !
-    if (lenTx1D /= 0.d0) then
+    if(lenTx1D /= 0.d0) then
         ! Return Tx position to its center value so future calls (for other
         ! frequencies) have the correct center.
         xTx1D   = ctr_xTx1D
@@ -657,7 +657,7 @@ module dipole1d
         bz1D = w_bz1D / lenTx1D
         ! Allocate the working variables into which everything will be summed.
         deallocate (w_ex1D, w_ey1D, w_jz1D, w_bx1D, w_by1D, w_bz1D)
-        if (linversion) then
+        if(linversion) then
             dexdsig = w_dexdsig /lenTx1D
             deydsig = w_deydsig /lenTx1D
             djzdsig = w_djzdsig /lenTx1D
@@ -666,7 +666,7 @@ module dipole1d
             dbzdsig = w_dbzdsig /lenTx1D
             deallocate (w_dexdsig, w_deydsig, w_djzdsig, w_dbxdsig, w_dbydsig, w_dbzdsig)
         endif
-    end if
+    endif
     
     deallocate(xint,weights)
     
@@ -764,12 +764,12 @@ subroutine legendre_compute_dr ( order, xtab, weight )
     real    ( kind = 8 ) xtemp
     real    ( kind = 8 ) weight(order)
     
-    if ( order < 1 ) then
+    if( order < 1 ) then
     write ( *, '(a)' ) ' '
     write ( *, '(a)' ) 'LEGENDRE_COMPUTE - Fatal error!'
     write ( *, '(a,i8)' ) '  Illegal value of ORDER = ', order
     stop
-    end if
+    endif
     
     e1 = real ( order * ( order + 1 ), kind = 8 )
     
@@ -836,9 +836,9 @@ subroutine legendre_compute_dr ( order, xtab, weight )
     
     end do
     
-    if ( mod ( order, 2 ) == 1 ) then
+    if( mod ( order, 2 ) == 1 ) then
     xtab(1) = 0.0D+00
-    end if
+    endif
     !
     !  Shift the data up.
     !
@@ -888,7 +888,7 @@ subroutine legendre_compute_dr ( order, xtab, weight )
     ext = 0d0; bxt = 0d0
     
     
-    if (linversion) then
+    if(linversion) then
         dexhdsig = 0d0; deyhdsig = 0d0; djzhdsig = 0d0
         dbxhdsig = 0d0; dbyhdsig = 0d0; dbzhdsig = 0d0
         dexvdsig = 0d0; deyvdsig = 0d0; djzvdsig = 0d0
@@ -898,13 +898,13 @@ subroutine legendre_compute_dr ( order, xtab, weight )
 !
 ! Compute fields for horizontal electric dipole at azimuthTx1D  
 !
-    if (lhed)   then
+    if(lhed)   then
         call comp_hed_fht   
     endif
 !
 ! Compute fields for vertical electric dipole:  
 !           
-    if (lved) then
+    if(lved) then
         call comp_ved_fht 
     endif
 !
@@ -921,7 +921,7 @@ subroutine legendre_compute_dr ( order, xtab, weight )
     by1D(i) = byh*cc + byv*ss
     bz1D(i) = bzh*cc + bzv*ss   
     
-    if (linversion) then
+    if(linversion) then
     
         dexdsig(i,:) = dexhdsig*cc + dexvdsig*ss  ! arrays are n1D (#rxs) by nlay1D
         deydsig(i,:) = deyhdsig*cc + deyvdsig*ss
@@ -958,17 +958,17 @@ subroutine legendre_compute_dr ( order, xtab, weight )
 !
 ! HED pointing along x
 !
-    if (kxmode.eq.1) then  
+    if(kxmode.eq.1) then  
         call comp_kx_x(kx1D,ex1D(i),ey1D(i),jz1D(i),bx1D(i),by1D(i),bz1D(i),lbcomp)
 !
 ! HED pointing along y
 !       
-    elseif (kxmode.eq.2) then 
+    elseif(kxmode.eq.2) then 
         call comp_kx_y(kx1D,ex1D(i),ey1D(i),jz1D(i),bx1D(i),by1D(i),bz1D(i),lbcomp)
 !
 ! VED pointing along z
 !   
-    elseif (kxmode.eq.3) then 
+    elseif(kxmode.eq.3) then 
         call comp_kx_z(kx1D,ex1D(i),ey1D(i),jz1D(i),bx1D(i),by1D(i),bz1D(i),lbcomp)
     else
         write(*,*) 'Error in Dipole1D, kxmode is unknown! kxmode: ',kxmode
@@ -1018,11 +1018,11 @@ subroutine legendre_compute_dr ( order, xtab, weight )
 !
 ! Check for |dy| < 1
 !
-   if (dy.lt.0) then
+   if(dy.lt.0) then
       ysign = -1     !  we only need to use the sign term for odd integrals
-   elseif (dy.gt.0) then
+   elseif(dy.gt.0) then
       ysign = 1
-   elseif (dy.eq.0) then
+   elseif(dy.eq.0) then
       ysign = 0 
    endif
    ruse = maxval((/abs(dy),1d0/)) ! always use positive range, adjust sign afterwards on odd integrals
@@ -1057,7 +1057,7 @@ subroutine legendre_compute_dr ( order, xtab, weight )
         call jz_hed_x_kx(kx,ky,f)
         jz = jz + f*cosfc(j)
         
-        if (lbcomp) then
+        if(lbcomp) then
             ! Bx: 
             call bx_hed_x_kx(kx,ky,f)
             bx = bx + f*sinfc(j)
@@ -1125,11 +1125,11 @@ subroutine legendre_compute_dr ( order, xtab, weight )
 !
 ! Check for |dy| < 1
 !
-   if (dy.lt.0) then
+   if(dy.lt.0) then
       ysign = -1     !  we only need to use the sign term for odd integrals
-   elseif (dy.gt.0) then
+   elseif(dy.gt.0) then
       ysign = 1
-   elseif (dy.eq.0) then
+   elseif(dy.eq.0) then
       ysign = 0
    endif
    ruse = maxval((/abs(dy),1.d0/)) ! always use positive range, adjust sign afterwards on odd integrals
@@ -1165,7 +1165,7 @@ subroutine legendre_compute_dr ( order, xtab, weight )
         call jz_hed_y_kx(kx,ky,f)
         jz = jz + f*sinfc(j)
         
-        if (lbcomp) then
+        if(lbcomp) then
             ! Bx: 
             call bx_hed_y_kx(kx,ky,f)
             bx = bx + f*cosfc(j)
@@ -1233,11 +1233,11 @@ subroutine legendre_compute_dr ( order, xtab, weight )
 !
 ! Check for |dy| < 1
 !
-   if (dy.lt.0) then
+   if(dy.lt.0) then
       ysign = -1     !  we only need to use the sign term for odd integrals
-   elseif (dy.gt.0) then
+   elseif(dy.gt.0) then
       ysign = 1
-   elseif (dy.eq.0) then
+   elseif(dy.eq.0) then
       ysign = 0
    endif   
    ruse = maxval((/abs(dy),1d0/)) ! always use positive range, adjust sign afterwards on odd integrals
@@ -1273,7 +1273,7 @@ subroutine legendre_compute_dr ( order, xtab, weight )
         call jz_ved_kx(kx,ky,f)
         jz = jz + f*cosfc(j)
 
-        if (lbcomp) then
+        if(lbcomp) then
             ! Bx: 
             call bx_ved_kx(kx,ky,f)
             bx = bx + f*sinfc(j)
@@ -1350,7 +1350,7 @@ subroutine legendre_compute_dr ( order, xtab, weight )
         call jz_hed_j1(lam,jzj1)   
         jzh = jzh + jzj1*htj1(j)      
              
-        if (lbcomp) then
+        if(lbcomp) then
         
             ! Bx:
             call bx_hed_j0(lam,bxj0)
@@ -1370,7 +1370,7 @@ subroutine legendre_compute_dr ( order, xtab, weight )
 !
 ! Compute derivatives with respect to conductivity:
 !
-        if (linversion) then 
+        if(linversion) then 
             
             ! dExdSig:
             call dexdsig_hed_j0(lam)
@@ -1386,7 +1386,7 @@ subroutine legendre_compute_dr ( order, xtab, weight )
             call djzdsig_hed_j1(lam)         
             djzhdsig = djzhdsig + dfdsigj1*htj1(j)
             
-            if (lbcomp) then    
+            if(lbcomp) then    
             
                 ! dBxdsig:
                 call dbxdsig_hed_j0(lam)
@@ -1420,7 +1420,7 @@ subroutine legendre_compute_dr ( order, xtab, weight )
     byh =  sin2theta/4d0/pi*byh/r
     bzh = -costheta/2d0/pi*bzh/r
     
-    if (linversion) then 
+    if(linversion) then 
     
         dexhdsig =  sin2theta/(4d0*pi*mu0*csigsite)*dexhdsig/r ! need to normalize back by r value
         dexhdsig(iRxlayer) = dexhdsig(iRxlayer) - exh/csigsite  ! augment iRxlayer since csigsite was outside kernel function
@@ -1436,12 +1436,12 @@ subroutine legendre_compute_dr ( order, xtab, weight )
 ! x is at -90 degrees from dipole azimuth, y points along dipole (positive in direction of dipole azimuth)
 ! so now we need to rotate the fields back to the cardinal directions
 !   
-    if (rotang.ne.0d0) then
+    if(rotang.ne.0d0) then
         call rotate_fields(exh,eyh,-1.d0*rotang)
         call rotate_fields(bxh,byh,-1.d0*rotang)   
     endif
     
-    if (linversion) then 
+    if(linversion) then 
     
         do i=1,nlay1D
             call rotate_fields(dexhdsig(i),deyhdsig(i),-1.d0*rotang)
@@ -1495,7 +1495,7 @@ subroutine legendre_compute_dr ( order, xtab, weight )
         call jz_ved_j0(lam,fj0)   
         jzv = jzv + fj0*htj0(j)           
         
-        if (lbcomp) then
+        if(lbcomp) then
             ! Bx:
             call bx_ved_j1(lam,fj1)
             bxt = bxt + fj1*htj1(j)               
@@ -1504,7 +1504,7 @@ subroutine legendre_compute_dr ( order, xtab, weight )
         
         endif
         
-        if (linversion) then
+        if(linversion) then
         
             ! dExdsig: 
             call dexdsig_ved_j1(lam)   
@@ -1517,7 +1517,7 @@ subroutine legendre_compute_dr ( order, xtab, weight )
             call djzdsig_ved_j0(lam)   
             djzvdsig = djzvdsig + dfdsigj0*htj0(j)           
             
-            if (lbcomp) then
+            if(lbcomp) then
                 ! dBxdsig:
                 call dbxdsig_ved_j1(lam)
                 dbxtdsig = dbxtdsig + dfdsigj1*htj1(j)               
@@ -1538,7 +1538,7 @@ subroutine legendre_compute_dr ( order, xtab, weight )
     bxv = -dsin(thetaRx)/2d0/pi*bxt/r
     byv =  dcos(thetaRx)/2d0/pi*bxt/r
     
-    if (linversion) then
+    if(linversion) then
     
         dexvdsig = -dcos(thetaRx)/(2d0*pi*mu0*csigsite)*dextdsig/r 
         dexvdsig(iRxlayer) = dexvdsig(iRxlayer) - exv/csigsite
@@ -1600,7 +1600,7 @@ subroutine legendre_compute_dr ( order, xtab, weight )
 ! First check that the model depths are correctly defined
 !
     do i = 3, nlay1D ! first layer top depth is never used
-        if (zlay1D(i).le.zlay1D(i-1)) then
+        if(zlay1D(i).le.zlay1D(i-1)) then
            write(*,*) ''        
            write(*,*) 'Dipole1D Error: layer depths not increasing, layers: ',i,i-1
            write(*,*) 'Stopping.'
@@ -1617,7 +1617,7 @@ subroutine legendre_compute_dr ( order, xtab, weight )
 !
 !  Allocate storage if derivatives also being computed   
 !
-    if (linversion) then
+    if(linversion) then
         allocate ( dRmdsig(nlay1D,nlay1D), dRpdsig(nlay1D,nlay1D) , dSmdsig(nlay1D,nlay1D), dSpdsig(nlay1D,nlay1D) )
         allocate ( dadsig(nlay1D,nlay1D), dbdsig(nlay1D,nlay1D), dcdsig(nlay1D,nlay1D), dddsig(nlay1D,nlay1D) )
         allocate ( dAydsig(nlay1D), dAzdsig(nlay1D)  )
@@ -1736,10 +1736,10 @@ subroutine legendre_compute_dr ( order, xtab, weight )
 !
 ! Set logical flags for computing spatial domain ved and hed
 !
-        if ( sin(dipTx1D*pi/180.).eq.0. ) then  ! if dip is 0 or 180, then no VED computation needed
+        if( sin(dipTx1D*pi/180.).eq.0. ) then  ! if dip is 0 or 180, then no VED computation needed
             lved = .false.
             lhed = .true.
-        elseif ( sin(dipTx1D*pi/180.).eq.1. ) then  ! kwk debug: change this and above to tolerance statements
+        elseif( sin(dipTx1D*pi/180.).eq.1. ) then  ! kwk debug: change this and above to tolerance statements
             lved = .true.
             lhed = .false. 
         else  ! both ved and hed needed
@@ -1760,8 +1760,8 @@ subroutine legendre_compute_dr ( order, xtab, weight )
 !         = 2   HED pointing along y
 !         = 3   VED pointing along z
 !
-        if (kxmode /= 3) lhed = .true.
-        if (kxmode == 3) lved = .true.
+        if(kxmode /= 3) lhed = .true.
+        if(kxmode == 3) lved = .true.
 
 !
 ! Initialize CT filter coefficients:
@@ -1826,14 +1826,14 @@ subroutine legendre_compute_dr ( order, xtab, weight )
 !
     iTxlayer = 1 ! default
     do j = 2,nlay1D
-       if (zTx1D.gt.zlay1D(j))  then
+       if(zTx1D.gt.zlay1D(j))  then
             iTxlayer = j
        endif
     enddo
 !
 ! Set transmitter depth in iTxlayer
 !
-    if (iTxlayer.eq.1) then
+    if(iTxlayer.eq.1) then
         depthTx = 1d150 ! large value allows for zeroing source term if in top layer
     else
         depthTx = zTx1D - zlay1D(iTxlayer)   
@@ -1841,7 +1841,7 @@ subroutine legendre_compute_dr ( order, xtab, weight )
 !
 ! Set transmitter height in iTxlayer:
 !
-    if (iTxlayer.eq.nlay1D) then
+    if(iTxlayer.eq.nlay1D) then
         heightTx = 1d150 ! large value allows for zeroing source term if in bottom layer
     else
         heightTx = zlay1D(iTxlayer+1) - zTx1D;   
@@ -1861,7 +1861,7 @@ subroutine legendre_compute_dr ( order, xtab, weight )
     
     implicit none
 
-    if (.not. lUseSpline1D) then
+    if(.not. lUseSpline1D) then
         return
     endif
     
@@ -1874,7 +1874,7 @@ subroutine legendre_compute_dr ( order, xtab, weight )
     deallocate(  c_ved_interp,  d_ved_interp )
     deallocate( c2_ved_interp, d2_ved_interp )
     
-    if (linversion) then
+    if(linversion) then
         deallocate(  dadsig_hed_interp,  dbdsig_hed_interp )
         deallocate(  dcdsig_hed_interp,  dddsig_hed_interp )
         deallocate( dadsig2_hed_interp, dbdsig2_hed_interp )
@@ -1905,7 +1905,7 @@ subroutine legendre_compute_dr ( order, xtab, weight )
 !
 !  Deallocate storage if derivatives also being computed   
 !
-    if (linversion) then
+    if(linversion) then
         deallocate ( dRmdsig, dRpdsig, dSmdsig, dSpdsig )
         deallocate ( dadsig, dbdsig, dcdsig, dddsig, dAydsig, dAzdsig, dAydsigdz, dAzdsigdz, dAzdsigdz2)
         deallocate ( dae1dsig, dbe2dsig, dce1dsig, dde2dsig )
@@ -1946,7 +1946,7 @@ subroutine legendre_compute_dr ( order, xtab, weight )
     z          = z1D(i)                ! internal potential routines use r and z
     r          = sqrt( dx**2 + dy**2)  ! Horizontal range to site 
     
-    if ((r).lt.1d0) then  
+    if((r).lt.1d0) then  
         r = 1d0 ! Move r to 1 so that division by r doesn't explode anywhere
         ! For now this will be a nudge to y=1,x=0 but keep in mind that this will cause small 
         ! error in r=0 fields for inversions...but then again this is where point dipole approximation
@@ -1971,14 +1971,14 @@ subroutine legendre_compute_dr ( order, xtab, weight )
 !
     iRxlayer = 1
     do j= 2,nlay1D
-      if (z.gt.zlay1D(j))  then   ! Sites on boundaries use the top layer 
+      if(z.gt.zlay1D(j))  then   ! Sites on boundaries use the top layer 
         iRxlayer = j
       endif
     enddo
 !
 ! Set receiver depth in iRxlayer
 !
-    if (iRxlayer.eq.1) then
+    if(iRxlayer.eq.1) then
         depthRx = 1d150 ! large value allows for zeroing source term if in top layer
     else
         depthRx = z - zlay1D(iRxlayer)   
@@ -1986,7 +1986,7 @@ subroutine legendre_compute_dr ( order, xtab, weight )
 !
 ! Set receiver height in iRxlayer:
 !
-    if (iRxlayer.eq.nlay1D) then
+    if(iRxlayer.eq.nlay1D) then
         heightRx = 1d150 ! large value allows for zeroing source term if in bottom layer
     else
         heightRx = zlay1D(iRxlayer+1) - z;   
@@ -1996,13 +1996,13 @@ subroutine legendre_compute_dr ( order, xtab, weight )
 !       
 ! Set sgn operator for source layer primary term and it's derivative 
 !
-    if (iRxlayer == iTxlayer) then
+    if(iRxlayer == iTxlayer) then
       isgnsrc = 1                   ! potential has primary source term
-      if (z > zTx1D) then
+      if(z > zTx1D) then
         isgndsrcdz = -1             ! negative source term derivative
-      elseif (z < zTx1D) then
+      elseif(z < zTx1D) then
         isgndsrcdz = 1              ! positive source term derivative
-      elseif (z == zTx1D) then
+      elseif(z == zTx1D) then
         isgndsrcdz = 0              ! no source term derivative
       endif
     else
@@ -2874,7 +2874,7 @@ subroutine legendre_compute_dr ( order, xtab, weight )
     c  = 0d0
     d  = 0d0
     
-    if (linversion) then
+    if(linversion) then
     
         dRmdsig = 0d0 !  note that for bounding layers these terms start out as zero
         dRpdsig = 0d0
@@ -2909,7 +2909,7 @@ subroutine legendre_compute_dr ( order, xtab, weight )
       Sm(i)  =  (sgmosgp + sjexp) / ( 1.d0 + sgmosgp*sjexp)     
         
     
-        if (linversion) then
+        if(linversion) then
              
             dgammadsig   = -ii*omega*mu0 / (2.d0 *gamma(i))
             drdsig       = 2.d0*gamma(i-1) / ((gamma(i) + gamma(i-1) )**2) *dgammadsig
@@ -2984,7 +2984,7 @@ subroutine legendre_compute_dr ( order, xtab, weight )
        Rp(i)   =  (gmogp + rjexp)   / ( 1.d0 + gmogp*rjexp)
        Sp(i)   =  (sgmosgp + sjexp) / ( 1.d0 + sgmosgp*sjexp)    
    
-        if (linversion) then
+        if(linversion) then
 
             dgammadsig = -ii*omega*mu0 / (2.d0 *gamma(i))
             drdsig     = 2.d0*gamma(i+1) / ((gamma(i) + gamma(i+1) )**2) *dgammadsig
@@ -3055,7 +3055,7 @@ subroutine legendre_compute_dr ( order, xtab, weight )
 !
 ! If inversion, compute da/dsig,db/dsig
 !
-    if (linversion) then
+    if(linversion) then
          
          ! Make sure nothing is tiny:
 !        where (abs(dRmdsig) <1d-80) dRmdsig = 0d0
@@ -3066,10 +3066,10 @@ subroutine legendre_compute_dr ( order, xtab, weight )
   !
   ! Catch to omit recursion derivatives if Tx in upper or lowermost layers
   !
-        if (iTxlayer == nlay1D) then
+        if(iTxlayer == nlay1D) then
             isgnRm = 0 
             isgnRp = 0          
-        elseif (iTxlayer == 1)  then
+        elseif(iTxlayer == 1)  then
             isgnRm = 0
             isgnRp = 0  
         else
@@ -3146,7 +3146,7 @@ subroutine legendre_compute_dr ( order, xtab, weight )
     
     enddo
     
-    if (linversion) then    
+    if(linversion) then    
 
         do i = iTxlayer-1,1,-1
     
@@ -3188,7 +3188,7 @@ subroutine legendre_compute_dr ( order, xtab, weight )
     
     enddo
     
-    if (linversion) then       
+    if(linversion) then       
         
         do i = iTxlayer+1,nlay1D    
         
@@ -3235,7 +3235,7 @@ subroutine legendre_compute_dr ( order, xtab, weight )
 !
 ! If inversion, compute dc/dsig,dd/dsig
 !
-    if (linversion) then
+    if(linversion) then
     
         dgammadsig = -ii*omega*mu0 / (2.d0 *gamma(iTxlayer)) 
     
@@ -3302,7 +3302,7 @@ subroutine legendre_compute_dr ( order, xtab, weight )
         srcm = 0d0
     enddo
         
-    if (linversion) then
+    if(linversion) then
     
         do i = iTxlayer-1,1,-1      
         ! base form for dcdsig:
@@ -3340,7 +3340,7 @@ subroutine legendre_compute_dr ( order, xtab, weight )
         srcp = 0d0
      enddo    
      
-    if (linversion) then
+    if(linversion) then
     
         do i = iTxlayer+1,nlay1D
         ! base form for dddsig:
@@ -3422,7 +3422,7 @@ subroutine legendre_compute_dr ( order, xtab, weight )
 !
 ! Either compute potential coeffs or interpolate using precomputed values
 !
-    if (lUseSpline1D) then
+    if(lUseSpline1D) then
 !
 ! Get interpolated value of coefficients at current lambda:
 !             
@@ -3467,13 +3467,13 @@ subroutine legendre_compute_dr ( order, xtab, weight )
 !
 ! Catch tiny numbers:
 !
-!    if ( abs(aa).lt.1d-150) aa = 0d0
-!    if ( abs(bb).lt.1d-150) bb = 0d0
-!    if ( abs(cc).lt.1d-150) cc = 0d0
-!    if ( abs(dd).lt.1d-150) dd = 0d0  
-!    if ( abs(expcoef1).lt.1d-150) expcoef1 = 0d0
-!    if ( abs(expcoef2).lt.1d-150) expcoef2 = 0d0
-!    if ( abs(expsrc1).lt.1d-150)  expsrc1  = 0d0
+!    if( abs(aa).lt.1d-150) aa = 0d0
+!    if( abs(bb).lt.1d-150) bb = 0d0
+!    if( abs(cc).lt.1d-150) cc = 0d0
+!    if( abs(dd).lt.1d-150) dd = 0d0  
+!    if( abs(expcoef1).lt.1d-150) expcoef1 = 0d0
+!    if( abs(expcoef2).lt.1d-150) expcoef2 = 0d0
+!    if( abs(expsrc1).lt.1d-150)  expsrc1  = 0d0
 
     ae1 = aa*expcoef1
     be2 = bb*expcoef2
@@ -3507,7 +3507,7 @@ subroutine legendre_compute_dr ( order, xtab, weight )
     
     csigsite  = csig(iRxlayer)
 
-    if (linversion) then
+    if(linversion) then
     
   ! Form the common components:
        
@@ -3640,7 +3640,7 @@ subroutine legendre_compute_dr ( order, xtab, weight )
     c  = 0d0
     d  = 0d0   
     
-    if (linversion) then
+    if(linversion) then
     
         dSmdsig = 0d0 !  note that for bounding layers these terms start out as zero
         dSpdsig = 0d0
@@ -3664,7 +3664,7 @@ subroutine legendre_compute_dr ( order, xtab, weight )
       sjexp   = Sm(i-1)*expmgh(i-1) 
       Sm(i)   =  (sgmosgp + sjexp)  / ( 1.d0 + sgmosgp*sjexp)
       
-      if (linversion) then
+      if(linversion) then
       
             dgammadsig      = -ii*omega*mu0 / (2.d0 *gamma(i))
             dsdsig          = (dgammadsig*csig(i-1)*(1.d0 - sgmosgp)  - &
@@ -3709,7 +3709,7 @@ subroutine legendre_compute_dr ( order, xtab, weight )
         sjexp  = Sp(i+1)*expmgh(i+1) ! since Sp(nlay1D) is zero, no need to worry about height of bottom layer
         Sp(i)  =  (sgmosgp + sjexp) / ( 1.d0 + sgmosgp*sjexp)
         
-        if (linversion) then
+        if(linversion) then
 
             dgammadsig = -ii*omega*mu0 / (2.d0 *gamma(i))
             dsdsig     = (dgammadsig*csig(i+1)*(1.d0 - sgmosgp) - (gamma(i+1)*(1.d0+ sgmosgp)) ) / &
@@ -3752,7 +3752,7 @@ subroutine legendre_compute_dr ( order, xtab, weight )
     c(iTxlayer) = ( rmrp*srcm*expmgh(iTxlayer)  + Sp(iTxlayer)*srcp  ) / onemrmrp    
     d(iTxlayer) = ( rmrp*srcp*expmgh(iTxlayer)  + Sm(iTxlayer)*srcm  ) / onemrmrp    
     
-    if (linversion) then
+    if(linversion) then
     
         ! Make sure nothing is tiny:
 !        where (abs(dSmdsig) <1d-80) dSmdsig = 0d0
@@ -3761,10 +3761,10 @@ subroutine legendre_compute_dr ( order, xtab, weight )
       !
       ! Catch to omit recursion derivatives if Tx in upper or lowermost layers
       !
-        if (iTxlayer == nlay1D) then
+        if(iTxlayer == nlay1D) then
             isgnRm = 0 
             isgnRp = 0          
-        elseif (iTxlayer == 1)  then
+        elseif(iTxlayer == 1)  then
             isgnRm = 0
             isgnRp = 0  
         else
@@ -3837,7 +3837,7 @@ subroutine legendre_compute_dr ( order, xtab, weight )
         srcm = 0d0 ! primary source term only for first layer above source layer
     enddo
 
-    if (linversion) then
+    if(linversion) then
     
         do i = iTxlayer-1,1,-1      
         ! base form for dcdsig:
@@ -3877,7 +3877,7 @@ subroutine legendre_compute_dr ( order, xtab, weight )
         srcp = 0d0 ! primary source term only for first layer below source layer
     enddo
     
-    if (linversion) then
+    if(linversion) then
     
         do i = iTxlayer+1,nlay1D
         ! base form for dddsig:
@@ -3954,7 +3954,7 @@ subroutine legendre_compute_dr ( order, xtab, weight )
 !
 ! Either compute potential coeffs or interpolate using precomputed values
 !
-    if (lUseSpline1D) then
+    if(lUseSpline1D) then
 !
 ! Get interpolated value of coefficients at current lambda:
 !             
@@ -3993,11 +3993,11 @@ subroutine legendre_compute_dr ( order, xtab, weight )
 !   
     expsrc1  = exp(-gamma(iTxlayer)*dabs(z-zTx1D))
     
-!    if ( abs(cc).lt.1d-150) cc=0d0
-!    if ( abs(dd).lt.1d-150) dd=0d0    
-!    if ( abs(expcoef1).lt.1d-150) expcoef1=0d0
-!    if ( abs(expcoef2).lt.1d-150) expcoef2=0d0
-!    if ( abs(expsrc1).lt.1d-150) expsrc1=0d0
+!    if( abs(cc).lt.1d-150) cc=0d0
+!    if( abs(dd).lt.1d-150) dd=0d0    
+!    if( abs(expcoef1).lt.1d-150) expcoef1=0d0
+!    if( abs(expcoef2).lt.1d-150) expcoef2=0d0
+!    if( abs(expsrc1).lt.1d-150) expsrc1=0d0
     
     srcterm  = isgnsrc*mu0*sdm1D/2d0/gamma(iTxlayer)*expsrc1  !isgnsrc is 0|1 
     
@@ -4017,7 +4017,7 @@ subroutine legendre_compute_dr ( order, xtab, weight )
   
     csigsite = csig(iRxlayer)
     
-    if (linversion) then
+    if(linversion) then
     
   ! Form the common components:   
 
@@ -4117,9 +4117,9 @@ subroutine legendre_compute_dr ( order, xtab, weight )
         dx         = x1D(i) - xTx1D
         dy         = y1D(i) - yTx1D
         r          = sqrt( dx**2 + dy**2)  ! Horizontal range to site
-        if (r<1d0) r = 1d0
-        if (r>r_max) r_max = r
-        if (r<r_min) r_min = r
+        if(r<1d0) r = 1d0
+        if(r>r_max) r_max = r
+        if(r<r_min) r_min = r
         
     enddo ! loop over sites
     
@@ -4132,7 +4132,7 @@ subroutine legendre_compute_dr ( order, xtab, weight )
     do i = 1,n1D  ! Loop over receivers
         iRxlayer = 1            ! Get layer current Rx resides in:
         do j= 2,nlay1D
-          if (z1D(i).gt.zlay1D(j))  then   ! Sites on boundaries use the top layer 
+          if(z1D(i).gt.zlay1D(j))  then   ! Sites on boundaries use the top layer 
             iRxlayer = j
           endif
         enddo
@@ -4141,7 +4141,7 @@ subroutine legendre_compute_dr ( order, xtab, weight )
     ! now modify iRxLayerInterp to have interp array column index
     icnt = 0
     do i = 1,nlay1D
-        if ( iRxLayerInterp(i) /= 0) then
+        if( iRxLayerInterp(i) /= 0) then
             icnt = icnt + 1
             iRxLayerInterp(i) = icnt
         endif
@@ -4152,7 +4152,7 @@ subroutine legendre_compute_dr ( order, xtab, weight )
     allocate( ilayersInterp(nlayersInterp) )  ! this small array is used to extract the required layers for interpolation
     icnt = 0
     do i = 1,nlay1D
-        if ( iRxLayerInterp(i) /= 0) then
+        if( iRxLayerInterp(i) /= 0) then
             icnt = icnt  + 1
             ilayersInterp(icnt) = i      
         endif
@@ -4193,7 +4193,7 @@ subroutine legendre_compute_dr ( order, xtab, weight )
     linversionIn = linversion
     linversion = .false.
     
-    if (lhed)  then
+    if(lhed)  then
 !
 ! Test for lam_hed_min:
 !
@@ -4207,7 +4207,7 @@ subroutine legendre_compute_dr ( order, xtab, weight )
             ! Test all layers with Rxs:
             do i = 1,nlay1d
                 if  ( iRxLayerInterp(i) /= 0)  then
-                   if ( (abs(a(i)) > pot_coef_tol) .or. (abs(b(i)) > pot_coef_tol) .or. &
+                   if( (abs(a(i)) > pot_coef_tol) .or. (abs(b(i)) > pot_coef_tol) .or. &
                       & (abs(c(i)) > pot_coef_tol) .or. (abs(d(i)) > pot_coef_tol) ) then  
                         lam_hed_min = lamtest   
                     endif
@@ -4231,7 +4231,7 @@ subroutine legendre_compute_dr ( order, xtab, weight )
             ! Test all layers with Rxs:
             do i = 1,nlay1d
                 if  ( iRxLayerInterp(i) /= 0)  then
-                   if ( (abs(a(i)) > pot_coef_tol) .or. (abs(b(i)) > pot_coef_tol) .or. &
+                   if( (abs(a(i)) > pot_coef_tol) .or. (abs(b(i)) > pot_coef_tol) .or. &
                       & (abs(c(i)) > pot_coef_tol) .or. (abs(d(i)) > pot_coef_tol) ) then             
                         lam_hed_max = lamtest   
                     endif
@@ -4245,7 +4245,7 @@ subroutine legendre_compute_dr ( order, xtab, weight )
     endif
 
 
-    if (lved)  then
+    if(lved)  then
 !
 ! Test for lam_ved_min:
 !
@@ -4259,7 +4259,7 @@ subroutine legendre_compute_dr ( order, xtab, weight )
             ! Test all layers with Rxs:
             do i = 1,nlay1d
                 if  ( iRxLayerInterp(i) /= 0) then
-                   if ( (abs(c(i)) > pot_coef_tol) .or. (abs(d(i)) > pot_coef_tol) ) then  
+                   if( (abs(c(i)) > pot_coef_tol) .or. (abs(d(i)) > pot_coef_tol) ) then  
                         lam_ved_min = lamtest   
                     endif
                 endif
@@ -4280,7 +4280,7 @@ subroutine legendre_compute_dr ( order, xtab, weight )
             ! Test all layers with Rxs:
             do i = 1,nlay1d
                 if  ( iRxLayerInterp(i) /= 0)  then
-                   if ( (abs(c(i)) > pot_coef_tol) .or. (abs(d(i)) > pot_coef_tol) ) then                 
+                   if( (abs(c(i)) > pot_coef_tol) .or. (abs(d(i)) > pot_coef_tol) ) then                 
                         lam_ved_max = lamtest   
                     endif
                 endif
@@ -4296,13 +4296,13 @@ subroutine legendre_compute_dr ( order, xtab, weight )
 !
 ! Update min/max lam values based on the test drive results:
 !
-    if (lhed.and.lved) then
+    if(lhed.and.lved) then
         min_lam = min(lam_hed_min,lam_ved_min)
         max_lam = min(lam_hed_max,lam_ved_max)  
-    elseif (lhed) then
+    elseif(lhed) then
         min_lam = lam_hed_min
         max_lam = lam_hed_max       
-    elseif (lved) then
+    elseif(lved) then
         min_lam = lam_ved_min
         max_lam = lam_ved_max           
     endif
@@ -4313,7 +4313,7 @@ subroutine legendre_compute_dr ( order, xtab, weight )
 !   
 ! Compute total number if index points:
 !
-    if ( ( min_lam == 0) .and. (max_lam == 0) ) then
+    if( ( min_lam == 0) .and. (max_lam == 0) ) then
         nlam_interp = 1 ! kwk debug, fix me
         
     else
@@ -4333,7 +4333,7 @@ subroutine legendre_compute_dr ( order, xtab, weight )
     allocate( c2_ved_interp(nlam_interp,nlayersInterp), d2_ved_interp(nlam_interp,nlayersInterp) )
     
     
-    if (linversion) then
+    if(linversion) then
         allocate(  dadsig_hed_interp(nlam_interp,nlay1D,nlayersInterp),  dbdsig_hed_interp(nlam_interp,nlay1D,nlayersInterp) )
         allocate(  dcdsig_hed_interp(nlam_interp,nlay1D,nlayersInterp),  dddsig_hed_interp(nlam_interp,nlay1D,nlayersInterp) )
         allocate( dadsig2_hed_interp(nlam_interp,nlay1D,nlayersInterp), dbdsig2_hed_interp(nlam_interp,nlay1D,nlayersInterp) )
@@ -4362,7 +4362,7 @@ subroutine legendre_compute_dr ( order, xtab, weight )
 ! 
 ! 2a. Compute horizontal coefficients if needed
 !
-    if (lhed)  then
+    if(lhed)  then
     
         do i = 1,nlam_interp    
         
@@ -4376,7 +4376,7 @@ subroutine legendre_compute_dr ( order, xtab, weight )
             c_hed_interp(i,1:nlayersInterp) = c(ilayersInterp)
             d_hed_interp(i,1:nlayersInterp) = d(ilayersInterp)
 
-            if (linversion) then
+            if(linversion) then
                 dadsig_hed_interp(i,1:nlay1d,1:nlayersInterp) = dadsig(1:nlay1d,ilayersInterp)
                 dbdsig_hed_interp(i,1:nlay1d,1:nlayersInterp) = dbdsig(1:nlay1d,ilayersInterp)
                 dcdsig_hed_interp(i,1:nlay1d,1:nlayersInterp) = dcdsig(1:nlay1d,ilayersInterp)
@@ -4397,7 +4397,7 @@ subroutine legendre_compute_dr ( order, xtab, weight )
         ! KWK Note: These take up most of the CPU time for each call to Dipole1D with linversion = true.
         ! This is the place to concentrate future optimization efforts.
         !
-            if (linversion) then                
+            if(linversion) then                
                 do j = 1,nlay1d  ! interpolate sensitivity to each layer (i.e., the 2nd index):
                     call spline_i1d(lam_interp,dadsig_hed_interp(:,j,i),nlam_interp,dadsig2_hed_interp(:,j,i) )
                     call spline_i1d(lam_interp,dbdsig_hed_interp(:,j,i),nlam_interp,dbdsig2_hed_interp(:,j,i) )
@@ -4413,7 +4413,7 @@ subroutine legendre_compute_dr ( order, xtab, weight )
 ! 
 ! 2b. Compute vertical coefficients if needed
 !       
-    if (lved)  then
+    if(lved)  then
     
         do i = 1,nlam_interp    
         
@@ -4424,7 +4424,7 @@ subroutine legendre_compute_dr ( order, xtab, weight )
             c_ved_interp(i,1:nlayersInterp) = c(ilayersInterp)
             d_ved_interp(i,1:nlayersInterp) = d(ilayersInterp)
             
-            if (linversion) then
+            if(linversion) then
                 dcdsig_ved_interp(i,1:nlay1d,1:nlayersInterp) = dcdsig(1:nlay1d,ilayersInterp)
                 dddsig_ved_interp(i,1:nlay1d,1:nlayersInterp) = dddsig(1:nlay1d,ilayersInterp)
             endif
@@ -4438,7 +4438,7 @@ subroutine legendre_compute_dr ( order, xtab, weight )
             call spline_i1d(lam_interp,c_ved_interp(:,i),nlam_interp,c2_ved_interp(:,i) )
             call spline_i1d(lam_interp,d_ved_interp(:,i),nlam_interp,d2_ved_interp(:,i) )       
 
-            if (linversion) then
+            if(linversion) then
                 
                 do j = 1,nlay1d  !   nlam, nlay, nlayersInterp
                     call spline_i1d(lam_interp,dcdsig_ved_interp(:,j,i),nlam_interp,dcdsig2_ved_interp(:,j,i) )
@@ -4574,7 +4574,7 @@ subroutine legendre_compute_dr ( order, xtab, weight )
     cc = 0d0
     dd = 0d0
     
-!    if (linversion) then
+!    if(linversion) then
 !        dadsig(iRxlayer,:) = 0d0
 !        dbdsig(iRxlayer,:) = 0d0
 !        dcdsig(iRxlayer,:) = 0d0
@@ -4586,7 +4586,7 @@ subroutine legendre_compute_dr ( order, xtab, weight )
 !
     istr = iptr
     do i = istr,nlam_interp-1
-        if ( (lam_interp(i) <= x) .and. (lam_interp(i+1) >= x) ) then
+        if( (lam_interp(i) <= x) .and. (lam_interp(i+1) >= x) ) then
             iptr = i
             klo = iptr
             khi = iptr+1
@@ -4616,7 +4616,7 @@ subroutine legendre_compute_dr ( order, xtab, weight )
 
 
                         
-            if (linversion) then
+            if(linversion) then
             
                 dadsig(1:nlay1d,iRxlayer) =    ai *  dadsig_hed_interp(klo,1:nlay1d,ilay)  +  & 
                  &                             bi *  dadsig_hed_interp(khi,1:nlay1d,ilay)  +  &
@@ -4673,7 +4673,7 @@ subroutine legendre_compute_dr ( order, xtab, weight )
     cc = 0d0
     dd = 0d0
     
-!    if (linversion) then
+!    if(linversion) then
 !        dcdsig(1:nlay1d,iRxlayer) = 0d0
 !        dddsig(1:nlay1d,iRxlayer) = 0d0
 !    endif
@@ -4685,7 +4685,7 @@ subroutine legendre_compute_dr ( order, xtab, weight )
         !
         ! Find bounding points:
         !   
-        if ( (lam_interp(i) <= x) .and. (lam_interp(i+1) >= x) ) then
+        if( (lam_interp(i) <= x) .and. (lam_interp(i+1) >= x) ) then
             iptr = i
             klo = iptr
             khi = iptr+1
@@ -4708,7 +4708,7 @@ subroutine legendre_compute_dr ( order, xtab, weight )
          &       (a3ma * d2_ved_interp(klo,ilay) + b3mb * d2_ved_interp(khi,ilay))     
                         
                         
-            if (linversion) then
+            if(linversion) then
                         
         
                 dcdsig(1:nlay1d,iRxlayer) =    ai *  dcdsig_ved_interp(klo,1:nlay1d,ilay)  +  & 

@@ -90,7 +90,7 @@ module CoreComponents
     public :: printInversionControlFileTemplate
     !
 contains
-    !
+   !
     !> Read Model File and instantiate global variables: main_grid, model_operator and sigma0
     subroutine handleModelFile( sigma0 )
         implicit none
@@ -126,11 +126,38 @@ contains
                 !
                 write( *, * ) "          Air layers from the method [", trim( air_layer%method ), "]"
                 !
-                write( *, "( a39, f12.5, a4 )" ) "          Top of the air layers is at ", sum( air_layer%Dz ) / 1000, " km."
+                write( *, "( a39, f12.5, a4 )" ) "Top of the air layers is at ", sum( air_layer%Dz ) / 1000, " km."
                 !
-                write( *, "( a31, f16.5, a2, f16.5, a2, f16.5, a4, f16.5 )" ) "          o(x,y,z) * rotDeg:(", main_grid%ox, ", ", main_grid%oy, ", ", main_grid%oz, ") * ", main_grid%rotDeg
+                write( *, "( a23, i6, a2, i6, a2, i6, a1 )" ) "dim(x,y,z):(", main_grid%nx, ", ", main_grid%ny, ", ", main_grid%nz, ")"
                 !
-                allocate( model_operator, source = ModelOperator_MF_t( main_grid ) )
+                write( *, "( a30, f16.5, a2, f16.5, a2, f16.5, a4, f16.5 )" ) "o(x,y,z) * rotDeg:(", main_grid%ox, ", ", main_grid%oy, ", ", main_grid%oz, ") * ", main_grid%rotDeg
+                !
+                !> Instantiate the ForwardSolver - Specific type can be chosen via control file
+                select case( field_type )
+                    !
+                    case( FIELD_MF )
+                        !
+                        allocate( model_operator, source = ModelOperator_MF_t( main_grid ) )
+                        !
+                    case( FIELD_SP )
+                        !
+                        allocate( model_operator, source = ModelOperator_SP_t( main_grid ) )
+                        !
+                    case( FIELD_SP2 )
+                        !
+                        stop "Error: handleModelFile > FIELD_SP2 not implemented"
+                        !
+                    case( "" )
+                        !
+                        write( *, * ) "     "//achar(27)//"[91m# Warning:"//achar(27)//"[0m handleModelFile > field_type not provided, using ModelOperator_MF_t."
+                        !
+                        allocate( model_operator, source = ModelOperator_MF_t( main_grid ) )
+                        !
+                    case default
+                        !
+                        stop "Error: handleModelFile > Undefined model_operator"
+                        !
+                end select
                 !
                 call model_operator%setEquations
                 !
@@ -634,6 +661,10 @@ contains
             write( ioFwdTmp, "(A46)" ) "#     Comment or remove to use default value  "
             write( ioFwdTmp, "(A46)" ) "##############################################"
             write( ioFwdTmp, "(A1)" )  "#"
+            write( ioFwdTmp, "(A20)" ) "# <Field parameters>"
+            write( ioFwdTmp, "(A1)" )  "#"
+            write( ioFwdTmp, "(A27)" ) "field_type [MF|SP|SP2] : MF"
+            write( ioFwdTmp, "(A1)" )  "#"
             write( ioFwdTmp, "(A19)" ) "# <Grid parameters>"
             write( ioFwdTmp, "(A1)" )  "#"
             write( ioFwdTmp, "(A33)" ) "#grid_header [ModEM|HDF5] : ModEM"
@@ -648,7 +679,7 @@ contains
             write( ioFwdTmp, "(A21)" ) "# <Source parameters>"
             write( ioFwdTmp, "(A1)" )  "#"
             write( ioFwdTmp, "(A66)" ) "source_type_mt [1D|2D]                                        : 1D"
-            write( ioFwdTmp, "(A68)" ) "source_type_csem [EM1D|Dipole1D]                              : EM1D"
+            write( ioFwdTmp, "(A72)" ) "source_type_csem [EM1D|Dipole1D]                              : Dipole1D"
             write( ioFwdTmp, "(A78)" ) "get_1d_from [Fixed|Geometric_mean|Mean_around_Tx|Tx_Position] : Geometric_mean"
             write( ioFwdTmp, "(A1)" )  "#"
             write( ioFwdTmp, "(A21)" ) "# <Solver parameters>"

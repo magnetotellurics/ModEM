@@ -19,11 +19,11 @@ subroutine init_intval(refl_var,bgdat)
   integer(kind=int32)          :: ierr        !error index
 
 
-  if (bgdat%dowhat .eq. fwdmodel) then !fields only
+  if(bgdat%dowhat .eq. fwdmodel) then !fields only
     allocate(refl_var%intvalre(refl_var%nrad,nintHED),refl_var%intvalim(refl_var%nrad,nintHED), &
              refl_var%spl_derivre(refl_var%nrad,nintHED),refl_var%spl_derivim(refl_var%nrad,nintHED), stat=ierr)
   else !sensitivities (and possibly fields)
-    if (bgdat%aniso .eq. iso) then !isotropic
+    if(bgdat%aniso .eq. iso) then !isotropic
       allocate(refl_var%intvalre(refl_var%nrad,nintHEDd),refl_var%intvalim(refl_var%nrad,nintHEDd), &
                refl_var%spl_derivre(refl_var%nrad,nintHEDd),refl_var%spl_derivim(refl_var%nrad,nintHEDd), stat=ierr)
     else !VTI-anisotropic
@@ -31,7 +31,7 @@ subroutine init_intval(refl_var,bgdat)
                refl_var%spl_derivre(refl_var%nrad,nintHEDdvti),refl_var%spl_derivim(refl_var%nrad,nintHEDdvti), stat=ierr)
     endif
   endif
-  if (ierr.ne.0) call alloc_error(pid,'init_intval','refl_var%intvalre etc.',ierr)
+  if(ierr.ne.0) call alloc_error(pid,'init_intval','refl_var%intvalre etc.',ierr)
 
 
 endsubroutine init_intval

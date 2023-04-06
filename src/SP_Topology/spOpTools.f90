@@ -499,7 +499,8 @@ contains
         !> everything is allocated and correct on entry
         !
         if( A%nCol .NE. size(x) ) then
-            stop "Error: RMATxCVEC > matrix and vector sizes incompatible"
+            write( *, * ) "Error: RMATxCVEC > matrix and vector sizes incompatible = ", A%nCol, size(x)
+			stop
         endif
         !
         do i = 1, A%nRow
@@ -1771,7 +1772,7 @@ contains
             B%col=A%col-1
             B%val=A%val
             return
-        end if
+        endif
         nrow = A%nRow
         !nz_l = floor((A%row(nrow+1)-1)/np)
         if(present(isizes)) then ! split into given sizes
@@ -1787,7 +1788,7 @@ contains
         iend=nrow
         else
         iend=i*nrow_l+nrow_l
-        end if
+        endif
         endif
         allocate(rowT(iend-istart+1))
         rowT =(/(j, j=istart, iend) /)
@@ -1836,7 +1837,7 @@ contains
             B%col=A%col-1
             B%val=A%val
             return
-        end if
+        endif
         nrow = A%nRow
         !nz_l = floor((A%row(nrow+1)-1)/np)
         if(present(isizes)) then ! split according to the given sizes
@@ -1852,7 +1853,7 @@ contains
         iend=nrow
         else
         iend=i*nrow_l+nrow_l
-        end if
+        endif
         endif
         allocate(rowT(iend-istart+1))
         rowT =(/(j, j=istart, iend) /)
@@ -2617,11 +2618,11 @@ contains
         !
         selectcase(node_type)
             !
-            case(CENTER)
+            case(CELL)
                 nx = grid%nx
                 ny = grid%ny
                 nz = grid%nz
-            case(CORNER)
+            case( NODE )
                 nx = grid%nx+1
                 ny = grid%ny+1
                 nz = grid%nz+1
@@ -2821,9 +2822,9 @@ contains
                 !
                 temp_sv = temp_vector%sv
                 !
-            case(CORNER)
+            case( NODE )
                 !
-                temp_scalar = rScalar3D_SG_t( grid, CORNER )
+                temp_scalar = rScalar3D_SG_t( grid, NODE )
                 !
                 temp_scalar%v(1, :, :) = 1
                 temp_scalar%v(temp_scalar%nx+1, :, :) = 1

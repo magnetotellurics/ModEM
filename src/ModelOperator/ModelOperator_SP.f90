@@ -23,9 +23,9 @@ module ModelOperator_SP
         !
         real( kind=prec ), allocatable, dimension(:) :: VomegaMuSig
         !
-        type( spMatCSR_Real ) :: VDiv        ! div : edges->nodes (interior only)
-        type( spMatCSR_Real ) :: VDsG        ! operator for div correction
-        type( spMatCSR_Real ) :: VDs         ! divergence of current operator
+        type( spMatCSR_Real ) :: VDiv    ! div : edges->nodes (interior only)
+        type( spMatCSR_Real ) :: VDsG    ! operator for div correction
+        type( spMatCSR_Real ) :: VDs     ! divergence of current operator
         !
         type( spMatCSR_Real ) :: VDsG_L, VDsG_U
         !
@@ -277,7 +277,7 @@ contains
         integer :: i, m
         !
         !> set indexes for interior and boundary nodes
-        call boundaryIndexSP( CORNER, self%metric%grid, self%NODEb, self%NODEi )
+        call boundaryIndexSP( NODE, self%metric%grid, self%NODEb, self%NODEi )
         !
         !> (1) first construct VDiv operator transpose of topology
         call RMATtrans( G, Temp )
@@ -287,14 +287,10 @@ contains
         !
         call RMATxDIAG( Temp, aux_vec, Temp2 )
         !
-        write( *, * ) "Temp2%nRow, Temp2%nCol: ", Temp2%nRow, Temp2%nCol
-        !
         call deall_spMatCSR( Temp )
         !
         !> select out interior nodes, edges
         call subMatrix_Real( Temp2, self%NODEi, self%EDGEi, self%VDiv )
-        !
-        write( *, * ) "self%VDiv%nRow, self%VDiv%nCol: ", self%VDiv%nRow, self%VDiv%nCol
         !
         call deall_spMatCSR( Temp2 )
         !
@@ -387,23 +383,30 @@ contains
         class( Vector_t ), intent( inout ) :: outE
         logical, intent( in ), optional :: p_adjoint
         !
-        complex( kind=prec ), allocatable, dimension(:) :: temp_array_inE, temp_array_outE
+        complex( kind=prec ), allocatable, dimension(:) :: inE_array, outE_array, interior_array
         logical :: adjoint
         !
         if( .NOT. inE%is_allocated ) then
             stop "Error: amultModelOperatorSP > inE not allocated"
         endif
         !
-        temp_array_inE = inE%getArray()
+        inE_array = inE%getArray()
         !
-        temp_array_outE = temp_array_inE
-        temp_array_outE = C_ZERO
+        write( *, * ) "amult full     : ", size( inE_array )
+        write( *, * ) "amult mask     : ", size( inE%mask_interior )
+        write( *, * ) "amult interior : ", size( pack( inE_array, inE%mask_interior ) )
+        write( *, * ) "amult boundary : ", size( pack( inE_array, .NOT. inE%mask_interior ) )
+        !
+        !> GET JEST THE INTERIOR
+        interior_array = pack( inE_array, inE%mask_interior )
+        !
+        outE_array = interior_array
+        outE_array = C_ZERO
         !
         ! ON CCii DIFFERENT LENGTH ???? 
-        ! call RMATxCVEC( self%CCii, temp_array_inE, temp_array_outE )
+        call RMATxCVEC( self%CCii, interior_array, outE_array )
         !
-        ! CC Works
-        call RMATxCVEC( self%CC, temp_array_inE, temp_array_outE )
+        deallocate( interior_array )
         !
         if( present( p_adjoint ) ) then
             adjoint = p_adjoint
@@ -412,18 +415,18 @@ contains
         endif
         !
         if( adjoint ) then
-            temp_array_outE = temp_array_outE - ONE_I * ISIGN * self%VomegaMuSig * temp_array_inE
+            outE_array = outE_array - ONE_I * ISIGN * self%VomegaMuSig * inE_array
         else
-            temp_array_outE = temp_array_outE + ONE_I * ISIGN * self%VomegaMuSig * temp_array_inE
+            outE_array = outE_array + ONE_I * ISIGN * self%VomegaMuSig * inE_array
         endif
         !
-        deallocate( temp_array_inE )
+        deallocate( inE_array )
         !
         outE = cVector3D_SG_t( self%metric%grid, EDGE )
         !
-        call outE%setArray( temp_array_outE )
+        call outE%setArray( outE_array )
         !
-        deallocate( temp_array_outE )
+        deallocate( outE_array )
         !
     end subroutine amultModelOperatorSP
     !
@@ -438,22 +441,36 @@ contains
         class( Field_t ), intent( in ) :: bdry
         class( Vector_t ), intent( inout ) :: outE
         !
-        complex( kind=prec ), allocatable, dimension(:) :: temp_array, temp_array_inE, temp_array_outE
+        integer i, j
+        complex( kind=prec ), allocatable, dimension(:) :: inE_array, outE_array, bdry_array
         !
         if( .NOT. bdry%is_allocated ) then
-            stop "Error: amultModelOperatorSP > bdry not allocated"
+            stop "Error: multAibModelOperatorSP > bdry not allocated"
         endif
         !
-        temp_array_inE = bdry%getArray()
+        if( .NOT. outE%is_allocated ) then
+            stop "Error: multAibModelOperatorSP > outE not allocated"
+        endif
         !
-        temp_array_outE = temp_array_inE
-        temp_array_outE = C_ZERO
+        inE_array = bdry%getArray()
+        !
+        write( *, * ) "multAib full     : ", size( inE_array )
+        write( *, * ) "multAib mask     : ", size( bdry%mask_interior )
+        !
+        bdry_array = pack( inE_array, .NOT. bdry%mask_interior )
+        !
+        write( *, * ) "multAib boundary : ", size( bdry_array )
+        !
+        outE_array = bdry_array
+        outE_array = C_ZERO
         !
         ! ON CCib DIFFERENT LENGTH ???? 
-        ! call RMATxCVEC( self%CCib, temp_array_inE, temp_array_outE )
+        call RMATxCVEC( self%CCib, bdry_array, outE_array )
         !
         ! CC Works
-        call RMATxCVEC( self%CC, temp_array_inE, temp_array_outE )
+        !call RMATxCVEC( self%CC, inE_array, outE_array )
+        !
+        deallocate( bdry_array ) 
         !
         ! if( present( p_adjoint ) ) then
             ! adjoint = p_adjoint
@@ -468,25 +485,35 @@ contains
             ! !
             ! allocate( temp_array( size( self%EDGEb ) ) )
             ! !
-            ! call RMATxCVEC( CCibt, temp_array_inE, temp_array )
+            ! call RMATxCVEC( CCibt, inE_array, temp_array )
             ! !
-            ! temp_array_outE( self%EDGEb ) = temp_array;
+            ! outE_array( self%EDGEb ) = temp_array;
             ! !
             ! call deall_spMATcsr( CCibt )
             ! !
             ! deallocate( temp_array )
             ! !
         ! else
-            ! call RMATxCVEC( self%CCib, temp_array_inE, temp_array_outE )
+            ! call RMATxCVEC( self%CCib, inE_array, outE_array )
         ! endif
         !
-        deallocate( temp_array_inE )
+        !deallocate( inE_array )
         !
-        outE = rVector3D_SG_t( self%metric%grid, EDGE )
+        ! j = 1
+        ! do i = 1, size( inE_array )
+            ! if( bdry%mask_interior(i) ) then
+                ! inE_array(i) = temp_array(j)
+                ! j = j + 1
+            ! endif
+        ! enddo
         !
-        call outE%setArray( temp_array_outE )
+        deallocate( inE_array )
         !
-        deallocate( temp_array_outE )
+        outE = cVector3D_SG_t( self%metric%grid, EDGE )
+        !
+        call outE%setArray( outE_array )
+        !
+        deallocate( outE_array )
         !
     end subroutine multAibModelOperatorSP
     !
@@ -587,16 +614,16 @@ contains
         class( Field_t ), intent( in ) :: inE
         class( Scalar_t ), intent( inout ) :: outPhi
         !
-        complex( kind=prec ), allocatable, dimension(:) :: temp_array_inE, temp_array_outPhi
+        complex( kind=prec ), allocatable, dimension(:) :: inE_array, temp_array_outPhi
         !
-        temp_array_inE = inE%getArray()
+        inE_array = inE%getArray()
         !
-        temp_array_outPhi = temp_array_inE
+        temp_array_outPhi = inE_array
         temp_array_outPhi = C_ZERO
         !
-        call RMATxCVEC( self%VDs, temp_array_inE, temp_array_outPhi )
+        call RMATxCVEC( self%VDs, inE_array, temp_array_outPhi )
         !
-        deallocate( temp_array_inE )
+        deallocate( inE_array )
         !
         outPhi = rVector3D_SG_t( inE%grid, inE%grid_type )
         !
@@ -614,22 +641,22 @@ contains
         class( Scalar_t ), intent( in ) :: inPhi
         class( Vector_t ), intent( inout ) :: outE
         !
-        complex( kind=prec ), allocatable, dimension(:) :: temp_array_inPhi, temp_array_outE
+        complex( kind=prec ), allocatable, dimension(:) :: temp_array_inPhi, outE_array
         !
         temp_array_inPhi = inPhi%getArray()
         !
-        temp_array_outE = temp_array_inPhi
-        temp_array_outE = C_ZERO
+        outE_array = temp_array_inPhi
+        outE_array = C_ZERO
         !
-        call RMATxCVEC( G, temp_array_inPhi, temp_array_outE )
+        call RMATxCVEC( G, temp_array_inPhi, outE_array )
         !
         deallocate( temp_array_inPhi )
         !
         outE = rVector3D_SG_t( inPhi%grid, inPhi%grid_type )
         !
-        call outE%setArray( temp_array_outE )
+        call outE%setArray( outE_array )
         !
-        deallocate( temp_array_outE )
+        deallocate( outE_array )
         !
     end subroutine gradModelOperatorSP
     !
@@ -643,20 +670,20 @@ contains
         !
         type( spMatCSR_Real ) :: D
         !
-        complex( kind=prec ), allocatable, dimension(:) :: temp_array_inE, temp_array_outPhi
+        complex( kind=prec ), allocatable, dimension(:) :: inE_array, temp_array_outPhi
         !
         call RMATtrans( G, D )
         !
-        temp_array_inE = inE%getArray()
+        inE_array = inE%getArray()
         !
-        temp_array_outPhi = temp_array_inE
+        temp_array_outPhi = inE_array
         temp_array_outPhi = C_ZERO
         !
-        call RMATxCVEC( D, temp_array_inE, temp_array_outPhi )
+        call RMATxCVEC( D, inE_array, temp_array_outPhi )
         !
         call deall_spMatCSR( D )
         !
-        deallocate( temp_array_inE )
+        deallocate( inE_array )
         !
         outPhi = rScalar3D_SG_t( inE%grid, inE%grid_type )
         !

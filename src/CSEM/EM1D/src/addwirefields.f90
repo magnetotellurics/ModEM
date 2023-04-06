@@ -36,7 +36,7 @@ subroutine addwirefields(bgdat,refl_var,src,icur,ifreq)
   !add up fields from separate wires
   icurstart = (icur-1)*src%nwire
 
-  if ((bgdat%dowhat.eq.fwdmodel) .or. (bgdat%dowhat.eq.fwd_deriv)) then
+  if((bgdat%dowhat.eq.fwdmodel) .or. (bgdat%dowhat.eq.fwd_deriv)) then
     addfields: do iwire=1,src%nwire
       !take complex conjugate of current here to match Loeseth's sign convention
       !careful: some frequency components of the currents can be zero
@@ -63,7 +63,7 @@ subroutine addwirefields(bgdat,refl_var,src,icur,ifreq)
     enddo addfields
   endif
 
-  if (bgdat%dowhat.ge.deriv) then
+  if(bgdat%dowhat.ge.deriv) then
     addfieldsderiv: do iwire=1,src%nwire
       !careful: some frequency components of the currents can be zero
       !--> do NOT overwrite values in Ewire, but multiply the current at the very end!
@@ -89,7 +89,7 @@ subroutine addwirefields(bgdat,refl_var,src,icur,ifreq)
         enddo
       enddo
     enddo addfieldsderiv
-    if (bgdat%aniso .eq. vti) then
+    if(bgdat%aniso .eq. vti) then
       addfieldsderivv: do iwire=1,src%nwire
         cur = conjg(src%cur(icurstart+iwire,ifreq))
         do ilay = 1,nlay

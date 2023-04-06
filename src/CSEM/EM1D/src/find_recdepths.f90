@@ -16,7 +16,7 @@ subroutine find_recdepths_general(bgdat,refl_var)
   !internal variables
 
 
-  if (bgdat%allcomp_samecoord) then
+  if(bgdat%allcomp_samecoord) then
     !same coordinates for all field components: search depths for one component only
     call find_recdepths_1comp(bgdat%nExy,bgdat%Exypos,refl_var%irecperzExy,refl_var%nzrecExy,refl_var%zrecExy,refl_var%nrecperzExy)
     refl_var%irecperzEz => refl_var%irecperzExy
@@ -40,29 +40,29 @@ subroutine find_recdepths_general(bgdat,refl_var)
     !for receivers, x,y,z are the same for Ex and Ey
     !at half-interpolated points, we run bg computations separately for each component --> we have EITHER Ex OR Ey
     !--> a mix of different depths for Ex and Ey is not supposed to occur!
-    if (bgdat%nExy .gt. 0) then
+    if(bgdat%nExy .gt. 0) then
       call find_recdepths_1comp(bgdat%nExy,bgdat%Exypos,refl_var%irecperzExy,refl_var%nzrecExy,refl_var%zrecExy,refl_var%nrecperzExy)
-    elseif (bgdat%nEx .gt. 0) then
+    elseif(bgdat%nEx .gt. 0) then
       call find_recdepths_1comp(bgdat%nEx,bgdat%Expos,refl_var%irecperzExy,refl_var%nzrecExy,refl_var%zrecExy,refl_var%nrecperzExy)
     else
       call find_recdepths_1comp(bgdat%nEy,bgdat%Eypos,refl_var%irecperzExy,refl_var%nzrecExy,refl_var%zrecExy,refl_var%nrecperzExy)
     endif
 	
-    if (bgdat%nEz .gt. 0) then
+    if(bgdat%nEz .gt. 0) then
       call find_recdepths_1comp(bgdat%nEz,bgdat%Ezpos,refl_var%irecperzEz,refl_var%nzrecEz,refl_var%zrecEz,refl_var%nrecperzEz)
-    end if
+    endif
 	
-    if (bgdat%nHxy .gt. 0) then
+    if(bgdat%nHxy .gt. 0) then
       call find_recdepths_1comp(bgdat%nHxy,bgdat%Hxypos,refl_var%irecperzHxy,refl_var%nzrecHxy,refl_var%zrecHxy,refl_var%nrecperzHxy)
-    elseif (bgdat%nHx .gt. 0) then
+    elseif(bgdat%nHx .gt. 0) then
       call find_recdepths_1comp(bgdat%nHx,bgdat%Hxpos,refl_var%irecperzHxy,refl_var%nzrecHxy,refl_var%zrecHxy,refl_var%nrecperzHxy)
-    elseif (bgdat%nHy .gt. 0) then
+    elseif(bgdat%nHy .gt. 0) then
       call find_recdepths_1comp(bgdat%nHy,bgdat%Hypos,refl_var%irecperzHxy,refl_var%nzrecHxy,refl_var%zrecHxy,refl_var%nrecperzHxy)
     endif
 	
-    if (bgdat%nHz .gt. 0) then
+    if(bgdat%nHz .gt. 0) then
      call find_recdepths_1comp(bgdat%nHz,bgdat%Hzpos,refl_var%irecperzHz,refl_var%nzrecHz,refl_var%zrecHz,refl_var%nrecperzHz)
-	end if
+	endif
 	
   endif
 endsubroutine find_recdepths_general
@@ -95,16 +95,16 @@ subroutine find_recdepths_1comp(nrec,pos,irecperz,nzrec,zrec,nrecperz_out)
 
 
   allocate(irecperz(nrec), stat=ierr)
-  if (ierr.ne.0) call alloc_error(pid,'find_recdepths_1comp','irecperz',ierr)
+  if(ierr.ne.0) call alloc_error(pid,'find_recdepths_1comp','irecperz',ierr)
 
   !temp depth vector
   allocate(zrtmp(nrec),nrecperz(nrec), stat=ierr)
-  if (ierr.ne.0) call alloc_error(pid,'find_recdepths_1comp','zrtmp,nrecperz',ierr)
+  if(ierr.ne.0) call alloc_error(pid,'find_recdepths_1comp','zrtmp,nrecperz',ierr)
 
   !get sort indices for receiver depths
   call indexx(nrec,pos(:,3),irecperz)
 
-  if (nrec .eq. 0) then
+  if(nrec .eq. 0) then
     nzr = 0
   else
 
@@ -114,7 +114,7 @@ subroutine find_recdepths_1comp(nrec,pos,irecperz,nzrec,zrec,nrecperz_out)
     zrtmp(1) = pos(irecperz(1),3)
     nrecperz(1) = 1
     do irec=2,nrec
-      if (pos(irecperz(irec),3) .eq. pos(irecperz(irec-1),3)) then
+      if(pos(irecperz(irec),3) .eq. pos(irecperz(irec-1),3)) then
         nrecperz(nzr) = nrecperz(nzr) + 1
       else
         nzr = nzr + 1
@@ -127,7 +127,7 @@ subroutine find_recdepths_1comp(nrec,pos,irecperz,nzrec,zrec,nrecperz_out)
 
   nzrec = nzr
   allocate(zrec(nzrec),nrecperz_out(nzrec), stat=ierr)
-  if (ierr.ne.0) call alloc_error(pid,'find_recdepths_1comp','zrec,nzrec',ierr)
+  if(ierr.ne.0) call alloc_error(pid,'find_recdepths_1comp','zrec,nzrec',ierr)
   zrec = zrtmp(1:nzrec)
   nrecperz_out = nrecperz(1:nzrec)
 
@@ -156,7 +156,7 @@ subroutine clean_zrec(refl_var,bgdat)
 
 
   
-  if (bgdat%allcomp_samecoord) then
+  if(bgdat%allcomp_samecoord) then
     nullify(refl_var%irecperzEz,refl_var%zrecEz,refl_var%nrecperzEz)
     nullify(refl_var%irecperzHxy,refl_var%zrecHxy,refl_var%nrecperzHxy)
     nullify(refl_var%irecperzHz,refl_var%zrecHz,refl_var%nrecperzHz)

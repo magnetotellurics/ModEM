@@ -8,7 +8,7 @@ module Field
     use Grid
     !
     character(:), allocatable :: field_type
-    character( len=13 ), parameter :: FIELD_STD = "StandardField"
+    character( len=15 ), parameter :: FIELD_MF = "MatrixFreeField"
     character( len=17 ), parameter :: FIELD_SP = "SparseMatrixField"
     character( len=19 ), parameter :: FIELD_SP2 = "SparseMatrixFieldV2"
     !
@@ -19,6 +19,8 @@ module Field
         character( len=4 ) :: grid_type
         !
         integer :: nx, ny, nz, store_state
+        !
+        logical, dimension(:), allocatable :: mask_interior
         !
         logical :: is_allocated
         !
@@ -75,6 +77,8 @@ module Field
             procedure( interface_read_field ), deferred, public :: read
             procedure( interface_write_field ), deferred, public :: write
             procedure( interface_print_field ), deferred, public :: print
+            !
+            procedure( interface_setinteriormask_field ), deferred, public :: setInteriorMask
             !
             !> Field procedures
             procedure, public :: init => initializeField
@@ -306,6 +310,11 @@ module Field
             logical, intent( in ), optional :: append
         end subroutine interface_print_field
         !
+        subroutine interface_setinteriormask_field( self )
+            import :: Field_t
+            class( Field_t ), intent( inout ) :: self
+        end subroutine interface_setinteriormask_field
+        !
     end interface
     !
 contains
@@ -356,7 +365,7 @@ contains
         implicit none
         !
         class( Field_t ), intent( in ) :: self
-        class( Field_t ), allocatable, intent( out ) :: boundary
+        class( Field_t ), allocatable, intent( inout ) :: boundary
         !
         allocate( boundary, source = self )
         !
@@ -369,7 +378,7 @@ contains
         implicit none
         !
         class( Field_t ), intent( in ) :: self
-        class( Field_t ), allocatable, intent( out ) :: interior
+        class( Field_t ), allocatable, intent( inout ) :: interior
         !
         allocate( interior, source = self )
         !

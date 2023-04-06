@@ -29,7 +29,7 @@ module rVector3D_MR
     type, extends( rVector3D_SG_t ) :: rVector3D_MR_t
         !
         type( rVector3D_SG_t ), allocatable :: sub_vectors(:)
-        !
+		!
         integer, dimension(:), allocatable :: ind_active
         integer, dimension(:), allocatable :: ind_interior
         integer, dimension(:), allocatable :: ind_boundaries
@@ -362,7 +362,7 @@ contains
                 !
                 i1 = 1; i2 = 0;
                 do k = 1, grid%n_grids
-                    n = self%sub_vectors(k)%Length ()
+                    n = self%sub_vectors(k)%length ()
                     i2 = i2 + n
                     call self%sub_vectors(k)%setArray( cmplx( v(i1:i2), 0.0, kind=prec ) )
                     i1 = i1 + n
@@ -400,7 +400,7 @@ contains
             class is( Grid3D_MR_t )
                 !
                 do k = 1, grid%n_grids
-                    n = self%sub_vectors(k)%Length()
+                    n = self%sub_vectors(k)%length()
                     i2 = i2 + n
                     v_temp = self%sub_vectors(k)%getArray()
                     v(i1:i2) = v_temp
@@ -485,7 +485,7 @@ contains
         integer :: n, n_I, k
         real( kind=prec ), parameter :: TOL = 1E-5
         !
-        n = self%Length()
+        n = self%length()
         allocate (v(n))
         v = self%getArray()
         !
@@ -837,8 +837,10 @@ contains
         endif
         !
         select case(self%grid_type)
-            case(EDGE)
-                self%x(:, (/1, self%NdX(2)/), :) = real( cvalue, kind=prec )
+            !
+			case(EDGE)
+                !
+				self%x(:, (/1, self%NdX(2)/), :) = real( cvalue, kind=prec )
                 self%x(:, :, (/1, self%NdX(3)/)) = real( cvalue, kind=prec )
                 self%y((/1, self%NdY(1)/), :, :) = real( cvalue, kind=prec )
                 self%y(:, :, (/1, self%NdY(3)/)) = real( cvalue, kind=prec )
@@ -846,7 +848,8 @@ contains
                 self%z((/1, self%NdZ(1)/), :, :) = real( cvalue, kind=prec )
                 !
             case(FACE)
-                self%x((/1, self%NdX(1)/), :, :) = real( cvalue, kind=prec )
+                !
+				self%x((/1, self%NdX(1)/), :, :) = real( cvalue, kind=prec )
                 self%y(:, (/1, self%NdY(2)/), :) = real( cvalue, kind=prec )
                 self%z(:, :, (/1, self%NdZ(3)/)) = real( cvalue, kind=prec )
                 !
@@ -869,7 +872,8 @@ contains
         endif
         !
         select case(self%grid_type)
-            case(EDGE)
+            !
+			case(EDGE)
                 self%x(:, 2:self%NdX(2)-1, :) = real( cvalue, kind=prec )
                 self%x(:, :, 2:self%NdX(3)-1) = real( cvalue, kind=prec )
                 self%y(2:self%NdY(1)-1, :, :) = real( cvalue, kind=prec )
@@ -882,6 +886,7 @@ contains
                 self%z(:, :, 2:self%NdZ(3)-1) = real( cvalue, kind=prec )
             case default
                 stop "Error: setAllInteriorRVector3D_MR > Invalid grid type."
+			!
         end select
         !
     end subroutine setAllInteriorRVector3D_MR
@@ -2319,4 +2324,15 @@ contains
         !
     end subroutine printRVector3D_MR
     !
+    !> No subroutine briefing
+    !
+    subroutine setInteriorMaskRVector3D_MR( self )
+        implicit none
+        !
+        class( rVector3D_MR_t ), intent( inout ) :: self
+        !
+        stop "Error: setInteriorMaskRVector3D_MR not implemented!"
+        !
+    end subroutine setInteriorMaskRVector3D_MR
+	!
 end module rVector3D_MR
