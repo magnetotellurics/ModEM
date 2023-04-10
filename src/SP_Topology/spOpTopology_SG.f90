@@ -21,7 +21,7 @@
 module spOpTopology_SG
     !
     use spOpTopology
-    use Grid3D_SG
+    use Grid
     !
     type, extends( spOpTopology_t ) :: spOpTopology_SG_t
         !
@@ -115,7 +115,7 @@ contains
         !
         K = K + 1
         !
-        call self%grid%vectorIndex ( YEDGE, I, J, K, IndVec )
+        call self%grid%vectorIndex( YEDGE, I, J, K, IndVec )
         !
         do ii = 1, nXface
             T%col(4*ii - 2) = IndVec(ii) + nXedge
@@ -125,7 +125,7 @@ contains
         K = K - 1
         J = J + 1
         !
-        call self%grid%vectorIndex ( ZEDGE, I, J, K, IndVec )
+        call self%grid%vectorIndex( ZEDGE, I, J, K, IndVec )
         !
         do ii = 1, nXface
             T%col(4*ii) = IndVec(ii) + nXedge + nYedge
@@ -174,7 +174,7 @@ contains
         K = K - 1
         I = I + 1
         !
-        call self%grid%vectorIndex (ZEDGE, I, J, K, IndVec)
+        call self%grid%vectorIndex(ZEDGE, I, J, K, IndVec)
         !
         do ii = 1, nYface
             jj = ii + nXface
@@ -194,8 +194,8 @@ contains
             IndVec(ii) = ii
         end do
         !
-        call self%grid%gridIndex (ZFACE, IndVec, I, J, K)
-        call self%grid%vectorIndex (XEDGE, I, J, K, IndVec)
+        call self%grid%gridIndex(ZFACE, IndVec, I, J, K)
+        call self%grid%vectorIndex(XEDGE, I, J, K, IndVec)
         !
         do ii = 1, nZface
             jj = ii + nXface + nYface
@@ -203,7 +203,7 @@ contains
             T%val(4*jj - 3) = 1
         end do
         !
-        call self%grid%vectorIndex (YEDGE, I, J, K, IndVec)
+        call self%grid%vectorIndex(YEDGE, I, J, K, IndVec)
         !
         do ii = 1, nZface
             jj = ii + nXface + nYface
@@ -213,7 +213,7 @@ contains
         !
         J = J + 1
         !
-        call self%grid%vectorIndex (XEDGE, I, J, K, IndVec)
+        call self%grid%vectorIndex(XEDGE, I, J, K, IndVec)
         !
         do ii = 1, nZface
             jj = ii + nXface + nYface
@@ -224,7 +224,7 @@ contains
         I = I + 1
         J = J - 1
         !
-        call self%grid%vectorIndex (YEDGE, I, J, K, IndVec)
+        call self%grid%vectorIndex(YEDGE, I, J, K, IndVec)
         !
         do ii = 1, nZface
             jj = ii + nXface + nYface
@@ -243,18 +243,18 @@ contains
         type( spMatCSR_Real ), intent( inout ) :: G
         !
         integer :: nXedge, nYedge, nZedge, nNodes
-        integer :: ii, jj, n, m, nz, nx, ny
+        integer :: ii, jj, n, m, nx, ny, nz
         integer, dimension (:), allocatable :: IndVec, I, J, K
         !
-        call self%grid%numberOfEdges (nXedge, nYedge, nZedge)
-        call self%grid%limits(NODE, nx, ny, nz)
+        call self%grid%numberOfEdges( nXedge, nYedge, nZedge )
+        call self%grid%limits( NODE, nx, ny, nz )
         !
-        nNodes = nx*ny*nz
+        nNodes = nx * ny * nz
         m = nXedge + nYedge + nZedge
         n = nNodes
-        nz = 2*m
+        nz = 2 * m
         !
-        call create_spMatCSR(m, n, nz, G)
+        call create_spMatCSR( m, n, nz, G )
         !
         G%row(1) = 1
         !
@@ -274,8 +274,8 @@ contains
             IndVec(ii) = ii
         end do
         !
-        call self%grid%gridIndex (XEDGE, IndVec, I, J, K)
-        call self%grid%vectorIndex (NODE, I, J, K, IndVec)
+        call self%grid%gridIndex(XEDGE, IndVec, I, J, K)
+        call self%grid%vectorIndex(NODE, I, J, K, IndVec)
         !
         do ii = 1, nXedge
             G%col(2*ii - 1) = IndVec(ii)
@@ -283,7 +283,7 @@ contains
         !
         I = I + 1
         !
-        call self%grid%vectorIndex (NODE, I, J, K, IndVec)
+        call self%grid%vectorIndex(NODE, I, J, K, IndVec)
         !
         do ii = 1, nXedge
             G%col(2*ii) = IndVec(ii)
@@ -301,8 +301,8 @@ contains
         IndVec(ii) = ii
         end do
         !
-        call self%grid%gridIndex (YEDGE, IndVec, I, J, K)
-        call self%grid%vectorIndex (NODE, I, J, K, IndVec)
+        call self%grid%gridIndex(YEDGE, IndVec, I, J, K)
+        call self%grid%vectorIndex(NODE, I, J, K, IndVec)
         !
         do ii = 1, nYedge
         jj = ii + nXedge
@@ -311,7 +311,7 @@ contains
         !
         J = J + 1
         !
-        call self%grid%vectorIndex (NODE, I, J, K, IndVec)
+        call self%grid%vectorIndex(NODE, I, J, K, IndVec)
         !
         do ii = 1, nYedge
         jj = ii + nXedge
@@ -330,8 +330,8 @@ contains
             IndVec(ii) = ii
         end do
         !
-        call self%grid%gridIndex (ZEDGE, IndVec, I, J, K)
-        call self%grid%vectorIndex (NODE, I, J, K, IndVec)
+        call self%grid%gridIndex(ZEDGE, IndVec, I, J, K)
+        call self%grid%vectorIndex(NODE, I, J, K, IndVec)
         !
         do ii = 1, nZedge
             jj = ii + nXedge + nYedge
@@ -340,7 +340,7 @@ contains
         !
         K = K + 1
         !
-        call self%grid%vectorIndex (NODE, I, J, K, IndVec)
+        call self%grid%vectorIndex(NODE, I, J, K, IndVec)
         !
         do ii = 1, nZedge
             jj = ii + nXedge + nYedge

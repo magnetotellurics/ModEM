@@ -1530,6 +1530,7 @@ contains
         type( spMatCSR_Real ), intent( in ) :: A
         type( spMatCSR_Real ), intent( out ) :: B
         integer, intent( in ) :: r(:), c(:)
+        !
         integer :: kk, n, m, i, j, nz, k
         integer, allocatable, dimension(:) :: rowT, colT
         !
@@ -1557,7 +1558,7 @@ contains
             enddo
         enddo
         !
-        call create_spMatCSR(m, n, nz, B)
+        call create_spMatCSR( m, n, nz, B )
         !
         !   set row array in output CSR matrix
         B%row(1) = 1

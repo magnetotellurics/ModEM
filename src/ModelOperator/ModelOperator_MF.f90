@@ -381,7 +381,7 @@ contains
         class( ModelOperator_MF_t ), intent( in ) :: self
         real( kind=prec ), intent( in ), optional :: omega
         class( Field_t ), intent( in ) :: inE
-        class( Vector_t ), intent( inout ) :: outE
+        class( Field_t ), intent( inout ) :: outE
         logical, intent( in ), optional :: p_adjoint
         !
         integer :: ix, iy, iz
@@ -478,22 +478,23 @@ contains
     end subroutine amultModelOperatorMF
     !
     !> No subroutine briefing
-    subroutine multAibModelOperatorMF( self, bdry, outE )
+	!
+    subroutine multAibModelOperatorMF( self, inE, outE )
         implicit none
         !
         class( ModelOperator_MF_t ), intent( in ) :: self
-        class( Field_t ), intent( in ) :: bdry
-        class( Vector_t ), intent( inout ) :: outE
+        class( Field_t ), intent( in ) :: inE
+        class( Field_t ), intent( inout ) :: outE
         !
         real( kind=prec ) :: omega
         !
         if(.NOT. outE%is_allocated) then
-            stop "Error: multAibModelOperatorMF > output vector not allocated"
+            stop "Error: multAibModelOperatorMF > outE not allocated"
         endif
         !
         omega = R_ZERO
         !
-        call self%amult( omega, bdry, outE ) 
+        call self%amult( omega, inE, outE ) 
         !
     end subroutine multAibModelOperatorMF
     !

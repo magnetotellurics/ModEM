@@ -57,19 +57,19 @@ module ModelOperator
             import :: ModelOperator_t, Field_t, prec, Vector_t
             !
             class( ModelOperator_t ), intent( in ) :: self
-            real( kind = prec ), intent( in ), optional :: omega
+            real( kind=prec ), intent( in ), optional :: omega
             class( Field_t ), intent( in ) :: inE
-            class( Vector_t ), intent( inout ) :: outE
+            class( Field_t ), intent( inout ) :: outE
             logical, intent( in ), optional :: p_adjoint
         end subroutine interface_amult_model_operator
         !
         !> No interface subroutine briefing
-        subroutine interface_multaib_model_operator( self, bdry, outE )
+        subroutine interface_multaib_model_operator( self, inE, outE )
             import :: ModelOperator_t, Field_t, Vector_t
             !
             class( ModelOperator_t ), intent( in ) :: self
-            class( Field_t ), intent( in ) :: bdry
-            class( Vector_t ), intent( inout ) :: outE
+            class( Field_t ), intent( in ) :: inE
+            class( Field_t ), intent( inout ) :: outE
         end subroutine interface_multaib_model_operator
         !
         !> No interface subroutine briefing

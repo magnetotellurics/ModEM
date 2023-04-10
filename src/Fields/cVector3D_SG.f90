@@ -100,8 +100,6 @@ contains
         self%grid_type = trim( grid_type )
         self%is_allocated = .FALSE.
         !
-        write( *, * ) "cVector3D_SG_t: ", self%nx, self%ny, self%nz , self%grid_type
-        !
         if(self%grid_type == EDGE) then
             !
             allocate(self%x(self%nx, self%ny + 1, self%nz + 1), STAT = status)
@@ -185,8 +183,10 @@ contains
              call self%switchStoreState
         endif
         !
-        select case(self%grid_type)
-            case(EDGE)
+        select case( self%grid_type )
+            !
+            case( EDGE )
+                !
                 self%x(:, (/1, self%NdX(2)/), :) = cvalue
                 self%x(:, :, (/1, self%NdX(3)/)) = cvalue
                 self%y((/1, self%NdY(1)/), :, :) = cvalue
@@ -194,13 +194,15 @@ contains
                 self%z(:, (/1, self%NdZ(2)/), :) = cvalue
                 self%z((/1, self%NdZ(1)/), :, :) = cvalue
                 !
-            case(FACE)
+            case( FACE )
+                !
                 self%x((/1, self%NdX(1)/), :, :) = cvalue
                 self%y(:, (/1, self%NdY(2)/), :) = cvalue
                 self%z(:, :, (/1, self%NdZ(3)/)) = cvalue
                 !
             case default
                 stop "Error: setAllBoundaryCVector3D_SG > Invalid grid type."
+            !
         end select
         !
     end subroutine setAllBoundaryCVector3D_SG
@@ -217,17 +219,23 @@ contains
              call self%switchStoreState
         endif
         !
-        select case(self%grid_type)
-            case(EDGE)
+        select case( self%grid_type )
+            !
+            case( EDGE )
+                !
                 self%x(:, 2:self%NdX(2)-1, 2:self%NdX(3)-1) = cvalue
                 self%y(2:self%NdY(1)-1, :, 2:self%NdY(3)-1) = cvalue
                 self%z(2:self%NdZ(1), 2:self%NdZ(2)-1, :) = cvalue
-            case(FACE)
+                !
+            case( FACE )
+                !
                 self%x(2:self%NdX(1)-1, :, :) = cvalue
                 self%y(:, 2:self%NdY(2)-1, :) = cvalue
                 self%z(:, :, 2:self%NdZ(3)-1) = cvalue
+                !
             case default
                 stop "Error: setAllInteriorCVector3D_SG > Invalid grid type."
+            !
         end select
         !
     end subroutine setAllinteriorCVector3D_SG

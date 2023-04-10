@@ -42,7 +42,7 @@ contains
         real( kind=prec ) :: latitude, longitude, xyz(3), tx_xyz(3)
         real( kind=prec ) :: moment, tx_azimuth, dip, azimuth
         !
-        class( DataEntry_t ), allocatable :: data_entry
+        class( DataEntry_t ), pointer :: data_entry
         !
         !write( *, * ) "Constructor DataFileStandard_t"
         !
@@ -92,8 +92,8 @@ contains
                                 read( args(10), * ) imaginary
                                 read( args(11), * ) error
                                 !
-                                data_entry = DataEntryMT_t( iDe, actual_type, period, code, &
-                                latitude, longitude, xyz, component, rvalue, imaginary, error )
+                                allocate( data_entry, source = DataEntryMT_t( iDe, actual_type, period, code, &
+                                latitude, longitude, xyz, component, rvalue, imaginary, error ) )
                                 !
                                 data_entry%is_complex = .TRUE.
                                 !
@@ -124,9 +124,9 @@ contains
                                 read( args(16), * ) imaginary
                                 read( args(17), * ) error
                                 !
-                                data_entry = DataEntryMT_REF_t( iDe, actual_type,    &
+                                allocate( data_entry, source = DataEntryMT_REF_t( iDe, actual_type,    &
                                 period, code, latitude, longitude, xyz, code_ref,    &
-                                latitude_ref, longitude_ref, xyz_ref, component, rvalue, imaginary, error )
+                                latitude_ref, longitude_ref, xyz_ref, component, rvalue, imaginary, error ) )
                                 !
                                 data_entry%is_complex = .TRUE.
                                 !
@@ -156,9 +156,9 @@ contains
                                 read( args(15), * ) imaginary
                                 read( args(16), * ) error
                                 !
-                                data_entry = DataEntryCSEM_t( iDe, actual_type,    &
+                                allocate( data_entry, source = DataEntryCSEM_t( iDe, actual_type,    &
                                 dipole, period, moment, tx_azimuth, dip, tx_xyz,    &
-                                code, xyz, component, rvalue, imaginary, error )
+                                code, xyz, component, rvalue, imaginary, error ) )
                                 !
                                 data_entry%is_complex = .TRUE.
                                 !
@@ -188,9 +188,9 @@ contains
                                 read( args(15), * ) error
                                 read( args(16), * ) azimuth
                                 !
-                                data_entry = DataEntryCSEM_t( iDe, actual_type,    &
+                                allocate( data_entry, source = DataEntryCSEM_t( iDe, actual_type,    &
                                 dipole, period, moment, tx_azimuth, dip, tx_xyz,    &
-                                code, xyz, component, rvalue, R_ZERO, error, azimuth )
+                                code, xyz, component, rvalue, R_ZERO, error, azimuth ) )
                                 !
                                 data_entry%is_complex = .FALSE.
                                 !
@@ -204,6 +204,8 @@ contains
                                 stop "DataFileStandard.f08: DataFileStandard_ctor()"
                                 !
                      end select
+                     !
+                     deallocate( data_entry )
                      !
                      header_line_counter = 0
                      !
@@ -225,7 +227,7 @@ contains
                          !> Data Type
                          case( 3 )
                              !
-                             actual_type = args(2)
+                             actual_type = trim( args(2) )
                          !
                          !> exp(-i\omega t)
                          case( 4 )

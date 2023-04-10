@@ -282,9 +282,9 @@ module spOpTopology_MR
         type(rVector3D_MR_t) :: vecR
 
         integer, allocatable :: R(:), C(:)
-        real (kind = prec), allocatable :: S(:)
+        real (kind=prec), allocatable :: S(:)
         integer, allocatable :: Rtmp(:), Ctmp(:)
-        real (kind = prec), allocatable :: Stmp(:)
+        real (kind=prec), allocatable :: Stmp(:)
         integer, allocatable :: indSet(:)
 
         type(Comp) :: compR1(4), compR2(4), &
@@ -295,7 +295,7 @@ module spOpTopology_MR
         integer, dimension (:), allocatable :: indXcoarse1, indYcoarse1
         integer, dimension (:), allocatable :: indXcoarse2, indYcoarse2
 
-        real (kind = prec) :: Cc(2), cR(4)
+        real (kind=prec) :: Cc(2), cR(4)
         integer :: i, k, n, n_grids, iComp
         integer :: kVecC, kVecR
         integer :: n_rows, n_cols
@@ -607,12 +607,12 @@ module spOpTopology_MR
         type(rScalar3D_MR_t) :: vecR, vecC(9)
 
         integer, dimension (:), allocatable :: R, C
-        real (kind = prec), dimension(:), allocatable :: S
+        real (kind=prec), dimension(:), allocatable :: S
         integer, dimension (:), allocatable :: Rtmp, Ctmp
-        real (kind = prec), dimension (:), allocatable :: Stmp
+        real (kind=prec), dimension (:), allocatable :: Stmp
         integer, dimension (:), allocatable :: indR, indC_i
         type(Comp) :: compR(4), compC(9)
-        real (kind = prec) :: Cc(9), cR(4)
+        real (kind=prec) :: Cc(9), cR(4)
 
         integer :: kVecC, kVecR
         integer :: i, k, n, n_grids

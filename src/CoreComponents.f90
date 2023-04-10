@@ -159,11 +159,19 @@ contains
                         !
                 end select
                 !
+                write( *, * ) "Model Operator Instantiated"
+                !
                 call model_operator%setEquations
+                !
+                write( *, * ) "Model Operator Equations Setted"
                 !
                 call sigma0%setMetric( model_operator%metric )
                 !
+                write( *, * ) "Sigma0 Metric Setted"
+                !
                 call model_operator%setCond( sigma0 )
+                !
+                write( *, * ) "Model Operator Conductivity Setted"
                 !
             class default
                 stop "Error: handleModelFile > Unclassified main_grid"
@@ -555,14 +563,16 @@ contains
         !> Flush memory used by main program control variables and flags
         if( allocated( inversion_type ) ) deallocate( inversion_type )
         !
+        if( allocated( field_type ) ) deallocate( field_type )
         if( allocated( forward_solver_type ) ) deallocate( forward_solver_type )
         if( allocated( source_type_mt ) ) deallocate( source_type_mt )
+        if( allocated( source_type_csem ) ) deallocate( source_type_csem )
         if( allocated( model_method ) ) deallocate( model_method )
         if( allocated( get_1d_from ) ) deallocate( get_1d_from )
         if( allocated( predicted_data_file_name ) ) deallocate( predicted_data_file_name )
         if( allocated( jmhat_data_file_name ) ) deallocate( jmhat_data_file_name )
         if( allocated( e_solution_file_name ) ) deallocate( e_solution_file_name )
-        !
+        !field_type
         if( allocated( model_file_name ) ) deallocate( model_file_name )
         if( allocated( pmodel_file_name ) ) deallocate( pmodel_file_name )
         if( allocated( data_file_name ) ) deallocate( data_file_name )

@@ -326,11 +326,11 @@ contains
     implicit none
     ! Arguments
     class (Vector3d_cmr_real_t), intent (in out)       :: self
-    real (kind = prec)      , intent (in), optional :: c_in
+    real (kind=prec)      , intent (in), optional :: c_in
     ! Local variables
     ! Local variables
     character(80) :: ctmp
-    real (kind = prec) :: rtmp
+    real (kind=prec) :: rtmp
     !
     !***********************
     ! Executable statements
@@ -352,11 +352,11 @@ contains
     ! Arguments
     class (Vector3d_cmr_real_t), intent (in out) :: self
     character (*)           , intent (in)     :: bdry
-    real (kind = prec)      , intent (in)     :: c
+    real (kind=prec)      , intent (in)     :: c
     logical                 , intent (in), optional :: int_only
     ! Local variables
     character(80) :: ctmp
-    real (kind = prec) :: rtmp
+    real (kind=prec) :: rtmp
 
     if (present(int_only)) then
        ctmp = self%grid_type
@@ -380,7 +380,7 @@ contains
     logical :: xy, int_only
     integer :: i, k
     integer :: n_full, n_active, n_interior, n_boundaries
-    real (kind = prec), dimension (:), allocatable :: v_1, v_2
+    real (kind=prec), dimension (:), allocatable :: v_1, v_2
     !
     !***********************
     ! Executable statements
@@ -574,9 +574,9 @@ contains
     implicit none
     ! Arguments
     class (Vector3d_cmr_real_t)     , intent (in)  :: self
-    real (kind = prec), allocatable, intent (out) :: v(:)
+    real (kind=prec), allocatable, intent (out) :: v(:)
     ! Local variables
-    real (kind = prec), allocatable :: v_full(:)
+    real (kind=prec), allocatable :: v_full(:)
     !
     !***********************
     ! Executable statements
@@ -596,9 +596,9 @@ contains
     implicit none
     ! Arguments
     class (Vector3d_cmr_real_t), intent (in out) :: self
-    real (kind = prec)      , intent (in)     :: v(:)
+    real (kind=prec)      , intent (in)     :: v(:)
     ! Local variables
-    real (kind = prec), allocatable :: vFull(:)
+    real (kind=prec), allocatable :: vFull(:)
     !
     !***********************
     ! Executable statements
@@ -660,10 +660,10 @@ contains
     implicit none
     ! Arguments
     class (Vector3d_cmr_real_t)     , intent (in)  :: self
-    real (kind = prec), allocatable, intent (out) :: v(:)
+    real (kind=prec), allocatable, intent (out) :: v(:)
     ! Local variables    
     integer :: n, i1, i2, k
-    real (kind = prec), allocatable :: v_temp(:)
+    real (kind=prec), allocatable :: v_temp(:)
     !
     !***********************
     ! Executable statements
@@ -691,7 +691,7 @@ contains
     implicit none
     ! Arguments
     class (Vector3d_cmr_real_t), intent (in out) :: self
-    real (kind = prec)        , intent (in)     :: v(:)
+    real (kind=prec)        , intent (in)     :: v(:)
     ! Local variables
     integer :: i1, i2, k, n
     !
@@ -739,10 +739,10 @@ contains
     implicit none
     ! Arguments
     class (Vector3d_cmr_real_t), intent (in) :: self
-    real (kind = prec)      , intent (in) :: c
+    real (kind=prec)      , intent (in) :: c
     ! Local variables
     integer, allocatable :: I(:)
-    real (kind = prec), allocatable :: v(:)
+    real (kind=prec), allocatable :: v(:)
     integer :: n, n_I, k
     !
     !***********************
@@ -776,11 +776,11 @@ contains
     ! Arguments
     class (Vector3d_cmr_real_t), intent (in)  :: self
     integer, allocatable    , intent (out) :: I(:)
-    real (kind = prec)      , intent (in)  :: c
+    real (kind=prec)      , intent (in)  :: c
     ! Local variables
-    real (kind = prec), allocatable :: v(:)
+    real (kind=prec), allocatable :: v(:)
     integer :: n, n_I, k
-    real (kind = prec), parameter :: TOL = 1E-5
+    real (kind=prec), parameter :: TOL = 1E-5
     !
     !***********************
     ! Executable statements
@@ -915,10 +915,10 @@ contains
     ! Arguments
     !   a real scalar to be multiplied with
     class (Vector3d_cmr_real_t), intent (in out) :: self
-    real (kind = prec)         , intent (in)     :: c    
+    real (kind=prec)         , intent (in)     :: c    
     ! Local variables
     character(80) :: ctmp
-    real (kind = prec) :: rtmp
+    real (kind=prec) :: rtmp
     !
     !***********************
     ! Executable statements
@@ -967,7 +967,7 @@ contains
     class (Vector3d_cmr_real_t), intent (in) :: self
     class (Vector3d_cmr_real_t), intent (in) :: rhs
     ! Local variables
-    real (kind = prec) :: c
+    real (kind=prec) :: c
     character(80) :: ctmp
     !
     !***********************
@@ -1033,7 +1033,7 @@ contains
     integer :: y_nx, y_ny, y_nz
     integer :: z_nx, z_ny, z_nz
     integer :: last, Cs, i1, i2, i, k
-    real (kind = prec) w1, w2
+    real (kind=prec) w1, w2
     !
     !***********************
     ! Executable statements
@@ -1122,10 +1122,10 @@ contains
     type (rvector)             , intent(in)    :: sg_v
     ! Local variables
     type (grid_t), pointer :: grid
-    real (kind = prec), pointer, dimension(:) :: tempe
+    real (kind=prec), pointer, dimension(:) :: tempe
     type(rvector) :: templ_r
-    real (kind = prec), pointer, dimension(:) :: templ, temple
-    real (kind = prec), allocatable, dimension(:, :, :) :: lengthx, lengthy
+    real (kind=prec), pointer, dimension(:) :: templ, temple
+    real (kind=prec), allocatable, dimension(:, :, :) :: lengthx, lengthy
     integer :: sx1, sx2, sx3, sy1, sy2, sy3, s1, s2
     integer :: Cs, i1, i2
 
@@ -1286,11 +1286,11 @@ contains
   function rep_mat(m_in, nx, ny, nz, transp) result(m_out)
     implicit none
     ! Arguments
-    real (kind = prec), dimension(:), intent(in) :: m_in
+    real (kind=prec), dimension(:), intent(in) :: m_in
     integer, intent(in) :: nx, ny, nz
     logical, intent(in) :: transp
     ! Local variables
-    real (kind = prec), dimension(:, :, :), allocatable :: m_out
+    real (kind=prec), dimension(:, :, :), allocatable :: m_out
     integer :: i, i1, i2, n_in
     !
     !***********************

@@ -172,10 +172,11 @@ contains
         select case( self%grid_type )
             !
             case( NODE ) 
-                 self%v((/1, self%NdV(1)/), :, :) = real( cvalue, kind=prec )
-                 self%v(:, (/1, self%NdV(2)/), :) = real( cvalue, kind=prec )
-                 self%v(:, :, (/1, self%NdV(3)/)) = real( cvalue, kind=prec )
-                 !
+                !
+                self%v((/1, self%NdV(1)/), :, :) = real( cvalue, kind=prec )
+                self%v(:, (/1, self%NdV(2)/), :) = real( cvalue, kind=prec )
+                self%v(:, :, (/1, self%NdV(3)/)) = real( cvalue, kind=prec )
+                !
             case default
                 write( *, * ) "Error: setAllBoundaryRScalar3D_SG > Grid type not recognized [", self%grid_type, "]"
                 stop

@@ -17,7 +17,6 @@ module DataEntry
     contains
         !
         procedure( interface_write ), deferred, public :: write
-        procedure( interface_get_copy_data_entry ), deferred, public :: getCopy
         !
         procedure, public :: init => initializeDataEntry
         !
@@ -34,14 +33,6 @@ module DataEntry
             import :: DataEntry_t
             class( DataEntry_t ), intent( in ) :: self
         end subroutine interface_write
-        !
-        !> No interface function briefing
-        function interface_get_copy_data_entry( self ) result ( copy )
-            import :: DataEntry_t
-            !
-            class( DataEntry_t ), intent( in ) :: self
-            class( DataEntry_t ), allocatable :: copy
-        end function interface_get_copy_data_entry
         !
     end interface
     !
@@ -61,6 +52,8 @@ contains
         self%imaginary = R_ZERO
         self%error = R_ZERO
         self%azimuth = R_ZERO
+        !
+        self%is_complex = .FALSE.
         !
     end subroutine initializeDataEntry
     !

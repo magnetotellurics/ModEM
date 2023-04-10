@@ -18,7 +18,6 @@ module DataEntryMT_REF
         final :: DataEntryMT_REF_dtor
         !
         procedure, public :: write => writeDataEntryMT_REF
-        procedure, public :: getCopy => getCopyDataEntryMT_REF
         !
     end type DataEntryMT_REF_t
     !
@@ -48,17 +47,17 @@ contains
         call self%init
         !
         self%i_de = i_de
-        self%dtype = dtype
+        self%dtype = trim( dtype )
         self%period = period
-        self%code = code
+        self%code = trim( code )
         self%latitude = latitude
         self%longitude = longitude
         self%location = location
-        self%code_ref = code_ref
+        self%code_ref = trim( code_ref )
         self%latitude_ref = latitude_ref
         self%longitude_ref = longitude_ref
         self%location_ref = location_ref
-        self%component = component
+        self%component = trim( component )
         self%rvalue = rvalue
         self%imaginary = imaginary
         self%error = error
@@ -80,21 +79,6 @@ contains
         if( allocated( self%code_ref ) ) deallocate( self%code_ref )
         !
     end subroutine DataEntryMT_REF_dtor
-    !
-    !> No subroutine briefing
-    !
-    function getCopyDataEntryMT_REF( self ) result ( copy )
-        implicit none
-        !
-        class( DataEntryMT_REF_t ), intent( in ) :: self
-        class( DataEntry_t ), allocatable :: copy
-        !
-        allocate( copy, source = DataEntryMT_REF_t( self%i_de, self%dtype,    &
-                  self%period, self%code, self%latitude, self%longitude, self%location, self%code_ref,    &
-                  self%latitude_ref, self%longitude_ref, self%location_ref, self%component, &
-                  self%rvalue, self%imaginary, self%error ) )
-        !
-    end function getCopyDataEntryMT_REF
     !
     !> No subroutine briefing
     subroutine writeDataEntryMT_REF( self )

@@ -14,7 +14,6 @@ module DataEntryMT
         final :: DataEntryMT_dtor
         !
         procedure, public :: write => writeDataEntryMT
-        procedure, public :: getCopy => getCopyDataEntryMT
         !
     end type DataEntryMT_t
     !
@@ -66,20 +65,6 @@ contains
         call self%dealloc
         !
     end subroutine DataEntryMT_dtor
-    !
-    !> No subroutine briefing
-    !
-    function getCopyDataEntryMT( self ) result ( copy )
-        implicit none
-        !
-        class( DataEntryMT_t ), intent( in ) :: self
-        class( DataEntry_t ), allocatable :: copy
-        !
-        allocate( copy, source = DataEntryMT_t( self%i_de, self%dtype, self%period, self%code, &
-                  self%latitude, self%longitude, self%location, &
-                  self%component, self%rvalue, self%imaginary, self%error ) )
-        !
-    end function getCopyDataEntryMT
     !
     !> No subroutine briefing
     subroutine writeDataEntryMT( self )
