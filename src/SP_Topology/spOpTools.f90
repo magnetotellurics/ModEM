@@ -500,7 +500,7 @@ contains
         !
         if( A%nCol .NE. size(x) ) then
             write( *, * ) "Error: RMATxCVEC > matrix and vector sizes incompatible = ", A%nCol, size(x)
-			stop
+            stop
         endif
         !
         do i = 1, A%nRow
@@ -1532,7 +1532,9 @@ contains
         integer, intent( in ) :: r(:), c(:)
         integer :: kk, n, m, i, j, nz, k
         integer, allocatable, dimension(:) :: rowT, colT
-
+        !
+        write( *, * ) "A%nCol, size(r), size(c): ", A%nCol, size(r), size(c)
+        !
         m = size(r)
         n = size(c)
         allocate(rowT(m+1))
@@ -1547,8 +1549,8 @@ contains
         rowT = 0
         nz = 0
         do i =1, m
-            do j = A%row(r(i)), A%row(r(i)+1)-1
-                if( colT(A%col(j)) .GT. 0 ) then
+            do j = A%row( r(i) ), A%row( r(i) + 1 ) - 1
+                if( colT( A%col(j) ) .GT. 0 ) then
                     rowT(i) = rowT(i)+1
                     nz = nz+1
                 endif

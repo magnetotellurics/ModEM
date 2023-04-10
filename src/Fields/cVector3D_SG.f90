@@ -67,8 +67,8 @@ module cVector3D_SG
             procedure, public :: write => writeCVector3D_SG
             procedure, public :: print => printCVector3D_SG
             !
-            procedure, public :: setInteriorMask => setInteriorMaskCVector3D_SG
-               !
+            procedure, public :: setInteriorBoundary => setInteriorBoundaryCVector3D_SG
+            !
     end type cVector3D_SG_t
     !
     interface cVector3D_SG_t
@@ -101,6 +101,8 @@ contains
         !
         self%grid_type = trim( grid_type )
         self%is_allocated = .FALSE.
+        !
+        write( *, * ) "cVector3D_SG_t: ", self%nx, self%ny, self%nz , self%grid_type
         !
         if(self%grid_type == EDGE) then
             !
@@ -146,9 +148,9 @@ contains
         !
         self%Nxyz = (/product(self%NdX), product(self%NdY), product(self%NdZ)/)
         !
-          call self%setInteriorMask
-          call self%zeros
-          !
+        call self%setInteriorBoundary
+        call self%zeros
+        !
     end function cVector3D_SG_ctor
     !
     !> No subroutine briefing
@@ -159,6 +161,8 @@ contains
         type( cVector3D_SG_t ), intent( inout ) :: self
         !
         !write( *, * ) "Destructor cVector3D_SG"
+        !
+        call self%dealloc
         !
         if( allocated( self%x ) ) deallocate( self%x )
         if( allocated( self%y ) ) deallocate( self%y )
@@ -1764,8 +1768,12 @@ contains
         self%nz = rhs%nz
         self%store_state = rhs%store_state
         !
-		self%mask_interior = rhs%mask_interior
-		!
+        if( allocated( rhs%ind_interior ) ) &
+        self%ind_interior = rhs%ind_interior
+        !
+        if( allocated( rhs%ind_boundaries ) ) &
+        self%ind_boundaries = rhs%ind_boundaries
+        !
         select type( rhs )
             !
             class is( cVector3D_SG_t )
@@ -1996,25 +2004,51 @@ contains
     !
     !> No subroutine briefing
     !
-    subroutine setInteriorMaskCVector3D_SG( self )
+    subroutine setInteriorBoundaryCVector3D_SG( self )
         implicit none
         !
         class( cVector3D_SG_t ), intent( inout ) :: self
         !
+        integer :: i, j, k, int_size, bdry_size
         class( Field_t ), allocatable :: aux_field
-        real( kind=prec ), dimension(:), allocatable :: r_array
+        complex( kind=prec ), dimension(:), allocatable :: c_array
         !
         allocate( aux_field, source = self )
         call aux_field%zeros()
         !
-        call aux_field%setAllboundary( C_ONE )
+        call aux_field%setAllBoundary( C_ONE )
         !
-        r_array = aux_field%getArray()
+        c_array = aux_field%getArray()
         !
-        self%mask_interior = r_array == 0
+        int_size = 0
+        bdry_size = 0
+        do i = 1, size( c_array )
+            if( c_array(i) == C_ONE ) then
+                bdry_size = bdry_size + 1
+            else
+                int_size = int_size + 1
+            endif
+        enddo
         !
-		deallocate( aux_field )
-		!
-    end subroutine setInteriorMaskCVector3D_SG
+        write( *, * ) "int_size, bdry_size: ", int_size, bdry_size
+        !
+        allocate( self%ind_interior( int_size ) )
+        allocate( self%ind_boundaries( bdry_size ) )
+        !
+        j = 1
+        k = 1
+        do i = 1, size( c_array )
+            if( c_array(i) == C_ONE ) then
+                self%ind_boundaries(j) = i
+                j = j + 1
+            else
+                self%ind_interior(k) = i
+                k = k + 1
+            endif
+        enddo
+        !
+        deallocate( aux_field )
+        !
+    end subroutine setInteriorBoundaryCVector3D_SG
     !
 end module cVector3D_SG

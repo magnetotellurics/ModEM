@@ -9,10 +9,8 @@ module rScalar3D_MR
     type, extends( rScalar3D_SG_t ) :: rScalar3D_MR_t
         !
         type( rScalar3D_SG_t ), allocatable :: sub_scalars(:)
-		!
+        !
         integer, dimension(:), allocatable :: ind_active
-        integer, dimension(:), allocatable :: ind_interior
-        integer, dimension(:), allocatable :: ind_boundaries
         !
         contains
             !
@@ -81,8 +79,6 @@ module rScalar3D_MR
             procedure, public :: write => writeRScalar3D_MR
             procedure, public :: print => printRScalar3D_MR
             !
-            procedure, public :: setInteriorMask => setInteriorMaskRScalar3D_MR
-			!
     end type rScalar3D_MR_t
     !
     interface rScalar3D_MR_t
@@ -542,6 +538,8 @@ contains
         type( rScalar3D_MR_t ), intent( inout ) :: self
         !
         !write( *, * ) "Destructor rScalar3D_MR"
+        !
+        call self%dealloc
         !
         if( allocated( self%v ) ) deallocate( self%v )
         if( allocated( self%sv ) ) deallocate( self%sv )
@@ -1166,15 +1164,4 @@ contains
         !
     end subroutine printRScalar3D_MR
     !
-    !> No subroutine briefing
-    !
-    subroutine setInteriorMaskRScalar3D_MR( self )
-        implicit none
-        !
-        class( rScalar3D_MR_t ), intent( inout ) :: self
-        !
-        stop "Error: setInteriorMaskRScalar3D_MR not implemented!"
-        !
-    end subroutine setInteriorMaskRScalar3D_MR
-	!
 end module rScalar3D_MR

@@ -393,12 +393,11 @@ contains
         inE_array = inE%getArray()
         !
         write( *, * ) "amult full     : ", size( inE_array )
-        write( *, * ) "amult mask     : ", size( inE%mask_interior )
-        write( *, * ) "amult interior : ", size( pack( inE_array, inE%mask_interior ) )
-        write( *, * ) "amult boundary : ", size( pack( inE_array, .NOT. inE%mask_interior ) )
+        write( *, * ) "amult interior : ", size( inE%ind_interior )
+        write( *, * ) "amult boundary : ", size( inE%ind_boundaries )
         !
         !> GET JEST THE INTERIOR
-        interior_array = pack( inE_array, inE%mask_interior )
+        interior_array = ( inE_array( inE%ind_interior ) )
         !
         outE_array = interior_array
         outE_array = C_ZERO
@@ -441,7 +440,7 @@ contains
         class( Field_t ), intent( in ) :: bdry
         class( Vector_t ), intent( inout ) :: outE
         !
-        integer i, j
+        integer i, j, real_size
         complex( kind=prec ), allocatable, dimension(:) :: inE_array, outE_array, bdry_array
         !
         if( .NOT. bdry%is_allocated ) then
@@ -455,65 +454,65 @@ contains
         inE_array = bdry%getArray()
         !
         write( *, * ) "multAib full     : ", size( inE_array )
-        write( *, * ) "multAib mask     : ", size( bdry%mask_interior )
+        write( *, * ) "multAib interior : ", size( bdry%ind_interior )
+        write( *, * ) "multAib boundary : ", size( bdry%ind_boundaries )
+        write( *, * ) "multAib boundary2: ", size( inE_array( bdry%ind_boundaries ) )
         !
-        bdry_array = pack( inE_array, .NOT. bdry%mask_interior )
+        bdry_array = inE_array( bdry%ind_boundaries )
         !
-        write( *, * ) "multAib boundary : ", size( bdry_array )
-        !
-        outE_array = bdry_array
+        allocate( outE_array( size( bdry%ind_boundaries ) ) )
         outE_array = C_ZERO
-        !
-        ! ON CCib DIFFERENT LENGTH ???? 
-        call RMATxCVEC( self%CCib, bdry_array, outE_array )
-        !
-        ! CC Works
-        !call RMATxCVEC( self%CC, inE_array, outE_array )
-        !
-        deallocate( bdry_array ) 
-        !
-        ! if( present( p_adjoint ) ) then
-            ! adjoint = p_adjoint
-        ! else
-            ! adjoint = .FALSE.
-        ! endif
         ! !
-        ! !> ON ORIGINAL OMPLEMENTATION
-        ! if( adjoint ) then
-            ! !
-            ! call RMATtrans( self%CCib, CCibt )
-            ! !
-            ! allocate( temp_array( size( self%EDGEb ) ) )
-            ! !
-            ! call RMATxCVEC( CCibt, inE_array, temp_array )
-            ! !
-            ! outE_array( self%EDGEb ) = temp_array;
-            ! !
-            ! call deall_spMATcsr( CCibt )
-            ! !
-            ! deallocate( temp_array )
-            ! !
-        ! else
-            ! call RMATxCVEC( self%CCib, inE_array, outE_array )
-        ! endif
-        !
+        ! ! ON CCib DIFFERENT LENGTH ???? 
+        call RMATxCVEC( self%CCib, bdry_array, outE_array )
+        ! !
+        ! ! CC Works
+        !call RMATxCVEC( self%CC, inE_array, outE_array )
+        ! !
+        !deallocate( bdry_array ) 
+        ! !
+        ! ! if( present( p_adjoint ) ) then
+            ! ! adjoint = p_adjoint
+        ! ! else
+            ! ! adjoint = .FALSE.
+        ! ! endif
+        ! ! !
+        ! ! !> ON ORIGINAL OMPLEMENTATION
+        ! ! if( adjoint ) then
+            ! ! !
+            ! ! call RMATtrans( self%CCib, CCibt )
+            ! ! !
+            ! ! allocate( temp_array( size( self%EDGEb ) ) )
+            ! ! !
+            ! ! call RMATxCVEC( CCibt, inE_array, temp_array )
+            ! ! !
+            ! ! outE_array( self%EDGEb ) = temp_array;
+            ! ! !
+            ! ! call deall_spMATcsr( CCibt )
+            ! ! !
+            ! ! deallocate( temp_array )
+            ! ! !
+        ! ! else
+            ! ! call RMATxCVEC( self%CCib, inE_array, outE_array )
+        ! ! endif
+        ! !
         !deallocate( inE_array )
-        !
+        ! !
         ! j = 1
         ! do i = 1, size( inE_array )
-            ! if( bdry%mask_interior(i) ) then
-                ! inE_array(i) = temp_array(j)
+            ! if( .NOT. bdry%ind_interior(i) ) then
+                ! inE_array(i) = outE_array(j)
                 ! j = j + 1
             ! endif
         ! enddo
+        ! !
+        ! !deallocate( inE_array )
+        ! !
+        ! !outE = cVector3D_SG_t( self%metric%grid, EDGE )
+        ! !
+        !call outE%setArray( outE_array )
         !
-        deallocate( inE_array )
-        !
-        outE = cVector3D_SG_t( self%metric%grid, EDGE )
-        !
-        call outE%setArray( outE_array )
-        !
-        deallocate( outE_array )
+        !deallocate( outE_array )
         !
     end subroutine multAibModelOperatorSP
     !

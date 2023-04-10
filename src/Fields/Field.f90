@@ -20,7 +20,8 @@ module Field
         !
         integer :: nx, ny, nz, store_state
         !
-        logical, dimension(:), allocatable :: mask_interior
+        integer, dimension(:), allocatable :: ind_interior
+        integer, dimension(:), allocatable :: ind_boundaries
         !
         logical :: is_allocated
         !
@@ -78,10 +79,11 @@ module Field
             procedure( interface_write_field ), deferred, public :: write
             procedure( interface_print_field ), deferred, public :: print
             !
-            procedure( interface_setinteriormask_field ), deferred, public :: setInteriorMask
+            procedure( interface_set_boundary_interior_field ), deferred, public :: setInteriorBoundary
             !
             !> Field procedures
             procedure, public :: init => initializeField
+            procedure, public :: dealloc => deallocateField
             procedure, public :: boundary => boundaryField
             procedure, public :: interior => interiorField
             procedure, public :: isCompatible => isCompatibleField
@@ -310,10 +312,10 @@ module Field
             logical, intent( in ), optional :: append
         end subroutine interface_print_field
         !
-        subroutine interface_setinteriormask_field( self )
+        subroutine interface_set_boundary_interior_field( self )
             import :: Field_t
             class( Field_t ), intent( inout ) :: self
-        end subroutine interface_setinteriormask_field
+        end subroutine interface_set_boundary_interior_field
         !
     end interface
     !
@@ -338,6 +340,16 @@ contains
         self%is_allocated = .FALSE.
         !
     end subroutine initializeField
+    !
+    !> No subroutine briefing
+    subroutine deallocateField( self )
+        implicit none
+        !
+        class( Field_t ), intent( inout ) :: self
+        !
+        if( allocated( self%ind_interior ) ) deallocate( self%ind_interior )
+        !
+    end subroutine deallocateField
     !
     !> No subroutine briefing
     !

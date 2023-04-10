@@ -80,7 +80,7 @@ module ModelOperator
             class( Vector_t ), intent( inout ) :: inH
             class( Vector_t ), allocatable, intent( inout ) :: outE
         end subroutine interface_multcurl_t_model_operator
-		!
+        !
         !> No interface subroutine briefing
         subroutine interface_divcor_setup_model_operator( self )
             import :: ModelOperator_t

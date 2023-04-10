@@ -68,7 +68,7 @@ module rVector3D_SG
             procedure, public :: read => readRVector3D_SG
             procedure, public :: write => writeRVector3D_SG
             !
-            procedure, public :: setInteriorMask => setInteriorMaskRVector3D_SG
+            procedure, public :: setInteriorBoundary => setInteriorBoundaryRVector3D_SG
             !
     end type rVector3D_SG_t
     !
@@ -151,7 +151,7 @@ contains
         !
         self%Nxyz = (/product(self%NdX), product(self%NdY), product(self%NdZ)/)
         !
-        call self%setInteriorMask
+        call self%setInteriorBoundary
         call self%zeros
         !
     end function rVector3D_SG_ctor
@@ -164,6 +164,8 @@ contains
         type( rVector3D_SG_t ), intent( inout ) :: self
         !
         !write( *, * ) "Destructor rVector3D_SG"
+        !
+        call self%dealloc
         !
         if( allocated( self%x ) ) deallocate( self%x )
         if( allocated( self%y ) ) deallocate( self%y )
@@ -1578,7 +1580,13 @@ contains
         self%nz = rhs%nz
         self%store_state = rhs%store_state
         !
-        self%mask_interior = rhs%mask_interior
+        !
+        if( allocated( rhs%ind_interior ) ) &
+        self%ind_interior = rhs%ind_interior
+        !
+        if( allocated( rhs%ind_boundaries ) ) &
+        self%ind_boundaries = rhs%ind_boundaries
+        !
         !
         select type( rhs )
             class is( rVector3D_SG_t )
@@ -1905,25 +1913,51 @@ contains
     !
     !> No subroutine briefing
     !
-    subroutine setInteriorMaskRVector3D_SG( self )
+    subroutine setInteriorBoundaryRVector3D_SG( self )
         implicit none
         !
         class( rVector3D_SG_t ), intent( inout ) :: self
         !
+        integer :: i, j, k, int_size, bdry_size
         class( Field_t ), allocatable :: aux_field
-        complex( kind=prec ), dimension(:), allocatable :: r_array
+        complex( kind=prec ), dimension(:), allocatable :: c_array
         !
         allocate( aux_field, source = self )
         call aux_field%zeros()
         !
-        call aux_field%setAllboundary( C_ONE )
+        call aux_field%setAllInterior( C_ONE )
         !
-        r_array = aux_field%getArray()
+        c_array = aux_field%getArray()
         !
-        self%mask_interior = r_array == 0
+        int_size = 0
+        bdry_size = 0
+        do i = 1, size( c_array )
+            if( c_array(i) == C_ONE ) then
+                int_size = int_size + 1
+            else
+                bdry_size = bdry_size + 1
+            endif
+        enddo
+        !
+        write( *, * ) "int_size, bdry_size: ", int_size, bdry_size
+        !
+        allocate( self%ind_interior( int_size ) )
+        allocate( self%ind_boundaries( bdry_size ) )
+        !
+        j = 1
+        k = 1
+        do i = 1, size( c_array )
+            if( c_array(i) == C_ONE ) then
+                self%ind_interior(j) = i
+                j = j + 1
+            else
+                self%ind_boundaries(k) = i
+                k = k + 1
+            endif
+        enddo
         !
         deallocate( aux_field )
         !
-    end subroutine setInteriorMaskRVector3D_SG
+    end subroutine setInteriorBoundaryRVector3D_SG
     !
 end module rVector3D_SG
