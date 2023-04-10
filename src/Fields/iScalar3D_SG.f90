@@ -64,8 +64,6 @@ module iScalar3D_SG
             procedure, public :: write => writeiScalar3D_SG
             procedure, public :: print => printiScalar3D_SG
             !
-            procedure, public :: setInteriorBoundary => setInteriorBoundaryiScalar3D_SG
-            !
     end type iScalar3D_SG_t
     !
     interface iScalar3D_SG_t
@@ -136,9 +134,6 @@ contains
         endif
         !
         self%Nxyz = product( self%NdV )
-        !
-        call self%setInteriorBoundary
-        call self%zeros
         !
     end function iScalar3D_SG_ctor
     !
@@ -981,7 +976,11 @@ contains
         self%nz = rhs%nz
         self%store_state = rhs%store_state
         !
+        if( allocated( rhs%ind_interior ) ) &
         self%ind_interior = rhs%ind_interior
+        !
+        if( allocated( rhs%ind_boundaries ) ) &
+        self%ind_boundaries = rhs%ind_boundaries
         !
         select type( rhs )
             !
@@ -1245,54 +1244,5 @@ contains
         enddo
         !
     end subroutine printiScalar3D_SG
-    !
-    !> No subroutine briefing
-    !
-    subroutine setInteriorBoundaryiScalar3D_SG( self )
-        implicit none
-        !
-        class( iScalar3D_SG_t ), intent( inout ) :: self
-        !
-        integer :: i, j, k, int_size, bdry_size
-        class( Field_t ), allocatable :: aux_field
-        complex( kind=prec ), dimension(:), allocatable :: c_array
-        !
-        allocate( aux_field, source = self )
-        call aux_field%zeros()
-        !
-        call aux_field%setAllInterior( C_ONE )
-        !
-        c_array = aux_field%getArray()
-        !
-        int_size = 0
-        bdry_size = 0
-        do i = 1, size( c_array )
-            if( c_array(i) == C_ONE ) then
-                int_size = int_size + 1
-            else
-                bdry_size = bdry_size + 1
-            endif
-        enddo
-        !
-        write( *, * ) "int_size, bdry_size: ", int_size, bdry_size
-        !
-        allocate( self%ind_interior( int_size ) )
-        allocate( self%ind_boundaries( bdry_size ) )
-        !
-        j = 1
-        k = 1
-        do i = 1, size( c_array )
-            if( c_array(i) == C_ONE ) then
-                self%ind_interior(j) = i
-                j = j + 1
-            else
-                self%ind_boundaries(k) = i
-                k = k + 1
-            endif
-        enddo
-        !
-        deallocate( aux_field )
-        !
-    end subroutine setInteriorBoundaryiScalar3D_SG
     !
 end module iScalar3D_SG

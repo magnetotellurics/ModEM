@@ -67,8 +67,6 @@ module cVector3D_SG
             procedure, public :: write => writeCVector3D_SG
             procedure, public :: print => printCVector3D_SG
             !
-            procedure, public :: setInteriorBoundary => setInteriorBoundaryCVector3D_SG
-            !
     end type cVector3D_SG_t
     !
     interface cVector3D_SG_t
@@ -147,9 +145,6 @@ contains
         endif
         !
         self%Nxyz = (/product(self%NdX), product(self%NdY), product(self%NdZ)/)
-        !
-        call self%setInteriorBoundary
-        call self%zeros
         !
     end function cVector3D_SG_ctor
     !
@@ -2001,54 +1996,5 @@ contains
         enddo
         !
     end subroutine printCVector3D_SG
-    !
-    !> No subroutine briefing
-    !
-    subroutine setInteriorBoundaryCVector3D_SG( self )
-        implicit none
-        !
-        class( cVector3D_SG_t ), intent( inout ) :: self
-        !
-        integer :: i, j, k, int_size, bdry_size
-        class( Field_t ), allocatable :: aux_field
-        complex( kind=prec ), dimension(:), allocatable :: c_array
-        !
-        allocate( aux_field, source = self )
-        call aux_field%zeros()
-        !
-        call aux_field%setAllBoundary( C_ONE )
-        !
-        c_array = aux_field%getArray()
-        !
-        int_size = 0
-        bdry_size = 0
-        do i = 1, size( c_array )
-            if( c_array(i) == C_ONE ) then
-                bdry_size = bdry_size + 1
-            else
-                int_size = int_size + 1
-            endif
-        enddo
-        !
-        write( *, * ) "int_size, bdry_size: ", int_size, bdry_size
-        !
-        allocate( self%ind_interior( int_size ) )
-        allocate( self%ind_boundaries( bdry_size ) )
-        !
-        j = 1
-        k = 1
-        do i = 1, size( c_array )
-            if( c_array(i) == C_ONE ) then
-                self%ind_boundaries(j) = i
-                j = j + 1
-            else
-                self%ind_interior(k) = i
-                k = k + 1
-            endif
-        enddo
-        !
-        deallocate( aux_field )
-        !
-    end subroutine setInteriorBoundaryCVector3D_SG
     !
 end module cVector3D_SG

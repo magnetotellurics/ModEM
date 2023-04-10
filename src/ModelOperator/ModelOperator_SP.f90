@@ -383,6 +383,7 @@ contains
         class( Vector_t ), intent( inout ) :: outE
         logical, intent( in ), optional :: p_adjoint
         !
+        class( Field_t ), allocatable :: aux_inE
         complex( kind=prec ), allocatable, dimension(:) :: inE_array, outE_array, interior_array
         logical :: adjoint
         !
@@ -390,14 +391,18 @@ contains
             stop "Error: amultModelOperatorSP > inE not allocated"
         endif
         !
-        inE_array = inE%getArray()
+		allocate( aux_inE, source = inE )
+		!
+		call aux_inE%setInteriorBoundaryIndexes
+        !
+        inE_array = aux_inE%getArray()
         !
         write( *, * ) "amult full     : ", size( inE_array )
-        write( *, * ) "amult interior : ", size( inE%ind_interior )
-        write( *, * ) "amult boundary : ", size( inE%ind_boundaries )
+        write( *, * ) "amult interior : ", size( aux_inE%ind_interior )
+        write( *, * ) "amult boundary : ", size( aux_inE%ind_boundaries )
         !
         !> GET JEST THE INTERIOR
-        interior_array = ( inE_array( inE%ind_interior ) )
+        interior_array = ( inE_array( aux_inE%ind_interior ) )
         !
         outE_array = interior_array
         outE_array = C_ZERO
@@ -441,7 +446,8 @@ contains
         class( Vector_t ), intent( inout ) :: outE
         !
         integer i, j, real_size
-        complex( kind=prec ), allocatable, dimension(:) :: inE_array, outE_array, bdry_array
+        class( Field_t ), allocatable :: aux_bdry
+        complex( kind=prec ), allocatable, dimension(:) :: bdry_array, outE_array, interior_array
         !
         if( .NOT. bdry%is_allocated ) then
             stop "Error: multAibModelOperatorSP > bdry not allocated"
@@ -451,68 +457,34 @@ contains
             stop "Error: multAibModelOperatorSP > outE not allocated"
         endif
         !
-        inE_array = bdry%getArray()
+		allocate( aux_bdry, source = bdry )
+		!
+		call aux_bdry%setInteriorBoundaryIndexes
         !
-        write( *, * ) "multAib full     : ", size( inE_array )
-        write( *, * ) "multAib interior : ", size( bdry%ind_interior )
-        write( *, * ) "multAib boundary : ", size( bdry%ind_boundaries )
-        write( *, * ) "multAib boundary2: ", size( inE_array( bdry%ind_boundaries ) )
+        bdry_array = aux_bdry%getArray()
         !
-        bdry_array = inE_array( bdry%ind_boundaries )
+        write( *, * ) "multAib full     : ", size( bdry_array )
+        write( *, * ) "multAib interior : ", size( aux_bdry%ind_interior )
+        write( *, * ) "multAib boundary : ", size( aux_bdry%ind_boundaries )
         !
-        allocate( outE_array( size( bdry%ind_boundaries ) ) )
+        !> GET JEST THE INTERIOR
+        interior_array = ( bdry_array( aux_bdry%ind_boundaries ) )
+        !
+        outE_array = interior_array
         outE_array = C_ZERO
-        ! !
-        ! ! ON CCib DIFFERENT LENGTH ???? 
-        call RMATxCVEC( self%CCib, bdry_array, outE_array )
-        ! !
-        ! ! CC Works
-        !call RMATxCVEC( self%CC, inE_array, outE_array )
-        ! !
-        !deallocate( bdry_array ) 
-        ! !
-        ! ! if( present( p_adjoint ) ) then
-            ! ! adjoint = p_adjoint
-        ! ! else
-            ! ! adjoint = .FALSE.
-        ! ! endif
-        ! ! !
-        ! ! !> ON ORIGINAL OMPLEMENTATION
-        ! ! if( adjoint ) then
-            ! ! !
-            ! ! call RMATtrans( self%CCib, CCibt )
-            ! ! !
-            ! ! allocate( temp_array( size( self%EDGEb ) ) )
-            ! ! !
-            ! ! call RMATxCVEC( CCibt, inE_array, temp_array )
-            ! ! !
-            ! ! outE_array( self%EDGEb ) = temp_array;
-            ! ! !
-            ! ! call deall_spMATcsr( CCibt )
-            ! ! !
-            ! ! deallocate( temp_array )
-            ! ! !
-        ! ! else
-            ! ! call RMATxCVEC( self%CCib, inE_array, outE_array )
-        ! ! endif
-        ! !
-        !deallocate( inE_array )
-        ! !
-        ! j = 1
-        ! do i = 1, size( inE_array )
-            ! if( .NOT. bdry%ind_interior(i) ) then
-                ! inE_array(i) = outE_array(j)
-                ! j = j + 1
-            ! endif
-        ! enddo
-        ! !
-        ! !deallocate( inE_array )
-        ! !
-        ! !outE = cVector3D_SG_t( self%metric%grid, EDGE )
-        ! !
-        !call outE%setArray( outE_array )
         !
-        !deallocate( outE_array )
+        ! ON CCii DIFFERENT LENGTH ???? 
+        call RMATxCVEC( self%CCib, interior_array, outE_array )
+        !
+        deallocate( interior_array )
+        !
+        deallocate( bdry_array )
+        !
+        outE = cVector3D_SG_t( self%metric%grid, EDGE )
+        !
+        call outE%setArray( outE_array )
+        !
+        deallocate( outE_array )
         !
     end subroutine multAibModelOperatorSP
     !

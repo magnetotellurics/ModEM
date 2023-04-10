@@ -79,14 +79,14 @@ module Field
             procedure( interface_write_field ), deferred, public :: write
             procedure( interface_print_field ), deferred, public :: print
             !
-            procedure( interface_set_boundary_interior_field ), deferred, public :: setInteriorBoundary
-            !
             !> Field procedures
             procedure, public :: init => initializeField
             procedure, public :: dealloc => deallocateField
             procedure, public :: boundary => boundaryField
             procedure, public :: interior => interiorField
             procedure, public :: isCompatible => isCompatibleField
+            !
+            procedure, public :: setInteriorBoundaryIndexes => setInteriorBoundaryIndexesField
             !
     end type Field_t
     !
@@ -397,5 +397,54 @@ contains
         call interior%setAllboundary( C_ZERO )
         !
     end subroutine interiorField
+    !
+    !> No subroutine briefing
+    !
+    subroutine setInteriorBoundaryIndexesField( self )
+        implicit none
+        !
+        class( Field_t ), intent( inout ) :: self
+        !
+        integer :: i, j, k, int_size, bdry_size
+        class( Field_t ), allocatable :: aux_field
+        complex( kind=prec ), dimension(:), allocatable :: c_array
+        !
+        allocate( aux_field, source = self )
+        call aux_field%zeros()
+        !
+        call aux_field%setAllBoundary( C_ONE )
+        !
+        c_array = aux_field%getArray()
+        !
+        int_size = 0
+        bdry_size = 0
+        do i = 1, size( c_array )
+            if( c_array(i) == C_ONE ) then
+                bdry_size = bdry_size + 1
+            else
+                int_size = int_size + 1
+            endif
+        enddo
+        !
+        write( *, * ) "int_size, bdry_size: ", int_size, bdry_size
+        !
+        allocate( self%ind_interior( int_size ) )
+        allocate( self%ind_boundaries( bdry_size ) )
+        !
+        j = 1
+        k = 1
+        do i = 1, size( c_array )
+            if( c_array(i) == C_ONE ) then
+                self%ind_boundaries(j) = i
+                j = j + 1
+            else
+                self%ind_interior(k) = i
+                k = k + 1
+            endif
+        enddo
+        !
+        deallocate( aux_field )
+        !
+    end subroutine setInteriorBoundaryIndexesField
     !
 end module Field
