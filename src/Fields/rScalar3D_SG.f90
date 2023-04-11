@@ -20,7 +20,6 @@ module rScalar3D_SG
             !> Boundary operations
             procedure, public :: setAllBoundary => setAllBoundaryRScalar3D_SG
             procedure, public :: setOneBoundary => setOneBoundaryRScalar3D_SG
-            procedure, public :: setAllInterior => setAllInteriorRScalar3D_SG
             procedure, public :: intBdryIndices => intBdryIndicesRScalar3D_SG
             !
             !> Dimensioning operations
@@ -132,6 +131,9 @@ contains
         !
         self%Nxyz = product( self%NdV )
         !
+        call self%setIndexArrays
+        call self%zeros
+        !
     end function rScalar3D_SG_ctor
     !
     !> No subroutine briefing
@@ -171,7 +173,7 @@ contains
         !
         select case( self%grid_type )
             !
-            case( NODE ) 
+            case( NODE, CELL, CELL_EARTH ) 
                 !
                 self%v((/1, self%NdV(1)/), :, :) = real( cvalue, kind=prec )
                 self%v(:, (/1, self%NdV(2)/), :) = real( cvalue, kind=prec )
@@ -274,23 +276,6 @@ contains
         end select
         !
     end subroutine setOneBoundaryRScalar3D_SG
-    !
-    !> No subroutine briefing
-    !
-    subroutine setAllInteriorRScalar3D_SG( self, cvalue )
-        implicit none
-        !
-        class( rScalar3D_SG_t ), intent( inout ) :: self
-        complex( kind=prec ), intent( in ) :: cvalue
-        !
-        if( self%store_state /= compound ) then
-             call self%switchStoreState
-        endif
-        !
-        write( *, * ) "Error: setAllInteriorRScalar3D_SG to be implement: ", cvalue
-        stop
-        !
-    end subroutine setAllInteriorRScalar3D_SG
     !
     !> No subroutine briefing
     !

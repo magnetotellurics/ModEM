@@ -312,7 +312,7 @@ module spOpTopology_MR
         ! This extra argument set to true results in redundant x and
         ! y edges distinguished by different values.
         XY = .TRUE.;
-        call vecR%setActiveIntBoundary(XY)
+        call vecR%setIndexArrays(XY)
         call vecR%zeros()
 
         n_cols = size (vecR%ind_active)

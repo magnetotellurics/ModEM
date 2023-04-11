@@ -21,7 +21,6 @@ module cVectorSparse3D_SG
             !> Boundary operations
             procedure, public :: setAllBoundary => setAllBoundaryCVectorSparse3D_SG
             procedure, public :: setOneBoundary => setOneBoundaryCVectorSparse3D_SG
-            procedure, public :: setAllInterior => setAllInteriorCVectorSparse3D_SG
             procedure, public :: intBdryIndices => intBdryIndicesCVectorSparse3D_SG
             !
             !> Dimensioning operations
@@ -181,18 +180,6 @@ contains
         stop "Error: setAllBoundaryCVectorSparse3D_SG not implemented yet!"
         !
     end subroutine setAllBoundaryCVectorSparse3D_SG
-    !
-    !> No subroutine briefing
-    !
-    subroutine setAllInteriorCVectorSparse3D_SG( self, cvalue )
-        implicit none
-        !
-        class( cVectorSparse3D_SG_t ), intent( inout ) :: self
-        complex( kind=prec ), intent( in ) :: cvalue
-        !
-        stop "Error: setAllInteriorCVectorSparse3D_SG not implemented yet!"
-        !
-    end subroutine setAllInteriorCVectorSparse3D_SG
     !
     !> No subroutine briefing
     !

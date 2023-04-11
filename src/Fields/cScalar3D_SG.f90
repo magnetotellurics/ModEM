@@ -19,7 +19,6 @@ module cScalar3D_SG
             !> Boundary operations
             procedure, public :: setAllBoundary => setAllBoundaryCScalar3D_SG
             procedure, public :: setOneBoundary => setOneBoundaryCScalar3D_SG
-            procedure, public :: setAllInterior => setAllInteriorCScalar3D_SG
             procedure, public :: intBdryIndices => intBdryIndicesCScalar3D_SG
             !
             !> Dimensioning operations
@@ -129,6 +128,9 @@ contains
         !
         self%Nxyz = product( self%NdV )
         !
+        call self%setIndexArrays
+        call self%zeros
+        !
     end function cScalar3D_SG_ctor
     !
     !> No subroutine briefing
@@ -168,7 +170,7 @@ contains
         !
         select case( self%grid_type )
             !
-            case( NODE )
+            case( NODE, CELL, CELL_EARTH )
                 !
                 self%v((/1, self%NdV(1)/), :, :) = cvalue
                 self%v(:, (/1, self%NdV(2)/), :) = cvalue
@@ -267,18 +269,6 @@ contains
         end select
         !
     end subroutine setOneBoundaryCScalar3D_SG
-    !
-    !> No subroutine briefing
-    !
-    subroutine setAllInteriorCScalar3D_SG( self, cvalue )
-        implicit none
-        !
-        class( cScalar3D_SG_t ), intent( inout ) :: self
-        complex( kind=prec ), intent( in ) :: cvalue
-        !
-        stop "Error: setAllInteriorCScalar3D_SG to be implemented!"
-        !
-    end subroutine setAllInteriorCScalar3D_SG
     !
     !> No subroutine briefing
     !

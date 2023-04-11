@@ -20,7 +20,7 @@ module rScalar3D_MR
             !> MR Routines
             procedure, public :: initializeSub => initializeSubRScalar3D_MR
             !
-            procedure, public :: setActiveIntBoundary => setActiveIntBoundaryRScalar3D_MR
+            procedure, public :: setIndexArrays => setIndexArraysRScalar3D_MR
             !
             procedure, public :: setFull => setFullRScalar3D_MR
             procedure, public :: getFull => getFullRScalar3D_MR
@@ -35,7 +35,6 @@ module rScalar3D_MR
             !> Boundary operations
             procedure, public :: setAllBoundary => setAllBoundaryRScalar3D_MR
             procedure, public :: setOneBoundary => setOneBoundaryRScalar3D_MR
-            procedure, public :: setAllInterior => setAllInteriorRScalar3D_MR
             procedure, public :: intBdryIndices => intBdryIndicesRScalar3D_MR
             !
             !> Dimensioning operations
@@ -157,8 +156,8 @@ contains
                     self%sub_scalars(i) = rScalar3D_MR_t( grid%sub_grids(i), grid_type )
                 end do
                 !
-                call self%setActiveIntBoundary()
-                call self%zeros()
+                call self%setIndexArrays
+                call self%zeros
                 !
             class default
                 stop "Error: initializeSubRScalar3D_MR > Unclassified grid"
@@ -169,7 +168,7 @@ contains
     !
     !> No subroutine briefing
     !
-    subroutine setActiveIntBoundaryRScalar3D_MR( self, xy_in ) 
+    subroutine setIndexArraysRScalar3D_MR( self, xy_in ) 
         implicit none
         !
         class( rScalar3D_MR_t ), intent( inout ) :: self
@@ -207,7 +206,7 @@ contains
                         int_only = .TRUE.
                     case default
                         !
-                        stop "Error: setActiveIntBoundaryRScalar3D_MR > Invalid grid type option!"
+                        stop "Error: setIndexArraysRScalar3D_MR > Invalid grid type option!"
                     !
                 end select
                 !
@@ -240,7 +239,7 @@ contains
                 end do
                 !
             class default
-                stop "Error: setActiveIntBoundaryRScalar3D_MR > Unclassified grid"
+                stop "Error: setIndexArraysRScalar3D_MR > Unclassified grid"
             !
         end select
         !
@@ -316,7 +315,7 @@ contains
             endif
         end do
         !
-    end subroutine setActiveIntBoundaryRScalar3D_MR
+    end subroutine setIndexArraysRScalar3D_MR
     !
     !> No subroutine briefing
     !
@@ -646,23 +645,6 @@ contains
         end select
         !
     end subroutine setOneBoundaryRScalar3D_MR
-    !
-    !> No subroutine briefing
-    !
-    subroutine setAllInteriorRScalar3D_MR( self, cvalue )
-        implicit none
-        !
-        class( rScalar3D_MR_t ), intent( inout ) :: self
-        complex( kind=prec ), intent( in ) :: cvalue
-        !
-        if( self%store_state /= compound ) then
-             call self%switchStoreState
-        endif
-        !
-        write( *, * ) "Error: setAllInteriorRScalar3D_MR to be implement: ", cvalue
-        stop
-        !
-    end subroutine setAllInteriorRScalar3D_MR
     !
     !> No subroutine briefing
     !
@@ -1065,6 +1047,15 @@ contains
         self%ny = rhs%ny
         self%nz = rhs%nz
         self%store_state = rhs%store_state
+        !
+        if( allocated( rhs%ind_interior ) ) &
+        self%ind_interior = rhs%ind_interior
+        !
+        if( allocated( rhs%ind_boundaries ) ) &
+        self%ind_boundaries = rhs%ind_boundaries
+        !
+        if( allocated( rhs%ind_active ) ) &
+        self%ind_active = rhs%ind_active
         !
         select type( rhs )
             !

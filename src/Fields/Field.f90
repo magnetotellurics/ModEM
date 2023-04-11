@@ -12,6 +12,10 @@ module Field
     character( len=17 ), parameter :: FIELD_SP = "SparseMatrixField"
     character( len=19 ), parameter :: FIELD_SP2 = "SparseMatrixFieldV2"
     !
+    !> Field Store States
+    integer, parameter :: compound = 1
+    integer, parameter :: singleton = 2
+    !
     type, abstract :: Field_t
         !
         class( Grid_t ), pointer :: grid
@@ -32,7 +36,6 @@ module Field
             !> Boundary operations
             procedure( interface_set_all_boundary_field ), deferred, public :: setAllBoundary
             procedure( interface_set_one_boundary_field ), deferred, public :: setOneBoundary
-            procedure( interface_set_all_interior_field ), deferred, public :: setAllInterior
             procedure( interface_int_bdry_indices_field ), deferred, public :: intBdryIndices
             !
             !> Dimensioning operations
@@ -86,7 +89,7 @@ module Field
             procedure, public :: interior => interiorField
             procedure, public :: isCompatible => isCompatibleField
             !
-            procedure, public :: setInteriorBoundaryIndexes => setInteriorBoundaryIndexesField
+            procedure, public :: setIndexArrays => setIndexArraysField
             !
     end type Field_t
     !
@@ -127,13 +130,6 @@ module Field
             complex( kind=prec ), intent( in ) :: cvalue
             logical, intent( in ), optional :: int_only
         end subroutine interface_set_one_boundary_field
-        !
-        !> No interface subroutine briefing
-        subroutine interface_set_all_interior_field( self, cvalue )
-            import :: Field_t, prec
-            class( Field_t ), intent( inout ) :: self
-            complex( kind=prec ), intent( in ) :: cvalue
-        end subroutine interface_set_all_interior_field
         !
         !> No interface subroutine briefing
         subroutine interface_int_bdry_indices_field( self, ind_i, ind_b )
@@ -379,10 +375,16 @@ contains
         class( Field_t ), intent( in ) :: self
         class( Field_t ), allocatable, intent( inout ) :: boundary
         !
+        complex( kind=prec ), allocatable, dimension(:) :: c_array
+        !
         allocate( boundary, source = self )
         !
-        call boundary%setAllInterior( C_ZERO )
-       !
+        c_array = boundary%getArray()
+        !
+        c_array( self%ind_interior ) = C_ZERO
+        !
+        call boundary%setArray( c_array )
+        !
     end subroutine boundaryField
     !
     !> No subroutine briefing
@@ -392,15 +394,24 @@ contains
         class( Field_t ), intent( in ) :: self
         class( Field_t ), allocatable, intent( inout ) :: interior
         !
+        complex( kind=prec ), allocatable, dimension(:) :: c_array
+        !
         allocate( interior, source = self )
         !
-        call interior%setAllboundary( C_ZERO )
+        c_array = interior%getArray()
+        !
+        c_array( self%ind_boundaries ) = C_ZERO
+        !
+        call interior%setArray( c_array )
         !
     end subroutine interiorField
     !
-    !> No subroutine briefing
+    !> Defines the index arrays: ind_interior and ind_boundaries.
+    !>     Create copy with zeros and value boundaries with C_ONE.
+    !>     Take two sizes and allocate the two arrays.
+    !>     Fills the two arrays with their proper indices.
     !
-    subroutine setInteriorBoundaryIndexesField( self )
+    subroutine setIndexArraysField( self )
         implicit none
         !
         class( Field_t ), intent( inout ) :: self
@@ -426,10 +437,13 @@ contains
             endif
         enddo
         !
+        write( *, * ) "grid_type, grid[ x, y, z ]: ", self%grid_type, self%grid%nx, self%grid%ny, self%grid%nz
+        !
         write( *, * ) "int_size, bdry_size: ", int_size, bdry_size
         !
-        allocate( self%ind_interior( int_size ) )
         allocate( self%ind_boundaries( bdry_size ) )
+        !
+        allocate( self%ind_interior( int_size ) )
         !
         j = 1
         k = 1
@@ -445,6 +459,6 @@ contains
         !
         deallocate( aux_field )
         !
-    end subroutine setInteriorBoundaryIndexesField
+    end subroutine setIndexArraysField
     !
 end module Field

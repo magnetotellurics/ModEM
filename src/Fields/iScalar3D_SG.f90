@@ -20,7 +20,6 @@ module iScalar3D_SG
             !> Boundary operations
             procedure, public :: setAllBoundary => setAllBoundaryiScalar3D_SG
             procedure, public :: setOneBoundary => setOneBoundaryiScalar3D_SG
-            procedure, public :: setAllInterior => setAllInterioriScalar3D_SG
             procedure, public :: intBdryIndices => intBdryIndicesiScalar3D_SG
             !
             !> Dimensioning operations
@@ -135,6 +134,9 @@ contains
         !
         self%Nxyz = product( self%NdV )
         !
+        call self%setIndexArrays
+        call self%zeros
+        !
     end function iScalar3D_SG_ctor
     !
     !> No subroutine briefing
@@ -174,7 +176,7 @@ contains
         !
         select case( self%grid_type )
             !
-            case( NODE ) 
+            case( NODE, CELL, CELL_EARTH ) 
                 !
                 self%v((/1, self%NdV(1)/), :, :) = cvalue
                 self%v(:, (/1, self%NdV(2)/), :) = cvalue
@@ -265,23 +267,6 @@ contains
         end select
         !
     end subroutine setOneBoundaryiScalar3D_SG
-    !
-    !> No subroutine briefing
-    !
-    subroutine setAllInterioriScalar3D_SG( self, cvalue )
-        implicit none
-        !
-        class( iScalar3D_SG_t ), intent( inout ) :: self
-        complex( kind=prec ), intent( in ) :: cvalue
-        !
-        if( self%store_state /= compound ) then
-             call self%switchStoreState
-        endif
-        !
-        write( *, * ) "     "//achar(27)//"[31m# Error:"//achar(27)//"[0m setAllInterioriScalar3D_SG to be implement: ", cvalue
-        stop
-        !
-    end subroutine setAllInterioriScalar3D_SG
     !
     !> No subroutine briefing
     !

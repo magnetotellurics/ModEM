@@ -39,7 +39,7 @@ module rVector3D_MR
             !> MR Routines
             procedure, public :: initializeSub => initializeSubRVector3D_MR
             !
-            procedure, public :: setActiveIntBoundary => setActiveIntBoundaryVector3D_MR
+            procedure, public :: setIndexArrays => setIndexArraysVector3D_MR
             !
             procedure, public :: setFull => setFullRVector3D_MR
             procedure, public :: getFull => getFullRVector3D_MR
@@ -56,7 +56,6 @@ module rVector3D_MR
             !> Boundary operations
             procedure, public :: setAllBoundary => setAllBoundaryRVector3D_MR
             procedure, public :: setOneBoundary => setOneBoundaryRVector3D_MR
-            procedure, public :: setAllInterior => setAllInteriorRVector3D_MR
             procedure, public :: intBdryIndices => intBdryIndicesRVector3D_MR
             !
             !> Dimensioning operations
@@ -186,8 +185,8 @@ contains
                     self%sub_vectors(i) = rScalar3D_MR_t( grid%sub_grids(i), grid_type )
                 end do
                 !
-                call self%setActiveIntBoundary()
-                call self%zeros()
+                call self%setIndexArrays
+                call self%zeros
                 !
             class default
                 stop "Error: initializeSubRVector3D_MR > Unclassified grid"
@@ -198,7 +197,7 @@ contains
     !
     !> No subroutine briefing
     !
-    subroutine setActiveIntBoundaryVector3D_MR( self, xy_in ) 
+    subroutine setIndexArraysVector3D_MR( self, xy_in ) 
         implicit none
         !
         class( rVector3D_MR_t ), intent( inout ) :: self
@@ -236,7 +235,7 @@ contains
                         int_only = .TRUE.
                     case default
                         !
-                        stop "Error: setActiveIntBoundaryVector3D_MR > Invalid grid type option!"
+                        stop "Error: setIndexArraysVector3D_MR > Invalid grid type option!"
                     !
                 end select
                 !
@@ -269,7 +268,7 @@ contains
                 end do
                 !
             class default
-                stop "Error: setActiveIntBoundaryVector3D_MR > Unclassified grid"
+                stop "Error: setIndexArraysVector3D_MR > Unclassified grid"
             !
         end select
         !
@@ -342,7 +341,7 @@ contains
             end if
         end do
         !
-    end subroutine setActiveIntBoundaryVector3D_MR
+    end subroutine setIndexArraysVector3D_MR
     !
     !> No subroutine briefing
     !
@@ -858,38 +857,6 @@ contains
         end select
         !
     end subroutine setAllBoundaryRVector3D_MR
-    !
-    !> No subroutine briefing
-    !
-    subroutine setAllInteriorRVector3D_MR( self, cvalue )
-        implicit none
-        !
-        class( rVector3D_MR_t ), intent( inout ) :: self
-        complex( kind=prec ), intent( in ) :: cvalue
-        !
-        if( self%store_state /= compound ) then
-             call self%switchStoreState
-        endif
-        !
-        select case(self%grid_type)
-            !
-			case(EDGE)
-                self%x(:, 2:self%NdX(2)-1, :) = real( cvalue, kind=prec )
-                self%x(:, :, 2:self%NdX(3)-1) = real( cvalue, kind=prec )
-                self%y(2:self%NdY(1)-1, :, :) = real( cvalue, kind=prec )
-                self%y(:, :, 2:self%NdY(3)-1) = real( cvalue, kind=prec )
-                self%z(:, 2:self%NdZ(2)-1, :) = real( cvalue, kind=prec )
-                self%z(2:self%NdZ(1)-1, :, :) = real( cvalue, kind=prec )
-            case(FACE)
-                self%x(2:self%NdX(1)-1, :, :) = real( cvalue, kind=prec )
-                self%y(:, 2:self%NdY(2)-1, :) = real( cvalue, kind=prec )
-                self%z(:, :, 2:self%NdZ(3)-1) = real( cvalue, kind=prec )
-            case default
-                stop "Error: setAllInteriorRVector3D_MR > Invalid grid type."
-			!
-        end select
-        !
-    end subroutine setAllInteriorRVector3D_MR
     !
     !> No subroutine briefing
     !
@@ -2111,6 +2078,15 @@ contains
         self%ny = rhs%ny
         self%nz = rhs%nz
         self%store_state = rhs%store_state
+        !
+        if( allocated( rhs%ind_interior ) ) &
+        self%ind_interior = rhs%ind_interior
+        !
+        if( allocated( rhs%ind_boundaries ) ) &
+        self%ind_boundaries = rhs%ind_boundaries
+        !
+        if( allocated( rhs%ind_active ) ) &
+        self%ind_active = rhs%ind_active
         !
         select type( rhs )
             class is( rVector3D_MR_t )

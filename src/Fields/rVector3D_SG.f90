@@ -20,7 +20,6 @@ module rVector3D_SG
             !> Boundary operations
             procedure, public :: setAllBoundary => setAllBoundaryRVector3D_SG
             procedure, public :: setOneBoundary => setOneBoundaryRVector3D_SG
-            procedure, public :: setAllInterior => setAllInteriorRVector3D_SG
             procedure, public :: intBdryIndices => intBdryIndicesRVector3D_SG
             !
             !> Dimensioning operations
@@ -149,6 +148,9 @@ contains
         !
         self%Nxyz = (/product(self%NdX), product(self%NdY), product(self%NdZ)/)
         !
+        call self%setIndexArrays
+        call self%zeros
+        !
     end function rVector3D_SG_ctor
     !
     !> No subroutine briefing
@@ -207,36 +209,6 @@ contains
         end select
         !
     end subroutine setAllBoundaryRVector3D_SG
-    !
-    !> No subroutine briefing
-    !
-    subroutine setAllInteriorRVector3D_SG( self, cvalue )
-        implicit none
-        !
-        class( rVector3D_SG_t ), intent( inout ) :: self
-        complex( kind=prec ), intent( in ) :: cvalue
-        !
-        if( self%store_state /= compound ) then
-             call self%switchStoreState
-        endif
-        !
-        select case(self%grid_type)
-            case(EDGE)
-                self%x(:, 2:self%NdX(2)-1, :) = real( cvalue, kind=prec )
-                self%x(:, :, 2:self%NdX(3)-1) = real( cvalue, kind=prec )
-                self%y(2:self%NdY(1)-1, :, :) = real( cvalue, kind=prec )
-                self%y(:, :, 2:self%NdY(3)-1) = real( cvalue, kind=prec )
-                self%z(:, 2:self%NdZ(2)-1, :) = real( cvalue, kind=prec )
-                self%z(2:self%NdZ(1)-1, :, :) = real( cvalue, kind=prec )
-            case(FACE)
-                self%x(2:self%NdX(1)-1, :, :) = real( cvalue, kind=prec )
-                self%y(:, 2:self%NdY(2)-1, :) = real( cvalue, kind=prec )
-                self%z(:, :, 2:self%NdZ(3)-1) = real( cvalue, kind=prec )
-            case default
-                stop "Error: setAllInteriorRVector3D_SG > Invalid grid type."
-        end select
-        !
-    end subroutine setAllInteriorRVector3D_SG
     !
     !> No subroutine briefing
     !

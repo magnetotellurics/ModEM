@@ -12,8 +12,8 @@ module ModelOperator_SP
         !
         type( spOpTopology_SG_t ) :: topology_sg
         !
-        type( rScalar3D_SG_t ) :: sigma_C
-		!
+        type( rVector3D_SG_t ) :: sigma_C
+        !
         integer, allocatable, dimension(:) :: EDGEi, EDGEb
         integer, allocatable, dimension(:) :: NODEi, NODEb
         !
@@ -386,7 +386,7 @@ contains
         class( Field_t ), intent( inout ) :: outE
         logical, intent( in ), optional :: p_adjoint
         !
-        complex( kind=prec ), allocatable, dimension(:) :: temp_array_inE, temp_array_outE
+        complex( kind=prec ), allocatable, dimension(:) :: temp_array_interior, temp_array_inE, temp_array_outE
         logical :: adjoint
         !
         if( .NOT. inE%is_allocated ) then
@@ -395,14 +395,20 @@ contains
         !
         temp_array_inE = inE%getArray()
         !
-        temp_array_outE = temp_array_inE
+        temp_array_interior = temp_array_inE( inE%ind_interior )
+        !
+        temp_array_outE = temp_array_interior
         temp_array_outE = C_ZERO
         !
+        write( *, * ) "amult full    : ", size( temp_array_inE )
+        write( *, * ) "amult interior: ", size( inE%ind_interior )
+        write( *, * ) "amult boundary: ", size( inE%ind_boundaries )
+        !
         ! ON CCii DIFFERENT LENGTH ???? 
-        ! call RMATxCVEC( self%CCii, temp_array_inE, temp_array_outE )
+        call RMATxCVEC( self%CCii, temp_array_interior, temp_array_outE )
         !
         ! CC Works
-        call RMATxCVEC( self%CC, temp_array_inE, temp_array_outE )
+        !call RMATxCVEC( self%CC, temp_array_inE, temp_array_outE )
         !
         if( present( p_adjoint ) ) then
             adjoint = p_adjoint
@@ -416,13 +422,16 @@ contains
             temp_array_outE = temp_array_outE + ONE_I * ISIGN * self%VomegaMuSig * temp_array_inE
         endif
         !
-        deallocate( temp_array_inE )
+        temp_array_inE = C_ZERO
+        temp_array_inE( inE%ind_interior ) = temp_array_outE
+        !
+        deallocate( temp_array_outE )
         !
         outE = cVector3D_SG_t( self%metric%grid, EDGE )
         !
-        call outE%setArray( temp_array_outE )
+        call outE%setArray( temp_array_inE )
         !
-        deallocate( temp_array_outE )
+        deallocate( temp_array_inE )
         !
     end subroutine amultModelOperatorSP
     !
