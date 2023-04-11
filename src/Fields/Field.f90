@@ -7,11 +7,6 @@ module Field
     use Constants
     use Grid
     !
-    character(:), allocatable :: field_type
-    character( len=15 ), parameter :: FIELD_MF = "MatrixFreeField"
-    character( len=17 ), parameter :: FIELD_SP = "SparseMatrixField"
-    character( len=19 ), parameter :: FIELD_SP2 = "SparseMatrixFieldV2"
-    !
     !> Field Store States
     integer, parameter :: compound = 1
     integer, parameter :: singleton = 2

@@ -6,6 +6,11 @@ module ModelOperator
     use MetricElements
     use ModelParameter
     !
+    character(:), allocatable :: model_operator_type
+    character( len=15 ), parameter :: MODELOP_MF = "MatrixFreeField"
+    character( len=17 ), parameter :: MODELOP_SP = "SparseMatrixField"
+    character( len=19 ), parameter :: MODELOP_SP2 = "SparseMatrixFieldV2"
+    !
     type, abstract :: ModelOperator_t
         !
         class( MetricElements_t ), allocatable :: metric
@@ -38,6 +43,7 @@ module ModelOperator
     abstract interface
         !
         !> No interface subroutine briefing
+        !
         subroutine interface_set_equations_model_operator( self )
             import :: ModelOperator_t
             !
@@ -45,6 +51,7 @@ module ModelOperator
         end subroutine interface_set_equations_model_operator
         !
         !> No interface subroutine briefing
+        !
         subroutine interface_set_cond_model_operator( self, sigma ) 
             import :: ModelOperator_t, ModelParameter_t
             !
@@ -53,6 +60,7 @@ module ModelOperator
         end subroutine interface_set_cond_model_operator
         !
         !> No interface subroutine briefing
+        !
         subroutine interface_amult_model_operator( self, omega, inE, outE, p_adjoint )
             import :: ModelOperator_t, Field_t, prec, Vector_t
             !
@@ -64,6 +72,7 @@ module ModelOperator
         end subroutine interface_amult_model_operator
         !
         !> No interface subroutine briefing
+        !
         subroutine interface_multaib_model_operator( self, inE, outE )
             import :: ModelOperator_t, Field_t, Vector_t
             !
@@ -73,6 +82,7 @@ module ModelOperator
         end subroutine interface_multaib_model_operator
         !
         !> No interface subroutine briefing
+        !
         subroutine interface_multcurl_t_model_operator( self, inH, outE )
             import :: ModelOperator_t, Vector_t
             !
@@ -82,12 +92,14 @@ module ModelOperator
         end subroutine interface_multcurl_t_model_operator
         !
         !> No interface subroutine briefing
+        !
         subroutine interface_divcor_setup_model_operator( self )
             import :: ModelOperator_t
             class( ModelOperator_t ), intent( inout ) :: self
         end subroutine interface_divcor_setup_model_operator
         !
         !> No interface subroutine briefing
+        !
         subroutine interface_divc_grad_model_operator( self, inPhi, outPhi )
             import :: ModelOperator_t, Scalar_t
             !
@@ -97,6 +109,7 @@ module ModelOperator
         end subroutine interface_divc_grad_model_operator
         !
         !> No interface subroutine briefing
+        !
         subroutine interface_divc_model_operator( self, inE, outPhi )
             import :: ModelOperator_t, Field_t, Scalar_t
             !
@@ -106,6 +119,7 @@ module ModelOperator
         end subroutine interface_divc_model_operator
         !
         !> No interface subroutine briefing
+        !
         subroutine interface_grad_model_operator( self, inPhi, outE )
             import :: ModelOperator_t, Vector_t, Scalar_t
             !
@@ -115,6 +129,7 @@ module ModelOperator
         end subroutine interface_grad_model_operator
         !
         !> No interface subroutine briefing
+        !
         subroutine interface_div_model_operator( self, inE, outPhi )
             import :: ModelOperator_t, Vector_t, Scalar_t
             !
@@ -124,11 +139,13 @@ module ModelOperator
         end subroutine interface_div_model_operator
         !
         !> No interface subroutine briefing
+        !
         subroutine interface_print_model_operator( self )
             import :: ModelOperator_t
             !
             class( ModelOperator_t ), intent( in ) :: self
         end subroutine interface_print_model_operator
+        !
     end interface
     !
 contains

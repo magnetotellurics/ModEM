@@ -14,7 +14,7 @@ module ForwardControlFile
     type :: ForwardControlFile_t
         !
         !> FWD Components parameters
-        character(:), allocatable :: field_type
+        character(:), allocatable :: model_operator_type
         !
         character(:), allocatable :: grid_reader_type, grid_type, forward_solver_type
         character(:), allocatable :: source_type_mt, source_type_csem, get_1d_from
@@ -72,8 +72,8 @@ contains
                         self%grid_reader_type = trim( args(2) )
                     elseif( index( line_text, "grid_type" ) > 0 ) then
                         self%grid_type = trim( args(2) )
-                    elseif( index( line_text, "field_type" ) > 0 ) then
-                        self%field_type = trim( args(2) )
+                    elseif( index( line_text, "model_operator_type" ) > 0 ) then
+                        self%model_operator_type = trim( args(2) )
                     elseif( index( line_text, "forward_solver" ) > 0 ) then
                         self%forward_solver_type = trim( args(2) )
                     elseif( index( line_text, "source_type_mt" ) > 0 ) then
@@ -112,21 +112,21 @@ contains
 10          close( unit = funit )
             !
             ! Field type
-            if( allocated( self%field_type ) ) then
+            if( allocated( self%model_operator_type ) ) then
                 !
-                select case( self%field_type )
+                select case( self%model_operator_type )
                     case( "MF" )
-                        field_type = FIELD_MF
+                        model_operator_type = MODELOP_MF
                     case( "SP" )
-                        field_type = FIELD_SP
+                        model_operator_type = MODELOP_SP
                     case( "SP2" )
-                        field_type = FIELD_SP2
+                        model_operator_type = MODELOP_SP2
                     case default
-                        field_type = ""
-                        stop "Error: Wrong field_type control, use [MF|SP|SP2]"
+                        model_operator_type = ""
+                        stop "Error: Wrong model_operator_type control, use [MF|SP|SP2]"
                 end select
                 !
-                write( *, "( A30, A20)" ) "          field_type = ", field_type
+                write( *, "( A30, A20)" ) "          model_operator_type = ", model_operator_type
                 !
             endif
             !
@@ -343,7 +343,7 @@ contains
         !
         !write( *,* ) "Destructor ForwardControlFile_t"
         !
-        if( allocated( self%field_type ) ) deallocate( self%field_type )
+        if( allocated( self%model_operator_type ) ) deallocate( self%model_operator_type )
         !
         if( allocated( self%grid_reader_type ) ) deallocate( self%grid_reader_type )
         if( allocated( self%grid_type ) ) deallocate( self%grid_type )

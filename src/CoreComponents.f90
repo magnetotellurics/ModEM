@@ -133,23 +133,23 @@ contains
                 write( *, "( a30, f16.5, a2, f16.5, a2, f16.5, a4, f16.5 )" ) "o(x,y,z) * rotDeg:(", main_grid%ox, ", ", main_grid%oy, ", ", main_grid%oz, ") * ", main_grid%rotDeg
                 !
                 !> Instantiate the ForwardSolver - Specific type can be chosen via control file
-                select case( field_type )
+                select case( model_operator_type )
                     !
-                    case( FIELD_MF )
+                    case( MODELOP_MF )
                         !
                         allocate( model_operator, source = ModelOperator_MF_t( main_grid ) )
                         !
-                    case( FIELD_SP )
+                    case( MODELOP_SP )
                         !
                         allocate( model_operator, source = ModelOperator_SP_t( main_grid ) )
                         !
-                    case( FIELD_SP2 )
+                    case( MODELOP_SP2 )
                         !
-                        stop "Error: handleModelFile > FIELD_SP2 not implemented"
+                        stop "Error: handleModelFile > MODELOP_SP2 not implemented"
                         !
                     case( "" )
                         !
-                        write( *, * ) "     "//achar(27)//"[91m# Warning:"//achar(27)//"[0m handleModelFile > field_type not provided, using ModelOperator_MF_t."
+                        write( *, * ) "     "//achar(27)//"[91m# Warning:"//achar(27)//"[0m handleModelFile > model_operator_type not provided, using ModelOperator_MF_t."
                         !
                         allocate( model_operator, source = ModelOperator_MF_t( main_grid ) )
                         !
@@ -563,7 +563,7 @@ contains
         !> Flush memory used by main program control variables and flags
         if( allocated( inversion_type ) ) deallocate( inversion_type )
         !
-        if( allocated( field_type ) ) deallocate( field_type )
+        if( allocated( model_operator_type ) ) deallocate( model_operator_type )
         if( allocated( forward_solver_type ) ) deallocate( forward_solver_type )
         if( allocated( source_type_mt ) ) deallocate( source_type_mt )
         if( allocated( source_type_csem ) ) deallocate( source_type_csem )
@@ -572,7 +572,7 @@ contains
         if( allocated( predicted_data_file_name ) ) deallocate( predicted_data_file_name )
         if( allocated( jmhat_data_file_name ) ) deallocate( jmhat_data_file_name )
         if( allocated( e_solution_file_name ) ) deallocate( e_solution_file_name )
-        !field_type
+        !model_operator_type
         if( allocated( model_file_name ) ) deallocate( model_file_name )
         if( allocated( pmodel_file_name ) ) deallocate( pmodel_file_name )
         if( allocated( data_file_name ) ) deallocate( data_file_name )
@@ -673,7 +673,7 @@ contains
             write( ioFwdTmp, "(A1)" )  "#"
             write( ioFwdTmp, "(A20)" ) "# <Field parameters>"
             write( ioFwdTmp, "(A1)" )  "#"
-            write( ioFwdTmp, "(A27)" ) "field_type [MF|SP|SP2] : MF"
+            write( ioFwdTmp, "(A27)" ) "model_operator_type [MF|SP|SP2] : MF"
             write( ioFwdTmp, "(A1)" )  "#"
             write( ioFwdTmp, "(A19)" ) "# <Grid parameters>"
             write( ioFwdTmp, "(A1)" )  "#"
