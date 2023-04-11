@@ -31,8 +31,6 @@ module rVector3D_MR
         type( rVector3D_SG_t ), allocatable :: sub_vectors(:)
 		!
         integer, dimension(:), allocatable :: ind_active
-        integer, dimension(:), allocatable :: ind_interior
-        integer, dimension(:), allocatable :: ind_boundaries
         !
         contains
             !
@@ -809,6 +807,8 @@ contains
         type( rVector3D_MR_t ), intent( inout ) :: self
         !
         !write( *, * ) "Destructor rVector3D_MR"
+        !
+        call self%dealloc
         !
         if( allocated( self%x ) ) deallocate( self%x )
         if( allocated( self%y ) ) deallocate( self%y )
@@ -2324,15 +2324,4 @@ contains
         !
     end subroutine printRVector3D_MR
     !
-    !> No subroutine briefing
-    !
-    subroutine setInteriorMaskRVector3D_MR( self )
-        implicit none
-        !
-        class( rVector3D_MR_t ), intent( inout ) :: self
-        !
-        stop "Error: setInteriorMaskRVector3D_MR not implemented!"
-        !
-    end subroutine setInteriorMaskRVector3D_MR
-	!
 end module rVector3D_MR

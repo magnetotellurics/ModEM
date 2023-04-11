@@ -64,8 +64,6 @@ module rScalar3D_SG
             procedure, public :: write => writeRScalar3D_SG
             procedure, public :: print => printRScalar3D_SG
             !
-            procedure, public :: setInteriorMask => setInteriorMaskRScalar3D_SG
-            !
     end type rScalar3D_SG_t
     !
     interface rScalar3D_SG_t
@@ -134,9 +132,6 @@ contains
         !
         self%Nxyz = product( self%NdV )
         !
-		call self%setInteriorMask
-		call self%zeros
-		!
     end function rScalar3D_SG_ctor
     !
     !> No subroutine briefing
@@ -147,6 +142,8 @@ contains
         type( rScalar3D_SG_t ), intent( inout ) :: self
         !
         !write( *, * ) "Destructor rScalar3D_SG"
+        !
+        call self%dealloc
         !
         if( allocated( self%v ) ) deallocate( self%v )
         if( allocated( self%sv ) ) deallocate( self%sv )
@@ -175,14 +172,15 @@ contains
         select case( self%grid_type )
             !
             case( NODE ) 
-                 self%v((/1, self%NdV(1)/), :, :) = real( cvalue, kind=prec )
-                 self%v(:, (/1, self%NdV(2)/), :) = real( cvalue, kind=prec )
-                 self%v(:, :, (/1, self%NdV(3)/)) = real( cvalue, kind=prec )
-                 !
+                !
+                self%v((/1, self%NdV(1)/), :, :) = real( cvalue, kind=prec )
+                self%v(:, (/1, self%NdV(2)/), :) = real( cvalue, kind=prec )
+                self%v(:, :, (/1, self%NdV(3)/)) = real( cvalue, kind=prec )
+                !
             case default
-				write( *, * ) "Error: setAllBoundaryRScalar3D_SG > Grid type not recognized [", self%grid_type, "]"
-				stop
-				!
+                write( *, * ) "Error: setAllBoundaryRScalar3D_SG > Grid type not recognized [", self%grid_type, "]"
+                stop
+                !
         end select
         !
     end subroutine setAllBoundaryRScalar3D_SG
@@ -987,8 +985,12 @@ contains
         self%nz = rhs%nz
         self%store_state = rhs%store_state
         !
-		self%mask_interior = rhs%mask_interior
-		!
+        if( allocated( rhs%ind_interior ) ) &
+        self%ind_interior = rhs%ind_interior
+        !
+        if( allocated( rhs%ind_boundaries ) ) &
+        self%ind_boundaries = rhs%ind_boundaries
+        !
         select type( rhs )
             !
             class is( rScalar3D_SG_t )
@@ -1264,29 +1266,5 @@ contains
         enddo
         !
     end subroutine printRScalar3D_SG
-    !
-    !> No subroutine briefing
-    !
-    subroutine setInteriorMaskRScalar3D_SG( self )
-        implicit none
-        !
-        class( rScalar3D_SG_t ), intent( inout ) :: self
-        !
-        class( Field_t ), allocatable :: aux_field
-        real( kind=prec ), dimension(:), allocatable :: r_array
-        !
-        allocate( aux_field, source = self )
-        aux_field%grid_type = NODE
-        call aux_field%zeros()
-        !
-        call aux_field%setAllboundary( C_ONE )
-        !
-        r_array = aux_field%getArray()
-        !
-        self%mask_interior = ( r_array .EQ. 0 )
-        !
-        deallocate( aux_field )
-        !
-    end subroutine setInteriorMaskRScalar3D_SG
     !
 end module rScalar3D_SG

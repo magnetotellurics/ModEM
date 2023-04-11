@@ -68,8 +68,6 @@ module cVectorSparse3D_SG
             procedure, public :: read => readCVectorSparse3D_SG
             procedure, public :: write => writeCVectorSparse3D_SG
             procedure, public :: print => printCVectorSparse3D_SG
-			!
-            procedure, public :: setInteriorMask => setInteriorMaskCVectorSparse3D_SG
             !
             !> Module routines
             procedure, public :: fromFullVector => fromFullVectorCVectorSparse3D_SG
@@ -144,6 +142,8 @@ contains
         type( cVectorSparse3D_SG_t ), intent( inout ) :: self
         !
         !write( *, * ) "Destructor cVectorSparse3D_SG_t:"
+        !
+        call self%dealloc
         !
         self%grid_type = ""
         self%nCoeff = 0
@@ -744,6 +744,12 @@ contains
         self%nz = rhs%nz
         self%is_allocated = .TRUE.
         !
+        if( allocated( rhs%ind_interior ) ) &
+        self%ind_interior = rhs%ind_interior
+        !
+        if( allocated( rhs%ind_boundaries ) ) &
+        self%ind_boundaries = rhs%ind_boundaries
+        !
         select type( rhs )
             !
             class is( cVectorSparse3D_SG_t )
@@ -898,13 +904,4 @@ contains
        !
     end subroutine printCVectorSparse3D_SG
     !
-    !> No subroutine briefing
-    !
-    subroutine setInteriorMaskCVectorSparse3D_SG( self )
-        implicit none
-        !
-        class( cVectorSparse3D_SG_t ), intent( inout ) :: self
-        !
-	end subroutine setInteriorMaskCVectorSparse3D_SG
-	!
 end module cVectorSparse3D_SG  

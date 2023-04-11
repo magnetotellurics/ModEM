@@ -15,7 +15,6 @@ module DataEntryCSEM
             final :: DataEntryCSEM_dtor
             !
             procedure, public :: write => writeDataEntryCSEM
-            procedure, public :: getCopy => getCopyDataEntryCSEM
             !
     end type DataEntryCSEM_t
     !
@@ -42,16 +41,16 @@ contains
         call self%init
         !
         self%i_de = i_de
-        self%dtype = dtype
-        self%dipole = dipole
+        self%dtype = trim( dtype )
+        self%dipole = trim( dipole )
         self%period = period
         self%moment = moment
         self%tx_azimuth = tx_azimuth
         self%dip = dip
         self%tx_location = tx_location
-        self%code = code
+        self%code = trim( code )
         self%location = location
-        self%component = component
+        self%component = trim( component )
         self%rvalue = rvalue
         self%imaginary = imaginary
         self%error = error
@@ -80,20 +79,6 @@ contains
         if( allocated( self%dipole ) ) deallocate( self%dipole )
         !
     end subroutine DataEntryCSEM_dtor
-    !
-    !> No subroutine briefing
-    !
-    function getCopyDataEntryCSEM( self ) result ( copy )
-        implicit none
-        !
-        class( DataEntryCSEM_t ), intent( in ) :: self
-      class( DataEntry_t ), allocatable :: copy
-        !
-        allocate( copy, source = DataEntryCSEM_t( self%i_de, self%dtype,    &
-                  self%dipole, self%period, self%moment, self%tx_azimuth, self%dip, self%tx_location,    &
-                  self%code, self%location, self%component, self%rvalue, self%imaginary, self%error ) )
-        !
-    end function getCopyDataEntryCSEM
     !
     !> No subroutine briefing
     subroutine writeDataEntryCSEM( self )

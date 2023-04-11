@@ -63,8 +63,6 @@ module cScalar3D_SG
             procedure, public :: write => writeCScalar3D_SG
             procedure, public :: print => printCScalar3D_SG
             !
-            procedure, public :: setInteriorMask => setInteriorMaskCScalar3D_SG
-			!
     end type cScalar3D_SG_t
     !
     interface cScalar3D_SG_t
@@ -131,9 +129,6 @@ contains
         !
         self%Nxyz = product( self%NdV )
         !
-		call self%setInteriorMask
-		call self%zeros
-		!
     end function cScalar3D_SG_ctor
     !
     !> No subroutine briefing
@@ -144,6 +139,8 @@ contains
         type( cScalar3D_SG_t ), intent( inout ) :: self
         !
         !write( *, * ) "Destructor cScalar3D_SG"
+        !
+        call self%dealloc
         !
         if( allocated( self%v ) ) deallocate( self%v )
         if( allocated( self%sv ) ) deallocate( self%sv )
@@ -1056,8 +1053,12 @@ contains
         self%nz = rhs%nz
         self%store_state = rhs%store_state
         !
-		self%mask_interior = rhs%mask_interior
-		!
+        if( allocated( rhs%ind_interior ) ) &
+        self%ind_interior = rhs%ind_interior
+        !
+        if( allocated( rhs%ind_boundaries ) ) &
+        self%ind_boundaries = rhs%ind_boundaries
+        !
         select type( rhs )
             !
             class is( cScalar3D_SG_t )
@@ -1356,30 +1357,5 @@ contains
         enddo
         !
     end subroutine printCScalar3D_SG
-    !
-    !> No subroutine briefing
-    !
-    subroutine setInteriorMaskCScalar3D_SG( self )
-        implicit none
-        !
-        class( cScalar3D_SG_t ), intent( inout ) :: self
-        !
-        class( Field_t ), allocatable :: aux_field
-        real( kind=prec ), dimension(:), allocatable :: r_array
-        !
-        allocate( aux_field, source = self )
-        call aux_field%zeros()
-        !
-        call aux_field%setAllboundary( C_ONE )
-        !
-        r_array = aux_field%getArray()
-        !
-        self%mask_interior = r_array == 0
-        !
-        !write( *, * ) "self%mask_interior:", self%mask_interior
-        !
-		deallocate( aux_field )
-		!
-    end subroutine setInteriorMaskCScalar3D_SG
     !
 end module cScalar3D_SG

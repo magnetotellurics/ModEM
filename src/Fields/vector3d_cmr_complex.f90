@@ -329,9 +329,9 @@ contains
     implicit none
     ! Arguments
     class (Vector3d_cmr_complex_t), intent (in out)       :: self
-    complex (kind = prec)        , intent (in), optional :: c_in
+    complex (kind=prec)        , intent (in), optional :: c_in
     ! Local variables
-    complex(kind = prec) :: rtmp
+    complex(kind=prec) :: rtmp
     character(80) :: ctmp
     !
     !***********************
@@ -353,11 +353,11 @@ contains
     ! Arguments
     class (Vector3d_cmr_complex_t), intent (in out) :: self
     character (*)                , intent (in)     :: bdry
-    complex (kind = prec)        , intent (in)     :: c
+    complex (kind=prec)        , intent (in)     :: c
     logical                      , intent (in), optional :: int_only
     ! Local variables
     character(80) ::ctmp
-    complex (kind = prec) :: rtmp
+    complex (kind=prec) :: rtmp
 
     if (int_only) then
        ctmp = self%grid_type
@@ -382,7 +382,7 @@ contains
     logical :: xy, int_only
     integer :: i, k
     integer :: n_full, n_active, n_interior, n_boundaries
-    complex (kind = prec), dimension (:), allocatable :: v_1, v_2
+    complex (kind=prec), dimension (:), allocatable :: v_1, v_2
     !
     !***********************
     ! Executable statements
@@ -578,9 +578,9 @@ contains
     implicit none
     ! Arguments
     class (Vector3d_cmr_complex_t)     , intent (in)  :: self
-    complex (kind = prec), allocatable, intent (out) :: v(:)
+    complex (kind=prec), allocatable, intent (out) :: v(:)
     ! Local variables
-    complex (kind = prec), allocatable :: v_full(:)
+    complex (kind=prec), allocatable :: v_full(:)
     !
     !***********************
     ! Executable statements
@@ -600,9 +600,9 @@ contains
     implicit none
     ! Arguments
     class (Vector3d_cmr_complex_t), intent (in out) :: self
-    complex (kind = prec)         , intent (in)     :: v(:)
+    complex (kind=prec)         , intent (in)     :: v(:)
     ! Local variables
-    complex (kind = prec), allocatable :: vFull(:)
+    complex (kind=prec), allocatable :: vFull(:)
     !
     !***********************
     ! Executable statements
@@ -674,9 +674,9 @@ contains
     ! Arguments
     class (Vector3d_cmr_complex_t), intent (in) :: self
     ! Local variables
-    complex (kind = prec), allocatable, intent (out) :: v(:)
+    complex (kind=prec), allocatable, intent (out) :: v(:)
     integer :: n, i1, i2, k
-    complex (kind = prec), allocatable :: v_temp(:)
+    complex (kind=prec), allocatable :: v_temp(:)
     !
     !***********************
     ! Executable statements
@@ -704,7 +704,7 @@ contains
     implicit none
     ! Arguments
     class (Vector3d_cmr_complex_t), intent (in out) :: self
-    complex (kind = prec)        , intent (in)     :: v(:)
+    complex (kind=prec)        , intent (in)     :: v(:)
     ! Local variables
     integer :: i1, i2, k, n
     !
@@ -752,10 +752,10 @@ contains
   !   implicit none
   !   ! Arguments
   !   class (Vector3d_cmr_complex_t), intent (in) :: self
-  !   complex (kind = prec)        , intent (in) :: c
+  !   complex (kind=prec)        , intent (in) :: c
   !   ! Local variables
   !   integer, allocatable :: I(:)
-  !   complex (kind = prec), allocatable :: v(:)
+  !   complex (kind=prec), allocatable :: v(:)
   !   integer :: n, n_I, k
   !   !
   !   !***********************
@@ -794,11 +794,11 @@ contains
   !   ! Arguments
   !   class (Vector3d_cmr_complex_t), intent (in)  :: self
   !   integer, allocatable         , intent (out) :: I(:)
-  !   complex (kind = prec)        , intent (in)  :: c
+  !   complex (kind=prec)        , intent (in)  :: c
   !   ! Local variables
-  !   complex (kind = prec), allocatable :: v(:)
+  !   complex (kind=prec), allocatable :: v(:)
   !   integer :: n, n_I, k
-  !   real (kind = prec), parameter :: TOL = 1E-5
+  !   real (kind=prec), parameter :: TOL = 1E-5
   !   !
   !   !***********************
   !   ! Executable statements
@@ -933,10 +933,10 @@ contains
     ! Arguments
     !   a real scalar to be multiplied with
     class (Vector3d_cmr_complex_t), intent (in out) :: self
-    complex (kind = prec)        , intent (in)     :: c    
+    complex (kind=prec)        , intent (in)     :: c    
     ! Local variables
     character(80) :: ctmp
-    complex (kind = prec) :: rtmp
+    complex (kind=prec) :: rtmp
     !
     !***********************
     ! Executable statements
@@ -985,7 +985,7 @@ contains
     class (Vector3d_cmr_complex_t), intent (in) :: self
     class (Vector3d_cmr_complex_t), intent (in) :: rhs
     ! Local variables
-    complex (kind = prec) :: c
+    complex (kind=prec) :: c
     character(80) :: ctmp
     !
     !***********************
@@ -1010,11 +1010,11 @@ contains
     ! Arguments
     class (Vector3d_cmr_complex_t), intent (in) :: self
     integer                       , intent (in) :: component
-    real (kind = prec)            , intent (in) :: rx(3)
+    real (kind=prec)            , intent (in) :: rx(3)
     ! Local variables
-    complex (kind = prec) :: ret
+    complex (kind=prec) :: ret
     character(80) :: ctmp
-    real (kind = prec) :: rtmp
+    real (kind=prec) :: rtmp
     integer :: itmp
     !
     !***********************
@@ -1114,7 +1114,7 @@ contains
     integer :: y_nx, y_ny, y_nz
     integer :: z_nx, z_ny, z_nz
     integer :: last, Cs, i1, i2, i, k
-    real (kind = prec) w1, w2
+    real (kind=prec) w1, w2
     !
     !***********************
     ! Executable statements
@@ -1203,11 +1203,11 @@ contains
     ! Local variables
     type (grid_t), pointer :: grid
     
-    complex (kind = prec), pointer, dimension(:) :: tempe
+    complex (kind=prec), pointer, dimension(:) :: tempe
     type(rvector) :: templ_r
-    real (kind = prec), pointer, dimension(:) :: templ
-    complex (kind = prec), pointer, dimension(:) :: temple
-    complex (kind = prec), allocatable, dimension(:, :, :) :: lengthx, lengthy
+    real (kind=prec), pointer, dimension(:) :: templ
+    complex (kind=prec), pointer, dimension(:) :: temple
+    complex (kind=prec), allocatable, dimension(:, :, :) :: lengthx, lengthy
     integer :: sx1, sx2, sx3, sy1, sy2, sy3, s1, s2
     integer :: Cs, i1, i2
 
@@ -1368,11 +1368,11 @@ contains
   function rep_mat(m_in, nx, ny, nz, transp) result(m_out)
     implicit none
     ! Arguments
-    real (kind = prec), dimension(:), intent(in) :: m_in
+    real (kind=prec), dimension(:), intent(in) :: m_in
     integer, intent(in) :: nx, ny, nz
     logical, intent(in) :: transp
     ! Local variables
-    real (kind = prec), dimension(:, :, :), allocatable :: m_out
+    real (kind=prec), dimension(:, :, :), allocatable :: m_out
     integer :: i, i1, i2, n_in
     !
     !***********************

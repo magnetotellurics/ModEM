@@ -255,7 +255,7 @@ contains
         class( ModelParameterCell_SG_t ), intent( in ) :: self
         character(:), allocatable, intent( inout ) :: paramType
         class( Scalar_t ), intent( out ) :: v_h
-        real(kind = prec) , intent( out ), optional :: vAir
+        real(kind=prec) , intent( out ), optional :: vAir
         class( Scalar_t ), intent( out ), optional :: v_v
         !
         class( ModelParameterCell_SG_t ), allocatable :: mTemp
@@ -308,7 +308,7 @@ contains
         class( ModelParameterCell_SG_t ), intent( inout ) :: self
         character(:), allocatable, intent( in ) :: paramType
         class( Scalar_t ), intent( in ) :: v_h
-        real(kind = prec) , intent( in ), optional :: vAir
+        real(kind=prec) , intent( in ), optional :: vAir
         class( Scalar_t ), intent( in ), optional :: v_v
         !
         if( .NOT. ( self%is_allocated )) then

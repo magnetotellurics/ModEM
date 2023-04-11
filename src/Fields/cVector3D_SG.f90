@@ -67,8 +67,6 @@ module cVector3D_SG
             procedure, public :: write => writeCVector3D_SG
             procedure, public :: print => printCVector3D_SG
             !
-            procedure, public :: setInteriorMask => setInteriorMaskCVector3D_SG
-               !
     end type cVector3D_SG_t
     !
     interface cVector3D_SG_t
@@ -146,9 +144,6 @@ contains
         !
         self%Nxyz = (/product(self%NdX), product(self%NdY), product(self%NdZ)/)
         !
-          call self%setInteriorMask
-          call self%zeros
-          !
     end function cVector3D_SG_ctor
     !
     !> No subroutine briefing
@@ -159,6 +154,8 @@ contains
         type( cVector3D_SG_t ), intent( inout ) :: self
         !
         !write( *, * ) "Destructor cVector3D_SG"
+        !
+        call self%dealloc
         !
         if( allocated( self%x ) ) deallocate( self%x )
         if( allocated( self%y ) ) deallocate( self%y )
@@ -186,8 +183,10 @@ contains
              call self%switchStoreState
         endif
         !
-        select case(self%grid_type)
-            case(EDGE)
+        select case( self%grid_type )
+            !
+            case( EDGE )
+                !
                 self%x(:, (/1, self%NdX(2)/), :) = cvalue
                 self%x(:, :, (/1, self%NdX(3)/)) = cvalue
                 self%y((/1, self%NdY(1)/), :, :) = cvalue
@@ -195,13 +194,15 @@ contains
                 self%z(:, (/1, self%NdZ(2)/), :) = cvalue
                 self%z((/1, self%NdZ(1)/), :, :) = cvalue
                 !
-            case(FACE)
+            case( FACE )
+                !
                 self%x((/1, self%NdX(1)/), :, :) = cvalue
                 self%y(:, (/1, self%NdY(2)/), :) = cvalue
                 self%z(:, :, (/1, self%NdZ(3)/)) = cvalue
                 !
             case default
                 stop "Error: setAllBoundaryCVector3D_SG > Invalid grid type."
+            !
         end select
         !
     end subroutine setAllBoundaryCVector3D_SG
@@ -218,17 +219,23 @@ contains
              call self%switchStoreState
         endif
         !
-        select case(self%grid_type)
-            case(EDGE)
+        select case( self%grid_type )
+            !
+            case( EDGE )
+                !
                 self%x(:, 2:self%NdX(2)-1, 2:self%NdX(3)-1) = cvalue
                 self%y(2:self%NdY(1)-1, :, 2:self%NdY(3)-1) = cvalue
                 self%z(2:self%NdZ(1), 2:self%NdZ(2)-1, :) = cvalue
-            case(FACE)
+                !
+            case( FACE )
+                !
                 self%x(2:self%NdX(1)-1, :, :) = cvalue
                 self%y(:, 2:self%NdY(2)-1, :) = cvalue
                 self%z(:, :, 2:self%NdZ(3)-1) = cvalue
+                !
             case default
                 stop "Error: setAllInteriorCVector3D_SG > Invalid grid type."
+            !
         end select
         !
     end subroutine setAllinteriorCVector3D_SG
@@ -1764,8 +1771,12 @@ contains
         self%nz = rhs%nz
         self%store_state = rhs%store_state
         !
-		self%mask_interior = rhs%mask_interior
-		!
+        if( allocated( rhs%ind_interior ) ) &
+        self%ind_interior = rhs%ind_interior
+        !
+        if( allocated( rhs%ind_boundaries ) ) &
+        self%ind_boundaries = rhs%ind_boundaries
+        !
         select type( rhs )
             !
             class is( cVector3D_SG_t )
@@ -1993,28 +2004,5 @@ contains
         enddo
         !
     end subroutine printCVector3D_SG
-    !
-    !> No subroutine briefing
-    !
-    subroutine setInteriorMaskCVector3D_SG( self )
-        implicit none
-        !
-        class( cVector3D_SG_t ), intent( inout ) :: self
-        !
-        class( Field_t ), allocatable :: aux_field
-        real( kind=prec ), dimension(:), allocatable :: r_array
-        !
-        allocate( aux_field, source = self )
-        call aux_field%zeros()
-        !
-        call aux_field%setAllboundary( C_ONE )
-        !
-        r_array = aux_field%getArray()
-        !
-        self%mask_interior = r_array == 0
-        !
-		deallocate( aux_field )
-		!
-    end subroutine setInteriorMaskCVector3D_SG
     !
 end module cVector3D_SG

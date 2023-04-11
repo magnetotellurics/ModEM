@@ -343,6 +343,8 @@ contains
         !
         !write( *,* ) "Destructor ForwardControlFile_t"
         !
+        if( allocated( self%field_type ) ) deallocate( self%field_type )
+        !
         if( allocated( self%grid_reader_type ) ) deallocate( self%grid_reader_type )
         if( allocated( self%grid_type ) ) deallocate( self%grid_type )
         !
