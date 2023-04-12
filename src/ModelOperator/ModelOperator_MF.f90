@@ -381,7 +381,7 @@ contains
         class( ModelOperator_MF_t ), intent( in ) :: self
         real( kind=prec ), intent( in ), optional :: omega
         class( Field_t ), intent( in ) :: inE
-        class( Field_t ), intent( inout ) :: outE
+        class( Vector_t ), intent( inout ) :: outE
         logical, intent( in ), optional :: p_adjoint
         !
         integer :: ix, iy, iz
@@ -484,7 +484,7 @@ contains
         !
         class( ModelOperator_MF_t ), intent( in ) :: self
         class( Field_t ), intent( in ) :: inE
-        class( Field_t ), intent( inout ) :: outE
+        class( Vector_t ), intent( inout ) :: outE
         !
         real( kind=prec ) :: omega
         !
@@ -565,8 +565,8 @@ contains
         implicit none
         !
         class( ModelOperator_MF_t ), intent( in ) :: self
-        class( Field_t ), intent( in ) :: inPhi
-        class( Field_t ), intent( inout ) :: outPhi
+        class( Scalar_t ), intent( in ) :: inPhi
+        class( Scalar_t ), intent( inout ) :: outPhi
         !
         integer :: ix, iy, iz
         !
@@ -618,7 +618,7 @@ contains
         !
         class( ModelOperator_MF_t ), intent( in ) :: self
         class( Field_t ), intent( in ) :: inE
-        class( Field_t ), intent( inout ) :: outPhi
+        class( Scalar_t ), intent( inout ) :: outPhi
         !
         integer :: ix, iy, iz
         !

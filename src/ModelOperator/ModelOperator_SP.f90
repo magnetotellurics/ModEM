@@ -205,8 +205,6 @@ contains
         call deall_spMatCSR( Temp )
         call deall_spMatCSR( Ttrans )
         !
-        !deallocate( Dtemp )
-        !
         self%eqset = .TRUE.
         !
         call self%divCorInit
@@ -336,8 +334,6 @@ contains
         !> Construct VDs .. multiply VDiv by Conductivity on edges; can use VomegaMuSig
         n = self%VDiv%nCol
         !
-        !allocate( d( n ) )
-        !
         d = ( self%VomegaMuSig / ( mu_0 * self%omega ) )
         !
         temp_vec = self%metric%VEdge
@@ -381,24 +377,26 @@ contains
         class( ModelOperator_SP_t ), intent( in ) :: self
         real( kind=prec ), intent( in ), optional :: omega
         class( Field_t ), intent( in ) :: inE
-        class( Field_t ), intent( inout ) :: outE
+        class( Vector_t ), intent( inout ) :: outE
         logical, intent( in ), optional :: p_adjoint
         !
-        complex( kind=prec ), allocatable, dimension(:) :: array_interior, array_inE, array_outE
         logical :: adjoint
+        complex( kind=prec ), allocatable, dimension(:) :: array_inE, array_outE
+        complex( kind=prec ), allocatable, dimension(:) :: array_inE_int, array_result
         !
         if( .NOT. inE%is_allocated ) then
             stop "Error: amultModelOperatorSP > inE not allocated"
         endif
         !
         array_inE = inE%getArray()
+        array_outE = outE%getArray()
         !
-        array_interior = array_inE( inE%ind_interior )
+        array_inE_int = array_inE( inE%ind_interior )
         !
-        array_outE = array_interior
-        array_outE = C_ZERO
+        array_result = array_inE_int
+        array_result = C_ZERO
         !
-        call RMATxCVEC( self%CCii, array_interior, array_outE )
+        call RMATxCVEC( self%CCii, array_inE_int, array_result )
         !
         if( present( p_adjoint ) ) then
             adjoint = p_adjoint
@@ -407,15 +405,15 @@ contains
         endif
         !
         if( adjoint ) then
-            array_outE = array_outE - ONE_I * ISIGN * self%VomegaMuSig * array_inE
+            array_result = array_result - ONE_I * ISIGN * self%VomegaMuSig * array_inE_int
         else
-            array_outE = array_outE + ONE_I * ISIGN * self%VomegaMuSig * array_inE
+            array_result = array_result + ONE_I * ISIGN * self%VomegaMuSig * array_inE_int
         endif
         !
-        array_inE = C_ZERO
-        array_inE( inE%ind_interior ) = array_outE
+        !array_inE = C_ZERO
+        array_outE( inE%ind_interior ) = array_result
         !
-        call outE%setArray( array_inE )
+        call outE%setArray( array_outE )
         !
     end subroutine amultModelOperatorSP
     !
@@ -428,34 +426,33 @@ contains
         !
         class( ModelOperator_SP_t ), intent( in ) :: self
         class( Field_t ), intent( in ) :: inE
-        class( Field_t ), intent( inout ) :: outE
+        class( Vector_t ), intent( inout ) :: outE
         !
-        complex( kind=prec ), allocatable, dimension(:) :: temp_array, array_inE, array_outE
+        complex( kind=prec ), allocatable, dimension(:) :: array_inE, array_outE
+        complex( kind=prec ), allocatable, dimension(:) :: array_inE_bdry, array_outE_int
         !
         if( .NOT. inE%is_allocated ) then
             stop "Error: amultModelOperatorSP > inE not allocated"
         endif
         !
         array_inE = inE%getArray()
+        array_inE_bdry = array_inE( inE%ind_boundaries )
         !
-        array_outE = array_inE
-        array_outE = C_ZERO
+        array_outE = outE%getArray()
+        array_outE_int = array_outE( inE%ind_interior )
+        array_outE_int = C_ZERO
         !
         ! ON CCib DIFFERENT LENGTH ???? 
-        ! call RMATxCVEC( self%CCib, array_inE, array_outE )
+        call RMATxCVEC( self%CCib, array_inE_bdry, array_outE_int )
         !
-        write( *, * ) "multAib full    : ", size( array_inE )
-        write( *, * ) "multAib interior: ", size( inE%ind_interior )
-        write( *, * ) "multAib boundary: ", size( inE%ind_boundaries )
-        !
-        ! CC Works
-        call RMATxCVEC( self%CC, array_inE, array_outE )
+        array_outE( inE%ind_interior ) = array_outE_int
         !
         call outE%setArray( array_outE )
         !
     end subroutine multAibModelOperatorSP
     !
     !> No subroutine briefing
+    !
     subroutine multCurlTModelOperatorSP( self, inH, outE )
         implicit none
         !
@@ -520,54 +517,56 @@ contains
     end subroutine multCurlTModelOperatorSP
     !
     !> No subroutine briefing
+    !
     subroutine divCgradModelOperatorSP( self, inPhi, outPhi )
         implicit none
         !
         class( ModelOperator_SP_t ), intent( in ) :: self
-        class( Field_t ), intent( in ) :: inPhi
-        class( Field_t ), intent( inout ) :: outPhi
+        class( Scalar_t ), intent( in ) :: inPhi
+        class( Scalar_t ), intent( inout ) :: outPhi
         !
-        complex( kind=prec ), allocatable, dimension(:) :: array_interior, array_inPhi, array_outPhi
+        complex( kind=prec ), allocatable, dimension(:) :: array_inPhi, array_outPhi
+        complex( kind=prec ), allocatable, dimension(:) :: array_inPhi_int, array_result
         !
         array_inPhi = inPhi%getArray()
+        array_inPhi_int = array_inPhi( inPhi%ind_interior )
         !
-        array_interior = array_inPhi( inPhi%ind_interior )
+        array_outPhi = outPhi%getArray()
+        array_result = array_inPhi_int
+        array_result = C_ZERO
         !
-        array_outPhi = array_interior
-        array_outPhi = C_ZERO
+        call RMATxCVEC( self%VDsG, array_inPhi_int, array_result )
         !
-        call RMATxCVEC( self%VDsG, array_interior, array_outPhi )
+        array_outPhi( inPhi%ind_interior ) = array_result
         !
-        array_inPhi = C_ZERO
-        array_inPhi( inPhi%ind_interior ) = array_outPhi
-        !
-        call outPhi%setArray( array_inPhi )
+        call outPhi%setArray( array_outPhi )
         !
     end subroutine divCgradModelOperatorSP
     !
     !> No subroutine briefing
+    !
     subroutine divCModelOperatorSP( self, inE, outPhi )
         implicit none
         !
         class( ModelOperator_SP_t ), intent( in ) :: self
         class( Field_t ), intent( in ) :: inE
-        class( Field_t ), intent( inout ) :: outPhi
+        class( Scalar_t ), intent( inout ) :: outPhi
         !
-        complex( kind=prec ), allocatable, dimension(:) :: array_interior, array_inE, array_outPhi
+        complex( kind=prec ), allocatable, dimension(:) :: array_inE, array_outPhi
+        complex( kind=prec ), allocatable, dimension(:) :: array_inE_int, array_outPhi_int
         !
         array_inE = inE%getArray()
+        array_inE_int = array_inE( inE%ind_interior )
         !
-        array_interior = array_inE( inE%ind_interior )
+        array_outPhi = outPhi%getArray()
+        array_outPhi_int = array_outPhi( outPhi%ind_interior )
+        array_outPhi_int = C_ZERO
         !
-        array_outPhi = array_interior
-        array_outPhi = C_ZERO
+        call RMATxCVEC( self%VDs, array_inE_int, array_outPhi_int )
         !
-        call RMATxCVEC( self%VDs, array_interior, array_outPhi )
+        array_outPhi( outPhi%ind_interior ) = array_outPhi_int
         !
-        array_inE = C_ZERO
-        array_inE( inE%ind_interior ) = array_outPhi
-        !
-        call outPhi%setArray( array_inE )
+        call outPhi%setArray( array_outPhi )
         !
     end subroutine divCModelOperatorSP
     !
@@ -580,24 +579,16 @@ contains
         class( Vector_t ), intent( inout ) :: outE
         !
         complex( kind=prec ), allocatable, dimension(:) :: array_inPhi, array_outE
+        complex( kind=prec ), allocatable, dimension(:) :: array_outE_int
         !
         array_inPhi = inPhi%getArray()
         !
         array_outE = outE%getArray()
+        array_outE_int = array_outE( outE%ind_interior )
         !
-        write( *, * ) "grad full out1: ", size( array_outE )
+        call RMATxCVEC( G, array_inPhi, array_outE_int )
         !
-        array_outE = array_inPhi
-        array_outE = C_ZERO
-        !
-        write( *, * ) "grad full in      : ", size( array_inPhi )
-        write( *, * ) "grad full out2    : ", size( array_outE )
-        write( *, * ) "grad interior in  : ", size( inPhi%ind_interior )
-        write( *, * ) "grad interior out : ", size( outE%ind_interior )
-        write( *, * ) "grad boundary in  : ", size( inPhi%ind_boundaries )
-        write( *, * ) "grad boundary out : ", size( outE%ind_boundaries )
-        !
-        call RMATxCVEC( G, array_inPhi, array_outE )
+        array_outE( outE%ind_interior ) = array_outE_int
         !
         call outE%setArray( array_outE )
         !
