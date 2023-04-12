@@ -502,8 +502,8 @@ contains
         !> lets start coding this with little checking -- assume
         !> everything is allocated and correct on entry
         !
-		write( *, * ) "RMATxCVEC > A%nCol, A%nRow, size(x), size(y): ", A%nCol, A%nRow, size(x), size(y)
-		!
+        write( *, * ) "RMATxCVEC > A%nCol, A%nRow, size(x), size(y): ", A%nCol, A%nRow, size(x), size(y)
+        !
         if( A%nCol .NE. size(x) ) then
             write( *, * ) "Error: RMATxCVEC > matrix and vector sizes incompatible = ", A%nCol, size(x)
             stop

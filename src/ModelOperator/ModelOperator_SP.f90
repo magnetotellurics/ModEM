@@ -12,7 +12,7 @@ module ModelOperator_SP
         !
         type( spOpTopology_SG_t ) :: topology_sg
         !
-        type( rVector3D_SG_t ) :: sigma_C
+        class( Field_t ), allocatable :: sigma_C
         !
         integer, allocatable, dimension(:) :: EDGEi, EDGEb
         integer, allocatable, dimension(:) :: NODEi, NODEb
@@ -41,6 +41,8 @@ module ModelOperator_SP
             procedure, public :: divCorSetUp => divCorSetUpModelOperatorSP
             !
             procedure, public :: divCorInit => divCorInitModelOperatorSP
+            !
+            procedure, private :: updateOmegaMuSig
             !
             procedure :: divCgrad => divCgradModelOperatorSP
             procedure :: divC => divCModelOperatorSP
@@ -224,9 +226,9 @@ contains
         integer :: i
         type( rScalar3D_SG_t ) :: cell_cond
         class( ModelParameter_t ), allocatable :: model
-        type( rvector3D_SG_t ) :: temp_vec, sig_temp_vec
+        type( rVector3D_SG_t ) :: temp_vec, sig_temp_vec
         !
-        sig_temp_vec = rvector3D_SG_t( self%metric%grid, EDGE )
+        sig_temp_vec = rVector3D_SG_t( self%metric%grid, EDGE )
         !
         !> ON -> call ModelParamToEdge( sigma, sig_temp_vec )
         call sigma%PDEmapping( sig_temp_vec )
@@ -259,6 +261,45 @@ contains
         deallocate( model )
         !
     end subroutine setCondModelOperatorSP
+    !
+    !> No subroutine briefing
+    !
+    subroutine updateOmegaMuSig( self, inOmega, model_param )
+        implicit none
+        !
+        class( ModelOperator_SP_t ), intent( inout ) :: self
+        real( kind=prec ), intent ( in ) :: inOmega
+        class( ModelParameter_t ), intent( in ), optional :: model_param
+        !
+        type( rVector3D_SG_t ) :: sigTemp
+        complex( kind=prec ), allocatable, dimension(:) :: sigVec, temp_vec
+        !
+        if( present( model_param ) ) then
+            !
+            sigTemp = rVector3D_SG_t( self%metric%grid, EDGE )
+            !
+            call model_param%PDEmapping( sigTemp )
+            !
+            sigVec = sigTemp%getArray()
+            !
+            temp_vec = self%metric%VEdge%getArray()
+            !
+            self%VomegaMuSig = MU_0 * inOmega * sigVec( self%EDGEi ) * temp_vec( self%EDGEi )
+            !
+            self%omega = inOmega
+            !
+        else
+            if( self%omega .gt. 0 ) then
+                self%VomegaMuSig = ( self%VomegaMuSig / self%omega )
+            endif
+            !
+            self%VomegaMuSig = ( self%VomegaMuSig * inOmega )
+            !
+            self%omega = inOmega
+            !
+        endif
+        !
+    end subroutine updateOmegaMuSig
     !
     !> To complete setup conductivity is required
     !> DivCorInit has to be called before this routine
@@ -326,7 +367,7 @@ contains
         class( ModelOperator_SP_t ), intent( inout ) :: self
         !
         type( spMatCSR_Real ) :: temp_matrix
-        type( rvector3D_SG_t ) :: temp_vec
+        type( rVector3D_SG_t ) :: temp_vec
         real( kind=prec ), allocatable, dimension(:) :: d
         integer, allocatable, dimension(:) :: allNodes
         integer :: n, i
