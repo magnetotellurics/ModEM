@@ -97,7 +97,7 @@ contains
         !
         type( Grid2D_t ) :: grid
         call grid%create( ny, nzAir, nzEarth )
-        call grid%SetCellSizes( dy, dz )
+        call grid%setCellSizes( dy, dz )
         !
         call grid%setup
         

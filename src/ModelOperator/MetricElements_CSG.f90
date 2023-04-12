@@ -60,7 +60,7 @@ contains
         call self%allocate()
         !
         !>    if were going to allocate storage for all, just set all now!
-        call self%SetMetricElements()
+        call self%setMetricElements()
         !
     end function MetricElements_CSG_Ctor
     !
@@ -315,8 +315,8 @@ contains
         !> is just to create these (but they might already be created--
         !>     let's assume they are--the way metric element objects are created
         !>      this is always true
-        !call self%SetEdgeLength()
-        !call self%SetDualFaceArea()
+        !call self%setEdgeLength()
+        !call self%setDualFaceArea()
         !
         self%Vedge = self%EdgeLength
         call self%Vedge%mult( self%DualFaceArea )

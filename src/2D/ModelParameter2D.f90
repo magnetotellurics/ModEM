@@ -217,7 +217,7 @@ contains
          !>     comnductivity slice
          allocate(CondSlice(grid1%nzEarth))
          CondSlice = self%CellCond(j,:)
-         call m1d%SetConductivity(CondSlice, self%AirCond, &
+         call m1d%setConductivity(CondSlice, self%AirCond, &
              self%paramType, self%mKey)
 
     end function slice1DModelParameter2D

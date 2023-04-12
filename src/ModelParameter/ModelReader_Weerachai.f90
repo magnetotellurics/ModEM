@@ -119,7 +119,7 @@ contains
             !
             !> ALWAYS convert modelParam to natural log for computations ????
             paramType = LOGE
-            call model%SetType( paramType )
+            call model%setType( paramType )
             !
             !> End - Reading cells conductivity values.
             !
@@ -133,14 +133,14 @@ contains
                  oz = R_ZERO
             endif
             !
-            call grid%SetOrigin( ox, oy, oz )
+            call grid%setOrigin( ox, oy, oz )
             !
             read(ioPrm, *, iostat = io_stat) rotDeg
             if(io_stat /= 0) then
                  rotDeg = R_ZERO
             endif
             !
-            call grid%SetGridRotation( rotDeg )
+            call grid%setGridRotation( rotDeg )
             !
             close( ioPrm )
             !

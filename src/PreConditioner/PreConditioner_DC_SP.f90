@@ -130,9 +130,14 @@ contains
         class( Scalar_t ), intent( in ) :: inPhi
         class( Scalar_t ), intent( inout ) :: outPhi
         !
-        complex( kind=prec ), allocatable, dimension(:) :: temp_array_inPhi, temp_array_outPhi
+        complex( kind=prec ), allocatable, dimension(:) :: temp_array_interior, temp_array_inPhi, temp_array_outPhi
         !
         temp_array_inPhi = inPhi%getArray()
+        !
+        temp_array_interior = temp_array_inPhi( inPhi%ind_interior )
+        !
+        temp_array_outPhi = temp_array_interior
+        temp_array_outPhi = C_ZERO
         !
         select type( model_operator => self%model_operator )
             !
@@ -142,11 +147,14 @@ contains
                 !
                 call UTsolve_Real( model_operator%VDsG_U, self%phi, temp_array_outPhi )
                 !
-                deallocate( temp_array_inPhi )
-                !
-                call outPhi%setArray( temp_array_outPhi )
+                temp_array_inPhi = C_ZERO
+                temp_array_inPhi( inPhi%ind_interior ) = temp_array_outPhi
                 !
                 deallocate( temp_array_outPhi )
+                !
+                call outPhi%setArray( temp_array_inPhi )
+                !
+                deallocate( temp_array_inPhi )
                 !
             class default
                 stop "Error: LUSolvePreConditioner_DC_SP > Unclassified ModelOperator"

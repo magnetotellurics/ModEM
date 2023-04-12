@@ -132,7 +132,7 @@ contains
                 !
             enddo
             !
-            call self%Setup()
+            call self%setup()
             !
             self%is_initialized = .TRUE.
             !
@@ -232,7 +232,7 @@ contains
             self%sub_grids(k)%oz = 0.0
         endif
         !
-        call self%sub_grids(k)%Setup()
+        call self%sub_grids(k)%setup()
         !
         contains
             !

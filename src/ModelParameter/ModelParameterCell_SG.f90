@@ -101,7 +101,7 @@ contains
         !
         if( present( param_type ) ) then
             !
-            call self%SetSigMap( param_type )
+            call self%setSigMap( param_type )
             !
         endif
         !
@@ -139,7 +139,7 @@ contains
         !
         cond_slice = self%SigMap( self%cell_cond_h%v( ix, iy, : ) )
         !
-        call model_param_1D%SetConductivity( cond_slice, self%air_cond, self%param_type, self%mKey )
+        call model_param_1D%setConductivity( cond_slice, self%air_cond, self%param_type, self%mKey )
         !
         deallocate( cond_slice )
         !
@@ -178,7 +178,7 @@ contains
             !
         enddo
         !
-        call model_param_1D%SetConductivity( cond_slice, self%air_cond, self%param_type, self%mKey )
+        call model_param_1D%setConductivity( cond_slice, self%air_cond, self%param_type, self%mKey )
         !
         deallocate( cond_slice )
         !
@@ -213,7 +213,7 @@ contains
             stop "ModelParameter:Slice2D: wrong axis"
         endif
         !
-        call m2D%SetConductivity( cond_slice, self%air_cond, param_type, self%mKey )
+        call m2D%setConductivity( cond_slice, self%air_cond, param_type, self%mKey )
         !
         deallocate( cond_slice )
         !

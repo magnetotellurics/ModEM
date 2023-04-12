@@ -85,7 +85,7 @@ contains
         !
         forward_1D = Forward1D_t( model_parameter_1D )
         !
-        call forward_1D%SetFreq( 2.0 * PI / self%period )
+        call forward_1D%setFreq( 2.0 * PI / self%period )
         !
         !> NOTE: E1D is defined at layer interfaces -- dzEdge(nz+1) 
         allocate( E1D( self%model_operator%metric%grid%nz + 1 ) )

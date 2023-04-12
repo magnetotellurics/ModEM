@@ -87,43 +87,43 @@ module MetricElements
         !> No interface subroutine briefing
         subroutine interface_set_edge_length_metric_elements( self )
             import :: MetricElements_t
-            class(MetricElements_t), intent( inout ) :: self
+            class( MetricElements_t ), intent( inout ) :: self
         end subroutine interface_set_edge_length_metric_elements
         !
         !> No interface subroutine briefing
         subroutine interface_set_face_area_metric_elements( self )
             import :: MetricElements_t
-            class(MetricElements_t), intent( inout ) :: self
+            class( MetricElements_t ), intent( inout ) :: self
         end subroutine interface_set_face_area_metric_elements
         !
         !> No interface subroutine briefing
         subroutine interface_set_dual_edge_length_metric_elements( self )
             import :: MetricElements_t
-            class(MetricElements_t), intent( inout ) :: self
+            class( MetricElements_t ), intent( inout ) :: self
         end subroutine interface_set_dual_edge_length_metric_elements
         !
         !> No interface subroutine briefing
         subroutine interface_set_dual_face_area_metric_elements( self )
             import :: MetricElements_t
-            class(MetricElements_t), intent( inout ) :: self
+            class( MetricElements_t ), intent( inout ) :: self
         end subroutine interface_set_dual_face_area_metric_elements
         !
         !> No interface subroutine briefing
         subroutine interface_set_cell_volume_metric_elements( self )
             import :: MetricElements_t
-            class(MetricElements_t), intent( inout ) :: self
+            class( MetricElements_t ), intent( inout ) :: self
         end subroutine interface_set_cell_volume_metric_elements
         !
         !> No interface subroutine briefing
         subroutine interface_set_edge_volume_metric_elements( self )
             import :: MetricElements_t
-            class(MetricElements_t), intent( inout ) :: self
+            class( MetricElements_t ), intent( inout ) :: self
         end subroutine interface_set_edge_volume_metric_elements
         !
         !> No interface subroutine briefing
         subroutine interface_set_node_volume_metric_elements( self )
             import :: MetricElements_t
-            class(MetricElements_t), intent( inout ) :: self
+            class( MetricElements_t ), intent( inout ) :: self
         end subroutine interface_set_node_volume_metric_elements
         !
     end interface
@@ -136,14 +136,14 @@ contains
         !
         class( MetricElements_t ), intent( inout ) :: self
         !
-        call self%SetEdgeLength()
-        call self%SetFaceArea()
-        call self%SetDualEdgeLength()
-        call self%SetDualFaceArea()
-        call self%SetEdgeVolume()
+        call self%setEdgeLength()
+        call self%setFaceArea()
+        call self%setDualEdgeLength()
+        call self%setDualFaceArea()
+        call self%setEdgeVolume()
         !
-        call self%SetCellVolume()
-        call self%SetNodeVolume()
+        call self%setCellVolume()
+        call self%setNodeVolume()
         !
     end subroutine SetMetricElements
     !

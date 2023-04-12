@@ -1415,12 +1415,14 @@ contains
             !
         else if( self%store_state .EQ. singleton ) then
             !
-            array = self%sv
+            array = cmplx( self%sv, 0.0, kind=prec )
             !
         else
             stop "Error: getArrayRVector3D_SG > Unknown store_state!"
         endif
         !
+		write( *, * ) "getArrayRVector3D_SG: ", size( array )
+		!
     end function getArrayRVector3D_SG
     !
     !> No subroutine briefing

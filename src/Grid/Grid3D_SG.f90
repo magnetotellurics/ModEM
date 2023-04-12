@@ -104,9 +104,9 @@ contains
         !
         call self%Create( nx, ny, nzAir, nzEarth )
         !
-        call self%SetCellSizes( dx, dy, dz )
+        call self%setCellSizes( dx, dy, dz )
         !
-        call self%Setup()
+        call self%setup()
         !
     end function Grid3D_SG_t_ctor
     !
@@ -222,7 +222,7 @@ contains
             oy = origin(2)
             oz = origin(3)
             !
-            call self%SetOrigin(ox, oy, oz)
+            call self%setOrigin(ox, oy, oz)
             !
         endif
         !
@@ -484,12 +484,12 @@ contains
         self%dy = dy_old
         self%dx = dx_old
         !
-        call self%SetOrigin(ox_old, oy_old, oz_old)
-        call self%SetGridRotation(rotdeg_old)
-        call self%SetGridGeometry(geometry_old)
+        call self%setOrigin(ox_old, oy_old, oz_old)
+        call self%setGridRotation(rotdeg_old)
+        call self%setGridGeometry(geometry_old)
         !
         !> Setup the rest of the grid from scratch
-        call self%Setup()
+        call self%setup()
         !
     end subroutine UpdateAirLayersGrid3D_SG
     !

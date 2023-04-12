@@ -238,7 +238,7 @@ module Forward2D
         call zgbtrs(TRANS,n,kl,ku,nRHS,A,lda,ipiv,b,n,info)
         !
         !>    put the solution into the E2D object]
-        call E2D%SetArray(b)
+        call E2D%setArray(b)
         !
         !>    deallocate local arrays (is this needed???)
         deallocate(A)

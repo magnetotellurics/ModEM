@@ -62,7 +62,7 @@ module ModelOperator
         !> No interface subroutine briefing
         !
         subroutine interface_amult_model_operator( self, omega, inE, outE, p_adjoint )
-            import :: ModelOperator_t, Field_t, prec, Vector_t
+            import :: ModelOperator_t, prec, Field_t
             !
             class( ModelOperator_t ), intent( in ) :: self
             real( kind=prec ), intent( in ), optional :: omega
@@ -74,7 +74,7 @@ module ModelOperator
         !> No interface subroutine briefing
         !
         subroutine interface_multaib_model_operator( self, inE, outE )
-            import :: ModelOperator_t, Field_t, Vector_t
+            import :: ModelOperator_t, Field_t
             !
             class( ModelOperator_t ), intent( in ) :: self
             class( Field_t ), intent( in ) :: inE
@@ -84,10 +84,10 @@ module ModelOperator
         !> No interface subroutine briefing
         !
         subroutine interface_multcurl_t_model_operator( self, inH, outE )
-            import :: ModelOperator_t, Vector_t
+            import :: ModelOperator_t, Field_t, Vector_t
             !
             class( ModelOperator_t ), intent( in ) :: self
-            class( Vector_t ), intent( inout ) :: inH
+            class( Field_t ), intent( inout ) :: inH
             class( Vector_t ), allocatable, intent( inout ) :: outE
         end subroutine interface_multcurl_t_model_operator
         !
@@ -101,27 +101,27 @@ module ModelOperator
         !> No interface subroutine briefing
         !
         subroutine interface_divc_grad_model_operator( self, inPhi, outPhi )
-            import :: ModelOperator_t, Scalar_t
+            import :: ModelOperator_t, Field_t
             !
             class( ModelOperator_t ), intent( in ) :: self
-            class( Scalar_t ), intent( in ) :: inPhi
-            class( Scalar_t ), intent( inout ) :: outPhi
+            class( Field_t ), intent( in ) :: inPhi
+            class( Field_t ), intent( inout ) :: outPhi
         end subroutine interface_divc_grad_model_operator
         !
         !> No interface subroutine briefing
         !
         subroutine interface_divc_model_operator( self, inE, outPhi )
-            import :: ModelOperator_t, Field_t, Scalar_t
+            import :: ModelOperator_t, Field_t
             !
             class( ModelOperator_t ), intent( in ) :: self
             class( Field_t ), intent( in ) :: inE
-            class( Scalar_t ), intent( inout ) :: outPhi
+            class( Field_t ), intent( inout ) :: outPhi
         end subroutine interface_divc_model_operator
         !
         !> No interface subroutine briefing
         !
         subroutine interface_grad_model_operator( self, inPhi, outE )
-            import :: ModelOperator_t, Vector_t, Scalar_t
+            import :: ModelOperator_t, Scalar_t, Vector_t
             !
             class( ModelOperator_t ), intent( in ) :: self
             class( Scalar_t ), intent( in ) :: inPhi
@@ -131,11 +131,11 @@ module ModelOperator
         !> No interface subroutine briefing
         !
         subroutine interface_div_model_operator( self, inE, outPhi )
-            import :: ModelOperator_t, Vector_t, Scalar_t
+            import :: ModelOperator_t, Field_t
             !
             class( ModelOperator_t ), intent( in ) :: self
-            class( Vector_t ), intent( in ) :: inE
-            class( Scalar_t ), intent( inout ) :: outPhi
+            class( Field_t ), intent( in ) :: inE
+            class( Field_t ), intent( inout ) :: outPhi
         end subroutine interface_div_model_operator
         !
         !> No interface subroutine briefing

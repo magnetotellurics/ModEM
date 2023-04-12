@@ -134,15 +134,19 @@ contains
         !   A will be sparse m x n with nz non-zero elements
         type( spMatCSR_Real ), intent( inout ) :: A
         !
-        if(A%is_allocated) then
+        integer :: istat
+        !
+        write( *, * ) "m, n, nz: ", m, n, nz
+        !
+        if( A%is_allocated ) then
             call deall_spMatCSR(A)
         endif
         !
         A%nRow = m
         A%nCol = n
-        allocate(A%row(m+1))
-        allocate(A%col(nz))
-        allocate(A%val(nz))
+        allocate(A%row(m+1), stat = istat )
+        allocate(A%col(nz), stat = istat )
+        allocate(A%val(nz), stat = istat )
         A%row(m+1)=nz+1
         A%is_allocated = .TRUE.
         !
@@ -498,6 +502,8 @@ contains
         !> lets start coding this with little checking -- assume
         !> everything is allocated and correct on entry
         !
+		write( *, * ) "RMATxCVEC > A%nCol, size(x), size(y): ", A%nCol, size(x), size(y)
+		!
         if( A%nCol .NE. size(x) ) then
             write( *, * ) "Error: RMATxCVEC > matrix and vector sizes incompatible = ", A%nCol, size(x)
             stop
@@ -1053,29 +1059,36 @@ contains
         type( spMatIJS_Real ) :: B
         integer :: i, nz, nz1, temp
         !
-        nz = A%row(A%nRow+1)-1
-        call create_spMatCSR(A%nCol, A%nRow, nz, Atrans)
+        nz = A%row( A%nRow + 1 ) - 1
         !
-        call create_spMatIJS(A%nRow, A%nCol, nz, B)
+        write( *, * ) "A%nCol, A%nRow, nz: ", A%nCol, A%nRow, nz
         !
-        call CSR2IJS(A, B)
+        call create_spMatCSR( A%nCol, A%nRow, nz, Atrans )
+        !
+        call create_spMatIJS( A%nRow, A%nCol, nz, B )
+        !
+        call CSR2IJS( A, B )
+        !
         do i = 1, nz
-        temp = B%I(i)
-        B%I(i) = B%J(i)
-        B%J(i) = temp
+            temp = B%I(i)
+            B%I(i) = B%J(i)
+            B%J(i) = temp
         enddo
+        !
         temp = B%nRow
         B%nRow = B%nCol
         B%nCol = temp
         !
-        call IJS2CSR_Real(B, Atrans)
-        call deall_spMATIJS(B)
+        call IJS2CSR_Real( B, Atrans )
+        !
+        call deall_spMATIJS( B )
         !
         if(A%lower) then
-        Atrans%upper = .TRUE.
+            Atrans%upper = .TRUE.
         endif 
+        !
         if(A%upper) then
-        Atrans%lower = .TRUE.
+            Atrans%lower = .TRUE.
         endif 
         !
     end subroutine
@@ -1985,38 +1998,41 @@ contains
     !> Solve system Ux = b for complex vector x, upper triangular U
     !> ere real or cmplx refers to L; x is always complex
     !
-    subroutine UTsolve_Real(U, b, x)
+    subroutine UTsolve_Real( U, b, x )
         implicit none
         !
         type( spMatCSR_Real ), intent( in ) :: U
         complex( kind=prec ), dimension(:), intent( in ) :: b
         complex( kind=prec ), dimension(:), intent( inout ) :: x
-
+        !
         integer :: i, j
         real( kind=prec ) :: d
-
-        if(U%nRow .NE.U%nCol) then
-        stop "Error: UTsolve_Real > sparse matrix must be square"
-        endif 
-        if(.NOT.U%upper) then
-        stop "Error: UTsolve_Real > sparse matrix must be upper triangular"
-        endif 
-        if(size(x).NE.U%nRow) then
-        stop "Error: UTsolve_Real > output vector x not of correct size"
-        endif 
-        do i = U%nRow, 1, -1
-        x(i) = b(i)
-        do j = U%row(i), U%row(i+1)-1
-        if(U%col(j).GT.i) then
-        x(i) = x(i)-U%val(j)*x(U%col(j))
-        else
-        !   in this case U%col(j) = i
-        d = U%val(j)
+        !
+        if( U%nRow .NE. U%nCol ) then
+            stop "Error: UTsolve_Real > sparse matrix must be square"
         endif
+        !
+        if( .NOT. U%upper ) then
+            stop "Error: UTsolve_Real > sparse matrix must be upper triangular"
+        endif
+        !
+        write( *, * ) "size(x), U%nRow: ", size(x), U%nRow
+        if( size(x) .NE. U%nRow ) then
+            stop "Error: UTsolve_Real > output vector x not of correct size"
+        endif
+        !
+        do i = U%nRow, 1, -1
+            x(i) = b(i)
+            do j = U%row(i), U%row(i+1)-1
+                if(U%col(j).GT.i) then
+                    x(i) = x(i)-U%val(j)*x(U%col(j))
+                else
+                    !   in this case U%col(j) = i
+                    d = U%val(j)
+                endif
+            enddo
+            x(i) = x(i)/d
         enddo
-        x(i) = x(i)/d
-        enddo
-        return
         !
     end subroutine UTsolve_Real
     !
@@ -2780,11 +2796,9 @@ contains
         type( rScalar3D_SG_t ) :: temp_scalar
         real( kind=prec ), allocatable, dimension(:) :: temp_sv
         !
-        !> write(0, *) gridType
-        !> write(0, *) 'grid.nx, ny, nz', grid%nx, grid%ny, grid%nz, grid%nzAir
         selectcase( gridType )
             !
-            case(EDGE)
+            case( EDGE )
                 !
                 temp_vector = rVector3D_SG_t( grid, EDGE )
                 !
@@ -2810,9 +2824,14 @@ contains
                 !
                 temp_sv = temp_vector%sv
                 !
-            case(FACE)
+            case( FACE )
                 !
                 temp_vector = rVector3D_SG_t( grid, FACE )
+                !
+                nVec(1) = size(temp_vector%x)
+                nVec(2) = size(temp_vector%y)
+                nVec(3) = size(temp_vector%z)
+                nVecT = nVec(1)+nVec(2)+nVec(3)
                 !
                 temp_vector%x(1, :, :) = 1
                 temp_vector%x(temp_vector%nx+1, :, :) = 1
@@ -2829,6 +2848,8 @@ contains
                 !
                 temp_scalar = rScalar3D_SG_t( grid, NODE )
                 !
+                nVecT = size( temp_scalar%v )
+                !
                 temp_scalar%v(1, :, :) = 1
                 temp_scalar%v(temp_scalar%nx+1, :, :) = 1
                 temp_scalar%v(:, 1, :) = 1
@@ -2840,6 +2861,9 @@ contains
                 !
                 temp_sv = temp_scalar%sv
                 !
+            case default
+                write( *, * ) "Error: boundaryIndexSP > Invalid grid type [", gridType, "]"
+                stop
         end select 
         !
         nBdry = 0
@@ -2871,7 +2895,9 @@ contains
         enddo
         !
         deallocate( temp_sv )
-        ! 
+        !
+        write( *, * ) "boundaryIndexSP > gridType, INDb, INDi: ", gridType, size( INDb ), size( INDi )
+        !
     end subroutine boundaryIndexSP
     !
 end module SpOpTools

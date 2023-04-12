@@ -112,7 +112,7 @@ contains
         call self%divergence_correction%setCond()
         !
         !> Set preconditioner for this solver´s preconditioner
-        call self%solver%preconditioner%SetPreconditioner( self%solver%omega )
+        call self%solver%preconditioner%setPreconditioner( self%solver%omega )
         !
         call self%initDiagnostics()
         !

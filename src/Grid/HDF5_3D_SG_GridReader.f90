@@ -127,7 +127,7 @@ contains
         !dy = hdf_dy        
         !dz(nzAir + 1 : nzAir + nzEarth) = hdf_dz
         !
-        call newGrid%SetCellSizes(dx, dy, dz)
+        call newGrid%setCellSizes(dx, dy, dz)
         !
         !> ** Read grid origin **
         !
@@ -139,7 +139,7 @@ contains
         call h5aclose_f(hdf_att_id, hdf_error)
 
         grid_origin = hdf_grid_origin
-        call newGrid%SetOrigin(grid_origin(1), grid_origin(2), grid_origin(3))
+        call newGrid%setOrigin(grid_origin(1), grid_origin(2), grid_origin(3))
 
         !
         !> ** Read grid rotation **
@@ -152,7 +152,7 @@ contains
         call h5aclose_f(hdf_att_id, hdf_error)
 
         grid_rotation = hdf_grid_rotation(1)
-        call newGrid%SetGridRotation(grid_rotation)
+        call newGrid%setGridRotation(grid_rotation)
         !
         !> Clean up
         !

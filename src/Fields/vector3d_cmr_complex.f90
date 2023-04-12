@@ -250,7 +250,7 @@ contains
             igrid%sub_grids(i), grid_type)
     end do
 
-    call self%Set_active_int_boundary ()
+    call self%set_active_int_boundary ()
     call self%Zero ()
 
   end subroutine Vector3d_cmr_complex_t_initialize
@@ -397,7 +397,7 @@ contains
     ! Loop over subgrids, setting boundary edges to one,
     ! interior to  zero
     do k = 1, self%grid_ptr%ngrids
-       call self%sub_vectors(k)%Set_all_boundary (cmplx(1._prec, 0._prec, prec))
+       call self%sub_vectors(k)%set_all_boundary (cmplx(1._prec, 0._prec, prec))
     end do
 
     ! Loop over interfaces: set redundant interface edges to 2
@@ -424,27 +424,27 @@ contains
           ! not active; also reset interior part of interface
           ! edges to 0
           if (xy) then
-             call self%sub_vectors(k-1)%Set_one_boundary('z2_x', &
+             call self%sub_vectors(k-1)%set_one_boundary('z2_x', &
                   cmplx(-1._prec, 0._prec, prec))
-             call self%sub_vectors(k-1)%Set_one_boundary('z2_y', &
+             call self%sub_vectors(k-1)%set_one_boundary('z2_y', &
                   cmplx(-10._prec, 0._prec, prec))
           else
-             call self%sub_vectors(k-1)%Set_one_boundary('z2', &
+             call self%sub_vectors(k-1)%set_one_boundary('z2', &
                   cmplx(-1._prec, 0._prec, prec))
           end if
-          call self%sub_vectors(k)%Set_one_boundary('z1', &
+          call self%sub_vectors(k)%set_one_boundary('z1', &
                cmplx(0._prec, 0._prec, prec), int_only)
        else
           if (xy) then
-             call self%sub_vectors(k)%Set_one_boundary('z1_x', &
+             call self%sub_vectors(k)%set_one_boundary('z1_x', &
                   cmplx(-1.0_prec, 0._prec, prec))
-             call self%sub_vectors(k)%Set_one_boundary('z1_y', &
+             call self%sub_vectors(k)%set_one_boundary('z1_y', &
                   cmplx(-10.0_prec, 0._prec, prec))
           else                
-             call self%sub_vectors(k)%Set_one_boundary('z1', &
+             call self%sub_vectors(k)%set_one_boundary('z1', &
                   cmplx(-1.0_prec, 0._prec, prec))
           end if
-          call self%sub_vectors(k-1)%Set_one_boundary('z2', &
+          call self%sub_vectors(k-1)%set_one_boundary('z2', &
                cmplx(0._prec, 0._prec, prec), int_only)
        end if
     end do
@@ -611,7 +611,7 @@ contains
     allocate (vFull(self%length_full ()))
     vFull = 0.0
     vFull(self%ind_active) = v
-    call self%Set_full (vFull)
+    call self%set_full (vFull)
   end subroutine Set_array_
 
   !**
@@ -716,7 +716,7 @@ contains
     do k = 1, self%grid_ptr%ngrids
        n = self%sub_vectors(k)%length ()
        i2 = i2 + n
-       call self%sub_vectors(k)%Set_array (v(i1:i2))
+       call self%sub_vectors(k)%set_array (v(i1:i2))
        i1 = i1 + n
     end do
   end subroutine Set_full_

@@ -746,7 +746,7 @@ contains
                         !
                         call unpackScalarBuffer( model%cell_cond_h, main_grid, parent_buffer, parent_buffer_size, index )
                         !
-                        call model%SetSigMap( model%param_type )
+                        call model%setSigMap( model%param_type )
                         !
                     class default
                         stop "unpackModelBuffer: Unclassified model"

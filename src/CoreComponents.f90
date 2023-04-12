@@ -113,7 +113,7 @@ contains
             !
             class is( Grid3D_SG_t )
                 !
-                call main_grid%SetupAirLayers( air_layer, model_method, model_n_air_layer, model_max_height )
+                call main_grid%setupAirLayers( air_layer, model_method, model_n_air_layer, model_max_height )
                 !
                 call main_grid%UpdateAirLayers( air_layer%nz, air_layer%dz )
                 !
@@ -163,15 +163,15 @@ contains
                 !
                 call model_operator%setEquations
                 !
-                write( *, * ) "Model Operator Equations Setted"
+                write( *, * ) "Model Operator setEquations"
                 !
                 call sigma0%setMetric( model_operator%metric )
                 !
-                write( *, * ) "Sigma0 Metric Setted"
+                write( *, * ) "Model Operator setMetric"
                 !
                 call model_operator%setCond( sigma0 )
                 !
-                write( *, * ) "Model Operator Conductivity Setted"
+                write( *, * ) "Model Operator setCond"
                 !
             class default
                 stop "Error: handleModelFile > Unclassified main_grid"

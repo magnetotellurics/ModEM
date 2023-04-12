@@ -503,7 +503,7 @@ contains
         implicit none
         !
         class( ModelOperator_MF_t ), intent( in ) :: self
-        class( Vector_t ), intent( inout ) :: inH
+        class( Field_t ), intent( inout ) :: inH
         class( Vector_t ), allocatable, intent( inout ) :: outE
         !
         integer :: ix, iy, iz
@@ -565,8 +565,8 @@ contains
         implicit none
         !
         class( ModelOperator_MF_t ), intent( in ) :: self
-        class( Scalar_t ), intent( in ) :: inPhi
-        class( Scalar_t ), intent( inout ) :: outPhi
+        class( Field_t ), intent( in ) :: inPhi
+        class( Field_t ), intent( inout ) :: outPhi
         !
         integer :: ix, iy, iz
         !
@@ -618,7 +618,7 @@ contains
         !
         class( ModelOperator_MF_t ), intent( in ) :: self
         class( Field_t ), intent( in ) :: inE
-        class( Scalar_t ), intent( inout ) :: outPhi
+        class( Field_t ), intent( inout ) :: outPhi
         !
         integer :: ix, iy, iz
         !
@@ -708,7 +708,8 @@ contains
                 endif
                 !
                 select type( inPhi )
-                    class is ( cScalar3D_SG_t )
+                    !
+					class is ( cScalar3D_SG_t )
                         !
                         call outE%Zeros
                         !
@@ -753,8 +754,8 @@ contains
         implicit none
         !
         class( ModelOperator_MF_t ), intent( in ) :: self
-        class( Vector_t ), intent( in ) :: inE
-        class( Scalar_t ), intent( inout ) :: outPhi
+        class( Field_t ), intent( in ) :: inE
+        class( Field_t ), intent( inout ) :: outPhi
         !
         integer :: ix, iy, iz
         !
