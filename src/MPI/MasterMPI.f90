@@ -23,11 +23,12 @@ contains
         !
         class( ModelParameter_t ), intent( in ) :: sigma
         !
-        integer :: worker_rank, tx_received, i_tx, i_data
+        integer :: worker_rank, tx_received, i_tx
         !
         !> Verbose
-        !!write( *, * ) "     - Start masterSolveAll"
+        !write( *, * ) "     - Start masterSolveAll"
         !
+        !> Send Sigma to all workers
         if( sigma%is_allocated ) then
             !
             call broadcastSigma( sigma )
@@ -95,7 +96,7 @@ contains
         type( DataGroupTx_t ), allocatable, dimension(:), intent( out ) :: all_predicted_data
         integer, intent( in ), optional :: i_sol
         !
-        integer :: worker_rank, tx_received, i_tx, i_data, sol_index
+        integer :: worker_rank, tx_received, i_tx, sol_index
         !
         !> Verbose
         !write( *, * ) "     - Start masterForwardModelling"
@@ -105,6 +106,7 @@ contains
         !> Set i_sol if present
         if( present( i_sol ) ) sol_index = i_sol
         !
+        !> Send Sigma to all workers
         if( sigma%is_allocated ) then
             !
             call broadcastSigma( sigma )
@@ -189,12 +191,21 @@ contains
         integer :: worker_rank, i_tx, tx_received
         !
         !> Send Sigma to all workers
+        if( sigma%is_allocated ) then
+            !
+            call broadcastSigma( sigma )
+            !
+        else
+            stop "Error: masterJMult > sigma not allocated"
+        endif
+        !
+        !> Send dSigma to all workers
         if( dsigma%is_allocated ) then
             !
             call broadcastDSigma( dsigma )
             !
         else
-            stop "Error: masterSolveAll > sigma not allocated"
+            stop "Error: masterJMult > sigma not allocated"
         endif
         !
         if( allocated( JmHat ) ) deallocate( JmHat )
@@ -285,6 +296,9 @@ contains
         !
         !> And initialize dsigma with Zeros
         if( sigma%is_allocated ) then
+            !
+            !> Send Sigma to all workers
+            call broadcastSigma( sigma )
             !
             if( allocated( dsigma ) ) deallocate( dsigma )
             allocate( dsigma, source = sigma )

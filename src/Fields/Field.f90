@@ -432,10 +432,6 @@ contains
             endif
         enddo
         !
-        write( *, * ) "grid_type, grid[ x, y, z ]: ", self%grid_type, self%grid%nx, self%grid%ny, self%grid%nz
-        !
-        write( *, * ) "int_size, bdry_size: ", int_size, bdry_size
-        !
         allocate( self%ind_boundaries( bdry_size ) )
         !
         allocate( self%ind_interior( int_size ) )

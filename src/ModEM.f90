@@ -40,6 +40,7 @@ contains
         implicit none
         !
         real( kind=prec ) :: t_start, t_finish
+        integer :: int_time
         !
         call date_and_time( str_date, str_time )
         !
@@ -74,8 +75,10 @@ contains
         !> End runtime countdown
         call cpu_time( t_finish )
         !
+        int_time = int( t_finish - t_start )
+        !
         write( *, * )
-        write( *, "( a16, f16.3, a1 )" ) "Finish ModEM-OO:", ( t_finish - t_start ), "s"
+        write( *, * ) "Finish ModEM-OO: ", getLiteralTime( int_time )
         write( *, * )
         !
     end subroutine runProgram

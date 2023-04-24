@@ -120,7 +120,7 @@ contains
         bgdat%dowhat = 1
         !
         call self%create_background_data( bgdat )
-		!
+        !
         call self%create_source_data( src, freqdat )
         !
         ifreq=1
@@ -195,6 +195,7 @@ contains
         !
         integer ix, iy, iz, counter
         !
+        if( allocated( E_p ) ) deallocate( E_p )
         allocate( E_p, source = cVector3D_SG_t( grid, EDGE ) )
         !
         !> Fill e_vector (cVector3D_SG) from E2D (Esoln2DTM_t)
@@ -203,7 +204,7 @@ contains
             class is( cVector3D_SG_t )
                 !
                 counter = 1
-                ! E-field corresponing to these nodes is Ex
+                ! E-field corresponding to these nodes is Ex
                 do iz = 1,grid%Nz+1    !Edge Z
                     do iy = 1,grid%Ny+1     !Edge Y
                         do ix = 1,grid%Nx       !Center X

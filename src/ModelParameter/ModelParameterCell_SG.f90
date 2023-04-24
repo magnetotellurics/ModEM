@@ -226,6 +226,7 @@ contains
         class( ModelParameterCell_SG_t ), intent( in ) :: self
         class( Scalar_t ), allocatable, intent( inout ) :: ccond
         !
+        if( allocated( ccond ) ) deallocate( ccond )
         allocate( ccond, source = self%cell_cond_h )
         !
     end subroutine getCondModelParameterCell_SG

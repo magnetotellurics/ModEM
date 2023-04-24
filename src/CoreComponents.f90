@@ -83,6 +83,7 @@ module CoreComponents
     public :: handleArguments
     public :: setupDefaultParameters
     public :: createOutputDirectory
+    public :: getLiteralTime
     public :: garbageCollector
     public :: printUsage
     public :: printHelp
@@ -159,19 +160,11 @@ contains
                         !
                 end select
                 !
-                write( *, * ) "Model Operator Instantiated"
-                !
                 call model_operator%setEquations
-                !
-                write( *, * ) "Model Operator setEquations"
                 !
                 call sigma0%setMetric( model_operator%metric )
                 !
-                write( *, * ) "Model Operator setMetric"
-                !
                 call model_operator%setCond( sigma0 )
-                !
-                write( *, * ) "Model Operator setCond"
                 !
             class default
                 stop "Error: handleModelFile > Unclassified main_grid"
@@ -291,7 +284,6 @@ contains
         !
         if( command_argument_count() == 0 ) then
             !
-            call printHelp()
             call printUsage()
             stop
             !
@@ -430,7 +422,6 @@ contains
                       case( "-h", "--help" )
                          !
                          call printHelp()
-                         call printUsage()
                          stop
                          !
                       case( "-tmp", "--template" )
@@ -538,6 +529,49 @@ contains
         !
     end subroutine createOutputDirectory
     !
+    !
+    !
+    function getLiteralTime( seconds ) result( str_time )
+        implicit none
+        !
+        integer, intent( inout ) :: seconds
+        !
+        character(50) :: str_time
+        !
+        integer :: days, hours, minutes
+        !
+        days = seconds / 86400
+        !
+        seconds = mod( seconds, 86400 )
+        !
+        hours = seconds / 3600
+        !
+        seconds = mod( seconds, 3600 )
+        !
+        minutes = seconds / 60
+        !
+        seconds = mod( seconds, 60 )
+        !
+        if( days .EQ. 0 .AND. hours .EQ. 0 .AND. minutes .EQ. 0 ) then
+            write( str_time, "(i2, a1)" ) seconds, "s"
+        elseif( days .EQ. 0 .AND. hours .EQ. 0 ) then
+            write( str_time, "(i2, a2, i2, a1)" ) minutes, "m,", seconds, "s"
+        elseif( days .EQ. 0 .AND. minutes .EQ. 0 ) then
+            write( str_time, "(i2, a2, i2, a1)" ) hours, "h,", seconds, "s"
+        elseif( hours .EQ. 0 .AND. minutes .EQ. 0  ) then
+            write( str_time, "(i2, a2, i2, a2, i2, a2, i2, a1)" ) days, "d,", seconds, "s"
+        elseif( days .EQ. 0 ) then
+            write( str_time, "(i2, a2, i2, a2, i2, a1)" ) hours, "h,", minutes, "m,", seconds, "s"
+        elseif( hours .EQ. 0 ) then
+            write( str_time, "(i2, a2, i2, a2, i2, a1)" ) days, "d,", minutes, "m,", seconds, "s"
+        elseif( minutes .EQ. 0  ) then
+            write( str_time, "(i2, a2, i2, a2, i2, a2, i2, a1)" ) days, "d,", hours, "h,", seconds, "s"
+        else
+            write( str_time, "(i2, a2, i2, a2, i2, a2, i2, a1)" ) days, "d,", hours, "h,", minutes, "m,", seconds, "s"
+        endif
+        !
+    end function getLiteralTime
+    !
     !> Deallocate remaining unallocated global memory
     !
     subroutine garbageCollector()
@@ -602,12 +636,12 @@ contains
         write( *, * ) "        Output:"
         write( *, * ) "        - 'all_predicted_data.dat' or the path specified by      [-pd]"
         write( *, * ) ""
-        write( *, * ) "    JMult:"
+        write( *, * ) "    Jacobian Multiplication:"
         write( *, * ) "        <ModEM> -j -m <rFile_Model> -pm <rFile_pModel> -d <rFile_Data>"
         write( *, * ) "        Output:"
         write( *, * ) "        - 'jmhat.dat' or the path specified by                   [-jm]"
         write( *, * ) ""
-        write( *, * ) "    JMult_T:"
+        write( *, * ) "    Transposed J Multiplication:"
         write( *, * ) "        <ModEM> -jt -m <rFile_Model> -d <rFile_Data>"
         write( *, * ) "        Output:"
         write( *, * ) "        - 'dsigma.rho' or the path specified by                  [-dm]"
@@ -616,7 +650,10 @@ contains
         write( *, * ) "        <ModEM> -i -m <rFile_Model> -d <rFile_Data>"
         write( *, * ) "        Output:"
         write( *, * ) "        - directory named 'Output_<date>_<time>' or specified by [-o]"
-        !
+        write( *, * ) ""
+        write( *, * ) "    Other options:"
+        write( *, * ) "        <ModEM> -h or <ModEM> --help"
+        write( *, * ) ""
     end subroutine printUsage
     !
     !> Print all the supported input parameters  on the screen
@@ -645,7 +682,7 @@ contains
         write( *, * ) "        [-jm], [--jmhat]     :  Flag to precede output JmHat data file path."
         write( *, * ) "        [-es], [--esolution] :  Flag to precede binary output e-solution file path."
         write( *, * ) "        [-v],  [--version]   :  Print version."
-        write( *, * ) "        [-h],  [--help]      :  Print usage information."
+        write( *, * ) "        [-h],  [--help]      :  Print this information."
         write( *, * ) "        [-tmp],[--template]  :  Create control file templates."
         !
         write( *, * ) ""
@@ -673,7 +710,7 @@ contains
             write( ioFwdTmp, "(A1)" )  "#"
             write( ioFwdTmp, "(A20)" ) "# <Field parameters>"
             write( ioFwdTmp, "(A1)" )  "#"
-            write( ioFwdTmp, "(A27)" ) "model_operator_type [MF|SP|SP2] : MF"
+            write( ioFwdTmp, "(A36)" ) "model_operator_type [MF|SP|SP2] : MF"
             write( ioFwdTmp, "(A1)" )  "#"
             write( ioFwdTmp, "(A19)" ) "# <Grid parameters>"
             write( ioFwdTmp, "(A1)" )  "#"
@@ -694,14 +731,14 @@ contains
             write( ioFwdTmp, "(A1)" )  "#"
             write( ioFwdTmp, "(A21)" ) "# <Solver parameters>"
             write( ioFwdTmp, "(A1)" )  "#"
-            write( ioFwdTmp, "(A30)" ) "QMR_iters [40]            : 40"
-            write( ioFwdTmp, "(A30)" ) "BCG_iters [80]            : 80"
-            write( ioFwdTmp, "(A30)" ) "max_divcor_calls [20]     : 20"
-            write( ioFwdTmp, "(A31)" ) "max_divcor_iters [100]    : 100"
-            write( ioFwdTmp, "(A32)" ) "tolerance_qmr [1E-7]      : 1E-7"
-            write( ioFwdTmp, "(A32)" ) "tolerance_divcor [1E-5]   : 1E-5"
-            write( ioFwdTmp, "(A33)" ) "forward_solver [IT|IT_DC] : IT_DC"
-            write( ioFwdTmp, "(A1)" )  "#"
+            write( ioFwdTmp, "(A35)" ) "QMR_iters [40]                 : 40"
+            write( ioFwdTmp, "(A35)" ) "BCG_iters [80]                 : 80"
+            write( ioFwdTmp, "(A35)" ) "max_divcor_calls [20]          : 20"
+            write( ioFwdTmp, "(A36)" ) "max_divcor_iters [100]         : 100"
+            write( ioFwdTmp, "(A37)" ) "tolerance_qmr [1E-7]           : 1E-7"
+            write( ioFwdTmp, "(A37)" ) "tolerance_divcor [1E-5]        : 1E-5"
+            write( ioFwdTmp, "(A38)" ) "forward_solver_type [IT|IT_DC] : IT_DC"
+            write( ioFwdTmp, "(A1)", advance = "no" ) "#"
             !
             close( ioFwdTmp )
             !
@@ -741,7 +778,7 @@ contains
             write( ioInvTmp, "(A40)" ) "lambda_tol [1.0e-4]             : 1.0e-8"
             write( ioInvTmp, "(A37)" ) "lambda_div [20.]                : 10."
             write( ioInvTmp, "(A37)" ) "startdm [20.]                   : 10."
-            write( ioInvTmp, "(A1)" )  "#"
+            write( ioInvTmp, "(A1)", advance = "no" ) "#"
             !
             close( ioInvTmp )
             !

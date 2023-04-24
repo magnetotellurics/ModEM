@@ -136,8 +136,6 @@ contains
         !
         integer :: istat
         !
-        write( *, * ) "m, n, nz: ", m, n, nz
-        !
         if( A%is_allocated ) then
             call deall_spMatCSR(A)
         endif
@@ -501,8 +499,6 @@ contains
         !
         !> lets start coding this with little checking -- assume
         !> everything is allocated and correct on entry
-        !
-        write( *, * ) "RMATxCVEC > A%nCol, A%nRow, size(x), size(y): ", A%nCol, A%nRow, size(x), size(y)
         !
         if( A%nCol .NE. size(x) ) then
             write( *, * ) "Error: RMATxCVEC > matrix and vector sizes incompatible = ", A%nCol, size(x)
@@ -1061,8 +1057,6 @@ contains
         !
         nz = A%row( A%nRow + 1 ) - 1
         !
-        write( *, * ) "A%nCol, A%nRow, nz: ", A%nCol, A%nRow, nz
-        !
         call create_spMatCSR( A%nCol, A%nRow, nz, Atrans )
         !
         call create_spMatIJS( A%nRow, A%nCol, nz, B )
@@ -1547,8 +1541,6 @@ contains
         integer :: kk, n, m, i, j, nz, k
         integer, allocatable, dimension(:) :: rowT, colT
         !
-        write( *, * ) "A%nCol, size(r), size(c): ", A%nCol, size(r), size(c)
-        !
         m = size(r)
         n = size(c)
         allocate(rowT(m+1))
@@ -2016,7 +2008,6 @@ contains
             stop "Error: UTsolve_Real > sparse matrix must be upper triangular"
         endif
         !
-        write( *, * ) "size(x), U%nRow: ", size(x), U%nRow
         if( size(x) .NE. U%nRow ) then
             stop "Error: UTsolve_Real > output vector x not of correct size"
         endif
@@ -2895,8 +2886,6 @@ contains
         enddo
         !
         deallocate( temp_sv )
-        !
-        write( *, * ) "boundaryIndexSP > gridType, INDb, INDi: ", gridType, size( INDb ), size( INDi )
         !
     end subroutine boundaryIndexSP
     !

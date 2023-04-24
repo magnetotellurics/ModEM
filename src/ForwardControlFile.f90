@@ -74,7 +74,7 @@ contains
                         self%grid_type = trim( args(2) )
                     elseif( index( line_text, "model_operator_type" ) > 0 ) then
                         self%model_operator_type = trim( args(2) )
-                    elseif( index( line_text, "forward_solver" ) > 0 ) then
+                    elseif( index( line_text, "forward_solver_type" ) > 0 ) then
                         self%forward_solver_type = trim( args(2) )
                     elseif( index( line_text, "source_type_mt" ) > 0 ) then
                         self%source_type_mt = trim( args(2) )

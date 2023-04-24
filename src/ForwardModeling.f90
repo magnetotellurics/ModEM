@@ -26,15 +26,13 @@ contains
         class( ModelParameter_t ), intent( in ) :: sigma
         !
         class( Transmitter_t ), pointer :: Tx
-        integer :: i_tx, n_tx
+        integer :: i_tx
         !
         ! Verbose
         write( *, * ) "          - Start EM Solve"
         !
-        n_tx = size( transmitters )
-        !
         !> Loop over all Transmitters
-        do i_tx = 1, n_tx
+        do i_tx = 1, size( transmitters )
             !
             !> Point to the current Transmitter
             Tx => getTransmitter( i_tx )

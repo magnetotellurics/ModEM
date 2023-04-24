@@ -1421,8 +1421,6 @@ contains
             stop "Error: getArrayRVector3D_SG > Unknown store_state!"
         endif
         !
-		write( *, * ) "getArrayRVector3D_SG: ", size( array )
-		!
     end function getArrayRVector3D_SG
     !
     !> No subroutine briefing
