@@ -59,14 +59,9 @@ module DataGroupTxArray
         module procedure :: setErrorBarDataGroupTxArray
     end interface setErrorBar
     !
-    !> Routines for data handling
     interface countData
         module procedure :: countDataGroupTxArray
     end interface countData
-    !
-    interface countValues
-        module procedure :: countValuesGroupTxArray
-    end interface countValues
     !
     interface getData
         module procedure :: getDataGroupByIndex
@@ -294,30 +289,7 @@ contains
         !
     end subroutine setErrorBarDataGroupTxArray
     !
-    !> Return the amount of DataGroups
-    !
     function countDataGroupTxArray( data_tx_array ) result( counter )
-        implicit none
-        !
-        type( DataGroupTx_t ), dimension(:), intent( in ) :: data_tx_array
-        integer :: counter
-        !
-        integer :: i
-        !
-        counter = 0
-        !
-        do i = 1, size( data_tx_array )
-            !
-            counter = counter + size( data_tx_array(i)%data )
-            !
-        enddo
-        !
-    end function countDataGroupTxArray
-    !
-    !> Return the amount of relevant values
-    !> All the reals and all the relevant imaginaries
-    !
-    function countValuesGroupTxArray( data_tx_array ) result( counter )
         implicit none
         !
         type( DataGroupTx_t ), dimension(:), intent( in ) :: data_tx_array
@@ -329,25 +301,11 @@ contains
         !
         do i = 1, size( data_tx_array )
             !
-            do j = 1, size( data_tx_array(i)%data )
-                !
-                do k = 1, data_tx_array(i)%data(j)%n_comp
-                    !
-                    if( ABS( data_tx_array(i)%data(j)%imaginaries(k) ) .GT. R_TINY ) then
-                        !
-                        counter = counter + 1
-                        !
-                    endif
-                    !
-                    counter = counter + 1
-                    !
-                enddo
-                !
-            enddo
+            counter = counter + size( data_tx_array(i)%data ) * 2
             !
         enddo
         !
-    end function countValuesGroupTxArray
+    end function countDataGroupTxArray
     !
     !> Return a pointer, allowing directly modifications to a specific DataGroup at a given index
     !

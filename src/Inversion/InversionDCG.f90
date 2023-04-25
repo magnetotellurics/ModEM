@@ -240,7 +240,7 @@ contains
         !
         SS = dotProdData( res, Nres )
         !
-        Ndata = countValues( res )
+        Ndata = countData( res )
         !
         mNorm = mHat%dotProd( mHat )
         !

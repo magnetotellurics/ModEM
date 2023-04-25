@@ -444,7 +444,7 @@ contains
         !call linCombData( ONE, all_data, MinusONE, dHat, res )
         call subData( res, dHat )
         !
-        Ndata = countValues( dHat )
+        Ndata = countData( dHat )
         !
         call cdInvMult( res )
         !
@@ -629,7 +629,7 @@ contains
             !
             SS = dotProdData( res, Nres )
             !
-            Ndata = countValues( res )
+            Ndata = countData( res )
             !
             rms = sqrt( SS / Ndata )
             !
@@ -744,8 +744,11 @@ contains
         !
         SS = dotProdData( res, Nres )
         !
-        Ndata = countValues( res )
-        !
+        Ndata = countData( res )
+	   
+	   write( *, * ) "COUNT DATA: ", Ndata
+	   stop
+
         mNorm = mHat%dotProd( mHat )
         !
         Nmodel = mHat%countModel()
