@@ -745,10 +745,10 @@ contains
         SS = dotProdData( res, Nres )
         !
         Ndata = countData( res )
-	   
-	   write( *, * ) "COUNT DATA: ", Ndata
-	   stop
-
+		!
+		!write( *, * ) "COUNT DATA: ", Ndata
+		!stop
+		!
         mNorm = mHat%dotProd( mHat )
         !
         Nmodel = mHat%countModel()

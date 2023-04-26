@@ -174,20 +174,20 @@ contains
         EE(1,2) = self%Lex%dotProd( tx_e_2 )
         EE(2,2) = self%Ley%dotProd( tx_e_2 )
         !
-		write( *, * ) "EE"
-		write( *, * ) EE(1,1), EE(1,2)
-		write( *, * ) EE(2,1), EE(2,2)
-		!
+        !write( *, * ) "EE"
+        !write( *, * ) EE(1,1), EE(1,2)
+        !write( *, * ) EE(2,1), EE(2,2)
+        !
         allocate( BB( 2, 2 ) )
         BB(1,1) = self%Lbx%dotProd( tx_e_1 )
         BB(2,1) = self%Lby%dotProd( tx_e_1 )
         BB(1,2) = self%Lbx%dotProd( tx_e_2 )
         BB(2,2) = self%Lby%dotProd( tx_e_2 )
         !
-		write( *, * ) "BB"
-		write( *, * ) BB(1,1), BB(1,2)
-		write( *, * ) BB(2,1), BB(2,2)
-		!
+        !write( *, * ) "BB"
+        !write( *, * ) BB(1,1), BB(1,2)
+        !write( *, * ) BB(2,1), BB(2,2)
+        !
         deallocate( tx_e_1 )
         deallocate( tx_e_2 )
         !
